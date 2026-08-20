@@ -36,11 +36,26 @@ class StatusWriter:
         self.status = BotStatus()
 
     def write(self) -> None:
+        """Best-effort status telemetry — must NEVER take down trading.
+
+        On Windows, os.replace fails with PermissionError while a reader
+        (the dashboard polls this file every few seconds) briefly holds the
+        destination open; retry, then fall back to a direct write, and
+        swallow any remaining OSError."""
         self.status.updated_at = self._clock()
+        payload = json.dumps(asdict(self.status), ensure_ascii=False, indent=2)
         tmp = self._path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(asdict(self.status), ensure_ascii=False, indent=2),
-                       encoding="utf-8")
-        tmp.replace(self._path)
+        try:
+            tmp.write_text(payload, encoding="utf-8")
+            for _ in range(5):
+                try:
+                    tmp.replace(self._path)
+                    return
+                except PermissionError:
+                    time.sleep(0.05)
+            self._path.write_text(payload, encoding="utf-8")
+        except OSError:
+            pass
 
     def format_report(self) -> str:
         s = self.status
