@@ -18,9 +18,9 @@ sfd_guard_pct: 4.5
 strategy:
   name: xborder_momentum     # ema_cross | rsi_reversion | breakout | xborder_momentum
   params:
-    k: 5                     # leader momentum window (bars)
-    thr_pct: 0.15            # enter long above +thr, short below -thr (%)
-    exit_pct: 0.03           # flatten when |leader momentum| fades below this (%)
+    k: 30                    # leader momentum window (bars)
+    thr_pct: 0.8             # enter long above +thr, short below -thr (%)
+    exit_pct: 0.05           # flatten when |leader momentum| fades below this (%)
 
 # Protective stop: flatten any position losing more than this % of entry price.
 # Also defines the per-trade estimated loss used by the pre-trade risk checks.
