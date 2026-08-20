@@ -38,7 +38,8 @@ class StatusWriter:
     def write(self) -> None:
         self.status.updated_at = self._clock()
         tmp = self._path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(asdict(self.status), ensure_ascii=False, indent=2))
+        tmp.write_text(json.dumps(asdict(self.status), ensure_ascii=False, indent=2),
+                       encoding="utf-8")
         tmp.replace(self._path)
 
     def format_report(self) -> str:

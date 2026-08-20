@@ -124,9 +124,10 @@ def load_settings(
     if env is None:
         env = dict(os.environ)
 
-    with open(root / "config" / "config.yaml") as f:
+    # encoding pinned: Windows defaults to cp932 which breaks UTF-8 configs
+    with open(root / "config" / "config.yaml", encoding="utf-8") as f:
         config = yaml.safe_load(f) or {}
-    with open(root / "config" / "risk_limits.yaml") as f:
+    with open(root / "config" / "risk_limits.yaml", encoding="utf-8") as f:
         limits = RiskLimits.from_dict(yaml.safe_load(f))
 
     mode = resolve_mode(env, config)

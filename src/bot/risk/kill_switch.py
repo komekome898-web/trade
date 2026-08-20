@@ -33,7 +33,7 @@ class KillSwitch:
     def _load(self) -> None:
         if self._state_file.exists():
             try:
-                self._tripped = json.loads(self._state_file.read_text())
+                self._tripped = json.loads(self._state_file.read_text(encoding="utf-8"))
             except Exception:
                 # Unreadable state file: fail safe — treat as tripped.
                 self._tripped = {"reason": KillReason.SYSTEM_ERROR.value,
@@ -42,7 +42,7 @@ class KillSwitch:
     def trip(self, reason: KillReason, detail: str = "") -> None:
         self._tripped = {"reason": reason.value, "detail": detail, "time": time.time()}
         self._state_file.parent.mkdir(parents=True, exist_ok=True)
-        self._state_file.write_text(json.dumps(self._tripped))
+        self._state_file.write_text(json.dumps(self._tripped), encoding="utf-8")
 
     @property
     def is_tripped(self) -> bool:
