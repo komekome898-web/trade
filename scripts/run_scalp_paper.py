@@ -145,7 +145,7 @@ class ScalpPaper:
         self.ask: float | None = None
         self.quote_ts = 0.0
         self.leader: deque[tuple[float, float]] = deque(maxlen=600)
-        self.prints: deque[tuple[float, float, str]] = deque(maxlen=2000)
+        self.prints: deque[tuple[float, float, str, float | None]] = deque(maxlen=2000)
         self.position = None          # dict(side, size, entry, t_entry, tp)
         self.pending: RestingLimit | None = None
         self.last_entry_ts = 0.0
@@ -196,6 +196,9 @@ class ScalpPaper:
 
         Receive time is used as the timestamp: fills are judged against our
         own local placement clock, so exec_date parsing buys nothing here.
+        ``size`` is appended after the fields RestingLimit reads (ts, price,
+        side) so its ``rec[0]``/``rec[1]``/``rec[2]`` indexing is untouched;
+        it feeds sigma60_bps/v60_btc below.
         """
         now = time.time()
         for ex in message or []:
@@ -203,7 +206,11 @@ class ScalpPaper:
                 price = float(ex["price"])
             except (KeyError, TypeError, ValueError):
                 continue
-            self.prints.append((now, price, str(ex.get("side") or "")))
+            try:
+                size = float(ex["size"])
+            except (KeyError, TypeError, ValueError):
+                size = None
+            self.prints.append((now, price, str(ex.get("side") or ""), size))
 
     async def binance_poll(self):
         while True:
@@ -231,6 +238,35 @@ class ScalpPaper:
             return None
         import math
         return math.log(now_px / past) * 1e4
+
+    def pre_signal_features(self, t_signal: float) -> tuple[float | None, float | None]:
+        """sigma60_bps, v60_btc over the 60s strictly before ``t_signal``.
+
+        Mirrors sigma_60/V60 in scripts/research_exit_surface.py (1s
+        bitFlyer log-return std, and summed print volume, both looking only
+        at seconds before the signal) so live entry-side events carry the
+        features that study's TP30-vs-TP10 high-vol tercile tilt (+8 bps
+        paired, n=9) will eventually be judged against. bf_price here is the
+        last print in each whole second of ``self.prints``, since no
+        resampled 1s series is kept.
+        """
+        window = [(ts, price, size) for ts, price, side, size in self.prints
+                 if t_signal - 60.0 <= ts < t_signal]
+        sizes = [size for _, _, size in window if size is not None]
+        v60 = sum(sizes) if sizes else None
+        bars: dict[int, float] = {}
+        for ts, price, _ in window:
+            bars[int(ts)] = price
+        prices = [bars[s] for s in sorted(bars)]
+        import math
+        rets = [math.log(b / a) * 1e4 for a, b in zip(prices, prices[1:])
+                if a > 0 and b > 0]
+        if len(rets) < 10:
+            return None, v60
+        n = len(rets)
+        mean = sum(rets) / n
+        var = sum((r - mean) ** 2 for r in rets) / (n - 1)
+        return math.sqrt(var), v60
 
     # ---- storm radar ------------------------------------------------------
     def update_radar(self, now: float) -> bool:
@@ -293,9 +329,11 @@ class ScalpPaper:
         size = self.args.notional / px
         self.position = {"side": side, "size": size, "entry": px, "t_entry": now,
                          "tp": self.make_tp(side, px, size, now)}
+        sigma60_bps, v60_btc = self.pre_signal_features(now)
         self.log("entry", entry_mode="taker", side=side, price=px, size=size,
                  signal_bps=ret, radar_armed=bool(self.radar_armed),
-                 thr_bps=self.threshold_bps(), bid=self.bid, ask=self.ask)
+                 thr_bps=self.threshold_bps(), bid=self.bid, ask=self.ask,
+                 sigma60_bps=sigma60_bps, v60_btc=v60_btc)
 
     def place_limit(self, side: str, ret: float, now: float) -> None:
         """Rest a virtual limit at the near touch (bid for long, ask for short)."""
@@ -304,12 +342,14 @@ class ScalpPaper:
             side=side, limit=limit, t_signal=now,
             timeout_sec=self.args.fill_timeout_sec,
             size=self.args.notional / limit, signal_bps=ret)
+        sigma60_bps, v60_btc = self.pre_signal_features(now)
         self.log("limit_placed", entry_mode="maker", side=side, limit=limit,
                  size=self.pending.size, signal_bps=ret,
                  radar_armed=bool(self.radar_armed),
                  thr_bps=self.threshold_bps(),
                  fill_timeout_sec=self.args.fill_timeout_sec,
-                 bid=self.bid, ask=self.ask)
+                 bid=self.bid, ask=self.ask,
+                 sigma60_bps=sigma60_bps, v60_btc=v60_btc)
 
     def check_pending(self, now: float) -> None:
         """Fill the resting order off the tape, or cancel it on timeout."""
@@ -338,11 +378,14 @@ class ScalpPaper:
             basis = self.ask if order.side == "LONG" else self.bid
             if basis is not None:
                 basis *= 1 + (SLIPPAGE_BPS / 1e4) * (1 if order.side == "LONG" else -1)
+            # features as of the original signal, not the miss (now)
+            sigma60_bps, v60_btc = self.pre_signal_features(order.t_signal)
             self.log("missed", entry_mode="maker", side=order.side,
                      limit=order.limit, signal_bps=order.signal_bps,
                      taker_basis=basis, misses=self.misses,
                      waited_sec=round(now - order.t_signal, 3),
-                     bid=self.bid, ask=self.ask)
+                     bid=self.bid, ask=self.ask,
+                     sigma60_bps=sigma60_bps, v60_btc=v60_btc)
 
     def make_tp(self, side: str, entry: float, size: float, t_entry: float):
         """Take-profit limit --tp-bps beyond the fill, or None in taker mode.
