@@ -1,0 +1,13 @@
+# Runs fetch_history.py every 15 minutes to accumulate backtest data.
+#   sudo cp deploy/bitflyer-fetch.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now bitflyer-fetch.timer
+[Unit]
+Description=Run bitFlyer history fetch every 15 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

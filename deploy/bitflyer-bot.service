@@ -1,0 +1,34 @@
+# Paper-trading bot service. Install per docs/OPERATIONS.md:
+#   sudo cp deploy/bitflyer-bot.service /etc/systemd/system/
+#   edit User= and the two path placeholders below, then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now bitflyer-bot
+#
+# Restart=on-failure recovers from crashes, but a tripped kill switch is
+# persisted to data/kill_switch.json and main.py refuses to trade after a
+# restart until an operator resets it — restarts never resume trading by
+# themselves.
+[Unit]
+Description=bitFlyer paper trading bot (PAPER mode only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=CHANGE_ME_USER
+WorkingDirectory=/home/CHANGE_ME_USER/trade
+ExecStart=/home/CHANGE_ME_USER/trade/.venv/bin/python scripts/run_paper.py
+Restart=on-failure
+RestartSec=30
+# Stop restart-looping if the bot exits 5 times within 10 minutes
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/CHANGE_ME_USER/trade/data /home/CHANGE_ME_USER/trade/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
