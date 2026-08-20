@@ -52,9 +52,9 @@ def fetch_trades(pair: str, days: float, sleep_sec: float, max_seconds: float):
                   flush=True)
             break
 
-        resp = session.get(URL, params={"pair": pair, "since": since}, timeout=20)
         req_count += 1
         try:
+            resp = session.get(URL, params={"pair": pair, "since": since}, timeout=30)
             resp.raise_for_status()
             data = resp.json()
         except Exception as exc:
