@@ -28,14 +28,17 @@ the hold curve, and thr 10 bps keeps EV while raising trade count.
 
 Storm radar (src/bot/radar.py, from scripts/research_storm_b.py): storms are
 2.23x more likely to begin during 12:30-15:00 UTC, the only pre-registered
-precursor that qualified. Inside that window the radar is "armed" and the
-entry threshold drops to --thr-armed-bps (8 bps) so more of the burst
-regime is traded; outside it the unchanged --thr-bps (10 bps) applies.
-Every arm/disarm flip is logged as a "radar_state" event, and entry-side
-events carry radar_armed, so the JSONL shows the arming windows.
+precursor that qualified. Inside that window the radar is "armed"; while
+armed the threshold is --thr-armed-bps. The armed default is 10 (same as
+--thr-bps): the storm-library replay (scripts/replay_scalp_storm.py,
+2026-08-20) found the marginal 8-10 bps bursts bought by a lower armed
+threshold ran -4.1 bps/trade over 68 fills, so the sensitivity boost is
+off until paper evidence says otherwise. Every arm/disarm flip is logged
+as a "radar_state" event, and entry-side events carry radar_armed, so the
+JSONL still separates armed vs unarmed performance at equal thresholds.
 
 Usage:
-  python scripts/run_scalp_paper.py [--thr-bps 10] [--thr-armed-bps 8]
+  python scripts/run_scalp_paper.py [--thr-bps 10] [--thr-armed-bps 10]
       [--window-sec 5] [--hold-sec 60] [--entry maker]
       [--fill-timeout-sec 10] [--notional 110000] [--daily-loss-cap 6000]
       [--radar-start 12:30] [--radar-end 15:00]
@@ -353,9 +356,11 @@ class ScalpPaper:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--thr-bps", type=float, default=10.0)
-    ap.add_argument("--thr-armed-bps", type=float, default=8.0,
+    ap.add_argument("--thr-armed-bps", type=float, default=10.0,
                     help="entry threshold while the storm radar is armed "
-                         "(12:30-15:00 UTC by default)")
+                         "(12:30-15:00 UTC by default); replay evidence "
+                         "says a lower armed bar hurts, so it matches "
+                         "--thr-bps until paper data argues otherwise")
     ap.add_argument("--radar-start", default="12:30", help="radar window start, UTC HH:MM")
     ap.add_argument("--radar-end", default="15:00", help="radar window end, UTC HH:MM")
     ap.add_argument("--window-sec", type=float, default=5.0)
