@@ -1,20 +1,35 @@
 # Trading configuration. NO secrets in this file.
-product_code: XRP_JPY        # candidate for small capital; confirm min order size via scripts/check_api.py
+# Product specs (min size, fees, leverage, shortability): config/products.yaml
+product_code: FX_BTC_JPY     # Lightning FX: 0% taker fee, shortable, 2x leverage
 candle_interval_sec: 60
 
-# Paper-trading validation target (see docs/RESEARCH_REPORT_2026-08-20b.md):
-# follow large Binance XRPUSDT moves on bitFlyer XRP_JPY. UNPROVEN — paper only.
+# PAPER-mode virtual equity. FX_BTC_JPY min order is 0.01 BTC (~110k JPY
+# notional), far above the real 6,000 JPY — this virtual stake exists ONLY to
+# validate the strategy at realistic size. Live trading would require real
+# funding and explicit owner approval.
+paper_equity_jpy: 200000
+
+# Refuse NEW FX entries when |FX-spot| divergence approaches the 5% SFD band.
+sfd_guard_pct: 4.5
+
+# Paper-trading validation target (see docs/RESEARCH_REPORT_2026-08-20*.md):
+# follow Binance BTCUSDT moves on bitFlyer FX_BTC_JPY, long AND short.
+# UNPROVEN — paper only. Params are set from the FX research (train/val only).
 strategy:
   name: xborder_momentum     # ema_cross | rsi_reversion | breakout | xborder_momentum
   params:
-    k: 10                    # leader momentum window (bars)
-    thr_pct: 0.8             # entry when leader moved more than this (%)
-    exit_pct: 0.0            # exit when leader momentum falls below this (%)
+    k: 5                     # leader momentum window (bars)
+    thr_pct: 0.15            # enter long above +thr, short below -thr (%)
+    exit_pct: 0.03           # flatten when |leader momentum| fades below this (%)
+
+# Protective stop: flatten any position losing more than this % of entry price.
+# Also defines the per-trade estimated loss used by the pre-trade risk checks.
+stop_loss_pct: 0.5
 
 # Leader market feed for xborder_momentum (public Binance data, read-only)
 leader:
   exchange: binance
-  symbol: XRPUSDT
+  symbol: BTCUSDT
 
 # Poll intervals (seconds)
 poll:

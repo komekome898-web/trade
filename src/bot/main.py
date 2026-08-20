@@ -65,8 +65,18 @@ class TradingApp:
                 symbol=str(leader_cfg["symbol"]),
                 interval_sec=int(cfg.get("candle_interval_sec", 60)),
             )
+        from bot.products import load_products
+        products = load_products(".")  # bot always runs from the repo root
+        self.product = products.get(settings.product_code)
+        if self.product is None:
+            raise ValueError(f"unknown product {settings.product_code}; add it to config/products.yaml")
+        self.sfd_guard_pct = float(cfg.get("sfd_guard_pct", 4.5))
+        self.stop_loss_pct = float(cfg.get("stop_loss_pct", 0.5))
+        self._sfd_divergence: float | None = None
+
         self.kill_switch = KillSwitch()
-        self.checker = PreTradeChecker(settings.risk_limits, self.kill_switch)
+        self.checker = PreTradeChecker(settings.risk_limits, self.kill_switch,
+                                       product=self.product)
         self.store = OrderStore()
         costs = cfg.get("costs", {})
 
@@ -77,13 +87,15 @@ class TradingApp:
             gateway = LiveExecutor(settings, client)
             initial_equity = self._fetch_jpy_balance()
         else:
+            initial_equity = float(cfg.get("paper_equity_jpy", 6000.0))
             gateway = PaperExecutor(
                 quote_fn=self._quote,
-                balance_jpy=6000.0,
-                taker_fee_pct=float(costs.get("taker_fee_pct", 0.15)),
+                balance_jpy=initial_equity,
+                taker_fee_pct=self.product.taker_fee_pct,
                 slippage_pct=float(costs.get("slippage_pct", 0.05)),
+                allow_short=self.product.shortable,
+                leverage=self.product.leverage,
             )
-            initial_equity = 6000.0
 
         self.orders = OrderManager(self.store, gateway, self.kill_switch)
         self.portfolio = Portfolio(initial_equity_jpy=initial_equity)
@@ -147,14 +159,45 @@ class TradingApp:
                 [self.leader_feed.close_for(c.start) for c in self.candles.completed],
                 dtype="float64",
             )
-        signal = self.strategy.on_candles(candles_df)
-        decision, reject_reasons, order = "HOLD", [], None
+        # protective stop-loss overrides the strategy
+        pos = self.portfolio.position_size
+        if pos != 0.0:
+            loss_pct = -self.portfolio.unrealized_pnl_jpy(tick.price) / \
+                self.portfolio.position_notional_jpy(tick.price) * 100
+            if loss_pct >= self.stop_loss_pct:
+                side = "SELL" if pos > 0 else "BUY"
+                order = self._try_order(side, tick, size=abs(pos))
+                log_decision(
+                    logger, symbol=self.settings.product_code, price=tick.price,
+                    strategy_signal="STOP_LOSS", indicator_values={"loss_pct": loss_pct},
+                    decision="ORDER_SENT" if order else "REJECTED",
+                    reason=f"protective stop: unrealized -{loss_pct:.2f}%",
+                    order_id=order.local_id if order else None,
+                    pnl=self.portfolio.realized_pnl_jpy,
+                )
+                self._update_status(tick.price)
+                return
 
-        if signal.type is SignalType.BUY and self.portfolio.position_size == 0.0:
-            order = self._try_order("BUY", tick)
-            decision = "ORDER_SENT" if order else "REJECTED"
-        elif signal.type is SignalType.SELL and self.portfolio.position_size > 0.0:
-            order = self._try_order("SELL", tick, size=self.portfolio.position_size)
+        signal = self.strategy.on_candles(candles_df)
+        decision, order = "HOLD", None
+
+        if signal.type is SignalType.BUY:
+            if pos < 0:      # close short
+                order = self._try_order("BUY", tick, size=abs(pos))
+                decision = "ORDER_SENT" if order else "REJECTED"
+            elif pos == 0.0 and not self._sfd_blocked():
+                order = self._try_order("BUY", tick)
+                decision = "ORDER_SENT" if order else "REJECTED"
+        elif signal.type is SignalType.SELL:
+            if pos > 0:      # close long
+                order = self._try_order("SELL", tick, size=pos)
+                decision = "ORDER_SENT" if order else "REJECTED"
+            elif pos == 0.0 and self.product.shortable and not self._sfd_blocked():
+                order = self._try_order("SELL", tick)
+                decision = "ORDER_SENT" if order else "REJECTED"
+        elif signal.type is SignalType.CLOSE and pos != 0.0:
+            side = "SELL" if pos > 0 else "BUY"
+            order = self._try_order(side, tick, size=abs(pos))
             decision = "ORDER_SENT" if order else "REJECTED"
 
         log_decision(
@@ -169,20 +212,59 @@ class TradingApp:
         )
         self._update_status(tick.price)
 
+    def _sfd_blocked(self) -> bool:
+        """For FX products, refuse NEW entries when the FX/spot divergence is
+        close to the SFD band (5%). Closing positions is always allowed."""
+        if self.product.market_type != "FX":
+            return False
+        try:
+            spot = float(self.client.ticker("BTC_JPY")["ltp"])
+            fx = self.feed.last_tick.price if self.feed.last_tick else spot
+            self._sfd_divergence = (fx - spot) / spot * 100
+        except Exception:
+            return True  # cannot verify divergence -> stay out (safe side)
+        if abs(self._sfd_divergence) >= self.sfd_guard_pct:
+            logger.warning("SFD guard active", extra={"data": {
+                "event": "sfd_guard", "divergence_pct": self._sfd_divergence}})
+            return True
+        return False
+
     def _try_order(self, side: str, tick, size: float | None = None):
         price = tick.best_ask if side == "BUY" else tick.best_bid
-        if size is None:
-            notional = min(self.settings.risk_limits.max_order_size_jpy,
-                           self.portfolio.initial_equity_jpy / 2)
-            size = round(notional / price, 6)
-        request = OrderRequest(self.settings.product_code, side, size, price)
+        opening = size is None
+        if opening:
+            # margin products size off equity x leverage; spot off half equity
+            equity = self.portfolio.equity_jpy(tick.price)
+            if self.product.is_margin:
+                budget = min(self.settings.risk_limits.max_order_size_jpy,
+                             equity * self.product.leverage * 0.9)
+            else:
+                budget = min(self.settings.risk_limits.max_order_size_jpy, equity / 2)
+            # round DOWN to the product's minimum-size granularity
+            steps = int(budget / price / self.product.min_size)
+            size = round(steps * self.product.min_size, 8)
+            if size < self.product.min_size:
+                logger.warning("order skipped: budget below product minimum", extra={"data": {
+                    "event": "size_below_min", "budget_jpy": budget,
+                    "min_notional_jpy": self.product.min_size * price}})
+                return None
+        # entry orders risk stop_loss_pct of price; closing orders reduce risk
+        if opening:
+            stop = price * (1 - self.stop_loss_pct / 100) if side == "BUY" \
+                else price * (1 + self.stop_loss_pct / 100)
+        else:
+            stop = price
+        request = OrderRequest(self.settings.product_code, side, size, price,
+                               stop_price=stop)
         account = AccountState(
-            balance_jpy=self.portfolio.equity_jpy(tick.price) - self.portfolio.position_notional_jpy(tick.price),
+            balance_jpy=self.portfolio.equity_jpy(tick.price) - (
+                0.0 if self.product.is_margin else self.portfolio.position_notional_jpy(tick.price)),
             position_notional_jpy=self.portfolio.position_notional_jpy(tick.price),
             open_orders=len(self.store.active_orders(self.settings.product_code)),
             daily_pnl_jpy=self.portfolio.daily_pnl_jpy(tick.price),
             drawdown_pct=self.portfolio.drawdown_pct(tick.price),
             consecutive_losses=self.portfolio.consecutive_losses,
+            position_size=self.portfolio.position_size,
         )
         decision = self.checker.check(request, account)
         if not decision.approved:
@@ -200,8 +282,7 @@ class TradingApp:
         order = self.orders.refresh(order)
         if order.state.value in ("FILLED", "PARTIALLY_FILLED") and order.filled_size > 0:
             fill_price = order.avg_fill_price or price
-            fee = fill_price * order.filled_size * float(
-                self.settings.config.get("costs", {}).get("taker_fee_pct", 0.15)) / 100
+            fee = fill_price * order.filled_size * self.product.taker_fee_pct / 100
             self.portfolio.on_fill(symbol=order.symbol, side=side,
                                    size=order.filled_size, price=fill_price, fee_jpy=fee)
             self.status.status.last_execution = f"{side} {order.filled_size} @ {fill_price}"

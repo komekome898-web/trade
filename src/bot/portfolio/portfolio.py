@@ -41,28 +41,38 @@ class Portfolio:
 
     def on_fill(self, *, symbol: str, side: str, size: float, price: float,
                 fee_jpy: float = 0.0) -> float:
-        """Record a fill; returns realized PnL of this fill (JPY)."""
+        """Record a fill; returns realized PnL of this fill (JPY).
+
+        position_size is signed: > 0 long, < 0 short. A fill against the
+        current position closes up to its size first; any remainder opens a
+        position in the other direction (net position model)."""
         self._roll_day()
         realized = 0.0
-        if side == "BUY":
-            new_size = self.position_size + size
-            if new_size > 0:
-                self.avg_entry_price = (
-                    (self.avg_entry_price * self.position_size + price * size) / new_size
-                )
+        delta = size if side == "BUY" else -size
+        pos = self.position_size
+        if pos == 0.0 or (pos > 0) == (delta > 0):
+            new_size = pos + delta
+            self.avg_entry_price = (
+                (self.avg_entry_price * abs(pos) + price * abs(delta)) / abs(new_size)
+            )
             self.position_size = new_size
         else:
-            closing = min(size, self.position_size)
-            realized = (price - self.avg_entry_price) * closing
-            self.position_size -= closing
-            if self.position_size <= 1e-12:
+            closing = min(abs(delta), abs(pos))
+            direction = 1.0 if pos > 0 else -1.0
+            realized = (price - self.avg_entry_price) * closing * direction
+            self.position_size = pos + direction * -closing
+            remainder = abs(delta) - closing
+            if abs(self.position_size) <= 1e-12:
                 self.position_size = 0.0
                 self.avg_entry_price = 0.0
+            if remainder > 1e-12:
+                self.position_size = remainder if delta > 0 else -remainder
+                self.avg_entry_price = price
         realized -= fee_jpy
         self.realized_pnl_jpy += realized
         self.fees_paid_jpy += fee_jpy
         self._daily_realized += realized
-        if side == "SELL":
+        if realized + fee_jpy != 0.0:  # a closing fill
             if realized < 0:
                 self.consecutive_losses += 1
             elif realized > 0:
@@ -71,6 +81,7 @@ class Portfolio:
         return realized
 
     def unrealized_pnl_jpy(self, mark_price: float) -> float:
+        # signed position: a short (negative) gains when mark < entry
         return (mark_price - self.avg_entry_price) * self.position_size
 
     def equity_jpy(self, mark_price: float) -> float:
@@ -88,4 +99,4 @@ class Portfolio:
         return max(0.0, (self.equity_peak_jpy - eq) / self.equity_peak_jpy * 100)
 
     def position_notional_jpy(self, mark_price: float) -> float:
-        return self.position_size * mark_price
+        return abs(self.position_size) * mark_price

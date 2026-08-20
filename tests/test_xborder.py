@@ -26,10 +26,22 @@ def test_buy_on_leader_surge():
     assert sig.indicators["leader_mom_pct"] > 0.8
 
 
-def test_sell_on_negative_leader_momentum():
-    leader = [1.0] * 19 + [0.99]
+def test_sell_on_strong_negative_leader_momentum():
+    leader = [1.0] * 19 + [0.99]  # -1% < -thr -> short entry signal
     s = XborderMomentumStrategy({"k": 10, "thr_pct": 0.8})
     assert s.on_candles(make_candles(20, leader)).type is SignalType.SELL
+
+
+def test_close_when_momentum_fades():
+    leader = [1.0] * 20  # momentum ~0 -> inside exit band
+    s = XborderMomentumStrategy({"k": 10, "thr_pct": 0.8, "exit_pct": 0.1})
+    assert s.on_candles(make_candles(20, leader)).type is SignalType.CLOSE
+
+
+def test_hold_between_exit_band_and_threshold():
+    leader = [1.0] * 19 + [1.004]  # +0.4%: above exit band, below entry thr
+    s = XborderMomentumStrategy({"k": 10, "thr_pct": 0.8, "exit_pct": 0.1})
+    assert s.on_candles(make_candles(20, leader)).type is SignalType.HOLD
 
 
 def test_hold_without_leader_column():

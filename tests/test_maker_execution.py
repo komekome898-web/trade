@@ -45,7 +45,7 @@ def test_maker_buy_fills_only_when_traded_through():
     ])
     res = run_backtest(ScriptedSignals({"script": {1: SignalType.BUY}}), candles,
                        costs=NO_COST, execution="maker")
-    buys = [t for t in res.trade_log if t["side"] == "BUY"]
+    buys = [t for t in res.trade_log if t["side"] == "OPEN_LONG"]
     assert len(buys) == 1
     assert buys[0]["bar"] == 3
     assert buys[0]["price"] == 100.0
@@ -55,7 +55,7 @@ def test_maker_timeout_cancels_and_counts_missed_fill():
     candles = candles_from([(100, 101, 100, 100)] * 10)  # never trades below 100
     res = run_backtest(ScriptedSignals({"script": {1: SignalType.BUY}}), candles,
                        costs=NO_COST, execution="maker", maker_timeout_bars=3)
-    assert [t for t in res.trade_log if t["side"] == "BUY"] == []
+    assert [t for t in res.trade_log if t["side"] == "OPEN_LONG"] == []
     assert res.missed_fills == 1
 
 
@@ -91,7 +91,7 @@ def test_maker_no_same_bar_fill():
     ])
     res = run_backtest(ScriptedSignals({"script": {1: SignalType.BUY}}), candles,
                        costs=NO_COST, execution="maker", maker_timeout_bars=5)
-    assert [t for t in res.trade_log if t["side"] == "BUY"] == []
+    assert [t for t in res.trade_log if t["side"] == "OPEN_LONG"] == []
     assert res.missed_fills == 1
 
 
@@ -99,5 +99,5 @@ def test_taker_path_unchanged_by_maker_addition():
     candles = candles_from([(100, 101, 99, 100)] * 6)
     res = run_backtest(ScriptedSignals({"script": {2: SignalType.BUY}}), candles,
                        costs=NO_COST, execution="taker")
-    buys = [t for t in res.trade_log if t["side"] == "BUY"]
+    buys = [t for t in res.trade_log if t["side"] == "OPEN_LONG"]
     assert buys and buys[0]["bar"] == 3 and buys[0]["price"] == 100.0

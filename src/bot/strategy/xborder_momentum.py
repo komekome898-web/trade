@@ -28,7 +28,7 @@ class XborderMomentumStrategy(Strategy):
     def on_candles(self, candles: pd.DataFrame) -> Signal:
         k = int(self.params.get("k", 10))
         thr = float(self.params.get("thr_pct", 0.8)) / 100
-        exit_below = float(self.params.get("exit_pct", 0.0)) / 100
+        exit_band = float(self.params.get("exit_pct", 0.1)) / 100
 
         if "leader_close" not in candles.columns:
             return Signal(SignalType.HOLD, "no leader data column")
@@ -45,6 +45,8 @@ class XborderMomentumStrategy(Strategy):
                "close": float(candles["close"].iloc[-1])}
         if mom > thr:
             return Signal(SignalType.BUY, f"leader +{mom*100:.2f}% over {k} bars", ind)
-        if mom < exit_below:
-            return Signal(SignalType.SELL, f"leader momentum {mom*100:.2f}% <= exit", ind)
-        return Signal(SignalType.HOLD, "below threshold", ind)
+        if mom < -thr:
+            return Signal(SignalType.SELL, f"leader {mom*100:.2f}% over {k} bars", ind)
+        if abs(mom) <= exit_band:
+            return Signal(SignalType.CLOSE, f"leader momentum faded ({mom*100:.2f}%)", ind)
+        return Signal(SignalType.HOLD, "between exit band and threshold", ind)

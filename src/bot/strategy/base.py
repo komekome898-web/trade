@@ -13,8 +13,9 @@ import pandas as pd
 
 
 class SignalType(Enum):
-    BUY = "BUY"
-    SELL = "SELL"
+    BUY = "BUY"      # open/extend long, or close a short
+    SELL = "SELL"    # close a long, or open a short (shortable products only)
+    CLOSE = "CLOSE"  # flatten any open position; never opens one
     HOLD = "HOLD"
 
 

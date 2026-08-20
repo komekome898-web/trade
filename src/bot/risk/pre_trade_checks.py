@@ -20,6 +20,7 @@ class AccountState:
     daily_pnl_jpy: float          # realized + unrealized, today
     drawdown_pct: float           # from equity peak
     consecutive_losses: int
+    position_size: float = 0.0    # signed: > 0 long, < 0 short
 
 
 @dataclass
@@ -48,9 +49,10 @@ class RiskDecision:
 
 
 class PreTradeChecker:
-    def __init__(self, limits: RiskLimits, kill_switch: KillSwitch):
+    def __init__(self, limits: RiskLimits, kill_switch: KillSwitch, product=None):
         self.limits = limits
         self.kill_switch = kill_switch
+        self.product = product        # optional bot.products.ProductSpec
 
     def check(self, order: OrderRequest, account: AccountState) -> RiskDecision:
         reasons: list[str] = []
@@ -88,8 +90,13 @@ class PreTradeChecker:
             reasons.append(
                 f"order notional {order.notional_jpy:.0f} > MAX_ORDER_SIZE {self.limits.max_order_size_jpy:.0f}"
             )
+        # exposure grows when the order is in the direction of (or opens) the position
+        increases_exposure = (
+            (order.side == "BUY" and account.position_size >= 0)
+            or (order.side == "SELL" and account.position_size <= 0)
+        )
         new_position = account.position_notional_jpy + (
-            order.notional_jpy if order.side == "BUY" else 0.0
+            order.notional_jpy if increases_exposure else 0.0
         )
         if new_position > self.limits.max_position_size_jpy:
             reasons.append(
@@ -99,7 +106,25 @@ class PreTradeChecker:
             reasons.append(
                 f"open orders {account.open_orders} >= MAX_OPEN_ORDERS {self.limits.max_open_orders}"
             )
-        if order.side == "BUY" and order.notional_jpy > account.balance_jpy:
+        if self.product is not None:
+            if order.size < self.product.min_size:
+                reasons.append(
+                    f"size {order.size} below product minimum {self.product.min_size}"
+                )
+            if (order.side == "SELL" and account.position_size <= 0
+                    and not self.product.shortable):
+                reasons.append(f"{order.symbol} is not shortable (spot)")
+            if self.product.is_margin:
+                if increases_exposure and new_position > account.balance_jpy * self.product.leverage:
+                    reasons.append(
+                        f"margin exceeded: notional {new_position:.0f} > "
+                        f"{account.balance_jpy:.0f} x{self.product.leverage}"
+                    )
+            elif order.side == "BUY" and order.notional_jpy > account.balance_jpy:
+                reasons.append(
+                    f"insufficient balance: need {order.notional_jpy:.0f}, have {account.balance_jpy:.0f}"
+                )
+        elif order.side == "BUY" and order.notional_jpy > account.balance_jpy:
             reasons.append(
                 f"insufficient balance: need {order.notional_jpy:.0f}, have {account.balance_jpy:.0f}"
             )

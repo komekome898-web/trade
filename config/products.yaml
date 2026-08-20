@@ -1,0 +1,15 @@
+# Product specifications for bitFlyer Lightning API products.
+# min_size / fees verified against the official docs & live API where possible;
+# re-verify via scripts/check_api.py before any live use.
+# taker_fee_pct for spot is the lowest-volume tier (<10万円/30日) — worst case.
+BTC_JPY:    {market_type: Spot, min_size: 0.001, taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
+XRP_JPY:    {market_type: Spot, min_size: 0.1,   taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
+ETH_JPY:    {market_type: Spot, min_size: 0.01,  taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
+XLM_JPY:    {market_type: Spot, min_size: 0.1,   taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
+MONA_JPY:   {market_type: Spot, min_size: 0.1,   taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
+ELF_JPY:    {market_type: Spot, min_size: 0.1,   taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
+ETH_BTC:    {market_type: Spot, min_size: 0.01,  taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
+BCH_BTC:    {market_type: Spot, min_size: 0.01,  taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
+# Lightning FX: taker/maker fee 0%, 2x leverage, 0.04%/day swap on carried
+# positions, SFD surcharge when |FX-spot|/spot >= 5% (bot must not trade near it).
+FX_BTC_JPY: {market_type: FX,   min_size: 0.01,  taker_fee_pct: 0.0,  shortable: true,  leverage: 2, swap_daily_pct: 0.04}

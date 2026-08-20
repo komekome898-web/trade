@@ -1,10 +1,14 @@
 # Hard safety limits. The bot refuses any order violating one of these,
-# and trips the kill switch where noted. Changing these in production
-# requires explicit owner approval.
-MAX_ORDER_SIZE_JPY: 3000        # max notional per order
-MAX_POSITION_SIZE_JPY: 6000     # max total open position notional
-MAX_DAILY_LOSS_JPY: 300         # kill switch when daily realized+unrealized loss reaches this
+# and trips the kill switch where noted.
+#
+# These values are sized for PAPER validation of FX_BTC_JPY with the virtual
+# 200,000 JPY stake (config.yaml paper_equity_jpy): one minimum-size order
+# (0.01 BTC ~ 110k JPY) must fit inside MAX_ORDER_SIZE. Any LIVE deployment
+# requires explicit owner approval of a fresh set of limits.
+MAX_ORDER_SIZE_JPY: 130000      # max notional per order (~one 0.01 BTC FX order)
+MAX_POSITION_SIZE_JPY: 130000   # single position at a time
+MAX_DAILY_LOSS_JPY: 6000        # 3% of virtual equity: kill switch on daily loss
 MAX_DRAWDOWN_PCT: 10.0          # kill switch at this % drawdown from equity peak
 MAX_OPEN_ORDERS: 1
-MAX_CONSECUTIVE_LOSSES: 4       # kill switch after this many losing trades in a row
+MAX_CONSECUTIVE_LOSSES: 5       # kill switch after this many losing trades in a row
 MAX_API_ERRORS_IN_ROW: 5        # kill switch after this many consecutive API errors

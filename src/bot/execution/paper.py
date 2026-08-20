@@ -26,11 +26,19 @@ class PaperFill:
 
 @dataclass
 class PaperExecutor(ExecutionGateway):
+    """Spot mode (default): pays/receives full notional from the JPY balance,
+    long only. Margin mode (allow_short=True): signed positions, only fees and
+    realized PnL move the balance, and total notional is capped at
+    balance * leverage."""
+
     quote_fn: Callable[[str], tuple[float, float]]   # symbol -> (best_bid, best_ask)
     balance_jpy: float = 6000.0
     taker_fee_pct: float = 0.15
     slippage_pct: float = 0.05
-    positions: dict[str, float] = field(default_factory=dict)   # symbol -> size
+    allow_short: bool = False
+    leverage: float = 1.0
+    positions: dict[str, float] = field(default_factory=dict)   # symbol -> signed size
+    entry_prices: dict[str, float] = field(default_factory=dict)
     fills: list[PaperFill] = field(default_factory=list)
     _orders: dict[str, OrderStatus] = field(default_factory=dict)
 
@@ -50,6 +58,17 @@ class PaperExecutor(ExecutionGateway):
             fill_price = price
         notional = size * fill_price
         fee = notional * self.taker_fee_pct / 100
+        if self.allow_short:
+            self._fill_margin(symbol, side, size, fill_price, fee)
+        else:
+            self._fill_spot(symbol, side, size, fill_price, notional, fee)
+        acceptance_id = f"PAPER-{uuid.uuid4()}"
+        self.fills.append(PaperFill(acceptance_id, symbol, side, size, fill_price, fee))
+        self._orders[acceptance_id] = OrderStatus(acceptance_id, "COMPLETED", size, fill_price)
+        return SubmitResult(acceptance_id)
+
+    def _fill_spot(self, symbol: str, side: str, size: float, fill_price: float,
+                   notional: float, fee: float) -> None:
         if side == "BUY":
             cost = notional + fee
             if cost > self.balance_jpy:
@@ -62,10 +81,33 @@ class PaperExecutor(ExecutionGateway):
                 raise ValueError(f"paper position insufficient: selling {size}, hold {held}")
             self.balance_jpy += notional - fee
             self.positions[symbol] = held - size
-        acceptance_id = f"PAPER-{uuid.uuid4()}"
-        self.fills.append(PaperFill(acceptance_id, symbol, side, size, fill_price, fee))
-        self._orders[acceptance_id] = OrderStatus(acceptance_id, "COMPLETED", size, fill_price)
-        return SubmitResult(acceptance_id)
+
+    def _fill_margin(self, symbol: str, side: str, size: float, fill_price: float,
+                     fee: float) -> None:
+        pos = self.positions.get(symbol, 0.0)
+        entry = self.entry_prices.get(symbol, 0.0)
+        delta = size if side == "BUY" else -size
+        new_pos = pos + delta
+        if pos == 0.0 or (pos > 0) == (delta > 0):   # opening / extending
+            if abs(new_pos) * fill_price > self.balance_jpy * self.leverage + 1e-9:
+                raise ValueError(
+                    f"paper margin insufficient: notional {abs(new_pos) * fill_price:.0f} > "
+                    f"{self.balance_jpy:.0f} x{self.leverage}"
+                )
+            self.entry_prices[symbol] = (
+                (entry * abs(pos) + fill_price * abs(delta)) / abs(new_pos)
+            )
+        else:                                         # closing (possibly flipping)
+            closing = min(abs(delta), abs(pos))
+            direction = 1.0 if pos > 0 else -1.0
+            self.balance_jpy += (fill_price - entry) * closing * direction
+            if abs(new_pos) <= 1e-12:
+                new_pos = 0.0
+                self.entry_prices.pop(symbol, None)
+            elif (new_pos > 0) != (pos > 0):          # flipped
+                self.entry_prices[symbol] = fill_price
+        self.balance_jpy -= fee
+        self.positions[symbol] = new_pos
 
     def cancel_order(self, *, symbol: str, acceptance_id: str) -> None:
         st = self._orders.get(acceptance_id)

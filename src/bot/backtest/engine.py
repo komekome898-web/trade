@@ -7,10 +7,13 @@ Anti-look-ahead design:
 - Maker execution: a signal at bar i places a limit at bar i's CLOSE; it fills
   only when a LATER bar trades strictly through the limit (low < limit for BUY,
   high > limit for SELL), paying the maker fee only. Unfilled orders cancel
-  after `maker_timeout_bars` and are counted as missed fills. This is a
-  conservative fill model: touching the level is not enough.
-Long-only (spot). Position sizing is bounded by the caller via
-`order_notional_jpy`.
+  after `maker_timeout_bars` and are counted as missed fills. Touching the
+  level is not enough — a conservative fill model.
+
+Position model: one net position at a time. BUY closes a short or opens a
+long; SELL closes a long or opens a short (shorts only when allow_short, for
+margin products such as FX_BTC_JPY). Margin carry cost accrues per bar via
+`swap_daily_pct` and is charged against the open trade's PnL.
 """
 from __future__ import annotations
 
@@ -67,14 +70,17 @@ def run_backtest(
     costs: CostModel | None = None,
     execution: str = "taker",
     maker_timeout_bars: int = 5,
+    allow_short: bool = False,
+    swap_daily_pct: float = 0.0,
+    bar_seconds: float = 60.0,
 ) -> BacktestResult:
     if execution not in ("taker", "maker"):
         raise ValueError(f"unknown execution model: {execution}")
     costs = costs or CostModel()
     cash = initial_equity_jpy
-    position = 0.0
+    position = 0.0                 # signed: >0 long, <0 short
     entry_price = 0.0
-    entry_cost = 0.0
+    entry_cost = 0.0               # entry fee + accrued carry, charged at close
     pending_taker: SignalType | None = None
     pending_limit: _PendingLimit | None = None
     equity = []
@@ -82,6 +88,7 @@ def run_backtest(
     trade_log: list[dict] = []
     fees_total = 0.0
     missed_fills = 0
+    swap_per_bar = swap_daily_pct / 100 * (bar_seconds / 86400.0)
 
     start = strategy.min_history
     closes = candles["close"].to_numpy()
@@ -89,50 +96,74 @@ def run_backtest(
     highs = candles["high"].to_numpy()
     lows = candles["low"].to_numpy()
 
-    def book_buy(i: int, price: float, fee_fn) -> None:
+    def open_position(i: int, side: SignalType, price: float, fee_fn) -> None:
         nonlocal cash, position, entry_price, entry_cost, fees_total
         size = order_notional_jpy / price
         fee = fee_fn(size * price)
-        if size * price + fee <= cash:
-            cash -= size * price + fee
-            fees_total += fee
-            position, entry_price = size, price
-            entry_cost = fee
-            trade_log.append({"bar": i, "side": "BUY", "price": price, "size": size})
-
-    def book_sell(i: int, price: float, fee_fn) -> None:
-        nonlocal cash, position, entry_price, entry_cost, fees_total
-        fee = fee_fn(position * price)
-        cash += position * price - fee
         fees_total += fee
-        pnl = (price - entry_price) * position - fee - entry_cost
+        position = size if side is SignalType.BUY else -size
+        entry_price = price
+        entry_cost = fee
+        trade_log.append({"bar": i, "side": f"OPEN_{'LONG' if position > 0 else 'SHORT'}",
+                          "price": price, "size": size})
+
+    def close_position(i: int, price: float, fee_fn) -> None:
+        nonlocal cash, position, entry_price, entry_cost, fees_total
+        size = abs(position)
+        fee = fee_fn(size * price)
+        fees_total += fee
+        direction = 1.0 if position > 0 else -1.0
+        pnl = (price - entry_price) * size * direction - fee - entry_cost
+        cash += pnl
         trade_pnls.append(pnl)
-        trade_log.append({"bar": i, "side": "SELL", "price": price,
-                          "size": position, "pnl": pnl})
+        trade_log.append({"bar": i, "side": f"CLOSE_{'LONG' if position > 0 else 'SHORT'}",
+                          "price": price, "size": size, "pnl": pnl})
         position, entry_price, entry_cost = 0.0, 0.0, 0.0
 
+    def execute(i: int, side: SignalType, price: float, fee_fn) -> None:
+        if side is SignalType.BUY:
+            if position < 0:
+                close_position(i, price, fee_fn)
+            elif position == 0:
+                open_position(i, SignalType.BUY, price, fee_fn)
+        else:
+            if position > 0:
+                close_position(i, price, fee_fn)
+            elif position == 0 and allow_short:
+                open_position(i, SignalType.SELL, price, fee_fn)
+
+    def actionable(side: SignalType) -> bool:
+        if side is SignalType.BUY:
+            return position <= 0
+        return position > 0 or (position == 0 and allow_short)
+
     for i in range(len(candles)):
-        # 1) execute prior decisions against THIS bar (open for taker,
-        #    intrabar range for maker) — always before deciding on bar i.
+        # 0) margin carry accrues on any open position, per bar
+        if position != 0.0 and swap_per_bar > 0:
+            carry = abs(position) * closes[i - 1 if i > 0 else 0] * swap_per_bar
+            entry_cost += carry
+            fees_total += carry
+
+        # 1) execute prior decisions against THIS bar
         if execution == "taker":
             if pending_taker is not None and i > 0:
-                if pending_taker is SignalType.BUY and position == 0.0:
-                    book_buy(i, costs.buy_price(opens[i]), costs.fee)
-                elif pending_taker is SignalType.SELL and position > 0.0:
-                    book_sell(i, costs.sell_price(opens[i]), costs.fee)
+                ref = opens[i]
+                side = pending_taker
+                if side is SignalType.CLOSE:
+                    side = SignalType.SELL if position > 0 else SignalType.BUY \
+                        if position < 0 else None
+                if side is not None:
+                    price = costs.buy_price(ref) if side is SignalType.BUY \
+                        else costs.sell_price(ref)
+                    execute(i, side, price, costs.fee)
                 pending_taker = None
         else:
             if pending_limit is not None and i > pending_limit.placed_bar:
                 po = pending_limit
-                filled = (
-                    (po.side is SignalType.BUY and position == 0.0 and lows[i] < po.limit)
-                    or (po.side is SignalType.SELL and position > 0.0 and highs[i] > po.limit)
-                )
-                if filled:
-                    if po.side is SignalType.BUY:
-                        book_buy(i, po.limit, costs.maker_fee)
-                    else:
-                        book_sell(i, po.limit, costs.maker_fee)
+                traded_through = (lows[i] < po.limit) if po.side is SignalType.BUY \
+                    else (highs[i] > po.limit)
+                if traded_through and actionable(po.side):
+                    execute(i, po.side, po.limit, costs.maker_fee)
                     pending_limit = None
                 elif i - po.placed_bar >= maker_timeout_bars:
                     missed_fills += 1
@@ -143,18 +174,28 @@ def run_backtest(
         # 2) decide on this bar using only candles[0..i]
         if i >= start:
             signal = strategy.on_candles(candles.iloc[: i + 1])
-            if signal.type in (SignalType.BUY, SignalType.SELL):
-                actionable = (signal.type is SignalType.BUY and position == 0.0) or \
-                             (signal.type is SignalType.SELL and position > 0.0)
+            sig_type = signal.type
+            if sig_type is SignalType.CLOSE:
+                # resolve CLOSE to the concrete closing side, or drop when flat
+                sig_type = SignalType.SELL if position > 0 else SignalType.BUY \
+                    if position < 0 else None
+                if sig_type is None and execution == "taker":
+                    pass
+            if sig_type in (SignalType.BUY, SignalType.SELL):
                 if execution == "taker":
-                    pending_taker = signal.type
-                elif actionable:
-                    # new signal replaces any resting order (cancel/replace)
-                    if pending_limit is not None and pending_limit.side is not signal.type:
+                    if signal.type is SignalType.CLOSE:
+                        pending_taker = SignalType.CLOSE
+                    else:
+                        pending_taker = sig_type
+                elif actionable(sig_type) or signal.type is SignalType.CLOSE:
+                    if pending_limit is not None and pending_limit.side is not sig_type:
                         missed_fills += 1
-                    pending_limit = _PendingLimit(signal.type, closes[i], i)
+                    pending_limit = _PendingLimit(sig_type, closes[i], i)
 
-        equity.append(cash + position * closes[i])
+        direction = 1.0 if position >= 0 else -1.0
+        unrealized = (closes[i] - entry_price) * abs(position) * direction - entry_cost \
+            if position != 0 else 0.0
+        equity.append(cash + unrealized)
 
     equity_curve = pd.Series(equity, index=candles.index)
     metrics = compute_metrics(trade_pnls, equity_curve, fees_total)
