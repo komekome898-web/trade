@@ -26,11 +26,19 @@ from bot.exchange.bitflyer_client import BitflyerClient  # noqa: E402
 
 def fetch_product(client: BitflyerClient, product: str, days: int, max_pages: int,
                   data_dir: Path, sleep_sec: float = 1.05) -> None:
+    from bot.exchange.bitflyer_client import BitflyerError
+
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     rows: list[dict] = []
     before: int | None = None
     for page in range(max_pages):
-        batch = client.executions(product, count=500, before=before)
+        try:
+            batch = client.executions(product, count=500, before=before)
+        except BitflyerError as e:
+            # the public executions API only serves the most recent ~31 days;
+            # keep what we have instead of dying mid-product
+            print(f"[{product}] history limit reached at page {page}: {e}", flush=True)
+            break
         if not batch:
             break
         rows.extend(batch)
