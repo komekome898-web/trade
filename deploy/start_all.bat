@@ -14,9 +14,11 @@ if not exist logs mkdir logs
 call :launch "main-bot"    "scripts\run_paper.py"       run_paper.py       "logs\run_paper.out.log"
 call :launch "scalp-paper" "scripts\run_scalp_paper.py" run_scalp_paper.py "logs\scalp.out.log"
 call :launch "ws-recorder" "scripts\record_realtime.py" record_realtime.py "logs\recorder.out.log"
+call :launch "dashboard"   "scripts\dashboard.py"       dashboard.py       "logs\dashboard.out.log"
 
 echo.
-echo Done. Logs: logs\run_paper.out.log / logs\scalp.out.log / logs\recorder.out.log
+echo Done. Dashboard: http://127.0.0.1:8300
+echo Logs: logs\run_paper.out.log / logs\scalp.out.log / logs\recorder.out.log
 timeout /t 5 >nul
 exit /b 0
 
