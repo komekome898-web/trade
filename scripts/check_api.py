@@ -63,7 +63,18 @@ def main() -> int:
             print(f"permissions: OK, no withdrawal permission ({len(perms)} endpoints allowed)")
         balance = client.get_balance()
         jpy = next((b for b in balance if b.get("currency_code") == "JPY"), None)
-        print(f"balance JPY: {jpy}")
+        print(f"spot balance JPY: {jpy}")
+        try:
+            collateral = client.get_collateral()
+            print(f"margin collateral: {collateral}")
+        except (BitflyerError, NetworkError) as e:
+            print(f"margin collateral: not readable ({e})")
+        spot_jpy = float(jpy["available"]) if jpy else 0.0
+        if spot_jpy <= 0:
+            print("NOTE: spot JPY is zero. This bot trades SPOT; funds parked in the")
+            print("margin (deposit/collateral) account must be transferred to the cash")
+            print("account in bitFlyer's UI before any future live trading. Paper mode")
+            print("does not need a real balance.")
         orders = client.get_child_orders(settings.product_code, child_order_state="ACTIVE")
         print(f"active orders: {len(orders)}")
     except (BitflyerError, NetworkError) as e:
