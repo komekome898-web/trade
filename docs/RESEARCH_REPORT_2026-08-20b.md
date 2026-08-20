@@ -49,6 +49,12 @@ Binance XRPUSDTが10〜30分で+0.8%以上動いた後のbitFlyer XRP_JPY:
 3. **多角的データ収集** — `scripts/fetch_deep.py`(bitFlyer複数銘柄)、`scripts/fetch_external.py`(増分マージ対応)、`scripts/fetch_all.sh`(systemdタイマー対象を差し替え)
 4. config は `xborder_momentum`(k=10, thr=0.8%)をPAPER検証対象に設定
 
+## 補足: bitFlyer内クロス資産(BTC/ETH深掘りデータ取得後に追記)
+
+- bitFlyer BTC_JPY / ETH_JPY → XRP_JPY のリード・ラグは lag1 +0.10〜0.12 で、Binance BTCUSDT が既に持つ情報とほぼ同等(追加情報なし)
+- bitFlyer BTC_JPY 自体も Binance BTCUSDT に1分遅行(lag1 +0.16)— 価格発見はBinance側という構造の再確認
+- **二次候補**: bitFlyer BTC が10分で+0.5%以上動いた後のXRPは15分で平均+0.372%(114イベント分、勝率64%)— maker往復コスト0.30%を僅かに上回る。XRPトリガー(+0.8%)より発生頻度が高い。`config.yaml` の `leader.symbol: BTCUSDT` に変えるだけで同戦略をBTCトリガーでペーパー検証可能。ただしイベント重複・薄板の过大評価は同様に未解決のため、これも候補どまり
+
 ## 結論と次ステップ
 
 - **実運用に足る検証済み優位性は依然として存在しない**。LIVE移行の根拠なし
