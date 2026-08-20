@@ -14,6 +14,13 @@ Position model: one net position at a time. BUY closes a short or opens a
 long; SELL closes a long or opens a short (shorts only when allow_short, for
 margin products such as FX_BTC_JPY). Margin carry cost accrues per bar via
 `swap_daily_pct` and is charged against the open trade's PnL.
+
+Time exit: `max_hold_bars` caps how long a position may stay open. A position
+filled at bar b is force-closed at the OPEN of bar b + max_hold_bars — i.e.
+after exactly max_hold_bars bars of holding — with taker costs, whatever the
+strategy says. The forced close overrides any pending signal on that bar. An
+intrabar stop/take-profit on an EARLIER bar naturally fires first; on the same
+bar the stop is checked first (conservative).
 """
 from __future__ import annotations
 
@@ -75,13 +82,17 @@ def run_backtest(
     bar_seconds: float = 60.0,
     stop_loss_pct: float | None = None,
     take_profit_pct: float | None = None,
+    max_hold_bars: int | None = None,
 ) -> BacktestResult:
     if execution not in ("taker", "maker"):
         raise ValueError(f"unknown execution model: {execution}")
+    if max_hold_bars is not None and max_hold_bars < 1:
+        raise ValueError("max_hold_bars must be >= 1")
     costs = costs or CostModel()
     cash = initial_equity_jpy
     position = 0.0                 # signed: >0 long, <0 short
     entry_price = 0.0
+    entry_bar = -1                 # bar index the open position was filled on
     entry_cost = 0.0               # entry fee + accrued carry, charged at close
     pending_taker: SignalType | None = None
     pending_limit: _PendingLimit | None = None
@@ -99,18 +110,19 @@ def run_backtest(
     lows = candles["low"].to_numpy()
 
     def open_position(i: int, side: SignalType, price: float, fee_fn) -> None:
-        nonlocal cash, position, entry_price, entry_cost, fees_total
+        nonlocal cash, position, entry_price, entry_bar, entry_cost, fees_total
         size = order_notional_jpy / price
         fee = fee_fn(size * price)
         fees_total += fee
         position = size if side is SignalType.BUY else -size
         entry_price = price
+        entry_bar = i
         entry_cost = fee
         trade_log.append({"bar": i, "side": f"OPEN_{'LONG' if position > 0 else 'SHORT'}",
                           "price": price, "size": size})
 
     def close_position(i: int, price: float, fee_fn) -> None:
-        nonlocal cash, position, entry_price, entry_cost, fees_total
+        nonlocal cash, position, entry_price, entry_bar, entry_cost, fees_total
         size = abs(position)
         fee = fee_fn(size * price)
         fees_total += fee
@@ -121,6 +133,7 @@ def run_backtest(
         trade_log.append({"bar": i, "side": f"CLOSE_{'LONG' if position > 0 else 'SHORT'}",
                           "price": price, "size": size, "pnl": pnl})
         position, entry_price, entry_cost = 0.0, 0.0, 0.0
+        entry_bar = -1
 
     def execute(i: int, side: SignalType, price: float, fee_fn) -> None:
         if side is SignalType.BUY:
@@ -170,6 +183,17 @@ def run_backtest(
                 close_position(i, tp_level, costs.maker_fee)
                 pending_taker = None
                 pending_limit = None
+
+        # 0.7) time exit: a position filled at bar b is force-closed at the OPEN
+        # of bar b + max_hold_bars with taker costs. Any pending signal for this
+        # bar is simply overridden.
+        if max_hold_bars is not None and position != 0.0 \
+                and i - entry_bar >= max_hold_bars:
+            ref = opens[i]
+            price = costs.sell_price(ref) if position > 0 else costs.buy_price(ref)
+            close_position(i, price, costs.fee)
+            pending_taker = None
+            pending_limit = None
 
         # 1) execute prior decisions against THIS bar
         if execution == "taker":
