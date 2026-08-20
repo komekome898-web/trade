@@ -79,6 +79,8 @@ def test_strategies_return_indicator_values(name):
     strat = STRATEGIES[name]({})
     candles = make_candles(200)
     candles["leader_close"] = candles["close"]  # for cross-exchange strategies
+    candles["buy_vol"] = candles["volume"] / 2  # for order-flow strategies
+    candles["sell_vol"] = candles["volume"] / 2
     signal = strat.on_candles(candles)
     assert isinstance(signal.indicators, dict) and signal.indicators
     assert signal.reason

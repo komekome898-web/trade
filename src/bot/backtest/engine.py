@@ -73,6 +73,8 @@ def run_backtest(
     allow_short: bool = False,
     swap_daily_pct: float = 0.0,
     bar_seconds: float = 60.0,
+    stop_loss_pct: float | None = None,
+    take_profit_pct: float | None = None,
 ) -> BacktestResult:
     if execution not in ("taker", "maker"):
         raise ValueError(f"unknown execution model: {execution}")
@@ -143,6 +145,31 @@ def run_backtest(
             carry = abs(position) * closes[i - 1 if i > 0 else 0] * swap_per_bar
             entry_cost += carry
             fees_total += carry
+
+        # 0.5) protective stop / take-profit, checked intrabar. When both
+        # levels are inside the bar's range the STOP is assumed to fill first
+        # (conservative). Stops fill as market orders with taker costs; take
+        # profits are resting limits filled at their level with maker fee.
+        if position != 0.0 and i > 0 and (stop_loss_pct or take_profit_pct):
+            long = position > 0
+            sl_level = entry_price * (1 - stop_loss_pct / 100) if long and stop_loss_pct \
+                else entry_price * (1 + stop_loss_pct / 100) if stop_loss_pct else None
+            tp_level = entry_price * (1 + take_profit_pct / 100) if long and take_profit_pct \
+                else entry_price * (1 - take_profit_pct / 100) if take_profit_pct else None
+            sl_hit = sl_level is not None and (
+                lows[i] <= sl_level if long else highs[i] >= sl_level)
+            tp_hit = tp_level is not None and (
+                highs[i] > tp_level if long else lows[i] < tp_level)
+            if sl_hit:
+                trigger = min(opens[i], sl_level) if long else max(opens[i], sl_level)
+                price = costs.sell_price(trigger) if long else costs.buy_price(trigger)
+                close_position(i, price, costs.fee)
+                pending_taker = None
+                pending_limit = None
+            elif tp_hit:
+                close_position(i, tp_level, costs.maker_fee)
+                pending_taker = None
+                pending_limit = None
 
         # 1) execute prior decisions against THIS bar
         if execution == "taker":

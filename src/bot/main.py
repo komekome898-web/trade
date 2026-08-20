@@ -72,6 +72,7 @@ class TradingApp:
             raise ValueError(f"unknown product {settings.product_code}; add it to config/products.yaml")
         self.sfd_guard_pct = float(cfg.get("sfd_guard_pct", 4.5))
         self.stop_loss_pct = float(cfg.get("stop_loss_pct", 0.5))
+        self.use_flow_candles = bool(cfg.get("use_flow_candles", False))
         self._sfd_divergence: float | None = None
 
         self.kill_switch = KillSwitch()
@@ -102,6 +103,8 @@ class TradingApp:
         self.status = StatusWriter()
         self.status.status.mode = settings.mode.value
         self._api_errors_in_row = 0
+        from bot.market_data.feed import SpreadRecorder
+        self.spread_recorder = SpreadRecorder(f"data/spread_{settings.product_code}.csv")
 
     # ---- helpers ----------------------------------------------------------
     def _quote(self, symbol: str) -> tuple[float, float]:
@@ -131,6 +134,7 @@ class TradingApp:
             tick = self.feed.poll_ticker()
             self._api_errors_in_row = 0
             self.status.status.api_connected = True
+            self.spread_recorder.record(tick)
         except MarketDataAnomaly as e:
             self.kill_switch.trip(KillReason.MARKET_DATA_ANOMALY, str(e))
             self._on_kill(str(e))
@@ -148,7 +152,16 @@ class TradingApp:
         if self.leader_feed is not None:
             self.leader_feed.poll()  # failure -> stale leader -> strategy holds
 
-        finished = self.candles.add_trade(tick.timestamp, tick.price, 0.0)
+        if self.use_flow_candles:
+            # candles from real executions (volume + taker sides) for
+            # order-flow strategies; a failed poll just delays the candle
+            try:
+                completed = self.feed.poll_executions(self.candles)
+            except (BitflyerError, NetworkError):
+                completed = []
+            finished = completed[-1] if completed else None
+        else:
+            finished = self.candles.add_trade(tick.timestamp, tick.price, 0.0)
         self._update_status(tick.price)
         if finished is None:
             return  # decide only on completed candles
