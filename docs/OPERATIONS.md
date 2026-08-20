@@ -61,6 +61,18 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
 
 通知内容: BOT起動/停止、Kill Switch 発動、1時間毎のステータスレポート。
 
+## 4.5 更新手順(重要)
+
+コード更新は必ず**2点セット**で行うこと:
+
+```powershell
+git pull
+.venv\Scripts\pip install -e ".[dev]"   # 新しい依存ライブラリを取り込む(Linuxは .venv/bin/pip)
+```
+
+`git pull` だけでは新規追加されたライブラリが入らず、該当コンポーネントが
+起動直後にクラッシュする(例: websockets 追加時の板記録・スキャルパー)。
+
 ## 5. Windows PC で動かす場合
 
 並走する3コンポーネント(メインBOT / バーストスキャルパー / 板記録)は
