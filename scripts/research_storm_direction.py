@@ -602,23 +602,25 @@ def main() -> None:
     print_pred_table("[JUDGMENT events, first-of-day only]", rows_d)
 
     # ---------------- regime drift ----------------
-    header("7. REGIME DRIFT -- up-share and P1 accuracy by month")
+    header(f"7. REGIME DRIFT -- up-share and clean-lag P2 accuracy by month")
+    print("the up-share of storms tracks the month's own trend, which is the mechanism behind")
+    print(f"P2's clean-lag accuracy: it is reading the prevailing regime, not the coming storm.\n")
     mon = pd.Series(direction, index=ev_ts).groupby(ev_ts.to_period("M")).agg(
         n="size", up=lambda s: int((s > 0).sum()))
-    p1c = pd.Series(calls["P1"], index=ev_ts)
-    p1hit = pd.Series(np.where(np.isfinite(calls["P1"]) & (calls["P1"] != 0),
-                               (calls["P1"] == direction).astype(float), np.nan), index=ev_ts)
-    print(f"{'month':<10}{'events':>8}{'up%':>8}{'P1 acc%':>10}{'P1 n':>7}   "
+    v_p2 = calls_at("P2", L0)
+    hit = pd.Series(np.where(np.isfinite(v_p2) & (v_p2 != 0),
+                             (v_p2 == direction).astype(float), np.nan), index=ev_ts)
+    print(f"{'month':<10}{'events':>8}{'up%':>8}{'P2@L31 acc%':>14}{'n':>6}   "
           f"BTC close move over the month")
     line()
     for per, row in mon.iterrows():
         sel = ev_ts.to_period("M") == per
-        h = p1hit[sel].dropna()
+        h = hit[sel].dropna()
         acc = f"{100*h.mean():.1f}" if len(h) else "-"
         seg = b["close"][b.index.to_period("M") == per]
         mv = 100.0 * (seg.iloc[-1] / seg.iloc[0] - 1.0) if len(seg) else float("nan")
         print(f"{str(per):<10}{int(row['n']):>8}{100*row['up']/row['n']:>8.1f}"
-              f"{acc:>10}{len(h):>7}   {mv:+.1f}%")
+              f"{acc:>14}{len(h):>6}   {mv:+.1f}%")
 
     # ---------------- economic frame ----------------
     header("8. ECONOMIC SANITY CHECK -- naive pre-positioning in the armed window")
@@ -650,6 +652,41 @@ def main() -> None:
                   "no armed-window analogue)")
         # always show the always-long benchmark for scale
         econ_check("benchmark: always LONG", np.ones(len(idx)), logc, idx, seg)
+
+    # ---------------- verdict ----------------
+    header("9. VERDICT")
+    print("Q: is the DIRECTION of a storm predictable before it starts?")
+    print()
+    print(f"1. Unconditional: {n_up}/{len(direction)} up ({100*n_up/len(direction):.1f}%), "
+          f"p={p_uncond:.3f}. No usable directional bias in storms themselves.")
+    print("2. As literally pre-registered (predictors at onset-1), P1/P2/P3/MAJ all clear the")
+    print("   adoption bar at 87-96% accuracy. That result is NOT a forecast: the storm is")
+    print(f"   defined by a TRAILING {STORM_WINDOW_MIN}m return, so at onset-1 the move is "
+          f"already {STORM_WINDOW_MIN-1} minutes")
+    print("   old and sits inside the P1/P3 lookbacks. The pre-registration has a design flaw;")
+    print("   the honest reading of section 4b is that these predictors measure the storm.")
+    print(f"3. Pushed back to onset-{L0} (storm window excluded): P1 {100*sweep[('P1',L0)]['acc']:.1f}% "
+          f"(p={sweep[('P1',L0)]['p']:.3f}), P3 {100*sweep[('P3',L0)]['acc']:.1f}% "
+          f"(p={sweep[('P3',L0)]['p']:.3f}),")
+    print(f"   P4 50.0% (p=1.000), P5 {100*res_j['P5']['acc']:.1f}% "
+          f"(p={res_j['P5']['p']:.3f}) -- all indistinguishable from a coin flip.")
+    print(f"4. Two survive the clean lag: P2 {100*sweep[('P2',L0)]['acc']:.1f}% "
+          f"(n={sweep[('P2',L0)]['n']}, p={sweep[('P2',L0)]['p']:.4f}) and "
+          f"MAJ {100*sweep[('MAJ',L0)]['acc']:.1f}% "
+          f"(n={sweep[('MAJ',L0)]['n']}, p={sweep[('MAJ',L0)]['p']:.4f}).")
+    print("   P2's accuracy is flat from L=30 to L=180, so it is a 24h-trend regime label")
+    print("   ('storms break the way the day is already leaning'), not a timing signal. MAJ is")
+    print("   driven by P2 and sits barely over the 58% bar with p just under 0.05, one")
+    print("   marginal call away from failing.")
+    print("5. Economic frame: NO configuration produces a day-clustered t-stat above 1.0, in")
+    print("   either the full sample or the judgment period. P2's positive minute-weighted")
+    print("   mean is a day-selection artefact (fully-armed days +40bps, sparse days -36bps).")
+    print()
+    print("CONCLUSION: the direction of a storm is NOT predictable before it starts in any way")
+    print("that supports pre-positioning. The one weak survivor (24h range position) is a slow")
+    print("trend label with no timing content and no net payoff, and it says nothing about WHEN")
+    print("to have the position on -- which is exactly what a resting-limit strategy needs.")
+    print("Recorded as a NEGATIVE result.")
 
     print()
     line("=")
