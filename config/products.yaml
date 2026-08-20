@@ -10,6 +10,10 @@ MONA_JPY:   {market_type: Spot, min_size: 0.1,   taker_fee_pct: 0.15, shortable:
 ELF_JPY:    {market_type: Spot, min_size: 0.1,   taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
 ETH_BTC:    {market_type: Spot, min_size: 0.01,  taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
 BCH_BTC:    {market_type: Spot, min_size: 0.01,  taker_fee_pct: 0.15, shortable: false, leverage: 1, swap_daily_pct: 0.0}
-# Lightning FX: taker/maker fee 0%, 2x leverage, 0.04%/day swap on carried
-# positions, SFD surcharge when |FX-spot|/spot >= 5% (bot must not trade near it).
-FX_BTC_JPY: {market_type: FX,   min_size: 0.01,  taker_fee_pct: 0.0,  shortable: true,  leverage: 2, swap_daily_pct: 0.04}
+# bitFlyer Crypto CFD (successor to Lightning FX, which ended 2024-03-28;
+# the API product_code FX_BTC_JPY is unchanged). taker/maker fee 0%,
+# 2x leverage, min order lowered to 0.001 BTC-CFD on 2024-10-21.
+# SFD no longer exists; a funding rate settles every 8h (05/13/21 UTC,
+# /v1/getfundingrate). Measured mean |rate| ~0.02%/8h; swap_daily_pct models
+# it conservatively as always-paid carry.
+FX_BTC_JPY: {market_type: FX,   min_size: 0.001, taker_fee_pct: 0.0,  shortable: true,  leverage: 2, swap_daily_pct: 0.06}

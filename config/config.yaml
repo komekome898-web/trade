@@ -9,7 +9,10 @@ candle_interval_sec: 60
 # funding and explicit owner approval.
 paper_equity_jpy: 200000
 
-# Refuse NEW FX entries when |FX-spot| divergence approaches the 5% SFD band.
+# Basis-anomaly guard: refuse NEW CFD entries when |CFD-spot| divergence is
+# abnormal. (The old SFD fee band no longer exists — Crypto CFD uses an 8h
+# funding rate instead — but extreme divergence still signals a market you
+# don't want to enter.)
 sfd_guard_pct: 4.5
 
 # Paper-trading validation target (see docs/RESEARCH_REPORT_2026-08-20*.md):

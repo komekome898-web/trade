@@ -110,6 +110,16 @@ class BitflyerClient:
     def health(self, product_code: str) -> dict:
         return self._request("GET", "/v1/gethealth", params={"product_code": product_code})
 
+    def funding_rate(self, product_code: str) -> dict:
+        """bitFlyer Crypto CFD funding rate (successor to Lightning FX SFD):
+        next scheduled transfer ratio, settled every 8 hours."""
+        return self._request("GET", "/v1/getfundingrate",
+                             params={"product_code": product_code})
+
+    def funding_rate_history(self, product_code: str, count: int = 30) -> list[dict]:
+        return self._request("GET", "/v1/getfundingratehistory",
+                             params={"product_code": product_code, "count": count})
+
     # ---- private read endpoints ------------------------------------------
     def get_balance(self) -> list[dict]:
         return self._request("GET", "/v1/me/getbalance", auth=True)

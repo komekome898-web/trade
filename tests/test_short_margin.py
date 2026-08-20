@@ -139,7 +139,7 @@ def test_risk_checker_product_rules(tmp_path):
     ok = fx_checker.check(OrderRequest("FX_BTC_JPY", "SELL", 0.01, 10_000_000,
                                        stop_price=10_050_000), account)
     assert ok.approved  # short entry allowed on FX
-    too_small = fx_checker.check(OrderRequest("FX_BTC_JPY", "BUY", 0.005, 10_000_000,
+    too_small = fx_checker.check(OrderRequest("FX_BTC_JPY", "BUY", 0.0005, 10_000_000,
                                               stop_price=9_950_000), account)
     assert not too_small.approved and any("below product minimum" in r for r in too_small.reasons)
 
@@ -154,7 +154,7 @@ def test_products_registry():
     fx = products["FX_BTC_JPY"]
     assert fx.shortable and fx.is_margin
     assert fx.taker_fee_pct == 0.0
-    assert fx.min_size == pytest.approx(0.01)
+    assert fx.min_size == pytest.approx(0.001)
     assert fx.leverage == pytest.approx(2.0)
     spot = products["XRP_JPY"]
     assert not spot.shortable and not spot.is_margin

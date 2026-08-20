@@ -80,7 +80,7 @@ def test_leader_drop_opens_short_then_recovery_closes(app):
     drive(app, ticks, leader)
     # candle for start=240 completed at t=330: leader mom over k=2 =
     # log(99600/100000) = -0.40% < -0.15% -> SELL -> paper short 0.01 BTC
-    assert app.portfolio.position_size == pytest.approx(-0.01)
+    assert app.portfolio.position_size == pytest.approx(-0.013)
 
     drive(app, [(390, price), (430, price), (490, price)], leader)
     # candle 360: mom = log(99610/99600) = +0.01% <= exit band -> CLOSE
@@ -94,7 +94,7 @@ def test_stop_loss_flattens_losing_short(app):
               240: 99600.0, 300: 99500.0, 360: 99500.0, 420: 99500.0}
     drive(app, [(30, price), (90, price), (150, price), (210, price),
                 (270, price), (330, price)], leader)
-    assert app.portfolio.position_size == pytest.approx(-0.01)
+    assert app.portfolio.position_size == pytest.approx(-0.013)
     # price jumps +1% against the short -> protective stop (0.5%) must flatten
     drive(app, [(390, price * 1.01)], leader)
     assert app.portfolio.position_size == 0.0
