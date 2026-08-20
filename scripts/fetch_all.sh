@@ -7,3 +7,4 @@ PY="${PY:-.venv/bin/python}"
 
 "$PY" scripts/fetch_history.py
 "$PY" scripts/fetch_external.py --days 2 --swing-days 30
+"$PY" scripts/record_oi.py

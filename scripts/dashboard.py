@@ -48,7 +48,8 @@ PAGE = """<!doctype html>
     padding: 3px 10px; border-radius: 999px; font-size: 12px;
     border: 1px solid var(--line); color: var(--muted);
   }
-  .pill i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .pill i { width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+            background: var(--muted); }
   .pill.ok i { background: var(--ok); } .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
   .pill.warn i { background: var(--warn); } .pill.warn { color: var(--warn); }
   .pill.down i, .pill.missing i, .pill.killed i { background: var(--crit); }
@@ -82,6 +83,7 @@ PAGE = """<!doctype html>
        background: var(--panel); }
   tr + tr td { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
   td.num { text-align: right; }
+  .sub { color: var(--muted); }
   .empty { color: var(--muted); padding: 16px; }
 </style></head><body>
 <header>
@@ -89,6 +91,7 @@ PAGE = """<!doctype html>
   <span class="pill" id="p-main"><i></i>メインBOT</span>
   <span class="pill" id="p-scalp"><i></i>スキャルパー</span>
   <span class="pill" id="p-ws"><i></i>板記録</span>
+  <span class="pill" id="p-radar"><i></i>レーダー</span>
   <span id="updated">—</span>
 </header>
 <main>
@@ -120,6 +123,16 @@ function setPill(id, name, comp) {
   el.innerHTML = `<i></i>${name}: ${stateLabel[comp.state] || comp.state}`;
 }
 
+// storm radar (research_storm_b.py G3): armed inside 12:30-15:00 UTC, when
+// the scalper trades its lowered entry threshold.
+function setRadar(r) {
+  const el = document.getElementById("p-radar");
+  el.className = "pill" + (r.armed ? " warn" : "");
+  el.title = r.reason || "";
+  el.innerHTML = `<i></i>${r.armed ? "レーダー: 武装中" : "レーダー: 待機"}` +
+    (r.window ? ` <span class="sub">${r.window}</span>` : "");
+}
+
 function tile(k, v, cls="") { return `<div class="tile"><div class="k">${k}</div><div class="v mono ${cls}">${v}</div></div>`; }
 function pnlCls(v) { return v > 0 ? "pos" : v < 0 ? "neg" : ""; }
 
@@ -130,6 +143,7 @@ async function refresh() {
   setPill("p-main", "メインBOT", d.components.main_bot);
   setPill("p-scalp", "スキャルパー", d.components.scalper);
   setPill("p-ws", "板記録", d.components.ws_recorder);
+  setRadar(d.radar || {});
   document.getElementById("updated").textContent =
     "更新 " + new Date(d.generated_at * 1000).toLocaleTimeString("ja-JP");
 
@@ -175,7 +189,22 @@ async function refresh() {
     col.map(([k, v]) => `<tr><td>${k}</td><td>${v ? age(v.age_sec) : "未収集"}</td>` +
       `<td class="num mono">${v ? fmt(v.size / 1e6, 1) + " MB" : "—"}</td></tr>`).join("") +
     `<tr><td>板記録 (WS)</td><td>${d.ws.latest ? age(d.ws.latest.age_sec) : "未収集"}</td>` +
-    `<td class="num mono">${fmt(d.ws.total_mb, 1)} MB / ${d.ws.files}ファイル</td></tr>`;
+    `<td class="num mono">${fmt(d.ws.total_mb, 1)} MB / ${d.ws.files}ファイル</td></tr>` +
+    oiRow(d.oi_snapshot);
+}
+
+// OI/DVOL snapshot recorder (scripts/record_oi.py): one row per collector run.
+function oiRow(oi) {
+  if (!oi) return `<tr><td>OIスナップショット</td><td>未収集</td><td class="num mono">—</td></tr>`;
+  const last = oi.last || {};
+  const vals = [
+    last.dvol ? `DVOL ${fmt(last.dvol, 2)}` : null,
+    last.okx_usdt_oi ? `OKX OI ${fmt(last.okx_usdt_oi, 0)}` : null,
+    last.okx_ls_ratio ? `L/S ${fmt(last.okx_ls_ratio, 2)}` : null,
+  ].filter(Boolean).join(" / ");
+  return `<tr><td>OIスナップショット${vals ? ` <span class="sub">${vals}</span>` : ""}</td>` +
+    `<td>${age(oi.row_age_sec != null ? oi.row_age_sec : oi.age_sec)}</td>` +
+    `<td class="num mono">${fmt(oi.size / 1e6, 2)} MB</td></tr>`;
 }
 refresh();
 setInterval(refresh, 5000);

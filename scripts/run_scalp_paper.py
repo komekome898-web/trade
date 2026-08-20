@@ -26,10 +26,19 @@ Defaults follow the quote-level study in scripts/research_scalp_opt.py:
 maker entry beats taker entry per event, hold 60s sits at/near the peak of
 the hold curve, and thr 10 bps keeps EV while raising trade count.
 
+Storm radar (src/bot/radar.py, from scripts/research_storm_b.py): storms are
+2.23x more likely to begin during 12:30-15:00 UTC, the only pre-registered
+precursor that qualified. Inside that window the radar is "armed" and the
+entry threshold drops to --thr-armed-bps (8 bps) so more of the burst
+regime is traded; outside it the unchanged --thr-bps (10 bps) applies.
+Every arm/disarm flip is logged as a "radar_state" event, and entry-side
+events carry radar_armed, so the JSONL shows the arming windows.
+
 Usage:
-  python scripts/run_scalp_paper.py [--thr-bps 10] [--window-sec 5]
-      [--hold-sec 60] [--entry maker] [--fill-timeout-sec 10]
-      [--notional 110000] [--daily-loss-cap 6000]
+  python scripts/run_scalp_paper.py [--thr-bps 10] [--thr-armed-bps 8]
+      [--window-sec 5] [--hold-sec 60] [--entry maker]
+      [--fill-timeout-sec 10] [--notional 110000] [--daily-loss-cap 6000]
+      [--radar-start 12:30] [--radar-end 15:00]
 """
 from __future__ import annotations
 
@@ -45,6 +54,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import requests
 import websockets
+
+from bot.radar import StormRadar
 
 WS_ENDPOINT = "wss://ws.lightstream.bitflyer.com/json-rpc"
 TICKER_CHANNEL = "lightning_ticker_FX_BTC_JPY"
@@ -125,6 +136,8 @@ class ScalpPaper:
         self.log_path = Path("data/scalp_paper.jsonl")
         self.log_path.parent.mkdir(exist_ok=True)
         self.session = requests.Session()
+        self.radar = StormRadar(start=args.radar_start, end=args.radar_end)
+        self.radar_armed: bool | None = None   # None until the first check
 
     def log(self, event: str, **kw):
         rec = {"ts": time.time(), "event": event, **kw}
@@ -200,11 +213,29 @@ class ScalpPaper:
         import math
         return math.log(now_px / past) * 1e4
 
+    # ---- storm radar ------------------------------------------------------
+    def update_radar(self, now: float) -> bool:
+        """Refresh the armed flag, logging a "radar_state" event on each flip."""
+        armed = self.radar.is_armed(now)
+        if armed != self.radar_armed:
+            self.radar_armed = armed
+            state = self.radar.state(now)
+            self.log("radar_state", radar_armed=armed, window=state["window"],
+                     reason=state["reason"], thr_bps=self.threshold_bps())
+        return armed
+
+    def threshold_bps(self) -> float:
+        """Entry threshold in force right now: armed -> --thr-armed-bps."""
+        return self.args.thr_armed_bps if self.radar_armed else self.args.thr_bps
+
     # ---- trading loop -----------------------------------------------------
     async def engine(self):
         while True:
             await asyncio.sleep(0.25)
             now = time.time()
+            # checked every tick so arm/disarm flips are logged even while a
+            # position or a resting order is open
+            self.update_radar(now)
             if Path("KILL").exists():
                 self.log("kill_file_stop", daily_pnl=self.daily_pnl)
                 return
@@ -226,7 +257,7 @@ class ScalpPaper:
             if not feeds_ok:
                 continue
             ret = self.leader_return_bps()
-            if ret is None or abs(ret) < self.args.thr_bps:
+            if ret is None or abs(ret) < self.threshold_bps():
                 continue
             if now - self.last_entry_ts < self.args.cooldown_sec:
                 continue
@@ -244,7 +275,8 @@ class ScalpPaper:
         size = self.args.notional / px
         self.position = {"side": side, "size": size, "entry": px, "t_entry": now}
         self.log("entry", entry_mode="taker", side=side, price=px, size=size,
-                 signal_bps=ret, bid=self.bid, ask=self.ask)
+                 signal_bps=ret, radar_armed=bool(self.radar_armed),
+                 thr_bps=self.threshold_bps(), bid=self.bid, ask=self.ask)
 
     def place_limit(self, side: str, ret: float, now: float) -> None:
         """Rest a virtual limit at the near touch (bid for long, ask for short)."""
@@ -255,6 +287,8 @@ class ScalpPaper:
             size=self.args.notional / limit, signal_bps=ret)
         self.log("limit_placed", entry_mode="maker", side=side, limit=limit,
                  size=self.pending.size, signal_bps=ret,
+                 radar_armed=bool(self.radar_armed),
+                 thr_bps=self.threshold_bps(),
                  fill_timeout_sec=self.args.fill_timeout_sec,
                  bid=self.bid, ask=self.ask)
 
@@ -319,6 +353,11 @@ class ScalpPaper:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--thr-bps", type=float, default=10.0)
+    ap.add_argument("--thr-armed-bps", type=float, default=8.0,
+                    help="entry threshold while the storm radar is armed "
+                         "(12:30-15:00 UTC by default)")
+    ap.add_argument("--radar-start", default="12:30", help="radar window start, UTC HH:MM")
+    ap.add_argument("--radar-end", default="15:00", help="radar window end, UTC HH:MM")
     ap.add_argument("--window-sec", type=float, default=5.0)
     ap.add_argument("--hold-sec", type=float, default=60.0)
     ap.add_argument("--cooldown-sec", type=float, default=30.0)
