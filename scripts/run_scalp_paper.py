@@ -17,7 +17,13 @@ Mechanics:
           fills inside --fill-timeout-sec the order is cancelled and the
           event is logged as a miss.
     taker cross the spread immediately, plus SLIPPAGE_BPS.
-  The exit is always taker, hold_sec after the FILL (not after the signal).
+  The exit style is selectable too (--exit):
+    maker_tp (default) on the entry FILL, rest a take-profit limit
+          --tp-bps beyond the fill in the profit direction (long -> sell
+          above, short -> buy below), filled by the same at-or-through
+          print rule as the entry; if it has not filled by fill +
+          --fallback-sec the position is closed taker at market.
+    taker legacy: hold --hold-sec from the FILL, then exit taker.
   One position at a time, cooldown between entries (measured from signal).
 - Every trade and decision appended to data/scalp_paper.jsonl
 - Safety: KILL file stops it; daily loss cap stops it; stale feeds pause it.
@@ -25,6 +31,15 @@ Mechanics:
 Defaults follow the quote-level study in scripts/research_scalp_opt.py:
 maker entry beats taker entry per event, hold 60s sits at/near the peak of
 the hold curve, and thr 10 bps keeps EV while raising trade count.
+
+The exit default is E2 from the exit study in scripts/research_scalp_exits.py
+(maker TP +10 bps, fallback taker at fill+120s). No exit variant cleared the
++5 bps/trade adoption bar there, so this is NOT an edge adoption: E2 is taken
+as a VARIANCE decision (higher median, higher win rate, about half the sd,
+bounded losses vs the legacy taker hold) and the call stays pending paper
+evidence. The study ran on n = 16 storm events, under the 30-event bar; the
+paper event count restarts at this change, so only fills logged from here on
+count toward the 30.
 
 Storm radar (src/bot/radar.py, from scripts/research_storm_b.py): storms are
 2.23x more likely to begin during 12:30-15:00 UTC, the only pre-registered
@@ -40,6 +55,7 @@ JSONL still separates armed vs unarmed performance at equal thresholds.
 Usage:
   python scripts/run_scalp_paper.py [--thr-bps 10] [--thr-armed-bps 10]
       [--window-sec 5] [--hold-sec 60] [--entry maker]
+      [--exit maker_tp] [--tp-bps 10] [--fallback-sec 120]
       [--fill-timeout-sec 10] [--notional 110000] [--daily-loss-cap 6000]
       [--radar-start 12:30] [--radar-end 15:00]
 """
@@ -130,7 +146,7 @@ class ScalpPaper:
         self.quote_ts = 0.0
         self.leader: deque[tuple[float, float]] = deque(maxlen=600)
         self.prints: deque[tuple[float, float, str]] = deque(maxlen=2000)
-        self.position = None          # dict(side, size, entry, t_entry)
+        self.position = None          # dict(side, size, entry, t_entry, tp)
         self.pending: RestingLimit | None = None
         self.last_entry_ts = 0.0
         self.daily_pnl = 0.0
@@ -253,9 +269,8 @@ class ScalpPaper:
                 self.check_pending(now)
                 continue
             if self.position is not None:
-                # hold is measured from the FILL, which is t_entry
-                if now - self.position["t_entry"] >= self.args.hold_sec and feeds_ok:
-                    self.close_position()
+                # every exit clock is measured from the FILL, which is t_entry
+                self.check_exit(now, feeds_ok)
                 continue
             if not feeds_ok:
                 continue
@@ -276,7 +291,8 @@ class ScalpPaper:
         px = self.ask if side == "LONG" else self.bid
         px *= 1 + (SLIPPAGE_BPS / 1e4) * (1 if side == "LONG" else -1)
         size = self.args.notional / px
-        self.position = {"side": side, "size": size, "entry": px, "t_entry": now}
+        self.position = {"side": side, "size": size, "entry": px, "t_entry": now,
+                         "tp": self.make_tp(side, px, size, now)}
         self.log("entry", entry_mode="taker", side=side, price=px, size=size,
                  signal_bps=ret, radar_armed=bool(self.radar_armed),
                  thr_bps=self.threshold_bps(), bid=self.bid, ask=self.ask)
@@ -304,7 +320,9 @@ class ScalpPaper:
             self.pending = None
             # maker fill: at the limit price, no spread and no slippage
             self.position = {"side": order.side, "size": order.size,
-                             "entry": order.limit, "t_entry": fill_ts}
+                             "entry": order.limit, "t_entry": fill_ts,
+                             "tp": self.make_tp(order.side, order.limit,
+                                                order.size, fill_ts)}
             self.log("fill", entry_mode="maker", side=order.side,
                      price=order.limit, size=order.size,
                      signal_bps=order.signal_bps,
@@ -326,16 +344,47 @@ class ScalpPaper:
                      waited_sec=round(now - order.t_signal, 3),
                      bid=self.bid, ask=self.ask)
 
-    def close_position(self):
+    def make_tp(self, side: str, entry: float, size: float, t_entry: float):
+        """Take-profit limit --tp-bps beyond the fill, or None in taker mode.
+
+        Exiting a LONG rests an ASK above the fill, which a taker BUY lifts —
+        that is a RestingLimit whose *own* side is SHORT (fills at or through
+        from below); exiting a SHORT is the mirror. Its window runs from the
+        fill to the fallback deadline, so a print outside it cannot fill it.
+        """
+        if self.args.exit != "maker_tp":
+            return None
+        edge = 1 if side == "LONG" else -1
+        limit = entry * (1 + edge * self.args.tp_bps / 1e4)
+        return RestingLimit(side="SHORT" if side == "LONG" else "LONG",
+                            limit=limit, t_signal=t_entry,
+                            timeout_sec=self.args.fallback_sec, size=size)
+
+    def check_exit(self, now: float, feeds_ok: bool) -> None:
+        """Fill the take-profit off the tape, else exit taker on the deadline."""
         pos = self.position
-        px = self.bid if pos["side"] == "LONG" else self.ask
-        px *= 1 - (SLIPPAGE_BPS / 1e4) * (1 if pos["side"] == "LONG" else -1)
+        tp = pos["tp"]
+        if tp is not None and tp.first_fill(self.prints) is not None:
+            self.close_position("tp_maker", price=tp.limit)
+            return
+        deadline = self.args.fallback_sec if tp is not None else self.args.hold_sec
+        if now - pos["t_entry"] >= deadline and feeds_ok:
+            self.close_position("fallback_taker" if tp is not None else "taker")
+
+    def close_position(self, exit_kind: str = "taker", price: float | None = None):
+        pos = self.position
+        # a maker TP passes its own fill price: AT the limit, no spread, no
+        # slippage, no fee. Every other exit crosses and pays both.
+        if price is None:
+            price = self.bid if pos["side"] == "LONG" else self.ask
+            price *= 1 - (SLIPPAGE_BPS / 1e4) * (1 if pos["side"] == "LONG" else -1)
         direction = 1 if pos["side"] == "LONG" else -1
-        pnl = (px - pos["entry"]) * pos["size"] * direction
+        pnl = (price - pos["entry"]) * pos["size"] * direction
         self.daily_pnl += pnl
         self.trades += 1
         self.position = None
-        self.log("exit", entry_mode=self.args.entry, side=pos["side"], price=px,
+        self.log("exit", entry_mode=self.args.entry, exit_kind=exit_kind,
+                 side=pos["side"], price=price,
                  pnl_jpy=round(pnl, 1), daily_pnl=round(self.daily_pnl, 1),
                  trades=self.trades)
 
@@ -367,6 +416,14 @@ def main() -> int:
     ap.add_argument("--hold-sec", type=float, default=60.0)
     ap.add_argument("--cooldown-sec", type=float, default=30.0)
     ap.add_argument("--entry", choices=("maker", "taker"), default="maker")
+    ap.add_argument("--exit", choices=("maker_tp", "taker"), default="maker_tp",
+                    help="maker_tp: rest a take-profit --tp-bps beyond the "
+                         "fill and fall back to a taker exit after "
+                         "--fallback-sec (E2 of scripts/research_scalp_exits.py, "
+                         "a variance decision pending paper evidence); "
+                         "taker: legacy hold --hold-sec then exit taker")
+    ap.add_argument("--tp-bps", type=float, default=10.0)
+    ap.add_argument("--fallback-sec", type=float, default=120.0)
     ap.add_argument("--fill-timeout-sec", type=float, default=10.0)
     ap.add_argument("--notional", type=float, default=110000.0)
     ap.add_argument("--daily-loss-cap", type=float, default=6000.0)

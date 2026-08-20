@@ -1,9 +1,12 @@
-"""Pure-logic tests for the burst scalper's maker entry (scripts/run_scalp_paper.py).
+"""Pure-logic tests for the burst scalper (scripts/run_scalp_paper.py).
 
 The runner itself is a network app (bitFlyer WS + Binance polling) and stays
 untested, but the fill decision is factored into ``RestingLimit`` — no clock,
 no I/O — so the rule from scripts/research_scalp_opt.py (limit at the near
 touch, filled by a print that comes to it inside the timeout) is verified here.
+The exit side reuses the same object for its take-profit (E2 of
+scripts/research_scalp_exits.py), so it is driven here too, by feeding a tape
+and a clock straight into ``check_exit``.
 """
 from __future__ import annotations
 
@@ -122,6 +125,7 @@ def make_scalper(tmp_path, monkeypatch, **over):
     args = Namespace(thr_bps=10.0, thr_armed_bps=8.0, radar_start="12:30",
                      radar_end="15:00", window_sec=5.0, hold_sec=60.0,
                      cooldown_sec=30.0, entry="maker", fill_timeout_sec=10.0,
+                     exit="maker_tp", tp_bps=10.0, fallback_sec=120.0,
                      notional=110000.0, daily_loss_cap=6000.0)
     for k, v in over.items():
         setattr(args, k, v)
@@ -166,3 +170,154 @@ def test_custom_radar_window_is_honoured(tmp_path, monkeypatch):
     assert s.threshold_bps() == 8.0
     assert s.update_radar(utc_ts(2, 0)) is False
     assert s.threshold_bps() == 10.0
+
+
+# ---- exit rule -------------------------------------------------------------
+# E2 of scripts/research_scalp_exits.py: a maker take-profit --tp-bps beyond
+# the fill, falling back to the legacy taker exit at fill + --fallback-sec.
+# The clock and the tape are handed to check_exit directly, so no I/O runs.
+FILL = 2_000.0            # fill time
+ENTRY = 10_000_000.0      # fill price, JPY
+SPREAD = 500.0
+
+
+def open_position(s, side, entry=ENTRY):
+    """Put a filled position on the books the way the entry path does."""
+    s.bid, s.ask = entry - SPREAD, entry + SPREAD
+    s.position = {"side": side, "size": 1.0, "entry": entry, "t_entry": FILL,
+                  "tp": s.make_tp(side, entry, 1.0, FILL)}
+    return s.position
+
+
+def exit_events(tmp_path):
+    log = tmp_path / "data" / "scalp_paper.jsonl"
+    if not log.exists():
+        return []
+    events = [json.loads(line) for line in
+              log.read_text(encoding="utf-8").splitlines()]
+    return [e for e in events if e["event"] == "exit"]
+
+
+def test_long_take_profit_rests_above_the_fill(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    tp = open_position(s, "LONG")["tp"]
+    assert tp.limit == pytest.approx(ENTRY * 1.001)
+    # a LONG exits by resting an ASK, lifted by a taker BUY from below
+    assert tp.side == "SHORT"
+
+
+def test_short_take_profit_rests_below_the_fill(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    tp = open_position(s, "SHORT")["tp"]
+    assert tp.limit == pytest.approx(ENTRY * 0.999)
+    assert tp.side == "LONG"
+
+
+@pytest.mark.parametrize("through", [0.0, 1_000.0])
+def test_long_exits_at_the_limit_on_a_buy_print_at_or_through(
+        tmp_path, monkeypatch, through):
+    s = make_scalper(tmp_path, monkeypatch)
+    tp = open_position(s, "LONG")["tp"]
+    s.prints.append((FILL + 3.0, tp.limit + through, "BUY"))
+    s.check_exit(FILL + 3.5, feeds_ok=True)
+    assert s.position is None
+    ev = exit_events(tmp_path)[-1]
+    assert ev["exit_kind"] == "tp_maker"
+    # filled AT the limit, however far the print ran through it
+    assert ev["price"] == pytest.approx(tp.limit)
+    assert ev["pnl_jpy"] == pytest.approx(round(tp.limit - ENTRY, 1))
+    assert ev["trades"] == 1
+
+
+@pytest.mark.parametrize("through", [0.0, 1_000.0])
+def test_short_exits_at_the_limit_on_a_sell_print_at_or_through(
+        tmp_path, monkeypatch, through):
+    s = make_scalper(tmp_path, monkeypatch)
+    tp = open_position(s, "SHORT")["tp"]
+    s.prints.append((FILL + 3.0, tp.limit - through, "SELL"))
+    s.check_exit(FILL + 3.5, feeds_ok=True)
+    assert s.position is None
+    ev = exit_events(tmp_path)[-1]
+    assert ev["exit_kind"] == "tp_maker"
+    assert ev["price"] == pytest.approx(tp.limit)
+    assert ev["pnl_jpy"] == pytest.approx(round(ENTRY - tp.limit, 1))
+
+
+def test_take_profit_ignores_the_wrong_taker_side_and_prints_before_the_fill(
+        tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    tp = open_position(s, "LONG")["tp"]
+    s.prints.append((FILL - 1.0, tp.limit + 500.0, "BUY"))   # before the fill
+    s.prints.append((FILL + 1.0, tp.limit + 500.0, "SELL"))  # wrong taker side
+    s.check_exit(FILL + 2.0, feeds_ok=True)
+    assert s.position is not None
+    assert exit_events(tmp_path) == []
+
+
+def test_no_take_profit_fill_exits_taker_at_the_fallback_deadline(
+        tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    open_position(s, "LONG")
+    s.prints.append((FILL + 5.0, ENTRY + 200.0, "BUY"))   # short of the limit
+    s.check_exit(FILL + 119.9, feeds_ok=True)
+    assert s.position is not None
+    s.check_exit(FILL + 120.0, feeds_ok=True)
+    assert s.position is None
+    ev = exit_events(tmp_path)[-1]
+    assert ev["exit_kind"] == "fallback_taker"
+    # taker: hits the bid and pays slippage
+    assert ev["price"] == pytest.approx((ENTRY - SPREAD) * (1 - 2.0 / 1e4))
+
+
+def test_fallback_waits_for_live_feeds(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    open_position(s, "LONG")
+    s.check_exit(FILL + 300.0, feeds_ok=False)
+    assert s.position is not None
+    assert exit_events(tmp_path) == []
+
+
+def test_take_profit_wins_a_tie_with_the_fallback_deadline(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    tp = open_position(s, "LONG")["tp"]
+    s.prints.append((FILL + 120.0, tp.limit, "BUY"))
+    s.check_exit(FILL + 120.0, feeds_ok=True)
+    assert exit_events(tmp_path)[-1]["exit_kind"] == "tp_maker"
+
+
+def test_maker_entry_fill_arms_the_take_profit(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    s.bid, s.ask = ENTRY - SPREAD, ENTRY + SPREAD
+    s.place_limit("LONG", 12.0, FILL)
+    s.prints.append((FILL + 1.0, s.pending.limit, "SELL"))
+    s.check_pending(FILL + 1.5)
+    assert s.position["t_entry"] == FILL + 1.0
+    tp = s.position["tp"]
+    assert tp.limit == pytest.approx(s.position["entry"] * 1.001)
+    assert tp.t_signal == FILL + 1.0     # the TP clock starts at the fill
+
+
+# ---- legacy taker exit (--exit taker) --------------------------------------
+def test_taker_exit_holds_hold_sec_then_crosses(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch, exit="taker")
+    pos = open_position(s, "LONG")
+    assert pos["tp"] is None
+    # a print that would have filled a take-profit changes nothing
+    s.prints.append((FILL + 1.0, ENTRY * 1.002, "BUY"))
+    s.check_exit(FILL + 59.9, feeds_ok=True)
+    assert s.position is not None
+    s.check_exit(FILL + 60.0, feeds_ok=True)
+    assert s.position is None
+    ev = exit_events(tmp_path)[-1]
+    assert ev["exit_kind"] == "taker"
+    assert ev["price"] == pytest.approx((ENTRY - SPREAD) * (1 - 2.0 / 1e4))
+
+
+def test_taker_exit_short_side_lifts_the_ask(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch, exit="taker")
+    open_position(s, "SHORT")
+    s.check_exit(FILL + 60.0, feeds_ok=True)
+    ev = exit_events(tmp_path)[-1]
+    assert ev["price"] == pytest.approx((ENTRY + SPREAD) * (1 + 2.0 / 1e4))
+    assert ev["pnl_jpy"] == pytest.approx(
+        round(ENTRY - (ENTRY + SPREAD) * (1 + 2.0 / 1e4), 1))
