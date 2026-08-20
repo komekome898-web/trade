@@ -321,3 +321,69 @@ def test_taker_exit_short_side_lifts_the_ask(tmp_path, monkeypatch):
     assert ev["price"] == pytest.approx((ENTRY + SPREAD) * (1 + 2.0 / 1e4))
     assert ev["pnl_jpy"] == pytest.approx(
         round(ENTRY - (ENTRY + SPREAD) * (1 + 2.0 / 1e4), 1))
+
+
+# ---- pre-signal features: sigma60_bps, v60_btc -----------------------------
+# scripts/research_exit_surface.py found a directional optimal-TP tilt with
+# pre-signal volatility (TP30 vs TP10: +8 bps paired in the high-vol
+# tercile, but on 9 signals) -- these fields let forward paper data carry
+# that context so the hypothesis can be judged on live samples later.
+def push_prints(s, t_signal, n_sec, size=0.01, step_bps=2.0):
+    """``n_sec`` one-per-second prints ending the second before t_signal,
+    walking price so the 1s log-returns have non-zero variance."""
+    price = 10_000_000.0
+    for i in range(n_sec):
+        ts = t_signal - n_sec + i
+        price *= 1 + (step_bps / 1e4) * (1 if i % 2 == 0 else -1)
+        s.prints.append((ts, price, "BUY", size))
+
+
+def test_pre_signal_features_present_and_plausible_with_enough_history(
+        tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    push_prints(s, FILL, n_sec=70)
+    sigma60_bps, v60_btc = s.pre_signal_features(FILL)
+    assert sigma60_bps is not None and sigma60_bps > 0
+    assert v60_btc == pytest.approx(60 * 0.01)   # only the last 60s count
+
+
+def test_pre_signal_sigma_is_null_when_history_is_short(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    push_prints(s, FILL, n_sec=5)   # fewer than 10 return samples
+    sigma60_bps, v60_btc = s.pre_signal_features(FILL)
+    assert sigma60_bps is None
+    assert v60_btc == pytest.approx(5 * 0.01)   # volume is still reported
+
+
+def test_pre_signal_features_are_both_null_with_no_print_history(
+        tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    sigma60_bps, v60_btc = s.pre_signal_features(FILL)
+    assert sigma60_bps is None
+    assert v60_btc is None
+
+
+def test_taker_entry_event_carries_sigma60_and_v60(tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    s.bid, s.ask = ENTRY - SPREAD, ENTRY + SPREAD
+    push_prints(s, FILL, n_sec=70)
+    s.enter_taker("LONG", 12.0, FILL)
+    events = [json.loads(line) for line in
+              (tmp_path / "data" / "scalp_paper.jsonl").read_text(
+                  encoding="utf-8").splitlines()]
+    ev = [e for e in events if e["event"] == "entry"][-1]
+    assert ev["sigma60_bps"] > 0
+    assert ev["v60_btc"] == pytest.approx(0.6)
+
+
+def test_limit_placed_event_has_null_features_with_no_history(
+        tmp_path, monkeypatch):
+    s = make_scalper(tmp_path, monkeypatch)
+    s.bid, s.ask = ENTRY - SPREAD, ENTRY + SPREAD
+    s.place_limit("LONG", 12.0, FILL)
+    events = [json.loads(line) for line in
+              (tmp_path / "data" / "scalp_paper.jsonl").read_text(
+                  encoding="utf-8").splitlines()]
+    ev = [e for e in events if e["event"] == "limit_placed"][-1]
+    assert ev["sigma60_bps"] is None
+    assert ev["v60_btc"] is None
