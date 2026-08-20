@@ -86,19 +86,23 @@ class PreTradeChecker:
             reasons.append(f"invalid order size/price: {order.size}/{order.price}")
         if order.side not in ("BUY", "SELL"):
             reasons.append(f"invalid side: {order.side}")
-        if order.notional_jpy > self.limits.max_order_size_jpy:
-            reasons.append(
-                f"order notional {order.notional_jpy:.0f} > MAX_ORDER_SIZE {self.limits.max_order_size_jpy:.0f}"
-            )
         # exposure grows when the order is in the direction of (or opens) the position
         increases_exposure = (
             (order.side == "BUY" and account.position_size >= 0)
             or (order.side == "SELL" and account.position_size <= 0)
         )
-        new_position = account.position_notional_jpy + (
-            order.notional_jpy if increases_exposure else 0.0
-        )
-        if new_position > self.limits.max_position_size_jpy:
+        # MAX_ORDER_SIZE caps risk-increasing orders only: a closing order must
+        # never be blocked, or a position opened at the cap becomes un-exitable
+        # after an adverse move (the stop-loss itself would be refused).
+        if increases_exposure and order.notional_jpy > self.limits.max_order_size_jpy:
+            reasons.append(
+                f"order notional {order.notional_jpy:.0f} > MAX_ORDER_SIZE {self.limits.max_order_size_jpy:.0f}"
+            )
+        # Like MAX_ORDER_SIZE, the position cap binds only when exposure grows:
+        # an adverse move can push an existing position's marked notional past
+        # the cap, and the closing order must still go through.
+        new_position = account.position_notional_jpy + order.notional_jpy
+        if increases_exposure and new_position > self.limits.max_position_size_jpy:
             reasons.append(
                 f"position notional {new_position:.0f} > MAX_POSITION_SIZE {self.limits.max_position_size_jpy:.0f}"
             )
