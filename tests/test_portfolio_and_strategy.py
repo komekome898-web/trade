@@ -77,6 +77,8 @@ def test_strategies_hold_on_missing_data(name):
 @pytest.mark.parametrize("name", list(STRATEGIES))
 def test_strategies_return_indicator_values(name):
     strat = STRATEGIES[name]({})
-    signal = strat.on_candles(make_candles(200))
+    candles = make_candles(200)
+    candles["leader_close"] = candles["close"]  # for cross-exchange strategies
+    signal = strat.on_candles(candles)
     assert isinstance(signal.indicators, dict) and signal.indicators
     assert signal.reason

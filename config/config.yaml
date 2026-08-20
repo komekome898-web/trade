@@ -2,14 +2,19 @@
 product_code: XRP_JPY        # candidate for small capital; confirm min order size via scripts/check_api.py
 candle_interval_sec: 60
 
+# Paper-trading validation target (see docs/RESEARCH_REPORT_2026-08-20b.md):
+# follow large Binance XRPUSDT moves on bitFlyer XRP_JPY. UNPROVEN — paper only.
 strategy:
-  name: ema_cross            # ema_cross | rsi_reversion | breakout
+  name: xborder_momentum     # ema_cross | rsi_reversion | breakout | xborder_momentum
   params:
-    fast_period: 9
-    slow_period: 26
-    atr_period: 14
-    atr_min_volatility_pct: 0.05   # skip entries when ATR/price below this (%)
-    stop_atr_mult: 2.0
+    k: 10                    # leader momentum window (bars)
+    thr_pct: 0.8             # entry when leader moved more than this (%)
+    exit_pct: 0.0            # exit when leader momentum falls below this (%)
+
+# Leader market feed for xborder_momentum (public Binance data, read-only)
+leader:
+  exchange: binance
+  symbol: XRPUSDT
 
 # Poll intervals (seconds)
 poll:

@@ -53,7 +53,7 @@ def test_execution_delayed_to_next_bar_open():
     prices = [100, 100, 100, 100, 200, 200, 200, 300, 300, 300]
     candles = make_candles([float(x) for x in prices])
     res = run_backtest(BuyThenSellOnce({}), candles,
-                       costs=CostModel(0, 0, 0))
+                       costs=CostModel(taker_fee_pct=0, slippage_pct=0, spread_pct=0))
     buy = next(t for t in res.trade_log if t["side"] == "BUY")
     assert buy["bar"] == 4 and buy["price"] == 200.0  # signal at bar 3 fills at bar 4 open
 

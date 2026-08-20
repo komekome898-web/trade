@@ -57,6 +57,14 @@ class TradingApp:
         strat_cfg = cfg.get("strategy", {})
         strategy_cls = STRATEGIES[strat_cfg.get("name", "ema_cross")]
         self.strategy = strategy_cls(strat_cfg.get("params", {}))
+        leader_cfg = cfg.get("leader", {})
+        self.leader_feed = None
+        if leader_cfg.get("symbol"):
+            from bot.market_data.external_feed import BinanceFeed
+            self.leader_feed = BinanceFeed(
+                symbol=str(leader_cfg["symbol"]),
+                interval_sec=int(cfg.get("candle_interval_sec", 60)),
+            )
         self.kill_switch = KillSwitch()
         self.checker = PreTradeChecker(settings.risk_limits, self.kill_switch)
         self.store = OrderStore()
@@ -125,12 +133,20 @@ class TradingApp:
                 self._on_kill(str(e))
             return
 
+        if self.leader_feed is not None:
+            self.leader_feed.poll()  # failure -> stale leader -> strategy holds
+
         finished = self.candles.add_trade(tick.timestamp, tick.price, 0.0)
         self._update_status(tick.price)
         if finished is None:
             return  # decide only on completed candles
 
         candles_df = pd.DataFrame([c.__dict__ for c in self.candles.completed])
+        if self.leader_feed is not None:
+            candles_df["leader_close"] = pd.Series(
+                [self.leader_feed.close_for(c.start) for c in self.candles.completed],
+                dtype="float64",
+            )
         signal = self.strategy.on_candles(candles_df)
         decision, reject_reasons, order = "HOLD", [], None
 
