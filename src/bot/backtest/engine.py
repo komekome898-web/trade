@@ -21,6 +21,11 @@ after exactly max_hold_bars bars of holding — with taker costs, whatever the
 strategy says. The forced close overrides any pending signal on that bar. An
 intrabar stop/take-profit on an EARLIER bar naturally fires first; on the same
 bar the stop is checked first (conservative).
+
+Trade log: every CLOSE_* entry carries a "reason" in
+{"signal", "stop_loss", "take_profit", "time_exit"} so callers can break down
+how trades actually ended (exit-structure audits). Additive field only —
+existing consumers keying off "bar"/"side"/"price"/"pnl" are unaffected.
 """
 from __future__ import annotations
 
@@ -121,7 +126,7 @@ def run_backtest(
         trade_log.append({"bar": i, "side": f"OPEN_{'LONG' if position > 0 else 'SHORT'}",
                           "price": price, "size": size})
 
-    def close_position(i: int, price: float, fee_fn) -> None:
+    def close_position(i: int, price: float, fee_fn, reason: str = "signal") -> None:
         nonlocal cash, position, entry_price, entry_bar, entry_cost, fees_total
         size = abs(position)
         fee = fee_fn(size * price)
@@ -131,19 +136,19 @@ def run_backtest(
         cash += pnl
         trade_pnls.append(pnl)
         trade_log.append({"bar": i, "side": f"CLOSE_{'LONG' if position > 0 else 'SHORT'}",
-                          "price": price, "size": size, "pnl": pnl})
+                          "price": price, "size": size, "pnl": pnl, "reason": reason})
         position, entry_price, entry_cost = 0.0, 0.0, 0.0
         entry_bar = -1
 
     def execute(i: int, side: SignalType, price: float, fee_fn) -> None:
         if side is SignalType.BUY:
             if position < 0:
-                close_position(i, price, fee_fn)
+                close_position(i, price, fee_fn, reason="signal")
             elif position == 0:
                 open_position(i, SignalType.BUY, price, fee_fn)
         else:
             if position > 0:
-                close_position(i, price, fee_fn)
+                close_position(i, price, fee_fn, reason="signal")
             elif position == 0 and allow_short:
                 open_position(i, SignalType.SELL, price, fee_fn)
 
@@ -176,11 +181,11 @@ def run_backtest(
             if sl_hit:
                 trigger = min(opens[i], sl_level) if long else max(opens[i], sl_level)
                 price = costs.sell_price(trigger) if long else costs.buy_price(trigger)
-                close_position(i, price, costs.fee)
+                close_position(i, price, costs.fee, reason="stop_loss")
                 pending_taker = None
                 pending_limit = None
             elif tp_hit:
-                close_position(i, tp_level, costs.maker_fee)
+                close_position(i, tp_level, costs.maker_fee, reason="take_profit")
                 pending_taker = None
                 pending_limit = None
 
@@ -191,7 +196,7 @@ def run_backtest(
                 and i - entry_bar >= max_hold_bars:
             ref = opens[i]
             price = costs.sell_price(ref) if position > 0 else costs.buy_price(ref)
-            close_position(i, price, costs.fee)
+            close_position(i, price, costs.fee, reason="time_exit")
             pending_taker = None
             pending_limit = None
 
