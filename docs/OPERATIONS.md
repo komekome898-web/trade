@@ -61,14 +61,26 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
 
 通知内容: BOT起動/停止、Kill Switch 発動、1時間毎のステータスレポート。
 
-## 5. Windows PC で動かす場合(簡易)
+## 5. Windows PC で動かす場合
 
-1. Python 3.11+ をインストールし、リポジトリ直下で
-   `python -m venv .venv && .venv\Scripts\pip install -e ".[dev]"`
-2. `copy .env.example .env` して編集
-3. タスクスケジューラで「ログオン時に起動」タスクを作成し、
-   プログラム: `<repo>\.venv\Scripts\python.exe`、引数: `scripts\run_paper.py`、開始: `<repo>`
-4. データ蓄積は同様に `scripts\fetch_history.py` を15分間隔の繰り返しタスクで登録
+並走する3コンポーネント(メインBOT / バーストスキャルパー / 板記録)は
+**`deploy\start_all.bat` が一括起動**します。起動済みのものは自動でスキップされる
+(冪等)ため、同じバッチが**ウォッチドッグ**(落ちたプロセスの自動復旧)を兼ねます。
+安全停止は再起動に勝ちます: Kill Switch発動中のメインBOTは取引せず、日次損失上限に
+達したスキャルパーは当日中の再開を拒否します(`data\scalp_stopped_YYYYMMDD`)。
+
+タスクスケジューラ登録(2タスクのみ):
+
+| タスク名 | トリガー | 操作(プログラム。引数・開始は空欄) |
+|---|---|---|
+| bitflyer-start-all | ログオン時 + **1時間ごとに繰り返し(無期限)** | `<repo>\deploy\start_all.bat` |
+| bitflyer-fetch | ログオン時 + **15分ごとに繰り返し(無期限)** | `<repo>\deploy\fetch_all.bat` |
+
+手動操作: 一括起動 `deploy\start_all.bat` / 一括停止 `deploy\stop_all.bat` /
+緊急停止はリポジトリ直下に `KILL` ファイル作成(メインBOT・スキャルパー両方が停止)。
+
+ログ: `logs\run_paper.out.log`(メイン)/ `logs\scalp.out.log`(スキャル)/
+`logs\recorder.out.log`(板記録)/ `data\scalp_paper.jsonl`(スキャル全取引)。
 
 常時稼働の信頼性は Linux + systemd の方が高いため、Raspberry Pi 等があればそちらを推奨します。
 

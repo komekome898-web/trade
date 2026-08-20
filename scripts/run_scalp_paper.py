@@ -118,6 +118,8 @@ class ScalpPaper:
                 self.log("kill_file_stop", daily_pnl=self.daily_pnl)
                 return
             if self.daily_pnl <= -self.args.daily_loss_cap:
+                # marker prevents a watchdog restart from resuming the same day
+                self.stop_marker().touch()
                 self.log("daily_loss_stop", daily_pnl=self.daily_pnl)
                 return
             feeds_ok = (self.bid is not None and now - self.quote_ts < 10
@@ -154,7 +156,16 @@ class ScalpPaper:
         self.log("exit", side=pos["side"], price=px, pnl_jpy=round(pnl, 1),
                  daily_pnl=round(self.daily_pnl, 1), trades=self.trades)
 
+    def stop_marker(self) -> Path:
+        import datetime
+        day = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+        return Path(f"data/scalp_stopped_{day}")
+
     async def run(self):
+        if self.stop_marker().exists():
+            self.log("refused_start", reason="daily loss cap already hit today "
+                     f"({self.stop_marker()}); delete the marker to override")
+            return
         self.log("start", **vars(self.args))
         await asyncio.gather(self.bitflyer_ws(), self.binance_poll(), self.engine())
 
