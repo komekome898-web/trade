@@ -276,9 +276,27 @@ def econ_check(name: str, calls: np.ndarray, logc: np.ndarray,
     dfr = pd.Series(net, index=idx[m]).groupby(idx[m].date).mean()
     d_sd = dfr.std(ddof=1) if len(dfr) > 1 else float("nan")
     d_t = dfr.mean() / (d_sd / math.sqrt(len(dfr))) if len(dfr) > 1 and d_sd > 0 else float("nan")
-    print(f"  {name:<28}n={n:>6}  days={days:>4}  gross={gross.mean():>8.2f}bps  "
-          f"net={net.mean():>8.2f}bps  hit={100*(gross>0).mean():>5.1f}%  "
-          f"t(naive)={naive_t:>6.2f}  t(day-clustered)={d_t:>6.2f}")
+    print(f"  {name:<26}n={n:>6} days={days:>4} gross={gross.mean():>7.2f} "
+          f"net={net.mean():>7.2f} net/day-eqw={dfr.mean():>7.2f} "
+          f"hit={100*(gross>0).mean():>5.1f}% t(naive)={naive_t:>6.2f} "
+          f"t(day-clust)={d_t:>6.2f}")
+
+    # when the predictor abstains a lot, the minute-weighted mean is a day-selection
+    # artefact: check whether the payoff lives only on the days it is armed all window
+    span = ARMED_END[0] * 60 + ARMED_END[1] - ARMED_START[0] * 60 - ARMED_START[1] + 1
+    cnt = pd.Series(1, index=idx[m]).groupby(idx[m].date).sum()
+    if cnt.mean() < 0.95 * span and len(cnt) >= 20:
+        # rank first so heavy ties in the daily call count still yield four bins
+        q = pd.qcut(cnt.rank(method="first"), 4,
+                    labels=["q1 fewest calls", "q2", "q3", "q4 most calls"])
+        agg = pd.DataFrame({"cnt": cnt, "ret": dfr}).groupby(q, observed=True).agg(
+            days=("ret", "size"), mean_net=("ret", "mean"))
+        parts = "  ".join(f"{str(k)}: {v.mean_net:+.1f}bps({int(v.days)}d)"
+                          for k, v in agg.iterrows())
+        print(f"      armed-minutes/day quartiles -> {parts}")
+        print(f"      corr(calls per day, that day's mean net) = "
+              f"{np.corrcoef(cnt.to_numpy(), dfr.to_numpy())[0,1]:+.2f}  "
+              f"-> the minute-weighted mean is dominated by the fully-armed days")
 
 
 # --------------------------------------------------------------------------- #
@@ -402,9 +420,9 @@ def main() -> None:
     sweep_names = ["P1", "P2", "P3", "MAJ"]
     print("sign-accuracy on JUDGMENT events as the predictor is lagged back from onset")
     print("(L = minutes before onset at which the predictor is read; L >= 31 is clean)\n")
-    hdr = f"{'L (min)':>9}" + "".join(f"{LABELS[c].split()[0]:>20}" for c in sweep_names)
-    print(hdr)
-    line()
+    print(f"{'L (min)':>9}  " + "".join(f"{LABELS[c].split()[0]:>23}" for c in sweep_names))
+    print(f"{'':>9}  " + "".join(f"{'acc (n, p)':>23}" for _ in sweep_names))
+    line("-", 110)
     sweep: dict[tuple[str, int], dict] = {}
     for L in lags:
         cells = []
@@ -418,8 +436,8 @@ def main() -> None:
             cells.append("-" if m["n"] == 0
                          else f"{100*m['acc']:.1f}% (n={m['n']},p={m['p']:.3f})")
         mark = "  <-- pre-registered" if L == 1 else (
-            f"  <-- first clean lag" if L == STORM_WINDOW_MIN + 1 else "")
-        print(f"{L:>9}" + "".join(f"{s:>20}" for s in cells) + mark)
+            "  <-- first clean lag" if L == STORM_WINDOW_MIN + 1 else "")
+        print(f"{L:>9}  " + "".join(f"{s:>23}" for s in cells) + mark)
     print("\nIf direction were genuinely forecastable, accuracy would decay gently with L.")
     print("A cliff at L = 31 -- exactly where the storm window leaves the lookback -- means")
     print("the signal WAS the storm.")
@@ -451,10 +469,115 @@ def main() -> None:
               f"{'PASS' if ok else 'FAIL -- ' + '; '.join(why)}")
     print()
     if passed:
-        print(f"QUALIFYING PREDICTORS: {', '.join(LABELS[c] for c in passed)}")
+        print(f"QUALIFYING PREDICTORS (as pre-registered, at onset-1): "
+              f"{', '.join(LABELS[c] for c in passed)}")
+        print("*** but see section 4b: for P1/P2/P3/MAJ this pass is an artefact of the")
+        print("*** lookback window overlapping the storm's own 30-minute definition window.")
     else:
         print("NO PREDICTOR QUALIFIES. Pre-storm direction is not predictable by any of the")
         print("five pre-registered signals at the pre-registered bar.")
+
+    # ---- the same rule applied at the first uncontaminated lag ----
+    L0 = STORM_WINDOW_MIN + 1
+    header(f"5b. ADOPTION RULE AT THE FIRST CLEAN LAG (onset - {L0} min, storm window excluded)")
+    print("This is the honest form of the pre-registered question: at a moment strictly")
+    print("BEFORE the storm's 30m window opens, does any signal call the direction?\n")
+    print(f"{'predictor':<28}{'acc%':>8}{'n':>6}{'p':>10}   verdict")
+    line()
+    passed_clean: list[str] = []
+    for c in PREDICTORS:
+        if c == "P5":
+            m = res_j[c]                       # P5 lives on the event list, no lag applies
+        elif c == "P4":
+            pos = ev_pos - L0
+            v = np.full(len(ev_pos), np.nan)
+            ok = pos >= P2_LOOKBACK_MIN
+            v[ok] = P[c][pos[ok]]
+            m = score(v[judge], direction[judge])
+        else:
+            m = sweep[(c, L0)]
+        acc_ok = m["n"] > 0 and m["acc"] >= ADOPT_ACC
+        n_ok = m["n"] >= ADOPT_N
+        p_ok = m["n"] > 0 and m["p"] < ADOPT_P
+        ok2 = acc_ok and n_ok and p_ok
+        if ok2:
+            passed_clean.append(c)
+        why = []
+        if not acc_ok:
+            why.append(f"acc {100*m['acc']:.1f}% < {100*ADOPT_ACC:.0f}%" if m["n"] else "no calls")
+        if not n_ok:
+            why.append(f"n={m['n']} < {ADOPT_N}")
+        if not p_ok and m["n"]:
+            why.append(f"p={m['p']:.3f} >= {ADOPT_P}")
+        acc_s = "-" if m["n"] == 0 else f"{100*m['acc']:.2f}"
+        p_s = "-" if m["n"] == 0 else f"{m['p']:.4f}"
+        note = "  (event-list predictor, lag-invariant)" if c == "P5" else ""
+        print(f"{LABELS[c]:<28}{acc_s:>8}{m['n']:>6}{p_s:>10}   "
+              f"{'PASS' if ok2 else 'FAIL -- ' + '; '.join(why)}{note}")
+    print()
+    if passed_clean:
+        print(f"QUALIFYING AT THE CLEAN LAG: {', '.join(LABELS[c] for c in passed_clean)}")
+    else:
+        print("NO PREDICTOR QUALIFIES AT THE CLEAN LAG.")
+        print("Storm direction is NOT predictable before the storm begins by any of the five")
+        print("pre-registered signals. The pre-positioned resting-limit idea has no directional")
+        print("edge to rest on.")
+
+    # ---------------- deep dive on whatever survived the clean lag ----------------
+    header(f"5c. DEEP DIVE -- what survives at onset - {L0} min, and is it really a forecast?")
+    days_all = np.array([t.date() for t in ev_ts])
+    fod = np.zeros(len(ev_pos), dtype=bool)
+    _seen: set = set()
+    for i, d in enumerate(days_all):
+        if d not in _seen:
+            _seen.add(d)
+            fod[i] = True
+
+    def calls_at(c: str, L: int) -> np.ndarray:
+        pos = ev_pos - L
+        v = np.full(len(ev_pos), np.nan)
+        ok = pos >= P2_LOOKBACK_MIN
+        v[ok] = P[c][pos[ok]]
+        return v
+
+    for c in (passed_clean or ["P2"]):
+        if c == "P5":
+            continue
+        v = calls_at(c, L0)
+        print(f"\n{LABELS[c]} at L={L0}")
+        rows = [
+            ("  exploratory (first 60%)", score(v[explore], direction[explore])),
+            ("  judgment (last 40%)", score(v[judge], direction[judge])),
+            ("  judgment, first-of-day", score(v[judge & fod], direction[judge & fod])),
+            ("  all events", score(v, direction)),
+            ("  all events, first-of-day", score(v[fod], direction[fod])),
+        ]
+        print_pred_table("", rows)
+        # does the edge come from one side only? (a falling-market artefact would)
+        for side, lab in [(1.0, "UP calls  "), (-1.0, "DOWN calls")]:
+            sel = judge & np.isfinite(v) & (v == side)
+            if sel.sum():
+                m = score(v[sel], direction[sel])
+                print(f"  judgment {lab}: n={m['n']:>3}  acc={100*m['acc']:>5.1f}%  "
+                      f"p={m['p']:.4f}")
+        # is it just a same-day repeat of the previous storm's direction?
+        prev = np.full(len(ev_pos), np.nan)
+        prev[1:] = direction[:-1]
+        same_day = np.zeros(len(ev_pos), dtype=bool)
+        same_day[1:] = days_all[1:] == days_all[:-1]
+        agree = np.isfinite(v) & (v != 0) & np.isfinite(prev)
+        a_sd = agree & same_day
+        if a_sd.sum():
+            print(f"  on same-day repeat events (n={int(a_sd.sum())}), this predictor agrees "
+                  f"with the PREVIOUS storm's direction {100*(v[a_sd]==prev[a_sd]).mean():.1f}% "
+                  f"of the time")
+        a_nd = agree & ~same_day
+        if a_nd.sum():
+            print(f"  on first-of-day events   (n={int(a_nd.sum())}), it agrees with the "
+                  f"previous storm's direction {100*(v[a_nd]==prev[a_nd]).mean():.1f}% "
+                  f"of the time")
+        print("  -> a predictor that merely echoes the running trend of a trending day is a")
+        print("     regime label, not a forecast; it cannot tell you WHEN to have the position on.")
 
     # ---------------- robustness: one event per day ----------------
     header("6. ROBUSTNESS -- ONE EVENT PER DAY (event clustering control)")
