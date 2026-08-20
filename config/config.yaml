@@ -1,0 +1,35 @@
+# Trading configuration. NO secrets in this file.
+product_code: XRP_JPY        # candidate for small capital; confirm min order size via scripts/check_api.py
+candle_interval_sec: 60
+
+strategy:
+  name: ema_cross            # ema_cross | rsi_reversion | breakout
+  params:
+    fast_period: 9
+    slow_period: 26
+    atr_period: 14
+    atr_min_volatility_pct: 0.05   # skip entries when ATR/price below this (%)
+    stop_atr_mult: 2.0
+
+# Poll intervals (seconds)
+poll:
+  ticker_sec: 5
+  order_status_sec: 3
+
+# Market data safety
+market_data:
+  max_staleness_sec: 60          # kill switch if no fresh data for this long
+  max_price_jump_pct: 5.0        # single-tick move larger than this % = anomaly
+  max_spread_pct: 1.0            # spread wider than this % = anomaly, no trading
+
+# Fees / paper fill model (verify real account fee via check_api.py)
+costs:
+  taker_fee_pct: 0.15
+  slippage_pct: 0.05
+
+# LIVE MODE double-ack. Must be exactly "I_UNDERSTAND_REAL_MONEY" together with
+# LIVE_MODE=true in the environment, otherwise the bot refuses to start in live mode.
+live_mode_ack: ""
+
+notifications:
+  status_report_interval_sec: 3600
