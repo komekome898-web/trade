@@ -2,7 +2,14 @@
 """Local operations dashboard — serves http://127.0.0.1:8300 with live bot
 state, scalp trades, kill-switch status and data-collection health.
 
-Read-only over local files; binds to localhost only; no external requests.
+Read-only over local files and binds to localhost only. Two READ-ONLY public
+bitFlyer endpoints are polled for the マーケット tab — /v1/board for the depth
+panel and /v1/executions for the live 1m tail. No auth, no keys, no order
+endpoints; both are cached for at least PUBLIC_TTL seconds and both fail soft,
+so the page renders offline exactly as it did before they existed. Worst case
+they add 2 requests per PUBLIC_TTL seconds (0.4 req/s) against the 500 per
+5 minutes per-IP public budget the bot also draws on.
+
 Usage: python scripts/dashboard.py [--port 8300]
 """
 from __future__ import annotations
@@ -15,10 +22,14 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import requests
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bot.monitoring.aggregate import collect_status  # noqa: E402
-from bot.monitoring.market_view import PRODUCT, collect_market  # noqa: E402
+from bot.monitoring.market_view import (  # noqa: E402
+    PRODUCT, attach_board, bars_from_executions, collect_market,
+)
 
 PAGE = """<!doctype html>
 <html lang="ja"><head>
@@ -128,11 +139,24 @@ PAGE = """<!doctype html>
                   color: var(--muted); font: inherit; font-size: 12px; padding: 3px 11px;
                   cursor: pointer; }
   .tfbar button.on { color: var(--ink); border-color: var(--accent); }
+  /* higher-timeframe direction strip: the trend table, compressed to chips and
+     parked where the eye already is while scalping the 1m chart */
+  .dirstrip { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+              padding: 10px 14px 0; }
+  .dirstrip .k { color: var(--muted); font-size: 11px; letter-spacing: .06em;
+                 text-transform: uppercase; margin-right: 2px; }
+  .chip { background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+          color: var(--muted); font: inherit; font-size: 12px; padding: 2px 10px;
+          cursor: pointer; font-variant-numeric: tabular-nums; }
+  .chip.up { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+  .chip.down { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 45%, var(--line)); }
+  .chip.flat { color: var(--muted); }
   .chartwrap { position: relative; padding: 10px 14px 6px; }
-  canvas { display: block; width: 100%; }
+  canvas { display: block; width: 100%; font-variant-numeric: tabular-nums; }
   .tip { position: absolute; pointer-events: none; display: none; z-index: 3;
          background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
-         padding: 6px 9px; font-size: 11.5px; white-space: pre; }
+         padding: 6px 9px; font-size: 11.5px; white-space: pre;
+         font-variant-numeric: tabular-nums; }
   .legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted);
             font-size: 11.5px; padding: 0 14px 12px; }
   .legend b { font-weight: 500; }
@@ -185,6 +209,7 @@ PAGE = """<!doctype html>
   </div>
   <section>
     <h2>チャート <span class="sub" id="m-chart-sub"></span></h2>
+    <div class="dirstrip" id="m-dir"></div>
     <div class="tfbar" id="m-tfs"></div>
     <div class="chartwrap"><canvas id="m-chart"></canvas><div class="tip" id="m-tip"></div></div>
     <div class="legend" id="m-legend"></div>
@@ -313,10 +338,17 @@ function oiRow(oi) {
 // マーケットタブ — /api/market (bot/monitoring/market_view.collect_market)
 // ===========================================================================
 const MC = {up: "#46b87a", down: "#e0604f", flat: "#93a0b8", accent: "#4cc8cf",
-            grid: "rgba(34,48,80,.9)", band: "rgba(76,200,207,.07)"};
+            grid: "rgba(34,48,80,.9)", gridMajor: "rgba(147,160,184,.42)",
+            band: "rgba(76,200,207,.07)", vol: "rgba(147,160,184,.45)",
+            depthBid: "rgba(70,184,122,.55)", depthAsk: "rgba(224,96,79,.55)",
+            depthLine: "rgba(147,160,184,.55)"};
 const STATE_CLS = {"嵐": "storm", "ブレイク": "brk", "静穏レンジ": "calm", "通常": ""};
 const VOTE_NAME = {ema_cross: "EMA12/48", ema_slope: "EMA48の傾き", rsi: "RSI14"};
-let marketData = null, marketTimer = null, chartTf = "15m", chartGeom = null;
+// The 1m chart is where the scalping happens; the higher frames are read for
+// direction, so they live in the chip strip above it, not in the chart.
+const DIR_TFS = ["15m", "1h", "4h", "1d"];
+const FAST_TF = "1m", FAST_POLL_MS = 10000, SLOW_POLL_MS = 30000;
+let marketData = null, marketTimer = null, chartTf = "1m", chartGeom = null;
 
 const dirCls = v => v > 0 ? "up" : v < 0 ? "down" : "flat";
 const dirGlyph = v => v > 0 ? "▲" : v < 0 ? "▼" : "─";
@@ -326,6 +358,21 @@ const signed = v => v == null ? "—" : (v > 0 ? "+" : "") + v;
 const jst = ts => new Date(ts * 1000).toLocaleString("ja-JP",
   {timeZone: "Asia/Tokyo", month: "2-digit", day: "2-digit",
    hour: "2-digit", minute: "2-digit"});
+const jstHm = ts => new Date(ts * 1000).toLocaleString("ja-JP",
+  {timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit"});
+const jstMd = ts => new Date(ts * 1000).toLocaleString("ja-JP",
+  {timeZone: "Asia/Tokyo", month: "2-digit", day: "2-digit"});
+// age() reads as "N ago"; a gap in the data is a duration, not a point in time
+const dur = s => age(s).replace("前", "");
+
+// A 1m scalp view is worthless at a 30s cadence; the slower frames do not move
+// fast enough to be worth the extra polls.
+function marketPollMs() { return chartTf === FAST_TF ? FAST_POLL_MS : SLOW_POLL_MS; }
+
+function startMarketTimer() {
+  if (marketTimer) clearInterval(marketTimer);
+  marketTimer = setInterval(refreshMarket, marketPollMs());
+}
 
 function showTab(name) {
   for (const t of ["console", "market"]) {
@@ -336,7 +383,7 @@ function showTab(name) {
   }
   if (name === "market") {
     refreshMarket();
-    if (!marketTimer) marketTimer = setInterval(refreshMarket, 30000);
+    startMarketTimer();
   } else if (marketTimer) { clearInterval(marketTimer); marketTimer = null; }
 }
 
@@ -402,33 +449,91 @@ function renderTfBar() {
     `${ch.tfs[tf].label}</button>`).join("") : "";
 }
 
-function setChartTf(tf) { chartTf = tf; renderTfBar(); renderChart(); }
+// Switching timeframe also switches the poll cadence: the 1m view is a live
+// scalp view, the 4h view is not.
+function setChartTf(tf) {
+  const was = chartTf;
+  chartTf = tf;
+  renderTfBar();
+  renderChart();
+  if (marketTimer && marketPollMs() !== (was === FAST_TF ? FAST_POLL_MS : SLOW_POLL_MS)) {
+    startMarketTimer();
+  }
+}
+
+function showTrendTable() {
+  const el = document.getElementById("t-tf");
+  if (el && el.scrollIntoView) el.scrollIntoView({behavior: "smooth", block: "center"});
+}
+
+// The higher frames as chips — 「15分 ▲強」 — so the direction is readable
+// without leaving the 1m chart. Clicking one jumps to the full table.
+function renderDirStrip() {
+  const el = document.getElementById("m-dir");
+  if (!el) return;
+  const by = {};
+  for (const t of (marketData && marketData.timeframes) || []) by[t.tf] = t;
+  const chips = DIR_TFS.map(tf => {
+    const t = by[tf];
+    if (!t || !t.trend || t.trend.score == null) return "";
+    const s = t.trend.score;
+    const tip = `${t.label}: スコア ${signed(s)} (有効票 ${t.trend.votes_available}/3)` +
+      (t.trend.rsi != null ? ` / RSI ${t.trend.rsi}` : "");
+    return `<button class="chip ${dirCls(s)}" title="${tip}" onclick="showTrendTable()">` +
+      `${t.label} ${dirGlyph(s)}${s === 0 ? "" : (t.trend.strength || "")}</button>`;
+  }).filter(Boolean).join("");
+  el.innerHTML = chips ? '<span class="k">上位足の向き</span>' + chips : "";
+}
 
 function renderChart() {
   const ch = marketData && marketData.chart;
   const p = ch ? ch.tfs[chartTf] : null;
   chartGeom = drawChart(p, document.getElementById("m-chart"));
   const sub = document.getElementById("m-chart-sub");
+  const live = p ? p.bars.filter(b => b.live).length : 0;
   if (sub) sub.textContent = p
-    ? `${p.label} / ${p.bars.length}本` + (p.dropped ? ` / 表示範囲外の取引 ${p.dropped}件` : "")
+    ? `${p.label} / ${p.bars.length}本` +
+      (live ? ` / ライブ ${live}本` : "") +
+      (p.dropped ? ` / 表示範囲外の取引 ${p.dropped}件` : "")
     : "データなし";
+  const bd = marketData && marketData.board;
   const lg = document.getElementById("m-legend");
   if (lg) lg.innerHTML = p ? [
     '<span><b class="up">▲</b> ロング建て</span>',
     '<span><b class="down">▼</b> ショート建て</span>',
     '<span><b>✕</b> 決済 (色 = 損益の符号 / 灰 = 不明)</span>',
     '<span>小さいマーカー = スキャルパー</span>',
-    p.range ? `<span>帯 = 直近${p.range.window_min}分レンジ ` +
+    p.range ? `<span>帯 = レンジ ${p.range.window_label} ` +
       `${fmt(p.range.low, 0)}〜${fmt(p.range.high, 0)}</span>` : "",
+    `<span>下段 = 出来高 (<b class="up">緑</b>買い / <b class="down">赤</b>売り)</span>`,
+    bd ? `<span>右 = 板 (<b class="down">赤</b>売り / <b class="up">緑</b>買い) ` +
+      `スプレッド ${fmt(bd.spread, 0)}円 · ${boardAge(bd)}</span>`
+       : '<span>右 = 板情報なし</span>',
+    live ? '<span>半透明の足 = ライブ (公開約定から生成、CSV未確定)</span>' : "",
   ].join("") : "";
+}
+
+// The board snapshot carries the wall-clock second it was actually taken, so a
+// frozen exchange shows as an ageing panel rather than as fresh depth.
+function boardAge(bd) {
+  if (!bd || bd.fetched_at == null) return "取得時刻不明";
+  return "板 " + age(Date.now() / 1000 - bd.fetched_at);
 }
 
 function renderMarket(d) {
   marketData = d;
   const s = d.state, strip = document.getElementById("m-strip");
   const src = d.sources || {};
+  const lv = d.live || {};
   const meta = `<span class="sub">${d.product} · ローソク足 ${fmt(src.candles, 0)}行 / ` +
     `取引 ${fmt((src.bot_events || 0) + (src.scalp_events || 0), 0)}件 · ` +
+    // the CSV writer runs every ~15 min; these are the minutes the page built
+    // itself from the public tape so the 1m view is not 15 minutes behind
+    (lv.bars ? `ライブ追記 ${fmt(lv.bars, 0)}分` +
+      // an hours-long hole means the収集 task is down: the tape keeps the price
+      // live, but every window measured across the hole is refused, not faked
+      (lv.gap_sec > 900 ? ` <b class="down">CSV欠落 ${dur(lv.gap_sec)}</b>` : "") +
+      " · " : "公開約定の追記なし · ") +
     `更新 ${new Date(d.generated_at * 1000).toLocaleTimeString("ja-JP")}</span>`;
   if (strip && !s) {
     strip.innerHTML = '<span class="empty">ローソク足データなし ' +
@@ -474,20 +579,33 @@ function renderMarket(d) {
 
   renderOi(d.oi);
   if (d.chart && !d.chart.tfs[chartTf]) chartTf = d.chart.default_tf;
+  renderDirStrip();
   renderTfBar();
   renderChart();
   return d;
 }
 
-// Candlestick chart. No libraries: bars, the 240m range band, and the trade
-// markers, drawn at devicePixelRatio so the hairlines stay crisp.
+// Gridline label. 1m/15m read as clock time; the frames whose gridlines ARE
+// days read as dates; a UTC midnight always gets its date, whatever the frame.
+function gridTimeLabel(g, tf) {
+  if (tf === "1d" || tf === "4h") return jstMd(g.ts);
+  return g.major ? jstMd(g.ts) : jstHm(g.ts);
+}
+
+// Candlestick chart, no libraries. Three panes on ONE canvas so they cannot
+// drift out of alignment: the price pane (trailing-range band, candles, trade
+// markers), a volume pane under it sharing the x-axis, and an order-book depth
+// panel beside it sharing the y-axis. The y-scale and both gridline ladders
+// come from the server (market_view.chart_scale / time_grid): the depth panel
+// aggregates the book onto exactly the price gridlines drawn here, and two
+// independent "nice step" implementations would drift apart on the first tune.
 function drawChart(payload, canvas, width) {
   if (!canvas || !canvas.getContext) return null;
   const ctx = canvas.getContext("2d");
   const bars = (payload && payload.bars) || [];
   const W = Math.max(320, width ||
     (canvas.parentElement && canvas.parentElement.clientWidth) || 760);
-  const H = 340;
+  const H = 420;
   const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
   canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
   canvas.style.width = W + "px"; canvas.style.height = H + "px";
@@ -498,25 +616,36 @@ function drawChart(payload, canvas, width) {
     ctx.fillText("チャートデータなし", 14, 30);
     return null;
   }
-  const padL = 10, padR = 72, padT = 12, padB = 24;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  let hi = -Infinity, lo = Infinity;
-  for (const b of bars) { if (b.h > hi) hi = b.h; if (b.l < lo) lo = b.l; }
-  const rg = payload.range;
-  if (rg) { hi = Math.max(hi, rg.high); lo = Math.min(lo, rg.low); }
-  for (const m of payload.markers || []) {
-    if (m.price > hi) hi = m.price;
-    if (m.price < lo) lo = m.price;
+
+  // ---- geometry: price ~72% / volume ~20% of the body, depth ~15% of width
+  const padL = 10, padR = 74, padT = 12, padB = 22, paneGap = 10;
+  const fullW = W - padL - padR;
+  const depthW = Math.max(46, Math.round(fullW * 0.15));
+  const plotW = Math.max(80, fullW - depthW - 8);
+  const bodyH = H - padT - padB;
+  const volH = Math.max(38, Math.round(bodyH * 0.20));
+  const priceH = bodyH - volH - paneGap;
+  const volTop = padT + priceH + paneGap, volBot = volTop + volH;
+  const depthX = padL + plotW + 8, depthRight = depthX + depthW;
+
+  const sc = payload.scale || {};
+  let hi = sc.hi, lo = sc.lo;
+  if (hi == null || lo == null) {          // payload without a server scale
+    hi = -Infinity; lo = Infinity;
+    for (const b of bars) { if (b.h > hi) hi = b.h; if (b.l < lo) lo = b.l; }
+    const pad = (hi - lo) * 0.06 || Math.max(1, Math.abs(hi) * 0.001);
+    hi += pad; lo -= pad;
   }
-  const pad = (hi - lo) * 0.06 || Math.max(1, Math.abs(hi) * 0.001);
-  hi += pad; lo -= pad;
   const span = (hi - lo) || 1;
-  const y = p => padT + (hi - p) / span * plotH;
+  const y = p => padT + (hi - p) / span * priceH;
   const step = plotW / bars.length;
   const cw = Math.max(1, Math.min(14, step * 0.66));
   const xc = i => padL + step * (i + 0.5);
+  const xl = i => padL + step * i;
+  const vmax = payload.vmax || bars.reduce((m, b) => Math.max(m, b.v || 0), 0) || 1;
 
-  if (rg) {  // trailing range band
+  const rg = payload.range;
+  if (rg) {  // trailing range band, sized to this timeframe (range_windows)
     ctx.fillStyle = MC.band;
     ctx.fillRect(padL, y(rg.high), plotW, Math.max(1, y(rg.low) - y(rg.high)));
     ctx.strokeStyle = MC.accent; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
@@ -527,30 +656,80 @@ function drawChart(payload, canvas, width) {
     ctx.setLineDash([]);
   }
 
-  ctx.font = "11px ui-monospace, Consolas, monospace"; ctx.textAlign = "left";
-  for (let k = 0; k <= 4; k++) {   // price grid + right-hand axis
-    const p = lo + span * k / 4, yy = Math.round(y(p)) + 0.5;
+  // ---- price gridlines: they cross the depth panel too (shared y-axis)
+  ctx.font = "11px ui-monospace, Consolas, monospace";
+  ctx.lineWidth = 1;
+  const grid = sc.grid || [];
+  for (const p of grid) {
+    const yy = Math.round(y(p)) + 0.5;
+    if (yy < padT || yy > padT + priceH) continue;
     ctx.strokeStyle = MC.grid;
-    ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(padL + plotW, yy); ctx.stroke();
-    ctx.fillStyle = MC.flat;
-    ctx.fillText(Math.round(p).toLocaleString("ja-JP"), padL + plotW + 6, yy + 4);
-  }
-  ctx.textAlign = "center"; ctx.fillStyle = MC.flat;
-  for (const i of [0, Math.floor(bars.length / 2), bars.length - 1]) {
-    const x = Math.min(Math.max(xc(i), padL + 34), padL + plotW - 34);
-    ctx.fillText(jst(bars[i].ts), x, H - 8);
+    ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(depthRight, yy); ctx.stroke();
+    ctx.textAlign = "left"; ctx.fillStyle = MC.flat;
+    ctx.fillText(Math.round(p).toLocaleString("ja-JP"), W - padR + 6, yy + 4);
   }
 
+  // ---- time gridlines on clock boundaries; UTC midnight gets a stronger line
+  const tg = payload.time_grid || [];
+  ctx.textAlign = "center";
+  if (tg.length) {
+    const stride = Math.max(1, Math.ceil(tg.length /
+      Math.max(2, Math.floor(plotW / 74))));
+    for (let k = 0; k < tg.length; k++) {
+      const g0 = tg[k], x = Math.round(xl(g0.i)) + 0.5;
+      if (x < padL || x > padL + plotW) continue;
+      ctx.strokeStyle = g0.major ? MC.gridMajor : MC.grid;
+      ctx.beginPath();
+      ctx.moveTo(x, padT); ctx.lineTo(x, padT + priceH);
+      ctx.moveTo(x, volTop); ctx.lineTo(x, volBot);
+      ctx.stroke();
+      if (k % stride === 0) {
+        ctx.fillStyle = MC.flat;
+        ctx.fillText(gridTimeLabel(g0, payload.tf),
+          Math.min(Math.max(x, padL + 26), padL + plotW - 26), H - 6);
+      }
+    }
+  } else {                                  // too short for a single boundary
+    ctx.fillStyle = MC.flat;
+    for (const i of [0, bars.length - 1]) {
+      const x = Math.min(Math.max(xc(i), padL + 34), padL + plotW - 34);
+      ctx.fillText(jst(bars[i].ts), x, H - 6);
+    }
+  }
+
+  // ---- candles + volume columns (same x, same alpha, one pass)
   for (let i = 0; i < bars.length; i++) {
     const b = bars[i], x = Math.round(xc(i)) + 0.5;
+    // the still-forming bar is dimmed; a live bar (built here from the public
+    // tape, not yet in the CSV) is dimmed further
+    ctx.globalAlpha = b.live ? 0.45 : (b.partial ? 0.6 : 1);
     ctx.strokeStyle = ctx.fillStyle = (b.c >= b.o) ? MC.up : MC.down;
-    ctx.globalAlpha = b.partial ? 0.5 : 1;   // the still-forming bar is dimmed
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, y(b.h)); ctx.lineTo(x, y(b.l)); ctx.stroke();
     const top = y(Math.max(b.o, b.c)), bot = y(Math.min(b.o, b.c));
     ctx.fillRect(x - cw / 2, top, cw, Math.max(1, bot - top));
+
+    const bx = x - cw / 2, bw = Math.max(1, cw);
+    if (b.bv != null && b.sv != null && (b.bv + b.sv) > 0) {
+      // the taker split is real data (data/flow_*.csv or the live tape):
+      // buy stacked from the axis, sell on top of it
+      const hb = b.bv / vmax * volH, hs = b.sv / vmax * volH;
+      if (hb > 0) { ctx.fillStyle = MC.up; ctx.fillRect(bx, volBot - hb, bw, Math.max(1, hb)); }
+      if (hs > 0) { ctx.fillStyle = MC.down; ctx.fillRect(bx, volBot - hb - hs, bw, Math.max(1, hs)); }
+    } else if (b.v > 0) {
+      const hv = b.v / vmax * volH;         // no split known: one muted column
+      ctx.fillStyle = MC.vol; ctx.fillRect(bx, volBot - hv, bw, Math.max(1, hv));
+    }
     ctx.globalAlpha = 1;
   }
+  ctx.strokeStyle = MC.grid;                // volume baseline
+  ctx.beginPath(); ctx.moveTo(padL, volBot + 0.5); ctx.lineTo(padL + plotW, volBot + 0.5);
+  ctx.stroke();
+  ctx.textAlign = "left"; ctx.fillStyle = MC.flat;
+  ctx.fillText(fmt(vmax, 2), W - padR + 6, volTop + 10);
+  ctx.fillText("出来高", W - padR + 6, volBot - 1);
+
+  drawDepth(ctx, payload.depth, y, depthX, depthW, padT, priceH);
 
   for (const m of payload.markers || []) {
     const x = xc(m.bar), yy = y(m.price);
@@ -576,7 +755,55 @@ function drawChart(payload, canvas, width) {
     }
     ctx.globalAlpha = 1;
   }
-  return {padL: padL, padR: padR, step: step, bars: bars, W: W, H: H, hi: hi, lo: lo};
+  return {padL: padL, padR: padR, step: step, bars: bars, W: W, H: H,
+          hi: hi, lo: lo, plotW: plotW, priceH: priceH, padT: padT,
+          volTop: volTop, volH: volH, depthX: depthX, depthW: depthW,
+          vmax: vmax, gridLines: grid.length, timeLines: tg.length};
+}
+
+// Order-book depth beside the price pane: bars grow LEFT from the right edge,
+// asks (above mid) red, bids (below mid) green, on the price buckets the
+// gridlines already draw. The thin step line is cumulative depth away from mid
+// — where the book actually thickens, not just where one level sits.
+function drawDepth(ctx, dp, y, depthX, depthW, padT, priceH) {
+  const right = depthX + depthW;
+  if (!dp || !dp.buckets || !dp.buckets.length || !(dp.max > 0)) {
+    ctx.fillStyle = MC.flat; ctx.font = "10.5px system-ui"; ctx.textAlign = "center";
+    ctx.fillText("板情報なし", depthX + depthW / 2, padT + priceH / 2);
+    return;
+  }
+  for (const bk of dp.buckets) {
+    const yTop = y(bk.p + dp.step), yBot = y(bk.p);
+    const half = Math.max(1, (yBot - yTop) / 2 - 0.5);
+    if (bk.ask > 0) {
+      const w = Math.max(1, bk.ask / dp.max * depthW);
+      ctx.fillStyle = MC.depthAsk; ctx.fillRect(right - w, yTop, w, half);
+    }
+    if (bk.bid > 0) {
+      const w = Math.max(1, bk.bid / dp.max * depthW);
+      ctx.fillStyle = MC.depthBid; ctx.fillRect(right - w, yTop + half + 1, w, half);
+    }
+  }
+  const mid = dp.mid, total = Math.max(dp.ask_sum || 0, dp.bid_sum || 0);
+  if (mid == null || !(total > 0)) return;
+  ctx.strokeStyle = MC.depthLine; ctx.lineWidth = 1; ctx.setLineDash([]);
+  const walk = (list, key, upward) => {
+    let cum = 0, started = false;
+    ctx.beginPath();
+    for (const bk of list) {
+      cum += bk[key];
+      const x = right - Math.min(1, cum / total) * depthW;
+      const a = upward ? y(bk.p) : y(bk.p + dp.step);
+      const z = upward ? y(bk.p + dp.step) : y(bk.p);
+      if (started) { ctx.lineTo(x, a); } else { ctx.moveTo(x, a); started = true; }
+      ctx.lineTo(x, z);
+    }
+    if (started) ctx.stroke();
+  };
+  walk(dp.buckets.filter(b => b.ask > 0 && b.p + dp.step > mid)
+         .sort((a, b) => a.p - b.p), "ask", true);
+  walk(dp.buckets.filter(b => b.bid > 0 && b.p < mid)
+         .sort((a, b) => b.p - a.p), "bid", false);
 }
 
 function chartHover(ev) {
@@ -586,11 +813,15 @@ function chartHover(ev) {
   const rect = ev.currentTarget.getBoundingClientRect();
   const x = ev.clientX - rect.left;
   const i = Math.floor((x - g.padL) / g.step);
-  if (i < 0 || i >= g.bars.length) { tip.style.display = "none"; return; }
+  if (x > g.padL + g.plotW || i < 0 || i >= g.bars.length) {
+    tip.style.display = "none"; return;     // over the depth panel / the gutter
+  }
   const b = g.bars[i];
-  tip.innerHTML = `${jst(b.ts)} JST${b.partial ? " (形成中)" : ""}\n` +
+  const split = (b.bv != null && b.sv != null)
+    ? `\n買 ${fmt(b.bv, 3)}  売 ${fmt(b.sv, 3)}` : "";
+  tip.innerHTML = `${jst(b.ts)} JST${b.live ? " (ライブ)" : b.partial ? " (形成中)" : ""}\n` +
     `始 ${fmt(b.o, 0)}   高 ${fmt(b.h, 0)}\n安 ${fmt(b.l, 0)}   終 ${fmt(b.c, 0)}\n` +
-    `出来高 ${fmt(b.v, 3)}`;
+    `出来高 ${fmt(b.v, 3)}` + split;
   tip.style.display = "block";
   tip.style.left = Math.min(Math.max(x - 60, 8), g.W - 150) + "px";
   tip.style.top = "18px";
@@ -629,19 +860,92 @@ setInterval(refresh, 5000);
 
 
 # ---------------------------------------------------------------------------
+# public bitFlyer reads (board + execution tape)
+#
+# Both are best-effort by construction: on ANY failure the last good snapshot
+# is served with its real age, and if there has never been one the caller gets
+# None and the page draws its empty state. Nothing here may raise into a
+# request handler — a dead exchange must not take the local console down.
+# ---------------------------------------------------------------------------
+BF_PUBLIC = "https://api.bitflyer.com"
+PUBLIC_TIMEOUT = 3.0
+PUBLIC_TTL = 5.0          # minimum seconds between two calls to one endpoint
+EXEC_COUNT = 500          # /v1/executions max per call
+
+_session = requests.Session()
+_public_lock = threading.Lock()
+# one entry per endpoint: the last GOOD payload, when it was taken, and when we
+# last tried (so a hard-down endpoint is still only retried every PUBLIC_TTL)
+_public_cache: dict[str, dict] = {
+    "board": {"data": None, "fetched_at": None, "tried_at": None, "error": None},
+    "executions": {"data": None, "fetched_at": None, "tried_at": None, "error": None},
+}
+
+
+def _public_get(name: str, path: str, params: dict, now: float | None = None):
+    """GET one public endpoint at most once per PUBLIC_TTL; never raises."""
+    now = time.time() if now is None else now
+    with _public_lock:
+        slot = _public_cache[name]
+        tried = slot["tried_at"]
+        if tried is not None and (now - tried) < PUBLIC_TTL:
+            return slot["data"]
+        slot["tried_at"] = now
+    data = error = None
+    try:
+        r = _session.get(f"{BF_PUBLIC}{path}", params=params, timeout=PUBLIC_TIMEOUT)
+        r.raise_for_status()
+        data = r.json()
+    except Exception as exc:                      # network, HTTP, JSON — all soft
+        error = f"{type(exc).__name__}: {exc}"[:200]
+    with _public_lock:
+        slot = _public_cache[name]
+        if data is not None:
+            slot.update({"data": data, "fetched_at": now, "error": None})
+        else:
+            slot["error"] = error                 # keep the stale data and its age
+        return slot["data"]
+
+
+def fetch_board(now: float | None = None):
+    """The public order book, or the last one we got (or None)."""
+    return _public_get("board", "/v1/board", {"product_code": PRODUCT}, now)
+
+
+def fetch_executions(now: float | None = None) -> list:
+    """The public execution tape tail, or the last one we got (or [])."""
+    data = _public_get("executions", "/v1/executions",
+                       {"product_code": PRODUCT, "count": EXEC_COUNT}, now)
+    return data if isinstance(data, list) else []
+
+
+def live_bars(now: float | None = None) -> list[dict]:
+    """The last few 1m buckets off the execution tape (empty when offline)."""
+    return bars_from_executions(fetch_executions(now))
+
+
+def board_fetched_at() -> float | None:
+    with _public_lock:
+        return _public_cache["board"]["fetched_at"]
+
+
+# ---------------------------------------------------------------------------
 # /api/market cache
 #
-# collect_market re-parses every candle in data/ (tens of thousands of rows).
-# The page polls it every 30s per open tab, so the answer is cached and only
-# rebuilt when one of the files it reads has actually changed — with a floor of
-# MARKET_TTL seconds so a busy collector cannot make every poll a full re-parse.
+# collect_market re-parses every candle in data/ (tens of thousands of rows) —
+# ~0.7s on the live dataset, far too much to redo per poll. The payload is
+# therefore cached and rebuilt only when the files it reads changed OR the live
+# 1m tail moved, with a floor of MARKET_TTL seconds either way. The board is
+# NOT part of that key: it is attached to the cached payload on every request,
+# which is microseconds, so depth stays as fresh as the fetch cache allows.
 # ---------------------------------------------------------------------------
 MARKET_FILES = (f"data/candles_{PRODUCT}.csv", f"data/flow_{PRODUCT}.csv",
                 "data/oi_snapshots.csv", "logs/bot.jsonl",
                 "data/scalp_paper.jsonl")
 MARKET_TTL = 15.0
 _market_lock = threading.Lock()
-_market_cache: dict[str, object] = {"key": None, "at": 0.0, "body": b"", "root": None}
+_market_cache: dict[str, object] = {"key": None, "at": 0.0, "payload": None,
+                                    "root": None}
 
 
 def _market_key(root: str = ".") -> tuple:
@@ -660,20 +964,33 @@ def _market_key(root: str = ".") -> tuple:
     return tuple(out)
 
 
+def _live_key(bars: list[dict]) -> tuple:
+    """What about the live tail would change the payload if it changed."""
+    if not bars:
+        return ()
+    last = bars[-1]
+    return (len(bars), last["ts"], last["close"], round(last["volume"], 6))
+
+
 def market_body(root: str = ".", now: float | None = None) -> bytes:
-    """The /api/market JSON, from cache when nothing it reads has changed."""
+    """The /api/market JSON: cached files + live tail, board attached fresh."""
     now = time.monotonic() if now is None else now
+    live = live_bars()
+    board = fetch_board()
     with _market_lock:
-        cached = _market_cache["body"] if _market_cache["root"] == str(root) else b""
-        if cached and (now - _market_cache["at"]) < MARKET_TTL:
-            return cached
-        key = _market_key(root)
-        if cached and key == _market_cache["key"]:
-            _market_cache["at"] = now      # unchanged files: re-arm the TTL
-            return cached
-        body = json.dumps(collect_market(root)).encode()
-        _market_cache.update({"key": key, "at": now, "body": body, "root": str(root)})
-        return body
+        cached = (_market_cache["payload"]
+                  if _market_cache["root"] == str(root) else None)
+        key = None
+        if cached is None or (now - _market_cache["at"]) >= MARKET_TTL:
+            key = _market_key(root) + _live_key(live)
+            if cached is not None and key == _market_cache["key"]:
+                _market_cache["at"] = now   # nothing moved: re-arm the TTL
+            else:
+                cached = collect_market(root, live_bars=live)
+                _market_cache.update({"key": key, "at": now, "payload": cached,
+                                      "root": str(root)})
+        attach_board(cached, board, now=board_fetched_at())
+        return json.dumps(cached).encode()
 
 
 class Handler(BaseHTTPRequestHandler):

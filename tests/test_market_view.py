@@ -9,9 +9,12 @@ from datetime import datetime, timezone
 import pytest
 
 from bot.monitoring.market_view import (
-    chart_payload, collect_market, market_state, oi_trend, parse_bot_events,
-    parse_scalp_events, read_candles, resample, series_trend, slope_angle,
-    taker_split, trend, volatility, volume_trend,
+    RANGE_WINDOW_BY_TF, TF_ORDER, attach_board, bars_from_executions,
+    board_depth, chart_payload, chart_scale, collect_market, market_state,
+    merge_live_bars, nice_step, normalize_board, oi_trend, overlay_flow,
+    parse_bot_events, parse_scalp_events, price_grid, read_candles, resample,
+    series_trend, slope_angle, taker_split, time_grid, trend, volatility,
+    volume_trend, window_label,
 )
 
 T0 = datetime(2026, 8, 20, 0, 0, tzinfo=timezone.utc).timestamp()
@@ -507,7 +510,9 @@ def test_collect_market_empty_root_is_an_all_none_skeleton(tmp_path):
     assert all(t["trend"] is None and t["volatility"] is None and t["volume"] is None
                and t["bars"] == 0 for t in d["timeframes"])
     assert d["sources"] == {"candles": 0, "flow_tail": 0, "oi_rows": 0,
-                            "bot_events": 0, "scalp_events": 0}
+                            "bot_events": 0, "scalp_events": 0,
+                            "flow_split_minutes": 0}
+    assert d["board"] is None and d["live"]["bars"] == 0
     json.dumps(d)
 
 
@@ -516,14 +521,14 @@ def test_collect_market_payload_is_json_serialisable(tmp_path):
     json.dumps(collect_market(tmp_path, now=T0))
 
 
-def _make_workspace(root):
+def _make_workspace(root, minutes=400):
     """A miniature data/ + logs/ in the shapes the collectors really write."""
     (root / "data").mkdir(parents=True, exist_ok=True)
     (root / "logs").mkdir(parents=True, exist_ok=True)
     rows = ["ts,open,high,low,close,volume"]
     flow = ["ts,open,high,low,close,volume,buy_vol,sell_vol,trades"]
     price = 11_000_000.0
-    for i in range(400):
+    for i in range(minutes):
         stamp = datetime.fromtimestamp(T0 + i * 60, timezone.utc).strftime(
             "%Y-%m-%d %H:%M:%S+00:00")
         price *= 1.0002
@@ -561,8 +566,12 @@ def test_collect_market_wires_every_source(tmp_path):
 
     chart = d["chart"]["tfs"]["15m"]
     assert chart["markers"] and {m["source"] for m in chart["markers"]} == {"main", "scalp"}
-    assert d["chart"]["default_tf"] == "15m"
-    assert d["chart"]["range_window_min"] == 240
+    # the chart opens on 1m: that is the frame the owner scalps
+    assert d["chart"]["default_tf"] == "1m"
+    assert d["chart"]["range_windows"] == RANGE_WINDOW_BY_TF
+    # data/candles_*.csv has no taker split; data/flow_*.csv's is laid over it
+    assert d["sources"]["flow_split_minutes"] == 400
+    assert d["chart"]["tfs"]["1m"]["bars"][-1]["bv"] == 1.0
 
 
 def test_collect_market_survives_a_missing_candle_file(tmp_path):
@@ -572,3 +581,290 @@ def test_collect_market_survives_a_missing_candle_file(tmp_path):
     d = collect_market(tmp_path, now=T0 + 400 * 60)
     assert d["sources"]["candles"] == 0
     assert d["state"] is not None and d["chart"] is not None
+
+
+# ---- per-timeframe range windows -------------------------------------------
+def test_range_window_is_the_timeframe_s_own_window():
+    """A 240m band is a horizon on a 1m scalp chart and one candle on the daily
+    one. Each frame gets a window of roughly the bars it is showing."""
+    assert RANGE_WINDOW_BY_TF == {"1m": 15, "15m": 60, "1h": 240,
+                                  "4h": 1440, "1d": 10080}
+    assert list(RANGE_WINDOW_BY_TF) == TF_ORDER
+
+    candles = bars([100.0] * 600 + [130.0] * 10 + [100.0] * 30)
+    windows = {tf: chart_payload(tf, candles, [], [])["range"] for tf in TF_ORDER}
+    # the spike is 30..40 minutes back: outside the 1m band, inside every other
+    assert windows["1m"]["window_min"] == 15 and windows["1m"]["high"] == 100.0
+    assert windows["15m"]["window_min"] == 60 and windows["15m"]["high"] == 130.0
+    assert windows["1h"]["window_min"] == 240 and windows["4h"]["window_min"] == 1440
+    assert windows["1d"]["window_min"] == 10080
+    # the label names the window, so the legend can say WHICH range it drew
+    assert [windows[tf]["window_label"] for tf in TF_ORDER] == [
+        "15分", "1時間", "4時間", "24時間", "7日"]
+
+
+def test_window_label_units():
+    assert window_label(15) == "15分" and window_label(59) == "59分"
+    assert window_label(60) == "1時間" and window_label(240) == "4時間"
+    assert window_label(1440) == "24時間"      # a rolling day, not a calendar one
+    assert window_label(10080) == "7日"
+
+
+def test_range_window_can_still_be_overridden():
+    candles = bars([100.0] * 100 + [130.0] * 10 + [100.0] * 100)
+    p = chart_payload("1m", candles, [], [], range_window=240)
+    assert p["range"]["window_min"] == 240 and p["range"]["high"] == 130.0
+
+
+# ---- price / time grids ----------------------------------------------------
+def test_nice_step_is_a_one_two_five_ladder():
+    for span in (37.0, 364_852.0, 1.2e6, 0.004, 88_000.0):
+        step = nice_step(span)
+        mantissa = step / 10.0 ** math.floor(math.log10(step))
+        assert round(mantissa, 6) in (1.0, 2.0, 5.0), (span, step)
+        assert 5 <= span / step <= 17          # 1/2/5 cannot always hit 8..12
+    assert nice_step(0.0) == 1.0 and nice_step(float("nan")) == 1.0
+
+
+def test_price_grid_lines_are_round_numbers_inside_the_extent():
+    grid = price_grid(10_980_454.0, 11_345_306.0, 50_000.0)
+    assert grid[0] == 11_000_000.0 and grid[-1] == 11_300_000.0
+    assert all(g % 50_000.0 == 0 for g in grid)
+    assert all(10_980_454.0 <= g <= 11_345_306.0 for g in grid)
+    assert price_grid(1.0, 2.0, 0.0) == [] and price_grid(2.0, 1.0, 1.0) == []
+
+
+def test_chart_scale_covers_every_drawn_thing():
+    """A marker outside the candles' own extent must still land on the chart."""
+    bar_rows = [{"ts": T0, "o": 100.0, "h": 101.0, "l": 99.0, "c": 100.0, "v": 1.0}]
+    sc = chart_scale(bar_rows, {"high": 105.0, "low": 95.0},
+                     [{"price": 120.0}, {"price": 80.0}])
+    assert sc["lo"] < 80.0 and sc["hi"] > 120.0
+    assert 8 <= len(sc["grid"]) <= 14 and sc["step"] > 0
+    assert chart_scale([]) is None
+
+
+def test_time_grid_sits_on_clock_boundaries_per_timeframe():
+    candles = bars([100.0] * (8 * 1440), start=T0)     # 8 UTC days of 1m bars
+    per_tf = {tf: chart_payload(tf, candles, [], [], bars=400) for tf in TF_ORDER}
+
+    for tf, period_min in (("1m", 5), ("15m", 60), ("1h", 240), ("4h", 1440)):
+        p = per_tf[tf]
+        stamps = [p["bars"][g["i"]]["ts"] for g in p["time_grid"]]
+        assert stamps and all(s % (period_min * 60) == 0 for s in stamps)
+        assert all(g["ts"] == p["bars"][g["i"]]["ts"] for g in p["time_grid"])
+    # UTC midnight is the one line the eye should find
+    assert [g["major"] for g in per_tf["1m"]["time_grid"]].count(True) <= 8
+    assert all(g["major"] for g in per_tf["4h"]["time_grid"])
+    # the daily frame steps weekly: 1970-01-01 was a Thursday, so Mondays
+    for g in per_tf["1d"]["time_grid"]:
+        assert datetime.fromtimestamp(g["ts"], timezone.utc).weekday() == 0
+
+
+def test_time_grid_skips_boundaries_that_fall_in_a_data_gap():
+    """The collector stopped over a boundary: no bar sits on it, so no line is
+    drawn there rather than one drawn on the neighbouring bar."""
+    have = bars([100.0] * 4, start=T0 + 60)            # 00:01..00:04
+    later = bars([100.0] * 4, start=T0 + 11 * 60)      # 00:11..00:14
+    grid = time_grid(have + later, "1m")               # 00:05 and 00:10 missing
+    assert [g["ts"] for g in grid] == []
+    with_boundary = time_grid(bars([100.0] * 12, start=T0), "1m")
+    assert [g["ts"] for g in with_boundary] == [T0, T0 + 300, T0 + 600]
+
+
+# ---- live 1m tail ----------------------------------------------------------
+def _exec(sec, price, size, side="BUY"):
+    stamp = datetime.fromtimestamp(T0 + sec, timezone.utc)
+    return {"id": int(sec), "side": side, "price": price, "size": size,
+            "exec_date": stamp.strftime("%Y-%m-%dT%H:%M:%S.000")}
+
+
+def test_bars_from_executions_builds_1m_buckets_with_a_taker_split():
+    execs = [_exec(10, 100.0, 1.0, "BUY"), _exec(30, 103.0, 2.0, "SELL"),
+             _exec(50, 101.0, 0.5, "BUY"), _exec(70, 99.0, 1.0, "SELL")]
+    out = bars_from_executions(list(reversed(execs)))   # the tape arrives newest-first
+    assert [b["ts"] for b in out] == [T0, T0 + 60]
+    first = out[0]
+    assert (first["open"], first["high"], first["low"], first["close"]) == (100.0, 103.0, 100.0, 101.0)
+    assert first["volume"] == 3.5 and first["buy_vol"] == 1.5 and first["sell_vol"] == 2.0
+    assert first["trades"] == 3 and first["live"] is True
+    # the fetch window began wherever count ran out, not on a minute boundary
+    assert first["truncated"] is True and "truncated" not in out[1]
+    assert bars_from_executions([]) == []
+    assert bars_from_executions([{"price": "x", "exec_date": "nope"}]) == []
+
+
+def test_merge_live_bars_lets_the_csv_win_and_marks_what_is_live():
+    csv_bars = bars([100.0, 101.0, 102.0])                     # T0 .. T0+120
+    live = [dict(b, live=True, close=999.0) for b in bars([1.0], start=T0 + 120)]
+    live += [dict(b, live=True) for b in bars([103.0, 104.0], start=T0 + 180)]
+
+    merged = merge_live_bars(csv_bars, live)
+    assert [b["ts"] for b in merged] == [T0, T0 + 60, T0 + 120, T0 + 180, T0 + 240]
+    assert merged[2]["close"] == 102.0 and not merged[2].get("live")   # CSV wins
+    assert [b.get("live") for b in merged[3:]] == [True, True]
+    assert csv_bars[0]["close"] == 100.0 and live[0]["close"] == 999.0  # no mutation
+    assert merge_live_bars(csv_bars, []) == csv_bars
+
+
+def test_resample_carries_the_live_flag_up_to_the_bucket():
+    src = bars([100.0] * 14) + [dict(b, live=True) for b in bars([101.0], start=T0 + 840)]
+    out = resample(src, "15m")
+    assert len(out) == 1 and out[0]["live"] is True and out[0]["close"] == 101.0
+
+
+def test_live_tail_makes_a_stale_csv_feed_classifiable_again(tmp_path):
+    """The fetch task rewrites the CSV every ~15 min, which is long enough for
+    the staleness guard to call a live market dead. The merged tail is what the
+    guard must key off."""
+    _make_workspace(tmp_path)
+    now = T0 + 400 * 60 + 20 * 60          # 20 minutes past the last CSV bar
+    stale = collect_market(tmp_path, now=now)
+    assert stale["state"]["stale"] is True and stale["state"]["state"] is None
+
+    last_close = 11_000_000.0 * 1.0002 ** 400
+    live = bars_from_executions(
+        [_exec(400 * 60 + 19 * 60 + s, last_close, 0.1) for s in (0, 30, 59)])
+    fresh = collect_market(tmp_path, now=now, live_bars=live)
+    assert fresh["state"]["stale"] is False
+    assert fresh["state"]["state"] in ("嵐", "ブレイク", "静穏レンジ", "通常")
+    assert fresh["live"]["bars"] == 1 and fresh["live"]["last_ts"] > fresh["live"]["csv_last_ts"]
+    assert fresh["chart"]["tfs"]["1m"]["bars"][-1]["live"] is True
+
+
+def test_overlay_flow_fills_only_the_minutes_the_recorder_covered():
+    candles = bars([100.0] * 5)
+    flow = [dict(b, buy_vol=3.0, sell_vol=1.0) for b in bars([100.0] * 2, start=T0 + 60)]
+    assert overlay_flow(candles, flow) == 2
+    assert [c.get("buy_vol") for c in candles] == [None, 3.0, 3.0, None, None]
+    assert overlay_flow(candles, []) == 0 and overlay_flow([], flow) == 0
+    # a second pass is a no-op: an already-split minute is never overwritten
+    assert overlay_flow(candles, flow) == 0
+
+
+# ---- order book ------------------------------------------------------------
+def _board(mid=11_000_000.0, n=40, step=100.0, size=0.5):
+    return {
+        "mid_price": mid,
+        "bids": [{"price": mid - step * (i + 1), "size": size} for i in range(n)],
+        "asks": [{"price": mid + step * (i + 1), "size": size * 0.8} for i in range(n)],
+    }
+
+
+def test_normalize_board_trims_to_the_drawable_window():
+    nb = normalize_board(_board(n=400, step=100.0), now=T0)
+    assert nb["best_bid"] == 10_999_900.0 and nb["best_ask"] == 11_000_100.0
+    assert nb["spread"] == 200.0 and nb["mid"] == 11_000_000.0 and nb["fetched_at"] == T0
+    # +-2% of 11M is +-220k, i.e. 2200 x 100 JPY levels: all 400 survive
+    assert len(nb["bids"]) == 400 and nb["bid_total"] == nb["bid_total_all"]
+    # a far-out ladder is dropped from the drawable levels but stays in the total
+    far = normalize_board({"mid_price": 100.0,
+                           "bids": [{"price": 99.0, "size": 1.0}, {"price": 50.0, "size": 9.0}],
+                           "asks": [{"price": 101.0, "size": 1.0}]}, now=T0)
+    assert far["bid_total"] == 1.0 and far["bid_total_all"] == 10.0
+
+
+def test_normalize_board_rejects_what_cannot_be_drawn():
+    assert normalize_board(None) is None
+    assert normalize_board("nope") is None
+    assert normalize_board({"bids": [], "asks": []}) is None
+    assert normalize_board({"bids": [{"price": 1.0, "size": 1.0}]}) is None
+    # crossed book: a snapshot we cannot reason about is not half-drawn
+    assert normalize_board({"mid_price": 100.0,
+                            "bids": [{"price": 101.0, "size": 1.0}],
+                            "asks": [{"price": 99.0, "size": 1.0}]}) is None
+    # unusable levels are dropped, not coerced
+    ok = normalize_board({"mid_price": 100.0,
+                          "bids": [{"price": 99.0, "size": 1.0}, {"price": 98.0, "size": 0.0},
+                                   {"price": None, "size": 5.0}],
+                          "asks": [{"price": 101.0, "size": 2.0}]})
+    assert ok["bids"] == [[99.0, 1.0]] and ok["bid_total_all"] == 1.0
+
+
+def test_board_depth_uses_the_chart_s_own_price_buckets():
+    """The panel shares the price pane's y-axis, so the book has to be summed
+    onto the very gridlines drawn next to it."""
+    nb = normalize_board(_board(mid=11_000_000.0, n=40, step=100.0, size=0.5))
+    dp = board_depth(nb, 10_995_000.0, 11_005_000.0, 1000.0)
+    assert dp["step"] == 1000.0 and dp["start"] == 10_995_000.0 and dp["count"] == 10
+    assert all(bk["p"] % 1000.0 == 0 for bk in dp["buckets"])
+    # 40 bids x 0.5 and 40 asks x 0.4, all inside the +-4000 JPY window
+    assert dp["bid_sum"] == pytest.approx(20.0) and dp["ask_sum"] == pytest.approx(16.0)
+    assert dp["outside"] == 0 and dp["max"] > 0 and dp["mid"] == 11_000_000.0
+
+    # a window too narrow to hold the book: the rest is counted, never clamped
+    # onto the edge bucket (two 100 JPY buckets fit; 79 of the 80 levels do not)
+    narrow = board_depth(nb, 10_999_950.0, 11_000_050.0, 100.0)
+    assert narrow["count"] == 2 and narrow["outside"] == 79
+    assert narrow["bid_sum"] == 0.5 and narrow["ask_sum"] == 0.0
+    assert board_depth(None, 1.0, 2.0, 0.1) is None
+    assert board_depth(nb, 1.0, 2.0, 0.0) is None
+
+
+def test_attach_board_wires_every_timeframe_and_survives_a_failed_fetch(tmp_path):
+    _make_workspace(tmp_path)
+    payload = collect_market(tmp_path, now=T0 + 400 * 60)
+    last = payload["chart"]["tfs"]["1m"]["bars"][-1]["c"]
+    attach_board(payload, _board(mid=last, n=60, step=200.0), now=T0)
+
+    assert payload["board"]["mid"] == last and payload["board"]["fetched_at"] == T0
+    for tf in TF_ORDER:
+        depth = payload["chart"]["tfs"][tf]["depth"]
+        scale = payload["chart"]["tfs"][tf]["scale"]
+        assert depth["step"] == scale["step"]      # same ladder as the gridlines
+    json.dumps(payload)
+
+    attach_board(payload, None)                    # the fetch failed
+    assert payload["board"] is None
+    assert all(payload["chart"]["tfs"][tf]["depth"] is None for tf in TF_ORDER)
+    # a payload with no chart at all (empty workspace) must not raise either
+    assert attach_board({"chart": None}, _board())["board"] is not None
+
+
+# ---- volume pane -----------------------------------------------------------
+def test_chart_payload_carries_the_volume_pane_s_inputs():
+    src = bars([100.0] * 30, volume=[1.0 + i for i in range(30)])
+    for b in src[:10]:
+        b["buy_vol"], b["sell_vol"] = 0.6, 0.4
+    p = chart_payload("1m", src, [], [])
+    assert p["vmax"] == 30.0 == max(b["v"] for b in p["bars"])
+    assert p["bars"][0]["bv"] == 0.6 and p["bars"][0]["sv"] == 0.4
+    # a minute with no recorded split says so rather than inventing a 50/50 one
+    assert "bv" not in p["bars"][-1] and "sv" not in p["bars"][-1]
+
+
+def test_returns_refuse_to_measure_across_a_hole_in_the_series():
+    """With the live tail merged in, a dead collector leaves a gap between the
+    last CSV bar and the live minutes. Calling the move across that gap a
+    30-minute return lit 嵐 on a market that had not moved in 30 minutes."""
+    old = bars([100.0] * 60)                       # ends at T0 + 59m
+    fresh = [dict(b, live=True) for b in bars([130.0] * 3, start=T0 + 24 * 3600)]
+    st = market_state(old + fresh, now=T0 + 24 * 3600 + 180)
+
+    assert st["stale"] is False                    # the tape IS live
+    assert st["ret_30m_pct"] is None               # but there is no 30m ago bar
+    assert st["state"] != "嵐"
+    # the guard is per-window, not a blanket refusal: a bar really does sit 24h
+    # back, so THAT return is still reported
+    assert st["ret_24h_pct"] == pytest.approx(30.0)
+
+    # a normal 15-minute CSV lag is well inside the tolerance and still reports
+    lagging = bars([100.0] * 60) + [dict(b, live=True)
+                                    for b in bars([101.0] * 2, start=T0 + 75 * 60)]
+    ok = market_state(lagging, now=T0 + 77 * 60)
+    assert ok["ret_30m_pct"] == pytest.approx(1.0, abs=0.01)
+
+
+def test_collect_market_reports_how_far_the_csv_writer_has_fallen_behind(tmp_path):
+    _make_workspace(tmp_path)
+    csv_end = T0 + 399 * 60
+    live = bars_from_executions([_exec(399 * 60 + 60 + s, 11_900_000.0, 0.1)
+                                 for s in (1, 30)])
+    near = collect_market(tmp_path, now=csv_end + 180, live_bars=live)
+    assert near["live"]["gap_sec"] == 0.0          # the very next minute
+
+    late = bars_from_executions([_exec(399 * 60 + 3600 + s, 11_900_000.0, 0.1)
+                                 for s in (1, 30)])
+    behind = collect_market(tmp_path, now=csv_end + 3700, live_bars=late)
+    assert behind["live"]["gap_sec"] == pytest.approx(3540.0)
+    assert collect_market(tmp_path, now=csv_end)["live"]["gap_sec"] is None
