@@ -25,6 +25,7 @@ from bot.monitoring.notifier import DiscordNotifier, Notifier, NullNotifier
 from bot.monitoring.status import StatusWriter
 from bot.order_management.manager import OrderManager
 from bot.order_management.order import DuplicateOrderError, OrderStore
+from bot.portfolio.persistence import PaperPosition, PaperState, utc_date
 from bot.portfolio.portfolio import Portfolio
 from bot.risk.kill_switch import KillReason, KillSwitch
 from bot.risk.pre_trade_checks import AccountState, OrderRequest, PreTradeChecker
@@ -118,6 +119,23 @@ class TradingApp:
 
         self.orders = OrderManager(self.store, gateway, self.kill_switch)
         self.portfolio = Portfolio(initial_equity_jpy=initial_equity)
+        # PAPER only: reload the paper book (cumulative P&L, fill count, today's
+        # daily P&L, the open position). LIVE never touches the file — there the
+        # exchange holds the book and is reconciled against, and a JSON file
+        # pretending to know a real position would be worse than no file at all.
+        self.paper_state: PaperState | None = None
+        self._restored_trade_count = 0
+        self._position_opened_ts: float | None = None
+        if settings.mode is not Mode.LIVE:
+            self._restore_paper_state(gateway)
+        self._paper_day = self.portfolio.daily_day_index
+        # Boot equity for the overlay INCLUDES the restored realized P&L: the
+        # overlay rebuilds its peak as boot_equity / dd_frac, so it has to be
+        # handed the equity the book actually starts at. Unrealized needs a mark
+        # price this early boot does not have, and is zero at the restored entry
+        # price by construction. Both terms are 0 on a fresh/live book, so this
+        # is the previous value unchanged there.
+        boot_equity = initial_equity + self.portfolio.realized_pnl_jpy
         # Risk-overlay brake state survives a restart: a crash mid-losing-streak
         # must not hand the next process a clean slate and full size.
         #
@@ -128,7 +146,7 @@ class TradingApp:
         # inherited history — and again on the next boot after an operator
         # reset, a deadlock no reset can clear. Sizing may inherit the brake;
         # the kill switch may not. (bot/strategy/composite.py module docstring.)
-        self.overlay_state = OverlayState.load(boot_equity_jpy=initial_equity)
+        self.overlay_state = OverlayState.load(boot_equity_jpy=boot_equity)
         self._overlay_suppressed_day: int | None = None
         self.status = StatusWriter()
         self.status.status.mode = settings.mode.value
@@ -155,6 +173,119 @@ class TradingApp:
             raise PermissionError(
                 f"API key has withdrawal-related permissions {bad}; refusing LIVE mode."
             )
+
+    # ---- paper book persistence (PAPER ONLY) ------------------------------
+    @property
+    def trade_count(self) -> int:
+        """Fills booked by this paper book, not by this process.
+
+        A restart used to show 0 here — the console tile, and every reading of
+        the paper experiment taken from it, restarted with the process."""
+        return self._restored_trade_count + len(self.portfolio.trades)
+
+    def _restore_paper_state(self, gateway: PaperExecutor) -> None:
+        """Reload data/paper_state.json into the portfolio and the paper gateway.
+
+        Restored: cumulative realized P&L, the fill count, the open position,
+        and today's realized daily P&L — the last one ONLY when the saved date
+        is still today (UTC), which `PaperState.daily_pnl_on` decides.
+
+        NOT restored, deliberately: `consecutive_losses` and `equity_peak_jpy`.
+        Those feed the HARD pre-trade checks, which trip the kill switch, so
+        seeding them from disk would trip it on history this process never
+        traded — and again on the next boot after an operator reset, a deadlock
+        no reset can clear (bot/strategy/composite.py module docstring). The
+        daily P&L is a different kind of fact: it EXPIRES at the UTC rollover,
+        so inheriting a spent budget for the rest of the same day is bounded,
+        while dropping it let a watchdog restart hand back the whole
+        MAX_DAILY_LOSS_JPY allowance mid-day.
+
+        The peak is instead anchored at BOOT equity, so a book restored below
+        its starting equity does not read as an instant max-drawdown breach:
+        the hard check keeps measuring the drawdown this process lived through.
+        """
+        state = PaperState.load()
+        self.paper_state = state
+        p = self.portfolio
+        p.realized_pnl_jpy = state.realized_pnl_jpy
+        self._restored_trade_count = state.trade_count
+        p.equity_peak_jpy = p.initial_equity_jpy + state.realized_pnl_jpy
+        today = utc_date(p.clock())
+        p.seed_daily_realized(state.daily_pnl_on(today))
+        position = state.position
+        if position is not None and position.side == "SHORT" and not gateway.allow_short:
+            # The product is not shortable now; whatever wrote that short is not
+            # this configuration. Start flat rather than restore a position the
+            # executor could never have opened.
+            logger.warning("paper state holds a short on a non-shortable product; "
+                           "starting flat", extra={"data": {
+                               "event": "paper_state_position_dropped",
+                               "symbol": self.settings.product_code}})
+            position = None
+        if position is not None:
+            p.position_size = position.signed_size
+            p.avg_entry_price = position.entry_price
+            self._position_opened_ts = position.opened_ts
+        self._restore_gateway(gateway, position, state.realized_pnl_jpy)
+        logger.info("paper state restored", extra={"data": {
+            "event": "paper_state_restored",
+            "realized_pnl_jpy": state.realized_pnl_jpy,
+            "trade_count": state.trade_count,
+            "daily_pnl_jpy": p.daily_realized_jpy, "daily_date": today,
+            "position_size": p.position_size}})
+
+    def _restore_gateway(self, gateway: PaperExecutor,
+                         position: PaperPosition | None,
+                         realized_pnl_jpy: float) -> None:
+        """Put the paper executor back where the portfolio is.
+
+        The executor keeps its own book, and a restart left it flat and at the
+        starting balance while the portfolio was long: the exit would then OPEN
+        a phantom short in the executor (margin) or be refused for want of
+        inventory (spot), and every later fill would be priced off a balance
+        that never happened.
+
+        Balance: margin moves by realized P&L and fees only, both already inside
+        the portfolio's realized figure. Spot additionally paid the position's
+        notional out of cash when it was opened.
+        """
+        symbol = self.settings.product_code
+        gateway.balance_jpy += realized_pnl_jpy
+        if position is None:
+            return
+        gateway.positions[symbol] = position.signed_size
+        gateway.entry_prices[symbol] = position.entry_price
+        if not gateway.allow_short:
+            gateway.balance_jpy -= position.size * position.entry_price
+
+    def _capture_paper_state(self) -> PaperState:
+        """Snapshot the paper book. Reads the PORTFOLIO's clock for the day, so
+        the persisted date and the daily P&L it labels can never come from two
+        different clocks."""
+        p = self.portfolio
+        pos = p.position_size
+        if pos == 0.0:
+            self._position_opened_ts = None
+            position = None
+        else:
+            if self._position_opened_ts is None:
+                self._position_opened_ts = p.clock()
+            position = PaperPosition.from_signed(pos, p.avg_entry_price,
+                                                 self._position_opened_ts)
+        return PaperState(realized_pnl_jpy=p.realized_pnl_jpy,
+                          trade_count=self.trade_count,
+                          daily_pnl_jpy=p.daily_realized_jpy,
+                          daily_date=utc_date(p.clock()),
+                          position=position)
+
+    def _save_paper_state(self) -> None:
+        """Checkpoint the paper book. No-op in LIVE mode; best-effort and
+        silent otherwise (`PaperState.save` swallows OSError) — bookkeeping must
+        never raise into trading."""
+        if self.paper_state is None:
+            return
+        self.paper_state = self._capture_paper_state()
+        self.paper_state.save()
 
     # ---- one iteration of the trading loop --------------------------------
     def step(self) -> None:
@@ -427,6 +558,9 @@ class TradingApp:
                 # has to checkpoint the brake. Opening fills change no
                 # overlay state, so they are not written.
                 self._persist_overlay_state(tick.price, realized)
+            # Every fill, opening included: an unsaved entry is a position the
+            # next process does not know it holds.
+            self._save_paper_state()
             self.status.status.last_execution = f"{side} {order.filled_size} @ {fill_price}"
         self.status.status.last_order = f"{side} {size} ({order.state.value})"
         return order
@@ -449,6 +583,7 @@ class TradingApp:
             self.orders.cancel_all_active(self.settings.product_code)
         except Exception:
             logger.exception("cancel_all_active failed during kill switch")
+        self._save_paper_state()
         self.status.status.kill_switch = self.kill_switch.state
         self.status.write()
         try:
@@ -460,6 +595,18 @@ class TradingApp:
         logger.critical("kill switch tripped", extra={"data": {
             "event": "kill_switch", "detail": detail, "state": self.kill_switch.state}})
 
+    def _roll_paper_day(self) -> None:
+        """Persist the daily-P&L reset when the UTC day turns under a running
+        process. Portfolio owns the rollover itself (`_roll_day`); this only
+        notices that it happened, off the SAME clock, and checkpoints it — once
+        a day, so an idle process does not rewrite the file every tick."""
+        if self.paper_state is None:
+            return
+        day = self.portfolio.daily_day_index
+        if day != self._paper_day:
+            self._paper_day = day
+            self._save_paper_state()
+
     def _update_status(self, price: float) -> None:
         equity = self.portfolio.equity_jpy(price)
         # Fold the equity the bot is looking at RIGHT NOW into the overlay's
@@ -468,11 +615,13 @@ class TradingApp:
         # drawdown, and a peak that only moved on closes would engage the brake
         # a trade late. Persisting still happens on the closing fill only.
         self.overlay_state.observe_equity(equity)
+        self._roll_paper_day()
         s = self.status.status
         s.running = not self.kill_switch.is_tripped
         s.last_price = price
         s.balance_jpy = equity
         s.position_size = self.portfolio.position_size
+        s.trade_count = self.trade_count
         s.daily_pnl_jpy = self.portfolio.daily_pnl_jpy(price)
         s.total_pnl_jpy = self.portfolio.realized_pnl_jpy + self.portfolio.unrealized_pnl_jpy(price)
         s.max_drawdown_pct = max(s.max_drawdown_pct, self.portfolio.drawdown_pct(price))
@@ -518,6 +667,19 @@ class TradingApp:
         last_report = time.time()
         self.notifier.send("BOT START", f"mode={self.settings.mode.value} "
                                         f"product={self.settings.product_code}")
+        try:
+            self._run_loop(poll, report_every, last_report)
+        finally:
+            # Every exit checkpoints the paper book: a clean stop, a kill, a
+            # crash on its way out, and Ctrl-C (a BaseException that passes
+            # straight through the loop's guards). Fills are saved as they
+            # happen, so this only ever tops up the day/rollover fields — but it
+            # is the difference between a stop being continuous and being a
+            # silent partial reset.
+            self._save_paper_state()
+        self.notifier.send("BOT STOPPED", str(self.kill_switch.state), urgent=True)
+
+    def _run_loop(self, poll: float, report_every: float, last_report: float) -> None:
         while not self.kill_switch.is_tripped:
             # The WHOLE body is guarded, not just step(): a failure in the
             # freshness check, the status report or the notifier is just as
@@ -547,7 +709,6 @@ class TradingApp:
                 logger.exception("unhandled exception in loop; kill switch tripped")
                 self._on_kill(detail)
                 raise
-        self.notifier.send("BOT STOPPED", str(self.kill_switch.state), urgent=True)
 
     def _trip_once(self, reason: KillReason, detail: str) -> None:
         """Trip the kill switch only if it is not already tripped.

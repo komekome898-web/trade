@@ -290,6 +290,7 @@ async function refresh() {
     tile("累積損益", fmt(b.total_pnl_jpy, 1) + " 円", pnlCls(b.total_pnl_jpy)) +
     tile("最大DD", fmt(b.max_drawdown_pct, 2) + " %") +
     tile("ポジション", fmt(b.position_size, 4)) +
+    tile("約定回数", fmt(b.trade_count, 0) + " 回") +
     tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円 / ${d.scalp.trades}回`, pnlCls(d.scalp.total_pnl_jpy)) +
     tile("エラー数", fmt(b.error_count, 0)) +
     overlayTile(d.overlay);

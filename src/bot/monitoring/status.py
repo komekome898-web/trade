@@ -16,7 +16,12 @@ class BotStatus:
     last_price: float | None = None
     balance_jpy: float | None = None
     position_size: float = 0.0
+    # Fills booked by the paper book (an entry and its exit are two), carried
+    # across restarts by data/paper_state.json — not a per-process counter.
+    trade_count: int = 0
     daily_pnl_jpy: float = 0.0
+    # realized (cumulative, all sessions) + unrealized at the current mark;
+    # balance_jpy is the same number plus the book's initial equity
     total_pnl_jpy: float = 0.0
     max_drawdown_pct: float = 0.0
     last_order: str | None = None
@@ -67,6 +72,6 @@ class StatusWriter:
             f"mode={s.mode} running={s.running} api={'OK' if s.api_connected else 'NG'}\n"
             f"price={s.last_price} balance={s.balance_jpy} position={s.position_size}\n"
             f"daily_pnl={s.daily_pnl_jpy:.1f} total_pnl={s.total_pnl_jpy:.1f} "
-            f"max_dd={s.max_drawdown_pct:.2f}%\n"
+            f"max_dd={s.max_drawdown_pct:.2f}% trades={s.trade_count}\n"
             f"errors={s.error_count} kill_switch={s.kill_switch}"
         )

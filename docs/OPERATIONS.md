@@ -53,6 +53,8 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
 | Kill Switch 解除(原因調査後のみ) | `.venv/bin/python -c "import sys; sys.path.insert(0,'src'); from bot.risk.kill_switch import KillSwitch; KillSwitch().reset(operator_confirm=True)"` |
 | サイジングブレーキ状態確認 | `cat data/overlay_state.json` |
 | サイジングブレーキ解除(口座を作り直した時のみ) | `rm data/overlay_state.json` |
+| PAPER 帳簿の確認 | `cat data/paper_state.json` |
+| PAPER 帳簿のリセット(仮想口座を作り直す時のみ) | `rm data/paper_state.json` |
 
 重要: Kill Switch はファイルに永続化されるため、**systemd がプロセスを再起動しても取引は再開しません**。解除は必ず原因(status.json / bot.jsonl / kill_switch.json)を確認してから行ってください。
 
@@ -65,6 +67,35 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
   とみなしてプロセスが落ちる前に発動するため(`detail` に例外の repr)、再起動しても
   取引は再開しません。解除手順は他の理由と同じで、原因調査後に上の
   `reset(operator_confirm=True)` を人間が実行します。
+
+### data/paper_state.json(PAPER の帳簿)
+
+PAPER モードの帳簿。約定のたび・日付が変わった時・停止時に書かれ、再起動しても
+引き継がれます(**LIVE では読み書きしません**。LIVE の建玉は取引所が正で、
+そちらと突き合わせます)。
+
+- `realized_pnl_jpy` — 累積の実現損益(手数料込み)。ダッシュボードの
+  仮想残高 = `paper_equity_jpy` + この値 + 含み損益。
+- `trade_count` — 累積の約定回数(新規と決済で2回)。
+- `daily_pnl_jpy` / `daily_date` — 当日の**実現**損益と、それが属する UTC 日付。
+  起動時は日付が当日と一致する時だけ復元し、日付が変わっていれば 0 から始めます
+  (含み損益は現在値から計算し直すので保存しません)。
+- `position` — 建玉(`side` / `size` / `entry_price` / `opened_ts`)、無ければ null。
+
+これが無かった頃は、再起動のたびに仮想残高が初期値に戻り、**建玉を持ったまま忘れ**、
+さらに **MAX_DAILY_LOSS_JPY の当日枠が満額に戻っていました**(ウォッチドッグ再起動で
+日中に損失上限が実質リセットされる)。当日枠は UTC 日付が変われば自然に消えるので、
+引き継いでも詰みません。
+
+一方で**連敗数と equity ピークは保存しません**。これらはハードなリスクチェック
+(=Kill Switch を発動させる側)の入力で、他プロセスの履歴で発動させると、解除しても
+次回起動でまた発動する詰み状態になるためです(`src/bot/strategy/composite.py` の
+モジュール docstring)。ピークは**起動時 equity**を基準に取り直すので、負けが乗った
+帳簿を復元しても起動直後に最大DD超過にはなりません。
+
+Kill Switch とは別物で、**このファイルは取引を止めません**。壊れている・存在しない
+場合は警告1行を出して新規の帳簿(全部ゼロ・建玉なし)で起動します。消してよいのは
+仮想口座を作り直す時だけで、その時は `data/overlay_state.json` も併せて消します。
 
 ### data/overlay_state.json(リスクオーバーレイのブレーキ)
 
@@ -91,6 +122,10 @@ composite へ切り替えると、その時点のブレーキがそのまま効�
 削除してよいのは、口座を作り直した・`paper_equity_jpy` を変えた等で、蓄積された
 ブレーキがもはや実態を表していない時だけです。連敗で縮小されているのを「戻したい」
 という理由で消してはいけません。
+
+`data/paper_state.json` とは役割が別です:あちらは PAPER の帳簿(残高・建玉・
+当日損益)、こちらは新規建玉のサイズ縮小ブレーキだけ。ピークと連敗数はこちらにしか
+無く、二重には持ちません。
 
 ### composite モジュールの効果はバックテストでは測れない
 

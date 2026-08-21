@@ -126,6 +126,14 @@ defaults (no drawdown, zero losses). Delete it when the account is
 re-baselined (paper equity reset, fresh account) and the accumulated brake no
 longer describes anything real. Operator steps: docs/OPERATIONS.md §3.
 
+It is not the paper BOOK. `data/paper_state.json`
+(bot/portfolio/persistence.py, PAPER only) restores equity, the open position
+and the day's realized P&L across a restart; the peak and the loss streak live
+here and are deliberately not duplicated there — two files with an opinion
+about the same brake would eventually disagree. The boot equity this state is
+rebuilt against is the RESTORED one, so the relative drawdown is measured off
+the equity the book actually restarts at.
+
 The overlay applies to NEW exposure only. Closing/exit orders are never
 scaled and never blocked, the same invariant `increases_exposure` enforces in
 bot/risk/pre_trade_checks.py: a position opened at a cap must stay exitable.

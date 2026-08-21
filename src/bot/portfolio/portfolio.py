@@ -39,6 +39,32 @@ class Portfolio:
             self._daily_anchor_day = day
             self._daily_realized = 0.0
 
+    @property
+    def daily_day_index(self) -> int:
+        """UTC day the daily P&L is currently anchored to (rolls it first).
+
+        The one clock for "which trading day is it": callers that need to react
+        to a rollover (bot/main.py persists the reset) read it from here rather
+        than running a second clock that could disagree with this one."""
+        self._roll_day()
+        return self._daily_anchor_day
+
+    @property
+    def daily_realized_jpy(self) -> float:
+        """Realized P&L booked today. `daily_pnl_jpy` adds unrealized on top;
+        only the realized part is meaningful to persist."""
+        self._roll_day()
+        return self._daily_realized
+
+    def seed_daily_realized(self, realized_jpy: float) -> None:
+        """Restore today's realized P&L after a paper restart.
+
+        Rolls the day FIRST, so a figure handed in for an earlier day cannot be
+        booked into today's — the caller checks the date, and this makes the
+        clock check unmissable on either side."""
+        self._roll_day()
+        self._daily_realized = float(realized_jpy)
+
     def on_fill(self, *, symbol: str, side: str, size: float, price: float,
                 fee_jpy: float = 0.0) -> float:
         """Record a fill; returns realized PnL of this fill (JPY).
