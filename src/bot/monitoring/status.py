@@ -25,6 +25,10 @@ class BotStatus:
     consecutive_api_errors: int = 0
     last_data_time: float | None = None
     kill_switch: dict | None = None
+    # Composite-strategy telemetry; None when the running strategy has neither
+    # (bot/main.py: _overlay_status / _active_module_names).
+    overlay: dict | None = None            # {factor, consecutive_losses, dd_pct}
+    active_modules: list | None = None     # [] = framework on, nothing enabled
     updated_at: float = field(default_factory=time.time)
 
 

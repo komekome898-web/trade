@@ -21,11 +21,18 @@ core:
 # the BARE FILENAME of an existing docs/RESEARCH_REPORT_*.md (e.g.
 # "RESEARCH_REPORT_2026-08-20b.md") — free text does not unlock anything, and
 # a path (any "/", "\" or "..") is refused so nothing outside docs/ can be
-# passed off as a report. Setting enabled: true with an empty gate_evidence, with invented
-# evidence, or on a module whose veto rule is not implemented yet all raise at
-# construction: a config edit alone can never switch a module on. Owner
-# approval is still required: putting a strategy change into production is
-# owner-gated.
+# passed off as a report.
+#
+# What this file can and cannot stop, stated plainly: for a module whose veto
+# rule is IMPLEMENTED, an edit here plus the filename of a report that already
+# exists IS enough to switch it on. The moat is two other things:
+#   (a) the report named in gate_evidence must MENTION THE MODULE BY NAME in
+#       its text (case-sensitive), so any of the reports already in docs/
+#       cannot be borrowed to unlock a module it never discusses; and
+#   (b) owner approval of that report, per the module's `gate` text above —
+#       the code cannot tell a passing verdict from a failing one, and putting
+#       a strategy change into production is owner-gated.
+# Enabling a module whose veto rule is NOT implemented raises regardless.
 modules:
   imbalance_filter:
     enabled: false
@@ -50,7 +57,7 @@ modules:
 
   radar_window:
     enabled: false
-    gate: "Champion paper >= 30 trades AND the inside-window subset beats the full set on net expectancy AND maxDD (tournament C2, scripts/research_tournament.py)"
+    gate: "Owner approval of a written report in docs/ showing the inside-window subset of champion paper trades (subset n >= 15) meets the standing bars: net >= +0.15%/trade AND maxDD < 10%, with event-clustered CI excluding 0 and fresh-data confirmation (KNOWLEDGE.md §5; tournament C2 was candidate-generation only)."
     gate_evidence: ""
     params:
       window_start_utc: "12:30"   # bot.radar storm window (lift 2.23, n=234)
@@ -58,17 +65,19 @@ modules:
     # would veto entries whose signal time falls outside the storm window.
     # Tournament C2 beat the champion on expectancy AND maxDD, but on n=2
     # judgment trades and with the sign flipped on the 210d proxy — the
-    # signature of an overfit split, not of an edge. Judgment is deferred to
-    # the champion's own paper trades at n>=30.
+    # signature of an overfit split, not of an edge. That run GENERATED this
+    # candidate; it cannot judge it. Judgment is the inside-window subset of
+    # the champion's own paper trades, against the gate above.
 
   long_only:
     enabled: false
-    gate: "Champion paper >= 30 trades AND the long-only subset beats the full set on net expectancy AND maxDD (tournament C3, scripts/research_tournament.py)"
+    gate: "Owner approval of a written report in docs/ showing the long-only subset of champion paper trades (subset n >= 15) meets the standing bars: net >= +0.15%/trade AND maxDD < 10%, with event-clustered CI excluding 0 and fresh-data confirmation (KNOWLEDGE.md §5; tournament C3 was candidate-generation only)."
     gate_evidence: ""
     # would veto entries that open or extend a short. Tournament C3 beat the
     # champion on expectancy AND maxDD, but on n=6 judgment trades and with the
     # sign flipped on the 210d proxy — same overfit signature as C2. Judgment
-    # is deferred to the champion's own paper trades at n>=30.
+    # is the long-only subset of the champion's own paper trades, against the
+    # gate above.
 
 # Risk overlay (src/bot/strategy/composite.py: size_factor) has no config:
 # 95% drawdown trigger / 3-loss streak / x0.5 steps / 0.25 floor are fixed

@@ -159,6 +159,12 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
                             "age_sec": ws_age},
         },
         "bot": status,
+        # Composite telemetry, surfaced beside the bot block instead of buried
+        # in it. Both stay None under a strategy that has no overlay / no
+        # module framework (xborder_momentum), which is not the same as an
+        # overlay sitting at full size or an empty enabled-module list.
+        "overlay": status.get("overlay"),
+        "active_modules": status.get("active_modules"),
         "kill_switch": kill,
         "manual_kill_file": manual_kill,
         "decisions": decisions[-30:][::-1],

@@ -378,6 +378,13 @@ class TradingApp:
                 if scaled < self.product.min_size:
                     self._warn_overlay_suppressed(factor, price, size)
                     return None
+                # All three numbers, so the line can be checked by hand: the
+                # approved full size, the factor, and what was actually sent.
+                logger.info("entry scaled by risk overlay", extra={"data": {
+                    "event": "overlay_scaled_entry", "reason": "risk_overlay",
+                    "full_size": size, "size_factor": factor,
+                    "scaled_size": scaled,
+                    "consecutive_losses": self.overlay_state.consecutive_losses}})
                 size = scaled
         try:
             order = self.orders.submit(symbol=self.settings.product_code, side=side, size=size)
@@ -438,7 +445,38 @@ class TradingApp:
         s.max_drawdown_pct = max(s.max_drawdown_pct, self.portfolio.drawdown_pct(price))
         s.last_data_time = self.feed.last_update
         s.kill_switch = self.kill_switch.state
+        s.overlay = self._overlay_status(price)
+        s.active_modules = self._active_module_names()
         self.status.write()
+
+    def _overlay_status(self, price: float) -> dict | None:
+        """Overlay brake, for status.json — None when the strategy has no
+        overlay (xborder_momentum), so an operator can tell "not applicable"
+        from "applicable and currently at full size".
+
+        `dd_pct` is measured live against the OVERLAY's peak (the same peak
+        `_entry_size_factor` uses), not the portfolio's: the portfolio's
+        drawdown is already reported as `max_drawdown_pct` and belongs to the
+        hard risk checks.
+        """
+        if not callable(getattr(self.strategy, "size_factor", None)):
+            return None
+        equity = self.portfolio.equity_jpy(price)
+        peak = max(self.overlay_state.equity_peak_jpy, equity)
+        return {
+            "factor": self._entry_size_factor(price),
+            "consecutive_losses": self.overlay_state.consecutive_losses,
+            "dd_pct": round((1.0 - equity / peak) * 100, 3) if peak > 0 else 0.0,
+        }
+
+    def _active_module_names(self) -> list[str] | None:
+        """Enabled composite modules, for status.json. None when the strategy
+        has no module framework at all — an empty list means "framework
+        present, nothing enabled", which is a different fact."""
+        modules = getattr(self.strategy, "active_modules", None)
+        if modules is None:
+            return None
+        return [m.name for m in modules]
 
     def run_forever(self) -> None:
         poll = float(self.settings.config.get("poll", {}).get("ticker_sec", 5))

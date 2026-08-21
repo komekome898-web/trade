@@ -38,6 +38,27 @@ def test_collect_status_full(tmp_path):
     assert d["decisions"][0]["strategy_signal"] == "HOLD"
 
 
+def test_overlay_and_active_modules_surfaced(tmp_path):
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "status.json").write_text(json.dumps({
+        "mode": "paper", "updated_at": 1_000_000.0,
+        "overlay": {"factor": 0.5, "consecutive_losses": 3, "dd_pct": 6.2},
+        "active_modules": []}), encoding="utf-8")
+    d = collect_status(tmp_path, now=1_000_000.0)
+    assert d["overlay"] == {"factor": 0.5, "consecutive_losses": 3, "dd_pct": 6.2}
+    assert d["active_modules"] == []
+
+
+def test_overlay_absent_for_a_strategy_without_one(tmp_path):
+    """None means 'no overlay / no module framework in this strategy', which
+    is not the same as an overlay sitting at full size."""
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "status.json").write_text(json.dumps({
+        "mode": "paper", "updated_at": 1_000_000.0}), encoding="utf-8")
+    d = collect_status(tmp_path, now=1_000_000.0)
+    assert d["overlay"] is None and d["active_modules"] is None
+
+
 def test_status_write_survives_windows_permission_error(tmp_path, monkeypatch):
     """A dashboard reader holding status.json open must never crash the bot
     (Windows os.replace raises PermissionError then)."""

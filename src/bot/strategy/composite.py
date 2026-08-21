@@ -31,12 +31,33 @@ framework is fail-closed at CONSTRUCTION, not at call time:
 * `enabled: true` with an empty `gate_evidence` raises,
 * `gate_evidence` that does not name an existing docs/RESEARCH_REPORT_*.md
   raises (a made-up reference cannot unlock a module),
+* `gate_evidence` naming a real report whose TEXT never mentions the module
+  raises — the reference has to be evidence ABOUT THIS module, not any report
+  that happens to exist,
 * a module entry in YAML that omits `gate`, or whose `gate` text differs from
   the one pre-registered in code, raises, and
 * `enabled: true` on a module that has no `veto_entry` implementation raises.
   The base hook is an unimplemented stub, so an enabled-but-unbuilt module can
   never construct — it cannot fail open at decision time because it cannot
   exist.
+
+None of that is the whole moat, and this file does not pretend otherwise: a
+config edit is a real unlock path for a module whose rule is implemented and
+whose gate has a report written about it. What the code can enforce is that
+the reference resolves to a readable, auditable report about that module; what
+the code CANNOT enforce is that the report says the gate passed. That last
+step is the owner's, per each module's `gate` text.
+
+Where a module's effect is measured
+-----------------------------------
+NOT in a backtest. `bot/backtest/engine.py` calls `on_candles` and never
+`gate_entry`, so an engine run of the composite is the CORE SIGNAL only and is
+blind to every module — scripts/validate_composite.py G1 states that scope and
+fails if any module is enabled while it runs. A module's behaviour is validated
+on the LIVE path instead (G4 drives a real paper TradingApp with a temporarily
+enabled module), and its VALUE is judged from subsets of the champion's own
+paper trades against the standing bars in KNOWLEDGE.md §5 — never from a
+backtest of the module itself.
 
 Risk overlay: convention, NOT a fitted parameter
 ------------------------------------------------
@@ -72,7 +93,10 @@ The persisted brake. Two fields:
 
 * `consecutive_losses` — losing closes in a row, as counted by the overlay.
 * `dd_frac` — equity / running-peak equity at the moment of the write (<= 1.0),
-  i.e. the RELATIVE drawdown. The absolute peak is deliberately NOT stored:
+  i.e. the RELATIVE drawdown. A book at or below zero writes DD_FLOOR, not
+  1.0: that is the deepest drawdown there is, and reporting "no drawdown"
+  would have restarted a wiped-out account at full size. The absolute peak is
+  deliberately NOT stored:
   restoring an absolute JPY peak against a different boot equity (a changed
   `paper_equity_jpy`, a different account) would manufacture a drawdown that
   never happened. On boot the peak is reconstructed as
@@ -115,7 +139,8 @@ CORE_PARAM_KEYS = ("k", "thr_pct", "exit_pct")
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CONFIG_PATH = REPO_ROOT / "config" / "composite.yaml"
 
-# gate_evidence must name a report that actually exists in the repo.
+# gate_evidence must name a report that actually exists in the repo AND that
+# mentions the module it is unlocking (see _check_evidence).
 EVIDENCE_DIR = REPO_ROOT / "docs"
 EVIDENCE_PATTERN = "RESEARCH_REPORT_*.md"
 
@@ -124,6 +149,13 @@ DRAWDOWN_TRIGGER = 0.95      # scale down while equity < 95% of running peak
 LOSS_STREAK_TRIGGER = 3      # scale down after this many losses in a row
 SCALE_STEP = 0.5             # each trigger halves new exposure
 MIN_SIZE_FACTOR = 0.25       # floor, however many triggers are active
+
+# Relative drawdown reported for a wiped-out book (equity <= 0). It is not a
+# measurement — the ratio is undefined there — it is the SAFE reading: well
+# under DRAWDOWN_TRIGGER, so the brake engages, and comfortably inside the
+# (0, 1] range OverlayState.load accepts, so the value can survive a restart
+# instead of being rejected as corrupt and degrading to "no drawdown".
+DD_FLOOR = 0.5
 
 OVERLAY_STATE_PATH = Path("data") / "overlay_state.json"
 
@@ -209,7 +241,8 @@ class CompositeModule:
 
 
 def _check_evidence(name: str, gate: str, evidence: str) -> None:
-    """gate_evidence must be the BARE FILENAME of an existing report in docs/.
+    """gate_evidence must be the BARE FILENAME of an existing report in docs/
+    that MENTIONS THIS MODULE BY NAME.
 
     Free text ("passed", "see chat") is refused: the unlock reference has to
     be a report that can be read and audited afterwards. Any path separator or
@@ -218,6 +251,15 @@ def _check_evidence(name: str, gate: str, evidence: str) -> None:
     another directory) read as a docs/ report. The match is case-SENSITIVE
     (fnmatchcase): on Windows `fnmatch` would accept `research_report_x.MD`
     for a file the repo does not have under that name.
+
+    The content check is what binds the evidence to the module: without it any
+    of the dozen reports already in docs/ would unlock any module, so the
+    reference would prove only that this repo does research, not that this
+    module was judged. It is a case-sensitive substring test on the module's
+    registered NAME (e.g. "radar_window"), which a report arguing about that
+    module cannot avoid containing. It is deliberately dumb: it cannot tell a
+    passing verdict from a failing one, and is not meant to — that judgment is
+    the owner's, per the module's gate text.
     """
     if any(sep in evidence for sep in ("/", "\\", os.sep)) or ".." in evidence:
         raise ModuleGateError(
@@ -229,10 +271,24 @@ def _check_evidence(name: str, gate: str, evidence: str) -> None:
             f"module '{name}' gate_evidence {evidence!r} is not a "
             f"docs/{EVIDENCE_PATTERN} reference. Gate: {gate}."
         )
-    if not (EVIDENCE_DIR / evidence).exists():
+    path = EVIDENCE_DIR / evidence
+    if not path.exists():
         raise ModuleGateError(
             f"module '{name}' gate_evidence {evidence!r} names a report that "
             f"does not exist under {EVIDENCE_DIR}. Gate: {gate}."
+        )
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ModuleGateError(
+            f"module '{name}' gate_evidence {evidence!r} cannot be read "
+            f"({exc}); an unreadable report is not evidence. Gate: {gate}."
+        ) from exc
+    if name not in text:
+        raise ModuleGateError(
+            f"module '{name}' gate_evidence {evidence!r} is a report that "
+            f"never mentions '{name}'. The reference must be evidence about "
+            f"THIS module, not any report that happens to exist. Gate: {gate}."
         )
 
 
@@ -281,15 +337,25 @@ class RadarWindowModule(CompositeModule):
     """
 
     NAME = "radar_window"
-    GATE = ("Champion paper >= 30 trades AND the inside-window subset beats "
-            "the full set on net expectancy AND maxDD (tournament C2, "
-            "scripts/research_tournament.py)")
+    GATE = ("Owner approval of a written report in docs/ showing the "
+            "inside-window subset of champion paper trades (subset n >= 15) "
+            "meets the standing bars: net >= +0.15%/trade AND maxDD < 10%, "
+            "with event-clustered CI excluding 0 and fresh-data confirmation "
+            "(KNOWLEDGE.md §5; tournament C2 was candidate-generation only).")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.radar = StormRadar(
-            self.params.get("window_start_utc", RADAR_DEFAULT_START),
-            self.params.get("window_end_utc", RADAR_DEFAULT_END))
+        start = self.params.get("window_start_utc", RADAR_DEFAULT_START)
+        end = self.params.get("window_end_utc", RADAR_DEFAULT_END)
+        if str(start).strip() == str(end).strip():
+            # StormRadar reads an empty window as NEVER armed, which would turn
+            # this filter into "veto every entry" — a silent trading halt that
+            # looks like a configured window. Refuse it where it is written.
+            raise ValueError(
+                f"module '{self.NAME}': window_start_utc == window_end_utc "
+                f"({start!r}); an empty window would veto every entry. Use a "
+                "real window, or disable the module.")
+        self.radar = StormRadar(start, end)
 
     def veto_entry(self, signal: Signal, context: ModuleContext) -> bool:
         """Veto unless the signal time is inside the window.
@@ -312,9 +378,11 @@ class LongOnlyModule(CompositeModule):
     """
 
     NAME = "long_only"
-    GATE = ("Champion paper >= 30 trades AND the long-only subset beats the "
-            "full set on net expectancy AND maxDD (tournament C3, "
-            "scripts/research_tournament.py)")
+    GATE = ("Owner approval of a written report in docs/ showing the "
+            "long-only subset of champion paper trades (subset n >= 15) "
+            "meets the standing bars: net >= +0.15%/trade AND maxDD < 10%, "
+            "with event-clustered CI excluding 0 and fresh-data confirmation "
+            "(KNOWLEDGE.md §5; tournament C3 was candidate-generation only).")
 
     def veto_entry(self, signal: Signal, context: ModuleContext) -> bool:
         return signal.type is SignalType.SELL and context.position_size <= 0
@@ -364,23 +432,26 @@ def build_modules(raw: dict | None) -> list[CompositeModule]:
     return modules
 
 
-def load_composite_config(path: str | Path | None = None) -> dict:
-    """Read config/composite.yaml. A missing DEFAULT path yields {} (all
-    modules off — the safe state); a path given explicitly must exist.
+def load_composite_config() -> dict:
+    """Read DEFAULT_CONFIG_PATH (config/composite.yaml). Missing file -> {},
+    i.e. all modules off — the safe state.
 
-    The default path is absolute (repo-anchored), so this fallback is reached
-    only when the file has genuinely been removed from the repo — not merely
-    because the process was started from another directory. Selecting
-    `strategy.name: composite` while the file is missing is refused at startup
-    by bot/main.py, and CompositeStrategy itself refuses to construct without
-    core params, so this fallback can never be how the live bot ends up running
-    an unconfigured composite.
+    There is deliberately NO path argument and no config override anywhere in
+    the composite's load path: one absolute, repo-anchored file holds the
+    gates, so the bot, the tests and scripts/validate_composite.py all read
+    the SAME gates whatever the process cwd, and no caller can point the
+    strategy at a different set of them. Tests that need another file
+    monkeypatch DEFAULT_CONFIG_PATH, which is visible in the test rather than
+    reachable from config.
+
+    The empty-dict fallback is reached only when the file has genuinely been
+    removed from the repo. Selecting `strategy.name: composite` while it is
+    missing is refused at startup by bot/main.py, and CompositeStrategy itself
+    refuses to construct without core params, so this fallback can never be how
+    the live bot ends up running an unconfigured composite.
     """
-    explicit = path is not None
-    path = Path(path) if explicit else DEFAULT_CONFIG_PATH
+    path = Path(DEFAULT_CONFIG_PATH)
     if not path.exists():
-        if explicit:
-            raise FileNotFoundError(f"composite config not found: {path}")
         return {}
     with open(path, encoding="utf-8") as f:   # cp932 default on Windows breaks UTF-8
         return yaml.safe_load(f) or {}
@@ -414,9 +485,22 @@ class OverlayState:
 
     @property
     def dd_frac(self) -> float:
-        """Equity as a fraction of the running peak, clamped to (0, 1]."""
-        if self.equity_peak_jpy <= 0 or self.equity_jpy <= 0:
+        """Equity as a fraction of the running peak, in (0, 1].
+
+        Two degenerate inputs, and they are NOT the same case:
+
+        * no peak recorded yet (`equity_peak_jpy <= 0`) — nothing has been
+          measured, so there is no drawdown to report: 1.0.
+        * a peak exists but equity has gone to zero or below — that is the
+          DEEPEST possible drawdown, not the absence of one. Reporting 1.0
+          there (the old behaviour) let a wiped-out book restart at full size.
+          It reports DD_FLOOR instead: a value the brake reads as "in
+          drawdown" and `load` accepts back.
+        """
+        if self.equity_peak_jpy <= 0:
             return 1.0
+        if self.equity_jpy <= 0:
+            return DD_FLOOR
         return min(1.0, self.equity_jpy / self.equity_peak_jpy)
 
     def on_closed_trade(self, realized_pnl_jpy: float, equity_jpy: float) -> None:
@@ -492,11 +576,9 @@ class CompositeStrategy(Strategy):
     """xborder_momentum core + (disabled) modules + risk overlay."""
 
     def __init__(self, params: dict | None = None, *,
-                 modules: list[CompositeModule] | None = None,
-                 config_path: str | Path | None = None):
+                 modules: list[CompositeModule] | None = None):
         params = dict(params or {})
-        file_cfg = load_composite_config(
-            config_path if config_path is not None else params.get("config_path"))
+        file_cfg = load_composite_config()
         core = dict(file_cfg.get("core") or {})
         for key in CORE_PARAM_KEYS:      # config.yaml strategy.params wins
             if key in params:
@@ -551,8 +633,12 @@ class CompositeStrategy(Strategy):
             return signal
         for module in self._active:
             if module.veto_entry(signal, context):
+                # The SIDE is part of the reason: several modules are
+                # one-sided (long_only vetoes shorts only), so a log line that
+                # does not say which entry was suppressed cannot be read back.
                 return Signal(SignalType.HOLD,
-                              f"entry vetoed by module {module.name}",
+                              f"{signal.type.value} entry vetoed by module "
+                              f"{module.name}",
                               dict(signal.indicators))
         return signal
 

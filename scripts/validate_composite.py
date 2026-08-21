@@ -37,8 +37,21 @@ G2  OVERLAY — replay G1's closed trades with size_factor() applied to each
 
 G3  FAIL-CLOSED — configs that must be refused at construction: enabled with
     no gate_evidence, gate text rewritten in config, invented gate_evidence,
-    gate_evidence naming a file outside docs/, and an enabled module with no
-    veto_entry implementation.
+    gate_evidence naming a file outside docs/, gate_evidence naming a REAL
+    report that never mentions the module, and an enabled module with no
+    veto_entry implementation. The section is not a list of everything that
+    fails: the one ACCEPTED construction is printed beside them, because a
+    framework that refused everything would be useless and the honest claim is
+    about WHICH edit unlocks a module, not that none does.
+
+G4  MODULE EFFECT ON THE LIVE PATH — the engine never calls gate_entry, so no
+    backtest can show what a module does. G4 drives a real paper TradingApp
+    whose strategy carries a temporarily ENABLED RadarWindowModule and checks
+    the three things that matter: an entry whose signal time is outside the
+    window is suppressed, an entry inside it goes through at full size, and a
+    CLOSE goes through even after the window has moved away. This is a
+    behaviour check only — whether the module HELPS is judged from subsets of
+    the champion's own paper trades (KNOWLEDGE.md §5), never from here.
 
 Data: backtest_data/ permanent snapshots FIRST (deterministic; the public
 bitFlyer history expires after 31 days, KNOWLEDGE.md §6), falling back to the
@@ -47,17 +60,19 @@ Cost model = this repo's measured Crypto CFD constants (taker/maker fee 0%,
 spread 0.0235%, slippage 0.02%, swap 0.06%/day) — same constants as
 scripts/research_mainbot_exits.py.
 
-G1b reuses the paper-app helper in tests/test_composite.py, so this script
-needs the dev extra (pytest) installed, like the test suite it stands beside.
+G1b and G4 reuse the paper-app helper in tests/test_composite.py, so this
+script needs the dev extra (pytest) installed, like the suite it stands beside.
 
 Run: PYTHONPATH=src python scripts/validate_composite.py
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -70,17 +85,22 @@ import yaml  # noqa: E402
 from bot.backtest.engine import CostModel, run_backtest  # noqa: E402
 from bot.products import load_products  # noqa: E402
 from bot.strategy.base import Signal, SignalType  # noqa: E402
+import bot.strategy.composite as composite_mod  # noqa: E402
 from bot.strategy.composite import (  # noqa: E402
     MODULE_CLASSES,
     CompositeModule,
     CompositeStrategy,
     ModuleContext,
     ModuleGateError,
+    RadarWindowModule,
     build_modules,
 )
 from bot.strategy.xborder_momentum import XborderMomentumStrategy  # noqa: E402
 
+# The composite reads this itself (bot.strategy.composite.DEFAULT_CONFIG_PATH);
+# kept here only to assert the script and the strategy mean the same file.
 CONFIG_PATH = ROOT / "config" / "composite.yaml"
+assert CONFIG_PATH == composite_mod.DEFAULT_CONFIG_PATH
 
 FX_COSTS = CostModel(taker_fee_pct=0.0, maker_fee_pct=0.0,
                      slippage_pct=0.02, spread_pct=0.0235)
@@ -99,9 +119,51 @@ MAX_CONSECUTIVE_LOSSES = int(
     yaml.safe_load((ROOT / "config" / "risk_limits.yaml").read_text(encoding="utf-8"))
     ["MAX_CONSECUTIVE_LOSSES"])
 
-# gate_evidence for the throwaway test doubles below: the bare filename of a
-# report that exists under docs/.
+# gate_evidence for the throwaway test doubles below. It resolves under the
+# scratch docs/ that harness_evidence() installs, never under the repo's own.
 TEST_EVIDENCE = "RESEARCH_REPORT_2026-08-20b.md"
+
+# A real report in the repo's docs/ that discusses none of the modules — G3
+# uses it to show that an existing report cannot be borrowed to unlock a module
+# it never mentions.
+UNRELATED_REPORT = "RESEARCH_REPORT_2026-08-20k.md"
+
+
+@contextlib.contextmanager
+def harness_evidence():
+    """HARNESS ONLY: point the evidence check at a scratch docs/ that names
+    every module.
+
+    gate_evidence must name a report whose text mentions the module it
+    unlocks. No such report exists — nothing has been judged — so a probe that
+    needs an ENABLED module cannot get one against the real docs/. This
+    installs a stub for the duration of the probe and puts the real directory
+    back afterwards. It unlocks nothing in the repo: the shipped config carries
+    no gate_evidence at all, and G3's refusal cases run against the REAL
+    docs/.
+    """
+    original = composite_mod.EVIDENCE_DIR
+    with tempfile.TemporaryDirectory(prefix="composite_evidence_") as tmp:
+        docs = Path(tmp)
+        (docs / TEST_EVIDENCE).write_text(
+            "validation harness stub, not a research report. Modules named so "
+            "the evidence-content check resolves: "
+            + ", ".join(sorted(MODULE_CLASSES)) + "\n", encoding="utf-8")
+        composite_mod.EVIDENCE_DIR = docs
+        try:
+            yield docs
+        finally:
+            composite_mod.EVIDENCE_DIR = original
+
+
+def utc_window(start_offset_min: int, end_offset_min: int) -> dict:
+    """A radar window placed relative to the wall clock the live path reads
+    (bot/main.py passes time.time() as the signal's `signal_ts`)."""
+    now = datetime.now(timezone.utc)
+    return {
+        "window_start_utc": (now + timedelta(minutes=start_offset_min)).strftime("%H:%M"),
+        "window_end_utc": (now + timedelta(minutes=end_offset_min)).strftime("%H:%M"),
+    }
 
 # backtest_data/ snapshots are permanent and deterministic -> primary source.
 CANDLE_SOURCES = [
@@ -186,8 +248,10 @@ def gate_probe(comp_strategy) -> tuple[bool, bool]:
     identity = all(comp_strategy.gate_entry(s, ModuleContext(position_size=p)) is s
                    for s in probe for p in (-1.0, 0.0, 1.0))
 
-    vetoing = CompositeStrategy(
-        dict(PARAMS), modules=[_AlwaysVeto(enabled=True, gate_evidence=TEST_EVIDENCE)])
+    with harness_evidence():     # an enabled module needs evidence that names it
+        vetoing = CompositeStrategy(
+            dict(PARAMS),
+            modules=[_AlwaysVeto(enabled=True, gate_evidence=TEST_EVIDENCE)])
     entries = [(SignalType.BUY, 0.0), (SignalType.SELL, 0.0)]
     closes = [(SignalType.BUY, -0.5), (SignalType.SELL, 0.5),
               (SignalType.CLOSE, 0.5), (SignalType.CLOSE, -0.5),
@@ -204,7 +268,7 @@ def gate_probe(comp_strategy) -> tuple[bool, bool]:
 
 def gate_equivalence(data: pd.DataFrame, index: pd.Index) -> tuple[bool, object]:
     base = run(XborderMomentumStrategy(dict(PARAMS)), data)
-    comp_strategy = CompositeStrategy(dict(PARAMS), config_path=CONFIG_PATH)
+    comp_strategy = CompositeStrategy(dict(PARAMS))   # reads CONFIG_PATH itself
     comp = run(comp_strategy, data)
 
     active = comp_strategy.active_modules
@@ -220,6 +284,14 @@ def gate_equivalence(data: pd.DataFrame, index: pd.Index) -> tuple[bool, object]
     print("  scope: the backtest engine never calls gate_entry — this compares")
     print("         the CORE SIGNAL only. Live-path equivalence is G1b.")
     print(f"  active modules            : {[m.name for m in active] or 'none'}")
+    if active:
+        print("    FAIL: an enabled module makes this comparison meaningless, not")
+        print("          merely different. The ENGINE calls on_candles and never")
+        print("          gate_entry, so a module cannot act here at all: the run")
+        print("          would silently reproduce the core signal and 'pass' while")
+        print("          saying nothing about the module. Module behaviour is")
+        print("          checked on the live path (G4); module VALUE is judged from")
+        print("          champion paper subsets (KNOWLEDGE.md §5).")
     print(f"  trades  xborder/composite : {base.metrics.num_trades} / {comp.metrics.num_trades}")
     print(f"  log entries               : {len(log_base)} / {len(log_comp)} "
           f"({'identical' if log_base == log_comp else 'DIFFERENT'})")
@@ -401,7 +473,7 @@ def linearity_check(data: pd.DataFrame, base) -> bool:
     it on the real run rather than asserting it: half the notional must halve
     every single trade's PnL exactly."""
     half = run_backtest(
-        CompositeStrategy(dict(PARAMS), config_path=CONFIG_PATH), data,
+        CompositeStrategy(dict(PARAMS)), data,
         costs=FX_COSTS, execution="taker", allow_short=True,
         swap_daily_pct=SWAP_DAILY_PCT, order_notional_jpy=NOTIONAL / 2,
         initial_equity_jpy=INITIAL_EQUITY, stop_loss_pct=STOP_LOSS_PCT,
@@ -452,39 +524,149 @@ def gate_overlay(data: pd.DataFrame, base) -> bool:
 # ---------------------------------------------------------------------------
 def gate_fail_closed() -> bool:
     gates = {name: cls.GATE for name, cls in MODULE_CLASSES.items()}
+    # (label, config, harness) — harness=True runs the case against the scratch
+    # docs/ of harness_evidence(), so it is refused for ITS OWN reason instead
+    # of tripping the evidence-content check first.
     cases = [
         ("enabled without evidence",
          {"imbalance_filter": {"enabled": True, "gate": gates["imbalance_filter"],
-                               "gate_evidence": ""}}),
+                               "gate_evidence": ""}}, False),
         ("gate text rewritten in config",
-         {"oi_regime": {"enabled": False, "gate": "trust me"}}),
+         {"oi_regime": {"enabled": False, "gate": "trust me"}}, False),
         ("gate key omitted in config",
-         {"oi_regime": {"enabled": False}}),
+         {"oi_regime": {"enabled": False}}, False),
         ("invented gate_evidence",
          {"funding_window": {"enabled": True, "gate": gates["funding_window"],
-                             "gate_evidence": "RESEARCH_REPORT_never_written.md"}}),
+                             "gate_evidence": "RESEARCH_REPORT_never_written.md"}},
+         False),
         ("gate_evidence pointing outside docs/",
          {"funding_window": {"enabled": True, "gate": gates["funding_window"],
-                             "gate_evidence": "../elsewhere/" + TEST_EVIDENCE}}),
+                             "gate_evidence": "../elsewhere/" + TEST_EVIDENCE}},
+         False),
         ("free-text gate_evidence",
          {"funding_window": {"enabled": True, "gate": gates["funding_window"],
-                             "gate_evidence": "the lead said it was fine"}}),
+                             "gate_evidence": "the lead said it was fine"}}, False),
+        # Real report, right shape, right module implementation — refused only
+        # because that report is about something else. radar_window has a veto
+        # rule, so nothing else could refuse it.
+        ("real report that never names the module",
+         {"radar_window": {"enabled": True, "gate": gates["radar_window"],
+                           "gate_evidence": UNRELATED_REPORT}}, False),
         ("enabled with no veto_entry implementation",
          {"funding_window": {"enabled": True, "gate": gates["funding_window"],
-                             "gate_evidence": TEST_EVIDENCE}}),
+                             "gate_evidence": TEST_EVIDENCE}}, True),
     ]
     checks = []
-    for label, raw in cases:
+    for label, raw, harness in cases:
+        ctx = harness_evidence() if harness else contextlib.nullcontext()
         try:
-            build_modules(raw)
+            with ctx:
+                build_modules(raw)
         except ModuleGateError as e:
-            checks.append((label, True, type(e).__name__))
+            # first sentence, minus the "module 'x'" prefix the label already
+            # carries, so the printed reason is the reason
+            detail = str(e).split(". ")[0]
+            _, _, tail = detail.partition("' ")
+            detail = tail or detail
+            if len(detail) > 72:                 # cut on a word, not mid-word
+                detail = detail[:72].rsplit(" ", 1)[0] + " ..."
+            checks.append((label, True, detail))
         else:
             checks.append((label, False, "no error raised"))
-    ok = all(passed for _, passed, _ in checks)
-    print("G3 FAIL-CLOSED MODULES (all must be refused at CONSTRUCTION)")
+
+    # The ONE construction that is meant to succeed. Printing only refusals
+    # would read as "nothing can enable a module", which is false: this edit
+    # can, and what stops it in practice is owner approval of the report.
+    with harness_evidence():
+        accepted = next(
+            m for m in build_modules(
+                {"radar_window": {"enabled": True, "gate": gates["radar_window"],
+                                  "gate_evidence": TEST_EVIDENCE}})
+            if m.name == "radar_window")
+    unlocked = accepted.enabled and accepted.gate_evidence == TEST_EVIDENCE
+
+    ok = all(passed for _, passed, _ in checks) and unlocked
+    print("G3 FAIL-CLOSED MODULES (construction-time gate)")
+    print("  refused:")
     for label, passed, detail in checks:
-        print(f"  {label:42s}: {'refused' if passed else 'ACCEPTED'} ({detail})")
+        print(f"    {label:42s}: {'refused' if passed else 'ACCEPTED'} ({detail})")
+    print("  accepted: enabled + evidence naming a report that mentions the module")
+    print(f"    radar_window enabled                      : {unlocked} "
+          f"(evidence {TEST_EVIDENCE})")
+    print("    -> this IS the unlock path. The code cannot read a verdict out of")
+    print("       a report; owner approval of it is the remaining gate.")
+    print(f"  -> {'PASS' if ok else 'FAIL'}\n")
+    return ok
+
+
+# ---------------------------------------------------------------------------
+# G4 module effect on the live path
+# ---------------------------------------------------------------------------
+def _drive_module_app(workdir: Path, window: dict, *,
+                      close_window: dict | None = None) -> dict:
+    """Paper TradingApp running the composite with ONE enabled RadarWindowModule.
+
+    `close_window` (optional) is swapped in after the entry ticks, to prove an
+    exit is still executed once the window has moved away from it.
+    """
+    from tests.test_app_fx_integration import drive
+    from tests.test_composite import LEADER, TICKS, build_test_app
+
+    workdir.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(ROOT / "config", workdir / "config")
+    cwd = Path.cwd()
+    os.chdir(workdir)
+    try:
+        app = build_test_app(strategy_name="composite")
+        params = dict(app.settings.config["strategy"]["params"])
+
+        def with_window(win: dict):
+            return CompositeStrategy(dict(params), modules=[RadarWindowModule(
+                enabled=True, gate_evidence=TEST_EVIDENCE, params=win)])
+
+        app.strategy = with_window(window)
+        drive(app, TICKS, LEADER)
+        entered = app.portfolio.position_size
+        closed = None
+        if close_window is not None:
+            app.strategy = with_window(close_window)
+            drive(app, [(390, 1e7), (430, 1e7), (490, 1e7)], LEADER)
+            closed = app.portfolio.position_size
+        return {"position": entered, "trades": len(app.portfolio.trades),
+                "after_close": closed}
+    finally:
+        os.chdir(cwd)
+
+
+def gate_module_live_path() -> bool:
+    """The only place a module's behaviour can be observed: the live path."""
+    outside = utc_window(60, 120)      # window opens an hour from now
+    inside = utc_window(-30, 30)       # window is open right now
+    with tempfile.TemporaryDirectory(prefix="validate_composite_g4_") as tmp:
+        tmp = Path(tmp)
+        with harness_evidence():       # an enabled module needs naming evidence
+            out = _drive_module_app(tmp / "outside", outside)
+            ins = _drive_module_app(tmp / "inside", inside)
+            exit_ = _drive_module_app(tmp / "exit", inside, close_window=outside)
+
+    suppressed = out["position"] == 0.0 and out["trades"] == 0
+    entered = ins["position"] != 0.0
+    closes = exit_["position"] != 0.0 and exit_["after_close"] == 0.0
+    ok = suppressed and entered and closes
+
+    print("G4 MODULE EFFECT ON THE LIVE PATH (radar_window on a paper TradingApp)")
+    print("  scope: the ENGINE cannot show this — it never calls gate_entry. What")
+    print("         a module DOES is checked here; whether it HELPS is judged from")
+    print("         champion paper subsets (KNOWLEDGE.md §5), never from this run.")
+    print(f"  module              : radar_window (enabled for this probe only, "
+          f"evidence {TEST_EVIDENCE})")
+    print(f"  outside window {outside['window_start_utc']}-{outside['window_end_utc']}"
+          f"  : position {out['position']}, trades {out['trades']} "
+          f"-> entries suppressed: {suppressed}")
+    print(f"  inside window  {inside['window_start_utc']}-{inside['window_end_utc']}"
+          f"  : position {ins['position']} -> entry passed: {entered}")
+    print(f"  close after window moved   : {exit_['position']} -> "
+          f"{exit_['after_close']} (exit never blocked: {closes})")
     print(f"  -> {'PASS' if ok else 'FAIL'}\n")
     return ok
 
@@ -498,7 +680,8 @@ def main() -> int:
     g1b = gate_live_path()
     g2 = gate_overlay(data, base)
     g3 = gate_fail_closed()
-    results = (g1, g1b, g2, g3)
+    g4 = gate_module_live_path()
+    results = (g1, g1b, g2, g3, g4)
     print(f"RESULT: {'ALL GATES PASS' if all(results) else 'FAILED'}")
     return 0 if all(results) else 1
 

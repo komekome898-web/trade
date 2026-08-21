@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import shutil
 from pathlib import Path
 
@@ -32,9 +33,37 @@ from tests.test_app_fx_integration import drive
 
 REPO = Path(__file__).resolve().parents[1]
 PARAMS = {"k": 10, "thr_pct": 0.8, "exit_pct": 0.1}
-# A real report in docs/, by BARE FILENAME: gate_evidence must reference one
-# that exists, and a path is refused.
+# A report filename in the shape gate_evidence demands (bare, docs/-relative).
+# It resolves under the STUB docs directory installed by stub_evidence_dir
+# below, not under the repo's own docs/.
 EVIDENCE = "RESEARCH_REPORT_2026-08-20b.md"
+ALL_MODULES = ["imbalance_filter", "funding_window", "oi_regime",
+               "radar_window", "long_only"]
+
+
+@pytest.fixture(autouse=True)
+def stub_evidence_dir(tmp_path, monkeypatch):
+    """HARNESS ONLY: a scratch docs/ holding one report that names every module.
+
+    gate_evidence must resolve to a report whose text MENTIONS the module
+    (bot.strategy.composite._check_evidence). No such report exists in the real
+    docs/ — no module has been judged — so every test that enables a module
+    would otherwise be testing the content check instead of the behaviour it is
+    about. Pointing EVIDENCE_DIR at a stub keeps that check honest: the repo's
+    shipped config still carries no gate_evidence at all, and the refusal cases
+    below are checked against this same stub, so they fail for their own reason
+    rather than because the directory is empty.
+    """
+    import bot.strategy.composite as composite_mod
+
+    docs = tmp_path / "stub_docs"
+    docs.mkdir()
+    (docs / EVIDENCE).write_text(
+        "test harness stub, not a research report. Modules named so the "
+        "evidence-content check resolves: " + ", ".join(ALL_MODULES) + "\n",
+        encoding="utf-8")
+    monkeypatch.setattr(composite_mod, "EVIDENCE_DIR", docs)
+    return docs
 
 
 class RecordingNotifier(Notifier):
@@ -64,7 +93,7 @@ def test_registry_lookup():
 
 def test_equivalence_signal_for_signal():
     candles = make_candles()
-    comp = CompositeStrategy(dict(PARAMS), config_path=REPO / "config" / "composite.yaml")
+    comp = CompositeStrategy(dict(PARAMS))
     base = XborderMomentumStrategy(dict(PARAMS))
     assert comp.min_history == base.min_history
     seen = set()
@@ -79,30 +108,37 @@ def test_equivalence_signal_for_signal():
 
 
 def test_core_params_from_yaml_when_config_params_absent():
-    comp = CompositeStrategy({}, config_path=REPO / "config" / "composite.yaml")
+    comp = CompositeStrategy({})
     assert comp.params == {"k": 30, "thr_pct": 0.8, "exit_pct": 0.05}
     assert comp.min_history == 32
 
 
 def test_config_params_override_yaml_core():
-    comp = CompositeStrategy({"k": 5}, config_path=REPO / "config" / "composite.yaml")
+    comp = CompositeStrategy({"k": 5})
     assert comp.params["k"] == 5 and comp.params["thr_pct"] == 0.8
 
 
+def test_config_path_cannot_be_injected():
+    """M3: there is exactly ONE config path (DEFAULT_CONFIG_PATH). Neither a
+    constructor kwarg nor a `config_path` smuggled through strategy.params may
+    repoint the composite at another set of gates."""
+    with pytest.raises(TypeError):
+        CompositeStrategy(dict(PARAMS), config_path=REPO / "config" / "composite.yaml")
+    comp = CompositeStrategy({"config_path": "/nowhere/else.yaml"})
+    assert comp.params["k"] == 30            # still the repo's core params
+    assert comp.active_modules == []
+
+
 # ---- module framework: fail-closed ----------------------------------------
-ALL_MODULES = ["imbalance_filter", "funding_window", "oi_regime",
-               "radar_window", "long_only"]
-
-
 def test_shipped_yaml_modules_are_all_disabled_and_ungated():
-    cfg = load_composite_config(REPO / "config" / "composite.yaml")
+    cfg = load_composite_config()
     modules = build_modules(cfg["modules"])
     assert [m.name for m in modules] == ALL_MODULES
     for m in modules:
         assert m.enabled is False
         assert m.gate                      # pre-registered unlock criterion
         assert m.gate_evidence == ""       # nothing has passed judgment yet
-    assert CompositeStrategy({}, config_path=REPO / "config" / "composite.yaml").active_modules == []
+    assert CompositeStrategy({}).active_modules == []
 
 
 def _raw(name: str, **overrides) -> dict:
@@ -118,7 +154,7 @@ def test_enabled_without_gate_evidence_raises():
         build_modules(_raw("imbalance_filter", enabled=True, gate_evidence=""))
 
 
-def test_enabled_without_gate_evidence_raises_via_strategy_config(tmp_path):
+def test_enabled_without_gate_evidence_raises_via_strategy_config(tmp_path, monkeypatch):
     path = tmp_path / "composite.yaml"
     path.write_text(
         "core: {k: 10}\n"
@@ -127,8 +163,9 @@ def test_enabled_without_gate_evidence_raises_via_strategy_config(tmp_path):
         "    enabled: true\n"
         "    gate: \"board-data judgment >= 1-2 weeks recording, per KNOWLEDGE.md §4\"\n"
         "    gate_evidence: \"\"\n", encoding="utf-8")
+    monkeypatch.setattr("bot.strategy.composite.DEFAULT_CONFIG_PATH", path)
     with pytest.raises(ModuleGateError):
-        CompositeStrategy({}, config_path=path)
+        CompositeStrategy({})
 
 
 def test_gate_text_cannot_be_weakened_by_config():
@@ -191,6 +228,36 @@ def test_evidence_is_checked_even_while_disabled():
         build_modules(_raw("funding_window", enabled=False, gate_evidence="trust me"))
 
 
+# ---- M2: the evidence must be about THIS module ----------------------------
+def test_evidence_report_must_mention_the_module(stub_evidence_dir):
+    """A report that exists and is named correctly but never mentions the
+    module cannot unlock it — otherwise any of the dozen reports already in
+    docs/ would unlock anything. radar_window HAS a veto rule, so the content
+    check is the only thing that can refuse this construction."""
+    other = "RESEARCH_REPORT_2026-08-20z.md"
+    (stub_evidence_dir / other).write_text(
+        "a report about something else entirely\n", encoding="utf-8")
+    with pytest.raises(ModuleGateError, match="never mentions"):
+        build_modules(_raw("radar_window", enabled=True, gate_evidence=other))
+
+
+def test_evidence_content_match_is_case_sensitive(stub_evidence_dir):
+    other = "RESEARCH_REPORT_2026-08-20y.md"
+    (stub_evidence_dir / other).write_text("RADAR_WINDOW passed\n", encoding="utf-8")
+    with pytest.raises(ModuleGateError, match="never mentions"):
+        build_modules(_raw("radar_window", enabled=True, gate_evidence=other))
+
+
+def test_evidence_naming_the_module_is_accepted(stub_evidence_dir):
+    """The one ACCEPTED construction: an implemented module, enabled, with
+    evidence that names a readable report mentioning it. Owner approval of
+    that report is the remaining gate and lives outside the code."""
+    module = next(m for m in build_modules(
+        _raw("radar_window", enabled=True, gate_evidence=EVIDENCE))
+        if m.name == "radar_window")
+    assert module.enabled is True and module.gate_evidence == EVIDENCE
+
+
 def test_enabled_module_without_implementation_cannot_be_constructed():
     """B1: an enabled module whose veto rule is a stub must fail AT
     CONSTRUCTION — never at decision time, where 'no rule' could fail open."""
@@ -244,6 +311,15 @@ def test_module_vetoes_new_entry():
     assert out.indicators == {"x": 1.0}
 
 
+@pytest.mark.parametrize("sig_type", [SignalType.BUY, SignalType.SELL])
+def test_veto_reason_names_the_suppressed_side(sig_type):
+    """Several modules are one-sided; a reason that does not say WHICH entry
+    was suppressed cannot be read back from the decision log."""
+    out = _vetoing_composite().gate_entry(Signal(sig_type, "core"),
+                                          ModuleContext(position_size=0.0))
+    assert out.reason == f"{sig_type.value} entry vetoed by module oi_regime"
+
+
 @pytest.mark.parametrize("sig_type,pos", [
     (SignalType.CLOSE, 0.5),     # explicit flatten
     (SignalType.CLOSE, -0.5),
@@ -283,12 +359,19 @@ def _composite_with(name: str, **params) -> CompositeStrategy:
     return CompositeStrategy(dict(PARAMS), modules=[_enabled_module(name, **params)])
 
 
-@pytest.mark.parametrize("name", ["radar_window", "long_only"])
-def test_candidate_modules_ship_disabled(name):
-    modules = build_modules(load_composite_config(REPO / "config" / "composite.yaml")["modules"])
+@pytest.mark.parametrize("name,subset", [("radar_window", "inside-window"),
+                                         ("long_only", "long-only")])
+def test_candidate_modules_ship_disabled(name, subset):
+    modules = build_modules(load_composite_config()["modules"])
     module = next(m for m in modules if m.name == name)
     assert module.enabled is False and module.gate_evidence == ""
-    assert "tournament" in module.gate and "30 trades" in module.gate
+    # B1: the gate is the STANDING bars on a paper subset plus owner approval,
+    # not a re-reading of the tournament that generated the candidate.
+    assert "Owner approval" in module.gate
+    assert f"{subset} subset" in module.gate
+    assert "n >= 15" in module.gate and "+0.15%/trade" in module.gate
+    assert "maxDD < 10%" in module.gate
+    assert "candidate-generation only" in module.gate
 
 
 @pytest.mark.parametrize("name", ["radar_window", "long_only"])
@@ -325,6 +408,15 @@ def test_radar_window_bounds_come_from_params():
     assert comp.gate_entry(sig, ModuleContext(position_size=0.0, signal_ts=OUTSIDE)) is sig
     assert comp.gate_entry(sig, ModuleContext(position_size=0.0, signal_ts=INSIDE)
                            ).type is SignalType.HOLD
+
+
+def test_radar_window_rejects_an_empty_window():
+    """A start == end window is never armed, so the module would veto EVERY
+    entry — a silent trading halt wearing the clothes of a configured window.
+    Refuse it where it is written."""
+    with pytest.raises(ValueError, match="empty window"):
+        _enabled_module("radar_window", window_start_utc="12:30",
+                        window_end_utc="12:30")
 
 
 def test_radar_window_vetoes_when_no_signal_time_is_supplied():
@@ -374,7 +466,7 @@ def test_long_only_never_blocks_a_close(sig_type, pos):
 def test_disabled_candidates_leave_every_signal_untouched(signal_ts):
     """E0: the shipped (all-disabled) module set is the identity function for
     every signal type, every position and any signal_ts."""
-    comp = CompositeStrategy({}, config_path=REPO / "config" / "composite.yaml")
+    comp = CompositeStrategy({})
     assert comp.active_modules == []
     for sig_type in SignalType:
         for pos in (-0.5, 0.0, 0.5):
@@ -417,6 +509,30 @@ def test_overlay_resets_after_a_win():
     state.on_closed_trade(+100.0, 200000.0)
     assert state.consecutive_losses == 0
     assert CompositeStrategy.size_factor(200000.0, 200000.0, state.consecutive_losses) == 1.0
+
+
+def test_dd_frac_of_a_wiped_out_book_is_the_deepest_drawdown():
+    """A book at (or below) zero is the DEEPEST drawdown, not the absence of
+    one. Reporting 1.0 there let a wiped-out account restart at full size."""
+    from bot.strategy.composite import DD_FLOOR, DRAWDOWN_TRIGGER
+
+    state = OverlayState(equity_peak_jpy=200000.0, equity_jpy=0.0)
+    assert state.dd_frac == DD_FLOOR
+    assert 0.0 < DD_FLOOR < DRAWDOWN_TRIGGER          # engages the brake
+    assert OverlayState(equity_peak_jpy=200000.0, equity_jpy=-5.0).dd_frac == DD_FLOOR
+    # no peak recorded yet is a different case: nothing measured, no drawdown
+    assert OverlayState().dd_frac == 1.0
+
+
+def test_wiped_out_state_reloads_as_a_drawdown(tmp_path):
+    """DD_FLOOR must survive the round trip: a value load() rejected would
+    degrade to 'no drawdown' — the exact reading it exists to prevent."""
+    path = tmp_path / "overlay_state.json"
+    OverlayState(equity_peak_jpy=200000.0, equity_jpy=0.0).save(path)
+    reloaded = OverlayState.load(path, boot_equity_jpy=100000.0)
+    assert reloaded.equity_peak_jpy > reloaded.equity_jpy
+    assert CompositeStrategy.size_factor(reloaded.equity_peak_jpy,
+                                         reloaded.equity_jpy, 0) == 0.5
 
 
 def test_overlay_counter_is_not_the_portfolios():
@@ -521,6 +637,19 @@ def test_app_quarters_new_entry_in_drawdown_and_streak(app):
     assert app.portfolio.consecutive_losses == 0
 
 
+def test_scaled_entry_logs_all_three_sizes(app, caplog):
+    """M4(4): the log line has to be checkable by hand — approved full size,
+    the factor, and what was actually sent."""
+    app.overlay_state.consecutive_losses = 3
+    with caplog.at_level(logging.INFO, logger="bot.main"):
+        drive(app, TICKS, LEADER)
+    rec = next(r for r in caplog.records
+               if getattr(r, "data", {}).get("event") == "overlay_scaled_entry")
+    assert rec.data["full_size"] == pytest.approx(0.013)
+    assert rec.data["size_factor"] == pytest.approx(0.5)
+    assert rec.data["scaled_size"] == pytest.approx(0.006)
+
+
 def test_overlay_never_shrinks_a_closing_order(app):
     drive(app, TICKS, LEADER)
     assert app.portfolio.position_size == pytest.approx(-0.013)
@@ -530,6 +659,74 @@ def test_overlay_never_shrinks_a_closing_order(app):
     app.overlay_state.equity_peak_jpy = 215000.0
     drive(app, [(390, 1e7), (430, 1e7), (490, 1e7)], LEADER)
     assert app.portfolio.position_size == 0.0
+
+
+# ---- M4: module effects are visible on the LIVE path, never in a backtest --
+def _utc_window(start_offset_min: int, end_offset_min: int) -> dict:
+    """A radar window placed relative to the wall clock the live path reads
+    (bot/main.py passes time.time() as signal_ts)."""
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    return {"window_start_utc": (now + timedelta(minutes=start_offset_min)).strftime("%H:%M"),
+            "window_end_utc": (now + timedelta(minutes=end_offset_min)).strftime("%H:%M")}
+
+
+def _run_with_module(app, name: str, **params):
+    """HARNESS ONLY: put a real, ENABLED module on the running app's strategy.
+
+    The backtest engine never calls gate_entry, so a module's effect can only
+    be seen on the live order path. Nothing in the repo ships enabled; this
+    swaps in the same class the config would build, with the same core params.
+    """
+    app.strategy = CompositeStrategy(dict(app.settings.config["strategy"]["params"]),
+                                     modules=[_enabled_module(name, **params)])
+    return app
+
+
+def test_live_path_module_suppresses_out_of_window_entries(app):
+    _run_with_module(app, "radar_window", **_utc_window(60, 120))
+    drive(app, TICKS, LEADER)
+    assert app.portfolio.position_size == 0.0
+    assert app.portfolio.trades == []
+
+
+def test_live_path_module_passes_in_window_entries_and_never_blocks_a_close(app):
+    _run_with_module(app, "radar_window", **_utc_window(-30, 30))
+    drive(app, TICKS, LEADER)
+    assert app.portfolio.position_size == pytest.approx(-0.013)   # full size
+    # the window moves away while the position is open: the EXIT must still go
+    _run_with_module(app, "radar_window", **_utc_window(60, 120))
+    drive(app, [(390, 1e7), (430, 1e7), (490, 1e7)], LEADER)
+    assert app.portfolio.position_size == 0.0
+
+
+# ---- M13: overlay + active modules are visible in status.json --------------
+def test_status_json_carries_overlay_and_active_modules(app, workdir):
+    app.overlay_state.consecutive_losses = 3
+    app.overlay_state.equity_peak_jpy = 215000.0
+    drive(app, TICKS, LEADER)
+    saved = json.loads((workdir / "logs" / "status.json").read_text(encoding="utf-8"))
+    assert saved["overlay"]["consecutive_losses"] == 3
+    assert saved["overlay"]["factor"] == pytest.approx(0.25)
+    assert saved["overlay"]["dd_pct"] > 0.0
+    assert saved["active_modules"] == []     # framework present, none enabled
+
+
+def test_status_json_lists_enabled_modules(app, workdir):
+    _run_with_module(app, "radar_window", **_utc_window(-30, 30))
+    drive(app, TICKS, LEADER)
+    saved = json.loads((workdir / "logs" / "status.json").read_text(encoding="utf-8"))
+    assert saved["active_modules"] == ["radar_window"]
+
+
+def test_status_json_omits_overlay_for_a_strategy_without_one(workdir, monkeypatch):
+    """None, not 0/[]: 'this strategy has no overlay and no module framework'
+    is a different fact from 'the overlay is at full size'."""
+    app = build_test_app(monkeypatch, strategy_name="xborder_momentum")
+    drive(app, TICKS, LEADER)
+    saved = json.loads((workdir / "logs" / "status.json").read_text(encoding="utf-8"))
+    assert saved["overlay"] is None
+    assert saved["active_modules"] is None
 
 
 # ---- B2: the overlay may narrow an approved order, never rescue a rejected one
@@ -872,7 +1069,7 @@ def test_config_yaml_params_match_composite_yaml_core():
     strat = cfg.get("strategy", {})
     if strat.get("name") not in ("xborder_momentum", "composite"):
         pytest.skip(f"strategy.name is {strat.get('name')!r}; core params not comparable")
-    core = load_composite_config(REPO / "config" / "composite.yaml")["core"]
+    core = load_composite_config()["core"]
     assert {k: strat["params"][k] for k in core} == core
 
 
