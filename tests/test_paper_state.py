@@ -65,8 +65,15 @@ def boot(monkeypatch, **kwargs):
 
 
 def write_state(**fields) -> None:
+    fields.setdefault("product_code", SYMBOL)
     Path("data").mkdir(exist_ok=True)
     STATE.write_text(json.dumps(fields), encoding="utf-8")
+
+
+def spend_daily(app, jpy: float) -> None:
+    """Book `jpy` of REALIZED P&L into today, the way a losing day would."""
+    p = app.portfolio
+    p.seed_daily_realized(jpy, day=p.daily_day_index)
 
 
 def read_state() -> dict:
@@ -96,7 +103,7 @@ def test_daily_loss_brake_survives_a_restart_on_the_same_day(workdir, monkeypatc
     of the day a full MAX_DAILY_LOSS_JPY budget."""
     app = boot(monkeypatch)
     app.portfolio.realized_pnl_jpy = -5000.0
-    app.portfolio.seed_daily_realized(-5000.0)
+    spend_daily(app, -5000.0)
     app._save_paper_state()
     assert read_state()["daily_date"] == "2026-08-20"
 
@@ -121,7 +128,7 @@ def test_daily_loss_resets_on_the_next_utc_day(workdir, monkeypatch, clock):
     """The carried brake expires — that is what makes carrying it safe."""
     app = boot(monkeypatch)
     app.portfolio.realized_pnl_jpy = -5000.0
-    app.portfolio.seed_daily_realized(-5000.0)
+    spend_daily(app, -5000.0)
     app._save_paper_state()
 
     clock["now"] = DAY1
@@ -135,7 +142,7 @@ def test_daily_loss_limit_still_trips_the_kill_switch_after_a_restart(
         workdir, monkeypatch, clock):
     app = boot(monkeypatch)
     app.portfolio.realized_pnl_jpy = -6000.0
-    app.portfolio.seed_daily_realized(-6000.0)
+    spend_daily(app, -6000.0)
     app._save_paper_state()
 
     restarted = boot(monkeypatch)
@@ -147,7 +154,7 @@ def test_daily_loss_limit_still_trips_the_kill_switch_after_a_restart(
 def test_day_rollover_while_running_resets_and_persists(workdir, monkeypatch, clock):
     app = boot(monkeypatch)
     app.portfolio.realized_pnl_jpy = -1000.0
-    app.portfolio.seed_daily_realized(-1000.0)
+    spend_daily(app, -1000.0)
     app._save_paper_state()
 
     saves = []
@@ -162,6 +169,139 @@ def test_day_rollover_while_running_resets_and_persists(workdir, monkeypatch, cl
     saved = read_state()
     assert saved["daily_date"] == "2026-08-21" and saved["daily_pnl_jpy"] == 0.0
     assert saved["realized_pnl_jpy"] == pytest.approx(-1000.0)
+
+
+# ---- a restored loss is not TODAY's loss, and not an instant drawdown ------
+# N1: the reviewer's deadlock. A position restored 5% underwater used to (a)
+# spend the whole of TODAY's MAX_DAILY_LOSS_JPY budget on a move that happened
+# on an earlier day and (b) be measured against an equity peak that pretended
+# the open loss was not there. Either trips the kill switch on the FIRST order
+# the bot tries — which is the protective stop closing that very position — so
+# the position can never be closed, and the next boot after an operator reset
+# trips again: a reset-proof loop.
+GAP = PRICE * 0.95              # the adverse move while the process was down
+
+
+def yesterdays_long(**overrides) -> None:
+    fields = dict(realized_pnl_jpy=0.0, trade_count=1, daily_pnl_jpy=-400.0,
+                  daily_date=utc_date(DAY0 - 86400),      # expired: another day
+                  position={"side": "LONG", "size": 0.013, "entry_price": PRICE,
+                            "opened_ts": DAY0 - 86400})
+    fields.update(overrides)
+    write_state(**fields)
+
+
+def test_a_restored_underwater_position_is_not_charged_to_today(workdir, monkeypatch,
+                                                                clock):
+    yesterdays_long()
+    app = boot(monkeypatch)
+    p = app.portfolio
+    # the loss is fully visible in equity — it is only the two BRAKES that
+    # measure from this boot rather than from an entry price days old
+    assert p.unrealized_pnl_jpy(GAP) == pytest.approx(-6500.0)
+    assert p.equity_jpy(GAP) == pytest.approx(193500.0)
+    assert p.daily_pnl_jpy(GAP) == pytest.approx(0.0)     # not today's -6500
+    assert p.drawdown_pct(GAP) == 0.0
+    assert p.equity_peak_jpy == pytest.approx(193500.0)   # anchored at boot, marked
+
+
+def test_the_protective_stop_on_a_restored_underwater_position_executes(
+        workdir, monkeypatch, clock):
+    """The whole point of not charging it to today: the exit must be allowed
+    through. It used to be rejected by the brake that the position itself had
+    filled up."""
+    yesterdays_long()
+    app = boot(monkeypatch)
+    close = OrderRequest(SYMBOL, "SELL", 0.013, GAP, stop_price=GAP)
+    assert app.checker.check(close, account_of(app, GAP)).approved
+
+    drive(app, [(30, GAP), (90, GAP)], LEADER)      # 5% below entry -> the stop
+    assert app.portfolio.position_size == 0.0
+    assert app.portfolio.realized_pnl_jpy < -6000.0         # the loss was booked
+    assert not app.kill_switch.is_tripped
+    assert read_state()["position"] is None
+    # REALIZED accounting is unchanged: once booked it is today's loss like any
+    # other, so the day's budget is spent (and expires with the day). What the
+    # anchors changed is that the exit happened at all.
+    assert app.portfolio.daily_pnl_jpy(GAP) < -6000.0
+
+
+def test_an_adverse_move_after_boot_still_counts_toward_the_daily_brake(
+        workdir, monkeypatch, clock):
+    """Directionality of N1: only the move made BEFORE this boot is exempt. A
+    5% drop after the anchor is spent out of today's budget exactly as before,
+    and trips the daily-loss kill switch."""
+    yesterdays_long()
+    app = boot(monkeypatch)
+    assert app.portfolio.daily_pnl_jpy(PRICE) == pytest.approx(0.0)   # the anchor
+    assert app.portfolio.daily_pnl_jpy(GAP) == pytest.approx(-6500.0)  # since it
+    app.checker.check(wide_stop_entry(), account_of(app, GAP))
+    assert app.kill_switch.is_tripped
+    assert app.kill_switch.state["reason"] == KillReason.DAILY_LOSS_LIMIT.value
+
+
+def test_an_operator_reset_and_restart_lets_the_bot_trade_again(workdir, monkeypatch,
+                                                                clock):
+    """The loop the anchors break, end to end: a book already 90% down with an
+    underwater position used to re-trip MAX_DRAWDOWN on every boot, so the
+    operator's reset was undone before the stop could fire."""
+    yesterdays_long(realized_pnl_jpy=-180000.0, trade_count=8,
+                    position={"side": "LONG", "size": 0.005, "entry_price": PRICE,
+                              "opened_ts": DAY0 - 86400})
+    KillSwitch().trip(KillReason.MAX_DRAWDOWN, "the boot that started the loop")
+    KillSwitch().reset(operator_confirm=True)     # human, after investigating
+
+    app = boot(monkeypatch)
+    assert app.portfolio.drawdown_pct(GAP) == 0.0
+    drive(app, [(30, GAP), (90, GAP)], LEADER)    # the stop gets the position out
+    assert app.portfolio.position_size == 0.0
+    assert not app.kill_switch.is_tripped
+
+    restarted = boot(monkeypatch)                 # and the next boot trades
+    assert not restarted.kill_switch.is_tripped
+    drive(restarted, TICKS, LEADER)
+    assert restarted.portfolio.position_size == pytest.approx(-0.003)
+    assert not restarted.kill_switch.is_tripped
+
+
+# ---- one clock read decides the day, on the way out and on the way in ------
+def rolling_clock(reads: list):
+    """A clock that turns midnight immediately after its FIRST read: the race
+    a second `clock()` call for the date used to lose."""
+    def clock() -> float:
+        reads.append(1)
+        return DAY0 if len(reads) == 1 else DAY1
+    return clock
+
+
+def test_the_saved_daily_figure_and_its_date_come_from_one_read(workdir, monkeypatch,
+                                                                clock):
+    """Two reads could straddle the rollover and write yesterday's spent budget
+    under TODAY's date — a fresh day starting with its brake already spent."""
+    app = boot(monkeypatch)
+    spend_daily(app, -5000.0)
+    app.portfolio.clock = rolling_clock([])
+
+    state = app._capture_paper_state()
+    assert (state.daily_pnl_jpy, state.daily_date) == (-5000.0, "2026-08-20")
+    # and once the day HAS turned, the pair moves together
+    later = app._capture_paper_state()
+    assert (later.daily_pnl_jpy, later.daily_date) == (0.0, "2026-08-21")
+
+
+def test_a_rollover_during_the_restore_drops_the_daily_figure(workdir, monkeypatch):
+    """The mirror image on the way in: the date check and the seed read the
+    same day index, so a rollover between them can only drop the figure (the
+    new day genuinely starts at 0), never book it into the wrong day."""
+    write_state(realized_pnl_jpy=-5900.0, trade_count=2, daily_pnl_jpy=-5900.0,
+                daily_date=utc_date(DAY0), position=None)
+    real = Portfolio
+    monkeypatch.setattr(bot.main, "Portfolio",
+                        lambda *a, **k: real(*a, **{**k, "clock": rolling_clock([])}))
+    app = boot(monkeypatch)
+    assert app.portfolio.realized_pnl_jpy == pytest.approx(-5900.0)   # ledger kept
+    assert app.portfolio.daily_pnl_jpy(PRICE) == 0.0                  # brake reset
+    assert app.checker.check(wide_stop_entry(), account_of(app)).approved
 
 
 # ---- a restored position is a position the bot can still get out of --------
@@ -219,14 +359,9 @@ def test_pre_trade_checks_see_the_restored_position(workdir, monkeypatch, clock)
     assert seen[0].position_notional_jpy == pytest.approx(0.012 * PRICE)
 
 
-def test_short_in_state_is_dropped_on_a_non_shortable_product(workdir, monkeypatch,
-                                                              clock, caplog):
-    """The product config changed under the file; start flat rather than
-    restore a position the executor could never have opened."""
-    write_state(realized_pnl_jpy=0.0, trade_count=2, daily_pnl_jpy=0.0,
-                daily_date=utc_date(DAY0),
-                position={"side": "SHORT", "size": 0.01, "entry_price": PRICE,
-                          "opened_ts": DAY0})
+def spot_app() -> bot.main.TradingApp:
+    """A paper app on BTC_JPY (spot, not shortable) = the same bot started on
+    another product."""
     settings = Settings(mode=Mode.PAPER, product_code="BTC_JPY",
                         config=app_config("xborder_momentum"),
                         risk_limits=RiskLimits.from_dict({
@@ -238,13 +373,82 @@ def test_short_in_state_is_dropped_on_a_non_shortable_product(workdir, monkeypat
     session.set("GET", "/v1/ticker", FakeResponse(200, {
         "ltp": PRICE, "best_bid": PRICE - 1000, "best_ask": PRICE + 1000}))
     from bot.exchange.bitflyer_client import BitflyerClient
+    return bot.main.TradingApp(settings, BitflyerClient(session=session,
+                                                        sleep=lambda s: None),
+                               NullNotifier())
+
+
+def test_short_in_state_is_dropped_on_a_non_shortable_product(workdir, monkeypatch,
+                                                              clock, caplog):
+    """The PRODUCT SPEC changed under the file (same product, shortable flipped
+    off); start flat rather than restore a position the executor could never
+    have opened."""
+    write_state(realized_pnl_jpy=0.0, trade_count=2, daily_pnl_jpy=0.0,
+                daily_date=utc_date(DAY0), product_code="BTC_JPY",
+                position={"side": "SHORT", "size": 0.01, "entry_price": PRICE,
+                          "opened_ts": DAY0})
     with caplog.at_level(logging.WARNING):
-        app = bot.main.TradingApp(settings, BitflyerClient(session=session,
-                                                           sleep=lambda s: None),
-                                  NullNotifier())
+        app = spot_app()
     assert app.portfolio.position_size == 0.0
     assert app.trade_count == 2                    # the ledger is still inherited
     assert "non-shortable" in caplog.text
+
+
+# ---- the book belongs to ONE product ---------------------------------------
+def test_a_book_from_another_product_is_not_transplanted(workdir, monkeypatch,
+                                                         clock, caplog):
+    """N2: sizes, entry prices and a margin balance mean nothing on another
+    product. An FX_BTC_JPY book must not become a BTC_JPY spot book — the
+    restored long would have its notional subtracted from a cash balance that
+    never paid it (a negative paper balance), and the ledger would attribute
+    another experiment's P&L to this one."""
+    write_state(realized_pnl_jpy=-30000.0, trade_count=9, daily_pnl_jpy=-500.0,
+                daily_date=utc_date(DAY0), product_code=SYMBOL,
+                position={"side": "LONG", "size": 0.013, "entry_price": PRICE,
+                          "opened_ts": DAY0})
+    with caplog.at_level(logging.WARNING):
+        app = spot_app()
+    assert app.portfolio.realized_pnl_jpy == 0.0        # nothing transplanted
+    assert app.portfolio.position_size == 0.0
+    assert app.trade_count == 0
+    assert app.portfolio.daily_pnl_jpy(PRICE) == 0.0
+    assert app.orders._gateway.balance_jpy == pytest.approx(200000.0)
+    assert caplog.text.count("belongs to another product") == 1
+    assert not app.kill_switch.is_tripped
+    # the other product's book is kept, not overwritten: it is the only record
+    # of that paper experiment
+    kept = json.loads((workdir / "data" / f"paper_state.{SYMBOL}.bak")
+                      .read_text(encoding="utf-8"))
+    assert kept["realized_pnl_jpy"] == pytest.approx(-30000.0)
+    app._save_paper_state()
+    assert read_state()["product_code"] == "BTC_JPY"
+
+
+def test_the_same_product_is_restored_normally(workdir, monkeypatch, clock):
+    """Directionality for the test above: it is the MISMATCH that drops the
+    book, not the product-code field itself."""
+    write_state(realized_pnl_jpy=-30000.0, trade_count=9, daily_pnl_jpy=0.0,
+                daily_date="2000-01-01", product_code=SYMBOL)
+    app = boot(monkeypatch)
+    assert app.portfolio.realized_pnl_jpy == pytest.approx(-30000.0)
+    assert app.trade_count == 9
+
+
+def test_a_book_written_before_the_product_field_is_adopted(workdir, monkeypatch,
+                                                            clock, caplog):
+    """A file with no product recorded predates the field; it is the running
+    product's book by construction (there was only ever one)."""
+    Path("data").mkdir(exist_ok=True)
+    STATE.write_text(json.dumps({"realized_pnl_jpy": -900.0, "trade_count": 3,
+                                 "daily_pnl_jpy": 0.0, "daily_date": "2000-01-01",
+                                 "position": None}), encoding="utf-8")
+    with caplog.at_level(logging.WARNING):
+        app = boot(monkeypatch)
+    assert app.portfolio.realized_pnl_jpy == pytest.approx(-900.0)
+    assert app.trade_count == 3
+    assert caplog.text == ""
+    app._save_paper_state()
+    assert read_state()["product_code"] == SYMBOL      # and it is stamped now
 
 
 # ---- continuity of the console numbers -------------------------------------
@@ -414,12 +618,6 @@ def test_missing_state_is_a_silent_fresh_book(tmp_path, caplog):
     '{"realized_pnl_jpy": "x", "trade_count": 1, "daily_pnl_jpy": 0, "daily_date": "d"}',
     '{"realized_pnl_jpy": NaN, "trade_count": 1, "daily_pnl_jpy": 0, "daily_date": "d"}',
     '{"realized_pnl_jpy": 0, "trade_count": -1, "daily_pnl_jpy": 0, "daily_date": "d"}',
-    '{"realized_pnl_jpy": 0, "trade_count": 1, "daily_pnl_jpy": 0, "daily_date": "d",'
-    ' "position": {"side": "FLAT", "size": 1, "entry_price": 1}}',
-    '{"realized_pnl_jpy": 0, "trade_count": 1, "daily_pnl_jpy": 0, "daily_date": "d",'
-    ' "position": {"side": "LONG", "size": 0, "entry_price": 1}}',
-    '{"realized_pnl_jpy": 0, "trade_count": 1, "daily_pnl_jpy": 0, "daily_date": "d",'
-    ' "position": true}',
 ])
 def test_corrupt_state_degrades_to_a_fresh_book_with_one_warning(tmp_path, caplog, content):
     path = tmp_path / "paper_state.json"
@@ -428,6 +626,33 @@ def test_corrupt_state_degrades_to_a_fresh_book_with_one_warning(tmp_path, caplo
         state = PaperState.load(path)
     assert state == PaperState()
     assert caplog.text.count("paper state unreadable") == 1
+
+
+# The ledger and the position are parsed independently: dropping the whole book
+# because the position is unreadable would ALSO hand back the spent daily
+# budget — the safety brake this file exists to carry.
+LEDGER = ('"realized_pnl_jpy": -12000, "trade_count": 4, '
+          '"daily_pnl_jpy": -5900, "daily_date": "2026-08-20"')
+
+
+@pytest.mark.parametrize("position", [
+    '{"side": "FLAT", "size": 1, "entry_price": 1}',
+    '{"side": "LONG", "size": 0, "entry_price": 1}',
+    '{"side": "LONG", "size": 0.01, "entry_price": 1, "opened_ts": "yesterday"}',
+    '{"size": 0.01, "entry_price": 1}',
+    'true',
+])
+def test_a_corrupt_position_drops_only_the_position(tmp_path, caplog, position):
+    path = tmp_path / "paper_state.json"
+    path.write_text('{%s, "position": %s}' % (LEDGER, position), encoding="utf-8")
+    with caplog.at_level(logging.WARNING):
+        state = PaperState.load(path)
+    assert state.position is None                      # started flat
+    assert state.realized_pnl_jpy == pytest.approx(-12000.0)
+    assert state.trade_count == 4
+    assert state.daily_pnl_on("2026-08-20") == pytest.approx(-5900.0)
+    assert caplog.text.count("position unreadable") == 1
+    assert "paper state unreadable" not in caplog.text  # the book is readable
 
 
 def test_app_boots_on_a_corrupt_state_file(workdir, monkeypatch, clock):
@@ -442,18 +667,19 @@ def test_app_boots_on_a_corrupt_state_file(workdir, monkeypatch, clock):
 
 def test_save_survives_a_locked_destination(tmp_path, monkeypatch):
     """os.replace fails with PermissionError on Windows while the dashboard
-    holds the file open: retry, write directly, leak no temp file."""
-    import bot.portfolio.persistence as persistence
+    holds the file open: retry, write directly, leak no temp file. The write
+    itself is bot/atomic_file.py, shared with the other two state files."""
+    import bot.atomic_file as atomic
 
     path = tmp_path / "paper_state.json"
-    monkeypatch.setattr(persistence.time, "sleep", lambda s: None)
+    monkeypatch.setattr(atomic.time, "sleep", lambda s: None)
     calls = []
 
     def always_locked(src, dst):
         calls.append((src, dst))
         raise PermissionError("a reader holds the file open")
 
-    monkeypatch.setattr(persistence.os, "replace", always_locked)
+    monkeypatch.setattr(atomic.os, "replace", always_locked)
     PaperState(realized_pnl_jpy=-5.0, trade_count=3).save(path)
 
     assert len(calls) == 5

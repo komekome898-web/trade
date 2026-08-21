@@ -16,6 +16,13 @@ same reason the kill switch persists.
 
 data/paper_state.json
 ---------------------
+* `product_code` — the product the book belongs to. On boot a file naming a
+  DIFFERENT product is not transplanted onto the running one: sizes, entry
+  prices and a spot/margin balance are not comparable across products (an
+  FX_BTC_JPY short restored onto BTC_JPY spot would be a position the executor
+  could never hold, and its notional would be subtracted from a cash balance
+  that never paid it). The stale file is renamed aside and the book starts
+  fresh. A file with no product recorded is a pre-field file and is adopted.
 * `realized_pnl_jpy` — cumulative realized P&L of the paper book, fees
   included (Portfolio books fees into realized).
 * `trade_count` — cumulative FILLS booked (an entry and its exit are two).
@@ -24,9 +31,14 @@ data/paper_state.json
   would double-count it after a restart.
 * `daily_date` — the UTC date `daily_pnl_jpy` belongs to. On boot the daily
   figure is restored only when this still names today; otherwise the day has
-  rolled and the brake starts fresh at 0.
+  rolled and the brake starts fresh at 0. The figure and this date come from
+  ONE read of the portfolio's day index (`Portfolio.daily_snapshot`), so a
+  rollover between two clock reads can never label yesterday's spent budget
+  with today's date.
 * `position` — the open position (`side` / `size` / `entry_price` /
-  `opened_ts`), or null when flat.
+  `opened_ts`), or null when flat. It is parsed INDEPENDENTLY of the scalars
+  above: an unreadable position drops the position only, because losing the
+  ledger with it would also hand back the spent daily budget.
 
 What is NOT here, on purpose: the equity peak and the consecutive-loss streak.
 The overlay's own brake state is `data/overlay_state.json` (relative drawdown,
@@ -45,11 +57,12 @@ from __future__ import annotations
 import json
 import logging
 import math
-import os
-import time
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+
+from bot.atomic_file import atomic_write_text
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +78,17 @@ def utc_date(ts: float) -> str:
     the two can never drift into two different days.
     """
     return datetime.fromtimestamp(float(ts), tz=timezone.utc).strftime("%Y-%m-%d")
+
+
+def utc_date_of_day(day_index: int) -> str:
+    """The date of a PORTFOLIO day index (`int(ts // 86400)`).
+
+    The caller reads the index once and derives the date from it, instead of
+    reading the clock a second time: between two reads the UTC day can turn,
+    and a daily figure labelled with the wrong date either resurrects a spent
+    budget on a fresh day or drops one mid-day.
+    """
+    return utc_date(int(day_index) * 86400)
 
 
 def _finite(value: object, name: str) -> float:
@@ -102,8 +126,9 @@ class PaperPosition:
 
     @classmethod
     def from_dict(cls, raw: object) -> "PaperPosition":
-        """Strict: anything unreadable raises and the whole state degrades to
-        the flat default. A half-understood position is worse than none."""
+        """Strict: anything unreadable raises and the book starts FLAT. A
+        half-understood position is worse than none — but only the position is
+        given up (`PaperState.load`), never the ledger around it."""
         if not isinstance(raw, dict):
             raise ValueError(f"position is not a mapping: {type(raw).__name__}")
         side = str(raw["side"])
@@ -126,6 +151,7 @@ class PaperState:
     daily_pnl_jpy: float = 0.0     # realized only; see module docstring
     daily_date: str = ""           # UTC YYYY-MM-DD the daily figure belongs to
     position: PaperPosition | None = None
+    product_code: str = ""         # the product this book belongs to
 
     def daily_pnl_on(self, date: str) -> float:
         """Today's realized P&L, or 0.0 when the saved figure is another day's.
@@ -138,6 +164,7 @@ class PaperState:
 
     def to_dict(self) -> dict:
         return {
+            "product_code": self.product_code,
             "realized_pnl_jpy": self.realized_pnl_jpy,
             "trade_count": self.trade_count,
             "daily_pnl_jpy": self.daily_pnl_jpy,
@@ -146,65 +173,88 @@ class PaperState:
         }
 
     @classmethod
-    def load(cls, path: str | Path = PAPER_STATE_PATH) -> "PaperState":
+    def load(cls, path: str | Path = PAPER_STATE_PATH, *,
+             product_code: str = "") -> "PaperState":
         """Read the book. Missing file -> fresh defaults, silently (that is a
         normal first start). Unreadable/corrupt -> fresh defaults and ONE
         warning, never an exception: a restart with a clean book is exactly the
         old behaviour, while crashing here would stop the bot over bookkeeping.
+
+        `product_code` is the product the CALLER is running. A file naming a
+        different one is renamed aside and not read (see module docstring); an
+        empty one on either side means "not recorded", and the file is adopted.
         """
         path = Path(path)
         try:
             text = path.read_text(encoding="utf-8")
         except OSError:
-            return cls()
+            return cls(product_code=product_code)
         try:
             raw = json.loads(text)
             if not isinstance(raw, dict):
                 raise ValueError(f"not a JSON object: {type(raw).__name__}")
-            position = raw.get("position")
+        except (ValueError, TypeError) as exc:
+            return cls._corrupt(path, exc, product_code)
+
+        saved_product = str(raw.get("product_code") or "")
+        if product_code and saved_product and saved_product != product_code:
+            _rename_aside(path, saved_product)
+            logger.warning("paper state belongs to another product; starting "
+                           "from a fresh book",
+                           extra={"data": {"event": "paper_state_product_mismatch",
+                                           "path": str(path),
+                                           "saved_product": saved_product,
+                                           "product_code": product_code}})
+            return cls(product_code=product_code)
+
+        # The ledger and the position are parsed independently: the daily
+        # budget and the realized P&L are the safety-relevant half, and an
+        # unreadable position must not hand them back too.
+        try:
             trade_count = int(raw["trade_count"])
             if trade_count < 0:
                 raise ValueError(f"negative trade_count: {trade_count}")
-            return cls(
+            state = cls(
                 realized_pnl_jpy=_finite(raw["realized_pnl_jpy"], "realized_pnl_jpy"),
                 trade_count=trade_count,
                 daily_pnl_jpy=_finite(raw["daily_pnl_jpy"], "daily_pnl_jpy"),
                 daily_date=str(raw["daily_date"]),
-                position=None if position is None else PaperPosition.from_dict(position),
+                product_code=product_code or saved_product,
             )
         except (ValueError, TypeError, KeyError) as exc:
-            logger.warning("paper state unreadable; starting from a fresh book",
-                           extra={"data": {"event": "paper_state_corrupt",
-                                           "path": str(path), "error": str(exc)}})
-            return cls()
+            return cls._corrupt(path, exc, product_code)
+
+        position = raw.get("position")
+        if position is not None:
+            try:
+                state.position = PaperPosition.from_dict(position)
+            except (ValueError, TypeError, KeyError) as exc:
+                logger.warning("paper state position unreadable; keeping the "
+                               "book and starting flat",
+                               extra={"data": {"event": "paper_state_position_corrupt",
+                                               "path": str(path), "error": str(exc)}})
+        return state
+
+    @classmethod
+    def _corrupt(cls, path: Path, exc: Exception, product_code: str) -> "PaperState":
+        logger.warning("paper state unreadable; starting from a fresh book",
+                       extra={"data": {"event": "paper_state_corrupt",
+                                       "path": str(path), "error": str(exc)}})
+        return cls(product_code=product_code)
 
     def save(self, path: str | Path = PAPER_STATE_PATH) -> None:
-        """Best-effort atomic write (OverlayState.save / StatusWriter pattern):
-        a bookkeeping checkpoint must never take trading down.
+        """Best-effort atomic write (bot/atomic_file.py, shared with
+        OverlayState and StatusWriter): a bookkeeping checkpoint must never
+        take trading down, so a failed write is swallowed."""
+        atomic_write_text(path, json.dumps(self.to_dict(), ensure_ascii=False))
 
-        On Windows os.replace fails with PermissionError while another process
-        briefly holds the destination open; retry, then fall back to a direct
-        write, and swallow any remaining OSError. The temp file is cleaned up so
-        a failed replace does not leak one.
-        """
-        path = Path(path)
-        payload = json.dumps(self.to_dict(), ensure_ascii=False)
-        tmp = path.with_suffix(".tmp")
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            tmp.write_text(payload, encoding="utf-8")
-            for _ in range(5):
-                try:
-                    os.replace(tmp, path)
-                    return
-                except PermissionError:
-                    time.sleep(0.05)
-            path.write_text(payload, encoding="utf-8")
-        except OSError:
-            pass
-        finally:
-            try:
-                if tmp.exists():
-                    tmp.unlink()
-            except OSError:
-                pass
+
+def _rename_aside(path: Path, saved_product: str) -> None:
+    """Keep a book that belongs to another product instead of overwriting it:
+    it is the only record of that paper experiment. Best effort — a failure
+    here just means the fresh book overwrites it on the next save."""
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", saved_product) or "unknown"
+    try:
+        path.replace(path.with_name(f"{path.stem}.{safe}.bak"))
+    except OSError:
+        pass

@@ -109,15 +109,17 @@ def test_overlay_absent_for_a_strategy_without_one(tmp_path):
 def test_status_write_survives_windows_permission_error(tmp_path, monkeypatch):
     """A dashboard reader holding status.json open must never crash the bot
     (Windows os.replace raises PermissionError then)."""
-    from pathlib import Path
+    import bot.atomic_file as atomic
     from bot.monitoring.status import StatusWriter
 
     w = StatusWriter(tmp_path / "status.json", clock=lambda: 123.0)
-    monkeypatch.setattr(Path, "replace",
-                        lambda self, target: (_ for _ in ()).throw(PermissionError(5)))
+    monkeypatch.setattr(atomic.time, "sleep", lambda s: None)
+    monkeypatch.setattr(atomic.os, "replace",
+                        lambda src, dst: (_ for _ in ()).throw(PermissionError(5)))
     w.write()  # must not raise
     assert json.loads((tmp_path / "status.json").read_text(encoding="utf-8"))[
         "updated_at"] == 123.0  # fell back to the direct write
+    assert not (tmp_path / "status.tmp").exists()   # and left no temp file
 
 
 def test_kill_switch_reflected(tmp_path):

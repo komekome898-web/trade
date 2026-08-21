@@ -1108,11 +1108,12 @@ def test_overlay_state_roundtrip_is_utf8_json(tmp_path):
 def test_overlay_state_save_survives_a_locked_destination(tmp_path, monkeypatch):
     """N7: os.replace fails with PermissionError on Windows while a reader
     holds the file. Retry, then write directly — and never leak the temp
-    file (StatusWriter's pattern)."""
-    import bot.strategy.composite as composite_mod
+    file. The write itself is bot/atomic_file.py, shared with StatusWriter
+    and the paper book."""
+    import bot.atomic_file as atomic
 
     path = tmp_path / "overlay_state.json"
-    monkeypatch.setattr(composite_mod.time, "sleep", lambda s: None)
+    monkeypatch.setattr(atomic.time, "sleep", lambda s: None)
 
     calls = []
 
@@ -1120,7 +1121,7 @@ def test_overlay_state_save_survives_a_locked_destination(tmp_path, monkeypatch)
         calls.append((src, dst))
         raise PermissionError("dashboard holds the file open")
 
-    monkeypatch.setattr(composite_mod.os, "replace", always_locked)
+    monkeypatch.setattr(atomic.os, "replace", always_locked)
     OverlayState(consecutive_losses=3, equity_peak_jpy=100.0, equity_jpy=50.0).save(path)
 
     assert len(calls) == 5                       # retried before falling back

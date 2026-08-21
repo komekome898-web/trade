@@ -142,7 +142,6 @@ from __future__ import annotations
 
 import json
 import os
-import time
 from dataclasses import dataclass, field
 from fnmatch import fnmatchcase
 from pathlib import Path
@@ -150,6 +149,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+from bot.atomic_file import atomic_write_text
 from bot.radar import DEFAULT_END as RADAR_DEFAULT_END
 from bot.radar import DEFAULT_START as RADAR_DEFAULT_START
 from bot.radar import StormRadar
@@ -644,36 +644,11 @@ class OverlayState:
             return cls(consecutive_losses=0, equity_peak_jpy=boot, equity_jpy=boot)
 
     def save(self, path: str | Path = OVERLAY_STATE_PATH) -> None:
-        """Best-effort atomic-ish write (same pattern as StatusWriter): a
-        state write must never take down trading.
-
-        On Windows os.replace fails with PermissionError while another process
-        briefly holds the destination open; retry, then fall back to a direct
-        write, and swallow any remaining OSError. A temp file left behind by a
-        failed replace is cleaned up — otherwise every failure leaks one.
-        """
-        path = Path(path)
-        payload = json.dumps({"consecutive_losses": int(self.consecutive_losses),
-                              "dd_frac": self.dd_frac}, ensure_ascii=False)
-        tmp = path.with_suffix(".tmp")
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            tmp.write_text(payload, encoding="utf-8")
-            for _ in range(5):
-                try:
-                    os.replace(tmp, path)
-                    return
-                except PermissionError:
-                    time.sleep(0.05)
-            path.write_text(payload, encoding="utf-8")
-        except OSError:
-            pass
-        finally:
-            try:
-                if tmp.exists():
-                    tmp.unlink()
-            except OSError:
-                pass
+        """Best-effort write (bot/atomic_file.py, shared with StatusWriter and
+        the paper book): a state checkpoint must never take down trading."""
+        atomic_write_text(path, json.dumps(
+            {"consecutive_losses": int(self.consecutive_losses),
+             "dd_frac": self.dd_frac}, ensure_ascii=False))
 
 
 class CompositeStrategy(Strategy):

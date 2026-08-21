@@ -25,7 +25,7 @@ from bot.monitoring.notifier import DiscordNotifier, Notifier, NullNotifier
 from bot.monitoring.status import StatusWriter
 from bot.order_management.manager import OrderManager
 from bot.order_management.order import DuplicateOrderError, OrderStore
-from bot.portfolio.persistence import PaperPosition, PaperState, utc_date
+from bot.portfolio.persistence import PaperPosition, PaperState, utc_date_of_day
 from bot.portfolio.portfolio import Portfolio
 from bot.risk.kill_switch import KillReason, KillSwitch
 from bot.risk.pre_trade_checks import AccountState, OrderRequest, PreTradeChecker
@@ -131,9 +131,13 @@ class TradingApp:
         self._paper_day = self.portfolio.daily_day_index
         # Boot equity for the overlay INCLUDES the restored realized P&L: the
         # overlay rebuilds its peak as boot_equity / dd_frac, so it has to be
-        # handed the equity the book actually starts at. Unrealized needs a mark
-        # price this early boot does not have, and is zero at the restored entry
-        # price by construction. Both terms are 0 on a fresh/live book, so this
+        # handed the equity the book actually starts at. The unrealized term
+        # needs a mark price this early boot does not have; the overlay folds
+        # the real equity in on the first `_update_status`, and its peak only
+        # ever moves UP, so an open loss shrinks SIZE (the overlay's whole job)
+        # rather than being missed. The portfolio's own peak cannot wait like
+        # that — it feeds the kill switch — and is anchored mark-to-market in
+        # `_restore_paper_state`. Realized is 0 on a fresh/live book, so this
         # is the previous value unchanged there.
         boot_equity = initial_equity + self.portfolio.realized_pnl_jpy
         # Risk-overlay brake state survives a restart: a crash mid-losing-streak
@@ -188,7 +192,10 @@ class TradingApp:
 
         Restored: cumulative realized P&L, the fill count, the open position,
         and today's realized daily P&L — the last one ONLY when the saved date
-        is still today (UTC), which `PaperState.daily_pnl_on` decides.
+        is still today (UTC), which `PaperState.daily_pnl_on` decides, and only
+        when the file belongs to the product this process is running (a book
+        from another product is renamed aside and not read at all; see
+        bot/portfolio/persistence.py).
 
         NOT restored, deliberately: `consecutive_losses` and `equity_peak_jpy`.
         Those feed the HARD pre-trade checks, which trip the kill switch, so
@@ -200,18 +207,27 @@ class TradingApp:
         while dropping it let a watchdog restart hand back the whole
         MAX_DAILY_LOSS_JPY allowance mid-day.
 
-        The peak is instead anchored at BOOT equity, so a book restored below
-        its starting equity does not read as an instant max-drawdown breach:
-        the hard check keeps measuring the drawdown this process lived through.
+        The peak is instead anchored at the MARK-TO-MARKET boot equity
+        (`Portfolio.anchor_boot_equity`), and a restored position's unrealized
+        P&L is counted into the daily brake only from the first mark this
+        process sees. Both brakes therefore measure what happened SINCE this
+        boot: a book restored 5% underwater neither reads as an instant
+        max-drawdown breach nor spends today's MAX_DAILY_LOSS_JPY budget on a
+        loss incurred days ago — either would trip the kill switch before the
+        protective stop could close the position, and trip again on the boot
+        after every operator reset.
         """
-        state = PaperState.load()
+        state = PaperState.load(product_code=self.settings.product_code)
         self.paper_state = state
         p = self.portfolio
         p.realized_pnl_jpy = state.realized_pnl_jpy
         self._restored_trade_count = state.trade_count
-        p.equity_peak_jpy = p.initial_equity_jpy + state.realized_pnl_jpy
-        today = utc_date(p.clock())
-        p.seed_daily_realized(state.daily_pnl_on(today))
+        # ONE clock read decides both the day and the date the file's daily
+        # figure is judged against (see Portfolio.seed_daily_realized).
+        day = p.daily_day_index
+        today = utc_date_of_day(day)
+        daily = state.daily_pnl_on(today)
+        p.seed_daily_realized(daily, day=day)
         position = state.position
         if position is not None and position.side == "SHORT" and not gateway.allow_short:
             # The product is not shortable now; whatever wrote that short is not
@@ -226,12 +242,13 @@ class TradingApp:
             p.position_size = position.signed_size
             p.avg_entry_price = position.entry_price
             self._position_opened_ts = position.opened_ts
+        p.anchor_boot_equity()      # after the position: it is marked to market
         self._restore_gateway(gateway, position, state.realized_pnl_jpy)
         logger.info("paper state restored", extra={"data": {
             "event": "paper_state_restored",
             "realized_pnl_jpy": state.realized_pnl_jpy,
             "trade_count": state.trade_count,
-            "daily_pnl_jpy": p.daily_realized_jpy, "daily_date": today,
+            "daily_pnl_jpy": daily, "daily_date": today,
             "position_size": p.position_size}})
 
     def _restore_gateway(self, gateway: PaperExecutor,
@@ -259,10 +276,14 @@ class TradingApp:
             gateway.balance_jpy -= position.size * position.entry_price
 
     def _capture_paper_state(self) -> PaperState:
-        """Snapshot the paper book. Reads the PORTFOLIO's clock for the day, so
-        the persisted date and the daily P&L it labels can never come from two
-        different clocks."""
+        """Snapshot the paper book.
+
+        The daily figure and the date labelling it come from ONE read of the
+        portfolio's clock (`daily_snapshot`): asking the clock a second time
+        for the date could straddle a UTC rollover and persist yesterday's
+        spent budget under today's date, wedging a fresh day's brake."""
         p = self.portfolio
+        day, daily_realized = p.daily_snapshot()
         pos = p.position_size
         if pos == 0.0:
             self._position_opened_ts = None
@@ -274,9 +295,10 @@ class TradingApp:
                                                  self._position_opened_ts)
         return PaperState(realized_pnl_jpy=p.realized_pnl_jpy,
                           trade_count=self.trade_count,
-                          daily_pnl_jpy=p.daily_realized_jpy,
-                          daily_date=utc_date(p.clock()),
-                          position=position)
+                          daily_pnl_jpy=daily_realized,
+                          daily_date=utc_date_of_day(day),
+                          position=position,
+                          product_code=self.settings.product_code)
 
     def _save_paper_state(self) -> None:
         """Checkpoint the paper book. No-op in LIVE mode; best-effort and

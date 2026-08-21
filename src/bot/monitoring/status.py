@@ -7,6 +7,8 @@ import time
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
+from bot.atomic_file import atomic_write_text
+
 
 @dataclass
 class BotStatus:
@@ -47,24 +49,11 @@ class StatusWriter:
     def write(self) -> None:
         """Best-effort status telemetry — must NEVER take down trading.
 
-        On Windows, os.replace fails with PermissionError while a reader
-        (the dashboard polls this file every few seconds) briefly holds the
-        destination open; retry, then fall back to a direct write, and
-        swallow any remaining OSError."""
+        The retry-and-fall-back write itself is shared with the two other
+        state files (bot/atomic_file.py)."""
         self.status.updated_at = self._clock()
         payload = json.dumps(asdict(self.status), ensure_ascii=False, indent=2)
-        tmp = self._path.with_suffix(".tmp")
-        try:
-            tmp.write_text(payload, encoding="utf-8")
-            for _ in range(5):
-                try:
-                    tmp.replace(self._path)
-                    return
-                except PermissionError:
-                    time.sleep(0.05)
-            self._path.write_text(payload, encoding="utf-8")
-        except OSError:
-            pass
+        atomic_write_text(self._path, payload)
 
     def format_report(self) -> str:
         s = self.status
