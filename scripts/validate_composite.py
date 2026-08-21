@@ -15,7 +15,9 @@ G1  CORE-SIGNAL EQUIVALENCE (ENGINE PATH) — xborder_momentum vs composite with
     covers the CORE SIGNAL only; it says nothing about the live order path.
     A veto/closing-path probe on `gate_entry` (identity while disabled, and,
     with a test-double module enabled, entries vetoed while closes pass) is
-    run alongside it.
+    run alongside it. The identity holds for ANY ModuleContext — the fields it
+    carries (position, timestamps such as `signal_ts`) are only ever read by an
+    ENABLED module, so extending the context additively cannot move G1 or G1b.
 
 G1b LIVE-PATH EQUIVALENCE — the same two strategies driven through a real
     paper TradingApp on identical synthetic feeds. Decisions (side, open vs

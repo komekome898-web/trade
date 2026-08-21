@@ -21,8 +21,11 @@ tests/test_composite.py and scripts/validate_composite.py.
 
 Why every module ships disabled
 -------------------------------
-Each module corresponds to a hypothesis listed as PENDING in
-docs/KNOWLEDGE.md §4. None has passed its judgment, so none may trade. The
+Each module corresponds either to a hypothesis listed as PENDING in
+docs/KNOWLEDGE.md §4, or to a pre-registered CANDIDATE from the strategy
+tournament (scripts/research_tournament.py: `radar_window`, `long_only` —
+candidates, never adoptions, and both under-powered on their judgment split).
+None has passed its judgment, so none may trade. The
 framework is fail-closed at CONSTRUCTION, not at call time:
 
 * `enabled: true` with an empty `gate_evidence` raises,
@@ -99,6 +102,9 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+from bot.radar import DEFAULT_END as RADAR_DEFAULT_END
+from bot.radar import DEFAULT_START as RADAR_DEFAULT_START
+from bot.radar import StormRadar
 from bot.strategy.base import Signal, SignalType, Strategy
 from bot.strategy.xborder_momentum import XborderMomentumStrategy
 
@@ -133,11 +139,20 @@ class ModuleContext:
     The Strategy interface is position-blind by design (bot/strategy/base.py),
     but a veto must never touch a closing order — so the position-aware caller
     passes `position_size` in here.
+
+    `signal_ts` is the WALL-CLOCK unix time at which the signal is being acted
+    on (bot/main.py passes `time.time()`), for clock-window modules. It is kept
+    separate from `timestamp`, which carries the tick's own timestamp and is
+    synthetic in tests and replays. Both fields are optional: every field here
+    is additive, and with all modules disabled `gate_entry` never reads the
+    context at all, so the E0 / G1 / G1b identity guarantees are unaffected by
+    anything added to this dataclass.
     """
 
     candles: pd.DataFrame | None = None
     timestamp: float | None = None
     position_size: float = 0.0
+    signal_ts: float | None = None
     extra: dict = field(default_factory=dict)
 
 
@@ -256,8 +271,58 @@ class OiRegimeModule(CompositeModule):
     GATE = "oi_snapshots.csv 30-day phase-C judgment"
 
 
+class RadarWindowModule(CompositeModule):
+    """Vetoes NEW entries whose signal time is OUTSIDE the storm-radar window.
+
+    Params: `window_start_utc` / `window_end_utc` ("HH:MM", default the radar's
+    own 12:30-15:00 UTC). Reuses bot.radar.StormRadar, so the window means the
+    same thing here as everywhere else. Tournament candidate C2; disabled until
+    the champion's own paper trades judge it.
+    """
+
+    NAME = "radar_window"
+    GATE = ("Champion paper >= 30 trades AND the inside-window subset beats "
+            "the full set on net expectancy AND maxDD (tournament C2, "
+            "scripts/research_tournament.py)")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.radar = StormRadar(
+            self.params.get("window_start_utc", RADAR_DEFAULT_START),
+            self.params.get("window_end_utc", RADAR_DEFAULT_END))
+
+    def veto_entry(self, signal: Signal, context: ModuleContext) -> bool:
+        """Veto unless the signal time is inside the window.
+
+        No `signal_ts` -> veto: an entry that cannot be SHOWN to be inside the
+        window is refused, rather than reading the process clock as a stand-in
+        for a timestamp the caller did not supply.
+        """
+        if context.signal_ts is None:
+            return True
+        return not self.radar.is_armed(float(context.signal_ts))
+
+
+class LongOnlyModule(CompositeModule):
+    """Vetoes NEW entries that would open or extend a SHORT (longs pass).
+
+    Closing signals never reach a module (CompositeStrategy.gate_entry), and
+    the position check here keeps that true for direct calls too. Tournament
+    candidate C3; disabled until the champion's own paper trades judge it.
+    """
+
+    NAME = "long_only"
+    GATE = ("Champion paper >= 30 trades AND the long-only subset beats the "
+            "full set on net expectancy AND maxDD (tournament C3, "
+            "scripts/research_tournament.py)")
+
+    def veto_entry(self, signal: Signal, context: ModuleContext) -> bool:
+        return signal.type is SignalType.SELL and context.position_size <= 0
+
+
 MODULE_CLASSES: dict[str, type[CompositeModule]] = {
-    cls.NAME: cls for cls in (ImbalanceFilterModule, FundingWindowModule, OiRegimeModule)
+    cls.NAME: cls for cls in (ImbalanceFilterModule, FundingWindowModule, OiRegimeModule,
+                              RadarWindowModule, LongOnlyModule)
 }
 
 

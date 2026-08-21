@@ -229,7 +229,8 @@ class TradingApp:
         if callable(gate):
             signal = gate(signal, ModuleContext(candles=candles_df,
                                                 timestamp=tick.timestamp,
-                                                position_size=pos))
+                                                position_size=pos,
+                                                signal_ts=time.time()))
         decision, order = "HOLD", None
 
         if signal.type is SignalType.BUY:

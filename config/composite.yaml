@@ -9,9 +9,10 @@ core:
   thr_pct: 0.8               # enter long above +thr, short below -thr (%)
   exit_pct: 0.05             # flatten when |leader momentum| fades below this (%)
 
-# Modules are OFF and stay OFF until their gate is judged. Each one is a
-# PENDING hypothesis in docs/KNOWLEDGE.md §4 — enabling one before its gate
-# passes would be adopting an unvalidated rule.
+# Modules are OFF and stay OFF until their gate is judged. Each one is either a
+# PENDING hypothesis in docs/KNOWLEDGE.md §4 or a pre-registered CANDIDATE from
+# the strategy tournament (scripts/research_tournament.py) — enabling one before
+# its gate passes would be adopting an unvalidated rule.
 #
 # `gate` is the pre-registered unlock criterion. It is REQUIRED on every module
 # entry and must match the text registered in code; omitting it or rewriting it
@@ -46,6 +47,28 @@ modules:
     gate: "oi_snapshots.csv 30-day phase-C judgment"
     gate_evidence: ""
     # would veto entries by open-interest condition
+
+  radar_window:
+    enabled: false
+    gate: "Champion paper >= 30 trades AND the inside-window subset beats the full set on net expectancy AND maxDD (tournament C2, scripts/research_tournament.py)"
+    gate_evidence: ""
+    params:
+      window_start_utc: "12:30"   # bot.radar storm window (lift 2.23, n=234)
+      window_end_utc: "15:00"
+    # would veto entries whose signal time falls outside the storm window.
+    # Tournament C2 beat the champion on expectancy AND maxDD, but on n=2
+    # judgment trades and with the sign flipped on the 210d proxy — the
+    # signature of an overfit split, not of an edge. Judgment is deferred to
+    # the champion's own paper trades at n>=30.
+
+  long_only:
+    enabled: false
+    gate: "Champion paper >= 30 trades AND the long-only subset beats the full set on net expectancy AND maxDD (tournament C3, scripts/research_tournament.py)"
+    gate_evidence: ""
+    # would veto entries that open or extend a short. Tournament C3 beat the
+    # champion on expectancy AND maxDD, but on n=6 judgment trades and with the
+    # sign flipped on the 210d proxy — same overfit signature as C2. Judgment
+    # is deferred to the champion's own paper trades at n>=30.
 
 # Risk overlay (src/bot/strategy/composite.py: size_factor) has no config:
 # 95% drawdown trigger / 3-loss streak / x0.5 steps / 0.25 floor are fixed

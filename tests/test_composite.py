@@ -90,10 +90,14 @@ def test_config_params_override_yaml_core():
 
 
 # ---- module framework: fail-closed ----------------------------------------
-def test_shipped_yaml_has_three_disabled_ungated_modules():
+ALL_MODULES = ["imbalance_filter", "funding_window", "oi_regime",
+               "radar_window", "long_only"]
+
+
+def test_shipped_yaml_modules_are_all_disabled_and_ungated():
     cfg = load_composite_config(REPO / "config" / "composite.yaml")
     modules = build_modules(cfg["modules"])
-    assert [m.name for m in modules] == ["imbalance_filter", "funding_window", "oi_regime"]
+    assert [m.name for m in modules] == ALL_MODULES
     for m in modules:
         assert m.enabled is False
         assert m.gate                      # pre-registered unlock criterion
@@ -142,7 +146,7 @@ def test_missing_gate_key_is_refused():
 def test_module_absent_from_config_is_simply_off():
     modules = build_modules(_raw("oi_regime"))
     assert all(m.enabled is False for m in modules)
-    assert [m.name for m in modules] == ["imbalance_filter", "funding_window", "oi_regime"]
+    assert [m.name for m in modules] == ALL_MODULES
 
 
 def test_unknown_module_rejected():
@@ -250,6 +254,133 @@ def test_module_vetoes_new_entry():
 def test_module_never_blocks_a_close(sig_type, pos):
     sig = Signal(sig_type, "core")
     assert _vetoing_composite().gate_entry(sig, ModuleContext(position_size=pos)) is sig
+
+
+# ---- tournament candidates (C2 radar_window / C3 long_only) ----------------
+# Both are CANDIDATES, not adoptions: they beat the champion on the tournament's
+# judgment split but on n=2 / n=6 trades and with the sign flipped on the 210d
+# proxy. They ship disabled; these tests check the wiring, not the hypothesis.
+def _ts(hh: int, mm: int) -> float:
+    """Unix seconds for a UTC wall-clock time on an arbitrary date."""
+    from datetime import datetime, timezone
+    return datetime(2026, 8, 20, hh, mm, tzinfo=timezone.utc).timestamp()
+
+
+INSIDE, OUTSIDE = _ts(13, 0), _ts(3, 0)      # storm window is 12:30-15:00 UTC
+
+
+def _enabled_module(name: str, **params):
+    """The real module, enabled with evidence that exists — the fail-closed
+    construction check only passes because the rule is actually implemented."""
+    module = next(m for m in build_modules(
+        _raw(name, enabled=True, gate_evidence=EVIDENCE, params=params or None))
+        if m.name == name)
+    assert module.enabled is True
+    return module
+
+
+def _composite_with(name: str, **params) -> CompositeStrategy:
+    return CompositeStrategy(dict(PARAMS), modules=[_enabled_module(name, **params)])
+
+
+@pytest.mark.parametrize("name", ["radar_window", "long_only"])
+def test_candidate_modules_ship_disabled(name):
+    modules = build_modules(load_composite_config(REPO / "config" / "composite.yaml")["modules"])
+    module = next(m for m in modules if m.name == name)
+    assert module.enabled is False and module.gate_evidence == ""
+    assert "tournament" in module.gate and "30 trades" in module.gate
+
+
+@pytest.mark.parametrize("name", ["radar_window", "long_only"])
+def test_candidate_modules_construct_when_enabled_with_valid_evidence(name):
+    """Unlike the pending §4 modules, these two have real veto rules, so the
+    B1 construction check passes instead of refusing them."""
+    assert _enabled_module(name).gate_evidence == EVIDENCE
+
+
+def test_radar_window_vetoes_an_entry_outside_the_window():
+    out = _composite_with("radar_window").gate_entry(
+        Signal(SignalType.BUY, "core", {"x": 1.0}),
+        ModuleContext(position_size=0.0, signal_ts=OUTSIDE))
+    assert out.type is SignalType.HOLD and "radar_window" in out.reason
+    assert out.indicators == {"x": 1.0}
+
+
+@pytest.mark.parametrize("sig_type", [SignalType.BUY, SignalType.SELL])
+def test_radar_window_passes_an_entry_inside_the_window(sig_type):
+    sig = Signal(sig_type, "core")
+    comp = _composite_with("radar_window")
+    assert comp.gate_entry(sig, ModuleContext(position_size=0.0, signal_ts=INSIDE)) is sig
+
+
+def test_radar_window_reuses_the_radar_window_bounds():
+    module = _enabled_module("radar_window")
+    assert module.radar.window == "12:30-15:00 UTC"
+    assert module.radar.is_armed(INSIDE) and not module.radar.is_armed(OUTSIDE)
+
+
+def test_radar_window_bounds_come_from_params():
+    comp = _composite_with("radar_window", window_start_utc="02:00", window_end_utc="04:00")
+    sig = Signal(SignalType.BUY, "core")
+    assert comp.gate_entry(sig, ModuleContext(position_size=0.0, signal_ts=OUTSIDE)) is sig
+    assert comp.gate_entry(sig, ModuleContext(position_size=0.0, signal_ts=INSIDE)
+                           ).type is SignalType.HOLD
+
+
+def test_radar_window_vetoes_when_no_signal_time_is_supplied():
+    """Fail closed: an entry that cannot be shown to be inside the window is
+    refused rather than being timed by the process clock."""
+    out = _composite_with("radar_window").gate_entry(
+        Signal(SignalType.BUY, "core"), ModuleContext(position_size=0.0))
+    assert out.type is SignalType.HOLD
+
+
+def test_long_only_vetoes_a_short_entry():
+    out = _composite_with("long_only").gate_entry(
+        Signal(SignalType.SELL, "core", {"x": 1.0}), ModuleContext(position_size=0.0))
+    assert out.type is SignalType.HOLD and "long_only" in out.reason
+    assert out.indicators == {"x": 1.0}
+
+
+@pytest.mark.parametrize("pos", [0.0, -0.5])      # opening and extending a short
+def test_long_only_vetoes_any_short_exposure(pos):
+    assert _composite_with("long_only").gate_entry(
+        Signal(SignalType.SELL, "core"), ModuleContext(position_size=pos)
+    ).type is SignalType.HOLD
+
+
+@pytest.mark.parametrize("pos", [0.0, 0.5])       # opening and extending a long
+def test_long_only_passes_long_entries(pos):
+    sig = Signal(SignalType.BUY, "core")
+    assert _composite_with("long_only").gate_entry(
+        sig, ModuleContext(position_size=pos)) is sig
+
+
+@pytest.mark.parametrize("sig_type,pos", [
+    (SignalType.CLOSE, 0.5), (SignalType.CLOSE, -0.5),
+    (SignalType.BUY, -0.5),        # BUY closing a short
+    (SignalType.SELL, 0.5),        # SELL closing a long — the one to watch
+    (SignalType.HOLD, 0.0),
+])
+def test_long_only_never_blocks_a_close(sig_type, pos):
+    """The framework's closing guard covers this, but a long-only rule that
+    ever blocked a SELL out of a long would strand a position."""
+    sig = Signal(sig_type, "core")
+    assert _composite_with("long_only").gate_entry(
+        sig, ModuleContext(position_size=pos)) is sig
+
+
+@pytest.mark.parametrize("signal_ts", [None, INSIDE, OUTSIDE])
+def test_disabled_candidates_leave_every_signal_untouched(signal_ts):
+    """E0: the shipped (all-disabled) module set is the identity function for
+    every signal type, every position and any signal_ts."""
+    comp = CompositeStrategy({}, config_path=REPO / "config" / "composite.yaml")
+    assert comp.active_modules == []
+    for sig_type in SignalType:
+        for pos in (-0.5, 0.0, 0.5):
+            sig = Signal(sig_type, "core", {"x": 1.0})
+            assert comp.gate_entry(sig, ModuleContext(
+                position_size=pos, signal_ts=signal_ts)) is sig
 
 
 # ---- risk overlay ----------------------------------------------------------
