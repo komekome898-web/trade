@@ -14,10 +14,12 @@ Design constraints honored here:
 
 Every failure is routed through bot.exchange.resilience, which owns the
 taxonomy (SAFE_RETRY / AMBIGUOUS / REJECTED) and the single `may_retry`
-predicate. On an ORDER endpoint only a PROVABLY pre-send failure (connect
-timeout, DNS, connection refused, TLS handshake) is ever repeated — anything
-that could have reached order placement, including a 5xx, becomes
-OrderStateUnknown. Timeouts are split connect/read and widen under load.
+predicate. On an ORDER endpoint only a PROVABLY pre-send failure (a connect
+timeout, or a connection error whose text names the new-connection failure —
+`resilience._PRE_SEND_MARKERS`; a TLS error is NEVER one) is repeated — anything
+that could have reached order placement, including a 5xx AND a 200 whose body
+is not the answer the endpoint promised, becomes OrderStateUnknown. Timeouts
+are split connect/read and widen under load.
 """
 from __future__ import annotations
 
@@ -172,6 +174,11 @@ class BitflyerClient:
         self._base_timeouts = timeouts or Timeouts(connect_sec=min(3.0, timeout),
                                                    read_sec=timeout)
         self._timeouts = self._base_timeouts
+        # The condition the TRADING timeouts are currently derived from. Kept
+        # so a diagnostic window can restore the timeouts that apply NOW rather
+        # than the ones that applied when it opened (see `diagnostic_call`).
+        self._condition = ExchangeCondition.NORMAL
+        self._diagnostic_depth = 0
         self._retry_policy = retry_policy or RetryPolicy(max_tries=max_retries)
         self._observer = observer
         # Published limits: private 500/5min, public 500/5min per IP. Stay well below.
@@ -193,7 +200,7 @@ class BitflyerClient:
         """Apply the operator's configured base timeouts / retry budget."""
         if timeouts is not None:
             self._base_timeouts = timeouts
-            self._timeouts = timeouts
+            self._apply_trading_timeouts()
         if retry_policy is not None:
             self._retry_policy = retry_policy
 
@@ -211,21 +218,43 @@ class BitflyerClient:
 
         Single-threaded by construction (the bot runs one loop); nested use
         restores the previous values on exit.
+
+        On the way out the TRADING timeouts are re-derived from the condition
+        that holds NOW, not blindly restored to the pair captured on the way in.
+        A reconciliation window can be open for the whole reconciliation budget,
+        and an `apply_condition` inside it — the venue going CRITICAL while we
+        poll, which is precisely when it happens — used to be discarded on exit,
+        leaving the next trading call on the pre-degradation read timeout.
         """
         previous_timeouts, previous_policy = self._timeouts, self._retry_policy
+        self._diagnostic_depth += 1
         self._timeouts = timeouts
         self._retry_policy = RetryPolicy(max_tries=1, total_budget_sec=0.0)
         try:
             yield self
         finally:
-            self._timeouts = previous_timeouts
+            self._diagnostic_depth -= 1
             self._retry_policy = previous_policy
+            if self._diagnostic_depth > 0:
+                self._timeouts = previous_timeouts   # still inside an outer window
+            else:
+                self._apply_trading_timeouts()
 
     def apply_condition(self, condition: ExchangeCondition) -> Timeouts:
         """Widen the READ timeout while the venue is degraded, always relative
-        to the configured base (so recovery restores it exactly)."""
-        self._timeouts = self._base_timeouts.for_condition(condition)
-        return self._timeouts
+        to the configured base (so recovery restores it exactly).
+
+        Inside a diagnostic window the condition is RECORDED but the short
+        fixed timeouts stay in force; the window applies it when it closes."""
+        self._condition = condition
+        return self._apply_trading_timeouts()
+
+    def _apply_trading_timeouts(self) -> Timeouts:
+        """The trading timeouts implied by the base config + current condition."""
+        trading = self._base_timeouts.for_condition(self._condition)
+        if self._diagnostic_depth == 0:
+            self._timeouts = trading
+        return trading
 
     # ---- public endpoints -------------------------------------------------
     def markets(self) -> list[dict]:
@@ -402,10 +431,40 @@ class BitflyerClient:
                 retry_after_sec=resilience.retry_after_of(resp))
             self._observe(endpoint_class, path, call_started, failure)
             raise _Classified(failure, detail)   # type: ignore[arg-type]
+        payload, failure = self._parse_body(resp, path, endpoint_class)
+        if failure is not None:
+            # Telemetry is recorded AFTER the parse, so a 200 carrying a
+            # maintenance page is logged as what it is (ambiguous), not as ok.
+            self._observe(endpoint_class, path, call_started, failure)
+            raise _Classified(failure, f"{method} {path}: 200 {failure.reason}")
         self._observe(endpoint_class, path, call_started, None)
-        if resp.text == "":
-            return None
-        return resp.json()
+        return payload
+
+    def _parse_body(self, resp, path: str,
+                    endpoint_class: EndpointClass) -> tuple[Any, Failure | None]:
+        """Read a 2xx body INSIDE the classification boundary.
+
+        A 200 is not an acceptance on its own: the body has to be the answer
+        the endpoint promised. When it is not — a JSON decode error, an empty
+        body where an acceptance id was due, an object without one — this is a
+        classified failure (`resilience.classify_body`), which on an order
+        endpoint means AMBIGUOUS -> OrderStateUnknown. Before, `resp.json()`
+        raised a bare ValueError here, the order manager caught it in its
+        `except (BitflyerError, ValueError)` branch and closed the record
+        REJECTED — and the next signal sent a second real order.
+        """
+        text = getattr(resp, "text", "") or ""
+        payload = None
+        if text != "":
+            try:
+                payload = resp.json()
+            except (ValueError, TypeError):
+                return None, resilience.classify_body("unparseable_body",
+                                                      endpoint_class)
+        problem = resilience.body_shape_problem(path, payload, text)
+        if problem is not None:
+            return None, resilience.classify_body(problem, endpoint_class)
+        return payload, None
 
     def _observe(self, endpoint_class: EndpointClass, path: str,
                  started: float, failure: Failure | None) -> None:

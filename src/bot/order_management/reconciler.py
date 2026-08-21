@@ -79,6 +79,13 @@ _EXCHANGE_STATE = {
 # placed" at t≈7s.
 POLL_FRACTIONS = (1 / 30, 1 / 15, 2 / 15, 4 / 15, 8 / 15, 1.0)
 
+# ...but the FIRST poll is capped in absolute time. It is the one that catches
+# an order the venue listed straight away, and with a long budget a purely
+# proportional first offset would leave the caller — which is holding an order
+# in an unknown state — waiting seconds for a question the venue can answer at
+# once.
+FIRST_POLL_MAX_SEC = 2.0
+
 # How many acceptance ids seen on the venue are carried forward as baseline.
 MAX_OBSERVED_IDS = 500
 
@@ -200,7 +207,9 @@ class AutoReconciler:
 
     # ---- internals ---------------------------------------------------------
     def _schedule(self) -> list[float]:
-        return [f * self.budget_sec for f in POLL_FRACTIONS]
+        offsets = [f * self.budget_sec for f in POLL_FRACTIONS]
+        offsets[0] = min(FIRST_POLL_MAX_SEC, offsets[0])
+        return offsets
 
     def _sleep_until(self, target: float) -> None:
         wait = target - self._clock()

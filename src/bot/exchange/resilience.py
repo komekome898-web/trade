@@ -22,6 +22,14 @@ AMBIGUOUS   the request may have reached order placement — read timeout,
 REJECTED    the exchange gave a definite business answer (4xx). No retry; the
             reason is surfaced to the caller.
 
+The RESPONSE BODY is inside this boundary too (`body_shape_problem` /
+`classify_body`): a 200 whose body cannot be read as the answer the endpoint
+promised — a maintenance HTML page, an empty body, a missing acceptance id — is
+AMBIGUOUS on an order endpoint, not a success and not a rejection. Parsing it
+outside the taxonomy raised a bare ValueError that the order manager read as
+"the exchange said no" and closed the record REJECTED, which is exactly the
+state from which the next signal sends a second real order.
+
 Classification and applicability are deliberately SEPARATE decisions
 (`may_retry`): a 429 classifies SAFE_RETRY everywhere, but on an order
 endpoint only a PRE_SEND failure is ever retried, because only a pre-send
@@ -78,6 +86,20 @@ ORDER_ENDPOINTS = (
     "/v1/me/cancelallchildorders",
     "/v1/me/sendparentorder",
     "/v1/me/cancelparentorder",
+)
+
+
+# Order endpoints whose 2xx body MUST carry an acceptance id. A 200 that does
+# not is NOT a success: an edge in front of the venue can answer a maintenance
+# page (or nothing at all) with status 200 while the request behind it did
+# reach order placement, so such a send is ambiguous, not accepted.
+ACCEPTANCE_ID_ENDPOINTS = (
+    "/v1/me/sendchildorder",
+    "/v1/me/sendparentorder",
+)
+ACCEPTANCE_ID_KEYS = (
+    "child_order_acceptance_id",
+    "parent_order_acceptance_id",
 )
 
 
@@ -225,6 +247,47 @@ def classify_status(status_code: int, endpoint_class: EndpointClass, *,
                        endpoint_class=endpoint_class)
     return Failure(FailureClass.REJECTED, Phase.RESPONSE, str(status_code),
                    status_code=status_code, endpoint_class=endpoint_class)
+
+
+def body_shape_problem(path: str, payload, raw_text: str) -> str | None:
+    """Does a 2xx body actually carry what the endpoint promised?
+
+    Only the acceptance-id endpoints make a promise this can check: their
+    answer is a JSON object with an acceptance id in it. `cancelchildorder`
+    legitimately answers 200 with an EMPTY body, so an empty body is a problem
+    for a send and normal for a cancel.
+
+    None means "the body is what it should be". Anything else is a short,
+    secret-free reason string.
+    """
+    if path not in ACCEPTANCE_ID_ENDPOINTS:
+        return None
+    if not (raw_text or "").strip():
+        return "empty_body"
+    if not isinstance(payload, dict):
+        return "unexpected_body"
+    if any(payload.get(key) for key in ACCEPTANCE_ID_KEYS):
+        return None
+    return "missing_acceptance_id"
+
+
+def classify_body(problem: str, endpoint_class: EndpointClass) -> Failure:
+    """Classify a 2xx whose BODY could not be read as the expected answer.
+
+    This is part of the same classification boundary as the transport and the
+    status code, and for the same reason: on an ORDER endpoint an unreadable
+    200 does not prove the order was refused, so it is AMBIGUOUS and becomes
+    OrderStateUnknown — never a ValueError escaping into the caller's "the
+    exchange said no" branch, which would let the next signal resend.
+
+    On a read-only endpoint the request is idempotent, so a garbled body is
+    just a sample to take again.
+    """
+    if endpoint_class is EndpointClass.ORDER:
+        return Failure(FailureClass.AMBIGUOUS, Phase.RESPONSE, problem,
+                       endpoint_class=endpoint_class)
+    return Failure(FailureClass.SAFE_RETRY, Phase.RESPONSE, problem,
+                   endpoint_class=endpoint_class)
 
 
 def may_retry(failure: Failure, endpoint_class: EndpointClass) -> bool:
@@ -440,7 +503,21 @@ class ConditionMonitor:
 
     @property
     def exchange_stopped(self) -> bool:
-        return self._fresh_health(self._clock()) in HEALTH_STOPPED
+        """STOP is STICKY across staleness — deliberately unlike the vote.
+
+        A stale reading drops out of `_raw_level` because "the venue was busy
+        90s ago" says nothing about load now. "The venue was HALTED and we have
+        not heard from it since" is a different fact: the poll that would have
+        cleared it is exactly the call that is failing. Letting the TTL clear it
+        would resume ENTRIES into a venue last known to be stopped, on no
+        evidence at all. Only a FRESH non-STOP reading clears it (the next
+        successful `observe_health` overwrites `_health`).
+
+        The trade-off is bounded and one-sided: while it is sticky the bot
+        refuses NEW entries only — closing orders never consult this
+        (bot/main.py `_entry_allowed_under_condition`).
+        """
+        return self._health in HEALTH_STOPPED
 
     def _fresh_health(self, now: float) -> str | None:
         if self._health is None or self._health_at is None:
@@ -583,6 +660,14 @@ def _positive(raw: dict, key: str, default: float, warn: list[str]) -> float:
     return value
 
 
+# The reconciliation budget is the time an order is allowed to sit in an
+# UNKNOWN state before a human is called. Below 5s the poll schedule cannot
+# outlast getchildorders' listing lag (the whole point of the budget); above
+# 60s the trading loop is blocked for a minute on one send. Outside that range
+# the configured value is not a tuning choice, it is a typo.
+RECONCILE_BUDGET_RANGE = (5.0, 60.0)
+
+
 def load_resilience_config(raw: dict | None) -> ResilienceConfig:
     raw = raw or {}
     warn: list[str] = []
@@ -592,6 +677,11 @@ def load_resilience_config(raw: dict | None) -> ResilienceConfig:
     budget = _positive(raw, "retry_budget_sec", defaults.retry_budget_sec, warn)
     health_poll = _positive(raw, "health_poll_sec", defaults.health_poll_sec, warn)
     reconcile = _positive(raw, "reconcile_budget_sec", defaults.reconcile_budget_sec, warn)
+    low, high = RECONCILE_BUDGET_RANGE
+    if not low <= reconcile <= high:
+        warn.append(f"reconcile_budget_sec={reconcile} is outside "
+                    f"[{low:.0f}, {high:.0f}]s")
+        reconcile = defaults.reconcile_budget_sec
     window = _positive(raw, "condition_window_sec", defaults.condition_window_sec, warn)
     degraded = _positive(raw, "degraded_latency_ms", defaults.degraded_latency_ms, warn)
     critical = _positive(raw, "critical_latency_ms", defaults.critical_latency_ms, warn)
@@ -607,13 +697,23 @@ def load_resilience_config(raw: dict | None) -> ResilienceConfig:
     if tries < 1:
         warn.append(f"retry_max_tries={tries} must be >= 1")
         tries = defaults.retry_max_tries
+    gating = raw.get("entry_gating", defaults.entry_gating)
+    if not isinstance(gating, bool):
+        # STRICT, not bool(): every non-empty string is truthy, so a quoted
+        # "false" — the exact typo YAML invites — would have ENABLED an
+        # unregistered behavior change. Anything that is not a bare YAML bool
+        # falls back to OFF (bot/strategy/composite.py makes the same call for
+        # module gates).
+        warn.append(f"entry_gating={gating!r} is not a bare bool "
+                    f"({type(gating).__name__}); entries stay ungated")
+        gating = defaults.entry_gating
     cfg = ResilienceConfig(
         connect_timeout_sec=connect, read_timeout_sec=read, retry_max_tries=tries,
         retry_budget_sec=budget, health_poll_sec=health_poll,
         reconcile_budget_sec=reconcile, condition_window_sec=window,
         degraded_latency_ms=degraded, critical_latency_ms=critical,
         api_health_csv=str(raw.get("api_health_csv") or defaults.api_health_csv),
-        entry_gating=bool(raw.get("entry_gating", defaults.entry_gating)),
+        entry_gating=gating,
     )
     if warn:
         logger.warning("resilience config: falling back to defaults",

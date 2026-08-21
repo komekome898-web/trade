@@ -45,6 +45,14 @@ import pandas as pd
 
 logger = logging.getLogger("bot.main")
 
+# How often the loop re-reads the state of every non-terminal LIVE order. The
+# book must not be allowed to believe an order is resting when the venue has
+# already filled, cancelled or expired it: a stale non-terminal record is what
+# makes `OrderStore.create` refuse the next order — including a protective
+# close. Cheap and bounded (one diagnostic GET per open order, at most this
+# often), and best effort: a failed sweep changes nothing.
+ORDER_SWEEP_SEC = 30.0
+
 
 def build_app(settings: Settings, *, client: BitflyerClient | None = None,
               notifier: Notifier | None = None) -> "TradingApp":
@@ -123,6 +131,7 @@ class TradingApp:
         self.condition = ExchangeCondition.NORMAL
         self._health_poll_sec = res_cfg.health_poll_sec
         self._last_health_poll = 0.0
+        self._last_order_sweep = 0.0
         self._degraded_entry_seq = 0
         # UNREGISTERED behavior change, default OFF: throttling entries under
         # DEGRADED/CRITICAL alters what the champion trades and would
@@ -363,6 +372,7 @@ class TradingApp:
         # Before the polls, not after: a widened read timeout has to apply to
         # the very call that is struggling, not to the one after it.
         self._refresh_condition()
+        self._sweep_open_orders()
         try:
             tick = self.feed.poll_ticker()
             self._api_errors_in_row = 0
@@ -469,6 +479,41 @@ class TradingApp:
         )
         self._update_status(tick.price)
 
+    def _sweep_open_orders(self) -> None:
+        """Re-read every non-terminal LIVE order, at most once per sweep window.
+
+        Without this the book only learns about an order when something asks
+        about it, and a LIMIT order the venue filled, cancelled or expired can
+        sit as SUBMITTED forever. That stale record is not merely untidy: the
+        duplicate-order guard counts it, so the next order for the symbol is
+        refused — and the next order may be the protective stop. `OrderManager`
+        can force its way past that wedge, but a book that is simply CURRENT
+        never gets into it.
+
+        LIVE only (PAPER fills synchronously, so its records are never stale),
+        on the DIAGNOSTIC timeouts, and best effort in the strongest sense: a
+        failed refresh leaves the record exactly as it was.
+        """
+        if self.settings.mode is not Mode.LIVE:
+            return
+        now = time.time()
+        if now - self._last_order_sweep < ORDER_SWEEP_SEC:
+            return
+        self._last_order_sweep = now
+        try:
+            open_orders = self.store.active_orders(self.settings.product_code)
+        except Exception:
+            logger.exception("order sweep could not read the book")
+            return
+        for order in open_orders:
+            try:
+                with self.client.diagnostic_call():
+                    self.orders.refresh(order)
+            except Exception as e:
+                logger.warning("order sweep refresh failed", extra={"data": {
+                    "event": "order_sweep_failed", "local_id": order.local_id,
+                    "error": type(e).__name__}})
+
     def _counts_towards_api_errors(self, error: Exception) -> bool:
         """Should this failure move MAX_API_ERRORS_IN_ROW towards a kill?
 
@@ -487,16 +532,22 @@ class TradingApp:
         - any PUBLIC-endpoint failure while the venue is DEGRADED or worse.
           That failure IS the degradation; it is already reflected in the
           condition, the timeouts and (when enabled) the entry gate.
+
+        A failure carrying NO classification at all counts. Every exemption
+        above is granted on positive evidence about what went wrong; "we do not
+        know what this was" is not evidence, and treating it as one turned an
+        unclassified error into an error the counter could never see.
         """
         failure = getattr(error, "failure", None)
-        if failure is not None and failure.failure_class is FailureClass.SAFE_RETRY:
+        if failure is None:
+            return True
+        if failure.failure_class is FailureClass.SAFE_RETRY:
             return False
-        if self.condition is not ExchangeCondition.NORMAL:
-            endpoint = getattr(failure, "endpoint_class", None)
-            if endpoint is None or endpoint is EndpointClass.PUBLIC:
-                # The ticker poll is a public endpoint; a failure there while
-                # degraded says nothing new.
-                return False
+        if self.condition is not ExchangeCondition.NORMAL \
+                and failure.endpoint_class is EndpointClass.PUBLIC:
+            # The ticker poll is a public endpoint; a failure there while
+            # degraded says nothing new.
+            return False
         return True
 
     # ---- exchange condition ------------------------------------------------
@@ -739,9 +790,16 @@ class TradingApp:
                     "consecutive_losses": self.overlay_state.consecutive_losses}})
                 size = scaled
         try:
-            order = self.orders.submit(symbol=self.settings.product_code, side=side, size=size)
+            order = self.orders.submit(symbol=self.settings.product_code,
+                                       side=side, size=size, opening=opening)
         except (DuplicateOrderError, RuntimeError) as e:
-            logger.error("submit refused", extra={"data": {"event": "submit_refused", "error": str(e)}})
+            # `opening` travels with the order because the manager treats a
+            # refused CLOSE as an emergency (cancel the resting order, retry
+            # once, then alert + kill switch) rather than as a skipped tick.
+            # By the time one surfaces here the operator has already been told.
+            logger.error("submit refused", extra={"data": {
+                "event": "submit_refused", "opening": opening,
+                "side": side, "size": size, "error": str(e)}})
             return None
         # Refresh once for immediate (market/paper) fills and book them.
         order = self.orders.refresh(order)

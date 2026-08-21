@@ -24,9 +24,9 @@ from bot.exchange.resilience import (
     ApiHealthRecorder, ApiObserver, ConditionMonitor, EndpointClass,
     ExchangeCondition, FailureClass, Phase, RetryPolicy, Timeouts,
 )
-from bot.execution.gateway import ExecutionGateway, SubmitResult
+from bot.execution.gateway import ExecutionGateway, OrderStatus, SubmitResult
 from bot.order_management.manager import OrderManager
-from bot.order_management.order import OrderState, OrderStore
+from bot.order_management.order import DuplicateOrderError, OrderState, OrderStore
 from bot.order_management.reconciler import (
     AutoReconciler, ExchangeSnapshot, QueryOnlyExchange, Resolution,
 )
@@ -92,27 +92,64 @@ def _requests_exception_types():
     return out
 
 
-@pytest.mark.parametrize("name,exc_type", _requests_exception_types(),
-                         ids=[n for n, _ in _requests_exception_types()])
-def test_order_endpoint_makes_exactly_one_attempt_for_every_exception(
-        name, exc_type, fake_session):
-    """THE hard invariant, over the whole exception surface.
+def _bad_order_bodies():
+    """2xx answers that are NOT the acceptance /v1/me/sendchildorder promises.
 
-    On an ORDER endpoint every failure gets exactly ONE attempt, except the two
-    provable pre-send classes (a connect timeout, and a connection error whose
-    text names the new-connection failure) — those are sanctioned and tested
-    separately below. A plain one-argument message carries no such marker, so
-    ConnectTimeout is the only row here that may repeat.
+    Every one of them has been seen from an edge in front of an exchange: a
+    maintenance page, a body cut off mid-flight, an object without the id, a
+    bare 202 with nothing in it. None of them proves the order was refused.
     """
-    fake_session.set("POST", ORDER_PATH, exc_type("x"))
+    return [
+        ("html_page", lambda: FakeResponse(200, None,
+                                           text="<html>maintenance</html>")),
+        ("empty_body", lambda: FakeResponse(200, None, text="")),
+        ("truncated_json", lambda: FakeResponse(200, None,
+                                                text='{"child_order_acce')),
+        ("no_acceptance_id", lambda: FakeResponse(200, {"status": "ok"})),
+        ("json_array", lambda: FakeResponse(200, [])),
+        ("accepted_202_empty", lambda: FakeResponse(202, None, text="")),
+    ]
+
+
+_INVARIANT_INJECTIONS = (
+    [("transport", n, t) for n, t in _requests_exception_types()]
+    + [("parse", n, f) for n, f in _bad_order_bodies()]
+)
+
+
+@pytest.mark.parametrize("phase,name,injection", _INVARIANT_INJECTIONS,
+                         ids=[f"{p}:{n}" for p, n, _ in _INVARIANT_INJECTIONS])
+def test_order_endpoint_makes_exactly_one_attempt_for_every_failure(
+        phase, name, injection, fake_session):
+    """THE hard invariant, over BOTH phases a send can fail in.
+
+    - transport: the whole `requests.exceptions` surface. Every failure gets
+      exactly ONE attempt, except the two provable pre-send classes (a connect
+      timeout, and a connection error whose text names the new-connection
+      failure) — those are sanctioned and tested separately below. A plain
+      one-argument message carries no such marker, so ConnectTimeout is the
+      only transport row that may repeat.
+    - response parse: a 2xx whose body is not the acceptance the endpoint
+      promised. The venue may well be holding the order behind that body, so it
+      is AMBIGUOUS -> OrderStateUnknown, one attempt, and never a ValueError
+      escaping into the manager's REJECTED branch.
+    """
+    if phase == "transport":
+        fake_session.set("POST", ORDER_PATH, injection("x"))
+        expected = 3 if injection is requests.exceptions.ConnectTimeout else 1
+    else:
+        fake_session.set("POST", ORDER_PATH, injection())
+        expected = 1
     client = BitflyerClient(Secret("k"), Secret("s"), session=fake_session,
                             sleep=lambda s: None)
+    raised = None
     try:
         client.send_child_order(product_code="FX_BTC_JPY", side="BUY", size=0.01)
-    except BaseException:
-        pass
-    expected = 3 if exc_type is requests.exceptions.ConnectTimeout else 1
+    except BaseException as e:      # noqa: BLE001 - the invariant is the count
+        raised = e
     assert len(fake_session.order_calls()) == expected, name
+    if phase == "parse":
+        assert isinstance(raised, OrderStateUnknown), name
 
 
 @pytest.mark.parametrize("message", [
@@ -165,6 +202,161 @@ def test_unrecognised_transport_failure_is_ambiguous_on_order_endpoints():
     bare = requests.exceptions.ConnectionError("reset by peer")
     assert resilience.classify_exception(
         bare, EndpointClass.ORDER).failure_class is FailureClass.AMBIGUOUS
+
+
+# --------------------------------- (B1) the response BODY is classified too --
+def test_body_shape_is_only_promised_by_the_acceptance_endpoints():
+    ok = {"child_order_acceptance_id": "ACC-1"}
+    assert resilience.body_shape_problem(ORDER_PATH, ok, '{"x":1}') is None
+    assert resilience.body_shape_problem(ORDER_PATH, {}, "{}") == "missing_acceptance_id"
+    assert resilience.body_shape_problem(ORDER_PATH, None, "") == "empty_body"
+    assert resilience.body_shape_problem(ORDER_PATH, [], "[]") == "unexpected_body"
+    # A cancel answers 200 with an EMPTY body by design, so it promises nothing.
+    assert resilience.body_shape_problem("/v1/me/cancelchildorder", None, "") is None
+    assert resilience.body_shape_problem("/v1/ticker", None, "") is None
+    # ...and the classification itself is the usual split.
+    assert resilience.classify_body("empty_body",
+                                    EndpointClass.ORDER).failure_class \
+        is FailureClass.AMBIGUOUS
+    safe = resilience.classify_body("unparseable_body", EndpointClass.PUBLIC)
+    assert safe.failure_class is FailureClass.SAFE_RETRY
+    assert resilience.may_retry(safe, EndpointClass.PUBLIC)
+
+
+def _live_stack(tmp_path, session, clock=None, budget_sec=15.0):
+    """Order manager wired to the REAL client through LiveExecutor.
+
+    Everything below the manager is production code, so a test can inject an
+    HTTP response and watch what the order book actually does with it — which
+    is where a bad-body 200 used to turn into a REJECTED record.
+    """
+    from bot.execution.live import LiveExecutor
+    from bot.settings import Mode, RiskLimits, Settings
+
+    clock = clock or VirtualClock()
+    settings = Settings(mode=Mode.LIVE, product_code="FX_BTC_JPY", config={},
+                        risk_limits=RiskLimits.from_dict({
+                            "MAX_ORDER_SIZE_JPY": 130000,
+                            "MAX_POSITION_SIZE_JPY": 130000,
+                            "MAX_DAILY_LOSS_JPY": 6000, "MAX_DRAWDOWN_PCT": 10.0,
+                            "MAX_OPEN_ORDERS": 1, "MAX_CONSECUTIVE_LOSSES": 5,
+                            "MAX_API_ERRORS_IN_ROW": 5}))
+    client = BitflyerClient(Secret("k"), Secret("s"), session=session,
+                            sleep=lambda s: None)
+    store = OrderStore(tmp_path / "orders.sqlite3")
+    ks = KillSwitch(state_dir=tmp_path, manual_file=tmp_path / "KILL")
+    notifier = RecordingNotifier()
+    manager = OrderManager(
+        store, LiveExecutor(settings, client), ks,
+        reconciler=AutoReconciler(QueryOnlyExchange(client),
+                                  budget_sec=budget_sec, sleep=clock.sleep,
+                                  clock=clock),
+        notifier=notifier)
+    return manager, store, ks, notifier
+
+
+@pytest.mark.parametrize("name,body", [
+    ("html_page", FakeResponse(200, None, text="<html>maintenance</html>")),
+    ("empty_body", FakeResponse(200, None, text="")),
+])
+def test_a_200_that_is_not_an_acceptance_is_unknown_not_rejected(tmp_path, name,
+                                                                 body):
+    """(B1) The duplicate-order path at the response parse.
+
+    A 200 carrying a maintenance page raised a bare ValueError out of
+    `resp.json()`, straight past the taxonomy and into the manager's
+    `except (BitflyerError, ValueError)` branch — which closes the record
+    REJECTED. The venue may be holding that order, and the next signal, seeing
+    a book with nothing open, sends a SECOND real one.
+    """
+    session = FakeSession()
+    session.set("POST", ORDER_PATH, body)
+    session.set("GET", "/v1/me/getchildorders", FakeResponse(200, []))
+    manager, store, ks, notifier = _live_stack(tmp_path, session)
+
+    order = manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
+
+    assert order.state is OrderState.STATE_UNKNOWN          # NOT rejected
+    assert len(session.order_calls()) == 1                  # ONE body sent
+    polls = [c for c in session.calls if "getchildorders" in c["path"]]
+    assert len(polls) == 6                                  # reconciler engaged
+    assert ks.is_tripped
+    assert notifier.sent and notifier.sent[0][0] == "ORDER STATE UNKNOWN"
+
+    # ...and the next signal cannot resend it.
+    with pytest.raises(RuntimeError, match="unknown state"):
+        manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
+    assert len(session.order_calls()) == 1
+
+
+def test_a_200_carrying_a_real_acceptance_is_still_a_normal_fill(tmp_path):
+    session = FakeSession()
+    session.set("POST", ORDER_PATH,
+                FakeResponse(200, {"child_order_acceptance_id": "ACC-1"}))
+    manager, store, ks, notifier = _live_stack(tmp_path, session)
+    order = manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
+    assert order.state is OrderState.SUBMITTED
+    assert order.acceptance_id == "ACC-1"
+    assert not ks.is_tripped
+
+
+def test_a_cancel_may_answer_200_with_an_empty_body(fake_session):
+    """`cancelchildorder` answers 200 with nothing by design; that is a
+    success, not an unreadable body."""
+    fake_session.set("POST", "/v1/me/cancelchildorder",
+                     FakeResponse(200, None, text=""))
+    client = BitflyerClient(Secret("k"), Secret("s"), session=fake_session,
+                            sleep=lambda s: None)
+    assert client.cancel_child_order(product_code="FX_BTC_JPY",
+                                     child_order_acceptance_id="ACC-1") is None
+    # A body it cannot read at all is still ambiguous, on one attempt.
+    fake_session.set("POST", "/v1/me/cancelchildorder",
+                     FakeResponse(200, None, text="<html>oops</html>"))
+    with pytest.raises(OrderStateUnknown):
+        client.cancel_child_order(product_code="FX_BTC_JPY",
+                                  child_order_acceptance_id="ACC-1")
+    assert len([c for c in fake_session.calls
+                if "cancelchildorder" in c["path"]]) == 2
+
+
+def test_a_bad_body_200_is_recorded_as_ambiguous_not_ok(tmp_path, fake_session):
+    """(m6) Telemetry is written AFTER the parse: a 200 the bot could not use
+    must not be counted as a healthy call."""
+    path = tmp_path / "api_health.csv"
+    fake_session.set("POST", ORDER_PATH,
+                     FakeResponse(200, None, text="<html>maintenance</html>"))
+    client = BitflyerClient(Secret("k"), Secret("s"), session=fake_session,
+                            sleep=lambda s: None,
+                            observer=ApiObserver(ConditionMonitor(),
+                                                 ApiHealthRecorder(path)))
+    with pytest.raises(OrderStateUnknown):
+        client.send_child_order(product_code="FX_BTC_JPY", side="BUY", size=0.01)
+    rows = [r for r in path.read_text(encoding="utf-8").splitlines()[1:] if r]
+    assert len(rows) == 1
+    assert rows[0].split(",")[1] == "order"
+    assert rows[0].split(",")[4] == "ambiguous"
+
+
+def test_a_garbled_read_body_is_just_another_retry(fake_session):
+    """On an idempotent read endpoint an unreadable body is a sample to take
+    again — SAFE_RETRY, not an exception the caller has to know about."""
+    good = {"ltp": 1.0, "best_bid": 1.0, "best_ask": 1.0}
+    fake_session.set("GET", "/v1/ticker", [
+        FakeResponse(200, None, text="<html>oops</html>"),
+        FakeResponse(200, good),
+    ])
+    client = BitflyerClient(session=fake_session, sleep=lambda s: None)
+    assert client.ticker("FX_BTC_JPY")["ltp"] == 1.0
+    assert len(fake_session.calls) == 2
+
+
+def test_a_read_body_that_never_parses_surfaces_as_a_network_error(fake_session):
+    fake_session.set("GET", "/v1/ticker",
+                     FakeResponse(200, None, text="<html>oops</html>"))
+    client = BitflyerClient(session=fake_session, sleep=lambda s: None)
+    with pytest.raises(NetworkError, match="unparseable_body"):
+        client.ticker("FX_BTC_JPY")
+    assert len(fake_session.calls) == 3          # retried, then given up on
 
 
 def test_retry_policy_full_jitter_and_budget():
@@ -480,6 +672,106 @@ def test_failed_poll_is_not_evidence(tmp_path):
     order = manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
     assert order.state is OrderState.SUBMITTED    # ACTIVE on the exchange
     assert gateway.sends == 1
+
+
+# ------------------- (M2) a wedged resting order must never block a close ----
+class WedgedGateway(ExecutionGateway):
+    """The critic's scenario, as a gateway.
+
+    The first send fails ambiguously; reconciliation finds the order ACTIVE on
+    the venue, so the book holds a live SUBMITTED record — and the venue then
+    never fills it. Later sends succeed and fill at once.
+    """
+
+    def __init__(self, cancel_error: Exception | None = None):
+        self.sends = 0
+        self.canceled: list[str] = []
+        self.cancel_error = cancel_error
+        self._states: dict[str, tuple[str, float]] = {}
+
+    def submit_order(self, *, symbol, side, size, order_type, price):
+        self.sends += 1
+        if self.sends == 1:
+            raise OrderStateUnknown("read timeout on sendchildorder")
+        acceptance_id = f"ACC-{self.sends}"
+        self._states[acceptance_id] = ("COMPLETED", size)
+        return SubmitResult(acceptance_id=acceptance_id)
+
+    def cancel_order(self, *, symbol, acceptance_id):
+        if self.cancel_error is not None:
+            raise self.cancel_error
+        self.canceled.append(acceptance_id)
+        self._states[acceptance_id] = ("CANCELED", 0.0)
+
+    def fetch_order_status(self, *, symbol, acceptance_id):
+        state, filled = self._states.get(acceptance_id, ("ACTIVE", 0.0))
+        return OrderStatus(acceptance_id, state, filled,
+                           11_000_000.0 if state == "COMPLETED" else None)
+
+
+def _wedge(tmp_path, gateway):
+    """Drive the book into the wedge: ambiguous send -> ACTIVE -> stays ACTIVE."""
+    clock = VirtualClock()
+    venue = LaggyVenue(clock, order=child_order(state="ACTIVE"), lag_sec=0.0)
+    manager, store, ks, notifier = build_manager(tmp_path, gateway, venue,
+                                                 clock=clock, budget_sec=15.0)
+    entry = manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
+    assert entry.state is OrderState.SUBMITTED       # resolved to ACTIVE
+    assert entry.acceptance_id == "ACC-NEW"
+    return manager, store, ks, notifier, entry
+
+
+def test_a_wedged_resting_order_never_blocks_a_protective_close(tmp_path):
+    """(M2) The 2019 failure with a different cause: the position could not be
+    exited — not because the venue refused, but because our OWN duplicate-order
+    guard counted a resting order the venue never filled. A close outranks it:
+    cancel (idempotent, safe) and retry the close once."""
+    gateway = WedgedGateway()
+    manager, store, ks, notifier, entry = _wedge(tmp_path, gateway)
+
+    close = manager.refresh(manager.submit(symbol="FX_BTC_JPY", side="SELL",
+                                           size=0.01, opening=False))
+
+    assert close.state is OrderState.FILLED
+    assert gateway.canceled == ["ACC-NEW"]
+    assert store.get(entry.local_id).state is OrderState.CANCELED
+    assert gateway.sends == 2               # one per intended order, no resend
+    assert not ks.is_tripped
+    assert notifier.sent == []
+
+
+def test_an_entry_is_still_just_refused_by_a_resting_order(tmp_path):
+    """The priority belongs to CLOSING orders only. An entry that collides with
+    a resting order is skipped, exactly as before — degradation and congestion
+    may only ever REDUCE exposure."""
+    gateway = WedgedGateway()
+    manager, store, ks, notifier, entry = _wedge(tmp_path, gateway)
+    with pytest.raises(DuplicateOrderError):
+        manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
+    assert gateway.canceled == []
+    assert gateway.sends == 1
+    assert store.get(entry.local_id).state is OrderState.SUBMITTED
+
+
+def test_a_close_that_cannot_clear_the_book_alerts_and_trips_the_kill_switch(
+        tmp_path):
+    """(M2c) If even the cancel is ambiguous the bot cannot flatten. That is a
+    human's problem NOW — an urgent alert and a tripped kill switch, never a
+    quiet `submit_refused` line in the log."""
+    gateway = WedgedGateway(cancel_error=OrderStateUnknown("cancel timed out"))
+    manager, store, ks, notifier, entry = _wedge(tmp_path, gateway)
+
+    with pytest.raises(DuplicateOrderError):
+        manager.submit(symbol="FX_BTC_JPY", side="SELL", size=0.01,
+                       opening=False)
+
+    assert ks.is_tripped
+    assert ks.state["reason"] == "system_error"
+    assert entry.local_id in ks.state["detail"]        # names the wedged order
+    title, message, urgent = notifier.sent[-1]
+    assert title == "CANNOT CLOSE POSITION" and urgent is True
+    assert entry.local_id in message
+    assert gateway.sends == 1                          # zero duplicate sends
 
 
 # ---------------------- (c) no positive evidence -> STATE_UNKNOWN, never closed --
@@ -865,6 +1157,55 @@ def test_entry_gating_is_off_by_default():
     assert load_resilience_config({"entry_gating": True}).entry_gating is True
 
 
+def _config_problems(caplog) -> list[str]:
+    """The fields `load_resilience_config` complained about, from the ONE
+    warning it emits (the field names live in the record's structured data)."""
+    return [p for r in caplog.records
+            for p in (getattr(r, "data", None) or {}).get("problems", [])]
+
+
+@pytest.mark.parametrize("value", ["false", "no", "0", "1", "true", 0, 1, None])
+def test_entry_gating_is_read_strictly(value, caplog):
+    """(M3) A quoted "false" is a non-empty string, so `bool()` would have
+    ENABLED an unregistered behavior change. Anything that is not a bare YAML
+    bool falls back to OFF and says so once (composite.py's precedent)."""
+    from bot.exchange.resilience import load_resilience_config
+    with caplog.at_level("WARNING"):
+        cfg = load_resilience_config({"entry_gating": value})
+    assert cfg.entry_gating is False
+    assert any("entry_gating" in p for p in _config_problems(caplog))
+
+
+def test_reconcile_budget_is_range_checked(caplog):
+    """(m10) Below 5s the schedule cannot outlast the venue's listing lag;
+    above 60s the loop is blocked for a minute on one send. Either way it is a
+    typo, not a tuning choice."""
+    from bot.exchange.resilience import ResilienceConfig, load_resilience_config
+    default = ResilienceConfig().reconcile_budget_sec
+    with caplog.at_level("WARNING"):
+        assert load_resilience_config(
+            {"reconcile_budget_sec": 1}).reconcile_budget_sec == default
+        assert load_resilience_config(
+            {"reconcile_budget_sec": 600}).reconcile_budget_sec == default
+    assert any("reconcile_budget_sec" in p for p in _config_problems(caplog))
+    assert load_resilience_config(
+        {"reconcile_budget_sec": 30}).reconcile_budget_sec == 30
+
+
+def test_the_first_reconciliation_poll_is_capped_in_absolute_time():
+    """(m10) The first poll catches an order the venue listed at once; with a
+    long budget a purely proportional offset would make the caller — holding an
+    order in an unknown state — wait for an answer available immediately."""
+    clock = VirtualClock()
+    venue = LaggyVenue(clock)
+    reconciler = AutoReconciler(venue, budget_sec=120.0, sleep=clock.sleep,
+                                clock=clock)
+    reconciler.resolve(symbol="FX_BTC_JPY", side="BUY", size=0.01,
+                       snapshot=reconciler.baseline())
+    assert venue.query_times[0] == 2.0            # not 120/30 = 4.0
+    assert venue.query_times[1] == 8.0            # the rest stay proportional
+
+
 @pytest.mark.parametrize("condition", [ExchangeCondition.DEGRADED,
                                        ExchangeCondition.CRITICAL])
 def test_gating_off_leaves_entries_alone(condition):
@@ -907,6 +1248,28 @@ def test_closing_order_path_is_invariant_under_every_condition(tmp_path, monkeyp
     closing = app._try_order("SELL", tick, size=size)
     assert closing is not None
     assert app.portfolio.position_size == pytest.approx(0.0)
+
+
+def test_the_app_tells_the_manager_what_each_order_is_for(tmp_path, monkeypatch):
+    """(M2b) The manager can only give a CLOSE priority over the book if it is
+    told which orders are closes. That flag is `_try_order`'s `opening`."""
+    app = _paper_app(tmp_path, monkeypatch)
+    from bot.market_data.feed import Tick
+    tick = Tick(timestamp=1.0, price=10_000_000, best_bid=9_999_000,
+                best_ask=10_001_000)
+    app.feed.last_tick = tick
+    seen = []
+    real_submit = app.orders.submit
+
+    def spy(**kwargs):
+        seen.append(kwargs.get("opening"))
+        return real_submit(**kwargs)
+
+    app.orders.submit = spy
+    app._try_order("BUY", tick)
+    size = app.portfolio.position_size
+    app._try_order("SELL", tick, size=size)
+    assert seen == [True, False]
 
 
 def _paper_app(tmp_path, monkeypatch, resilience_cfg=None, session=None,
@@ -1025,6 +1388,27 @@ def test_public_failures_are_ignored_while_degraded(tmp_path, monkeypatch):
     assert app.condition is ExchangeCondition.DEGRADED
     assert app._api_errors_in_row == 0
     assert not app.kill_switch.is_tripped
+
+
+def test_an_unclassified_failure_still_counts_towards_the_api_error_kill(
+        tmp_path, monkeypatch):
+    """(m5) Every exemption is granted on positive evidence about what went
+    wrong. "We do not know what this was" is not evidence — an error with no
+    classification attached used to be exempt while DEGRADED, which is an error
+    the counter could never see."""
+    app = _paper_app(tmp_path, monkeypatch)
+    app.condition = ExchangeCondition.CRITICAL
+    assert app._counts_towards_api_errors(NetworkError("no classification"))
+    assert app._counts_towards_api_errors(BitflyerError(500, "no failure obj"))
+    # A classified public failure while degraded is still exempt.
+    public = resilience.classify_status(400, EndpointClass.PUBLIC)
+    assert not app._counts_towards_api_errors(
+        BitflyerError(400, "nope", public))
+    # ...and a SAFE_RETRY never counts, whatever the condition.
+    app.condition = ExchangeCondition.NORMAL
+    retryable = resilience.classify_exception(
+        requests.exceptions.ReadTimeout("slow"), EndpointClass.PRIVATE_READ)
+    assert not app._counts_towards_api_errors(NetworkError("slow", retryable))
 
 
 def test_staleness_budget_scales_with_the_read_timeout(tmp_path, monkeypatch):
@@ -1181,6 +1565,110 @@ def test_reconciler_wall_clock_stays_inside_budget_plus_one_read(tmp_path):
     assert clock() <= 15.0 + 5.0
 
 
+def test_a_condition_applied_inside_a_diagnostic_window_survives_it(fake_session):
+    """(m8) A reconciliation window can stay open for the whole budget, and the
+    venue degrading DURING it is exactly when it happens. Restoring the pair
+    captured on the way in threw that away and left the next trading call on
+    the pre-degradation read timeout."""
+    client = BitflyerClient(Secret("k"), Secret("s"), session=fake_session,
+                            sleep=lambda s: None)
+    client.configure(timeouts=Timeouts(connect_sec=3.0, read_sec=10.0))
+    with client.diagnostic_call():
+        assert client.timeouts.as_tuple() == (3.0, 5.0)
+        client.apply_condition(ExchangeCondition.CRITICAL)
+        assert client.timeouts.as_tuple() == (3.0, 5.0)     # window still rules
+    assert client.timeouts.as_tuple() == (3.0, 30.0)        # ...and not lost
+
+    # Nested windows restore the OUTER window first, then the trading value.
+    with client.diagnostic_call():
+        with client.diagnostic_call(Timeouts(3.0, 1.0, 1.0)):
+            assert client.timeouts.as_tuple() == (3.0, 1.0)
+        assert client.timeouts.as_tuple() == (3.0, 5.0)
+    assert client.timeouts.as_tuple() == (3.0, 30.0)
+    # Recovery still restores the configured base exactly.
+    client.apply_condition(ExchangeCondition.NORMAL)
+    assert client.timeouts.as_tuple() == (3.0, 10.0)
+
+
+def test_the_loop_sweeps_open_live_orders_on_diagnostic_timeouts(tmp_path,
+                                                                 monkeypatch):
+    """(M2a) A LIMIT order the venue already filled must not sit in the book as
+    SUBMITTED: that stale record is what makes the duplicate-order guard refuse
+    the next order, which may be the protective stop."""
+    from dataclasses import replace
+
+    from bot.execution.live import LiveExecutor
+    from bot.settings import Mode
+
+    session = TimeoutRecordingSession()
+    client = BitflyerClient(Secret("k"), Secret("s"), session=session,
+                            sleep=lambda s: None)
+    app = _paper_app(tmp_path, monkeypatch, client=client)
+    app.settings = replace(app.settings, mode=Mode.LIVE)
+    app.orders._gateway = LiveExecutor(app.settings, app.client)
+    app.client.apply_condition(ExchangeCondition.CRITICAL)
+
+    order = app.store.create("FX_BTC_JPY", "BUY", 0.01, "MARKET", None)
+    app.store.transition(order.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-1")
+    session.set("GET", "/v1/me/getchildorders", FakeResponse(200, [{
+        "child_order_acceptance_id": "ACC-1", "child_order_state": "COMPLETED",
+        "executed_size": 0.01, "average_price": 11_000_000}]))
+
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+
+    assert app.store.get(order.local_id).state is OrderState.FILLED
+    # ...on the DIAGNOSTIC timeouts, with the trading ones restored afterwards.
+    assert session.read_timeout_for("/v1/me/getchildorders") == 5.0
+    assert app.client.timeouts.as_tuple() == (3.0, 30.0)
+
+    # Bounded: a second sweep inside the window makes no call at all.
+    stale = app.store.create("FX_BTC_JPY", "BUY", 0.01, "MARKET", None)
+    app.store.transition(stale.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-2")
+    before = len(session.calls)
+    app._sweep_open_orders()
+    assert len(session.calls) == before
+
+
+def test_a_failed_sweep_changes_nothing_and_never_raises(tmp_path, monkeypatch):
+    from dataclasses import replace
+
+    from bot.execution.live import LiveExecutor
+    from bot.settings import Mode
+
+    session = FakeSession()
+    client = BitflyerClient(Secret("k"), Secret("s"), session=session,
+                            sleep=lambda s: None)
+    app = _paper_app(tmp_path, monkeypatch, client=client)
+    app.settings = replace(app.settings, mode=Mode.LIVE)
+    app.orders._gateway = LiveExecutor(app.settings, app.client)
+    order = app.store.create("FX_BTC_JPY", "BUY", 0.01, "MARKET", None)
+    app.store.transition(order.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-1")
+    session.set("GET", "/v1/me/getchildorders",
+                requests.exceptions.ReadTimeout("slow"))
+
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()                       # must not raise
+    assert app.store.get(order.local_id).state is OrderState.SUBMITTED
+
+
+def test_paper_mode_does_not_sweep(tmp_path, monkeypatch):
+    """PAPER fills synchronously, so its records are never stale — and the
+    paper gateway has no venue to ask."""
+    session = FakeSession()
+    app = _paper_app(tmp_path, monkeypatch, session=session)
+    order = app.store.create("FX_BTC_JPY", "BUY", 0.01, "MARKET", None)
+    app.store.transition(order.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-1")
+    app._last_order_sweep = -1e9
+    before = len(session.calls)
+    app._sweep_open_orders()
+    assert len(session.calls) == before
+
+
 def test_paper_mode_has_no_reconciler(tmp_path, monkeypatch):
     """PAPER's executor is local, so ambiguity cannot arise and there is
     nothing for a reconciler to query."""
@@ -1266,12 +1754,26 @@ def test_a_stale_health_reading_drops_out_of_the_vote():
     assert monitor.condition is ExchangeCondition.NORMAL
 
 
-def test_a_stale_stop_reading_no_longer_halts_entries():
+def test_a_stale_stop_reading_stays_sticky_until_a_fresh_reading():
+    """(m9) STOP is the one reading the TTL must NOT clear.
+
+    A stale BUSY drops out of the vote because it says nothing about load now.
+    "The venue was halted and we have not heard since" is different: the poll
+    that would clear it is the call that is failing, so expiring it resumes
+    ENTRIES into a venue last known to be stopped, on no evidence. Only a fresh
+    non-STOP reading clears it. Closes are never gated on this.
+    """
     clock = _StepClock(step=0.0)
     monitor = ConditionMonitor(clock=clock, health_ttl_sec=90.0)
     monitor.observe_health("STOP")
     assert monitor.exchange_stopped
-    clock.t = 91.0
+
+    clock.t = 10_000.0                       # the poll never came back
+    assert monitor.exchange_stopped          # sticky
+    assert monitor.health is None            # ...but still reported as expired
+    assert monitor.snapshot()["health"] is None
+
+    monitor.observe_health("NORMAL")         # a FRESH reading clears it
     assert not monitor.exchange_stopped
 
 

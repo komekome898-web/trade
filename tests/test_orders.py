@@ -85,11 +85,29 @@ def test_reconcile_unknown_order_found_filled(manager, store, gateway):
     assert store.unknown_orders() == []
 
 
-def test_reconcile_unknown_order_not_on_exchange(manager, store, gateway):
+@pytest.mark.parametrize("answer", [
+    None,                                          # the query came back empty
+    OrderStatus("ACC-X", "UNKNOWN", 0.0, None),    # the caller could not tell
+    OrderStatus("ACC-X", "", 0.0, None),
+])
+def test_reconcile_unknown_keeps_unconfirmed_orders_unknown(manager, store,
+                                                            gateway, answer):
+    """(m7) Only an explicit exchange state resolves a record. 'Not found' is
+    absence of evidence — closing it as REJECTED is how the book goes flat
+    while the venue still holds a live order."""
     gateway.fail_with = OrderStateUnknown("timeout")
     manager.submit(symbol="XRP_JPY", side="BUY", size=10.0)
-    resolved = manager.reconcile_unknown(lambda o: None)
-    assert resolved[0].state is OrderState.REJECTED
+    resolved = manager.reconcile_unknown(lambda o: answer)
+    assert resolved == []
+    assert [o.state for o in store.unknown_orders()] == [OrderState.STATE_UNKNOWN]
+
+
+def test_reconcile_unknown_resolves_a_confirmed_cancel(manager, store, gateway):
+    gateway.fail_with = OrderStateUnknown("timeout")
+    manager.submit(symbol="XRP_JPY", side="BUY", size=10.0)
+    resolved = manager.reconcile_unknown(
+        lambda o: OrderStatus("ACC-X", "CANCELED", 0.0, None))
+    assert resolved[0].state is OrderState.CANCELED
     assert store.unknown_orders() == []
 
 

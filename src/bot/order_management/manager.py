@@ -5,7 +5,9 @@ import logging
 
 from bot.exchange.bitflyer_client import BitflyerError, OrderStateUnknown
 from bot.execution.gateway import ExecutionGateway
-from bot.order_management.order import Order, OrderState, OrderStore
+from bot.order_management.order import (
+    DuplicateOrderError, Order, OrderState, OrderStore,
+)
 from bot.order_management.reconciler import AutoReconciler, ExchangeSnapshot
 from bot.risk.kill_switch import KillReason, KillSwitch
 
@@ -44,7 +46,8 @@ class OrderManager:
         self._notifier = notifier
 
     def submit(self, *, symbol: str, side: str, size: float,
-               order_type: str = "MARKET", price: float | None = None) -> Order:
+               order_type: str = "MARKET", price: float | None = None,
+               opening: bool = True) -> Order:
         """Persist first, then submit.
 
         An ambiguous failure is handed to the QUERY-ONLY auto-reconciler, which
@@ -53,11 +56,22 @@ class OrderManager:
         reports and trading continues. Not found, or no reconciler at all ->
         STATE_UNKNOWN, kill switch, operator alert; never "assumed not placed".
         Either way the order is NEVER resent (rule 12).
+
+        `opening` says what the order is FOR, and only the CLOSING case may act
+        on it: a close outranks anything resting on the book (see
+        `_make_room_for_close`). An entry refused because an order already
+        exists is simply skipped, as before.
         """
         if self._store.unknown_orders():
             raise RuntimeError("orders with unknown state exist; reconcile before submitting")
         snapshot = self._baseline(symbol)
-        order = self._store.create(symbol, side, size, order_type, price)
+        try:
+            order = self._store.create(symbol, side, size, order_type, price)
+        except DuplicateOrderError as refusal:
+            if opening:
+                raise
+            order = self._make_room_for_close(symbol, side, size, order_type,
+                                              price, refusal)
         try:
             result = self._gateway.submit_order(
                 symbol=symbol, side=side, size=size, order_type=order_type, price=price
@@ -81,6 +95,61 @@ class OrderManager:
             return order
         return self._store.transition(order.local_id, OrderState.SUBMITTED,
                                       acceptance_id=result.acceptance_id)
+
+    # ---- a CLOSING order outranks the book ---------------------------------
+    def _make_room_for_close(self, symbol: str, side: str, size: float,
+                             order_type: str, price: float | None,
+                             refusal: DuplicateOrderError) -> Order:
+        """Clear resting orders so a CLOSING order can be placed, ONCE.
+
+        The wedge this exists for: an ambiguous send resolves to ACTIVE, so the
+        book holds a live SUBMITTED order; the venue never fills it; the
+        protective stop then asks for a new order and `OrderStore.create`
+        refuses it — the duplicate-order guard silently refusing the one order
+        that must never be refused. That is the 2019 failure with a different
+        cause: a position that cannot be exited.
+
+        Cancelling is safe in a way sending is not — it is idempotent, and
+        cancelling an order that is already gone changes nothing — so the
+        resting order is cancelled and the close retried exactly once. If it is
+        STILL refused, the bot cannot flatten and a human must: urgent alert
+        plus a tripped kill switch, never a quiet `submit_refused` log line.
+        """
+        resting = [o.local_id for o in self._store.active_orders(symbol)]
+        try:
+            canceled = self.cancel_all_active(symbol)
+        except Exception as e:
+            self._closing_blocked(symbol, side, size, resting,
+                                  f"cancel failed ({type(e).__name__}: {e})")
+            raise refusal from None
+        logger.warning("resting orders cancelled to clear a closing order",
+                       extra={"data": {"event": "closing_order_priority",
+                                       "symbol": symbol, "side": side,
+                                       "size": size, "canceled": canceled,
+                                       "resting": resting}})
+        try:
+            return self._store.create(symbol, side, size, order_type, price)
+        except DuplicateOrderError as e:
+            self._closing_blocked(symbol, side, size, resting,
+                                  f"still refused after cancelling: {e}")
+            raise
+
+    def _closing_blocked(self, symbol: str, side: str, size: float,
+                         resting: list[str], detail: str) -> None:
+        """The bot cannot close. Say so as loudly as the system allows."""
+        logger.critical("closing order blocked", extra={"data": {
+            "event": "closing_order_blocked", "symbol": symbol, "side": side,
+            "size": size, "resting": resting, "detail": detail}})
+        self._alert(
+            "CANNOT CLOSE POSITION",
+            f"The protective/closing order {side} {size} {symbol} could not be "
+            f"placed: it is blocked by order(s) {resting} and {detail}. Trading "
+            f"is stopped. The exchange may still hold both the resting order "
+            f"and the position — check bitFlyer, flatten by hand if you need "
+            f"to, then reconcile and reset the kill switch.")
+        self._kill_switch.trip(
+            KillReason.SYSTEM_ERROR,
+            f"closing order {side} {size} {symbol} blocked by {resting}: {detail}")
 
     # ---- automatic, query-only reconciliation ------------------------------
     def _baseline(self, symbol: str) -> ExchangeSnapshot | None:
@@ -146,24 +215,27 @@ class OrderManager:
             "detail": res.detail}})
         return resolved
 
-    def _alert_unknown(self, order: Order) -> None:
-        """Tell the operator a human decision is now required. A dead webhook
-        must not raise on top of an already-unknown order state."""
+    def _alert(self, title: str, message: str) -> None:
+        """Urgent operator alert. A dead webhook must never raise on top of the
+        order-state problem it is trying to report."""
         if self._notifier is None:
             return
         try:
-            self._notifier.send(
-                "ORDER STATE UNKNOWN",
-                f"{order.side} {order.size} {order.symbol} could not be resolved "
-                f"automatically within the reconciliation budget. The exchange "
-                f"may or may not hold it. Trading is stopped and the order will "
-                f"NOT be resent — and while the kill switch is tripped the bot "
-                f"cannot CLOSE anything either. Check the order on bitFlyer, "
-                f"flatten by hand if you need to, then reconcile and reset the "
-                f"kill switch.",
-                urgent=True)
+            self._notifier.send(title, message, urgent=True)
         except Exception:
-            logger.exception("unknown-state alert failed")
+            logger.exception("operator alert failed")
+
+    def _alert_unknown(self, order: Order) -> None:
+        """Tell the operator a human decision is now required."""
+        self._alert(
+            "ORDER STATE UNKNOWN",
+            f"{order.side} {order.size} {order.symbol} could not be resolved "
+            f"automatically within the reconciliation budget. The exchange "
+            f"may or may not hold it. Trading is stopped and the order will "
+            f"NOT be resent — and while the kill switch is tripped the bot "
+            f"cannot CLOSE anything either. Check the order on bitFlyer, "
+            f"flatten by hand if you need to, then reconcile and reset the "
+            f"kill switch.")
 
     def refresh(self, order: Order) -> Order:
         """Poll the gateway for fill/cancel state of a submitted order."""
@@ -182,25 +254,48 @@ class OrderManager:
                                       avg_fill_price=status.avg_fill_price)
 
     def reconcile_unknown(self, lookup_fn) -> list[Order]:
-        """Resolve STATE_UNKNOWN/PENDING_SUBMIT orders by querying the exchange.
+        """Resolve STATE_UNKNOWN/PENDING_SUBMIT orders from CONFIRMED answers.
 
-        lookup_fn(order) -> OrderStatus | None: caller queries getchildorders by
-        acceptance id or by (product, side, size, time window). None means the
-        exchange definitively has no such order -> safe to mark REJECTED.
+        lookup_fn(order) -> OrderStatus | None: the operator's query against
+        getchildorders, by acceptance id or by (product, side, size, time
+        window). It answers with what the EXCHANGE said, and only an explicit
+        exchange state — ACTIVE / COMPLETED / CANCELED / EXPIRED / REJECTED —
+        resolves the record.
+
+        Everything else keeps STATE_UNKNOWN, deliberately:
+
+        - `None` means the query came back with nothing. That is the absence of
+          evidence, not evidence of absence — it used to close the record as
+          REJECTED, the same ghost-order path the AUTOMATIC reconciler had
+          already been fixed for (bot/order_management/reconciler.py). A venue
+          that is lagging its own listing would have the bot believe it is flat
+          while a real position is open.
+        - a state string of "UNKNOWN", or anything unrecognised, is the caller
+          saying it could not tell. It used to fall back to SUBMITTED, which
+          invents an order on the book.
+
+        Returns only the orders that were actually resolved. Whatever is left
+        is still in `unknown_orders()` and still needs a human.
         """
         resolved = []
         for order in self._store.unknown_orders():
             status = lookup_fn(order)
-            if status is None:
-                resolved.append(self._store.transition(order.local_id, OrderState.REJECTED))
-            else:
-                new_state = _GATEWAY_TO_LOCAL.get(status.state, OrderState.SUBMITTED)
-                resolved.append(self._store.transition(
-                    order.local_id, new_state,
-                    acceptance_id=status.acceptance_id,
-                    filled_size=status.filled_size,
-                    avg_fill_price=status.avg_fill_price,
-                ))
+            state = None if status is None else _GATEWAY_TO_LOCAL.get(
+                str(getattr(status, "state", "")).upper())
+            if state is None:
+                logger.warning("manual reconcile: no confirmed state; order "
+                               "stays STATE_UNKNOWN", extra={"data": {
+                                   "event": "reconcile_unconfirmed",
+                                   "local_id": order.local_id,
+                                   "reported": (None if status is None
+                                                else str(status.state))}})
+                continue
+            resolved.append(self._store.transition(
+                order.local_id, state,
+                acceptance_id=status.acceptance_id,
+                filled_size=status.filled_size,
+                avg_fill_price=status.avg_fill_price,
+            ))
         return resolved
 
     def cancel_all_active(self, symbol: str) -> int:
