@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 
 from bot.exchange.bitflyer_client import BitflyerError, OrderStateUnknown
 from bot.execution.gateway import ExecutionGateway
 from bot.order_management.order import Order, OrderState, OrderStore
+from bot.order_management.reconciler import AutoReconciler, ExchangeSnapshot
 from bot.risk.kill_switch import KillReason, KillSwitch
 
 logger = logging.getLogger("bot.orders")
@@ -18,19 +20,43 @@ _GATEWAY_TO_LOCAL = {
     "EXPIRED": OrderState.CANCELED,
 }
 
+# AutoReconciler outcomes -> local states. NOT_PLACED closes the record as
+# REJECTED, the same terminal state `reconcile_unknown` uses when the exchange
+# definitively has no such order.
+_RESOLUTION_TO_LOCAL = {
+    "FILLED": OrderState.FILLED,
+    "ACTIVE": OrderState.SUBMITTED,
+    "CANCELED": OrderState.CANCELED,
+    "REJECTED": OrderState.REJECTED,
+    "NOT_PLACED": OrderState.REJECTED,
+}
+
 
 class OrderManager:
-    def __init__(self, store: OrderStore, gateway: ExecutionGateway, kill_switch: KillSwitch):
+    def __init__(self, store: OrderStore, gateway: ExecutionGateway,
+                 kill_switch: KillSwitch, *,
+                 reconciler: AutoReconciler | None = None, notifier=None):
         self._store = store
         self._gateway = gateway
         self._kill_switch = kill_switch
+        # Query-only, bounded auto-reconciliation of an ambiguous send. None in
+        # PAPER mode: the executor is local, so ambiguity cannot arise.
+        self._reconciler = reconciler
+        self._notifier = notifier
 
     def submit(self, *, symbol: str, side: str, size: float,
                order_type: str = "MARKET", price: float | None = None) -> Order:
-        """Persist first, then submit. Ambiguous failures leave STATE_UNKNOWN and
-        trip the kill switch — the bot never blindly resends (rule 12)."""
+        """Persist first, then submit.
+
+        An ambiguous failure is handed to the QUERY-ONLY auto-reconciler, which
+        has a bounded budget to prove what happened from getchildorders /
+        getpositions. Resolved -> the record takes the true state and trading
+        continues. Unresolved (or no reconciler at all) -> STATE_UNKNOWN, kill
+        switch, operator alert. Either way the order is NEVER resent (rule 12).
+        """
         if self._store.unknown_orders():
             raise RuntimeError("orders with unknown state exist; reconcile before submitting")
+        snapshot = self._pre_send_snapshot(symbol)
         order = self._store.create(symbol, side, size, order_type, price)
         try:
             result = self._gateway.submit_order(
@@ -38,9 +64,14 @@ class OrderManager:
             )
         except OrderStateUnknown as e:
             order = self._store.transition(order.local_id, OrderState.STATE_UNKNOWN)
+            resolved = self._auto_reconcile(order, symbol, side, size, snapshot)
+            if resolved is not None:
+                return resolved
             self._kill_switch.trip(KillReason.ORDER_STATE_UNKNOWN, str(e))
             logger.error("order state unknown after submit", extra={"data": {
-                "event": "order_state_unknown", "local_id": order.local_id}})
+                "event": "order_state_unknown", "local_id": order.local_id,
+                "auto_reconciled": False}})
+            self._alert_unknown(order)
             return order
         except (BitflyerError, ValueError) as e:
             order = self._store.transition(order.local_id, OrderState.REJECTED)
@@ -49,6 +80,86 @@ class OrderManager:
             return order
         return self._store.transition(order.local_id, OrderState.SUBMITTED,
                                       acceptance_id=result.acceptance_id)
+
+    # ---- automatic, query-only reconciliation ------------------------------
+    def _pre_send_snapshot(self, symbol: str) -> ExchangeSnapshot | None:
+        """Acceptance ids + position size as they are BEFORE the send.
+
+        Costs two read-only GETs before every LIVE send. That is deliberate:
+        without a baseline there is nothing to diff an ambiguous failure
+        against, and the alternative to a diff is a human at 3am.
+
+        The ids the local book already knows are unioned in, so an acceptance
+        id we recorded earlier can never be mistaken for the order we are about
+        to send even if the snapshot poll happened to omit it.
+
+        Best effort: if the snapshot cannot be taken there is nothing to diff
+        against, so auto-reconciliation is simply skipped for this order and
+        the existing STATE_UNKNOWN path stands. It must never block a send.
+        """
+        if self._reconciler is None:
+            return None
+        try:
+            snapshot = self._reconciler.snapshot(symbol)
+            return replace(snapshot, acceptance_ids=frozenset(
+                snapshot.acceptance_ids | self._store.known_acceptance_ids()))
+        except Exception as e:
+            logger.warning("pre-send snapshot failed; auto-reconciliation disabled "
+                           "for this order", extra={"data": {
+                               "event": "presend_snapshot_failed",
+                               "error": type(e).__name__}})
+            return None
+
+    def _auto_reconcile(self, order: Order, symbol: str, side: str, size: float,
+                        snapshot: ExchangeSnapshot | None) -> Order | None:
+        """Resolve STATE_UNKNOWN from read-only endpoints. None = still unknown.
+
+        Nothing in this path can send an order: the reconciler holds a
+        QueryOnlyExchange, which has no send/cancel method at all.
+        """
+        if self._reconciler is None or snapshot is None:
+            return None
+        try:
+            res = self._reconciler.resolve(symbol=symbol, side=side, size=size,
+                                           snapshot=snapshot)
+        except Exception:
+            logger.exception("auto-reconciliation failed; order stays STATE_UNKNOWN")
+            return None
+        if not res.resolved:
+            logger.error("auto-reconciliation exhausted its budget", extra={"data": {
+                "event": "reconcile_unresolved", "local_id": order.local_id,
+                "polls": res.polls, "elapsed_sec": round(res.elapsed_sec, 2),
+                "detail": res.detail}})
+            return None
+        new_state = _RESOLUTION_TO_LOCAL.get(res.state)
+        if new_state is None:      # pragma: no cover - defensive
+            return None
+        resolved = self._store.transition(
+            order.local_id, new_state, acceptance_id=res.acceptance_id,
+            filled_size=res.filled_size or None,
+            avg_fill_price=res.avg_fill_price)
+        logger.warning("order state auto-reconciled", extra={"data": {
+            "event": "order_auto_reconciled", "local_id": order.local_id,
+            "resolution": res.state, "state": new_state.value,
+            "polls": res.polls, "elapsed_sec": round(res.elapsed_sec, 2),
+            "detail": res.detail}})
+        return resolved
+
+    def _alert_unknown(self, order: Order) -> None:
+        """Tell the operator a human decision is now required. A dead webhook
+        must not raise on top of an already-unknown order state."""
+        if self._notifier is None:
+            return
+        try:
+            self._notifier.send(
+                "ORDER STATE UNKNOWN",
+                f"{order.side} {order.size} {order.symbol} could not be resolved "
+                f"automatically within the reconciliation budget. Trading is "
+                f"stopped and the order will NOT be resent. Check the order on "
+                f"bitFlyer, then reconcile and reset the kill switch by hand.",
+                urgent=True)
+        except Exception:
+            logger.exception("unknown-state alert failed")
 
     def refresh(self, order: Order) -> Order:
         """Poll the gateway for fill/cancel state of a submitted order."""

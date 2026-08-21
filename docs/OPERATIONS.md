@@ -164,6 +164,112 @@ FAIL します)。
   (`docs/KNOWLEDGE.md` §5 の常設基準)。「モジュール入りのバックテストが勝った」
   は採用根拠になりません。
 
+## 3.5 API 状態(取引所の劣化への備え)
+
+2019年の失敗は「シグナルが外れた」ではなく「相場が動いた瞬間に bitFlyer が重く
+なり、注文が通らず、建玉を降ろせなかった」でした。BOT はその劣化を**測って**
+振る舞いを変えます。
+
+### API状態タイル(ダッシュボード)
+
+Bot コンソール(http://127.0.0.1:8300)のタイル列に **API状態** が出ます。
+
+```
+API状態
+DEGRADED   p95 1840ms / VERY BUSY
+```
+
+- 左: `NORMAL` / `DEGRADED` / `CRITICAL` — BOT 自身の判定。**DEGRADED 以上は赤**
+- `p95`: 直近15分の自分のAPI呼び出しレイテンシ95パーセンタイル
+- 右端: `/v1/gethealth` の生の文字列(`NORMAL` / `BUSY` / `VERY BUSY` /
+  `SUPER BUSY` / `STOP`)
+
+判定は「gethealth の状態」「自分の呼び出しレイテンシの EWMA」「直近の
+エラー率」の3つから決まります。**悪化は即座、回復はゆっくり**(数サンプル連続で
+落ち着き、かつ最低滞在時間を超えてから)なので、境界付近で毎ティック
+チカチカすることはありません。
+
+### 各レベルでの挙動
+
+| レベル | 新規エントリー | 決済(利確・損切・CLOSE) | read タイムアウト |
+|---|---|---|---|
+| NORMAL | 通常 | 通す | 設定値(既定10秒) |
+| DEGRADED | **頻度を半分に**(1回打って1回飛ばす) | 通す | ×2 |
+| CRITICAL / gethealth=STOP | **全面停止** | 通す | ×3 |
+
+**決済はどのレベルでも必ず通します。** 劣化でエントリーを絞るのはリスクを
+減らす方向だけで、建玉を降ろせなくなる方向には一切働きません(pre_trade_checks
+の `increases_exposure` と同じ考え方。`tests/test_resilience.py` が
+CRITICAL 中の決済成功を明示的に検査しています)。connect タイムアウトは
+広げません — 3秒で繋がらない接続は待っても注文を運びません。
+
+Kill Switch の意味は変わりません。劣化は Kill Switch を発動させません。
+
+設定は `config/config.yaml` の `resilience:` ブロック(タイムアウト、リトライ
+回数と予算、gethealth ポーリング間隔、しきい値)。
+
+### data/api_health.csv(生テレメトリ)
+
+BOT の API 呼び出し1回につき1行、追記のみ:
+
+```
+ts,endpoint_class,endpoint,latency_ms,outcome,condition,health
+1787320011.412,public,/v1/ticker,84.3,ok,NORMAL,NORMAL
+```
+
+- `endpoint_class`: `public` / `private_read` / `order`
+- `outcome`: `ok` / `safe_retry` / `ambiguous` / `rejected`
+- 4MB を超えると `api_health.csv.1` に退避して切り詰めます
+- **書き込み失敗は握り潰します**。テレメトリが取引を止めることは絶対にありません
+
+PAPER 稼働中に自宅PCから貯まるこのファイルが、LIVE のタイムアウトを
+「勘」ではなく実測で決めるための材料です。分布を見るには:
+
+```bash
+python - <<'PY'
+import csv, statistics
+lat = [float(r["latency_ms"]) for r in csv.DictReader(open("data/api_health.csv"))]
+lat.sort()
+print(len(lat), "calls  p50", lat[len(lat)//2], " p95", lat[int(len(lat)*.95)],
+      " max", lat[-1])
+PY
+```
+
+### リトライの原則(破らない)
+
+- **読み取り系**(ticker / executions / getchildorders など)は冪等なので、
+  失敗したら指数バックオフ(フルジッター)で再送します
+- **注文系**は、リクエスト本文が送信される**前**に失敗したことが証明できる場合
+  (接続拒否 / 名前解決失敗 / connect タイムアウト / TLS ハンドシェイク失敗)
+  **だけ**再送します
+- 送信後に失敗したもの(read タイムアウト、送信後の切断、注文系の 5xx)は
+  **曖昧**として扱い、**絶対に再送しません**
+
+### STATE_UNKNOWN と自動照合
+
+曖昧な失敗が起きると、BOT はまず**読み取り専用**の自動照合を試みます:
+送信直前に控えた「既知の注文受付ID一覧+建玉サイズ」と、`getchildorders` /
+`getpositions` を突き合わせ、最大15秒(既定)以内に
+**約定していた / 板に残っている / そもそも出ていなかった** のどれかを確定します。
+確定できれば注文レコードに正しい状態を書いて通常運転に戻ります。
+この照合は `QueryOnlyExchange`(送信メソッドを一切持たないオブジェクト)経由
+なので、**構造上、注文を出すことができません**。
+
+15秒で確定できなかった場合だけ、従来どおり:
+
+1. 注文は `STATE_UNKNOWN` のまま(**再送しません**)
+2. Kill Switch が `order_state_unknown` で発動
+3. Discord に `🚨 ORDER STATE UNKNOWN` が飛びます
+
+このアラートが来たら、オペレーターがやることは:
+
+1. bitFlyer の画面か `getchildorders` で、その注文が実在するか確認する
+2. 建玉が意図と合っているか確認する(合っていなければ**手で**解消する)
+3. 原因を `logs/bot.jsonl`(`event=order_state_unknown`)で確認する
+4. そのうえで Kill Switch を `reset(operator_confirm=True)` で解除する
+
+**BOT に判断させないでください。** ここは人間の持ち場です。
+
 ## 4. Discord 通知(任意)
 
 1. Discord サーバー設定 → 連携サービス → Webhook を作成し URL をコピー

@@ -13,11 +13,11 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 ## 2. 構成地図
 
 - `src/bot/settings.py` — 設定読込・モード解決・`Secret`
-- `src/bot/exchange/` — bitFlyer REST クライアント(`OrderStateUnknown` の発生源)
+- `src/bot/exchange/` — bitFlyer REST クライアント(`OrderStateUnknown` の発生源)+ `resilience.py`(失敗分類 SAFE_RETRY/AMBIGUOUS/REJECTED・リトライ方針・分割タイムアウト・取引所コンディション監視・API テレメトリ)
 - `src/bot/market_data/` — bitFlyer feed / Binance 外部 feed / Realtime WS
 - `src/bot/strategy/` — 戦略群(現行検証対象は `xborder_momentum`、他は棄却済みを含む)。`composite.py` は同一コア信号+フェイルクローズなモジュール枠(全 OFF)+新規建玉のリスクオーバーレイ
 - `src/bot/risk/` — kill switch・発注前チェック
-- `src/bot/order_management/` `execution/` `portfolio/` — 注文永続化・PAPER/LIVE 執行・建玉
+- `src/bot/order_management/` `execution/` `portfolio/` — 注文永続化・PAPER/LIVE 執行・建玉。`reconciler.py` は曖昧失敗の**読み取り専用**自動照合(時間予算付き。送信メソッドを持たない `QueryOnlyExchange` 経由なので構造上発注できない)
 - `src/bot/backtest/` — エンジン(maker執行 / TP・SL / max_hold / 決済理由記録)・指標・walk-forward
 - `src/bot/monitoring/` — status.json・Discord 通知
 - `src/bot/radar.py` — ストームレーダー(時計窓)、`src/bot/research/board.py` — 板再構成
@@ -30,7 +30,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 
 ## 3. 運用の要点
 
-- テスト: `PYTHONPATH=src python -m pytest -q`(現在599件)
+- テスト: `PYTHONPATH=src python -m pytest -q`(現在641件)
 - **`git pull` 後は必ず `pip install -e ".[dev]"`**。依存追加を取り込まないとコンポーネントが起動直後に落ちる → 詳細 `docs/OPERATIONS.md` §4.5
 - Windows 運用(3プロセス並走・ウォッチドッグ・タスクスケジューラ2件)→ `docs/OPERATIONS.md` §5
 - 緊急停止: リポジトリ直下に `KILL` ファイルを作成

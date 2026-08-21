@@ -11,23 +11,36 @@ Design constraints honored here:
 - Self rate-limiting below the published limits, exponential backoff on 429/5xx.
 - Network-ambiguous failures on order endpoints raise OrderStateUnknown and are
   NEVER retried here — the order manager must reconcile state first (rule 12).
+
+Every failure is routed through bot.exchange.resilience, which owns the
+taxonomy (SAFE_RETRY / AMBIGUOUS / REJECTED) and the single `may_retry`
+predicate. On an ORDER endpoint only a PROVABLY pre-send failure (connect
+timeout, DNS, connection refused, TLS handshake) is ever repeated — anything
+that could have reached order placement, including a 5xx, becomes
+OrderStateUnknown. Timeouts are split connect/read and widen under load.
 """
 from __future__ import annotations
 
 import hashlib
 import hmac
 import json
+import random
 import time
 from typing import Any
 
 import requests
 
+from bot.exchange import resilience
+from bot.exchange.resilience import (
+    ApiObserver, EndpointClass, ExchangeCondition, Failure, FailureClass,
+    Phase, RetryPolicy, Timeouts,
+)
 from bot.settings import Secret
 
 BASE_URL = "https://api.bitflyer.com"
 
-# Endpoints that mutate order state: ambiguous failures must not be auto-retried.
-_ORDER_ENDPOINTS = ("/v1/me/sendchildorder", "/v1/me/cancelchildorder", "/v1/me/sendparentorder")
+# Kept for callers that imported it; the authoritative list lives in resilience.
+_ORDER_ENDPOINTS = resilience.ORDER_ENDPOINTS
 
 
 class BitflyerError(Exception):
@@ -45,6 +58,15 @@ class NetworkError(Exception):
 class OrderStateUnknown(Exception):
     """An order-mutating request failed in a way where the server may or may not
     have processed it. Caller MUST reconcile via getchildorders before resending."""
+
+
+class _Classified(Exception):
+    """Internal carrier: a failed attempt plus its resilience classification."""
+
+    def __init__(self, failure: Failure, detail: str):
+        self.failure = failure
+        self.detail = detail
+        super().__init__(detail)
 
 
 class RateLimiter:
@@ -78,6 +100,11 @@ class BitflyerClient:
         max_retries: int = 3,
         sleep=time.sleep,
         clock=time.time,
+        timeouts: Timeouts | None = None,
+        retry_policy: RetryPolicy | None = None,
+        observer: ApiObserver | None = None,
+        perf=time.monotonic,
+        rand=None,
     ):
         self._api_key = api_key or Secret("")
         self._api_secret = api_secret or Secret("")
@@ -87,9 +114,43 @@ class BitflyerClient:
         self._max_retries = max_retries
         self._sleep = sleep
         self._clock = clock
+        self._perf = perf
+        self._rand = rand or random.random
+        # `timeout` stays the read timeout so existing callers keep their
+        # behavior; the connect timeout is the new, tighter half.
+        self._base_timeouts = timeouts or Timeouts(connect_sec=min(3.0, timeout),
+                                                   read_sec=timeout)
+        self._timeouts = self._base_timeouts
+        self._retry_policy = retry_policy or RetryPolicy(max_tries=max_retries)
+        self._observer = observer
         # Published limits: private 500/5min, public 500/5min per IP. Stay well below.
         self._private_limiter = RateLimiter(300, 300.0)
         self._public_limiter = RateLimiter(300, 300.0)
+
+    # ---- resilience wiring -------------------------------------------------
+    def attach_observer(self, observer: ApiObserver | None) -> None:
+        """Route per-call latency/outcome telemetry somewhere. Optional: the
+        client works identically with no observer attached."""
+        self._observer = observer
+
+    @property
+    def timeouts(self) -> Timeouts:
+        return self._timeouts
+
+    def configure(self, *, timeouts: Timeouts | None = None,
+                  retry_policy: RetryPolicy | None = None) -> None:
+        """Apply the operator's configured base timeouts / retry budget."""
+        if timeouts is not None:
+            self._base_timeouts = timeouts
+            self._timeouts = timeouts
+        if retry_policy is not None:
+            self._retry_policy = retry_policy
+
+    def apply_condition(self, condition: ExchangeCondition) -> Timeouts:
+        """Widen the READ timeout while the venue is degraded, always relative
+        to the configured base (so recovery restores it exactly)."""
+        self._timeouts = self._base_timeouts.for_condition(condition)
+        return self._timeouts
 
     # ---- public endpoints -------------------------------------------------
     def markets(self) -> list[dict]:
@@ -182,30 +243,51 @@ class BitflyerClient:
 
     def _request(self, method: str, path: str, *, params: dict | None = None,
                  body: dict | None = None, auth: bool = False) -> Any:
-        is_order_endpoint = path in _ORDER_ENDPOINTS
-        attempts = 1 if is_order_endpoint else self._max_retries
-        last_exc: Exception | None = None
-        for attempt in range(attempts):
+        """Attempt loop. The ONLY place a request is repeated.
+
+        `resilience.may_retry` is the single gate: SAFE_RETRY only, and on an
+        ORDER endpoint only when the failure is provably PRE_SEND. AMBIGUOUS
+        leaves here immediately as OrderStateUnknown — no second attempt, ever.
+        """
+        endpoint_class = resilience.endpoint_class_of(path)
+        is_order_endpoint = endpoint_class is EndpointClass.ORDER
+        started = self._perf()
+        attempt = 0
+        while True:
             try:
-                return self._request_once(method, path, params=params, body=body, auth=auth)
-            except BitflyerError as e:
-                # 429/5xx on read endpoints: back off and retry. Definite 4xx: raise.
-                if not is_order_endpoint and e.status_code in (429, 500, 502, 503, 504):
-                    last_exc = e
-                    self._sleep(2 ** attempt)
-                    continue
-                raise
-            except NetworkError as e:
-                if is_order_endpoint:
+                return self._request_once(method, path, params=params, body=body,
+                                          auth=auth, endpoint_class=endpoint_class)
+            except _Classified as c:
+                failure = c.failure
+                if failure.failure_class is FailureClass.AMBIGUOUS:
                     raise OrderStateUnknown(
-                        f"transport failure on {path}; order state must be reconciled"
-                    ) from e
-                last_exc = e
-                self._sleep(2 ** attempt)
-        raise last_exc  # type: ignore[misc]
+                        f"{c.detail}; order state must be reconciled before any resend"
+                    ) from None
+                elapsed = self._perf() - started
+                if (resilience.may_retry(failure, endpoint_class)
+                        and self._retry_policy.allows(attempt, elapsed)):
+                    self._sleep(self._retry_policy.delay_for(
+                        attempt, retry_after_sec=failure.retry_after_sec,
+                        rand=self._rand))
+                    attempt += 1
+                    continue
+                if is_order_endpoint and failure.phase is Phase.PRE_SEND \
+                        and failure.failure_class is FailureClass.SAFE_RETRY:
+                    # Every attempt failed before the body left us, so the order
+                    # was almost certainly never placed — but "almost" is not
+                    # the standard for a resend. Hand it to reconciliation.
+                    raise OrderStateUnknown(
+                        f"{c.detail}; order endpoint unreachable after "
+                        f"{attempt + 1} attempt(s), state must be reconciled"
+                    ) from None
+                if failure.status_code is not None:
+                    raise BitflyerError(failure.status_code, c.detail)
+                raise NetworkError(c.detail) from None
 
     def _request_once(self, method: str, path: str, *, params: dict | None,
-                      body: dict | None, auth: bool) -> Any:
+                      body: dict | None, auth: bool,
+                      endpoint_class: EndpointClass | None = None) -> Any:
+        endpoint_class = endpoint_class or resilience.endpoint_class_of(path)
         (self._private_limiter if auth else self._public_limiter).acquire()
         url = self._base_url + path
         body_str = json.dumps(body) if body is not None else ""
@@ -223,21 +305,41 @@ class BitflyerClient:
                 "ACCESS-TIMESTAMP": timestamp,
                 "ACCESS-SIGN": self._sign(timestamp, method, path + qs, body_str),
             })
+        call_started = self._perf()
         try:
             resp = self._session.request(
                 method, url, params=params, data=body_str if body is not None else None,
-                headers=headers, timeout=self._timeout,
+                headers=headers, timeout=self._timeouts.as_tuple(),
             )
         except requests.exceptions.RequestException as e:
+            failure = resilience.classify_exception(e, endpoint_class)
+            self._observe(endpoint_class, path, call_started, failure)
             # Never include headers/secrets in the raised message.
-            raise NetworkError(f"{method} {path}: {type(e).__name__}") from None
+            raise _Classified(failure, f"{method} {path}: {type(e).__name__}") from None
         if resp.status_code >= 400:
             detail = ""
             try:
                 detail = str(resp.json().get("error_message", ""))[:200]
             except Exception:
                 detail = resp.text[:200]
-            raise BitflyerError(resp.status_code, detail)
+            failure = resilience.classify_status(
+                resp.status_code, endpoint_class,
+                retry_after_sec=resilience.retry_after_of(resp))
+            self._observe(endpoint_class, path, call_started, failure)
+            raise _Classified(failure, detail)   # type: ignore[arg-type]
+        self._observe(endpoint_class, path, call_started, None)
         if resp.text == "":
             return None
         return resp.json()
+
+    def _observe(self, endpoint_class: EndpointClass, path: str,
+                 started: float, failure: Failure | None) -> None:
+        """Best-effort telemetry. A broken observer must never surface here."""
+        if self._observer is None:
+            return
+        try:
+            self._observer.on_call(
+                endpoint_class=endpoint_class, endpoint=path,
+                latency_ms=(self._perf() - started) * 1000.0, failure=failure)
+        except Exception:      # pragma: no cover - defensive
+            pass

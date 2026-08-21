@@ -263,6 +263,18 @@ function overlayTile(ov) {
     `DD ${fmt(ov.dd_pct, 2)}%</span>`, brake ? "neg" : "");
 }
 
+// API状態 (bot/exchange/resilience.py). condition は NORMAL/DEGRADED/CRITICAL、
+// p95 は data/api_health.csv の直近15分、health は /v1/gethealth の生文字列。
+// DEGRADED 以上は赤 — 2019年の「板が重くて注文が通らない」を可視化するタイル。
+function apiTile(a) {
+  if (a == null) return "";
+  const bad = a.condition && a.condition !== "NORMAL";
+  const p95 = a.p95_ms != null ? fmt(a.p95_ms, 0) + "ms" : "—";
+  return tile("API状態",
+    `${a.condition || "—"} <span class="sub">p95 ${p95} / ${a.health || "健全度不明"}</span>`,
+    bad ? "neg" : "");
+}
+
 async function refresh() {
   let d;
   try { d = await (await fetch("/api/status")).json(); }
@@ -294,6 +306,7 @@ async function refresh() {
     tile("約定回数", fmt(b.trade_count, 0) + " 回") +
     tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円 / ${d.scalp.trades}回`, pnlCls(d.scalp.total_pnl_jpy)) +
     tile("エラー数", fmt(b.error_count, 0)) +
+    apiTile(d.api_health) +
     overlayTile(d.overlay);
 
   const dec = d.decisions || [];

@@ -154,6 +154,17 @@ class OrderStore:
             args.append(symbol)
         return [self._row_to_order(r) for r in self._conn.execute(q, args)]
 
+    def known_acceptance_ids(self) -> set[str]:
+        """Every exchange acceptance id this book has ever seen.
+
+        Used to harden the pre-send snapshot: an id we already recorded cannot
+        be the order we are about to send, even if getchildorders happened to
+        omit it from the snapshot poll.
+        """
+        rows = self._conn.execute(
+            "SELECT acceptance_id FROM orders WHERE acceptance_id IS NOT NULL")
+        return {str(r[0]) for r in rows}
+
     def unknown_orders(self) -> list[Order]:
         rows = self._conn.execute(
             "SELECT * FROM orders WHERE state IN (?, ?)",

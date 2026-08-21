@@ -46,6 +46,24 @@ poll:
   ticker_sec: 5
   order_status_sec: 3
 
+# Execution resilience (docs/OPERATIONS.md §3.5). Timeouts are SPLIT: the
+# connect timeout stays tight (a connection that will not establish in 3s will
+# not carry a useful order), while the read timeout is what widens when
+# bitFlyer degrades — x2 at DEGRADED, x3 at CRITICAL.
+# Retries apply to read-only endpoints and to order-endpoint failures that
+# happened provably BEFORE the request was sent. An ambiguous order failure is
+# never retried; it goes to bounded query-only reconciliation instead.
+resilience:
+  connect_timeout_sec: 3.0
+  read_timeout_sec: 10.0
+  retry_max_tries: 3
+  retry_budget_sec: 10.0
+  health_poll_sec: 30           # /v1/gethealth poll interval
+  reconcile_budget_sec: 15.0    # LIVE only: budget to resolve STATE_UNKNOWN
+  condition_window_sec: 900     # rolling error-rate window
+  degraded_latency_ms: 1200
+  critical_latency_ms: 3000
+
 # Market data safety
 market_data:
   max_staleness_sec: 60          # kill switch if no fresh data for this long

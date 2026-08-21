@@ -36,6 +36,14 @@ class BotStatus:
     # (bot/main.py: _overlay_status / _active_module_names).
     overlay: dict | None = None            # {factor, consecutive_losses, dd_pct}
     active_modules: list | None = None     # [] = framework on, nothing enabled
+    # Execution resilience (bot/exchange/resilience.py). `api_condition` is the
+    # hysteretic NORMAL/DEGRADED/CRITICAL level, `api_health_status` the raw
+    # /v1/gethealth string. The 15-minute latency percentiles live in
+    # data/api_health.csv and are computed by monitoring/aggregate.py.
+    api_condition: str = "NORMAL"
+    api_health_status: str | None = None
+    api_latency_ms: float | None = None    # EWMA of this bot's own calls
+    api_error_rate: float | None = None
     updated_at: float = field(default_factory=time.time)
 
 

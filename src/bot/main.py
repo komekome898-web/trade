@@ -18,6 +18,10 @@ import logging
 import time
 
 from bot.exchange.bitflyer_client import BitflyerClient, BitflyerError, NetworkError
+from bot.exchange.resilience import (
+    ApiHealthRecorder, ApiObserver, ConditionMonitor, ExchangeCondition,
+    RetryPolicy, Timeouts,
+)
 from bot.execution.paper import PaperExecutor
 from bot.logging_setup import log_decision, redact, register_secret, setup_logging
 from bot.market_data.feed import CandleBuilder, MarketDataAnomaly, MarketDataFeed
@@ -25,6 +29,7 @@ from bot.monitoring.notifier import DiscordNotifier, Notifier, NullNotifier
 from bot.monitoring.status import StatusWriter
 from bot.order_management.manager import OrderManager
 from bot.order_management.order import DuplicateOrderError, OrderStore
+from bot.order_management.reconciler import AutoReconciler, QueryOnlyExchange
 from bot.portfolio.persistence import PaperPosition, PaperState, utc_date_of_day
 from bot.portfolio.portfolio import Portfolio
 from bot.risk.kill_switch import KillReason, KillSwitch
@@ -94,18 +99,51 @@ class TradingApp:
         self.use_flow_candles = bool(cfg.get("use_flow_candles", False))
         self._sfd_divergence: float | None = None
 
+        # ---- execution resilience (bot/exchange/resilience.py) -------------
+        # Wired BEFORE the gateway so the very first API call the bot makes is
+        # already instrumented: the paper bot's job right now is to accrue real
+        # degradation telemetry from the home PC.
+        res_cfg = cfg.get("resilience", {})
+        self._base_timeouts = Timeouts(
+            connect_sec=float(res_cfg.get("connect_timeout_sec", 3.0)),
+            read_sec=float(res_cfg.get("read_timeout_sec", 10.0)),
+        )
+        self.condition_monitor = ConditionMonitor(
+            window_sec=float(res_cfg.get("condition_window_sec", 900.0)),
+            degraded_latency_ms=float(res_cfg.get("degraded_latency_ms", 1200.0)),
+            critical_latency_ms=float(res_cfg.get("critical_latency_ms", 3000.0)),
+        )
+        self.api_recorder = ApiHealthRecorder(
+            res_cfg.get("api_health_csv", "data/api_health.csv"))
+        client.attach_observer(ApiObserver(self.condition_monitor, self.api_recorder))
+        client.configure(
+            timeouts=self._base_timeouts,
+            retry_policy=RetryPolicy(
+                max_tries=int(res_cfg.get("retry_max_tries", 3)),
+                total_budget_sec=float(res_cfg.get("retry_budget_sec", 10.0))))
+        self.condition = ExchangeCondition.NORMAL
+        self._health_poll_sec = float(res_cfg.get("health_poll_sec", 30.0))
+        self._last_health_poll = 0.0
+        self._degraded_entry_seq = 0
+
         self.kill_switch = KillSwitch()
         self.checker = PreTradeChecker(settings.risk_limits, self.kill_switch,
                                        product=self.product)
         self.store = OrderStore()
         costs = cfg.get("costs", {})
 
+        reconciler = None
         if settings.mode is Mode.LIVE:
             # Imported here so paper runs never even load the live module.
             from bot.execution.live import LiveExecutor
             self._verify_live_preconditions()
             gateway = LiveExecutor(settings, client)
             initial_equity = self._fetch_jpy_balance()
+            # LIVE only: PAPER's executor is local, so an ambiguous send cannot
+            # happen there and a reconciler would have nothing to reconcile.
+            reconciler = AutoReconciler(
+                QueryOnlyExchange(client),
+                budget_sec=float(res_cfg.get("reconcile_budget_sec", 15.0)))
         else:
             initial_equity = float(cfg.get("paper_equity_jpy", 6000.0))
             gateway = PaperExecutor(
@@ -117,7 +155,8 @@ class TradingApp:
                 leverage=self.product.leverage,
             )
 
-        self.orders = OrderManager(self.store, gateway, self.kill_switch)
+        self.orders = OrderManager(self.store, gateway, self.kill_switch,
+                                   reconciler=reconciler, notifier=notifier)
         self.portfolio = Portfolio(initial_equity_jpy=initial_equity)
         # PAPER only: reload the paper book (cumulative P&L, fill count, today's
         # daily P&L, the open position). LIVE never touches the file — there the
@@ -313,6 +352,9 @@ class TradingApp:
     def step(self) -> None:
         if self.kill_switch.is_tripped:
             return
+        # Before the polls, not after: a widened read timeout has to apply to
+        # the very call that is struggling, not to the one after it.
+        self._refresh_condition()
         try:
             tick = self.feed.poll_ticker()
             self._api_errors_in_row = 0
@@ -417,6 +459,66 @@ class TradingApp:
         )
         self._update_status(tick.price)
 
+    # ---- exchange condition ------------------------------------------------
+    def _refresh_condition(self) -> None:
+        """Fold /v1/gethealth into the monitor and apply the resulting level.
+
+        Best effort throughout: a failed health poll is telemetry we did not
+        get, not a reason to stop trading — the latency EWMA and error rate the
+        monitor already keeps from the bot's own calls carry it in the
+        meantime.
+        """
+        now = time.time()
+        if now - self._last_health_poll >= self._health_poll_sec:
+            self._last_health_poll = now
+            try:
+                status = self.client.health(self.settings.product_code)
+                self.condition_monitor.observe_health(
+                    (status or {}).get("status"))
+            except Exception:
+                pass
+        condition = self.condition_monitor.condition
+        if condition is not self.condition:
+            previous = self.condition
+            self.condition = condition
+            # DEGRADED/CRITICAL widen the READ timeout only: a slow venue
+            # answers late, it does not refuse the connection.
+            self.client.apply_condition(condition)
+            logger.warning("exchange condition changed", extra={"data": {
+                "event": "exchange_condition",
+                "from": previous.value, "to": condition.value,
+                **self.condition_monitor.snapshot()}})
+
+    def _entry_allowed_under_condition(self) -> bool:
+        """Gate for NEW entries ONLY.
+
+        Closing orders are never routed through here (see `_try_order`: the
+        gate sits inside `if opening:`), which is the whole point. The 2019
+        trap was a position that could not be exited while bitFlyer was
+        degraded — degradation must only ever REDUCE exposure, exactly like
+        pre_trade_checks' `increases_exposure`.
+        """
+        condition = self.condition
+        if condition is ExchangeCondition.NORMAL and \
+                not self.condition_monitor.exchange_stopped:
+            return True
+        if condition is ExchangeCondition.CRITICAL or \
+                self.condition_monitor.exchange_stopped:
+            logger.warning("entry suppressed: exchange condition", extra={"data": {
+                "event": "entry_suppressed", "reason": "exchange_condition",
+                **self.condition_monitor.snapshot()}})
+            return False
+        # DEGRADED: halve the entry frequency — take one opportunity, skip the
+        # next. Closing and the protective stop are untouched.
+        self._degraded_entry_seq += 1
+        if self._degraded_entry_seq % 2 == 1:
+            return True
+        logger.warning("entry skipped: exchange DEGRADED (frequency halved)",
+                       extra={"data": {
+                           "event": "entry_skipped", "reason": "exchange_degraded",
+                           **self.condition_monitor.snapshot()}})
+        return False
+
     def _sfd_blocked(self) -> bool:
         """For FX products, refuse NEW entries when the FX/spot divergence is
         close to the SFD band (5%). Closing positions is always allowed."""
@@ -500,6 +602,10 @@ class TradingApp:
         price = tick.best_ask if side == "BUY" else tick.best_bid
         opening = size is None
         if opening:
+            # Degradation gate, first thing and inside `opening` only: a
+            # CLOSING order can never reach it.
+            if not self._entry_allowed_under_condition():
+                return None
             # margin products size off equity x leverage; spot off half equity
             equity = self.portfolio.equity_jpy(tick.price)
             if self.product.is_margin:
@@ -651,6 +757,11 @@ class TradingApp:
         s.kill_switch = self.kill_switch.state
         s.overlay = self._overlay_status(price)
         s.active_modules = self._active_module_names()
+        snap = self.condition_monitor.snapshot()
+        s.api_condition = snap["condition"]
+        s.api_health_status = snap["health"]
+        s.api_latency_ms = snap["latency_ms"]
+        s.api_error_rate = snap["error_rate"]
         self.status.write()
 
     def _overlay_status(self, price: float) -> dict | None:

@@ -102,6 +102,72 @@ def _oi_snapshot(path: Path, now: float) -> dict[str, Any] | None:
     }
 
 
+def _percentile(values: list[float], q: float) -> float:
+    """Nearest-rank percentile over an already-sorted-able list."""
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    idx = int(round(q * (len(ordered) - 1)))
+    return ordered[max(0, min(idx, len(ordered) - 1))]
+
+
+def _api_health(path: Path, now: float, status: dict,
+                window_sec: float = 900.0,
+                max_bytes: int = 512 * 1024) -> dict[str, Any] | None:
+    """Latency/error picture of the bot's own API calls (data/api_health.csv).
+
+    The file is a plain append of one line per call written best-effort by
+    bot.exchange.resilience.ApiHealthRecorder, so parsing is line-tolerant: a
+    torn or short line is skipped, never fatal. Falls back to the live fields
+    in status.json when the CSV is missing — condition and health are known
+    there too; only the percentiles need the file.
+    """
+    rows: list[tuple[float, float, str, str, str]] = []
+    try:
+        size = path.stat().st_size
+        with open(path, "rb") as f:
+            f.seek(max(0, size - max_bytes))
+            chunk = f.read().decode("utf-8", errors="replace")
+    except OSError:
+        chunk = ""
+    cutoff = now - window_sec
+    for line in chunk.splitlines():
+        parts = line.split(",")
+        if len(parts) < 7:
+            continue
+        try:
+            ts = float(parts[0])
+            latency = float(parts[3])
+        except ValueError:
+            continue          # header line or a torn append
+        if ts < cutoff:
+            continue
+        rows.append((ts, latency, parts[4], parts[5], parts[6].strip()))
+    if not rows and not status:
+        return None
+    if not rows:
+        return {
+            "p50_ms": None, "p95_ms": None, "error_rate": status.get("api_error_rate"),
+            "samples": 0, "window_sec": window_sec,
+            "condition": status.get("api_condition", "NORMAL"),
+            "health": status.get("api_health_status"),
+        }
+    latencies = [r[1] for r in rows]
+    errors = sum(1 for r in rows if r[2] != "ok")
+    last = rows[-1]
+    return {
+        "p50_ms": round(_percentile(latencies, 0.50), 1),
+        "p95_ms": round(_percentile(latencies, 0.95), 1),
+        "error_rate": round(errors / len(rows), 4),
+        "samples": len(rows),
+        "window_sec": window_sec,
+        # The live monitor is authoritative for the level; the CSV's last row
+        # is the fallback for when the bot is not currently running.
+        "condition": status.get("api_condition") or last[3],
+        "health": status.get("api_health_status") or (last[4] or None),
+    }
+
+
 def _liveness(age_sec: float | None, warn_after: float, dead_after: float) -> str:
     if age_sec is None:
         return "missing"
@@ -173,6 +239,10 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         # overlay sitting at full size or an empty enabled-module list.
         "overlay": status.get("overlay"),
         "active_modules": status.get("active_modules"),
+        # Execution resilience: how bitFlyer is actually answering us right
+        # now, and how it answered over the last 15 minutes. This is the tile
+        # that would have shown the 2019 failure mode while it was happening.
+        "api_health": _api_health(root / "data" / "api_health.csv", now, status),
         "kill_switch": kill,
         "manual_kill_file": manual_kill,
         "decisions": decisions[-30:][::-1],

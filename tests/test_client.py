@@ -6,6 +6,7 @@ import hashlib
 import hmac
 
 import pytest
+import requests
 
 from bot.exchange.bitflyer_client import (
     BitflyerClient, BitflyerError, NetworkError, OrderStateUnknown,
@@ -70,11 +71,35 @@ def test_definite_4xx_no_retry(client, fake_session):
     assert len(fake_session.calls) == 1
 
 
-def test_order_endpoint_ambiguous_failure_never_retried(client, fake_session, timeout_error):
-    fake_session.set("POST", "/v1/me/sendchildorder", timeout_error)
+def test_order_endpoint_ambiguous_failure_never_retried(client, fake_session):
+    """A READ timeout on an order endpoint is the ambiguous case: the body was
+    sent and the exchange may already hold the order."""
+    fake_session.set("POST", "/v1/me/sendchildorder",
+                     requests.exceptions.ReadTimeout("boom"))
     with pytest.raises(OrderStateUnknown):
         client.send_child_order(product_code="XRP_JPY", side="BUY", size=1.0)
     assert len(fake_session.order_calls()) == 1  # exactly one attempt, no blind resend
+
+
+def test_order_endpoint_5xx_is_ambiguous_not_rejected(client, fake_session):
+    """A 5xx AFTER the body was sent cannot prove the order never reached
+    placement, so it is STATE_UNKNOWN rather than a definite rejection."""
+    fake_session.set("POST", "/v1/me/sendchildorder",
+                     FakeResponse(503, {"error_message": "unavailable"}))
+    with pytest.raises(OrderStateUnknown):
+        client.send_child_order(product_code="XRP_JPY", side="BUY", size=1.0)
+    assert len(fake_session.order_calls()) == 1
+
+
+def test_order_endpoint_presend_failure_retries_within_budget(client, fake_session,
+                                                              timeout_error):
+    """A CONNECT timeout proves the request body never left this process, so
+    repeating it cannot duplicate an order — and getting through during a storm
+    is the whole point. Still bounded, and still OrderStateUnknown at the end."""
+    fake_session.set("POST", "/v1/me/sendchildorder", timeout_error)
+    with pytest.raises(OrderStateUnknown):
+        client.send_child_order(product_code="XRP_JPY", side="BUY", size=1.0)
+    assert len(fake_session.order_calls()) == 3  # retry budget, not unbounded
 
 
 def test_secret_never_in_exception_message(client, fake_session, timeout_error):
