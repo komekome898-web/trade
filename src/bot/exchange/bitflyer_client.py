@@ -26,14 +26,15 @@ import hmac
 import json
 import random
 import time
+from contextlib import contextmanager
 from typing import Any
 
 import requests
 
 from bot.exchange import resilience
 from bot.exchange.resilience import (
-    ApiObserver, EndpointClass, ExchangeCondition, Failure, FailureClass,
-    Phase, RetryPolicy, Timeouts,
+    DIAGNOSTIC_TIMEOUTS, ApiObserver, EndpointClass, ExchangeCondition, Failure,
+    FailureClass, Phase, RetryPolicy, Timeouts,
 )
 from bot.settings import Secret
 
@@ -46,13 +47,22 @@ _ORDER_ENDPOINTS = resilience.ORDER_ENDPOINTS
 class BitflyerError(Exception):
     """API returned an error response (4xx/5xx with a definite answer)."""
 
-    def __init__(self, status_code: int, message: str):
+    def __init__(self, status_code: int, message: str,
+                 failure: Failure | None = None):
         self.status_code = status_code
+        # The resilience classification that produced this error, so callers
+        # (main's API-error counter) can tell "the venue is slow" from "the
+        # venue gave us a definite no".
+        self.failure = failure
         super().__init__(f"bitFlyer API error {status_code}: {message}")
 
 
 class NetworkError(Exception):
     """Transport-level failure on a read-only endpoint (safe to retry)."""
+
+    def __init__(self, message: str, failure: Failure | None = None):
+        self.failure = failure
+        super().__init__(message)
 
 
 class OrderStateUnknown(Exception):
@@ -89,6 +99,47 @@ class RateLimiter:
         self._calls.append(self._clock())
 
 
+def _adapter_retry_total(adapter) -> int:
+    """Retries urllib3 would do UNDER us, or 0 when the adapter has none."""
+    retries = getattr(adapter, "max_retries", None)
+    if retries is None:
+        return 0
+    total = getattr(retries, "total", retries)
+    try:
+        return int(total or 0)
+    except (TypeError, ValueError):      # pragma: no cover - defensive
+        return 0
+
+
+def _with_no_transport_retries(session):
+    """THE retry decision belongs to `resilience.may_retry`, once, per attempt.
+
+    urllib3's own adapter-level retries are invisible here: they would repeat a
+    POST /v1/me/sendchildorder inside a single `session.request` call, before
+    any of the taxonomy in bot.exchange.resilience ever runs. requests defaults
+    to 0, but a caller handing in a tuned Session can silently arm it, so this
+    pins our own session to 0 and REFUSES a supplied one that has retries armed
+    rather than trading with a duplicate-order path underneath us.
+    """
+    adapters = getattr(session, "adapters", None)
+    if not adapters:                      # test doubles have no adapter mapping
+        return session
+    for prefix, adapter in list(adapters.items()):
+        armed = _adapter_retry_total(adapter)
+        if armed:
+            raise ValueError(
+                f"session adapter for {prefix} has max_retries={armed}; the "
+                "client must be the only thing that repeats a request "
+                "(bot.exchange.resilience.may_retry). Mount it with "
+                "max_retries=0."
+            )
+        try:
+            adapter.max_retries = requests.adapters.Retry(0, read=False)
+        except Exception:                 # pragma: no cover - exotic adapter
+            pass
+    return session
+
+
 class BitflyerClient:
     def __init__(
         self,
@@ -108,7 +159,7 @@ class BitflyerClient:
     ):
         self._api_key = api_key or Secret("")
         self._api_secret = api_secret or Secret("")
-        self._session = session or requests.Session()
+        self._session = _with_no_transport_retries(session or requests.Session())
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._max_retries = max_retries
@@ -145,6 +196,30 @@ class BitflyerClient:
             self._timeouts = timeouts
         if retry_policy is not None:
             self._retry_policy = retry_policy
+
+    @contextmanager
+    def diagnostic_call(self, timeouts: Timeouts = DIAGNOSTIC_TIMEOUTS):
+        """Run read-only DIAGNOSTICS on short, fixed, single-attempt I/O.
+
+        Reconciliation polls and the /v1/gethealth poll must not inherit the
+        widened trading timeouts: at CRITICAL the read timeout is 30s, so one
+        poll could consume the whole 15s reconciliation budget, and the health
+        poll — which sits on the trading loop's hot path — could stall a step
+        for longer than the market-data staleness watchdog allows. The retry
+        policy is pinned to a single attempt too: the reconciler runs its own
+        poll schedule, so a per-call retry would just eat its budget twice.
+
+        Single-threaded by construction (the bot runs one loop); nested use
+        restores the previous values on exit.
+        """
+        previous_timeouts, previous_policy = self._timeouts, self._retry_policy
+        self._timeouts = timeouts
+        self._retry_policy = RetryPolicy(max_tries=1, total_budget_sec=0.0)
+        try:
+            yield self
+        finally:
+            self._timeouts = previous_timeouts
+            self._retry_policy = previous_policy
 
     def apply_condition(self, condition: ExchangeCondition) -> Timeouts:
         """Widen the READ timeout while the venue is degraded, always relative
@@ -281,8 +356,8 @@ class BitflyerClient:
                         f"{attempt + 1} attempt(s), state must be reconciled"
                     ) from None
                 if failure.status_code is not None:
-                    raise BitflyerError(failure.status_code, c.detail)
-                raise NetworkError(c.detail) from None
+                    raise BitflyerError(failure.status_code, c.detail, failure)
+                raise NetworkError(c.detail, failure) from None
 
     def _request_once(self, method: str, path: str, *, params: dict | None,
                       body: dict | None, auth: bool,

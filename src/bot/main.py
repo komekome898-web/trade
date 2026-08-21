@@ -19,8 +19,9 @@ import time
 
 from bot.exchange.bitflyer_client import BitflyerClient, BitflyerError, NetworkError
 from bot.exchange.resilience import (
-    ApiHealthRecorder, ApiObserver, ConditionMonitor, ExchangeCondition,
-    RetryPolicy, Timeouts,
+    ApiHealthRecorder, ApiObserver, ConditionMonitor, EndpointClass,
+    ExchangeCondition, FailureClass, RetryPolicy, Timeouts,
+    condition_multiplier, load_resilience_config,
 )
 from bot.execution.paper import PaperExecutor
 from bot.logging_setup import log_decision, redact, register_secret, setup_logging
@@ -103,28 +104,36 @@ class TradingApp:
         # Wired BEFORE the gateway so the very first API call the bot makes is
         # already instrumented: the paper bot's job right now is to accrue real
         # degradation telemetry from the home PC.
-        res_cfg = cfg.get("resilience", {})
-        self._base_timeouts = Timeouts(
-            connect_sec=float(res_cfg.get("connect_timeout_sec", 3.0)),
-            read_sec=float(res_cfg.get("read_timeout_sec", 10.0)),
-        )
+        self.res_cfg = load_resilience_config(cfg.get("resilience"))
+        res_cfg = self.res_cfg
+        self._base_timeouts = Timeouts(connect_sec=res_cfg.connect_timeout_sec,
+                                       read_sec=res_cfg.read_timeout_sec)
         self.condition_monitor = ConditionMonitor(
-            window_sec=float(res_cfg.get("condition_window_sec", 900.0)),
-            degraded_latency_ms=float(res_cfg.get("degraded_latency_ms", 1200.0)),
-            critical_latency_ms=float(res_cfg.get("critical_latency_ms", 3000.0)),
+            window_sec=res_cfg.condition_window_sec,
+            degraded_latency_ms=res_cfg.degraded_latency_ms,
+            critical_latency_ms=res_cfg.critical_latency_ms,
+            health_ttl_sec=res_cfg.health_ttl_sec,
         )
-        self.api_recorder = ApiHealthRecorder(
-            res_cfg.get("api_health_csv", "data/api_health.csv"))
+        self.api_recorder = ApiHealthRecorder(res_cfg.api_health_csv)
         client.attach_observer(ApiObserver(self.condition_monitor, self.api_recorder))
         client.configure(
             timeouts=self._base_timeouts,
-            retry_policy=RetryPolicy(
-                max_tries=int(res_cfg.get("retry_max_tries", 3)),
-                total_budget_sec=float(res_cfg.get("retry_budget_sec", 10.0))))
+            retry_policy=RetryPolicy(max_tries=res_cfg.retry_max_tries,
+                                     total_budget_sec=res_cfg.retry_budget_sec))
         self.condition = ExchangeCondition.NORMAL
-        self._health_poll_sec = float(res_cfg.get("health_poll_sec", 30.0))
+        self._health_poll_sec = res_cfg.health_poll_sec
         self._last_health_poll = 0.0
         self._degraded_entry_seq = 0
+        # UNREGISTERED behavior change, default OFF: throttling entries under
+        # DEGRADED/CRITICAL alters what the champion trades and would
+        # contaminate the running paper sample. gethealth=STOP suppression is
+        # not behind the flag (see `_entry_allowed_under_condition`).
+        self._entry_gating = res_cfg.entry_gating
+        # The staleness watchdog scales with the same multiplier as the read
+        # timeout: at CRITICAL a single read may legitimately take 30s, and a
+        # fixed 60s threshold would trip the kill switch on our OWN widened
+        # timeouts rather than on a real loss of data.
+        self._base_staleness_sec = self.feed.max_staleness_sec
 
         self.kill_switch = KillSwitch()
         self.checker = PreTradeChecker(settings.risk_limits, self.kill_switch,
@@ -141,9 +150,8 @@ class TradingApp:
             initial_equity = self._fetch_jpy_balance()
             # LIVE only: PAPER's executor is local, so an ambiguous send cannot
             # happen there and a reconciler would have nothing to reconcile.
-            reconciler = AutoReconciler(
-                QueryOnlyExchange(client),
-                budget_sec=float(res_cfg.get("reconcile_budget_sec", 15.0)))
+            reconciler = AutoReconciler(QueryOnlyExchange(client),
+                                        budget_sec=res_cfg.reconcile_budget_sec)
         else:
             initial_equity = float(cfg.get("paper_equity_jpy", 6000.0))
             gateway = PaperExecutor(
@@ -365,13 +373,15 @@ class TradingApp:
             self._on_kill(str(e))
             return
         except (BitflyerError, NetworkError) as e:
-            self._api_errors_in_row += 1
             self.status.status.error_count += 1
-            self.status.status.consecutive_api_errors = self._api_errors_in_row
             self.status.status.api_connected = False
-            if self._api_errors_in_row >= self.settings.risk_limits.max_api_errors_in_row:
-                self.kill_switch.trip(KillReason.API_ERRORS, f"{self._api_errors_in_row} in a row: {e}")
-                self._on_kill(str(e))
+            if self._counts_towards_api_errors(e):
+                self._api_errors_in_row += 1
+                self.status.status.consecutive_api_errors = self._api_errors_in_row
+                if self._api_errors_in_row >= self.settings.risk_limits.max_api_errors_in_row:
+                    self.kill_switch.trip(KillReason.API_ERRORS,
+                                          f"{self._api_errors_in_row} in a row: {e}")
+                    self._on_kill(str(e))
             return
 
         if self.leader_feed is not None:
@@ -459,22 +469,56 @@ class TradingApp:
         )
         self._update_status(tick.price)
 
+    def _counts_towards_api_errors(self, error: Exception) -> bool:
+        """Should this failure move MAX_API_ERRORS_IN_ROW towards a kill?
+
+        The counter exists for "the API is answering us with a definite no we
+        cannot handle" — a revoked key, a rejected signature. It is NOT the
+        degradation detector, and it must not become one: tripping the kill
+        switch is a FULL freeze, closes included (see `_on_kill`), so a slow
+        venue tripping it would recreate the 2019 trap the resilience layer was
+        built to avoid.
+
+        Not counted:
+        - anything classified SAFE_RETRY (transport failure, 429, 5xx on a read
+          endpoint). It has already been retried under a widened timeout, and
+          the thing it endangers — a stale price — is owned by the market-data
+          staleness watchdog, whose threshold scales with the same multiplier.
+        - any PUBLIC-endpoint failure while the venue is DEGRADED or worse.
+          That failure IS the degradation; it is already reflected in the
+          condition, the timeouts and (when enabled) the entry gate.
+        """
+        failure = getattr(error, "failure", None)
+        if failure is not None and failure.failure_class is FailureClass.SAFE_RETRY:
+            return False
+        if self.condition is not ExchangeCondition.NORMAL:
+            endpoint = getattr(failure, "endpoint_class", None)
+            if endpoint is None or endpoint is EndpointClass.PUBLIC:
+                # The ticker poll is a public endpoint; a failure there while
+                # degraded says nothing new.
+                return False
+        return True
+
     # ---- exchange condition ------------------------------------------------
     def _refresh_condition(self) -> None:
         """Fold /v1/gethealth into the monitor and apply the resulting level.
 
-        Best effort throughout: a failed health poll is telemetry we did not
-        get, not a reason to stop trading — the latency EWMA and error rate the
-        monitor already keeps from the bot's own calls carry it in the
-        meantime.
+        Best effort throughout, and OFF the hot path in the sense that matters:
+        the poll runs on the short fixed DIAGNOSTIC timeouts (connect 3s / read
+        5s, one attempt), never on the widened trading ones, so a CRITICAL
+        venue cannot make this call stall a whole trading step. A failed poll is
+        telemetry we did not get, not a reason to stop trading — it is skipped
+        silently and the reading expires on its own
+        (`ConditionMonitor.health_ttl_sec`), so a stale health string can no
+        longer hold the bot at a level forever.
         """
         now = time.time()
         if now - self._last_health_poll >= self._health_poll_sec:
             self._last_health_poll = now
             try:
-                status = self.client.health(self.settings.product_code)
-                self.condition_monitor.observe_health(
-                    (status or {}).get("status"))
+                with self.client.diagnostic_call():
+                    status = self.client.health(self.settings.product_code)
+                self.condition_monitor.observe_health((status or {}).get("status"))
             except Exception:
                 pass
         condition = self.condition_monitor.condition
@@ -484,10 +528,23 @@ class TradingApp:
             # DEGRADED/CRITICAL widen the READ timeout only: a slow venue
             # answers late, it does not refuse the connection.
             self.client.apply_condition(condition)
+            self._apply_staleness_budget(condition)
             logger.warning("exchange condition changed", extra={"data": {
                 "event": "exchange_condition",
                 "from": previous.value, "to": condition.value,
+                "max_staleness_sec": self.feed.max_staleness_sec,
                 **self.condition_monitor.snapshot()}})
+
+    def _apply_staleness_budget(self, condition: ExchangeCondition) -> None:
+        """Scale the market-data staleness threshold with the read timeout.
+
+        Same multiplier, one definition (`resilience.condition_multiplier`): a
+        widened read timeout must never race the watchdog that is supposed to
+        catch a genuinely dead feed. At NORMAL this restores the configured
+        value exactly.
+        """
+        self.feed.max_staleness_sec = (self._base_staleness_sec
+                                       * condition_multiplier(condition))
 
     def _entry_allowed_under_condition(self) -> bool:
         """Gate for NEW entries ONLY.
@@ -497,13 +554,28 @@ class TradingApp:
         trap was a position that could not be exited while bitFlyer was
         degraded — degradation must only ever REDUCE exposure, exactly like
         pre_trade_checks' `increases_exposure`.
+
+        Two different rules, deliberately:
+
+        - gethealth = STOP is ALWAYS honoured. The venue is halted; a new order
+          cannot succeed, so refusing it is not a strategy change.
+        - DEGRADED/CRITICAL throttling is behind `resilience.entry_gating`,
+          DEFAULT FALSE. Skipping entries because latency is high changes what
+          the champion trades, and that is a strategy change which has to be
+          pre-registered and measured (.claude/skills/research-protocol) before
+          it may touch the running paper sample.
         """
-        condition = self.condition
-        if condition is ExchangeCondition.NORMAL and \
-                not self.condition_monitor.exchange_stopped:
+        if self.condition_monitor.exchange_stopped:
+            logger.warning("entry suppressed: exchange halted", extra={"data": {
+                "event": "entry_suppressed", "reason": "exchange_stopped",
+                **self.condition_monitor.snapshot()}})
+            return False
+        if not self._entry_gating:
             return True
-        if condition is ExchangeCondition.CRITICAL or \
-                self.condition_monitor.exchange_stopped:
+        condition = self.condition
+        if condition is ExchangeCondition.NORMAL:
+            return True
+        if condition is ExchangeCondition.CRITICAL:
             logger.warning("entry suppressed: exchange condition", extra={"data": {
                 "event": "entry_suppressed", "reason": "exchange_condition",
                 **self.condition_monitor.snapshot()}})
@@ -715,13 +787,33 @@ class TradingApp:
         self.status.status.kill_switch = self.kill_switch.state
         self.status.write()
         try:
-            self.notifier.send("KILL SWITCH", detail, urgent=True)
+            self.notifier.send("KILL SWITCH", self._kill_message(detail), urgent=True)
         except Exception:
             # A dead webhook must not become an exception that propagates back
             # into run_forever and overwrites the kill reason we just recorded.
             logger.exception("kill switch notification failed")
         logger.critical("kill switch tripped", extra={"data": {
-            "event": "kill_switch", "detail": detail, "state": self.kill_switch.state}})
+            "event": "kill_switch", "detail": detail,
+            "position_size": self.portfolio.position_size,
+            "state": self.kill_switch.state}})
+
+    def _kill_message(self, detail: str) -> str:
+        """A tripped kill switch is a FULL freeze — the pre-trade checks refuse
+        every order while it is tripped, closing orders included. That is the
+        deliberate contract (a bot in an unknown state must not keep trading),
+        but it means an OPEN POSITION is now the operator's to manage. Say so,
+        with the position, instead of leaving them to infer it.
+        """
+        position = self.portfolio.position_size
+        if position == 0.0:
+            return detail
+        side = "LONG" if position > 0 else "SHORT"
+        return (f"{detail}\n\nOPEN POSITION: {side} {abs(position)} "
+                f"{self.settings.product_code}. The bot will NOT close it — a "
+                f"tripped kill switch blocks every order, exits included. Close "
+                f"it by hand on bitFlyer if you want it flat, then investigate "
+                f"and reset the switch "
+                f"(KillSwitch().reset(operator_confirm=True)).")
 
     def _roll_paper_day(self) -> None:
         """Persist the daily-P&L reset when the UTC day turns under a running
@@ -760,6 +852,7 @@ class TradingApp:
         snap = self.condition_monitor.snapshot()
         s.api_condition = snap["condition"]
         s.api_health_status = snap["health"]
+        s.api_health_age_sec = snap["health_age_sec"]
         s.api_latency_ms = snap["latency_ms"]
         s.api_error_rate = snap["error_rate"]
         self.status.write()

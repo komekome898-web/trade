@@ -270,8 +270,13 @@ function apiTile(a) {
   if (a == null) return "";
   const bad = a.condition && a.condition !== "NORMAL";
   const p95 = a.p95_ms != null ? fmt(a.p95_ms, 0) + "ms" : "—";
+  // health は 3 ポーリング分で失効する。失効後は「不明」であって「正常」ではない。
+  const age = a.health_age_sec != null ? `(${fmt(a.health_age_sec, 0)}秒前)` : "";
+  const health = a.health ? a.health : `健全度不明${age}`;
+  // status.json が古い(BOT停止/ハング)ときは CSV 最終行の値。断りを入れる。
+  const stale = a.stale ? " ⚠️停止中の記録" : "";
   return tile("API状態",
-    `${a.condition || "—"} <span class="sub">p95 ${p95} / ${a.health || "健全度不明"}</span>`,
+    `${a.condition || "—"}${stale} <span class="sub">p95 ${p95} / ${health}</span>`,
     bad ? "neg" : "");
 }
 

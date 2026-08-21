@@ -10,10 +10,11 @@ duplicated real order.
 
 Taxonomy (`classify_exception` / `classify_status`)
 ---------------------------------------------------
-SAFE_RETRY  the transport failed BEFORE the request body left this process
-            (DNS, connection refused, connect timeout, TLS handshake), or the
-            exchange gave an availability answer (429 / 5xx) on a read-only,
-            idempotent endpoint.
+SAFE_RETRY  the transport failed PROVABLY before the request body left this
+            process (connect timeout, or a connection error whose text names
+            the new-connection failure explicitly), or the exchange gave an
+            availability answer (429 / 5xx) on a read-only, idempotent
+            endpoint.
 AMBIGUOUS   the request may have reached order placement — read timeout,
             connection reset after send, or any 5xx on an ORDER endpoint. On
             order endpoints this becomes `OrderStateUnknown` and is NEVER
@@ -26,6 +27,19 @@ Classification and applicability are deliberately SEPARATE decisions
 endpoint only a PRE_SEND failure is ever retried, because only a pre-send
 failure proves the order was not placed. "When in doubt on an order endpoint"
 resolves to AMBIGUOUS, never to a resend.
+
+The PRE_SEND whitelist is deliberately tiny, and two entries that used to be on
+it were removed after they were shown to be reachable AFTER the body was sent:
+
+- **TLS/SSL errors of every kind.** OpenSSL renders alerts in lowercase
+  ("tlsv1 alert internal error", "sslv3 alert bad record mac") and a venue's
+  load balancer can send one after it has read the request. There is no string
+  that distinguishes a handshake alert from a mid-stream alert, so every
+  SSLError on an order endpoint is AMBIGUOUS.
+- **ProxyError.** urllib3 1.26 wraps any connection failure raised while a
+  proxy is configured — including a reset that happened after the write — into
+  ProxyError. (`pyproject.toml` pins urllib3>=2 for the same reason; the
+  taxonomy no longer depends on that pin being honored.)
 
 Condition monitor
 -----------------
@@ -43,10 +57,12 @@ gate a CLOSING order) lives in bot/main.py, which is where the position is.
 from __future__ import annotations
 
 import logging
+import math
 import random
 import time
 from collections import deque
 from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
 from enum import Enum
 from pathlib import Path
 
@@ -99,6 +115,10 @@ class Failure:
     reason: str                       # exception type name or HTTP status; never a secret
     status_code: int | None = None
     retry_after_sec: float | None = None
+    # Where it happened. Carried so a caller that only sees the raised
+    # exception (main's API-error counter) can still tell a public-feed
+    # failure from a private one.
+    endpoint_class: "EndpointClass | None" = None
 
     @property
     def counts_as_unavailable(self) -> bool:
@@ -106,41 +126,34 @@ class Failure:
 
         A business 4xx (bad parameter, insufficient funds, 404) does not — it
         would otherwise drive the condition monitor to DEGRADED on our own
-        malformed request.
+        malformed request. A 429 is never REJECTED (`classify_status` returns
+        SAFE_RETRY for it), so REJECTED is simply "our problem, not theirs".
         """
-        if self.failure_class is FailureClass.REJECTED:
-            return self.status_code == 429
-        return True
+        return self.failure_class is not FailureClass.REJECTED
 
 
 # --- exception classification ------------------------------------------------
 # Only these prove the request body never left this process. Everything else on
 # an order endpoint is AMBIGUOUS by construction.
+#
+# A connect timeout means the TCP/TLS connection for THIS attempt never
+# completed, so no bytes of the request can have been written.
 _STRICT_PRE_SEND_TYPES = (
     requests.exceptions.ConnectTimeout,
+)
+# Types that must NEVER be read as pre-send even though they subclass
+# ConnectionError and could otherwise reach the marker test below. See the
+# module docstring: both are reachable after the body was sent.
+_NEVER_PRE_SEND_TYPES = (
+    requests.exceptions.SSLError,
     requests.exceptions.ProxyError,
 )
+# Explicit new-connection markers, matched case-insensitively: urllib3 raises
+# these only from the connect/DNS phase, before any request byte is written.
 _PRE_SEND_MARKERS = (
-    "NewConnectionError",
-    "NameResolutionError",
-    "Failed to establish a new connection",
-    "Connection refused",
-    "Name or service not known",
-    "Temporary failure in name resolution",
-    "getaddrinfo failed",
-    "nodename nor servname provided",
-)
-# A TLS failure at handshake time is pre-send; an SSL error raised mid-stream
-# is not, so the markers have to be present before we call it provable.
-_HANDSHAKE_MARKERS = (
-    "handshake",
-    "certificate verify failed",
-    "CERTIFICATE_VERIFY_FAILED",
-    "SSLCertVerificationError",
-    "WRONG_VERSION_NUMBER",
-    "UNKNOWN_PROTOCOL",
-    "sslv3",
-    "tlsv1",
+    "failed to establish a new connection",
+    "name or service not known",
+    "nodename nor servname",
 )
 # Our own bug (bad URL/schema): retrying cannot help and nothing was sent.
 _DEFINITE_CLIENT_TYPES = (
@@ -152,15 +165,15 @@ _DEFINITE_CLIENT_TYPES = (
 
 
 def _has_marker(exc: BaseException, markers: tuple[str, ...]) -> bool:
-    text = f"{exc!r}"
+    text = f"{exc!r}".lower()
     return any(m in text for m in markers)
 
 
 def _is_pre_send(exc: BaseException) -> bool:
     if isinstance(exc, _STRICT_PRE_SEND_TYPES):
         return True
-    if isinstance(exc, requests.exceptions.SSLError):
-        return _has_marker(exc, _HANDSHAKE_MARKERS)
+    if isinstance(exc, _NEVER_PRE_SEND_TYPES):
+        return False
     if isinstance(exc, requests.exceptions.ConnectionError):
         return _has_marker(exc, _PRE_SEND_MARKERS)
     return False
@@ -172,16 +185,20 @@ def classify_exception(exc: BaseException,
     request bodies and headers (and therefore secrets) must not leak."""
     name = type(exc).__name__
     if isinstance(exc, _DEFINITE_CLIENT_TYPES):
-        return Failure(FailureClass.REJECTED, Phase.PRE_SEND, name)
+        return Failure(FailureClass.REJECTED, Phase.PRE_SEND, name,
+                       endpoint_class=endpoint_class)
     if _is_pre_send(exc):
-        return Failure(FailureClass.SAFE_RETRY, Phase.PRE_SEND, name)
+        return Failure(FailureClass.SAFE_RETRY, Phase.PRE_SEND, name,
+                       endpoint_class=endpoint_class)
     if endpoint_class is EndpointClass.ORDER:
         # Read timeout, reset after send, anything unrecognised: the exchange
         # may already hold the order. This is the STATE_UNKNOWN path.
-        return Failure(FailureClass.AMBIGUOUS, Phase.POST_SEND, name)
+        return Failure(FailureClass.AMBIGUOUS, Phase.POST_SEND, name,
+                       endpoint_class=endpoint_class)
     # Read-only endpoints are idempotent, so a post-send failure is still safe
     # to repeat.
-    return Failure(FailureClass.SAFE_RETRY, Phase.POST_SEND, name)
+    return Failure(FailureClass.SAFE_RETRY, Phase.POST_SEND, name,
+                   endpoint_class=endpoint_class)
 
 
 def classify_status(status_code: int, endpoint_class: EndpointClass, *,
@@ -194,17 +211,20 @@ def classify_status(status_code: int, endpoint_class: EndpointClass, *,
         # and repeating is exactly right. On order endpoints `may_retry` still
         # refuses (RESPONSE phase), so this surfaces as a definite error.
         return Failure(FailureClass.SAFE_RETRY, Phase.RESPONSE, "429",
-                       status_code=429, retry_after_sec=retry_after_sec)
+                       status_code=429, retry_after_sec=retry_after_sec,
+                       endpoint_class=endpoint_class)
     if status_code >= 500:
         if endpoint_class is EndpointClass.ORDER:
             # The body was sent and the exchange failed while holding it. We
             # cannot prove it never reached placement -> ambiguous.
             return Failure(FailureClass.AMBIGUOUS, Phase.POST_SEND,
-                           str(status_code), status_code=status_code)
+                           str(status_code), status_code=status_code,
+                           endpoint_class=endpoint_class)
         return Failure(FailureClass.SAFE_RETRY, Phase.RESPONSE, str(status_code),
-                       status_code=status_code, retry_after_sec=retry_after_sec)
+                       status_code=status_code, retry_after_sec=retry_after_sec,
+                       endpoint_class=endpoint_class)
     return Failure(FailureClass.REJECTED, Phase.RESPONSE, str(status_code),
-                   status_code=status_code)
+                   status_code=status_code, endpoint_class=endpoint_class)
 
 
 def may_retry(failure: Failure, endpoint_class: EndpointClass) -> bool:
@@ -220,8 +240,14 @@ def may_retry(failure: Failure, endpoint_class: EndpointClass) -> bool:
     return True
 
 
-def retry_after_of(resp) -> float | None:
-    """Seconds from a Retry-After header, if the exchange sent one."""
+def retry_after_of(resp, *, now: float | None = None) -> float | None:
+    """Seconds from a Retry-After header, if the exchange sent one.
+
+    RFC 9110 allows both forms and edges in front of an exchange do send the
+    HTTP-date one: `Retry-After: Wed, 21 Aug 2026 12:00:05 GMT`. Parsing only
+    the delta-seconds form silently dropped that signal and fell back to our
+    own jittered backoff.
+    """
     headers = getattr(resp, "headers", None) or {}
     try:
         raw = headers.get("Retry-After")
@@ -232,7 +258,18 @@ def retry_after_of(resp) -> float | None:
     try:
         return max(0.0, float(raw))
     except (TypeError, ValueError):
+        pass
+    try:
+        when = parsedate_to_datetime(str(raw))
+    except (TypeError, ValueError):
         return None
+    if when is None:
+        return None
+    try:
+        target = when.timestamp()
+    except (OSError, OverflowError, ValueError):      # pragma: no cover
+        return None
+    return max(0.0, target - (time.time() if now is None else now))
 
 
 @dataclass(frozen=True)
@@ -291,11 +328,26 @@ class Timeouts:
                         self.max_read_sec)
 
     def for_condition(self, condition: ExchangeCondition) -> "Timeouts":
-        if condition is ExchangeCondition.CRITICAL:
-            return self.widened(3.0)
-        if condition is ExchangeCondition.DEGRADED:
-            return self.widened(2.0)
-        return self
+        factor = condition_multiplier(condition)
+        return self.widened(factor) if factor > 1.0 else self
+
+
+def condition_multiplier(condition: ExchangeCondition) -> float:
+    """How much slack the current condition buys. ONE definition, because more
+    than one thing scales with it: the read timeout, and the market-data
+    staleness threshold that would otherwise race a widened read (main.py)."""
+    if condition is ExchangeCondition.CRITICAL:
+        return 3.0
+    if condition is ExchangeCondition.DEGRADED:
+        return 2.0
+    return 1.0
+
+
+# Read-only DIAGNOSTICS (reconciliation polls, the /v1/gethealth poll) run on
+# their own short, FIXED timeouts and never inherit the widened trading ones.
+# The point of a diagnostic is to answer inside a bounded budget; a 30s read
+# timeout inherited from CRITICAL would let one poll eat the whole budget.
+DIAGNOSTIC_TIMEOUTS = Timeouts(connect_sec=3.0, read_sec=5.0, max_read_sec=5.0)
 
 
 # bitFlyer /v1/gethealth status strings, worst last.
@@ -311,7 +363,17 @@ HEALTH_STOPPED = ("STOP",)
 
 
 class ConditionMonitor:
-    """NORMAL / DEGRADED / CRITICAL over health + latency EWMA + error rate."""
+    """NORMAL / DEGRADED / CRITICAL over health + latency EWMA + error rate.
+
+    The /v1/gethealth reading EXPIRES (`health_ttl_sec`, wired to 3x the poll
+    interval). A health string that is never refreshed — the poll keeps failing,
+    or the poll stopped being made at all — used to be immortal: one
+    "SUPER BUSY" read could hold the bot at CRITICAL forever with nothing in
+    the telemetry to say the reading was hours old. Once it expires it drops out
+    of the vote entirely (the level then comes from latency and errors, which
+    are facts this process measured itself) and is reported as
+    `health=None` + `health_age_sec`.
+    """
 
     def __init__(self, *, window_sec: float = 900.0, alpha: float = 0.2,
                  degraded_latency_ms: float = 1200.0,
@@ -319,7 +381,8 @@ class ConditionMonitor:
                  degraded_error_rate: float = 0.2,
                  critical_error_rate: float = 0.5,
                  min_samples: int = 5, recovery_samples: int = 3,
-                 min_dwell_sec: float = 30.0, clock=time.time):
+                 min_dwell_sec: float = 30.0, health_ttl_sec: float = 90.0,
+                 clock=time.time):
         self.window_sec = window_sec
         self.alpha = alpha
         self.degraded_latency_ms = degraded_latency_ms
@@ -329,14 +392,16 @@ class ConditionMonitor:
         self.min_samples = min_samples
         self.recovery_samples = recovery_samples
         self.min_dwell_sec = min_dwell_sec
+        self.health_ttl_sec = health_ttl_sec
         self._clock = clock
         self._ewma_ms: float | None = None
         self._events: deque[tuple[float, bool]] = deque()   # (ts, unavailable)
         self._health: str | None = None
+        self._health_at: float | None = None
         self._condition = ExchangeCondition.NORMAL
         self._changed_at = clock()
-        self._pending: ExchangeCondition | None = None
-        self._pending_count = 0
+        self._calm_target: ExchangeCondition | None = None
+        self._calm_count = 0
 
     # ---- inputs ----------------------------------------------------------
     def observe(self, latency_ms: float, *, unavailable: bool = False,
@@ -351,9 +416,11 @@ class ConditionMonitor:
 
     def observe_health(self, status: str | None,
                        ts: float | None = None) -> ExchangeCondition:
+        now = ts if ts is not None else self._clock()
         if status is not None:
             self._health = str(status).upper()
-        return self._reassess(ts if ts is not None else self._clock())
+            self._health_at = now
+        return self._reassess(now)
 
     # ---- outputs ---------------------------------------------------------
     @property
@@ -362,11 +429,26 @@ class ConditionMonitor:
 
     @property
     def health(self) -> str | None:
-        return self._health
+        """The venue's own status string, or None when it has gone stale."""
+        return self._fresh_health(self._clock())
+
+    @property
+    def health_age_sec(self) -> float | None:
+        if self._health_at is None:
+            return None
+        return max(0.0, self._clock() - self._health_at)
 
     @property
     def exchange_stopped(self) -> bool:
-        return self._health in HEALTH_STOPPED
+        return self._fresh_health(self._clock()) in HEALTH_STOPPED
+
+    def _fresh_health(self, now: float) -> str | None:
+        if self._health is None or self._health_at is None:
+            return None
+        if self.health_ttl_sec is not None and \
+                now - self._health_at > self.health_ttl_sec:
+            return None
+        return self._health
 
     @property
     def ewma_latency_ms(self) -> float | None:
@@ -379,10 +461,14 @@ class ConditionMonitor:
         bad = sum(1 for _, unavailable in self._events if unavailable)
         return bad / len(self._events)
 
-    def snapshot(self) -> dict:
+    def snapshot(self, now: float | None = None) -> dict:
+        now = self._clock() if now is None else now
+        age = (None if self._health_at is None
+               else round(max(0.0, now - self._health_at), 1))
         return {
             "condition": self._condition.value,
-            "health": self._health,
+            "health": self._fresh_health(now),
+            "health_age_sec": age,
             "latency_ms": (round(self._ewma_ms, 1)
                            if self._ewma_ms is not None else None),
             "error_rate": round(self.error_rate, 4),
@@ -395,8 +481,8 @@ class ConditionMonitor:
         while self._events and self._events[0][0] < cutoff:
             self._events.popleft()
 
-    def _raw_level(self) -> ExchangeCondition:
-        health_rank = HEALTH_LEVEL.get(self._health or "", 0)
+    def _raw_level(self, now: float) -> ExchangeCondition:
+        health_rank = HEALTH_LEVEL.get(self._fresh_health(now) or "", 0)
         level = ExchangeCondition.NORMAL
         if health_rank >= 3:
             level = ExchangeCondition.CRITICAL
@@ -417,32 +503,123 @@ class ConditionMonitor:
         return level
 
     def _reassess(self, now: float) -> ExchangeCondition:
-        raw = self._raw_level()
+        raw = self._raw_level(now)
         if raw.rank > self._condition.rank:
             # Escalate at once: being late to notice degradation is the
             # expensive direction.
             self._set(raw, now)
             return self._condition
         if raw is self._condition:
-            self._pending = None
-            self._pending_count = 0
+            self._calm_target = None
+            self._calm_count = 0
             return self._condition
-        # Calmer than the current level: require it to hold.
-        if self._pending is raw:
-            self._pending_count += 1
-        else:
-            self._pending = raw
-            self._pending_count = 1
-        if (self._pending_count >= self.recovery_samples
+        # Calmer than the current level. The streak counts consecutive samples
+        # that are calmer than CURRENT — not consecutive samples of the SAME
+        # calmer level, which deadlocked: /v1/gethealth flapping BUSY <-> NORMAL
+        # for two hours never produced `recovery_samples` of one level, so a
+        # monitor that had once seen SUPER BUSY stayed CRITICAL forever with
+        # entries fully suppressed. The target is the WORST of the pending calm
+        # samples, so the alternation above recovers to DEGRADED (which is what
+        # BUSY means) rather than jumping to NORMAL.
+        self._calm_count += 1
+        if self._calm_target is None or raw.rank > self._calm_target.rank:
+            self._calm_target = raw
+        if (self._calm_count >= self.recovery_samples
                 and now - self._changed_at >= self.min_dwell_sec):
-            self._set(raw, now)
+            self._set(self._calm_target, now)
         return self._condition
 
     def _set(self, condition: ExchangeCondition, now: float) -> None:
         self._condition = condition
         self._changed_at = now
-        self._pending = None
-        self._pending_count = 0
+        self._calm_target = None
+        self._calm_count = 0
+
+
+@dataclass(frozen=True)
+class ResilienceConfig:
+    """Validated `resilience:` block from config/config.yaml.
+
+    Every field is checked before it can reach a timeout or a threshold: a
+    typo'd `read_timeout_sec: -10` used to be accepted verbatim and turned every
+    request into an immediate failure, and `degraded_latency_ms` above
+    `critical_latency_ms` made DEGRADED unreachable. Bad values fall back to the
+    documented default and log a warning naming the field — never a silent
+    substitution, and never a refusal to start (the bot must keep running the
+    paper experiment).
+    """
+    connect_timeout_sec: float = 3.0
+    read_timeout_sec: float = 10.0
+    retry_max_tries: int = 3
+    retry_budget_sec: float = 10.0
+    health_poll_sec: float = 30.0
+    reconcile_budget_sec: float = 15.0
+    condition_window_sec: float = 900.0
+    degraded_latency_ms: float = 1200.0
+    critical_latency_ms: float = 3000.0
+    api_health_csv: str = "data/api_health.csv"
+    # Pre-registration guard: throttling/suppressing entries under DEGRADED or
+    # CRITICAL changes what the champion trades, so it is OFF until that change
+    # is registered and measured. gethealth=STOP suppression is NOT behind this
+    # flag — see main._entry_allowed_under_condition.
+    entry_gating: bool = False
+
+    @property
+    def health_ttl_sec(self) -> float:
+        """A gethealth reading older than three polls is not evidence."""
+        return self.health_poll_sec * 3.0
+
+
+def _positive(raw: dict, key: str, default: float, warn: list[str]) -> float:
+    try:
+        value = float(raw[key])
+    except (KeyError, TypeError, ValueError):
+        if key in raw:
+            warn.append(f"{key}={raw[key]!r} is not a number")
+        return default
+    if not math.isfinite(value) or value <= 0:
+        warn.append(f"{key}={raw[key]!r} must be a finite number > 0")
+        return default
+    return value
+
+
+def load_resilience_config(raw: dict | None) -> ResilienceConfig:
+    raw = raw or {}
+    warn: list[str] = []
+    defaults = ResilienceConfig()
+    connect = _positive(raw, "connect_timeout_sec", defaults.connect_timeout_sec, warn)
+    read = _positive(raw, "read_timeout_sec", defaults.read_timeout_sec, warn)
+    budget = _positive(raw, "retry_budget_sec", defaults.retry_budget_sec, warn)
+    health_poll = _positive(raw, "health_poll_sec", defaults.health_poll_sec, warn)
+    reconcile = _positive(raw, "reconcile_budget_sec", defaults.reconcile_budget_sec, warn)
+    window = _positive(raw, "condition_window_sec", defaults.condition_window_sec, warn)
+    degraded = _positive(raw, "degraded_latency_ms", defaults.degraded_latency_ms, warn)
+    critical = _positive(raw, "critical_latency_ms", defaults.critical_latency_ms, warn)
+    if degraded >= critical:
+        warn.append(f"degraded_latency_ms={degraded} >= critical_latency_ms="
+                    f"{critical}; DEGRADED would be unreachable")
+        degraded, critical = defaults.degraded_latency_ms, defaults.critical_latency_ms
+    try:
+        tries = int(raw.get("retry_max_tries", defaults.retry_max_tries))
+    except (TypeError, ValueError):
+        warn.append(f"retry_max_tries={raw.get('retry_max_tries')!r} is not an integer")
+        tries = defaults.retry_max_tries
+    if tries < 1:
+        warn.append(f"retry_max_tries={tries} must be >= 1")
+        tries = defaults.retry_max_tries
+    cfg = ResilienceConfig(
+        connect_timeout_sec=connect, read_timeout_sec=read, retry_max_tries=tries,
+        retry_budget_sec=budget, health_poll_sec=health_poll,
+        reconcile_budget_sec=reconcile, condition_window_sec=window,
+        degraded_latency_ms=degraded, critical_latency_ms=critical,
+        api_health_csv=str(raw.get("api_health_csv") or defaults.api_health_csv),
+        entry_gating=bool(raw.get("entry_gating", defaults.entry_gating)),
+    )
+    if warn:
+        logger.warning("resilience config: falling back to defaults",
+                       extra={"data": {"event": "resilience_config_invalid",
+                                       "problems": warn}})
+    return cfg
 
 
 class ApiHealthRecorder:

@@ -63,6 +63,11 @@ resilience:
   condition_window_sec: 900     # rolling error-rate window
   degraded_latency_ms: 1200
   critical_latency_ms: 3000
+  # DEGRADED/CRITICAL でエントリーを絞るか。既定 false:
+  # エントリー頻度を変えることは champion の戦略変更であり、事前登録
+  # (.claude/skills/research-protocol) を経ずに稼働中のペーパー標本へ
+  # 混ぜてはならない。gethealth=STOP の抑止はこのフラグとは無関係に常時有効。
+  entry_gating: false
 
 # Market data safety
 market_data:

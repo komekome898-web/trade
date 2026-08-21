@@ -111,6 +111,10 @@ def _percentile(values: list[float], q: float) -> float:
     return ordered[max(0, min(idx, len(ordered) - 1))]
 
 
+# A status.json older than this is a stopped or wedged bot, not a live reading.
+STATUS_FRESH_SEC = 120.0
+
+
 def _api_health(path: Path, now: float, status: dict,
                 window_sec: float = 900.0,
                 max_bytes: int = 512 * 1024) -> dict[str, Any] | None:
@@ -121,6 +125,12 @@ def _api_health(path: Path, now: float, status: dict,
     torn or short line is skipped, never fatal. Falls back to the live fields
     in status.json when the CSV is missing — condition and health are known
     there too; only the percentiles need the file.
+
+    status.json is only believed while it is FRESH (`STATUS_FRESH_SEC`). A
+    crashed bot leaves its last status on disk forever, and the tile was
+    reporting that "NORMAL" as the current state of the venue for as long as
+    the file sat there. Once it is stale the CSV's last row is used instead and
+    the payload carries `stale: True` so the dashboard can say so.
     """
     rows: list[tuple[float, float, str, str, str]] = []
     try:
@@ -143,14 +153,22 @@ def _api_health(path: Path, now: float, status: dict,
         if ts < cutoff:
             continue
         rows.append((ts, latency, parts[4], parts[5], parts[6].strip()))
+    updated_at = status.get("updated_at")
+    try:
+        fresh = updated_at is not None and (now - float(updated_at)) < STATUS_FRESH_SEC
+    except (TypeError, ValueError):
+        fresh = False
+    live = status if fresh else {}
     if not rows and not status:
         return None
     if not rows:
         return {
-            "p50_ms": None, "p95_ms": None, "error_rate": status.get("api_error_rate"),
+            "p50_ms": None, "p95_ms": None, "error_rate": live.get("api_error_rate"),
             "samples": 0, "window_sec": window_sec,
-            "condition": status.get("api_condition", "NORMAL"),
-            "health": status.get("api_health_status"),
+            "condition": live.get("api_condition", "NORMAL"),
+            "health": live.get("api_health_status"),
+            "health_age_sec": live.get("api_health_age_sec"),
+            "stale": not fresh,
         }
     latencies = [r[1] for r in rows]
     errors = sum(1 for r in rows if r[2] != "ok")
@@ -161,10 +179,12 @@ def _api_health(path: Path, now: float, status: dict,
         "error_rate": round(errors / len(rows), 4),
         "samples": len(rows),
         "window_sec": window_sec,
-        # The live monitor is authoritative for the level; the CSV's last row
-        # is the fallback for when the bot is not currently running.
-        "condition": status.get("api_condition") or last[3],
-        "health": status.get("api_health_status") or (last[4] or None),
+        # The live monitor is authoritative for the level ONLY while status.json
+        # is fresh; otherwise the CSV's last row is what actually happened.
+        "condition": live.get("api_condition") or last[3],
+        "health": live.get("api_health_status") or (last[4] or None),
+        "health_age_sec": live.get("api_health_age_sec"),
+        "stale": not fresh,
     }
 
 

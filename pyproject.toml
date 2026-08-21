@@ -5,6 +5,12 @@ description = "Rule-based automated trading system for bitFlyer with paper/live 
 requires-python = ">=3.11"
 dependencies = [
     "requests>=2.31",
+    # urllib3 1.26 wraps a connection failure raised while a proxy is
+    # configured into requests' ProxyError, INCLUDING a reset that happened
+    # after the request body was written. The order-endpoint taxonomy in
+    # bot/exchange/resilience.py no longer trusts ProxyError either way, but a
+    # transport that cannot mislabel a post-send failure is worth pinning.
+    "urllib3>=2",
     "pandas>=2.0",
     "numpy>=1.24",
     "PyYAML>=6.0",

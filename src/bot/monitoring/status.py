@@ -41,7 +41,11 @@ class BotStatus:
     # /v1/gethealth string. The 15-minute latency percentiles live in
     # data/api_health.csv and are computed by monitoring/aggregate.py.
     api_condition: str = "NORMAL"
+    # None once the reading has expired (3x the poll interval): a health string
+    # that stopped being refreshed is not evidence about the venue, and
+    # `api_health_age_sec` says how long ago it last was.
     api_health_status: str | None = None
+    api_health_age_sec: float | None = None
     api_latency_ms: float | None = None    # EWMA of this bot's own calls
     api_error_rate: float | None = None
     updated_at: float = field(default_factory=time.time)

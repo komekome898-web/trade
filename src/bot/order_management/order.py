@@ -154,16 +154,29 @@ class OrderStore:
             args.append(symbol)
         return [self._row_to_order(r) for r in self._conn.execute(q, args)]
 
-    def known_acceptance_ids(self) -> set[str]:
-        """Every exchange acceptance id this book has ever seen.
+    def known_acceptance_ids(self, max_terminal: int = 200) -> set[str]:
+        """Acceptance ids this book knows, BOUNDED.
 
-        Used to harden the pre-send snapshot: an id we already recorded cannot
-        be the order we are about to send, even if getchildorders happened to
-        omit it from the snapshot poll.
+        This is the reconciliation baseline: an id we already recorded cannot
+        be the order we are about to send. Every non-terminal order is included
+        unconditionally (those are the ones that could still be confused with a
+        fresh send), plus the most recently updated `max_terminal` closed ones.
+        A months-old book would otherwise load every id it ever saw before every
+        single send, and only the recent ones can still be listed inside a
+        reconciliation window.
         """
+        terminal = tuple(s.value for s in _TERMINAL)
+        placeholders = ",".join("?" * len(terminal))
         rows = self._conn.execute(
-            "SELECT acceptance_id FROM orders WHERE acceptance_id IS NOT NULL")
-        return {str(r[0]) for r in rows}
+            f"SELECT acceptance_id FROM orders WHERE acceptance_id IS NOT NULL "
+            f"AND state NOT IN ({placeholders})", terminal)
+        ids = {str(r[0]) for r in rows}
+        rows = self._conn.execute(
+            f"SELECT acceptance_id FROM orders WHERE acceptance_id IS NOT NULL "
+            f"AND state IN ({placeholders}) ORDER BY updated_at DESC LIMIT ?",
+            (*terminal, max(0, int(max_terminal))))
+        ids.update(str(r[0]) for r in rows)
+        return ids
 
     def unknown_orders(self) -> list[Order]:
         rows = self._conn.execute(
