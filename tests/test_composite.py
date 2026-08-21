@@ -248,6 +248,17 @@ def test_evidence_content_match_is_case_sensitive(stub_evidence_dir):
         build_modules(_raw("radar_window", enabled=True, gate_evidence=other))
 
 
+def test_unreadable_evidence_report_is_refused(stub_evidence_dir):
+    """A report saved in cp932 (the Windows default this repo keeps meeting)
+    cannot be decoded as UTF-8. That is a refusal — an unreadable report is not
+    evidence — not a raw UnicodeDecodeError escaping into startup."""
+    other = "RESEARCH_REPORT_2026-08-20w.md"
+    (stub_evidence_dir / other).write_bytes(
+        "radar_window は窓内部分集合で判定済み\n".encode("cp932"))
+    with pytest.raises(ModuleGateError, match="unreadable report is not evidence"):
+        build_modules(_raw("radar_window", enabled=True, gate_evidence=other))
+
+
 def test_evidence_naming_the_module_is_accepted(stub_evidence_dir):
     """The one ACCEPTED construction: an implemented module, enabled, with
     evidence that names a readable report mentioning it. Owner approval of
@@ -368,10 +379,24 @@ def test_candidate_modules_ship_disabled(name, subset):
     # B1: the gate is the STANDING bars on a paper subset plus owner approval,
     # not a re-reading of the tournament that generated the candidate.
     assert "Owner approval" in module.gate
-    assert f"{subset} subset" in module.gate
-    assert "n >= 15" in module.gate and "+0.15%/trade" in module.gate
-    assert "maxDD < 10%" in module.gate
+    assert f"{subset} subset of champion paper trades" in module.gate
+    assert "+0.15%/trade" in module.gate and "maxDD < 10%" in module.gate
+    assert "the KNOWLEDGE.md §5 bars" in module.gate
     assert "candidate-generation only" in module.gate
+
+
+@pytest.mark.parametrize("name", ["radar_window", "long_only"])
+def test_candidate_gate_states_the_subset_n_as_a_deviation(name):
+    """B1: subset n >= 15 is NOT §5's number — §5's bar is 30 trades on the
+    full set. The gate must carry the reduced n as an explicit deviation the
+    owner approves along with the report, never dressed up as §5 saying 15."""
+    module = next(m for m in build_modules(load_composite_config()["modules"])
+                  if m.name == name)
+    assert "subset n >= 15" in module.gate
+    assert "§5's full-set bar is 30 trades" in module.gate
+    assert "deliberate deviation that the owner approves" in module.gate
+    # the §5 attribution covers the two BARS only, not the sample size
+    assert "n >= 15 (KNOWLEDGE" not in module.gate
 
 
 @pytest.mark.parametrize("name", ["radar_window", "long_only"])
@@ -410,13 +435,29 @@ def test_radar_window_bounds_come_from_params():
                            ).type is SignalType.HOLD
 
 
-def test_radar_window_rejects_an_empty_window():
+@pytest.mark.parametrize("start,end", [
+    ("12:30", "12:30"),      # identical strings
+    ("0:00", "00:00"),       # M1: same MINUTE, different spelling
+    ("1:05", "01:05"),
+])
+def test_radar_window_rejects_an_empty_window(start, end):
     """A start == end window is never armed, so the module would veto EVERY
     entry — a silent trading halt wearing the clothes of a configured window.
-    Refuse it where it is written."""
+    Refuse it where it is written, on the PARSED minutes: "0:00" and "00:00"
+    are the same minute to StormRadar, and a string comparison let that
+    spelling through into a permanent veto."""
     with pytest.raises(ValueError, match="empty window"):
-        _enabled_module("radar_window", window_start_utc="12:30",
-                        window_end_utc="12:30")
+        _enabled_module("radar_window", window_start_utc=start,
+                        window_end_utc=end)
+
+
+def test_radar_window_accepts_an_unpadded_real_window():
+    """The parsed-minutes guard must not refuse a legitimate window written
+    without a leading zero."""
+    module = _enabled_module("radar_window", window_start_utc="1:05",
+                             window_end_utc="02:05")
+    assert module.radar.is_armed(_ts(1, 30))
+    assert not module.radar.is_armed(_ts(3, 0))
 
 
 def test_radar_window_vetoes_when_no_signal_time_is_supplied():
@@ -535,6 +576,20 @@ def test_wiped_out_state_reloads_as_a_drawdown(tmp_path):
                                          reloaded.equity_jpy, 0) == 0.5
 
 
+def test_observe_equity_raises_the_peak_without_touching_the_streak():
+    """The peak is a fact about the equity CURVE, not the trade log: equity
+    seen between closes counts. The loss streak is a closed-trade fact and must
+    not move here."""
+    state = OverlayState(consecutive_losses=2, equity_peak_jpy=200000.0,
+                         equity_jpy=200000.0)
+    state.observe_equity(220000.0)
+    assert state.equity_peak_jpy == pytest.approx(220000.0)
+    state.observe_equity(205000.0)                  # a give-back is a drawdown
+    assert state.equity_peak_jpy == pytest.approx(220000.0)
+    assert state.equity_jpy == pytest.approx(205000.0)
+    assert state.consecutive_losses == 2
+
+
 def test_overlay_counter_is_not_the_portfolios():
     """N1: the portfolio's counter feeds the HARD risk checks (kill switch);
     the overlay must never write into it, in either direction."""
@@ -617,6 +672,18 @@ def test_app_runs_composite_at_full_size(app):
     assert isinstance(app.strategy, CompositeStrategy)
     drive(app, TICKS, LEADER)
     assert app.portfolio.position_size == pytest.approx(-0.013)  # same as xborder
+
+
+def test_quantize_truncates_like_the_pre_composite_champion(app):
+    """M2: sizing is the champion's own expression, int(budget/price/min_size).
+    An epsilon there rounds a budget one step UP at the boundary — an
+    undocumented change to the sizing of the strategy under paper validation,
+    which the composite (a carrier) must not make."""
+    assert app.product.min_size == 0.001
+    # 11.9999999999 steps: truncation buys 11, an epsilon-nudged floor could not
+    assert app._quantize(119999.999999, 1e7) == pytest.approx(0.011)
+    assert app._quantize(130000.0, 1e7) == pytest.approx(0.013)
+    assert app._quantize(9999.0, 1e7) == 0.0        # below one step
 
 
 def test_app_halves_new_entry_after_loss_streak(app):
@@ -860,6 +927,36 @@ def test_closing_trade_checkpoints_overlay_state(app, workdir):
     assert saved["dd_frac"] == pytest.approx(app.overlay_state.dd_frac)
     assert 0.0 < saved["dd_frac"] <= 1.0
     assert "equity_peak_jpy" not in saved        # absolute peaks are not stored
+
+
+def test_flat_close_still_checkpoints_the_overlay(app, workdir, monkeypatch):
+    """A close that breaks exactly even (realized + fee == 0) still moved the
+    equity path, so the brake must be checkpointed. Keying the write on the
+    P&L skipped exactly that case."""
+    drive(app, TICKS, LEADER)                       # opens a position
+    assert not (workdir / "data" / "overlay_state.json").exists()
+    real_on_fill = app.portfolio.on_fill
+    monkeypatch.setattr(app.portfolio, "on_fill",
+                        lambda **kw: (real_on_fill(**kw), 0.0)[1])
+    drive(app, [(390, 1e7), (430, 1e7), (490, 1e7)], LEADER)
+    assert app.portfolio.position_size == 0.0
+    assert (workdir / "data" / "overlay_state.json").exists()
+
+
+def test_equity_high_between_closes_engages_the_brake_earlier(app, monkeypatch):
+    """The overlay peak follows equity the app OBSERVES, not only equity at a
+    close. A run-up handed back inside one open position is a real drawdown; a
+    peak that moved only on closes would engage the brake a trade late."""
+    monkeypatch.setattr(app.portfolio, "equity_jpy", lambda price: 220000.0)
+    app._update_status(1e7)
+    assert app.overlay_state.equity_peak_jpy == pytest.approx(220000.0)
+    # 205,000 is 6.8% below that high -> the drawdown brake is in force, where
+    # a close-only peak would still read 205,000 as its own peak (factor 1.0)
+    monkeypatch.setattr(app.portfolio, "equity_jpy", lambda price: 205000.0)
+    app._update_status(1e7)
+    assert app._entry_size_factor(1e7) == 0.5
+    assert app.status.status.overlay["dd_pct"] > 0.0
+    assert app.overlay_state.consecutive_losses == 0     # not a closed trade
 
 
 @pytest.mark.parametrize("content", [

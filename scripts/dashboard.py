@@ -69,6 +69,7 @@ PAGE = """<!doctype html>
              text-transform: uppercase; }
   .tile .v { font-size: 22px; margin-top: 4px; }
   .tile .v.pos { color: var(--ok); } .tile .v.neg { color: var(--crit); }
+  .tile .v .sub { font-size: 12px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
   section { background: var(--panel); border: 1px solid var(--line);
@@ -92,6 +93,7 @@ PAGE = """<!doctype html>
   <span class="pill" id="p-scalp"><i></i>スキャルパー</span>
   <span class="pill" id="p-ws"><i></i>板記録</span>
   <span class="pill" id="p-radar"><i></i>レーダー</span>
+  <span class="pill" id="p-modules"><i></i>モジュール</span>
   <span id="updated">—</span>
 </header>
 <main>
@@ -133,8 +135,31 @@ function setRadar(r) {
     (r.window ? ` <span class="sub">${r.window}</span>` : "");
 }
 
+// Composite modules (bot/strategy/composite.py). null = the running strategy
+// has no module framework at all; [] = framework present, nothing enabled —
+// deliberately different facts, so the pill is hidden only in the null case.
+function setModules(mods) {
+  const el = document.getElementById("p-modules");
+  if (mods == null) { el.style.display = "none"; return; }
+  el.style.display = "";
+  el.className = "pill" + (mods.length ? " warn" : "");
+  el.innerHTML = `<i></i>モジュール: ` +
+    (mods.length ? mods.join(", ") : "なし");
+}
+
 function tile(k, v, cls="") { return `<div class="tile"><div class="k">${k}</div><div class="v mono ${cls}">${v}</div></div>`; }
 function pnlCls(v) { return v > 0 ? "pos" : v < 0 ? "neg" : ""; }
+
+// Risk overlay (bot/strategy/composite.py: size_factor). null = the running
+// strategy has no overlay, which is not the same as an overlay sitting at full
+// size — so the tile is omitted entirely rather than shown as x1.00.
+function overlayTile(ov) {
+  if (ov == null) return "";
+  const brake = ov.factor != null && ov.factor < 1;
+  return tile("リスクオーバーレイ",
+    `x${fmt(ov.factor, 2)} <span class="sub">連敗 ${fmt(ov.consecutive_losses, 0)} / ` +
+    `DD ${fmt(ov.dd_pct, 2)}%</span>`, brake ? "neg" : "");
+}
 
 async function refresh() {
   let d;
@@ -144,6 +169,7 @@ async function refresh() {
   setPill("p-scalp", "スキャルパー", d.components.scalper);
   setPill("p-ws", "板記録", d.components.ws_recorder);
   setRadar(d.radar || {});
+  setModules(d.active_modules);
   document.getElementById("updated").textContent =
     "更新 " + new Date(d.generated_at * 1000).toLocaleTimeString("ja-JP");
 
@@ -164,7 +190,8 @@ async function refresh() {
     tile("最大DD", fmt(b.max_drawdown_pct, 2) + " %") +
     tile("ポジション", fmt(b.position_size, 4)) +
     tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円 / ${d.scalp.trades}回`, pnlCls(d.scalp.total_pnl_jpy)) +
-    tile("エラー数", fmt(b.error_count, 0));
+    tile("エラー数", fmt(b.error_count, 0)) +
+    overlayTile(d.overlay);
 
   const dec = d.decisions || [];
   document.getElementById("t-dec").innerHTML = dec.length ?

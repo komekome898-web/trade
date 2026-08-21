@@ -49,6 +49,39 @@ def test_overlay_and_active_modules_surfaced(tmp_path):
     assert d["active_modules"] == []
 
 
+def _dashboard_page() -> str:
+    """scripts/dashboard.py's PAGE, loaded by path (scripts/ is not a package)."""
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "dashboard.py"
+    spec = importlib.util.spec_from_file_location("dashboard_module", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.PAGE
+
+
+def test_page_renders_the_overlay_and_active_modules_it_is_served(tmp_path):
+    """The page must consume the keys collect_status publishes — telemetry that
+    is written and never displayed is not visible to an operator. Checked
+    against a real collect_status payload rather than a hand-written key list."""
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "status.json").write_text(json.dumps({
+        "mode": "paper", "updated_at": 1_000_000.0,
+        "overlay": {"factor": 0.25, "consecutive_losses": 4, "dd_pct": 7.1},
+        "active_modules": ["radar_window"]}), encoding="utf-8")
+    d = collect_status(tmp_path, now=1_000_000.0)
+    page = _dashboard_page()
+
+    assert "overlayTile(d.overlay)" in page          # tile is rendered
+    assert "setModules(d.active_modules)" in page    # modules pill is rendered
+    for field in d["overlay"]:                       # every field is shown
+        assert f"ov.{field}" in page
+    # null (no overlay / no module framework) is hidden, not shown as x1.00
+    assert "if (ov == null) return \"\";" in page
+    assert "if (mods == null) { el.style.display = \"none\"; return; }" in page
+
+
 def test_overlay_absent_for_a_strategy_without_one(tmp_path):
     """None means 'no overlay / no module framework in this strategy', which
     is not the same as an overlay sitting at full size."""

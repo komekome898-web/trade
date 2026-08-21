@@ -57,7 +57,7 @@ modules:
 
   radar_window:
     enabled: false
-    gate: "Owner approval of a written report in docs/ showing the inside-window subset of champion paper trades (subset n >= 15) meets the standing bars: net >= +0.15%/trade AND maxDD < 10%, with event-clustered CI excluding 0 and fresh-data confirmation (KNOWLEDGE.md §5; tournament C2 was candidate-generation only)."
+    gate: "Owner approval of a written report in docs/ showing the inside-window subset of champion paper trades meets: net >= +0.15%/trade AND maxDD < 10% (the KNOWLEDGE.md §5 bars) on subset n >= 15 — NOTE: §5's full-set bar is 30 trades; the reduced subset-n is a deliberate deviation that the owner approves together with the report — with event-clustered CI excluding 0 and fresh-data confirmation (tournament C2 was candidate-generation only)."
     gate_evidence: ""
     params:
       window_start_utc: "12:30"   # bot.radar storm window (lift 2.23, n=234)
@@ -71,7 +71,7 @@ modules:
 
   long_only:
     enabled: false
-    gate: "Owner approval of a written report in docs/ showing the long-only subset of champion paper trades (subset n >= 15) meets the standing bars: net >= +0.15%/trade AND maxDD < 10%, with event-clustered CI excluding 0 and fresh-data confirmation (KNOWLEDGE.md §5; tournament C3 was candidate-generation only)."
+    gate: "Owner approval of a written report in docs/ showing the long-only subset of champion paper trades meets: net >= +0.15%/trade AND maxDD < 10% (the KNOWLEDGE.md §5 bars) on subset n >= 15 — NOTE: §5's full-set bar is 30 trades; the reduced subset-n is a deliberate deviation that the owner approves together with the report — with event-clustered CI excluding 0 and fresh-data confirmation (tournament C3 was candidate-generation only)."
     gate_evidence: ""
     # would veto entries that open or extend a short. Tournament C3 beat the
     # champion on expectancy AND maxDD, but on n=6 judgment trades and with the

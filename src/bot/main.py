@@ -298,8 +298,14 @@ class TradingApp:
         return float(factor_fn(peak, equity, self.overlay_state.consecutive_losses))
 
     def _quantize(self, budget_jpy: float, price: float) -> float:
-        """Round an order budget DOWN to the product's size granularity."""
-        steps = int(budget_jpy / price / self.product.min_size + 1e-9)
+        """Round an order budget DOWN to the product's size granularity.
+
+        Plain truncation, bit-identical to the pre-composite champion's sizing
+        expression. An epsilon was briefly added here; it is an undocumented
+        change to the sizing of the strategy under paper validation (it can
+        round one step UP), and the composite is a carrier, not a rewrite.
+        """
+        steps = int(budget_jpy / price / self.product.min_size)
         return round(steps * self.product.min_size, 8)
 
     def _warn_overlay_suppressed(self, factor: float, price: float, full_size: float) -> None:
@@ -399,7 +405,12 @@ class TradingApp:
             realized = self.portfolio.on_fill(symbol=order.symbol, side=side,
                                               size=order.filled_size, price=fill_price,
                                               fee_jpy=fee)
-            if realized + fee != 0.0:      # a closing fill: the brake moved
+            if not opening:
+                # A CLOSING fill, decided by what was ordered rather than by
+                # its P&L: a close that happened to break exactly even
+                # (realized + fee == 0) still moved the equity path and still
+                # has to checkpoint the brake. Opening fills change no
+                # overlay state, so they are not written.
                 self._persist_overlay_state(tick.price, realized)
             self.status.status.last_execution = f"{side} {order.filled_size} @ {fill_price}"
         self.status.status.last_order = f"{side} {size} ({order.state.value})"
@@ -435,10 +446,17 @@ class TradingApp:
             "event": "kill_switch", "detail": detail, "state": self.kill_switch.state}})
 
     def _update_status(self, price: float) -> None:
+        equity = self.portfolio.equity_jpy(price)
+        # Fold the equity the bot is looking at RIGHT NOW into the overlay's
+        # running peak. The peak is a property of the equity curve, not of the
+        # trade log: a run-up handed back inside one open position is a real
+        # drawdown, and a peak that only moved on closes would engage the brake
+        # a trade late. Persisting still happens on the closing fill only.
+        self.overlay_state.observe_equity(equity)
         s = self.status.status
         s.running = not self.kill_switch.is_tripped
         s.last_price = price
-        s.balance_jpy = self.portfolio.equity_jpy(price)
+        s.balance_jpy = equity
         s.position_size = self.portfolio.position_size
         s.daily_pnl_jpy = self.portfolio.daily_pnl_jpy(price)
         s.total_pnl_jpy = self.portfolio.realized_pnl_jpy + self.portfolio.unrealized_pnl_jpy(price)

@@ -378,7 +378,7 @@ def gate_live_path() -> bool:
             if size is None:
                 expected.append(None)
             elif kind == "open":
-                last_open = round(int(size * factor / min_size + 1e-9) * min_size, 8)
+                last_open = round(int(size * factor / min_size) * min_size, 8)
                 expected.append(last_open)
             else:
                 expected.append(last_open)
@@ -445,7 +445,7 @@ def simulate(trades: list[dict], *, overlay: bool, min_size: float):
     for t in trades:
         factor = CompositeStrategy.size_factor(peak, equity, losses) if overlay else 1.0
         budget = factor * NOTIONAL
-        size = round(int(budget / t["entry_price"] / min_size + 1e-9) * min_size, 8)
+        size = round(int(budget / t["entry_price"] / min_size) * min_size, 8)
         if size < min_size:                # scaled entry below the product minimum
             skipped += 1
             continue                       # no fill: the equity path does not move

@@ -57,7 +57,10 @@ fails if any module is enabled while it runs. A module's behaviour is validated
 on the LIVE path instead (G4 drives a real paper TradingApp with a temporarily
 enabled module), and its VALUE is judged from subsets of the champion's own
 paper trades against the standing bars in KNOWLEDGE.md §5 — never from a
-backtest of the module itself.
+backtest of the module itself. §5 supplies the two BARS (net >= +0.15%/trade,
+maxDD < 10%); the sample size a SUBSET is judged on is not §5's 30 trades but
+a reduced n written into each module's gate as an explicit deviation the owner
+approves with the report (see RadarWindowModule.GATE).
 
 Risk overlay: convention, NOT a fitted parameter
 ------------------------------------------------
@@ -103,9 +106,18 @@ The persisted brake. Two fields:
   `boot_equity / dd_frac`, which preserves the relative drawdown exactly and
   degrades to "no drawdown" when the file is missing.
 
-Written after every closed trade. Deleting it clears the SIZING brake only —
-it never unblocks trading (that is the kill switch) and it is never required
-for the bot to start: a missing or unreadable file degrades to the safe
+The running peak itself is tracked in memory on EVERY equity observation
+(`OverlayState.observe_equity`, called from bot/main.py `_update_status`), not
+only on closes: a run-up given back inside one open position is a real
+drawdown, and a peak that moved only on closes would engage the brake a trade
+late. The file is still written only on a closing fill, so an idle process does
+not rewrite it every tick — a peak seen between closes and never checkpointed
+degrades to that trade's closing equity, which is the safe direction.
+
+Written after every closing fill — whatever its P&L, since a close that broke
+exactly even still moved the equity path. Deleting it clears the SIZING brake
+only — it never unblocks trading (that is the kill switch) and it is never
+required to start: a missing or unreadable file degrades to the safe
 defaults (no drawdown, zero losses). Delete it when the account is
 re-baselined (paper equity reset, fresh account) and the accumulated brake no
 longer describes anything real. Operator steps: docs/OPERATIONS.md §3.
@@ -129,6 +141,10 @@ import yaml
 from bot.radar import DEFAULT_END as RADAR_DEFAULT_END
 from bot.radar import DEFAULT_START as RADAR_DEFAULT_START
 from bot.radar import StormRadar
+# The radar's OWN "HH:MM" parser, imported rather than re-implemented: this
+# module's empty-window guard has to read a window exactly the way StormRadar
+# will, and a second copy of the parser could drift away from it.
+from bot.radar import _parse_hhmm as radar_parse_hhmm
 from bot.strategy.base import Signal, SignalType, Strategy
 from bot.strategy.xborder_momentum import XborderMomentumStrategy
 
@@ -279,7 +295,11 @@ def _check_evidence(name: str, gate: str, evidence: str) -> None:
         )
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
+        # ValueError covers UnicodeDecodeError: a report saved in cp932 (the
+        # Windows default this repo keeps tripping over) is not "no evidence
+        # found", it is a file the check cannot read — which must refuse the
+        # unlock, not crash the bot with a raw decode error.
         raise ModuleGateError(
             f"module '{name}' gate_evidence {evidence!r} cannot be read "
             f"({exc}); an unreadable report is not evidence. Gate: {gate}."
@@ -337,24 +357,37 @@ class RadarWindowModule(CompositeModule):
     """
 
     NAME = "radar_window"
+    # The subset-n is 15, NOT the §5 bar of 30: an inside-window subset of the
+    # champion's paper trades reaches 30 only after ~10 months, which would
+    # make this module unjudgeable rather than strict. So the reduced n is
+    # stated in the gate as a DEVIATION the owner signs off on together with
+    # the report — never as if §5 said 15.
     GATE = ("Owner approval of a written report in docs/ showing the "
-            "inside-window subset of champion paper trades (subset n >= 15) "
-            "meets the standing bars: net >= +0.15%/trade AND maxDD < 10%, "
-            "with event-clustered CI excluding 0 and fresh-data confirmation "
-            "(KNOWLEDGE.md §5; tournament C2 was candidate-generation only).")
+            "inside-window subset of champion paper trades meets: net >= "
+            "+0.15%/trade AND maxDD < 10% (the KNOWLEDGE.md §5 bars) on "
+            "subset n >= 15 — NOTE: §5's full-set bar is 30 trades; the "
+            "reduced subset-n is a deliberate deviation that the owner "
+            "approves together with the report — with event-clustered CI "
+            "excluding 0 and fresh-data confirmation (tournament C2 was "
+            "candidate-generation only).")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         start = self.params.get("window_start_utc", RADAR_DEFAULT_START)
         end = self.params.get("window_end_utc", RADAR_DEFAULT_END)
-        if str(start).strip() == str(end).strip():
-            # StormRadar reads an empty window as NEVER armed, which would turn
-            # this filter into "veto every entry" — a silent trading halt that
-            # looks like a configured window. Refuse it where it is written.
+        # Compare the PARSED minutes, not the strings: StormRadar arms on
+        # minutes, so "0:00"/"00:00" and "1:05"/"01:05" are the same empty
+        # window even though the strings differ. A string comparison let those
+        # spellings through, and StormRadar reads an empty window as NEVER
+        # armed — turning this filter into "veto every entry", a silent
+        # trading halt wearing the clothes of a configured window. Refuse it
+        # where it is written. (The parser is the radar's own, so an
+        # unparseable HH:MM raises here exactly as it would there.)
+        if radar_parse_hhmm(start) == radar_parse_hhmm(end):
             raise ValueError(
                 f"module '{self.NAME}': window_start_utc == window_end_utc "
-                f"({start!r}); an empty window would veto every entry. Use a "
-                "real window, or disable the module.")
+                f"({start!r} == {end!r}); an empty window would veto every "
+                "entry. Use a real window, or disable the module.")
         self.radar = StormRadar(start, end)
 
     def veto_entry(self, signal: Signal, context: ModuleContext) -> bool:
@@ -378,11 +411,17 @@ class LongOnlyModule(CompositeModule):
     """
 
     NAME = "long_only"
+    # Same deviation, same reason as RadarWindowModule.GATE above: subset n=15
+    # is a deliberate departure from §5's 30-trade full-set bar, and the gate
+    # says so rather than borrowing §5's authority for a number it never set.
     GATE = ("Owner approval of a written report in docs/ showing the "
-            "long-only subset of champion paper trades (subset n >= 15) "
-            "meets the standing bars: net >= +0.15%/trade AND maxDD < 10%, "
-            "with event-clustered CI excluding 0 and fresh-data confirmation "
-            "(KNOWLEDGE.md §5; tournament C3 was candidate-generation only).")
+            "long-only subset of champion paper trades meets: net >= "
+            "+0.15%/trade AND maxDD < 10% (the KNOWLEDGE.md §5 bars) on "
+            "subset n >= 15 — NOTE: §5's full-set bar is 30 trades; the "
+            "reduced subset-n is a deliberate deviation that the owner "
+            "approves together with the report — with event-clustered CI "
+            "excluding 0 and fresh-data confirmation (tournament C3 was "
+            "candidate-generation only).")
 
     def veto_entry(self, signal: Signal, context: ModuleContext) -> bool:
         return signal.type is SignalType.SELL and context.position_size <= 0
@@ -503,6 +542,23 @@ class OverlayState:
             return DD_FLOOR
         return min(1.0, self.equity_jpy / self.equity_peak_jpy)
 
+    def observe_equity(self, equity_jpy: float) -> None:
+        """Record equity the app has SEEN, closed trade or not.
+
+        The running peak is a fact about the equity curve, not about the trade
+        log: a book that ran up 10% on an open position and then gave it all
+        back was in drawdown, and a peak that only moved on closes would not
+        know it — the brake would engage a whole trade late. Every point the
+        app observes equity (bot/main.py `_update_status`) is folded in here.
+
+        Only the peak and the last-seen equity move; the loss streak is a
+        closed-trade fact and is untouched. Nothing is written to disk here —
+        the checkpoint stays on the closing fill, so an idle process does not
+        rewrite the state file every tick.
+        """
+        self.equity_jpy = float(equity_jpy)
+        self.equity_peak_jpy = max(self.equity_peak_jpy, self.equity_jpy)
+
     def on_closed_trade(self, realized_pnl_jpy: float, equity_jpy: float) -> None:
         """Fold one closed trade into the brake (the overlay's own counters).
 
@@ -514,8 +570,7 @@ class OverlayState:
             self.consecutive_losses += 1
         elif realized_pnl_jpy > 0:
             self.consecutive_losses = 0
-        self.equity_jpy = float(equity_jpy)
-        self.equity_peak_jpy = max(self.equity_peak_jpy, self.equity_jpy)
+        self.observe_equity(equity_jpy)
 
     @classmethod
     def load(cls, path: str | Path = OVERLAY_STATE_PATH, *,
