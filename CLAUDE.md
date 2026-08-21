@@ -21,7 +21,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 - `src/bot/backtest/` — エンジン(maker執行 / TP・SL / max_hold / 決済理由記録)・指標・walk-forward
 - `src/bot/monitoring/` — status.json・Discord 通知
 - `src/bot/radar.py` — ストームレーダー(時計窓)、`src/bot/research/board.py` — 板再構成
-- `scripts/` — `run_*`(BOT・スキャルパー・バックテスト)/ `fetch_*`・`record_*`(収集)/ `build_*`(イベントライブラリ)/ `research_*`・`replay_*`(研究)/ `validate_composite.py`(composite の再現ゲート)/ `dashboard.py` / `check_api.py`
+- `scripts/` — `run_*`(BOT・スキャルパー・バックテスト)/ `fetch_*`・`record_*`(収集)/ `build_*`(イベントライブラリ)/ `research_*`・`replay_*`(研究)/ `validate_composite.py`(composite の再現ゲート)/ `judge_gates.py`(係属ゲートの一括判定)/ `dashboard.py` / `check_api.py`
 - `deploy/` — Windows bat(`start_all` / `stop_all` / `fetch_all`、タスクスケジューラ登録)+ systemd unit
 - `config/` — `config.yaml`(戦略・コスト)/ `products.yaml`(商品仕様)/ `risk_limits.yaml`(ハード上限)/ `composite.yaml`(composite のコア params・モジュールゲート)
 - `data/` — gitignore 済。**bitFlyer 公開約定履歴は31日で消える**ため長期保存先にはならない
@@ -30,7 +30,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 
 ## 3. 運用の要点
 
-- テスト: `PYTHONPATH=src python -m pytest -q`(現在398件)
+- テスト: `PYTHONPATH=src python -m pytest -q`(現在438件)
 - **`git pull` 後は必ず `pip install -e ".[dev]"`**。依存追加を取り込まないとコンポーネントが起動直後に落ちる → 詳細 `docs/OPERATIONS.md` §4.5
 - Windows 運用(3プロセス並走・ウォッチドッグ・タスクスケジューラ2件)→ `docs/OPERATIONS.md` §5
 - 緊急停止: リポジトリ直下に `KILL` ファイルを作成
