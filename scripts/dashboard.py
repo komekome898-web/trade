@@ -700,9 +700,11 @@ function drawChart(payload, canvas, width) {
   // ---- candles + volume columns (same x, same alpha, one pass)
   for (let i = 0; i < bars.length; i++) {
     const b = bars[i], x = Math.round(xc(i)) + 0.5;
-    // the still-forming bar is dimmed; a live bar (built here from the public
-    // tape, not yet in the CSV) is dimmed further
-    ctx.globalAlpha = b.live ? 0.45 : (b.partial ? 0.6 : 1);
+    // the still-forming bar is dimmed; a bar whose volume is not the minute's
+    // real volume — live (built here from the public tape, not yet in the CSV)
+    // or truncated (the tape's oldest bucket, cut off where count ran out) —
+    // is dimmed further
+    ctx.globalAlpha = (b.live || b.truncated) ? 0.45 : (b.partial ? 0.6 : 1);
     ctx.strokeStyle = ctx.fillStyle = (b.c >= b.o) ? MC.up : MC.down;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, y(b.h)); ctx.lineTo(x, y(b.l)); ctx.stroke();
@@ -766,22 +768,32 @@ function drawChart(payload, canvas, width) {
 // gridlines already draw. The thin step line is cumulative depth away from mid
 // — where the book actually thickens, not just where one level sits.
 function drawDepth(ctx, dp, y, depthX, depthW, padT, priceH) {
-  const right = depthX + depthW;
+  const right = depthX + depthW, paneTop = padT, paneBot = padT + priceH;
   if (!dp || !dp.buckets || !dp.buckets.length || !(dp.max > 0)) {
     ctx.fillStyle = MC.flat; ctx.font = "10.5px system-ui"; ctx.textAlign = "center";
     ctx.fillText("板情報なし", depthX + depthW / 2, padT + priceH / 2);
     return;
   }
+  // A depth bucket sits at a PRICE, and the price pane only shows a window of
+  // prices: board_depth's ladder starts below the pane's lo and ends above its
+  // hi (it is floor/ceil'd onto the gridline step), and a board fetched while
+  // price ran away can sit further out still. Every rect is therefore clipped
+  // to the pane — un-clipped, the edge buckets painted over the volume pane
+  // below and the label gutter above.
+  const clamp = v => Math.min(paneBot, Math.max(paneTop, v));
+  const bar = (yy, h, w, fill) => {
+    const top = clamp(yy), bot = clamp(yy + h);
+    if (!(bot > top)) return;
+    ctx.fillStyle = fill;
+    ctx.fillRect(right - w, top, w, bot - top);
+  };
   for (const bk of dp.buckets) {
     const yTop = y(bk.p + dp.step), yBot = y(bk.p);
+    if (yBot <= paneTop || yTop >= paneBot) continue;   // wholly off the pane
     const half = Math.max(1, (yBot - yTop) / 2 - 0.5);
-    if (bk.ask > 0) {
-      const w = Math.max(1, bk.ask / dp.max * depthW);
-      ctx.fillStyle = MC.depthAsk; ctx.fillRect(right - w, yTop, w, half);
-    }
+    if (bk.ask > 0) bar(yTop, half, Math.max(1, bk.ask / dp.max * depthW), MC.depthAsk);
     if (bk.bid > 0) {
-      const w = Math.max(1, bk.bid / dp.max * depthW);
-      ctx.fillStyle = MC.depthBid; ctx.fillRect(right - w, yTop + half + 1, w, half);
+      bar(yTop + half + 1, half, Math.max(1, bk.bid / dp.max * depthW), MC.depthBid);
     }
   }
   const mid = dp.mid, total = Math.max(dp.ask_sum || 0, dp.bid_sum || 0);
@@ -793,8 +805,8 @@ function drawDepth(ctx, dp, y, depthX, depthW, padT, priceH) {
     for (const bk of list) {
       cum += bk[key];
       const x = right - Math.min(1, cum / total) * depthW;
-      const a = upward ? y(bk.p) : y(bk.p + dp.step);
-      const z = upward ? y(bk.p + dp.step) : y(bk.p);
+      const a = clamp(upward ? y(bk.p) : y(bk.p + dp.step));
+      const z = clamp(upward ? y(bk.p + dp.step) : y(bk.p));
       if (started) { ctx.lineTo(x, a); } else { ctx.moveTo(x, a); started = true; }
       ctx.lineTo(x, z);
     }
@@ -819,7 +831,11 @@ function chartHover(ev) {
   const b = g.bars[i];
   const split = (b.bv != null && b.sv != null)
     ? `\n買 ${fmt(b.bv, 3)}  売 ${fmt(b.sv, 3)}` : "";
-  tip.innerHTML = `${jst(b.ts)} JST${b.live ? " (ライブ)" : b.partial ? " (形成中)" : ""}\n` +
+  // 不完全(取得上限): the tape's oldest bucket starts where count ran out, so
+  // its volume is a floor — the number is shown, with what it is worth
+  const flags = (b.live ? " (ライブ)" : b.partial ? " (形成中)" : "") +
+    (b.truncated ? " 不完全(取得上限)" : "");
+  tip.innerHTML = `${jst(b.ts)} JST${flags}\n` +
     `始 ${fmt(b.o, 0)}   高 ${fmt(b.h, 0)}\n安 ${fmt(b.l, 0)}   終 ${fmt(b.c, 0)}\n` +
     `出来高 ${fmt(b.v, 3)}` + split;
   tip.style.display = "block";
@@ -938,11 +954,17 @@ def board_fetched_at() -> float | None:
 # 1m tail moved, with a floor of MARKET_TTL seconds either way. The board is
 # NOT part of that key: it is attached to the cached payload on every request,
 # which is microseconds, so depth stays as fresh as the fetch cache allows.
+#
+# MARKET_TTL must stay BELOW the 1m view's poll period (FAST_POLL_MS, 10s) or
+# every other fast poll is answered from a payload the TTL refuses to rebuild —
+# a 10s poll against a 15s floor served the same 1m tail twice, then a fresh
+# one, forever. The execution tape is fetched only on the paths that can
+# actually use it, so a TTL-fresh answer costs no /v1/executions call at all.
 # ---------------------------------------------------------------------------
 MARKET_FILES = (f"data/candles_{PRODUCT}.csv", f"data/flow_{PRODUCT}.csv",
                 "data/oi_snapshots.csv", "logs/bot.jsonl",
                 "data/scalp_paper.jsonl")
-MARKET_TTL = 15.0
+MARKET_TTL = 8.0
 _market_lock = threading.Lock()
 _market_cache: dict[str, object] = {"key": None, "at": 0.0, "payload": None,
                                     "root": None}
@@ -975,13 +997,20 @@ def _live_key(bars: list[dict]) -> tuple:
 def market_body(root: str = ".", now: float | None = None) -> bytes:
     """The /api/market JSON: cached files + live tail, board attached fresh."""
     now = time.monotonic() if now is None else now
-    live = live_bars()
+    # the board is NOT deferred like the tape below: it is not part of the
+    # cache key precisely so the depth panel never waits on a candle file, so
+    # every path attaches it. fetch_board is PUBLIC_TTL-capped (one HTTP call
+    # per 5s however often the page polls) and stays OUTSIDE _market_lock, so a
+    # slow exchange cannot make a second tab queue behind it.
     board = fetch_board()
     with _market_lock:
         cached = (_market_cache["payload"]
                   if _market_cache["root"] == str(root) else None)
-        key = None
         if cached is None or (now - _market_cache["at"]) >= MARKET_TTL:
+            # the tape is fetched HERE and not before: on a TTL-fresh path the
+            # cached payload is served unchanged, so the /v1/executions call
+            # would have bought nothing but a slot in the public rate budget
+            live = live_bars()
             key = _market_key(root) + _live_key(live)
             if cached is not None and key == _market_cache["key"]:
                 _market_cache["at"] = now   # nothing moved: re-arm the TTL

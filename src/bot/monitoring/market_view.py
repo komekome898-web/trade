@@ -24,8 +24,9 @@ Definitions come from docs/KNOWLEDGE.md §2 and are NOT re-derived here:
 
 Two rules apply everywhere in this module:
 
-  * the still-forming bucket (``partial: True``) is excluded from every slope,
-    accel and vote window — see ``closed_bars``; levels shown AS levels keep it
+  * an incomplete bucket — still forming (``partial``) or cut off mid-minute by
+    the tape's fetch window (``truncated``) — is excluded from every slope,
+    accel and vote window; see ``closed_bars``. Levels shown AS levels keep it
   * a 1m feed more than STALE_AFTER_SEC behind is not classified at all
     (``market_state`` -> state None, stale True): a stopped collector is not a
     calm market
@@ -212,13 +213,26 @@ def read_candles(path: Path, max_bytes: int = 32 * 1024 * 1024) -> list[dict[str
 # ---------------------------------------------------------------------------
 # resampling
 # ---------------------------------------------------------------------------
-def resample(candles_1m: Sequence[dict], tf: str) -> list[dict]:
+def resample(candles_1m: Sequence[dict], tf: str,
+             now: float | None = None) -> list[dict]:
     """1m bars -> ``tf`` bars on UTC-aligned buckets.
 
     Buckets are floor(ts / step) * step, so every timeframe lines up with UTC
     midnight (the 4h grid is 00/04/08/... UTC, the daily bar is a UTC day).
     The last bucket is emitted even when it is still filling; it carries
     ``partial: True`` so callers can say so instead of guessing.
+
+    ``now`` is what makes that flag right on the 1m frame. Bucket-fill alone
+    ("fewer 1m bars than the timeframe holds") can never see a forming MINUTE:
+    a 1m bucket holds exactly one bar the instant its first execution lands, so
+    without a clock the live tape's current minute — two seconds old, one
+    execution deep — was handed to the closed-bar computations as a finished
+    bar. With ``now``, any bucket whose end has not passed yet is partial, on
+    every timeframe including 1m.
+
+    ``truncated`` (the live tape's oldest bucket, whose volume is a floor —
+    see ``bars_from_executions``) rides up to its bucket like ``live`` does, so
+    ``closed_bars`` can keep it out of the same computations.
     """
     step = TF_MINUTES[tf] * 60
     out: list[dict] = []
@@ -234,8 +248,9 @@ def resample(candles_1m: Sequence[dict], tf: str) -> list[dict]:
             for extra in ("buy_vol", "sell_vol"):
                 if extra in bar:
                     cur[extra] = cur.get(extra, 0.0) + bar[extra]
-            if bar.get("live"):
-                cur["live"] = True
+            for flag in ("live", "truncated"):
+                if bar.get(flag):
+                    cur[flag] = True
         else:
             cur = {"ts": bucket, "open": bar["open"], "high": bar["high"],
                    "low": bar["low"], "close": bar["close"],
@@ -243,26 +258,37 @@ def resample(candles_1m: Sequence[dict], tf: str) -> list[dict]:
             for extra in ("buy_vol", "sell_vol"):
                 if extra in bar:
                     cur[extra] = bar[extra]
-            if bar.get("live"):
-                cur["live"] = True
+            for flag in ("live", "truncated"):
+                if bar.get(flag):
+                    cur[flag] = True
             out.append(cur)
     for bar in out:
         bar["partial"] = False
     if out:
-        out[-1]["partial"] = out[-1]["bars"] < TF_MINUTES[tf]
+        last = out[-1]
+        last["partial"] = (last["bars"] < TF_MINUTES[tf]
+                           or (now is not None and now < last["ts"] + step))
     return out
 
 
 def closed_bars(bars: Sequence[dict]) -> list[dict]:
-    """The bars whose bucket has finished — ``partial: True`` ones dropped.
+    """The bars whose bucket has finished and whose volume is the real one.
 
-    Ten minutes into a 4h bucket the bucket's volume is 1/24 of a full one and
-    its range is a fraction of one: fed to a slope that reads as a collapse.
+    Two kinds of bar are dropped:
+
+      ``partial``    the bucket is still filling. Ten minutes into a 4h bucket
+                     its volume is 1/24 of a full one and its range a fraction
+                     of one: fed to a slope, that reads as a collapse.
+      ``truncated``  the live tape's oldest bucket. The fetch window started
+                     wherever ``count`` ran out, mid-minute, so its volume is a
+                     floor rather than the minute's — the same understatement,
+                     from the other end.
+
     Every slope / accel / vote window in this module therefore runs on closed
     buckets only; levels the UI shows as levels (last close, taker share) may
-    still come from the forming bar, and say so via ``partial``.
+    still come from those bars, and say so via ``partial`` / ``truncated``.
     """
-    return [b for b in bars if not b.get("partial")]
+    return [b for b in bars if not b.get("partial") and not b.get("truncated")]
 
 
 # ---------------------------------------------------------------------------
@@ -275,15 +301,42 @@ def closed_bars(bars: Sequence[dict]) -> list[dict]:
 # builds the missing minutes here. Those bars are marked ``live`` so the page
 # can draw them as what they are: a partial, unarchived tail.
 # ---------------------------------------------------------------------------
+def _exec_order(row: dict) -> tuple[int, int]:
+    """Sort key putting the tape back in the order it happened.
+
+    The execution id is the exchange's own sequence number and is the only
+    thing that orders a sweep: a market order that fills against five resting
+    levels writes five rows with the SAME exec_date, and the tape serves them
+    newest-first. Rows without a usable id keep their relative position, after
+    the ones that have one.
+    """
+    try:
+        return (0, int(row.get("id")))
+    except (TypeError, ValueError):
+        return (1, 0)
+
+
 def bars_from_executions(executions: Sequence[dict]) -> list[dict]:
     """bitFlyer /v1/executions rows -> ascending 1m bars with a taker split.
 
+    The tape arrives newest-first and its exec_date has one-second resolution,
+    so the rows of one sweep are indistinguishable by timestamp. They are
+    therefore folded in ascending id order — the same rule
+    ``market_data.feed.poll_executions`` uses — and open/close are simply the
+    first and last row of the bucket in that order. Ordering by exec_date alone
+    inverted every sweep: the newest print became the open and the oldest the
+    close, so a 100 -> 102 sweep drew as 102 -> 100.
+
     The oldest bucket is flagged ``truncated``: the fetched window starts
     wherever ``count`` ran out, not on a minute boundary, so that bucket's
-    volume is a floor rather than the minute's real volume.
+    volume is a floor rather than the minute's real volume. The flag is carried
+    through the merge and the resample and keeps that bucket out of
+    ``closed_bars`` (it is NOT dropped: the whole window is often one minute,
+    and dropping it would take the live tail — and with it the staleness
+    guard's only fresh bar — away entirely).
     """
     buckets: dict[float, dict[str, Any]] = {}
-    for row in executions:
+    for row in sorted(executions, key=_exec_order):
         price = _f(row.get("price"))
         size = _f(row.get("size"))
         ts = _epoch(str(row.get("exec_date") or ""))
@@ -293,17 +346,13 @@ def bars_from_executions(executions: Sequence[dict]) -> list[dict]:
         start = math.floor(ts / 60.0) * 60.0
         bar = buckets.get(start)
         if bar is None:
-            buckets[start] = {
+            buckets[start] = bar = {
                 "ts": start, "open": price, "high": price, "low": price,
                 "close": price, "volume": size, "buy_vol": 0.0, "sell_vol": 0.0,
-                "trades": 0, "live": True, "_first": ts, "_last": ts,
+                "trades": 0, "live": True,
             }
-            bar = buckets[start]
         else:
-            if ts < bar["_first"]:
-                bar["_first"], bar["open"] = ts, price
-            if ts >= bar["_last"]:
-                bar["_last"], bar["close"] = ts, price
+            bar["close"] = price
             bar["high"] = max(bar["high"], price)
             bar["low"] = min(bar["low"], price)
             bar["volume"] += size
@@ -314,9 +363,6 @@ def bars_from_executions(executions: Sequence[dict]) -> list[dict]:
             bar["sell_vol"] += size
         bar["trades"] += 1
     out = [buckets[k] for k in sorted(buckets)]
-    for bar in out:
-        bar.pop("_first", None)
-        bar.pop("_last", None)
     if out:
         out[0]["truncated"] = True
     return out
@@ -328,8 +374,11 @@ def merge_live_bars(csv_bars: Sequence[dict],
 
     The CSV always wins on an overlapping minute: it is the archived, complete
     bucket, while the live one only holds whatever executions the fetch window
-    reached back to. Nothing is mutated — the live bars are copied — so the
-    caller can hand the same live tail to more than one consumer.
+    reached back to. That is also why the live tail's ``truncated`` flag rides
+    through unchanged — where the CSV does NOT have the minute, the flag is the
+    only thing saying its volume is a floor. Nothing is mutated — the live bars
+    are copied — so the caller can hand the same live tail to more than one
+    consumer.
     """
     out = [dict(b) for b in csv_bars]
     if live_bars:
@@ -1049,7 +1098,8 @@ def chart_payload(tf: str, candles: Sequence[dict],
                   bot_events: Sequence[dict] = (),
                   scalp_events: Sequence[dict] = (),
                   bars: int = 120, range_window: int | None = None,
-                  resampled: Sequence[dict] | None = None) -> dict[str, Any]:
+                  resampled: Sequence[dict] | None = None,
+                  now: float | None = None) -> dict[str, Any]:
     """Last ``bars`` bars of ``tf`` plus the markers that fall inside them.
 
     A marker is placed on the bucket that CONTAINS its timestamp. Markers
@@ -1067,11 +1117,14 @@ def chart_payload(tf: str, candles: Sequence[dict],
     apart the first time one of them was tuned.
 
     ``resampled`` lets a caller that already resampled ``candles`` to ``tf``
-    hand the result in instead of paying for it twice.
+    hand the result in instead of paying for it twice; ``now`` is passed to
+    ``resample`` when it does not (see there — it is what marks the forming
+    bucket on the 1m frame).
     """
     if range_window is None:
         range_window = RANGE_WINDOW_BY_TF.get(tf, BREAK_WINDOW)
-    tf_bars = (resample(candles, tf) if resampled is None else list(resampled))[-bars:]
+    tf_bars = (resample(candles, tf, now=now) if resampled is None
+               else list(resampled))[-bars:]
     step = TF_MINUTES[tf] * 60
     starts = [b["ts"] for b in tf_bars]
     first = starts[0] if starts else None
@@ -1114,8 +1167,9 @@ def chart_payload(tf: str, candles: Sequence[dict],
         if "buy_vol" in b and "sell_vol" in b:
             row["bv"] = round(b["buy_vol"], 4)
             row["sv"] = round(b["sell_vol"], 4)
-        if b.get("live"):
-            row["live"] = True
+        for flag in ("live", "truncated"):
+            if b.get(flag):
+                row[flag] = True
         vmax = max(vmax, row["v"])
         out_bars.append(row)
 
@@ -1199,14 +1253,23 @@ def collect_market(root: str | Path = ".", now: float | None = None,
             # two is the fetch task's normal lag; hours mean the collector is
             # down and the merged series has a HOLE in it, which every window
             # computed across it is entitled to refuse (see _ret_over).
-            first_new = min(b["ts"] for b in merged if b["ts"] > csv_last_ts)
-            gap_sec = round(max(0.0, first_new - csv_last_ts - 60.0), 1)
+            #
+            # default=None because every merged-in minute can sit at or BEFORE
+            # the last CSV minute: the tape fills an internal hole (the fetch
+            # task dropped a minute and moved on). That is a real, common case
+            # and it has no "behind" to measure — not a reason to raise.
+            first_new = min((b["ts"] for b in merged if b["ts"] > csv_last_ts),
+                            default=None)
+            if first_new is not None:
+                gap_sec = round(max(0.0, first_new - csv_last_ts - 60.0), 1)
         source = merged
 
     timeframes = []
     charts: dict[str, Any] = {}
     for tf in TF_ORDER:
-        tf_bars = resample(source, tf) if source else []
+        # ``now`` is what tells resample that the newest bucket is still open —
+        # without it the forming MINUTE looks closed on the 1m frame
+        tf_bars = resample(source, tf, now=now) if source else []
         timeframes.append({
             "tf": tf,
             "label": TF_LABELS[tf],

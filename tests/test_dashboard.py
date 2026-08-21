@@ -240,6 +240,35 @@ def test_api_market_is_cached_until_a_file_changes(tmp_path, monkeypatch):
     assert len(calls) == 2
 
 
+def test_market_cache_ttl_fits_inside_the_fast_poll(tmp_path, monkeypatch):
+    """A 15s TTL under a 10s poll served the 1m view a payload the TTL refused
+    to rebuild on every other tick. And the tape is fetched only where it can
+    change the answer: a TTL-fresh request spends no /v1/executions call."""
+    import re
+
+    from tests.test_market_view import _make_workspace
+
+    _make_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    module = _dashboard_module()
+    fast_sec = int(re.search(r"FAST_POLL_MS = (\d+)", module.PAGE).group(1)) / 1000.0
+    assert module.MARKET_TTL <= fast_sec
+
+    builds, tapes = [], []
+    monkeypatch.setattr(module, "collect_market",
+                        lambda root, live_bars=(): builds.append(root) or
+                        {"n": len(builds)})
+    monkeypatch.setattr(module, "live_bars", lambda now=None: tapes.append(1) or [])
+
+    assert json.loads(module.market_body(".", now=1000.0))["n"] == 1
+    assert len(tapes) == 1
+    module.market_body(".", now=1000.0 + module.MARKET_TTL - 0.1)
+    assert len(tapes) == 1               # inside the TTL: the fetch is skipped
+    module.market_body(".", now=1000.0 + fast_sec)
+    assert len(tapes) == 2               # the next 1m poll does look at the tape
+    assert len(builds) == 1              # files and tail unchanged: no rebuild
+
+
 def test_page_has_both_tabs_and_switches_without_reloading(tmp_path):
     page = _dashboard_page()
     assert 'onclick="showTab(\'console\')"' in page and "Botコンソール" in page
@@ -345,6 +374,12 @@ const vert = segs.filter(s => s.pts.length === 4 && s.pts.every(p => p[0] === s.
 const openRects = rects;
 const inVolPane = g ? openRects.filter(r => r.y >= g.volTop - 0.5) : [];
 const inDepth = g ? openRects.filter(r => r.x >= g.depthX - 0.5 && r.y < g.volTop) : [];
+// EVERY rect in the depth column, wherever it landed: a depth bucket sits at a
+// price, and a price outside the pane's window has no business being painted
+// over the volume pane below it or the label gutter above.
+const depthCol = g ? openRects.filter(r => r.x >= g.depthX - 0.5) : [];
+const outsidePane = g ? depthCol.filter(
+  r => r.y < g.padT - 0.01 || r.y + r.h > g.padT + g.priceH + 0.01) : [];
 const byFill = list => {
   const out = {};
   for (const r of list) out[r.fill] = (out[r.fill] || 0) + 1;
@@ -354,6 +389,11 @@ const byFill = list => {
 // what the page looked like on the frame it OPENED on, before any switching
 const openSub = els["m-chart-sub"].textContent, openLegend = els["m-legend"].innerHTML;
 const openStrip = els["m-strip"].innerHTML, openTexts = texts.map(t => t.s);
+
+// the tooltip for the NEWEST bar, on the frame the page opened on
+if (g) api.chartHover({clientX: g.padL + g.step * (g.bars.length - 0.5),
+                       currentTarget: canvas});
+const openTipLast = g ? els["m-tip"].innerHTML : "";
 
 const before = ops.length;
 api.setChartTf("1h");
@@ -386,7 +426,9 @@ console.log(JSON.stringify({
   time_grid_majors: vert.filter(s => s.stroke !== "rgba(34,48,80,.9)").length,
   vol_rects: inVolPane.length, vol_fills: byFill(inVolPane),
   depth_rects: inDepth.length, depth_fills: byFill(inDepth),
+  depth_col_rects: depthCol.length, depth_outside_pane: outsidePane.length,
   translucent_bars: openRects.filter(r => r.a < 1).length,
+  open_tip_last: openTipLast,
   axis_texts: texts.map(t => t.s),
   tip: hover1h, tip_display: hoverDisplay, tip_over_depth: hoverDepth,
   bars_drawn: g ? g.bars.length : 0,
@@ -584,6 +626,62 @@ def test_market_tab_draws_the_live_tail_as_translucent(tmp_path):
     assert "ライブ追記 2分" in r["open_strip"]
     assert r["translucent_bars"] > 0
     assert "半透明の足" in r["open_legend"]
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_market_tab_marks_the_tape_s_truncated_bucket(tmp_path):
+    """The fetch window is often one single minute, so the tape's oldest —
+    truncated — bucket IS the live tail: it is drawn rather than dropped, in
+    the same translucent style, and the tooltip says its volume is a floor."""
+    from tests.test_market_view import T0, _make_workspace, _exec
+    from bot.monitoring.market_view import bars_from_executions, collect_market
+
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    _make_workspace(workspace)
+    live = bars_from_executions([_exec(400 * 60 + 10, 11_900_000.0, 0.02)])
+    payload = collect_market(workspace, now=T0 + 401 * 60, live_bars=live)
+    last = payload["chart"]["tfs"]["1m"]["bars"][-1]
+    assert last["truncated"] is True and last["live"] is True
+
+    r = _render_market_in_node(tmp_path, payload)
+    assert "不完全(取得上限)" in r["open_tip_last"]     # the volume is a floor
+    assert "ライブ" in r["open_tip_last"]
+    assert r["translucent_bars"] > 0
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_depth_panel_never_paints_outside_the_price_pane(tmp_path):
+    """The depth ladder is floor/ceil'd onto the gridline step, so its end
+    buckets already reach past the pane, and a board fetched while price ran
+    away reaches much further. Un-clipped, those rects painted over the volume
+    pane below and the price labels above."""
+    from tests.test_market_view import T0, _make_workspace
+    from bot.monitoring.market_view import attach_board, collect_market
+
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    _make_workspace(workspace, minutes=120)
+    payload = collect_market(workspace, now=T0 + 120 * 60)
+    mid = payload["chart"]["tfs"]["1m"]["bars"][-1]["c"]
+    attach_board(payload, {
+        "mid_price": mid,
+        "bids": [{"price": mid - 500 - i * 1500, "size": 0.4} for i in range(120)],
+        "asks": [{"price": mid + 500 + i * 1500, "size": 0.3} for i in range(120)],
+    }, now=T0 + 120 * 60)
+
+    depth = payload["chart"]["tfs"]["1m"]["depth"]
+    scale = payload["chart"]["tfs"]["1m"]["scale"]
+    assert depth["buckets"]
+    # price ran away from the book between the candle file and the board fetch
+    depth["buckets"].append({"p": scale["hi"] + 4 * depth["step"],
+                             "bid": 0.0, "ask": depth["max"]})
+    depth["buckets"].append({"p": scale["lo"] - 4 * depth["step"],
+                             "bid": depth["max"], "ask": 0.0})
+
+    r = _render_market_in_node(tmp_path, payload)
+    assert r["depth_col_rects"] > 4          # the panel still drew
+    assert r["depth_outside_pane"] == 0      # and stayed inside its own pane
 
 
 @pytest.mark.skipif(_node() is None, reason="node not installed")

@@ -10,11 +10,11 @@ import pytest
 
 from bot.monitoring.market_view import (
     RANGE_WINDOW_BY_TF, TF_ORDER, attach_board, bars_from_executions,
-    board_depth, chart_payload, chart_scale, collect_market, market_state,
-    merge_live_bars, nice_step, normalize_board, oi_trend, overlay_flow,
-    parse_bot_events, parse_scalp_events, price_grid, read_candles, resample,
-    series_trend, slope_angle, taker_split, time_grid, trend, volatility,
-    volume_trend, window_label,
+    board_depth, chart_payload, chart_scale, closed_bars, collect_market,
+    market_state, merge_live_bars, nice_step, normalize_board, oi_trend,
+    overlay_flow, parse_bot_events, parse_scalp_events, price_grid,
+    read_candles, resample, series_trend, slope_angle, taker_split, time_grid,
+    trend, volatility, volume_trend, window_label,
 )
 
 T0 = datetime(2026, 8, 20, 0, 0, tzinfo=timezone.utc).timestamp()
@@ -74,6 +74,24 @@ def test_resample_marks_only_the_partial_last_bucket():
 def test_resample_1m_is_a_passthrough_grid():
     out = resample(bars([1, 2, 3]), "1m")
     assert len(out) == 3 and all(b["bars"] == 1 for b in out)
+
+
+def test_resample_needs_the_clock_to_see_a_forming_minute():
+    """Bucket fill alone cannot flag a forming MINUTE — a 1m bucket is "full"
+    the instant its first execution lands, so the live tape's current minute,
+    two seconds and one trade old, was handed to the closed-bar computations as
+    a finished bar. With ``now`` it is partial on every frame, 1m included."""
+    src = bars([100.0] * 3)                              # T0 .. T0+120
+    assert [b["partial"] for b in resample(src, "1m")] == [False] * 3
+
+    forming = resample(src, "1m", now=T0 + 120 + 2)      # 2s into the last one
+    assert [b["partial"] for b in forming] == [False, False, True]
+    assert len(closed_bars(forming)) == 2
+
+    over = resample(src, "1m", now=T0 + 180)             # the minute has closed
+    assert over[-1]["partial"] is False and len(closed_bars(over)) == 3
+    # a slower frame is partial for the whole time its bucket is open
+    assert resample(src, "15m", now=T0 + 180)[-1]["partial"] is True
 
 
 def test_resample_empty():
@@ -694,6 +712,51 @@ def test_bars_from_executions_builds_1m_buckets_with_a_taker_split():
     assert bars_from_executions([{"price": "x", "exec_date": "nope"}]) == []
 
 
+def test_bars_from_executions_orders_a_sweep_by_id_not_by_timestamp():
+    """One market order sweeping three resting levels writes three rows with
+    the SAME exec_date (one-second resolution), served newest-first. Folded by
+    timestamp, the newest print became the open and the oldest the close: a
+    100 -> 102 sweep drew as 102 -> 100, on every sweep the tape carried."""
+    sweep = [dict(_exec(10, 100.0 + k, 1.0), id=k + 1) for k in range(3)]
+    out = bars_from_executions(list(reversed(sweep)))    # the tape's own order
+    assert len(out) == 1
+    bar = out[0]
+    assert (bar["open"], bar["close"]) == (100.0, 102.0)
+    assert (bar["high"], bar["low"]) == (102.0, 100.0)
+    assert bar["trades"] == 3 and bar["volume"] == 3.0
+    # the id is the order, so any serving order folds to the same bar
+    assert bars_from_executions(sweep) == out
+    assert bars_from_executions([sweep[1], sweep[0], sweep[2]]) == out
+
+
+def test_the_truncated_bucket_is_flagged_all_the_way_into_the_votes(tmp_path):
+    """The fetch window starts wherever ``count`` ran out, mid-minute, so the
+    oldest live bucket's volume is a floor. It is kept and flagged rather than
+    dropped — the window is often ONE minute, and dropping it would take the
+    live tail (and with it the staleness guard's only fresh bar) away — and the
+    flag rides through the merge and the resample into ``closed_bars``."""
+    _make_workspace(tmp_path)
+    live = bars_from_executions([_exec(400 * 60 + 30, 11_900_000.0, 0.02)])
+    assert len(live) == 1 and live[0]["truncated"] is True
+
+    d = collect_market(tmp_path, now=T0 + 401 * 60, live_bars=live)
+    assert d["live"]["bars"] == 1                  # kept: the tail is the tail
+    assert d["state"]["stale"] is False            # so the guard still sees it
+    row = d["chart"]["tfs"]["1m"]["bars"][-1]
+    assert row["truncated"] is True and row["live"] is True
+    assert row["partial"] is False and row["v"] == 0.02
+
+    # 0.02 BTC "in" a minute the market traded ~1.5 in: a floor, not a volume
+    volume = {t["tf"]: t["volume"] for t in d["timeframes"]}["1m"]
+    assert volume["partial_excluded"] == 1 and volume["last"] == 1.5
+
+    # and the flag survives a resample onto a slower bucket
+    tail = [dict(b, live=True, truncated=True)
+            for b in bars([101.0], start=T0 + 840)]
+    tf15 = resample(merge_live_bars(bars([100.0] * 14), tail), "15m")
+    assert tf15[0]["truncated"] is True and closed_bars(tf15) == []
+
+
 def test_merge_live_bars_lets_the_csv_win_and_marks_what_is_live():
     csv_bars = bars([100.0, 101.0, 102.0])                     # T0 .. T0+120
     live = [dict(b, live=True, close=999.0) for b in bars([1.0], start=T0 + 120)]
@@ -868,3 +931,58 @@ def test_collect_market_reports_how_far_the_csv_writer_has_fallen_behind(tmp_pat
     behind = collect_market(tmp_path, now=csv_end + 3700, live_bars=late)
     assert behind["live"]["gap_sec"] == pytest.approx(3540.0)
     assert collect_market(tmp_path, now=csv_end)["live"]["gap_sec"] is None
+
+
+def test_collect_market_survives_a_tape_that_only_fills_an_internal_hole(tmp_path):
+    """Every merged-in minute can sit at or BEFORE the last CSV minute: the
+    fetch task dropped a minute and moved on, and the tape backfills that hole.
+    There is then no "how far behind" to measure — and measuring it over an
+    empty set raised ValueError out of the /api/market handler."""
+    (tmp_path / "data").mkdir(parents=True, exist_ok=True)
+    rows = ["ts,open,high,low,close,volume"]
+    for i in range(10):
+        if i == 5:                       # the minute the collector missed
+            continue
+        stamp = datetime.fromtimestamp(T0 + i * 60, timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S+00:00")
+        rows.append(f"{stamp},100,101,99,100,1.0")
+    (tmp_path / "data" / "candles_FX_BTC_JPY.csv").write_text(
+        "\n".join(rows) + "\n", encoding="utf-8")
+
+    live = bars_from_executions([_exec(5 * 60 + 10, 100.0, 0.3)])
+    assert [b["ts"] for b in live] == [T0 + 5 * 60]
+
+    d = collect_market(tmp_path, now=T0 + 10 * 60, live_bars=live)
+    assert d["live"]["bars"] == 1                      # the hole was filled
+    assert d["live"]["csv_last_ts"] == T0 + 9 * 60
+    assert d["live"]["last_ts"] == T0 + 9 * 60         # nothing past the head
+    assert d["live"]["gap_sec"] is None                # so there is no gap
+    assert d["chart"]["tfs"]["1m"]["bars"][5]["ts"] == T0 + 5 * 60
+
+
+def test_the_forming_minute_never_reaches_a_closed_bar_computation(tmp_path):
+    """Two seconds into the current minute the tape has one execution in it.
+    On the 1m frame that was published as a closed bar, so the volume vote read
+    0.02 BTC as a minute's volume."""
+    _make_workspace(tmp_path)
+    price = 11_000_000.0 * 1.0002 ** 400
+    live = bars_from_executions([_exec(400 * 60 + 5, price, 0.2),     # closed
+                                 _exec(401 * 60 + 2, price, 0.05)])   # forming
+    now = T0 + 401 * 60 + 2
+    d = collect_market(tmp_path, now=now, live_bars=live)
+
+    rows = d["chart"]["tfs"]["1m"]["bars"]
+    assert rows[-1]["ts"] == T0 + 401 * 60 and rows[-1]["partial"] is True
+    assert rows[-2]["ts"] == T0 + 400 * 60 and rows[-2]["partial"] is False
+    for tf in TF_ORDER:                     # every slower frame is open too
+        assert d["chart"]["tfs"][tf]["bars"][-1]["partial"] is True
+
+    # the vote is what it would have been without the fraction of a minute:
+    # bucket 401 is partial, bucket 400 is the tape's truncated one
+    volume = {t["tf"]: t["volume"] for t in d["timeframes"]}["1m"]
+    base = {t["tf"]: t["volume"] for t in
+            collect_market(tmp_path, now=now)["timeframes"]}["1m"]
+    assert volume["partial_excluded"] == 2 and base["partial_excluded"] == 0
+    assert volume["last"] == base["last"] == 1.5
+    assert volume["score"] == base["score"]
+    assert volume["angle_deg"] == base["angle_deg"]
