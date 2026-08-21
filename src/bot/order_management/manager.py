@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 
 from bot.exchange.bitflyer_client import BitflyerError, OrderStateUnknown
 from bot.execution.gateway import ExecutionGateway
@@ -70,10 +71,18 @@ class OrderManager:
     def __init__(self, store: OrderStore, gateway: ExecutionGateway,
                  kill_switch: KillSwitch, *,
                  reconciler: AutoReconciler | None = None, notifier=None,
-                 on_canceled_fill=None):
+                 on_canceled_fill=None, min_size: float = 0.0):
         self._store = store
         self._gateway = gateway
         self._kill_switch = kill_switch
+        # The venue's minimum order size for this product. A residual smaller
+        # than this cannot be closed through the API at all, so it is DUST and
+        # is reported rather than sent (`report_dust_position`). 0.0 (the
+        # default, and every test that drives the manager directly) means "no
+        # minimum is known here", and then nothing is ever dust.
+        self._min_size = float(min_size)
+        # symbol -> the dust size already alerted about. One alert per episode.
+        self._dust_episodes: dict[str, float] = {}
         # Query-only, bounded auto-reconciliation of an ambiguous send. None in
         # PAPER mode: the executor is local, so ambiguity cannot arise.
         self._reconciler = reconciler
@@ -114,7 +123,9 @@ class OrderManager:
         short while trying to flatten.
 
         A record is created for the RESOLVED size only, so nothing is persisted
-        for an order that is not sent.
+        for an order that is not sent. A resolved size BELOW the product
+        minimum is not sent either: the venue would refuse it, so it takes the
+        dust path (`report_dust_position`) instead of the gateway.
 
         Orders in an unknown state block a new ENTRY (nothing may be sent while
         the book is unresolved), but they may not block a CLOSE with a bare
@@ -122,9 +133,15 @@ class OrderManager:
         the exit over it is the 2019 failure. A close is routed on into the
         priority path, which either clears the way or takes the LOUD path
         (`_closing_blocked`: critical log, urgent alert, kill switch).
+
+        The unresolved-book refusal is scoped to THIS symbol. An unresolved
+        order on another product says nothing about this one, and a book-wide
+        check let a leftover BTC_JPY record refuse every FX_BTC_JPY entry until
+        a human reconciled a position this bot does not even trade.
         """
-        if opening and self._store.unknown_orders():
-            raise RuntimeError("orders with unknown state exist; reconcile before submitting")
+        if opening and self._store.unknown_orders(symbol):
+            raise RuntimeError(f"orders with unknown state exist for {symbol}; "
+                               "reconcile before submitting")
         snapshot = self._baseline(symbol)
         try:
             order = self._store.create(symbol, side, size, order_type, price)
@@ -136,6 +153,11 @@ class OrderManager:
             if made is None:
                 return None            # the close is already satisfied
             order, size = made
+        if not opening and size >= self._min_size:
+            # A close the venue can actually accept ENDS any dust episode for
+            # the symbol: the next residual too small to close is a new episode
+            # and is alerted about again.
+            self._dust_episodes.pop(symbol, None)
         try:
             result = self._gateway.submit_order(
                 symbol=symbol, side=side, size=size, order_type=order_type, price=price
@@ -267,7 +289,16 @@ class OrderManager:
         Without a resolver the requested size stands (a caller that keeps no
         position, and every test that drives the manager directly). A resolver
         that RAISES is the same case, loudly: an exit must not be dropped
-        because the bookkeeping it consults is broken.
+        because the bookkeeping it consults is broken. A resolver that answers
+        with NaN or an infinity is that case too — an unusable number is not a
+        position reading, and `min(requested, nan)` is whichever operand the
+        comparison happens to fall through to, which is not a decision.
+
+        The resolved size is FLOORED at the product minimum: below it the venue
+        cannot accept the order at all, so it is not sent and the residual is
+        reported as dust (`report_dust_position`). Sending it anyway produced
+        the silent version of the same fact — a rejection logged as a rejected
+        order, with the operator never told the position cannot be exited.
         """
         if size_resolver is None:
             return requested
@@ -280,6 +311,13 @@ class OrderManager:
                                  "symbol": symbol, "side": side,
                                  "size": requested}})
             return requested
+        if not math.isfinite(current):
+            logger.warning("the live position read back as a non-finite number; "
+                           "the closing order keeps its requested size",
+                           extra={"data": {"event": "closing_size_not_finite",
+                                           "symbol": symbol, "side": side,
+                                           "size": requested}})
+            return requested
         if current <= _SIZE_EPSILON:
             logger.warning("closing order no longer needed: the position is flat",
                            extra={"data": {"event": "closing_already_satisfied",
@@ -287,11 +325,59 @@ class OrderManager:
                                            "requested_size": requested}})
             return None
         if current >= requested:
-            return requested
-        logger.warning("closing order resized to the live position", extra={"data": {
-            "event": "closing_size_reresolved", "symbol": symbol, "side": side,
-            "requested_size": requested, "size": current}})
-        return current
+            resolved = requested
+        else:
+            logger.warning("closing order resized to the live position",
+                           extra={"data": {"event": "closing_size_reresolved",
+                                           "symbol": symbol, "side": side,
+                                           "requested_size": requested,
+                                           "size": current}})
+            resolved = current
+        if resolved < self._min_size:
+            self.report_dust_position(symbol, side, resolved)
+            return None
+        return resolved
+
+    def report_dust_position(self, symbol: str, side: str, size: float) -> None:
+        """A residual too small for the venue: say it LOUDLY, ONCE per episode.
+
+        `0 < |position| < min_size` is not a position this bot can close. The
+        API refuses a sub-minimum order, so every "close" attempt is a
+        rejection — the pre-trade checker's minimum-size rule, an exchange 400,
+        or both — and the honest handling is to stop attempting and tell a
+        human. The two paths that can discover it (the app's closing path
+        before the checker, and `_close_size_now` after the size is re-resolved
+        at send time) route HERE so the operator sees one fact, not two
+        differently-worded near-misses.
+
+        NOT a kill-switch condition. Dust is a few hundred yen of exposure that
+        cannot be reduced by any order this bot can place; freezing trading over
+        it would add nothing, and the risk brakes (daily loss, drawdown) still
+        measure it like any other position.
+
+        ONE alert per episode: repeats at the SAME size are logged quietly, a
+        CHANGED dust size is a new fact and alerts again, and a close the venue
+        can accept ends the episode (`submit`), so a residual that grows past
+        the minimum and later dusts again alerts again.
+        """
+        size = float(size)
+        alerted = self._dust_episodes.get(symbol)
+        if alerted is not None and abs(alerted - size) <= _SIZE_EPSILON:
+            logger.info("dust position unchanged; already reported", extra={"data": {
+                "event": "dust_position_unchanged", "symbol": symbol,
+                "side": side, "size": size}})
+            return
+        self._dust_episodes[symbol] = size
+        logger.critical("dust position cannot be closed via the API", extra={"data": {
+            "event": "dust_position_unclosable", "symbol": symbol, "side": side,
+            "size": size, "min_size": self._min_size}})
+        self._alert(
+            "DUST POSITION",
+            f"DUST POSITION cannot be closed via API: {side} {size:g} {symbol} "
+            f"— manual handling required; risk brakes still monitor it. The "
+            f"residual is below the venue minimum {self._min_size:g}, so no "
+            f"order was placed and none will be: the exchange would refuse it. "
+            f"Close it by hand on bitFlyer. Trading continues.")
 
     def _verify_blockers_cleared(
             self, symbol: str,

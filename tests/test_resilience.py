@@ -573,14 +573,14 @@ class AmbiguousGateway(ExecutionGateway):
         return None
 
 
-def build_manager(tmp_path, gateway, exchange, clock=None, **kw):
+def build_manager(tmp_path, gateway, exchange, clock=None, min_size=0.0, **kw):
     clock = clock or VirtualClock()
     store = OrderStore(tmp_path / "orders.sqlite3")
     ks = KillSwitch(state_dir=tmp_path, manual_file=tmp_path / "KILL")
     reconciler = AutoReconciler(exchange, sleep=clock.sleep, clock=clock, **kw)
     notifier = RecordingNotifier()
     return OrderManager(store, gateway, ks, reconciler=reconciler,
-                        notifier=notifier), store, ks, notifier
+                        notifier=notifier, min_size=min_size), store, ks, notifier
 
 
 class _StepClock:
@@ -717,12 +717,13 @@ class WedgedGateway(ExecutionGateway):
                            11_000_000.0 if state == "COMPLETED" else None)
 
 
-def _wedge(tmp_path, gateway):
+def _wedge(tmp_path, gateway, min_size=0.0):
     """Drive the book into the wedge: ambiguous send -> ACTIVE -> stays ACTIVE."""
     clock = VirtualClock()
     venue = LaggyVenue(clock, order=child_order(state="ACTIVE"), lag_sec=0.0)
     manager, store, ks, notifier = build_manager(tmp_path, gateway, venue,
-                                                 clock=clock, budget_sec=15.0)
+                                                 clock=clock, budget_sec=15.0,
+                                                 min_size=min_size)
     # The gateway drives the venue listing, so a cancel it acknowledges is a
     # cancel the venue can be seen to have honoured (m2's verification poll).
     gateway.venue = venue
@@ -3322,3 +3323,213 @@ def test_a_fully_valid_resilience_block_warns_about_nothing(caplog):
                                 "api_health_csv": "data/api_health.csv",
                                 "entry_gating": False})
     assert _config_problems(caplog) == []
+
+
+# ============================================================================
+# (M1) DUST: a residual the venue is too big to take
+# ============================================================================
+def _dust_boot(tmp_path, monkeypatch, size, notifier):
+    """A LIVE boot holding `size` at 11,000,000 — underwater at 10,900,000."""
+    return _live_boot_app(
+        tmp_path, monkeypatch, notifier=notifier,
+        positions=FakeResponse(200, [
+            {"product_code": "FX_BTC_JPY", "side": "BUY",
+             "price": 11_000_000, "size": size, "pnl": -40}]))
+
+
+def _run_candles(app, count, price=10_900_000.0, interval=60):
+    """Drive `count` COMPLETED candles through the real loop body.
+
+    The ticker poll is replaced rather than routed, so the timestamps are ours:
+    a candle is only emitted once a trade lands in a later interval, and one
+    extra tick is needed to close the last one. Successive calls continue the
+    clock — a tick that lands before the candle in progress is ignored as
+    out-of-order, so a second run has to start after the first.
+    """
+    last = getattr(app.feed.last_tick, "timestamp", None)
+    base = 0.0 if last is None else float(last) + interval
+    ticks = [_tick(price, spread=1000.0) for _ in range(count + 1)]
+    for i, tick in enumerate(ticks):
+        tick.timestamp = base + float(i * interval)
+    pending = list(ticks)
+
+    def poll():
+        tick = pending.pop(0)
+        app.feed.last_tick = tick
+        return tick
+
+    app.feed.poll_ticker = poll
+    for _ in ticks:
+        app.step()
+
+
+def _urgent(notifier):
+    return [s for s in notifier.sent if s[2]]
+
+
+def test_a_dust_position_is_never_ordered_and_is_reported_once(tmp_path,
+                                                               monkeypatch):
+    """(M1) THE finding. 0 < |position| < min_size cannot be closed through the
+    API: the venue refuses a sub-minimum order. The bot used to try anyway on
+    every candle the stop breached, and the refusal arrived as one more
+    `risk_reject` line — so it looked like a protected position while it was an
+    un-exitable one. Nothing is sent, the operator is told ONCE, and trading
+    continues: dust is a residual the risk brakes still measure, not a reason
+    to freeze the bot."""
+    notifier = RecordingNotifier()
+    app, session = _dust_boot(tmp_path, monkeypatch, 0.0004, notifier)
+    assert app.portfolio.position_size == pytest.approx(0.0004)
+
+    _run_candles(app, 3)
+
+    assert [c for c in session.order_calls() if ORDER_PATH in c["path"]] == []
+    urgent = _urgent(notifier)
+    assert len(urgent) == 1                       # three candles, ONE alert
+    title, message, _ = urgent[0]
+    assert title == "DUST POSITION"
+    assert "cannot be closed via API" in message
+    assert "SELL 0.0004" in message               # the side that would close it
+    assert "manual handling required" in message
+    assert "risk brakes still monitor it" in message
+    # NOT a kill-switch condition: the exposure is a few hundred yen and no
+    # order this bot can place would reduce it.
+    assert not app.kill_switch.is_tripped
+    assert app.portfolio.position_size == pytest.approx(0.0004)
+
+
+def test_a_dust_position_that_grows_can_be_closed_again(tmp_path, monkeypatch):
+    """The episode ENDS when the venue can take the close again: a normal stop
+    goes out and fills, and a later residual is a new episode that alerts
+    afresh. A suppression that never lifted would silence the second, real
+    occurrence."""
+    notifier = RecordingNotifier()
+    app, session = _dust_boot(tmp_path, monkeypatch, 0.0004, notifier)
+    _run_candles(app, 2)
+    assert len(_urgent(notifier)) == 1
+
+    # The residual grows past the venue minimum (a fill lands, or the operator
+    # tops it up) — the protective stop is a normal close again.
+    app.portfolio.position_size = 0.004
+    session.set("POST", ORDER_PATH,
+                FakeResponse(200, {"child_order_acceptance_id": "ACC-STOP"}))
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-STOP", state="COMPLETED", executed=0.004,
+                         avg=10_900_000, side="SELL", size=0.004))
+
+    _run_candles(app, 1)
+
+    sends = [c for c in session.order_calls() if ORDER_PATH in c["path"]]
+    assert len(sends) == 1
+    assert app.portfolio.position_size == pytest.approx(0.0)
+    assert not app.kill_switch.is_tripped
+    # ...and the next dust residual is a NEW episode, so it is reported again.
+    app.orders.report_dust_position("FX_BTC_JPY", "SELL", 0.0004)
+    assert len(_urgent(notifier)) == 2
+
+
+def test_a_close_re_resolved_to_dust_is_not_sent_to_the_gateway(tmp_path):
+    """(M1b) The other path to the same fact, and the one the app cannot see:
+    the size is re-resolved at SEND time, after the cancelled blocker's fill has
+    been booked, and what is left is dust. `min(requested, |position|)` used to
+    hand that straight to the gateway as a sub-minimum order. Same floor, same
+    single loud report."""
+    gateway = WedgedGateway()
+    manager, store, ks, notifier, entry = _wedge(tmp_path, gateway,
+                                                 min_size=0.001)
+
+    out = manager.submit(symbol="FX_BTC_JPY", side="SELL", size=0.01,
+                         opening=False, size_resolver=lambda: 1e-9)
+
+    assert out is None
+    assert gateway.sends == 1                     # the wedged entry, nothing new
+    urgent = _urgent(notifier)
+    assert len(urgent) == 1
+    assert urgent[0][0] == "DUST POSITION" and "1e-09" in urgent[0][1]
+    assert not ks.is_tripped
+    # A repeat of the SAME residual stays quiet; a different one is a new fact.
+    manager.report_dust_position("FX_BTC_JPY", "SELL", 1e-9)
+    assert len(_urgent(notifier)) == 1
+    manager.report_dust_position("FX_BTC_JPY", "SELL", 0.0005)
+    assert len(_urgent(notifier)) == 2
+
+
+@pytest.mark.parametrize("reading", [float("nan"), float("inf")])
+def test_a_non_finite_position_reading_keeps_the_requested_close_size(
+        tmp_path, reading):
+    """(m1) NaN/inf out of the resolver is not a position reading. Every
+    comparison against NaN is False, so it fell through as "the position is
+    bigger than the order" for inf and as the resolved size itself for NaN — a
+    close sent for `nan`. Same handling as a resolver that raises: keep the
+    requested size, warn, never drop the exit."""
+    gateway = WedgedGateway()
+    manager, store, ks, notifier, entry = _wedge(tmp_path, gateway,
+                                                 min_size=0.001)
+
+    close = manager.refresh(manager.submit(
+        symbol="FX_BTC_JPY", side="SELL", size=0.01, opening=False,
+        size_resolver=lambda: reading))
+
+    assert close.size == pytest.approx(0.01)
+    assert close.state is OrderState.FILLED
+    assert not ks.is_tripped
+    assert _urgent(notifier) == []
+
+
+# ---------------------------------------- (M2) alerts leave through `redact` --
+def test_an_alert_body_is_redacted_before_it_reaches_the_webhook():
+    """(M2) Alerts are assembled from exception strings, venue responses and
+    kill-switch details, any of which can carry a registered secret. Logs have
+    passed through `redact` since day one; the notifier posted raw text to a
+    third-party webhook."""
+    from bot import logging_setup
+    from bot.monitoring.notifier import DiscordNotifier
+
+    class RecordingSession:
+        def __init__(self):
+            self.posted = []
+
+        def post(self, url, json=None, timeout=None):
+            self.posted.append(json)
+            return FakeResponse(204, None)
+
+    secret = "bfLiveApiKey-9f3c1a7d"
+    saved = list(logging_setup._SECRET_PATTERNS)
+    try:
+        logging_setup.register_secret(secret)
+        session = RecordingSession()
+        notifier = DiscordNotifier(Secret("https://discord.example/hook"),
+                                   session=session)
+        assert notifier.send("ORDER STATE UNKNOWN",
+                             f"sendchildorder failed with key={secret}",
+                             urgent=True) is True
+    finally:
+        logging_setup._SECRET_PATTERNS[:] = saved
+
+    body = session.posted[0]["content"]
+    assert secret not in body
+    assert "***REDACTED***" in body
+    assert "ORDER STATE UNKNOWN" in body          # the alert still says what it is
+
+
+# ------------------------- (m2) the unresolved-book gate is per PRODUCT ------
+def test_an_unresolved_order_on_another_product_does_not_block_entries(tmp_path):
+    """(m2) The refusal exists because nothing may be sent while THIS symbol's
+    book is unresolved. Asked book-wide, one leftover BTC_JPY record refused
+    every FX_BTC_JPY entry until a human reconciled a product this bot does not
+    trade — a wedge with no reason behind it."""
+    store = OrderStore(tmp_path / "orders.sqlite3")
+    ks = KillSwitch(state_dir=tmp_path, manual_file=tmp_path / "KILL")
+    gateway = AmbiguousGateway(fail_times=0)
+    manager = OrderManager(store, gateway, ks, notifier=RecordingNotifier())
+    leftover = store.create("BTC_JPY", "BUY", 0.001, "MARKET", None)
+
+    order = manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
+
+    assert order.state is OrderState.SUBMITTED
+    assert gateway.sends == 1
+    # ...and the leftover still blocks ITS OWN product, and still needs a human.
+    with pytest.raises(RuntimeError, match="unknown state"):
+        manager.submit(symbol="BTC_JPY", side="BUY", size=0.001)
+    assert [o.local_id for o in store.unknown_orders("BTC_JPY")] == [leftover.local_id]
+    assert store.unknown_orders("FX_BTC_JPY") == []
+    assert len(store.unknown_orders()) == 1       # the operator's view is whole

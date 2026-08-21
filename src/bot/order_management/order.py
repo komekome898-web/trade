@@ -260,12 +260,25 @@ class OrderStore:
         ids.update(str(r[0]) for r in rows)
         return ids
 
-    def unknown_orders(self) -> list[Order]:
-        rows = self._conn.execute(
-            "SELECT * FROM orders WHERE state IN (?, ?)",
-            (OrderState.STATE_UNKNOWN.value, OrderState.PENDING_SUBMIT.value),
-        )
-        return [self._row_to_order(r) for r in rows]
+    def unknown_orders(self, symbol: str | None = None) -> list[Order]:
+        """Records whose state the exchange has not confirmed either way.
+
+        `symbol` scopes the answer to one product. The unscoped form is the
+        OPERATOR's view (`OrderManager.reconcile_unknown` walks the whole
+        book); the scoped one is what a trading decision may consult, because
+        an unresolved order on another product is not evidence about this one.
+        The book-wide form used to gate every new entry, so one leftover
+        BTC_JPY record refused every FX_BTC_JPY entry — a cross-product wedge
+        with no reason behind it. `active_orders(symbol)`, which
+        `adopt_stale_pending` uses for the same reason, is already scoped.
+        """
+        args: list = [OrderState.STATE_UNKNOWN.value,
+                      OrderState.PENDING_SUBMIT.value]
+        q = "SELECT * FROM orders WHERE state IN (?, ?)"
+        if symbol:
+            q += " AND symbol=?"
+            args.append(symbol)
+        return [self._row_to_order(r) for r in self._conn.execute(q, args)]
 
     @staticmethod
     def _row_to_order(row) -> Order:

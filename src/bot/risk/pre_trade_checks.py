@@ -135,6 +135,17 @@ class PreTradeChecker:
                 f"open orders {account.open_orders} >= MAX_OPEN_ORDERS {self.limits.max_open_orders}"
             )
         if self.product is not None:
+            # ENTRIES only, in practice. A CLOSE never reaches this rule any
+            # more: a residual below the venue minimum is DUST, detected before
+            # the checker on both closing paths — `TradingApp._try_order` for a
+            # close decided from the position, and
+            # `OrderManager._close_size_now` for one re-resolved at send time —
+            # and reported to the operator instead of being sent
+            # (`OrderManager.report_dust_position`). The rule stays here as the
+            # backstop it always was: it is the venue's rule, and a caller that
+            # reaches it with a sub-minimum close would otherwise send an order
+            # the exchange refuses. Keep both ends honest — a rejection here is
+            # SILENT to the operator, which is exactly why the dust paths exist.
             if order.size < self.product.min_size:
                 reasons.append(
                     f"size {order.size} below product minimum {self.product.min_size}"

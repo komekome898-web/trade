@@ -243,7 +243,11 @@ class TradingApp:
                                    # like any other: an order the venue partly
                                    # filled before the cancel landed is booked
                                    # through the same idempotent path.
-                                   on_canceled_fill=self._book_fill_delta)
+                                   on_canceled_fill=self._book_fill_delta,
+                                   # So the manager can tell a close it may
+                                   # send from DUST the venue would refuse
+                                   # (`report_dust_position`).
+                                   min_size=self.product.min_size)
         self.portfolio = Portfolio(initial_equity_jpy=initial_equity)
         # PAPER only: reload the paper book (cumulative P&L, fill count, today's
         # daily P&L, the open position). LIVE never touches the file — there the
@@ -1075,6 +1079,22 @@ class TradingApp:
                     "budget_jpy": budget,
                     "min_notional_jpy": self.product.min_size * price}})
                 return None
+        elif size < self.product.min_size:
+            # DUST, and the protective stop is the path that finds it: a
+            # residual of 0 < |position| < min_size cannot be closed through
+            # the API at all, because the venue refuses a sub-minimum order.
+            # Attempting it every candle produced a rejection the operator
+            # never saw (the pre-trade checker's minimum-size rule, logged as
+            # one more `risk_reject`), so the bot looked like it was protecting
+            # a position it had no way to exit. Nothing is sent; the operator
+            # is told once (`OrderManager.report_dust_position`), and the risk
+            # brakes go on measuring the residual like any other position.
+            # Below FILL_EPSILON there is no position at all — float noise on a
+            # size the venue already reported — and nothing to report either.
+            if size > FILL_EPSILON:
+                self.orders.report_dust_position(self.settings.product_code,
+                                                 side, size)
+            return None
         # entry orders risk stop_loss_pct of price; closing orders reduce risk
         if opening:
             stop = price * (1 - self.stop_loss_pct / 100) if side == "BUY" \
