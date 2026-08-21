@@ -49,5 +49,5 @@ if errorlevel 1 (
   exit /b 1
 )
 echo.
-echo Done. Tell Claude: "ログを上げました"
+echo Done. Tell Claude that the logs are up.
 pause

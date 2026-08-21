@@ -196,6 +196,54 @@ def test_g1_reconstructs_shorts_and_stop_loss_exits(tmp_path):
     assert meta["open_at_end"] is False
 
 
+def test_g1_market_order_price_none_falls_back_to_execution_price(tmp_path):
+    # Real bot.jsonl records for market orders carry order_price: None but DO
+    # carry execution_price (the fill) and price (the market price at
+    # decision time). The reconstruction must not read notional as 0/None in
+    # that shape -> use execution_price, falling back to price, falling back
+    # to order_price.
+    def real_shape(ts, signal, *, execution_price, price, pnl, order_id):
+        return {
+            "PnL": pnl,
+            "decision": "ORDER_SENT",
+            "event": "decision",
+            "execution_price": execution_price,
+            "execution_status": "FILLED",
+            "indicator_values": {"mom": 1.0},
+            "level": "INFO",
+            "logger": "bot.main",
+            "message": "decision",
+            "order_id": order_id,
+            "order_price": None,
+            "order_size": SIZE,
+            "price": price,
+            "reason": "test",
+            "strategy_signal": signal,
+            "symbol": "FX_BTC_JPY",
+            "timestamp": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+        }
+
+    entry_exec, entry_mkt = 10_000_000.0, 10_000_050.0
+    rows = [
+        real_shape(BASE_DAY, "BUY", execution_price=entry_exec,
+                   price=entry_mkt, pnl=0.0, order_id="o1"),
+        real_shape(BASE_DAY + 60, "SELL", execution_price=10_050_000.0,
+                   price=10_050_100.0, pnl=400.0, order_id="o2"),
+    ]
+    write_bot(tmp_path, rows)
+    trades, meta = jg.load_champion_trades(tmp_path)
+    assert len(trades) == 1
+    assert trades[0].entry_price == pytest.approx(entry_exec)
+    assert trades[0].notional_jpy == pytest.approx(entry_exec * SIZE)
+    assert trades[0].pnl_jpy == pytest.approx(400.0)
+    assert trades[0].pnl_pct == pytest.approx(400.0 / (entry_exec * SIZE) * 100)
+    assert meta["unmeasured_closes"] == 0
+
+    g1 = by_id(jg.judge_all(tmp_path, iters=200), "G1")
+    assert g1.n == 1
+    assert g1.status == jg.INSUFFICIENT
+
+
 def test_g1_ignores_holds_rejections_and_unknown_state(tmp_path):
     rows = [decision(BASE_DAY, "HOLD", decision="HOLD", status=None, pnl=0.0),
             decision(BASE_DAY + 60, "BUY", decision="REJECTED", status=None),

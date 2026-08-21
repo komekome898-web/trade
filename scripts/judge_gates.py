@@ -340,7 +340,13 @@ def load_champion_trades(root: Path) -> tuple[list[ChampionTrade], dict[str, Any
             continue
         state = rec.get("execution_status")
         signal = str(rec.get("strategy_signal") or "")
-        price = _f(rec.get("order_price"))
+        # market orders carry order_price: None; fall back to the fill price
+        # (execution_price) and then the decision-time market price (price).
+        price = _f(rec.get("execution_price"))
+        if price is None:
+            price = _f(rec.get("price"))
+        if price is None:
+            price = _f(rec.get("order_price"))
         size = _f(rec.get("order_size"))
         filled = state is None or state not in NON_FILL_STATES
 
