@@ -10,6 +10,15 @@ Protocol for every order (rule 12):
 
 bitFlyer child orders have no client order id, so reconciliation matches by
 acceptance id when we have one, else by (product, side, size, time window).
+
+`booked_size` is the second half of that protocol and belongs to the ORDER, not
+to whoever noticed the fill: it records how much of `filled_size` has already
+been turned into a portfolio position. Every discovery path (the submit-path
+refresh, the periodic sweep, auto-reconciliation) books only the delta above it
+(`TradingApp._book_fill_delta`), so a fill seen twice is booked once and a fill
+seen only by the sweep is booked at all. It is persisted with the record
+because the alternative — in-memory bookkeeping — loses the distinction across
+a restart, in the direction that doubles a REAL position.
 """
 from __future__ import annotations
 
@@ -33,7 +42,15 @@ class OrderState(Enum):
 
 _TERMINAL = {OrderState.FILLED, OrderState.CANCELED, OrderState.REJECTED}
 _ALLOWED_TRANSITIONS: dict[OrderState, set[OrderState]] = {
-    OrderState.PENDING_SUBMIT: {OrderState.SUBMITTED, OrderState.REJECTED, OrderState.STATE_UNKNOWN},
+    # PENDING_SUBMIT can resolve straight to a fill: `reconcile_unknown` walks
+    # PENDING_SUBMIT records too (the crash-between-INSERT-and-send case), and
+    # the venue may answer that it holds the order — partly or fully filled, or
+    # cancelled. Refusing those transitions did not make the fill unreal, it
+    # only raised InvalidTransition out of the reconciler that was trying to
+    # record it.
+    OrderState.PENDING_SUBMIT: {OrderState.SUBMITTED, OrderState.PARTIALLY_FILLED,
+                                OrderState.FILLED, OrderState.CANCELED,
+                                OrderState.REJECTED, OrderState.STATE_UNKNOWN},
     OrderState.SUBMITTED: {OrderState.PARTIALLY_FILLED, OrderState.FILLED, OrderState.CANCELED,
                            OrderState.REJECTED, OrderState.STATE_UNKNOWN},
     OrderState.PARTIALLY_FILLED: {OrderState.FILLED, OrderState.CANCELED, OrderState.STATE_UNKNOWN},
@@ -64,10 +81,17 @@ class Order:
     avg_fill_price: float | None = None
     created_at: float = 0.0
     updated_at: float = 0.0
+    # How much of `filled_size` the portfolio has already been told about.
+    booked_size: float = 0.0
 
     @property
     def is_terminal(self) -> bool:
         return self.state in _TERMINAL
+
+    @property
+    def unbooked_size(self) -> float:
+        """Filled but not yet booked into the portfolio."""
+        return float(self.filled_size) - float(self.booked_size)
 
 
 class OrderStore:
@@ -90,10 +114,28 @@ class OrderStore:
                 filled_size REAL NOT NULL DEFAULT 0,
                 avg_fill_price REAL,
                 created_at REAL NOT NULL,
-                updated_at REAL NOT NULL
+                updated_at REAL NOT NULL,
+                booked_size REAL NOT NULL DEFAULT 0
             )"""
         )
+        self._migrate_booked_size()
         self._conn.commit()
+
+    def _migrate_booked_size(self) -> None:
+        """Add `booked_size` to a book written before it existed.
+
+        Backfilled as `booked_size = filled_size`, not 0: everything already in
+        an older book that had filled was booked by the old submit-path code,
+        and the safe direction for a migration is "already booked" — a missed
+        booking is a phantom flat, but a repeated one is a DOUBLED real
+        position.
+        """
+        columns = {row[1] for row in self._conn.execute("PRAGMA table_info(orders)")}
+        if "booked_size" in columns:
+            return
+        self._conn.execute(
+            "ALTER TABLE orders ADD COLUMN booked_size REAL NOT NULL DEFAULT 0")
+        self._conn.execute("UPDATE orders SET booked_size = filled_size")
 
     def create(self, symbol: str, side: str, size: float, order_type: str,
                price: float | None) -> Order:
@@ -111,9 +153,9 @@ class OrderStore:
             created_at=now, updated_at=now,
         )
         self._conn.execute(
-            "INSERT INTO orders VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO orders VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (order.local_id, symbol, side, size, order_type, price,
-             order.state.value, None, 0.0, None, now, now),
+             order.state.value, None, 0.0, None, now, now, 0.0),
         )
         self._conn.commit()
         return order
@@ -138,6 +180,34 @@ class OrderStore:
         )
         self._conn.commit()
         return self.get(local_id)  # type: ignore[return-value]
+
+    def mark_booked(self, local_id: str, booked_size: float) -> Order:
+        """Record how much of this order the portfolio has been told about.
+
+        Monotone by construction (`MAX`): a stale reader that saw a smaller
+        `filled_size` can never walk the watermark back and re-open an already
+        booked fill for a second booking.
+        """
+        self._conn.execute(
+            "UPDATE orders SET booked_size=MAX(booked_size, ?), updated_at=? "
+            "WHERE local_id=?", (float(booked_size), self._clock(), local_id))
+        self._conn.commit()
+        order = self.get(local_id)
+        if order is None:
+            raise KeyError(local_id)
+        return order
+
+    def blocking_order_ids(self, symbol: str) -> list[str]:
+        """local_ids of the non-terminal orders that would make `create` refuse.
+
+        The duplicate-order guard refuses a new order when ANY non-terminal
+        order exists for the symbol, so this IS that set — asked for explicitly
+        so a caller that has to clear the way (a closing order, see
+        `OrderManager._make_room_for_close`) can cancel exactly those ids
+        instead of issuing a blanket cancel over whatever is active by the time
+        it runs.
+        """
+        return [o.local_id for o in self.active_orders(symbol)]
 
     def get(self, local_id: str) -> Order | None:
         row = self._conn.execute(
@@ -192,4 +262,5 @@ class OrderStore:
             order_type=row[4], price=row[5], state=OrderState(row[6]),
             acceptance_id=row[7], filled_size=row[8], avg_fill_price=row[9],
             created_at=row[10], updated_at=row[11],
+            booked_size=(row[12] if len(row) > 12 else 0.0),
         )

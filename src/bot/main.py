@@ -53,6 +53,9 @@ logger = logging.getLogger("bot.main")
 # often), and best effort: a failed sweep changes nothing.
 ORDER_SWEEP_SEC = 30.0
 
+# Below this, a "fill" is float noise on a size the venue already reported.
+FILL_EPSILON = 1e-12
+
 
 def build_app(settings: Settings, *, client: BitflyerClient | None = None,
               notifier: Notifier | None = None) -> "TradingApp":
@@ -490,9 +493,23 @@ class TradingApp:
         can force its way past that wedge, but a book that is simply CURRENT
         never gets into it.
 
+        Whatever it discovers is BOOKED, through the same idempotent path the
+        submit path uses (`_book_fill_delta`). A sweep that only tidied the
+        record was the worse half of the bug: it moved a filled LIMIT order to
+        FILLED and told the portfolio nothing, so the bot read its own flat
+        book and opened a second position on top of a real one.
+
         LIVE only (PAPER fills synchronously, so its records are never stale),
         on the DIAGNOSTIC timeouts, and best effort in the strongest sense: a
         failed refresh leaves the record exactly as it was.
+
+        COST BOUND: one diagnostic GET per non-terminal order, at most once per
+        ORDER_SWEEP_SEC. That is bounded at one call per window because
+        `OrderStore.create` refuses a new order while ANY non-terminal order
+        exists for the symbol — the same invariant `_make_room_for_close` is
+        built around. The check below is the cheap statement of it: it is
+        LOGGED, never raised, because a surprising book is a reason to look, not
+        a reason to kill trading from inside a best-effort sweep.
         """
         if self.settings.mode is not Mode.LIVE:
             return
@@ -505,14 +522,33 @@ class TradingApp:
         except Exception:
             logger.exception("order sweep could not read the book")
             return
+        if len(open_orders) > 1:
+            logger.error("order sweep: more than one non-terminal order",
+                         extra={"data": {
+                             "event": "sweep_invariant_broken",
+                             "symbol": self.settings.product_code,
+                             "count": len(open_orders),
+                             "local_ids": [o.local_id for o in open_orders]}})
         for order in open_orders:
             try:
                 with self.client.diagnostic_call():
-                    self.orders.refresh(order)
+                    refreshed = self.orders.refresh(order)
             except Exception as e:
                 logger.warning("order sweep refresh failed", extra={"data": {
                     "event": "order_sweep_failed", "local_id": order.local_id,
                     "error": type(e).__name__}})
+                continue
+            try:
+                self._book_fill_delta(refreshed)
+            except Exception:
+                # Booking is the whole point of the sweep, so a failure here is
+                # loud — but it still must not take the trading loop down: the
+                # watermark is untouched, so the next sweep books the same
+                # delta again.
+                logger.exception("order sweep could not book a discovered fill",
+                                 extra={"data": {
+                                     "event": "sweep_booking_failed",
+                                     "local_id": refreshed.local_id}})
 
     def _counts_towards_api_errors(self, error: Exception) -> bool:
         """Should this failure move MAX_API_ERRORS_IN_ROW towards a kill?
@@ -801,27 +837,97 @@ class TradingApp:
                 "event": "submit_refused", "opening": opening,
                 "side": side, "size": size, "error": str(e)}})
             return None
-        # Refresh once for immediate (market/paper) fills and book them.
-        order = self.orders.refresh(order)
-        if order.state.value in ("FILLED", "PARTIALLY_FILLED") and order.filled_size > 0:
-            fill_price = order.avg_fill_price or price
-            fee = fill_price * order.filled_size * self.product.taker_fee_pct / 100
-            realized = self.portfolio.on_fill(symbol=order.symbol, side=side,
-                                              size=order.filled_size, price=fill_price,
-                                              fee_jpy=fee)
-            if not opening:
-                # A CLOSING fill, decided by what was ordered rather than by
-                # its P&L: a close that happened to break exactly even
-                # (realized + fee == 0) still moved the equity path and still
-                # has to checkpoint the brake. Opening fills change no
-                # overlay state, so they are not written.
-                self._persist_overlay_state(tick.price, realized)
-            # Every fill, opening included: an unsaved entry is a position the
-            # next process does not know it holds.
-            self._save_paper_state()
-            self.status.status.last_execution = f"{side} {order.filled_size} @ {fill_price}"
+        # Refresh once for immediate (market/paper) fills. GUARDED, like the
+        # sweep's: this refresh is a diagnostic, and a failure inside it — a
+        # dead read, an InvalidTransition on a record another path already
+        # moved — must not propagate out of the order path and become an
+        # unhandled exception that trips the kill switch on a placed order.
+        try:
+            order = self.orders.refresh(order)
+        except Exception as e:
+            logger.warning("post-submit refresh failed", extra={"data": {
+                "event": "submit_refresh_failed", "local_id": order.local_id,
+                "error": type(e).__name__}})
+            order = self.store.get(order.local_id) or order
+        # Booking runs on the record UNCONDITIONALLY, refresh or no refresh:
+        # `submit` itself may already have resolved the order to FILLED or
+        # PARTIALLY_FILLED through auto-reconciliation, in which case there was
+        # nothing for `refresh` to do. `_book_fill_delta` is the single
+        # idempotent path and books only what is not booked yet.
+        order = self._book_fill_delta(order, fallback_price=price)
         self.status.status.last_order = f"{side} {size} ({order.state.value})"
         return order
+
+    # ---- THE fill-booking path --------------------------------------------
+    def _book_fill_delta(self, order, *, fallback_price: float | None = None):
+        """Book everything this order has filled but not yet been booked for.
+
+        ONE path, called from EVERY place a fill can be discovered — the
+        submit-path refresh, the periodic sweep (`_sweep_open_orders`), and
+        auto-reconciliation (whose resolution `_try_order` books off the record
+        it returns). The order's own `booked_size` watermark is what makes that
+        safe: the delta is `filled_size - booked_size`, so the same fill seen by
+        two paths is booked once and a fill seen only by the sweep is booked at
+        all.
+
+        Before this existed, booking lived inside `_try_order` alone. A LIMIT
+        order that filled later was discovered by the sweep, which moved the
+        record to FILLED and told nobody — the portfolio stayed flat while the
+        venue held a real position. The bot then read its own flat book, took
+        the next entry signal, and doubled a live position; the protective stop
+        never armed, because as far as the portfolio was concerned there was
+        nothing to protect.
+
+        Fees come from the product spec, the price from the exchange's own
+        record (`avg_fill_price`); `fallback_price` is the caller's
+        decision-time quote and is used only when the venue reported no average
+        price at all.
+        """
+        delta = order.unbooked_size
+        if delta <= FILL_EPSILON:
+            return order
+        fill_price = order.avg_fill_price or fallback_price or order.price
+        if not fill_price:
+            tick = self.feed.last_tick
+            fill_price = tick.price if tick is not None else None
+        if not fill_price or fill_price <= 0:
+            # No usable price means no honest booking. Leave the watermark
+            # alone so the next discovery books it, and say so loudly — a
+            # position the portfolio does not know about is the phantom-flat
+            # state this whole path exists to prevent.
+            logger.error("fill observed with no usable price; NOT booked",
+                         extra={"data": {
+                             "event": "fill_unpriced", "local_id": order.local_id,
+                             "symbol": order.symbol, "side": order.side,
+                             "unbooked_size": delta}})
+            return order
+        # Closing is decided by the position the fill lands on, not by what the
+        # caller intended: the sweep discovers fills with no intent attached.
+        pos_before = self.portfolio.position_size
+        closing = pos_before != 0.0 and ((pos_before > 0) != (order.side == "BUY"))
+        fee = fill_price * delta * self.product.taker_fee_pct / 100
+        realized = self.portfolio.on_fill(symbol=order.symbol, side=order.side,
+                                          size=delta, price=fill_price,
+                                          fee_jpy=fee)
+        booked = self.store.mark_booked(order.local_id, order.filled_size)
+        tick = self.feed.last_tick
+        mark_price = tick.price if tick is not None else fill_price
+        if closing:
+            # A CLOSING fill, decided by what it did to the position rather
+            # than by its P&L: a close that happened to break exactly even
+            # still moved the equity path and still has to checkpoint the
+            # brake. Opening fills change no overlay state.
+            self._persist_overlay_state(mark_price, realized)
+        # Every fill, opening included: an unsaved entry is a position the next
+        # process does not know it holds.
+        self._save_paper_state()
+        self.status.status.last_execution = f"{order.side} {delta} @ {fill_price}"
+        logger.info("fill booked", extra={"data": {
+            "event": "fill_booked", "local_id": order.local_id,
+            "symbol": order.symbol, "side": order.side, "size": delta,
+            "price": fill_price, "fee_jpy": fee, "realized_pnl_jpy": realized,
+            "state": order.state.value, "position_size": self.portfolio.position_size}})
+        return booked
 
     def _persist_overlay_state(self, mark_price: float,
                                realized_pnl_jpy: float) -> None:

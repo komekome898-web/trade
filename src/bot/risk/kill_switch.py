@@ -3,6 +3,11 @@
 The tripped state is persisted to a file so a process restart (systemd etc.)
 cannot silently resume trading — a human must remove the file / call reset.
 Manual trip: create a file named KILL in the working directory.
+
+`detail` is written to disk and surfaced in status.json and operator alerts, so
+it goes through the SAME redaction filter as the logs (`logging_setup.redact`):
+a trip reason is usually an exception string, and an exception string is one of
+the likeliest places for a signed URL or an API key to appear.
 """
 from __future__ import annotations
 
@@ -10,6 +15,8 @@ import json
 import time
 from enum import Enum
 from pathlib import Path
+
+from bot.logging_setup import redact
 
 
 class KillReason(Enum):
@@ -41,7 +48,8 @@ class KillSwitch:
                                  "detail": "unreadable kill switch state file"}
 
     def trip(self, reason: KillReason, detail: str = "") -> None:
-        self._tripped = {"reason": reason.value, "detail": detail, "time": time.time()}
+        self._tripped = {"reason": reason.value, "detail": redact(str(detail)),
+                         "time": time.time()}
         self._state_file.parent.mkdir(parents=True, exist_ok=True)
         self._state_file.write_text(json.dumps(self._tripped), encoding="utf-8")
 

@@ -10,6 +10,7 @@ Nothing in this file touches the network.
 from __future__ import annotations
 
 import inspect
+import logging
 import random
 import sqlite3
 
@@ -683,10 +684,15 @@ class WedgedGateway(ExecutionGateway):
     never fills it. Later sends succeed and fill at once.
     """
 
-    def __init__(self, cancel_error: Exception | None = None):
+    def __init__(self, cancel_error: Exception | None = None,
+                 cancel_honoured: bool = True):
         self.sends = 0
         self.canceled: list[str] = []
         self.cancel_error = cancel_error
+        # False = the venue answers the cancel with a 2xx and keeps the order
+        # ACTIVE on getchildorders anyway (m2).
+        self.cancel_honoured = cancel_honoured
+        self.venue = None            # set by `_wedge` so a cancel is listed
         self._states: dict[str, tuple[str, float]] = {}
 
     def submit_order(self, *, symbol, side, size, order_type, price):
@@ -702,6 +708,8 @@ class WedgedGateway(ExecutionGateway):
             raise self.cancel_error
         self.canceled.append(acceptance_id)
         self._states[acceptance_id] = ("CANCELED", 0.0)
+        if self.venue is not None and self.cancel_honoured:
+            self.venue.order = child_order(acc=acceptance_id, state="CANCELED")
 
     def fetch_order_status(self, *, symbol, acceptance_id):
         state, filled = self._states.get(acceptance_id, ("ACTIVE", 0.0))
@@ -715,6 +723,9 @@ def _wedge(tmp_path, gateway):
     venue = LaggyVenue(clock, order=child_order(state="ACTIVE"), lag_sec=0.0)
     manager, store, ks, notifier = build_manager(tmp_path, gateway, venue,
                                                  clock=clock, budget_sec=15.0)
+    # The gateway drives the venue listing, so a cancel it acknowledges is a
+    # cancel the venue can be seen to have honoured (m2's verification poll).
+    gateway.venue = venue
     entry = manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
     assert entry.state is OrderState.SUBMITTED       # resolved to ACTIVE
     assert entry.acceptance_id == "ACC-NEW"
@@ -2048,3 +2059,373 @@ def test_snapshot_type_is_frozen():
     snap = ExchangeSnapshot(frozenset({"A"}), 0.0)
     with pytest.raises(Exception):
         snap.acceptance_ids = frozenset()
+
+
+# ============================================================================
+# (B1) A discovered fill is a BOOKED fill — one idempotent path
+# ============================================================================
+# The pass-3 finding: the sweep tidied the order record and told the portfolio
+# nothing. A LIMIT order the venue filled moved to FILLED in the book while the
+# portfolio stayed flat, so the bot read its own flat book, took the next entry
+# signal and doubled a REAL position — with no protective stop armed, because
+# as far as the portfolio was concerned there was nothing to protect.
+
+def _live_app(tmp_path, monkeypatch, session=None):
+    """The paper app rewired to LIVE with a real LiveExecutor over a FakeSession.
+
+    LIVE is where the sweep runs at all (PAPER fills synchronously), so every
+    discovery-path test has to be here.
+    """
+    from dataclasses import replace
+
+    from bot.execution.live import LiveExecutor
+    from bot.settings import Mode
+
+    session = session or FakeSession()
+    session.set("GET", "/v1/ticker", FakeResponse(200, {
+        "ltp": 10_000_000, "best_bid": 9_999_000, "best_ask": 10_001_000}))
+    client = BitflyerClient(Secret("k"), Secret("s"), session=session,
+                            sleep=lambda s: None)
+    app = _paper_app(tmp_path, monkeypatch, client=client)
+    app.settings = replace(app.settings, mode=Mode.LIVE)
+    app.orders._gateway = LiveExecutor(app.settings, app.client)
+    return app, session
+
+
+def _tick(price, spread=1000.0):
+    from bot.market_data.feed import Tick
+    return Tick(timestamp=1.0, price=price, best_bid=price - spread,
+                best_ask=price + spread)
+
+
+def _listing(state="COMPLETED", executed=0.01, avg=11_000_000, acc="ACC-1",
+             side="BUY", size=0.01):
+    return FakeResponse(200, [{
+        "child_order_acceptance_id": acc, "child_order_state": state,
+        "side": side, "size": size, "executed_size": executed,
+        "average_price": avg, "child_order_date": "2026-08-21T00:00:00"}])
+
+
+def test_a_sweep_discovered_fill_is_booked_into_the_portfolio(tmp_path,
+                                                              monkeypatch,
+                                                              caplog):
+    """(B1) THE finding. The sweep is the only thing that ever sees this fill,
+    so if the sweep does not book it, nothing does: the portfolio is a phantom
+    flat over a real 0.01 BTC position, and the next entry doubles it."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    order = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(order.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-1")
+    session.set("GET", "/v1/me/getchildorders", _listing())
+
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+
+    # 1. the position is real to the portfolio, at the venue's own fill price
+    assert app.store.get(order.local_id).state is OrderState.FILLED
+    assert app.portfolio.position_size == pytest.approx(0.01)
+    assert app.portfolio.avg_entry_price == pytest.approx(11_000_000)
+    assert app.store.get(order.local_id).booked_size == pytest.approx(0.01)
+    assert len(app.portfolio.trades) == 1
+
+    # 2. the protective stop now ARMS: 1% against a 0.5% stop
+    mark = 10_890_000.0
+    loss_pct = -app.portfolio.unrealized_pnl_jpy(mark) / \
+        app.portfolio.position_notional_jpy(mark) * 100
+    assert loss_pct >= app.stop_loss_pct
+
+    # 3. ...and MAX_POSITION_SIZE binds, so the second entry is refused rather
+    #    than doubling the live position.
+    tick = _tick(mark)
+    app.feed.last_tick = tick
+    with caplog.at_level(logging.WARNING, logger="bot.main"):
+        assert app._try_order("BUY", tick) is None
+    reasons = [r for rec in caplog.records
+               for r in (getattr(rec, "data", None) or {}).get("reasons", [])]
+    assert any("MAX_POSITION_SIZE" in r for r in reasons)
+    assert session.order_calls() == []          # nothing was sent
+
+
+def test_the_submit_path_and_a_later_sweep_book_one_fill_between_them(
+        tmp_path, monkeypatch):
+    """(B1) Two discovery paths, ONE booking. The submit-path refresh sees the
+    partial first; the sweep sees the same partial 30s later and must add
+    nothing — `booked_size` is what makes that true rather than lucky."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    session.set("POST", ORDER_PATH,
+                FakeResponse(200, {"child_order_acceptance_id": "ACC-1"}))
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(state="ACTIVE", executed=0.004, avg=11_950_000,
+                         size=0.01))
+    tick = _tick(12_000_000, spread=0.0)        # -> a 0.01 order
+    app.feed.last_tick = tick
+
+    order = app._try_order("BUY", tick)
+
+    assert order.state is OrderState.PARTIALLY_FILLED   # ACTIVE + executed_size
+    assert app.portfolio.position_size == pytest.approx(0.004)
+    assert len(app.portfolio.trades) == 1
+
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()                    # same listing, same fill
+
+    assert app.portfolio.position_size == pytest.approx(0.004)
+    assert len(app.portfolio.trades) == 1       # booked ONCE in total
+
+
+def test_a_growing_partial_books_only_the_delta(tmp_path, monkeypatch):
+    """A partial that grows while the order stays on the book must book the
+    DIFFERENCE. The record used to freeze at the first `filled_size` it saw
+    (same-state refreshes were skipped), so every later execution vanished."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    order = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(order.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-1")
+
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(state="ACTIVE", executed=0.004, avg=11_000_000))
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+    assert app.portfolio.position_size == pytest.approx(0.004)
+
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(state="COMPLETED", executed=0.010, avg=11_000_000))
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+
+    assert app.portfolio.position_size == pytest.approx(0.010)
+    assert len(app.portfolio.trades) == 2       # 0.004 then 0.006, never 0.014
+    assert app.portfolio.trades[-1].size == pytest.approx(0.006)
+
+
+def test_the_reconciler_books_a_partial_fill(tmp_path, monkeypatch):
+    """(B1) The third discovery path. An ambiguous send resolves against a
+    venue that reports ACTIVE with executed_size 0.004: that is a PARTIAL fill,
+    not a resting order with nothing done, and the 0.004 has to reach the
+    portfolio."""
+    session = FakeSession()
+    session.set("POST", ORDER_PATH, requests.exceptions.ReadTimeout("slow"))
+    app, session = _live_app(tmp_path, monkeypatch, session=session)
+    app.orders._reconciler = AutoReconciler(QueryOnlyExchange(app.client),
+                                            budget_sec=15.0,
+                                            sleep=lambda s: None)
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-NEW", state="ACTIVE", executed=0.004,
+                         avg=11_950_000, size=0.01))
+    tick = _tick(12_000_000, spread=0.0)        # -> a 0.01 order
+    app.feed.last_tick = tick
+
+    order = app._try_order("BUY", tick)
+
+    assert order.state is OrderState.PARTIALLY_FILLED
+    assert order.filled_size == pytest.approx(0.004)
+    assert app.portfolio.position_size == pytest.approx(0.004)
+    assert app.portfolio.avg_entry_price == pytest.approx(11_950_000)
+    assert app.store.get(order.local_id).booked_size == pytest.approx(0.004)
+    assert not app.kill_switch.is_tripped       # resolved, so no freeze
+    assert len(session.order_calls()) == 1      # and never resent
+
+
+def test_the_paper_booking_path_is_unchanged(tmp_path, monkeypatch):
+    """PAPER fills synchronously on the submit path, books once, and never
+    sweeps. The refactor must be invisible here."""
+    app = _paper_app(tmp_path, monkeypatch)
+    tick = _tick(10_000_000)
+    app.feed.last_tick = tick
+
+    order = app._try_order("BUY", tick)
+
+    assert order.state is OrderState.FILLED
+    position = app.portfolio.position_size
+    assert position > 0
+    assert app.store.get(order.local_id).booked_size == pytest.approx(
+        order.filled_size)
+    assert len(app.portfolio.trades) == 1
+
+    # Idempotent: asking again books nothing.
+    app._book_fill_delta(app.store.get(order.local_id))
+    assert app.portfolio.position_size == pytest.approx(position)
+    assert len(app.portfolio.trades) == 1
+
+    # ...and PAPER has no sweep to discover anything with.
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+    assert app.portfolio.position_size == pytest.approx(position)
+    assert len(app.portfolio.trades) == 1
+
+
+# ------------------------------------------- (m3) the sweep's cost bound ----
+def test_the_sweep_flags_a_book_with_more_than_one_open_order(tmp_path,
+                                                              monkeypatch,
+                                                              caplog):
+    """(m3) The sweep costs one diagnostic GET per non-terminal order, and it
+    is bounded at one because `create` refuses a second. That invariant is
+    checked cheaply and LOGGED — never raised, or a surprising book would kill
+    trading from inside a best-effort sweep."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    a = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(a.local_id, OrderState.SUBMITTED, acceptance_id="ACC-1")
+    b = app.store.create("BTC_JPY", "BUY", 0.001, "LIMIT", 11_000_000)
+    app.store.transition(b.local_id, OrderState.SUBMITTED, acceptance_id="ACC-2")
+    both = [app.store.get(a.local_id), app.store.get(b.local_id)]
+    monkeypatch.setattr(app.store, "active_orders", lambda symbol=None: both)
+    session.set("GET", "/v1/me/getchildorders", FakeResponse(200, []))
+
+    app._last_order_sweep = -1e9
+    with caplog.at_level(logging.ERROR, logger="bot.main"):
+        app._sweep_open_orders()                # must not raise
+
+    events = [(getattr(r, "data", None) or {}).get("event") for r in caplog.records]
+    assert "sweep_invariant_broken" in events
+
+
+# ============================================================================
+# (M1) a rejected CLOSE is an emergency, a rejected entry is a skipped tick
+# ============================================================================
+class RejectingGateway(ExecutionGateway):
+    """The venue answers a definite business error: 'insufficient margin'."""
+
+    def __init__(self):
+        self.sends = 0
+
+    def submit_order(self, *, symbol, side, size, order_type, price):
+        self.sends += 1
+        raise BitflyerError(400, "insufficient margin")
+
+    def cancel_order(self, *, symbol, acceptance_id):
+        pass
+
+    def fetch_order_status(self, *, symbol, acceptance_id):
+        return None
+
+
+def test_a_rejected_close_takes_the_loud_path(tmp_path):
+    """(M1) The position is still open and the bot has just found out it
+    cannot exit. That is the 2019 failure, and a `warning` line is not how it
+    gets said."""
+    gateway = RejectingGateway()
+    manager, store, ks, notifier = build_manager(tmp_path, gateway,
+                                                 FakeExchange())
+
+    order = manager.submit(symbol="FX_BTC_JPY", side="SELL", size=0.01,
+                           opening=False)
+
+    assert order.state is OrderState.REJECTED
+    assert ks.is_tripped and ks.state["reason"] == "system_error"
+    assert "insufficient margin" in ks.state["detail"]
+    title, message, urgent = notifier.sent[-1]
+    assert title == "CANNOT CLOSE POSITION" and urgent is True
+    assert "SELL 0.01 FX_BTC_JPY" in message
+    assert gateway.sends == 1                   # and never resent
+
+
+def test_a_rejected_entry_is_still_only_a_warning(tmp_path):
+    """The mirror image: an entry the venue refused leaves the bot holding no
+    more risk than a moment ago. Skipped tick, no freeze, no alert."""
+    gateway = RejectingGateway()
+    manager, store, ks, notifier = build_manager(tmp_path, gateway,
+                                                 FakeExchange())
+
+    order = manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
+
+    assert order.state is OrderState.REJECTED
+    assert not ks.is_tripped
+    assert notifier.sent == []
+    assert gateway.sends == 1
+
+
+# ============================================================================
+# (m1/m2) clearing the way for a close: scoped, and verified
+# ============================================================================
+def test_only_the_blocking_orders_are_cancelled_to_clear_a_close(tmp_path):
+    """(m1) The close cancels exactly the ids the store named as blockers, not
+    'everything active by the time we got here'."""
+    gateway = WedgedGateway()
+    manager, store, ks, notifier, entry = _wedge(tmp_path, gateway)
+    other = store.create("BTC_JPY", "BUY", 0.001, "MARKET", None)
+    store.transition(other.local_id, OrderState.SUBMITTED,
+                     acceptance_id="ACC-OTHER")
+    assert store.blocking_order_ids("FX_BTC_JPY") == [entry.local_id]
+
+    close = manager.refresh(manager.submit(symbol="FX_BTC_JPY", side="SELL",
+                                           size=0.01, opening=False))
+
+    assert close.state is OrderState.FILLED
+    assert gateway.canceled == ["ACC-NEW"]              # the blocker, alone
+    assert store.get(other.local_id).state is OrderState.SUBMITTED
+    assert not ks.is_tripped
+
+
+def test_a_cancel_the_venue_did_not_honour_blocks_the_close(tmp_path):
+    """(m2) The venue answers the cancel 2xx and keeps the order ACTIVE. On the
+    strength of that 2xx alone the close would go out ALONGSIDE a live order —
+    one intended exit, two real orders. No send: alert and kill switch."""
+    gateway = WedgedGateway(cancel_honoured=False)
+    manager, store, ks, notifier, entry = _wedge(tmp_path, gateway)
+
+    with pytest.raises(DuplicateOrderError):
+        manager.submit(symbol="FX_BTC_JPY", side="SELL", size=0.01,
+                       opening=False)
+
+    assert gateway.sends == 1                   # the close was NEVER sent
+    assert ks.is_tripped and ks.state["reason"] == "system_error"
+    assert "ACC-NEW" in ks.state["detail"]
+    title, message, urgent = notifier.sent[-1]
+    assert title == "CANNOT CLOSE POSITION" and urgent is True
+
+
+class FlakyVenue(LaggyVenue):
+    """Lists the order, then fails every later poll — so the CANCEL can be
+    acknowledged but never verified."""
+
+    def __init__(self, *args, fail_after=1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fail_after = fail_after
+
+    def child_orders(self, symbol):
+        rows = super().child_orders(symbol)
+        if self.order_queries > self.fail_after:
+            raise NetworkError("getchildorders timed out")
+        return rows
+
+
+def test_an_unverifiable_cancel_blocks_the_close(tmp_path):
+    """(m2) Same rule for 'we could not check'. Absence of evidence that the
+    book is clear is not evidence that it is."""
+    clock = VirtualClock()
+    venue = FlakyVenue(clock, order=child_order(state="ACTIVE"), lag_sec=0.0,
+                       fail_after=1)
+    gateway = WedgedGateway()
+    manager, store, ks, notifier = build_manager(tmp_path, gateway, venue,
+                                                 clock=clock, budget_sec=15.0)
+    gateway.venue = venue
+    entry = manager.submit(symbol="FX_BTC_JPY", side="BUY", size=0.01)
+    assert entry.state is OrderState.SUBMITTED
+
+    with pytest.raises(DuplicateOrderError):
+        manager.submit(symbol="FX_BTC_JPY", side="SELL", size=0.01,
+                       opening=False)
+
+    assert gateway.sends == 1                   # no close on an unverified book
+    assert ks.is_tripped and "could not be read" in ks.state["detail"]
+    assert notifier.sent[-1][0] == "CANNOT CLOSE POSITION"
+
+
+# ------------------------------------------ (m4) the kill file is redacted --
+def test_a_secret_in_a_kill_detail_is_redacted_on_disk(tmp_path):
+    """(m4) `detail` is usually an exception string, and an exception string is
+    a likely place for a key or a signed URL. It is persisted and alerted out,
+    so it goes through the same filter as every log line."""
+    from bot.logging_setup import register_secret
+    from bot.risk.kill_switch import KillReason
+
+    register_secret("k1ll-sw1tch-t3st-s3cr3t")
+    ks = KillSwitch(state_dir=tmp_path, manual_file=tmp_path / "KILL")
+    ks.trip(KillReason.SYSTEM_ERROR,
+            "auth failed for key k1ll-sw1tch-t3st-s3cr3t on /v1/me/sendchildorder")
+
+    on_disk = (tmp_path / "kill_switch.json").read_text(encoding="utf-8")
+    assert "k1ll-sw1tch-t3st-s3cr3t" not in on_disk
+    assert "***REDACTED***" in on_disk
+    assert "***REDACTED***" in ks.state["detail"]
+    assert "/v1/me/sendchildorder" in ks.state["detail"]   # diagnosis survives

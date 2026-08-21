@@ -173,6 +173,23 @@ class AutoReconciler:
         ids.update(self._observed)
         return ExchangeSnapshot(frozenset(ids), self._clock())
 
+    # ---- one-shot diagnostic listing ---------------------------------------
+    def list_orders(self, symbol: str) -> list[dict] | None:
+        """ONE getchildorders poll. None = the venue could not be read.
+
+        Exposed because "did the cancel actually take?" is the same question
+        this module already answers about a send, asked once instead of on a
+        schedule (`OrderManager._verify_blockers_cleared`). It runs through the
+        same QueryOnlyExchange, on the same diagnostic timeouts, and a failed
+        read returns None — never an empty list, which would read as "the book
+        is clear".
+        """
+        orders = self._safe(lambda: self._exchange.child_orders(symbol))
+        if orders is None:
+            return None
+        self._remember(orders)
+        return list(orders)
+
     # ---- step 2: after an ambiguous failure --------------------------------
     def resolve(self, *, symbol: str, side: str, size: float,
                 snapshot: ExchangeSnapshot, order_type: str = "MARKET",

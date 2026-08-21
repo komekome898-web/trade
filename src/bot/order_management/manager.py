@@ -32,6 +32,27 @@ _RESOLUTION_TO_LOCAL = {
     "REJECTED": OrderState.REJECTED,
 }
 
+# Exchange states that mean "still on the book" — the ones a reported
+# executed_size can refine into a PARTIAL fill.
+_RESTING = {OrderState.SUBMITTED, OrderState.PENDING_SUBMIT}
+
+
+def _with_partial(state: OrderState | None, filled_size: float | None) -> OrderState | None:
+    """ACTIVE-with-executed_size is PARTIALLY_FILLED, not SUBMITTED.
+
+    bitFlyer reports a partially filled child order as ACTIVE and carries the
+    filled amount in `executed_size`. Mapping that to plain SUBMITTED threw the
+    fill away: the book showed a resting order with nothing done, so the
+    already-executed size was never booked into the portfolio and the bot
+    believed it was flatter than it was. It also made the record un-updatable —
+    a later refresh of a PARTIALLY_FILLED order that the venue still calls
+    ACTIVE tried PARTIALLY_FILLED -> SUBMITTED, which is not a legal transition
+    and raised InvalidTransition out of the sweep.
+    """
+    if state in _RESTING and (filled_size or 0.0) > 0:
+        return OrderState.PARTIALLY_FILLED
+    return state
+
 
 class OrderManager:
     def __init__(self, store: OrderStore, gateway: ExecutionGateway,
@@ -90,8 +111,19 @@ class OrderManager:
             return order
         except (BitflyerError, ValueError) as e:
             order = self._store.transition(order.local_id, OrderState.REJECTED)
-            logger.warning("order rejected", extra={"data": {
-                "event": "order_rejected", "local_id": order.local_id, "error": str(e)}})
+            if opening:
+                # An entry the venue refused is a skipped opportunity: the bot
+                # holds no more risk than it did a moment ago.
+                logger.warning("order rejected", extra={"data": {
+                    "event": "order_rejected", "local_id": order.local_id,
+                    "error": str(e)}})
+                return order
+            # A refused CLOSE is the 2019 failure exactly: the position is
+            # still open, the bot just found out it cannot exit, and a
+            # `warning` line is not how that gets said. Same loud path as a
+            # close the book blocked — critical log, urgent alert, kill switch.
+            self._closing_blocked(symbol, side, size, [],
+                                  f"the exchange rejected it ({type(e).__name__}: {e})")
             return order
         return self._store.transition(order.local_id, OrderState.SUBMITTED,
                                       acceptance_id=result.acceptance_id)
@@ -111,45 +143,115 @@ class OrderManager:
 
         Cancelling is safe in a way sending is not — it is idempotent, and
         cancelling an order that is already gone changes nothing — so the
-        resting order is cancelled and the close retried exactly once. If it is
-        STILL refused, the bot cannot flatten and a human must: urgent alert
+        blocking orders are cancelled and the close retried exactly once. If it
+        is STILL refused, the bot cannot flatten and a human must: urgent alert
         plus a tripped kill switch, never a quiet `submit_refused` log line.
+
+        SCOPED, not blanket. Only the ids the store reports as blocking are
+        cancelled — `OrderStore.blocking_order_ids`, which is exactly the set
+        `create` refused for. Today that set is "every non-terminal order for
+        the symbol", so the effect is unchanged; the difference is that this
+        path can no longer reach past its own reason for existing.
+        WARNING to any future design that keeps a protective order RESTING on
+        the book (a venue-side stop, a bracket): such an order would be
+        non-terminal, so it would appear here as a blocker and be cancelled to
+        make room for a manual close. Before adding one, this list has to learn
+        to exclude it — and the duplicate-order guard has to stop counting it.
+
+        A cancel the venue ACKNOWLEDGED is not a cancel the venue HONOURED, so
+        the acknowledgement is verified against getchildorders before the close
+        is sent (`_verify_blockers_cleared`). Sending on the strength of a 2xx
+        alone is how one intended exit becomes two live orders.
         """
-        resting = [o.local_id for o in self._store.active_orders(symbol)]
+        blockers = self._store.blocking_order_ids(symbol)
         try:
-            canceled = self.cancel_all_active(symbol)
+            canceled = self.cancel_orders(symbol, blockers)
         except Exception as e:
-            self._closing_blocked(symbol, side, size, resting,
+            self._closing_blocked(symbol, side, size, blockers,
                                   f"cancel failed ({type(e).__name__}: {e})")
+            raise refusal from None
+        ok, detail = self._verify_blockers_cleared(symbol, blockers)
+        if not ok:
+            self._closing_blocked(symbol, side, size, blockers, detail)
             raise refusal from None
         logger.warning("resting orders cancelled to clear a closing order",
                        extra={"data": {"event": "closing_order_priority",
                                        "symbol": symbol, "side": side,
                                        "size": size, "canceled": canceled,
-                                       "resting": resting}})
+                                       "resting": blockers}})
         try:
             return self._store.create(symbol, side, size, order_type, price)
         except DuplicateOrderError as e:
-            self._closing_blocked(symbol, side, size, resting,
+            self._closing_blocked(symbol, side, size, blockers,
                                   f"still refused after cancelling: {e}")
             raise
 
+    def _verify_blockers_cleared(self, symbol: str,
+                                 blockers: list[str]) -> tuple[bool, str]:
+        """ONE diagnostic getchildorders poll: are the cancelled ids really gone?
+
+        Returns (verified, detail). Anything short of positive evidence that
+        every blocker has left the book — the venue still lists one as ACTIVE,
+        the poll failed, the poll came back unreadable — is NOT verified, and
+        the caller must not send the close. The failure mode this guards is the
+        expensive one: the venue accepted the cancel request with a 2xx, did
+        not act on it, and the close then went out ALONGSIDE a live order.
+
+        Query-only by construction — it borrows the auto-reconciler's
+        `QueryOnlyExchange`, which has no method that can send or cancel.
+        Without a reconciler (PAPER: the executor is local, so its cancel IS
+        the venue's answer and there is no listing to poll) there is nothing to
+        verify against and the cancel stands.
+        """
+        if self._reconciler is None:
+            return True, ""
+        ids = {o.acceptance_id for o in
+               (self._store.get(local_id) for local_id in blockers)
+               if o is not None and o.acceptance_id}
+        if not ids:
+            return True, ""
+        listing = self._reconciler.list_orders(symbol)
+        if listing is None:
+            return False, ("the cancel was acknowledged but getchildorders could "
+                           "not be read, so it is unverified")
+        still_active = []
+        for row in listing:
+            acc = str(row.get("child_order_acceptance_id") or "")
+            if acc in ids and str(row.get("child_order_state") or "").upper() == "ACTIVE":
+                still_active.append(acc)
+        if still_active:
+            return False, (f"the cancel was acknowledged but the exchange still "
+                           f"lists {still_active} as ACTIVE")
+        logger.info("cancel verified against getchildorders", extra={"data": {
+            "event": "cancel_verified", "symbol": symbol,
+            "acceptance_ids": sorted(ids)}})
+        return True, ""
+
     def _closing_blocked(self, symbol: str, side: str, size: float,
                          resting: list[str], detail: str) -> None:
-        """The bot cannot close. Say so as loudly as the system allows."""
+        """The bot cannot close. Say so as loudly as the system allows.
+
+        `resting` is the order(s) in the way when the book blocked the close,
+        and EMPTY when nothing was in the way and the venue simply refused it —
+        both are the same fact for the operator (the position is open and the
+        bot cannot exit it), so both take this path.
+        """
         logger.critical("closing order blocked", extra={"data": {
             "event": "closing_order_blocked", "symbol": symbol, "side": side,
             "size": size, "resting": resting, "detail": detail}})
+        blocked_by = (f"it is blocked by order(s) {resting} and {detail}"
+                      if resting else detail)
         self._alert(
             "CANNOT CLOSE POSITION",
             f"The protective/closing order {side} {size} {symbol} could not be "
-            f"placed: it is blocked by order(s) {resting} and {detail}. Trading "
-            f"is stopped. The exchange may still hold both the resting order "
-            f"and the position — check bitFlyer, flatten by hand if you need "
-            f"to, then reconcile and reset the kill switch.")
+            f"placed: {blocked_by}. Trading is stopped. The exchange may still "
+            f"hold both the resting order and the position — check bitFlyer, "
+            f"flatten by hand if you need to, then reconcile and reset the "
+            f"kill switch.")
         self._kill_switch.trip(
             KillReason.SYSTEM_ERROR,
-            f"closing order {side} {size} {symbol} blocked by {resting}: {detail}")
+            f"closing order {side} {size} {symbol} blocked by "
+            f"{resting or 'the exchange'}: {detail}")
 
     # ---- automatic, query-only reconciliation ------------------------------
     def _baseline(self, symbol: str) -> ExchangeSnapshot | None:
@@ -201,7 +303,10 @@ class OrderManager:
                 "polls": res.polls, "elapsed_sec": round(res.elapsed_sec, 2),
                 "detail": res.detail}})
             return None
-        new_state = _RESOLUTION_TO_LOCAL.get(res.state)
+        # ACTIVE with an executed_size is a PARTIAL fill, and the size has to
+        # reach the record or nothing will ever book it (`_with_partial`).
+        new_state = _with_partial(_RESOLUTION_TO_LOCAL.get(res.state),
+                                  res.filled_size)
         if new_state is None:      # pragma: no cover - defensive
             return None
         resolved = self._store.transition(
@@ -238,7 +343,14 @@ class OrderManager:
             f"kill switch.")
 
     def refresh(self, order: Order) -> Order:
-        """Poll the gateway for fill/cancel state of a submitted order."""
+        """Poll the gateway for fill/cancel state of a submitted order.
+
+        The record is rewritten whenever the state changes OR the reported fill
+        has GROWN. A partial fill that grows while the order stays on the book
+        used to be dropped on the "same state, nothing to do" shortcut, so the
+        book's `filled_size` froze at whatever the first poll happened to see
+        and every later execution went unbooked.
+        """
         if order.acceptance_id is None or order.is_terminal:
             return order
         status = self._gateway.fetch_order_status(
@@ -246,8 +358,12 @@ class OrderManager:
         )
         if status is None:
             return order
-        new_state = _GATEWAY_TO_LOCAL.get(status.state)
-        if new_state is None or new_state == order.state:
+        new_state = _with_partial(_GATEWAY_TO_LOCAL.get(status.state),
+                                  status.filled_size)
+        if new_state is None:
+            return order
+        grew = (status.filled_size or 0.0) > order.filled_size
+        if new_state == order.state and not grew:
             return order
         return self._store.transition(order.local_id, new_state,
                                       filled_size=status.filled_size,
@@ -280,8 +396,9 @@ class OrderManager:
         resolved = []
         for order in self._store.unknown_orders():
             status = lookup_fn(order)
-            state = None if status is None else _GATEWAY_TO_LOCAL.get(
-                str(getattr(status, "state", "")).upper())
+            state = None if status is None else _with_partial(
+                _GATEWAY_TO_LOCAL.get(str(getattr(status, "state", "")).upper()),
+                getattr(status, "filled_size", 0.0))
             if state is None:
                 logger.warning("manual reconcile: no confirmed state; order "
                                "stays STATE_UNKNOWN", extra={"data": {
@@ -299,8 +416,21 @@ class OrderManager:
         return resolved
 
     def cancel_all_active(self, symbol: str) -> int:
+        """Cancel everything non-terminal for the symbol (kill-switch shutdown).
+
+        The blanket form, and it belongs to the shutdown path only. A caller
+        clearing the way for ONE order wants `cancel_orders` with the ids the
+        store said were in the way.
+        """
+        return self.cancel_orders(symbol, self._store.blocking_order_ids(symbol))
+
+    def cancel_orders(self, symbol: str, local_ids: list[str]) -> int:
+        """Cancel exactly these orders. Returns how many were sent to the venue."""
         n = 0
-        for order in self._store.active_orders(symbol):
+        for local_id in local_ids:
+            order = self._store.get(local_id)
+            if order is None:
+                continue
             if order.acceptance_id and order.state in (OrderState.SUBMITTED,
                                                        OrderState.PARTIALLY_FILLED):
                 self._gateway.cancel_order(symbol=symbol, acceptance_id=order.acceptance_id)
