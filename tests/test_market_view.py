@@ -10,8 +10,8 @@ import pytest
 
 from bot.monitoring.market_view import (
     chart_payload, collect_market, market_state, oi_trend, parse_bot_events,
-    parse_scalp_events, resample, series_trend, slope_angle, taker_split,
-    trend, volatility, volume_trend,
+    parse_scalp_events, read_candles, resample, series_trend, slope_angle,
+    taker_split, trend, volatility, volume_trend,
 )
 
 T0 = datetime(2026, 8, 20, 0, 0, tzinfo=timezone.utc).timestamp()
@@ -160,6 +160,41 @@ def test_volume_trend_reports_the_taker_share_when_flow_has_one():
     assert volume_trend(bars([100.0] * 3))["buy_share"] is None
 
 
+def test_volume_trend_ignores_the_still_forming_bucket():
+    """10 minutes into a 4h bucket the bucket holds 1/24 of a bucket's volume.
+    Reading that as a collapse tilted the arrow to -28.6 deg on a market whose
+    volume never changed, every four hours."""
+    src = bars([100.0] * (240 * 20 + 10), volume=1.0)   # 20 full 4h buckets + 10m
+    tf = resample(src, "4h")
+    assert tf[-1]["partial"] is True and tf[-1]["volume"] == 10.0
+    assert slope_angle([b["volume"] for b in tf])["angle_deg"] < -25   # the bug
+
+    v = volume_trend(tf)
+    assert v["partial_excluded"] == 1 and v["bars_used"] == 20
+    assert v["angle_deg"] == pytest.approx(0.0, abs=1.0)   # flat volume, flat arrow
+    assert v["last"] == 240.0                              # last CLOSED bucket
+
+    # the same series without the partial tail votes identically
+    assert volume_trend(tf)["score"] == volume_trend(tf[:-1])["score"]
+
+
+def test_trend_and_volatility_exclude_the_partial_bucket_from_slopes():
+    """The forming bar still counts for the level votes — it is where price
+    is now — but never for a slope or for the ATR."""
+    src = bars(ramp(240 * 60 + 10, 100.0, 0.00002))
+    for b in src[-10:]:                       # a violent 10m tail
+        b["close"] = 50.0
+        b["high"], b["low"] = 51.0, 49.0
+    tf = resample(src, "4h")
+    assert tf[-1]["partial"] is True
+
+    t = trend(tf)
+    assert t["votes"]["ema_slope"] == trend(tf[:-1])["votes"]["ema_slope"] == 1
+    assert t["votes"]["ema_cross"] == -1       # the level vote does see the drop
+    v = volatility(tf)
+    assert v["bars"] == len(tf) - 1 and v == volatility(tf[:-1])
+
+
 def test_taker_split_over_the_recent_window():
     src = bars([100.0] * 120)
     for i, b in enumerate(src):
@@ -234,8 +269,48 @@ def test_market_state_carries_returns_and_radar():
     st = market_state(bars([100.0] * 1500), now=T0)
     assert st["ret_24h_pct"] == pytest.approx(0.0)
     assert st["radar"]["window"] == "12:30-15:00 UTC"
-    assert st["last_price"] == 100.0
+    assert st["last_price"] == 100.0 and st["stale"] is False
     assert market_state([], now=T0) is None
+
+
+def test_market_state_is_fresh_within_ten_minutes():
+    candles = bars([100.0 + 0.01 * (i % 10) for i in range(300)])
+    st = market_state(candles, now=candles[-1]["ts"] + 9 * 60)
+    assert st["stale"] is False and st["state"] == "静穏レンジ"
+
+
+def test_market_state_stale_feed_is_not_classified():
+    """A dead collector is not a calm market: the label is withheld, and the
+    age is reported so the page can say the feed stopped."""
+    candles = bars([100.0 + 0.01 * (i % 10) for i in range(300)])
+    st = market_state(candles, now=candles[-1]["ts"] + 24 * 3600)
+    assert st["state"] is None and st["stale"] is True
+    assert st["age_sec"] == pytest.approx(86400.0)
+    assert st["ret_30m_pct"] is None and st["ret_24h_pct"] is None
+    assert st["last_price"] == candles[-1]["close"]
+    assert st["radar"]["window"] == "12:30-15:00 UTC"     # the clock is live
+
+
+# ---- candle reader ---------------------------------------------------------
+def test_read_candles_drops_unusable_rows(tmp_path):
+    """A close of 0 / blank / NaN would divide by zero in every return and log
+    below — the row is dropped, and the burst scan over it cannot raise."""
+    path = tmp_path / "candles.csv"
+    path.write_text(
+        "ts,open,high,low,close,volume\n"
+        "2026-08-20 00:00:00+00:00,100,101,99,100,1.0\n"
+        "2026-08-20 00:01:00+00:00,100,101,99,0,1.0\n"
+        "2026-08-20 00:02:00+00:00,100,101,99,,1.0\n"
+        "2026-08-20 00:03:00+00:00,100,101,99,nan,1.0\n"
+        "2026-08-20 00:04:00+00:00,100,101,99,-5,1.0\n"
+        "2026-08-20 00:05:00+00:00,0,0,0,101,-3\n", encoding="utf-8")
+    out = read_candles(path)
+    assert [c["close"] for c in out] == [100.0, 101.0]
+    # unusable prices fall back to the close; a negative volume clamps to 0
+    assert out[1]["open"] == out[1]["high"] == out[1]["low"] == 101.0
+    assert out[1]["volume"] == 0.0
+    st = market_state(out, now=out[-1]["ts"] + 5)   # must not raise
+    assert st["state"] in ("嵐", "ブレイク", "静穏レンジ", "通常")
 
 
 # ---- trade markers ---------------------------------------------------------
@@ -286,6 +361,63 @@ def test_parse_bot_events_skips_unfilled_and_non_orders(tmp_path):
     assert parse_bot_events(tmp_path / "logs" / "missing.jsonl") == []
 
 
+def _decision(minute, signal, **kw):
+    """One bot.main.log_decision record, in the shape logs/bot.jsonl really has."""
+    rec = {"event": "decision", "timestamp": f"2026-08-20T00:{minute:02d}:00+00:00",
+           "strategy_signal": signal, "decision": "ORDER_SENT",
+           "execution_status": "FILLED", "order_size": 0.01}
+    rec.update(kw)
+    return rec
+
+
+def test_parse_bot_events_pairs_a_long_to_short_flip(tmp_path):
+    """bot.main never flips in one order: a SELL with a long open only CLOSES
+    it (size=abs(pos)), and the short is a separate later record. Reading the
+    closing SELL as an entry drew a phantom short at the moment of the exit."""
+    log = tmp_path / "logs" / "bot.jsonl"
+    _write(log, [
+        _decision(0, "BUY", price=100.0, PnL=0.0),      # flat -> long
+        _decision(1, "HOLD", decision="HOLD", price=101.0, PnL=0.0,
+                  execution_status=None, order_size=None),
+        _decision(2, "SELL", price=105.0, PnL=50.0),    # long open -> close
+        _decision(3, "SELL", price=105.0, PnL=50.0),    # flat -> short
+        _decision(4, "BUY", price=103.0, PnL=70.0),     # short open -> close
+        _decision(5, "BUY", price=103.0, PnL=70.0),     # flat -> long again
+    ])
+    evs = parse_bot_events(log)
+    assert [(e["kind"], e["side"]) for e in evs] == [
+        ("entry", "LONG"), ("exit", "LONG"), ("entry", "SHORT"),
+        ("exit", "SHORT"), ("entry", "LONG")]
+    assert [e["pnl"] for e in evs] == [None, 50.0, None, 20.0, None]
+    assert [e["signal"] for e in evs] == ["BUY", "SELL", "SELL", "BUY", "BUY"]
+
+
+def test_parse_bot_events_stop_loss_closes_the_open_position(tmp_path):
+    log = tmp_path / "logs" / "bot.jsonl"
+    _write(log, [
+        _decision(0, "SELL", price=100.0, PnL=10.0),
+        _decision(1, "STOP_LOSS", price=104.0, PnL=-30.0),
+        _decision(2, "CLOSE", price=104.0, PnL=-30.0),   # flat: nothing to pair
+    ])
+    evs = parse_bot_events(log)
+    assert [(e["kind"], e["side"], e["pnl"]) for e in evs] == [
+        ("entry", "SHORT", None), ("exit", "SHORT", -40.0)]
+
+
+def test_parse_bot_events_unresolved_close_leaves_the_position_open(tmp_path):
+    """STATE_UNKNOWN with no realized step: the position may still be open, so
+    no exit is drawn and the next order still closes it (judge_gates rule)."""
+    log = tmp_path / "logs" / "bot.jsonl"
+    _write(log, [
+        _decision(0, "BUY", price=100.0, PnL=0.0),
+        _decision(1, "SELL", price=104.0, PnL=0.0, execution_status="STATE_UNKNOWN"),
+        _decision(2, "SELL", price=105.0, PnL=25.0),
+    ])
+    evs = parse_bot_events(log)
+    assert [(e["kind"], e["ts"] % 3600 // 60) for e in evs] == [("entry", 0), ("exit", 2)]
+    assert evs[1]["pnl"] == 25.0
+
+
 def test_parse_scalp_events_keeps_only_trades(tmp_path):
     path = tmp_path / "data" / "scalp_paper.jsonl"
     _write(path, [
@@ -327,6 +459,26 @@ def test_chart_payload_drops_markers_outside_the_window():
     assert len(p["bars"]) == 120 and p["dropped"] == 2
     assert len(p["markers"]) == 1
     assert p["markers"][0]["ts"] == inside and p["markers"][0]["bar"] == 20
+
+
+def test_chart_payload_drops_markers_that_fall_in_a_data_gap():
+    """The collector stopped for two hours; a trade inside the hole belongs to
+    no bucket, so it is dropped rather than stamped on the bar before it."""
+    candles = bars([100.0] * 30) + bars([100.0] * 30, start=T0 + 150 * 60)
+    gap = T0 + 60 * 60           # inside the hole: after bar 29 ends, before 30
+    evs = [{"ts": T0 + 10 * 60, "price": 100.0, "kind": "entry", "side": "LONG",
+            "source": "main"},
+           {"ts": gap, "price": 100.0, "kind": "exit", "side": "LONG", "source": "main"},
+           {"ts": T0 + 155 * 60, "price": 100.0, "kind": "entry", "side": "LONG",
+            "source": "main"}]
+    p = chart_payload("1m", candles, evs, [], bars=120)
+    assert p["dropped"] == 1
+    assert [m["ts"] for m in p["markers"]] == [T0 + 10 * 60, T0 + 155 * 60]
+    assert all(p["bars"][m["bar"]]["ts"] == m["ts"] for m in p["markers"])
+
+    # a 15m view has a bucket that spans the same instant only if data covers it
+    p15 = chart_payload("15m", candles, evs, [], bars=120)
+    assert p15["dropped"] == 1
 
 
 def test_chart_payload_range_band_and_empty_input():

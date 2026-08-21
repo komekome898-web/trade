@@ -10,13 +10,15 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bot.monitoring.aggregate import collect_status  # noqa: E402
-from bot.monitoring.market_view import collect_market  # noqa: E402
+from bot.monitoring.market_view import PRODUCT, collect_market  # noqa: E402
 
 PAGE = """<!doctype html>
 <html lang="ja"><head>
@@ -115,6 +117,7 @@ PAGE = """<!doctype html>
   .pill.brk { color: var(--warn); border-color: var(--warn); } .pill.brk i { background: var(--warn); }
   .pill.calm { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
   .pill.calm i { background: var(--ok); }
+  .pill.stale { color: var(--muted); border-color: var(--line); } .pill.stale i { background: var(--muted); }
   .mkt-grid { display: grid; grid-template-columns: 1fr 260px; gap: 20px; }
   @media (max-width: 900px) { .mkt-grid { grid-template-columns: 1fr; } }
   .oi { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
@@ -432,11 +435,18 @@ function renderMarket(d) {
       '(data/candles_FX_BTC_JPY.csv 未収集)</span>' + meta;
   } else if (strip) {
     const r = s.radar || {};
-    strip.innerHTML =
-      `<span class="pill ${STATE_CLS[s.state] || ""}" title="嵐 = |30分log収益| ≥ 0.8% / ` +
+    // s.state == null means the feed is stale: say the collector stopped
+    // instead of labelling day-old candles 静穏レンジ.
+    const statePill = s.stale || !s.state
+      ? `<span class="pill stale" title="最終足 ${jst(s.last_ts)} JST — ` +
+        `収集が停止している可能性 (${fmt(s.age_sec, 0)}秒経過)"><i></i>` +
+        `データ停止 ${age(s.age_sec)}</span>`
+      : `<span class="pill ${STATE_CLS[s.state] || ""}" title="嵐 = |30分log収益| ≥ 0.8% / ` +
         `静穏レンジ = |30分| < 0.4% かつ 直近10分に |1分| ≥ 0.15% なし / ` +
         `ブレイク = 直近15分に240分高安を更新"><i></i>${s.state}` +
-        `${s.approx ? ` <span class="sub">${s.approx}</span>` : ""}</span>` +
+        `${s.approx ? ` <span class="sub">${s.approx}</span>` : ""}</span>`;
+    strip.innerHTML =
+      statePill +
       `<span class="pill${r.armed ? " warn" : ""}" title="${r.reason || ""}"><i></i>` +
         `レーダー: ${r.armed ? "武装中" : "待機"}` +
         `${r.window ? ` <span class="sub">${r.window}</span>` : ""}</span>` +
@@ -618,13 +628,61 @@ setInterval(refresh, 5000);
 """
 
 
+# ---------------------------------------------------------------------------
+# /api/market cache
+#
+# collect_market re-parses every candle in data/ (tens of thousands of rows).
+# The page polls it every 30s per open tab, so the answer is cached and only
+# rebuilt when one of the files it reads has actually changed — with a floor of
+# MARKET_TTL seconds so a busy collector cannot make every poll a full re-parse.
+# ---------------------------------------------------------------------------
+MARKET_FILES = (f"data/candles_{PRODUCT}.csv", f"data/flow_{PRODUCT}.csv",
+                "data/oi_snapshots.csv", "logs/bot.jsonl",
+                "data/scalp_paper.jsonl")
+MARKET_TTL = 15.0
+_market_lock = threading.Lock()
+_market_cache: dict[str, object] = {"key": None, "at": 0.0, "body": b"", "root": None}
+
+
+def _market_key(root: str = ".") -> tuple:
+    """(mtime_ns, size) of every file collect_market reads; missing -> None.
+
+    The root is part of the key so a differently-rooted call (tests) can never
+    be answered from another root's cache.
+    """
+    out: list = [str(root)]
+    for rel in MARKET_FILES:
+        try:
+            st = (Path(root) / rel).stat()
+            out.append((st.st_mtime_ns, st.st_size))
+        except OSError:
+            out.append(None)
+    return tuple(out)
+
+
+def market_body(root: str = ".", now: float | None = None) -> bytes:
+    """The /api/market JSON, from cache when nothing it reads has changed."""
+    now = time.monotonic() if now is None else now
+    with _market_lock:
+        cached = _market_cache["body"] if _market_cache["root"] == str(root) else b""
+        if cached and (now - _market_cache["at"]) < MARKET_TTL:
+            return cached
+        key = _market_key(root)
+        if cached and key == _market_cache["key"]:
+            _market_cache["at"] = now      # unchanged files: re-arm the TTL
+            return cached
+        body = json.dumps(collect_market(root)).encode()
+        _market_cache.update({"key": key, "at": now, "body": body, "root": str(root)})
+        return body
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/api/status"):
             body = json.dumps(collect_status(".")).encode()
             ctype = "application/json"
         elif self.path.startswith("/api/market"):
-            body = json.dumps(collect_market(".")).encode()
+            body = market_body(".")
             ctype = "application/json"
         elif self.path == "/" or self.path.startswith("/index"):
             body = PAGE.encode()

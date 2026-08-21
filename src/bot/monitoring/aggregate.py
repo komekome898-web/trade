@@ -21,7 +21,12 @@ def _read_json(path: Path) -> dict | None:
         return None
 
 
-def _tail_jsonl(path: Path, n: int, max_bytes: int = 512 * 1024) -> list[dict]:
+def _tail_jsonl(path: Path, n: int | None = None,
+                max_bytes: int = 512 * 1024) -> list[dict]:
+    """The last ``n`` JSON objects of a .jsonl file (all of them when n is None),
+    read from at most ``max_bytes`` of tail. Missing file -> []. Shared with
+    bot.monitoring.market_view, which reads a larger tail and wants every
+    record rather than a fixed count."""
     try:
         size = path.stat().st_size
         with open(path, "rb") as f:
@@ -33,11 +38,13 @@ def _tail_jsonl(path: Path, n: int, max_bytes: int = 512 * 1024) -> list[dict]:
     if len(lines) and size > max_bytes:
         lines = lines[1:]  # drop the partial first line
     out = []
-    for line in lines[-n:]:
+    for line in (lines if n is None else lines[-n:]):
         try:
-            out.append(json.loads(line))
+            rec = json.loads(line)
         except ValueError:
             continue
+        if isinstance(rec, dict):
+            out.append(rec)
     return out
 
 

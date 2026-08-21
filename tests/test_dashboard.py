@@ -206,6 +206,32 @@ def test_api_market_endpoint_serves_the_market_payload(tmp_path, monkeypatch):
         thread.join(timeout=5)
 
 
+def test_api_market_is_cached_until_a_file_changes(tmp_path, monkeypatch):
+    """collect_market re-parses every candle row; a 30s poll per open tab must
+    not pay for that when nothing on disk moved."""
+    from tests.test_market_view import _make_workspace
+
+    _make_workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    module = _dashboard_module()
+    calls = []
+    monkeypatch.setattr(module, "collect_market",
+                        lambda root: calls.append(root) or {"n": len(calls)})
+
+    first = module.market_body(".", now=1000.0)
+    assert json.loads(first)["n"] == 1
+    assert module.market_body(".", now=1005.0) == first    # inside the TTL
+    assert module.market_body(".", now=1100.0) == first    # TTL over, files same
+    assert len(calls) == 1
+
+    (tmp_path / "logs" / "bot.jsonl").write_text(
+        json.dumps({"event": "decision", "timestamp": "2026-08-20T00:31:00+00:00",
+                    "strategy_signal": "HOLD", "decision": "HOLD",
+                    "PnL": 0.0}) + "\n", encoding="utf-8")
+    assert json.loads(module.market_body(".", now=1200.0))["n"] == 2
+    assert len(calls) == 2
+
+
 def test_page_has_both_tabs_and_switches_without_reloading(tmp_path):
     page = _dashboard_page()
     assert 'onclick="showTab(\'console\')"' in page and "Botコンソール" in page
@@ -346,6 +372,27 @@ def test_market_tab_renders_a_full_payload(tmp_path):
     assert r["tip_display"] == "block" and "JST" in r["tip"]
     assert "rotate(-35.0 12 12)" in r["arrow_up"]  # SVG y is down: up = -angle
     assert r["arrow_flat"] == '<span class="flat">—</span>'
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_market_tab_says_the_feed_stopped_instead_of_labelling_it(tmp_path):
+    """Day-old candles must not render as 静穏レンジ — the pill says the
+    collector stopped, and the freshness line stays."""
+    from tests.test_market_view import T0, _make_workspace
+    from bot.monitoring.market_view import collect_market
+
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    _make_workspace(workspace)
+    payload = collect_market(workspace, now=T0 + 400 * 60 + 24 * 3600)
+    assert payload["state"]["state"] is None and payload["state"]["stale"] is True
+
+    r = _render_market_in_node(tmp_path, payload)
+    assert "データ停止 24.0時間前" in r["strip"]
+    assert "足 24.0時間前" in r["strip"]                  # freshness line kept
+    for label in ("嵐", "ブレイク", "静穏レンジ", "通常"):
+        assert label not in r["strip"].split("レーダー")[0]
+    assert r["bars_drawn"] > 0                            # the chart still draws
 
 
 @pytest.mark.skipif(_node() is None, reason="node not installed")

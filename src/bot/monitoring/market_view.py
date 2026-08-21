@@ -14,12 +14,19 @@ Definitions come from docs/KNOWLEDGE.md §2 and are NOT re-derived here:
                market_state() uses a documented 1m approximation and labels it
                "1m近似" — a weaker filter than the研究 one, never a claim of
                equivalence.
+
+Two rules apply everywhere in this module:
+
+  * the still-forming bucket (``partial: True``) is excluded from every slope,
+    accel and vote window — see ``closed_bars``; levels shown AS levels keep it
+  * a 1m feed more than STALE_AFTER_SEC behind is not classified at all
+    (``market_state`` -> state None, stale True): a stopped collector is not a
+    calm market
 """
 from __future__ import annotations
 
 import csv
 import io
-import json
 import math
 import time
 from bisect import bisect_right
@@ -27,6 +34,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 
+from bot.monitoring.aggregate import _tail_jsonl
 from bot.radar import StormRadar
 
 # ---- timeframes ------------------------------------------------------------
@@ -52,8 +60,10 @@ CALM_BURST_RET = 0.0015  # 1m approximation of the 5s burst filter
 CALM_BURST_LOOKBACK = 10  # minutes
 BREAK_WINDOW = 240       # trailing high/low window, minutes
 BREAK_RECENT = 15        # the break must have happened within this many minutes
+STALE_AFTER_SEC = 600    # a 1m feed this far behind is stopped, not "calm"
 
 FLOW_TAIL_BYTES = 512 * 1024   # ~4000 minutes of data/flow_*.csv
+LOG_TAIL_BYTES = 4 * 1024 * 1024   # logs/bot.jsonl / data/scalp_paper.jsonl tail
 FLOW_SPLIT_MIN = 60            # taker split is reported over the last hour
 
 STRENGTH = {0: "—", 1: "弱", 2: "中", 3: "強"}
@@ -71,6 +81,11 @@ def _f(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return out if math.isfinite(out) else None
+
+
+def _pos(value: float | None, fallback: float) -> float:
+    """A usable (finite, positive) price, or ``fallback``."""
+    return value if value is not None and value > 0.0 else fallback
 
 
 _DAY_EPOCH: dict[str, float] = {}
@@ -132,47 +147,31 @@ def _read_csv_tail(path: Path, max_bytes: int = 32 * 1024 * 1024) -> list[dict[s
     return rows
 
 
-def _tail_jsonl(path: Path, max_bytes: int = 4 * 1024 * 1024) -> list[dict]:
-    try:
-        size = path.stat().st_size
-        with open(path, "rb") as fh:
-            fh.seek(max(0, size - max_bytes))
-            chunk = fh.read().decode("utf-8", errors="replace")
-    except OSError:
-        return []
-    lines = chunk.splitlines()
-    if lines and size > max_bytes:
-        lines = lines[1:]
-    out = []
-    for line in lines:
-        try:
-            rec = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(rec, dict):
-            out.append(rec)
-    return out
-
-
 def read_candles(path: Path, max_bytes: int = 32 * 1024 * 1024) -> list[dict[str, float]]:
     """data/candles_*.csv or data/flow_*.csv -> ascending 1m bars.
 
     Both files share the ts,open,high,low,close,volume prefix; flow adds
     buy_vol/sell_vol/trades, which are carried through when present.
+
+    A row whose close is missing, non-finite or <= 0 is dropped: every
+    downstream return is a ratio or a log of one, so a zero close would be a
+    division by zero rather than a bar worth drawing. The other prices fall
+    back to the close when they are unusable, for the same reason.
     """
     bars: list[dict[str, float]] = []
     for row in _read_csv_tail(path, max_bytes):
         ts = _epoch(row.get("ts", ""))
         close = _f(row.get("close"))
-        if ts is None or close is None:
+        if ts is None or close is None or close <= 0.0:
             continue
+        volume = _f(row.get("volume"))
         bar = {
             "ts": ts,
-            "open": _f(row.get("open")) or close,
-            "high": _f(row.get("high")) or close,
-            "low": _f(row.get("low")) or close,
+            "open": _pos(_f(row.get("open")), close),
+            "high": _pos(_f(row.get("high")), close),
+            "low": _pos(_f(row.get("low")), close),
             "close": close,
-            "volume": _f(row.get("volume")) or 0.0,
+            "volume": max(volume, 0.0) if volume is not None else 0.0,
         }
         for extra in ("buy_vol", "sell_vol"):
             value = _f(row.get(extra))
@@ -221,6 +220,18 @@ def resample(candles_1m: Sequence[dict], tf: str) -> list[dict]:
     if out:
         out[-1]["partial"] = out[-1]["bars"] < TF_MINUTES[tf]
     return out
+
+
+def closed_bars(bars: Sequence[dict]) -> list[dict]:
+    """The bars whose bucket has finished — ``partial: True`` ones dropped.
+
+    Ten minutes into a 4h bucket the bucket's volume is 1/24 of a full one and
+    its range is a fraction of one: fed to a slope that reads as a collapse.
+    Every slope / accel / vote window in this module therefore runs on closed
+    buckets only; levels the UI shows as levels (last close, taker share) may
+    still come from the forming bar, and say so via ``partial``.
+    """
+    return [b for b in bars if not b.get("partial")]
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +323,8 @@ def slope_angle(values: Sequence[float], bars: int = SLOPE_BARS,
 # ---------------------------------------------------------------------------
 # trend / volatility / volume / OI
 # ---------------------------------------------------------------------------
-def series_trend(values: Sequence[float]) -> dict[str, Any]:
+def series_trend(values: Sequence[float],
+                 slope_values: Sequence[float] | None = None) -> dict[str, Any]:
     """Three-vote trend score in [-3..+3] over an arbitrary series.
 
     Votes (each +1/0/-1, or None when the series is too short for it):
@@ -320,18 +332,27 @@ def series_trend(values: Sequence[float]) -> dict[str, Any]:
       ema_slope  sign of the EMA48 change over the last 10 bars
       rsi        RSI14 above/below 50
 
+    ``slope_values`` is the series the SLOPE vote runs on when it differs from
+    the level series — the closed-bucket closes, so a bucket that is ten
+    minutes old cannot bend the slope (see ``closed_bars``). The level votes
+    (cross, RSI) keep the forming bar: that is where the price is now.
+
     The per-vote breakdown is returned so the UI can show WHICH votes were
     available — a score of +2 out of 2 votes is not the same fact as +2 out
     of 3, and the tooltip says so rather than hiding the difference.
     """
     values = [float(v) for v in values]
+    same = slope_values is None
+    slope_series = values if same else [float(v) for v in slope_values]
     votes: dict[str, int | None] = {"ema_cross": None, "ema_slope": None, "rsi": None}
+    slow: list[float] | None = None
     if len(values) >= EMA_SLOW:
-        fast, slow = ema(values, EMA_FAST), ema(values, EMA_SLOW)
-        votes["ema_cross"] = _sign(fast[-1] - slow[-1])
-    if len(values) >= SLOPE_BARS + 1:
         slow = ema(values, EMA_SLOW)
-        votes["ema_slope"] = _sign(slow[-1] - slow[-1 - SLOPE_BARS])
+        votes["ema_cross"] = _sign(ema(values, EMA_FAST)[-1] - slow[-1])
+    if len(slope_series) >= SLOPE_BARS + 1:
+        # reuse the EMA48 already computed above when it is the same series
+        slope_ema = slow if (same and slow is not None) else ema(slope_series, EMA_SLOW)
+        votes["ema_slope"] = _sign(slope_ema[-1] - slope_ema[-1 - SLOPE_BARS])
     rsi_value = rsi(values)
     if rsi_value is not None:
         votes["rsi"] = _sign(rsi_value - 50.0)
@@ -348,17 +369,27 @@ def series_trend(values: Sequence[float]) -> dict[str, Any]:
 
 
 def trend(tf_candles: Sequence[dict]) -> dict[str, Any]:
-    """Trend vote over the closes of one timeframe."""
-    return series_trend([c["close"] for c in tf_candles])
+    """Trend vote over the closes of one timeframe.
+
+    The forming bucket counts for the level votes (its close IS the current
+    price) but not for the slope one — ``closed_bars`` explains why.
+    """
+    return series_trend([c["close"] for c in tf_candles],
+                        [c["close"] for c in closed_bars(tf_candles)])
 
 
 def volatility(tf_candles: Sequence[dict]) -> dict[str, Any]:
-    """ATR14 as a 値幅: absolute JPY range, % of price, and its slope arrow."""
-    series = atr_series(tf_candles)
+    """ATR14 as a 値幅: absolute JPY range, % of price, and its slope arrow.
+
+    Closed buckets only: the forming bucket's range is a partial range, and it
+    would drag both the ATR and its arrow down for no market reason.
+    """
+    closed = closed_bars(tf_candles)
+    series = atr_series(closed)
     if not series:
         return {"atr": None, "atr_pct": None, "accel": None, "angle_deg": None,
-                "bars": len(tf_candles)}
-    last_close = tf_candles[-1]["close"]
+                "bars": len(closed)}
+    last_close = closed[-1]["close"]
     atr = series[-1]
     arrow = slope_angle(series)
     return {
@@ -366,24 +397,31 @@ def volatility(tf_candles: Sequence[dict]) -> dict[str, Any]:
         "atr_pct": round(atr / last_close * 100.0, 3) if last_close else None,
         "accel": arrow["accel"],
         "angle_deg": arrow["angle_deg"],
-        "bars": len(tf_candles),
+        "bars": len(closed),
     }
 
 
 def volume_trend(bars: Sequence[dict]) -> dict[str, Any]:
     """Trend + accel arrow over per-bar volume (candles or flow rows).
 
+    Volume is the one series where even the LEVEL of a forming bucket is
+    wrong — ten minutes into a 4h bucket it holds 1/24 of a bucket's trade —
+    so every field here comes from closed buckets (``closed_bars``).
+
     When the rows carry a taker split (data/flow_*.csv) the latest buy share is
     reported alongside — it is a level, not part of the vote.
     """
-    volumes = [b.get("volume", 0.0) for b in bars]
+    closed = closed_bars(bars)
+    volumes = [b.get("volume", 0.0) for b in closed]
     out = series_trend(volumes)
     out.update(slope_angle(volumes))
-    last = bars[-1] if bars else {}
+    last = closed[-1] if closed else {}
     buy, sell = last.get("buy_vol"), last.get("sell_vol")
     total = (buy or 0.0) + (sell or 0.0)
     out["buy_share"] = round(buy / total * 100.0, 1) if buy is not None and total else None
     out["last"] = round(volumes[-1], 4) if volumes else None
+    out["bars_used"] = len(closed)
+    out["partial_excluded"] = len(bars) - len(closed)
     return out
 
 
@@ -452,48 +490,78 @@ def oi_trend(oi_rows: Sequence[dict], column: str = "okx_usdt_oi") -> dict[str, 
 # ---------------------------------------------------------------------------
 # market state
 # ---------------------------------------------------------------------------
-def _bar_at_or_before(candles: Sequence[dict], ts: float) -> dict | None:
-    idx = bisect_right([c["ts"] for c in candles], ts) - 1
+def _stamps(candles: Sequence[dict], stamps: list[float] | None = None) -> list[float]:
+    """The ts column, built once and passed around — rebuilding it per lookup
+    turns a 10-bar burst scan over 40k candles into 400k list writes."""
+    return [c["ts"] for c in candles] if stamps is None else stamps
+
+
+def _bar_at_or_before(candles: Sequence[dict], ts: float,
+                      stamps: list[float] | None = None) -> dict | None:
+    idx = bisect_right(_stamps(candles, stamps), ts) - 1
     return candles[idx] if idx >= 0 else None
 
 
-def _ret_over(candles: Sequence[dict], minutes: int) -> float | None:
+def _ret_over(candles: Sequence[dict], minutes: int,
+              stamps: list[float] | None = None) -> float | None:
     """Simple return from the bar at or before now-``minutes`` to the last bar."""
     if not candles:
         return None
     last = candles[-1]
-    ref = _bar_at_or_before(candles, last["ts"] - minutes * 60)
+    ref = _bar_at_or_before(candles, last["ts"] - minutes * 60, stamps)
     if ref is None or ref is last or not ref["close"]:
         return None
     return last["close"] / ref["close"] - 1.0
 
 
-def _log_ret_over(candles: Sequence[dict], minutes: int) -> float | None:
-    simple = _ret_over(candles, minutes)
+def _log_ret_over(candles: Sequence[dict], minutes: int,
+                  stamps: list[float] | None = None) -> float | None:
+    simple = _ret_over(candles, minutes, stamps)
     return math.log(1.0 + simple) if simple is not None and simple > -1.0 else None
 
 
 def market_state(candles_1m: Sequence[dict], now: float | None = None,
-                 radar: StormRadar | None = None) -> dict[str, Any] | None:
+                 radar: StormRadar | None = None,
+                 stamps: list[float] | None = None) -> dict[str, Any] | None:
     """嵐 / ブレイク / 静穏レンジ / 通常 for the state strip.
 
     Checked in that order — a storm that also broke the range is a storm. The
     calm branch is the 1m approximation of the research calm filter (see the
     module docstring) and carries ``approx: "1m近似"`` so the UI can label it.
+
+    A feed more than ``STALE_AFTER_SEC`` behind is not classified at all:
+    ``state`` is None and ``stale`` is True, because "静穏レンジ" over a
+    collector that died yesterday is a false statement about the market, not a
+    stale reading of it. ``stamps`` is the candles' ts column when the caller
+    already has it.
     """
     if not candles_1m:
         return None
     now = now if now is not None else time.time()
     radar = radar or StormRadar()
+    stamps = _stamps(candles_1m, stamps)
     last = candles_1m[-1]
-    ret30 = _log_ret_over(candles_1m, 30)
-    ret24 = _ret_over(candles_1m, 1440)
+    age = now - last["ts"]
+    if age > STALE_AFTER_SEC:
+        return {
+            "state": None,
+            "stale": True,
+            "approx": None,
+            "last_price": last["close"],
+            "last_ts": last["ts"],
+            "age_sec": round(age, 1),
+            "ret_30m_pct": None,
+            "ret_24h_pct": None,
+            "radar": radar.state(now),
+            "detail": {"stale_after_sec": STALE_AFTER_SEC},
+        }
+    ret30 = _log_ret_over(candles_1m, 30, stamps)
+    ret24 = _ret_over(candles_1m, 1440, stamps)
 
     # break: beyond the trailing 240m high/low, and it happened in the last 15m
-    recent = [c for c in candles_1m if c["ts"] > last["ts"] - BREAK_RECENT * 60]
-    ref = [c for c in candles_1m
-           if last["ts"] - (BREAK_WINDOW + BREAK_RECENT) * 60 < c["ts"]
-           <= last["ts"] - BREAK_RECENT * 60]
+    recent = candles_1m[bisect_right(stamps, last["ts"] - BREAK_RECENT * 60):]
+    ref = candles_1m[bisect_right(stamps, last["ts"] - (BREAK_WINDOW + BREAK_RECENT) * 60):
+                     bisect_right(stamps, last["ts"] - BREAK_RECENT * 60)]
     broke_up = broke_down = None
     if ref and recent:
         ref_high = max(c["high"] for c in ref)
@@ -503,8 +571,8 @@ def market_state(candles_1m: Sequence[dict], now: float | None = None,
 
     burst = None
     if len(candles_1m) >= 2:
-        window = [c for c in candles_1m if c["ts"] > last["ts"] - CALM_BURST_LOOKBACK * 60]
-        prevs = [_bar_at_or_before(candles_1m, c["ts"] - 60) for c in window]
+        window = candles_1m[bisect_right(stamps, last["ts"] - CALM_BURST_LOOKBACK * 60):]
+        prevs = [_bar_at_or_before(candles_1m, c["ts"] - 60, stamps) for c in window]
         burst = any(
             p is not None and p["close"] and
             abs(math.log(c["close"] / p["close"])) >= CALM_BURST_RET
@@ -520,10 +588,11 @@ def market_state(candles_1m: Sequence[dict], now: float | None = None,
 
     return {
         "state": state,
+        "stale": False,
         "approx": approx,
         "last_price": last["close"],
         "last_ts": last["ts"],
-        "age_sec": round(now - last["ts"], 1),
+        "age_sec": round(age, 1),
         "ret_30m_pct": round(ret30 * 100.0, 3) if ret30 is not None else None,
         "ret_24h_pct": round(ret24 * 100.0, 3) if ret24 is not None else None,
         "radar": radar.state(now),
@@ -554,14 +623,24 @@ def _fill_price(rec: dict) -> float | None:
 def parse_bot_events(path: Path) -> list[dict[str, Any]]:
     """FILLED main-bot orders from logs/bot.jsonl, as chart markers.
 
-    BUY/SELL open a position, CLOSE/STOP_LOSS close it. The log records the
-    CUMULATIVE realized ``PnL``, so an exit's own P&L is the step since the
-    previous decision — None when no baseline is known yet.
+    Pairing is the one in scripts/judge_gates.py:load_champion_trades, because
+    the signal alone does not say what an order DID. bot.main never flips in a
+    single order: with a position open, a BUY (short), a SELL (long), a CLOSE
+    and a STOP_LOSS all send size=abs(pos) and go flat — a re-entry is a
+    SEPARATE later record. So the rule is positional, not by signal name: the
+    first filled ORDER_SENT with BUY/SELL opens, the NEXT filled ORDER_SENT
+    closes. Reading a closing BUY as an entry would draw a phantom long at the
+    exact moment the bot went flat.
+
+    The log records the CUMULATIVE realized ``PnL``, so an exit's own P&L is
+    the step in it — None when no baseline is known yet. An unresolved order
+    (STATE_UNKNOWN) with no realized step leaves the position open, exactly as
+    the gate judge treats it.
     """
     out: list[dict[str, Any]] = []
     open_side: str | None = None
     last_pnl: float | None = None
-    for rec in _tail_jsonl(path):
+    for rec in _tail_jsonl(path, max_bytes=LOG_TAIL_BYTES):
         if rec.get("event") != "decision" and not rec.get("strategy_signal"):
             continue
         pnl_now = _f(rec.get("PnL"))
@@ -570,27 +649,39 @@ def parse_bot_events(path: Path) -> list[dict[str, Any]]:
                 last_pnl = pnl_now
             continue
         state = rec.get("execution_status")
-        if state is not None and str(state).upper() in NON_FILL_STATES:
-            continue
+        filled = state is None or str(state).upper() not in NON_FILL_STATES
         ts = _epoch(rec.get("timestamp") or "")
         price = _fill_price(rec)
-        if ts is None or price is None:
-            continue
         signal = str(rec.get("strategy_signal") or "").upper()
-        if signal in ("BUY", "SELL"):
-            kind, side = "entry", "LONG" if signal == "BUY" else "SHORT"
-            open_side = side
-            pnl = None
-        else:
-            kind, side = "exit", open_side
-            pnl = (pnl_now - last_pnl) if (pnl_now is not None and last_pnl is not None) else None
-            open_side = None
+
+        if open_side is None:
+            # flat: only a filled BUY/SELL opens a position
+            if not filled or signal not in ("BUY", "SELL"):
+                if pnl_now is not None and last_pnl is None:
+                    last_pnl = pnl_now
+                continue
+            if last_pnl is None:
+                last_pnl = pnl_now if pnl_now is not None else 0.0
+            open_side = "LONG" if signal == "BUY" else "SHORT"
+            if ts is not None and price is not None:
+                out.append({"ts": ts, "price": price, "kind": "entry",
+                            "side": open_side, "source": "main", "pnl": None,
+                            "size": _f(rec.get("order_size")), "signal": signal})
+            continue
+
+        # a position is open -> this order closes it, whatever its signal says
+        pnl = None if (pnl_now is None or last_pnl is None) else pnl_now - last_pnl
+        if not filled and (pnl is None or pnl == 0.0):
+            continue        # ambiguous: the position may still be open
+        if ts is not None and price is not None:
+            out.append({"ts": ts, "price": price, "kind": "exit",
+                        "side": open_side, "source": "main",
+                        "pnl": round(pnl, 1) if pnl is not None else None,
+                        "size": _f(rec.get("order_size")),
+                        "signal": signal or None})
+        open_side = None
         if pnl_now is not None:
             last_pnl = pnl_now
-        out.append({"ts": ts, "price": price, "kind": kind, "side": side,
-                    "source": "main", "pnl": round(pnl, 1) if pnl is not None else None,
-                    "size": _f(rec.get("order_size")),
-                    "signal": signal or None})
     return out
 
 
@@ -598,7 +689,7 @@ def parse_scalp_events(path: Path) -> list[dict[str, Any]]:
     """entry/exit events from data/scalp_paper.jsonl (the other events —
     limit_placed / missed / fill / start / radar_state — are not trades)."""
     out: list[dict[str, Any]] = []
-    for rec in _tail_jsonl(path):
+    for rec in _tail_jsonl(path, max_bytes=LOG_TAIL_BYTES):
         event = rec.get("event")
         if event not in ("entry", "exit"):
             continue
@@ -622,9 +713,11 @@ def chart_payload(tf: str, candles: Sequence[dict],
                   resampled: Sequence[dict] | None = None) -> dict[str, Any]:
     """Last ``bars`` bars of ``tf`` plus the markers that fall inside them.
 
-    A marker is placed on the bucket that contains its timestamp. Markers
-    outside the visible window are counted in ``dropped`` rather than clamped
-    to the edge — a trade drawn on the wrong bar is worse than one not drawn.
+    A marker is placed on the bucket that CONTAINS its timestamp. Markers
+    outside the visible window — and markers inside a data gap, where the
+    preceding bucket ended before the trade happened — are counted in
+    ``dropped`` rather than clamped onto a neighbouring bar: a trade drawn on
+    the wrong bar is worse than one not drawn.
 
     ``resampled`` lets a caller that already resampled ``candles`` to ``tf``
     hand the result in instead of paying for it twice.
@@ -643,8 +736,8 @@ def chart_payload(tf: str, candles: Sequence[dict],
             dropped += 1
             continue
         idx = bisect_right(starts, ts) - 1
-        if idx < 0:
-            dropped += 1
+        if idx < 0 or ts >= starts[idx] + step:
+            dropped += 1      # before the first bar, or inside a gap
             continue
         marker = dict(ev)
         marker["bar"] = idx
@@ -713,10 +806,12 @@ def collect_market(root: str | Path = ".", now: float | None = None,
             charts[tf] = chart_payload(tf, source, bot_events, scalp_events,
                                        bars=bars, resampled=tf_bars)
 
+    stamps = [c["ts"] for c in source] if source else []
+
     return {
         "generated_at": now,
         "product": product,
-        "state": market_state(source, now) if source else None,
+        "state": market_state(source, now, stamps=stamps) if source else None,
         "timeframes": timeframes,
         "flow": taker_split(flow_tail),
         "oi": oi_trend(oi_rows),
