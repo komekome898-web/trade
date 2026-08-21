@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from bot.monitoring.aggregate import collect_status
 
 
@@ -49,8 +51,8 @@ def test_overlay_and_active_modules_surfaced(tmp_path):
     assert d["active_modules"] == []
 
 
-def _dashboard_page() -> str:
-    """scripts/dashboard.py's PAGE, loaded by path (scripts/ is not a package)."""
+def _dashboard_module():
+    """scripts/dashboard.py, loaded by path (scripts/ is not a package)."""
     import importlib.util
     from pathlib import Path
 
@@ -58,7 +60,11 @@ def _dashboard_page() -> str:
     spec = importlib.util.spec_from_file_location("dashboard_module", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.PAGE
+    return module
+
+
+def _dashboard_page() -> str:
+    return _dashboard_module().PAGE
 
 
 def test_page_renders_the_overlay_and_active_modules_it_is_served(tmp_path):
@@ -158,3 +164,202 @@ def test_oi_snapshot_header_only_file(tmp_path):
 
 def test_status_payload_is_json_serialisable(tmp_path):
     json.dumps(collect_status(tmp_path))
+
+
+# ---- マーケットタブ ---------------------------------------------------------
+def _serve(tmp_path, monkeypatch):
+    """The real handler on a throwaway localhost port, rooted at tmp_path so
+    the endpoints answer over an empty workspace instead of the live data/."""
+    import threading
+    from http.server import ThreadingHTTPServer
+
+    monkeypatch.chdir(tmp_path)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _dashboard_module().Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server, thread
+
+
+def _get(port, path):
+    import urllib.request
+
+    with urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=10) as r:
+        return r.status, r.headers.get("Content-Type"), r.read()
+
+
+def test_api_market_endpoint_serves_the_market_payload(tmp_path, monkeypatch):
+    server, thread = _serve(tmp_path, monkeypatch)
+    try:
+        port = server.server_address[1]
+        status, ctype, body = _get(port, "/api/market")
+        assert status == 200 and ctype == "application/json"
+        d = json.loads(body)
+        # empty workspace: every section degrades instead of erroring
+        assert d["state"] is None and d["chart"] is None and d["oi"] is None
+        assert [t["tf"] for t in d["timeframes"]] == ["1m", "15m", "1h", "4h", "1d"]
+
+        assert _get(port, "/api/status")[0] == 200
+        assert "マーケット" in _get(port, "/")[2].decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_page_has_both_tabs_and_switches_without_reloading(tmp_path):
+    page = _dashboard_page()
+    assert 'onclick="showTab(\'console\')"' in page and "Botコンソール" in page
+    assert 'onclick="showTab(\'market\')"' in page and "マーケット" in page
+    assert 'id="view-console"' in page and 'id="view-market"' in page
+    # market data is fetched on show and refreshed while the tab is visible
+    assert 'setInterval(refreshMarket, 30000)' in page
+    assert 'clearInterval(marketTimer)' in page
+    assert '"/api/market"' in page
+
+
+def test_page_renders_the_market_keys_it_is_served(tmp_path):
+    """Checked against a real collect_market payload, not a hand-written list —
+    a field that is computed and never displayed is invisible to the owner."""
+    from bot.monitoring.market_view import collect_market
+
+    d = collect_market(tmp_path)
+    page = _dashboard_page()
+    for key in d:
+        assert f"d.{key}" in page or f'"{key}"' in page, key
+    for tf in d["timeframes"]:
+        assert f'>{tf["label"]}<' in page or "t.label" in page
+    # the three state pills and the 1m-approximation label are all reachable
+    for state in ("嵐", "ブレイク", "静穏レンジ", "通常"):
+        assert state in page
+    assert "s.approx" in page
+
+
+def _node() -> str | None:
+    import shutil
+
+    return shutil.which("node")
+
+
+HARNESS = r"""
+// DOM-less harness: runs the page script under stub globals so the market
+// rendering path can be exercised headlessly.
+const fs = require("fs");
+const src = fs.readFileSync(process.argv[2], "utf8");
+const data = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
+
+function El(id) {
+  this.id = id; this.innerHTML = ""; this.textContent = "";
+  this.className = ""; this.hidden = false; this.style = {}; this.events = {};
+}
+El.prototype.addEventListener = function (k, f) { this.events[k] = f; };
+El.prototype.getBoundingClientRect = () => ({left: 0, top: 0, width: 800, height: 340});
+
+const els = {};
+const document = {getElementById: id => (els[id] = els[id] || new El(id))};
+const ops = [];
+const ctx = {};
+for (const m of ["setTransform", "clearRect", "fillRect", "beginPath", "moveTo",
+                 "lineTo", "stroke", "fill", "closePath", "setLineDash", "fillText"]) {
+  ctx[m] = () => ops.push(m);
+}
+const canvas = document.getElementById("m-chart");
+canvas.getContext = () => ctx;
+canvas.parentElement = {clientWidth: 800};
+const window = {devicePixelRatio: 2, addEventListener() {}};
+
+const api = new Function(
+  "document", "window", "fetch", "setInterval", "clearInterval", "navigator",
+  src + "\nreturn {renderMarket, drawChart, showTab, setChartTf, arrowSvg, " +
+        "chartHover, geom: () => chartGeom};"
+)(document, window, () => Promise.reject(new Error("no network")),
+  () => 0, () => 0, {});
+
+api.showTab("market");
+api.renderMarket(data);
+const before = ops.length;
+api.setChartTf("1h");
+api.chartHover({clientX: 300, currentTarget: canvas});
+
+console.log(JSON.stringify({
+  console_hidden: els["view-console"].hidden,
+  market_hidden: els["view-market"].hidden,
+  tab_class: els["tab-market"].className,
+  strip: els["m-strip"].innerHTML,
+  table: els["t-tf"].innerHTML,
+  oi: els["m-oi"].innerHTML,
+  tf_buttons: (els["m-tfs"].innerHTML.match(/<button/g) || []).length,
+  chart_sub: els["m-chart-sub"].textContent,
+  legend: els["m-legend"].innerHTML,
+  canvas_px: [canvas.width, canvas.height],
+  redrawn_on_tf_switch: ops.length - before,
+  fill_rects: ops.filter(o => o === "fillRect").length,
+  strokes: ops.filter(o => o === "stroke").length,
+  tip: els["m-tip"].innerHTML,
+  tip_display: els["m-tip"].style.display,
+  bars_drawn: api.geom() ? api.geom().bars.length : 0,
+  arrow_up: api.arrowSvg(35), arrow_flat: api.arrowSvg(null),
+}));
+"""
+
+
+def _render_market_in_node(tmp_path, payload) -> dict:
+    """Execute the page's own JS against ``payload`` and report what it built."""
+    import re
+    import subprocess
+
+    js = re.search(r"<script>(.*)</script>", _dashboard_page(), re.S).group(1)
+    (tmp_path / "page.js").write_text(js, encoding="utf-8")
+    (tmp_path / "harness.js").write_text(HARNESS, encoding="utf-8")
+    (tmp_path / "market.json").write_text(json.dumps(payload), encoding="utf-8")
+    node = _node()
+    subprocess.run([node, "--check", str(tmp_path / "page.js")], check=True)
+    out = subprocess.run(
+        [node, str(tmp_path / "harness.js"), str(tmp_path / "page.js"),
+         str(tmp_path / "market.json")],
+        check=True, capture_output=True, text=True)
+    return json.loads(out.stdout)
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_market_tab_renders_a_full_payload(tmp_path):
+    from tests.test_market_view import T0, _make_workspace
+    from bot.monitoring.market_view import collect_market
+
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    _make_workspace(workspace)
+    payload = collect_market(workspace, now=T0 + 400 * 60)
+    r = _render_market_in_node(tmp_path, payload)
+
+    assert r["console_hidden"] is True and r["market_hidden"] is False
+    assert r["tab_class"] == "on"
+    assert payload["state"]["state"] in r["strip"] and "レーダー" in r["strip"]
+    assert "24時間" in r["strip"] and "買い比率" in r["strip"]
+    assert r["table"].count("<tr>") == 6           # header + five timeframes
+    assert "OKX USDT建 OI" in r["oi"] and "DVOL" in r["oi"]
+    assert r["tf_buttons"] == 5 and "1時間" in r["chart_sub"]
+    assert "ロング建て" in r["legend"] and "レンジ" in r["legend"]
+    # crisp on devicePixelRatio 2: the backing store is twice the CSS size
+    assert r["canvas_px"] == [1600, 680]
+    assert r["bars_drawn"] > 0 and r["fill_rects"] > 10 and r["strokes"] > 10
+    assert r["redrawn_on_tf_switch"] > 10          # switching TF repaints
+    assert r["tip_display"] == "block" and "JST" in r["tip"]
+    assert "rotate(-35.0 12 12)" in r["arrow_up"]  # SVG y is down: up = -angle
+    assert r["arrow_flat"] == '<span class="flat">—</span>'
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_market_tab_renders_an_empty_payload_without_errors(tmp_path):
+    """Every data file missing: empty states, no exception, no chart."""
+    from bot.monitoring.market_view import collect_market
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    r = _render_market_in_node(tmp_path, collect_market(empty))
+
+    assert "ローソク足データなし" in r["strip"]
+    assert "ローソク足データなし" in r["table"]
+    assert "OIスナップショット未収集" in r["oi"]
+    assert r["tf_buttons"] == 0 and r["chart_sub"] == "データなし"
+    assert r["legend"] == "" and r["bars_drawn"] == 0
+    assert r["tip_display"] == "none"
