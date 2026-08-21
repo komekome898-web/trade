@@ -1,0 +1,20 @@
+{
+  "mode": "paper",
+  "running": true,
+  "api_connected": true,
+  "last_price": 11919900.0,
+  "balance_jpy": 200000.0,
+  "position_size": 0.0,
+  "daily_pnl_jpy": 0.0,
+  "total_pnl_jpy": 0.0,
+  "max_drawdown_pct": 0.0,
+  "last_order": null,
+  "last_execution": null,
+  "error_count": 0,
+  "consecutive_api_errors": 0,
+  "last_data_time": 1787288065.2874248,
+  "kill_switch": null,
+  "overlay": null,
+  "active_modules": null,
+  "updated_at": 1787288065.3059888
+}
