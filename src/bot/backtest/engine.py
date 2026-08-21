@@ -23,9 +23,10 @@ intrabar stop/take-profit on an EARLIER bar naturally fires first; on the same
 bar the stop is checked first (conservative).
 
 Trade log: every CLOSE_* entry carries a "reason" in
-{"signal", "stop_loss", "take_profit", "time_exit", "maker_tp"} so callers can
-break down how trades actually ended (exit-structure audits). Additive field
-only — existing consumers keying off "bar"/"side"/"price"/"pnl" are unaffected.
+{"signal", "stop_loss", "take_profit", "time_exit", "maker_tp", "wick_stop"} so
+callers can break down how trades actually ended (exit-structure audits).
+Additive field only — existing consumers keying off "bar"/"side"/"price"/"pnl"
+are unaffected.
 
 Additive options (all default to the historical behaviour; existing callers get
 bit-identical results):
@@ -50,6 +51,29 @@ bit-identical results):
     unknown. Real fills also depend on queue position; this model grants the
     fill on any strict through-trade. Treat maker-TP results as an upper
     bound, not a promise.
+
+``stop_mode="wick_invalidation"`` + ``stop_window_bars``
+    Replaces the fixed-percentage protective stop with a STRUCTURAL one: the
+    invalidation level is the extreme of the trailing ``stop_window_bars``
+    COMPLETED bars' wicks as of the fill — ``min(low)`` over bars
+    ``[b - N, b - 1]`` for a long, ``max(high)`` over the same bars for a
+    short, where ``b`` is the fill bar. Bar ``b`` itself is excluded (its own
+    range is not yet known when the position fills at its open), so under the
+    taker path the window ends exactly on the SIGNAL bar — the bar whose wick
+    the legacy bot froze.
+
+    The level is FROZEN at entry and never trails. It is breached only by a
+    CLOSE beyond it (``close < level`` long, ``close > level`` short); a wick
+    poking through is explicitly not an exit, which is the whole point of the
+    construction. A breach detected at bar ``i``'s close is executed at bar
+    ``i + 1``'s OPEN with taker costs — the same next-bar-open causality the
+    signal path uses — and is logged with ``reason="wick_stop"``. It overrides
+    any pending signal for that bar and is checked BEFORE the intrabar
+    stop/take-profit block, because it rests on strictly older information
+    (the previous bar's close) than that bar's high/low.
+
+    Requires ``stop_loss_pct=None``: the two protective stops are alternatives,
+    never a stack.
 
 ``entry_mask`` / ``entry_sides``
     Restrict which decisions may OPEN a position; closes are never blocked.
@@ -126,11 +150,23 @@ def run_backtest(
     maker_tp_pct: float | None = None,
     entry_mask=None,
     entry_sides: str = "both",
+    stop_mode: str = "fixed",
+    stop_window_bars: int | None = None,
 ) -> BacktestResult:
     if execution not in ("taker", "maker"):
         raise ValueError(f"unknown execution model: {execution}")
     if max_hold_bars is not None and max_hold_bars < 1:
         raise ValueError("max_hold_bars must be >= 1")
+    if stop_mode not in ("fixed", "wick_invalidation"):
+        raise ValueError(f"unknown stop mode: {stop_mode}")
+    if stop_mode == "wick_invalidation":
+        if stop_window_bars is None or stop_window_bars < 1:
+            raise ValueError('stop_mode="wick_invalidation" requires stop_window_bars >= 1')
+        if stop_loss_pct is not None:
+            raise ValueError('stop_mode="wick_invalidation" replaces stop_loss_pct; '
+                             "pass stop_loss_pct=None")
+    elif stop_window_bars is not None:
+        raise ValueError('stop_window_bars requires stop_mode="wick_invalidation"')
     if exit_execution not in ("signal", "maker_tp"):
         raise ValueError(f"unknown exit execution model: {exit_execution}")
     if exit_execution == "maker_tp":
@@ -153,6 +189,7 @@ def run_backtest(
     entry_price = 0.0
     entry_bar = -1                 # bar index the open position was filled on
     entry_cost = 0.0               # entry fee + accrued carry, charged at close
+    wick_level: float | None = None  # frozen structural stop, wick_invalidation mode
     pending_taker: SignalType | None = None
     pending_taker_bar: int = -1    # decision bar behind pending_taker
     pending_limit: _PendingLimit | None = None
@@ -171,6 +208,7 @@ def run_backtest(
 
     def open_position(i: int, side: SignalType, price: float, fee_fn) -> None:
         nonlocal cash, position, entry_price, entry_bar, entry_cost, fees_total
+        nonlocal wick_level
         size = order_notional_jpy / price
         fee = fee_fn(size * price)
         fees_total += fee
@@ -178,11 +216,18 @@ def run_backtest(
         entry_price = price
         entry_bar = i
         entry_cost = fee
+        if stop_mode == "wick_invalidation":
+            lo = max(0, i - stop_window_bars)
+            # bars [lo, i) are the COMPLETED bars behind the fill; bar i's own
+            # range is unknown at its open, so it is excluded.
+            wick_level = (float(lows[lo:i].min()) if position > 0
+                          else float(highs[lo:i].max())) if lo < i else None
         trade_log.append({"bar": i, "side": f"OPEN_{'LONG' if position > 0 else 'SHORT'}",
                           "price": price, "size": size})
 
     def close_position(i: int, price: float, fee_fn, reason: str = "signal") -> None:
         nonlocal cash, position, entry_price, entry_bar, entry_cost, fees_total
+        nonlocal wick_level
         size = abs(position)
         fee = fee_fn(size * price)
         fees_total += fee
@@ -194,6 +239,7 @@ def run_backtest(
                           "price": price, "size": size, "pnl": pnl, "reason": reason})
         position, entry_price, entry_cost = 0.0, 0.0, 0.0
         entry_bar = -1
+        wick_level = None
 
     def entry_ok(decision_bar: int, side: SignalType) -> bool:
         """Entry-side filters. Evaluated at the DECISION bar, never at the fill
@@ -230,6 +276,20 @@ def run_backtest(
             carry = abs(position) * closes[i - 1 if i > 0 else 0] * swap_per_bar
             entry_cost += carry
             fees_total += carry
+
+        # 0.4) structural wick-invalidation stop. The level was frozen at entry;
+        # a breach is a CLOSE beyond it, so the trigger is bar i-1's close and
+        # the fill is bar i's open with taker costs. Checked before the intrabar
+        # block because it rests on strictly older information.
+        if wick_level is not None and position != 0.0 and i > entry_bar:
+            long = position > 0
+            breached = closes[i - 1] < wick_level if long else closes[i - 1] > wick_level
+            if breached:
+                ref = opens[i]
+                price = costs.sell_price(ref) if long else costs.buy_price(ref)
+                close_position(i, price, costs.fee, reason="wick_stop")
+                pending_taker = None
+                pending_limit = None
 
         # 0.5) protective stop / take-profit, checked intrabar. When both
         # levels are inside the bar's range the STOP is assumed to fill first
