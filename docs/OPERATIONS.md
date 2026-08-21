@@ -94,6 +94,20 @@ LIVE の起動は `/v1/me/getpositions`(診断用タイムアウト)を1回叩�
   (建玉があるのに平均建値が取れなかった場合も同じ扱い — 守れない建玉だからです)。
   原因を調べ、bitFlyer 側の建玉を確認してから人間が
   `reset(operator_confirm=True)` します。
+- **取り込んだ建玉には、帳簿の約定がすでに含まれています**。そのため取り込みの直後に
+  非終端の注文すべてについて `booked_size := filled_size` へ進めます
+  (`_adopt_fill_watermarks`、ログ `live_boot_watermarks_adopted`)。前のプロセスが
+  watermark を書き切れずに落ちていると、最初の定期スイープが同じ約定を
+  **取り込んだ建玉の上にもう一度計上**してしまうためです(旧 sqlite 移行と同じ規則 —
+  「取り込んだ = 計上済み」)。書き込めなかった時は起動を拒否します。
+- **前のプロセスが残した `PENDING_SUBMIT`(acceptance id 無し)も起動時に片付けます**
+  (`OrderManager.adopt_stale_pending`)。getchildorders を1回だけ読み、
+  積極的証拠(商品・売買方向・数量、LIMIT なら価格)で一致すれば acceptance id と
+  状態を取り込み、**一致しなければ `ABANDONED`(終端)** にします。プロセス再起動を
+  跨いだレコードは、getchildorders の遅延(数秒)よりはるかに古いためです。
+  取引所が**読めなかった時は触りません**(証拠が無いので)。いずれも通知
+  `LIVE BOOT: UNSENT ORDER RECORDS RESOLVED` に出ます。放置すると重複注文ガードが
+  これを数え、**次の注文(逆指値を含む)が黙って拒否**されていました。
 - PAPER はこの経路を**一切通りません**(PAPER の正は `data/paper_state.json`)。
 
 - `product_code` — この帳簿が属する商品。起動時の商品と**違えば復元しません**
@@ -261,6 +275,20 @@ CRITICAL 中の決済成功を明示的に検査しています)。connect タ�
 - 取り消しても決済が通らない/取消自体が曖昧に失敗した場合は、**黙って諦めません**:
   `🚨 CANNOT CLOSE POSITION` を urgent で送り、Kill Switch を `system_error` で
   発動します(`event=closing_order_blocked`)。ここから先は人間の持ち場です
+- **決済のサイズは送信直前に取り直します。** 板を空けるための取消で確定した約定は
+  その場で建玉に計上されるので、決済を決めた時点のサイズは**もう古い**からです。
+  送るのは `min(要求サイズ, 現在の建玉)`、既にフラットなら**何も送りません**
+  (`closing_size_reresolved` / `closing_already_satisfied`)。塞いでいた前回の決済が
+  0.006 約定済みだったのに 0.01 をそのまま送ると、**逆方向に 0.006 の建玉が立ちます**
+- **未解決レコードは決済を拒否しません。** `PENDING_SUBMIT` / `STATE_UNKNOWN` が
+  残っていると**新規エントリー**は拒否されますが(帳簿が分からない状態で送らない)、
+  決済は上の優先権ルートに回ります。取り消せない相手(acceptance id の無い
+  `PENDING_SUBMIT`、`STATE_UNKNOWN`)なら上の loud path です — 黙った
+  RuntimeError で逆指値が消えることはもうありません
+- **リスク上限の決済免除は建玉の大きさまでです。** MAX_ORDER_SIZE /
+  MAX_POSITION_SIZE / MAX_OPEN_ORDERS は「エクスポージャーを増やす注文」にだけ
+  効きますが、増える分の判定は**建玉を超えた超過分**で行います
+  (0.001 のロングに対する SELL 1.0 は、0.001 の決済と 0.999 の新規ショートです)
 - **新規エントリーにこの優先権はありません。** 混雑や劣化でエントリーが飛ぶのは
   リスクを減らす方向なので、従来どおり単にスキップします
 

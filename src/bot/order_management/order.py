@@ -38,9 +38,20 @@ class OrderState(Enum):
     CANCELED = "CANCELED"
     REJECTED = "REJECTED"
     STATE_UNKNOWN = "STATE_UNKNOWN"
+    # A PENDING_SUBMIT record a DEAD PROCESS left behind, which the LIVE boot
+    # looked for on the venue's recent listing and did not find
+    # (`OrderManager.adopt_stale_pending`). Terminal on purpose: the record
+    # never reached the exchange as far as the exchange can be seen to know,
+    # and leaving it non-terminal makes the duplicate-order guard refuse every
+    # later order for the symbol — including the protective close. It is a
+    # state of its own rather than CANCELED because nobody cancelled anything:
+    # an operator reading the book must be able to tell "we gave up on this
+    # record at boot" from "the venue confirmed a cancel".
+    ABANDONED = "ABANDONED"
 
 
-_TERMINAL = {OrderState.FILLED, OrderState.CANCELED, OrderState.REJECTED}
+_TERMINAL = {OrderState.FILLED, OrderState.CANCELED, OrderState.REJECTED,
+             OrderState.ABANDONED}
 _ALLOWED_TRANSITIONS: dict[OrderState, set[OrderState]] = {
     # PENDING_SUBMIT can resolve straight to a fill: `reconcile_unknown` walks
     # PENDING_SUBMIT records too (the crash-between-INSERT-and-send case), and
@@ -50,7 +61,8 @@ _ALLOWED_TRANSITIONS: dict[OrderState, set[OrderState]] = {
     # record it.
     OrderState.PENDING_SUBMIT: {OrderState.SUBMITTED, OrderState.PARTIALLY_FILLED,
                                 OrderState.FILLED, OrderState.CANCELED,
-                                OrderState.REJECTED, OrderState.STATE_UNKNOWN},
+                                OrderState.REJECTED, OrderState.STATE_UNKNOWN,
+                                OrderState.ABANDONED},
     OrderState.SUBMITTED: {OrderState.PARTIALLY_FILLED, OrderState.FILLED, OrderState.CANCELED,
                            OrderState.REJECTED, OrderState.STATE_UNKNOWN},
     OrderState.PARTIALLY_FILLED: {OrderState.FILLED, OrderState.CANCELED, OrderState.STATE_UNKNOWN},

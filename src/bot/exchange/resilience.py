@@ -69,7 +69,7 @@ import math
 import random
 import time
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from email.utils import parsedate_to_datetime
 from enum import Enum
 from pathlib import Path
@@ -672,6 +672,14 @@ def load_resilience_config(raw: dict | None) -> ResilienceConfig:
     raw = raw or {}
     warn: list[str] = []
     defaults = ResilienceConfig()
+    # A key this loader does not read is a key that does nothing. Silence made
+    # `read_timout_sec: 30` look exactly like a configured timeout, so the
+    # operator believed a value the bot never used — the same class of failure
+    # as a bad value, minus the warning. Named, not rejected: an unknown key
+    # must not stop the bot (see the class docstring).
+    unknown = sorted(set(raw) - {f.name for f in fields(ResilienceConfig)})
+    if unknown:
+        warn.append(f"unknown key(s) {unknown}; they configure nothing")
     connect = _positive(raw, "connect_timeout_sec", defaults.connect_timeout_sec, warn)
     read = _positive(raw, "read_timeout_sec", defaults.read_timeout_sec, warn)
     budget = _positive(raw, "retry_budget_sec", defaults.retry_budget_sec, warn)
@@ -716,7 +724,7 @@ def load_resilience_config(raw: dict | None) -> ResilienceConfig:
         entry_gating=gating,
     )
     if warn:
-        logger.warning("resilience config: falling back to defaults",
+        logger.warning("resilience config: problems found",
                        extra={"data": {"event": "resilience_config_invalid",
                                        "problems": warn}})
     return cfg

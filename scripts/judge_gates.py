@@ -99,7 +99,7 @@ INSUFFICIENT = "INSUFFICIENT"
 READY = "READY"
 
 NON_FILL_STATES = {"PENDING_SUBMIT", "SUBMITTED", "CANCELED", "REJECTED",
-                   "STATE_UNKNOWN"}
+                   "STATE_UNKNOWN", "ABANDONED"}
 
 
 # ---- result container ------------------------------------------------------

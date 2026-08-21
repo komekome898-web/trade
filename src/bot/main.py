@@ -72,11 +72,32 @@ def _net_position(rows) -> tuple[float, float]:
     The signed sum is the position; the price is weighted over the rows on the
     NET side only, so even a mixed listing yields the entry price of what is
     actually held rather than a blend of both directions.
+
+    STRICT, and it RAISES rather than guessing. Two ways a row can be
+    unreadable, both of which used to pass silently in the dangerous direction:
+
+    - a side string that is neither BUY nor SELL. `else -size` counted every
+      one of them — an empty string, a renamed field, a typo, an error object
+      — as a SHORT. One such row in a listing flips the sign of the adopted
+      position, so the bot arms a stop on the wrong side and its next "close"
+      doubles the real position instead.
+    - a net-side row with no usable price. It used to be skipped, which quietly
+      re-weighted the average entry price over the REMAINING rows: the number
+      the protective stop, the daily brake and the drawdown are all computed
+      from would then describe part of the position and be applied to all of
+      it.
+
+    The caller turns either into a refusal to trade
+    (`TradingApp._adopt_venue_position`), which is the only honest answer: a
+    position we cannot read is not a position we can protect.
     """
     signed = 0.0
     for row in rows or ():
+        side = str(row.get("side") or "").upper()
+        if side not in ("BUY", "SELL"):
+            raise ValueError(f"unrecognised position side {row.get('side')!r}")
         size = _num(row.get("size"))
-        signed += size if str(row.get("side") or "").upper() == "BUY" else -size
+        signed += size if side == "BUY" else -size
     if abs(signed) <= FILL_EPSILON:
         return 0.0, 0.0
     wanted = "BUY" if signed > 0 else "SELL"
@@ -85,8 +106,11 @@ def _net_position(rows) -> tuple[float, float]:
         if str(row.get("side") or "").upper() != wanted:
             continue
         size, price = _num(row.get("size")), _num(row.get("price"))
-        if size <= 0 or price <= 0:
-            continue
+        if size <= 0:
+            continue          # an empty lot holds nothing and prices nothing
+        if price <= 0:
+            raise ValueError(f"position row of {size} has no usable price "
+                             f"({row.get('price')!r})")
         notional += size * price
         quantity += size
     return signed, (notional / quantity if quantity > 0 else 0.0)
@@ -306,7 +330,18 @@ class TradingApp:
         is tripped (`system_error`, 'live boot reconciliation failed') so
         `main()` refuses to start and no order can be placed, and a human
         decides. Assuming flat is the phantom-flat state again, this time
-        chosen deliberately.
+        chosen deliberately. A venue answer this process cannot PARSE is the
+        same fact and takes the same path — an unreadable answer is not an
+        answer (`_net_position` raises; bitFlyer serves its error objects with
+        a 200 and a body that is not a list of positions).
+
+        The local order book is squared with the adopted position before
+        anything can run: stale PENDING_SUBMIT records are resolved
+        (`OrderManager.adopt_stale_pending`) and every non-terminal order's
+        fill watermark is advanced (`_adopt_fill_watermarks`). Both happen
+        BEFORE the first sweep, because the sweep is what would otherwise book
+        those fills a second time on top of the position that already contains
+        them.
         """
         try:
             with self.client.diagnostic_call():
@@ -319,7 +354,29 @@ class TradingApp:
                 f"a position is open.",
                 error=type(e).__name__)
             return
-        size, entry_price = _net_position(rows)
+        try:
+            size, entry_price = _net_position(rows)
+        except Exception as e:
+            # Never a bare traceback out of the boot: an unparseable answer
+            # would otherwise kill the process without the persisted kill
+            # switch, and the supervisor's restart would land on the SAME
+            # unreadable answer with nothing recorded about why.
+            self._refuse_live_boot(
+                "the venue's positions could not be read",
+                f"getpositions for {self.settings.product_code} answered with "
+                f"something this bot cannot read ({type(e).__name__}: {e}), so "
+                f"the position it reports cannot be trusted.",
+                error=type(e).__name__)
+            return
+        self._resolve_stale_pending()
+        if not self._adopt_fill_watermarks():
+            self._refuse_live_boot(
+                "the order book's fill watermarks could not be advanced",
+                f"the local order book for {self.settings.product_code} could "
+                f"not be squared with the venue's position, so the periodic "
+                f"sweep would book fills the adopted position already contains "
+                f"and the bot would believe it holds more than it does.")
+            return
         if size == 0.0:
             logger.info("LIVE boot: the venue reports no open position",
                         extra={"data": {"event": "live_boot_flat",
@@ -357,6 +414,92 @@ class TradingApp:
                      f"starts holding it — the protective stop is armed "
                      f"against this position and new entries are sized on top "
                      f"of it.")
+
+    def _adopt_fill_watermarks(self) -> bool:
+        """Every fill this book knows about is ALREADY IN the adopted position.
+
+        getpositions is the whole truth about what is held — the fills of the
+        orders sitting in the local book included. So the moment that answer
+        becomes the portfolio's position, each non-terminal order's
+        `booked_size` has to be advanced to its `filled_size`: those fills HAVE
+        been booked, by the adoption itself.
+
+        Without it the first sweep re-reads the same order, sees an
+        `executed_size` above a watermark the dead process never managed to
+        persist, and books it a SECOND time on top of the adopted position —
+        the bot then believes it holds more than the venue does, sizes the next
+        order against that, and "closes" into a reverse position. It is the
+        rule the schema migration already applies (`OrderStore.
+        _migrate_booked_size`: adopted means already booked), applied to the
+        other way a book can arrive carrying fills nobody in this process
+        booked.
+
+        False = the book could not be advanced, and the caller refuses the
+        boot. The alternative is a sweep that double-counts a REAL position.
+        """
+        advanced = []
+        try:
+            for order in self.store.active_orders(self.settings.product_code):
+                if order.unbooked_size <= FILL_EPSILON:
+                    continue
+                self.store.mark_booked(order.local_id, order.filled_size)
+                advanced.append((order.local_id, order.filled_size))
+        except Exception:
+            logger.exception("LIVE boot: the order book's fill watermarks could "
+                             "not be advanced", extra={"data": {
+                                 "event": "live_boot_watermarks_failed",
+                                 "symbol": self.settings.product_code}})
+            return False
+        if advanced:
+            logger.warning("LIVE boot: fill watermarks advanced to the adopted "
+                           "position", extra={"data": {
+                               "event": "live_boot_watermarks_adopted",
+                               "symbol": self.settings.product_code,
+                               "orders": [local_id for local_id, _ in advanced],
+                               "booked_to": [size for _, size in advanced]}})
+        return True
+
+    def _resolve_stale_pending(self) -> None:
+        """LIVE boot: deal with PENDING_SUBMIT records a dead process left.
+
+        The manager does the work and the evidence rules
+        (`OrderManager.adopt_stale_pending`); this reports it. An operator has
+        to be told that a record was adopted from the venue or written off at
+        boot, because both change what the book says about a real account.
+
+        Guarded: the boot's job is the POSITION, and the position has already
+        been read by the time this runs. A failure here leaves the records
+        non-terminal, which refuses new entries and routes a close through the
+        loud path — safe, and not a reason to abort the start.
+        """
+        try:
+            outcome = self.orders.adopt_stale_pending(self.settings.product_code)
+        except Exception:
+            logger.exception("LIVE boot: stale PENDING_SUBMIT records could not "
+                             "be resolved", extra={"data": {
+                                 "event": "live_boot_stale_pending_failed",
+                                 "symbol": self.settings.product_code}})
+            return
+        if not any(outcome.values()):
+            return
+        lines = []
+        for order in outcome["adopted"]:
+            lines.append(f"ADOPTED {order.side} {order.size} as "
+                         f"{order.acceptance_id} ({order.state.value}, "
+                         f"filled {order.filled_size})")
+        for order in outcome["abandoned"]:
+            lines.append(f"ABANDONED {order.side} {order.size} (the venue does "
+                         f"not list it)")
+        for order in outcome["unresolved"]:
+            lines.append(f"UNRESOLVED {order.side} {order.size} (the venue "
+                         f"could not be read; it still blocks new entries)")
+        self._notify(
+            "LIVE BOOT: UNSENT ORDER RECORDS RESOLVED",
+            f"{self.settings.product_code}: a previous process left order "
+            f"records that never reached SUBMITTED.\n" + "\n".join(lines) +
+            "\nThe position itself comes from the venue (getpositions), not "
+            "from these records.",
+            urgent=bool(outcome["unresolved"]))
 
     def _refuse_live_boot(self, reason: str, message: str, **data) -> None:
         """Trip the kill switch so the LIVE boot cannot trade, and say why.
@@ -975,16 +1118,33 @@ class TradingApp:
                     "consecutive_losses": self.overlay_state.consecutive_losses}})
                 size = scaled
         try:
-            order = self.orders.submit(symbol=self.settings.product_code,
-                                       side=side, size=size, opening=opening)
+            order = self.orders.submit(
+                symbol=self.settings.product_code, side=side, size=size,
+                opening=opening,
+                # A CLOSE's size is a CAP, not a quantity: the manager asks
+                # this for the live position again at SEND time, after
+                # `_make_room_for_close` has cancelled the blockers and booked
+                # whatever they filled on the way out. `size` was decided
+                # before that booking, so sending it unchanged would push a
+                # part-closed position through flat and open a reverse one.
+                size_resolver=(None if opening
+                               else (lambda: abs(self.portfolio.position_size))))
         except (DuplicateOrderError, RuntimeError) as e:
-            # `opening` travels with the order because the manager treats a
-            # refused CLOSE as an emergency (cancel the resting order, retry
-            # once, then alert + kill switch) rather than as a skipped tick.
-            # By the time one surfaces here the operator has already been told.
+            # Two different facts, both ending here:
+            # - DuplicateOrderError on a CLOSE means the manager could not
+            #   clear the book for it and has ALREADY taken the loud path
+            #   (critical log, urgent alert, kill switch). Nothing to add.
+            # - RuntimeError can only be an ENTRY (a close is never refused for
+            #   an unresolved book, see `OrderManager.submit`), which is a
+            #   skipped tick and nobody is alerted about it.
             logger.error("submit refused", extra={"data": {
                 "event": "submit_refused", "opening": opening,
                 "side": side, "size": size, "error": str(e)}})
+            return None
+        if order is None:
+            # The close was already satisfied while the book was being cleared
+            # — the blocker's own fill flattened the position. Nothing was
+            # sent, nothing is owed; the manager logged it.
             return None
         # Refresh once for immediate (market/paper) fills. GUARDED, like the
         # sweep's: this refresh is a diagnostic, and a failure inside it — a

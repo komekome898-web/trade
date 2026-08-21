@@ -190,6 +190,37 @@ class AutoReconciler:
         self._remember(orders)
         return list(orders)
 
+    # ---- one-shot match for a record that is NOT a fresh send ---------------
+    def match_once(self, *, symbol: str, side: str, size: float,
+                   snapshot: ExchangeSnapshot, order_type: str = "MARKET",
+                   price: float | None = None,
+                   listing: list[dict] | None = None) -> Resolution:
+        """Same positive-evidence matcher as `resolve`, asked ONCE.
+
+        For an order record whose send happened in a PREVIOUS PROCESS
+        (`OrderManager.adopt_stale_pending`). The poll schedule in `resolve`
+        exists to outlast getchildorders' listing lag right after a send; a
+        record that survived a process restart is far older than that lag, so
+        one listing is the whole question — and the caller is a boot sequence
+        that must not spend a reconciliation budget per stale record.
+
+        `listing` lets one getchildorders answer serve several records. Not
+        found is UNRESOLVED, exactly as everywhere else in this module: what
+        the caller does with "no evidence" is the caller's decision, and it is
+        a different decision at boot (nothing has been sent yet in this
+        process) than it is mid-flight.
+        """
+        orders = self.list_orders(symbol) if listing is None else listing
+        if orders is None:
+            return Resolution("UNRESOLVED",
+                              detail="getchildorders could not be read")
+        match = self._match(orders, snapshot, symbol, side, size,
+                            order_type, price)
+        if match is None:
+            return Resolution("UNRESOLVED", polls=1,
+                              detail="no matching order on the venue's listing")
+        return self._from_order(match, 1, 0.0)
+
     # ---- step 2: after an ambiguous failure --------------------------------
     def resolve(self, *, symbol: str, side: str, size: float,
                 snapshot: ExchangeSnapshot, order_type: str = "MARKET",

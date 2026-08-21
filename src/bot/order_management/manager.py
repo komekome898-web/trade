@@ -36,6 +36,10 @@ _RESOLUTION_TO_LOCAL = {
 # executed_size can refine into a PARTIAL fill.
 _RESTING = {OrderState.SUBMITTED, OrderState.PENDING_SUBMIT}
 
+# Below this a position is flat and a size is nothing. Same value as
+# `bot.main.FILL_EPSILON`: both are "float noise on a venue-reported size".
+_SIZE_EPSILON = 1e-12
+
 
 def _with_partial(state: OrderState | None, filled_size: float | None) -> OrderState | None:
     """ACTIVE-with-executed_size is PARTIALLY_FILLED, not SUBMITTED.
@@ -83,8 +87,8 @@ class OrderManager:
 
     def submit(self, *, symbol: str, side: str, size: float,
                order_type: str = "MARKET", price: float | None = None,
-               opening: bool = True) -> Order:
-        """Persist first, then submit.
+               opening: bool = True, size_resolver=None) -> Order | None:
+        """Persist first, then submit. None = a CLOSE that is no longer needed.
 
         An ambiguous failure is handed to the QUERY-ONLY auto-reconciler, which
         has a bounded budget to find POSITIVE evidence of the order on
@@ -97,8 +101,29 @@ class OrderManager:
         on it: a close outranks anything resting on the book (see
         `_make_room_for_close`). An entry refused because an order already
         exists is simply skipped, as before.
+
+        `size_resolver` is how a CLOSE stays a close. It answers "how much is
+        open RIGHT NOW" (unsigned), and it is asked again after
+        `_make_room_for_close` has cancelled the blockers and BOOKED whatever
+        they filled on their way out — which is precisely the moment the
+        caller's size went stale. `size` is then a CAP, not a quantity: the
+        order goes out for `min(requested, |position|)`, and for nothing at all
+        if the position is already flat. Without it a close decided at 0.01
+        against a blocker that turned out to have filled 0.006 sends 0.01 into
+        a 0.004 position and opens a REVERSE position — the bot flipping itself
+        short while trying to flatten.
+
+        A record is created for the RESOLVED size only, so nothing is persisted
+        for an order that is not sent.
+
+        Orders in an unknown state block a new ENTRY (nothing may be sent while
+        the book is unresolved), but they may not block a CLOSE with a bare
+        RuntimeError: a leftover PENDING_SUBMIT is a book problem, and refusing
+        the exit over it is the 2019 failure. A close is routed on into the
+        priority path, which either clears the way or takes the LOUD path
+        (`_closing_blocked`: critical log, urgent alert, kill switch).
         """
-        if self._store.unknown_orders():
+        if opening and self._store.unknown_orders():
             raise RuntimeError("orders with unknown state exist; reconcile before submitting")
         snapshot = self._baseline(symbol)
         try:
@@ -106,8 +131,11 @@ class OrderManager:
         except DuplicateOrderError as refusal:
             if opening:
                 raise
-            order = self._make_room_for_close(symbol, side, size, order_type,
-                                              price, refusal)
+            made = self._make_room_for_close(symbol, side, size, order_type,
+                                             price, refusal, size_resolver)
+            if made is None:
+                return None            # the close is already satisfied
+            order, size = made
         try:
             result = self._gateway.submit_order(
                 symbol=symbol, side=side, size=size, order_type=order_type, price=price
@@ -146,8 +174,12 @@ class OrderManager:
     # ---- a CLOSING order outranks the book ---------------------------------
     def _make_room_for_close(self, symbol: str, side: str, size: float,
                              order_type: str, price: float | None,
-                             refusal: DuplicateOrderError) -> Order:
+                             refusal: DuplicateOrderError,
+                             size_resolver=None) -> tuple[Order, float] | None:
         """Clear resting orders so a CLOSING order can be placed, ONCE.
+
+        Returns (record, size to send), or None when there is no longer
+        anything to close.
 
         The wedge this exists for: an ambiguous send resolves to ACTIVE, so the
         book holds a live SUBMITTED order; the venue never fills it; the
@@ -177,6 +209,12 @@ class OrderManager:
         the acknowledgement is verified against getchildorders before the close
         is sent (`_verify_blockers_cleared`). Sending on the strength of a 2xx
         alone is how one intended exit becomes two live orders.
+
+        And the size is re-resolved LAST, after the cancelled orders' fills
+        have been booked (`_settle_canceled` -> `on_canceled_fill`): those
+        fills change the very position this order is trying to close, so the
+        size the caller decided on is stale by construction here
+        (`_close_size_now`).
         """
         blockers = self._store.blocking_order_ids(symbol)
         try:
@@ -201,12 +239,59 @@ class OrderManager:
                                        "size": size,
                                        "canceled": [o.local_id for o in canceled],
                                        "resting": blockers}})
+        resolved = self._close_size_now(symbol, side, size, size_resolver)
+        if resolved is None:
+            return None
+        size = resolved
         try:
-            return self._store.create(symbol, side, size, order_type, price)
+            return self._store.create(symbol, side, size, order_type, price), size
         except DuplicateOrderError as e:
             self._closing_blocked(symbol, side, size, blockers,
                                   f"still refused after cancelling: {e}")
             raise
+
+    def _close_size_now(self, symbol: str, side: str, requested: float,
+                        size_resolver) -> float | None:
+        """How much a CLOSE should be sent for, asked at SEND time.
+
+        None means "nothing": the cancelled blocker turned out to have filled
+        the whole position on its way out, so the close has already happened
+        and sending it would open a position in the opposite direction.
+
+        `min(requested, |position|)` and never more. The requested size is what
+        the pre-trade checks approved, so the order may only ever shrink here —
+        a position that GREW between the decision and the send is not this
+        order's business, and enlarging it would send a size no risk check ever
+        saw.
+
+        Without a resolver the requested size stands (a caller that keeps no
+        position, and every test that drives the manager directly). A resolver
+        that RAISES is the same case, loudly: an exit must not be dropped
+        because the bookkeeping it consults is broken.
+        """
+        if size_resolver is None:
+            return requested
+        try:
+            current = abs(float(size_resolver()))
+        except Exception:
+            logger.exception("the live position could not be read; the closing "
+                             "order keeps its requested size", extra={"data": {
+                                 "event": "closing_size_unresolved",
+                                 "symbol": symbol, "side": side,
+                                 "size": requested}})
+            return requested
+        if current <= _SIZE_EPSILON:
+            logger.warning("closing order no longer needed: the position is flat",
+                           extra={"data": {"event": "closing_already_satisfied",
+                                           "symbol": symbol, "side": side,
+                                           "requested_size": requested}})
+            return None
+        if current >= requested:
+            return requested
+        logger.warning("closing order resized to the live position", extra={"data": {
+            "event": "closing_size_reresolved", "symbol": symbol, "side": side,
+            "requested_size": requested, "size": current}})
+        return current
 
     def _verify_blockers_cleared(
             self, symbol: str,
@@ -457,6 +542,102 @@ class OrderManager:
                 avg_fill_price=status.avg_fill_price,
             ))
         return resolved
+
+    # ---- LIVE BOOT: PENDING_SUBMIT records a dead process left --------------
+    def adopt_stale_pending(self, symbol: str) -> dict[str, list[Order]]:
+        """Resolve the PENDING_SUBMIT records this process did not write.
+
+        A PENDING_SUBMIT with no acceptance id is the crash window itself: the
+        record was INSERTed and the process died before the send returned (or
+        before it was even made). At boot every such record is by definition
+        from a previous process, and it is not harmless bookkeeping — it is
+        non-terminal, so the duplicate-order guard counts it and the NEXT order
+        for the symbol is refused. The next order may be the protective stop,
+        and that refusal used to arrive as a bare RuntimeError nobody was told
+        about: the position could not be exited, silently. That is the 2019
+        failure reached through our own book.
+
+        So each one is asked about ONCE, with the same positive-evidence
+        matcher that resolves an ambiguous send (product + side + size, and
+        price for a LIMIT order), against one getchildorders listing:
+
+        - LISTED -> adopt it: the acceptance id and whatever state the venue
+          reports, fill size and price included. The record becomes a normal
+          order the sweep can follow.
+        - NOT LISTED -> ABANDONED (terminal). Absence is not evidence for a
+          FRESH send — getchildorders lags an acceptance by seconds — but this
+          record outlived a process restart, which is far longer than that lag,
+          so "the venue does not list it" is the answer here. The position is
+          not being guessed at either way: the LIVE boot has just adopted the
+          venue's own getpositions answer (`TradingApp._adopt_venue_position`),
+          so the truth about what is held does not depend on this record at all.
+        - the venue could NOT BE READ -> left exactly as it is. "We could not
+          look" is not evidence, and a boot that cannot see the book is one
+          that must not clear it. Entries stay refused while it sits there and
+          a close takes the loud path; both are the safe direction.
+
+        LIVE-only by wiring (PAPER has no reconciler and fills synchronously).
+        Returns the three groups so the boot can tell the operator.
+        """
+        outcome: dict[str, list[Order]] = {"adopted": [], "abandoned": [],
+                                           "unresolved": []}
+        stale = [o for o in self._store.active_orders(symbol)
+                 if o.state is OrderState.PENDING_SUBMIT and not o.acceptance_id]
+        if not stale:
+            return outcome
+        # BEFORE the listing: `baseline` unions in every id the reconciler has
+        # already seen, so taking it afterwards would exclude the very rows we
+        # are about to match against.
+        snapshot = self._baseline(symbol)
+        listing = (None if self._reconciler is None or snapshot is None
+                   else self._reconciler.list_orders(symbol))
+        claimed: set[str] = set()
+        for order in stale:
+            snap = snapshot
+            if claimed and snap is not None:
+                # Two stale records must never adopt the SAME venue row.
+                snap = ExchangeSnapshot(
+                    frozenset(snap.acceptance_ids | claimed), snap.taken_at)
+            res = (None if listing is None or snap is None
+                   else self._reconciler.match_once(
+                       symbol=symbol, side=order.side, size=order.size,
+                       snapshot=snap, order_type=order.order_type,
+                       price=order.price, listing=listing))
+            if res is not None and res.resolved:
+                state = _with_partial(_RESOLUTION_TO_LOCAL.get(res.state),
+                                      res.filled_size)
+                if state is not None:
+                    claimed.add(str(res.acceptance_id))
+                    outcome["adopted"].append(self._store.transition(
+                        order.local_id, state, acceptance_id=res.acceptance_id,
+                        filled_size=res.filled_size or None,
+                        avg_fill_price=res.avg_fill_price))
+                    logger.warning("stale PENDING_SUBMIT adopted from the venue",
+                                   extra={"data": {
+                                       "event": "stale_pending_adopted",
+                                       "local_id": order.local_id,
+                                       "acceptance_id": res.acceptance_id,
+                                       "state": state.value,
+                                       "filled_size": res.filled_size}})
+                    continue
+            if listing is None:
+                outcome["unresolved"].append(order)
+                logger.error("stale PENDING_SUBMIT could not be checked against "
+                             "the venue; it is left for a human", extra={"data": {
+                                 "event": "stale_pending_unresolved",
+                                 "local_id": order.local_id,
+                                 "symbol": order.symbol, "side": order.side,
+                                 "size": order.size}})
+                continue
+            outcome["abandoned"].append(
+                self._store.transition(order.local_id, OrderState.ABANDONED))
+            logger.warning("stale PENDING_SUBMIT abandoned: the venue does not "
+                           "list it", extra={"data": {
+                               "event": "stale_pending_abandoned",
+                               "local_id": order.local_id,
+                               "symbol": order.symbol, "side": order.side,
+                               "size": order.size}})
+        return outcome
 
     def cancel_all_active(self, symbol: str) -> list[Order]:
         """Cancel everything non-terminal for the symbol (kill-switch shutdown).

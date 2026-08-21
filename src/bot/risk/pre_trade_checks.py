@@ -10,6 +10,9 @@ from dataclasses import dataclass
 from bot.risk.kill_switch import KillReason, KillSwitch
 from bot.settings import RiskLimits
 
+# Below this a leftover size is float noise on a close, not new exposure.
+_SIZE_EPSILON = 1e-12
+
 
 @dataclass
 class AccountState:
@@ -86,22 +89,38 @@ class PreTradeChecker:
             reasons.append(f"invalid order size/price: {order.size}/{order.price}")
         if order.side not in ("BUY", "SELL"):
             reasons.append(f"invalid side: {order.side}")
-        # exposure grows when the order is in the direction of (or opens) the position
-        increases_exposure = (
-            (order.side == "BUY" and account.position_size >= 0)
-            or (order.side == "SELL" and account.position_size <= 0)
-        )
-        # MAX_ORDER_SIZE caps risk-increasing orders only: a closing order must
-        # never be blocked, or a position opened at the cap becomes un-exitable
-        # after an adverse move (the stop-loss itself would be refused).
-        if increases_exposure and order.notional_jpy > self.limits.max_order_size_jpy:
+        # THE REDUCING EXEMPTION, and its bound. A closing order must never be
+        # refused by a cap — a position opened at the cap would become
+        # un-exitable after an adverse move, because the stop-loss itself would
+        # be refused. But only the part of the order that actually REDUCES the
+        # position is closing: a SELL of 1.0 against a 0.001 long closes 0.001
+        # and OPENS 0.999 short, and exempting the whole order because "it is a
+        # sell and we are long" let an order a thousand times the cap through
+        # as if it were protective. So the caps are evaluated on the EXCESS.
+        reducible = (max(0.0, -account.position_size) if order.side == "BUY"
+                     else max(0.0, account.position_size))
+        reduced_size = min(order.size, reducible)
+        excess_size = order.size - reduced_size
+        if excess_size <= _SIZE_EPSILON:      # float noise, not exposure
+            excess_size = 0.0
+        # Exposure grows only if something is left over once the position has
+        # been closed out.
+        increases_exposure = excess_size > 0.0
+        excess_notional_jpy = excess_size * order.price
+        # MAX_ORDER_SIZE, on what the order ADDS.
+        if increases_exposure and excess_notional_jpy > self.limits.max_order_size_jpy:
             reasons.append(
-                f"order notional {order.notional_jpy:.0f} > MAX_ORDER_SIZE {self.limits.max_order_size_jpy:.0f}"
+                f"order notional {excess_notional_jpy:.0f} > MAX_ORDER_SIZE {self.limits.max_order_size_jpy:.0f}"
             )
         # Like MAX_ORDER_SIZE, the position cap binds only when exposure grows:
         # an adverse move can push an existing position's marked notional past
-        # the cap, and the closing order must still go through.
-        new_position = account.position_notional_jpy + order.notional_jpy
+        # the cap, and the closing order must still go through. What is left
+        # after the reducing part is what the position becomes — for a pure
+        # entry that is the old `position + order`, and for an oversized "close"
+        # it is the reverse position the excess opens.
+        new_position = (max(0.0, account.position_notional_jpy
+                            - reduced_size * order.price)
+                        + excess_notional_jpy)
         if increases_exposure and new_position > self.limits.max_position_size_jpy:
             reasons.append(
                 f"position notional {new_position:.0f} > MAX_POSITION_SIZE {self.limits.max_position_size_jpy:.0f}"
@@ -120,8 +139,10 @@ class PreTradeChecker:
                 reasons.append(
                     f"size {order.size} below product minimum {self.product.min_size}"
                 )
-            if (order.side == "SELL" and account.position_size <= 0
+            if (order.side == "SELL" and excess_size > 0.0
                     and not self.product.shortable):
+                # The excess again: on spot, a SELL bigger than the inventory
+                # is a short, whether or not some of it was a close.
                 reasons.append(f"{order.symbol} is not shortable (spot)")
             if self.product.is_margin:
                 if increases_exposure and new_position > account.balance_jpy * self.product.leverage:

@@ -74,6 +74,52 @@ def test_max_open_orders_never_refuses_a_closing_order(checker):
     assert any("MAX_OPEN_ORDERS" in r for r in opening.reasons)
 
 
+def test_only_the_reducing_part_of_an_order_is_exempt_from_the_caps(checker):
+    """(M1) The exemption exists so a stop can always be placed, and it is
+    bounded by the position it closes.
+
+    A SELL of 1.0 against a 0.001 long closes 0.001 and OPENS 0.999 short.
+    Exempting the whole order because "it is a sell and we are long" let an
+    order a thousand times MAX_ORDER_SIZE through as if it were protective —
+    the caps applied to entries and to nothing else, reachable from any signal
+    that oversizes a close.
+    """
+    long_at_the_cap = healthy_account(position_size=0.001,
+                                      position_notional_jpy=10.0, open_orders=1)
+    oversized = OrderRequest("XRP_JPY", "SELL", 1.0, 10_000.0, stop_price=10_000.0)
+
+    d = checker.check(oversized, long_at_the_cap)
+
+    assert not d.approved
+    assert any("MAX_ORDER_SIZE" in r for r in d.reasons), d.reasons
+    assert any("MAX_POSITION_SIZE" in r for r in d.reasons), d.reasons
+
+    # ...and the actual close, of exactly what is open, is still exempt from
+    # every one of them — including the open-order cap it sits at.
+    exact = OrderRequest("XRP_JPY", "SELL", 0.001, 10_000.0, stop_price=10_000.0)
+    assert checker.check(exact, long_at_the_cap).approved
+
+
+def test_a_partial_close_is_exempt_and_an_oversized_one_is_judged_on_the_excess(
+        checker):
+    """The rule stated as a boundary: everything up to |position| is a close,
+    and only what is left over is new exposure."""
+    short = healthy_account(position_size=-20.0, position_notional_jpy=2000.0)
+
+    # closing half of a 20-unit short: entirely reducing
+    assert checker.check(order(size=10.0, side="BUY", stop=100.0), short).approved
+    # exactly flat: still entirely reducing
+    assert checker.check(order(size=20.0, side="BUY", stop=100.0), short).approved
+    # 20 closes the short and 25 more open a long, so the caps see the 2500 JPY
+    # EXCESS — not the 4500 the whole order is worth, which would have been
+    # refused by MAX_ORDER_SIZE for exposure it does not add.
+    assert checker.check(order(size=45.0, side="BUY", stop=100.0), short).approved
+    # ...and once the excess itself is over the cap, it is refused.
+    too_far = checker.check(order(size=90.0, side="BUY", stop=100.0), short)
+    assert not too_far.approved
+    assert any("MAX_ORDER_SIZE" in r for r in too_far.reasons), too_far.reasons
+
+
 def test_insufficient_balance_rejected(checker):
     d = checker.check(order(size=25.0), healthy_account(balance_jpy=1000))
     assert not d.approved and any("insufficient balance" in r for r in d.reasons)
