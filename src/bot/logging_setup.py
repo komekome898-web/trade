@@ -21,7 +21,13 @@ def register_secret(value: str) -> None:
         _SECRET_PATTERNS.append(re.compile(re.escape(value)))
 
 
-def _redact(text: str) -> str:
+def redact(text: str) -> str:
+    """Mask every registered secret in `text`.
+
+    Public because logs are not the only place a secret can leak: anything
+    persisted or notified out (kill-switch details, status files) must pass
+    through the same filter.
+    """
     for pat in _SECRET_PATTERNS:
         text = pat.sub("***REDACTED***", text)
     return text
@@ -40,7 +46,7 @@ class JsonFormatter(logging.Formatter):
             payload.update(extra)
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
-        return _redact(json.dumps(payload, ensure_ascii=False, default=str))
+        return redact(json.dumps(payload, ensure_ascii=False, default=str))
 
 
 def setup_logging(log_dir: str | Path = "logs", level: int = logging.INFO) -> logging.Logger:

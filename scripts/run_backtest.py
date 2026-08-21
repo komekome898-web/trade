@@ -40,6 +40,11 @@ def main() -> int:
     strat_params = settings.config.get("strategy", {}).get("params", {})
 
     for name, cls in STRATEGIES.items():
+        if name == "composite":
+            # A carrier for xborder_momentum, not an independent strategy: with
+            # every module disabled it reproduces xborder trade-for-trade, so a
+            # sweep row for it would just be the same result listed twice.
+            continue
         params = strat_params if settings.config.get("strategy", {}).get("name") == name else {}
         print(f"\n=== {name} ===")
         results = evaluate_on_splits(cls, params, candles, costs=costs)

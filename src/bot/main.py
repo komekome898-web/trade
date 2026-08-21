@@ -6,19 +6,20 @@ Startup safety sequence:
 3. Kill switch state check — a tripped switch from a previous run blocks trading.
 4. In LIVE mode only: verify API permissions contain no withdrawal access.
 
-The loop is fail-closed: any unhandled exception out of `step()` trips the
+The loop is fail-closed: any unhandled exception out of the loop body trips the
 persisted kill switch before the process dies, so a supervisor restart lands on
-the refusal in `main()` instead of resuming trading in an unknown state.
+the refusal in `main()` instead of resuming trading in an unknown state. The
+FIRST reason recorded wins (`_trip_once`) — a failure while shutting down must
+not overwrite the diagnosis of what actually went wrong.
 """
 from __future__ import annotations
 
 import logging
 import time
-from pathlib import Path
 
 from bot.exchange.bitflyer_client import BitflyerClient, BitflyerError, NetworkError
 from bot.execution.paper import PaperExecutor
-from bot.logging_setup import log_decision, register_secret, setup_logging
+from bot.logging_setup import log_decision, redact, register_secret, setup_logging
 from bot.market_data.feed import CandleBuilder, MarketDataAnomaly, MarketDataFeed
 from bot.monitoring.notifier import DiscordNotifier, Notifier, NullNotifier
 from bot.monitoring.status import StatusWriter
@@ -63,7 +64,9 @@ class TradingApp:
         self.candles = CandleBuilder(int(cfg.get("candle_interval_sec", 60)))
         strat_cfg = cfg.get("strategy", {})
         strat_name = strat_cfg.get("name", "ema_cross")
-        if strat_name == "composite" and not Path(COMPOSITE_CONFIG_PATH).exists():
+        # Repo-anchored absolute path (bot.strategy.composite): the guard must
+        # test the SAME file the strategy will read, whatever the process cwd.
+        if strat_name == "composite" and not COMPOSITE_CONFIG_PATH.exists():
             # Refuse rather than silently running the composite with an empty
             # module set: a missing file must not look like a validated config.
             raise FileNotFoundError(
@@ -117,10 +120,15 @@ class TradingApp:
         self.portfolio = Portfolio(initial_equity_jpy=initial_equity)
         # Risk-overlay brake state survives a restart: a crash mid-losing-streak
         # must not hand the next process a clean slate and full size.
-        self.overlay_state = OverlayState.load(default_equity_jpy=initial_equity)
-        self.portfolio.consecutive_losses = self.overlay_state.consecutive_losses
-        self.portfolio.equity_peak_jpy = max(self.overlay_state.equity_peak_jpy,
-                                             initial_equity)
+        #
+        # It is kept HERE, never copied into the portfolio. The portfolio's
+        # consecutive_losses / equity_peak_jpy feed the hard pre-trade risk
+        # checks, which trip the kill switch; they must stay facts about what
+        # THIS process traded. Seeding them from disk would trip the switch on
+        # inherited history — and again on the next boot after an operator
+        # reset, a deadlock no reset can clear. Sizing may inherit the brake;
+        # the kill switch may not. (bot/strategy/composite.py module docstring.)
+        self.overlay_state = OverlayState.load(boot_equity_jpy=initial_equity)
         self._overlay_suppressed_day: int | None = None
         self.status = StatusWriter()
         self.status.status.mode = settings.mode.value
@@ -274,14 +282,19 @@ class TradingApp:
 
     def _entry_size_factor(self, mark_price: float) -> float:
         """Risk-overlay multiplier for a NEW entry, when the active strategy
-        exposes one (duck-typed). Equity peak and the consecutive-loss counter
-        come from the portfolio's closed trades."""
+        exposes one (duck-typed).
+
+        Reads the OVERLAY's own peak and loss streak (self.overlay_state), not
+        the portfolio's: the portfolio's counters belong to the hard risk
+        checks and must not be re-pointed at persisted state. Current equity is
+        a live fact and comes from the portfolio.
+        """
         factor_fn = getattr(self.strategy, "size_factor", None)
         if not callable(factor_fn):
             return 1.0
         equity = self.portfolio.equity_jpy(mark_price)
-        peak = max(self.portfolio.equity_peak_jpy, equity)
-        return float(factor_fn(peak, equity, self.portfolio.consecutive_losses))
+        peak = max(self.overlay_state.equity_peak_jpy, equity)
+        return float(factor_fn(peak, equity, self.overlay_state.consecutive_losses))
 
     def _quantize(self, budget_jpy: float, price: float) -> float:
         """Round an order budget DOWN to the product's size granularity."""
@@ -311,7 +324,6 @@ class TradingApp:
     def _try_order(self, side: str, tick, size: float | None = None):
         price = tick.best_ask if side == "BUY" else tick.best_bid
         opening = size is None
-        factor = 1.0
         if opening:
             # margin products size off equity x leverage; spot off half equity
             equity = self.portfolio.equity_jpy(tick.price)
@@ -380,26 +392,37 @@ class TradingApp:
                                               size=order.filled_size, price=fill_price,
                                               fee_jpy=fee)
             if realized + fee != 0.0:      # a closing fill: the brake moved
-                self._persist_overlay_state(tick.price)
+                self._persist_overlay_state(tick.price, realized)
             self.status.status.last_execution = f"{side} {order.filled_size} @ {fill_price}"
         self.status.status.last_order = f"{side} {size} ({order.state.value})"
         return order
 
-    def _persist_overlay_state(self, mark_price: float) -> None:
-        """Checkpoint the overlay brake after every closed trade."""
-        self.portfolio.drawdown_pct(mark_price)   # refreshes equity_peak_jpy
-        self.overlay_state.consecutive_losses = self.portfolio.consecutive_losses
-        self.overlay_state.equity_peak_jpy = self.portfolio.equity_peak_jpy
+    def _persist_overlay_state(self, mark_price: float,
+                               realized_pnl_jpy: float) -> None:
+        """Advance and checkpoint the overlay brake after every closed trade.
+
+        The overlay keeps its OWN streak and peak (see __init__); the portfolio
+        keeps the ones the risk checks read.
+        """
+        self.overlay_state.on_closed_trade(realized_pnl_jpy,
+                                           self.portfolio.equity_jpy(mark_price))
         self.overlay_state.save()
 
     def _on_kill(self, detail: str) -> None:
+        """Shut trading down cleanly. Every step is independently guarded: a
+        failure in one must not skip the others."""
         try:
             self.orders.cancel_all_active(self.settings.product_code)
         except Exception:
             logger.exception("cancel_all_active failed during kill switch")
         self.status.status.kill_switch = self.kill_switch.state
         self.status.write()
-        self.notifier.send("KILL SWITCH", detail, urgent=True)
+        try:
+            self.notifier.send("KILL SWITCH", detail, urgent=True)
+        except Exception:
+            # A dead webhook must not become an exception that propagates back
+            # into run_forever and overwrites the kill reason we just recorded.
+            logger.exception("kill switch notification failed")
         logger.critical("kill switch tripped", extra={"data": {
             "event": "kill_switch", "detail": detail, "state": self.kill_switch.state}})
 
@@ -424,29 +447,53 @@ class TradingApp:
         self.notifier.send("BOT START", f"mode={self.settings.mode.value} "
                                         f"product={self.settings.product_code}")
         while not self.kill_switch.is_tripped:
+            # The WHOLE body is guarded, not just step(): a failure in the
+            # freshness check, the status report or the notifier is just as
+            # much an unknown state as a failure in step(). KeyboardInterrupt
+            # and SystemExit are BaseExceptions and deliberately pass straight
+            # through — an operator stopping the bot must not leave a tripped
+            # switch behind for the next start to refuse.
             try:
                 self.step()
+                self.feed.check_freshness()
+                if time.time() - last_report >= report_every:
+                    self.notifier.send("STATUS", self.status.format_report())
+                    last_report = time.time()
+                time.sleep(poll)
+            except MarketDataAnomaly as e:
+                self._trip_once(KillReason.MARKET_DATA_ANOMALY, str(e))
+                self._on_kill(str(e))
+                break
             except Exception as e:
                 # An unexpected exception is an unknown state, not a hiccup: a
                 # bare crash would let systemd/the watchdog restart the process
                 # straight back into trading. Trip the (persisted) kill switch
                 # first, so the restarted process refuses to trade until a human
                 # has investigated and reset it (see main()).
-                self.kill_switch.trip(KillReason.UNHANDLED_EXCEPTION, repr(e))
-                logger.exception("unhandled exception in step; kill switch tripped")
-                self._on_kill(f"unhandled exception in step: {e!r}")
+                detail = redact(f"unhandled exception in loop: {e!r}")
+                self._trip_once(KillReason.UNHANDLED_EXCEPTION, detail)
+                logger.exception("unhandled exception in loop; kill switch tripped")
+                self._on_kill(detail)
                 raise
-            try:
-                self.feed.check_freshness()
-            except MarketDataAnomaly as e:
-                self.kill_switch.trip(KillReason.MARKET_DATA_ANOMALY, str(e))
-                self._on_kill(str(e))
-                break
-            if time.time() - last_report >= report_every:
-                self.notifier.send("STATUS", self.status.format_report())
-                last_report = time.time()
-            time.sleep(poll)
         self.notifier.send("BOT STOPPED", str(self.kill_switch.state), urgent=True)
+
+    def _trip_once(self, reason: KillReason, detail: str) -> None:
+        """Trip the kill switch only if it is not already tripped.
+
+        The FIRST reason is the diagnosis. An exception raised while handling a
+        kill (a dead Discord webhook, a locked status file) surfaces here as a
+        second trip; re-tripping would overwrite 'market_data_anomaly: stale
+        feed' with 'unhandled exception in the notifier' and send the operator
+        after the wrong fault.
+        """
+        if self.kill_switch.is_tripped:
+            logger.warning("kill switch already tripped; keeping the original reason",
+                           extra={"data": {"event": "kill_switch_secondary",
+                                           "ignored_reason": reason.value,
+                                           "ignored_detail": detail,
+                                           "state": self.kill_switch.state}})
+            return
+        self.kill_switch.trip(reason, detail)
 
 
 def main() -> int:

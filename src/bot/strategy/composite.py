@@ -50,9 +50,38 @@ the factor is applied only to an already-approved order (bot/main.py
 `_try_order`). A size the champion would have been refused is never retried
 smaller.
 
-The overlay's own state (consecutive losses, equity peak) is persisted by
+The overlay's own state (consecutive losses, relative drawdown) is persisted by
 `OverlayState` so a process restart cannot reset the brake — the same reason
 the kill switch persists.
+
+The overlay's counters are the OVERLAY'S OWN and are deliberately kept out of
+`Portfolio`. The portfolio's `consecutive_losses` / `equity_peak_jpy` feed the
+HARD risk checks in bot/risk/pre_trade_checks.py, which trip the kill switch;
+they are process-local facts about trades this process actually made and must
+stay that way. Writing persisted overlay numbers into them would make a
+restart trip the kill switch on history it did not live through — and after an
+operator reset, trip it again on the very next boot (an unresettable deadlock).
+The overlay reads its own state; the risk checks read the portfolio's.
+
+data/overlay_state.json
+-----------------------
+The persisted brake. Two fields:
+
+* `consecutive_losses` — losing closes in a row, as counted by the overlay.
+* `dd_frac` — equity / running-peak equity at the moment of the write (<= 1.0),
+  i.e. the RELATIVE drawdown. The absolute peak is deliberately NOT stored:
+  restoring an absolute JPY peak against a different boot equity (a changed
+  `paper_equity_jpy`, a different account) would manufacture a drawdown that
+  never happened. On boot the peak is reconstructed as
+  `boot_equity / dd_frac`, which preserves the relative drawdown exactly and
+  degrades to "no drawdown" when the file is missing.
+
+Written after every closed trade. Deleting it clears the SIZING brake only —
+it never unblocks trading (that is the kill switch) and it is never required
+for the bot to start: a missing or unreadable file degrades to the safe
+defaults (no drawdown, zero losses). Delete it when the account is
+re-baselined (paper equity reset, fresh account) and the accumulated brake no
+longer describes anything real. Operator steps: docs/OPERATIONS.md §3.
 
 The overlay applies to NEW exposure only. Closing/exit orders are never
 scaled and never blocked, the same invariant `increases_exposure` enforces in
@@ -62,8 +91,9 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from dataclasses import dataclass, field
-from fnmatch import fnmatch
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 import pandas as pd
@@ -72,11 +102,14 @@ import yaml
 from bot.strategy.base import Signal, SignalType, Strategy
 from bot.strategy.xborder_momentum import XborderMomentumStrategy
 
-DEFAULT_CONFIG_PATH = Path("config") / "composite.yaml"
 CORE_PARAM_KEYS = ("k", "thr_pct", "exit_pct")
 
-# gate_evidence must name a report that actually exists in the repo.
+# Anchored to the repo, not to the process cwd: a bot started from anywhere
+# must read the same gates and the same core params as the tests do.
 REPO_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_CONFIG_PATH = REPO_ROOT / "config" / "composite.yaml"
+
+# gate_evidence must name a report that actually exists in the repo.
 EVIDENCE_DIR = REPO_ROOT / "docs"
 EVIDENCE_PATTERN = "RESEARCH_REPORT_*.md"
 
@@ -161,18 +194,27 @@ class CompositeModule:
 
 
 def _check_evidence(name: str, gate: str, evidence: str) -> None:
-    """gate_evidence must name an existing docs/RESEARCH_REPORT_*.md file.
+    """gate_evidence must be the BARE FILENAME of an existing report in docs/.
 
     Free text ("passed", "see chat") is refused: the unlock reference has to
-    be a report that can be read and audited afterwards.
+    be a report that can be read and audited afterwards. Any path separator or
+    `..` is refused too — taking the basename of a path would have let
+    `../../elsewhere/RESEARCH_REPORT_x.md` (or a same-named file dropped into
+    another directory) read as a docs/ report. The match is case-SENSITIVE
+    (fnmatchcase): on Windows `fnmatch` would accept `research_report_x.MD`
+    for a file the repo does not have under that name.
     """
-    basename = Path(evidence.replace("\\", "/")).name
-    if not fnmatch(basename, EVIDENCE_PATTERN):
+    if any(sep in evidence for sep in ("/", "\\", os.sep)) or ".." in evidence:
+        raise ModuleGateError(
+            f"module '{name}' gate_evidence {evidence!r} must be a bare "
+            f"filename under docs/ (no path separators, no '..'). Gate: {gate}."
+        )
+    if not fnmatchcase(evidence, EVIDENCE_PATTERN):
         raise ModuleGateError(
             f"module '{name}' gate_evidence {evidence!r} is not a "
             f"docs/{EVIDENCE_PATTERN} reference. Gate: {gate}."
         )
-    if not (EVIDENCE_DIR / basename).exists():
+    if not (EVIDENCE_DIR / evidence).exists():
         raise ModuleGateError(
             f"module '{name}' gate_evidence {evidence!r} names a report that "
             f"does not exist under {EVIDENCE_DIR}. Gate: {gate}."
@@ -261,9 +303,13 @@ def load_composite_config(path: str | Path | None = None) -> dict:
     """Read config/composite.yaml. A missing DEFAULT path yields {} (all
     modules off — the safe state); a path given explicitly must exist.
 
-    Selecting `strategy.name: composite` while the file is missing is refused
-    at startup by bot/main.py, so this fallback can never be how the live bot
-    ends up running an unconfigured composite.
+    The default path is absolute (repo-anchored), so this fallback is reached
+    only when the file has genuinely been removed from the repo — not merely
+    because the process was started from another directory. Selecting
+    `strategy.name: composite` while the file is missing is refused at startup
+    by bot/main.py, and CompositeStrategy itself refuses to construct without
+    core params, so this fallback can never be how the live bot ends up running
+    an unconfigured composite.
     """
     explicit = path is not None
     path = Path(path) if explicit else DEFAULT_CONFIG_PATH
@@ -277,44 +323,104 @@ def load_composite_config(path: str | Path | None = None) -> dict:
 
 @dataclass
 class OverlayState:
-    """Persisted risk-overlay state: the drawdown brake must survive a restart.
+    """Risk-overlay brake state; persisted so it survives a restart.
 
     A crash-and-restart in the middle of a losing streak would otherwise hand
     the bot a clean slate and full size — exactly the moment sizing should be
-    smallest. Written on every closed trade, reloaded on boot. A missing or
-    unreadable file degrades to safe defaults (peak = current equity, zero
+    smallest. Written on every closed trade, reloaded on boot.
+
+    On disk it is `consecutive_losses` + `dd_frac` (equity / peak at the time
+    of the write). The RELATIVE drawdown is what carries over; the absolute
+    peak does not, because it is only meaningful against the equity it was
+    measured on. See the module docstring for why.
+
+    In memory the same state is carried as the reconstructed absolute peak
+    (`equity_peak_jpy`) alongside the last known equity, because that is the
+    form `CompositeStrategy.size_factor` takes.
+
+    A missing or unreadable file degrades to safe defaults (no drawdown, zero
     losses) rather than crashing: this is a brake, not an authorisation, so
-    losing it must not stop the bot from running conservatively.
+    losing it must not stop the bot from running.
     """
 
     consecutive_losses: int = 0
     equity_peak_jpy: float = 0.0
+    equity_jpy: float = 0.0
+
+    @property
+    def dd_frac(self) -> float:
+        """Equity as a fraction of the running peak, clamped to (0, 1]."""
+        if self.equity_peak_jpy <= 0 or self.equity_jpy <= 0:
+            return 1.0
+        return min(1.0, self.equity_jpy / self.equity_peak_jpy)
+
+    def on_closed_trade(self, realized_pnl_jpy: float, equity_jpy: float) -> None:
+        """Fold one closed trade into the brake (the overlay's own counters).
+
+        Mirrors Portfolio's streak rule — a loss increments, a win resets, a
+        flat close does neither — but on state of its own, because the
+        portfolio's counter feeds the kill-switch checks (module docstring).
+        """
+        if realized_pnl_jpy < 0:
+            self.consecutive_losses += 1
+        elif realized_pnl_jpy > 0:
+            self.consecutive_losses = 0
+        self.equity_jpy = float(equity_jpy)
+        self.equity_peak_jpy = max(self.equity_peak_jpy, self.equity_jpy)
 
     @classmethod
     def load(cls, path: str | Path = OVERLAY_STATE_PATH, *,
-             default_equity_jpy: float = 0.0) -> "OverlayState":
+             boot_equity_jpy: float = 0.0) -> "OverlayState":
+        """Rebuild the brake against THIS boot's equity.
+
+        peak := boot_equity / dd_frac, so a saved 10% drawdown is still a 10%
+        drawdown after a restart — whatever the account is now worth, and
+        whatever `paper_equity_jpy` was changed to in between.
+        """
         path = Path(path)
+        boot = float(boot_equity_jpy)
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
-            return cls(consecutive_losses=max(0, int(raw["consecutive_losses"])),
-                       equity_peak_jpy=float(raw["equity_peak_jpy"]))
-        except (OSError, ValueError, TypeError, KeyError):
-            return cls(consecutive_losses=0, equity_peak_jpy=float(default_equity_jpy))
+            losses = max(0, int(raw["consecutive_losses"]))
+            dd_frac = float(raw["dd_frac"])
+            if not 0.0 < dd_frac <= 1.0:
+                raise ValueError(f"dd_frac out of range: {dd_frac}")
+            return cls(consecutive_losses=losses,
+                       equity_peak_jpy=boot / dd_frac, equity_jpy=boot)
+        except (OSError, ValueError, TypeError, KeyError, ZeroDivisionError):
+            return cls(consecutive_losses=0, equity_peak_jpy=boot, equity_jpy=boot)
 
     def save(self, path: str | Path = OVERLAY_STATE_PATH) -> None:
         """Best-effort atomic-ish write (same pattern as StatusWriter): a
-        telemetry/state write must never take down trading."""
+        state write must never take down trading.
+
+        On Windows os.replace fails with PermissionError while another process
+        briefly holds the destination open; retry, then fall back to a direct
+        write, and swallow any remaining OSError. A temp file left behind by a
+        failed replace is cleaned up — otherwise every failure leaks one.
+        """
         path = Path(path)
         payload = json.dumps({"consecutive_losses": int(self.consecutive_losses),
-                              "equity_peak_jpy": float(self.equity_peak_jpy)},
-                             ensure_ascii=False)
+                              "dd_frac": self.dd_frac}, ensure_ascii=False)
+        tmp = path.with_suffix(".tmp")
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_suffix(".tmp")
             tmp.write_text(payload, encoding="utf-8")
-            os.replace(tmp, path)
+            for _ in range(5):
+                try:
+                    os.replace(tmp, path)
+                    return
+                except PermissionError:
+                    time.sleep(0.05)
+            path.write_text(payload, encoding="utf-8")
         except OSError:
             pass
+        finally:
+            try:
+                if tmp.exists():
+                    tmp.unlink()
+            except OSError:
+                pass
 
 
 class CompositeStrategy(Strategy):
@@ -330,6 +436,15 @@ class CompositeStrategy(Strategy):
         for key in CORE_PARAM_KEYS:      # config.yaml strategy.params wins
             if key in params:
                 core[key] = params[key]
+        if not core:
+            # Fail closed rather than falling through to XborderMomentumStrategy's
+            # own defaults: a composite silently trading k=10 because its config
+            # went missing is a different strategy wearing the validated name.
+            raise FileNotFoundError(
+                "composite core params unavailable: no core params were given "
+                f"and {DEFAULT_CONFIG_PATH} supplied none (missing or empty "
+                "'core:'). Restore the file or pass k/thr_pct/exit_pct."
+            )
         super().__init__(core)
         self.core = XborderMomentumStrategy(core)
         self.modules = list(modules) if modules is not None \

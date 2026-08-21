@@ -16,9 +16,11 @@ core:
 # `gate` is the pre-registered unlock criterion. It is REQUIRED on every module
 # entry and must match the text registered in code; omitting it or rewriting it
 # here is refused at construction.
-# `gate_evidence` is the report reference that satisfied the gate. It must name
-# an existing docs/RESEARCH_REPORT_*.md file — free text does not unlock
-# anything. Setting enabled: true with an empty gate_evidence, with invented
+# `gate_evidence` is the report reference that satisfied the gate. It must be
+# the BARE FILENAME of an existing docs/RESEARCH_REPORT_*.md (e.g.
+# "RESEARCH_REPORT_2026-08-20b.md") — free text does not unlock anything, and
+# a path (any "/", "\" or "..") is refused so nothing outside docs/ can be
+# passed off as a report. Setting enabled: true with an empty gate_evidence, with invented
 # evidence, or on a module whose veto rule is not implemented yet all raise at
 # construction: a config edit alone can never switch a module on. Owner
 # approval is still required: putting a strategy change into production is
@@ -51,4 +53,6 @@ modules:
 # unregistered parameter search. New exposure only; exits are never scaled.
 # The overlay only ever SHRINKS an order the pre-trade risk checks already
 # approved at full size, and its brake state is persisted in
-# data/overlay_state.json so a restart cannot reset it.
+# data/overlay_state.json so a restart cannot reset it (relative drawdown +
+# loss streak; see docs/OPERATIONS.md §3 for when it may be deleted). That
+# state is the overlay's own and is never fed back into the hard risk checks.

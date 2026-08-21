@@ -51,8 +51,30 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
 | 緊急停止(Kill Switch) | リポジトリ直下に `touch KILL` |
 | Kill Switch 状態確認 | `cat data/kill_switch.json` |
 | Kill Switch 解除(原因調査後のみ) | `.venv/bin/python -c "import sys; sys.path.insert(0,'src'); from bot.risk.kill_switch import KillSwitch; KillSwitch().reset(operator_confirm=True)"` |
+| サイジングブレーキ状態確認 | `cat data/overlay_state.json` |
+| サイジングブレーキ解除(口座を作り直した時のみ) | `rm data/overlay_state.json` |
 
 重要: Kill Switch はファイルに永続化されるため、**systemd がプロセスを再起動しても取引は再開しません**。解除は必ず原因(status.json / bot.jsonl / kill_switch.json)を確認してから行ってください。
+
+### data/overlay_state.json(リスクオーバーレイのブレーキ)
+
+composite 戦略のリスクオーバーレイ(新規建玉のサイズを縮小する仕組み)の状態。
+決済のたびに書かれ、再起動しても引き継がれます(連敗中にクラッシュした直後こそ
+サイズは小さいべきなので、プロセス再起動でリセットされてはいけない)。
+
+- `consecutive_losses` — 連敗数。
+- `dd_frac` — 保存時点の「equity ÷ ピーク equity」(≦1.0)。**相対**ドローダウンだけを
+  保存し、JPY のピーク額は保存しません。額を保存すると `paper_equity_jpy` を変えた
+  だけで存在しないドローダウンが復元されてしまうためです。起動時は
+  `起動時 equity ÷ dd_frac` でピークを再構成します。
+
+Kill Switch とは別物です。**このファイルは取引を止めません**(止めるのは Kill Switch
+だけ)。消してもBOTは起動し、ブレーキが解除されて通常サイズに戻るだけです。壊れて
+いる・存在しない場合も安全な既定値(ドローダウンなし・連敗0)で起動します。
+
+削除してよいのは、口座を作り直した・`paper_equity_jpy` を変えた等で、蓄積された
+ブレーキがもはや実態を表していない時だけです。連敗で縮小されているのを「戻したい」
+という理由で消してはいけません。
 
 ## 4. Discord 通知(任意)
 

@@ -25,11 +25,13 @@ G1b LIVE-PATH EQUIVALENCE — the same two strategies driven through a real
 
 G2  OVERLAY — replay G1's closed trades with size_factor() applied to each
     ENTRY, sized through the live quantization and truncated where the kill
-    switch would have stopped trading (MAX_CONSECUTIVE_LOSSES). Reported for
-    the record only: max-drawdown delta and how many entries were scaled or
-    skipped. Sizing conventions are not an edge and nothing here is evidence
-    for adopting anything; per-trade JPY totals on one sample are path
-    arithmetic and are deliberately not reported.
+    switch would have stopped trading (MAX_CONSECUTIVE_LOSSES). PASS/FAIL rests
+    on ONE thing: that engine PnL is linear in notional, which is what makes
+    rescaling a replay legitimate at all. The max-drawdown delta and the
+    scaled/skipped counts are printed as INFORMATION and gate nothing — one
+    path on one sample cannot show a sizing convention works. Sizing
+    conventions are not an edge; per-trade JPY totals are path arithmetic and
+    are deliberately not reported.
 
 G3  FAIL-CLOSED — configs that must be refused at construction: enabled with
     no gate_evidence, gate text rewritten in config, invented gate_evidence,
@@ -94,8 +96,9 @@ MAX_CONSECUTIVE_LOSSES = int(
     yaml.safe_load((ROOT / "config" / "risk_limits.yaml").read_text(encoding="utf-8"))
     ["MAX_CONSECUTIVE_LOSSES"])
 
-# gate_evidence for the throwaway test doubles below: a report that exists.
-TEST_EVIDENCE = "docs/RESEARCH_REPORT_2026-08-20b.md"
+# gate_evidence for the throwaway test doubles below: the bare filename of a
+# report that exists under docs/.
+TEST_EVIDENCE = "RESEARCH_REPORT_2026-08-20b.md"
 
 # backtest_data/ snapshots are permanent and deterministic -> primary source.
 CANDLE_SOURCES = [
@@ -222,8 +225,9 @@ def gate_equivalence(data: pd.DataFrame, index: pd.Index) -> tuple[bool, object]
     print(f"  gate_entry is identity    : {identity} (every module disabled)")
     print(f"  enabled-module probe      : {closing_ok} "
           "(entries vetoed, closes/holds pass untouched)")
-    print(f"  net pnl                   : {base.metrics.total_pnl_jpy:+.2f} JPY "
-          f"(expectancy {base.metrics.expectancy_per_trade_jpy:+.2f} JPY/trade)")
+    # No net-pnl / expectancy line: this gate is a trade-log IDENTITY check.
+    # Printing the baseline's profitability beside it invites reading a
+    # reproduction gate as a performance result, which it is not.
     print(f"  -> {'PASS' if ok else 'FAIL'}\n")
     return ok, base
 
@@ -234,7 +238,12 @@ def gate_equivalence(data: pd.DataFrame, index: pd.Index) -> tuple[bool, object]
 def _drive_app(workdir: Path, strategy_name: str, *, consecutive_losses: int,
                equity_peak_jpy: float | None):
     """Run one paper TradingApp on the shared synthetic feed; return its
-    (decision, order-size) stream."""
+    (decision, order-size) stream.
+
+    The brake is set on the OVERLAY's state, never on the portfolio's: the
+    portfolio's counters drive the hard risk checks and injecting into them
+    would be testing the kill switch, not the overlay.
+    """
     from tests.test_app_fx_integration import drive
     from tests.test_composite import LEADER, TICKS, build_test_app
 
@@ -244,9 +253,9 @@ def _drive_app(workdir: Path, strategy_name: str, *, consecutive_losses: int,
     os.chdir(workdir)
     try:
         app = build_test_app(strategy_name=strategy_name)
-        app.portfolio.consecutive_losses = consecutive_losses
+        app.overlay_state.consecutive_losses = consecutive_losses
         if equity_peak_jpy is not None:
-            app.portfolio.equity_peak_jpy = equity_peak_jpy
+            app.overlay_state.equity_peak_jpy = equity_peak_jpy
         calls: list[tuple] = []
         original = app._try_order
 
@@ -406,8 +415,11 @@ def gate_overlay(data: pd.DataFrame, base) -> bool:
     over = simulate(trades, overlay=True, min_size=min_size)
     linear = linearity_check(data, base)
     dd_delta = over["max_dd_jpy"] - flat["max_dd_jpy"]
-    dd_ok = dd_delta <= 1e-9
-    ok = dd_ok and linear
+    # PASS/FAIL rests on LINEARITY alone — the one thing this replay actually
+    # verifies. The drawdown delta is a single path on a single sample: a
+    # smaller number is not evidence the overlay works, and a larger one is not
+    # evidence it is broken, so gating on it would manufacture a result.
+    ok = linear
     print("G2 OVERLAY (size_factor applied to entries; exits untouched)")
     print(f"  closed trades in sample   : {len(trades)}")
     print(f"  pnl linear in notional    : {linear} (half notional halves every trade)")
@@ -415,7 +427,7 @@ def gate_overlay(data: pd.DataFrame, base) -> bool:
     print(f"  max drawdown JPY    flat  : {flat['max_dd_jpy']:,.0f}")
     print(f"                      overlay: {over['max_dd_jpy']:,.0f}")
     print(f"  max drawdown delta        : {dd_delta:+,.0f} JPY "
-          f"({'reduced or equal' if dd_ok else 'INCREASED'})")
+          "(INFORMATIONAL - one path, one sample; not a pass/fail criterion)")
     print(f"  entries scaled below 1.0  : {over['scaled_trades']} "
           f"(smallest factor {over['min_factor']:.2f})")
     print(f"  entries skipped < min_size: flat {flat['skipped']} / overlay "
