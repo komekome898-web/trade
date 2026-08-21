@@ -31,7 +31,7 @@ from bot.order_management.order import DuplicateOrderError, OrderState, OrderSto
 from bot.order_management.reconciler import (
     AutoReconciler, ExchangeSnapshot, QueryOnlyExchange, Resolution,
 )
-from bot.risk.kill_switch import KillSwitch
+from bot.risk.kill_switch import KillReason, KillSwitch
 from bot.settings import Secret
 from tests.conftest import FakeResponse, FakeSession
 
@@ -2429,3 +2429,465 @@ def test_a_secret_in_a_kill_detail_is_redacted_on_disk(tmp_path):
     assert "***REDACTED***" in on_disk
     assert "***REDACTED***" in ks.state["detail"]
     assert "/v1/me/sendchildorder" in ks.state["detail"]   # diagnosis survives
+
+
+# ============================================================================
+# (B1) the open-order cap must not be able to refuse the exit
+# ============================================================================
+# The pass-4 finding: MAX_OPEN_ORDERS was the one cap still checked for EVERY
+# order. A book at the cap therefore refused the protective stop inside the
+# risk checks — before the order manager ran at all, so `_make_room_for_close`
+# (which exists to cancel exactly that resting order) was never reached. The
+# wedge it was built to clear could never be cleared.
+
+def _reconciled(app):
+    """Give a LIVE app the query-only reconciler its LIVE wiring would have."""
+    app.orders._reconciler = AutoReconciler(QueryOnlyExchange(app.client),
+                                            budget_sec=15.0, sleep=lambda s: None)
+    return app
+
+
+def _cancel_ok(session):
+    session.set("POST", "/v1/me/cancelchildorder", FakeResponse(200, {}))
+
+
+def test_the_open_order_cap_can_no_longer_refuse_the_protective_stop(
+        tmp_path, monkeypatch, caplog):
+    """(B1) THE finding, end to end on a LIVE app.
+
+    One real position, one resting order the venue never finished, MAX_OPEN_
+    ORDERS = 1, and a price through the stop. Every one of those is ordinary;
+    together they used to mean the position could not be exited.
+    """
+    app, session = _live_app(tmp_path, monkeypatch)
+    _reconciled(app)
+    _cancel_ok(session)
+    assert app.settings.risk_limits.max_open_orders == 1
+
+    # a real long 0.01, discovered and booked by the sweep
+    entry = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(entry.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-ENTRY")
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-ENTRY", state="COMPLETED", executed=0.01,
+                         avg=11_000_000))
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+    assert app.portfolio.position_size == pytest.approx(0.01)
+
+    # ...and the wedge: a resting order the venue partly filled and then sat on
+    blocker = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 10_500_000)
+    app.store.transition(blocker.local_id, OrderState.PARTIALLY_FILLED,
+                         acceptance_id="ACC-BLOCK", filled_size=0.002,
+                         avg_fill_price=10_500_000)
+    app._book_fill_delta(app.store.get(blocker.local_id))
+    assert app.portfolio.position_size == pytest.approx(0.012)
+    assert len(app.store.active_orders("FX_BTC_JPY")) == 1     # at the cap
+
+    mark = 10_800_000.0
+    tick = _tick(mark, spread=0.0)
+    app.feed.last_tick = tick
+    loss_pct = -app.portfolio.unrealized_pnl_jpy(mark) / \
+        app.portfolio.position_notional_jpy(mark) * 100
+    assert loss_pct >= app.stop_loss_pct              # the stop is due
+
+    session.set("POST", ORDER_PATH,
+                FakeResponse(200, {"child_order_acceptance_id": "ACC-STOP"}))
+    session.set("GET", "/v1/me/getchildorders", [
+        # 1. the cancel-verification poll: the blocker has left the book
+        _listing(acc="ACC-BLOCK", state="CANCELED", executed=0.002,
+                 avg=10_500_000, size=0.01),
+        # 2. the post-submit refresh of the stop itself
+        _listing(acc="ACC-STOP", state="COMPLETED", executed=0.012, avg=mark,
+                 side="SELL", size=0.012),
+    ])
+
+    with caplog.at_level(logging.WARNING, logger="bot.orders"):
+        stop = app._try_order("SELL", tick, size=abs(app.portfolio.position_size))
+
+    # the risk checks approved it, so the manager was reached and the
+    # closing-order priority path ran...
+    events = [(getattr(r, "data", None) or {}).get("event") for r in caplog.records]
+    assert "closing_order_priority" in events
+    # ...the blocker was cancelled and verified, and the stop booked
+    assert stop is not None and stop.state is OrderState.FILLED
+    assert app.store.get(blocker.local_id).state is OrderState.CANCELED
+    sent = [c for c in session.order_calls() if ORDER_PATH in c["path"]]
+    canceled = [c for c in session.order_calls() if "cancelchildorder" in c["path"]]
+    assert len(sent) == 1 and len(canceled) == 1
+    assert app.portfolio.position_size == pytest.approx(0.0)
+    assert not app.kill_switch.is_tripped
+
+
+# ============================================================================
+# (M1) a cancel is not a rewind: what the blocker filled on the way out
+# ============================================================================
+def test_a_cancelled_blockers_partial_fill_is_booked(tmp_path, monkeypatch):
+    """(M1) The venue filled 0.007 of the resting order before our cancel
+    landed and says so on the CANCELED record. Nothing would ever look at that
+    order again, so if the cancel path does not book it, nothing does — and the
+    bot goes on holding a position it thinks it has closed."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    _reconciled(app)
+    _cancel_ok(session)
+
+    # long 0.01 @ 11,000,000, booked
+    entry = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(entry.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-ENTRY")
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-ENTRY", state="COMPLETED", executed=0.01,
+                         avg=11_000_000))
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+
+    # a resting order our book believes has done NOTHING
+    blocker = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 10_900_000)
+    app.store.transition(blocker.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-BLOCK")
+
+    mark = 10_800_000.0
+    tick = _tick(mark, spread=0.0)
+    app.feed.last_tick = tick
+    session.set("POST", ORDER_PATH,
+                FakeResponse(200, {"child_order_acceptance_id": "ACC-STOP"}))
+    session.set("GET", "/v1/me/getchildorders", [
+        # the verification poll — and the venue's final word on the blocker
+        _listing(acc="ACC-BLOCK", state="CANCELED", executed=0.007,
+                 avg=10_900_000, size=0.01),
+        _listing(acc="ACC-STOP", state="COMPLETED", executed=0.01, avg=mark,
+                 side="SELL", size=0.01),
+    ])
+
+    app._try_order("SELL", tick, size=abs(app.portfolio.position_size))
+
+    # the 0.007 reached the portfolio, at the venue's own price
+    record = app.store.get(blocker.local_id)
+    assert record.state is OrderState.CANCELED
+    assert record.filled_size == pytest.approx(0.007)
+    assert record.booked_size == pytest.approx(0.007)
+    # ...so the close (sized 0.01, decided before the cancel) leaves a RESIDUAL
+    # long of 0.007, and it is visible instead of being a phantom flat
+    assert app.portfolio.position_size == pytest.approx(0.007)
+    # and the protective stop still manages what is left
+    residual_loss = -app.portfolio.unrealized_pnl_jpy(mark) / \
+        app.portfolio.position_notional_jpy(mark) * 100
+    assert residual_loss >= app.stop_loss_pct
+
+
+def test_the_kill_switch_cancel_books_what_it_finalizes(tmp_path, monkeypatch):
+    """(M1) Same rule on the shutdown path — and the OPEN POSITION line the
+    operator is handed has to be the position they will actually find on
+    bitFlyer, so the booking happens BEFORE the message is built."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    notifier = RecordingNotifier()
+    app.notifier = notifier
+    _cancel_ok(session)
+
+    entry = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(entry.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-ENTRY")
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-ENTRY", state="COMPLETED", executed=0.01,
+                         avg=11_000_000))
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+    assert app.portfolio.position_size == pytest.approx(0.01)
+
+    resting = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 10_900_000)
+    app.store.transition(resting.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-REST")
+    # no verification listing on this path: the record is re-read directly
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-REST", state="CANCELED", executed=0.004,
+                         avg=10_900_000, size=0.01))
+
+    app.kill_switch.trip(KillReason.API_ERRORS, "5 in a row")
+    app._on_kill("5 in a row")
+
+    assert app.store.get(resting.local_id).state is OrderState.CANCELED
+    assert app.portfolio.position_size == pytest.approx(0.014)
+    title, message, urgent = notifier.sent[-1]
+    assert title == "KILL SWITCH" and urgent is True
+    assert "LONG 0.014" in message          # post-booking, not 0.01
+
+
+# ============================================================================
+# (M2) a LIVE restart must not boot into a phantom flat
+# ============================================================================
+def _live_boot_app(tmp_path, monkeypatch, *, positions, notifier=None,
+                   balance=200_000.0):
+    """A REAL LIVE TradingApp construction, not a paper app rewired afterwards.
+
+    M2 is about what the LIVE BOOT does, so the boot has to be the real one:
+    the permissions check, the balance read, and now the getpositions
+    reconciliation. `positions` is the getpositions route (payload or raise).
+    """
+    import shutil
+    from pathlib import Path
+
+    from bot.main import TradingApp
+    from bot.settings import Mode, RiskLimits, Settings
+
+    repo = Path(__file__).resolve().parents[1]
+    shutil.copytree(repo / "config", tmp_path / "config", dirs_exist_ok=True)
+    monkeypatch.chdir(tmp_path)
+    session = FakeSession()
+    session.set("GET", "/v1/ticker", FakeResponse(200, {
+        "ltp": 10_000_000, "best_bid": 9_999_000, "best_ask": 10_001_000}))
+    session.set("GET", "/v1/me/getpermissions", FakeResponse(200, [
+        "/v1/me/getbalance", "/v1/me/sendchildorder"]))
+    session.set("GET", "/v1/me/getbalance", FakeResponse(200, [
+        {"currency_code": "JPY", "available": balance}]))
+    session.set("GET", "/v1/me/getpositions", positions)
+    client = BitflyerClient(Secret("k"), Secret("s"), session=session,
+                            sleep=lambda s: None)
+    settings = Settings(
+        mode=Mode.LIVE, product_code="FX_BTC_JPY",
+        api_key=Secret("k"), api_secret=Secret("s"),
+        config={"product_code": "FX_BTC_JPY", "candle_interval_sec": 60,
+                "sfd_guard_pct": 4.5, "stop_loss_pct": 0.5,
+                "strategy": {"name": "xborder_momentum",
+                             "params": {"k": 2, "thr_pct": 0.15,
+                                        "exit_pct": 0.03}},
+                "costs": {"slippage_pct": 0.0},
+                "market_data": {"max_staleness_sec": 3600,
+                                "max_price_jump_pct": 50, "max_spread_pct": 5.0}},
+        risk_limits=RiskLimits.from_dict({
+            "MAX_ORDER_SIZE_JPY": 130000, "MAX_POSITION_SIZE_JPY": 130000,
+            "MAX_DAILY_LOSS_JPY": 6000, "MAX_DRAWDOWN_PCT": 10.0,
+            "MAX_OPEN_ORDERS": 1, "MAX_CONSECUTIVE_LOSSES": 5,
+            "MAX_API_ERRORS_IN_ROW": 5}))
+    return TradingApp(settings, client, notifier or RecordingNotifier()), session
+
+
+def test_live_boot_adopts_the_venue_position(tmp_path, monkeypatch):
+    """(M2) THE finding. LIVE keeps no local book because the venue owns it —
+    but "no book" was implemented as "start flat", so every restart booted a
+    portfolio that believed it held nothing over a real position. No path would
+    have corrected it: the sweep only re-reads orders THIS book knows."""
+    notifier = RecordingNotifier()
+    app, session = _live_boot_app(
+        tmp_path, monkeypatch, notifier=notifier,
+        positions=FakeResponse(200, [
+            {"product_code": "FX_BTC_JPY", "side": "BUY", "price": 11_000_000,
+             "size": 0.004, "pnl": -120}]))
+
+    assert not app.kill_switch.is_tripped
+    assert app.portfolio.position_size == pytest.approx(0.004)
+    assert app.portfolio.avg_entry_price == pytest.approx(11_000_000)
+    adopted = [s for s in notifier.sent if "adopted venue position" in s[1]]
+    assert adopted and "LONG 0.004" in adopted[0][1]
+
+    # the protective stop now ARMS on an adverse move, which is the whole point
+    mark = 10_900_000.0
+    tick = _tick(mark, spread=0.0)
+    app.feed.last_tick = tick
+    loss_pct = -app.portfolio.unrealized_pnl_jpy(mark) / \
+        app.portfolio.position_notional_jpy(mark) * 100
+    assert loss_pct >= app.stop_loss_pct
+
+    session.set("POST", ORDER_PATH,
+                FakeResponse(200, {"child_order_acceptance_id": "ACC-STOP"}))
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-STOP", state="COMPLETED", executed=0.004,
+                         avg=mark, side="SELL", size=0.004))
+    stop = app._try_order("SELL", tick, size=0.004)
+    assert stop is not None and stop.state is OrderState.FILLED
+    assert app.portfolio.position_size == pytest.approx(0.0)
+
+
+def test_live_boot_refuses_to_trade_when_the_venue_cannot_be_read(tmp_path,
+                                                                  monkeypatch):
+    """(M2) The other half. Not knowing whether a position is open is not the
+    same as being flat, and guessing flat is the phantom state chosen on
+    purpose. Refusal, and a human decides."""
+    notifier = RecordingNotifier()
+    app, session = _live_boot_app(
+        tmp_path, monkeypatch, notifier=notifier,
+        positions=requests.exceptions.ReadTimeout("getpositions timed out"))
+
+    assert app.kill_switch.is_tripped
+    assert app.kill_switch.state["reason"] == "system_error"
+    assert app.kill_switch.state["detail"] == "live boot reconciliation failed"
+    assert notifier.sent[-1][0] == "LIVE BOOT RECONCILIATION FAILED"
+    assert notifier.sent[-1][2] is True
+
+    # and nothing can be ordered from that state
+    session.set("POST", ORDER_PATH,
+                FakeResponse(200, {"child_order_acceptance_id": "ACC-NOPE"}))
+    tick = _tick(10_000_000.0)
+    app.feed.last_tick = tick
+    assert app._try_order("BUY", tick) is None
+    app.step()
+    assert [c for c in session.order_calls() if ORDER_PATH in c["path"]] == []
+
+
+def test_paper_boot_never_asks_the_venue_for_a_position(tmp_path, monkeypatch):
+    """(M2) PAPER's book is `data/paper_state.json` and its executor is local.
+    The reconciliation is LIVE-only; PAPER must not have changed at all."""
+    session = FakeSession()
+    session.set("GET", "/v1/ticker", FakeResponse(200, {
+        "ltp": 10_000_000, "best_bid": 9_999_000, "best_ask": 10_001_000}))
+    app = _paper_app(tmp_path, monkeypatch, session=session)
+
+    assert app.paper_state is not None
+    assert app.portfolio.position_size == 0.0
+    assert not app.kill_switch.is_tripped
+    assert [c for c in session.calls if "getpositions" in c["path"]] == []
+
+
+# ============================================================================
+# (m1/m2/m3) what the booking path says, and what it must not do twice
+# ============================================================================
+def _failing_mark_booked(app, monkeypatch) -> dict:
+    """Make the store's watermark write fail until the test says otherwise.
+
+    A flag rather than `monkeypatch.undo()`: undo would also restore the cwd
+    these app fixtures chdir'd into, and the app writes status/state files
+    relative to it.
+    """
+    real = app.store.mark_booked
+    failing = {"on": True}
+
+    def mark_booked(*args, **kwargs):
+        if failing["on"]:
+            raise sqlite3.OperationalError("database is locked")
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(app.store, "mark_booked", mark_booked)
+    return failing
+
+
+def _fill_booked_records(caplog):
+    return [(getattr(r, "data", None) or {}) for r in caplog.records
+            if (getattr(r, "data", None) or {}).get("event") == "fill_booked"]
+
+
+def test_a_booked_fill_names_the_price_it_used(tmp_path, monkeypatch, caplog):
+    """(m1) "The position moved" and "the position moved at a price the venue
+    never confirmed" are different facts, and only one of them is a reason to
+    go and look at the venue."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    order = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(order.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-1")
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(state="COMPLETED", executed=0.01, avg=11_050_000))
+    app._last_order_sweep = -1e9
+    with caplog.at_level(logging.INFO, logger="bot.main"):
+        app._sweep_open_orders()
+    booked = _fill_booked_records(caplog)
+    assert booked[-1]["price_source"] == "venue_avg"
+    assert booked[-1]["price"] == pytest.approx(11_050_000)
+
+    # ...and a venue that reports no average price falls back, visibly
+    caplog.clear()
+    second = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 10_900_000)
+    app.store.transition(second.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-2")
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-2", state="COMPLETED", executed=0.01, avg=None))
+    app._last_order_sweep = -1e9
+    with caplog.at_level(logging.INFO, logger="bot.main"):
+        app._sweep_open_orders()
+    booked = _fill_booked_records(caplog)
+    assert booked[-1]["price_source"] == "order_price"
+    assert booked[-1]["price"] == pytest.approx(10_900_000)
+
+
+def test_a_failed_watermark_write_never_books_the_same_fill_twice(
+        tmp_path, monkeypatch, caplog):
+    """(m2) `mark_booked` is a write, and writes fail. The portfolio has
+    already moved by then, so replaying the fill on the next discovery would
+    DOUBLE a real position to repair a bookkeeping error — the worse of the two
+    directions by far. Only the watermark write is retried."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    order = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(order.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-1")
+    # ACTIVE + executed_size: the record stays non-terminal, so the sweep keeps
+    # rediscovering exactly this fill.
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(state="ACTIVE", executed=0.004, avg=11_000_000))
+
+    failing = _failing_mark_booked(app, monkeypatch)
+    app._last_order_sweep = -1e9
+    with caplog.at_level(logging.CRITICAL, logger="bot.main"):
+        app._sweep_open_orders()
+
+    assert app.portfolio.position_size == pytest.approx(0.004)
+    assert app.store.get(order.local_id).booked_size == 0.0    # never persisted
+    events = [(getattr(r, "data", None) or {}).get("event") for r in caplog.records]
+    assert "mark_booked_failed" in events
+
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()                    # same fill, seen again
+    assert app.portfolio.position_size == pytest.approx(0.004)
+    assert len(app.portfolio.trades) == 1
+
+    failing["on"] = False                       # the store recovers
+    app._last_order_sweep = -1e9
+    app._sweep_open_orders()
+    assert app.store.get(order.local_id).booked_size == pytest.approx(0.004)
+    assert app.portfolio.position_size == pytest.approx(0.004)
+    assert len(app.portfolio.trades) == 1
+
+
+def test_paper_persists_its_book_before_the_watermark(tmp_path, monkeypatch):
+    """(m3) The crash window between the two writes, closed by ordering.
+
+    `paper_state` carries the POSITION and is written first; the watermark is
+    only bookkeeping about an order PAPER will never look at again (its records
+    are terminal on the submit path and there is no sweep in PAPER). So a crash
+    in between loses the watermark and nothing else — never the position, and
+    never by doubling it."""
+    import json
+
+    from bot.main import TradingApp
+    from bot.monitoring.notifier import NullNotifier
+
+    app = _paper_app(tmp_path, monkeypatch)
+    tick = _tick(10_000_000)
+    app.feed.last_tick = tick
+
+    failing = _failing_mark_booked(app, monkeypatch)
+    order = app._try_order("BUY", tick)
+    position = app.portfolio.position_size
+    assert position > 0
+    assert order.state is OrderState.FILLED                 # terminal
+    assert app.store.get(order.local_id).booked_size == 0.0   # the lost write
+
+    saved = json.loads((tmp_path / "data" / "paper_state.json")
+                       .read_text(encoding="utf-8"))
+    assert saved["position"]["size"] == pytest.approx(position)
+
+    failing["on"] = False
+    restarted = TradingApp(app.settings, app.client, NullNotifier())
+
+    assert restarted.portfolio.position_size == pytest.approx(position)
+    assert len(restarted.portfolio.trades) == 0     # restored, not re-booked
+    restarted._last_order_sweep = -1e9
+    restarted._sweep_open_orders()                  # PAPER: nothing to sweep
+    assert restarted.portfolio.position_size == pytest.approx(position)
+
+
+def test_a_cancel_that_raced_a_complete_fill_is_recorded_as_filled(tmp_path,
+                                                                   monkeypatch):
+    """(M1) The cancel lost the race. The venue says COMPLETED, so the record
+    says FILLED — a CANCELED record whose entire size executed would be a book
+    that contradicts itself — and the whole size is booked."""
+    app, session = _live_app(tmp_path, monkeypatch)
+    _cancel_ok(session)
+    resting = app.store.create("FX_BTC_JPY", "BUY", 0.01, "LIMIT", 11_000_000)
+    app.store.transition(resting.local_id, OrderState.SUBMITTED,
+                         acceptance_id="ACC-REST")
+    session.set("GET", "/v1/me/getchildorders",
+                _listing(acc="ACC-REST", state="COMPLETED", executed=0.01,
+                         avg=11_000_000))
+
+    canceled = app.orders.cancel_all_active("FX_BTC_JPY")
+
+    assert [o.state for o in canceled] == [OrderState.FILLED]
+    assert app.portfolio.position_size == pytest.approx(0.01)
+    assert app.store.get(resting.local_id).booked_size == pytest.approx(0.01)

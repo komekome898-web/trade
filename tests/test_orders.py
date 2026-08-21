@@ -122,8 +122,9 @@ def test_fill_confirmation_via_refresh(manager, gateway):
 
 def test_cancel_all_active(manager, gateway):
     order = manager.submit(symbol="XRP_JPY", side="BUY", size=10.0)
-    n = manager.cancel_all_active("XRP_JPY")
-    assert n == 1
+    canceled = manager.cancel_all_active("XRP_JPY")
+    assert [o.local_id for o in canceled] == [order.local_id]
+    assert canceled[0].state is OrderState.CANCELED
     assert gateway.canceled == [order.acceptance_id]
 
 

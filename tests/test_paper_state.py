@@ -578,9 +578,13 @@ def test_live_mode_neither_reads_nor_writes_paper_state(workdir, monkeypatch, cl
         "/v1/me/getbalance", "/v1/me/sendchildorder"]))
     session.set("GET", "/v1/me/getbalance", FakeResponse(200, [
         {"currency_code": "JPY", "available": 50000}]))
+    # LIVE boots by ASKING the venue what it holds (bot/main.py
+    # `_adopt_venue_position`); here it holds nothing.
+    session.set("GET", "/v1/me/getpositions", FakeResponse(200, []))
 
     app = live_app(session)
     assert app.paper_state is None
+    assert not app.kill_switch.is_tripped
     assert app.portfolio.initial_equity_jpy == pytest.approx(50000.0)
     assert app.portfolio.realized_pnl_jpy == 0.0
     assert app.portfolio.position_size == 0.0

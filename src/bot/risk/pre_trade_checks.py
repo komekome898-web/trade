@@ -106,7 +106,12 @@ class PreTradeChecker:
             reasons.append(
                 f"position notional {new_position:.0f} > MAX_POSITION_SIZE {self.limits.max_position_size_jpy:.0f}"
             )
-        if account.open_orders >= self.limits.max_open_orders:
+        # Same rule again for MAX_OPEN_ORDERS: a book already at the cap must
+        # not be able to refuse the protective stop. The refusal lands HERE,
+        # before the order manager ever runs, so the very path that exists to
+        # clear a wedged resting order (`_make_room_for_close`) is never
+        # reached — the cap silently becomes "this position cannot be exited".
+        if increases_exposure and account.open_orders >= self.limits.max_open_orders:
             reasons.append(
                 f"open orders {account.open_orders} >= MAX_OPEN_ORDERS {self.limits.max_open_orders}"
             )

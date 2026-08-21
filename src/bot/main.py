@@ -57,6 +57,41 @@ ORDER_SWEEP_SEC = 30.0
 FILL_EPSILON = 1e-12
 
 
+def _num(value) -> float:
+    """Venue numbers arrive as strings, None or junk. Unusable -> 0.0."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _net_position(rows) -> tuple[float, float]:
+    """(signed size, average entry price) from getpositions rows.
+
+    bitFlyer answers with one row per open lot, normally all on the same side.
+    The signed sum is the position; the price is weighted over the rows on the
+    NET side only, so even a mixed listing yields the entry price of what is
+    actually held rather than a blend of both directions.
+    """
+    signed = 0.0
+    for row in rows or ():
+        size = _num(row.get("size"))
+        signed += size if str(row.get("side") or "").upper() == "BUY" else -size
+    if abs(signed) <= FILL_EPSILON:
+        return 0.0, 0.0
+    wanted = "BUY" if signed > 0 else "SELL"
+    notional = quantity = 0.0
+    for row in rows or ():
+        if str(row.get("side") or "").upper() != wanted:
+            continue
+        size, price = _num(row.get("size")), _num(row.get("price"))
+        if size <= 0 or price <= 0:
+            continue
+        notional += size * price
+        quantity += size
+    return signed, (notional / quantity if quantity > 0 else 0.0)
+
+
 def build_app(settings: Settings, *, client: BitflyerClient | None = None,
               notifier: Notifier | None = None) -> "TradingApp":
     client = client or BitflyerClient(settings.api_key, settings.api_secret)
@@ -175,8 +210,16 @@ class TradingApp:
                 leverage=self.product.leverage,
             )
 
+        # Fills the portfolio has been told about but whose watermark could not
+        # be persisted. See `_book_fill_delta` / `_mark_booked`.
+        self._applied_bookings: set[tuple[str, float]] = set()
         self.orders = OrderManager(self.store, gateway, self.kill_switch,
-                                   reconciler=reconciler, notifier=notifier)
+                                   reconciler=reconciler, notifier=notifier,
+                                   # A self-cancel is a fill discovery path
+                                   # like any other: an order the venue partly
+                                   # filled before the cancel landed is booked
+                                   # through the same idempotent path.
+                                   on_canceled_fill=self._book_fill_delta)
         self.portfolio = Portfolio(initial_equity_jpy=initial_equity)
         # PAPER only: reload the paper book (cumulative P&L, fill count, today's
         # daily P&L, the open position). LIVE never touches the file — there the
@@ -185,7 +228,9 @@ class TradingApp:
         self.paper_state: PaperState | None = None
         self._restored_trade_count = 0
         self._position_opened_ts: float | None = None
-        if settings.mode is not Mode.LIVE:
+        if settings.mode is Mode.LIVE:
+            self._adopt_venue_position()
+        else:
             self._restore_paper_state(gateway)
         self._paper_day = self.portfolio.daily_day_index
         # Boot equity for the overlay INCLUDES the restored realized P&L: the
@@ -236,6 +281,110 @@ class TradingApp:
             raise PermissionError(
                 f"API key has withdrawal-related permissions {bad}; refusing LIVE mode."
             )
+
+    # ---- LIVE boot reconciliation (LIVE ONLY) -----------------------------
+    def _adopt_venue_position(self) -> None:
+        """Seed the portfolio from what the EXCHANGE says we hold.
+
+        LIVE keeps no local book on purpose (see `_restore_paper_state`): the
+        venue owns the position. But "no local book" was implemented as "start
+        flat", so every LIVE restart booted a portfolio that believed it held
+        nothing while bitFlyer held a real position. Nothing would have
+        corrected it either — the sweep only re-reads orders THIS book knows,
+        and a position opened before the restart has no such order. The
+        consequences are the two the whole booking path exists to prevent: the
+        protective stop never arms (there is nothing, as far as the portfolio
+        knows, to protect), and the next entry signal opens on top of the live
+        position instead of being refused by MAX_POSITION_SIZE.
+
+        So the boot ASKS, on the diagnostic timeouts, and adopts the venue's
+        net position — size, side and average entry price — loudly, in the log
+        and to the operator, because silently inheriting a position is exactly
+        the kind of thing an operator must be able to see happening.
+
+        A failure to ask is NOT "assume flat". It is refusal: the kill switch
+        is tripped (`system_error`, 'live boot reconciliation failed') so
+        `main()` refuses to start and no order can be placed, and a human
+        decides. Assuming flat is the phantom-flat state again, this time
+        chosen deliberately.
+        """
+        try:
+            with self.client.diagnostic_call():
+                rows = self.client.get_positions(self.settings.product_code)
+        except Exception as e:
+            self._refuse_live_boot(
+                "could not read the venue's positions",
+                f"getpositions for {self.settings.product_code} could not be "
+                f"read ({type(e).__name__}), so the bot does not know whether "
+                f"a position is open.",
+                error=type(e).__name__)
+            return
+        size, entry_price = _net_position(rows)
+        if size == 0.0:
+            logger.info("LIVE boot: the venue reports no open position",
+                        extra={"data": {"event": "live_boot_flat",
+                                        "symbol": self.settings.product_code}})
+            return
+        if entry_price <= 0:
+            # A position with no usable entry price cannot be protected: the
+            # stop, the daily brake and the drawdown are all computed from it.
+            # Knowing a position exists and nothing else is not a state to
+            # trade from either.
+            self._refuse_live_boot(
+                "the venue reports a position with no usable entry price",
+                f"getpositions reports {size} {self.settings.product_code} "
+                f"with no usable entry price, so the position cannot be "
+                f"protected.",
+                position_size=size)
+            return
+        p = self.portfolio
+        p.position_size = size
+        p.avg_entry_price = entry_price
+        # Same anchoring as a restored paper book: the drawdown peak and the
+        # daily mark are taken at THIS boot's first price, so a position that
+        # was already underwater does not trip the brakes before the stop can
+        # close it (bot/portfolio/portfolio.py module docstring).
+        p.anchor_boot_equity()
+        side = "LONG" if size > 0 else "SHORT"
+        logger.warning("LIVE boot: adopted venue position", extra={"data": {
+            "event": "live_boot_position_adopted",
+            "symbol": self.settings.product_code, "side": side,
+            "position_size": size, "avg_entry_price": entry_price,
+            "rows": len(rows or [])}})
+        self._notify("LIVE BOOT: POSITION ADOPTED",
+                     f"LIVE boot: adopted venue position {side} {abs(size)} "
+                     f"{self.settings.product_code} @ {entry_price}. The bot "
+                     f"starts holding it — the protective stop is armed "
+                     f"against this position and new entries are sized on top "
+                     f"of it.")
+
+    def _refuse_live_boot(self, reason: str, message: str, **data) -> None:
+        """Trip the kill switch so the LIVE boot cannot trade, and say why.
+
+        ONE detail string for every way boot reconciliation can fail — the
+        operator's next step is the same in all of them (look at bitFlyer,
+        then reset), and the specifics are in the log line and the alert.
+        """
+        logger.critical(f"LIVE boot: {reason}; refusing to trade",
+                        extra={"data": {
+                            "event": "live_boot_reconcile_failed",
+                            "symbol": self.settings.product_code,
+                            "reason": reason, **data}})
+        self.kill_switch.trip(KillReason.SYSTEM_ERROR,
+                              "live boot reconciliation failed")
+        self._notify("LIVE BOOT RECONCILIATION FAILED",
+                     f"{message} Trading is stopped and NO order can be "
+                     f"placed. Check the position on bitFlyer, then reset the "
+                     f"kill switch (KillSwitch().reset(operator_confirm=True)).",
+                     urgent=True)
+
+    def _notify(self, title: str, message: str, *, urgent: bool = False) -> None:
+        """Operator line that must never raise into the caller — the boot path
+        included, where a dead webhook would otherwise abort startup."""
+        try:
+            self.notifier.send(title, message, urgent=urgent)
+        except Exception:
+            logger.exception("operator notification failed")
 
     # ---- paper book persistence (PAPER ONLY) ------------------------------
     @property
@@ -865,9 +1014,11 @@ class TradingApp:
         ONE path, called from EVERY place a fill can be discovered — the
         submit-path refresh, the periodic sweep (`_sweep_open_orders`), and
         auto-reconciliation (whose resolution `_try_order` books off the record
-        it returns). The order's own `booked_size` watermark is what makes that
-        safe: the delta is `filled_size - booked_size`, so the same fill seen by
-        two paths is booked once and a fill seen only by the sweep is booked at
+        it returns), plus the cancel path (`OrderManager.cancel_orders`, whose
+        refreshed records arrive here through `on_canceled_fill`). A watermark
+        is what makes that safe: the delta is `filled_size` minus what the
+        portfolio already holds for this order, so the same fill seen by three
+        paths is booked once and a fill seen only by one of them is booked at
         all.
 
         Before this existed, booking lived inside `_try_order` alone. A LIMIT
@@ -881,15 +1032,39 @@ class TradingApp:
         Fees come from the product spec, the price from the exchange's own
         record (`avg_fill_price`); `fallback_price` is the caller's
         decision-time quote and is used only when the venue reported no average
-        price at all.
+        price at all. Which of the four sources was used is logged as
+        `price_source`, because "the position moved" and "the position moved at
+        a price the venue never confirmed" are different facts.
+
+        TWO watermarks, not one. `booked_size` is persisted with the order and
+        survives a restart; `_applied_bookings` is this process's memory of
+        what it has already handed to the portfolio. They differ only when
+        `mark_booked` FAILED after the portfolio had already moved — and
+        without the second one the next discovery would read the stale
+        persisted watermark and book the same fill again, doubling a real
+        position to fix a bookkeeping error.
+
+        RESIDUAL, LIVE ONLY: a process that dies between the portfolio move and
+        a successful `mark_booked` loses the in-session set. The restarted
+        process re-discovers the order through the sweep and books it a second
+        time — LIVE has no local book to compare against (the venue is the
+        book), so nothing can tell the two apart. It is bounded to the orders
+        that were open at the crash and is why the LIVE boot reconciles against
+        getpositions (`_adopt_venue_position`), which re-seats the portfolio on
+        the venue's own answer. PAPER is safe by ordering: `paper_state` is
+        written BEFORE the watermark, and a restored PAPER book never revisits
+        a terminal order (there is no sweep in PAPER).
         """
-        delta = order.unbooked_size
+        applied = self._applied_watermark(order)
+        delta = float(order.filled_size) - applied
         if delta <= FILL_EPSILON:
+            # Nothing new for the portfolio. The persisted watermark may still
+            # be behind it, though — retrying that write is the only thing left
+            # to do, and it is what clears the in-session record.
+            if order.unbooked_size > FILL_EPSILON:
+                return self._mark_booked(order, applied)
             return order
-        fill_price = order.avg_fill_price or fallback_price or order.price
-        if not fill_price:
-            tick = self.feed.last_tick
-            fill_price = tick.price if tick is not None else None
+        fill_price, price_source = self._fill_price_of(order, fallback_price)
         if not fill_price or fill_price <= 0:
             # No usable price means no honest booking. Leave the watermark
             # alone so the next discovery books it, and say so loudly — a
@@ -906,10 +1081,14 @@ class TradingApp:
         pos_before = self.portfolio.position_size
         closing = pos_before != 0.0 and ((pos_before > 0) != (order.side == "BUY"))
         fee = fill_price * delta * self.product.taker_fee_pct / 100
+        target = float(order.filled_size)
         realized = self.portfolio.on_fill(symbol=order.symbol, side=order.side,
                                           size=delta, price=fill_price,
                                           fee_jpy=fee)
-        booked = self.store.mark_booked(order.local_id, order.filled_size)
+        # The portfolio has moved. Record that in-session BEFORE anything that
+        # can fail, so a failed watermark write cannot make the next discovery
+        # replay this same fill.
+        self._applied_bookings.add((order.local_id, target))
         tick = self.feed.last_tick
         mark_price = tick.price if tick is not None else fill_price
         if closing:
@@ -920,13 +1099,82 @@ class TradingApp:
             self._persist_overlay_state(mark_price, realized)
         # Every fill, opening included: an unsaved entry is a position the next
         # process does not know it holds.
+        #
+        # BEFORE `mark_booked`, deliberately. In PAPER the two writes are the
+        # crash window, and this order closes it: `paper_state` carries the
+        # position itself, and a PAPER restart restores the book and never
+        # looks at a terminal order again (there is no sweep in PAPER), so a
+        # crash in between loses only the watermark — never the position, and
+        # never by doubling it. In LIVE this call is a no-op.
         self._save_paper_state()
+        booked = self._mark_booked(order, target)
         self.status.status.last_execution = f"{order.side} {delta} @ {fill_price}"
         logger.info("fill booked", extra={"data": {
             "event": "fill_booked", "local_id": order.local_id,
             "symbol": order.symbol, "side": order.side, "size": delta,
-            "price": fill_price, "fee_jpy": fee, "realized_pnl_jpy": realized,
+            "price": fill_price, "price_source": price_source,
+            "fee_jpy": fee, "realized_pnl_jpy": realized,
             "state": order.state.value, "position_size": self.portfolio.position_size}})
+        return booked
+
+    def _fill_price_of(self, order,
+                       fallback_price: float | None) -> tuple[float | None, str]:
+        """(price, source) for a fill, best evidence first.
+
+        `venue_avg` is the exchange's own average for the order and is the only
+        one that is a FACT about the fill; the rest are approximations, in
+        descending order of how close they are to the moment it happened.
+        """
+        if order.avg_fill_price:
+            return float(order.avg_fill_price), "venue_avg"
+        if fallback_price:
+            return float(fallback_price), "decision_quote"
+        if order.price:
+            return float(order.price), "order_price"
+        tick = self.feed.last_tick
+        if tick is not None and tick.price:
+            return float(tick.price), "last_tick"
+        return None, "none"
+
+    def _applied_watermark(self, order) -> float:
+        """How much of this order the PORTFOLIO already holds.
+
+        The persisted watermark, raised by anything this process applied but
+        could not persist (`_mark_booked`). Persisted-only would replay a fill
+        whose watermark write failed; in-session-only would forget every fill
+        booked before a restart.
+        """
+        applied = float(order.booked_size)
+        for local_id, booked_to in self._applied_bookings:
+            if local_id == order.local_id:
+                applied = max(applied, booked_to)
+        return applied
+
+    def _mark_booked(self, order, booked_to: float):
+        """Persist the watermark; on failure keep the in-session record.
+
+        A failure here is CRITICAL and not retried in place: the portfolio is
+        already correct, the store is behind, and the only harm is that the
+        next discovery of this order sees an unbooked delta. `_applied_bookings`
+        is what stops it from acting on that, and the next discovery retries
+        this write.
+        """
+        try:
+            booked = self.store.mark_booked(order.local_id, booked_to)
+        except Exception:
+            logger.critical("fill booked into the portfolio but the watermark "
+                            "could not be persisted; it will NOT be re-applied",
+                            extra={"data": {
+                                "event": "mark_booked_failed",
+                                "local_id": order.local_id,
+                                "symbol": order.symbol,
+                                "booked_to": booked_to}})
+            self._applied_bookings.add((order.local_id, float(booked_to)))
+            return order
+        # Persisted: the in-session record has done its job for this order.
+        self._applied_bookings = {
+            entry for entry in self._applied_bookings
+            if entry[0] != order.local_id or entry[1] > float(booked.booked_size)}
         return booked
 
     def _persist_overlay_state(self, mark_price: float,
@@ -944,6 +1192,11 @@ class TradingApp:
         """Shut trading down cleanly. Every step is independently guarded: a
         failure in one must not skip the others."""
         try:
+            # FIRST, and before the message is built: cancelling a resting
+            # order finalizes whatever it filled on the way out, and that fill
+            # is booked from inside this call (`on_canceled_fill`). The OPEN
+            # POSITION line below is then the position the operator will
+            # actually find on bitFlyer, not the one from before the cancel.
             self.orders.cancel_all_active(self.settings.product_code)
         except Exception:
             logger.exception("cancel_all_active failed during kill switch")

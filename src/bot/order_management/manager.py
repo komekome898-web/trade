@@ -54,10 +54,19 @@ def _with_partial(state: OrderState | None, filled_size: float | None) -> OrderS
     return state
 
 
+def _as_float(value) -> float | None:
+    """Venue numbers arrive as strings, None, or junk. None = not a number."""
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
 class OrderManager:
     def __init__(self, store: OrderStore, gateway: ExecutionGateway,
                  kill_switch: KillSwitch, *,
-                 reconciler: AutoReconciler | None = None, notifier=None):
+                 reconciler: AutoReconciler | None = None, notifier=None,
+                 on_canceled_fill=None):
         self._store = store
         self._gateway = gateway
         self._kill_switch = kill_switch
@@ -65,6 +74,12 @@ class OrderManager:
         # PAPER mode: the executor is local, so ambiguity cannot arise.
         self._reconciler = reconciler
         self._notifier = notifier
+        # Called with the refreshed record of every order THIS manager
+        # cancelled, so a partial fill the venue completed before the cancel
+        # landed reaches the portfolio (`TradingApp._book_fill_delta`). The
+        # manager owns orders, not positions; without this hook a self-cancel
+        # is the one fill discovery path that books nothing.
+        self._on_canceled_fill = on_canceled_fill
 
     def submit(self, *, symbol: str, side: str, size: float,
                order_type: str = "MARKET", price: float | None = None,
@@ -165,19 +180,26 @@ class OrderManager:
         """
         blockers = self._store.blocking_order_ids(symbol)
         try:
-            canceled = self.cancel_orders(symbol, blockers)
+            sent = self._send_cancels(symbol, blockers)
         except Exception as e:
             self._closing_blocked(symbol, side, size, blockers,
                                   f"cancel failed ({type(e).__name__}: {e})")
             raise refusal from None
-        ok, detail = self._verify_blockers_cleared(symbol, blockers)
+        ok, detail, listing = self._verify_blockers_cleared(symbol, blockers)
         if not ok:
+            # The records stay as they are. An order the venue still lists as
+            # ACTIVE is not cancelled, and a book that says CANCELED about it
+            # would be a lie in the direction that hides a live order.
             self._closing_blocked(symbol, side, size, blockers, detail)
             raise refusal from None
+        # The verification listing already carries each cancelled order's final
+        # executed_size, so settling the records costs no further call.
+        canceled = self._settle_canceled(symbol, sent, listing=listing)
         logger.warning("resting orders cancelled to clear a closing order",
                        extra={"data": {"event": "closing_order_priority",
                                        "symbol": symbol, "side": side,
-                                       "size": size, "canceled": canceled,
+                                       "size": size,
+                                       "canceled": [o.local_id for o in canceled],
                                        "resting": blockers}})
         try:
             return self._store.create(symbol, side, size, order_type, price)
@@ -186,16 +208,37 @@ class OrderManager:
                                   f"still refused after cancelling: {e}")
             raise
 
-    def _verify_blockers_cleared(self, symbol: str,
-                                 blockers: list[str]) -> tuple[bool, str]:
-        """ONE diagnostic getchildorders poll: are the cancelled ids really gone?
+    def _verify_blockers_cleared(
+            self, symbol: str,
+            blockers: list[str]) -> tuple[bool, str, list[dict] | None]:
+        """ONE diagnostic getchildorders poll before the close is sent.
 
-        Returns (verified, detail). Anything short of positive evidence that
-        every blocker has left the book — the venue still lists one as ACTIVE,
-        the poll failed, the poll came back unreadable — is NOT verified, and
-        the caller must not send the close. The failure mode this guards is the
-        expensive one: the venue accepted the cancel request with a 2xx, did
-        not act on it, and the close then went out ALONGSIDE a live order.
+        Returns (verified, detail, listing). THE RULE, stated exactly:
+
+        - the poll SUCCEEDED and no blocker is listed ACTIVE -> verified. That
+          includes a blocker that does not appear in the listing at all. The
+          venue answered, and the thing this guards against is an order the
+          venue is still holding LIVE — an id that is absent from a listing the
+          venue served is not that.
+        - the poll succeeded and a blocker is still ACTIVE -> NOT verified.
+          This is the expensive failure: the venue took the cancel request with
+          a 2xx, did not act on it, and the close would go out ALONGSIDE a live
+          order — one intended exit, two real orders.
+        - the poll FAILED (None) -> NOT verified. "We could not look" is not
+          evidence that the book is clear.
+
+        Deliberately NOT strict about absence: requiring positive evidence that
+        each id is listed CANCELED would hand the venue's own listing lag a
+        veto over the exit. getchildorders is eventually consistent (see
+        bot/order_management/reconciler.py); a cancelled order can be dropped
+        from the default listing, or reappear a poll later, and treating either
+        as "unverified" would trip the kill switch and freeze the bot WITH an
+        open position — the 2019 trap, reached from the other side. The
+        asymmetry is the point: absence blocks nothing, a live ACTIVE blocks
+        everything.
+
+        The listing is returned so the caller can settle the cancelled records
+        from it (`_settle_canceled`) instead of paying a second read per order.
 
         Query-only by construction — it borrows the auto-reconciler's
         `QueryOnlyExchange`, which has no method that can send or cancel.
@@ -204,16 +247,16 @@ class OrderManager:
         verify against and the cancel stands.
         """
         if self._reconciler is None:
-            return True, ""
+            return True, "", None
         ids = {o.acceptance_id for o in
                (self._store.get(local_id) for local_id in blockers)
                if o is not None and o.acceptance_id}
         if not ids:
-            return True, ""
+            return True, "", None
         listing = self._reconciler.list_orders(symbol)
         if listing is None:
             return False, ("the cancel was acknowledged but getchildorders could "
-                           "not be read, so it is unverified")
+                           "not be read, so it is unverified"), None
         still_active = []
         for row in listing:
             acc = str(row.get("child_order_acceptance_id") or "")
@@ -221,11 +264,11 @@ class OrderManager:
                 still_active.append(acc)
         if still_active:
             return False, (f"the cancel was acknowledged but the exchange still "
-                           f"lists {still_active} as ACTIVE")
+                           f"lists {still_active} as ACTIVE"), listing
         logger.info("cancel verified against getchildorders", extra={"data": {
             "event": "cancel_verified", "symbol": symbol,
             "acceptance_ids": sorted(ids)}})
-        return True, ""
+        return True, "", listing
 
     def _closing_blocked(self, symbol: str, side: str, size: float,
                          resting: list[str], detail: str) -> None:
@@ -415,7 +458,7 @@ class OrderManager:
             ))
         return resolved
 
-    def cancel_all_active(self, symbol: str) -> int:
+    def cancel_all_active(self, symbol: str) -> list[Order]:
         """Cancel everything non-terminal for the symbol (kill-switch shutdown).
 
         The blanket form, and it belongs to the shutdown path only. A caller
@@ -424,16 +467,133 @@ class OrderManager:
         """
         return self.cancel_orders(symbol, self._store.blocking_order_ids(symbol))
 
-    def cancel_orders(self, symbol: str, local_ids: list[str]) -> int:
-        """Cancel exactly these orders. Returns how many were sent to the venue."""
-        n = 0
+    def cancel_orders(self, symbol: str, local_ids: list[str]) -> list[Order]:
+        """Cancel exactly these orders; returns their FINAL records.
+
+        A cancel is not a rewind. bitFlyer can fill part of a resting order
+        before the cancel lands, and it reports that on the cancelled child
+        order as `executed_size` / `average_price`. Stamping the record
+        CANCELED without re-reading those threw the fill away: the size was
+        real and the position was real, but no discovery path would ever look
+        at a terminal order again — a phantom flat over a live position, the
+        exact state `TradingApp._book_fill_delta` exists to prevent, reached
+        through our OWN cancel.
+
+        So each cancelled order is re-read once, the fill is written to the
+        record before it is closed (`_settle_canceled`), and the refreshed
+        records are RETURNED. Booking them is the app's job and happens through
+        the `on_canceled_fill` hook, which routes to the one idempotent
+        booking path.
+        """
+        return self._settle_canceled(symbol, self._send_cancels(symbol, local_ids))
+
+    def _send_cancels(self, symbol: str, local_ids: list[str]) -> list[Order]:
+        """Send the cancel for every id still on the book; returns those orders.
+
+        The records are NOT transitioned here: what they finally filled is only
+        known after the cancel, and a caller that has to verify the cancel took
+        (`_make_room_for_close`) must be able to leave them untouched when the
+        venue says it did not.
+        """
+        sent = []
         for local_id in local_ids:
             order = self._store.get(local_id)
             if order is None:
                 continue
             if order.acceptance_id and order.state in (OrderState.SUBMITTED,
                                                        OrderState.PARTIALLY_FILLED):
-                self._gateway.cancel_order(symbol=symbol, acceptance_id=order.acceptance_id)
-                self._store.transition(order.local_id, OrderState.CANCELED)
-                n += 1
-        return n
+                self._gateway.cancel_order(symbol=symbol,
+                                           acceptance_id=order.acceptance_id)
+                sent.append(order)
+        return sent
+
+    def _settle_canceled(self, symbol: str, sent: list[Order], *,
+                         listing: list[dict] | None = None) -> list[Order]:
+        """Record each cancelled order's final fill, then close it CANCELED.
+
+        The fill is written FIRST, through `_with_partial`, so the executed
+        size is durable on a PARTIALLY_FILLED record before the terminal
+        transition — a crash in between then leaves a book that knows about the
+        fill rather than one that has forgotten it.
+
+        `listing` is a getchildorders answer the caller already paid for; rows
+        are read from it instead of issuing a read per order. Without one, each
+        cancelled order costs one status read (the same read `refresh` uses).
+        A read that fails is logged, not raised: the cancel went out, so the
+        record has to close either way.
+        """
+        settled = []
+        for order in sent:
+            state, filled, avg = self._final_fill(symbol, order, listing)
+            if filled is not None and filled > order.filled_size:
+                partial = _with_partial(order.state, filled) or order.state
+                order = self._store.transition(order.local_id, partial,
+                                               filled_size=filled,
+                                               avg_fill_price=avg)
+            # A cancel that raced a COMPLETE fill cancelled nothing. The record
+            # says what the venue says, or the book ends up holding a CANCELED
+            # order whose entire size executed.
+            closed = (OrderState.FILLED
+                      if _GATEWAY_TO_LOCAL.get(state) is OrderState.FILLED
+                      else OrderState.CANCELED)
+            final = self._store.transition(order.local_id, closed)
+            settled.append(final)
+            self._announce_canceled_fill(final)
+        return settled
+
+    def _final_fill(self, symbol: str, order: Order, listing: list[dict] | None
+                    ) -> tuple[str | None, float | None, float | None]:
+        """(exchange state, executed_size, average_price) of a cancelled order.
+
+        All three are None when the venue could not be re-read. The state
+        string is the venue's own vocabulary, the keys of `_GATEWAY_TO_LOCAL`.
+        """
+        row = self._row_for(order.acceptance_id, listing)
+        if row is not None:
+            # A zero average_price is "the venue reported none", not a price.
+            return (str(row.get("child_order_state") or "").upper() or None,
+                    _as_float(row.get("executed_size")),
+                    _as_float(row.get("average_price")) or None)
+        try:
+            status = self._gateway.fetch_order_status(
+                symbol=symbol, acceptance_id=order.acceptance_id)
+        except Exception as e:
+            logger.warning("cancelled order could not be re-read; its final "
+                           "fill is unknown", extra={"data": {
+                               "event": "cancel_refresh_failed",
+                               "local_id": order.local_id,
+                               "error": type(e).__name__}})
+            return None, None, None
+        if status is None:
+            return None, None, None
+        return (str(status.state or "").upper() or None,
+                _as_float(status.filled_size),
+                _as_float(status.avg_fill_price) or None)
+
+    @staticmethod
+    def _row_for(acceptance_id: str | None,
+                 listing: list[dict] | None) -> dict | None:
+        for row in listing or ():
+            if acceptance_id and str(row.get("child_order_acceptance_id") or "") \
+                    == str(acceptance_id):
+                return row
+        return None
+
+    def _announce_canceled_fill(self, order: Order) -> None:
+        """Hand a cancelled order's record to whoever books fills.
+
+        Guarded: the cancel has already happened, so a failure on the booking
+        side must not leave this path half-done. The booking itself is
+        idempotent (`booked_size`), so a retry from another discovery path
+        cannot double it.
+        """
+        if self._on_canceled_fill is None or order.unbooked_size <= 0:
+            return
+        try:
+            self._on_canceled_fill(order)
+        except Exception:
+            logger.exception("booking a cancelled order's partial fill failed",
+                             extra={"data": {
+                                 "event": "cancel_booking_failed",
+                                 "local_id": order.local_id,
+                                 "unbooked_size": order.unbooked_size}})

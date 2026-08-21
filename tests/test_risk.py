@@ -54,6 +54,26 @@ def test_max_open_orders_rejected(checker):
     assert not d.approved and any("MAX_OPEN_ORDERS" in r for r in d.reasons)
 
 
+def test_max_open_orders_never_refuses_a_closing_order(checker):
+    """(B1) The cap binds on exposure, like MAX_ORDER_SIZE and
+    MAX_POSITION_SIZE beside it.
+
+    A book at the cap is exactly the situation the closing-order priority path
+    exists for — one resting order the venue never filled, and a position that
+    now has to be exited. Refusing the exit HERE happens before the order
+    manager runs, so `_make_room_for_close` never gets to cancel the blocker:
+    the cap silently becomes 'this position cannot be closed'.
+    """
+    at_cap = healthy_account(open_orders=1, position_size=10.0,
+                             position_notional_jpy=1000.0)
+    closing = checker.check(order(side="SELL", stop=100.0), at_cap)
+    assert closing.approved, closing.reasons
+
+    opening = checker.check(order(side="BUY"), at_cap)
+    assert not opening.approved
+    assert any("MAX_OPEN_ORDERS" in r for r in opening.reasons)
+
+
 def test_insufficient_balance_rejected(checker):
     d = checker.check(order(size=25.0), healthy_account(balance_jpy=1000))
     assert not d.approved and any("insufficient balance" in r for r in d.reasons)
