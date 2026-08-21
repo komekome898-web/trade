@@ -3,9 +3,10 @@
 #
 # These values are sized for PAPER validation of FX_BTC_JPY with the virtual
 # 200,000 JPY stake (config.yaml paper_equity_jpy): one minimum-size order
-# (0.01 BTC ~ 110k JPY) must fit inside MAX_ORDER_SIZE. Any LIVE deployment
-# requires explicit owner approval of a fresh set of limits.
-MAX_ORDER_SIZE_JPY: 130000      # max notional per order (~one 0.01 BTC FX order)
+# (0.001 BTC ~ 11k JPY at ~11M JPY/BTC, per config/products.yaml) must fit
+# inside MAX_ORDER_SIZE. Any LIVE deployment requires explicit owner approval
+# of a fresh set of limits.
+MAX_ORDER_SIZE_JPY: 130000      # max notional per order (~0.012 BTC at ~11M JPY/BTC)
 MAX_POSITION_SIZE_JPY: 130000   # single position at a time
 MAX_DAILY_LOSS_JPY: 6000        # 3% of virtual equity: kill switch on daily loss
 MAX_DRAWDOWN_PCT: 10.0          # kill switch at this % drawdown from equity peak

@@ -15,6 +15,7 @@ from bot.main import TradingApp
 from bot.monitoring.notifier import Notifier, NullNotifier
 from bot.portfolio.portfolio import Portfolio
 from bot.risk.kill_switch import KillReason, KillSwitch
+from bot.risk.pre_trade_checks import AccountState, OrderRequest, PreTradeChecker
 from bot.settings import Mode, RiskLimits, Settings
 from bot.strategy import STRATEGIES
 from bot.strategy.base import Signal, SignalType
@@ -189,6 +190,48 @@ def test_module_absent_from_config_is_simply_off():
 def test_unknown_module_rejected():
     with pytest.raises(ValueError, match="unknown composite module"):
         build_modules({"moon_phase": {"enabled": False}})
+
+
+@pytest.mark.parametrize("enabled", ["false", "no", "off", "true", 1, 0, 0.0, None, []])
+def test_enabled_must_be_a_yaml_bool(enabled):
+    """`enabled` is read STRICTLY, not through bool(): every non-empty string is
+    truthy, so a quoted "false" — the typo YAML invites — would have switched
+    the module ON. Anything that is not a bare bool is refused in either
+    direction rather than guessed at."""
+    with pytest.raises(ModuleGateError, match="non-boolean 'enabled'") as exc:
+        build_modules(_raw("oi_regime", enabled=enabled))
+    assert "oi_regime" in str(exc.value)          # names the module
+    assert repr(enabled) in str(exc.value)        # and the offending value
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+def test_bare_yaml_bools_still_work(enabled):
+    evidence = EVIDENCE if enabled else ""
+    module = next(m for m in build_modules(
+        _raw("radar_window", enabled=enabled, gate_evidence=evidence))
+        if m.name == "radar_window")
+    assert module.enabled is enabled
+
+
+def test_enabled_read_from_yaml_is_a_bool_not_a_string():
+    """End to end through the YAML reader: the quoted form is what a config
+    edit actually produces, and it must be refused there too."""
+    from bot.strategy.composite import MODULE_CLASSES
+
+    raw = yaml.safe_load(
+        "oi_regime:\n"
+        "  enabled: \"false\"\n"
+        f"  gate: {json.dumps(MODULE_CLASSES['oi_regime'].GATE)}\n")
+    with pytest.raises(ModuleGateError, match="non-boolean 'enabled'"):
+        build_modules(raw)
+
+
+@pytest.mark.parametrize("entry", [True, False, "true", 3, ["enabled"]])
+def test_non_mapping_module_entry_is_refused(entry):
+    """`radar_window: true` is a plausible typo for the mapping form. It must
+    be refused with a message that says so, not a raw TypeError out of dict()."""
+    with pytest.raises(ModuleGateError, match="must be configured as a mapping"):
+        build_modules({"radar_window": entry})
 
 
 @pytest.mark.parametrize("evidence", ["trust me", "RESEARCH_REPORT_x.md",
@@ -686,6 +729,25 @@ def test_quantize_truncates_like_the_pre_composite_champion(app):
     assert app._quantize(9999.0, 1e7) == 0.0        # below one step
 
 
+def test_overlay_scales_the_size_directly_not_through_the_price(app):
+    """The scaled size is a function of (size, factor) only.
+
+    The old form, `_quantize(size * factor * price, price)`, multiplied by the
+    price and divided it straight back out — not the identity in binary
+    floating point. At this price the round trip lands one ulp off the step
+    boundary and loses a whole min_size step; at others it GAINS one, sending
+    more than the approved size times the factor. `_scale_size` is the direct
+    form, which is also what validate_composite.py G1b asserts.
+    """
+    size, factor, price = 0.012, 0.5, 6525609.457968516
+    assert app._scale_size(size, factor) == pytest.approx(0.006)
+    assert app._quantize(size * factor * price, price) == pytest.approx(0.005)
+    # and the sizes the bot actually meets are unchanged by the switch
+    assert app._scale_size(0.013, 0.5) == pytest.approx(0.006)
+    assert app._scale_size(0.013, 0.25) == pytest.approx(0.003)
+    assert app._scale_size(0.001, 0.5) == 0.0        # below one step -> suppressed
+
+
 def test_app_halves_new_entry_after_loss_streak(app):
     app.overlay_state.consecutive_losses = 3
     drive(app, TICKS, LEADER)
@@ -813,6 +875,52 @@ def test_full_size_rejection_is_not_retried_at_overlay_size(app):
     assert app.portfolio.position_size == 0.0
     assert app.portfolio.trades == []
     assert not app.kill_switch.is_tripped    # -5500 > -6000: reject, not kill
+
+
+@pytest.mark.parametrize("label,full_size,daily_pnl,position_notional,position_size", [
+    ("flat book", 0.013, 0.0, 0.0, 0.0),
+    ("most of the daily risk budget spent", 0.013, -5300.0, 0.0, 0.0),
+    ("a position already open", 0.010, 0.0, 30000.0, -0.003),
+    ("unrealized loss on the day", 0.013, -1200.0, 0.0, 0.0),
+])
+def test_a_smaller_size_never_turns_an_approval_into_a_rejection(
+        workdir, label, full_size, daily_pnl, position_notional, position_size):
+    """The invariant that makes "check at full size, then scale" sound.
+
+    bot/main.py runs the pre-trade checks on the FULL size and lets the overlay
+    shrink an order those checks already approved — it never re-checks the
+    smaller one. That is only safe because every size-bearing check is monotone
+    in size: the order-notional cap, the position cap, the margin and balance
+    checks and the remaining daily risk budget all get LOOSER as the size
+    falls, so a smaller order cannot be refused where the full one passed.
+    Sizes below the product minimum are out of scope by construction — there
+    the overlay suppresses the entry instead of submitting it (bot/main.py
+    `_warn_overlay_suppressed`).
+
+    The inputs are the ones the composite tests above already exercise
+    (daily-loss budget, open position, flat book).
+    """
+    from bot.products import load_products
+
+    product = load_products(str(REPO))["FX_BTC_JPY"]
+    checker = PreTradeChecker(RiskLimits.from_dict(dict(APP_LIMITS)),
+                              KillSwitch(), product=product)
+    price = 1e7
+    account = AccountState(
+        balance_jpy=200000.0, position_notional_jpy=position_notional,
+        open_orders=0, daily_pnl_jpy=daily_pnl, drawdown_pct=0.0,
+        consecutive_losses=0, position_size=position_size)
+
+    def approved(size: float) -> bool:
+        request = OrderRequest("FX_BTC_JPY", "SELL", size, price,
+                               stop_price=price * 1.005)
+        return checker.check(request, account).approved
+
+    assert approved(full_size), f"{label}: full size must be approved first"
+    steps = int(round(full_size / product.min_size))
+    for step in range(1, steps + 1):
+        size = round(step * product.min_size, 8)
+        assert approved(size), f"{label}: {size} refused while {full_size} passed"
 
 
 def test_same_scenario_without_the_daily_brake_does_enter_scaled(app):

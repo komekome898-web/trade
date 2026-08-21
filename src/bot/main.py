@@ -308,6 +308,21 @@ class TradingApp:
         steps = int(budget_jpy / price / self.product.min_size)
         return round(steps * self.product.min_size, 8)
 
+    def _scale_size(self, size: float, factor: float) -> float:
+        """Apply the overlay factor to an already-approved SIZE, re-quantized.
+
+        Directly on the size, not `_quantize(size * factor * price, price)`:
+        multiplying by the price and dividing it straight back out is not the
+        identity in binary floating point, and at some prices the round trip
+        lands one ulp off a step boundary and moves the result a whole
+        min_size step — in either direction, including UP, above the size the
+        risk checks approved times the factor. The scaled size is a function
+        of (size, factor) alone, so the price must not appear in it. This is
+        the form scripts/validate_composite.py G1b asserts.
+        """
+        return round(int(size * factor / self.product.min_size)
+                     * self.product.min_size, 8)
+
     def _warn_overlay_suppressed(self, factor: float, price: float, full_size: float) -> None:
         """One notifier warning per UTC day; the log line is per occurrence.
 
@@ -380,7 +395,7 @@ class TradingApp:
             # downward, and re-quantized to the product's granularity.
             factor = self._entry_size_factor(tick.price)
             if factor < 1.0:
-                scaled = self._quantize(size * factor * price, price)
+                scaled = self._scale_size(size, factor)
                 if scaled < self.product.min_size:
                     self._warn_overlay_suppressed(factor, price, size)
                     return None

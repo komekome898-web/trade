@@ -56,6 +56,16 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
 
 重要: Kill Switch はファイルに永続化されるため、**systemd がプロセスを再起動しても取引は再開しません**。解除は必ず原因(status.json / bot.jsonl / kill_switch.json)を確認してから行ってください。
 
+`kill_switch.json` の `reason` は `daily_loss_limit` / `max_drawdown` /
+`consecutive_losses` / `api_errors` / `order_state_unknown` /
+`market_data_anomaly` / `system_error` / `unhandled_exception` / `manual` の
+いずれかです。
+
+- `unhandled_exception` — 取引ループ内で想定外の例外が出たことを示します。状態不明
+  とみなしてプロセスが落ちる前に発動するため(`detail` に例外の repr)、再起動しても
+  取引は再開しません。解除手順は他の理由と同じで、原因調査後に上の
+  `reset(operator_confirm=True)` を人間が実行します。
+
 ### data/overlay_state.json(リスクオーバーレイのブレーキ)
 
 composite 戦略のリスクオーバーレイ(新規建玉のサイズを縮小する仕組み)の状態。

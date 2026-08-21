@@ -1,5 +1,13 @@
 # CompositeStrategy configuration (src/bot/strategy/composite.py).
 # Read by the strategy itself; config/config.yaml only selects the strategy.
+#
+# BEFORE SWITCHING config/config.yaml strategy.name to `composite`: switching
+# the main bot's strategy RESTARTS the 30-trade paper count from the moment of
+# the switch (docs/KNOWLEDGE.md §5, following the E2 precedent) — trades from
+# before and after the switch are not pooled to judge the standing bars. The
+# risk overlay's brake, by contrast, applies from tick one after the switch:
+# data/overlay_state.json accumulates under every strategy and only the
+# composite USES it.
 
 # Core signal = xborder_momentum, mirroring config/config.yaml strategy.params.
 # With every module below disabled the composite is signal-for-signal

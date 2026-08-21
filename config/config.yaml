@@ -3,10 +3,11 @@
 product_code: FX_BTC_JPY     # Lightning FX: 0% taker fee, shortable, 2x leverage
 candle_interval_sec: 60
 
-# PAPER-mode virtual equity. FX_BTC_JPY min order is 0.01 BTC (~110k JPY
-# notional), far above the real 6,000 JPY — this virtual stake exists ONLY to
-# validate the strategy at realistic size. Live trading would require real
-# funding and explicit owner approval.
+# PAPER-mode virtual equity. FX_BTC_JPY min order is 0.001 BTC (~11k JPY
+# notional at ~11M JPY/BTC, see config/products.yaml), still above the real
+# 6,000 JPY — this virtual stake exists ONLY to validate the strategy at
+# realistic size. Live trading would require real funding and explicit owner
+# approval.
 paper_equity_jpy: 200000
 
 # Basis-anomaly guard: refuse NEW CFD entries when |CFD-spot| divergence is
@@ -23,6 +24,9 @@ strategy:
   # name: composite          # same core signal + config/composite.yaml modules
   #                          # (all disabled) + the risk overlay on new entries.
   #                          # The lead decides when to switch; owner-approved only.
+  #                          # Switching restarts the 30-trade paper count from
+  #                          # the switch (KNOWLEDGE.md §5, E2 precedent); the
+  #                          # overlay brake applies from tick one after it.
   params:
     k: 30                    # leader momentum window (bars)
     thr_pct: 0.8             # enter long above +thr, short below -thr (%)

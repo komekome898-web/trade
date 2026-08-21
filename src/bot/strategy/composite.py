@@ -35,7 +35,11 @@ framework is fail-closed at CONSTRUCTION, not at call time:
   raises — the reference has to be evidence ABOUT THIS module, not any report
   that happens to exist,
 * a module entry in YAML that omits `gate`, or whose `gate` text differs from
-  the one pre-registered in code, raises, and
+  the one pre-registered in code, raises,
+* an `enabled` value that is not a bare YAML bool raises instead of being
+  coerced — every non-empty string is truthy, so a quoted "false" would have
+  read as ENABLED — and a module entry that is not a mapping at all
+  (`radar_window: true`) raises for the same reason, and
 * `enabled: true` on a module that has no `veto_entry` implementation raises.
   The base hook is an unimplemented stub, so an enabled-but-unbuilt module can
   never construct — it cannot fail open at decision time because it cannot
@@ -436,12 +440,14 @@ MODULE_CLASSES: dict[str, type[CompositeModule]] = {
 def build_modules(raw: dict | None) -> list[CompositeModule]:
     """Instantiate every registered module from config (all default: off).
 
-    Fail-closed: an unknown module name is an error; a configured module that
-    omits `gate` is an error (the criterion must be spelled out where it is
-    being configured, not inherited silently); a `gate` text that does not
-    match the one pre-registered in code is an error (the gate cannot be
-    weakened by editing YAML); enabled-without-judged-evidence and
-    enabled-without-implementation raise in CompositeModule.__init__.
+    Fail-closed: an unknown module name is an error; a module entry that is not
+    a mapping is an error; a configured module that omits `gate` is an error
+    (the criterion must be spelled out where it is being configured, not
+    inherited silently); a `gate` text that does not match the one
+    pre-registered in code is an error (the gate cannot be weakened by editing
+    YAML); an `enabled` value that is not a YAML bool is an error; and
+    enabled-without-judged-evidence and enabled-without-implementation raise in
+    CompositeModule.__init__.
 
     A module absent from the config entirely is simply built disabled.
     """
@@ -453,7 +459,18 @@ def build_modules(raw: dict | None) -> list[CompositeModule]:
     modules = []
     for name, cls in MODULE_CLASSES.items():
         configured = name in raw
-        cfg = dict(raw.get(name) or {})
+        entry = raw.get(name)
+        if configured and entry is not None and not isinstance(entry, dict):
+            # `radar_window: true` is a plausible typo for the mapping form, and
+            # letting it reach dict() would surface as a raw TypeError out of a
+            # config read. It also carries no `gate`, so it could never be a
+            # valid entry: say so where it is written.
+            raise ModuleGateError(
+                f"module '{name}' must be configured as a mapping (enabled / "
+                f"gate / gate_evidence / params), got "
+                f"{type(entry).__name__} {entry!r}."
+            )
+        cfg = dict(entry or {})
         if configured and "gate" not in cfg:
             raise ModuleGateError(
                 f"module '{name}' is configured without a 'gate' key. The "
@@ -465,7 +482,19 @@ def build_modules(raw: dict | None) -> list[CompositeModule]:
                 f"module '{name}' gate text in config does not match the "
                 f"pre-registered gate. config: {gate!r}; registered: {cls.GATE!r}"
             )
-        modules.append(cls(enabled=bool(cfg.get("enabled", False)),
+        enabled = cfg.get("enabled", False)
+        if not isinstance(enabled, bool):
+            # STRICT, not bool(): every non-empty string is truthy, so a quoted
+            # "false" — the exact typo YAML invites — would have ENABLED the
+            # module. Anything that is not a bare YAML bool is refused rather
+            # than guessed at, in either direction.
+            raise ModuleGateError(
+                f"module '{name}' has a non-boolean 'enabled' value "
+                f"{enabled!r} ({type(enabled).__name__}). Write a bare YAML "
+                "bool (true / false); a quoted \"false\" is a non-empty string "
+                "and would read as ENABLED."
+            )
+        modules.append(cls(enabled=enabled,
                            gate_evidence=cfg.get("gate_evidence", ""),
                            params=cfg.get("params")))
     return modules
@@ -562,9 +591,21 @@ class OverlayState:
     def on_closed_trade(self, realized_pnl_jpy: float, equity_jpy: float) -> None:
         """Fold one closed trade into the brake (the overlay's own counters).
 
-        Mirrors Portfolio's streak rule — a loss increments, a win resets, a
-        flat close does neither — but on state of its own, because the
-        portfolio's counter feeds the kill-switch checks (module docstring).
+        Called on INTENT: the caller invokes this exactly when the order it
+        sent was a closing one (bot/main.py `_persist_overlay_state`, guarded
+        by `not opening`), never by inspecting the P&L. From there the streak
+        rule is the plain one — a loss increments, a win resets, an exactly
+        flat close does neither — and the equity is checkpointed either way.
+
+        Portfolio's streak (bot/portfolio/portfolio.py `on_fill`) instead uses
+        `realized + fee != 0` as its proxy for "this fill was a close". The two
+        rules disagree on exactly one case: a close whose loss is exactly the
+        fee. There the portfolio skips the update and the overlay counts a
+        loss — the CONSERVATIVE direction (a brake that engages sooner, never
+        later), and the right one here, because the overlay may not read the
+        portfolio's counter (that one feeds the kill switch; module docstring).
+        On this product the divergence is moot anyway: taker/maker fee is 0%,
+        so `realized + fee == 0` is exactly `realized == 0`.
         """
         if realized_pnl_jpy < 0:
             self.consecutive_losses += 1
