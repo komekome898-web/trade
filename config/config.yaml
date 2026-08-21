@@ -19,7 +19,10 @@ sfd_guard_pct: 4.5
 # follow Binance BTCUSDT moves on bitFlyer FX_BTC_JPY, long AND short.
 # UNPROVEN — paper only. Params are set from the FX research (train/val only).
 strategy:
-  name: xborder_momentum     # ema_cross | rsi_reversion | breakout | xborder_momentum
+  name: xborder_momentum     # ema_cross | rsi_reversion | breakout | xborder_momentum | composite
+  # name: composite          # same core signal + config/composite.yaml modules
+  #                          # (all disabled) + the risk overlay on new entries.
+  #                          # The lead decides when to switch; owner-approved only.
   params:
     k: 30                    # leader momentum window (bars)
     thr_pct: 0.8             # enter long above +thr, short below -thr (%)

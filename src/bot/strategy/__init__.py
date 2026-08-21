@@ -6,6 +6,7 @@ from bot.strategy.xborder_momentum import XborderMomentumStrategy
 from bot.strategy.inago import InagoStrategy
 from bot.strategy.wick_reversal import WickReversalStrategy
 from bot.strategy.range_fade import RangeFadeStrategy
+from bot.strategy.composite import CompositeStrategy
 
 STRATEGIES = {
     "ema_cross": EmaCrossStrategy,
@@ -15,9 +16,10 @@ STRATEGIES = {
     "inago": InagoStrategy,
     "wick_reversal": WickReversalStrategy,
     "range_fade": RangeFadeStrategy,
+    "composite": CompositeStrategy,
 }
 
 __all__ = ["Signal", "SignalType", "Strategy", "STRATEGIES",
            "EmaCrossStrategy", "RsiReversionStrategy", "BreakoutStrategy",
            "XborderMomentumStrategy", "InagoStrategy", "WickReversalStrategy",
-           "RangeFadeStrategy"]
+           "RangeFadeStrategy", "CompositeStrategy"]

@@ -1,0 +1,47 @@
+# CompositeStrategy configuration (src/bot/strategy/composite.py).
+# Read by the strategy itself; config/config.yaml only selects the strategy.
+
+# Core signal = xborder_momentum, mirroring config/config.yaml strategy.params.
+# With every module below disabled the composite is signal-for-signal
+# identical to xborder_momentum (verified by scripts/validate_composite.py).
+core:
+  k: 30                      # leader momentum window (bars)
+  thr_pct: 0.8               # enter long above +thr, short below -thr (%)
+  exit_pct: 0.05             # flatten when |leader momentum| fades below this (%)
+
+# Modules are OFF and stay OFF until their gate is judged. Each one is a
+# PENDING hypothesis in docs/KNOWLEDGE.md §4 — enabling one before its gate
+# passes would be adopting an unvalidated rule.
+#
+# `gate` is the pre-registered unlock criterion and must match the text
+# registered in code; changing it here is refused at construction.
+# `gate_evidence` is the report reference that satisfied the gate. Setting
+# enabled: true with an empty gate_evidence raises at construction — a config
+# edit alone can never switch a module on. Owner approval is still required:
+# putting a strategy change into production is owner-gated.
+modules:
+  imbalance_filter:
+    enabled: false
+    gate: "board-data judgment >= 1-2 weeks recording, per KNOWLEDGE.md §4"
+    gate_evidence: ""
+    # would veto entries whose board imbalance opposes the signal
+
+  funding_window:
+    enabled: false
+    gate: "13:00 UTC post-settlement drift re-test at 3x sample"
+    gate_evidence: ""
+    params:
+      window_start_utc: "13:00"   # funding settles 05/13/21 UTC
+      window_minutes: 30
+    # would veto entries inside the post-settlement window
+
+  oi_regime:
+    enabled: false
+    gate: "oi_snapshots.csv 30-day phase-C judgment"
+    gate_evidence: ""
+    # would veto or scale entries by open-interest condition
+
+# Risk overlay (src/bot/strategy/composite.py: size_factor) has no config:
+# 95% drawdown trigger / 3-loss streak / x0.5 steps / 0.25 floor are fixed
+# conventions, deliberately not tunable from YAML so they cannot become an
+# unregistered parameter search. New exposure only; exits are never scaled.

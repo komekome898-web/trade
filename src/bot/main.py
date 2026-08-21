@@ -25,6 +25,7 @@ from bot.risk.pre_trade_checks import AccountState, OrderRequest, PreTradeChecke
 from bot.settings import Mode, Settings, load_settings
 from bot.strategy import STRATEGIES
 from bot.strategy.base import SignalType
+from bot.strategy.composite import ModuleContext
 
 import pandas as pd
 
@@ -192,6 +193,14 @@ class TradingApp:
                 return
 
         signal = self.strategy.on_candles(candles_df)
+        # Optional module gate (CompositeStrategy). Duck-typed: strategies
+        # without the hook are untouched. Position-aware so a module can never
+        # veto a signal that closes an open position.
+        gate = getattr(self.strategy, "gate_entry", None)
+        if callable(gate):
+            signal = gate(signal, ModuleContext(candles=candles_df,
+                                                timestamp=tick.timestamp,
+                                                position_size=pos))
         decision, order = "HOLD", None
 
         if signal.type is SignalType.BUY:
@@ -242,6 +251,17 @@ class TradingApp:
             return True
         return False
 
+    def _entry_size_factor(self, mark_price: float) -> float:
+        """Risk-overlay multiplier for a NEW entry, when the active strategy
+        exposes one (duck-typed). Equity peak and the consecutive-loss counter
+        come from the portfolio's closed trades."""
+        factor_fn = getattr(self.strategy, "size_factor", None)
+        if not callable(factor_fn):
+            return 1.0
+        equity = self.portfolio.equity_jpy(mark_price)
+        peak = max(self.portfolio.equity_peak_jpy, equity)
+        return float(factor_fn(peak, equity, self.portfolio.consecutive_losses))
+
     def _try_order(self, side: str, tick, size: float | None = None):
         price = tick.best_ask if side == "BUY" else tick.best_bid
         opening = size is None
@@ -253,12 +273,17 @@ class TradingApp:
                              equity * self.product.leverage * 0.9)
             else:
                 budget = min(self.settings.risk_limits.max_order_size_jpy, equity / 2)
+            # risk overlay scales NEW exposure only (closing orders never pass here)
+            factor = self._entry_size_factor(tick.price)
+            budget *= factor
             # round DOWN to the product's minimum-size granularity
             steps = int(budget / price / self.product.min_size)
             size = round(steps * self.product.min_size, 8)
             if size < self.product.min_size:
                 logger.warning("order skipped: budget below product minimum", extra={"data": {
-                    "event": "size_below_min", "budget_jpy": budget,
+                    "event": "size_below_min",
+                    "reason": "risk_overlay" if factor < 1.0 else "budget_below_min",
+                    "size_factor": factor, "budget_jpy": budget,
                     "min_notional_jpy": self.product.min_size * price}})
                 return None
         # entry orders risk stop_loss_pct of price; closing orders reduce risk
