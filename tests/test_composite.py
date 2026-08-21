@@ -626,14 +626,16 @@ def test_unhandled_step_exception_trips_kill_switch(workdir, monkeypatch):
 
 # ---- N3: a failure while shutting down must not destroy the kill reason ----
 class ExplodingNotifier(Notifier):
-    """A dead webhook: every send raises."""
+    """A webhook that dies exactly when it is needed most."""
 
     def __init__(self):
         self.attempts: list[str] = []
 
     def send(self, title, message, *, urgent=False):
         self.attempts.append(title)
-        raise ConnectionError("discord webhook is gone")
+        if title == "KILL SWITCH":
+            raise ConnectionError("discord webhook is gone")
+        return True
 
 
 def test_kill_reason_survives_a_failing_notifier(workdir, monkeypatch):

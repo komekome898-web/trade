@@ -497,10 +497,11 @@ class CompositeStrategy(Strategy):
         """Size multiplier for NEW exposure only (see module docstring).
 
         1.0 normally; x0.5 while equity is below 95% of its running peak;
-        x0.5 after 3+ consecutive losses (the caller's counter resets on a
-        win); factors multiply, floored at 0.25. Never applied to a closing
-        order — the caller must not consult this when reducing exposure, and
-        never before the full-size risk checks have approved the order.
+        x0.5 after 3+ consecutive losses (`OverlayState`'s counter, which
+        resets on a win); factors multiply, floored at 0.25. Never applied to a
+        closing order — the caller must not consult this when reducing
+        exposure, and never before the full-size risk checks have approved the
+        order.
         """
         factor = 1.0
         if equity_peak > 0 and equity_now < DRAWDOWN_TRIGGER * equity_peak:

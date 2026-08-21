@@ -35,7 +35,8 @@ G2  OVERLAY — replay G1's closed trades with size_factor() applied to each
 
 G3  FAIL-CLOSED — configs that must be refused at construction: enabled with
     no gate_evidence, gate text rewritten in config, invented gate_evidence,
-    and an enabled module with no veto_entry implementation.
+    gate_evidence naming a file outside docs/, and an enabled module with no
+    veto_entry implementation.
 
 Data: backtest_data/ permanent snapshots FIRST (deterministic; the public
 bitFlyer history expires after 31 days, KNOWLEDGE.md §6), falling back to the
@@ -459,7 +460,10 @@ def gate_fail_closed() -> bool:
          {"oi_regime": {"enabled": False}}),
         ("invented gate_evidence",
          {"funding_window": {"enabled": True, "gate": gates["funding_window"],
-                             "gate_evidence": "docs/RESEARCH_REPORT_never_written.md"}}),
+                             "gate_evidence": "RESEARCH_REPORT_never_written.md"}}),
+        ("gate_evidence pointing outside docs/",
+         {"funding_window": {"enabled": True, "gate": gates["funding_window"],
+                             "gate_evidence": "../elsewhere/" + TEST_EVIDENCE}}),
         ("free-text gate_evidence",
          {"funding_window": {"enabled": True, "gate": gates["funding_window"],
                              "gate_evidence": "the lead said it was fine"}}),
