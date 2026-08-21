@@ -23,14 +23,48 @@ intrabar stop/take-profit on an EARLIER bar naturally fires first; on the same
 bar the stop is checked first (conservative).
 
 Trade log: every CLOSE_* entry carries a "reason" in
-{"signal", "stop_loss", "take_profit", "time_exit"} so callers can break down
-how trades actually ended (exit-structure audits). Additive field only —
-existing consumers keying off "bar"/"side"/"price"/"pnl" are unaffected.
+{"signal", "stop_loss", "take_profit", "time_exit", "maker_tp"} so callers can
+break down how trades actually ended (exit-structure audits). Additive field
+only — existing consumers keying off "bar"/"side"/"price"/"pnl" are unaffected.
+
+Additive options (all default to the historical behaviour; existing callers get
+bit-identical results):
+
+``exit_execution="maker_tp"`` + ``maker_tp_pct``
+    Rests a maker take-profit limit at ``maker_tp_pct`` away from the entry
+    price for the life of the position, while the strategy's own signal exit
+    and the protective ``stop_loss_pct`` stay as taker fallbacks. The limit
+    fills under the SAME conservative traded-through rule the maker entry
+    path uses: the bar must trade strictly THROUGH the level
+    (``high > level`` for a long TP, ``low < level`` for a short TP); merely
+    touching it is not a fill. The fill is booked at the level itself with
+    ``maker_fee`` and no spread/slippage, and is only ever checked on bars
+    STRICTLY AFTER the entry bar, so there is no look-ahead.
+
+    1m-bar approximation (optimistic, stated for the record): on a 1-minute
+    bar we only know that the level traded through somewhere inside the
+    minute, not that our specific resting order was reached in the queue, nor
+    whether the stop level was touched EARLIER in the same minute. When the
+    stop and the maker TP are both inside one bar's range the STOP is taken
+    first (conservative), but within a single bar the true sequencing is
+    unknown. Real fills also depend on queue position; this model grants the
+    fill on any strict through-trade. Treat maker-TP results as an upper
+    bound, not a promise.
+
+``entry_mask`` / ``entry_sides``
+    Restrict which decisions may OPEN a position; closes are never blocked.
+    ``entry_mask`` is a per-bar boolean aligned to ``candles`` and is
+    evaluated at the DECISION bar (the bar whose information produced the
+    signal), not at the fill bar. ``entry_sides`` is one of
+    ``"both"`` / ``"long"`` / ``"short"``. Both are entry-side filters only:
+    an open position still exits by signal, stop, take-profit, maker TP and
+    time exit exactly as before.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import numpy as np
 import pandas as pd
 
 from bot.backtest.metrics import Metrics, compute_metrics
@@ -88,11 +122,31 @@ def run_backtest(
     stop_loss_pct: float | None = None,
     take_profit_pct: float | None = None,
     max_hold_bars: int | None = None,
+    exit_execution: str = "signal",
+    maker_tp_pct: float | None = None,
+    entry_mask=None,
+    entry_sides: str = "both",
 ) -> BacktestResult:
     if execution not in ("taker", "maker"):
         raise ValueError(f"unknown execution model: {execution}")
     if max_hold_bars is not None and max_hold_bars < 1:
         raise ValueError("max_hold_bars must be >= 1")
+    if exit_execution not in ("signal", "maker_tp"):
+        raise ValueError(f"unknown exit execution model: {exit_execution}")
+    if exit_execution == "maker_tp":
+        if maker_tp_pct is None or maker_tp_pct <= 0:
+            raise ValueError('exit_execution="maker_tp" requires maker_tp_pct > 0')
+    elif maker_tp_pct is not None:
+        raise ValueError('maker_tp_pct requires exit_execution="maker_tp"')
+    if entry_sides not in ("both", "long", "short"):
+        raise ValueError(f"unknown entry_sides: {entry_sides}")
+    mtp_pct = maker_tp_pct if exit_execution == "maker_tp" else None
+    mask = None
+    if entry_mask is not None:
+        mask = np.asarray(entry_mask, dtype=bool)
+        if mask.shape != (len(candles),):
+            raise ValueError(
+                f"entry_mask length {mask.shape} != number of candles {len(candles)}")
     costs = costs or CostModel()
     cash = initial_equity_jpy
     position = 0.0                 # signed: >0 long, <0 short
@@ -100,6 +154,7 @@ def run_backtest(
     entry_bar = -1                 # bar index the open position was filled on
     entry_cost = 0.0               # entry fee + accrued carry, charged at close
     pending_taker: SignalType | None = None
+    pending_taker_bar: int = -1    # decision bar behind pending_taker
     pending_limit: _PendingLimit | None = None
     equity = []
     trade_pnls: list[float] = []
@@ -140,16 +195,28 @@ def run_backtest(
         position, entry_price, entry_cost = 0.0, 0.0, 0.0
         entry_bar = -1
 
-    def execute(i: int, side: SignalType, price: float, fee_fn) -> None:
+    def entry_ok(decision_bar: int, side: SignalType) -> bool:
+        """Entry-side filters. Evaluated at the DECISION bar, never at the fill
+        bar, and never consulted when the action would close a position."""
+        if entry_sides == "long" and side is SignalType.SELL:
+            return False
+        if entry_sides == "short" and side is SignalType.BUY:
+            return False
+        if mask is not None and not bool(mask[decision_bar]):
+            return False
+        return True
+
+    def execute(i: int, side: SignalType, price: float, fee_fn,
+                decision_bar: int) -> None:
         if side is SignalType.BUY:
             if position < 0:
                 close_position(i, price, fee_fn, reason="signal")
-            elif position == 0:
+            elif position == 0 and entry_ok(decision_bar, side):
                 open_position(i, SignalType.BUY, price, fee_fn)
         else:
             if position > 0:
                 close_position(i, price, fee_fn, reason="signal")
-            elif position == 0 and allow_short:
+            elif position == 0 and allow_short and entry_ok(decision_bar, side):
                 open_position(i, SignalType.SELL, price, fee_fn)
 
     def actionable(side: SignalType) -> bool:
@@ -168,16 +235,24 @@ def run_backtest(
         # levels are inside the bar's range the STOP is assumed to fill first
         # (conservative). Stops fill as market orders with taker costs; take
         # profits are resting limits filled at their level with maker fee.
-        if position != 0.0 and i > 0 and (stop_loss_pct or take_profit_pct):
+        if position != 0.0 and i > 0 and i > entry_bar \
+                and (stop_loss_pct or take_profit_pct or mtp_pct):
             long = position > 0
             sl_level = entry_price * (1 - stop_loss_pct / 100) if long and stop_loss_pct \
                 else entry_price * (1 + stop_loss_pct / 100) if stop_loss_pct else None
             tp_level = entry_price * (1 + take_profit_pct / 100) if long and take_profit_pct \
                 else entry_price * (1 - take_profit_pct / 100) if take_profit_pct else None
+            # resting maker take-profit (exit_execution="maker_tp"); same
+            # traded-through rule as the maker ENTRY path, checked only on bars
+            # strictly after entry_bar (guaranteed by the guard above).
+            mtp_level = entry_price * (1 + mtp_pct / 100) if long and mtp_pct \
+                else entry_price * (1 - mtp_pct / 100) if mtp_pct else None
             sl_hit = sl_level is not None and (
                 lows[i] <= sl_level if long else highs[i] >= sl_level)
             tp_hit = tp_level is not None and (
                 highs[i] > tp_level if long else lows[i] < tp_level)
+            mtp_hit = mtp_level is not None and (
+                highs[i] > mtp_level if long else lows[i] < mtp_level)
             if sl_hit:
                 trigger = min(opens[i], sl_level) if long else max(opens[i], sl_level)
                 price = costs.sell_price(trigger) if long else costs.buy_price(trigger)
@@ -186,6 +261,10 @@ def run_backtest(
                 pending_limit = None
             elif tp_hit:
                 close_position(i, tp_level, costs.maker_fee, reason="take_profit")
+                pending_taker = None
+                pending_limit = None
+            elif mtp_hit:
+                close_position(i, mtp_level, costs.maker_fee, reason="maker_tp")
                 pending_taker = None
                 pending_limit = None
 
@@ -211,7 +290,7 @@ def run_backtest(
                 if side is not None:
                     price = costs.buy_price(ref) if side is SignalType.BUY \
                         else costs.sell_price(ref)
-                    execute(i, side, price, costs.fee)
+                    execute(i, side, price, costs.fee, pending_taker_bar)
                 pending_taker = None
         else:
             if pending_limit is not None and i > pending_limit.placed_bar:
@@ -219,7 +298,7 @@ def run_backtest(
                 traded_through = (lows[i] < po.limit) if po.side is SignalType.BUY \
                     else (highs[i] > po.limit)
                 if traded_through and actionable(po.side):
-                    execute(i, po.side, po.limit, costs.maker_fee)
+                    execute(i, po.side, po.limit, costs.maker_fee, po.placed_bar)
                     pending_limit = None
                 elif i - po.placed_bar >= maker_timeout_bars:
                     missed_fills += 1
@@ -243,6 +322,7 @@ def run_backtest(
                         pending_taker = SignalType.CLOSE
                     else:
                         pending_taker = sig_type
+                    pending_taker_bar = i
                 elif actionable(sig_type) or signal.type is SignalType.CLOSE:
                     if pending_limit is not None and pending_limit.side is not sig_type:
                         missed_fills += 1

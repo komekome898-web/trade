@@ -20,6 +20,7 @@ class KillReason(Enum):
     ORDER_STATE_UNKNOWN = "order_state_unknown"
     MARKET_DATA_ANOMALY = "market_data_anomaly"
     SYSTEM_ERROR = "system_error"
+    UNHANDLED_EXCEPTION = "unhandled_exception"
     MANUAL = "manual"
 
 

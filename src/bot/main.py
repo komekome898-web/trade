@@ -5,11 +5,16 @@ Startup safety sequence:
 2. Register secrets for log redaction.
 3. Kill switch state check — a tripped switch from a previous run blocks trading.
 4. In LIVE mode only: verify API permissions contain no withdrawal access.
+
+The loop is fail-closed: any unhandled exception out of `step()` trips the
+persisted kill switch before the process dies, so a supervisor restart lands on
+the refusal in `main()` instead of resuming trading in an unknown state.
 """
 from __future__ import annotations
 
 import logging
 import time
+from pathlib import Path
 
 from bot.exchange.bitflyer_client import BitflyerClient, BitflyerError, NetworkError
 from bot.execution.paper import PaperExecutor
@@ -25,7 +30,8 @@ from bot.risk.pre_trade_checks import AccountState, OrderRequest, PreTradeChecke
 from bot.settings import Mode, Settings, load_settings
 from bot.strategy import STRATEGIES
 from bot.strategy.base import SignalType
-from bot.strategy.composite import ModuleContext
+from bot.strategy.composite import DEFAULT_CONFIG_PATH as COMPOSITE_CONFIG_PATH
+from bot.strategy.composite import ModuleContext, OverlayState
 
 import pandas as pd
 
@@ -56,7 +62,15 @@ class TradingApp:
         )
         self.candles = CandleBuilder(int(cfg.get("candle_interval_sec", 60)))
         strat_cfg = cfg.get("strategy", {})
-        strategy_cls = STRATEGIES[strat_cfg.get("name", "ema_cross")]
+        strat_name = strat_cfg.get("name", "ema_cross")
+        if strat_name == "composite" and not Path(COMPOSITE_CONFIG_PATH).exists():
+            # Refuse rather than silently running the composite with an empty
+            # module set: a missing file must not look like a validated config.
+            raise FileNotFoundError(
+                f"strategy.name is 'composite' but {COMPOSITE_CONFIG_PATH} is "
+                "missing; restore it (module gates live there) before starting."
+            )
+        strategy_cls = STRATEGIES[strat_name]
         self.strategy = strategy_cls(strat_cfg.get("params", {}))
         leader_cfg = cfg.get("leader", {})
         self.leader_feed = None
@@ -101,6 +115,13 @@ class TradingApp:
 
         self.orders = OrderManager(self.store, gateway, self.kill_switch)
         self.portfolio = Portfolio(initial_equity_jpy=initial_equity)
+        # Risk-overlay brake state survives a restart: a crash mid-losing-streak
+        # must not hand the next process a clean slate and full size.
+        self.overlay_state = OverlayState.load(default_equity_jpy=initial_equity)
+        self.portfolio.consecutive_losses = self.overlay_state.consecutive_losses
+        self.portfolio.equity_peak_jpy = max(self.overlay_state.equity_peak_jpy,
+                                             initial_equity)
+        self._overlay_suppressed_day: int | None = None
         self.status = StatusWriter()
         self.status.status.mode = settings.mode.value
         self._api_errors_in_row = 0
@@ -262,9 +283,35 @@ class TradingApp:
         peak = max(self.portfolio.equity_peak_jpy, equity)
         return float(factor_fn(peak, equity, self.portfolio.consecutive_losses))
 
+    def _quantize(self, budget_jpy: float, price: float) -> float:
+        """Round an order budget DOWN to the product's size granularity."""
+        steps = int(budget_jpy / price / self.product.min_size + 1e-9)
+        return round(steps * self.product.min_size, 8)
+
+    def _warn_overlay_suppressed(self, factor: float, price: float, full_size: float) -> None:
+        """One notifier warning per UTC day; the log line is per occurrence.
+
+        A suppressed entry means the overlay has shrunk sizing below what the
+        product can trade — worth telling the operator once, not once a tick.
+        """
+        logger.warning("entry suppressed: overlay size below product minimum", extra={"data": {
+            "event": "size_below_min", "reason": "risk_overlay",
+            "size_factor": factor, "full_size": full_size,
+            "min_notional_jpy": self.product.min_size * price}})
+        day = int(time.time() // 86400)
+        if self._overlay_suppressed_day == day:
+            return
+        self._overlay_suppressed_day = day
+        self.notifier.send(
+            "OVERLAY SUPPRESSING ENTRIES",
+            f"risk overlay factor {factor:.2f} scales the entry below "
+            f"{self.product.min_size} {self.settings.product_code}; entries are "
+            "being skipped until the drawdown / loss-streak brake releases.")
+
     def _try_order(self, side: str, tick, size: float | None = None):
         price = tick.best_ask if side == "BUY" else tick.best_bid
         opening = size is None
+        factor = 1.0
         if opening:
             # margin products size off equity x leverage; spot off half equity
             equity = self.portfolio.equity_jpy(tick.price)
@@ -273,17 +320,15 @@ class TradingApp:
                              equity * self.product.leverage * 0.9)
             else:
                 budget = min(self.settings.risk_limits.max_order_size_jpy, equity / 2)
-            # risk overlay scales NEW exposure only (closing orders never pass here)
-            factor = self._entry_size_factor(tick.price)
-            budget *= factor
-            # round DOWN to the product's minimum-size granularity
-            steps = int(budget / price / self.product.min_size)
-            size = round(steps * self.product.min_size, 8)
+            # FULL (unscaled) size: the risk checks below judge this one, so the
+            # overlay can only narrow an approved order, never rescue a rejected
+            # one. Retrying a refused entry at half size would quietly widen the
+            # champion's permission boundary (e.g. the daily-loss brake).
+            size = self._quantize(budget, price)
             if size < self.product.min_size:
                 logger.warning("order skipped: budget below product minimum", extra={"data": {
-                    "event": "size_below_min",
-                    "reason": "risk_overlay" if factor < 1.0 else "budget_below_min",
-                    "size_factor": factor, "budget_jpy": budget,
+                    "event": "size_below_min", "reason": "budget_below_min",
+                    "budget_jpy": budget,
                     "min_notional_jpy": self.product.min_size * price}})
                 return None
         # entry orders risk stop_loss_pct of price; closing orders reduce risk
@@ -311,6 +356,16 @@ class TradingApp:
             if self.kill_switch.is_tripped:
                 self._on_kill("; ".join(decision.reasons))
             return None
+        if opening:
+            # Approved at full size -> the overlay may now shrink it. Only ever
+            # downward, and re-quantized to the product's granularity.
+            factor = self._entry_size_factor(tick.price)
+            if factor < 1.0:
+                scaled = self._quantize(size * factor * price, price)
+                if scaled < self.product.min_size:
+                    self._warn_overlay_suppressed(factor, price, size)
+                    return None
+                size = scaled
         try:
             order = self.orders.submit(symbol=self.settings.product_code, side=side, size=size)
         except (DuplicateOrderError, RuntimeError) as e:
@@ -321,11 +376,21 @@ class TradingApp:
         if order.state.value in ("FILLED", "PARTIALLY_FILLED") and order.filled_size > 0:
             fill_price = order.avg_fill_price or price
             fee = fill_price * order.filled_size * self.product.taker_fee_pct / 100
-            self.portfolio.on_fill(symbol=order.symbol, side=side,
-                                   size=order.filled_size, price=fill_price, fee_jpy=fee)
+            realized = self.portfolio.on_fill(symbol=order.symbol, side=side,
+                                              size=order.filled_size, price=fill_price,
+                                              fee_jpy=fee)
+            if realized + fee != 0.0:      # a closing fill: the brake moved
+                self._persist_overlay_state(tick.price)
             self.status.status.last_execution = f"{side} {order.filled_size} @ {fill_price}"
         self.status.status.last_order = f"{side} {size} ({order.state.value})"
         return order
+
+    def _persist_overlay_state(self, mark_price: float) -> None:
+        """Checkpoint the overlay brake after every closed trade."""
+        self.portfolio.drawdown_pct(mark_price)   # refreshes equity_peak_jpy
+        self.overlay_state.consecutive_losses = self.portfolio.consecutive_losses
+        self.overlay_state.equity_peak_jpy = self.portfolio.equity_peak_jpy
+        self.overlay_state.save()
 
     def _on_kill(self, detail: str) -> None:
         try:
@@ -359,7 +424,18 @@ class TradingApp:
         self.notifier.send("BOT START", f"mode={self.settings.mode.value} "
                                         f"product={self.settings.product_code}")
         while not self.kill_switch.is_tripped:
-            self.step()
+            try:
+                self.step()
+            except Exception as e:
+                # An unexpected exception is an unknown state, not a hiccup: a
+                # bare crash would let systemd/the watchdog restart the process
+                # straight back into trading. Trip the (persisted) kill switch
+                # first, so the restarted process refuses to trade until a human
+                # has investigated and reset it (see main()).
+                self.kill_switch.trip(KillReason.UNHANDLED_EXCEPTION, repr(e))
+                logger.exception("unhandled exception in step; kill switch tripped")
+                self._on_kill(f"unhandled exception in step: {e!r}")
+                raise
             try:
                 self.feed.check_freshness()
             except MarketDataAnomaly as e:

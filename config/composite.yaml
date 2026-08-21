@@ -13,12 +13,16 @@ core:
 # PENDING hypothesis in docs/KNOWLEDGE.md §4 — enabling one before its gate
 # passes would be adopting an unvalidated rule.
 #
-# `gate` is the pre-registered unlock criterion and must match the text
-# registered in code; changing it here is refused at construction.
-# `gate_evidence` is the report reference that satisfied the gate. Setting
-# enabled: true with an empty gate_evidence raises at construction — a config
-# edit alone can never switch a module on. Owner approval is still required:
-# putting a strategy change into production is owner-gated.
+# `gate` is the pre-registered unlock criterion. It is REQUIRED on every module
+# entry and must match the text registered in code; omitting it or rewriting it
+# here is refused at construction.
+# `gate_evidence` is the report reference that satisfied the gate. It must name
+# an existing docs/RESEARCH_REPORT_*.md file — free text does not unlock
+# anything. Setting enabled: true with an empty gate_evidence, with invented
+# evidence, or on a module whose veto rule is not implemented yet all raise at
+# construction: a config edit alone can never switch a module on. Owner
+# approval is still required: putting a strategy change into production is
+# owner-gated.
 modules:
   imbalance_filter:
     enabled: false
@@ -39,9 +43,12 @@ modules:
     enabled: false
     gate: "oi_snapshots.csv 30-day phase-C judgment"
     gate_evidence: ""
-    # would veto or scale entries by open-interest condition
+    # would veto entries by open-interest condition
 
 # Risk overlay (src/bot/strategy/composite.py: size_factor) has no config:
 # 95% drawdown trigger / 3-loss streak / x0.5 steps / 0.25 floor are fixed
 # conventions, deliberately not tunable from YAML so they cannot become an
 # unregistered parameter search. New exposure only; exits are never scaled.
+# The overlay only ever SHRINKS an order the pre-trade risk checks already
+# approved at full size, and its brake state is persisted in
+# data/overlay_state.json so a restart cannot reset it.
