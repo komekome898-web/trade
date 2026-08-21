@@ -185,11 +185,12 @@ git pull
 
 ## 5. Windows PC で動かす場合
 
-並走する3コンポーネント(メインBOT / バーストスキャルパー / 板記録)は
+並走する2コンポーネント(メインBOT / 板記録)は
 **`deploy\start_all.bat` が一括起動**します。起動済みのものは自動でスキップされる
 (冪等)ため、同じバッチが**ウォッチドッグ**(落ちたプロセスの自動復旧)を兼ねます。
-安全停止は再起動に勝ちます: Kill Switch発動中のメインBOTは取引せず、日次損失上限に
-達したスキャルパーは当日中の再開を拒否します(`data\scalp_stopped_YYYYMMDD`)。
+安全停止は再起動に勝ちます: Kill Switch発動中のメインBOTは取引しません。
+バーストスキャルパーは2026-08-21にペーパー正式判定(第16報)で棄却され**退役**しました
+(スクリプトは `scripts\run_scalp_paper.py` に保存。復帰は start_all.bat に1行戻すだけ)。
 
 タスクスケジューラ登録(2タスクのみ):
 
@@ -201,8 +202,7 @@ git pull
 手動操作: 一括起動 `deploy\start_all.bat` / 一括停止 `deploy\stop_all.bat` /
 緊急停止はリポジトリ直下に `KILL` ファイル作成(メインBOT・スキャルパー両方が停止)。
 
-ログ: `logs\run_paper.out.log`(メイン)/ `logs\scalp.out.log`(スキャル)/
-`logs\recorder.out.log`(板記録)/ `data\scalp_paper.jsonl`(スキャル全取引)。
+ログ: `logs\run_paper.out.log`(メイン)/ `logs\recorder.out.log`(板記録)。
 
 常時稼働の信頼性は Linux + systemd の方が高いため、Raspberry Pi 等があればそちらを推奨します。
 

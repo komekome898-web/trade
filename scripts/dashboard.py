@@ -68,6 +68,7 @@ PAGE = """<!doctype html>
   .pill.warn i { background: var(--warn); } .pill.warn { color: var(--warn); }
   .pill.down i, .pill.missing i, .pill.killed i { background: var(--crit); }
   .pill.down, .pill.missing, .pill.killed { color: var(--crit); }
+  .pill.retired i { background: var(--muted); } .pill.retired { color: var(--muted); }
   #updated { margin-left: auto; color: var(--muted); font-size: 12px; }
   main { padding: 20px; max-width: 1200px; margin: 0 auto;
          display: flex; flex-direction: column; gap: 20px; }
@@ -218,7 +219,7 @@ PAGE = """<!doctype html>
 <script>
 const fmt = (v, d=1) => v == null ? "—" : Number(v).toLocaleString("ja-JP", {maximumFractionDigits: d});
 const age = s => s == null ? "—" : s < 90 ? `${Math.round(s)}秒前` : s < 5400 ? `${Math.round(s/60)}分前` : `${(s/3600).toFixed(1)}時間前`;
-const stateLabel = {ok: "稼働中", warn: "遅延", down: "停止?", missing: "未起動", killed: "停止(Kill)"};
+const stateLabel = {ok: "稼働中", warn: "遅延", down: "停止?", missing: "未起動", killed: "停止(Kill)", retired: "退役"};
 
 function setPill(id, name, comp) {
   const el = document.getElementById(id);

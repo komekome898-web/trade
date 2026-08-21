@@ -156,10 +156,11 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
                           _liveness(bot_age, 30, 120)),
                 "age_sec": round(bot_age, 1) if bot_age is not None else None,
             },
-            # the scalper logs only on events, so a long quiet spell is normal
+            # retired 2026-08-21 after the formal paper rejection (report
+            # #16, -3.83bps vs the +5bps bar); start_all no longer launches
+            # it. The pill stays as a record, not a liveness signal.
             "scalper": {
-                "state": "killed" if manual_kill else
-                         ("ok" if scalp_last else "missing"),
+                "state": "retired",
                 "age_sec": round(scalp_age, 1) if scalp_age is not None else None,
             },
             "ws_recorder": {"state": _liveness(ws_age, 300, 1200),
