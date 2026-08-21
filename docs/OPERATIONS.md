@@ -164,6 +164,26 @@ git pull
 
 注意: この環境は一時VMのため、`data/` に貯めたデータはセッション終了で消えます。継続的なデータ蓄積は自宅マシン側で行ってください。
 
+## 6.5 ログを Claude に見せる手順
+
+**簡易(コピペ、数十秒)** — 自宅PCのリポジトリで:
+
+```
+.venv\Scripts\activate
+set PYTHONPATH=src
+python scripts\judge_gates.py
+```
+
+出力(全係属ゲートの判定表)をそのままチャットに貼り付ける。
+
+**完全共有(生ログを Claude が直接分析)** — `deploy\share_logs.bat` をダブルクリック。
+`logs\bot.jsonl`・`data\scalp_paper.jsonl`・`status.json`・`oi_snapshots.csv`・スプレッド記録・
+オーバーレイ状態を `paper_logs\` にコピーしてコミット・プッシュする(板WS記録は巨大なため一覧のみ)。
+完了したらチャットで「ログを上げました」と伝えるだけでよい。
+初回はgitのプッシュ認証(GitHubログイン)を求められることがある。
+Claude 側は `paper_logs/` の各ファイルを `logs/`・`data/` の定位置にコピーしてから
+`judge_gates.py`・各研究スクリプトを実行する。
+
 ## 7. 次フェーズのチェックリスト
 
 - [ ] `check_api.py` 成功(認証OK・出金権限なし・最低注文数量と手数料率の実測)
