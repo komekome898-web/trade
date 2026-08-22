@@ -1,0 +1,48 @@
+{
+  "fetched_utc": "2026-08-22T08:30:50.819769+00:00",
+  "study": "FX S6 low-frequency fundamentals",
+  "files": {
+    "cot_jpy_legacy.csv": {
+      "source": "https://publicreporting.cftc.gov/resource/6dca-aqww.json",
+      "rows": 1931,
+      "sha256": "e4d54bae71dfd7eaf0ab726c451c0b02bdb7f32f1833af60d068adf424e06905",
+      "bytes": 198964
+    },
+    "fred_DEXJPUS.csv": {
+      "source": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXJPUS",
+      "rows": 14511,
+      "sha256": "da0e6e5518e4689a0bec4c17a1d66720bd641ee4a8ba521dd1aeb857bf05f8fa",
+      "bytes": 256277
+    },
+    "fred_DGS2.csv": {
+      "source": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2",
+      "rows": 13104,
+      "sha256": "2271b3ca1a306a4c8fdde0d752b73f71fe011341ab5921bee3cd304142c05dfd",
+      "bytes": 208616
+    },
+    "fred_VIXCLS.csv": {
+      "source": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS",
+      "rows": 9559,
+      "sha256": "a762b0aafe8676f205a98e06a0704a0b856e0ab3f1fd66bf2fd3503639a56f3b",
+      "bytes": 160932
+    },
+    "jgb_hist.csv": {
+      "source": "https://www.mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv",
+      "rows": 13272,
+      "sha256": "2e895395d2a840ad158945a636457d3d94042af8214c389b0d46b8e96feb25de",
+      "bytes": 1174446
+    },
+    "jgb_current.csv": {
+      "source": "https://www.mof.go.jp/jgbs/reference/interest_rate/jgbcm.csv",
+      "rows": 17,
+      "sha256": "35a7155dba6dad089bffaf8fc9193afe171cae50866c638403793b61bfd256ff",
+      "bytes": 1530
+    },
+    "mof_feio_daily.csv": {
+      "source": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/foreign_exchange_intervention_operations.csv",
+      "rows": 550,
+      "sha256": "c2869df8fe6e9c0d51e2b58b6726f375a04e846066cd6aaacceb7fa642040f59",
+      "bytes": 43477
+    }
+  }
+}
