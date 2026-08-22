@@ -141,6 +141,16 @@ Pre-registered caveats
       exposes this.
     * Weekend/holiday gaps, venue outages: handled by the staleness filters above.
 
+Post-run diagnostics (declared as diagnostics, NEVER promoted -- protocol sec.8.2)
+----------------------------------------------------------------------------------
+    * mechanism decomposition (zero-cost mid-to-mid vs spread paid vs fee), which
+      separates a COST-LOSS rejection from a MECHANISM-ABSENT one (protocol sec.5);
+    * all 12 configs on the judgment span, printed so the negative result is auditable;
+    * the mechanical MIRROR of F2 (enter at E+60s WITH the impulse).  F2's fade loses,
+      so its mirror wins by construction minus twice the cost; it is printed at full
+      measured cost and logged PENDING.  It is NOT in the enumeration above and is NOT
+      adopted here under any result.
+
 Run:  PYTHONPATH=src python scripts/research_fx_event_ticks.py
 Idempotent, deterministic, no network.  Nothing is written outside stdout.
 """
@@ -542,11 +552,15 @@ def main() -> int:
     print("SANITY 2 -- BOJ BURST DETECTOR ON 3 KNOWN DECISIONS (price-blind; arrivals only)")
     print(hr())
     known = {
-        "2016-01-29": "NIRP introduced; press reports place the statement at 12:38 JST = 03:38Z",
-        "2024-03-19": "NIRP exit / YCC end; statement just after 12:30 JST = ~03:3xZ",
-        "2022-12-20": "YCC band widened (surprise); statement around noon JST = ~03:0xZ",
+        "2016-01-29": ("NIRP introduced; press reports place the statement at 12:38 JST = 03:38Z",
+                       "MISS -- the detector locks onto an EARLIER genuine burst at 12:21 JST. That day the "
+                       "meeting over-ran\n              and the tape whipsawed before the statement; the "
+                       "largest arrival burst is not the statement.\n              This is the detector's "
+                       "documented failure mode: on a leak/whipsaw day it finds the first burst, not the release."),
+        "2024-03-19": ("NIRP exit / YCC end; statement just after 12:30 JST = ~03:3xZ", "HIT"),
+        "2022-12-20": ("YCC band widened (surprise); statement around noon JST = ~03:0xZ", "HIT"),
     }
-    for dt, note in known.items():
+    for dt, (note, verdict) in known.items():
         p = os.path.join(LIB, f"BOJ_{dt.replace('-', '')}.csv.gz")
         if not os.path.exists(p):
             print(f"  {dt}  FILE MISSING")
@@ -561,6 +575,7 @@ def main() -> int:
               f"independent price-range-peak minute {utc(pk).strftime('%H:%M')}Z ; "
               f"detector-vs-proxy {abs(br.e_ms - pk)/1000:.0f}s")
         print(f"              expectation: {note}")
+        print(f"              verdict: {verdict}")
 
     # ---------------------------------------------------------------- build all events
     print("\n" + hr())
