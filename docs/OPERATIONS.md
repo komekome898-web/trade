@@ -449,6 +449,25 @@ Kill Switch が発動している間は**決済も含めて全注文が拒否さ
 
 ## 4.5 更新手順(重要)
 
+### 推奨: `deploy\restart_all.bat` をダブルクリック(Windows)
+
+更新〜再起動の4手順を1回のダブルクリックで実行する。
+
+| | 手順 | 失敗したら |
+|---|---|---|
+| [1/4] | `git pull` | **中断**。何も停止しない(BOTは旧コードのまま稼働継続) |
+| [2/4] | `.venv\Scripts\pip install -e ".[dev]"` | **中断**。同上 |
+| [3/4] | `deploy\stop_all.bat` | 中断(タスクマネージャで python.exe を確認) |
+| [4/4] | `deploy\start_all.bat` | 中断(コンポーネントは停止状態) |
+
+各手順の成否を `[n/4] ... ok` で表示し、**失敗した時点で以降を実行しない**。
+pull がコンフリクトした・pip が落ちたのに再起動してしまうと、
+「新コードなのに依存が無い」半端な状態で起動することになるため、
+中断してBOTを旧コードのまま走らせ続ける方が安全という設計。
+出力はASCIIのみ(コンソールはcp932。日本語を出すと文字化けする)。
+
+### 手動でやる場合
+
 コード更新は必ず**2点セット**で行うこと:
 
 ```powershell
@@ -490,6 +509,7 @@ git pull
 | bitflyer-fetch | ログオン時 + **15分ごとに繰り返し(無期限)** | `<repo>\deploy\fetch_all.bat` |
 
 手動操作: 一括起動 `deploy\start_all.bat` / 一括停止 `deploy\stop_all.bat` /
+更新して再起動 `deploy\restart_all.bat`(§4.5。pull + pip install + 停止 + 起動) /
 緊急停止はリポジトリ直下に `KILL` ファイル作成(メインBOT・スキャルパー両方が停止)。
 
 ログ: `logs\run_paper.out.log`(メイン)/ `logs\recorder.out.log`(板記録)。

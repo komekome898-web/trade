@@ -19,10 +19,10 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 - `src/bot/risk/` — kill switch・発注前チェック
 - `src/bot/order_management/` `execution/` `portfolio/` — 注文永続化・PAPER/LIVE 執行・建玉。`reconciler.py` は曖昧失敗の**読み取り専用**自動照合(時間予算付き。送信メソッドを持たない `QueryOnlyExchange` 経由なので構造上発注できない)
 - `src/bot/backtest/` — エンジン(maker執行 / TP・SL / max_hold / 決済理由記録)・指標・walk-forward
-- `src/bot/monitoring/` — status.json・Discord 通知
+- `src/bot/monitoring/` — status.json・Discord 通知・ダッシュボード集約(`gates.py` は係属ゲートの事前登録バー(judge_gates と共有)と進捗/ETA、`decision_text.py` は判断ログの日本語ラベル)
 - `src/bot/radar.py` — ストームレーダー(時計窓)、`src/bot/research/board.py` — 板再構成
 - `scripts/` — `run_*`(BOT・スキャルパー・バックテスト)/ `fetch_*`・`record_*`(収集)/ `build_*`(イベントライブラリ)/ `research_*`・`replay_*`(研究)/ `validate_composite.py`(composite の再現ゲート)/ `judge_gates.py`(係属ゲートの一括判定)/ `dashboard.py` / `check_api.py`
-- `deploy/` — Windows bat(`start_all` / `stop_all` / `fetch_all`、タスクスケジューラ登録)+ systemd unit
+- `deploy/` — Windows bat(`start_all` / `stop_all` / `restart_all`(pull+install+再起動) / `fetch_all`、タスクスケジューラ登録)+ systemd unit
 - `config/` — `config.yaml`(戦略・コスト)/ `products.yaml`(商品仕様)/ `risk_limits.yaml`(ハード上限)/ `composite.yaml`(composite のコア params・モジュールゲート)
 - `data/` — gitignore 済。**bitFlyer 公開約定履歴は31日で消える**ため長期保存先にはならない
 - `backtest_data/` — 恒久スナップショット(再現用。31日制限の回避先)
@@ -30,8 +30,8 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 
 ## 3. 運用の要点
 
-- テスト: `PYTHONPATH=src python -m pytest -q`(現在794件)
-- **`git pull` 後は必ず `pip install -e ".[dev]"`**。依存追加を取り込まないとコンポーネントが起動直後に落ちる → 詳細 `docs/OPERATIONS.md` §4.5
+- テスト: `PYTHONPATH=src python -m pytest -q`(現在859件)
+- **`git pull` 後は必ず `pip install -e ".[dev]"`**。依存追加を取り込まないとコンポーネントが起動直後に落ちる → 詳細 `docs/OPERATIONS.md` §4.5(Windows は `deploy\restart_all.bat` が pull→install→停止→起動を失敗時中断つきで実行)
 - Windows 運用(3プロセス並走・ウォッチドッグ・タスクスケジューラ2件)→ `docs/OPERATIONS.md` §5
 - 緊急停止: リポジトリ直下に `KILL` ファイルを作成
 - ダッシュボード: http://127.0.0.1:8300

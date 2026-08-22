@@ -52,6 +52,18 @@ class FakeSession:
                 or "cancelchildorder" in c["path"]]
 
 
+@pytest.fixture(autouse=True)
+def _clear_gate_scan_cache():
+    """bot.monitoring.gates memoises its file scans on (mtime_ns, size). Two
+    tests that write DIFFERENT content of the same length to the same tmp path
+    inside one mtime tick would otherwise read each other's answer."""
+    from bot.monitoring.gates import clear_cache
+
+    clear_cache()
+    yield
+    clear_cache()
+
+
 @pytest.fixture
 def fake_session():
     return FakeSession()

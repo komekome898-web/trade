@@ -65,7 +65,6 @@ from __future__ import annotations
 import argparse
 import json
 import random
-import re
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -75,23 +74,26 @@ from typing import Any, Iterable, Sequence
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from bot.radar import StormRadar  # noqa: E402
+# The coverage bars and the file scans behind them are shared with the
+# operations dashboard (bot/monitoring/gates.py). Defining them twice would let
+# the progress bar the owner watches drift away from the bar this harness
+# judges against — the same number has to come from one place.
+from bot.monitoring.gates import (  # noqa: E402
+    BOARD_BYTES_BAR, BOARD_DAYS_BAR, FUNDING_HOUR_UTC, FUNDING_N_BAR,
+    FUNDING_WINDOW_MIN, MAIN_TRADES_BAR, OI_DAYS_BAR, OI_ROWS_BAR,
+    candle_days_covering as _candle_days_covering,
+    csv_first_last_ts as _csv_first_last_ts,
+    parse_ts, ws_file_start as _ws_file_start,
+)
 
 # ---- pre-registered constants (KNOWLEDGE.md; do not tune here) -------------
-MAIN_TRADES_BAR = 30              # §5 main bot: paper trades
 MAIN_NET_PCT_BAR = 0.15           # §5 main bot: net % per trade
 MAIN_MAXDD_BAR = 10.0             # §5 main bot: max drawdown %
 SCALP_EVENTS_BAR = 30             # §5 burst scalper: events
 SCALP_NET_BPS_BAR = 5.0           # §5 burst scalper: net bps per trade
 SUBSET_N_BAR = 15                 # composite.yaml C2/C3 subset deviation
 VOL_TILT_N_BAR = 30               # §4 TP vol tilt: live entries with sigma60
-OI_ROWS_BAR = 2900                # §4 OI phase C: ~30 days at 15 min
-OI_DAYS_BAR = 30.0
-BOARD_DAYS_BAR = 7.0              # §4 board data: 1-2 weeks
-BOARD_BYTES_BAR = 500_000_000     # §4 board data: ~0.5-1 GB
-FUNDING_N_BAR = 63                # §4 funding window: 3x the original n=21
 FUNDING_ORIGINAL_N = 21
-FUNDING_HOUR_UTC = 13             # settlement 05/13/21 UTC; 13:00 was measured
-FUNDING_WINDOW_MIN = 30
 
 PASS = "PASS"
 FAIL = "FAIL"
@@ -161,28 +163,6 @@ def read_jsonl(path: Path, max_bytes: int = 256 * 1024 * 1024) -> tuple[list[dic
     except OSError:
         return records, bad
     return records, bad
-
-
-def parse_ts(value: Any) -> float | None:
-    """Unix seconds from a float, an ISO-8601 string, or None.
-
-    Naive strings are read as UTC — every writer in this repo stamps UTC
-    (bot.logging_setup uses datetime.now(timezone.utc).isoformat()).
-    """
-    if value is None:
-        return None
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return float(value)
-    if not isinstance(value, str):
-        return None
-    text = value.strip().replace("Z", "+00:00")
-    try:
-        dt = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.timestamp()
 
 
 def _f(value: Any) -> float | None:
@@ -850,38 +830,6 @@ def gate_vol_tilt(trades: list[ScalpTrade], meta: dict, *, iters: int,
 
 
 # ---- gate 6: OI phase C ----------------------------------------------------
-def _csv_first_last_ts(path: Path, column: str = "ts_utc"
-                       ) -> tuple[int, float | None, float | None, int]:
-    """(rows, first ts, last ts, bad rows) for an append-only CSV."""
-    rows = bad = 0
-    first = last = None
-    try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            header = f.readline().strip().split(",")
-            try:
-                idx = header.index(column)
-            except ValueError:
-                idx = 0
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                parts = line.split(",")
-                if len(parts) <= idx:
-                    bad += 1
-                    continue
-                ts = parse_ts(parts[idx])
-                if ts is None:
-                    bad += 1
-                    continue
-                rows += 1
-                first = ts if first is None else min(first, ts)
-                last = ts if last is None else max(last, ts)
-    except OSError:
-        return 0, None, None, bad
-    return rows, first, last, bad
-
-
 def gate_oi(root: Path) -> GateResult:
     path = root / "data" / "oi_snapshots.csv"
     res = GateResult(
@@ -911,20 +859,6 @@ def gate_oi(root: Path) -> GateResult:
 
 
 # ---- gate 7: board data ----------------------------------------------------
-_WS_STAMP = re.compile(r"(\d{8})_(\d{6})")
-
-
-def _ws_file_start(path: Path) -> float | None:
-    m = _WS_STAMP.search(path.name)
-    if not m:
-        return None
-    try:
-        dt = datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S")
-    except ValueError:
-        return None
-    return dt.replace(tzinfo=timezone.utc).timestamp()
-
-
 def gate_board(root: Path) -> GateResult:
     ws_dir = root / "data" / "ws"
     res = GateResult(
@@ -968,35 +902,6 @@ def gate_board(root: Path) -> GateResult:
 
 
 # ---- gate 8: funding window ------------------------------------------------
-def _candle_days_covering(path: Path, hour: int, minutes: int) -> tuple[set[str], int]:
-    """UTC days whose 1-minute candles cover [hour:00, hour:00+minutes]."""
-    have_start: set[str] = set()
-    have_end: set[str] = set()
-    bad = 0
-    end_h, end_m = divmod(hour * 60 + minutes, 60)
-    try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            header = f.readline().strip().split(",")
-            idx = header.index("ts") if "ts" in header else 0
-            for line in f:
-                parts = line.split(",")
-                if len(parts) <= idx:
-                    bad += 1
-                    continue
-                ts = parse_ts(parts[idx])
-                if ts is None:
-                    bad += 1
-                    continue
-                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
-                if dt.hour == hour and dt.minute == 0:
-                    have_start.add(dt.strftime("%Y-%m-%d"))
-                elif dt.hour == end_h and dt.minute == end_m % 60:
-                    have_end.add(dt.strftime("%Y-%m-%d"))
-    except OSError:
-        return set(), bad
-    return have_start & have_end, bad
-
-
 def gate_funding(root: Path) -> GateResult:
     res = GateResult(
         gate_id="G8", title="Funding-window sample (13:00 UTC)",

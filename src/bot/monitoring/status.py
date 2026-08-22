@@ -18,6 +18,11 @@ class BotStatus:
     last_price: float | None = None
     balance_jpy: float | None = None
     position_size: float = 0.0
+    # Average entry of the OPEN position (JPY), None while flat. The console
+    # shows it beside the size — a position tile without it says the bot is
+    # long but not whether it is in profit, which is the first thing the owner
+    # looks for.
+    entry_price: float | None = None
     # Fills booked by the paper book (an entry and its exit are two), carried
     # across restarts by data/paper_state.json — not a per-process counter.
     trade_count: int = 0

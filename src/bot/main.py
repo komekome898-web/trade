@@ -1438,6 +1438,10 @@ class TradingApp:
         s.last_price = price
         s.balance_jpy = equity
         s.position_size = self.portfolio.position_size
+        # None while flat: avg_entry_price is reset to 0.0 on the closing fill,
+        # and a tile showing "@ 0" would read as a real price.
+        s.entry_price = (self.portfolio.avg_entry_price
+                         if self.portfolio.position_size != 0.0 else None)
         s.trade_count = self.trade_count
         s.daily_pnl_jpy = self.portfolio.daily_pnl_jpy(price)
         s.total_pnl_jpy = self.portfolio.realized_pnl_jpy + self.portfolio.unrealized_pnl_jpy(price)

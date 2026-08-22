@@ -176,6 +176,341 @@ def test_status_payload_is_json_serialisable(tmp_path):
     json.dumps(collect_status(tmp_path))
 
 
+# ---- 最近の判断: JST times, Japanese reasons, fills and realized P&L --------
+def _decision(ts: str, signal: str, decision: str, reason: str, pnl=None,
+              **extra) -> dict:
+    rec = {"event": "decision", "timestamp": ts, "strategy_signal": signal,
+           "decision": decision, "reason": reason, "PnL": pnl}
+    rec.update(extra)
+    return rec
+
+
+def _write_log(root, records) -> None:
+    (root / "logs").mkdir(exist_ok=True)
+    with open(root / "logs" / "bot.jsonl", "w", encoding="utf-8") as f:
+        for rec in records:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+PAIRED_LOG = [
+    _decision("2026-08-20T04:59:00+00:00", "HOLD", "HOLD", "leader data gap", 0.0),
+    _decision("2026-08-20T05:00:00+00:00", "BUY", "ORDER_SENT",
+              "leader +0.42% over 5 bars", 0.0, execution_price=11_000_000.0,
+              order_size=0.01, execution_status="FILLED"),
+    _decision("2026-08-20T05:10:00+00:00", "CLOSE", "ORDER_SENT",
+              "leader momentum faded (0.01%)", 1234.5,
+              execution_price=11_123_456.0, order_size=0.01,
+              execution_status="FILLED"),
+    _decision("2026-08-20T05:20:00+00:00", "SELL", "ORDER_SENT",
+              "leader -0.51% over 5 bars", 1234.5, execution_price=11_100_000.0,
+              order_size=0.01, execution_status="FILLED"),
+    _decision("2026-08-20T05:30:00+00:00", "BUY", "ORDER_SENT",
+              "leader +0.30% over 5 bars", 900.5, execution_price=11_150_000.0,
+              order_size=0.01, execution_status="FILLED"),
+    _decision("2026-08-20T05:31:00+00:00", "HOLD", "REJECTED",
+              "BUY entry vetoed by module long_only", 900.5),
+]
+
+
+def test_decision_times_are_jst(tmp_path):
+    """The bot stamps UTC; the owner reads JST. 05:00Z is 14:00 JST, and the
+    format is MM/DD HH:MM:SS so a date rollover is visible."""
+    _write_log(tmp_path, PAIRED_LOG)
+    rows = {r["timestamp"]: r for r in collect_status(tmp_path)["decisions"]}
+    assert rows["2026-08-20T05:00:00+00:00"]["time_jst"] == "08/20 14:00:00"
+    # 16:30 UTC is already the next day in JST
+    _write_log(tmp_path, [_decision("2026-08-20T16:30:05+00:00", "HOLD", "HOLD",
+                                    "no cross")])
+    assert collect_status(tmp_path)["decisions"][0]["time_jst"] == "08/21 01:30:05"
+
+
+@pytest.mark.parametrize("raw,japanese", [
+    # every strategy
+    ("insufficient history", "履歴不足"),
+    ("indicators warming up", "指標の準備中"),
+    # xborder_momentum (the champion under validation)
+    ("no leader data column", "先行データ列なし"),
+    ("leader data gap", "先行データ欠落"),
+    ("leader +0.42% over 5 bars", "先行 +0.42% / 5本"),
+    ("leader -0.51% over 5 bars", "先行 -0.51% / 5本"),
+    ("leader momentum faded (0.01%)", "先行モメンタム減衰 (0.01%)"),
+    ("between exit band and threshold", "手仕舞い帯と閾値の間"),
+    # older wordings that are still in the log tail the console reads
+    ("below threshold", "閾値未満"),
+    ("leader momentum -0.06% <= exit", "先行モメンタム -0.06% ≤ 手仕舞い帯"),
+    # bot/main.py protective stop
+    ("protective stop: unrealized -2.10%", "保護ストップ(含み -2.10%)"),
+    # bot/strategy/composite.py module veto
+    ("BUY entry vetoed by module long_only", "新規BUYをモジュール long_only が拒否"),
+    ("SELL entry vetoed by module radar_window",
+     "新規SELLをモジュール radar_window が拒否"),
+    # ema_cross / breakout / inago / range_fade / rsi / wick
+    ("EMA fast crossed above slow", "EMA 上抜け"),
+    ("EMA fast crossed below slow", "EMA 下抜け"),
+    ("no cross", "クロスなし"),
+    ("volatility too low (0.031%)", "ボラ不足 (0.031%)"),
+    ("inside channel", "チャネル内"),
+    ("close 11000000 broke above 20-bar high 10950000", "20本高値 10950000 を上抜け"),
+    ("close 10900000 broke below 20-bar low 10950000", "20本安値 10950000 を下抜け"),
+    ("no order-flow columns", "オーダーフロー列なし"),
+    ("no volume surge", "出来高の急増なし"),
+    ("buy surge x3.2", "買い急増 x3.2"),
+    ("sell surge x2.8", "売り急増 x2.8"),
+    ("surge without direction", "急増(方向なし)"),
+    ("regime not calm — stand aside", "静穏でない — 待機"),
+    ("degenerate range", "レンジ幅なし"),
+    ("at range bottom (0.08)", "レンジ下限 (0.08)"),
+    ("at range top (0.94)", "レンジ上限 (0.94)"),
+    ("back at range middle", "レンジ中央に回帰"),
+    ("inside range", "レンジ内"),
+    ("RSI oversold (24.1) in non-down trend", "RSI 売られすぎ (24.1)"),
+    ("RSI overbought (78.9)", "RSI 買われすぎ (78.9)"),
+    ("RSI neutral", "RSI 中立"),
+    ("lower wick 0.42% rejected", "下ヒゲ 0.42% を否定"),
+    ("upper wick 0.51% rejected", "上ヒゲ 0.51% を否定"),
+    # bot/main.py suppression events
+    ("risk_overlay", "リスクオーバーレイ"),
+    ("budget_below_min", "発注額が最小単位未満"),
+    ("exchange_stopped", "取引所が停止中"),
+    ("exchange_condition", "取引所コンディション悪化"),
+    ("exchange_degraded", "取引所の応答が劣化"),
+])
+def test_reason_strings_map_to_japanese(raw, japanese):
+    from bot.monitoring.decision_text import reason_ja
+
+    assert reason_ja(raw) == japanese
+
+
+def test_every_literal_strategy_reason_has_a_japanese_label():
+    """Read out of the strategy sources, not a hand-kept list: a new HOLD
+    reason added tomorrow shows up here as an unmapped English string in the
+    console, and this is what says so. Only the literal reasons are checked —
+    the f-string ones carry numbers and are covered by the parametrised cases
+    above."""
+    import ast
+    import pathlib
+
+    from bot.monitoring.decision_text import reason_ja
+
+    unmapped = []
+    for path in sorted((pathlib.Path(__file__).resolve().parents[1] / "src" /
+                        "bot" / "strategy").glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call)
+                    and getattr(node.func, "id", "") == "Signal"
+                    and len(node.args) >= 2):
+                continue
+            arg = node.args[1]
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                if reason_ja(arg.value) == arg.value:
+                    unmapped.append(f"{path.name}: {arg.value}")
+    assert not unmapped, unmapped
+
+
+def test_unknown_reason_passes_through_raw():
+    """A strategy swapped in tomorrow logs reasons nobody has mapped. A
+    wrong-but-Japanese label would be worse than the English original."""
+    from bot.monitoring.decision_text import decision_ja, reason_ja, signal_ja
+
+    assert reason_ja("some brand new reason") == "some brand new reason"
+    assert reason_ja("") == "" and reason_ja(None) == ""
+    assert decision_ja("SOMETHING_ELSE") == "SOMETHING_ELSE"
+    assert signal_ja("STOP_LOSS") == "損切り"
+    assert decision_ja("ORDER_SENT") == "発注" and decision_ja("HOLD") == "様子見"
+
+
+def test_entry_and_exit_rows_carry_the_fill_price_and_realized_pnl(tmp_path):
+    """The pairing is positional (a BUY on top of a short is an EXIT) and the
+    log's PnL field is CUMULATIVE, so an exit's own P&L is the step in it.
+    Both facts need the whole log — the page cannot derive either from a row."""
+    _write_log(tmp_path, PAIRED_LOG)
+    rows = {r["timestamp"]: r for r in collect_status(tmp_path)["decisions"]}
+
+    entry = rows["2026-08-20T05:00:00+00:00"]
+    assert entry["trade_kind"] == "entry" and entry["trade_side"] == "LONG"
+    assert entry["fill_price"] == 11_000_000.0
+    assert entry["realized_pnl_jpy"] is None      # an entry realizes nothing
+
+    exit_row = rows["2026-08-20T05:10:00+00:00"]
+    assert exit_row["trade_kind"] == "exit" and exit_row["trade_side"] == "LONG"
+    assert exit_row["fill_price"] == 11_123_456.0
+    assert exit_row["realized_pnl_jpy"] == 1234.5
+
+    # the SELL is an ENTRY (the book was flat), not a close of the long above
+    short = rows["2026-08-20T05:20:00+00:00"]
+    assert short["trade_kind"] == "entry" and short["trade_side"] == "SHORT"
+    # and the BUY that follows CLOSES it, at a loss: 900.5 - 1234.5
+    close = rows["2026-08-20T05:30:00+00:00"]
+    assert close["trade_kind"] == "exit" and close["trade_side"] == "SHORT"
+    assert close["realized_pnl_jpy"] == -334.0
+
+    # a row that sent no order is labelled but carries no trade numbers
+    refused = rows["2026-08-20T05:31:00+00:00"]
+    assert refused["trade_kind"] is None
+    assert refused["fill_price"] is None and refused["realized_pnl_jpy"] is None
+    assert refused["decision_ja"] == "発注却下"
+
+
+def test_decision_enrichment_reuses_the_one_pairing_implementation(tmp_path):
+    """market_view.parse_bot_events is the repo's single pairing rule (chart
+    markers, gate judge, this table). A second one would eventually disagree
+    with the chart about what an order did."""
+    from bot.monitoring.market_view import parse_bot_events
+
+    _write_log(tmp_path, PAIRED_LOG)
+    events = parse_bot_events(tmp_path / "logs" / "bot.jsonl")
+    priced = [(r["fill_price"], r["realized_pnl_jpy"])
+              for r in reversed(collect_status(tmp_path)["decisions"])
+              if r["trade_kind"]]
+    assert priced == [(e["price"], e["pnl"] if e["kind"] == "exit" else None)
+                      for e in events]
+
+
+# ---- 判定ゲート: progress against the pre-registered bars -------------------
+def _gates(payload) -> dict:
+    return {g["key"]: g for g in payload["gates"]}
+
+
+def test_gate_bars_come_from_the_judge(tmp_path):
+    """The console's 必要量 and judge_gates' PASS bar have to be one number."""
+    import sys
+
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve()
+                          .parents[1] / "scripts"))
+    import judge_gates as jg
+    from bot.monitoring import gates as g
+
+    assert jg.MAIN_TRADES_BAR is g.MAIN_TRADES_BAR == 30
+    assert jg.OI_ROWS_BAR is g.OI_ROWS_BAR == 2900
+    assert jg.BOARD_DAYS_BAR is g.BOARD_DAYS_BAR == 7.0
+    assert jg.BOARD_BYTES_BAR is g.BOARD_BYTES_BAR == 500_000_000
+    assert jg.FUNDING_N_BAR is g.FUNDING_N_BAR == 63
+
+    needs = {k: v["need"] for k, v in _gates(collect_status(tmp_path)).items()}
+    assert needs == {"champion": 30.0, "oi": 2900.0, "board": 7.0,
+                     "funding": 63.0}
+
+
+def test_champion_gate_counts_closed_round_trips_not_fills(tmp_path):
+    """status.json's trade_count is FILLS (an entry and its exit are two); §5
+    counts trades. PAIRED_LOG holds two closed round trips."""
+    _write_log(tmp_path, PAIRED_LOG)
+    champ = _gates(collect_status(tmp_path))["champion"]
+    assert champ["have"] == 2.0 and champ["need"] == 30.0
+    assert champ["unit"] == "trades" and champ["done"] is False
+
+
+def test_progress_eta_is_measured_from_the_observed_rate():
+    """A known rate gives a known ETA: 10 rows in 10 days is 1 row/day, so the
+    remaining 20 of a 30-row bar are 20 days away."""
+    from bot.monitoring.gates import DAY_SEC, progress
+
+    now = 1_800_000_000.0
+    p = progress("t", "t", have=10, need=30, unit="rows",
+                 first_ts=now - 10 * DAY_SEC, now=now, bar="x")
+    assert p["rate_per_day"] == 1.0
+    assert p["eta_sec"] == pytest.approx(20 * DAY_SEC)
+    assert p["pct"] == pytest.approx(33.3) and p["done"] is False
+
+
+def test_progress_eta_is_unknown_rather_than_optimistic():
+    """No rate — nothing collected yet, or the collector never ran — is None,
+    which the page renders as 「—」. A guess here would be read as a promise."""
+    from bot.monitoring.gates import DAY_SEC, progress
+
+    now = 1_800_000_000.0
+    assert progress("t", "t", have=0, need=30, unit="rows",
+                    first_ts=now - 10 * DAY_SEC, now=now, bar="x")["eta_sec"] is None
+    assert progress("t", "t", have=5, need=30, unit="rows",
+                    first_ts=None, now=now, bar="x")["eta_sec"] is None
+    # a full sample is 0 seconds away, not None
+    done = progress("t", "t", have=30, need=30, unit="rows",
+                    first_ts=now - DAY_SEC, now=now, bar="x")
+    assert done["eta_sec"] == 0.0 and done["done"] is True and done["pct"] == 100.0
+
+
+def test_board_gate_waits_for_the_later_of_its_two_bars(tmp_path):
+    """data/ws must reach BOTH 7 days and ~0.5 GB (§4 reports f, g). At 1 MB a
+    day the byte bar is centuries out and it is the byte bar that decides."""
+    import os
+    from datetime import datetime, timezone
+
+    from bot.monitoring.gates import DAY_SEC, board_gate, clear_cache
+
+    clear_cache()
+    ws = tmp_path / "data" / "ws"
+    ws.mkdir(parents=True)
+    now = 1_800_000_000.0
+    for day in range(3):
+        # the span is read off the STAMPED start in the filename (first file)
+        # and the last file's mtime, exactly as judge_gates measures it
+        start = now - (3 - day) * DAY_SEC
+        stamp = datetime.fromtimestamp(start, tz=timezone.utc).strftime(
+            "%Y%m%d_%H%M%S")
+        f = ws / f"board_{stamp}.jsonl.gz"
+        f.write_bytes(b"x" * 1_000_000)
+        os.utime(f, (start, start + DAY_SEC))
+    g = board_gate(tmp_path, now)
+    assert g["unit"] == "days" and g["need"] == 7.0
+    assert g["have"] == pytest.approx(3.0, abs=0.01)
+    # days alone would be ~4 more days; the 0.5 GB bar dominates
+    assert g["eta_sec"] > 100 * DAY_SEC
+    assert "3.0 MB / 3ファイル" in g["detail"]
+
+
+def test_oi_and_funding_gates_read_the_real_files(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    from bot.monitoring.gates import DAY_SEC, clear_cache
+
+    clear_cache()
+    (tmp_path / "data").mkdir()
+    start = datetime(2026, 7, 1, tzinfo=timezone.utc)
+    rows = ["ts_utc,okx_usdt_oi,okx_usd_oi,okx_ls_ratio,dvol,deribit_oi"]
+    for i in range(96 * 10):                       # 10 days at 15 min
+        rows.append((start + timedelta(minutes=15 * i)).isoformat() +
+                    ",1.0,2.0,1.1,38.0,3.0")
+    (tmp_path / "data" / "oi_snapshots.csv").write_text("\n".join(rows) + "\n",
+                                                        encoding="utf-8")
+    candles = ["ts,open,high,low,close,volume"]
+    for day in range(4):                           # 4 settlement days covered
+        for minute in (0, 30):
+            ts = start + timedelta(days=day, hours=13, minutes=minute)
+            candles.append(f"{ts.isoformat()},1,1,1,1,1")
+    (tmp_path / "data" / "candles_FX_BTC_JPY.csv").write_text(
+        "\n".join(candles) + "\n", encoding="utf-8")
+
+    now = (start + timedelta(days=10)).timestamp()
+    gates = _gates(collect_status(tmp_path, now=now))
+    oi = gates["oi"]
+    assert oi["have"] == 960.0 and oi["need"] == 2900.0
+    assert oi["rate_per_day"] == pytest.approx(96.0, rel=0.02)
+    assert oi["eta_sec"] == pytest.approx((2900 - 960) / 96 * DAY_SEC, rel=0.02)
+    funding = gates["funding"]
+    assert funding["have"] == 4.0 and funding["need"] == 63.0
+    assert funding["unit"] == "days"
+
+
+def test_gate_file_scans_are_memoised_on_mtime_and_size(tmp_path, monkeypatch):
+    """The console polls every 5s and the candle file has tens of thousands of
+    rows; re-reading it per poll to draw one progress bar is not affordable."""
+    from bot.monitoring import gates as g
+
+    g.clear_cache()
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "oi_snapshots.csv").write_text(
+        "ts_utc,dvol\n2026-07-01T00:00:00+00:00,38.0\n", encoding="utf-8")
+    calls = []
+    real = g.csv_first_last_ts
+    monkeypatch.setattr(g, "csv_first_last_ts",
+                        lambda p, column="ts_utc": calls.append(p) or real(p, column))
+    now = 1_800_000_000.0
+    for _ in range(5):
+        g.oi_gate(tmp_path, now)
+    assert len(calls) == 1
+
+
 # ---- マーケットタブ ---------------------------------------------------------
 def _serve(tmp_path, monkeypatch):
     """The real handler on a throwaway localhost port, rooted at tmp_path so
@@ -303,10 +638,273 @@ def test_page_renders_the_market_keys_it_is_served(tmp_path):
     assert "s.approx" in page
 
 
+def test_tile_values_are_pinned_to_one_line_in_the_css():
+    """Runs without node: the no-wrap rule is CSS, not arithmetic, and the
+    auto-shrink constants have to agree with the grid's own minimum width."""
+    import re
+
+    page = _dashboard_page()
+    css = re.search(r"\.tile \.v \{(.*?)\}", page, re.S).group(1)
+    assert "white-space: nowrap" in css
+    assert "overflow: hidden" in css and "text-overflow: ellipsis" in css
+    # TILE_W is the narrowest tile's CONTENT box: the grid minimum less the
+    # 14px padding on each side. Widening one without the other silently
+    # over- or under-shrinks every value.
+    minmax = int(re.search(r"minmax\((\d+)px, 1fr\)", page).group(1))
+    tile_w = int(re.search(r"const TILE_W = (\d+)", page).group(1))
+    pad = int(re.search(r"\.tile \{[^}]*padding: 12px (\d+)px", page, re.S).group(1))
+    assert tile_w == minmax - 2 * pad
+    # the .sub run inside a value is sized relative to it, so one font-size
+    # attribute governs the whole line
+    assert ".tile .v .sub { font-size: .55em; }" in page
+    assert "const TILE_W = 140, TILE_CH = 0.6, TILE_SUB = 0.55;" in page
+
+
 def _node() -> str | None:
     import shutil
 
     return shutil.which("node")
+
+
+# ---- Botコンソール tab, rendered headlessly ---------------------------------
+CONSOLE_HARNESS = r"""
+// DOM-less harness for the CONSOLE tab: refresh() is driven with a stubbed
+// fetch that answers one /api/status payload, then the built markup is
+// reported. The tile fonts are reported as numbers, not as markup, because
+// "the value never wraps" is an assertion about a WIDTH.
+const fs = require("fs");
+const src = fs.readFileSync(process.argv[2], "utf8");
+const data = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
+
+function El(id) {
+  this.id = id; this.innerHTML = ""; this.textContent = "";
+  this.className = ""; this.hidden = false; this.style = {}; this.events = {};
+}
+El.prototype.addEventListener = function (k, f) { this.events[k] = f; };
+El.prototype.getBoundingClientRect = () => ({left: 0, top: 0, width: 800, height: 420});
+El.prototype.scrollIntoView = function () { this.scrolled = true; };
+
+const els = {};
+const document = {getElementById: id => (els[id] = els[id] || new El(id))};
+const canvas = document.getElementById("m-chart");
+canvas.getContext = () => null;
+canvas.parentElement = {clientWidth: 800};
+const window = {devicePixelRatio: 1, addEventListener() {}};
+
+const api = new Function(
+  "document", "window", "fetch", "setInterval", "clearInterval", "navigator",
+  src + "\nreturn {refresh, tileFont, eta, TILE_W, TILE_CH, TILE_SUB, TILE_MAX, TILE_MIN};"
+)(document, window,
+  () => Promise.resolve({json: () => Promise.resolve(data)}),
+  () => 7, () => 0, {});
+
+// The longest values the console can realistically hold, as (value, sub) —
+// exactly what tile() is called with in refresh().
+const PROBES = [
+  ["PAPER", ""],
+  ["12,345,678", ""],
+  ["1,234,567 円", ""],
+  ["-123,456.7 円", ""],
+  ["LONG 0.013", "@ 11,234,567"],
+  ["SHORT 0.1234", "@ 12,345,678"],
+  ["CRITICAL ⚠️停止中の記録", "p95 12,345ms / NORMAL"],
+  ["x0.25", "連敗 4 / DD 12.34%"],
+];
+const width = (v, sub) => api.TILE_CH * api.tileFont(v, sub) *
+  (v.length + (sub ? api.TILE_SUB * (sub.length + 1) : 0));
+
+api.refresh().then(() => {
+  const tiles = els["tiles"].innerHTML;
+  const fonts = [];
+  const re = /<div class="v mono[^"]*" style="font-size:([\d.]+)px"/g;
+  let m;
+  while ((m = re.exec(tiles)) !== null) fonts.push(Number(m[1]));
+  console.log(JSON.stringify({
+    tiles: tiles,
+    tile_count: (tiles.match(/class="tile"/g) || []).length,
+    tile_fonts: fonts,
+    probe_fonts: PROBES.map(p => api.tileFont(p[0], p[1])),
+    probe_widths: PROBES.map(p => width(p[0], p[1])),
+    tile_w: api.TILE_W, tile_max: api.TILE_MAX, tile_min: api.TILE_MIN,
+    decisions: els["t-dec"].innerHTML,
+    collectors: els["t-col"].innerHTML,
+    gates: els["gates"].innerHTML,
+    banner: els["banner"].textContent,
+    updated: els["updated"].textContent,
+    eta_samples: [api.eta(null), api.eta(0), api.eta(3600), api.eta(86400 * 20),
+                  api.eta(86400 * 400)],
+  }));
+}).catch(e => { console.error(e && e.stack || String(e)); process.exit(3); });
+"""
+
+
+def _render_console_in_node(tmp_path, payload) -> dict:
+    """Execute the page's own JS against a /api/status payload."""
+    import re
+    import subprocess
+
+    js = re.search(r"<script>(.*)</script>", _dashboard_page(), re.S).group(1)
+    (tmp_path / "page.js").write_text(js, encoding="utf-8")
+    (tmp_path / "console_harness.js").write_text(CONSOLE_HARNESS, encoding="utf-8")
+    (tmp_path / "status.json").write_text(json.dumps(payload), encoding="utf-8")
+    node = _node()
+    subprocess.run([node, "--check", str(tmp_path / "page.js")], check=True)
+    out = subprocess.run(
+        [node, str(tmp_path / "console_harness.js"), str(tmp_path / "page.js"),
+         str(tmp_path / "status.json")],
+        check=True, capture_output=True, text=True)
+    return json.loads(out.stdout)
+
+
+def _console_workspace(root):
+    """A workspace with a paired trade log, an open position, OI rows and a
+    board recording — everything the console tab draws."""
+    import os
+    from datetime import datetime, timedelta, timezone
+
+    from bot.monitoring.gates import DAY_SEC, clear_cache
+
+    clear_cache()
+    (root / "logs").mkdir(exist_ok=True)
+    (root / "data").mkdir(exist_ok=True)
+    _write_log(root, PAIRED_LOG)
+    now = 1_800_000_000.0
+    (root / "logs" / "status.json").write_text(json.dumps({
+        "mode": "paper", "last_price": 12_345_678, "balance_jpy": 1_234_567,
+        "daily_pnl_jpy": -123_456.7, "total_pnl_jpy": 234_567.8,
+        "max_drawdown_pct": 12.34, "position_size": 0.013,
+        "entry_price": 11_234_567.0, "trade_count": 4, "error_count": 0,
+        "api_condition": "CRITICAL", "api_health_status": "NORMAL",
+        "overlay": {"factor": 0.25, "consecutive_losses": 4, "dd_pct": 12.34},
+        "active_modules": [], "updated_at": now - 5}), encoding="utf-8")
+    start = datetime(2026, 7, 1, tzinfo=timezone.utc)
+    rows = ["ts_utc,okx_usdt_oi,okx_usd_oi,okx_ls_ratio,dvol,deribit_oi"]
+    for i in range(96 * 5):
+        rows.append((start + timedelta(minutes=15 * i)).isoformat() +
+                    ",120000,2.0,1.13,38.25,3.0")
+    (root / "data" / "oi_snapshots.csv").write_text("\n".join(rows) + "\n",
+                                                    encoding="utf-8")
+    ws = root / "data" / "ws"
+    ws.mkdir()
+    for day in range(2):
+        s = now - (2 - day) * DAY_SEC
+        stamp = datetime.fromtimestamp(s, tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+        f = ws / f"board_{stamp}.jsonl.gz"
+        f.write_bytes(b"x" * 2_000_000)
+        os.utime(f, (s, s + DAY_SEC))
+    for label, rel in [("bitFlyer candles", "data/candles_FX_BTC_JPY.csv"),
+                       ("Binance 1m", "data/binance_BTCUSDT_1m.csv")]:
+        (root / rel).write_text("ts,open,high,low,close,volume\n", encoding="utf-8")
+    return now
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_console_tiles_never_wrap_to_a_second_line(tmp_path):
+    """A 小窓 that wraps pushes the whole tile row out of alignment. The value
+    is one line by CSS and the font is stepped down to the string's own length,
+    so the longest realistic values still fit the narrowest (150px) tile."""
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    now = _console_workspace(workspace)
+    r = _render_console_in_node(tmp_path,
+                                collect_status(workspace, now=now))
+    page = _dashboard_page()
+
+    # the CSS says it outright, whatever the font arithmetic does
+    assert "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" in page
+    # every rendered tile carries a computed size inside the allowed band
+    assert r["tile_count"] >= 12 and len(r["tile_fonts"]) == r["tile_count"]
+    for px in r["tile_fonts"]:
+        assert r["tile_min"] <= px <= r["tile_max"]
+    # and the longest values the console can hold still fit the box
+    for value, px in zip(r["probe_widths"], r["probe_fonts"]):
+        assert value <= r["tile_w"] + 0.01 or px == r["tile_min"]
+    # short values are NOT shrunk — the tiles keep their headline size
+    assert r["probe_fonts"][0] == r["tile_max"]
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_console_position_tile_shows_the_entry_price(tmp_path):
+    """LONG 0.013 @ 11,234,567 — a size alone does not say whether the open
+    position is winning, which is the first thing the owner looks for."""
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    now = _console_workspace(workspace)
+    payload = collect_status(workspace, now=now)
+    assert payload["bot"]["entry_price"] == 11_234_567.0
+
+    r = _render_console_in_node(tmp_path, payload)
+    assert "LONG 0.013" in r["tiles"]
+    assert "@ 11,234,567" in r["tiles"]
+
+    # flat is spelled out rather than shown as 0.0000
+    payload["bot"]["position_size"] = 0.0
+    payload["bot"]["entry_price"] = None
+    flat = _render_console_in_node(tmp_path, payload)
+    assert "フラット" in flat["tiles"] and "@ " not in flat["tiles"]
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_console_decisions_table_is_jst_japanese_and_priced(tmp_path):
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    now = _console_workspace(workspace)
+    r = _render_console_in_node(tmp_path, collect_status(workspace, now=now))
+    table = r["decisions"]
+
+    assert "時刻 (JST)" in table and "08/20 14:00:00" in table
+    assert "先行 +0.42% / 5本" in table          # reason in Japanese
+    assert "発注却下" in table and "様子見" in table
+    assert "11,123,456" in table                 # the exit's fill price
+    assert "+1,234.5円" in table                 # realized, signed
+    assert "-334円" in table or "-334.0円" in table
+    # signed and coloured with the page's shared up/down semantics
+    assert 'class="num mono up"' in table and 'class="num mono down"' in table
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_console_collectors_show_requirement_progress_and_eta(tmp_path):
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    now = _console_workspace(workspace)
+    payload = collect_status(workspace, now=now)
+    r = _render_console_in_node(tmp_path, payload)
+    table, strip = r["collectors"], r["gates"]
+
+    for header in ("必要量", "進捗", "残り時間"):
+        assert header in table
+    # every gate is a row with its bar, its n/required and a progress bar
+    for gate in payload["gates"]:
+        assert gate["label"] in table and gate["bar"] in table
+        assert gate["label"] in strip                 # and a chip in the strip
+    assert "480/2,900行" in table                     # OI rows
+    assert "2/30回" in table                          # champion round trips
+    assert "2/7日" in table                           # board days recorded
+    assert "0/63日" in table                          # funding-window days
+    assert table.count('class="prog') == len(payload["gates"])
+    # the estimate is labelled as one, and an unknown rate is not guessed
+    assert "≈" in table
+    assert r["eta_samples"] == ["—", "達成", "≈1.0時間", "≈20.0日", "≈13.1ヶ月"]
+    # the plain collectors keep their row and simply have no bar
+    assert "bitFlyer candles" in table and "Binance 1m" in table
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_console_renders_an_empty_payload_without_errors(tmp_path):
+    """Every runtime file missing: empty states, no exception, no NaN."""
+    from bot.monitoring.gates import clear_cache
+
+    clear_cache()
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    r = _render_console_in_node(tmp_path, collect_status(empty, now=1_800_000_000.0))
+
+    assert "判断ログなし" in r["decisions"]
+    assert "フラット" in r["tiles"]
+    assert "NaN" not in r["tiles"] and "undefined" not in r["tiles"]
+    assert "0/30回" in r["gates"] and "0/2,900行" in r["gates"]
+    assert r["gates"].count("—") >= 4          # no rate anywhere: no guesses
+    assert "未収集" in r["collectors"]
 
 
 HARNESS = r"""

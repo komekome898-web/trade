@@ -77,14 +77,24 @@ PAGE = """<!doctype html>
     border: 1px solid var(--crit); border-radius: 8px; padding: 12px 16px;
     display: none;
   }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  /* 168px, not 150: the widest tile value (ポジション: LONG 0.013 @ 11,234,567)
+     is auto-shrunk to fit the NARROWEST tile, and at 150px that dropped it to
+     ~12px. See TILE_W in the script — the two numbers are one decision. */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 12px; }
   .tile { background: var(--panel); border: 1px solid var(--line);
           border-radius: 8px; padding: 12px 14px; }
   .tile .k { color: var(--muted); font-size: 11px; letter-spacing: .06em;
              text-transform: uppercase; }
-  .tile .v { font-size: 22px; margin-top: 4px; }
+  /* A 小窓 that wraps to two lines pushes every row below it down and the
+     tile grid stops lining up. The value therefore NEVER wraps: it is one
+     line, clipped with an ellipsis as a last resort, and the font is stepped
+     down to the string's own length by tileFont() so the clip is never
+     actually reached at realistic values (¥1,234,567 / 12,345,678 /
+     LONG 0.013 @ 11,234,567). The full text stays in the title attribute. */
+  .tile .v { font-size: 22px; margin-top: 4px;
+             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tile .v.pos { color: var(--ok); } .tile .v.neg { color: var(--crit); }
-  .tile .v .sub { font-size: 12px; }
+  .tile .v .sub { font-size: .55em; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
   section { background: var(--panel); border: 1px solid var(--line);
@@ -102,6 +112,16 @@ PAGE = """<!doctype html>
   .sub { color: var(--muted); }
   .empty { color: var(--muted); padding: 16px; }
   [hidden] { display: none !important; }
+  /* collectors / gates: a progress bar sized by the pre-registered bar */
+  .prog { display: inline-block; width: 90px; height: 6px; border-radius: 3px;
+          background: color-mix(in srgb, var(--line) 70%, transparent);
+          vertical-align: middle; overflow: hidden; margin-right: 8px; }
+  .prog i { display: block; height: 100%; background: var(--accent); }
+  .prog.done i { background: var(--ok); }
+  .gates { display: flex; align-items: center; gap: 10px 20px; flex-wrap: wrap;
+           padding: 10px 14px; }
+  .gates .g { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .gates .g .k { color: var(--muted); }
 
   /* ---- tabs ---- */
   nav.tabs { display: flex; gap: 4px; padding: 0 20px; background: var(--bg);
@@ -178,6 +198,10 @@ PAGE = """<!doctype html>
 <main id="view-console">
   <div class="banner" id="banner"></div>
   <div class="tiles" id="tiles"></div>
+  <section>
+    <h2>判定ゲート (係属中の必要サンプル)</h2>
+    <div class="gates" id="gates"></div>
+  </section>
   <div class="grid2">
     <section>
       <h2>メインBOT: 最近の判断</h2>
@@ -249,8 +273,40 @@ function setModules(mods) {
     (mods.length ? mods.join(", ") : "なし");
 }
 
-function tile(k, v, cls="") { return `<div class="tile"><div class="k">${k}</div><div class="v mono ${cls}">${v}</div></div>`; }
+// ---- tiles -----------------------------------------------------------------
+// The tile value is one line, always (see .tile .v in the CSS). The font is
+// stepped down to whatever the string actually is, so 「12,345,678」 and
+// 「LONG 0.013 @ 11,234,567」 fit the same 150px 小窓 that holds 「PAPER」.
+// TILE_W is the narrowest tile's content box (grid minmax 168px, 14px padding
+// each side); TILE_CH is the monospace advance in em; the .sub run is .55em of
+// the value (CSS), plus one space.
+const TILE_W = 140, TILE_CH = 0.6, TILE_SUB = 0.55;
+const TILE_MAX = 22, TILE_MIN = 11;
+function tileFont(v, sub) {
+  const units = TILE_CH * (String(v == null ? "" : v).length +
+    (sub ? TILE_SUB * (String(sub).length + 1) : 0));
+  if (!(units > 0)) return TILE_MAX;
+  return Math.max(TILE_MIN, Math.min(TILE_MAX, TILE_W / units));
+}
+function tile(k, v, cls="", sub="") {
+  const px = tileFont(v, sub).toFixed(1);
+  const full = sub ? `${v} ${sub}` : String(v == null ? "" : v);
+  return `<div class="tile"><div class="k">${k}</div>` +
+    `<div class="v mono ${cls}" style="font-size:${px}px" title="${full}">${v}` +
+    (sub ? ` <span class="sub">${sub}</span>` : "") + `</div></div>`;
+}
 function pnlCls(v) { return v > 0 ? "pos" : v < 0 ? "neg" : ""; }
+
+// Position tile. A size on its own does not say whether the bot is winning:
+// the entry price (status.json entry_price, portfolio.avg_entry_price) rides
+// along as the sub-run. Flat is spelled out rather than shown as 0.0000.
+function positionTile(b) {
+  const size = b.position_size;
+  if (!size) return tile("ポジション", "フラット");
+  const side = size > 0 ? "LONG" : "SHORT";
+  return tile("ポジション", `${side} ${fmt(Math.abs(size), 4)}`, "",
+    b.entry_price != null ? `@ ${fmt(b.entry_price, 0)}` : "");
+}
 
 // Risk overlay (bot/strategy/composite.py: size_factor). null = the running
 // strategy has no overlay, which is not the same as an overlay sitting at full
@@ -258,9 +314,8 @@ function pnlCls(v) { return v > 0 ? "pos" : v < 0 ? "neg" : ""; }
 function overlayTile(ov) {
   if (ov == null) return "";
   const brake = ov.factor != null && ov.factor < 1;
-  return tile("リスクオーバーレイ",
-    `x${fmt(ov.factor, 2)} <span class="sub">連敗 ${fmt(ov.consecutive_losses, 0)} / ` +
-    `DD ${fmt(ov.dd_pct, 2)}%</span>`, brake ? "neg" : "");
+  return tile("リスクオーバーレイ", `x${fmt(ov.factor, 2)}`, brake ? "neg" : "",
+    `連敗 ${fmt(ov.consecutive_losses, 0)} / DD ${fmt(ov.dd_pct, 2)}%`);
 }
 
 // API状態 (bot/exchange/resilience.py). condition は NORMAL/DEGRADED/CRITICAL、
@@ -275,9 +330,8 @@ function apiTile(a) {
   const health = a.health ? a.health : `健全度不明${age}`;
   // status.json が古い(BOT停止/ハング)ときは CSV 最終行の値。断りを入れる。
   const stale = a.stale ? " ⚠️停止中の記録" : "";
-  return tile("API状態",
-    `${a.condition || "—"}${stale} <span class="sub">p95 ${p95} / ${health}</span>`,
-    bad ? "neg" : "");
+  return tile("API状態", `${a.condition || "—"}${stale}`, bad ? "neg" : "",
+    `p95 ${p95} / ${health}`);
 }
 
 async function refresh() {
@@ -307,19 +361,32 @@ async function refresh() {
     tile("本日損益", fmt(b.daily_pnl_jpy, 1) + " 円", pnlCls(b.daily_pnl_jpy)) +
     tile("累積損益", fmt(b.total_pnl_jpy, 1) + " 円", pnlCls(b.total_pnl_jpy)) +
     tile("最大DD", fmt(b.max_drawdown_pct, 2) + " %") +
-    tile("ポジション", fmt(b.position_size, 4)) +
+    positionTile(b) +
     tile("約定回数", fmt(b.trade_count, 0) + " 回") +
-    tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円 / ${d.scalp.trades}回`, pnlCls(d.scalp.total_pnl_jpy)) +
+    tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円`, pnlCls(d.scalp.total_pnl_jpy),
+         `${d.scalp.trades}回`) +
     tile("エラー数", fmt(b.error_count, 0)) +
     apiTile(d.api_health) +
     overlayTile(d.overlay);
 
+  renderGates(d.gates || []);
+
+  // 最近の判断: times in JST, reasons in Japanese, and — for the rows that
+  // were actually trades — the fill price and, on an exit, the realized P&L.
+  // All four are computed server-side (monitoring/aggregate.py) because
+  // whether a filled order opened or closed depends on the whole log.
   const dec = d.decisions || [];
   document.getElementById("t-dec").innerHTML = dec.length ?
-    "<tr><th>時刻</th><th>シグナル</th><th>判断</th><th>理由</th></tr>" +
-    dec.map(r => `<tr><td class="mono">${(r.timestamp || "").slice(11, 19)}</td>` +
-      `<td>${r.strategy_signal || ""}</td><td>${r.decision || ""}</td>` +
-      `<td>${(r.reason || "").slice(0, 60)}</td></tr>`).join("")
+    "<tr><th>時刻 (JST)</th><th>シグナル</th><th>判断</th>" +
+    "<th class='num'>約定価格</th><th class='num'>損益</th><th>理由</th></tr>" +
+    dec.map(r => `<tr><td class="mono">${r.time_jst || ""}</td>` +
+      `<td>${r.signal_ja || r.strategy_signal || ""}</td>` +
+      `<td>${r.decision_ja || r.decision || ""}</td>` +
+      `<td class="num mono">${r.fill_price != null ? fmt(r.fill_price, 0) : ""}</td>` +
+      `<td class="num mono ${r.realized_pnl_jpy != null ? dirCls(r.realized_pnl_jpy) : ""}">` +
+        `${r.realized_pnl_jpy != null ?
+           (r.realized_pnl_jpy > 0 ? "+" : "") + fmt(r.realized_pnl_jpy, 1) + "円" : ""}</td>` +
+      `<td title="${r.reason || ""}">${(r.reason_ja || r.reason || "").slice(0, 60)}</td></tr>`).join("")
     : "<tr><td class='empty'>判断ログなし(シグナル待ちは正常です)</td></tr>";
 
   const sc = d.scalp.recent || [];
@@ -331,28 +398,77 @@ async function refresh() {
       `<td class="num mono">${r.pnl_jpy != null ? fmt(r.pnl_jpy, 1) : ""}</td></tr>`).join("")
     : "<tr><td class='empty'>イベントなし(激変動待ちは正常です)</td></tr>";
 
+  // データ収集: the plain collectors first (no pre-registered bar on them),
+  // then one row per pending gate carrying 必要量 / 進捗 / 残り時間.
   const col = Object.entries(d.collectors || {});
   document.getElementById("t-col").innerHTML =
-    "<tr><th>データ</th><th>最終更新</th><th class='num'>サイズ</th></tr>" +
+    "<tr><th>データ</th><th>最終更新</th><th class='num'>サイズ</th>" +
+    "<th>必要量</th><th>進捗</th><th class='num'>残り時間</th></tr>" +
     col.map(([k, v]) => `<tr><td>${k}</td><td>${v ? age(v.age_sec) : "未収集"}</td>` +
-      `<td class="num mono">${v ? fmt(v.size / 1e6, 1) + " MB" : "—"}</td></tr>`).join("") +
-    `<tr><td>板記録 (WS)</td><td>${d.ws.latest ? age(d.ws.latest.age_sec) : "未収集"}</td>` +
-    `<td class="num mono">${fmt(d.ws.total_mb, 1)} MB / ${d.ws.files}ファイル</td></tr>` +
-    oiRow(d.oi_snapshot);
+      `<td class="num mono">${v ? fmt(v.size / 1e6, 1) + " MB" : "—"}</td>` +
+      `<td class="sub">—</td><td class="sub">—</td><td class="num sub">—</td></tr>`).join("") +
+    (d.gates || []).map(g => gateRow(g, d)).join("");
+}
+
+const UNIT_JA = {trades: "回", rows: "行", days: "日"};
+
+// The remaining time is a projection at the rate the data has ACTUALLY been
+// arriving (aggregate/gates.py: units accumulated / seconds observed), so it
+// is always prefixed ≈. No rate — nothing collected yet, or the collector has
+// never run — is "—", never an optimistic guess.
+function eta(sec) {
+  if (sec == null) return "—";
+  if (sec <= 0) return "達成";
+  if (sec < 86400) return `≈${(sec / 3600).toFixed(1)}時間`;
+  if (sec < 86400 * 90) return `≈${(sec / 86400).toFixed(1)}日`;
+  return `≈${(sec / 86400 / 30.44).toFixed(1)}ヶ月`;
+}
+
+function progBar(g) {
+  return `<span class="prog${g.done ? " done" : ""}">` +
+    `<i style="width:${Math.max(0, Math.min(100, g.pct || 0))}%"></i></span>`;
+}
+
+function gateRow(g, d) {
+  const u = UNIT_JA[g.unit] || "";
+  const dec = g.unit === "days" ? 1 : 0;
+  // the OI row keeps the live readings it always carried in its label
+  const extra = g.key === "oi" ? oiValues(d.oi_snapshot) : "";
+  return `<tr><td>${g.label}${extra}</td>` +
+    `<td>${g.age_sec != null ? age(g.age_sec) : "未収集"}</td>` +
+    `<td class="num mono sub">${g.detail || "—"}</td>` +
+    `<td class="sub" title="${g.bar}">${g.bar}</td>` +
+    `<td>${progBar(g)}<span class="mono">${fmt(g.have, dec)}/${fmt(g.need, dec)}${u}</span> ` +
+      `<span class="sub mono">${g.pct != null ? fmt(g.pct, 0) + "%" : "—"}</span></td>` +
+    `<td class="num mono">${eta(g.eta_sec)}</td></tr>`;
 }
 
 // OI/DVOL snapshot recorder (scripts/record_oi.py): one row per collector run.
-function oiRow(oi) {
-  if (!oi) return `<tr><td>OIスナップショット</td><td>未収集</td><td class="num mono">—</td></tr>`;
+function oiValues(oi) {
+  if (!oi) return "";
   const last = oi.last || {};
   const vals = [
     last.dvol ? `DVOL ${fmt(last.dvol, 2)}` : null,
     last.okx_usdt_oi ? `OKX OI ${fmt(last.okx_usdt_oi, 0)}` : null,
     last.okx_ls_ratio ? `L/S ${fmt(last.okx_ls_ratio, 2)}` : null,
   ].filter(Boolean).join(" / ");
-  return `<tr><td>OIスナップショット${vals ? ` <span class="sub">${vals}</span>` : ""}</td>` +
-    `<td>${age(oi.row_age_sec != null ? oi.row_age_sec : oi.age_sec)}</td>` +
-    `<td class="num mono">${fmt(oi.size / 1e6, 2)} MB</td></tr>`;
+  return vals ? ` <span class="sub">${vals}</span>` : "";
+}
+
+// 判定ゲート strip: the same numbers as the collectors table, compressed to
+// one glanceable line — n/required for every pending pre-registered sample.
+function renderGates(gates) {
+  const el = document.getElementById("gates");
+  if (!el) return;
+  if (!gates.length) { el.innerHTML = '<span class="empty">係属ゲートなし</span>'; return; }
+  el.innerHTML = gates.map(g => {
+    const u = UNIT_JA[g.unit] || "";
+    const dec = g.unit === "days" ? 1 : 0;
+    return `<span class="g" title="${g.bar} / 残り ${eta(g.eta_sec)}">` +
+      `<span class="k">${g.label}</span>${progBar(g)}` +
+      `<span class="mono${g.done ? " up" : ""}">${fmt(g.have, dec)}/${fmt(g.need, dec)}${u}</span>` +
+      `<span class="sub mono">${eta(g.eta_sec)}</span></span>`;
+  }).join("");
 }
 // ===========================================================================
 // マーケットタブ — /api/market (bot/monitoring/market_view.collect_market)

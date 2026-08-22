@@ -11,6 +11,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from bot.monitoring.decision_text import (
+    decision_ja, jst_label, reason_ja, signal_ja,
+)
+from bot.monitoring.gates import cached_scan, collect_gates, parse_ts
 from bot.radar import StormRadar
 
 
@@ -188,6 +192,66 @@ def _api_health(path: Path, now: float, status: dict,
     }
 
 
+def _bot_events(path: Path) -> list[dict[str, Any]]:
+    """FILLED main-bot trades, paired entry->exit (market_view.parse_bot_events).
+
+    Imported lazily: market_view reads `_tail_jsonl` from this module, so a
+    top-level import here would be a cycle. There is exactly one pairing
+    implementation in the repo and this is it — the console must not grow a
+    second one that disagrees with the chart and the gate judge about what an
+    order DID.
+
+    Memoised on the log's (mtime, size): the pairing reads a 4 MB tail and the
+    console polls every 5 seconds, while the bot appends about once a minute.
+    """
+    from bot.monitoring.market_view import parse_bot_events
+
+    return cached_scan("bot_events", path, lambda: parse_bot_events(path))
+
+
+def _enrich_decisions(decisions: list[dict], events: list[dict]
+                      ) -> list[dict[str, Any]]:
+    """Decision rows plus JST times, Japanese labels and the trade they were.
+
+    The pairing is done HERE rather than in the page: whether a filled order
+    opened or closed a position is positional (a BUY with a short open is an
+    exit), which the page cannot see from one row, and the realized P&L of an
+    exit is a STEP in the cumulative ``PnL`` field — two facts that must be
+    derived from the whole log or not at all.
+
+    Rows that were not trades keep every field they had and gain the labels
+    only; ``fill_price``/``realized_pnl_jpy`` stay None so the page renders an
+    empty cell instead of a zero that looks like a flat trade.
+    """
+    by_ts: dict[float, list[dict]] = {}
+    for event in events:
+        ts = event.get("ts")
+        if ts is not None:
+            by_ts.setdefault(round(float(ts), 3), []).append(event)
+    out: list[dict[str, Any]] = []
+    for rec in decisions:
+        row = dict(rec)
+        row["time_jst"] = jst_label(rec.get("timestamp"))
+        row["signal_ja"] = signal_ja(rec.get("strategy_signal"))
+        row["decision_ja"] = decision_ja(rec.get("decision"))
+        row["reason_ja"] = reason_ja(rec.get("reason"))
+        row["trade_kind"] = None
+        row["trade_side"] = None
+        row["fill_price"] = None
+        row["realized_pnl_jpy"] = None
+        ts = parse_ts(rec.get("timestamp"))
+        bucket = by_ts.get(round(ts, 3)) if ts is not None else None
+        if bucket:
+            event = bucket.pop(0)
+            row["trade_kind"] = event.get("kind")
+            row["trade_side"] = event.get("side")
+            row["fill_price"] = event.get("price")
+            if event.get("kind") == "exit":
+                row["realized_pnl_jpy"] = event.get("pnl")
+        out.append(row)
+    return out
+
+
 def _liveness(age_sec: float | None, warn_after: float, dead_after: float) -> str:
     if age_sec is None:
         return "missing"
@@ -206,8 +270,13 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
     kill = _read_json(root / "data" / "kill_switch.json")
     manual_kill = (root / "KILL").exists()
 
-    decisions = [d for d in _tail_jsonl(root / "logs" / "bot.jsonl", 400)
+    bot_log = root / "logs" / "bot.jsonl"
+    decisions = [d for d in _tail_jsonl(bot_log, 400)
                  if d.get("event") == "decision" or d.get("strategy_signal")]
+    # One parse of the trade pairing, used twice: to say what each decision row
+    # actually did, and to count the closed round trips the §5 gate needs.
+    bot_events = _bot_events(bot_log)
+    decisions = _enrich_decisions(decisions, bot_events)
 
     scalp_events = _tail_jsonl(root / "data" / "scalp_paper.jsonl", 400)
     scalp_trades = [e for e in scalp_events if e.get("event") == "exit"]
@@ -278,4 +347,9 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         # scalper runs its lowered entry threshold
         "radar": StormRadar().state(now),
         "oi_snapshot": oi_snapshot,
+        # Pending COVERAGE gates (docs/KNOWLEDGE.md §4/§5) with the bars
+        # scripts/judge_gates.py judges against, so the console can show how
+        # far off each pre-registered sample still is. Progress and ETA only —
+        # nothing here decides anything.
+        "gates": collect_gates(root, now, bot_events, ws_files),
     }
