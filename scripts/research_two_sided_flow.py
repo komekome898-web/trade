@@ -179,10 +179,6 @@ def sub(title: str) -> None:
     print("\n--- " + title + " " + "-" * max(0, 72 - len(title)))
 
 
-def pct(x: float) -> str:
-    return f"{x * 100:.2f}%"
-
-
 def boot_ci(x: np.ndarray, groups: np.ndarray, n_boot: int = 2000,
             seed: int = SEED) -> tuple[float, float]:
     """Cluster bootstrap CI of the mean, clustered on `groups` (UTC day)."""
@@ -1061,6 +1057,23 @@ def section5(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
                       f"[{lo:+.3f}, {hi:+.3f}] (day-clustered, seed {SEED})")
                 print()
 
+    sub("does the wall SATURATE?  adverse(60s) / adverse(5s), pool=all p50")
+    print("A wall that keeps growing with tau is a trend running away from the")
+    print("fill.  A wall that stops growing is mean reversion: the flow that")
+    print("hit the maker was noise, not information.  Ratio near 1 = saturated.")
+    print(f"{'W':>4} {'set':<9}{'adv 5s':>9}{'adv 60s':>10}{'ratio':>8}"
+          f"{'total 60s':>11}")
+    for W in WINDOWS:
+        g = grids[W]
+        m = cells[(W, "all", 50)].mask
+        keep = m[g.wid_of_print]
+        for tag, sel in (("inside", keep), ("outside", ~keep)):
+            a5 = markouts(tp, sel, 5).mean()
+            a60 = markouts(tp, sel, 60).mean()
+            t60 = markouts(tp, sel, 60, "total").mean()
+            print(f"{W:>4} {tag:<9}{a5:>+9.3f}{a60:>+10.3f}"
+                  f"{a60 / a5:>8.2f}{t60:>+11.3f}")
+
     sub("post-window forward drift (the window AFTER a two-sided window)")
     print("Strictly forward: window k is classified, window k+1 is measured.")
     print(f"{'W':>4} {'pool':<9}{'pctl':>5}{'set':<9}{'n':>9}"
@@ -1090,7 +1103,8 @@ def section6(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
     print(f"split at {pd.Timestamp(t_split, unit='s', tz='UTC')}")
 
     print(f"\n{'W':>4} {'pool':<9}{'pctl':>5}{'half':<7}{'duty':>8}"
-          f"{'episodes':>10}{'med dur':>9}{'ceil bps':>10}{'adv30':>11}")
+          f"{'episodes':>10}{'med dur':>9}{'ceil bps':>10}{'mean ep':>9}"
+          f"{'adv30':>10}")
     for W in WINDOWS:
         g = grids[W]
         early_w = g.start < t_split
@@ -1105,11 +1119,19 @@ def section6(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
                     st, ln = runs(mm)
                     es = episode_pnl(g, mm, tp, UNWIND_SEC)
                     mo = markouts(tp, keep & psel, 30)
+                    epb = es.bps[np.isfinite(es.bps)]
                     print(f"{W:>4} {pool:<9}{q:>5}{tag:<7}"
                           f"{m[wsel].mean() * 100:>7.2f}%{len(st):>10,}"
                           f"{(np.median(ln * W) if len(ln) else 0):>8.0f}s"
                           f"{es.bps_of_notional:>10.3f}"
-                          f"{(mo.mean() if mo.size else np.nan):>+11.3f}")
+                          f"{(epb.mean() if epb.size else np.nan):>9.3f}"
+                          f"{(mo.mean() if mo.size else np.nan):>+10.3f}")
+    print("\n'ceil bps' is notional-weighted and a handful of large episodes")
+    print("move it: at W=10s and 30s it roughly doubles from the early half to")
+    print("the late half while the equal-weighted 'mean ep' barely moves.  The")
+    print("SIGN and the ordering (inside > outside) reproduce in both halves;")
+    print("the LEVEL of the notional-weighted ceiling does not.  Quote the sign,")
+    print("not the level.")
 
 
 # --------------------------------------------------------------------------
