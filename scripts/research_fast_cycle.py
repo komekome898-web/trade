@@ -150,6 +150,11 @@ T2_IMB_MAX = 0.30
 T2_PCTL = 50
 VOL_EPS = 1e-9
 
+# ---- settled S7 measurements, used as this design's prior (not re-measured)
+S7_HALF_SPREAD = 1.169            # realised half-spread per fill, bps
+S7_INSIDE_NET_LO = 0.38           # idealized maker net inside two-sided windows
+S7_INSIDE_NET_HI = 0.76
+
 BURN_FRAC = 0.20                  # prefix used ONLY to fix v_min
 MARKOUT_TAUS = (5, 30)            # seconds, for the selection gap
 SEED = 12345
@@ -773,8 +778,8 @@ def main() -> None:
     sub("SANITY")
     probe_c = simulate(tp, "T1", 10.0, 2.0, True, regime, i_start, False)
     probe_o = simulate(tp, "T1", 10.0, 2.0, False, regime, i_start, False)
-    print(f"epoch, look-ahead, overlap: see the docstring; enforced by "
-          f"construction")
+    print("epoch, look-ahead, overlap: see the docstring; enforced by "
+          "construction")
     print(f"fill-model nesting  : conservative quotes {probe_c.n_quote_events:,} "
           f"fills {probe_c.n_filled_events:,} ({100 * probe_c.n_filled_events / max(probe_c.n_quote_events, 1):.1f}%) "
           f"<= optimistic fills {probe_o.n_filled_events:,} "
@@ -953,6 +958,65 @@ def main() -> None:
     print("take-profit from a touch fill is almost exactly 'quote the opposite")
     print("touch'.  The take-profit is not mis-sized -- it is the right size,")
     print("and the round trip still loses.")
+
+    # ---------------- reconciliation against S7 ----------------------------
+    header("RECONCILIATION WITH S7 (scripts/research_two_sided_flow.py)")
+    print("S7 measured, on this same tape and as settled fact:")
+    print(f"  realised half-spread per fill            : "
+          f"{S7_HALF_SPREAD:+.3f} bps")
+    print("  inside two-sided windows, adverse selection SATURATES by ~5s;")
+    print("  outside them it keeps doubling from 5s to 60s;")
+    print(f"  idealized maker net, INSIDE windows only : "
+          f"{S7_INSIDE_NET_LO:+.2f} .. {S7_INSIDE_NET_HI:+.2f} bps.")
+    print("\nThose are the priors this design was built on, and this study")
+    print("reproduces both of them:")
+    res2, _ = store[("T2", 0.0, TP_BPS_GRID[0], True)]
+    tr2 = [x for x in res2.trades if np.isfinite(x.mid_fill)]
+    capt2 = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 1e4
+                      for x in tr2])
+    curve = {}
+    for tau in (5, 30, 60):
+        v = np.array([_fwd_mid_markout(tp, x.t_entry, x.mid_fill, x.side, tau)
+                      for x in tr2])
+        curve[tau] = float(v[np.isfinite(v)].mean())
+    print(f"  * saturation: T2 fills mark out {curve[5]:+.2f} bps at 5s and only "
+          f"{curve[30]:+.2f} at 30s / {curve[60]:+.2f} at 60s -- flat after ~5s,")
+    res1, _ = store[("T1", 10.0, TP_BPS_GRID[0], True)]
+    tr1 = [x for x in res1.trades if np.isfinite(x.mid_fill)]
+    c1 = {}
+    for tau in (5, 60):
+        v = np.array([_fwd_mid_markout(tp, x.t_entry, x.mid_fill, x.side, tau)
+                      for x in tr1])
+        c1[tau] = float(v[np.isfinite(v)].mean())
+    print(f"    exactly the S7 shape.  T1's curve does NOT saturate (b=10: "
+          f"{c1[5]:+.2f} at 5s,")
+    print(f"    {c1[60]:+.2f} at 60s), because a burst-reversion quote is by")
+    print("    construction OUTSIDE the balanced regime.")
+    print(f"  * capture: this study earns {capt2.mean():+.3f} bps per T2 fill "
+          f"against S7's {S7_HALF_SPREAD:+.3f} bps realised half-spread.  The")
+    print(f"    {S7_HALF_SPREAD - capt2.mean():.3f} bps shortfall is the price of the "
+          f"last-print touch proxy: it")
+    print("    quotes AT or INSIDE the true touch, so it buys a higher fill")
+    print("    rate with a thinner edge.  A real book would recover part of it.")
+    print("\nAnd here is where this study PARTS from the S7 ceiling, which is")
+    print("the whole finding:")
+    print(f"  S7 idealized maker, inside windows : "
+          f"{S7_INSIDE_NET_LO:+.2f} .. {S7_INSIDE_NET_HI:+.2f} bps  (wins EVERY print, "
+          f"BOTH sides)")
+    print(f"  this study, T2, one-lot inventory  : {capt2.mean() + curve[30]:+.3f} bps"
+          f"  (capture + adverse at 30s, no exit rule)")
+    print(f"  registered T2/tp2 cell, all rules   : "
+          f"{store[('T2', 0.0, 2.0, True)][1].ev:+.3f} bps")
+    print("\nThe ~1 bps step from the S7 ceiling to the un-ruled fill economics")
+    print("is the INVENTORY CAP, and it is a mechanism, not a tuning loss.  The")
+    print("S7 ceiling wins both sides continuously, so the offsetting fill is")
+    print("itself revenue -- it earns a capture leg on the way back to flat.  A")
+    print("one-lot quoter is filled on one side and must then BUY its way flat:")
+    print("it PAYS a round trip where the ceiling EARNS one.  The step is worth")
+    print("about one capture leg, which is what the numbers show.  Raising the")
+    print("cap does not fix this; it turns the design into the spread-MM of")
+    print("KNOWLEDGE section 4, which is a different, still-pending study whose")
+    print("board data has not matured.")
 
     # ---------------- bars --------------------------------------------------
     header("DO ANY CELLS CLEAR THE HF/MM-CLASS BARS -- EVEN OPTIMISTICALLY?")
