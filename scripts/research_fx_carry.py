@@ -544,6 +544,18 @@ def main():
         f"({panel.index[panel['diff'] < 0].min().date() if neg else '-'} .. "
         f"{panel.index[panel['diff'] < 0].max().date() if neg else '-'})")
 
+    log("  rate-regime map (descriptive; the point of a 41-year sample):")
+    dec = panel.groupby((panel.index.year // 5) * 5).agg(
+        n=("diff", "size"), lo=("diff", "min"), med=("diff", "median"),
+        hi=("diff", "max"), negfrac=("diff", lambda x: (x < 0).mean()),
+        px0=("px", "first"), px1=("px", "last"))
+    log(f"    {'period':<10}{'n':>6}{'diff min':>10}{'diff med':>10}{'diff max':>10}"
+        f"{'neg%':>8}{'USDJPY':>16}")
+    for p5, r in dec.iterrows():
+        log(f"    {p5}-{p5+4:<5}{int(r['n']):>6}{r['lo']:>10.2f}{r['med']:>10.2f}"
+            f"{r['hi']:>10.2f}{r['negfrac']*100:>8.1f}"
+            f"{f'{r.px0:.1f}->{r.px1:.1f}':>16}")
+
     validate_price(panel)
 
     mid_ratio, half_spread, gcal = calibrate_swap(panel)
@@ -562,6 +574,12 @@ def main():
     log(f"  -> KNOWLEDGE_FX sec.1 [T] estimate was 0.6-1.6 bps/day; MEASURED long "
         f"receive is {gcal['buy_bps_day'].median():.3f} bps/day over "
         f"{gcal.index[0].date()}..{gcal.index[-1].date()}")
+    be = half_spread / mid_ratio * 365.0 / 1e4 * 100.0
+    log(f"  BREAKEVEN DIFFERENTIAL   : {be:+.3f}%/yr -- below this the retail "
+        f"receiving side earns NOTHING; the broker's swap spread eats the whole "
+        f"differential.")
+    frac_be = float((panel["diff"].abs() < be).mean())
+    log(f"  share of 1985-2026 days with |differential| < breakeven: {frac_be*100:.2f}%")
     by_yr = gcal.groupby(gcal.index.year).agg(
         n=("ratio", "size"), ratio=("ratio", "median"),
         hs=("half_spread", "median"), buy=("buy_bps_day", "median"))
@@ -569,6 +587,20 @@ def main():
     for y, r in by_yr.iterrows():
         log(f"    {y}  n={int(r['n']):>3}  mid/ib={r['ratio']:.4f}  "
             f"half-spread={r['hs']:.4f} bps/d  long-receive={r['buy']:+.4f} bps/d")
+
+    # reproduction gate (research-protocol sec.6): the fitted 2-constant model
+    # must reproduce GMO's ACTUAL published long-side swap day by day.
+    pred_long = carry_bps_day(gcal["diff"].to_numpy(), 1.0, mid_ratio, half_spread)
+    pred_short = carry_bps_day(gcal["diff"].to_numpy(), -1.0, mid_ratio, half_spread)
+    res_l = gcal["buy_bps_day"].to_numpy() - pred_long
+    res_s = gcal["sell_bps_day"].to_numpy() - pred_short
+    log(f"  REPRODUCTION GATE (model vs GMO actual, n={len(gcal)}):")
+    log(f"    long  residual bps/day : median={np.median(res_l):+.4f}  "
+        f"MAE={np.mean(np.abs(res_l)):.4f}  p95|e|={np.percentile(np.abs(res_l),95):.4f}")
+    log(f"    short residual bps/day : median={np.median(res_s):+.4f}  "
+        f"MAE={np.mean(np.abs(res_s)):.4f}  p95|e|={np.percentile(np.abs(res_s),95):.4f}")
+    log(f"    -> the 2-constant model tracks the published calendar to "
+        f"{np.mean(np.abs(res_l))*365/1e4*100:.3f}%/yr of notional on the long side")
 
     validate_daycount(gcal)
 
