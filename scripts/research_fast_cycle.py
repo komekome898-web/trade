@@ -122,7 +122,6 @@ import argparse
 import gzip
 import json
 import sys
-from bisect import bisect_right
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -330,6 +329,7 @@ class Trade:
     reason: str
     hold: float
     day: int
+    mid_fill: float = float("nan")   # bounce-free mid at the moment of fill
     mk5: float = float("nan")  # signed mid markout at +5s from entry
     mk30: float = float("nan")
 
@@ -340,6 +340,8 @@ class QuoteEvent:
     side: int
     filled: bool
     day: int
+    t_ref: float = float("nan")      # fill time if filled, quote time if not
+    mid_ref: float = float("nan")    # bounce-free mid at t_ref
     mk5: float = float("nan")
     mk30: float = float("nan")
     cf_pnl: float = float("nan")   # taker-entry counterfactual, missed quotes
@@ -412,20 +414,20 @@ def simulate(tp: Tape, trigger: str, b_bps: float, tp_bps: float,
     res = SimResult()
     n = len(tp.t)
     i = i_start
-    last_quote_t = -1e18
+    next_quote_t = -1e18     # earliest instant a NEW quote may be placed
 
     while i < n:
         # ---------------- IDLE: look for a quote-placement trigger ---------
         place = None                      # (sides, limits) to rest after print i
-        if trigger == "T1":
-            r = tp.r3_bps[i]
-            if abs(r) >= b_bps and tp.t[i] >= last_quote_t + T1_COOLDOWN_SEC:
-                if r > 0:                 # mid ran up -> quote the ASK (short)
-                    place = ((-1,), (tp.ask_incl[i],))
-                else:                     # mid ran down -> quote the BID (long)
-                    place = ((+1,), (tp.bid_incl[i],))
-        else:                             # T2
-            if regime[i] and tp.t[i] >= last_quote_t + QUOTE_LIFE_SEC:
+        if tp.t[i] >= next_quote_t:
+            if trigger == "T1":
+                r = tp.r3_bps[i]
+                if abs(r) >= b_bps:
+                    if r > 0:             # mid ran up -> quote the ASK (short)
+                        place = ((-1,), (tp.ask_incl[i],))
+                    else:                 # mid ran down -> quote the BID (long)
+                        place = ((+1,), (tp.bid_incl[i],))
+            elif regime[i]:               # T2
                 place = ((+1, -1), (tp.bid_incl[i], tp.ask_incl[i]))
 
         if place is None:
@@ -435,7 +437,10 @@ def simulate(tp: Tape, trigger: str, b_bps: float, tp_bps: float,
         sides, limits = place
         t_q = tp.t[i]
         mid_q = tp.mid_incl[i]
-        last_quote_t = t_q
+        # T1 re-arms COOLDOWN after the quote goes up; T2 re-quotes as soon
+        # as the previous quote's life ends (or the position closes, below).
+        next_quote_t = t_q + (T1_COOLDOWN_SEC if trigger == "T1"
+                              else QUOTE_LIFE_SEC)
         res.n_quote_events += 1
         expiry = t_q + QUOTE_LIFE_SEC
 
@@ -462,7 +467,8 @@ def simulate(tp: Tape, trigger: str, b_bps: float, tp_bps: float,
             # ---------- MISS: record it and its taker counterfactual -------
             for s in sides:
                 qe = QuoteEvent(t=t_q, side=s, filled=False,
-                                day=int(np.floor(t_q / 86400.0)))
+                                day=int(np.floor(t_q / 86400.0)),
+                                t_ref=t_q, mid_ref=mid_q)
                 qe.mk5 = _fwd_mid_markout(tp, t_q, mid_q, s, MARKOUT_TAUS[0])
                 qe.mk30 = _fwd_mid_markout(tp, t_q, mid_q, s, MARKOUT_TAUS[1])
                 if counterfactual:
@@ -477,7 +483,8 @@ def simulate(tp: Tape, trigger: str, b_bps: float, tp_bps: float,
         t_f = tp.t[j]
         mid_f = tp.mid_incl[j]
         qe = QuoteEvent(t=t_q, side=fill_side, filled=True,
-                        day=int(np.floor(t_q / 86400.0)))
+                        day=int(np.floor(t_q / 86400.0)),
+                        t_ref=t_f, mid_ref=mid_f)
         qe.mk5 = _fwd_mid_markout(tp, t_f, mid_f, fill_side, MARKOUT_TAUS[0])
         qe.mk30 = _fwd_mid_markout(tp, t_f, mid_f, fill_side, MARKOUT_TAUS[1])
         res.quotes.append(qe)
@@ -489,8 +496,11 @@ def simulate(tp: Tape, trigger: str, b_bps: float, tp_bps: float,
         res.trades.append(Trade(t_entry=t_f, t_exit=t_x, side=fill_side,
                                 entry_px=fill_px, pnl_bps=pnl, reason=reason,
                                 hold=t_x - t_f, day=int(np.floor(t_f / 86400.0)),
-                                mk5=qe.mk5, mk30=qe.mk30))
+                                mid_fill=mid_f, mk5=qe.mk5, mk30=qe.mk30))
         i = k + 1                          # no overlap: resume after the exit
+        # no cooldown after a close; T1 still honours its 3s re-arm delay
+        next_quote_t = (max(t_x, t_q + T1_COOLDOWN_SEC) if trigger == "T1"
+                        else t_x)
 
     res.span_days = (tp.t[-1] - tp.t[i_start]) / 86400.0
     res.days = np.unique(np.floor(tp.t[i_start:] / 86400.0).astype(np.int64))
@@ -661,7 +671,7 @@ def queue_reality(ws_dir: Path) -> None:
             if not np.isfinite(px) or q <= 0:
                 continue
             n_try += 1
-            lo = bisect_right(list(et), t0) if False else np.searchsorted(et, t0, "right")
+            lo = np.searchsorted(et, t0, "right")
             hi = np.searchsorted(et, t0 + QUOTE_LIFE_SEC, "right")
             vol = 0.0
             hit_touch = hit_through = False
@@ -832,6 +842,76 @@ def main() -> None:
                   f"{mm('mk30', f):>12.3f}{mm('mk30', ~f):>12.3f}"
                   f"{m.sel_gap30:>9.3f}{m.cf_miss:>10.2f}")
 
+    # ---------------- mechanism diagnostic ----------------------------------
+    header("DIAGNOSTIC (not a strategy, not adoptable) -- the POST-FILL "
+           "MARKOUT CURVE")
+    print("This is the mechanism question underneath the whole family: after a")
+    print("maker fill, does the mid EVER come back to us, and on what clock?")
+    print("Signed mid-to-mid move in our direction, bps, from the fill instant.")
+    print("The exit rules are switched off here -- this is the raw edge, not a")
+    print("P&L.  KNOWLEDGE section 4 records +1.1 bps at 5 minutes for the")
+    print("pending 'post-fill rotation' hypothesis; if that reversion is real")
+    print("and fast, it must appear as a rising curve below.")
+    print("Baseline = the same curve for the quotes that were NOT filled, on")
+    print("the intended side.  The fill-minus-baseline difference IS the wall.")
+    taus = (1, 2, 3, 5, 10, 20, 30, 60, 120, 300)
+    print(f"\n{'cell':<16}{'set':<9}{'n':>8}" + "".join(f"{'t+' + str(x):>8}"
+                                                        for x in taus))
+    for trig, b, tpb in CELLS:
+        if tpb != TP_BPS_GRID[0]:
+            continue                       # the curve does not depend on tp
+        res, _ = store[(trig, b, tpb, True)]
+        for tag, want in (("filled", True), ("missed", False)):
+            qs = [q for q in res.quotes if q.filled == want]
+            if not qs:
+                continue
+            row = []
+            for tau in taus:
+                v = np.array([_fwd_mid_markout(tp, q.t_ref, q.mid_ref,
+                                               q.side, tau) for q in qs])
+                v = v[np.isfinite(v)]
+                row.append(float(v.mean()) if v.size else float("nan"))
+            print(f"{cell_name(trig, b, tpb).split('/')[0]:<16}{tag:<9}"
+                  f"{len(qs):>8,}" + "".join(f"{x:>8.2f}" for x in row))
+    sub("pure maker economics per fill -- NO exit rule, NO abort, NO queue")
+    print("capture  = signed (mid at fill - our fill price), the half-spread we")
+    print("           earned by resting instead of crossing;")
+    print("adverse  = the markout above at tau seconds;")
+    print("net(tau) = capture + adverse = what a fill is worth if we could")
+    print("           unwind at the mid, free, tau seconds later.  This is the")
+    print("           CEILING of every cell in the family: a real exit is a")
+    print("           maker TP that may not fill plus a taker abort at 3.96 bps,")
+    print("           and a real quote sits behind a queue.")
+    print(f"\n{'cell':<16}{'n':>8}{'capture':>9}" +
+          "".join(f"{'net@' + str(x):>9}" for x in (1, 3, 5, 10, 30, 60)))
+    for trig, b, tpb in CELLS:
+        if tpb != TP_BPS_GRID[0]:
+            continue
+        res, _ = store[(trig, b, tpb, True)]
+        tr = [x for x in res.trades if np.isfinite(x.mid_fill)]
+        if not tr:
+            continue
+        capt = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 1e4
+                         for x in tr])
+        row = []
+        for tau in (1, 3, 5, 10, 30, 60):
+            v = np.array([_fwd_mid_markout(tp, x.t_entry, x.mid_fill, x.side,
+                                           tau) for x in tr])
+            ok = np.isfinite(v)
+            row.append(float((capt[ok] + v[ok]).mean()) if ok.any()
+                       else float("nan"))
+        print(f"{cell_name(trig, b, tpb).split('/')[0]:<16}{len(tr):>8,}"
+              f"{capt.mean():>9.3f}" + "".join(f"{x:>9.3f}" for x in row))
+    print("\nIf net(tau) is negative at EVERY tau, no exit rule and no take-")
+    print("profit can rescue the cell: the fill itself is worth less than it")
+    print("cost, before the strategy does anything at all.")
+
+    print("\nT2's 'missed' row is identically 0 at every horizon BY")
+    print("CONSTRUCTION: a missed two-sided quote contributes one +1 and one")
+    print("-1 side, whose signed markouts cancel exactly.  That is the correct")
+    print("null for a symmetric quoter -- the market has no direction to")
+    print("predict -- so for T2 the 'filled' row IS the wall, unadjusted.")
+
     # ---------------- exit-reason economics --------------------------------
     header("WHY THE CELLS LAND WHERE THEY DO -- the abort geometry")
     print("The abort configuration is frozen at adverse 3.0 bps / age 30s with")
@@ -846,7 +926,8 @@ def main() -> None:
     sub("realised exit mix and the P&L each reason contributes (conservative "
         "fill)")
     print(f"{'cell':<16}{'n':>7}{'TP%':>7}{'stop%':>7}{'age%':>7}"
-          f"{'E[tp]':>8}{'E[stop]':>9}{'E[age]':>9}{'net':>8}")
+          f"{'E[tp]':>8}{'E[stop]':>9}{'E[age]':>9}{'net':>8}"
+          f"{'taker fee/trade':>17}{'net ex-fee':>11}")
     for trig, b, tpb in CELLS:
         res, m = store[(trig, b, tpb, True)]
         if m.n == 0:
@@ -856,10 +937,22 @@ def main() -> None:
         def contrib(r):
             s = rs == r
             return float(pnl[s].sum() / len(pnl)) if s.any() else 0.0
+        fee = (m.stop_share + m.age_share) * TAKER_BPS
         print(f"{cell_name(trig, b, tpb):<16}{m.n:>7,}"
               f"{m.tp_share * 100:>6.1f}%{m.stop_share * 100:>6.1f}%"
               f"{m.age_share * 100:>6.1f}%{contrib('tp'):>8.2f}"
-              f"{contrib('stop'):>9.2f}{contrib('age'):>9.2f}{m.ev:>8.3f}")
+              f"{contrib('stop'):>9.2f}{contrib('age'):>9.2f}{m.ev:>8.3f}"
+              f"{-fee:>17.2f}{m.ev + fee:>11.3f}")
+    print("\n'taker fee/trade' is (stop% + age%) x 3.96 bps: the taker cost the")
+    print("design was created to ELIMINATE, and which it ends up paying on the")
+    print("majority of its trades because a 2-3 bps take-profit against a 3 bps")
+    print("stop is a coin flip on a tape whose 1-second mid noise is larger")
+    print("than both.  'net ex-fee' adds it back: even with the aborts made")
+    print("free, no cell reaches zero.")
+    print("For scale: the board's median spread is 2.04 bps, so a +2 bps")
+    print("take-profit from a touch fill is almost exactly 'quote the opposite")
+    print("touch'.  The take-profit is not mis-sized -- it is the right size,")
+    print("and the round trip still loses.")
 
     # ---------------- bars --------------------------------------------------
     header("DO ANY CELLS CLEAR THE HF/MM-CLASS BARS -- EVEN OPTIMISTICALLY?")
