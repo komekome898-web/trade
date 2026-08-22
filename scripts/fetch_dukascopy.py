@@ -102,6 +102,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 BASE_URL = "https://datafeed.dukascopy.com/datafeed"
 
+
+def rel(p: Path) -> str:
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
 CANDLE_DTYPE = np.dtype([
     ("offset", ">u4"), ("open", ">u4"), ("close", ">u4"),
     ("low", ">u4"), ("high", ">u4"), ("volume", ">f4"),
@@ -147,6 +154,31 @@ class FetchError(Exception):
     pass
 
 
+# The endpoint returns HTTP 503 ("no server available") noticeably more
+# often once requests start overlapping across worker threads -- observed
+# empirically in this session (isolated serial requests: mostly 1st-try
+# 200s; 4 concurrent workers: several days needed all 5 retries and still
+# failed). A small global minimum-interval limiter smooths request starts
+# across all worker threads without giving up the concurrency win (threads
+# still overlap on the network-wait portion of each request).
+class RateLimiter:
+    def __init__(self, min_interval: float):
+        self.min_interval = min_interval
+        self.lock = threading.Lock()
+        self.next_ok = 0.0
+
+    def wait(self) -> None:
+        with self.lock:
+            now = time.monotonic()
+            delay = max(0.0, self.next_ok - now)
+            self.next_ok = max(now, self.next_ok) + self.min_interval
+        if delay:
+            time.sleep(delay)
+
+
+_RATE_LIMITER = RateLimiter(min_interval=0.25)
+
+
 def _http_get(url: str, timeout: float = 20.0) -> tuple[int, bytes]:
     req = urllib.request.Request(url, headers={"User-Agent": "trade-bot-research/1.0"})
     try:
@@ -158,16 +190,17 @@ def _http_get(url: str, timeout: float = 20.0) -> tuple[int, bytes]:
         raise FetchError(str(e)) from e
 
 
-def fetch_bytes(url: str, retries: int = 5, backoff: float = 2.0) -> tuple[str, bytes]:
+def fetch_bytes(url: str, retries: int = 8, backoff: float = 3.0) -> tuple[str, bytes]:
     """Returns (status, body) where status in {"ok", "nodata"}.
     Raises FetchError if retries are exhausted on transient failures."""
     last_err = None
     for attempt in range(retries):
+        _RATE_LIMITER.wait()
         try:
             code, body = _http_get(url)
         except FetchError as e:
             last_err = e
-            time.sleep(backoff * (attempt + 1))
+            time.sleep(min(30.0, backoff * (attempt + 1)))
             continue
         if code == 200:
             return "ok", body
@@ -175,11 +208,11 @@ def fetch_bytes(url: str, retries: int = 5, backoff: float = 2.0) -> tuple[str, 
             return "nodata", b""
         if code == 503:
             last_err = FetchError("503 service unavailable")
-            time.sleep(backoff * (attempt + 1))
+            time.sleep(min(30.0, backoff * (attempt + 1)))
             continue
         # unexpected status: treat like a transient error and retry
         last_err = FetchError(f"HTTP {code}")
-        time.sleep(backoff * (attempt + 1))
+        time.sleep(min(30.0, backoff * (attempt + 1)))
     raise FetchError(f"exhausted retries for {url}: {last_err}")
 
 
@@ -348,6 +381,7 @@ def run_candles(pair: str, start: date, end: date, out_path: Path, workers: int,
             if n_done % 50 == 0 or n_done == len(todo):
                 print(f"  progress {n_done}/{len(todo)}  ok={n_ok} empty={n_empty} "
                       f"nodata={n_nodata} fail={n_fail}", flush=True)
+                manifest.save()  # periodic checkpoint so a kill mid-run can resume cleanly
             if status == "fail" and consecutive_fail >= max_503_streak:
                 print(f"  !! {consecutive_fail} consecutive failures -- stopping early "
                       f"(politeness threshold). Re-run to resume.", flush=True)
@@ -359,7 +393,7 @@ def run_candles(pair: str, start: date, end: date, out_path: Path, workers: int,
 
     manifest.save()
     print(f"[{side}] done: ok={n_ok} empty={n_empty} nodata={n_nodata} fail={n_fail} "
-          f"(manifest={manifest_path.relative_to(ROOT)})")
+          f"(manifest={rel(manifest_path)})")
 
     if merge_ask_close and side == "ASK":
         if ask_close_buf and target_path.exists():
@@ -373,13 +407,13 @@ def run_candles(pair: str, start: date, end: date, out_path: Path, workers: int,
             merged = merged.sort_values("timestamp")
             merged.to_csv(target_path, index=False)
             print(f"[ASK] merged ask_close for {len(ask_df)} rows into "
-                  f"{target_path.relative_to(ROOT)} ({merged['ask_close'].notna().sum()} "
+                  f"{rel(target_path)} ({merged['ask_close'].notna().sum()} "
                   f"rows now have ask_close)")
         else:
             print("[ASK] nothing to merge (no ASK rows fetched or target csv missing)")
     else:
         df = finalize_csv(target_path)
-        print(f"[{side}] {target_path.relative_to(ROOT)}: {len(df)} rows total")
+        print(f"[{side}] {rel(target_path)}: {len(df)} rows total")
     return 0 if consecutive_fail < max_503_streak else 1
 
 
@@ -411,7 +445,7 @@ def run_ticks(pair: str, start: date, end: date, out_dir: Path, workers: int,
         if frames:
             out = pd.concat(frames, ignore_index=True).sort_values("timestamp")
             out.to_csv(day_path, index=False)
-            print(f"  {d}: {len(out)} ticks -> {day_path.relative_to(ROOT)}")
+            print(f"  {d}: {len(out)} ticks -> {rel(day_path)}")
     return 0
 
 
