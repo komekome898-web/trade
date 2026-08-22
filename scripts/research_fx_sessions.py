@@ -171,6 +171,34 @@ KNOWN LIMITS (stated before the results, not after)
   * No swap/rollover carry, no queue position, no adverse selection, no slippage
     on the break leg beyond the flat constant.  Frequencies of price paths only.
 
+-------------------------------------------------------------------------------
+POST-HOC DIAGNOSTICS ADDED AFTER THE FIRST RUN (declared, not hidden)
+-------------------------------------------------------------------------------
+The pre-registration above is exactly what was run first, and the verdict in B4
+is that first run's judgment segment, unchanged.  The following were added
+AFTERWARDS and are DIAGNOSTICS ONLY (research-protocol sec.8.2 -- a diagnostic
+stays a diagnostic and may never be promoted to an adoption):
+
+  * A3-A5 carry a RANK (Spearman) autocorrelation beside the Pearson one, after
+    the first run produced a +0.22 Pearson AC(1) in Tokyo-lunch 2026.  The rank
+    figure for that cell is +0.006, i.e. the Pearson number is two adjacent
+    outliers, not structure.  Printing only Pearson would have been misleading.
+  * A8 prints tick density and zero-move-bar share per year, after the same
+    anomaly turned out to sit on a tape whose recorded ticks/bar fall ~2/3 from
+    2023 to 2026.  This is a data caveat about Part A; Part B races high/low
+    extremes and is not exposed to it in the same way.
+  * B7 gains D3 (fresh breach: the previous bar was not already a same-side
+    breach), which is the most literal reading of the brief's phrase "first
+    touch".  PRIMARY was pre-registered as the headline because it matches the
+    convention the BTC law is quoted in.
+  * B7b re-runs the ENTIRE pre-registered bar (both segments, all 18 cells) on
+    the de-clustered D2 event set.  D2 is strictly more adverse to the fade
+    than PRIMARY, so this re-run cannot manufacture a pass; it exists so that
+    the verdict cannot be blamed on the event-set reading.
+None of these changed the verdict, and none could have: every one of them is
+either descriptive or more hostile to the hypothesis than the pre-registered
+test.
+
 Run:  PYTHONPATH=src python scripts/research_fx_sessions.py
 Read-only, no network, idempotent, writes nothing, commits nothing.
 """
@@ -1061,33 +1089,49 @@ def main() -> int:
           "to break even --")
     print("   a move USD/JPY does not make inside 60 minutes. Barrier choice is")
     print("   not a free parameter here; it is irrelevant.")
-    print("\n6. THE DE-CLUSTERED READING REPRODUCES THE BTC LAW ALMOST EXACTLY.")
-    print("   PRIMARY counts every bar that breaches the edge, and most of those")
-    print("   bars are price WALKING ALONG a moving edge, which is a coin flip by")
-    print("   construction. Restrict to non-overlapping races (D2) and USD/JPY")
-    print("   lands on the BTC number:")
+    print("\n6. DE-CLUSTERING IS WHERE THE MOMENTUM RESULT LIVES. PRIMARY counts")
+    print("   every bar that breaches the edge, and most of those bars are price")
+    print("   WALKING ALONG a moving edge: at a running extreme the trailing edge")
+    print("   is a tick away and the next few bps either way is near 50/50, which")
+    print("   is why PRIMARY sits at ~49%. Restrict to non-overlapping races (D2)")
+    print("   and the momentum result appears:")
+    med_rw = float(np.median(rw[okrw]))
+    print(f"     (median trailing-60m range on this tape = {med_rw:.1f}bps)")
+    print(f"     {'cell':<26}{'revert':>8}{'break':>8}{'unres':>8}"
+          f"{'rev|res':>9}{'b/range':>9}")
     for b in BARRIERS:
         sd_ = stats(outs[b][d2])
-        print(f"     D2, all hours, {b:>2.0f}bps : revert {sd_['rev']:.1f}%  "
-              f"break {sd_['brk']:.1f}%  (n={sd_['n']:,})")
-    print("     BTC law, 1s grid, 10bps   : revert 31.7%  break 61.4%  (n=23,642)")
-    print("   Two unrelated markets, different asset class, different venue,")
-    print("   different tick size, costs 9x apart, one 24/7 and one with hard")
-    print("   session structure -- and the first-passage race off a fresh")
-    print("   range-edge breach lands in the same place. Compare the rows above.")
-    print("   That is the strongest cross-market confirmation this project has,")
-    print("   and it is a confirmation of a NEGATIVE result: the range edge is a")
-    print("   momentum event, and that appears to be a property of price, not of")
-    print("   bitcoin.")
-    print("\n7. COST WAS NEVER THE BINDING CONSTRAINT HERE. Dropping the cost bar")
-    print("   from BTC's to USD/JPY's moves the 10bps breakeven from "
-          f"{(10 + 2.93) / 20 * 100:.2f}% to")
-    print(f"   {breakeven(10.0):.2f}% -- a {(10 + 2.93) / 20 * 100 - breakeven(10.0):.2f} pp "
-          "relief. The measured shortfall is far larger than")
-    print("   that, so 1/9 costs do not rescue the fade. This is the honest")
-    print("   answer the brief asked for: the ECONOMIC re-derivation was done and")
-    print("   it does not change the conclusion, because the MECHANISM (break")
-    print("   wins the first-passage race) holds in USD/JPY too.")
+        print(f"     {f'D2 all hours {b:.0f}bps':<26}{sd_['rev']:>7.1f}%"
+              f"{sd_['brk']:>7.1f}%{sd_['un']:>7.1f}%{sd_['cond']:>8.1f}%"
+              f"{b / med_rw:>8.2f}x")
+    print(f"     {'BTC law 1s grid 10bps':<26}{31.7:>7.1f}%{61.4:>7.1f}%"
+          f"{6.9:>7.1f}%{34.1:>8.1f}%{'n/a':>9}")
+    print("   SAME DIRECTION, SIMILAR ORDER OF MAGNITUDE, NOT THE SAME NUMBER.")
+    print("   FX rev|res is 40-44% against BTC's 34%: the fade loses the race in")
+    print("   both markets, less lopsidedly in USD/JPY. The two are not directly")
+    print("   comparable anyway -- the barriers are not volatility-matched (10bps")
+    print(f"   is {10 / med_rw:.2f}x the median 60m FX range, which is why {stats(outs[10.0][d2])['un']:.0f}% of the")
+    print("   FX 10bps races never resolve inside the cap), and the FX study is a")
+    print("   1m study against BTC's 1s study. What transfers is the SIGN and the")
+    print("   rough size, in a second market, on a different asset class, with a")
+    print("   9x lower cost bar and hard session structure. That is the strongest")
+    print("   cross-market evidence this project has -- for a NEGATIVE result: a")
+    print("   trailing-range-edge breach is a momentum event, and that looks like")
+    print("   a property of price rather than a property of bitcoin.")
+    print("\n7. WHAT THE 1/9 COST BAR ACTUALLY BOUGHT -- STATED PRECISELY.")
+    relief = (10 + 2.93) / 20 * 100 - breakeven(10.0)
+    sbest10 = stats(outs[10.0][np.isin(ehr, list(CONDITIONS[best]))])
+    print(f"   At the 10bps barrier the breakeven falls from "
+          f"{(10 + 2.93) / 20 * 100:.2f}% (BTC exit cost)")
+    print(f"   to {breakeven(10.0):.2f}% (USD/JPY) -- a {relief:.2f} pp relief, which is large.")
+    print(f"   In the best cell ({best}, 10bps) the remaining shortfall is only")
+    print(f"   {sbest10['cond'] - breakeven(10.0):+.2f} pp. So the cheap cost bar closes MOST of the gap.")
+    print("   It is the last piece that cannot be bought: with p < 50% the GROSS")
+    print("   expectancy is already <= 0, and no cost regime, however cheap, makes")
+    print("   a negative gross edge positive. That is the honest answer to the")
+    print("   brief -- the economic conclusion WAS re-derived from scratch and it")
+    print("   moved a long way, just not far enough, and the residual is")
+    print("   mechanistic rather than economic.")
     print("\n8. MECHANISM CLASSIFICATION (research-protocol sec.5): MECHANISM")
     print("   rejection, cross-market. The BTC finding is not merely a BTC-cost")
     print("   artefact -- a trailing-range-edge touch is a momentum event in a")
