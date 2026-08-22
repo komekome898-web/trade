@@ -548,6 +548,17 @@ python scripts\judge_gates.py
 Claude 側は `paper_logs/` の各ファイルを `logs/`・`data/` の定位置にコピーしてから
 `judge_gates.py`・各研究スクリプトを実行する。
 
+**生テープ(fresh-cycle判定用の生約定 + 31日制限を越えた蓄積)** — 板WS記録
+(`data/ws/*.jsonl.gz`)は共有できないほど巨大だが、そこから約定
+(EXECUTIONSチャンネル)だけを抜き出した `data/tape/executions_YYYYMMDD.csv.gz`
+(列: `ts, price, size, side`)は1日あたり数MBに収まり共有できる。
+`scripts/extract_tape.py` が抽出を行い(マニフェストで既処理分を記憶する
+差分実行・書きかけの行/gz末尾切れを許容)、`deploy/fetch_all.bat` から
+自宅PCで自動実行される。`deploy/share_logs.bat` はこの `data/tape/*.csv.gz`
+を `paper_logs/tape/` にコピーして共有する。目的は二つ:
+fast-cycle判定に使う新鮮な約定データの供給と、bitFlyerの約定履歴API
+(31日で消える)を越えた長期テープの蓄積。
+
 ## 7. 次フェーズのチェックリスト
 
 - [ ] `check_api.py` 成功(認証OK・出金権限なし・最低注文数量と手数料率の実測)

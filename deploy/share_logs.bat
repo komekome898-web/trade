@@ -3,7 +3,9 @@ rem Copy the paper logs into paper_logs\ and push, so the Claude research
 rem session can pull and analyse the raw files directly.
 rem Safe while the bot is running: files are copied, never moved, and the
 rem readers tolerate a partial last line. WS recordings (data\ws) are too
-rem large for git - only a directory listing is shared.
+rem large for git - only a directory listing is shared. The executions
+rem extracted from them into data\tape\*.csv.gz (scripts\extract_tape.py,
+rem run by fetch_all.bat) are small and ARE shared below.
 rem Order matters: COMMIT FIRST, sync after. Committing first keeps the
 rem index clean for the rebase, and also self-heals a previous run that
 rem staged files but failed to commit.
@@ -24,6 +26,8 @@ copy /Y data\spread_FX_BTC_JPY.csv paper_logs\ >nul 2>&1
 copy /Y data\overlay_state.json paper_logs\ >nul 2>&1
 copy /Y data\kill_switch.json paper_logs\ >nul 2>&1
 dir /-C data\ws > paper_logs\ws_listing.txt 2>nul
+if not exist paper_logs\tape mkdir paper_logs\tape
+if exist data\tape\*.csv.gz copy /Y data\tape\*.csv.gz paper_logs\tape\ >nul 2>&1
 
 git add paper_logs
 rem Commit only when there is something staged (quiet no-op otherwise).
