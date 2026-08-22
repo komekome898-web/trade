@@ -35,13 +35,15 @@ def test_bat_output_is_ascii_only(name):
     assert not bad, f"{name}: non-ASCII byte at {bad[0][0]}"
 
 
-def test_restart_all_runs_the_four_steps_in_order():
+def test_restart_all_runs_the_five_steps_in_order():
     text = _text("restart_all.bat")
     steps = [text.index(m) for m in
-             ("echo [1/4] git pull", "echo [2/4] pip install",
-              "echo [3/4] stop_all.bat", "echo [4/4] start_all.bat")]
+             ("echo [1/5] git pull", "echo [2/5] pip install",
+              "echo [3/5] stop_all.bat", "echo [4/5] verify components",
+              "echo [5/5] start_all.bat")]
     assert steps == sorted(steps)
-    # the update pair from docs/OPERATIONS.md 4.5, then the restart pair
+    # the update pair from docs/OPERATIONS.md 4.5, then the restart pair,
+    # with the stopped-component check wedged between them
     assert "git pull" in text
     assert '"%PIP%" install -e ".[dev]"' in text
     assert 'call "%~dp0stop_all.bat"' in text      # reuses the existing bats
@@ -53,8 +55,8 @@ def test_restart_all_aborts_before_restarting_on_a_failed_update():
     into a half-updated tree is worse than staying on the old code."""
     text = _text("restart_all.bat")
     # every step is guarded, and every guard leaves the script
-    assert text.count("if errorlevel 1 (") == 4
-    assert text.count("goto :aborted") == 5        # 4 steps + the missing venv
+    assert text.count("if errorlevel 1 (") == 5
+    assert text.count("goto :aborted") == 6         # 5 steps + the missing venv
     assert "if not exist \"%PIP%\"" in text        # no venv is a failure too
     stop = text.index('call "%~dp0stop_all.bat"')
     for guard in ("*** FAILED: git pull ***", "*** FAILED: pip install ***"):
@@ -63,9 +65,30 @@ def test_restart_all_aborts_before_restarting_on_a_failed_update():
     assert ":aborted" in text and "exit /b 0" in text
 
 
+def test_restart_all_verifies_components_are_gone_before_starting():
+    """stop_all.bat's contract is only to ATTEMPT a stop (it always exits 0);
+    a survivor must block start_all, not be started alongside a duplicate."""
+    text = _text("restart_all.bat")
+    stop = text.index('call "%~dp0stop_all.bat"')
+    verify = text.index("echo [4/5] verify components")
+    start = text.index('call "%~dp0start_all.bat"')
+    assert stop < verify < start
+    # re-runs the SAME four-process query stop_all.bat uses
+    verify_block = text[verify:start]
+    for needle in ("run_paper.py", "run_scalp_paper.py", "record_realtime.py",
+                  "dashboard.py", "Get-CimInstance Win32_Process"):
+        assert needle in verify_block
+    assert "still running" in verify_block          # names the survivor(s)
+    assert "*** FAILED: component" in verify_block
+    assert "start_all.bat was NOT run" in verify_block
+    assert text.index("*** FAILED: component") < start
+
+
 def test_stop_all_reports_success_explicitly():
     """restart_all.bat aborts on a non-zero step, and stop_all's last command
-    used to be `timeout`, whose exit code is not about stopping anything."""
+    used to be `timeout`, whose exit code is not about stopping anything.
+    stop_all's contract stays 'attempted' — verifying the stop actually took
+    is restart_all's job (test_restart_all_verifies_components_are_gone)."""
     assert _text("stop_all.bat").rstrip().endswith("exit /b 0")
 
 

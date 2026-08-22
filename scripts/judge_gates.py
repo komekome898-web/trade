@@ -83,7 +83,7 @@ from bot.monitoring.gates import (  # noqa: E402
     FUNDING_WINDOW_MIN, MAIN_TRADES_BAR, OI_DAYS_BAR, OI_ROWS_BAR,
     candle_days_covering as _candle_days_covering,
     csv_first_last_ts as _csv_first_last_ts,
-    parse_ts, ws_file_start as _ws_file_start,
+    parse_ts, read_jsonl, ws_file_start as _ws_file_start,
 )
 
 # ---- pre-registered constants (KNOWLEDGE.md; do not tune here) -------------
@@ -127,42 +127,11 @@ class GateResult:
                 "values": self.values}
 
 
-# ---- small robust readers --------------------------------------------------
-def read_jsonl(path: Path, max_bytes: int = 256 * 1024 * 1024) -> tuple[list[dict], int]:
-    """Every parseable JSON object in a .jsonl file, plus the bad-line count.
-
-    A half-written last line (the collector is probably still running) and any
-    corrupt line in the middle are skipped, never raised: a gate with unreadable
-    data must report INSUFFICIENT, not crash the whole report.
-    """
-    records: list[dict] = []
-    bad = 0
-    try:
-        size = path.stat().st_size
-    except OSError:
-        return [], 0
-    try:
-        with open(path, "rb") as f:
-            if size > max_bytes:                     # keep the newest tail
-                f.seek(size - max_bytes)
-                f.readline()
-                bad += 1
-            for raw in f:
-                line = raw.decode("utf-8", errors="replace").strip()
-                if not line:
-                    continue
-                try:
-                    obj = json.loads(line)
-                except ValueError:
-                    bad += 1
-                    continue
-                if isinstance(obj, dict):
-                    records.append(obj)
-                else:
-                    bad += 1
-    except OSError:
-        return records, bad
-    return records, bad
+# ---- small robust readers ---------------------------------------------------
+# read_jsonl is imported from bot.monitoring.gates: the operations console's
+# champion gate must count the same trades this harness counts, so both read
+# logs/bot.jsonl with the same reader at the same depth rather than keeping
+# two copies that could drift.
 
 
 def _f(value: Any) -> float | None:

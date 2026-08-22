@@ -276,7 +276,7 @@ function setModules(mods) {
 // ---- tiles -----------------------------------------------------------------
 // The tile value is one line, always (see .tile .v in the CSS). The font is
 // stepped down to whatever the string actually is, so 「12,345,678」 and
-// 「LONG 0.013 @ 11,234,567」 fit the same 150px 小窓 that holds 「PAPER」.
+// 「LONG 0.013 @ 11,234,567」 fit the same 168px 小窓 that holds 「PAPER」.
 // TILE_W is the narrowest tile's content box (grid minmax 168px, 14px padding
 // each side); TILE_CH is the monospace advance in em; the .sub run is .55em of
 // the value (CSS), plus one space.

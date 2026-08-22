@@ -196,10 +196,10 @@ def _bot_events(path: Path) -> list[dict[str, Any]]:
     """FILLED main-bot trades, paired entry->exit (market_view.parse_bot_events).
 
     Imported lazily: market_view reads `_tail_jsonl` from this module, so a
-    top-level import here would be a cycle. There is exactly one pairing
-    implementation in the repo and this is it — the console must not grow a
-    second one that disagrees with the chart and the gate judge about what an
-    order DID.
+    top-level import here would be a cycle. Feeds the 決定 table and the chart
+    markers, both of which only ever show the recent tail — the §5 CLOSED-trade
+    COUNT is a separate, full-log read (bot.monitoring.gates.champion_gate,
+    at judge_gates' own depth) precisely because this one is not.
 
     Memoised on the log's (mtime, size): the pairing reads a 4 MB tail and the
     console polls every 5 seconds, while the bot appends about once a minute.
@@ -273,8 +273,9 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
     bot_log = root / "logs" / "bot.jsonl"
     decisions = [d for d in _tail_jsonl(bot_log, 400)
                  if d.get("event") == "decision" or d.get("strategy_signal")]
-    # One parse of the trade pairing, used twice: to say what each decision row
-    # actually did, and to count the closed round trips the §5 gate needs.
+    # Says what each recent decision row actually did (trade_kind/fill_price/
+    # realized_pnl). The §5 champion gate below does its OWN full-log pairing
+    # (bot.monitoring.gates.champion_gate) rather than reusing this tail.
     bot_events = _bot_events(bot_log)
     decisions = _enrich_decisions(decisions, bot_events)
 
@@ -351,5 +352,5 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         # scripts/judge_gates.py judges against, so the console can show how
         # far off each pre-registered sample still is. Progress and ETA only —
         # nothing here decides anything.
-        "gates": collect_gates(root, now, bot_events, ws_files),
+        "gates": collect_gates(root, now, ws_files),
     }

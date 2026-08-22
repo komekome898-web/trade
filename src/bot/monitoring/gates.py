@@ -15,12 +15,13 @@ rate is measured (units accumulated / seconds since the first observation),
 never assumed: with no observations there is no rate and the ETA is None, which
 the page renders as "—" rather than as a guess.
 
-The two file scans (candles, OI snapshots) are memoised on (mtime_ns, size), so
-a 5-second dashboard poll costs one stat() per file until the collector
-actually appends something.
+The file scans (candles, OI snapshots, the champion decision log) are
+memoised on (mtime_ns, size), so a 5-second dashboard poll costs one stat()
+per file until the collector actually appends something.
 """
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -171,23 +172,16 @@ def clear_cache() -> None:
 
 
 # ---- progress ---------------------------------------------------------------
-def progress(key: str, label: str, *, have: float, need: float, unit: str,
-             first_ts: float | None, now: float, bar: str,
-             age_sec: float | None = None, detail: str = "",
-             extra_eta_sec: float | None = None) -> dict[str, Any]:
-    """One gate row: how much of the sample exists and when it fills up.
+def _bar_stats(have: float, need: float, first_ts: float | None, now: float
+              ) -> tuple[float | None, float | None, float | None]:
+    """(pct 0-100, rate units/sec, eta_sec) for ONE bar.
 
-    The rate is ``have / (now - first_ts)`` — what actually accumulated over the
-    window we have been observing, gaps and outages included. An estimate that
-    assumed the collector runs perfectly from here would be the optimistic one,
-    and the whole point of the row is to tell the owner when to look again.
-
-    ``extra_eta_sec`` is a second bar on the same row (data/ws must reach BOTH
-    7 days and ~0.5 GB): the row is only full when the later of the two is, so
-    the ETA shown is the later one.
+    The rate is ``have / (now - first_ts)`` — what actually accumulated over
+    the window we have been observing, gaps and outages included. An estimate
+    that assumed the collector runs perfectly from here would be the
+    optimistic one, and the whole point of a progress row is to tell the
+    owner when to look again.
     """
-    have = float(have)
-    need = float(need)
     remaining = max(0.0, need - have)
     elapsed = None if first_ts is None else max(0.0, now - first_ts)
     rate = (have / elapsed) if (elapsed and have > 0) else None   # units/sec
@@ -197,17 +191,53 @@ def progress(key: str, label: str, *, have: float, need: float, unit: str,
         eta = None
     else:
         eta = remaining / rate
-    if extra_eta_sec is not None and eta is not None:
-        eta = max(eta, extra_eta_sec)
-    elif extra_eta_sec is not None and eta is None:
-        eta = None                      # one half unknown: the row is unknown
+    pct = min(100.0, have / need * 100.0) if need > 0 else None
+    return pct, rate, eta
+
+
+def progress(key: str, label: str, *, have: float, need: float, unit: str,
+             first_ts: float | None, now: float, bar: str,
+             age_sec: float | None = None, detail: str = "",
+             extra_have: float | None = None, extra_need: float | None = None,
+             extra_first_ts: float | None = None) -> dict[str, Any]:
+    """One gate row: how much of the sample exists and when it fills up.
+
+    ``extra_have``/``extra_need`` put a SECOND bar on the same row — board_gate
+    needs data/ws to reach BOTH 7 days and ~0.5 GB. When given, the row folds
+    both bars together rather than reporting the first one alone:
+
+      ``done``    only when BOTH bars are met
+      ``pct``     the MIN of the two bars' percentages — the one further
+                  behind is what the owner is actually waiting on
+      ``eta_sec`` the LATER of the two bars' ETAs — the row is not full until
+                  the slower bar is, and one half unknown makes the whole row
+                  unknown rather than an optimistic guess off the other half
+
+    ``extra_first_ts`` defaults to ``first_ts`` (the same clock, a different
+    accumulated unit).
+    """
+    have = float(have)
+    need = float(need)
+    pct, rate, eta = _bar_stats(have, need, first_ts, now)
+    done = have >= need
+    if extra_need is not None:
+        extra_have = float(extra_have or 0.0)
+        extra_need = float(extra_need)
+        x_first = first_ts if extra_first_ts is None else extra_first_ts
+        x_pct, _x_rate, x_eta = _bar_stats(extra_have, extra_need, x_first, now)
+        done = done and (extra_have >= extra_need)
+        if pct is not None and x_pct is not None:
+            pct = min(pct, x_pct)
+        elif x_pct is not None:
+            pct = x_pct
+        eta = max(eta, x_eta) if (eta is not None and x_eta is not None) else None
     return {
         "key": key, "label": label, "unit": unit,
         "have": round(have, 2), "need": round(need, 2),
-        "pct": round(min(100.0, have / need * 100.0), 1) if need > 0 else None,
+        "pct": round(pct, 1) if pct is not None else None,
         "rate_per_day": round(rate * DAY_SEC, 3) if rate else None,
         "eta_sec": round(eta, 0) if eta is not None else None,
-        "done": have >= need,
+        "done": done,
         "bar": bar,
         # clamped: a file stamped in the future (clock skew between the
         # collector box and this one) is 0 seconds old, not "-2.3 days ago"
@@ -216,40 +246,149 @@ def progress(key: str, label: str, *, have: float, need: float, unit: str,
     }
 
 
-def _eta_only(have: float, need: float, first_ts: float | None,
-              now: float) -> float | None:
-    """The ETA half of ``progress`` — for a row with a second bar on it."""
-    remaining = max(0.0, need - have)
-    if remaining <= 0:
-        return 0.0
-    elapsed = None if first_ts is None else max(0.0, now - first_ts)
-    if not elapsed or have <= 0:
+# ---- champion trades: full-log read at judge_gates' own depth --------------
+# scripts/judge_gates.py:load_champion_trades reconstructs closed round trips
+# from the WHOLE decision log (it can run for months of append-only writes),
+# reading up to CHAMPION_LOG_MAX_BYTES rather than market_view's 4 MB console
+# tail. The gate must count the trades the judge counts, so it reads with the
+# SAME reader at the SAME depth — both live here, and scripts/judge_gates.py
+# imports read_jsonl from this module instead of keeping its own copy, the
+# same arrangement as the BARS above.
+CHAMPION_LOG_MAX_BYTES = 256 * 1024 * 1024
+
+_NON_FILL_STATES = {"PENDING_SUBMIT", "SUBMITTED", "CANCELED", "REJECTED",
+                    "STATE_UNKNOWN", "ABANDONED"}
+
+
+def read_jsonl(path: Path, max_bytes: int = CHAMPION_LOG_MAX_BYTES
+              ) -> tuple[list[dict], int]:
+    """Every parseable JSON object in a .jsonl file, plus the bad-line count.
+
+    A half-written last line (the collector is probably still running) and any
+    corrupt line in the middle are skipped, never raised. A file bigger than
+    ``max_bytes`` keeps its NEWEST tail: logs/bot.jsonl is append-only, so
+    whatever a cap has to drop is the oldest end of it.
+    """
+    records: list[dict] = []
+    bad = 0
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return [], 0
+    try:
+        with open(path, "rb") as f:
+            if size > max_bytes:                     # keep the newest tail
+                f.seek(size - max_bytes)
+                f.readline()
+                bad += 1
+            for raw in f:
+                line = raw.decode("utf-8", errors="replace").strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except ValueError:
+                    bad += 1
+                    continue
+                if isinstance(obj, dict):
+                    records.append(obj)
+                else:
+                    bad += 1
+    except OSError:
+        return records, bad
+    return records, bad
+
+
+def _fval(value: Any) -> float | None:
+    """float() that returns None instead of raising (log fields can be null)."""
+    if value is None or isinstance(value, bool):
         return None
-    return remaining / (have / elapsed)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _champion_summary(path: Path) -> dict[str, Any]:
+    """Closed round trips, paired the same positional way
+    scripts/judge_gates.py:load_champion_trades pairs them: an ORDER_SENT that
+    opens a position, then the NEXT ORDER_SENT while it is open closes it,
+    whatever its own signal says — an ambiguous close (STATE_UNKNOWN with no
+    realized PnL step) leaves the position open rather than booking a trade.
+    Only counts and timestamps are kept here; the console needs no
+    price/notional/PnL detail for a progress bar.
+
+    ``first_entry_ts`` is the FIRST trade's own entry — reading the whole log
+    (not a tail) is what makes that unambiguous.
+    """
+    records, _bad = read_jsonl(path)
+    closed = 0
+    first_entry_ts: float | None = None
+    last_exit_ts: float | None = None
+    last_pnl: float | None = None
+    open_trade: dict[str, Any] | None = None
+
+    for rec in records:
+        if rec.get("event") != "decision" and not rec.get("strategy_signal"):
+            continue
+        ts = parse_ts(rec.get("timestamp"))
+        pnl_now = _fval(rec.get("PnL"))
+        if rec.get("decision") != "ORDER_SENT":
+            if pnl_now is not None and last_pnl is None:
+                last_pnl = pnl_now
+            continue
+        state = rec.get("execution_status")
+        signal = str(rec.get("strategy_signal") or "")
+        filled = state is None or state not in _NON_FILL_STATES
+
+        if open_trade is None:
+            if not filled or signal not in ("BUY", "SELL"):
+                if pnl_now is not None and last_pnl is None:
+                    last_pnl = pnl_now
+                continue
+            if last_pnl is None:
+                # baseline: the P&L already on the books when the log starts
+                last_pnl = pnl_now if pnl_now is not None else 0.0
+            open_trade = {"ts": ts}
+            if first_entry_ts is None and ts is not None:
+                first_entry_ts = ts
+            continue
+
+        # a position is open -> this order closes it
+        delta = None if (pnl_now is None or last_pnl is None) else pnl_now - last_pnl
+        if not filled and (delta is None or delta == 0.0):
+            continue        # ambiguous close: the position may still be open
+        closed += 1
+        if ts is not None:
+            last_exit_ts = ts
+        open_trade = None
+        if pnl_now is not None:
+            last_pnl = pnl_now
+
+    return {"closed": closed, "first_entry_ts": first_entry_ts,
+            "last_exit_ts": last_exit_ts, "open_at_end": open_trade is not None}
 
 
 # ---- the four pending coverage gates ---------------------------------------
-def champion_gate(events: Iterable[dict], now: float) -> dict[str, Any]:
+def champion_gate(root: Path, now: float) -> dict[str, Any]:
     """G1 sample size: CLOSED round trips in logs/bot.jsonl.
 
-    ``events`` is bot.monitoring.market_view.parse_bot_events output — the same
-    positional entry/exit pairing scripts/judge_gates.py:load_champion_trades
-    uses, so this counts the trades the judge would count. status.json's
-    ``trade_count`` is fills (an entry and its exit are two) and would report
-    double.
+    Counted the same way scripts/judge_gates.py:load_champion_trades counts
+    them (see ``_champion_summary``) — full-log positional entry/exit pairing
+    at ``CHAMPION_LOG_MAX_BYTES``, not market_view's 4 MB console tail. A log
+    past 4 MB has trades the tail cannot see, and this row must show the same
+    n the judge's PASS/FAIL is computed against. status.json's ``trade_count``
+    is fills (an entry and its exit are two) and would report double.
     """
-    events = list(events)
-    entries = [e for e in events if e.get("kind") == "entry"]
-    exits = [e for e in events if e.get("kind") == "exit"]
-    first_ts = min((e["ts"] for e in events if e.get("ts")), default=None)
-    last_ts = max((e["ts"] for e in exits if e.get("ts")), default=None)
-    open_now = max(0, len(entries) - len(exits))
+    path = root / "logs" / "bot.jsonl"
+    summary = cached_scan("champion", path, lambda: _champion_summary(path))
+    open_now = 1 if summary["open_at_end"] else 0
     return progress(
         "champion", "チャンピオン試行 (§5)",
-        have=len(exits), need=MAIN_TRADES_BAR, unit="trades",
-        first_ts=first_ts, now=now,
+        have=summary["closed"], need=MAIN_TRADES_BAR, unit="trades",
+        first_ts=summary["first_entry_ts"], now=now,
         bar=f">= {MAIN_TRADES_BAR} 決済済みトレード",
-        age_sec=(now - last_ts) if last_ts else None,
+        age_sec=(now - summary["last_exit_ts"]) if summary["last_exit_ts"] else None,
         detail=f"建玉中 {open_now}件")
 
 
@@ -300,7 +439,7 @@ def board_gate(root: Path, now: float,
         bar=f">= {BOARD_DAYS_BAR:.0f}日 かつ >= {BOARD_BYTES_BAR / 1e9:.1f}GB",
         age_sec=(now - max(ends)) if ends else None,
         detail=f"{total / 1e6:.1f} MB / {len(files)}ファイル",
-        extra_eta_sec=_eta_only(total, BOARD_BYTES_BAR, first_ts, now))
+        extra_have=total, extra_need=BOARD_BYTES_BAR)
 
 
 def funding_gate(root: Path, now: float) -> dict[str, Any]:
@@ -341,12 +480,11 @@ def funding_gate(root: Path, now: float) -> dict[str, Any]:
 
 
 def collect_gates(root: str | Path, now: float,
-                  champion_events: Iterable[dict] = (),
                   ws_files: Iterable[Path] | None = None
                   ) -> list[dict[str, Any]]:
     """The four PENDING coverage gates, in the order the console shows them."""
     root = Path(root)
-    return [champion_gate(champion_events, now),
+    return [champion_gate(root, now),
             oi_gate(root, now),
             board_gate(root, now, ws_files),
             funding_gate(root, now)]

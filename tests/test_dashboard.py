@@ -401,6 +401,41 @@ def test_champion_gate_counts_closed_round_trips_not_fills(tmp_path):
     assert champ["unit"] == "trades" and champ["done"] is False
 
 
+def test_champion_gate_matches_judge_gates_beyond_market_views_4mb_tail(tmp_path):
+    """market_view (the decisions table / chart markers) only ever reads a
+    4 MB tail of logs/bot.jsonl. The champion GATE must not inherit that limit
+    — a round trip old enough to sit beyond the tail still has to be counted,
+    exactly as scripts/judge_gates.py counts it from the whole file."""
+    import sys
+    from pathlib import Path as _P
+
+    old_trade = [
+        _decision("2020-01-01T00:00:00+00:00", "BUY", "ORDER_SENT",
+                  "old entry", 0.0, execution_price=1_000_000.0,
+                  order_size=0.01, execution_status="FILLED"),
+        _decision("2020-01-01T00:10:00+00:00", "CLOSE", "ORDER_SENT",
+                  "old exit", 100.0, execution_price=1_001_000.0,
+                  order_size=0.01, execution_status="FILLED"),
+    ]
+    # >4 MB of HOLD filler so the round trip above sits well outside
+    # market_view.LOG_TAIL_BYTES (4 MB) once the file is read from the end.
+    filler = [_decision(f"2020-06-{1 + i % 28:02d}T00:00:00+00:00", "HOLD",
+                        "HOLD", "x" * 2000) for i in range(2600)]
+    _write_log(tmp_path, old_trade + filler + PAIRED_LOG)
+    log_path = tmp_path / "logs" / "bot.jsonl"
+    assert log_path.stat().st_size > 4 * 1024 * 1024   # the scenario is real
+
+    console_have = _gates(collect_status(tmp_path))["champion"]["have"]
+
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1] / "scripts"))
+    import judge_gates as jg
+    trades, _meta = jg.load_champion_trades(tmp_path)
+    assert console_have == len(trades)
+    # the old round trip (1) + PAIRED_LOG's two (2) = 3; proves it was not
+    # silently dropped by a tail read
+    assert console_have == 3.0
+
+
 def test_progress_eta_is_measured_from_the_observed_rate():
     """A known rate gives a known ETA: 10 rows in 10 days is 1 row/day, so the
     remaining 20 of a 30-row bar are 20 days away."""
@@ -457,6 +492,33 @@ def test_board_gate_waits_for_the_later_of_its_two_bars(tmp_path):
     # days alone would be ~4 more days; the 0.5 GB bar dominates
     assert g["eta_sec"] > 100 * DAY_SEC
     assert "3.0 MB / 3ファイル" in g["detail"]
+
+
+def test_board_gate_done_and_pct_fold_both_bars(tmp_path):
+    """8 days clears BOARD_DAYS_BAR (7) alone, but 8 MB of recordings is
+    nowhere near BOARD_BYTES_BAR (~0.5 GB) — the row must stay NOT done, and
+    its pct must reflect the bar that is actually behind (~1.6%), not the
+    days bar that already reads 100%."""
+    import os
+    from datetime import datetime, timezone
+
+    from bot.monitoring.gates import DAY_SEC, board_gate, clear_cache
+
+    clear_cache()
+    ws = tmp_path / "data" / "ws"
+    ws.mkdir(parents=True)
+    now = 1_800_000_000.0
+    for day in range(8):
+        start = now - (8 - day) * DAY_SEC
+        stamp = datetime.fromtimestamp(start, tz=timezone.utc).strftime(
+            "%Y%m%d_%H%M%S")
+        f = ws / f"board_{stamp}.jsonl.gz"
+        f.write_bytes(b"x" * 1_000_000)          # 1 MB/day -> 8 MB total
+        os.utime(f, (start, start + DAY_SEC))
+    g = board_gate(tmp_path, now)
+    assert g["have"] >= 7.0                      # the DAYS bar alone is met
+    assert g["done"] is False                    # the BYTES bar is not
+    assert g["pct"] == pytest.approx(1.6, abs=0.2)
 
 
 def test_oi_and_funding_gates_read_the_real_files(tmp_path):
@@ -802,7 +864,7 @@ def _console_workspace(root):
 def test_console_tiles_never_wrap_to_a_second_line(tmp_path):
     """A 小窓 that wraps pushes the whole tile row out of alignment. The value
     is one line by CSS and the font is stepped down to the string's own length,
-    so the longest realistic values still fit the narrowest (150px) tile."""
+    so the longest realistic values still fit the narrowest (168px) tile."""
     workspace = tmp_path / "ws"
     workspace.mkdir()
     now = _console_workspace(workspace)
