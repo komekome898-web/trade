@@ -1,6 +1,6 @@
 # KNOWLEDGE.md — このプロジェクトが実測で確立した知識
 
-出典記法: `b`〜`m` = `docs/RESEARCH_REPORT_2026-08-20{b..m}.md`(第2〜13報)、`n`〜`p` = `docs/RESEARCH_REPORT_2026-08-21{n..p}.md`(第14〜16報)、`BT` = `docs/BACKTEST_REPORT_2026-08-20.md`(第1報)、`T` = 戦略トーナメント(`scripts/research_tournament.py` + 第13報予定)。
+出典記法: `b`〜`m` = `docs/RESEARCH_REPORT_2026-08-20{b..m}.md`(第2〜13報)、`n`〜`q` = `docs/RESEARCH_REPORT_2026-08-21{n..q}.md`(第14〜17報)、`r`/`s` = `docs/RESEARCH_REPORT_2026-08-22{r,s}.md`(第18・19報)、`BT` = `docs/BACKTEST_REPORT_2026-08-20.md`(第1報)、`T` = 戦略トーナメント(`scripts/research_tournament.py` + 第13報予定)。
 
 ## 1. コスト実測(FX_BTC_JPY / Crypto CFD)
 
