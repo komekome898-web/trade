@@ -85,6 +85,23 @@ A calendar condition qualifies as a radar-module CANDIDATE iff ALL of:
       by a margin whose exact binomial p < 0.05.
 Below the bar -> reported as a PRIOR FOR FX ONLY, not a BTC radar module.
 
+SUPPLEMENTARY ANALYSES -- added AFTER the pre-registered tables were produced
+-----------------------------------------------------------------------------
+Recorded here so the audit trail is honest.  None of these can move the verdict in
+section 10; they are diagnostics and, where they generate a new hypothesis, that
+hypothesis is registered for FRESH data and explicitly not adopted here.
+  4b  dedup / magnitude view.  Motivated by NFP 2026-02-06: 2.78% |30m ret| inside
+      the window yet ZERO onsets, because the 2h dedup suppresses an onset inside an
+      already-running storm.  Adds storm-minute occupancy and mean |30m ret|.
+  6b  matched-hour volatility rank test.  With 19 events the binary onset count has
+      almost no power; this ranks each event's realised range against the SAME UTC
+      minute-of-day on every other day, plus a pre-release placebo and two far
+      (+/-6h, same day) placebos, and a paired post-minus-pre difference.
+  9D/9E  US-local-time decomposition.  Motivated by profile 9C.  Splits the sample at
+      the DST boundary to ask whether the clock law is anchored to UTC or to US
+      Eastern local time.  The ET windows in 9E were chosen after seeing 9C/9D and are
+      therefore a REGISTERED HYPOTHESIS FOR FRESH DATA, not a result.
+
 Known limitations (stated before seeing any result)
 ---------------------------------------------------
   * ~19-21 events in 210 days is thin.  A +/-30m window is 61 minutes; 20 events
@@ -362,13 +379,10 @@ def main() -> None:
             rows.append((kind, m))
             print(f"{kind + f'  (n_ev={len(st)})':<44}" + fmt(m))
         for label, kinds in [("ALL (NFP+CPI+FOMC)", ["NFP", "CPI", "FOMC"]),
-                             ("NO-FOMC (NFP+CPI)", ["NFP", "CPI"]),
-                             ("08:30-ET only (NFP+CPI, same clock slot)", ["NFP", "CPI"])]:
+                             ("NO-FOMC = the 08:30-ET pair (NFP+CPI)", ["NFP", "CPI"])]:
             st = cal[cal["kind"].isin(kinds)]["ts"]
             m = rate_stats(onset, window_mask(idx, st, half), universe)
             print(f"{label + f'  (n_ev={len(st)})':<44}" + fmt(m))
-            if label.startswith("08:30"):
-                break
         print(f"{'-- reference: CLOCK 12:30-15:00 UTC':<44}" + fmt(mc))
 
     # ---------------------------------------------------------------- per-event
@@ -404,6 +418,32 @@ def main() -> None:
     print("\nfor scale: an arbitrary 61-minute window catches >=1 storm onset with probability")
     print(f"  ~1-(1-r)^61 = {1 - (1 - len(events) / len(idx)) ** 61:.3f}, and a 181-minute window "
           f"~{1 - (1 - len(events) / len(idx)) ** 181:.3f}")
+
+    # ------------------------------------------------- 4b dedup artifact
+    header("4b. DEDUP ARTIFACT + MAGNITUDE VIEW  (supplementary; NOT part of the bar)")
+    print("The 2h dedup means a window sitting INSIDE an already-running storm records ZERO")
+    print("onsets no matter how violent it is.  NFP 2026-02-06 is exactly that case: 2.78%")
+    print("|30m ret| inside +/-90m and no onset.  Two dedup-free views of the same windows:")
+    storm_occ = storm_min.to_numpy()
+    print(f"\n{'condition':<44}{'minutes':>9}{'storm-min%':>12}{'out%':>9}{'lift':>8}"
+          f"{'mean|30m|':>11}{'out':>9}{'ratio':>8}")
+    line()
+    r30 = np.nan_to_num(ret30, nan=0.0)
+    for tag, kinds in [("NFP", ["NFP"]), ("CPI", ["CPI"]), ("FOMC", ["FOMC"]),
+                       ("ALL", ["NFP", "CPI", "FOMC"]), ("NO-FOMC", ["NFP", "CPI"])]:
+        for half in [WIN_PRIMARY, WIN_SECONDARY]:
+            st = cal[cal["kind"].isin(kinds)]["ts"]
+            w = window_mask(idx, st, half)
+            oi_, oo = storm_occ[w].mean(), storm_occ[~w].mean()
+            mi, mo = r30[w].mean(), r30[~w].mean()
+            print(f"{f'{tag}  +/-{half}m':<44}{int(w.sum()):>9}{100 * oi_:>12.2f}"
+                  f"{100 * oo:>9.2f}{oi_ / oo:>8.2f}{100 * mi:>11.3f}{100 * mo:>9.3f}"
+                  f"{mi / mo:>8.2f}")
+    print(f"{'-- reference: CLOCK 12:30-15:00 UTC':<44}{int(clock.sum()):>9}"
+          f"{100 * storm_occ[clock].mean():>12.2f}{100 * storm_occ[~clock].mean():>9.2f}"
+          f"{storm_occ[clock].mean() / storm_occ[~clock].mean():>8.2f}"
+          f"{100 * r30[clock].mean():>11.3f}{100 * r30[~clock].mean():>9.3f}"
+          f"{r30[clock].mean() / r30[~clock].mean():>8.2f}")
 
     # ---------------------------------------------------------------- clock decomposition
     header("5. CLOCK DECOMPOSITION  --  does the calendar add anything BEYOND 12:30-15:00 UTC?")
@@ -479,6 +519,91 @@ def main() -> None:
             m = rate_stats(onset, asym_mask(idx, st, a, z), universe)
             print(f"{tag + '  ' + lab:<44}" + fmt(m))
         print()
+
+    # ------------------------------------------------- 6b matched-hour rank test
+    header("6b. MATCHED-HOUR VOLATILITY RANK TEST  (supplementary; the high-power view)")
+    print("With 19 events a binary storm/no-storm count has almost no power, and the 2h dedup")
+    print("throws away real violence (section 4b).  This test is dedup-free, threshold-free and")
+    print("controls the clock EXACTLY: for each event, the realised range over the window is")
+    print("ranked against the SAME UTC minute-of-day window on EVERY OTHER DAY of the sample.")
+    print("Under the null 'a release day is an ordinary day at that hour' the ranks are U(0,1),")
+    print("so mean rank = 0.500 and half the events sit above 0.5.  No RNG; ranks are exact.\n")
+
+    hi_s, lo_s = b["high"], b["low"]
+
+    def fwd_range(win: int) -> np.ndarray:
+        h = hi_s[::-1].rolling(win, min_periods=win).max()[::-1]
+        ll = lo_s[::-1].rolling(win, min_periods=win).min()[::-1]
+        return np.log(h / ll).to_numpy()
+
+    rng_f30, rng_f60 = fwd_range(30), fwd_range(60)
+    rng_b60 = np.log(hi_s.rolling(60, min_periods=60).max()
+                     / lo_s.rolling(60, min_periods=60).min()).to_numpy()
+
+    mod_arr = (idx.hour * 60 + idx.minute).to_numpy()
+
+    def matched_rank(p: int, series: np.ndarray) -> tuple[float, int]:
+        peers = np.flatnonzero(mod_arr == mod_arr[p])
+        v = series[peers]
+        ok = np.isfinite(v)
+        peers, v = peers[ok], v[ok]
+        me = series[p]
+        if not np.isfinite(me) or len(v) < 30:
+            return float("nan"), 0
+        others = v[peers != p]
+        return float((others < me).mean()), len(others)
+
+    print("Two placebos are carried alongside: the hour BEFORE the release, and a window 6h")
+    print("away on the SAME DAY.  If release days are merely busy days, the far placebo lifts")
+    print("too; if the release moment matters, only the post window does.\n")
+    print(f"{'kind':<6}{'UTC timestamp':<28}{'[E,E+30]':>11}{'[E,E+60]':>11}{'[E-60,E]':>11}"
+          f"{'far -6h':>10}{'far +6h':>10}{'n_peer':>8}")
+    line()
+    ranks = {k: {"f30": [], "f60": [], "b60": [], "m6": [], "p6": [], "d": []}
+             for k in ["NFP", "CPI", "FOMC"]}
+    for _, r in cal.iterrows():
+        p = idx.get_indexer(pd.DatetimeIndex([r["ts"]]))[0]
+        a30, npeer = matched_rank(p, rng_f30)
+        a60, _ = matched_rank(p, rng_f60)
+        bb, _ = matched_rank(p, rng_b60)
+        m6, _ = matched_rank(max(0, p - 360), rng_f60)
+        p6, _ = matched_rank(min(len(idx) - 1, p + 360), rng_f60)
+        for key, val in [("f30", a30), ("f60", a60), ("b60", bb), ("m6", m6), ("p6", p6),
+                         ("d", (a60 - bb) if np.isfinite(a60) and np.isfinite(bb) else np.nan)]:
+            if np.isfinite(val):
+                ranks[r["kind"]][key].append(val)
+        print(f"{r['kind']:<6}{str(r['ts']):<28}{a30:>11.3f}{a60:>11.3f}{bb:>11.3f}"
+              f"{m6:>10.3f}{p6:>10.3f}{npeer:>8}")
+
+    print(f"\n{'group':<20}{'n':>5}{'mean rank':>12}{'median':>9}{'above .5':>10}"
+          f"{'sign-test p':>13}   window")
+    line()
+    for key, wlab in [("f30", "[E, E+30]  post-release"),
+                      ("f60", "[E, E+60]  post-release"),
+                      ("b60", "[E-60, E]  PRE-release (placebo, expect 0.50)"),
+                      ("m6", "[E-6h, E-5h] FAR placebo, same day (expect 0.50)"),
+                      ("p6", "[E+6h, E+7h] FAR placebo, same day (expect 0.50)")]:
+        for tag, kinds in [("NFP", ["NFP"]), ("CPI", ["CPI"]), ("FOMC", ["FOMC"]),
+                           ("ALL", ["NFP", "CPI", "FOMC"]), ("NO-FOMC", ["NFP", "CPI"])]:
+            v = np.array([x for k in kinds for x in ranks[k][key]])
+            if not len(v):
+                continue
+            above = int((v > 0.5).sum())
+            pv = binom_tail_ge(above, len(v), 0.5)
+            print(f"{tag:<20}{len(v):>5}{v.mean():>12.3f}{np.median(v):>9.3f}"
+                  f"{f'{above}/{len(v)}':>10}{pv:>13.3f}   {wlab}")
+        print()
+
+    print("PAIRED post-minus-pre rank difference (removes the 'release days are busy days'")
+    print("component; a positive, significant difference is the release-moment increment):")
+    print(f"{'group':<20}{'n':>5}{'mean diff':>12}{'median':>9}{'diff>0':>10}{'sign-test p':>13}")
+    line()
+    for tag, kinds in [("NFP", ["NFP"]), ("CPI", ["CPI"]), ("FOMC", ["FOMC"]),
+                       ("ALL", ["NFP", "CPI", "FOMC"]), ("NO-FOMC", ["NFP", "CPI"])]:
+        v = np.array([x for k in kinds for x in ranks[k]["d"]])
+        above = int((v > 0).sum())
+        print(f"{tag:<20}{len(v):>5}{v.mean():>+12.3f}{np.median(v):>+9.3f}"
+              f"{f'{above}/{len(v)}':>10}{binom_tail_ge(above, len(v), 0.5):>13.3f}")
 
     # ---------------------------------------------------------------- permutation
     header("7. DAY-SHIFT PERMUTATION NULL  (the cleanest control for the clock law)")
@@ -597,6 +722,66 @@ def main() -> None:
         print(f"{f'{a // 60:02d}:{a % 60:02d}-{(a + 30) // 60:02d}:{(a + 30) % 60:02d}':<16}"
               f"{n:>10}{k:>9}{r:>10.2f}  " + "#" * int(round(r)))
 
+    print("\nD. POST-HOC MECHANISM DIAGNOSTIC (generated by looking at profile C -- explicitly")
+    print("   NOT a candidate, and NOT eligible for adoption from this data; registered here")
+    print("   as a hypothesis for fresh data).  Profile C shows the 12:30-13:00 UTC slot -- the")
+    print("   08:30-ET release slot in summer -- is the QUIETEST of its neighbourhood, while the")
+    print("   peak sits at 13:30-15:00 UTC.  In EDT, 13:30 UTC = 09:30 ET = the NYSE cash open.")
+    print("   If storms track US LOCAL time, the peak must MOVE by one hour in UTC across the")
+    print("   DST boundary (2026-03-08): 14:30 UTC in EST, 13:30 UTC in EDT.  If it does not")
+    print("   move, the driver is a fixed UTC-clock effect, not a US-local-session effect.\n")
+    est = idx < pd.Timestamp("2026-03-08 07:00", tz="UTC")
+    et_min = np.where(est, (mod_arr + 60) % 1440, mod_arr)   # UTC -> "as if EDT" alignment
+    for lab, seg in [("EST leg (data start .. 2026-03-08)", est),
+                     ("EDT leg (2026-03-08 .. data end)", ~est)]:
+        nd = int(seg.sum()) / 1440.0
+        nst = int(onset[seg].sum())
+        print(f"[{lab}]  {nd:.0f} days, {nst} storm onsets")
+        print(f"  {'UTC slot':<14}{'ET slot':<14}{'minutes':>9}{'storms':>8}{'per 10k':>10}  bar")
+        line("-", 78)
+        for a in range(12 * 60, 16 * 60, 30):
+            sel = seg & (mod_arr >= a) & (mod_arr < a + 30)
+            n, k = int(sel.sum()), int(onset[sel].sum())
+            r = 1e4 * k / n if n else 0.0
+            off = -5 if lab.startswith("EST") else -4
+            et_a = (a + off * 60) % 1440
+            print(f"  {f'{a // 60:02d}:{a % 60:02d}':<14}"
+                  f"{f'{et_a // 60:02d}:{et_a % 60:02d} ET':<14}{n:>9}{k:>8}{r:>10.2f}  "
+                  + "#" * int(round(r / 2)))
+        print()
+    print("  combined profile after re-expressing every minute in US EASTERN local time")
+    print("  (EST minutes shifted +60m so both legs share one ET axis):")
+    print(f"  {'ET slot':<14}{'minutes':>9}{'storms':>8}{'per 10k':>10}{'lift vs day':>13}  bar")
+    line("-", 78)
+    day_rate = len(events) / len(idx)
+    for a in range(7 * 60, 12 * 60, 30):
+        sel = (et_min >= a + 4 * 60) & (et_min < a + 4 * 60 + 30)   # ET slot -> EDT-UTC axis
+        n, k = int(sel.sum()), int(onset[sel].sum())
+        r = k / n if n else 0.0
+        print(f"  {f'{a // 60:02d}:{a % 60:02d} ET':<14}{n:>9}{k:>8}{1e4 * r:>10.2f}"
+              f"{r / day_rate:>13.2f}  " + "#" * int(round(1e4 * r / 2)))
+
+    print("\n  E. the registered radar window is UTC-FIXED, so it drifts one hour against US local")
+    print("     time twice a year.  Side-by-side, same metric (POST-HOC, for fresh-data testing):")
+    print(f"  {'window':<40}{'minutes':>9}{'storms':>8}{'in/10k':>10}{'out/10k':>10}"
+          f"{'lift':>8}{'recall':>9}")
+    line("-", 96)
+    off_min = np.where(est, 5 * 60, 4 * 60)          # UTC minus this = ET minutes
+    et_of_day = (mod_arr - off_min) % 1440
+    for lab, sel in [("UTC 12:30-15:00 (current radar window)", clock),
+                     ("ET  09:00-11:30 (US cash open, DST-tracking)",
+                      (et_of_day >= 9 * 60) & (et_of_day < 11 * 60 + 30)),
+                     ("ET  09:30-11:00 (tighter, DST-tracking)",
+                      (et_of_day >= 9 * 60 + 30) & (et_of_day < 11 * 60)),
+                     ("ET  08:15-08:45 (the 08:30 release slot itself)",
+                      (et_of_day >= 8 * 60 + 15) & (et_of_day < 8 * 60 + 45))]:
+        m = rate_stats(onset, sel, universe)
+        print(f"  {lab:<40}{m['n_in']:>9}{m['k_in']:>8}{m['per_10k_in']:>10.2f}"
+              f"{m['per_10k_out']:>10.2f}{m['lift']:>8.2f}{m['recall']:>9.3f}")
+    print("  NOTE: these ET windows were chosen AFTER seeing profile C/D.  They are a registered")
+    print("  hypothesis for fresh data, NOT a result -- selecting a window on the data that")
+    print("  suggested it is exactly the self-contamination banned by research-protocol sec.8.")
+
     # ---------------------------------------------------------------- verdict
     header("10. PRE-REGISTERED VERDICT")
     print("bar: lift >= 2.0  AND  >= 15 event windows  AND  survives clock removal")
@@ -635,6 +820,25 @@ def main() -> None:
               f"{m90['lift']:>9.2f}{m90['p']:>8.3f}{'-':>9}{'-':>9}{'-':>8}   "
               f"BELOW BAR -- only {len(st)} windows (<{BAR_MIN_WINDOWS}) by construction")
 
+    print("\nMANDATORY QUALIFICATION OF THE ABOVE  --  read before acting on any 'CANDIDATE'")
+    print("The bar for THIS study (set in the brief) omits recall and a storm-count minimum.")
+    print("The STANDING radar bar of KNOWLEDGE.md sec.5 is  lift>=2.0 AND recall>=0.10 AND")
+    print(">=30 storms.  Measured against that standing bar:")
+    st = cal["ts"]
+    m30 = rate_stats(onset, window_mask(idx, st, WIN_PRIMARY), universe)
+    m90 = rate_stats(onset, window_mask(idx, st, WIN_SECONDARY), universe)
+    print(f"  ALL +/-30m : lift={m30['lift']:.2f} (PASS)  recall={m30['recall']:.3f} "
+          f"(FAIL, needs 0.10 -- {1 / max(m30['recall'], 1e-9):.0f}x short)  "
+          f"storms caught={m30['k_in']} (FAIL, needs 30)")
+    print(f"  ALL +/-90m : lift={m90['lift']:.2f} (PASS)  recall={m90['recall']:.3f} "
+          f"(FAIL)  storms caught={m90['k_in']} (FAIL)")
+    print("  -> the calendar CANNOT be a stand-alone radar module: it is on for ~0.4% of minutes")
+    print("     and sees ~1% of storms.  At best it is a MULTIPLIER on an already-firing radar.")
+    print("  -> the day-shift permutation (section 7), which controls the clock exactly, puts the")
+    print("     ALL +/-30m lift at p_perm ~0.07-0.08 -- i.e. one shifted calendar in thirteen")
+    print("     does as well.  Only the FOMC arm beats its own shifts (p_perm 0.011 at +/-90m),")
+    print("     and it has 5 events.")
+
     # ---------------------------------------------------------------- sanity
     header("11. SANITY CHECKLIST  (research-protocol sec.6)")
     print("* look-ahead: ZERO by construction.  The calendar is published in advance; a storm")
@@ -667,6 +871,12 @@ def main() -> None:
     print("6. NFP and CPI both fire at 08:30 ET = the START of the 12:30-15:00 UTC clock window.")
     print("   Any 08:30-ET result and the clock law are mechanically confounded; only D2/D3/D4 and")
     print("   the day-shift permutation can separate them, and both are thin.")
+    print("7. Sections 4b, 6b, 9D and 9E were added after the pre-registered tables existed (see")
+    print("   the SUPPLEMENTARY block of the docstring).  They are diagnostics.  The ET-anchored")
+    print("   windows of 9E in particular were chosen on the very data that suggested them and")
+    print("   must be re-tested on fresh data before they mean anything.")
+    print("8. The DST split is unbalanced: 45 days EST vs 165 days EDT, so the EST leg of 9D")
+    print("   rests on ~108 onsets and its per-slot cells hold 0-14 events each.")
 
     print()
     line("=")
