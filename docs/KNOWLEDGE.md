@@ -91,5 +91,7 @@
 - **bitFlyer 公開約定履歴は直近31日まで**(90日バックフィルは不可能と実証)。フェッチャーは制限到達で優雅に打ち切る → **恒久保存は `backtest_data/` へのスナップショットが必須** (g)
 - OKX の OI / L-S比履歴も約30日固定・ページング不可 (h)。Binance 先物(資金調達率・OI・清算)は HTTP 451 で地理的ブロック (e)
 - Claude Code 開発環境は一時VMのため `data/` はセッション終了で消える。継続蓄積は自宅マシン側 (`docs/OPERATIONS.md` §6)
-- 恒久スナップショット(`backtest_data/`): `candles_FX_BTC_JPY_20260820.csv`(21日)/ `candles_FX_BTC_JPY_30d_20260820.csv` / `candles_{BTC,ETH,XRP}_JPY_20260820.csv` / `flow_FX_BTC_JPY_20260820.csv` / `storm_events_20260820/`(嵐16件×2時間窓、796KB)/ `burst_events_20260820/`(平常バースト99窓×40分、1.5MB)/ Binance・bitbank の 1m・4h・1d
+- 恒久スナップショット(`backtest_data/`): `candles_FX_BTC_JPY_20260820.csv`(21日)/ `candles_FX_BTC_JPY_30d_20260820.csv` / `candles_{BTC,ETH,XRP}_JPY_20260820.csv` / `flow_FX_BTC_JPY_20260820.csv` / `storm_events_20260820/`(嵐16件×2時間窓、796KB)/ `burst_events_20260820/`(平常バースト99窓×40分、1.5MB)/ Binance・bitbank の 1m・4h・1d / **`executions_FX_BTC_JPY_31d_20260823.csv.gz`(98.2万約定、2026-07-23〜08-23、10.8MB — S10探索テープ)+ `candles_FX_BTC_JPY_31d_20260823.csv.gz`** / `okx_btc_{oi,lsratio}_{5m,1h}_20260823.csv`(1hは30日分)
+- **Binance 遡及取得の実証**(2026-08-23): `data.binance.vision` の日次アーカイブ(spot 1s klines・aggTrades)は直近日も約3か月前も HTTP 200 で到達可 — **保持期限なし、研究時の遡及取得で足りる**(先回り収集は不要)。注意: タイムスタンプは**マイクロ秒**(ミリ秒ではない)。一方 `api.binance.com`(REST)はこの環境から HTTP 451 で geo-block(fapi と同様)— 使えるのは静的アーカイブのみ
+- データ収集の切り分け原則と係属研究→データ対応表: `docs/DATA_PLAN_2026-08-23.md`(今すぐ集める = 期限付きで消滅するものだけ)
 - 蓄積中(`data/`): WS記録 `ws/*.jsonl.gz`(板・約定・ティッカー、実測523msg/分・約70MB/日)/ `spread_FX_BTC_JPY.csv`(5秒毎 bid/ask)/ `oi_snapshots.csv`(15分毎、OKX OI・L-S比・Deribit DVOL)/ `basis_1m.csv` / `funding_rate_history.csv`(66日・200決済)/ `scalp_paper.jsonl`(スキャルパー全判断)
