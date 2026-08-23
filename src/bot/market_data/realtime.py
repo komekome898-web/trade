@@ -7,6 +7,9 @@ board snapshots + diffs, executions and tickers at millisecond cadence.
 
 Read-only: no authentication, no orders. Reconnects with backoff on any
 failure; a session writes to its own file so crashes never corrupt data.
+The file is opened lazily on the first received message, so sessions that
+never receive anything (e.g. reconnect attempts during bitFlyer's daily
+maintenance window, 19:00-19:10 JST) leave no empty stub files behind.
 """
 from __future__ import annotations
 
@@ -62,8 +65,12 @@ class RealtimeRecorder:
                 backoff = min(backoff * 2, 60.0)
 
     async def _session(self, deadline: float | None) -> None:
-        f, path = self._open_file()
-        print(f"[recorder] connecting; writing {path}", flush=True)
+        # Lazy open: the output file is created on the FIRST received message,
+        # so a session that connects but receives nothing (or never connects)
+        # leaves no empty stub file behind.
+        f = None
+        path = None
+        print("[recorder] connecting", flush=True)
         try:
             async with websockets.connect(self.endpoint, ping_interval=20,
                                           ping_timeout=20, max_size=2 ** 24) as ws:
@@ -76,6 +83,9 @@ class RealtimeRecorder:
                     timeout = None if deadline is None else max(
                         0.1, deadline - time.monotonic())
                     raw = await asyncio.wait_for(ws.recv(), timeout=min(60.0, timeout or 60.0))
+                    if f is None:
+                        f, path = self._open_file()
+                        print(f"[recorder] writing {path}", flush=True)
                     f.write(json.dumps({"rts": time.time(), "m": json.loads(raw)},
                                        ensure_ascii=False, separators=(",", ":")) + "\n")
                     self.messages_written += 1
@@ -84,6 +94,7 @@ class RealtimeRecorder:
                 return  # duration reached while waiting — normal shutdown
             raise ConnectionError("no message for 60s — reconnecting")
         finally:
-            f.close()
-            print(f"[recorder] closed {path} ({self.messages_written} msgs total)",
-                  flush=True)
+            if f is not None:
+                f.close()
+                print(f"[recorder] closed {path} ({self.messages_written} msgs total)",
+                      flush=True)

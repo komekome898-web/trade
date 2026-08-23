@@ -559,6 +559,18 @@ Claude 側は `paper_logs/` の各ファイルを `logs/`・`data/` の定位置
 fast-cycle判定に使う新鮮な約定データの供給と、bitFlyerの約定履歴API
 (31日で消える)を越えた長期テープの蓄積。
 
+同じ走査で TICKER チャンネルから best bid/ask とそのサイズも
+`data/tape/ticker_YYYYMMDD.csv.gz`(列: `ts, best_bid, best_ask,
+best_bid_size, best_ask_size`。気配が変化した行のみ記録)として抽出・共有
+される。用途は係属研究の実測: S8 復活チェック、スプレッドMM の fill率 f
+実測、S10 雪崩時スリッページ実測。ticker 追加後の初回実行では、抽出済みの
+過去ファイルからも ticker を自動バックフィルする(約定は二重出力されない)。
+
+なおレコーダ(`record_realtime.py`)は出力ファイルを最初のメッセージ受信時に
+初めて作るため、bitFlyer の日次メンテナンス(19:00–19:10 JST)中の再接続
+試行で空の .jsonl.gz スタブが量産されることはない(過去に生成済みの空
+スタブは無害・放置でよい)。
+
 ## 7. 次フェーズのチェックリスト
 
 - [ ] `check_api.py` 成功(認証OK・出金権限なし・最低注文数量と手数料率の実測)
