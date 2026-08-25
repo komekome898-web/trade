@@ -80,7 +80,12 @@ modules:
   long_only:
     enabled: false
     gate: "Owner approval of a written report in docs/ showing the long-only subset of champion paper trades meets: net >= +0.15%/trade AND maxDD < 10% (the KNOWLEDGE.md §5 bars) on subset n >= 15 — NOTE: §5's full-set bar is 30 trades; the reduced subset-n is a deliberate deviation that the owner approves together with the report — with event-clustered CI excluding 0 and fresh-data confirmation (tournament C3 was candidate-generation only)."
-    gate_evidence: "JUDGED FAIL 2026-08-25 (docs/RESEARCH_REPORT_2026-08-25w.md): subset n=17, net -0.013%/trade, day-clustered CI [-0.194, +0.196] includes 0. Module rejected; stays off. Re-opening requires a NEW pre-registration."
+    # JUDGED FAIL 2026-08-25 (docs/RESEARCH_REPORT_2026-08-25w.md): subset
+    # n=17, net -0.013%/trade, day-clustered CI [-0.194, +0.196] includes 0.
+    # Module rejected; stays off. Re-opening requires a NEW pre-registration.
+    # gate_evidence stays empty: it is the enable-time evidence slot, and
+    # this module must never be enabled under this gate.
+    gate_evidence: ""
     # would veto entries that open or extend a short. Tournament C3 beat the
     # champion on expectancy AND maxDD, but on n=6 judgment trades and with the
     # sign flipped on the 210d proxy — same overfit signature as C2. Judgment
