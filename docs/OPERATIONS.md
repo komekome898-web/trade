@@ -50,7 +50,7 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
 | 通常停止 | `sudo systemctl stop bitflyer-bot` |
 | 緊急停止(Kill Switch) | リポジトリ直下に `touch KILL` |
 | Kill Switch 状態確認 | `cat data/kill_switch.json` |
-| Kill Switch 解除(原因調査後のみ) | `.venv/bin/python -c "import sys; sys.path.insert(0,'src'); from bot.risk.kill_switch import KillSwitch; KillSwitch().reset(operator_confirm=True)"` |
+| Kill Switch 解除(原因調査後のみ) | **Windows: `deploy\reset_kill.bat` をダブルクリック**(発動理由を表示 → `YES` 入力 → 停止→解除→再起動まで通しで実行)。Linux: `.venv/bin/python -c "import sys; sys.path.insert(0,'src'); from bot.risk.kill_switch import KillSwitch; KillSwitch().reset(operator_confirm=True)"` の後、手動で再起動 |
 | サイジングブレーキ状態確認 | `cat data/overlay_state.json` |
 | サイジングブレーキ解除(口座を作り直した時のみ) | `rm data/overlay_state.json` |
 | PAPER 帳簿の確認 | `cat data/paper_state.json` |
