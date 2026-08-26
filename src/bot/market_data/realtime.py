@@ -9,7 +9,8 @@ Read-only: no authentication, no orders. Reconnects with backoff on any
 failure; a session writes to its own file so crashes never corrupt data.
 The file is opened lazily on the first received message, so sessions that
 never receive anything (e.g. reconnect attempts during bitFlyer's daily
-maintenance window, 19:00-19:10 JST) leave no empty stub files behind.
+maintenance window, 04:00-04:10 JST = 19:00-19:10 UTC) leave no empty
+stub files behind.
 """
 from __future__ import annotations
 
