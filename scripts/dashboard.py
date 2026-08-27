@@ -199,7 +199,7 @@ PAGE = """<!doctype html>
   <div class="banner" id="banner"></div>
   <div class="tiles" id="tiles"></div>
   <section>
-    <h2>判定ゲート (係属中の必要サンプル)</h2>
+    <h2>判定ゲート (確定済み判定と係属中の必要サンプル)</h2>
     <div class="gates" id="gates"></div>
   </section>
   <div class="grid2">
@@ -208,7 +208,7 @@ PAGE = """<!doctype html>
       <div class="scroll"><table id="t-dec"></table></div>
     </section>
     <section>
-      <h2>バーストスキャル(ペーパー)</h2>
+      <h2>バーストスキャル(退役・棄却済み 第16報)</h2>
       <div class="scroll"><table id="t-scalp"></table></div>
     </section>
   </div>
@@ -297,6 +297,16 @@ function tile(k, v, cls="", sub="") {
 }
 function pnlCls(v) { return v > 0 ? "pos" : v < 0 ? "neg" : ""; }
 
+// 収集の鮮度 (aggregate.py: ingest). data/tape shards carry their UTC day in
+// the filename, so the value is that date and the sub-run is the file's age;
+// data/venues has no date and shows the age alone. A missing file/directory
+// is 未収集 — the tile renders, offline or not.
+function ingestTile(k, v) {
+  if (!v) return tile(k, "未収集");
+  const day = v.date ? v.date.slice(5).replace("-", "/") : null;
+  return tile(k, day || age(v.age_sec), "", day ? age(v.age_sec) : "");
+}
+
 // Position tile. A size on its own does not say whether the bot is winning:
 // the entry price (status.json entry_price, portfolio.avg_entry_price) rides
 // along as the sub-run. Flat is spelled out rather than shown as 0.0000.
@@ -367,7 +377,10 @@ async function refresh() {
          `${d.scalp.trades}回`) +
     tile("エラー数", fmt(b.error_count, 0)) +
     apiTile(d.api_health) +
-    overlayTile(d.overlay);
+    overlayTile(d.overlay) +
+    ingestTile("収集: ticker", (d.ingest || {}).ticker) +
+    ingestTile("収集: board_top", (d.ingest || {}).board_top) +
+    ingestTile("収集: venues", (d.ingest || {}).venues);
 
   renderGates(d.gates || []);
 
@@ -396,7 +409,7 @@ async function refresh() {
       `<td>${r.event}</td><td>${r.side || ""}</td>` +
       `<td class="num mono">${fmt(r.price, 0)}</td>` +
       `<td class="num mono">${r.pnl_jpy != null ? fmt(r.pnl_jpy, 1) : ""}</td></tr>`).join("")
-    : "<tr><td class='empty'>イベントなし(激変動待ちは正常です)</td></tr>";
+    : "<tr><td class='empty'>イベントなし(退役済み — 記録のみ)</td></tr>";
 
   // データ収集: the plain collectors first (no pre-registered bar on them),
   // then one row per pending gate carrying 必要量 / 進捗 / 残り時間.
@@ -418,7 +431,7 @@ const UNIT_JA = {trades: "回", rows: "行", days: "日"};
 // never run — is "—", never an optimistic guess.
 function eta(sec) {
   if (sec == null) return "—";
-  if (sec <= 0) return "達成";
+  if (sec <= 0) return "到達済み";
   if (sec < 86400) return `≈${(sec / 3600).toFixed(1)}時間`;
   if (sec < 86400 * 90) return `≈${(sec / 86400).toFixed(1)}日`;
   return `≈${(sec / 86400 / 30.44).toFixed(1)}ヶ月`;
@@ -429,15 +442,30 @@ function progBar(g) {
     `<i style="width:${Math.max(0, Math.min(100, g.pct || 0))}%"></i></span>`;
 }
 
+// A gate that has been formally judged (report in docs/, KNOWLEDGE §3/§5) is
+// a settled fact: 判定済み + the registered numbers, never a progress bar —
+// a bar would read as "still collecting toward a verdict" when the verdict
+// already exists.
+function verdictText(g) {
+  return `判定済み: ${g.verdict}(${g.verdict_detail})— ${g.verdict_note}`;
+}
+
 function gateRow(g, d) {
   const u = UNIT_JA[g.unit] || "";
   const dec = g.unit === "days" ? 1 : 0;
   // the OI row keeps the live readings it always carried in its label
   const extra = g.key === "oi" ? oiValues(d.oi_snapshot) : "";
-  return `<tr><td>${g.label}${extra}</td>` +
+  const head = `<tr><td>${g.label}${extra}</td>` +
     `<td>${g.age_sec != null ? age(g.age_sec) : "未収集"}</td>` +
     `<td class="num mono sub">${g.detail || "—"}</td>` +
-    `<td class="sub" title="${g.bar}">${g.bar}</td>` +
+    `<td class="sub" title="${g.bar}">${g.bar}</td>`;
+  if (g.verdict) {
+    return head +
+      `<td><span class="down">${verdictText(g)}</span> ` +
+        `<span class="sub mono">${fmt(g.have, dec)}${u}収集済み</span></td>` +
+      `<td class="num sub">—</td></tr>`;
+  }
+  return head +
     `<td>${progBar(g)}<span class="mono">${fmt(g.have, dec)}/${fmt(g.need, dec)}${u}</span> ` +
       `<span class="sub mono">${g.pct != null ? fmt(g.pct, 0) + "%" : "—"}</span></td>` +
     `<td class="num mono">${eta(g.eta_sec)}</td></tr>`;
@@ -464,6 +492,12 @@ function renderGates(gates) {
   el.innerHTML = gates.map(g => {
     const u = UNIT_JA[g.unit] || "";
     const dec = g.unit === "days" ? 1 : 0;
+    if (g.verdict) {
+      return `<span class="g" title="${verdictText(g)}">` +
+        `<span class="k">${g.label}</span>` +
+        `<span class="down">判定済み ${g.verdict}</span>` +
+        `<span class="sub">${g.verdict_note}</span></span>`;
+    }
     return `<span class="g" title="${g.bar} / 残り ${eta(g.eta_sec)}">` +
       `<span class="k">${g.label}</span>${progBar(g)}` +
       `<span class="mono${g.done ? " up" : ""}">${fmt(g.have, dec)}/${fmt(g.need, dec)}${u}</span>` +

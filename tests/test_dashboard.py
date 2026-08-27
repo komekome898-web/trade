@@ -386,10 +386,14 @@ def test_gate_bars_come_from_the_judge(tmp_path):
     assert jg.BOARD_DAYS_BAR is g.BOARD_DAYS_BAR == 7.0
     assert jg.BOARD_BYTES_BAR is g.BOARD_BYTES_BAR == 500_000_000
     assert jg.FUNDING_N_BAR is g.FUNDING_N_BAR == 63
+    # C2's subset bar is registered in judge_gates (composite.yaml deviation);
+    # the console's copy must be the same number
+    assert jg.SUBSET_N_BAR == g.C2_TRADES_BAR == 15
+    assert g.SPREADMM_BOARD_DAYS_BAR == 14.0     # §4 spread-MM phase 2
 
     needs = {k: v["need"] for k, v in _gates(collect_status(tmp_path)).items()}
-    assert needs == {"champion": 30.0, "oi": 2900.0, "board": 7.0,
-                     "funding": 63.0}
+    assert needs == {"champion": 30.0, "c2": 15.0, "oi": 2900.0, "board": 7.0,
+                     "spreadmm": 14.0, "funding": 63.0}
 
 
 def test_champion_gate_counts_closed_round_trips_not_fills(tmp_path):
@@ -434,6 +438,150 @@ def test_champion_gate_matches_judge_gates_beyond_market_views_4mb_tail(tmp_path
     # the old round trip (1) + PAIRED_LOG's two (2) = 3; proves it was not
     # silently dropped by a tail read
     assert console_have == 3.0
+
+
+def test_c2_gate_counts_the_same_window_subset_as_judge_gates(tmp_path):
+    """The C2 row (entries inside 12:30-15:00 UTC, / 15) must show the very n
+    judge_gates' G4a judges — one sample log, two readers, one number. The
+    window is half-open [12:30, 15:00): 12:30 is inside, 15:00 is not."""
+    import sys
+    from pathlib import Path as _P
+
+    from bot.monitoring.gates import clear_cache
+
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1] / "scripts"))
+    import judge_gates as jg
+    from tests.test_judge_gates import BASE_DAY, NOTIONAL, champion_log, write_bot
+
+    step = 0.2 / 100 * NOTIONAL
+    rows = champion_log(12, 0.2, hour=13)                       # inside
+    rows += champion_log(7, 0.2, hour=3,                        # outside
+                         base=BASE_DAY + 30 * 86400, start_cum=12 * step)
+    rows += champion_log(1, 0.2, hour=12, minute=30,            # edge: inside
+                         base=BASE_DAY + 60 * 86400, start_cum=19 * step)
+    rows += champion_log(1, 0.2, hour=15, minute=0,             # edge: outside
+                         base=BASE_DAY + 61 * 86400, start_cum=20 * step)
+    write_bot(tmp_path, rows)
+    clear_cache()
+
+    gates = _gates(collect_status(tmp_path))
+    g4a = next(r for r in jg.judge_all(tmp_path, iters=200) if r.gate_id == "G4a")
+    assert gates["c2"]["have"] == g4a.n == 13
+    assert gates["c2"]["need"] == 15.0 and gates["c2"]["done"] is False
+    assert gates["c2"]["unit"] == "trades"
+    # and the champion row still counts the full set the judge's G1 counts
+    assert gates["champion"]["have"] == 21.0
+
+
+def test_champion_gate_is_a_settled_verdict_not_a_pending_bar(tmp_path):
+    """Report #22 judged the champion at n=30: FAIL. The row carries that
+    verdict verbatim (KNOWLEDGE §3/§5) so the console cannot show the rejected
+    strategy as still awaiting judgment."""
+    _write_log(tmp_path, PAIRED_LOG)
+    champ = _gates(collect_status(tmp_path))["champion"]
+    assert champ["verdict"] == "FAIL"
+    assert champ["verdict_detail"] == "net −0.148%/取引、第22報"
+    assert champ["verdict_note"] == "C2判定まで収集継続"
+    # the count is still measured (the paper run feeds C2), just not a bar
+    assert champ["have"] == 2.0
+    # no other gate claims a verdict — they are genuinely pending
+    for key, gate in _gates(collect_status(tmp_path)).items():
+        if key != "champion":
+            assert "verdict" not in gate
+
+
+def test_spreadmm_gate_counts_board_days_toward_14(tmp_path):
+    """The spread-MM phase-2 countdown reads the SAME data/ws span as G7 but
+    against the 14-day bar (§4, report #26) and with NO byte bar: 8 recorded
+    days clears G7's day bar yet is only ~57% of the phase-2 sample, and a
+    15-day span completes it however small the files are."""
+    import os
+    from datetime import datetime, timezone
+
+    from bot.monitoring.gates import DAY_SEC, board_gate, clear_cache, spreadmm_gate
+
+    def record(root, days):
+        clear_cache()
+        ws = root / "data" / "ws"
+        ws.mkdir(parents=True)
+        now = 1_800_000_000.0
+        for day in range(days):
+            start = now - (days - day) * DAY_SEC
+            stamp = datetime.fromtimestamp(start, tz=timezone.utc).strftime(
+                "%Y%m%d_%H%M%S")
+            f = ws / f"board_{stamp}.jsonl.gz"
+            f.write_bytes(b"x" * 1_000_000)
+            os.utime(f, (start, start + DAY_SEC))
+        return now
+
+    eight = tmp_path / "eight"
+    now = record(eight, 8)
+    g = spreadmm_gate(eight, now)
+    assert g["unit"] == "days" and g["need"] == 14.0
+    assert g["have"] == pytest.approx(8.0, abs=0.01)
+    assert g["done"] is False and g["pct"] == pytest.approx(57.1, abs=0.2)
+    # same scan as the board gate: the two rows agree on the measured days
+    assert g["have"] == board_gate(eight, now)["have"]
+
+    fifteen = tmp_path / "fifteen"
+    now = record(fifteen, 15)
+    g = spreadmm_gate(fifteen, now)
+    assert g["have"] >= 14.0 and g["done"] is True and g["eta_sec"] == 0.0
+    # ...while G7 still refuses to call 15 MB of recordings 0.5 GB
+    assert board_gate(fifteen, now)["done"] is False
+
+
+def test_spreadmm_gate_empty_workspace_is_zero_not_an_error(tmp_path):
+    from bot.monitoring.gates import clear_cache, spreadmm_gate
+
+    clear_cache()
+    g = spreadmm_gate(tmp_path, 1_800_000_000.0)
+    assert g["have"] == 0.0 and g["done"] is False
+    assert g["eta_sec"] is None and g["age_sec"] is None
+
+
+# ---- 収集の鮮度 (data/tape, data/venues) ------------------------------------
+def test_ingest_freshness_reads_the_newest_dated_shard(tmp_path):
+    """data/tape shards are daily and dated in the filename; the tile reports
+    the newest DATE (lexicographic max), whatever order mtimes landed in.
+    data/venues has no dated names, so the newest mtime wins and date is None."""
+    import os
+
+    tape = tmp_path / "data" / "tape"
+    tape.mkdir(parents=True)
+    now = 1_800_000_000.0
+    for day, mtime in (("20260825", now - 300), ("20260827", now - 7200),
+                       ("20260826", now - 100)):
+        f = tape / f"ticker_{day}.csv.gz"
+        f.write_bytes(b"x" * 10)
+        os.utime(f, (mtime, mtime))
+    f = tape / "board_top5_20260826.csv.gz"
+    f.write_bytes(b"y" * 20)
+    os.utime(f, (now - 50, now - 50))
+    venues = tmp_path / "data" / "venues"
+    venues.mkdir()
+    for name, mtime in (("okx.csv", now - 900), ("deribit.csv", now - 60)):
+        f = venues / name
+        f.write_bytes(b"z")
+        os.utime(f, (mtime, mtime))
+
+    ing = collect_status(tmp_path, now=now)["ingest"]
+    assert ing["ticker"]["date"] == "2026-08-27"        # newest date, not mtime
+    assert ing["ticker"]["age_sec"] == 7200.0
+    assert ing["board_top"]["date"] == "2026-08-26"
+    assert ing["venues"]["date"] is None                 # undated collector
+    assert ing["venues"]["age_sec"] == 60.0              # newest mtime wins
+
+
+def test_ingest_freshness_survives_missing_directories(tmp_path):
+    """No data/tape, no data/venues at all (a fresh clone, an offline box):
+    every entry is None — 未収集 on the page — and the payload still serialises."""
+    ing = collect_status(tmp_path)["ingest"]
+    assert ing == {"ticker": None, "board_top": None, "venues": None}
+    json.dumps(ing)
+    # an EMPTY tape directory is the same fact as a missing one
+    (tmp_path / "data" / "tape").mkdir(parents=True)
+    assert collect_status(tmp_path)["ingest"]["ticker"] is None
 
 
 def test_progress_eta_is_measured_from_the_observed_rate():
@@ -857,6 +1005,12 @@ def _console_workspace(root):
     for label, rel in [("bitFlyer candles", "data/candles_FX_BTC_JPY.csv"),
                        ("Binance 1m", "data/binance_BTCUSDT_1m.csv")]:
         (root / rel).write_text("ts,open,high,low,close,volume\n", encoding="utf-8")
+    tape = root / "data" / "tape"
+    tape.mkdir()
+    for name in ("ticker_20260820.csv.gz", "board_top5_20260820.csv.gz"):
+        f = tape / name
+        f.write_bytes(b"x" * 1000)
+        os.utime(f, (now - 3600, now - 3600))
     return now
 
 
@@ -935,20 +1089,28 @@ def test_console_collectors_show_requirement_progress_and_eta(tmp_path):
 
     for header in ("必要量", "進捗", "残り時間"):
         assert header in table
-    # every gate is a row with its bar, its n/required and a progress bar
+    # every gate is a row with its bar, and a chip in the strip
     for gate in payload["gates"]:
         assert gate["label"] in table and gate["bar"] in table
-        assert gate["label"] in strip                 # and a chip in the strip
+        assert gate["label"] in strip
     assert "480/2,900行" in table                     # OI rows
-    assert "2/30回" in table                          # champion round trips
+    # the champion row is a SETTLED verdict (report #22), not a progress bar
+    assert "判定済み: FAIL(net −0.148%/取引、第22報)— C2判定まで収集継続" in table
+    assert "2/30回" not in table and "2回収集済み" in table
+    assert "0/15回" in table                          # C2 inside-window subset
     assert "2/7日" in table                           # board days recorded
+    assert "2/14日" in table                          # spread-MM 14-day bar
     assert "0/63日" in table                          # funding-window days
-    assert table.count('class="prog') == len(payload["gates"])
+    # every PENDING gate draws a bar; the settled champion row draws none
+    assert table.count('class="prog') == len(payload["gates"]) - 1
     # the estimate is labelled as one, and an unknown rate is not guessed
     assert "≈" in table
-    assert r["eta_samples"] == ["—", "達成", "≈1.0時間", "≈20.0日", "≈13.1ヶ月"]
+    assert r["eta_samples"] == ["—", "到達済み", "≈1.0時間", "≈20.0日", "≈13.1ヶ月"]
     # the plain collectors keep their row and simply have no bar
     assert "bitFlyer candles" in table and "Binance 1m" in table
+    # 収集の鮮度 tiles: the tape shards show their stamped date + age, and the
+    # never-recorded data/venues shows 未収集 instead of erroring
+    assert "08/20" in r["tiles"] and "未収集" in r["tiles"]
 
 
 @pytest.mark.skipif(_node() is None, reason="node not installed")
@@ -964,9 +1126,14 @@ def test_console_renders_an_empty_payload_without_errors(tmp_path):
     assert "判断ログなし" in r["decisions"]
     assert "フラット" in r["tiles"]
     assert "NaN" not in r["tiles"] and "undefined" not in r["tiles"]
-    assert "0/30回" in r["gates"] and "0/2,900行" in r["gates"]
+    # nothing collected: the settled champion verdict still shows, the pending
+    # gates all sit at zero, and the freshness tiles say 未収集 rather than err
+    assert "判定済み FAIL" in r["gates"]
+    assert "0/15回" in r["gates"] and "0/2,900行" in r["gates"]
+    assert "0/14日" in r["gates"]
     assert r["gates"].count("—") >= 4          # no rate anywhere: no guesses
     assert "未収集" in r["collectors"]
+    assert r["tiles"].count("未収集") >= 3      # ticker / board_top / venues
 
 
 HARNESS = r"""

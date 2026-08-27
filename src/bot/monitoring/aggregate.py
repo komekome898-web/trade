@@ -6,6 +6,7 @@ no network. Everything degrades to None/empty when a file is missing.
 from __future__ import annotations
 
 import json
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -58,6 +59,41 @@ def _file_info(path: Path, now: float) -> dict | None:
     except OSError:
         return None
     return {"size": st.st_size, "age_sec": round(now - st.st_mtime, 1)}
+
+
+def _ingest_latest(dir_path: Path, pattern: str, now: float,
+                   dated: bool = True) -> dict | None:
+    """Freshness of the newest collector output matching ``pattern``.
+
+    ``dated`` files carry YYYYMMDD in the name (data/tape's daily shards), so
+    the newest is the lexicographic max and its stamped date is reported;
+    otherwise (data/venues) the newest mtime wins and ``date`` stays None.
+    Missing directory or no match -> None — the tile renders 未収集.
+    """
+    try:
+        files = [f for f in dir_path.glob(pattern) if f.is_file()]
+    except OSError:
+        files = []
+    if not files:
+        return None
+    if dated:
+        latest = max(files, key=lambda f: f.name)
+    else:
+        def _mtime(f: Path) -> float:
+            try:
+                return f.stat().st_mtime
+            except OSError:
+                return 0.0
+        latest = max(files, key=_mtime)
+    info = _file_info(latest, now)
+    if info is None:
+        return None
+    date = None
+    if dated:
+        m = re.search(r"(\d{4})(\d{2})(\d{2})", latest.name)
+        if m:
+            date = "-".join(m.groups())
+    return {"date": date, "age_sec": info["age_sec"], "size": info["size"]}
 
 
 def _last_csv_row(path: Path, max_bytes: int = 8192) -> dict[str, str] | None:
@@ -300,6 +336,18 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
 
     oi_snapshot = _oi_snapshot(root / "data" / "oi_snapshots.csv", now)
 
+    # 収集の鮮度: the newest daily shard each recorder wrote. data/tape names
+    # carry the UTC day; data/venues (when it exists at all) is read by mtime.
+    # Every entry degrades to None so an offline box renders 未収集, not an
+    # error.
+    tape = root / "data" / "tape"
+    ingest = {
+        "ticker": _ingest_latest(tape, "ticker_*.csv.gz", now),
+        "board_top": _ingest_latest(tape, "board_top*.csv.gz", now),
+        "venues": _ingest_latest(root / "data" / "venues", "*", now,
+                                 dated=False),
+    }
+
     bot_age = (now - status["updated_at"]) if status.get("updated_at") else None
     scalp_age = (now - scalp_last["ts"]) if scalp_last else None
     ws_age = ws_latest["age_sec"] if ws_latest else None
@@ -343,6 +391,7 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         },
         "ws": {"files": len(ws_files), "total_mb": ws_total_mb, "latest": ws_latest},
         "collectors": collectors,
+        "ingest": ingest,
         # storm radar: the one adopted precursor (scripts/research_storm_b.py
         # G3, 12:30-15:00 UTC, lift 2.23) — armed windows are when the
         # scalper runs its lowered entry threshold

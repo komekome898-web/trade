@@ -10,7 +10,9 @@ every day.
 
 Nothing here JUDGES anything. A gate's PASS/FAIL needs the statistics in
 judge_gates; this module only answers "how much of the required sample exists,
-and — at the rate it has actually been accumulating — when is it full". The
+and — at the rate it has actually been accumulating — when is it full". (The
+champion row carries a VERDICT, but that verdict is a recorded fact — report
+#22's n=30 FAIL — transcribed as constants above, not computed here.) The
 rate is measured (units accumulated / seconds since the first observation),
 never assumed: with no observations there is no rate and the ETA is None, which
 the page renders as "—" rather than as a guess.
@@ -27,6 +29,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+from bot.radar import StormRadar
+
 # ---- pre-registered bars (KNOWLEDGE.md; do not tune here) ------------------
 MAIN_TRADES_BAR = 30              # §5 main bot: closed paper trades
 OI_ROWS_BAR = 2900                # §4 OI phase C: ~30 days at 15 min
@@ -36,6 +40,24 @@ BOARD_BYTES_BAR = 500_000_000     # §4 board data: ~0.5-1 GB
 FUNDING_N_BAR = 63                # §4 funding window: 3x the original n=21
 FUNDING_HOUR_UTC = 13             # settlement 05/13/21 UTC; 13:00 was measured
 FUNDING_WINDOW_MIN = 30
+# §4 C2 radar_window: judged on the inside-window SUBSET at n >= 15 (a
+# deliberate, owner-approvable deviation from §5's 30 — config/composite.yaml
+# modules.radar_window.gate). Must equal scripts/judge_gates.py SUBSET_N_BAR;
+# a test pins the two together.
+C2_TRADES_BAR = 15
+# §4 spread MM phase 2 (report #26): the daily-statistics bar needs 14 board
+# days in data/ws; the 7-day/0.5GB G7 bar above is the already-reached
+# phase-1 coverage bar.
+SPREADMM_BOARD_DAYS_BAR = 14.0
+
+# §5 adoption table / §3 index: the champion (xborder_momentum) was FORMALLY
+# JUDGED at n=30 and rejected (report #22, docs/RESEARCH_REPORT_2026-08-25w.md:
+# net −0.148%/trade vs the +0.15% bar; the day-clustered CI excludes the bar).
+# The paper run continues only to fill the C2 inside-window subset, so the
+# console shows this as a settled verdict, not a progress bar toward 30.
+CHAMPION_VERDICT = "FAIL"
+CHAMPION_VERDICT_DETAIL = "net −0.148%/取引、第22報"
+CHAMPION_VERDICT_NOTE = "C2判定まで収集継続"
 
 DAY_SEC = 86400.0
 
@@ -319,10 +341,13 @@ def _champion_summary(path: Path) -> dict[str, Any]:
     price/notional/PnL detail for a progress bar.
 
     ``first_entry_ts`` is the FIRST trade's own entry — reading the whole log
-    (not a tail) is what makes that unambiguous.
+    (not a tail) is what makes that unambiguous. ``closed_spans`` keeps every
+    closed trade's (entry_ts, exit_ts) so the C2 gate can take the SAME
+    radar-window subset judge_gates' G4a takes (filtered on entry_ts).
     """
     records, _bad = read_jsonl(path)
     closed = 0
+    closed_spans: list[tuple[float | None, float | None]] = []
     first_entry_ts: float | None = None
     last_exit_ts: float | None = None
     last_pnl: float | None = None
@@ -359,37 +384,70 @@ def _champion_summary(path: Path) -> dict[str, Any]:
         if not filled and (delta is None or delta == 0.0):
             continue        # ambiguous close: the position may still be open
         closed += 1
+        closed_spans.append((open_trade["ts"], ts))
         if ts is not None:
             last_exit_ts = ts
         open_trade = None
         if pnl_now is not None:
             last_pnl = pnl_now
 
-    return {"closed": closed, "first_entry_ts": first_entry_ts,
+    return {"closed": closed, "closed_spans": closed_spans,
+            "first_entry_ts": first_entry_ts,
             "last_exit_ts": last_exit_ts, "open_at_end": open_trade is not None}
 
 
-# ---- the four pending coverage gates ---------------------------------------
+# ---- the pending coverage gates (plus the settled champion verdict) --------
 def champion_gate(root: Path, now: float) -> dict[str, Any]:
-    """G1 sample size: CLOSED round trips in logs/bot.jsonl.
+    """G1: SETTLED — judged FAIL at n=30 (report #22); collection continues.
 
-    Counted the same way scripts/judge_gates.py:load_champion_trades counts
-    them (see ``_champion_summary``) — full-log positional entry/exit pairing
-    at ``CHAMPION_LOG_MAX_BYTES``, not market_view's 4 MB console tail. A log
-    past 4 MB has trades the tail cannot see, and this row must show the same
-    n the judge's PASS/FAIL is computed against. status.json's ``trade_count``
-    is fills (an entry and its exit are two) and would report double.
+    The closed-trade count is still measured the same way
+    scripts/judge_gates.py:load_champion_trades counts it (see
+    ``_champion_summary``) — full-log positional entry/exit pairing at
+    ``CHAMPION_LOG_MAX_BYTES``, not market_view's 4 MB console tail — because
+    the paper run keeps feeding the C2 subset. But the ROW is a verdict, not a
+    progress bar: the ``verdict*`` keys carry the report-#22 outcome and the
+    page renders those instead of "n of 30". The verdict itself is a recorded
+    fact (§3/§5), not something this module computes.
     """
     path = root / "logs" / "bot.jsonl"
     summary = cached_scan("champion", path, lambda: _champion_summary(path))
     open_now = 1 if summary["open_at_end"] else 0
-    return progress(
-        "champion", "チャンピオン試行 (§5)",
+    g = progress(
+        "champion", "チャンピオン判定 (§5)",
         have=summary["closed"], need=MAIN_TRADES_BAR, unit="trades",
         first_ts=summary["first_entry_ts"], now=now,
-        bar=f">= {MAIN_TRADES_BAR} 決済済みトレード",
+        bar=f">= {MAIN_TRADES_BAR} 決済済みトレード (判定済み)",
         age_sec=(now - summary["last_exit_ts"]) if summary["last_exit_ts"] else None,
         detail=f"建玉中 {open_now}件")
+    g["verdict"] = CHAMPION_VERDICT
+    g["verdict_detail"] = CHAMPION_VERDICT_DETAIL
+    g["verdict_note"] = CHAMPION_VERDICT_NOTE
+    return g
+
+
+def c2_gate(root: Path, now: float,
+            radar: StormRadar | None = None) -> dict[str, Any]:
+    """G4a sample size: champion trades ENTERED inside the radar window.
+
+    The subset is taken exactly as scripts/judge_gates.py:gates_subsets takes
+    it — closed round trips whose entry_ts falls inside StormRadar's window
+    (half-open [12:30, 15:00) UTC by default, the same defaults
+    config/composite.yaml registers) — over the same full-log reconstruction
+    the champion gate uses, so the two consoles cannot disagree on n.
+    """
+    path = root / "logs" / "bot.jsonl"
+    summary = cached_scan("champion", path, lambda: _champion_summary(path))
+    radar = radar if radar is not None else StormRadar()
+    inside = [(entry, exit_ts) for entry, exit_ts in summary["closed_spans"]
+              if entry is not None and radar.is_armed(entry)]
+    entries = [entry for entry, _ in inside]
+    exits = [exit_ts for _, exit_ts in inside if exit_ts is not None]
+    return progress(
+        "c2", "C2 窓内サブセット", have=len(inside), need=C2_TRADES_BAR,
+        unit="trades", first_ts=min(entries) if entries else None, now=now,
+        bar=f">= {C2_TRADES_BAR} 窓内決済済みトレード (composite.yaml)",
+        age_sec=(now - max(exits)) if exits else None,
+        detail=f"窓 {radar.window} / 全{summary['closed']}件中")
 
 
 def oi_gate(root: Path, now: float) -> dict[str, Any]:
@@ -416,6 +474,24 @@ def board_gate(root: Path, now: float,
     ``files`` lets the caller hand over a listing it already has (the dashboard
     globs data/ws for the recorder's liveness anyway); None globs it here.
     """
+    span_days, first_ts, last_end, total, count = _ws_span(root, files)
+    return progress(
+        "board", "板記録 (WS)", have=span_days, need=BOARD_DAYS_BAR,
+        unit="days", first_ts=first_ts, now=now,
+        bar=f">= {BOARD_DAYS_BAR:.0f}日 かつ >= {BOARD_BYTES_BAR / 1e9:.1f}GB",
+        age_sec=(now - last_end) if last_end is not None else None,
+        detail=f"{total / 1e6:.1f} MB / {count}ファイル",
+        extra_have=total, extra_need=BOARD_BYTES_BAR)
+
+
+def _ws_span(root: Path, files: Iterable[Path] | None
+             ) -> tuple[float, float | None, float | None, int, int]:
+    """(span_days, first_ts, last_end, total_bytes, n_files) over data/ws.
+
+    First-file stamped start to last-file mtime — the SAME upper-bound reading
+    judge_gates' G7 uses; shared by board_gate and spreadmm_gate so the two
+    rows can never measure the recordings differently.
+    """
     if files is None:
         ws_dir = root / "data" / "ws"
         files = sorted(ws_dir.glob("*.jsonl.gz")) if ws_dir.is_dir() else []
@@ -432,14 +508,26 @@ def board_gate(root: Path, now: float,
         ends.append(st.st_mtime)
         starts.append(ws_file_start(f) or st.st_mtime)
     span_days = (max(ends) - min(starts)) / DAY_SEC if starts else 0.0
-    first_ts = min(starts) if starts else None
+    return (span_days, min(starts) if starts else None,
+            max(ends) if ends else None, total, len(files))
+
+
+def spreadmm_gate(root: Path, now: float,
+                  files: Iterable[Path] | None = None) -> dict[str, Any]:
+    """Spread-MM phase-2 countdown: data/ws must span 14 board days (§4).
+
+    Report #26 moved the binding constraint from fill counts to DAILY
+    statistics, keeping the required board days at 14 — this row is the
+    countdown to that judgment. Same scan as board_gate (G7, the 7-day
+    phase-1 bar), just a farther bar and no byte bar.
+    """
+    span_days, first_ts, last_end, total, count = _ws_span(root, files)
     return progress(
-        "board", "板記録 (WS)", have=span_days, need=BOARD_DAYS_BAR,
-        unit="days", first_ts=first_ts, now=now,
-        bar=f">= {BOARD_DAYS_BAR:.0f}日 かつ >= {BOARD_BYTES_BAR / 1e9:.1f}GB",
-        age_sec=(now - max(ends)) if ends else None,
-        detail=f"{total / 1e6:.1f} MB / {len(files)}ファイル",
-        extra_have=total, extra_need=BOARD_BYTES_BAR)
+        "spreadmm", "スプレッドMM 判定 (板日数)", have=span_days,
+        need=SPREADMM_BOARD_DAYS_BAR, unit="days", first_ts=first_ts, now=now,
+        bar=f">= {SPREADMM_BOARD_DAYS_BAR:.0f}日 (フェーズ2判定、第26報)",
+        age_sec=(now - last_end) if last_end is not None else None,
+        detail=f"{total / 1e6:.1f} MB / {count}ファイル")
 
 
 def funding_gate(root: Path, now: float) -> dict[str, Any]:
@@ -482,9 +570,14 @@ def funding_gate(root: Path, now: float) -> dict[str, Any]:
 def collect_gates(root: str | Path, now: float,
                   ws_files: Iterable[Path] | None = None
                   ) -> list[dict[str, Any]]:
-    """The four PENDING coverage gates, in the order the console shows them."""
+    """The gate rows, in the order the console shows them: the settled
+    champion verdict first, then the pending coverage gates."""
     root = Path(root)
+    # materialised once: two rows read the listing and it may be a generator
+    files = list(ws_files) if ws_files is not None else None
     return [champion_gate(root, now),
+            c2_gate(root, now),
             oi_gate(root, now),
-            board_gate(root, now, ws_files),
+            board_gate(root, now, files),
+            spreadmm_gate(root, now, files),
             funding_gate(root, now)]
