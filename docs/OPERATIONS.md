@@ -573,6 +573,15 @@ BOARD チャンネルから板を再構成し、1秒サンプルの top-N 深度
 未指定の通常実行は板カーソルを進めないので後からのバックフィルが可能)。
 実行例: `python scripts\extract_tape.py --board-top 5`
 
+**マルチベニュー公開データ(`scripts/record_venues.py`、常駐)** — Round 22 ベニュー調査の
+後続研究(クロスベニュー・リード/ラグ、CFD−現物ベーシス再監査、リベート maker 判定)用に、
+bitbank(BTC/JPY・XRP/JPY: ticker 5秒毎+約定 15秒毎)、GMOコイン(全銘柄 ticker 10秒毎+
+BTC 現物 / BTC_JPY レバレッジの約定を 30秒毎交互 — GMO 合計 0.13 req/s。実効スロットル
+≈1 req/s・超過 ERR-5003 の実測があるため **0.5 req/s 未満を厳守**)、bitFlyer 現物 BTC_JPY
+ticker(10秒毎)を公開 REST のみで記録し、`data/venues/quotes_YYYYMMDD.csv.gz`(全ベニュー
+混載)と `trades_{venue}_{pair}_YYYYMMDD.csv.gz`(tid 重複排除)に日次追記する(約5MB/日)。
+`start_all.bat` のウォッチドッグ対象で、`share_logs.bat` が `paper_logs\venues\` へ共有する。
+
 なおレコーダ(`record_realtime.py`)は出力ファイルを最初のメッセージ受信時に
 初めて作るため、bitFlyer の日次メンテナンス(04:00–04:10 JST = 19:00–19:10 UTC)中の再接続
 試行で空の .jsonl.gz スタブが量産されることはない(過去に生成済みの空

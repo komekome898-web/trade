@@ -16,6 +16,7 @@ if not exist logs mkdir logs
 
 call :launch "main-bot"    "scripts\run_paper.py"       run_paper.py       "logs\run_paper.out.log"
 call :launch "ws-recorder" "scripts\record_realtime.py" record_realtime.py "logs\recorder.out.log"
+call :launch "venue-recorder" "scripts\record_venues.py" record_venues.py  "logs\venues.out.log"
 call :launch "dashboard"   "scripts\dashboard.py"       dashboard.py       "logs\dashboard.out.log"
 
 echo.

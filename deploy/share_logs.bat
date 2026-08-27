@@ -28,6 +28,8 @@ copy /Y data\kill_switch.json paper_logs\ >nul 2>&1
 dir /-C data\ws > paper_logs\ws_listing.txt 2>nul
 if not exist paper_logs\tape mkdir paper_logs\tape
 if exist data\tape\*.csv.gz copy /Y data\tape\*.csv.gz paper_logs\tape\ >nul 2>&1
+if not exist paper_logs\venues mkdir paper_logs\venues
+if exist data\venues\*.csv.gz copy /Y data\venues\*.csv.gz paper_logs\venues\ >nul 2>&1
 
 git add paper_logs
 rem Commit only when there is something staged (quiet no-op otherwise).
