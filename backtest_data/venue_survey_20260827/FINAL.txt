@@ -1,0 +1,108 @@
+# common window UTC 1787816892..1787831284  = 4.00 h
+# sanity  local-clock: 2026-08-27T11:49:04.767014+00:00
+
+## per venue/pair  (spread in bps of mid; tick_p50 = median spread in ticks)
+      job |         n |      gaps |    sp_p10 |    sp_p50 |    sp_p90 |  spr_tick |     lock% |   bestJPY |   dep5JPY |   trd/min |   JPY/min |     vol1m |   eff_hsp |     clk_s
+ bf_fxbtc |      7200 |         0 |     0.940 |     1.835 |     2.976 |    2333.5 |      0.0% |    236773 |   4041962 |     57.18 |  18413153 |      7.27 |     1.017 |       nan
+   bf_btc |      2878 |         1 |     1.810 |     2.990 |     4.568 |    3805.0 |      0.1% |    229953 |   8187926 |       nan |       nan |      6.73 |       nan |       nan
+   bf_xrp |      3600 |         0 |    10.537 |    17.856 |    22.654 |     410.0 |      0.0% |    100284 |  15109757 |      3.04 |    185111 |     13.15 |     6.104 |       nan
+   bb_btc |      7199 |         0 |     0.001 |     0.001 |     1.250 |       1.0 |     67.7% |    737379 |  13212097 |      8.86 |   2778384 |      6.62 |     0.282 |      1.23
+   bb_xrp |      7199 |         0 |     0.044 |     0.044 |     0.616 |       1.0 |     84.2% |    797168 |   6229514 |     23.44 |   2440936 |     12.91 |     0.541 |      1.20
+   bb_eth |      3600 |         0 |     0.025 |     0.025 |     0.477 |       1.0 |     85.8% |    909169 |   6788273 |     10.76 |   1406483 |     11.21 |     0.767 |      1.25
+  gmo_btc |      4799 |         0 |     0.001 |     0.677 |     3.000 |     860.0 |     32.2% |    307688 |  13800248 |     17.69 |   2083494 |      6.85 |     0.615 |       nan
+gmo_btclev |      4799 |         0 |     0.769 |     1.597 |     2.886 |    2028.0 |      0.0% |    228578 |   2912975 |    105.16 |  16507990 |      7.29 |     1.038 |       nan
+   cc_btc |      4799 |         0 |     0.566 |     1.428 |     2.494 |    1814.0 |      0.1% |    254143 |   3492503 |     41.76 |   9844111 |      6.95 |     0.873 |       nan
+  okj_btc |      4800 |         0 |     3.435 |     6.811 |    10.609 |    8664.5 |      0.0% |    494259 |  24740372 |      5.72 |    505282 |      6.41 |     3.451 |      0.18
+   bt_btc |      4800 |         0 |     0.001 |     0.274 |     3.396 |     349.0 |     37.5% |     81582 |    844081 |     63.14 |    493390 |      6.63 |     0.395 |      1.12
+
+## virtual touch quotes (traded-through, L=10s, adv=5s)
+       job |  placed |  fills |     f% |     cap |    adv5 |  cap+adv |               CI95 |  +rebate
+  bf_fxbtc |   14400 |   6260 |  43.5% |   0.413 |  -1.078 |   -0.665 | [ -0.773, -0.568] |   -0.665
+    bf_xrp |    7200 |    390 |   5.4% |   3.435 |  -3.556 |   -0.122 | [ -1.232,  1.120] |  -15.122
+    bb_btc |   14398 |   1507 |  10.5% |  -0.744 |  -2.016 |   -2.760 | [ -3.127, -2.413] |   -2.760
+    bb_xrp |   14398 |   3342 |  23.2% |  -0.958 |  -3.039 |   -3.997 | [ -4.326, -3.675] |   -1.997
+    bb_eth |    7200 |    905 |  12.6% |  -1.302 |  -3.257 |   -4.558 | [ -5.160, -4.019] |   -2.558
+   gmo_btc |    9598 |   1227 |  12.8% |  -0.484 |  -1.810 |   -2.294 | [ -2.626, -1.980] |   -1.294
+gmo_btclev |    9598 |   4666 |  48.6% |   0.299 |  -0.895 |   -0.596 | [ -0.702, -0.493] |   -0.596
+    cc_btc |    9598 |   4261 |  44.4% |   0.127 |  -0.872 |   -0.745 | [ -0.861, -0.634] |   -0.745
+   okj_btc |    9600 |    523 |   5.4% |   1.902 |  -1.437 |    0.465 | [ -0.158,  1.055] |   -6.535
+    bt_btc |    9600 |   1867 |  19.4% |  -0.339 |  -1.082 |   -1.420 | [ -1.742, -1.143] |   -1.420
+
+## basis vs bitFlyer FX_BTC_JPY (bps, 5s grid) + lead-lag
+       job |      n |     mean |      sd |  AR1rho |  half-life | lag corr (venue leads bfFX at negative lag)
+    bf_btc |   2878 |     5.69 |    5.36 |  0.9582 |     1.35m | L-2:+0.045  L-1:+0.088  L+0:+0.598  L+1:+0.448  L+2:+0.156
+    bb_btc |   2878 |     1.14 |    5.65 |  0.9541 |     1.23m | L-2:+0.037  L-1:+0.086  L+0:+0.489  L+1:+0.433  L+2:+0.174
+   gmo_btc |   2878 |     3.34 |    3.41 |  0.8674 |     0.41m | L-2:+0.029  L-1:+0.043  L+0:+0.471  L+1:+0.488  L+2:+0.179
+gmo_btclev |   2878 |     2.08 |    1.94 |  0.7785 |     0.23m | L-2:+0.050  L-1:+0.156  L+0:+0.756  L+1:+0.267  L+2:+0.044
+    cc_btc |   2878 |     6.73 |    2.52 |  0.8866 |     0.48m | L-2:+0.066  L-1:+0.200  L+0:+0.785  L+1:+0.177  L+2:+0.045
+   okj_btc |   2878 |     6.73 |    3.70 |  0.9088 |     0.60m | L-2:+0.071  L-1:+0.114  L+0:+0.512  L+1:+0.376  L+2:+0.245
+    bt_btc |   2878 |     9.13 |    5.90 |  0.9328 |     0.83m | L-2:+0.016  L-1:+0.011  L+0:+0.327  L+1:+0.434  L+2:+0.173
+
+## XRP_JPY bitbank vs bitFlyer spot lead-lag (5s grid)
+  lag -2 (bitbank leads if <0): corr=+0.076 n=2875
+  lag -1 (bitbank leads if <0): corr=+0.281 n=2876
+  lag +0 (bitbank leads if <0): corr=+0.577 n=2877
+  lag +1 (bitbank leads if <0): corr=+0.282 n=2876
+  lag +2 (bitbank leads if <0): corr=+0.110 n=2875
+
+## basis on a 1-minute grid (comparable with report f: HL 9.1 min)
+      bf_btc  mean   +5.69 bps  sd  5.36  AR1 half-life   6.65 min
+      bb_btc  mean   +1.14 bps  sd  5.65  AR1 half-life   3.85 min
+     gmo_btc  mean   +3.34 bps  sd  3.41  AR1 half-life   1.05 min
+  gmo_btclev  mean   +2.08 bps  sd  1.94  AR1 half-life   2.09 min
+      cc_btc  mean   +6.73 bps  sd  2.52  AR1 half-life   3.04 min
+     okj_btc  mean   +6.73 bps  sd  3.70  AR1 half-life   1.13 min
+      bt_btc  mean   +9.13 bps  sd  5.90  AR1 half-life   2.31 min
+
+## fee-vs-spread substitution check (taker fee bps vs measured spread p50 bps)
+  corr(taker_fee, spread_p50) = +0.407  n=11 venues/pairs
+  BTC/JPY only:               +0.423  n=8
+
+## report-f basis re-audit: is a CFD-vs-spot convergence trade reachable now?
+  report f rejected it with a spot leg costing 55bps round trip (taker 0.15% + 0.15% spread).
+  Below: the spot leg re-priced at today's fees, judged against report f's MEASURED
+  gross convergence (+2.7bps = spot +5.5 catch-up minus CFD +2.8 co-drift), NOT the sd.
+  'total best' assumes ALL FOUR legs fill as maker - which the repo's sign law says
+  cannot happen on the side the price is moving toward. It is an optimistic bound.
+  spot venue | basis sd | 2sd move | spot taker RT | spot maker RT(meas) | CFD leg RT | total taker | total best | vs f +2.7bps
+      bb_btc |     5.65 |    11.30 |         24.00 |                5.52 |       1.33 |       29.84 |       6.85 | dead
+     gmo_btc |     3.41 |     6.81 |         14.68 |                2.59 |       1.33 |       20.51 |       3.92 | dead
+      cc_btc |     2.52 |     5.03 |          5.43 |                1.49 |       1.33 |       11.26 |       2.82 | dead
+      bt_btc |     5.90 |    11.80 |         24.27 |                2.84 |       1.33 |       30.11 |       4.17 | dead
+     okj_btc |     3.70 |     7.40 |         38.81 |               13.07 |       1.33 |       44.65 |      14.40 | dead
+
+## PHASE 3 efficiency-gap map
+       job |  m/t fee bps |  spr p50 | COSTFLOOR | maker_raw | maker_meas |   JPY/min |   dep5JPY
+  COSTFLOOR = 2*taker_fee + spread_p50 + 2*slip ;  maker_raw = 0.5*half_spread + rebate - 1.2 ;  maker_meas = cap+adv(5s) + rebate
+  bf_fxbtc |   0.0/0.0    |    1.835 |      5.84 |     -0.74 |      -0.67 |  18413153 |   4041962
+    bf_btc |  15.0/15.0   |    2.990 |     36.99 |    -15.45 |        nan |       nan |   8187926
+    bf_xrp |  15.0/15.0   |   17.856 |     51.86 |    -11.74 |     -15.12 |    185111 |  15109757
+    bb_btc |   0.0/10.0   |    0.001 |     24.00 |     -1.20 |      -2.76 |   2778384 |  13212097
+    bb_xrp |  -2.0/12.0   |    0.044 |     28.04 |      0.81 |      -2.00 |   2440936 |   6229514
+    bb_eth |  -2.0/12.0   |    0.025 |     28.02 |      0.81 |      -2.56 |   1406483 |   6788273
+   gmo_btc |  -1.0/5.0    |    0.677 |     14.68 |     -0.03 |      -1.29 |   2083494 |  13800248
+gmo_btclev |   0.0/0.0    |    1.597 |      5.60 |     -0.80 |      -0.60 |  16507990 |   2912975
+    cc_btc |   0.0/0.0    |    1.428 |      5.43 |     -0.84 |      -0.74 |   9844111 |   3492503
+   okj_btc |   7.0/14.0   |    6.811 |     38.81 |     -6.50 |      -6.53 |    505282 |  24740372
+    bt_btc |   0.0/10.0   |    0.274 |     24.27 |     -1.13 |      -1.42 |    493390 |    844081
+
+## first-half / second-half stability (the repo's 前後半 rule)
+       job | spr p50 H1 | spr p50 H2 | cap+adv H1 | cap+adv H2 |   fill H1/H2
+  bf_fxbtc |      1.861 |      1.815 |     -0.578 |     -0.766 |  3355/2905  
+    bf_btc |      3.080 |      2.891 |        nan |        nan |     0/0     
+    bf_xrp |     16.232 |     18.893 |     -0.789 |      1.124 |   254/136   
+    bb_btc |      0.001 |      0.001 |     -2.740 |     -2.784 |   834/673   
+    bb_xrp |      0.044 |      0.044 |     -3.989 |     -4.008 |  2003/1339  
+    bb_eth |      0.025 |      0.025 |     -4.405 |     -4.854 |   596/309   
+   gmo_btc |      0.424 |      1.019 |     -2.135 |     -2.531 |   735/492   
+gmo_btclev |      1.585 |      1.602 |     -0.515 |     -0.693 |  2547/2119  
+    cc_btc |      1.380 |      1.469 |     -0.657 |     -0.856 |  2373/1888  
+   okj_btc |      6.924 |      6.731 |      0.596 |      0.303 |   290/233   
+    bt_btc |      0.787 |      0.030 |     -1.242 |     -2.093 |  1476/391   
+
+## cross-asset lead-lag on the 5s grid (report b re-test: does BTC still lead XRP?)
+    bf_fxbtc -> bb_xrp     lag0:+0.403  lag1:+0.365  lag2:+0.171  lag3:+0.099   n=2874
+    bf_fxbtc -> bb_eth     lag0:+0.245  lag1:+0.352  lag2:+0.147  lag3:+0.057   n=2874
+      bb_btc -> bb_xrp     lag0:+0.463  lag1:+0.213  lag2:+0.105  lag3:+0.074   n=2874
+    bf_fxbtc -> bf_xrp     lag0:+0.353  lag1:+0.330  lag2:+0.126  lag3:+0.041   n=2874
+    bf_fxbtc -> bb_btc     lag0:+0.489  lag1:+0.433  lag2:+0.174  lag3:+0.074   n=2874
