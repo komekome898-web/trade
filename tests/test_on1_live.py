@@ -680,3 +680,18 @@ def test_build_executor_defaults_to_dry_run(tmp_path, monkeypatch):
     e = build_executor(tmp_path, env={}, client=FakeClient())
     assert e.live is False
     assert e.config.port == 18081
+
+
+def test_check_kabu_api_refuses_order_test_on_production_port(monkeypatch, capsys):
+    """The connectivity checker must never send an order to port 18080."""
+    import importlib.util
+    root = Path(__file__).resolve().parent.parent
+    spec = importlib.util.spec_from_file_location(
+        "check_kabu_api", root / "scripts" / "check_kabu_api.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr("sys.argv",
+                        ["check_kabu_api", "--entry-test", "--port", "18080"])
+    assert mod.main() == 1
+    out = capsys.readouterr().out
+    assert "REFUSED" in out
