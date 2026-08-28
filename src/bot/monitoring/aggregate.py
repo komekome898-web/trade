@@ -5,6 +5,7 @@ no network. Everything degrades to None/empty when a file is missing.
 """
 from __future__ import annotations
 
+import csv
 import json
 import re
 import time
@@ -139,6 +140,61 @@ def _oi_snapshot(path: Path, now: float) -> dict[str, Any] | None:
         "age_sec": info["age_sec"],
         "row_age_sec": row_age,
         "last": row,
+    }
+
+
+def _on1_paper(path: Path, now: float) -> dict[str, Any] | None:
+    """ON1 forward paper ledger (scripts/paper_on1.py, docs/PREREG_on1_forward.md).
+
+    Guard levels are the PREREG §3 lines verbatim (p05 warn / p01 stop of the
+    judged 1990-2026 net series, and the signed micro-vs-large friction stop).
+    The values are duplicated here deliberately: the dashboard must render the
+    frozen lines even if the ledger script changes, and a mismatch between the
+    two is itself a bug worth seeing.
+    """
+    info = _file_info(path, now)
+    if info is None:
+        return None
+    guards = {63: (-11.1, -22.4), 126: (-14.2, -42.5), 245: (-20.4, -51.1)}
+    trades: list[dict[str, str]] = []
+    try:
+        with path.open(newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+    except OSError:
+        return None
+    trades = [r for r in rows if r.get("net_bps")]
+    skipped = len(rows) - len(trades)
+    if not trades:
+        return {"trades": 0, "skipped": skipped, "age_sec": info["age_sec"]}
+    net_bps = [float(r["net_bps"]) for r in trades]
+    cum_yen = sum(float(r["net_yen"]) for r in trades)
+    state = "OK"
+    for win, (warn, stop) in guards.items():
+        if len(net_bps) < win:
+            continue
+        cum_pct = sum(net_bps[-win:]) / 1e4 * 100
+        if cum_pct < stop:
+            state = "停止"
+            break
+        if cum_pct < warn:
+            state = "警告"
+    fr = [r for r in trades[-21:]
+          if r.get("micro_minus_large_entry") and r.get("micro_minus_large_exit")]
+    friction = None
+    if len(fr) >= 15:
+        friction = round(sum(float(r["micro_minus_large_exit"])
+                             - float(r["micro_minus_large_entry"]) for r in fr) / len(fr), 1)
+        if friction < -10.0 and state != "停止":
+            state = "停止"
+    return {
+        "trades": len(trades),
+        "skipped": skipped,
+        "cum_net_yen": round(cum_yen),
+        "mean_net_bps": round(sum(net_bps) / len(net_bps), 2),
+        "last_exit_date": trades[-1].get("exit_date"),
+        "guard": state,
+        "friction_yen": friction,
+        "age_sec": info["age_sec"],
     }
 
 
@@ -335,6 +391,7 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         collectors[label] = _file_info(root / rel, now)
 
     oi_snapshot = _oi_snapshot(root / "data" / "oi_snapshots.csv", now)
+    on1 = _on1_paper(root / "data" / "paper_on1" / "ledger.csv", now)
 
     # 収集の鮮度: the newest daily shard each recorder wrote. data/tape names
     # carry the UTC day; data/venues (when it exists at all) is read by mtime.
@@ -397,6 +454,9 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         # scalper runs its lowered entry threshold
         "radar": StormRadar().state(now),
         "oi_snapshot": oi_snapshot,
+        # ON1 forward paper tracking (Nikkei micro overnight; report #36,
+        # PREREG_on1_forward.md). None until the first ledger is built.
+        "on1": on1,
         # Pending COVERAGE gates (docs/KNOWLEDGE.md §4/§5) with the bars
         # scripts/judge_gates.py judges against, so the console can show how
         # far off each pre-registered sample still is. Progress and ETA only —

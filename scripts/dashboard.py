@@ -344,6 +344,21 @@ function apiTile(a) {
     `p95 ${p95} / ${health}`);
 }
 
+// ON1 フォワード・ペーパー (aggregate.py: on1; docs/PREREG_on1_forward.md)。
+// 日経225マイクロのオーバーナイト紙上取引。null = 台帳未生成 (fetch_all が
+// scripts/paper_on1.py を書くまで) — その間も「未稼働」タイルで存在は見せる。
+// guard は PREREG §3 の警告/停止線の現在値 (OK / 警告 / 停止)。
+function on1Tiles(o) {
+  if (o == null) return tile("ON1 紙上 (日経ON)", "未稼働");
+  if (!o.trades) return tile("ON1 紙上 (日経ON)", "取引0", "", `スキップ ${o.skipped ?? 0}`);
+  const guardBad = o.guard && o.guard !== "OK";
+  const fr = o.friction_yen != null ? ` / 摩擦 ${fmt(o.friction_yen, 1)}円` : "";
+  return tile("ON1 紙上損益", `${fmt(o.cum_net_yen, 0)}円`, pnlCls(o.cum_net_yen),
+              `${fmt(o.mean_net_bps, 1)}bps ${o.trades}回`) +
+         tile("ON1 監視線", o.guard || "—", guardBad ? "neg" : "pos",
+              `〜${(o.last_exit_date || "").slice(4, 6)}/${(o.last_exit_date || "").slice(6, 8)}${fr}`);
+}
+
 async function refresh() {
   let d;
   try { d = await (await fetch("/api/status")).json(); }
@@ -375,6 +390,7 @@ async function refresh() {
     tile("約定回数", fmt(b.trade_count, 0) + " 回") +
     tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円`, pnlCls(d.scalp.total_pnl_jpy),
          `${d.scalp.trades}回`) +
+    on1Tiles(d.on1) +
     tile("エラー数", fmt(b.error_count, 0)) +
     apiTile(d.api_health) +
     overlayTile(d.overlay) +
