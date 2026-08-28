@@ -1,0 +1,313 @@
+========================================================================================================
+FX-S4 JUDGMENT -- IMPULSE-DIRECTION RESUMPTION (E+60s -> E+300s)
+2005-2014 BACKWARD-FRESH US MACRO EVENTS -- RUN ONCE, REPORTED AS-IS
+========================================================================================================
+  split arithmetic self-check: explore_n(477) = 286 == S4's SPLIT_EXPLORE_N 286  OK
+  cells (imported from S4, family F2R = enter E+60s WITH the impulse, exit E+300s):
+      exploration  m=5 bps
+      exploration  m=10 bps
+      exploration  m=20 bps
+      judgment     m=5 bps
+      judgment     m=10 bps
+      judgment     m=20 bps
+  fee per side 0.2 bps ; impulse window E..E+5s ; thresholds (5.0, 10.0, 20.0) -- all from the S4 module
+
+--------------------------------------------------------------------------------------------------------
+SANITY -- CALENDAR PROVENANCE (both libraries)
+--------------------------------------------------------------------------------------------------------
+  2005-2014: n=320  CPI=120, FOMC=80, NFP=120
+      source {'verified_web': 320}   confidence {'high': 257, 'medium': 63}
+      PRIMARY-SOURCE RATE = 100.0%  (rule-generated dates: 0)
+  2015-2026: n=477  BOJ=100, CPI=139, FOMC=99, NFP=139
+      source {'verified_web': 477}   confidence {'high': 469, 'medium': 8}
+      PRIMARY-SOURCE RATE = 100.0%  (rule-generated dates: 0)
+  2005-2014 dates: bls.gov/schedule/{YYYY}/home.htm (NFP, CPI) and
+  federalreserve.gov/monetarypolicy/fomchistorical{YYYY}.htm (FOMC, scheduled
+  meetings only -- conference-call statements excluded).  Zero rule-generated dates.
+  FOMC clock time: scraped exactly where the Fed publishes it (fomcpresconf pages,
+  2011-04 onward); otherwise the era rule 14:15 ET (pre 2013-03-20) / 14:00 ET,
+  each documented by a Fed press release cited in the calendar's note column.
+
+--------------------------------------------------------------------------------------------------------
+BUILDING EVENT FEATURES (S4's build_event, unchanged)
+--------------------------------------------------------------------------------------------------------
+  2005-2014    calendar  320  files missing   1  built  319  valid  317  split at event #192 (2011-01-07)
+      drop    1  no executable quote at E+60s
+      drop    1  no executable quote at E+10s
+      drops by year: 2008:1, 2012:1
+  2015-2026    calendar  477  files missing   0  built  477  valid  458  split at event #286 (2021-11-05)
+      drop   16  BOJ no clear burst (ratio<4)
+      drop    2  no fresh pre-release quote at E
+      drop    1  no executable quote at E+60s
+      drops by year: 2016:4, 2017:4, 2018:1, 2019:1, 2020:3, 2021:3, 2023:2, 2024:1
+
+--------------------------------------------------------------------------------------------------------
+REPRODUCTION GATE (protocol sec.6) -- do the six 2015-2026 cells reproduce the
+numbers the committed S4 run printed?
+--------------------------------------------------------------------------------------------------------
+  exploration  m=   5   S4 printed  +0.767   here  +0.767   MATCH
+  exploration  m=  10   S4 printed  +1.876   here  +1.876   MATCH
+  exploration  m=  20   S4 printed  +1.688   here  +1.688   MATCH
+  judgment     m=   5   S4 printed  +2.196   here  +2.196   MATCH
+  judgment     m=  10   S4 printed  +1.463   here  +1.463   MATCH
+  judgment     m=  20   S4 printed  +1.988   here  +1.988   MATCH
+  gate: PASS
+
+--------------------------------------------------------------------------------------------------------
+PRE-DESIGNATION OF THE TWO PRIMARY CELLS (mechanical, from the 2015-2026 reference,
+using S4's own selection key: net_base mean desc, tie-break t desc)
+--------------------------------------------------------------------------------------------------------
+  rank  cell                         n   net_base       t     gross
+  1     judgment m=5               139     +2.196   +1.45    +3.322  <== PRIMARY
+  2     judgment m=20               78     +1.988   +0.84    +3.148  <== PRIMARY
+  3     exploration m=10           108     +1.876   +1.59    +2.704
+  4     exploration m=20            40     +1.688   +0.85    +2.527
+  5     judgment m=10              122     +1.463   +0.89    +2.597
+  6     exploration m=5            146     +0.767   +0.81    +1.607
+  PRIMARY (pre-designated): ('judgment', 5.0) and ('judgment', 20.0)
+  reference gross signs    : exm5=+, exm10=+, exm20=+, jum5=+, jum10=+, jum20=+
+  MULTIPLICITY: 6 cells exist; 2 are named before the judgment numbers are read;
+  the other 4 serve only as the plateau condition.  No cell is added later.
+
+========================================================================================================
+THE SIX CELLS x {2005-2014 JUDGMENT, 2015-2026 REFERENCE}
+gross = zero-cost mid-to-mid signed with the impulse; book-cross = filled by
+crossing the library's own bid/ask; net ERA = book-cross - 0.4 bps fee;
+net@C = gross - C, C from KNOWLEDGE_FX sec.2.5 (0.89 / 1.46 bps)
+========================================================================================================
+
+  2005-2014  *** JUDGMENT SET (backward-fresh) ***
+  cell                       n  gross(zero-cost)      t  book-cross   net ERA      t  95% CI (era net)      net@0.89  net@1.46    win
+  exploration m=5           97            -0.374  -0.21      -1.924    -2.324  -1.28  [ -5.875, +1.190]    -1.264    -1.834  47.4%
+  exploration m=10          70            -1.027  -0.55      -2.613    -3.013  -1.61  [ -6.765, +0.614]    -1.917    -2.487  45.7%
+  exploration m=20          34            +0.709  +0.26      -1.039    -1.439  -0.52  [ -6.974, +3.883]    -0.181    -0.751  50.0%
+  judgment m=5              68            -0.552  -0.25      -1.409    -1.809  -0.83  [ -6.338, +2.179]    -1.442    -2.012  50.0%
+  judgment m=10             51            -1.198  -0.43      -2.106    -2.506  -0.91  [ -8.270, +2.301]    -2.088    -2.658  52.9%
+  judgment m=20             42            -0.664  -0.20      -1.657    -2.057  -0.62  [ -9.042, +3.725]    -1.554    -2.124  57.1%
+
+  2015-2026  reference (S4's own library)
+  cell                       n  gross(zero-cost)      t  book-cross   net ERA      t  95% CI (era net)      net@0.89  net@1.46    win
+  exploration m=5          146            +1.607  +1.68      +1.167    +0.767  +0.81  [ -1.070, +2.671]    +0.717    +0.147  52.1%
+  exploration m=10         108            +2.704  +2.29      +2.276    +1.876  +1.59  [ -0.394, +4.178]    +1.814    +1.244  58.3%
+  exploration m=20          40            +2.527  +1.27      +2.088    +1.688  +0.85  [ -2.034, +5.621]    +1.637    +1.067  55.0%
+  judgment m=5             139            +3.322  +2.20      +2.596    +2.196  +1.45  [ -0.772, +5.042]    +2.432    +1.862  54.0%
+  judgment m=10            122            +2.597  +1.58      +1.863    +1.463  +0.89  [ -1.861, +4.630]    +1.707    +1.137  51.6%
+  judgment m=20             78            +3.148  +1.34      +2.388    +1.988  +0.84  [ -2.780, +6.419]    +2.258    +1.688  55.1%
+
+========================================================================================================
+THE THREE PRE-REGISTERED BARS
+========================================================================================================
+  (1) MECHANISM -- primary cells: gross same sign as 2015-2026 AND event-clustered t >= 2.0
+      ('judgment', 5.0)          n=  68 gross   -0.552 (ref sign +: OPPOSITE)  t  -0.25  -> FAIL
+      ('judgment', 20.0)         n=  42 gross   -0.664 (ref sign +: OPPOSITE)  t  -0.20  -> FAIL
+      PLATEAU: 1/4 remaining cells share the reference sign -> FAIL (needs a majority, >= 3)
+      BAR 1 = FAIL
+
+  (2) ERA COST -- primary cells: net at the era's OWN measured spread > 0, t >= 1.5
+      ('judgment', 5.0)          book-cross   -1.409  net ERA   -1.809 t  -0.83  CI [-6.338,+2.179]  -> FAIL
+      ('judgment', 20.0)         book-cross   -1.657  net ERA   -2.057 t  -0.62  CI [-9.042,+3.725]  -> FAIL
+      BAR 2 = FAIL
+
+  (3) TODAY'S COST -- primary cells: gross - 1.46 bps > 0 (conservative end of the sec.2.5 map)
+      ('judgment', 5.0)          net@0.89   -1.442   net@1.46   -2.012  -> FAIL
+      ('judgment', 20.0)         net@0.89   -1.554   net@1.46   -2.124  -> FAIL
+      BAR 3 = FAIL
+
+========================================================================================================
+YEAR-BY-YEAR (is the mechanism concentrated in one era?)
+========================================================================================================
+
+  2005-2014 judgment -- all six cells pooled (a trade may appear in several cells; this is a
+  DIAGNOSTIC of where the tape moves, not a portfolio)
+      year       n     gross       t   net ERA       t     win
+      2005      15    -0.300   -0.09    -2.064   -0.59   60.0%
+      2006      21    -2.009   -1.19    -3.744   -2.21   33.3%
+      2007      21    +0.800   +0.38    -1.262   -0.60   42.9%
+      2008      47    -1.692   -0.63    -3.814   -1.40   40.4%
+      2009      40    +2.699   +0.70    +0.601   +0.16   62.5%
+      2010      54    -2.113   -1.10    -4.062   -2.06   42.6%
+      2011      31    +1.500   +0.59    -0.402   -0.16   61.3%
+      2012      34    +3.421   +1.77    +1.914   +1.00   73.5%
+      2013      50    -2.627   -0.65    -3.899   -0.97   52.0%
+      2014      49    -2.583   -1.27    -3.460   -1.71   36.7%
+
+  2015-2026 reference -- all six cells pooled (a trade may appear in several cells; this is a
+  DIAGNOSTIC of where the tape moves, not a portfolio)
+      year       n     gross       t   net ERA       t     win
+      2015      73    +1.408   +0.75    +0.460   +0.25   45.2%
+      2016      58    +2.795   +1.72    +1.851   +1.15   60.3%
+      2017      52    +3.316   +2.19    +2.577   +1.71   63.5%
+      2018      34    +3.807   +2.94    +3.037   +2.35   58.8%
+      2019      35    +1.216   +0.71    +0.522   +0.30   51.4%
+      2020       7    -1.149   -0.37    -1.975   -0.64   42.9%
+      2021      43    -1.142   -0.75    -1.929   -1.27   46.5%
+      2022      63    +7.217   +3.00    +5.958   +2.48   54.0%
+      2023      83    -2.201   -0.81    -3.481   -1.28   45.8%
+      2024      87    +4.176   +3.11    +3.014   +2.23   58.6%
+      2025      68    +3.181   +1.86    +2.188   +1.28   55.9%
+      2026      30    +8.268   +2.35    +7.464   +2.12   63.3%
+
+  primary cells only, 2005-2014, by year
+      cell judgment m=5
+          year       n     gross       t   net ERA
+          2011      12    -0.800   -0.20    -2.625
+          2012      15    +4.068   +1.25    +2.630
+          2013      19    -2.444   -0.39    -3.664
+          2014      22    -1.933   -0.67    -2.789
+      cell judgment m=20
+          year       n     gross       t   net ERA
+          2011       8    +1.542   +0.27    -0.397
+          2012       9    +2.463   +0.68    +0.891
+          2013      13    -2.641   -0.29    -4.025
+          2014      12    -2.338   -0.51    -3.242
+
+  by event type, 2005-2014, all six cells pooled
+      type       n     gross       t   net ERA       t
+      CPI       73    +0.589   +0.56    -0.841   -0.80
+      FOMC      25    -4.191   -0.89    -6.286   -1.33
+      NFP      264    -0.564   -0.48    -2.288   -1.94
+
+========================================================================================================
+SPREAD ACROSS THE ERAS -- what a trade in these seconds actually cost, by year
+(median quoted spread in bps at the instant; Dukascopy interbank USD/JPY)
+========================================================================================================
+      year      n      E-60s       E+1s       E+5s      E+15s      E+30s      E+60s     E+300s  RT E+60->300
+  2005-2014
+      2005     32      0.942      1.423      1.720      0.933      1.868      1.688      1.252         1.750
+      2006     32      0.868      0.878      1.434      0.863      0.911      1.686      1.189         1.679
+      2007     32      1.351      1.976      2.866      1.913      1.638      1.634      1.155         1.671
+      2008     31      1.875      5.688      3.288      3.730      1.988      1.425      1.441         2.020
+      2009     31      1.615      4.214      4.683      3.994      2.014      1.497      1.513         1.897
+      2010     32      1.655      5.302      5.434      2.809      1.664      1.740      1.620         2.082
+      2011     32      1.538      4.884      3.458      2.304      1.732      1.442      1.468         1.891
+      2012     31      0.768      2.780      2.433      1.281      0.891      1.015      0.869         1.288
+      2013     32      0.752      3.159      3.138      1.233      0.994      0.813      0.582         1.118
+      2014     32      0.392      2.898      2.499      0.783      0.588      0.510      0.312         0.836
+  2015-2026
+      2015     46      0.503      2.333      1.807      0.868      0.811      0.498      0.417         0.845
+      2016     36      0.628      2.266      1.284      0.961      0.903      0.607      0.441         0.956
+      2017     36      0.443      1.431      1.232      0.716      0.527      0.270      0.274         0.715
+      2018     39      0.354      1.282      1.095      0.615      0.540      0.439      0.351         0.756
+      2019     40      0.278      0.880      0.865      0.644      0.373      0.373      0.275         0.724
+      2020     42      0.377      1.145      1.014      0.660      0.555      0.375      0.288         0.782
+      2021     37      0.364      0.918      0.961      0.821      0.547      0.529      0.352         0.840
+      2022     40      0.684      1.905      1.880      1.220      0.969      0.842      0.633         1.208
+      2023     38      0.675      3.207      1.632      1.821      1.109      1.151      0.617         1.296
+      2024     39      0.670      3.835      2.105      1.452      0.984      0.922      0.562         1.192
+      2025     39      0.482      2.433      1.484      1.332      1.096      0.949      0.474         1.092
+      2026     26      0.377      1.336      1.289      0.834      0.440      0.444      0.376         0.778
+
+  RT E+60->300 = half-spread in + half-spread out + 0.4 bps fee, i.e. the actual
+  round-trip cost of THIS trade in THAT year.  Compare with the GMO retail floor
+  0.71 bps and the sec.2.5 map 0.89-1.46 bps.
+
+  spread by era, pooled (median / p90 bps)
+      2005-2014: E-60s 1.037/2.238   E+1s 2.825/9.576   E+60s 1.200/2.631   E+300s 1.113/1.974   RT 1.567/2.509
+      2015-2026: E-60s 0.458/0.877   E+1s 1.640/4.740   E+60s 0.550/1.305   E+300s 0.377/0.771   RT 0.868/1.405
+
+========================================================================================================
+IMPULSE SIZE ACROSS THE ERAS  |mid(E+5s)-mid(E)| in bps
+(KNOWLEDGE_FX sec.2.5 records the peak at 2023-24; does 2005-2014 look like it?)
+========================================================================================================
+      year      n      p50      p75      p90       max   >=5bps  >=10bps  >=20bps
+  2005-2014
+      2005     32     2.06     6.18    11.78     15.89      28%      19%       0%
+      2006     32     3.18     9.27    11.30     12.35      47%      19%       0%
+      2007     32     2.15     6.55    18.18     26.59      31%      25%       9%
+      2008     31    11.28    22.22    35.99     38.70      65%      58%      29%
+      2009     31     7.24    22.76    42.40     52.26      61%      39%      29%
+      2010     32    10.59    41.53    53.11     72.60      72%      59%      38%
+      2011     32     4.19    22.07    52.88     66.02      41%      28%      28%
+      2012     31     4.00    25.06    38.87     71.73      48%      32%      29%
+      2013     32    13.61    35.82    56.15     75.59      59%      56%      41%
+      2014     32     8.08    26.85    42.78     73.38      69%      47%      38%
+  2015-2026
+      2015     46    11.85    21.45    40.39     64.82      74%      57%      28%
+      2016     36    13.87    21.21    40.70     80.09      75%      58%      28%
+      2017     36    12.94    26.71    30.96     48.00      61%      53%      31%
+      2018     39     4.10    14.19    17.56     30.55      49%      33%       5%
+      2019     40     4.66    13.07    19.00     24.66      48%      35%       5%
+      2020     42     1.54     3.28     5.22     12.99      14%       2%       0%
+      2021     37     8.67    12.96    18.00     24.09      62%      46%       8%
+      2022     40    12.26    23.02    46.19     99.59      68%      60%      30%
+      2023     38    23.60    33.12    48.77     78.50      84%      76%      58%
+      2024     39    23.41    32.15    39.75     69.13      85%      82%      56%
+      2025     39    17.30    31.41    38.52     53.77      72%      62%      41%
+      2026     26     6.85    15.52    22.75     38.95      58%      38%      19%
+
+      type/era            n      p50      p90
+      2005-2014 CPI     119     3.24    11.77
+      2005-2014 FOMC     78     1.64     7.77
+      2005-2014 NFP     120    25.60    53.56
+      2015-2026 BOJ      83     2.38    19.66
+      2015-2026 CPI     139    12.91    36.52
+      2015-2026 FOMC     97     2.98    20.04
+      2015-2026 NFP     139    17.67    41.54
+
+========================================================================================================
+SANITY -- IS E RIGHT?  price-blind tick-ARRIVAL burst detector vs the calendar clock
+(S4's detector, run here ONLY as validation; it never moves E)
+========================================================================================================
+  era         type      n  burst found  |dE| p50 s   <=30s   <=60s   <=300s
+  2005-2014   CPI     119          24%           9    100%    100%     100%
+  2005-2014   FOMC     78          44%          36     44%     85%     100%
+  2005-2014   NFP     120          22%          10     88%     96%     100%
+  2005-2014   ALL     317          28%          10     75%     93%     100%
+      by year (2005-2014): burst-found rate / median |dE| s
+          2005     12%       37   n=32
+          2006      9%       37   n=32
+          2007     19%       43   n=32
+          2008     13%       30   n=31
+          2009      6%      115   n=31
+          2010      9%       11   n=32
+          2011     38%       15   n=32
+          2012     48%       13   n=31
+          2013     44%        7   n=32
+          2014     81%        9   n=32
+  2015-2026   CPI     139          76%           5     93%     98%      99%
+  2015-2026   FOMC     97          88%           8     67%     82%      96%
+  2015-2026   NFP     139          83%           6     98%     98%      99%
+  2015-2026   ALL     375          81%           6     88%     94%      98%
+  NOTE. The detector needs a tick-arrival burst >= 4x the trailing rate.  On a thin
+  2005-2008 tape a real release can fail that test without E being wrong; a low
+  found-rate is a statement about tick DENSITY, not about the calendar.  What would
+  indict the calendar is a burst found FAR from E, so |dE| is the column to read.
+
+========================================================================================================
+SANITY -- LOOK-AHEAD IS ZERO BY CONSTRUCTION
+========================================================================================================
+  signal window is [E, E+5s]; the entry decision is at E+60s,
+  i.e. a hard 55-second gap between the last tick the signal
+  may read and the earliest tick the entry may fill on.
+  entry_tick_ts - signal_tick_ts (ms): min 55023, median 55685, negatives 0
+  entry fill gap past the decision instant (ms): median 332, p90 7455, max 23163 (cap 30000)
+  exit_tick_ts - entry_tick_ts (ms): min 218513 (must exceed 0)
+  no feature used by a cell reads a tick after its own decision instant.
+
+--------------------------------------------------------------------------------------------------------
+ONE TRADE WORKED OUT FROM RAW 2005-2014 QUOTES (auditable by hand)
+--------------------------------------------------------------------------------------------------------
+  NFP 2013-08-02  E = 2013-08-02 12:30:00+00:00   mid(E) = 99.94150
+    impulse -75.59 bps -> SHORT at E+60s
+    entry fill @ 2013-08-02 12:31:00.110000+00:00 (+110 ms): bid 99.35400 / ask 99.36100
+    exit  fill @ 2013-08-02 12:35:00.181000+00:00 (+181 ms): bid 99.40300 / ask 99.40800
+    book-cross -5.435 bps ; minus 0.4 bps fee -> net ERA -5.835 bps ; zero-cost mid-to-mid -4.831 bps
+
+--------------------------------------------------------------------------------------------------------
+SANITY -- DETERMINISM
+--------------------------------------------------------------------------------------------------------
+  six-cell trade-table hash: run A 133c537292da6c21 / run B 133c537292da6c21   identical=True
+  bootstrap CI reproduced exactly (seed 20260828): True  (-6.337796677057434, 2.1785709263281277)
+  no network access, no RNG outside the seeded bootstrap, no files written.
+
+========================================================================================================
+VERDICT (PREREG sec.5 -- the reading was fixed before the run)
+========================================================================================================
+  BAR 1 mechanism reproduces (primary t>=2.0, same sign, plateau): FAIL
+  BAR 2 positive at the ERA's own measured cost (t>=1.5)        : FAIL
+  BAR 3 positive at today's cost map (conservative 1.46 bps) : FAIL
+
+  >>> REJECT -- the mechanism does not reproduce on backward-fresh events. S4's +0.8..+3.0 bps is confirmed as a dig-out. <<<
+========================================================================================================
+FINAL: REJECT   primary cells ('judgment', 5.0) / ('judgment', 20.0)   judgment events 317 valid of 320
+========================================================================================================

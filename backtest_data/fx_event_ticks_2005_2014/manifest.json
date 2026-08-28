@@ -1,0 +1,3199 @@
+{
+"CPI_20050119": {
+"bytes": 2035,
+"failed": 0,
+"first_ms": 1106140800028,
+"hours": 1,
+"last_ms": 1106141986891,
+"nodata": 0,
+"rows": 163,
+"status": "ok"
+},
+"CPI_20050223": {
+"bytes": 2007,
+"failed": 0,
+"first_ms": 1109164800710,
+"hours": 1,
+"last_ms": 1109165988015,
+"nodata": 0,
+"rows": 162,
+"status": "ok"
+},
+"CPI_20050323": {
+"bytes": 2082,
+"failed": 0,
+"first_ms": 1111584000231,
+"hours": 1,
+"last_ms": 1111585186308,
+"nodata": 0,
+"rows": 162,
+"status": "ok"
+},
+"CPI_20050420": {
+"bytes": 2040,
+"failed": 0,
+"first_ms": 1113999600178,
+"hours": 1,
+"last_ms": 1114000785701,
+"nodata": 0,
+"rows": 159,
+"status": "ok"
+},
+"CPI_20050518": {
+"bytes": 2022,
+"failed": 0,
+"first_ms": 1116418801268,
+"hours": 1,
+"last_ms": 1116419985099,
+"nodata": 0,
+"rows": 159,
+"status": "ok"
+},
+"CPI_20050615": {
+"bytes": 1988,
+"failed": 0,
+"first_ms": 1118838008004,
+"hours": 1,
+"last_ms": 1118839185339,
+"nodata": 0,
+"rows": 158,
+"status": "ok"
+},
+"CPI_20050714": {
+"bytes": 2099,
+"failed": 0,
+"first_ms": 1121343600840,
+"hours": 1,
+"last_ms": 1121344784456,
+"nodata": 0,
+"rows": 167,
+"status": "ok"
+},
+"CPI_20050816": {
+"bytes": 1926,
+"failed": 0,
+"first_ms": 1124194800095,
+"hours": 1,
+"last_ms": 1124195984896,
+"nodata": 0,
+"rows": 156,
+"status": "ok"
+},
+"CPI_20050915": {
+"bytes": 1885,
+"failed": 0,
+"first_ms": 1126786815335,
+"hours": 1,
+"last_ms": 1126787984757,
+"nodata": 0,
+"rows": 146,
+"status": "ok"
+},
+"CPI_20051014": {
+"bytes": 1967,
+"failed": 0,
+"first_ms": 1129292400297,
+"hours": 1,
+"last_ms": 1129293584244,
+"nodata": 0,
+"rows": 151,
+"status": "ok"
+},
+"CPI_20051116": {
+"bytes": 1860,
+"failed": 0,
+"first_ms": 1132147201800,
+"hours": 1,
+"last_ms": 1132148387807,
+"nodata": 0,
+"rows": 149,
+"status": "ok"
+},
+"CPI_20051215": {
+"bytes": 1980,
+"failed": 0,
+"first_ms": 1134652801891,
+"hours": 1,
+"last_ms": 1134653987840,
+"nodata": 0,
+"rows": 155,
+"status": "ok"
+},
+"CPI_20060118": {
+"bytes": 1899,
+"failed": 0,
+"first_ms": 1137590400354,
+"hours": 1,
+"last_ms": 1137591587231,
+"nodata": 0,
+"rows": 156,
+"status": "ok"
+},
+"CPI_20060222": {
+"bytes": 1979,
+"failed": 0,
+"first_ms": 1140614401798,
+"hours": 1,
+"last_ms": 1140615586659,
+"nodata": 0,
+"rows": 159,
+"status": "ok"
+},
+"CPI_20060316": {
+"bytes": 1965,
+"failed": 0,
+"first_ms": 1142515200211,
+"hours": 1,
+"last_ms": 1142516387287,
+"nodata": 0,
+"rows": 153,
+"status": "ok"
+},
+"CPI_20060419": {
+"bytes": 1979,
+"failed": 0,
+"first_ms": 1145449200972,
+"hours": 1,
+"last_ms": 1145450384352,
+"nodata": 0,
+"rows": 153,
+"status": "ok"
+},
+"CPI_20060517": {
+"bytes": 1972,
+"failed": 0,
+"first_ms": 1147868400325,
+"hours": 1,
+"last_ms": 1147869584870,
+"nodata": 0,
+"rows": 155,
+"status": "ok"
+},
+"CPI_20060614": {
+"bytes": 2021,
+"failed": 0,
+"first_ms": 1150287615698,
+"hours": 1,
+"last_ms": 1150288784866,
+"nodata": 0,
+"rows": 159,
+"status": "ok"
+},
+"CPI_20060719": {
+"bytes": 1965,
+"failed": 0,
+"first_ms": 1153311607141,
+"hours": 1,
+"last_ms": 1153312785204,
+"nodata": 0,
+"rows": 153,
+"status": "ok"
+},
+"CPI_20060816": {
+"bytes": 2056,
+"failed": 0,
+"first_ms": 1155730815738,
+"hours": 1,
+"last_ms": 1155731984375,
+"nodata": 0,
+"rows": 159,
+"status": "ok"
+},
+"CPI_20060915": {
+"bytes": 1939,
+"failed": 0,
+"first_ms": 1158322800916,
+"hours": 1,
+"last_ms": 1158323984297,
+"nodata": 0,
+"rows": 150,
+"status": "ok"
+},
+"CPI_20061018": {
+"bytes": 2029,
+"failed": 0,
+"first_ms": 1161174001061,
+"hours": 1,
+"last_ms": 1161175183922,
+"nodata": 0,
+"rows": 156,
+"status": "ok"
+},
+"CPI_20061116": {
+"bytes": 2007,
+"failed": 0,
+"first_ms": 1163683200364,
+"hours": 1,
+"last_ms": 1163684387500,
+"nodata": 0,
+"rows": 158,
+"status": "ok"
+},
+"CPI_20061215": {
+"bytes": 2045,
+"failed": 0,
+"first_ms": 1166188800291,
+"hours": 1,
+"last_ms": 1166189986845,
+"nodata": 0,
+"rows": 162,
+"status": "ok"
+},
+"CPI_20070118": {
+"bytes": 1931,
+"failed": 0,
+"first_ms": 1169126401653,
+"hours": 1,
+"last_ms": 1169127587847,
+"nodata": 0,
+"rows": 156,
+"status": "ok"
+},
+"CPI_20070221": {
+"bytes": 1990,
+"failed": 0,
+"first_ms": 1172064000126,
+"hours": 1,
+"last_ms": 1172065186559,
+"nodata": 0,
+"rows": 158,
+"status": "ok"
+},
+"CPI_20070316": {
+"bytes": 1872,
+"failed": 0,
+"first_ms": 1174047601028,
+"hours": 1,
+"last_ms": 1174048784473,
+"nodata": 0,
+"rows": 147,
+"status": "ok"
+},
+"CPI_20070417": {
+"bytes": 14701,
+"failed": 0,
+"first_ms": 1176812400251,
+"hours": 1,
+"last_ms": 1176813599978,
+"nodata": 0,
+"rows": 1859,
+"status": "ok"
+},
+"CPI_20070515": {
+"bytes": 24534,
+"failed": 0,
+"first_ms": 1179231600684,
+"hours": 1,
+"last_ms": 1179232799517,
+"nodata": 0,
+"rows": 3294,
+"status": "ok"
+},
+"CPI_20070615": {
+"bytes": 20170,
+"failed": 0,
+"first_ms": 1181910000164,
+"hours": 1,
+"last_ms": 1181911199917,
+"nodata": 0,
+"rows": 2671,
+"status": "ok"
+},
+"CPI_20070718": {
+"bytes": 22691,
+"failed": 0,
+"first_ms": 1184761200296,
+"hours": 1,
+"last_ms": 1184762399986,
+"nodata": 0,
+"rows": 3096,
+"status": "ok"
+},
+"CPI_20070815": {
+"bytes": 33146,
+"failed": 0,
+"first_ms": 1187180400185,
+"hours": 1,
+"last_ms": 1187181599031,
+"nodata": 0,
+"rows": 4393,
+"status": "ok"
+},
+"CPI_20070919": {
+"bytes": 24532,
+"failed": 0,
+"first_ms": 1190204401295,
+"hours": 1,
+"last_ms": 1190205599944,
+"nodata": 0,
+"rows": 3384,
+"status": "ok"
+},
+"CPI_20071017": {
+"bytes": 21608,
+"failed": 0,
+"first_ms": 1192623600134,
+"hours": 1,
+"last_ms": 1192624798822,
+"nodata": 0,
+"rows": 3651,
+"status": "ok"
+},
+"CPI_20071115": {
+"bytes": 22685,
+"failed": 0,
+"first_ms": 1195132800085,
+"hours": 1,
+"last_ms": 1195133999950,
+"nodata": 0,
+"rows": 3680,
+"status": "ok"
+},
+"CPI_20071214": {
+"bytes": 24152,
+"failed": 0,
+"first_ms": 1197638400198,
+"hours": 1,
+"last_ms": 1197639599894,
+"nodata": 0,
+"rows": 3886,
+"status": "ok"
+},
+"CPI_20080116": {
+"bytes": 25226,
+"failed": 0,
+"first_ms": 1200489600166,
+"hours": 1,
+"last_ms": 1200490799895,
+"nodata": 0,
+"rows": 4047,
+"status": "ok"
+},
+"CPI_20080220": {
+"bytes": 18007,
+"failed": 0,
+"first_ms": 1203513600090,
+"hours": 1,
+"last_ms": 1203514799854,
+"nodata": 0,
+"rows": 3346,
+"status": "ok"
+},
+"CPI_20080314": {
+"bytes": 25651,
+"failed": 0,
+"first_ms": 1205497200122,
+"hours": 1,
+"last_ms": 1205498399991,
+"nodata": 0,
+"rows": 4212,
+"status": "ok"
+},
+"CPI_20080416": {
+"bytes": 22135,
+"failed": 0,
+"first_ms": 1208348400157,
+"hours": 1,
+"last_ms": 1208349599815,
+"nodata": 0,
+"rows": 4665,
+"status": "ok"
+},
+"CPI_20080514": {
+"bytes": 12617,
+"failed": 0,
+"first_ms": 1210767601086,
+"hours": 1,
+"last_ms": 1210768799989,
+"nodata": 0,
+"rows": 1894,
+"status": "ok"
+},
+"CPI_20080613": {
+"bytes": 22671,
+"failed": 0,
+"first_ms": 1213359600619,
+"hours": 1,
+"last_ms": 1213360799951,
+"nodata": 0,
+"rows": 2891,
+"status": "ok"
+},
+"CPI_20080716": {
+"bytes": 13378,
+"failed": 0,
+"first_ms": 1216210801261,
+"hours": 1,
+"last_ms": 1216211999615,
+"nodata": 0,
+"rows": 1827,
+"status": "ok"
+},
+"CPI_20080814": {
+"bytes": 11754,
+"failed": 0,
+"first_ms": 1218716400319,
+"hours": 1,
+"last_ms": 1218717599817,
+"nodata": 0,
+"rows": 1594,
+"status": "ok"
+},
+"CPI_20080916": {
+"bytes": 21522,
+"failed": 0,
+"first_ms": 1221567600241,
+"hours": 1,
+"last_ms": 1221568799783,
+"nodata": 0,
+"rows": 2862,
+"status": "ok"
+},
+"CPI_20081016": {
+"bytes": 31355,
+"failed": 0,
+"first_ms": 1224159600143,
+"hours": 1,
+"last_ms": 1224160799927,
+"nodata": 0,
+"rows": 2987,
+"status": "ok"
+},
+"CPI_20081119": {
+"bytes": 10651,
+"failed": 0,
+"first_ms": 1227100800121,
+"hours": 1,
+"last_ms": 1227101999901,
+"nodata": 0,
+"rows": 1511,
+"status": "ok"
+},
+"CPI_20081216": {
+"bytes": 9780,
+"failed": 0,
+"first_ms": 1229433600006,
+"hours": 1,
+"last_ms": 1229434798686,
+"nodata": 0,
+"rows": 1368,
+"status": "ok"
+},
+"CPI_20090116": {
+"bytes": 10764,
+"failed": 0,
+"first_ms": 1232112000625,
+"hours": 1,
+"last_ms": 1232113199315,
+"nodata": 0,
+"rows": 1536,
+"status": "ok"
+},
+"CPI_20090220": {
+"bytes": 10283,
+"failed": 0,
+"first_ms": 1235136000919,
+"hours": 1,
+"last_ms": 1235137199369,
+"nodata": 0,
+"rows": 1397,
+"status": "ok"
+},
+"CPI_20090318": {
+"bytes": 15069,
+"failed": 0,
+"first_ms": 1237378801563,
+"hours": 1,
+"last_ms": 1237379999772,
+"nodata": 0,
+"rows": 1974,
+"status": "ok"
+},
+"CPI_20090415": {
+"bytes": 9847,
+"failed": 0,
+"first_ms": 1239798000363,
+"hours": 1,
+"last_ms": 1239799199913,
+"nodata": 0,
+"rows": 1327,
+"status": "ok"
+},
+"CPI_20090515": {
+"bytes": 9722,
+"failed": 0,
+"first_ms": 1242390000543,
+"hours": 1,
+"last_ms": 1242391197944,
+"nodata": 0,
+"rows": 1338,
+"status": "ok"
+},
+"CPI_20090617": {
+"failed": 0,
+"hours": 1,
+"nodata": 1,
+"rows": 0,
+"status": "empty"
+},
+"CPI_20090715": {
+"bytes": 13012,
+"failed": 0,
+"first_ms": 1247660401980,
+"hours": 1,
+"last_ms": 1247661590752,
+"nodata": 0,
+"rows": 1762,
+"status": "ok"
+},
+"CPI_20090814": {
+"bytes": 10122,
+"failed": 0,
+"first_ms": 1250252400252,
+"hours": 1,
+"last_ms": 1250253597985,
+"nodata": 0,
+"rows": 1282,
+"status": "ok"
+},
+"CPI_20090916": {
+"bytes": 14804,
+"failed": 0,
+"first_ms": 1253103600058,
+"hours": 1,
+"last_ms": 1253104799969,
+"nodata": 0,
+"rows": 2056,
+"status": "ok"
+},
+"CPI_20091015": {
+"bytes": 12532,
+"failed": 0,
+"first_ms": 1255609200584,
+"hours": 1,
+"last_ms": 1255610398985,
+"nodata": 0,
+"rows": 1698,
+"status": "ok"
+},
+"CPI_20091118": {
+"bytes": 10561,
+"failed": 0,
+"first_ms": 1258550400523,
+"hours": 1,
+"last_ms": 1258551595477,
+"nodata": 0,
+"rows": 1466,
+"status": "ok"
+},
+"CPI_20091216": {
+"bytes": 7369,
+"failed": 0,
+"first_ms": 1260969600396,
+"hours": 1,
+"last_ms": 1260970799938,
+"nodata": 0,
+"rows": 1064,
+"status": "ok"
+},
+"CPI_20100115": {
+"bytes": 11776,
+"failed": 0,
+"first_ms": 1263561600069,
+"hours": 1,
+"last_ms": 1263562799490,
+"nodata": 0,
+"rows": 1635,
+"status": "ok"
+},
+"CPI_20100219": {
+"bytes": 8064,
+"failed": 0,
+"first_ms": 1266585601277,
+"hours": 1,
+"last_ms": 1266586798836,
+"nodata": 0,
+"rows": 1101,
+"status": "ok"
+},
+"CPI_20100318": {
+"bytes": 10817,
+"failed": 0,
+"first_ms": 1268914800791,
+"hours": 1,
+"last_ms": 1268915999788,
+"nodata": 0,
+"rows": 1496,
+"status": "ok"
+},
+"CPI_20100414": {
+"bytes": 13620,
+"failed": 0,
+"first_ms": 1271247601082,
+"hours": 1,
+"last_ms": 1271248799764,
+"nodata": 0,
+"rows": 1791,
+"status": "ok"
+},
+"CPI_20100519": {
+"bytes": 17292,
+"failed": 0,
+"first_ms": 1274271600211,
+"hours": 1,
+"last_ms": 1274272799823,
+"nodata": 0,
+"rows": 2154,
+"status": "ok"
+},
+"CPI_20100617": {
+"bytes": 12863,
+"failed": 0,
+"first_ms": 1276777200035,
+"hours": 1,
+"last_ms": 1276778399625,
+"nodata": 0,
+"rows": 1844,
+"status": "ok"
+},
+"CPI_20100716": {
+"bytes": 12278,
+"failed": 0,
+"first_ms": 1279282800659,
+"hours": 1,
+"last_ms": 1279283997679,
+"nodata": 0,
+"rows": 1681,
+"status": "ok"
+},
+"CPI_20100813": {
+"bytes": 9880,
+"failed": 0,
+"first_ms": 1281702001242,
+"hours": 1,
+"last_ms": 1281703198344,
+"nodata": 0,
+"rows": 1350,
+"status": "ok"
+},
+"CPI_20100917": {
+"bytes": 10341,
+"failed": 0,
+"first_ms": 1284726001009,
+"hours": 1,
+"last_ms": 1284727198582,
+"nodata": 0,
+"rows": 1502,
+"status": "ok"
+},
+"CPI_20101015": {
+"bytes": 12876,
+"failed": 0,
+"first_ms": 1287145200410,
+"hours": 1,
+"last_ms": 1287146399296,
+"nodata": 0,
+"rows": 1691,
+"status": "ok"
+},
+"CPI_20101117": {
+"bytes": 4696,
+"failed": 0,
+"first_ms": 1290000003123,
+"hours": 1,
+"last_ms": 1290001198004,
+"nodata": 0,
+"rows": 505,
+"status": "ok"
+},
+"CPI_20101215": {
+"bytes": 10491,
+"failed": 0,
+"first_ms": 1292419200650,
+"hours": 1,
+"last_ms": 1292420393803,
+"nodata": 0,
+"rows": 1254,
+"status": "ok"
+},
+"CPI_20110114": {
+"bytes": 11865,
+"failed": 0,
+"first_ms": 1295011204566,
+"hours": 1,
+"last_ms": 1295012392784,
+"nodata": 0,
+"rows": 1387,
+"status": "ok"
+},
+"CPI_20110217": {
+"bytes": 13889,
+"failed": 0,
+"first_ms": 1297948801012,
+"hours": 1,
+"last_ms": 1297949998833,
+"nodata": 0,
+"rows": 1707,
+"status": "ok"
+},
+"CPI_20110317": {
+"bytes": 21874,
+"failed": 0,
+"first_ms": 1300364400140,
+"hours": 1,
+"last_ms": 1300365599486,
+"nodata": 0,
+"rows": 2791,
+"status": "ok"
+},
+"CPI_20110415": {
+"bytes": 13130,
+"failed": 0,
+"first_ms": 1302870000459,
+"hours": 1,
+"last_ms": 1302871199789,
+"nodata": 0,
+"rows": 1652,
+"status": "ok"
+},
+"CPI_20110513": {
+"bytes": 11750,
+"failed": 0,
+"first_ms": 1305289200975,
+"hours": 1,
+"last_ms": 1305290388647,
+"nodata": 0,
+"rows": 1449,
+"status": "ok"
+},
+"CPI_20110615": {
+"bytes": 16567,
+"failed": 0,
+"first_ms": 1308140400040,
+"hours": 1,
+"last_ms": 1308141598604,
+"nodata": 0,
+"rows": 2000,
+"status": "ok"
+},
+"CPI_20110715": {
+"bytes": 9593,
+"failed": 0,
+"first_ms": 1310732400839,
+"hours": 1,
+"last_ms": 1310733599836,
+"nodata": 0,
+"rows": 1147,
+"status": "ok"
+},
+"CPI_20110818": {
+"bytes": 7437,
+"failed": 0,
+"first_ms": 1313670000289,
+"hours": 1,
+"last_ms": 1313671198441,
+"nodata": 0,
+"rows": 890,
+"status": "ok"
+},
+"CPI_20110915": {
+"bytes": 9275,
+"failed": 0,
+"first_ms": 1316089200549,
+"hours": 1,
+"last_ms": 1316090399674,
+"nodata": 0,
+"rows": 1102,
+"status": "ok"
+},
+"CPI_20111019": {
+"bytes": 6106,
+"failed": 0,
+"first_ms": 1319026801627,
+"hours": 1,
+"last_ms": 1319027998190,
+"nodata": 0,
+"rows": 725,
+"status": "ok"
+},
+"CPI_20111116": {
+"bytes": 4395,
+"failed": 0,
+"first_ms": 1321449600490,
+"hours": 1,
+"last_ms": 1321450798978,
+"nodata": 0,
+"rows": 554,
+"status": "ok"
+},
+"CPI_20111216": {
+"bytes": 4873,
+"failed": 0,
+"first_ms": 1324041602850,
+"hours": 1,
+"last_ms": 1324042796735,
+"nodata": 0,
+"rows": 611,
+"status": "ok"
+},
+"CPI_20120119": {
+"bytes": 4934,
+"failed": 0,
+"first_ms": 1326979201252,
+"hours": 1,
+"last_ms": 1326980396895,
+"nodata": 0,
+"rows": 639,
+"status": "ok"
+},
+"CPI_20120217": {
+"bytes": 7207,
+"failed": 0,
+"first_ms": 1329484800407,
+"hours": 1,
+"last_ms": 1329485998922,
+"nodata": 0,
+"rows": 922,
+"status": "ok"
+},
+"CPI_20120316": {
+"bytes": 13972,
+"failed": 0,
+"first_ms": 1331900400707,
+"hours": 1,
+"last_ms": 1331901599869,
+"nodata": 0,
+"rows": 1687,
+"status": "ok"
+},
+"CPI_20120413": {
+"bytes": 9783,
+"failed": 0,
+"first_ms": 1334319600326,
+"hours": 1,
+"last_ms": 1334320799580,
+"nodata": 0,
+"rows": 1264,
+"status": "ok"
+},
+"CPI_20120515": {
+"bytes": 15045,
+"failed": 0,
+"first_ms": 1337084400918,
+"hours": 1,
+"last_ms": 1337085599651,
+"nodata": 0,
+"rows": 1941,
+"status": "ok"
+},
+"CPI_20120614": {
+"bytes": 11922,
+"failed": 0,
+"first_ms": 1339676400159,
+"hours": 1,
+"last_ms": 1339677598340,
+"nodata": 0,
+"rows": 1546,
+"status": "ok"
+},
+"CPI_20120717": {
+"bytes": 7339,
+"failed": 0,
+"first_ms": 1342527600672,
+"hours": 1,
+"last_ms": 1342528795985,
+"nodata": 0,
+"rows": 925,
+"status": "ok"
+},
+"CPI_20120815": {
+"bytes": 13674,
+"failed": 0,
+"first_ms": 1345033201134,
+"hours": 1,
+"last_ms": 1345034399845,
+"nodata": 0,
+"rows": 1601,
+"status": "ok"
+},
+"CPI_20120914": {
+"bytes": 12340,
+"failed": 0,
+"first_ms": 1347625200684,
+"hours": 1,
+"last_ms": 1347626399943,
+"nodata": 0,
+"rows": 1441,
+"status": "ok"
+},
+"CPI_20121016": {
+"bytes": 6671,
+"failed": 0,
+"first_ms": 1350390000792,
+"hours": 1,
+"last_ms": 1350391194476,
+"nodata": 0,
+"rows": 825,
+"status": "ok"
+},
+"CPI_20121115": {
+"bytes": 12792,
+"failed": 0,
+"first_ms": 1352985600534,
+"hours": 1,
+"last_ms": 1352986798366,
+"nodata": 0,
+"rows": 1576,
+"status": "ok"
+},
+"CPI_20121214": {
+"bytes": 13763,
+"failed": 0,
+"first_ms": 1355491200421,
+"hours": 1,
+"last_ms": 1355492398953,
+"nodata": 0,
+"rows": 1648,
+"status": "ok"
+},
+"CPI_20130116": {
+"bytes": 11641,
+"failed": 0,
+"first_ms": 1358342400244,
+"hours": 1,
+"last_ms": 1358343599076,
+"nodata": 0,
+"rows": 1513,
+"status": "ok"
+},
+"CPI_20130221": {
+"bytes": 13832,
+"failed": 0,
+"first_ms": 1361452800741,
+"hours": 1,
+"last_ms": 1361453992940,
+"nodata": 0,
+"rows": 1703,
+"status": "ok"
+},
+"CPI_20130315": {
+"bytes": 12585,
+"failed": 0,
+"first_ms": 1363350000062,
+"hours": 1,
+"last_ms": 1363351199494,
+"nodata": 0,
+"rows": 1641,
+"status": "ok"
+},
+"CPI_20130416": {
+"bytes": 20476,
+"failed": 0,
+"first_ms": 1366114800109,
+"hours": 1,
+"last_ms": 1366115999821,
+"nodata": 0,
+"rows": 2587,
+"status": "ok"
+},
+"CPI_20130516": {
+"bytes": 23525,
+"failed": 0,
+"first_ms": 1368706800345,
+"hours": 1,
+"last_ms": 1368707999700,
+"nodata": 0,
+"rows": 2740,
+"status": "ok"
+},
+"CPI_20130618": {
+"bytes": 16163,
+"failed": 0,
+"first_ms": 1371558000221,
+"hours": 1,
+"last_ms": 1371559199862,
+"nodata": 0,
+"rows": 2080,
+"status": "ok"
+},
+"CPI_20130716": {
+"bytes": 15992,
+"failed": 0,
+"first_ms": 1373977200202,
+"hours": 1,
+"last_ms": 1373978392672,
+"nodata": 0,
+"rows": 1998,
+"status": "ok"
+},
+"CPI_20130815": {
+"bytes": 26508,
+"failed": 0,
+"first_ms": 1376569200161,
+"hours": 1,
+"last_ms": 1376570399702,
+"nodata": 0,
+"rows": 3134,
+"status": "ok"
+},
+"CPI_20130917": {
+"bytes": 9865,
+"failed": 0,
+"first_ms": 1379420400430,
+"hours": 1,
+"last_ms": 1379421598114,
+"nodata": 0,
+"rows": 1287,
+"status": "ok"
+},
+"CPI_20131030": {
+"bytes": 8919,
+"failed": 0,
+"first_ms": 1383135600307,
+"hours": 1,
+"last_ms": 1383136798717,
+"nodata": 0,
+"rows": 1043,
+"status": "ok"
+},
+"CPI_20131120": {
+"bytes": 13794,
+"failed": 0,
+"first_ms": 1384953600208,
+"hours": 1,
+"last_ms": 1384954798425,
+"nodata": 0,
+"rows": 1591,
+"status": "ok"
+},
+"CPI_20131217": {
+"bytes": 11117,
+"failed": 0,
+"first_ms": 1387286400305,
+"hours": 1,
+"last_ms": 1387287598974,
+"nodata": 0,
+"rows": 1320,
+"status": "ok"
+},
+"CPI_20140116": {
+"bytes": 15712,
+"failed": 0,
+"first_ms": 1389878400645,
+"hours": 1,
+"last_ms": 1389879594950,
+"nodata": 0,
+"rows": 1806,
+"status": "ok"
+},
+"CPI_20140220": {
+"bytes": 14397,
+"failed": 0,
+"first_ms": 1392902400542,
+"hours": 1,
+"last_ms": 1392903599325,
+"nodata": 0,
+"rows": 1632,
+"status": "ok"
+},
+"CPI_20140318": {
+"bytes": 9943,
+"failed": 0,
+"first_ms": 1395145200267,
+"hours": 1,
+"last_ms": 1395146394410,
+"nodata": 0,
+"rows": 1176,
+"status": "ok"
+},
+"CPI_20140415": {
+"bytes": 12455,
+"failed": 0,
+"first_ms": 1397564400237,
+"hours": 1,
+"last_ms": 1397565599909,
+"nodata": 0,
+"rows": 1492,
+"status": "ok"
+},
+"CPI_20140515": {
+"bytes": 14622,
+"failed": 0,
+"first_ms": 1400156400148,
+"hours": 1,
+"last_ms": 1400157599661,
+"nodata": 0,
+"rows": 1767,
+"status": "ok"
+},
+"CPI_20140617": {
+"bytes": 13567,
+"failed": 0,
+"first_ms": 1403007600451,
+"hours": 1,
+"last_ms": 1403008799826,
+"nodata": 0,
+"rows": 1626,
+"status": "ok"
+},
+"CPI_20140722": {
+"bytes": 12340,
+"failed": 0,
+"first_ms": 1406031600327,
+"hours": 1,
+"last_ms": 1406032797779,
+"nodata": 0,
+"rows": 1554,
+"status": "ok"
+},
+"CPI_20140819": {
+"bytes": 13017,
+"failed": 0,
+"first_ms": 1408450800510,
+"hours": 1,
+"last_ms": 1408451998164,
+"nodata": 0,
+"rows": 1632,
+"status": "ok"
+},
+"CPI_20140917": {
+"bytes": 13316,
+"failed": 0,
+"first_ms": 1410956400095,
+"hours": 1,
+"last_ms": 1410957598198,
+"nodata": 0,
+"rows": 1725,
+"status": "ok"
+},
+"CPI_20141022": {
+"bytes": 17966,
+"failed": 0,
+"first_ms": 1413980400020,
+"hours": 1,
+"last_ms": 1413981599857,
+"nodata": 0,
+"rows": 2425,
+"status": "ok"
+},
+"CPI_20141120": {
+"bytes": 20522,
+"failed": 0,
+"first_ms": 1416489600277,
+"hours": 1,
+"last_ms": 1416490799836,
+"nodata": 0,
+"rows": 2737,
+"status": "ok"
+},
+"CPI_20141217": {
+"bytes": 13357,
+"failed": 0,
+"first_ms": 1418822400286,
+"hours": 1,
+"last_ms": 1418823598119,
+"nodata": 0,
+"rows": 1684,
+"status": "ok"
+},
+"FOMC_20050202": {
+"bytes": 7785,
+"failed": 0,
+"first_ms": 1107371102721,
+"hours": 1,
+"last_ms": 1107372299804,
+"nodata": 0,
+"rows": 717,
+"status": "ok"
+},
+"FOMC_20050322": {
+"bytes": 7807,
+"failed": 0,
+"first_ms": 1111518303171,
+"hours": 1,
+"last_ms": 1111519499037,
+"nodata": 0,
+"rows": 717,
+"status": "ok"
+},
+"FOMC_20050503": {
+"bytes": 8080,
+"failed": 0,
+"first_ms": 1115143500231,
+"hours": 1,
+"last_ms": 1115144699528,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20050630": {
+"bytes": 8128,
+"failed": 0,
+"first_ms": 1120154701428,
+"hours": 1,
+"last_ms": 1120155899328,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20050809": {
+"bytes": 8099,
+"failed": 0,
+"first_ms": 1123610704567,
+"hours": 1,
+"last_ms": 1123611899823,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20050920": {
+"bytes": 8241,
+"failed": 0,
+"first_ms": 1127239500056,
+"hours": 1,
+"last_ms": 1127240699679,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20051101": {
+"bytes": 7670,
+"failed": 0,
+"first_ms": 1130871902443,
+"hours": 1,
+"last_ms": 1130873098477,
+"nodata": 0,
+"rows": 717,
+"status": "ok"
+},
+"FOMC_20051213": {
+"bytes": 7731,
+"failed": 0,
+"first_ms": 1134500704212,
+"hours": 1,
+"last_ms": 1134501898901,
+"nodata": 0,
+"rows": 717,
+"status": "ok"
+},
+"FOMC_20060131": {
+"bytes": 8107,
+"failed": 0,
+"first_ms": 1138734302756,
+"hours": 1,
+"last_ms": 1138735498343,
+"nodata": 0,
+"rows": 717,
+"status": "ok"
+},
+"FOMC_20060328": {
+"bytes": 7964,
+"failed": 0,
+"first_ms": 1143572703733,
+"hours": 1,
+"last_ms": 1143573898136,
+"nodata": 0,
+"rows": 717,
+"status": "ok"
+},
+"FOMC_20060510": {
+"bytes": 8263,
+"failed": 0,
+"first_ms": 1147284300346,
+"hours": 1,
+"last_ms": 1147285499027,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20060629": {
+"bytes": 8512,
+"failed": 0,
+"first_ms": 1151604300514,
+"hours": 1,
+"last_ms": 1151605498925,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20060808": {
+"bytes": 8588,
+"failed": 0,
+"first_ms": 1155060304559,
+"hours": 1,
+"last_ms": 1155061498522,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20060920": {
+"bytes": 8170,
+"failed": 0,
+"first_ms": 1158775500066,
+"hours": 1,
+"last_ms": 1158776693308,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20061025": {
+"bytes": 8205,
+"failed": 0,
+"first_ms": 1161799501036,
+"hours": 1,
+"last_ms": 1161800699631,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20061212": {
+"bytes": 7910,
+"failed": 0,
+"first_ms": 1165950302319,
+"hours": 1,
+"last_ms": 1165951499223,
+"nodata": 0,
+"rows": 717,
+"status": "ok"
+},
+"FOMC_20070131": {
+"bytes": 7858,
+"failed": 0,
+"first_ms": 1170270302458,
+"hours": 1,
+"last_ms": 1170271498424,
+"nodata": 0,
+"rows": 717,
+"status": "ok"
+},
+"FOMC_20070321": {
+"bytes": 8271,
+"failed": 0,
+"first_ms": 1174500300853,
+"hours": 1,
+"last_ms": 1174501493232,
+"nodata": 0,
+"rows": 753,
+"status": "ok"
+},
+"FOMC_20070509": {
+"bytes": 17548,
+"failed": 0,
+"first_ms": 1178733903934,
+"hours": 1,
+"last_ms": 1178735095648,
+"nodata": 0,
+"rows": 2354,
+"status": "ok"
+},
+"FOMC_20070628": {
+"bytes": 22598,
+"failed": 0,
+"first_ms": 1183053900167,
+"hours": 1,
+"last_ms": 1183055099999,
+"nodata": 0,
+"rows": 3028,
+"status": "ok"
+},
+"FOMC_20070807": {
+"bytes": 31572,
+"failed": 0,
+"first_ms": 1186509905205,
+"hours": 1,
+"last_ms": 1186511099989,
+"nodata": 0,
+"rows": 4273,
+"status": "ok"
+},
+"FOMC_20070918": {
+"bytes": 33297,
+"failed": 0,
+"first_ms": 1190138707690,
+"hours": 1,
+"last_ms": 1190139899862,
+"nodata": 0,
+"rows": 4510,
+"status": "ok"
+},
+"FOMC_20071031": {
+"bytes": 29700,
+"failed": 0,
+"first_ms": 1193853900228,
+"hours": 1,
+"last_ms": 1193855099912,
+"nodata": 0,
+"rows": 4723,
+"status": "ok"
+},
+"FOMC_20071211": {
+"bytes": 18813,
+"failed": 0,
+"first_ms": 1197399900129,
+"hours": 1,
+"last_ms": 1197401099889,
+"nodata": 0,
+"rows": 2899,
+"status": "ok"
+},
+"FOMC_20080130": {
+"bytes": 30864,
+"failed": 0,
+"first_ms": 1201719900035,
+"hours": 1,
+"last_ms": 1201721099927,
+"nodata": 0,
+"rows": 5061,
+"status": "ok"
+},
+"FOMC_20080318": {
+"bytes": 24491,
+"failed": 0,
+"first_ms": 1205863500162,
+"hours": 1,
+"last_ms": 1205864699757,
+"nodata": 0,
+"rows": 3979,
+"status": "ok"
+},
+"FOMC_20080430": {
+"bytes": 15042,
+"failed": 0,
+"first_ms": 1209578701639,
+"hours": 1,
+"last_ms": 1209579899789,
+"nodata": 0,
+"rows": 2153,
+"status": "ok"
+},
+"FOMC_20080625": {
+"bytes": 20636,
+"failed": 0,
+"first_ms": 1214417106111,
+"hours": 1,
+"last_ms": 1214418299922,
+"nodata": 0,
+"rows": 2614,
+"status": "ok"
+},
+"FOMC_20080805": {
+"bytes": 18728,
+"failed": 0,
+"first_ms": 1217959504408,
+"hours": 1,
+"last_ms": 1217960699943,
+"nodata": 0,
+"rows": 2465,
+"status": "ok"
+},
+"FOMC_20080916": {
+"bytes": 17772,
+"failed": 0,
+"first_ms": 1221588300161,
+"hours": 1,
+"last_ms": 1221589499877,
+"nodata": 0,
+"rows": 2301,
+"status": "ok"
+},
+"FOMC_20081029": {
+"bytes": 14881,
+"failed": 0,
+"first_ms": 1225303501815,
+"hours": 1,
+"last_ms": 1225304699556,
+"nodata": 0,
+"rows": 1956,
+"status": "ok"
+},
+"FOMC_20081216": {
+"bytes": 5993,
+"failed": 0,
+"first_ms": 1229454301062,
+"hours": 1,
+"last_ms": 1229455499294,
+"nodata": 0,
+"rows": 779,
+"status": "ok"
+},
+"FOMC_20090128": {
+"bytes": 14309,
+"failed": 0,
+"first_ms": 1233169500995,
+"hours": 1,
+"last_ms": 1233170697496,
+"nodata": 0,
+"rows": 1829,
+"status": "ok"
+},
+"FOMC_20090318": {
+"bytes": 13953,
+"failed": 0,
+"first_ms": 1237399500396,
+"hours": 1,
+"last_ms": 1237400699675,
+"nodata": 0,
+"rows": 1740,
+"status": "ok"
+},
+"FOMC_20090429": {
+"bytes": 10749,
+"failed": 0,
+"first_ms": 1241028300110,
+"hours": 1,
+"last_ms": 1241029499839,
+"nodata": 0,
+"rows": 1421,
+"status": "ok"
+},
+"FOMC_20090624": {
+"bytes": 12122,
+"failed": 0,
+"first_ms": 1245866700330,
+"hours": 1,
+"last_ms": 1245867898262,
+"nodata": 0,
+"rows": 1583,
+"status": "ok"
+},
+"FOMC_20090812": {
+"bytes": 12273,
+"failed": 0,
+"first_ms": 1250100300392,
+"hours": 1,
+"last_ms": 1250101499900,
+"nodata": 0,
+"rows": 1598,
+"status": "ok"
+},
+"FOMC_20090923": {
+"bytes": 14662,
+"failed": 0,
+"first_ms": 1253729104395,
+"hours": 1,
+"last_ms": 1253730299827,
+"nodata": 0,
+"rows": 1927,
+"status": "ok"
+},
+"FOMC_20091104": {
+"bytes": 15873,
+"failed": 0,
+"first_ms": 1257361500172,
+"hours": 1,
+"last_ms": 1257362699918,
+"nodata": 0,
+"rows": 2145,
+"status": "ok"
+},
+"FOMC_20091216": {
+"bytes": 12883,
+"failed": 0,
+"first_ms": 1260990300154,
+"hours": 1,
+"last_ms": 1260991499875,
+"nodata": 0,
+"rows": 1740,
+"status": "ok"
+},
+"FOMC_20100127": {
+"bytes": 14470,
+"failed": 0,
+"first_ms": 1264619106901,
+"hours": 1,
+"last_ms": 1264620299993,
+"nodata": 0,
+"rows": 1896,
+"status": "ok"
+},
+"FOMC_20100316": {
+"bytes": 13578,
+"failed": 0,
+"first_ms": 1268762700733,
+"hours": 1,
+"last_ms": 1268763899966,
+"nodata": 0,
+"rows": 1792,
+"status": "ok"
+},
+"FOMC_20100428": {
+"bytes": 13615,
+"failed": 0,
+"first_ms": 1272477900027,
+"hours": 1,
+"last_ms": 1272479099824,
+"nodata": 0,
+"rows": 1822,
+"status": "ok"
+},
+"FOMC_20100623": {
+"bytes": 11184,
+"failed": 0,
+"first_ms": 1277316301057,
+"hours": 1,
+"last_ms": 1277317499495,
+"nodata": 0,
+"rows": 1485,
+"status": "ok"
+},
+"FOMC_20100810": {
+"bytes": 13742,
+"failed": 0,
+"first_ms": 1281463500067,
+"hours": 1,
+"last_ms": 1281464699665,
+"nodata": 0,
+"rows": 1752,
+"status": "ok"
+},
+"FOMC_20100921": {
+"bytes": 10849,
+"failed": 0,
+"first_ms": 1285092301357,
+"hours": 1,
+"last_ms": 1285093499250,
+"nodata": 0,
+"rows": 1450,
+"status": "ok"
+},
+"FOMC_20101103": {
+"bytes": 12331,
+"failed": 0,
+"first_ms": 1288807500346,
+"hours": 1,
+"last_ms": 1288808699732,
+"nodata": 0,
+"rows": 1361,
+"status": "ok"
+},
+"FOMC_20101214": {
+"bytes": 11129,
+"failed": 0,
+"first_ms": 1292353502384,
+"hours": 1,
+"last_ms": 1292354699378,
+"nodata": 0,
+"rows": 1329,
+"status": "ok"
+},
+"FOMC_20110126": {
+"bytes": 10942,
+"failed": 0,
+"first_ms": 1296068701491,
+"hours": 1,
+"last_ms": 1296069898682,
+"nodata": 0,
+"rows": 1252,
+"status": "ok"
+},
+"FOMC_20110315": {
+"bytes": 14087,
+"failed": 0,
+"first_ms": 1300212303241,
+"hours": 1,
+"last_ms": 1300213498985,
+"nodata": 0,
+"rows": 1755,
+"status": "ok"
+},
+"FOMC_20110427": {
+"bytes": 13054,
+"failed": 0,
+"first_ms": 1303921204350,
+"hours": 1,
+"last_ms": 1303922399905,
+"nodata": 0,
+"rows": 1661,
+"status": "ok"
+},
+"FOMC_20110622": {
+"bytes": 8910,
+"failed": 0,
+"first_ms": 1308759600976,
+"hours": 1,
+"last_ms": 1308760790461,
+"nodata": 0,
+"rows": 1073,
+"status": "ok"
+},
+"FOMC_20110809": {
+"bytes": 17242,
+"failed": 0,
+"first_ms": 1312913100026,
+"hours": 1,
+"last_ms": 1312914299601,
+"nodata": 0,
+"rows": 2068,
+"status": "ok"
+},
+"FOMC_20110921": {
+"bytes": 8957,
+"failed": 0,
+"first_ms": 1316628300250,
+"hours": 1,
+"last_ms": 1316629498793,
+"nodata": 0,
+"rows": 1036,
+"status": "ok"
+},
+"FOMC_20111102": {
+"bytes": 7032,
+"failed": 0,
+"first_ms": 1320250807447,
+"hours": 1,
+"last_ms": 1320251999480,
+"nodata": 0,
+"rows": 917,
+"status": "ok"
+},
+"FOMC_20111213": {
+"bytes": 4573,
+"failed": 0,
+"first_ms": 1323803111800,
+"hours": 1,
+"last_ms": 1323804298723,
+"nodata": 0,
+"rows": 582,
+"status": "ok"
+},
+"FOMC_20120125": {
+"bytes": 4362,
+"failed": 0,
+"first_ms": 1327511400600,
+"hours": 1,
+"last_ms": 1327512599140,
+"nodata": 0,
+"rows": 554,
+"status": "ok"
+},
+"FOMC_20120313": {
+"bytes": 13826,
+"failed": 0,
+"first_ms": 1331661900462,
+"hours": 1,
+"last_ms": 1331663099892,
+"nodata": 0,
+"rows": 1692,
+"status": "ok"
+},
+"FOMC_20120425": {
+"bytes": 16452,
+"failed": 0,
+"first_ms": 1335371106882,
+"hours": 1,
+"last_ms": 1335372297648,
+"nodata": 0,
+"rows": 2011,
+"status": "ok"
+},
+"FOMC_20120620": {
+"bytes": 20868,
+"failed": 0,
+"first_ms": 1340209501057,
+"hours": 1,
+"last_ms": 1340210698788,
+"nodata": 0,
+"rows": 2641,
+"status": "ok"
+},
+"FOMC_20120801": {
+"bytes": 8943,
+"failed": 0,
+"first_ms": 1343844300364,
+"hours": 1,
+"last_ms": 1343845497994,
+"nodata": 0,
+"rows": 1117,
+"status": "ok"
+},
+"FOMC_20120913": {
+"bytes": 21410,
+"failed": 0,
+"first_ms": 1347553500503,
+"hours": 1,
+"last_ms": 1347554699075,
+"nodata": 0,
+"rows": 2534,
+"status": "ok"
+},
+"FOMC_20121024": {
+"bytes": 2250,
+"failed": 0,
+"first_ms": 1351095601595,
+"hours": 1,
+"last_ms": 1351096741601,
+"nodata": 0,
+"rows": 276,
+"status": "ok"
+},
+"FOMC_20121212": {
+"bytes": 16931,
+"failed": 0,
+"first_ms": 1355332800334,
+"hours": 1,
+"last_ms": 1355333999930,
+"nodata": 0,
+"rows": 2041,
+"status": "ok"
+},
+"FOMC_20130130": {
+"bytes": 19970,
+"failed": 0,
+"first_ms": 1359572709827,
+"hours": 1,
+"last_ms": 1359573899920,
+"nodata": 0,
+"rows": 2560,
+"status": "ok"
+},
+"FOMC_20130320": {
+"bytes": 22845,
+"failed": 0,
+"first_ms": 1363801800214,
+"hours": 2,
+"last_ms": 1363802999501,
+"nodata": 0,
+"rows": 2827,
+"status": "ok"
+},
+"FOMC_20130501": {
+"bytes": 19321,
+"failed": 0,
+"first_ms": 1367430600169,
+"hours": 2,
+"last_ms": 1367431799968,
+"nodata": 0,
+"rows": 2352,
+"status": "ok"
+},
+"FOMC_20130619": {
+"bytes": 26340,
+"failed": 0,
+"first_ms": 1371664200690,
+"hours": 2,
+"last_ms": 1371665399582,
+"nodata": 0,
+"rows": 3286,
+"status": "ok"
+},
+"FOMC_20130731": {
+"bytes": 20946,
+"failed": 0,
+"first_ms": 1375293000139,
+"hours": 2,
+"last_ms": 1375294198862,
+"nodata": 0,
+"rows": 2569,
+"status": "ok"
+},
+"FOMC_20130918": {
+"bytes": 28365,
+"failed": 0,
+"first_ms": 1379526600645,
+"hours": 2,
+"last_ms": 1379527799875,
+"nodata": 0,
+"rows": 3507,
+"status": "ok"
+},
+"FOMC_20131030": {
+"bytes": 21855,
+"failed": 0,
+"first_ms": 1383155400452,
+"hours": 2,
+"last_ms": 1383156599854,
+"nodata": 0,
+"rows": 2619,
+"status": "ok"
+},
+"FOMC_20131218": {
+"bytes": 33006,
+"failed": 0,
+"first_ms": 1387392600218,
+"hours": 2,
+"last_ms": 1387393799691,
+"nodata": 0,
+"rows": 3779,
+"status": "ok"
+},
+"FOMC_20140129": {
+"bytes": 29273,
+"failed": 0,
+"first_ms": 1391021401326,
+"hours": 2,
+"last_ms": 1391022599868,
+"nodata": 0,
+"rows": 3419,
+"status": "ok"
+},
+"FOMC_20140319": {
+"bytes": 28197,
+"failed": 0,
+"first_ms": 1395251400369,
+"hours": 2,
+"last_ms": 1395252599984,
+"nodata": 0,
+"rows": 3537,
+"status": "ok"
+},
+"FOMC_20140430": {
+"bytes": 15100,
+"failed": 0,
+"first_ms": 1398880200259,
+"hours": 2,
+"last_ms": 1398881399880,
+"nodata": 0,
+"rows": 1897,
+"status": "ok"
+},
+"FOMC_20140618": {
+"bytes": 22607,
+"failed": 0,
+"first_ms": 1403113800190,
+"hours": 2,
+"last_ms": 1403114999927,
+"nodata": 0,
+"rows": 2783,
+"status": "ok"
+},
+"FOMC_20140730": {
+"bytes": 13046,
+"failed": 0,
+"first_ms": 1406742610469,
+"hours": 2,
+"last_ms": 1406743792512,
+"nodata": 0,
+"rows": 1744,
+"status": "ok"
+},
+"FOMC_20140917": {
+"bytes": 29615,
+"failed": 0,
+"first_ms": 1410976200138,
+"hours": 2,
+"last_ms": 1410977399869,
+"nodata": 0,
+"rows": 3943,
+"status": "ok"
+},
+"FOMC_20141029": {
+"bytes": 26971,
+"failed": 0,
+"first_ms": 1414605000107,
+"hours": 2,
+"last_ms": 1414606199671,
+"nodata": 0,
+"rows": 3646,
+"status": "ok"
+},
+"FOMC_20141217": {
+"bytes": 35862,
+"failed": 0,
+"first_ms": 1418842200962,
+"hours": 2,
+"last_ms": 1418843398489,
+"nodata": 0,
+"rows": 4737,
+"status": "ok"
+},
+"NFP_20050107": {
+"bytes": 2181,
+"failed": 0,
+"first_ms": 1105104000950,
+"hours": 1,
+"last_ms": 1105105188224,
+"nodata": 0,
+"rows": 169,
+"status": "ok"
+},
+"NFP_20050204": {
+"bytes": 2036,
+"failed": 0,
+"first_ms": 1107523200401,
+"hours": 1,
+"last_ms": 1107524388279,
+"nodata": 0,
+"rows": 157,
+"status": "ok"
+},
+"NFP_20050304": {
+"bytes": 2016,
+"failed": 0,
+"first_ms": 1109942401415,
+"hours": 1,
+"last_ms": 1109943588227,
+"nodata": 0,
+"rows": 161,
+"status": "ok"
+},
+"NFP_20050401": {
+"bytes": 2176,
+"failed": 0,
+"first_ms": 1112361601579,
+"hours": 1,
+"last_ms": 1112362787953,
+"nodata": 0,
+"rows": 172,
+"status": "ok"
+},
+"NFP_20050506": {
+"bytes": 2026,
+"failed": 0,
+"first_ms": 1115382000756,
+"hours": 1,
+"last_ms": 1115383184368,
+"nodata": 0,
+"rows": 156,
+"status": "ok"
+},
+"NFP_20050603": {
+"bytes": 1916,
+"failed": 0,
+"first_ms": 1117801201287,
+"hours": 1,
+"last_ms": 1117802385402,
+"nodata": 0,
+"rows": 148,
+"status": "ok"
+},
+"NFP_20050708": {
+"bytes": 2046,
+"failed": 0,
+"first_ms": 1120825200867,
+"hours": 1,
+"last_ms": 1120826385481,
+"nodata": 0,
+"rows": 158,
+"status": "ok"
+},
+"NFP_20050805": {
+"bytes": 2108,
+"failed": 0,
+"first_ms": 1123244401149,
+"hours": 1,
+"last_ms": 1123245584621,
+"nodata": 0,
+"rows": 164,
+"status": "ok"
+},
+"NFP_20050902": {
+"bytes": 2030,
+"failed": 0,
+"first_ms": 1125663601773,
+"hours": 1,
+"last_ms": 1125664785229,
+"nodata": 0,
+"rows": 157,
+"status": "ok"
+},
+"NFP_20051007": {
+"bytes": 2059,
+"failed": 0,
+"first_ms": 1128687600399,
+"hours": 1,
+"last_ms": 1128688785030,
+"nodata": 0,
+"rows": 156,
+"status": "ok"
+},
+"NFP_20051104": {
+"bytes": 2126,
+"failed": 0,
+"first_ms": 1131110400474,
+"hours": 1,
+"last_ms": 1131111587072,
+"nodata": 0,
+"rows": 170,
+"status": "ok"
+},
+"NFP_20051202": {
+"bytes": 1947,
+"failed": 0,
+"first_ms": 1133529600400,
+"hours": 1,
+"last_ms": 1133530787398,
+"nodata": 0,
+"rows": 156,
+"status": "ok"
+},
+"NFP_20060106": {
+"bytes": 2054,
+"failed": 0,
+"first_ms": 1136553601224,
+"hours": 1,
+"last_ms": 1136554787350,
+"nodata": 0,
+"rows": 155,
+"status": "ok"
+},
+"NFP_20060203": {
+"bytes": 1957,
+"failed": 0,
+"first_ms": 1138972801814,
+"hours": 1,
+"last_ms": 1138973986444,
+"nodata": 0,
+"rows": 155,
+"status": "ok"
+},
+"NFP_20060310": {
+"bytes": 1947,
+"failed": 0,
+"first_ms": 1141996801758,
+"hours": 1,
+"last_ms": 1141997986755,
+"nodata": 0,
+"rows": 155,
+"status": "ok"
+},
+"NFP_20060407": {
+"bytes": 2043,
+"failed": 0,
+"first_ms": 1144412400704,
+"hours": 1,
+"last_ms": 1144413585700,
+"nodata": 0,
+"rows": 158,
+"status": "ok"
+},
+"NFP_20060505": {
+"bytes": 2031,
+"failed": 0,
+"first_ms": 1146831600089,
+"hours": 1,
+"last_ms": 1146832784820,
+"nodata": 0,
+"rows": 159,
+"status": "ok"
+},
+"NFP_20060602": {
+"bytes": 1969,
+"failed": 0,
+"first_ms": 1149250800416,
+"hours": 1,
+"last_ms": 1149251984764,
+"nodata": 0,
+"rows": 151,
+"status": "ok"
+},
+"NFP_20060707": {
+"bytes": 2070,
+"failed": 0,
+"first_ms": 1152274800610,
+"hours": 1,
+"last_ms": 1152275984306,
+"nodata": 0,
+"rows": 160,
+"status": "ok"
+},
+"NFP_20060804": {
+"bytes": 1969,
+"failed": 0,
+"first_ms": 1154694000124,
+"hours": 1,
+"last_ms": 1154695185083,
+"nodata": 0,
+"rows": 152,
+"status": "ok"
+},
+"NFP_20060901": {
+"bytes": 1991,
+"failed": 0,
+"first_ms": 1157113200521,
+"hours": 1,
+"last_ms": 1157114384844,
+"nodata": 0,
+"rows": 156,
+"status": "ok"
+},
+"NFP_20061006": {
+"bytes": 2005,
+"failed": 0,
+"first_ms": 1160137215851,
+"hours": 1,
+"last_ms": 1160138384762,
+"nodata": 0,
+"rows": 158,
+"status": "ok"
+},
+"NFP_20061103": {
+"bytes": 2185,
+"failed": 0,
+"first_ms": 1162560000013,
+"hours": 1,
+"last_ms": 1162561186406,
+"nodata": 0,
+"rows": 167,
+"status": "ok"
+},
+"NFP_20061208": {
+"bytes": 2086,
+"failed": 0,
+"first_ms": 1165584000272,
+"hours": 1,
+"last_ms": 1165585186890,
+"nodata": 0,
+"rows": 164,
+"status": "ok"
+},
+"NFP_20070105": {
+"bytes": 2089,
+"failed": 0,
+"first_ms": 1168003201194,
+"hours": 1,
+"last_ms": 1168004387055,
+"nodata": 0,
+"rows": 160,
+"status": "ok"
+},
+"NFP_20070202": {
+"bytes": 2006,
+"failed": 0,
+"first_ms": 1170422401154,
+"hours": 1,
+"last_ms": 1170423587218,
+"nodata": 0,
+"rows": 154,
+"status": "ok"
+},
+"NFP_20070309": {
+"bytes": 2039,
+"failed": 0,
+"first_ms": 1173446401625,
+"hours": 1,
+"last_ms": 1173447588236,
+"nodata": 0,
+"rows": 155,
+"status": "ok"
+},
+"NFP_20070406": {
+"bytes": 14817,
+"failed": 0,
+"first_ms": 1175862000139,
+"hours": 1,
+"last_ms": 1175863199961,
+"nodata": 0,
+"rows": 1862,
+"status": "ok"
+},
+"NFP_20070504": {
+"bytes": 19238,
+"failed": 0,
+"first_ms": 1178281200472,
+"hours": 1,
+"last_ms": 1178282399783,
+"nodata": 0,
+"rows": 2378,
+"status": "ok"
+},
+"NFP_20070601": {
+"bytes": 19104,
+"failed": 0,
+"first_ms": 1180700400135,
+"hours": 1,
+"last_ms": 1180701599861,
+"nodata": 0,
+"rows": 2476,
+"status": "ok"
+},
+"NFP_20070706": {
+"bytes": 39040,
+"failed": 0,
+"first_ms": 1183724400719,
+"hours": 1,
+"last_ms": 1183725599955,
+"nodata": 0,
+"rows": 5122,
+"status": "ok"
+},
+"NFP_20070803": {
+"bytes": 36807,
+"failed": 0,
+"first_ms": 1186143600249,
+"hours": 1,
+"last_ms": 1186144799815,
+"nodata": 0,
+"rows": 4801,
+"status": "ok"
+},
+"NFP_20070907": {
+"bytes": 33594,
+"failed": 0,
+"first_ms": 1189167600309,
+"hours": 1,
+"last_ms": 1189168799930,
+"nodata": 0,
+"rows": 4348,
+"status": "ok"
+},
+"NFP_20071005": {
+"bytes": 37599,
+"failed": 0,
+"first_ms": 1191586800023,
+"hours": 1,
+"last_ms": 1191587999852,
+"nodata": 0,
+"rows": 5122,
+"status": "ok"
+},
+"NFP_20071102": {
+"bytes": 27586,
+"failed": 0,
+"first_ms": 1194006000143,
+"hours": 1,
+"last_ms": 1194007199931,
+"nodata": 0,
+"rows": 4420,
+"status": "ok"
+},
+"NFP_20071207": {
+"bytes": 22238,
+"failed": 0,
+"first_ms": 1197033600004,
+"hours": 1,
+"last_ms": 1197034799791,
+"nodata": 0,
+"rows": 3611,
+"status": "ok"
+},
+"NFP_20080104": {
+"bytes": 30267,
+"failed": 0,
+"first_ms": 1199452800225,
+"hours": 1,
+"last_ms": 1199453999996,
+"nodata": 0,
+"rows": 4628,
+"status": "ok"
+},
+"NFP_20080201": {
+"bytes": 26207,
+"failed": 0,
+"first_ms": 1201872000012,
+"hours": 1,
+"last_ms": 1201873199959,
+"nodata": 0,
+"rows": 4112,
+"status": "ok"
+},
+"NFP_20080307": {
+"bytes": 26858,
+"failed": 0,
+"first_ms": 1204896000144,
+"hours": 1,
+"last_ms": 1204897199796,
+"nodata": 0,
+"rows": 4236,
+"status": "ok"
+},
+"NFP_20080404": {
+"bytes": 24475,
+"failed": 0,
+"first_ms": 1207311600112,
+"hours": 1,
+"last_ms": 1207312799747,
+"nodata": 0,
+"rows": 4150,
+"status": "ok"
+},
+"NFP_20080502": {
+"bytes": 18613,
+"failed": 0,
+"first_ms": 1209730800220,
+"hours": 1,
+"last_ms": 1209731998681,
+"nodata": 0,
+"rows": 2664,
+"status": "ok"
+},
+"NFP_20080606": {
+"bytes": 17155,
+"failed": 0,
+"first_ms": 1212754802046,
+"hours": 1,
+"last_ms": 1212755999809,
+"nodata": 0,
+"rows": 2460,
+"status": "ok"
+},
+"NFP_20080703": {
+"bytes": 20411,
+"failed": 0,
+"first_ms": 1215087607960,
+"hours": 1,
+"last_ms": 1215088799421,
+"nodata": 0,
+"rows": 2426,
+"status": "ok"
+},
+"NFP_20080801": {
+"bytes": 15263,
+"failed": 0,
+"first_ms": 1217593201396,
+"hours": 1,
+"last_ms": 1217594398901,
+"nodata": 0,
+"rows": 1980,
+"status": "ok"
+},
+"NFP_20080905": {
+"bytes": 18928,
+"failed": 0,
+"first_ms": 1220617200095,
+"hours": 1,
+"last_ms": 1220618399945,
+"nodata": 0,
+"rows": 2378,
+"status": "ok"
+},
+"NFP_20081003": {
+"bytes": 24229,
+"failed": 0,
+"first_ms": 1223036401887,
+"hours": 1,
+"last_ms": 1223037599659,
+"nodata": 0,
+"rows": 3304,
+"status": "ok"
+},
+"NFP_20081107": {
+"bytes": 17412,
+"failed": 0,
+"first_ms": 1226064001541,
+"hours": 1,
+"last_ms": 1226065199732,
+"nodata": 0,
+"rows": 2229,
+"status": "ok"
+},
+"NFP_20081205": {
+"bytes": 16138,
+"failed": 0,
+"first_ms": 1228483201358,
+"hours": 1,
+"last_ms": 1228484399719,
+"nodata": 0,
+"rows": 2164,
+"status": "ok"
+},
+"NFP_20090109": {
+"bytes": 10710,
+"failed": 0,
+"first_ms": 1231507201354,
+"hours": 1,
+"last_ms": 1231508399044,
+"nodata": 0,
+"rows": 1309,
+"status": "ok"
+},
+"NFP_20090206": {
+"bytes": 12331,
+"failed": 0,
+"first_ms": 1233926400195,
+"hours": 1,
+"last_ms": 1233927599645,
+"nodata": 0,
+"rows": 1496,
+"status": "ok"
+},
+"NFP_20090306": {
+"bytes": 14835,
+"failed": 0,
+"first_ms": 1236345600307,
+"hours": 1,
+"last_ms": 1236346799886,
+"nodata": 0,
+"rows": 1844,
+"status": "ok"
+},
+"NFP_20090403": {
+"bytes": 15756,
+"failed": 0,
+"first_ms": 1238761200589,
+"hours": 1,
+"last_ms": 1238762399809,
+"nodata": 0,
+"rows": 2045,
+"status": "ok"
+},
+"NFP_20090508": {
+"bytes": 11340,
+"failed": 0,
+"first_ms": 1241785200076,
+"hours": 1,
+"last_ms": 1241786399464,
+"nodata": 0,
+"rows": 1559,
+"status": "ok"
+},
+"NFP_20090605": {
+"bytes": 15949,
+"failed": 0,
+"first_ms": 1244204400353,
+"hours": 1,
+"last_ms": 1244205599914,
+"nodata": 0,
+"rows": 2157,
+"status": "ok"
+},
+"NFP_20090702": {
+"bytes": 13387,
+"failed": 0,
+"first_ms": 1246537200262,
+"hours": 1,
+"last_ms": 1246538399781,
+"nodata": 0,
+"rows": 1814,
+"status": "ok"
+},
+"NFP_20090807": {
+"bytes": 16105,
+"failed": 0,
+"first_ms": 1249647600050,
+"hours": 1,
+"last_ms": 1249648799612,
+"nodata": 0,
+"rows": 2075,
+"status": "ok"
+},
+"NFP_20090904": {
+"bytes": 20597,
+"failed": 0,
+"first_ms": 1252066800050,
+"hours": 1,
+"last_ms": 1252067999681,
+"nodata": 0,
+"rows": 2733,
+"status": "ok"
+},
+"NFP_20091002": {
+"bytes": 18053,
+"failed": 0,
+"first_ms": 1254486000070,
+"hours": 1,
+"last_ms": 1254487199952,
+"nodata": 0,
+"rows": 2400,
+"status": "ok"
+},
+"NFP_20091106": {
+"bytes": 16125,
+"failed": 0,
+"first_ms": 1257513600350,
+"hours": 1,
+"last_ms": 1257514799892,
+"nodata": 0,
+"rows": 2261,
+"status": "ok"
+},
+"NFP_20091204": {
+"bytes": 19920,
+"failed": 0,
+"first_ms": 1259932800130,
+"hours": 1,
+"last_ms": 1259933999781,
+"nodata": 0,
+"rows": 2619,
+"status": "ok"
+},
+"NFP_20100108": {
+"bytes": 19249,
+"failed": 0,
+"first_ms": 1262956800304,
+"hours": 1,
+"last_ms": 1262957999995,
+"nodata": 0,
+"rows": 2528,
+"status": "ok"
+},
+"NFP_20100205": {
+"bytes": 14352,
+"failed": 0,
+"first_ms": 1265376000552,
+"hours": 1,
+"last_ms": 1265377199794,
+"nodata": 0,
+"rows": 1799,
+"status": "ok"
+},
+"NFP_20100305": {
+"bytes": 11224,
+"failed": 0,
+"first_ms": 1267795200245,
+"hours": 1,
+"last_ms": 1267796399696,
+"nodata": 0,
+"rows": 1408,
+"status": "ok"
+},
+"NFP_20100402": {
+"bytes": 14086,
+"failed": 0,
+"first_ms": 1270210800710,
+"hours": 1,
+"last_ms": 1270211999820,
+"nodata": 0,
+"rows": 1851,
+"status": "ok"
+},
+"NFP_20100507": {
+"bytes": 17179,
+"failed": 0,
+"first_ms": 1273234800501,
+"hours": 1,
+"last_ms": 1273235999039,
+"nodata": 0,
+"rows": 2096,
+"status": "ok"
+},
+"NFP_20100604": {
+"bytes": 15371,
+"failed": 0,
+"first_ms": 1275654000989,
+"hours": 1,
+"last_ms": 1275655199630,
+"nodata": 0,
+"rows": 2030,
+"status": "ok"
+},
+"NFP_20100702": {
+"bytes": 13097,
+"failed": 0,
+"first_ms": 1278073200150,
+"hours": 1,
+"last_ms": 1278074398187,
+"nodata": 0,
+"rows": 1735,
+"status": "ok"
+},
+"NFP_20100806": {
+"bytes": 13744,
+"failed": 0,
+"first_ms": 1281097200374,
+"hours": 1,
+"last_ms": 1281098399825,
+"nodata": 0,
+"rows": 1741,
+"status": "ok"
+},
+"NFP_20100903": {
+"bytes": 12555,
+"failed": 0,
+"first_ms": 1283516400574,
+"hours": 1,
+"last_ms": 1283517599737,
+"nodata": 0,
+"rows": 1604,
+"status": "ok"
+},
+"NFP_20101008": {
+"bytes": 13397,
+"failed": 0,
+"first_ms": 1286540400055,
+"hours": 1,
+"last_ms": 1286541599766,
+"nodata": 0,
+"rows": 1714,
+"status": "ok"
+},
+"NFP_20101105": {
+"bytes": 7910,
+"failed": 0,
+"first_ms": 1288959600199,
+"hours": 1,
+"last_ms": 1288960799529,
+"nodata": 0,
+"rows": 870,
+"status": "ok"
+},
+"NFP_20101203": {
+"bytes": 15876,
+"failed": 0,
+"first_ms": 1291382400917,
+"hours": 1,
+"last_ms": 1291383599940,
+"nodata": 0,
+"rows": 1848,
+"status": "ok"
+},
+"NFP_20110107": {
+"bytes": 17463,
+"failed": 0,
+"first_ms": 1294406400796,
+"hours": 1,
+"last_ms": 1294407599743,
+"nodata": 0,
+"rows": 1958,
+"status": "ok"
+},
+"NFP_20110204": {
+"bytes": 17249,
+"failed": 0,
+"first_ms": 1296825600869,
+"hours": 1,
+"last_ms": 1296826799767,
+"nodata": 0,
+"rows": 2007,
+"status": "ok"
+},
+"NFP_20110304": {
+"bytes": 19251,
+"failed": 0,
+"first_ms": 1299244800299,
+"hours": 1,
+"last_ms": 1299245999169,
+"nodata": 0,
+"rows": 2299,
+"status": "ok"
+},
+"NFP_20110401": {
+"bytes": 21761,
+"failed": 0,
+"first_ms": 1301660400496,
+"hours": 1,
+"last_ms": 1301661599669,
+"nodata": 0,
+"rows": 2664,
+"status": "ok"
+},
+"NFP_20110506": {
+"bytes": 22624,
+"failed": 0,
+"first_ms": 1304684400276,
+"hours": 1,
+"last_ms": 1304685599996,
+"nodata": 0,
+"rows": 2682,
+"status": "ok"
+},
+"NFP_20110603": {
+"bytes": 18476,
+"failed": 0,
+"first_ms": 1307103600624,
+"hours": 1,
+"last_ms": 1307104799531,
+"nodata": 0,
+"rows": 2166,
+"status": "ok"
+},
+"NFP_20110708": {
+"bytes": 19065,
+"failed": 0,
+"first_ms": 1310127600113,
+"hours": 1,
+"last_ms": 1310128799793,
+"nodata": 0,
+"rows": 2291,
+"status": "ok"
+},
+"NFP_20110805": {
+"bytes": 21180,
+"failed": 0,
+"first_ms": 1312546800083,
+"hours": 1,
+"last_ms": 1312547999590,
+"nodata": 0,
+"rows": 2385,
+"status": "ok"
+},
+"NFP_20110902": {
+"bytes": 15161,
+"failed": 0,
+"first_ms": 1314966000709,
+"hours": 1,
+"last_ms": 1314967199939,
+"nodata": 0,
+"rows": 1789,
+"status": "ok"
+},
+"NFP_20111007": {
+"bytes": 13620,
+"failed": 0,
+"first_ms": 1317990000392,
+"hours": 1,
+"last_ms": 1317991199547,
+"nodata": 0,
+"rows": 1633,
+"status": "ok"
+},
+"NFP_20111104": {
+"bytes": 11568,
+"failed": 0,
+"first_ms": 1320409201338,
+"hours": 1,
+"last_ms": 1320410399118,
+"nodata": 0,
+"rows": 1442,
+"status": "ok"
+},
+"NFP_20111202": {
+"bytes": 11763,
+"failed": 0,
+"first_ms": 1322832002366,
+"hours": 1,
+"last_ms": 1322833195066,
+"nodata": 0,
+"rows": 1455,
+"status": "ok"
+},
+"NFP_20120106": {
+"bytes": 13639,
+"failed": 0,
+"first_ms": 1325856000254,
+"hours": 1,
+"last_ms": 1325857199909,
+"nodata": 0,
+"rows": 1767,
+"status": "ok"
+},
+"NFP_20120203": {
+"bytes": 14805,
+"failed": 0,
+"first_ms": 1328275201838,
+"hours": 1,
+"last_ms": 1328276399963,
+"nodata": 0,
+"rows": 1819,
+"status": "ok"
+},
+"NFP_20120309": {
+"bytes": 18788,
+"failed": 0,
+"first_ms": 1331299201289,
+"hours": 1,
+"last_ms": 1331300399996,
+"nodata": 0,
+"rows": 2280,
+"status": "ok"
+},
+"NFP_20120406": {
+"bytes": 19178,
+"failed": 0,
+"first_ms": 1333714801144,
+"hours": 1,
+"last_ms": 1333715999549,
+"nodata": 0,
+"rows": 2309,
+"status": "ok"
+},
+"NFP_20120504": {
+"bytes": 21319,
+"failed": 0,
+"first_ms": 1336134000421,
+"hours": 1,
+"last_ms": 1336135199938,
+"nodata": 0,
+"rows": 2607,
+"status": "ok"
+},
+"NFP_20120601": {
+"bytes": 22261,
+"failed": 0,
+"first_ms": 1338553200219,
+"hours": 1,
+"last_ms": 1338554399165,
+"nodata": 0,
+"rows": 2786,
+"status": "ok"
+},
+"NFP_20120706": {
+"bytes": 21136,
+"failed": 0,
+"first_ms": 1341577200532,
+"hours": 1,
+"last_ms": 1341578398083,
+"nodata": 0,
+"rows": 2587,
+"status": "ok"
+},
+"NFP_20120803": {
+"bytes": 21883,
+"failed": 0,
+"first_ms": 1343996400350,
+"hours": 1,
+"last_ms": 1343997599782,
+"nodata": 0,
+"rows": 2668,
+"status": "ok"
+},
+"NFP_20120907": {
+"bytes": 19797,
+"failed": 0,
+"first_ms": 1347020400108,
+"hours": 1,
+"last_ms": 1347021599941,
+"nodata": 0,
+"rows": 2317,
+"status": "ok"
+},
+"NFP_20121005": {
+"bytes": 20199,
+"failed": 0,
+"first_ms": 1349439600028,
+"hours": 1,
+"last_ms": 1349440799552,
+"nodata": 0,
+"rows": 2416,
+"status": "ok"
+},
+"NFP_20121102": {
+"bytes": 15089,
+"failed": 0,
+"first_ms": 1351858800198,
+"hours": 1,
+"last_ms": 1351859999785,
+"nodata": 0,
+"rows": 1792,
+"status": "ok"
+},
+"NFP_20121207": {
+"bytes": 20589,
+"failed": 0,
+"first_ms": 1354886400181,
+"hours": 1,
+"last_ms": 1354887598286,
+"nodata": 0,
+"rows": 2385,
+"status": "ok"
+},
+"NFP_20130104": {
+"bytes": 25326,
+"failed": 0,
+"first_ms": 1357305600245,
+"hours": 1,
+"last_ms": 1357306799672,
+"nodata": 0,
+"rows": 2953,
+"status": "ok"
+},
+"NFP_20130201": {
+"bytes": 26807,
+"failed": 0,
+"first_ms": 1359724800475,
+"hours": 1,
+"last_ms": 1359725999857,
+"nodata": 0,
+"rows": 3169,
+"status": "ok"
+},
+"NFP_20130308": {
+"bytes": 32405,
+"failed": 0,
+"first_ms": 1362748800707,
+"hours": 1,
+"last_ms": 1362749999696,
+"nodata": 0,
+"rows": 3766,
+"status": "ok"
+},
+"NFP_20130405": {
+"bytes": 29696,
+"failed": 0,
+"first_ms": 1365164400569,
+"hours": 1,
+"last_ms": 1365165600000,
+"nodata": 0,
+"rows": 3517,
+"status": "ok"
+},
+"NFP_20130503": {
+"bytes": 26589,
+"failed": 0,
+"first_ms": 1367583600200,
+"hours": 1,
+"last_ms": 1367584799242,
+"nodata": 0,
+"rows": 3131,
+"status": "ok"
+},
+"NFP_20130607": {
+"bytes": 47233,
+"failed": 0,
+"first_ms": 1370607600021,
+"hours": 1,
+"last_ms": 1370608799767,
+"nodata": 0,
+"rows": 5215,
+"status": "ok"
+},
+"NFP_20130705": {
+"bytes": 26174,
+"failed": 0,
+"first_ms": 1373026800367,
+"hours": 1,
+"last_ms": 1373027999889,
+"nodata": 0,
+"rows": 3314,
+"status": "ok"
+},
+"NFP_20130802": {
+"bytes": 31022,
+"failed": 0,
+"first_ms": 1375446000087,
+"hours": 1,
+"last_ms": 1375447199732,
+"nodata": 0,
+"rows": 3732,
+"status": "ok"
+},
+"NFP_20130906": {
+"bytes": 28318,
+"failed": 0,
+"first_ms": 1378470000219,
+"hours": 1,
+"last_ms": 1378471199461,
+"nodata": 0,
+"rows": 3309,
+"status": "ok"
+},
+"NFP_20131022": {
+"bytes": 21610,
+"failed": 0,
+"first_ms": 1382444400399,
+"hours": 1,
+"last_ms": 1382445597030,
+"nodata": 0,
+"rows": 2589,
+"status": "ok"
+},
+"NFP_20131108": {
+"bytes": 32682,
+"failed": 0,
+"first_ms": 1383916800433,
+"hours": 1,
+"last_ms": 1383917999941,
+"nodata": 0,
+"rows": 3800,
+"status": "ok"
+},
+"NFP_20131206": {
+"bytes": 34127,
+"failed": 0,
+"first_ms": 1386336000026,
+"hours": 1,
+"last_ms": 1386337199873,
+"nodata": 0,
+"rows": 3816,
+"status": "ok"
+},
+"NFP_20140110": {
+"bytes": 35915,
+"failed": 0,
+"first_ms": 1389360000175,
+"hours": 1,
+"last_ms": 1389361199817,
+"nodata": 0,
+"rows": 4069,
+"status": "ok"
+},
+"NFP_20140207": {
+"bytes": 35456,
+"failed": 0,
+"first_ms": 1391779200128,
+"hours": 1,
+"last_ms": 1391780399759,
+"nodata": 0,
+"rows": 3968,
+"status": "ok"
+},
+"NFP_20140307": {
+"bytes": 31154,
+"failed": 0,
+"first_ms": 1394198400378,
+"hours": 1,
+"last_ms": 1394199599658,
+"nodata": 0,
+"rows": 3421,
+"status": "ok"
+},
+"NFP_20140404": {
+"bytes": 25122,
+"failed": 0,
+"first_ms": 1396614000204,
+"hours": 1,
+"last_ms": 1396615199393,
+"nodata": 0,
+"rows": 2959,
+"status": "ok"
+},
+"NFP_20140502": {
+"bytes": 23538,
+"failed": 0,
+"first_ms": 1399033200161,
+"hours": 1,
+"last_ms": 1399034399942,
+"nodata": 0,
+"rows": 3001,
+"status": "ok"
+},
+"NFP_20140606": {
+"bytes": 25448,
+"failed": 0,
+"first_ms": 1402057200299,
+"hours": 1,
+"last_ms": 1402058399662,
+"nodata": 0,
+"rows": 3119,
+"status": "ok"
+},
+"NFP_20140703": {
+"bytes": 21424,
+"failed": 0,
+"first_ms": 1404390000397,
+"hours": 1,
+"last_ms": 1404391199059,
+"nodata": 0,
+"rows": 2620,
+"status": "ok"
+},
+"NFP_20140801": {
+"bytes": 23637,
+"failed": 0,
+"first_ms": 1406895600179,
+"hours": 1,
+"last_ms": 1406896799716,
+"nodata": 0,
+"rows": 3025,
+"status": "ok"
+},
+"NFP_20140905": {
+"bytes": 24414,
+"failed": 0,
+"first_ms": 1409919600232,
+"hours": 1,
+"last_ms": 1409920799966,
+"nodata": 0,
+"rows": 3209,
+"status": "ok"
+},
+"NFP_20141003": {
+"bytes": 27704,
+"failed": 0,
+"first_ms": 1412338800116,
+"hours": 1,
+"last_ms": 1412339999919,
+"nodata": 0,
+"rows": 3656,
+"status": "ok"
+},
+"NFP_20141107": {
+"bytes": 37110,
+"failed": 0,
+"first_ms": 1415366400122,
+"hours": 1,
+"last_ms": 1415367599978,
+"nodata": 0,
+"rows": 4881,
+"status": "ok"
+},
+"NFP_20141205": {
+"bytes": 34776,
+"failed": 0,
+"first_ms": 1417785600114,
+"hours": 1,
+"last_ms": 1417786799872,
+"nodata": 0,
+"rows": 4440,
+"status": "ok"
+}
+}
