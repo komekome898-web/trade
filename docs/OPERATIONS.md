@@ -516,6 +516,69 @@ git pull
 
 常時稼働の信頼性は Linux + systemd の方が高いため、Raspberry Pi 等があればそちらを推奨します。
 
+## 5.1 ON1(日経225マイクロ先物オーバーナイト)の自動執行
+
+`docs/ON1_LIVE_PLAN.md` L1。**既定は dry-run**(発注ペイロードを
+`data\on1_live\events.jsonl` に書くだけで、検証ポート18081にも送らない)。
+
+### 前提
+
+- kabuステーションが**同一PCで起動・ログイン済み**であること(APIはlocalhost)。
+  起動していなければジョブは `order_not_sent` を記録して終了する(再送しない)
+- `.env` に `KABU_API_PASSWORD=`(APIパスワード。YAMLには絶対に書かない)
+- `data\jpx_daily\nk225_sessions.csv` が最新であること
+  (`deploy\fetch_all.bat` が毎日更新。5日以上古いと中心限月が引けず**発注しない**)
+
+### タスクスケジューラ登録(2タスク追加)
+
+| タスク名 | トリガー | 操作(プログラム。引数・開始は空欄) |
+|---|---|---|
+| on1-entry | **平日 15:35**(毎週・月〜金) | `<repo>\deploy\on1_entry.bat` |
+| on1-exit | **平日 08:35**(毎週・月〜金) | `<repo>\deploy\on1_exit.bat` |
+
+両タスクとも「全般」タブで **「ログオンしていなくても実行する」** を選択し、
+「最上位の特権で実行する」はチェック不要。「設定」タブの
+**「タスクを停止するまでの時間: 1時間」** はそのままでよい。
+二重起動は `data\on1_live\*.lock` のロックファイルで防いでいるので、
+「既に実行中の場合: 新しいインスタンスを開始しない」でも「並列」でも安全。
+
+### LIVE の二重ゲート(オーナー承認制)
+
+3つ**すべて**が揃わなければ1件も発注しない:
+
+1. `config\on1_live.yaml` の `enabled: true`
+2. `config\on1_live.yaml` の `live_ack: "I_UNDERSTAND_REAL_MONEY_JPX"`
+3. env `ON1_LIVE=true`
+
+欠けている場合は dry-run になり、events.jsonl の各行に `live: false` と
+欠けている条件が残る。ポート(`port:` 既定18081=検証)は**このゲートとは別**で、
+ゲートが開いていなければ18081にも送らない。
+
+### コードで強制しているハードリミット(設定で緩められない)
+
+- 建玉は常に {0, +1枚}。売りは唯一の買い建玉の返済としてしか組み立てられない
+- 1日の発注は最大4件(発注**前**にカウンタを永続化するので、曖昧失敗も1枠消費)
+- 発注前サニティ(銘柄コードの形・SymbolNameに「マイクロ」・限月・売買方向と
+  取引区分がジョブと一致・数量1・成行はPrice 0)に1つでも失敗したら**発注しない**
+- SQ(第2金曜)の1週間前から**エントリーをスキップ**(限月ロールの端は fail-close)
+- リポジトリ直下 `KILL` / `data\kill_switch.json` があれば何もしない
+
+### STATE_UNKNOWN(曖昧な発注失敗)からの復帰
+
+タイムアウト・5xx・OrderId無しの200 は `OrderStateUnknown` として
+`data\on1_live\state.json` に保持され、**自動リトライしない**。以後 ON1 は
+エントリーもエグジットも発注しない。復帰は人間の作業:
+
+```
+.venv\Scripts\python.exe scripts\run_on1_reconcile.py
+```
+
+これは**読み取り専用**(`/orders` と `/positions` しか持たない `QueryOnlyKabu` を
+使うので構造上発注できない)。積極的証拠が取れたときだけ FLAT / LONG に確定する。
+`unresolved` なら口座画面を人間が確認し、`state.json` を意図して書き換えること。
+
+ログ: `logs\on1.out.log` / イベント: `data\on1_live\events.jsonl`。
+
 ## 6. Claude Code(この開発環境)側のネットワーク許可
 
 開発セッションから bitFlyer API に接続してバックテスト等を行う場合(ユーザー自身で設定):

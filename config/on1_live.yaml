@@ -1,0 +1,22 @@
+# ON1 (Nikkei 225 micro overnight) live-execution config. NO secrets in this file.
+# The API password lives in .env as KABU_API_PASSWORD only.
+#
+# LIVE requires ALL THREE and owner approval (docs/ON1_LIVE_PLAN.md L1):
+#   1. enabled: true here
+#   2. live_ack: "I_UNDERSTAND_REAL_MONEY_JPX" here
+#   3. env ON1_LIVE=true
+# Anything less is DRY RUN: the order payload is written to
+# data/on1_live/events.jsonl and nothing is sent, not even to port 18081.
+
+enabled: false
+live_ack: ""
+
+# kabuステーションAPI port. 18081 = 検証, 18080 = 本番.
+# (kabu_STATION_API.yaml `servers:`)
+port: 18081
+
+# Scheduler windows. These may only NARROW the hard windows compiled into
+# bot/jpx/on1_executor.py (entry 15:00-15:44, exit 08:00-08:44); a wider value
+# is ignored and reported as a config_problem event.
+entry_window: ["15:30", "15:44"]
+exit_window: ["08:30", "08:44"]
