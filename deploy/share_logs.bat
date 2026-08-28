@@ -25,6 +25,9 @@ copy /Y data\oi_snapshots.csv paper_logs\ >nul 2>&1
 copy /Y data\spread_FX_BTC_JPY.csv paper_logs\ >nul 2>&1
 copy /Y data\overlay_state.json paper_logs\ >nul 2>&1
 copy /Y data\kill_switch.json paper_logs\ >nul 2>&1
+rem ON1 forward paper ledger + its JPX source (small CSVs)
+copy /Y data\paper_on1\ledger.csv paper_logs\on1_ledger.csv >nul 2>&1
+copy /Y data\jpx_daily\nk225_sessions.csv paper_logs\nk225_sessions.csv >nul 2>&1
 dir /-C data\ws > paper_logs\ws_listing.txt 2>nul
 if not exist paper_logs\tape mkdir paper_logs\tape
 if exist data\tape\*.csv.gz copy /Y data\tape\*.csv.gz paper_logs\tape\ >nul 2>&1
