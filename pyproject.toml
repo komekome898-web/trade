@@ -16,6 +16,8 @@ dependencies = [
     "PyYAML>=6.0",
     "python-dotenv>=1.0",
     "websockets>=12.0",
+    # JPX daily-report parsing (scripts/fetch_jpx_daily.py, ON1 forward tracking)
+    "pdfplumber>=0.11",
 ]
 
 [project.optional-dependencies]
