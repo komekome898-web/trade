@@ -1,0 +1,24 @@
+{
+  "source": "225Labo N225f_2026.xlsx (owner-downloaded 2026-08-28, free registration, personal-use license)",
+  "instrument": "Nikkei 225 futures (Osaka; continuous series as provided by 225Labo)",
+  "files": {
+    "day_session_daily.csv.gz": "day session (08:45 open auction - 15:45 closing auction), 1990-01-04..2026-08-27, 9038 rows; volume missing 1990-2000",
+    "night_session_daily.csv.gz": "night session daily, 2007-09-19..2026-08-28, 4674 rows",
+    "full_day_daily.csv.gz": "calendar-day full-session daily, 1990-2026, 9038 rows",
+    "trading_day_daily.csv.gz": "trading-day convention daily (preceding night + day), 9038 rows",
+    "bars_1min.csv.gz": "1-minute bars 2025-12-30..2026-08-28, 205121 rows; date column uses trading-day convention (a row's 17:00.. bars are the PRECEDING evening)"
+  },
+  "qc": {
+    "ohlc_integrity_bad_rows": 0,
+    "vs_cash_close_abs_diff_pct": {
+      "matched_days": 8986,
+      "median": 0.179,
+      "p99": 2.135,
+      "max": 4.635
+    },
+    "day_daily_vs_1min_reconstruction": "170/170 overlapping days exact match on open/close",
+    "calendar_gaps_gt10d": [
+      "2019-04-26..2019-05-07 (Golden Week 2019, genuine)"
+    ]
+  }
+}
