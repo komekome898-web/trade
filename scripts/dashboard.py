@@ -213,6 +213,11 @@ PAGE = """<!doctype html>
     </section>
   </div>
   <section>
+    <h2>BTC長期チャートと市場加熱度 <span class="sub">月次・2015年〜 / 表示専用(方向予測は棄却済み)</span></h2>
+    <div class="chartwrap"><canvas id="a-chart"></canvas><div class="tip" id="a-tip"></div></div>
+    <div class="legend" id="a-legend"></div>
+  </section>
+  <section>
     <h2>データ収集</h2>
     <div class="scroll"><table id="t-col"></table></div>
   </section>
@@ -377,6 +382,126 @@ function attentionTile(a) {
               hot ? "neg" : "", parts.join(" / "));
 }
 
+// ---- BTC長期チャート + 市場加熱度 (aggregate.py: attention_chart) ------------
+// 上段: BTC/USD 月次終値の対数スケール折れ線 (アクセント1色)。
+// 下段: 注目Zスコアの「正の部分のみ」を積み上げた加熱バー (JA/EN/報道の3系列、
+// パレットは検証済み: #c08a20/#4a86d1/#d16a9e、セグメント間2pxギャップが
+// CVD境界ペアの二次符号)。2軸重ね書きはしない — パネルを分けて各1軸。
+// 表示専用: これらからの方向予測は no-go として記録済み (SURVEY_ATTENTION_DATA)。
+const A_COLORS = { ja: "#c08a20", en: "#4a86d1", gd: "#d16a9e" };
+const A_LABELS = { ja: "注目 日本語WP", en: "注目 英語WP", gd: "報道量 GDELT" };
+let aSeries = [];
+
+function drawAttentionChart() {
+  const canvas = document.getElementById("a-chart");
+  if (!canvas || !aSeries.length) return;
+  const css = getComputedStyle(document.documentElement);
+  const ink = css.getPropertyValue("--ink").trim(), muted = css.getPropertyValue("--muted").trim();
+  const grid = css.getPropertyValue("--line").trim(), accent = css.getPropertyValue("--accent").trim();
+  const panel = css.getPropertyValue("--panel").trim();
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 28, H = 320;
+  canvas.style.width = W + "px"; canvas.style.height = H + "px";
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  ctx.font = "11px ui-monospace, monospace";
+
+  const padL = 46, padR = 8, padT = 6, xAxisH = 18, panelGap = 14;
+  const priceH = Math.round((H - padT - xAxisH - panelGap) * 0.58);
+  const barsH = H - padT - xAxisH - panelGap - priceH;
+  const priceY0 = padT, priceY1 = padT + priceH;
+  const barsY0 = priceY1 + panelGap, barsY1 = barsY0 + barsH;
+  const n = aSeries.length, slot = (W - padL - padR) / n;
+  const xOf = i => padL + slot * (i + 0.5);
+
+  // -- price panel (log scale, one series, one axis)
+  const prices = aSeries.map(r => r.p).filter(p => p > 0);
+  const lo = Math.min(...prices), hi = Math.max(...prices);
+  const yOfP = p => priceY1 - (Math.log(p) - Math.log(lo)) / (Math.log(hi) - Math.log(lo)) * priceH;
+  ctx.strokeStyle = grid; ctx.fillStyle = muted; ctx.lineWidth = 1;
+  for (const t of [300, 1000, 3000, 10000, 30000, 100000]) {
+    if (t < lo || t > hi) continue;
+    const y = yOfP(t);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.textAlign = "right";
+    ctx.fillText(t >= 1000 ? "$" + (t/1000) + "k" : "$" + t, padL - 5, y + 3.5);
+  }
+  ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.beginPath();
+  let started = false;
+  aSeries.forEach((r, i) => {
+    if (r.p == null) return;
+    const x = xOf(i), y = yOfP(r.p);
+    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // -- heat bars panel (stacked positive z, one axis)
+  const heat = aSeries.map(r =>
+    Math.max(r.ja || 0, 0) + Math.max(r.en || 0, 0) + Math.max(r.gd || 0, 0));
+  const zMax = Math.max(2, Math.ceil(Math.max(...heat)));
+  const yOfZ = z => barsY1 - z / zMax * barsH;
+  ctx.strokeStyle = grid; ctx.fillStyle = muted; ctx.lineWidth = 1;
+  for (let t = 0; t <= zMax; t += (zMax > 4 ? 2 : 1)) {
+    const y = yOfZ(t);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.textAlign = "right"; ctx.fillText("+" + t + "σ", padL - 5, y + 3.5);
+  }
+  const barW = Math.max(1, slot - 2);          // >=2px gap between bars
+  aSeries.forEach((r, i) => {
+    let yBase = barsY1;
+    for (const k of ["ja", "en", "gd"]) {      // fixed stacking order
+      const z = Math.max(r[k] || 0, 0);
+      if (z <= 0) continue;
+      const hPx = barsY1 - yOfZ(z);
+      const yTop = yBase - hPx;
+      ctx.fillStyle = A_COLORS[k];
+      ctx.fillRect(xOf(i) - barW / 2, yTop, barW, Math.max(hPx - 2, 1));
+      yBase = yTop;                            // 2px surface gap between segments
+    }
+  });
+
+  // -- x axis: January of each year
+  ctx.fillStyle = muted; ctx.textAlign = "center";
+  aSeries.forEach((r, i) => {
+    if (r.m.endsWith("-01")) ctx.fillText(r.m.slice(0, 4), xOf(i), H - 4);
+  });
+
+  // -- legend (chips carry identity; text stays in ink tokens)
+  const legend = document.getElementById("a-legend");
+  legend.innerHTML =
+    `<span><i style="background:${accent}"></i>BTC/USD (対数)</span>` +
+    Object.keys(A_COLORS).map(k =>
+      `<span><i style="background:${A_COLORS[k]}"></i>${A_LABELS[k]}</span>`).join("") +
+    `<span class="empty">加熱バー = 正のZのみ積算</span>`;
+
+  // -- hover: crosshair + tooltip
+  canvas.onmousemove = (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const i = Math.min(n - 1, Math.max(0, Math.round((ev.clientX - rect.left - padL) / slot - 0.5)));
+    const r = aSeries[i];
+    const tip = document.getElementById("a-tip");
+    const zLine = k => r[k] != null ?
+      `<span style="color:${A_COLORS[k]}">●</span> ${A_LABELS[k]} ${r[k] >= 0 ? "+" : ""}${r[k].toFixed(1)}σ` : null;
+    tip.innerHTML = `<b>${r.m}</b><br>BTC $${fmt(r.p, 0)}<br>` +
+      ["ja", "en", "gd"].map(zLine).filter(Boolean).join("<br>");
+    tip.style.display = "block";
+    tip.style.left = Math.min(ev.clientX - rect.left + 14, W - 150) + "px";
+    tip.style.top = "10px";
+    drawAttentionChart();                       // redraw base, then crosshair
+    const c2 = canvas.getContext("2d");
+    c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c2.strokeStyle = muted; c2.lineWidth = 1; c2.setLineDash([3, 3]);
+    c2.beginPath(); c2.moveTo(xOf(i), padT); c2.lineTo(xOf(i), barsY1); c2.stroke();
+    c2.setLineDash([]);
+  };
+  canvas.onmouseleave = () => {
+    document.getElementById("a-tip").style.display = "none";
+    drawAttentionChart();
+  };
+}
+
 async function refresh() {
   let d;
   try { d = await (await fetch("/api/status")).json(); }
@@ -418,6 +543,13 @@ async function refresh() {
     ingestTile("収集: venues", (d.ingest || {}).venues);
 
   renderGates(d.gates || []);
+
+  // long-horizon attention chart: redraw only when the monthly series changed
+  const aNew = d.attention_chart || [];
+  if (JSON.stringify(aNew) !== JSON.stringify(aSeries)) {
+    aSeries = aNew;
+    drawAttentionChart();
+  }
 
   // 最近の判断: times in JST, reasons in Japanese, and — for the rows that
   // were actually trades — the fill price and, on an exit, the realized P&L.
@@ -1058,7 +1190,7 @@ function chartHover(ev) {
     });
   }
   if (typeof window !== "undefined" && window.addEventListener) {
-    window.addEventListener("resize", () => { if (marketData) renderChart(); });
+    window.addEventListener("resize", () => { if (marketData) renderChart(); if (aSeries.length) drawAttentionChart(); });
   }
 })();
 

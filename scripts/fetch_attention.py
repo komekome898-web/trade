@@ -23,6 +23,7 @@ import csv
 import io
 import json
 import sys
+import time
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -30,16 +31,23 @@ import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "attention" / "attention.csv"
-FIELDS = ["date", "wp_en", "wp_ja", "gdelt_vol", "fng"]
+FIELDS = ["date", "wp_en", "wp_ja", "gdelt_vol", "fng", "btc_usd"]
 UA = {"User-Agent": "trade-research-gauge/1.0"}
 WP_START = "20150701"
 GDELT_START = "20170101000000"
 
 
-def _get(url: str, timeout: int = 120) -> bytes:
-    resp = requests.get(url, headers=UA, timeout=timeout)
-    resp.raise_for_status()
-    return resp.content
+def _get(url: str, timeout: int = 120, tries: int = 3) -> bytes:
+    last: Exception | None = None
+    for attempt in range(tries):
+        try:
+            resp = requests.get(url, headers=UA, timeout=timeout)
+            resp.raise_for_status()
+            return resp.content
+        except requests.RequestException as exc:  # read-only public data: retry
+            last = exc
+            time.sleep(2 ** attempt)
+    raise last  # type: ignore[misc]
 
 
 def fetch_wikipedia(project: str, article: str, start: str, end: str) -> dict[str, float]:
@@ -55,13 +63,10 @@ def fetch_wikipedia(project: str, article: str, start: str, end: str) -> dict[st
 def _fetch_gdelt_window(start: str, end: str) -> dict[str, float]:
     url = ("https://api.gdeltproject.org/api/v2/doc/doc?query=bitcoin"
            f"&mode=timelinevol&STARTDATETIME={start}&ENDDATETIME={end}&format=CSV")
-    for attempt in (1, 2):  # long windows get reset occasionally; one retry
-        try:
-            text = _get(url).decode("utf-8", "replace")
-            break
-        except requests.RequestException:
-            if attempt == 2:
-                return {}
+    try:
+        text = _get(url).decode("utf-8", "replace")
+    except requests.RequestException:
+        return {}
     out: dict[str, float] = {}
     for row in csv.reader(io.StringIO(text)):
         if len(row) >= 2 and row[0][:4].isdigit():
@@ -73,14 +78,45 @@ def _fetch_gdelt_window(start: str, end: str) -> dict[str, float]:
     return out
 
 
-def fetch_gdelt(start: str, end: str) -> dict[str, float]:
-    """Yearly chunks: the full 2017- span in one request is reset-prone."""
+def fetch_gdelt(years: list[int], end: str) -> dict[str, float]:
+    """Yearly chunks (the full 2017- span in one request is reset-prone).
+    The caller passes exactly the years that need (re)fetching, so a chunk that
+    failed on an earlier run is retried on the next one."""
     out: dict[str, float] = {}
-    y0, y1 = int(start[:4]), int(end[:4])
-    for year in range(y0, y1 + 1):
-        s = max(start, f"{year}0101000000")
+    for year in years:
+        s = max(GDELT_START, f"{year}0101000000")
         e = min(end, f"{year}1231235959")
-        out.update(_fetch_gdelt_window(s, e))
+        if s <= e:
+            out.update(_fetch_gdelt_window(s, e))
+    return out
+
+
+def fetch_btc_daily(start_day: str) -> dict[str, float]:
+    """Bitstamp daily closes (public, full history, 1000 rows/page)."""
+    from datetime import datetime, timezone
+    out: dict[str, float] = {}
+    start = int(datetime.strptime(start_day, "%Y%m%d")
+                .replace(tzinfo=timezone.utc).timestamp())
+    for _ in range(20):  # 20k days cap
+        url = ("https://www.bitstamp.net/api/v2/ohlc/btcusd/"
+               f"?step=86400&limit=1000&start={start}")
+        try:
+            data = json.loads(_get(url)).get("data", {}).get("ohlc", [])
+        except (requests.RequestException, json.JSONDecodeError):
+            break
+        if not data:
+            break
+        for row in data:
+            try:
+                ts = int(row["timestamp"])
+                day = date.fromtimestamp(ts).strftime("%Y%m%d")
+                out[day] = float(row["close"])
+            except (KeyError, ValueError, TypeError, OSError):
+                pass
+        last = max(int(r["timestamp"]) for r in data)
+        if len(data) < 1000:
+            break
+        start = last + 86400
     return out
 
 
@@ -110,29 +146,43 @@ def main() -> int:
     existing = load_existing()
     today = date.today()
     end = today.strftime("%Y%m%d")
-    # Full backfill when empty; otherwise a 14-day top-up window (covers the
-    # D-2 Wikipedia lag plus a week of missed runs).
-    if existing:
-        start = (today - timedelta(days=14)).strftime("%Y%m%d")
-        g_start = start + "000000"
-    else:
-        start, g_start = WP_START, GDELT_START
+    topup = (today - timedelta(days=14)).strftime("%Y%m%d")
 
-    wp_en = fetch_wikipedia("en.wikipedia", "Bitcoin", start, end)
+    def start_for(column: str, full_start: str) -> str:
+        """14-day top-up when the column has real history; otherwise the full
+        backfill start.  A source that failed silently on an earlier run (or a
+        newly added column) heals itself on the next run instead of leaving a
+        permanent hole behind the top-up window."""
+        if any(r.get(column) for r in existing.values() if r["date"] < topup):
+            return topup
+        return full_start
+
+    wp_en = fetch_wikipedia("en.wikipedia", "Bitcoin",
+                            start_for("wp_en", WP_START), end)
     wp_ja = fetch_wikipedia("ja.wikipedia",
                             "%E3%83%93%E3%83%83%E3%83%88%E3%82%B3%E3%82%A4%E3%83%B3",
-                            start, end)
-    gdelt = fetch_gdelt(g_start, end + "000000")
+                            start_for("wp_ja", WP_START), end)
+    # GDELT: refetch every year whose coverage is thin (<300 rows) plus the
+    # current year, so an interior hole from a failed chunk heals itself.
+    per_year: dict[int, int] = {}
+    for r in existing.values():
+        if r.get("gdelt_vol"):
+            y = int(r["date"][:4])
+            per_year[y] = per_year.get(y, 0) + 1
+    gdelt_years = [y for y in range(int(GDELT_START[:4]), today.year + 1)
+                   if per_year.get(y, 0) < 300 or y == today.year]
+    gdelt = fetch_gdelt(gdelt_years, end + "000000")
     fng = fetch_fng()
+    btc = fetch_btc_daily(start_for("btc_usd", WP_START))
 
-    days = set(existing) | set(wp_en) | set(wp_ja) | set(gdelt)
+    days = set(existing) | set(wp_en) | set(wp_ja) | set(gdelt) | set(btc)
     updated = 0
     for day in days:
         row = existing.get(day) or {k: "" for k in FIELDS}
         row["date"] = day
         before = dict(row)
         for key, src in (("wp_en", wp_en), ("wp_ja", wp_ja),
-                         ("gdelt_vol", gdelt), ("fng", fng)):
+                         ("gdelt_vol", gdelt), ("fng", fng), ("btc_usd", btc)):
             if day in src and not row.get(key):
                 row[key] = f"{src[day]:.4f}".rstrip("0").rstrip(".")
         existing[day] = row

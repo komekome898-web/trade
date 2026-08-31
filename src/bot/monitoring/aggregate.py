@@ -240,6 +240,65 @@ def _attention_gauge(path: Path, now: float) -> dict[str, Any] | None:
             "fng": fng, "asof": d_ja, "age_sec": info["age_sec"]}
 
 
+def _attention_chart(path: Path) -> list[dict[str, Any]]:
+    """Monthly series for the long-horizon chart: BTC close (last of month) +
+    mean daily rolling-365 z per attention series.  ~135 points since 2015, so
+    the payload stays tiny; recomputed only when the CSV changes (cached_scan).
+    Display only — same no-signal caveat as the gauge.
+    """
+    import math
+    import statistics
+
+    def build() -> list[dict[str, Any]]:
+        try:
+            with path.open(newline="", encoding="utf-8") as f:
+                rows = list(csv.DictReader(f))
+        except OSError:
+            return []
+        if len(rows) < 400:
+            return []
+
+        def z_series(key: str) -> dict[str, float]:
+            pts = [(r["date"], math.log(float(r[key]) + 1.0))
+                   for r in rows if r.get(key)]
+            out: dict[str, float] = {}
+            vals = [v for _, v in pts]
+            for i in range(365, len(pts)):
+                window = vals[i - 365:i]
+                mean = statistics.fmean(window)
+                sd = statistics.stdev(window)
+                if sd > 0:
+                    out[pts[i][0]] = (vals[i] - mean) / sd
+            return out
+
+        z = {k: z_series(k) for k in ("wp_ja", "wp_en", "gdelt_vol")}
+        months: dict[str, dict[str, Any]] = {}
+        for r in rows:
+            day = r["date"]
+            month = f"{day[:4]}-{day[4:6]}"
+            slot = months.setdefault(month, {"m": month, "p": None,
+                                             "ja": [], "en": [], "gd": []})
+            if r.get("btc_usd"):
+                slot["p"] = float(r["btc_usd"])  # last close of the month wins
+            for out_key, src_key in (("ja", "wp_ja"), ("en", "wp_en"),
+                                     ("gd", "gdelt_vol")):
+                if day in z[src_key]:
+                    slot[out_key].append(z[src_key][day])
+        series = []
+        for month in sorted(months):
+            slot = months[month]
+            series.append({
+                "m": month,
+                "p": slot["p"],
+                "ja": round(statistics.fmean(slot["ja"]), 2) if slot["ja"] else None,
+                "en": round(statistics.fmean(slot["en"]), 2) if slot["en"] else None,
+                "gd": round(statistics.fmean(slot["gd"]), 2) if slot["gd"] else None,
+            })
+        return series
+
+    return cached_scan("attention_chart", path, build) or []
+
+
 def _percentile(values: list[float], q: float) -> float:
     """Nearest-rank percentile over an already-sorted-able list."""
     if not values:
@@ -503,6 +562,8 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         # Crowd-heat gauge (attention z-scores; display only, no signal --
         # direction-prediction from these series is a recorded no-go).
         "attention": attention,
+        # Long-horizon monthly chart: BTC close + attention z (display only).
+        "attention_chart": _attention_chart(root / "data" / "attention" / "attention.csv"),
         # Pending COVERAGE gates (docs/KNOWLEDGE.md §4/§5) with the bars
         # scripts/judge_gates.py judges against, so the console can show how
         # far off each pre-registered sample still is. Progress and ETA only —

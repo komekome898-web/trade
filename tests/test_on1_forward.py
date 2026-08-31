@@ -149,3 +149,34 @@ def test_dashboard_page_renders_attention_tile():
     assert "attentionTile(d.attention)" in page
     for field in ("z_wp_ja", "z_wp_en", "z_gdelt", "fng"):
         assert f"a.{field}" in page
+
+
+def test_attention_chart_monthly_series(tmp_path):
+    from bot.monitoring.aggregate import _attention_chart
+    from bot.monitoring.gates import clear_cache
+    clear_cache()
+    p = tmp_path / "attention.csv"
+    with p.open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["date", "wp_en", "wp_ja", "gdelt_vol", "fng", "btc_usd"])
+        for i in range(500):
+            m, d = divmod(i, 28)
+            base = 1000 + (i % 7) * 10
+            w.writerow([f"2024{m+1:02d}{d+1:02d}" if m < 12 else f"2025{m-11:02d}{d+1:02d}",
+                        str(base), str(base), "", "", str(50000 + i)])
+    series = _attention_chart(p)
+    assert series, "monthly series should not be empty"
+    assert all(set(r) == {"m", "p", "ja", "en", "gd"} for r in series)
+    # last close of each month wins, and months are sorted
+    assert [r["m"] for r in series] == sorted(r["m"] for r in series)
+    assert series[-1]["p"] == 50000 + 499
+    clear_cache()
+
+
+def test_dashboard_page_renders_attention_chart():
+    page = (ROOT / "scripts" / "dashboard.py").read_text(encoding="utf-8")
+    assert 'id="a-chart"' in page and "drawAttentionChart" in page
+    assert "attention_chart" in page
+    # validated palette, fixed stacking order, no dual axis
+    for hex_ in ("#c08a20", "#4a86d1", "#d16a9e"):
+        assert hex_ in page
