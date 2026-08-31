@@ -114,3 +114,38 @@ def test_dashboard_page_renders_on1_tiles():
     assert "on1Tiles(d.on1)" in page
     for field in ("cum_net_yen", "mean_net_bps", "guard", "friction_yen", "last_exit_date"):
         assert f"o.{field}" in page
+
+
+def test_attention_gauge_z_and_missing(tmp_path):
+    from bot.monitoring.aggregate import _attention_gauge
+    assert _attention_gauge(tmp_path / "attention.csv", 0.0) is None
+    p = tmp_path / "attention.csv"
+    import math
+    with p.open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["date", "wp_en", "wp_ja", "gdelt_vol", "fng"])
+        # 450 mildly-noisy days then a spike on the last day -> large positive z
+        for i in range(450):
+            base = 1000 + (i % 7) * 10
+            w.writerow([f"2025{i:04d}", str(base), str(base), "", "50"])
+        w.writerow(["20260101", "8000", "8000", "", "77"])
+    o = _attention_gauge(p, 0.0)
+    assert o is not None and o["z_wp_ja"] is not None
+    assert o["z_wp_ja"] > 3          # log spike vs flat window
+    assert o["fng"] == 77
+    # too-short history -> gauge withholds z rather than fake one
+    p2 = tmp_path / "short.csv"
+    with p2.open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["date", "wp_en", "wp_ja", "gdelt_vol", "fng"])
+        for i in range(100):
+            w.writerow([f"2026{i:04d}", "1000", "1000", "", ""])
+    o2 = _attention_gauge(p2, 0.0)
+    assert o2 is None or o2.get("z_wp_ja") is None
+
+
+def test_dashboard_page_renders_attention_tile():
+    page = (ROOT / "scripts" / "dashboard.py").read_text(encoding="utf-8")
+    assert "attentionTile(d.attention)" in page
+    for field in ("z_wp_ja", "z_wp_en", "z_gdelt", "fng"):
+        assert f"a.{field}" in page

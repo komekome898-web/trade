@@ -198,6 +198,48 @@ def _on1_paper(path: Path, now: float) -> dict[str, Any] | None:
     }
 
 
+def _attention_gauge(path: Path, now: float) -> dict[str, Any] | None:
+    """Crowd-heat gauge from data/attention/attention.csv (fetch_attention.py).
+
+    Rolling-365-row z-scores of log levels — levels decay secularly (survey:
+    EN median 8.3k in 2015 -> 3.1k in 2026) so a raw level is meaningless.
+    Newest COMPLETE wp row is used (Wikipedia publishes at D-2).  Display only:
+    direction-prediction from these series is a recorded no-go.
+    """
+    import math
+    import statistics
+
+    info = _file_info(path, now)
+    if info is None:
+        return None
+    try:
+        with path.open(newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+    except OSError:
+        return None
+
+    def z_of(key: str) -> tuple[float | None, str | None]:
+        series = [(r["date"], math.log(float(r[key]) + 1.0))
+                  for r in rows if r.get(key)]
+        if len(series) < 400:
+            return None, None
+        window = [v for _, v in series[-366:-1]]
+        mean, sd = statistics.fmean(window), statistics.stdev(window)
+        if sd <= 0:
+            return None, None
+        return round((series[-1][1] - mean) / sd, 2), series[-1][0]
+
+    z_ja, d_ja = z_of("wp_ja")
+    z_en, _ = z_of("wp_en")
+    z_gd, _ = z_of("gdelt_vol")
+    fng_rows = [(r["date"], float(r["fng"])) for r in rows if r.get("fng")]
+    fng = round(fng_rows[-1][1]) if fng_rows else None
+    if z_ja is None and z_en is None and z_gd is None and fng is None:
+        return None
+    return {"z_wp_ja": z_ja, "z_wp_en": z_en, "z_gdelt": z_gd,
+            "fng": fng, "asof": d_ja, "age_sec": info["age_sec"]}
+
+
 def _percentile(values: list[float], q: float) -> float:
     """Nearest-rank percentile over an already-sorted-able list."""
     if not values:
@@ -392,6 +434,7 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
 
     oi_snapshot = _oi_snapshot(root / "data" / "oi_snapshots.csv", now)
     on1 = _on1_paper(root / "data" / "paper_on1" / "ledger.csv", now)
+    attention = _attention_gauge(root / "data" / "attention" / "attention.csv", now)
 
     # 収集の鮮度: the newest daily shard each recorder wrote. data/tape names
     # carry the UTC day; data/venues (when it exists at all) is read by mtime.
@@ -457,6 +500,9 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         # ON1 forward paper tracking (Nikkei micro overnight; report #36,
         # PREREG_on1_forward.md). None until the first ledger is built.
         "on1": on1,
+        # Crowd-heat gauge (attention z-scores; display only, no signal --
+        # direction-prediction from these series is a recorded no-go).
+        "attention": attention,
         # Pending COVERAGE gates (docs/KNOWLEDGE.md §4/§5) with the bars
         # scripts/judge_gates.py judges against, so the console can show how
         # far off each pre-registered sample still is. Progress and ETA only —

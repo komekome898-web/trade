@@ -12,3 +12,5 @@ rem ON1 forward paper tracking: JPX daily report (published T+1 09:00 JST) ->
 rem session prints -> paper ledger (docs/PREREG_on1_forward.md)
 ".venv\Scripts\python.exe" "scripts\fetch_jpx_daily.py" >> "logs\fetch.out.log" 2>&1
 ".venv\Scripts\python.exe" "scripts\paper_on1.py" >> "logs\fetch.out.log" 2>&1
+rem crowd-heat gauge series (Wikipedia/GDELT/F&G) for the dashboard tile
+".venv\Scripts\python.exe" "scripts\fetch_attention.py" >> "logs\fetch.out.log" 2>&1

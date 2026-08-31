@@ -359,6 +359,24 @@ function on1Tiles(o) {
               `〜${(o.last_exit_date || "").slice(4, 6)}/${(o.last_exit_date || "").slice(6, 8)}${fr}`);
 }
 
+// 市場加熱度 (aggregate.py: attention; docs/SURVEY_ATTENTION_DATA.md)。
+// Wikipedia閲覧数(日本語/英語)とGDELT報道量のローリング365日Zスコア + F&G。
+// 表示専用 — これらからの方向予測は no-go として記録済み。F&G は約6〜7割が
+// 価格由来の合成指数なので「注目」ではなく参考値として末尾に置く。
+// z>2 は過熱(赤)。null = 未収集(fetch_all が fetch_attention.py を書くまで)。
+function attentionTile(a) {
+  if (a == null) return tile("市場加熱度", "未収集");
+  if (a.z_wp_ja == null && a.z_wp_en == null) return tile("市場加熱度", "蓄積中");
+  const z = a.z_wp_ja != null ? a.z_wp_ja : a.z_wp_en;
+  const hot = z >= 2;
+  const parts = [];
+  if (a.z_wp_en != null) parts.push(`EN ${a.z_wp_en >= 0 ? "+" : ""}${fmt(a.z_wp_en, 1)}`);
+  if (a.z_gdelt != null) parts.push(`報道 ${a.z_gdelt >= 0 ? "+" : ""}${fmt(a.z_gdelt, 1)}`);
+  if (a.fng != null) parts.push(`F&G ${fmt(a.fng, 0)}`);
+  return tile("市場加熱度 (注目Z)", `${z >= 0 ? "+" : ""}${fmt(z, 1)}σ`,
+              hot ? "neg" : "", parts.join(" / "));
+}
+
 async function refresh() {
   let d;
   try { d = await (await fetch("/api/status")).json(); }
@@ -391,6 +409,7 @@ async function refresh() {
     tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円`, pnlCls(d.scalp.total_pnl_jpy),
          `${d.scalp.trades}回`) +
     on1Tiles(d.on1) +
+    attentionTile(d.attention) +
     tile("エラー数", fmt(b.error_count, 0)) +
     apiTile(d.api_health) +
     overlayTile(d.overlay) +
