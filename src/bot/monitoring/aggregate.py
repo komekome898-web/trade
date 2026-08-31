@@ -276,10 +276,19 @@ def _attention_chart(path: Path) -> list[dict[str, Any]]:
         for r in rows:
             day = r["date"]
             month = f"{day[:4]}-{day[4:6]}"
-            slot = months.setdefault(month, {"m": month, "p": None,
+            slot = months.setdefault(month, {"m": month, "o": None, "h": None,
+                                             "l": None, "c": None,
                                              "ja": [], "en": [], "gd": []})
             if r.get("btc_usd"):
-                slot["p"] = float(r["btc_usd"])  # last close of the month wins
+                slot["c"] = float(r["btc_usd"])  # last close of the month wins
+            if r.get("btc_open") and slot["o"] is None:
+                slot["o"] = float(r["btc_open"])  # first open of the month
+            if r.get("btc_high"):
+                hi = float(r["btc_high"])
+                slot["h"] = hi if slot["h"] is None else max(slot["h"], hi)
+            if r.get("btc_low"):
+                lo = float(r["btc_low"])
+                slot["l"] = lo if slot["l"] is None else min(slot["l"], lo)
             for out_key, src_key in (("ja", "wp_ja"), ("en", "wp_en"),
                                      ("gd", "gdelt_vol")):
                 if day in z[src_key]:
@@ -289,7 +298,7 @@ def _attention_chart(path: Path) -> list[dict[str, Any]]:
             slot = months[month]
             series.append({
                 "m": month,
-                "p": slot["p"],
+                "o": slot["o"], "h": slot["h"], "l": slot["l"], "c": slot["c"],
                 "ja": round(statistics.fmean(slot["ja"]), 2) if slot["ja"] else None,
                 "en": round(statistics.fmean(slot["en"]), 2) if slot["en"] else None,
                 "gd": round(statistics.fmean(slot["gd"]), 2) if slot["gd"] else None,

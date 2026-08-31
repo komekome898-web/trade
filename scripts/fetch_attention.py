@@ -31,7 +31,8 @@ import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "attention" / "attention.csv"
-FIELDS = ["date", "wp_en", "wp_ja", "gdelt_vol", "fng", "btc_usd"]
+FIELDS = ["date", "wp_en", "wp_ja", "gdelt_vol", "fng", "btc_usd",
+          "btc_open", "btc_high", "btc_low"]
 UA = {"User-Agent": "trade-research-gauge/1.0"}
 WP_START = "20150701"
 GDELT_START = "20170101000000"
@@ -91,10 +92,12 @@ def fetch_gdelt(years: list[int], end: str) -> dict[str, float]:
     return out
 
 
-def fetch_btc_daily(start_day: str) -> dict[str, float]:
-    """Bitstamp daily closes (public, full history, 1000 rows/page)."""
+def fetch_btc_daily(start_day: str) -> dict[str, dict[str, float]]:
+    """Bitstamp daily OHLC (public, full history, 1000 rows/page).
+    Returns day -> {close, open, high, low} for the candle chart and the
+    short-horizon heat-vs-range diagnostics."""
     from datetime import datetime, timezone
-    out: dict[str, float] = {}
+    out: dict[str, dict[str, float]] = {}
     start = int(datetime.strptime(start_day, "%Y%m%d")
                 .replace(tzinfo=timezone.utc).timestamp())
     for _ in range(20):  # 20k days cap
@@ -110,7 +113,8 @@ def fetch_btc_daily(start_day: str) -> dict[str, float]:
             try:
                 ts = int(row["timestamp"])
                 day = date.fromtimestamp(ts).strftime("%Y%m%d")
-                out[day] = float(row["close"])
+                out[day] = {"close": float(row["close"]), "open": float(row["open"]),
+                            "high": float(row["high"]), "low": float(row["low"])}
             except (KeyError, ValueError, TypeError, OSError):
                 pass
         last = max(int(r["timestamp"]) for r in data)
@@ -173,7 +177,11 @@ def main() -> int:
                    if per_year.get(y, 0) < 300 or y == today.year]
     gdelt = fetch_gdelt(gdelt_years, end + "000000")
     fng = fetch_fng()
-    btc = fetch_btc_daily(start_for("btc_usd", WP_START))
+    btc_rows = fetch_btc_daily(start_for("btc_low", WP_START))
+    btc = {d: r["close"] for d, r in btc_rows.items()}
+    btc_o = {d: r["open"] for d, r in btc_rows.items()}
+    btc_h = {d: r["high"] for d, r in btc_rows.items()}
+    btc_l = {d: r["low"] for d, r in btc_rows.items()}
 
     days = set(existing) | set(wp_en) | set(wp_ja) | set(gdelt) | set(btc)
     updated = 0
@@ -182,7 +190,8 @@ def main() -> int:
         row["date"] = day
         before = dict(row)
         for key, src in (("wp_en", wp_en), ("wp_ja", wp_ja),
-                         ("gdelt_vol", gdelt), ("fng", fng), ("btc_usd", btc)):
+                         ("gdelt_vol", gdelt), ("fng", fng), ("btc_usd", btc),
+                         ("btc_open", btc_o), ("btc_high", btc_h), ("btc_low", btc_l)):
             if day in src and not row.get(key):
                 row[key] = f"{src[day]:.4f}".rstrip("0").rstrip(".")
         existing[day] = row

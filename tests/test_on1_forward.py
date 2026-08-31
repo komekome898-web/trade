@@ -158,18 +158,24 @@ def test_attention_chart_monthly_series(tmp_path):
     p = tmp_path / "attention.csv"
     with p.open("w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["date", "wp_en", "wp_ja", "gdelt_vol", "fng", "btc_usd"])
+        w.writerow(["date", "wp_en", "wp_ja", "gdelt_vol", "fng", "btc_usd",
+                    "btc_open", "btc_high", "btc_low"])
         for i in range(500):
             m, d = divmod(i, 28)
             base = 1000 + (i % 7) * 10
+            px = 50000 + i
             w.writerow([f"2024{m+1:02d}{d+1:02d}" if m < 12 else f"2025{m-11:02d}{d+1:02d}",
-                        str(base), str(base), "", "", str(50000 + i)])
+                        str(base), str(base), "", "", str(px),
+                        str(px - 5), str(px + 10), str(px - 10)])
     series = _attention_chart(p)
     assert series, "monthly series should not be empty"
-    assert all(set(r) == {"m", "p", "ja", "en", "gd"} for r in series)
-    # last close of each month wins, and months are sorted
+    assert all(set(r) == {"m", "o", "h", "l", "c", "ja", "en", "gd"} for r in series)
+    # last close / first open / max high / min low of each month; sorted months
     assert [r["m"] for r in series] == sorted(r["m"] for r in series)
-    assert series[-1]["p"] == 50000 + 499
+    last = series[-1]
+    assert last["c"] == 50000 + 499 and last["h"] == 50000 + 499 + 10
+    first = series[0]
+    assert first["o"] == 50000 - 5 and first["l"] == 50000 - 10
     clear_cache()
 
 

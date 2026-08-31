@@ -213,7 +213,7 @@ PAGE = """<!doctype html>
     </section>
   </div>
   <section>
-    <h2>BTC長期チャートと市場加熱度 <span class="sub">月次・2015年〜 / 表示専用(方向予測は棄却済み)</span></h2>
+    <h2>BTC長期チャートと市場加熱度 <span class="sub">月足ローソク・2015年〜 / 表示専用(方向予測は棄却済み)</span></h2>
     <div class="chartwrap"><canvas id="a-chart"></canvas><div class="tip" id="a-tip"></div></div>
     <div class="legend" id="a-legend"></div>
   </section>
@@ -396,11 +396,10 @@ function drawAttentionChart() {
   const canvas = document.getElementById("a-chart");
   if (!canvas || !aSeries.length) return;
   const css = getComputedStyle(document.documentElement);
-  const ink = css.getPropertyValue("--ink").trim(), muted = css.getPropertyValue("--muted").trim();
+  const muted = css.getPropertyValue("--muted").trim();
   const grid = css.getPropertyValue("--line").trim(), accent = css.getPropertyValue("--accent").trim();
-  const panel = css.getPropertyValue("--panel").trim();
   const dpr = window.devicePixelRatio || 1;
-  const W = canvas.parentElement.clientWidth - 28, H = 320;
+  const W = canvas.parentElement.clientWidth - 28, H = 640;
   canvas.style.width = W + "px"; canvas.style.height = H + "px";
   canvas.width = W * dpr; canvas.height = H * dpr;
   const ctx = canvas.getContext("2d");
@@ -408,34 +407,39 @@ function drawAttentionChart() {
   ctx.clearRect(0, 0, W, H);
   ctx.font = "11px ui-monospace, monospace";
 
-  const padL = 46, padR = 8, padT = 6, xAxisH = 18, panelGap = 14;
-  const priceH = Math.round((H - padT - xAxisH - panelGap) * 0.58);
+  const padL = 52, padR = 8, padT = 6, xAxisH = 18, panelGap = 14;
+  const priceH = Math.round((H - padT - xAxisH - panelGap) * 0.72);
   const barsH = H - padT - xAxisH - panelGap - priceH;
-  const priceY0 = padT, priceY1 = padT + priceH;
+  const priceY1 = padT + priceH;
   const barsY0 = priceY1 + panelGap, barsY1 = barsY0 + barsH;
   const n = aSeries.length, slot = (W - padL - padR) / n;
   const xOf = i => padL + slot * (i + 0.5);
 
-  // -- price panel (log scale, one series, one axis)
-  const prices = aSeries.map(r => r.p).filter(p => p > 0);
-  const lo = Math.min(...prices), hi = Math.max(...prices);
-  const yOfP = p => priceY1 - (Math.log(p) - Math.log(lo)) / (Math.log(hi) - Math.log(lo)) * priceH;
+  // -- price panel: LINEAR scale, monthly candlesticks (owner request: faithful
+  //    magnitudes; the pre-2019 range is small on this scale by construction).
+  const highs = aSeries.map(r => r.h).filter(v => v != null);
+  const lows = aSeries.map(r => r.l).filter(v => v != null);
+  const hi = Math.max(...highs), lo = 0;                  // baseline at $0
+  const yOfP = p => priceY1 - (p - lo) / (hi - lo) * (priceH - 4);
+  const tick = hi > 60000 ? 20000 : 10000;
   ctx.strokeStyle = grid; ctx.fillStyle = muted; ctx.lineWidth = 1;
-  for (const t of [300, 1000, 3000, 10000, 30000, 100000]) {
-    if (t < lo || t > hi) continue;
+  for (let t = 0; t <= hi; t += tick) {
     const y = yOfP(t);
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
     ctx.textAlign = "right";
-    ctx.fillText(t >= 1000 ? "$" + (t/1000) + "k" : "$" + t, padL - 5, y + 3.5);
+    ctx.fillText(t === 0 ? "$0" : "$" + (t / 1000) + "k", padL - 5, y + 3.5);
   }
-  ctx.strokeStyle = accent; ctx.lineWidth = 2; ctx.beginPath();
-  let started = false;
+  const bodyW = Math.max(1, slot - 2);                    // >=2px gap between candles
   aSeries.forEach((r, i) => {
-    if (r.p == null) return;
-    const x = xOf(i), y = yOfP(r.p);
-    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    if (r.o == null || r.c == null || r.h == null || r.l == null) return;
+    const x = xOf(i), up = r.c >= r.o;
+    ctx.strokeStyle = ctx.fillStyle = up ? MC.up : MC.down;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, yOfP(r.h)); ctx.lineTo(x, yOfP(r.l)); ctx.stroke();
+    const yO = yOfP(r.o), yC = yOfP(r.c);
+    const top = Math.min(yO, yC), hBody = Math.max(Math.abs(yO - yC), 1);
+    ctx.fillRect(x - bodyW / 2, top, bodyW, hBody);
   });
-  ctx.stroke();
 
   // -- heat bars panel (stacked positive z, one axis)
   const heat = aSeries.map(r =>
@@ -448,7 +452,6 @@ function drawAttentionChart() {
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
     ctx.textAlign = "right"; ctx.fillText("+" + t + "σ", padL - 5, y + 3.5);
   }
-  const barW = Math.max(1, slot - 2);          // >=2px gap between bars
   aSeries.forEach((r, i) => {
     let yBase = barsY1;
     for (const k of ["ja", "en", "gd"]) {      // fixed stacking order
@@ -457,7 +460,7 @@ function drawAttentionChart() {
       const hPx = barsY1 - yOfZ(z);
       const yTop = yBase - hPx;
       ctx.fillStyle = A_COLORS[k];
-      ctx.fillRect(xOf(i) - barW / 2, yTop, barW, Math.max(hPx - 2, 1));
+      ctx.fillRect(xOf(i) - bodyW / 2, yTop, bodyW, Math.max(hPx - 2, 1));
       yBase = yTop;                            // 2px surface gap between segments
     }
   });
@@ -471,10 +474,11 @@ function drawAttentionChart() {
   // -- legend (chips carry identity; text stays in ink tokens)
   const legend = document.getElementById("a-legend");
   legend.innerHTML =
-    `<span><i style="background:${accent}"></i>BTC/USD (対数)</span>` +
+    `<span><i style="background:${MC.up}"></i>陽線</span>` +
+    `<span><i style="background:${MC.down}"></i>陰線</span>` +
     Object.keys(A_COLORS).map(k =>
       `<span><i style="background:${A_COLORS[k]}"></i>${A_LABELS[k]}</span>`).join("") +
-    `<span class="empty">加熱バー = 正のZのみ積算</span>`;
+    `<span class="empty">月足・線形スケール / 加熱バー = 正のZのみ積算</span>`;
 
   // -- hover: crosshair + tooltip
   canvas.onmousemove = (ev) => {
@@ -484,11 +488,14 @@ function drawAttentionChart() {
     const tip = document.getElementById("a-tip");
     const zLine = k => r[k] != null ?
       `<span style="color:${A_COLORS[k]}">●</span> ${A_LABELS[k]} ${r[k] >= 0 ? "+" : ""}${r[k].toFixed(1)}σ` : null;
-    tip.innerHTML = `<b>${r.m}</b><br>BTC $${fmt(r.p, 0)}<br>` +
+    const chg = (r.o && r.c) ? ((r.c / r.o - 1) * 100) : null;
+    tip.innerHTML = `<b>${r.m}</b>` +
+      (chg != null ? ` <span class="${chg >= 0 ? "up" : "down"}">${chg >= 0 ? "+" : ""}${chg.toFixed(1)}%</span>` : "") +
+      `<br>O $${fmt(r.o, 0)} / H $${fmt(r.h, 0)}<br>L $${fmt(r.l, 0)} / C $${fmt(r.c, 0)}<br>` +
       ["ja", "en", "gd"].map(zLine).filter(Boolean).join("<br>");
     tip.style.display = "block";
-    tip.style.left = Math.min(ev.clientX - rect.left + 14, W - 150) + "px";
-    tip.style.top = "10px";
+    tip.style.left = Math.min(ev.clientX - rect.left + 14, W - 170) + "px";
+    tip.style.top = (ev.clientY - rect.top < H / 2 ? ev.clientY - rect.top + 12 : 10) + "px";
     drawAttentionChart();                       // redraw base, then crosshair
     const c2 = canvas.getContext("2d");
     c2.setTransform(dpr, 0, 0, dpr, 0, 0);
