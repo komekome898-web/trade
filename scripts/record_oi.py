@@ -18,6 +18,10 @@ Columns (data/oi_snapshots.csv, header written on create):
     dvol           Deribit BTC DVOL, newest 1m close
                    (public/get_volatility_index_data, resolution=60)
     deribit_oi     Deribit BTC-PERPETUAL open interest (public/ticker)
+    btc_usd        OKX BTC-USDT-SWAP last price (public/ticker) — lets the
+                   entry-price ladder estimator allocate each OI delta to the
+                   price bucket it happened at (added 2026-08-31; older rows
+                   have the cell empty and are back-joined from candles)
 
 Every field is fetched independently and best-effort: a venue that errors,
 times out or answers in an unexpected shape leaves its cell EMPTY and never
@@ -44,7 +48,8 @@ OKX = "https://www.okx.com"
 DERIBIT = "https://www.deribit.com/api/v2/public"
 TIMEOUT = 10.0
 
-FIELDS = ["ts_utc", "okx_usdt_oi", "okx_usd_oi", "okx_ls_ratio", "dvol", "deribit_oi"]
+FIELDS = ["ts_utc", "okx_usdt_oi", "okx_usd_oi", "okx_ls_ratio", "dvol", "deribit_oi",
+          "btc_usd"]
 
 session = requests.Session()
 
@@ -125,6 +130,21 @@ def deribit_perp_oi(instrument: str = "BTC-PERPETUAL") -> float | None:
         return None
 
 
+def okx_last_price(inst_id: str = "BTC-USDT-SWAP") -> float | None:
+    """Last traded price of the swap the OI columns describe."""
+    try:
+        r = session.get(f"{OKX}/api/v5/market/ticker",
+                        params={"instId": inst_id}, timeout=TIMEOUT)
+        r.raise_for_status()
+        body = r.json()
+        if body.get("code") != "0":
+            raise RuntimeError(f"code={body.get('code')} msg={body.get('msg')!r}")
+        return float(body["data"][0]["last"])
+    except Exception as exc:  # noqa: BLE001
+        _warn(f"okx ticker {inst_id}", exc)
+        return None
+
+
 def snapshot() -> dict[str, object]:
     """One row. Each cell is independent; failures become empty strings."""
     row = {"ts_utc": datetime.now(timezone.utc).isoformat(timespec="seconds")}
@@ -133,12 +153,34 @@ def snapshot() -> dict[str, object]:
     row["okx_ls_ratio"] = okx_ls_ratio()
     row["dvol"] = deribit_dvol()
     row["deribit_oi"] = deribit_perp_oi()
+    row["btc_usd"] = okx_last_price()
     return {k: ("" if v is None else v) for k, v in row.items()}
+
+
+def _migrate_header(out: Path) -> None:
+    """Older files carry fewer columns; rewrite once so appended rows align.
+    Old rows get empty cells for the new columns (back-filled by the ladder
+    estimator from exchange candles, never guessed here)."""
+    with open(out, encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        old_fields = reader.fieldnames or []
+        if old_fields == FIELDS:
+            return
+        rows = list(reader)
+    tmp = out.with_suffix(".tmp")
+    with open(tmp, "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: r.get(k, "") for k in FIELDS})
+    tmp.replace(out)
 
 
 def append_row(row: dict[str, object], out: Path = OUT) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     new_file = not out.exists() or out.stat().st_size == 0
+    if not new_file:
+        _migrate_header(out)
     with open(out, "a", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=FIELDS)
         if new_file:
