@@ -135,3 +135,9 @@
 - **Binance 遡及取得の実証**(2026-08-23): `data.binance.vision` の日次アーカイブ(spot 1s klines・aggTrades)は直近日も約3か月前も HTTP 200 で到達可 — **保持期限なし、研究時の遡及取得で足りる**(先回り収集は不要)。注意: タイムスタンプは**マイクロ秒**(ミリ秒ではない)。一方 `api.binance.com`(REST)はこの環境から HTTP 451 で geo-block(fapi と同様)— 使えるのは静的アーカイブのみ
 - データ収集の切り分け原則と係属研究→データ対応表: `docs/DATA_PLAN_2026-08-23.md`(今すぐ集める = 期限付きで消滅するものだけ)
 - 蓄積中(`data/`): WS記録 `ws/*.jsonl.gz`(板・約定・ティッカー、実測523msg/分・約70MB/日)/ `spread_FX_BTC_JPY.csv`(5秒毎 bid/ask)/ `oi_snapshots.csv`(15分毎、OKX OI・L-S比・Deribit DVOL)/ `basis_1m.csv` / `funding_rate_history.csv`(66日・200決済)/ `scalp_paper.jsonl`(スキャルパー全判断)
+
+## 7. 評価済み外部ツール(再評価の重複防止)
+
+| ツール | 評価日 | 結論 |
+|---|---|---|
+| Freqtrade(GPLv3、約53k★、CCXTベースの暗号資産BOT基盤) | 2026-09-01 | **信頼性は高い(実在・活発・lookahead/recursive分析は実装済み)が不採用**。公式対応取引所(現物: Binance/BingX/Bitget/Bybit/Gate/HTX/Hyperliquid/Kraken/OKX、先物: Binance/Bitget/Bybit/Gate/HL/Kraken/OKX)に **bitFlyer・GMO・JPX はいずれも無い**(READMEに「CCXT経由の他所は動作保証なし」と明記)。強みの hyperopt/FreqAI は当プロジェクトの研究規律が排除する「足ベース指標の履歴最適化」であり、コスト床の算術も変えない。自前資産(コストモデル・嵐法則・ON1安全執行系)は移植不能。将来、対応取引所に移る場合のみ再検討(日本居住者の海外取引所利用は規制上の注意が必要) |
