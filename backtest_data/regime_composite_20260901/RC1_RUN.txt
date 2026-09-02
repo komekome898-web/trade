@@ -1,0 +1,110 @@
+==============================================================================
+RC1 — 大衆心理×大口×テクニカルの等重量合成指標(PREREG 2026-09-01 凍結)
+==============================================================================
+features: backtest_data/regime_composite_20260901/features_daily.csv
+seed=20260901  bootstrap reps=10000  cost=6 bps/week
+
+daily feature rows: 4080 (2015-07-01 .. 2026-08-31)
+weekly samples built: 303 (2020-11-02 .. 2026-08-24)
+dropped weeks — <4 components: 279, no forward return: 1
+
+look-ahead structure (PREREG §5): each sample is stamped Monday 00:00 UTC.
+  Every component is a rolling Z of the SUNDAY daily row against the
+  365 rows strictly BEFORE that Sunday (current row excluded), so the
+  newest datum touching a feature is Sunday 23:59 UTC — strictly earlier
+  than the sample stamp; `assert feature_date < monday` enforces it per row.
+  The target is the Monday close -> next Monday close log return (Bitstamp),
+  i.e. entirely in the future of the feature.  Weeks are non-overlapping.
+
+==============================================================================
+§3 フィージビリティ足切り(探索窓 2021-01-04 .. 2022-12-26)
+==============================================================================
+--- EXPLORATION (参考・符号確認のみ): n=103 weeks (2021-01-04 .. 2022-12-26) ---
+composite Spearman IC = +0.0203   t = +0.204   n = 103
+composite mean/sd = +0.0372 / 0.4989; fwd mean = -0.681%/wk
+
+component IC (signed component vs next-week return; >0 == prior sign held)
+  component                                        n       IC       t  prior  ok
+  1 funding_3d_mean (資金調達率3日平均)                  103  -0.0191   -0.19   -   no
+  2 premium_1d (先物プレミアム日次)                       102  +0.0011   +0.01   -   YES
+  3 ls_ratio (全体L/S口座比)                           58  +0.0295   +0.22   -   YES
+  4 toptrader_ls (大口建玉L/S比)                       10  -0.0303   -0.09   +   no
+  5 tone_7d_mean (GDELT報道トーン7日)                  103  +0.0413   +0.42   -   YES
+  6 ret_28d (4週モメンタム)                            103  +0.0494   +0.50   +   YES
+  components with prior sign held: 4/6
+
+quintiles of the composite (Q1 = most bearish signal, Q5 = most bullish)
+   Q    n           comp range   mean fwd    median     hit
+   1   21 [ -1.506, -0.340]    +0.370%   -0.833%   47.6%
+   2   21 [ -0.311, +0.060]    -1.865%   -1.205%   47.6%
+   3   21 [ +0.060, +0.250]    -2.622%   -1.106%   38.1%
+   4   20 [ +0.260, +0.449]    +1.715%   +1.990%   60.0%
+   5   20 [ +0.450, +1.084]    -0.898%   -2.422%   45.0%
+  Q5-Q1 spread = -1.267%/wk   Welch t = -0.353
+  after 6 bps/wk cost: -1.327%/wk
+
+annual decomposition
+   year    n       IC       t      Q5-Q1
+   2021   51  +0.1205   +0.85    +2.081%
+   2022   52  +0.0640   +0.45    -0.911%
+
+>>> feasibility PASSED (exploration t = +0.204 >= 0) → proceed to OOS (§4). Exploration t is NOT evidence of adoption.
+
+==============================================================================
+§4 判定窓 OOS 2023-01-02 .. 2026-08-31(一度だけ開封)
+==============================================================================
+--- OOS (判定窓): n=191 weeks (2023-01-02 .. 2026-08-24) ---
+composite Spearman IC = -0.0728   t = -1.003   n = 191
+composite mean/sd = +0.0493 / 0.4125; fwd mean = +0.808%/wk
+
+component IC (signed component vs next-week return; >0 == prior sign held)
+  component                                        n       IC       t  prior  ok
+  1 funding_3d_mean (資金調達率3日平均)                  191  +0.0124   +0.17   -   YES
+  2 premium_1d (先物プレミアム日次)                       191  -0.0419   -0.58   -   no
+  3 ls_ratio (全体L/S口座比)                          191  +0.0140   +0.19   -   YES
+  4 toptrader_ls (大口建玉L/S比)                      150  -0.0210   -0.26   +   no
+  5 tone_7d_mean (GDELT報道トーン7日)                  188  -0.0895   -1.23   -   no
+  6 ret_28d (4週モメンタム)                            191  +0.1072   +1.48   +   YES
+  components with prior sign held: 3/6
+
+quintiles of the composite (Q1 = most bearish signal, Q5 = most bullish)
+   Q    n           comp range   mean fwd    median     hit
+   1   39 [ -1.644, -0.282]    +1.037%   +1.358%   61.5%
+   2   38 [ -0.278, -0.037]    +2.492%   +1.952%   55.3%
+   3   38 [ -0.032, +0.135]    +0.268%   -0.329%   47.4%
+   4   38 [ +0.141, +0.391]    -0.139%   -0.773%   39.5%
+   5   38 [ +0.393, +1.089]    +0.375%   +0.946%   52.6%
+  Q5-Q1 spread = -0.662%/wk   Welch t = -0.459
+  after 6 bps/wk cost: -0.722%/wk
+
+annual decomposition
+   year    n       IC       t      Q5-Q1
+   2023   52  +0.0969   +0.69    +2.448%
+   2024   53  -0.1467   -1.06    -5.075%
+   2025   52  +0.0105   +0.07    +0.464%
+   2026   34  -0.0659   -0.37    -2.088%
+
+weekly-block bootstrap IC 95% CI (seed 20260901, 10000 reps): [-0.2104, +0.0634]
+  (blocks are the weekly non-overlapping samples themselves; the simple t
+   above is the pre-registered statistic, this CI is a confirmation only)
+
+==============================================================================
+§4 判定(凍結基準)
+==============================================================================
+  基準1 IC > 0 かつ t >= 2.0        : IC=-0.0728 t=-1.003 -> FAIL
+  基準2 Q5-Q1 > 0 かつ t >= 1.5     : spread=-0.662%/wk t=-0.459 -> FAIL
+  基準3 6成分中4以上が事前符号      : 3/6 -> FAIL
+  基準4 6bps/週控除後も正           : -0.722%/wk -> FAIL
+
+§6 読み方に従う結論:
+  基準1 or 2 が落ちた → **方向合成は棄却**。成分別に「規模(ボラ)ゲート」
+  への転用のみ検討可(方向としては再検定しない)。
+
+==============================================================================
+§5 決定性
+==============================================================================
+  sample digest run#1 = 559e2c45d9921dd2
+  sample digest run#2 = 559e2c45d9921dd2   -> MATCH
+  bootstrap CI run#1 = [-0.210439, +0.063432]
+  bootstrap CI run#2 = [-0.210439, +0.063432]   -> MATCH
+==============================================================================

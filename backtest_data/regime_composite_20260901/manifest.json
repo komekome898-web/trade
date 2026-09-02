@@ -1,0 +1,57 @@
+{
+  "prereg": "docs/PREREG_regime_composite.md (frozen 2026-09-01)",
+  "collected_utc": "2026-09-02T06:28:45+00:00",
+  "sources": {
+    "funding": {
+      "url_pattern": "https://data.binance.vision/data/futures/um/monthly/fundingRate/BTCUSDT/BTCUSDT-fundingRate-YYYY-MM.zip",
+      "files": 0,
+      "rows": 2435,
+      "first": "2020-01-01",
+      "last": "2026-08-31"
+    },
+    "premium": {
+      "url_pattern": "https://data.binance.vision/data/futures/um/monthly/premiumIndexKlines/BTCUSDT/1d/BTCUSDT-1d-YYYY-MM.zip",
+      "files": 0,
+      "rows": 2427,
+      "first": "2020-01-01",
+      "last": "2026-08-31"
+    },
+    "metrics": {
+      "url_pattern": "https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-YYYY-MM-DD.zip",
+      "files": 0,
+      "note": "5-min rows averaged to one row per UTC day",
+      "rows": 2069,
+      "first": "2021-01-01",
+      "last": "2026-08-31"
+    },
+    "gdelt": {
+      "url_pattern": "https://api.gdeltproject.org/api/v2/doc/doc?query=bitcoin&mode=timelinetone&STARTDATETIME=...&ENDDATETIME=...&format=CSV",
+      "chunks": 0,
+      "rows": 3505,
+      "first": "2017-01-01",
+      "last": "2026-08-31"
+    },
+    "price": {
+      "source": "data/attention/attention.csv (Bitstamp daily via scripts/fetch_attention.py)",
+      "rows": 4080,
+      "first": "2015-07-01",
+      "last": "2026-08-31"
+    }
+  },
+  "missing": {},
+  "missing_counts": {},
+  "features_daily": {
+    "rows": 4080,
+    "first": "2015-07-01",
+    "last": "2026-08-31",
+    "non_null": {
+      "funding_3d_mean": 2435,
+      "premium_1d": 2427,
+      "ls_ratio": 2050,
+      "toptrader_ls": 1754,
+      "tone_7d_mean": 3506,
+      "ret_28d": 4052,
+      "close": 4080
+    }
+  }
+}
