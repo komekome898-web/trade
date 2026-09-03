@@ -11,6 +11,7 @@ path exactly and is trivial to reason about.
 from __future__ import annotations
 
 import gzip
+import json
 import re
 import sys
 from pathlib import Path
@@ -225,6 +226,54 @@ def test_safety_valve_is_deterministic_across_two_calls(tmp_path, capsys):
     m.main(paths=[str(tape)])
     out2 = capsys.readouterr().out
     assert out1 == out2
+
+
+def test_status_json_writes_n_period_and_last_day_but_no_statistics(tmp_path, capsys):
+    """--status-json feeds the dashboard S12 tile: n / fresh period / last day
+    only. The n<30 safety valve on stdout is unaffected, and the JSON payload
+    itself never carries a statistic even though it is written at any n."""
+    t0 = int(iso_to_epoch("2026-08-26T12:35:00Z"))
+    p0 = 10_000_000.0
+    up = p0 * 1.0030
+    down = p0 * 0.9970
+    t, price, buy = synth_prints(t0, [
+        (250, p0), (200, up), (2000, up), (250, p0), (200, down),
+    ])
+    tape = tmp_path / "executions_synth.csv.gz"
+    write_gz_tape(tape, t, price, buy)
+    out_path = tmp_path / "sub" / "s12_status.json"
+
+    rc = m.main(paths=[str(tape)], status_json_path=str(out_path))
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out_path.exists()
+
+    payload = json.loads(out_path.read_text(encoding="utf-8"))
+    assert set(payload) == {"n", "need", "fresh_start", "fresh_end", "last_day",
+                            "generated_at"}
+    assert 0 < payload["n"] < 30
+    assert payload["need"] == 30
+    assert payload["fresh_start"].startswith("2026-08-26")
+    assert payload["last_day"] == payload["fresh_end"][:10]
+
+    # the printed safety-valve line is unchanged, and no statistic leaked into
+    # either the stdout line or the JSON payload's own (small, fixed) key set
+    lines = [ln for ln in out.splitlines() if ln.strip()]
+    assert len(lines) == 1 and "judgment not executed" in lines[0]
+    dumped = json.dumps(payload)
+    for forbidden in ("bps", "PASS", "FAIL", "maxDD", "CI"):
+        assert forbidden not in dumped
+
+
+def test_status_json_payload_has_no_period_when_no_fresh_prints(tmp_path):
+    t0 = int(iso_to_epoch("2026-08-20T12:00:00Z"))  # before the fresh cutoff
+    t, price, buy = synth_prints(t0, [(10, 10_000_000.0)])
+    tape = tmp_path / "executions_stale.csv.gz"
+    write_gz_tape(tape, t, price, buy)
+    pipe = m.run_pipeline([str(tape)])
+    payload = m.status_json_payload(pipe, now=1_800_000_000.0)
+    assert payload == {"n": 0, "need": 30, "fresh_start": None, "fresh_end": None,
+                       "last_day": None, "generated_at": 1_800_000_000.0}
 
 
 # --------------------------------------------------------------------------

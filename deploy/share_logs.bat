@@ -28,11 +28,16 @@ copy /Y data\kill_switch.json paper_logs\ >nul 2>&1
 rem ON1 forward paper ledger + its JPX source (small CSVs)
 copy /Y data\paper_on1\ledger.csv paper_logs\on1_ledger.csv >nul 2>&1
 copy /Y data\jpx_daily\nk225_sessions.csv paper_logs\nk225_sessions.csv >nul 2>&1
+rem S12 clock-burst status tile feed (n / fresh period / last day only)
+copy /Y data\s12_status.json paper_logs\s12_status.json >nul 2>&1
 dir /-C data\ws > paper_logs\ws_listing.txt 2>nul
 if not exist paper_logs\tape mkdir paper_logs\tape
 if exist data\tape\*.csv.gz copy /Y data\tape\*.csv.gz paper_logs\tape\ >nul 2>&1
 if not exist paper_logs\venues mkdir paper_logs\venues
 if exist data\venues\*.csv.gz copy /Y data\venues\*.csv.gz paper_logs\venues\ >nul 2>&1
+rem Binance daily metrics + USDJPY (dashboard G6 features / yen conversion)
+if not exist paper_logs\binance_daily mkdir paper_logs\binance_daily
+if exist data\binance_daily\*.csv copy /Y data\binance_daily\*.csv paper_logs\binance_daily\ >nul 2>&1
 
 git add paper_logs
 rem Commit only when there is something staged (quiet no-op otherwise).

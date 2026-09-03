@@ -14,3 +14,8 @@ rem session prints -> paper ledger (docs/PREREG_on1_forward.md)
 ".venv\Scripts\python.exe" "scripts\paper_on1.py" >> "logs\fetch.out.log" 2>&1
 rem crowd-heat gauge series (Wikipedia/GDELT/F&G) for the dashboard tile
 ".venv\Scripts\python.exe" "scripts\fetch_attention.py" >> "logs\fetch.out.log" 2>&1
+rem Binance daily futures metrics (G6 features / regime) + USDJPY (yen conversion)
+".venv\Scripts\python.exe" "scripts\fetch_binance_daily.py" >> "logs\fetch.out.log" 2>&1
+rem S12 clock-burst-30m status tile feed (n / fresh period / last day only;
+rem the n<30 safety valve inside the script still applies to the full report)
+".venv\Scripts\python.exe" "scripts\research_clock_burst.py" --status-json "data\s12_status.json" >> "logs\fetch.out.log" 2>&1

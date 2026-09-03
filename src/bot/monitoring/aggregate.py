@@ -6,6 +6,7 @@ no network. Everything degrades to None/empty when a file is missing.
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import re
 import time
@@ -18,6 +19,39 @@ from bot.monitoring.decision_text import (
 )
 from bot.monitoring.gates import cached_scan, collect_gates, parse_ts
 from bot.radar import StormRadar
+
+# データ蓄積表 + 判定ゲート双方が読む「目的」注記 (日本語・簡潔)。表示専用の静的
+# テキストであり、ゲートのバー文字列/判定ロジック(gates.py, judge_gates.py)には
+# 一切触れない — fail-close設計のバーはここでは変更できない。
+GATE_PURPOSE: dict[str, str] = {
+    "champion": "n>=30決済で本番投入可否を判定(判定済みFAIL・以後はC2用データの収集運搬役)",
+    "c2": "嵐時計窓内サブセットの追加検証(§4a)",
+    "oi": "30日到達で清算リバージョンのフェーズC判定",
+    "board": "板7日で監視モードの再校正",
+    "spreadmm": "板14日でスプレッドMMの確認判定(maker線は探索で既に棄却済み)",
+    "funding": "63日で資金調達後ドリフト再検定",
+}
+
+# データ蓄積表: 収集ラベル -> 目的 (「何のために集めているか」を1行で)。
+# scripts/dashboard.py が同じキーでこの目的文言を参照する。
+COLLECTOR_PURPOSE: dict[str, str] = {
+    "板記録 (WS)": "G7・監視モード(スプレッドMM再開条件)・GMO校正",
+    "ティッカー/板上位テープ": "S12判定・嵐ライブラリ",
+    "venues (bitbank/GMO/bF現物)": "効率ギャップ地図の定点観測",
+    "OIスナップショット (+価格)": "G6フェーズC・推定建値台帳",
+    "注目系列": "市場加熱度計器・長期チャート",
+    "JPX日報": "ON1ペーパー台帳",
+    "bitFlyer candles": "G8資金調達窓",
+    "Binance日次": "G6特徴量・レジーム監視",
+    "USDJPY": "円換算",
+    "Binance 1m": "外部特徴量(短期足)参考",
+    "bitbank 1m": "退役スキャルパーの参考系列",
+    "spread record": "実効スプレッド計測",
+}
+
+# 推定建値台帳 (scripts/research_position_ladder.py): 価格列は 2026-08-31 以降の
+# 行のみ使う (それ以前は btc_usd が無い/バックフィル対象外のロット)。
+LADDER_PRICE_CUTOFF = "2026-08-31"
 
 
 def _read_json(path: Path) -> dict | None:
@@ -140,6 +174,62 @@ def _oi_snapshot(path: Path, now: float) -> dict[str, Any] | None:
         "age_sec": info["age_sec"],
         "row_age_sec": row_age,
         "last": row,
+    }
+
+
+_ladder_module_cache: dict[str, Any] = {}
+
+
+def _ladder_module() -> Any:
+    """Lazily loads scripts/research_position_ladder.py's build_ladder — the
+    ONE implementation of the OI-delta ladder inference, shared with the CLI
+    tool by file identity rather than duplicated here. No network call is
+    made: only build_ladder (pure) is used, never the OKX backfill helpers."""
+    mod = _ladder_module_cache.get("mod")
+    if mod is not None:
+        return mod
+    path = Path(__file__).resolve().parents[3] / "scripts" / "research_position_ladder.py"
+    spec = importlib.util.spec_from_file_location("research_position_ladder", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    _ladder_module_cache["mod"] = mod
+    return mod
+
+
+def _position_ladder(path: Path, now: float) -> dict[str, Any] | None:
+    """Estimated entry-price ladder for the その他 console section (推定建値
+    台帳). Rows are restricted to ts_utc >= LADDER_PRICE_CUTOFF (earlier rows
+    predate the price backfill) and rows with no btc_usd cell are skipped —
+    both per the same rule build_ladder's own docstring records. Display only:
+    G6 phase-C study pending (KNOWLEDGE §4), no signal is adopted from this.
+    """
+    info = _file_info(path, now)
+    if info is None:
+        return None
+    try:
+        with path.open(newline="", encoding="utf-8") as f:
+            rows = [r for r in csv.DictReader(f) if r.get("okx_usdt_oi")]
+    except OSError:
+        return None
+    rows = [r for r in rows if (r.get("ts_utc") or "") >= LADDER_PRICE_CUTOFF]
+    if not rows:
+        return {"age_sec": info["age_sec"], "price": None, "above_pct": None,
+                "below_pct": None, "rungs": []}
+    ladder, px = _ladder_module().build_ladder(rows)
+    if not ladder or px is None:
+        return {"age_sec": info["age_sec"], "price": px, "above_pct": None,
+                "below_pct": None, "rungs": []}
+    total = sum(ladder.values())
+    above = sum(v for b, v in ladder.items() if b > px)
+    below = sum(v for b, v in ladder.items() if b < px)
+    top5 = sorted(ladder.items(), key=lambda kv: kv[1], reverse=True)[:5]
+    return {
+        "age_sec": info["age_sec"],
+        "price": px,
+        "above_pct": round(above / total * 100, 1),
+        "below_pct": round(below / total * 100, 1),
+        "rungs": [{"price": b, "share_pct": round(v / total * 100, 2)}
+                 for b, v in top5],
     }
 
 
@@ -489,16 +579,8 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
     ws_dir = root / "data" / "ws"
     ws_files = sorted(ws_dir.glob("*.jsonl.gz")) if ws_dir.exists() else []
     ws_latest = _file_info(ws_files[-1], now) if ws_files else None
-    ws_total_mb = round(sum(f.stat().st_size for f in ws_files) / 1e6, 1) if ws_files else 0.0
-
-    collectors = {}
-    for label, rel in [
-        ("bitFlyer candles", "data/candles_FX_BTC_JPY.csv"),
-        ("Binance 1m", "data/binance_BTCUSDT_1m.csv"),
-        ("bitbank 1m", "data/bitbank_xrp_jpy_1m.csv"),
-        ("spread record", "data/spread_FX_BTC_JPY.csv"),
-    ]:
-        collectors[label] = _file_info(root / rel, now)
+    ws_total_bytes = sum(f.stat().st_size for f in ws_files) if ws_files else 0
+    ws_total_mb = round(ws_total_bytes / 1e6, 1) if ws_files else 0.0
 
     oi_snapshot = _oi_snapshot(root / "data" / "oi_snapshots.csv", now)
     on1 = _on1_paper(root / "data" / "paper_on1" / "ledger.csv", now)
@@ -514,6 +596,35 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         "board_top": _ingest_latest(tape, "board_top*.csv.gz", now),
         "venues": _ingest_latest(root / "data" / "venues", "*", now,
                                  dated=False),
+    }
+
+    # データ蓄積表 (§A1 dashboard reorg): データ / 最終更新 / サイズ / 目的.
+    # Every entry is {"age_sec", "size"} or None so the existing "v ? ... :
+    # 未収集" render keeps working unchanged; COLLECTOR_PURPOSE (dashboard.py
+    # mirrors the same keys) supplies the 目的 text. ティッカー/板上位テープ
+    # folds data/tape's two shard kinds into one row (freshest age, summed
+    # size) — the underlying per-kind freshness stays available in ``ingest``.
+    tape_entries = [e for e in (ingest["ticker"], ingest["board_top"]) if e]
+    tape_row = ({"age_sec": min(e["age_sec"] for e in tape_entries),
+                "size": sum(e.get("size") or 0 for e in tape_entries)}
+               if tape_entries else None)
+    ws_row = ({"age_sec": ws_latest["age_sec"], "size": ws_total_bytes}
+             if ws_latest else None)
+    venues_row = ingest["venues"]
+
+    collectors = {
+        "板記録 (WS)": ws_row,
+        "ティッカー/板上位テープ": tape_row,
+        "venues (bitbank/GMO/bF現物)": venues_row,
+        "OIスナップショット (+価格)": oi_snapshot,
+        "注目系列": _file_info(root / "data" / "attention" / "attention.csv", now),
+        "JPX日報": _file_info(root / "data" / "jpx_daily" / "nk225_sessions.csv", now),
+        "bitFlyer candles": _file_info(root / "data" / "candles_FX_BTC_JPY.csv", now),
+        "Binance日次": _file_info(root / "data" / "binance_daily" / "metrics.csv", now),
+        "USDJPY": _file_info(root / "data" / "binance_daily" / "usdjpy.csv", now),
+        "Binance 1m": _file_info(root / "data" / "binance_BTCUSDT_1m.csv", now),
+        "bitbank 1m": _file_info(root / "data" / "bitbank_xrp_jpy_1m.csv", now),
+        "spread record": _file_info(root / "data" / "spread_FX_BTC_JPY.csv", now),
     }
 
     bot_age = (now - status["updated_at"]) if status.get("updated_at") else None
@@ -576,6 +687,19 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         # Pending COVERAGE gates (docs/KNOWLEDGE.md §4/§5) with the bars
         # scripts/judge_gates.py judges against, so the console can show how
         # far off each pre-registered sample still is. Progress and ETA only —
-        # nothing here decides anything.
-        "gates": collect_gates(root, now, ws_files),
+        # nothing here decides anything. ``purpose`` is display-only text
+        # (GATE_PURPOSE above) — the bar/verdict fields judge_gates shares
+        # with this module are untouched.
+        "gates": [dict(g, purpose=GATE_PURPOSE.get(g["key"], ""))
+                 for g in collect_gates(root, now, ws_files)],
+        # S12 clock-burst-30m status tile (scripts/research_clock_burst.py
+        # --status-json): n / fresh period / last day only, written by
+        # fetch_all.bat daily. None until the first run writes the file — the
+        # n<30 safety valve on the full report is a separate concern and
+        # still applies; this payload never carries a statistic either way.
+        "s12": _read_json(root / "data" / "s12_status.json"),
+        # 推定建値台帳 (scripts/research_position_ladder.py:build_ladder,
+        # imported by identity — see _ladder_module). Display/monitoring
+        # only: G6 phase-C study pending (KNOWLEDGE §4), no signal adopted.
+        "ladder": _position_ladder(root / "data" / "oi_snapshots.csv", now),
     }

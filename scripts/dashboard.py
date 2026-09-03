@@ -122,6 +122,20 @@ PAGE = """<!doctype html>
            padding: 10px 14px; }
   .gates .g { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
   .gates .g .k { color: var(--muted); }
+  .gates .g .purpose { color: var(--muted); font-size: 11px; }
+  td.purpose { color: var(--muted); font-size: 11.5px; }
+
+  /* ---- console: 4 grouped sections (データ蓄積 / ゲート開放 / ペーパー / その他) --- */
+  .group-h { font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--muted); margin: 4px 2px -10px; }
+  /* 推定建値台帳: single-hue continuous-quantity bar, value label in ink (not muted) */
+  .ladder-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 12px; }
+  .ladder-px { width: 84px; color: var(--muted); text-align: right; flex-shrink: 0; }
+  .ladder-bar { flex: 1; height: 8px; border-radius: 3px; overflow: hidden;
+                background: color-mix(in srgb, var(--line) 70%, transparent); }
+  .ladder-bar i { display: block; height: 100%; background: var(--accent); }
+  .ladder-val { width: 52px; text-align: right; color: var(--ink); flex-shrink: 0; }
+  .ladder-cur { color: var(--accent); }
 
   /* ---- tabs ---- */
   nav.tabs { display: flex; gap: 4px; padding: 0 20px; background: var(--bg);
@@ -198,10 +212,21 @@ PAGE = """<!doctype html>
 <main id="view-console">
   <div class="banner" id="banner"></div>
   <div class="tiles" id="tiles"></div>
+
+  <div class="group-h">1. データ蓄積</div>
   <section>
-    <h2>判定ゲート (確定済み判定と係属中の必要サンプル)</h2>
+    <h2>データ収集 <span class="sub">データ / 最終更新 / サイズ / 目的</span></h2>
+    <div class="scroll"><table id="t-col"></table></div>
+  </section>
+
+  <div class="group-h">2. ゲート開放</div>
+  <section>
+    <h2>判定ゲート (確定済み判定と係属中の必要サンプル・目的つき)</h2>
     <div class="gates" id="gates"></div>
   </section>
+
+  <div class="group-h">3. ペーパートレード</div>
+  <div class="tiles" id="tiles-paper"></div>
   <div class="grid2">
     <section>
       <h2>メインBOT: 最近の判断</h2>
@@ -212,14 +237,16 @@ PAGE = """<!doctype html>
       <div class="scroll"><table id="t-scalp"></table></div>
     </section>
   </div>
+
+  <div class="group-h">4. その他 <span class="sub">API状態・Kill Switch・レーダーは上部の帯とタイルに表示中</span></div>
+  <section>
+    <h2>推定建値台帳 <span class="sub">ΔOI配分・按分退出・表示専用(G6フェーズC待ち)</span></h2>
+    <div class="oi" id="ladder"></div>
+  </section>
   <section>
     <h2>BTC長期チャートと市場加熱度 <span class="sub">月足ローソク・2015年〜 / 表示専用(方向予測は棄却済み)</span></h2>
     <div class="chartwrap"><canvas id="a-chart"></canvas><div class="tip" id="a-tip"></div></div>
     <div class="legend" id="a-legend"></div>
-  </section>
-  <section>
-    <h2>データ収集</h2>
-    <div class="scroll"><table id="t-col"></table></div>
   </section>
 </main>
 <main id="view-market" hidden>
@@ -362,6 +389,54 @@ function on1Tiles(o) {
               `${fmt(o.mean_net_bps, 1)}bps ${o.trades}回`) +
          tile("ON1 監視線", o.guard || "—", guardBad ? "neg" : "pos",
               `〜${(o.last_exit_date || "").slice(4, 6)}/${(o.last_exit_date || "").slice(6, 8)}${fr}`);
+}
+
+// チャンピオン (aggregate.py: gates[key="champion"]; report #22)。判定は既に
+// FAIL で確定しており(§5)、以後の稼働はC2窓内サブセットを埋める収集運搬役
+// でしかない — その2点を1タイルで明記する(判定ゲート表の同じ行が数値の
+// 出所)。
+function championTile(gates) {
+  const g = (gates || []).find(x => x.key === "champion");
+  if (!g) return "";
+  return tile("チャンピオン (xborder_momentum)", `判定済み ${g.verdict || "—"}`, "sub",
+    "収集運搬役として稼働中(C2判定まで)");
+}
+
+// S12 時計バースト30分 (scripts/research_clock_burst.py --status-json;
+// data/s12_status.json, fetch_all.bat が毎日書く)。n・フレッシュ期間・最終日
+// だけの安全な要約 — n<30の間は判定文を一切出さない安全弁はスクリプト側に
+// あり、このタイルは統計を持たない。
+function s12Tile(s) {
+  if (s == null) return tile("S12 新鮮n", "未収集");
+  const last = s.last_day ? s.last_day.slice(5).replace("-", "/") : "—";
+  return tile("S12 新鮮n", `${fmt(s.n, 0)}/${fmt(s.need, 0)}`, "", `最終 ${last}`);
+}
+
+// 推定建値台帳 (aggregate.py: ladder -> scripts/research_position_ladder.py
+// build_ladder)。ΔOIを$500刻みの価格ラングに配分し、減少は按分退出 — 表示・
+// 監視専用(G6フェーズC待ち、シグナルとしては未採用)。dataviz: 単一色の連続量
+// バー、値ラベルはインク色(.ladder-val)。
+function renderLadder(l) {
+  const el = document.getElementById("ladder");
+  if (!el) return;
+  if (!l || !l.rungs || !l.rungs.length) {
+    el.innerHTML = '<span class="empty">推定建値台帳: 未収集(2026-08-31以降の価格付きOI行が必要)</span>';
+    return;
+  }
+  const row = (k, v) => `<div class="row"><span class="k">${k}</span><span class="mono">${v}</span></div>`;
+  const maxShare = Math.max(...l.rungs.map(r => r.share_pct));
+  const rungs = l.rungs.map(r => {
+    return `<div class="ladder-row"><span class="ladder-px mono">$${fmt(r.price, 0)}</span>` +
+      `<span class="ladder-bar"><i style="width:${maxShare > 0 ? (r.share_pct / maxShare * 100).toFixed(1) : 0}%"></i></span>` +
+      `<span class="ladder-val mono">${fmt(r.share_pct, 1)}%</span></div>`;
+  }).join("");
+  el.innerHTML =
+    row("現在値", l.price != null ? `$${fmt(l.price, 0)}` : "—") +
+    row("上方質量 (現在値超・ロング含み損側)", l.above_pct != null ? `${fmt(l.above_pct, 1)}%` : "—") +
+    row("下方質量 (現在値未満・ショート含み損側)", l.below_pct != null ? `${fmt(l.below_pct, 1)}%` : "—") +
+    `<div style="margin-top:6px">${rungs}</div>` +
+    `<div class="sub" style="font-size:11px;margin-top:6px">上位5ラング($500刻み) / 推定(集計OIからの逆算、` +
+    `Hyperliquid型の実データではない) — シグナル未採用</div>`;
 }
 
 // 市場加熱度 (aggregate.py: attention; docs/SURVEY_ATTENTION_DATA.md)。
@@ -540,7 +615,6 @@ async function refresh() {
     tile("約定回数", fmt(b.trade_count, 0) + " 回") +
     tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円`, pnlCls(d.scalp.total_pnl_jpy),
          `${d.scalp.trades}回`) +
-    on1Tiles(d.on1) +
     attentionTile(d.attention) +
     tile("エラー数", fmt(b.error_count, 0)) +
     apiTile(d.api_health) +
@@ -549,6 +623,11 @@ async function refresh() {
     ingestTile("収集: board_top", (d.ingest || {}).board_top) +
     ingestTile("収集: venues", (d.ingest || {}).venues);
 
+  // 3. ペーパートレード: champion (判定済みFAIL・収集運搬役) + ON1台帳 + S12
+  const tp = document.getElementById("tiles-paper");
+  if (tp) tp.innerHTML = championTile(d.gates) + on1Tiles(d.on1) + s12Tile(d.s12);
+
+  renderLadder(d.ladder);
   renderGates(d.gates || []);
 
   // long-horizon attention chart: redraw only when the monthly series changed
@@ -586,16 +665,36 @@ async function refresh() {
     : "<tr><td class='empty'>イベントなし(退役済み — 記録のみ)</td></tr>";
 
   // データ収集: the plain collectors first (no pre-registered bar on them),
-  // then one row per pending gate carrying 必要量 / 進捗 / 残り時間.
+  // then one row per pending gate carrying 必要量 / 進捗 / 残り時間. Every row
+  // ends in a 目的 cell -- static text (COLLECTOR_PURPOSE / g.purpose), never
+  // computed from the row's own freshness.
   const col = Object.entries(d.collectors || {});
   document.getElementById("t-col").innerHTML =
     "<tr><th>データ</th><th>最終更新</th><th class='num'>サイズ</th>" +
-    "<th>必要量</th><th>進捗</th><th class='num'>残り時間</th></tr>" +
+    "<th>必要量</th><th>進捗</th><th class='num'>残り時間</th><th>目的</th></tr>" +
     col.map(([k, v]) => `<tr><td>${k}</td><td>${v ? age(v.age_sec) : "未収集"}</td>` +
       `<td class="num mono">${v ? fmt(v.size / 1e6, 1) + " MB" : "—"}</td>` +
-      `<td class="sub">—</td><td class="sub">—</td><td class="num sub">—</td></tr>`).join("") +
+      `<td class="sub">—</td><td class="sub">—</td><td class="num sub">—</td>` +
+      `<td class="purpose">${COLLECTOR_PURPOSE[k] || "—"}</td></tr>`).join("") +
     (d.gates || []).map(g => gateRow(g, d)).join("");
 }
+
+// データ蓄積表の「目的」列: 静的テキスト。キーは aggregate.py: COLLECTOR_PURPOSE
+// と一致させる(同期はキー文字列の一致で保つ — 値そのものはUI文言なのでここに置く)。
+const COLLECTOR_PURPOSE = {
+  "板記録 (WS)": "G7・監視モード(スプレッドMM再開条件)・GMO校正",
+  "ティッカー/板上位テープ": "S12判定・嵐ライブラリ",
+  "venues (bitbank/GMO/bF現物)": "効率ギャップ地図の定点観測",
+  "OIスナップショット (+価格)": "G6フェーズC・推定建値台帳",
+  "注目系列": "市場加熱度計器・長期チャート",
+  "JPX日報": "ON1ペーパー台帳",
+  "bitFlyer candles": "G8資金調達窓",
+  "Binance日次": "G6特徴量・レジーム監視",
+  "USDJPY": "円換算",
+  "Binance 1m": "外部特徴量(短期足)参考",
+  "bitbank 1m": "退役スキャルパーの参考系列",
+  "spread record": "実効スプレッド計測",
+};
 
 const UNIT_JA = {trades: "回", rows: "行", days: "日"};
 
@@ -629,6 +728,7 @@ function gateRow(g, d) {
   const dec = g.unit === "days" ? 1 : 0;
   // the OI row keeps the live readings it always carried in its label
   const extra = g.key === "oi" ? oiValues(d.oi_snapshot) : "";
+  const purpose = `<td class="purpose">${g.purpose || "—"}</td>`;
   const head = `<tr><td>${g.label}${extra}</td>` +
     `<td>${g.age_sec != null ? age(g.age_sec) : "未収集"}</td>` +
     `<td class="num mono sub">${g.detail || "—"}</td>` +
@@ -637,12 +737,12 @@ function gateRow(g, d) {
     return head +
       `<td><span class="down">${verdictText(g)}</span> ` +
         `<span class="sub mono">${fmt(g.have, dec)}${u}収集済み</span></td>` +
-      `<td class="num sub">—</td></tr>`;
+      `<td class="num sub">—</td>` + purpose + `</tr>`;
   }
   return head +
     `<td>${progBar(g)}<span class="mono">${fmt(g.have, dec)}/${fmt(g.need, dec)}${u}</span> ` +
       `<span class="sub mono">${g.pct != null ? fmt(g.pct, 0) + "%" : "—"}</span></td>` +
-    `<td class="num mono">${eta(g.eta_sec)}</td></tr>`;
+    `<td class="num mono">${eta(g.eta_sec)}</td>` + purpose + `</tr>`;
 }
 
 // OI/DVOL snapshot recorder (scripts/record_oi.py): one row per collector run.
@@ -666,16 +766,17 @@ function renderGates(gates) {
   el.innerHTML = gates.map(g => {
     const u = UNIT_JA[g.unit] || "";
     const dec = g.unit === "days" ? 1 : 0;
+    const purpose = g.purpose ? `<span class="purpose">${g.purpose}</span>` : "";
     if (g.verdict) {
-      return `<span class="g" title="${verdictText(g)}">` +
+      return `<span class="g" title="${verdictText(g)}${g.purpose ? " / " + g.purpose : ""}">` +
         `<span class="k">${g.label}</span>` +
         `<span class="down">判定済み ${g.verdict}</span>` +
-        `<span class="sub">${g.verdict_note}</span></span>`;
+        `<span class="sub">${g.verdict_note}</span>${purpose}</span>`;
     }
-    return `<span class="g" title="${g.bar} / 残り ${eta(g.eta_sec)}">` +
+    return `<span class="g" title="${g.bar} / 残り ${eta(g.eta_sec)}${g.purpose ? " / " + g.purpose : ""}">` +
       `<span class="k">${g.label}</span>${progBar(g)}` +
       `<span class="mono${g.done ? " up" : ""}">${fmt(g.have, dec)}/${fmt(g.need, dec)}${u}</span>` +
-      `<span class="sub mono">${eta(g.eta_sec)}</span></span>`;
+      `<span class="sub mono">${eta(g.eta_sec)}</span>${purpose}</span>`;
   }).join("");
 }
 // ===========================================================================

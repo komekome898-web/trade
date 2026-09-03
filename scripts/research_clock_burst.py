@@ -194,13 +194,18 @@ once, chosen before any fresh number was read, and reported to the lead):
     §6, seed 20260825, no network access).
 
 Usage:  PYTHONPATH=src python scripts/research_clock_burst.py
+        PYTHONPATH=src python scripts/research_clock_burst.py --status-json data/s12_status.json
 """
 from __future__ import annotations
 
+import argparse
 import glob
 import hashlib
+import json
 import os
 import sys
+import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -673,13 +678,47 @@ def judge(pipe: dict) -> None:
               "procedure's reliability is marked down accordingly.")
 
 
-def main(paths=None) -> int:
+# --------------------------------------------------------------------------
+# --status-json: dashboard tile feed (n / fresh period / last day ONLY).
+# The safety valve above governs the printed judgment report; this payload
+# is a separate, always-safe output -- it never carries a statistic (net bps,
+# CI, frequency, ...), only the sample count and its date span, so writing it
+# is fine at any n, including n < N_JUDGE_MIN. scripts/dashboard.py reads it
+# for the S12 tile ("S12 新鮮n 23/30"); it never renders a verdict from n<30.
+# --------------------------------------------------------------------------
+def status_json_payload(pipe: dict, now: float | None = None) -> dict:
+    t = pipe["raw"]["t"]
+    if len(t):
+        fresh_start = iso(float(t[0]))
+        fresh_end = iso(float(t[-1]))
+        last_day = fresh_end[:10]
+    else:
+        fresh_start = fresh_end = last_day = None
+    return {
+        "n": pipe["n_fresh"], "need": N_JUDGE_MIN,
+        "fresh_start": fresh_start, "fresh_end": fresh_end,
+        "last_day": last_day,
+        "generated_at": now if now is not None else time.time(),
+    }
+
+
+def write_status_json(path, pipe: dict, now: float | None = None) -> None:
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(status_json_payload(pipe, now), indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8")
+
+
+def main(paths=None, status_json_path=None) -> int:
     pipe = run_pipeline(paths)
     pipe2 = run_pipeline(paths)
     h1, h2 = episodes_hash(pipe["episodes"]), episodes_hash(pipe2["episodes"])
     if h1 != h2 or pipe["n_fresh"] != pipe2["n_fresh"]:
         raise SystemExit("non-deterministic run -- refusing to report "
                           f"(hash {h1} vs {h2})")
+
+    if status_json_path is not None:
+        write_status_json(status_json_path, pipe)
 
     n = pipe["n_fresh"]
     if n < N_JUDGE_MIN:
@@ -692,4 +731,9 @@ def main(paths=None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--status-json", default=None,
+                    help="write n/fresh-period/last-day (no statistics) to this path "
+                         "for the dashboard S12 tile")
+    args = ap.parse_args()
+    sys.exit(main(status_json_path=args.status_json))

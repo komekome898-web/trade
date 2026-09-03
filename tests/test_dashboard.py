@@ -176,6 +176,93 @@ def test_status_payload_is_json_serialisable(tmp_path):
     json.dumps(collect_status(tmp_path))
 
 
+# ---- 推定建値台帳 (aggregate.py: ladder -> research_position_ladder.build_ladder) --
+def test_ladder_missing_oi_file_is_none(tmp_path):
+    assert collect_status(tmp_path)["ladder"] is None
+
+
+def test_ladder_filters_rows_before_the_price_cutoff_and_computes_masses(tmp_path):
+    (tmp_path / "data").mkdir()
+    rows = [
+        "ts_utc,okx_usdt_oi,okx_usd_oi,okx_ls_ratio,dvol,deribit_oi,btc_usd",
+        # pre-cutoff: has a price, but must be excluded entirely (not just its
+        # price) so it cannot seed prev_oi for the rows that follow
+        "2026-08-20T00:00:00+00:00,1000,,,,,60000",
+        "2026-08-31T00:00:00+00:00,1000,,,,,70000",
+        "2026-08-31T00:15:00+00:00,1100,,,,,70000",   # +100 opened at $70,000
+        "2026-08-31T00:30:00+00:00,1150,,,,,70500",   # +50 opened at $70,500
+        "2026-08-31T00:45:00+00:00,1200,,,,,",         # price missing: skipped
+    ]
+    (tmp_path / "data" / "oi_snapshots.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
+    ladder = collect_status(tmp_path, now=1_800_000_000.0)["ladder"]
+    assert ladder is not None
+    assert ladder["price"] == 70500.0
+    assert ladder["below_pct"] == pytest.approx(66.7, abs=0.05)   # the $70,000 rung
+    assert ladder["above_pct"] == 0.0            # nothing struck above the last price
+    assert len(ladder["rungs"]) == 2
+    top = ladder["rungs"][0]
+    assert top["price"] == 70000.0
+    assert top["share_pct"] == pytest.approx(66.67, abs=0.01)
+
+
+def test_ladder_all_rows_pre_cutoff_yields_no_rungs(tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "oi_snapshots.csv").write_text(
+        "ts_utc,okx_usdt_oi,okx_usd_oi,okx_ls_ratio,dvol,deribit_oi,btc_usd\n"
+        "2026-08-20T00:00:00+00:00,1000,,,,,60000\n"
+        "2026-08-20T00:15:00+00:00,1100,,,,,60000\n", encoding="utf-8")
+    ladder = collect_status(tmp_path, now=1_800_000_000.0)["ladder"]
+    assert ladder is not None and ladder["rungs"] == [] and ladder["price"] is None
+
+
+# ---- S12 clock-burst status tile (data/s12_status.json passthrough) --------
+def test_s12_status_missing_is_none(tmp_path):
+    assert collect_status(tmp_path)["s12"] is None
+
+
+def test_s12_status_passes_through_as_written(tmp_path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "s12_status.json").write_text(json.dumps({
+        "n": 23, "need": 30, "fresh_start": "2026-08-25T12:00:00+00:00",
+        "fresh_end": "2026-09-02T00:00:00+00:00", "last_day": "2026-09-02",
+        "generated_at": 1_800_000_000.0}), encoding="utf-8")
+    s12 = collect_status(tmp_path)["s12"]
+    assert s12["n"] == 23 and s12["need"] == 30 and s12["last_day"] == "2026-09-02"
+
+
+# ---- gate 目的 text (§A2 dashboard reorg) -----------------------------------
+def test_every_gate_carries_a_purpose_and_the_bar_string_is_unchanged(tmp_path):
+    gates = collect_status(tmp_path)["gates"]
+    keys = {g["key"] for g in gates}
+    assert keys == {"champion", "c2", "oi", "board", "spreadmm", "funding"}
+    for g in gates:
+        assert g["purpose"], g["key"]
+    oi_gate = next(g for g in gates if g["key"] == "oi")
+    assert "フェーズC" in oi_gate["purpose"]
+    # the registered bar text (fail-close design) is untouched by the purpose annotation
+    assert oi_gate["bar"] == ">= 2900行 (30日)"
+
+
+# ---- データ蓄積表: extended collectors dict ----------------------------------
+def test_collectors_include_the_new_data_inventory_rows(tmp_path):
+    labels = set(collect_status(tmp_path)["collectors"])
+    for label in ("板記録 (WS)", "ティッカー/板上位テープ", "venues (bitbank/GMO/bF現物)",
+                  "OIスナップショット (+価格)", "注目系列", "JPX日報", "bitFlyer candles",
+                  "Binance日次", "USDJPY", "Binance 1m", "bitbank 1m", "spread record"):
+        assert label in labels
+
+
+def test_binance_daily_and_usdjpy_collector_rows_read_their_files(tmp_path):
+    (tmp_path / "data" / "binance_daily").mkdir(parents=True)
+    (tmp_path / "data" / "binance_daily" / "metrics.csv").write_text(
+        "date,sum_open_interest\n20260901,123\n", encoding="utf-8")
+    (tmp_path / "data" / "binance_daily" / "usdjpy.csv").write_text(
+        "date,usdjpy\n20260901,148.5\n", encoding="utf-8")
+    collectors = collect_status(tmp_path)["collectors"]
+    assert collectors["Binance日次"] is not None
+    assert collectors["USDJPY"] is not None
+
+
 # ---- 最近の判断: JST times, Japanese reasons, fills and realized P&L --------
 def _decision(ts: str, signal: str, decision: str, reason: str, pnl=None,
               **extra) -> dict:
@@ -939,6 +1026,8 @@ api.refresh().then(() => {
     decisions: els["t-dec"].innerHTML,
     collectors: els["t-col"].innerHTML,
     gates: els["gates"].innerHTML,
+    tilesPaper: els["tiles-paper"].innerHTML,
+    ladder: els["ladder"].innerHTML,
     banner: els["banner"].textContent,
     updated: els["updated"].textContent,
     eta_samples: [api.eta(null), api.eta(0), api.eta(3600), api.eta(86400 * 20),
@@ -1134,6 +1223,57 @@ def test_console_renders_an_empty_payload_without_errors(tmp_path):
     assert r["gates"].count("—") >= 4          # no rate anywhere: no guesses
     assert "未収集" in r["collectors"]
     assert r["tiles"].count("未収集") >= 3      # ticker / board_top / venues
+    # 3. ペーパートレード: champion still shows its settled verdict, S12 says
+    # 未収集 rather than erroring, and 4. その他 の推定建値台帳 says so too
+    assert "判定済み FAIL" in r["tilesPaper"]
+    assert "S12" in r["tilesPaper"] and "未収集" in r["tilesPaper"]
+    assert "未収集" in r["ladder"]
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_console_paper_trading_section_shows_champion_on1_and_s12(tmp_path):
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    now = _console_workspace(workspace)
+    payload = collect_status(workspace, now=now)
+    payload["s12"] = {"n": 23, "need": 30, "fresh_start": "2026-08-25T12:00:00+00:00",
+                      "fresh_end": "2026-09-02T00:00:00+00:00", "last_day": "2026-09-02",
+                      "generated_at": now}
+    r = _render_console_in_node(tmp_path, payload)
+    tp = r["tilesPaper"]
+    assert "チャンピオン" in tp and "判定済み FAIL" in tp and "収集運搬役" in tp
+    assert "23" in tp and "30" in tp and "S12" in tp
+    assert "09/02" in tp  # last_day, MM/DD
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_console_data_table_and_gates_carry_a_purpose_column(tmp_path):
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    now = _console_workspace(workspace)
+    r = _render_console_in_node(tmp_path, collect_status(workspace, now=now))
+    assert "目的" in r["collectors"]
+    assert "G8資金調達窓" in r["collectors"]        # bitFlyer candles row's purpose
+    assert "G6フェーズC" in r["collectors"]          # OI snapshot row's purpose
+    # the gates strip carries the same purpose text server-side attached
+    assert "監視モード" in r["gates"] or "フェーズC" in r["gates"]
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_console_ladder_renders_top_rungs_and_masses(tmp_path):
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    (workspace / "data").mkdir(exist_ok=True)
+    (workspace / "data" / "oi_snapshots.csv").write_text(
+        "ts_utc,okx_usdt_oi,okx_usd_oi,okx_ls_ratio,dvol,deribit_oi,btc_usd\n"
+        "2026-08-31T00:00:00+00:00,1000,,,,,70000\n"
+        "2026-08-31T00:15:00+00:00,1100,,,,,70000\n"
+        "2026-08-31T00:30:00+00:00,1150,,,,,70500\n", encoding="utf-8")
+    payload = collect_status(workspace, now=1_800_000_000.0)
+    r = _render_console_in_node(tmp_path, payload)
+    assert "70,000" in r["ladder"] or "70000" in r["ladder"]
+    assert "%" in r["ladder"]
+    assert "上方質量" in r["ladder"] and "下方質量" in r["ladder"]
 
 
 HARNESS = r"""
