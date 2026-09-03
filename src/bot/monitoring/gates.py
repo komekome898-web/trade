@@ -495,6 +495,12 @@ def _ws_span(root: Path, files: Iterable[Path] | None
     if files is None:
         ws_dir = root / "data" / "ws"
         files = sorted(ws_dir.glob("*.jsonl.gz")) if ws_dir.is_dir() else []
+        listed = _ws_span_from_listing(root / "paper_logs" / "ws_listing.txt")
+        # The recordings themselves are too large for git; the operator PC
+        # shares only a directory listing. When that listing knows more files
+        # than this checkout holds, it is the truth about coverage.
+        if listed is not None and listed[4] > len(files):
+            return listed
     files = list(files)
     total = 0
     starts: list[float] = []
@@ -510,6 +516,33 @@ def _ws_span(root: Path, files: Iterable[Path] | None
     span_days = (max(ends) - min(starts)) / DAY_SEC if starts else 0.0
     return (span_days, min(starts) if starts else None,
             max(ends) if ends else None, total, len(files))
+
+
+def _ws_span_from_listing(path: Path
+                          ) -> tuple[float, float | None, float | None, int, int] | None:
+    """Same tuple as _ws_span, read from a Windows `dir` listing of data/ws
+    (share_logs.bat writes it, cp932). Start = UTC stamp in the filename,
+    end = the listed mtime (local JST, converted), size = the listed bytes."""
+    try:
+        text = path.read_bytes().decode("cp932", errors="replace")
+    except OSError:
+        return None
+    pat = re.compile(r"(\d{4})/(\d{2})/(\d{2})\s+(\d{2}):(\d{2})\s+([\d,]+)\s+"
+                     r"(\S+_(\d{8})_(\d{6})\.jsonl\.gz)")
+    starts: list[float] = []
+    ends: list[float] = []
+    total = 0
+    for m in pat.finditer(text):
+        y, mo, d, hh, mm, size, _name, ds, ts = m.groups()
+        end_local = datetime(int(y), int(mo), int(d), int(hh), int(mm), tzinfo=timezone.utc)
+        ends.append(end_local.timestamp() - 9 * 3600)          # JST -> UTC
+        starts.append(datetime.strptime(ds + ts, "%Y%m%d%H%M%S")
+                      .replace(tzinfo=timezone.utc).timestamp())
+        total += int(size.replace(",", ""))
+    if not starts:
+        return None
+    span_days = (max(ends) - min(starts)) / DAY_SEC
+    return (span_days, min(starts), max(ends), total, len(starts))
 
 
 def spreadmm_gate(root: Path, now: float,
