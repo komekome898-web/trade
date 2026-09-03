@@ -397,6 +397,24 @@ def _champion_summary(path: Path) -> dict[str, Any]:
 
 
 # ---- the pending coverage gates (plus the settled champion verdict) --------
+def shared_or_local(root: Path, rel: str) -> Path:
+    """Prefer the operator's shared copy (paper_logs/<name>) over this
+    checkout's local file when the shared one is newer. On the operator PC
+    the local file is the newest by construction; in the research checkout
+    the local copies are stale scratch and paper_logs is the truth."""
+    local = root / rel
+    shared = root / "paper_logs" / Path(rel).name
+    try:
+        s_m = shared.stat().st_mtime
+    except OSError:
+        return local
+    try:
+        l_m = local.stat().st_mtime
+    except OSError:
+        return shared
+    return shared if s_m > l_m else local
+
+
 def champion_gate(root: Path, now: float) -> dict[str, Any]:
     """G1: SETTLED — judged FAIL at n=30 (report #22); collection continues.
 
@@ -409,7 +427,7 @@ def champion_gate(root: Path, now: float) -> dict[str, Any]:
     page renders those instead of "n of 30". The verdict itself is a recorded
     fact (§3/§5), not something this module computes.
     """
-    path = root / "logs" / "bot.jsonl"
+    path = shared_or_local(root, "logs/bot.jsonl")
     summary = cached_scan("champion", path, lambda: _champion_summary(path))
     open_now = 1 if summary["open_at_end"] else 0
     g = progress(
@@ -435,7 +453,7 @@ def c2_gate(root: Path, now: float,
     config/composite.yaml registers) — over the same full-log reconstruction
     the champion gate uses, so the two consoles cannot disagree on n.
     """
-    path = root / "logs" / "bot.jsonl"
+    path = shared_or_local(root, "logs/bot.jsonl")
     summary = cached_scan("champion", path, lambda: _champion_summary(path))
     radar = radar if radar is not None else StormRadar()
     inside = [(entry, exit_ts) for entry, exit_ts in summary["closed_spans"]
@@ -452,7 +470,7 @@ def c2_gate(root: Path, now: float,
 
 def oi_gate(root: Path, now: float) -> dict[str, Any]:
     """G6 coverage: rows in data/oi_snapshots.csv (15-min cadence)."""
-    path = root / "data" / "oi_snapshots.csv"
+    path = shared_or_local(root, "data/oi_snapshots.csv")
     rows, first, last, _bad = cached_scan(
         "oi", path, lambda: csv_first_last_ts(path))
     span_days = (last - first) / DAY_SEC if (first and last) else 0.0

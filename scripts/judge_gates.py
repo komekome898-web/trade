@@ -79,6 +79,7 @@ from bot.radar import StormRadar  # noqa: E402
 # the progress bar the owner watches drift away from the bar this harness
 # judges against — the same number has to come from one place.
 from bot.monitoring.gates import (  # noqa: E402
+    shared_or_local,
     BOARD_BYTES_BAR, BOARD_DAYS_BAR, FUNDING_HOUR_UTC, FUNDING_N_BAR,
     FUNDING_WINDOW_MIN, MAIN_TRADES_BAR, OI_DAYS_BAR, OI_ROWS_BAR,
     candle_days_covering as _candle_days_covering,
@@ -266,7 +267,7 @@ def load_champion_trades(root: Path) -> tuple[list[ChampionTrade], dict[str, Any
     ORDER_SENT (BUY/SELL/CLOSE/STOP_LOSS) while it is open, whose realized P&L
     is the step in `PnL` at that record.
     """
-    path = root / "logs" / "bot.jsonl"
+    path = shared_or_local(root, "logs/bot.jsonl")
     records, bad = read_jsonl(path)
     meta: dict[str, Any] = {
         "path": str(path), "exists": path.exists(), "records": len(records),
@@ -377,7 +378,7 @@ def load_scalp_trades(root: Path) -> tuple[list[ScalpTrade], dict[str, Any]]:
                 differed from --thr-bps (the armed-threshold reversion, §5).
       epoch_ts — the LATER of the two: that is the one that binds.
     """
-    path = root / "data" / "scalp_paper.jsonl"
+    path = shared_or_local(root, "data/scalp_paper.jsonl")
     records, bad = read_jsonl(path)
     meta: dict[str, Any] = {
         "path": str(path), "exists": path.exists(), "records": len(records),
@@ -800,7 +801,7 @@ def gate_vol_tilt(trades: list[ScalpTrade], meta: dict, *, iters: int,
 
 # ---- gate 6: OI phase C ----------------------------------------------------
 def gate_oi(root: Path) -> GateResult:
-    path = root / "data" / "oi_snapshots.csv"
+    path = shared_or_local(root, "data/oi_snapshots.csv")
     res = GateResult(
         gate_id="G6", title="OI phase-C coverage (oi_snapshots.csv)",
         source="KNOWLEDGE.md §4 (report h)",
