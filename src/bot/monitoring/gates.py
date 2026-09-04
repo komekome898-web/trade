@@ -397,13 +397,18 @@ def _champion_summary(path: Path) -> dict[str, Any]:
 
 
 # ---- the pending coverage gates (plus the settled champion verdict) --------
-def shared_or_local(root: Path, rel: str) -> Path:
+def shared_or_local(root: Path, rel: str, shared_name: str | None = None) -> Path:
     """Prefer the operator's shared copy (paper_logs/<name>) over this
     checkout's local file when the shared one is newer. On the operator PC
     the local file is the newest by construction; in the research checkout
-    the local copies are stale scratch and paper_logs is the truth."""
+    the local copies are stale scratch and paper_logs is the truth.
+
+    ``shared_name`` overrides the paper_logs basename when the shared copy is
+    deliberately renamed (e.g. multiple sources sharing the same local
+    basename "ledger.csv" get distinct paper_logs names like on1_ledger.csv /
+    onr_ledger.csv). Defaults to rel's own basename."""
     local = root / rel
-    shared = root / "paper_logs" / Path(rel).name
+    shared = root / "paper_logs" / (shared_name or Path(rel).name)
     try:
         s_m = shared.stat().st_mtime
     except OSError:

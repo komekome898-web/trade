@@ -17,7 +17,7 @@ from typing import Any
 from bot.monitoring.decision_text import (
     decision_ja, jst_label, reason_ja, signal_ja,
 )
-from bot.monitoring.gates import cached_scan, collect_gates, parse_ts
+from bot.monitoring.gates import cached_scan, collect_gates, parse_ts, shared_or_local
 from bot.radar import StormRadar
 
 # データ蓄積表 + 判定ゲート双方が読む「目的」注記 (日本語・簡潔)。表示専用の静的
@@ -286,6 +286,34 @@ def _on1_paper(path: Path, now: float) -> dict[str, Any] | None:
         "friction_yen": friction,
         "age_sec": info["age_sec"],
     }
+
+
+def _onr_paper(root: Path, now: float) -> dict[str, Any] | None:
+    """ONR forward paper ledger (scripts/paper_onr.py, docs/PREREG_onr_forward.md).
+
+    Reads scripts/paper_onr.py's own status.json (guard already evaluated
+    there against the PREREG sec.3 percentiles, 付録A) rather than
+    recomputing it here -- unlike _on1_paper this tile trusts the writer's
+    verdict instead of duplicating the guard math, since status.json already
+    exists as the single source for it. ledger.csv supplies only the trade
+    count actually on disk as a cross-check against status.json's n_trades.
+    """
+    status_path = shared_or_local(root, "data/paper_onr/status.json", "onr_status.json")
+    status = _read_json(status_path)
+    if status is None:
+        return None
+    info = _file_info(status_path, now)
+    ledger_path = shared_or_local(root, "data/paper_onr/ledger.csv", "onr_ledger.csv")
+    n_ledger_rows = 0
+    try:
+        with ledger_path.open(newline="", encoding="utf-8") as f:
+            n_ledger_rows = sum(1 for _ in csv.DictReader(f))
+    except OSError:
+        pass
+    out = dict(status)
+    out["age_sec"] = info["age_sec"] if info else None
+    out["n_ledger_rows"] = n_ledger_rows
+    return out
 
 
 def _attention_gauge(path: Path, now: float) -> dict[str, Any] | None:
@@ -584,6 +612,7 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
 
     oi_snapshot = _oi_snapshot(root / "data" / "oi_snapshots.csv", now)
     on1 = _on1_paper(root / "data" / "paper_on1" / "ledger.csv", now)
+    onr = _onr_paper(root, now)
     attention = _attention_gauge(root / "data" / "attention" / "attention.csv", now)
 
     # 収集の鮮度: the newest daily shard each recorder wrote. data/tape names
@@ -679,6 +708,9 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         # ON1 forward paper tracking (Nikkei micro overnight; report #36,
         # PREREG_on1_forward.md). None until the first ledger is built.
         "on1": on1,
+        # ONR forward paper tracking (1343 J-REIT ETF overnight;
+        # PREREG_onr_forward.md). None until the first ledger is built.
+        "onr": onr,
         # Crowd-heat gauge (attention z-scores; display only, no signal --
         # direction-prediction from these series is a recorded no-go).
         "attention": attention,

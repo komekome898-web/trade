@@ -28,6 +28,9 @@ copy /Y data\kill_switch.json paper_logs\ >nul 2>&1
 rem ON1 forward paper ledger + its JPX source (small CSVs)
 copy /Y data\paper_on1\ledger.csv paper_logs\on1_ledger.csv >nul 2>&1
 copy /Y data\jpx_daily\nk225_sessions.csv paper_logs\nk225_sessions.csv >nul 2>&1
+rem ONR forward paper ledger + status (small CSV/JSON)
+copy /Y data\paper_onr\ledger.csv paper_logs\onr_ledger.csv >nul 2>&1
+copy /Y data\paper_onr\status.json paper_logs\onr_status.json >nul 2>&1
 rem S12 clock-burst status tile feed (n / fresh period / last day only)
 copy /Y data\s12_status.json paper_logs\s12_status.json >nul 2>&1
 dir /-C data\ws > paper_logs\ws_listing.txt 2>nul

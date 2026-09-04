@@ -391,6 +391,22 @@ function on1Tiles(o) {
               `〜${(o.last_exit_date || "").slice(4, 6)}/${(o.last_exit_date || "").slice(6, 8)}${fr}`);
 }
 
+// ONR フォワード・ペーパー (aggregate.py: onr; docs/PREREG_onr_forward.md)。
+// J-REIT ETF 1343 のオーバーナイト紙上取引。null = 台帳未生成 (fetch_all が
+// scripts/paper_onr.py を書くまで)。guard は scripts/paper_onr.py が
+// status.json に書いた判定 (ok/caution/stop, PREREG §3・付録A)。
+function onrTiles(o) {
+  if (o == null) return tile("ONR 紙上 (1343 ON)", "未稼働");
+  if (!o.n_trades) return tile("ONR 紙上 (1343 ON)", "取引0");
+  const guardLabel = {ok: "OK", caution: "注意", stop: "停止"}[o.guard] || (o.guard || "—");
+  const guardBad = o.guard && o.guard !== "ok";
+  const gap = o.gap_mean_bps != null ? ` / 乖離 ${fmt(o.gap_mean_bps, 1)}bps` : "";
+  return tile("ONR 紙上損益", `${fmt(o.cum_pnl_yen, 0)}円`, pnlCls(o.cum_pnl_yen),
+              `${fmt(o.mean_bps, 1)}bps ${o.n_trades}回${gap}`) +
+         tile("ONR 監視線", guardLabel, guardBad ? "neg" : "pos",
+              `〜${(o.last_date || "").slice(5).replace("-", "/")}`);
+}
+
 // チャンピオン (aggregate.py: gates[key="champion"]; report #22)。判定は既に
 // FAIL で確定しており(§5)、以後の稼働はC2窓内サブセットを埋める収集運搬役
 // でしかない — その2点を1タイルで明記する(判定ゲート表の同じ行が数値の
@@ -623,9 +639,9 @@ async function refresh() {
     ingestTile("収集: board_top", (d.ingest || {}).board_top) +
     ingestTile("収集: venues", (d.ingest || {}).venues);
 
-  // 3. ペーパートレード: champion (判定済みFAIL・収集運搬役) + ON1台帳 + S12
+  // 3. ペーパートレード: champion (判定済みFAIL・収集運搬役) + ON1台帳 + ONR台帳 + S12
   const tp = document.getElementById("tiles-paper");
-  if (tp) tp.innerHTML = championTile(d.gates) + on1Tiles(d.on1) + s12Tile(d.s12);
+  if (tp) tp.innerHTML = championTile(d.gates) + on1Tiles(d.on1) + onrTiles(d.onr) + s12Tile(d.s12);
 
   renderLadder(d.ladder);
   renderGates(d.gates || []);
