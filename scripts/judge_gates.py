@@ -836,32 +836,21 @@ def gate_board(root: Path) -> GateResult:
         source="KNOWLEDGE.md §4 (reports f, g)",
         bar=f">= {BOARD_DAYS_BAR:.0f} days recorded (1-2 weeks, ~0.5-1 GB)",
         status=INSUFFICIENT, need=int(BOARD_DAYS_BAR))
-    files = sorted(ws_dir.glob("*.jsonl.gz")) if ws_dir.is_dir() else []
-    if not files:
+    # Same scan as the dashboard's board_gate: the operator PC shares only a
+    # `dir` listing of data/ws (paper_logs/ws_listing.txt); when it knows more
+    # files than this checkout, it is the truth about coverage.
+    from bot.monitoring.gates import _ws_span
+    span_days, first, last, total, n_files = _ws_span(root, None)
+    if n_files == 0 or first is None or last is None:
         res.statistic = "no recordings"
-        res.notes.append(f"{ws_dir} is empty or missing — "
-                         "scripts/record_realtime.py has not run here.")
+        res.notes.append(f"{ws_dir} is empty or missing and paper_logs/"
+                         "ws_listing.txt has no entries.")
         return res
-    total = 0
-    starts: list[float] = []
-    ends: list[float] = []
-    for f in files:
-        try:
-            st = f.stat()
-        except OSError:
-            continue
-        total += st.st_size
-        ends.append(st.st_mtime)
-        starts.append(_ws_file_start(f) or st.st_mtime)
-    if not starts:
-        res.statistic = "unreadable"
-        return res
-    span_days = (max(ends) - min(starts)) / 86400
     res.n = int(span_days)
-    res.values = {"files": len(files), "bytes": total, "span_days": span_days}
+    res.values = {"files": n_files, "bytes": total, "span_days": span_days}
     res.statistic = f"{total / 1e9:.2f} GB, {span_days:.1f} d span"
-    res.detail = [f"{len(files)} file(s), {total / 1e6:.1f} MB, "
-                  f"{iso(min(starts))} .. {iso(max(ends))}",
+    res.detail = [f"{n_files} file(s), {total / 1e6:.1f} MB, "
+                  f"{iso(first)} .. {iso(last)}",
                   "gaps are NOT measured here: span is first-file start to "
                   "last-file mtime, an upper bound on real coverage"]
     res.status = (READY if (span_days >= BOARD_DAYS_BAR
