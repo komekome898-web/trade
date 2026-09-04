@@ -33,7 +33,8 @@
 | 2400s | nan | 0 |
 
 (参考: 指示コスト前提 spread≈1.9bps, slippage≈1bps/side, fee=0% → 半スプレッド+slip想定=1.95bps。
- データ実測spread_bps平均=-12.51bps。実測とcaseの前提1.9bpsの乖離を§7参照。)
+ データ実測spread_bps: 無効bar除外後 平均=1.88bps / 中央値=1.77bps。
+ (除外前の単純平均は-12.51bpsで、後述のsentinel外れ値により大きく歪む。)
 
 ## 3. 頑健性: キュー位置感度 (queue_frac=0.5, 中位着席)
 | cap | taker_share | symmetric_bps mean | 95%CI |
@@ -43,14 +44,21 @@
 | 300s | 0.2% | 0.94 | [0.86, 1.01] |
 | 2400s | 0.0% | 0.94 | [0.88, 1.01] |
 
+## 3b. データ健全性(Q6): 再接続グリッチ
+board_round_series_5s に spread_bps=-20000(sentinel)の行が **180件**存在。全件が19:00-19:10 UTCメンテナンス明け
+直後(19:10-19:11台)に集中し(17エピソード、最大23連続bin=115秒)、当該区間はmidも約半値(例: 11,514,147→5,757,633)に
+汚損される再接続グリッチと確認。本監査は該当bar([maint_hour19,minute<12] ∪ spread<=-100)を含む地平線窓を持つ
+試行を全て除外(妥当性フィルタ)。除外なしで実行すると exec_price=0 の除算エラー・infでheadline統計が崩壊することを確認済み
+(spread=-20000のとき 1+spread/2/1e4 が厳密に0になるため)。
+
 ## 4. コントロール
 ### (i) シャッフルplacebo (未来経路を n/2 循環シフトして時刻対応を破壊)
 | cap | symmetric_bps mean(placebo) | 95%CI |
 |---|---|---|
-| 5s | inf | [-1.25, nan] |
-| 60s | -inf | [nan, 0.55] |
-| 300s | -inf | [nan, 0.98] |
-| 2400s | -inf | [nan, 1.00] |
+| 5s | -1.17 | [-1.24, -1.09] |
+| 60s | 0.43 | [0.26, 0.59] |
+| 300s | 0.92 | [0.84, 0.99] |
+| 2400s | 0.93 | [0.86, 0.99] |
 
 ### (ii) sign-reversed: buy-only vs sell-only (ドリフト混入チェック)
 | cap | buy_total_bps mean | sell_total_bps mean | 差(buy-(-sell)) |
@@ -90,9 +98,10 @@
 ## 7. 前提の誤り
 | premise | claimの出典 | データが示すこと | バイアス方向 | 波及するclaim |
 |---|---|---|---|---|
-| spread≈1.9bps(指示コスト) | 監査指示の realized cost regime | 板実測spread_bps平均=-12.51bps、中央値=1.78bps | 実測が指示値と乖離する分だけtaker脚コスト見積りが変動 | AB自身、コストregimeを共有する他の全capパケット(AD,AE,AF,AG等) |
+| spread≈1.9bps(指示コスト) | 監査指示の realized cost regime | 板実測spread_bps平均=1.88bps、中央値=1.78bps | 実測が指示値と乖離する分だけtaker脚コスト見積りが変動 | AB自身、コストregimeを共有する他の全capパケット(AD,AE,AF,AG等) |
 | config/config.yaml costs.taker_fee_pct=0.15%(15bps)+slippage_pct=0.05%(5bps) | 本番PAPER約定モデル | 本監査指示のfee0%/slippage1bpsと1桁近く異なる(paper側は保守バッファ) | configの値を使うと本監査より遥かに悲観的な結果になる | costs.taker_fee_pct/slippage_pctを直接引用する他の全pnl系claim |
 | キュー位置=着席時点のbestサイズ全量(最後尾) | 本監査の待ち行列近似(データに真のキュー位置情報なし) | 実際のキュー位置は不明(半分着席のqueue_frac=0.5感度では結果は§3参照) | 最後尾仮定はtaker化率を過大に見積る方向(悲観)=法則を支持する方向にバイアス | AB自身、キューモデルを流用する将来のmaker系claim |
+| 板データは常に健全 | (暗黙) | spread_bps=-20000のsentinelが180行、19:10-19:11UTC再接続時にmidも半値に汚損(§3b) | 未フィルタでtaker脚コストやspread平均を計算すると符号・桁が破綻(実測平均が-12.5bpsに歪む) | spread/コストをboard_round系データから直接平均するAB以外の全claim(特に同スナップショットを使うクロスパケット) |
 | 「5秒スケールで-7〜-15bps/回」の絶対水準 | claim文言 | 本監査のsymmetric_bps@5s = -1.21bps (CI [-1.27,-1.15]) | 前提spread/slippageに敏感。値の絶対一致は要検討、方向(負・大きい)の一致度は§6参照 | L16本体、40分側の値幅換算 |
 
 ## 8. 検証した読み取りファイル
