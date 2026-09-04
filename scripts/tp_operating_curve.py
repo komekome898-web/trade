@@ -120,6 +120,14 @@ def curve(f: pd.Series, onsets: np.ndarray, valid: np.ndarray, days: float,
     return rows
 
 
+def fut_onset(n: int, onsets: np.ndarray) -> np.ndarray:
+    """fut[t] = an onset occurs in (t, t+LEAD_MAX]."""
+    fut = np.zeros(n, dtype=bool)
+    for o in onsets:
+        fut[max(0, o - LEAD_MAX):o] = True
+    return fut
+
+
 def base_rate_any(valid: np.ndarray, burst_bins: np.ndarray) -> float:
     """Share of eligible (no burst in the last 60s) valid bins that are
     followed by a burst bin within LEAD_MAX -- the 'any burst' base rate."""
@@ -164,6 +172,40 @@ def main() -> None:
         for r in curve(f[col], onsets, valid, days, burst_bins):
             lines.append(f"{r['pct']:6.1f} {r['thr']:10.3f} {r['alarms']:7d} {r['alarms_per_day']:8.2f} "
                          f"{r['precision']:10.3f} {r['recall']:7.3f} {r['eligible']:8d} {r['precision_any']:8.3f}")
+        lines.append("")
+    # --- PRIMARY: in-state operating curve -------------------------------
+    # The precursor module only runs in the state "no burst bin in the prior
+    # 30 minutes" (the only state in which an onset can occur, and the
+    # population the screening AUC compared within). Thresholds are
+    # percentiles of the in-state distribution; hit = onset within 180s.
+    recent30 = np.zeros(len(s), dtype=bool)
+    for b in np.flatnonzero(burst_bins):
+        recent30[b:b + QUIET + 1] = True
+    state = valid & ~recent30
+    base_state = float(fut_onset(len(s), onsets)[state].mean()) if state.any() else float("nan")
+    lines.append(f"=== PRIMARY: in-state operating curve (state = no burst in prior 30 min; "
+                 f"{state.sum() / max(valid.sum(), 1):.2f} of valid time; base rate {base_state:.3f}) ===")
+    for col in ["avg_spread_bps", "board_update_rate", "combined", "realized_move"]:
+        x = f[col].to_numpy()
+        ok = state & np.isfinite(x)
+        lines.append(f"[{col}]" + ("  (benchmark)" if col == "realized_move" else ""))
+        lines.append(f"{'pct':>6} {'thr':>10} {'per_day':>8} {'precision':>10} {'recall':>7} {'lift':>6} {'F1':>6}")
+        fut = fut_onset(len(s), onsets)
+        for p in (50.0, 70.0, 80.0, 90.0, 95.0, 97.5, 99.0):
+            thr = np.nanpercentile(x[ok], p)
+            idx, last = [], -10**9
+            for i in np.flatnonzero(ok & (x >= thr)):
+                if i - last >= REFRACT:
+                    idx.append(i)
+                    last = i
+            idx = np.asarray(idx, dtype=int)
+            prec = float(fut[idx].mean()) if len(idx) else float("nan")
+            raw = ok & (x >= thr)
+            rec = float(np.mean([raw[max(0, o - LEAD_MAX):max(0, o - LEAD_MIN) + 1].any()
+                                 for o in onsets])) if len(onsets) else float("nan")
+            f1 = 2 * prec * rec / (prec + rec) if prec + rec > 0 else 0.0
+            lines.append(f"{p:6.1f} {thr:10.3f} {len(idx) / days:8.1f} {prec:10.3f} {rec:7.3f} "
+                         f"{prec / base_state if base_state else float('nan'):6.1f} {f1:6.3f}")
         lines.append("")
     text = "\n".join(lines)
     print(text)
