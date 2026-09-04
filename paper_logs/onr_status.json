@@ -1,0 +1,8 @@
+{
+  "n_trades": 0,
+  "cum_pnl_yen": 0.0,
+  "mean_bps": null,
+  "gap_mean_bps": null,
+  "guard": "ok",
+  "last_date": null
+}
