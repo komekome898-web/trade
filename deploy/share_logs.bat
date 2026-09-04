@@ -41,6 +41,11 @@ if exist data\venues\*.csv.gz copy /Y data\venues\*.csv.gz paper_logs\venues\ >n
 rem Binance daily metrics + USDJPY (dashboard G6 features / yen conversion)
 if not exist paper_logs\binance_daily mkdir paper_logs\binance_daily
 if exist data\binance_daily\*.csv copy /Y data\binance_daily\*.csv paper_logs\binance_daily\ >nul 2>&1
+rem Round 17 board-round derived series (scripts\run_board_round.py output;
+rem the 1GB data\ws raw recordings stay local, only the ~8MB derived series
+rem and its coverage report are shared)
+copy /Y data\board_round\series_5s.csv.gz paper_logs\board_round_series_5s.csv.gz >nul 2>&1
+copy /Y data\board_round\coverage.json paper_logs\board_round_coverage.json >nul 2>&1
 
 git add paper_logs
 rem Commit only when there is something staged (quiet no-op otherwise).
