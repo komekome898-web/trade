@@ -144,3 +144,4 @@
 | ツール | 評価日 | 結論 |
 |---|---|---|
 | Freqtrade(GPLv3、約53k★、CCXTベースの暗号資産BOT基盤) | 2026-09-01 | **信頼性は高い(実在・活発・lookahead/recursive分析は実装済み)が不採用**。公式対応取引所(現物: Binance/BingX/Bitget/Bybit/Gate/HTX/Hyperliquid/Kraken/OKX、先物: Binance/Bitget/Bybit/Gate/HL/Kraken/OKX)に **bitFlyer・GMO・JPX はいずれも無い**(READMEに「CCXT経由の他所は動作保証なし」と明記)。強みの hyperopt/FreqAI は当プロジェクトの研究規律が排除する「足ベース指標の履歴最適化」であり、コスト床の算術も変えない。自前資産(コストモデル・嵐法則・ON1安全執行系)は移植不能。将来、対応取引所に移る場合のみ再検討(日本居住者の海外取引所利用は規制上の注意が必要) |
+| 「暗号通貨MCP 10選」(LunarCrush / CoinMarketCap / CryptoPanic / DeFi Portfolio / CoinGecko / altFINS / GOAT SDK / Perplexity / Dune / TradingView非公式) | 2026-09-04 | **全て不採用**。MCPは対話セッション用の道具で、Windows常駐BOTの収集器(script+API)にはならない。データ系(CMC/CoinGecko/CryptoPanic/LunarCrush)は既存の無料一次資料と重複し、社会的センチメントは方向として閉鎖済み(§3 RC1・注目)。altFINS(150指標)は履歴最適化の温床。GOAT SDK・DeFi Portfolio・TradingView非公式ラッパーは鍵/資格情報を第三者コードに渡す構造で §1 の秘密不変条件に抵触。Dune(オンチェーン取引所フロー)のみ、G6の**規模ゲート**データ源として将来再検討可(無料枠が薄い) |
