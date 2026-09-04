@@ -64,18 +64,36 @@ def features(s: pd.DataFrame) -> pd.DataFrame:
     f["realized_move"] = (np.log(s["mid"]) - np.log(s["mid"].shift(WIN))).abs() * 1e4
     ranks = f[["avg_spread_bps", "board_update_rate"]].rank(pct=True)
     f["combined"] = ranks.mean(axis=1)
+    # relative-to-baseline variants: current 120s window divided by the median
+    # of the same statistic over the preceding 30 minutes (window excluded),
+    # i.e. "quiet -> restless" change rather than absolute level
+    base_n = QUIET  # 30 min of bins
+    for col in ["avg_spread_bps", "board_update_rate", "realized_move"]:
+        base = f[col].shift(WIN).rolling(base_n, min_periods=base_n // 2).median()
+        f["rel_" + col] = f[col] / base.replace(0, np.nan)
+    rel_ranks = f[["rel_avg_spread_bps", "rel_board_update_rate"]].rank(pct=True)
+    f["rel_combined"] = rel_ranks.mean(axis=1)
     return f
 
 
-def curve(f: pd.Series, onsets: np.ndarray, valid: np.ndarray, days: float) -> list[dict]:
+def curve(f: pd.Series, onsets: np.ndarray, valid: np.ndarray, days: float,
+          burst_bins: np.ndarray) -> list[dict]:
     x = f.to_numpy()
     ok = valid & np.isfinite(x)
-    onset_set = np.zeros(len(x), dtype=bool)
-    onset_set[onsets] = True
-    # for each bin: is there an onset in (t, t+LEAD_MAX]?
+    # for each bin: is there an onset (first burst after >=30 min quiet) in (t, t+LEAD_MAX]?
     fut = np.zeros(len(x), dtype=bool)
     for o in onsets:
         fut[max(0, o - LEAD_MAX):o] = True
+    # "any burst" variant: hit if ANY burst bin (|60s move| >= 20bps) lies in
+    # (t, t+LEAD_MAX]; only alarms raised while no burst bin occurred in the
+    # last 60s are eligible (the burst must not have started yet)
+    fut_any = np.zeros(len(x), dtype=bool)
+    for b in np.flatnonzero(burst_bins):
+        fut_any[max(0, b - LEAD_MAX):b] = True
+    recent = np.zeros(len(x), dtype=bool)
+    for b in np.flatnonzero(burst_bins):
+        recent[b:b + LEAD_MIN + 1] = True
+    eligible = ok & ~recent
     rows = []
     for p in PCTS:
         thr = np.nanpercentile(x[ok], p)
@@ -87,6 +105,9 @@ def curve(f: pd.Series, onsets: np.ndarray, valid: np.ndarray, days: float) -> l
                 last = i
         alarm_idx = np.asarray(alarm_idx, dtype=int)
         hits = int(fut[alarm_idx].sum()) if len(alarm_idx) else 0
+        el = alarm_idx[eligible[alarm_idx]] if len(alarm_idx) else alarm_idx
+        hits_any = int(fut_any[el].sum()) if len(el) else 0
+        prec_any = hits_any / len(el) if len(el) else float("nan")
         # recall: onset with >= 1 alarm bin (pre-refractory) in [t0-180s, t0-60s]
         raw_alarm = ok & (x >= thr)
         rec = sum(bool(raw_alarm[max(0, o - LEAD_MAX):max(0, o - LEAD_MIN) + 1].any())
@@ -94,8 +115,21 @@ def curve(f: pd.Series, onsets: np.ndarray, valid: np.ndarray, days: float) -> l
         rows.append(dict(pct=p, thr=thr, alarms=len(alarm_idx),
                          alarms_per_day=len(alarm_idx) / days,
                          precision=hits / len(alarm_idx) if len(alarm_idx) else float("nan"),
-                         recall=rec / len(onsets) if len(onsets) else float("nan")))
+                         recall=rec / len(onsets) if len(onsets) else float("nan"),
+                         eligible=len(el), precision_any=prec_any))
     return rows
+
+
+def base_rate_any(valid: np.ndarray, burst_bins: np.ndarray) -> float:
+    """Share of eligible (no burst in the last 60s) valid bins that are
+    followed by a burst bin within LEAD_MAX -- the 'any burst' base rate."""
+    fut_any = np.zeros(len(valid), dtype=bool)
+    recent = np.zeros(len(valid), dtype=bool)
+    for b in np.flatnonzero(burst_bins):
+        fut_any[max(0, b - LEAD_MAX):b] = True
+        recent[b:b + LEAD_MIN + 1] = True
+    el = valid & ~recent
+    return float(fut_any[el].mean()) if el.any() else float("nan")
 
 
 def main() -> None:
@@ -113,16 +147,23 @@ def main() -> None:
     s.loc[~valid, "spread_bps"] = np.nan
     days = valid.sum() * BIN / 86400
     onsets = burst_onsets(s["mid"])
+    m60 = (np.log(s["mid"]) - np.log(s["mid"].shift(60 // BIN))).abs() * 1e4
+    burst_bins = (m60 >= 20.0).to_numpy()
+    onset_base = len(onsets) * LEAD_MAX / max(valid.sum(), 1)
     f = features(s)
-    lines = [f"series {s.index[0]} .. {s.index[-1]}  valid_days={days:.2f}  bursts={len(onsets)} "
-             f"({len(onsets)/days:.2f}/day)  alarm horizon 180s, refractory 60s",
+    lines = [f"series {s.index[0]} .. {s.index[-1]}  valid_days={days:.2f}  onsets={len(onsets)} "
+             f"({len(onsets)/days:.2f}/day)  burst bins={int(burst_bins.sum())}  alarm horizon 180s, refractory 60s",
+             f"base rate: onset-within-180s {onset_base:.3f}   any-burst-within-180s (eligible bins) "
+             f"{base_rate_any(valid, burst_bins):.3f}",
              ""]
-    for col in ["avg_spread_bps", "board_update_rate", "combined", "realized_move"]:
-        lines.append(f"[{col}]" + ("  (benchmark)" if col == "realized_move" else ""))
-        lines.append(f"{'pct':>6} {'thr':>10} {'alarms':>7} {'per_day':>8} {'precision':>10} {'recall':>7}")
-        for r in curve(f[col], onsets, valid, days):
+    for col in ["avg_spread_bps", "board_update_rate", "combined", "realized_move",
+                "rel_avg_spread_bps", "rel_board_update_rate", "rel_combined", "rel_realized_move"]:
+        lines.append(f"[{col}]" + ("  (benchmark)" if "realized_move" in col else ""))
+        lines.append(f"{'pct':>6} {'thr':>10} {'alarms':>7} {'per_day':>8} {'prec_onset':>10} {'recall':>7} "
+                     f"{'eligible':>8} {'prec_any':>8}")
+        for r in curve(f[col], onsets, valid, days, burst_bins):
             lines.append(f"{r['pct']:6.1f} {r['thr']:10.3f} {r['alarms']:7d} {r['alarms_per_day']:8.2f} "
-                         f"{r['precision']:10.3f} {r['recall']:7.3f}")
+                         f"{r['precision']:10.3f} {r['recall']:7.3f} {r['eligible']:8d} {r['precision_any']:8.3f}")
         lines.append("")
     text = "\n".join(lines)
     print(text)
