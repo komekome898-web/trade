@@ -1,0 +1,106 @@
+==============================================================================
+ONR — J-REIT overnight, index-level + fresh-period one-shot judgment
+run date 2026-09-04, seed=20260904, cutoff=2026-09-03
+==============================================================================
+
+[data] index-level rows: 299 (2025-06-16..2026-09-03) — PARTIAL, see manifest.md (full 2003-2026 window not obtainable free)
+[data] 1343 ETF rows: 4405 (2008-09-16..2026-09-03)
+[data] 1321 ETF rows: 4083 (2009-02-06..2026-09-03)
+
+[glitch filter |log r|>0.1] index dropped 0/298, 1343 dropped 5/4404, 1321 dropped 1/4082
+
+------------------------------------------------------------------------------
+[Judgment data (1) index-level overnight — PARTIAL WINDOW, see manifest]
+n=298  mean=+0.006bps  t=+0.003  bootstrap95%CI=[-3.922,+3.776]bps
+net @ conservative 1.0bps/day: mean=-0.994bps t=-0.442
+net @ stress 2.6bps/day (report only): t=-1.155
+
+era table (index-level; eras with no overlapping data are unavailable):
+       era |          n |   mean_bps |          t
+ 2003-2008 |          0 |        nan |        nan
+ 2009-2014 |          0 |        nan |        nan
+ 2015-2020 |          0 |        nan |        nan
+ 2021-2026 |        298 |      0.006 |      0.003
+
+weekday table (index-level):
+   weekday |          n |   mean_bps |          t
+       Mon |         54 |      3.365 |      0.799
+       Tue |         61 |      2.983 |      0.660
+       Wed |         60 |     -4.967 |     -0.830
+       Thu |         62 |     -4.445 |     -1.121
+       Fri |         61 |      3.470 |      0.581
+
+weekday table (index-level, intraday open->close):
+   weekday |          n |   mean_bps |          t
+       Mon |         54 |     -1.895 |     -0.187
+       Tue |         61 |     -3.832 |     -0.498
+       Wed |         60 |     10.322 |      1.209
+       Thu |         63 |      0.475 |      0.068
+       Fri |         61 |     -6.319 |     -0.805
+
+yearly table (index-level, overnight):
+      year |          n |   mean_bps |          t
+      2025 |        135 |      2.590 |      1.345
+      2026 |        163 |     -2.135 |     -0.564
+yearly table (index-level, intraday open->close):
+      year |          n |   mean_bps |          t
+      2025 |        135 |      6.754 |      1.444
+      2026 |        164 |     -6.000 |     -1.107
+
+------------------------------------------------------------------------------
+[Judgment data (2) 1343 ETF-level overnight, fresh period nominal 2008-08-20..2011-09-04]
+actual data start 2008-09-16 (nominal 2008-08-20; Yahoo has no 1343 bars before 2008-09-16, see manifest)
+n=714  mean=+4.791bps  t=+0.812  (sign check only, per PREREG)
+
+------------------------------------------------------------------------------
+[Reference, CONTAMINATED, not used for judgment] 1343 ETF overnight 2011-09-05..2026-09-03]
+n=3685  mean=+4.771bps  t=+4.600  ann=+12.40%
+
+------------------------------------------------------------------------------
+[Required report] ETF-vs-index same-date overnight comparison (overlap window)
+overlap n=297 (2025-06-16..2026-09-02)
+index ON mean=-0.086bps (t=-0.038)  ETF ON mean=+9.186bps (t=+4.132)  shrink ratio=-0.009
+
+------------------------------------------------------------------------------
+[Required report] dividend-inclusive annualized overnight return (1343 ETF, full window)
+overnight-only ann (no div): +12.41%   dividend-inclusive ann: +14.40%   (n dividends applied=36)
+
+------------------------------------------------------------------------------
+[Required report] Buy&Hold 1343 (close->close) vs overnight-only
+B&H:        ann=+2.77%  Sharpe=0.14  maxDD=-48.89%
+ON-only:    ann=+12.41%  Sharpe=0.87  maxDD=-28.57%
+vol-matched leverage on ON-only to match B&H daily vol: 1.50x -> ann=+19.18% (gross, cost/borrow of leverage not modeled)
+
+------------------------------------------------------------------------------
+[Required report] correlation with 1321 (N225 ETF) overnight, 50/50 blend
+n overlap=4079  corr(1343_ON, 1321_ON)=+0.508  50/50 blend Sharpe=1.06
+
+------------------------------------------------------------------------------
+[Structural note] lookahead = 0: r_t uses close(t) [observed at/after 15:30 close
+  auction, trade date t] and open(t+1) [observed at/after 9:00 open auction, next
+  trading date]. Both prices are realized, tradable auction prints; no feature or
+  label window overlaps the other side of the trade. Entry (buy at close t) and
+  exit (sell at open t+1) are both auctions the strategy participates in, not
+  observed-then-predicted continuous-session prices.
+
+==============================================================================
+VERDICT (PREREG §3)
+==============================================================================
+① 機構(グロス・指数水準, 全窓 mean>0 & t>=2.0, CI下限>0): UNVERIFIED (index full-window data unavailable, see manifest.md)
+   [partial-window diagnostic only] mean=+0.006bps t=+0.003 CI_lo=-3.922bps
+② 台地(4era中3つ+ かつ [2021-2026]正): UNVERIFIED (index full-window data unavailable; only 1/4 eras have data)
+   [partial] eras with data=1/4, positive among those=1, [2021-2026] positive=True
+③ 新鮮期間の非矛盾(1343 2008-08-20~2011-09-04, mean>0): PASS  (n=714, mean=+4.791bps, t=+0.812)
+④ コスト後(指数水準, 保守1.0bps/日控除後 mean>0 & t>=1.5): UNVERIFIED (index full-window data unavailable, see manifest.md)
+
+OVERALL: PROVISIONAL (仮判定) per PREREG §1 fallback — index-level full-window
+  data (2003-04~2026-09) could not be obtained free of charge (see manifest.md).
+  Only ③ (fresh 2008-2011 ETF-level sign check) is a bona fide pre-registered
+  judgment; it PASSES (mean=+4.791bps, t=+0.812, n=714). ①②④ require the missing index-level history and are
+  reported as diagnostics on the partial (2025-06~2026-09) index window only —
+  NOT a substitute for the pre-registered full-window bar. Per PREREG §6, a
+  provisional pass on ③ alone does not authorize forward tracking on its own;
+  it should be read with the "指数水準未確認" caveat the document itself specifies.
+
+==============================================================================
+determinism hash (sha256 of report body above): 415215d9bcb3632cb0934138b2117bd153356a63155224d8d8bfc7d77bdea47b
