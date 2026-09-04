@@ -104,6 +104,34 @@ picked where the document is silent, per instructions):
   positive when favorable to the position taken by the first leg. This
   section cannot be exercised against real data yet (day bar not reached)
   and is documented here for when it can be.
+
+QC AMENDMENT (2026-09-04): the real reconstructed series
+(backtest_data/board_round_20260904) is crossed/garbage for ~2 minutes
+after each daily bitFlyer maintenance window (19:00-19:10 UTC) -- mid
+halves then jumps back, spread_bps goes negative or to -20000, and some
+bins carry a zero-size side. A data-validity mask is applied UNIFORMLY,
+BEFORE any statistic in any of the four sections:
+  1. A bin is INVALID when spread_bps <= 0, spread_bps > 50, either
+     depth-within-5bps side == 0, either best-of-book size <= 0, or mid is
+     not finite.
+  2. An invalid bin's `mid` is set to NaN -- every forward/backward return
+     (BI, VR5's ret/vr/trigger, TP's burst displacement) that would read
+     through it becomes NaN and the bin is skipped, exactly like a
+     reconstruction gap. BI's decile/tercile SIGNAL inputs (imb_5bps,
+     imb_top) are masked to NaN on invalid or excluded bins the same way,
+     so an invalid bin can never anchor a decile-10/decile-1 entry either.
+  3. The fixed daily window 19:00:00-19:15:00 UTC is excluded outright
+     (own reason, separate from criterion 1, even on days when the book
+     inside it happens to pass criterion 1) -- no trigger, event, control,
+     or sample originates inside it, in any section.
+  4. TP: an event is dropped if ANY bin in [t0-180s, t0] is invalid or
+     excluded; a control candidate is never added to its sampling pool if
+     any bin in [c-180s, c] is invalid or excluded (so every drawn control
+     already satisfies this); feature-window sums/means read only valid
+     bins, an invalid bin inside the window contributes nothing (treated
+     as absent, not as zero).
+  5. QC counts (invalid bins by reason, bins excluded by the maintenance
+     window) are printed at the top of the report, once, before section 1.
 """
 from __future__ import annotations
 
@@ -158,6 +186,10 @@ FEATURE_NAMES = [
 # -- section 4: GMO-cal ------------------------------------------------------
 GMO_DAY_BAR = 14
 
+# -- QC amendment (2026-09-04): post-maintenance crossed/garbage book -------
+QC_SPREAD_MAX_BPS = 50.0
+MAINT_LO_HOUR, MAINT_HI_HOUR = 19.0, 19.25   # UTC 19:00:00-19:15:00 daily
+
 
 # ==========================================================================
 # reporting
@@ -205,6 +237,75 @@ def load_series(path: Path) -> pd.DataFrame:
     df["bin_idx"] = (epoch // int(BIN_SEC)).astype(np.int64)
     df["hour"] = df["ts"].dt.hour + df["ts"].dt.minute / 60.0
     return df
+
+
+# ==========================================================================
+# QC amendment (2026-09-04): post-maintenance crossed/garbage book
+# ==========================================================================
+def compute_qc_mask(df: pd.DataFrame) -> tuple[np.ndarray, dict]:
+    """Return (valid, counts). `valid[i]` is False iff bin i is INVALID
+    (criterion 1) or falls in the daily maintenance window (criterion 3).
+    `counts` breaks the exclusion down by reason (reasons can overlap; the
+    maintenance-window count is reported separately, not folded in)."""
+    spread = df["spread_bps"].to_numpy(float)
+    bid_depth = df["bid_depth_5bps"].to_numpy(float)
+    ask_depth = df["ask_depth_5bps"].to_numpy(float)
+    bb_size = df["best_bid_size"].to_numpy(float)
+    ba_size = df["best_ask_size"].to_numpy(float)
+    mid = df["mid"].to_numpy(float)
+    hour = df["hour"].to_numpy(float)
+
+    reasons = {
+        "spread_le_0": spread <= 0,
+        "spread_gt_50bps": spread > QC_SPREAD_MAX_BPS,
+        "bid_depth_5bps_zero": bid_depth == 0,
+        "ask_depth_5bps_zero": ask_depth == 0,
+        "best_bid_size_le_0": bb_size <= 0,
+        "best_ask_size_le_0": ba_size <= 0,
+        "mid_not_finite": ~np.isfinite(mid),
+    }
+    invalid = np.zeros(len(df), dtype=bool)
+    for mask in reasons.values():
+        invalid |= mask
+
+    maint = (hour >= MAINT_LO_HOUR) & (hour < MAINT_HI_HOUR)
+    valid = ~(invalid | maint)
+
+    counts = {k: int(v.sum()) for k, v in reasons.items()}
+    counts["invalid_total"] = int(invalid.sum())
+    counts["maintenance_window"] = int(maint.sum())
+    counts["excluded_total"] = int((~valid).sum())
+    counts["n_bins"] = len(df)
+    return valid, counts
+
+
+def apply_qc(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    """Apply the QC mask uniformly: NaN `mid` (and the BI decile signal
+    columns) on every invalid/excluded bin, and carry a `valid` column so
+    later sections (TP) can require a whole window to be valid, not merely
+    have a finite mid. Returns (masked df, qc counts)."""
+    df = df.copy()
+    valid, counts = compute_qc_mask(df)
+    df["valid"] = valid
+    bad = ~valid
+    df.loc[bad, "mid"] = np.nan
+    df.loc[bad, "imb_5bps"] = np.nan
+    df.loc[bad, "imb_top"] = np.nan
+    return df, counts
+
+
+def print_qc(rep: "Reporter", counts: dict) -> None:
+    rep.header("QC AMENDMENT (2026-09-04) -- post-maintenance crossed book")
+    rep.line(f"total bins: {counts['n_bins']:,}")
+    rep.line(f"invalid (criterion 1, reasons may overlap): {counts['invalid_total']:,}")
+    for reason in ("spread_le_0", "spread_gt_50bps", "bid_depth_5bps_zero",
+                  "ask_depth_5bps_zero", "best_bid_size_le_0", "best_ask_size_le_0",
+                  "mid_not_finite"):
+        rep.line(f"    {reason:<22}: {counts[reason]:,}")
+    rep.line(f"excluded (maintenance window 19:00-19:15 UTC daily): "
+             f"{counts['maintenance_window']:,}")
+    rep.line(f"total excluded from every section (invalid | maintenance): "
+             f"{counts['excluded_total']:,}")
 
 
 # ==========================================================================
@@ -481,6 +582,28 @@ def detect_burst_and_events(df: pd.DataFrame, burst_bps=BURST_BPS,
     return burst, np.array(sorted(events), dtype=np.int64)
 
 
+def _defining_range(t0_bin: int) -> tuple[int, int]:
+    """[t0-180s, t0] inclusive, in bin units -- the QC amendment's
+    drop-the-whole-event/control range (wider than the feature window: it
+    also covers the [t0-60s, t0] defining window)."""
+    return t0_bin - int(round(FEATURE_WINDOW[0] / BIN_SEC)), t0_bin
+
+
+def _range_fully_valid(idx_df: pd.DataFrame, t0_bin: int) -> bool:
+    lo, hi = _defining_range(t0_bin)
+    sub = idx_df["valid"].reindex(range(lo, hi + 1))
+    return bool(sub.fillna(False).all())
+
+
+def _mask_invalid_rows(window: pd.DataFrame) -> pd.DataFrame:
+    """QC amendment: an invalid/excluded (or missing) bin contributes
+    nothing to a feature window -- NaN every column on that row, same
+    treatment as a bin absent from the series."""
+    ok = window["valid"].fillna(False).astype(bool)
+    out = window.drop(columns=["valid"])
+    return out.where(ok, other=np.nan)
+
+
 def _window_features(idx_df: pd.DataFrame, t0_bin: int) -> np.ndarray | None:
     """6 features for the pre-event window [t0-180s, t0-60s), or None if the
     window (or its 30-minute baseline) is too sparsely reconstructed."""
@@ -490,8 +613,8 @@ def _window_features(idx_df: pd.DataFrame, t0_bin: int) -> np.ndarray | None:
     b_lo = w_lo - int(round(BASELINE_SEC / BIN_SEC))
     b_hi = w_lo                                              # exclusive
 
-    win = idx_df.reindex(range(w_lo, w_hi))
-    base = idx_df.reindex(range(b_lo, b_hi))
+    win = _mask_invalid_rows(idx_df.reindex(range(w_lo, w_hi)))
+    base = _mask_invalid_rows(idx_df.reindex(range(b_lo, b_hi)))
     if win["mid"].notna().mean() < 0.5 or base["mid"].notna().mean() < 0.5:
         return None
 
@@ -525,9 +648,9 @@ def _window_features(idx_df: pd.DataFrame, t0_bin: int) -> np.ndarray | None:
     return np.array([accel, large_ratio, taker_imb, avg_spread, thinness, board_rate], float)
 
 
-def sample_controls(df: pd.DataFrame, burst: np.ndarray, events: np.ndarray,
-                    rng: np.random.Generator, n_per_event=N_CONTROLS_PER_EVENT,
-                    radius_sec=1800.0):
+def sample_controls(df: pd.DataFrame, idx_df: pd.DataFrame, burst: np.ndarray,
+                    events: np.ndarray, rng: np.random.Generator,
+                    n_per_event=N_CONTROLS_PER_EVENT, radius_sec=1800.0):
     bin_idx = df["bin_idx"].to_numpy()
     hour = df["hour"].to_numpy()
     hour_bucket = np.floor(hour).astype(int)
@@ -541,9 +664,12 @@ def sample_controls(df: pd.DataFrame, burst: np.ndarray, events: np.ndarray,
                 return True
         return False
 
+    # QC amendment: a candidate control never enters the pool unless its
+    # OWN [c-180s, c] range is fully valid/unexcluded -- every control this
+    # function draws already satisfies rule 4, no post-hoc filtering needed.
     pool_by_hour: dict[int, list[int]] = {}
     for b, hb in zip(bin_idx, hour_bucket):
-        if near_burst(int(b)):
+        if near_burst(int(b)) or not _range_fully_valid(idx_df, int(b)):
             continue
         pool_by_hour.setdefault(int(hb), []).append(int(b))
 
@@ -600,10 +726,16 @@ def compute_tp(df: pd.DataFrame, seed=SEED) -> dict:
     burst, events = detect_burst_and_events(df)
     idx_df = df.set_index("bin_idx")[
         ["mid", "n_trades", "vol_buy", "vol_sell", "n_large", "vol_large",
-         "spread_bps", "bid_depth_5bps", "ask_depth_5bps", "n_board_updates"]
+         "spread_bps", "bid_depth_5bps", "ask_depth_5bps", "n_board_updates",
+         "valid"]
     ]
+    # QC amendment rule 4: drop an event outright if any bin in its own
+    # [t0-180s, t0] is invalid or in the maintenance window.
+    events = np.array([t0 for t0 in events if _range_fully_valid(idx_df, int(t0))],
+                      dtype=np.int64)
+
     ctrl_rng = np.random.default_rng(seed)
-    controls_by_event = sample_controls(df, burst, events, ctrl_rng)
+    controls_by_event = sample_controls(df, idx_df, burst, events, ctrl_rng)
 
     event_feats = [_window_features(idx_df, int(t0)) for t0 in events]
     control_feats = [[_window_features(idx_df, int(c)) for c in ctrls]
@@ -837,6 +969,9 @@ def main() -> int:
         rep.line(f"coverage: {cov.get('missing_bins', '?')} missing of "
                  f"{cov.get('total_bins', '?')} bins, "
                  f"{len(cov.get('gaps_over_60s', []))} gaps > 60s")
+
+    df, qc_counts = apply_qc(df)
+    print_qc(rep, qc_counts)
 
     print_bi(rep, compute_bi(df))
     print_vr(rep, compute_vr(df))

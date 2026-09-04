@@ -286,6 +286,112 @@ def test_gmo_not_reached_below_day_bar(tmp_path):
     assert res["day_count"] == 5
 
 
+# ==========================================================================
+# QC amendment (2026-09-04): post-maintenance crossed/garbage book
+# ==========================================================================
+def _clean_full_series(n_bins, seed=7):
+    """A fully-featured, all-valid synthetic series (every column
+    apply_qc/compute_tp touch), spanning the maintenance window so the
+    exclusion clause has something to bite on."""
+    rng = np.random.default_rng(seed)
+    bins = np.arange(n_bins)
+    mid = 1_000_000.0 + np.cumsum(rng.normal(0, 5, n_bins))
+    # 12:00 UTC start, far from the 19:00-19:15 maintenance window -- tests
+    # that need to exercise that window set df["hour"] explicitly instead.
+    ts = pd.to_datetime(pd.Timestamp("2026-09-01T12:00:00Z") + bins * pd.Timedelta("5s"))
+    df = pd.DataFrame({
+        "ts": ts,
+        "mid": mid,
+        "spread_bps": rng.uniform(1.0, 3.0, n_bins),
+        "best_bid_size": rng.uniform(0.5, 2.0, n_bins),
+        "best_ask_size": rng.uniform(0.5, 2.0, n_bins),
+        "bid_depth_5bps": rng.uniform(1.0, 4.0, n_bins),
+        "ask_depth_5bps": rng.uniform(1.0, 4.0, n_bins),
+        "imb_top": rng.uniform(-1, 1, n_bins),
+        "imb_5bps": rng.uniform(-1, 1, n_bins),
+        "n_board_updates": 1,
+        "n_trades": 1,
+        "vol_buy": 0.01,
+        "vol_sell": 0.01,
+        "n_large": 0,
+        "vol_large": 0.0,
+        "max_trade_size": 0.01,
+    })
+    df["bin_idx"] = bins
+    df["hour"] = df["ts"].dt.hour + df["ts"].dt.minute / 60.0
+    return df
+
+
+def test_qc_mask_flags_each_reason_and_maintenance_window():
+    df = _clean_full_series(20)
+    df.loc[3, "spread_bps"] = -1.0          # crossed
+    df.loc[4, "spread_bps"] = 999.0         # far too wide
+    df.loc[5, "bid_depth_5bps"] = 0.0
+    df.loc[6, "ask_depth_5bps"] = 0.0
+    df.loc[7, "best_bid_size"] = 0.0
+    df.loc[8, "best_ask_size"] = -0.01
+    df.loc[9, "mid"] = np.nan
+    df.loc[10, "hour"] = 19.05              # inside 19:00-19:15 maintenance
+
+    valid, counts = jbr.compute_qc_mask(df)
+    assert counts["spread_le_0"] == 1
+    assert counts["spread_gt_50bps"] == 1
+    assert counts["bid_depth_5bps_zero"] == 1
+    assert counts["ask_depth_5bps_zero"] == 1
+    assert counts["best_bid_size_le_0"] == 1
+    assert counts["best_ask_size_le_0"] == 1
+    assert counts["mid_not_finite"] == 1
+    assert counts["maintenance_window"] == 1
+    assert counts["invalid_total"] == 7           # rows 3..9, not row 10
+    assert counts["excluded_total"] == 8           # + row 10
+    for i in (3, 4, 5, 6, 7, 8, 9, 10):
+        assert not valid[i]
+    for i in (0, 1, 2, 11, 12):
+        assert valid[i]
+
+
+def test_apply_qc_nans_mid_and_breaks_forward_return_like_a_gap():
+    df = _clean_full_series(60)
+    bad_bin = 30
+    df.loc[bad_bin, "spread_bps"] = -1.0
+    masked, counts = jbr.apply_qc(df)
+    assert np.isnan(masked.loc[bad_bin, "mid"])
+    assert np.isnan(masked.loc[bad_bin, "imb_5bps"])
+    assert masked.loc[bad_bin, "valid"] == False  # noqa: E712
+    assert counts["invalid_total"] == 1
+
+    # a forward return spanning the invalid bin is NaN, exactly like a gap
+    bin_idx = masked["bin_idx"].to_numpy()
+    mid = masked["mid"].to_numpy(float)
+    fwd = jbr.forward_value(mid, bin_idx, 0)
+    assert np.isnan(fwd[bad_bin])
+
+
+def test_tp_drops_event_whose_prewindow_touches_an_invalid_bin():
+    n_bins = 700
+    df = _clean_full_series(n_bins, seed=11)
+    burst_start = 500
+    base = df.loc[burst_start - 1, "mid"]
+    for i in range(burst_start, burst_start + 12):
+        df.loc[i, "mid"] = base * (1 + 0.0025 * (i - burst_start + 1) / 12.0)
+    for i in range(burst_start + 12, n_bins):
+        df.loc[i, "mid"] = df.loc[burst_start + 11, "mid"]
+
+    # baseline: the event survives on the untouched series
+    clean, _ = jbr.apply_qc(df.copy())
+    res_clean = jbr.compute_tp(clean)
+    assert res_clean["n_events"] == 1
+
+    # corrupt one bin 100s before t0 -- inside the QC amendment's
+    # [t0-180s, t0] drop range -- and confirm the event is now dropped
+    contaminated = df.copy()
+    contaminated.loc[burst_start - 20, "spread_bps"] = -1.0
+    masked, qc_counts = jbr.apply_qc(contaminated)
+    assert qc_counts["invalid_total"] == 1
+    res = jbr.compute_tp(masked)
+    assert res["n_events"] == 0
+
+
 def test_gmo_day_count_prefers_shared_paper_logs(tmp_path):
     local = tmp_path / "data" / "venues"
     shared = tmp_path / "paper_logs" / "venues"
