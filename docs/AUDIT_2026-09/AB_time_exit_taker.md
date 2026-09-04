@@ -86,6 +86,13 @@ board_round_series_5s に spread_bps=-20000(sentinel)の行が **180件**存在�
 | mid | 1249 | -1.26 | 0.47 | 0.90 | 0.91 |
 | high | 1249 | -0.97 | 0.95 | 1.15 | 1.15 |
 
+### ボラ3分位別 taker_share (法則が高ボラ局面だけで生き残るかの確認)
+| vol tercile | 5s | 60s | 300s | 2400s |
+|---|---|---|---|---|
+| low | 87.2% | 22.9% | 0.9% | 0.0% |
+| mid | 77.8% | 10.4% | 0.1% | 0.0% |
+| high | 65.3% | 3.4% | 0.0% | 0.0% |
+
 ## 6. スケーリング検定・MDE・棄却文
 - cap=5s symmetric_bps = -1.21 [-1.27,-1.15]、cap=2400s = 0.94 [0.88,1.01]
 - 対応差分(2400s−5s) = 2.15 [2.11,2.20] (day-clustered)
@@ -98,7 +105,7 @@ board_round_series_5s に spread_bps=-20000(sentinel)の行が **180件**存在�
 ## 7. 前提の誤り
 | premise | claimの出典 | データが示すこと | バイアス方向 | 波及するclaim |
 |---|---|---|---|---|
-| spread≈1.9bps(指示コスト) | 監査指示の realized cost regime | 板実測spread_bps平均=1.88bps、中央値=1.78bps | 実測が指示値と乖離する分だけtaker脚コスト見積りが変動 | AB自身、コストregimeを共有する他の全capパケット(AD,AE,AF,AG等) |
+| spread≈1.9bps(指示コスト) | 監査指示の realized cost regime | 板実測spread_bps 平均=1.88bps・中央値=1.77bps(sentinel除外後) — 指示値とほぼ一致し確認された | 一致のため本項目由来の追加バイアスは小さい(sentinel除外を怠ると平均が-12.5bpsへ暴走する点は別項目参照) | AB自身、同じfee0%/spread1.9bps前提を使う他capパケット |
 | config/config.yaml costs.taker_fee_pct=0.15%(15bps)+slippage_pct=0.05%(5bps) | 本番PAPER約定モデル | 本監査指示のfee0%/slippage1bpsと1桁近く異なる(paper側は保守バッファ) | configの値を使うと本監査より遥かに悲観的な結果になる | costs.taker_fee_pct/slippage_pctを直接引用する他の全pnl系claim |
 | キュー位置=着席時点のbestサイズ全量(最後尾) | 本監査の待ち行列近似(データに真のキュー位置情報なし) | 実際のキュー位置は不明(半分着席のqueue_frac=0.5感度では結果は§3参照) | 最後尾仮定はtaker化率を過大に見積る方向(悲観)=法則を支持する方向にバイアス | AB自身、キューモデルを流用する将来のmaker系claim |
 | 板データは常に健全 | (暗黙) | spread_bps=-20000のsentinelが180行、19:10-19:11UTC再接続時にmidも半値に汚損(§3b) | 未フィルタでtaker脚コストやspread平均を計算すると符号・桁が破綻(実測平均が-12.5bpsに歪む) | spread/コストをboard_round系データから直接平均するAB以外の全claim(特に同スナップショットを使うクロスパケット) |
@@ -121,8 +128,10 @@ board_round_series_5s に spread_bps=-20000(sentinel)の行が **180件**存在�
 claim=「短scale=長scale、5秒で-7〜-15bps/回」。本監査のsymmetric_bps(day-clustered)は
 cap=5s: -1.21bps [-1.27,-1.15]、cap=2400s: 0.94bps [0.88,1.01]、
 差分2.15bps [2.11,2.20] (MDE=0.09bps)。
-taker_shareの低下に伴いsymmetric_bpsも有意に改善し、capを伸ばすことが実質的な経済価値を生んでいる
-。
+taker_shareの低下に伴いsymmetric_bpsも有意に改善し、capを伸ばすことが実質的な経済価値を生んでいる。
+taker_shareは5s:76.8%→60s:12.2%→300s:0.3%→2400s:0.0%と単調に潰れ、それに伴いsymmetric_bpsも単調に改善する。
+§5のボラ3分位でもhigh tercileで300s/2400sのtaker_shareが依然0%近辺(§5表)であり、高ボラ局面限定でも法則は再現しない。
+無条件(全レジーム平均)でもレジーム条件付き(時間帯・ボラ3分位)でも「短scale=長scale」は本モデルでは支持されない。
 
 | 項目 | claim値 | 本監査再計算値 |
 |---|---|---|
