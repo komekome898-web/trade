@@ -4,13 +4,12 @@ Independent re-derivation. Own script: `audit_Y.py` (scratchpad, not committed).
 assumed; costs derived from `config/products.yaml` and from raw quotes/book/trade data.
 
 ## Files read
-`config/products.yaml`, `config/config.yaml` (grep only: maker/spread/slippage keys — none found for
-maker fee), `docs/AUDIT_2026-09/PROTOCOL.md`, `docs/AUDIT_2026-09/00_packets.md` (grep on R29/R30/Y only),
+`config/products.yaml`, `config/config.yaml` (grep only: maker/spread/slippage — no maker fee found),
+`docs/AUDIT_2026-09/PROTOCOL.md`, `docs/AUDIT_2026-09/00_packets.md` (grep on R29/R30/Y only),
 `backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz`, `backtest_data/candles_BTC_JPY_20260820.csv`,
 `backtest_data/candles_XRP_JPY_20260820.csv`, `backtest_data/bitbank_xrp_jpy_1m.csv`,
-`backtest_data/binance_XRPUSDT_1m.csv`, `backtest_data/venue_survey_20260827/bf_fxbtc_book.jsonl.gz`,
-`.../bf_fxbtc_trade.jsonl.gz`, `.../bf_fxbtc_trade2.jsonl.gz`, `paper_logs/venues/quotes_*.csv.gz` (headers
-only, reconnaissance, not used in final numbers).
+`backtest_data/binance_XRPUSDT_1m.csv`, `backtest_data/venue_survey_20260827/bf_fxbtc_{book,trade,trade2}.jsonl.gz`,
+`paper_logs/venues/quotes_*.csv.gz` (headers only, reconnaissance, not used in final numbers).
 
 **Protocol note (disclose, do not suppress):** while listing `backtest_data/venue_survey_20260827/`
 (permitted as a data directory) I also `head`-ed `FINAL.txt`/`SCREEN.txt` before realizing they are a
@@ -102,14 +101,13 @@ JPY funding-rate contamination assumed negligible at 1-min — not independently
 
   Every cell in the grid loses **24–34bps/trade net**, matching the claim's qualitative "follower-side
   floor of 24–52bps eats it all."
-- **Controls:** time-shift placebo (leader series rolled by half the sample, breaks true alignment while
-  preserving its own price dynamics) on the best cell → −29.77±1.05 (n=3983, comparable count) — the real
-  best cell (−26.14) is *not* better than this placebo. Sign-reversed on best cell → −33.86±1.74 (worse, as
-  expected for a mirror trade). **Selection contamination:** 30 random circular-shift permutations of the
-  leader, same 24-cell×2-venue grid, best-of-grid under the null: mean −28.1, p90 −26.6, max −23.9bps. The
-  observed best cell (−26.14) sits inside this null range (between the null's p90 and max) — i.e. a
-  best-of-24 search on pure noise produces a cell this "good" a non-trivial fraction of the time. **The
-  grid's least-bad cell is not distinguishable from search noise.**
+- **Controls:** time-shift placebo (leader rolled by half the sample, breaks alignment, keeps its own price
+  dynamics) on the best cell → −29.77±1.05 (n=3983, comparable count) — the real best cell (−26.14) is
+  *not* better than this placebo. Sign-reversed → −33.86±1.74 (worse, as expected for a mirror trade).
+  **Selection contamination:** 30 random circular-shift permutations of the leader, same 24-cell×2-venue
+  grid, best-of-grid under the null: mean −28.1, p90 −26.6, max −23.9bps. The observed best cell (−26.14)
+  sits inside this null range — a best-of-24 search on pure noise produces a cell this "good" a non-trivial
+  fraction of the time. **The grid's least-bad cell is not distinguishable from search noise.**
 - **MDE:** best-cell day-sd≈3.93bps, n_days=22 → MDE≈2.4bps. Observed net (−26.1bps) is ~11x the MDE —
   resolved, not underpowered.
 
@@ -123,16 +121,15 @@ JPY funding-rate contamination assumed negligible at 1-min — not independently
 | verdict | rejected | rejected |
 
 **Verdict R30: 再現.** Different sampling frequency for the lead-lag number (5s vs the 1-min this audit
-used, per the task's own spec), but the follower-cost floor and the rejection both reproduce, and the
-permutation check adds a stronger reason to reject: even the best grid cell is statistically indistinguishable
-from what a pure-noise leader would produce over the same search.
+used, per the task spec), but the follower-cost floor and rejection both reproduce; the permutation check
+adds a stronger reason: even the best grid cell is indistinguishable from a pure-noise leader over the
+same search.
 
 ## 前提の誤り (assumption findings)
 
-1. **Maker fee for spot BTC_JPY/XRP_JPY is undocumented.** `products.yaml` states an explicit
-   taker/maker=0% for `FX_BTC_JPY` but gives only `taker_fee_pct` for spot products, no maker figure. I
-   assumed 0% for spot maker; if bitFlyer's real spot maker fee is positive, R29's cost (b) is a lower
-   bound and the rejection only strengthens. Affects: every claim costing a "maker-side" spot leg.
+1. **Maker fee for spot BTC_JPY/XRP_JPY is undocumented.** `products.yaml` states taker/maker=0% for
+   `FX_BTC_JPY` explicitly but gives only `taker_fee_pct` for spot, no maker figure. Assumed 0% for spot
+   maker; if the real fee is positive, R29's cost (b) is a lower bound and rejection only strengthens.
 2. **Queue-fill assumption drives cost (b) an order of magnitude above the claimed 2.82bps** (36.6bps
    here). A naive "price touched my level = filled" model (no queue depletion) gives a much higher fill
    rate and lower cost — closer to what the claim likely used. This suggests the claim's 2.82bps rests on
