@@ -37,7 +37,9 @@ recorded claim from raw data with your OWN implementation and report whether it 
 8. Simplest alternative explanation: volatility clustering, time-of-day, volume, price level, survivorship, bid-ask
    bounce; does it reproduce the number?
 9. Consistency: does a second, independent measurement of the same effect (other data file, other horizon, other
-   instrument) agree in sign and magnitude?
+   instrument) agree in sign and magnitude? Also check ARITHMETIC identities between claims on the same population
+   (overall mean = mixture of subset means × shares; rates × n = counts). An inconsistent claim set is wrong before
+   any model is run — say which member must be wrong and why.
 10. Falsification sentence + MDE (minimum detectable effect) at the claim's n. For rejections: could a plausible
     effect size have been detected at all?
 
