@@ -68,6 +68,9 @@ DEFAULT_TS_CAP = 2000
 
 HASH_CHUNK = 1024 * 1024
 
+ACTIVE_WINDOW_SEC = 600  # files modified in the last 10 min are treated as being written
+ACTIVE_MIN_BYTES = 5 * 1024 * 1024  # ...but only when large enough for re-hashing to cost anything
+
 
 # --------------------------------------------------------------------------
 # timestamp parsing (tolerant)
@@ -344,9 +347,20 @@ def run(root: Path, full: bool, ledger_path: Path, latest_path: Path) -> dict:
             and prev.get("mtime") == cheap_mtime
         )
 
+        # A file modified within the last ACTIVE_WINDOW_SEC is being written
+        # right now (live WS recorder, growing tape): it has no stable hash
+        # and re-hashing a growing 100MB+ file on every run is pure cost.
+        # Record it as in-progress (path/bytes/mtime only); it is hashed and
+        # counted on the first run after it stops changing.
+        active = (cheap_bytes >= ACTIVE_MIN_BYTES and
+                  (datetime.now(timezone.utc) - datetime.fromisoformat(cheap_mtime)).total_seconds() < ACTIVE_WINDOW_SEC)
         if unchanged:
             rec = dict(prev)
             rec["status"] = "present"
+        elif active:
+            rec = {"path": rel, "status": "present", "bytes": cheap_bytes, "mtime": cheap_mtime,
+                   "md5": None, "row_count": None, "first_ts": None, "last_ts": None,
+                   "in_progress": True}
         else:
             try:
                 rec = scan_one(rel, p, cap)

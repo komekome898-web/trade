@@ -18,6 +18,7 @@ rem fallback only when none is configured anywhere.
 git config user.name >nul 2>&1 || git config user.name "bot-operator"
 git config user.email >nul 2>&1 || git config user.email "komekome3ai@gmail.com"
 
+echo [share_logs] copying logs and data files
 if not exist paper_logs mkdir paper_logs
 copy /Y logs\bot.jsonl        paper_logs\ >nul 2>&1
 copy /Y logs\status.json      paper_logs\ >nul 2>&1
@@ -48,22 +49,19 @@ rem and its coverage report are shared)
 copy /Y data\board_round\series_5s.csv.gz paper_logs\board_round_series_5s.csv.gz >nul 2>&1
 copy /Y data\board_round\coverage.json paper_logs\board_round_coverage.json >nul 2>&1
 
-rem Data governance (docs/DATA_GOVERNANCE_PLAN.md, docs/QA_PLAN_2026-09.md):
-rem refresh the intake ledger + quality report right before sharing, so the
-rem research side always reads a ledger current with what is being copied
-rem below, then share the ledger and quality report themselves -- "台帳が
-rem 数字の唯一の出所" (the ledger is the only source for file/row counts).
-".venv\Scripts\python.exe" "scripts\intake_ledger.py" >> "logs\fetch.out.log" 2>&1
-".venv\Scripts\python.exe" "scripts\data_quality.py" >> "logs\fetch.out.log" 2>&1
-copy /Y data\INTAKE_latest.json paper_logs\ >nul 2>&1
-copy /Y data\INTAKE.jsonl       paper_logs\ >nul 2>&1
-copy /Y data\QUALITY.json       paper_logs\ >nul 2>&1
-rem data\archive\ (owner PC only, git-excluded, unlimited retention) is too
-rem large to share by content -- share a LISTING only, per QA_PLAN_2026-09.md
-rem section 1-2 item 7. Guarded: this directory does not exist on every
-rem checkout (e.g. the research VM).
+rem Data governance: the intake ledger and quality report are produced by
+rem fetch_all.bat (unattended, scheduled). This interactive script only
+rem COPIES whatever ledger/report exists -- it never runs Python, so it
+rem finishes in seconds and cannot look frozen.
+echo [share_logs] copying ledger / quality report (if present)
+if exist data\INTAKE_latest.json copy /Y data\INTAKE_latest.json paper_logs\ >nul 2>&1
+if exist data\INTAKE.jsonl       copy /Y data\INTAKE.jsonl       paper_logs\ >nul 2>&1
+if exist data\QUALITY.json       copy /Y data\QUALITY.json       paper_logs\ >nul 2>&1
+rem data\archive\ (owner PC only, git-excluded) is too large to share by
+rem content -- share a LISTING only (QA_PLAN_2026-09.md section 1-2 item 7).
 if exist data\archive dir /-C data\archive > paper_logs\archive_listing.txt 2>nul
 
+echo [share_logs] git add / commit
 git add paper_logs
 rem Commit only when there is something staged (quiet no-op otherwise).
 git diff --cached --quiet || git commit -m "paper logs snapshot %date% %time%"
@@ -72,21 +70,20 @@ rem Sync with the remote BEFORE pushing - the research session commits to
 rem this branch too, so an un-pulled clone would be rejected as
 rem non-fast-forward. paper_logs is written only from this machine, so
 rem the rebase cannot conflict on it.
+echo [share_logs] git pull --rebase
 git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
 if errorlevel 1 (
   echo.
   echo *** git pull failed - copy the error above into the Claude chat. ***
-  pause
   exit /b 1
 )
 
+echo [share_logs] git push
 git push origin claude/bitflyer-trading-bot-hhxxaf
 if errorlevel 1 (
   echo.
   echo *** git push failed - if a login window appeared, sign in and rerun. ***
-  pause
   exit /b 1
 )
 echo.
-echo Done. Tell Claude that the logs are up.
-pause
+echo [share_logs] Done. Tell Claude that the logs are up.
