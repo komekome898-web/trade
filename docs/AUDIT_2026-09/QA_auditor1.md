@@ -1,10 +1,6 @@
 # Packet QA — blind audit (calibration packet)
 
-Files read: `PROTOCOL.md`, `docs/QA/claims_for_auditors.md` (both explicitly permitted),
-`backtest_data/qa_known_answer_20260905/manifest.md`, `costs_qa.yaml`, all 8 data files in that dir.
-`docs/QA/answers_sealed.json` and `scripts/qa/*.py` were **not** opened. Own scripts in scratchpad:
-`audit_QA.py`, `audit_QA3.py`, `audit_QA4.py`. Note: `audit_QA2.py` was overwritten by an external
-edit mid-session not authored by me; not used — all numbers below are from runs I executed myself.
+Files read: `PROTOCOL.md`, `docs/QA/claims_for_auditors.md` (both explicitly permitted), `backtest_data/qa_known_answer_20260905/manifest.md`, `costs_qa.yaml`, all 8 data files in that dir. `docs/QA/answers_sealed.json` and `scripts/qa/*.py` were **not** opened. Own scripts in scratchpad: `audit_QA.py`, `audit_QA3.py`, `audit_QA4.py` (`audit_QA2.py` was overwritten by an external edit mid-session not authored by me and is not used — all numbers below are from my own runs).
 
 ## QA-1
 

@@ -4,7 +4,7 @@ Data: `backtest_data/qa_known_answer_20260905/` (manifest.md read first). Script
 `scratchpad/audit_QA2.py` (independent pandas/numpy reimplementation). Files read: `PROTOCOL.md`,
 `.../manifest.md`, `docs/QA/claims_for_auditors.md`, `costs_qa.yaml`, `daily_qa_{alpha,bravo,charlie}.csv.gz`,
 `min1_qa_{autocorr,randomwalk}.csv.gz`, `ticker_qa_tape.csv.gz`, `executions_qa_tape.csv.gz`. No
-excluded file (scripts/qa/*.py, docs/QA/answers_sealed.json, other docs/) was opened.
+excluded file was opened (scripts/qa/*.py, docs/QA/answers_sealed.json, other docs/).
 
 ## QA-1
 Claim: QA_BRAVO close→next-open premium +2.1bps/day, t=7.2 (2011-01-03..2026-08-31, weekdays).
@@ -19,10 +19,6 @@ tape (QA-5) give a 3.6bps taker round-trip floor, so net of cost this is **−1.
 (≈−3.7%/yr)** — statistically real but not a standalone taker-executable edge. t=7.2 on n=4085
 can't come from a 3-instrument search under a true null (P≪1e-6). CHARLIE (unclaimed) shows the
 same-sign, larger premium (+4.95bps, t=16.8). MDE(80%,5%)≈0.83bps; effect is ~2.5× MDE.
-
-| | claimed | recomputed |
-|---|---|---|
-| mean / t | +2.1bps / 7.2 | **+2.116bps / 7.200** |
 
 Verdict: 再現
 
@@ -40,10 +36,6 @@ with BRAVO (reproduces) and CHARLIE (also positive, unclaimed) — ALPHA is the 
 with no positive premium. MDE(80%,5%)≈0.83bps; a true +3.5bps effect (12×MDE) would give t≈12 and
 was not observed — falsification "ALPHA overnight mean=0" is NOT rejected (|t|=0.85<1.96).
 
-| | claimed | recomputed (cleaned, n=4083) |
-|---|---|---|
-| mean / t | +3.5bps / 4.2 | **−0.25bps / −0.85** |
-
 Verdict: 結論変更
 
 ## QA-3
@@ -57,10 +49,6 @@ short-memory correlation, not a single-lag fluke. 0.69% flat (zero-return) bars,
 incidence in both min1 series, immaterial at this lag. Bid-ask bounce would push ρ₁ negative, not
 positive — argues against microstructure bounce as the source. MDE(95%)≈0.0067; observed is ~7.6×.
 
-| | claimed | recomputed |
-|---|---|---|
-| ρ₁ | +0.051 | **+0.0506** |
-
 Verdict: 再現
 
 ## QA-4
@@ -73,10 +61,6 @@ magnitude: 0.0050 / 0.0043. Directly contradicts the paired series (QA-3), which
 shuffle-surviving ρ₁≈0.05 — the two series behave as their names imply, and QA-4 attributes the
 effect to the wrong one. MDE(95%)≈0.0067 — a true 0.04 effect (6×MDE) would have been trivially
 caught; it was not. Falsification "qa_randomwalk ρ₁=0" is NOT rejected (t=1.38, p≈0.17).
-
-| | claimed | recomputed |
-|---|---|---|
-| ρ₁ / t | +0.04 / "significant" | **+0.0047 / 1.38 (n.s.)** |
 
 Verdict: 結論変更
 
@@ -97,10 +81,6 @@ offset, not noise — two different clocks under similar names); matching fills 
 0.802 vs 0.796bps slippage — ~1% difference, immaterial here but a genuine trap for a
 shorter-window claim assuming `t`≡`ts`. MDE: SE of spread mean≈0.0006bps — well resolved.
 
-| | claimed | recomputed |
-|---|---|---|
-| spread / one-way slip / RT floor | 2.0 / 0.8 / 3.6bps | **1.995 / 0.802 / 3.60bps** |
-
 Verdict: 再現
 
 ## QA-6
@@ -116,10 +96,6 @@ the identical population. Downstream arithmetic is wrong on its own terms too: u
 measured spread, 2×(1.995/2+0.802)=**3.60bps**, not 2.8bps; 2.8bps is reachable only via the false
 1.2bps input. SE of the spread mean≈0.0006bps at this n — 1.2bps is ~1,300 SE from the data; this
 is a direct falsification by the same tape the claim cites, not a power problem.
-
-| | claimed | recomputed |
-|---|---|---|
-| spread / RT floor | 1.2bps / 2.8bps | **1.995bps (no narrowing) / 3.60bps** |
 
 Verdict: 結論変更
 
@@ -138,31 +114,27 @@ Verdict: 結論変更
 
 - premise: an unconditional mean/t on a raw daily OHLC series is safe without a scale-break check |
   source: QA-2's headline stat, no data-quality caveat | data shows: one row (`2019-08-14`) priced
-  ~1000× neighbors, inflating raw std to 1529bps and masking that the true effect is null/negative |
-  bias: hides a false claim rather than just distorting it (raw t≈0 looks "merely underpowered," not
-  wrong) | inherits: any claim reporting mean/std/t on a raw daily series without checking for
-  single-row scale breaks first — the failure mode generalizes beyond ALPHA.
+  ~1000× neighbors, inflating raw std to 1529bps, masking that the true effect is null/negative |
+  bias: hides a false claim (raw t≈0 looks "merely underpowered," not wrong) | inherits: any claim
+  reporting mean/std/t on a raw daily series without a single-row scale-break check first.
 
 - premise: executions' `t` and `ts` columns are the same clock as the ticker file's `ts` | source:
-  implicit in any time-join used for QA-5/6-style cost claims | data shows: `ts=t−2.000s` exactly,
-  a constant deterministic offset, not noise | bias: small here (0.802 vs 0.796bps, ~1% relative),
-  immaterial to QA-5/6, but would matter more for a shorter reaction-window claim not in this
-  packet | inherits: any latency/reaction-time claim on an executions file with two similarly-named
-  time columns.
+  implicit in any time-join for QA-5/6-style cost claims | data shows: `ts=t−2.000s` exactly, a
+  constant deterministic offset, not noise | bias: small here (0.802 vs 0.796bps, ~1%), but would
+  matter more for a shorter reaction-window claim | inherits: any latency/reaction-time claim on an
+  executions file with two similarly-named time columns.
 
-- premise: `qa_randomwalk` is expected to show no autocorrelation (it is the null/placebo series) |
-  source: QA-4 asserts the opposite — a significant positive effect in exactly this series | data
-  shows: ρ₁=0.0047, t=1.38, inside its own shuffle-placebo range — behaves as a control should |
-  bias: would convert a null control into an apparent tradable signal, the most severe failure mode
-  a calibration packet can probe | inherits: any claim citing "control passed" language for this
-  series without recomputing ρ directly.
+- premise: `qa_randomwalk` shows no autocorrelation (it is the null/placebo series) | source: QA-4
+  asserts the opposite | data shows: ρ₁=0.0047, t=1.38, inside its own shuffle-placebo range —
+  behaves as a control should | bias: would convert a null control into an apparent tradable
+  signal, the most severe failure mode a calibration packet can probe | inherits: any claim citing
+  "control passed" for this series without recomputing ρ directly.
 
 - premise: "simple mean of all quote rows, no exclusions" yields ~1.2bps on this tape | source:
   QA-6's stated methodology and number | data shows: the identical procedure yields 1.995bps, flat
-  across day/hour, with no narrowing trend | bias: understates the true taker floor (2.8 vs 3.60bps
-  actual), which would make any downstream profitability claim netting against QA-6's floor look
-  more profitable than it is | inherits: any claim reusing "spread has compressed" as a premise
-  without independently recomputing spread from the tape.
+  across day/hour, no narrowing trend | bias: understates the true taker floor (2.8 vs 3.60bps),
+  making any downstream profitability claim netting against it look better than it is | inherits:
+  any claim reusing "spread has compressed" without recomputing it from the tape.
 
 No other categories (contract multipliers, tick sizes, additional control definitions,
 survivorship, dividend drops — not applicable to this synthetic packet) showed a material

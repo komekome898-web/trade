@@ -233,6 +233,101 @@ def _position_ladder(path: Path, now: float) -> dict[str, Any] | None:
     }
 
 
+_data_quality_module_cache: dict[str, Any] = {}
+
+
+def _data_quality_module() -> Any:
+    """Lazily loads scripts/data_quality.py's schema matching (load_schemas /
+    match_dataset) — the ONE implementation of "which schema/*.json dataset
+    does this path belong to", shared with the CLI tool by file identity
+    rather than duplicated here, so a dataset's row/file count here and its
+    quality-flag counts (data/QUALITY.json) always describe the same set of
+    files. Only the pure matching helpers are used; main()/argparse are not
+    invoked."""
+    mod = _data_quality_module_cache.get("mod")
+    if mod is not None:
+        return mod
+    path = Path(__file__).resolve().parents[3] / "scripts" / "data_quality.py"
+    spec = importlib.util.spec_from_file_location("data_quality", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    _data_quality_module_cache["mod"] = mod
+    return mod
+
+
+def _data_ledger(root: Path) -> dict[str, dict[str, Any]] | None:
+    """Ledger-driven データ蓄積 rows (docs/QA_PLAN_2026-09.md item 6).
+
+    Files/rows/span/freshness come from data/INTAKE_latest.json
+    (scripts/intake_ledger.py) and quality-flag counts from data/QUALITY.json
+    (scripts/data_quality.py) — both read via ``shared_or_local`` so the
+    console always shows the operator's shared copy over a stale local one
+    (docs/DATA_GOVERNANCE_PLAN.md §2: "台帳が数字の唯一の出所" — these
+    counts are never recomputed by hand). Rows are grouped by the SAME
+    schema/*.json dataset boundary data_quality.py itself uses (imported by
+    identity, see _data_quality_module), so a file counted in one table's row
+    is exactly the set of files whose quality flags appear in the other.
+
+    Returns None only when no intake ledger exists yet (fresh checkout, or
+    before the first fetch_all.bat run) — the dashboard then falls back to
+    showing "台帳未生成" instead of an empty table. A missing QUALITY.json
+    still yields rows (with zero quality flags each), since the intake
+    ledger is the primary source of files/rows/span.
+    """
+    intake_path = shared_or_local(root, "data/INTAKE_latest.json")
+    intake = _read_json(intake_path)
+    if not intake:
+        return None
+    quality = _read_json(shared_or_local(root, "data/QUALITY.json")) or {}
+    q_datasets = quality.get("datasets", {})
+
+    dq = _data_quality_module()
+    schemas = dq.load_schemas(root)
+
+    groups: dict[str, dict[str, Any]] = {}
+    for rel, rec in intake.items():
+        if rec.get("status") == "missing":
+            continue
+        schema = dq.match_dataset(rel, schemas)
+        name = schema.get("dataset", "_unmatched") if schema else "_unmatched"
+        g = groups.setdefault(name, {"files": 0, "rows": 0, "first_ts": None,
+                                     "last_ts": None, "last_update": None})
+        g["files"] += 1
+        rows = rec.get("row_count")
+        if rows:
+            g["rows"] += rows
+        for k, agg in (("first_ts", min), ("last_ts", max)):
+            v = rec.get(k)
+            if v is not None:
+                g[k] = v if g[k] is None else agg(g[k], v)
+        mtime = rec.get("mtime")
+        if mtime is not None:
+            g["last_update"] = mtime if g["last_update"] is None else max(g["last_update"], mtime)
+
+    now = time.time()
+    out: dict[str, dict[str, Any]] = {}
+    for name, g in groups.items():
+        age_sec = None
+        if g["last_update"]:
+            try:
+                age_sec = round(now - datetime.fromisoformat(g["last_update"]).timestamp(), 1)
+            except ValueError:
+                age_sec = None
+        q = q_datasets.get(name, {})
+        flag_counts = {check: info.get("count", 0) for check, info in (q.get("checks") or {}).items()}
+        out[name] = {
+            "files": g["files"],
+            "rows": g["rows"],
+            "first_ts": g["first_ts"],
+            "last_ts": g["last_ts"],
+            "last_update_age_sec": age_sec,
+            "files_checked": q.get("files_checked"),
+            "files_flagged": q.get("files_flagged"),
+            "quality_flags": flag_counts,
+        }
+    return out
+
+
 def _on1_paper(path: Path, now: float) -> dict[str, Any] | None:
     """ON1 forward paper ledger (scripts/paper_on1.py, docs/PREREG_on1_forward.md).
 
@@ -700,6 +795,11 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         "ws": {"files": len(ws_files), "total_mb": ws_total_mb, "latest": ws_latest},
         "collectors": collectors,
         "ingest": ingest,
+        # Ledger-driven データ蓄積 table (docs/QA_PLAN_2026-09.md item 6):
+        # per-dataset files/rows/span/freshness + quality-flag counts, read
+        # from data/INTAKE_latest.json + data/QUALITY.json via shared_or_local
+        # rather than recomputed from the raw files (see _data_ledger).
+        "data_ledger": _data_ledger(root),
         # storm radar: the one adopted precursor (scripts/research_storm_b.py
         # G3, 12:30-15:00 UTC, lift 2.23) — armed windows are when the
         # scalper runs its lowered entry threshold

@@ -218,6 +218,10 @@ PAGE = """<!doctype html>
     <h2>データ収集 <span class="sub">データ / 最終更新 / サイズ / 目的</span></h2>
     <div class="scroll"><table id="t-col"></table></div>
   </section>
+  <section>
+    <h2>データ台帳 <span class="sub">INTAKE/QUALITY駆動・データセットごとのファイル数/行数/期間/品質フラグ</span></h2>
+    <div class="scroll"><table id="t-ledger"></table></div>
+  </section>
 
   <div class="group-h">2. ゲート開放</div>
   <section>
@@ -693,6 +697,31 @@ async function refresh() {
       `<td class="sub">—</td><td class="sub">—</td><td class="num sub">—</td>` +
       `<td class="purpose">${COLLECTOR_PURPOSE[k] || "—"}</td></tr>`).join("") +
     (d.gates || []).map(g => gateRow(g, d)).join("");
+
+  renderDataLedger(d.data_ledger);
+}
+
+// データ台帳: aggregate.py:_data_ledger — data/INTAKE_latest.json (files/rows/
+// span/最終更新) + data/QUALITY.json (品質フラグ件数) を台帳から集計した表示専用
+// テーブル。手計算はしない(DATA_GOVERNANCE_PLAN.md「台帳が数字の唯一の出所」)。
+function renderDataLedger(ledger) {
+  const rows = Object.entries(ledger || {}).sort((a, b) => a[0].localeCompare(b[0]));
+  document.getElementById("t-ledger").innerHTML = rows.length ?
+    "<tr><th>データセット</th><th class='num'>ファイル数</th><th class='num'>行数</th>" +
+    "<th>期間</th><th>最終更新</th><th>品質フラグ</th></tr>" +
+    rows.map(([name, v]) => {
+      const span = (v.first_ts || v.last_ts) ?
+        `${(v.first_ts || "?").slice(0, 10)} .. ${(v.last_ts || "?").slice(0, 10)}` : "—";
+      const flags = Object.entries(v.quality_flags || {});
+      const flagText = flags.length ?
+        flags.map(([check, n]) => `${check}:${n}`).join(", ") : "—";
+      return `<tr><td>${name}</td><td class="num mono">${fmt(v.files, 0)}</td>` +
+        `<td class="num mono">${v.rows != null ? fmt(v.rows, 0) : "—"}</td>` +
+        `<td class="mono">${span}</td>` +
+        `<td>${v.last_update_age_sec != null ? age(v.last_update_age_sec) : "—"}</td>` +
+        `<td class="sub" title="${flagText}">${flagText}</td></tr>`;
+    }).join("")
+    : "<tr><td class='empty'>台帳未生成(scripts/intake_ledger.py 未実行)</td></tr>";
 }
 
 // データ蓄積表の「目的」列: 静的テキスト。キーは aggregate.py: COLLECTOR_PURPOSE

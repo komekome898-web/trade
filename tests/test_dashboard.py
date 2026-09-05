@@ -1909,3 +1909,112 @@ def test_market_tab_flags_a_collector_outage_behind_the_live_tail(tmp_path):
     assert "CSV欠落 24.0時間" in r["open_strip"]
     assert "CSV欠落 24.0時間前" not in r["open_strip"]   # a duration, not an age
     assert "30分</span><span class=\"mono flat\">—" in r["open_strip"]
+
+
+# ---- データ台帳 (docs/QA_PLAN_2026-09.md item 6: ledger-driven データ蓄積) ----
+
+
+def _write_schema(root, dataset, path_globs):
+    (root / "schema").mkdir(exist_ok=True)
+    (root / "schema" / f"{dataset}.json").write_text(json.dumps({
+        "dataset": dataset, "path_glob": path_globs, "columns": {},
+    }), encoding="utf-8")
+
+
+def _write_intake(root, records: dict, under="data"):
+    (root / under).mkdir(parents=True, exist_ok=True)
+    (root / under / "INTAKE_latest.json").write_text(json.dumps(records), encoding="utf-8")
+
+
+def test_data_ledger_none_when_no_intake_ledger(tmp_path):
+    from bot.monitoring.aggregate import _data_ledger
+    assert _data_ledger(tmp_path) is None
+
+
+def test_data_ledger_groups_unmatched_files_with_no_schema(tmp_path):
+    from bot.monitoring.aggregate import _data_ledger
+
+    records = {
+        "data/foo.csv": {"status": "present", "row_count": 10,
+                         "first_ts": "2026-08-01T00:00:00+00:00",
+                         "last_ts": "2026-08-02T00:00:00+00:00",
+                         "mtime": "2026-08-02T00:00:00+00:00"},
+        "data/bar.csv": {"status": "present", "row_count": 5,
+                         "first_ts": "2026-08-03T00:00:00+00:00",
+                         "last_ts": "2026-08-04T00:00:00+00:00",
+                         "mtime": "2026-08-04T00:00:00+00:00"},
+    }
+    _write_intake(tmp_path, records)
+
+    ledger = _data_ledger(tmp_path)
+    assert set(ledger.keys()) == {"_unmatched"}
+    row = ledger["_unmatched"]
+    assert row["files"] == 2
+    assert row["rows"] == 15
+    assert row["first_ts"] == "2026-08-01T00:00:00+00:00"
+    assert row["last_ts"] == "2026-08-04T00:00:00+00:00"
+    assert row["quality_flags"] == {}
+    assert row["last_update_age_sec"] is not None and row["last_update_age_sec"] >= 0
+
+
+def test_data_ledger_uses_schema_dataset_boundaries_and_quality_flags(tmp_path):
+    from bot.monitoring.aggregate import _data_ledger
+
+    _write_schema(tmp_path, "oi_snapshots", ["data/oi_snapshots.csv", "paper_logs/oi_snapshots.csv"])
+    records = {
+        "data/oi_snapshots.csv": {"status": "present", "row_count": 100,
+                                  "first_ts": "2026-08-01T00:00:00+00:00",
+                                  "last_ts": "2026-08-20T00:00:00+00:00",
+                                  "mtime": "2026-08-20T00:00:00+00:00"},
+        "data/other.csv": {"status": "missing", "row_count": 999},  # excluded
+    }
+    _write_intake(tmp_path, records)
+    (tmp_path / "data" / "QUALITY.json").write_text(json.dumps({
+        "datasets": {
+            "oi_snapshots": {
+                "files_checked": 1, "files_flagged": 1,
+                "checks": {"gaps": {"count": 3}, "duplicate_keys": {"count": 0}},
+            }
+        }
+    }), encoding="utf-8")
+
+    ledger = _data_ledger(tmp_path)
+    assert set(ledger.keys()) == {"oi_snapshots"}
+    row = ledger["oi_snapshots"]
+    assert row["files"] == 1
+    assert row["rows"] == 100
+    assert row["files_checked"] == 1
+    assert row["files_flagged"] == 1
+    assert row["quality_flags"] == {"gaps": 3, "duplicate_keys": 0}
+
+
+def test_data_ledger_prefers_the_shared_paper_logs_copy_when_newer(tmp_path):
+    import os
+    from bot.monitoring.aggregate import _data_ledger
+
+    _write_intake(tmp_path, {
+        "data/stale.csv": {"status": "present", "row_count": 1, "mtime": "2026-08-01T00:00:00+00:00"},
+    }, under="data")
+    _write_intake(tmp_path, {
+        "data/fresh.csv": {"status": "present", "row_count": 2, "mtime": "2026-08-02T00:00:00+00:00"},
+    }, under="paper_logs")
+    # make the shared copy strictly newer on disk so shared_or_local picks it
+    local = tmp_path / "data" / "INTAKE_latest.json"
+    shared = tmp_path / "paper_logs" / "INTAKE_latest.json"
+    os.utime(local, (1000, 1000))
+    os.utime(shared, (2000, 2000))
+
+    ledger = _data_ledger(tmp_path)
+    assert set(ledger.keys()) == {"_unmatched"}
+    assert ledger["_unmatched"]["files"] == 1
+    assert ledger["_unmatched"]["rows"] == 2  # from the shared/fresh copy, not stale
+
+
+def test_data_ledger_surfaced_in_collect_status(tmp_path):
+    from bot.monitoring.aggregate import collect_status
+    _write_intake(tmp_path, {
+        "data/x.csv": {"status": "present", "row_count": 1, "mtime": "2026-08-01T00:00:00+00:00"},
+    })
+    d = collect_status(tmp_path)
+    assert d["data_ledger"] is not None
+    assert d["data_ledger"]["_unmatched"]["files"] == 1

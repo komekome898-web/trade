@@ -22,6 +22,12 @@ rem Binance daily futures metrics (G6 features / regime) + USDJPY (yen conversio
 rem S12 clock-burst-30m status tile feed (n / fresh period / last day only;
 rem the n<30 safety valve inside the script still applies to the full report)
 ".venv\Scripts\python.exe" "scripts\research_clock_burst.py" --status-json "data\s12_status.json" >> "logs\fetch.out.log" 2>&1
+rem Retention pre-empt (docs/QA_PLAN_2026-09.md item 5): copy-only snapshots
+rem of retention-limited sources (bitFlyer 31d, OKX OI/L-S) at half their
+rem upstream window into backtest_data\auto_<source>_<date>\, before the
+rem intake ledger below records them. Never overwrites, never touches the
+rem original files; skips a source with no snapshot due yet.
+".venv\Scripts\python.exe" "scripts\retention_snapshot.py" >> "logs\fetch.out.log" 2>&1
 rem Data governance (docs/DATA_GOVERNANCE_PLAN.md, docs/QA_PLAN_2026-09.md):
 rem intake ledger (data\INTAKE.jsonl append-only history + data\INTAKE_latest.json
 rem materialized index of every file under data\, paper_logs\, backtest_data\,
