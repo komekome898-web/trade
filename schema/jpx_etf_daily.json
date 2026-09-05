@@ -11,7 +11,7 @@
   "source": "Yahoo Finance chart API: https://query1.finance.yahoo.com/v8/finance/chart/<SYM>?range=15y&interval=1d&events=div,splits -- fetched via Python requests through the project's preconfigured HTTPS proxy. See backtest_data/jpx_etf_daily_<date>/README.md and manifest.json for exact fetch timestamps, HTTP status, and per-symbol checksums.",
   "retention": "backtest_data/jpx_etf_daily_<date>/ is a permanent MD5-stamped snapshot (never overwritten in place; a re-fetch lands in a new dated directory). Raw *.json files are never modified or deleted once written -- they are the ground truth if the derived CSV parsing is ever found to be wrong.",
   "symbols": {
-    "1321.T": "NEXT FUNDS TOPIX (Nomura Asset Management) -- ETF",
+    "1321.T": "NEXT FUNDS Nikkei 225 ETF (Nomura Asset Management) -- ETF (the earlier label 'TOPIX' was wrong; corrected 2026-09-05)",
     "1306.T": "NEXT FUNDS TOPIX (Nomura Asset Management) -- ETF",
     "1591.T": "Nomura Asset Management -- ETF",
     "2516.T": "Simplex Asset Management -- ETF",
@@ -35,13 +35,48 @@
     "backtest_data/jpx_etf_daily_<date>/<SYM>.csv": {
       "coverage": "Varies by symbol -- 15y request range capped by each symbol's actual listing history. See manifest.json / README.md in the snapshot directory for the exact row count and first/last date measured at fetch time.",
       "columns": {
-        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "UTC calendar date of the bar's raw Unix timestamp (empirically equal to the JST trading date for the timestamps seen in the 20260905 snapshot -- see that snapshot's README for the verification and caveat; not a documented Yahoo guarantee)", "notes": null},
-        "open": {"meaning": "daily open", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null for this field on this date"},
-        "high": {"meaning": "daily high", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null"},
-        "low": {"meaning": "daily low", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null"},
-        "close": {"meaning": "daily close", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null"},
-        "adjclose": {"meaning": "dividend/split-adjusted close, as returned by Yahoo's indicators.adjclose", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null or omitted the adjclose series entirely"},
-        "volume": {"meaning": "daily volume", "unit": "units", "tz": null, "notes": "blank when Yahoo returned null; 0 is a real reported value distinct from blank"}
+        "date": {
+          "meaning": "trading day",
+          "unit": "YYYY-MM-DD",
+          "tz": "UTC calendar date of the bar's raw Unix timestamp (empirically equal to the JST trading date for the timestamps seen in the 20260905 snapshot -- see that snapshot's README for the verification and caveat; not a documented Yahoo guarantee)",
+          "notes": null
+        },
+        "open": {
+          "meaning": "daily open",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "blank when Yahoo returned null for this field on this date"
+        },
+        "high": {
+          "meaning": "daily high",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "blank when Yahoo returned null"
+        },
+        "low": {
+          "meaning": "daily low",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "blank when Yahoo returned null"
+        },
+        "close": {
+          "meaning": "daily close",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "blank when Yahoo returned null"
+        },
+        "adjclose": {
+          "meaning": "dividend/split-adjusted close, as returned by Yahoo's indicators.adjclose",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "blank when Yahoo returned null or omitted the adjclose series entirely"
+        },
+        "volume": {
+          "meaning": "daily volume",
+          "unit": "units",
+          "tz": null,
+          "notes": "blank when Yahoo returned null; 0 is a real reported value distinct from blank"
+        }
       }
     },
     "backtest_data/jpx_etf_daily_<date>/manifest.json": {
@@ -56,6 +91,8 @@
     "ISOLATED BAD-PRINT DAYS: on a small number of dates, OHLC collapses to roughly 1/100 of the surrounding price level for exactly one bar, often with volume 0, and with no corresponding entry in the raw JSON's events.splits (so it is not a real corporate action, just a Yahoo source glitch). Confirmed in the 20260905 snapshot for 1557.T (2013-10-29, 2013-10-31, 2017-07-17: e.g. close prints ~177 against a ~17390 close the trading days immediately before/after), 1306.T (2015-01-05), 1655.T (2017-09-28, 2022-02-08), and 2558.T (2026-06-05, 2026-06-08). Treat any single-day >80% round-trip in close-to-close return as a probable bad print unless corroborated by events.splits in the raw JSON -- do not silently forward-fill or interpolate without flagging it.",
     "MIXED INSTRUMENT TYPES UNDER ONE DATASET NAME: 7203.T, 6758.T, 8306.T, 9984.T are individual equities (Yahoo instrumentType=EQUITY), not ETFs, despite the jpx_etf_daily dataset name -- kept here because packet H's fetch list specified them alongside the 11 ETF tickers.",
     "VARYING HISTORY LENGTH: the 15y range request is capped by each symbol's actual listing date -- row counts and first_date differ substantially across symbols (see manifest.json for exact values per snapshot). A cross-symbol join must handle the shorter series' missing early history explicitly, not assume 15y of data for every ticker.",
-    "adjclose may be absent or null-padded independently of open/high/low/close -- Yahoo's indicators.adjclose is a separate array from indicators.quote and can have different null coverage; check it independently rather than assuming it tracks close's nullness."
+    "adjclose may be absent or null-padded independently of open/high/low/close -- Yahoo's indicators.adjclose is a separate array from indicators.quote and can have different null coverage; check it independently rather than assuming it tracks close's nullness.",
+    "ADDED BY THIRD AUDIT OF PACKET H (2026-09-05): 1306.T has an undocumented bad print on 2026-03-30/31 (price collapses ~10x for two bars, no events.splits entry); it was not in the original list above. Also, 1306.T's 2015-01-05 row is NOT a bad print: it is a real, unadjusted 10:1 unit split (visible in raw JSON events.splits) -- the earlier line above listing it as a bad print is wrong and is kept for the record.",
+    "FIRST_DATE IS A FETCH-WINDOW TRUNCATION, NOT A LISTING DATE: for symbols older than 15y (e.g. 1547.T, 1557.T) first_date in manifest.json is the 15y window edge. Any 'first listing year' analysis must obtain the true listing date from the exchange, not from this snapshot."
   ]
 }
