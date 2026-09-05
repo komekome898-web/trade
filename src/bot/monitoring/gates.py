@@ -24,7 +24,9 @@ per file until the collector actually appends something.
 from __future__ import annotations
 
 import json
+import os
 import re
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -406,18 +408,47 @@ def shared_or_local(root: Path, rel: str, shared_name: str | None = None) -> Pat
     ``shared_name`` overrides the paper_logs basename when the shared copy is
     deliberately renamed (e.g. multiple sources sharing the same local
     basename "ledger.csv" get distinct paper_logs names like on1_ledger.csv /
-    onr_ledger.csv). Defaults to rel's own basename."""
+    onr_ledger.csv). Defaults to rel's own basename.
+
+    Phase-2 sealing (docs/PHASE2_SPEC.md §3, implementation note below): when
+    env ``PHASE2_UNIT`` names an active research unit and the path this
+    resolves to is listed in that unit's
+    ``backtest_data/phase2_sealed/<unit>/SEALED.json``, the path is still
+    RETURNED — this function has no read-only-loader replacement to fall
+    back to — but a warning is emitted. The enforced path that actually
+    refuses sealed rows is ``bot.research.sealed.load_unsealed`` /
+    ``load_sealed``; this check exists only so a phase-2 script that reaches
+    for ``shared_or_local`` directly (instead of the sealed-data loader) does
+    not do so silently.
+    """
     local = root / rel
     shared = root / "paper_logs" / (shared_name or Path(rel).name)
     try:
         s_m = shared.stat().st_mtime
     except OSError:
-        return local
-    try:
-        l_m = local.stat().st_mtime
-    except OSError:
-        return shared
-    return shared if s_m > l_m else local
+        resolved = local
+    else:
+        try:
+            l_m = local.stat().st_mtime
+        except OSError:
+            resolved = shared
+        else:
+            resolved = shared if s_m > l_m else local
+
+    unit = os.environ.get("PHASE2_UNIT")
+    if unit:
+        try:
+            from bot.research.sealed import is_dataset_sealed_file
+            if is_dataset_sealed_file(str(resolved), unit, root):
+                warnings.warn(
+                    f"shared_or_local: {resolved} is a SEALED file for phase-2 "
+                    f"unit {unit!r} (PHASE2_UNIT). This function does not "
+                    f"filter sealed rows -- use "
+                    f"bot.research.sealed.load_unsealed instead.",
+                    stacklevel=2)
+        except Exception:
+            pass  # never let the seal check break a plain coverage-gate read
+    return resolved
 
 
 def champion_gate(root: Path, now: float) -> dict[str, Any]:

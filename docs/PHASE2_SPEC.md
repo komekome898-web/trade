@@ -58,6 +58,18 @@
   ようにする(`gates.shared_or_local` に封印チェックを追加し、封印期間を読むと例外)。
 - 反復(改良)に使えるのは開発セットのみ。開発セットは train/val に分けて選択は val で行う。
 
+**実装**: `scripts/phase2_seal.py` が研究単位ごとに `backtest_data/phase2_sealed/<unit>/SEALED.json`
+を書く(各ファイルのパス・MD5・時刻列・直近30%の暦日境界 `seal_from_ts`・フォワード開始日
+`forward_start`。データ自体はコピー・移動しない)。読み手の強制経路は
+`src/bot/research/sealed.py`: `load_unsealed(path, unit, root=...)` が封印行(過去の直近30%窓
++ `forward_start` 以降)を除いた DataFrame を返し、`load_sealed(path, unit, token)` は
+env `PHASE2_FINAL_EVAL=<unit>` + オーナー作成の `UNSEAL_APPROVED` ファイル + 明示トークンの
+3条件が揃わない限り `SealedDataError` を投げる(LIVE_MODE と同型の三重ガード)。解除は毎回
+`UNSEAL_LOG.jsonl` に追記される。他経路で読み込んだ場合向けに `assert_not_sealed(df, unit)` も
+用意する。`bot.monitoring.gates.shared_or_local` は env `PHASE2_UNIT` が立っていて解決先が対象
+ユニットの SEALED.json に載っている場合、パスはそのまま返しつつ警告を出す(強制はしない —
+強制経路は上記ローダー)。
+
 ## 4. 反復と停止規則
 
 - 改良の反復は過学習ではない。**改良に使ったデータで最終評価しない**ことだけが条件。
