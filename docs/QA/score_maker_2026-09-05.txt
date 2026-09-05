@@ -1,0 +1,21 @@
+docs/AUDIT_2026-09/QAM_auditor1.md
+   QA-M1 True 判定不能 False
+   QA-M2 False 結論変更 True
+   QA-M3 True 判定不能 False
+   QA-M4 False 結論変更 True
+   QA-M5 False 結論変更 True
+   verdicts 3/5  traps {'unclosed/survivorship': True, 'mid_reference': False, 'crossed_rows': True, 'off_grid/tiny_depth': True}
+docs/AUDIT_2026-09/QAM_auditor2.md
+   QA-M1 True 数値差異(結論維持) True
+   QA-M2 False 結論変更 True
+   QA-M3 True 結論変更 False
+   QA-M4 False 結論変更 True
+   QA-M5 False 結論変更 True
+   verdicts 4/5  traps {'unclosed/survivorship': True, 'mid_reference': False, 'crossed_rows': True, 'off_grid/tiny_depth': True}
+docs/AUDIT_2026-09/QAM_auditor3.md
+   QA-M1 True 数値差異(結論維持) True
+   QA-M2 False 結論変更 True
+   QA-M3 True 結論変更 False
+   QA-M4 False 結論変更 True
+   QA-M5 False 結論変更 True
+   verdicts 4/5  traps {'unclosed/survivorship': True, 'mid_reference': True, 'crossed_rows': True, 'off_grid/tiny_depth': True}
