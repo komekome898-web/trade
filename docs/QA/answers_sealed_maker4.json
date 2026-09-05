@@ -1,0 +1,104 @@
+{
+  "generated_utc": "2026-09-05T09:05:13.923176+00:00",
+  "method": "generation-4, CODE-AS-CLAIM (docs/AUDIT_2026-09/PROTOCOL.md \"Maker fill-model claims\"): the fill simulator code is part of the claim. This packet reuses the public tape files from backtest_data/qa_known_answer_maker3_v3_20260905/ verbatim and re-derives all numbers from scripts/qa/maker_fill_ref.py (the CLEAN reference simulator; RULE_DECISIONS at its top is the definitive resolution of every ambiguity in the v3 prose rule).",
+  "dataset_dir_reused": "backtest_data/qa_known_answer_maker3_v3_20260905",
+  "simulator": "scripts/qa/maker_fill_ref.py",
+  "own_size": 0.05,
+  "cap_seconds": 300.0,
+  "S1": {
+    "label": "S1",
+    "n_positions": 921,
+    "net_bps_mean": 1.1480616500821217,
+    "net_bps_t_stat": 9.0517395824102,
+    "adverse_selection_bps_at_5s_mean": -0.6098663044226711,
+    "adverse_selection_t_stat": -21.36050877867226,
+    "adverse_selection_n": 921,
+    "forced_exit_count": 507,
+    "forced_exit_fraction": 0.5504885993485342
+  },
+  "S2": {
+    "label": "S2",
+    "n_positions": 361,
+    "net_bps_mean": 0.7737559041288598,
+    "net_bps_t_stat": 4.1549959966082834,
+    "adverse_selection_bps_at_5s_mean": -0.5336790882288005,
+    "adverse_selection_t_stat": -15.007291124976556,
+    "adverse_selection_n": 361,
+    "forced_exit_count": 192,
+    "forced_exit_fraction": 0.5318559556786704
+  },
+  "naive": {
+    "label": "naive",
+    "n_positions": 11936,
+    "net_bps_mean": 0.8418444210792696,
+    "net_bps_t_stat": 76.58942161561514,
+    "adverse_selection_bps_at_5s_mean": -0.5457753863971708,
+    "adverse_selection_t_stat": -73.10657104500447,
+    "adverse_selection_n": 11936,
+    "forced_exit_count": 0,
+    "forced_exit_fraction": 0.0
+  },
+  "comparison_to_v3_sealed_numbers": {
+    "note": "These numbers are EXPECTED to differ from v3's sealed values -- this is not a discrepancy to resolve. v3's own generator computed queue-ahead from an internal, hidden per-order LOB it constructed by hand; this generation-4 simulator computes queue-ahead purely from the two PUBLIC files (raw displayed size at insertion, per RULE_DECISIONS #6/entry 6), with no attempt to reverse out whatever footprint the original generator's own S1 clip already baked into those displayed sizes. Other RULE_DECISIONS entries (shared slot + exit eviction priority, forced-exit timing, exact-equality boundary) are also independent resolutions of the same prose and were not tuned to reproduce v3.",
+    "v3_sealed": {
+      "S1_net_bps_mean": 0.3046,
+      "S1_net_bps_t_stat": 2.795,
+      "S1_forced_exit_fraction": 0.446,
+      "S2_net_bps_mean": -0.9825,
+      "S2_net_bps_t_stat": -26.194,
+      "naive_net_bps_mean": 0.8357,
+      "naive_net_bps_t_stat": 74.631
+    },
+    "maker4_clean_sim": {
+      "S1_net_bps_mean": 1.1480616500821217,
+      "S1_net_bps_t_stat": 9.0517395824102,
+      "S1_forced_exit_fraction": 0.5504885993485342,
+      "S2_net_bps_mean": 0.7737559041288598,
+      "S2_net_bps_t_stat": 4.1549959966082834,
+      "naive_net_bps_mean": 0.8418444210792696,
+      "naive_net_bps_t_stat": 76.58942161561514
+    }
+  },
+  "planted_defect": {
+    "location": "scripts/qa/maker_fill_ref_packet.py (the copy claims_for_auditors_maker4.md points auditors to; scripts/qa/maker_fill_ref.py, the CLEAN simulator used to compute every number in this sealed file and in the claims doc, does NOT contain it)",
+    "description": "Single-line off-by-one at the completion threshold check: the clean simulator requires cumulative same-price executions since insertion to be STRICTLY GREATER than queue_ahead+own_size to complete an order (`s.cum > threshold`), per the literal rule text ('... EXCEED queue-ahead + own size'). The packet copy uses `s.cum >= threshold`, letting an order complete one execution earlier, on exact equality.",
+    "exposing_micro_tape": "d",
+    "exposing_micro_tape_detail": "backtest_data/qa_known_answer_maker4_20260905/micro/{ticker,exec}_d.csv + expected_d.json + HAND_DERIVATION_d.md: cumulative volume lands EXACTLY on the threshold (0.15) at t=3; the clean simulator does not complete the entry there (needs t=4's print to exceed 0.15), the defective copy completes immediately at t=3. All other 7 micro-tapes produce byte-identical output from both simulators (see test_packet_copy_diverges_only_on_tape_d).",
+    "not_exposed_by": "micro-tape (b) also touches the queue-ahead boundary but never reaches exact equality with the completion threshold (cumulative stops at 0.90 against a 1.05 threshold), so it does not discriminate the two operators; (d) was constructed specifically to land on the boundary."
+  },
+  "claims": [
+    {
+      "id": "QA4-1",
+      "claim_correct": true,
+      "truth_class": "true_effect"
+    },
+    {
+      "id": "QA4-2",
+      "claim_correct": true,
+      "truth_class": "naive_not_optimistic_here"
+    },
+    {
+      "id": "QA4-3",
+      "claim_correct": true,
+      "truth_class": "true_effect"
+    },
+    {
+      "id": "QA4-4",
+      "claim_correct": true,
+      "truth_class": "adverse_selection_nonzero"
+    },
+    {
+      "id": "QA4-5",
+      "claim_correct": true,
+      "truth_class": "forced_fraction"
+    },
+    {
+      "id": "QA4-6",
+      "claim_correct": true,
+      "truth_class": "comparison_statement",
+      "scored": false,
+      "not_scored_reason": "comparison to v3 sealed numbers; auditors cannot see v3 sealed"
+    }
+  ],
+  "scoring_note": "Primary measurement of this packet = detection of the planted code defect (>= vs >) via code review / micro-tape (d), and exact reproduction of numbers by re-running the packet code. Verdict scoring is secondary; all scored claims are true under the clean simulator."
+}
