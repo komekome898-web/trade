@@ -28,7 +28,7 @@
 | n225f_225labo | extreme_return | 16 | 仕様どおり | Golden Week前後・実相場変動の範囲内(既存known_defects) | 対応不要 |
 | n225f_225labo | gaps | 5 | 既知欠陥 | 既存known_defects「2019-04-26..05-07 Golden Week」と一致 | 対応不要 |
 | n225f_225labo | zero_volume | 14893 | 仕様どおり | 1分足の薄商い分(夜間セッション中心)。1分粒度では無出来高分が生じるのは構造上当然 | 対応不要 |
-| oi_snapshots | gaps | 6 | 既知欠陥(2件×3コピー) | 実ギャップは2件(data/・paper_logs/・backtest_dataの3コピーで6)。最大(10.4h, 08-28 04:22終了)はboard_round/venuesと同時、オーナーPCダウンと推定。2件目(2.9h, 08-31)は対応するventues/board_roundの穴が無く未説明 | schema追記済み(1件)。2件目は未解決 |
+| oi_snapshots | gaps | 6 | 既知欠陥(2件×3コピー) | 実ギャップは2件(data/・paper_logs/・backtest_dataの3コピーで6)。最大(10.4h, 08-28 04:22終了)はboard_round/venuesと同時、オーナーPCダウンと推定。2件目(2.9h, 08-31 09:07:42Z→12:03:50Z終了)を本回で解明: venues(全ペア)・board_round_series_5s(5秒粒度、窓内2280行)・bot.jsonl(paperボット本体の判断ログ)は同じ窓で欠落なし、ws_listing.txtも窓内(11:17:22)に正常な再接続セッション開始があり穴なし→PC/回線/他コレクタは稼働中。`scripts/record_oi.py`は各API呼び出しを個別best-effortで捕捉し失敗時も空欄セルで必ず1行appendする設計(行自体を欠かすことは無い)ため、行が0件=OI用API個別の障害ではなく`record_oi.py`自体が実行されなかったことを意味する。同スクリプトは`deploy/fetch_all.bat`内でfetch_history.py/fetch_external.py/fetch_okx.pyの後に呼ばれる1行(15分毎のタスクスケジューラ`bitflyer-fetch`)なので、当該実行が前段のいずれかで2.9h滞留した(あるいはタスクスケジューラの「実行中は新規開始しない」既定によりその間の起動がスキップされた)ことが有力な説明——他プロセス(bot/venues/board_round/WS)は個別プロセスのため無関係で影響を受けない。オーナーPCの`logs\fetch.out.log`やタスクスケジューラ実行履歴が本リポジトリに無いため、前段のどのスクリプトが滞留したかの確定はできていないが、「PCダウン」「API側の一般的な不通」の2説は上記根拠で否定できる | schema追記済み(2件とも)。原因は`fetch_all.bat`バッチ(record_oi.py起動経路)の単発滞留に切り込み済みだが、滞留元スクリプトの確定は残課題(オーナーPCのfetch.out.log確認が必要) |
 | qa_synthetic | duplicate_keys | 60679 | 仕様どおり | 全ファイルが既存known_defects「SYNTHETIC DATA WARNING」明記の人工既知解フィクスチャで実データではない | 対応不要 |
 | qa_synthetic | extreme_return | 70 | 仕様どおり | 同上 | 対応不要 |
 | qa_synthetic | gaps | 55593 | 仕様どおり | 同上 | 対応不要 |
@@ -42,8 +42,22 @@
 | schema_undefined | schema_undefined_count(top) | 134 | 収集側の修正(131件)/未解決(3件) | 17新規+3修正schemaのpush後、path_globをローカルで照合した結果131/134は正しいdatasetへ解決(VMのフルスキャンでも`schema_undefined_count=0`)。残り3件はさらにpath_glob不足だった: `backtest_data/auto_bitflyer_executions_*/candles_FX_BTC_JPY.csv`・`candles_XRP_JPY.csv`(candles_fx_btc_jpyのpath_glob対象外)、`data/api_health.csv`(schema自体が無い) | 修正済み: candles_fx_btc_jpy.jsonにpath_glob追加、新規`schema/api_health.json`作成(`src/bot/exchange/resilience.py`のApiHealthRecorderを読んで作成。VM上に実ファイルが無くコード読解のみ、オーナーPCでの再確認が望ましい=未解決の余地あり) |
 | schema_undefined | gaps(バケツ集計) | 109400 | 収集側の修正(結果的に解消) | schema未定義バケツの構造チェック(structural-only)の合算値。schema追加後は各データセット固有のチェックへ正しく分解される(VM再実行でexternal_crypto_klines/fx_macro_fundamentals/daily_crypto_usd_multisource/regime_composite等へ分解確認済み) | 対応不要(schema追加で自然消滅) |
 | venues | duplicate_keys | 399 | 仕様どおり | quotes_YYYYMMDD.csv.gzの複合unique_key(ts_utc,venue,pair)前提でも、GMOの複数シンボル一括返却などで残る想定内の重複(既存known_defects記載の範囲) | 対応不要 |
-| venues | extreme_return | 15 | 未解決 | 個別行までは検証していない。件数は小さく既存known_defectsの範囲内と推定されるが未確認 | 必要なら個別に確認 |
+| venues | extreme_return | 15 | 既知欠陥 | 15件全行を列挙・個別検証(下記「venues extreme_return 15件の内訳」参照): 実体は5件の(ts,gmo,FCR)行が3コピー(data/・paper_logs/・backtest_data)に重複しているだけ。FCRはGMO専用の超薄商いマイナー銘柄(価格0.08〜0.12・刻み0.001)で1回の約定でlastが10〜20%動く。全行でbid<ask(クロスなし)・last∈[bid,ask]・bid/ask入替なしを確認済みで、recorder glitchやunit/pair mixではなく実際の薄商い挙動と判定 | schema追記済み |
 | venues | gaps | 211876 | 仕様どおり | ローカル再現(paper_logs/venues 50ファイル)で99%超がtrades_*.csv.gz(個々の約定の到着間隔=自然な閑散)。最大ギャップ(2.17h、GMOのBTC/BTC_JPYが同時、2026-08-29 02:10 UTC)は既存known_defects「ベニューごとの独立バックオフ」どおり。quotes側の残りは19:00-19:10 UTC保守で説明可 | schema追記済み(outage window) |
+
+## venues extreme_return 15件の内訳
+
+`paper_logs/QUALITY.json`のvenues.extreme_return(count=15)を`scripts/data_quality.py`のロジック通りに手動列挙(row番号はヘッダー行を0とした生CSV行位置、`paper_logs/venues/quotes_*.csv.gz`で実測)。全15行は下記5件のユニーク事象が`path_glob`の3コピー(`data/venues/`・`paper_logs/venues/`・`backtest_data/auto_venues_*/`)に同一内容で重複しているだけ(5×3=15)。
+
+| # | ts_utc | venue | pair | prev→value (last) | 変化率 | bid/ask文脈 | 判定 |
+|---|---|---|---|---|---|---|---|
+| 1 | 2026-08-27T13:00:46.471Z | gmo | FCR | 0.115→0.103 | -10.43% | bid 0.113→0.103と同時、ask 0.114で不変 | 実際の価格変動(薄商い) |
+| 2 | 2026-08-27T13:18:06.081Z | gmo | FCR | 0.102→0.113 | +10.78% | bid 0.102/ask 0.113で不変、lastがaskへ収束 | 実際の価格変動(薄商い) |
+| 3 | 2026-08-27T16:35:57.261Z | gmo | FCR | 0.102→0.113 | +10.78% | bid 0.102/ask 0.113で不変、lastがaskへ収束 | 実際の価格変動(薄商い) |
+| 4 | 2026-08-31T03:36:43.256Z | gmo | FCR | 0.105→0.085 | -19.05% | bid 0.103→0.083と同時、ask 0.105で不変 | 実際の価格変動(薄商い) |
+| 5 | 2026-08-31T04:10:23.944Z | gmo | FCR | 0.081→0.097 | +19.75% | bid 0.084で不変、ask 0.095→0.098、lastがaskへ収束 | 実際の価格変動(薄商い) |
+
+各#×3コピー(data/・paper_logs/・backtest_data)= 15件。根拠: FCRはGMO専用のマイナー銘柄でbitbank/bitflyerに同一銘柄が無くベニュー間クロスチェック不能だが、各行でbid<ask(crossed_bookなし)・last∈[bid,ask]・bidとaskが同時に入れ替わっていない(swap無し)ことを窓±8行で確認。挙動は「約定が途切れる間lastが前回値のまま固まり、次の約定でbid/askの近い側へ飛ぶ」という薄商い銘柄特有のパターンで、閾値10%を刻み0.001の低価格銘柄で容易に超えるだけ。recorder glitch(bid/ask入替・stale row)・unit/pair mixのいずれにも当たらない。
 
 ## 収集側の修正 一覧(本コミットで適用)
 
@@ -60,11 +74,13 @@
 `schema/jpx_etf_daily.json`: 2024-08-05/06 Nikkei暴落による本物のextreme_return、および日本の祝日による平坦ゼロ出来高行のパターンを追記。
 `schema/bitflyer_tape.json`: missing_columnsの原因説明とgapsの内訳(executions優位)を追記。
 `schema/candles_fx_btc_jpy.json`: zero_volumeの根本原因(`fetch_deep.py`のOHLC列別ffill+volume.fillna(0.0))を確定し、known_defectsに追記。
+`schema/venues.json`: extreme_return 15件(実体は5件×3コピー、gmo/FCRの薄商いによる本物の価格変動)を追記。
+`schema/oi_snapshots.json`: gapsの2件目(2.9h, 2026-08-31 09:07:42Z→12:03:50Z)について、venues/board_round/bot.jsonl/ws_listing全て欠落なし(PCダウンではない)、かつ`record_oi.py`は失敗時も空欄セルで必ず1行appendする設計(行自体が消えることは無い)ため単純なAPI不通でもない、と切り込んだ調査結果を追記(`deploy/fetch_all.bat`の当該実行がrecord_oi.py到達前の前段ステップで滞留した可能性が高い、ただし確定はオーナーPCのfetch.out.log待ち)。
 
 ## 未解決として残るもの
 
-- oi_snapshots gapsの2件目(2.9h, 2026-08-31 12:03 UTC終了): venues/board_roundに対応するギャップが見当たらず未説明。
-- venues extreme_return(15件)・reit_onr extreme_return(一部): 件数が小さく既存known_defectsの範囲内と推定されるが、1件ずつは未検証。
+- oi_snapshots gapsの2件目: 「PCダウンではない」「API側の一般的な不通ではない」まで絞り込んだが、`fetch_all.bat`内でどのスクリプト(fetch_history.py/fetch_external.py/fetch_okx.pyのいずれか)が2.9h滞留したかの確定はできていない(オーナーPCの`logs\fetch.out.log`・タスクスケジューラ実行履歴がこのVM/リポジトリに無いため)。
+- reit_onr extreme_return(8件): 件数が小さく既存known_defectsの範囲内と推定されるが、1件ずつは未検証(今回はvenues分のみ全件検証)。
 - schema/api_health.json: VM上に実ファイルが無く、コード読解のみで作成。オーナーPCの実データで列内容の確認が望ましい。
 
 ## 検証
