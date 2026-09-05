@@ -3,7 +3,7 @@
   "_unmatched": {
    "checks": {
     "duplicate_keys": {
-     "count": 956699,
+     "count": 956863,
      "examples": [
       {
        "examples": [
@@ -612,7 +612,7 @@
      "files": 11
     },
     "non_monotonic": {
-     "count": 1532179,
+     "count": 1532673,
      "examples": [
       {
        "examples": [
@@ -810,7 +810,7 @@
      "files": 3
     },
     "zero_volume": {
-     "count": 311211,
+     "count": 311216,
      "examples": [
       {
        "examples": [
@@ -941,7 +941,7 @@
      "files": 12
     }
    },
-   "files_checked": 1238,
+   "files_checked": 1239,
    "files_flagged": 886
   },
   "attention": {
@@ -957,7 +957,7 @@
   "bitflyer_tape": {
    "checks": {
     "duplicate_keys": {
-     "count": 323584,
+     "count": 323673,
      "examples": [
       {
        "examples": [
@@ -1088,7 +1088,7 @@
      "files": 36
     },
     "gaps": {
-     "count": 162527,
+     "count": 162655,
      "examples": [
       {
        "examples": [
@@ -2823,7 +2823,7 @@
   "venues": {
    "checks": {
     "duplicate_keys": {
-     "count": 762790,
+     "count": 764895,
      "examples": [
       {
        "examples": [
@@ -2954,7 +2954,7 @@
      "files": 100
     },
     "extreme_return": {
-     "count": 4849142,
+     "count": 4872770,
      "examples": [
       {
        "examples": [
@@ -3135,7 +3135,7 @@
      "files": 20
     },
     "gaps": {
-     "count": 375242,
+     "count": 376896,
      "examples": [
       {
        "examples": [
@@ -3296,7 +3296,7 @@
      "files": 100
     },
     "non_monotonic": {
-     "count": 2184304,
+     "count": 2195198,
      "examples": [
       {
        "examples": [
@@ -3456,7 +3456,7 @@
    "files_flagged": 100
   }
  },
- "generated_at": "2026-09-05T11:54:13.026105+00:00",
+ "generated_at": "2026-09-05T13:22:16.633658+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
  "unmatched_files": [
   "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260820.csv.gz",
@@ -4692,6 +4692,7 @@
   "data/ws/FX_BTC_JPY_20260905_051106.jsonl.gz",
   "data/ws/FX_BTC_JPY_20260905_111043.jsonl.gz",
   "data/ws/FX_BTC_JPY_20260905_112545.jsonl.gz",
+  "data/ws/FX_BTC_JPY_20260905_115743.jsonl.gz",
   "paper_logs/INTAKE.jsonl",
   "paper_logs/bot.jsonl",
   "paper_logs/nk225_sessions.csv",
