@@ -254,7 +254,7 @@ def _scan_file(path: Path) -> dict[str, Any]:
             else:
                 rows, first_ts, last_ts = il.scan_jsonl(path, gz, il.DEFAULT_TS_CAP)
             rec["row_count"], rec["first_ts"], rec["last_ts"] = rows, first_ts, last_ts
-        except (OSError, gzip.BadGzipFile) as exc:
+        except (OSError, gzip.BadGzipFile, EOFError) as exc:
             rec["scan_error"] = f"{type(exc).__name__}: {exc}"
     return rec
 
@@ -335,6 +335,8 @@ def main() -> int:
 
     created = sum(1 for r in results if r["action"] == "created")
     skipped = sum(1 for r in results if r["action"] == "skip")
+    for r in results:
+        print(f"retention_snapshot: {r['source']}: {r['action']}" + (f" ({r['reason']})" if r.get("reason") else ""))
     print(f"retention_snapshot: {created} created, {skipped} skipped")
     if args.summary:
         for r in results:

@@ -295,6 +295,12 @@ def scan_one(rel: str, p: Path, cap: Optional[int]) -> dict:
             rec["row_count"] = row_count
             rec["first_ts"] = first_ts
             rec["last_ts"] = last_ts
+        except EOFError as exc:
+            # A gzip member without its end-of-stream marker: the file is
+            # still being written (live WS recorder) or was cut off. Keep the
+            # partial counts and mark the row; never abort the ledger.
+            rec["scan_error"] = f"EOFError (truncated/in-progress gzip): {exc}"
+            rec["truncated"] = True
         except (OSError, gzip.BadGzipFile, csv.Error) as exc:
             rec["scan_error"] = f"{type(exc).__name__}: {exc}"
     return rec
