@@ -36,6 +36,12 @@ recorded claim from raw data with your OWN implementation and report whether it 
 10. Falsification sentence + MDE (minimum detectable effect) at the claim's n. For rejections: could a plausible
     effect size have been detected at all?
 
+## Standard configuration (adopted 2026-09-05)
+A verdict is FINAL only when two blind auditors (one lower-tier, one upper-tier model) agree on the verdict class;
+otherwise an arbiter who reads both reports decides. A single audit is PROVISIONAL. Claims involving a maker fill
+model stay provisional until the maker known-answer test passes. Second auditors must not open the first auditor's
+report (docs/AUDIT_2026-09/<PACKET>_*.md) — it is under docs/ and therefore forbidden.
+
 ## Verdict
 One of: 再現 / 数値差異(結論維持) / 結論変更 / 再計算不能 (data lost → the claim is downgraded to 未検証).
 Give a claimed-vs-recomputed table and one paragraph of justification. List every file you read.
