@@ -1,0 +1,24 @@
+docs/AUDIT_2026-09/QAM3_auditor1.md
+   QA3-1 True 結論変更 False
+   QA3-2 False 数値差異(結論維持) False
+   QA3-3 True 結論変更 False
+   QA3-4 False 結論変更 True
+   QA3-5 False 結論変更 True
+   QA3-6 True 結論変更 False
+   verdicts 2/6  traps {'survivorship': True, 'naive_fill_wrong': True, 'crossed_rows': True, 'adverse_selection_nonzero': False}
+docs/AUDIT_2026-09/QAM3_auditor2.md
+   QA3-1 True 結論変更 False
+   QA3-2 False 結論変更 (number inside the 10% band; conclusion "tradable edge exists" does not follow from an unrealizable fill assumption) True
+   QA3-3 True 結論変更 False
+   QA3-4 False 結論変更 (statistically significant, though economically small — the claim's specific statistical statement does not hold under my recompute) True
+   QA3-5 False 結論変更 (numbers are in the same ballpark — +2.45 vs +2.08bps, 17.7% off, single-sign — but "this is the correct expected-value estimate" does not follow: it is a post-hoc exclusion of the loss-carrying tail) True
+   QA3-6 True 結論変更 False
+   verdicts 3/6  traps {'survivorship': True, 'naive_fill_wrong': True, 'crossed_rows': False, 'adverse_selection_nonzero': False}
+docs/AUDIT_2026-09/QAM3_auditor3.md
+   QA3-1 True 結論変更 False
+   QA3-2 False 結論変更 True
+   QA3-3 True 結論変更 False
+   QA3-4 False 結論変更 True
+   QA3-5 False 結論変更 True
+   QA3-6 True 結論変更 False
+   verdicts 3/6  traps {'survivorship': False, 'naive_fill_wrong': True, 'crossed_rows': True, 'adverse_selection_nonzero': True}
