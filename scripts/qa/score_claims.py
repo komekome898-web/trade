@@ -22,6 +22,8 @@ for path in sys.argv[2:]:
         got[m.group(1)] = v[-1].strip() if v else None
     ok = 0; rows = []
     for c in ans['claims']:
+        if c.get('scored', True) is False:
+            continue
         v = got.get(c['id']) or ''
         correct = (('再現' in v) or ('維持' in v)) if c['claim_correct'] else ('結論変更' in v)
         ok += correct; rows.append((c['id'], c['claim_correct'], v, correct))

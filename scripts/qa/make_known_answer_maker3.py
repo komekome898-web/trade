@@ -17,18 +17,20 @@ Architecture (see generate() for the full pipeline):
   Phase 1 -- `simulate_background()` runs ONE background LOB for the whole
   tape: two sides, each a real FIFO list of background orders (size only;
   owner is implicitly "bg"), price/size distributions calibrated against
-  real bitFlyer touch sizes (see CALIBRATION_NOTES below). A market order
-  consumes the opposite side's queue front-to-back; if it exhausts the
-  level, price steps by one tick ("walk") and a fresh queue is seeded.
-  Cancellations remove one background order at a uniformly random queue
-  position. A fraction of market orders are flagged "informed": they kick
-  a decaying `impulse` variable that biases the direction of SUBSEQUENT
-  order flow (both market-order side and limit-improve side), which is
-  what mechanically manufactures a permanent-ish post-trade price drift
-  and therefore genuine adverse selection on resting orders -- nothing is
-  added after the fact. This phase returns one flat, time-ordered event
-  log (`events` DataFrame) plus a full touch-state timeline (bid/ask price
-  and BACKGROUND-ONLY depth at every event).
+  real bitFlyer touch sizes (see CALIBRATION_NOTES below). A market order's
+  side is an UNBIASED coin flip (no memory of past order flow at all -- see
+  the v3 note below); its size is a small FRACTION of the CURRENT displayed
+  depth on the side it consumes (PRINT_FRAC_MU/SIGMA). It consumes that
+  side's queue front-to-back; if it exhausts the level, price steps by one
+  tick ("walk") and a fresh queue is seeded. Cancellations remove one
+  background order at a uniformly random queue position. A fraction of
+  market orders are flagged "informed": each such print is ALSO followed
+  by a small, permanent, ONE-TIME price shift (INFORMED_SHIFT_TICKS_MEAN
+  ticks) in its own direction -- nothing is added after the fact, and this
+  shift has no effect on any FUTURE order's direction (that would be v2's
+  feedback bug). This phase returns one flat, time-ordered event log
+  (`events` DataFrame) plus a full touch-state timeline (bid/ask price and
+  BACKGROUND-ONLY depth at every event).
 
   Phase 2 -- `run_strategy()` replays that SAME event log once per
   strategy (S1 = at-best symmetric quoting, S2 = one-tick-inside
@@ -76,17 +78,44 @@ files + the stated rule and must match the hidden-log truth exactly
 the check three blind auditors would perform by hand, so it fails loudly
 here first.
 
-Files written to backtest_data/qa_known_answer_maker3_v2_<date>/:
-  ticker_qa_maker3_v2_tape.csv.gz      ts,best_bid,best_ask,best_bid_size,best_ask_size
-  executions_qa_maker3_v2_tape.csv.gz  id,ts,price,size,side
+v3 (coordinator review of v2): v2's circuit breakers (MAX_TICKS_ABS,
+MAX_SPREAD_TICKS -- both DELETED) were masking a degenerate book: spread
+sat pinned at the breaker on the large majority of ticker rows, letting a
+maker earn tens of bps/round-trip on an instrument whose resting spread is
+supposed to be ~2 ticks. v3 removes the breakers AND their actual root
+cause -- v2's "impulse" mechanism, where an informed print biased the
+DIRECTION of subsequent order flow, which could then itself be informed
+and biased further: a real, unbounded positive-feedback loop, and mean
+reversion (REVERSION_KAPPA) only ever pulled the MID back toward PRICE0,
+applying zero restoring force to bid/ask independently drifting apart
+(which is what actually blew the spread out once per-event walk size grew
+in v2). v3's market-order side is an unbiased coin (P_BUY_BASELINE) with
+no memory of past order flow at all; "informed" only ever adds a bounded,
+ONE-TIME permanent shift (INFORMED_SHIFT_TICKS_MEAN, Poisson mean 1.3) in
+that one order's own direction. Liquidity replenishment (_join_rate) now
+runs FASTER the wider the spread already is -- an arrival-RATE effect, not
+just a higher per-join improve probability -- which is the sole (and, per
+run_self_checks' hard acceptance asserts, sufficient) restoring force on
+the spread. A 2nd coordinator round then fixed market-order SIZE (see
+PRINT_FRAC_MU/SIGMA): absolute sizes comparable to the touch made most
+prints sweep whole levels, defeating queue position; sizes are now a small
+fraction of touch depth, as on the real venue. See the longer v3 comments
+above RATE_MARKET/JOIN_RATE_SLOPE for the full reasoning trace, including
+the reported-but-not-fully-resolved tension the STOP note there covers
+(resolved by the lead's NAIVE_GAP_CRITERION_REVISION, not by relaxing the
+spread/adverse-selection/forced-fraction criteria).
+
+Files written to backtest_data/qa_known_answer_maker3_v3_<date>/:
+  ticker_qa_maker3_v3_tape.csv.gz      ts,best_bid,best_ask,best_bid_size,best_ask_size
+  executions_qa_maker3_v3_tape.csv.gz  id,ts,price,size,side
   manifest.md                          (full fill rule incl. the 3 stated
                                         ambiguities; no planted numbers)
 
 Hidden ground truth (never shown to an auditor):
-  docs/QA/hidden_maker3_v2/s1_positions.csv.gz
-  docs/QA/hidden_maker3_v2/s2_positions.csv.gz
-Sealed summary -> docs/QA/answers_sealed_maker3_v2.json
-Claims         -> docs/QA/claims_for_auditors_maker3_v2.md (6 claims, 3 true
+  docs/QA/hidden_maker3_v3/s1_positions.csv.gz
+  docs/QA/hidden_maker3_v3/s2_positions.csv.gz
+Sealed summary -> docs/QA/answers_sealed_maker3_v3.json
+Claims         -> docs/QA/claims_for_auditors_maker3_v3.md (6 claims, 3 true
                   / 3 false, each stating the exact fill rule + population).
 
 Determinism: a single seed drives every draw via independent
@@ -124,40 +153,97 @@ import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-# v2 seed choice (docs/QA/known_answer_results_2026-09-05.md item 3 of the
-# fix spec): the informed-flow parameters below (RATE_MARKET, P_INFORMED,
-# IMPULSE_WALK_TICKS_MEAN) were tuned FIRST against the ONE required target
-# -- S1 entry-fill adverse selection at 5s in [0.5, 1.5]bps with t>=5 --
-# then, with those fixed, <=5 seeds were tried and measured (full 5-day
-# tape, no other post-hoc tuning). S1's net sign/magnitude and the
-# forced-exit fraction were NOT targeted; they are whatever the chosen
-# seed's hidden logs produce. Realized adverse_selection_bps_at_5s_mean
-# (t-stat) per seed -- all five landed in-band at this parameter setting
-# (an earlier, since-abandoned attempt reached the target by making each
-# informed print's own price impact large instead of the market busier,
-# which destabilized the shared background price process for a nontrivial
-# fraction of seeds; see MAX_TICKS_ABS/MAX_SPREAD_TICKS below):
-#   20260907  0.7423 (15.83)
-#   20260908  0.7260 (16.34)
-#   20260909  0.7200 (15.53)
-#   20260910  0.7371 (16.16)  -- SELECTED (first seed tried, already in-band)
-#   20260911  0.7153 (15.64)
-# All five are recorded verbatim in SEEDS_TRIED and echoed into the sealed
-# json's "seed_selection" field.
+# v3 seed choice, final (docs/QA/known_answer_results_2026-09-05.md, two
+# rounds of coordinator review): RATE_MARKET, JOIN_RATE_SLOPE, P_INFORMED,
+# INFORMED_SHIFT_TICKS_MEAN, and PRINT_FRAC_MU/SIGMA (market-order size as
+# a fraction of touch depth, round 2's fix) were tuned FIRST against the
+# full set of hard acceptance criteria in run_self_checks() -- spread
+# stability, adverse selection in [0.3,1.0]bps at t>=5, forced_exit_fraction
+# in [0.15,0.45], S1 |net| p95<=8bps, price range +-5%, mid-move p99<=3bps,
+# and the revised naive-gap criterion (NAIVE_GAP_CRITERION_REVISION) -- then,
+# with those fixed, <=5 seeds were tried and measured (full 5-day tape, no
+# other post-hoc tuning). S1's net sign/magnitude were NOT targeted at any
+# seed. Per-seed results at the final parameter setting (all rounded to the
+# same precision generate() seals):
+#   seed      S1net(t)      naive(t)       gap    forced  adv5s(t)      maxspr frac123 p95net
+#   20260907  0.215(1.88)   0.831(71.30)  0.616   0.463*  0.415(16.51)  7      0.941   7.96*
+#   20260908  0.334(3.16)   0.842(73.27)  0.507   0.446   0.480(18.09)  7      0.942   7.04
+#   20260909  0.160(1.42)   0.873(75.34)  0.713   0.453*  0.485(18.37)  7      0.942   8.03*
+#   20260910  0.305(2.80)   0.836(74.63)  0.531   0.446   0.454(18.39)  7      0.944   6.98  <- SELECTED
+#   20260911  0.234(2.10)   0.849(75.61)  0.615   0.447   0.493(18.38)  8      0.942   7.02
+# (* = fails forced_exit_fraction<=0.45 and/or S1 |net| p95<=8bps -- 20260907
+# and 20260909 are excluded on those grounds, unrelated to the naive-gap
+# revision). 20260908 and 20260911 also satisfy every criterion; 20260910
+# was used per the coordinator's explicit instruction (it is the seed the
+# criterion revision was evaluated against). All five are recorded verbatim
+# in SEEDS_TRIED and echoed into the sealed json's "seed_selection" field.
 SEED = 20260910
 SEEDS_TRIED = {
-    20260907: {"adverse_selection_bps_at_5s_mean": 0.7423, "adverse_selection_t_stat": 15.83, "in_band": True},
-    20260908: {"adverse_selection_bps_at_5s_mean": 0.7260, "adverse_selection_t_stat": 16.34, "in_band": True},
-    20260909: {"adverse_selection_bps_at_5s_mean": 0.7200, "adverse_selection_t_stat": 15.53, "in_band": True},
-    20260910: {"adverse_selection_bps_at_5s_mean": 0.7371, "adverse_selection_t_stat": 16.16, "in_band": True},
-    20260911: {"adverse_selection_bps_at_5s_mean": 0.7153, "adverse_selection_t_stat": 15.64, "in_band": True},
+    20260907: {"S1_net_bps_mean": 0.215, "S1_net_bps_t_stat": 1.879, "naive_net_bps_mean": 0.8311,
+               "naive_net_bps_t_stat": 71.299, "gap": 0.6161, "forced_exit_fraction": 0.4626,
+               "adverse_selection_bps_at_5s_mean": 0.4145, "adverse_selection_t_stat": 16.506,
+               "max_spread_ticks": 7, "frac_spread_1_2_3": 0.9413, "s1_abs_net_p95_bps": 7.958,
+               "meets_all_criteria": False, "excluded_for": "forced_exit_fraction>0.45; S1 |net| p95>8bps"},
+    20260908: {"S1_net_bps_mean": 0.3344, "S1_net_bps_t_stat": 3.164, "naive_net_bps_mean": 0.8417,
+               "naive_net_bps_t_stat": 73.269, "gap": 0.5073, "forced_exit_fraction": 0.4458,
+               "adverse_selection_bps_at_5s_mean": 0.4804, "adverse_selection_t_stat": 18.091,
+               "max_spread_ticks": 7, "frac_spread_1_2_3": 0.9419, "s1_abs_net_p95_bps": 7.035,
+               "meets_all_criteria": True, "excluded_for": None},
+    20260909: {"S1_net_bps_mean": 0.1603, "S1_net_bps_t_stat": 1.421, "naive_net_bps_mean": 0.8732,
+               "naive_net_bps_t_stat": 75.335, "gap": 0.7129, "forced_exit_fraction": 0.4533,
+               "adverse_selection_bps_at_5s_mean": 0.4851, "adverse_selection_t_stat": 18.372,
+               "max_spread_ticks": 7, "frac_spread_1_2_3": 0.9423, "s1_abs_net_p95_bps": 8.035,
+               "meets_all_criteria": False, "excluded_for": "forced_exit_fraction>0.45; S1 |net| p95>8bps"},
+    20260910: {"S1_net_bps_mean": 0.3046, "S1_net_bps_t_stat": 2.795, "naive_net_bps_mean": 0.8357,
+               "naive_net_bps_t_stat": 74.631, "gap": 0.5311, "forced_exit_fraction": 0.446,
+               "adverse_selection_bps_at_5s_mean": 0.4542, "adverse_selection_t_stat": 18.391,
+               "max_spread_ticks": 7, "frac_spread_1_2_3": 0.9435, "s1_abs_net_p95_bps": 6.978,
+               "meets_all_criteria": True, "excluded_for": None, "selected": True},
+    20260911: {"S1_net_bps_mean": 0.2342, "S1_net_bps_t_stat": 2.097, "naive_net_bps_mean": 0.8487,
+               "naive_net_bps_t_stat": 75.614, "gap": 0.6145, "forced_exit_fraction": 0.4472,
+               "adverse_selection_bps_at_5s_mean": 0.493, "adverse_selection_t_stat": 18.376,
+               "max_spread_ticks": 8, "frac_spread_1_2_3": 0.9422, "s1_abs_net_p95_bps": 7.018,
+               "meets_all_criteria": True, "excluded_for": None},
 }
 SEED_SELECTION_NOTE = (
-    "criterion = S1 adverse_selection_bps_at_5s_mean in [0.5,1.5] with t>=5, measured "
-    "BEFORE picking a seed, with informed-flow parameters fixed first; S1's net sign/"
-    "magnitude and forced_exit_fraction were not targeted at any seed and are read off "
-    "whichever seed satisfied the adverse-selection criterion"
+    "criterion = S1 adverse_selection_bps_at_5s_mean in [0.3,1.0] with t>=5, PLUS spread "
+    "in {1,2,3} ticks in >=85% of ticker rows (max<=8), forced_exit_fraction in [0.15,0.45], "
+    "S1 |net| p95<=8bps, 5-day price range within +-5%, mid-move p99<=3bps, and the revised "
+    "naive-gap criterion (see NAIVE_GAP_CRITERION_REVISION) -- all measured BEFORE picking a "
+    "seed, with informed-flow/replenishment/market-order-size parameters fixed first (see the "
+    "v3 comments above RATE_MARKET, JOIN_RATE_SLOPE, P_INFORMED, PRINT_FRAC_MU for the tuning "
+    "trace across two coordinator review rounds); S1's net sign/magnitude were not targeted at "
+    "any seed. 20260910 was selected per the coordinator's explicit instruction (it was the "
+    "seed used to evaluate the criterion revision); 20260908 and 20260911 also satisfy every "
+    "criterion at this parameter setting, 20260907 and 20260909 do not (forced_exit_fraction "
+    "and/or S1 |net| p95 out of band)."
 )
+# Lead decision, recorded verbatim (coordinator message, criterion revision
+# for item 2's naive-vs-true-rule requirement): the original ">=1.0bps gap"
+# threshold was arbitrary; the actual purpose is that the naive fill-on-
+# print model reaches a DIFFERENT CONCLUSION from the true rule. Revised
+# criterion applied below and asserted in run_self_checks() /
+# build_claims(): naive net >= 2x true net, AND naive net is statistically
+# significant (t>=3), AND gap (naive - true) >= 0.5bps.
+NAIVE_GAP_CRITERION_REVISION = (
+    "Lead decision (recorded in the results doc as a criterion revision, with reason): the "
+    "1.0 bps gap threshold was an arbitrary number; the purpose of the criterion is that the "
+    "naive fill-on-print model reaches a DIFFERENT CONCLUSION from the true rule. Revised "
+    "criterion: naive net >= 2 x true net AND naive net is statistically significant (t >= 3) "
+    "AND gap >= 0.5 bps."
+)
+
+
+def _naive_gap_criterion_met(naive_summary: dict, s1_summary: dict) -> tuple[bool, float]:
+    """The revised naive-vs-true-rule criterion (NAIVE_GAP_CRITERION_REVISION),
+    shared by run_self_checks() (fails loudly) and build_claims() (decides
+    whether QA3-2's 'therefore a tradable edge exists' claim can honestly be
+    marked false). Returns (meets, gap)."""
+    naive_net = naive_summary["net_bps_mean"]
+    s1_net = s1_summary["net_bps_mean"]
+    gap = naive_net - s1_net
+    meets = (naive_net >= 2.0 * s1_net) and (naive_summary["net_bps_t_stat"] >= 3.0) and (gap >= 0.5)
+    return meets, gap
 
 # --------------------------------------------------------------------- #
 # instrument / tick
@@ -184,17 +270,49 @@ MARKOUT_HORIZONS = (5.0, 30.0, 300.0)
 CROSSED_BOOK_FRACTION = 0.001
 
 # --------------------------------------------------------------------- #
-# background LOB process rates (per second; tuned by simulate-and-measure,
-# see the report for the tuning trace -- NOT solved analytically)
+# background LOB process rates (per second; tuned by simulate-and-measure)
 # --------------------------------------------------------------------- #
-# v2: RATE_MARKET raised 0.075 -> 0.15 alongside the informed-flow knobs
-# below (item 3 of the fix spec) -- a busier market means more informed
-# prints can land inside any given 5s post-fill window, which is what
-# actually moves the average adverse-selection markout (the alternative of
-# raising per-print walk SIZE further, tried first, pushed the shared
-# background price process into instability -- see MAX_TICKS_ABS/
-# MAX_SPREAD_TICKS below for the circuit breakers that resulted).
-RATE_MARKET = 0.15
+# v3 (coordinator review of v2, docs/QA/known_answer_results_2026-09-05.md):
+# v2's circuit breakers (MAX_TICKS_ABS / MAX_SPREAD_TICKS, now DELETED) were
+# masking a book that was unstable BY CONSTRUCTION -- spread sat pinned at
+# the breaker most of the time, giving a maker "edge" of tens of bps on an
+# instrument whose resting spread is supposed to be ~2 ticks. v3 removes
+# both the breakers AND their root cause:
+#   1. the v2 "impulse" feedback (an informed print biased the DIRECTION of
+#      subsequent order flow, which could then itself be informed and
+#      biased further -- a real, unbounded positive-feedback loop) is
+#      GONE. Every market order's side is an unbiased coin flip
+#      (P_BUY_BASELINE); "informed" only ever adds a bounded, ONE-TIME
+#      permanent tick shift, with no effect on any FUTURE order's
+#      direction. This is the entire fix -- nothing else in v2 was
+#      actually unstable on its own.
+#   2. mean reversion of the price level (v2's REVERSION_KAPPA) is GONE per
+#      spec ("no mean reversion of fair value, no bounds"): with the
+#      feedback loop removed, an unbiased informed random walk stays
+#      comfortably inside a +-5% band over 5 days on its own (variance
+#      accumulates as sqrt(n_informed_events), never linearly).
+#   3. liquidity replenishment (limit-order arrivals AT the touch and ONE
+#      TICK INSIDE) now runs FASTER the wider the spread already is
+#      (_join_rate below): baseline RATE_JOIN at spread<=2, scaling up
+#      (quadratically in the excess) beyond that. This is what keeps the
+#      SPREAD itself stable by construction (REVERSION_KAPPA only ever
+#      pulled the MID back toward PRICE0 -- it applied zero restoring
+#      force to bid/ask independently drifting apart, which is what
+#      actually blew the spread out in v2 once per-event walk size grew).
+#
+# v3, 2nd round (coordinator diagnosis): market orders were an ABSOLUTE
+# size comparable to the touch, so most prints swept whole levels --
+# "first print at my price" (naive) was then ~= "level consumed"
+# regardless of queue-ahead, which is why the naive-vs-true-rule gap stuck
+# near 0.18bps no matter how hard informed-flow strength was pushed. Round
+# 2 makes EVERY market order (informed or not) a small FRACTION of the
+# CURRENT touch (PRINT_FRAC_MU/SIGMA below), which is what actually moves
+# the gap. RATE_MARKET/JOIN_RATE_SLOPE were then retuned by the ACTUAL
+# acceptance criteria (gap, forced_exit_fraction, S1 |net| p95), landing
+# well below a pure volume-per-hour-matching estimate -- see the STOP
+# note further below (by JOIN_RATE_SLOPE) for the final, reported,
+# not-fully-resolved tension between these criteria.
+RATE_MARKET = 0.082
 RATE_JOIN = 0.230
 # Cancellation is modeled as a per-order hazard (each resting background
 # order independently cancels at this rate), not a flat Poisson process --
@@ -212,7 +330,28 @@ P_IMPROVE_WIDE_BASE = 0.30  # spread == 3 ticks: prob. pulled back toward 2
 JOIN_MU, JOIN_SIGMA = math.log(0.10), 1.38      # background limit-join clip
 INIT_MU, INIT_SIGMA = math.log(0.25), 0.9       # seed order for a fresh level (bigger =
                                                   # less vulnerable to an immediate re-walk)
-PRINT_MU, PRINT_SIGMA = math.log(0.06), 1.05    # market-order (taker) size
+# v3 (coordinator, 2nd round): market-order size (informed or not) is now
+# drawn as a FRACTION of the CURRENT displayed touch size on the side being
+# consumed (median 5%, p95 60% -- real bitFlyer prints are median
+# ~0.01-0.03 vs a ~0.5 touch, i.e. a small fraction of the level, so queue
+# position is normally decisive; v3's first round used an ABSOLUTE size
+# distribution comparable to the touch itself, which made most prints
+# sweep whole levels -- "first print at my price" was then ~= "level
+# consumed" regardless of queue-ahead, collapsing the naive-vs-true-rule
+# gap this fixes). Non-informed draws are HARD-CAPPED at 100% of the level
+# (so they can never need a second one, by construction, not by a separate
+# walk cap); informed draws are the SAME distribution UNCAPPED, so an
+# occasional large tail draw can still exceed the level and walk
+# (MAX_WALK_LEVELS) -- multi-level sweeps are an informed-only phenomenon,
+# per the coordinator, but a TYPICAL informed print is just as small as a
+# typical non-informed one (being informed is about carrying information,
+# not about size). Median picked at the LOW end of the coordinator's 5-8%
+# band -- it gave the widest naive-vs-true gap in the sweep.
+# Solve lognormal(mu,sigma) for median=0.05, p95=0.60:
+# mu = ln(0.05); p95 = exp(mu + 1.6449 sigma) = 0.60 =>
+# sigma = (ln(0.60) - mu) / 1.6449.
+PRINT_FRAC_MU = math.log(0.05)
+PRINT_FRAC_SIGMA = (math.log(0.60) - PRINT_FRAC_MU) / 1.6449
 
 
 def _p_improve(spread_ticks: int) -> float:
@@ -225,39 +364,74 @@ def _p_improve(spread_ticks: int) -> float:
         return P_IMPROVE_BASE
     return min(0.92, P_IMPROVE_WIDE_BASE + 0.20 * (spread_ticks - 3))
 
-# v2: informed-flow strength raised (item 3 of the fix spec) so adverse
-# selection is REAL and OBSERVABLE rather than a token 0.06bps/t~6 effect
-# (v1's value, measured before this change). Two knobs raised together:
-# P_INFORMED (how often a print carries information) and
-# IMPULSE_WALK_TICKS_MEAN (how MANY ticks its immediate mechanical impact
-# walks, Poisson-distributed, replacing v1's fixed single-tick coin flip --
-# a single extra tick saturates near ~0.28bps/5s even at P_INFORMED,
-# P_INFORMED_WALK -> ~1, since expected market-order arrivals in a 5s
-# window are only RATE_MARKET*5 =~ 0.4; letting an informed print's impact
-# span several ticks removes that ceiling without changing arrival rates,
-# spread dynamics, or anything else in the shared background process).
-P_INFORMED = 0.6          # prob. a market order carries information
-P_INFORMED_WALK = 0.97    # prob. an informed print also forces an immediate
-                          # mechanical impact walk (see simulate_background)
-IMPULSE_WALK_TICKS_MEAN = 6.0  # mean extra ticks (Poisson) of that impact walk
-IMPULSE_KICK = 1.35       # size of the flow-direction bias kick per informed print
-IMPULSE_TAU = 20.0       # seconds, exponential decay of the informed impulse
-IMPULSE_BETA = 1.5       # sigmoid steepness on market-order side probability
-REVERSION_KAPPA = 0.016  # mean-reversion pull (in ticks of mid offset) keeping
-                          # the multi-day price path range-bound around PRICE0
-                          # while still letting short-horizon informed impulses
-                          # create real (but bounded) adverse-selection drift
 
-MAX_WALK_LEVELS = 6      # safety cap on levels a single market order can cross
-MAX_TICKS_ABS = 150      # circuit breaker: price stays within +-1.5% of PRICE0
-                          # (bid_ticks/ask_ticks each clamped to this band) --
-                          # see the comment at the clamp site in
-                          # simulate_background for why v2 needs this
-MAX_SPREAD_TICKS = 40    # second circuit breaker: caps the SPREAD itself
-                          # (see the comment at its clamp site) -- generous
-                          # vs. the normal 1-3 tick spread, only binds when
-                          # bid/ask have independently run away from each
-                          # other
+# v3: replenishment-intensity multiplier -- the coordinator's specified
+# mechanism ("arrival rate x spread_ticks"), floored at spread<=2 so the
+# baseline RATE_JOIN is unaffected at the target spread. JOIN_RATE_SLOPE is
+# the one replenishment-strength knob item 3 allows tuning.
+#
+# STOP -- reported to the coordinator, not fully resolved (see the session
+# report): even after round 2's market-order-size fix raised the naive-vs-
+# true gap from +0.18bps to +0.51..+0.83bps across the 5 seeds (still
+# checked against the ORIGINAL >=1bps threshold at the time), the lead then
+# revised the acceptance criterion itself (NAIVE_GAP_CRITERION_REVISION) --
+# naive net >= 2x true net AND naive t>=3 AND gap>=0.5bps -- which seed
+# 20260910 satisfies (naive=0.836 >= 2*0.305=0.610; t=74.6; gap=0.531). This
+# JOIN_RATE_SLOPE/RATE_MARKET pair is the closest point found where that
+# revised gap criterion, forced_exit_fraction<=0.45, and S1 |net| p95<=8bps
+# all hold simultaneously; pushing the gap further (seen up to ~0.7-0.8 in
+# the sweep) pushes forced_fraction past 0.45 and/or p95 past 8bps.
+JOIN_RATE_SLOPE = 28.0
+
+
+def _join_rate(spread_ticks: int) -> float:
+    """Effective background limit-join ARRIVAL rate (not just the
+    probability that a given join improves, see _p_improve): rises with
+    the SQUARE of how far spread has widened past 2 ticks, so a widening
+    spread pulls in replenishment faster in real time, not just more
+    probably per join. This -- not mean-reversion of the price level -- is
+    what keeps the SPREAD itself stable by construction. Quadratic (not
+    linear) in the excess: a mild, common 3-tick widening barely needs
+    extra replenishment (letting normal short-lived episodes still form,
+    which is what the naive-vs-true-rule fill gap depends on), while a
+    rare, large excursion gets pulled back MUCH harder -- found necessary
+    to keep max spread bounded without flattening ordinary spread
+    dynamics into permanent fast-reformation mode."""
+    if spread_ticks <= 2:
+        return RATE_JOIN
+    excess = spread_ticks - 2
+    return RATE_JOIN * (1.0 + JOIN_RATE_SLOPE * excess * excess)
+
+
+# v3: informed flow = an UNBIASED market order (P_BUY_BASELINE, no
+# direction feedback of any kind) that, with probability P_INFORMED, is
+# ALSO followed by a permanent one-time fair-value shift of
+# INFORMED_SHIFT_TICKS_MEAN ticks (Poisson, floor 1) in its own direction
+# -- applied unconditionally on an informed print whose OWN mechanical
+# consumption did not already deplete a level (levels_walked==0 -- see the
+# gate at the call site: stacking a separate shift on an already-multi-
+# level-walking print produced the spread>8 tail an earlier attempt hit).
+# P_INFORMED and INFORMED_SHIFT_TICKS_MEAN are the only informed-flow knobs
+# item 3 allows tuning (mean held at the specified 1.3; P_INFORMED held at
+# the coordinator's specified 0.85 -- "keep all other parameters as in
+# your passing config" -- not retuned in round 2).
+P_BUY_BASELINE = 0.5
+P_INFORMED = 0.85
+INFORMED_SHIFT_TICKS_MEAN = 1.3   # = 1 + Poisson(0.3): floor 1 tick, occasionally 2+
+
+MAX_WALK_LEVELS = 3      # safety cap on levels a single market order's OWN
+                          # mechanical consumption can cross in ONE event --
+                          # an occasional oversized print sweeping many thin
+                          # freshly-reseeded levels in one shot is what could
+                          # still spike the spread past the max-8 acceptance
+                          # bound even with the informed-shift gated off that
+                          # same event (levels_walked==0); a normal print
+                          # rarely exceeds one level's depth at all, so this
+                          # only ever trims the extreme tail, never the
+                          # typical case. Non-informed orders are separately
+                          # limited to 1 level by their own size cap (see
+                          # PRINT_FRAC_MU/SIGMA); only informed orders can
+                          # reach this cap at all.
 RATE_SPREAD1_DECAY = 0.05  # extra hazard, active only while spread==1 ticks: a
                             # one-tick spread is fragile (a single improved
                             # quote) and reverts toward 2 on its own, not only
@@ -304,7 +478,6 @@ def simulate_background(rng: np.random.Generator, span_sec: float) -> pd.DataFra
     bid_epi, ask_epi = 0, 0
     bid_orders: list[list] = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
     ask_orders: list[list] = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
-    impulse = 0.0
 
     t = 0.0
     exec_counter = 3_300_000_000
@@ -333,70 +506,21 @@ def simulate_background(rng: np.random.Generator, span_sec: float) -> pd.DataFra
         rows_ask_epi.append(ask_epi)
 
     while t < span_sec:
-        # Circuit breaker: clamp each side's tick offset to +-MAX_TICKS_ABS
-        # from PRICE0. The v2 informed-flow strength increase (item 3 of
-        # the fix spec) drives price with multi-tick walks whose direction
-        # is reinforced by the SAME impulse that made them likely (a real,
-        # if extreme, feedback loop) -- rare tail draws could otherwise let
-        # price wander to a level where net_bps = pnl/entry_price blows up
-        # arithmetically. A wide (+-20%) band is standard exchange-circuit-
-        # breaker realism, not a hidden thumb on the scale: it only ever
-        # binds in the tail, and like every other walk it emits its own
-        # ticker row (etype="walk") so it is never an invisible move.
-        # NOTE: every branch below bumps epi/reseeds/records a side ONLY IF
-        # its tick value actually changes. An unconditional bump (this
-        # generator's own first attempt) is a PHANTOM episode change: a
-        # resting order's epi-based staleness check (run_strategy) would
-        # invalidate/reset an order whose price never actually moved, while
-        # this replay's PRICE-based staleness check would not -- silently
-        # desyncing hidden truth from the independent public replay (caught
-        # by verify_independent_replay(), which is the entire point of it).
-        if bid_ticks < -MAX_TICKS_ABS:
-            bid_ticks = -MAX_TICKS_ABS
-            bid_epi += 1
-            bid_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
-            record("bid", "walk", 0.0)
-        if ask_ticks > MAX_TICKS_ABS:
-            ask_ticks = MAX_TICKS_ABS
-            ask_epi += 1
-            ask_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
-            record("ask", "walk", 0.0)
-        # Second circuit breaker, on the SPREAD itself: REVERSION_KAPPA only
-        # pulls the MID back toward PRICE0 -- it applies no restoring force
-        # to bid_ticks and ask_ticks independently drifting APART (a BUY-
-        # informed print only ever pushes ask up, a SELL-informed print
-        # only ever pushes bid down), so an unlucky/reinforced run of
-        # same-side informed walks can blow the SPREAD out with the MID
-        # barely moving. Symmetric pull-in (mid-preserving) once spread
-        # exceeds MAX_SPREAD_TICKS -- found necessary once per-event walk
-        # size stopped being a single tick (v2): net_bps = pnl/entry_price
-        # was coming out in the hundreds of bps from spread blowouts alone.
-        spread_now_pre = ask_ticks - bid_ticks
-        if spread_now_pre > MAX_SPREAD_TICKS:
-            mid_ticks_now = (bid_ticks + ask_ticks) / 2.0
-            new_bid_ticks = int(round(mid_ticks_now - MAX_SPREAD_TICKS / 2.0))
-            new_ask_ticks = int(round(mid_ticks_now + MAX_SPREAD_TICKS / 2.0))
-            if new_bid_ticks != bid_ticks:
-                bid_ticks = new_bid_ticks
-                bid_epi += 1
-                bid_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
-                record("bid", "walk", 0.0)
-            if new_ask_ticks != ask_ticks:
-                ask_ticks = new_ask_ticks
-                ask_epi += 1
-                ask_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
-                record("ask", "walk", 0.0)
-
         n_orders = len(bid_orders) + len(ask_orders)
         rate_cancel = CANCEL_HAZARD_PER_ORDER * n_orders
         spread_now = ask_ticks - bid_ticks
         rate_decay = RATE_SPREAD1_DECAY if spread_now <= 1 else 0.0
-        rate_total = RATE_MARKET + RATE_JOIN + rate_cancel + rate_decay
+        # v3: replenishment intensity itself (not just P(improve|join))
+        # rises with spread -- see _join_rate. This is the sole restoring
+        # force on the spread now that REVERSION_KAPPA is gone; there is no
+        # breaker downstream, so if this is too weak the self-checks below
+        # fail loudly rather than a clamp silently papering over it.
+        rate_join_now = _join_rate(spread_now)
+        rate_total = RATE_MARKET + rate_join_now + rate_cancel + rate_decay
         dt = rng.exponential(1.0 / rate_total)
         t += dt
         if t >= span_sec:
             break
-        impulse *= math.exp(-dt / IMPULSE_TAU)
 
         r = rng.random() * rate_total
         if r < rate_decay:
@@ -415,15 +539,39 @@ def simulate_background(rng: np.random.Generator, span_sec: float) -> pd.DataFra
         r -= rate_decay
         if r < RATE_MARKET:
             # ---- market order (taker) ----
-            mid_ticks = (bid_ticks + ask_ticks) / 2.0
-            p_buy = 1.0 / (1.0 + math.exp(-(IMPULSE_BETA * impulse - REVERSION_KAPPA * mid_ticks)))
-            side_buy = rng.random() < p_buy
-            size = float(rng.lognormal(PRINT_MU, PRINT_SIGMA))
+            # v3: side is an UNBIASED coin, full stop -- no impulse, no
+            # mean-reversion pull. This is the actual fix (see the module
+            # docstring / the v3 comment above RATE_MARKET): v2's feedback
+            # loop (informed prints biasing the direction of FUTURE order
+            # flow, which could then itself be informed) was the sole
+            # source of the runaway instability the circuit breakers were
+            # papering over. Nothing here can reinforce itself.
+            side_buy = rng.random() < P_BUY_BASELINE
             informed = rng.random() < P_INFORMED
-            taker_side = "bid" if side_buy else "ask"  # queue CONSUMED
+            # v3 (2nd round, coordinator): EVERY market order -- informed
+            # or not -- draws its size as a FRACTION of the CURRENT
+            # displayed depth on the side about to be consumed (median 5%,
+            # p95 60%; PRINT_FRAC_MU/SIGMA), matching real bitFlyer prints
+            # being a small fraction of the touch (so queue position is
+            # normally decisive). Being "informed" is about carrying
+            # information, not about size: a small informed print still
+            # triggers the permanent fair-value shift below. Non-informed
+            # orders are HARD-CAPPED at 100% of the level (can never need a
+            # second one); informed orders draw from the SAME distribution
+            # UNCAPPED, so an occasional large tail draw can still exceed
+            # the level and walk (MAX_WALK_LEVELS) -- multi-level sweeps
+            # are an informed-only phenomenon, per the coordinator, but a
+            # TYPICAL informed print is just as small as a typical
+            # non-informed one.
+            touch_depth = depth(ask_orders if side_buy else bid_orders)
+            frac = float(rng.lognormal(PRINT_FRAC_MU, PRINT_FRAC_SIGMA))
+            if not informed:
+                frac = min(1.0, frac)
+            size = frac * touch_depth
             remaining = size
             levels_walked = 0
-            while remaining > 1e-9 and levels_walked < MAX_WALK_LEVELS:
+            max_levels_this_order = MAX_WALK_LEVELS if informed else 1
+            while remaining > 1e-9 and levels_walked < max_levels_this_order:
                 orders = ask_orders if side_buy else bid_orders
                 consumed = 0.0
                 while remaining > 1e-9 and orders:
@@ -451,49 +599,53 @@ def simulate_background(rng: np.random.Generator, span_sec: float) -> pd.DataFra
                     levels_walked += 1
                 else:
                     break
-            if informed:
-                impulse += IMPULSE_KICK * (1.0 if side_buy else -1.0)
-                # An informed print carries real information beyond the
-                # size it happens to trade: it also has a chance of an
-                # immediate extra one-tick impact (a genuine, mechanical
-                # source of the required "fair value drifts permanently in
-                # the informed direction" -- organic full-level depletion
-                # alone was too rare within a 5s window to produce a
-                # detectable markout, found in tuning).
-                if levels_walked == 0 and rng.random() < P_INFORMED_WALK:
-                    # v2: the impact is now a Poisson-distributed NUMBER of
-                    # ticks (mean IMPULSE_WALK_TICKS_MEAN), not a fixed
-                    # single tick -- see the IMPULSE_WALK_TICKS_MEAN
-                    # comment above for why this was needed to reach a
-                    # realistic 5s markout magnitude. Each tick gets its OWN
-                    # record() row (etype="walk", zero size, no exec_id): a
-                    # multi-tick move that skipped intermediate rows would
-                    # be exactly the v1 failure mode transplanted into the
-                    # BACKGROUND process itself -- a price change nothing in
-                    # the public ticker shows, silently relied on by the
-                    # NEXT event's epi/staleness bookkeeping. Every level
-                    # this walk crosses must be a real, printed ticker row
-                    # (found via the independent-replay cross-check: without
-                    # this, a resting order's own staleness check can miss
-                    # an epi change that never got a row, since two or more
-                    # DISTINCT price levels would otherwise collapse onto
-                    # one observed row).
-                    n_extra = 1 + int(rng.poisson(IMPULSE_WALK_TICKS_MEAN - 1.0)) \
-                        if IMPULSE_WALK_TICKS_MEAN > 1.0 else 1
-                    n_extra = min(n_extra, MAX_WALK_LEVELS)
-                    for _ in range(n_extra):
-                        if side_buy:
-                            ask_ticks += 1
-                            ask_epi += 1
-                            ask_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
-                            record("ask", "walk", 0.0)
-                        else:
-                            bid_ticks -= 1
-                            bid_epi += 1
-                            bid_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
-                            record("bid", "walk", 0.0)
+            if informed and levels_walked == 0:
+                # v3: informed flow = a market order followed by a
+                # PERMANENT, bounded fair-value shift (Poisson,
+                # INFORMED_SHIFT_TICKS_MEAN, floor 1 tick) in its own
+                # direction, with NO effect on any future order's direction
+                # (that coupling -- not the shift itself -- was v2's actual
+                # bug). Gated on levels_walked==0: an occasional oversized
+                # print that ALREADY mechanically swept several levels has
+                # already moved price by that much and revealed its
+                # information through the walk itself; stacking a SEPARATE
+                # shift on top of that (both within the same event, hence
+                # the same instant, before any replenishment can react) is
+                # what produced the spread>8 tail this gate removes -- found
+                # via the max-spread acceptance check, not assumed.
+                # Each shift tick gets its own record() row (etype="walk",
+                # zero size, no exec_id): a multi-tick move that skipped
+                # intermediate rows would be exactly the v1 failure mode
+                # (an unobservable thing that decides outcomes) transplanted
+                # into the background process itself -- found via the
+                # independent-replay cross-check, which is the entire point
+                # of having a second, separately-written replay.
+                n_shift = 1 + int(rng.poisson(INFORMED_SHIFT_TICKS_MEAN - 1.0))
+                for _ in range(n_shift):
+                    # Advance t by a tiny epsilon (not a real inter-arrival
+                    # draw) so the shift's own ticker rows carry a STRICTLY
+                    # LATER timestamp than the triggering print, not a tied
+                    # one. Needed for markouts(): MidLookup.at() resolves a
+                    # tie by landing on the LAST same-timestamp row, so a
+                    # same-tick shift was silently already baked into the
+                    # entry-fill markout's OWN baseline (m0) and therefore
+                    # invisible to the 5s-forward adverse-selection measure
+                    # -- found empirically (adverse selection stayed
+                    # ~0.06bps regardless of P_INFORMED/shift size until
+                    # this was separated out).
+                    t += 1e-3
+                    if side_buy:
+                        ask_ticks += 1
+                        ask_epi += 1
+                        ask_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+                        record("ask", "walk", 0.0)
+                    else:
+                        bid_ticks -= 1
+                        bid_epi += 1
+                        bid_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+                        record("bid", "walk", 0.0)
 
-        elif r < RATE_MARKET + RATE_JOIN:
+        elif r < RATE_MARKET + rate_join_now:
             # ---- background limit order arrival ----
             side_buy = rng.random() < 0.5
             spread_ticks = ask_ticks - bid_ticks
@@ -693,7 +845,7 @@ def run_strategy(events: pd.DataFrame, mid: MidLookup, inside_mode: bool,
             # MARKOUT_HORIZONS for why v1's hidden TAKER_SLIPPAGE_TICKS was
             # removed). mid.at() reads the exact same events timeline the
             # public ticker file is built from, so this IS the touch that
-            # ends up written to ticker_qa_maker3_v2_tape.csv.gz at/just
+            # ends up written to ticker_qa_maker3_v3_tape.csv.gz at/just
             # before this timestamp -- asserted equal in run_self_checks().
             exit_price = fb if direction == "long" else fa
             pnl = (exit_price - entry_price) if direction == "long" else (entry_price - exit_price)
@@ -828,7 +980,7 @@ def build_public_tape(events: pd.DataFrame, s1_positions: list[dict], s2_positio
         "id": ex["id"], "ts": to_iso_row(ex["t"].to_numpy(), start),
         "price": ex["price"], "size": ex["size"], "side": ex["side"],
     })
-    efile = "executions_qa_maker3_v2_tape.csv.gz"
+    efile = "executions_qa_maker3_v3_tape.csv.gz"
     gzip_write_text(out_dir / efile, ex_out.to_csv(index=False))
 
     # ticker: one row per background event, sizes include S1's own resting
@@ -886,7 +1038,7 @@ def build_public_tape(events: pd.DataFrame, s1_positions: list[dict], s2_positio
         "best_bid": bb, "best_ask": ba,
         "best_bid_size": ticks["best_bid_size"], "best_ask_size": ticks["best_ask_size"],
     })
-    qfile = "ticker_qa_maker3_v2_tape.csv.gz"
+    qfile = "ticker_qa_maker3_v3_tape.csv.gz"
     gzip_write_text(out_dir / qfile, tick_out.to_csv(index=False))
 
     return {
@@ -904,7 +1056,9 @@ def build_public_tape(events: pd.DataFrame, s1_positions: list[dict], s2_positio
 # self-checks (assert BY CONSTRUCTION -- run every generate() call)
 # ======================================================================= #
 def run_self_checks(events: pd.DataFrame, tape_info: dict, out_dir: Path,
-                     s1_positions: list[dict], s2_positions: list[dict]) -> None:
+                     s1_positions: list[dict], s2_positions: list[dict],
+                     s1_summary: dict, s2_summary: dict, naive_summary: dict,
+                     tape_days: float = TAPE_DAYS) -> None:
     tol = 1e-6
     bp = events["bid_price"].to_numpy()
     ap = events["ask_price"].to_numpy()
@@ -1014,6 +1168,80 @@ def run_self_checks(events: pd.DataFrame, tape_info: dict, out_dir: Path,
             # (documented non-interacting-clip approximation, see manifest).
             if is_s1 or (key_p == "exit_price" and p["forced"]):
                 assert abs(float(row["price"]) - p[key_p]) < 1e-6, f"own fill {key_id} price mismatch vs public tape"
+
+    # ---- v3 hard acceptance criteria (coordinator round-2/round-3/round-4
+    # review of v2/v3). These assert the BOOK ITSELF is stable BY
+    # CONSTRUCTION (no circuit breakers -- MAX_TICKS_ABS/MAX_SPREAD_TICKS
+    # were deleted, not tightened) and that the economics of the packet
+    # (adverse selection, forced-exit fraction, S1 net) sit in a realistic
+    # band. Any failure here means the parameters need to change -- it is
+    # NOT permitted to relax a threshold to make a failure disappear.
+    #
+    # These bands were tuned/measured against the FULL 5-day tape only (see
+    # SEEDS_TRIED / SEED_SELECTION_NOTE: "all measured ... full 5-day
+    # tape"). A short tape (e.g. tests calling generate() with a small
+    # tape_days for speed) has far fewer own-position samples, so
+    # t-statistics that comfortably clear their threshold at full length
+    # (adverse selection t=18, naive t=75) mechanically shrink by roughly
+    # sqrt(scale) and can legitimately miss a threshold like t>=5 even
+    # though the underlying per-event process is identical -- that is a
+    # sample-size artifact of the shortened tape, not an instability, so
+    # these checks only run once the tape is at (or effectively at) full
+    # length. The process-shape checks just above (tick grid, median touch,
+    # forced-exit price, mean-decomposition identity, fill consistency)
+    # still run unconditionally at any tape_days.
+    if tape_days < TAPE_DAYS * 0.9:
+        return
+
+    # spread distribution: >=85% of ticker rows at spread in {1,2,3} ticks,
+    # and spread must never exceed 8 ticks (no unbounded blow-ups).
+    spread_ticks = np.round((tick_ask - tick_bid) / TICK).astype(np.int64)
+    frac_123 = float(np.mean(np.isin(spread_ticks, [1, 2, 3])))
+    max_spread = int(spread_ticks.max())
+    assert frac_123 >= 0.85, f"spread in {{1,2,3}} ticks only {frac_123:.3f} of rows, need >=0.85"
+    assert max_spread <= 8, f"max spread {max_spread} ticks exceeds 8"
+
+    # |mid move| per row, p99 <= 3bps (no per-tick jump instability).
+    mid = (tick_bid + tick_ask) / 2.0
+    mid_move_bps = np.abs(np.diff(mid)) / mid[:-1] * 1e4
+    p99_move = float(np.percentile(mid_move_bps, 99)) if len(mid_move_bps) else 0.0
+    assert p99_move <= 3.0, f"|mid move| p99 {p99_move:.3f}bps exceeds 3bps"
+
+    # 5-day price range within +-5% of PRICE0 (no unbounded drift -- the
+    # informed shift is a one-time bounded kick with NO mean reversion and
+    # NO explicit bound, so this is checked empirically, not enforced by a
+    # breaker).
+    lo_px, hi_px = float(mid.min()), float(mid.max())
+    assert lo_px >= PRICE0 * 0.95 and hi_px <= PRICE0 * 1.05, \
+        f"5-day price range [{lo_px}, {hi_px}] outside +-5% of {PRICE0}"
+
+    # S1 |net| p95 <= 8bps (realistic maker per-position P&L, not the
+    # degenerate +-30-60bps of the void v2 packet).
+    s1_abs_net_p95 = float(np.percentile(np.abs([p["net_bps"] for p in s1_positions]), 95)) if s1_positions else 0.0
+    assert s1_abs_net_p95 <= 8.0, f"S1 |net| p95 {s1_abs_net_p95:.3f}bps exceeds 8bps"
+
+    # forced_exit_fraction in [0.15, 0.45] for S1 (not near-zero, not
+    # dominating the sample).
+    s1_forced_frac = s1_summary["forced_exit_fraction"]
+    assert 0.15 <= s1_forced_frac <= 0.45, f"S1 forced_exit_fraction {s1_forced_frac:.3f} outside [0.15,0.45]"
+
+    # adverse selection at 5s in [0.3, 1.0]bps with t>=5 (a real, but not
+    # exaggerated, informed-flow signature).
+    adv_mean = s1_summary["adverse_selection_bps_at_5s_mean"]
+    adv_t = s1_summary["adverse_selection_t_stat"]
+    assert 0.3 <= adv_mean <= 1.0, f"adverse selection at 5s {adv_mean:.4f}bps outside [0.3,1.0]"
+    assert adv_t >= 5.0, f"adverse selection t-stat {adv_t:.3f} < 5"
+
+    # naive (queue-blind, fill-on-first-print) comparison model must reach
+    # a DIFFERENT ECONOMIC CONCLUSION from the true queue-aware rule --
+    # see NAIVE_GAP_CRITERION_REVISION for the exact, coordinator-revised
+    # form of this criterion (recorded verbatim in the sealed json).
+    meets_gap, gap_val = _naive_gap_criterion_met(naive_summary, s1_summary)
+    assert meets_gap, (
+        f"naive-gap criterion not met: naive_net={naive_summary['net_bps_mean']:.4f}bps "
+        f"(t={naive_summary['net_bps_t_stat']:.3f}) vs S1 net={s1_summary['net_bps_mean']:.4f}bps, "
+        f"gap={gap_val:.4f}bps -- see NAIVE_GAP_CRITERION_REVISION"
+    )
 
 
 # ======================================================================= #
@@ -1263,12 +1491,12 @@ def naive_net(events: pd.DataFrame, mid: MidLookup) -> dict:
 # ======================================================================= #
 # manifest + claims
 # ======================================================================= #
-MANIFEST_TEMPLATE = """# QA known-answer packet (generation 3, v2) -- maker fill model -- manifest
+MANIFEST_TEMPLATE = """# QA known-answer packet (generation 3, v3) -- maker fill model -- manifest
 
 Synthetic data generated by `scripts/qa/make_known_answer_maker3.py` (fixed
 seed). Nothing here is real market data.
 
-Do not open `docs/QA/answers_sealed_maker3_v2.json` before completing an
+Do not open `docs/QA/answers_sealed_maker3_v3.json` before completing an
 audit of this packet.
 
 ## Synthetic tape ({tape_days:.0f} days)
@@ -1344,25 +1572,29 @@ def _sign_significance_ja(mean: float, t_stat: float, alpha_t: float = 2.0) -> s
 
 
 def build_claims(s1: dict, s2: dict, naive: dict) -> tuple[str, list[dict]]:
-    # item 5-(2) stop condition: the naive (queue-blind) fill model must be
-    # MORE OPTIMISTIC than the true, stated rule by >= 1bps, or wrong-signed
-    # relative to it -- otherwise QA3-2 cannot honestly be marked "false"
-    # and generation must fail loudly rather than seal a broken claim.
-    gap = naive["net_bps_mean"] - s1["net_bps_mean"]
-    wrong_sign = (naive["net_bps_mean"] > 0) != (s1["net_bps_mean"] > 0)
-    if not (gap >= 1.0 or wrong_sign):
+    # item 5-(2) stop condition, REVISED (round-4 lead decision -- see
+    # NAIVE_GAP_CRITERION_REVISION, also recorded verbatim in the sealed
+    # json): the original ">=1bps or wrong-sign" threshold was arbitrary;
+    # what actually matters is that the naive (queue-blind) fill model
+    # reaches a DIFFERENT ECONOMIC CONCLUSION from the true, stated rule.
+    # Replaced with _naive_gap_criterion_met (naive_net >= 2x true_net AND
+    # naive_t>=3 AND gap>=0.5bps). If it is not met, generation must stop
+    # here rather than seal a false QA3-2.
+    meets_gap, gap = _naive_gap_criterion_met(naive, s1)
+    if not meets_gap:
         raise RuntimeError(
-            f"QA3-2 stop condition failed: naive net_bps_mean={naive['net_bps_mean']:.4f} is not "
-            f">=1bps more optimistic than the true-rule S1 net_bps_mean={s1['net_bps_mean']:.4f} "
-            f"(gap={gap:.4f}) and is not wrong-signed relative to it -- per the fix spec, "
-            f"generation must stop here rather than seal a false QA3-2."
+            f"QA3-2 stop condition failed (revised criterion): naive net_bps_mean="
+            f"{naive['net_bps_mean']:.4f} (t={naive['net_bps_t_stat']:.3f}) vs true-rule S1 "
+            f"net_bps_mean={s1['net_bps_mean']:.4f} (gap={gap:.4f}) does not satisfy "
+            f"naive>=2x*S1 AND naive_t>=3 AND gap>=0.5bps -- see NAIVE_GAP_CRITERION_REVISION. "
+            f"Per the fix spec, generation must stop here rather than seal a false QA3-2."
         )
 
     claims = [
         {
             "id": "QA3-1", "category": "maker_fill", "truth_class": "true_effect", "claim_correct": True,
-            "text": (f"母集団=S1(最良気配で対称的に両建て quote、300秒 cap)の完了建玉。約定規則: {FILL_RULE_TEXT}。"
-                     f"この規則の下でネット = {s1['net_bps_mean']:+.2f}bps/往復 (t={s1['net_bps_t_stat']:.2f})。"
+            "text": (f"母集団=S1(最良気配で対称的に両建て quote、300秒 cap)の完了建玉。上記の約定規則の下で"
+                     f"ネット = {s1['net_bps_mean']:+.2f}bps/往復 (t={s1['net_bps_t_stat']:.2f})。"
                      f"{_sign_significance_ja(s1['net_bps_mean'], s1['net_bps_t_stat'])}。"),
         },
         {
@@ -1370,41 +1602,43 @@ def build_claims(s1: dict, s2: dict, naive: dict) -> tuple[str, list[dict]]:
             "text": (f"母集団=S1と同じ建玉群だが、約定規則を『挿入後に自分の価格・サイドで最初に印字された"
                      f"執行を無条件に約定とみなす(キュー先行量を無視)』に置き換えて PUBLIC テープを再生した"
                      f"場合、ネット = {naive['net_bps_mean']:+.2f}bps/往復 (t={naive['net_bps_t_stat']:.2f}) と"
-                     f"なり、正しい規則({s1['net_bps_mean']:+.2f}bps)より楽観的であり、したがってこの"
-                     f"素朴な計算だけからでも取引可能なエッジの存在が結論できる。"),
+                     f"なる。これは上記の約定規則(正しい規則)の下でのネット {s1['net_bps_mean']:+.2f}bps/往復"
+                     f"(t={s1['net_bps_t_stat']:.2f})より大幅に楽観的であり、したがってこの素朴な計算だけからでも"
+                     f"取引可能なエッジが存在すると結論できる。"),
         },
         {
             "id": "QA3-3", "category": "maker_fill", "truth_class": "true_effect", "claim_correct": True,
             "text": (f"母集団=S2(スプレッド2tick以上のとき最良気配より1tick内側に improve して両建て quote、"
-                     f"それ以外は最良気配、300秒 cap)の完了建玉。同じ約定規則: {FILL_RULE_TEXT}。"
-                     f"ネット = {s2['net_bps_mean']:+.2f}bps/往復 (t={s2['net_bps_t_stat']:.2f})。"
+                     f"それ以外は最良気配、300秒 cap)の完了建玉。上記と同じ約定規則の下でネット = "
+                     f"{s2['net_bps_mean']:+.2f}bps/往復 (t={s2['net_bps_t_stat']:.2f})。"
                      f"{_sign_significance_ja(s2['net_bps_mean'], s2['net_bps_t_stat'])}。"),
         },
         {
             "id": "QA3-4", "category": "adverse_selection", "truth_class": "adverse_selection_magnitude",
             "claim_correct": False,
-            "text": (f"母集団=S1(約定規則: {FILL_RULE_TEXT})のエントリー約定(参入 leg のみ)。5秒地点の"
-                     f"逆選択(adverse selection、エントリー約定直後の mid の変化を符号調整したもの)は"
+            "text": (f"母集団=S1(上記の約定規則)のエントリー約定(参入 leg のみ)。5秒地点の逆選択"
+                     f"(adverse selection、エントリー約定直後の mid の変化を符号調整したもの)は"
                      f"ゼロと統計的に区別できない。"),
         },
         {
             "id": "QA3-5", "category": "survivorship", "truth_class": "survivorship_and_reference_trap",
             "claim_correct": False,
-            "text": (f"母集団=S1(約定規則: {FILL_RULE_TEXT})の完了建玉のうち、300秒 cap で taker 決済"
-                     f"(forced exit)になったものを除外した部分集合。この部分集合の平均ネットは "
+            "text": (f"母集団=S1(上記の約定規則)の完了建玉のうち、300秒 cap で taker 決済(forced exit)"
+                     f"になったものを除外した部分集合。この部分集合の平均ネットは "
                      f"{s1['survivorship_biased_net_bps_if_forced_dropped']:+.2f}bps であり、"
                      f"これが戦略の正しい期待値の推定である。"),
         },
         {
             "id": "QA3-6", "category": "maker_fill", "truth_class": "true_effect", "claim_correct": True,
-            "text": (f"母集団=S1(約定規則: {FILL_RULE_TEXT})の完了建玉。300秒 cap に到達し taker として"
-                     f"決済された(forced exit)建玉の比率は {s1['forced_exit_fraction'] * 100:.1f}% である。"),
+            "text": (f"母集団=S1(上記の約定規則)の完了建玉。300秒 cap に到達し taker として決済された"
+                     f"(forced exit)建玉の比率は {s1['forced_exit_fraction'] * 100:.1f}% である。"),
         },
     ]
-    lines = ["# QA known-answer packet (generation 3, v2, maker fill model) -- claims for auditors", "",
-             "## 約定規則 (すべての主張に共通)", "", FILL_RULE_TEXT, "",
-             "母集団の定義は各主張の本文中に明記する。以下 6 件を判定せよ。番号 (QA3-1..QA3-6) を報告の"
-             "見出しに使うこと。", ""]
+    lines = ["# QA known-answer packet (generation 3, v3, maker fill model) -- claims for auditors", "",
+             "## 約定規則 (すべての主張に共通。以下、各主張本文の「上記の約定規則」はこれを指す)", "",
+             FILL_RULE_TEXT, "",
+             "母集団の定義(戦略 S1/S2 の別、cap 秒数など)は各主張の本文中に明記する。以下 6 件を判定せよ。"
+             "番号 (QA3-1..QA3-6) を報告の見出しに使うこと。", ""]
     for c in claims:
         lines.append(f"## {c['id']}\n\n{c['text']}\n")
     return "\n".join(lines), claims
@@ -1441,7 +1675,8 @@ def generate(out_dir: Path, seed: int, tape_days: float = TAPE_DAYS, hidden_dir:
     s1_summary = summarize(s1_positions, "S1_symmetric_at_best")
     s2_summary = summarize(s2_positions, "S2_inside_one_tick")
 
-    run_self_checks(events, tape_info, out_dir, s1_positions, s2_positions)
+    run_self_checks(events, tape_info, out_dir, s1_positions, s2_positions, s1_summary, s2_summary, naive,
+                     tape_days=tape_days)
     independent = verify_independent_replay(out_dir, tape_info, s1_summary, s2_summary)
 
     manifest = build_manifest(tape_info, seed)
@@ -1449,7 +1684,7 @@ def generate(out_dir: Path, seed: int, tape_days: float = TAPE_DAYS, hidden_dir:
     claims_md, claims = build_claims(s1_summary, s2_summary, naive)
 
     if hidden_dir is None:
-        hidden_dir = REPO_ROOT / "docs" / "QA" / "hidden_maker3_v2"
+        hidden_dir = REPO_ROOT / "docs" / "QA" / "hidden_maker3_v3"
     hidden_dir.mkdir(parents=True, exist_ok=True)
     s1_file = hidden_dir / "s1_positions.csv.gz"
     s2_file = hidden_dir / "s2_positions.csv.gz"
@@ -1475,7 +1710,10 @@ def generate(out_dir: Path, seed: int, tape_days: float = TAPE_DAYS, hidden_dir:
             "S1_symmetric_at_best": independent["S1_symmetric_at_best"],
             "S2_inside_one_tick": independent["S2_inside_one_tick"],
         },
-        "seed_selection": {"seeds_tried": SEEDS_TRIED, "selected_seed": SEED, "note": SEED_SELECTION_NOTE},
+        "seed_selection": {
+            "seeds_tried": SEEDS_TRIED, "selected_seed": SEED, "note": SEED_SELECTION_NOTE,
+            "naive_gap_criterion_revision": NAIVE_GAP_CRITERION_REVISION,
+        },
         "traps": {
             "crossed_book_rows": {
                 "file": tape_info["quote_file"], "fraction_target": CROSSED_BOOK_FRACTION,
@@ -1504,9 +1742,9 @@ def main() -> None:
     ap.add_argument("--tape-days", type=float, default=TAPE_DAYS)
     args = ap.parse_args()
 
-    out_dir = Path(args.out_dir) if args.out_dir else REPO_ROOT / "backtest_data" / f"qa_known_answer_maker3_v2_{args.date}"
-    answers_out = Path(args.answers_out) if args.answers_out else REPO_ROOT / "docs" / "QA" / "answers_sealed_maker3_v2.json"
-    claims_out = Path(args.claims_out) if args.claims_out else REPO_ROOT / "docs" / "QA" / "claims_for_auditors_maker3_v2.md"
+    out_dir = Path(args.out_dir) if args.out_dir else REPO_ROOT / "backtest_data" / f"qa_known_answer_maker3_v3_{args.date}"
+    answers_out = Path(args.answers_out) if args.answers_out else REPO_ROOT / "docs" / "QA" / "answers_sealed_maker3_v3.json"
+    claims_out = Path(args.claims_out) if args.claims_out else REPO_ROOT / "docs" / "QA" / "claims_for_auditors_maker3_v3.md"
     answers_out.parent.mkdir(parents=True, exist_ok=True)
     claims_out.parent.mkdir(parents=True, exist_ok=True)
 
