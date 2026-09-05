@@ -220,6 +220,25 @@ def _expand_range_columns(names) -> set:
     return out
 
 
+def schema_optional_columns_for(schema: dict, filename: str, rel_path: Optional[str] = None) -> set:
+    """Column names declared with `"optional": true` (dataset-level `columns`
+    or a matching file_group). An optional column is documented but may be
+    absent from files written before it was introduced (e.g. `synthetic`,
+    added 2026-09-05); its absence is NOT a missing_columns finding."""
+    out: set = set()
+    top = schema.get("columns")
+    if isinstance(top, dict):
+        out.update(k.lower() for k, v in top.items() if isinstance(v, dict) and v.get("optional") is True)
+    groups = schema.get("file_groups")
+    if isinstance(groups, dict):
+        for group_key, group_val in groups.items():
+            if _file_group_prefix_match(group_key, filename, rel_path):
+                gcols = group_val.get("columns") if isinstance(group_val, dict) else None
+                if isinstance(gcols, dict):
+                    out.update(k.lower() for k, v in gcols.items() if isinstance(v, dict) and v.get("optional") is True)
+    return out
+
+
 def schema_columns_for(schema: dict, filename: str, rel_path: Optional[str] = None) -> Optional[set]:
     """Flatten the documented column names relevant to this file: the
     dataset-level `columns` dict, plus any `file_groups` entry whose key
@@ -401,7 +420,8 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                     declared_lower = {c.lower() for c in declared}
                     have_lower = set(header_lower)
                     undocumented = [header[i] for i, h in enumerate(header_lower) if h not in declared_lower]
-                    absent = sorted(declared_lower - have_lower)
+                    optional_lower = schema_optional_columns_for(schema, p.name, rel_path)
+                    absent = sorted((declared_lower - have_lower) - optional_lower)
                     if undocumented or absent:
                         result["missing_columns"] = {
                             "count": len(undocumented) + len(absent),

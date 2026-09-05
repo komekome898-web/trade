@@ -567,3 +567,13 @@ def test_main_cli_writes_quality_json(tmp_path: Path, monkeypatch, capsys):
     assert (tmp_path / "data" / "QUALITY.json").exists()
     report = json.loads((tmp_path / "data" / "QUALITY.json").read_text())
     assert "generated_at" in report
+
+
+def test_optional_column_absence_is_not_missing_columns(tmp_path):
+    import scripts.data_quality as dq  # noqa: F401  (import style used by the other tests)
+    schema = {"dataset": "x", "path_glob": ["data/x_*.csv"],
+              "columns": {"ts": {"meaning": "t"}, "v": {"meaning": "v"},
+                          "synthetic": {"meaning": "s", "optional": True}}}
+    assert dq.schema_optional_columns_for(schema, "x_1.csv", "data/x_1.csv") == {"synthetic"}
+    declared = dq.schema_columns_for(schema, "x_1.csv", "data/x_1.csv")
+    assert "synthetic" in {c.lower() for c in declared}

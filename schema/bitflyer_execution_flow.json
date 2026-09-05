@@ -19,36 +19,140 @@
   "file_groups": {
     "executions_<product>.csv": {
       "columns": {
-        "id": {"meaning": "bitFlyer execution id, monotonically increasing, used for incremental paging/dedup", "unit": "integer", "tz": null, "notes": null},
-        "exec_date": {"meaning": "exchange execution/trade time", "unit": "ISO-8601 (bitFlyer's native format, mixed precision -- read with pandas format='mixed')", "tz": "UTC", "notes": "trade time (約定時刻), same sense as executions_*.csv.gz's ts in schema/bitflyer_tape.json"},
-        "price": {"meaning": "execution price", "unit": "JPY", "tz": null, "notes": null},
-        "size": {"meaning": "execution size", "unit": "base currency (BTC/ETH/XRP depending on product)", "tz": null, "notes": null},
-        "side": {"meaning": "taker side", "unit": "BUY/SELL", "tz": null, "notes": null}
+        "id": {
+          "meaning": "bitFlyer execution id, monotonically increasing, used for incremental paging/dedup",
+          "unit": "integer",
+          "tz": null,
+          "notes": null
+        },
+        "exec_date": {
+          "meaning": "exchange execution/trade time",
+          "unit": "ISO-8601 (bitFlyer's native format, mixed precision -- read with pandas format='mixed')",
+          "tz": "UTC",
+          "notes": "trade time (約定時刻), same sense as executions_*.csv.gz's ts in schema/bitflyer_tape.json"
+        },
+        "price": {
+          "meaning": "execution price",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "size": {
+          "meaning": "execution size",
+          "unit": "base currency (BTC/ETH/XRP depending on product)",
+          "tz": null,
+          "notes": null
+        },
+        "side": {
+          "meaning": "taker side",
+          "unit": "BUY/SELL",
+          "tz": null,
+          "notes": null
+        }
       },
-      "quality": {"unique_key": ["id"]}
+      "quality": {
+        "unique_key": [
+          "id"
+        ]
+      }
     },
     "flow_<product>.csv": {
       "columns": {
-        "ts": {"meaning": "start of the 1-minute bucket", "unit": "ISO-8601", "tz": "UTC", "notes": null},
-        "open": {"meaning": "first execution price in the minute", "unit": "JPY", "tz": null, "notes": "forward-filled from the previous real minute when synthetic=1"},
-        "high": {"meaning": "max execution price in the minute", "unit": "JPY", "tz": null, "notes": "forward-filled from the previous real minute when synthetic=1"},
-        "low": {"meaning": "min execution price in the minute", "unit": "JPY", "tz": null, "notes": "forward-filled from the previous real minute when synthetic=1"},
-        "close": {"meaning": "last execution price in the minute", "unit": "JPY", "tz": null, "notes": "forward-filled from the previous real minute when synthetic=1"},
-        "volume": {"meaning": "total execution size in the minute (buy_vol + sell_vol)", "unit": "base currency", "tz": null, "notes": "0.0 when synthetic=1"},
-        "buy_vol": {"meaning": "taker-buy volume in the minute", "unit": "base currency", "tz": null, "notes": "0.0 when synthetic=1"},
-        "sell_vol": {"meaning": "taker-sell volume in the minute", "unit": "base currency", "tz": null, "notes": "0.0 when synthetic=1"},
-        "trades": {"meaning": "execution count in the minute", "unit": "count", "tz": null, "notes": "0 when synthetic=1"},
-        "synthetic": {"meaning": "1 = this minute had zero executions and every OHLCV column above is forward-filled/zeroed rather than observed; 0 = a real minute", "unit": "0/1", "tz": null, "notes": "added 2026-09-05 (DATA QA); rows written before this date do not have this column at all -- its absence, not a 0 value, is what marks pre-fix history"}
+        "ts": {
+          "meaning": "start of the 1-minute bucket",
+          "unit": "ISO-8601",
+          "tz": "UTC",
+          "notes": null
+        },
+        "open": {
+          "meaning": "first execution price in the minute",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "forward-filled from the previous real minute when synthetic=1"
+        },
+        "high": {
+          "meaning": "max execution price in the minute",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "forward-filled from the previous real minute when synthetic=1"
+        },
+        "low": {
+          "meaning": "min execution price in the minute",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "forward-filled from the previous real minute when synthetic=1"
+        },
+        "close": {
+          "meaning": "last execution price in the minute",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "forward-filled from the previous real minute when synthetic=1"
+        },
+        "volume": {
+          "meaning": "total execution size in the minute (buy_vol + sell_vol)",
+          "unit": "base currency",
+          "tz": null,
+          "notes": "0.0 when synthetic=1"
+        },
+        "buy_vol": {
+          "meaning": "taker-buy volume in the minute",
+          "unit": "base currency",
+          "tz": null,
+          "notes": "0.0 when synthetic=1"
+        },
+        "sell_vol": {
+          "meaning": "taker-sell volume in the minute",
+          "unit": "base currency",
+          "tz": null,
+          "notes": "0.0 when synthetic=1"
+        },
+        "trades": {
+          "meaning": "execution count in the minute",
+          "unit": "count",
+          "tz": null,
+          "notes": "0 when synthetic=1"
+        },
+        "synthetic": {
+          "meaning": "1 = this minute had zero executions and every OHLCV column above is forward-filled/zeroed rather than observed; 0 = a real minute",
+          "unit": "0/1",
+          "tz": null,
+          "notes": "added 2026-09-05 (DATA QA); rows written before this date do not have this column at all -- its absence, not a 0 value, is what marks pre-fix history",
+          "optional": true
+        }
       }
     },
     "basis_1m.csv": {
       "columns": {
-        "ts": {"meaning": "1-minute UTC index shared by candles_FX_BTC_JPY.csv and candles_BTC_JPY.csv (inner join -- a minute either book was quiet in produces no row)", "unit": "ISO-8601", "tz": "UTC", "notes": null},
-        "fx_close": {"meaning": "FX_BTC_JPY 1-minute close", "unit": "JPY", "tz": null, "notes": null},
-        "spot_close": {"meaning": "BTC_JPY (spot) 1-minute close", "unit": "JPY", "tz": null, "notes": null},
-        "basis_pct": {"meaning": "(fx_close / spot_close - 1) * 100 -- FX premium/discount over spot", "unit": "percent", "tz": null, "notes": "positive = FX trading above spot (contango); negative = below (backwardation)"}
+        "ts": {
+          "meaning": "1-minute UTC index shared by candles_FX_BTC_JPY.csv and candles_BTC_JPY.csv (inner join -- a minute either book was quiet in produces no row)",
+          "unit": "ISO-8601",
+          "tz": "UTC",
+          "notes": null
+        },
+        "fx_close": {
+          "meaning": "FX_BTC_JPY 1-minute close",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "spot_close": {
+          "meaning": "BTC_JPY (spot) 1-minute close",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "basis_pct": {
+          "meaning": "(fx_close / spot_close - 1) * 100 -- FX premium/discount over spot",
+          "unit": "percent",
+          "tz": null,
+          "notes": "positive = FX trading above spot (contango); negative = below (backwardation)"
+        }
       },
-      "quality": {"unique_key": ["ts"]}
+      "quality": {
+        "unique_key": [
+          "ts"
+        ]
+      }
     }
   },
   "known_defects": [

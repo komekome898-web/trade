@@ -16,35 +16,141 @@
   "source": "resampled from data/executions_<product>.csv (bitFlyer public GET /v1/executions, paged, deduped by id) -- see scripts/fetch_history.py",
   "retention": "bitFlyer's public execution history is 31 days; candles built from it are the long-term substitute once written and are never regenerated in a way that drops old minutes. backtest_data/candles_*_<date>.csv[.gz] are permanent dated snapshots of this file for reproducibility.",
   "columns": {
-    "ts": {"meaning": "start of the 1-minute bucket (pandas resample('1min') left edge)", "unit": "ISO-8601 or 'YYYY-MM-DD HH:MM:SS+00:00' (pandas default str repr)", "tz": "UTC", "notes": null},
-    "open": {"meaning": "first execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
-    "high": {"meaning": "max execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
-    "low": {"meaning": "min execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
-    "close": {"meaning": "last execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
-    "volume": {"meaning": "sum of execution sizes in the minute", "unit": "BTC (or ETH/XRP for the sibling products)", "tz": null, "notes": null},
-    "synthetic": {"meaning": "1 = this row has no executions and was forward-filled by scripts/fetch_deep.py (open/high/low/close each independently carry the previous real candle's value for that field, volume=0.0); 0 = a real bar. Added 2026-09-05; absent/blank on rows written before this date -- see known_defects for how to recognize an unflagged synthetic row.", "unit": "0/1", "tz": null, "notes": "scripts/fetch_history.py never fabricates a bar (a zero-execution minute is dropped, not written) and always emits 0 here for schema consistency with fetch_deep.py, which writes to the same path."}
+    "ts": {
+      "meaning": "start of the 1-minute bucket (pandas resample('1min') left edge)",
+      "unit": "ISO-8601 or 'YYYY-MM-DD HH:MM:SS+00:00' (pandas default str repr)",
+      "tz": "UTC",
+      "notes": null
+    },
+    "open": {
+      "meaning": "first execution price in the minute",
+      "unit": "JPY",
+      "tz": null,
+      "notes": null
+    },
+    "high": {
+      "meaning": "max execution price in the minute",
+      "unit": "JPY",
+      "tz": null,
+      "notes": null
+    },
+    "low": {
+      "meaning": "min execution price in the minute",
+      "unit": "JPY",
+      "tz": null,
+      "notes": null
+    },
+    "close": {
+      "meaning": "last execution price in the minute",
+      "unit": "JPY",
+      "tz": null,
+      "notes": null
+    },
+    "volume": {
+      "meaning": "sum of execution sizes in the minute",
+      "unit": "BTC (or ETH/XRP for the sibling products)",
+      "tz": null,
+      "notes": null
+    },
+    "synthetic": {
+      "meaning": "1 = this row has no executions and was forward-filled by scripts/fetch_deep.py (open/high/low/close each independently carry the previous real candle's value for that field, volume=0.0); 0 = a real bar. Added 2026-09-05; absent/blank on rows written before this date -- see known_defects for how to recognize an unflagged synthetic row.",
+      "unit": "0/1",
+      "tz": null,
+      "notes": "scripts/fetch_history.py never fabricates a bar (a zero-execution minute is dropped, not written) and always emits 0 here for schema consistency with fetch_deep.py, which writes to the same path.",
+      "optional": true
+    }
   },
   "companion_files": {
     "executions_<product>.csv": {
       "columns": {
-        "id": {"meaning": "bitFlyer execution id, monotonically increasing, used for incremental paging/dedup", "unit": "integer", "tz": null, "notes": null},
-        "exec_date": {"meaning": "exchange execution/trade time", "unit": "ISO-8601 (bitFlyer's native format, mixed precision -- read with pandas format='mixed')", "tz": "UTC", "notes": "this is the ts=約定時刻 (trade time) sense of the column, same as executions_*.csv.gz in schema/bitflyer_tape.json"},
-        "price": {"meaning": "execution price", "unit": "JPY", "tz": null, "notes": null},
-        "size": {"meaning": "execution size", "unit": "base currency", "tz": null, "notes": null},
-        "side": {"meaning": "taker side", "unit": "BUY/SELL", "tz": null, "notes": null}
+        "id": {
+          "meaning": "bitFlyer execution id, monotonically increasing, used for incremental paging/dedup",
+          "unit": "integer",
+          "tz": null,
+          "notes": null
+        },
+        "exec_date": {
+          "meaning": "exchange execution/trade time",
+          "unit": "ISO-8601 (bitFlyer's native format, mixed precision -- read with pandas format='mixed')",
+          "tz": "UTC",
+          "notes": "this is the ts=約定時刻 (trade time) sense of the column, same as executions_*.csv.gz in schema/bitflyer_tape.json"
+        },
+        "price": {
+          "meaning": "execution price",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "size": {
+          "meaning": "execution size",
+          "unit": "base currency",
+          "tz": null,
+          "notes": null
+        },
+        "side": {
+          "meaning": "taker side",
+          "unit": "BUY/SELL",
+          "tz": null,
+          "notes": null
+        }
       }
     },
     "flow_<product>.csv": {
       "columns": {
-        "ts": {"meaning": "start of the 1-minute bucket, same convention as candles", "unit": "ISO-8601", "tz": "UTC", "notes": null},
-        "open": {"meaning": "same as candles open", "unit": "JPY", "tz": null, "notes": null},
-        "high": {"meaning": "same as candles high", "unit": "JPY", "tz": null, "notes": null},
-        "low": {"meaning": "same as candles low", "unit": "JPY", "tz": null, "notes": null},
-        "close": {"meaning": "same as candles close", "unit": "JPY", "tz": null, "notes": null},
-        "volume": {"meaning": "same as candles volume (buy_vol + sell_vol)", "unit": "base currency", "tz": null, "notes": null},
-        "buy_vol": {"meaning": "taker-buy volume in the minute", "unit": "base currency", "tz": null, "notes": null},
-        "sell_vol": {"meaning": "taker-sell volume in the minute", "unit": "base currency", "tz": null, "notes": null},
-        "trades": {"meaning": "execution count in the minute", "unit": "count", "tz": null, "notes": null}
+        "ts": {
+          "meaning": "start of the 1-minute bucket, same convention as candles",
+          "unit": "ISO-8601",
+          "tz": "UTC",
+          "notes": null
+        },
+        "open": {
+          "meaning": "same as candles open",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "high": {
+          "meaning": "same as candles high",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "low": {
+          "meaning": "same as candles low",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "close": {
+          "meaning": "same as candles close",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "volume": {
+          "meaning": "same as candles volume (buy_vol + sell_vol)",
+          "unit": "base currency",
+          "tz": null,
+          "notes": null
+        },
+        "buy_vol": {
+          "meaning": "taker-buy volume in the minute",
+          "unit": "base currency",
+          "tz": null,
+          "notes": null
+        },
+        "sell_vol": {
+          "meaning": "taker-sell volume in the minute",
+          "unit": "base currency",
+          "tz": null,
+          "notes": null
+        },
+        "trades": {
+          "meaning": "execution count in the minute",
+          "unit": "count",
+          "tz": null,
+          "notes": null
+        }
       }
     }
   },
