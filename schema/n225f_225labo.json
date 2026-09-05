@@ -1,0 +1,72 @@
+{
+  "dataset": "n225f_225labo",
+  "description": "Nikkei 225 futures (Osaka), continuous series as provided by 225Labo -- day session, night session, calendar-day, and trading-day daily bars, plus 1-minute bars. Owner-downloaded personal-use snapshot, not a live feed.",
+  "path_glob": [
+    "backtest_data/n225f_225labo_*/day_session_daily.csv.gz",
+    "backtest_data/n225f_225labo_*/night_session_daily.csv.gz",
+    "backtest_data/n225f_225labo_*/full_day_daily.csv.gz",
+    "backtest_data/n225f_225labo_*/trading_day_daily.csv.gz",
+    "backtest_data/n225f_225labo_*/bars_1min.csv.gz"
+  ],
+  "source": "225Labo N225f_2026.xlsx, owner-downloaded 2026-08-28 under free registration / personal-use license -- see backtest_data/n225f_225labo_20260828/manifest.json",
+  "retention": "permanent snapshot (owner-downloaded, license-limited to personal use) -- kept as-is, never re-scraped in place; a future refresh would land in a new dated backtest_data/n225f_225labo_<date>/ directory alongside this one, not overwrite it",
+  "file_groups": {
+    "day_session_daily.csv.gz": {
+      "coverage": "1990-01-04..2026-08-27, 9038 rows; volume missing 1990-2000",
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST (JPX session date)", "notes": null},
+        "open": {"meaning": "day-session opening-auction print (08:45)", "unit": "index points", "tz": null, "notes": null},
+        "high": {"meaning": "day-session high", "unit": "index points", "tz": null, "notes": null},
+        "low": {"meaning": "day-session low", "unit": "index points", "tz": null, "notes": null},
+        "close": {"meaning": "day-session closing-auction print (15:45)", "unit": "index points", "tz": null, "notes": null},
+        "volume": {"meaning": "day-session volume", "unit": "contracts", "tz": null, "notes": "blank for 1990-2000 (source does not carry it for that period)"}
+      }
+    },
+    "night_session_daily.csv.gz": {
+      "coverage": "2007-09-19..2026-08-28, 4674 rows (night session did not exist before 2007-09)",
+      "columns": {"date": {"meaning": "the calendar date the night session started", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
+                  "open": {"meaning": "night-session open", "unit": "index points", "tz": null, "notes": null},
+                  "high": {"meaning": "night-session high", "unit": "index points", "tz": null, "notes": null},
+                  "low": {"meaning": "night-session low", "unit": "index points", "tz": null, "notes": null},
+                  "close": {"meaning": "night-session close", "unit": "index points", "tz": null, "notes": null},
+                  "volume": {"meaning": "night-session volume", "unit": "contracts", "tz": null, "notes": null}}
+    },
+    "full_day_daily.csv.gz": {
+      "coverage": "1990-2026, 9038 rows",
+      "columns": {"date": {"meaning": "calendar day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": "calendar-day full-session convention -- OHLC spans whichever sessions fall on/after this calendar date, distinct from trading_day_daily.csv.gz's convention below"},
+                  "open": {"meaning": "session-open under the calendar-day convention", "unit": "index points", "tz": null, "notes": null},
+                  "high": {"meaning": "high", "unit": "index points", "tz": null, "notes": null},
+                  "low": {"meaning": "low", "unit": "index points", "tz": null, "notes": null},
+                  "close": {"meaning": "close", "unit": "index points", "tz": null, "notes": null},
+                  "volume": {"meaning": "volume", "unit": "contracts", "tz": null, "notes": null}}
+    },
+    "trading_day_daily.csv.gz": {
+      "coverage": "9038 rows, same span as full_day_daily",
+      "columns": {"date": {"meaning": "TRADING-DAY convention: groups the preceding night session with the following day session under one date", "unit": "YYYY-MM-DD", "tz": "JST", "notes": "the convention that matters for continuity across the day/night boundary -- verify which of full_day_daily vs trading_day_daily a downstream script assumes before joining"},
+                  "open": {"meaning": "open of the (preceding night + day) trading-day unit", "unit": "index points", "tz": null, "notes": null},
+                  "high": {"meaning": "high over the trading-day unit", "unit": "index points", "tz": null, "notes": null},
+                  "low": {"meaning": "low over the trading-day unit", "unit": "index points", "tz": null, "notes": null},
+                  "close": {"meaning": "close of the trading-day unit", "unit": "index points", "tz": null, "notes": null},
+                  "volume": {"meaning": "volume over the trading-day unit", "unit": "contracts", "tz": null, "notes": null}}
+    },
+    "bars_1min.csv.gz": {
+      "coverage": "2025-12-30..2026-08-28, 205121 rows",
+      "columns": {
+        "date": {"meaning": "TRADING-DAY convention (same as trading_day_daily.csv.gz)", "unit": "YYYY-MM-DD", "tz": "JST", "notes": "a row's 17:00.. bars belong to the PRECEDING evening's trading day -- e.g. a bar timestamped date=2026-08-28 time=17:05 is the night session that OPENS the trading day dated 2026-08-28, not a continuation of 2026-08-28's day session"},
+        "time": {"meaning": "clock time within the trading day", "unit": "HH:MM", "tz": "JST", "notes": null},
+        "open": {"meaning": "1-minute open", "unit": "index points", "tz": null, "notes": null},
+        "high": {"meaning": "1-minute high", "unit": "index points", "tz": null, "notes": null},
+        "low": {"meaning": "1-minute low", "unit": "index points", "tz": null, "notes": null},
+        "close": {"meaning": "1-minute close", "unit": "index points", "tz": null, "notes": null},
+        "volume": {"meaning": "1-minute volume", "unit": "contracts", "tz": null, "notes": null}
+      }
+    }
+  },
+  "known_defects": [
+    "day_session_daily.csv.gz has NO volume for 1990-2000 (source limitation, not a collection failure)",
+    "bars_1min.csv.gz's `date` column uses the TRADING-DAY convention, not the calendar date of the clock time -- a naive groupby(date) on 1-minute bars will put the evening's night-session bars under the FOLLOWING calendar day's trading-day label, which is correct by this dataset's convention but wrong if code assumes date==calendar day of the bar's own timestamp",
+    "vs_cash_close comparison (own QC, in manifest.json) found a median 0.179%% / p99 2.135%% / max 4.635%% absolute deviation between this futures series and the TOPIX/Nikkei cash close across 8986 matched days -- expected futures/cash basis, not a defect, but material for anything comparing this series directly to a cash index level",
+    "one genuine calendar gap > 10 days: 2019-04-26..2019-05-07 (Golden Week 2019, confirmed genuine per manifest.json qc.calendar_gaps_gt10d)",
+    "day_daily_vs_1min_reconstruction QC only checked 170 overlapping days (the 1-minute file's short 2025-12-30..2026-08-28 span) -- exact match on open/close for those 170, not evidence about the other ~8868 days that have no 1-minute counterpart to check against"
+  ]
+}

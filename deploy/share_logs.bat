@@ -11,6 +11,7 @@ rem index clean for the rebase, and also self-heals a previous run that
 rem staged files but failed to commit.
 setlocal
 cd /d "%~dp0.."
+if not exist logs mkdir logs
 
 rem A machine that has never committed needs an identity; set a repo-local
 rem fallback only when none is configured anywhere.
@@ -46,6 +47,22 @@ rem the 1GB data\ws raw recordings stay local, only the ~8MB derived series
 rem and its coverage report are shared)
 copy /Y data\board_round\series_5s.csv.gz paper_logs\board_round_series_5s.csv.gz >nul 2>&1
 copy /Y data\board_round\coverage.json paper_logs\board_round_coverage.json >nul 2>&1
+
+rem Data governance (docs/DATA_GOVERNANCE_PLAN.md, docs/QA_PLAN_2026-09.md):
+rem refresh the intake ledger + quality report right before sharing, so the
+rem research side always reads a ledger current with what is being copied
+rem below, then share the ledger and quality report themselves -- "台帳が
+rem 数字の唯一の出所" (the ledger is the only source for file/row counts).
+".venv\Scripts\python.exe" "scripts\intake_ledger.py" >> "logs\fetch.out.log" 2>&1
+".venv\Scripts\python.exe" "scripts\data_quality.py" >> "logs\fetch.out.log" 2>&1
+copy /Y data\INTAKE_latest.json paper_logs\ >nul 2>&1
+copy /Y data\INTAKE.jsonl       paper_logs\ >nul 2>&1
+copy /Y data\QUALITY.json       paper_logs\ >nul 2>&1
+rem data\archive\ (owner PC only, git-excluded, unlimited retention) is too
+rem large to share by content -- share a LISTING only, per QA_PLAN_2026-09.md
+rem section 1-2 item 7. Guarded: this directory does not exist on every
+rem checkout (e.g. the research VM).
+if exist data\archive dir /-C data\archive > paper_logs\archive_listing.txt 2>nul
 
 git add paper_logs
 rem Commit only when there is something staged (quiet no-op otherwise).

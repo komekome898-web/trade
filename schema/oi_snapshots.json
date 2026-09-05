@@ -1,0 +1,24 @@
+{
+  "dataset": "oi_snapshots",
+  "description": "One row per collector run: derivatives open-interest / long-short / vol-index snapshot from OKX and Deribit public endpoints, recorded forward because those APIs cannot be paged back beyond their own short windows.",
+  "path_glob": [
+    "data/oi_snapshots.csv",
+    "paper_logs/oi_snapshots.csv"
+  ],
+  "source": "OKX public/open-interest, public/rubik/stat/contracts/long-short-account-ratio; Deribit public/get_volatility_index_data and public/ticker -- all read-only, no auth (scripts/record_oi.py)",
+  "retention": "OKX open interest 1H window ~30 days, 5m window ~2-3 days; long/short ratio ~60 days -- per docs/DATA_GOVERNANCE_PLAN.md this is exactly why this file exists (forward recording is the only way to get a long dense history); snapshot to backtest_data/ at roughly half the shortest source retention",
+  "columns": {
+    "ts_utc": {"meaning": "time this collector run executed (our clock), NOT an exchange timestamp for any individual field below", "unit": "ISO-8601", "tz": "UTC", "notes": "every other cell in the row is 'best available value from that endpoint at this moment', not synchronized to a shared trade time"},
+    "okx_usdt_oi": {"meaning": "OKX BTC-USDT-SWAP open interest", "unit": "contracts or USDT notional as returned by public/open-interest (see scripts/record_oi.py for the exact field mapping)", "tz": null, "notes": "empty cell if this call failed/errored -- rows are best-effort per field, a blank never aborts the row"},
+    "okx_usd_oi": {"meaning": "OKX BTC-USD-SWAP (coin-margined) open interest", "unit": "contracts", "tz": null, "notes": "empty cell on per-field failure, same as okx_usdt_oi"},
+    "okx_ls_ratio": {"meaning": "OKX BTC long/short ACCOUNT ratio, newest 5-minute value at call time", "unit": "ratio (longs/shorts)", "tz": null, "notes": null},
+    "dvol": {"meaning": "Deribit BTC DVOL index, newest 1-minute close at call time", "unit": "annualized implied vol, %", "tz": null, "notes": null},
+    "deribit_oi": {"meaning": "Deribit BTC-PERPETUAL open interest", "unit": "USD (per Deribit's public/ticker)", "tz": null, "notes": null},
+    "btc_usd": {"meaning": "OKX BTC-USDT-SWAP last price at call time, added 2026-08-31 to let an entry-price ladder allocate OI deltas to price buckets", "unit": "USD", "tz": null, "notes": "rows recorded before 2026-08-31 have this cell empty; those are back-joined from candles by consumers, not filled in here"}
+  },
+  "known_defects": [
+    "every field is independently best-effort: a timed-out or malformed call leaves only that cell empty and never drops the row -- do not assume all-or-nothing rows",
+    "collector interval is whatever cron/task-scheduler cadence is configured (see deploy/fetch_all.bat), not a fixed guaranteed period -- treat gaps > the configured cadence as real gaps, not as a fixed-grid series",
+    "OKX and Deribit retention windows mean any row referencing data older than the source's own window (30d OKX OI, 60d L/S) is only trustworthy because it was captured forward in time by this file -- it cannot be independently re-verified against the source after the window rolls"
+  ]
+}

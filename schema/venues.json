@@ -1,0 +1,44 @@
+{
+  "dataset": "venues",
+  "description": "Multi-venue PUBLIC quotes and trades (bitbank, GMO Coin, bitFlyer spot ticker), recorded continuously by scripts/record_venues.py for the effective-cost-floor / cross-venue lead-lag research line.",
+  "path_glob": [
+    "data/venues/quotes_*.csv.gz",
+    "data/venues/trades_*_*_*.csv.gz",
+    "paper_logs/venues/quotes_*.csv.gz",
+    "paper_logs/venues/trades_*_*_*.csv.gz"
+  ],
+  "source": "public REST: bitbank (/{pair}/ticker, /{pair}/transactions), GMO Coin (/ticker, /trades), bitFlyer (/v1/ticker) -- see scripts/record_venues.py",
+  "retention": "not exchange-limited (recorder-owned, appended forward only); kept indefinitely once written, daily gz files, never regenerated in place",
+  "file_groups": {
+    "quotes_YYYYMMDD.csv.gz": {
+      "columns": {
+        "ts_utc": {
+          "meaning": "TRADE/QUOTE time reported by the exchange for that ticker snapshot (bitbank `timestamp` ms epoch, GMO `timestamp` ISO string, bitFlyer `timestamp` ISO string) -- verified against scripts/record_venues.py: this column is exchange time, not our own collection time, for every row currently written",
+          "unit": "ISO-8601",
+          "tz": "UTC",
+          "notes": "READ THIS BEFORE ASSUMING: docs/DATA_GOVERNANCE_PLAN.md's known-issues table warns of a `t`(collection time) vs `ts`(trade time) mixup specifically for 'venue execution files'. As of the current scripts/record_venues.py implementation there is no separate `t` column and `ts_utc` here is always exchange-sourced -- but this is exactly the kind of assumption that has been wrong before (see schema/bitflyer_tape.json's board_top5 entry for a live example of the same trap in a sibling dataset). Re-verify against the recorder code if the column ever looks suspiciously regular (a recorder that silently fell back to its own clock on a parse miss would look identical in the CSV)."
+        },
+        "venue": {"meaning": "exchange name", "unit": "bitbank / gmo / bitflyer", "tz": null, "notes": null},
+        "pair": {"meaning": "instrument symbol as the venue names it", "unit": "e.g. btc_jpy, XRP, BTC_JPY", "tz": null, "notes": "not normalized across venues -- join on venue+pair, not pair alone"},
+        "bid": {"meaning": "best bid", "unit": "quote currency (mostly JPY; GMO altcoin pairs may quote in JPY or USDT depending on symbol)", "tz": null, "notes": null},
+        "ask": {"meaning": "best ask", "unit": "quote currency", "tz": null, "notes": null},
+        "last": {"meaning": "last traded price reported by the ticker", "unit": "quote currency", "tz": null, "notes": null}
+      }
+    },
+    "trades_{venue}_{pair}_YYYYMMDD.csv.gz": {
+      "columns": {
+        "ts_utc": {"meaning": "trade execution time reported by the exchange", "unit": "ISO-8601", "tz": "UTC", "notes": "same exchange-time caveat as quotes_*.csv.gz above"},
+        "price": {"meaning": "execution price", "unit": "quote currency", "tz": null, "notes": null},
+        "size": {"meaning": "execution size", "unit": "base currency", "tz": null, "notes": null},
+        "side": {"meaning": "taker side, normalized", "unit": "BUY/SELL", "tz": null, "notes": null},
+        "tid": {"meaning": "trade id", "unit": "string", "tz": null, "notes": "bitbank: exchange transaction_id (globally unique per pair). GMO: no id in the public trades response, so this is sha1(ts|price|size|side)[:16] -- two genuinely identical prints in the same source timestamp collapse into one row (documented, accepted, rare)"}
+      }
+    }
+  },
+  "known_defects": [
+    "GMO trade dedup uses a hash of (ts, price, size, side) because GMO's public trades carry no id -- a real double-print with identical values in the same timestamp is invisible as two trades",
+    "pair/symbol naming is venue-specific and not normalized (bitbank lowercase snake_case, GMO uppercase) -- do not string-match pair across venues without a mapping table",
+    "each stream backs off independently (interval * 2^failures, capped 5 min) on venue errors -- an outage on one venue does not stop others, but does mean per-venue row density can drop sharply for minutes without any error marker in the CSV itself; cross-check gaps against the recorder's stderr log if investigating a specific hole",
+    "GMO's ticker call returns ALL symbols per request; a symbol GMO delists or renames simply stops appearing, it is not marked 'missing' anywhere in this file"
+  ]
+}

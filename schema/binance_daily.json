@@ -1,0 +1,36 @@
+{
+  "dataset": "binance_daily",
+  "description": "Daily Binance USDT-M futures (BTCUSDT) metrics + USDJPY reference rate, for the dashboard's G6-feature/regime tile and JPY conversion -- collection only, not itself a trading signal.",
+  "path_glob": [
+    "data/binance_daily/metrics.csv",
+    "data/binance_daily/usdjpy.csv",
+    "paper_logs/binance_daily/metrics.csv",
+    "paper_logs/binance_daily/usdjpy.csv"
+  ],
+  "source": "metrics.csv: data.binance.vision public daily metrics dump for BTCUSDT (no API key, no geo-block, unlike api.binance.com), 5-minute rows averaged down to a daily mean. usdjpy.csv: ECB reference rate via frankfurter.app (free, no key). See scripts/fetch_binance_daily.py.",
+  "retention": "kept indefinitely, appended forward. metrics.csv: first run backfills 30 days, later runs re-scan the same recent window and fetch only still-missing days (self-heals a day that failed due to a network blip or not-yet-published source file -- does not leave a permanent hole). usdjpy.csv: first run backfills full ECB history, later runs top up a recent window.",
+  "file_groups": {
+    "metrics.csv": {
+      "columns": {
+        "date": {"meaning": "UTC calendar day", "unit": "YYYYMMDD", "tz": "UTC", "notes": null},
+        "sum_open_interest": {"meaning": "daily mean of Binance's 5-minute sumOpenInterest (BTCUSDT-M futures)", "unit": "BTC (contracts)", "tz": null, "notes": null},
+        "sum_open_interest_value": {"meaning": "daily mean of sumOpenInterestValue", "unit": "USDT notional", "tz": null, "notes": null},
+        "count_toptrader_long_short_ratio": {"meaning": "daily mean of countTopTraderLongShortRatio (top-trader ACCOUNT count long/short ratio)", "unit": "ratio", "tz": null, "notes": null},
+        "sum_toptrader_long_short_ratio": {"meaning": "daily mean of sumTopTraderLongShortRatio (top-trader POSITION long/short ratio)", "unit": "ratio", "tz": null, "notes": "distinct from count_toptrader_long_short_ratio -- one is by account count, the other by position size; do not conflate"},
+        "count_long_short_ratio": {"meaning": "daily mean of countLongShortRatio (all-account long/short ratio)", "unit": "ratio", "tz": null, "notes": null},
+        "sum_taker_long_short_vol_ratio": {"meaning": "daily mean of sumTakerLongShortVolRatio (taker buy/sell volume ratio)", "unit": "ratio", "tz": null, "notes": null}
+      }
+    },
+    "usdjpy.csv": {
+      "columns": {
+        "date": {"meaning": "calendar day", "unit": "YYYYMMDD", "tz": "date as published by ECB reference rate (no intraday time component)", "notes": null},
+        "usdjpy": {"meaning": "USD/JPY reference rate", "unit": "JPY per USD", "tz": null, "notes": "ECB publishes one rate per business day; weekends/ECB holidays have no row (not a gap in the collection, a genuine non-publication day)"}
+      }
+    }
+  },
+  "known_defects": [
+    "metrics.csv values are DAILY MEANS of 5-minute source rows, not end-of-day snapshots or sums -- averaging a ratio series is lossy if the intraday distribution is skewed",
+    "usdjpy.csv has no row on days ECB does not publish (weekends, ECB holidays) -- treat those as calendar non-events, not missing data, when checking cadence",
+    "count_* vs sum_* prefixed long/short ratios measure different things (account count vs position-weighted) despite similar names -- see column notes above"
+  ]
+}

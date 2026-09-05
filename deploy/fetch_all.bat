@@ -22,3 +22,11 @@ rem Binance daily futures metrics (G6 features / regime) + USDJPY (yen conversio
 rem S12 clock-burst-30m status tile feed (n / fresh period / last day only;
 rem the n<30 safety valve inside the script still applies to the full report)
 ".venv\Scripts\python.exe" "scripts\research_clock_burst.py" --status-json "data\s12_status.json" >> "logs\fetch.out.log" 2>&1
+rem Data governance (docs/DATA_GOVERNANCE_PLAN.md, docs/QA_PLAN_2026-09.md):
+rem intake ledger (data\INTAKE.jsonl append-only history + data\INTAKE_latest.json
+rem materialized index of every file under data\, paper_logs\, backtest_data\,
+rem data\archive\) MUST run before data_quality.py, which only reads that index
+rem and never re-walks the filesystem itself. Both are read-only over the data
+rem they inventory/check -- neither ever writes, moves or deletes a data file.
+".venv\Scripts\python.exe" "scripts\intake_ledger.py" >> "logs\fetch.out.log" 2>&1
+".venv\Scripts\python.exe" "scripts\data_quality.py" >> "logs\fetch.out.log" 2>&1

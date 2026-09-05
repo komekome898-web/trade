@@ -1,0 +1,79 @@
+{
+  "dataset": "reit_onr",
+  "description": "J-REIT ETF (1343, 1321) and TSE REIT index daily data used for the ONR overnight strategy (docs/PREREG_onr_forward.md). IMPORTANT: this dataset exists in TWO shapes with the SAME basenames in different directories -- a permanent full-history OHLCV snapshot in backtest_data/, and a live/forward-tracking feed with fewer columns in data/onr/. Do not assume a schema from the filename alone; check the directory.",
+  "path_glob": [
+    "backtest_data/reit_onr_*/etf_1343_daily.csv",
+    "backtest_data/reit_onr_*/etf_1343_dividends.csv",
+    "backtest_data/reit_onr_*/etf_1321_daily.csv",
+    "backtest_data/reit_onr_*/reit_index_daily.csv",
+    "data/onr/etf_1343_daily.csv",
+    "data/onr/reit_index_daily.csv"
+  ],
+  "source": "Yahoo Finance chart API (ETF 1343, 1343 dividends via events=div, ETF 1321), kabutan code=0105 (東証REIT指数, TSE REIT index) -- see backtest_data/reit_onr_20260904/manifest.md and scripts/paper_onr.py",
+  "retention": "backtest_data/reit_onr_<date>/ is a permanent MD5-stamped snapshot (never overwritten in place; a refresh lands in a new dated directory). data/onr/*.csv is the live forward-tracking feed maintained by scripts/paper_onr.py: appended/self-healed (existing dates get refreshed values but are never dropped from history).",
+  "file_groups": {
+    "backtest_data/reit_onr_<date>/etf_1343_daily.csv": {
+      "coverage": "2008-09-16..snapshot date, ~4409 rows (see manifest.md for the exact count/date at snapshot time)",
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
+        "open": {"meaning": "daily open", "unit": "JPY", "tz": null, "notes": null},
+        "high": {"meaning": "daily high", "unit": "JPY", "tz": null, "notes": null},
+        "low": {"meaning": "daily low", "unit": "JPY", "tz": null, "notes": null},
+        "close": {"meaning": "daily close", "unit": "JPY", "tz": null, "notes": null},
+        "volume": {"meaning": "daily volume", "unit": "units", "tz": null, "notes": null}
+      }
+    },
+    "backtest_data/reit_onr_<date>/etf_1343_dividends.csv": {
+      "columns": {
+        "ex_date": {"meaning": "ex-dividend date", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
+        "amount": {"meaning": "dividend amount per unit", "unit": "JPY", "tz": null, "notes": null}
+      }
+    },
+    "backtest_data/reit_onr_<date>/etf_1321_daily.csv": {
+      "coverage": "2009-01-05..snapshot date",
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
+        "open": {"meaning": "daily open", "unit": "JPY", "tz": null, "notes": "known-defective: source has a documented 0.0 open on some early rows (e.g. 2009-01-05) -- treat open==0.0 as a source erratum, not a real print"},
+        "high": {"meaning": "daily high", "unit": "JPY", "tz": null, "notes": null},
+        "low": {"meaning": "daily low", "unit": "JPY", "tz": null, "notes": null},
+        "close": {"meaning": "daily close", "unit": "JPY", "tz": null, "notes": null},
+        "volume": {"meaning": "daily volume", "unit": "units", "tz": null, "notes": null}
+      }
+    },
+    "backtest_data/reit_onr_<date>/reit_index_daily.csv": {
+      "coverage": "partial, recent only (2025-06-16..snapshot date per manifest.md) -- kabutan does not serve the full index history for free; the PREREG's primary index-level judgment cell (2003-04~) was NOT obtainable, see manifest.md for the full list of attempted sources and why each failed",
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
+        "open": {"meaning": "TSE REIT index open", "unit": "index points", "tz": null, "notes": null},
+        "high": {"meaning": "index high", "unit": "index points", "tz": null, "notes": null},
+        "low": {"meaning": "index low", "unit": "index points", "tz": null, "notes": null},
+        "close": {"meaning": "index close", "unit": "index points", "tz": null, "notes": null}
+      }
+    },
+    "data/onr/etf_1343_daily.csv": {
+      "description": "LIVE forward-tracking feed for paper_onr.py -- NOT the same schema as backtest_data's etf_1343_daily.csv despite the identical filename",
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
+        "open": {"meaning": "closing-auction-adjacent daily open (see scripts/paper_onr.py for exact print used)", "unit": "JPY", "tz": null, "notes": null},
+        "close": {"meaning": "closing-auction print", "unit": "JPY", "tz": null, "notes": null},
+        "div_yen": {"meaning": "dividend amount if this date is an ex-dividend date", "unit": "JPY", "tz": null, "notes": "blank on non-ex-dividend days"}
+      },
+      "known_defects": ["only open/close/div_yen -- no high/low/volume, unlike the backtest_data snapshot of the same-named file"]
+    },
+    "data/onr/reit_index_daily.csv": {
+      "description": "LIVE forward-tracking feed -- NOT the same schema as backtest_data's reit_index_daily.csv",
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
+        "open": {"meaning": "index open", "unit": "index points", "tz": null, "notes": null},
+        "close": {"meaning": "index close", "unit": "index points", "tz": null, "notes": null}
+      },
+      "known_defects": ["only open/close -- no high/low, unlike the backtest_data snapshot of the same-named file"]
+    }
+  },
+  "known_defects": [
+    "SAME BASENAME, DIFFERENT SCHEMA: backtest_data/reit_onr_<date>/etf_1343_daily.csv and reit_index_daily.csv are full OHLC(V) history snapshots; data/onr/etf_1343_daily.csv and reit_index_daily.csv are the live forward-tracking feed with fewer columns (open/close[/div_yen] only). Reading the wrong one, or assuming they interchange, silently drops high/low/volume.",
+    "the TSE REIT INDEX (not the 1343 ETF) has NO free full-history source as of the 2026-09-04 snapshot -- kabutan's reit_index_daily.csv only goes back to 2025-06-16; the PREREG's primary judgment cell needing 2003-04~ index history was not obtainable (see manifest.md for the 6 sources attempted and why each failed: JPX chart-only, JPX bulk data is paid, Yahoo ^TREIT is a stale delisted quote, stooq blocked by a JS PoW challenge, investing.com bot-blocked, matsui client-side-only)",
+    "etf_1321_daily.csv has a documented open==0.0 erratum on at least its first row (2009-01-05) -- a zero open is a source artifact, not a real print",
+    "guard percentile thresholds used by paper_onr.py's status.json are a frozen one-time computation over the backtest_data/reit_onr_20260904/ snapshot (n=4399, after dropping open<=0/close<=0 rows and a |log r|>0.10 glitch filter) -- they are NOT recomputed as new data arrives in data/onr/"
+  ]
+}

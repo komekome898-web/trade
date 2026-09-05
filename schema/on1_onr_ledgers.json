@@ -1,0 +1,64 @@
+{
+  "dataset": "on1_onr_ledgers",
+  "description": "Forward paper-trading ledgers for two pre-registered overnight strategies: ON1 (Nikkei 225 micro futures, long-only overnight) and ONR (J-REIT ETF 1343, long-only overnight). Both are fully rebuilt from their source CSVs on every run (deterministic, no hidden state) -- see docs/PREREG_on1_forward.md and docs/PREREG_onr_forward.md.",
+  "path_glob": [
+    "data/paper_on1/ledger.csv",
+    "paper_logs/on1_ledger.csv",
+    "data/paper_onr/ledger.csv",
+    "paper_logs/onr_ledger.csv",
+    "data/paper_onr/status.json"
+  ],
+  "source": "ON1: data/jpx_daily/nk225_sessions.csv (scripts/fetch_jpx_daily.py) -> scripts/paper_on1.py. ONR: data/onr/etf_1343_daily.csv (Yahoo chart API) + data/onr/reit_index_daily.csv (kabutan code=0105) -> scripts/paper_onr.py",
+  "retention": "kept indefinitely; ON1/ONR ledgers are the ON1/ONR live-tracking record itself, not a re-derivable cache -- do not treat as disposable even though the build is deterministic from inputs, because the INPUT daily CSVs are refreshed/self-healed in place and old ledger rows can differ from what a fresh rebuild from today's inputs would produce for the same date",
+  "file_groups": {
+    "on1_ledger.csv (data/paper_on1/ledger.csv, paper_logs/on1_ledger.csv)": {
+      "columns": {
+        "entry_date": {"meaning": "day-session date the position was entered (closing-auction print of the central month)", "unit": "YYYYMMDD", "tz": "JST (JPX trading day)", "notes": null},
+        "exit_date": {"meaning": "next trading day's day-session opening-auction print date", "unit": "YYYYMMDD", "tz": "JST", "notes": null},
+        "month": {"meaning": "contract delivery month traded (central month = largest day-session volume that day; entry and exit use the same month)", "unit": "YYYYMM", "tz": null, "notes": null},
+        "entry_px": {"meaning": "central-month day-session closing-auction print used as entry", "unit": "index points", "tz": null, "notes": null},
+        "exit_px": {"meaning": "central-month day-session opening-auction print, next trading day, used as exit", "unit": "index points", "tz": null, "notes": null},
+        "gross_bps": {"meaning": "(exit_px - entry_px) / entry_px in bps, before fees", "unit": "bps", "tz": null, "notes": null},
+        "fee_yen": {"meaning": "round-trip fee, fixed 11 yen/contract/side x2 = 22 yen", "unit": "JPY", "tz": null, "notes": "constant by construction, not measured per trade"},
+        "net_yen": {"meaning": "(exit_px-entry_px) * 10 (multiplier) - fee_yen", "unit": "JPY", "tz": null, "notes": null},
+        "net_bps": {"meaning": "net_yen expressed back in bps of entry_px*multiplier", "unit": "bps", "tz": null, "notes": null},
+        "large_entry_px": {"meaning": "the LARGE (regular, non-micro) Nikkei 225 futures print at the same entry moment, for diagnostic comparison", "unit": "index points", "tz": null, "notes": null},
+        "large_exit_px": {"meaning": "large-contract print at the same exit moment", "unit": "index points", "tz": null, "notes": null},
+        "micro_minus_large_entry": {"meaning": "micro print minus large print at entry -- a slippage/tracking diagnostic, NOT a cost charged in net_yen (the PREREG charges only the fixed fee, no slippage)", "unit": "index points", "tz": null, "notes": null},
+        "micro_minus_large_exit": {"meaning": "same diagnostic at exit", "unit": "index points", "tz": null, "notes": null},
+        "note": {"meaning": "free-text annotation, e.g. reason a day was skipped upstream", "unit": "string", "tz": null, "notes": "usually blank"}
+      }
+    },
+    "onr_ledger.csv (data/paper_onr/ledger.csv, paper_logs/onr_ledger.csv)": {
+      "columns": {
+        "date_entry": {"meaning": "closing-auction (15:30 JST) date the ETF was bought", "unit": "YYYY-MM-DD or YYYYMMDD (see source script for exact format)", "tz": "JST", "notes": null},
+        "date_exit": {"meaning": "next trading day's opening-auction (9:00 JST) date", "unit": "same as date_entry", "tz": "JST", "notes": null},
+        "close_entry": {"meaning": "ETF 1343 closing-auction print at entry", "unit": "JPY", "tz": null, "notes": null},
+        "open_exit": {"meaning": "ETF 1343 opening-auction print at exit", "unit": "JPY", "tz": null, "notes": null},
+        "qty": {"meaning": "units held, fixed", "unit": "units (10 per PREREG)", "tz": null, "notes": null},
+        "dividend_yen": {"meaning": "dividend credited, only when exit date is the ex-dividend date (overnight holder is entitled)", "unit": "JPY", "tz": null, "notes": "blank/0 on non-ex-dividend nights"},
+        "pnl_yen": {"meaning": "(open_exit - close_entry) * qty + dividend_yen", "unit": "JPY", "tz": null, "notes": "fee is 0 by PREREG (auction print, no slippage charge in the paper model)"},
+        "etf_on_bps": {"meaning": "ETF 1343 overnight return in bps", "unit": "bps", "tz": null, "notes": null},
+        "index_on_bps": {"meaning": "TSE REIT index overnight return in bps, for attribution against etf_on_bps", "unit": "bps", "tz": null, "notes": null},
+        "gap_bps": {"meaning": "etf_on_bps - index_on_bps", "unit": "bps", "tz": null, "notes": "blank when either leg's index row is missing -- tolerated, never blocks the ETF-only trade from being recorded"},
+        "cum_pnl_yen": {"meaning": "running cumulative pnl_yen from the ledger start", "unit": "JPY", "tz": null, "notes": null}
+      }
+    },
+    "status.json (data/paper_onr/status.json)": {
+      "columns": {
+        "n_trades": {"meaning": "count of rows in onr_ledger.csv", "unit": "count", "tz": null, "notes": null},
+        "cum_pnl_yen": {"meaning": "final cumulative pnl", "unit": "JPY", "tz": null, "notes": null},
+        "mean_bps": {"meaning": "mean of etf_on_bps across the ledger", "unit": "bps", "tz": null, "notes": "null before the first trade"},
+        "gap_mean_bps": {"meaning": "mean of gap_bps across rows where it is not blank", "unit": "bps", "tz": null, "notes": null},
+        "guard": {"meaning": "PREREG sec.3 warn/stop guard state evaluated on the ledger's rolling window", "unit": "ok / warn / stop", "tz": null, "notes": "guard percentile thresholds are duplicated from a frozen one-time computation over backtest_data/reit_onr_20260904/etf_1343_daily.csv (n=4399), not recomputed live"},
+        "last_date": {"meaning": "most recent date_exit in the ledger", "unit": "date string", "tz": "JST", "notes": "null before the first trade"}
+      }
+    }
+  },
+  "known_defects": [
+    "ON1 ledger silently SKIPS (never back-fills) any day with a missing central-month print -- a gap in entry_date is a real skip, not necessarily a data-collection failure; cross-check data/jpx_daily/nk225_sessions.csv before calling it a defect",
+    "ONR ledger only starts at date_entry >= 2026-09-04 (freeze date per PREREG sec.1) even though the underlying etf_1343_daily.csv history goes back to 2008-09-16 -- earlier history is intentionally never backfilled into the ledger",
+    "both ledgers are FULLY REBUILT from source CSVs on every run -- if the source daily CSV (data/onr/etf_1343_daily.csv, data/jpx_daily/nk225_sessions.csv) is corrected/self-healed for an already-ledgered date, the ledger row for that date changes silently on the next run; the intake ledger's md5 history is what lets you detect that a source file changed between two runs",
+    "ONR guard thresholds are a frozen constant duplicated in both paper_onr.py and docs/PREREG_onr_forward.md by design (so the dashboard renders even if one changes independently) -- a mismatch between the two copies is itself a bug worth surfacing, not a false alarm"
+  ]
+}

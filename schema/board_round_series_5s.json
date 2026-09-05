@@ -1,0 +1,34 @@
+{
+  "dataset": "board_round_series_5s",
+  "description": "5-second aggregated bitFlyer FX_BTC_JPY order-book/tape features, built from raw data/ws recordings (scripts/run_board_round.py, per docs referenced in Round 17). One row per 5-second bucket.",
+  "path_glob": [
+    "data/board_round/series_5s.csv.gz",
+    "paper_logs/board_round_series_5s.csv.gz",
+    "backtest_data/board_round_*/board_round_series_5s.csv.gz"
+  ],
+  "source": "derived from data/ws/*.jsonl.gz (bitFlyer public WS: lightning_ticker/_executions/_board), reconstructed and bucketed by scripts/run_board_round.py",
+  "retention": "kept indefinitely once written; backtest_data/board_round_<date>/ snapshots are permanent MD5-stamped copies used for reproducibility, alongside their MD5SUMS / *_qc.txt / coverage json companions",
+  "columns": {
+    "ts": {"meaning": "start of the 5-second bucket", "unit": "ISO-8601", "tz": "UTC (`Z` suffix)", "notes": "bucket boundary time, not a single event time -- every other column is an aggregate over [ts, ts+5s)"},
+    "mid": {"meaning": "mid price at bucket close (or last observed mid within the bucket)", "unit": "JPY", "tz": null, "notes": null},
+    "spread_bps": {"meaning": "bid-ask spread", "unit": "basis points of mid", "tz": null, "notes": "a value <= 0 is a crossed book and a value > 50 is treated as an outlier by scripts/data_quality.py's crossed-book check"},
+    "best_bid_size": {"meaning": "size at best bid at bucket close", "unit": "BTC", "tz": null, "notes": null},
+    "best_ask_size": {"meaning": "size at best ask at bucket close", "unit": "BTC", "tz": null, "notes": null},
+    "bid_depth_5bps": {"meaning": "cumulative bid size within 5bps of mid", "unit": "BTC", "tz": null, "notes": null},
+    "ask_depth_5bps": {"meaning": "cumulative ask size within 5bps of mid", "unit": "BTC", "tz": null, "notes": null},
+    "imb_top": {"meaning": "top-of-book imbalance, (bid_sz-ask_sz)/(bid_sz+ask_sz) at best level", "unit": "ratio in [-1, 1]", "tz": null, "notes": null},
+    "imb_5bps": {"meaning": "same imbalance ratio computed over the 5bps depth bands", "unit": "ratio in [-1, 1]", "tz": null, "notes": null},
+    "n_board_updates": {"meaning": "count of board (order book) update messages within the bucket", "unit": "count", "tz": null, "notes": null},
+    "n_trades": {"meaning": "count of executions within the bucket", "unit": "count", "tz": null, "notes": null},
+    "vol_buy": {"meaning": "buy-taker execution volume within the bucket", "unit": "BTC", "tz": null, "notes": null},
+    "vol_sell": {"meaning": "sell-taker execution volume within the bucket", "unit": "BTC", "tz": null, "notes": null},
+    "n_large": {"meaning": "count of executions classified as large prints within the bucket", "unit": "count", "tz": null, "notes": "large-print size threshold is defined in scripts/run_board_round.py, not in this file"},
+    "vol_large": {"meaning": "volume of large-print executions within the bucket", "unit": "BTC", "tz": null, "notes": null},
+    "max_trade_size": {"meaning": "largest single execution size within the bucket", "unit": "BTC", "tz": null, "notes": "`nan` when n_trades is 0 for that bucket"}
+  },
+  "known_defects": [
+    "buckets with zero trades legitimately have n_trades=0, vol_buy=vol_sell=0.0 and max_trade_size=nan -- do not treat nan/0 rows as missing data without checking n_board_updates too (a bucket with updates but no trades is a real quiet period, not a gap)",
+    "same maintenance-window and WS-reconnect caveats as schema/bitflyer_tape.json apply, since this is built from the same raw WS captures",
+    "coverage (which UTC days/ranges are actually represented) must be read from board_round_coverage.json alongside the series, not assumed from the file's own first/last timestamp -- the series can have internal holes"
+  ]
+}

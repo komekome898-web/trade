@@ -1,0 +1,24 @@
+{
+  "dataset": "attention",
+  "description": "Daily crowd-attention/heat gauge series (dashboard tile only -- direction-prediction from these series is a recorded no-go per docs/SURVEY_ATTENTION_DATA.md's stage-0 + power analysis + literature review; this is NOT a trading signal input).",
+  "path_glob": ["data/attention/attention.csv"],
+  "source": "Wikimedia Pageviews API (per-article daily, user traffic only, bots excluded), GDELT doc API timelinevol (share of world news coverage mentioning bitcoin), alternative.me Fear & Greed index, Bitstamp public OHLC API (BTC/USD daily) -- see scripts/fetch_attention.py",
+  "retention": "kept indefinitely, appended forward; first run backfills full history per source, later runs top up the recent window",
+  "columns": {
+    "date": {"meaning": "calendar date", "unit": "YYYYMMDD", "tz": "UTC calendar day (source APIs are day-granular, not tied to a JPX/bitFlyer session)", "notes": null},
+    "wp_en": {"meaning": "English Wikipedia daily pageviews for the tracked Bitcoin article", "unit": "count", "tz": null, "notes": "Wikipedia publishes at D-2 -- the most recent 2 days are EXPECTED to be blank, not missing data"},
+    "wp_ja": {"meaning": "Japanese Wikipedia daily pageviews for the tracked Bitcoin article", "unit": "count", "tz": null, "notes": "same D-2 publication lag as wp_en"},
+    "gdelt_vol": {"meaning": "GDELT share of world news coverage mentioning bitcoin that day", "unit": "fraction/percentage as GDELT's timelinevol API returns it", "tz": null, "notes": "series starts 2017-01-01 (GDELT_START in fetch_attention.py); blank before that"},
+    "fng": {"meaning": "alternative.me Fear & Greed index", "unit": "0-100", "tz": null, "notes": "kept for reference only -- alternative.me states roughly 60-70% of its own composition weight is price-derived, so this is partially a relabeled price series, not an independent sentiment measure"},
+    "btc_usd": {"meaning": "Bitstamp BTC/USD daily close", "unit": "USD", "tz": null, "notes": "for the candle chart and short-horizon heat-vs-range diagnostics, not a primary price source for strategy work (see backtest_data/daily_btcusd_* for the multi-venue daily snapshots used there)"},
+    "btc_open": {"meaning": "Bitstamp BTC/USD daily open", "unit": "USD", "tz": null, "notes": null},
+    "btc_high": {"meaning": "Bitstamp BTC/USD daily high", "unit": "USD", "tz": null, "notes": null},
+    "btc_low": {"meaning": "Bitstamp BTC/USD daily low", "unit": "USD", "tz": null, "notes": null}
+  },
+  "known_defects": [
+    "wp_en/wp_ja are blank for the most recent 2 calendar days by design (Wikipedia's own publication lag) -- do not flag as a data-quality gap unless it persists beyond D-2",
+    "gdelt_vol is blank before 2017-01-01",
+    "fng is not an independent series -- it is majority price-derived per alternative.me's own published composition",
+    "date is a plain calendar day with no timezone anchor to any trading session; joining against JST/UTC session-based series (JPX, bitFlyer) needs an explicit convention choice, not a bare date match"
+  ]
+}
