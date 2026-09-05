@@ -1,0 +1,19 @@
+{
+  "dataset": "bitflyer_funding_rate",
+  "description": "bitFlyer FX_BTC_JPY funding-fee (swap) rate history, consumed alongside flow_FX_BTC_JPY.csv by the storm-radar research scripts (scripts/research_storm.py, scripts/research_storm_direction.py) to check whether funding-rate regime interacts with storm events.",
+  "path_glob": [
+    "data/funding_rate_history.csv"
+  ],
+  "source": "not produced by a fetch script in this repo (no scripts/fetch_*.py writes this path) -- appears to be an owner-maintained/hand-updated record of bitFlyer's FX_BTC_JPY funding fee calendar. Verify against bitFlyer's public funding-fee announcement page before assuming this auto-refreshes.",
+  "retention": "appended forward; exact update mechanism unconfirmed (see source note above).",
+  "columns": {
+    "calculation_date": {"meaning": "date/time the funding rate was calculated", "unit": "ISO-8601 (no explicit UTC offset in the raw string)", "tz": "unconfirmed -- read alongside settlement_date, which scripts/research_storm.py explicitly parses with pandas utc=True", "notes": null},
+    "settlement_date": {"meaning": "date/time the funding fee was applied/settled", "unit": "ISO-8601", "tz": "treated as UTC by consuming scripts (pd.to_datetime(..., utc=True))", "notes": "this is the column consuming scripts sort/index on, not calculation_date"},
+    "rate": {"meaning": "funding fee rate for the period", "unit": "fraction (e.g. 0.0001 = 0.01%)", "tz": null, "notes": null}
+  },
+  "quality": {"unique_key": ["settlement_date"]},
+  "known_defects": [
+    "no fetch script in this repo currently writes this file -- provenance/update cadence is not verifiable from the code alone; treat any gap or staleness claim about this file cautiously until the actual update process is confirmed with the owner",
+    "calculation_date's timezone is not explicit in the raw string; only settlement_date is consistently treated as UTC by downstream code"
+  ]
+}

@@ -99,7 +99,13 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-TAPE = ROOT / "data" / "tape"
+sys.path.insert(0, str(ROOT / "src"))
+from bot.monitoring.gates import shared_or_local_dir  # noqa: E402
+
+# Single source of truth (docs/DATA_QA_CHECKLIST.md #10): prefer
+# paper_logs/tape/ over this checkout's local data/tape/ when it holds
+# newer files.
+TAPE = shared_or_local_dir(ROOT, "data/tape", shared_name="tape")
 
 EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
 SEED = 20260828
@@ -434,6 +440,7 @@ def main() -> int:
           f"delta {list(DELTAS)} s;  slip {list(SLIPS)} bps")
     print(f"exit: E2 (maker TP +{TP_BPS:.0f}bps, taker fallback {FALLBACK_S:.0f}s);  "
           f"fees 0 (measured); half-spread paid by touching the real quote")
+    print(f"[data] tape dir: {TAPE}")
     line()
     D = load()
 

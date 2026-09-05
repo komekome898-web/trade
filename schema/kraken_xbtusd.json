@@ -1,0 +1,19 @@
+{
+  "dataset": "kraken_xbtusd",
+  "description": "Kraken public Trades for XBTUSD, rebucketed to 1-minute last-price/volume/count bars -- an additional liquid-market cross-check series alongside schema/external_crypto_klines.json's Binance/bitbank feeds.",
+  "path_glob": [
+    "data/kraken_XBTUSD_1m.csv"
+  ],
+  "source": "Kraken public REST, no auth: GET https://api.kraken.com/0/public/Trades?pair=XBTUSD (paged forward via the response's nanosecond `last` cursor) -- see scripts/fetch_kraken.py.",
+  "retention": "appended forward, merged with existing history on every fetch run (never truncated).",
+  "columns": {
+    "timestamp": {"meaning": "1-minute bucket time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+    "price": {"meaning": "last trade price in the bin", "unit": "USD", "tz": null, "notes": null},
+    "volume": {"meaning": "summed trade size in the bin", "unit": "BTC", "tz": null, "notes": null},
+    "n": {"meaning": "trade count in the bin", "unit": "count", "tz": null, "notes": null}
+  },
+  "quality": {"unique_key": ["timestamp"]},
+  "known_defects": [
+    "scripts/fetch_kraken.py runs under a wall-clock time budget (--max-seconds) and stops early, saving whatever it has, if paging can't catch up to now within that budget -- a run can therefore leave the file short of the present without raising an error"
+  ]
+}

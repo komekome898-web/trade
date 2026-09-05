@@ -357,8 +357,10 @@ def main() -> int:
     rng = np.random.default_rng(SEED)                      # noqa: F841
     cal.header("SM SPREAD-MM SYMMETRIC FAMILY -- EXPLORATION "
                "(selection only; contaminated week)")
+    tape_dir = cal.default_tape_dir()
+    print(f"[data] tape dir: {tape_dir}")
     (t_tk, bid, ask, bsz, asz, mid, spread_bps,
-     t_ex, px, sz, buy, span) = cal.load(ROOT / "data" / "tape")
+     t_ex, px, sz, buy, span) = cal.load(tape_dir)
     assert t_tk[-1] < CUTOFF and t_ex[-1] < CUTOFF, "judgment region present!"
     gs, ge = cal.find_gaps(t_tk, t_ex)
     g = cal.build_grid(t_ex, sz, buy, t_tk, gs, ge)

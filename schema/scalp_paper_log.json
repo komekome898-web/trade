@@ -1,0 +1,15 @@
+{
+  "dataset": "scalp_paper_log",
+  "description": "Event/decision log for scripts/run_scalp_paper.py's short-horizon scalper (paper mode): one JSON object per line, every entry carrying ts + event plus event-specific fields (start, entry, limit_placed, fill, missed, exit, ws_reconnect, radar_state, kill_file_stop, daily_loss_stop, refused_start). Line-delimited JSON, not CSV -- scripts/data_quality.py's column-based checks are explicitly out of scope for jsonl (see that script's own docstring); this schema exists so the file resolves to a named dataset instead of schema_undefined.",
+  "path_glob": [
+    "data/scalp_paper.jsonl",
+    "paper_logs/scalp_paper.jsonl"
+  ],
+  "source": "scripts/run_scalp_paper.py's self.log(event, **kw) -> {\"ts\": time.time(), \"event\": event, **kw}, appended on every trade/decision (see the script's module docstring: 'Every trade and decision appended to data/scalp_paper.jsonl').",
+  "retention": "append-only, one process run's log; paper_logs/scalp_paper.jsonl is the owner-PC operational copy this checkout mirrors, data/scalp_paper.jsonl is this checkout's own copy.",
+  "known_defects": [
+    "jsonl, not CSV -- data_quality.py treats jsonl as out of scope for its column-based row checks (counted in files_checked, never flagged), consistent with schema/venue_survey.json's precedent",
+    "every line shares 'ts' (epoch seconds float) and 'event' (string), but the remaining fields differ per event type -- see scripts/run_scalp_paper.py's self.log() call sites for the exact field set per event (e.g. 'entry' carries side/price/size/signal_bps/bid/ask; 'exit' carries exit_kind/PnL; 'start' carries the full argparse Namespace)",
+    "'start' event's PnL/loss-cap fields (daily_loss_cap, notional, etc.) come directly from CLI args at process launch -- a change in launch parameters between runs is only visible by re-reading each run's own 'start' line, not inferable from later rows"
+  ]
+}

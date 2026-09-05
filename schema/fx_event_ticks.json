@@ -10,10 +10,15 @@
     "backtest_data/fx_event_ticks_2015_2026/CPI_*.csv.gz",
     "backtest_data/fx_event_ticks_2015_2026/FOMC_*.csv.gz",
     "backtest_data/fx_event_ticks_2015_2026/BOJ_*.csv.gz",
-    "backtest_data/fx_event_ticks_2015_2026/calendar.csv"
+    "backtest_data/fx_event_ticks_2015_2026/calendar.csv",
+    "data/fx/events/NFP_*.csv.gz",
+    "data/fx/events/CPI_*.csv.gz",
+    "data/fx/events/FOMC_*.csv.gz",
+    "data/fx/events/BOJ_*.csv.gz",
+    "data/fx/calendar.csv"
   ],
-  "source": "owner-downloaded tick history windowed around each event's scheduled release time (see MISSING.txt / manifest.json in each snapshot directory for exact fetch provenance and any dates that could not be obtained).",
-  "retention": "permanent owner-downloaded snapshot (backtest_data/fx_event_ticks_2005_2014 and _2015_2026 split by coverage era); never re-scraped in place.",
+  "source": "owner-downloaded tick history windowed around each event's scheduled release time (see MISSING.txt / manifest.json in each snapshot directory for exact fetch provenance and any dates that could not be obtained). data/fx/events/ and data/fx/calendar.csv are the live working copy the two backtest_data/fx_event_ticks_* snapshots were cut from -- identical column shapes (verified: header is 'ts_utc,bid,ask,bidvol,askvol' for every event file, 'date,time_utc,type,source,confidence,note' for calendar.csv, matching the file_groups below).",
+  "retention": "permanent owner-downloaded snapshot (backtest_data/fx_event_ticks_2005_2014 and _2015_2026 split by coverage era); never re-scraped in place. data/fx/events/ and data/fx/calendar.csv are the working copy (kept indefinitely, not itself dated/frozen) -- data/fx/events/manifest.json documents per-event fetch status and data/fx/calendar_cache*/ hold the raw scraped HTML pages behind each calendar entry (both non-tabular, out of scope for this schema).",
   "file_groups": {
     "NFP_YYYYMMDD.csv.gz": {
       "columns": {
@@ -63,6 +68,7 @@
     }
   },
   "known_defects": [
+    "data/fx/events/ (working copy) is not itself frozen -- if this directory is ever re-scraped in place, the backtest_data/fx_event_ticks_2005_2014 and _2015_2026 dated snapshots are the reproducible reference, not this copy",
     "coverage is split across two directories by era (2005-2014, 2015-2026) with BOJ only present from 2015 onward -- do not assume BOJ events exist pre-2015",
     "fx_event_ticks_2005_2014/MISSING.txt records event dates the owner could not obtain a tick file for -- an event listed in calendar.csv with no corresponding *_YYYYMMDD.csv.gz is a known, documented gap, not a silent collection failure",
     "ts_utc is epoch milliseconds, not an ISO string like most other datasets in this repo -- do not assume string sorting or a bare int() cast without unit conversion"

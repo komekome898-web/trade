@@ -156,7 +156,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from research_board_calibration import (          # noqa: E402
     epoch_seconds, epoch_seconds_alt, span_touches_gap,
     next_greater, next_smaller, boot_ci, boot_diff_ci, fmt_pct,
-    header, sub, GAP_SEC, W,
+    header, sub, GAP_SEC, W, default_tape_dir,
 )
 
 SEED = 20260828
@@ -334,7 +334,7 @@ def markout(ft, price, sign, tb, mid, horizon):
 # --------------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=str(ROOT / "data" / "tape"))
+    ap.add_argument("--data", default=str(default_tape_dir()))
     args = ap.parse_args()
     np.seterr(all="ignore")
 
@@ -342,7 +342,8 @@ def main() -> int:
     print("Execution option, not a strategy.  Bar (frozen 2026-08-21): "
           f"fill-conditional\ncapture+adverse(5s) difference >= {BAR_BPS:+.1f} bps, "
           f"day-clustered t >= {BAR_T}, >= {BAR_N} fills per arm.")
-    print(f"seed {SEED}, no network, read-only.\n")
+    print(f"seed {SEED}, no network, read-only.")
+    print(f"[data] tape dir: {args.data}\n")
 
     data_dir = Path(args.data)
     tb, bpx, bsz, apx, asz, mid = load_board(data_dir)

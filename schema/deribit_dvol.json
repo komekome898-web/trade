@@ -1,0 +1,36 @@
+{
+  "dataset": "deribit_dvol",
+  "description": "Deribit BTC DVOL (implied volatility index) history at 1-hour and 1-minute(7d) resolution -- a volatility-regime reference series, not itself a price feed.",
+  "path_glob": [
+    "data/deribit_dvol_1h.csv",
+    "data/deribit_dvol_1m_7d.csv"
+  ],
+  "source": "Deribit public REST, no auth: public/get_volatility_index_data (currency=BTC), paged backwards via the response's `continuation` cursor -- see scripts/fetch_deribit.py. deribit_dvol_1h.csv uses resolution=3600 (paged back as far as the API allows, target >=180 days); deribit_dvol_1m_7d.csv uses resolution=60 for the last 7 days only.",
+  "retention": "appended forward, merged with existing history on every fetch run (never truncated).",
+  "file_groups": {
+    "deribit_dvol_1h.csv": {
+      "columns": {
+        "ts": {"meaning": "bar time (index)", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "DVOL open", "unit": "annualized volatility, percentage points", "tz": null, "notes": null},
+        "high": {"meaning": "DVOL high", "unit": "annualized volatility, percentage points", "tz": null, "notes": null},
+        "low": {"meaning": "DVOL low", "unit": "annualized volatility, percentage points", "tz": null, "notes": null},
+        "close": {"meaning": "DVOL close", "unit": "annualized volatility, percentage points", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["ts"]}
+    },
+    "deribit_dvol_1m_7d.csv": {
+      "columns": {
+        "ts": {"meaning": "bar time (index)", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "DVOL open", "unit": "annualized volatility, percentage points", "tz": null, "notes": null},
+        "high": {"meaning": "DVOL high", "unit": "annualized volatility, percentage points", "tz": null, "notes": null},
+        "low": {"meaning": "DVOL low", "unit": "annualized volatility, percentage points", "tz": null, "notes": null},
+        "close": {"meaning": "DVOL close", "unit": "annualized volatility, percentage points", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["ts"]}
+    }
+  },
+  "known_defects": [
+    "no volume column -- DVOL is an index level, not a traded instrument, so zero_volume/extreme_return-style checks that assume a tradable price series don't directly apply",
+    "deribit_dvol_1m_7d.csv is a rolling 7-day window re-fetched on every run, not an accumulating history -- it does not extend past 7 days even though the file is appended-and-merged like the others"
+  ]
+}

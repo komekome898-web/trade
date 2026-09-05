@@ -1,0 +1,58 @@
+{
+  "dataset": "bitflyer_execution_flow",
+  "description": "Raw bitFlyer public execution history per product (executions_<product>.csv, deduped by execution id, the source candles_fx_btc_jpy.json's candles are resampled from), the same history pre-bucketed into 1-minute OHLCV+buy/sell-split bars (flow_<product>.csv), and the FX_BTC_JPY-vs-BTC_JPY basis computed from the 1-minute candles (basis_1m.csv). schema/candles_fx_btc_jpy.json already documents these two file shapes informally as 'companion_files'; this schema is what actually resolves their path_glob so they are checked instead of landing in schema_undefined.",
+  "path_glob": [
+    "data/executions_BTC_JPY.csv",
+    "data/executions_ETH_JPY.csv",
+    "data/executions_FX_BTC_JPY.csv",
+    "data/executions_XRP_JPY.csv",
+    "data/flow_BTC_JPY.csv",
+    "data/flow_ETH_JPY.csv",
+    "data/flow_FX_BTC_JPY.csv",
+    "data/flow_XRP_JPY.csv",
+    "data/basis_1m.csv",
+    "backtest_data/executions_FX_BTC_JPY_31d_*.csv.gz",
+    "backtest_data/flow_FX_BTC_JPY_*.csv"
+  ],
+  "source": "executions_<product>.csv: bitFlyer public GET /v1/executions, paged, deduped by id (see scripts/fetch_history.py). flow_<product>.csv: the same executions resampled to 1-minute OHLCV with a buy/sell volume split. basis_1m.csv: scripts/build_basis.py, inner-joins data/candles_FX_BTC_JPY.csv and data/candles_BTC_JPY.csv on their UTC minute index and computes the FX-over-spot percentage basis.",
+  "retention": "bitFlyer's public execution history is 31 days; executions_<product>.csv, flow_<product>.csv and basis_1m.csv are all long-term substitutes, appended/rebuilt forward and never regenerated in a way that drops old rows. backtest_data/executions_FX_BTC_JPY_31d_<date>.csv.gz and flow_FX_BTC_JPY_<date>.csv are permanent dated snapshots of the FX_BTC_JPY files for reproducibility.",
+  "file_groups": {
+    "executions_<product>.csv": {
+      "columns": {
+        "id": {"meaning": "bitFlyer execution id, monotonically increasing, used for incremental paging/dedup", "unit": "integer", "tz": null, "notes": null},
+        "exec_date": {"meaning": "exchange execution/trade time", "unit": "ISO-8601 (bitFlyer's native format, mixed precision -- read with pandas format='mixed')", "tz": "UTC", "notes": "trade time (約定時刻), same sense as executions_*.csv.gz's ts in schema/bitflyer_tape.json"},
+        "price": {"meaning": "execution price", "unit": "JPY", "tz": null, "notes": null},
+        "size": {"meaning": "execution size", "unit": "base currency (BTC/ETH/XRP depending on product)", "tz": null, "notes": null},
+        "side": {"meaning": "taker side", "unit": "BUY/SELL", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["id"]}
+    },
+    "flow_<product>.csv": {
+      "columns": {
+        "ts": {"meaning": "start of the 1-minute bucket", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "first execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
+        "high": {"meaning": "max execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
+        "low": {"meaning": "min execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
+        "close": {"meaning": "last execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
+        "volume": {"meaning": "total execution size in the minute (buy_vol + sell_vol)", "unit": "base currency", "tz": null, "notes": null},
+        "buy_vol": {"meaning": "taker-buy volume in the minute", "unit": "base currency", "tz": null, "notes": null},
+        "sell_vol": {"meaning": "taker-sell volume in the minute", "unit": "base currency", "tz": null, "notes": null},
+        "trades": {"meaning": "execution count in the minute", "unit": "count", "tz": null, "notes": null}
+      }
+    },
+    "basis_1m.csv": {
+      "columns": {
+        "ts": {"meaning": "1-minute UTC index shared by candles_FX_BTC_JPY.csv and candles_BTC_JPY.csv (inner join -- a minute either book was quiet in produces no row)", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "fx_close": {"meaning": "FX_BTC_JPY 1-minute close", "unit": "JPY", "tz": null, "notes": null},
+        "spot_close": {"meaning": "BTC_JPY (spot) 1-minute close", "unit": "JPY", "tz": null, "notes": null},
+        "basis_pct": {"meaning": "(fx_close / spot_close - 1) * 100 -- FX premium/discount over spot", "unit": "percent", "tz": null, "notes": "positive = FX trading above spot (contango); negative = below (backwardation)"}
+      },
+      "quality": {"unique_key": ["ts"]}
+    }
+  },
+  "known_defects": [
+    "executions_<product>.csv duplicate_keys should be checked on id, not exec_date -- several executions can share the same exec_date microsecond (see schema/bitflyer_tape.json's executions_YYYYMMDD.csv.gz for the same phenomenon on the WS-derived tape)",
+    "flow_<product>.csv and basis_1m.csv both silently omit a minute with zero executions (no interpolated/zero row) -- a gap in ts is a genuinely quiet minute for that product/pair, not necessarily a collection failure",
+    "basis_1m.csv is rebuilt from data/candles_FX_BTC_JPY.csv and data/candles_BTC_JPY.csv on every run of scripts/build_basis.py -- a correction to either candle file would silently change historical basis_pct values"
+  ]
+}

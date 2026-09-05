@@ -1,0 +1,31 @@
+{
+  "dataset": "nk225_sessions",
+  "description": "Daily Nikkei 225 futures (large/mini/micro) night- and day-session OHLC, volume and settlement, extracted from JPX's official daily derivatives report. Used by the ON1 forward paper tracker (docs/PREREG_on1_forward.md, src/bot/jpx/on1_executor.py). Distinct from schema/nk225_events.json (index constituent add/delete events).",
+  "path_glob": [
+    "data/jpx_daily/nk225_sessions.csv",
+    "paper_logs/nk225_sessions.csv"
+  ],
+  "source": "JPX official daily report (free, published next business day ~9:00 JST): jpx.co.jp/automation/markets/statistics-derivatives/daily/json/daily_report_YYYYMM.json -> Daily_Report_OSE_YYYYMMDD.zip -> sif_dyr_YYYYMMDD.pdf, parsed for the three Nikkei 225 futures lines -- see scripts/fetch_jpx_daily.py.",
+  "retention": "appended forward, idempotent: a (date, product, month) row already present is never rewritten. Run daily from deploy/fetch_all.bat, fetching only missing dates within a trailing window (default 7 days).",
+  "columns": {
+    "date": {"meaning": "trade date", "unit": "YYYYMMDD", "tz": "JST (JPX trade date)", "notes": null},
+    "product": {"meaning": "contract size line", "unit": "large / mini / micro", "tz": null, "notes": null},
+    "month": {"meaning": "contract month", "unit": "YYYYMM", "tz": null, "notes": null},
+    "night_open": {"meaning": "night-session (evening) open", "unit": "index points", "tz": null, "notes": null},
+    "night_high": {"meaning": "night-session high", "unit": "index points", "tz": null, "notes": null},
+    "night_low": {"meaning": "night-session low", "unit": "index points", "tz": null, "notes": null},
+    "night_close": {"meaning": "night-session close", "unit": "index points", "tz": null, "notes": null},
+    "day_open": {"meaning": "day-session open", "unit": "index points", "tz": null, "notes": null},
+    "day_high": {"meaning": "day-session high", "unit": "index points", "tz": null, "notes": null},
+    "day_low": {"meaning": "day-session low", "unit": "index points", "tz": null, "notes": null},
+    "day_close": {"meaning": "day-session close", "unit": "index points", "tz": null, "notes": null},
+    "day_volume": {"meaning": "day-session volume", "unit": "contracts", "tz": null, "notes": null},
+    "settlement": {"meaning": "settlement price for the trade date", "unit": "index points", "tz": null, "notes": null}
+  },
+  "quality": {"unique_key": ["date", "product", "month"], "group_by": ["product", "month"]},
+  "known_defects": [
+    "data_quality.py's TS_CANDIDATES recognizes the literal column name 'date' but this file's date is a bare YYYYMMDD integer rather than an ISO string -- parse_ts handles the 8-digit form, but double check gap/non-monotonic results here rather than trusting them blindly",
+    "this file interleaves three independent series (large/mini/micro contract sizes, and rolling contract months within each) -- group_by above splits gap/non-monotonic/extreme_return checks by (product, month) so a normal cross-series jump is not misread as one series moving",
+    "paper_logs/nk225_sessions.csv is the owner-PC operational copy this checkout mirrors; data/jpx_daily/nk225_sessions.csv is this checkout's own copy (built independently by the same fetch script) -- the two are not guaranteed to be byte-identical, only same-shaped"
+  ]
+}

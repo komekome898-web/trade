@@ -451,6 +451,34 @@ def shared_or_local(root: Path, rel: str, shared_name: str | None = None) -> Pat
     return resolved
 
 
+def shared_or_local_dir(root: Path, rel: str, shared_name: str | None = None) -> Path:
+    """Directory analogue of ``shared_or_local`` (docs/DATA_QA_CHECKLIST.md
+    item 10 / DATA_GOVERNANCE_PLAN.md §2.2): some shared copies are a whole
+    directory of per-day files (``data/tape/executions_YYYYMMDD.csv.gz`` etc.)
+    rather than one file, so a single mtime comparison on the dir itself is
+    meaningless -- compare the newest file mtime inside each candidate
+    directory instead and return whichever is newer. Missing/empty
+    directories lose to one that has files; if neither has files, ``local``
+    is returned so callers get a normal "not found" error.
+    """
+    local = root / rel
+    shared = root / "paper_logs" / (shared_name or Path(rel).name)
+
+    def newest(d: Path) -> float | None:
+        try:
+            return max((p.stat().st_mtime for p in d.iterdir() if p.is_file()),
+                       default=None)
+        except OSError:
+            return None
+
+    s_m, l_m = newest(shared), newest(local)
+    if s_m is None:
+        return local
+    if l_m is None:
+        return shared
+    return shared if s_m > l_m else local
+
+
 def champion_gate(root: Path, now: float) -> dict[str, Any]:
     """G1: SETTLED — judged FAIL at n=30 (report #22); collection continues.
 

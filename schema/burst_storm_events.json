@@ -3,10 +3,12 @@
   "description": "Per-event Binance-vs-bitFlyer price/flow snippets built around detected volatility bursts (radar-flagged \"storm\" windows and shorter \"burst\" spikes) for the storm-radar research line (src/bot/radar.py). One file per event, named by its detection timestamp.",
   "path_glob": [
     "backtest_data/burst_events_*/event_*.csv.gz",
-    "backtest_data/storm_events_*/event_*.csv.gz"
+    "backtest_data/storm_events_*/event_*.csv.gz",
+    "data/burst_events/event_*.csv",
+    "data/storm_events/event_*.csv"
   ],
-  "source": "extracted from the accumulated Binance BTCUSDT and bitFlyer FX_BTC_JPY feeds around each radar-flagged event window -- see src/bot/radar.py and the scripts/build_* event-library tooling referenced in CLAUDE.md.",
-  "retention": "permanent dated snapshot (backtest_data/burst_events_<date>/, storm_events_<date>/); never regenerated in place.",
+  "source": "extracted from the accumulated Binance BTCUSDT and bitFlyer FX_BTC_JPY feeds around each radar-flagged event window -- see src/bot/radar.py and the scripts/build_* event-library tooling referenced in CLAUDE.md. data/burst_events/ and data/storm_events/ are the live, ungzipped working directories the backtest_data/*_events_<date>/ snapshots are periodically frozen from (same 'ts,bn_price,bf_price,bf_buy,bf_sell' header, verified).",
+  "retention": "permanent dated snapshot (backtest_data/burst_events_<date>/, storm_events_<date>/); never regenerated in place. data/burst_events/ and data/storm_events/ are the ongoing working copy (kept indefinitely, appended forward, not itself dated) -- see known_defects.",
   "file_groups": {
     "event_YYYYMMDD_HHMM.csv.gz": {
       "columns": {
@@ -19,6 +21,7 @@
     }
   },
   "known_defects": [
+    "data/burst_events/*.csv and data/storm_events/*.csv are plain (ungzipped) files, unlike their backtest_data/*_events_<date>/event_*.csv.gz snapshot counterparts -- same columns, different compression only",
     "bn_price and bf_price are two different quote currencies (USD vs JPY) sampled from two different venues -- never diffed or ratioed directly without converting through a USD/JPY rate first",
     "burst_events (shorter, sharper spikes) and storm_events (the storm-radar's own longer clock-window detections) are two different detectors over the same underlying feeds and are not deduplicated against each other -- the same underlying market move can appear as both a burst file and a storm file",
     "bf_price/bf_buy/bf_sell blank/zero rows reflect bitFlyer's comparatively thin liquidity next to Binance, not a data-quality defect in the extraction itself"

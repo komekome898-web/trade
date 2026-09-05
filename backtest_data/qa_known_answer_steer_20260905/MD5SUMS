@@ -1,0 +1,10 @@
+557727e02a9d477871e3956f0d14ed96  costs_qs.yaml
+360cc270ea51ff5d0cebcd17b1cc30b0  daily_qs_delta.csv.gz
+5000dc5353cd2e3ad30166fa251abc9c  daily_qs_echo.csv.gz
+8e11f79991476a239bd12d072844021a  daily_qs_foxtrot.csv.gz
+16ca0aeb48350c9b961c54bc36d47936  daily_qs_golf.csv.gz
+2f4f30911352273c8ec07500c34e5ab1  executions_qs_tape.csv.gz
+7e6c37c862821778fe740f48fd836ba6  manifest.md
+27bcef2ccf2613cd2e98b5a398405748  min1_qs_flat.csv.gz
+9cda24ca025f1998012a7aaa204803da  min1_qs_momentum.csv.gz
+f4651e817d7d3b452e243cdcd0ff5497  ticker_qs_tape.csv.gz

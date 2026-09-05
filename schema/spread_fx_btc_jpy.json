@@ -1,0 +1,21 @@
+{
+  "dataset": "spread_fx_btc_jpy",
+  "description": "Resident heartbeat/liveness recording of bitFlyer FX_BTC_JPY's best bid/ask/last-traded-price, consumed by the monitoring dashboard's freshness check (src/bot/monitoring/aggregate.py's 'spread record' file-age indicator).",
+  "path_glob": [
+    "data/spread_FX_BTC_JPY.csv",
+    "paper_logs/spread_FX_BTC_JPY.csv"
+  ],
+  "source": "written by a resident recorder process (see src/bot/monitoring/aggregate.py's consumer for the expected shape; the writer was not conclusively located as a standalone script in this checkout as of 2026-09-05 -- treat as owner-operational infrastructure, re-verify against the running deploy/ scripts if this file's cadence ever looks wrong).",
+  "retention": "appended forward by the resident recorder; paper_logs/spread_FX_BTC_JPY.csv is the owner-PC operational copy this checkout mirrors, data/spread_FX_BTC_JPY.csv is this checkout's own copy.",
+  "columns": {
+    "timestamp": {"meaning": "collection time", "unit": "epoch seconds (float)", "tz": "UTC (host clock)", "notes": null},
+    "best_bid": {"meaning": "best bid price at collection time", "unit": "JPY", "tz": null, "notes": null},
+    "best_ask": {"meaning": "best ask price at collection time", "unit": "JPY", "tz": null, "notes": null},
+    "ltp": {"meaning": "last traded price at collection time", "unit": "JPY", "tz": null, "notes": null}
+  },
+  "quality": {"unique_key": ["timestamp"]},
+  "known_defects": [
+    "the writing process could not be conclusively identified in this checkout (grepped for spread_FX_BTC_JPY.csv/best_bid+best_ask across src/ and scripts/; only the monitoring consumer in src/bot/monitoring/aggregate.py was found) -- provenance here is inferred from the header and consumer, not confirmed against the writer's own docstring; re-verify before making strong claims about its collection semantics",
+    "timestamp is a bare float epoch, not an ISO string like most other datasets in this repo -- do not assume string sorting or ISO parsing will work directly"
+  ]
+}

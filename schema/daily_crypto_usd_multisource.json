@@ -1,0 +1,28 @@
+{
+  "dataset": "daily_crypto_usd_multisource",
+  "description": "LT1 pre-registration (docs/PREREG_trend_lt1.md sec.3) phase-1 collection: BTCUSD/ETHUSD daily OHLCV from the longest available history at each of 3 independent public sources (bitstamp, yahoo, coinbase), kept as 3 separate un-reconciled files per symbol rather than merged, so the trend study (scripts/research_trend_lt1.py) can cross-check sources instead of trusting one.",
+  "path_glob": [
+    "backtest_data/daily_btcusd_bitstamp_*.csv.gz",
+    "backtest_data/daily_btcusd_yahoo_*.csv.gz",
+    "backtest_data/daily_btcusd_coinbase_*.csv.gz",
+    "backtest_data/daily_ethusd_bitstamp_*.csv.gz",
+    "backtest_data/daily_ethusd_yahoo_*.csv.gz",
+    "backtest_data/daily_ethusd_coinbase_*.csv.gz"
+  ],
+  "source": "scripts/fetch_daily_lt1.py, three public no-auth REST sources: bitstamp (/api/v2/ohlc/<pair>/?step=86400, paged, BTC/USD from 2011-08), yahoo (query1.finance.yahoo.com/v8/finance/chart/<SYM>-USD, from 2014-09), coinbase (api.exchange.coinbase.com/products/<SYM>-USD/candles, 300 bars/request, from 2015). A source that is unreachable is logged and skipped, per the pre-registration's instruction, rather than retried indefinitely or backfilled from another source.",
+  "retention": "permanent dated snapshot, filename-stamped 20260828 (fetch_daily_lt1.py's STAMP constant) -- idempotent, an existing file is not re-fetched without --force.",
+  "columns": {
+    "date": {"meaning": "UTC calendar day", "unit": "YYYY-MM-DD", "tz": "UTC", "notes": null},
+    "open": {"meaning": "daily open", "unit": "USD", "tz": null, "notes": null},
+    "high": {"meaning": "daily high", "unit": "USD", "tz": null, "notes": null},
+    "low": {"meaning": "daily low", "unit": "USD", "tz": null, "notes": null},
+    "close": {"meaning": "daily close", "unit": "USD", "tz": null, "notes": null},
+    "volume": {"meaning": "daily volume", "unit": "base currency (BTC or ETH depending on symbol)", "tz": null, "notes": null}
+  },
+  "quality": {"unique_key": ["date"]},
+  "known_defects": [
+    "the three sources per symbol are DELIBERATELY not reconciled/merged into one series -- differing start dates, differing volume conventions, and occasional differing OHLC on the same date (source data quality, not a bug here) are expected; see scripts/research_trend_lt1.py for how it cross-checks rather than picks one",
+    "start date differs by source and is NOT the same across bitstamp/yahoo/coinbase for the same symbol (bitstamp 2011-08, yahoo 2014-09, coinbase 2015) -- a source-to-source row-count mismatch on the same symbol is expected, not a partial-fetch failure",
+    "coinbase's product ids and yahoo's ticker symbols both assume USD-quoted spot pairs (BTC-USD/ETH-USD); this is Coinbase's retail spot venue, not Coinbase derivatives -- do not conflate with any futures/perp series elsewhere in this repo"
+  ]
+}

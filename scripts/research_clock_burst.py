@@ -211,7 +211,15 @@ import numpy as np
 import pandas as pd
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TAPE_GLOB = os.path.join(ROOT, "paper_logs", "tape", "executions_*.csv.gz")
+sys.path.insert(0, os.path.join(ROOT, "src"))
+from bot.monitoring.gates import shared_or_local_dir  # noqa: E402
+
+# Single source of truth (docs/DATA_QA_CHECKLIST.md #10): pick whichever of
+# paper_logs/tape/ or data/tape/ holds the newer files, instead of always
+# hard-coding paper_logs/ (which would silently miss local-only days on the
+# operator PC, where the local copy is authoritative by construction).
+TAPE_DIR = shared_or_local_dir(Path(ROOT), "data/tape", shared_name="tape")
+TAPE_GLOB = os.path.join(str(TAPE_DIR), "executions_*.csv.gz")
 
 EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
 FRESH_CUTOFF_ISO = "2026-08-25T12:00:00Z"
@@ -710,6 +718,8 @@ def write_status_json(path, pipe: dict, now: float | None = None) -> None:
 
 
 def main(paths=None, status_json_path=None) -> int:
+    if paths is None:
+        print(f"[data] tape dir: {TAPE_DIR}")
     pipe = run_pipeline(paths)
     pipe2 = run_pipeline(paths)
     h1, h2 = episodes_hash(pipe["episodes"]), episodes_hash(pipe2["episodes"])

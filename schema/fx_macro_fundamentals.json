@@ -1,0 +1,101 @@
+{
+  "dataset": "fx_macro_fundamentals",
+  "description": "Low-frequency USD/JPY fundamentals used by the FX carry (S5, scripts/research_fx_carry.py) and FX fundamentals (S6, scripts/research_fx_fundamentals.py) studies: FRED daily/monthly macro series, CFTC Commitments-of-Traders JPY futures positioning, MOF Japan 2-year JGB yields, and MOF's official FX-intervention daily detail. backtest_data/fx_fundamentals_20260822/ is S6's own permanent snapshot (fetched independently of S5's root-level fred_*.csv, by design -- S5 coordinates constants, not data, per research_fx_fundamentals.py).",
+  "path_glob": [
+    "backtest_data/fred_DEXJPUS.csv",
+    "backtest_data/fred_DFF.csv",
+    "backtest_data/fred_DGS2.csv",
+    "backtest_data/fred_IR3TIB01JPM156N.csv",
+    "backtest_data/fred_IRSTCI01JPM156N.csv",
+    "backtest_data/fx_fundamentals_20260822/fred_DEXJPUS.csv",
+    "backtest_data/fx_fundamentals_20260822/fred_DGS2.csv",
+    "backtest_data/fx_fundamentals_20260822/fred_VIXCLS.csv",
+    "backtest_data/fx_fundamentals_20260822/cot_jpy_legacy.csv",
+    "backtest_data/fx_fundamentals_20260822/jgb_current.csv",
+    "backtest_data/fx_fundamentals_20260822/jgb_hist.csv",
+    "backtest_data/fx_fundamentals_20260822/mof_feio_daily.csv"
+  ],
+  "source": "FRED daily CSV (no key, https://fred.stlouisfed.org/graph/fredgraph.csv?id=<SERIES>): DEXJPUS (USD/JPY noon-ET buying rate), DFF (US effective fed funds, daily), DGS2 (US 2y CMT, daily), IRSTCI01JPM156N (Japan overnight call/interbank rate, monthly), IR3TIB01JPM156N (Japan 3M TIBOR, monthly, robustness arm only), VIXCLS (VIX close, descriptive only). cot_jpy_legacy.csv: CFTC Commitments of Traders LEGACY futures-only, JAPANESE YEN contract, via Socrata (publicreporting.cftc.gov/resource/6dca-aqww.json). jgb_hist.csv/jgb_current.csv: MOF JGB constant-maturity yield curve, historical + current-year (mof.go.jp/jgbs/reference/interest_rate/data/jgbcm_all.csv + jgbcm.csv). mof_feio_daily.csv: MOF daily FX-intervention detail (mof.go.jp .../feio/foreign_exchange_intervention_operations.csv). See scripts/research_fx_carry.py and scripts/research_fx_fundamentals.py's pre-registration headers for the full sourcing and clock-alignment rationale.",
+  "retention": "permanent snapshots for offline, reproducible reruns -- backtest_data/fred_*.csv are S5's snapshot (root level); backtest_data/fx_fundamentals_20260822/ is S6's dated snapshot directory (its own independent fred_* copies plus cot/jgb/mof). Neither is re-scraped in place once written.",
+  "file_groups": {
+    "fred_DEXJPUS.csv": {
+      "columns": {
+        "observation_date": {"meaning": "observation date", "unit": "YYYY-MM-DD", "tz": null, "notes": null},
+        "DEXJPUS": {"meaning": "USD/JPY noon buying rate in New York (Board of Governors of the Federal Reserve System)", "unit": "JPY per USD", "tz": null, "notes": "no row on days the rate is not published (weekends/US holidays) -- a calendar non-event, not a gap"}
+      },
+      "quality": {"unique_key": ["observation_date"]}
+    },
+    "fred_DFF.csv": {
+      "columns": {
+        "observation_date": {"meaning": "observation date", "unit": "YYYY-MM-DD", "tz": null, "notes": null},
+        "DFF": {"meaning": "US effective federal funds rate, daily", "unit": "percent", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["observation_date"]}
+    },
+    "fred_DGS2.csv": {
+      "columns": {
+        "observation_date": {"meaning": "observation date", "unit": "YYYY-MM-DD", "tz": null, "notes": null},
+        "DGS2": {"meaning": "US 2-year Treasury constant maturity rate, daily", "unit": "percent", "tz": null, "notes": "'.' or blank on non-trading days per FRED convention"}
+      },
+      "quality": {"unique_key": ["observation_date"]}
+    },
+    "fred_IR3TIB01JPM156N.csv": {
+      "columns": {
+        "observation_date": {"meaning": "observation month (FRED monthly series, stamped to a day)", "unit": "YYYY-MM-DD", "tz": null, "notes": null},
+        "IR3TIB01JPM156N": {"meaning": "Japan 3-month TIBOR (interbank rate), monthly -- robustness-arm series only, not the primary JP short-rate leg", "unit": "percent", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["observation_date"]}
+    },
+    "fred_IRSTCI01JPM156N.csv": {
+      "columns": {
+        "observation_date": {"meaning": "observation month (FRED monthly series, stamped to a day)", "unit": "YYYY-MM-DD", "tz": null, "notes": null},
+        "IRSTCI01JPM156N": {"meaning": "Japan immediate (<24h) call money / interbank rate, monthly -- the primary JP overnight short-rate leg used to match against US DFF", "unit": "percent", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["observation_date"]}
+    },
+    "fred_VIXCLS.csv": {
+      "columns": {
+        "observation_date": {"meaning": "observation date", "unit": "YYYY-MM-DD", "tz": null, "notes": null},
+        "VIXCLS": {"meaning": "CBOE VIX close", "unit": "index points", "tz": null, "notes": "descriptive only in S6 -- not used as a trading-family input, per research_fx_fundamentals.py"}
+      },
+      "quality": {"unique_key": ["observation_date"]}
+    },
+    "cot_jpy_legacy.csv": {
+      "columns": {
+        "report_date": {"meaning": "COT report (as-of/Tuesday) date", "unit": "YYYY-MM-DD", "tz": null, "notes": "stamped Tuesday; released the following Friday -- see research_fx_fundamentals.py's pub_ts clock derivation before using this as an entry timestamp"},
+        "market": {"meaning": "exchange/contract label -- 'JAPANESE YEN - INTERNATIONAL MONETARY MARKET' (1986-01-15..2000-08-22) or 'JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE' (2000-08-29..present); same underlying contract, non-overlapping date ranges", "unit": "string", "tz": null, "notes": null},
+        "open_interest": {"meaning": "total open interest", "unit": "contracts (1 contract = 12,500,000 JPY)", "tz": null, "notes": null},
+        "nc_long": {"meaning": "non-commercial (speculative) long positions", "unit": "contracts", "tz": null, "notes": null},
+        "nc_short": {"meaning": "non-commercial (speculative) short positions", "unit": "contracts", "tz": null, "notes": null},
+        "nc_spread": {"meaning": "non-commercial spreading positions", "unit": "contracts", "tz": null, "notes": null},
+        "comm_long": {"meaning": "commercial (hedger) long positions", "unit": "contracts", "tz": null, "notes": null},
+        "comm_short": {"meaning": "commercial (hedger) short positions", "unit": "contracts", "tz": null, "notes": null},
+        "nonrept_long": {"meaning": "non-reportable (small trader) long positions", "unit": "contracts", "tz": null, "notes": null},
+        "nonrept_short": {"meaning": "non-reportable (small trader) short positions", "unit": "contracts", "tz": null, "notes": null}
+      },
+      "quality": {
+        "unique_key": ["report_date", "market"],
+        "_notes": "net non-commercial (nc_long - nc_short) is the derived feature actually used; positive = speculators net long the yen = net short USD/JPY, per research_fx_fundamentals.py"
+      }
+    },
+    "jgb_hist.csv": {
+      "columns": {},
+      "_note": "intentionally empty: see known_defects -- the real header (基準日,1年,2年,...40年, i.e. base-date + tenor columns) is TWO rows down from the file's actual first line and is Shift-JIS encoded, so what scripts/data_quality.py's UTF-8 reader sees as 'the header' (row 1) is really a Japanese title/units line, not column names."
+    },
+    "jgb_current.csv": {
+      "columns": {},
+      "_note": "same structure/caveat as jgb_hist.csv -- current fiscal year's JGB yield curve, spliced onto jgb_hist.csv's history by scripts/research_fx_fundamentals.py's load_jgb_2y()."
+    },
+    "mof_feio_daily.csv": {
+      "columns": {},
+      "_note": "intentionally empty: see known_defects -- real per-row fields (positions 3/4/5/6/8, 0-indexed: year, month, day, amount in 100-million JPY, JPY-buy/sell side) are parsed positionally by scripts/research_fx_fundamentals.py's load_mof_interventions() directly from the Shift-JIS bytes; there is no single stable UTF-8 header row for this schema to declare."
+    }
+  },
+  "known_defects": [
+    "jgb_hist.csv, jgb_current.csv and mof_feio_daily.csv are Shift-JIS (cp932-family) encoded MOF downloads. scripts/data_quality.py (like scripts/intake_ledger.py) opens every file as UTF-8 with errors='replace', so their header/early rows decode into mojibake (replacement characters, stray CJK-adjacent bytes) rather than readable text -- this is a decoding artifact of the generic tooling, not file corruption. Only scripts/research_fx_fundamentals.py, which explicitly re-opens these three files with encoding='shift_jis', parses them correctly.",
+    "MOF publishes a MONTHLY TOTAL for FX intervention on the last business day of month M (covering (M-1)-27..M-26), and the DAILY breakdown only ~2 months after quarter end -- mof_feio_daily.csv's quarter-total rows are distinguishable only by an empty Day field, per research_fx_fundamentals.py; do not assume every row is a genuine single-day intervention record",
+    "Japanese-era date tokens in jgb_hist.csv/jgb_current.csv (S/H/R + 2-digit year, e.g. 'R8.8.3') require era-aware conversion (see research_fx_fundamentals.py's _jp_era_date) -- a naive date parse will misread or reject them",
+    "cot_jpy_legacy.csv cadence changes from BI-WEEKLY (until 1992-09-30) to WEEKLY (from 1992-10 onward), measured not assumed -- trading-family research restricts to report_date >= 1992-10-01 for this reason; the earlier bi-weekly rows are for descriptive/IC use only",
+    "fred_DEXJPUS.csv and fred_DGS2.csv exist independently in two places (backtest_data/ root, for S5, and backtest_data/fx_fundamentals_20260822/, for S6) -- fetched separately by design, so the two copies are not guaranteed to be byte-identical even though they cover the same FRED series"
+  ]
+}

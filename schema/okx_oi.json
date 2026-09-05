@@ -9,10 +9,18 @@
     "backtest_data/auto_okx_*/okx_btc_oi_5m*.csv*",
     "backtest_data/auto_okx_*/okx_btc_oi_1h*.csv*",
     "backtest_data/auto_okx_*/okx_btc_lsratio_5m*.csv*",
-    "backtest_data/auto_okx_*/okx_btc_lsratio_1h*.csv*"
+    "backtest_data/auto_okx_*/okx_btc_lsratio_1h*.csv*",
+    "backtest_data/okx_*/okx_btc_oi_5m.csv",
+    "backtest_data/okx_*/okx_btc_oi_1h.csv",
+    "backtest_data/okx_*/okx_btc_lsratio_5m.csv",
+    "backtest_data/okx_*/okx_btc_lsratio_1h.csv",
+    "data/okx_btc_oi_5m.csv",
+    "data/okx_btc_oi_1h.csv",
+    "data/okx_btc_lsratio_5m.csv",
+    "data/okx_btc_lsratio_1h.csv"
   ],
   "source": "OKX public REST, no auth: /api/v5/rubik/stat/contracts/open-interest-volume (ccy=BTC, period=5m|1H) and /api/v5/rubik/stat/contracts/long-short-account-ratio (same params) -- see scripts/fetch_okx.py",
-  "retention": "the rubik endpoints return a fixed-depth window only (no paging further back -- verified empirically in fetch_okx.py) so each run's file is whatever depth OKX currently returns; backtest_data/okx_btc_*_<date>.csv and backtest_data/auto_okx_*/ are permanent dated snapshots that are the only way to accumulate history beyond OKX's own window.",
+  "retention": "the rubik endpoints return a fixed-depth window only (no paging further back -- verified empirically in fetch_okx.py) so each run's file is whatever depth OKX currently returns; data/okx_btc_*.csv (undated) is the live file fetch_okx.py overwrites on every run, while backtest_data/okx_btc_*_<date>.csv, backtest_data/auto_okx_*/ and backtest_data/okx_<date>/ are permanent dated snapshots that are the only way to accumulate history beyond OKX's own window (same 4 filenames/columns, just frozen under a dated directory instead of a dated filename).",
   "file_groups": {
     "okx_btc_oi_5m": {
       "columns": {

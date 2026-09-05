@@ -1,0 +1,18 @@
+{
+  "dataset": "ws_latency",
+  "description": "Per-execution WebSocket receive-delay measurements: local receive time minus bitFlyer's own exchange execution timestamp, for lightning_executions_FX_BTC_JPY prints. A read-only diagnostic (public channel, no order/private endpoint touched) -- see scripts/measure_ws_latency.py.",
+  "path_glob": [
+    "data/latency/ws_vm.csv"
+  ],
+  "source": "scripts/measure_ws_latency.py, subscribed to bitFlyer's public WS (wss://ws.lightstream.bitflyer.com/json-rpc, lightning_executions_FX_BTC_JPY) for a fixed measurement window; one row per execution print received.",
+  "retention": "one file per measurement run/host (this one from the 'vm' host); appended or overwritten depending on how the script is invoked -- not a continuously-running collector, a periodic diagnostic run.",
+  "columns": {
+    "rts": {"meaning": "local (this machine's) receive time when the WS message carrying this execution arrived", "unit": "epoch seconds (float)", "tz": "UTC (host clock, not NTP-verified by this script)", "notes": null},
+    "exec_date": {"meaning": "bitFlyer's own exchange execution time for this print (exec_date field of the lightning_executions message)", "unit": "ISO-8601, 7-digit fractional seconds", "tz": "UTC (Z-suffixed)", "notes": null},
+    "delay_s": {"meaning": "rts - exec_date, i.e. how late this machine learned about a trade that already happened", "unit": "seconds", "tz": null, "notes": "contains this host's own clock offset from the exchange -- scripts/measure_ws_latency.py reports that offset separately (HTTP Date header comparison) so it can be subtracted; do not read delay_s as pure network latency"}
+  },
+  "known_defects": [
+    "delay_s conflates network/processing latency with local clock skew -- see the script's own CLOCK CAVEAT docstring before comparing delay_s across different host runs without also comparing their reported clock offsets",
+    "not a continuous feed -- a diagnostic run of a few minutes at a time; large gaps between runs (or between rows within one run, if the process paused) are expected and not a collection failure"
+  ]
+}

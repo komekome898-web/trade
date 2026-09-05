@@ -1591,7 +1591,7 @@ def run_cell_bars(B: BarTape, brk_on: bool, T1m: float, T2m: float,
 # ===========================================================================
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=str(ROOT / "data" / "tape"))
+    ap.add_argument("--data", default=str(cal.default_tape_dir()))
     ap.add_argument("--diag", default=str(
         ROOT / "backtest_data" / "executions_FX_BTC_JPY_31d_20260823.csv.gz"))
     ap.add_argument("--cutoff", default="2026-08-20T08:22:17Z")
@@ -1605,7 +1605,8 @@ def main() -> int:
           "'propose at most\none frozen cell' or 'feasibility rejection'.  "
           "No adoption judgement is made here.\n"
           f"seed {SEED}, no network.  Verdict window (>= 2026-08-28) "
-          "untouched.\n")
+          "untouched.")
+    print(f"[data] tape dir: {args.data}\n")
 
     m = build_market(Path(args.data))
     build_seconds(m)

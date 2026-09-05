@@ -35,7 +35,10 @@ from pathlib import Path
 import requests
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_CSV = ROOT / "data" / "oi_snapshots.csv"
+sys.path.insert(0, str(ROOT / "src"))
+from bot.monitoring.gates import shared_or_local  # noqa: E402
+
+LOCAL_CSV = ROOT / "data" / "oi_snapshots.csv"
 BUCKET = 500.0                       # USD per rung
 OKX = "https://www.okx.com/api/v5/market/history-candles"
 FIELDS = ["ts_utc", "okx_usdt_oi", "okx_usd_oi", "okx_ls_ratio", "dvol", "deribit_oi",
@@ -114,17 +117,25 @@ def build_ladder(rows: list[dict], oi_key: str = "okx_usdt_oi") -> tuple[dict[fl
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--csv", type=Path, default=DEFAULT_CSV)
+    ap.add_argument("--csv", type=Path, default=None,
+                    help="override the input CSV; default is the freshest "
+                         "of paper_logs/oi_snapshots.csv or data/oi_snapshots.csv "
+                         "(single source of truth, docs/DATA_QA_CHECKLIST.md #10)")
     ap.add_argument("--write-prices", action="store_true",
-                    help="persist back-joined btc_usd cells into the CSV")
+                    help="persist back-joined btc_usd cells into the CSV "
+                         "(always writes the LOCAL copy, never paper_logs/, "
+                         "so the shared/committed file is never mutated here)")
     args = ap.parse_args()
-    rows = load(args.csv)
+    read_path = args.csv or shared_or_local(ROOT, "data/oi_snapshots.csv")
+    print(f"[data] oi_snapshots.csv read from: {read_path}")
+    rows = load(read_path)
     if not rows:
         print("no OI rows")
         return 0
     filled = backfill_prices(rows)
     if args.write_prices and filled:
-        with args.csv.open("w", encoding="utf-8", newline="") as f:
+        write_path = args.csv or LOCAL_CSV
+        with write_path.open("w", encoding="utf-8", newline="") as f:
             w = csv.DictWriter(f, fieldnames=FIELDS)
             w.writeheader()
             for r in rows:

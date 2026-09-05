@@ -1,0 +1,34 @@
+{
+  "dataset": "artefacts",
+  "description": "Non-tabular companion files that live alongside real datasets under data/, paper_logs/ and backtest_data/ -- checksums, human-readable manifests/reports, provenance notes, and archives. These are NOT row-oriented data and are never subject to scripts/data_quality.py's column-based checks; in fact scripts/data_quality.py's run() only ever considers files scripts/intake_ledger.py's tabular_kind() recognizes (.csv/.csv.gz/.jsonl/.jsonl.gz), so a plain .json/.txt/.md/.htm/.tar.gz/.zip/.yaml file is skipped before schema matching is even attempted and can never appear in schema_undefined_files. This schema exists purely so a human scanning schema/*.json for 'what covers this file' finds an explicit, documented answer instead of silence, per the project's data-governance discipline (CLAUDE.md sec.5 / docs/DATA_GOVERNANCE_PLAN.md).",
+  "non_tabular": true,
+  "path_glob": [
+    "backtest_data/*/MD5SUMS",
+    "backtest_data/*/*.tar.gz",
+    "backtest_data/*/px.tar.gz",
+    "data/**/manifest.json",
+    "backtest_data/**/manifest.json",
+    "paper_logs/**/manifest.json",
+    "data/**/*.manifest.json",
+    "**/README.md",
+    "**/MISSING.txt",
+    "**/*JUDGE_RUN*.txt",
+    "**/TP_OPERATING_REF.txt",
+    "paper_logs/ws_listing.txt",
+    "**/*_coverage.json",
+    "data/status.json",
+    "data/kill_switch.json",
+    "data/onr_status.json",
+    "data/overlay_state.json",
+    "data/s12_status.json",
+    "data/QUALITY.json",
+    "data/*.jsonl.README.md"
+  ],
+  "source": "produced as side-output by the same scripts that build the dataset next to them (e.g. scripts/*.py's manifest.json/MD5SUMS writers for each backtest_data/<snapshot>_<date>/ directory, src/bot/monitoring/aggregate.py's status.json, src/bot/risk/ kill_switch.json) -- see the sibling dataset's own schema/*.json for exact provenance; this schema intentionally does not re-derive it.",
+  "retention": "follows the retention of the dataset directory it sits in (permanent for a dated snapshot's MD5SUMS/manifest.json, live/overwritten for status.json-style monitoring state).",
+  "known_defects": [
+    "declared non_tabular here as documentation only -- scripts/data_quality.py does not read this 'non_tabular' key or this schema's path_glob at all for these files, because its run() loop filters by intake_ledger.tabular_kind() (csv/csv.gz/jsonl/jsonl.gz) BEFORE calling match_dataset(); a file that fails that filter is never added to schema_undefined_files in the first place, regardless of whether any schema matches it",
+    "path_glob here uses '**' for recursive matching for readability, but scripts/data_quality.py's own match_dataset() uses fnmatch.fnmatch() (a single-level-agnostic string regex, not a path-aware glob) -- '**' behaves the same as a single '*' there. This is harmless for this schema specifically (since none of these files are ever checked against path_glob anyway, per the note above) but should not be copied into a schema for an actually-tabular dataset expecting real recursive-directory semantics.",
+    "calendar-scrape HTML cache pages (data/fx/calendar_cache*/*.htm, ~179 files) and other one-off *.py/*.yaml/*.zip snapshot-tooling files are NOT enumerated in path_glob above (there are many ad-hoc names) -- they are still non-tabular and still silently skipped by data_quality.py for the same tabular_kind() reason, just not itemized here individually"
+  ]
+}

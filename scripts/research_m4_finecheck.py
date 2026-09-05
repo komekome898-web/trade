@@ -881,7 +881,7 @@ def week_prints(data_dir: Path):
 # ===========================================================================
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=str(ROOT / "data" / "tape"))
+    ap.add_argument("--data", default=str(cal.default_tape_dir()))
     ap.add_argument("--diag", default=str(
         ROOT / "backtest_data" / "executions_FX_BTC_JPY_31d_20260823.csv.gz"))
     ap.add_argument("--cutoff", default="2026-08-20T08:22:17Z")
@@ -894,6 +894,7 @@ def main() -> int:
           f"approximation whose bias is of the same order as its best cell.\n"
           f"seed {SEED}, read-only, no network.  "
           "Verdict window (>= 2026-08-28) untouched.")
+    print(f"[data] tape dir: {args.data}")
 
     m = M3.build_market(Path(args.data))
     M3.build_seconds(m)

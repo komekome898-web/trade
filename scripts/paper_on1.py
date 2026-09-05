@@ -26,9 +26,29 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-IN_CSV = ROOT / "data" / "jpx_daily" / "nk225_sessions.csv"
+sys.path.insert(0, str(ROOT / "src"))
+from bot.monitoring.gates import shared_or_local  # noqa: E402
+
 OUT_DIR = ROOT / "data" / "paper_on1"
 OUT_CSV = OUT_DIR / "ledger.csv"
+
+# Kept as a plain module attribute (not folded into _in_csv) so tests can
+# still monkeypatch paper_on1.IN_CSV to a tmp_path fixture, same as before
+# this fix -- see tests/test_on1_forward.py.
+IN_CSV = ROOT / "data" / "jpx_daily" / "nk225_sessions.csv"
+
+
+def _in_csv() -> Path:
+    # Single source of truth (docs/DATA_QA_CHECKLIST.md #10): prefer
+    # paper_logs/nk225_sessions.csv over this checkout's local copy when the
+    # shared one is newer. On the operator PC the local file just written by
+    # fetch_jpx_daily.py is always newest, so this is a no-op there. A test
+    # (or caller) that monkeypatches IN_CSV away from its default local path
+    # is respected verbatim -- no resolver override.
+    if IN_CSV != ROOT / "data" / "jpx_daily" / "nk225_sessions.csv":
+        return IN_CSV
+    return shared_or_local(ROOT, "data/jpx_daily/nk225_sessions.csv",
+                            shared_name="nk225_sessions.csv")
 
 MULTIPLIER = 10
 FEE_SIDE = 11.0
@@ -48,8 +68,10 @@ FIELDS = [
 
 def load_sessions() -> dict[str, dict[str, dict]]:
     """date -> product -> {month -> row}"""
+    in_csv = _in_csv()
+    print(f"[data] nk225_sessions.csv read from: {in_csv}")
     out: dict[str, dict[str, dict]] = {}
-    with IN_CSV.open() as f:
+    with in_csv.open() as f:
         for r in csv.DictReader(f):
             out.setdefault(r["date"], {}).setdefault(r["product"], {})[r["month"]] = r
     return out
@@ -136,7 +158,7 @@ def check_guards(ledger: list[dict]) -> None:
 
 
 def main() -> int:
-    if not IN_CSV.exists():
+    if not _in_csv().exists():
         print("paper_on1: no input (run scripts/fetch_jpx_daily.py first)")
         return 0
     ledger = build_ledger()

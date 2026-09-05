@@ -1,0 +1,9 @@
+557727e02a9d477871e3956f0d14ed96  costs_qa.yaml
+25dbc4b891279606d6538603ede37822  daily_qa_alpha.csv.gz
+c174cd3a4117623a18462ce28ad4d9d8  daily_qa_bravo.csv.gz
+af222b8e8872bed956653fe62feafef6  daily_qa_charlie.csv.gz
+03c11279beceafb94128fad4fa020298  executions_qa_tape.csv.gz
+257d73dc5e232373a16e4b6d30f26f6f  manifest.md
+feccda40eb0d1fef736fc07b188bde26  min1_qa_autocorr.csv.gz
+b1ee82a0880bc01b41693960a916a6aa  min1_qa_randomwalk.csv.gz
+bd50b1434f42a2a5ecabebdad780080b  ticker_qa_tape.csv.gz

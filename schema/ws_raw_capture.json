@@ -1,0 +1,15 @@
+{
+  "dataset": "ws_raw_capture",
+  "description": "Raw bitFlyer public WebSocket capture (lightning_ticker_FX_BTC_JPY, lightning_executions_FX_BTC_JPY, lightning_board_FX_BTC_JPY/_snapshot_FX_BTC_JPY JSON-RPC messages), one line per received message, exactly as received plus a local receive timestamp. This is the immutable original that schema/bitflyer_tape.json's data/tape/*.csv.gz files are extracted from by scripts/extract_tape.py -- bitflyer_tape.json explicitly notes 'data/ws is not itself covered here'; this schema is what actually resolves it instead of leaving it schema_undefined. Line-delimited JSON, not CSV -- out of scope for scripts/data_quality.py's column-based checks.",
+  "path_glob": [
+    "data/ws/*.jsonl.gz"
+  ],
+  "source": "the resident WS collector subscribed to bitFlyer's public wss://ws.lightstream.bitflyer.com/json-rpc channels for FX_BTC_JPY, appending one JSON line per message received to a file named <product>_<YYYYMMDD>_<HHMMSS>.jsonl.gz (capture start time in the filename) -- see scripts/extract_tape.py's reader for the exact per-channel message shapes it expects.",
+  "retention": "NEVER deleted, even after data/tape/*.csv.gz extraction -- this is the primary record; data/tape/ is a derived, re-generatable convenience. See paper_logs/ws_listing.txt for a listing of the owner-PC's captured files.",
+  "known_defects": [
+    "jsonl(.gz), not CSV -- data_quality.py treats jsonl as out of scope for its column-based row checks (counted in files_checked, never flagged), same precedent as schema/venue_survey.json",
+    "each line's top-level shape varies by message type -- ticker messages carry the exchange's own 'timestamp' (trade/quote time), board snapshot/diff messages carry no timestamp of their own (book state is reconstructed in memory, stamped with the recorder's local 'rts' once per second on extraction) -- see schema/bitflyer_tape.json's known_defects for the full t(collection time)/ts(trade time) mixup this raw capture is the source of",
+    "scripts/extract_tape.py stops at the first line in a file that fails to parse (torn write / truncated gzip tail) -- a capture file can be incomplete with no error surfaced anywhere except a short extracted CSV day; this raw file's own row/byte count in the intake ledger is the only place to see whether a specific capture file looks truncated",
+    "filenames encode capture START time only -- a file's actual end time/coverage is only knowable by reading it (or via data/INTAKE_latest.json's row_count/last_ts, not inferable from the filename alone)"
+  ]
+}

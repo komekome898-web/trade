@@ -38,6 +38,13 @@ rem data\archive\) MUST run before data_quality.py, which only reads that index
 rem and never re-walks the filesystem itself. Both are read-only over the data
 rem they inventory/check -- neither ever writes, moves or deletes a data file.
 ".venv\Scripts\python.exe" "scripts\intake_ledger.py" >> "logs\fetch.out.log" 2>&1
+rem Snapshot integrity (DATA_QA_CHECKLIST item 5): verifies every MD5SUMS
+rem under backtest_data\ against the files on disk, creates a new MD5SUMS
+rem for any snapshot dir that lacks one, and cross-checks against the intake
+rem ledger above -> data\SNAPSHOT_VERIFY.json. Read-only over data files;
+rem the only write is a brand-new MD5SUMS. Non-zero exit on any mismatch is
+rem intentionally ignored here so the rest of fetch_all still runs.
+".venv\Scripts\python.exe" "scripts\verify_snapshots.py" >> "logs\fetch.out.log" 2>&1
 rem Read-only listing of every data\ws recording (member count, complete?, recoverable
 rem rows) -> data\WS_GZ_LISTING.json; shared by share_logs.bat (DATA_QA_CHECKLIST item 6).
 ".venv\Scripts\python.exe" "scripts\repair_gz_listing.py" --json "data\WS_GZ_LISTING.json" >> "logs\fetch.out.log" 2>&1

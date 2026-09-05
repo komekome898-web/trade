@@ -1,0 +1,14 @@
+{
+  "dataset": "bot_decision_log",
+  "description": "Structured JSON decision/audit log for the main trading bot loop (src/bot/logging_setup.py's JsonFormatter + log_decision), one line per log record: every trading decision is logged with the full field set needed to audit 'why did the bot place this order'. Line-delimited JSON, not CSV -- out of scope for scripts/data_quality.py's column-based checks (same precedent as schema/venue_survey.json).",
+  "path_glob": [
+    "paper_logs/bot.jsonl"
+  ],
+  "source": "src/bot/logging_setup.py: setup_logging() attaches a FileHandler(log_dir / 'bot.jsonl') with JsonFormatter to the 'bot' logger; log_decision() is the primary structured emitter, called from the main bot loop on every decision cycle. Every line passes through redact() (secret masking) before being written -- see CLAUDE.md sec.1.",
+  "retention": "append-only process log; paper_logs/bot.jsonl is the owner-PC operational copy this checkout mirrors (the running bot's log_dir defaults to 'logs/' locally, not this path -- see src/bot/logging_setup.py's setup_logging() signature).",
+  "known_defects": [
+    "jsonl, not CSV -- out of scope for data_quality.py's row-level checks (counted in files_checked, never flagged)",
+    "every line has timestamp/level/logger/message plus whatever the caller passed as extra={'data': {...}} (JsonFormatter.format merges it in) -- the 'decision' event documented via log_decision carries: event, symbol, price, strategy_signal, indicator_values, decision, order_size, order_price, order_id, execution_price, execution_status, PnL, reason. Other log call sites elsewhere in the bot can emit different event/field shapes under the same file.",
+    "secrets are redacted via a regex substitution registered at runtime (register_secret) -- a secret that leaked into a log line BEFORE its registration (e.g. very early startup) would not be masked retroactively; this has not been observed but is a structural possibility worth knowing about per CLAUDE.md's 'no secrets in logs' invariant"
+  ]
+}

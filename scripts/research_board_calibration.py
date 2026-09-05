@@ -167,6 +167,19 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from bot.monitoring.gates import shared_or_local_dir  # noqa: E402
+
+
+def default_tape_dir() -> Path:
+    # Single source of truth (docs/DATA_QA_CHECKLIST.md #10): prefer
+    # paper_logs/tape/ over this checkout's local data/tape/ when the shared
+    # copy holds newer files. research_wall_front.py, research_m4_finecheck.py,
+    # research_matilda_taro.py and research_matilda_modern.py reuse this same
+    # default instead of each hard-coding "data/tape" separately.
+    return shared_or_local_dir(ROOT, "data/tape", shared_name="tape")
+
+
 EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
 
 SEED = 20260827
@@ -661,14 +674,15 @@ def fmt_pct(x):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=str(ROOT / "data" / "tape"))
+    ap.add_argument("--data", default=str(default_tape_dir()))
     args = ap.parse_args()
 
     np.seterr(all="ignore")
     header("ROUND 21 PHASE 1 -- BOARD EXECUTION CALIBRATION "
            "(f, S8 revival, power, vr, imbalance)")
     print("Read-only calibration.  No strategy P&L, no inventory simulation.")
-    print(f"seed {SEED}, no network.\n")
+    print(f"seed {SEED}, no network.")
+    print(f"[data] tape dir: {args.data}\n")
 
     (t_tk, bid, ask, bsz, asz, mid, spread_bps,
      t_ex, px, sz, buy, span_days) = load(Path(args.data))

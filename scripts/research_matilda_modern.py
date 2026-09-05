@@ -938,7 +938,7 @@ def fmt(x, w=8, p=2):
 # ---------------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=str(ROOT / "data" / "tape"))
+    ap.add_argument("--data", default=str(cal.default_tape_dir()))
     args = ap.parse_args()
     np.seterr(all="ignore")
 
@@ -946,7 +946,8 @@ def main() -> int:
            "contaminated window)")
     print("Read-only board replay.  No adoption judgement is made here; the "
           "output is\n'freeze at most one cell' or 'feasibility rejection'.  "
-          f"seed {SEED}, no network.\n")
+          f"seed {SEED}, no network.")
+    print(f"[data] tape dir: {args.data}\n")
 
     m = build_market(Path(args.data))
     build_seconds(m)

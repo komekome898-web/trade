@@ -1,0 +1,148 @@
+{
+  "dataset": "external_crypto_klines",
+  "description": "External (non-bitFlyer) crypto reference OHLCV series used across research scripts as a liquid-market cross-check / regime feature: Binance BTCUSDT and XRPUSDT (klines at 1m/4h/1d, a full-precision 1m dump, and five rolling 1-second trade-bucket windows used around storm/burst events), plus bitbank xrp_jpy 1-minute candles (JPY-quoted, for BTC/XRP cross-checks against bitFlyer's own XRP_JPY). Distinct from schema/binance_daily.json (daily-mean derivatives metrics, dashboard-only) and schema/candles_fx_btc_jpy.json (bitFlyer's own products).",
+  "path_glob": [
+    "data/binance_BTCUSDT_1d.csv",
+    "data/binance_BTCUSDT_4h.csv",
+    "data/binance_BTCUSDT_1m.csv",
+    "data/binance_BTCUSDT_1m_full.csv",
+    "data/binance_BTCUSDT_1s_hi1.csv",
+    "data/binance_BTCUSDT_1s_hi2.csv",
+    "data/binance_BTCUSDT_1s_lo1.csv",
+    "data/binance_BTCUSDT_1s_lo2.csv",
+    "data/binance_BTCUSDT_1s_today.csv",
+    "data/binance_XRPUSDT_1d.csv",
+    "data/binance_XRPUSDT_4h.csv",
+    "data/binance_XRPUSDT_1m.csv",
+    "data/bitbank_xrp_jpy_1m.csv",
+    "backtest_data/binance_BTCUSDT_1m.csv",
+    "backtest_data/binance_BTCUSDT_1m_210d_*.csv.gz",
+    "backtest_data/binance_XRPUSDT_1d.csv",
+    "backtest_data/binance_XRPUSDT_1m.csv",
+    "backtest_data/binance_XRPUSDT_4h.csv",
+    "backtest_data/bitbank_xrp_jpy_1m.csv"
+  ],
+  "source": "Binance klines: data-api.binance.vision public REST /api/v3/klines (BTCUSDT/XRPUSDT, no key, no geo-block) -- see scripts/fetch_external.py (1m/4h/1d) and scripts/fetch_binance_full.py (1m_full, 1s_* rolling windows). bitbank_xrp_jpy_1m.csv: public.bitbank.cc /{pair}/candlestick/1min/{day} -- see scripts/fetch_external.py.",
+  "retention": "data/*.csv files are appended forward and merged with existing history on every fetch run (never truncated -- see scripts/fetch_external.py's save()). backtest_data/binance_BTCUSDT_1m.csv, binance_BTCUSDT_1m_210d_<date>.csv.gz, binance_XRPUSDT_*.csv and bitbank_xrp_jpy_1m.csv are permanent dated/frozen snapshots of the corresponding data/ file for reproducibility.",
+  "file_groups": {
+    "binance_BTCUSDT_1d.csv": {
+      "columns": {
+        "timestamp": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "binance_BTCUSDT_4h.csv": {
+      "columns": {
+        "timestamp": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "binance_BTCUSDT_1m.csv": {
+      "columns": {
+        "timestamp": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "binance_BTCUSDT_1m_full.csv": {
+      "columns": {
+        "open_time": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null},
+        "quote_volume": {"meaning": "quote-asset (USDT) volume in the bar", "unit": "USDT", "tz": null, "notes": null},
+        "n_trades": {"meaning": "number of trades in the bar", "unit": "count", "tz": null, "notes": null},
+        "taker_buy_base": {"meaning": "taker-buy base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["open_time"]}
+    },
+    "binance_BTCUSDT_1m_210d_*.csv.gz": {
+      "columns": {
+        "timestamp": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "binance_BTCUSDT_1s_*.csv": {
+      "columns": {
+        "ts": {"meaning": "1-second bucket time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "price": {"meaning": "last trade price in the second", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "summed trade volume in the second", "unit": "BTC", "tz": null, "notes": null},
+        "n": {"meaning": "trade count in the second", "unit": "count", "tz": null, "notes": null}
+      },
+      "quality": {
+        "unique_key": ["ts"],
+        "_notes": "5 rolling windows share this shape: 1s_hi1/1s_hi2 (high-volatility reference windows), 1s_lo1/1s_lo2 (low-volatility reference windows), 1s_today (current-day rolling window) -- see scripts/fetch_binance_full.py for the exact window selection."
+      }
+    },
+    "binance_XRPUSDT_1d.csv": {
+      "columns": {
+        "timestamp": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "XRP", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "binance_XRPUSDT_4h.csv": {
+      "columns": {
+        "timestamp": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "XRP", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "binance_XRPUSDT_1m.csv": {
+      "columns": {
+        "timestamp": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "XRP", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "bitbank_xrp_jpy_1m.csv": {
+      "columns": {
+        "timestamp": {"meaning": "candle open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "JPY", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "JPY", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "JPY", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "JPY", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "XRP", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    }
+  },
+  "known_defects": [
+    "these are external reference feeds, never a trading signal for the bitFlyer FX_BTC_JPY bot directly -- used only for cross-venue lead-lag / regime research (per CLAUDE.md's cross-border momentum research line)",
+    "the 1s_hi1/hi2/lo1/lo2/today windows are short, purpose-selected slices (high-vol / low-vol / current-day reference), not a continuous 1-second history -- large inter-file gaps against each other are by design, not a collection failure",
+    "binance_BTCUSDT_1m_full.csv carries extra precision columns (quote_volume/n_trades/taker_buy_base) that binance_BTCUSDT_1m.csv does not -- the two are not simply the same data at different retention, they come from two different fetch scripts (fetch_external.py vs fetch_binance_full.py) and are not guaranteed to be bar-for-bar identical on open/high/low/close rounding"
+  ]
+}

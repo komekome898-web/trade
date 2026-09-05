@@ -1,0 +1,51 @@
+{
+  "dataset": "fx_usdjpy_reference",
+  "description": "USD/JPY 1-minute bid/ask reference candles (Dukascopy) used for validation in the FX carry study (docs referenced from scripts/research_fx_carry.py), plus GMO Coin's actually-published USD/JPY margin-FX swap-point calendar used to compute realistic overnight carry cost/income in the same study.",
+  "path_glob": [
+    "data/fx/USDJPY_1m.csv",
+    "backtest_data/fx_usdjpy_1m_*.csv.gz",
+    "backtest_data/gmo_swap_usdjpy.csv"
+  ],
+  "source": "USDJPY_1m.csv: Dukascopy historical 1-minute bid data, 2023-01-01 onward (validation series for scripts/research_fx_carry.py's carry-as-income study). gmo_swap_usdjpy.csv: GMO Coin's published USD/JPY swap calendar (swapBuy/swapSell in JPY per 10,000 USD notional, swapDays), 2023-04 onward -- see scripts/research_fx_carry.py header comment for the exact provenance and field mapping.",
+  "retention": "data/fx/USDJPY_1m.csv is the live working copy, appended forward; backtest_data/fx_usdjpy_1m_<date>.csv.gz is a permanent dated snapshot of it (same columns, verified). backtest_data/gmo_swap_usdjpy.csv is itself the permanent snapshot used by the carry study -- see docs referenced in scripts/research_fx_carry.py for whether/how it is refreshed.",
+  "file_groups": {
+    "USDJPY_1m.csv": {
+      "columns": {
+        "timestamp": {"meaning": "1-minute bar time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "bid open", "unit": "JPY per USD", "tz": null, "notes": null},
+        "high": {"meaning": "bid high", "unit": "JPY per USD", "tz": null, "notes": null},
+        "low": {"meaning": "bid low", "unit": "JPY per USD", "tz": null, "notes": null},
+        "close": {"meaning": "bid close", "unit": "JPY per USD", "tz": null, "notes": null},
+        "volume": {"meaning": "Dukascopy's own tick-volume proxy for the bar", "unit": "as provided by source (not a true traded notional -- Dukascopy is an ECN aggregator, not a single venue)", "tz": null, "notes": "frequently 0.0 -- see known_defects"},
+        "ask_close": {"meaning": "ask close (companion to the bid-based open/high/low/close)", "unit": "JPY per USD", "tz": null, "notes": "blank on rows where the ask series had no print for this minute"}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "fx_usdjpy_1m_*.csv.gz": {
+      "columns": {
+        "timestamp": {"meaning": "1-minute bar time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "bid open", "unit": "JPY per USD", "tz": null, "notes": null},
+        "high": {"meaning": "bid high", "unit": "JPY per USD", "tz": null, "notes": null},
+        "low": {"meaning": "bid low", "unit": "JPY per USD", "tz": null, "notes": null},
+        "close": {"meaning": "bid close", "unit": "JPY per USD", "tz": null, "notes": null},
+        "volume": {"meaning": "Dukascopy's own tick-volume proxy for the bar", "unit": "as provided by source", "tz": null, "notes": "frequently 0.0 -- see known_defects"},
+        "ask_close": {"meaning": "ask close", "unit": "JPY per USD", "tz": null, "notes": "blank on rows where the ask series had no print for this minute"}
+      },
+      "quality": {"unique_key": ["timestamp"]}
+    },
+    "gmo_swap_usdjpy.csv": {
+      "columns": {
+        "date": {"meaning": "calendar date the swap applies to", "unit": "YYYY-MM-DD", "tz": null, "notes": null},
+        "swap_buy": {"meaning": "swap points credited/charged for a long (buy) USD/JPY position", "unit": "JPY per 10,000 USD notional", "tz": null, "notes": "sign convention: can be negative (a cost) or positive (income) depending on the rate differential at the time"},
+        "swap_sell": {"meaning": "swap points credited/charged for a short (sell) USD/JPY position", "unit": "JPY per 10,000 USD notional", "tz": null, "notes": null},
+        "swap_days": {"meaning": "number of days the swap covers (>1 over weekends/holidays, when multiple days' swap is charged at once)", "unit": "days", "tz": null, "notes": "scripts/research_fx_carry.py filters swap_days > 0 before computing a per-day bps rate"}
+      },
+      "quality": {"unique_key": ["date"]}
+    }
+  },
+  "known_defects": [
+    "USDJPY_1m.csv volume is an ECN tick-volume proxy, not a real traded notional -- do not treat zero_volume flags on this file as a liquidity signal the way they would be for an exchange trade feed",
+    "ask_close is a late addition alongside the original bid OHLC -- earlier rows in the accumulated history may have this column blank even where bid data is present",
+    "gmo_swap_usdjpy.csv reflects ONE broker's (GMO Coin) published swap calendar; other brokers' swap points differ and are not cross-checked here -- see scripts/research_fx_carry.py's pre-registration notes for how this choice was justified"
+  ]
+}
