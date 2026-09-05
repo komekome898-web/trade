@@ -17,7 +17,7 @@
 | board_round_series_5s | gaps | 135 | 既知欠陥 | 最大ギャップ(10.3h, 2026-08-27夜〜08-28朝)は venues・oi_snapshots の最大ギャップと同時刻に終了、かつ data/ws の WS セッション一覧にも同じ穴。オーナーPC本体のダウン/スリープと推定 | schema追記済み(3データセット) |
 | candles_fx_btc_jpy | gaps | 163 | 仕様どおり | 例示は夜間・週末の低頻度期間(約定なし=行なし)。既存known_defects記載どおり | 対応不要 |
 | candles_fx_btc_jpy | maintenance_window | 610 | 仕様どおり | 19:00-19:10 UTCの平坦OHLC carried-forward行。チェッカー自身がbitFlyer保守時間として検出する設計 | 対応不要 |
-| candles_fx_btc_jpy | zero_volume | 56649 | 未解決 | 価格が実際に動いているのにvolume=0の行が多数。`scripts/fetch_history.py`のresampleロジックを検証(pandas再現テスト)した結果、単発実行ではopen非NaN行がvolume=0になるのは数学的に不可能と確認。VM上の`data/candles_*.csv`と`data/executions_*.csv`が非同時点のコピーである可能性が濃厚だが未確認(VMはbotを稼働させていない) | schema追記(検証手順を記録)。オーナーPCで新鮮な組を再生成し再検証が必要 |
+| candles_fx_btc_jpy | zero_volume | 56649 | 収集側の修正 | 根本原因を確定: `data/candles_FX_BTC_JPY.csv`(=`backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz`と同一)は`scripts/fetch_deep.py`で構築された区間を含み、同スクリプトは欠測分を`candles[["open","high","low","close"]].ffill()`(列ごとに独立転記)+`volume.fillna(0.0)`で埋めていた。これは単一フラットな点ではなく**前の実バーのopen/high/low/closeを列ごとにコピー**するため、前バーがフラットでなければ非フラットなOHLCがvolume=0で残る。実データで再現・確認済み: ts=2026-07-23 16:04:00Zの行(open=10624068 high=10625509 low=10623927 close=10624749 volume=0)は`data/executions_FX_BTC_JPY.csv`にその分の約定が0件である一方、直前16:03:00の実バー(open=10624068 high=10625509 low=10623927 close=10624749 volume=0.341750)とOHLCが完全一致——`fetch_history.py`側(dropna(subset=["open"])のみ、ffillなし)のロジックで同区間を再構築すると16:04の行自体が生成されないことも確認済み(数式再現テストは合成dfで実施、pandas resample().sum()は空バケットをNaNでなく0.0にする点が前回の「未解決」判断の誤り)。前回記載の「VM非同時点コピー」説は誤り(データ改変ではなく単発実行内のロジック起因、再現性あり) | 修正済み: `scripts/fetch_deep.py`(and `scripts/fetch_history.py`, 同一出力ファイルへの書き込み元として列を揃えるため)に`synthetic`列を追加(1=ffillで埋めた偽バー、0=実バー)。既存データファイルは書き換えない(過去分のzero_volume行はそのまま=既知欠陥として残る)。既存コンシューマは列名参照(`src/bot/monitoring/market_view.py:read_candles`はヘッダー由来の列名で辞書化、pandas読者は列名参照)のため追加列は無視され後方互換。テスト: `tests/test_fetch_history_candles.py`(合成executionsに欠測分を挟んで両ビルダーを比較) |
 | fx_event_ticks | duplicate_keys | 23 | 仕様どおり | CPIとFOMCが同日開催の実例(2008-09-16など7日)。`date`列単独をキーにした結果の誤判定 | 修正済み: schemaにcalendar.csvの`unique_key: [date,type]`追加 |
 | fx_event_ticks | gaps | 367871 | 仕様どおり | イベントtickは発表直前のみ密、それ以外は疎という設計上の性質(median_gap 0.157〜5.5秒、単発の疎ギャップ) | 対応不要 |
 | jpx_etf_daily | extreme_return | 98 | 既知欠陥 | 一部は既存known_defects「ISOLATED BAD-PRINT DAYS」記載(1557/1306/1655/2558)。1311/1321/1343/1547のrow~3182は2024-08-05/06のNikkei暴落(実相場、複数ETFで整合的に確認) | schema追記済み(暴落の件) |
@@ -59,11 +59,10 @@
 `schema/board_round_series_5s.json` / `schema/venues.json` / `schema/oi_snapshots.json`: 2026-08-27夜〜08-28朝の約10.3時間の同時ギャップ(オーナーPCダウン推定)を追記。
 `schema/jpx_etf_daily.json`: 2024-08-05/06 Nikkei暴落による本物のextreme_return、および日本の祝日による平坦ゼロ出来高行のパターンを追記。
 `schema/bitflyer_tape.json`: missing_columnsの原因説明とgapsの内訳(executions優位)を追記。
-`schema/candles_fx_btc_jpy.json`: zero_volumeの再現不能性の検証結果(未解決の根拠)を追記。
+`schema/candles_fx_btc_jpy.json`: zero_volumeの根本原因(`fetch_deep.py`のOHLC列別ffill+volume.fillna(0.0))を確定し、known_defectsに追記。
 
 ## 未解決として残るもの
 
-- candles_fx_btc_jpy zero_volume(56649): アルゴリズム上再現不能と確認済みだが、原因(VM上の非同時点コピー vs 実際の履歴書き換え)はオーナーPCでの再実行でのみ確定できる。
 - oi_snapshots gapsの2件目(2.9h, 2026-08-31 12:03 UTC終了): venues/board_roundに対応するギャップが見当たらず未説明。
 - venues extreme_return(15件)・reit_onr extreme_return(一部): 件数が小さく既存known_defectsの範囲内と推定されるが、1件ずつは未検証。
 - schema/api_health.json: VM上に実ファイルが無く、コード読解のみで作成。オーナーPCの実データで列内容の確認が望ましい。

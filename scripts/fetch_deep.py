@@ -24,6 +24,38 @@ import pandas as pd  # noqa: E402
 from bot.exchange.bitflyer_client import BitflyerClient  # noqa: E402
 
 
+def build_candles(executions: "pd.DataFrame") -> "pd.DataFrame":
+    """1-minute OHLCV from an executions frame (columns: exec_date, price, size).
+
+    A minute with zero executions gets a forward-filled OHLC (each of
+    open/high/low/close independently carries the *previous* real candle's
+    value for that field -- not a single flat point) and volume=0, so it
+    stays a gapless series for consumers that need one. `synthetic` marks
+    exactly those rows (1) so they can be told apart from a real bar that
+    legitimately traded; real rows are 0. Without this flag such a row is
+    indistinguishable from a genuine moving-price bar with zero volume --
+    see docs/DATA_QA_TRIAGE.md candles_fx_btc_jpy/zero_volume and
+    schema/candles_fx_btc_jpy.json known_defects for how this was found.
+    """
+    df = executions.copy()
+    df["ts"] = pd.to_datetime(df["exec_date"], format="mixed", utc=True)
+    df = df.sort_values("ts")
+    o = df.set_index("ts")["price"].resample("1min").ohlc()
+    v = df.set_index("ts")["size"].resample("1min").sum().rename("volume")
+    candles = o.join(v)
+    # `open` is NaN here exactly on minutes with zero executions: ohlc() of
+    # an empty bin has no price to report, unlike sum() which defaults an
+    # empty bin's volume to 0.0 rather than NaN (resample().sum(min_count=0)
+    # is the pandas default) -- so volume can NOT be used to detect the gap.
+    # Capture the flag from `open` *before* ffill fills it in.
+    synthetic = candles["open"].isna()
+    candles[["open", "high", "low", "close"]] = candles[["open", "high", "low", "close"]].ffill()
+    candles["volume"] = candles["volume"].fillna(0.0)
+    candles["synthetic"] = synthetic.astype(int)
+    candles = candles.dropna(subset=["open"])
+    return candles
+
+
 def fetch_product(client: BitflyerClient, product: str, days: int, max_pages: int,
                   data_dir: Path, sleep_sec: float = 1.05) -> None:
     from bot.exchange.bitflyer_client import BitflyerError
@@ -59,15 +91,7 @@ def fetch_product(client: BitflyerClient, product: str, days: int, max_pages: in
             w.writerow({k: t.get(k) for k in ("id", "exec_date", "price", "size", "side")})
     print(f"[{product}] wrote {len(rows)} executions -> {out}", flush=True)
 
-    df = pd.read_csv(out)
-    df["ts"] = pd.to_datetime(df["exec_date"], format="mixed", utc=True)
-    df = df.sort_values("ts")
-    o = df.set_index("ts")["price"].resample("1min").ohlc()
-    v = df.set_index("ts")["size"].resample("1min").sum().rename("volume")
-    candles = o.join(v)
-    candles[["open", "high", "low", "close"]] = candles[["open", "high", "low", "close"]].ffill()
-    candles["volume"] = candles["volume"].fillna(0.0)
-    candles = candles.dropna(subset=["open"])
+    candles = build_candles(pd.read_csv(out))
     cout = data_dir / f"candles_{product}.csv"
     candles.to_csv(cout)
     print(f"[{product}] wrote {len(candles)} 1-min candles "

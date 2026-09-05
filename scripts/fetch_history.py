@@ -20,6 +20,25 @@ from bot.exchange.bitflyer_client import BitflyerClient  # noqa: E402
 from bot.settings import load_settings  # noqa: E402
 
 
+def build_candles(executions: "pd.DataFrame") -> "pd.DataFrame":
+    """1-minute OHLCV from an executions frame (columns: exec_date, price, size).
+
+    A minute with zero executions is dropped entirely (dropna on open) --
+    never written as a zero-volume row. `synthetic` is always 0 here since
+    this builder never fabricates a bar; it exists so the column set matches
+    fetch_deep.py's output (which does forward-fill gaps and needs the flag
+    to mark them). See docs/DATA_QA_TRIAGE.md candles_fx_btc_jpy/zero_volume.
+    """
+    df = executions.copy()
+    df["ts"] = pd.to_datetime(df["exec_date"], format="mixed", utc=True)
+    df = df.sort_values("ts")
+    o = df.set_index("ts")["price"].resample("1min").ohlc()
+    v = df.set_index("ts")["size"].resample("1min").sum().rename("volume")
+    candles = o.join(v).dropna(subset=["open"])
+    candles["synthetic"] = 0
+    return candles
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     settings = load_settings(root)
@@ -58,12 +77,7 @@ def main() -> int:
     print(f"appended {len(new_rows)} new executions")
 
     # Rebuild candles
-    df = pd.read_csv(exec_file)
-    df["ts"] = pd.to_datetime(df["exec_date"], format="mixed", utc=True)
-    df = df.sort_values("ts")
-    o = df.set_index("ts")["price"].resample("1min").ohlc()
-    v = df.set_index("ts")["size"].resample("1min").sum().rename("volume")
-    candles = o.join(v).dropna(subset=["open"])
+    candles = build_candles(pd.read_csv(exec_file))
     out = data_dir / f"candles_{product}.csv"
     candles.to_csv(out)
     print(f"wrote {len(candles)} candles -> {out}")
