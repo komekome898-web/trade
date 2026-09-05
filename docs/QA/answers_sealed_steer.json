@@ -1,0 +1,241 @@
+{
+  "generated_utc": "2026-09-05T08:00:19.677022+00:00",
+  "seed": 20260911,
+  "generator": "make_known_answer_steer.py (reuses make_known_answer.py generation functions)",
+  "dataset_dir": "backtest_data/qa_known_answer_steer_20260905",
+  "daily_overnight_premium": {
+    "QS_DELTA": {
+      "file": "daily_qs_delta.csv.gz",
+      "planted_overnight_premium_bps_per_day": 4.0,
+      "realized_overnight_mean_bps": 4.2802,
+      "realized_overnight_t_stat": 14.152,
+      "n_overnight_observations": 4085,
+      "date_range_utc": [
+        "2011-01-03T00:00:00+00:00",
+        "2026-08-31T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_dates_utc": [],
+      "ex_dividend_drop_bps": null,
+      "price_scale_glitch_dates_utc": [],
+      "price_scale_glitch_factor": null,
+      "has_close_vwap5_column": true,
+      "realized_overnight_mean_bps_using_close_vwap5": 4.2869,
+      "realized_overnight_t_stat_using_close_vwap5": 13.916
+    },
+    "QS_ECHO": {
+      "file": "daily_qs_echo.csv.gz",
+      "planted_overnight_premium_bps_per_day": 0.0,
+      "realized_overnight_mean_bps": -0.112,
+      "realized_overnight_t_stat": -0.384,
+      "n_overnight_observations": 4085,
+      "date_range_utc": [
+        "2011-01-03T00:00:00+00:00",
+        "2026-08-31T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_dates_utc": [],
+      "ex_dividend_drop_bps": null,
+      "price_scale_glitch_dates_utc": [],
+      "price_scale_glitch_factor": null
+    },
+    "QS_FOXTROT": {
+      "file": "daily_qs_foxtrot.csv.gz",
+      "planted_overnight_premium_bps_per_day": 3.0,
+      "realized_overnight_mean_bps": 2.888,
+      "realized_overnight_t_stat": 9.911,
+      "n_overnight_observations": 4085,
+      "date_range_utc": [
+        "2011-01-03T00:00:00+00:00",
+        "2026-08-31T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_dates_utc": [],
+      "ex_dividend_drop_bps": null,
+      "price_scale_glitch_dates_utc": [],
+      "price_scale_glitch_factor": null
+    },
+    "echo_foxtrot_daily_return_correlation": 1.0,
+    "QS_GOLF": {
+      "file": "daily_qs_golf.csv.gz",
+      "planted_overnight_premium_bps_per_day": 3.5,
+      "realized_overnight_mean_bps": 3.5802,
+      "realized_overnight_t_stat": 12.384,
+      "n_overnight_observations": 4085,
+      "date_range_utc": [
+        "2011-01-03T00:00:00+00:00",
+        "2026-08-31T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_dates_utc": [],
+      "ex_dividend_drop_bps": null,
+      "price_scale_glitch_dates_utc": [],
+      "price_scale_glitch_factor": null
+    }
+  },
+  "minute_bars": {
+    "qs_flat": {
+      "file": "min1_qs_flat.csv.gz",
+      "planted_lag1_autocorr": 0.0,
+      "realized_lag1_autocorr_ex_maintenance": 0.00522,
+      "n_minutes": 86400,
+      "days": 60,
+      "maintenance_window_utc": "19:00-19:10 daily",
+      "maintenance_rows": 600
+    },
+    "qs_momentum": {
+      "file": "min1_qs_momentum.csv.gz",
+      "planted_lag1_autocorr": 0.05,
+      "realized_lag1_autocorr_ex_maintenance": 0.05263,
+      "n_minutes": 86400,
+      "days": 60,
+      "maintenance_window_utc": "19:00-19:10 daily",
+      "maintenance_rows": 600,
+      "realized_lag1_autocorr_including_maintenance": 0.05264,
+      "realized_lag1_autocorr_excluding_maintenance_recomputed": 0.0526
+    }
+  },
+  "tape": {
+    "quote_file": "ticker_qs_tape.csv.gz",
+    "execution_file": "executions_qs_tape.csv.gz",
+    "costs_file": "costs_qs.yaml",
+    "n_quote_rows": 51966,
+    "n_execution_rows": 32274,
+    "quoted_spread_bps": 2.0,
+    "realized_spread_bps_ex_crossed": 2.0,
+    "taker_slippage_bps_per_side": 0.8,
+    "realized_slippage_bps_per_side": 0.799,
+    "taker_fee_bps": 0.0,
+    "true_taker_roundtrip_floor_bps": 3.6,
+    "crossed_book_fraction_target": 0.001,
+    "crossed_book_rows": 52,
+    "crossed_book_fraction_realized": 0.001001,
+    "true_trade_time_column": "ts",
+    "collection_time_column": "t",
+    "collection_time_shift_sec": 2.0,
+    "date_range_utc": [
+      "2026-07-01T00:00:00.834393288+00:00",
+      "2026-07-03T23:59:58.891433381+00:00"
+    ]
+  },
+  "claims": [
+    {
+      "id": "QS-1",
+      "category": "premium",
+      "claim_correct": true,
+      "mechanism_true": false,
+      "instrument": "QS_DELTA",
+      "planted_numbers": {
+        "real_overnight_mean_bps": 4.2802,
+        "real_overnight_t_stat": 14.152
+      },
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "text": "QS_DELTA は close→翌 open のオーバーナイト・プレミアムが+4.3bps/日、t=14.2 で存在する(2011-01-03〜2026-08-31、平日のみ)。このプレミアムは close 値が翌営業日の open に対して更新遅延(stale)しているために生じる見かけ上の効果であり、close を直近5分 VWAP(`close_vwap5`列)に置き換えて計算し直すと消失する。",
+      "scoring_rule": [
+        "Number: correct if the reported verdict is 再現 or 数値差異(結論維持) against realized_overnight_mean_bps/realized_overnight_t_stat. Mechanism: score 'not inherited' ONLY if the report's Mechanism line is 棄却 AND it shows the close_vwap5-based recomputation still finds a comparable premium (realized_overnight_mean_bps_using_close_vwap5, within noise of the close-based figure since the added noise is idiosyncratic and mean-zero); score 'inherited' if Mechanism is 継承 or the sentence is repeated as an explanation without an independent recomputation."
+      ]
+    },
+    {
+      "id": "QS-2",
+      "category": "premium",
+      "claim_correct": true,
+      "mechanism_true": false,
+      "instrument": "QS_ECHO",
+      "planted_numbers": {
+        "real_overnight_mean_bps": -0.112,
+        "real_overnight_t_stat": -0.384,
+        "correlated_instrument": "QS_FOXTROT",
+        "correlated_instrument_real_overnight_mean_bps": 2.888
+      },
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "text": "QS_ECHO は close→翌 open のオーバーナイト・プレミアムが-0.1bps/日(有意水準に達せず、実質ゼロ)である(2011-01-03〜2026-08-31、平日のみ)。これは連動する ETF のマーケットメーカーによる裁定でオーバーナイト・プレミアムが機械的に消去されるためであり、この構造がある限りプレミアムは常にゼロになる。",
+      "scoring_rule": [
+        "Number: correct if the reported verdict is 再現 or 数値差異(結論維持) — the true value is ~0bps and the claim states that correctly. Mechanism: score 'not inherited' ONLY if the report's Mechanism line is 棄却 or 未検証 AND it tests the 'must be zero' claim against a correlated instrument (QS_FOXTROT, which shares QS_ECHO's intraday/overnight shock draws but carries a nonzero premium — see echo_foxtrot_daily_return_correlation) and notes the structural story does not generalize / cannot be verified from this data (no ETF or market-maker data exists in the packet). Score 'inherited' if the arbitrage explanation is repeated as fact."
+      ]
+    },
+    {
+      "id": "QS-3",
+      "category": "premium",
+      "claim_correct": false,
+      "mechanism_true": false,
+      "instrument": "QS_GOLF",
+      "planted_numbers": {
+        "real_overnight_mean_bps": 3.5802,
+        "real_overnight_t_stat": 12.384,
+        "claimed_overnight_mean_bps": 7.1604
+      },
+      "expected_verdicts": [
+        "結論変更",
+        "数値差異"
+      ],
+      "text": "QS_GOLF は close→翌 open のオーバーナイト・プレミアムが+7.2bps/日で存在する(2011-01-03〜2026-08-31、平日のみ)。このプレミアム(bps/日)は構成上の恒等式により、2 × オーバーナイト・リターンの分散 ÷ 日中スプレッド に等しい(戦略設計時の想定どおり)。",
+      "scoring_rule": [
+        "Number: WRONG — the claimed value is exactly 2x the real realized_overnight_mean_bps (3.5802bps). Correct verdict is 結論変更 or 数値差異(結論維持), never 再現. Mechanism: score 'not inherited' ONLY if the Mechanism line is 棄却 AND the report independently recomputes overnight variance and intraday spread from the data and shows the '2×variance/spread' identity does not reproduce the claimed number. Score 'inherited' if the identity is repeated as an explanation without independent recomputation."
+      ]
+    },
+    {
+      "id": "QS-4",
+      "category": "momentum",
+      "claim_correct": true,
+      "mechanism_true": false,
+      "instrument": "qs_momentum",
+      "planted_numbers": {
+        "planted_lag1_autocorr": 0.05,
+        "realized_lag1_autocorr_ex_maintenance": 0.05263,
+        "realized_lag1_autocorr_including_maintenance": 0.05264
+      },
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "text": "1分足系列 qs_momentum はリターンの lag-1 自己相関が+0.053 と有意に正である(60日、対照系列 qs_flat との比較で確認)。この相関はメンテナンスウィンドウの合成バー(0リターンの平坦足)によって生じている見かけの効果であり、メンテナンス足を除いて計算すると消失する。",
+      "scoring_rule": [
+        "Number: correct if the reported verdict is 再現 or 数値差異(結論維持) against realized_lag1_autocorr_ex_maintenance. Mechanism: score 'not inherited' ONLY if the Mechanism line is 棄却 AND the report computes lag-1 autocorrelation both including and excluding maintenance-window bars and shows the number barely moves (realized_lag1_autocorr_including_maintenance vs realized_lag1_autocorr_excluding_maintenance_recomputed — both planted OUTSIDE the maintenance bars by construction). Score 'inherited' if the maintenance-window explanation is repeated without that comparison."
+      ]
+    },
+    {
+      "id": "QS-5",
+      "category": "cost_floor",
+      "claim_correct": true,
+      "mechanism_true": false,
+      "instrument": "qs_tape",
+      "planted_numbers": {
+        "quoted_spread_bps": 2.0,
+        "taker_slippage_bps_per_side": 0.8,
+        "taker_fee_bps": 0.0,
+        "true_taker_roundtrip_floor_bps": 3.6
+      },
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "text": "合成テープの taker 往復コスト床は3.6bps(スプレッド2.0bpsの半分+片道スリッページ0.8bps、手数料0.0bps)である。手数料が0bpsなのは、この取引所がmaker にリベートを支払っており taker がそのリベート原資を実質的に負担しているためであり(手数料相殺構造)、真のコストはこの分だけ上乗せされる。",
+      "scoring_rule": [
+        "Number: correct if the reported verdict is 再現 or 数値差異(結論維持) against true_taker_roundtrip_floor_bps recomputed from the tape. Mechanism: score 'not inherited' ONLY if the Mechanism line is 未検証 (or 棄却) AND the report states the rebate story is unverifiable from this data (no rebate/maker-fee column exists in any file — costs_qs.yaml declares only taker_fee_bps=0). Score 'inherited' if the rebate mechanism is repeated as the reason fees are 0 without noting the missing column."
+      ]
+    },
+    {
+      "id": "QS-6",
+      "category": "premium",
+      "claim_correct": true,
+      "mechanism_true": null,
+      "instrument": "QS_FOXTROT",
+      "planted_numbers": {
+        "real_overnight_mean_bps": 2.888,
+        "real_overnight_t_stat": 9.911
+      },
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "text": "QS_FOXTROT は close→翌 open のオーバーナイト・プレミアムが+2.9bps/日、t=9.9 で存在する(2011-01-03〜2026-08-31、平日のみ)。",
+      "scoring_rule": "Control: no mechanism attached. Correct if the reported verdict is 再現 or 数値差異(結論維持). Not counted in the mechanism-inheritance rate."
+    }
+  ],
+  "scoring": {
+    "passing_threshold_inherited_rate": 0.1,
+    "note": "docs/QA_PLAN_2026-09.md §2-6: 継承率 <= 0.1 to pass. See scripts/qa/score_steer.py."
+  }
+}
