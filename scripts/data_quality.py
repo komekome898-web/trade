@@ -78,6 +78,7 @@ import csv
 import fnmatch
 import gzip
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -151,12 +152,33 @@ def match_dataset(rel_path: str, schemas: list[dict]) -> Optional[dict]:
     return None
 
 
-def _file_group_prefix_match(group_key: str, filename: str) -> bool:
+_PLACEHOLDER_RE = re.compile(r"<[^>]*>|\{[^}]*\}|YYYYMMDD")
+
+
+def _file_group_prefix_match(group_key: str, filename: str, rel_path: Optional[str] = None) -> bool:
     """True if `filename` plausibly belongs to a `file_groups` entry keyed
     by `group_key` (e.g. "quotes_YYYYMMDD.csv.gz", "executions_<date>.csv",
     "trades_{venue}_{pair}_YYYYMMDD.csv.gz"), matched on the stable literal
     prefix before any placeholder/wildcard token -- "{", "<", "*", or the
-    literal "YYYYMMDD" example token, whichever comes first."""
+    literal "YYYYMMDD" example token, whichever comes first.
+
+    When `group_key` itself spans a directory (e.g.
+    "backtest_data/reit_onr_<date>/etf_1343_daily.csv", as opposed to a bare
+    "quotes_YYYYMMDD.csv.gz" filename pattern) and `rel_path` is given, EVERY
+    placeholder token ("<...>", "{...}", the literal "YYYYMMDD") is turned
+    into a glob "*" and matched against the full path with fnmatch, not just
+    a literal prefix -- a directory-qualified prefix alone is not enough to
+    tell apart two group_keys that share the same placeholder-bearing
+    directory but differ only in their basename (e.g. reit_onr's
+    "backtest_data/reit_onr_<date>/etf_1343_daily.csv" vs.
+    ".../etf_1343_dividends.csv": both reduce to the identical directory
+    prefix "backtest_data/reit_onr_", so a prefix-only path check could not
+    distinguish them and matched a file against the wrong file_group's
+    (narrower) columns, misreporting real columns as
+    'undocumented_in_schema')."""
+    if "/" in group_key and rel_path is not None:
+        pattern = _PLACEHOLDER_RE.sub("*", group_key)
+        return fnmatch.fnmatch(rel_path.replace("\\", "/"), pattern)
     prefix = group_key.split("YYYYMMDD")[0].split("<")[0].split("*")[0].split("{")[0]
     prefix = prefix.strip()
     if not prefix:
@@ -164,10 +186,37 @@ def _file_group_prefix_match(group_key: str, filename: str) -> bool:
     return filename.startswith(prefix.split("/")[-1].split(" ")[0])
 
 
-def schema_columns_for(schema: dict, filename: str) -> Optional[set]:
+_RANGE_COL_RE = re.compile(r"^(.*?)(\d+)\.\.(\d+)$")
+
+
+def _expand_range_columns(names) -> set:
+    """Expand a schema column key using the "prefix_N..M" shorthand (e.g.
+    "bid_px_1..5") into the individual numbered column names it documents
+    (bid_px_1, bid_px_2, ..., bid_px_5). Schemas use this shorthand purely
+    for readability (see schema/bitflyer_tape.json's board_top5 columns);
+    comparing it literally against a real CSV header -- which has no column
+    actually named "bid_px_1..5" -- made every board_top5_*.csv.gz file
+    misreport all 20 of its real level columns as undocumented, every time,
+    while also claiming the 4 literal shorthand strings as "missing"."""
+    out: set = set()
+    for name in names:
+        m = _RANGE_COL_RE.match(name)
+        if m:
+            base, lo, hi = m.group(1), int(m.group(2)), int(m.group(3))
+            out.update(f"{base}{i}" for i in range(lo, hi + 1))
+        else:
+            out.add(name)
+    return out
+
+
+def schema_columns_for(schema: dict, filename: str, rel_path: Optional[str] = None) -> Optional[set]:
     """Flatten the documented column names relevant to this file: the
     dataset-level `columns` dict, plus any `file_groups` entry whose key
-    (a filename pattern/example) appears as a substring of this filename."""
+    (a filename pattern/example) appears as a substring of this filename.
+    `rel_path` (the full path relative to the repo root) disambiguates
+    file_groups keyed by a directory-qualified pattern -- see
+    _file_group_prefix_match. Column keys using the "prefix_N..M" shorthand
+    are expanded to individual column names -- see _expand_range_columns."""
     cols: set = set()
     top = schema.get("columns")
     if isinstance(top, dict):
@@ -176,7 +225,7 @@ def schema_columns_for(schema: dict, filename: str) -> Optional[set]:
     if isinstance(groups, dict):
         matched_any = False
         for group_key, group_val in groups.items():
-            if _file_group_prefix_match(group_key, filename):
+            if _file_group_prefix_match(group_key, filename, rel_path):
                 gcols = group_val.get("columns") if isinstance(group_val, dict) else None
                 if isinstance(gcols, dict):
                     cols.update(gcols.keys())
@@ -185,21 +234,23 @@ def schema_columns_for(schema: dict, filename: str) -> Optional[set]:
             return None
     if not cols:
         return None
-    return cols
+    return _expand_range_columns(cols)
 
 
-def schema_quality_for(schema: Optional[dict], filename: str) -> dict:
+def schema_quality_for(schema: Optional[dict], filename: str, rel_path: Optional[str] = None) -> dict:
     """Merge dataset-level `quality` (group_by / unique_key) with any
     matched `file_groups` entry's own `quality` (file-group keys win,
     since bitflyer_tape/venues declare different keys per file shape
-    within one schema). Returns {} if schema is None or nothing declared."""
+    within one schema). Returns {} if schema is None or nothing declared.
+    `rel_path` disambiguates directory-qualified file_groups keys -- see
+    _file_group_prefix_match."""
     if schema is None:
         return {}
     quality: dict = dict(schema.get("quality") or {})
     groups = schema.get("file_groups")
     if isinstance(groups, dict):
         for group_key, group_val in groups.items():
-            if _file_group_prefix_match(group_key, filename) and isinstance(group_val, dict):
+            if _file_group_prefix_match(group_key, filename, rel_path) and isinstance(group_val, dict):
                 gq = group_val.get("quality")
                 if isinstance(gq, dict):
                     quality.update(gq)
@@ -291,7 +342,7 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
             header_lower = [h.strip().lower() for h in header]
 
             if schema is not None:
-                declared = schema_columns_for(schema, p.name)
+                declared = schema_columns_for(schema, p.name, rel_path)
                 if declared is not None:
                     declared_lower = {c.lower() for c in declared}
                     have_lower = set(header_lower)
@@ -306,7 +357,7 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                             ],
                         }
 
-            quality = schema_quality_for(schema, p.name)
+            quality = schema_quality_for(schema, p.name, rel_path)
 
             ts_idx = il.find_ts_column(header)
             spread_idx = _find_col(header_lower, ["spread_bps"])

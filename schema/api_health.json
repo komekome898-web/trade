@@ -1,0 +1,23 @@
+{
+  "dataset": "api_health",
+  "description": "Per-call latency/outcome telemetry for the bot's own bitFlyer API requests, appended by src/bot/exchange/resilience.py's ApiHealthRecorder. Purely observational (best-effort, swallow-all-errors) -- never on the trading path and never influences order decisions itself; consumed by src/bot/monitoring/aggregate.py to build the dashboard's API health tile.",
+  "path_glob": [
+    "data/api_health.csv"
+  ],
+  "source": "src/bot/exchange/resilience.py: ApiHealthRecorder.record() appends one line per observed API call (both PAPER and LIVE), wired in via ApiObserver in src/bot/main.py.",
+  "retention": "self-rotating: ApiHealthRecorder rotates the file to api_health.csv.1 (overwriting any previous .1) once it exceeds max_bytes (4,000,000 by default, checked every 200 writes), then starts a fresh file with just the header -- history beyond one rotation's worth is not kept.",
+  "columns": {
+    "ts": {"meaning": "time the call was observed by the recorder", "unit": "Unix epoch seconds, 3 decimal places", "tz": "UTC (time.time())", "notes": "NOT an ISO-8601 string like most other datasets in this repo -- a bare int()/pandas.to_datetime without unit='s' will misparse this"},
+    "endpoint_class": {"meaning": "coarse grouping of the endpoint (e.g. order-placement vs read-only) used for condition-monitor bucketing", "unit": "string", "tz": null, "notes": "see src/bot/exchange/resilience.py for the exact class names in use"},
+    "endpoint": {"meaning": "the specific bitFlyer API path/method called", "unit": "string", "tz": null, "notes": null},
+    "latency_ms": {"meaning": "round-trip latency of the call", "unit": "milliseconds", "tz": null, "notes": null},
+    "outcome": {"meaning": "how the call resolved (e.g. success/error/timeout)", "unit": "string", "tz": null, "notes": "see resilience.py's failure classification (SAFE_RETRY/AMBIGUOUS/REJECTED) for how this feeds retry decisions"},
+    "condition": {"meaning": "the exchange-condition-monitor's state at the time of this call", "unit": "string", "tz": null, "notes": null},
+    "health": {"meaning": "raw health string from bitFlyer's own /v1/gethealth, when available for this call", "unit": "string", "tz": null, "notes": "blank when not applicable/unavailable, not a missing-data marker"}
+  },
+  "known_defects": [
+    "DATA QA 2026-09-05: this file had no schema entry at all as of the 2026-09-05 14:03 UTC owner-PC QUALITY.json run (1 of the 134 schema_undefined files) -- added post hoc from reading src/bot/exchange/resilience.py's ApiHealthRecorder (HEADER constant + record()); no live api_health.csv sample was available on the VM to cross-check column values against, only the writer code.",
+    "best-effort writer: every failure mode (unwritable path, full disk, a locked file on Windows) is silently swallowed by design (telemetry must never affect the trading path) -- an api_health.csv that stops growing, or is entirely absent, is not necessarily evidence the bot itself is unhealthy, only that this particular telemetry sink failed.",
+    "the file rotates in place (renamed to .1, then a fresh file with just the header) once it exceeds ~4MB -- a long-running deployment's api_health.csv only ever holds its most recent rotation's worth of calls plus whatever accumulated after the last rotation; it is not a full-history log."
+  ]
+}

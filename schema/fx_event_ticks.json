@@ -64,6 +64,10 @@
         "source": {"meaning": "provenance of this calendar entry", "unit": "string", "tz": null, "notes": null},
         "confidence": {"meaning": "owner's confidence in the scheduled time", "unit": "low/medium/high", "tz": null, "notes": null},
         "note": {"meaning": "free-text provenance note", "unit": "string", "tz": null, "notes": null}
+      },
+      "quality": {
+        "unique_key": ["date", "type"],
+        "_unique_key_note": "date alone is not a row key: CPI and an FOMC decision genuinely land on the same calendar date several times in the 2005-2014 snapshot (e.g. 2008-09-16, 2008-12-16, 2009-03-18, 2009-12-16, 2013-10-30 -- confirmed real coincident releases, not a data entry error). Without this, scripts/data_quality.py's duplicate_keys check (date column alone) flags each of those 7 dates."
       }
     }
   },

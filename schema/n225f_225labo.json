@@ -59,6 +59,10 @@
         "low": {"meaning": "1-minute low", "unit": "index points", "tz": null, "notes": null},
         "close": {"meaning": "1-minute close", "unit": "index points", "tz": null, "notes": null},
         "volume": {"meaning": "1-minute volume", "unit": "contracts", "tz": null, "notes": null}
+      },
+      "quality": {
+        "unique_key": ["date", "time"],
+        "_unique_key_note": "without this, scripts/data_quality.py's auto ts-column pick lands on `date` alone (it appears before `time` in TS_CANDIDATES) -- every one of the ~171 trading days in the file then looks like one repeated 'duplicate' key, purely from having >1 row per day. Verified empty duplicate set under (date, time) -- 205121 rows, 205121 unique (date, time) pairs, 2026-09-05."
       }
     }
   },

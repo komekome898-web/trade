@@ -9,7 +9,9 @@
     "backtest_data/candles_FX_BTC_JPY_*.csv*",
     "backtest_data/candles_BTC_JPY_*.csv",
     "backtest_data/candles_ETH_JPY_*.csv",
-    "backtest_data/candles_XRP_JPY_*.csv"
+    "backtest_data/candles_XRP_JPY_*.csv",
+    "backtest_data/auto_bitflyer_executions_*/candles_FX_BTC_JPY.csv",
+    "backtest_data/auto_bitflyer_executions_*/candles_XRP_JPY.csv"
   ],
   "source": "resampled from data/executions_<product>.csv (bitFlyer public GET /v1/executions, paged, deduped by id) -- see scripts/fetch_history.py",
   "retention": "bitFlyer's public execution history is 31 days; candles built from it are the long-term substitute once written and are never regenerated in a way that drops old minutes. backtest_data/candles_*_<date>.csv[.gz] are permanent dated snapshots of this file for reproducibility.",
@@ -48,6 +50,7 @@
   "known_defects": [
     "minutes with zero executions produce NO row at all (dropna on open) -- a hole in ts is a genuinely quiet minute for that product, not necessarily a collection failure; cross-check against the intake ledger's row_count/span and against a liquid sibling product before calling it a gap",
     "candles are rebuilt from scratch from the full executions_<product>.csv on every fetch_history.py run -- a correction to an old execution row (rare, but bitFlyer has issued erratum prints historically per other research reports) would silently change a historical candle",
-    "exec_date parsing uses pandas format='mixed' because bitFlyer's own timestamp precision is inconsistent across rows -- a row whose exec_date pandas cannot parse would silently become NaT and be sorted arbitrarily; this has not been observed but has not been actively checked for either"
+    "exec_date parsing uses pandas format='mixed' because bitFlyer's own timestamp precision is inconsistent across rows -- a row whose exec_date pandas cannot parse would silently become NaT and be sorted arbitrarily; this has not been observed but has not been actively checked for either",
+    "DATA QA 2026-09-05: a `zero_volume` row with a real (non-flat) open/high/low/close is NOT reproducible from a single fetch_history.py pass -- verified directly (o.join(v).dropna(subset=['open']) on a synthetic df: an empty resample bucket has NaN open and is dropped, so any surviving row's volume sum covers the exact same rows as its open) -- yet data/candles_FX_BTC_JPY.csv on the VM copy has such rows (e.g. ts=2026-07-23 16:04:00Z, open=10624068 high=10625509 low=10623927 close=10624749 volume=0.0) with NO corresponding rows at all in the VM's data/executions_FX_BTC_JPY.csv for that minute. Most likely cause: this VM's data/candles_*.csv and data/executions_*.csv are a stale, non-contemporaneous pair (this VM never runs fetch_history.py itself), not a live code defect -- but this is UNCONFIRMED; re-run fetch_history.py on the owner PC and recheck whether these specific zero_volume flags persist against a freshly-paired executions file before ruling out a real historical-rewrite defect (see the correction-silently-changes-a-candle note above)."
   ]
 }
