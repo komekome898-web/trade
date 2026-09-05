@@ -42,8 +42,11 @@ def first_verdicts() -> dict[str, tuple[str, str]]:
     return out
 
 
+SUFFIX = "2_second"
+
+
 def second_verdicts(packet: str) -> dict[str, str]:
-    path = AUD / f"{packet}2_second.md"
+    path = AUD / f"{packet}{SUFFIX}.md"
     if not path.exists():
         return {}
     out, cur = {}, None
@@ -82,4 +85,7 @@ def main(packets: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:] or DEFAULT)
+    args = sys.argv[1:]
+    if args and args[0].startswith("--suffix="):
+        SUFFIX = args.pop(0).split("=", 1)[1]
+    main(args or DEFAULT)
