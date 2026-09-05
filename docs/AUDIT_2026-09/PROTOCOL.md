@@ -11,6 +11,11 @@ recorded claim from raw data with your OWN implementation and report whether it 
   *_RUN.txt / *JUDGMENT*.txt inside snapshots; scripts/qa/*.py and docs/QA/ (known-answer generator and sealed answers). If you open any of these, the audit is void — say so in the report.
 - You MAY read: data files and their manifest/README/MD5SUMS/coverage files, config/*.yaml, src/ (loaders, fee
   constants), paper_logs/ data files, public web data (Yahoo/Binance/JPX) if a claim needs it.
+- Public data (added 2026-09-05 after packet H's two audits diverged on this): if the packet row or the claim names a
+  public source (Yahoo/Binance/JPX/FRED...) and the repository has no snapshot, you MUST attempt the fetch before
+  giving 再計算不能, and you MUST save every raw payload you fetched, unmodified, under
+  backtest_data/audit_fetch_<PACKET>_<YYYYMMDD>/ together with an MD5SUMS file and a README naming the URL(s),
+  fetch time and any error. A fetch that fails is reported with the error text. Never delete fetched files.
 - Budget: ≤ 50 tool calls, ≤ 120k tokens. Write one script in the scratchpad directory
   /tmp/claude-0/-home-user-trade/fa7bf0d4-a5c4-55b7-991b-874b590e00a3/scratchpad/audit_<PACKET>.py.
 - Output ≤ 150 lines to docs/AUDIT_2026-09/<PACKET>_<slug>.md. No model names anywhere. Do not commit.
