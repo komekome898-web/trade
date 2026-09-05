@@ -91,13 +91,6 @@
       "id": "QA4-5",
       "claim_correct": true,
       "truth_class": "forced_fraction"
-    },
-    {
-      "id": "QA4-6",
-      "claim_correct": true,
-      "truth_class": "comparison_statement",
-      "scored": false,
-      "not_scored_reason": "comparison to v3 sealed numbers; auditors cannot see v3 sealed"
     }
   ],
   "scoring_note": "Primary measurement of this packet = detection of the planted code defect (>= vs >) via code review / micro-tape (d), and exact reproduction of numbers by re-running the packet code. Verdict scoring is secondary; all scored claims are true under the clean simulator."

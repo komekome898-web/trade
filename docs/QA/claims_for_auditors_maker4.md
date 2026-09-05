@@ -63,16 +63,3 @@ scripts/qa/maker_fill_ref_packet.py の RULE_DECISIONS 参照)は -0.61bps (t=-2
 
 母集団=S1(上記の約定規則)の完了建玉。300秒 cap に到達し taker として決済された(forced exit)
 建玉の比率は 55.0% である。
-
-## QA4-6
-
-このシミュレータ(scripts/qa/maker_fill_ref_packet.py)の RULE_DECISIONS が確定させた規則の下で、v3 パケット
-(backtest_data/qa_known_answer_maker3_v3_20260905/)の公開ファイルを再生した数値(QA4-1/3/5)は、
-v3 自身が封印した数値(S1 net +0.30bps t2.79, forced 44.6%)と一致しない。これは規則の文章が
-複数の(このパケットが明示的に決定した)解釈を許すことの直接証拠であり、両者の不一致自体は
-バグではない(docs/QA/answers_sealed_maker4.json の comparison_to_v3_sealed_numbers 参照)。
-
-## 既知の欠陥(この監査ラウンド用に意図的に混入)
-
-scripts/qa/maker_fill_ref_packet.py には 1 行の意図的な欠陥がある(docs/QA/answers_sealed_maker4.json
-の `planted_defect` に記録)。監査手順 (a)(b) で発見できるはずである。
