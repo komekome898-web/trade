@@ -1,0 +1,168 @@
+{
+  "n_claims": 6,
+  "n_claims_located_in_report": 6,
+  "sensitivity": {
+    "rate": 0.5,
+    "n": 2,
+    "hits": 1
+  },
+  "specificity": {
+    "rate": 0.0,
+    "n": 2,
+    "hits": 0
+  },
+  "trap_detection": {
+    "per_trap": {
+      "crossed_book_rows": true,
+      "maintenance_window_flat_segment": false,
+      "t_ts_collection_vs_trade_time": false,
+      "price_scale_glitch": true
+    },
+    "rate": 0.5,
+    "assumption_section_found": true
+  },
+  "mde_sanity": {
+    "expected_mde_bps_from_seal": 0.5879,
+    "reported_mde_bps": [
+      18.79,
+      0.82
+    ],
+    "plausible": true
+  },
+  "per_claim": [
+    {
+      "id": "QA-1",
+      "category": "premium",
+      "truth_class": "true_effect",
+      "claim_correct": true,
+      "found_section": true,
+      "extracted_verdict": "再現",
+      "bps_values": [
+        2.1,
+        2.134,
+        0.294,
+        2.94,
+        122.0,
+        4.97,
+        18.79,
+        0.82,
+        2.1,
+        2.134,
+        3.5,
+        2445.7,
+        7.0,
+        7.0,
+        -9990.0,
+        18.86,
+        18.79,
+        -0.234,
+        0.83,
+        3.5,
+        -0.235,
+        3.5,
+        2445.7,
+        -0.234
+      ],
+      "t_stat_mentions": [
+        "t=7.2",
+        "t=7.26",
+        "t=16.8",
+        "t=4.2",
+        "t=0.999",
+        "t=-0.79",
+        "t=-0.81"
+      ]
+    },
+    {
+      "id": "QA-2",
+      "category": "premium",
+      "truth_class": "zero_effect",
+      "claim_correct": false,
+      "found_section": true,
+      "extracted_verdict": null,
+      "bps_values": [],
+      "t_stat_mentions": []
+    },
+    {
+      "id": "QA-3",
+      "category": "momentum",
+      "truth_class": "true_effect",
+      "claim_correct": true,
+      "found_section": true,
+      "extracted_verdict": null,
+      "bps_values": [],
+      "t_stat_mentions": []
+    },
+    {
+      "id": "QA-4",
+      "category": "momentum",
+      "truth_class": "zero_effect",
+      "claim_correct": false,
+      "found_section": true,
+      "extracted_verdict": null,
+      "bps_values": [],
+      "t_stat_mentions": []
+    },
+    {
+      "id": "QA-5",
+      "category": "cost_floor",
+      "truth_class": "cost_trap",
+      "claim_correct": true,
+      "found_section": true,
+      "extracted_verdict": "再現",
+      "bps_values": [
+        3.6,
+        2.0,
+        0.8,
+        0.0,
+        1.995,
+        2.0,
+        0.802,
+        0.8,
+        3.599,
+        3.6,
+        0.005,
+        0.38,
+        222.0,
+        0.8,
+        3.6,
+        3.599
+      ],
+      "t_stat_mentions": []
+    },
+    {
+      "id": "QA-6",
+      "category": "cost_floor",
+      "truth_class": "cost_trap",
+      "claim_correct": false,
+      "found_section": true,
+      "extracted_verdict": "結論変更",
+      "bps_values": [
+        1.2,
+        2.8,
+        1.995,
+        1.2,
+        0.00061,
+        1.9938,
+        2.0,
+        1.2,
+        2.8,
+        3.6,
+        2.8,
+        2.8,
+        3.6,
+        2445.0,
+        4.97,
+        0.0,
+        3.6,
+        -2.0,
+        0.802,
+        0.005
+      ],
+      "t_stat_mentions": [
+        "t=4.2",
+        "t=16.8"
+      ]
+    }
+  ]
+}
