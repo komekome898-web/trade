@@ -9,7 +9,7 @@ from __future__ import annotations
 import gzip
 import sys
 import time
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
@@ -124,6 +124,79 @@ def test_cli_refuses_json_output_under_data_dir(tmp_path, monkeypatch, capsys):
     assert "refusing" in err
 
 
+def test_cli_allows_the_self_report_path_under_data_dir(tmp_path, monkeypatch, capsys):
+    """The one path deploy/fetch_all.bat actually passes
+    (data\\WS_GZ_LISTING.json on Windows) must be allowed even though it is
+    under data/ — this is the bug: the generic 'nothing under data/' guard
+    used to block the tool's own designated self-report location."""
+    monkeypatch.setattr(rgl, "REPO_ROOT", tmp_path)
+    (tmp_path / "data" / "ws").mkdir(parents=True)
+    (tmp_path / "data" / "ws" / "x.gz").write_bytes(_member("x\n"))
+    self_report = tmp_path / "data" / "WS_GZ_LISTING.json"
+    monkeypatch.setattr(sys, "argv", [
+        "repair_gz_listing.py", "--root", str(tmp_path / "data" / "ws"),
+        "--json", str(self_report),
+    ])
+
+    rc = rgl.main()
+    assert rc == 0
+    assert self_report.exists()
+    err = capsys.readouterr().err
+    assert "refusing" not in err
+
+
+def test_cli_still_refuses_other_names_under_data_dir(tmp_path, monkeypatch, capsys):
+    """Only the exact self-report name is exempt — any other filename under
+    data/ (including a near-miss) stays blocked."""
+    monkeypatch.setattr(rgl, "REPO_ROOT", tmp_path)
+    (tmp_path / "data" / "ws").mkdir(parents=True)
+    (tmp_path / "data" / "ws" / "x.gz").write_bytes(_member("x\n"))
+    near_miss = tmp_path / "data" / "ws" / "WS_GZ_LISTING.json"
+    monkeypatch.setattr(sys, "argv", [
+        "repair_gz_listing.py", "--root", str(tmp_path / "data" / "ws"),
+        "--json", str(near_miss),
+    ])
+
+    rc = rgl.main()
+    assert rc == 1
+    assert not near_miss.exists()
+    assert "refusing" in capsys.readouterr().err
+
+
+# ---- Windows-style path handling -----------------------------------------
+# These don't need an actual Windows host: Path.resolve() on POSIX already
+# treats a literal backslash as one funny-looking filename character, so we
+# reproduce the Windows-side path shape with pathlib.PureWindowsPath instead
+# of relying on os.sep / the running platform's own Path implementation.
+
+
+def test_is_under_data_matches_windows_style_absolute_path():
+    win_root = PureWindowsPath(r"C:\Users\owner\trade")
+    win_json = PureWindowsPath(r"C:\Users\owner\trade\data\WS_GZ_LISTING.json")
+    win_data = win_root / "data"
+    assert win_data == win_json.parent
+    assert win_data in win_json.parents
+
+
+def test_is_self_report_recognizes_backslash_relative_path(tmp_path):
+    # Simulate what happens when the bat file's literal argument
+    # "data\WS_GZ_LISTING.json" is resolved on a real Windows host: pathlib's
+    # WindowsPath treats backslash natively, so the resolved path lands
+    # exactly at <repo_root>/data/WS_GZ_LISTING.json on that OS too. We
+    # exercise the same relative_to/as_posix logic repair_gz_listing.py uses,
+    # via an actual Path built through parts (OS-independent construction is
+    # what we're pinning down, not the literal separator character).
+    repo_root = tmp_path
+    resolved = repo_root.joinpath("data", "WS_GZ_LISTING.json").resolve()
+    assert rgl._is_self_report(resolved, repo_root)
+    assert rgl._is_under_data(resolved, repo_root)
+
+    # A different file under data/ must NOT be treated as the self-report.
+    other = repo_root.joinpath("data", "ws", "WS_GZ_LISTING.json").resolve()
+    assert not rgl._is_self_report(other, repo_root)
+    assert rgl._is_under_data(other, repo_root)
+
+
 def test_cli_writes_json_report_outside_data_dir(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(rgl, "REPO_ROOT", tmp_path)
     (tmp_path / "data" / "ws").mkdir(parents=True)
@@ -141,3 +214,25 @@ def test_cli_writes_json_report_outside_data_dir(tmp_path, monkeypatch, capsys):
     data = json.loads(out_json.read_text())
     assert len(data) == 1
     assert data[0]["last_member_complete"] is True
+
+
+def test_unexpected_exception_prints_one_line_and_exits_nonzero(tmp_path, monkeypatch, capsys):
+    """An unforeseen failure must never die silently (e.g. an unlogged
+    traceback swallowed by a bat file's stdout/stderr redirection) — main()
+    catches it, prints a single stderr line, and returns non-zero."""
+    monkeypatch.setattr(sys, "argv", ["repair_gz_listing.py", "--root", str(tmp_path)])
+    monkeypatch.setattr(rgl, "build_report", lambda root: (_ for _ in ()).throw(RuntimeError("boom")))
+
+    rc = rgl.main()
+    assert rc == 1
+    err = capsys.readouterr().err.strip()
+    assert err.count("\n") == 0
+    assert "boom" in err
+
+
+def test_self_report_relative_matches_intake_ledger_self_files():
+    """scripts/intake_ledger.py must already know this tool's self-report
+    output is not recorded data — keep the two constants in sync."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import intake_ledger
+    assert rgl.SELF_REPORT_RELATIVE in intake_ledger.SELF_FILES

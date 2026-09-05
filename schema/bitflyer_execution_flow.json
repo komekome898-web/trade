@@ -30,14 +30,15 @@
     "flow_<product>.csv": {
       "columns": {
         "ts": {"meaning": "start of the 1-minute bucket", "unit": "ISO-8601", "tz": "UTC", "notes": null},
-        "open": {"meaning": "first execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
-        "high": {"meaning": "max execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
-        "low": {"meaning": "min execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
-        "close": {"meaning": "last execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
-        "volume": {"meaning": "total execution size in the minute (buy_vol + sell_vol)", "unit": "base currency", "tz": null, "notes": null},
-        "buy_vol": {"meaning": "taker-buy volume in the minute", "unit": "base currency", "tz": null, "notes": null},
-        "sell_vol": {"meaning": "taker-sell volume in the minute", "unit": "base currency", "tz": null, "notes": null},
-        "trades": {"meaning": "execution count in the minute", "unit": "count", "tz": null, "notes": null}
+        "open": {"meaning": "first execution price in the minute", "unit": "JPY", "tz": null, "notes": "forward-filled from the previous real minute when synthetic=1"},
+        "high": {"meaning": "max execution price in the minute", "unit": "JPY", "tz": null, "notes": "forward-filled from the previous real minute when synthetic=1"},
+        "low": {"meaning": "min execution price in the minute", "unit": "JPY", "tz": null, "notes": "forward-filled from the previous real minute when synthetic=1"},
+        "close": {"meaning": "last execution price in the minute", "unit": "JPY", "tz": null, "notes": "forward-filled from the previous real minute when synthetic=1"},
+        "volume": {"meaning": "total execution size in the minute (buy_vol + sell_vol)", "unit": "base currency", "tz": null, "notes": "0.0 when synthetic=1"},
+        "buy_vol": {"meaning": "taker-buy volume in the minute", "unit": "base currency", "tz": null, "notes": "0.0 when synthetic=1"},
+        "sell_vol": {"meaning": "taker-sell volume in the minute", "unit": "base currency", "tz": null, "notes": "0.0 when synthetic=1"},
+        "trades": {"meaning": "execution count in the minute", "unit": "count", "tz": null, "notes": "0 when synthetic=1"},
+        "synthetic": {"meaning": "1 = this minute had zero executions and every OHLCV column above is forward-filled/zeroed rather than observed; 0 = a real minute", "unit": "0/1", "tz": null, "notes": "added 2026-09-05 (DATA QA); rows written before this date do not have this column at all -- its absence, not a 0 value, is what marks pre-fix history"}
       }
     },
     "basis_1m.csv": {
@@ -52,7 +53,10 @@
   },
   "known_defects": [
     "executions_<product>.csv duplicate_keys should be checked on id, not exec_date -- several executions can share the same exec_date microsecond (see schema/bitflyer_tape.json's executions_YYYYMMDD.csv.gz for the same phenomenon on the WS-derived tape)",
-    "flow_<product>.csv and basis_1m.csv both silently omit a minute with zero executions (no interpolated/zero row) -- a gap in ts is a genuinely quiet minute for that product/pair, not necessarily a collection failure",
-    "basis_1m.csv is rebuilt from data/candles_FX_BTC_JPY.csv and data/candles_BTC_JPY.csv on every run of scripts/build_basis.py -- a correction to either candle file would silently change historical basis_pct values"
+    "basis_1m.csv silently omits a minute with zero executions (no interpolated/zero row) -- a gap in ts is a genuinely quiet minute for that product/pair, not necessarily a collection failure",
+    "basis_1m.csv is rebuilt from data/candles_FX_BTC_JPY.csv and data/candles_BTC_JPY.csv on every run of scripts/build_basis.py -- a correction to either candle file would silently change historical basis_pct values",
+    "DATA QA 2026-09-05 (docs/DATA_QA_TRIAGE.md): flow_<product>.csv's maintenance_window (80) and zero_volume (2527) flags root-caused to scripts/build_flow.py independently reimplementing scripts/fetch_deep.py's ffill(open/high/low/close)+fillna(0.0) gap-filling -- UNLIKE the note above (which describes fetch_history.py's build_candles, which drops quiet minutes entirely), build_flow.py never dropped them, it just had no way to mark them. Fixed by adding the same `synthetic` flag fetch_deep.py already has (see the column doc above and tests/test_build_flow.py); existing data/flow_*.csv files are not rewritten.",
+    "DATA QA 2026-09-05: executions_<product>.csv's non_monotonic (538,325 rows, on data/executions_FX_BTC_JPY.csv and data/executions_XRP_JPY.csv only -- NOT on the backtest_data/executions_FX_BTC_JPY_31d_*.csv.gz snapshot, which is built by a separate, already-sorted extraction path) and a large share of its gaps (109,005 total across the dataset) are the same root cause: scripts/fetch_history.py pages backward from the newest trade each run (before=None, then before=<oldest id so far>) and used to append that batch to the file in the newest-first order it arrived in, writing a strictly-decreasing id/timestamp run into an otherwise-ascending file on every single run -- and a gaps check computed off that same broken row order manufactures bogus deltas alongside the real non_monotonic ones. Fixed: scripts/fetch_history.py now sorts each run's new rows ascending by id before appending (see `_order_new_rows`, tests/test_fetch_history_candles.py). Existing rows are NOT reordered -- the historical reversed runs already written remain and will keep flagging non_monotonic/gaps until/unless a one-off resort of the existing file is separately decided (not done here: never modify data files).",
+    "DATA QA 2026-09-05: checked group_by applicability for flow_<product>.csv and executions_<product>.csv -- confirmed NOT interleaved (one file per product already, verified against backtest_data/flow_FX_BTC_JPY_20260820.csv and backtest_data/executions_FX_BTC_JPY_31d_*.csv.gz headers), so quality.group_by is not needed here; the gaps/non_monotonic counts are fully explained by the ordering bug above, not by multiple symbols sharing one file."
   ]
 }

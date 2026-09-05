@@ -163,6 +163,54 @@ def test_main_writes_output_and_nonzero_exit_on_mismatch(tree: Path, monkeypatch
     assert data["ok"] is False
 
 
+def test_line_ending_only_mismatch_is_not_a_real_mismatch(tmp_path: Path):
+    bt = tmp_path / "backtest_data"
+    lf_content = "line1\nline2\nline3\n"
+    _write(bt / "unit_crlf" / "notes.md", lf_content)
+    lf_md5 = il.md5_of(bt / "unit_crlf" / "notes.md")
+    # MD5SUMS was sealed against the LF content (as this VM produces it)
+    _write(bt / "unit_crlf" / "MD5SUMS", f"{lf_md5}  notes.md\n")
+    # ...but the working copy on disk now has CRLF line endings (as a
+    # Windows checkout with autocrlf on would produce)
+    (bt / "unit_crlf" / "notes.md").write_bytes(lf_content.replace("\n", "\r\n").encode())
+
+    report = vs.run(tmp_path, write_seal=True)
+    units = {u["unit"]: u for u in report["units"]}
+    unit = units["unit_crlf"]
+
+    assert unit["status"] == "verified_line_ending_only"
+    assert unit["mismatches"] == []
+    assert len(unit["line_ending_mismatches"]) == 1
+    entry = unit["line_ending_mismatches"][0]
+    assert entry["file"] == "notes.md"
+    assert entry["ok"] is True
+    assert "note" in entry
+
+    # a benign line-ending diff must not fail the overall run
+    assert report["summary"]["total_mismatches"] == 0
+    assert report["summary"]["total_line_ending_only"] == 1
+    assert report["ok"] is True
+
+
+def test_line_ending_normalization_does_not_mask_real_content_changes(tmp_path: Path):
+    bt = tmp_path / "backtest_data"
+    _write(bt / "unit_real" / "data.csv", "a,b,c\n1,2,3\n")
+    good_md5 = il.md5_of(bt / "unit_real" / "data.csv")
+    _write(bt / "unit_real" / "MD5SUMS", f"{good_md5}  data.csv\n")
+    # genuinely different content (not just a line-ending change)
+    (bt / "unit_real" / "data.csv").write_text("a,b,c\n1,2,4\n")
+
+    report = vs.run(tmp_path, write_seal=True)
+    units = {u["unit"]: u for u in report["units"]}
+    unit = units["unit_real"]
+
+    assert unit["status"] == "mismatch"
+    assert len(unit["mismatches"]) == 1
+    assert unit["mismatches"][0]["file"] == "data.csv"
+    assert unit["line_ending_mismatches"] == []
+    assert report["ok"] is False
+
+
 def test_main_exit_zero_when_clean(tmp_path: Path, monkeypatch):
     bt = tmp_path / "backtest_data"
     _write(bt / "clean" / "c.csv", "clean-content")

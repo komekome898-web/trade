@@ -86,3 +86,60 @@
 ## 検証
 
 `PYTHONPATH=src python -m pytest -q tests/test_data_quality.py` および全体テスト(976件)を実行し、全て通過(スキーマ・チェッカー変更後も既存の期待値に影響なし)。`scripts/data_quality.py`をVMのローカルコピーに対して再実行し、上記の修正が実際に該当フラグを解消することを確認(例: missing_columns 347→5、schema_undefined_count 0 を維持)。データファイルは変更していない。
+
+---
+
+# 追記 (2026-09-05 続き): paper_logs/QUALITY.json (16:26 UTC, 32データセット) の残りフラグ
+
+入力は本追記の見出しどおり `paper_logs/QUALITY.json`(2026-09-05 16:26 UTC生成、32データセット)+ `paper_logs/INTAKE_latest.json`。件数 > 0 で上表に未掲載の全フラグ(fx_event_ticks/gaps 367871、oi_snapshots/gaps 6 は既存行と完全一致するため対象外)を判定。手法は上表と同一(ローカル実ファイルを開く/`scripts/data_quality.py`のロジックを手動再現、または実際にVM上のローカルコピーに対して再実行)。データファイルは一切変更していない。
+
+このラウンドでスキーマ形式に `quality.skip_checks`(その dataset/file_group にそのチェックを一切適用しない)と `quality.informational_checks`(チェックは発火させ続けるが結果には `informational: true` を付けて実データ問題としては扱わない)を追加し、`scripts/data_quality.py`(`_apply_check_switches`)に実装した。既存の `quality.group_by` / `quality.unique_key` と同じ場所(dataset直下または`file_groups`エントリ内、file_groups側が優先)で解決される。
+
+## 台帳(追加分)
+
+| dataset | flag | count | 判断 | 根拠(要約) | 対応 |
+|---|---|---|---|---|---|
+| bitflyer_execution_flow | non_monotonic | 538325 | 収集側の修正 | `data/executions_FX_BTC_JPY.csv`・`data/executions_XRP_JPY.csv`のみで発火(`backtest_data/executions_FX_BTC_JPY_31d_*.csv.gz`は0件=別の抽出経路で既にソート済み)。根本原因を`scripts/fetch_history.py`で特定: `before=None`から新しい順にページングして`before=batch[-1]["id"]`で遡る設計のため、`new_rows`は新しい順(降順)で溜まり、それをそのまま追記書き込みしていた。昇順の既存ファイルに対し**毎回の実行で降順の1ブロックを書き込む**ため、実行のたびに非単調な区間が生まれる(サンプル行のprev_ts→tsが連続して減少するパターンと一致) | 修正済み: `scripts/fetch_history.py`に`_order_new_rows`(id昇順ソート)を追加し、追記前に必ず昇順化。既存データファイルは書き換えない(「データは一切変更しない」原則により、過去に書き込まれた降順ブロックはそのまま残り、以後もnon_monotonic/gapsとして検出され続ける)。テスト: `tests/test_fetch_history_candles.py::test_order_new_rows_sorts_ascending_by_id` |
+| bitflyer_execution_flow | gaps | 109005 | 収集側の修正(2ファイル)/仕様どおり(1ファイル) | 3ファイルの内訳: `backtest_data/executions_FX_BTC_JPY_31d_*.csv.gz`(median 0.734s、最大ギャップ約810s=閑散期、bitflyer_tapeと同じ「仕様どおり」の性質)/ `data/executions_FX_BTC_JPY.csv`・`data/executions_XRP_JPY.csv`(non_monotonic行と同一原因: 行順序が壊れているため、`_compute_gaps`が前行との差分から計算するgapsも同時に汚染されている実測値ではなく順序バグの副産物) | 上記non_monotonicの修正(`_order_new_rows`)で将来分は解消。既存データは非修正(既知の残存事象として記録) |
+| bitflyer_execution_flow | maintenance_window | 80 | 収集側の修正 | `backtest_data/flow_FX_BTC_JPY_20260820.csv`(=`data/flow_FX_BTC_JPY.csv`と同一ビルダー)のみで発火。`scripts/build_flow.py`を確認したところ、`scripts/fetch_deep.py`と全く同じ`ffill(open/high/low/close)+fillna(volume,0.0)`パターンを独自実装しており(既存修正のcandles_fx_btc_jpy/zero_volumeと同根)、欠測分の1分足を前バーの値でOHLC埋めしていた。`synthetic`フラグが無いため実バーと区別不能だった | 修正済み: `scripts/build_flow.py`に`synthetic`列を追加(1=ffill埋め、0=実バー)。既存`schema/candles_fx_btc_jpy.json`の`synthetic`列と同じ設計・同じ「追加日より前の行には列自体が無い」の扱い。既存データファイルは書き換えない。テスト: `tests/test_build_flow.py` |
+| bitflyer_execution_flow | zero_volume | 2527 | 収集側の修正 | 上記maintenance_windowと同一原因・同一ファイル(`build_flow.py`のffill+fillna(0.0))。ffillされた行は`volume`列が常に0.0になる | 同上(`synthetic`列で識別可能に) |
+| bitflyer_execution_flow | (group_by適用性の確認) | - | 検討済み・不要 | 「複数銘柄が1ファイルに混在していないか」を`backtest_data/flow_FX_BTC_JPY_20260820.csv`・`backtest_data/executions_FX_BTC_JPY_31d_*.csv.gz`のヘッダーで確認したが、いずれも1ファイル1銘柄(製品名がファイル名に含まれ、`path_glob`も製品ごとに分離)で混在なし。gaps/non_monotonicの原因は上記の順序バグで説明済みのため`quality.group_by`は不要と判断 | schema known_defectsに追記済み(対応不要の根拠として記録) |
+| daily_crypto_usd_multisource | extreme_return | 869 | 仕様どおり | 5ファイル全てで発火するが、いずれも各ソース(bitstamp 2011-08〜、coinbase/yahoo)の収集開始直後の年代に集中。BTC/ETHが1桁〜低2桁ドルだった時期の実相場変動(2011年のBTC乱高下等)で、隣接行との整合性も確認済み(単発の異常値ではない) | schema追記済み(早期年代の実変動の件) |
+| daily_crypto_usd_multisource | zero_volume | 33 | 仕様どおり | 全件`backtest_data/daily_btcusd_bitstamp_20260828.csv.gz`の2011-08-23〜08-29(bitstampのBTC/USD取引開始直後の週)。新規上場直後の薄商いで実際に出来高ゼロの日が生じるのは自然(reit_onrの上場初期zero_volumeと同型) | schema追記済み(開始直後の週の件) |
+| external_crypto_klines | extreme_return | 91 | 仕様どおり | 5ファイル(data/・backtest_dataのbinance_XRPUSDT_1d/4h、data/binance_BTCUSDT_1d)。XRP +13〜+26%、BTC +10〜-14%は両銘柄の既知の実ボラティリティ範囲内(前後行と整合、単発の桁ズレ等の兆候なし) | schema追記済み |
+| external_crypto_klines | maintenance_window | 355 | 仕様どおり(チェック自体が不適用) | 全件`bitbank_xrp_jpy_1m.csv`(data/・backtest_data)。bitbank社はbitFlyerと無関係の別取引所であり、19:00-19:10 UTCという時間帯そのものに固有の意味はない(隣接行が同一値ではなく、単に該当分だけ値幅ゼロという薄商いの偶然の一致)。チェック名の前提(bitFlyerの保守時間)がそもそも当てはまらないデータセット | 修正済み: `schema/external_crypto_klines.json`にdataset-level `quality.skip_checks: ["maintenance_window"]`を追加(このデータセットの情報源はいずれもbitFlyer以外のため) |
+| external_crypto_klines | missing_columns | 5 | 収集側の修正 | `backtest_data/binance_BTCUSDT_1m_210d_*.csv.gz`の実ヘッダーを確認したところ`open_time,open,high,low,close,volume,quote_volume,n_trades,taker_buy_base`(`scripts/fetch_binance_full.py`のフル精度出力と同一形状)だったが、schemaの該当file_groupsは`timestamp,open,high,low,close,volume`(簡易形状)を誤って宣言していた。この210日スナップショットは`fetch_binance_full.py`出力の凍結コピーであり、簡易版ではなかった | 修正済み: `schema/external_crypto_klines.json`の`binance_BTCUSDT_1m_210d_*.csv.gz`のcolumns/unique_keyを`binance_BTCUSDT_1m_full.csv`と同一形状に修正 |
+| external_crypto_klines | zero_volume | 19435 | 仕様どおり | 全件`bitbank_xrp_jpy_1m.csv`(data/・backtest_data)。1分粒度のJPY建てマイナー銘柄(XRP/JPY)で無出来高分が多数生じるのは構造上当然(n225f_225labo・reit_onrの薄商いzero_volumeと同型) | 対応不要 |
+| fx_usdjpy_reference | gaps | 189 | 仕様どおり | 最大例(172860s≈48h、2024-01-01始まり)は元日を挟むFX年末年始休場。他の反復例(86460s≈24h+60s、2023-01-08/15/22/29=いずれも日曜日)はFXの週末休場(金22:00UTC〜日22:00UTC)という市場構造そのもの。median_gap 60sは1分足として正常 | 対応不要 |
+| fx_usdjpy_reference | maintenance_window | 1994 | 収集側の修正(チェック自体が不適用) | `backtest_data/fx_usdjpy_1m_20260822.csv.gz`のみで発火。DukascopyのFXフィードにbitFlyerの保守時間が影響する理由がなく、19:00-19:10UTCに固まって見えるのは単なる薄商いの平坦分足(既存known_defects「volumeはtick-volumeプロキシで頻繁に0」と同種の性質) | 修正済み: `schema/fx_usdjpy_reference.json`の`USDJPY_1m.csv`・`fx_usdjpy_1m_*.csv.gz`両file_groupsに`quality.skip_checks: ["zero_volume","maintenance_window"]`を追加 |
+| fx_usdjpy_reference | zero_volume | 285071 | 収集側の修正(チェック自体が不適用) | 同上ファイル。既存known_defectsに「volumeはDukascopyのtick-volumeプロキシで真の約定高ではなく頻繁に0」と明記済み(新情報ではない)。FXに`volume`概念そのものが薄いため、このチェックはデータセットの性質上ほぼ常に大量発火する設計不一致だった | 同上(skip_checksで無効化) |
+| regime_composite | extreme_return | 186 | 仕様どおり | `raw/price_daily.csv`と`features_daily.csv`(`close`列は前者の同日値をそのままコピー)の2ファイルで重複発火(93件×2)。該当日は2015-08(著名な2015年8月BTC暴落、約$280→$200)・2015-11(2015年11月BTC急騰、約$230→$464)・2016-01(その後の調整)で、いずれも実在する検証可能な相場変動 | schema追記済み |
+| regime_composite | gaps | 1 | 既知欠陥 | `raw/gdelt_tone.csv`の単発ギャップ(2025-07-02、median 86400s=1日に対し約18日分の欠測)。既存known_defects「GDELTのレート制限により四半期単位で分割取得、過去のレート制限時期周辺に薄い欠測が生じるのは想定内」と完全一致 | 対応不要(既存記載どおり) |
+| spread_fx_btc_jpy | gaps | 42 | 既知欠陥(大半)/未解決(一部) | 21件のユニーク事象×2コピー(data/・paper_logs/)。最大2件のうち1件(約10.3h、2026-08-28T04:19:17Z終了)は既存known_defects記載の2026-08-27夜〜08-28朝のオーナーPCダウンと同一時刻で完全一致。もう1件(約10.7h、2026-08-26T05:16:24Z終了、1日前)は同種のPCダウン/スリープの可能性が高いが、`paper_logs/venues/`がこのVMには2026-08-27分からしか無く独立したデータセットでの裏取りができず未確認のまま残す。残りの小さいギャップ(194s/約50分/約2.5h、いずれも2026-08-20)は収集初日の起動時の一時的な事象と推定 | schema追記済み(2件目は「未確認」と明記して残す)。08-25/26の件はオーナーPC側のログで確認できれば解消可能 |
+
+## 収集側の修正 一覧(本追記で適用)
+
+7. `scripts/fetch_history.py`: `_order_new_rows`を追加し、`before=`遡りページングで新しい順に溜まる`new_rows`を追記前にid昇順へソート。executions_<product>.csvのnon_monotonic(538,325件)と、それに連動するgapsの誤検出を将来分について解消。既存データは非変更。
+8. `scripts/build_flow.py`: `scripts/fetch_deep.py`と同型のffill+fillna(0.0)によるギャップ埋めに`synthetic`列(1=埋めた行、0=実バー)を追加。flow_<product>.csvのmaintenance_window(80件)・zero_volume(2527件)を実バーと区別可能に。既存データは非変更。
+9. `scripts/data_quality.py`: `quality.skip_checks`(該当チェックを結果から除外)・`quality.informational_checks`(チェックは発火させたまま`informational: true`を付与)をdataset-level/file_groups-levelで解決する`_apply_check_switches`を追加。`scan_file`の両returnパスに適用。
+10. `schema/qa_synthetic.json`: `quality.informational_checks: "all"`を追加し、「SYNTHETIC DATA WARNING」を仕組みとして固定(以後QUALITY.jsonの当該チェックは`informational: true`付きで報告される)。
+11. `schema/fx_usdjpy_reference.json`: `USDJPY_1m.csv`・`fx_usdjpy_1m_*.csv.gz`両file_groupsに`quality.skip_checks: ["zero_volume","maintenance_window"]`を追加。
+12. `schema/external_crypto_klines.json`: dataset-levelに`quality.skip_checks: ["maintenance_window"]`を追加(全ソースがbitFlyer以外のため)。`binance_BTCUSDT_1m_210d_*.csv.gz`のcolumns誤り(簡易形状→フル精度形状)を修正。
+
+## known_defects 追記(追加分)
+
+`schema/bitflyer_execution_flow.json`: non_monotonic/gaps/maintenance_window/zero_volumeそれぞれの根本原因(fetch_history.pyの追記順序バグ、build_flow.pyの無フラグffill)と修正内容、group_by不要の確認結果を追記。
+`schema/daily_crypto_usd_multisource.json`: extreme_returnが早期年代の実変動であること、zero_volumeがbitstamp取引開始直後の週であることを追記。
+`schema/external_crypto_klines.json`: extreme_returnの実変動判定、maintenance_windowチェック不適用の理由、missing_columnsのschema修正内容、zero_volumeの薄商い判定を追記。
+`schema/fx_usdjpy_reference.json`: zero_volume/maintenance_windowをskip_checksで無効化した理由を追記。
+`schema/regime_composite.json`: extreme_returnが2015年のBTC暴落・急騰という実相場変動であることを追記。
+`schema/spread_fx_btc_jpy.json`: gapsの内訳(既知の10.3h PCダウンと一致する1件、未確認の10.7h候補1件、起動日の小ギャップ)を追記。
+
+## 未解決として残るもの(追加分)
+
+- spread_fx_btc_jpyのgaps: 2026-08-25夜〜08-26朝と推定される約10.7時間のギャップが、独立したデータセット(venues等)でこのVM上では裏取りできない(paper_logs/venuesが2026-08-27分からしか無い)。オーナーPCの当該日ログで確認が望ましい。
+- bitflyer_execution_flowのnon_monotonic/gaps: `fetch_history.py`の追記順序バグは将来分のみ修正済みで、既存の`data/executions_FX_BTC_JPY.csv`・`data/executions_XRP_JPY.csv`に残る過去の降順ブロックは「データは一切変更しない」原則により是正していない(検出され続ける)。一括再ソートするかどうかはオーナー判断待ち。
+
+## 検証(追加分)
+
+`PYTHONPATH=src python -m pytest -q tests/test_data_quality.py tests/test_fetch_history_candles.py tests/test_build_flow.py tests/test_verify_snapshots.py` を実行し全て通過(新規テスト`test_build_flow.py`、`test_data_quality.py`のskip_checks/informational_checksケース、`test_fetch_history_candles.py`の`_order_new_rows`ケース、`test_verify_snapshots.py`の`line_ending_only`ケースを含む)。`scripts/data_quality.py`をVMのローカルコピーに対して再実行し、`external_crypto_klines`のmissing_columns/maintenance_windowが解消、`fx_usdjpy_reference`のzero_volume/maintenance_windowが解消、`qa_synthetic`の全チェックに`informational: true`が付与されることを確認。データファイルは一切変更していない。

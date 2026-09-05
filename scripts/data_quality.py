@@ -65,6 +65,17 @@ per file_groups entry -- the file_groups one wins, same lookup as
   - quality.unique_key: [col, ...] -- duplicate_keys uses these columns
     instead of the timestamp column alone (e.g. bitFlyer executions can
     print several distinct trades within one shared microsecond).
+  - quality.skip_checks: [check_name, ...] -- the named check(s) do not
+    apply to this dataset at all and are dropped from the result entirely
+    (e.g. an FX 1-minute feed has no real `volume` concept, so zero_volume
+    is meaningless there; bitFlyer's maintenance window has no bearing on
+    an FX reference feed either). See _apply_check_switches.
+  - quality.informational_checks: [check_name, ...] or "all"/true -- the
+    named check(s) (or every check that fires on the file) are real and
+    should keep firing, but are not data problems to chase down (e.g.
+    qa_synthetic's planted-defect fixtures exist specifically to trip these
+    checks). Marked `"informational": true` on the result rather than
+    dropped, at both the per-file and dataset-aggregate level.
 
 Usage:
     python scripts/data_quality.py               # run checks, write QUALITY.json
@@ -262,6 +273,48 @@ def schema_quality_for(schema: Optional[dict], filename: str, rel_path: Optional
 # --------------------------------------------------------------------------
 
 
+def _apply_check_switches(result: dict, quality: dict) -> dict:
+    """Apply a schema's per-dataset (or per-file_group) quality-check
+    switches to one file's already-computed check results:
+
+      - quality.skip_checks: [check_name, ...] -- the named check does not
+        apply to this dataset at all (e.g. an FX 1-minute file has no real
+        `volume` concept, so zero_volume is structurally meaningless there;
+        bitFlyer's 19:00-19:10 UTC maintenance window has no bearing on an
+        FX reference feed). The check still runs (cheap, and keeps the code
+        simple), but its result is dropped before it ever reaches
+        QUALITY.json or a dashboard count -- it is not merely hidden, it
+        never happened as far as any consumer of this report is concerned.
+      - quality.informational_checks: [check_name, ...], or the literal
+        string "all" (or boolean True) for every check that fires on this
+        file -- the check is real and SHOULD keep firing (e.g. qa_synthetic
+        is planted-defect fixtures whose entire purpose is to exercise
+        these checks; a real dataset's genuinely-expected-but-still-worth-
+        seeing pattern could use this too), but it is not a data problem to
+        chase down. Marked with `"informational": true` on that check's
+        result rather than removed, so counts/examples stay visible.
+
+    Both keys are read from the SAME `quality` dict schema_quality_for()
+    already resolves (dataset-level merged with any matching file_groups
+    entry), so a file_group can, e.g., skip a check the dataset applies
+    everywhere else.
+    """
+    skip = {c for c in (quality.get("skip_checks") or []) if isinstance(c, str)}
+    for name in skip:
+        result.pop(name, None)
+
+    info = quality.get("informational_checks")
+    if info is True or info == "all":
+        info_names = set(result.keys())
+    else:
+        info_names = {c for c in (info or []) if isinstance(c, str)}
+    for name in info_names:
+        if name in result:
+            result[name]["informational"] = True
+
+    return result
+
+
 def _compute_gaps(groups: dict) -> tuple[int, Optional[float], list]:
     """Per-group median-gap detection (see scan_file's `groups` state):
     a group's own median inter-row delta sets its threshold, so one group's
@@ -322,6 +375,7 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
     duplicate_keys uses it instead of the timestamp column alone when set.
     """
     result: dict[str, dict] = {}
+    quality: dict = {}  # overwritten below once the schema is resolved; stays {} on an early return/error
     p = root / rel_path
     kind = il.tabular_kind(p.name)
     if kind is None or not p.exists():
@@ -554,7 +608,7 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                 gap_count, gap_median, gap_examples = _compute_gaps(groups)
                 if gap_count:
                     result["gaps"] = {"count": gap_count, "median_gap_seconds": gap_median, "examples": gap_examples}
-                return result
+                return _apply_check_switches(result, quality)
 
             if non_monotonic_count:
                 result["non_monotonic"] = {"count": non_monotonic_count, "examples": non_monotonic_examples}
@@ -608,7 +662,7 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
     except (OSError, gzip.BadGzipFile, csv.Error) as exc:
         result["scan_error"] = {"count": 1, "examples": [{"error": f"{type(exc).__name__}: {exc}"}]}
 
-    return result
+    return _apply_check_switches(result, quality)
 
 
 # --------------------------------------------------------------------------
@@ -648,6 +702,13 @@ def run(root: Path) -> dict:
             agg = d["checks"].setdefault(check_name, {"count": 0, "files": 0, "examples": []})
             agg["count"] += payload.get("count", 0)
             agg["files"] += 1
+            if payload.get("informational"):
+                # quality.informational_checks (see _apply_check_switches):
+                # surfaced at the aggregate level too, not just buried in
+                # per-file examples, so a consumer can tell "this whole
+                # check is expected-by-design for this dataset" without
+                # inspecting individual examples.
+                agg["informational"] = True
             if len(agg["examples"]) < MAX_EXAMPLES:
                 agg["examples"].append({"path": rel_path, **{k: v for k, v in payload.items() if k != "count"}})
 

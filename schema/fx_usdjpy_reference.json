@@ -19,7 +19,7 @@
         "volume": {"meaning": "Dukascopy's own tick-volume proxy for the bar", "unit": "as provided by source (not a true traded notional -- Dukascopy is an ECN aggregator, not a single venue)", "tz": null, "notes": "frequently 0.0 -- see known_defects"},
         "ask_close": {"meaning": "ask close (companion to the bid-based open/high/low/close)", "unit": "JPY per USD", "tz": null, "notes": "blank on rows where the ask series had no print for this minute"}
       },
-      "quality": {"unique_key": ["timestamp"]}
+      "quality": {"unique_key": ["timestamp"], "skip_checks": ["zero_volume", "maintenance_window"]}
     },
     "fx_usdjpy_1m_*.csv.gz": {
       "columns": {
@@ -31,7 +31,7 @@
         "volume": {"meaning": "Dukascopy's own tick-volume proxy for the bar", "unit": "as provided by source", "tz": null, "notes": "frequently 0.0 -- see known_defects"},
         "ask_close": {"meaning": "ask close", "unit": "JPY per USD", "tz": null, "notes": "blank on rows where the ask series had no print for this minute"}
       },
-      "quality": {"unique_key": ["timestamp"]}
+      "quality": {"unique_key": ["timestamp"], "skip_checks": ["zero_volume", "maintenance_window"]}
     },
     "gmo_swap_usdjpy.csv": {
       "columns": {
@@ -46,6 +46,7 @@
   "known_defects": [
     "USDJPY_1m.csv volume is an ECN tick-volume proxy, not a real traded notional -- do not treat zero_volume flags on this file as a liquidity signal the way they would be for an exchange trade feed",
     "ask_close is a late addition alongside the original bid OHLC -- earlier rows in the accumulated history may have this column blank even where bid data is present",
-    "gmo_swap_usdjpy.csv reflects ONE broker's (GMO Coin) published swap calendar; other brokers' swap points differ and are not cross-checked here -- see scripts/research_fx_carry.py's pre-registration notes for how this choice was justified"
+    "gmo_swap_usdjpy.csv reflects ONE broker's (GMO Coin) published swap calendar; other brokers' swap points differ and are not cross-checked here -- see scripts/research_fx_carry.py's pre-registration notes for how this choice was justified",
+    "DATA QA 2026-09-05 (docs/DATA_QA_TRIAGE.md): zero_volume (285,071 rows on backtest_data/fx_usdjpy_1m_20260822.csv.gz) and maintenance_window (1,994 rows, same file) are both structurally meaningless for this dataset -- Dukascopy's tick-volume proxy is legitimately mostly-zero (see known_defects above, this isn't new information), and bitFlyer's 19:00-19:10 UTC crypto-exchange maintenance window has no relationship whatsoever to a Dukascopy FX feed (the flat-looking bars the checker found there are just ordinary quiet FX minutes, not a carried-forward maintenance artifact). Both checks are now disabled via `quality.skip_checks` on both 1-minute file_groups (USDJPY_1m.csv and fx_usdjpy_1m_*.csv.gz share the same shape) instead of merely being noted as expected in prose. gaps (189 rows, same file, median_gap 60s -- consistent with normal FX 1m cadence, larger gaps land on illiquid weekend/holiday hours per typical FX market structure) is left enabled: a gap is still a real, actionable signal for this feed."
   ]
 }

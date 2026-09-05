@@ -12,6 +12,17 @@ more unit) -- this script:
     disk are reported. Files present in the unit but NOT listed in MD5SUMS
     are reported separately (``extra``) -- not a failure by itself, just
     visibility.
+  - a mismatch is reclassified as ``line_ending_only`` (kept out of
+    ``mismatches``/``total_mismatches`` and out of the pass/fail ``ok``
+    verdict) when the file's content matches the recorded md5 once line
+    endings are normalized in either direction (LF<->CRLF). This is the
+    expected fallout of git's autocrlf converting text files LF->CRLF on a
+    Windows checkout after the MD5SUMS were sealed on this (Linux, LF) VM
+    -- not data corruption. See ``.gitattributes`` (``-text`` on
+    backtest_data/** and paper_logs/**), which stops autocrlf from doing
+    this going forward; existing Windows working copies only show it if
+    touched again. Binary snapshot files (``.gz`` etc.) never hit this
+    path since autocrlf never rewrites them.
   - if the unit has no ``MD5SUMS`` file: computes one from the files
     present right now and WRITES it (new file only). Reported as
     "newly_sealed". This never reads, moves, or modifies any existing data
@@ -44,11 +55,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -101,6 +113,36 @@ def _parse_md5sums(path: Path) -> dict[str, str]:
     return entries
 
 
+def _md5_bytes(data: bytes) -> str:
+    return hashlib.md5(data).hexdigest()
+
+
+def _line_ending_only_note(path: Path, expected_md5: str) -> Optional[str]:
+    """If `path`'s content matches `expected_md5` once line endings are
+    normalized (either direction), return a short note naming the
+    direction; otherwise None.
+
+    Why this exists: MD5SUMS files under backtest_data/ are sealed on this
+    (Linux, LF) VM, but the owner's Windows checkout has git's autocrlf
+    rewriting text files' line endings LF->CRLF on checkout -- a byte-exact
+    md5 mismatch with identical content, not data corruption. Binary/.gz
+    snapshot files are marked -text (see .gitattributes) and never hit
+    this path; this only reclassifies text files whose only difference is
+    line-ending style.
+    """
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return None
+    lf = raw.replace(b"\r\n", b"\n")
+    if lf != raw and _md5_bytes(lf) == expected_md5:
+        return "actual is CRLF, MD5SUMS was sealed against LF content"
+    crlf = lf.replace(b"\n", b"\r\n")
+    if crlf != raw and _md5_bytes(crlf) == expected_md5:
+        return "actual is LF, MD5SUMS was sealed against CRLF content"
+    return None
+
+
 def _write_md5sums(unit_dir: Path, rel_to_md5: dict[str, str]) -> None:
     lines = [f"{md5}  {rel}\n" for rel, md5 in sorted(rel_to_md5.items())]
     (unit_dir / MD5SUMS_NAME).write_text("".join(lines), encoding="utf-8")
@@ -113,6 +155,7 @@ def verify_unit(unit_dir: Path, unit_label: str, files: list[Path],
     than possibly creating a brand-new MD5SUMS."""
     md5sums_path = unit_dir / MD5SUMS_NAME
     rel_of = {f: f.relative_to(unit_dir).as_posix() for f in files}
+    rel_of_inverse = {rel: f for f, rel in rel_of.items()}
     actual_md5: dict[str, str] = {rel_of[f]: il.md5_of(f) for f in files}
 
     result: dict[str, Any] = {
@@ -124,6 +167,7 @@ def verify_unit(unit_dir: Path, unit_label: str, files: list[Path],
     if md5sums_path.exists():
         expected = _parse_md5sums(md5sums_path)
         mismatches = []
+        line_ending_mismatches = []
         missing = []
         matched = 0
         seen_rel = set(actual_md5.keys())
@@ -133,15 +177,29 @@ def verify_unit(unit_dir: Path, unit_label: str, files: list[Path],
                 continue
             act = actual_md5[rel]
             if act != exp_md5:
-                mismatches.append({"file": rel, "expected": exp_md5, "actual": act})
+                note = _line_ending_only_note(rel_of_inverse[rel], exp_md5)
+                entry = {"file": rel, "expected": exp_md5, "actual": act}
+                if note is not None:
+                    entry["ok"] = True
+                    entry["note"] = note
+                    line_ending_mismatches.append(entry)
+                else:
+                    mismatches.append(entry)
             else:
                 matched += 1
         extra = sorted(seen_rel - set(expected.keys()))
+        if mismatches or missing:
+            status = "mismatch"
+        elif line_ending_mismatches:
+            status = "verified_line_ending_only"
+        else:
+            status = "verified"
         result.update({
-            "status": "verified" if not mismatches and not missing else "mismatch",
+            "status": status,
             "checked": len(expected),
             "matched": matched,
             "mismatches": mismatches,
+            "line_ending_mismatches": line_ending_mismatches,
             "missing": missing,
             "extra": extra,
         })
@@ -149,7 +207,7 @@ def verify_unit(unit_dir: Path, unit_label: str, files: list[Path],
         result.update({
             "status": "empty",
             "checked": 0, "matched": 0,
-            "mismatches": [], "missing": [], "extra": [],
+            "mismatches": [], "line_ending_mismatches": [], "missing": [], "extra": [],
             "sealed_file_count": 0,
         })
     else:
@@ -158,6 +216,7 @@ def verify_unit(unit_dir: Path, unit_label: str, files: list[Path],
             "checked": 0,
             "matched": 0,
             "mismatches": [],
+            "line_ending_mismatches": [],
             "missing": [],
             "extra": [],
             "sealed_file_count": len(files),
@@ -254,10 +313,12 @@ def run(root: Path, write_seal: bool) -> dict[str, Any]:
         res.pop("_actual_md5", None)
 
     total_mismatches = sum(len(r["mismatches"]) for r in unit_results)
+    total_line_ending_only = sum(len(r.get("line_ending_mismatches", [])) for r in unit_results)
     total_missing = sum(len(r["missing"]) for r in unit_results)
     total_extra = sum(len(r["extra"]) for r in unit_results)
     newly_sealed = sum(1 for r in unit_results if r["status"] == "newly_sealed")
     verified = sum(1 for r in unit_results if r["status"] == "verified")
+    verified_line_ending_only = sum(1 for r in unit_results if r["status"] == "verified_line_ending_only")
 
     report = {
         "generated_at": _now_iso(),
@@ -267,9 +328,11 @@ def run(root: Path, write_seal: bool) -> dict[str, Any]:
         "summary": {
             "unit_count": len(unit_results),
             "verified": verified,
+            "verified_line_ending_only": verified_line_ending_only,
             "newly_sealed": newly_sealed,
             "mismatch_units": sum(1 for r in unit_results if r["status"] == "mismatch"),
             "total_mismatches": total_mismatches,
+            "total_line_ending_only": total_line_ending_only,
             "total_missing": total_missing,
             "total_extra_untracked": total_extra,
             "ledger_mismatches": len(ledger_check["mismatches"]),
@@ -284,8 +347,11 @@ def run(root: Path, write_seal: bool) -> dict[str, Any]:
 def print_summary(report: dict[str, Any]) -> None:
     s = report["summary"]
     print(f"verify_snapshots: {s['unit_count']} units "
-          f"({s['verified']} verified, {s['newly_sealed']} newly_sealed, "
-          f"{s['mismatch_units']} with mismatches)")
+          f"({s['verified']} verified, {s.get('verified_line_ending_only', 0)} verified_line_ending_only, "
+          f"{s['newly_sealed']} newly_sealed, {s['mismatch_units']} with mismatches)")
+    if s.get("total_line_ending_only"):
+        print(f"  ({s['total_line_ending_only']} line-ending-only diffs across all units -- "
+              f"benign CRLF/LF checkout differences, not counted as real mismatches; see .gitattributes)")
     for r in report["units"]:
         if r["status"] == "newly_sealed":
             print(f"  [newly_sealed] {r['unit']}: sealed {r['sealed_file_count']} files -> {r['md5sums_path']}")
@@ -300,6 +366,10 @@ def print_summary(report: dict[str, Any]) -> None:
                 print(f"      mismatch: {m['file']} expected={m['expected']} actual={m['actual']}")
             for miss in r["missing"]:
                 print(f"      missing: {miss}")
+        elif r["status"] == "verified_line_ending_only":
+            extra_note = f" ({len(r['extra'])} extra-untracked)" if r["extra"] else ""
+            print(f"  [ok, line-ending-only] {r['unit']}: {r['matched']}/{r['checked']} matched, "
+                  f"{len(r.get('line_ending_mismatches', []))} line-ending-only{extra_note}")
         else:
             extra_note = f" ({len(r['extra'])} extra-untracked)" if r["extra"] else ""
             print(f"  [ok] {r['unit']}: {r['matched']}/{r['checked']} matched{extra_note}")

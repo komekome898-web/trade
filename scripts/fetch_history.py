@@ -20,6 +20,21 @@ from bot.exchange.bitflyer_client import BitflyerClient  # noqa: E402
 from bot.settings import load_settings  # noqa: E402
 
 
+def _order_new_rows(new_rows: list[dict]) -> list[dict]:
+    """Ascending-by-id order for a batch of freshly-fetched executions
+    before it is appended to executions_<product>.csv.
+
+    Why this exists: main()'s pagination fetches backward from the newest
+    trade (before=None, then before=<oldest id seen>), so the raw list it
+    accumulates is newest-first/descending -- appending it as-is to an
+    otherwise-ascending file writes a strictly-decreasing run of ids/
+    timestamps on every single run. See docs/DATA_QA_TRIAGE.md
+    bitflyer_execution_flow/non_monotonic (538,325 flagged rows) and its
+    downstream gaps miscount on data/executions_FX_BTC_JPY.csv and
+    data/executions_XRP_JPY.csv."""
+    return sorted(new_rows, key=lambda t: int(t["id"]))
+
+
 def build_candles(executions: "pd.DataFrame") -> "pd.DataFrame":
     """1-minute OHLCV from an executions frame (columns: exec_date, price, size).
 
@@ -67,6 +82,18 @@ def main() -> int:
         time.sleep(0.6)
 
     if new_rows:
+        # DATA QA 2026-09-05 (docs/DATA_QA_TRIAGE.md bitflyer_execution_flow/
+        # non_monotonic+gaps): the loop above pages BACKWARD from the newest
+        # trade (before=None, then before=oldest id seen so far), so
+        # new_rows arrives newest-first/descending. Appending it in that
+        # order writes a strictly-decreasing run of ids/timestamps into an
+        # otherwise-ascending file every single run -- exactly the huge
+        # non_monotonic count found in data/executions_FX_BTC_JPY.csv and
+        # data/executions_XRP_JPY.csv (and, downstream, gaps computed off
+        # that same broken ordering). Sorting ascending by id before writing
+        # fixes every future append; existing rows are NOT reordered/
+        # rewritten (never modify data files).
+        new_rows = _order_new_rows(new_rows)
         write_header = not exec_file.exists()
         with open(exec_file, "a", newline="") as f:
             w = csv.DictWriter(f, fieldnames=["id", "exec_date", "price", "size", "side"])

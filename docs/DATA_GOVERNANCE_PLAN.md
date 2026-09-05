@@ -47,3 +47,29 @@
 ## 3. 位置づけ
 
 監査(`AUDIT_PLAN_2026-09.md`)完了後、最初に着手する基盤課題。順位付けの結果に関わらず実施する。
+
+## 4. スナップショットのバイト完全一致(2026-09-05、SNAPSHOT_VERIFY.json ok:false の調査)
+
+- **症状**: オーナー PC で `verify_snapshots.py` が `backtest_data/` 配下 21 unit・99 ファイルの
+  MD5 不一致を報告(`ok: false`)。一方 `.gz` は 1 件も不一致がなく、台帳(`data/INTAKE_latest.json`)
+  とのクロスチェックも 0 件不一致。
+- **原因**: データ破損ではなく **git の autocrlf** による改行コード変換。MD5SUMS は本 VM(Linux、LF)
+  で封印されるが、オーナーの Windows チェックアウトでは `.md`/`.json`/`.txt`/`.yaml`/`.py`/`.csv`
+  などテキストファイルが checkout 時に LF→CRLF へ書き換えられる。バイナリ扱いの `.gz` は対象外の
+  ため一致していた。99 件の不一致は全てテキスト系ファイルで説明がつく。
+- **対処**:
+  1. `scripts/verify_snapshots.py`: 不一致ファイルを、内容を LF→CRLF・CRLF→LF の両方向に正規化した
+     md5 が MD5SUMS の記録値と一致するかで再判定し、一致すれば `line_ending_only`(`ok: true`、
+     `mismatches`/`total_mismatches`・全体の `ok` 判定からは除外)として `line_ending_mismatches` に
+     分離して記録する。正規化しても一致しない実質的な内容変更は従来どおり `mismatch` のまま。
+  2. リポジトリ直下に `.gitattributes` を追加し、`backtest_data/** -text` と `paper_logs/** -text`
+     を宣言。以後どの OS でチェックアウトしても改行変換が起きず、スナップショットはバイト完全一致に
+     なる。**データファイルへの変更は一切行っていない**(git の改行変換設定のみ)。
+  3. 既存のオーナー PC の Windows チェックアウトは、`.gitattributes` 適用後もその場のファイルが
+     自動で書き戻るわけではない(git は変更のあったファイルだけ再正規化する)。実務上は次回
+     `restart_all.bat`(`git pull`)や当該ファイルへの何らかの書き込みで解消される想定。
+     `share_logs.bat` は `paper_logs/` に**追記するだけ**(既存ファイルを触らない)ため、この変更が
+     既存の共有ログに影響することはない。
+- テスト: `tests/test_verify_snapshots.py`
+  (`test_line_ending_only_mismatch_is_not_a_real_mismatch`,
+  `test_line_ending_normalization_does_not_mask_real_content_changes`)。

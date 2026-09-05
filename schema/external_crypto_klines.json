@@ -22,6 +22,7 @@
     "backtest_data/binance_XRPUSDT_4h.csv",
     "backtest_data/bitbank_xrp_jpy_1m.csv"
   ],
+  "quality": {"skip_checks": ["maintenance_window"]},
   "source": "Binance klines: data-api.binance.vision public REST /api/v3/klines (BTCUSDT/XRPUSDT, no key, no geo-block) -- see scripts/fetch_external.py (1m/4h/1d) and scripts/fetch_binance_full.py (1m_full, 1s_* rolling windows). bitbank_xrp_jpy_1m.csv: public.bitbank.cc /{pair}/candlestick/1min/{day} -- see scripts/fetch_external.py.",
   "retention": "data/*.csv files are appended forward and merged with existing history on every fetch run (never truncated -- see scripts/fetch_external.py's save()). backtest_data/binance_BTCUSDT_1m.csv, binance_BTCUSDT_1m_210d_<date>.csv.gz, binance_XRPUSDT_*.csv and bitbank_xrp_jpy_1m.csv are permanent dated/frozen snapshots of the corresponding data/ file for reproducibility.",
   "file_groups": {
@@ -74,14 +75,17 @@
     },
     "binance_BTCUSDT_1m_210d_*.csv.gz": {
       "columns": {
-        "timestamp": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open_time": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
         "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
         "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
         "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
         "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
-        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null},
+        "quote_volume": {"meaning": "quote-asset (USDT) volume in the bar", "unit": "USDT", "tz": null, "notes": null},
+        "n_trades": {"meaning": "number of trades in the bar", "unit": "count", "tz": null, "notes": null},
+        "taker_buy_base": {"meaning": "taker-buy base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
       },
-      "quality": {"unique_key": ["timestamp"]}
+      "quality": {"unique_key": ["open_time"]}
     },
     "binance_BTCUSDT_1s_*.csv": {
       "columns": {
@@ -143,6 +147,10 @@
   "known_defects": [
     "these are external reference feeds, never a trading signal for the bitFlyer FX_BTC_JPY bot directly -- used only for cross-venue lead-lag / regime research (per CLAUDE.md's cross-border momentum research line)",
     "the 1s_hi1/hi2/lo1/lo2/today windows are short, purpose-selected slices (high-vol / low-vol / current-day reference), not a continuous 1-second history -- large inter-file gaps against each other are by design, not a collection failure",
-    "binance_BTCUSDT_1m_full.csv carries extra precision columns (quote_volume/n_trades/taker_buy_base) that binance_BTCUSDT_1m.csv does not -- the two are not simply the same data at different retention, they come from two different fetch scripts (fetch_external.py vs fetch_binance_full.py) and are not guaranteed to be bar-for-bar identical on open/high/low/close rounding"
+    "binance_BTCUSDT_1m_full.csv carries extra precision columns (quote_volume/n_trades/taker_buy_base) that binance_BTCUSDT_1m.csv does not -- the two are not simply the same data at different retention, they come from two different fetch scripts (fetch_external.py vs fetch_binance_full.py) and are not guaranteed to be bar-for-bar identical on open/high/low/close rounding",
+    "DATA QA 2026-09-05 (docs/DATA_QA_TRIAGE.md): binance_BTCUSDT_1m_210d_*.csv.gz's missing_columns (5 hits: declared_but_absent=[timestamp], undocumented_in_schema=[open_time,quote_volume,n_trades,taker_buy_base]) was a schema bug, not a real header mismatch -- the actual file (verified: `zcat backtest_data/binance_BTCUSDT_1m_210d_20260820.csv.gz | head`) has header `open_time,open,high,low,close,volume,quote_volume,n_trades,taker_buy_base`, identical to fetch_binance_full.py's full-precision output shape (scripts/fetch_binance_full.py lines 10-17/37-38/98), NOT the plain `timestamp,open,high,low,close,volume` shape this schema previously declared for it. This 210-day snapshot is a frozen copy of the full-precision builder's output (data/binance_BTCUSDT_1m_full.csv), just under a retention-window-named filename instead of `_full` -- fixed by copying binance_BTCUSDT_1m_full.csv's column set into this file_group's `columns`/`unique_key`.",
+    "DATA QA 2026-09-05: extreme_return (91 hits across binance_XRPUSDT_1d.csv/4h.csv and binance_BTCUSDT_1d.csv, mirrored in both data/ and backtest_data/ copies of the same files -- 5 unique files total) checked against real crypto price history: XRP moves of +13%/+12%/+15%/+26%/+13% and BTC moves of +10%/-14%/+12% in a single bar are within the well-documented volatility of both assets (XRP in particular has repeated >20%/day pumps historically) -- no evidence of a decimal/unit/duplicate-row artifact (values are internally consistent bar-to-bar, not a single spurious spike). Judged genuine market moves, not a collection defect.",
+    "DATA QA 2026-09-05: maintenance_window (355 hits, both copies of bitbank_xrp_jpy_1m.csv) is a false application of a bitFlyer-specific check to a different exchange -- bitbank has no relationship to bitFlyer's 19:00-19:10 UTC downtime, so a flat (O=H=L=C) minute landing in that same clock window there is coincidental illiquidity in a thin JPY-quoted altcoin pair, not a carried-forward maintenance artifact (confirmed neighboring minutes are NOT identical to each other, just individually flat -- e.g. 172.665 -> 172.642 -> 172.642 -> 172.642 -> 172.694, real small moves with occasional zero-range minutes). Disabled dataset-wide via `quality.skip_checks: [maintenance_window]` since none of this dataset's sources are bitFlyer.",
+    "DATA QA 2026-09-05: zero_volume (19,435 hits, both copies of bitbank_xrp_jpy_1m.csv) is expected at 1-minute granularity for a thin JPY-quoted altcoin pair (bitbank XRP/JPY), the same pattern already established for schema/n225f_225labo.json's 1-minute zero_volume and schema/reit_onr.json's early-listing zero_volume -- not actioned."
   ]
 }

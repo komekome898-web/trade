@@ -2,7 +2,9 @@
   "dataset": "intake_ledger_snapshot",
   "description": "scripts/intake_ledger.py's own append-only history of every data file this project holds (path, size, mtime, md5, row_count, first/last parsed timestamp, present/missing status) -- 'the single place file-count/coverage numbers come from' per that script's docstring. Line-delimited JSON, not CSV -- out of scope for scripts/data_quality.py's column-based checks. data/INTAKE.jsonl (this checkout's own ledger history) is explicitly excluded from being treated as data by intake_ledger.py's own SELF_FILES set; paper_logs/INTAKE.jsonl is NOT in that exclusion set (it lives under a different scanned root) and is the owner-PC's ledger history, carried into this checkout as a reference for what the owner's fuller data tree contains.",
   "path_glob": [
-    "paper_logs/INTAKE.jsonl"
+    "paper_logs/INTAKE.jsonl",
+    "paper_logs/INTAKE_latest.json",
+    "data/INTAKE_latest.json"
   ],
   "source": "scripts/intake_ledger.py, run on the owner's PC over its data/paper_logs/backtest_data trees; one JSON line appended per (path, run) whenever that path is new, its content changed (size/mtime/md5), or its present/missing status flipped.",
   "retention": "append-only history (never rewritten in place) -- data/INTAKE_latest.json (or paper_logs/INTAKE_latest.json for the owner-PC copy) is the corresponding always-current materialized index keyed by path.",

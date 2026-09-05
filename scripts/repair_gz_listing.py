@@ -38,7 +38,13 @@ Usage:
     python scripts/repair_gz_listing.py --root data/ws
     python scripts/repair_gz_listing.py --json out.json  # also write JSON
                                                            # (must NOT be
-                                                           # under data/)
+                                                           # under data/,
+                                                           # except this
+                                                           # tool's own
+                                                           # self-report at
+                                                           # data/WS_GZ_LISTING.json
+                                                           # — see
+                                                           # SELF_REPORT_RELATIVE)
 """
 from __future__ import annotations
 
@@ -54,6 +60,15 @@ DEFAULT_ROOT = REPO_ROOT / "data" / "ws"
 
 GZIP_MAGIC = b"\x1f\x8b"
 READ_CHUNK = 1 << 20  # 1 MiB of compressed input per decompress() call
+
+# The one path under data/ this tool is allowed to write: its own diagnostic
+# report (this is what deploy/fetch_all.bat passes via --json). Expressed as
+# a POSIX-style relative path so the comparison is OS-independent — do not
+# compare raw strings containing OS-native separators (backslash on
+# Windows), compare resolved Path objects / relative_to(...).as_posix().
+# Must stay in sync with scripts/intake_ledger.py's SELF_FILES entry of the
+# same name.
+SELF_REPORT_RELATIVE = "data/WS_GZ_LISTING.json"
 
 
 def analyze_gz(path: Path) -> dict[str, Any]:
@@ -166,14 +181,61 @@ def print_table(report: list[dict[str, Any]]) -> None:
             print(f"  {Path(r['path']).name}: {r['error']}")
 
 
+def _safe_print(*args, **kwargs) -> None:
+    """print(), but never let a console codepage that can't encode a
+    character (e.g. cp932 on a stock Windows terminal) turn into an
+    unhandled UnicodeEncodeError that looks like the script died silently.
+    Falls back to replacing unencodable characters."""
+    try:
+        print(*args, **kwargs)
+    except UnicodeEncodeError:
+        stream = kwargs.get("file", sys.stdout)
+        encoding = getattr(stream, "encoding", None) or "utf-8"
+        text = " ".join(str(a) for a in args)
+        stream.write(text.encode(encoding, errors="replace").decode(encoding, errors="replace"))
+        stream.write(kwargs.get("end", "\n"))
+
+
+def _is_under_data(json_path: Path, repo_root: Path) -> bool:
+    """True iff json_path (already resolved to an absolute Path) sits at or
+    under <repo_root>/data. Compares resolved Path objects — not raw
+    strings — so this gives the same answer regardless of whether the
+    original argument used '/' or '\\' as its separator (Windows accepts
+    both; Path.resolve() normalizes them before this check ever runs)."""
+    data_dir = (repo_root / "data").resolve()
+    return data_dir == json_path or data_dir in json_path.parents
+
+
+def _is_self_report(json_path: Path, repo_root: Path) -> bool:
+    """True iff json_path is exactly this tool's own allowed self-report
+    location (data/WS_GZ_LISTING.json), compared as a POSIX-style relative
+    path so OS-native separators never matter."""
+    try:
+        rel = json_path.relative_to(repo_root.resolve())
+    except ValueError:
+        return False
+    return rel.as_posix() == SELF_REPORT_RELATIVE
+
+
 def main() -> int:
+    try:
+        return _main()
+    except SystemExit:
+        raise
+    except Exception as exc:  # noqa: BLE001 - never die without a one-line reason
+        print(f"repair_gz_listing: failed: {exc}", file=sys.stderr)
+        return 1
+
+
+def _main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--root", default=str(DEFAULT_ROOT),
                     help="directory to scan for *.gz (default: data/ws)")
     ap.add_argument("--json", default=None,
                     help="optional path to also write the full report as JSON "
-                         "(must not be under data/ — this tool is read-only "
-                         "with respect to recorded data)")
+                         "(must not be under data/, except this tool's own "
+                         f"self-report at {SELF_REPORT_RELATIVE} — this tool "
+                         "is otherwise read-only with respect to recorded data)")
     args = ap.parse_args()
 
     root = Path(args.root).resolve()
@@ -182,21 +244,40 @@ def main() -> int:
         return 1
 
     report = build_report(root)
-    print_table(report)
+    _safe_print_table(report)
 
     if args.json:
         json_path = Path(args.json).resolve()
-        data_dir = (REPO_ROOT / "data").resolve()
-        if data_dir == json_path or data_dir in json_path.parents:
+        if _is_under_data(json_path, REPO_ROOT) and not _is_self_report(json_path, REPO_ROOT):
             print("repair_gz_listing: refusing to write the report under data/ "
                   "— this tool never writes recorded data", file=sys.stderr)
             return 1
         json_path.parent.mkdir(parents=True, exist_ok=True)
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2, sort_keys=True)
-        print(f"wrote {json_path}")
+        _safe_print(f"wrote {json_path}")
 
     return 0
+
+
+def _safe_print_table(report: list[dict[str, Any]]) -> None:
+    """print_table(), tolerant of a console codepage that rejects a
+    character in a file path (see _safe_print)."""
+    try:
+        print_table(report)
+    except UnicodeEncodeError:
+        # Re-render through _safe_print line by line rather than duplicating
+        # print_table's formatting logic.
+        import io
+        buf = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = buf
+        try:
+            print_table(report)
+        finally:
+            sys.stdout = old_stdout
+        for line in buf.getvalue().splitlines():
+            _safe_print(line)
 
 
 if __name__ == "__main__":

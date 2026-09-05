@@ -423,6 +423,112 @@ def test_file_group_level_quality_overrides_dataset_level(tmp_path: Path):
     assert "duplicate_keys" not in checks
 
 
+# ---- quality.skip_checks / quality.informational_checks ------------------
+
+
+def test_skip_checks_removes_the_named_check_entirely(tmp_path: Path):
+    """DATA QA 2026-09-05 (fx_usdjpy_reference): a feed with no real volume
+    concept (FX) or no bitFlyer maintenance window relevance should not
+    report zero_volume/maintenance_window at all, not just hide them from a
+    summary."""
+    (tmp_path / "data").mkdir()
+    rows = ["ts,open,high,low,close,volume"]
+    for h in range(19, 20):
+        for m in range(0, 5):
+            rows.append(f"2026-01-01T{h:02d}:{m:02d}:00Z,100,100,100,100,0")
+    (tmp_path / "data" / "fx_usdjpy_1m.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "fx_usdjpy_reference", {
+        "dataset": "fx_usdjpy_reference",
+        "path_glob": ["data/fx_usdjpy_1m.csv"],
+        "columns": {"ts": {}, "open": {}, "high": {}, "low": {}, "close": {}, "volume": {}},
+        "quality": {"skip_checks": ["zero_volume", "maintenance_window"]},
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["fx_usdjpy_reference"]["checks"]
+
+    assert "zero_volume" not in checks
+    assert "maintenance_window" not in checks
+
+
+def test_skip_checks_is_file_group_scoped(tmp_path: Path):
+    """A file_group's skip_checks applies only within that group, not to
+    other files/groups of the same dataset (same lookup as unique_key)."""
+    (tmp_path / "data").mkdir()
+    rows = ["ts,price,volume", "2026-01-01T00:00:00Z,100,0"]
+    (tmp_path / "data" / "no_volume_check.csv").write_text("\n".join(rows) + "\n")
+    (tmp_path / "data" / "normal_check.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "mixed", {
+        "dataset": "mixed",
+        "path_glob": ["data/no_volume_check.csv", "data/normal_check.csv"],
+        "columns": {"ts": {}, "price": {}, "volume": {}},
+        "file_groups": {
+            "no_volume_check.csv": {
+                "columns": {"ts": {}, "price": {}, "volume": {}},
+                "quality": {"skip_checks": ["zero_volume"]},
+            },
+        },
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["mixed"]["checks"]
+    # normal_check.csv still fires zero_volume -> dataset-level count is 1,
+    # not 2 (no_volume_check.csv's own zero_volume row was dropped)
+    assert checks["zero_volume"]["count"] == 1
+    assert checks["zero_volume"]["files"] == 1
+
+
+def test_informational_checks_marks_without_removing(tmp_path: Path):
+    """DATA QA 2026-09-05 (qa_synthetic): planted-defect fixtures WANT their
+    checks to keep firing (that is the point of the fixture) but the hits
+    are not real data problems -- informational_checks marks them instead
+    of dropping them."""
+    (tmp_path / "data").mkdir()
+    rows = ["ts,price,volume", "2026-01-01T00:00:00Z,100,0"]
+    (tmp_path / "data" / "qa_fixture.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "qa_synthetic", {
+        "dataset": "qa_synthetic",
+        "path_glob": ["data/qa_fixture.csv"],
+        "columns": {"ts": {}, "price": {}, "volume": {}},
+        "quality": {"informational_checks": "all"},
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["qa_synthetic"]["checks"]
+
+    assert "zero_volume" in checks
+    assert checks["zero_volume"]["count"] == 1
+    # the per-file example payload carries the informational marker
+    assert report["datasets"]["qa_synthetic"]["checks"]["zero_volume"]["examples"][0].get("informational") is True
+
+
+def test_informational_checks_named_list_leaves_others_alone(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    rows = [
+        "ts,mid,spread_bps",
+        "2026-01-01T00:00:00Z,100.0,1.0",
+        "2026-01-01T00:00:05Z,100.0,-1.0",   # crossed_book
+        "2026-01-01T00:05:20Z,80.0,1.0",     # extreme_return
+    ]
+    (tmp_path / "data" / "partial_info.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "partial_info", {
+        "dataset": "partial_info",
+        "path_glob": ["data/partial_info.csv"],
+        "columns": {"ts": {}, "mid": {}, "spread_bps": {}},
+        "quality": {"informational_checks": ["crossed_book"]},
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["partial_info"]["checks"]
+
+    assert checks["crossed_book"]["examples"][0].get("informational") is True
+    assert "informational" not in checks["extreme_return"]["examples"][0]
+
+
 # ---- never modifies data --------------------------------------------------
 
 

@@ -1,0 +1,12 @@
+# Data snapshots must be byte-exact across machines (see
+# docs/DATA_GOVERNANCE_PLAN.md and scripts/verify_snapshots.py). Without
+# this, git's autocrlf (common on Windows checkouts) rewrites text files'
+# line endings LF->CRLF on checkout, which breaks every MD5SUMS seal
+# recorded on a Linux/macOS machine even though the content is unchanged
+# (see SNAPSHOT_VERIFY.json's "line_ending_only" mismatch classification).
+# `-text` disables ALL of git's newline handling (checkout conversion,
+# checkin normalization, and diff/merge text handling) for every file
+# under these trees, regardless of extension -- binary and text files
+# alike are stored and checked out exactly as committed.
+backtest_data/** -text
+paper_logs/** -text

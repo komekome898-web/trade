@@ -90,6 +90,24 @@ def test_fetch_deep_real_rows_unaffected_by_flag():
     )
 
 
+def test_order_new_rows_sorts_ascending_by_id():
+    """DATA QA 2026-09-05 (bitflyer_execution_flow/non_monotonic): main()'s
+    backward pagination accumulates new_rows newest-first; before being
+    appended to the (ascending) executions_<product>.csv it must be
+    re-sorted ascending by id, or every run writes a decreasing run into an
+    otherwise-increasing file."""
+    newest_first = [
+        {"id": "105", "exec_date": "2026-07-23T12:09:30.0"},
+        {"id": "104", "exec_date": "2026-07-23T12:09:29.0"},
+        {"id": "103", "exec_date": "2026-07-23T12:09:28.0"},
+        {"id": "101", "exec_date": "2026-07-23T12:09:26.0"},
+    ]
+    ordered = fetch_history._order_new_rows(newest_first)
+    assert [r["id"] for r in ordered] == ["101", "103", "104", "105"]
+    # a no-op on an already-ascending batch
+    assert fetch_history._order_new_rows(ordered) == ordered
+
+
 def test_no_gap_all_real_for_both_builders():
     contiguous = _executions([
         ("2026-07-23T16:00:10.000", 100, 1),
