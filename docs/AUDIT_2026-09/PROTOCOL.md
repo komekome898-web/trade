@@ -48,7 +48,15 @@ model stay provisional until the maker known-answer test passes. Second auditors
 report (docs/AUDIT_2026-09/<PACKET>_*.md) — it is under docs/ and therefore forbidden.
 
 ## Verdict
-One of: 再現 / 数値差異(結論維持) / 結論変更 / 再計算不能 (data lost → the claim is downgraded to 未検証).
+One of: 再現 / 数値差異(結論維持) / 結論変更 / 再計算不能 (data lost → the claim is downgraded to 未検証) / 判定不能
+(computed, but the data cannot distinguish the claim from its negation at the claim's n: state the MDE).
+Boundary rules (added 2026-09-05 after the inter-auditor agreement test):
+- 再現 = EVERY headline number is within 10% relative (or inside the claim's own CI) AND the conclusion holds.
+- 数値差異(結論維持) = at least one headline number outside that band, conclusion holds.
+- A claim with several sub-figures (instruments, eras, cells) gets one verdict per sub-figure AND one overall class =
+  the worst sub-figure (再現 < 数値差異 < 判定不能 < 結論変更). Put the overall class alone on the `Verdict:` line.
+- 再計算不能 only after the mandatory fetch attempt above AND after checking every path in the packet row. Name the
+  missing file(s).
 Give a claimed-vs-recomputed table and one paragraph of justification. List every file you read.
 
 ## REQUIRED section: 前提の誤り (assumption findings)

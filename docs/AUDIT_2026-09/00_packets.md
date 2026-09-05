@@ -253,8 +253,8 @@ A・B・C・E・G は既存 ID を保持。D は FX「東京仲値」家族、F 
 | E | コスト床+逆選択の壁(核となる市場構造法則) | C1-C7,L1,L5,L8,R1,R9 | backtest_data/candles_FX_BTC_JPY_31d, executions_FX_BTC_JPY_31d, board_round_20260904/ | taker片道3.2bps・maker逆選択6-9bpsを実データから独立再計測 |
 | F | 規模predictable・方向not則(注目度/報道トーン/大口ポジション/funding) | L14,R41,R42,P1,P4,PR11,SV1 | data/attention/attention.csv, backtest_data/regime_composite_20260901/, data/funding_rate_history.csv | RC1の6成分(funding, premium, retail L/S, whale L/S, news tone, momentum)個別ICと合成ICを非重複350週で再現、L30確率面の必要p線を再走査 |
 | G | ONR(J-REIT overnight) | JPL6,JPL7,JPP3,PR8,PR10,JPR8 | backtest_data/reit_onr_20260904/, data/onr/, paper_logs/onr_ledger.csv | ETF−指数 乖離(gap_bps)を298日重なりで再計算、ETF約定アーティファクト成分を分離 |
-| H | JPX夜間プレミアム市場横断+ETFアーティファクト(RB1/UO1/Core30) | JPL6,JPL7,JPR6,JPR7,JPR8 | backtest_data/reit_onr_20260904/(他指数ETFは未収集=partial) | N225/TOPIX/JPX400/グロース250/REIT の5系列で夜間プレミアム符号・大きさを横断再計算 |
-| I | Matilda M2(在庫グリッド型ミーンリバージョンMM現代化) | R22,PR5 | backtest_data/venue_survey_20260827/ | 8セル(N{1,4}×時間ラダー2×ゲート2)を再構築し56日次値の符号を再現 |
+| H | JPX夜間プレミアム市場横断+ETFアーティファクト(RB1/UO1/Core30) | JPL6,JPL7,JPR6,JPR7,JPR8 | backtest_data/reit_onr_20260904/, backtest_data/jpx_etf_daily_20260905/(15 銘柄 15 年日足、2026-09-05 追加スナップショット) | N225/TOPIX/JPX400/グロース250/REIT の5系列で夜間プレミアム符号・大きさを横断再計算 |
+| I | Matilda M2(在庫グリッド型ミーンリバージョンMM現代化) | R22,PR5 | backtest_data/venue_survey_20260827/(4 時間の板), paper_logs/tape/ticker_*.csv.gz + executions_*.csv.gz(16 日), backtest_data/binance_BTCUSDT_1m_210d_20260820.csv.gz | 8セル(N{1,4}×時間ラダー2×ゲート2)を再構築し56日次値の符号を再現 |
 | J | Matilda M3 TaroCamp(非対称レンジ/ブレイク2モード機) | R23,PR6 | backtest_data/venue_survey_20260827/ | 4セルのbps/unitと損益均衡までの倍率(1.13〜1.48)を再計算 |
 | K | Matilda M4 面探索+在庫床法則群(L20-25)+旧bot要素+vr原典 | L20,L21,L22,L23,L24,L25,R17,R27,R32,R35 | backtest_data/candles_FX_BTC_JPY_30d, board_round_20260904/ | 210日57セル面を再走査し正の台地の有無を確認、按分恒等式(width×k=0.8×vola)を検算 |
 | L | スプレッドMM対称族(SM)+maker閉じ脚はさみ撃ち法則 | L19,R26,PR12 | backtest_data/venue_survey_20260827/ | 4セルのcapture×2 vs 脚間ドリフト(−3.2〜−3.6bps)を実板から再計測 |
@@ -279,7 +279,7 @@ A・B・C・E・G は既存 ID を保持。D は FX「東京仲値」家族、F 
 | AE | メインBOT champion(xborder_momentum)棄却判定 | R36 | paper_logs/bot.jsonl | 30取引net−0.148%/取引・CIを再現、ストップ束7本の寄与を分離 |
 | AF | compositeモジュール棄却(C3ロングオンリー・S11シグナル反転フェード) | R37,R39 | paper_logs/bot.jsonl | n=17/n=4セルのCIと符号を再計算 |
 | AG | S9嵐時計ブラケット・S10雪崩追随・C2レーダー窓内(棄却3件) | R40,R38,R43 | backtest_data/storm_events_20260820/, burst_events_20260820/, paper_logs/bot.jsonl | 時計窓限定サブセットのCIが0を負側に除外することを再現 |
-| AH | 嵐の予兆棄却+嵐の方向予測棄却+時間帯の方向性棄却 | R10,R11,R12 | backtest_data/storm_events_20260820/ | 予兆13仮説のリフト値、嵐方向49.3/50.7%、時間帯ドリフトのノイズフロア比較を再現 |
+| AH | 嵐の予兆棄却+嵐の方向予測棄却+時間帯の方向性棄却 | R10,R11,R12 | backtest_data/storm_events_20260820/(16 イベント窓、対照母集団なし), backtest_data/binance_BTCUSDT_1m_210d_20260820.csv.gz(全時刻母集団), backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz | 予兆13仮説のリフト値、嵐方向49.3/50.7%、時間帯ドリフトのノイズフロア比較を再現 |
 | AI | FX スワップ/キャリー経済性(棄却41年) | FXC6,FXR8 | backtest_data/gmo_swap_usdjpy.csv, fred_DGS2.csv, fred_DFF.csv | スワップ仲値公式(銀行間金利差×1.056+0.162bps)とキャリー判定シャープ0.487を41年で再現 |
 | AJ | FXイベントティック家族(指標発表ボラ+S4棄却+カレンダー精度) | FXL9,FXL10,FXL11,FXL12,FXL13,FXL14,FXR5,FXR6,FXR10,PR4,FXP1 | backtest_data/fx_event_ticks_2005_2014/, fx_event_ticks_2015_2026/ | 477イベントのE+1sスプレッド爆発と初撃継続/フェードを一次資料カレンダーで再現 |
 | AK | FXセッション時計/週末ギャップ/介入テール | FXL1,FXL2,FXL5,FXL6,FXC5,FXR4,FXT1,FXT2 | backtest_data/fx_usdjpy_1m_20260822.csv.gz | UTC時間帯別ボラ・週末ギャップ中央値4.4bpsを再計算 |
