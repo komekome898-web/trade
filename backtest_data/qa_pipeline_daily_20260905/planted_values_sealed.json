@@ -1,0 +1,240 @@
+{
+ "bad_print_dates_flagged_legs": [
+  "2005-04-07",
+  "2005-04-08",
+  "2006-03-21",
+  "2006-03-22",
+  "2010-05-11",
+  "2010-05-12",
+  "2012-08-08",
+  "2012-08-09",
+  "2013-12-16",
+  "2013-12-17"
+ ],
+ "bad_print_days_index": [
+  69,
+  317,
+  1397,
+  1983,
+  2336
+ ],
+ "computation_path": "scripts/research_overnight_onr.py: overnight_returns, drop_glitches, mean_t (imported directly, not reimplemented)",
+ "data_quality_scan": {
+  "checks_fired": [
+   "extreme_return"
+  ],
+  "extreme_return_count": 5,
+  "extreme_return_examples": [
+   {
+    "examples": [
+     {
+      "prev": 2786.0834975607922,
+      "return": -0.9892494420544091,
+      "row": 70,
+      "value": 29.951952081781542
+     },
+     {
+      "prev": 29.951952081781542,
+      "return": 93.30144275963876,
+      "row": 71,
+      "value": 2824.5122947795653
+     },
+     {
+      "prev": 2815.832485122799,
+      "return": -0.9922815705390512,
+      "row": 318,
+      "value": 21.73380441026846
+     },
+     {
+      "prev": 21.73380441026846,
+      "return": 128.3940595221391,
+      "row": 319,
+      "value": 2812.2251815048057
+     },
+     {
+      "prev": 4110.388638183405,
+      "return": -0.9809899077836579,
+      "row": 1398,
+      "value": 78.13886705687142
+     }
+    ],
+    "path": "backtest_data/qa_pipeline_daily_temp/daily_etf_Y5bps_20260905.csv"
+   }
+  ],
+  "files_checked": 1
+ },
+ "expected_dropped_dates": [
+  "2005-04-07",
+  "2005-04-08",
+  "2006-03-21",
+  "2006-03-22",
+  "2010-05-11",
+  "2010-05-12",
+  "2011-04-29",
+  "2012-08-08",
+  "2012-08-09",
+  "2013-12-16",
+  "2013-12-17"
+ ],
+ "files": {
+  "0.0": {
+   "etf": "daily_etf_Y0bps_20260905.csv",
+   "index_future": "daily_idxf_Y0bps_20260905.csv"
+  },
+  "2.0": {
+   "etf": "daily_etf_Y2bps_20260905.csv",
+   "index_future": "daily_idxf_Y2bps_20260905.csv"
+  },
+  "5.0": {
+   "etf": "daily_etf_Y5bps_20260905.csv",
+   "index_future": "daily_idxf_Y5bps_20260905.csv"
+  }
+ },
+ "findings": [
+  "The unadjusted 10:1 split at 2011-04-29 and the 5 genuine bad-print days are INDISTINGUISHABLE to drop_glitches() (both are just |log-return|>10%): a real corporate action gets silently dropped exactly like a data error. This reproduces, on synthetic data, the same failure mode schema/jpx_etf_daily.json's known_defects records for the real 1306.T 2015-01-05 split (once misclassified as a bad print by an earlier audit pass).",
+  "scripts/data_quality.py:scan_file() reports extreme_return \"count\" as len(extreme_examples) where extreme_examples is capped at MAX_EXAMPLES=5 (same bug pattern in the crossed_book/maintenance_window/non_monotonic/zero_volume checks -- only duplicate_keys and gaps use an uncapped counter). On this ETF tape with 11 genuine extreme-return transitions, data_quality.py under-reports the count as exactly 5, silently hiding how widespread the problem actually is once a file has more than 5 hits."
+ ],
+ "generated_utc": "2026-09-05T07:38:46.597100+00:00",
+ "glitch_threshold_abs_log_return": 0.1,
+ "n_days": 3000,
+ "results_by_y": {
+  "0.0": {
+   "etf_glitches_dropped": 11,
+   "etf_glitches_dropped_dates": [
+    "2005-04-07",
+    "2005-04-08",
+    "2006-03-21",
+    "2006-03-22",
+    "2010-05-11",
+    "2010-05-12",
+    "2011-04-29",
+    "2012-08-08",
+    "2012-08-09",
+    "2013-12-16",
+    "2013-12-17"
+   ],
+   "etf_high_tercile_after_cleaning_mean_bps": 0.5598,
+   "etf_high_tercile_after_cleaning_n": 994,
+   "planted_overnight_premium_bps": 0.0,
+   "regime": {
+    "high": {
+     "mde_bps": 1.6757,
+     "mean_bps": 0.5145,
+     "n": 999,
+     "se_bps": 0.5985,
+     "t_stat": 0.8597,
+     "within_mde": true
+    },
+    "low": {
+     "mde_bps": 1.0752,
+     "mean_bps": -0.4597,
+     "n": 1000,
+     "se_bps": 0.384,
+     "t_stat": -1.1972
+    },
+    "mid": {
+     "mde_bps": 1.2739,
+     "mean_bps": -0.0586,
+     "n": 1000,
+     "se_bps": 0.455,
+     "t_stat": -0.1288
+    }
+   }
+  },
+  "2.0": {
+   "etf_glitches_dropped": 11,
+   "etf_glitches_dropped_dates": [
+    "2005-04-07",
+    "2005-04-08",
+    "2006-03-21",
+    "2006-03-22",
+    "2010-05-11",
+    "2010-05-12",
+    "2011-04-29",
+    "2012-08-08",
+    "2012-08-09",
+    "2013-12-16",
+    "2013-12-17"
+   ],
+   "etf_high_tercile_after_cleaning_mean_bps": 2.5598,
+   "etf_high_tercile_after_cleaning_n": 994,
+   "planted_overnight_premium_bps": 2.0,
+   "regime": {
+    "high": {
+     "mde_bps": 1.6757,
+     "mean_bps": 2.5145,
+     "n": 999,
+     "se_bps": 0.5985,
+     "t_stat": 4.2016,
+     "within_mde": true
+    },
+    "low": {
+     "mde_bps": 1.0752,
+     "mean_bps": -0.4597,
+     "n": 1000,
+     "se_bps": 0.384,
+     "t_stat": -1.1972
+    },
+    "mid": {
+     "mde_bps": 1.2739,
+     "mean_bps": -0.0586,
+     "n": 1000,
+     "se_bps": 0.455,
+     "t_stat": -0.1288
+    }
+   }
+  },
+  "5.0": {
+   "etf_glitches_dropped": 11,
+   "etf_glitches_dropped_dates": [
+    "2005-04-07",
+    "2005-04-08",
+    "2006-03-21",
+    "2006-03-22",
+    "2010-05-11",
+    "2010-05-12",
+    "2011-04-29",
+    "2012-08-08",
+    "2012-08-09",
+    "2013-12-16",
+    "2013-12-17"
+   ],
+   "etf_high_tercile_after_cleaning_mean_bps": 5.5598,
+   "etf_high_tercile_after_cleaning_n": 994,
+   "planted_overnight_premium_bps": 5.0,
+   "regime": {
+    "high": {
+     "mde_bps": 1.6757,
+     "mean_bps": 5.5145,
+     "n": 999,
+     "se_bps": 0.5985,
+     "t_stat": 9.2143,
+     "within_mde": true
+    },
+    "low": {
+     "mde_bps": 1.0752,
+     "mean_bps": -0.4597,
+     "n": 1000,
+     "se_bps": 0.384,
+     "t_stat": -1.1972
+    },
+    "mid": {
+     "mde_bps": 1.2739,
+     "mean_bps": -0.0586,
+     "n": 1000,
+     "se_bps": 0.455,
+     "t_stat": -0.1288
+    }
+   }
+  }
+ },
+ "seed": 20260905,
+ "split_date_flagged_leg": "2011-04-29",
+ "split_day_index": 1650,
+ "split_ratio_unadjusted": 10.0,
+ "y_values_bps": [
+  0.0,
+  2.0,
+  5.0
+ ]
+}

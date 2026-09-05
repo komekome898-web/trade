@@ -1,0 +1,99 @@
+{
+ "bars_per_day": 1440,
+ "cost_provenance": {
+  "realized_round_trip_bps": {
+   "source_type": "measured",
+   "used_bps": 2.3,
+   "value": [
+    2.0,
+    2.6
+   ]
+  },
+  "taker_fee_pct": {
+   "source_type": "primary_document",
+   "value": 0.0
+  }
+ },
+ "days": 60,
+ "event_minute_of_day_utc": 555,
+ "event_move_mean_bps": 28.0,
+ "event_move_sigma_bps": 4.0,
+ "files": {
+  "0.0": "candles_qa_taker_X0bps_20260905.csv.gz",
+  "3.0": "candles_qa_taker_X3bps_20260905.csv.gz",
+  "8.0": "candles_qa_taker_X8bps_20260905.csv.gz"
+ },
+ "findings": [
+  "src/bot/backtest/engine.py:run_backtest consumes `candles` verbatim -- no maintenance-window or bad-print filtering exists anywhere in the taker path. All 600 synthetic maintenance flat-bars and all 6 isolated bad-print bars passed into the backtest unmodified and unflagged; they did not corrupt the measured trades here only because this generator deliberately placed them outside every event/hold window -- a real event window that happened to contain one would be silently traded on."
+ ],
+ "generated_utc": "2026-09-05T07:38:43.235193+00:00",
+ "hold_bars": 30,
+ "lookback_bars": 3,
+ "maintenance_window_utc": "19:00-19:10 daily",
+ "move_threshold_bps": 20.0,
+ "n_bad_prints": 6,
+ "n_events_planted": 60,
+ "n_maintenance_rows": 600,
+ "results_by_x": {
+  "0.0": {
+   "cost_bps_used": 2.3,
+   "gross_t_stat": 0.9026,
+   "mde_bps": 6.9858,
+   "n_other_exit_reason": 0,
+   "n_time_exit": 52,
+   "n_trades": 52,
+   "planted_continuation_bps": 0.0,
+   "planted_net_bps": -2.3,
+   "recovered_gross_bps_mean": 2.252,
+   "recovered_net_bps_ci95": [
+    -4.938,
+    4.842
+   ],
+   "recovered_net_bps_mean": -0.048,
+   "recovered_net_bps_se": 2.4949,
+   "within_mde": true
+  },
+  "3.0": {
+   "cost_bps_used": 2.3,
+   "gross_t_stat": 2.1049,
+   "mde_bps": 6.986,
+   "n_other_exit_reason": 0,
+   "n_time_exit": 52,
+   "n_trades": 52,
+   "planted_continuation_bps": 3.0,
+   "planted_net_bps": 0.7,
+   "recovered_gross_bps_mean": 5.2517,
+   "recovered_net_bps_ci95": [
+    -1.9384,
+    7.8419
+   ],
+   "recovered_net_bps_mean": 2.9517,
+   "recovered_net_bps_se": 2.495,
+   "within_mde": true
+  },
+  "8.0": {
+   "cost_bps_used": 2.3,
+   "gross_t_stat": 4.1086,
+   "mde_bps": 6.9863,
+   "n_other_exit_reason": 0,
+   "n_time_exit": 52,
+   "n_trades": 52,
+   "planted_continuation_bps": 8.0,
+   "planted_net_bps": 5.7,
+   "recovered_gross_bps_mean": 10.2513,
+   "recovered_net_bps_ci95": [
+    3.0609,
+    12.8417
+   ],
+   "recovered_net_bps_mean": 7.9513,
+   "recovered_net_bps_se": 2.4951,
+   "within_mde": true
+  }
+ },
+ "seed": 20260905,
+ "x_values_bps": [
+  0.0,
+  3.0,
+  8.0
+ ]
+}
