@@ -35,7 +35,10 @@ echo ============================================================
 echo.
 
 echo [1/5] git pull
-git pull
+rem --rebase: a local paper-logs commit that has not been pushed yet must
+rem never open a merge-commit editor here (that looks like a freeze and,
+rem when killed, leaves MERGE_HEAD behind and blocks every later pull).
+git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
 if errorlevel 1 (
   echo.
   echo *** FAILED: git pull ***
