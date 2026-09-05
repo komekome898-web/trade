@@ -342,7 +342,16 @@ def run(root: Path, full: bool, ledger_path: Path, latest_path: Path) -> dict:
             rec = dict(prev)
             rec["status"] = "present"
         else:
-            rec = scan_one(rel, p, cap)
+            try:
+                rec = scan_one(rel, p, cap)
+            except Exception as exc:  # noqa: BLE001 - one bad file must never abort the ledger
+                # Record the failure as a row (path, bytes/mtime if available,
+                # error text) and keep going: the ledger's job is to list what
+                # exists, and a listing that dies on one file lists nothing.
+                rec = {"path": rel, "status": "present", "bytes": cheap_bytes, "mtime": cheap_mtime,
+                       "md5": None, "row_count": None, "first_ts": None, "last_ts": None,
+                       "scan_error": f"{type(exc).__name__}: {exc}"}
+                print(f"intake_ledger: scan failed for {rel}: {rec['scan_error']}", file=sys.stderr)
 
         rec["first_seen"] = prev.get("first_seen") if prev else now
         if rec["first_seen"] is None:
