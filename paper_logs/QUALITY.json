@@ -69,7 +69,7 @@
          "ts": "2026-08-20T05:00:03.230000+00:00"
         }
        ],
-       "median_gap_seconds": 1793.773,
+       "median_gap_seconds": 1790.26,
        "path": "data/executions_FX_BTC_JPY.csv"
       },
       {
@@ -122,8 +122,25 @@
      ],
      "files": 1
     },
+    "missing_columns": {
+     "count": 1,
+     "examples": [
+      {
+       "examples": [
+        {
+         "declared_but_absent": [
+          "synthetic"
+         ],
+         "undocumented_in_schema": []
+        }
+       ],
+       "path": "backtest_data/flow_FX_BTC_JPY_20260820.csv"
+      }
+     ],
+     "files": 1
+    },
     "non_monotonic": {
-     "count": 538782,
+     "count": 539228,
      "examples": [
       {
        "examples": [
@@ -1806,96 +1823,8 @@
      ],
      "files": 5
     },
-    "maintenance_window": {
-     "count": 355,
-     "examples": [
-      {
-       "examples": [
-        {
-         "row": 1141,
-         "ts": "2026-07-30T19:00:00+00:00",
-         "value": 172.665
-        },
-        {
-         "row": 1142,
-         "ts": "2026-07-30T19:01:00+00:00",
-         "value": 172.642
-        },
-        {
-         "row": 1143,
-         "ts": "2026-07-30T19:02:00+00:00",
-         "value": 172.642
-        },
-        {
-         "row": 1144,
-         "ts": "2026-07-30T19:03:00+00:00",
-         "value": 172.642
-        },
-        {
-         "row": 1145,
-         "ts": "2026-07-30T19:04:00+00:00",
-         "value": 172.694
-        }
-       ],
-       "path": "backtest_data/bitbank_xrp_jpy_1m.csv"
-      },
-      {
-       "examples": [
-        {
-         "row": 1141,
-         "ts": "2026-07-30T19:00:00+00:00",
-         "value": 172.665
-        },
-        {
-         "row": 1142,
-         "ts": "2026-07-30T19:01:00+00:00",
-         "value": 172.642
-        },
-        {
-         "row": 1143,
-         "ts": "2026-07-30T19:02:00+00:00",
-         "value": 172.642
-        },
-        {
-         "row": 1144,
-         "ts": "2026-07-30T19:03:00+00:00",
-         "value": 172.642
-        },
-        {
-         "row": 1145,
-         "ts": "2026-07-30T19:04:00+00:00",
-         "value": 172.694
-        }
-       ],
-       "path": "data/bitbank_xrp_jpy_1m.csv"
-      }
-     ],
-     "files": 2
-    },
-    "missing_columns": {
-     "count": 5,
-     "examples": [
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "timestamp"
-         ],
-         "undocumented_in_schema": [
-          "open_time",
-          "quote_volume",
-          "n_trades",
-          "taker_buy_base"
-         ]
-        }
-       ],
-       "path": "backtest_data/binance_BTCUSDT_1m_210d_20260820.csv.gz"
-      }
-     ],
-     "files": 1
-    },
     "zero_volume": {
-     "count": 19448,
+     "count": 19452,
      "examples": [
       {
        "examples": [
@@ -1952,7 +1881,7 @@
     }
    },
    "files_checked": 13,
-   "files_flagged": 8
+   "files_flagged": 7
   },
   "fx_event_ticks": {
    "checks": {
@@ -2100,73 +2029,6 @@
         }
        ],
        "median_gap_seconds": 60.0,
-       "path": "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
-      }
-     ],
-     "files": 1
-    },
-    "maintenance_window": {
-     "count": 1994,
-     "examples": [
-      {
-       "examples": [
-        {
-         "row": 1141,
-         "ts": "2023-01-01T19:00:00+00:00",
-         "value": 131.072
-        },
-        {
-         "row": 1142,
-         "ts": "2023-01-01T19:01:00+00:00",
-         "value": 131.072
-        },
-        {
-         "row": 1143,
-         "ts": "2023-01-01T19:02:00+00:00",
-         "value": 131.072
-        },
-        {
-         "row": 1144,
-         "ts": "2023-01-01T19:03:00+00:00",
-         "value": 131.072
-        },
-        {
-         "row": 1145,
-         "ts": "2023-01-01T19:04:00+00:00",
-         "value": 131.072
-        }
-       ],
-       "path": "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
-      }
-     ],
-     "files": 1
-    },
-    "zero_volume": {
-     "count": 285071,
-     "examples": [
-      {
-       "examples": [
-        {
-         "row": 1,
-         "ts": "2023-01-01 00:00:00+00:00"
-        },
-        {
-         "row": 2,
-         "ts": "2023-01-01 00:01:00+00:00"
-        },
-        {
-         "row": 3,
-         "ts": "2023-01-01 00:02:00+00:00"
-        },
-        {
-         "row": 4,
-         "ts": "2023-01-01 00:03:00+00:00"
-        },
-        {
-         "row": 5,
-         "ts": "2023-01-01 00:04:00+00:00"
-        }
-       ],
        "path": "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
       }
      ],
@@ -2847,6 +2709,7 @@
          "ts": "2026-07-03T08:34:04.483Z"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_20260905/executions_qa_tape.csv.gz"
       },
       {
@@ -2856,6 +2719,7 @@
          "ts": "2026-07-03T15:31:01.326Z"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_20260905/ticker_qa_tape.csv.gz"
       },
       {
@@ -2881,6 +2745,7 @@
          "ts": "2026-08-03T00:12:16.097Z"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_maker3_20260907/executions_qa_maker3_tape.csv.gz"
       },
       {
@@ -2906,6 +2771,7 @@
          "ts": "2026-08-03T00:12:16.097Z"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_maker3_20260907/ticker_qa_maker3_tape.csv.gz"
       },
       {
@@ -2931,10 +2797,12 @@
          "ts": "2026-08-03T00:05:47.071670Z"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_maker3_v2_20260905/executions_qa_maker3_v2_tape.csv.gz"
       }
      ],
-     "files": 12
+     "files": 12,
+     "informational": true
     },
     "extreme_return": {
      "count": 70,
@@ -2954,6 +2822,7 @@
          "value": 24.501284413723834
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_20260905/daily_qa_alpha.csv.gz"
       },
       {
@@ -2989,6 +2858,7 @@
          "value": 63.88880029804521
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_daily_20260905/daily_etf_Y0bps_20260905.csv"
       },
       {
@@ -3024,6 +2894,7 @@
          "value": 47.8319216166286
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_daily_20260905/daily_etf_Y2bps_20260905.csv"
       },
       {
@@ -3059,6 +2930,7 @@
          "value": 78.13886705687142
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_daily_20260905/daily_etf_Y5bps_20260905.csv"
       },
       {
@@ -3094,10 +2966,12 @@
          "value": 6811099.247563434
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_taker_20260905/candles_qa_taker_X0bps_20260905.csv.gz"
       }
      ],
-     "files": 7
+     "files": 7,
+     "informational": true
     },
     "gaps": {
      "count": 55593,
@@ -3130,6 +3004,7 @@
          "ts": "2026-07-01T03:41:48.476000+00:00"
         }
        ],
+       "informational": true,
        "median_gap_seconds": 5.519,
        "path": "backtest_data/qa_known_answer_20260905/executions_qa_tape.csv.gz"
       },
@@ -3161,6 +3036,7 @@
          "ts": "2026-07-03T02:54:12.846000+00:00"
         }
        ],
+       "informational": true,
        "median_gap_seconds": 3.459,
        "path": "backtest_data/qa_known_answer_20260905/ticker_qa_tape.csv.gz"
       },
@@ -3192,6 +3068,7 @@
          "ts": "2026-08-06T13:29:59.919000+00:00"
         }
        ],
+       "informational": true,
        "median_gap_seconds": 9.154,
        "path": "backtest_data/qa_known_answer_maker3_20260907/executions_qa_maker3_tape.csv.gz"
       },
@@ -3223,6 +3100,7 @@
          "ts": "2026-08-07T09:50:38.535000+00:00"
         }
        ],
+       "informational": true,
        "median_gap_seconds": 1.501,
        "path": "backtest_data/qa_known_answer_maker3_20260907/ticker_qa_maker3_tape.csv.gz"
       },
@@ -3254,11 +3132,13 @@
          "ts": "2026-08-03T02:13:22.025746+00:00"
         }
        ],
+       "informational": true,
        "median_gap_seconds": 4.59212,
        "path": "backtest_data/qa_known_answer_maker3_v2_20260905/executions_qa_maker3_v2_tape.csv.gz"
       }
      ],
-     "files": 12
+     "files": 12,
+     "informational": true
     },
     "maintenance_window": {
      "count": 4200,
@@ -3291,6 +3171,7 @@
          "value": 977899.920901459
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_20260905/min1_qa_autocorr.csv.gz"
       },
       {
@@ -3321,6 +3202,7 @@
          "value": 962877.151732419
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_20260905/min1_qa_randomwalk.csv.gz"
       },
       {
@@ -3351,6 +3233,7 @@
          "value": 1085132.9946266257
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_steer_20260905/min1_qs_flat.csv.gz"
       },
       {
@@ -3381,6 +3264,7 @@
          "value": 956579.0104732596
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_steer_20260905/min1_qs_momentum.csv.gz"
       },
       {
@@ -3411,10 +3295,12 @@
          "value": 6045296.461524771
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_taker_20260905/candles_qa_taker_X0bps_20260905.csv.gz"
       }
      ],
-     "files": 7
+     "files": 7,
+     "informational": true
     },
     "split_candidate": {
      "count": 3,
@@ -3429,6 +3315,7 @@
          "ts": "2011-05-02T00:00:00+00:00"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_daily_20260905/daily_etf_Y0bps_20260905.csv"
       },
       {
@@ -3441,6 +3328,7 @@
          "ts": "2011-05-02T00:00:00+00:00"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_daily_20260905/daily_etf_Y2bps_20260905.csv"
       },
       {
@@ -3453,10 +3341,12 @@
          "ts": "2011-05-02T00:00:00+00:00"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_daily_20260905/daily_etf_Y5bps_20260905.csv"
       }
      ],
-     "files": 3
+     "files": 3,
+     "informational": true
     },
     "zero_volume": {
      "count": 4200,
@@ -3484,6 +3374,7 @@
          "ts": "2026-06-01 19:04:00+00:00"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_20260905/min1_qa_autocorr.csv.gz"
       },
       {
@@ -3509,6 +3400,7 @@
          "ts": "2026-06-01 19:04:00+00:00"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_20260905/min1_qa_randomwalk.csv.gz"
       },
       {
@@ -3534,6 +3426,7 @@
          "ts": "2026-06-01 19:04:00+00:00"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_steer_20260905/min1_qs_flat.csv.gz"
       },
       {
@@ -3559,6 +3452,7 @@
          "ts": "2026-06-01 19:04:00+00:00"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_known_answer_steer_20260905/min1_qs_momentum.csv.gz"
       },
       {
@@ -3584,10 +3478,12 @@
          "ts": "2026-01-01 19:04:00+00:00"
         }
        ],
+       "informational": true,
        "path": "backtest_data/qa_pipeline_taker_20260905/candles_qa_taker_X0bps_20260905.csv.gz"
       }
      ],
-     "files": 7
+     "files": 7,
+     "informational": true
     }
    },
    "files_checked": 66,
@@ -4313,7 +4209,7 @@
      "files": 6
     },
     "gaps": {
-     "count": 212981,
+     "count": 213352,
      "examples": [
       {
        "examples": [
@@ -4418,7 +4314,7 @@
    "files_flagged": 0
   }
  },
- "generated_at": "2026-09-05T16:58:00.401579+00:00",
+ "generated_at": "2026-09-05T17:27:50.384694+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
  "schema_undefined_count": 0,
  "schema_undefined_files": []
