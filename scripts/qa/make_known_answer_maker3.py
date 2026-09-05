@@ -56,17 +56,38 @@ Architecture (see generate() for the full pipeline):
   with the rule "filled at the first print on our side/episode after
   insertion, ignoring queue-ahead entirely."
 
-Files written to backtest_data/qa_known_answer_maker3_<date>/:
-  ticker_qa_maker3_tape.csv.gz      ts,best_bid,best_ask,best_bid_size,best_ask_size
-  executions_qa_maker3_tape.csv.gz  id,ts,price,size,side
-  manifest.md                       (no planted numbers, no fill-rule hints)
+v2 (docs/QA/known_answer_results_2026-09-05.md, "第3世代...第1版" §1-4) fixes
+the v1 flaw: forced-cap taker exits were silently charged an extra, UNSTATED
+TAKER_SLIPPAGE_TICKS=12 beyond the displayed touch -- never in the manifest
+or claim text, not observable from the public tape, and the entire reason
+S1 came out negative (three blind auditors who replayed the STATED rule got
++0.75..+1.25bps). v2 removes that lever: a forced exit crosses EXACTLY at
+the displayed public touch, asserted against the WRITTEN ticker file in
+run_self_checks(). v2 also (a) states three rule ambiguities the v1
+auditors flagged (post-fill exit-order queue position, no position-netting/
+one-open-position-per-side, ticker-rows-are-post-trade) explicitly in
+FILL_RULE_TEXT/manifest instead of leaving them for auditors to guess; (b)
+raises informed-flow strength so S1 entry-fill adverse selection at 5s is
+real and observable (target band, not the S1 sign or forced fraction --
+see SEEDS_TRIED); (c) adds independent_public_replay(), a SECOND,
+separately-written replay that reconstructs S1/S2 from ONLY the two public
+files + the stated rule and must match the hidden-log truth exactly
+(verify_independent_replay(), called from generate()) -- this is precisely
+the check three blind auditors would perform by hand, so it fails loudly
+here first.
+
+Files written to backtest_data/qa_known_answer_maker3_v2_<date>/:
+  ticker_qa_maker3_v2_tape.csv.gz      ts,best_bid,best_ask,best_bid_size,best_ask_size
+  executions_qa_maker3_v2_tape.csv.gz  id,ts,price,size,side
+  manifest.md                          (full fill rule incl. the 3 stated
+                                        ambiguities; no planted numbers)
 
 Hidden ground truth (never shown to an auditor):
-  docs/QA/hidden_maker3/s1_positions.csv.gz
-  docs/QA/hidden_maker3/s2_positions.csv.gz
-Sealed summary -> docs/QA/answers_sealed_maker3.json
-Claims         -> docs/QA/claims_for_auditors_maker3.md (6 claims, 3 true /
-                  3 false, each stating the exact fill rule + population).
+  docs/QA/hidden_maker3_v2/s1_positions.csv.gz
+  docs/QA/hidden_maker3_v2/s2_positions.csv.gz
+Sealed summary -> docs/QA/answers_sealed_maker3_v2.json
+Claims         -> docs/QA/claims_for_auditors_maker3_v2.md (6 claims, 3 true
+                  / 3 false, each stating the exact fill rule + population).
 
 Determinism: a single seed drives every draw via independent
 np.random.default_rng(seed).integers()-reseeded sub-streams (background
@@ -95,6 +116,7 @@ import argparse
 import gzip
 import json
 import math
+from collections import defaultdict, deque
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -102,13 +124,40 @@ import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-# Seed choice: parameters below were tuned first (this is the primary lever
-# per the spec); with them fixed, 5 seeds were tried for the S2 (inside-
-# quote) null result specifically -- 20260907 (|t|=1.79), 20260908 (0.66),
-# 20260909 (3.29), 20260910 (0.03 -- selected), 20260911 (0.34). All five
-# satisfy every OTHER planted target; 20260910 is used because it also
-# lands S1 cleanly inside [-2.5,-1.0] bps at this parameter setting.
+# v2 seed choice (docs/QA/known_answer_results_2026-09-05.md item 3 of the
+# fix spec): the informed-flow parameters below (RATE_MARKET, P_INFORMED,
+# IMPULSE_WALK_TICKS_MEAN) were tuned FIRST against the ONE required target
+# -- S1 entry-fill adverse selection at 5s in [0.5, 1.5]bps with t>=5 --
+# then, with those fixed, <=5 seeds were tried and measured (full 5-day
+# tape, no other post-hoc tuning). S1's net sign/magnitude and the
+# forced-exit fraction were NOT targeted; they are whatever the chosen
+# seed's hidden logs produce. Realized adverse_selection_bps_at_5s_mean
+# (t-stat) per seed -- all five landed in-band at this parameter setting
+# (an earlier, since-abandoned attempt reached the target by making each
+# informed print's own price impact large instead of the market busier,
+# which destabilized the shared background price process for a nontrivial
+# fraction of seeds; see MAX_TICKS_ABS/MAX_SPREAD_TICKS below):
+#   20260907  0.7423 (15.83)
+#   20260908  0.7260 (16.34)
+#   20260909  0.7200 (15.53)
+#   20260910  0.7371 (16.16)  -- SELECTED (first seed tried, already in-band)
+#   20260911  0.7153 (15.64)
+# All five are recorded verbatim in SEEDS_TRIED and echoed into the sealed
+# json's "seed_selection" field.
 SEED = 20260910
+SEEDS_TRIED = {
+    20260907: {"adverse_selection_bps_at_5s_mean": 0.7423, "adverse_selection_t_stat": 15.83, "in_band": True},
+    20260908: {"adverse_selection_bps_at_5s_mean": 0.7260, "adverse_selection_t_stat": 16.34, "in_band": True},
+    20260909: {"adverse_selection_bps_at_5s_mean": 0.7200, "adverse_selection_t_stat": 15.53, "in_band": True},
+    20260910: {"adverse_selection_bps_at_5s_mean": 0.7371, "adverse_selection_t_stat": 16.16, "in_band": True},
+    20260911: {"adverse_selection_bps_at_5s_mean": 0.7153, "adverse_selection_t_stat": 15.64, "in_band": True},
+}
+SEED_SELECTION_NOTE = (
+    "criterion = S1 adverse_selection_bps_at_5s_mean in [0.5,1.5] with t>=5, measured "
+    "BEFORE picking a seed, with informed-flow parameters fixed first; S1's net sign/"
+    "magnitude and forced_exit_fraction were not targeted at any seed and are read off "
+    "whichever seed satisfied the adverse-selection criterion"
+)
 
 # --------------------------------------------------------------------- #
 # instrument / tick
@@ -122,17 +171,15 @@ TAPE_START = "2026-08-03T00:00:00+00:00"
 
 OWN_SIZE = 0.05
 CAP_SECONDS = 300.0
-TAKER_SLIPPAGE_TICKS = 12.0  # extra cost (ticks) a forced-cap taker exit pays
-                              # beyond the displayed touch -- a marketable
-                              # order sent because a deadline was hit, not
-                              # because the price was good, realistically
-                              # does worse than the last-quoted touch. Tuned
-                              # last, as the main lever separating S1's net
-                              # (very sensitive: forced exits are ~24% of
-                              # S1 positions) from S2's (barely sensitive:
-                              # forced exits are ~1% of S2 positions, since
-                              # an inside quote is first-in-queue and fills
-                              # almost immediately).
+# v2 (docs/QA/known_answer_results_2026-09-05.md sec "第3世代...第1版" §1-4):
+# generation-3-v1 charged forced-cap taker exits an extra, UNSTATED
+# TAKER_SLIPPAGE_TICKS=12 beyond the displayed touch. That hidden constant
+# (never in the manifest or claim text, not observable from the public
+# tape) was the entire reason S1 looked negative; three blind auditors who
+# replayed the STATED rule got +0.75..+1.25bps. There is no such lever any
+# more: a forced exit crosses EXACTLY at the displayed public touch at exit
+# time, full stop. See run_self_checks() for the assertion that enforces
+# this against the actual written ticker file, not an internal lookup.
 MARKOUT_HORIZONS = (5.0, 30.0, 300.0)
 CROSSED_BOOK_FRACTION = 0.001
 
@@ -140,7 +187,14 @@ CROSSED_BOOK_FRACTION = 0.001
 # background LOB process rates (per second; tuned by simulate-and-measure,
 # see the report for the tuning trace -- NOT solved analytically)
 # --------------------------------------------------------------------- #
-RATE_MARKET = 0.075
+# v2: RATE_MARKET raised 0.075 -> 0.15 alongside the informed-flow knobs
+# below (item 3 of the fix spec) -- a busier market means more informed
+# prints can land inside any given 5s post-fill window, which is what
+# actually moves the average adverse-selection markout (the alternative of
+# raising per-print walk SIZE further, tried first, pushed the shared
+# background price process into instability -- see MAX_TICKS_ABS/
+# MAX_SPREAD_TICKS below for the circuit breakers that resulted).
+RATE_MARKET = 0.15
 RATE_JOIN = 0.230
 # Cancellation is modeled as a per-order hazard (each resting background
 # order independently cancels at this rate), not a flat Poisson process --
@@ -171,12 +225,22 @@ def _p_improve(spread_ticks: int) -> float:
         return P_IMPROVE_BASE
     return min(0.92, P_IMPROVE_WIDE_BASE + 0.20 * (spread_ticks - 3))
 
-P_INFORMED = 0.2025      # = 0.45 * an "informed_scale" of 0.45 found while
-                          # tuning (kept as the literal product for a clear
-                          # tuning record; see the report for the full trace)
-P_INFORMED_WALK = 0.92   # prob. an informed print also forces an immediate
-                          # one-tick impact walk (see simulate_background)
-IMPULSE_KICK = 0.45      # = 1.0 * informed_scale 0.45
+# v2: informed-flow strength raised (item 3 of the fix spec) so adverse
+# selection is REAL and OBSERVABLE rather than a token 0.06bps/t~6 effect
+# (v1's value, measured before this change). Two knobs raised together:
+# P_INFORMED (how often a print carries information) and
+# IMPULSE_WALK_TICKS_MEAN (how MANY ticks its immediate mechanical impact
+# walks, Poisson-distributed, replacing v1's fixed single-tick coin flip --
+# a single extra tick saturates near ~0.28bps/5s even at P_INFORMED,
+# P_INFORMED_WALK -> ~1, since expected market-order arrivals in a 5s
+# window are only RATE_MARKET*5 =~ 0.4; letting an informed print's impact
+# span several ticks removes that ceiling without changing arrival rates,
+# spread dynamics, or anything else in the shared background process).
+P_INFORMED = 0.6          # prob. a market order carries information
+P_INFORMED_WALK = 0.97    # prob. an informed print also forces an immediate
+                          # mechanical impact walk (see simulate_background)
+IMPULSE_WALK_TICKS_MEAN = 6.0  # mean extra ticks (Poisson) of that impact walk
+IMPULSE_KICK = 1.35       # size of the flow-direction bias kick per informed print
 IMPULSE_TAU = 20.0       # seconds, exponential decay of the informed impulse
 IMPULSE_BETA = 1.5       # sigmoid steepness on market-order side probability
 REVERSION_KAPPA = 0.016  # mean-reversion pull (in ticks of mid offset) keeping
@@ -185,6 +249,15 @@ REVERSION_KAPPA = 0.016  # mean-reversion pull (in ticks of mid offset) keeping
                           # create real (but bounded) adverse-selection drift
 
 MAX_WALK_LEVELS = 6      # safety cap on levels a single market order can cross
+MAX_TICKS_ABS = 150      # circuit breaker: price stays within +-1.5% of PRICE0
+                          # (bid_ticks/ask_ticks each clamped to this band) --
+                          # see the comment at the clamp site in
+                          # simulate_background for why v2 needs this
+MAX_SPREAD_TICKS = 40    # second circuit breaker: caps the SPREAD itself
+                          # (see the comment at its clamp site) -- generous
+                          # vs. the normal 1-3 tick spread, only binds when
+                          # bid/ask have independently run away from each
+                          # other
 RATE_SPREAD1_DECAY = 0.05  # extra hazard, active only while spread==1 ticks: a
                             # one-tick spread is fragile (a single improved
                             # quote) and reverts toward 2 on its own, not only
@@ -197,8 +270,14 @@ def gzip_write_text(path: Path, text: str) -> None:
 
 
 def to_iso_row(sec: np.ndarray, start: pd.Timestamp) -> pd.Series:
+    # v2: full microsecond precision (v1 truncated %f to milliseconds,
+    # which -- given ~1-10 background events/sec across a 5-day tape --
+    # produced enough same-millisecond ties between adjacent ticker rows
+    # to make an exact ticker<->execution row join ambiguous; needed for
+    # independent_public_replay() below to unambiguously pair each
+    # execution with its ticker row by exact ts string match).
     ts = start + pd.to_timedelta(sec, unit="s")
-    return ts.strftime("%Y-%m-%dT%H:%M:%S.%f").str[:-3] + "Z"
+    return ts.strftime("%Y-%m-%dT%H:%M:%S.%f") + "Z"
 
 
 # ======================================================================= #
@@ -254,6 +333,60 @@ def simulate_background(rng: np.random.Generator, span_sec: float) -> pd.DataFra
         rows_ask_epi.append(ask_epi)
 
     while t < span_sec:
+        # Circuit breaker: clamp each side's tick offset to +-MAX_TICKS_ABS
+        # from PRICE0. The v2 informed-flow strength increase (item 3 of
+        # the fix spec) drives price with multi-tick walks whose direction
+        # is reinforced by the SAME impulse that made them likely (a real,
+        # if extreme, feedback loop) -- rare tail draws could otherwise let
+        # price wander to a level where net_bps = pnl/entry_price blows up
+        # arithmetically. A wide (+-20%) band is standard exchange-circuit-
+        # breaker realism, not a hidden thumb on the scale: it only ever
+        # binds in the tail, and like every other walk it emits its own
+        # ticker row (etype="walk") so it is never an invisible move.
+        # NOTE: every branch below bumps epi/reseeds/records a side ONLY IF
+        # its tick value actually changes. An unconditional bump (this
+        # generator's own first attempt) is a PHANTOM episode change: a
+        # resting order's epi-based staleness check (run_strategy) would
+        # invalidate/reset an order whose price never actually moved, while
+        # this replay's PRICE-based staleness check would not -- silently
+        # desyncing hidden truth from the independent public replay (caught
+        # by verify_independent_replay(), which is the entire point of it).
+        if bid_ticks < -MAX_TICKS_ABS:
+            bid_ticks = -MAX_TICKS_ABS
+            bid_epi += 1
+            bid_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+            record("bid", "walk", 0.0)
+        if ask_ticks > MAX_TICKS_ABS:
+            ask_ticks = MAX_TICKS_ABS
+            ask_epi += 1
+            ask_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+            record("ask", "walk", 0.0)
+        # Second circuit breaker, on the SPREAD itself: REVERSION_KAPPA only
+        # pulls the MID back toward PRICE0 -- it applies no restoring force
+        # to bid_ticks and ask_ticks independently drifting APART (a BUY-
+        # informed print only ever pushes ask up, a SELL-informed print
+        # only ever pushes bid down), so an unlucky/reinforced run of
+        # same-side informed walks can blow the SPREAD out with the MID
+        # barely moving. Symmetric pull-in (mid-preserving) once spread
+        # exceeds MAX_SPREAD_TICKS -- found necessary once per-event walk
+        # size stopped being a single tick (v2): net_bps = pnl/entry_price
+        # was coming out in the hundreds of bps from spread blowouts alone.
+        spread_now_pre = ask_ticks - bid_ticks
+        if spread_now_pre > MAX_SPREAD_TICKS:
+            mid_ticks_now = (bid_ticks + ask_ticks) / 2.0
+            new_bid_ticks = int(round(mid_ticks_now - MAX_SPREAD_TICKS / 2.0))
+            new_ask_ticks = int(round(mid_ticks_now + MAX_SPREAD_TICKS / 2.0))
+            if new_bid_ticks != bid_ticks:
+                bid_ticks = new_bid_ticks
+                bid_epi += 1
+                bid_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+                record("bid", "walk", 0.0)
+            if new_ask_ticks != ask_ticks:
+                ask_ticks = new_ask_ticks
+                ask_epi += 1
+                ask_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+                record("ask", "walk", 0.0)
+
         n_orders = len(bid_orders) + len(ask_orders)
         rate_cancel = CANCEL_HAZARD_PER_ORDER * n_orders
         spread_now = ask_ticks - bid_ticks
@@ -328,14 +461,37 @@ def simulate_background(rng: np.random.Generator, span_sec: float) -> pd.DataFra
                 # alone was too rare within a 5s window to produce a
                 # detectable markout, found in tuning).
                 if levels_walked == 0 and rng.random() < P_INFORMED_WALK:
-                    if side_buy:
-                        ask_ticks += 1
-                        ask_epi += 1
-                        ask_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
-                    else:
-                        bid_ticks -= 1
-                        bid_epi += 1
-                        bid_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+                    # v2: the impact is now a Poisson-distributed NUMBER of
+                    # ticks (mean IMPULSE_WALK_TICKS_MEAN), not a fixed
+                    # single tick -- see the IMPULSE_WALK_TICKS_MEAN
+                    # comment above for why this was needed to reach a
+                    # realistic 5s markout magnitude. Each tick gets its OWN
+                    # record() row (etype="walk", zero size, no exec_id): a
+                    # multi-tick move that skipped intermediate rows would
+                    # be exactly the v1 failure mode transplanted into the
+                    # BACKGROUND process itself -- a price change nothing in
+                    # the public ticker shows, silently relied on by the
+                    # NEXT event's epi/staleness bookkeeping. Every level
+                    # this walk crosses must be a real, printed ticker row
+                    # (found via the independent-replay cross-check: without
+                    # this, a resting order's own staleness check can miss
+                    # an epi change that never got a row, since two or more
+                    # DISTINCT price levels would otherwise collapse onto
+                    # one observed row).
+                    n_extra = 1 + int(rng.poisson(IMPULSE_WALK_TICKS_MEAN - 1.0)) \
+                        if IMPULSE_WALK_TICKS_MEAN > 1.0 else 1
+                    n_extra = min(n_extra, MAX_WALK_LEVELS)
+                    for _ in range(n_extra):
+                        if side_buy:
+                            ask_ticks += 1
+                            ask_epi += 1
+                            ask_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+                            record("ask", "walk", 0.0)
+                        else:
+                            bid_ticks -= 1
+                            bid_epi += 1
+                            bid_orders = [[new_id(), float(rng.lognormal(INIT_MU, INIT_SIGMA))]]
+                            record("bid", "walk", 0.0)
 
         elif r < RATE_MARKET + RATE_JOIN:
             # ---- background limit order arrival ----
@@ -506,11 +662,21 @@ def run_strategy(events: pd.DataFrame, mid: MidLookup, inside_mode: bool,
                             filled = (o.cum_exec > 1e-9) if naive else (o.cum_exec >= threshold)
                             if filled:
                                 entry_time = row.t
+                                entry_row_idx = i
                                 entry_price = o.price
                                 entry_exec_id = row.exec_id
                                 direction = "long" if side == "bid" else "short"
                                 exit_side = "ask" if side == "bid" else "bid"
-                                exit_order = pending[exit_side]
+                                # Ambiguity (a) (see FILL_RULE_TEXT / manifest):
+                                # after our own fill, the OPPOSITE-side exit
+                                # quote is a FRESH order inserted at the back
+                                # of the displayed queue AT THAT MOMENT --
+                                # queue-ahead = displayed (background) size on
+                                # that side at insertion -- not whatever stale
+                                # queue position `pending[exit_side]` happened
+                                # to be resting at since it was last (re)made.
+                                exit_order = _make_order(exit_side, row, inside_mode)
+                                pending[exit_side] = exit_order
                                 cap_time = entry_time + CAP_SECONDS
                                 state = "seek_exit"
                                 break
@@ -520,16 +686,34 @@ def run_strategy(events: pd.DataFrame, mid: MidLookup, inside_mode: bool,
         # state == "seek_exit"
         if row.t > cap_time:
             fb, fa = mid.at(cap_time)
-            # forced taker exit crosses the spread AGAINST us: a long
-            # position exits by SELLING at the (lower) bid; a short
-            # position exits by BUYING at the (higher) ask -- plus extra
-            # slippage (see TAKER_SLIPPAGE_TICKS).
-            slip = TAKER_SLIPPAGE_TICKS * TICK
-            exit_price = (fb - slip) if direction == "long" else (fa + slip)
+            # v2: forced taker exit crosses EXACTLY at the displayed public
+            # touch at exit time -- a long position exits by SELLING at the
+            # (lower) bid, a short position exits by BUYING at the (higher)
+            # ask. NO additional slippage is modelled (see the note by
+            # MARKOUT_HORIZONS for why v1's hidden TAKER_SLIPPAGE_TICKS was
+            # removed). mid.at() reads the exact same events timeline the
+            # public ticker file is built from, so this IS the touch that
+            # ends up written to ticker_qa_maker3_v2_tape.csv.gz at/just
+            # before this timestamp -- asserted equal in run_self_checks().
+            exit_price = fb if direction == "long" else fa
             pnl = (exit_price - entry_price) if direction == "long" else (entry_price - exit_price)
+            # exit_row_idx = i-1 (NOT i): row i is the first row with
+            # t > cap_time -- it belongs to the NEXT (post-close) footprint,
+            # since the cap deadline, unlike every other transition here, is
+            # a clock event that is NOT "caused by" processing row i (row i
+            # gets REPROCESSED under seek_entry below via `continue`,
+            # without ever being treated as part of the closing position's
+            # own-size footprint). See _reconstruct_own_add / the own-size
+            # interval construction in build_public_tape for why exact row
+            # boundaries (not timestamps) matter here: two or more events
+            # can share the identical timestamp (a market order walking
+            # multiple price levels in one step advances the level without
+            # advancing simulated time), which a timestamp-based interval
+            # cannot resolve but a row index always can.
             positions.append({
-                "direction": direction, "entry_time": entry_time, "entry_price": entry_price,
-                "entry_exec_id": entry_exec_id, "exit_time": cap_time, "exit_price": exit_price,
+                "direction": direction, "entry_time": entry_time, "entry_row_idx": entry_row_idx,
+                "entry_price": entry_price, "entry_exec_id": entry_exec_id,
+                "exit_time": cap_time, "exit_row_idx": max(i - 1, 0), "exit_price": exit_price,
                 "exit_exec_id": None, "forced": True, "net_bps": pnl / entry_price * 1e4,
             })
             state = "seek_entry"
@@ -553,8 +737,9 @@ def run_strategy(events: pd.DataFrame, mid: MidLookup, inside_mode: bool,
                     exit_price = exit_order.price
                     pnl = (exit_price - entry_price) if direction == "long" else (entry_price - exit_price)
                     positions.append({
-                        "direction": direction, "entry_time": entry_time, "entry_price": entry_price,
-                        "entry_exec_id": entry_exec_id, "exit_time": row.t, "exit_price": exit_price,
+                        "direction": direction, "entry_time": entry_time, "entry_row_idx": entry_row_idx,
+                        "entry_price": entry_price, "entry_exec_id": entry_exec_id,
+                        "exit_time": row.t, "exit_row_idx": i, "exit_price": exit_price,
                         "exit_exec_id": row.exec_id, "forced": False, "net_bps": pnl / entry_price * 1e4,
                     })
                     state = "seek_entry"
@@ -643,41 +828,44 @@ def build_public_tape(events: pd.DataFrame, s1_positions: list[dict], s2_positio
         "id": ex["id"], "ts": to_iso_row(ex["t"].to_numpy(), start),
         "price": ex["price"], "size": ex["size"], "side": ex["side"],
     })
-    efile = "executions_qa_maker3_tape.csv.gz"
+    efile = "executions_qa_maker3_v2_tape.csv.gz"
     gzip_write_text(out_dir / efile, ex_out.to_csv(index=False))
 
     # ticker: one row per background event, sizes include S1's own resting
-    # order while it is on the book (add OWN_SIZE to whichever side/time
-    # window an S1 order was actually resting -- both the seek_entry two-
-    # sided quote and the seek_exit single-sided quote).
-    t_arr = events["t"].to_numpy()
+    # order while it is on the book. Model: EACH SIDE is active (own_size
+    # added) by DEFAULT on every row, except during an explicit IDLE GAP --
+    # a side goes idle exactly on [entry_row_idx, exit_row_idx) of any
+    # position it was the ENTRY side for (its resting order was consumed by
+    # that entry fill, and only the OPPOSITE side gets a fresh order "at
+    # that moment" per ambiguity (a); the entry side stays idle until the
+    # position closes, becoming active again -- a fresh order, same rule --
+    # starting AT exit_row_idx inclusive, since ticker rows are written
+    # POST-TRADE (c), so the row of the closing trade already reflects the
+    # re-quote). The EXIT side of a position needs no special-casing: it is
+    # continuously active before, during, and after the position (same
+    # resting clip, just re-priced/re-queued on staleness), so it is never
+    # part of an idle gap. Boundaries are ROW INDICES (entry_row_idx/
+    # exit_row_idx, recorded by run_strategy), NOT timestamps: a single
+    # market order can walk MULTIPLE price levels without simulated time
+    # advancing (see simulate_background's per-order while-loop), so two or
+    # more DISTINCT rows can share the exact same timestamp with a real
+    # state transition (an entry/exit fill) happening strictly between them
+    # -- only a row index can resolve which of the tied rows is "before" vs
+    # "after" the transition (found via the independent-replay cross-check
+    # below disagreeing with the sealed truth on exactly the positions
+    # following a multi-level-walk tie / an entry-fill-then-idle-side gap).
     n = len(events)
-    own_bid_add = np.zeros(n)
-    own_ask_add = np.zeros(n)
-
-    def add_interval(side: str, t0: float, t1: float) -> None:
-        lo = np.searchsorted(t_arr, t0, side="left")
-        hi = np.searchsorted(t_arr, t1, side="right")
-        if side == "bid":
-            own_bid_add[lo:hi] += OWN_SIZE
-        else:
-            own_ask_add[lo:hi] += OWN_SIZE
-
-    # Reconstruct S1's resting-order intervals: always resting BOTH sides
-    # while seeking entry, then only the exit side while seeking exit.
-    prev_end = 0.0
+    own_bid_add = np.full(n, OWN_SIZE)
+    own_ask_add = np.full(n, OWN_SIZE)
     for p in s1_positions:
-        add_interval("bid", prev_end, p["entry_time"])  # both sides resting while seeking entry
-        add_interval("ask", prev_end, p["entry_time"])
-        exit_side = "ask" if p["direction"] == "long" else "bid"
-        add_interval(exit_side, p["entry_time"], p["exit_time"])
-        prev_end = p["exit_time"]
-    if s1_positions:
-        add_interval("bid", prev_end, t_arr[-1] if n else prev_end)
-        add_interval("ask", prev_end, t_arr[-1] if n else prev_end)
+        entry_side = "bid" if p["direction"] == "long" else "ask"
+        lo, hi = p["entry_row_idx"], p["exit_row_idx"]
+        if hi > lo:
+            (own_bid_add if entry_side == "bid" else own_ask_add)[lo:hi] = 0.0
 
     bid_size = events["bid_depth"].to_numpy() + own_bid_add
     ask_size = events["ask_depth"].to_numpy() + own_ask_add
+    t_arr = events["t"].to_numpy()
     ticks = pd.DataFrame({
         "t": t_arr, "best_bid": events["bid_price"].to_numpy(), "best_ask": events["ask_price"].to_numpy(),
         "best_bid_size": bid_size, "best_ask_size": ask_size,
@@ -698,7 +886,7 @@ def build_public_tape(events: pd.DataFrame, s1_positions: list[dict], s2_positio
         "best_bid": bb, "best_ask": ba,
         "best_bid_size": ticks["best_bid_size"], "best_ask_size": ticks["best_ask_size"],
     })
-    qfile = "ticker_qa_maker3_tape.csv.gz"
+    qfile = "ticker_qa_maker3_v2_tape.csv.gz"
     gzip_write_text(out_dir / qfile, tick_out.to_csv(index=False))
 
     return {
@@ -732,28 +920,336 @@ def run_self_checks(events: pd.DataFrame, tape_info: dict, out_dir: Path,
 
     with gzip.open(out_dir / tape_info["execution_file"], "rt") as f:
         edf = pd.read_csv(f)
-    # NOTE: this check is scoped to S1 because S1 is the pass the public
-    # tape's own-size ticker annotations are built from (see
-    # build_public_tape). S2 is a separate, non-interacting counterfactual
-    # pass -- its fills are real within its own pass (and its exec_id still
-    # references a genuine background print), but its inside-improved price
-    # legitimately differs from the S1-world tape by one tick, so price
-    # identity is checked for S1 only.
     exec_ids = set(edf["id"].astype(np.int64))
     exec_by_id = edf.set_index("id")
-    for p in s1_positions:
+
+    assert med_touch >= 5 * OWN_SIZE and med_touch <= 20 * OWN_SIZE, \
+        f"median touch size {med_touch} outside the 5-20x own-size band"
+
+    # ---- item 1: forced exits cross EXACTLY at the displayed public touch
+    # -- read straight back off the WRITTEN ticker file (tdf, already
+    # loaded above), same as any auditor would, not the in-memory events
+    # array. Crossed-book trap rows (best_bid > best_ask there -- a
+    # physically impossible quote, injected on purpose, see
+    # CROSSED_BOOK_FRACTION) carry EXACTLY-SWAPPED prices, so they are
+    # un-swapped here rather than skipped -- see the identical, more-
+    # detailed comment on this in _independent_replay_one (an earlier
+    # skip-the-row approach could land on the wrong PRECEDING row instead
+    # of recovering the true touch at the exact row).
+    t_arr = events["t"].to_numpy()
+    raw_bid = tdf["best_bid"].to_numpy()
+    raw_ask = tdf["best_ask"].to_numpy()
+    valid = raw_bid <= raw_ask
+    tick_bid = np.where(valid, raw_bid, raw_ask)
+    tick_ask = np.where(valid, raw_ask, raw_bid)
+    for p in s1_positions + s2_positions:
+        if not p["forced"]:
+            continue
+        j = int(np.searchsorted(t_arr, p["exit_time"], side="right")) - 1
+        j = max(j, 0)
+        touch = tick_bid[j] if p["direction"] == "long" else tick_ask[j]
+        assert abs(float(touch) - p["exit_price"]) < 1e-6, (
+            f"forced exit price {p['exit_price']} != public touch {touch} "
+            f"at exit_time={p['exit_time']} (row {j})"
+        )
+
+    # ---- item 4a: mean-decomposition identity (overall mean == weighted
+    # combination of the forced-only and non-forced-only subset means),
+    # checked directly off the raw position lists, not the rounded summary
+    # dict. ----
+    for label, positions in (("S1", s1_positions), ("S2", s2_positions)):
+        if not positions:
+            continue
+        all_net = np.asarray([q["net_bps"] for q in positions], dtype=float)
+        forced_mask = np.asarray([q["forced"] for q in positions], dtype=bool)
+        n = len(positions)
+        n_forced = int(forced_mask.sum())
+        frac = n_forced / n
+        forced_mean = float(all_net[forced_mask].mean()) if n_forced else 0.0
+        nonforced_mean = float(all_net[~forced_mask].mean()) if n_forced < n else 0.0
+        recombined = frac * forced_mean + (1 - frac) * nonforced_mean
+        assert abs(recombined - float(all_net.mean())) < 1e-9, \
+            f"{label}: mean decomposition identity failed"
+
+    # ---- item 4b: every own fill (entry AND exit, both forced and
+    # non-forced, S1 and S2) maps to a public print at the same ts/price/
+    # side-consistency. Forced exits are checked against the touch above
+    # (their price is DEFINED as the touch, no exec-row lookup needed for
+    # price -- but their (ts, size, side) must still appear as a genuine
+    # print, checked here by exec_id). Non-forced maker fills at-best (S1
+    # always; S2 whenever spread==1 forces it back to an at-best quote)
+    # must match the print's PRICE exactly; S2's genuinely one-tick-inside
+    # fills are a real, disclosed, non-interacting-clip approximation (see
+    # manifest) where our own resting price is better than the background
+    # print it silently taps, so price identity is not required there --
+    # only ts/side-consistency (the print exists, on the correct side, at
+    # the fill instant) is. ----
+    for is_s1, p in [(True, p) for p in s1_positions] + [(False, p) for p in s2_positions]:
         for key_p, key_id in (("entry_price", "entry_exec_id"), ("exit_price", "exit_exec_id")):
             assert p.get(key_id) is not None, f"own fill missing {key_id}"
             assert int(p[key_id]) in exec_ids, f"own fill {key_id}={p[key_id]} missing from public tape"
             row = exec_by_id.loc[int(p[key_id])]
-            assert abs(float(row["price"]) - p[key_p]) < 1e-6, "own fill price mismatch vs public tape"
-    for p in s2_positions:
-        for key_id in ("entry_exec_id", "exit_exec_id"):
-            assert p.get(key_id) is not None and int(p[key_id]) in exec_ids, \
-                f"S2 own fill {key_id} missing from public tape"
+            long_ = p["direction"] == "long"
+            if key_p == "exit_price" and p["forced"]:
+                # forced exit: WE are the taker (crossing the spread
+                # ourselves), so the print's side is OUR OWN action --
+                # SELL to close a long, BUY to close a short.
+                want_taker_side = "SELL" if long_ else "BUY"
+            elif key_p == "entry_price":
+                # entry: a background taker consumes OUR resting order --
+                # our bid (long) is consumed by a SELL, our ask (short) by
+                # a BUY.
+                want_taker_side = "SELL" if long_ else "BUY"
+            else:
+                # non-forced exit: a background taker consumes our resting
+                # CLOSING order on the OPPOSITE side from entry -- our ask
+                # (closing a long) is consumed by a BUY, our bid (closing a
+                # short) by a SELL.
+                want_taker_side = "BUY" if long_ else "SELL"
+            assert row["side"] == want_taker_side, f"own fill {key_id} side inconsistent with public print"
+            # S1 never improves (always at-best) so its price must exactly
+            # equal the print's price at every fill, forced or not. S2's
+            # forced exits also cross at the touch (price-equal too); only
+            # S2's genuinely one-tick-inside NON-forced fills are exempt
+            # (documented non-interacting-clip approximation, see manifest).
+            if is_s1 or (key_p == "exit_price" and p["forced"]):
+                assert abs(float(row["price"]) - p[key_p]) < 1e-6, f"own fill {key_id} price mismatch vs public tape"
 
-    assert med_touch >= 5 * OWN_SIZE and med_touch <= 20 * OWN_SIZE, \
-        f"median touch size {med_touch} outside the 5-20x own-size band"
+
+# ======================================================================= #
+# independent public-only replay (item 4: a SECOND, separately-written
+# re-derivation that reads ONLY the two public files + the stated rule --
+# no access to `events`, epi ids, or anything else internal. If this
+# disagrees with the hidden-log-derived S1/S2 net/n/forced-fraction, the
+# packet is broken exactly the way generation-3-v1 was (docs/QA/
+# known_answer_results_2026-09-05.md) and generate() must fail loudly
+# rather than seal a mismatched answer -- this is precisely the check
+# three blind auditors would perform by hand.
+# ======================================================================= #
+class _PubOrder:
+    __slots__ = ("side", "price", "ahead", "cum_exec", "inside", "ref_bid", "ref_ask")
+
+    def __init__(self, side, price, ahead, inside, ref_bid, ref_ask):
+        self.side = side
+        self.price = price
+        self.ahead = ahead
+        self.cum_exec = 0.0
+        self.inside = inside
+        self.ref_bid = ref_bid
+        self.ref_ask = ref_ask
+
+
+def _reconstruct_own_add(positions: list[dict], n: int) -> tuple[np.ndarray, np.ndarray]:
+    """Mirrors build_public_tape()'s own-size idle-gap logic EXACTLY (see
+    the detailed comment there): each side is active by default, idle only
+    on [entry_row_idx, exit_row_idx) of a position it was the ENTRY side
+    for. Driven off a POSITIONS LIST carrying entry_row_idx/exit_row_idx
+    (recorded during the replay that produced it, hidden or public -- see
+    _independent_replay_one)."""
+    bid_add = np.full(n, OWN_SIZE)
+    ask_add = np.full(n, OWN_SIZE)
+    for p in positions:
+        entry_side = "bid" if p["direction"] == "long" else "ask"
+        lo, hi = p["entry_row_idx"], p["exit_row_idx"]
+        if hi > lo:
+            (bid_add if entry_side == "bid" else ask_add)[lo:hi] = 0.0
+    return bid_add, ask_add
+
+
+def _independent_replay_one(ticker_df: pd.DataFrame, exec_df: pd.DataFrame, inside_mode: bool,
+                             bg_bid: np.ndarray | None, bg_ask: np.ndarray | None) -> tuple[list[dict], np.ndarray]:
+    """Replays ONE strategy (S1 if inside_mode=False, else S2) using only
+    the public ticker/execution DataFrames + the rule stated verbatim in
+    FILL_RULE_TEXT. `bg_bid`/`bg_ask` (background-only displayed size,
+    already purified of any earlier pass's own-size contribution) are used
+    for queue-ahead whenever an at-best price applies; pass None on the
+    FIRST call (S1: the ticker's own-size annotations ARE S1's, so
+    ticker-size - own_size recovers it directly). Returns (positions,
+    own_add_bid) so a second call (S2) can be told what background depth
+    really was, purified of S1's own footprint."""
+    bp_raw = ticker_df["best_bid"].to_numpy(dtype=float)
+    ap_raw = ticker_df["best_ask"].to_numpy(dtype=float)
+    bs = ticker_df["best_bid_size"].to_numpy(dtype=float)
+    asz = ticker_df["best_ask_size"].to_numpy(dtype=float)
+    t_dt = pd.to_datetime(ticker_df["ts"]).to_numpy()
+    n = len(ticker_df)
+
+    # Crossed-book trap rows (best_bid > best_ask -- physically impossible,
+    # a deliberate injected corruption, see CROSSED_BOOK_FRACTION) carry
+    # EXACTLY-SWAPPED bid/ask prices and otherwise-untouched sizes -- the
+    # injection is a pure relabel, not noise, so it is exactly reversible:
+    # a competent auditor who notices "bid > ask" concludes the two got
+    # swapped and swaps them back, rather than discarding the row (an
+    # earlier forward-fill attempt here masked a genuine price move that
+    # happened to land exactly on a crossed row, delaying a re-quote/
+    # queue-ahead read by one row and desyncing this replay from the
+    # sealed truth -- found via the independent-replay cross-check).
+    valid = bp_raw <= ap_raw
+    bp = np.where(valid, bp_raw, ap_raw)
+    ap = np.where(valid, ap_raw, bp_raw)
+
+    if bg_bid is None:
+        bg_bid = bs - OWN_SIZE
+        bg_ask = asz - OWN_SIZE
+
+    # A single background market order can walk MULTIPLE price levels in one
+    # step (t does not advance between levels -- see the while-loop in
+    # simulate_background), producing several DISTINCT exec/ticker rows that
+    # share the EXACT SAME timestamp. So this must be ts -> an ORDERED queue
+    # of exec rows, popped from the front once per matching ticker row, not
+    # a plain ts -> one-row dict (which silently dropped the 2nd+ exec at a
+    # tied ts -- found via the independent-replay cross-check itself, this
+    # generator's whole point).
+    exec_at_ts: dict[str, deque] = defaultdict(deque)
+    for row in exec_df.itertuples(index=False):
+        exec_at_ts[row.ts].append(row)
+
+    def make_order(side: str, i: int) -> _PubOrder:
+        spread_ticks = round((ap[i] - bp[i]) / TICK)
+        if inside_mode and spread_ticks >= 2:
+            price = bp[i] + TICK if side == "bid" else ap[i] - TICK
+            return _PubOrder(side, price, 0.0, True, bp[i], ap[i])
+        price = bp[i] if side == "bid" else ap[i]
+        ahead = bg_bid[i] if side == "bid" else bg_ask[i]
+        return _PubOrder(side, price, ahead, False, bp[i], ap[i])
+
+    def stale(o: _PubOrder, i: int) -> bool:
+        if o.inside:
+            return bp[i] != o.ref_bid or ap[i] != o.ref_ask
+        cur = bp[i] if o.side == "bid" else ap[i]
+        return cur != o.price
+
+    def asof_touch(cap_time) -> tuple[float, float]:
+        j = int(np.searchsorted(t_dt, cap_time, side="right")) - 1
+        j = max(j, 0)
+        return float(bp[j]), float(ap[j])
+
+    positions: list[dict] = []
+    if n == 0:
+        return positions, np.zeros(0)
+    state = "seek_entry"
+    pending = {"bid": make_order("bid", 0), "ask": make_order("ask", 0)}
+    exit_order = None
+    entry_time = entry_price = None
+    direction = None
+    cap_time = None
+
+    entry_row_idx = None
+    i = 0
+    while i < n:
+        if state == "seek_exit" and t_dt[i] > cap_time:
+            fb, fa = asof_touch(cap_time)
+            exit_price = fb if direction == "long" else fa
+            pnl = (exit_price - entry_price) if direction == "long" else (entry_price - exit_price)
+            # exit_row_idx = i-1: row i is the first row past the cap
+            # deadline and gets reprocessed under seek_entry below -- see
+            # the identical comment on the hidden-side forced-exit branch
+            # in run_strategy for why this must be a row index, not i.
+            positions.append({
+                "direction": direction, "entry_time": entry_time, "entry_row_idx": entry_row_idx,
+                "entry_price": entry_price, "exit_time": cap_time, "exit_row_idx": max(i - 1, 0),
+                "exit_price": exit_price, "forced": True, "net_bps": pnl / entry_price * 1e4,
+            })
+            state = "seek_entry"
+            pending = {"bid": make_order("bid", i), "ask": make_order("ask", i)}
+            continue
+
+        dq = exec_at_ts.get(ticker_df["ts"].iat[i])
+        e = dq.popleft() if dq else None
+        hit_side = None
+        if e is not None:
+            hit_side = "bid" if e.side == "SELL" else "ask"
+
+        if state == "seek_entry":
+            filled_side = None
+            for side in ("bid", "ask"):
+                o = pending[side]
+                if stale(o, i):
+                    pending[side] = make_order(side, i)
+                    o = pending[side]
+                if hit_side == side:
+                    o.cum_exec += float(e.size)
+                    if o.cum_exec >= o.ahead + OWN_SIZE - 1e-9:
+                        filled_side = side
+                        break
+            if filled_side:
+                side = filled_side
+                o = pending[side]
+                entry_time = t_dt[i]
+                entry_row_idx = i
+                entry_price = o.price
+                direction = "long" if side == "bid" else "short"
+                exit_side = "ask" if side == "bid" else "bid"
+                exit_order = make_order(exit_side, i)
+                pending[exit_side] = exit_order
+                cap_time = entry_time + np.timedelta64(int(CAP_SECONDS * 1e9), "ns")
+                state = "seek_exit"
+            i += 1
+            continue
+
+        # state == "seek_exit", not forced this row
+        exit_side = exit_order.side
+        if stale(exit_order, i):
+            exit_order = make_order(exit_side, i)
+            pending[exit_side] = exit_order
+        if hit_side == exit_side:
+            exit_order.cum_exec += float(e.size)
+            if exit_order.cum_exec >= exit_order.ahead + OWN_SIZE - 1e-9:
+                exit_price = exit_order.price
+                pnl = (exit_price - entry_price) if direction == "long" else (entry_price - exit_price)
+                positions.append({
+                    "direction": direction, "entry_time": entry_time, "entry_row_idx": entry_row_idx,
+                    "entry_price": entry_price, "exit_time": t_dt[i], "exit_row_idx": i,
+                    "exit_price": exit_price, "forced": False, "net_bps": pnl / entry_price * 1e4,
+                })
+                state = "seek_entry"
+                pending = {"bid": make_order("bid", i), "ask": make_order("ask", i)}
+        i += 1
+
+    own_bid_add, _own_ask_add = _reconstruct_own_add(positions, n)
+    return positions, own_bid_add
+
+
+def independent_public_replay(ticker_df: pd.DataFrame, exec_df: pd.DataFrame) -> dict:
+    """Public-only re-derivation of S1 and S2. Returns a dict with the same
+    net_bps_mean/net_bps_t_stat/n_positions/forced_exit_fraction shape as
+    summarize() for both, via the SAME summarize() function (it only looks
+    at 'net_bps'/'forced', both present here)."""
+    s1_pub, _ = _independent_replay_one(ticker_df, exec_df, inside_mode=False, bg_bid=None, bg_ask=None)
+    # S2 needs BACKGROUND-ONLY depth (purified of S1's own footprint, which
+    # is what the ticker's size columns actually carry -- see the
+    # _independent_replay_one docstring) for its rare at-best fallback
+    # (spread==1, where an inside improve is impossible).
+    s1_bid_add, s1_ask_add = _reconstruct_own_add(s1_pub, len(ticker_df))
+    bg_bid = ticker_df["best_bid_size"].to_numpy(dtype=float) - s1_bid_add
+    bg_ask = ticker_df["best_ask_size"].to_numpy(dtype=float) - s1_ask_add
+    s2_pub, _ = _independent_replay_one(ticker_df, exec_df, inside_mode=True, bg_bid=bg_bid, bg_ask=bg_ask)
+    return {
+        "S1_symmetric_at_best": summarize(s1_pub, "S1_independent_replay"),
+        "S2_inside_one_tick": summarize(s2_pub, "S2_independent_replay"),
+    }
+
+
+def verify_independent_replay(out_dir: Path, tape_info: dict, s1_summary: dict, s2_summary: dict) -> dict:
+    with gzip.open(out_dir / tape_info["quote_file"], "rt") as f:
+        ticker_df = pd.read_csv(f)
+    with gzip.open(out_dir / tape_info["execution_file"], "rt") as f:
+        exec_df = pd.read_csv(f)
+    pub = independent_public_replay(ticker_df, exec_df)
+    for label, hidden in (("S1_symmetric_at_best", s1_summary), ("S2_inside_one_tick", s2_summary)):
+        got = pub[label]
+        for field in ("n_positions", "forced_exit_fraction"):
+            assert got[field] == hidden[field], (
+                f"INDEPENDENT PUBLIC-ONLY REPLAY DISAGREES WITH SEALED TRUTH ({label}.{field}): "
+                f"public-only replay={got[field]!r} hidden-log truth={hidden[field]!r} -- "
+                f"this is the generation-3-v1 failure mode (a rule ambiguity three blind "
+                f"auditors would ALSO hit); do not seal this packet."
+            )
+        assert abs(got["net_bps_mean"] - hidden["net_bps_mean"]) < 1e-6, (
+            f"INDEPENDENT PUBLIC-ONLY REPLAY DISAGREES WITH SEALED TRUTH ({label}.net_bps_mean): "
+            f"public-only replay={got['net_bps_mean']!r} hidden-log truth={hidden['net_bps_mean']!r}"
+        )
+    return pub
 
 
 # ======================================================================= #
@@ -767,13 +1263,13 @@ def naive_net(events: pd.DataFrame, mid: MidLookup) -> dict:
 # ======================================================================= #
 # manifest + claims
 # ======================================================================= #
-MANIFEST_TEMPLATE = """# QA known-answer packet (generation 3) -- maker fill model -- manifest
+MANIFEST_TEMPLATE = """# QA known-answer packet (generation 3, v2) -- maker fill model -- manifest
 
 Synthetic data generated by `scripts/qa/make_known_answer_maker3.py` (fixed
 seed). Nothing here is real market data.
 
-Do not open `docs/QA/answers_sealed_maker3.json` before completing an audit
-of this packet.
+Do not open `docs/QA/answers_sealed_maker3_v2.json` before completing an
+audit of this packet.
 
 ## Synthetic tape ({tape_days:.0f} days)
 
@@ -783,12 +1279,26 @@ of this packet.
 | `{execution_file}` | id,ts,price,size,side | {n_execution_rows} |
 
 `side` in the execution file is the TAKER's side (BUY/SELL). `best_bid_size`
-/`best_ask_size` are the DISPLAYED sizes at the touch at quote time.
+/`best_ask_size` are the DISPLAYED sizes at the touch at quote time, and
+ALWAYS include our own resting clip's size while it is on the book for
+whichever maker strategy this packet's ticker reflects (S1; see the fill
+rule below). Ticker rows are written AFTER the execution(s) sharing that
+same timestamp are applied (post-trade state), so a row's sizes/prices are
+the book AS IT STOOD immediately after anything that happened at that
+instant, own fill included.
+
+## Fill rule (applies to every claim; population is defined in each claim)
+
+{fill_rule_text}.
+
+Own order size for any maker strategy under test: {own_size} units. An
+order that improves the touch (quotes inside the current best) has
+queue-ahead = 0 by construction (nothing can be ahead of a brand-new best
+price).
 
 ## Notes
 
 - Instrument tick: {tick} (price units). Fee: 0 bps maker and taker.
-- Own order size for any maker strategy under test: {own_size} units.
 - Sizes in both files are displayed/executed totals, not per-order detail.
 - The ticker (quote) file and the execution file are separate update
   streams with their own timestamps.
@@ -801,6 +1311,7 @@ def build_manifest(tape_info: dict, seed: int) -> str:
         tape_days=TAPE_DAYS, quote_file=tape_info["quote_file"], execution_file=tape_info["execution_file"],
         n_quote_rows=tape_info["n_quote_rows"], n_execution_rows=tape_info["n_execution_rows"],
         tick=TICK, own_size=OWN_SIZE, generated_utc=datetime.now(timezone.utc).isoformat(), seed=seed,
+        fill_rule_text=FILL_RULE_TEXT,
     )
 
 
@@ -808,31 +1319,66 @@ FILL_RULE_TEXT = (
     "resting order joins the back of the displayed queue at insertion; it fills when "
     "cumulative executions at its price on its side since insertion exceed queue-ahead + "
     "own size, or partially per FIFO; cancelled and re-joined at the new best when the "
-    "touch moves away; positions = completed entry fills; exit as taker at touch after 300 s"
+    "touch moves away; after our own fill, the OPPOSITE-side exit order is a NEW order "
+    "inserted at the back of the displayed queue AT THAT MOMENT (queue-ahead = displayed "
+    "size at insertion, minus own size, since the displayed size at insertion already "
+    "includes our own just-joined clip -- see the ticker-timing rule below); each entry "
+    "has its own exit order, there is no netting across positions, and at most one open "
+    "position per side at a time (a new entry quote on a side is placed only when that "
+    "side has no open position); ticker rows are written AFTER the execution(s) at that "
+    "same timestamp are applied (post-trade); positions = completed entry fills; forced "
+    "exits at the 300 s cap cross EXACTLY at the displayed public touch at exit time -- "
+    "no additional slippage is modelled"
 )
 
 
+def _sign_significance_ja(mean: float, t_stat: float, alpha_t: float = 2.0) -> str:
+    """Describes a realized mean/t-stat truthfully -- used so claim text is
+    never hardcoded to an assumed sign (v1's bug: QA3-1/QA3-3 text hardcoded
+    'negative, significant' / 'no significant difference from 0' regardless
+    of what the hidden logs actually produced). Written from whatever the
+    number IS, per the fix spec's "do not target the sign" instruction."""
+    if not math.isfinite(t_stat) or abs(t_stat) < alpha_t:
+        return "0 との有意差はない"
+    return ("正" if mean > 0 else "負") + "かつ有意である"
+
+
 def build_claims(s1: dict, s2: dict, naive: dict) -> tuple[str, list[dict]]:
+    # item 5-(2) stop condition: the naive (queue-blind) fill model must be
+    # MORE OPTIMISTIC than the true, stated rule by >= 1bps, or wrong-signed
+    # relative to it -- otherwise QA3-2 cannot honestly be marked "false"
+    # and generation must fail loudly rather than seal a broken claim.
+    gap = naive["net_bps_mean"] - s1["net_bps_mean"]
+    wrong_sign = (naive["net_bps_mean"] > 0) != (s1["net_bps_mean"] > 0)
+    if not (gap >= 1.0 or wrong_sign):
+        raise RuntimeError(
+            f"QA3-2 stop condition failed: naive net_bps_mean={naive['net_bps_mean']:.4f} is not "
+            f">=1bps more optimistic than the true-rule S1 net_bps_mean={s1['net_bps_mean']:.4f} "
+            f"(gap={gap:.4f}) and is not wrong-signed relative to it -- per the fix spec, "
+            f"generation must stop here rather than seal a false QA3-2."
+        )
+
     claims = [
         {
             "id": "QA3-1", "category": "maker_fill", "truth_class": "true_effect", "claim_correct": True,
             "text": (f"母集団=S1(最良気配で対称的に両建て quote、300秒 cap)の完了建玉。約定規則: {FILL_RULE_TEXT}。"
-                     f"この規則の下でネット = {s1['net_bps_mean']:.2f}bps/往復 (t={s1['net_bps_t_stat']:.2f})。"
-                     f"負かつ有意である。"),
+                     f"この規則の下でネット = {s1['net_bps_mean']:+.2f}bps/往復 (t={s1['net_bps_t_stat']:.2f})。"
+                     f"{_sign_significance_ja(s1['net_bps_mean'], s1['net_bps_t_stat'])}。"),
         },
         {
             "id": "QA3-2", "category": "naive_bias", "truth_class": "naive_model_bias", "claim_correct": False,
             "text": (f"母集団=S1と同じ建玉群だが、約定規則を『挿入後に自分の価格・サイドで最初に印字された"
                      f"執行を無条件に約定とみなす(キュー先行量を無視)』に置き換えて PUBLIC テープを再生した"
                      f"場合、ネット = {naive['net_bps_mean']:+.2f}bps/往復 (t={naive['net_bps_t_stat']:.2f}) と"
-                     f"プラスであり、したがって取引可能なエッジが存在する。"),
+                     f"なり、正しい規則({s1['net_bps_mean']:+.2f}bps)より楽観的であり、したがってこの"
+                     f"素朴な計算だけからでも取引可能なエッジの存在が結論できる。"),
         },
         {
-            "id": "QA3-3", "category": "maker_fill", "truth_class": "correct_null", "claim_correct": True,
+            "id": "QA3-3", "category": "maker_fill", "truth_class": "true_effect", "claim_correct": True,
             "text": (f"母集団=S2(スプレッド2tick以上のとき最良気配より1tick内側に improve して両建て quote、"
                      f"それ以外は最良気配、300秒 cap)の完了建玉。同じ約定規則: {FILL_RULE_TEXT}。"
-                     f"ネット = {s2['net_bps_mean']:+.2f}bps/往復 (t={s2['net_bps_t_stat']:.2f}) であり、"
-                     f"0 との有意差はない。"),
+                     f"ネット = {s2['net_bps_mean']:+.2f}bps/往復 (t={s2['net_bps_t_stat']:.2f})。"
+                     f"{_sign_significance_ja(s2['net_bps_mean'], s2['net_bps_t_stat'])}。"),
         },
         {
             "id": "QA3-4", "category": "adverse_selection", "truth_class": "adverse_selection_magnitude",
@@ -846,7 +1392,7 @@ def build_claims(s1: dict, s2: dict, naive: dict) -> tuple[str, list[dict]]:
             "claim_correct": False,
             "text": (f"母集団=S1(約定規則: {FILL_RULE_TEXT})の完了建玉のうち、300秒 cap で taker 決済"
                      f"(forced exit)になったものを除外した部分集合。この部分集合の平均ネットは "
-                     f"{s1['survivorship_biased_net_bps_if_forced_dropped']:+.2f}bps とプラスに転じ、"
+                     f"{s1['survivorship_biased_net_bps_if_forced_dropped']:+.2f}bps であり、"
                      f"これが戦略の正しい期待値の推定である。"),
         },
         {
@@ -855,7 +1401,7 @@ def build_claims(s1: dict, s2: dict, naive: dict) -> tuple[str, list[dict]]:
                      f"決済された(forced exit)建玉の比率は {s1['forced_exit_fraction'] * 100:.1f}% である。"),
         },
     ]
-    lines = ["# QA known-answer packet (generation 3, maker fill model) -- claims for auditors", "",
+    lines = ["# QA known-answer packet (generation 3, v2, maker fill model) -- claims for auditors", "",
              "## 約定規則 (すべての主張に共通)", "", FILL_RULE_TEXT, "",
              "母集団の定義は各主張の本文中に明記する。以下 6 件を判定せよ。番号 (QA3-1..QA3-6) を報告の"
              "見出しに使うこと。", ""]
@@ -896,13 +1442,14 @@ def generate(out_dir: Path, seed: int, tape_days: float = TAPE_DAYS, hidden_dir:
     s2_summary = summarize(s2_positions, "S2_inside_one_tick")
 
     run_self_checks(events, tape_info, out_dir, s1_positions, s2_positions)
+    independent = verify_independent_replay(out_dir, tape_info, s1_summary, s2_summary)
 
     manifest = build_manifest(tape_info, seed)
     (out_dir / "manifest.md").write_text(manifest)
     claims_md, claims = build_claims(s1_summary, s2_summary, naive)
 
     if hidden_dir is None:
-        hidden_dir = REPO_ROOT / "docs" / "QA" / "hidden_maker3"
+        hidden_dir = REPO_ROOT / "docs" / "QA" / "hidden_maker3_v2"
     hidden_dir.mkdir(parents=True, exist_ok=True)
     s1_file = hidden_dir / "s1_positions.csv.gz"
     s2_file = hidden_dir / "s2_positions.csv.gz"
@@ -920,6 +1467,15 @@ def generate(out_dir: Path, seed: int, tape_days: float = TAPE_DAYS, hidden_dir:
         "S1_symmetric_at_best": s1_summary,
         "S2_inside_one_tick": s2_summary,
         "naive_fill_on_print_at_best": naive,
+        "independent_public_only_replay": {
+            "note": "second, separately-written replay reading ONLY the two public files + "
+                     "FILL_RULE_TEXT (see independent_public_replay() in this script) -- "
+                     "verified to match S1/S2 net_bps_mean/n_positions/forced_exit_fraction "
+                     "exactly in verify_independent_replay() before this json is written",
+            "S1_symmetric_at_best": independent["S1_symmetric_at_best"],
+            "S2_inside_one_tick": independent["S2_inside_one_tick"],
+        },
+        "seed_selection": {"seeds_tried": SEEDS_TRIED, "selected_seed": SEED, "note": SEED_SELECTION_NOTE},
         "traps": {
             "crossed_book_rows": {
                 "file": tape_info["quote_file"], "fraction_target": CROSSED_BOOK_FRACTION,
@@ -948,9 +1504,9 @@ def main() -> None:
     ap.add_argument("--tape-days", type=float, default=TAPE_DAYS)
     args = ap.parse_args()
 
-    out_dir = Path(args.out_dir) if args.out_dir else REPO_ROOT / "backtest_data" / f"qa_known_answer_maker3_{args.date}"
-    answers_out = Path(args.answers_out) if args.answers_out else REPO_ROOT / "docs" / "QA" / "answers_sealed_maker3.json"
-    claims_out = Path(args.claims_out) if args.claims_out else REPO_ROOT / "docs" / "QA" / "claims_for_auditors_maker3.md"
+    out_dir = Path(args.out_dir) if args.out_dir else REPO_ROOT / "backtest_data" / f"qa_known_answer_maker3_v2_{args.date}"
+    answers_out = Path(args.answers_out) if args.answers_out else REPO_ROOT / "docs" / "QA" / "answers_sealed_maker3_v2.json"
+    claims_out = Path(args.claims_out) if args.claims_out else REPO_ROOT / "docs" / "QA" / "claims_for_auditors_maker3_v2.md"
     answers_out.parent.mkdir(parents=True, exist_ok=True)
     claims_out.parent.mkdir(parents=True, exist_ok=True)
 
@@ -969,6 +1525,8 @@ def main() -> None:
           f"t={s1['adverse_selection_t_stat']:.2f}")
     print(f"S2 net={s2['net_bps_mean']:+.3f}bps t={s2['net_bps_t_stat']:.2f} n={s2['n_positions']}")
     print(f"naive net={naive['net_bps_mean']:+.3f}bps t={naive['net_bps_t_stat']:.2f} n={naive['n_positions']}")
+    print(f"seed={args.seed} (seeds tried: {sorted(SEEDS_TRIED)})")
+    print("independent public-only replay matched sealed S1/S2 net/n/forced_fraction exactly")
 
 
 if __name__ == "__main__":
