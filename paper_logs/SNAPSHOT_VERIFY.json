@@ -1,0 +1,930 @@
+{
+  "generated_at": "2026-09-05T16:18:45.983449+00:00",
+  "backtest_data_root": "backtest_data",
+  "units": [
+    {
+      "unit": "backtest_data (top-level files)",
+      "md5sums_path": "backtest_data\\MD5SUMS",
+      "file_count": 31,
+      "status": "mismatch",
+      "checked": 31,
+      "matched": 11,
+      "mismatches": [
+        {
+          "file": "binance_BTCUSDT_1m.csv",
+          "expected": "6caf363223f8f0e1a48689bf1868362b",
+          "actual": "abb9276e009ab00b5fde39fc6b367bbb"
+        },
+        {
+          "file": "binance_XRPUSDT_1d.csv",
+          "expected": "dde1bd94387bf8efdad0f72d4bdde07f",
+          "actual": "160abcce8cfbeae99d799824516689ec"
+        },
+        {
+          "file": "binance_XRPUSDT_1m.csv",
+          "expected": "15f16edbc603d2e068765e9af0a2a2de",
+          "actual": "06285272107ba1e061df91106739ce97"
+        },
+        {
+          "file": "binance_XRPUSDT_4h.csv",
+          "expected": "ac6b0f984648d8f33febd04fce748d43",
+          "actual": "ba628fbc88c71149df3aa69ce48749a9"
+        },
+        {
+          "file": "bitbank_xrp_jpy_1m.csv",
+          "expected": "426833407546f08d97a148d7d4081285",
+          "actual": "c1dce020388b026f5f3e29cb179907e9"
+        },
+        {
+          "file": "candles_BTC_JPY_20260820.csv",
+          "expected": "89e0539f6c39b5d7e7d3b0368f17f7c4",
+          "actual": "08ef6ada01e21f2873b45e915e4f014a"
+        },
+        {
+          "file": "candles_ETH_JPY_20260820.csv",
+          "expected": "886561c35cf9f908d12631eee2b1e8e8",
+          "actual": "3e49086ace200bc20edf44c8c010f6a1"
+        },
+        {
+          "file": "candles_FX_BTC_JPY_20260820.csv",
+          "expected": "b6b94af5f247b8b0259956087d73fae1",
+          "actual": "4fe19c87d70c190f2c8c165fb7bab9c1"
+        },
+        {
+          "file": "candles_FX_BTC_JPY_30d_20260820.csv",
+          "expected": "59947efe5cafcdc02b1d0aa8cc3d09c4",
+          "actual": "50921114d6928a354d55a0e266c33876"
+        },
+        {
+          "file": "candles_XRP_JPY_20260820.csv",
+          "expected": "a9035a584b860c5a493a64324c8b148b",
+          "actual": "435e6751b198581cab7e381faef17f7e"
+        },
+        {
+          "file": "flow_FX_BTC_JPY_20260820.csv",
+          "expected": "0d4bdfdaf90e643607ff35c3947b7897",
+          "actual": "092783bc79e17a7196cdbfb3860ddb64"
+        },
+        {
+          "file": "fred_DEXJPUS.csv",
+          "expected": "e077c7261a28f60dd049b1ba52bcf427",
+          "actual": "ce3c3cc098c534215110e6b043bf11ab"
+        },
+        {
+          "file": "fred_DFF.csv",
+          "expected": "4668e62eb507657c51f03376564a5d51",
+          "actual": "eefea89004933c1ef15fbb7e8cbc8b67"
+        },
+        {
+          "file": "fred_DGS2.csv",
+          "expected": "97962bfb5f2f1a08e8adc732c442ee7e",
+          "actual": "977d9ffaade994d68d0ac544d586db21"
+        },
+        {
+          "file": "fred_IR3TIB01JPM156N.csv",
+          "expected": "e59c95eaf8ad2c1a092f618a23302e83",
+          "actual": "bfc11cdecb1ca4b3cdd0a9436335ace9"
+        },
+        {
+          "file": "fred_IRSTCI01JPM156N.csv",
+          "expected": "b16bed6f0a4a0ff0e61d4b6a899793ff",
+          "actual": "2ddd320e5b653b50257da2b0d93127e4"
+        },
+        {
+          "file": "okx_btc_lsratio_1h_20260823.csv",
+          "expected": "9c210c85c51e143fd260210d5136b8b7",
+          "actual": "8492256a9c0960ef1f8e928f47b9d40c"
+        },
+        {
+          "file": "okx_btc_lsratio_5m_20260823.csv",
+          "expected": "e0de839f45e965d6166e1d125550f133",
+          "actual": "b0db5f3e0400975124aa12c53c58dd35"
+        },
+        {
+          "file": "okx_btc_oi_1h_20260823.csv",
+          "expected": "3e6c97745426eb97d3968eb9052fd422",
+          "actual": "246f32d86936fefda1a714116dece2db"
+        },
+        {
+          "file": "okx_btc_oi_5m_20260823.csv",
+          "expected": "33c2ba9478dd2e6008299be0927bc0ff",
+          "actual": "dddfb388486a20883bd15854c7dda766"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "audit_fetch_H_20260905",
+      "md5sums_path": "backtest_data\\audit_fetch_H_20260905\\MD5SUMS",
+      "file_count": 5,
+      "status": "verified",
+      "checked": 4,
+      "matched": 4,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "README.md"
+      ]
+    },
+    {
+      "unit": "auto_bitflyer_executions_20260905",
+      "md5sums_path": "backtest_data\\auto_bitflyer_executions_20260905\\MD5SUMS",
+      "file_count": 44,
+      "status": "verified",
+      "checked": 43,
+      "matched": 43,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_oi_snapshots_20260905",
+      "md5sums_path": "backtest_data\\auto_oi_snapshots_20260905\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_long_short_ratio_20260905",
+      "md5sums_path": "backtest_data\\auto_okx_long_short_ratio_20260905\\MD5SUMS",
+      "file_count": 3,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_1h_20260905",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_1h_20260905\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260905",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260905\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_venues_20260905",
+      "md5sums_path": "backtest_data\\auto_venues_20260905\\MD5SUMS",
+      "file_count": 51,
+      "status": "verified",
+      "checked": 50,
+      "matched": 50,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "board_round_20260904",
+      "md5sums_path": "backtest_data\\board_round_20260904\\MD5SUMS",
+      "file_count": 5,
+      "status": "mismatch",
+      "checked": 2,
+      "matched": 1,
+      "mismatches": [
+        {
+          "file": "board_round_coverage.json",
+          "expected": "dbc3bf1b97438111d5796c43d9d1612a",
+          "actual": "f588a7cd2f0c87985ff4b18c7ca62279"
+        }
+      ],
+      "missing": [],
+      "extra": [
+        "JUDGE_RUN.txt",
+        "JUDGE_RUN_qc.txt",
+        "TP_OPERATING_REF.txt"
+      ]
+    },
+    {
+      "unit": "burst_events_20260820",
+      "md5sums_path": "backtest_data\\burst_events_20260820\\MD5SUMS",
+      "file_count": 99,
+      "status": "verified",
+      "checked": 99,
+      "matched": 99,
+      "mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "fx_event_ticks_2005_2014",
+      "md5sums_path": "backtest_data\\fx_event_ticks_2005_2014\\MD5SUMS",
+      "file_count": 323,
+      "status": "mismatch",
+      "checked": 323,
+      "matched": 320,
+      "mismatches": [
+        {
+          "file": "MISSING.txt",
+          "expected": "ca256e2c3db331a2e2f91dc5fb0921f1",
+          "actual": "fa2eb12dc46e586e9c9372cce74a1064"
+        },
+        {
+          "file": "S4_JUDGMENT_RUN.txt",
+          "expected": "eaa34a3ef651468bf26d2848464a67c6",
+          "actual": "1ba4e208f938e079acc0e748344facb5"
+        },
+        {
+          "file": "manifest.json",
+          "expected": "62bdeb4b806a100daeb5bef1f7cf65e5",
+          "actual": "a30ec7a3b315aee6d0d9942e2a6287a0"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "fx_event_ticks_2015_2026",
+      "md5sums_path": "backtest_data\\fx_event_ticks_2015_2026\\MD5SUMS",
+      "file_count": 479,
+      "status": "mismatch",
+      "checked": 479,
+      "matched": 477,
+      "mismatches": [
+        {
+          "file": "calendar.csv",
+          "expected": "7a8f0dfc3232d534c27ef9d00e28358b",
+          "actual": "502c95a7ecec6171a57f1378cd68be6e"
+        },
+        {
+          "file": "manifest.json",
+          "expected": "34188f84cf795a2e7663d70830281658",
+          "actual": "451530b567d880744d6ac66655c8f764"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "fx_fundamentals_20260822",
+      "md5sums_path": "backtest_data\\fx_fundamentals_20260822\\MD5SUMS",
+      "file_count": 8,
+      "status": "mismatch",
+      "checked": 8,
+      "matched": 4,
+      "mismatches": [
+        {
+          "file": "MANIFEST.json",
+          "expected": "0eb0173a761ada4542343ec228e5cd59",
+          "actual": "0f5fdd637d5d605301b3ce065b644a4e"
+        },
+        {
+          "file": "fred_DEXJPUS.csv",
+          "expected": "e077c7261a28f60dd049b1ba52bcf427",
+          "actual": "ce3c3cc098c534215110e6b043bf11ab"
+        },
+        {
+          "file": "fred_DGS2.csv",
+          "expected": "97962bfb5f2f1a08e8adc732c442ee7e",
+          "actual": "977d9ffaade994d68d0ac544d586db21"
+        },
+        {
+          "file": "fred_VIXCLS.csv",
+          "expected": "778f094850bf5e0a2ef82945c84b9ecc",
+          "actual": "cb352d8a15db03f8f01eae5948163b89"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "jp_factors_20260905",
+      "md5sums_path": "backtest_data\\jp_factors_20260905\\MD5SUMS",
+      "file_count": 5,
+      "status": "verified",
+      "checked": 4,
+      "matched": 4,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "README.txt"
+      ]
+    },
+    {
+      "unit": "jpx_etf_daily_20260905",
+      "md5sums_path": "backtest_data\\jpx_etf_daily_20260905\\MD5SUMS",
+      "file_count": 33,
+      "status": "mismatch",
+      "checked": 33,
+      "matched": 30,
+      "mismatches": [
+        {
+          "file": "README.md",
+          "expected": "470fa9919c635a658e95338b0ee23386",
+          "actual": "1352da477010b28b08e153ef4f086a66"
+        },
+        {
+          "file": "_fetch_results.json",
+          "expected": "c07bd97ba750fd339fb9406fd77a39f4",
+          "actual": "24d1bb4fa8f3819caefc78be449f30e2"
+        },
+        {
+          "file": "manifest.json",
+          "expected": "5dcf352b4f5aacaf5628c5385ce8c847",
+          "actual": "1c6e23f65b553d38bd02046256e84d25"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "n225f_225labo_20260828",
+      "md5sums_path": "backtest_data\\n225f_225labo_20260828\\MD5SUMS",
+      "file_count": 6,
+      "status": "verified",
+      "checked": 5,
+      "matched": 5,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "nk225_events_20260904",
+      "md5sums_path": "backtest_data\\nk225_events_20260904\\MD5SUMS",
+      "file_count": 4,
+      "status": "mismatch",
+      "checked": 4,
+      "matched": 3,
+      "mismatches": [
+        {
+          "file": ".gitignore",
+          "expected": "d4ee4ff2691ac38cbdb0f22e9abe5b78",
+          "actual": "14ef1cd359dbc8e9ac284317e4245efc"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "okx_20260905",
+      "md5sums_path": "backtest_data\\okx_20260905\\MD5SUMS",
+      "file_count": 5,
+      "status": "mismatch",
+      "checked": 4,
+      "matched": 0,
+      "mismatches": [
+        {
+          "file": "okx_btc_lsratio_1h.csv",
+          "expected": "69ebcc2c5a18857a7f2dbf7a7901adc8",
+          "actual": "bd0c72c6e804b81c05854309029da238"
+        },
+        {
+          "file": "okx_btc_lsratio_5m.csv",
+          "expected": "41e2711367714900828053a802847738",
+          "actual": "ab212e4b3f1cd78fc2c23e34f7ddb6c6"
+        },
+        {
+          "file": "okx_btc_oi_1h.csv",
+          "expected": "c0aed1e6563f3a9c0866a6c1ebd1d159",
+          "actual": "f75a4b3457b5379b30e5009bac5690e8"
+        },
+        {
+          "file": "okx_btc_oi_5m.csv",
+          "expected": "395b9ff27ed4adb302cc634fe3405e54",
+          "actual": "168dbb0c4fb6a930abb10a4d0f40ff7c"
+        }
+      ],
+      "missing": [],
+      "extra": [
+        "README.md"
+      ]
+    },
+    {
+      "unit": "qa_known_answer_20260905",
+      "md5sums_path": "backtest_data\\qa_known_answer_20260905\\MD5SUMS",
+      "file_count": 9,
+      "status": "mismatch",
+      "checked": 9,
+      "matched": 7,
+      "mismatches": [
+        {
+          "file": "costs_qa.yaml",
+          "expected": "557727e02a9d477871e3956f0d14ed96",
+          "actual": "248435a4c4c848416f25cc219d50a536"
+        },
+        {
+          "file": "manifest.md",
+          "expected": "257d73dc5e232373a16e4b6d30f26f6f",
+          "actual": "c395ea303f06029ddd861b2c78bff884"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_known_answer_maker3_20260907",
+      "md5sums_path": "backtest_data\\qa_known_answer_maker3_20260907\\MD5SUMS",
+      "file_count": 3,
+      "status": "mismatch",
+      "checked": 3,
+      "matched": 2,
+      "mismatches": [
+        {
+          "file": "manifest.md",
+          "expected": "750327699a57418df2e31ee61bed2ca3",
+          "actual": "202109c49941933af6a57d098229a228"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_known_answer_maker3_v2_20260905",
+      "md5sums_path": "backtest_data\\qa_known_answer_maker3_v2_20260905\\MD5SUMS",
+      "file_count": 4,
+      "status": "mismatch",
+      "checked": 4,
+      "matched": 2,
+      "mismatches": [
+        {
+          "file": "VOID.md",
+          "expected": "0c7df337d5ea7058737c21fcf52ae21d",
+          "actual": "f8b9e5f0dc349f035f88f6c0f2c990be"
+        },
+        {
+          "file": "manifest.md",
+          "expected": "16dd1465be05b28c7cefd183861f52f5",
+          "actual": "d34ddf7dbc83302099f1ebe94fa0c021"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_known_answer_maker3_v3_20260905",
+      "md5sums_path": "backtest_data\\qa_known_answer_maker3_v3_20260905\\MD5SUMS",
+      "file_count": 3,
+      "status": "mismatch",
+      "checked": 3,
+      "matched": 2,
+      "mismatches": [
+        {
+          "file": "manifest.md",
+          "expected": "3cc557ccd684ecb87368e0d440c568a1",
+          "actual": "841c45b40c96d672fd92d89df57ec364"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_known_answer_maker4_20260905",
+      "md5sums_path": "backtest_data\\qa_known_answer_maker4_20260905\\MD5SUMS",
+      "file_count": 32,
+      "status": "mismatch",
+      "checked": 32,
+      "matched": 16,
+      "mismatches": [
+        {
+          "file": "micro/HAND_DERIVATION_a.md",
+          "expected": "7d8e70de4177b0e0d360aa59e47945fd",
+          "actual": "7cdc3634e80d9dcce4d33c5ab157e1d2"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_b.md",
+          "expected": "048a65a45ce6effcd965191fba3cfafe",
+          "actual": "1f094ebf165c6498cf5c5cd2f6f9b085"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_c.md",
+          "expected": "2c57b5c41f29f05c82deab1f8e9c72d7",
+          "actual": "6631fd431c0bfbdb8caff6bedb9be0b9"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_d.md",
+          "expected": "7a8a5e627ef66381e0f78be832d67366",
+          "actual": "5cedd5290ffea3a1996c63103c693fb0"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_e.md",
+          "expected": "1758666eb9e6c5cb41e2a43198689522",
+          "actual": "bee2a6f1ce136341118faf6eb4848a00"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_f.md",
+          "expected": "4496ff0bcc2820a4c11166784799df3e",
+          "actual": "1225194eeb8b1412770bddb215effc89"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_g.md",
+          "expected": "c72f1be63a8b9f16047c959e0a24979b",
+          "actual": "3b527d139ea8de9c4c665a16f23d1004"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_h.md",
+          "expected": "763c4bc4a74ec7b2c3544a6fb8a706e8",
+          "actual": "c41846516a8bbcdbbf5cd176b946d69d"
+        },
+        {
+          "file": "micro/expected_a.json",
+          "expected": "82f960c5a6b5496d405c9db2ec54cced",
+          "actual": "346ab516cdcd1ef12104298f24a2b4ff"
+        },
+        {
+          "file": "micro/expected_b.json",
+          "expected": "1625fcf70b2c8ed544b36039736c50b6",
+          "actual": "06b0cea37f52ebe78da4f2687c2d34bc"
+        },
+        {
+          "file": "micro/expected_c.json",
+          "expected": "e3520fa8b183efaedab0080131c1d52c",
+          "actual": "38b4cb78ac9a1a3a70e1772c1275f843"
+        },
+        {
+          "file": "micro/expected_d.json",
+          "expected": "3c8476bcba85c88f5f6906f7dfe42d25",
+          "actual": "924a7b1cc2d5234761886bea5ad3fd0c"
+        },
+        {
+          "file": "micro/expected_e.json",
+          "expected": "97a21f829602fff237737b5205e76367",
+          "actual": "63176d2f9ad37ca397545cda42e9209b"
+        },
+        {
+          "file": "micro/expected_f.json",
+          "expected": "82f960c5a6b5496d405c9db2ec54cced",
+          "actual": "346ab516cdcd1ef12104298f24a2b4ff"
+        },
+        {
+          "file": "micro/expected_g.json",
+          "expected": "c0c88a1cf13c99522c059fa00b14ccec",
+          "actual": "bbb12521bb1a8c604e9bf54415918a7f"
+        },
+        {
+          "file": "micro/expected_h.json",
+          "expected": "7372b06ac8bc496bc0f43a0b3ac75b7e",
+          "actual": "0fe5c52fd740a4cab48a47751d9bf713"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_known_answer_maker4_r2_20260905",
+      "md5sums_path": "backtest_data\\qa_known_answer_maker4_r2_20260905\\MD5SUMS",
+      "file_count": 36,
+      "status": "mismatch",
+      "checked": 36,
+      "matched": 16,
+      "mismatches": [
+        {
+          "file": "micro/HAND_DERIVATION_a.md",
+          "expected": "7d8e70de4177b0e0d360aa59e47945fd",
+          "actual": "7cdc3634e80d9dcce4d33c5ab157e1d2"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_b.md",
+          "expected": "048a65a45ce6effcd965191fba3cfafe",
+          "actual": "1f094ebf165c6498cf5c5cd2f6f9b085"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_c.md",
+          "expected": "2c57b5c41f29f05c82deab1f8e9c72d7",
+          "actual": "6631fd431c0bfbdb8caff6bedb9be0b9"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_d.md",
+          "expected": "7a8a5e627ef66381e0f78be832d67366",
+          "actual": "5cedd5290ffea3a1996c63103c693fb0"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_e.md",
+          "expected": "140512609791eb8b9bf05037aed0f2da",
+          "actual": "8fcbba20aeeb3e6603892e9eb78d69ea"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_f.md",
+          "expected": "4496ff0bcc2820a4c11166784799df3e",
+          "actual": "1225194eeb8b1412770bddb215effc89"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_g.md",
+          "expected": "c72f1be63a8b9f16047c959e0a24979b",
+          "actual": "3b527d139ea8de9c4c665a16f23d1004"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_h.md",
+          "expected": "763c4bc4a74ec7b2c3544a6fb8a706e8",
+          "actual": "c41846516a8bbcdbbf5cd176b946d69d"
+        },
+        {
+          "file": "micro/HAND_DERIVATION_i.md",
+          "expected": "9bd90ab09d918f1af812f4eb0c38c855",
+          "actual": "d0bbdbff7d64003f2f5d9b1cec65d02a"
+        },
+        {
+          "file": "micro/exec_i.csv",
+          "expected": "a4f30e33683a8cc3f747738891facce7",
+          "actual": "1c528c685ff91eb13e1245582717dba6"
+        },
+        {
+          "file": "micro/expected_a.json",
+          "expected": "82f960c5a6b5496d405c9db2ec54cced",
+          "actual": "346ab516cdcd1ef12104298f24a2b4ff"
+        },
+        {
+          "file": "micro/expected_b.json",
+          "expected": "1625fcf70b2c8ed544b36039736c50b6",
+          "actual": "06b0cea37f52ebe78da4f2687c2d34bc"
+        },
+        {
+          "file": "micro/expected_c.json",
+          "expected": "e3520fa8b183efaedab0080131c1d52c",
+          "actual": "38b4cb78ac9a1a3a70e1772c1275f843"
+        },
+        {
+          "file": "micro/expected_d.json",
+          "expected": "3c8476bcba85c88f5f6906f7dfe42d25",
+          "actual": "924a7b1cc2d5234761886bea5ad3fd0c"
+        },
+        {
+          "file": "micro/expected_e.json",
+          "expected": "cb96c5085195b6e0f8a026af788f5c9f",
+          "actual": "1a0ded600eb1c1605e2cceb83473f24e"
+        },
+        {
+          "file": "micro/expected_f.json",
+          "expected": "82f960c5a6b5496d405c9db2ec54cced",
+          "actual": "346ab516cdcd1ef12104298f24a2b4ff"
+        },
+        {
+          "file": "micro/expected_g.json",
+          "expected": "c0c88a1cf13c99522c059fa00b14ccec",
+          "actual": "bbb12521bb1a8c604e9bf54415918a7f"
+        },
+        {
+          "file": "micro/expected_h.json",
+          "expected": "7372b06ac8bc496bc0f43a0b3ac75b7e",
+          "actual": "0fe5c52fd740a4cab48a47751d9bf713"
+        },
+        {
+          "file": "micro/expected_i.json",
+          "expected": "b090698f1f011175f6cf2e1b7a6a72b1",
+          "actual": "5b834afa185ddea19a654dfc6dcb3e60"
+        },
+        {
+          "file": "micro/ticker_i.csv",
+          "expected": "6fc1524db31b8331f16da28ce295596d",
+          "actual": "7c133f4cf52ea64d8d3c8dfcc6414951"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_known_answer_maker_20260905",
+      "md5sums_path": "backtest_data\\qa_known_answer_maker_20260905\\MD5SUMS",
+      "file_count": 3,
+      "status": "mismatch",
+      "checked": 3,
+      "matched": 2,
+      "mismatches": [
+        {
+          "file": "manifest.md",
+          "expected": "5df6b071585b39e9be1903f2dae60922",
+          "actual": "3b7d6d6590b4d0c09e3ba9294d1a0eaf"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_known_answer_steer_20260905",
+      "md5sums_path": "backtest_data\\qa_known_answer_steer_20260905\\MD5SUMS",
+      "file_count": 10,
+      "status": "mismatch",
+      "checked": 10,
+      "matched": 8,
+      "mismatches": [
+        {
+          "file": "costs_qs.yaml",
+          "expected": "557727e02a9d477871e3956f0d14ed96",
+          "actual": "248435a4c4c848416f25cc219d50a536"
+        },
+        {
+          "file": "manifest.md",
+          "expected": "7e6c37c862821778fe740f48fd836ba6",
+          "actual": "501e7d1b11889d2183114311208073e3"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_pipeline_daily_20260905",
+      "md5sums_path": "backtest_data\\qa_pipeline_daily_20260905\\MD5SUMS",
+      "file_count": 8,
+      "status": "mismatch",
+      "checked": 8,
+      "matched": 0,
+      "mismatches": [
+        {
+          "file": "RESULTS.md",
+          "expected": "90329d61a482e2c55305e7c489a5de23",
+          "actual": "78e38a71777b179d235501084fc90765"
+        },
+        {
+          "file": "daily_etf_Y0bps_20260905.csv",
+          "expected": "fa022d5738840c3413afa05417224c05",
+          "actual": "a74ad475fb274c9e2a649da205068c94"
+        },
+        {
+          "file": "daily_etf_Y2bps_20260905.csv",
+          "expected": "99d176436b3fb8cfff00cdd0904055d4",
+          "actual": "a8894f5642857dd8441bdf1b3d76731b"
+        },
+        {
+          "file": "daily_etf_Y5bps_20260905.csv",
+          "expected": "8a0fc0256e6b99e4f69758ac62315086",
+          "actual": "026025f91f96f1a1f693431877520b73"
+        },
+        {
+          "file": "daily_idxf_Y0bps_20260905.csv",
+          "expected": "5a567ec3cb43eab5382a5fb85985282e",
+          "actual": "3837891c6acd4df308b880b9eaaf1d51"
+        },
+        {
+          "file": "daily_idxf_Y2bps_20260905.csv",
+          "expected": "d0f9a711625677f1550c0bc6c5861ffc",
+          "actual": "e894cb644fe03917ef146decc3afacbf"
+        },
+        {
+          "file": "daily_idxf_Y5bps_20260905.csv",
+          "expected": "e5d2d5490c484cac929c6543e3995b9d",
+          "actual": "f1b2b5f7abf9a5aa2b3fa58b237be6e0"
+        },
+        {
+          "file": "planted_values_sealed.json",
+          "expected": "eed418718fc892d1c91aeecb24fc8784",
+          "actual": "65b0f11ce0e2bfc9f47d65dd89201613"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "qa_pipeline_taker_20260905",
+      "md5sums_path": "backtest_data\\qa_pipeline_taker_20260905\\MD5SUMS",
+      "file_count": 5,
+      "status": "mismatch",
+      "checked": 5,
+      "matched": 3,
+      "mismatches": [
+        {
+          "file": "RESULTS.md",
+          "expected": "a8862d8b34096076a77bdbd4d7a070b6",
+          "actual": "308630479f36c9c5822c03c29efe7f26"
+        },
+        {
+          "file": "planted_values_sealed.json",
+          "expected": "03a95eda5fe9b0f11163947d7b0f949c",
+          "actual": "1bc22a656a03af0557161b3171a868d1"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "regime_composite_20260901",
+      "md5sums_path": "backtest_data\\regime_composite_20260901\\MD5SUMS",
+      "file_count": 8,
+      "status": "mismatch",
+      "checked": 7,
+      "matched": 6,
+      "mismatches": [
+        {
+          "file": "manifest.json",
+          "expected": "7a7bc37d92ff2744559653649e492aff",
+          "actual": "1534cebd259e11d103caed3d8023255d"
+        }
+      ],
+      "missing": [],
+      "extra": [
+        "RC1_RUN.txt"
+      ]
+    },
+    {
+      "unit": "reit_onr_20260904",
+      "md5sums_path": "backtest_data\\reit_onr_20260904\\MD5SUMS",
+      "file_count": 6,
+      "status": "verified",
+      "checked": 4,
+      "matched": 4,
+      "mismatches": [],
+      "missing": [],
+      "extra": [
+        "ONR_RUN.txt",
+        "manifest.md"
+      ]
+    },
+    {
+      "unit": "storm_events_20260820",
+      "md5sums_path": "backtest_data\\storm_events_20260820\\MD5SUMS",
+      "file_count": 16,
+      "status": "verified",
+      "checked": 16,
+      "matched": 16,
+      "mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "venue_survey_20260827",
+      "md5sums_path": "backtest_data\\venue_survey_20260827\\MD5SUMS",
+      "file_count": 35,
+      "status": "mismatch",
+      "checked": 35,
+      "matched": 31,
+      "mismatches": [
+        {
+          "file": "FINAL.txt",
+          "expected": "0467cadbba240a1e71e166fc546d5b3c",
+          "actual": "39ffcac0536ed57995ac3f9f84d1616e"
+        },
+        {
+          "file": "SCREEN.txt",
+          "expected": "1e940a05211d836e250d0ca151e6a1b5",
+          "actual": "8c22ff8e317f4628327d97ce40d9d22f"
+        },
+        {
+          "file": "analyze_screen.py",
+          "expected": "a92b7c9a1fcc3cfb30bec4b6fa669099",
+          "actual": "995010e81d2616efab49f9af0893758a"
+        },
+        {
+          "file": "analyze_venues.py",
+          "expected": "b3b7bd9d81540df8fb4c0a76f8f5a134",
+          "actual": "a22b19998122f0822d67a754897a45a1"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "yutai_20260904",
+      "md5sums_path": "backtest_data\\yutai_20260904\\MD5SUMS",
+      "file_count": 3,
+      "status": "mismatch",
+      "checked": 3,
+      "matched": 2,
+      "mismatches": [
+        {
+          "file": "manifest.md",
+          "expected": "512769baa0b18e4e8ad9ada36fe9f81e",
+          "actual": "636a1a4aaa30160a792903717cfe087b"
+        }
+      ],
+      "missing": [],
+      "extra": []
+    }
+  ],
+  "ledger_cross_check": {
+    "ledger_path": "data\\INTAKE_latest.json",
+    "checked": 1288,
+    "mismatches": []
+  },
+  "summary": {
+    "unit_count": 33,
+    "verified": 12,
+    "newly_sealed": 0,
+    "mismatch_units": 21,
+    "total_mismatches": 99,
+    "total_missing": 0,
+    "total_extra_untracked": 16,
+    "ledger_mismatches": 0
+  },
+  "ok": false
+}

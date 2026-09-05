@@ -1,5 +1,10 @@
 {
  "datasets": {
+  "api_health": {
+   "checks": {},
+   "files_checked": 1,
+   "files_flagged": 0
+  },
   "attention": {
    "checks": {},
    "files_checked": 1,
@@ -10,10 +15,218 @@
    "files_checked": 4,
    "files_flagged": 0
   },
+  "bitflyer_execution_flow": {
+   "checks": {
+    "gaps": {
+     "count": 109005,
+     "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 809.97,
+         "row": 615767,
+         "ts": "2026-08-15T19:12:00.113000+00:00"
+        },
+        {
+         "gap_seconds": 804.303,
+         "row": 506094,
+         "ts": "2026-08-10T19:12:00.360000+00:00"
+        },
+        {
+         "gap_seconds": 790.583,
+         "row": 552834,
+         "ts": "2026-08-12T19:12:25.373000+00:00"
+        },
+        {
+         "gap_seconds": 789.92,
+         "row": 67260,
+         "ts": "2026-07-26T19:12:00.243000+00:00"
+        },
+        {
+         "gap_seconds": 780.107,
+         "row": 675176,
+         "ts": "2026-08-18T19:12:00.360000+00:00"
+        }
+       ],
+       "median_gap_seconds": 0.734,
+       "path": "backtest_data/executions_FX_BTC_JPY_31d_20260823.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 38977.16,
+         "row": 481386,
+         "ts": "2026-08-28T04:20:01.133000+00:00"
+        },
+        {
+         "gap_seconds": 38383.007,
+         "row": 499845,
+         "ts": "2026-08-28T04:30:12.017000+00:00"
+        },
+        {
+         "gap_seconds": 29336.737,
+         "row": 25001,
+         "ts": "2026-08-20T05:00:03.230000+00:00"
+        }
+       ],
+       "median_gap_seconds": 1793.773,
+       "path": "data/executions_FX_BTC_JPY.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 1521773.28,
+         "row": 25001,
+         "ts": "2026-08-20T03:01:57.823000+00:00"
+        }
+       ],
+       "median_gap_seconds": 1604.517,
+       "path": "data/executions_XRP_JPY.csv"
+      }
+     ],
+     "files": 3
+    },
+    "maintenance_window": {
+     "count": 80,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 3813,
+         "ts": "2026-08-01T19:00:00+00:00",
+         "value": 9844906.0
+        },
+        {
+         "row": 3814,
+         "ts": "2026-08-01T19:01:00+00:00",
+         "value": 9844906.0
+        },
+        {
+         "row": 3815,
+         "ts": "2026-08-01T19:02:00+00:00",
+         "value": 9844906.0
+        },
+        {
+         "row": 3816,
+         "ts": "2026-08-01T19:03:00+00:00",
+         "value": 9844906.0
+        },
+        {
+         "row": 3817,
+         "ts": "2026-08-01T19:04:00+00:00",
+         "value": 9844906.0
+        }
+       ],
+       "path": "backtest_data/flow_FX_BTC_JPY_20260820.csv"
+      }
+     ],
+     "files": 1
+    },
+    "non_monotonic": {
+     "count": 538325,
+     "examples": [
+      {
+       "examples": [
+        {
+         "prev_ts": "2026-08-20T04:58:13.873000+00:00",
+         "row": 2,
+         "ts": "2026-08-20T04:57:51.790000+00:00"
+        },
+        {
+         "prev_ts": "2026-08-20T04:57:51.790000+00:00",
+         "row": 3,
+         "ts": "2026-08-20T04:57:34.917000+00:00"
+        },
+        {
+         "prev_ts": "2026-08-20T04:57:34.917000+00:00",
+         "row": 4,
+         "ts": "2026-08-20T04:57:31.987000+00:00"
+        },
+        {
+         "prev_ts": "2026-08-20T04:57:31.987000+00:00",
+         "row": 5,
+         "ts": "2026-08-20T04:57:29.247000+00:00"
+        },
+        {
+         "prev_ts": "2026-08-20T04:57:29.247000+00:00",
+         "row": 6,
+         "ts": "2026-08-20T04:57:28.093000+00:00"
+        }
+       ],
+       "path": "data/executions_FX_BTC_JPY.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev_ts": "2026-08-20T02:47:24.470000+00:00",
+         "row": 2,
+         "ts": "2026-08-20T02:47:03.623000+00:00"
+        },
+        {
+         "prev_ts": "2026-08-20T02:47:03.623000+00:00",
+         "row": 3,
+         "ts": "2026-08-20T02:46:21.640000+00:00"
+        },
+        {
+         "prev_ts": "2026-08-20T02:46:21.640000+00:00",
+         "row": 4,
+         "ts": "2026-08-20T02:46:21.280000+00:00"
+        },
+        {
+         "prev_ts": "2026-08-20T02:46:21.280000+00:00",
+         "row": 5,
+         "ts": "2026-08-20T02:46:11.427000+00:00"
+        },
+        {
+         "prev_ts": "2026-08-20T02:46:11.427000+00:00",
+         "row": 6,
+         "ts": "2026-08-20T02:46:10.740000+00:00"
+        }
+       ],
+       "path": "data/executions_XRP_JPY.csv"
+      }
+     ],
+     "files": 2
+    },
+    "zero_volume": {
+     "count": 2527,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 50,
+         "ts": "2026-07-30 04:17:00+00:00"
+        },
+        {
+         "row": 145,
+         "ts": "2026-07-30 05:52:00+00:00"
+        },
+        {
+         "row": 196,
+         "ts": "2026-07-30 06:43:00+00:00"
+        },
+        {
+         "row": 212,
+         "ts": "2026-07-30 06:59:00+00:00"
+        },
+        {
+         "row": 386,
+         "ts": "2026-07-30 09:53:00+00:00"
+        }
+       ],
+       "path": "backtest_data/flow_FX_BTC_JPY_20260820.csv"
+      }
+     ],
+     "files": 1
+    }
+   },
+   "files_checked": 4,
+   "files_flagged": 4
+  },
   "bitflyer_tape": {
    "checks": {
     "duplicate_keys": {
-     "count": 30354,
+     "count": 30357,
      "examples": [
       {
        "examples": [
@@ -269,7 +482,7 @@
      "files": 54
     },
     "gaps": {
-     "count": 243494,
+     "count": 243523,
      "examples": [
       {
        "examples": [
@@ -408,112 +621,6 @@
       }
      ],
      "files": 123
-    },
-    "missing_columns": {
-     "count": 504,
-     "examples": [
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "ask_px_1..5",
-          "ask_sz_1..5",
-          "bid_px_1..5",
-          "bid_sz_1..5"
-         ],
-         "undocumented_in_schema": [
-          "bid_px_1",
-          "bid_px_2",
-          "bid_px_3",
-          "bid_px_4",
-          "bid_px_5"
-         ]
-        }
-       ],
-       "path": "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260820.csv.gz"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "ask_px_1..5",
-          "ask_sz_1..5",
-          "bid_px_1..5",
-          "bid_sz_1..5"
-         ],
-         "undocumented_in_schema": [
-          "bid_px_1",
-          "bid_px_2",
-          "bid_px_3",
-          "bid_px_4",
-          "bid_px_5"
-         ]
-        }
-       ],
-       "path": "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260821.csv.gz"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "ask_px_1..5",
-          "ask_sz_1..5",
-          "bid_px_1..5",
-          "bid_sz_1..5"
-         ],
-         "undocumented_in_schema": [
-          "bid_px_1",
-          "bid_px_2",
-          "bid_px_3",
-          "bid_px_4",
-          "bid_px_5"
-         ]
-        }
-       ],
-       "path": "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260822.csv.gz"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "ask_px_1..5",
-          "ask_sz_1..5",
-          "bid_px_1..5",
-          "bid_sz_1..5"
-         ],
-         "undocumented_in_schema": [
-          "bid_px_1",
-          "bid_px_2",
-          "bid_px_3",
-          "bid_px_4",
-          "bid_px_5"
-         ]
-        }
-       ],
-       "path": "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260823.csv.gz"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "ask_px_1..5",
-          "ask_sz_1..5",
-          "bid_px_1..5",
-          "bid_sz_1..5"
-         ],
-         "undocumented_in_schema": [
-          "bid_px_1",
-          "bid_px_2",
-          "bid_px_3",
-          "bid_px_4",
-          "bid_px_5"
-         ]
-        }
-       ],
-       "path": "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260824.csv.gz"
-      }
-     ],
-     "files": 21
     }
    },
    "files_checked": 123,
@@ -816,6 +923,11 @@
    "files_checked": 3,
    "files_flagged": 3
   },
+  "bot_decision_log": {
+   "checks": {},
+   "files_checked": 1,
+   "files_flagged": 0
+  },
   "burst_storm_events": {
    "checks": {},
    "files_checked": 115,
@@ -824,8 +936,70 @@
   "candles_fx_btc_jpy": {
    "checks": {
     "gaps": {
-     "count": 163,
+     "count": 326,
      "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 5580.0,
+         "row": 8400,
+         "ts": "2026-08-25T20:02:00+00:00"
+        },
+        {
+         "gap_seconds": 840.0,
+         "row": 13959,
+         "ts": "2026-08-29T19:12:00+00:00"
+        },
+        {
+         "gap_seconds": 780.0,
+         "row": 1327,
+         "ts": "2026-08-20T19:12:00+00:00"
+        },
+        {
+         "gap_seconds": 780.0,
+         "row": 2755,
+         "ts": "2026-08-21T19:12:00+00:00"
+        },
+        {
+         "gap_seconds": 780.0,
+         "row": 4174,
+         "ts": "2026-08-22T19:12:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/auto_bitflyer_executions_20260905/candles_FX_BTC_JPY.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 4200.0,
+         "row": 6977,
+         "ts": "2026-08-18T18:11:00+00:00"
+        },
+        {
+         "gap_seconds": 3780.0,
+         "row": 660,
+         "ts": "2026-08-03T20:00:00+00:00"
+        },
+        {
+         "gap_seconds": 3360.0,
+         "row": 5282,
+         "ts": "2026-08-13T21:29:00+00:00"
+        },
+        {
+         "gap_seconds": 3180.0,
+         "row": 5981,
+         "ts": "2026-08-15T21:12:00+00:00"
+        },
+        {
+         "gap_seconds": 3060.0,
+         "row": 5257,
+         "ts": "2026-08-13T18:09:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 120.0,
+       "path": "backtest_data/auto_bitflyer_executions_20260905/candles_XRP_JPY.csv"
+      },
       {
        "examples": [
         {
@@ -889,7 +1063,7 @@
        "path": "data/candles_XRP_JPY.csv"
       }
      ],
-     "files": 2
+     "files": 4
     },
     "maintenance_window": {
      "count": 610,
@@ -1047,6 +1221,67 @@
      ],
      "files": 6
     },
+    "missing_columns": {
+     "count": 9,
+     "examples": [
+      {
+       "examples": [
+        {
+         "declared_but_absent": [
+          "synthetic"
+         ],
+         "undocumented_in_schema": []
+        }
+       ],
+       "path": "backtest_data/auto_bitflyer_executions_20260905/candles_FX_BTC_JPY.csv"
+      },
+      {
+       "examples": [
+        {
+         "declared_but_absent": [
+          "synthetic"
+         ],
+         "undocumented_in_schema": []
+        }
+       ],
+       "path": "backtest_data/auto_bitflyer_executions_20260905/candles_XRP_JPY.csv"
+      },
+      {
+       "examples": [
+        {
+         "declared_but_absent": [
+          "synthetic"
+         ],
+         "undocumented_in_schema": []
+        }
+       ],
+       "path": "backtest_data/candles_BTC_JPY_20260820.csv"
+      },
+      {
+       "examples": [
+        {
+         "declared_but_absent": [
+          "synthetic"
+         ],
+         "undocumented_in_schema": []
+        }
+       ],
+       "path": "backtest_data/candles_ETH_JPY_20260820.csv"
+      },
+      {
+       "examples": [
+        {
+         "declared_but_absent": [
+          "synthetic"
+         ],
+         "undocumented_in_schema": []
+        }
+       ],
+       "path": "backtest_data/candles_FX_BTC_JPY_20260820.csv"
+      }
+     ],
+     "files": 9
+    },
     "zero_volume": {
      "count": 56649,
      "examples": [
@@ -1179,67 +1414,548 @@
      "files": 6
     }
    },
-   "files_checked": 8,
-   "files_flagged": 8
+   "files_checked": 10,
+   "files_flagged": 10
   },
-  "fx_event_ticks": {
+  "daily_crypto_usd_multisource": {
    "checks": {
-    "duplicate_keys": {
-     "count": 23,
+    "extreme_return": {
+     "count": 869,
      "examples": [
       {
        "examples": [
         {
-         "row": 120,
-         "ts": "2008-09-16"
+         "prev": 11.7,
+         "return": -0.1025641025641025,
+         "row": 3,
+         "value": 10.5
         },
         {
-         "row": 128,
-         "ts": "2008-12-16"
+         "prev": 10.0,
+         "return": -0.2,
+         "row": 9,
+         "value": 8.0
         },
         {
-         "row": 136,
-         "ts": "2009-03-18"
+         "prev": 8.89,
+         "return": -0.10011248593925764,
+         "row": 16,
+         "value": 8.0
         },
         {
-         "row": 160,
-         "ts": "2009-12-16"
+         "prev": 8.5,
+         "return": -0.1294117647058823,
+         "row": 18,
+         "value": 7.4
         },
         {
-         "row": 283,
-         "ts": "2013-10-30"
+         "prev": 7.4,
+         "return": -0.19324324324324332,
+         "row": 23,
+         "value": 5.97
         }
        ],
-       "path": "backtest_data/fx_event_ticks_2005_2014/calendar.csv"
+       "path": "backtest_data/daily_btcusd_bitstamp_20260828.csv.gz"
       },
       {
        "examples": [
         {
-         "row": 19,
-         "ts": "2015-05-22"
+         "prev": 257.31,
+         "return": -0.13726633243946987,
+         "row": 30,
+         "value": 221.99
         },
         {
-         "row": 29,
-         "ts": "2015-08-07"
+         "prev": 329.46,
+         "return": 0.10851089661870941,
+         "row": 106,
+         "value": 365.21
         },
         {
-         "row": 56,
-         "ts": "2016-03-16"
+         "prev": 365.21,
+         "return": 0.10648667889707304,
+         "row": 107,
+         "value": 404.1
         },
         {
-         "row": 66,
-         "ts": "2016-06-16"
+         "prev": 379.53,
+         "return": -0.11169077543277209,
+         "row": 114,
+         "value": 337.14
         },
         {
-         "row": 76,
-         "ts": "2016-09-21"
+         "prev": 430.03,
+         "return": -0.1685928888682185,
+         "row": 180,
+         "value": 357.53
         }
        ],
-       "path": "backtest_data/fx_event_ticks_2015_2026/calendar.csv"
+       "path": "backtest_data/daily_btcusd_coinbase_20260828.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "prev": 367.69500732421875,
+         "return": 0.15193569725354666,
+         "row": 57,
+         "value": 423.5610046386719
+        },
+        {
+         "prev": 315.0320129394531,
+         "return": -0.10776686435849996,
+         "row": 109,
+         "value": 281.0820007324219
+        },
+        {
+         "prev": 267.7959899902344,
+         "return": -0.1565930750498653,
+         "row": 119,
+         "value": 225.86099243164062
+        },
+        {
+         "prev": 225.86099243164062,
+         "return": -0.21144862196566874,
+         "row": 120,
+         "value": 178.10299682617188
+        },
+        {
+         "prev": 178.10299682617188,
+         "return": 0.17821708719158874,
+         "row": 121,
+         "value": 209.843994140625
+        }
+       ],
+       "path": "backtest_data/daily_btcusd_yahoo_20260828.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "prev": 350.62,
+         "return": -0.14437282528093093,
+         "row": 20,
+         "value": 300.0
+        },
+        {
+         "prev": 275.25,
+         "return": -0.18837420526793822,
+         "row": 30,
+         "value": 223.4
+        },
+        {
+         "prev": 223.4,
+         "return": 0.1520143240823635,
+         "row": 31,
+         "value": 257.36
+        },
+        {
+         "prev": 257.1,
+         "return": 0.1590820692337611,
+         "row": 34,
+         "value": 298.0
+        },
+        {
+         "prev": 302.71,
+         "return": 0.11284727957451035,
+         "row": 59,
+         "value": 336.87
+        }
+       ],
+       "path": "backtest_data/daily_ethusd_bitstamp_20260828.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "prev": 13.18,
+         "return": 0.13050075872534148,
+         "row": 2,
+         "value": 14.9
+        },
+        {
+         "prev": 12.47,
+         "return": -0.1194867682437851,
+         "row": 8,
+         "value": 10.98
+        },
+        {
+         "prev": 14.1,
+         "return": 0.10496453900709223,
+         "row": 24,
+         "value": 15.58
+        },
+        {
+         "prev": 15.58,
+         "return": 0.14826700898587936,
+         "row": 25,
+         "value": 17.89
+        },
+        {
+         "prev": 18.42,
+         "return": 0.13952225841476637,
+         "row": 28,
+         "value": 20.99
+        }
+       ],
+       "path": "backtest_data/daily_ethusd_coinbase_20260828.csv.gz"
+      }
+     ],
+     "files": 6
+    },
+    "zero_volume": {
+     "count": 33,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 2,
+         "ts": "2011-08-23"
+        },
+        {
+         "row": 5,
+         "ts": "2011-08-26"
+        },
+        {
+         "row": 6,
+         "ts": "2011-08-27"
+        },
+        {
+         "row": 7,
+         "ts": "2011-08-28"
+        },
+        {
+         "row": 8,
+         "ts": "2011-08-29"
+        }
+       ],
+       "path": "backtest_data/daily_btcusd_bitstamp_20260828.csv.gz"
+      }
+     ],
+     "files": 1
+    }
+   },
+   "files_checked": 6,
+   "files_flagged": 6
+  },
+  "external_crypto_klines": {
+   "checks": {
+    "extreme_return": {
+     "count": 91,
+     "examples": [
+      {
+       "examples": [
+        {
+         "prev": 0.6207,
+         "return": 0.13420331883357486,
+         "row": 84,
+         "value": 0.704
+        },
+        {
+         "prev": 0.6898,
+         "return": 0.12148448825746591,
+         "row": 86,
+         "value": 0.7736
+        },
+        {
+         "prev": 0.7736,
+         "return": 0.15330920372285425,
+         "row": 87,
+         "value": 0.8922
+        },
+        {
+         "prev": 0.8922,
+         "return": 0.2563326608383771,
+         "row": 88,
+         "value": 1.1209
+        },
+        {
+         "prev": 1.1041,
+         "return": 0.12942668236572777,
+         "row": 93,
+         "value": 1.247
+        }
+       ],
+       "path": "backtest_data/binance_XRPUSDT_1d.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 0.7136,
+         "return": 0.10734304932735426,
+         "row": 520,
+         "value": 0.7902
+        },
+        {
+         "prev": 1.247,
+         "return": 0.10994386527666399,
+         "row": 564,
+         "value": 1.3841
+        },
+        {
+         "prev": 1.9015,
+         "return": 0.11738101498816715,
+         "row": 622,
+         "value": 2.1247
+        },
+        {
+         "prev": 2.3146,
+         "return": 0.16655145597511448,
+         "row": 627,
+         "value": 2.7001
+        },
+        {
+         "prev": 2.8499,
+         "return": -0.11410926699182418,
+         "row": 633,
+         "value": 2.5247
+        }
+       ],
+       "path": "backtest_data/binance_XRPUSDT_4h.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 80370.01,
+         "return": 0.102998369665501,
+         "row": 83,
+         "value": 88647.99
+        },
+        {
+         "prev": 73165.83,
+         "return": -0.14017431361060212,
+         "row": 534,
+         "value": 62909.86
+        },
+        {
+         "prev": 62909.86,
+         "return": 0.12192683309102888,
+         "row": 535,
+         "value": 70580.26
+        }
+       ],
+       "path": "data/binance_BTCUSDT_1d.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 0.6207,
+         "return": 0.13420331883357486,
+         "row": 84,
+         "value": 0.704
+        },
+        {
+         "prev": 0.6898,
+         "return": 0.12148448825746591,
+         "row": 86,
+         "value": 0.7736
+        },
+        {
+         "prev": 0.7736,
+         "return": 0.15330920372285425,
+         "row": 87,
+         "value": 0.8922
+        },
+        {
+         "prev": 0.8922,
+         "return": 0.2563326608383771,
+         "row": 88,
+         "value": 1.1209
+        },
+        {
+         "prev": 1.1041,
+         "return": 0.12942668236572777,
+         "row": 93,
+         "value": 1.247
+        }
+       ],
+       "path": "data/binance_XRPUSDT_1d.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 0.7136,
+         "return": 0.10734304932735426,
+         "row": 520,
+         "value": 0.7902
+        },
+        {
+         "prev": 1.247,
+         "return": 0.10994386527666399,
+         "row": 564,
+         "value": 1.3841
+        },
+        {
+         "prev": 1.9015,
+         "return": 0.11738101498816715,
+         "row": 622,
+         "value": 2.1247
+        },
+        {
+         "prev": 2.3146,
+         "return": 0.16655145597511448,
+         "row": 627,
+         "value": 2.7001
+        },
+        {
+         "prev": 2.8499,
+         "return": -0.11410926699182418,
+         "row": 633,
+         "value": 2.5247
+        }
+       ],
+       "path": "data/binance_XRPUSDT_4h.csv"
+      }
+     ],
+     "files": 5
+    },
+    "maintenance_window": {
+     "count": 355,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 1141,
+         "ts": "2026-07-30T19:00:00+00:00",
+         "value": 172.665
+        },
+        {
+         "row": 1142,
+         "ts": "2026-07-30T19:01:00+00:00",
+         "value": 172.642
+        },
+        {
+         "row": 1143,
+         "ts": "2026-07-30T19:02:00+00:00",
+         "value": 172.642
+        },
+        {
+         "row": 1144,
+         "ts": "2026-07-30T19:03:00+00:00",
+         "value": 172.642
+        },
+        {
+         "row": 1145,
+         "ts": "2026-07-30T19:04:00+00:00",
+         "value": 172.694
+        }
+       ],
+       "path": "backtest_data/bitbank_xrp_jpy_1m.csv"
+      },
+      {
+       "examples": [
+        {
+         "row": 1141,
+         "ts": "2026-07-30T19:00:00+00:00",
+         "value": 172.665
+        },
+        {
+         "row": 1142,
+         "ts": "2026-07-30T19:01:00+00:00",
+         "value": 172.642
+        },
+        {
+         "row": 1143,
+         "ts": "2026-07-30T19:02:00+00:00",
+         "value": 172.642
+        },
+        {
+         "row": 1144,
+         "ts": "2026-07-30T19:03:00+00:00",
+         "value": 172.642
+        },
+        {
+         "row": 1145,
+         "ts": "2026-07-30T19:04:00+00:00",
+         "value": 172.694
+        }
+       ],
+       "path": "data/bitbank_xrp_jpy_1m.csv"
       }
      ],
      "files": 2
     },
+    "missing_columns": {
+     "count": 5,
+     "examples": [
+      {
+       "examples": [
+        {
+         "declared_but_absent": [
+          "timestamp"
+         ],
+         "undocumented_in_schema": [
+          "open_time",
+          "quote_volume",
+          "n_trades",
+          "taker_buy_base"
+         ]
+        }
+       ],
+       "path": "backtest_data/binance_BTCUSDT_1m_210d_20260820.csv.gz"
+      }
+     ],
+     "files": 1
+    },
+    "zero_volume": {
+     "count": 19435,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 4,
+         "ts": "2026-07-30 00:03:00+00:00"
+        },
+        {
+         "row": 11,
+         "ts": "2026-07-30 00:10:00+00:00"
+        },
+        {
+         "row": 19,
+         "ts": "2026-07-30 00:18:00+00:00"
+        },
+        {
+         "row": 27,
+         "ts": "2026-07-30 00:26:00+00:00"
+        },
+        {
+         "row": 29,
+         "ts": "2026-07-30 00:28:00+00:00"
+        }
+       ],
+       "path": "backtest_data/bitbank_xrp_jpy_1m.csv"
+      },
+      {
+       "examples": [
+        {
+         "row": 4,
+         "ts": "2026-07-30 00:03:00+00:00"
+        },
+        {
+         "row": 11,
+         "ts": "2026-07-30 00:10:00+00:00"
+        },
+        {
+         "row": 19,
+         "ts": "2026-07-30 00:18:00+00:00"
+        },
+        {
+         "row": 27,
+         "ts": "2026-07-30 00:26:00+00:00"
+        },
+        {
+         "row": 29,
+         "ts": "2026-07-30 00:28:00+00:00"
+        }
+       ],
+       "path": "data/bitbank_xrp_jpy_1m.csv"
+      }
+     ],
+     "files": 2
+    }
+   },
+   "files_checked": 13,
+   "files_flagged": 8
+  },
+  "fx_event_ticks": {
+   "checks": {
     "gaps": {
      "count": 367871,
      "examples": [
@@ -1343,7 +2059,127 @@
     }
    },
    "files_checked": 798,
-   "files_flagged": 744
+   "files_flagged": 742
+  },
+  "fx_macro_fundamentals": {
+   "checks": {},
+   "files_checked": 12,
+   "files_flagged": 0
+  },
+  "fx_usdjpy_reference": {
+   "checks": {
+    "gaps": {
+     "count": 189,
+     "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 172860.0,
+         "row": 449281,
+         "ts": "2024-01-01T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 86460.0,
+         "row": 8641,
+         "ts": "2023-01-08T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 86460.0,
+         "row": 17281,
+         "ts": "2023-01-15T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 86460.0,
+         "row": 25921,
+         "ts": "2023-01-22T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 86460.0,
+         "row": 34561,
+         "ts": "2023-01-29T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
+      }
+     ],
+     "files": 1
+    },
+    "maintenance_window": {
+     "count": 1994,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 1141,
+         "ts": "2023-01-01T19:00:00+00:00",
+         "value": 131.072
+        },
+        {
+         "row": 1142,
+         "ts": "2023-01-01T19:01:00+00:00",
+         "value": 131.072
+        },
+        {
+         "row": 1143,
+         "ts": "2023-01-01T19:02:00+00:00",
+         "value": 131.072
+        },
+        {
+         "row": 1144,
+         "ts": "2023-01-01T19:03:00+00:00",
+         "value": 131.072
+        },
+        {
+         "row": 1145,
+         "ts": "2023-01-01T19:04:00+00:00",
+         "value": 131.072
+        }
+       ],
+       "path": "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
+      }
+     ],
+     "files": 1
+    },
+    "zero_volume": {
+     "count": 285071,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 1,
+         "ts": "2023-01-01 00:00:00+00:00"
+        },
+        {
+         "row": 2,
+         "ts": "2023-01-01 00:01:00+00:00"
+        },
+        {
+         "row": 3,
+         "ts": "2023-01-01 00:02:00+00:00"
+        },
+        {
+         "row": 4,
+         "ts": "2023-01-01 00:03:00+00:00"
+        },
+        {
+         "row": 5,
+         "ts": "2023-01-01 00:04:00+00:00"
+        }
+       ],
+       "path": "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
+      }
+     ],
+     "files": 1
+    }
+   },
+   "files_checked": 2,
+   "files_flagged": 1
+  },
+  "intake_ledger_snapshot": {
+   "checks": {},
+   "files_checked": 1,
+   "files_flagged": 0
   },
   "jp_factors": {
    "checks": {},
@@ -1698,37 +2534,6 @@
   },
   "n225f_225labo": {
    "checks": {
-    "duplicate_keys": {
-     "count": 171,
-     "examples": [
-      {
-       "examples": [
-        {
-         "row": 2,
-         "ts": "2025-12-30"
-        },
-        {
-         "row": 1204,
-         "ts": "2026-01-05"
-        },
-        {
-         "row": 2406,
-         "ts": "2026-01-06"
-        },
-        {
-         "row": 3608,
-         "ts": "2026-01-07"
-        },
-        {
-         "row": 4810,
-         "ts": "2026-01-08"
-        }
-       ],
-       "path": "backtest_data/n225f_225labo_20260828/bars_1min.csv.gz"
-      }
-     ],
-     "files": 1
-    },
     "extreme_return": {
      "count": 16,
      "examples": [
@@ -1955,6 +2760,11 @@
    "files_checked": 2,
    "files_flagged": 0
   },
+  "nk225_sessions": {
+   "checks": {},
+   "files_checked": 2,
+   "files_flagged": 0
+  },
   "oi_snapshots": {
    "checks": {
     "gaps": {
@@ -2017,7 +2827,7 @@
   },
   "okx_oi": {
    "checks": {},
-   "files_checked": 8,
+   "files_checked": 16,
    "files_flagged": 0
   },
   "on1_onr_ledgers": {
@@ -2783,6 +3593,105 @@
    "files_checked": 66,
    "files_flagged": 23
   },
+  "regime_composite": {
+   "checks": {
+    "extreme_return": {
+     "count": 186,
+     "examples": [
+      {
+       "examples": [
+        {
+         "prev": 256.47,
+         "return": -0.12348422817483531,
+         "row": 49,
+         "value": 224.8
+        },
+        {
+         "prev": 325.78,
+         "return": 0.10890785192461176,
+         "row": 125,
+         "value": 361.26
+        },
+        {
+         "prev": 361.26,
+         "return": 0.11847422908708413,
+         "row": 126,
+         "value": 404.06
+        },
+        {
+         "prev": 377.9,
+         "return": -0.10875893093410947,
+         "row": 133,
+         "value": 336.8
+        },
+        {
+         "prev": 429.55,
+         "return": -0.16191363054359215,
+         "row": 199,
+         "value": 360.0
+        }
+       ],
+       "path": "backtest_data/regime_composite_20260901/features_daily.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 256.47,
+         "return": -0.12348422817483531,
+         "row": 49,
+         "value": 224.8
+        },
+        {
+         "prev": 325.78,
+         "return": 0.10890785192461176,
+         "row": 125,
+         "value": 361.26
+        },
+        {
+         "prev": 361.26,
+         "return": 0.11847422908708413,
+         "row": 126,
+         "value": 404.06
+        },
+        {
+         "prev": 377.9,
+         "return": -0.10875893093410947,
+         "row": 133,
+         "value": 336.8
+        },
+        {
+         "prev": 429.55,
+         "return": -0.16191363054359215,
+         "row": 199,
+         "value": 360.0
+        }
+       ],
+       "path": "backtest_data/regime_composite_20260901/raw/price_daily.csv"
+      }
+     ],
+     "files": 2
+    },
+    "gaps": {
+     "count": 1,
+     "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 1555200.0,
+         "row": 3084,
+         "ts": "2025-07-02T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/regime_composite_20260901/raw/gdelt_tone.csv"
+      }
+     ],
+     "files": 1
+    }
+   },
+   "files_checked": 6,
+   "files_flagged": 3
+  },
   "reit_onr": {
    "checks": {
     "extreme_return": {
@@ -2865,39 +3774,6 @@
      ],
      "files": 2
     },
-    "missing_columns": {
-     "count": 6,
-     "examples": [
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "div_yen"
-         ],
-         "undocumented_in_schema": [
-          "high",
-          "low",
-          "volume"
-         ]
-        }
-       ],
-       "path": "backtest_data/reit_onr_20260904/etf_1343_daily.csv"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [],
-         "undocumented_in_schema": [
-          "high",
-          "low"
-         ]
-        }
-       ],
-       "path": "backtest_data/reit_onr_20260904/reit_index_daily.csv"
-      }
-     ],
-     "files": 2
-    },
     "zero_volume": {
      "count": 124,
      "examples": [
@@ -2956,154 +3832,86 @@
     }
    },
    "files_checked": 6,
-   "files_flagged": 3
+   "files_flagged": 2
   },
-  "schema_undefined": {
+  "scalp_paper_log": {
+   "checks": {},
+   "files_checked": 2,
+   "files_flagged": 0
+  },
+  "spread_fx_btc_jpy": {
    "checks": {
     "gaps": {
-     "count": 109400,
+     "count": 42,
      "examples": [
       {
        "examples": [
         {
-         "gap_seconds": 5580.0,
-         "row": 8400,
-         "ts": "2026-08-25T20:02:00+00:00"
+         "gap_seconds": 38671.924,
+         "row": 89711,
+         "ts": "2026-08-26T05:16:24.272000+00:00"
         },
         {
-         "gap_seconds": 840.0,
-         "row": 13959,
-         "ts": "2026-08-29T19:12:00+00:00"
+         "gap_seconds": 37145.963,
+         "row": 114983,
+         "ts": "2026-08-28T04:19:17.278000+00:00"
         },
         {
-         "gap_seconds": 780.0,
-         "row": 1327,
-         "ts": "2026-08-20T19:12:00+00:00"
+         "gap_seconds": 9163.595,
+         "row": 966,
+         "ts": "2026-08-20T08:58:53.267000+00:00"
         },
         {
-         "gap_seconds": 780.0,
-         "row": 2755,
-         "ts": "2026-08-21T19:12:00+00:00"
+         "gap_seconds": 2988.298,
+         "row": 1869,
+         "ts": "2026-08-20T11:05:03.809000+00:00"
         },
         {
-         "gap_seconds": 780.0,
-         "row": 4174,
-         "ts": "2026-08-22T19:12:00+00:00"
+         "gap_seconds": 194.131,
+         "row": 307,
+         "ts": "2026-08-20T05:29:16.064000+00:00"
         }
        ],
-       "median_gap_seconds": 60.0,
-       "path": "backtest_data/auto_bitflyer_executions_20260905/candles_FX_BTC_JPY.csv"
+       "median_gap_seconds": 5.067,
+       "path": "data/spread_FX_BTC_JPY.csv"
       },
       {
        "examples": [
         {
-         "gap_seconds": 4200.0,
-         "row": 6977,
-         "ts": "2026-08-18T18:11:00+00:00"
+         "gap_seconds": 38671.924,
+         "row": 89711,
+         "ts": "2026-08-26T05:16:24.272000+00:00"
         },
         {
-         "gap_seconds": 3780.0,
-         "row": 660,
-         "ts": "2026-08-03T20:00:00+00:00"
+         "gap_seconds": 37145.963,
+         "row": 114983,
+         "ts": "2026-08-28T04:19:17.278000+00:00"
         },
         {
-         "gap_seconds": 3360.0,
-         "row": 5282,
-         "ts": "2026-08-13T21:29:00+00:00"
+         "gap_seconds": 9163.595,
+         "row": 966,
+         "ts": "2026-08-20T08:58:53.267000+00:00"
         },
         {
-         "gap_seconds": 3180.0,
-         "row": 5981,
-         "ts": "2026-08-15T21:12:00+00:00"
+         "gap_seconds": 2988.298,
+         "row": 1869,
+         "ts": "2026-08-20T11:05:03.809000+00:00"
         },
         {
-         "gap_seconds": 3060.0,
-         "row": 5257,
-         "ts": "2026-08-13T18:09:00+00:00"
+         "gap_seconds": 194.131,
+         "row": 307,
+         "ts": "2026-08-20T05:29:16.064000+00:00"
         }
        ],
-       "median_gap_seconds": 120.0,
-       "path": "backtest_data/auto_bitflyer_executions_20260905/candles_XRP_JPY.csv"
-      },
-      {
-       "examples": [
-        {
-         "gap_seconds": 809.97,
-         "row": 615767,
-         "ts": "2026-08-15T19:12:00.113000+00:00"
-        },
-        {
-         "gap_seconds": 804.303,
-         "row": 506094,
-         "ts": "2026-08-10T19:12:00.360000+00:00"
-        },
-        {
-         "gap_seconds": 790.583,
-         "row": 552834,
-         "ts": "2026-08-12T19:12:25.373000+00:00"
-        },
-        {
-         "gap_seconds": 789.92,
-         "row": 67260,
-         "ts": "2026-07-26T19:12:00.243000+00:00"
-        },
-        {
-         "gap_seconds": 780.107,
-         "row": 675176,
-         "ts": "2026-08-18T19:12:00.360000+00:00"
-        }
-       ],
-       "median_gap_seconds": 0.734,
-       "path": "backtest_data/executions_FX_BTC_JPY_31d_20260823.csv.gz"
-      },
-      {
-       "examples": [
-        {
-         "gap_seconds": 172860.0,
-         "row": 449281,
-         "ts": "2024-01-01T00:00:00+00:00"
-        },
-        {
-         "gap_seconds": 86460.0,
-         "row": 8641,
-         "ts": "2023-01-08T00:00:00+00:00"
-        },
-        {
-         "gap_seconds": 86460.0,
-         "row": 17281,
-         "ts": "2023-01-15T00:00:00+00:00"
-        },
-        {
-         "gap_seconds": 86460.0,
-         "row": 25921,
-         "ts": "2023-01-22T00:00:00+00:00"
-        },
-        {
-         "gap_seconds": 86460.0,
-         "row": 34561,
-         "ts": "2023-01-29T00:00:00+00:00"
-        }
-       ],
-       "median_gap_seconds": 60.0,
-       "path": "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
-      },
-      {
-       "examples": [
-        {
-         "gap_seconds": 1555200.0,
-         "row": 3084,
-         "ts": "2025-07-02T00:00:00+00:00"
-        }
-       ],
-       "median_gap_seconds": 86400.0,
-       "path": "backtest_data/regime_composite_20260901/raw/gdelt_tone.csv"
+       "median_gap_seconds": 5.067,
+       "path": "paper_logs/spread_FX_BTC_JPY.csv"
       }
      ],
-     "files": 9
+     "files": 2
     }
    },
-   "files_checked": 138,
-   "files_flagged": 9
+   "files_checked": 2,
+   "files_flagged": 2
   },
   "venue_survey": {
    "checks": {},
@@ -3113,7 +3921,7 @@
   "venues": {
    "checks": {
     "duplicate_keys": {
-     "count": 401,
+     "count": 403,
      "examples": [
       {
        "examples": [
@@ -3505,7 +4313,7 @@
      "files": 6
     },
     "gaps": {
-     "count": 212245,
+     "count": 212580,
      "examples": [
       {
        "examples": [
@@ -3599,153 +4407,19 @@
    "files_checked": 150,
    "files_flagged": 150
   },
+  "ws_raw_capture": {
+   "checks": {},
+   "files_checked": 76,
+   "files_flagged": 0
+  },
   "yutai": {
    "checks": {},
    "files_checked": 1,
    "files_flagged": 0
   }
  },
- "generated_at": "2026-09-05T15:24:36.305842+00:00",
+ "generated_at": "2026-09-05T16:26:30.267068+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 138,
- "schema_undefined_files": [
-  "backtest_data/auto_bitflyer_executions_20260905/candles_FX_BTC_JPY.csv",
-  "backtest_data/auto_bitflyer_executions_20260905/candles_XRP_JPY.csv",
-  "backtest_data/binance_BTCUSDT_1m.csv",
-  "backtest_data/binance_BTCUSDT_1m_210d_20260820.csv.gz",
-  "backtest_data/binance_XRPUSDT_1d.csv",
-  "backtest_data/binance_XRPUSDT_1m.csv",
-  "backtest_data/binance_XRPUSDT_4h.csv",
-  "backtest_data/bitbank_xrp_jpy_1m.csv",
-  "backtest_data/daily_btcusd_bitstamp_20260828.csv.gz",
-  "backtest_data/daily_btcusd_coinbase_20260828.csv.gz",
-  "backtest_data/daily_btcusd_yahoo_20260828.csv.gz",
-  "backtest_data/daily_ethusd_bitstamp_20260828.csv.gz",
-  "backtest_data/daily_ethusd_coinbase_20260828.csv.gz",
-  "backtest_data/daily_ethusd_yahoo_20260828.csv.gz",
-  "backtest_data/executions_FX_BTC_JPY_31d_20260823.csv.gz",
-  "backtest_data/flow_FX_BTC_JPY_20260820.csv",
-  "backtest_data/fred_DEXJPUS.csv",
-  "backtest_data/fred_DFF.csv",
-  "backtest_data/fred_DGS2.csv",
-  "backtest_data/fred_IR3TIB01JPM156N.csv",
-  "backtest_data/fred_IRSTCI01JPM156N.csv",
-  "backtest_data/fx_fundamentals_20260822/cot_jpy_legacy.csv",
-  "backtest_data/fx_fundamentals_20260822/fred_DEXJPUS.csv",
-  "backtest_data/fx_fundamentals_20260822/fred_DGS2.csv",
-  "backtest_data/fx_fundamentals_20260822/fred_VIXCLS.csv",
-  "backtest_data/fx_fundamentals_20260822/jgb_current.csv",
-  "backtest_data/fx_fundamentals_20260822/jgb_hist.csv",
-  "backtest_data/fx_fundamentals_20260822/mof_feio_daily.csv",
-  "backtest_data/fx_usdjpy_1m_20260822.csv.gz",
-  "backtest_data/gmo_swap_usdjpy.csv",
-  "backtest_data/okx_20260905/okx_btc_lsratio_1h.csv",
-  "backtest_data/okx_20260905/okx_btc_lsratio_5m.csv",
-  "backtest_data/okx_20260905/okx_btc_oi_1h.csv",
-  "backtest_data/okx_20260905/okx_btc_oi_5m.csv",
-  "backtest_data/regime_composite_20260901/features_daily.csv",
-  "backtest_data/regime_composite_20260901/raw/binance_funding.csv",
-  "backtest_data/regime_composite_20260901/raw/binance_metrics.csv",
-  "backtest_data/regime_composite_20260901/raw/binance_premium.csv",
-  "backtest_data/regime_composite_20260901/raw/gdelt_tone.csv",
-  "backtest_data/regime_composite_20260901/raw/price_daily.csv",
-  "data/api_health.csv",
-  "data/binance_BTCUSDT_1d.csv",
-  "data/binance_BTCUSDT_1m.csv",
-  "data/binance_BTCUSDT_4h.csv",
-  "data/binance_XRPUSDT_1d.csv",
-  "data/binance_XRPUSDT_1m.csv",
-  "data/binance_XRPUSDT_4h.csv",
-  "data/bitbank_xrp_jpy_1m.csv",
-  "data/executions_FX_BTC_JPY.csv",
-  "data/executions_XRP_JPY.csv",
-  "data/jpx_daily/nk225_sessions.csv",
-  "data/okx_btc_lsratio_1h.csv",
-  "data/okx_btc_lsratio_5m.csv",
-  "data/okx_btc_oi_1h.csv",
-  "data/okx_btc_oi_5m.csv",
-  "data/scalp_paper.jsonl",
-  "data/spread_FX_BTC_JPY.csv",
-  "data/ws/FX_BTC_JPY_20260820_061319.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_085835.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_104112.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_110442.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_115202.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_121050.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_121442.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_125451.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_145537.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_163355.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_190200.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_190203.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_190207.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_190215.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_190231.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_190303.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260820_190403.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_031638.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_050319.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_074822.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_090730.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_095827.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_114412.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_131326.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_190209.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_190218.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_190222.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_190231.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_190247.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_190319.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_190420.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260821_210645.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_010916.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_081507.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_100129.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_114954.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_190205.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_190215.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_190224.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_190240.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_190312.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260822_190412.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260823_044847.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260823_131824.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260823_190405.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260824_190402.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260826_025448.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260826_051532.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260826_051623.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260826_190404.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260827_114426.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260827_120105.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260828_041847.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260828_042323.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260828_190404.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260829_190401.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260830_190502.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260831_011109.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260831_022241.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260831_060016.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260831_111722.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260831_190402.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260901_190501.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260902_050926.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260902_190404.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260903_121610.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260903_190403.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260904_101346.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260904_123343.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260904_190403.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260905_051106.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260905_111043.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260905_112545.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260905_115743.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260905_132655.jsonl.gz",
-  "data/ws/FX_BTC_JPY_20260905_134841.jsonl.gz",
-  "paper_logs/INTAKE.jsonl",
-  "paper_logs/bot.jsonl",
-  "paper_logs/nk225_sessions.csv",
-  "paper_logs/scalp_paper.jsonl",
-  "paper_logs/spread_FX_BTC_JPY.csv"
- ]
+ "schema_undefined_count": 0,
+ "schema_undefined_files": []
 }
