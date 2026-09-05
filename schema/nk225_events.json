@@ -1,0 +1,33 @@
+{
+  "dataset": "nk225_events",
+  "description": "Nikkei 225 index constituent add/delete events and the per-symbol price-fetch log behind them, used for the JPX event-library research line.",
+  "path_glob": [
+    "backtest_data/nk225_events_*/events.csv",
+    "backtest_data/nk225_events_*/fetch_log.csv"
+  ],
+  "source": "Nikkei 225 constituent change history (add/delete) cross-referenced against per-symbol daily price fetches -- see backtest_data/nk225_events_<date>/px.tar.gz for the underlying per-symbol series.",
+  "retention": "permanent dated snapshot (backtest_data/nk225_events_<date>/); never regenerated in place.",
+  "file_groups": {
+    "events.csv": {
+      "columns": {
+        "effective_date": {"meaning": "date the constituent change took effect", "unit": "YYYY-MM-DD", "tz": "JST (JPX index effective date)", "notes": null},
+        "ticker": {"meaning": "4-digit JPX ticker code of the added/removed constituent", "unit": "string", "tz": null, "notes": null},
+        "name": {"meaning": "company name at the time of the event", "unit": "string (Japanese)", "tz": null, "notes": null},
+        "action": {"meaning": "index membership change", "unit": "add / delete", "tz": null, "notes": null}
+      }
+    },
+    "fetch_log.csv": {
+      "columns": {
+        "symbol": {"meaning": "ticker with exchange suffix, as fetched", "unit": "e.g. 1301.T", "tz": null, "notes": null},
+        "n_rows": {"meaning": "rows obtained for this symbol in px.tar.gz", "unit": "count", "tz": null, "notes": "0 rows is a real, logged fetch failure (see status), not a blank/removed row"},
+        "first_date": {"meaning": "first date obtained", "unit": "YYYY-MM-DD", "tz": null, "notes": "blank when n_rows is 0"},
+        "last_date": {"meaning": "last date obtained", "unit": "YYYY-MM-DD", "tz": null, "notes": "blank when n_rows is 0"},
+        "status": {"meaning": "fetch outcome for this symbol", "unit": "e.g. ok / no timestamps / <error text>", "tz": null, "notes": null}
+      }
+    }
+  },
+  "known_defects": [
+    "fetch_log.csv rows with n_rows=0 (status e.g. \"no timestamps\") are symbols that could NOT be fetched -- events.csv references to that ticker have no corresponding price series in px.tar.gz; cross-check before assuming full price coverage of every constituent change",
+    "events.csv has no timestamp column data_quality.py's TS_CANDIDATES recognizes (\"effective_date\", not \"date\"/\"ts\"), so duplicate/gap/non-monotonic checks do not run on it automatically -- this is a small reference table, not a dense time series"
+  ]
+}

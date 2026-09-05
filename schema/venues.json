@@ -5,7 +5,9 @@
     "data/venues/quotes_*.csv.gz",
     "data/venues/trades_*_*_*.csv.gz",
     "paper_logs/venues/quotes_*.csv.gz",
-    "paper_logs/venues/trades_*_*_*.csv.gz"
+    "paper_logs/venues/trades_*_*_*.csv.gz",
+    "backtest_data/auto_venues_*/quotes_*.csv.gz",
+    "backtest_data/auto_venues_*/trades_*_*_*.csv.gz"
   ],
   "source": "public REST: bitbank (/{pair}/ticker, /{pair}/transactions), GMO Coin (/ticker, /trades), bitFlyer (/v1/ticker) -- see scripts/record_venues.py",
   "retention": "not exchange-limited (recorder-owned, appended forward only); kept indefinitely once written, daily gz files, never regenerated in place",
@@ -23,6 +25,11 @@
         "bid": {"meaning": "best bid", "unit": "quote currency (mostly JPY; GMO altcoin pairs may quote in JPY or USDT depending on symbol)", "tz": null, "notes": null},
         "ask": {"meaning": "best ask", "unit": "quote currency", "tz": null, "notes": null},
         "last": {"meaning": "last traded price reported by the ticker", "unit": "quote currency", "tz": null, "notes": null}
+      },
+      "quality": {
+        "group_by": ["venue", "pair"],
+        "unique_key": ["ts_utc", "venue", "pair"],
+        "_notes": "one quotes_YYYYMMDD.csv.gz file interleaves EVERY (venue, pair) series bitbank/GMO/bitFlyer report -- extreme_return/non_monotonic/gaps must run per (venue, pair) group or a normal cross-series jump (e.g. BTC/JPY row followed by an altcoin row) is misread as one series moving. GMO returns all its symbols from a single ticker call, so many rows legitimately share one ts_utc -- ts_utc alone is not a row key either, hence the wider unique_key."
       }
     },
     "trades_{venue}_{pair}_YYYYMMDD.csv.gz": {
@@ -32,6 +39,10 @@
         "size": {"meaning": "execution size", "unit": "base currency", "tz": null, "notes": null},
         "side": {"meaning": "taker side, normalized", "unit": "BUY/SELL", "tz": null, "notes": null},
         "tid": {"meaning": "trade id", "unit": "string", "tz": null, "notes": "bitbank: exchange transaction_id (globally unique per pair). GMO: no id in the public trades response, so this is sha1(ts|price|size|side)[:16] -- two genuinely identical prints in the same source timestamp collapse into one row (documented, accepted, rare)"}
+      },
+      "quality": {
+        "unique_key": ["ts_utc", "tid"],
+        "_notes": "already one file per (venue, pair) -- no group_by needed here. tid is the actual identity (exchange id for bitbank, a content hash for GMO); ts_utc alone is not unique when trades cluster in the same second."
       }
     }
   },

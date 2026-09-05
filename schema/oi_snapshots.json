@@ -3,7 +3,8 @@
   "description": "One row per collector run: derivatives open-interest / long-short / vol-index snapshot from OKX and Deribit public endpoints, recorded forward because those APIs cannot be paged back beyond their own short windows.",
   "path_glob": [
     "data/oi_snapshots.csv",
-    "paper_logs/oi_snapshots.csv"
+    "paper_logs/oi_snapshots.csv",
+    "backtest_data/auto_oi_snapshots_*/oi_snapshots.csv"
   ],
   "source": "OKX public/open-interest, public/rubik/stat/contracts/long-short-account-ratio; Deribit public/get_volatility_index_data and public/ticker -- all read-only, no auth (scripts/record_oi.py)",
   "retention": "OKX open interest 1H window ~30 days, 5m window ~2-3 days; long/short ratio ~60 days -- per docs/DATA_GOVERNANCE_PLAN.md this is exactly why this file exists (forward recording is the only way to get a long dense history); snapshot to backtest_data/ at roughly half the shortest source retention",

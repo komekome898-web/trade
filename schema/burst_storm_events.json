@@ -1,0 +1,26 @@
+{
+  "dataset": "burst_storm_events",
+  "description": "Per-event Binance-vs-bitFlyer price/flow snippets built around detected volatility bursts (radar-flagged \"storm\" windows and shorter \"burst\" spikes) for the storm-radar research line (src/bot/radar.py). One file per event, named by its detection timestamp.",
+  "path_glob": [
+    "backtest_data/burst_events_*/event_*.csv.gz",
+    "backtest_data/storm_events_*/event_*.csv.gz"
+  ],
+  "source": "extracted from the accumulated Binance BTCUSDT and bitFlyer FX_BTC_JPY feeds around each radar-flagged event window -- see src/bot/radar.py and the scripts/build_* event-library tooling referenced in CLAUDE.md.",
+  "retention": "permanent dated snapshot (backtest_data/burst_events_<date>/, storm_events_<date>/); never regenerated in place.",
+  "file_groups": {
+    "event_YYYYMMDD_HHMM.csv.gz": {
+      "columns": {
+        "ts": {"meaning": "row time within the event window", "unit": "ISO-8601 with UTC offset", "tz": "UTC", "notes": null},
+        "bn_price": {"meaning": "Binance BTCUSDT price at ts", "unit": "USD", "tz": null, "notes": null},
+        "bf_price": {"meaning": "bitFlyer FX_BTC_JPY price at ts", "unit": "JPY", "tz": null, "notes": "blank when bitFlyer had no print/quote at this ts within the window -- a normal quiet moment on the thinner venue, not a collection failure"},
+        "bf_buy": {"meaning": "bitFlyer taker-buy volume at ts", "unit": "BTC", "tz": null, "notes": null},
+        "bf_sell": {"meaning": "bitFlyer taker-sell volume at ts", "unit": "BTC", "tz": null, "notes": null}
+      }
+    }
+  },
+  "known_defects": [
+    "bn_price and bf_price are two different quote currencies (USD vs JPY) sampled from two different venues -- never diffed or ratioed directly without converting through a USD/JPY rate first",
+    "burst_events (shorter, sharper spikes) and storm_events (the storm-radar's own longer clock-window detections) are two different detectors over the same underlying feeds and are not deduplicated against each other -- the same underlying market move can appear as both a burst file and a storm file",
+    "bf_price/bf_buy/bf_sell blank/zero rows reflect bitFlyer's comparatively thin liquidity next to Binance, not a data-quality defect in the extraction itself"
+  ]
+}

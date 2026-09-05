@@ -1,0 +1,17 @@
+{
+  "dataset": "jp_factors",
+  "description": "Japan 3-factor (Mkt-RF, SMB, HML) and momentum (WML) monthly return series from the Kenneth R. French Data Library, used as regime/factor context for JP equity research. NOT parsed as a normal header+rows CSV by data_quality.py -- see known_defects.",
+  "path_glob": [
+    "backtest_data/jp_factors_*/Japan_3_Factors.csv",
+    "backtest_data/jp_factors_*/Japan_MOM_Factor.csv"
+  ],
+  "source": "Kenneth R. French Data Library (Tuck School of Business, Dartmouth): Japan_3_Factors_CSV.zip and Japan_Mom_Factor_CSV.zip, extracted verbatim -- see backtest_data/jp_factors_<date>/README.txt for exact fetch date and the source's own \"created using the <YYYYMM> Bloomberg database\" line.",
+  "retention": "permanent dated snapshot (backtest_data/jp_factors_<date>/); never re-fetched in place.",
+  "known_defects": [
+    "NOT A PLAIN CSV: the French Data Library's own export starts with several free-text preamble lines (a title line, a blank line, a missing-data note) BEFORE the real header row (\",Mkt-RF,SMB,HML,RF\" / \",WML\") -- data_quality.py's csv.reader reads the first line as if it were the header, so ts/column detection and missing_columns do not apply here; this schema intentionally declares no `columns` for that reason. Any consumer must skip the documented preamble line count (see README.txt) before parsing.",
+    "period column is monthly YYYYMM (e.g. 199007), not a date -- not one of data_quality.py's TS_CANDIDATES, so it is not scanned for gaps/duplicates/monotonicity either.",
+    "-99.99 is the source's own missing-value sentinel, not a real return -- do not average or otherwise use it without filtering.",
+    "annual-average rows the source appends after the monthly block were intentionally NOT parsed into these files (see README.txt) -- only the monthly rows are present.",
+    "values are monthly PERCENT returns already (e.g. 0.10 means 0.10%), not fractions -- do not divide by 100 a second time."
+  ]
+}

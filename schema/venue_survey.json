@@ -1,0 +1,14 @@
+{
+  "dataset": "venue_survey",
+  "description": "One-off multi-venue order-book/trade recording survey (bitbank, bitFlyer, GMO, Coincheck, OKJ, and others) used to screen candidate venues before scripts/record_venues.py's ongoing collection was built. Raw captures are line-delimited JSON (jsonl.gz), not CSV -- data_quality.py's column-based checks are out of scope for this dataset (jsonl is skipped by design, see scripts/data_quality.py's docstring); this schema exists so these files resolve to a named dataset instead of schema_undefined.",
+  "path_glob": [
+    "backtest_data/venue_survey_*/*.jsonl.gz"
+  ],
+  "source": "ad-hoc recording run across several venues' public WS/REST book and trade feeds, screened by backtest_data/venue_survey_<date>/analyze_venues.py and analyze_screen.py (see FINAL.txt / SCREEN.txt in the same directory for the survey's conclusions).",
+  "retention": "permanent dated snapshot (backtest_data/venue_survey_<date>/), a one-off survey rather than an ongoing feed -- scripts/record_venues.py (see schema/venues.json) is the dataset that resulted from it.",
+  "known_defects": [
+    "jsonl(.gz), not CSV -- scripts/data_quality.py explicitly treats jsonl as out of scope for its column-based checks (see the script's own docstring), so files here are counted (files_checked) but never flagged by any row-level check.",
+    "this was a short, one-off screening run, not a maintained feed -- gaps/coverage holes here are expected and were never meant to be continuous.",
+    "filename prefixes encode venue+symbol shorthand (bb=bitbank, bf=bitFlyer, gmo=GMO, cc=Coincheck, bt=?, okj=OKJ) informally, not documented per-file -- see analyze_venues.py for how they were actually parsed."
+  ]
+}

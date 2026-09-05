@@ -289,7 +289,12 @@ def _data_ledger(root: Path) -> dict[str, dict[str, Any]] | None:
         if rec.get("status") == "missing":
             continue
         schema = dq.match_dataset(rel, schemas)
-        name = schema.get("dataset", "_unmatched") if schema else "_unmatched"
+        # "schema_undefined" mirrors scripts/data_quality.py's own bucket
+        # name for a path with no schema/*.json match at all (see its run()),
+        # so this table's row lines up with QUALITY.json's quality_flags for
+        # the same group instead of silently looking up a name that no
+        # longer exists there.
+        name = schema.get("dataset", "schema_undefined") if schema else "schema_undefined"
         g = groups.setdefault(name, {"files": 0, "rows": 0, "first_ts": None,
                                      "last_ts": None, "last_update": None})
         g["files"] += 1

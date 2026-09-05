@@ -1,0 +1,20 @@
+{
+  "dataset": "yutai",
+  "description": "Universe of Tokyo Stock Exchange \"yutai\" (shareholder perk / 株主優待) issuers and their perk record-date month, used for the yutai calendar-effect research line. px.tar.gz (per-symbol daily price archive) is not itself covered by this schema -- see known_defects.",
+  "path_glob": [
+    "backtest_data/yutai_*/universe.csv"
+  ],
+  "source": "compiled list of TSE-listed issuers offering shareholder perks and their perk record-date month -- see backtest_data/yutai_<date>/manifest.md for compilation method and any known omissions.",
+  "retention": "permanent dated snapshot (backtest_data/yutai_<date>/); never regenerated in place.",
+  "columns": {
+    "code": {"meaning": "4-digit JPX ticker code", "unit": "string", "tz": null, "notes": null},
+    "name": {"meaning": "issuer name", "unit": "string (Japanese)", "tz": null, "notes": null},
+    "market": {"meaning": "TSE market segment", "unit": "prime / standard / growth", "tz": null, "notes": null},
+    "perk_flag": {"meaning": "whether the issuer currently offers a shareholder perk", "unit": "0/1", "tz": null, "notes": null},
+    "kenri_month": {"meaning": "record-date (権利確定) month for the perk", "unit": "Japanese month label, e.g. 3月", "tz": null, "notes": null}
+  },
+  "known_defects": [
+    "px.tar.gz (per-symbol daily price archive referenced by manifest.md) is a tar archive, not directly tabular, and is out of scope for this schema/data_quality.py's row-level checks -- see manifest.md for its own coverage notes",
+    "universe.csv is a point-in-time snapshot of perk-eligible issuers -- it is not forward-updated in place, and does not itself carry a fetch/effective date column (see the directory's own date suffix and manifest.md for that)"
+  ]
+}

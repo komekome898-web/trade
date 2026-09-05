@@ -125,7 +125,11 @@ def test_extreme_return_count_not_capped_by_examples(tmp_path: Path):
     rel = "data/extremes.csv"
     (tmp_path / rel).write_text("\n".join(rows) + "\n")
 
-    result = dq.scan_file(tmp_path, rel, schema=None)
+    # extreme_return is a value-based check and needs a schema (schema=None
+    # is the schema_undefined / structural-only path -- see
+    # test_schema_undefined_runs_structural_checks_only below).
+    schema = {"dataset": "extremes", "path_glob": ["data/extremes.csv"], "columns": {"ts": {}, "mid": {}}}
+    result = dq.scan_file(tmp_path, rel, schema=schema)
 
     assert result["extreme_return"]["count"] == 11
     assert len(result["extreme_return"]["examples"]) == dq.MAX_EXAMPLES == 5
@@ -212,10 +216,10 @@ def test_missing_columns_vs_schema(tmp_path: Path):
     assert "b" in mc["declared_but_absent"]
 
 
-# ---- gz support, unmatched files, no-op on clean data --------------------
+# ---- gz support, schema_undefined files, no-op on clean data -------------
 
 
-def test_gz_file_is_checked_and_unmatched_files_listed(tmp_path: Path):
+def test_gz_file_is_checked_and_schema_undefined_files_listed(tmp_path: Path):
     (tmp_path / "data").mkdir()
     text = "ts,a\n2026-01-01T00:00:00Z,1\n2026-01-01T00:00:00Z,1\n"
     with gzip.open(tmp_path / "data" / "dup.csv.gz", "wt") as f:
@@ -232,7 +236,8 @@ def test_gz_file_is_checked_and_unmatched_files_listed(tmp_path: Path):
     report = dq.run(tmp_path)
 
     assert report["datasets"]["dup_dataset"]["checks"]["duplicate_keys"]["count"] == 1
-    assert "data/orphan.csv" in report["unmatched_files"]
+    assert "data/orphan.csv" in report["schema_undefined_files"]
+    assert report["schema_undefined_count"] == 1
 
 
 def test_clean_file_flags_nothing(tmp_path: Path):
@@ -253,6 +258,169 @@ def test_clean_file_flags_nothing(tmp_path: Path):
     assert d["files_checked"] == 1
     assert d["files_flagged"] == 0
     assert d["checks"] == {}
+
+
+# ---- schema_undefined: structural checks only -----------------------------
+
+
+def test_schema_undefined_runs_structural_checks_only(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    rows = ["ts,mid"]
+    price = 100.0
+    for t in range(12):
+        rows.append(f"2026-01-01T00:{t:02d}:00Z,{price}")
+        price = price * 0.5  # would be 11 extreme_return transitions under a schema
+    rel = "data/no_schema.csv"
+    (tmp_path / rel).write_text("\n".join(rows) + "\n")
+
+    # no schema/*.json at all -> match_dataset returns None -> structural_only
+    result = dq.scan_file(tmp_path, rel, schema=None)
+
+    assert "extreme_return" not in result
+    assert "non_monotonic" not in result
+    assert "zero_volume" not in result
+    assert "missing_columns" not in result
+
+
+def test_schema_undefined_duplicate_keys_use_full_row_not_bare_ts(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    rows = [
+        "ts,price",
+        "2026-01-01T00:00:00Z,100",
+        "2026-01-01T00:00:00Z,200",  # same ts, different price -- NOT a real duplicate
+        "2026-01-01T00:00:00Z,100",  # exact repeat of row 1 -- a real duplicate
+    ]
+    rel = "data/no_schema2.csv"
+    (tmp_path / rel).write_text("\n".join(rows) + "\n")
+
+    result = dq.scan_file(tmp_path, rel, schema=None)
+
+    # bare-ts dedup would have counted 3 rows as one duplicate group;
+    # full-row auto-detection only flags the genuine exact repeat.
+    assert result["duplicate_keys"]["count"] == 1
+
+
+def test_schema_undefined_files_land_in_schema_undefined_dataset(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "mystery.csv").write_text(
+        "ts,a\n2026-01-01T00:00:00Z,1\n2026-01-01T00:00:00Z,1\n"
+    )
+    # no schema/*.json written at all
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+
+    assert "data/mystery.csv" in report["schema_undefined_files"]
+    d = report["datasets"]["schema_undefined"]
+    assert d["files_checked"] == 1
+    # exact duplicate row -> duplicate_keys fires; nothing value-based does
+    assert set(d["checks"]) <= {"duplicate_keys", "gaps"}
+
+
+# ---- quality.group_by: independent series in one file --------------------
+
+
+def test_group_by_prevents_cross_series_false_extreme_return(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    # two interleaved series (venue A, venue B) at wildly different price
+    # levels -- naive row-order extreme_return would fire on every jump
+    # between them; grouped, neither series itself ever jumps.
+    rows = ["ts,venue,price"]
+    for i in range(6):
+        rows.append(f"2026-01-01T00:{i:02d}:00Z,A,{100 + i}")
+        rows.append(f"2026-01-01T00:{i:02d}:01Z,B,{100000 + i}")
+    (tmp_path / "data" / "grouped.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "grouped", {
+        "dataset": "grouped",
+        "path_glob": ["data/grouped.csv"],
+        "columns": {"ts": {}, "venue": {}, "price": {}},
+        "quality": {"group_by": ["venue"]},
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["grouped"]["checks"]
+
+    assert "extreme_return" not in checks
+    assert "non_monotonic" not in checks
+
+
+def test_group_by_still_flags_a_real_extreme_return_within_a_group(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    rows = ["ts,venue,price",
+            "2026-01-01T00:00:00Z,A,100",
+            "2026-01-01T00:00:01Z,B,999999",
+            "2026-01-01T00:00:02Z,A,10",   # -90% within venue A -- a real extreme return
+            "2026-01-01T00:00:03Z,B,999998"]
+    (tmp_path / "data" / "grouped2.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "grouped2", {
+        "dataset": "grouped2",
+        "path_glob": ["data/grouped2.csv"],
+        "columns": {"ts": {}, "venue": {}, "price": {}},
+        "quality": {"group_by": ["venue"]},
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["grouped2"]["checks"]
+
+    assert checks["extreme_return"]["count"] == 1
+
+
+# ---- quality.unique_key: a bare timestamp is not always a key ------------
+
+
+def test_unique_key_avoids_false_duplicates_on_shared_timestamp(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    rows = [
+        "ts,price,size,side",
+        "2026-01-01T00:00:00.100Z,100,1,BUY",
+        "2026-01-01T00:00:00.100Z,101,2,SELL",  # same ts, genuinely different print
+        "2026-01-01T00:00:00.100Z,100,1,BUY",   # exact repeat -- a real duplicate
+    ]
+    (tmp_path / "data" / "keyed.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "keyed", {
+        "dataset": "keyed",
+        "path_glob": ["data/keyed.csv"],
+        "columns": {"ts": {}, "price": {}, "size": {}, "side": {}},
+        "quality": {"unique_key": ["ts", "price", "size", "side"]},
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["keyed"]["checks"]
+
+    assert checks["duplicate_keys"]["count"] == 1
+
+
+def test_file_group_level_quality_overrides_dataset_level(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    # dataset-level unique_key is just ts (would flag 1 dup); this
+    # file_group declares a wider key that clears it.
+    rows = [
+        "ts,price",
+        "2026-01-01T00:00:00Z,1",
+        "2026-01-01T00:00:00Z,2",
+    ]
+    (tmp_path / "data" / "special_a.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "override", {
+        "dataset": "override",
+        "path_glob": ["data/special_a.csv"],
+        "quality": {"unique_key": ["ts"]},
+        "columns": {"ts": {}, "price": {}},
+        "file_groups": {
+            "special_a.csv": {
+                "columns": {"ts": {}, "price": {}},
+                "quality": {"unique_key": ["ts", "price"]},
+            }
+        },
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["override"]["checks"]
+
+    assert "duplicate_keys" not in checks
 
 
 # ---- never modifies data --------------------------------------------------

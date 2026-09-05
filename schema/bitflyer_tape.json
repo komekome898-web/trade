@@ -7,7 +7,10 @@
     "data/tape/board_top5_*.csv.gz",
     "paper_logs/tape/ticker_*.csv.gz",
     "paper_logs/tape/executions_*.csv.gz",
-    "paper_logs/tape/board_top5_*.csv.gz"
+    "paper_logs/tape/board_top5_*.csv.gz",
+    "backtest_data/auto_bitflyer_executions_*/ticker_*.csv.gz",
+    "backtest_data/auto_bitflyer_executions_*/executions_*.csv.gz",
+    "backtest_data/auto_bitflyer_executions_*/board_top5_*.csv.gz"
   ],
   "source": "bitFlyer public WebSocket (lightning_ticker_FX_BTC_JPY, lightning_executions_FX_BTC_JPY, lightning_board_FX_BTC_JPY / _snapshot_FX_BTC_JPY), recorded by the resident WS collector into data/ws/*.jsonl.gz, then extracted by scripts/extract_tape.py",
   "retention": "bitFlyer's own public REST history is 31 days; these extracted daily CSVs are the long-term substitute and are kept indefinitely once written (never regenerated in a way that drops old days).",
@@ -24,6 +27,10 @@
         "best_ask": {"meaning": "best ask price", "unit": "JPY", "tz": null, "notes": null},
         "best_bid_size": {"meaning": "size at best bid", "unit": "BTC", "tz": null, "notes": null},
         "best_ask_size": {"meaning": "size at best ask", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {
+        "unique_key": ["ts"],
+        "_unique_key_note": "extract_tape.py already dedups identical (best_bid, best_ask, best_bid_size, best_ask_size) quadruples, so a surviving repeated ts is a genuine anomaly worth keeping ts-only."
       }
     },
     "executions_YYYYMMDD.csv.gz": {
@@ -37,6 +44,10 @@
         "price": {"meaning": "execution price", "unit": "JPY", "tz": null, "notes": null},
         "size": {"meaning": "execution size", "unit": "BTC", "tz": null, "notes": null},
         "side": {"meaning": "taker side", "unit": "BUY/SELL", "tz": null, "notes": null}
+      },
+      "quality": {
+        "unique_key": ["ts", "price", "size", "side"],
+        "_unique_key_note": "bitFlyer's public execution stream can print several distinct trades within the same microsecond timestamp (no execution id is carried in this extracted CSV) -- ts alone massively over-counts duplicate_keys. This composite key is still probabilistic (two genuinely identical prints in the same microsecond collapse into one row), but is far closer to the truth than ts alone."
       }
     },
     "board_top5_YYYYMMDD.csv.gz": {
@@ -51,6 +62,10 @@
         "bid_sz_1..5": {"meaning": "size at each bid level, same order as bid_px_*", "unit": "BTC", "tz": null, "notes": null},
         "ask_px_1..5": {"meaning": "ask price, level 1 (best) through 5, ascending", "unit": "JPY", "tz": null, "notes": "blank cell if book has fewer than 5 levels on that side at that second"},
         "ask_sz_1..5": {"meaning": "size at each ask level, same order as ask_px_*", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {
+        "unique_key": ["ts"],
+        "_unique_key_note": "one row per second by construction -- a repeated ts here is a real duplicate."
       }
     }
   },

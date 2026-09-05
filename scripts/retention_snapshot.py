@@ -250,10 +250,12 @@ def _scan_file(path: Path) -> dict[str, Any]:
         fmt, gz = kind
         try:
             if fmt == "csv":
-                rows, first_ts, last_ts = il.scan_csv(path, gz, il.DEFAULT_TS_CAP)
+                rows, first_ts, last_ts, truncated = il.scan_csv(path, gz, il.DEFAULT_TS_CAP)
             else:
-                rows, first_ts, last_ts = il.scan_jsonl(path, gz, il.DEFAULT_TS_CAP)
+                rows, first_ts, last_ts, truncated = il.scan_jsonl(path, gz, il.DEFAULT_TS_CAP)
             rec["row_count"], rec["first_ts"], rec["last_ts"] = rows, first_ts, last_ts
+            if truncated:
+                rec["truncated"] = True
         except (OSError, gzip.BadGzipFile, EOFError) as exc:
             rec["scan_error"] = f"{type(exc).__name__}: {exc}"
     return rec

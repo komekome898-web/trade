@@ -1931,7 +1931,7 @@ def test_data_ledger_none_when_no_intake_ledger(tmp_path):
     assert _data_ledger(tmp_path) is None
 
 
-def test_data_ledger_groups_unmatched_files_with_no_schema(tmp_path):
+def test_data_ledger_groups_schema_undefined_files_with_no_schema(tmp_path):
     from bot.monitoring.aggregate import _data_ledger
 
     records = {
@@ -1947,8 +1947,8 @@ def test_data_ledger_groups_unmatched_files_with_no_schema(tmp_path):
     _write_intake(tmp_path, records)
 
     ledger = _data_ledger(tmp_path)
-    assert set(ledger.keys()) == {"_unmatched"}
-    row = ledger["_unmatched"]
+    assert set(ledger.keys()) == {"schema_undefined"}
+    row = ledger["schema_undefined"]
     assert row["files"] == 2
     assert row["rows"] == 15
     assert row["first_ts"] == "2026-08-01T00:00:00+00:00"
@@ -2005,9 +2005,9 @@ def test_data_ledger_prefers_the_shared_paper_logs_copy_when_newer(tmp_path):
     os.utime(shared, (2000, 2000))
 
     ledger = _data_ledger(tmp_path)
-    assert set(ledger.keys()) == {"_unmatched"}
-    assert ledger["_unmatched"]["files"] == 1
-    assert ledger["_unmatched"]["rows"] == 2  # from the shared/fresh copy, not stale
+    assert set(ledger.keys()) == {"schema_undefined"}
+    assert ledger["schema_undefined"]["files"] == 1
+    assert ledger["schema_undefined"]["rows"] == 2  # from the shared/fresh copy, not stale
 
 
 def test_data_ledger_surfaced_in_collect_status(tmp_path):
@@ -2017,4 +2017,4 @@ def test_data_ledger_surfaced_in_collect_status(tmp_path):
     })
     d = collect_status(tmp_path)
     assert d["data_ledger"] is not None
-    assert d["data_ledger"]["_unmatched"]["files"] == 1
+    assert d["data_ledger"]["schema_undefined"]["files"] == 1

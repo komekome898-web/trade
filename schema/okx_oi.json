@@ -1,0 +1,52 @@
+{
+  "dataset": "okx_oi",
+  "description": "OKX public BTC derivatives history: open-interest+volume and long/short account ratio, at 5-minute and 1-hour granularity, fetched by scripts/fetch_okx.py. Distinct from schema/oi_snapshots.json, which is a forward-recorded, multi-source (OKX+Deribit), one-row-per-collector-run file -- this dataset is OKX's own paged history for a single (ccy=BTC) series per file.",
+  "path_glob": [
+    "backtest_data/okx_btc_oi_5m_*.csv",
+    "backtest_data/okx_btc_oi_1h_*.csv",
+    "backtest_data/okx_btc_lsratio_5m_*.csv",
+    "backtest_data/okx_btc_lsratio_1h_*.csv",
+    "backtest_data/auto_okx_*/okx_btc_oi_5m*.csv*",
+    "backtest_data/auto_okx_*/okx_btc_oi_1h*.csv*",
+    "backtest_data/auto_okx_*/okx_btc_lsratio_5m*.csv*",
+    "backtest_data/auto_okx_*/okx_btc_lsratio_1h*.csv*"
+  ],
+  "source": "OKX public REST, no auth: /api/v5/rubik/stat/contracts/open-interest-volume (ccy=BTC, period=5m|1H) and /api/v5/rubik/stat/contracts/long-short-account-ratio (same params) -- see scripts/fetch_okx.py",
+  "retention": "the rubik endpoints return a fixed-depth window only (no paging further back -- verified empirically in fetch_okx.py) so each run's file is whatever depth OKX currently returns; backtest_data/okx_btc_*_<date>.csv and backtest_data/auto_okx_*/ are permanent dated snapshots that are the only way to accumulate history beyond OKX's own window.",
+  "file_groups": {
+    "okx_btc_oi_5m": {
+      "columns": {
+        "ts": {"meaning": "bar time (OKX's own ms-epoch timestamp for the period)", "unit": "UTC datetime (pandas to_datetime of the epoch-ms field)", "tz": "UTC", "notes": null},
+        "oi": {"meaning": "open interest at ts", "unit": "as returned by open-interest-volume (contracts/notional per OKX's own convention for this endpoint)", "tz": null, "notes": null},
+        "volume": {"meaning": "volume over the period ending at ts", "unit": "same convention as oi", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["ts"]}
+    },
+    "okx_btc_oi_1h": {
+      "columns": {
+        "ts": {"meaning": "bar time (OKX's own ms-epoch timestamp for the period)", "unit": "UTC datetime", "tz": "UTC", "notes": null},
+        "oi": {"meaning": "open interest at ts", "unit": "as returned by open-interest-volume", "tz": null, "notes": null},
+        "volume": {"meaning": "volume over the period ending at ts", "unit": "same convention as oi", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["ts"]}
+    },
+    "okx_btc_lsratio_5m": {
+      "columns": {
+        "ts": {"meaning": "bar time (OKX's own ms-epoch timestamp for the period)", "unit": "UTC datetime", "tz": "UTC", "notes": null},
+        "ratio": {"meaning": "BTC long/short ACCOUNT ratio (longs/shorts)", "unit": "ratio", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["ts"]}
+    },
+    "okx_btc_lsratio_1h": {
+      "columns": {
+        "ts": {"meaning": "bar time (OKX's own ms-epoch timestamp for the period)", "unit": "UTC datetime", "tz": "UTC", "notes": null},
+        "ratio": {"meaning": "BTC long/short ACCOUNT ratio (longs/shorts)", "unit": "ratio", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["ts"]}
+    }
+  },
+  "known_defects": [
+    "the rubik endpoints do not support paging further back via after/before (verified empirically in fetch_okx.py -- both params return the identical response), so a single run's file depth is whatever OKX currently serves; long history only exists because successive dated snapshots were kept, not because one file spans it",
+    "oi/volume unit is whatever OKX's open-interest-volume endpoint returns for ccy=BTC and is not independently re-derived or cross-checked against public/open-interest in this file"
+  ]
+}

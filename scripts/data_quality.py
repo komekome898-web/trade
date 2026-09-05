@@ -46,6 +46,26 @@ Checks (per file, where the relevant column exists in the header):
 Nothing is EXCLUDED for a flagged row -- this only marks, per the plan's
 "除外はしない、印を付けるだけ" rule.
 
+A file that matches no schema/*.json `path_glob` at all lands in the
+"schema_undefined" dataset bucket (report["schema_undefined_files"] lists
+the paths) and gets ONLY the two structural checks that don't need
+documented column meaning: duplicate_keys (on an auto-detected key -- the
+full row, not just its timestamp column, since we don't know which columns
+actually identify a row) and gaps. The value-based checks (extreme_return,
+non_monotonic, crossed_book, maintenance_window, zero_volume,
+split_candidate, missing_columns) are skipped there rather than guessed at.
+
+A schema can additionally declare a `quality` block (dataset-level, and/or
+per file_groups entry -- the file_groups one wins, same lookup as
+`columns`):
+  - quality.group_by: [col, ...] -- for a file that interleaves several
+    independent time series (e.g. venues' quotes_*.csv.gz holds every
+    (venue, pair) ticker in one file), extreme_return / non_monotonic /
+    gaps are computed per group instead of over the raw row order.
+  - quality.unique_key: [col, ...] -- duplicate_keys uses these columns
+    instead of the timestamp column alone (e.g. bitFlyer executions can
+    print several distinct trades within one shared microsecond).
+
 Usage:
     python scripts/data_quality.py               # run checks, write QUALITY.json
     python scripts/data_quality.py --summary     # + print a table of counts
@@ -131,6 +151,19 @@ def match_dataset(rel_path: str, schemas: list[dict]) -> Optional[dict]:
     return None
 
 
+def _file_group_prefix_match(group_key: str, filename: str) -> bool:
+    """True if `filename` plausibly belongs to a `file_groups` entry keyed
+    by `group_key` (e.g. "quotes_YYYYMMDD.csv.gz", "executions_<date>.csv",
+    "trades_{venue}_{pair}_YYYYMMDD.csv.gz"), matched on the stable literal
+    prefix before any placeholder/wildcard token -- "{", "<", "*", or the
+    literal "YYYYMMDD" example token, whichever comes first."""
+    prefix = group_key.split("YYYYMMDD")[0].split("<")[0].split("*")[0].split("{")[0]
+    prefix = prefix.strip()
+    if not prefix:
+        return False
+    return filename.startswith(prefix.split("/")[-1].split(" ")[0])
+
+
 def schema_columns_for(schema: dict, filename: str) -> Optional[set]:
     """Flatten the documented column names relevant to this file: the
     dataset-level `columns` dict, plus any `file_groups` entry whose key
@@ -143,12 +176,7 @@ def schema_columns_for(schema: dict, filename: str) -> Optional[set]:
     if isinstance(groups, dict):
         matched_any = False
         for group_key, group_val in groups.items():
-            # group_key looks like "quotes_YYYYMMDD.csv.gz" or a bare
-            # filename -- match on the stable literal prefix before any
-            # placeholder/wildcard token.
-            prefix = group_key.split("YYYYMMDD")[0].split("<")[0].split("*")[0]
-            prefix = prefix.strip()
-            if prefix and filename.startswith(prefix.split("/")[-1].split(" ")[0]):
+            if _file_group_prefix_match(group_key, filename):
                 gcols = group_val.get("columns") if isinstance(group_val, dict) else None
                 if isinstance(gcols, dict):
                     cols.update(gcols.keys())
@@ -160,9 +188,56 @@ def schema_columns_for(schema: dict, filename: str) -> Optional[set]:
     return cols
 
 
+def schema_quality_for(schema: Optional[dict], filename: str) -> dict:
+    """Merge dataset-level `quality` (group_by / unique_key) with any
+    matched `file_groups` entry's own `quality` (file-group keys win,
+    since bitflyer_tape/venues declare different keys per file shape
+    within one schema). Returns {} if schema is None or nothing declared."""
+    if schema is None:
+        return {}
+    quality: dict = dict(schema.get("quality") or {})
+    groups = schema.get("file_groups")
+    if isinstance(groups, dict):
+        for group_key, group_val in groups.items():
+            if _file_group_prefix_match(group_key, filename) and isinstance(group_val, dict):
+                gq = group_val.get("quality")
+                if isinstance(gq, dict):
+                    quality.update(gq)
+    return quality
+
+
 # --------------------------------------------------------------------------
 # per-file scan
 # --------------------------------------------------------------------------
+
+
+def _compute_gaps(groups: dict) -> tuple[int, Optional[float], list]:
+    """Per-group median-gap detection (see scan_file's `groups` state):
+    a group's own median inter-row delta sets its threshold, so one group's
+    cadence never contaminates another's (this is what quality.group_by
+    exists to isolate). Returns (total_count, smallest per-group median
+    seen, capped examples)."""
+    gap_count = 0
+    gap_median: Optional[float] = None
+    gap_examples: list = []
+    for gs in groups.values():
+        deltas = gs["deltas"]
+        if len(deltas) < 4:
+            continue
+        sorted_deltas = sorted(deltas)
+        median = sorted_deltas[len(sorted_deltas) // 2]
+        if median <= 0:
+            continue
+        gap_median = median if gap_median is None else min(gap_median, median)
+        threshold = median * GAP_MULTIPLIER
+        gaps_found = [(ri, d, ts) for ri, d, ts in gs["rows_with_dt"] if d > threshold]
+        gap_count += len(gaps_found)
+        if gaps_found and len(gap_examples) < MAX_EXAMPLES:
+            gap_examples.extend(
+                {"row": ri, "gap_seconds": d, "ts": ts}
+                for ri, d, ts in sorted(gaps_found, key=lambda x: -x[1])[:MAX_EXAMPLES - len(gap_examples)]
+            )
+    return gap_count, gap_median, gap_examples
 
 
 def _find_col(header_lower: list[str], candidates: list[str]) -> Optional[int]:
@@ -175,7 +250,26 @@ def _find_col(header_lower: list[str], candidates: list[str]) -> Optional[int]:
 def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
     """Run all applicable checks on one tabular file. Returns a dict of
     check_name -> {"count": int, "examples": [...]} for checks that fired
-    at least once, plus (optionally) "missing_columns"."""
+    at least once, plus (optionally) "missing_columns".
+
+    schema is None for a file with no schema/*.json match at all ("schema
+    _undefined" in run()'s report): in that case only the two STRUCTURAL
+    checks (duplicate_keys, gaps) run -- the value-based checks below
+    (extreme_return, non_monotonic, crossed_book, maintenance_window,
+    zero_volume, split_candidate) need documented column meaning to avoid
+    misfiring on a dataset we haven't actually looked at, so they are
+    skipped rather than guessed at.
+
+    A schema's `quality.group_by` (dataset- or file_group-level, see
+    schema_quality_for) names columns that split one file into several
+    independent time series (e.g. venues' quotes_*.csv.gz interleaves many
+    (venue, pair) tickers) -- extreme_return / non_monotonic / gaps are
+    then computed per group instead of over the raw row order, which would
+    otherwise manufacture bogus "extreme returns" out of jumping between
+    series. `quality.unique_key` names the columns that actually identify a
+    row (e.g. bitflyer executions: several prints can share a timestamp) --
+    duplicate_keys uses it instead of the timestamp column alone when set.
+    """
     result: dict[str, dict] = {}
     p = root / rel_path
     kind = il.tabular_kind(p.name)
@@ -184,6 +278,8 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
     fmt, gz = kind
     if fmt != "csv":
         return result  # jsonl checks are out of scope for these column-based rules
+
+    structural_only = schema is None
 
     try:
         with il.open_text(p, gz) as f:
@@ -210,6 +306,8 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                             ],
                         }
 
+            quality = schema_quality_for(schema, p.name)
+
             ts_idx = il.find_ts_column(header)
             spread_idx = _find_col(header_lower, ["spread_bps"])
             volume_idx = _find_col(header_lower, ["volume"])
@@ -219,51 +317,116 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                 ohlc_idx = {c: header_lower.index(c) for c in ("open", "high", "low", "close")}
             is_daily_ohlc = ohlc_idx is not None and ts_idx is not None and header_lower[ts_idx] == "date"
 
-            seen_ts: dict[str, int] = {}
+            # -- grouping (quality.group_by): only used to split extreme_return /
+            # non_monotonic / gaps into independent per-series tracking; falls
+            # back to a single implicit group ("_all") when undeclared or the
+            # named columns aren't actually in this file's header.
+            group_by_cols = [c for c in (quality.get("group_by") or []) if isinstance(c, str)]
+            group_idxs = (
+                [header_lower.index(c.lower()) for c in group_by_cols]
+                if group_by_cols and all(c.lower() in header_lower for c in group_by_cols)
+                else []
+            )
+
+            def _group_key(row: list[str]):
+                if not group_idxs:
+                    return "_all"
+                return tuple(row[i] if i < len(row) else "" for i in group_idxs)
+
+            # -- duplicate key (quality.unique_key): declared columns win;
+            # otherwise a schema_undefined file auto-detects the full row
+            # (an exact repeated row, not merely a repeated timestamp);
+            # otherwise fall back to the timestamp column alone (unchanged
+            # legacy behaviour for schemas that never opted in).
+            unique_key_cols = [c for c in (quality.get("unique_key") or []) if isinstance(c, str)]
+            key_idxs = (
+                [header_lower.index(c.lower()) for c in unique_key_cols]
+                if unique_key_cols and all(c.lower() in header_lower for c in unique_key_cols)
+                else []
+            )
+            if key_idxs:
+                dup_key_mode = "declared"
+            elif structural_only:
+                dup_key_mode = "auto_full_row"
+            elif ts_idx is not None:
+                dup_key_mode = "ts"
+            else:
+                dup_key_mode = None
+
+            def _dup_key(row: list[str]):
+                if dup_key_mode == "declared":
+                    return tuple(row[i] if i < len(row) else "" for i in key_idxs)
+                if dup_key_mode == "auto_full_row":
+                    return tuple(row)
+                if dup_key_mode == "ts":
+                    return row[ts_idx] if ts_idx < len(row) else None
+                return None
+
+            seen_keys: dict = {}
             dup_examples: list = []
-            non_monotonic_examples: list = []
-            non_monotonic_count = 0
-            gap_examples: list = []
             crossed_examples: list = []
             crossed_count = 0
             maint_examples: list = []
             maint_count = 0
-            extreme_examples: list = []
-            extreme_count = 0
             zero_vol_examples: list = []
             zero_vol_count = 0
             daily_rows: list[tuple[int, Optional[str], Optional[float]]] = []
 
-            prev_dt = None
-            prev_price = None
-            deltas: list[float] = []
-            rows_with_dt: list[tuple[float, list[str]]] = []
+            # per-group state for non_monotonic / extreme_return / gaps
+            groups: dict = {}
+
+            def _g(gkey):
+                return groups.setdefault(gkey, {
+                    "prev_dt": None, "prev_price": None,
+                    "deltas": [], "rows_with_dt": [],
+                })
+
+            non_monotonic_examples: list = []
+            non_monotonic_count = 0
+            extreme_examples: list = []
+            extreme_count = 0
 
             row_i = 0
             for row in reader:
                 row_i += 1
-                # duplicate keys
+                gkey = _group_key(row)
+                gs = _g(gkey)
+                group_tag = {} if not group_idxs else {"group": dict(zip(group_by_cols, gkey))}
+
+                # duplicate keys (structural -- ungrouped, whole-file)
+                if dup_key_mode is not None:
+                    kv = _dup_key(row)
+                    non_empty = kv not in (None, "") if not isinstance(kv, tuple) else any(v not in (None, "") for v in kv)
+                    if non_empty:
+                        seen_keys[kv] = seen_keys.get(kv, 0) + 1
+                        if seen_keys[kv] == 2 and len(dup_examples) < MAX_EXAMPLES:
+                            ex = {"row": row_i}
+                            if dup_key_mode == "ts":
+                                ex["ts"] = kv
+                            else:
+                                ex["key"] = list(kv)
+                            dup_examples.append(ex)
+
                 if ts_idx is not None and ts_idx < len(row):
                     raw_ts = row[ts_idx]
-                    if raw_ts:
-                        seen_ts[raw_ts] = seen_ts.get(raw_ts, 0) + 1
-                        if seen_ts[raw_ts] == 2 and len(dup_examples) < MAX_EXAMPLES:
-                            dup_examples.append({"row": row_i, "ts": raw_ts})
-
                     dt = il.parse_ts(raw_ts)
                     if dt is not None:
-                        if prev_dt is not None:
-                            if dt < prev_dt:
+                        if not structural_only and gs["prev_dt"] is not None:
+                            if dt < gs["prev_dt"]:
                                 non_monotonic_count += 1
                                 if len(non_monotonic_examples) < MAX_EXAMPLES:
                                     non_monotonic_examples.append(
-                                        {"row": row_i, "prev_ts": prev_dt.isoformat(), "ts": dt.isoformat()}
+                                        {"row": row_i, "prev_ts": gs["prev_dt"].isoformat(), "ts": dt.isoformat(), **group_tag}
                                     )
-                            delta = (dt - prev_dt).total_seconds()
+                        if gs["prev_dt"] is not None:
+                            delta = (dt - gs["prev_dt"]).total_seconds()
                             if delta > 0:
-                                deltas.append(delta)
-                                rows_with_dt.append((row_i, delta, dt.isoformat()))
-                        prev_dt = dt
+                                gs["deltas"].append(delta)
+                                gs["rows_with_dt"].append((row_i, delta, dt.isoformat()))
+                        gs["prev_dt"] = dt
+
+                if structural_only:
+                    continue  # everything below is a value-based check needing a documented schema
 
                 # crossed book
                 if spread_idx is not None and spread_idx < len(row):
@@ -304,20 +467,22 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                                 daily_close = None
                             daily_rows.append((row_i, dt2.isoformat(), daily_close))
 
-                # extreme single-step return
+                # extreme single-step return (per group)
                 if price_idx is not None and price_idx < len(row):
                     try:
                         pv = float(row[price_idx])
                     except (ValueError, TypeError):
                         pv = None
                     if pv is not None:
-                        if prev_price not in (None, 0) and pv != 0:
-                            ret = (pv - prev_price) / prev_price
+                        if gs["prev_price"] not in (None, 0) and pv != 0:
+                            ret = (pv - gs["prev_price"]) / gs["prev_price"]
                             if abs(ret) > EXTREME_RETURN_FRAC:
                                 extreme_count += 1
                                 if len(extreme_examples) < MAX_EXAMPLES:
-                                    extreme_examples.append({"row": row_i, "prev": prev_price, "value": pv, "return": ret})
-                        prev_price = pv
+                                    extreme_examples.append(
+                                        {"row": row_i, "prev": gs["prev_price"], "value": pv, "return": ret, **group_tag}
+                                    )
+                        gs["prev_price"] = pv
 
                 # zero volume
                 if volume_idx is not None and volume_idx < len(row):
@@ -330,9 +495,16 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                         if len(zero_vol_examples) < MAX_EXAMPLES:
                             zero_vol_examples.append({"row": row_i, "ts": row[ts_idx] if ts_idx is not None and ts_idx < len(row) else None})
 
-            dup_count = sum(1 for v in seen_ts.values() if v > 1)
+            dup_count = sum(1 for v in seen_keys.values() if v > 1)
             if dup_count:
                 result["duplicate_keys"] = {"count": dup_count, "examples": dup_examples}
+
+            if structural_only:
+                gap_count, gap_median, gap_examples = _compute_gaps(groups)
+                if gap_count:
+                    result["gaps"] = {"count": gap_count, "median_gap_seconds": gap_median, "examples": gap_examples}
+                return result
+
             if non_monotonic_count:
                 result["non_monotonic"] = {"count": non_monotonic_count, "examples": non_monotonic_examples}
             if crossed_count:
@@ -375,22 +547,13 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                 if split_count:
                     result["split_candidate"] = {"count": split_count, "examples": split_examples}
 
-            if len(deltas) >= 4:
-                sorted_deltas = sorted(deltas)
-                median = sorted_deltas[len(sorted_deltas) // 2]
-                if median > 0:
-                    threshold = median * GAP_MULTIPLIER
-                    gaps_found = [(ri, d, ts) for ri, d, ts in rows_with_dt if d > threshold]
-                    if gaps_found:
-                        gap_examples = [
-                            {"row": ri, "gap_seconds": d, "ts": ts}
-                            for ri, d, ts in sorted(gaps_found, key=lambda x: -x[1])[:MAX_EXAMPLES]
-                        ]
-                        result["gaps"] = {
-                            "count": len(gaps_found),
-                            "median_gap_seconds": median,
-                            "examples": gap_examples,
-                        }
+            gap_count, gap_median, gap_examples = _compute_gaps(groups)
+            if gap_count:
+                result["gaps"] = {
+                    "count": gap_count,
+                    "median_gap_seconds": gap_median,
+                    "examples": gap_examples,
+                }
     except (OSError, gzip.BadGzipFile, csv.Error) as exc:
         result["scan_error"] = {"count": 1, "examples": [{"error": f"{type(exc).__name__}: {exc}"}]}
 
@@ -408,7 +571,7 @@ def run(root: Path) -> dict:
     schemas = load_schemas(root)
 
     datasets: dict[str, dict] = {}
-    unmatched: list[str] = []
+    schema_undefined: list[str] = []
 
     for rel_path, rec in sorted(index.items()):
         if rec.get("status") != "present":
@@ -418,10 +581,10 @@ def run(root: Path) -> dict:
 
         schema = match_dataset(rel_path, schemas)
         if schema is None:
-            unmatched.append(rel_path)
-            dataset_name = "_unmatched"
+            schema_undefined.append(rel_path)
+            dataset_name = "schema_undefined"
         else:
-            dataset_name = schema.get("dataset", "_unmatched")
+            dataset_name = schema.get("dataset", "schema_undefined")
 
         d = datasets.setdefault(dataset_name, {"files_checked": 0, "files_flagged": 0, "checks": {}})
         d["files_checked"] += 1
@@ -441,7 +604,8 @@ def run(root: Path) -> dict:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "ledger_source": str(latest_path.relative_to(root)) if latest_path.exists() else None,
         "datasets": datasets,
-        "unmatched_files": sorted(set(unmatched)),
+        "schema_undefined_files": sorted(set(schema_undefined)),
+        "schema_undefined_count": len(set(schema_undefined)),
     }
     return report
 
@@ -476,8 +640,9 @@ def print_summary(report: dict) -> None:
     for row in rows_out:
         print(fmt_row(row))
 
-    if report["unmatched_files"]:
-        print(f"\n{len(report['unmatched_files'])} tabular files not matched to any schema/*.json dataset (see unmatched_files in QUALITY.json)")
+    if report["schema_undefined_files"]:
+        print(f"\n{len(report['schema_undefined_files'])} tabular files not matched to any schema/*.json dataset "
+              f"(structural checks only -- see schema_undefined_files in QUALITY.json)")
 
     print("\nchecks by type (across all datasets):")
     by_check: dict[str, int] = {}
