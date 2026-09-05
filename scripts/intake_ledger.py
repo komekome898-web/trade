@@ -58,7 +58,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ROOT_NAMES = ["data", "paper_logs", "backtest_data", "data/archive"]
 
 # Ledger's own output files live under data/ — never treat them as data.
-SELF_FILES = {"data/INTAKE.jsonl", "data/INTAKE_latest.json", "data/QUALITY.json"}
+SELF_FILES = {"data/INTAKE.jsonl", "data/INTAKE_latest.json", "data/QUALITY.json",
+              "data/WS_GZ_LISTING.json", "data/SNAPSHOT_VERIFY.json"}
 
 SKIP_DIR_NAMES = {"__pycache__", ".git"}
 

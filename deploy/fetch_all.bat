@@ -38,4 +38,7 @@ rem data\archive\) MUST run before data_quality.py, which only reads that index
 rem and never re-walks the filesystem itself. Both are read-only over the data
 rem they inventory/check -- neither ever writes, moves or deletes a data file.
 ".venv\Scripts\python.exe" "scripts\intake_ledger.py" >> "logs\fetch.out.log" 2>&1
+rem Read-only listing of every data\ws recording (member count, complete?, recoverable
+rem rows) -> data\WS_GZ_LISTING.json; shared by share_logs.bat (DATA_QA_CHECKLIST item 6).
+".venv\Scripts\python.exe" "scripts\repair_gz_listing.py" --json "data\WS_GZ_LISTING.json" >> "logs\fetch.out.log" 2>&1
 ".venv\Scripts\python.exe" "scripts\data_quality.py" >> "logs\fetch.out.log" 2>&1

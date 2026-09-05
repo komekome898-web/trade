@@ -57,6 +57,8 @@ echo [share_logs] copying ledger / quality report (if present)
 if exist data\INTAKE_latest.json copy /Y data\INTAKE_latest.json paper_logs\ >nul 2>&1
 if exist data\INTAKE.jsonl       copy /Y data\INTAKE.jsonl       paper_logs\ >nul 2>&1
 if exist data\QUALITY.json       copy /Y data\QUALITY.json       paper_logs\ >nul 2>&1
+if exist data\WS_GZ_LISTING.json copy /Y data\WS_GZ_LISTING.json paper_logs\ >nul 2>&1
+if exist data\SNAPSHOT_VERIFY.json copy /Y data\SNAPSHOT_VERIFY.json paper_logs\ >nul 2>&1
 rem data\archive\ (owner PC only, git-excluded) is too large to share by
 rem content -- share a LISTING only (QA_PLAN_2026-09.md section 1-2 item 7).
 if exist data\archive dir /-C data\archive > paper_logs\archive_listing.txt 2>nul
