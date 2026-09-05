@@ -188,8 +188,14 @@ def _last_parseable(values) -> Optional[str]:
 
 
 def scan_csv(path: Path, gz: bool, cap: Optional[int]):
+    """Returns (row_count, first_ts, last_ts, truncated). A gzip member
+    without its end-of-stream marker (live WS recorder, or a cut-off
+    transfer) raises EOFError partway through the `for row in reader` loop
+    — everything read before that point is still valid data, so it is kept
+    and returned (truncated=True) rather than discarded."""
     row_count = 0
     ts_col = None
+    truncated = False
     head_vals: list[str] = []
     tail_vals = deque(maxlen=cap) if cap else []
     with open_text(path, gz) as f:
@@ -197,49 +203,61 @@ def scan_csv(path: Path, gz: bool, cap: Optional[int]):
         try:
             header = next(reader)
         except StopIteration:
-            return 0, None, None
+            return 0, None, None, False
+        except EOFError:
+            return 0, None, None, True
         ts_col = find_ts_column(header)
-        for row in reader:
-            row_count += 1
-            if ts_col is not None and ts_col < len(row):
-                val = row[ts_col]
-                if cap is None or len(head_vals) < cap:
-                    head_vals.append(val)
-                tail_vals.append(val)
+        try:
+            for row in reader:
+                row_count += 1
+                if ts_col is not None and ts_col < len(row):
+                    val = row[ts_col]
+                    if cap is None or len(head_vals) < cap:
+                        head_vals.append(val)
+                    tail_vals.append(val)
+        except EOFError:
+            truncated = True  # partial read kept — see docstring
     if ts_col is None:
-        return row_count, None, None
-    return row_count, _first_parseable(head_vals), _last_parseable(tail_vals)
+        return row_count, None, None, truncated
+    return row_count, _first_parseable(head_vals), _last_parseable(tail_vals), truncated
 
 
 def scan_jsonl(path: Path, gz: bool, cap: Optional[int]):
+    """Returns (row_count, first_ts, last_ts, truncated). See scan_csv's
+    docstring on EOFError from a truncated gzip member: rows read so far
+    are kept and truncated=True is reported rather than raising."""
     row_count = 0
     ts_key: Optional[str] = None
     ts_key_resolved = False
+    truncated = False
     head_vals: list[Any] = []
     tail_vals = deque(maxlen=cap) if cap else []
     with open_text(path, gz) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            row_count += 1
-            try:
-                obj = json.loads(line)
-            except (json.JSONDecodeError, ValueError):
-                continue
-            if not isinstance(obj, dict):
-                continue
-            if not ts_key_resolved:
-                ts_key = find_ts_key(obj)
-                ts_key_resolved = True
-            if ts_key is not None and ts_key in obj:
-                val = obj[ts_key]
-                if cap is None or len(head_vals) < cap:
-                    head_vals.append(val)
-                tail_vals.append(val)
+        try:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                row_count += 1
+                try:
+                    obj = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+                if not isinstance(obj, dict):
+                    continue
+                if not ts_key_resolved:
+                    ts_key = find_ts_key(obj)
+                    ts_key_resolved = True
+                if ts_key is not None and ts_key in obj:
+                    val = obj[ts_key]
+                    if cap is None or len(head_vals) < cap:
+                        head_vals.append(val)
+                    tail_vals.append(val)
+        except EOFError:
+            truncated = True  # partial read kept — see docstring
     if ts_key is None:
-        return row_count, None, None
-    return row_count, _first_parseable(head_vals), _last_parseable(tail_vals)
+        return row_count, None, None, truncated
+    return row_count, _first_parseable(head_vals), _last_parseable(tail_vals), truncated
 
 
 # --------------------------------------------------------------------------
@@ -292,16 +310,24 @@ def scan_one(rel: str, p: Path, cap: Optional[int]) -> dict:
         fmt, gz = kind
         try:
             if fmt == "csv":
-                row_count, first_ts, last_ts = scan_csv(p, gz, cap)
+                row_count, first_ts, last_ts, truncated = scan_csv(p, gz, cap)
             else:
-                row_count, first_ts, last_ts = scan_jsonl(p, gz, cap)
+                row_count, first_ts, last_ts, truncated = scan_jsonl(p, gz, cap)
             rec["row_count"] = row_count
             rec["first_ts"] = first_ts
             rec["last_ts"] = last_ts
+            if truncated:
+                # A gzip member without its end-of-stream marker: the file
+                # is still being written (live WS recorder) or was cut off.
+                # scan_csv/scan_jsonl already kept the partial counts read
+                # before the cutoff — just flag the row, never abort the
+                # ledger and never drop what was read.
+                rec["scan_error"] = "EOFError (truncated/in-progress gzip): partial read kept"
+                rec["truncated"] = True
         except EOFError as exc:
-            # A gzip member without its end-of-stream marker: the file is
-            # still being written (live WS recorder) or was cut off. Keep the
-            # partial counts and mark the row; never abort the ledger.
+            # Defense in depth: something raised EOFError outside the
+            # scan_csv/scan_jsonl read loops (e.g. while opening). No
+            # partial counts are available in that case.
             rec["scan_error"] = f"EOFError (truncated/in-progress gzip): {exc}"
             rec["truncated"] = True
         except (OSError, gzip.BadGzipFile, csv.Error) as exc:

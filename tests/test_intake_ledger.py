@@ -197,10 +197,11 @@ def test_default_cap_still_finds_boundary_timestamps_on_large_file(tmp_path: Pat
         lines.append(f"2026-01-01T{i % 24:02d}:00:{i % 60:02d}Z,{i}")
     (tmp_path / "data" / "big.csv").write_text("\n".join(lines) + "\n")
 
-    row_count, first_ts, last_ts = il.scan_csv(tmp_path / "data" / "big.csv", gz=False, cap=il.DEFAULT_TS_CAP)
+    row_count, first_ts, last_ts, truncated = il.scan_csv(tmp_path / "data" / "big.csv", gz=False, cap=il.DEFAULT_TS_CAP)
     assert row_count == 5000
     assert first_ts is not None
     assert last_ts is not None
+    assert truncated is False
 
 
 def test_full_mode_scans_without_cap(tmp_path: Path):
@@ -213,10 +214,84 @@ def test_full_mode_scans_without_cap(tmp_path: Path):
     lines.append("2026-01-01T00:00:00Z,end")
     (tmp_path / "data" / "tail.csv").write_text("\n".join(lines) + "\n")
 
-    row_count, first_ts, last_ts = il.scan_csv(tmp_path / "data" / "tail.csv", gz=False, cap=None)
+    row_count, first_ts, last_ts, truncated = il.scan_csv(tmp_path / "data" / "tail.csv", gz=False, cap=None)
     assert row_count == 3001
     assert first_ts == last_ts  # only one parseable value anywhere in the file
     assert first_ts is not None
+    assert truncated is False
+
+
+# ---- truncated gzip (multi-member, last member cut off mid-write) -------
+
+
+def _multi_member_truncated_gz(path: Path, complete_members: list[str], last_member_text: str,
+                               chop_bytes: int = 15) -> None:
+    """Write N complete gzip members, then a final member whose deflate
+    stream is cut off before its end-of-stream marker — the shape a live
+    WS recorder leaves behind when killed mid-flush (see
+    src/bot/market_data/realtime.py)."""
+    with gzip.open(path, "wb") as f:
+        f.write(complete_members[0].encode("utf-8"))
+    for text in complete_members[1:]:
+        with gzip.open(path, "ab") as f:
+            f.write(text.encode("utf-8"))
+    good_len = path.stat().st_size
+    with gzip.open(path, "ab") as f:
+        f.write(last_member_text.encode("utf-8"))
+    raw = path.read_bytes()
+    assert len(raw) > good_len + chop_bytes  # sanity: a member was actually added
+    path.write_bytes(raw[: len(raw) - chop_bytes])
+
+
+def test_truncated_multi_member_csv_gz_yields_partial_count_and_truncated_flag(tmp_path: Path):
+    path = tmp_path / "cut.csv.gz"
+    header_and_good_rows = "ts,v\n" + "".join(
+        f"2026-01-01T00:00:{i:02d}Z,{i}\n" for i in range(5))
+    last_member_rows = "".join(
+        f"2026-01-01T00:01:{i:02d}Z,{100 + i}\n" for i in range(50))
+    _multi_member_truncated_gz(path, [header_and_good_rows], last_member_rows)
+
+    with pytest.raises(EOFError):
+        # sanity check the fixture actually reproduces a truncated read
+        with gzip.open(path, "rt") as f:
+            f.read()
+
+    row_count, first_ts, last_ts, truncated = il.scan_csv(path, gz=True, cap=None)
+    assert truncated is True
+    assert row_count is not None and row_count >= 5  # the complete member's rows
+    assert first_ts is not None
+
+
+def test_truncated_jsonl_gz_yields_partial_count_and_truncated_flag(tmp_path: Path):
+    path = tmp_path / "cut.jsonl.gz"
+    good_lines = "".join(
+        json.dumps({"ts": 1767225600.0 + i, "x": i}) + "\n" for i in range(5))
+    last_member_lines = "".join(
+        json.dumps({"ts": 1767225700.0 + i, "x": 100 + i}) + "\n" for i in range(50))
+    _multi_member_truncated_gz(path, [good_lines], last_member_lines)
+
+    row_count, first_ts, last_ts, truncated = il.scan_jsonl(path, gz=True, cap=None)
+    assert truncated is True
+    assert row_count is not None and row_count >= 5
+    assert first_ts is not None
+
+
+def test_scan_one_marks_truncated_and_keeps_partial_row_count(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    path = tmp_path / "data" / "live_20260101_000000.jsonl.gz"
+    good_lines = "".join(
+        json.dumps({"ts": 1767225600.0 + i, "x": i}) + "\n" for i in range(7))
+    last_member_lines = "".join(
+        json.dumps({"ts": 1767225700.0 + i, "x": 100 + i}) + "\n" for i in range(50))
+    _multi_member_truncated_gz(path, [good_lines], last_member_lines)
+
+    rec = il.scan_one("data/live_20260101_000000.jsonl.gz", path, cap=None)
+    assert rec["truncated"] is True
+    # partial count kept (not None as it used to be) — some of the final,
+    # incomplete member's lines decompress fine before the cutoff bites.
+    assert rec["row_count"] is not None and rec["row_count"] >= 7
+    assert rec["first_ts"] is not None
+    assert "scan_error" in rec
 
 
 # ---- summary ---------------------------------------------------------
