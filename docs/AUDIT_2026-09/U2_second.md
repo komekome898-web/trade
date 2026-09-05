@@ -1,0 +1,61 @@
+# Second blind audit — Packet U (ヒゲ逆張り・レンジ逆張り・アンカー乖離逆張りの棄却)
+
+Claims audited: R5, R6, R7 (from packet U row, `00_packets.md` line 269 + the three claim rows).
+Files read: `backtest_data/candles_FX_BTC_JPY_20260820.csv` (21d: 2026-07-30→08-20, 30251 rows, 1min),
+`backtest_data/candles_FX_BTC_JPY_30d_20260820.csv` (30d: 07-21→08-20, 43206 rows), `.../candles_FX_BTC_JPY_31d_20260823.csv.gz`
+(31d: 07-23→08-23, 44657 rows), `config/products.yaml`, `config/config.yaml`, `backtest_data/flow_FX_BTC_JPY_20260820.csv` (header only).
+Own script: `audit_U2.py` in scratchpad, own strategy implementations (not the repo's rejected code — I did not open
+`src/bot/strategy/`). Cost basis used: `config/products.yaml` FX_BTC_JPY `taker_fee_pct=0.0`, `config/config.yaml`
+`costs.slippage_pct=0.05%`(5bps one-way) → round-trip = **10bps**. Note: `config.yaml`'s generic `costs.taker_fee_pct=0.15%`
+conflicts with the product-specific 0.0% (see 前提の誤り). No bid/ask data exists in any file I'm permitted for this packet,
+so half-spread could not be measured directly; 10bps RT is my best derivable floor, likely a *lower* bound.
+
+## R5
+Claim: 15m wick-reversal, mult=2.0, gentle+limit exec: passes 21d train, collapses on fresh data (overfit).
+1. Denominator: two operationalizations tried on 21d-train (n=30251 1min bars → 2016 15m bars). (a) wick > mult×ATR14(15m): only n=3 signals in 21d train, n=4 in 30d, n=2 in the truly-unseen 3-day tail (08-20→08-23) beyond the 30d file. (b) wick > mult×body (floor = 5% of rolling median range): n=560 signals in 21d train.
+2. Controls: shuffle placebo (500 draws, n=3) mean=+0.73bps sd=18.0, actual train mean=-38.7bps (~2.2σ, n too small for real inference). Sign-reversed = +38.7bps (mechanically, not independent evidence with n=3).
+3. Translation: (a) train mean -38.7bps, net of 10bps RT = -48.7bps/trade; fresh tail (n=2) +1.1bps — not comparable, both underpowered. (b) train mean -0.35bps at mult=2.0 (n=560) — already ~0 pre-cost, so net ≈ -10bps/trade.
+4. Regime: not run (n too small under (a); (b) shows no state where mean is far from 0 — see R7's vol-tercile check, same anchor logic applies qualitatively).
+5. Definition side-effects: mult-sweep on (b) train21: mult=1.0 n=927 mean=-1.37bps; 1.5 n=690 mean=+0.12bps; 2.0 n=560 mean=-0.35bps; 2.5 n=459 mean=-2.14bps; 3.0 n=390 mean=-1.37bps — no mult gives a train-positive edge that could plausibly "pass" a gate before decaying. Under (a) the "pass" only exists because n=3 and one large adverse move dominates the mean; this is not a stable in-sample edge, it is noise.
+6. Data validity: no timestamp gaps, no dup ts in any of the 3 files; max single-1min move 219.5bps (present in all 3 overlapping files — same underlying event, not an artifact).
+7. Selection contamination: 6-point mult sweep on definition (b) never clears +costs; definition (a) is a 2-parameter (mult×ATR-window) choice that happens to produce n=3 — a textbook case of the "free parameters create a lucky small-n cell" failure mode the claim itself is about.
+8. Simplest alternative: under (b), the near-zero mean at every mult indicates no genuine wick-reversion signal net of ordinary intrabar noise — no need to invoke vol-clustering etc.
+9. Consistency: (b) is stable across mult 1.0–3.0 (all within ±2bps, all sub-cost). (a) is not reproducible in any consistent way (n=2–4 across three overlapping windows, sign flips).
+10. Falsification: with n=560 (def. b) and sd≈36bps, se≈1.5bps, MDE95≈3bps — a real edge bigger than ~3bps would have been visible and wasn't. With n=3 (def. a) MDE95 is enormous (>20bps) — that cell cannot falsify or confirm anything on its own.
+Claimed vs recomputed: claim says "21d pass → fresh collapse (overfit)"; my own reasonable operationalization (b) never passes in-sample at all (mean≈0, not positive), and operationalization (a) reproducing the narrow definition that might "pass" has only 2-4 signals per window — too sparse for either auditor to independently confirm the specific pass→collapse *mechanism*, though the *conclusion* (no exploitable wick-reversal edge survives) is corroborated by (b) at every mult tested.
+Verdict: 数値差異(結論維持)
+
+## R6
+Claim: range-reversal (raw/gentle+limit+storm-stop/exec-reversed), all execution polarities negative (-3.30/-9.12bps).
+1. Denominator: Donchian(60min)/band=10% on full30 (43206 1min bars, 07-21→08-20), horizon=15min: contrarian(fade) n=8269, reversed(momentum) n=8269 (same bars, opposite sign by construction).
+2. Controls: sign-reversed IS the "reversed" polarity here — contrarian raw=-0.58bps, reversed raw=+0.58bps (exact mirror, as expected for a pure sign flip on the same signal set — this is mechanical, not new evidence, but it confirms no directional bug). t-stats: contrarian t=-2.75, reversed t=+2.75 (n=8269) — small but statistically non-zero raw effect.
+3. Translation: RT cost=10bps (derived above). Net: contrarian -0.58-10=-10.58bps; reversed +0.58-10=-9.42bps. Both negative, matching claim's "全執行極性で負" (claim's own numbers -3.30/-9.12bps are same order of magnitude and same sign for the momentum/reversed side; my contrarian side is more negative than claim's -3.30 because my RT-cost floor (10bps) is higher than whatever the claim used).
+4. Regime: lookback robustness — 30min lookback on full30: n=9081, mean=-0.33bps (same sign, smaller magnitude); 60min lookback on train21 only: n=5796, mean=-0.71bps. Effect direction stable across lookback and subwindow.
+5. Definition side-effects: band=10% threshold controls only signal frequency (n moves 5796→9081 across variants) without flipping sign — no evidence the definition smuggles in a favorable subset.
+6. Data validity: same clean series as R5 (no gaps/dups); large single moves present but not concentrated at signal timestamps enough to flip the sign (effect stable across lookback variants).
+7. Selection contamination: 2 lookbacks × 1 band tested here, both same-signed; a 500-permutation label-shuffle placebo at this n (8269) would center near 0 with se≈0.21bps (from t-stat above) — the observed raw effect (-0.58bps) sits ~2.7 se from that, i.e. plausibly a small genuine (if uneconomic) reversion, not a fluke of one lucky cell.
+8. Simplest alternative: bid-ask bounce would predict a spuriously *stronger* apparent reversal at short horizons; magnitude here (<1bps raw) is too small to be a major bounce artifact and is dwarfed by the cost floor regardless.
+9. Consistency: sign and magnitude order (~0.3-0.7bps raw, both negative net) hold across 2 lookbacks and 2 sub-periods (train21 vs full30) — consistent.
+10. Falsification: n=8269, sd=19.3bps → se=0.21bps, MDE95≈0.42bps. A raw edge of even 3-4bps (nowhere near covering 10bps cost) would have been clearly detectable and wasn't observed at either polarity.
+Claimed vs recomputed: claim -3.30bps / -9.12bps (exec polarities) net; mine -10.58bps / -9.42bps net (own signal def, own cost floor). Same sign, same conclusion (uneconomic both ways), moderate magnitude difference attributable to different band/lookback/cost assumptions.
+Verdict: 数値差異(結論維持)
+
+## R7
+Claim: anchor-deviation-reversal (v1/v2, gentle+limit), raw fade effect does not exceed 6.3bps round-trip cost.
+1. Denominator: SMA60(1min) anchor, full30 (43206 bars), horizon=15min, z-threshold sweep: z=1.5 n=12957, z=2.0 n=5798, z=2.5 n=2379, z=3.0 n=874.
+2. Controls: vol-tercile conditional (z=2.0, n=5798 split into terciles of trailing 60min realized vol): low n=2099 mean=+0.32bps, mid n=1750 mean=+0.32bps, high n=1949 mean=-2.30bps — no regime shows an economically usable positive edge; high-vol regime is *more* negative, opposite of what a genuine exploitable state-dependent edge would need.
+3. Translation: RT cost=10bps (my derivation) vs claim's quoted 6.3bps — raw effect at every z-threshold is between -0.56 and +0.06bps, i.e. essentially zero and nowhere near clearing either cost figure. Net at z=2.0: -0.56-10=-10.56bps.
+4. Regime: see (2); also horizon check z=2.0,h=5min: n=5808 mean=-0.02bps (still ~0); SMA120 anchor,h=15: n=6041 mean=-0.82bps (still far below cost either way).
+5. Definition side-effects: raw mean stays in a tight [-0.8, +0.3]bps band across z-thresholds 1.5-3.0, two SMA windows, and two horizons — the "no edge" finding is not an artifact of one threshold choice.
+6. Data validity: same clean 1min series; no gaps/dups affecting this window.
+7. Selection contamination: even taking the single most favorable cell across all variants tried (z=3.0, mean=+0.06bps, n=874), it's still ~2 orders of magnitude below the cost floor — a wider parameter search would not plausibly cross 6-10bps by chance in a mean-reverting series this liquid.
+8. Simplest alternative: not needed — effect is statistically indistinguishable from the ~0 level expected under pure noise/bid-ask bounce at this sampling rate; no separate explanatory mechanism required.
+9. Consistency: train21-only (SMA60,z=2.0,h=15): n=4043 mean=-0.40bps — same order and sign as full30 (-0.56bps); consistent across sub-period.
+10. Falsification: n=5798 (z=2.0), sd=20.15bps → se=0.27bps, t=-2.11, MDE95≈0.52bps. A raw edge anywhere near the claimed 6.3bps cost floor (let alone my 10bps) would be >10 se above what was observed — clearly would have been detected if present. This strongly falsifies "raw effect approaches or exceeds RT cost."
+Claimed vs recomputed: claim "raw fade effect doesn't exceed 6.3bps RT cost" ⇒ recomputed raw effect ≈ -0.6 to +0.1bps across all variants, i.e. even further below cost than the claim states (claim leaves open that it might be *close*; my numbers show it isn't close at all). Same conclusion, stronger margin.
+Verdict: 再現
+
+## 前提の誤り
+- premise: "round-trip cost ≈ 6.3bps" (used implicitly by R7 as the bar to clear) | source: claim text | what the data shows: no bid/ask or spread field exists in any candle/flow file usable for this packet, so the actual half-spread component of that number cannot be independently verified from this data; I substituted a 10bps RT floor from `config/config.yaml costs.slippage_pct` (5bps one-way) × 2, since `taker_fee_pct=0.0` for FX_BTC_JPY per `config/products.yaml` | direction of bias: if the true spread-based cost is in fact lower than 10bps, my rejections are conservative (stronger than needed) — does not change any verdict here, but a future claim that argues an edge of 3-8bps *does* clear cost would need real spread data, not this substitution | inherits: any claim in this packet family relying on a "raw effect vs RT cost" comparison without an order-book-derived spread.
+- premise: which fee number applies to FX_BTC_JPY | source: `config/config.yaml` | what the data shows: `config.yaml` carries two conflicting fee constants — a top-level comment and `product_code` block imply "0% taker fee" and `config/products.yaml` explicitly sets `FX_BTC_JPY.taker_fee_pct=0.0`, but a separate generic `costs: taker_fee_pct: 0.15` block also exists in the same file with a comment "verify real account fee via check_api.py" | direction of bias: if the generic 0.15% (15bps) block is what a fill-model actually applies, true RT cost could be ~40bps, making all three rejections in this packet even more strongly negative (no change of verdict, but changes the magnitude anyone should quote) | inherits: every cost-net calculation for FX_BTC_JPY strategies (composite.py's cost model, any backtest run without explicitly overriding costs from products.yaml).
+- premise: "21日訓練窓" as a specific, reproducible train/test split (R5) | source: packet U's stated data ("21日訓練窓と新鮮データでの構成乗り換わり") | what the data shows: the only 21-day-length file available (`candles_FX_BTC_JPY_20260820.csv`, despite its filename, spans 21 days) plausibly is the train window, and the 31d file's tail (08-20→08-23, only 3 days) is the only strictly-unseen "fresh" data available under this packet's data pointer — 3 days is too short to give a statistically meaningful post-hoc test of any signal as sparse as the wick-reversal definition produces (n=2-4) | direction of bias: cannot independently confirm or deny the specific "passed then collapsed" mechanism either way, only that no version of the strategy I built shows a stable in-sample edge to begin with | inherits: any other claim in the same lineage (d→g, j evaluation chain) that treats the 21d→fresh comparison as decisive.
