@@ -1,0 +1,325 @@
+# Provenance registry for cost/market constants used across the project
+# (QA_PLAN_2026-09.md §1-2 item 4).
+#
+# Rule: a bare-value constant is forbidden. Every entry below carries, at
+# minimum, `value`, `unit`, `source_type`, `notes`.
+#
+# source_type:
+#   primary_document -> official fee/spec page or press release. Requires
+#                        `source_url` and `verified_on` (date checked, or
+#                        the string "unverified (...)" with a reason).
+#   measured          -> derived from this repo's own data/scripts. Requires
+#                        `measured_by` (script or report path + data window)
+#                        and `verified_on`.
+#   assumed           -> not sourced from either of the above. May carry
+#                        `deprecated: true` + `reason` once superseded.
+#
+# Loader: src/bot/constants.py (load_constants(), require_source()).
+# Do not change values here to "fix" a strategy — this file only records
+# provenance for values that already exist in config/*.yaml or in audit
+# reports; changing a cost assumption is a research-protocol decision.
+
+bitflyer_fx_btc_jpy:
+  taker_fee_pct:
+    value: 0.0
+    unit: percent_of_notional
+    source_type: primary_document
+    source_url: "https://bitflyer.com/ja-jp/s/commission"
+    verified_on: "unverified (egress blocked): bitflyer.com returns HTTP 403/Akamai 'Access Denied' to this session's proxy IP on every path (root, /ja-jp/commission, /ja-jp/s/commission); lightning.bitflyer.com (same operator, docs subdomain) is reachable but its /docs pages do not carry the fee schedule text. Fee value cross-checked instead via docs/NOTE_CRYPTO_CFD_2026-08-20.md (official API docs quote: 'The product_code for BTC-CFD/JPY used in each API will be FX_BTC_JPY'; 手数料0%・レバレッジ最大2倍は変更なし) and confirmed as the value the live order path actually consumes."
+    measured_by: "config/products.yaml FX_BTC_JPY.taker_fee_pct=0.0 is read by src/bot/products.py:ProductSpec and used at src/bot/main.py order path; independently re-confirmed against the live 16-day tape in docs/AUDIT_2026-09/E2_cost_floor_maker_second.md (fee term = 0 in all three cost-floor methods)."
+    notes: >-
+      0% taker/maker fee for bitFlyer Crypto CFD (successor to Lightning FX,
+      discontinued 2024-03-28; API product_code FX_BTC_JPY unchanged). Do NOT
+      use config.yaml `costs.taker_fee_pct: 0.15` for this product — that is
+      a generic spot-tier default (see spot pairs in config/products.yaml)
+      never applied to FX_BTC_JPY; using it here was an audited error
+      (docs/AUDIT_2026-09/02_provenance_costs.md, E2_cost_floor_maker_second.md).
+
+  quoted_spread_median_bps:
+    value: 1.9
+    unit: bps
+    source_type: measured
+    measured_by: >-
+      docs/AUDIT_2026-09/E2_cost_floor_maker_second.md and
+      E3_maker_arbiter.md; tape
+      paper_logs/tape/{ticker,executions}_2026{0820..0904}.csv.gz,
+      2026-08-20 06:13Z .. 2026-09-04 12:32Z (16 days,
+      1,588,662-1,589,458 ticker/quote rows, cross-board board removed).
+    verified_on: "2026-09-05"
+    notes: >-
+      Median quoted (ticker) spread ≈1.91bps over the full 16-day tape;
+      1.95bps on the 2026-08-20..31 subset; 2.02bps from an independent
+      1s board_top5 snapshot series; 1.78bps on 5s board_round snapshots.
+      All cluster at ≈1.9bps. Supersedes the earlier single 4h-session
+      figure of 2.22bps (docs/RESEARCH_REPORT_2026-08-20g.md) — that number
+      is now judged "数値差異" (14-16% high), not wrong order of magnitude.
+
+  realized_taker_one_way_bps:
+    value: [1.0, 1.3]
+    unit: bps
+    source_type: measured
+    measured_by: >-
+      docs/AUDIT_2026-09/E2_cost_floor_maker_second.md, method (b)
+      "realized: fill price vs immediately-preceding mid", n=750,122
+      executions, same 16-day tape as quoted_spread_median_bps above.
+    verified_on: "2026-09-05"
+    notes: >-
+      One-way realized cost: mean 1.291bps / median 1.036bps /
+      volume-weighted 1.399bps (all executions); large orders
+      (size>=0.05BTC, n=84,478) give 1.461bps one-way with no
+      buy/sell asymmetry (1.280 vs 1.305bps). Independently, a
+      separate 31-day executions file (2026-07-23..08-23) gives a
+      1-minute BUY-VWAP minus SELL-VWAP of 0.99bps (a lower-bound
+      cross-check, different window).
+
+  realized_round_trip_bps:
+    value: [2.0, 2.6]
+    unit: bps
+    source_type: measured
+    measured_by: >-
+      docs/AUDIT_2026-09/E2_cost_floor_maker_second.md, three
+      independent methods on the same 16-day tape: (a) fee(0) +
+      quoted-spread median = 1.91bps; (b) realized fill-vs-mid,
+      volume-weighted = 2.58-2.80bps; (c) 0.01BTC board-walk,
+      median 2.16bps / mean 2.29bps (top-5 depth sufficient 99.90%
+      of the time). docs/AUDIT_2026-09/C_board_imbalance_taker.md
+      independently measures 1.77-1.91bps over the same window.
+    verified_on: "2026-09-05"
+    notes: >-
+      Current best-estimate taker round-trip cost floor for
+      FX_BTC_JPY. None of the three methods reproduces the deprecated
+      5.8-7.9bps floor below — see taker_round_trip_floor_bps_OLD.
+
+  taker_round_trip_floor_bps_OLD:
+    value: [5.8, 7.9]
+    unit: bps
+    source_type: assumed
+    deprecated: true
+    reason: "unmeasured 2bps/leg slippage (02_provenance_costs.md)"
+    verified_on: "2026-09-05 (deprecated by docs/AUDIT_2026-09/E2_cost_floor_maker_second.md and E3_maker_arbiter.md)"
+    notes: >-
+      docs/AUDIT_2026-09/02_provenance_costs.md traces every one of
+      5.8bps / 7.9bps / 3.96bps(side) / 3.2bps(side) and the "JFSA
+      venue floor map" back to one un-derived assumption — 2bps of
+      taker slippage per leg — first written with no measurement
+      shown in docs/RESEARCH_REPORT_2026-08-20d.md (2026-08-20),
+      then compounded with genuinely-measured spread figures across
+      KNOWLEDGE.md and several PREREG/RESEARCH_REPORT files. DO NOT
+      use for new judgment bars (research-protocol pre-registration);
+      kept here only so existing verdicts that cited it can be traced
+      (see 02_provenance_costs.md §4 "blast radius" table for the
+      list of claims that flip once the floor is corrected to ≈2bps).
+
+  funding_swap_daily_pct:
+    value: 0.06
+    unit: percent_of_notional_per_day
+    source_type: measured
+    measured_by: >-
+      docs/NOTE_CRYPTO_CFD_2026-08-20.md, via
+      /v1/getfundingrate + /v1/getfundingratehistory, 3-day sample
+      at note-writing time.
+    verified_on: "2026-08-20"
+    notes: >-
+      Funding rate settles 3x/day (UTC 05/13/21), cap +/-0.375%/
+      settlement. Measured mean |rate| ~=0.021%/settlement
+      ~=0.062%/day, sign both directions (not always a cost).
+      config/products.yaml FX_BTC_JPY.swap_daily_pct=0.06 models this
+      conservatively as an always-paid carry (slightly pessimistic).
+      This is a holding/carry cost, not a per-trade fee; irrelevant
+      for sub-day-hold round trips (see 02_provenance_costs.md §2).
+
+jpx_nikkei225_micro_futures:
+  fee_yen_per_contract_per_side:
+    value: 11
+    unit: yen_per_contract_per_side
+    source_type: primary_document
+    source_url: "https://kabu.com/cost/default.html"
+    verified_on: "2026-09-05"
+    notes: >-
+      三菱UFJ eスマート証券 (kabu.com), 日経225マイクロ先物 row = "11円"
+      (税込), no minute-count discount shown for micro. Cross-checked
+      by docs/SURVEY_JP_INDEX_FUTURES.md §1.3 against 松井証券(11円税込)/
+      楽天証券(11円税込) — broker fees converged after the 2023-07/08
+      cuts. 22円 round trip / 664,350円 avg notional per contract
+      (2026-07 JPX volume stats) = 0.331bps round trip.
+
+  tick_size_yen:
+    value: 5
+    unit: yen
+    source_type: primary_document
+    source_url: "https://www.jpx.co.jp/derivatives/products/domestic/225micro-futures/01.html"
+    verified_on: "2026-09-05"
+    notes: "JPX 日経225マイクロ先物 制度概要, 呼値の単位 = 5円."
+
+  multiplier_yen_per_point:
+    value: 10
+    unit: yen_per_index_point
+    source_type: primary_document
+    source_url: "https://www.jpx.co.jp/derivatives/products/domestic/225micro-futures/01.html"
+    verified_on: "2026-09-05"
+    notes: "JPX 日経225マイクロ先物 制度概要, 取引単位 = 日経平均株価×10円."
+
+jpx_cash_equity:
+  sor_commission_yen:
+    value: 0
+    unit: yen_per_trade
+    source_type: primary_document
+    source_url: "https://kabu.com/company/pressrelease/20260408_1.html"
+    verified_on: "2026-09-05"
+    notes: >-
+      三菱UFJ eスマート証券, "5/18予定 国内株式取引手数料無料化等のお知らせ"
+      (2026-04-08 press release). Effective 2026-05-18 (約定分):
+      国内株式取引手数料の無料化 for SOR orders. From 2026-05-16 (システム
+      メンテナンス後), SOR orders also gained 寄成/寄指/引成/引指/不成/IOC
+      execution-condition support (previously SOR could not use 寄成/引成),
+      so the 0-commission path covers opening/closing market orders too.
+      Cross-checked at https://kabu.com/item/stock/cost.html
+      ("無料で取引いただくにはSOR注文を選択いただく必要があります").
+
+  non_sor_fee_yen_by_notional:
+    value: {up_to_100000_yen: 55, up_to_200000_yen: 99, up_to_500000_yen: 115, over_500000_yen: 275}
+    unit: yen_per_trade
+    source_type: primary_document
+    source_url: "https://kabu.com/item/stock/cost.html"
+    verified_on: "2026-09-05"
+    notes: >-
+      Applies only to orders NOT routed via SOR (which is free per
+      sor_commission_yen above). Confirmed literal "55円/99円/115円/275円"
+      figures present on the page as of verification date; exact notional
+      breakpoints should be re-read from the live page before use in a
+      cost model, since brokers revise tables without notice.
+
+  etf_tick_size_yen_1000_3000_band:
+    value: 1
+    unit: yen
+    source_type: primary_document
+    source_url: "https://www.jpx.co.jp/equities/trading/domestic/07.html"
+    verified_on: "2026-09-05"
+    notes: >-
+      JPX 呼値の単位 table, "売買単位が1口のETF等(ETF、ETN及びレバレッジ商品)"
+      column: tick = 1円 at both the <=1,000円 and <=3,000円 price bands
+      (in fact 1円 through the <=10,000円 band; only "その他の銘柄" widens
+      tick size in this range).
+
+  etf_spread_bps:
+    value: null
+    unit: bps
+    source_type: assumed
+    measured: "none yet"
+    notes: >-
+      TODO: measure from kabu API board snapshots (kabuステーション PUSH
+      board data, per src/bot/jpx/kabu_client.py) once a recording script
+      exists. No repo script currently records JPX ETF board depth/spread;
+      docs/AUDIT_2026-09/02_provenance_costs.md flags "JPX ETFのコスト定数"
+      as a data-provenance gap. Do not use a value here until measured.
+
+  closing_auction_time_since_2024_11_05:
+    value: "15:30"
+    unit: JST_time
+    source_type: primary_document
+    source_url: "https://www.jpx.co.jp/corporate/news/news-releases/1030/20241105-01.html"
+    verified_on: "2026-09-05"
+    notes: >-
+      JPX press release "現物市場の取引時間の延伸が本日スタート"
+      (2024-11-05): 後場立会 extended 30 minutes, closing auction
+      ("クロージング・オークション") moved to 15:30 with a 15:25-15:30
+      pre-closing order-acceptance window (プレ・クロージング). Before
+      2024-11-05 the close was 15:00 (see docs/PREREG_overnight_onr.md:25
+      for the in-repo strategy-side note of the pre-2024-11-05 value).
+
+gmo_fx_usdjpy:
+  spread_sen:
+    value: 0.2
+    unit: sen (1/100 yen)
+    source_type: assumed
+    source_url: ""
+    verified_on: "unverified (egress blocked / no static content): https://www.gmo-fx.jp failed TLS CONNECT via the proxy (502); https://coin.z.com/jp/fx/ and /jp/service/fx/ return HTTP 200 but serve an empty client-side-rendered SPA shell with no fee/spread text reachable by a plain HTTP fetch — the actual spread table is drawn by JS after load and could not be confirmed. A WebSearch found the GMO Click Securities (a DIFFERENT company, https://www.click-sec.com/corp/guide/fxneo/commission_list/) FXネオ page instead, which is reachable, but that is not the 'GMO FX' brand named in this task and was not used to source this value."
+    notes: >-
+      Round-number figure carried in prior research notes as an assumed
+      typical USDJPY spread for a GMO-branded FX venue; not confirmed
+      against any primary page in this pass. Re-verify before using in
+      any judgment context (see require_source() in src/bot/constants.py).
+
+  fee_yen:
+    value: 0
+    unit: yen_per_trade
+    source_type: assumed
+    source_url: ""
+    verified_on: "unverified (egress blocked / no static content, see spread_sen above)"
+    notes: "Retail FX in Japan is conventionally spread-only (no separate commission); not independently confirmed for this venue in this pass."
+
+data_retention:
+  bitflyer_executions_days:
+    value: 31
+    unit: days
+    source_type: measured
+    measured_by: >-
+      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 1: live query
+      of GET /v1/executions?product_code=FX_BTC_JPY with `before=` at
+      id offsets; API itself returns
+      {"status":-156,"error_message":"Execution history is limited to
+      the most recent 31 days."} verbatim, confirmed live on the audit
+      date.
+    verified_on: "2026-09-04"
+    notes: "Hard server-enforced limit, not inferred from missing data. This is why backtest_data/ snapshots exist (31-day window cannot be a long-term store, see CLAUDE.md §2)."
+
+  okx_open_interest_1h_days:
+    value: 30
+    unit: days
+    source_type: measured
+    measured_by: >-
+      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 2:
+      GET /api/v5/rubik/stat/contracts/open-interest-volume,
+      period=1H, binary-searched begin/end boundary; returns data
+      through 30 days back, errors {"code":"50030","msg":"Illegal
+      time range"} at 31 days and beyond.
+    verified_on: "2026-09-04"
+    notes: "Hard wall for the 1H granularity of this specific endpoint (open-interest-volume). Do not generalize to the L-S ratio endpoint below, which behaves differently."
+
+  okx_open_interest_5m_days:
+    value: [2, 3]
+    unit: days
+    source_type: measured
+    measured_by: >-
+      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 3 (noted in
+      passing while testing the long-short-account-ratio-contract
+      endpoint): the 5m granularity errors at only ~2-3 days back,
+      much tighter than the 30d wall seen at 1H.
+    verified_on: "2026-09-04"
+    notes: "Confirms 'OKX retention' is granularity-dependent, not a single 30-day constant across all periods/endpoints."
+
+  okx_long_short_ratio_days:
+    value: [60, 90]
+    unit: days
+    source_type: measured
+    measured_by: >-
+      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 3:
+      GET /api/v5/rubik/stat/contracts/long-short-account-ratio-contract
+      (instId=BTC-USDT-SWAP, period=1H); does NOT hard-error at
+      30/31/32/60 days (still code 0, i.e. success) — data goes empty
+      (still code 0, not an error) somewhere between 60 and 90 days
+      back. No after/cursor pagination param exists on this endpoint.
+    verified_on: "2026-09-04"
+    notes: >-
+      Repo's prior "OKX ~=30日固定" note was accurate only for the
+      open-interest-volume endpoint; the L-S ratio endpoint has a
+      softer, further-out, empirically-bounded (not documented) limit.
+      Re-check periodically — this boundary is not stated in OKX docs,
+      only observed.
+
+  binance_vision_metrics_daily_only_since:
+    value: "2020-09-01"
+    unit: date
+    source_type: measured
+    measured_by: >-
+      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 4: S3
+      list-type=2 listing directly against the data.binance.vision
+      bucket. Monthly klines (BTCUSDT) exist 2017-08..2026-07 (216
+      keys). Monthly fundingRate (BTCUSDT futures/um) exist 2020-01..
+      2026-08 (160 keys). Monthly "metrics" folder has 0 keys — a
+      monthly metrics product does NOT exist; metrics (open interest /
+      top-trader long-short ratio snapshots) exists only under
+      data/futures/um/daily/metrics/BTCUSDT/, from 2020-09-01 onward
+      (>=1000 daily files, listing truncated at that count).
+    verified_on: "2026-09-04"
+    notes: "Do not assume metrics has a monthly bundle symmetric with klines/fundingRate — any pipeline sourcing Binance OI/L-S history from data.binance.vision must page through daily files, not monthly zips."
