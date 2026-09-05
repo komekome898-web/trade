@@ -20,6 +20,9 @@ recorded claim from raw data with your OWN implementation and report whether it 
   /tmp/claude-0/-home-user-trade/fa7bf0d4-a5c4-55b7-991b-874b590e00a3/scratchpad/audit_<PACKET>.py.
 - Output ≤ 150 lines to docs/AUDIT_2026-09/<PACKET>_<slug>.md. No model names anywhere. Do not commit.
 - Every rate you report (mean, t, IC, AUC, precision, win%) must state its DENOMINATOR (population, n, date range).
+- Derived formulas, identities, or mechanism explanations that appear inside a claim (e.g. "width × levels ≈ 0.8 × vol
+  so the strategy cannot profit") are CLAIMS TO TEST, never premises. Re-derive them from the strategy's actual
+  rules and the data; if the identity does not hold or does not imply the conclusion, say so (added 2026-09-05, AR-84).
 
 ## The 10 questions (answer each with numbers)
 1. Denominator: population, n, gaps, how events/samples were formed; recompute the claim's headline numbers.
