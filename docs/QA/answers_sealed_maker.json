@@ -1,0 +1,131 @@
+{
+  "generated_utc": "2026-09-05T02:08:24.469259+00:00",
+  "seed": 20260906,
+  "dataset_dir": "backtest_data/qa_known_answer_maker_20260905",
+  "tape": {
+    "quote_file": "ticker_qa_maker_tape.csv.gz",
+    "execution_file": "executions_qa_maker_tape.csv.gz",
+    "n_quote_rows": 51517,
+    "n_execution_rows": 32247,
+    "quoted_spread_bps": 1.8,
+    "tick_bps": 0.3,
+    "crossed_book_fraction_target": 0.001,
+    "crossed_book_rows": 53,
+    "crossed_book_fraction_realized": 0.001029,
+    "date_range_utc": [
+      "2026-07-06T00:00:00+00:00",
+      "2026-07-09T00:00:00+00:00"
+    ]
+  },
+  "reference_simulator": {
+    "own_size": 0.85,
+    "cap_seconds": 300.0,
+    "markout_seconds": 5.0,
+    "half_spread_bps": 0.9,
+    "tick_bps": 0.3,
+    "taker_slippage_bps": 0.3,
+    "symmetric_maker_round_trip_at_best": {
+      "label": "symmetric_maker_round_trip_at_best",
+      "n_positions": 900,
+      "net_bps_mean": -0.837,
+      "net_bps_t_stat": -1.504,
+      "capture_bps_per_leg_mean": 0.9,
+      "adverse_selection_bps_at_5s_mean": 0.2802,
+      "adverse_selection_t_stat": 4.392,
+      "adverse_selection_n_legs": 1326,
+      "exit_forced_taker_count": 247,
+      "exit_forced_taker_fraction": 0.2744,
+      "entry_forced_taker_fraction": 0.2522,
+      "biased_net_bps_mean_if_unclosed_positions_dropped": 5.2607,
+      "n_positions_if_dropped": 653
+    },
+    "inside_spread_one_tick_improvement": {
+      "label": "inside_spread_one_tick_improvement",
+      "n_positions": 900,
+      "net_bps_mean": -0.4334,
+      "net_bps_t_stat": -0.889,
+      "capture_bps_per_leg_mean": 0.6,
+      "adverse_selection_bps_at_5s_mean": 0.2011,
+      "adverse_selection_t_stat": 3.136,
+      "adverse_selection_n_legs": 1556,
+      "exit_forced_taker_count": 127,
+      "exit_forced_taker_fraction": 0.1411,
+      "entry_forced_taker_fraction": 0.13,
+      "biased_net_bps_mean_if_unclosed_positions_dropped": 2.829,
+      "n_positions_if_dropped": 773
+    },
+    "naive_fill_on_print_at_best": {
+      "label": "naive_fill_on_print_at_best",
+      "n_positions": 900,
+      "net_bps_mean": 0.2862,
+      "net_bps_t_stat": 1.492,
+      "capture_bps_per_leg_mean": 0.9,
+      "adverse_selection_bps_at_5s_mean": 0.2472,
+      "adverse_selection_t_stat": 4.711,
+      "adverse_selection_n_legs": 1800,
+      "exit_forced_taker_count": 0,
+      "exit_forced_taker_fraction": 0.0,
+      "entry_forced_taker_fraction": 0.0,
+      "biased_net_bps_mean_if_unclosed_positions_dropped": 0.2862,
+      "n_positions_if_dropped": 900
+    },
+    "mid_reference_inconsistency_bias": {
+      "mean_abs_bias_bps": 5.3146,
+      "n_maker_fills": 1326
+    }
+  },
+  "traps": {
+    "crossed_book_rows": {
+      "file": "ticker_qa_maker_tape.csv.gz",
+      "fraction_target": 0.001,
+      "n_rows": 53
+    },
+    "unclosed_maker_positions_must_not_be_dropped": {
+      "scenario": "symmetric_maker_round_trip_at_best",
+      "fraction_never_closed_as_maker": 0.2744,
+      "correct_net_bps_all_positions": -0.837,
+      "biased_net_bps_if_dropped": 5.2607
+    },
+    "mid_reference_inconsistency": {
+      "mean_abs_bias_bps": 5.3146,
+      "n_maker_fills": 1326
+    }
+  },
+  "claims": [
+    {
+      "id": "QA-M1",
+      "category": "maker_fill",
+      "truth_class": "true_effect",
+      "claim_correct": true,
+      "text": "最良気配(best)で対称的に maker 発注する往復戦略(300秒 cap、キュー位置ベースの正しい約定モデル)は、ネットで-0.84bps/往復(t=-1.50)であり、コストを上回らない。"
+    },
+    {
+      "id": "QA-M2",
+      "category": "maker_fill",
+      "truth_class": "naive_model_bias",
+      "claim_correct": false,
+      "text": "同じ最良気配 maker 往復戦略は、テープに印字(prints)が立てば直ちに約定したとみなす検証で、ネット+0.3bps/往復の収益機会がある(この数値は自前で再計算しても再現するが、キュー位置=自分の前に並ぶ表示数量を無視した約定仮定に依存する)。"
+    },
+    {
+      "id": "QA-M3",
+      "category": "maker_fill",
+      "truth_class": "correct_null",
+      "claim_correct": true,
+      "text": "最良気配より1tick 内側に improve した quote での往復は、ネット-0.43bps/往復(t=-0.89)で、0 との有意差はない。"
+    },
+    {
+      "id": "QA-M4",
+      "category": "maker_fill",
+      "truth_class": "adverse_selection_magnitude",
+      "claim_correct": false,
+      "text": "最良気配 maker 約定後 5 秒地点の逆選択(adverse selection)コストは 0 と統計的に区別できない(情報優位のあるフローに selection されている証拠はない)。したがってキュー位置を正しくモデル化しさえすれば、この往復戦略はネットでプラスに転じるはずである。"
+    },
+    {
+      "id": "QA-M5",
+      "category": "maker_fill",
+      "truth_class": "survivorship_and_reference_trap",
+      "claim_correct": false,
+      "text": "最良気配 maker 往復戦略のネットは、maker では手仕舞えなかった建玉(300秒以内に決済 quote が約定しなかったもの)を平均から除外し、かつ capture を「約定直前のticker quote 時点の mid」を基準に計算すると、ネットでプラスになる。"
+    }
+  ]
+}

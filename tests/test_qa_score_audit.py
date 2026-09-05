@@ -7,6 +7,7 @@ and MDE sanity behave as specified.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -132,13 +133,56 @@ def test_missing_claim_section_is_reported_as_not_found(answers):
     assert all(pc["extracted_verdict"] is None for pc in missing)
 
 
-def test_trap_keywords_only_count_inside_assumption_section(answers):
+def test_trap_keywords_count_inline_in_a_claim_section_too(answers):
+    # Real auditors document data-validity checks (PROTOCOL.md Q6) either in
+    # the dedicated "前提の誤り" section or inline inside a claim's own
+    # numbered checklist — both must count, not just the dedicated section.
     report = (
-        "## QA-1\n判定: 再現\n交差板の話がここに出てくる(本来のセクション外)\n"
+        "## QA-1\n判定: 再現\n交差板の話がここに出てくる(claim 本文中)\n"
         "## 前提の誤り\nnone found.\n"
     )
     result = sa.score(report, answers)
-    assert result["trap_detection"]["per_trap"]["crossed_book_rows"] is False
+    assert result["trap_detection"]["per_trap"]["crossed_book_rows"] is True
+
+
+def test_bold_verdict_line_is_parsed(answers):
+    section = "recomputed the claim.\n\n**Verdict: 再現**\n\n## QA-2"
+    assert sa._find_verdict(section) == "再現"
+
+
+def test_verdict_followed_by_parenthetical_explanation(answers):
+    section = "判定: 結論変更(オーバーナイト・プレミアムは存在しない。スケール断裂の産物)"
+    assert sa._find_verdict(section) == "結論変更"
+
+    section2 = "Verdict: 結論変更 — claimed premium does not survive a scale-break screen"
+    assert sa._find_verdict(section2) == "結論変更"
+
+
+def test_claim_sections_do_not_bleed_across_qa_n_headings(answers):
+    # A claim id mentioned in prose BEFORE its real heading (e.g. a
+    # scratchpad filename like "audit_QA3.py" in a frontmatter file list)
+    # must not hijack that claim's section start.
+    report = (
+        "# report\n\nscripts used: audit_QA3.py, audit_QA2.py\n\n"
+        "## QA-1\n判定: 再現\nnumbers: 1.0bps\n\n"
+        "## QA-2\n判定: 結論変更\nnumbers: 2.0bps\n\n"
+        "## QA-3\n判定: 再現\nnumbers: 3.0bps\n"
+    )
+    sections = sa._claim_sections(report, ["QA-1", "QA-2", "QA-3"])
+    assert sa._find_verdict(sections["QA-1"]) == "再現"
+    assert sa._find_verdict(sections["QA-2"]) == "結論変更"
+    assert sa._find_verdict(sections["QA-3"]) == "再現"
+    # QA-1's section must not swallow QA-2/QA-3's content
+    assert "3.0bps" not in sections["QA-1"]
+    assert "2.0bps" not in sections["QA-1"]
+
+
+def test_verdict_accuracy_covers_cost_trap_claims_too(answers):
+    # sensitivity/specificity only pool true_effect/zero_effect claims;
+    # verdict_accuracy is the "N/N correct verdicts" headline across ALL
+    # claims, cost_trap (QA-5/QA-6) included.
+    result = sa.score(GOOD_REPORT, answers)
+    assert result["verdict_accuracy"] == {"rate": 1.0, "n": 6, "hits": 6}
 
 
 def test_mde_sanity_flags_implausible_value(answers):
@@ -152,3 +196,22 @@ def test_mde_sanity_none_when_not_reported(answers):
     result = sa.score(report, answers)
     assert result["mde_sanity"]["reported_mde_bps"] == []
     assert result["mde_sanity"]["plausible"] is None
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize("n", [1, 2, 3])
+def test_real_auditor_reports_score_6_of_6_and_4_of_4(n):
+    """Regression check on the three real blind-audit reports
+    (docs/AUDIT_2026-09/QA_auditor{1,2,3}.md) against the real sealed
+    answers: all three should score 6/6 correct verdicts and 4/4 planted
+    traps (auditor 3 writes traps in Japanese: 交差/反転, メンテ, 収集時刻,
+    スケール)."""
+    report_path = REPO_ROOT / "docs" / "AUDIT_2026-09" / f"QA_auditor{n}.md"
+    answers_path = REPO_ROOT / "docs" / "QA" / "answers_sealed.json"
+    report = report_path.read_text(encoding="utf-8")
+    real_answers = json.loads(answers_path.read_text(encoding="utf-8"))
+    result = sa.score(report, real_answers)
+    assert result["verdict_accuracy"]["rate"] == 1.0, result["per_claim"]
+    assert result["trap_detection"]["rate"] == 1.0, result["trap_detection"]

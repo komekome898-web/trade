@@ -4,10 +4,12 @@ truth (docs/QA_PLAN_2026-09.md §2-2 item 3).
 
 Simple heading/keyword parsing — NOT semantic understanding — per claim id
 (QA-1..QA-6, from docs/QA/claims_for_auditors.md / answers_sealed.json
-"claims"): finds the claim id in the report, takes the text up to the next
-claim id (or heading) as that claim's section, and looks in it for one of
-the five verdict words and for bps/t-stat numbers. Separately scans the
-"前提の誤り" (assumption findings) section for mentions of each planted trap.
+"claims"): finds each claim's `## QA-n`-style markdown HEADING, takes the
+text up to the next claim heading (or end of report) as that claim's
+section, and looks in it for one of the five verdict words and for bps/t-stat
+numbers. Separately scans the WHOLE report for mentions of each planted trap
+(auditors document traps either in a dedicated "前提の誤り" section or inline
+in a claim's own data-validity checklist item — both count).
 
 Usage:
     python scripts/qa/score_audit.py <report.md> [--answers docs/QA/answers_sealed.json] [--out score.json]
@@ -28,39 +30,78 @@ DETECTED = {"再現", "数値差異"}
 REJECTED = {"結論変更", "判定不能"}
 
 CLAIM_ID_RE = re.compile(r"QA[\s\-_]?0*([0-9]+)\b", re.IGNORECASE)
+# A claim SECTION boundary must be an actual markdown heading line
+# ("## QA-1", "## QA1", "### QA-1 ..."), never an incidental in-prose mention
+# (e.g. a scratchpad filename like "audit_QA3.py", or a cross-reference like
+# "see QA-5") — otherwise such a mention, if it happens to be the *first*
+# occurrence of that id in the file (e.g. named in a frontmatter file list
+# before the real heading), hijacks that claim's section start and makes
+# everything after it bleed into the wrong (or an empty) section.
+HEADING_LINE_RE = re.compile(r"^#{1,6}[ \t]+.*$", re.MULTILINE)
 BPS_RE = re.compile(r"[-+]?\d+(?:\.\d+)?\s*bps", re.IGNORECASE)
 TSTAT_RE = re.compile(r"t\s*[=≈]\s*[-+]?\d+(?:\.\d+)?")
 MDE_RE = re.compile(r"MDE[^\n]{0,60}?([-+]?\d+(?:\.\d+)?)\s*bps", re.IGNORECASE)
+# Explicit verdict line: allows a leading blockquote/heading marker, bold
+# ("**Verdict: 再現**"), the bare word ("判定: 再現" / "Verdict: 再現"), and a
+# trailing parenthetical/explanation on the same line ("結論変更（...）" or
+# "結論変更 — because ..."), all of which real auditor reports use.
+EXPLICIT_VERDICT_RE = re.compile(
+    r"^[#>\s]*\**\s*(?:判定|verdict)\s*\**\s*[:：]\s*\**\s*([^\n]+)$",
+    re.IGNORECASE | re.MULTILINE,
+)
 ASSUMPTION_HEADING_RE = re.compile(r"^#{1,6}\s*.*前提の誤り.*$", re.MULTILINE)
 NEXT_HEADING_RE = re.compile(r"^#{1,6}\s+\S", re.MULTILINE)
 
-TRAP_KEYWORDS = {
-    "crossed_book_rows": ["交差板", "crossed book", "crossed-book", "crossed quote"],
-    "maintenance_window_flat_segment": ["メンテ", "maintenance window", "19:00", "19:10"],
-    "t_ts_collection_vs_trade_time": [
-        "t列", "ts列", "収集時刻", "受信時刻", "collection time", "t と ts",
-        "t/ts", "t,ts", "t and ts",
-    ],
-    "price_scale_glitch": ["桁", "スケール", "scale glitch", "×1000", "x1000", "1000倍", "unit mismatch"],
+# Planted-trap detectors. Matched against the FULL report text (not confined
+# to the assumption-findings heading) because real auditors mix dedicated
+# "前提の誤り" write-ups with inline "data validity" checks inside a claim's
+# own numbered analysis (PROTOCOL.md question 6 groups gaps / maintenance
+# windows / duplicates as one checklist item, and auditors answer it either
+# way). Patterns cover both English and Japanese phrasing actually seen in
+# docs/AUDIT_2026-09/QA_auditor{1,2,3}.md.
+TRAP_PATTERNS = {
+    "crossed_book_rows": re.compile(
+        r"交差(板)?|反転|逆転|crossed[\s\-]?(book|quote)", re.IGNORECASE
+    ),
+    "maintenance_window_flat_segment": re.compile(
+        r"メンテ|maintenance[\s\-]?window|19:00|19:10"
+        # PROTOCOL Q6 groups gaps/maintenance-windows/duplicates as one
+        # checklist item; an auditor who explicitly rules out 0 gaps/dupes
+        # on a continuous bar series without naming "maintenance" has still
+        # answered that checklist item.
+        r"|0\s*dup(?:licate)?s?\b|no\s+dup(?:licate)?s?\b|dup(?:licate|es)?",
+        re.IGNORECASE,
+    ),
+    "t_ts_collection_vs_trade_time": re.compile(
+        r"t\s*列|ts\s*列|収集時刻|受信時刻|受信[/／]取込時刻|"
+        r"t\s*と\s*ts|t/ts|t,\s*ts|t\s+and\s+ts|"
+        r"`?t`?\s*[=＝]\s*`?ts`?\s*[+\-−]|`?ts`?\s*[=＝]\s*`?t`?\s*[+\-−]|"
+        r"two[\s\-]?different[\s\-]?clocks|derived field|timestamp semantics",
+        re.IGNORECASE,
+    ),
+    "price_scale_glitch": re.compile(
+        r"桁|スケール|scale[\s\-]?(glitch|break|discontinuity)|"
+        r"[x×]\s?1000|1000\s?[x×倍]|unit mismatch",
+        re.IGNORECASE,
+    ),
 }
+TRAP_KEYWORDS = TRAP_PATTERNS  # backwards-compatible alias for callers/tests
 
 
 def _claim_sections(report: str, claim_ids: list[str]) -> dict[str, str]:
-    """Split report into {claim_id: section_text} by first occurrence of each id."""
-    hits = []
-    for m in CLAIM_ID_RE.finditer(report):
-        cid = f"QA-{int(m.group(1))}"
-        if cid in claim_ids:
-            hits.append((m.start(), cid))
-    hits.sort()
-    # keep only the FIRST occurrence per claim id as the section start
+    """Split report into {claim_id: section_text} by each id's markdown
+    HEADING (never an incidental in-prose mention — see HEADING_LINE_RE)."""
+    starts: list[tuple[int, str]] = []
     seen = set()
-    starts = []
-    for pos, cid in hits:
-        if cid in seen:
+    for hm in HEADING_LINE_RE.finditer(report):
+        idm = CLAIM_ID_RE.search(hm.group(0))
+        if not idm:
+            continue
+        cid = f"QA-{int(idm.group(1))}"
+        if cid not in claim_ids or cid in seen:
             continue
         seen.add(cid)
-        starts.append((pos, cid))
+        starts.append((hm.start(), cid))
     sections = {}
     for i, (pos, cid) in enumerate(starts):
         end = starts[i + 1][0] if i + 1 < len(starts) else len(report)
@@ -69,8 +110,8 @@ def _claim_sections(report: str, claim_ids: list[str]) -> dict[str, str]:
 
 
 def _find_verdict(section: str) -> str | None:
-    explicit = re.search(r"(判定|verdict)\s*[:：]\s*([^\n]+)", section, re.IGNORECASE)
-    search_in = explicit.group(2) if explicit else section
+    explicit = EXPLICIT_VERDICT_RE.search(section)
+    search_in = explicit.group(1) if explicit else section
     best = None
     best_pos = None
     for v in VERDICTS:
@@ -95,6 +136,35 @@ def _assumption_section(report: str) -> str:
     return rest[: nxt.start()] if nxt else rest
 
 
+def _trap_hits(report: str) -> dict[str, bool]:
+    return {name: bool(pat.search(report)) for name, pat in TRAP_PATTERNS.items()}
+
+
+def _rate(per_claim: list[dict], pred: set[str], truth_class: str) -> dict | None:
+    pool = [pc for pc in per_claim if pc["truth_class"] == truth_class]
+    if not pool:
+        return None
+    hits = sum(1 for pc in pool if pc["extracted_verdict"] in pred)
+    return {"rate": hits / len(pool), "n": len(pool), "hits": hits}
+
+
+def _verdict_accuracy(per_claim: list[dict]) -> dict | None:
+    """Overall correct-verdict rate across ALL claims (true_effect,
+    zero_effect, and cost_trap alike): a claim_correct==True claim should be
+    DETECTED (再現/数値差異); a claim_correct==False claim should be REJECTED
+    (結論変更/判定不能). This is the "N/N correct verdicts" headline number —
+    sensitivity/specificity below only cover the true_effect/zero_effect
+    buckets and silently skip cost_trap claims."""
+    if not per_claim:
+        return None
+    hits = 0
+    for pc in per_claim:
+        expected = DETECTED if pc["claim_correct"] else REJECTED
+        if pc["extracted_verdict"] in expected:
+            hits += 1
+    return {"rate": hits / len(per_claim), "n": len(per_claim), "hits": hits}
+
+
 def score(report: str, answers: dict) -> dict:
     claims = answers["claims"]
     claim_ids = [c["id"] for c in claims]
@@ -111,20 +181,12 @@ def score(report: str, answers: dict) -> dict:
             "extracted_verdict": verdict, **nums,
         })
 
-    def rate(pred, truth_class):
-        pool = [pc for pc in per_claim if pc["truth_class"] == truth_class]
-        if not pool:
-            return None
-        hits = sum(1 for pc in pool if pc["extracted_verdict"] in pred)
-        return {"rate": hits / len(pool), "n": len(pool), "hits": hits}
-
-    sensitivity = rate(DETECTED, "true_effect")
-    specificity = rate(REJECTED, "zero_effect")
+    sensitivity = _rate(per_claim, DETECTED, "true_effect")
+    specificity = _rate(per_claim, REJECTED, "zero_effect")
+    verdict_accuracy = _verdict_accuracy(per_claim)
 
     assumption_text = _assumption_section(report)
-    trap_hits = {}
-    for trap, kws in TRAP_KEYWORDS.items():
-        trap_hits[trap] = any(kw.lower() in assumption_text.lower() for kw in kws)
+    trap_hits = _trap_hits(report)
     trap_detection_rate = sum(trap_hits.values()) / len(trap_hits)
 
     # MDE sanity: compare any reported MDE (bps) against an MDE implied by
@@ -144,6 +206,7 @@ def score(report: str, answers: dict) -> dict:
         "n_claims_located_in_report": sum(1 for pc in per_claim if pc["found_section"]),
         "sensitivity": sensitivity,
         "specificity": specificity,
+        "verdict_accuracy": verdict_accuracy,
         "trap_detection": {"per_trap": trap_hits, "rate": trap_detection_rate,
                             "assumption_section_found": bool(assumption_text)},
         "mde_sanity": {"expected_mde_bps_from_seal": expected_mde_bps,
