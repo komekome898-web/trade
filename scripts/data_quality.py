@@ -32,6 +32,16 @@ Checks (per file, where the relevant column exists in the header):
   - zero_volume:        a `volume` column equal to 0
   - missing_columns:    header columns undocumented in schema, or schema
                          columns absent from the header (per matched dataset)
+  - split_candidate:    (daily OHLC files only, i.e. header's timestamp
+                         column is literally `date`) flag-only check: a day
+                         whose close/prev_close ratio (or its inverse) is
+                         within SPLIT_TOLERANCE of a round factor in
+                         SPLIT_FACTORS *and* the next day's close stays
+                         within PERSIST_TOLERANCE of the new level (so it is
+                         not a one-day round trip) is a probable unadjusted
+                         corporate action rather than a bad print. Reported
+                         alongside extreme_return when both fire on the same
+                         row -- it does not replace or suppress it.
 
 Nothing is EXCLUDED for a flagged row -- this only marks, per the plan's
 "除外はしない、印を付けるだけ" rule.
@@ -69,6 +79,26 @@ EXTREME_RETURN_FRAC = 0.10
 CROSSED_SPREAD_MAX_BPS = 50.0
 
 PRICE_COL_CANDIDATES = ["close", "price", "last", "mid"]
+
+SPLIT_FACTORS = [2, 3, 4, 5, 10, 100]
+SPLIT_TOLERANCE = 0.02   # ratio (or its inverse) must be within 2% of a round factor
+PERSIST_TOLERANCE = 0.05  # next day's close must stay within 5% of the new level
+
+
+def _matches_round_factor(x: float) -> bool:
+    for f in SPLIT_FACTORS:
+        if abs(x - f) / f <= SPLIT_TOLERANCE:
+            return True
+    return False
+
+
+def _is_split_ratio(ratio: float) -> bool:
+    """True if `ratio` (close / prev_close) or its inverse sits within
+    SPLIT_TOLERANCE of one of SPLIT_FACTORS -- e.g. a 10:1 split drops the
+    close to ~1/10th of the prior close (ratio ~= 0.1, inverse ~= 10)."""
+    if ratio is None or ratio <= 0:
+        return False
+    return _matches_round_factor(ratio) or _matches_round_factor(1.0 / ratio)
 
 
 # --------------------------------------------------------------------------
@@ -187,15 +217,22 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
             ohlc_idx = None
             if all(c in header_lower for c in ("open", "high", "low", "close")):
                 ohlc_idx = {c: header_lower.index(c) for c in ("open", "high", "low", "close")}
+            is_daily_ohlc = ohlc_idx is not None and ts_idx is not None and header_lower[ts_idx] == "date"
 
             seen_ts: dict[str, int] = {}
             dup_examples: list = []
             non_monotonic_examples: list = []
+            non_monotonic_count = 0
             gap_examples: list = []
             crossed_examples: list = []
+            crossed_count = 0
             maint_examples: list = []
+            maint_count = 0
             extreme_examples: list = []
+            extreme_count = 0
             zero_vol_examples: list = []
+            zero_vol_count = 0
+            daily_rows: list[tuple[int, Optional[str], Optional[float]]] = []
 
             prev_dt = None
             prev_price = None
@@ -216,10 +253,12 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                     dt = il.parse_ts(raw_ts)
                     if dt is not None:
                         if prev_dt is not None:
-                            if dt < prev_dt and len(non_monotonic_examples) < MAX_EXAMPLES:
-                                non_monotonic_examples.append(
-                                    {"row": row_i, "prev_ts": prev_dt.isoformat(), "ts": dt.isoformat()}
-                                )
+                            if dt < prev_dt:
+                                non_monotonic_count += 1
+                                if len(non_monotonic_examples) < MAX_EXAMPLES:
+                                    non_monotonic_examples.append(
+                                        {"row": row_i, "prev_ts": prev_dt.isoformat(), "ts": dt.isoformat()}
+                                    )
                             delta = (dt - prev_dt).total_seconds()
                             if delta > 0:
                                 deltas.append(delta)
@@ -233,6 +272,7 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                     except (ValueError, TypeError):
                         sv = None
                     if sv is not None and (sv <= 0 or sv > CROSSED_SPREAD_MAX_BPS):
+                        crossed_count += 1
                         if len(crossed_examples) < MAX_EXAMPLES:
                             crossed_examples.append({"row": row_i, "spread_bps": sv})
 
@@ -253,8 +293,16 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                             except (ValueError, TypeError, IndexError):
                                 o = h = l = c = None
                             if o is not None and o == h == l == c:
+                                maint_count += 1
                                 if len(maint_examples) < MAX_EXAMPLES:
                                     maint_examples.append({"row": row_i, "ts": dt2.isoformat(), "value": o})
+
+                        if is_daily_ohlc:
+                            try:
+                                daily_close = float(row[ohlc_idx["close"]])
+                            except (ValueError, TypeError, IndexError):
+                                daily_close = None
+                            daily_rows.append((row_i, dt2.isoformat(), daily_close))
 
                 # extreme single-step return
                 if price_idx is not None and price_idx < len(row):
@@ -266,6 +314,7 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                         if prev_price not in (None, 0) and pv != 0:
                             ret = (pv - prev_price) / prev_price
                             if abs(ret) > EXTREME_RETURN_FRAC:
+                                extreme_count += 1
                                 if len(extreme_examples) < MAX_EXAMPLES:
                                     extreme_examples.append({"row": row_i, "prev": prev_price, "value": pv, "return": ret})
                         prev_price = pv
@@ -277,22 +326,54 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                     except (ValueError, TypeError):
                         vv = None
                     if vv == 0.0:
+                        zero_vol_count += 1
                         if len(zero_vol_examples) < MAX_EXAMPLES:
                             zero_vol_examples.append({"row": row_i, "ts": row[ts_idx] if ts_idx is not None and ts_idx < len(row) else None})
 
             dup_count = sum(1 for v in seen_ts.values() if v > 1)
             if dup_count:
                 result["duplicate_keys"] = {"count": dup_count, "examples": dup_examples}
-            if non_monotonic_examples:
-                result["non_monotonic"] = {"count": len(non_monotonic_examples), "examples": non_monotonic_examples}
-            if crossed_examples:
-                result["crossed_book"] = {"count": len(crossed_examples), "examples": crossed_examples}
-            if maint_examples:
-                result["maintenance_window"] = {"count": len(maint_examples), "examples": maint_examples}
-            if extreme_examples:
-                result["extreme_return"] = {"count": len(extreme_examples), "examples": extreme_examples}
-            if zero_vol_examples:
-                result["zero_volume"] = {"count": len(zero_vol_examples), "examples": zero_vol_examples}
+            if non_monotonic_count:
+                result["non_monotonic"] = {"count": non_monotonic_count, "examples": non_monotonic_examples}
+            if crossed_count:
+                result["crossed_book"] = {"count": crossed_count, "examples": crossed_examples}
+            if maint_count:
+                result["maintenance_window"] = {"count": maint_count, "examples": maint_examples}
+            if extreme_count:
+                result["extreme_return"] = {"count": extreme_count, "examples": extreme_examples}
+            if zero_vol_count:
+                result["zero_volume"] = {"count": zero_vol_count, "examples": zero_vol_examples}
+
+            if is_daily_ohlc and len(daily_rows) >= 3:
+                split_examples: list = []
+                split_count = 0
+                for i in range(1, len(daily_rows) - 1):
+                    prev_i, _prev_ts, prev_close = daily_rows[i - 1]
+                    cur_i, cur_ts, cur_close = daily_rows[i]
+                    _next_i, _next_ts, next_close = daily_rows[i + 1]
+                    if prev_close in (None, 0) or cur_close in (None, 0) or next_close is None:
+                        continue
+                    ratio = cur_close / prev_close
+                    if not _is_split_ratio(ratio):
+                        continue
+                    if abs(next_close / cur_close - 1.0) > PERSIST_TOLERANCE:
+                        continue  # reverts back next day -- a one-day round trip, not a split
+                    if i - 2 >= 0:
+                        prev2_close = daily_rows[i - 2][2]
+                        # the pre-jump level must itself have been established
+                        # (not merely a single-day glitch bar reverting on this
+                        # very transition) -- otherwise the "revert" leg of a
+                        # one-day bad print would also look like a persistent
+                        # split from this side.
+                        if prev2_close not in (None, 0) and abs(prev_close / prev2_close - 1.0) > PERSIST_TOLERANCE:
+                            continue
+                    split_count += 1
+                    if len(split_examples) < MAX_EXAMPLES:
+                        split_examples.append(
+                            {"row": cur_i, "ts": cur_ts, "prev_close": prev_close, "close": cur_close, "ratio": ratio}
+                        )
+                if split_count:
+                    result["split_candidate"] = {"count": split_count, "examples": split_examples}
 
             if len(deltas) >= 4:
                 sorted_deltas = sorted(deltas)

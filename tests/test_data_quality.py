@@ -112,6 +112,85 @@ def test_duplicate_and_non_monotonic(tmp_path: Path):
     assert checks["non_monotonic"]["count"] == 1
 
 
+# ---- count is not capped by MAX_EXAMPLES ---------------------------------
+
+
+def test_extreme_return_count_not_capped_by_examples(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    rows = ["ts,mid"]
+    price = 100.0
+    for t in range(12):
+        rows.append(f"2026-01-01T00:{t:02d}:00Z,{price}")
+        price = price * 0.5  # -50% each step -> 11 extreme-return transitions across 12 rows
+    rel = "data/extremes.csv"
+    (tmp_path / rel).write_text("\n".join(rows) + "\n")
+
+    result = dq.scan_file(tmp_path, rel, schema=None)
+
+    assert result["extreme_return"]["count"] == 11
+    assert len(result["extreme_return"]["examples"]) == dq.MAX_EXAMPLES == 5
+
+
+# ---- split_candidate -------------------------------------------------------
+
+
+def _daily_rows(closes: list[float], start="2026-01-01") -> list[str]:
+    from datetime import datetime, timedelta
+
+    d0 = datetime.strptime(start, "%Y-%m-%d")
+    rows = ["date,open,high,low,close,volume"]
+    for i, c in enumerate(closes):
+        d = (d0 + timedelta(days=i)).strftime("%Y-%m-%d")
+        rows.append(f"{d},{c},{c},{c},{c},100")
+    return rows
+
+
+def test_persistent_split_flagged_as_split_candidate_not_bad_print(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    # 10:1 split at index 5, level persists afterwards
+    closes = [1000, 1005, 995, 1010, 1000, 100, 102, 98, 101, 99]
+    rows = _daily_rows(closes)
+    (tmp_path / "data" / "daily_split.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "daily_split", {
+        "dataset": "daily_split",
+        "path_glob": ["data/daily_split.csv"],
+        "columns": {"date": {}, "open": {}, "high": {}, "low": {}, "close": {}, "volume": {}},
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["daily_split"]["checks"]
+
+    assert checks["split_candidate"]["count"] == 1
+    flagged_row = checks["split_candidate"]["examples"][0]["examples"][0]["row"]
+    # extreme_return still fires on the same transition (>10% move) ...
+    extreme_rows = [ex["row"] for ex in checks["extreme_return"]["examples"][0]["examples"]]
+    assert flagged_row in extreme_rows
+    # ... but unlike a bad print, there is exactly one extreme transition
+    # (the split itself), not a drop immediately followed by a revert.
+    assert checks["extreme_return"]["count"] == 1
+
+
+def test_one_day_bad_print_is_extreme_return_only(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    # one-day 1/100 bad print then reverts -- a round trip, not a split
+    closes = [1000, 1005, 995, 10, 1000, 1002, 998]
+    rows = _daily_rows(closes)
+    (tmp_path / "data" / "daily_badprint.csv").write_text("\n".join(rows) + "\n")
+    _write_schema(tmp_path, "daily_badprint", {
+        "dataset": "daily_badprint",
+        "path_glob": ["data/daily_badprint.csv"],
+        "columns": {"date": {}, "open": {}, "high": {}, "low": {}, "close": {}, "volume": {}},
+    })
+
+    _ledger(tmp_path)
+    report = dq.run(tmp_path)
+    checks = report["datasets"]["daily_badprint"]["checks"]
+
+    assert "split_candidate" not in checks
+    assert checks["extreme_return"]["count"] == 2  # drop, then revert
+
+
 # ---- missing columns vs schema -------------------------------------------
 
 
