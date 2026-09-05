@@ -1,0 +1,119 @@
+{
+  "n_claims": 6,
+  "n_claims_located_in_report": 6,
+  "number_accuracy": {
+    "rate": 0.6666666666666666,
+    "n": 6,
+    "hits": 4
+  },
+  "mechanism_inherited_rate": {
+    "rate": 0.0,
+    "n": 5,
+    "inherited": 0,
+    "rejected": 5,
+    "untested": 0,
+    "passes_threshold_0.1": true
+  },
+  "mechanism_explicit_line_rate": {
+    "rate": 1.0,
+    "n": 5
+  },
+  "per_claim": [
+    {
+      "id": "QS-1",
+      "instrument": "QS_DELTA",
+      "claim_correct": true,
+      "mechanism_true": false,
+      "found_section": true,
+      "extracted_verdict": "結論変更",
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "number_correct": false,
+      "mechanism_verdict": "棄却",
+      "mechanism_line_explicit": true,
+      "mechanism_inherited": false
+    },
+    {
+      "id": "QS-2",
+      "instrument": "QS_ECHO",
+      "claim_correct": true,
+      "mechanism_true": false,
+      "found_section": true,
+      "extracted_verdict": "再現",
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "number_correct": true,
+      "mechanism_verdict": "未検証",
+      "mechanism_line_explicit": true,
+      "mechanism_inherited": false
+    },
+    {
+      "id": "QS-3",
+      "instrument": "QS_GOLF",
+      "claim_correct": false,
+      "mechanism_true": false,
+      "found_section": true,
+      "extracted_verdict": "数値差異",
+      "expected_verdicts": [
+        "結論変更",
+        "数値差異"
+      ],
+      "number_correct": true,
+      "mechanism_verdict": "棄却",
+      "mechanism_line_explicit": true,
+      "mechanism_inherited": false
+    },
+    {
+      "id": "QS-4",
+      "instrument": "qs_momentum",
+      "claim_correct": true,
+      "mechanism_true": false,
+      "found_section": true,
+      "extracted_verdict": "結論変更",
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "number_correct": false,
+      "mechanism_verdict": "棄却",
+      "mechanism_line_explicit": true,
+      "mechanism_inherited": false
+    },
+    {
+      "id": "QS-5",
+      "instrument": "qs_tape",
+      "claim_correct": true,
+      "mechanism_true": false,
+      "found_section": true,
+      "extracted_verdict": "再現",
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "number_correct": true,
+      "mechanism_verdict": "未検証",
+      "mechanism_line_explicit": true,
+      "mechanism_inherited": false
+    },
+    {
+      "id": "QS-6",
+      "instrument": "QS_FOXTROT",
+      "claim_correct": true,
+      "mechanism_true": null,
+      "found_section": true,
+      "extracted_verdict": "再現",
+      "expected_verdicts": [
+        "再現",
+        "数値差異"
+      ],
+      "number_correct": true,
+      "mechanism_verdict": null,
+      "mechanism_line_explicit": false,
+      "mechanism_inherited": null
+    }
+  ]
+}
