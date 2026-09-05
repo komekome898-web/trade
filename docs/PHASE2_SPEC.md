@@ -86,7 +86,11 @@ env `PHASE2_FINAL_EVAL=<unit>` + オーナー作成の `UNSEAL_APPROVED` ファ�
   読み替え)に回す。致命が 1 つでもあれば実行前に修正。
 - **パイプラインの既知正解テスト**: 各執行様式(taker / maker / 板寄せ / 日次)ごとに、効果を植え込んだ合成テープで
   「バックテストエンジン + 評価手順」が植え込み値を回収できることを確認してからでないと、その様式の研究単位を走らせない。
-  maker 型は `scripts/qa/make_known_answer_maker3.py`(v2)を流用。taker / 板寄せ / 日次は新規作成。
+  maker 型は `scripts/qa/make_known_answer_maker3.py`(v3)を流用。taker / 日次は `scripts/qa/pipeline_known_answer_{taker,daily}.py`
+  (2026-09-05 実施、回収合格。結果 `docs/QA/known_answer_results_2026-09-05.md` 末尾)。板寄せ型は日次型の関数経路を共有。
+- **taker 型の必須条件(パイプラインテストの欠陥 1 より)**: `src/bot/backtest/engine.py` はローソク足の妥当性(メンテ窓の合成バー、
+  誤プリント)を判定しない。taker 型の研究単位は、schema の既知欠陥と `data/QUALITY.json` のフラグから妥当性マスクを研究層で
+  作り、イベント窓・保有窓がマスクに触れる取引を印付けし、**マスク適用前後の両方**を報告する。適用後のみを結論に使う。
 
 ## 6. 結果監査と判定
 
