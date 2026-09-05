@@ -4,6 +4,9 @@ cd /d "%~dp0.."
 if not exist logs mkdir logs
 ".venv\Scripts\python.exe" "scripts\fetch_history.py" >> "logs\fetch.out.log" 2>&1
 ".venv\Scripts\python.exe" "scripts\fetch_external.py" --days 2 --swing-days 30 >> "logs\fetch.out.log" 2>&1
+rem OKX open interest + long/short ratio history (30d / 2-3d API windows; the
+rem retention snapshot halves those windows). Was missing here until 2026-09-05.
+".venv\Scripts\python.exe" "scripts\fetch_okx.py" >> "logs\fetch.out.log" 2>&1
 ".venv\Scripts\python.exe" "scripts\record_oi.py" >> "logs\fetch.out.log" 2>&1
 rem Best-effort: turns data\ws WS recordings into compact daily tape CSVs
 rem (data\tape) that share_logs.bat can carry past the 31-day API limit.
