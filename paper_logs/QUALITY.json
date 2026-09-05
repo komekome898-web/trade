@@ -13,7 +13,7 @@
   "bitflyer_tape": {
    "checks": {
     "duplicate_keys": {
-     "count": 30351,
+     "count": 30354,
      "examples": [
       {
        "examples": [
@@ -269,7 +269,7 @@
      "files": 54
     },
     "gaps": {
-     "count": 243465,
+     "count": 243494,
      "examples": [
       {
        "examples": [
@@ -2017,7 +2017,7 @@
   },
   "okx_oi": {
    "checks": {},
-   "files_checked": 4,
+   "files_checked": 8,
    "files_flagged": 0
   },
   "on1_onr_ledgers": {
@@ -3102,7 +3102,7 @@
      "files": 9
     }
    },
-   "files_checked": 134,
+   "files_checked": 138,
    "files_flagged": 9
   },
   "venue_survey": {
@@ -3113,7 +3113,7 @@
   "venues": {
    "checks": {
     "duplicate_keys": {
-     "count": 399,
+     "count": 401,
      "examples": [
       {
        "examples": [
@@ -3505,7 +3505,7 @@
      "files": 6
     },
     "gaps": {
-     "count": 211876,
+     "count": 212245,
      "examples": [
       {
        "examples": [
@@ -3605,9 +3605,9 @@
    "files_flagged": 0
   }
  },
- "generated_at": "2026-09-05T14:03:28.074594+00:00",
+ "generated_at": "2026-09-05T15:24:36.305842+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 134,
+ "schema_undefined_count": 138,
  "schema_undefined_files": [
   "backtest_data/auto_bitflyer_executions_20260905/candles_FX_BTC_JPY.csv",
   "backtest_data/auto_bitflyer_executions_20260905/candles_XRP_JPY.csv",
@@ -3660,6 +3660,10 @@
   "data/executions_FX_BTC_JPY.csv",
   "data/executions_XRP_JPY.csv",
   "data/jpx_daily/nk225_sessions.csv",
+  "data/okx_btc_lsratio_1h.csv",
+  "data/okx_btc_lsratio_5m.csv",
+  "data/okx_btc_oi_1h.csv",
+  "data/okx_btc_oi_5m.csv",
   "data/scalp_paper.jsonl",
   "data/spread_FX_BTC_JPY.csv",
   "data/ws/FX_BTC_JPY_20260820_061319.jsonl.gz",
