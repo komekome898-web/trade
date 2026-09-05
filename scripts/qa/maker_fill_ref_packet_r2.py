@@ -212,7 +212,11 @@ def simulate(ticker_df: pd.DataFrame, exec_df: pd.DataFrame, strategy: str = "S1
             # Entry order (initial or post-rejoin): no clip of ours is yet
             # resting on this side, so the raw displayed size is used as-is.
             qa = disp[side] or 0.0
-        slot[side] = _Slot(role, price, qa)
+        new_slot = _Slot(role, price, qa)
+        if cur is not None and cur.role == role:
+            # touch-move rejoin (same role, price changed to the new best)
+            new_slot.cum = cur.cum
+        slot[side] = new_slot
 
     def complete(side, now):
         s = slot[side]

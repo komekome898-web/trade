@@ -1,16 +1,26 @@
-"""Generation-4 CODE-AS-CLAIM known-answer packet for the maker fill model
-(docs/AUDIT_2026-09/PROTOCOL.md "Maker fill-model claims", after
-docs/QA/known_answer_results_2026-09-05.md §6 found blind re-implementation
-of the v3 fill rule non-reproducible across auditors).
+"""Generation-4 CODE-AS-CLAIM known-answer packet for the maker fill model,
+round 2 (docs/AUDIT_2026-09/PROTOCOL.md "Maker fill-model claims"), after
+docs/AUDIT_2026-09/QAM4_auditorB.md found three defects in round 1:
 
-Covers: the 8 hand-derived micro-tapes reproduce their hand-computed
-expected positions exactly under the CLEAN simulator
-(scripts/qa/maker_fill_ref.py); the packet copy pointed to auditors
-(scripts/qa/maker_fill_ref_packet.py, containing one planted off-by-one:
-`>=` instead of `>` at the completion threshold) diverges from the clean
-simulator on micro-tape (d) and ONLY on that tape; determinism; and the
-sealed full-tape numbers (docs/QA/answers_sealed_maker4.json) reproduce
-from the clean simulator on the reused v3 public tape.
+1. Forced (cap) exits were priced at the FAVOURABLE (resting-exit-order)
+   side's touch instead of the UNFAVOURABLE side the position's own entry
+   sits on (a long must taker-sell into the bid, not the ask). Fixed in
+   `check_caps`.
+2. Exit-order queue-ahead ignored the rule text's "minus own size" clause
+   (the displayed size at insertion already includes our own just-joined
+   clip). Fixed in `refresh`.
+3. `RULE_DECISIONS` lacked a definition of naive mode. Added.
+
+Covers: the 9 hand-derived micro-tapes (a-g, i; h has its own naive/true
+split, handled separately) reproduce their hand-computed expected
+positions exactly under the CLEAN simulator (scripts/qa/maker_fill_ref.py,
+fixed); the round-2 packet copy pointed to auditors
+(scripts/qa/maker_fill_ref_packet_r2.py, containing one NEW planted
+defect -- a touch-move rejoin keeps the OLD cumulative-print counter
+instead of resetting it to zero) diverges from the clean simulator on
+micro-tape (i) and ONLY on that tape; determinism; and the sealed
+full-tape numbers (docs/QA/answers_sealed_maker4_r2.json) reproduce from
+the clean, fixed simulator on the reused v3 public tape.
 """
 from __future__ import annotations
 
@@ -26,10 +36,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "qa"))
 
 import maker_fill_ref as ref  # noqa: E402
-import maker_fill_ref_packet as pkt  # noqa: E402
+import maker_fill_ref_packet_r2 as pkt  # noqa: E402
 
-MICRO_DIR = REPO_ROOT / "backtest_data" / "qa_known_answer_maker4_20260905" / "micro"
-LETTERS = list("abcdefg")  # (h) has its own naive/true split, handled separately
+MICRO_DIR = REPO_ROOT / "backtest_data" / "qa_known_answer_maker4_r2_20260905" / "micro"
+LETTERS = list("abcdefgi")  # (h) has its own naive/true split, handled separately
 
 
 def _load_tape(letter: str):
@@ -60,7 +70,7 @@ def _assert_matches_expected(positions: pd.DataFrame, expected_positions: list[d
 
 @pytest.mark.parametrize("letter", LETTERS)
 def test_micro_tape_matches_hand_derivation(letter):
-    """Each micro-tape (a)-(g): the CLEAN reference simulator reproduces
+    """Each micro-tape (a)-(g),(i): the CLEAN reference simulator reproduces
     the hand-computed expected positions exactly (see
     HAND_DERIVATION_<letter>.md, written before this test was run)."""
     t, e = _load_tape(letter)
@@ -79,27 +89,95 @@ def test_micro_tape_h_naive_vs_true():
     _assert_matches_expected(naive_false, expected["naive_false"]["positions"])
 
 
-def test_packet_copy_diverges_only_on_tape_d():
-    """The planted defect (>= instead of >) in maker_fill_ref_packet.py
-    must be invisible on every micro-tape except (d), and must actually
-    change (d)'s output -- this is the tape an auditor's micro-tape
-    verification (docs/AUDIT_2026-09/PROTOCOL.md step (b)) is meant to
-    catch it on."""
+def test_forced_exit_prices_at_unfavourable_side():
+    """Round-1 defect (QAM4_auditorB finding 1): a forced/cap exit is a
+    TAKER cross and must price at the UNFAVOURABLE touch -- the position's
+    own entry side (bid for a long, ask for a short) -- not the favourable
+    side the (cancelled) passive exit order was resting at."""
+    ticker = pd.DataFrame({
+        "ts": pd.date_range("2026-01-01T00:00:00Z", periods=10, freq="s"),
+        "best_bid": 1000.0, "best_ask": 1010.0,
+        "best_bid_size": 0.05, "best_ask_size": 0.05,
+    })
+    # Long: entry on the bid. Nothing ever fills the exit -> forced at cap.
+    long_exec = pd.DataFrame([
+        dict(id="l1", ts="2026-01-01T00:00:01Z", price=1000, size=0.11, side="SELL"),
+    ])
+    long_pos = ref.simulate(ticker, long_exec, strategy="S1", cap_s=3.0)
+    assert len(long_pos) == 1
+    row = long_pos.iloc[0]
+    assert row["direction"] == "long"
+    assert row["forced"]
+    assert row["exit_price"] == pytest.approx(1000.0)  # crosses into the BID, not the ask
+
+    # Short: entry on the ask. Nothing ever fills the exit -> forced at cap.
+    short_exec = pd.DataFrame([
+        dict(id="s1", ts="2026-01-01T00:00:01Z", price=1010, size=0.11, side="BUY"),
+    ])
+    short_pos = ref.simulate(ticker, short_exec, strategy="S1", cap_s=3.0)
+    assert len(short_pos) == 1
+    row = short_pos.iloc[0]
+    assert row["direction"] == "short"
+    assert row["forced"]
+    assert row["exit_price"] == pytest.approx(1010.0)  # crosses into the ASK, not the bid
+
+
+def test_exit_queue_ahead_subtracts_own_size():
+    """Round-1 defect (QAM4_auditorB finding 2): an EXIT order's queue-ahead
+    at insertion = displayed size MINUS own_size (rule text + v3 manifest:
+    'the displayed size at insertion already includes our own just-joined
+    clip'); an ENTRY order's queue-ahead uses the raw displayed size (no
+    clip of ours rests there yet) -- RULE_DECISIONS #6."""
+    ticker = pd.DataFrame({
+        "ts": pd.date_range("2026-01-01T00:00:00Z", periods=10, freq="s"),
+        "best_bid": 1000.0, "best_ask": 1010.0,
+        "best_bid_size": 0.05, "best_ask_size": 0.10,
+    })
+    exec_df = pd.DataFrame([
+        # entry: raw displayed bid size 0.05 -> threshold 0.05+0.05=0.10; 0.11 exceeds it.
+        dict(id="x1", ts="2026-01-01T00:00:01Z", price=1000, size=0.11, side="SELL"),
+        # exit: displayed ask size 0.10 MINUS own_size 0.05 = 0.05 -> threshold 0.10;
+        # 0.12 exceeds 0.10 (it would NOT exceed an un-subtracted threshold of 0.15).
+        dict(id="x2", ts="2026-01-01T00:00:02Z", price=1010, size=0.12, side="BUY"),
+    ])
+    positions = ref.simulate(ticker, exec_df, strategy="S1", cap_s=300.0)
+    assert len(positions) == 1
+    row = positions.iloc[0]
+    assert str(pd.Timestamp(row["entry_ts"]).isoformat()) == "2026-01-01T00:00:01+00:00"
+    assert str(pd.Timestamp(row["exit_ts"]).isoformat()) == "2026-01-01T00:00:02+00:00"
+    assert not row["forced"]
+
+
+def test_packet_r2_diverges_only_on_tape_i():
+    """The round-2 planted defect (a touch-move rejoin keeps the OLD
+    cumulative-print counter instead of resetting to zero) must be
+    invisible on every micro-tape except (i), and must actually change
+    (i)'s output -- this is the tape an auditor's micro-tape verification
+    (docs/AUDIT_2026-09/PROTOCOL.md step (b)) is meant to catch it on.
+    Tape (c), the packet's other touch-move-rejoin tape, does NOT expose
+    it (see HAND_DERIVATION_i.md) -- only (i) does."""
     diverges = {}
     for letter in LETTERS:
         t, e = _load_tape(letter)
         clean = ref.simulate(t, e, strategy="S1", cap_s=_cap_s(letter))
         defective = pkt.simulate(t, e, strategy="S1", cap_s=_cap_s(letter))
         diverges[letter] = not clean.equals(defective)
-    assert diverges == {"a": False, "b": False, "c": False, "d": True, "e": False,
-                         "f": False, "g": False}
+    assert diverges == {"a": False, "b": False, "c": False, "d": False, "e": False,
+                         "f": False, "g": False, "i": True}
 
-    t, e = _load_tape("d")
+    # (h)'s naive/true split is also unaffected by the round-2 defect.
+    t, e = pd.read_csv(MICRO_DIR / "ticker_h.csv"), pd.read_csv(MICRO_DIR / "exec_h.csv")
+    for naive in (True, False):
+        clean = ref.simulate(t, e, strategy="S1", naive=naive)
+        defective = pkt.simulate(t, e, strategy="S1", naive=naive)
+        assert clean.equals(defective)
+
+    t, e = _load_tape("i")
     clean = ref.simulate(t, e, strategy="S1")
     defective = pkt.simulate(t, e, strategy="S1")
     assert clean.loc[0, "entry_ts"] != defective.loc[0, "entry_ts"]
     assert str(pd.Timestamp(defective.loc[0, "entry_ts"]).isoformat()) == "2026-01-01T00:00:03+00:00"
-    assert str(pd.Timestamp(clean.loc[0, "entry_ts"]).isoformat()) == "2026-01-01T00:00:04+00:00"
+    assert str(pd.Timestamp(clean.loc[0, "entry_ts"]).isoformat()) == "2026-01-01T00:00:05+00:00"
 
 
 @pytest.mark.parametrize("letter", LETTERS)
@@ -114,7 +192,7 @@ def test_determinism(letter):
 # Full tape (reused v3 public files) + sealed json reproduction
 # --------------------------------------------------------------------- #
 FULL_TAPE_DIR = REPO_ROOT / "backtest_data" / "qa_known_answer_maker3_v3_20260905"
-SEALED_PATH = REPO_ROOT / "docs" / "QA" / "answers_sealed_maker4.json"
+SEALED_PATH = REPO_ROOT / "docs" / "QA" / "answers_sealed_maker4_r2.json"
 
 
 def _summarize(positions: pd.DataFrame) -> dict:

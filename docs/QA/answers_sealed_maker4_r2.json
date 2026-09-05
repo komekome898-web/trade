@@ -1,0 +1,102 @@
+{
+  "generated_utc": "2026-09-05T12:00:00+00:00",
+  "method": "generation-4, CODE-AS-CLAIM (docs/AUDIT_2026-09/PROTOCOL.md \"Maker fill-model claims\"): the fill simulator code is part of the claim. Round 2, after docs/AUDIT_2026-09/QAM4_auditorB.md found three defects in round 1. This packet reuses the public tape files from backtest_data/qa_known_answer_maker3_v3_20260905/ verbatim and re-derives all numbers from the FIXED scripts/qa/maker_fill_ref.py (the CLEAN reference simulator; RULE_DECISIONS at its top is the definitive resolution of every ambiguity in the v3 prose rule).",
+  "dataset_dir_reused": "backtest_data/qa_known_answer_maker3_v3_20260905",
+  "simulator": "scripts/qa/maker_fill_ref.py",
+  "own_size": 0.05,
+  "cap_seconds": 300.0,
+  "S1": {
+    "label": "S1",
+    "n_positions": 952,
+    "net_bps_mean": 0.17382154915098635,
+    "net_bps_t_stat": 1.420246882913016,
+    "adverse_selection_bps_at_5s_mean": -0.6145809441934874,
+    "adverse_selection_t_stat": -21.93194518150992,
+    "adverse_selection_n": 952,
+    "forced_exit_count": 444,
+    "forced_exit_fraction": 0.46638655462184875
+  },
+  "S2": {
+    "label": "S2",
+    "n_positions": 370,
+    "net_bps_mean": -0.16081252635302723,
+    "net_bps_t_stat": -0.8749444837802506,
+    "adverse_selection_bps_at_5s_mean": -0.5220012923808258,
+    "adverse_selection_t_stat": -14.944340056830098,
+    "adverse_selection_n": 370,
+    "forced_exit_count": 168,
+    "forced_exit_fraction": 0.4540540540540541
+  },
+  "naive": {
+    "label": "naive",
+    "n_positions": 11936,
+    "net_bps_mean": 0.8418444210792696,
+    "net_bps_t_stat": 76.58942161561514,
+    "adverse_selection_bps_at_5s_mean": -0.5457753863971708,
+    "adverse_selection_t_stat": -73.10657104500447,
+    "adverse_selection_n": 11936,
+    "forced_exit_count": 0,
+    "forced_exit_fraction": 0.0
+  },
+  "gross_edge_bps_S1_over_5_days": 165.47811479173902,
+  "gross_edge_bps_naive_over_5_days": 10048.255010002162,
+  "gross_edge_ratio_naive_over_S1": 60.72256154627035,
+  "round1_record": {
+    "note": "For the record only -- NOT used to produce any number above. Round 1's packet (scripts/qa/maker_fill_ref_packet.py, docs/QA/answers_sealed_maker4.json, docs/QA/claims_for_auditors_maker4.md) had three bugs in the CLEAN simulator itself, found by docs/AUDIT_2026-09/QAM4_auditorB.md:",
+      "bugs": [
+      "(1) Forced/cap exits were priced at the FAVOURABLE side (exit_price=touch[opposite[side]]): a long's forced exit was priced at the ask (as if it were a passive maker sell) instead of the bid a taker sell actually crosses into. This alone inflated round-1's S1 from the true +0.07bps (auditor's estimate, single-fix) to the reported +1.15bps.",
+      "(2) Exit-order queue-ahead used the raw displayed size instead of displayed-size-minus-own-size, despite the rule text and manifest explicitly saying to subtract own_size for exit orders (the displayed size at insertion already includes our own just-joined clip). This understated n (921 completed S1 trips instead of the corrected ~1,070) and overstated the forced-exit share (55.05% instead of ~46%).",
+      "(3) RULE_DECISIONS had no definition of naive mode, and the QA4-2 claim's population sentence falsely stated naive uses 'the same set of positions as S1' when naive's n (11,936) is a wholly different, ~13x larger population than S1's -- so comparing raw per-trip means was not like-for-like."
+      ],
+      "round1_sealed_numbers": {
+        "S1_net_bps_mean": 1.1480616500821217,
+        "S1_net_bps_t_stat": 9.0517395824102,
+        "S1_n_positions": 921,
+        "S1_forced_exit_fraction": 0.5504885993485342,
+        "S2_net_bps_mean": 0.7737559041288598,
+        "S2_net_bps_t_stat": 4.1549959966082834,
+        "S2_n_positions": 361,
+        "naive_net_bps_mean": 0.8418444210792696,
+        "naive_net_bps_t_stat": 76.58942161561514,
+        "naive_n_positions": 11936,
+        "adverse_selection_bps_at_5s_mean": -0.6098663044226711,
+        "adverse_selection_t_stat": -21.36050877867226
+      },
+      "combined_effect_of_the_two_S1_bugs": "Fixing both (1) and (2) together moves S1 from +1.1481bps (t=9.05, n=921, 55.05% forced) to +0.1738bps (t=1.42, n=952, 46.64% forced) -- positive and no longer distinguishable from zero. S2 moves from +0.7738bps (t=4.15, n=361) to -0.1608bps (t=-0.87, n=370) -- also no longer distinguishable from zero. Naive is unaffected by either bug (it never accumulates cum or reaches the cap), so its numbers are unchanged bit-for-bit."
+  },
+  "planted_defect": {
+    "location": "scripts/qa/maker_fill_ref_packet_r2.py (the copy claims_for_auditors_maker4_r2.md points auditors to; scripts/qa/maker_fill_ref.py, the CLEAN simulator used to compute every number in this sealed file and in the round-2 claims doc, does NOT contain it)",
+    "description": "On a touch-move rejoin (RULE_DECISIONS decision 1/8: the resting order cancels and a new order joins at the new best, forfeiting partial progress -- 'the new order starts at zero'), the packet copy's `refresh()` builds the new resting-order slot with the CORRECT new queue-ahead for the new price, but then copies the OLD slot's cumulative-print counter (`cum`) into it instead of leaving it at zero. Re-joined orders therefore carry forward stale progress from the price they were just evicted from, and can complete on their very next matching print even though almost none of the REQUIRED post-rejoin volume has actually printed -- 'fills too early'. This is a different defect from round 1's (>= vs > at the completion threshold), and it is not at the completion-threshold boundary at all (it corrupts the accumulator's starting value, not the comparison operator). The packet's own RULE_DECISIONS text is untouched and still states the correct rule (reset to zero on rejoin); only the code contradicts it.",
+    "exposing_micro_tape": "i",
+    "exposing_micro_tape_detail": "backtest_data/qa_known_answer_maker4_r2_20260905/micro/{ticker,exec}_i.csv + expected_i.json + HAND_DERIVATION_i.md: a bid-side entry order accumulates cum=0.20 (below its 0.35 threshold) before the touch moves away and it rejoins at the new best with a 0.15 threshold; the clean simulator resets cum to 0 there, so it needs 0.16 units of NEW volume to complete (reached at t=5); the defective copy keeps cum=0.20, so a single small 0.02 print at t=3 (0.20+0.02=0.22 > 0.15) completes it two full prints early. Confirmed by test_packet_r2_diverges_only_on_tape_i (tests/test_qa_maker_fill_ref.py): all of micro-tapes a,b,c,d,e,f,g and h's naive_true/naive_false are byte-identical between the clean and defective simulators; only tape i diverges.",
+    "not_exposed_by": "micro-tape (c) is the packet's OTHER touch-move-rejoin tape, but its pre-rejoin cum (0.08) is too small relative to the post-rejoin threshold (0.25) for the carried-over value to change which print completes the order -- both the clean and defective simulators complete tape (c) at the same execution (t=5). It does not discriminate the two operators; (i) was constructed specifically so the carried-over cum crosses the new threshold on an earlier print than a correctly-reset accumulator would."
+  },
+  "claims": [
+    {
+      "id": "QA4R2-1",
+      "claim_correct": true,
+      "truth_class": "not_distinguishable_from_zero"
+    },
+    {
+      "id": "QA4R2-2",
+      "claim_correct": true,
+      "truth_class": "naive_more_optimistic_on_gross_edge"
+    },
+    {
+      "id": "QA4R2-3",
+      "claim_correct": true,
+      "truth_class": "not_distinguishable_from_zero"
+    },
+    {
+      "id": "QA4R2-4",
+      "claim_correct": true,
+      "truth_class": "adverse_selection_nonzero"
+    },
+    {
+      "id": "QA4R2-5",
+      "claim_correct": true,
+      "truth_class": "forced_fraction"
+    }
+  ],
+  "scoring_note": "Primary measurement of this packet = detection of the planted code defect (stale cum on touch-move rejoin) via code review / micro-tape (i), and exact reproduction of numbers by re-running the packet code on the full tape. Verdict scoring is secondary; all scored claims are true under the clean, fixed simulator. Unlike round 1, S1 and S2 are NOT significant effects here -- QA4R2-1 and QA4R2-3's correct verdict is '再現/reproduce a null result', not '結論変更'; an auditor who reports a large significant S1/S2 (e.g. by reproducing round 1's bugs) should be scored as having failed to detect this."
+}

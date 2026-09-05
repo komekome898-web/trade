@@ -1,0 +1,14 @@
+{
+  "positions": [
+    {
+      "direction": "long",
+      "entry_ts": "2026-01-01T00:00:03Z",
+      "entry_price": 1000.0,
+      "exit_ts": "2026-01-01T00:00:05Z",
+      "exit_price": 1010.0,
+      "forced": false,
+      "net_bps": 100.0,
+      "markout_5s_bps": 0.0
+    }
+  ]
+}
