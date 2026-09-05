@@ -46,6 +46,15 @@ recorded claim from raw data with your OWN implementation and report whether it 
 10. Falsification sentence + MDE (minimum detectable effect) at the claim's n. For rejections: could a plausible
     effect size have been detected at all?
 
+## Maker fill-model claims (added 2026-09-05 after the v3 known-answer test)
+Prose fill rules are not reproducible across independent implementations (three auditors, three different S1 values).
+For any claim that depends on a maker fill model, the fill simulator CODE is part of the claim and you MAY read it
+(path given in the packet row). Your job is: (a) code review — does the code implement the stated rule; list every
+place where it decides something the rule text does not say; (b) verify the code on the packet's MICRO-TAPES (a few
+dozen events with hand-computable answers; compute the answers by hand and compare); (c) re-run the code on the full
+data and reproduce the headline numbers; (d) your own independent re-implementation is used only on the micro-tapes.
+Verdict classes are unchanged.
+
 ## Standard configuration (adopted 2026-09-05)
 A verdict is FINAL only when two blind auditors (one lower-tier, one upper-tier model) agree on the verdict class;
 otherwise an arbiter who reads both reports decides. A single audit is PROVISIONAL. Claims involving a maker fill

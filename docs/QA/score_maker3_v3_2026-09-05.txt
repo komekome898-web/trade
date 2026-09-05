@@ -1,0 +1,21 @@
+docs/AUDIT_2026-09/QAM3v3_auditor1.md
+   QA3-1 True 数値差異(結論維持) True
+   QA3-2 False 結論変更 True
+   QA3-4 False 結論変更 True
+   QA3-5 False 結論変更 True
+   QA3-6 True 数値差異(結論維持) True
+   verdicts 5/5  traps {'survivorship': True, 'naive_fill_wrong': True, 'crossed_rows': False, 'adverse_selection_nonzero': False}
+docs/AUDIT_2026-09/QAM3v3_auditor2.md
+   QA3-1 True 結論変更 False
+   QA3-2 False 結論変更 True
+   QA3-4 False 再現 False
+   QA3-5 False 結論変更 True
+   QA3-6 True 結論変更 False
+   verdicts 2/5  traps {'survivorship': False, 'naive_fill_wrong': True, 'crossed_rows': False, 'adverse_selection_nonzero': False}
+docs/AUDIT_2026-09/QAM3v3_auditor3.md
+   QA3-1 True 結論変更 False
+   QA3-2 False 結論変更 True
+   QA3-4 False 結論変更 True
+   QA3-5 False 結論変更 True
+   QA3-6 True 再現 True
+   verdicts 4/5  traps {'survivorship': True, 'naive_fill_wrong': True, 'crossed_rows': True, 'adverse_selection_nonzero': False}

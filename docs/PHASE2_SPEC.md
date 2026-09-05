@@ -88,6 +88,10 @@ env `PHASE2_FINAL_EVAL=<unit>` + オーナー作成の `UNSEAL_APPROVED` ファ�
   「バックテストエンジン + 評価手順」が植え込み値を回収できることを確認してからでないと、その様式の研究単位を走らせない。
   maker 型は `scripts/qa/make_known_answer_maker3.py`(v3)を流用。taker / 日次は `scripts/qa/pipeline_known_answer_{taker,daily}.py`
   (2026-09-05 実施、回収合格。結果 `docs/QA/known_answer_results_2026-09-05.md` 末尾)。板寄せ型は日次型の関数経路を共有。
+- **maker 型の必須条件(第 3 世代既知正解テストより)**: 文章の約定規則は独立実装間で再現しない。maker 型の研究単位は約定
+  シミュレータのコードと、手計算で答えが出る極小テープ(数十イベント、期待値を手計算で添付)を事前登録の一部として提出し、
+  監査はコードレビュー + 極小テープ検証 + 再実行で行う(PROTOCOL.md「Maker fill-model claims」)。G4 の着手条件はこの方式の
+  第 4 世代既知正解テスト合格。
 - **taker 型の必須条件(パイプラインテストの欠陥 1 より)**: `src/bot/backtest/engine.py` はローソク足の妥当性(メンテ窓の合成バー、
   誤プリント)を判定しない。taker 型の研究単位は、schema の既知欠陥と `data/QUALITY.json` のフラグから妥当性マスクを研究層で
   作り、イベント窓・保有窓がマスクに触れる取引を印付けし、**マスク適用前後の両方**を報告する。適用後のみを結論に使う。
