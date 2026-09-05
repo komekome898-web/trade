@@ -1,0 +1,181 @@
+{
+  "generated_utc": "2026-09-05T01:18:50.231478+00:00",
+  "seed": 20260905,
+  "dataset_dir": "backtest_data/qa_known_answer_20260905",
+  "daily_overnight_premium": {
+    "QA_ALPHA": {
+      "file": "daily_qa_alpha.csv.gz",
+      "planted_overnight_premium_bps_per_day": 0.0,
+      "realized_overnight_mean_bps": -0.2502,
+      "realized_overnight_t_stat": -0.848,
+      "n_overnight_observations": 4085,
+      "date_range_utc": [
+        "2011-01-03T00:00:00+00:00",
+        "2026-08-31T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_dates_utc": [
+        "2015-11-10T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_bps": -120.0,
+      "price_scale_glitch_dates_utc": [
+        "2019-08-14T00:00:00+00:00",
+        "2019-08-15T00:00:00+00:00"
+      ],
+      "price_scale_glitch_factor": 1000.0
+    },
+    "QA_BRAVO": {
+      "file": "daily_qa_bravo.csv.gz",
+      "planted_overnight_premium_bps_per_day": 2.0,
+      "realized_overnight_mean_bps": 2.1163,
+      "realized_overnight_t_stat": 7.2,
+      "n_overnight_observations": 4085,
+      "date_range_utc": [
+        "2011-01-03T00:00:00+00:00",
+        "2026-08-31T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_dates_utc": [],
+      "ex_dividend_drop_bps": null,
+      "price_scale_glitch_dates_utc": [],
+      "price_scale_glitch_factor": null
+    },
+    "QA_CHARLIE": {
+      "file": "daily_qa_charlie.csv.gz",
+      "planted_overnight_premium_bps_per_day": 5.0,
+      "realized_overnight_mean_bps": 4.9496,
+      "realized_overnight_t_stat": 16.76,
+      "n_overnight_observations": 4085,
+      "date_range_utc": [
+        "2011-01-03T00:00:00+00:00",
+        "2026-08-31T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_dates_utc": [
+        "2021-08-26T00:00:00+00:00"
+      ],
+      "ex_dividend_drop_bps": -120.0,
+      "price_scale_glitch_dates_utc": [],
+      "price_scale_glitch_factor": null
+    }
+  },
+  "minute_bars": {
+    "qa_randomwalk": {
+      "file": "min1_qa_randomwalk.csv.gz",
+      "planted_lag1_autocorr": 0.0,
+      "realized_lag1_autocorr_ex_maintenance": 0.00471,
+      "n_minutes": 86400,
+      "days": 60,
+      "maintenance_window_utc": "19:00-19:10 daily",
+      "maintenance_rows": 600
+    },
+    "qa_autocorr": {
+      "file": "min1_qa_autocorr.csv.gz",
+      "planted_lag1_autocorr": 0.05,
+      "realized_lag1_autocorr_ex_maintenance": 0.05063,
+      "n_minutes": 86400,
+      "days": 60,
+      "maintenance_window_utc": "19:00-19:10 daily",
+      "maintenance_rows": 600
+    }
+  },
+  "tape": {
+    "quote_file": "ticker_qa_tape.csv.gz",
+    "execution_file": "executions_qa_tape.csv.gz",
+    "costs_file": "costs_qa.yaml",
+    "n_quote_rows": 51732,
+    "n_execution_rows": 32464,
+    "quoted_spread_bps": 2.0,
+    "realized_spread_bps_ex_crossed": 2.0,
+    "taker_slippage_bps_per_side": 0.8,
+    "realized_slippage_bps_per_side": 0.7992,
+    "taker_fee_bps": 0.0,
+    "true_taker_roundtrip_floor_bps": 3.6,
+    "crossed_book_fraction_target": 0.001,
+    "crossed_book_rows": 63,
+    "crossed_book_fraction_realized": 0.001218,
+    "true_trade_time_column": "ts",
+    "collection_time_column": "t",
+    "collection_time_shift_sec": 2.0,
+    "date_range_utc": [
+      "2026-07-01T00:00:09.824856391+00:00",
+      "2026-07-03T23:59:54.272359166+00:00"
+    ]
+  },
+  "traps": {
+    "crossed_book_rows": {
+      "file": "ticker_qa_tape.csv.gz",
+      "fraction_target": 0.001,
+      "n_rows": 63
+    },
+    "maintenance_window_flat_segment": {
+      "files": [
+        "min1_qa_randomwalk.csv.gz",
+        "min1_qa_autocorr.csv.gz"
+      ],
+      "window_utc": "19:00-19:10 daily",
+      "rows_per_series": 600
+    },
+    "t_ts_collection_vs_trade_time": {
+      "file": "executions_qa_tape.csv.gz",
+      "collection_time_column": "t",
+      "true_trade_time_column": "ts",
+      "shift_sec": 2.0
+    },
+    "price_scale_glitch": {
+      "file": "daily_qa_alpha.csv.gz",
+      "dates_utc": [
+        "2019-08-14T00:00:00+00:00",
+        "2019-08-15T00:00:00+00:00"
+      ],
+      "factor": 1000.0
+    }
+  },
+  "claims": [
+    {
+      "id": "QA-1",
+      "category": "premium",
+      "truth_class": "true_effect",
+      "claim_correct": true,
+      "instrument": "QA_BRAVO",
+      "text": "QA_BRAVO は close→翌 open のオーバーナイト・プレミアムが+2.1bps/日、t=7.2 で存在する(2011-01-03〜2026-08-31、平日のみ)。"
+    },
+    {
+      "id": "QA-2",
+      "category": "premium",
+      "truth_class": "zero_effect",
+      "claim_correct": false,
+      "instrument": "QA_ALPHA",
+      "text": "QA_ALPHA は close→翌 open のオーバーナイト・プレミアムが+3.5bps/日、t=4.2 で存在する(2011-01-03〜2026-08-31、平日のみ)。"
+    },
+    {
+      "id": "QA-3",
+      "category": "momentum",
+      "truth_class": "true_effect",
+      "claim_correct": true,
+      "instrument": "qa_autocorr",
+      "text": "1分足系列 qa_autocorr はリターンの lag-1 自己相関が+0.051 と有意に正(60日、対照系列 qa_randomwalk との比較で確認)。"
+    },
+    {
+      "id": "QA-4",
+      "category": "momentum",
+      "truth_class": "zero_effect",
+      "claim_correct": false,
+      "instrument": "qa_randomwalk",
+      "text": "1分足系列 qa_randomwalk はリターンの lag-1 自己相関が+0.04 で有意なモメンタムが存在する(60日)。"
+    },
+    {
+      "id": "QA-5",
+      "category": "cost_floor",
+      "truth_class": "cost_trap",
+      "claim_correct": true,
+      "instrument": "qa_tape",
+      "text": "合成テープの taker 往復コスト床は3.6bps(スプレッド2.0bpsの半分+片道スリッページ0.8bps、手数料0.0bps)である。"
+    },
+    {
+      "id": "QA-6",
+      "category": "cost_floor",
+      "truth_class": "cost_trap",
+      "claim_correct": false,
+      "instrument": "qa_tape",
+      "text": "合成テープの実測スプレッドは1.2bpsに縮小しており(全 quote 行の単純平均。交差板・メンテ窓等の除外は行っていない)、taker 往復コスト床は2.8bpsまで圧縮できる。"
+    }
+  ]
+}

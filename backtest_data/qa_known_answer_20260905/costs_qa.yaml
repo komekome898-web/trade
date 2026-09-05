@@ -1,0 +1,5 @@
+_comment: 'QA known-answer packet: DECLARED constant only. Spread and slippage are
+  NOT declared here — recompute both from the tape yourself, per PROTOCOL.md Q3.'
+taker_fee_bps: 0.0
+source: 'synthetic, matches config/products.yaml FX_BTC_JPY convention (taker_fee_pct:
+  0.0)'

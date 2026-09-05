@@ -8,7 +8,7 @@ recorded claim from raw data with your OWN implementation and report whether it 
   that list your claim ids (section 1 tables; read them with grep on the claim id, not the whole file);
   any scripts/research_*.py, scripts/judge_*.py, scripts/build_*.py, scripts/paper_*.py, scripts/run_board_round.py,
   scripts/tp_operating_curve.py; any KNOWLEDGE*.md; any RESEARCH_REPORT/PREREG/SURVEY; git history; files named
-  *_RUN.txt / *JUDGMENT*.txt inside snapshots. If you open any of these, the audit is void — say so in the report.
+  *_RUN.txt / *JUDGMENT*.txt inside snapshots; scripts/qa/*.py and docs/QA/ (known-answer generator and sealed answers). If you open any of these, the audit is void — say so in the report.
 - You MAY read: data files and their manifest/README/MD5SUMS/coverage files, config/*.yaml, src/ (loaders, fee
   constants), paper_logs/ data files, public web data (Yahoo/Binance/JPX) if a claim needs it.
 - Budget: ≤ 50 tool calls, ≤ 120k tokens. Write one script in the scratchpad directory
