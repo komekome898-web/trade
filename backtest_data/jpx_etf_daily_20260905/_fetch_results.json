@@ -1,0 +1,137 @@
+{
+  "1321.T": {
+    "symbol": "1321.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1321.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:45:52Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "1306.T": {
+    "symbol": "1306.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1306.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:45:53Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "1591.T": {
+    "symbol": "1591.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1591.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:45:54Z",
+    "http_status": 200,
+    "row_count": 3106,
+    "first_date": "2014-01-23",
+    "last_date": "2026-09-04"
+  },
+  "2516.T": {
+    "symbol": "2516.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/2516.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:45:55Z",
+    "http_status": 200,
+    "row_count": 2111,
+    "first_date": "2018-01-30",
+    "last_date": "2026-09-04"
+  },
+  "1343.T": {
+    "symbol": "1343.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1343.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:45:56Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "1311.T": {
+    "symbol": "1311.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1311.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:45:57Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "1547.T": {
+    "symbol": "1547.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1547.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:45:58Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "2521.T": {
+    "symbol": "2521.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/2521.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:45:59Z",
+    "http_status": 200,
+    "row_count": 1982,
+    "first_date": "2018-07-30",
+    "last_date": "2026-09-04"
+  },
+  "2558.T": {
+    "symbol": "2558.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/2558.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:46:00Z",
+    "http_status": 200,
+    "row_count": 1629,
+    "first_date": "2020-01-07",
+    "last_date": "2026-09-04"
+  },
+  "1655.T": {
+    "symbol": "1655.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1655.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:46:01Z",
+    "http_status": 200,
+    "row_count": 2201,
+    "first_date": "2017-09-26",
+    "last_date": "2026-09-04"
+  },
+  "1557.T": {
+    "symbol": "1557.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1557.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:46:02Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "7203.T": {
+    "symbol": "7203.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/7203.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:46:03Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "6758.T": {
+    "symbol": "6758.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/6758.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:46:04Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "8306.T": {
+    "symbol": "8306.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/8306.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:46:05Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "9984.T": {
+    "symbol": "9984.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/9984.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-05T02:46:06Z",
+    "http_status": 200,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  }
+}

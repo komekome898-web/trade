@@ -1,0 +1,61 @@
+{
+  "dataset": "jpx_etf_daily",
+  "description": "15 Tokyo-listed Yahoo Finance daily series (mostly ETFs, plus 4 large-cap equities) snapshotted for packet H's data-governance audit. The first packet H audit fetched these 15 series live via the Yahoo chart API and never snapshotted the raw response (data loss) -- backtest_data/jpx_etf_daily_<date>/ is the permanent, MD5-stamped fix: raw JSON kept verbatim next to a derived CSV per symbol.",
+  "path_glob": [
+    "backtest_data/jpx_etf_daily_*/*.json",
+    "backtest_data/jpx_etf_daily_*/*.csv",
+    "backtest_data/jpx_etf_daily_*/manifest.json",
+    "backtest_data/jpx_etf_daily_*/MD5SUMS",
+    "backtest_data/jpx_etf_daily_*/README.md"
+  ],
+  "source": "Yahoo Finance chart API: https://query1.finance.yahoo.com/v8/finance/chart/<SYM>?range=15y&interval=1d&events=div,splits -- fetched via Python requests through the project's preconfigured HTTPS proxy. See backtest_data/jpx_etf_daily_<date>/README.md and manifest.json for exact fetch timestamps, HTTP status, and per-symbol checksums.",
+  "retention": "backtest_data/jpx_etf_daily_<date>/ is a permanent MD5-stamped snapshot (never overwritten in place; a re-fetch lands in a new dated directory). Raw *.json files are never modified or deleted once written -- they are the ground truth if the derived CSV parsing is ever found to be wrong.",
+  "symbols": {
+    "1321.T": "NEXT FUNDS TOPIX (Nomura Asset Management) -- ETF",
+    "1306.T": "NEXT FUNDS TOPIX (Nomura Asset Management) -- ETF",
+    "1591.T": "Nomura Asset Management -- ETF",
+    "2516.T": "Simplex Asset Management -- ETF",
+    "1343.T": "NEXT FUNDS J-REIT ETF (Nomura Asset Management) -- ETF",
+    "1311.T": "Nomura Asset Management -- ETF",
+    "1547.T": "Amova Asset Management -- ETF",
+    "2521.T": "Amova Asset Management -- ETF",
+    "2558.T": "Mitsubishi UFJ Asset Management -- ETF",
+    "1655.T": "BlackRock Japan / iShares -- ETF",
+    "1557.T": "State Street SPDR S&P 500 ETF Trust (JPY-denominated) -- ETF",
+    "7203.T": "Toyota Motor Corp -- EQUITY (not an ETF, kept here because it is on packet H's fetch list)",
+    "6758.T": "Sony Group Corporation -- EQUITY (not an ETF)",
+    "8306.T": "Mitsubishi UFJ Financial Group -- EQUITY (not an ETF)",
+    "9984.T": "SoftBank Group Corp -- EQUITY (not an ETF)"
+  },
+  "file_groups": {
+    "backtest_data/jpx_etf_daily_<date>/<SYM>.json": {
+      "description": "Raw Yahoo chart API response body, byte-for-byte, never modified. Ground truth for the derived CSV; re-parse this if a CSV-derivation bug is ever suspected.",
+      "notes": "Top-level shape: chart.result[0] with .meta (instrumentType, currency, exchangeTimezoneName, shortName), .timestamp (Unix seconds, one per bar), .indicators.quote[0] (open/high/low/close/volume arrays, null-padded), .indicators.adjclose[0].adjclose, and .events.{dividends,splits} when present (requested via events=div,splits)."
+    },
+    "backtest_data/jpx_etf_daily_<date>/<SYM>.csv": {
+      "coverage": "Varies by symbol -- 15y request range capped by each symbol's actual listing history. See manifest.json / README.md in the snapshot directory for the exact row count and first/last date measured at fetch time.",
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "UTC calendar date of the bar's raw Unix timestamp (empirically equal to the JST trading date for the timestamps seen in the 20260905 snapshot -- see that snapshot's README for the verification and caveat; not a documented Yahoo guarantee)", "notes": null},
+        "open": {"meaning": "daily open", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null for this field on this date"},
+        "high": {"meaning": "daily high", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null"},
+        "low": {"meaning": "daily low", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null"},
+        "close": {"meaning": "daily close", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null"},
+        "adjclose": {"meaning": "dividend/split-adjusted close, as returned by Yahoo's indicators.adjclose", "unit": "JPY", "tz": null, "notes": "blank when Yahoo returned null or omitted the adjclose series entirely"},
+        "volume": {"meaning": "daily volume", "unit": "units", "tz": null, "notes": "blank when Yahoo returned null; 0 is a real reported value distinct from blank"}
+      }
+    },
+    "backtest_data/jpx_etf_daily_<date>/manifest.json": {
+      "description": "Per-symbol machine-readable summary: url, fetched_at_utc, http_status, error (if any), row_count, first_date, last_date, and md5 of both the raw json and derived csv."
+    },
+    "backtest_data/jpx_etf_daily_<date>/MD5SUMS": {
+      "description": "md5sum output covering every *.json, *.csv, and README.md in the snapshot directory."
+    }
+  },
+  "known_defects": [
+    "NULL QUOTE ROWS: Yahoo sometimes lists a date in the timestamp[] array with every OHLC/volume field null (rendered as blank CSV cells), not a real halted-trading print. Observed at 2017-07-17 and/or 2025-10-24 across most symbols in the 20260905 snapshot, and additionally at 2026-03-06 / 2026-09-02 for 1557.T. A same-day fetch can also race the exchange close print, leaving open/high/low populated but close/adjclose/volume null (observed for 1557.T on 2026-09-04, the fetch's own run date) -- do not treat a partially-null row as a data-entry error, and do not assume the most recent row in a same-day fetch has a final close.",
+    "ISOLATED BAD-PRINT DAYS: on a small number of dates, OHLC collapses to roughly 1/100 of the surrounding price level for exactly one bar, often with volume 0, and with no corresponding entry in the raw JSON's events.splits (so it is not a real corporate action, just a Yahoo source glitch). Confirmed in the 20260905 snapshot for 1557.T (2013-10-29, 2013-10-31, 2017-07-17: e.g. close prints ~177 against a ~17390 close the trading days immediately before/after), 1306.T (2015-01-05), 1655.T (2017-09-28, 2022-02-08), and 2558.T (2026-06-05, 2026-06-08). Treat any single-day >80% round-trip in close-to-close return as a probable bad print unless corroborated by events.splits in the raw JSON -- do not silently forward-fill or interpolate without flagging it.",
+    "MIXED INSTRUMENT TYPES UNDER ONE DATASET NAME: 7203.T, 6758.T, 8306.T, 9984.T are individual equities (Yahoo instrumentType=EQUITY), not ETFs, despite the jpx_etf_daily dataset name -- kept here because packet H's fetch list specified them alongside the 11 ETF tickers.",
+    "VARYING HISTORY LENGTH: the 15y range request is capped by each symbol's actual listing date -- row counts and first_date differ substantially across symbols (see manifest.json for exact values per snapshot). A cross-symbol join must handle the shorter series' missing early history explicitly, not assume 15y of data for every ticker.",
+    "adjclose may be absent or null-padded independently of open/high/low/close -- Yahoo's indicators.adjclose is a separate array from indicators.quote and can have different null coverage; check it independently rather than assuming it tracks close's nullness."
+  ]
+}
