@@ -123,7 +123,7 @@
      "files": 1
     },
     "non_monotonic": {
-     "count": 538325,
+     "count": 538526,
      "examples": [
       {
        "examples": [
@@ -1895,7 +1895,7 @@
      "files": 1
     },
     "zero_volume": {
-     "count": 19435,
+     "count": 19443,
      "examples": [
       {
        "examples": [
@@ -4313,7 +4313,7 @@
      "files": 6
     },
     "gaps": {
-     "count": 212580,
+     "count": 212836,
      "examples": [
       {
        "examples": [
@@ -4418,7 +4418,7 @@
    "files_flagged": 0
   }
  },
- "generated_at": "2026-09-05T16:26:30.267068+00:00",
+ "generated_at": "2026-09-05T16:42:39.816884+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
  "schema_undefined_count": 0,
  "schema_undefined_files": []
