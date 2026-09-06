@@ -18,7 +18,7 @@
   "bitflyer_execution_flow": {
    "checks": {
     "gaps": {
-     "count": 111042,
+     "count": 112243,
      "examples": [
       {
        "examples": [
@@ -79,7 +79,7 @@
          "ts": "2026-08-31T12:15:09.137000+00:00"
         }
        ],
-       "median_gap_seconds": 3.327,
+       "median_gap_seconds": 2.003,
        "path": "data/executions_FX_BTC_JPY.csv"
       },
       {
@@ -236,7 +236,7 @@
   "bitflyer_tape": {
    "checks": {
     "duplicate_keys": {
-     "count": 30533,
+     "count": 30855,
      "examples": [
       {
        "examples": [
@@ -489,10 +489,10 @@
        "path": "backtest_data/auto_bitflyer_executions_20260905/executions_20260824.csv.gz"
       }
      ],
-     "files": 55
+     "files": 56
     },
     "gaps": {
-     "count": 246196,
+     "count": 250675,
      "examples": [
       {
        "examples": [
@@ -630,11 +630,11 @@
        "path": "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260824.csv.gz"
       }
      ],
-     "files": 125
+     "files": 127
     }
    },
-   "files_checked": 125,
-   "files_flagged": 125
+   "files_checked": 127,
+   "files_flagged": 127
   },
   "board_round_series_5s": {
    "checks": {
@@ -946,7 +946,7 @@
   "candles_fx_btc_jpy": {
    "checks": {
     "gaps": {
-     "count": 327,
+     "count": 328,
      "examples": [
       {
        "examples": [
@@ -1023,6 +1023,11 @@
          "ts": "2026-08-29T19:12:00+00:00"
         },
         {
+         "gap_seconds": 840.0,
+         "row": 24999,
+         "ts": "2026-09-06T19:12:00+00:00"
+        },
+        {
          "gap_seconds": 780.0,
          "row": 1327,
          "ts": "2026-08-20T19:12:00+00:00"
@@ -1031,11 +1036,6 @@
          "gap_seconds": 780.0,
          "row": 2755,
          "ts": "2026-08-21T19:12:00+00:00"
-        },
-        {
-         "gap_seconds": 780.0,
-         "row": 4174,
-         "ts": "2026-08-22T19:12:00+00:00"
         }
        ],
        "median_gap_seconds": 60.0,
@@ -1756,7 +1756,7 @@
      "files": 5
     },
     "zero_volume": {
-     "count": 19655,
+     "count": 19850,
      "examples": [
       {
        "examples": [
@@ -1814,6 +1814,116 @@
    },
    "files_checked": 13,
    "files_flagged": 7
+  },
+  "fx_btc_jpy_1m_continuous": {
+   "checks": {
+    "gaps": {
+     "count": 15,
+     "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 37260.0,
+         "row": 50165,
+         "ts": "2026-08-28T04:18:00+00:00"
+        },
+        {
+         "gap_seconds": 30360.0,
+         "row": 47854,
+         "ts": "2026-08-26T02:55:00+00:00"
+        },
+        {
+         "gap_seconds": 840.0,
+         "row": 52383,
+         "ts": "2026-08-29T19:12:00+00:00"
+        },
+        {
+         "gap_seconds": 780.0,
+         "row": 45041,
+         "ts": "2026-08-23T19:12:00+00:00"
+        },
+        {
+         "gap_seconds": 780.0,
+         "row": 46459,
+         "ts": "2026-08-24T19:12:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/fx_btc_jpy_1m_continuous_20260906/candles_1m.csv.gz"
+      }
+     ],
+     "files": 1
+    },
+    "maintenance_window": {
+     "count": 90,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 412,
+         "ts": "2026-07-23T19:00:00+00:00",
+         "value": 10602438.0
+        },
+        {
+         "row": 413,
+         "ts": "2026-07-23T19:01:00+00:00",
+         "value": 10602438.0
+        },
+        {
+         "row": 414,
+         "ts": "2026-07-23T19:02:00+00:00",
+         "value": 10602438.0
+        },
+        {
+         "row": 415,
+         "ts": "2026-07-23T19:03:00+00:00",
+         "value": 10602438.0
+        },
+        {
+         "row": 416,
+         "ts": "2026-07-23T19:04:00+00:00",
+         "value": 10602438.0
+        }
+       ],
+       "path": "backtest_data/fx_btc_jpy_1m_continuous_20260906/candles_1m.csv.gz"
+      }
+     ],
+     "files": 1
+    },
+    "zero_volume": {
+     "count": 3171,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 236,
+         "ts": "2026-07-23 16:04:00+00:00"
+        },
+        {
+         "row": 260,
+         "ts": "2026-07-23 16:28:00+00:00"
+        },
+        {
+         "row": 366,
+         "ts": "2026-07-23 18:14:00+00:00"
+        },
+        {
+         "row": 369,
+         "ts": "2026-07-23 18:17:00+00:00"
+        },
+        {
+         "row": 413,
+         "ts": "2026-07-23 19:01:00+00:00"
+        }
+       ],
+       "path": "backtest_data/fx_btc_jpy_1m_continuous_20260906/candles_1m.csv.gz"
+      }
+     ],
+     "files": 1
+    }
+   },
+   "files_checked": 1,
+   "files_flagged": 1
   },
   "fx_event_ticks": {
    "checks": {
@@ -3766,7 +3876,7 @@
      "files": 4
     }
    },
-   "files_checked": 217,
+   "files_checked": 218,
    "files_flagged": 4
   },
   "spread_fx_btc_jpy": {
@@ -3851,7 +3961,7 @@
   "venues": {
    "checks": {
     "duplicate_keys": {
-     "count": 430,
+     "count": 473,
      "examples": [
       {
        "examples": [
@@ -4079,7 +4189,7 @@
        "path": "backtest_data/auto_venues_20260905/quotes_20260901.csv.gz"
       }
      ],
-     "files": 27
+     "files": 28
     },
     "extreme_return": {
      "count": 15,
@@ -4243,7 +4353,7 @@
      "files": 6
     },
     "gaps": {
-     "count": 215940,
+     "count": 220946,
      "examples": [
       {
        "examples": [
@@ -4331,15 +4441,15 @@
        "path": "backtest_data/auto_venues_20260905/quotes_20260901.csv.gz"
       }
      ],
-     "files": 152
+     "files": 157
     }
    },
-   "files_checked": 155,
-   "files_flagged": 155
+   "files_checked": 160,
+   "files_flagged": 160
   },
   "ws_raw_capture": {
    "checks": {},
-   "files_checked": 78,
+   "files_checked": 81,
    "files_flagged": 0
   },
   "yutai": {
@@ -4348,10 +4458,11 @@
    "files_flagged": 0
   }
  },
- "generated_at": "2026-09-06T09:13:37.215597+00:00",
+ "generated_at": "2026-09-06T21:25:55.459431+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 217,
+ "schema_undefined_count": 218,
  "schema_undefined_files": [
+  "backtest_data/binance_BTCUSDT_1m_20240101_20260831/binance_BTCUSDT_1m_20240101_20260831.csv.gz",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_diff_table.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_null.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_state_table.csv",
