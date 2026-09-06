@@ -1,0 +1,8 @@
+unit: P2-03
+approved_by: owner (komekome3ai@gmail.com)
+approved_at_utc: 2026-09-06
+owner_message: "私の提案: 行う。ただし先に P2-01 だけ開け、上位層の監査まで通してから P2-02 / P2-03 を開ける。この提案を採用します。" then "わかりました。進めてください。"
+precondition_met: P2-01 final evaluation passed both lower- and upper-tier blind audits (再現, docs/PHASE2/P2-01/FINAL_AUDIT_*.md, commit a4a1caf)
+final_configuration: PREREG frozen 2026-09-06; iteration ledger docs/PHASE2/P2-03/ITER.md
+scope: P2-03 only
+file_created_by: lead, transcribing the owner's chat approval (this file is never created by code)
