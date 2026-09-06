@@ -2,3 +2,14 @@
 {"ts_utc": "2026-09-06T02:54:16.087273+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1321_daily.csv", "rows_returned": 1318}
 {"ts_utc": "2026-09-06T02:54:16.089190+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_dividends.csv", "rows_returned": 22}
 {"ts_utc": "2026-09-06T02:54:16.091880+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/reit_index_daily.csv", "rows_returned": 299}
+{"ts_utc": "2026-09-06T03:10:33.297124+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_daily.csv", "rows_returned": 1318}
+{"ts_utc": "2026-09-06T03:10:33.316121+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1321_daily.csv", "rows_returned": 1318}
+{"ts_utc": "2026-09-06T03:10:33.318234+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_dividends.csv", "rows_returned": 22}
+{"ts_utc": "2026-09-06T03:12:45.085039+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_daily.csv", "rows_returned": 1318}
+{"ts_utc": "2026-09-06T03:12:45.103424+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1321_daily.csv", "rows_returned": 1318}
+{"ts_utc": "2026-09-06T03:12:45.105501+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_dividends.csv", "rows_returned": 22}
+{"ts_utc": "2026-09-06T03:12:45.108292+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/reit_index_daily.csv", "rows_returned": 299}
+{"ts_utc": "2026-09-06T03:12:52.856608+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_daily.csv", "rows_returned": 1318}
+{"ts_utc": "2026-09-06T03:12:52.874832+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1321_daily.csv", "rows_returned": 1318}
+{"ts_utc": "2026-09-06T03:12:52.876864+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_dividends.csv", "rows_returned": 22}
+{"ts_utc": "2026-09-06T03:12:52.879682+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/reit_index_daily.csv", "rows_returned": 299}
