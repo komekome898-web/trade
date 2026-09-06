@@ -1,0 +1,446 @@
+{
+ "datasets": {
+  "nk225_events": {
+   "checks": {
+    "extreme_return": {
+     "count": 7142,
+     "examples": [
+      {
+       "examples": [
+        {
+         "prev": 1690.0,
+         "return": 0.15976331360946747,
+         "row": 690,
+         "value": 1960.0
+        },
+        {
+         "prev": 1960.0,
+         "return": 0.11734693877551021,
+         "row": 691,
+         "value": 2190.0
+        },
+        {
+         "prev": 1990.0,
+         "return": 0.19095477386934673,
+         "row": 1913,
+         "value": 2370.0
+        },
+        {
+         "prev": 1710.0,
+         "return": -0.12280701754385964,
+         "row": 1998,
+         "value": 1500.0
+        },
+        {
+         "prev": 1330.0,
+         "return": 0.17293233082706766,
+         "row": 2003,
+         "value": 1560.0
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1301.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 692.3333129882812,
+         "return": 0.11844006125614234,
+         "row": 1572,
+         "value": 774.3333129882812
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1333.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 538.1944580078125,
+         "return": -0.12580646734358703,
+         "row": 79,
+         "value": 470.4861145019531
+        },
+        {
+         "prev": 470.4861145019531,
+         "return": 0.14391145969851635,
+         "row": 80,
+         "value": 538.1944580078125
+        },
+        {
+         "prev": 880.2083129882812,
+         "return": 0.16370809827357846,
+         "row": 220,
+         "value": 1024.3055419921875
+        },
+        {
+         "prev": 767.361083984375,
+         "return": 0.12443443772746174,
+         "row": 255,
+         "value": 862.8472290039062
+        },
+        {
+         "prev": 961.8055419921875,
+         "return": 0.1498195672075187,
+         "row": 445,
+         "value": 1105.90283203125
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1605.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 1119.0,
+         "return": -0.1644325290437891,
+         "row": 1058,
+         "value": 935.0
+        },
+        {
+         "prev": 734.0,
+         "return": -0.11171662125340599,
+         "row": 1287,
+         "value": 652.0
+        },
+        {
+         "prev": 652.0,
+         "return": 0.15337423312883436,
+         "row": 1288,
+         "value": 752.0
+        },
+        {
+         "prev": 757.0,
+         "return": -0.13210039630118892,
+         "row": 1290,
+         "value": 657.0
+        },
+        {
+         "prev": 634.0,
+         "return": -0.10252365930599369,
+         "row": 1296,
+         "value": 569.0
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1721.csv"
+      },
+      {
+       "examples": [
+        {
+         "prev": 571.5,
+         "return": 0.12467191601049869,
+         "row": 32,
+         "value": 642.75
+        },
+        {
+         "prev": 607.25,
+         "return": 0.14697406340057637,
+         "row": 58,
+         "value": 696.5
+        },
+        {
+         "prev": 750.0,
+         "return": 0.30966666666666665,
+         "row": 85,
+         "value": 982.25
+        },
+        {
+         "prev": 982.25,
+         "return": 0.18172562993128022,
+         "row": 87,
+         "value": 1160.75
+        },
+        {
+         "prev": 910.75,
+         "return": -0.11776008783969256,
+         "row": 107,
+         "value": 803.5
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1808.csv"
+      }
+     ],
+     "files": 188
+    },
+    "gaps": {
+     "count": 185,
+     "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 4605,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/nk225_events_20260904/px/1301.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 1268,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/nk225_events_20260904/px/1333.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 4864,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/nk225_events_20260904/px/1605.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 3890,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/nk225_events_20260904/px/1721.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 4605,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/nk225_events_20260904/px/1808.csv"
+      }
+     ],
+     "files": 183
+    },
+    "split_candidate": {
+     "count": 15,
+     "examples": [
+      {
+       "examples": [
+        {
+         "close": 365.5,
+         "prev_close": 731.0,
+         "ratio": 0.5,
+         "row": 581,
+         "ts": "2005-11-04T00:00:00+00:00"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/3436.csv"
+      },
+      {
+       "examples": [
+        {
+         "close": 10.0,
+         "prev_close": 20.0,
+         "ratio": 0.5,
+         "row": 2654,
+         "ts": "2010-10-18T00:00:00+00:00"
+        },
+        {
+         "close": 20.0,
+         "prev_close": 10.0,
+         "ratio": 2.0,
+         "row": 2657,
+         "ts": "2010-10-21T00:00:00+00:00"
+        },
+        {
+         "close": 10.0,
+         "prev_close": 20.0,
+         "ratio": 0.5,
+         "row": 2659,
+         "ts": "2010-10-25T00:00:00+00:00"
+        },
+        {
+         "close": 20.0,
+         "prev_close": 10.0,
+         "ratio": 2.0,
+         "row": 2666,
+         "ts": "2010-11-04T00:00:00+00:00"
+        },
+        {
+         "close": 10.0,
+         "prev_close": 20.0,
+         "ratio": 0.5,
+         "row": 2668,
+         "ts": "2010-11-08T00:00:00+00:00"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/5721.csv"
+      },
+      {
+       "examples": [
+        {
+         "close": 2555.0,
+         "prev_close": 5210.0,
+         "ratio": 0.4904030710172745,
+         "row": 714,
+         "ts": "2003-09-25T00:00:00+00:00"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/7832.csv"
+      },
+      {
+       "examples": [
+        {
+         "close": 6.679999828338623,
+         "prev_close": 3.4000000953674316,
+         "ratio": 1.964705776755788,
+         "row": 1110,
+         "ts": "2004-04-05T00:00:00+00:00"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/8766.csv"
+      }
+     ],
+     "files": 4
+    },
+    "zero_volume": {
+     "count": 23507,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 1,
+         "ts": "2001-01-01"
+        },
+        {
+         "row": 2,
+         "ts": "2001-01-02"
+        },
+        {
+         "row": 3,
+         "ts": "2001-01-03"
+        },
+        {
+         "row": 6,
+         "ts": "2001-01-08"
+        },
+        {
+         "row": 31,
+         "ts": "2001-02-12"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1301.csv"
+      },
+      {
+       "examples": [
+        {
+         "row": 42,
+         "ts": "2014-06-02"
+        },
+        {
+         "row": 427,
+         "ts": "2015-12-25"
+        },
+        {
+         "row": 559,
+         "ts": "2016-07-11"
+        },
+        {
+         "row": 809,
+         "ts": "2017-07-17"
+        },
+        {
+         "row": 828,
+         "ts": "2017-08-11"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1333.csv"
+      },
+      {
+       "examples": [
+        {
+         "row": 5,
+         "ts": "2000-01-10"
+        },
+        {
+         "row": 29,
+         "ts": "2000-02-11"
+        },
+        {
+         "row": 55,
+         "ts": "2000-03-20"
+        },
+        {
+         "row": 87,
+         "ts": "2000-05-03"
+        },
+        {
+         "row": 88,
+         "ts": "2000-05-04"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1605.csv"
+      },
+      {
+       "examples": [
+        {
+         "row": 11,
+         "ts": "2003-10-13"
+        },
+        {
+         "row": 26,
+         "ts": "2003-11-03"
+        },
+        {
+         "row": 41,
+         "ts": "2003-11-24"
+        },
+        {
+         "row": 62,
+         "ts": "2003-12-23"
+        },
+        {
+         "row": 68,
+         "ts": "2003-12-31"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1721.csv"
+      },
+      {
+       "examples": [
+        {
+         "row": 1,
+         "ts": "2001-01-01"
+        },
+        {
+         "row": 2,
+         "ts": "2001-01-02"
+        },
+        {
+         "row": 3,
+         "ts": "2001-01-03"
+        },
+        {
+         "row": 6,
+         "ts": "2001-01-08"
+        },
+        {
+         "row": 31,
+         "ts": "2001-02-12"
+        }
+       ],
+       "path": "backtest_data/nk225_events_20260904/px/1808.csv"
+      }
+     ],
+     "files": 183
+    }
+   },
+   "files_checked": 189,
+   "files_flagged": 189
+  }
+ },
+ "files_scanned": 189,
+ "generated_at": "2026-09-06T08:14:20.505857+00:00",
+ "schema_undefined_count": 0,
+ "schema_undefined_files": [],
+ "scope": "backtest_data/nk225_events_20260904/px/*.csv only (189 files) -- NOT the repo-wide intake ledger"
+}

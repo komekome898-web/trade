@@ -3,7 +3,8 @@
   "description": "Nikkei 225 index constituent add/delete events and the per-symbol price-fetch log behind them, used for the JPX event-library research line.",
   "path_glob": [
     "backtest_data/nk225_events_*/events.csv",
-    "backtest_data/nk225_events_*/fetch_log.csv"
+    "backtest_data/nk225_events_*/fetch_log.csv",
+    "backtest_data/nk225_events_*/px/*.csv"
   ],
   "source": "Nikkei 225 constituent change history (add/delete) cross-referenced against per-symbol daily price fetches -- see backtest_data/nk225_events_<date>/px.tar.gz for the underlying per-symbol series.",
   "retention": "permanent dated snapshot (backtest_data/nk225_events_<date>/); never regenerated in place.",
@@ -24,10 +25,36 @@
         "last_date": {"meaning": "last date obtained", "unit": "YYYY-MM-DD", "tz": null, "notes": "blank when n_rows is 0"},
         "status": {"meaning": "fetch outcome for this symbol", "unit": "e.g. ok / no timestamps / <error text>", "tz": null, "notes": null}
       }
+    },
+    "px/<ticker>.csv": {
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST calendar day (JPX session, no intraday component)", "notes": null},
+        "open": {"meaning": "session open", "unit": "JPY", "tz": null, "notes": "Yahoo chart API raw price -- NOT split-adjusted (see known_defects)"},
+        "high": {"meaning": "session high", "unit": "JPY", "tz": null, "notes": "not split-adjusted"},
+        "low": {"meaning": "session low", "unit": "JPY", "tz": null, "notes": "not split-adjusted"},
+        "close": {"meaning": "session close", "unit": "JPY", "tz": null, "notes": "not split-adjusted -- this is the column the closing-auction reversal legs are computed from (scripts/research_nk225_events.py), so a real corporate-action split shows up here as an extreme_return/split_candidate hit, not a bad print"},
+        "adjclose": {"meaning": "split/dividend-adjusted close", "unit": "JPY", "tz": null, "notes": "as returned by the Yahoo chart API; use this column (not close) for any return computed across a corporate-action boundary"},
+        "volume": {"meaning": "session share volume", "unit": "shares", "tz": null, "notes": "0 has two distinct causes: (a) a genuine flat/carried-forward JPX-holiday placeholder row some (not all) ticker files include -- see known_defects; (b) an ordinary illiquid trading day. Do not assume either meaning without checking whether open==high==low==close on that row."}
+      }
+    },
+    "px/IDX_N225.csv": {
+      "columns": {
+        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST calendar day", "notes": null},
+        "open": {"meaning": "Nikkei 225 index open", "unit": "index points", "tz": null, "notes": "control series for the event-study legs, not a constituent -- not in events.csv"},
+        "high": {"meaning": "index high", "unit": "index points", "tz": null, "notes": null},
+        "low": {"meaning": "index low", "unit": "index points", "tz": null, "notes": null},
+        "close": {"meaning": "index close", "unit": "index points", "tz": null, "notes": null},
+        "adjclose": {"meaning": "same as close for an index (no split/dividend adjustment concept)", "unit": "index points", "tz": null, "notes": null},
+        "volume": {"meaning": "always 0 for this file", "unit": "n/a", "tz": null, "notes": "an index has no traded share volume; not a data-quality gap"}
+      }
     }
   },
   "known_defects": [
-    "fetch_log.csv rows with n_rows=0 (status e.g. \"no timestamps\") are symbols that could NOT be fetched -- events.csv references to that ticker have no corresponding price series in px.tar.gz; cross-check before assuming full price coverage of every constituent change",
-    "events.csv has no timestamp column data_quality.py's TS_CANDIDATES recognizes (\"effective_date\", not \"date\"/\"ts\"), so duplicate/gap/non-monotonic checks do not run on it automatically -- this is a small reference table, not a dense time series"
+    "fetch_log.csv rows with n_rows=0 (status e.g. \"no timestamps\" or an HTTP error string) are symbols that could NOT be fetched -- events.csv references to that ticker have no corresponding price series in px.tar.gz; cross-check before assuming full price coverage of every constituent change. As of the 2026-09-04 snapshot: 92 of the 280 unique tickers referenced by events.csv (125 of 330 events) have no px file at all (65 \"no timestamps\", 27 HTTP 404) -- see backtest_data/nk225_events_20260904/QUALITY_px.json and INVENTORY.md for the per-year breakdown.",
+    "events.csv has no timestamp column data_quality.py's TS_CANDIDATES recognizes (\"effective_date\", not \"date\"/\"ts\"), so duplicate/gap/non-monotonic checks do not run on it automatically -- this is a small reference table, not a dense time series. src/bot/research/sealed.py's TS_CANDIDATES was extended to recognize \"effective_date\" (2026-09-06) so scripts/phase2_seal.py can compute a calendar seal boundary for this file; data_quality.py's own separate TS_CANDIDATES list in scripts/intake_ledger.py was deliberately left unchanged.",
+    "px/<ticker>.csv close/open/high/low are raw (not split-adjusted) prices from the Yahoo chart API -- a real stock split shows up as a large single-day jump and will fire data_quality.py's extreme_return and/or split_candidate checks; see QUALITY_px.json for how many files this hit on the 2026-09-04 snapshot. adjclose is the adjusted series.",
+    "CONFIRMED: some px/<ticker>.csv files include a flat, carried-forward placeholder row (open==high==low==close == prior close, volume=0) on JPX-closed calendar days -- e.g. px/1301.csv has rows for 2001-01-01..01-03 (New Year) and 2001-01-08 (成人の日) that are not real trading days. This is NOT universal: px/IDX_N225.csv (the index control series) and a 2020 spot check on another ticker show NO such rows -- only some stock-level fetches, apparently concentrated in the earlier (~2000-2001) part of the history, carry this artifact; 139 of 189 px files literally contain a \"2001-01-01\" row. Effect: a \"trading day\" count taken from a raw row index in an affected file (as both this snapshot's own inventory check and scripts/research_nk225_events.py's trading_day_index() do) can overcount real JPX sessions for those files/eras -- the +/-10 trading-day coverage window in INVENTORY.md is measured this same (row-index) way for consistency with the downstream research script, not independently corrected for this artifact. Not fully quantified across all 189 files/eras; flag for the P2-07 pre-registration rather than silently correcting.",
+    "px/IDX_N225.csv is the Nikkei 225 index level itself (control series for the event study), not a constituent -- it never appears as a ticker in events.csv or fetch_log.csv, and its volume column is always 0 by construction (an index has no traded share volume).",
+    "the event-date convention (is effective_date the day the closing auction trades, or the day after) is NOT ambiguous: scripts/research_nk225_events.py's get_calendar_points() documents effective_date as the first day the change is IN the index, i.e. the rebalance trade is the CLOSING AUCTION of the last trading day strictly before effective_date -- sourced from docs/KNOWLEDGE_JP.md / RESEARCH_REPORT_2026-09-04ao.md. Any P2-07 code reading events.csv should follow that same convention rather than re-deriving it."
   ]
 }

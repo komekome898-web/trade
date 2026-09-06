@@ -1,0 +1,1719 @@
+{
+  "unit": "P2-07",
+  "created_utc": "2026-09-06T08:14:47.702959+00:00",
+  "forward_start": "2026-09-06T00:00:00+00:00",
+  "files": [
+    {
+      "path": "backtest_data/nk225_events_20260904/events.csv",
+      "md5": "cde965eaeed80763634b6d940c984193",
+      "time_column": "effective_date",
+      "first_ts": "2000-03-28T00:00:00+00:00",
+      "last_ts": "2026-04-01T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-06-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1301.csv",
+      "md5": "80cb1f59a3ad0db88de4022e90527b21",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1333.csv",
+      "md5": "60a4a2f27a48d3fff70a4b43e48983c3",
+      "time_column": "date",
+      "first_ts": "2014-04-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-12-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1605.csv",
+      "md5": "f35896b73b369422d03107bf42f9dd76",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1721.csv",
+      "md5": "ab54e2f448e32fedee898285deb6db27",
+      "time_column": "date",
+      "first_ts": "2003-09-29T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-10-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1808.csv",
+      "md5": "c462228cc9bb64ddf02ad44d5b75b7bb",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1815.csv",
+      "md5": "d4faaba7d2690c661fdd1954fe63bd2d",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1861.csv",
+      "md5": "b76a34946bf7713f4508a30a52d64142",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1885.csv",
+      "md5": "1dca66d6ca45f345d29ea5d57f5fad7a",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1928.csv",
+      "md5": "498dd5ad4cc234a12bf3f54b66b0c847",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/1963.csv",
+      "md5": "3bbb2db2273d29fadeb7f92b3c1bccd6",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2001.csv",
+      "md5": "f3fa01d22bf407a24bc70708339f8561",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2108.csv",
+      "md5": "1629a9d536abe3c28a81e89b312d8a21",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2201.csv",
+      "md5": "4ccfb7313f9838575ea9f623ae7376e0",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2269.csv",
+      "md5": "20a4add5f39bb5d924b05d5ec237bb2b",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2282.csv",
+      "md5": "287647cf762937d8c8221689b4d0c633",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2413.csv",
+      "md5": "d8abbdee14c7b9f48026da93a4377eed",
+      "time_column": "date",
+      "first_ts": "2004-09-16T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-02-01T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2432.csv",
+      "md5": "d82e4dbf2d94c9b5f49e6fd3e667bb4d",
+      "time_column": "date",
+      "first_ts": "2005-02-16T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-03-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2531.csv",
+      "md5": "c408d71700d5a8792a539daf217263fd",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2602.csv",
+      "md5": "7238275f1ac1848bb6faac002c467be4",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2768.csv",
+      "md5": "fed35cd5f0cd09207528f725099cc726",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/285A.csv",
+      "md5": "0e7fb35631409fa03da08880d3e88ed2",
+      "time_column": "date",
+      "first_ts": "2024-12-18T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-02-28T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/2914.csv",
+      "md5": "98f81c35ae49c3577c226d5b61507725",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3086.csv",
+      "md5": "d56e2af0d12f6b1400014d3fd057dc81",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3092.csv",
+      "md5": "f7c7d9336724898ea1241fc903a15545",
+      "time_column": "date",
+      "first_ts": "2007-12-11T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-01-20T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3099.csv",
+      "md5": "2bb4454d54424f9912698639ec194efe",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3101.csv",
+      "md5": "bb760d9b2d90ccbe86cda8b1af7e6921",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3103.csv",
+      "md5": "1c6b4f15487835e3592666811e59f78d",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3104.csv",
+      "md5": "bed0eae588a74795d91de1a84c3e91f8",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3105.csv",
+      "md5": "73735f899b6053d4444af89d46d27e8a",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3110.csv",
+      "md5": "b71c4608de12eff98649f4fe3b646655",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3289.csv",
+      "md5": "0c3f9e1b8b8686cc3c4fed8cb1795c90",
+      "time_column": "date",
+      "first_ts": "2013-10-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-10-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3382.csv",
+      "md5": "eebd5e90931d458830dbb07d83c95e8d",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3436.csv",
+      "md5": "bce17efb7685a23b32ce74865a40b523",
+      "time_column": "date",
+      "first_ts": "2003-08-15T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-10-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3659.csv",
+      "md5": "f845af5af99dc2dee094ea7fa9c49caf",
+      "time_column": "date",
+      "first_ts": "2011-12-14T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-04-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3697.csv",
+      "md5": "9cd2527de7de932f097c92aab9a20f7d",
+      "time_column": "date",
+      "first_ts": "2014-11-14T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2023-02-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3863.csv",
+      "md5": "9477c098fd7f03066b1ed3400a464fab",
+      "time_column": "date",
+      "first_ts": "2013-04-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-08-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3864.csv",
+      "md5": "d4440fc64e43a12fbf6612ab22c29dc7",
+      "time_column": "date",
+      "first_ts": "2005-09-29T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-05-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/3865.csv",
+      "md5": "579deda2e6ebc15283b4dedf58290864",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4022.csv",
+      "md5": "225c02d754d64027d5dd464d21251289",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4041.csv",
+      "md5": "f95b8c5e1171717ec20770a26728e39a",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4043.csv",
+      "md5": "dfd0cb9f43a6575542e8f18f9ef3216e",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4045.csv",
+      "md5": "00768201d902281e966e12c28cfdbad3",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4062.csv",
+      "md5": "08d0ac573c173961ce38251b947c3ab8",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4064.csv",
+      "md5": "5f6b195bc4a88de8df5ff1d8ab42038e",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4092.csv",
+      "md5": "c4928100862f544fe8445a27a58c25c9",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4183.csv",
+      "md5": "6879b71c81981618d81aab4f1863e8f9",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4188.csv",
+      "md5": "d00e22037bfa2eaa73a14cab326bd31d",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4272.csv",
+      "md5": "586938431d0b90ed0d46f9e6ed1cadbd",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4307.csv",
+      "md5": "b4d9320f8eabbd14435d8bfebef08a51",
+      "time_column": "date",
+      "first_ts": "2001-12-17T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-04-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4324.csv",
+      "md5": "be8a141b4d843af4ec5b36996a1c2dfa",
+      "time_column": "date",
+      "first_ts": "2001-11-30T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-03-31T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4385.csv",
+      "md5": "896f05416c347b5d8b7dc6081ac79e9c",
+      "time_column": "date",
+      "first_ts": "2018-06-19T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2024-03-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4401.csv",
+      "md5": "04370ce4da06780affb0a56a20073a60",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4403.csv",
+      "md5": "1fbee2c88daf6beb24cbd14cd770c9f9",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4452.csv",
+      "md5": "1c0b57e831481eb2e852b3de2e31d9a9",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4519.csv",
+      "md5": "6d40d82578f7eb42edf7088c063f94f6",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4523.csv",
+      "md5": "bae050bfb721bd5dde413fb5203b3075",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4543.csv",
+      "md5": "3bb28cf79873acc1d3ca20baa8c64f14",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4568.csv",
+      "md5": "630b96ff04bbfe4916a78fd8a1677380",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4578.csv",
+      "md5": "05a236782534fff3df097d924c3d7dce",
+      "time_column": "date",
+      "first_ts": "2010-12-15T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-12-16T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4631.csv",
+      "md5": "597fd245bd4d46684c54b975138cba5d",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4661.csv",
+      "md5": "3dc65f7432359b529d74f57b86ea87a5",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4689.csv",
+      "md5": "96f830f054f2dead2d16fac55c2bcff6",
+      "time_column": "date",
+      "first_ts": "2003-10-28T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-10-26T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4704.csv",
+      "md5": "548313dc2a827c67a531ae82e81ebe8a",
+      "time_column": "date",
+      "first_ts": "2000-08-17T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-11-10T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4751.csv",
+      "md5": "db80e878f499591e4ae96bfc63fd6bcb",
+      "time_column": "date",
+      "first_ts": "2001-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4755.csv",
+      "md5": "fd817c3c0c3d7802cc965148b2cec2cb",
+      "time_column": "date",
+      "first_ts": "2000-04-19T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-10-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/4911.csv",
+      "md5": "89ba3316de95271ca4542c5c981c58d8",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5016.csv",
+      "md5": "e2f1be8afd99adac97034154e5e69258",
+      "time_column": "date",
+      "first_ts": "2025-03-19T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-03-27T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5019.csv",
+      "md5": "238128e6fa1d364bb350b48105529a1d",
+      "time_column": "date",
+      "first_ts": "2006-10-24T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-09-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5020.csv",
+      "md5": "f211067e62c62e2496132a09836a87c2",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5105.csv",
+      "md5": "09bfd10f51f1aff71317b2eb5bcef765",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5202.csv",
+      "md5": "87c482eb62a2bfd232a94c50f41565ae",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5214.csv",
+      "md5": "39b832f4d4ef49f9d2fdbde898fe04c4",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5232.csv",
+      "md5": "eb4c6b75dc8216bf361bd650bf6c9777",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5302.csv",
+      "md5": "a16bd2498deff9c3fa4164521c3fac9d",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5331.csv",
+      "md5": "a36ea7b96c286e729f9523939fa8c4f5",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5351.csv",
+      "md5": "832695621063aaaaaa2bb6ab839f0a0d",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5411.csv",
+      "md5": "b46e84b060ab2f57c194230c9ea2b4f9",
+      "time_column": "date",
+      "first_ts": "2002-09-26T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-06-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/543A.csv",
+      "md5": "61048662fb611b0fc493886a7c6c0359",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5480.csv",
+      "md5": "1431c142e7a205a32ae5d8498a2f9b13",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5541.csv",
+      "md5": "9aad9f3e3ac9a513b1c17718347a6edd",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5563.csv",
+      "md5": "ba9fdc7a2f7bfc6c36a0d9da14be7a46",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5632.csv",
+      "md5": "05d1676ae43e089d0963a440b2dc25e0",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5703.csv",
+      "md5": "e5637d9264c5ba432c6818445ecb5662",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5707.csv",
+      "md5": "35630f35b81ee7547acd37d10edad621",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5715.csv",
+      "md5": "ea07b9a11ee1e37308c7103cfbd827e1",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5721.csv",
+      "md5": "71fda7c8b631925c616cb8d96003db19",
+      "time_column": "date",
+      "first_ts": "2000-05-17T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-10-14T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5805.csv",
+      "md5": "4552054e26e94371523b5654d54c4f6c",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5831.csv",
+      "md5": "e6d5506042e4b926c2cb989d535609b7",
+      "time_column": "date",
+      "first_ts": "2022-10-03T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2025-07-01T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5901.csv",
+      "md5": "a74a51335ddc58a065a6d323956f5daf",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/5981.csv",
+      "md5": "380a0b129779d9d01b50659a0669749b",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6098.csv",
+      "md5": "bf924c5b5c9f34b2cbcedb58eed383fa",
+      "time_column": "date",
+      "first_ts": "2014-10-16T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2023-02-09T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6113.csv",
+      "md5": "c9dca406d578d4c9ff0b1bdbe7a5e674",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6146.csv",
+      "md5": "063b8c98428b347fa923f94665067c8a",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6178.csv",
+      "md5": "440542aa0e95ac9e2ccd1412d8f0a6c1",
+      "time_column": "date",
+      "first_ts": "2015-11-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2023-06-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6273.csv",
+      "md5": "b80a99451f2f2847e29946469013714c",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6305.csv",
+      "md5": "40e5fde67e4d1657395a652f7d11cdc0",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6310.csv",
+      "md5": "f391a5d6a340c56df47939f0bbde3706",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6366.csv",
+      "md5": "946c32061f54d8bc79128c69a706996c",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6367.csv",
+      "md5": "5dc026aa668ea233aee419268874612a",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6474.csv",
+      "md5": "cb9f67dd672b589364dc1a1c0497837e",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6506.csv",
+      "md5": "18bd2364c45035f70b847f382fa3596a",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6508.csv",
+      "md5": "dddcca5eb9a26ad35a208e7b9e5d40ad",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6526.csv",
+      "md5": "d73e590ad4e65582a55402fb4796b3e2",
+      "time_column": "date",
+      "first_ts": "2022-10-12T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2025-07-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6532.csv",
+      "md5": "8f07423adf9666b0cc114c7586ad0c63",
+      "time_column": "date",
+      "first_ts": "2016-09-02T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2023-09-03T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6594.csv",
+      "md5": "85911292176eb7adcca2e973c92d911a",
+      "time_column": "date",
+      "first_ts": "2001-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6645.csv",
+      "md5": "e7ce1a6e07c3d9ba16bf2306f78a5a26",
+      "time_column": "date",
+      "first_ts": "2001-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6674.csv",
+      "md5": "877a46a831e9bb8efc97d2e8ff413b48",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6703.csv",
+      "md5": "0eaa3f90c103d3bf5d15a2df8f425baa",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6723.csv",
+      "md5": "bab5db18b0c1b2381f1b778ee25188ed",
+      "time_column": "date",
+      "first_ts": "2003-07-24T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-09-28T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6724.csv",
+      "md5": "22c2da63b3234c5a1792c94ffd4e3e27",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6753.csv",
+      "md5": "4e044f768cffd6e06baaa7c0b67bea9e",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6762.csv",
+      "md5": "7c5bb7477a9cfc0c97a4b2f6bed11faa",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6770.csv",
+      "md5": "9896c31456b56e5633bc67263c6e1ff6",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6857.csv",
+      "md5": "f89bf306f1f8009f3e348d6c10be3a99",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6861.csv",
+      "md5": "446b55e5a71f9dd6a21daa4b8ad11257",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6920.csv",
+      "md5": "fb3a5cdd77cc4d09a0bca36d82890b88",
+      "time_column": "date",
+      "first_ts": "2010-02-22T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-09-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6952.csv",
+      "md5": "6a94bf3c6368fd4c28907d8a73b80099",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6954.csv",
+      "md5": "f93e96d13d45be007ac792bf337a58df",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6963.csv",
+      "md5": "e94818f10ecca843342ed2d1ee3c4f26",
+      "time_column": "date",
+      "first_ts": "2001-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6971.csv",
+      "md5": "23999bbdefeed4ce7a3742311f40c25c",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6976.csv",
+      "md5": "69d9cdca4209ebcd62efa0da65374ef3",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6981.csv",
+      "md5": "ec3d0e7c4ed4172fa277fbe464343252",
+      "time_column": "date",
+      "first_ts": "2001-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/6988.csv",
+      "md5": "37c83c7c57117ea807c79cb2234dd1d5",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7003.csv",
+      "md5": "8cb299ead4b60b18c6d361c6b7eac234",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7102.csv",
+      "md5": "1c231f99bab68125457cc86a80e9d85b",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7186.csv",
+      "md5": "3f715a1fee82aa02223843605296fbc6",
+      "time_column": "date",
+      "first_ts": "2016-04-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2023-07-19T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7211.csv",
+      "md5": "bd655f3cf9a1741ddf5d0273371e5e58",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7231.csv",
+      "md5": "c530f73cb066dd39c5e57ed25d905e2e",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7270.csv",
+      "md5": "6ea628f87a720d19b270dc21e6c2fb78",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7272.csv",
+      "md5": "37193b7f2cbefd4616e09a9605a92af5",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7453.csv",
+      "md5": "6978cd1e622d72ccd1f9f929996a4062",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7532.csv",
+      "md5": "b84ea87755bd0a3451b139efedc2b1d2",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7733.csv",
+      "md5": "ea304358e9bc81f66c0ac82fc7964eba",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7735.csv",
+      "md5": "8b9d270eaa055b722c548bb0c73c18c9",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7741.csv",
+      "md5": "bb9986e2ca21bb0fd106431a608cf45c",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7762.csv",
+      "md5": "263f3add3635675e57d999b0c2563dce",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7832.csv",
+      "md5": "b6a04156db267d76c775b53c407446df",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/7974.csv",
+      "md5": "6a5d6946b6fd5e5104bf3a93521a7775",
+      "time_column": "date",
+      "first_ts": "2001-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8015.csv",
+      "md5": "45d3f77af61e717c473b5bc35ca4eda4",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8035.csv",
+      "md5": "8097a27ca3b617b8d9b4c30a8dc29381",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8061.csv",
+      "md5": "995493834ff50096e32b59e1ead2f8bc",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8088.csv",
+      "md5": "22912a8125d703eeb0e40ef9cb633c16",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8233.csv",
+      "md5": "4f93cf3ed9e6144bd9506a601828d40f",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8253.csv",
+      "md5": "681f7c122f8e87626d4c480009cb489c",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8267.csv",
+      "md5": "1908f7a0181e07c79d544786bff7764c",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8303.csv",
+      "md5": "d434b4ff14f7386764ac0df2372845f8",
+      "time_column": "date",
+      "first_ts": "2004-02-19T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-11-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8304.csv",
+      "md5": "3ae6f8e97fe82482f7cebd212748b354",
+      "time_column": "date",
+      "first_ts": "2006-11-14T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-09-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8306.csv",
+      "md5": "7804717d474a342f36086d2b46006b9b",
+      "time_column": "date",
+      "first_ts": "2005-09-29T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-05-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8308.csv",
+      "md5": "a78416684da50a49cc3dd487ca55ceba",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8309.csv",
+      "md5": "b8e27db33daf0540defd6ee780056ddb",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8316.csv",
+      "md5": "470c79f348b034230c9a04c63a253eef",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8331.csv",
+      "md5": "5e51c3790a02bec89baf82bc787bee5a",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8354.csv",
+      "md5": "9a8e4930746390cedc38ce4d9a6c4af0",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8411.csv",
+      "md5": "360d8dbba84a068367b240d3c6be4435",
+      "time_column": "date",
+      "first_ts": "2003-03-12T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-08-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8511.csv",
+      "md5": "707fc56c96c004594557fe7e9bbe6725",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8591.csv",
+      "md5": "3b23d3ad4e6195c637c100f467c6199f",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8601.csv",
+      "md5": "82271b4933fa699c697e2b87fa0895a0",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8628.csv",
+      "md5": "ba853d49b766dea40ba6f06ddc465f4b",
+      "time_column": "date",
+      "first_ts": "2001-08-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-02-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8630.csv",
+      "md5": "f9a01154aec0f9af961148023e946d3c",
+      "time_column": "date",
+      "first_ts": "2010-04-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-09-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8697.csv",
+      "md5": "b89564bf9621c5a9463096a51e96c202",
+      "time_column": "date",
+      "first_ts": "2008-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-04-11T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8725.csv",
+      "md5": "6277d821ade50207a7a31bcce830dee7",
+      "time_column": "date",
+      "first_ts": "2008-04-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-02-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8729.csv",
+      "md5": "db9983c37f597361d7a951f515d00c4f",
+      "time_column": "date",
+      "first_ts": "2025-09-29T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-05-25T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8750.csv",
+      "md5": "a2229169d208b94909d4fb5f99a654f8",
+      "time_column": "date",
+      "first_ts": "2010-04-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-09-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8766.csv",
+      "md5": "3fdf2b42d4c3462bd82c630acc4cb0e3",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8795.csv",
+      "md5": "1b93b7e78baef7937840a01b37801126",
+      "time_column": "date",
+      "first_ts": "2004-04-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-12-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8803.csv",
+      "md5": "f1324564f85761a609beb09c3097dac3",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8804.csv",
+      "md5": "cb60da3fcb8c15432159e83925e8cbc0",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/8830.csv",
+      "md5": "90fcdae73b76d2fad68d5ca7e0f8af3e",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9006.csv",
+      "md5": "6a99f4a4f689679032418d54fa20573b",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9020.csv",
+      "md5": "86bce43836b58cf2f33ddee64e5d3fff",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9021.csv",
+      "md5": "7d488acf98765c9dea529395a375d147",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9022.csv",
+      "md5": "bcb219e5e08df70a017befe022582c5f",
+      "time_column": "date",
+      "first_ts": "2001-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9064.csv",
+      "md5": "820d67bf488f9a98a572785649cca006",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9065.csv",
+      "md5": "9b3ff7f1be43cf48618da62105f506e4",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9147.csv",
+      "md5": "013c51ae308e683bb932610bf4042d23",
+      "time_column": "date",
+      "first_ts": "2022-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2025-04-10T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9201.csv",
+      "md5": "3cb9f517b87da734e79cc1f2ade5c205",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9301.csv",
+      "md5": "34c1c3bb486423c6faf2f3fb4ac096c5",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9302.csv",
+      "md5": "b7b7744de9d40e374e36b3f1776c22fd",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9412.csv",
+      "md5": "2865c8278335cd12df6e0d9196b650d2",
+      "time_column": "date",
+      "first_ts": "2000-08-07T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-11-07T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9433.csv",
+      "md5": "60675e58954223b8e9b18e0a0c613d0d",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9434.csv",
+      "md5": "5574373a76597b07d658996c852cf4cd",
+      "time_column": "date",
+      "first_ts": "2018-12-19T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2024-05-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9602.csv",
+      "md5": "61b661a08fc5a1b9515e7029b3ae6aef",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9605.csv",
+      "md5": "fc4588c104a3e8b9226dae6523bbd5cd",
+      "time_column": "date",
+      "first_ts": "2001-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9735.csv",
+      "md5": "ec4e2ceeffe40f46d067d7b9a3ba8e7e",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9766.csv",
+      "md5": "732ff6d8757bd7da0b5f64aa867603f7",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9843.csv",
+      "md5": "5b647eade1283f57431e4aee08bd8d91",
+      "time_column": "date",
+      "first_ts": "2002-10-29T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-07-09T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9983.csv",
+      "md5": "b1befe1397df7263637b97bc9a5ec6ec",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/9984.csv",
+      "md5": "f72f5a1c197fde7d675c99b28d586129",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/nk225_events_20260904/px/IDX_N225.csv",
+      "md5": "9b028145f0df72a002649fe2a3e17755",
+      "time_column": "date",
+      "first_ts": "2000-01-04T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2018-06-12T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-04T00:00:00+00:00"
+    }
+  ],
+  "rule": "everything with ts >= forward_start is sealed | unit-wide boundary: seal_from_ts of primary series events.csv (2018-06-12T00:00:00+00:00) applied to every file",
+  "primary_series": "events.csv"
+}
