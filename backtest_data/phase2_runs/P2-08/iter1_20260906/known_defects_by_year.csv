@@ -1,0 +1,8 @@
+config,label,year,grid_minutes,empty_minutes,big_gaps,entry_signal_bars,signals_discarded,trades,excluded_gap,deferred_entry_minutes,deferred_exit_minutes,trades_with_deferral,stops
+best,60/1.2/1.0@1_low,2017,197280,2108,146,42532,488,50,0,0,0,0,2
+best,60/1.2/1.0@1_low,2018,525600,4293,312,69530,736,29,1,0,0,0,1
+best,60/1.2/1.0@1_low,2019,525600,5708,374,32930,452,7,0,0,0,0,0
+best,60/1.2/1.0@1_low,2020,527040,7073,389,32698,444,13,0,0,0,0,2
+best,60/1.2/1.0@1_low,2021,525600,6970,395,66496,996,6,0,0,0,0,2
+best,60/1.2/1.0@1_low,2022,525600,4716,375,36357,661,13,1,0,0,0,0
+best,60/1.2/1.0@1_low,2023,505440,47601,1217,12762,275,22,1,0,0,0,0

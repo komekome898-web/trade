@@ -1,0 +1,4 @@
+n_trades,n_clipped_signal_bars,n_entry_signals_gated,k,thr,stop,state
+689,315022,310647,30,0.8,0.5,1_low
+7299,269501,265805,30,0.8,0.5,2_mid
+20159,51101,49724,30,0.8,0.5,3_high

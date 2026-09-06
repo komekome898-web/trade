@@ -313,13 +313,30 @@ def _core(o, h, lo, c, valid, sig, exit_sig, stop_f, last_valid, cap):
 
 
 def simulate_arrays(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: float,
-                    funding_pct_per_settlement: float = 0.02) -> dict:
+                    funding_pct_per_settlement: float = 0.02,
+                    entry_gate: np.ndarray | None = None) -> dict:
     """One configuration → dict of numpy arrays (one element per trade) plus
     the summary counts. ``gross_bps`` / ``funding_bps`` are cost-free so any
-    cost constant can be applied afterwards (net = gross − 2·c − funding)."""
+    cost constant can be applied afterwards (net = gross − 2·c − funding).
+
+    ``entry_gate`` (optional, bool per grid minute; P2-08 iteration 1) keeps
+    an ENTRY signal only where the gate is True — the state-conditioned
+    "建玉可" of the PREREG ladder. It is applied after the discard window
+    and touches nothing else: exit signals, stops, deferral, funding and the
+    gap exclusion are unchanged. ``None`` (the default) is the unconditioned
+    engine, bit-for-bit as before; the returned dict then carries
+    ``n_entry_signals_gated`` = 0.
+    """
     if not np.isfinite(stop) or stop < 0:
         raise ValueError(f"stop must be a finite non-negative percent, got {stop!r}")
     sig, exit_sig, n_signal_bars, n_discarded = build_signals(grid, mm, thr, exit_)
+    n_gated = 0
+    if entry_gate is not None:
+        gate = np.asarray(entry_gate, dtype=bool)
+        if gate.shape != (grid.n,):
+            raise ValueError(f"entry_gate must have one bool per grid minute ({grid.n}), got {gate.shape}")
+        n_gated = int(((sig != 0) & ~gate).sum())
+        sig[~gate] = 0
     cap = int((sig != 0).sum()) + 1
     (nt, entry_i, exit_i, side, entry_px, exit_px, reason, ndef_e, ndef_x,
      sig_i, xsig_i) = _core(grid.o, grid.h, grid.lo, grid.c, grid.valid, sig, exit_sig,
@@ -342,16 +359,20 @@ def simulate_arrays(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: 
         "excluded_gap": strad & grid.apply_masks,
         "exit_day": grid.day_id[exit_i] if nt else np.array([], dtype=np.int64),
         "n_entry_signal_bars": n_signal_bars, "n_entry_signals_discarded": n_discarded,
+        "n_entry_signals_gated": n_gated,
         "n_big_gaps": int(len(grid.gap_pa)), "n_trades": int(nt),
     }
 
 
 def simulate_fast(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: float,
                   cost_one_way_bps: float, funding_pct_per_settlement: float = 0.02,
-                  size_btc: float = SIZE_BTC_DEFAULT) -> pd.DataFrame:
+                  size_btc: float = SIZE_BTC_DEFAULT,
+                  entry_gate: np.ndarray | None = None) -> pd.DataFrame:
     """The `simulate` ledger (same columns / dtypes / attrs) for one
-    configuration on a prepared grid."""
-    a = simulate_arrays(grid, mm, thr, exit_, stop, funding_pct_per_settlement)
+    configuration on a prepared grid. ``entry_gate`` as in `simulate_arrays`;
+    when given, the attrs gain ``n_entry_signals_gated`` (absent otherwise so
+    the ungated attrs stay equal to the reference engine's)."""
+    a = simulate_arrays(grid, mm, thr, exit_, stop, funding_pct_per_settlement, entry_gate)
     nt = a["n_trades"]
     cost_bps = 2.0 * float(cost_one_way_bps)
     net = a["gross_bps"] - cost_bps - a["funding_bps"]
@@ -390,6 +411,8 @@ def simulate_fast(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: fl
         "n_straddles_gap": int(a["straddles_gap"].sum()) if nt else 0,
         "n_deferred_total": int((a["ndef_e"] + a["ndef_x"]).sum()) if nt else 0,
     })
+    if entry_gate is not None:
+        ledger.attrs["n_entry_signals_gated"] = a["n_entry_signals_gated"]
     return ledger
 
 

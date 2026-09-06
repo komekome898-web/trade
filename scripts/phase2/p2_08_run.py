@@ -20,6 +20,21 @@ Nothing here interprets a number: it writes tables.
 Usage:  PYTHONPATH=src python scripts/phase2/p2_08_run.py --iteration 0
         ... --out backtest_data/phase2_runs/P2-08/iter0_20260906
         ... --n-null 40 --n-ctrl 20 --n-boot 200 --workers 4   (smoke test)
+
+Iteration 1 (`--iteration 1`, PREREG 探索面「反復の梯子」反復 1): the same 27
+configurations each conditioned on the realized-volatility (60-minute)
+tercile at the signal minute — entries allowed only in that tercile — 27 × 3
+= 81 new configurations, cumulative N = 108. The state is defined in
+`bot.research.xborder_p2_state` (window, minimum bars, boundaries frozen on
+the train period) and applied through `simulate_arrays(..., entry_gate=...)`.
+The 27 unconditioned cells are recomputed with the SAME seeds as iteration 0
+so their rows in configs.csv and their per-draw null statistics must equal
+iteration 0's (reported in RESULTS.md as a consistency check). The best of
+the 108 is chosen on val exactly as in iteration 0; the null is best-of-108
+over the same 2,000 permuted worlds (same draw seeds); controls 2 and 3 and
+the edge trend are produced for that best configuration only, and the
+§6 condition analysis (`state_split`) is reported for the iteration-0 best
+and the current configuration.
 """
 from __future__ import annotations
 
@@ -43,8 +58,24 @@ if str(REPO_ROOT / "src") not in sys.path:
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from bot.research.overnight import EDGE_TREND_SLOPE_MDE_Z, block_bootstrap_ci, edge_trend  # noqa: E402
+from bot.research.overnight import (  # noqa: E402
+    EDGE_TREND_SLOPE_MDE_Z,
+    block_bootstrap_ci,
+    edge_trend,
+    state_split,
+)
 from bot.research.xborder_p2 import momentum_signal, simulate  # noqa: E402
+from bot.research.xborder_p2_state import (  # noqa: E402
+    TERCILE_CODES,
+    TERCILE_LABELS,
+    VOL_MIN_BARS,
+    VOL_WINDOW_MIN,
+    assign_tercile,
+    realized_vol,
+    tercile_bounds,
+    tercile_gates,
+    tercile_label,
+)
 from bot.research.xborder_p2_fast import (  # noqa: E402
     BinanceGrid,
     BlockPermuter,
@@ -102,6 +133,14 @@ OUT_DIR = REPO_ROOT / "backtest_data" / "phase2_runs" / "P2-08" / "iter0_2026090
 LAGS = list(range(-10, 11))
 SHIFTS = (-2, -1, 1, 2)
 
+# ---- iteration 1 (PREREG 反復の梯子 1: 実現ボラ 60 分 三分位) -----------------
+OUT_DIR_ITER1 = REPO_ROOT / "backtest_data" / "phase2_runs" / "P2-08" / "iter1_20260906"
+ITER0_DIR = OUT_DIR                                      # iteration-0 outputs read for cross-checks
+ITER0_BEST = (15, 0.4, 0.5)                              # iteration-0 RESULTS.md §4 "val の平均 net 最大"
+STATES = (None,) + TERCILE_CODES                          # None = unconditioned
+CONFIGS_ITER1 = [(k, thr, stop, st) for (k, thr, stop) in CONFIGS for st in STATES]   # 27 × 4 = 108
+N_CUMULATIVE_ITER1 = len(CONFIGS_ITER1)
+
 Z975 = 1.959963985
 
 
@@ -151,8 +190,18 @@ def _table(rows: list[dict], cols: list[tuple[str, str, int]]) -> str:
 
 
 def cfg_label(cfg) -> str:
+    """'k/thr/stop' for a 3-tuple; 'k/thr/stop@state' for an iteration-1
+    4-tuple (state None → '@all')."""
+    if len(cfg) == 4:
+        k, thr, stop, st = cfg
+        return f"{k}/{thr}/{stop}@{tercile_label(st)}"
     k, thr, stop = cfg
     return f"{k}/{thr}/{stop}"
+
+
+def mde_of(sd: float, n: int) -> float:
+    """2.8016 × σ / √n (PREREG 指標と分母)."""
+    return float(MDE_Z * sd / np.sqrt(n)) if n and np.isfinite(sd) else float("nan")
 
 
 def cluster_boot_mean(values: np.ndarray, clusters: np.ndarray, n_boot: int, seed
@@ -381,19 +430,26 @@ _G: dict = {}
 
 
 def _null_draw(draw: int) -> dict:
+    """One permuted world: the SAME rng seed as iteration 0 ([SEED, 1, draw])
+    so every iteration shares the worlds; `_G["cfgs"]` lists 4-tuples
+    (k, thr, stop, state) and `_G["gates"]` the per-state entry gates
+    (state None = no gate = iteration-0 engine call)."""
     t0 = time.perf_counter()
     grid: Grid = _G["grid"]
     bg: BinanceGrid = _G["bg"]
     bp: BlockPermuter = _G["bp"]
     burst: dict = _G["burst"]
     masks = _G["masks"]
+    cfgs = _G["cfgs"]
+    gates = _G["gates"]
     rng = np.random.default_rng([SEED, 1, draw])
     pc = bp.permute(rng)
     cg = bg.to_bn_grid(pc)
     ms = {k: bg.momentum_from_bn_grid(k, cg) for k in KS}
     out = {"draw": draw}
-    for ci, (k, thr, stop) in enumerate(CONFIGS):
-        a = simulate_arrays(grid, ms[k], thr, EXIT_PCT, stop, FUNDING_PCT)
+    for ci, (k, thr, stop, st) in enumerate(cfgs):
+        a = simulate_arrays(grid, ms[k], thr, EXIT_PCT, stop, FUNDING_PCT,
+                            None if st is None else gates[st])
         c1w = COST_CONS_1W * burst[(k, thr)]
         for period in ("full", "train", "val"):
             keep = masks[period](a) & ~a["excluded_gap"]
@@ -403,8 +459,15 @@ def _null_draw(draw: int) -> dict:
     return out
 
 
-def run_null(grid, bg, bp, burst, n_null: int, workers: int) -> tuple[pd.DataFrame, pd.DataFrame, float]:
-    _G.update({"grid": grid, "bg": bg, "bp": bp, "burst": burst,
+def run_null(grid, bg, bp, burst, n_null: int, workers: int, cfgs=None, gates=None
+             ) -> tuple[pd.DataFrame, pd.DataFrame, float]:
+    """best-of-N null. ``cfgs`` = list of (k, thr, stop, state); default =
+    the 27 unconditioned configurations (iteration 0, no `state` column in
+    the long table). ``gates`` = {state code: bool grid mask}."""
+    with_state = cfgs is not None
+    if cfgs is None:
+        cfgs = [(k, thr, stop, None) for (k, thr, stop) in CONFIGS]
+    _G.update({"grid": grid, "bg": bg, "bp": bp, "burst": burst, "cfgs": cfgs, "gates": gates or {},
                "masks": {p: (lambda a, p=p: period_mask(a, grid, p)) for p in ("full", "train", "val")}})
     _null_draw(0)                                     # JIT warm-up in the parent (cache)
     t0 = time.perf_counter()
@@ -416,16 +479,19 @@ def run_null(grid, bg, bp, burst, n_null: int, workers: int) -> tuple[pd.DataFra
     for r in results:
         rec = {"draw": r["draw"], "seconds": r["seconds"]}
         for period in ("full", "train", "val"):
-            ms = [r[(ci, period)] for ci in range(len(CONFIGS))]
+            ms = [r[(ci, period)] for ci in range(len(cfgs))]
             rec[f"max_mean_net_bps_{period}"] = float(np.nanmax([x[0] for x in ms]))
             rec[f"max_sharpe_{period}"] = float(np.nanmax([x[1] for x in ms]))
             rec[f"min_n_{period}"] = int(min(x[2] for x in ms))
         best_rows.append(rec)
-        for ci, cfg in enumerate(CONFIGS):
+        for ci, cfg in enumerate(cfgs):
             for period in ("full", "train", "val"):
                 m, s, n = r[(ci, period)]
-                long_rows.append({"draw": r["draw"], "k": cfg[0], "thr": cfg[1], "stop": cfg[2],
-                                  "period": period, "mean_net_bps": m, "sharpe": s, "n": n})
+                row = {"draw": r["draw"], "k": cfg[0], "thr": cfg[1], "stop": cfg[2]}
+                if with_state:
+                    row["state"] = tercile_label(cfg[3])
+                row.update({"period": period, "mean_net_bps": m, "sharpe": s, "n": n})
+                long_rows.append(row)
     return pd.DataFrame(best_rows), pd.DataFrame(long_rows), wall
 
 
@@ -572,6 +638,59 @@ def per_year_defects(grid: Grid, a: dict, mm: np.ndarray, thr: float) -> pd.Data
             "stops": int((a["reason"][ty] == 1).sum()),
         })
     return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------
+# edge trend (§5: unit = week, window = 50 trades) for one ledger
+# ---------------------------------------------------------------------------
+
+def edge_trend_for(tag: str, a: dict, grid_m: Grid, c1w: float, n_boot: int, out: Path,
+                   written: list[str]) -> dict:
+    """{(tag, leg): edge_trend result (+ year_table)} for gross / cost / net,
+    writing the rolling and weekly tables. Same computation as iteration 0."""
+    edge = {}
+    keep = ~a["excluded_gap"]
+    dates = grid_m.idx[a["exit_i"][keep]]
+    legs = {"gross": a["gross_bps"][keep],
+            "cost": np.full(int(keep.sum()), 2.0 * c1w) + a["funding_bps"][keep],
+            "net": net_of(a, c1w)[keep]}
+    n = int(keep.sum())
+    n_weeks = max(1, int(np.ceil((dates[-1] - dates[0]) / pd.Timedelta(days=7)))) if n else 1
+    step = max(1, int(round(n / n_weeks)))
+    for leg, vals in legs.items():
+        res = edge_trend(dates, vals, window=EDGE_WINDOW, block=EDGE_BLOCK, time_unit="week",
+                         time_axis="calendar", period="week", n_boot=n_boot, seed=SEED,
+                         rolling_step=step)
+        year_rows = []
+        yrs = dates.year.to_numpy()
+        for y in DEV_YEARS:
+            seg = vals[yrs == y]
+            lo, hi = block_bootstrap_ci(seg, block=EDGE_BLOCK, n_boot=n_boot, seed=SEED) \
+                if len(seg) >= EDGE_BLOCK else (np.nan, np.nan)
+            year_rows.append({"year": y, "n": int(len(seg)), "mean": float(seg.mean()) if len(seg) else np.nan,
+                              "ci_lo": lo, "ci_hi": hi})
+        res["year_table"] = pd.DataFrame(year_rows)
+        edge[(tag, leg)] = res
+        res["rolling"].to_csv(out / f"edge_trend_{tag}_{leg}_rolling.csv", index=False)
+        res["period_table"].to_csv(out / f"edge_trend_{tag}_{leg}_weekly.csv", index=False)
+        written += [f"edge_trend_{tag}_{leg}_rolling.csv", f"edge_trend_{tag}_{leg}_weekly.csv"]
+    return edge
+
+
+def edge_summary_rows(edge: dict) -> list[dict]:
+    rows = []
+    for (tag, leg), res in edge.items():
+        hs = res["half_split"]
+        lw = res["last_window"] or {}
+        rows.append({"config": tag, "leg": leg, "n": res["params"]["n"], "slope_bps_per_week": res["slope"],
+                     "slope_ci_lo": res["slope_ci"][0], "slope_ci_hi": res["slope_ci"][1],
+                     "slope_mde": res["slope_mde"], "mean_first_half": hs["mean_first"],
+                     "mean_second_half": hs["mean_second"], "half_diff": hs["diff"],
+                     "half_diff_ci_lo": hs["diff_ci"][0], "half_diff_ci_hi": hs["diff_ci"][1],
+                     "last_window_mean": lw.get("mean", np.nan), "last_window_ci_lo": lw.get("ci_lo", np.nan),
+                     "last_window_ci_hi": lw.get("ci_hi", np.nan), "judgment": res["judgment"],
+                     "rolling_step": res["params"]["rolling_step"]})
+    return rows
 
 
 # ---------------------------------------------------------------------------
@@ -786,46 +905,9 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
     t0 = time.perf_counter()
     edge = {}
     for tag, cfg in (("best", best), ("current", CURRENT)):
-        a = arrays[("masked", cfg)]
-        keep = ~a["excluded_gap"]
-        dates = grid_m.idx[a["exit_i"][keep]]
-        c1w = COST_CONS_1W * burst[(cfg[0], cfg[1])]
-        legs = {"gross": a["gross_bps"][keep],
-                "cost": np.full(int(keep.sum()), 2.0 * c1w) + a["funding_bps"][keep],
-                "net": net_of(a, c1w)[keep]}
-        n = int(keep.sum())
-        n_weeks = max(1, int(np.ceil((dates[-1] - dates[0]) / pd.Timedelta(days=7)))) if n else 1
-        step = max(1, int(round(n / n_weeks)))
-        for leg, vals in legs.items():
-            res = edge_trend(dates, vals, window=EDGE_WINDOW, block=EDGE_BLOCK, time_unit="week",
-                             time_axis="calendar", period="week", n_boot=n_boot, seed=SEED,
-                             rolling_step=step)
-            year_rows = []
-            yrs = dates.year.to_numpy()
-            for y in DEV_YEARS:
-                seg = vals[yrs == y]
-                lo, hi = block_bootstrap_ci(seg, block=EDGE_BLOCK, n_boot=n_boot, seed=SEED) \
-                    if len(seg) >= EDGE_BLOCK else (np.nan, np.nan)
-                year_rows.append({"year": y, "n": int(len(seg)), "mean": float(seg.mean()) if len(seg) else np.nan,
-                                  "ci_lo": lo, "ci_hi": hi})
-            res["year_table"] = pd.DataFrame(year_rows)
-            edge[(tag, leg)] = res
-            res["rolling"].to_csv(out / f"edge_trend_{tag}_{leg}_rolling.csv", index=False)
-            res["period_table"].to_csv(out / f"edge_trend_{tag}_{leg}_weekly.csv", index=False)
-            written += [f"edge_trend_{tag}_{leg}_rolling.csv", f"edge_trend_{tag}_{leg}_weekly.csv"]
-    edge_rows = []
-    for (tag, leg), res in edge.items():
-        hs = res["half_split"]
-        lw = res["last_window"] or {}
-        edge_rows.append({"config": tag, "leg": leg, "n": res["params"]["n"], "slope_bps_per_week": res["slope"],
-                          "slope_ci_lo": res["slope_ci"][0], "slope_ci_hi": res["slope_ci"][1],
-                          "slope_mde": res["slope_mde"], "mean_first_half": hs["mean_first"],
-                          "mean_second_half": hs["mean_second"], "half_diff": hs["diff"],
-                          "half_diff_ci_lo": hs["diff_ci"][0], "half_diff_ci_hi": hs["diff_ci"][1],
-                          "last_window_mean": lw.get("mean", np.nan), "last_window_ci_lo": lw.get("ci_lo", np.nan),
-                          "last_window_ci_hi": lw.get("ci_hi", np.nan), "judgment": res["judgment"],
-                          "rolling_step": res["params"]["rolling_step"]})
-    edge_summary = pd.DataFrame(edge_rows)
+        edge.update(edge_trend_for(tag, arrays[("masked", cfg)], grid_m, COST_CONS_1W * burst[(cfg[0], cfg[1])],
+                                   n_boot, out, written))
+    edge_summary = pd.DataFrame(edge_summary_rows(edge))
     write(edge_summary, "edge_trend_summary.csv")
     for tag in ("best", "current"):
         yt = edge[(tag, "net")]["year_table"].copy()
@@ -886,6 +968,452 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
     (out / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, default=str) + "\n",
                                        encoding="utf-8")
     print(json.dumps({"best": cfg_label(best), "null_p95": null_p95, "timings": T}, ensure_ascii=False, indent=2))
+    print(f"wrote {len(set(written)) + 1} files to {out}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# iteration 1: realized-volatility tercile conditioning (27 × 3 = 81, N = 108)
+# ---------------------------------------------------------------------------
+
+def iter0_cell_index(mi: int, ci: int, pi: int, cost_i: int) -> int:
+    """The `cell` counter iteration 0 used for its bootstrap seed
+    ([SEED, 5, cell]): 1-based over masks(2) × CONFIGS(27) × period(3) ×
+    cost(2) in that nesting order. Reused for the 27 unconditioned cells of
+    iteration 1 so those rows reproduce iteration 0 exactly."""
+    return ((mi * len(CONFIGS) + ci) * 3 + pi) * 2 + cost_i + 1
+
+
+def state_minutes_table(grid: Grid, terc: np.ndarray, vol: np.ndarray) -> pd.DataFrame:
+    """Per period (full / train / val) and per year: grid minutes, minutes
+    with a finite realized vol, and the count / share of each tercile."""
+    rows = []
+    day = grid.day_id
+    years = grid.idx.year.to_numpy()
+    fin = np.isfinite(vol)
+    groups = [("full", np.ones(grid.n, bool)), ("train", day <= _day_id(TRAIN_END)),
+              ("val", day >= _day_id(VAL_START))] + [(str(y), years == y) for y in DEV_YEARS]
+    for name, m in groups:
+        n_fin = int((m & fin).sum())
+        row = {"period": name, "grid_minutes": int(m.sum()), "vol_defined_minutes": n_fin,
+               "vol_undefined_minutes": int((m & ~fin).sum()),
+               "vol_mean": float(np.nanmean(vol[m])) if n_fin else np.nan,
+               "vol_median": float(np.nanmedian(vol[m])) if n_fin else np.nan}
+        for code, lab in zip(TERCILE_CODES, TERCILE_LABELS):
+            c = int((m & (terc == code)).sum())
+            row[f"n_{lab}"] = c
+            row[f"share_{lab}"] = c / n_fin if n_fin else np.nan
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def signal_bars_by_tercile(grid: Grid, mom: dict, terc: np.ndarray) -> pd.DataFrame:
+    """Entry-signal bars (after the discard window) per (k, thr) split by the
+    tercile at the signal minute, full period."""
+    rows = []
+    for k in KS:
+        for thr in THRS:
+            sig, _, n_bars, n_disc = build_signals(grid, mom[k], thr, EXIT_PCT)
+            on = sig != 0
+            row = {"k": k, "thr": thr, "signal_bars": n_bars, "discarded": n_disc,
+                   "signal_bars_kept": int(on.sum()), "no_tercile": int((on & (terc < 0)).sum())}
+            for code, lab in zip(TERCILE_CODES, TERCILE_LABELS):
+                row[f"n_{lab}"] = int((on & (terc == code)).sum())
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def gated_reference_check(bf: pd.DataFrame, grid_m: Grid, mm: np.ndarray, gate: np.ndarray,
+                          k: int, thr: float, stop: float) -> dict:
+    """The gate must equal, in the pure-pandas reference engine, a momentum
+    series whose out-of-gate entry signals are clipped to exactly ±thr (not
+    > thr → no entry; not < exit → no exit). Returns the comparison counts;
+    raises on any mismatch."""
+    m_ref = mm.copy()
+    off = (~gate) & np.isfinite(m_ref) & (np.abs(m_ref) > thr / 100.0)
+    m_ref[off] = np.sign(m_ref[off]) * (thr / 100.0)
+    ref = simulate(bf, pd.Series(m_ref, index=grid_m.idx), thr, EXIT_PCT, stop, COST_CONS_1W,
+                   FUNDING_PCT, FUNDING_TIMES, MAX_GAP_MIN, True)
+    fast = simulate_fast(grid_m, mm, thr, EXIT_PCT, stop, COST_CONS_1W, FUNDING_PCT, entry_gate=gate)
+    assert len(ref) == len(fast), (len(ref), len(fast))
+    assert (pd.DatetimeIndex(ref["entry_ts"]) == pd.DatetimeIndex(fast["entry_ts"])).all()
+    assert (pd.DatetimeIndex(ref["exit_ts"]) == pd.DatetimeIndex(fast["exit_ts"])).all()
+    assert np.allclose(ref["gross_bps"].to_numpy(), fast["gross_bps"].to_numpy(), atol=1e-9)
+    assert np.allclose(ref["funding_bps"].to_numpy(), fast["funding_bps"].to_numpy(), atol=1e-9)
+    assert ref["excluded_gap"].tolist() == fast["excluded_gap"].tolist()
+    return {"n_trades": int(len(fast)), "n_clipped_signal_bars": int(off.sum()),
+            "n_entry_signals_gated": int(fast.attrs["n_entry_signals_gated"])}
+
+
+def condition_analysis(a: dict, grid: Grid, terc: np.ndarray, c1w: float, period: str,
+                       n_boot: int) -> dict:
+    """PHASE2_TEMPLATES §6 on an UNCONDITIONED ledger: net (conservative)
+    per trade split by the tercile at the entry-signal minute (`sig_i`),
+    time-ordered, block = EDGE_BLOCK, joint permutation null from
+    `state_split`."""
+    keep = period_mask(a, grid, period) & ~a["excluded_gap"]
+    net = net_of(a, c1w)[keep]
+    codes = terc[a["sig_i"][keep]]
+    labels = np.array([TERCILE_LABELS[c] if c >= 0 else "" for c in codes], dtype=object)
+    res = state_split(net, {"realized_vol_60m_tercile": labels}, block=EDGE_BLOCK, n_boot=n_boot,
+                      seed=SEED)
+    st = res["state_table"]
+    st["sd_bps"] = [float(net[labels == s].std(ddof=1)) if (labels == s).sum() > 1 else np.nan for s in st["state"]]
+    st["mde_bps"] = [mde_of(sd, int(n_)) for sd, n_ in zip(st["sd_bps"], st["n"])]
+    res["n_no_tercile"] = int((labels == "").sum())
+    return res
+
+
+def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -> int:
+    T = {}
+    t_all = time.perf_counter()
+    out.mkdir(parents=True, exist_ok=True)
+    written: list[str] = []
+
+    def write(df: pd.DataFrame, name: str):
+        p = out / name
+        df.to_csv(p, index=False)
+        written.append(name)
+
+    # ---- 1. data (dev set only; the loader removes the sealed rows) --------
+    t0 = time.perf_counter()
+    bf, bn = load_dev_frames()
+    T["load_s"] = time.perf_counter() - t0
+    summary = summarize(bf, bn, MAX_GAP_MIN)
+    input_files = [f"{BF_DIR}/candles_1m_{y}.csv.gz" for y in DEV_YEARS] + \
+                  [f"{BN_DIR}/binance_BTCUSDT_1m_{y}.csv.gz" for y in DEV_YEARS]
+
+    # ---- 2. burst coefficient (same measurement as iteration 0) -----------
+    t0 = time.perf_counter()
+    burst_df, burst, burst_meta = burst_coefficients()
+    if not burst:
+        burst = {(k, thr): BURST_ASSUMED for k in KS for thr in THRS}
+    T["burst_s"] = time.perf_counter() - t0
+    if len(burst_df):
+        write(burst_df, "burst_factor.csv")
+
+    # ---- 3. grids, signals, state variable ---------------------------------
+    t0 = time.perf_counter()
+    grid_m = prepare_grid(bf, MAX_GAP_MIN, True, FUNDING_TIMES)
+    grid_u = prepare_grid(bf, MAX_GAP_MIN, False, FUNDING_TIMES)
+    bg = BinanceGrid(bn["close"], grid_m)
+    mom = {k: bg.momentum(k) for k in KS}
+    T["grid_s"] = time.perf_counter() - t0
+
+    t0 = time.perf_counter()
+    vol = {"masked": realized_vol(grid_m, VOL_WINDOW_MIN, VOL_MIN_BARS),
+           "unmasked": realized_vol(grid_u, VOL_WINDOW_MIN, VOL_MIN_BARS)}
+    in_train = grid_m.day_id <= _day_id(TRAIN_END)
+    bounds = tercile_bounds(vol["masked"], in_train)          # frozen on train, masked grid
+    terc = {m: assign_tercile(v, bounds) for m, v in vol.items()}
+    gates = {m: tercile_gates(t) for m, t in terc.items()}
+    grids = {"masked": grid_m, "unmasked": grid_u}
+    state_tab = state_minutes_table(grid_m, terc["masked"], vol["masked"])
+    write(state_tab, "state_minutes.csv")
+    sig_tab = signal_bars_by_tercile(grid_m, mom, terc["masked"])
+    write(sig_tab, "signal_bars_by_tercile.csv")
+    n_terc_diff = int((terc["masked"] != terc["unmasked"]).sum())
+    T["state_s"] = time.perf_counter() - t0
+
+    # ---- 4. 108 configurations × masks -------------------------------------
+    t0 = time.perf_counter()
+    arrays: dict = {}
+    for masks in ("masked", "unmasked"):
+        for cfg in CONFIGS_ITER1:
+            k, thr, stop, st = cfg
+            arrays[(masks, cfg)] = simulate_arrays(grids[masks], mom[k], thr, EXIT_PCT, stop, FUNDING_PCT,
+                                                   None if st is None else gates[masks][st])
+    T["sim108x2_s"] = time.perf_counter() - t0
+
+    # reference checks: (i) iteration 0's (current configuration, pandas engine);
+    # (ii) the gate against the pandas engine with clipped out-of-gate signals
+    t0 = time.perf_counter()
+    ref = simulate(bf, momentum_signal(bn["close"], CURRENT[0]), CURRENT[1], EXIT_PCT, CURRENT[2],
+                   COST_CONS_1W, FUNDING_PCT, FUNDING_TIMES, MAX_GAP_MIN, True)
+    a_cur = arrays[("masked", CURRENT + (None,))]
+    assert len(ref) == a_cur["n_trades"], (len(ref), a_cur["n_trades"])
+    assert np.allclose(ref["gross_bps"].to_numpy(), a_cur["gross_bps"], atol=1e-9)
+    assert (pd.DatetimeIndex(ref["exit_ts"]) == grid_m.idx[a_cur["exit_i"]]).all()
+    gate_checks = []
+    for st in TERCILE_CODES:
+        r = gated_reference_check(bf, grid_m, mom[CURRENT[0]], gates["masked"][st], *CURRENT)
+        r.update({"k": CURRENT[0], "thr": CURRENT[1], "stop": CURRENT[2], "state": tercile_label(st)})
+        gate_checks.append(r)
+    gate_checks = pd.DataFrame(gate_checks)
+    write(gate_checks, "gate_reference_check.csv")
+    T["reference_check_s"] = time.perf_counter() - t0
+
+    # ---- 5. main statistics for every cell ---------------------------------
+    t0 = time.perf_counter()
+    cfg_rows = []
+    cell1 = 0
+    for mi, masks in enumerate(("masked", "unmasked")):
+        for cfg in CONFIGS_ITER1:
+            k, thr, stop, st = cfg
+            ci0 = CONFIGS.index((k, thr, stop))
+            a = arrays[(masks, cfg)]
+            for pi, period in enumerate(("full", "train", "val")):
+                for cost_i, (cost_name, c1w) in enumerate((("cons", COST_CONS_1W * burst[(k, thr)]),
+                                                           ("opt", COST_OPT_1W))):
+                    if st is None:
+                        seed = [SEED, 5, iter0_cell_index(mi, ci0, pi, cost_i)]      # = iteration 0's seed
+                    else:
+                        cell1 += 1
+                        seed = [SEED, 15, cell1]
+                    row = {"k": k, "thr": thr, "stop": stop, "exit": EXIT_PCT, "state": tercile_label(st),
+                           "masks": masks, "period": period, "cost": cost_name, "one_way_bps": c1w,
+                           "burst_coef": burst[(k, thr)] if cost_name == "cons" else 1.0,
+                           "is_current": (k, thr, stop) == CURRENT and st is None,
+                           "is_iter0_best": (k, thr, stop) == ITER0_BEST and st is None,
+                           "n_entry_signal_bars": a["n_entry_signal_bars"],
+                           "n_entry_signals_discarded": a["n_entry_signals_discarded"],
+                           "n_entry_signals_gated": a["n_entry_signals_gated"]}
+                    row.update(full_stats(a, grids[masks], c1w, period, n_boot, seed))
+                    row["mde_bps"] = mde_of(row["sd_net_bps"], row["n"])
+                    row["mde_cluster_bps"] = float(MDE_Z * row["se_cluster"]) if np.isfinite(row["se_cluster"]) else np.nan
+                    cfg_rows.append(row)
+    configs = pd.DataFrame(cfg_rows)
+    write(configs, "configs.csv")
+    T["configs_stats_s"] = time.perf_counter() - t0
+
+    # consistency with iteration 0's configs.csv (the 27 unconditioned cells)
+    iter0_check = {"available": False}
+    p0 = ITER0_DIR / "configs.csv"
+    if p0.exists():
+        c0 = pd.read_csv(p0)
+        c1 = configs[configs["state"] == "all"].drop(columns=["state", "is_iter0_best", "n_entry_signals_gated",
+                                                                "mde_bps", "mde_cluster_bps"])
+        key = ["k", "thr", "stop", "masks", "period", "cost"]
+        m = c0.merge(c1, on=key, suffixes=("_0", "_1"))
+        num = [c for c in c0.columns if c not in key and pd.api.types.is_numeric_dtype(c0[c])
+               and c0[c].dtype != bool]
+        diffs = {c: float(np.nanmax(np.abs(m[f"{c}_0"].to_numpy(float) - m[f"{c}_1"].to_numpy(float))))
+                 for c in num}
+        iter0_check = {"available": True, "path": str(p0.relative_to(REPO_ROOT)), "md5": _md5(p0),
+                       "rows_matched": int(len(m)), "rows_iter0": int(len(c0)),
+                       "max_abs_diff_by_column": diffs, "max_abs_diff": max(diffs.values()) if diffs else np.nan}
+
+    # ---- 6. best configuration among the 108 (val, masked, conservative) --
+    sel = configs[(configs["masks"] == "masked") & (configs["period"] == "val") & (configs["cost"] == "cons")]
+
+    def _cfg_of(row) -> tuple:
+        st = None if row["state"] == "all" else TERCILE_LABELS.index(row["state"])
+        return (int(row["k"]), float(row["thr"]), float(row["stop"]), st)
+
+    best = _cfg_of(sel.sort_values("mean_net_bps", ascending=False).iloc[0])
+    best_by_sharpe = _cfg_of(sel.sort_values("sharpe", ascending=False).iloc[0])
+    sel22 = pd.DataFrame([{"k": c[0], "thr": c[1], "stop": c[2], "state": tercile_label(c[3]),
+                           **full_stats(arrays[("masked", c)], grid_m, COST_CONS_1W * burst[(c[0], c[1])],
+                                        "val2022", n_boot, [SEED, 16, i])}
+                          for i, c in enumerate(CONFIGS_ITER1)])
+    write(sel22, "sensitivity_val_2022_only.csv")
+    best22 = _cfg_of(sel22.sort_values("mean_net_bps", ascending=False).iloc[0])
+    best_uncond = _cfg_of(sel[sel["state"] == "all"].sort_values("mean_net_bps", ascending=False).iloc[0])
+
+    def stat_of(cfg, period, masks="masked", cost="cons"):
+        st = tercile_label(cfg[3]) if len(cfg) == 4 else "all"
+        r = configs[(configs["k"] == cfg[0]) & (configs["thr"] == cfg[1]) & (configs["stop"] == cfg[2])
+                    & (configs["state"] == st) & (configs["masks"] == masks) & (configs["period"] == period)
+                    & (configs["cost"] == cost)]
+        return r.iloc[0]
+
+    iter0_best4 = ITER0_BEST + (None,)
+    cur4 = CURRENT + (None,)
+    val_best = float(stat_of(best, "val")["mean_net_bps"])
+    val_iter0_best = float(stat_of(iter0_best4, "val")["mean_net_bps"])
+    improvement = {"best_iter1": cfg_label(best), "val_mean_net_best_iter1": val_best,
+                   "iter0_best": cfg_label(ITER0_BEST), "val_mean_net_iter0_best_recomputed": val_iter0_best,
+                   "val_improvement_bps": val_best - val_iter0_best, "mde_registered": MDE_REGISTERED,
+                   "val_improvement_over_mde": (val_best - val_iter0_best) / MDE_REGISTERED,
+                   "n_val_best_iter1": int(stat_of(best, "val")["n"]),
+                   "mde_val_best_iter1": float(stat_of(best, "val")["mde_bps"]),
+                   "best_unconditioned_this_run": cfg_label(best_uncond)}
+    if iter0_check["available"]:
+        r0 = c0[(c0["k"] == ITER0_BEST[0]) & (c0["thr"] == ITER0_BEST[1]) & (c0["stop"] == ITER0_BEST[2])
+                & (c0["masks"] == "masked") & (c0["period"] == "val") & (c0["cost"] == "cons")]
+        improvement["val_mean_net_iter0_best_from_iter0_file"] = float(r0["mean_net_bps"].iloc[0]) if len(r0) else np.nan
+
+    # ledger of the best configuration (masked)
+    k, thr, stop, st = best
+    led = simulate_fast(grid_m, mom[k], thr, EXIT_PCT, stop, COST_CONS_1W * burst[(k, thr)], FUNDING_PCT,
+                        entry_gate=None if st is None else gates["masked"][st])
+    led["net_bps_opt"] = led["gross_bps"] - 2 * COST_OPT_1W - led["funding_bps"]
+    led["split"] = np.where(pd.DatetimeIndex(led["entry_ts"]) <= TRAIN_END, "train", "val")
+    led["vol_tercile_at_signal"] = [TERCILE_LABELS[c] if c >= 0 else "" for c in
+                                    terc["masked"][grid_m.idx.get_indexer(pd.DatetimeIndex(led["entry_signal_ts"]))]]
+    led.to_csv(out / "trades_best.csv.gz", index=False)
+    written.append("trades_best.csv.gz")
+
+    # ---- 7. null: best-of-108 over the same permuted worlds ----------------
+    bp = BlockPermuter(bn["close"], "D")
+    null_best, null_all, null_wall = run_null(grid_m, bg, bp, burst, n_null, workers, CONFIGS_ITER1, gates["masked"])
+    write(null_best, "null_best_of_108.csv")
+    null_all.to_csv(out / "null_all_configs.csv.gz", index=False)
+    written.append("null_all_configs.csv.gz")
+    T["null_wall_s"] = null_wall
+    T["null_seconds_per_draw_mean"] = float(null_best["seconds"].mean())
+    T["null_seconds_per_draw_median"] = float(null_best["seconds"].median())
+    null_p95 = {c: float(np.nanpercentile(null_best[c], 95)) for c in null_best.columns if c.startswith("max_")}
+    # best-of-27 from the same draws (must reproduce iteration 0's null_best_of_27.csv)
+    sub27 = null_all[null_all["state"] == "all"]
+    b27 = sub27.groupby(["draw", "period"]).agg(max_mean=("mean_net_bps", "max"), max_sharpe=("sharpe", "max")).reset_index()
+    null27 = b27.pivot(index="draw", columns="period", values=["max_mean", "max_sharpe"])
+    null27.columns = [f"{'max_mean_net_bps' if a == 'max_mean' else 'max_sharpe'}_{p}" for a, p in null27.columns]
+    null27 = null27.reset_index()
+    write(null27, "null_best_of_27_from_same_draws.csv")
+    null27_check = {"available": False}
+    p27 = ITER0_DIR / "null_best_of_27.csv"
+    if p27.exists():
+        n0 = pd.read_csv(p27)
+        mm27 = n0.merge(null27, on="draw", suffixes=("_0", "_1"))
+        cols = [c for c in null27.columns if c != "draw"]
+        d = {c: float(np.nanmax(np.abs(mm27[f"{c}_0"] - mm27[f"{c}_1"]))) for c in cols}
+        null27_check = {"available": True, "path": str(p27.relative_to(REPO_ROOT)), "md5": _md5(p27),
+                        "draws_matched": int(len(mm27)), "max_abs_diff_by_column": d,
+                        "max_abs_diff": max(d.values()) if d else np.nan,
+                        "p95_iter0": {c: float(np.nanpercentile(n0[c], 95)) for c in cols},
+                        "p95_same_draws_here": {c: float(np.nanpercentile(null27[c], 95)) for c in cols}}
+
+    # ---- 8. controls 2 and 3 for the best configuration only ---------------
+    t0 = time.perf_counter()
+    a_best = arrays[("masked", best)]
+    c1w_best = COST_CONS_1W * burst[(best[0], best[1])]
+    obs = stat_of(best, "full")
+    ctrl_rows = []
+    df2 = control_sign_shuffle(a_best, c1w_best, n_ctrl, 0)
+    write(df2, "control2_sign_shuffle_best.csv")
+    sub3 = null_all[(null_all["k"] == best[0]) & (null_all["thr"] == best[1]) & (null_all["stop"] == best[2])
+                    & (null_all["state"] == tercile_label(best[3])) & (null_all["period"] == "full")].head(n_ctrl)
+    for name, df in (("対照2 符号シャッフル", df2), ("対照3 先行市場の日ブロック置換(帰無の当該構成のみ)", sub3)):
+        ctrl_rows.append({"config": "best", "label": cfg_label(best), "control": name, "draws": len(df),
+                          "obs_mean_net_bps": obs["mean_net_bps"], "null_mean_mean": float(df["mean_net_bps"].mean()),
+                          "null_mean_p95": float(np.nanpercentile(df["mean_net_bps"], 95)),
+                          "null_mean_p5": float(np.nanpercentile(df["mean_net_bps"], 5)),
+                          "obs_sharpe": obs["sharpe"], "null_sharpe_mean": float(df["sharpe"].mean()),
+                          "null_sharpe_p95": float(np.nanpercentile(df["sharpe"], 95)),
+                          "null_sharpe_p5": float(np.nanpercentile(df["sharpe"], 5)),
+                          "n_obs": int(obs["n"]), "n_null_mean": float(df["n"].mean())})
+    controls = pd.DataFrame(ctrl_rows)
+    write(controls, "controls.csv")
+    T["controls_s"] = time.perf_counter() - t0
+
+    # ---- 9. §6 condition analysis on the unconditioned ledgers -------------
+    t0 = time.perf_counter()
+    cond = {}
+    cond_state_rows, cond_diff_rows = [], []
+    for tag, cfg in (("iter0_best", iter0_best4), ("current", cur4)):
+        for period in ("full", "val"):
+            res = condition_analysis(arrays[("masked", cfg)], grid_m, terc["masked"],
+                                     COST_CONS_1W * burst[(cfg[0], cfg[1])], period, n_boot)
+            cond[(tag, period)] = res
+            st_ = res["state_table"].copy()
+            st_.insert(0, "period", period)
+            st_.insert(0, "label", cfg_label(cfg[:3]))
+            st_.insert(0, "config", tag)
+            st_["n_no_tercile"] = res["n_no_tercile"]
+            cond_state_rows.append(st_)
+            dt = res["diff_table"].copy()
+            dt.insert(0, "period", period)
+            dt.insert(0, "label", cfg_label(cfg[:3]))
+            dt.insert(0, "config", tag)
+            cond_diff_rows.append(dt)
+    cond_state = pd.concat(cond_state_rows, ignore_index=True)
+    cond_diff = pd.concat(cond_diff_rows, ignore_index=True)
+    write(cond_state, "condition_state_table.csv")
+    write(cond_diff, "condition_diff_table.csv")
+    T["condition_s"] = time.perf_counter() - t0
+
+    # ---- 10. known defects (best) + dev summary ----------------------------
+    d = per_year_defects(grid_m, a_best, mom[best[0]], best[1])
+    d.insert(0, "config", "best")
+    d.insert(1, "label", cfg_label(best))
+    defects = {"best": d}
+    write(d, "known_defects_by_year.csv")
+    write(summary["per_year"], "dev_set_summary_by_year.csv")
+
+    # ---- 11. edge trend (best only) ----------------------------------------
+    t0 = time.perf_counter()
+    edge = edge_trend_for("best", a_best, grid_m, c1w_best, n_boot, out, written)
+    edge_summary = pd.DataFrame(edge_summary_rows(edge))
+    write(edge_summary, "edge_trend_summary.csv")
+    yt = edge[("best", "net")]["year_table"].copy()
+    yt["gross_mean"] = edge[("best", "gross")]["year_table"]["mean"]
+    yt["cost_mean"] = edge[("best", "cost")]["year_table"]["mean"]
+    yt.insert(0, "config", "best")
+    write(yt, "edge_trend_best_by_year.csv")
+    T["edge_trend_s"] = time.perf_counter() - t0
+
+    # ---- 12. MDE -----------------------------------------------------------
+    mde_rows = []
+    for tag, cfg in (("best", best), ("iter0_best", iter0_best4), ("current", cur4)):
+        for period in ("full", "val"):
+            r = stat_of(cfg, period)
+            mde_rows.append({"config": tag, "label": cfg_label(cfg), "period": period, "n": int(r["n"]),
+                             "sigma_bps": r["sd_net_bps"],
+                             "se_independent": r["sd_net_bps"] / np.sqrt(r["n"]) if r["n"] else np.nan,
+                             "mde_independent": r["mde_bps"], "se_cluster": r["se_cluster"],
+                             "mde_cluster": r["mde_cluster_bps"], "mde_registered": MDE_REGISTERED})
+    mde = pd.DataFrame(mde_rows)
+    write(mde, "mde.csv")
+
+    T["total_s"] = time.perf_counter() - t_all
+
+    # ---- 13. RESULTS.md / manifest.json ------------------------------------
+    ctx = dict(n_null=n_null, n_ctrl=n_ctrl, n_boot=n_boot, workers=workers, T=T, summary=summary,
+               burst_df=burst_df, burst=burst, burst_meta=burst_meta, bounds=bounds, state_tab=state_tab,
+               sig_tab=sig_tab, n_terc_diff=n_terc_diff, gate_checks=gate_checks, configs=configs,
+               iter0_check=iter0_check, best=best, best_by_sharpe=best_by_sharpe, best22=best22,
+               best_uncond=best_uncond, improvement=improvement, null_best=null_best, null_p95=null_p95,
+               null27_check=null27_check, controls=controls, cond=cond, cond_state=cond_state,
+               cond_diff=cond_diff, defects=defects, edge_summary=edge_summary, edge=edge, mde=mde,
+               stat_of=stat_of, written=written)
+    md = results_md_iter1(**ctx)
+    (out / "RESULTS.md").write_text(md, encoding="utf-8")
+    written.append("RESULTS.md")
+
+    manifest = {
+        "unit": UNIT, "iteration": 1, "run_date_utc": pd.Timestamp.now("UTC").isoformat(),
+        "seed": SEED, "git_rev": _git_rev(), "script": "scripts/phase2/p2_08_run.py",
+        "script_md5": _md5(Path(__file__)),
+        "engine_md5": {"xborder_p2.py": _md5(REPO_ROOT / "src/bot/research/xborder_p2.py"),
+                       "xborder_p2_fast.py": _md5(REPO_ROOT / "src/bot/research/xborder_p2_fast.py"),
+                       "xborder_p2_state.py": _md5(REPO_ROOT / "src/bot/research/xborder_p2_state.py"),
+                       "overnight.py": _md5(REPO_ROOT / "src/bot/research/overnight.py"),
+                       "p2_08_data.py": _md5(REPO_ROOT / "scripts/phase2/p2_08_data.py")},
+        "inputs": [{"path": p, "md5": _md5(REPO_ROOT / p)} for p in input_files],
+        "seal_record": {"path": SEAL_FILE, "md5": _md5(REPO_ROOT / SEAL_FILE)},
+        "tape_inputs": [{"path": p, "md5": _md5(REPO_ROOT / p)} for p in burst_meta.get("files", [])],
+        "iteration0": {"dir": str(ITER0_DIR.relative_to(REPO_ROOT)), "best": cfg_label(ITER0_BEST),
+                       "configs_check": iter0_check, "null_best_of_27_check": null27_check},
+        "parameters": {"configs_base": CONFIGS, "states": ["all"] + list(TERCILE_LABELS),
+                       "n_configs_new": len(CONFIGS_ITER1) - len(CONFIGS), "n_cumulative": N_CUMULATIVE_ITER1,
+                       "exit_pct": EXIT_PCT, "current": CURRENT,
+                       "state_variable": {"name": "realized_vol_60m_tercile", "window_min": VOL_WINDOW_MIN,
+                                          "min_valid_returns": VOL_MIN_BARS, "ddof": 1,
+                                          "boundaries_fixed_on": f"train (.. {TRAIN_END}), masked grid, all minutes with finite vol",
+                                          "q1": bounds[0], "q2": bounds[1],
+                                          "assignment": "vol<=q1 -> 1_low; q1<vol<=q2 -> 2_mid; vol>q2 -> 3_high; NaN -> none (no entry)",
+                                          "n_minutes_tercile_differs_masked_vs_unmasked": n_terc_diff},
+                       "cost_cons_one_way_bps": COST_CONS_1W, "cost_opt_one_way_bps": COST_OPT_1W,
+                       "burst_coef": {f"{k}/{thr}": v for (k, thr), v in burst.items()},
+                       "burst_assumed_fallback": BURST_ASSUMED, "burst_min_window_minutes": BURST_MIN_WINDOW_MINUTES,
+                       "funding_pct_per_settlement": FUNDING_PCT, "funding_times_utc": FUNDING_TIMES,
+                       "max_gap_min": MAX_GAP_MIN, "train_end": str(TRAIN_END), "val_start": str(VAL_START),
+                       "dev_start": str(DEV_START), "dev_end": str(DEV_END), "n_boot": n_boot, "n_null": n_null,
+                       "n_ctrl": n_ctrl, "workers": workers, "edge_window": EDGE_WINDOW, "edge_block": EDGE_BLOCK,
+                       "null_block": "D", "null_statistic_periods": ["full", "train", "val"],
+                       "null_draw_seed": "[SEED, 1, draw] (same worlds as iteration 0)"},
+        "burst_meta": burst_meta,
+        "timings_s": T,
+        "headline": {"best_by_val_mean": cfg_label(best), "best_by_val_sharpe": cfg_label(best_by_sharpe),
+                     "best_by_val_2022_only": cfg_label(best22), "best_unconditioned": cfg_label(best_uncond),
+                     "val_improvement": improvement, "null_p95": null_p95},
+        "outputs": sorted(set(written)),
+    }
+    (out / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2, default=str) + "\n",
+                                       encoding="utf-8")
+    print(json.dumps({"best": cfg_label(best), "bounds": bounds, "val_improvement": improvement,
+                      "null_p95": null_p95, "timings": T}, ensure_ascii=False, indent=2, default=str))
     print(f"wrote {len(set(written)) + 1} files to {out}")
     return 0
 
@@ -1182,9 +1710,325 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
     return "\n".join(md)
 
 
+def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burst, burst_meta, bounds,
+                     state_tab, sig_tab, n_terc_diff, gate_checks, configs, iter0_check, best, best_by_sharpe,
+                     best22, best_uncond, improvement, null_best, null_p95, null27_check, controls, cond,
+                     cond_state, cond_diff, defects, edge_summary, edge, mde, stat_of, written) -> str:
+    md = []
+    now_jst = pd.Timestamp.now("Asia/Tokyo")
+    n_new = len(CONFIGS_ITER1) - len(CONFIGS)
+    md.append("# P2-08 反復 1 — 実現ボラ(60 分)三分位で建玉可否を条件付け(開発セットのみ、2017-08-17 .. 2023-12-17)")
+    md.append("")
+    md.append(f"実行 {now_jst.strftime('%Y-%m-%d %H:%M')} JST / seed {SEED} / git {_git_rev()[:12]} / 単位 {UNIT}。"
+              "読み込みは `load_unsealed(path, \"P2-08\")` のみ(封印 2023-12-18 以降・フォワードには触れていない)。"
+              "実装は盲検(`src/bot/strategy/`・`config/composite.yaml`・`config/config.yaml` の戦略節は読んでいない)。"
+              f"探索面: 反復 0 の 27 構成 × 三分位 3 = {n_new} 構成を追加、累計 N = {N_CUMULATIVE_ITER1}"
+              "(PREREG 探索面「反復の梯子」反復 1)。")
+    md.append("")
+    md.append("**本書は数値の報告のみで、良否・採用・棄却の解釈は行わない。**")
+    md.append("")
+
+    # ---- 0 --------------------------------------------------------------------
+    md.append("## 0. 実行条件と所要時間")
+    md.append("")
+    md.append(_table([
+        {"a": "構成数(反復 0 / 追加 / 累計 N)", "b": f"{len(CONFIGS)} / {n_new} / {N_CUMULATIVE_ITER1}"},
+        {"a": f"帰無の抽選数(best-of-{N_CUMULATIVE_ITER1})", "b": n_null},
+        {"a": "対照 2・3 の抽選数", "b": n_ctrl},
+        {"a": "ブートストラップ回数(CI)", "b": n_boot},
+        {"a": "並列(プロセス)", "b": workers},
+        {"a": "データ読込(s)", "b": round(T["load_s"], 1)},
+        {"a": "格子・信号準備(s)", "b": round(T["grid_s"], 1)},
+        {"a": "実現ボラ・三分位(s)", "b": round(T["state_s"], 1)},
+        {"a": f"{N_CUMULATIVE_ITER1} 構成 × マスク前後の台帳(s)", "b": round(T["sim108x2_s"], 2)},
+        {"a": "純 pandas 版との照合(現行構成 + ゲート 3 本、s)", "b": round(T["reference_check_s"], 1)},
+        {"a": f"主指標と CI({len(configs):,} セル、s)", "b": round(T["configs_stats_s"], 1)},
+        {"a": "帰無 壁時計(s)", "b": round(T["null_wall_s"], 1)},
+        {"a": "帰無 1 抽選あたり(プロセス内、平均 s)", "b": round(T["null_seconds_per_draw_mean"], 3)},
+        {"a": "帰無 1 抽選あたり(壁時計 ÷ 抽選数、s)", "b": round(T["null_wall_s"] / max(n_null, 1), 3)},
+        {"a": "対照(s)", "b": round(T["controls_s"], 1)},
+        {"a": "条件分析(s)", "b": round(T["condition_s"], 1)},
+        {"a": "エッジ推移(s)", "b": round(T["edge_trend_s"], 1)},
+        {"a": "合計(s)", "b": round(T["total_s"], 1)},
+    ], [("a", "項目", -1), ("b", "値", -1)]))
+    md.append("")
+    md.append("反復 0 との整合: 27 の無条件構成は反復 0 と同じ乱数種で再計算しており、`configs.csv` の当該行と、帰無の各抽選の当該構成の統計量は反復 0 の出力と一致しなければならない(§4・§9 に差の最大値を記載)。")
+    md.append("")
+
+    # ---- 1 --------------------------------------------------------------------
+    md.append("## 1. 開発セットの概況(年別)")
+    md.append("")
+    md.append(_table(summary["per_year"].to_dict("records"), [
+        ("year", "年", -1), ("bf_rows", "bf 行", 0), ("bf_empty_rows", "空行", 0), ("bf_absent_minutes", "欠落分", 0),
+        ("bf_valid_bars", "有効足", 0), ("bf_empty_share", "空率", 4), ("bf_big_gaps", "5 分超欠損", 0),
+        ("bf_big_gap_minutes_missing", "同・欠け分", 0), ("bf_misprint_rows", "誤プリント", 0),
+        ("bn_rows", "Binance 行", 0), ("bn_missing_minutes", "同・欠け分", 0)]))
+    md.append("")
+
+    # ---- 2 --------------------------------------------------------------------
+    md.append("## 2. バースト係数(WS 記録 `paper_logs/tape`、2026-08-20 .. 09-05、反復 0 と同じ測定)")
+    md.append("")
+    if len(burst_df):
+        md.append(_table(burst_df.to_dict("records"), [
+            ("k", "k", 0), ("thr", "thr(%)", 1), ("n_window_minutes_with_exec", "窓分(約定あり)", 0),
+            ("ratio_eff", "実効比", 3), ("measured", "実測", -1), ("thin", "薄い", -1),
+            ("burst_coef_used", "採用係数", 3), ("cons_one_way_bps", "保守 片道(bps)", 3)]))
+    else:
+        md.append(f"テープが読めなかったため全構成に係数 {BURST_ASSUMED}(仮定)を置いた: {burst_meta.get('reason')}")
+    md.append("")
+
+    # ---- 3 state ---------------------------------------------------------------
+    md.append("## 3. 状態変数: 実現ボラ(60 分)三分位")
+    md.append("")
+    md.append(f"定義: 信号分 t の実現ボラ = bitFlyer 1 分対数リターン r(j) = ln(c(j)/c(j−1)) の j = t−{VOL_WINDOW_MIN - 1} .. t "
+              f"({VOL_WINDOW_MIN} 本、終値 c(t−{VOL_WINDOW_MIN}) .. c(t))の標本標準偏差(ddof = 1)。r(j) は c(j−1)・c(j) が"
+              f"ともに有効足のときだけ存在(空分・誤プリント空白化分は除く)。有効な r が {VOL_MIN_BARS} 本未満なら NaN → どの三分位にも属さず、"
+              "条件付き構成では建玉しない。窓は t を含む(m(t) 自体が close(t) から作られるため、t より後の情報は使わない)。"
+              "三分位の境界 q1・q2 = train 期間(.. 2021-12-31 23:59 UTC)の**全格子分**(信号分に限らない)の有限な実現ボラの 33.3 / 66.7 パーセンタイル。"
+              "マスク後の格子で決め、マスク前の格子にも同じ値を適用(val にも固定値のまま適用 = look-ahead なし)。"
+              "割当: vol ≤ q1 → 1_low、q1 < vol ≤ q2 → 2_mid、vol > q2 → 3_high。条件付け = 「その三分位のときだけ建玉可」"
+              "(建玉信号をゲートで落とす。決済・ストップ・繰り延べ・捨て信号・資金調達・欠損除外は無条件構成と同一)。")
+    md.append("")
+    md.append(_table([
+        {"a": "q1(1_low / 2_mid 境界、1 分対数リターンの σ)", "b": f"{bounds[0]:.6e}"},
+        {"a": "q2(2_mid / 3_high 境界)", "b": f"{bounds[1]:.6e}"},
+        {"a": "q1・q2 を bps に直した値(σ × 1e4)", "b": f"{bounds[0] * 1e4:.3f} / {bounds[1] * 1e4:.3f}"},
+        {"a": "マスク前後で三分位が異なる分", "b": f"{n_terc_diff:,}"},
+    ], [("a", "項目", -1), ("b", "値", -1)]))
+    md.append("")
+    md.append("期間・年別の格子分と三分位の分布(マスク後の格子。`state_minutes.csv`):")
+    md.append("")
+    md.append(_table(state_tab.to_dict("records"), [
+        ("period", "期間", -1), ("grid_minutes", "格子分", 0), ("vol_defined_minutes", "ボラ定義あり", 0),
+        ("vol_undefined_minutes", "定義なし", 0), ("vol_mean", "ボラ平均", 6), ("vol_median", "中央値", 6),
+        ("n_1_low", "n 1_low", 0), ("share_1_low", "比 1_low", 4), ("n_2_mid", "n 2_mid", 0), ("share_2_mid", "比 2_mid", 4),
+        ("n_3_high", "n 3_high", 0), ("share_3_high", "比 3_high", 4)]))
+    md.append("")
+    md.append("建玉信号足(捨て信号除去後、全期間)の三分位別内訳(`signal_bars_by_tercile.csv`):")
+    md.append("")
+    md.append(_table(sig_tab.to_dict("records"), [
+        ("k", "k", 0), ("thr", "thr", 1), ("signal_bars", "信号足", 0), ("discarded", "捨て", 0), ("signal_bars_kept", "残り", 0),
+        ("n_1_low", "1_low", 0), ("n_2_mid", "2_mid", 0), ("n_3_high", "3_high", 0), ("no_tercile", "三分位なし", 0)]))
+    md.append("")
+    md.append("ゲートの既知正解: 現行構成 × 三分位 3 本について、純 pandas 版 `simulate` に「ゲート外の建玉信号を ±thr ちょうどに切り詰めた m」"
+              "(建玉にならず、決済にもならない)を渡した台帳と、高速版のゲート付き台帳が完全一致(取引数・entry/exit ts・gross・資金調達・除外)。"
+              "`gate_reference_check.csv`:")
+    md.append("")
+    md.append(_table(gate_checks.to_dict("records"), [
+        ("k", "k", 0), ("thr", "thr", 1), ("stop", "stop", 2), ("state", "三分位", -1), ("n_trades", "取引", 0),
+        ("n_clipped_signal_bars", "切り詰めた信号足", 0), ("n_entry_signals_gated", "ゲートで落とした信号", 0)]))
+    md.append("")
+
+    # ---- 4 configs -------------------------------------------------------------
+    cols_main = [("k", "k", 0), ("thr", "thr", 1), ("stop", "stop", 2), ("state", "三分位", -1), ("n", "n", 0),
+                 ("n_excluded_gap", "除外", 0), ("mean_net_bps", "平均 net(bps)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
+                 ("mde_bps", "MDE", 3), ("sharpe", "Sharpe", 3), ("sharpe_ci_lo", "S CI下", 3), ("sharpe_ci_hi", "S CI上", 3),
+                 ("win_rate", "勝率", 4), ("max_dd_bps", "最大DD(bps)", 0), ("mean_hold_min", "保有分", 1),
+                 ("stop_rate", "ストップ率", 4), ("mean_funding_bps", "資金調達", 3), ("deferred_minutes", "繰延分", 0),
+                 ("trades_with_deferral", "繰延取引", 0), ("n_entry_signals_gated", "ゲート落ち信号", 0)]
+    md.append(f"## 4. {N_CUMULATIVE_ITER1} 構成の主指標(`configs.csv`: {N_CUMULATIVE_ITER1} × {{全期間/train/val}} × {{保守/楽観}} × "
+              f"{{マスク後/前}} = {len(configs):,} 行)")
+    md.append("")
+    md.append("CI = 取引を決済日(UTC)で束ねたクラスタ・ブートストラップ(percentile 法、"
+              f"{n_boot:,} 回)。Sharpe = 日次損益(暦日、取引の無い日は 0)の 平均/SD × √365、CI は日を再抽出。"
+              "保守 = 片道 1.3 bps × バースト係数(k, thr ごと)+ 資金調達、楽観 = 片道 1.0 bps + 資金調達。"
+              "MDE = 2.8016 × σ(net)/√n(セルごと)。最大 DD は net bps の累積(1 単位元本)。除外 = 保有中に 5 分超欠損(マスク後のみ)。"
+              "三分位 = all は無条件(反復 0 の構成そのもの)。")
+    if iter0_check.get("available"):
+        md.append("")
+        md.append(f"反復 0 の `configs.csv`(md5 {iter0_check['md5']})との整合: 無条件 27 構成の {iter0_check['rows_matched']} 行"
+                  f"(反復 0 は {iter0_check['rows_iter0']} 行)を突合し、数値列の差の最大 = {iter0_check['max_abs_diff']:.3e}。")
+    sub_no = 0
+    for masks in ("masked", "unmasked"):
+        for cost in ("cons", "opt"):
+            for period in ("full", "train", "val"):
+                sub_no += 1
+                sub = configs[(configs["masks"] == masks) & (configs["cost"] == cost) & (configs["period"] == period)]
+                title = {"masked": "マスク後", "unmasked": "マスク前"}[masks] + " / " + \
+                        {"cons": "保守", "opt": "楽観"}[cost] + " / " + \
+                        {"full": "全期間", "train": "train(..2021-12-31)", "val": "val(2022-01-01..2023-12-17)"}[period]
+                md.append("")
+                md.append(f"### 4.{sub_no} {title}")
+                md.append("")
+                md.append(_table(sub.to_dict("records"), cols_main))
+    md.append("")
+
+    # ---- 5 best + null --------------------------------------------------------
+    md.append(f"## 5. 最良構成(val で選ぶ、{N_CUMULATIVE_ITER1} の中)と帰無 A・B(best-of-{N_CUMULATIVE_ITER1})")
+    md.append("")
+    md.append(_table([
+        {"a": "val の平均 net(保守・マスク後)最大", "b": cfg_label(best)},
+        {"a": "val の日次 Sharpe(保守・マスク後)最大", "b": cfg_label(best_by_sharpe)},
+        {"a": "val を 2022 年のみにした場合の平均 net 最大(感度、既知欠陥 (8))", "b": cfg_label(best22)},
+        {"a": "無条件 27 の中での val 最良(本実行での再計算)", "b": cfg_label(best_uncond)},
+        {"a": "反復 0 の val 最良(RESULTS.md §4 記載)", "b": cfg_label(ITER0_BEST)},
+        {"a": "現行構成", "b": cfg_label(CURRENT)},
+    ], [("a", "選択", -1), ("b", "k/thr/stop@三分位", -1)]))
+    md.append("")
+    imp = improvement
+    line = (f"**val 改善量** = 最良 {imp['best_iter1']} の val 平均 net {imp['val_mean_net_best_iter1']:.3f} − "
+            f"反復 0 最良 {imp['iter0_best']} の val 平均 net {imp['val_mean_net_iter0_best_recomputed']:.3f} = "
+            f"**{imp['val_improvement_bps']:.3f} bps**(事前登録 MDE {imp['mde_registered']} bps、比 {imp['val_improvement_over_mde']:.3f}; "
+            f"最良セルの n = {imp['n_val_best_iter1']:,}、同セルの MDE = {imp['mde_val_best_iter1']:.3f} bps)")
+    if "val_mean_net_iter0_best_from_iter0_file" in imp:
+        line += f"。反復 0 の `configs.csv` に記載の同値 = {imp['val_mean_net_iter0_best_from_iter0_file']:.3f}"
+    md.append(line + "。")
+    md.append("")
+    rows = []
+    for tag, cfg in (("最良", best), ("反復0最良", ITER0_BEST + (None,)), ("現行", CURRENT + (None,))):
+        for period in ("full", "val", "train"):
+            r = stat_of(cfg, period)
+            rows.append({"cfg": f"{tag} {cfg_label(cfg)}", "period": period, "n": int(r["n"]),
+                         "mean": r["mean_net_bps"], "lo": r["ci_lo"], "hi": r["ci_hi"], "mde": r["mde_bps"],
+                         "nullA": null_p95[f"max_mean_net_bps_{period}"], "sharpe": r["sharpe"],
+                         "slo": r["sharpe_ci_lo"], "shi": r["sharpe_ci_hi"], "nullB": null_p95[f"max_sharpe_{period}"]})
+    md.append(f"帰無 = Binance の対数リターンを UTC 日ブロックで置換(水準は累積で再構成)して信号を作り直し(bitFlyer 側と三分位ゲートはそのまま)、"
+              f"同じ置換世界で {N_CUMULATIVE_ITER1} 構成の主指標(保守・マスク後)を計算して最大を取る。{n_null:,} 回、抽選の乱数種は反復 0 と同一"
+              "(同じ置換世界)。帰無 A = 1 取引平均 net bps、帰無 B = 日次 Sharpe。95 点は期間ごと(全期間・val・train)に別々に取る。")
+    md.append("")
+    md.append(_table(rows, [("cfg", "構成", -1), ("period", "期間", -1), ("n", "n", 0), ("mean", "平均 net", 3),
+                            ("lo", "CI下", 3), ("hi", "CI上", 3), ("mde", "MDE", 3), ("nullA", "帰無A 95点", 3),
+                            ("sharpe", "Sharpe", 3), ("slo", "S CI下", 3), ("shi", "S CI上", 3), ("nullB", "帰無B 95点", 3)]))
+    md.append("")
+    md.append(f"帰無分布の要約(`null_best_of_{N_CUMULATIVE_ITER1}.csv`; 全構成 × 全抽選は `null_all_configs.csv.gz`):")
+    md.append("")
+    nrows = []
+    for c in [c for c in null_best.columns if c.startswith("max_")]:
+        v = null_best[c].to_numpy(float)
+        nrows.append({"stat": c, "mean": float(np.nanmean(v)), "p50": float(np.nanpercentile(v, 50)),
+                      "p95": float(np.nanpercentile(v, 95)), "p99": float(np.nanpercentile(v, 99)),
+                      "max": float(np.nanmax(v))})
+    md.append(_table(nrows, [("stat", "統計量", -1), ("mean", "平均", 3), ("p50", "中央値", 3), ("p95", "95 点", 3),
+                             ("p99", "99 点", 3), ("max", "最大", 3)]))
+    md.append("")
+    if null27_check.get("available"):
+        p0, p1 = null27_check["p95_iter0"], null27_check["p95_same_draws_here"]
+        md.append(f"同じ抽選から無条件 27 構成だけで最大を取った best-of-27(`null_best_of_27_from_same_draws.csv`)と反復 0 の "
+                  f"`null_best_of_27.csv`(md5 {null27_check['md5']})の突合: {null27_check['draws_matched']:,} 抽選、"
+                  f"差の最大 = {null27_check['max_abs_diff']:.3e}。95 点(反復 0 / 本実行): "
+                  + "、".join(f"{c} {p0[c]:.3f} / {p1[c]:.3f}" for c in p0) + "。")
+        md.append("")
+    md.append(f"1 抽選あたりの所要: プロセス内平均 {T['null_seconds_per_draw_mean']:.3f} s"
+              f"(中央値 {T['null_seconds_per_draw_median']:.3f} s)、壁時計 {T['null_wall_s']:.0f} s / {n_null:,} 抽選 = "
+              f"{T['null_wall_s'] / max(n_null, 1):.3f} s(プロセス {workers})。"
+              f"1 抽選 = 置換 1 回 + 信号 3 本(k = 15/30/60)+ {N_CUMULATIVE_ITER1} 構成(無条件 27 + ゲート付き 81)。")
+    md.append("")
+
+    # ---- 6 controls -------------------------------------------------------------
+    md.append("## 6. 対照(最良構成のみ、反復 0 の対照 2・3)")
+    md.append("")
+    md.append("対照 2: 実取引のグロスの符号を無作為化。対照 3: 帰無(§5)の抽選のうち当該構成だけの分布(最大を取らない)。統計量は全期間・保守・マスク後。"
+              "対照 1・4・5 と診断 (a)〜(d) は本反復では繰り返さない(反復 0 の出力を参照)。")
+    md.append("")
+    md.append(_table(controls.to_dict("records"), [
+        ("config", "構成", -1), ("label", "k/thr/stop@三分位", -1), ("control", "対照", -1), ("draws", "抽選", 0),
+        ("obs_mean_net_bps", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
+        ("null_mean_p95", "対照 95 点", 3), ("obs_sharpe", "実測 Sharpe", 3), ("null_sharpe_mean", "対照 Sharpe 平均", 3),
+        ("null_sharpe_p5", "5 点", 3), ("null_sharpe_p95", "95 点", 3), ("n_obs", "n 実測", 0), ("n_null_mean", "n 対照", 1)]))
+    md.append("")
+
+    # ---- 7 condition analysis ----------------------------------------------------
+    md.append(f"## 7. 条件分析(標準 §6、`state_split`: 無条件台帳を建玉信号分の三分位で分割、ブロック長 {EDGE_BLOCK} 取引、{n_boot:,} 回、保守・マスク後)")
+    md.append("")
+    md.append("§4 の条件付き構成は「その三分位のときだけ建玉」した独立の台帳で、本節は反復 0 最良と現行構成の**無条件**台帳の各取引を"
+              "建玉信号分の三分位で事後に分けたもの(同時に 1 建玉の制約のため両者の取引集合は一致しない)。差 = 状態 a − 状態 b、"
+              "CI は両状態のブロック・ブートストラップ差、MDE = 2.8016 × SE、帰無 95 点 = 値系列のブロック順序置換で全対の最大絶対差を取ったものの 95 点。"
+              "判定文は `state_split` の規則(候補 / 判定不能 / 差なし)そのまま。")
+    md.append("")
+    md.append(_table(cond_state.to_dict("records"), [
+        ("config", "構成", -1), ("label", "k/thr/stop", -1), ("period", "期間", -1), ("state", "三分位", -1), ("n", "n", 0),
+        ("mean", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("sd_bps", "σ", 2), ("mde_bps", "MDE", 3),
+        ("n_no_tercile", "三分位なし(除外)", 0)]))
+    md.append("")
+    md.append(_table(cond_diff.to_dict("records"), [
+        ("config", "構成", -1), ("label", "k/thr/stop", -1), ("period", "期間", -1), ("state_a", "a", -1), ("state_b", "b", -1),
+        ("n_a", "n a", 0), ("n_b", "n b", 0), ("mean_a", "平均 a", 3), ("mean_b", "平均 b", 3), ("diff", "差", 3),
+        ("ci_lo", "差 CI下", 3), ("ci_hi", "差 CI上", 3), ("mde", "MDE", 3), ("null_p95", "帰無 95 点", 3), ("verdict", "判定文", -1)]))
+    md.append("")
+    for (tag, period), res in cond.items():
+        vs = res["verdict"]
+        by = {}
+        for (var, a_, b_), v in vs.items():
+            by.setdefault(v, []).append(f"{a_} vs {b_}")
+        md.append(f"- {tag} / {period}: " + "; ".join(f"{v}: {', '.join(p)}" for v, p in by.items()))
+    md.append("")
+
+    # ---- 8 known defects -------------------------------------------------------
+    md.append("## 8. 既知欠陥の報告(最良構成、マスク後)")
+    md.append("")
+    d = defects["best"]
+    md.append(f"### 最良構成 {d['label'].iloc[0]}(年別)")
+    md.append("")
+    md.append(_table(d.to_dict("records"), [
+        ("year", "年", -1), ("grid_minutes", "格子分", 0), ("empty_minutes", "空分", 0), ("big_gaps", "5 分超欠損", 0),
+        ("entry_signal_bars", "信号足(ゲート前)", 0), ("signals_discarded", "捨てた信号", 0), ("trades", "取引", 0),
+        ("excluded_gap", "欠損またぎ除外", 0), ("deferred_entry_minutes", "繰延(建て)分", 0),
+        ("deferred_exit_minutes", "繰延(決済)分", 0), ("trades_with_deferral", "繰延あり取引", 0), ("stops", "ストップ", 0)]))
+    md.append("")
+    md.append("制度区分: 開発セットの取引は全件 `lightning_fx`。資金調達は PREREG のとおり現行制度(1 日 3 回 0.02%)を全期間に一様適用(保守仮定)。"
+              f"2023 を val から除いた場合(val = 2022 年のみ)の最良構成 = **{cfg_label(best22)}**(val 全体では {cfg_label(best)})。"
+              "`sensitivity_val_2022_only.csv`。")
+    md.append("")
+
+    # ---- 9 edge trend ---------------------------------------------------------------
+    md.append(f"## 9. エッジ推移(最良構成のみ。標準 §5、単位 = 週、窓 = {EDGE_WINDOW} 取引、ブロック長 {EDGE_BLOCK} 取引、"
+              f"時間軸 = 暦時間、{n_boot:,} 回、保守・マスク後)")
+    md.append("")
+    md.append(_table(edge_summary.to_dict("records"), [
+        ("config", "構成", -1), ("leg", "脚", -1), ("n", "n", 0), ("slope_bps_per_week", "傾き(bps/週)", 4),
+        ("slope_ci_lo", "傾き CI下", 4), ("slope_ci_hi", "CI上", 4), ("slope_mde", "傾き MDE", 4),
+        ("mean_first_half", "前半平均", 3), ("mean_second_half", "後半平均", 3), ("half_diff", "後半−前半", 3),
+        ("half_diff_ci_lo", "差 CI下", 3), ("half_diff_ci_hi", "差 CI上", 3), ("last_window_mean", "直近窓平均", 3),
+        ("last_window_ci_lo", "直近 CI下", 3), ("last_window_ci_hi", "直近 CI上", 3), ("judgment", "判定文", -1),
+        ("rolling_step", "step", 0)]))
+    md.append("")
+    yt = edge[("best", "net")]["year_table"].copy()
+    yt["gross"] = edge[("best", "gross")]["year_table"]["mean"]
+    yt["cost"] = edge[("best", "cost")]["year_table"]["mean"]
+    md.append(f"### 最良構成 {cfg_label(best)} 年別(net の平均と CI、グロス・費用の平均)")
+    md.append("")
+    md.append(_table(yt.to_dict("records"), [("year", "年", -1), ("n", "n", 0), ("mean", "net 平均", 3),
+                                             ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("gross", "グロス平均", 3),
+                                             ("cost", "費用平均", 3)]))
+    md.append("")
+
+    # ---- 10 MDE ----------------------------------------------------------------------
+    md.append("## 10. MDE")
+    md.append("")
+    md.append(_table(mde.to_dict("records"), [
+        ("config", "構成", -1), ("label", "k/thr/stop@三分位", -1), ("period", "期間", -1), ("n", "n", 0), ("sigma_bps", "σ(bps)", 2),
+        ("se_independent", "SE 独立", 4), ("mde_independent", "MDE 独立", 3), ("se_cluster", "SE クラスタ", 4),
+        ("mde_cluster", "MDE クラスタ", 3), ("mde_registered", "事前登録 MDE", 2)]))
+    md.append("")
+
+    # ---- 11 notes ----------------------------------------------------------------------
+    md.append("## 11. 事前登録の解釈・仮定(本反復で決めた点の記録)")
+    md.append("")
+    md.append(f"- 実現ボラの窓は「信号分 t を末尾に含む {VOL_WINDOW_MIN} 本の 1 分対数リターン」(終値 c(t−{VOL_WINDOW_MIN}) .. c(t))とした。"
+              "「直前 60 分」を t を含まない窓(c(t−61) .. c(t−1))と読む解釈も可能だが、m(t) が close(t) で作られる以上 close(t) は建玉判断時に既知なので、"
+              "t を含める方を採った(仮定)。")
+    md.append(f"- 「空分は除く」= 両端が有効足の r だけを数え、有効 r が {VOL_MIN_BARS} 本未満なら NaN(建玉なし)。σ は ddof = 1。")
+    md.append("- 三分位の母集団は train の全格子分(ボラが定義される分)。信号分だけの分布で切る解釈もあるが、それは (k, thr) ごとに境界が変わり"
+              "「状態変数」として一意でなくなるため採らなかった(仮定)。境界はマスク後の格子で決め、マスク前の格子にも同じ値を適用した。")
+    md.append("- 条件付けは建玉信号のゲートのみ。三分位が NaN の分(窓の有効足不足)はどの条件付き構成でも建玉しない。")
+    md.append("- 無条件 27 構成のブートストラップ乱数種は反復 0 と同一(`iter0_cell_index`)、条件付き 81 構成は別系列([SEED, 15, 通し番号])。"
+              "帰無の抽選乱数種は反復 0 と同一([SEED, 1, draw])で、置換世界を共有する。")
+    md.append("- val 改善量は「最良 108 の val 平均 net − 反復 0 最良(15/0.4/0.5)の val 平均 net」の点差のみ(差の CI は出していない)。"
+              "反復 0 最良の値は本実行で再計算した値を使い、反復 0 の `configs.csv` の値を併記した。")
+    md.append("- 対照 1・4・5、診断 (a)〜(d)、執行差は本反復では繰り返していない(反復 0 と同じ台帳・同じ未実施事項)。")
+    md.append("- 条件分析(§7)は無条件台帳の事後分割であり、§4 の条件付き構成(独立に建玉した台帳)とは取引集合が異なる。")
+    md.append("")
+    md.append("## 12. 出力ファイル")
+    md.append("")
+    for w in sorted(set(written)) + ["RESULTS.md", "manifest.json"]:
+        md.append(f"- `{w}`")
+    md.append("")
+    return "\n".join(md)
+
+
 def _parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--iteration", type=int, default=0)
+    p.add_argument("--iteration", type=int, default=0, choices=(0, 1))
     p.add_argument("--out", type=Path, default=None)
     p.add_argument("--n-null", type=int, default=N_NULL)
     p.add_argument("--n-ctrl", type=int, default=N_CTRL)
@@ -1195,5 +2039,8 @@ def _parse_args(argv=None) -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
+    if args.iteration == 1:
+        out = args.out if args.out is not None else OUT_DIR_ITER1
+        raise SystemExit(main_iter1(out, args.n_null, args.n_ctrl, args.n_boot, args.workers))
     out = args.out if args.out is not None else OUT_DIR
     raise SystemExit(main(args.iteration, out, args.n_null, args.n_ctrl, args.n_boot, args.workers))
