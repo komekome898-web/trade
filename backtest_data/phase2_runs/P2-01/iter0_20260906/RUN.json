@@ -1,0 +1,129 @@
+{
+  "unit": "P2-01",
+  "iteration": 0,
+  "run_date": "2026-09-06",
+  "seed": 20260906,
+  "git_rev": "32a924bbb31a54dbf6fd73b33b0477cd80ace390",
+  "script": "scripts/phase2/p2_01_run.py",
+  "script_md5": "b3bd11f14154a688afc28f2cd67cdfe1",
+  "inputs": [
+    {
+      "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz",
+      "md5": "0f179b365417d4e307e53672e8cb3237"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz",
+      "md5": "aed073cf99e230db81bf3b4714fddf10"
+    }
+  ],
+  "seal_record_md5": "2b18e0ef53a7ec4263e2203aee05f280",
+  "parameters": {
+    "analysis_start": "2007-09-19",
+    "train_end": "2016-12-31",
+    "glitch_threshold_abs_simple_return": 0.1,
+    "block": 20,
+    "n_boot": 2000,
+    "n_shuffle": 1000,
+    "cost_yen_conservative": 122,
+    "cost_yen_optimistic": 22,
+    "multiplier_yen_per_point": 10,
+    "mde_bps": 6.03,
+    "mde_diff_bps": 8.07,
+    "gross_gate_bps": 14.9
+  },
+  "n_at_each_step": {
+    "day_rows_unsealed": 7600,
+    "night_rows_unsealed": 3236,
+    "day_rows_in_window": 3241,
+    "pairs_after_endpoint_rule": 3240,
+    "glitches": 3,
+    "roll_adjacent_monthly": 471,
+    "roll_adjacent_quarterly": 159,
+    "nightless_marked": 5,
+    "pairs_without_night_row": 5,
+    "n_base": 3240,
+    "n_roll_excluded_monthly": 2769,
+    "n_main_roll_and_glitch_excluded": 2768,
+    "glitches_inside_roll_set": 2,
+    "glitches_in_main_set_removed": 1,
+    "long_run_day_rows_1990_2007": 4359
+  },
+  "headline": {
+    "mean_r_net_bps_conservative": -3.958047963734998,
+    "ci95": [
+      -7.842905657931856,
+      -0.2775647182519056
+    ],
+    "mean_gross_bps": 4.926562208846147,
+    "mean_diff_night_minus_day_bps": 4.361668982930028,
+    "ci95_diff": [
+      -0.47400490338391693,
+      9.114402203045216
+    ],
+    "sharpe_annualised": -0.517027612400455,
+    "hit_rate": 0.4848265895953757,
+    "max_drawdown_yen_1_micro": 213400.0,
+    "null_mean_p95_bps": 3.402325191367654,
+    "null_sharpe_p95": 0.4442502518407873,
+    "alignment_median_abs_prev_close": 20.0,
+    "alignment_median_abs_same_close": 110.0,
+    "alignment_pass": true
+  },
+  "mde": [
+    {
+      "quantity": "σ(r_night) ロール除外後 n=2,769(事前登録の基準)",
+      "sd_bps": 113.1801370037709,
+      "n": 2769,
+      "se_bps": 2.1508431340152656,
+      "mde_bps_independent": 6.025770331784466,
+      "mde_bps_registered": 6.03,
+      "mde_bps_effective_from_ci": 5.720604956150995
+    },
+    {
+      "quantity": "σ(夜間−日中の差)ロール除外後 n=2,769",
+      "sd_bps": 151.55101573820951,
+      "n": 2769,
+      "se_bps": 2.8800324004088025,
+      "mde_bps_independent": 8.068656202074378,
+      "mde_bps_registered": 8.07,
+      "mde_bps_effective_from_ci": 7.326541408015419
+    },
+    {
+      "quantity": "σ(r_net 保守コスト後)主集合",
+      "sd_bps": 110.65413795290893,
+      "n": 2768,
+      "se_bps": 2.103219580395811,
+      "mde_bps_independent": 5.892348887906998,
+      "mde_bps_registered": 6.03,
+      "mde_bps_effective_from_ci": 5.406973677191517
+    },
+    {
+      "quantity": "σ(夜間−日中の差)主集合",
+      "sd_bps": 149.00726105678908,
+      "n": 2768,
+      "se_bps": 2.83220306871091,
+      "mde_bps_independent": 7.934658253374045,
+      "mde_bps_registered": 8.07,
+      "mde_bps_effective_from_ci": 6.85286562020451
+    }
+  ],
+  "outputs": [
+    "RESULTS.md",
+    "alignment_check.csv",
+    "control2_sign_shuffle_null.csv",
+    "controls.csv",
+    "diagnostic_month.csv",
+    "diagnostic_nights.csv",
+    "diagnostic_regime.csv",
+    "diagnostic_sq_dist.csv",
+    "diagnostic_vol_tercile.csv",
+    "diagnostic_weekday.csv",
+    "diagnostic_year.csv",
+    "exclusions.csv",
+    "main_indicators.csv",
+    "mde.csv",
+    "nights_distribution.csv",
+    "pairs.csv",
+    "sub_indicators.csv"
+  ]
+}
