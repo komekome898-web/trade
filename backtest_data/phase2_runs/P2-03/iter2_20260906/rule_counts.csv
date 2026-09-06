@@ -1,0 +1,5 @@
+series,n_rows_dev,n_pairs_total,rule1_badprint_rows,rule1_badprint_runs,rule1_one_sided_info_rows,rule2_split_rows,rule3_null_rows,rule5_ghost_rows,n_pairs_excluded,n_pairs_valid_raw,n_pairs_clean
+1306.T,2588,2587,0,0,0,1,1,21,43,2585,2544
+1321.T,2588,2587,0,0,0,0,1,21,41,2585,2546
+1348.T,2588,2587,0,0,0,0,1,21,41,2585,2546
+1305.T,2588,2587,0,0,0,0,1,21,41,2585,2546
