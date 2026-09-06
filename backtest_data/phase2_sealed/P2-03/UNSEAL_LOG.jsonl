@@ -22,3 +22,15 @@
 {"ts_utc": "2026-09-06T03:03:53.351138+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/6758.T.csv", "rows_returned": 1102}
 {"ts_utc": "2026-09-06T03:03:53.380144+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/8306.T.csv", "rows_returned": 1102}
 {"ts_utc": "2026-09-06T03:03:53.408637+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/9984.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:15:34.979425+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1306.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:15:35.249400+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1591.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:15:35.449049+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/2516.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:15:35.604304+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1321.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:15:36.567022+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1306.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:15:36.581072+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1591.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:15:36.590646+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/2516.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:15:36.605667+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1321.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:17:55.729897+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1591.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:17:55.758552+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1306.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:17:55.785831+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/2516.T.csv", "rows_returned": 1102}
+{"ts_utc": "2026-09-06T03:17:55.810496+00:00", "unit": "P2-03", "path": "backtest_data/jpx_etf_daily_20260905/1321.T.csv", "rows_returned": 1102}
