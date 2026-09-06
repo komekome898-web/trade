@@ -8,3 +8,4 @@
 | L-004 | 2026-09-06 | 依頼中 | TOPIX 先物 / ミニ TOPIX 先物の xlsx(225Labo)の取得を依頼(P2-06 用) | 未取得 |
 | L-005 | 2026-09-06 | 決定 | 「私の作業はできる時に進めます。必要になったときにすぐ手順を呼び出せるようにしてください」 | `docs/OWNER_PROCEDURES.md`、`/owner-procedure` スキル |
 | L-006 | 2026-09-06 | 決定 | P2-07 は「a: 今は閉じる」 | `docs/PHASE2/P2-07/JUDGMENT_PROPOSAL.md`、資源 R10 |
+| L-007 | 2026-09-06 | 決定 | 「g2に進んでください」 | G2(champion 一族)開始。P2-06 は TOPIX 先物 xlsx 待ちで G1 に残す |
