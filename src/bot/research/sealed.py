@@ -49,7 +49,7 @@ SEALED_SUBDIR = Path("backtest_data") / "phase2_sealed"
 # Same candidate list / tolerant parsing as scripts/intake_ledger.py — kept in
 # sync deliberately (a schema's declared time column should always be one of
 # these; see schema/*.json). Order matters: the first candidate present wins.
-TS_CANDIDATES = ["ts", "ts_utc", "timestamp", "date", "entry_date",
+TS_CANDIDATES = ["ts", "ts_utc", "ts_us", "timestamp", "date", "entry_date",
                   "open_time", "exec_date", "ex_date", "date_entry",
                   "effective_date"]
 
@@ -94,6 +94,8 @@ def parse_ts(raw: Any) -> datetime | None:
         f = None
     if f is not None:
         try:
+            if abs(f) >= 1e15:  # epoch micros (Binance aggTrades ts_us, WS tape)
+                return datetime.fromtimestamp(f / 1_000_000.0, tz=timezone.utc)
             if abs(f) >= 1e12:  # epoch millis
                 return datetime.fromtimestamp(f / 1000.0, tz=timezone.utc)
             if abs(f) >= 1e8:  # epoch seconds
