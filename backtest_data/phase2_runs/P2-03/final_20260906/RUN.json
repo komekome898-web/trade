@@ -1,0 +1,473 @@
+{
+  "unit": "P2-03",
+  "stage": "final_evaluation_sealed",
+  "run_date": "2026-09-06",
+  "sealed_window": [
+    "2022-03-05",
+    "2026-09-04"
+  ],
+  "forward_start": "2026-09-06T00:00:00+00:00",
+  "forward_rows_available": 0,
+  "cumulative_N": 1,
+  "final_configuration": {
+    "iteration": 1,
+    "price_level_corrections": {
+      "1306.T": [
+        [
+          "2015-01-05",
+          "2026-03-31",
+          10.0
+        ]
+      ]
+    },
+    "note": "1306.T の CSV 2015-01-05..2026-03-31 は実勢価格の 1/10。呼値帯・呼値コストのみ ×10 で補正し、リターンには一切触れない。"
+  },
+  "seed": 20260906,
+  "git_rev": "c7536100d3ef4b73360d12243b06a9142e16b166",
+  "script": "scripts/phase2/p2_03_final.py",
+  "script_md5": "e3efe2f4b1c3e2eedb416abe5bc678e0",
+  "shared_code_path": "scripts/phase2/p2_03_run.py::build_series_result (開発セットと同一。差は load_sealed / load_unsealed のみ)",
+  "parameters": {
+    "block": 20,
+    "n_boot": 2000,
+    "n_shuffle": 1000,
+    "bad_print_dev_threshold": 0.3,
+    "bad_print_revert_tolerance": 0.05,
+    "bad_print_max_k": 3,
+    "commission_yen": 0,
+    "tick_bands_source": "https://www.jpx.co.jp/equities/trading/domestic/07.html",
+    "mde_bps_registered": {
+      "1306.T": 5.1,
+      "1591.T": 5.64,
+      "2516.T": 12.82,
+      "1321.T": 5.26
+    }
+  },
+  "input_md5_check": [
+    {
+      "series": "1306.T",
+      "path": "backtest_data/jpx_etf_daily_20260905/1306.T.csv",
+      "md5_sealed_json": "49c51d3c08759234930ccf49fc543d0d",
+      "md5_now": "49c51d3c08759234930ccf49fc543d0d",
+      "match": true
+    },
+    {
+      "series": "1591.T",
+      "path": "backtest_data/jpx_etf_daily_20260905/1591.T.csv",
+      "md5_sealed_json": "c85fa9d13826bbda54d69c18f459145f",
+      "md5_now": "c85fa9d13826bbda54d69c18f459145f",
+      "match": true
+    },
+    {
+      "series": "2516.T",
+      "path": "backtest_data/jpx_etf_daily_20260905/2516.T.csv",
+      "md5_sealed_json": "af53c67fe88a6d0a105007567daf5bb8",
+      "md5_now": "af53c67fe88a6d0a105007567daf5bb8",
+      "match": true
+    },
+    {
+      "series": "1321.T",
+      "path": "backtest_data/jpx_etf_daily_20260905/1321.T.csv",
+      "md5_sealed_json": "4c8963bb707afcb616914adf0307dad8",
+      "md5_now": "4c8963bb707afcb616914adf0307dad8",
+      "match": true
+    },
+    {
+      "series": "7203.T",
+      "path": "backtest_data/jpx_etf_daily_20260905/7203.T.csv",
+      "md5_sealed_json": "b2cdf1a61671c0b917b3ec6db1b1c03d",
+      "md5_now": "b2cdf1a61671c0b917b3ec6db1b1c03d",
+      "match": true
+    },
+    {
+      "series": "6758.T",
+      "path": "backtest_data/jpx_etf_daily_20260905/6758.T.csv",
+      "md5_sealed_json": "cf57511cd8e93db22e99a81a5ded20a3",
+      "md5_now": "cf57511cd8e93db22e99a81a5ded20a3",
+      "match": true
+    },
+    {
+      "series": "8306.T",
+      "path": "backtest_data/jpx_etf_daily_20260905/8306.T.csv",
+      "md5_sealed_json": "47705636d6638a48a150f1774361732c",
+      "md5_now": "47705636d6638a48a150f1774361732c",
+      "match": true
+    },
+    {
+      "series": "9984.T",
+      "path": "backtest_data/jpx_etf_daily_20260905/9984.T.csv",
+      "md5_sealed_json": "98a0b1e2b6eaa95faaf760d59a7ebda1",
+      "md5_now": "98a0b1e2b6eaa95faaf760d59a7ebda1",
+      "match": true
+    }
+  ],
+  "seal_record_md5": "199712d292982e1b4aabf78e0582f11a",
+  "unseal_approved_md5": "de6333c5b63280e583ae1e0053dffa46",
+  "n_at_each_step": {
+    "rows_sealed_1306.T": 1102,
+    "pairs_after_endpoint_rule_1306.T": 1101,
+    "rows_sealed_1591.T": 1102,
+    "pairs_after_endpoint_rule_1591.T": 1101,
+    "rows_sealed_2516.T": 1102,
+    "pairs_after_endpoint_rule_2516.T": 1101,
+    "rows_sealed_1321.T": 1102,
+    "pairs_after_endpoint_rule_1321.T": 1101,
+    "input_md5_mismatches": 0,
+    "n_clean_1306.T": 1098,
+    "n_clean_1591.T": 1099,
+    "n_clean_2516.T": 1099,
+    "n_clean_1321.T": 1099
+  },
+  "headline": {
+    "1306.T": {
+      "n_clean": 1098,
+      "mean_optimistic_bps": 7.495033537848948,
+      "ci95_optimistic": [
+        2.5259076797026316,
+        12.569831076898923
+      ],
+      "mean_conservative_bps": -4.271052914774287,
+      "ci95_conservative": [
+        -9.867686279915384,
+        1.0300009085365796
+      ],
+      "mean_cost_roundtrip_bps": 11.766086452623238,
+      "night_minus_day_bps": 6.834620935273762,
+      "ci95_night_minus_day": [
+        0.04918495706922889,
+        13.769334177400848
+      ],
+      "sharpe_optimistic": 1.1647665958110762,
+      "sharpe_conservative": -0.6626714880192245,
+      "max_dd_optimistic_bps": -2050.537978744196,
+      "max_dd_conservative_bps": -5319.682753455462,
+      "hit_rate_optimistic": 0.5628415300546448,
+      "sign_matches_1321": true
+    },
+    "1591.T": {
+      "n_clean": 1099,
+      "mean_optimistic_bps": 12.177647417507366,
+      "ci95_optimistic": [
+        6.331747526086577,
+        18.266416869552486
+      ],
+      "mean_conservative_bps": 7.288796202066246,
+      "ci95_conservative": [
+        1.3446209492587875,
+        13.362892995499852
+      ],
+      "mean_cost_roundtrip_bps": 4.888851215441121,
+      "night_minus_day_bps": 16.40242005632928,
+      "ci95_night_minus_day": [
+        7.298562848400414,
+        25.499341800389793
+      ],
+      "sharpe_optimistic": 1.9057749748756112,
+      "sharpe_conservative": 1.1408149839920574,
+      "max_dd_optimistic_bps": -2195.9426399890162,
+      "max_dd_conservative_bps": -2332.747117066961,
+      "hit_rate_optimistic": 0.565059144676979,
+      "sign_matches_1321": true
+    },
+    "2516.T": {
+      "n_clean": 1099,
+      "mean_optimistic_bps": 5.897188264460169,
+      "ci95_optimistic": [
+        -0.2294439046998338,
+        11.805995132636957
+      ],
+      "mean_conservative_bps": -30.335173870450035,
+      "ci95_conservative": [
+        -36.66165102809018,
+        -24.3062425215564
+      ],
+      "mean_cost_roundtrip_bps": 36.232362134910204,
+      "night_minus_day_bps": 8.74518948723556,
+      "ci95_night_minus_day": [
+        -0.8950458768967939,
+        17.255522396196735
+      ],
+      "sharpe_optimistic": 0.7397861985649159,
+      "sharpe_conservative": -3.811250714109111,
+      "max_dd_optimistic_bps": -2586.0049645707104,
+      "max_dd_conservative_bps": -34527.03625879781,
+      "hit_rate_optimistic": 0.5241128298453139,
+      "sign_matches_1321": true
+    },
+    "1321.T": {
+      "n_clean": 1099,
+      "mean_optimistic_bps": 7.469749791425504,
+      "ci95_optimistic": [
+        1.7351804205177903,
+        13.494080277619737
+      ],
+      "mean_conservative_bps": 3.0264285554361137,
+      "ci95_conservative": [
+        -2.7042690041690345,
+        9.039322169284173
+      ],
+      "mean_cost_roundtrip_bps": 4.443321235989392,
+      "night_minus_day_bps": 5.648874417463928,
+      "ci95_night_minus_day": [
+        -0.9316801672778783,
+        11.905051130320711
+      ],
+      "sharpe_optimistic": 0.994455074395745,
+      "sharpe_conservative": 0.402978669031677,
+      "max_dd_optimistic_bps": -2121.0269428056463,
+      "max_dd_conservative_bps": -2686.3487589278084,
+      "hit_rate_optimistic": 0.5523202911737943,
+      "sign_matches_1321": true
+    }
+  },
+  "bar": [
+    {
+      "series": "1306.T",
+      "criterion": "バー1 累計 N=1 の帰無 95 点超(符号シャッフル、グロス)",
+      "measured": "実測 7.495 vs 帰無95点 5.186 bps",
+      "outcome": "満たす"
+    },
+    {
+      "series": "1306.T",
+      "criterion": "バー2 保守コスト後の平均夜間リターンの 95% CI が正",
+      "measured": "[-9.868, 1.030] bps (平均 -4.271)",
+      "outcome": "満たさない"
+    },
+    {
+      "series": "1306.T",
+      "criterion": "バー3 日経225 ETF(1321)と符号一致",
+      "measured": "7.495 vs 1321 7.470 bps",
+      "outcome": "満たす"
+    },
+    {
+      "series": "1306.T",
+      "criterion": "バー(3 条件の同時充足)",
+      "measured": "バー1=True / バー2=False / バー3=True",
+      "outcome": "満たさない"
+    },
+    {
+      "series": "1591.T",
+      "criterion": "バー1 累計 N=1 の帰無 95 点超(符号シャッフル、グロス)",
+      "measured": "実測 12.178 vs 帰無95点 4.910 bps",
+      "outcome": "満たす"
+    },
+    {
+      "series": "1591.T",
+      "criterion": "バー2 保守コスト後の平均夜間リターンの 95% CI が正",
+      "measured": "[1.345, 13.363] bps (平均 7.289)",
+      "outcome": "満たす"
+    },
+    {
+      "series": "1591.T",
+      "criterion": "バー3 日経225 ETF(1321)と符号一致",
+      "measured": "12.178 vs 1321 7.470 bps",
+      "outcome": "満たす"
+    },
+    {
+      "series": "1591.T",
+      "criterion": "バー(3 条件の同時充足)",
+      "measured": "バー1=True / バー2=True / バー3=True",
+      "outcome": "満たす"
+    },
+    {
+      "series": "2516.T",
+      "criterion": "バー1 累計 N=1 の帰無 95 点超(符号シャッフル、グロス)",
+      "measured": "実測 5.897 vs 帰無95点 6.353 bps",
+      "outcome": "満たさない"
+    },
+    {
+      "series": "2516.T",
+      "criterion": "バー2 保守コスト後の平均夜間リターンの 95% CI が正",
+      "measured": "[-36.662, -24.306] bps (平均 -30.335)",
+      "outcome": "満たさない"
+    },
+    {
+      "series": "2516.T",
+      "criterion": "バー3 日経225 ETF(1321)と符号一致",
+      "measured": "5.897 vs 1321 7.470 bps",
+      "outcome": "満たす"
+    },
+    {
+      "series": "2516.T",
+      "criterion": "バー(3 条件の同時充足)",
+      "measured": "バー1=False / バー2=False / バー3=True",
+      "outcome": "満たさない"
+    }
+  ],
+  "bar_all_three_met": {
+    "1306.T": false,
+    "1591.T": true,
+    "2516.T": false
+  },
+  "falsification": [
+    {
+      "kind": "falsification_existence",
+      "series": "3 ETF 合計",
+      "criterion": "反証文(存在) 3 ETF のうち 2 つ以上で楽観コストの平均夜間リターンの 95% CI がゼロを含む",
+      "measured": "ゼロを含む銘柄数 = 1 / 3 (1306.T:含まない, 1591.T:含まない, 2516.T:含む)",
+      "outcome": "満たさない"
+    },
+    {
+      "kind": "falsification_tradability",
+      "series": "1306.T",
+      "criterion": "反証文(取引可能) 保守コスト後の 95% CI がゼロを含む →「存在するが取引不能(丸め次第)」",
+      "measured": "[-9.868, 1.030] bps / ゼロを含む=True / CI が正でない=True",
+      "outcome": "満たす"
+    },
+    {
+      "kind": "falsification_tradability",
+      "series": "1591.T",
+      "criterion": "反証文(取引可能) 保守コスト後の 95% CI がゼロを含む →「存在するが取引不能(丸め次第)」",
+      "measured": "[1.345, 13.363] bps / ゼロを含む=False / CI が正でない=False",
+      "outcome": "満たさない"
+    },
+    {
+      "kind": "falsification_tradability",
+      "series": "2516.T",
+      "criterion": "反証文(取引可能) 保守コスト後の 95% CI がゼロを含む →「存在するが取引不能(丸め次第)」",
+      "measured": "[-36.662, -24.306] bps / ゼロを含む=False / CI が正でない=True",
+      "outcome": "満たさない"
+    }
+  ],
+  "falsification_existence_met": false,
+  "hold_class": [
+    {
+      "kind": "hold_class",
+      "series": "1306.T",
+      "criterion": "保留区分「存在するが取引不能(丸め次第)」= 楽観 CI が正 かつ 保守 CI が正でない",
+      "measured": "楽観 [2.526, 12.570] / 保守 [-9.868, 1.030] bps",
+      "outcome": "満たす",
+      "trigger": "スプレッドの実測(kabu ステーションの板記録、docs/CONSTANTS_TODO.md) / 同一指数の高価格代替銘柄(TOPIX: 1348.T)の取得"
+    },
+    {
+      "kind": "hold_class",
+      "series": "1591.T",
+      "criterion": "保留区分「存在するが取引不能(丸め次第)」= 楽観 CI が正 かつ 保守 CI が正でない",
+      "measured": "楽観 [6.332, 18.266] / 保守 [1.345, 13.363] bps",
+      "outcome": "満たさない",
+      "trigger": "スプレッドの実測(kabu ステーションの板記録、docs/CONSTANTS_TODO.md) / 同一指数の高価格代替銘柄(TOPIX: 1348.T)の取得"
+    },
+    {
+      "kind": "hold_class",
+      "series": "2516.T",
+      "criterion": "保留区分「存在するが取引不能(丸め次第)」= 楽観 CI が正 かつ 保守 CI が正でない",
+      "measured": "楽観 [-0.229, 11.806] / 保守 [-36.662, -24.306] bps",
+      "outcome": "満たさない",
+      "trigger": "スプレッドの実測(kabu ステーションの板記録、docs/CONSTANTS_TODO.md) / 同一指数の高価格代替銘柄(TOPIX: 1348.T)の取得"
+    }
+  ],
+  "mde": [
+    {
+      "series": "1306.T",
+      "n": 1098,
+      "sd_bps": 100.59506261060089,
+      "se_bps": 3.035816347214871,
+      "mde_bps_independent": 8.505098204741428,
+      "mde_bps_effective_from_ci": 7.178424588841571,
+      "mde_bps_registered": 5.1
+    },
+    {
+      "series": "1591.T",
+      "n": 1099,
+      "sd_bps": 99.93818176793728,
+      "se_bps": 3.0146201494062046,
+      "mde_bps_independent": 8.445715250270146,
+      "mde_bps_effective_from_ci": 8.529746841632056,
+      "mde_bps_registered": 5.64
+    },
+    {
+      "series": "2516.T",
+      "n": 1099,
+      "sd_bps": 124.67472981714799,
+      "se_bps": 3.760794382884502,
+      "mde_bps_independent": 10.536185953283129,
+      "mde_bps_effective_from_ci": 8.601767268280739,
+      "mde_bps_registered": 12.82
+    },
+    {
+      "series": "1321.T",
+      "n": 1099,
+      "sd_bps": 117.47908481930654,
+      "se_bps": 3.54373883900001,
+      "mde_bps_independent": 9.928086349921152,
+      "mde_bps_effective_from_ci": 8.404123820329907,
+      "mde_bps_registered": 5.26
+    }
+  ],
+  "unseal_log_excerpt": [
+    {
+      "ts_utc": "2026-09-06T03:03:53.213742+00:00",
+      "unit": "P2-03",
+      "path": "backtest_data/jpx_etf_daily_20260905/1306.T.csv",
+      "rows_returned": 1102
+    },
+    {
+      "ts_utc": "2026-09-06T03:03:53.243170+00:00",
+      "unit": "P2-03",
+      "path": "backtest_data/jpx_etf_daily_20260905/1591.T.csv",
+      "rows_returned": 1102
+    },
+    {
+      "ts_utc": "2026-09-06T03:03:53.266183+00:00",
+      "unit": "P2-03",
+      "path": "backtest_data/jpx_etf_daily_20260905/2516.T.csv",
+      "rows_returned": 1102
+    },
+    {
+      "ts_utc": "2026-09-06T03:03:53.293225+00:00",
+      "unit": "P2-03",
+      "path": "backtest_data/jpx_etf_daily_20260905/1321.T.csv",
+      "rows_returned": 1102
+    },
+    {
+      "ts_utc": "2026-09-06T03:03:53.321526+00:00",
+      "unit": "P2-03",
+      "path": "backtest_data/jpx_etf_daily_20260905/7203.T.csv",
+      "rows_returned": 1102
+    },
+    {
+      "ts_utc": "2026-09-06T03:03:53.351138+00:00",
+      "unit": "P2-03",
+      "path": "backtest_data/jpx_etf_daily_20260905/6758.T.csv",
+      "rows_returned": 1102
+    },
+    {
+      "ts_utc": "2026-09-06T03:03:53.380144+00:00",
+      "unit": "P2-03",
+      "path": "backtest_data/jpx_etf_daily_20260905/8306.T.csv",
+      "rows_returned": 1102
+    },
+    {
+      "ts_utc": "2026-09-06T03:03:53.408637+00:00",
+      "unit": "P2-03",
+      "path": "backtest_data/jpx_etf_daily_20260905/9984.T.csv",
+      "rows_returned": 1102
+    }
+  ],
+  "outputs": [
+    "RESULTS.md",
+    "bar_and_falsification.csv",
+    "boundary_2026_1306.csv",
+    "controls_individual_stocks.csv",
+    "controls_sign_reversal.csv",
+    "controls_sign_shuffle.csv",
+    "controls_vol_tercile.csv",
+    "correlation_matrix.csv",
+    "cost_by_series.csv",
+    "diagnostics.csv",
+    "exclusions.csv",
+    "input_md5_check.csv",
+    "main_indicator.csv",
+    "mde.csv",
+    "pairs_1306T.csv",
+    "pairs_1321T.csv",
+    "pairs_1591T.csv",
+    "pairs_2516T.csv",
+    "regime_2024_11_05.csv",
+    "residual_vs_1321.csv",
+    "rule1_badprint_events.csv",
+    "rule_counts.csv",
+    "sign_agreement.csv",
+    "summary_by_series.csv"
+  ]
+}

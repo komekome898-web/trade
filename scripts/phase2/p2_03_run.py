@@ -289,6 +289,18 @@ def detect_ghost_rows(open_, high, low, close, volume) -> np.ndarray:
 def analyze_series(sym: str, bands, apply_price_correction: bool = False) -> dict:
     csv_path = SNAPSHOT_DIR / f"{sym}.csv"
     df = load_unsealed(csv_path, UNIT)
+    return build_series_result(sym, df, bands, apply_price_correction=apply_price_correction)
+
+
+def build_series_result(sym: str, df: pd.DataFrame, bands,
+                        apply_price_correction: bool = False) -> dict:
+    """既に読み込み済みの日足フレームから、欠陥フラグとペアを構築する。
+
+    `analyze_series`(開発セット = `load_unsealed`)と最終評価
+    (封印セット = `load_sealed`、`scripts/phase2/p2_03_final.py`)が
+    **同一のコード経路**を通るように切り出した部分。読み込み元だけが違い、
+    規則1/2/3/5・呼値帯・コスト・ペア構築はここに一本化されている。
+    """
     df = df.copy()
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
@@ -308,7 +320,7 @@ def analyze_series(sym: str, bands, apply_price_correction: bool = False) -> dic
     row_flag = null_mask | ghost_mask | split_mask | badprint_mask
 
     if n < 2:
-        raise RuntimeError(f"{sym}: dev set has fewer than 2 rows ({n})")
+        raise RuntimeError(f"{sym}: series has fewer than 2 rows ({n})")
 
     date_t = dates.iloc[:-1].reset_index(drop=True)
     date_t1 = dates.iloc[1:].reset_index(drop=True)
