@@ -15,65 +15,201 @@
     "backtest_data/reit_onr_<date>/etf_1343_daily.csv": {
       "coverage": "2008-09-16..snapshot date, ~4409 rows (see manifest.md for the exact count/date at snapshot time)",
       "columns": {
-        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
-        "open": {"meaning": "daily open", "unit": "JPY", "tz": null, "notes": null},
-        "high": {"meaning": "daily high", "unit": "JPY", "tz": null, "notes": null},
-        "low": {"meaning": "daily low", "unit": "JPY", "tz": null, "notes": null},
-        "close": {"meaning": "daily close", "unit": "JPY", "tz": null, "notes": null},
-        "volume": {"meaning": "daily volume", "unit": "units", "tz": null, "notes": null}
+        "date": {
+          "meaning": "trading day",
+          "unit": "YYYY-MM-DD",
+          "tz": "JST",
+          "notes": null
+        },
+        "open": {
+          "meaning": "daily open",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "high": {
+          "meaning": "daily high",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "low": {
+          "meaning": "daily low",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "close": {
+          "meaning": "daily close",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "volume": {
+          "meaning": "daily volume",
+          "unit": "units",
+          "tz": null,
+          "notes": null
+        }
       }
     },
     "backtest_data/reit_onr_<date>/etf_1343_dividends.csv": {
       "columns": {
-        "ex_date": {"meaning": "ex-dividend date", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
-        "amount": {"meaning": "dividend amount per unit", "unit": "JPY", "tz": null, "notes": null}
+        "ex_date": {
+          "meaning": "ex-dividend date",
+          "unit": "YYYY-MM-DD",
+          "tz": "JST",
+          "notes": null
+        },
+        "amount": {
+          "meaning": "dividend amount per unit",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        }
       }
     },
     "backtest_data/reit_onr_<date>/etf_1321_daily.csv": {
       "coverage": "2009-01-05..snapshot date",
       "columns": {
-        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
-        "open": {"meaning": "daily open", "unit": "JPY", "tz": null, "notes": "known-defective: source has a documented 0.0 open on some early rows (e.g. 2009-01-05) -- treat open==0.0 as a source erratum, not a real print"},
-        "high": {"meaning": "daily high", "unit": "JPY", "tz": null, "notes": null},
-        "low": {"meaning": "daily low", "unit": "JPY", "tz": null, "notes": null},
-        "close": {"meaning": "daily close", "unit": "JPY", "tz": null, "notes": null},
-        "volume": {"meaning": "daily volume", "unit": "units", "tz": null, "notes": null}
+        "date": {
+          "meaning": "trading day",
+          "unit": "YYYY-MM-DD",
+          "tz": "JST",
+          "notes": null
+        },
+        "open": {
+          "meaning": "daily open",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "known-defective: source has a documented 0.0 open on some early rows (e.g. 2009-01-05) -- treat open==0.0 as a source erratum, not a real print"
+        },
+        "high": {
+          "meaning": "daily high",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "low": {
+          "meaning": "daily low",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "close": {
+          "meaning": "daily close",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "volume": {
+          "meaning": "daily volume",
+          "unit": "units",
+          "tz": null,
+          "notes": null
+        }
       }
     },
     "backtest_data/reit_onr_<date>/reit_index_daily.csv": {
       "coverage": "partial, recent only (2025-06-16..snapshot date per manifest.md) -- kabutan does not serve the full index history for free; the PREREG's primary index-level judgment cell (2003-04~) was NOT obtainable, see manifest.md for the full list of attempted sources and why each failed",
       "columns": {
-        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
-        "open": {"meaning": "TSE REIT index open", "unit": "index points", "tz": null, "notes": null},
-        "high": {"meaning": "index high", "unit": "index points", "tz": null, "notes": null},
-        "low": {"meaning": "index low", "unit": "index points", "tz": null, "notes": null},
-        "close": {"meaning": "index close", "unit": "index points", "tz": null, "notes": null}
+        "date": {
+          "meaning": "trading day",
+          "unit": "YYYY-MM-DD",
+          "tz": "JST",
+          "notes": null
+        },
+        "open": {
+          "meaning": "TSE REIT index open",
+          "unit": "index points",
+          "tz": null,
+          "notes": null
+        },
+        "high": {
+          "meaning": "index high",
+          "unit": "index points",
+          "tz": null,
+          "notes": null
+        },
+        "low": {
+          "meaning": "index low",
+          "unit": "index points",
+          "tz": null,
+          "notes": null
+        },
+        "close": {
+          "meaning": "index close",
+          "unit": "index points",
+          "tz": null,
+          "notes": null
+        }
       }
     },
     "data/onr/etf_1343_daily.csv": {
       "description": "LIVE forward-tracking feed for paper_onr.py -- NOT the same schema as backtest_data's etf_1343_daily.csv despite the identical filename",
       "columns": {
-        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
-        "open": {"meaning": "closing-auction-adjacent daily open (see scripts/paper_onr.py for exact print used)", "unit": "JPY", "tz": null, "notes": null},
-        "close": {"meaning": "closing-auction print", "unit": "JPY", "tz": null, "notes": null},
-        "div_yen": {"meaning": "dividend amount if this date is an ex-dividend date", "unit": "JPY", "tz": null, "notes": "blank on non-ex-dividend days"}
+        "date": {
+          "meaning": "trading day",
+          "unit": "YYYY-MM-DD",
+          "tz": "JST",
+          "notes": null
+        },
+        "open": {
+          "meaning": "closing-auction-adjacent daily open (see scripts/paper_onr.py for exact print used)",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "close": {
+          "meaning": "closing-auction print",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "div_yen": {
+          "meaning": "dividend amount if this date is an ex-dividend date",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "blank on non-ex-dividend days"
+        }
       },
-      "known_defects": ["only open/close/div_yen -- no high/low/volume, unlike the backtest_data snapshot of the same-named file"]
+      "known_defects": [
+        "only open/close/div_yen -- no high/low/volume, unlike the backtest_data snapshot of the same-named file"
+      ]
     },
     "data/onr/reit_index_daily.csv": {
       "description": "LIVE forward-tracking feed -- NOT the same schema as backtest_data's reit_index_daily.csv",
       "columns": {
-        "date": {"meaning": "trading day", "unit": "YYYY-MM-DD", "tz": "JST", "notes": null},
-        "open": {"meaning": "index open", "unit": "index points", "tz": null, "notes": null},
-        "close": {"meaning": "index close", "unit": "index points", "tz": null, "notes": null}
+        "date": {
+          "meaning": "trading day",
+          "unit": "YYYY-MM-DD",
+          "tz": "JST",
+          "notes": null
+        },
+        "open": {
+          "meaning": "index open",
+          "unit": "index points",
+          "tz": null,
+          "notes": null
+        },
+        "close": {
+          "meaning": "index close",
+          "unit": "index points",
+          "tz": null,
+          "notes": null
+        }
       },
-      "known_defects": ["only open/close -- no high/low, unlike the backtest_data snapshot of the same-named file"]
+      "known_defects": [
+        "only open/close -- no high/low, unlike the backtest_data snapshot of the same-named file"
+      ]
     }
   },
   "known_defects": [
     "SAME BASENAME, DIFFERENT SCHEMA: backtest_data/reit_onr_<date>/etf_1343_daily.csv and reit_index_daily.csv are full OHLC(V) history snapshots; data/onr/etf_1343_daily.csv and reit_index_daily.csv are the live forward-tracking feed with fewer columns (open/close[/div_yen] only). Reading the wrong one, or assuming they interchange, silently drops high/low/volume.",
     "the TSE REIT INDEX (not the 1343 ETF) has NO free full-history source as of the 2026-09-04 snapshot -- kabutan's reit_index_daily.csv only goes back to 2025-06-16; the PREREG's primary judgment cell needing 2003-04~ index history was not obtainable (see manifest.md for the 6 sources attempted and why each failed: JPX chart-only, JPX bulk data is paid, Yahoo ^TREIT is a stale delisted quote, stooq blocked by a JS PoW challenge, investing.com bot-blocked, matsui client-side-only)",
     "etf_1321_daily.csv has a documented open==0.0 erratum on at least its first row (2009-01-05) -- a zero open is a source artifact, not a real print",
-    "guard percentile thresholds used by paper_onr.py's status.json are a frozen one-time computation over the backtest_data/reit_onr_20260904/ snapshot (n=4399, after dropping open<=0/close<=0 rows and a |log r|>0.10 glitch filter) -- they are NOT recomputed as new data arrives in data/onr/"
+    "guard percentile thresholds used by paper_onr.py's status.json are a frozen one-time computation over the backtest_data/reit_onr_20260904/ snapshot (n=4399, after dropping open<=0/close<=0 rows and a |log r|>0.10 glitch filter) -- they are NOT recomputed as new data arrives in data/onr/",
+    "1343 (etf_1343_daily.csv): 4 rows with open == 0 (2009-07-01, 2009-07-03, 2009-07-27, 2009-08-06) inside the phase-2 development set; an unmasked open(t+1)/close(t) return is -100% on those days. Listing-period zero-volume rows: 71 rows / 111 calendar days (2008-09-16 .. 2009-01). Recorded by the P2-02 design audit 2026-09-06.",
+    "etf_1343_daily.csv and backtest_data/jpx_etf_daily_*/1343.T.csv are the SAME source (Yahoo chart API): 0 differences on 3,687 overlapping days — they are copies, not independent confirmations."
   ]
 }
