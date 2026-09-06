@@ -1,0 +1,4 @@
+control,n_draws,observed_mean_bps,null_95pct_bps,observed_percentile_in_null,null_95pct_gross_bps,observed_gross_mean_bps,dist_mean_bps,dist_std_bps,mean_bps,ci_lo_bps,ci_hi_bps,n
+1_sign_shuffle_single_config,1000.0,-1.6484616199701891,1.6599419673721698,5.800000000000001,1.755535727355349,8.279981626871132,,,,,,
+2_vol_tercile_stratified_bootstrap_diagnostic,1000.0,,,,,,-1.7535689096666514,1.0210282671905346,,,,
+3_sign_reversal,,,,,,,,,-18.208424873712453,-20.41514418493354,-15.880227866514568,1317.0

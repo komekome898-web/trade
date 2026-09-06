@@ -1,0 +1,237 @@
+{
+  "unit": "P2-02",
+  "stage": "final_evaluation_sealed",
+  "cumulative_N": 1,
+  "run_date": "2026-09-06",
+  "sealed_window": [
+    "2021-04-13",
+    "2026-09-03"
+  ],
+  "seed": 20260906,
+  "git_rev": "c7536100d3ef4b73360d12243b06a9142e16b166",
+  "script": "scripts/phase2/p2_02_final.py",
+  "script_md5": "3b36c27b2b49a23f72438bf2326f6a39",
+  "inputs_md5_vs_sealed_json": [
+    {
+      "path": "backtest_data/reit_onr_20260904/etf_1343_daily.csv",
+      "md5_now": "cff01b6a1709e6ddda0157778fc72760",
+      "md5_in_sealed_json": "cff01b6a1709e6ddda0157778fc72760",
+      "in_seal_record": true,
+      "match": true
+    },
+    {
+      "path": "backtest_data/reit_onr_20260904/etf_1321_daily.csv",
+      "md5_now": "ec7e1e6b5f38f57c7b215919005d1125",
+      "md5_in_sealed_json": "ec7e1e6b5f38f57c7b215919005d1125",
+      "in_seal_record": true,
+      "match": true
+    },
+    {
+      "path": "backtest_data/reit_onr_20260904/etf_1343_dividends.csv",
+      "md5_now": "e0644769564c62766ca0b56e6394c337",
+      "md5_in_sealed_json": "e0644769564c62766ca0b56e6394c337",
+      "in_seal_record": true,
+      "match": true
+    },
+    {
+      "path": "backtest_data/reit_onr_20260904/reit_index_daily.csv",
+      "md5_now": "966c9af41d95fff1c1b374b8cda606db",
+      "md5_in_sealed_json": "966c9af41d95fff1c1b374b8cda606db",
+      "in_seal_record": true,
+      "match": true
+    }
+  ],
+  "seal_record_md5": "cb6531f713079ad7cdbaabf05df513b4",
+  "unseal_approved_md5": "a78cd8192c2ef9844b3bf0f9f2b0ecc6",
+  "parameters": {
+    "block": 20,
+    "n_boot": 2000,
+    "n_shuffle": 1000,
+    "n_strata_boot": 1000,
+    "thin_volume_threshold": 5000,
+    "cost_conservative": "2 / close(t) * 1e4 (1 tick per side)",
+    "cost_optimistic": 0,
+    "drawdown_bar_multiple": 3.0,
+    "dividend_correction_used": true,
+    "return_kind": "simple"
+  },
+  "n_at_each_step": {
+    "rows_sealed_1343": 1318,
+    "rows_sealed_1321": 1318,
+    "rows_sealed_dividends": 22,
+    "rows_sealed_reit_index": 299,
+    "forward_ledger_load_sealed_refusal": "paper_logs/onr_ledger.csv is not one of unit 'P2-02''s sealed files (['backtest_data/reit_onr_20260904/etf_1321_daily.csv', 'backtest_data/reit_onr_20260904/etf_1343_daily.csv', 'backtest_data/reit_onr_20260904/etf_1343_dividends.csv', 'backtest_data/reit_onr_20260904/reit_index_daily.csv', 'backtest_data/jpx_etf_daily_20260905/1343.T.csv'])",
+    "rows_forward_ledger": 0,
+    "calendar_days_total": 4409,
+    "calendar_days_pre_seal": 3091,
+    "rows_1343_in_window": 1318,
+    "rows_1321_in_window": 1318
+  },
+  "headline": {
+    "mean_net_conservative_bps": -1.6484616199701891,
+    "ci95": [
+      -3.833007537386216,
+      0.7273070680035952
+    ],
+    "mean_net_optimistic_bps": 8.279981626871132,
+    "ci95_optimistic": [
+      6.126015168273729,
+      10.5030289524022
+    ],
+    "mean_gross_bps": 8.279981626871132,
+    "ci95_gross": [
+      6.137240541890293,
+      10.650876345374234
+    ],
+    "mean_net_conservative_unadjusted_bps": -3.2967606993870033,
+    "ci95_unadjusted": [
+      -5.544673762786758,
+      -1.0318437099730136
+    ],
+    "night_minus_day_bps": 15.591462786181669,
+    "ci95_night_minus_day": [
+      11.048250525358556,
+      20.343120666129273
+    ],
+    "n_main": 1317,
+    "sharpe_annualised": -0.7035995912970826,
+    "hit_rate": 0.4631738800303721,
+    "max_drawdown_yen_1unit": 623.8000000000037,
+    "annualised_mean_net_profit_yen_1unit": -83.51753048780553,
+    "max_drawdown_bootstrap_median_yen": 600.1000000000006,
+    "mean_net_conservative_bps_1321": 1.6665467742991111,
+    "ci95_1321": [
+      -3.5207934663139513,
+      7.135079584132919
+    ],
+    "sign_shuffle_null_95pct_bps": 1.6599419673721698,
+    "sign_reversal_mean_bps": -18.208424873712453
+  },
+  "bar": {
+    "バー1 累計 N = 1(自由パラメータ無し=単一構成)の符号シャッフル帰無分布の 95 点を超える": {
+      "measured": "実測平均ネット -1.648 bps vs 帰無95点 1.660 bps",
+      "outcome": "満たさない"
+    },
+    "バー2 保守コスト後の平均夜間リターンの 95% CI が正": {
+      "measured": "[-3.833, 0.727] bps",
+      "outcome": "満たさない"
+    },
+    "バー3 1321 と符号一致": {
+      "measured": "1343 -1.648 bps / 1321 1.667 bps",
+      "outcome": "満たさない"
+    },
+    "(参考)「先物と同様」= 符号一致かつ双方の 95% CI が正": {
+      "measured": "1343 CI [-3.833, 0.727] / 1321 CI [-3.521, 7.135]",
+      "outcome": "満たさない"
+    },
+    "(参考)ドローダウン基準 最大DD ≤ 年率換算平均ネット利益 × 3": {
+      "measured": "最大DD 623.8 円 vs 3×年率平均ネット -250.6 円(年率平均ネット -83.5 円)",
+      "outcome": "満たさない"
+    },
+    "バー3条件すべて同時充足": {
+      "measured": "バー1 False / バー2 False / バー3 False",
+      "outcome": "満たさない"
+    },
+    "all_three_met": false
+  },
+  "falsification": {
+    "反証文 封印期間で「保守コスト後の平均夜間リターンの 95% CI がゼロを含む」→「取引可能な形で捕捉できる」は棄却": {
+      "measured": "[-3.833, 0.727] bps",
+      "outcome": "満たす"
+    },
+    "保留区分 楽観コストでのみ正(=「存在するが取引不能」、引き金 = スプレッドの実測)": {
+      "measured": "楽観 [6.126, 10.503] / 保守 [-3.833, 0.727] bps",
+      "outcome": "満たす"
+    }
+  },
+  "forward_diagnostic": {
+    "etf_vs_index": {
+      "common_days": 298,
+      "first_common_day": "2025-06-16",
+      "last_common_day": "2026-09-03",
+      "open_leg_pairs": 297,
+      "open_leg_pairs_dropped_non_adjacent": 0,
+      "gap_on_bps_n": 297,
+      "gap_on_bps_mean": 9.388465658350045,
+      "gap_on_bps_median": 5.385315649362175,
+      "gap_on_bps_sd": 35.16006184873457,
+      "gap_on_bps_absmean": 23.924379765333885,
+      "etf_on_bps_n": 297,
+      "etf_on_bps_mean": 9.263187062354486,
+      "etf_on_bps_median": 7.371007371006488,
+      "etf_on_bps_sd": 38.31532334132893,
+      "etf_on_bps_absmean": 25.54363799174525,
+      "idx_on_bps_n": 297,
+      "idx_on_bps_mean": -0.12527859599555888,
+      "idx_on_bps_median": 1.3085382118327438,
+      "idx_on_bps_sd": 38.79981099328251,
+      "idx_on_bps_absmean": 26.788422801596557,
+      "gap_day_bps_n": 298,
+      "gap_day_bps_mean": -8.981083764759276,
+      "gap_day_bps_median": -7.642989990822029,
+      "gap_day_bps_sd": 34.85455665335774,
+      "gap_day_bps_absmean": 24.098409766598696,
+      "etf_day_bps_n": 298,
+      "etf_day_bps_mean": -8.818445268958104,
+      "etf_day_bps_median": -6.994692199023822,
+      "etf_day_bps_sd": 62.125121421766835,
+      "etf_day_bps_absmean": 49.778646644516776,
+      "idx_day_bps_n": 298,
+      "idx_day_bps_mean": 0.16263849580117312,
+      "idx_day_bps_median": 0.5119933569708301,
+      "idx_day_bps_sd": 63.257040419744264,
+      "idx_day_bps_absmean": 50.06900036075
+    },
+    "paper_ledger": {
+      "rows": 0,
+      "min_rows_required": 5,
+      "enough_rows": false,
+      "source": "direct read (forward file, not listed in SEALED.json)"
+    }
+  },
+  "unseal_log_excerpt": [
+    {
+      "ts_utc": "2026-09-06T02:54:16.066856+00:00",
+      "unit": "P2-02",
+      "path": "backtest_data/reit_onr_20260904/etf_1343_daily.csv",
+      "rows_returned": 1318
+    },
+    {
+      "ts_utc": "2026-09-06T02:54:16.087273+00:00",
+      "unit": "P2-02",
+      "path": "backtest_data/reit_onr_20260904/etf_1321_daily.csv",
+      "rows_returned": 1318
+    },
+    {
+      "ts_utc": "2026-09-06T02:54:16.089190+00:00",
+      "unit": "P2-02",
+      "path": "backtest_data/reit_onr_20260904/etf_1343_dividends.csv",
+      "rows_returned": 22
+    },
+    {
+      "ts_utc": "2026-09-06T02:54:16.091880+00:00",
+      "unit": "P2-02",
+      "path": "backtest_data/reit_onr_20260904/reit_index_daily.csv",
+      "rows_returned": 299
+    }
+  ],
+  "outputs": [
+    "RESULTS.md",
+    "bar_and_falsification.csv",
+    "controls_summary.csv",
+    "diagnostics_exdate.csv",
+    "diagnostics_month.csv",
+    "diagnostics_vol_tercile.csv",
+    "diagnostics_weekday.csv",
+    "diagnostics_year.csv",
+    "ex_dates_1343.csv",
+    "exclusion_summary.csv",
+    "forward_diagnostic.csv",
+    "forward_etf_vs_index_gap.csv",
+    "main_indicators.csv",
+    "main_summary.csv",
+    "pairs_1321_sealed.csv",
+    "pairs_1343_sealed.csv",
+    "regime_split_20241105.csv"
+  ]
+}

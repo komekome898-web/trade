@@ -1,0 +1,4 @@
+{"ts_utc": "2026-09-06T02:54:16.066856+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_daily.csv", "rows_returned": 1318}
+{"ts_utc": "2026-09-06T02:54:16.087273+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1321_daily.csv", "rows_returned": 1318}
+{"ts_utc": "2026-09-06T02:54:16.089190+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/etf_1343_dividends.csv", "rows_returned": 22}
+{"ts_utc": "2026-09-06T02:54:16.091880+00:00", "unit": "P2-02", "path": "backtest_data/reit_onr_20260904/reit_index_daily.csv", "rows_returned": 299}
