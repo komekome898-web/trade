@@ -1,0 +1,19 @@
+HTTP/1.1 200 Connection Established
+
+HTTP/2 200 
+date: Sun, 06 Sep 2026 08:49:50 GMT
+content-type: application/json; charset=utf-8
+content-length: 202
+strict-transport-security: max-age=31536000
+request-context: appId=cid-v1:a57d1b5b-c19f-47fb-a850-b6472c175bda
+server: cloudflare
+x-server-id: AKS-EJP-V4.lightchart-7566476dc6-5q6t9#1
+x-region: AKS-EJP-V4
+access-control-allow-origin: *
+x-kuroma-date: Sun, 06 Sep 2026 08:49:49 GMT
+cache-control: public, s-maxage=2, max-age=2
+x-kuroma-cache-status: HIT
+etag: W/"ca-Wi9Pn70FvYquHOxYQG9mgCV2wf8"
+cf-cache-status: DYNAMIC
+cf-ray: a36c38fda848c9b7-IAD
+

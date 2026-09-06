@@ -1,0 +1,14 @@
+HTTP/1.1 200 Connection Established
+
+HTTP/2 401 
+date: Sun, 06 Sep 2026 08:57:30 GMT
+content-type: application/json
+content-length: 273
+cache-control: private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+expires: Thu, 01 Jan 1970 00:00:01 GMT
+referrer-policy: same-origin
+x-frame-options: SAMEORIGIN
+set-cookie: __cf_bm=P06W4ZJ7LaJC7DFx.MTD1Jg9al7l4.lKTA6ZOAC1CR4-1788685050.9248726-1.0.1.1-igEKKv.dev1IMFEN.tqHdkjCjrxDVWJHcaY8OSw8iI1b2sEJRshcCFkc8f3bEdjmV6D8E04NyjZu2fjoR8TZpnpQNaroGGj.vBX39_wOIcPdm8TQrLq4TZ460_4GR9ta; HttpOnly; SameSite=None; Secure; Path=/; Domain=cryptocompare.com; Expires=Sun, 06 Sep 2026 09:27:30 GMT
+server: cloudflare
+cf-ray: a36c444048842d1d-IAD
+

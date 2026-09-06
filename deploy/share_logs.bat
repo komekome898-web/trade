@@ -65,6 +65,13 @@ if exist data\archive dir /-C data\archive > paper_logs\archive_listing.txt 2>nu
 
 echo [share_logs] git add / commit
 git add paper_logs
+rem Permanent retention snapshots (scripts\retention_snapshot.py, run by
+rem fetch_all.bat) land in backtest_data\auto_<source>_<date>\ and were
+rem never committed here, so the research environment never received them
+rem (incident I-002). git does not expand wildcards itself, so loop the
+rem matching directories one by one.
+echo [share_logs] adding retention snapshots (backtest_data\auto_*)
+for /d %%D in (backtest_data\auto_*) do git add "%%D"
 rem Commit only when there is something staged (quiet no-op otherwise).
 git diff --cached --quiet || git commit -m "paper logs snapshot %date% %time%"
 

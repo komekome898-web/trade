@@ -1,0 +1,20 @@
+HTTP/1.1 200 Connection Established
+
+HTTP/2 200 
+date: Sun, 06 Sep 2026 08:50:02 GMT
+content-type: application/json; charset=utf-8
+content-length: 68509
+strict-transport-security: max-age=31536000
+request-context: appId=cid-v1:a57d1b5b-c19f-47fb-a850-b6472c175bda
+server: cloudflare
+x-server-id: AKS-EJP-V4.lightchart-7566476dc6-4txpw#1
+x-region: AKS-EJP-V4
+access-control-allow-origin: *
+x-kuroma-date: Sun, 06 Sep 2026 08:50:01 GMT
+x-kuroma-cache-key: OHLC_FX_BTC_JPY_m_1788609600000_1788652800000_UTC_full_1
+cache-control: public, s-maxage=14400, max-age=600
+x-kuroma-cache-status: HIT
+etag: W/"10b9d-mhzq7E1BEx56STOTQkN+NW/5Fmg"
+cf-cache-status: DYNAMIC
+cf-ray: a36c39489a77f272-IAD
+

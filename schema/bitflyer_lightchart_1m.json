@@ -1,0 +1,36 @@
+{
+  "dataset": "bitflyer_lightchart_1m",
+  "description": "1-minute OHLC(+volume/OI-like fields) for bitFlyer FX_BTC_JPY pulled from bitFlyer's own public chart backend (lightchart.bitflyer.com), NOT an officially documented API. Built 2026-09-06 as part of the multi-year-history source survey (docs/PHASE2/BITFLYER_HISTORY_SOURCES.md). This is the only source found so far that reaches back years instead of the ~31-day public-trade-history window used for backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz.",
+  "path_glob": [
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_*/candles_1m.csv.gz"
+  ],
+  "source": {
+    "url": "https://lightchart.bitflyer.com/api/ohlc?symbol=FX_BTC_JPY&period=m&before=<epoch_ms>",
+    "auth": "none (public, unauthenticated)",
+    "fetcher": "scripts/fetch_bitflyer_lightchart.py (resumable, --sleep polite delay, --dry-run)",
+    "notes": "period=h and period=d return HTTP 501 (not implemented) -- only period=m works. The server floors `before` to a 12-hour UTC grid boundary (00:00/12:00) and 301-redirects to the canonical URL with type=full&grouping=1 appended; each canonical page returns <=720 rows (12h of 1m bars), newest row first."
+  },
+  "columns": {
+    "ts_ms": {"meaning": "start of the 1-minute bucket", "unit": "epoch milliseconds UTC", "tz": "UTC", "notes": null},
+    "open": {"meaning": "first execution price in the minute", "unit": "JPY", "tz": null, "notes": "null when the minute had zero executions (see known_defects)"},
+    "high": {"meaning": "max execution price in the minute", "unit": "JPY", "tz": null, "notes": "null when the minute had zero executions"},
+    "low": {"meaning": "min execution price in the minute", "unit": "JPY", "tz": null, "notes": "null when the minute had zero executions"},
+    "close": {"meaning": "last execution price in the minute", "unit": "JPY", "tz": null, "notes": "null when the minute had zero executions"},
+    "volume": {"meaning": "sum of execution sizes in the minute", "unit": "BTC", "tz": null, "notes": "0 when the minute had zero executions -- this source does NOT forward-fill a flat bar the way backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz does (see schema/candles_fx_btc_jpy.json known_defects); it reports the true gap as null OHLC instead"},
+    "col7_inferred_long_oi": {"meaning": "INFERRED, not confirmed against bitFlyer documentation -- a large, slowly-drifting number present on rows since ~2017-07; guessed to be an open-interest-like long-side snapshot for the FX product because it does not sum with buy/sell volume and moves gradually bar-to-bar. Treat as unverified.", "unit": "unknown, plausibly BTC", "tz": null, "notes": "null on rows from before ~2017-07 (only OHLCV was recorded that far back)"},
+    "col8_inferred_short_oi": {"meaning": "INFERRED, not confirmed -- same reasoning as col7 but for the short side.", "unit": "unknown, plausibly BTC", "tz": null, "notes": "null before ~2017-07"},
+    "buy_volume": {"meaning": "portion of `volume` from taker-buy executions (inferred from buy_volume+sell_volume==volume on every row checked)", "unit": "BTC", "tz": null, "notes": "null before ~2017-07"},
+    "sell_volume": {"meaning": "portion of `volume` from taker-sell executions (inferred)", "unit": "BTC", "tz": null, "notes": "null before ~2017-07"}
+  },
+  "coverage": {
+    "earliest_seen": "~2015-11-30 (probed; before=2015-11-01 and earlier returned 0 rows, before=2015-12-01 returned rows back to 2015-11-30 23:41 UTC -- not pinned to the exact minute)",
+    "latest": "current (paginates from now backward)",
+    "as_of_this_build": "see backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/README.md for the exact range fetched by this build -- the fetch is resumable and may still be in progress / extended later"
+  },
+  "known_defects": [
+    "Not an officially documented bitFlyer API -- it is the backend the public web chart calls. Could change or be rate-limited/blocked without notice; no SLA.",
+    "col7/col8 semantics are an unverified guess (see column notes above) -- do not use them for anything load-bearing without independent confirmation.",
+    "Cross-check against backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz on the overlapping month (2026-07-23..2026-08-23): 41,461 minutes comparable (both sources had a real bar), exact OHLC match on 89.5%; close differs by >0.5 JPY on 5.1% of minutes, with a handful of outliers up to several thousand JPY on minutes where volume matches exactly between sources -- suggests the two internal bitFlyer systems (REST candle builder vs. this chart WS-derived feed) do not always bucket the same trades into the same minute, not a bug in our own snapshot. 3,171 minutes are non-null (forward-filled) in our REST snapshot but null (no execution) here, consistent with the REST snapshot's known zero-volume-ffill defect (schema/candles_fx_btc_jpy.json).",
+    "Cross-check against the WS-tape-rebuilt part of backtest_data/fx_btc_jpy_1m_continuous_20260906/candles_1m.csv.gz (2026-08-23..2026-09-05 span, source=paper_logs_tape_ws): 16,463 comparable minutes, 85.9% exact OHLC match, close differs >0.5 JPY on 7.0% -- similar-magnitude disagreement as above; likely the same minute-bucketing effect between our own WS tape recorder and bitFlyer's internal chart backend, not evidence either one is wrong."
+  ]
+}

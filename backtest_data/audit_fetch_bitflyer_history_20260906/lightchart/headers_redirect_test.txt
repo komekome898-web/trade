@@ -1,0 +1,36 @@
+HTTP/1.1 200 Connection Established
+
+HTTP/2 301 
+date: Sun, 06 Sep 2026 08:51:12 GMT
+content-type: text/plain; charset=utf-8
+content-length: 103
+location: ?symbol=FX_BTC_JPY&period=m&before=1787486400000&type=full&grouping=1
+strict-transport-security: max-age=31536000
+request-context: appId=cid-v1:a57d1b5b-c19f-47fb-a850-b6472c175bda
+server: cloudflare
+x-server-id: AKS-EJP-V4.lightchart-7566476dc6-bpqwq#1
+x-region: AKS-EJP-V4
+access-control-allow-origin: *
+x-kuroma-date: Sun, 06 Sep 2026 08:51:12 GMT
+vary: Accept
+cf-cache-status: DYNAMIC
+cf-ray: a36c3affde18c6f7-IAD
+
+HTTP/2 200 
+date: Sun, 06 Sep 2026 08:51:12 GMT
+content-type: application/json; charset=utf-8
+content-length: 74235
+strict-transport-security: max-age=31536000
+request-context: appId=cid-v1:a57d1b5b-c19f-47fb-a850-b6472c175bda
+server: cloudflare
+x-server-id: AKS-EJP-V4.lightchart-7566476dc6-5q6t9#1
+x-region: AKS-EJP-V4
+access-control-allow-origin: *
+x-kuroma-date: Sun, 06 Sep 2026 08:51:12 GMT
+x-kuroma-cache-key: OHLC_FX_BTC_JPY_m_1787443200000_1787486400000_UTC_full_1
+cache-control: public, s-maxage=14400, max-age=600
+x-kuroma-cache-status: HIT
+etag: W/"121fb-8z5+dKevGxSV8VVokKuDBpBabfo"
+cf-cache-status: DYNAMIC
+cf-ray: a36c3b0139c7c6f7-IAD
+

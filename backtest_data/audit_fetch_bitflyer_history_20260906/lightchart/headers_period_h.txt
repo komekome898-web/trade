@@ -1,0 +1,16 @@
+HTTP/1.1 200 Connection Established
+
+HTTP/2 501 
+date: Sun, 06 Sep 2026 08:50:03 GMT
+content-type: application/json; charset=utf-8
+content-length: 0
+strict-transport-security: max-age=31536000
+request-context: appId=cid-v1:a57d1b5b-c19f-47fb-a850-b6472c175bda
+server: cloudflare
+x-server-id: AKS-EJP-V4.lightchart-7566476dc6-cjkx6#1
+x-region: AKS-EJP-V4
+access-control-allow-origin: *
+x-kuroma-date: Sun, 06 Sep 2026 08:50:03 GMT
+cf-cache-status: DYNAMIC
+cf-ray: a36c395268677067-IAD
+
