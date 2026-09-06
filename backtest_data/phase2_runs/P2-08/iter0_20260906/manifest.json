@@ -1,0 +1,512 @@
+{
+  "unit": "P2-08",
+  "iteration": 0,
+  "run_date_utc": "2026-09-06T14:34:16.432340+00:00",
+  "seed": 20260906,
+  "git_rev": "4c877834e300d7c7d02416d78e83b22dd88e9a47",
+  "script": "scripts/phase2/p2_08_run.py",
+  "script_md5": "58be717554e9d98e348b51060c72f9f3",
+  "engine_md5": {
+    "xborder_p2.py": "a0729ff45d8a73c31bb2cb924ddf9996",
+    "xborder_p2_fast.py": "b00ee405c0f2f3d49d34e2e438bb8b84",
+    "p2_08_data.py": "d56491cb628df9d34f30c72554fc3a82"
+  },
+  "inputs": [
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+      "md5": "c366289a9aa18ff7b8c64c172c5ec140"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+      "md5": "c11968e40c84073a81bb8edd69cea282"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+      "md5": "e2af0e53ef5a3598b091f70e071a54cf"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+      "md5": "379b58063eb662168f8a3ab3dd8a2004"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+      "md5": "ebe95930d09f6a373a856313d27febfb"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+      "md5": "98394223f9f92c0cd27c19e1d585fdcc"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+      "md5": "a69c911da1a0946d720613d28aa9ebec"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz",
+      "md5": "f71412cc59d0c350f992f37a0eeced4e"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+      "md5": "2127061118d12127bec3c162615b1610"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+      "md5": "f7e7d62f0a27771cfbe697379d1a5e20"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+      "md5": "df6b29220b060559b5841c38a80678a0"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+      "md5": "5bd3b0347078ce5a1bb202a3dff2c644"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2022.csv.gz",
+      "md5": "2f21909992470572948166e27947f6a9"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2023.csv.gz",
+      "md5": "19cca5b070b8215d539d23068ca6f5bb"
+    }
+  ],
+  "seal_record": {
+    "path": "backtest_data/phase2_sealed/P2-08/SEALED.json",
+    "md5": "c20033694aafc8636f5011dcbae05b6e"
+  },
+  "tape_inputs": [
+    {
+      "path": "paper_logs/tape/executions_20260820.csv.gz",
+      "md5": "fe018cf55846ad6c8332194e9fcf1772"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260821.csv.gz",
+      "md5": "859e1e2f4d6f2b7c6d3c23fbbaaf1957"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260822.csv.gz",
+      "md5": "adf2eff5336e9e205ef5bedce5c02917"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260823.csv.gz",
+      "md5": "2ad39332a0bcef1b1904dffbde5b6cd6"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260824.csv.gz",
+      "md5": "10fefc8e38ca602eadd5ad3d9378677f"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260825.csv.gz",
+      "md5": "76d084d4fb1323e99ea8b629d924ae6a"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260826.csv.gz",
+      "md5": "f584af29a9a461aaf86c21b41fba45ea"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260827.csv.gz",
+      "md5": "c5f11327295507ae9a805bc63525c6fb"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260828.csv.gz",
+      "md5": "a84ab5523dc277c7baf57356690c1dfb"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260829.csv.gz",
+      "md5": "6073e471a5d467c6ebcf2d29ac9ade71"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260830.csv.gz",
+      "md5": "2917ad82f5c46f69fdb1a40dcd61552c"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260831.csv.gz",
+      "md5": "1e986e0d3a9a143f124c5acfcbe4ca42"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260901.csv.gz",
+      "md5": "d44ef9f19d68ca7618f312a44a884f71"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260902.csv.gz",
+      "md5": "0d09b6d027d881069d9a948bbfbd131d"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260903.csv.gz",
+      "md5": "47b905270cd95fe26fea012e4ed90078"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260904.csv.gz",
+      "md5": "f154d508371aed76c95596b7f7116951"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260905.csv.gz",
+      "md5": "2701acce52678ec733f3228f03d800df"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260820.csv.gz",
+      "md5": "765022ccc8729d6aa6cff5edae33fd96"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260821.csv.gz",
+      "md5": "2efdb03ff3178771fc136ac0d7e71845"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260822.csv.gz",
+      "md5": "8ffe97b49fb31e7d798c66e25717c951"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260823.csv.gz",
+      "md5": "096d37e271906dcaf74e767efce387d3"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260824.csv.gz",
+      "md5": "31248f729ae57212caf7637645c4eacb"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260825.csv.gz",
+      "md5": "612e571a17c0b876f847b49c9f98b41b"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260826.csv.gz",
+      "md5": "f850c94a6bab2a0688dc0efe4403e76a"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260827.csv.gz",
+      "md5": "83ec1871e799aa385e41e3e0191cd5c2"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260828.csv.gz",
+      "md5": "4893e229ca3df2a3c170a08765bf2251"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260829.csv.gz",
+      "md5": "cd0f4d768a0515e50670f4e7f400e5e5"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260830.csv.gz",
+      "md5": "bd1c77df3a19f7a3d316fc13f5dbab3d"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260831.csv.gz",
+      "md5": "bfab9defa33a1e0d6d57e364831de0fc"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260901.csv.gz",
+      "md5": "ee9c58da69ff84d3bb7e698e659e984f"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260902.csv.gz",
+      "md5": "28c7c031a5ecf72c246c0fc7baccef29"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260903.csv.gz",
+      "md5": "ed6b7c05d8adba9fe5f3c3d2ff3f7207"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260904.csv.gz",
+      "md5": "ec6aedb456223ef990bfee3b2dead01b"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260905.csv.gz",
+      "md5": "16620d685555030efd6e04aa5601162f"
+    }
+  ],
+  "parameters": {
+    "configs": [
+      [
+        15,
+        0.4,
+        0.25
+      ],
+      [
+        15,
+        0.4,
+        0.5
+      ],
+      [
+        15,
+        0.4,
+        1.0
+      ],
+      [
+        15,
+        0.8,
+        0.25
+      ],
+      [
+        15,
+        0.8,
+        0.5
+      ],
+      [
+        15,
+        0.8,
+        1.0
+      ],
+      [
+        15,
+        1.2,
+        0.25
+      ],
+      [
+        15,
+        1.2,
+        0.5
+      ],
+      [
+        15,
+        1.2,
+        1.0
+      ],
+      [
+        30,
+        0.4,
+        0.25
+      ],
+      [
+        30,
+        0.4,
+        0.5
+      ],
+      [
+        30,
+        0.4,
+        1.0
+      ],
+      [
+        30,
+        0.8,
+        0.25
+      ],
+      [
+        30,
+        0.8,
+        0.5
+      ],
+      [
+        30,
+        0.8,
+        1.0
+      ],
+      [
+        30,
+        1.2,
+        0.25
+      ],
+      [
+        30,
+        1.2,
+        0.5
+      ],
+      [
+        30,
+        1.2,
+        1.0
+      ],
+      [
+        60,
+        0.4,
+        0.25
+      ],
+      [
+        60,
+        0.4,
+        0.5
+      ],
+      [
+        60,
+        0.4,
+        1.0
+      ],
+      [
+        60,
+        0.8,
+        0.25
+      ],
+      [
+        60,
+        0.8,
+        0.5
+      ],
+      [
+        60,
+        0.8,
+        1.0
+      ],
+      [
+        60,
+        1.2,
+        0.25
+      ],
+      [
+        60,
+        1.2,
+        0.5
+      ],
+      [
+        60,
+        1.2,
+        1.0
+      ]
+    ],
+    "exit_pct": 0.05,
+    "current": [
+      30,
+      0.8,
+      0.5
+    ],
+    "cost_cons_one_way_bps": 1.3,
+    "cost_opt_one_way_bps": 1.0,
+    "burst_coef": {
+      "15/0.4": 1.4608883106035464,
+      "15/0.8": 1.995015716294818,
+      "15/1.2": 2.5797851515186285,
+      "30/0.4": 1.3131381165022826,
+      "30/0.8": 1.6529329543111058,
+      "30/1.2": 1.953784510283427,
+      "60/0.4": 1.2038743835337766,
+      "60/0.8": 1.4670397573813172,
+      "60/1.2": 1.6379802319615275
+    },
+    "burst_assumed_fallback": 2.0,
+    "burst_min_window_minutes": 30,
+    "funding_pct_per_settlement": 0.02,
+    "funding_times_utc": [
+      5,
+      13,
+      21
+    ],
+    "max_gap_min": 5,
+    "train_end": "2021-12-31 23:59:00+00:00",
+    "val_start": "2022-01-01 00:00:00+00:00",
+    "dev_start": "2017-08-17 00:00:00+00:00",
+    "dev_end": "2023-12-17 23:59:00+00:00",
+    "n_boot": 2000,
+    "n_null": 2000,
+    "n_ctrl": 1000,
+    "workers": 4,
+    "edge_window": 50,
+    "edge_block": 20,
+    "null_block": "D",
+    "null_statistic_periods": [
+      "full",
+      "train",
+      "val"
+    ]
+  },
+  "burst_meta": {
+    "files": [
+      "paper_logs/tape/executions_20260820.csv.gz",
+      "paper_logs/tape/executions_20260821.csv.gz",
+      "paper_logs/tape/executions_20260822.csv.gz",
+      "paper_logs/tape/executions_20260823.csv.gz",
+      "paper_logs/tape/executions_20260824.csv.gz",
+      "paper_logs/tape/executions_20260825.csv.gz",
+      "paper_logs/tape/executions_20260826.csv.gz",
+      "paper_logs/tape/executions_20260827.csv.gz",
+      "paper_logs/tape/executions_20260828.csv.gz",
+      "paper_logs/tape/executions_20260829.csv.gz",
+      "paper_logs/tape/executions_20260830.csv.gz",
+      "paper_logs/tape/executions_20260831.csv.gz",
+      "paper_logs/tape/executions_20260901.csv.gz",
+      "paper_logs/tape/executions_20260902.csv.gz",
+      "paper_logs/tape/executions_20260903.csv.gz",
+      "paper_logs/tape/executions_20260904.csv.gz",
+      "paper_logs/tape/executions_20260905.csv.gz",
+      "paper_logs/tape/ticker_20260820.csv.gz",
+      "paper_logs/tape/ticker_20260821.csv.gz",
+      "paper_logs/tape/ticker_20260822.csv.gz",
+      "paper_logs/tape/ticker_20260823.csv.gz",
+      "paper_logs/tape/ticker_20260824.csv.gz",
+      "paper_logs/tape/ticker_20260825.csv.gz",
+      "paper_logs/tape/ticker_20260826.csv.gz",
+      "paper_logs/tape/ticker_20260827.csv.gz",
+      "paper_logs/tape/ticker_20260828.csv.gz",
+      "paper_logs/tape/ticker_20260829.csv.gz",
+      "paper_logs/tape/ticker_20260830.csv.gz",
+      "paper_logs/tape/ticker_20260831.csv.gz",
+      "paper_logs/tape/ticker_20260901.csv.gz",
+      "paper_logs/tape/ticker_20260902.csv.gz",
+      "paper_logs/tape/ticker_20260903.csv.gz",
+      "paper_logs/tape/ticker_20260904.csv.gz",
+      "paper_logs/tape/ticker_20260905.csv.gz"
+    ],
+    "n_executions": 790996,
+    "n_ticker_rows": 1711888,
+    "minutes": 24107,
+    "minutes_with_executions": 22284,
+    "minutes_with_ticker": 22796,
+    "first_minute": "2026-08-20 06:13:00+00:00",
+    "last_minute": "2026-09-05 23:59:00+00:00",
+    "uncond_eff_bps": 1.1096753736714808,
+    "uncond_quoted_bps": 0.9667576874923348,
+    "uncond_eff_bps_exec_weighted": 1.562683482923486,
+    "measured": true
+  },
+  "timings_s": {
+    "load_s": 35.35534136299975,
+    "burst_s": 3.831065378995845,
+    "grid_s": 3.425203535007313,
+    "sim27x2_s": 4.7803367960004834,
+    "reference_check_s": 4.084743687999435,
+    "configs_stats_s": 12.557063011990977,
+    "null_wall_s": 594.9815696570004,
+    "null_seconds_per_draw_mean": 1.1849074154920018,
+    "null_seconds_per_draw_median": 1.1651338399969973,
+    "controls_s": 86.83137481599988,
+    "diagnostics_s": 11.68819759300095,
+    "edge_trend_s": 100.56267158899573,
+    "total_s": 869.1566694560024
+  },
+  "headline": {
+    "best_by_val_mean": "15/0.4/0.5",
+    "best_by_val_sharpe": "30/1.2/1.0",
+    "best_by_val_2022_only": "15/0.4/0.25",
+    "null_p95": {
+      "max_mean_net_bps_full": -3.237204630217127,
+      "max_sharpe_full": -1.9646810462375734,
+      "max_mean_net_bps_train": -3.112472518520384,
+      "max_sharpe_train": -1.7063960596205572,
+      "max_mean_net_bps_val": -2.773584043389734,
+      "max_sharpe_val": -2.0901288925955863
+    }
+  },
+  "outputs": [
+    "RESULTS.md",
+    "burst_factor.csv",
+    "configs.csv",
+    "control1a_random_all_best.csv",
+    "control1a_random_all_current.csv",
+    "control1b_random_state_best.csv",
+    "control1b_random_state_current.csv",
+    "control2_sign_shuffle_best.csv",
+    "control2_sign_shuffle_current.csv",
+    "control4_no_lead.csv",
+    "controls.csv",
+    "dev_set_summary_by_year.csv",
+    "diag_a_minute_shift.csv",
+    "diag_c_cross_correlation.csv",
+    "edge_trend_best_by_year.csv",
+    "edge_trend_best_cost_rolling.csv",
+    "edge_trend_best_cost_weekly.csv",
+    "edge_trend_best_gross_rolling.csv",
+    "edge_trend_best_gross_weekly.csv",
+    "edge_trend_best_net_rolling.csv",
+    "edge_trend_best_net_weekly.csv",
+    "edge_trend_current_by_year.csv",
+    "edge_trend_current_cost_rolling.csv",
+    "edge_trend_current_cost_weekly.csv",
+    "edge_trend_current_gross_rolling.csv",
+    "edge_trend_current_gross_weekly.csv",
+    "edge_trend_current_net_rolling.csv",
+    "edge_trend_current_net_weekly.csv",
+    "edge_trend_summary.csv",
+    "known_defects_by_year.csv",
+    "mde.csv",
+    "null_all_configs.csv.gz",
+    "null_best_of_27.csv",
+    "sensitivity_val_2022_only.csv",
+    "trades_best.csv.gz",
+    "trades_current.csv.gz"
+  ]
+}
