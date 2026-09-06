@@ -220,6 +220,46 @@ def test_roll_marking_skips_a_month_whose_second_friday_is_a_holiday():
     assert not any(d.month == 2 for d in marked)
 
 
+def test_roll_marking_quarterly_marks_exactly_the_sq_pair_and_not_other_months():
+    """PREREG (b): once the series is confirmed to be the LARGE contract
+    (quarterly Mar/Jun/Sep/Dec expiries only), the quarterly rule must mark
+    exactly the SQ pair for a quarter month and nothing for a non-quarter
+    month's 2nd Friday -- on a two-month synthetic calendar (Jan
+    non-quarter, Mar quarter)."""
+    days = pd.bdate_range("2010-01-04", "2010-03-31")
+    tape = pd.DataFrame({"date": days,
+                         "open": np.full(len(days), 20000.0),
+                         "close": np.full(len(days), 20000.0)})
+    pairs = p2.build_pairs(tape)
+
+    mask = p2.mark_roll_adjacent(pairs, days, "quarterly")
+    got = {(str(a.date()), str(b.date())) for a, b in
+           zip(pd.to_datetime(pairs.loc[mask, "date"]),
+               pd.to_datetime(pairs.loc[mask, "date_t1"]))}
+
+    # January's 2nd Friday (2010-01-08) is NOT a quarter month -> no pairs.
+    # March's 2nd Friday (2010-03-12) IS a quarter month -> exactly the three
+    # pairs touching {previous trading day, SQ}: (Wed,Thu) (Thu,SQ) (SQ,next).
+    assert got == {
+        ("2010-03-10", "2010-03-11"), ("2010-03-11", "2010-03-12"),
+        ("2010-03-12", "2010-03-15"),
+    }
+    assert int(mask.sum()) == 3
+    # none of the January-Friday pairs (monthly-only roll days) are marked
+    assert not any(a.startswith("2010-01") or b.startswith("2010-01")
+                  for a, b in got)
+    # cross-check against the monthly rule on the same calendar: monthly
+    # marks January's SQ too, quarterly does not
+    monthly_mask = p2.mark_roll_adjacent(pairs, days, "monthly")
+    monthly_got = {(str(a.date()), str(b.date())) for a, b in
+                  zip(pd.to_datetime(pairs.loc[monthly_mask, "date"]),
+                      pd.to_datetime(pairs.loc[monthly_mask, "date_t1"]))}
+    assert ("2010-01-07", "2010-01-08") in monthly_got
+    assert ("2010-01-07", "2010-01-08") not in got
+    assert ("2010-02-11", "2010-02-12") in monthly_got
+    assert ("2010-02-11", "2010-02-12") not in got
+
+
 def test_mark_nightless_matches_by_date_pair_not_by_single_date():
     pairs = pd.DataFrame({
         "date": pd.to_datetime(["2007-12-28", "2008-01-04", "2008-01-07"]),

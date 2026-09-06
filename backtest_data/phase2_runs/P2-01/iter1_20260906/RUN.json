@@ -1,0 +1,132 @@
+{
+  "unit": "P2-01",
+  "iteration": 1,
+  "roll_rule": "quarterly",
+  "run_date": "2026-09-06",
+  "seed": 20260906,
+  "git_rev": "a8b1fbea1feebfb12d1082a10c0bd1b542e26f19",
+  "script": "scripts/phase2/p2_01_run.py",
+  "script_md5": "83adb4010f00e35958da254ec61b33a6",
+  "inputs": [
+    {
+      "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz",
+      "md5": "0f179b365417d4e307e53672e8cb3237"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz",
+      "md5": "aed073cf99e230db81bf3b4714fddf10"
+    }
+  ],
+  "seal_record_md5": "2b18e0ef53a7ec4263e2203aee05f280",
+  "parameters": {
+    "roll_rule": "quarterly",
+    "analysis_start": "2007-09-19",
+    "train_end": "2016-12-31",
+    "glitch_threshold_abs_simple_return": 0.1,
+    "block": 20,
+    "n_boot": 2000,
+    "n_shuffle": 1000,
+    "cost_yen_conservative": 122,
+    "cost_yen_optimistic": 22,
+    "multiplier_yen_per_point": 10,
+    "mde_bps": 6.03,
+    "mde_diff_bps": 8.07,
+    "gross_gate_bps": 14.9
+  },
+  "n_at_each_step": {
+    "day_rows_unsealed": 7600,
+    "night_rows_unsealed": 3236,
+    "day_rows_in_window": 3241,
+    "pairs_after_endpoint_rule": 3240,
+    "glitches": 3,
+    "roll_adjacent_monthly": 471,
+    "roll_adjacent_quarterly": 159,
+    "nightless_marked": 5,
+    "pairs_without_night_row": 5,
+    "n_base": 3240,
+    "n_roll_excluded_monthly": 2769,
+    "n_roll_excluded_quarterly": 3081,
+    "n_main_roll_and_glitch_excluded": 3078,
+    "glitches_inside_roll_set": 0,
+    "glitches_in_main_set_removed": 3,
+    "long_run_day_rows_1990_2007": 4359
+  },
+  "headline": {
+    "mean_r_net_bps_conservative": -4.587011884902883,
+    "ci95": [
+      -8.54870436113701,
+      -0.9240587287090276
+    ],
+    "mean_gross_bps": 4.295851803265485,
+    "mean_diff_night_minus_day_bps": 4.871841842385757,
+    "ci95_diff": [
+      0.3123894818718515,
+      9.219234925316266
+    ],
+    "sharpe_annualised": -0.6260220920454247,
+    "hit_rate": 0.48180636777128005,
+    "max_drawdown_yen_1_micro": 266224.0,
+    "null_mean_p95_bps": 3.140129997353961,
+    "null_sharpe_p95": 0.4284792714248427,
+    "alignment_median_abs_prev_close": 20.0,
+    "alignment_median_abs_same_close": 110.0,
+    "alignment_pass": true
+  },
+  "mde": [
+    {
+      "quantity": "σ(r_night) ロール除外後 n=2,769(事前登録の基準)",
+      "sd_bps": 119.24504849053548,
+      "n": 3081,
+      "se_bps": 2.1482979071641926,
+      "mde_bps_independent": 6.018639661860516,
+      "mde_bps_registered": 6.03,
+      "mde_bps_effective_from_ci": 5.347983640596869
+    },
+    {
+      "quantity": "σ(夜間−日中の差)ロール除外後 n=2,769",
+      "sd_bps": 158.2139017119613,
+      "n": 3081,
+      "se_bps": 2.8503539411874614,
+      "mde_bps_independent": 7.9855094694090445,
+      "mde_bps_registered": 8.07,
+      "mde_bps_effective_from_ci": 6.299270607490051
+    },
+    {
+      "quantity": "σ(r_net 保守コスト後)主集合",
+      "sd_bps": 111.6842198426363,
+      "n": 3078,
+      "se_bps": 2.0130636511947744,
+      "mde_bps_independent": 5.639769369288225,
+      "mde_bps_registered": 6.03,
+      "mde_bps_effective_from_ci": 5.449358933213582
+    },
+    {
+      "quantity": "σ(夜間−日中の差)主集合",
+      "sd_bps": 151.20518236074983,
+      "n": 3078,
+      "se_bps": 2.7254132849885493,
+      "mde_bps_independent": 7.635477573799988,
+      "mde_bps_registered": 8.07,
+      "mde_bps_effective_from_ci": 6.365751291779127
+    }
+  ],
+  "outputs": [
+    "RESULTS.md",
+    "alignment_check.csv",
+    "control2_sign_shuffle_null.csv",
+    "controls.csv",
+    "diagnostic_month.csv",
+    "diagnostic_nights.csv",
+    "diagnostic_regime.csv",
+    "diagnostic_sq_dist.csv",
+    "diagnostic_vol_tercile.csv",
+    "diagnostic_weekday.csv",
+    "diagnostic_year.csv",
+    "exclusions.csv",
+    "main_indicators.csv",
+    "mde.csv",
+    "nights_distribution.csv",
+    "pairs.csv",
+    "sub_indicators.csv"
+  ]
+}

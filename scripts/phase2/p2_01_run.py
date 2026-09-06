@@ -11,9 +11,24 @@ Every input file is read through `bot.research.sealed.load_unsealed(path,
 here. Nothing in this module interprets the numbers: it writes tables.
 
 Usage:  PYTHONPATH=src python scripts/phase2/p2_01_run.py
+        PYTHONPATH=src python scripts/phase2/p2_01_run.py --roll-rule quarterly \
+            --out backtest_data/phase2_runs/P2-01/iter1_20260906
+
+Iteration ledger: iteration 0 (2026-09-06) used the monthly roll rule as the
+default under PREREG "限月ロールの扱い (a)" (limited months unconfirmed).
+Iteration 1 (2026-09-06) is the pre-registered switch under "(b)": the owner
+confirmed from the primary source (225Labo download page + JPX product
+outline page, see `backtest_data/audit_fetch_JPX_n225f_months_20260906/`)
+that the series is the LARGE Nikkei 225 futures contract, whose contract
+months are quarterly (Mar/Jun/Sep/Dec) only -- so the roll-adjacent rule
+switches from monthly 2nd-Friday to quarterly 2nd-Friday. `--roll-rule`
+selects which one is used to build the MAIN judgment set; the default stays
+"monthly" so a bare invocation reproduces iteration 0 exactly (verified by
+diffing main_indicators.csv / pairs.csv against the iter0 output).
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import subprocess
@@ -306,8 +321,15 @@ def _table(rows: list[dict], cols: list[tuple[str, str, int]]) -> str:
     return "\n".join([head, sep] + body)
 
 
-def main() -> int:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+ROLL_RULE_LABEL_JA = {"monthly": "月次", "quarterly": "四半期"}
+
+
+def main(roll_rule: str = "monthly", out_dir: Path | None = None,
+         iteration: int = 0) -> int:
+    if roll_rule not in ("monthly", "quarterly"):
+        raise ValueError(f"roll_rule must be 'monthly' or 'quarterly', got {roll_rule!r}")
+    out = out_dir if out_dir is not None else OUT_DIR
+    out.mkdir(parents=True, exist_ok=True)
     steps: dict[str, int] = {}
 
     # ---- load (dev set only; sealed rows are removed by the loader) --------
@@ -394,28 +416,42 @@ def main() -> int:
     else:  # pragma: no cover
         pairs["sq_dist_td"] = np.nan
 
-    # ---- the pre-registered sets ------------------------------------------
+    # ---- the pre-registered sets --------------------------------------
+    # roll_rule selects which roll-adjacent column defines the MAIN judgment
+    # set (PREREG "限月ロールの扱い" (a) monthly default / (b) quarterly switch
+    # once the contract months are confirmed). Both roll_monthly and
+    # roll_quarterly are always computed above regardless of roll_rule, so
+    # the diagnostics below stay available under either choice.
+    roll_col = f"roll_{roll_rule}"
     base = pairs                                         # 3,240
-    roll_ex = pairs[~pairs["roll_monthly"]]              # 2,769 (PREREG 分母)
+    roll_ex = pairs[~pairs[roll_col]]                    # PREREG 分母 (active rule)
     main = roll_ex[~roll_ex["is_glitch"]]                # judgment set
     steps["n_base"] = len(base)
-    steps["n_roll_excluded_monthly"] = len(roll_ex)
+    steps["n_roll_excluded_monthly"] = int((~pairs["roll_monthly"]).sum())
+    steps["n_roll_excluded_quarterly"] = int((~pairs["roll_quarterly"]).sum())
     steps["n_main_roll_and_glitch_excluded"] = len(main)
     steps["glitches_inside_roll_set"] = int(
-        (pairs["is_glitch"] & pairs["roll_monthly"]).sum())
+        (pairs["is_glitch"] & pairs[roll_col]).sum())
     steps["glitches_in_main_set_removed"] = int(
-        (pairs["is_glitch"] & ~pairs["roll_monthly"]).sum())
+        (pairs["is_glitch"] & ~pairs[roll_col]).sum())
 
     yrs_main = years_span(main)
     yrs_base = years_span(base)
 
     # ---- main indicators ---------------------------------------------------
+    if roll_rule == "monthly":
+        label1 = "主指標1 平均ネット夜間リターン(保守コスト、ロール除外+誤プリント除外)"
+        label_roll_ex = "PREREG 分母どおり n=2,769(誤プリント含む)"
+    else:
+        label1 = ("主指標1 平均ネット夜間リターン(保守コスト、四半期ロール除外+誤プリント除外、"
+                  "反復1: 限月確認によりラージ=四半期限月のみと判明)")
+        label_roll_ex = f"四半期ロール除外後 n={len(roll_ex):,}(誤プリント含む)"
     main_rows = [
-        describe(main["r_net_bps_cons"], "主指標1 平均ネット夜間リターン(保守コスト、ロール除外+誤プリント除外)", yrs_main),
+        describe(main["r_net_bps_cons"], label1, yrs_main),
         describe(main["r_night_bps"] - main["r_day_bps"], "主指標2 夜間−日中の差(同集合)", yrs_main),
         describe(main["r_night_bps"], "参考 グロス夜間リターン(同集合)", yrs_main),
         describe(main["r_net_bps_opt"], "参考 楽観コスト後(手数料のみ)", yrs_main),
-        describe(roll_ex["r_net_bps_cons"], "PREREG 分母どおり n=2,769(誤プリント含む)", years_span(roll_ex)),
+        describe(roll_ex["r_net_bps_cons"], label_roll_ex, years_span(roll_ex)),
         describe(roll_ex["r_night_bps"] - roll_ex["r_day_bps"], "同上 夜間−日中の差", years_span(roll_ex)),
         describe(base["r_net_bps_cons"], "ロール隣接ペアを含む n=3,240(誤プリント含む)", yrs_base),
         describe(base["r_night_bps"] - base["r_day_bps"], "同上 夜間−日中の差", yrs_base),
@@ -515,6 +551,8 @@ def main() -> int:
     nights_dist["share"] = nights_dist["n_pairs"] / len(pairs)
 
     # ---- exclusions ledger -------------------------------------------------
+    roll_ex_step_label = ("ロール隣接除外後(PREREG 分母)" if roll_rule == "monthly"
+                          else f"ロール隣接除外後(採用規則: {ROLL_RULE_LABEL_JA[roll_rule]}、反復{iteration})")
     excl = pd.DataFrame([
         {"step": "day_session_daily 未封印行", "n": steps["day_rows_unsealed"]},
         {"step": "解析窓 2007-09-19 以降の日中行", "n": steps["day_rows_in_window"]},
@@ -524,7 +562,7 @@ def main() -> int:
         {"step": "うちロール隣接(四半期規則)", "n": steps["roll_adjacent_quarterly"]},
         {"step": "うち夜間セッション無し(事前登録の5ペア)", "n": steps["nightless_marked"]},
         {"step": "うち夜間行が実データで欠損", "n": steps["pairs_without_night_row"]},
-        {"step": "ロール隣接除外後(PREREG 分母)", "n": steps["n_roll_excluded_monthly"]},
+        {"step": roll_ex_step_label, "n": len(roll_ex)},
         {"step": "誤プリントがロール隣接集合の内側にあった件数", "n": steps["glitches_inside_roll_set"]},
         {"step": "主集合(ロール除外+誤プリント除外)", "n": steps["n_main_roll_and_glitch_excluded"]},
         {"step": "主集合のうち train", "n": int((main["split"] == "train").sum())},
@@ -540,7 +578,7 @@ def main() -> int:
     written: list[str] = []
 
     def write(df: pd.DataFrame, name: str):
-        p = OUT_DIR / name
+        p = out / name
         df.to_csv(p, index=False)
         written.append(name)
 
@@ -606,12 +644,20 @@ def main() -> int:
                 ("t", "t", 2), ("hit_rate", "勝率", 4), ("sharpe", "Sharpe(年率)", 3)]
 
     md = []
-    md.append("# P2-01 反復 0 — 事前登録の主検定(開発セットのみ)")
+    md.append(f"# P2-01 反復 {iteration} — 事前登録の主検定(開発セットのみ、"
+              f"ロール規則: {ROLL_RULE_LABEL_JA[roll_rule]})")
     md.append("")
     md.append(f"実行日 2026-09-06 / seed {SEED} / git {_git_rev()[:12]} / "
-              f"単位 {UNIT}。読み込みは `load_unsealed` のみ(封印期間・"
+              f"単位 {UNIT} / roll_rule={roll_rule}。読み込みは `load_unsealed` のみ(封印期間・"
               "`bars_1min`・`paper_logs` には一切触れていない)。")
     md.append("")
+    if iteration > 0:
+        md.append("反復理由: PREREG「限月ロールの扱い (b)」— 225Labo ダウンロードページと "
+                  "JPX 商品概要ページ(一次資料、`backtest_data/audit_fetch_JPX_n225f_months_20260906/`)"
+                  "でラージ日経225先物の限月が3・6・9・12月のみと確認できたため、"
+                  "ロール隣接規則を月次から四半期の第2金曜に切り替える。それ以外のパラメータ"
+                  "(seed・ブロック長・リサンプル数・コスト・対照・副指標)は反復0と同一。")
+        md.append("")
     md.append("**本書は数値の報告のみで、採用・棄却の解釈は行わない。**")
     md.append("")
     md.append("## 1. 母集団と除外の内訳")
@@ -624,6 +670,14 @@ def main() -> int:
               "四半期 159 → n=3,081(一致)、夜間セッション無し 5 ペア(日付ペアも一致)。")
     md.append("")
     md.append(f"注: 誤プリント 3 件のうち {steps['glitches_inside_roll_set']} 件は"
+              f"ロール隣接ペア(2008 年 10 月の第 2 金曜近傍)の内側にあり、"
+              f"{ROLL_RULE_LABEL_JA[roll_rule]}ロール除外で既に落ちる。"
+              f"したがって「ロール除外 + 誤プリント除外」の主集合は "
+              f"n = {steps['n_main_roll_and_glitch_excluded']:,} で、ロール隣接除外後(誤プリント含む)の "
+              f"n = {len(roll_ex):,} とは {len(roll_ex) - steps['n_main_roll_and_glitch_excluded']} 件差になる"
+              "(2008年10月は非四半期月のため、四半期規則では誤プリントがこの集合の内側に落ちない)。"
+              if roll_rule == "quarterly" else
+              f"注: 誤プリント 3 件のうち {steps['glitches_inside_roll_set']} 件は"
               "ロール隣接ペア(2008 年 10 月の第 2 金曜近傍)の内側にあり、月次ロール除外で"
               f"既に落ちる。したがって「ロール除外 + 誤プリント除外」の主集合は "
               f"n = {steps['n_main_roll_and_glitch_excluded']:,} で、事前登録に書かれた分母 2,769 "
@@ -734,21 +788,80 @@ def main() -> int:
         md.append("")
     md.append("## 7. 事前登録からの逸脱")
     md.append("")
-    md.append("- 事前登録は主指標の分母を「ロール隣接除外後 n = 2,769」と書き、別行で「判定は誤プリント除外後」"
-              f"と書いている。この 2 つは同時に満たせないため(誤プリント 3 件のうち "
-              f"{steps['glitches_in_main_set_removed']} 件が n=2,769 の内側)、"
-              f"主集合 n = {steps['n_main_roll_and_glitch_excluded']:,} を判定用として先頭に置き、"
-              "n = 2,769(誤プリント含む)も同じ表に併記した。数値の差は微小だが規則の解釈なので明記する。")
-    md.append("- それ以外の逸脱はない。閾値・ブロック長・リサンプル数・分割日・除外規則・コスト定数は"
-              "すべて事前登録どおり。")
+    if roll_rule == "monthly":
+        md.append("- 事前登録は主指標の分母を「ロール隣接除外後 n = 2,769」と書き、別行で「判定は誤プリント除外後」"
+                  f"と書いている。この 2 つは同時に満たせないため(誤プリント 3 件のうち "
+                  f"{steps['glitches_in_main_set_removed']} 件が n=2,769 の内側)、"
+                  f"主集合 n = {steps['n_main_roll_and_glitch_excluded']:,} を判定用として先頭に置き、"
+                  "n = 2,769(誤プリント含む)も同じ表に併記した。数値の差は微小だが規則の解釈なので明記する。")
+        md.append("- それ以外の逸脱はない。閾値・ブロック長・リサンプル数・分割日・除外規則・コスト定数は"
+                  "すべて事前登録どおり。")
+    else:
+        md.append("- 本反復は PREREG「限月ロールの扱い (b)」の事前登録済みルール切替そのものであり、"
+                  "逸脱ではなく反復として台帳(RUN.json の `iteration`)に記録している。"
+                  f"ロール隣接除外後 n = {len(roll_ex):,}(誤プリント含む、PREREG 想定 3,081)、"
+                  f"誤プリント 3 件のうち {steps['glitches_in_main_set_removed']} 件がこの集合の外側にあり"
+                  f"主集合(ロール除外+誤プリント除外)から別途落ちるため、主集合 n = "
+                  f"{steps['n_main_roll_and_glitch_excluded']:,}。")
+        md.append("- それ以外の逸脱はない。閾値・ブロック長・リサンプル数・分割日・コスト定数・対照・副指標の"
+                  "定義は反復0と同一で、変更したのはロール隣接規則(月次→四半期)のみ。")
     md.append("")
-    (OUT_DIR / "RESULTS.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    if iteration > 0:
+        prior_path = REPO_ROOT / "backtest_data" / "phase2_runs" / UNIT / "iter0_20260906" / "RUN.json"
+        md.append(f"## 8. 反復比較(反復0 月次 vs 反復{iteration} {ROLL_RULE_LABEL_JA[roll_rule]})")
+        md.append("")
+        if prior_path.exists():
+            prior = json.loads(prior_path.read_text(encoding="utf-8"))
+            ph = prior["headline"]
+            cmp_rows = [
+                {"a": "n(主集合)", "b": prior["n_at_each_step"]["n_main_roll_and_glitch_excluded"],
+                 "c": steps["n_main_roll_and_glitch_excluded"],
+                 "d": steps["n_main_roll_and_glitch_excluded"]
+                      - prior["n_at_each_step"]["n_main_roll_and_glitch_excluded"]},
+                {"a": "平均ネット r_net(保守コスト、bps)", "b": ph["mean_r_net_bps_conservative"],
+                 "c": mean_main, "d": mean_main - ph["mean_r_net_bps_conservative"]},
+                {"a": "95%CI下限(bps)", "b": ph["ci95"][0], "c": ci_main[0],
+                 "d": ci_main[0] - ph["ci95"][0]},
+                {"a": "95%CI上限(bps)", "b": ph["ci95"][1], "c": ci_main[1],
+                 "d": ci_main[1] - ph["ci95"][1]},
+                {"a": "グロス平均夜間リターン(bps)", "b": ph["mean_gross_bps"],
+                 "c": gross_main, "d": gross_main - ph["mean_gross_bps"]},
+                {"a": "夜間−日中の差(bps)", "b": ph["mean_diff_night_minus_day_bps"],
+                 "c": diff_main, "d": diff_main - ph["mean_diff_night_minus_day_bps"]},
+                {"a": "Sharpe(年率)", "b": ph["sharpe_annualised"],
+                 "c": sharpe_annualised(main["r_net_bps_cons"], yrs_main),
+                 "d": sharpe_annualised(main["r_net_bps_cons"], yrs_main) - ph["sharpe_annualised"]},
+                {"a": "勝率", "b": ph["hit_rate"],
+                 "c": float((main["r_net_bps_cons"] > 0).mean()),
+                 "d": float((main["r_net_bps_cons"] > 0).mean()) - ph["hit_rate"]},
+                {"a": "最大ドローダウン(円、1枚)", "b": ph["max_drawdown_yen_1_micro"],
+                 "c": mdd_yen, "d": mdd_yen - ph["max_drawdown_yen_1_micro"]},
+                {"a": "MDE 関門(平均ネット r_net、bps)", "b": MDE_BPS, "c": MDE_BPS, "d": 0.0},
+                {"a": "着手前関門との差(平均ネット − MDE 6.03、bps)",
+                 "b": ph["mean_r_net_bps_conservative"] - MDE_BPS, "c": mean_main - MDE_BPS,
+                 "d": (mean_main - MDE_BPS) - (ph["mean_r_net_bps_conservative"] - MDE_BPS)},
+                {"a": "グロス関門との差(グロス平均 − 14.9、bps)",
+                 "b": ph["mean_gross_bps"] - GROSS_GATE_BPS, "c": gross_main - GROSS_GATE_BPS,
+                 "d": (gross_main - GROSS_GATE_BPS) - (ph["mean_gross_bps"] - GROSS_GATE_BPS)},
+            ]
+            md.append(_table(cmp_rows, [("a", "指標", -1), ("b", "反復0(月次)", 3),
+                                        ("c", f"反復{iteration}({ROLL_RULE_LABEL_JA[roll_rule]})", 3),
+                                        ("d", "差(反復1−反復0)", 3)]))
+            md.append("")
+            md.append(f"関門 6.03bps(平均ネット MDE)・14.9bps(グロス、着手前の実務上の最小値)は"
+                      "規則を切り替えても変わらない(標本サイズがわずかに変わるのみで σ の再計算は"
+                      "PREREG の指示どおり別途 MDE 表に記録する。関門の値自体は事前登録を変更しない)。")
+        else:
+            md.append(f"反復0の RUN.json が `{prior_path}` に見つからないため比較表は省略。")
+        md.append("")
+    (out / "RESULTS.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     written.append("RESULTS.md")
 
     # ---- RUN.json ----------------------------------------------------------
     run = {
         "unit": UNIT,
-        "iteration": 0,
+        "iteration": iteration,
+        "roll_rule": roll_rule,
         "run_date": str(date(2026, 9, 6)),
         "seed": SEED,
         "git_rev": _git_rev(),
@@ -761,6 +874,7 @@ def main() -> int:
         "seal_record_md5": _md5(REPO_ROOT / "backtest_data" / "phase2_sealed"
                                 / UNIT / "SEALED.json"),
         "parameters": {
+            "roll_rule": roll_rule,
             "analysis_start": str(ANALYSIS_START.date()),
             "train_end": str(TRAIN_END.date()),
             "glitch_threshold_abs_simple_return": GLITCH_THRESHOLD,
@@ -793,13 +907,31 @@ def main() -> int:
                  "mde_bps_effective_from_ci": r["g"]} for r in mde_rows],
         "outputs": sorted(written),
     }
-    (OUT_DIR / "RUN.json").write_text(
+    (out / "RUN.json").write_text(
         json.dumps(run, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     print(json.dumps(run["headline"], ensure_ascii=False, indent=2))
-    print(f"wrote {len(written) + 1} files to {OUT_DIR}")
+    print(f"wrote {len(written) + 1} files to {out}")
     return 0
 
 
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p.add_argument("--roll-rule", choices=["monthly", "quarterly"], default="monthly",
+                   help="Roll-adjacent rule for the MAIN judgment set (default: monthly, "
+                        "reproduces iteration 0). 'quarterly' is the PREREG (b) switch.")
+    p.add_argument("--out", type=Path, default=None,
+                   help="Output directory (default: iter0's directory under "
+                        "backtest_data/phase2_runs/P2-01/).")
+    p.add_argument("--iteration", type=int, default=None,
+                   help="Iteration number recorded in RUN.json / RESULTS.md "
+                        "(default: 0 for --roll-rule monthly, 1 otherwise).")
+    return p.parse_args(argv)
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    args = _parse_args()
+    iteration = args.iteration
+    if iteration is None:
+        iteration = 0 if args.roll_rule == "monthly" else 1
+    raise SystemExit(main(roll_rule=args.roll_rule, out_dir=args.out, iteration=iteration))
