@@ -1,0 +1,54 @@
+{
+  "unit": "P2-02",
+  "created_utc": "2026-09-06T00:27:29.586051+00:00",
+  "forward_start": "2026-09-06T00:00:00+00:00",
+  "files": [
+    {
+      "path": "backtest_data/reit_onr_20260904/etf_1321_daily.csv",
+      "md5": "ec7e1e6b5f38f57c7b215919005d1125",
+      "time_column": "date",
+      "first_ts": "2009-01-05T00:00:00+00:00",
+      "last_ts": "2026-09-03T00:00:00+00:00",
+      "seal_from_ts": "2021-04-13T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-05-17T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/reit_onr_20260904/etf_1343_daily.csv",
+      "md5": "cff01b6a1709e6ddda0157778fc72760",
+      "time_column": "date",
+      "first_ts": "2008-09-16T00:00:00+00:00",
+      "last_ts": "2026-09-03T00:00:00+00:00",
+      "seal_from_ts": "2021-04-13T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-04-13T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/reit_onr_20260904/etf_1343_dividends.csv",
+      "md5": "e0644769564c62766ca0b56e6394c337",
+      "time_column": "ex_date",
+      "first_ts": "2013-02-10T00:00:00+00:00",
+      "last_ts": "2026-08-10T00:00:00+00:00",
+      "seal_from_ts": "2021-04-13T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-07-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/reit_onr_20260904/reit_index_daily.csv",
+      "md5": "966c9af41d95fff1c1b374b8cda606db",
+      "time_column": "date",
+      "first_ts": "2025-06-16T00:00:00+00:00",
+      "last_ts": "2026-09-03T00:00:00+00:00",
+      "seal_from_ts": "2021-04-13T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-04-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1343.T.csv",
+      "md5": "15cac3f3aecc375ec5e9b85b0edbc16a",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2021-04-13T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    }
+  ],
+  "rule": "everything with ts >= forward_start is sealed | unit-wide boundary: seal_from_ts of primary series etf_1343_daily.csv (2021-04-13T00:00:00+00:00) applied to every file",
+  "primary_series": "etf_1343_daily.csv"
+}
