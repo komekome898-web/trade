@@ -1,0 +1,24 @@
+{
+ "n_total": 25112,
+ "n_excluded": 395,
+ "n": 24717,
+ "per_day": 10.686121919584954,
+ "mean_bps": -2.739532358936276,
+ "sigma_bps": 86.50138296633509,
+ "mde_bps": 1.5414565974798533,
+ "se_cluster_bps": 0.5480234059428098,
+ "mde_cluster_bps": 1.5353423740893761,
+ "attrs": {
+  "apply_masks": 1,
+  "n_minutes_grid": 3332160,
+  "n_valid_bars": 3253691,
+  "n_entry_signal_bars": 317433,
+  "n_entry_signals_discarded": 4460,
+  "n_misprint_rows_blanked": 0,
+  "n_big_gaps": 3208,
+  "n_trades": 25112,
+  "n_excluded_gap": 395,
+  "n_straddles_gap": 395,
+  "n_deferred_total": 1533
+ }
+}
