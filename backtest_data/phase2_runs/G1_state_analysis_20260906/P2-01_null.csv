@@ -1,0 +1,2 @@
+series,n_main,null_p95_bps,n_variables,n_comparisons,block,n_boot,seed,uncond_mean_bps,uncond_ci_lo_bps,uncond_ci_hi_bps,uncond_net_mean_bps,uncond_net_ci_lo_bps,uncond_net_ci_hi_bps
+N225F,4448,26.138948062937235,8,99,20,2000,20260906,4.838394235243511,1.7825065477229336,7.827122148521497,-2.407692961745828,-5.4753641059949985,0.6979845144586381

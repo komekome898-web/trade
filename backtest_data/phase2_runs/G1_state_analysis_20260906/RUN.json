@@ -1,0 +1,257 @@
+{
+  "generated": "2026-09-06",
+  "block": 20,
+  "n_boot": 2000,
+  "seed": 20260906,
+  "cc_abs_max": 0.3,
+  "vol_window": 20,
+  "script": "scripts/phase2/g1_state_analysis.py",
+  "uses_external_market_data": false,
+  "descriptive_post_seal_only": true,
+  "units": {
+    "P2-01": [
+      {
+        "series": "N225F",
+        "provenance": {
+          "series": "N225F",
+          "inputs": [
+            {
+              "path": "backtest_data/phase2_runs/P2-01/iter1_20260906/pairs.csv",
+              "md5": "9e52bd403d404191bcfc7717b17f9990",
+              "rows": 3240
+            },
+            {
+              "path": "backtest_data/phase2_runs/P2-01/final_20260906/pairs.csv",
+              "md5": "4f7cc885bef130126fe385a7d8af8839",
+              "rows": 1437
+            }
+          ],
+          "rows_combined": 4677,
+          "span": [
+            "2007-09-19",
+            "2026-08-26"
+          ],
+          "seam": [
+            "2020-12-17",
+            "2020-12-21"
+          ]
+        },
+        "n_main": 4448,
+        "value_col": "r_night_bps",
+        "null_p95_bps": 26.138948062937235,
+        "verdict_counts": {
+          "判定不能": 99
+        }
+      }
+    ],
+    "P2-02": [
+      {
+        "series": "1343",
+        "provenance": {
+          "series": "1343",
+          "inputs": [
+            {
+              "path": "backtest_data/phase2_runs/P2-02/iter0_20260906/pairs_1343_dev.csv",
+              "md5": "8b5d1ede83988735111824a70af3d66f",
+              "rows": 3019
+            },
+            {
+              "path": "backtest_data/phase2_runs/P2-02/final_20260906/pairs_1343_sealed.csv",
+              "md5": "f78d2812cc92b0ac2e3eae7f59faed5c",
+              "rows": 1317
+            }
+          ],
+          "rows_combined": 4336,
+          "span": [
+            "2009-01-05",
+            "2026-09-02"
+          ],
+          "seam": [
+            "2021-04-09",
+            "2021-04-13"
+          ]
+        },
+        "n_main": 4293,
+        "value_col": "r_night_adj_bps",
+        "null_p95_bps": 22.73687130756389,
+        "verdict_counts": {
+          "判定不能": 87,
+          "差なし": 5
+        }
+      },
+      {
+        "series": "1321",
+        "provenance": {
+          "series": "1321",
+          "inputs": [
+            {
+              "path": "backtest_data/phase2_runs/P2-02/iter0_20260906/pairs_1321_dev.csv",
+              "md5": "4bc174b19a6320bc8f28ca57f7b5e381",
+              "rows": 3019
+            },
+            {
+              "path": "backtest_data/phase2_runs/P2-02/final_20260906/pairs_1321_sealed.csv",
+              "md5": "2555bcf0e72cbce54226ee9986af7692",
+              "rows": 1317
+            }
+          ],
+          "rows_combined": 4336,
+          "span": [
+            "2009-01-05",
+            "2026-09-02"
+          ],
+          "seam": [
+            "2021-04-09",
+            "2021-04-13"
+          ]
+        },
+        "n_main": 4042,
+        "value_col": "r_night_raw_bps",
+        "null_p95_bps": 25.89524716867517,
+        "verdict_counts": {
+          "判定不能": 90,
+          "差なし": 1,
+          "候補": 1
+        }
+      }
+    ],
+    "P2-03": [
+      {
+        "series": "1306T",
+        "provenance": {
+          "series": "1306T",
+          "inputs": [
+            {
+              "path": "backtest_data/phase2_runs/P2-03/iter1_20260906/pairs_1306T.csv",
+              "md5": "ae8daa01023e209c65e101e35ac41e8c",
+              "rows": 2587
+            },
+            {
+              "path": "backtest_data/phase2_runs/P2-03/final_20260906/pairs_1306T.csv",
+              "md5": "4412eab3924a90c911668430df12d058",
+              "rows": 1101
+            }
+          ],
+          "rows_combined": 3688,
+          "span": [
+            "2011-09-05",
+            "2026-09-03"
+          ],
+          "seam": [
+            "2022-03-03",
+            "2022-03-07"
+          ]
+        },
+        "n_main": 3642,
+        "value_col": "r_night_bps",
+        "null_p95_bps": 24.66192626710645,
+        "verdict_counts": {
+          "判定不能": 88,
+          "差なし": 2
+        }
+      },
+      {
+        "series": "1591T",
+        "provenance": {
+          "series": "1591T",
+          "inputs": [
+            {
+              "path": "backtest_data/phase2_runs/P2-03/iter1_20260906/pairs_1591T.csv",
+              "md5": "161921d7143d45bc191b79af0eee54f9",
+              "rows": 2003
+            },
+            {
+              "path": "backtest_data/phase2_runs/P2-03/final_20260906/pairs_1591T.csv",
+              "md5": "a464636bb9441aeed269f334f7f2e552",
+              "rows": 1101
+            }
+          ],
+          "rows_combined": 3104,
+          "span": [
+            "2014-01-23",
+            "2026-09-03"
+          ],
+          "seam": [
+            "2022-03-03",
+            "2022-03-07"
+          ]
+        },
+        "n_main": 3061,
+        "value_col": "r_night_bps",
+        "null_p95_bps": 27.270123506600626,
+        "verdict_counts": {
+          "判定不能": 89,
+          "差なし": 1
+        }
+      },
+      {
+        "series": "2516T",
+        "provenance": {
+          "series": "2516T",
+          "inputs": [
+            {
+              "path": "backtest_data/phase2_runs/P2-03/iter1_20260906/pairs_2516T.csv",
+              "md5": "cceb2a4233d0196e7beb3f37902299d1",
+              "rows": 1008
+            },
+            {
+              "path": "backtest_data/phase2_runs/P2-03/final_20260906/pairs_2516T.csv",
+              "md5": "5f26231f623072ffa3756099717f027b",
+              "rows": 1101
+            }
+          ],
+          "rows_combined": 2109,
+          "span": [
+            "2018-01-30",
+            "2026-09-03"
+          ],
+          "seam": [
+            "2022-03-03",
+            "2022-03-07"
+          ]
+        },
+        "n_main": 2084,
+        "value_col": "r_night_bps",
+        "null_p95_bps": 44.6147887965698,
+        "verdict_counts": {
+          "判定不能": 89,
+          "差なし": 1
+        }
+      },
+      {
+        "series": "1321T",
+        "provenance": {
+          "series": "1321T",
+          "inputs": [
+            {
+              "path": "backtest_data/phase2_runs/P2-03/iter1_20260906/pairs_1321T.csv",
+              "md5": "7b2de9655d71dc7a92c761966250bc12",
+              "rows": 2587
+            },
+            {
+              "path": "backtest_data/phase2_runs/P2-03/final_20260906/pairs_1321T.csv",
+              "md5": "12f5155e7e9c897e9d7d341113f50b2b",
+              "rows": 1101
+            }
+          ],
+          "rows_combined": 3688,
+          "span": [
+            "2011-09-05",
+            "2026-09-03"
+          ],
+          "seam": [
+            "2022-03-03",
+            "2022-03-07"
+          ]
+        },
+        "n_main": 3645,
+        "value_col": "r_night_bps",
+        "null_p95_bps": 25.885693120381998,
+        "verdict_counts": {
+          "判定不能": 87,
+          "差なし": 3
+        }
+      }
+    ]
+  }
+}
