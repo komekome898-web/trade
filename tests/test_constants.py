@@ -79,6 +79,72 @@ def test_key_values_match_config_products_yaml(constants):
     assert swap.value == 0.06
 
 
+def test_equity_tick_size_topix100_band_boundaries(constants):
+    """P2-07: TOPIX500構成銘柄(TOPIX100及びTOPIX Mid400構成銘柄) column,
+    mirroring the etf_tick_size_yen_by_price_band boundary checks."""
+    table = constants["jpx_cash_equity.equity_tick_size_yen_by_price_band_topix500"].value
+    assert table["up_to_1000_yen"] == 0.1
+    assert table["up_to_3000_yen"] == 0.5
+    assert table["up_to_5000_yen"] == 1
+    assert table["up_to_10000_yen"] == 1
+    assert table["up_to_30000_yen"] == 5
+    assert table["up_to_50000_yen"] == 10
+    assert table["up_to_100000_yen"] == 10
+    assert table["up_to_300000_yen"] == 50
+    assert table["up_to_500000_yen"] == 100
+    assert table["up_to_1000000_yen"] == 100
+    assert table["up_to_3000000_yen"] == 500
+    assert table["up_to_5000000_yen"] == 1000
+    assert table["up_to_10000000_yen"] == 1000
+    assert table["up_to_30000000_yen"] == 5000
+    assert table["up_to_50000000_yen"] == 10000
+    assert table["over_50000000_yen"] == 10000
+    # Boundary must be strictly below the ETF/leveraged-product column at
+    # the low end (0.1/0.5 vs 1/1) and never above the "other" column.
+    etf = constants["jpx_cash_equity.etf_tick_size_yen_by_price_band"].value
+    other = constants["jpx_cash_equity.equity_tick_size_yen_by_price_band_other"].value
+    assert table["up_to_1000_yen"] < etf["up_to_1000_yen"]
+    for key in table:
+        assert table[key] <= other[key]
+
+
+def test_equity_tick_size_other_band_boundaries(constants):
+    """P2-07: その他の銘柄 column (all domestic stocks outside TOPIX500)."""
+    table = constants["jpx_cash_equity.equity_tick_size_yen_by_price_band_other"].value
+    assert table["up_to_1000_yen"] == 1
+    assert table["up_to_3000_yen"] == 1
+    assert table["up_to_5000_yen"] == 5
+    assert table["up_to_10000_yen"] == 10
+    assert table["up_to_30000_yen"] == 10
+    assert table["up_to_50000_yen"] == 50
+    assert table["up_to_100000_yen"] == 100
+    assert table["up_to_300000_yen"] == 100
+    assert table["up_to_500000_yen"] == 500
+    assert table["up_to_1000000_yen"] == 1000
+    assert table["up_to_3000000_yen"] == 1000
+    assert table["up_to_5000000_yen"] == 5000
+    assert table["up_to_10000000_yen"] == 10000
+    assert table["up_to_30000000_yen"] == 10000
+    assert table["up_to_50000000_yen"] == 50000
+    assert table["over_50000000_yen"] == 100000
+    # "other" widens (or matches) the tick vs. TOPIX500/ETF at every band —
+    # it is never the finest-grained column.
+    topix100 = constants["jpx_cash_equity.equity_tick_size_yen_by_price_band_topix500"].value
+    for key in table:
+        assert table[key] >= topix100[key]
+
+
+def test_topix500_membership_note_present_and_not_a_membership_list(constants):
+    """The membership caveat must exist and must not silently carry a
+    per-date TOPIX100 constituent list (CLAUDE.md §5 discipline: no
+    unregistered/undocumented assumptions feeding a judgment)."""
+    note = constants["jpx_cash_equity.topix500_membership_note"]
+    assert note.value
+    assert not isinstance(note.value, (list, dict))
+    assert "TOPIX100" in note.notes
+    assert "membership" in note.notes.lower() or "構成" in note.notes
+
+
 def test_malformed_file_raises(tmp_path):
     (tmp_path / "config").mkdir()
     (tmp_path / "config" / "constants.yaml").write_text(

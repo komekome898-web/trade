@@ -254,6 +254,140 @@ jpx_cash_equity:
       Supersedes/extends etf_tick_size_yen_1000_3000_band above (kept
       unchanged) with every remaining band.
 
+  equity_tick_size_yen_by_price_band_topix500:
+    value:
+      up_to_1000_yen: 0.1
+      up_to_3000_yen: 0.5
+      up_to_5000_yen: 1
+      up_to_10000_yen: 1
+      up_to_30000_yen: 5
+      up_to_50000_yen: 10
+      up_to_100000_yen: 10
+      up_to_300000_yen: 50
+      up_to_500000_yen: 100
+      up_to_1000000_yen: 100
+      up_to_3000000_yen: 500
+      up_to_5000000_yen: 1000
+      up_to_10000000_yen: 1000
+      up_to_30000000_yen: 5000
+      up_to_50000000_yen: 10000
+      over_50000000_yen: 10000
+    unit: yen
+    source_type: primary_document
+    source_url: "https://www.jpx.co.jp/equities/trading/domestic/07.html"
+    verified_on: "2026-09-06"
+    notes: >-
+      JPX 呼値の単位 table (same fetch/page as etf_tick_size_yen_by_price_band
+      above; raw HTML backtest_data/audit_fetch_JPX_tick_20260906/jpx_07.html),
+      column literally headed (quoted verbatim from the fetched
+      <table class="overtable"> header row): "TOPIX500構成銘柄
+      （TOPIX100及びTOPIX Mid400構成銘柄）※". Note precisely what this means:
+      JPX does NOT publish a separate narrower tick table for TOPIX100 alone
+      — one shared band table applies to the whole TOPIX500 population, and
+      the header itself states TOPIX100 is a subset of that population
+      (together with TOPIX Mid400). This entry is registered under the
+      "_topix100" name because docs/PHASE2/P2-07/PREREG.md (individual JPX
+      stocks) only needs the tick band that applies to TOPIX100-member
+      tickers, and this is that column (see topix500_membership_note below
+      for the caveat on determining membership by date). Table rows (値段の
+      水準 -> this column; ETF column and その他の銘柄 column given
+      alongside for cross-check, quoted verbatim):
+      1,000円以下 -> 0.1円 (ETF 1円 / その他 1円);
+      3,000円以下 -> 0.5円 (ETF 1円 / その他 1円);
+      5,000円以下 -> 1円 (ETF 1円 / その他 5円);
+      10,000円以下 -> 1円 (ETF 1円 / その他 10円);
+      30,000円以下 -> 5円 (ETF 5円 / その他 10円);
+      50,000円以下 -> 10円 (ETF 10円 / その他 50円);
+      100,000円以下 -> 10円 (ETF 10円 / その他 100円);
+      300,000円以下 -> 50円 (ETF 50円 / その他 100円);
+      500,000円以下 -> 100円 (ETF 100円 / その他 500円);
+      1,000,000円以下 -> 100円 (ETF 100円 / その他 1,000円);
+      3,000,000円以下 -> 500円 (ETF 500円 / その他 1,000円);
+      5,000,000円以下 -> 1,000円 (ETF 1,000円 / その他 5,000円);
+      10,000,000円以下 -> 1,000円 (ETF 1,000円 / その他 10,000円);
+      30,000,000円以下 -> 5,000円 (ETF 5,000円 / その他 10,000円);
+      50,000,000円以下 -> 10,000円 (ETF 10,000円 / その他 50,000円);
+      50,000,000円超 -> 10,000円 (ETF 10,000円 / その他 100,000円).
+
+  equity_tick_size_yen_by_price_band_other:
+    value:
+      up_to_1000_yen: 1
+      up_to_3000_yen: 1
+      up_to_5000_yen: 5
+      up_to_10000_yen: 10
+      up_to_30000_yen: 10
+      up_to_50000_yen: 50
+      up_to_100000_yen: 100
+      up_to_300000_yen: 100
+      up_to_500000_yen: 500
+      up_to_1000000_yen: 1000
+      up_to_3000000_yen: 1000
+      up_to_5000000_yen: 5000
+      up_to_10000000_yen: 10000
+      up_to_30000000_yen: 10000
+      up_to_50000000_yen: 50000
+      over_50000000_yen: 100000
+    unit: yen
+    source_type: primary_document
+    source_url: "https://www.jpx.co.jp/equities/trading/domestic/07.html"
+    verified_on: "2026-09-06"
+    notes: >-
+      JPX 呼値の単位 table (same fetch/page as the two entries above; raw
+      HTML backtest_data/audit_fetch_JPX_tick_20260906/jpx_07.html), column
+      literally headed (quoted verbatim): "その他の銘柄" — i.e. every
+      domestic-equity listing that is NOT a TOPIX500 constituent (see
+      equity_tick_size_yen_by_price_band_topix500 above, which also covers
+      TOPIX100) and is not the ETF/ETN/leveraged-product column
+      (etf_tick_size_yen_by_price_band). Table rows (値段の水準 -> this
+      column; ETF column and TOPIX500/TOPIX100 column given alongside for
+      cross-check, quoted verbatim):
+      1,000円以下 -> 1円 (ETF 1円 / TOPIX500列 0.1円);
+      3,000円以下 -> 1円 (ETF 1円 / TOPIX500列 0.5円);
+      5,000円以下 -> 5円 (ETF 1円 / TOPIX500列 1円);
+      10,000円以下 -> 10円 (ETF 1円 / TOPIX500列 1円);
+      30,000円以下 -> 10円 (ETF 5円 / TOPIX500列 5円);
+      50,000円以下 -> 50円 (ETF 10円 / TOPIX500列 10円);
+      100,000円以下 -> 100円 (ETF 10円 / TOPIX500列 10円);
+      300,000円以下 -> 100円 (ETF 50円 / TOPIX500列 50円);
+      500,000円以下 -> 500円 (ETF 100円 / TOPIX500列 100円);
+      1,000,000円以下 -> 1,000円 (ETF 100円 / TOPIX500列 100円);
+      3,000,000円以下 -> 1,000円 (ETF 500円 / TOPIX500列 500円);
+      5,000,000円以下 -> 5,000円 (ETF 1,000円 / TOPIX500列 1,000円);
+      10,000,000円以下 -> 10,000円 (ETF 1,000円 / TOPIX500列 1,000円);
+      30,000,000円以下 -> 10,000円 (ETF 5,000円 / TOPIX500列 5,000円);
+      50,000,000円以下 -> 50,000円 (ETF 10,000円 / TOPIX500列 10,000円);
+      50,000,000円超 -> 100,000円 (ETF 10,000円 / TOPIX500列 10,000円).
+
+  topix500_membership_note:
+    value: "topix500_membership_list_not_registered"
+    unit: text_flag
+    source_type: assumed
+    notes: >-
+      TOPIX100 (and the wider TOPIX500 population that
+      equity_tick_size_yen_by_price_band_topix500 above is keyed to) is
+      reviewed and re-composed periodically by JPX/TSE — which tickers are
+      members changes at each periodic review/rebalance, so "is ticker X a
+      TOPIX100 constituent on date D" is a point-in-time fact, not a
+      constant. This repo does NOT register a per-date TOPIX100 (or
+      TOPIX500) membership list anywhere in config/constants.yaml or
+      elsewhere — doing so would require an external, periodically
+      refreshed, dated constituent feed that does not exist in this repo
+      as of 2026-09-06 (docs/PHASE2/P2-07/PREREG.md flags the same gap:
+      "個別株の呼値表は未登録 → 一次資料...で登録してから凍結"). Consequently
+      any code or research unit (e.g. P2-07, or any individual-JPX-stock
+      backtest) that chooses between
+      equity_tick_size_yen_by_price_band_topix500 and
+      equity_tick_size_yen_by_price_band_other for a given ticker MUST
+      state, at the call site / pre-registration, (a) which column it
+      applies to that ticker and on what basis, and (b) the point-in-time
+      membership source used to justify that choice (a separately obtained,
+      dated constituent list) — this constants file supplies only the
+      yen-per-band tick sizes for each column, never membership.
+      source_type=assumed because this entry documents a data-governance
+      decision/caveat, not a value read off a primary document; there is no
+      "unsourced constant" risk here since no numeric value from this entry
+      is used in any cost/judgment computation.
+
   etf_spread_bps:
     value: null
     unit: bps
