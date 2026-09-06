@@ -1,0 +1,1 @@
+{"code":400,"reason":"Bad Request","errors":[{"path":"period","errorCode":"enum.openapi.validation","message":"instance.period is not one of enum values: m,h,d","location":"query"}]}
