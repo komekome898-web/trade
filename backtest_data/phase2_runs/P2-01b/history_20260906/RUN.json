@@ -1,0 +1,149 @@
+{
+  "unit": "P2-01b",
+  "seal_applies": false,
+  "seal_note": "P2-01's own final evaluation already opened the full 2007-2026 window; this run reads DAY_FILE/NIGHT_FILE with plain pandas.read_csv, bot.research.sealed is not imported.",
+  "run_date": "2026-09-06",
+  "seed": 20260906,
+  "git_rev": "713cd550b5e3c14dbfcff35c44c4897a79a464e2",
+  "script": "scripts/phase2/p2_01b_history.py",
+  "script_md5": "155e0064858e46c704e969fd55a5611a",
+  "inputs": [
+    {
+      "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz",
+      "md5": "0f179b365417d4e307e53672e8cb3237"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz",
+      "md5": "aed073cf99e230db81bf3b4714fddf10"
+    }
+  ],
+  "roll_rule": "quarterly",
+  "analysis_start": "2007-09-19",
+  "sealed_boundary_used_for_decomposition_only": [
+    "2020-12-21",
+    "2026-08-28"
+  ],
+  "regime_dates": [
+    "2011-02-14",
+    "2016-07-19",
+    "2021-09-21",
+    "2024-11-05"
+  ],
+  "edge_trend_params": {
+    "window": 250,
+    "block": 20,
+    "time_unit": "year",
+    "time_axis": "calendar",
+    "period": "year",
+    "n_boot": 2000,
+    "seed": 20260906
+  },
+  "n_pairs_full_history_main_set": 4449,
+  "decomposition": [
+    {
+      "period": "開発セット 2007-09-19..2020-12-20",
+      "n": 3078,
+      "gross_bps": 4.295851803265485,
+      "mean_cost_bps": 8.882863688168367,
+      "net_bps": -4.587011884902883,
+      "ref_gross_bps": 4.3,
+      "ref_mean_cost_bps": 8.89,
+      "ref_net_bps": -4.59,
+      "matches_reference_within_0.01": true
+    },
+    {
+      "period": "封印期間 2020-12-21..2026-08-28",
+      "n": 1370,
+      "gross_bps": 6.057332633512386,
+      "mean_cost_bps": 3.5687163649827283,
+      "net_bps": 2.488616268529659,
+      "ref_gross_bps": 6.06,
+      "ref_mean_cost_bps": 3.57,
+      "ref_net_bps": 2.49,
+      "matches_reference_within_0.01": true
+    }
+  ],
+  "edge_trend_summary": [
+    {
+      "leg": "gross",
+      "n": 4449,
+      "slope": 0.3915015469998107,
+      "slope_unit": "bps/year",
+      "slope_ci_lo": -0.16305169581588522,
+      "slope_ci_hi": 0.9136379333157459,
+      "slope_se": 0.2825344515835032,
+      "slope_mde": 0.7915443433015998,
+      "last_window_mean": 19.6550317731608,
+      "last_window_ci_lo": 8.697254332825432,
+      "last_window_ci_hi": 30.69622805992115,
+      "half_first_mean": 4.505639976538578,
+      "half_second_mean": 5.165462839990173,
+      "half_diff": 0.6598228634515948,
+      "half_diff_ci_lo": -5.330962682837334,
+      "half_diff_ci_hi": 6.4846516039151,
+      "judgment": "判定不能(標本不足)"
+    },
+    {
+      "leg": "cost",
+      "n": 4449,
+      "slope": -0.5892742836262155,
+      "slope_unit": "bps/year",
+      "slope_ci_lo": -0.6277979344970667,
+      "slope_ci_hi": -0.549828104108756,
+      "slope_se": 0.02005462768836086,
+      "slope_mde": 0.056184748496238064,
+      "last_window_mean": 2.2177224481726725,
+      "last_window_ci_lo": 2.051602861139564,
+      "last_window_ci_hi": 2.3773659614461327,
+      "half_first_mean": 10.13665986777608,
+      "half_second_mean": 4.355607532372189,
+      "half_diff": -5.781052335403891,
+      "half_diff_ci_lo": -6.359924415989355,
+      "half_diff_ci_hi": -5.221435835374886,
+      "judgment": "縮小"
+    },
+    {
+      "leg": "net",
+      "n": 4449,
+      "slope": 0.9807758306260268,
+      "slope_unit": "bps/year",
+      "slope_ci_lo": 0.432616266420057,
+      "slope_ci_hi": 1.504215092339131,
+      "slope_se": 0.28191833922203535,
+      "slope_mde": 0.7898182520167147,
+      "last_window_mean": 17.437309324988128,
+      "last_window_ci_lo": 6.563360220653065,
+      "last_window_ci_hi": 28.462718981702434,
+      "half_first_mean": -5.631019891237503,
+      "half_second_mean": 0.8098553076179833,
+      "half_diff": 6.440875198855486,
+      "half_diff_ci_lo": 0.5043935535132563,
+      "half_diff_ci_hi": 12.418432873238341,
+      "judgment": "拡大"
+    }
+  ],
+  "h1_identity_check": {
+    "n_pairs_checked": 4678,
+    "formula": "cost_bps_cons(t) * close_t(t) * MULTIPLIER(10) / 1e4",
+    "expected_yen": 122,
+    "max_abs_error_yen": 2.842170943040401e-14,
+    "all_pairs_match": true
+  },
+  "outputs": [
+    "RESULTS.md",
+    "decomposition_dev_vs_sealed.csv",
+    "edge_trend_period_cost.csv",
+    "edge_trend_period_gross.csv",
+    "edge_trend_period_net.csv",
+    "edge_trend_regime_cost.csv",
+    "edge_trend_regime_gross.csv",
+    "edge_trend_regime_net.csv",
+    "edge_trend_rolling_cost.csv",
+    "edge_trend_rolling_gross.csv",
+    "edge_trend_rolling_net.csv",
+    "edge_trend_summary.csv",
+    "h1_identity_check.csv",
+    "leg_decomposition_by_regime.csv",
+    "pairs_full_history.csv"
+  ]
+}

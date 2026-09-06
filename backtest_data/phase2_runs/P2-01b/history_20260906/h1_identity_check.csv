@@ -1,0 +1,2 @@
+n_pairs_checked,formula,expected_yen,max_abs_error_yen,all_pairs_match
+4678,cost_bps_cons(t) * close_t(t) * MULTIPLIER(10) / 1e4,122,2.842170943040401e-14,True

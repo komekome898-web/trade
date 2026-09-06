@@ -10,15 +10,22 @@ import pandas as pd
 import pytest
 
 from bot.research.overnight import (
+    EDGE_TREND_SLOPE_MDE_Z,
+    STATE_DIFF_MDE_Z,
+    STATE_VERDICT_CANDIDATE,
+    STATE_VERDICT_NO_DIFF,
+    STATE_VERDICT_UNDECIDABLE,
     GLITCH_ABS_LOG_RET_DEFAULT,
     JPX_T2_CUTOVER_DEFAULT,
     block_bootstrap_ci,
     count_glitches,
     drop_glitches,
+    edge_trend,
     ex_dates_from_record_dates,
     mean_t,
     overnight_returns,
     sign_shuffle_null,
+    state_split,
 )
 
 # Synthetic Mon-Fri (no holidays) trading calendar, wide enough to cover all
@@ -323,3 +330,429 @@ def test_sign_shuffle_null_deterministic_with_seed():
 def test_sign_shuffle_null_empty_input():
     out = sign_shuffle_null(np.array([]), n=10, seed=1)
     assert out.shape == (0,)
+
+
+# ------------------------------------------------------------------ edge_trend
+#
+# All the edge_trend tests here use a reduced n_boot (100 instead of the
+# pre-registered 2,000) purely to keep the test suite fast -- window=250 and
+# block=20 stay at the PHASE2_TEMPLATES.md §5.8 pre-registered values, and a
+# smaller n_boot only widens the bootstrap CIs slightly, it does not bias
+# them, so effects several times past the MDE (as planted below) still
+# recover cleanly. Each planted scenario is computed ONCE per test module
+# (module-scoped fixtures) and shared across the assertions that need it, so
+# the 15-year/n_boot=100 cost (a few seconds each) is not paid repeatedly.
+
+_EDGE_TREND_N_BOOT_TEST = 100
+_EDGE_TREND_YEARS = 15
+_EDGE_TREND_N = _EDGE_TREND_YEARS * 250  # ~15 years of "daily" observations
+_EDGE_TREND_SIGMA_BPS = 110.0
+
+
+def _planted_series(slope_bps_per_year: float, seed: int):
+    """`_EDGE_TREND_N` bdate-spaced observations = slope_bps_per_year * t_years
+    + N(0, sigma=110bps) noise, t_years counted in units of 250 obs/year (the
+    PREREG's own day-count convention, §5.4's line: "sigma ~= 110bps の日次で
+    15 年")."""
+    dates = pd.bdate_range("2011-01-03", periods=_EDGE_TREND_N)
+    t_years = np.arange(_EDGE_TREND_N) / 250.0
+    rng = np.random.default_rng(seed)
+    x = slope_bps_per_year * t_years + rng.normal(0.0, _EDGE_TREND_SIGMA_BPS, _EDGE_TREND_N)
+    return dates, x
+
+
+def _run_edge_trend(dates, x, **overrides):
+    kwargs = dict(window=250, block=20, time_unit="year", time_axis="calendar",
+                  period="year", n_boot=_EDGE_TREND_N_BOOT_TEST, seed=20260906)
+    kwargs.update(overrides)
+    return edge_trend(dates, x, **kwargs)
+
+
+@pytest.fixture(scope="module")
+def positive_series():
+    return _planted_series(2.0, seed=101)
+
+
+@pytest.fixture(scope="module")
+def zero_series():
+    return _planted_series(0.0, seed=202)
+
+
+@pytest.fixture(scope="module")
+def negative_series():
+    return _planted_series(-2.0, seed=303)
+
+
+@pytest.fixture(scope="module")
+def positive_result(positive_series):
+    dates, x = positive_series
+    return _run_edge_trend(dates, x)
+
+
+@pytest.fixture(scope="module")
+def zero_result(zero_series):
+    dates, x = zero_series
+    return _run_edge_trend(dates, x)
+
+
+@pytest.fixture(scope="module")
+def negative_result(negative_series):
+    dates, x = negative_series
+    return _run_edge_trend(dates, x)
+
+
+@pytest.fixture(scope="module")
+def positive_result_month(positive_series):
+    dates, x = positive_series
+    return _run_edge_trend(dates, x, time_unit="month")
+
+
+@pytest.fixture(scope="module")
+def positive_result_index(positive_series):
+    dates, x = positive_series
+    return _run_edge_trend(dates, x, time_unit="sample", time_axis="index", period=None)
+
+
+def test_edge_trend_planted_positive_slope_judges_expansion(positive_result):
+    res = positive_result
+    assert res["judgment"] == "拡大"
+    lo, hi = res["slope_ci"]
+    assert lo < hi
+    assert lo <= 2.0 <= hi           # planted slope recovered inside the CI
+    assert lo > 0                    # CI excludes zero and is positive
+    assert res["slope_unit"] == "bps/year"
+    assert res["slope_mde"] == pytest.approx(EDGE_TREND_SLOPE_MDE_Z * res["slope_se"], rel=1e-9)
+    assert res["slope_mde"] == pytest.approx(2.8016 * res["slope_se"], rel=1e-4)
+    assert res["last_window"] is not None
+    assert res["last_window"]["ci_lo"] > 0
+
+
+def test_edge_trend_zero_slope_judges_indeterminate(zero_result):
+    res = zero_result
+    assert res["judgment"] == "判定不能(標本不足)"
+    lo, hi = res["slope_ci"]
+    assert lo <= 0.0 <= hi            # CI contains zero, as planted
+    assert res["judgment"] != "安定"  # PREREG: never re-read 判定不能 as 安定
+
+
+def test_edge_trend_planted_negative_slope_judges_shrinkage(negative_result):
+    res = negative_result
+    assert res["judgment"] == "縮小"
+    lo, hi = res["slope_ci"]
+    assert lo < hi
+    assert lo <= -2.0 <= hi           # planted slope recovered inside the CI
+    assert hi < 0                     # CI excludes zero and is negative
+
+
+def test_edge_trend_month_slope_times_12_approximately_matches_year_slope(
+    positive_result, positive_result_month,
+):
+    res_year, res_month = positive_result, positive_result_month
+    assert res_year["slope_unit"] == "bps/year"
+    assert res_month["slope_unit"] == "bps/month"
+    # both fit the SAME (t, x) relationship rescaled linearly in time, so the
+    # two slopes agree to float precision, not just approximately
+    assert res_month["slope"] * 12 == pytest.approx(res_year["slope"], rel=1e-9)
+
+
+def test_edge_trend_index_axis_requires_sample_unit_and_runs(
+    positive_result, positive_result_index,
+):
+    res_year, res = positive_result, positive_result_index
+    assert res["slope_unit"] == "bps/sample"
+    assert res["period_table"] is None
+    # `dates` is a real business-day calendar (~261.9 sessions/year), while
+    # the series was planted on a synthetic 250-obs/year grid, so the
+    # calendar-year slope and 250*sample-slope agree only approximately
+    # (both estimate the same planted +2bps/year trend, from two different
+    # time axes over the same observations) -- exact equality is not
+    # expected and would indicate the two time axes were accidentally
+    # collapsed into the same one.
+    assert res["slope"] * 250.0 == pytest.approx(res_year["slope"], rel=0.1)
+    assert res["slope"] > 0  # same sign as the planted positive trend
+
+
+def test_edge_trend_time_axis_calendar_rejects_sample_unit(zero_series):
+    dates, x = zero_series
+    with pytest.raises(ValueError):
+        _run_edge_trend(dates, x, time_unit="sample", time_axis="calendar")
+
+
+def test_edge_trend_time_axis_index_rejects_non_sample_unit(zero_series):
+    dates, x = zero_series
+    with pytest.raises(ValueError):
+        _run_edge_trend(dates, x, time_axis="index")  # time_unit stays "year"
+
+
+def test_edge_trend_invalid_period_raises(zero_series):
+    dates, x = zero_series
+    with pytest.raises(ValueError):
+        _run_edge_trend(dates, x, period="quarter")
+
+
+def test_edge_trend_mismatched_lengths_raises(zero_series):
+    dates, x = zero_series
+    with pytest.raises(ValueError):
+        _run_edge_trend(dates[:-1], x)
+
+
+def test_edge_trend_deterministic_with_seed(positive_series):
+    dates, x = positive_series
+    r1 = _run_edge_trend(dates, x, seed=7)
+    r2 = _run_edge_trend(dates, x, seed=7)
+    assert r1["slope"] == r2["slope"]
+    assert r1["slope_ci"] == r2["slope_ci"]
+    pd.testing.assert_frame_equal(r1["rolling"], r2["rolling"])
+    pd.testing.assert_frame_equal(r1["period_table"], r2["period_table"])
+
+
+def test_edge_trend_period_table_year_buckets_and_counts(zero_result, zero_series):
+    res, (_, x) = zero_result, zero_series
+    pt = res["period_table"]
+    assert list(pt.columns) == ["period", "n", "mean", "ci_lo", "ci_hi"]
+    assert pt["n"].sum() == len(x)
+    assert list(pt["period"]) == sorted(pt["period"])  # chronological order
+
+
+def test_edge_trend_regime_table_partitions_the_full_span(zero_series):
+    dates, x = zero_series
+    boundary = dates[len(dates) // 2]
+    res = _run_edge_trend(dates, x, regime_dates=[boundary])
+    rt = res["regime_table"]
+    assert len(rt) == 2
+    assert rt["n"].sum() == len(x)
+
+
+def test_edge_trend_half_split_matches_manual_split(positive_result, positive_series):
+    res, (_, x) = positive_result, positive_series
+    mid = len(x) // 2
+    hs = res["half_split"]
+    assert hs["n_first"] == mid
+    assert hs["n_second"] == len(x) - mid
+    assert hs["mean_first"] == pytest.approx(x[:mid].mean())
+    assert hs["mean_second"] == pytest.approx(x[mid:].mean())
+    assert hs["diff"] == pytest.approx(hs["mean_second"] - hs["mean_first"])
+    lo, hi = hs["diff_ci"]
+    assert lo < hi
+    # second half is drawn from a higher-mean segment of the planted trend
+    assert lo > 0
+
+
+# ------------------------------------------------------------- state_split
+#
+# PHASE2_TEMPLATES.md §6 ("条件分析"). The two headline tests are known-answer
+# tapes: a tape with a planted +30bps offset on ONE state of ONE variable at
+# sigma 110 must flag exactly that variable's pairs as 候補, and the same tape
+# without the offset must flag nothing.
+
+_STATE_SIGMA_BPS = 110.0
+_STATE_PLANTED_OFFSET_BPS = 30.0
+_STATE_TAPE_N = 3000
+_STATE_TAPE_SEED = 20260906
+_STATE_RUN_SEED = 20260906
+
+
+def _state_tape(planted: bool, n: int = _STATE_TAPE_N, seed: int = _STATE_TAPE_SEED):
+    """Synthetic tape: 3 pre-registered-shaped state variables over N(0, 110).
+
+    Labels are shuffled (not laid down in contiguous runs) so each state is
+    spread across the whole tape; `planted` adds +30bps to the "3_高" level of
+    "vol" and to nothing else.
+    """
+    rng = np.random.default_rng(seed)
+    x = rng.normal(0.0, _STATE_SIGMA_BPS, n)
+    vol = np.array(["1_低", "2_中", "3_高"] * (n // 3))
+    rng.shuffle(vol)
+    weekday = np.array(["1_月", "2_火", "3_水", "4_木", "5_金"] * (n // 5))
+    rng.shuffle(weekday)
+    sign = np.where(rng.random(n) < 0.5, "1_上昇", "2_非上昇")
+    if planted:
+        x = x + np.where(vol == "3_高", _STATE_PLANTED_OFFSET_BPS, 0.0)
+    return x, {"vol": vol, "weekday": weekday, "sign": sign}
+
+
+def _run_state_split(x, states, **overrides):
+    kwargs = {"block": 20, "n_boot": 2000, "seed": _STATE_RUN_SEED}
+    kwargs.update(overrides)
+    return state_split(x, states, **kwargs)
+
+
+@pytest.fixture(scope="module")
+def planted_state_result():
+    x, states = _state_tape(planted=True)
+    return _run_state_split(x, states, cost_bps=np.full(len(x), 5.0)), (x, states)
+
+
+@pytest.fixture(scope="module")
+def null_state_result():
+    x, states = _state_tape(planted=False)
+    return _run_state_split(x, states), (x, states)
+
+
+def test_state_split_planted_offset_is_the_only_candidate(planted_state_result):
+    res, _ = planted_state_result
+    cand = res["diff_table"][res["diff_table"]["verdict"] == STATE_VERDICT_CANDIDATE]
+    # exactly the two pairs that straddle the planted state, and nothing else
+    assert set(zip(cand["variable"], cand["state_a"], cand["state_b"])) == {
+        ("vol", "1_低", "3_高"), ("vol", "2_中", "3_高"),
+    }
+    for row in cand.itertuples():
+        # the planted state is the higher one, so a - b is negative
+        assert row.diff < 0
+        assert abs(row.diff) > res["null_p95"]
+        assert row.ci_hi < 0  # CI excludes zero
+        assert row.mde < abs(row.diff)  # and the difference is visible at this n
+
+
+def test_state_split_planted_offset_recovered_in_the_state_means(planted_state_result):
+    res, (x, states) = planted_state_result
+    st = res["state_table"].set_index(["variable", "state"])
+    high = st.loc[("vol", "3_高"), "mean"]
+    others = [st.loc[("vol", lab), "mean"] for lab in ("1_低", "2_中")]
+    # planted 30bps recovered to within a fraction of the per-state SE
+    # (sigma 110 / sqrt(1000) ~= 3.5bps)
+    for other in others:
+        assert high - other == pytest.approx(_STATE_PLANTED_OFFSET_BPS, abs=12.0)
+
+
+def test_state_split_no_effect_tape_has_no_candidate(null_state_result):
+    res, _ = null_state_result
+    assert (res["diff_table"]["verdict"] != STATE_VERDICT_CANDIDATE).all()
+    assert res["null_p95"] > 0
+
+
+def test_state_split_diff_table_shape_and_arithmetic(null_state_result):
+    res, (x, states) = null_state_result
+    dt = res["diff_table"]
+    assert list(dt.columns) == [
+        "variable", "state_a", "state_b", "n_a", "n_b", "mean_a", "mean_b",
+        "diff", "ci_lo", "ci_hi", "se", "mde", "null_p95", "verdict"]
+    # 3 vol pairs + 10 weekday pairs + 1 sign pair
+    assert len(dt) == 3 + 10 + 1 == res["params"]["n_comparisons"]
+    assert (dt["null_p95"] == res["null_p95"]).all()
+    for row in dt.itertuples():
+        assert row.diff == pytest.approx(row.mean_a - row.mean_b)
+        assert row.mde == pytest.approx(STATE_DIFF_MDE_Z * row.se)
+        assert row.ci_lo <= row.ci_hi
+
+
+def test_state_split_state_table_counts_and_means_match_the_input(null_state_result):
+    res, (x, states) = null_state_result
+    st = res["state_table"]
+    assert list(st.columns) == ["variable", "state", "n", "mean", "ci_lo", "ci_hi"]
+    for var, labels in states.items():
+        rows = st[st["variable"] == var]
+        assert rows["n"].sum() == len(x)  # no missing labels on this tape
+        for row in rows.itertuples():
+            seg = x[np.asarray(labels) == row.state]
+            assert row.n == len(seg)
+            assert row.mean == pytest.approx(seg.mean())
+            assert row.ci_lo < row.mean < row.ci_hi
+
+
+def test_state_split_cost_columns_only_when_cost_given(planted_state_result,
+                                                       null_state_result):
+    with_cost, (x, _) = planted_state_result
+    without_cost, _ = null_state_result
+    assert "net_mean" not in without_cost["state_table"].columns
+    assert without_cost["params"]["has_cost"] is False
+    st = with_cost["state_table"]
+    assert with_cost["params"]["has_cost"] is True
+    assert st["cost_mean"].to_numpy() == pytest.approx(5.0)
+    # net = gross - cost exactly; its CI is a separate bootstrap draw of the
+    # shifted series, so it brackets the net mean and has a comparable width
+    # rather than being the gross CI shifted by exactly 5.0.
+    assert st["net_mean"].to_numpy() == pytest.approx(st["mean"].to_numpy() - 5.0)
+    assert (st["net_ci_lo"] < st["net_mean"]).all()
+    assert (st["net_mean"] < st["net_ci_hi"]).all()
+    assert (st["net_ci_hi"] - st["net_ci_lo"]).to_numpy() == pytest.approx(
+        (st["ci_hi"] - st["ci_lo"]).to_numpy(), rel=0.2)
+
+
+def test_state_split_verdicts_are_the_three_fixed_labels(planted_state_result):
+    res, _ = planted_state_result
+    allowed = {STATE_VERDICT_CANDIDATE, STATE_VERDICT_UNDECIDABLE,
+               STATE_VERDICT_NO_DIFF}
+    assert set(res["diff_table"]["verdict"]) <= allowed
+    # the lookup dict agrees with the table row for row
+    for row in res["diff_table"].itertuples():
+        assert res["verdict"][(row.variable, row.state_a, row.state_b)] == row.verdict
+
+
+def test_state_split_undecidable_when_n_is_far_too_small():
+    # 60 observations at sigma 110 cannot see a 30bps difference: MDE >> |diff|
+    rng = np.random.default_rng(3)
+    x = rng.normal(0.0, _STATE_SIGMA_BPS, 60)
+    labels = np.array(["1_a", "2_b"] * 30)
+    x = x + np.where(labels == "2_b", _STATE_PLANTED_OFFSET_BPS, 0.0)
+    res = _run_state_split(x, {"v": labels}, n_boot=500)
+    row = res["diff_table"].iloc[0]
+    assert row["mde"] > abs(row["diff"])
+    assert row["verdict"] == STATE_VERDICT_UNDECIDABLE
+
+
+def test_state_split_no_diff_verdict_when_visible_but_under_the_null():
+    # A tiny-sigma tape with a planted 4bps step: n is large enough that the
+    # MDE is under 4bps (so the difference IS visible), but the joint null of
+    # the largest difference across 12 monthly levels sits above it.
+    n = 3600
+    rng = np.random.default_rng(11)
+    x = rng.normal(0.0, 10.0, n)
+    two = np.array(["1_a", "2_b"] * (n // 2))
+    month = np.array([f"{m:02d}" for m in range(1, 13)] * (n // 12))
+    rng.shuffle(month)
+    x = x + np.where(two == "2_b", 4.0, 0.0)
+    res = _run_state_split(x, {"two": two, "month": month})
+    row = res["diff_table"].iloc[0]
+    assert row["variable"] == "two"
+    assert row["mde"] < abs(row["diff"])
+    assert abs(row["diff"]) < res["null_p95"]
+    assert row["verdict"] == STATE_VERDICT_NO_DIFF
+
+
+def test_state_split_missing_labels_drop_only_that_variable():
+    n = 400
+    rng = np.random.default_rng(5)
+    x = rng.normal(0.0, 50.0, n)
+    partial = np.array([None] * 100 + ["1_a", "2_b"] * 150, dtype=object)
+    full = np.array(["1_x", "2_y"] * 200)
+    res = _run_state_split(x, {"partial": partial, "full": full}, n_boot=200)
+    st = res["state_table"]
+    assert st[st["variable"] == "partial"]["n"].sum() == 300
+    assert st[st["variable"] == "full"]["n"].sum() == 400
+
+
+def test_state_split_deterministic_with_seed(null_state_result):
+    res, (x, states) = null_state_result
+    again = _run_state_split(x, states)
+    pd.testing.assert_frame_equal(res["state_table"], again["state_table"])
+    pd.testing.assert_frame_equal(res["diff_table"], again["diff_table"])
+    assert res["null_p95"] == again["null_p95"]
+
+
+def test_state_split_single_level_variable_makes_no_comparison():
+    x = np.arange(100, dtype=float)
+    res = _run_state_split(x, {"only": np.array(["1_a"] * 100)}, n_boot=200)
+    assert len(res["diff_table"]) == 0
+    assert math.isnan(res["null_p95"])
+    assert len(res["state_table"]) == 1
+
+
+def test_state_split_rejects_length_mismatch_and_empty_input():
+    x = np.zeros(10)
+    with pytest.raises(ValueError, match="same length"):
+        _run_state_split(x, {"v": np.array(["a"] * 9)})
+    with pytest.raises(ValueError, match="same length"):
+        _run_state_split(x, {"v": np.array(["a"] * 10)}, cost_bps=np.zeros(9))
+    with pytest.raises(ValueError, match="must not be empty"):
+        _run_state_split(np.array([]), {"v": np.array([])})
+    with pytest.raises(ValueError, match="must not be empty"):
+        _run_state_split(x, {})
+
+
+def test_state_split_null_p95_is_the_95th_percentile_of_the_maxima(null_state_result):
+    res, _ = null_state_result
+    maxima = res["null_max_abs_diff"]
+    assert len(maxima) == 2000
+    assert (maxima >= 0).all()
+    assert res["null_p95"] == pytest.approx(float(np.percentile(maxima, 95)))
