@@ -1,0 +1,54 @@
+{
+  "unit": "P2-04",
+  "created_utc": "2026-09-06T03:32:54.341149+00:00",
+  "forward_start": "2026-09-06T00:00:00+00:00",
+  "files": [
+    {
+      "path": "backtest_data/n225f_225labo_20260828/full_day_daily.csv.gz",
+      "md5": "7d97017afaff9f35bd5ca6c9c7193b94",
+      "time_column": "date",
+      "first_ts": "1990-01-04T00:00:00+00:00",
+      "last_ts": "2026-08-27T00:00:00+00:00",
+      "seal_from_ts": "2015-08-29T00:00:00+00:00",
+      "seal_from_ts_per_file": "2015-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz",
+      "md5": "0f179b365417d4e307e53672e8cb3237",
+      "time_column": "date",
+      "first_ts": "1990-01-04T00:00:00+00:00",
+      "last_ts": "2026-08-27T00:00:00+00:00",
+      "seal_from_ts": "2015-08-29T00:00:00+00:00",
+      "seal_from_ts_per_file": "2015-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz",
+      "md5": "aed073cf99e230db81bf3b4714fddf10",
+      "time_column": "date",
+      "first_ts": "2007-09-19T00:00:00+00:00",
+      "last_ts": "2026-08-28T00:00:00+00:00",
+      "seal_from_ts": "2015-08-29T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1321.T.csv",
+      "md5": "4c8963bb707afcb616914adf0307dad8",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2015-08-29T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1306.T.csv",
+      "md5": "49c51d3c08759234930ccf49fc543d0d",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2015-08-29T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    }
+  ],
+  "rule": "everything with ts >= forward_start is sealed | unit-wide boundary: seal_from_ts of primary series full_day_daily.csv.gz (2015-08-29T00:00:00+00:00) applied to every file",
+  "primary_series": "full_day_daily.csv.gz"
+}
