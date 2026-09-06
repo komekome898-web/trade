@@ -81,14 +81,19 @@ def floor_window(ts_ms: int) -> int:
     return (ts_ms // WINDOW_MS) * WINDOW_MS
 
 
-def fetch_page(session: requests.Session, before_ms: int, timeout: float = 20.0):
-    params = {"symbol": "FX_BTC_JPY", "period": "m", "before": before_ms}
+def fetch_page(session: requests.Session, before_ms: int, symbol: str, timeout: float = 20.0):
+    params = {"symbol": symbol, "period": "m", "before": before_ms}
     resp = session.get(BASE_URL, params=params, timeout=timeout, allow_redirects=True)
     return resp
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--symbol", default="FX_BTC_JPY",
+                     help="lightchart symbol, e.g. FX_BTC_JPY (default, CFD) or BTC_JPY (spot). "
+                          "Same endpoint/pagination behaviour observed for BTC_JPY in the "
+                          "P2-08 blindspot audit (2026-09-06): 301-redirects the same way, "
+                          "unauthenticated, no separate probing done here beyond that.")
     ap.add_argument("--out", default="backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_run",
                      help="output directory (raw/ subdir + manifest live here)")
     ap.add_argument("--before", default=None,
@@ -164,7 +169,7 @@ def main() -> int:
                 pass  # corrupt cache file, refetch
 
         try:
-            resp = fetch_page(session, window_end)
+            resp = fetch_page(session, window_end, args.symbol)
         except requests.RequestException as exc:
             consecutive_errors += 1
             print(f"ERROR fetching before={window_end}: {exc}", file=sys.stderr)

@@ -2,7 +2,7 @@
   "dataset": "bitflyer_lightchart_1m",
   "description": "1-minute OHLC(+volume/OI-like fields) for bitFlyer FX_BTC_JPY pulled from bitFlyer's own public chart backend (lightchart.bitflyer.com), NOT an officially documented API. Built 2026-09-06 as part of the multi-year-history source survey (docs/PHASE2/BITFLYER_HISTORY_SOURCES.md). This is the only source found so far that reaches back years instead of the ~31-day public-trade-history window used for backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz.",
   "path_glob": [
-    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_*/candles_1m.csv.gz"
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_*/candles_1m_*.csv.gz"
   ],
   "source": {
     "url": "https://lightchart.bitflyer.com/api/ohlc?symbol=FX_BTC_JPY&period=m&before=<epoch_ms>",
@@ -28,6 +28,7 @@
     "as_of_this_build": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/ now holds the FULL history walk (7,871 raw 12h pages, stopped on the empty terminal page): 5,662,046 rows, 2015-11-28 04:54 UTC .. 2026-09-06 00:00 UTC. See that directory's README.md for the per-year gap table and full overlap comparison."
   },
   "known_defects": [
+    "File layout changed 2026-09-06 (lead pass, after the full-history rebuild below): the single candles_1m.csv.gz (212MB) was split into one candles_1m_YYYY.csv.gz per calendar year (see candles_1m_index.json for row counts/first/last/md5 per year) and the 7,871 raw pages were packed into one raw_YYYY.tar per year, to keep every tracked file under GitHub's 100MB limit. path_glob above matches the new candles_1m_YYYY.csv.gz files; content/columns/row counts are unchanged, only the packaging.",
     "Not an officially documented bitFlyer API -- it is the backend the public web chart calls. Could change or be rate-limited/blocked without notice; no SLA.",
     "col7/col8 semantics are an unverified guess (see column notes above) -- do not use them for anything load-bearing without independent confirmation.",
     "SCHEMA BUG FIXED 2026-09-06: this file previously documented the timestamp column as `ts_ms` (raw epoch milliseconds); the actual CSV column emitted by scripts/build_bitflyer_lightchart_csv.py is `ts` (an ISO-8601 string). scripts/data_quality.py's missing_columns check caught the mismatch (declared_but_absent: ts_ms, undocumented_in_schema: ts) on the 2026-09-06 full-history build. Corrected above; no data file needed to change.",

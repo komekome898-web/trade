@@ -18,7 +18,7 @@
     "backtest_data/binance_BTCUSDT_1m.csv",
     "backtest_data/binance_BTCUSDT_1m_210d_*.csv.gz",
     "backtest_data/binance_BTCUSDT_1m_20240101_20260831/binance_BTCUSDT_1m_20240101_20260831.csv.gz",
-    "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_20170801_20231231.csv.gz",
+    "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_*.csv.gz",
     "backtest_data/binance_XRPUSDT_1d.csv",
     "backtest_data/binance_XRPUSDT_1m.csv",
     "backtest_data/binance_XRPUSDT_4h.csv",
@@ -104,7 +104,7 @@
       "quality": {"unique_key": ["open_time"]},
       "_notes": "backtest_data/binance_BTCUSDT_1m_20240101_20260831/ -- Binance Vision monthly (+ daily fallback for 2026-08, whose monthly archive wasn't published yet) klines, 2024-01-01..2026-08-31, built 2026-09-06 for phase-2 G2. Same column set as binance_BTCUSDT_1m_210d_*.csv.gz. See that directory's README.md."
     },
-    "binance_BTCUSDT_1m_20170801_20231231.csv.gz": {
+    "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_*.csv.gz": {
       "columns": {
         "open_time": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
         "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
@@ -117,7 +117,7 @@
         "taker_buy_base": {"meaning": "taker-buy base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
       },
       "quality": {"unique_key": ["open_time"]},
-      "_notes": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/ -- Binance Vision monthly klines, 2017-08-17 (BTCUSDT launch month; 2017-07 archive does not exist) .. 2023-12-31, built 2026-09-06 for phase-2 G2 via the new scripts/fetch_binance_vision.py (generalized from the manual curl build of the 2024 snapshot above). Same column set."
+      "_notes": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/ -- Binance Vision monthly klines, 2017-08-17 (BTCUSDT launch month; 2017-07 archive does not exist) .. 2023-12-31, built 2026-09-06 for phase-2 G2 via the new scripts/fetch_binance_vision.py (generalized from the manual curl build of the 2024 snapshot above). Same column set. Split into one file per year (binance_BTCUSDT_1m_2017.csv.gz .. _2023.csv.gz, see binance_1m_index.json) 2026-09-06 to stay under GitHub's 100MB limit -- key is directory-qualified (see _file_group_prefix_match) so it doesn't also swallow the sibling 20240101_20260831 dir's single-file build."
     },
     "binance_BTCUSDT_1s_*.csv": {
       "columns": {
