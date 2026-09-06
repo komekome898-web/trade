@@ -51,3 +51,10 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 
 - 実測に基づく簡潔な英語メッセージ(何を測り、何が変わったか)
 - モデル名(Claude / Opus 等)をコードにもコミットメッセージにも書かない
+
+## 7. オーナー報告の記録義務(インシデント I-001 の再発防止)
+
+- オーナーが状態・決定・完了を伝えたら、**その回のうちに** `docs/OWNER_LOG.md` に追記し `docs/OWNER_STATUS.md` を更新してコミットする。他の作業より先。
+- オーナーに手順を指示する前に **必ず** `docs/OWNER_STATUS.md` を読む。指示は `docs/OWNER_PROCEDURES.md` の手順番号で出し、時刻は日本時間 hh:mm と曜日を明記する。
+- 呼び出し: `/owner-procedure <P番号>`(`.claude/skills/owner-procedure`)。
+- 文脈の要約(コンパクション)で会話が失われても、この 3 ファイルが真実。会話だけに残した指示は「無かったこと」とみなす。
