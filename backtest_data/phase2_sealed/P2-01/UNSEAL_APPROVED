@@ -1,0 +1,8 @@
+unit: P2-01
+approved_by: owner (komekome3ai@gmail.com)
+approved_at_utc: 2026-09-06
+owner_message_1: "私の提案: 行う。ただし先に P2-01 だけ開け、上位層の監査まで通してから P2-02 / P2-03 を開ける。この提案を採用します。しかし費用の計算が反復毎に揺れているのが気になります。データ選択と計算が正しいか再度確認した上で進めてください。"
+owner_message_2: "わかりました。進めてください。"  (after docs/PHASE2/G1_COST_VERIFICATION.md verdict: cost inputs and arithmetic correct)
+final_configuration: PREREG frozen 2026-09-06; roll-adjacent rule = quarterly (iteration 1); cumulative N = 2
+scope: P2-01 only. P2-02 and P2-03 remain sealed until P2-01's upper-tier audit is complete and the owner approves them separately.
+file_created_by: lead, transcribing the owner's chat approval (this file is never created by code)
