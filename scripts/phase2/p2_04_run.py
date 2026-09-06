@@ -420,6 +420,37 @@ def conditional_indicator(net_cons_arr, gross_arr, mask, seed: int = SEED) -> di
             "sd_bps": sd, "mde_bps": mde}
 
 
+SIGN_LABELS = ("1_非正", "2_正")
+
+
+def label_sign(prev_r) -> np.ndarray:
+    """PREREG「直前日リターンの符号」の 2 値ラベル. '2_正' if the prior pair's
+    OWN return is strictly positive, else '1_非正' (zero counts as
+    non-positive, matching iteration 0's own `state_prev_sign` convention).
+    NaN (no prior pair — the series' first row) -> ''.
+    """
+    r = np.asarray(prev_r, dtype=float)
+    out = np.full(r.shape, "", dtype=object)
+    fin = np.isfinite(r)
+    out[fin & (r > 0)] = SIGN_LABELS[1]
+    out[fin & (r <= 0)] = SIGN_LABELS[0]
+    return out
+
+
+def prior_day_sign(gross_bps_in_time_order) -> np.ndarray:
+    """Attaches to row i the sign label of row i−1's OWN close→close return —
+    i.e. the return already realised by the time row i's pair enters (both
+    events happen at the same instant, close(t−1)): no look-ahead. Row 0 (no
+    prior pair) gets ''. Must be called on a frame in full calendar time
+    order, BEFORE any rule/eval mask is applied, so "the prior pair" always
+    means the truly calendar-adjacent one — exactly how iteration 0's own
+    `state_prev_sign` (§6) was built.
+    """
+    r = np.asarray(gross_bps_in_time_order, dtype=float)
+    prev = np.concatenate([[np.nan], r[:-1]])
+    return label_sign(prev)
+
+
 def years_span(dates) -> float:
     d = pd.to_datetime(pd.Series(list(dates)))
     if not len(d):
@@ -1963,14 +1994,331 @@ def _results_md_iter1(ds, ind_df, summary_df, null_summary, best_df,
     return "\n".join(md) + "\n"
 
 
+# =============================================================================
+# ITERATION 2 (PREREG「条件分析と反復の梯子」反復 2): each of the 9 unconditional
+# rules × the PRIOR-DAY return sign (2 levels; NOT nested with the iteration 1
+# vol tercile — applied to the unconditional rule independently) = 18 added
+# configurations, cumulative N = 9 + 27 + 18 = 54.
+#
+# Reuses `_load_and_build_dataset_iter1()` (same pairs/p1321, same vol tercile
+# column) and only adds the sign state on top, so iteration 1's own output is
+# untouched and the N=54 null can combine all three iterations' masks.
+# =============================================================================
+
+ITER2_OUT_DIR = REPO_ROOT / "backtest_data" / "phase2_runs" / "P2-04" / "iter2_20260906"
+
+
+def _load_and_build_dataset_iter2() -> dict:
+    """Iteration 1's dataset plus the prior-day sign state (§ this iteration).
+
+    The sign is built from each series' OWN full (unmasked) sequence of
+    close→close pair returns — the row immediately before row i in calendar
+    order — exactly how iteration 0's original `state_prev_sign` (§6) was
+    built, and UNLIKE iteration 1's vol tercile (which was deliberately
+    borrowed from the primary series alone, per that iteration's explicit
+    instruction). No such instruction was given for the sign state, so this
+    iteration keeps iteration 0's original per-series construction.
+    """
+    ds = _load_and_build_dataset_iter1()
+    pairs, p1321 = ds["pairs"], ds["p1321"]
+    pairs["state_sign_iter2"] = prior_day_sign(pairs["r_bps"].to_numpy(dtype=float))
+    p1321["state_sign_iter2"] = prior_day_sign(p1321["r_bps"].to_numpy(dtype=float))
+    ds["n_sign_positive_futures"] = int((pairs["state_sign_iter2"] == SIGN_LABELS[1]).sum())
+    ds["n_sign_nonpositive_futures"] = int((pairs["state_sign_iter2"] == SIGN_LABELS[0]).sum())
+    return ds
+
+
+def _masks_for_world_54(frame: pd.DataFrame, futures_keep_mask: np.ndarray | None) -> dict:
+    """All 54 cumulative configurations' (rule_mask, eval_mask) pairs on one
+    frame: 9 unconditional + 9×3 vol-tercile (iteration 1) + 9×2 sign
+    (iteration 2). Same eval-mask convention as `masks_for_world` in
+    `run_iteration1` (futures_keep_mask applies to FUTURES_RULES only; every
+    other rule, and every rule on the 1321.T frame, gets the frame's own
+    all-True mask).
+    """
+    ones = np.ones(len(frame), dtype=bool)
+    m = {}
+    for rule in RULES:
+        em = (futures_keep_mask if (futures_keep_mask is not None and rule in FUTURES_RULES)
+             else ones)
+        rm = frame[f"is_{rule}"].to_numpy(dtype=bool)
+        tm = frame["state_vol_iter1"].to_numpy()
+        sm = frame["state_sign_iter2"].to_numpy()
+        m[rule] = (rm & em, em)
+        for terc in TERCILE_LABELS:
+            m[f"{rule}×{terc}"] = (rm & (tm == terc) & em, em)
+        for sgn in SIGN_LABELS:
+            m[f"{rule}×{sgn}"] = (rm & (sm == sgn) & em, em)
+    return m
+
+
+def run_iteration2(out_dir: Path | None = None) -> int:
+    out = out_dir if out_dir is not None else ITER2_OUT_DIR
+    out.mkdir(parents=True, exist_ok=True)
+    written: list[str] = []
+
+    def write(df: pd.DataFrame, name: str):
+        df.to_csv(out / name, index=False)
+        written.append(name)
+
+    ds = _load_and_build_dataset_iter2()
+    pairs, p1321 = ds["pairs"], ds["p1321"]
+    keep_mask = ds["keep_mask"]
+
+    # ---- per (rule, sign-or-unconditional, split) indicator rows -----------
+    rows = []
+    for rule in RULES:
+        frame, emask, series = _population_for_rule(rule, pairs, p1321, keep_mask)
+        ev = frame.loc[emask].reset_index(drop=True)
+        rm = ev[f"is_{rule}"].to_numpy(dtype=bool)
+        sm = ev["state_sign_iter2"].to_numpy()
+        splitcol = ev["split"].to_numpy()
+        netcons = ev["r_net_bps_cons"].to_numpy(dtype=float)
+        gross = ev["r_bps"].to_numpy(dtype=float)
+
+        configs = [(ITER1_UNCOND_LABEL, rm)] + [
+            (sgn, rm & (sm == sgn)) for sgn in SIGN_LABELS]
+        for label, cmask in configs:
+            for split in ("train", "val"):
+                sm2 = splitcol == split
+                res = conditional_indicator(netcons[sm2], gross[sm2], cmask[sm2])
+                rows.append({"rule": rule, "series": series, "state_sign": label,
+                            "split": split, **res})
+    ind_df = pd.DataFrame(rows)
+    write(ind_df, "iter2_indicators.csv")
+
+    # ---- val improvement vs iteration 0's unconditional rule, vs MDE -------
+    val_uncond = {r["rule"]: r for r in rows
+                 if r["split"] == "val" and r["state_sign"] == ITER1_UNCOND_LABEL}
+    val_rows = [r for r in rows if r["split"] == "val" and r["state_sign"] != ITER1_UNCOND_LABEL]
+    summary_rows = []
+    for r in val_rows:
+        base = val_uncond[r["rule"]]["net_mean_cons_bps"]
+        improvement = (r["net_mean_cons_bps"] - base
+                      if np.isfinite(r["net_mean_cons_bps"]) and np.isfinite(base)
+                      else float("nan"))
+        mde = r["mde_bps"]
+        meets = bool(np.isfinite(improvement) and np.isfinite(mde) and improvement >= mde)
+        summary_rows.append({
+            "rule": r["rule"], "series": r["series"], "state_sign": r["state_sign"],
+            "n_val": r["n"], "val_net_mean_cons_bps": r["net_mean_cons_bps"],
+            "val_ci_lo": r["net_ci_lo"], "val_ci_hi": r["net_ci_hi"],
+            "iter0_unconditional_val_mean_bps": base,
+            "val_improvement_bps": improvement, "mde_bps": mde,
+            "improvement_ge_mde": meets,
+        })
+    summary_df = pd.DataFrame(summary_rows)
+    write(summary_df, "iter2_val_summary.csv")
+    any_stop_trigger = bool(summary_df["improvement_ge_mde"].any()) if len(summary_df) else False
+
+    # ---- joint permutation nulls A / B over all 54 cumulative configs ------
+    fut_masks = _masks_for_world_54(pairs, futures_keep_mask=keep_mask)
+    etf_masks = _masks_for_world_54(p1321, futures_keep_mask=None)
+    assert len(fut_masks) == 54 and len(etf_masks) == 54
+
+    draws_a, draws_b, arg_fut = joint_permutation_null(
+        pairs["r_net_bps_cons"].to_numpy(dtype=float),
+        pairs["r_bps"].to_numpy(dtype=float), fut_masks, BLOCK, N_PERM, SEED)
+    draws_a_etf, draws_b_etf, arg_etf = joint_permutation_null(
+        p1321["r_net_bps_cons"].to_numpy(dtype=float),
+        p1321["r_bps"].to_numpy(dtype=float), etf_masks, BLOCK, N_PERM, SEED + 1)
+
+    bar_a_fut = float(np.percentile(draws_a, 95))
+    bar_b_fut = float(np.percentile(draws_b, 95))
+    bar_a_etf = float(np.percentile(draws_a_etf, 95))
+    bar_b_etf = float(np.percentile(draws_b_etf, 95))
+    write(pd.DataFrame({"draw": np.arange(N_PERM),
+                        "null_A_futures": draws_a, "null_B_futures": draws_b,
+                        "null_A_1321": draws_a_etf, "null_B_1321": draws_b_etf}),
+          "iter2_joint_permutation_draws.csv")
+    null_summary = pd.DataFrame([
+        {"world": "先物(主系列、54構成の最大)", "null": "A(主指標1: 保守ネット平均)",
+         "p50": float(np.percentile(draws_a, 50)), "p95": bar_a_fut,
+         "p99": float(np.percentile(draws_a, 99)), "n_draws": N_PERM, "n_configs": 54},
+        {"world": "先物(主系列、54構成の最大)", "null": "B(主指標2: 差)",
+         "p50": float(np.percentile(draws_b, 50)), "p95": bar_b_fut,
+         "p99": float(np.percentile(draws_b, 99)), "n_draws": N_PERM, "n_configs": 54},
+        {"world": "1321.T(54構成の最大)", "null": "A(主指標1: 保守ネット平均)",
+         "p50": float(np.percentile(draws_a_etf, 50)), "p95": bar_a_etf,
+         "p99": float(np.percentile(draws_a_etf, 99)), "n_draws": N_PERM, "n_configs": 54},
+        {"world": "1321.T(54構成の最大)", "null": "B(主指標2: 差)",
+         "p50": float(np.percentile(draws_b_etf, 50)), "p95": bar_b_etf,
+         "p99": float(np.percentile(draws_b_etf, 99)), "n_draws": N_PERM, "n_configs": 54},
+    ])
+    write(null_summary, "iter2_joint_permutation_null.csv")
+
+    # ---- best conditional configuration per rule (val, by net mean) --------
+    best_rows = []
+    for rule in RULES:
+        cand = [r for r in summary_rows if r["rule"] == rule
+               and np.isfinite(r["val_net_mean_cons_bps"])]
+        if not cand:
+            continue
+        best = max(cand, key=lambda r: r["val_net_mean_cons_bps"])
+        best_rows.append(best)
+    best_df = pd.DataFrame(best_rows)
+    write(best_df, "iter2_best_per_rule.csv")
+
+    md = _results_md_iter2(ds, ind_df, summary_df, null_summary, best_df,
+                           bar_a_fut, bar_b_fut, bar_a_etf, bar_b_etf, any_stop_trigger)
+    (out / "RESULTS.md").write_text(md, encoding="utf-8")
+    written.append("RESULTS.md")
+
+    run = {
+        "unit": UNIT, "iteration": 2, "run_date": str(date(2026, 9, 6)), "seed": SEED,
+        "git_rev": _git_rev(),
+        "script": "scripts/phase2/p2_04_run.py",
+        "script_md5": _md5(Path(__file__)),
+        "inputs": [{"path": p, "md5": _md5(REPO_ROOT / p)} for p in ds["inputs"]],
+        "seal_record_md5": _md5(REPO_ROOT / "backtest_data" / "phase2_sealed" / UNIT
+                                / "SEALED.json"),
+        "cumulative_N": 54,
+        "n_added_this_iteration": 18,
+        "parameters": {
+            "block": BLOCK, "n_boot": N_BOOT, "n_permutation": N_PERM,
+            "train_end": str(TRAIN_END.date()),
+            "n_sign_positive_futures": ds["n_sign_positive_futures"],
+            "n_sign_nonpositive_futures": ds["n_sign_nonpositive_futures"],
+        },
+        "stopping_rule": {
+            "criterion": "val improvement vs iteration 0's unconditional rule >= per-config MDE",
+            "any_configuration_meets_it": any_stop_trigger,
+        },
+        "headline": {
+            "null_A_p95_futures": bar_a_fut, "null_B_p95_futures": bar_b_fut,
+            "null_A_p95_1321": bar_a_etf, "null_B_p95_1321": bar_b_etf,
+            "best_per_rule": best_df.to_dict("records"),
+        },
+        "outputs": sorted(written),
+    }
+    (out / "RUN.json").write_text(
+        json.dumps(_json_safe(run), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8")
+    print(json.dumps(_json_safe(run["headline"]), ensure_ascii=False, indent=2))
+    print(f"stopping rule (val improvement >= MDE, any of 18): {any_stop_trigger}")
+    print(f"wrote {len(written) + 1} files to {out}")
+    return 0
+
+
+def _results_md_iter2(ds, ind_df, summary_df, null_summary, best_df,
+                      bar_a_fut, bar_b_fut, bar_a_etf, bar_b_etf, any_stop_trigger) -> str:
+    md: list[str] = []
+    A = md.append
+    A("# P2-04 反復 2 — 直前日リターン符号による条件付け(9 規則 × 2 符号 = 18 追加、累計 N = 54)")
+    A("")
+    A(f"実行日 2026-09-06 / seed {SEED} / git {_git_rev()[:12]} / 単位 {UNIT}。"
+      "入力は全て `bot.research.sealed.load_unsealed(path, \"P2-04\")` 経由で読み込み、"
+      "封印期間には一切触れていない。開発セットのみ(train = 1990-01-04..2007-12-31、"
+      "val = 2008-01-01..2015-08-28)。反復 1(ボラ三分位)とは**独立**(入れ子にしない): "
+      "無条件の規則にだけ符号を掛け、三分位と符号を同時に掛けた構成は作らない。")
+    A("")
+    A("**本書は数値の報告のみで、採用・棄却の解釈は行わない。**")
+    A("")
+    A("## 0. 状態変数の構成(この反復固有)")
+    A("")
+    A("直前日リターンの符号は、規則を評価する**その系列自身**(先物規則は先物ペア、"
+      "SQ規則は1321.Tペア)の、暦順で 1 つ前のペアの保守前グロスリターンの符号"
+      "(反復 0 の元の `state_prev_sign` と同じ構成 — 反復 1 の vol20 のように主系列だけを"
+      "借用してはいない。符号は建玉の瞬間 close(t−1) に既に確定しているため先読みではない)。"
+      f"先物ペア全体で正 {ds['n_sign_positive_futures']:,} 件 / 非正 "
+      f"{ds['n_sign_nonpositive_futures']:,} 件。")
+    A("")
+    A("## 1. 事前登録値(この実行で固定した設計)")
+    A("")
+    A(_table([
+        {"a": "反復", "b": "2(反復 0 の無条件規則を直前日リターン符号で条件付け。反復 1 とは入れ子にしない)"},
+        {"a": "追加構成数 / 累計 N", "b": "18 / 54(9 規則 ×(無条件 1 + 三分位 3 + 符号 2)"
+         "= 54 を帰無の母数として使用)"},
+        {"a": "ブロック・ブートストラップ", "b": f"ブロック長 {BLOCK} / リサンプル {N_BOOT:,} / seed {SEED}"},
+        {"a": "同時置換の帰無 A / B(N=54)", "b": f"1 抽選 = 20 日ブロック 1 回の置換、同じ置換世界から"
+         f"累計 54 構成すべての統計量、最大値、{N_PERM:,} 抽選。系列ごとに 1 つの仮想世界"
+         "(先物・1321.T)を作る点は反復 0・1 と同じ。"},
+        {"a": "停止規則の判定式", "b": "val 改善(条件付き val 平均 − 反復0の無条件 val 平均) ≥ "
+         "その構成自身の MDE"},
+    ], [("a", "項目", -1), ("b", "値", -1)]))
+    A("")
+    A("## 2. 規則 × 状態(train / val)")
+    A("")
+    A("主指標 (1) = 条件付き日(規則 ∧ 符号)の保守コスト後平均と 95% CI。"
+      "主指標 (2) = 条件付き日の平均 − それ以外の日の平均(グロス)と 95% CI。"
+      "CI はブロック・ブートストラップ(ブロック長 20・2,000 回)、n < 20 の行は構造的に「—」。")
+    A("")
+    cols = [("rule", "規則", -1), ("series", "系列", -1), ("state_sign", "状態(直前日符号)", -1),
+            ("split", "分割", -1), ("n", "n", 0),
+            ("net_mean_cons_bps", "主指標1 保守ネット平均", 3),
+            ("net_ci_lo", "CI下限", 3), ("net_ci_hi", "CI上限", 3),
+            ("diff_gross_bps", "主指標2 差", 3), ("diff_ci_lo", "差CI下限", 3),
+            ("diff_ci_hi", "差CI上限", 3), ("mde_bps", "MDE", 2)]
+    A(_table(ind_df.to_dict("records"), cols))
+    A("")
+    A("## 3. val 改善 vs 反復 0 の無条件規則、MDE との比較(18 条件付き構成)")
+    A("")
+    A(_table(summary_df.to_dict("records"),
+             [("rule", "規則", -1), ("series", "系列", -1), ("state_sign", "状態", -1),
+              ("n_val", "val n", 0), ("val_net_mean_cons_bps", "val 主指標1", 3),
+              ("val_ci_lo", "CI下限", 3), ("val_ci_hi", "CI上限", 3),
+              ("iter0_unconditional_val_mean_bps", "反復0 無条件 val", 3),
+              ("val_improvement_bps", "val 改善", 3), ("mde_bps", "MDE", 2),
+              ("improvement_ge_mde", "改善≥MDE", -1)]))
+    A("")
+    n_meets = int(summary_df["improvement_ge_mde"].sum()) if len(summary_df) else 0
+    A(f"**停止規則チェック: 18 条件付き構成のうち改善 ≥ MDE を満たすもの = {n_meets} 件。"
+      f"いずれかが該当するか = {'はい' if any_stop_trigger else 'いいえ'}。"
+      "直近 3 反復(反復 0 は無条件なので対象外、反復 1・反復 2)の val 改善 < MDE が続けば"
+      "停止規則(標準 §6-4)に該当し得る — 反復 1 は 0/27、反復 2 は上記件数。**")
+    A("")
+    A("## 4. 規則ごとの最良条件付き構成(val 主指標1 が最大のもの)")
+    A("")
+    A(_table(best_df.to_dict("records"),
+             [("rule", "規則", -1), ("series", "系列", -1), ("state_sign", "状態", -1),
+              ("n_val", "val n", 0), ("val_net_mean_cons_bps", "val 主指標1", 3),
+              ("val_ci_lo", "CI下限", 3), ("val_ci_hi", "CI上限", 3),
+              ("val_improvement_bps", "val 改善", 3), ("mde_bps", "MDE", 2),
+              ("improvement_ge_mde", "改善≥MDE", -1)]))
+    A("")
+    A("## 5. 同時置換の帰無 A / B(N = 54、累計)")
+    A("")
+    A("1 抽選 = 日次リターン系列を 20 日ブロックで 1 回置換した「同じ仮想世界」。"
+      "その 1 つの世界から累計 54 構成(9 規則 ×(無条件 1 + 三分位 3 + 符号 2))すべての"
+      "統計量を計算し、最大値を取る。2,000 抽選。系列ごとに 1 つの仮想世界(先物・1321.T)を作り、"
+      "どちらの世界でも 54 構成すべての統計量を計算して最大を取った(反復 0・1 と同じ扱い)。")
+    A("")
+    A(_table(null_summary.to_dict("records"),
+             [("world", "仮想世界", -1), ("null", "帰無", -1), ("p50", "50 点", 3),
+              ("p95", "**95 点(バー)**", 3), ("p99", "99 点", 3),
+              ("n_draws", "抽選数", 0), ("n_configs", "構成数", 0)]))
+    A("")
+    A("## 6. 事前登録からの逸脱と解釈上の判断")
+    A("")
+    A("1. **符号の母集団は各系列自身**: 反復 1 の vol20 は「主系列から 1 本だけ作る」という"
+      "本反復固有の指示に従ったが、直前日符号にはその指示がないため、反復 0 の元の条件分析と"
+      "同じ「各系列(先物 / 1321.T)自身の直前ペア」を使った。1321.T の符号は先物の符号とは"
+      "独立の変数になり得る。")
+    A("2. **反復 1 との独立性**: 三分位と符号は同時に掛けない(9×3 + 9×2 の 2 本の枝のみ)。"
+      "PREREG の「反復 1 とは独立に、無条件の規則に符号だけを掛ける」の指示どおり。")
+    A("3. **同時置換の帰無でも状態ラベルは固定**: 反復 1 と同じ扱いで、符号ラベルも"
+      "観測データから 1 回だけ計算した固定ラベルとして置換世界全体で使い回した。")
+    A("4. それ以外の逸脱はない。ブロック長・リサンプル数・seed・train/val 分割日・費用定数は"
+      "反復 0・1 と同一。")
+    A("")
+    A("## 7. 出力ファイル")
+    A("")
+    A("`RUN.json`、`iter2_indicators.csv`(9 規則 ×(無条件+符号2)× train/val)、"
+      "`iter2_val_summary.csv`(18 条件付き構成の val 改善・MDE 判定)、`iter2_best_per_rule.csv`、"
+      "`iter2_joint_permutation_null.csv` / `iter2_joint_permutation_draws.csv`(N=54)。")
+    A("")
+    return "\n".join(md) + "\n"
+
+
 def _parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--out", type=Path, default=None)
     p.add_argument("--skip-edge-trend", action="store_true",
                    help="skip the §5 edge-trend block (slow); diagnostics only")
-    p.add_argument("--iteration", type=int, default=0, choices=(0, 1),
-                   help="0 (default, byte-identical to the original script) or "
-                        "1 (the vol-tercile conditioning ladder step)")
+    p.add_argument("--iteration", type=int, default=0, choices=(0, 1, 2),
+                   help="0 (default, byte-identical to the original script), "
+                        "1 (vol-tercile conditioning ladder step), or "
+                        "2 (prior-day-sign conditioning ladder step)")
     return p.parse_args(argv)
 
 
@@ -1978,4 +2326,6 @@ if __name__ == "__main__":
     args = _parse_args()
     if args.iteration == 0:
         raise SystemExit(main(out_dir=args.out, skip_edge_trend=args.skip_edge_trend))
-    raise SystemExit(run_iteration1(out_dir=args.out))
+    if args.iteration == 1:
+        raise SystemExit(run_iteration1(out_dir=args.out))
+    raise SystemExit(run_iteration2(out_dir=args.out))

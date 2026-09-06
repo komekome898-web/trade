@@ -37,6 +37,7 @@ from scripts.phase2.p2_04_run import (  # noqa: E402
     ITER1_OUT_DIR,
     OUT_DIR,
     RULES,
+    SIGN_LABELS,
     TERCILE_LABELS,
     build_close_pairs,
     build_rule_day_sets,
@@ -44,12 +45,15 @@ from scripts.phase2.p2_04_run import (  # noqa: E402
     diff_ci,
     etf_tick_yen,
     holiday_eves,
+    label_sign,
     label_tercile,
     major_sq_marked_days,
     main,
     mean_ci,
     primary_series_vol20,
+    prior_day_sign,
     run_iteration1,
+    run_iteration2,
     second_friday,
     shift_trading_days,
     sq_days,
@@ -564,6 +568,65 @@ def test_primary_series_vol20_uses_only_returns_realised_before_entry():
     expected = pd.Series(r[idx - 21:idx - 1]).std(ddof=1)
     assert vol_a[days[idx]] == pytest.approx(expected)
     assert np.isnan(vol_a[days[idx - 1]])                 # one day earlier: still undefined
+
+
+# ---------------------------------------------------------------------------
+# 5b. ITERATION 2 — the prior-day return sign: no look-ahead
+# ---------------------------------------------------------------------------
+
+def test_label_sign_positive_nonpositive_and_nan():
+    r = np.array([1.0, 0.0, -1.0, np.nan])
+    assert list(label_sign(r)) == [SIGN_LABELS[1], SIGN_LABELS[0], SIGN_LABELS[0], ""]
+
+
+def test_prior_day_sign_uses_the_return_ending_at_t_minus_1_not_t():
+    """Row i's label must be row i−1's OWN return's sign. Perturbing row i's
+    OWN return must NOT change row i's label (no look-ahead into the pair's
+    own outcome) but MUST change row i+1's label (whose "prior day" is row i).
+    """
+    r = np.array([10.0, -20.0, 5.0, -5.0, 30.0, -1.0, 2.0])
+    labels_a = prior_day_sign(r)
+    r2 = r.copy()
+    r2[3] = -r2[3] * 1000.0                               # flip + blow up row 3's own return
+    labels_b = prior_day_sign(r2)
+    assert labels_a[3] == labels_b[3]                     # row 3's own label: unaffected
+    assert labels_a[4] != labels_b[4]                     # row 4's label uses row 3's return
+    assert labels_a[0] == ""                              # no prior pair for the first row
+    # hand check against the definition directly
+    expected = label_sign(np.concatenate([[np.nan], r[:-1]]))
+    assert list(labels_a) == list(expected)
+
+
+def test_iteration1_output_is_still_byte_identical_after_adding_iteration2(tmp_path):
+    """Adding `run_iteration2` (which reuses iteration 1's dataset builder)
+    must not change one byte of iteration 1's own output.
+    """
+    ref_dir = ITER1_OUT_DIR
+    if not ref_dir.exists():
+        pytest.skip("no committed iteration-1 reference run in this checkout")
+    out = tmp_path / "iter1_rerun"
+    assert run_iteration1(out_dir=out) == 0
+    compared = []
+    for f in sorted(ref_dir.glob("*.csv")):
+        assert (out / f.name).read_bytes() == f.read_bytes(), (
+            f"iteration 1's {f.name} is no longer byte-identical")
+        compared.append(f.name)
+    assert len(compared) >= 4
+
+
+def test_iteration2_produces_54_cumulative_configurations(tmp_path):
+    out = tmp_path / "iter2_scratch"
+    assert run_iteration2(out_dir=out) == 0
+    ind = pd.read_csv(out / "iter2_indicators.csv")
+    # 9 rules x (1 unconditional + 2 signs) x 2 splits = 54 rows
+    assert len(ind) == len(RULES) * 3 * 2
+    summary = pd.read_csv(out / "iter2_val_summary.csv")
+    assert len(summary) == len(RULES) * 2                 # 18 conditional val rows
+    null_df = pd.read_csv(out / "iter2_joint_permutation_null.csv")
+    assert set(null_df["n_configs"]) == {54}
+    run = json.loads((out / "RUN.json").read_text(encoding="utf-8"))
+    assert run["cumulative_N"] == 54 and run["n_added_this_iteration"] == 18
+    assert "any_configuration_meets_it" in run["stopping_rule"]
 
 
 # ---------------------------------------------------------------------------
