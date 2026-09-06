@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+
+
+<html lang="en">
+<head prefix="og: http://ogp.me/ns#">
+    
+    
+
+<!-- Google Tag Manager -->
+<script>
+    (function (w, d, s, l, i) {
+        w[l] = w[l] || []; w[l].push({
+            'gtm.start':
+                new Date().getTime(), event: 'gtm.js'
+        }); var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', 'GTM-TWV92L');</script>
+<!-- End Google Tag Manager -->
+    <meta charset="utf-8" />
+    <title>Bitcoin Exchange - bitFlyer Lightning</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#1b1f27">
+    <link rel="manifest" href="/Content/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="/Content/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/Content/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/Content/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/Content/favicon-16x16.png">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans%3A300italic%2C400italic%2C600italic%2C300%2C400%2C600&#038;subset=latin%2Clatin-ext&#038;ver=4.0.1" type="text/css" media="all" />
+    <link rel="stylesheet" id="twentyfourteen-lato-css" href="//fonts.googleapis.com/css?family=Lato%3A300%2C400%2C700%2C900%2C300italic%2C400italic%2C700italic" type="text/css" media="all" />
+    <link rel="stylesheet" href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+    <link href="/Content/default?v=H5tPywoy6JIcPbv7NHVLlp6ddVMyChQtoL05ykslaYA1" rel="stylesheet"/>
+
+    <link href="/Content/css/landing?v=iLQguYUfyVEvFmw3Z2oe68eqNbI2VSK5j8g8Dd4PBzo1" rel="stylesheet"/>
+
+
+    
+    <link rel="canonical" href="https://lightning.bitflyer.com/docs" />
+    <link rel="alternate" href="https://lightning.bitflyer.com/docs" hreflang="x-default">
+    <link rel="alternate" href="https://lightning.bitflyer.com/docs?lang=ja" hreflang="ja">
+    <link rel="alternate" href="https://lightning.bitflyer.com/docs?lang=en" hreflang="en">
+    <meta name="keywords" content="ビットコイン,取引所,API,HTTP">
+    <meta name="description" content="bitFlyer Lightning is an exchange (trading platform) where users can trade bitcoins.  The exchange rates are determined based on the balance between the supply and demand. Users can sell JPY and obtain bitcoins in exchange, or they can sell bitcoins in exchange for JPY.  The practice is similar to retail foreign exchange (FX) trading." />
+    <style type="text/css">
+        .main__container table {
+            color: rgb(76, 85, 90);
+            border-collapse: collapse;
+            border-spacing: 0;
+            overflow: auto;
+        }
+
+        .main__container table td, .main__container table th {
+            padding: 6px 13px;
+            vertical-align: middle;
+            border: 1px solid rgb(223, 226, 229);
+        }
+
+        .main__container table tr {
+            border-top: 1px solid rgb(223, 226, 229);
+        }
+        .main__container table tr:nth-child(2n) {
+            background-color: rgb(251, 252, 253);
+        }
+
+        .main__container table thead th {
+            background-color: rgb(246, 248, 250);
+        }
+
+        .main__container p {
+            margin: 0.75em 0;
+        }
+    </style>
+
+    
+
+    <script type="text/javascript">
+        var appInsights = window.appInsights || function (config) {
+            function r(config) { t[config] = function () { var i = arguments; t.queue.push(function () { t[config].apply(t, i) }) } } var t = { config: config }, u = document, e = window, o = "script", s = u.createElement(o), i, f; for (s.src = config.url || "//az416426.vo.msecnd.net/scripts/a/ai.0.js", u.getElementsByTagName(o)[0].parentNode.appendChild(s), t.cookie = u.cookie, t.queue = [], i = ["Event", "Exception", "Metric", "PageView", "Trace"]; i.length;) r("track" + i.pop()); return r("setAuthenticatedUserContext"), r("clearAuthenticatedUserContext"), config.disableExceptionTracking || (i = "onerror", r("_" + i), f = e[i], e[i] = function (config, r, u, e, o) { var s = f && f(config, r, u, e, o); return s !== !0 && t["_" + i](config, r, u, e, o), s }), t
+        }({
+            instrumentationKey: "da28ea5e-a7e3-40a9-a9d3-b8c8003e0b63"
+        });
+
+        window.appInsights = appInsights;
+        appInsights.trackPageView();
+    </script>
+
+    <script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-64393818-1', 'auto');
+ga('send', 'pageview');
+</script>
+    
+    <style>
+        .bf-footnote {
+            padding: 0 15px;
+        }
+
+        .bf-footnote table {
+            width: unset;
+        }
+
+        .bf-footnote td {
+            vertical-align: top;
+        }
+
+        .bf-list {
+            list-style: none;
+        }
+
+        .bf-list > li {
+            padding-left: 10px;
+            position: relative;
+        }
+
+        .bf-list > li:not(:last-child) {
+            margin-bottom: 4px;
+        }
+
+        .bf-list > li:before {
+            content: '\26AC';
+            position: absolute;
+            top: -1px;
+            left: 0;
+        }
+
+        .bf-footnote__company {
+            margin-top: 20px;
+        }
+
+        .bf-footnote__company span {
+            display: block;
+        }
+
+        @media screen and (min-width: 768px) {
+            .bf-list .circle {
+                padding-left: 12px;
+            }
+        }
+
+        @media screen and (min-width: 1280px) {
+            .bf-footnote {
+                max-width: 960px;
+                margin: auto;
+            }
+
+            
+        }
+    </style>
+</head>
+
+<body class="lightning_landing"
+      data-contract-region="US">
+     
+
+<!-- Google Tag Manager (noscript) -->
+<noscript>
+    <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TWV92L"
+            height="0" width="0" style="display:none;visibility:hidden"></iframe>
+</noscript>
+<!-- End Google Tag Manager (noscript) -->
+    
+
+
+
+<div class="top-bar docs">
+    <div class="top-bar__ticker docs">
+        <a href="/">
+            <img src="/Content/LightningLogo.png" class="logo" alt="Lightning Bitcoin Exchange by bitFlyer">
+        </a>
+    </div>
+    <div class="top-bar__menu" style="padding-right: 120px;">
+        <ul>
+            <li><a href="">HTTP API</a></li>
+            <li><a href="https://bf-lightning-api.readme.io/docs?ljs=en">Realtime API</a></li>
+        </ul>
+    </div>
+</div>
+
+<main class="wrapper--documentation info">
+    <div class="documentation__index" id="docIndex">
+        <p><a href="#regions">Regions</a></p>
+<p><a href="#http-api">HTTP API</a></p>
+<ul>
+<li><a href="#api-limits">API Limits</a></li>
+<li><a href="#authentication">Authentication</a></li>
+<li><a href="#pagination">Pagination</a></li>
+<li>
+<p><a href="#two-factor-authentication">Two-factor Authentication</a></p>
+</li>
+<li>
+<p><a href="/docs/playground">API Playground</a></p>
+</li>
+</ul>
+<p><a href="#http-public-api">HTTP Public API</a></p>
+<ul>
+<li><a href="#market-list">Market List</a></li>
+<li><a href="#order-book">Order Book</a></li>
+<li><a href="#ticker">Ticker</a></li>
+<li><a href="#execution-history">Execution History</a></li>
+<li><a href="#orderbook-status">Orderbook Status</a></li>
+<li><a href="#exchange-status">Exchange Status</a></li>
+<li><a href="#funding-rate">Funding Rate</a></li>
+<li><a href="#funding-rate-history">Funding Rate History</a></li>
+<li><a href="#max-leverage-for-corporate-accounts">Max Leverage for Corporate Accounts</a></li>
+<li><a href="#chat">Chat</a></li>
+</ul>
+<p><a href="#http-private-api">HTTP Private API</a></p>
+<ul>
+<li>
+API
+<ul>
+<li><a href="#get-api-key-permissions">Get API Key Permissions</a></li>
+</ul>
+</li>
+<li>
+Assets
+<ul>
+<li><a href="#get-account-asset-balance">Get Account Asset Balance</a></li>
+<li><a href="#get-margin-status">Get Margin Status</a></li>
+</ul>
+</li>
+<li>
+Deposits and Withdrawals
+<ul>
+<li><a href="#get-crypto-assets-deposit-addresses">Get Crypto Assets Deposit Addresses</a></li>
+<li><a href="#get-crypto-assets-deposit-history">Get Crypto Assets Deposit History</a></li>
+<li><a href="#get-crypto-assets-transaction-history">Get Crypto Assets Transaction History</a></li>
+<li><a href="#get-summary-of-bank-accounts">Get Summary of Bank Accounts</a></li>
+<li><a href="#get-cash-deposits">Get Cash Deposits</a></li>
+<li><a href="#withdrawing-funds">Withdrawing Funds</a></li>
+<li><a href="#get-deposit-cancellation-history">Get Deposit Cancellation History</a></li>
+</ul>
+</li>
+<li>
+Trading
+<ul>
+<li><a href="#send-a-new-order">Send a New Order</a></li>
+<li><a href="#cancel-order">Cancel Order</a></li>
+<li><a href="#submit-new-parent-order-special-order">Submit New Parent Order (Special order)</a></li>
+<li><a href="#cancel-parent-order">Cancel Parent Order</a></li>
+<li><a href="#cancel-all-orders">Cancel All Orders</a></li>
+<li><a href="#list-orders">List Orders</a></li>
+<li><a href="#list-parent-orders">List Parent Orders</a></li>
+<li><a href="#get-parent-order-details">Get Parent Order Details</a></li>
+<li><a href="#list-executions">List Executions</a></li>
+<li><a href="#list-balance-history">List Balance History</a></li>
+<li><a href="#get-open-interest-summary">Get Open Interest Summary</a></li>
+<li><a href="#get-margin-change-history">Get Margin Change History</a></li>
+<li><a href="#get-trading-commission">Get Trading Commission</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+    <div class="main__container">
+        <h1 id="api-documentation">API Documentation</h1>
+<div class="notice">
+    <p>
+        Service for Lightning FX has been terminated as of Thursday, March 28th, 2024.<br />
+        Our new service, bitFlyer Crypto CFD, is available from same day.
+    </p>
+
+    <p>
+        The API of bitFlyer Crypto CFD is compatible with the API of Lightning FX, and the same API specifications as before can be used for trading.<br />
+        - In the API "Market List," the "market_type" of bitFlyer Crypto CFD is "FX", succeeding the "market_type" of Lightning FX.<br />
+        - The "product_code" for BTC-CFD/JPY used in each API will be FX_BTC_JPY, succeeding the "product_code" of FX BTC/JPY.<br />
+        - A new API "Funding Rate" is newly introduced to obtain the funding rate transfer ratio.<br />
+    </p>
+
+    <p>
+        The API specifications may be subject to change in the future to align with bitFlyer Crypto CFD.<br />
+        Any changes to the API specifications will be announced in advance.
+    </p>
+</div>
+<p>bitFlyer Lightning offers two styles of API,
+the <a href="#http-api">HTTP API</a> and <a href="https://bf-lightning-api.readme.io/docs?ljs=en">Realtime API</a>.</p>
+<h2 id="regions">Regions</h2>
+<p>API functionality may be limited by region. Specific products, such as markets, may not be available in every region. Specific order pairs may be limited to a specific region as well.</p>
+<p>Please note that samples are based on JP region.</p>
+<ul>
+<li>bitFlyer USA: BTC_USD, BTC_JPY, ETH_BTC</li>
+<li>bitFlyer Europe: BTC_EUR, BTC_JPY, ETH_BTC</li>
+</ul>
+<h2 id="http-api">HTTP API</h2>
+<p>Japan Endpoint URL: <code>https://api.bitflyer.com/v1/</code>
+U.S. Endpoint URL: <code>https://api.bitflyer.com/v1/</code>
+Europe Endpoint URL: <code>https://api.bitflyer.com/v1/</code></p>
+<p>For HTTP API, Public API does not require API Key, while Private API requires API Key authentication.</p>
+<p>You can try out our API at the <a href="/docs/playground">API Playground</a>.</p>
+<h3 id="api-limits">API Limits</h3>
+<p>Please be aware of the HTTP API usage limits described below.<br />
+When exceeding an API limit, future API requests will be blocked temporarily.<br />
+After being blocked, the maximum request limit will be temporarily be decreased.  </p>
+<table>
+<thead>
+<tr>
+	<th>Condition</th>
+	<th>Limitation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+	<td>Same IP Address</td>
+	<td>500 queries per 5 minutes</td>
+</tr>
+<tr>
+	<td>Orders with volume &lt;= 0.1</td>
+	<td>100 placements per minute**</td>
+</tr>
+<tr>
+	<td>Private APIs</td>
+	<td>500 queries per 5 minutes</td>
+</tr>
+<tr>
+	<td>Send a New Order<br /> POST /v1/me/sendchildorder<br /> Submit New Parent Order (Special order)<br /> POST /v1/me/sendparentorder<br /> Cancel All Orders<br /> POST /v1/me/cancelallchildorders</td>
+	<td>300 queries per 5 minutes</td>
+</tr>
+</tbody>
+</table>
+<p>** Exceeding this limit will enforce a temporary decreased limit of 10 times per minute for the duration of 1 hour</p>
+<p>If we determine that orders are being repeatedly placed with the intent of increasing the load on the system, we may place restrictions on the user's API usage.</p>
+<h3 id="authentication">Authentication</h3>
+<p>bitFlyer Private APIs require authentication using an API Key and API Secret. They can be obtained by generating them on the <a href="/developer">developer's page</a>.</p>
+<p>The following HTTP request headers are required to properly authenticate a request:</p>
+<ul>
+<li><code>ACCESS-KEY</code>: API key issued by the <a href="/developer">developer's page</a></li>
+<li><code>ACCESS-TIMESTAMP</code>: The request's Unix Timestamp.</li>
+<li><code>ACCESS-SIGN</code>: Signature generated for each request with the following method.</li>
+</ul>
+<p>The <code>ACCESS-SIGN</code> is the resulting HMAC-SHA256 hash of the <strong>ACCESS-TIMESTAMP</strong>, <strong>HTTP method</strong>, <strong>request path</strong>, and <strong>request body</strong> concatenated together as a character string, created using your API secret.</p>
+<pre><code>// Node.js sample
+var request = require('request');
+var crypto = require('crypto');
+
+var key = '{{ YOUR API KEY }}';
+var secret = '{{ YOUR API SECRET }}';
+
+var timestamp = Date.now().toString();
+var method = 'POST';
+var path = '/v1/me/sendchildorder';
+var body = JSON.stringify({
+    product_code: 'BTC_JPY',
+    child_order_type: 'LIMIT',
+    side: 'BUY',
+    price: 30000,
+    size: 0.1
+});
+
+var text = timestamp + method + path + body;
+var sign = crypto.createHmac('sha256', secret).update(text).digest('hex');
+
+var options = {
+    url: 'https://api.bitflyer.com' + path,
+    method: method,
+    body: body,
+    headers: {
+        'ACCESS-KEY': key,
+        'ACCESS-TIMESTAMP': timestamp,
+        'ACCESS-SIGN': sign,
+        'Content-Type': 'application/json'
+    }
+};
+request(options, function (err, response, payload) {
+    console.log(payload);
+});
+</code></pre>
+
+<h4 id="api-key-permissions">API key permissions</h4>
+<p>When you set up an API key, you can set the permissions for each key.
+In order to access a list of the permissions held by the API key, please use the <a href="#get-api-key-permissions">Get API permissions</a> API.</p>
+<p><img src="/content/docs/api-key-permissions.en.png" alt="API key permissions" /></p>
+<h3 id="pagination">Pagination</h3>
+<p>APIs that return many results can use query parameters to retrieve results within a specified range.</p>
+<ul>
+<li><code>count</code>: Specifies the number of results.  If this is omitted, the value will be <code>100</code>.</li>
+<li><code>before</code>: Obtains data having an <code>id</code> lower than the value specified for this parameter.</li>
+<li><code>after</code>: Obtains data having an <code>id</code> higher than the value specified for this parameter.</li>
+</ul>
+<h3 id="two-factor-authentication">Two-factor Authentication</h3>
+<p>Since 2FA must be enabled for withdrawals, you will also need 2FA when using bitFlyer APIs. The authentication code is entered in the request parameters. If the code parameter is not included or is incorrect, the following error response will be returned.</p>
+<p>Authenticate by including the verification code in the request as the code parameter. </p>
+<pre><code>{
+   &quot;status&quot;: -505,
+   &quot;error_message&quot;: &quot;Two-factor authentication code is incorrect.&quot;
+}
+</code></pre>
+
+<p>If you have enabled 2FA by email or SMS, a confirmation code will be sent. Please use the received confirmation code in your request.</p>
+<h2 id="http-public-api">HTTP Public API</h2>
+<h3 id="market-list">Market List</h3>
+<h4 id="request">Request</h4>
+<pre><code>GET /v1/getmarkets
+GET /v1/markets
+GET /v1/getmarkets/usa
+GET /v1/markets/usa
+GET /v1/getmarkets/eu
+GET /v1/markets/eu
+</code></pre>
+
+<h4 id="response">Response</h4>
+<pre><code>[
+  {
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;market_type&quot;: &quot;Spot&quot;
+  },
+  {
+    &quot;product_code&quot;: &quot;XRP_JPY&quot;,
+    &quot;market_type&quot;: &quot;Spot&quot;
+  },
+  {
+    &quot;product_code&quot;: &quot;ETH_JPY&quot;,
+    &quot;market_type&quot;: &quot;Spot&quot;
+  },
+  {
+    &quot;product_code&quot;: &quot;XLM_JPY&quot;,
+    &quot;market_type&quot;: &quot;Spot&quot;
+  },
+  {
+    &quot;product_code&quot;: &quot;MONA_JPY&quot;,
+    &quot;market_type&quot;: &quot;Spot&quot;
+  },
+  {
+    &quot;product_code&quot;: &quot;ETH_BTC&quot;,
+    &quot;market_type&quot;: &quot;Spot&quot;
+  },
+  {
+    &quot;product_code&quot;: &quot;BCH_BTC&quot;,
+    &quot;market_type&quot;: &quot;Spot&quot;
+  },
+  {
+    &quot;product_code&quot;: &quot;FX_BTC_JPY&quot;,
+    &quot;market_type&quot;: &quot;FX&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>market_type</code>: <code>Spot</code> or <code>FX</code></li>
+</ul>
+<h3 id="order-book">Order Book</h3>
+<h4 id="request-1">Request</h4>
+<pre><code>GET /v1/getboard
+GET /v1/board
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>. Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+</ul>
+<h4 id="response-1">Response</h4>
+<pre><code>{
+  &quot;mid_price&quot;: 33320,
+  &quot;bids&quot;: [
+    {
+      &quot;price&quot;: 30000,
+      &quot;size&quot;: 0.1
+    },
+    {
+      &quot;price&quot;: 25570,
+      &quot;size&quot;: 3
+    }
+  ],
+  &quot;asks&quot;: [
+    {
+      &quot;price&quot;: 36640,
+      &quot;size&quot;: 5
+    },
+    {
+      &quot;price&quot;: 36700,
+      &quot;size&quot;: 1.2
+    }
+  ]
+}
+</code></pre>
+
+<h3 id="ticker">Ticker</h3>
+<h4 id="request-2">Request</h4>
+<pre><code>GET /v1/getticker
+GET /v1/ticker
+</code></pre>
+
+<p>Query parameters</p>
+<p><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.  Please refer to the <a href="#regions">Regions</a> to check available products in each region.</p>
+<h4 id="response-2">Response</h4>
+<pre><code>{
+  &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+  &quot;state&quot;: &quot;RUNNING&quot;,
+  &quot;timestamp&quot;: &quot;2015-07-08T02:50:59.97&quot;,
+  &quot;tick_id&quot;: 3579,
+  &quot;best_bid&quot;: 30000,
+  &quot;best_ask&quot;: 36640,
+  &quot;best_bid_size&quot;: 0.1,
+  &quot;best_ask_size&quot;: 5,
+  &quot;total_bid_depth&quot;: 15.13,
+  &quot;total_ask_depth&quot;: 20,
+  &quot;market_bid_size&quot;: 0,
+  &quot;market_ask_size&quot;: 0,
+  &quot;ltp&quot;: 31690,
+  &quot;volume&quot;: 16819.26,
+  &quot;volume_by_product&quot;: 6819.26
+}
+</code></pre>
+
+<ul>
+<li><code>state</code>: Please refer to <a href="#orderbook-status">Orderbook status</a></li>
+<li><code>timestamp</code>: Time in UTC</li>
+<li><code>ltp</code>: Final trade price</li>
+<li><code>volume</code>: 24-hour trade volume</li>
+<li><code>market_bid_size</code>: Market sell order volume under Itayose period</li>
+<li><code>market_ask_size</code>: Market buy order volume under Itayose period</li>
+</ul>
+<h3 id="execution-history">Execution History</h3>
+<h4 id="request-3">Request</h4>
+<pre><code>GET /v1/getexecutions
+GET /v1/executions
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+ Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.
+ As of December 19, 2018, the execution history obtainable through the before parameter will be limited to the most recent 31 days.</li>
+</ul>
+<h4 id="response-3">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 39287,
+    &quot;side&quot;: &quot;BUY&quot;,
+    &quot;price&quot;: 31690,
+    &quot;size&quot;: 27.04,
+    &quot;exec_date&quot;: &quot;2015-07-08T02:43:34.823&quot;,
+    &quot;buy_child_order_acceptance_id&quot;: &quot;JRF20150707-200203-452209&quot;,
+    &quot;sell_child_order_acceptance_id&quot;: &quot;JRF20150708-024334-060234&quot;
+  },
+  {
+    &quot;id&quot;: 39286,
+    &quot;side&quot;: &quot;SELL&quot;,
+    &quot;price&quot;: 33170,
+    &quot;size&quot;: 0.36,
+    &quot;exec_date&quot;: &quot;2015-07-08T02:43:34.72&quot;,
+    &quot;buy_child_order_acceptance_id&quot;: &quot;JRF20150708-010230-400876&quot;,
+    &quot;sell_child_order_acceptance_id&quot;: &quot;JRF20150708-024334-197755&quot;
+  }
+]
+</code></pre>
+
+<h3 id="orderbook-status">Orderbook status</h3>
+<h4 id="request-4">Request</h4>
+<pre><code>GET /v1/getboardstate
+</code></pre>
+
+<p>Query parameters</p>
+<p><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+Please refer to the <a href="#regions">Regions</a> to check available products in each region.</p>
+<h4 id="response-4">Response</h4>
+<pre><code>{
+  &quot;health&quot;: &quot;NORMAL&quot;,
+  &quot;state&quot;: &quot;RUNNING&quot;,
+}
+
+{
+  &quot;health&quot;: &quot;NORMAL&quot;,
+  &quot;state&quot;: &quot;MATURED&quot;,
+  &quot;data&quot;: {
+    &quot;special_quotation&quot;: 410897
+  }
+}
+</code></pre>
+
+<ul>
+<li>
+<code>health</code>: Operational status of the exchange. Will display one of the following results.
+<ul>
+<li><code>NORMAL</code>: The exchange is operating.</li>
+<li><code>BUSY</code>: The exchange is experiencing high traffic.</li>
+<li><code>VERY BUSY</code>: The exchange is experiencing very heavy traffic.</li>
+<li><code>SUPER BUSY</code>: The exchange is experiencing extremely heavy traffic. There is a possibility that orders will fail or be processed after a delay.</li>
+<li><code>NO ORDER</code>: Orders can not be received.</li>
+<li><code>STOP</code>: The exchange has been stopped. Orders will not be accepted.</li>
+</ul>
+</li>
+<li>
+<code>state</code>: State of the order book. Displays one of the following:
+<ul>
+<li><code>RUNNING</code>: Operating</li>
+<li><code>CLOSED</code>: Suspending</li>
+<li><code>STARTING</code>: Restarting</li>
+<li><code>PREOPEN</code>: Performing Itayose</li>
+<li><code>CIRCUIT BREAK</code>: Circuit breaker triggered</li>
+</ul>
+</li>
+<li><code>data</code>: Additional information on the order book.</li>
+</ul>
+<p>*These items may change or new items may be added in the future.</p>
+<h3 id="exchange-status">Exchange status</h3>
+<p>This will allow you to determine the current status of the exchange.</p>
+<h4 id="request-5">Request</h4>
+<pre><code>GET /v1/gethealth
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+</ul>
+<h4 id="response-5">Response</h4>
+<pre><code>{
+  &quot;status&quot;: &quot;NORMAL&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>status</code>: one of the following levels will be displayed</li>
+<li><code>NORMAL</code>: The exchange is operating.</li>
+<li><code>BUSY</code>: The exchange is experiencing high traffic.</li>
+<li><code>VERY BUSY</code>: The exchange is experiencing very heavy traffic.</li>
+<li><code>SUPER BUSY</code>: The exchange is experiencing extremely heavy traffic. There is a possibility that orders will fail or be processed after a delay.</li>
+<li><code>STOP</code>: The exchange has been stopped. Orders will not be accepted.</li>
+</ul>
+<h3 id="funding-rate">Funding rate</h3>
+<p>Obtain the next scheduled funding rate transfer ratio that will be collected or granted.</p>
+<h4 id="request-6">Request</h4>
+<pre><code>GET /v1/getfundingrate
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Within the &quot;product_code&quot; that you can obtain from the <a href="#market-list">Market List</a>, specify &quot;FX&quot; as &quot;market_type&quot;. This cannot be omitted.</li>
+</ul>
+<p><code>&quot;FX&quot; will remain as &quot;market_type&quot; for the time being after the launch of bitFlyer Crypto CFD on March 28th, 2024.</code></p>
+<p><code>&quot;FX_BTC_JPY&quot; will remain as &quot;product_code&quot; for the time being after the launch of bitFlyer Crypto CFD on March 28th, 2024.</code></p>
+<h4 id="response-6">Response</h4>
+<pre><code>{
+  &quot;current_funding_rate&quot;: -0.003750000000
+  &quot;next_funding_rate_settledate&quot;: &quot;2024-04-15T13:00:00&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>current_funding_rate</code>: Funding rate transfer ratio that will be collected or granted, displayed in rate.</li>
+<li><code>next_funding_rate_settledate</code>: Timing of next funding rate collection or grant, displayed in UTC (Coordinated Universal Time).</li>
+</ul>
+<h3 id="funding-rate-history">Funding rate history</h3>
+<p>Obtain a list of past funding rate transfer ratios.</p>
+<h4 id="request-7">Request</h4>
+<pre><code>GET /v1/getfundingratehistory
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Within the &quot;product_code&quot; that you can obtain from the <a href="#market-list">Market List</a>, specify &quot;FX&quot; as &quot;market_type&quot;. This cannot be omitted.</li>
+<li><code>from</code>: Start datetime. When specified, selects the oldest <code>count</code> records on or after this datetime, then returns them in descending order. No lower bound if omitted.</li>
+<li><code>to</code>: Upper bound for <code>calculation_date</code>. No upper bound if omitted.</li>
+<li><code>count</code>: Number of results to return. Defaults to <code>100</code>. Maximum <code>500</code>. Results are always returned in descending order by <code>calculation_date</code>.</li>
+</ul>
+<h4 id="response-7">Response</h4>
+<pre><code>[
+  {
+    &quot;calculation_date&quot;: &quot;2024-04-15T05:00:00&quot;,
+    &quot;settlement_date&quot;: &quot;2024-04-15T13:00:00&quot;,
+    &quot;rate&quot;: -0.003750000000
+  },
+  {
+    &quot;calculation_date&quot;: &quot;2024-04-14T21:00:00&quot;,
+    &quot;settlement_date&quot;: &quot;2024-04-15T05:00:00&quot;,
+    &quot;rate&quot;: 0.001250000000
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>calculation_date</code>: Date and time the funding rate was calculated, displayed in UTC (Coordinated Universal Time).</li>
+<li><code>settlement_date</code>: Date and time the funding rate will be collected or granted, displayed in UTC (Coordinated Universal Time).</li>
+<li><code>rate</code>: Funding rate transfer ratio, displayed in rate.</li>
+</ul>
+<h3 id="max-leverage-for-corporate-accounts">Max leverage for corporate accounts</h3>
+<p>You can retrieve information on the max leverage for corporate accounts here. The following information is for clients with corporate accounts.</p>
+<h4 id="request-8">Request</h4>
+<pre><code>GET /v1/getcorporateleverage
+</code></pre>
+
+<h4 id="response-8">Response</h4>
+<pre><code>{
+    &quot;current_max&quot;: 7.70,
+    &quot;current_startdate&quot;: &quot;2021-04-27T15:00:00&quot;,
+    &quot;next_max&quot;: 7.65,
+    &quot;next_startdate&quot;: &quot;2021-05-04T15:00:00&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>current_max</code>: The current max leverage.</li>
+<li><code>current_startdate</code>: The effective date/time from which the current max leverage applies.</li>
+<li><code>next_max</code>: The next applicable max leverage (no value is returned if it is yet to be determined).</li>
+<li><code>next_startdate</code>: The effective date/time from which the next max leverage will apply (no value is returned if it is yet to be determined).</li>
+</ul>
+<h3 id="chat">Chat</h3>
+<p>Obtain the chat log.</p>
+<h4 id="request-9">Request</h4>
+<pre><code>GET /v1/getchats
+GET /v1/getchats/usa
+GET /v1/getchats/eu
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>from_date</code>: This accesses a list of any new messages after this date. Defaults to the previous 5 days if left blank.</li>
+</ul>
+<h4 id="response-9">Response</h4>
+<pre><code>[
+  {
+    &quot;nickname&quot;: &quot;User1234567&quot;,
+    &quot;message&quot;: &quot;Hello world!&quot;,
+    &quot;date&quot;: &quot;2016-02-16T10:58:08.833&quot;
+  },
+  {
+    &quot;nickname&quot;: &quot;TestUser&quot;,
+    &quot;message&quot;: &quot;TestHello&quot;,
+    &quot;date&quot;: &quot;2016-02-15T10:18:06.67&quot;
+  }
+]
+</code></pre>
+
+<p>Please note this request will only pull the chat logs from Japan if you use <code>/v1/getchats</code>. Use <code>/v1/getchats/usa</code> and <code>/v1/getchats/eu</code> to pull their respective regional chat logs.</p>
+<h2 id="http-private-api">HTTP Private API</h2>
+<p>Authentication is required for requests using the Private API.
+See the <a href="#authentication">Authentication</a> section.</p>
+<h3 id="get-api-key-permissions">Get API Key Permissions</h3>
+<p>Returns a list of HTTP Private APIs that can be used with the API key provided in the header of the request.</p>
+<h4 id="request-10">Request</h4>
+<pre><code>GET /v1/me/getpermissions
+</code></pre>
+
+<h4 id="response-10">Response</h4>
+<pre><code>[ &quot;/v1/me/getpermissions&quot;,
+  &quot;/v1/me/getbalance&quot;,
+  &quot;/v1/me/getcollateral&quot;,
+  &quot;/v1/me/getchildorders&quot;,
+  &quot;/v1/me/getparentorders&quot;,
+  &quot;/v1/me/getparentorder&quot;,
+  &quot;/v1/me/getexecutions&quot;,
+  &quot;/v1/me/getpositions&quot;
+]
+</code></pre>
+
+<h3 id="get-account-asset-balance">Get Account Asset Balance</h3>
+<h4 id="request-11">Request</h4>
+<pre><code>GET /v1/me/getbalance
+</code></pre>
+
+<h4 id="response-11">Response</h4>
+<pre><code>[
+  {
+    &quot;currency_code&quot;: &quot;JPY&quot;,
+    &quot;amount&quot;: 1024078,
+    &quot;available&quot;: 508000
+  },
+  {
+    &quot;currency_code&quot;: &quot;BTC&quot;,
+    &quot;amount&quot;: 10.24,
+    &quot;available&quot;: 4.12
+  },
+  {
+    &quot;currency_code&quot;: &quot;ETH&quot;,
+    &quot;amount&quot;: 20.48,
+    &quot;available&quot;: 16.38
+  }
+]
+</code></pre>
+
+<h3 id="get-margin-status">Get Margin Status</h3>
+<h4 id="request-12">Request</h4>
+<pre><code>GET /v1/me/getcollateral
+</code></pre>
+
+<h4 id="response-12">Response</h4>
+<pre><code>{
+  &quot;collateral&quot;: 100000,
+  &quot;open_position_pnl&quot;: -715,
+  &quot;require_collateral&quot;: 19857,
+  &quot;keep_rate&quot;: 5.000,
+  &quot;margin_call_amount&quot;: 1000000,
+  &quot;margin_call_due_date&quot;: &quot;2021-09-01T08:00:00&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>collateral</code>: The amount deposited in JPY.</li>
+<li><code>open_position_pnl</code>: The profit or loss from valuation.</li>
+<li><code>require_collateral</code>: The current required margin.</li>
+<li><code>keep_rate</code>: The current maintenance margin.</li>
+<li><code>margin_call_amount</code>: The margin call.</li>
+<li><code>margin_call_due_date</code>: The margin call due date.</li>
+</ul>
+<h4 id="request-13">Request</h4>
+<pre><code>GET /v1/me/getcollateralaccounts
+</code></pre>
+
+<h4 id="response-13">Response</h4>
+<pre><code>[
+  {
+    &quot;currency_code&quot;: &quot;JPY&quot;,
+    &quot;amount&quot;: 10000
+  },
+  {
+    &quot;currency_code&quot;: &quot;BTC&quot;,
+    &quot;amount&quot;: 1.23
+  }
+]
+</code></pre>
+
+<p>Obtain the details of your margin deposits for each currency.</p>
+<h3 id="get-crypto-assets-deposit-addresses">Get Crypto Assets Deposit Addresses</h3>
+<p>Get a crypto asset address for making deposits to your bitFlyer account.</p>
+<h4 id="request-14">Request</h4>
+<pre><code>GET /v1/me/getaddresses
+</code></pre>
+
+<h4 id="response-14">Response</h4>
+<pre><code>[
+  {
+    &quot;type&quot;: &quot;NORMAL&quot;,
+    &quot;currency_code&quot;: &quot;BTC&quot;,
+    &quot;address&quot;: &quot;3AYrDq8zhF82NJ2ZaLwBMPmaNziaKPaxa7&quot;
+  },
+  {
+    &quot;type&quot;: &quot;NORMAL&quot;,
+    &quot;currency_code&quot;: &quot;ETH&quot;,
+    &quot;address&quot;: &quot;0x7fbB2CC24a3C0cd3789a44e9073381Ca6470853f&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>type</code>: <code>&quot;NORMAL&quot;</code> for general deposit addresses.</li>
+<li><code>currency_code</code>: <code>&quot;BTC&quot;</code> for Bitcoin addresses and <code>&quot;ETH&quot;</code> for Ethereum addresses.</li>
+</ul>
+<h3 id="get-crypto-assets-deposit-history">Get Crypto Assets Deposit History</h3>
+<h4 id="request-15">Request</h4>
+<pre><code>GET /v1/me/getcoinins
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.</li>
+</ul>
+<h4 id="response-15">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 100,
+    &quot;order_id&quot;: &quot;CDP20151227-024141-055555&quot;,
+    &quot;currency_code&quot;: &quot;BTC&quot;,
+    &quot;amount&quot;: 0.00002,
+    &quot;address&quot;: &quot;1WriteySQufKZ2pVuM1oMhPrTtTVFq35j&quot;,
+    &quot;tx_hash&quot;: &quot;9f92ee65a176bb9545f7becb8706c50d07d4cee5ffca34d8be3ef11d411405ae&quot;,
+    &quot;status&quot;: &quot;COMPLETED&quot;,
+    &quot;event_date&quot;: &quot;2015-11-27T08:59:20.301&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>status</code>: If the Bitcoin deposit is being processed, it will be listed as <code>&quot;PENDING&quot;</code>. If the deposit has been completed, it will be listed as <code>&quot;COMPLETED&quot;</code>.</li>
+</ul>
+<h3 id="get-crypto-assets-transaction-history">Get Crypto Assets Transaction History</h3>
+<h4 id="request-16">Request</h4>
+<pre><code>GET /v1/me/getcoinouts
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.</li>
+</ul>
+<h4 id="response-16">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 500,
+    &quot;order_id&quot;: &quot;CWD20151224-014040-077777&quot;,
+    &quot;currency_code&quot;: &quot;BTC&quot;,
+    &quot;amount&quot;: 0.1234,
+    &quot;address&quot;: &quot;1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa&quot;,
+    &quot;tx_hash&quot;: &quot;724c07dfd4044abcb390b0412c3e707dd5c4f373f0a52b3bd295ce32b478c60a&quot;,
+    &quot;fee&quot;: 0.0005,
+    &quot;additional_fee&quot;: 0.0001,
+    &quot;status&quot;: &quot;COMPLETED&quot;,
+    &quot;event_date&quot;: &quot;2015-12-24T01:40:40.397&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>status</code>: If remittance is being processed, it will be listed as <code>&quot;PENDING&quot;</code>. If remittance has been completed, it will be listed as <code>&quot;COMPLETED&quot;</code>.</li>
+</ul>
+<h3 id="get-summary-of-bank-accounts">Get Summary of Bank Accounts</h3>
+<p>Returns a summary of bank accounts registered to your account.</p>
+<h4 id="request-17">Request</h4>
+<pre><code>GET /v1/me/getbankaccounts
+</code></pre>
+
+<h4 id="response-17">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 3402,
+    &quot;is_verified&quot;: true,
+    &quot;bank_name&quot;: &quot;Wells Fargo&quot;,
+    &quot;branch_name&quot;: &quot;1231234123&quot;,
+    &quot;account_type&quot;: &quot;Checking&quot;,
+    &quot;account_number&quot;: &quot;1111111&quot;,
+    &quot;account_name&quot;: &quot;Name on Account&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>id</code>: ID for the account designated for withdrawals.</li>
+<li><code>is_verified</code>: Will be return <code>true</code> if the account is verified and capable of sending money.</li>
+</ul>
+<h3 id="get-cash-deposits">Get Cash Deposits</h3>
+<h4 id="request-18">Request</h4>
+<pre><code>GET /v1/me/getdeposits
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.</li>
+</ul>
+<h4 id="response-18">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 300,
+    &quot;order_id&quot;: &quot;MDP20151014-101010-033333&quot;,
+    &quot;currency_code&quot;: &quot;JPY&quot;,
+    &quot;amount&quot;: 10000,
+    &quot;status&quot;: &quot;COMPLETED&quot;,
+    &quot;event_date&quot;: &quot;2015-10-14T10:10:10.001&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>status</code>: If the cash deposit is being processed, it will be listed as <code>&quot;PENDING&quot;</code>. If the deposit has been completed, it will be listed as <code>&quot;COMPLETED&quot;</code>.</li>
+</ul>
+<h3 id="withdrawing-funds">Withdrawing Funds</h3>
+<h4 id="request-19">Request</h4>
+<pre><code>POST /v1/me/withdraw
+</code></pre>
+
+<p>Body parameters</p>
+<pre><code>{
+  &quot;currency_code&quot;: &quot;JPY&quot;,
+  &quot;bank_account_id&quot;: 1234,
+  &quot;amount&quot;: 12000
+}
+</code></pre>
+
+<ul>
+<li><code>currency_code</code>: Required. Currently only compatible with <code>&quot;JPY&quot;</code> for Japanese accounts.</li>
+<li><code>bank_account_id</code>: Required. The id of the bank account.</li>
+<li><code>amount</code>: Required. The amount that you are canceling.</li>
+<li><code>code</code>: Two-factor authentication code. Reference the <a href="#two-factor-authentication">two-factor authentication section</a>.</li>
+</ul>
+<p>Additional fees apply for withdrawals.
+Please see the <a href="https://bitflyer.com/commission#DepositCancellation">Fees and Taxes</a> page for reference.</p>
+<h4 id="response-19">Response</h4>
+<pre><code>{
+  &quot;message_id&quot;: &quot;69476620-5056-4003-bcbe-42658a2b041b&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>message_id</code>: Transaction Message Receipt ID</li>
+</ul>
+<p><br />Error Response:</p>
+<pre><code>{
+  &quot;status&quot;: -700,
+  &quot;error_message&quot;: &quot;This account has not yet been authenticated&quot;,
+  &quot;data&quot;: null
+}
+</code></pre>
+
+<p>If an error with a negative status value is returned, the cancellation has not been committed.</p>
+<h3 id="get-deposit-cancellation-history">Get Deposit Cancellation History</h3>
+<h4 id="request-20">Request</h4>
+<pre><code>GET /v1/me/getwithdrawals
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.</li>
+<li><code>message_id</code>: Check the withdrawal status by specifying the receipt ID from the returned value from the withdrawal API.</li>
+</ul>
+<h4 id="response-20">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 700,
+    &quot;order_id&quot;: &quot;MWD20151020-090909-011111&quot;,
+    &quot;currency_code&quot;: &quot;JPY&quot;,
+    &quot;amount&quot;: 12000,
+    &quot;status&quot;: &quot;COMPLETED&quot;,
+    &quot;event_date&quot;: &quot;2015-10-20T09:09:09.416&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>status</code>: If the cancellation is being processed, it will be listed as <code>&quot;PENDING&quot;</code>. If the cancellation has been completed, it will be listed as <code>&quot;COMPLETED&quot;</code>.</li>
+</ul>
+<h3 id="send-a-new-order">Send a New Order</h3>
+<h4 id="request-21">Request</h4>
+<pre><code>POST /v1/me/sendchildorder
+</code></pre>
+
+<p>Body parameters</p>
+<pre><code>{
+  &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+  &quot;child_order_type&quot;: &quot;LIMIT&quot;,
+  &quot;side&quot;: &quot;BUY&quot;,
+  &quot;price&quot;: 30000,
+  &quot;size&quot;: 0.1,
+  &quot;minute_to_expire&quot;: 10000,
+  &quot;time_in_force&quot;: &quot;GTC&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+ Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+<li><code>child_order_type</code>: Required. For limit orders, it will be <code>&quot;LIMIT&quot;</code>. For market orders, <code>&quot;MARKET&quot;</code>.</li>
+<li><code>side</code>: Required. For buy orders, <code>&quot;BUY&quot;</code>. For sell orders, <code>&quot;SELL&quot;</code>.</li>
+<li><code>price</code>: Specify the price. This is a required value if child_order_type has been set to <code>&quot;LIMIT&quot;</code>.</li>
+<li><code>size</code>: Required. Specify the order quantity.</li>
+<li><code>minute_to_expire</code>: Specify the time in minutes until the expiration time. The maximum value is 43200 (30 days). If omitted, the value will be 43200 (30 days).</li>
+<li><code>time_in_force</code>: Specify any of the following execution conditions - <code>&quot;GTC&quot;</code>, <code>&quot;IOC&quot;</code>, or <code>&quot;FOK&quot;</code>. If omitted, the value defaults to <code>&quot;GTC&quot;</code>.</li>
+</ul>
+<h4 id="response-21">Response</h4>
+<p>If the parameters are correct, the status code will show <code>200 OK</code>.</p>
+<pre><code>{
+    &quot;child_order_acceptance_id&quot;: &quot;JRF20150707-050237-639234&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>child_order_acceptance_id</code>: This is the ID for the API. To specify the order to return, please use this instead of <code>child_order_id</code>. Please confirm the item is either <a href="#cancel-order">Cancel Order</a> or <a href="#list-executions">List Executions</a>.</li>
+</ul>
+<h3 id="cancel-order">Cancel Order</h3>
+<h4 id="request-22">Request</h4>
+<pre><code>POST /v1/me/cancelchildorder
+</code></pre>
+
+<p>Body parameters</p>
+<pre><code>{
+  &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+  &quot;child_order_id&quot;: &quot;JOR20150707-055555-022222&quot;
+}
+
+{
+  &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+  &quot;child_order_acceptance_id&quot;: &quot;JRF20150707-033333-099999&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+ Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+</ul>
+<p>Please specify either <code>child_order_id</code> or <code>child_order_acceptance_id</code></p>
+<ul>
+<li><code>child_order_id</code>: ID for the canceling order.</li>
+<li><code>child_order_acceptance_id</code>: Expects an ID from <a href="#send-a-new-order">Send a New Order</a>. When specified, the corresponding order will be cancelled.</li>
+</ul>
+<h4 id="response-22">Response</h4>
+<p>If the parameters are correct, the status code will show <code>200 OK</code>.</p>
+<h3 id="submit-new-parent-order-special-order">Submit New Parent Order (Special order)</h3>
+<p>It is possible to place orders with logic more complicated than limit orders (LIMIT) and market orders (MARKET).
+Such orders are handled as <strong>parent orders</strong>.
+By using a special order, it is possible to place orders in response to market conditions or place multiple associated orders.</p>
+<p><strong>Please read about the types of special orders and their methods in <a href="/docs/specialorder">the bitFlyer Lightning documentation on special orders</a>.</strong></p>
+<h4 id="request-23">Request</h4>
+<pre><code>POST /v1/me/sendparentorder
+</code></pre>
+
+<p>Body parameters</p>
+<pre><code>{
+  &quot;order_method&quot;: &quot;IFDOCO&quot;,
+  &quot;minute_to_expire&quot;: 10000,
+  &quot;time_in_force&quot;: &quot;GTC&quot;,
+  &quot;parameters&quot;: [{
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;condition_type&quot;: &quot;LIMIT&quot;,
+    &quot;side&quot;: &quot;BUY&quot;,
+    &quot;price&quot;: 30000,
+    &quot;size&quot;: 0.1
+  },
+  {
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;condition_type&quot;: &quot;LIMIT&quot;,
+    &quot;side&quot;: &quot;SELL&quot;,
+    &quot;price&quot;: 32000,
+    &quot;size&quot;: 0.1
+  },
+  {
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;condition_type&quot;: &quot;STOP_LIMIT&quot;,
+    &quot;side&quot;: &quot;SELL&quot;,
+    &quot;price&quot;: 28800,
+    &quot;trigger_price&quot;: 29000,
+    &quot;size&quot;: 0.1
+  }]
+}
+</code></pre>
+
+<ul>
+<li>
+<code>order_method</code>: The order method. Please set it to one of the following values. If omitted, the value defaults to <code>&quot;SIMPLE&quot;</code>.
+<ul>
+<li><code>&quot;SIMPLE&quot;</code>: A special order whereby one order is placed.</li>
+<li><code>&quot;IFD&quot;</code>: Conducts an IFD order. In this method, you place two orders at once, and when the first order is completed, the second order is automatically placed.</li>
+<li><code>&quot;OCO&quot;</code>: Conducts an OCO order. In this method, you place two orders at one, and when one of the orders is completed, the other order is automatically canceled.</li>
+<li><code>&quot;IFDOCO&quot;</code>: Conducts an IFD-OCO order. In this method, once the first order is completed, an OCO order is automatically placed.</li>
+</ul>
+</li>
+<li><code>minute_to_expire</code>: Specifies the time until the order expires in minutes. The maximum value is 43200 (30 days). If omitted, the value defaults to 43200 (30 days).</li>
+<li><code>time_in_force</code>: Specify any of the following execution conditions - <code>&quot;GTC&quot;</code>, <code>&quot;IOC&quot;</code>, or <code>&quot;FOK&quot;</code>. If omitted, the value defaults to <code>&quot;GTC&quot;</code>.</li>
+<li>
+<code>parameters</code>: Required value. This is an array that specifies the parameters of the order to be placed. The required length of the array varies depending upon the specified <code>order_method</code>.
+<ul>
+<li>If <code>&quot;SIMPLE&quot;</code> has been specified, specify one parameter.</li>
+<li>If <code>&quot;IFD&quot;</code> has been specified, specify two parameters. The first parameter is the parameter for the first order placed. The second parameter is the parameter for the order to be placed after the first order is completed.</li>
+<li>If <code>&quot;OCO&quot;</code> has been specified, specify two parameters. Two orders are placed simultaneously based on these parameters.</li>
+<li>If <code>&quot;IFDOCO&quot;</code> has been specified, specify three parameters. The first parameter is the parameter for the first order placed. After the order is complete, an OCO order is placed with the second and third parameters.</li>
+</ul>
+</li>
+</ul>
+<p>In the parameters, specify an array of objects with the following keys and values.</p>
+<ul>
+<li><code>product_code</code>: Required value. This is the product to be ordered. Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>. 
+  Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+<li>
+<code>condition_type</code>: Required value. This is the execution condition for the order. Please set it to one of the following values.
+<ul>
+<li><code>&quot;LIMIT&quot;</code>: Limit order.</li>
+<li><code>&quot;MARKET&quot;</code>: Market order.</li>
+<li><code>&quot;STOP&quot;</code>: Stop order.</li>
+<li><code>&quot;STOP_LIMIT&quot;</code>: Stop-limit order.</li>
+<li><code>&quot;TRAIL&quot;</code>: Trailing stop order.</li>
+</ul>
+</li>
+<li><code>side</code>: Required value. For buying orders, specify <code>&quot;BUY&quot;</code>, for selling orders, specify <code>&quot;SELL&quot;</code>.</li>
+<li><code>size</code>: Required value. Specify the order quantity.</li>
+<li><code>price</code>: Specify the price. This is a required value if <code>condition_type</code> has been set to <code>&quot;LIMIT&quot;</code> or <code>&quot;STOP_LIMIT&quot;</code>.</li>
+<li><code>trigger_price</code>: Specify the trigger price for a stop order. This is a required value if <code>condition_type</code> has been set to <code>&quot;STOP&quot;</code> or <code>&quot;STOP_LIMIT&quot;</code>.</li>
+<li><code>offset</code>: Specify the trail width of a trailing stop order as a positive integer. This is a required value if <code>condition_type</code> has been set to <code>&quot;TRAIL&quot;</code>.</li>
+</ul>
+<h4 id="response-23">Response</h4>
+<p>If the parameters are correct, the status code will show <code>200 OK</code>.</p>
+<pre><code>{
+  &quot;parent_order_acceptance_id&quot;: &quot;JRF20150707-050237-639234&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>parent_order_acceptance_id</code>: This is the ID for the API. To specify the order to return, please use this instead of <code>parent_order_id</code>.</li>
+</ul>
+<h3 id="cancel-parent-order">Cancel parent order</h3>
+<p>Parent orders can be canceled in the same manner as regular orders.
+<strong>If a parent order is canceled, the placed orders associated with that order will all be canceled.</strong></p>
+<h4 id="request-24">Request</h4>
+<pre><code>POST /v1/me/cancelparentorder
+</code></pre>
+
+<p>Body parameters</p>
+<pre><code>{
+  &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+  &quot;parent_order_id&quot;: &quot;JCO20150925-055555-022222&quot;
+}
+
+{
+  &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+  &quot;parent_order_acceptance_id&quot;: &quot;JRF20150925-033333-099999&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>product_code</code>: Required. The product for the corresponding order. Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+</ul>
+<p>Please specify only one between <code>parent_order_id</code> and <code>parent_order_acceptance_id</code></p>
+<ul>
+<li><code>parent_order_id</code>: ID for the canceling order.</li>
+<li><code>parent_order_acceptance_id</code>: Expects an ID from <a href="#submit-new-parent-order-special-order">Submit New Parent Order</a>. When specified, the corresponding order will be cancelled.</li>
+</ul>
+<h4 id="response-24">Response</h4>
+<p>If the parameters are correct, the status code will show <code>200 OK</code>.</p>
+<h3 id="cancel-all-orders">Cancel All Orders</h3>
+<p>Cancel all existing orders for the corresponding product.</p>
+<h4 id="request-25">Request</h4>
+<pre><code>POST /v1/me/cancelallchildorders
+</code></pre>
+
+<p>Body parameters</p>
+<pre><code>{
+  &quot;product_code&quot;: &quot;BTC_JPY&quot;
+}
+</code></pre>
+
+<ul>
+<li><code>product_code</code>: The product for the corresponding order. Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+</ul>
+<h3 id="response-25">Response</h3>
+<p>If the parameters are correct, the status code will show <code>200 OK</code>.</p>
+<h3 id="list-orders">List Orders</h3>
+<h4 id="request-26">Request</h4>
+<pre><code>GET /v1/me/getchildorders
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+  Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.  If either <code>before</code> or <code>after</code> is specified, <code>ACTIVE</code> orders will not be included in the result.</li>
+<li>
+<code>child_order_state</code>: When specified, return only orders that match the specified value.
+  If not specified, returns a concatenated list of <code>ACTIVE</code> and non-ACTIVE orders. <br />
+  You can specify one of the following:
+<ul>
+<li><code>ACTIVE</code>: Return open orders</li>
+<li><code>COMPLETED</code>: Return fully completed orders</li>
+<li><code>CANCELED</code>: Return orders that have been cancelled by the customer</li>
+<li><code>EXPIRED</code>: Return order that have been cancelled due to expiry</li>
+<li><code>REJECTED</code>: Return failed orders</li>
+</ul>
+</li>
+<li><code>child_order_id</code>, <code>child_order_acceptance_id</code>: ID for the child order.</li>
+<li><code>parent_order_id</code>: If specified, a list of all orders associated with the parent order is obtained.</li>
+</ul>
+<h4 id="response-26">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 138398,
+    &quot;child_order_id&quot;: &quot;JOR20150707-084555-022523&quot;,
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;side&quot;: &quot;BUY&quot;,
+    &quot;child_order_type&quot;: &quot;LIMIT&quot;,
+    &quot;price&quot;: 30000,
+    &quot;average_price&quot;: 30000,
+    &quot;size&quot;: 0.1,
+    &quot;child_order_state&quot;: &quot;COMPLETED&quot;,
+    &quot;expire_date&quot;: &quot;2015-07-14T07:25:52&quot;,
+    &quot;child_order_date&quot;: &quot;2015-07-07T08:45:53&quot;,
+    &quot;child_order_acceptance_id&quot;: &quot;JRF20150707-084552-031927&quot;,
+    &quot;outstanding_size&quot;: 0,
+    &quot;cancel_size&quot;: 0,
+    &quot;executed_size&quot;: 0.1,
+    &quot;total_commission&quot;: 0,
+    &quot;time_in_force&quot;: &quot;GTC&quot;
+  },
+  {
+    &quot;id&quot;: 138397,
+    &quot;child_order_id&quot;: &quot;JOR20150707-084549-022519&quot;,
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;side&quot;: &quot;SELL&quot;,
+    &quot;child_order_type&quot;: &quot;LIMIT&quot;,
+    &quot;price&quot;: 30000,
+    &quot;average_price&quot;: 0,
+    &quot;size&quot;: 0.1,
+    &quot;child_order_state&quot;: &quot;CANCELED&quot;,
+    &quot;expire_date&quot;: &quot;2015-07-14T07:25:47&quot;,
+    &quot;child_order_date&quot;: &quot;2015-07-07T08:45:47&quot;,
+    &quot;child_order_acceptance_id&quot;: &quot;JRF20150707-084547-396699&quot;,
+    &quot;outstanding_size&quot;: 0,
+    &quot;cancel_size&quot;: 0.1,
+    &quot;executed_size&quot;: 0,
+    &quot;total_commission&quot;: 0,
+    &quot;time_in_force&quot;: &quot;GTC&quot;
+  }
+]
+</code></pre>
+
+<p>Any order that has never been executed, and which is then invalidated, due to a cancellation, etc. will not be included in the list of orders.
+Although you can set <code>child_order_state</code> to <code>CANCELED</code>, <code>EXPIRED</code>, or <code>REJECTED</code>, even then, orders that have never been executed will not be included in the results.</p>
+<ul>
+<li><code>id</code>: This is the <a href="#pagination">paging ID</a>.
+ If <code>child_order_state</code> is unspecified or set to <code>ACTIVE</code>, currently the response id for all open orders is set to the fixed value of <code>0</code>.
+ (If before or after is specified, orders that have never been executed are not included in the results.)</li>
+<li><code>child_order_id</code>: This is unique ID of the order.</li>
+</ul>
+<h3 id="list-parent-orders">List Parent Orders</h3>
+<h4 id="request-27">Request</h4>
+<pre><code>GET /v1/me/getparentorders
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+ Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.</li>
+<li>
+<code>parent_order_state</code>: When specified, return only orders that match the specified value. You must specify one of the following:
+<ul>
+<li><code>ACTIVE</code>: Return open orders</li>
+<li><code>COMPLETED</code>: Return fully completed orders</li>
+<li><code>CANCELED</code>: Return orders that have been cancelled by the customer</li>
+<li><code>EXPIRED</code>: Return order that have been cancelled due to expiry</li>
+<li><code>REJECTED</code>: Return failed orders</li>
+</ul>
+</li>
+</ul>
+<h4 id="response-27">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 138398,
+    &quot;parent_order_id&quot;: &quot;JCO20150707-084555-022523&quot;,
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;side&quot;: &quot;BUY&quot;,
+    &quot;parent_order_type&quot;: &quot;STOP&quot;,
+    &quot;price&quot;: 30000,
+    &quot;average_price&quot;: 30000,
+    &quot;size&quot;: 0.1,
+    &quot;parent_order_state&quot;: &quot;COMPLETED&quot;,
+    &quot;expire_date&quot;: &quot;2015-07-14T07:25:52&quot;,
+    &quot;parent_order_date&quot;: &quot;2015-07-07T08:45:53&quot;,
+    &quot;parent_order_acceptance_id&quot;: &quot;JRF20150707-084552-031927&quot;,
+    &quot;outstanding_size&quot;: 0,
+    &quot;cancel_size&quot;: 0,
+    &quot;executed_size&quot;: 0.1,
+    &quot;total_commission&quot;: 0
+  },
+  {
+    &quot;id&quot;: 138397,
+    &quot;parent_order_id&quot;: &quot;JCO20150707-084549-022519&quot;,
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;side&quot;: &quot;SELL&quot;,
+    &quot;parent_order_type&quot;: &quot;IFD&quot;,
+    &quot;price&quot;: 30000,
+    &quot;average_price&quot;: 0,
+    &quot;size&quot;: 0.1,
+    &quot;parent_order_state&quot;: &quot;CANCELED&quot;,
+    &quot;expire_date&quot;: &quot;2015-07-14T07:25:47&quot;,
+    &quot;parent_order_date&quot;: &quot;2015-07-07T08:45:47&quot;,
+    &quot;parent_order_acceptance_id&quot;: &quot;JRF20150707-084547-396699&quot;,
+    &quot;outstanding_size&quot;: 0,
+    &quot;cancel_size&quot;: 0.1,
+    &quot;executed_size&quot;: 0,
+    &quot;total_commission&quot;: 0
+  }
+]
+</code></pre>
+
+<p><code>price</code> and <code>size</code> values for parent orders with multiple associated orders are both reference values only.</p>
+<p>To obtain the detailed parameters for individual orders, use the API to <a href="#get-parent-order-details">obtain the details of the parent order</a>.
+To obtain a list of associated orders, use the API to <a href="#list-orders">obtain the order list</a>.</p>
+<h3 id="get-parent-order-details">Get Parent Order Details</h3>
+<h4 id="request-28">Request</h4>
+<pre><code>GET /v1/me/getparentorder
+</code></pre>
+
+<p>Query parameters</p>
+<p>Please specify either <code>parent_order_id</code> or <code>parent_order_acceptance_id</code>.</p>
+<ul>
+<li><code>parent_order_id</code>: The ID of the parent order in question.</li>
+<li><code>parent_order_acceptance_id</code>: The acceptance ID for the API to <a href="#submit-new-parent-order-special-order">place a new parent order</a>. If specified, it returns the details of the parent order in question.</li>
+</ul>
+<h4 id="response-28">Response</h4>
+<pre><code>{
+  &quot;id&quot;: 4242,
+  &quot;parent_order_id&quot;: &quot;JCO20150925-046876-036161&quot;,
+  &quot;order_method&quot;: &quot;IFDOCO&quot;,
+  &quot;expire_date&quot;: 10000,
+  &quot;parameters&quot;: [{
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;condition_type&quot;: &quot;LIMIT&quot;,
+    &quot;side&quot;: &quot;BUY&quot;,
+    &quot;price&quot;: 30000,
+    &quot;size&quot;: 0.1,
+    &quot;trigger_price&quot;: 0,
+    &quot;offset&quot;: 0
+  }, {
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;condition_type&quot;: &quot;LIMIT&quot;,
+    &quot;side&quot;: &quot;SELL&quot;,
+    &quot;price&quot;: 32000,
+    &quot;size&quot;: 0.1,
+    &quot;trigger_price&quot;: 0,
+    &quot;offset&quot;: 0
+  }, {
+    &quot;product_code&quot;: &quot;BTC_JPY&quot;,
+    &quot;condition_type&quot;: &quot;STOP_LIMIT&quot;,
+    &quot;side&quot;: &quot;SELL&quot;,
+    &quot;price&quot;: 28800,
+    &quot;size&quot;: 0.1,
+    &quot;trigger_price&quot;: 29000,
+    &quot;offset&quot;: 0
+  }],
+  &quot;parent_order_acceptance_id&quot;: &quot;JRF20150925-060559-396699&quot;
+}
+</code></pre>
+
+<h3 id="list-executions">List Executions</h3>
+<h4 id="request-29">Request</h4>
+<pre><code>GET /v1/me/getexecutions
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+ Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.</li>
+<li><code>child_order_id</code>: Optional. When specified, a list of stipulations related to the order will be displayed.</li>
+<li><code>child_order_acceptance_id</code>: Optional. Expects an ID from <a href="#send-a-new-order">Send a New Order</a>. When specified, a list of stipulations related to the corresponding order will be displayed.</li>
+</ul>
+<h4 id="response-29">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 37233,
+    &quot;child_order_id&quot;: &quot;JOR20150707-060559-021935&quot;,
+    &quot;side&quot;: &quot;BUY&quot;,
+    &quot;price&quot;: 33470,
+    &quot;size&quot;: 0.01,
+    &quot;commission&quot;: 0,
+    &quot;exec_date&quot;: &quot;2015-07-07T09:57:40.397&quot;,
+    &quot;child_order_acceptance_id&quot;: &quot;JRF20150707-060559-396699&quot;
+  },
+  {
+    &quot;id&quot;: 37232,
+    &quot;child_order_id&quot;: &quot;JOR20150707-060426-021925&quot;,
+    &quot;side&quot;: &quot;BUY&quot;,
+    &quot;price&quot;: 33470,
+    &quot;size&quot;: 0.01,
+    &quot;commission&quot;: 0,
+    &quot;exec_date&quot;: &quot;2015-07-07T09:57:40.397&quot;,
+    &quot;child_order_acceptance_id&quot;: &quot;JRF20150707-060559-396699&quot;
+  }
+]
+</code></pre>
+
+<h3 id="list-balance-history">List Balance History</h3>
+<h4 id="request-30">Request</h4>
+<pre><code>GET /v1/me/getbalancehistory
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>currency_code</code>: Please specify a currency code. If omitted, the value is set to <code>JPY</code>.</li>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.</li>
+</ul>
+<h4 id="response-30">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 1000108,
+    &quot;trade_date&quot;: &quot;2016-10-19T14:44:55.28&quot;,
+    &quot;event_date&quot;: &quot;2016-10-19T05:44:55.28&quot;,
+    &quot;product_code&quot;: &quot;BTC_USD&quot;,
+    &quot;currency_code&quot;: &quot;USD&quot;,
+    &quot;trade_type&quot;: &quot;SELL&quot;,
+    &quot;price&quot;: 9999.99,
+    &quot;amount&quot;: 99.99,
+    &quot;quantity&quot;: 99.99,
+    &quot;commission&quot;: 0,
+    &quot;balance&quot;: 9999999.99,
+    &quot;order_id&quot;: &quot;JORYYYYMMDD‌-000000-000001X&quot;
+  },
+  {
+    &quot;id&quot;: 1000107,
+    &quot;trade_date&quot;: &quot;2016-10-19T14:41:35.23&quot;,
+    &quot;event_date&quot;: &quot;2016-10-19T05:41:35.23&quot;,
+    &quot;product_code&quot;: &quot;BTC_USD&quot;,
+    &quot;currency_code&quot;: &quot;USD&quot;,
+    &quot;trade_type&quot;: &quot;SELL&quot;,
+    &quot;price&quot;: 9999.99,
+    &quot;amount&quot;: 999.99,
+    &quot;quantity&quot;: 99.99,
+    &quot;commission&quot;: 0,
+    &quot;balance&quot;: 9999999.99,
+    &quot;order_id&quot;: &quot;JORYYYYMMDD‌-000000-000000X&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>event_date</code>: The transaction date in UTC.</li>
+<li><code>trade_date</code>: The transaction date in JST (UTC+9).</li>
+<li>
+<code>trade_type</code>: The type of the transaction.
+<ul>
+<li><code>BUY</code>: Purchases</li>
+<li><code>SELL</code>: Sales</li>
+<li><code>DEPOSIT</code>: Deposits of fiat or virtual currency</li>
+<li><code>WITHDRAW</code>: Withdrawals of fiat or virtual currency</li>
+<li><code>FEE</code>: Fees</li>
+<li><code>POST_COLL</code>: Margin deposits made</li>
+<li><code>CANCEL_COLL</code>: Margin withdrawals made</li>
+<li><code>PAYMENT</code>: Virtual currency transfers by means of Bitcoin Payments</li>
+<li><code>TRANSFER</code>: Other general currency transfers</li>
+</ul>
+</li>
+</ul>
+<h3 id="get-open-interest-summary">Get Open Interest Summary</h3>
+<h4 id="request-31">Request</h4>
+<pre><code>GET /v1/me/getpositions
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Currently supports bitFlyer Crypto CFD.</li>
+</ul>
+<h4 id="response-31">Response</h4>
+<pre><code>[
+  {
+    &quot;product_code&quot;: &quot;FX_BTC_JPY&quot;,
+    &quot;side&quot;: &quot;BUY&quot;,
+    &quot;price&quot;: 36000,
+    &quot;size&quot;: 10,
+    &quot;commission&quot;: 0,
+    &quot;swap_point_accumulate&quot;: -35,
+    &quot;require_collateral&quot;: 120000,
+    &quot;open_date&quot;: &quot;2015-11-03T10:04:45.011&quot;,
+    &quot;leverage&quot;: 3,
+    &quot;pnl&quot;: 965,
+    &quot;sfd&quot;: -0.5,
+    &quot;funding_fees&quot;: -120
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>product_code</code>: Product code of the position.</li>
+<li><code>side</code>: Order side (<code>BUY</code> or <code>SELL</code>).</li>
+<li><code>price</code>: Average execution price of the position.</li>
+<li><code>size</code>: Position quantity.</li>
+<li><code>commission</code>: Commission paid when the position was opened.</li>
+<li><code>swap_point_accumulate</code>: Accumulated leverage points for the position.</li>
+<li><code>require_collateral</code>: Required margin for the position.</li>
+<li><code>open_date</code>: Date and time the position was opened, displayed in UTC (Coordinated Universal Time).</li>
+<li><code>leverage</code>: Leverage applied to the position.</li>
+<li><code>pnl</code>: Unrealized profit and loss for the position.</li>
+<li><code>sfd</code>: Accumulated Lightning FX SFD (Special Fee for Deviation) charges for the position.</li>
+<li><code>funding_fees</code>: Accumulated funding rate transfer amount for the position. Negative values indicate amounts paid; positive values indicate amounts received.</li>
+</ul>
+<h3 id="get-margin-change-history">Get Margin Change History</h3>
+<h4 id="request-32">Request</h4>
+<pre><code>GET /v1/me/getcollateralhistory
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>count</code>, <code>before</code>, <code>after</code>: See <a href="#pagination">Pagination</a>.</li>
+</ul>
+<h4 id="response-32">Response</h4>
+<pre><code>[
+  {
+    &quot;id&quot;: 4995,
+    &quot;currency_code&quot;: &quot;JPY&quot;,
+    &quot;change&quot;: -6,
+    &quot;amount&quot;: -6,
+    &quot;reason_code&quot;: &quot;CLEARING_COLL&quot;,
+    &quot;date&quot;: &quot;2017-05-18T02:37:41.327&quot;
+  },
+  {
+    &quot;id&quot;: 4994,
+    &quot;currency_code&quot;: &quot;JPY&quot;,
+    &quot;change&quot;: 2083698,
+    &quot;amount&quot;: 0,
+    &quot;reason_code&quot;: &quot;EXCHANGE_COLL&quot;,
+    &quot;date&quot;: &quot;2017-04-28T03:05:07.493&quot;
+  },
+  {
+    &quot;id&quot;: 4993,
+    &quot;currency_code&quot;: &quot;BTC&quot;,
+    &quot;change&quot;: -14.69001618,
+    &quot;amount&quot;: 34.97163164,
+    &quot;reason_code&quot;: &quot;EXCHANGE_COLL&quot;,
+    &quot;date&quot;: &quot;2017-04-28T03:05:07.493&quot;
+  }
+]
+</code></pre>
+
+<ul>
+<li><code>change</code>: The amount of change to the margin deposit.</li>
+<li><code>amount</code>: The margin deposit balance after the change</li>
+</ul>
+<h3 id="get-trading-commission">Get Trading Commission</h3>
+<h4 id="request-33">Request</h4>
+<pre><code>GET /v1/me/gettradingcommission
+</code></pre>
+
+<p>Query parameters</p>
+<ul>
+<li><code>product_code</code>: Please specify a <code>product_code</code>, as obtained from the <a href="#market-list">Market List</a>.
+ Please refer to the <a href="#regions">Regions</a> to check available products in each region.</li>
+</ul>
+<h5 id="response-33">Response</h5>
+<pre><code>{
+  &quot;commission_rate&quot;: 0.001
+}
+</code></pre>
+
+
+    </div>
+</main>
+
+
+    <footer class="main-footer container" id="mainFooter">
+        <div class="footer-top clearfix">
+            <div class="container col-lg-10 col-lg-offset-1">
+                <div class="brand-container pull-left container">
+                    <div class="logo-container">
+                        <a href="https://bitflyer.com/en-us/" target="_blank" class="logo-footer">
+                            <img src="https://msm07s-cdn.bitflyer.com/pub/common/bitFlyer-logo-ball-orange.png" alt="bitFlyer">
+                        </a>
+                        <p>Connect to the World</p>
+                        <p class="muted"><small></small></p>
+                    </div>
+                    <div class="logo-wrapper">
+                        <div class="digicert-container">
+                            <!-- Begin DigiCert site seal HTML and JavaScript -->
+                            <div id="DigiCertClickID_2wQ58bQ8" data-language="en" style="display:inline-block;">
+                                <a href="http://www.digicert.com/">SSL Certificate</a>
+                            </div>
+                            <script type="text/javascript">
+                                var __dcid = __dcid || []; __dcid.push(["DigiCertClickID_2wQ58bQ8", "13", "s", "black", "2wQ58bQ8"]); (function () { var cid = document.createElement("script"); cid.async = true; cid.src = "//seal.digicert.com/seals/cascade/seal.min.js"; var s = document.getElementsByTagName("script"); var ls = s[(s.length - 1)]; ls.parentNode.insertBefore(cid, ls.nextSibling); }());
+                            </script>
+                            <!-- End DigiCert site seal HTML and JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                    <div class="footer-nav-wrapper pull-left row">
+                        <nav class="footer-nav col-md-footer clearfix">
+                            <span class="overview_title"><strong>Services</strong></span>
+                            <div class="footer-nav-container">
+                                <ul class="footer clearfix">
+                                    <li><a href="https://bitflyer.com/en-us/ex/buysell/btc" target="_blank"><span>Market</span></a></li>
+                                    <li><a href="/"><span>Pro Exchange</span></a></li>
+                                    <li><a href="https://chainflyer.bitflyer.com/Lang/en" target="_blank"><span>Blockchain Explorer</span></a></li>
+                                    <li><a href="https://bitflyer.com/blockchain-lab" target="_blank"><span>Blockchain LAB</span></a></li>
+                                    <li><a href="/docs/api"><span>API</span></a></li>
+                                </ul>
+                            </div>
+                        </nav>
+                        <nav class="footer-nav col-md-footer clearfix">
+                            <span class="overview_title"><strong>Information</strong></span>
+                            <div class="footer-nav-container">
+                                <ul class="footer clearfix">
+                                    <li><a href="https://bitflyer.com/en-us/glossary/index" target="_blank"><span>Glossary</span></a></li>
+                                    <li><a href="https://bitflyer.com/en-us/security" target="_blank"><span>Security</span></a></li>
+                                    <li><a href="https://bitflyer.com/en-us/blog/" target="_blank"><span>Blog</span></a></li>
+                                    <li><a href="https://bitflyer.jobsoid.com/"><span>Careers</span></a></li>
+                                    <li><a href="https://bitflyer.com/en-us/commission" target="_blank"><span>Fees</span></a></li>
+                                    <li><a href="https://bitflyer.com/en-us/account-class" target="_blank"><span>Account Class</span></a></li>
+                                    <li><a href="https://bitflyer.com/en-us/faq/crypto_safety" target="_blank"><span>Crypto Safety 101: Fraud</span></a></li>
+                                </ul>
+                            </div>
+                        </nav>
+                        <nav class="footer-nav col-md-footer clearfix">
+                            <span class="overview_title"><strong>Community</strong></span>
+                            <div class="footer-nav-container">
+                                <ul class="footer">
+                                    <li>
+                                        <a href="https://www.facebook.com/bitFlyerUSA" rel="nofollow noopener noreferrer" target="_blank">
+                                            <span>
+                                                <img src="/Content/landing/images/Facebook%20alt%201.png" alt="bitFlyer on Facebook" class="sns">Facebook
+                                            </span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="https://twitter.com/bitFlyerUSA" rel="nofollow noopener noreferrer" target="_blank">
+                                            <span>
+                                                <img src="/Content/landing/images/Twitter%20alt%202.png" alt="bitFlyer on X (formerly known as Twitter)" class="sns">X (formerly known as Twitter)
+                                            </span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </nav>
+                        <nav class="footer-nav col-md-footer clearfix">
+                            <span class="overview_title"><strong>Support</strong></span>
+                            <div class="footer-nav-container">
+                                <ul class="footer">
+                                    <li><a href="https://bitflyer.com/en-us/faq" target="_blank"><span>FAQ/Contact</span></a></li>
+                                </ul>
+                            </div>
+                        </nav>
+                        <nav class="footer-nav col-md-footer clearfix">
+                            <span class="overview_title"><strong>About</strong></span>
+                            <div class="footer-nav-container">
+                                <ul class="footer">
+                                    <li><a href="https://bitflyer.com/en-us/states" target="_blank"><span>States Where We Operate</span></a></li>
+                                    <li><a href="https://bitflyer.com/en-us/usepolicy" target="_blank"><span>Terms of Use</span></a></li>
+                                    <li><a href="https://bitflyer.com/en-us/privacy" target="_blank"><span>Privacy Policy</span></a></li>
+                                    <li><a href="https://bitflyer.com/en-us/risk" target="_blank"><span>Risks of Using Virtual Currency</span></a></li>
+                                </ul>
+                            </div>
+                        </nav>
+                    </div>
+            </div>
+        </div>
+        <div style="text-align:center;">
+            <aside style="font-size: 12px; color: white; line-height:1.5; padding: 50px 12px">
+                
+            </aside>
+        </div>
+
+
+        <div class="footer-bottom clearfix">
+            <nav class="language-switcher hidden-md hidden-lg">
+                <ul class="list-unstyled list-inline">
+                    <li><a href="?lang=ja" class="ja">Japanese</a></li>
+                    <li><a href="?lang=en" class="en">English</a></li>
+                </ul>
+            </nav>
+            <a id="scrollTop" href="#" class="scroll_top-btn fa fa-fw fa-lg fa-angle-up">
+                <p>Back to top</p>
+            </a>
+            <p>
+                        <small>© 2026 bitFlyer USA, Inc. All Rights Reserved</small>
+            </p>
+        </div>
+    </footer>
+    <script src="/bundles/jquery?v=LYwc5OxGSW7ZpkTf7ckY3GOdqafOvzeknRc1cFb3gaI1"></script>
+
+<script src="https://ajax.aspnetcdn.com/ajax/bootstrap/3.4.1/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+    <script>
+        (function(w,d){
+            // remove and recover ".pc_only" nodes
+            const switchFooterNav_Pc_Mobile = () => {
+                const po = d.querySelectorAll('.pc_only');
+                // reload to recover ".pc_only" nodes
+                if(po.length === 0 && w.innerWidth >= 1024) {
+                    //location.reload();
+                }
+                if(po.length === 0 || w.innerWidth >= 1024) return;
+                for(let i = po.length - 1; i >= 0; i -- ) {
+                    if(po[i].parentNode) {
+                        po[i].parentNode.removeChild(po[i]);
+                    }
+                }
+            }
+            if(d.querySelectorAll('.pc_only').length > 0){
+                switchFooterNav_Pc_Mobile();
+                w.addEventListener('resize',switchFooterNav_Pc_Mobile);
+            }
+        })(window,document);
+    </script>
+    <script>
+        const accordionElemArr = document.querySelectorAll('.js-accordion');
+
+        for (const triggerElem of accordionElemArr) {
+            triggerElem.addEventListener('click', (e) => {
+                for (const clickedElem of accordionElemArr) {
+                    if (clickedElem !== e.target.parentElement) {
+                        const accordionTitleElem = clickedElem.querySelector('.overview_title');
+                        const accordionContentElem = clickedElem.querySelector('.footer-nav-container');
+                        accordionTitleElem.classList.remove('is-active');
+                        accordionContentElem.classList.remove('is-open');
+                    }
+                }
+
+                const accordionTitleElem = triggerElem.querySelector('.overview_title');
+                const accordionContentElem = triggerElem.querySelector('.footer-nav-container');
+
+                accordionTitleElem.classList.toggle('is-active');
+                accordionContentElem.classList.toggle('is-open');
+            });
+        }
+    </script>
+    
+    <script src="/bundles/js/libraries?v=1Uq1YCUUiB3pzl2kp5YzQVTToefN5vNBOWOGl6FUJLk1"></script>
+
+    <script>
+(function () {
+    var requestAnimationFrame = window.requestAnimationFrame
+        || window.webkitRequestAnimationFrame
+        || window.msRequestAnimationFrame
+        || function (f) { setTimeout(f, 16); };
+
+    var $index = $("#docIndex");
+    var $footer = $("#mainFooter");
+    var $topBar = $(".top-bar");
+    var min = $topBar.height();
+
+    var willUpdate = false;
+    var update = function () {
+        if (willUpdate) {
+            var max = $footer.offset().top - $index[0].clientHeight;
+            var scroll = document.documentElement.scrollTop || document.body.scrollTop;
+            if (scroll < min) {
+                $index.css({
+                    position: "absolute",
+                    top: min,
+                    bottom: "auto"
+                });
+            } else if (max < scroll) {
+                $index.css({
+                    position: "absolute",
+                    top: "auto",
+                    bottom: 0
+                });
+            } else {
+                $index.css({
+                    position: "fixed",
+                    top: min,
+                    bottom: "auto"
+                });
+            }
+            willUpdate = false;
+        }
+        requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", function () { willUpdate = true; }, false);
+    update();
+})();
+    </script>
+
+<script type="text/javascript" nonce="0e1fd7987a60bfc50844f067d4f72832" src="/S8woKI/C/Y/9wpAxQ1_4ZNO/5S9JwGLzNfhzkStiYw/RnNYYAE/CwtZMh/s-WlcB"></script></body>
+</html>

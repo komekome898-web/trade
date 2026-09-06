@@ -2,12 +2,17 @@
   "dataset": "bitflyer_lightchart_1m",
   "description": "1-minute OHLC(+volume/OI-like fields) for bitFlyer FX_BTC_JPY pulled from bitFlyer's own public chart backend (lightchart.bitflyer.com), NOT an officially documented API. Built 2026-09-06 as part of the multi-year-history source survey (docs/PHASE2/BITFLYER_HISTORY_SOURCES.md). This is the only source found so far that reaches back years instead of the ~31-day public-trade-history window used for backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz.",
   "path_glob": [
-    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_*/candles_1m_*.csv.gz"
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_*/candles_1m_*.csv.gz",
+    "backtest_data/bitflyer_lightchart_BTC_JPY_1m_*/candles_1m_*.csv.gz"
   ],
+  "symbols": {
+    "FX_BTC_JPY": "bitFlyer Lightning FX / Crypto CFD BTC/JPY (the CFD product this repo trades). Full history built 2026-09-06, see backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/README.md.",
+    "BTC_JPY": "bitFlyer Lightning SPOT BTC/JPY (the underlying cash market bitFlyer's own SFD/funding-rate mechanism references against the CFD price). Added 2026-09-06 (P2-08 blindspot audit item #3, CFD-basis diagnostic) via `scripts/fetch_bitflyer_lightchart.py --symbol BTC_JPY` -- same endpoint/pagination behaviour observed as FX_BTC_JPY (301-redirect, unauthenticated), not independently re-probed beyond that. See backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/README.md for actual coverage (a resumable, possibly-partial-at-time-of-writing backfill -- check that README's coverage table, not this description, for the true span)."
+  },
   "source": {
-    "url": "https://lightchart.bitflyer.com/api/ohlc?symbol=FX_BTC_JPY&period=m&before=<epoch_ms>",
+    "url": "https://lightchart.bitflyer.com/api/ohlc?symbol=<FX_BTC_JPY|BTC_JPY>&period=m&before=<epoch_ms>",
     "auth": "none (public, unauthenticated)",
-    "fetcher": "scripts/fetch_bitflyer_lightchart.py (resumable, --sleep polite delay, --dry-run)",
+    "fetcher": "scripts/fetch_bitflyer_lightchart.py (resumable, --sleep polite delay, --dry-run, --symbol)",
     "notes": "period=h and period=d return HTTP 501 (not implemented) -- only period=m works. The server floors `before` to a 12-hour UTC grid boundary (00:00/12:00) and 301-redirects to the canonical URL with type=full&grouping=1 appended; each canonical page returns <=720 rows (12h of 1m bars), newest row first."
   },
   "columns": {
