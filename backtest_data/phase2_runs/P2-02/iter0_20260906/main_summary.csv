@@ -47,3 +47,8 @@ sign_shuffle_observed_percentile,0.0
 sign_reversal_mean_bps,-19.527688731436072
 sign_reversal_ci_lo_bps,-23.565397752143703
 sign_reversal_ci_hi_bps,-15.525735315203207
+sensitivity_mean_net_conservative_plus_oldfee_bps,-24.095999393965002
+sensitivity_ci_lo_conservative_plus_oldfee_bps,-27.821735681000252
+sensitivity_ci_hi_conservative_plus_oldfee_bps,-20.2772920842761
+sensitivity_median_close_1343_bps_denominator,1745.0
+sensitivity_fee_1unit_lot_bps_one_side,315.1862464183381

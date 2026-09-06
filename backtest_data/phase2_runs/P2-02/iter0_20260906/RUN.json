@@ -2,7 +2,7 @@
   "unit": "P2-02",
   "iteration": 0,
   "seed": 20260906,
-  "git_rev": "33b6cecb962671f4d362a83b1181717f8d0f47e1",
+  "git_rev": "ba693ded6a73f73fbc246980f948811d6e327d4b",
   "file_md5": {
     "backtest_data/reit_onr_20260904/etf_1343_daily.csv": "cff01b6a1709e6ddda0157778fc72760",
     "backtest_data/reit_onr_20260904/etf_1343_dividends.csv": "e0644769564c62766ca0b56e6394c337",
@@ -16,5 +16,5 @@
     "1321_after_rule1": 2765,
     "1321_after_rule1_and_2": 2725
   },
-  "generated_utc": "2026-09-06T01:16:46.179636+00:00"
+  "generated_utc": "2026-09-06T02:11:53.325360+00:00"
 }

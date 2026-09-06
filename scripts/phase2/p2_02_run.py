@@ -19,7 +19,8 @@ Outputs -> backtest_data/phase2_runs/P2-02/iter0_20260906/:
     exclusion_summary.csv, train_val_summary.csv, controls_summary.csv,
     diagnostics_vol_tercile.csv, diagnostics_weekday.csv,
     diagnostics_month.csv, diagnostics_exdate.csv, main_summary.csv,
-    RESULTS.md, RUN.json
+    sensitivity_fee.csv (historical non-SOR fee sensitivity, NOT used for
+    judgment), RESULTS.md, RUN.json
 """
 from __future__ import annotations
 
@@ -170,6 +171,31 @@ def conservative_cost_bps(close_t: np.ndarray, bands: list[tuple[float, float]])
     ticks = np.array([tick_for_price(c, bands) if c > 0 and not np.isnan(c) else np.nan
                        for c in close_t])
     return 2.0 * ticks / close_t * 1e4
+
+
+# ---------------------------------------------------------------------------
+# sensitivity ONLY (not used for judgment): the historical (pre-2026-05-18)
+# non-SOR commission, applied retroactively at the pre-registered lot size
+# (~100,000 yen notional). PREREG "費用の適用規則": the actual judgment uses
+# the CURRENT regime (SOR, 0 yen commission) -- this is reported alongside
+# as a sensitivity figure only, per the PREREG's explicit instruction to
+# report the old-fee-schedule number for context, never to use it as a bar.
+# ---------------------------------------------------------------------------
+
+def old_fee_per_pair(close_t: np.ndarray, fee_bands: list[tuple[float, float]]
+                      ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """(lot_units, notional_yen, fee_yen_per_execution, fee_bps_roundtrip).
+
+    lot = round(100,000 / close_t) units, minimum 1 (PREREG's fixed assumed
+    lot: "約定代金10万円相当(約50口)"). notional = lot * close_t decides
+    which non_sor_fee_yen_by_notional band applies; fee_bps_roundtrip = 2 *
+    fee_yen / notional * 1e4 (one commission per side, round trip).
+    """
+    lot = np.maximum(1, np.round(100_000.0 / close_t)).astype(float)
+    notional = lot * close_t
+    fee_yen = np.array([tick_for_price(nv, fee_bands) for nv in notional])
+    fee_bps = 2.0 * fee_yen / notional * 1e4
+    return lot, notional, fee_yen, fee_bps
 
 
 # ---------------------------------------------------------------------------
@@ -450,6 +476,32 @@ def run() -> dict:
     diff = (nd[main_col] - nd["r_day_bps"]).to_numpy()
     diff_mean, diff_lo, diff_hi = mean_ci_bootstrap(diff, seed=SEED + 2)
 
+    # ---- sensitivity ONLY: historical non-SOR fee retroactively applied ----
+    fee_band_value = constants["jpx_cash_equity.non_sor_fee_yen_by_notional"].value
+    fee_bands = build_tick_lookup(fee_band_value)
+    close_arr = kept_1343["close_t"].to_numpy()
+    lot_arr, notional_arr, fee_yen_arr, fee_bps_arr = old_fee_per_pair(close_arr, fee_bands)
+    cost_cons_plus_oldfee = kept_1343["cost_conservative_bps"].to_numpy() + fee_bps_arr
+    net_cons_plus_oldfee = r_night - cost_cons_plus_oldfee
+    mean_oldfee, ci_lo_oldfee, ci_hi_oldfee = mean_ci_bootstrap(net_cons_plus_oldfee, seed=SEED + 9)
+    # single-1-unit-lot illustrative case (PREREG: "1口だけなら290bps/片側"),
+    # using the dev-set's own representative (median) close price.
+    median_close_1343 = float(np.median(close_arr))
+    fee_1unit_bps_one_side = float(55.0 / median_close_1343 * 1e4)
+    sensitivity_fee_df = pd.DataFrame({
+        "t_date": kept_1343["t_date"],
+        "t1_date": kept_1343["t1_date"],
+        "close_t": close_arr,
+        "lot_units": lot_arr,
+        "notional_yen": notional_arr,
+        "fee_yen_per_execution": fee_yen_arr,
+        "fee_bps_roundtrip": fee_bps_arr,
+        "cost_conservative_bps": kept_1343["cost_conservative_bps"].to_numpy(),
+        "cost_conservative_plus_oldfee_bps": cost_cons_plus_oldfee,
+        "r_night_used_bps": r_night,
+        "net_conservative_plus_oldfee_bps": net_cons_plus_oldfee,
+    })
+
     # ---- drawdown bar ----
     pnl_yen = kept_1343["close_t"].to_numpy() * (net_cons / 1e4)
     dd = max_drawdown(pnl_yen)
@@ -575,6 +627,8 @@ def run() -> dict:
     month_diag.to_csv(OUT_DIR / "diagnostics_month.csv", index=False)
     exdate_diag.to_csv(OUT_DIR / "diagnostics_exdate.csv", index=False)
 
+    sensitivity_fee_df.to_csv(OUT_DIR / "sensitivity_fee.csv", index=False)
+
     summary = {
         "n_raw_pairs_1343": int(len(pairs_1343)),
         "n_after_rule1_1343": int((~pairs_1343["rule1_excluded"]).sum()),
@@ -624,6 +678,15 @@ def run() -> dict:
         "sign_reversal_mean_bps": reversal["mean_bps"],
         "sign_reversal_ci_lo_bps": reversal["ci_lo_bps"],
         "sign_reversal_ci_hi_bps": reversal["ci_hi_bps"],
+        # ---- sensitivity ONLY (PREREG "費用の適用規則"): historical
+        # non-SOR fee retroactively applied at the fixed ~100,000-yen lot.
+        # NOT used for judgment; the judgment bar uses the current (0-yen
+        # SOR) regime's mean_net_conservative_bps above, unchanged.
+        "sensitivity_mean_net_conservative_plus_oldfee_bps": mean_oldfee,
+        "sensitivity_ci_lo_conservative_plus_oldfee_bps": ci_lo_oldfee,
+        "sensitivity_ci_hi_conservative_plus_oldfee_bps": ci_hi_oldfee,
+        "sensitivity_median_close_1343_bps_denominator": median_close_1343,
+        "sensitivity_fee_1unit_lot_bps_one_side": fee_1unit_bps_one_side,
     }
     pd.DataFrame([summary]).T.reset_index().rename(
         columns={"index": "metric", 0: "value"}).to_csv(OUT_DIR / "main_summary.csv", index=False)
@@ -752,6 +815,10 @@ def write_results_md(result: dict) -> None:
     lines.append(f"- 関門（平均 ≥ MDE）: {f(s['gate_mean_net_conservative_vs_mde'])}（参考値であり判定ではない）")
     lines.append(f"- 勝率: {f(s['hit_rate'])}、Sharpe(年率): {f(s['sharpe_annualized'])}")
     lines.append(f"- 夜間−日中差: {f(s['night_minus_day_mean_bps'])} bps、CI = [{f(s['night_minus_day_ci_lo_bps'])}, {f(s['night_minus_day_ci_hi_bps'])}]")
+    lines.append(f"- 保守 + 旧手数料(感度): 平均 {f(s['sensitivity_mean_net_conservative_plus_oldfee_bps'])} bps、95%CI = [{f(s['sensitivity_ci_lo_conservative_plus_oldfee_bps'])}, {f(s['sensitivity_ci_hi_conservative_plus_oldfee_bps'])}] bps"
+                 "（判定には使わない。旧非SOR手数料55円/99円/115円/275円を`config/constants.yaml`の代金帯に従い"
+                 "想定ロット≈10万円分（lot=round(100000/close(t))、最小1口）に往復2回課したもの。現行制度はSOR手数料0円）")
+    lines.append(f"- 参考: 1口だけの場合、開発セット代表値（1343の中央値close={f(s['sensitivity_median_close_1343_bps_denominator'])}円）で55円/close×1e4 ≈ {f(s['sensitivity_fee_1unit_lot_bps_one_side'])} bps/片側（実質取引不能な水準）")
     lines.append("")
     lines.append("## 4. ドローダウン基準（1口固定）")
     lines.append(f"- 最大ドローダウン（単一実現値）: {f(s['max_drawdown_yen_1unit'])} 円")
