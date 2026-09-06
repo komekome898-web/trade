@@ -10,3 +10,17 @@
 {"ts_utc": "2026-09-06T02:23:02.232925+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz", "rows_returned": 1438}
 {"ts_utc": "2026-09-06T02:23:02.239461+00:00", "unit": "P2-01", "path": "paper_logs/nk225_sessions.csv", "rows_returned": 161}
 {"ts_utc": "2026-09-06T02:23:02.241320+00:00", "unit": "P2-01", "path": "paper_logs/on1_ledger.csv", "rows_returned": 9}
+{"ts_utc": "2026-09-06T02:29:52.304007+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:29:52.323842+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:29:52.633885+00:00", "unit": "P2-01", "path": "paper_logs/on1_ledger.csv", "rows_returned": 9}
+{"ts_utc": "2026-09-06T02:29:52.636917+00:00", "unit": "P2-01", "path": "paper_logs/nk225_sessions.csv", "rows_returned": 161}
+{"ts_utc": "2026-09-06T02:30:50.774852+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:30:50.795883+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:30:57.525405+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:30:57.545798+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:32:10.487071+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:33:36.012679+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:33:36.032620+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:34:39.057965+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:36:04.245771+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz", "rows_returned": 1438}
+{"ts_utc": "2026-09-06T02:36:04.265639+00:00", "unit": "P2-01", "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz", "rows_returned": 1438}
