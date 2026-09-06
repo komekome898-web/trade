@@ -1,0 +1,27 @@
+{
+  "unit": "P2-03b",
+  "created_utc": "2026-09-06T03:53:08.811550+00:00",
+  "forward_start": "2026-09-06T00:00:00+00:00",
+  "files": [
+    {
+      "path": "backtest_data/jpx_etf_daily_20260906_topix_alt/1348.T.csv",
+      "md5": "57230736ca399375ebfbd75381334fff",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260906_topix_alt/1305.T.csv",
+      "md5": "10990632c5185dbb1bb317fd21610683",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    }
+  ],
+  "rule": "everything with ts >= forward_start is sealed | unit-wide boundary: seal_from_ts of primary series 1348.T.csv (2022-03-05T00:00:00+00:00) applied to every file",
+  "primary_series": "1348.T.csv"
+}
