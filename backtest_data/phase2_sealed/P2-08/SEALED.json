@@ -1,0 +1,190 @@
+{
+  "unit": "P2-08",
+  "created_utc": "2026-09-06T12:59:15.990540+00:00",
+  "forward_start": "2026-09-06T00:00:00+00:00",
+  "files": [
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+      "md5": "c366289a9aa18ff7b8c64c172c5ec140",
+      "time_column": "ts",
+      "first_ts": "2017-01-01T00:00:00+00:00",
+      "last_ts": "2017-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2017-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+      "md5": "c11968e40c84073a81bb8edd69cea282",
+      "time_column": "ts",
+      "first_ts": "2018-01-01T00:00:00+00:00",
+      "last_ts": "2018-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+      "md5": "e2af0e53ef5a3598b091f70e071a54cf",
+      "time_column": "ts",
+      "first_ts": "2019-01-01T00:00:00+00:00",
+      "last_ts": "2019-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+      "md5": "379b58063eb662168f8a3ab3dd8a2004",
+      "time_column": "ts",
+      "first_ts": "2020-01-01T00:00:00+00:00",
+      "last_ts": "2020-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+      "md5": "ebe95930d09f6a373a856313d27febfb",
+      "time_column": "ts",
+      "first_ts": "2021-01-01T00:00:00+00:00",
+      "last_ts": "2021-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+      "md5": "98394223f9f92c0cd27c19e1d585fdcc",
+      "time_column": "ts",
+      "first_ts": "2022-01-01T00:00:00+00:00",
+      "last_ts": "2022-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+      "md5": "a69c911da1a0946d720613d28aa9ebec",
+      "time_column": "ts",
+      "first_ts": "2023-01-01T00:00:00+00:00",
+      "last_ts": "2023-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2023-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2024.csv.gz",
+      "md5": "7d6da60e99ffe3769c7de3ffeb19a8a1",
+      "time_column": "ts",
+      "first_ts": "2024-01-01T00:00:00+00:00",
+      "last_ts": "2024-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2024-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2025.csv.gz",
+      "md5": "da8d79b85bf5449a1bf0e87e8ccbafbf",
+      "time_column": "ts",
+      "first_ts": "2025-01-01T00:00:00+00:00",
+      "last_ts": "2025-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2025-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2026.csv.gz",
+      "md5": "3d987ec7b684a74dd47ae16d873a25e9",
+      "time_column": "ts",
+      "first_ts": "2026-01-01T00:00:00+00:00",
+      "last_ts": "2026-09-06T00:00:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-06-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz",
+      "md5": "f71412cc59d0c350f992f37a0eeced4e",
+      "time_column": "open_time",
+      "first_ts": "2017-08-17T04:00:00+00:00",
+      "last_ts": "2017-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2017-11-20T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+      "md5": "2127061118d12127bec3c162615b1610",
+      "time_column": "open_time",
+      "first_ts": "2018-01-01T00:00:00+00:00",
+      "last_ts": "2018-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2018-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+      "md5": "f7e7d62f0a27771cfbe697379d1a5e20",
+      "time_column": "open_time",
+      "first_ts": "2019-01-01T00:00:00+00:00",
+      "last_ts": "2019-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2019-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+      "md5": "df6b29220b060559b5841c38a80678a0",
+      "time_column": "open_time",
+      "first_ts": "2020-01-01T00:00:00+00:00",
+      "last_ts": "2020-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+      "md5": "5bd3b0347078ce5a1bb202a3dff2c644",
+      "time_column": "open_time",
+      "first_ts": "2021-01-01T00:00:00+00:00",
+      "last_ts": "2021-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2021-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2022.csv.gz",
+      "md5": "2f21909992470572948166e27947f6a9",
+      "time_column": "open_time",
+      "first_ts": "2022-01-01T00:00:00+00:00",
+      "last_ts": "2022-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2023.csv.gz",
+      "md5": "19cca5b070b8215d539d23068ca6f5bb",
+      "time_column": "open_time",
+      "first_ts": "2023-01-01T00:00:00+00:00",
+      "last_ts": "2023-12-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2023-09-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20240101_20260831/binance_BTCUSDT_1m_20240101_20260831.csv.gz",
+      "md5": "a20f758e1027158ec5e573f0a2dfdc26",
+      "time_column": "open_time",
+      "first_ts": "2024-01-01T00:00:00+00:00",
+      "last_ts": "2026-08-31T23:59:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2025-11-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/fx_btc_jpy_1m_continuous_20260906/candles_1m.csv.gz",
+      "md5": "c62ac0de468cf00ca8a80618e66685b9",
+      "time_column": "ts",
+      "first_ts": "2026-07-23T12:09:00+00:00",
+      "last_ts": "2026-09-05T13:47:00+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/executions_FX_BTC_JPY_31d_20260823.csv.gz",
+      "md5": "9e4ae57e4d220dd9c8d3ffddec6a2418",
+      "time_column": "exec_date",
+      "first_ts": "2026-07-23T12:09:27.130000+00:00",
+      "last_ts": "2026-08-23T12:25:34.217000+00:00",
+      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-13T00:00:00+00:00"
+    }
+  ],
+  "rule": "everything with ts >= forward_start is sealed | unit-wide EXPLICIT boundary (--seal-from): seal_from_ts=2023-12-19T00:00:00+00:00 applied to every file (each file's own 70/30 boundary kept as seal_from_ts_per_file)",
+  "boundary_rule": "explicit",
+  "explicit_seal_from": "2023-12-19T00:00:00+00:00"
+}
