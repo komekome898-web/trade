@@ -106,3 +106,53 @@ def tercile_label(code) -> str:
     if code is None:
         return "all"
     return TERCILE_LABELS[int(code)]
+
+
+# ---------------------------------------------------------------------------
+# iteration 2: UTC hour-of-day band (PREREG 反復の梯子 反復 2 = 時間帯 UTC 0-8 / 8-16 / 16-24)
+# ---------------------------------------------------------------------------
+#
+# The state of grid minute t is the UTC hour of t itself — the minute the
+# entry signal m(t) is formed on (the fill is the NEXT bar's open, which may
+# fall in the next band; the gate is on the signal minute, exactly as the
+# tercile gate of iteration 1). Bands are fixed UTC clock windows
+# [0, 8), [8, 16), [16, 24); no daylight-saving adjustment (PREREG 信号と執行の
+# 定義: "UTC 固定 ... 夏時間の影響は診断の注記に留める"). Every minute belongs
+# to exactly one band, so unlike the tercile state there is no "none" code.
+
+HOUR_BAND_CODES = (0, 1, 2)
+HOUR_BAND_LABELS = ("h00_08", "h08_16", "h16_24")
+HOUR_BAND_WIDTH = 8
+
+
+def assign_hour_band(idx) -> np.ndarray:
+    """int8 per minute: UTC hour // 8 → 0 ([0, 8)), 1 ([8, 16)), 2 ([16, 24)).
+    ``idx`` is a DatetimeIndex; a naive index is taken as UTC, a tz-aware
+    one is converted to UTC first."""
+    idx = pd.DatetimeIndex(idx)
+    idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
+    return (idx.hour.to_numpy() // HOUR_BAND_WIDTH).astype(np.int8)
+
+
+def hour_band_gates(band: np.ndarray) -> dict[str, np.ndarray]:
+    """{label: boolean entry gate over the grid} for the three bands, keyed
+    by LABEL (strings, so a gate dict can hold tercile codes and hour bands
+    side by side without collision)."""
+    band = np.asarray(band)
+    return {lab: band == code for code, lab in zip(HOUR_BAND_CODES, HOUR_BAND_LABELS)}
+
+
+def hour_band_label(code) -> str:
+    return HOUR_BAND_LABELS[int(code)]
+
+
+def state_label(state) -> str:
+    """Label of a configuration's state key: None → 'all' (unconditioned),
+    an int → the tercile label (iteration 1), a str → itself (iteration 2's
+    hour-band label). Iterations 0/1 only ever pass None or an int, for
+    which this equals `tercile_label`."""
+    if state is None:
+        return "all"
+    if isinstance(state, str):
+        return state
+    return TERCILE_LABELS[int(state)]

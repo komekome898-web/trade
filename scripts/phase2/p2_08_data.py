@@ -75,6 +75,30 @@ def load_dev_frames(root: Path | str = REPO_ROOT, years=DEV_YEARS,
     return bf, bn
 
 
+# ---- auxiliary series (iteration 2: control 5 and diagnostic (d)) -----------
+SPOT_DIR = "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906"
+USDJPY_PATH = "backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz"
+USDJPY_COLS = ["open", "high", "low", "close", "volume"]
+CONTROL5_END = pd.Timestamp("2022-12-31 23:59:00", tz="UTC")   # USDJPY snapshot ends 2022-12-30
+
+
+def load_spot_frame(root: Path | str = REPO_ROOT, years=DEV_YEARS,
+                    start: pd.Timestamp = DEV_START, end: pd.Timestamp = DEV_END) -> pd.DataFrame:
+    """Spot BTC_JPY (lightchart) 1m for the development set, via the seal.
+    Same schema as the FX_BTC_JPY files (NaN OHLC on empty minutes)."""
+    root = Path(root)
+    return _finish([_one_year(f"{SPOT_DIR}/candles_1m_{y}.csv.gz", "ts", BF_COLS, root)
+                    for y in years], start, end)
+
+
+def load_usdjpy(root: Path | str = REPO_ROOT, start: pd.Timestamp = DEV_START,
+                end: pd.Timestamp = CONTROL5_END) -> pd.DataFrame:
+    """USDJPY 1m BID (Dukascopy backfill 2017-08 .. 2022-12), via the seal;
+    rows only when the FX market traded (no weekend rows)."""
+    root = Path(root)
+    return _finish([_one_year(USDJPY_PATH, "timestamp", USDJPY_COLS, root)], start, end)
+
+
 # ---------------------------------------------------------------------------
 # summary (開発セット概況)
 # ---------------------------------------------------------------------------

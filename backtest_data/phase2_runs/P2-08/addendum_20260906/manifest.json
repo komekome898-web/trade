@@ -1,0 +1,412 @@
+{
+  "unit": "P2-08",
+  "kind": "addendum (no new configuration; N stays 108)",
+  "run_date_utc": "2026-09-06T22:08:56.333112+00:00",
+  "seed": 20260906,
+  "git_rev": "5ebdcae64e87b1861e608b373ddd77f597ca2be2",
+  "script": "scripts/phase2/p2_08_run.py",
+  "script_md5": "abaec95fffb28f31ca17131f84f25a5b",
+  "engine_md5": {
+    "xborder_p2.py": "a0729ff45d8a73c31bb2cb924ddf9996",
+    "xborder_p2_fast.py": "6f3023177fa4f4c7a4e56f85db02dda2",
+    "xborder_p2_state.py": "19c6d1eabf232154486f689a360c65e6",
+    "xborder_p2_fx.py": "f97464ac235b36b148215d724eadc552",
+    "overnight.py": "393257ddc4182861b883b337d68142a3",
+    "p2_08_data.py": "4cbd49e509b9059483ffb7e00edf498b"
+  },
+  "inputs": [
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+      "md5": "c366289a9aa18ff7b8c64c172c5ec140"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+      "md5": "c11968e40c84073a81bb8edd69cea282"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+      "md5": "e2af0e53ef5a3598b091f70e071a54cf"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+      "md5": "379b58063eb662168f8a3ab3dd8a2004"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+      "md5": "ebe95930d09f6a373a856313d27febfb"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+      "md5": "98394223f9f92c0cd27c19e1d585fdcc"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+      "md5": "a69c911da1a0946d720613d28aa9ebec"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz",
+      "md5": "f71412cc59d0c350f992f37a0eeced4e"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+      "md5": "2127061118d12127bec3c162615b1610"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+      "md5": "f7e7d62f0a27771cfbe697379d1a5e20"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+      "md5": "df6b29220b060559b5841c38a80678a0"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+      "md5": "5bd3b0347078ce5a1bb202a3dff2c644"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2022.csv.gz",
+      "md5": "2f21909992470572948166e27947f6a9"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2023.csv.gz",
+      "md5": "19cca5b070b8215d539d23068ca6f5bb"
+    }
+  ],
+  "aux_inputs": [
+    {
+      "path": "backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz",
+      "md5": "793d6c83f0f6282d5e1a45fdeb58a13b"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+      "md5": "379b1d1dc13477ec68a643a749c417e3"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+      "md5": "3cc83d8cd8b1906189cbffc772a25c01"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+      "md5": "591df0494a0cce85b701fb5e9a915246"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+      "md5": "e8a407050ad6a0c972ab643cc40d7faf"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+      "md5": "fbe458f9f8411bcd7dffc43c7aaa8829"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+      "md5": "672c9b209a7f58d546f15465400fdba8"
+    },
+    {
+      "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+      "md5": "708605ded5c22e72076e92dfe7c8c940"
+    }
+  ],
+  "seal_record": {
+    "path": "backtest_data/phase2_sealed/P2-08/SEALED.json",
+    "md5": "f0936f1a2852e8b889721c70af3d5dea"
+  },
+  "tape_inputs": [
+    {
+      "path": "paper_logs/tape/executions_20260820.csv.gz",
+      "md5": "fe018cf55846ad6c8332194e9fcf1772"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260821.csv.gz",
+      "md5": "859e1e2f4d6f2b7c6d3c23fbbaaf1957"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260822.csv.gz",
+      "md5": "adf2eff5336e9e205ef5bedce5c02917"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260823.csv.gz",
+      "md5": "2ad39332a0bcef1b1904dffbde5b6cd6"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260824.csv.gz",
+      "md5": "10fefc8e38ca602eadd5ad3d9378677f"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260825.csv.gz",
+      "md5": "76d084d4fb1323e99ea8b629d924ae6a"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260826.csv.gz",
+      "md5": "f584af29a9a461aaf86c21b41fba45ea"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260827.csv.gz",
+      "md5": "c5f11327295507ae9a805bc63525c6fb"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260828.csv.gz",
+      "md5": "a84ab5523dc277c7baf57356690c1dfb"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260829.csv.gz",
+      "md5": "6073e471a5d467c6ebcf2d29ac9ade71"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260830.csv.gz",
+      "md5": "2917ad82f5c46f69fdb1a40dcd61552c"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260831.csv.gz",
+      "md5": "1e986e0d3a9a143f124c5acfcbe4ca42"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260901.csv.gz",
+      "md5": "d44ef9f19d68ca7618f312a44a884f71"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260902.csv.gz",
+      "md5": "0d09b6d027d881069d9a948bbfbd131d"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260903.csv.gz",
+      "md5": "47b905270cd95fe26fea012e4ed90078"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260904.csv.gz",
+      "md5": "f154d508371aed76c95596b7f7116951"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260905.csv.gz",
+      "md5": "2701acce52678ec733f3228f03d800df"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260820.csv.gz",
+      "md5": "765022ccc8729d6aa6cff5edae33fd96"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260821.csv.gz",
+      "md5": "2efdb03ff3178771fc136ac0d7e71845"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260822.csv.gz",
+      "md5": "8ffe97b49fb31e7d798c66e25717c951"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260823.csv.gz",
+      "md5": "096d37e271906dcaf74e767efce387d3"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260824.csv.gz",
+      "md5": "31248f729ae57212caf7637645c4eacb"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260825.csv.gz",
+      "md5": "612e571a17c0b876f847b49c9f98b41b"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260826.csv.gz",
+      "md5": "f850c94a6bab2a0688dc0efe4403e76a"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260827.csv.gz",
+      "md5": "83ec1871e799aa385e41e3e0191cd5c2"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260828.csv.gz",
+      "md5": "4893e229ca3df2a3c170a08765bf2251"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260829.csv.gz",
+      "md5": "cd0f4d768a0515e50670f4e7f400e5e5"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260830.csv.gz",
+      "md5": "bd1c77df3a19f7a3d316fc13f5dbab3d"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260831.csv.gz",
+      "md5": "bfab9defa33a1e0d6d57e364831de0fc"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260901.csv.gz",
+      "md5": "ee9c58da69ff84d3bb7e698e659e984f"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260902.csv.gz",
+      "md5": "28c7c031a5ecf72c246c0fc7baccef29"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260903.csv.gz",
+      "md5": "ed6b7c05d8adba9fe5f3c3d2ff3f7207"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260904.csv.gz",
+      "md5": "ec6aedb456223ef990bfee3b2dead01b"
+    },
+    {
+      "path": "paper_logs/tape/ticker_20260905.csv.gz",
+      "md5": "16620d685555030efd6e04aa5601162f"
+    }
+  ],
+  "iteration1": {
+    "dir": "backtest_data/phase2_runs/P2-08/iter1_20260906",
+    "best": "60/1.2/1.0@1_low",
+    "configs_md5": "69d199760dd02d84d848f73c5ff0eb19",
+    "reference_stats_max_abs_diff": 8.881784197001252e-16
+  },
+  "parameters": {
+    "configs_of_interest": {
+      "iter0_best": "15/0.4/0.5@all",
+      "current": "30/0.8/0.5@all",
+      "iter1_best": "60/1.2/1.0@1_low"
+    },
+    "exit_pct": 0.05,
+    "tercile_bounds": {
+      "q1": 0.0005727275510361831,
+      "q2": 0.000999434798431187
+    },
+    "cost_cons_one_way_bps": 1.3,
+    "burst_coef": {
+      "15/0.4": 1.4608883106035464,
+      "15/0.8": 1.995015716294818,
+      "15/1.2": 2.5797851515186285,
+      "30/0.4": 1.3131381165022826,
+      "30/0.8": 1.6529329543111058,
+      "30/1.2": 1.953784510283427,
+      "60/0.4": 1.2038743835337766,
+      "60/0.8": 1.4670397573813172,
+      "60/1.2": 1.6379802319615275
+    },
+    "funding_pct_per_settlement": 0.02,
+    "funding_times_utc": [
+      5,
+      13,
+      21
+    ],
+    "max_gap_min": 5,
+    "train_end": "2021-12-31 23:59:00+00:00",
+    "val_start": "2022-01-01 00:00:00+00:00",
+    "dev_start": "2017-08-17 00:00:00+00:00",
+    "dev_end": "2023-12-17 23:59:00+00:00",
+    "n_boot": 2000,
+    "n_ctrl": 1000,
+    "control5": {
+      "end": "2022-12-31 23:59:00+00:00",
+      "usdjpy_fill": "forward fill (last USDJPY close at or before the minute)",
+      "grid_start": "2017-08-17 00:00:00+00:00",
+      "grid_end": "2022-12-31 23:59:00+00:00",
+      "grid_minutes": 2826720,
+      "bn_minutes": 2817999,
+      "usdjpy_rows": 2401920,
+      "fill": {
+        "n_minutes": 2817999,
+        "n_usdjpy_exact": 2376532,
+        "n_filled": 441467,
+        "n_nan": 0,
+        "max_fill_age_min": 2880.3333333333335,
+        "n_filled_by_year": {
+          "2017": 47761,
+          "2018": 78586,
+          "2019": 79200,
+          "2020": 77610,
+          "2021": 79110,
+          "2022": 79200
+        },
+        "usdjpy_first": "2017-08-17 00:00:00+00:00",
+        "usdjpy_last": "2022-12-30 23:59:00+00:00"
+      },
+      "val_definition": "entry day >= 2022-01-01 .. 2022-12-31 (2022 only)"
+    },
+    "diag_d": {
+      "basis": "FX close / spot close − 1 (both bars valid, masked grid)",
+      "sfd_threshold_pct": 5.0,
+      "flag_minute": "entry-signal minute",
+      "n_both_valid_minutes": 3165381
+    },
+    "maintenance_window_utc": "[18:50, 19:30] gap start (t_a + 1 min)",
+    "control1_seed": "[SEED, 2 or 3, 0] (as iteration 0)",
+    "control4_seed": "[SEED, 7, cfg, gate, period]",
+    "diag_a_seed": "[SEED, 8, k, shift + 10] (as iteration 0)",
+    "diag_d_seed": "[SEED, 28, cfg, period, subset]",
+    "control5_seed": "[SEED, 27, cfg, signal, period]"
+  },
+  "burst_meta": {
+    "files": [
+      "paper_logs/tape/executions_20260820.csv.gz",
+      "paper_logs/tape/executions_20260821.csv.gz",
+      "paper_logs/tape/executions_20260822.csv.gz",
+      "paper_logs/tape/executions_20260823.csv.gz",
+      "paper_logs/tape/executions_20260824.csv.gz",
+      "paper_logs/tape/executions_20260825.csv.gz",
+      "paper_logs/tape/executions_20260826.csv.gz",
+      "paper_logs/tape/executions_20260827.csv.gz",
+      "paper_logs/tape/executions_20260828.csv.gz",
+      "paper_logs/tape/executions_20260829.csv.gz",
+      "paper_logs/tape/executions_20260830.csv.gz",
+      "paper_logs/tape/executions_20260831.csv.gz",
+      "paper_logs/tape/executions_20260901.csv.gz",
+      "paper_logs/tape/executions_20260902.csv.gz",
+      "paper_logs/tape/executions_20260903.csv.gz",
+      "paper_logs/tape/executions_20260904.csv.gz",
+      "paper_logs/tape/executions_20260905.csv.gz",
+      "paper_logs/tape/ticker_20260820.csv.gz",
+      "paper_logs/tape/ticker_20260821.csv.gz",
+      "paper_logs/tape/ticker_20260822.csv.gz",
+      "paper_logs/tape/ticker_20260823.csv.gz",
+      "paper_logs/tape/ticker_20260824.csv.gz",
+      "paper_logs/tape/ticker_20260825.csv.gz",
+      "paper_logs/tape/ticker_20260826.csv.gz",
+      "paper_logs/tape/ticker_20260827.csv.gz",
+      "paper_logs/tape/ticker_20260828.csv.gz",
+      "paper_logs/tape/ticker_20260829.csv.gz",
+      "paper_logs/tape/ticker_20260830.csv.gz",
+      "paper_logs/tape/ticker_20260831.csv.gz",
+      "paper_logs/tape/ticker_20260901.csv.gz",
+      "paper_logs/tape/ticker_20260902.csv.gz",
+      "paper_logs/tape/ticker_20260903.csv.gz",
+      "paper_logs/tape/ticker_20260904.csv.gz",
+      "paper_logs/tape/ticker_20260905.csv.gz"
+    ],
+    "n_executions": 790996,
+    "n_ticker_rows": 1711888,
+    "minutes": 24107,
+    "minutes_with_executions": 22284,
+    "minutes_with_ticker": 22796,
+    "first_minute": "2026-08-20 06:13:00+00:00",
+    "last_minute": "2026-09-05 23:59:00+00:00",
+    "uncond_eff_bps": 1.1096753736714808,
+    "uncond_quoted_bps": 0.9667576874923348,
+    "uncond_eff_bps_exec_weighted": 1.562683482923486,
+    "measured": true
+  },
+  "timings_s": {
+    "load_s": 59.65484613300009,
+    "burst_s": 6.057291219000035,
+    "grid_s": 4.401067329000057,
+    "control5_s": 103.99713927799996,
+    "diag_d_s": 35.44984570100007,
+    "iter1_best_controls_s": 9.526767746999894,
+    "total_s": 225.84852484700002
+  },
+  "outputs": [
+    "RESULTS.md",
+    "big_gap_start_by_utc_hour.csv",
+    "burst_factor.csv",
+    "control1a_random_all_iter1_best.csv",
+    "control1b_random_state_iter1_best.csv",
+    "control4_no_lead_iter1_best.csv",
+    "control5_jpy.csv",
+    "control5_jpy_diff.csv",
+    "control5_jpy_signal_agreement.csv",
+    "controls_iter1_best.csv",
+    "dev_set_summary_by_year.csv",
+    "diag_a_minute_shift_iter1_best.csv",
+    "diag_d_basis_by_month.csv",
+    "diag_d_basis_by_year.csv",
+    "diag_d_basis_trades.csv",
+    "diag_d_basis_trades_by_year.csv",
+    "maintenance_gap_start_histogram.csv",
+    "maintenance_gaps_by_year.csv",
+    "reference_stats_check.csv"
+  ]
+}
