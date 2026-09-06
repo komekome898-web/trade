@@ -1,0 +1,70 @@
+{
+  "raw_day_rows_unsealed": 7600,
+  "raw_night_rows_unsealed": 3236,
+  "day_date_range": [
+    "1990-01-04",
+    "2020-12-18"
+  ],
+  "night_date_range": [
+    "2007-09-19",
+    "2020-12-18"
+  ],
+  "day_dev_rows": 3241,
+  "n_pairs_step0_all_dev_pairs": 3240,
+  "n_glitches_dropped": 3,
+  "n_pairs_after_glitch": 3237,
+  "n_roll_adjacent_monthly": 477,
+  "n_roll_adjacent_quarterly": 159,
+  "n_after_monthly_roll_excl": 2763,
+  "n_after_quarterly_roll_excl": 3081,
+  "n_nightless_pairs_marked": 5,
+  "n_after_monthly_roll_excl_only": 2763,
+  "n_glitches_in_roll_excluded_set": 1,
+  "n_main_set": 2762,
+  "n_main_train": 1939,
+  "n_main_val": 823,
+  "cost_bps_conservative_median": 7.906675307841867,
+  "cost_bps_conservative_mean": 8.884734040913981,
+  "cost_bps_conservative_min": 4.543761638733706,
+  "cost_bps_conservative_max": 17.329545454545457,
+  "cost_bps_optimistic_median": 1.425793907971484,
+  "cost_bps_optimistic_mean": 1.6021651549189144,
+  "indicator1_r_net_bps_mean": -3.943460403745316,
+  "indicator1_r_net_bps_t": -1.8715250699599046,
+  "indicator1_r_net_bps_n": 2762,
+  "indicator1_r_net_bps_ci95": [
+    -7.77190412911505,
+    -0.1101377986696141
+  ],
+  "gross_r_night_bps_mean": 4.941273637168665,
+  "gross_r_night_bps_t": 2.3453242418414137,
+  "gross_r_night_bps_ci95": [
+    1.2302815023585287,
+    8.692723347697417
+  ],
+  "r_night_std_bps": 110.72555081974846,
+  "indicator2_night_minus_day_bps_mean": 4.606948436749878,
+  "indicator2_night_minus_day_bps_t": 1.6003506256492221,
+  "indicator2_night_minus_day_bps_n": 2762,
+  "indicator2_night_minus_day_bps_ci95": [
+    -0.0022057663627732616,
+    9.095741239027225
+  ],
+  "night_minus_day_std_bps": 151.2899378924535,
+  "sign_shuffle_null_p95_mean_bps": 3.6300779880859015,
+  "sign_shuffle_null_n_resamples": 2000,
+  "n_pairs_with_night_row": 2757,
+  "control3_leg_b_mean_bps": 2.3736801203577405,
+  "control3_leg_b_ci95": [
+    -0.16737292695763836,
+    4.934902621963561
+  ],
+  "control3_leg_b_n": 2757,
+  "alignment_median_diff_vs_close_t": 20.0,
+  "alignment_median_diff_vs_close_t1": 110.0,
+  "alignment_n": 2757,
+  "train_r_net_bps_mean": -4.604499453245947,
+  "train_n": 1939,
+  "val_r_net_bps_mean": -2.386042764642367,
+  "val_n": 823
+}

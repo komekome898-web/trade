@@ -1,0 +1,7 @@
+instrument,stage,n,mean_bps,std_bps
+1343,raw (before any exclusion),3019,-8.759275160038356,374.51492256503417
+1343,after rule 1 (formula-input 0/blank/bad-print),3015,4.4961022526846435,88.26212658241
+1343,after rule 1 + rule 2 (phantom rows),2976,4.579238815266403,88.77522881464097
+1321,raw (before any exclusion),3019,-836.2791372151316,2779.443347324975
+1321,after rule 1 (formula-input 0/blank/bad-print),2765,5.523791952086059,97.47791213863803
+1321,after rule 1 + rule 2 (phantom rows),2725,5.7148963381563105,97.66599009339181
