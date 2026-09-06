@@ -1,0 +1,36 @@
+{
+  "dataset": "jpx_etf_daily_20260906_topix_alt",
+  "purpose": "Snapshot of JPX-listed Yahoo Finance daily series (see README.md in this directory for why).",
+  "source_url_template": "https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range=15y&interval=1d&events=div,splits",
+  "fetch_method": "Python requests via preconfigured HTTPS proxy",
+  "symbols": [
+    {
+      "symbol": "1348.T",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/1348.T?range=15y&interval=1d&events=div,splits",
+      "fetched_at_utc": "2026-09-06T03:33:19Z",
+      "http_status": 200,
+      "error": null,
+      "row_count": 3690,
+      "first_date": "2011-09-05",
+      "last_date": "2026-09-04",
+      "raw_json_file": "1348.T.json",
+      "raw_json_md5": "537196adffe47761dae58c4599202a72",
+      "csv_file": "1348.T.csv",
+      "csv_md5": "57230736ca399375ebfbd75381334fff"
+    },
+    {
+      "symbol": "1305.T",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/1305.T?range=15y&interval=1d&events=div,splits",
+      "fetched_at_utc": "2026-09-06T03:33:20Z",
+      "http_status": 200,
+      "error": null,
+      "row_count": 3690,
+      "first_date": "2011-09-05",
+      "last_date": "2026-09-04",
+      "raw_json_file": "1305.T.json",
+      "raw_json_md5": "1612739dd42e76a5f93c6c3faee94949",
+      "csv_file": "1305.T.csv",
+      "csv_md5": "10990632c5185dbb1bb317fd21610683"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "1348.T": {
+    "symbol": "1348.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1348.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-06T03:33:19Z",
+    "http_status": 200,
+    "error": null,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  },
+  "1305.T": {
+    "symbol": "1305.T",
+    "url": "https://query1.finance.yahoo.com/v8/finance/chart/1305.T?range=15y&interval=1d&events=div,splits",
+    "fetched_at_utc": "2026-09-06T03:33:20Z",
+    "http_status": 200,
+    "error": null,
+    "row_count": 3690,
+    "first_date": "2011-09-05",
+    "last_date": "2026-09-04"
+  }
+}
