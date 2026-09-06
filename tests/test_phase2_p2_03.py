@@ -183,5 +183,64 @@ def test_ghost_row_detection():
     assert not mask[0] and not mask[2]
 
 
+# ===========================================================================
+# 反復1: 1306.T 価格水準補正(schema/jpx_etf_daily.json CORRECTION 2026-09-06)
+# -- 呼値帯の判定にだけ x10 を適用し、区間外・他銘柄・リターン計算には触れない。
+# ===========================================================================
+
+@pytest.mark.parametrize("date_str,expected_factor", [
+    ("2014-12-30", 1.0),   # 区間開始前 -> 補正なし
+    ("2015-01-04", 1.0),   # 区間開始の前日 -> 補正なし
+    ("2015-01-05", 10.0),  # 区間開始日 -> x10
+    ("2019-07-01", 10.0),  # 区間内 -> x10
+    ("2026-03-31", 10.0),  # 区間終了日(境界を含む) -> x10
+    ("2026-04-01", 1.0),   # 実際の分割実効日以降 -> 補正なし
+])
+def test_price_correction_window_1306(date_str, expected_factor):
+    raw = 200.0
+    corrected = run.corrected_price_for_band("1306.T", pd.Timestamp(date_str), raw)
+    assert corrected == pytest.approx(raw * expected_factor)
+
+
+def test_price_correction_only_applies_to_1306():
+    date = pd.Timestamp("2019-07-01")  # 1306.T なら補正区間内の日付
+    raw = 200.0
+    for other_sym in ("1591.T", "2516.T", "1321.T"):
+        assert run.corrected_price_for_band(other_sym, date, raw) == pytest.approx(raw)
+
+
+def test_price_correction_disabled_via_empty_table():
+    date = pd.Timestamp("2019-07-01")
+    raw = 200.0
+    assert run.corrected_price_for_band("1306.T", date, raw, corrections={}) == pytest.approx(raw)
+
+
+def test_price_correction_never_touches_returns_end_to_end():
+    """analyze_series の1306.T相当の疑似データで、補正あり/なしで r_night/r_day
+    (リターン)が一切変わらないことを確認する(補正は帯・コストのみに効く)。"""
+    n = 30
+    dates = pd.date_range("2019-06-01", periods=n, freq="B")
+    close = np.linspace(150.0, 160.0, n)  # 補正区間内(2015-01-05..2026-03-31)の水準
+    open_ = close - 0.5
+    close_t = close[:-1]
+    open_t1 = open_[1:]
+    r_night_uncorrected = (open_t1 / close_t - 1.0) * 1e4
+
+    date_t = pd.Series(dates[:-1])
+    band_price_corrected = np.array([
+        run.corrected_price_for_band("1306.T", d, c, run.PRICE_LEVEL_CORRECTIONS)
+        for d, c in zip(date_t, close_t)
+    ])
+    band_price_uncorrected = np.array([
+        run.corrected_price_for_band("1306.T", d, c, {})
+        for d, c in zip(date_t, close_t)
+    ])
+    # 帯・コストの計算に使う「価格」は補正で変わるはず
+    assert np.allclose(band_price_corrected, close_t * 10.0)
+    assert np.allclose(band_price_uncorrected, close_t)
+    # しかし r_night 自体(比率)は close_t のみで決まり、帯価格には依存しない
+    assert np.allclose(r_night_uncorrected, (open_t1 / close_t - 1.0) * 1e4)
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

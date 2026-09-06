@@ -28,6 +28,7 @@ JPX 現物 ETF(TOPIX=1306.T, JPX400=1591.T, グロース250=2516.T, 参照系列
 """
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 import sys
@@ -45,7 +46,11 @@ from bot.constants import load_constants, require_source  # noqa: E402
 
 UNIT = "P2-03"
 SNAPSHOT_DIR = REPO_ROOT / "backtest_data" / "jpx_etf_daily_20260905"
-OUT_DIR = REPO_ROOT / "backtest_data" / "phase2_runs" / "P2-03" / "iter0_20260906"
+RUNS_BASE_DIR = REPO_ROOT / "backtest_data" / "phase2_runs" / "P2-03"
+
+
+def default_out_dir(iteration: int) -> Path:
+    return RUNS_BASE_DIR / f"iter{iteration}_20260906"
 
 MAIN_SYMBOLS = ["1306.T", "1591.T", "2516.T", "1321.T"]
 REFERENCE_SYMBOL = "1321.T"
@@ -107,6 +112,48 @@ def tick_for_price(price: float, bands: tuple[list[tuple[float, float]], float])
         if price <= bound:
             return tick
     return over
+
+
+# ===========================================================================
+# 反復1: 1306.T の価格水準補正(schema/jpx_etf_daily.json CORRECTION 2026-09-06、
+# 一次情報 backtest_data/audit_fetch_1306_split_20260906/)
+#
+# 1306.T の10:1分割は2026-04-01が実効日(2015年ではない)。CSVの2015-01-05〜
+# 2026-03-31 区間はベンダーが分割調整を誤った開始日から適用したため、実勢価格の
+# ちょうど1/10になっている(独立系列: 2022-03-04 の実勢終値1,920.5円 vs CSV
+# 192.05円)。この区間内では close/open の「比率」(リターン)は補正不要
+# (定数倍はリターンに影響しない)だが、価格そのものを使う量(呼値帯の判定、
+# 呼値コストのbps換算、想定元本)は実勢価格(CSV値×10)を使わなければならない。
+# 2015-01-05 の水準シフト自体は規則2(split_candidate)がそのまま拾う
+# (誤プリント同様、跨ぐペアは除外対象のまま変更しない)。
+# ===========================================================================
+PRICE_LEVEL_CORRECTIONS: dict[str, list[tuple[str, str, float]]] = {
+    "1306.T": [("2015-01-05", "2026-03-31", 10.0)],
+}
+
+
+def corrected_price_for_band(
+    sym: str, date, raw_price: float,
+    corrections: dict[str, list[tuple[str, str, float]]] | None = None,
+) -> float:
+    """`raw_price`(CSVの値)に、価格水準補正テーブルの倍率を掛けた「実勢価格」を返す。
+
+    呼値帯の判定・呼値コストのbps換算・想定元本など「価格そのもの」を使う量に
+    のみ使う。r_night/r_day などのリターン(比率)には絶対に使わない
+    -- 区間内は定数倍なので比率は不変であり、区間境界の水準シフトは規則2の
+    split_candidate 除外が別途処理する。
+
+    `corrections` を空 dict / None 以外の未設定にすると補正なし(反復0と同じ)。
+    """
+    if corrections is None:
+        corrections = PRICE_LEVEL_CORRECTIONS
+    if raw_price is None or not np.isfinite(raw_price):
+        return raw_price
+    date_ts = pd.Timestamp(date)
+    for start, end, factor in corrections.get(sym, []):
+        if pd.Timestamp(start) <= date_ts <= pd.Timestamp(end):
+            return raw_price * factor
+    return raw_price
 
 
 # ===========================================================================
@@ -239,7 +286,7 @@ def detect_ghost_rows(open_, high, low, close, volume) -> np.ndarray:
 # 系列ごとの読み込み・ペア構築
 # ===========================================================================
 
-def analyze_series(sym: str, bands) -> dict:
+def analyze_series(sym: str, bands, apply_price_correction: bool = False) -> dict:
     csv_path = SNAPSHOT_DIR / f"{sym}.csv"
     df = load_unsealed(csv_path, UNIT)
     df = df.copy()
@@ -273,9 +320,15 @@ def analyze_series(sym: str, bands) -> dict:
     r_day_bps_full = (close / open_ - 1.0) * 1e4
     r_day_bps_t = r_day_bps_full[:-1]
 
-    ticks = np.array([tick_for_price(c, bands) for c in close_t])
+    corrections = PRICE_LEVEL_CORRECTIONS if apply_price_correction else {}
+    band_price_t = np.array([
+        corrected_price_for_band(sym, d, c, corrections) for d, c in zip(date_t, close_t)
+    ])
+    ticks = np.array([tick_for_price(p, bands) for p in band_price_t])
     with np.errstate(divide="ignore", invalid="ignore"):
-        cost_cons_bps = np.where(np.isfinite(close_t) & (close_t != 0), 2.0 * ticks / close_t * 1e4, np.nan)
+        # bps 換算の分母も実勢価格(band_price_t) -- コストは実勢価格に対する割合
+        cost_cons_bps = np.where(np.isfinite(band_price_t) & (band_price_t != 0),
+                                  2.0 * ticks / band_price_t * 1e4, np.nan)
 
     net_opt_bps = r_night_bps.copy()
     net_cons_bps = r_night_bps - cost_cons_bps
@@ -288,7 +341,7 @@ def analyze_series(sym: str, bands) -> dict:
         "date_t": date_t, "date_t1": date_t1,
         "open_t": open_t, "close_t": close_t, "open_t1": open_t1,
         "r_day_bps": r_day_bps_t, "r_night_bps": r_night_bps,
-        "tick_yen": ticks, "cost_cons_bps": cost_cons_bps,
+        "band_price_t": band_price_t, "tick_yen": ticks, "cost_cons_bps": cost_cons_bps,
         "net_opt_bps": net_opt_bps, "net_cons_bps": net_cons_bps,
         "flag_null_t": null_mask[:-1], "flag_null_t1": null_mask[1:],
         "flag_ghost_t": ghost_mask[:-1], "flag_ghost_t1": ghost_mask[1:],
@@ -483,8 +536,9 @@ def git_rev() -> str:
         return "unknown"
 
 
-def main() -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+def main(out_dir: Path | None = None, iteration: int = 0, apply_price_correction: bool = False) -> Path:
+    out_dir = Path(out_dir) if out_dir is not None else default_out_dir(iteration)
+    out_dir.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(RUN_SEED)
 
     constants = load_constants(REPO_ROOT)
@@ -495,14 +549,15 @@ def main() -> None:
 
     results: dict[str, dict] = {}
     for sym in MAIN_SYMBOLS:
-        res = analyze_series(sym, bands)
+        res = analyze_series(sym, bands, apply_price_correction=apply_price_correction)
         res["pairs"] = add_diagnostic_columns(res["pairs"], res["df"])
         results[sym] = res
 
     control4_results: dict[str, dict] = {}
     for sym in CONTROL4_SYMBOLS:
         try:
-            control4_results[sym] = analyze_series(sym, bands)
+            # 対照4銘柄は価格水準補正の対象外(補正テーブルは1306.Tのみ)。
+            control4_results[sym] = analyze_series(sym, bands, apply_price_correction=apply_price_correction)
         except Exception as exc:  # 診断専用、失敗しても主検定は止めない
             control4_results[sym] = {"error": str(exc)}
 
@@ -524,7 +579,7 @@ def main() -> None:
             "n_pairs_valid_raw": int(pairs["valid_raw"].sum()),
             "n_pairs_clean": int(pairs["clean"].sum()),
         })
-    pd.DataFrame(rule_rows).to_csv(OUT_DIR / "rule_counts.csv", index=False)
+    pd.DataFrame(rule_rows).to_csv(out_dir / "rule_counts.csv", index=False)
 
     # -- main_indicator.csv (before/after x optimistic/conservative) ------
     indicator_rows = []
@@ -537,7 +592,7 @@ def main() -> None:
             indicator_rows.append({"series": sym, "stage": stage, "cost_scenario": "optimistic", **opt})
             indicator_rows.append({"series": sym, "stage": stage, "cost_scenario": "conservative", **cons})
     indicator_df = pd.DataFrame(indicator_rows)
-    indicator_df.to_csv(OUT_DIR / "main_indicator.csv", index=False)
+    indicator_df.to_csv(out_dir / "main_indicator.csv", index=False)
 
     # -- 系列別サマリ(clean のみ): sharpe / maxdd / hitrate / night-day 差 --
     summary_rows = []
@@ -567,7 +622,7 @@ def main() -> None:
             "hit_rate_gross": hit_rate(clean["r_night_bps"].to_numpy()),
         })
     summary_df = pd.DataFrame(summary_rows)
-    summary_df.to_csv(OUT_DIR / "summary_by_series.csv", index=False)
+    summary_df.to_csv(out_dir / "summary_by_series.csv", index=False)
 
     # -- sign agreement (b) vs 1321 (gross r_night, clean) -----------------
     ref_mean = summary_df.loc[summary_df["series"] == REFERENCE_SYMBOL, "mean_gross_bps"].iloc[0]
@@ -576,7 +631,7 @@ def main() -> None:
         m = summary_df.loc[summary_df["series"] == sym, "mean_gross_bps"].iloc[0]
         sign_rows.append({"series": sym, "mean_gross_bps": m,
                            "sign_matches_1321": bool(np.sign(m) == np.sign(ref_mean)) if np.isfinite(m) and np.isfinite(ref_mean) else None})
-    pd.DataFrame(sign_rows).to_csv(OUT_DIR / "sign_agreement.csv", index=False)
+    pd.DataFrame(sign_rows).to_csv(out_dir / "sign_agreement.csv", index=False)
 
     # -- correlation matrix + residual vs 1321 (共通日, clean) -------------
     frames = {}
@@ -589,7 +644,7 @@ def main() -> None:
     merged.columns = list(frames.keys())
     merged = merged.sort_index()
     corr = merged.corr()
-    corr.to_csv(OUT_DIR / "correlation_matrix.csv")
+    corr.to_csv(out_dir / "correlation_matrix.csv")
 
     residual_rows = []
     ref_series = merged[REFERENCE_SYMBOL]
@@ -601,7 +656,7 @@ def main() -> None:
         resid = (common["etf"] - common["ref"]).to_numpy()
         ci = mean_ci(resid, rng)
         residual_rows.append({"series": sym, "n_common": len(common), **ci})
-    pd.DataFrame(residual_rows).to_csv(OUT_DIR / "residual_vs_1321.csv", index=False)
+    pd.DataFrame(residual_rows).to_csv(out_dir / "residual_vs_1321.csv", index=False)
 
     # -- train / val split --------------------------------------------------
     tv_rows = []
@@ -617,7 +672,7 @@ def main() -> None:
                              "n": len(sub),
                              "mean_opt_bps": opt["mean_bps"], "opt_ci_lo": opt["ci_lo"], "opt_ci_hi": opt["ci_hi"],
                              "mean_cons_bps": cons["mean_bps"], "cons_ci_lo": cons["ci_lo"], "cons_ci_hi": cons["ci_hi"]})
-    pd.DataFrame(tv_rows).to_csv(OUT_DIR / "train_val_split.csv", index=False)
+    pd.DataFrame(tv_rows).to_csv(out_dir / "train_val_split.csv", index=False)
 
     # -- diagnostics (記述のみ) ---------------------------------------------
     diag_rows = []
@@ -625,7 +680,7 @@ def main() -> None:
         pairs = res["pairs"]
         clean = pairs.loc[pairs["clean"]]
         diag_rows.extend(diagnostics_table(sym, clean))
-    pd.DataFrame(diag_rows).to_csv(OUT_DIR / "diagnostics.csv", index=False)
+    pd.DataFrame(diag_rows).to_csv(out_dir / "diagnostics.csv", index=False)
 
     # -- controls ------------------------------------------------------------
     c1_rows = []
@@ -646,9 +701,9 @@ def main() -> None:
                          "net_short_cons_mean_bps": c3["net_short_cons"]["mean_bps"],
                          "net_short_cons_ci_lo": c3["net_short_cons"]["ci_lo"],
                          "net_short_cons_ci_hi": c3["net_short_cons"]["ci_hi"]})
-    pd.DataFrame(c1_rows).to_csv(OUT_DIR / "controls_sign_shuffle.csv", index=False)
-    pd.DataFrame(c2_rows).to_csv(OUT_DIR / "controls_vol_tercile.csv", index=False)
-    pd.DataFrame(c3_rows).to_csv(OUT_DIR / "controls_sign_reversal.csv", index=False)
+    pd.DataFrame(c1_rows).to_csv(out_dir / "controls_sign_shuffle.csv", index=False)
+    pd.DataFrame(c2_rows).to_csv(out_dir / "controls_vol_tercile.csv", index=False)
+    pd.DataFrame(c3_rows).to_csv(out_dir / "controls_sign_reversal.csv", index=False)
 
     # -- control 4: 個別株4銘柄(診断のみ) ------------------------------------
     c4_rows = []
@@ -659,7 +714,7 @@ def main() -> None:
         clean = res["pairs"].loc[res["pairs"]["clean"]]
         gross_ci = mean_ci(clean["r_night_bps"].to_numpy(), rng)
         c4_rows.append({"series": sym, "n_clean": len(clean), **gross_ci})
-    pd.DataFrame(c4_rows).to_csv(OUT_DIR / "controls_individual_stocks.csv", index=False)
+    pd.DataFrame(c4_rows).to_csv(out_dir / "controls_individual_stocks.csv", index=False)
 
     # -- 1321 帯またぎ回数(生の close 系列、全開発セット行) -------------------
     df1321 = results[REFERENCE_SYMBOL]["df"]
@@ -675,12 +730,12 @@ def main() -> None:
             crossings += 1
         prev = v
     pd.DataFrame([{"series": REFERENCE_SYMBOL, "n_rows": int(valid.sum()), "band_crossings": crossings}]).to_csv(
-        OUT_DIR / "band_crossing_1321.csv", index=False)
+        out_dir / "band_crossing_1321.csv", index=False)
 
     # -- per-pair raw CSV -----------------------------------------------------
     for sym, res in results.items():
         safe = sym.replace(".", "")
-        res["pairs"].to_csv(OUT_DIR / f"pairs_{safe}.csv", index=False)
+        res["pairs"].to_csv(out_dir / f"pairs_{safe}.csv", index=False)
 
     # -- RUN.json --------------------------------------------------------------
     md5s = {}
@@ -689,9 +744,17 @@ def main() -> None:
         if p.is_file():
             md5s[sym] = md5_of(p)
 
+    # -- 反復1(価格水準補正)のときは反復0の出力と突き合わせる ------------------
+    iter0_ref = None if iteration == 0 else load_iter0_reference()
+    comparison = None
+    if iter0_ref is not None:
+        comparison = build_iter0_vs_iter1_comparison(iter0_ref, results, summary_df, out_dir)
+
     run_meta = {
         "unit": UNIT,
-        "iteration": 0,
+        "iteration": iteration,
+        "apply_price_correction": apply_price_correction,
+        "price_level_corrections": PRICE_LEVEL_CORRECTIONS if apply_price_correction else {},
         "seed": RUN_SEED,
         "git_rev": git_rev(),
         "prereg_path": "docs/PHASE2/P2-03/PREREG.md",
@@ -713,8 +776,9 @@ def main() -> None:
             for sym, res in results.items()
         },
         "mde_bps": MDE_BPS,
+        "iter0_vs_iter1_comparison": comparison,
     }
-    (OUT_DIR / "RUN.json").write_text(json.dumps(run_meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    (out_dir / "RUN.json").write_text(json.dumps(run_meta, indent=2, ensure_ascii=False), encoding="utf-8")
 
     extra = {
         "sign_rows": sign_rows,
@@ -727,18 +791,126 @@ def main() -> None:
         "band_crossings": crossings,
         "band_n_rows": int(valid.sum()),
         "diag_rows": diag_rows,
+        "comparison": comparison,
     }
-    write_results_md(results, summary_df, indicator_df, control4_results, run_meta, rule_rows, extra)
-    print(f"wrote outputs to {OUT_DIR}")
+    write_results_md(results, summary_df, indicator_df, control4_results, run_meta, rule_rows, extra, out_dir)
+    print(f"wrote outputs to {out_dir}")
+    return out_dir
 
 
-def write_results_md(results, summary_df, indicator_df, control4_results, run_meta, rule_rows, extra) -> None:
+def load_iter0_reference() -> dict | None:
+    """反復0の出力(backtest_data/phase2_runs/P2-03/iter0_20260906/)を読み込む。
+    存在しなければ None(比較セクションを省略)。"""
+    ref_dir = default_out_dir(0)
+    summary_path = ref_dir / "summary_by_series.csv"
+    if not summary_path.is_file():
+        return None
+    ref_summary = pd.read_csv(summary_path)
+    ref_pairs = {}
+    for sym in MAIN_SYMBOLS:
+        safe = sym.replace(".", "")
+        p = ref_dir / f"pairs_{safe}.csv"
+        if p.is_file():
+            ref_pairs[sym] = pd.read_csv(p)
+    return {"dir": ref_dir, "summary": ref_summary, "pairs": ref_pairs}
+
+
+def build_iter0_vs_iter1_comparison(iter0_ref: dict, results: dict, summary_df: pd.DataFrame,
+                                     out_dir: Path) -> dict:
+    """1306.T の反復0→反復1比較(保守平均・CI・平均コスト)と、他3系列が
+    価格水準補正の影響を受けていないことの diff 確認。
+
+    diff は、反復0側(CSVから読み込み)と同じ土俵で比較するため、反復1側も
+    (メモリ上の DataFrame ではなく)このディレクトリに書き出したばかりの
+    pairs_<SYM>.csv を読み直して使う -- そうしないと date_t の dtype
+    (datetime64 vs CSV読み込みの文字列)のような、値としては同一でも
+    dtype が異なるだけの差分が偽陽性になる。"""
+    row0 = iter0_ref["summary"].loc[iter0_ref["summary"]["series"] == "1306.T"].iloc[0]
+    row1 = summary_df.loc[summary_df["series"] == "1306.T"].iloc[0]
+
+    pairs1 = pd.read_csv(out_dir / "pairs_1306T.csv")
+    clean1 = pairs1.loc[pairs1["clean"]]
+    mean_cost1 = float(clean1["cost_cons_bps"].mean()) if len(clean1) else float("nan")
+
+    pairs0 = iter0_ref["pairs"].get("1306.T")
+    if pairs0 is not None and "clean" in pairs0.columns:
+        clean0 = pairs0.loc[pairs0["clean"]]
+        mean_cost0 = float(clean0["cost_cons_bps"].mean()) if len(clean0) else float("nan")
+    else:
+        mean_cost0 = float("nan")
+
+    symbol_1306 = {
+        "iter0_mean_cons_bps": float(row0["mean_net_cons_bps"]),
+        "iter0_ci_lo": float(row0["cons_ci_lo"]), "iter0_ci_hi": float(row0["cons_ci_hi"]),
+        "iter0_mean_cost_bps": mean_cost0,
+        "iter1_mean_cons_bps": float(row1["mean_net_cons_bps"]),
+        "iter1_ci_lo": float(row1["cons_ci_lo"]), "iter1_ci_hi": float(row1["cons_ci_hi"]),
+        "iter1_mean_cost_bps": mean_cost1,
+    }
+
+    other_unchanged = {}
+    for sym in MAIN_SYMBOLS:
+        if sym == "1306.T":
+            continue
+        p0 = iter0_ref["pairs"].get(sym)
+        safe = sym.replace(".", "")
+        p1 = pd.read_csv(out_dir / f"pairs_{safe}.csv")
+        if p0 is None:
+            other_unchanged[sym] = None
+            continue
+        shared_cols = [c for c in p0.columns if c in p1.columns]
+        try:
+            eq = p0[shared_cols].reset_index(drop=True).equals(p1[shared_cols].reset_index(drop=True))
+        except Exception:
+            eq = False
+        other_unchanged[sym] = bool(eq)
+
+    return {"symbol_1306": symbol_1306, "other_series_unchanged": other_unchanged}
+
+
+def write_results_md(results, summary_df, indicator_df, control4_results, run_meta, rule_rows, extra, out_dir: Path) -> None:
+    it = run_meta["iteration"]
     lines = []
-    lines.append("# P2-03 反復0(開発セットのみ)結果 -- 数値のみ、判定なし")
+    lines.append(f"# P2-03 反復{it}(開発セットのみ)結果 -- 数値のみ、判定なし")
     lines.append("")
     lines.append(f"git rev: `{run_meta['git_rev']}` / seed: {run_meta['seed']} / "
-                 f"train末={run_meta['train_end']} / val={run_meta['val_start']}..{run_meta['val_end']}")
+                 f"train末={run_meta['train_end']} / val={run_meta['val_start']}..{run_meta['val_end']} / "
+                 f"価格水準補正={run_meta['apply_price_correction']}")
     lines.append("")
+    if run_meta["apply_price_correction"]:
+        lines.append("**反復1: データ補正(仮説変更ではない)**。1306.T の10:1分割は2026-04-01実効(2015年ではない)。"
+                     "primary source: `backtest_data/audit_fetch_1306_split_20260906/README.md`、"
+                     "`schema/jpx_etf_daily.json` CORRECTION 2026-09-06。"
+                     "CSVの2015-01-05〜2026-03-31区間は実勢価格のちょうど1/10"
+                     "(独立系列: 2022-03-04実勢終値1,920.5円 vs CSV 192.05円)。"
+                     "呼値帯の判定・呼値コストのbps換算にのみ×10を適用し、r_night/r_dayなどのリターン(比率)は"
+                     "CSVの値のまま変更していない。2015-01-05の水準シフトを跨ぐペアは規則2(split_candidate)の"
+                     "除外対象のまま(変更なし)。")
+        lines.append("")
+        comp = extra.get("comparison")
+        if comp is not None:
+            s = comp["symbol_1306"]
+            lines.append("## 反復0 → 反復1 比較(1306.T のみ、保守コストシナリオ)")
+            lines.append("")
+            lines.append("| | 反復0(補正前) | 反復1(補正後) |")
+            lines.append("|---|---|---|")
+            lines.append(f"| 平均net保守(bps) | {s['iter0_mean_cons_bps']:.2f} | {s['iter1_mean_cons_bps']:.2f} |")
+            lines.append(f"| CI | [{s['iter0_ci_lo']:.2f}, {s['iter0_ci_hi']:.2f}] | "
+                         f"[{s['iter1_ci_lo']:.2f}, {s['iter1_ci_hi']:.2f}] |")
+            lines.append(f"| 平均コスト(bps、往復) | {s['iter0_mean_cost_bps']:.2f} | {s['iter1_mean_cost_bps']:.2f} |")
+            lines.append("")
+            lines.append("他3系列(1591.T/2516.T/1321.T)は価格水準補正の対象外。反復0のpairs_<SYM>.csvと"
+                         "反復1のpairs_<SYM>.csv(共通列)を突き合わせて確認:")
+            lines.append("")
+            lines.append("| 系列 | 反復0と一致(diff結果) |")
+            lines.append("|---|---|")
+            for sym, eq in comp["other_series_unchanged"].items():
+                lines.append(f"| {sym} | {eq} |")
+            lines.append("")
+        else:
+            lines.append("(反復0の出力 `backtest_data/phase2_runs/P2-03/iter0_20260906/` が見つからなかったため、"
+                         "反復0→反復1の比較は省略)")
+            lines.append("")
 
     lines.append("## 欠陥規則の件数(規則1/2/3/5)")
     lines.append("")
@@ -899,8 +1071,19 @@ def write_results_md(results, summary_df, indicator_df, control4_results, run_me
     lines.append("")
     lines.append("本ファイルは判定(採用/棄却)を含まない。数値と件数のみ。")
 
-    (OUT_DIR / "RESULTS.md").write_text("\n".join(lines), encoding="utf-8")
+    (out_dir / "RESULTS.md").write_text("\n".join(lines), encoding="utf-8")
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--out", type=str, default=None,
+                    help="出力ディレクトリ(既定: backtest_data/phase2_runs/P2-03/iter<N>_20260906/)")
+    p.add_argument("--iteration", type=int, default=0, help="反復番号(RUN.json/RESULTS.mdのラベル用)")
+    p.add_argument("--apply-price-correction", dest="apply_price_correction", action="store_true", default=False,
+                    help="1306.T の価格水準補正(反復1)を適用する。既定は適用しない(反復0と同じ挙動)。")
+    return p.parse_args(argv)
 
 
 if __name__ == "__main__":
-    main()
+    _args = parse_args()
+    main(out_dir=_args.out, iteration=_args.iteration, apply_price_correction=_args.apply_price_correction)

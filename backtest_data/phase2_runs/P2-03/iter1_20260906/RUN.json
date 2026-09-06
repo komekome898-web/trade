@@ -1,0 +1,99 @@
+{
+  "unit": "P2-03",
+  "iteration": 1,
+  "apply_price_correction": true,
+  "price_level_corrections": {
+    "1306.T": [
+      [
+        "2015-01-05",
+        "2026-03-31",
+        10.0
+      ]
+    ]
+  },
+  "seed": 20260906,
+  "git_rev": "b6995d3ad51d160bb51d0e4038ba5358a30812fb",
+  "prereg_path": "docs/PHASE2/P2-03/PREREG.md",
+  "snapshot_dir": "backtest_data/jpx_etf_daily_20260905",
+  "input_md5": {
+    "1306.T": "49c51d3c08759234930ccf49fc543d0d",
+    "1591.T": "c85fa9d13826bbda54d69c18f459145f",
+    "2516.T": "af53c67fe88a6d0a105007567daf5bb8",
+    "1321.T": "4c8963bb707afcb616914adf0307dad8",
+    "7203.T": "b2cdf1a61671c0b917b3ec6db1b1c03d",
+    "6758.T": "cf57511cd8e93db22e99a81a5ded20a3",
+    "8306.T": "47705636d6638a48a150f1774361732c",
+    "9984.T": "98a0b1e2b6eaa95faaf760d59a7ebda1"
+  },
+  "boot_n": 2000,
+  "boot_block": 20,
+  "shuffle_n": 1000,
+  "train_end": "2019-06-30",
+  "val_start": "2019-07-01",
+  "val_end": "2022-03-04",
+  "n_per_step": {
+    "1306.T": {
+      "n_rows_dev": 2588,
+      "n_pairs_total": 2587,
+      "n_null_rows": 1,
+      "n_ghost_rows": 21,
+      "n_split_rows": 1,
+      "n_badprint_rows": 0,
+      "n_pairs_excluded": 43,
+      "n_pairs_clean": 2544
+    },
+    "1591.T": {
+      "n_rows_dev": 2004,
+      "n_pairs_total": 2003,
+      "n_null_rows": 1,
+      "n_ghost_rows": 21,
+      "n_split_rows": 0,
+      "n_badprint_rows": 0,
+      "n_pairs_excluded": 41,
+      "n_pairs_clean": 1962
+    },
+    "2516.T": {
+      "n_rows_dev": 1009,
+      "n_pairs_total": 1008,
+      "n_null_rows": 0,
+      "n_ghost_rows": 12,
+      "n_split_rows": 0,
+      "n_badprint_rows": 0,
+      "n_pairs_excluded": 23,
+      "n_pairs_clean": 985
+    },
+    "1321.T": {
+      "n_rows_dev": 2588,
+      "n_pairs_total": 2587,
+      "n_null_rows": 1,
+      "n_ghost_rows": 21,
+      "n_split_rows": 0,
+      "n_badprint_rows": 0,
+      "n_pairs_excluded": 41,
+      "n_pairs_clean": 2546
+    }
+  },
+  "mde_bps": {
+    "1306.T": 5.1,
+    "1591.T": 5.64,
+    "2516.T": 12.82,
+    "1321.T": 5.26
+  },
+  "iter0_vs_iter1_comparison": {
+    "symbol_1306": {
+      "iter0_mean_cons_bps": -82.62520656102492,
+      "iter0_ci_lo": -92.38458466352654,
+      "iter0_ci_hi": -73.03276618279253,
+      "iter0_mean_cost_bps": 88.12237936454136,
+      "iter1_mean_cons_bps": -9.17131483975599,
+      "iter1_ci_lo": -12.774323880987124,
+      "iter1_ci_hi": -5.672221018517693,
+      "iter1_mean_cost_bps": 14.668487643272403
+    },
+    "other_series_unchanged": {
+      "1591.T": true,
+      "2516.T": true,
+      "1321.T": true
+    }
+  }
+}
