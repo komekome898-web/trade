@@ -675,12 +675,30 @@
     "recoverable_bytes": 8513997
   },
   {
-    "bytes": 7671667,
-    "complete_members": 210,
+    "bytes": 11410333,
+    "complete_members": 313,
     "error": null,
     "last_member_complete": true,
-    "members": 210,
+    "members": 313,
     "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20260905_134841.jsonl.gz",
-    "recoverable_bytes": 85906444
+    "recoverable_bytes": 127540592
+  },
+  {
+    "bytes": 28719559,
+    "complete_members": 801,
+    "error": null,
+    "last_member_complete": true,
+    "members": 801,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20260905_190216.jsonl.gz",
+    "recoverable_bytes": 323159059
+  },
+  {
+    "bytes": 1818840,
+    "complete_members": 55,
+    "error": null,
+    "last_member_complete": true,
+    "members": 55,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20260906_082526.jsonl.gz",
+    "recoverable_bytes": 21992444
   }
 ]

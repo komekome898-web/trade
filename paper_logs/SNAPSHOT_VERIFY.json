@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-05T17:19:14.920489+00:00",
+  "generated_at": "2026-09-06T09:20:44.654446+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -156,6 +156,42 @@
       "extra": []
     },
     {
+      "unit": "audit_fetch_1306_split_20260906",
+      "md5sums_path": "backtest_data\\audit_fetch_1306_split_20260906\\MD5SUMS",
+      "file_count": 12,
+      "status": "verified",
+      "checked": 12,
+      "matched": 12,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "audit_fetch_etf_alternatives_20260906",
+      "md5sums_path": "backtest_data\\audit_fetch_etf_alternatives_20260906\\MD5SUMS",
+      "file_count": 73,
+      "status": "verified",
+      "checked": 73,
+      "matched": 73,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "audit_fetch_etf_units_20260906",
+      "md5sums_path": "backtest_data\\audit_fetch_etf_units_20260906\\MD5SUMS",
+      "file_count": 15,
+      "status": "verified",
+      "checked": 15,
+      "matched": 15,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
       "unit": "audit_fetch_H_20260905",
       "md5sums_path": "backtest_data\\audit_fetch_H_20260905\\MD5SUMS",
       "file_count": 5,
@@ -168,6 +204,44 @@
       "extra": [
         "README.md"
       ]
+    },
+    {
+      "unit": "audit_fetch_JPX_n225f_months_20260906",
+      "md5sums_path": "backtest_data\\audit_fetch_JPX_n225f_months_20260906\\MD5SUMS",
+      "file_count": 5,
+      "status": "verified",
+      "checked": 5,
+      "matched": 5,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "audit_fetch_JPX_tick_20260906",
+      "md5sums_path": "backtest_data\\audit_fetch_JPX_tick_20260906\\MD5SUMS",
+      "file_count": 3,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "README.md"
+      ]
+    },
+    {
+      "unit": "audit_fetch_micro_fee_20260906",
+      "md5sums_path": "backtest_data\\audit_fetch_micro_fee_20260906\\MD5SUMS",
+      "file_count": 8,
+      "status": "verified",
+      "checked": 8,
+      "matched": 8,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
     },
     {
       "unit": "auto_bitflyer_executions_20260905",
@@ -228,6 +302,20 @@
     {
       "unit": "auto_okx_open_interest_5m_20260905",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260905\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260906",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260906\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -440,16 +528,29 @@
       "extra": []
     },
     {
+      "unit": "jpx_etf_daily_20260906_topix_alt",
+      "md5sums_path": "backtest_data\\jpx_etf_daily_20260906_topix_alt\\MD5SUMS",
+      "file_count": 9,
+      "status": "verified",
+      "checked": 9,
+      "matched": 9,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
       "unit": "n225f_225labo_20260828",
       "md5sums_path": "backtest_data\\n225f_225labo_20260828\\MD5SUMS",
-      "file_count": 6,
+      "file_count": 9,
       "status": "verified",
-      "checked": 5,
-      "matched": 5,
+      "checked": 7,
+      "matched": 7,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
       "extra": [
+        "README_SOURCE.md",
         "manifest.json"
       ]
     },
@@ -515,6 +616,30 @@
       "extra": [
         "README.md"
       ]
+    },
+    {
+      "unit": "phase2_runs",
+      "md5sums_path": "backtest_data\\phase2_runs\\MD5SUMS",
+      "file_count": 242,
+      "status": "verified",
+      "checked": 242,
+      "matched": 242,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "phase2_sealed",
+      "md5sums_path": "backtest_data\\phase2_sealed\\MD5SUMS",
+      "file_count": 11,
+      "status": "verified",
+      "checked": 11,
+      "matched": 11,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
     },
     {
       "unit": "qa_known_answer_20260905",
@@ -1005,6 +1130,18 @@
       "extra": []
     },
     {
+      "unit": "qa_pipeline_daily_20260906",
+      "md5sums_path": "backtest_data\\qa_pipeline_daily_20260906\\MD5SUMS",
+      "file_count": 12,
+      "status": "verified",
+      "checked": 12,
+      "matched": 12,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
       "unit": "qa_pipeline_taker_20260905",
       "md5sums_path": "backtest_data\\qa_pipeline_taker_20260905\\MD5SUMS",
       "file_count": 5,
@@ -1144,19 +1281,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 1288,
+    "checked": 1683,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 33,
-    "verified": 12,
+    "unit_count": 44,
+    "verified": 23,
     "verified_line_ending_only": 21,
     "newly_sealed": 0,
     "mismatch_units": 0,
     "total_mismatches": 0,
     "total_line_ending_only": 99,
     "total_missing": 0,
-    "total_extra_untracked": 16,
+    "total_extra_untracked": 19,
     "ledger_mismatches": 0
   },
   "ok": true

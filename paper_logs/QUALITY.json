@@ -18,7 +18,7 @@
   "bitflyer_execution_flow": {
    "checks": {
     "gaps": {
-     "count": 109005,
+     "count": 111042,
      "examples": [
       {
        "examples": [
@@ -67,9 +67,19 @@
          "gap_seconds": 29336.737,
          "row": 25001,
          "ts": "2026-08-20T05:00:03.230000+00:00"
+        },
+        {
+         "gap_seconds": 11756.217,
+         "row": 603049,
+         "ts": "2026-08-31T12:01:21.477000+00:00"
+        },
+        {
+         "gap_seconds": 11349.514,
+         "row": 607153,
+         "ts": "2026-08-31T12:15:09.137000+00:00"
         }
        ],
-       "median_gap_seconds": 1790.26,
+       "median_gap_seconds": 3.327,
        "path": "data/executions_FX_BTC_JPY.csv"
       },
       {
@@ -115,23 +125,6 @@
          "row": 3817,
          "ts": "2026-08-01T19:04:00+00:00",
          "value": 9844906.0
-        }
-       ],
-       "path": "backtest_data/flow_FX_BTC_JPY_20260820.csv"
-      }
-     ],
-     "files": 1
-    },
-    "missing_columns": {
-     "count": 1,
-     "examples": [
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "synthetic"
-         ],
-         "undocumented_in_schema": []
         }
        ],
        "path": "backtest_data/flow_FX_BTC_JPY_20260820.csv"
@@ -243,7 +236,7 @@
   "bitflyer_tape": {
    "checks": {
     "duplicate_keys": {
-     "count": 30357,
+     "count": 30533,
      "examples": [
       {
        "examples": [
@@ -496,10 +489,10 @@
        "path": "backtest_data/auto_bitflyer_executions_20260905/executions_20260824.csv.gz"
       }
      ],
-     "files": 54
+     "files": 55
     },
     "gaps": {
-     "count": 243523,
+     "count": 246196,
      "examples": [
       {
        "examples": [
@@ -637,11 +630,11 @@
        "path": "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260824.csv.gz"
       }
      ],
-     "files": 123
+     "files": 125
     }
    },
-   "files_checked": 123,
-   "files_flagged": 123
+   "files_checked": 125,
+   "files_flagged": 125
   },
   "board_round_series_5s": {
    "checks": {
@@ -953,7 +946,7 @@
   "candles_fx_btc_jpy": {
    "checks": {
     "gaps": {
-     "count": 326,
+     "count": 327,
      "examples": [
       {
        "examples": [
@@ -1237,67 +1230,6 @@
       }
      ],
      "files": 6
-    },
-    "missing_columns": {
-     "count": 9,
-     "examples": [
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "synthetic"
-         ],
-         "undocumented_in_schema": []
-        }
-       ],
-       "path": "backtest_data/auto_bitflyer_executions_20260905/candles_FX_BTC_JPY.csv"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "synthetic"
-         ],
-         "undocumented_in_schema": []
-        }
-       ],
-       "path": "backtest_data/auto_bitflyer_executions_20260905/candles_XRP_JPY.csv"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "synthetic"
-         ],
-         "undocumented_in_schema": []
-        }
-       ],
-       "path": "backtest_data/candles_BTC_JPY_20260820.csv"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "synthetic"
-         ],
-         "undocumented_in_schema": []
-        }
-       ],
-       "path": "backtest_data/candles_ETH_JPY_20260820.csv"
-      },
-      {
-       "examples": [
-        {
-         "declared_but_absent": [
-          "synthetic"
-         ],
-         "undocumented_in_schema": []
-        }
-       ],
-       "path": "backtest_data/candles_FX_BTC_JPY_20260820.csv"
-      }
-     ],
-     "files": 9
     },
     "zero_volume": {
      "count": 56649,
@@ -1824,7 +1756,7 @@
      "files": 5
     },
     "zero_volume": {
-     "count": 19452,
+     "count": 19655,
      "examples": [
       {
        "examples": [
@@ -2051,7 +1983,7 @@
   "jpx_etf_daily": {
    "checks": {
     "extreme_return": {
-     "count": 98,
+     "count": 101,
      "examples": [
       {
        "examples": [
@@ -2145,10 +2077,10 @@
        "path": "backtest_data/jpx_etf_daily_20260905/1547.T.csv"
       }
      ],
-     "files": 14
+     "files": 16
     },
     "gaps": {
-     "count": 14,
+     "count": 16,
      "examples": [
       {
        "examples": [
@@ -2206,7 +2138,7 @@
        "path": "backtest_data/jpx_etf_daily_20260905/1547.T.csv"
       }
      ],
-     "files": 14
+     "files": 16
     },
     "split_candidate": {
      "count": 5,
@@ -2260,7 +2192,7 @@
      "files": 2
     },
     "zero_volume": {
-     "count": 351,
+     "count": 394,
      "examples": [
       {
        "examples": [
@@ -2388,11 +2320,11 @@
        "path": "backtest_data/jpx_etf_daily_20260905/1547.T.csv"
       }
      ],
-     "files": 15
+     "files": 17
     }
    },
-   "files_checked": 15,
-   "files_flagged": 15
+   "files_checked": 17,
+   "files_flagged": 17
   },
   "n225f_225labo": {
    "checks": {
@@ -2689,7 +2621,7 @@
   },
   "okx_oi": {
    "checks": {},
-   "files_checked": 16,
+   "files_checked": 17,
    "files_flagged": 0
   },
   "on1_onr_ledgers": {
@@ -2805,7 +2737,7 @@
      "informational": true
     },
     "extreme_return": {
-     "count": 70,
+     "count": 103,
      "examples": [
       {
        "examples": [
@@ -2936,41 +2868,41 @@
       {
        "examples": [
         {
-         "prev": 6044040.633796796,
-         "return": -0.1742178659625428,
-         "row": 13843,
-         "value": 4991060.772785824
+         "prev": 2765.2660343977172,
+         "return": -0.9810320031707291,
+         "row": 70,
+         "value": 52.451557372546056
         },
         {
-         "prev": 4991060.772785824,
-         "return": 0.21118050126193108,
-         "row": 13844,
-         "value": 6045075.488611495
+         "prev": 52.451557372546056,
+         "return": 52.44755874146174,
+         "row": 71,
+         "value": 2803.407693750306
         },
         {
-         "prev": 6239131.672601045,
-         "return": 0.11172004754909097,
-         "row": 28147,
-         "value": 6936167.759729073
+         "prev": 2694.6220402194294,
+         "return": -0.9815499450385304,
+         "row": 318,
+         "value": 49.71592474243562
         },
         {
-         "prev": 6936167.759729073,
-         "return": -0.1004108475946496,
-         "row": 28148,
-         "value": 6239701.275915995
+         "prev": 49.71592474243562,
+         "return": 53.07684169196285,
+         "row": 319,
+         "value": 2688.4801918662297
         },
         {
-         "prev": 6131186.421561363,
-         "return": 0.11089416945650865,
-         "row": 44046,
-         "value": 6811099.247563434
+         "prev": 3336.817749506872,
+         "return": -0.980853374354207,
+         "row": 1398,
+         "value": 63.88880029804521
         }
        ],
        "informational": true,
-       "path": "backtest_data/qa_pipeline_taker_20260905/candles_qa_taker_X0bps_20260905.csv.gz"
+       "path": "backtest_data/qa_pipeline_daily_20260906/daily_etf_Y0bps_20260906.csv"
       }
      ],
-     "files": 7,
+     "files": 10,
      "informational": true
     },
     "gaps": {
@@ -3303,7 +3235,7 @@
      "informational": true
     },
     "split_candidate": {
-     "count": 3,
+     "count": 6,
      "examples": [
       {
        "examples": [
@@ -3343,9 +3275,35 @@
        ],
        "informational": true,
        "path": "backtest_data/qa_pipeline_daily_20260905/daily_etf_Y5bps_20260905.csv"
+      },
+      {
+       "examples": [
+        {
+         "close": 281.25026599662385,
+         "prev_close": 2789.039925311873,
+         "ratio": 0.10084124771543893,
+         "row": 1651,
+         "ts": "2011-05-02T00:00:00+00:00"
+        }
+       ],
+       "informational": true,
+       "path": "backtest_data/qa_pipeline_daily_20260906/daily_etf_Y0bps_20260906.csv"
+      },
+      {
+       "examples": [
+        {
+         "close": 312.5126346640035,
+         "prev_close": 3098.435862957596,
+         "ratio": 0.10086141798194144,
+         "row": 1651,
+         "ts": "2011-05-02T00:00:00+00:00"
+        }
+       ],
+       "informational": true,
+       "path": "backtest_data/qa_pipeline_daily_20260906/daily_etf_Y2bps_20260906.csv"
       }
      ],
-     "files": 3,
+     "files": 6,
      "informational": true
     },
     "zero_volume": {
@@ -3486,8 +3444,8 @@
      "informational": true
     }
    },
-   "files_checked": 66,
-   "files_flagged": 23
+   "files_checked": 74,
+   "files_flagged": 26
   },
   "regime_composite": {
    "checks": {
@@ -3735,6 +3693,82 @@
    "files_checked": 2,
    "files_flagged": 0
   },
+  "schema_undefined": {
+   "checks": {
+    "gaps": {
+     "count": 150,
+     "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 2844,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/phase2_runs/P2-01/iter0_20260906/pairs.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 2844,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/phase2_runs/P2-01/iter1_20260906/pairs.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 2703,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/phase2_runs/P2-01b/history_20260906/pairs_full_history.csv"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 12268800.0,
+         "row": 7544,
+         "ts": "1990-09-21T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 11750400.0,
+         "row": 7567,
+         "ts": "1992-09-14T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 11664000.0,
+         "row": 7592,
+         "ts": "1994-09-14T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 11664000.0,
+         "row": 7602,
+         "ts": "1995-09-14T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 11577600.0,
+         "row": 7556,
+         "ts": "1991-09-13T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 604800.0,
+       "path": "backtest_data/phase2_runs/P2-04/iter0_20260906/calendar_rule_days.csv"
+      }
+     ],
+     "files": 4
+    }
+   },
+   "files_checked": 217,
+   "files_flagged": 4
+  },
   "spread_fx_btc_jpy": {
    "checks": {
     "gaps": {
@@ -3817,7 +3851,7 @@
   "venues": {
    "checks": {
     "duplicate_keys": {
-     "count": 403,
+     "count": 430,
      "examples": [
       {
        "examples": [
@@ -4045,7 +4079,7 @@
        "path": "backtest_data/auto_venues_20260905/quotes_20260901.csv.gz"
       }
      ],
-     "files": 26
+     "files": 27
     },
     "extreme_return": {
      "count": 15,
@@ -4209,7 +4243,7 @@
      "files": 6
     },
     "gaps": {
-     "count": 213352,
+     "count": 215940,
      "examples": [
       {
        "examples": [
@@ -4297,15 +4331,15 @@
        "path": "backtest_data/auto_venues_20260905/quotes_20260901.csv.gz"
       }
      ],
-     "files": 147
+     "files": 152
     }
    },
-   "files_checked": 150,
-   "files_flagged": 150
+   "files_checked": 155,
+   "files_flagged": 155
   },
   "ws_raw_capture": {
    "checks": {},
-   "files_checked": 76,
+   "files_checked": 78,
    "files_flagged": 0
   },
   "yutai": {
@@ -4314,8 +4348,226 @@
    "files_flagged": 0
   }
  },
- "generated_at": "2026-09-05T17:27:50.384694+00:00",
+ "generated_at": "2026-09-06T09:13:37.215597+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 0,
- "schema_undefined_files": []
+ "schema_undefined_count": 217,
+ "schema_undefined_files": [
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_diff_table.csv",
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_null.csv",
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_state_table.csv",
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-02_diff_table.csv",
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-02_null.csv",
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-02_state_table.csv",
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-03_diff_table.csv",
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-03_null.csv",
+  "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-03_state_table.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/alignment_check.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/bar_and_falsification.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/control2_best_of_2_null.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/controls.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/diagnostic_month.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/diagnostic_nights.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/diagnostic_regime.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/diagnostic_sq_dist.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/diagnostic_vol_tercile.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/diagnostic_weekday.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/diagnostic_year.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/exclusions.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/forward_diagnostic.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/main_indicators.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/mde.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/nights_distribution.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/pairs.csv",
+  "backtest_data/phase2_runs/P2-01/final_20260906/sub_indicators.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/alignment_check.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/control2_sign_shuffle_null.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/controls.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/diagnostic_month.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/diagnostic_nights.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/diagnostic_regime.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/diagnostic_sq_dist.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/diagnostic_vol_tercile.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/diagnostic_weekday.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/diagnostic_year.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/exclusions.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/main_indicators.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/mde.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/nights_distribution.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/pairs.csv",
+  "backtest_data/phase2_runs/P2-01/iter0_20260906/sub_indicators.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/alignment_check.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/control2_sign_shuffle_null.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/controls.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/diagnostic_month.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/diagnostic_nights.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/diagnostic_regime.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/diagnostic_sq_dist.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/diagnostic_vol_tercile.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/diagnostic_weekday.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/diagnostic_year.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/exclusions.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/main_indicators.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/mde.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/nights_distribution.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/pairs.csv",
+  "backtest_data/phase2_runs/P2-01/iter1_20260906/sub_indicators.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/decomposition_dev_vs_sealed.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_period_cost.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_period_gross.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_period_net.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_regime_cost.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_regime_gross.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_regime_net.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_rolling_cost.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_rolling_gross.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_rolling_net.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/edge_trend_summary.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/h1_identity_check.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/leg_decomposition_by_regime.csv",
+  "backtest_data/phase2_runs/P2-01b/history_20260906/pairs_full_history.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/bar_and_falsification.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/controls_summary.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/diagnostics_exdate.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/diagnostics_month.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/diagnostics_vol_tercile.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/diagnostics_weekday.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/diagnostics_year.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/ex_dates_1343.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/exclusion_summary.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/forward_diagnostic.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/forward_etf_vs_index_gap.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/main_indicators.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/main_summary.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/pairs_1321_sealed.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/pairs_1343_sealed.csv",
+  "backtest_data/phase2_runs/P2-02/final_20260906/regime_split_20241105.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/controls_summary.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/diagnostics_exdate.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/diagnostics_month.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/diagnostics_vol_tercile.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/diagnostics_weekday.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/ex_dates_1343.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/exclusion_summary.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/main_summary.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/pairs_1321_dev.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/pairs_1343_dev.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/sensitivity_fee.csv",
+  "backtest_data/phase2_runs/P2-02/iter0_20260906/train_val_summary.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/bar_and_falsification.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/boundary_2026_1306.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/controls_individual_stocks.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/controls_sign_reversal.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/controls_sign_shuffle.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/controls_vol_tercile.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/correlation_matrix.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/cost_by_series.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/diagnostics.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/exclusions.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/input_md5_check.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/main_indicator.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/mde.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/pairs_1306T.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/pairs_1321T.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/pairs_1591T.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/pairs_2516T.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/regime_2024_11_05.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/residual_vs_1321.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/rule1_badprint_events.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/rule_counts.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/sign_agreement.csv",
+  "backtest_data/phase2_runs/P2-03/final_20260906/summary_by_series.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/band_crossing_1321.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/controls_individual_stocks.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/controls_sign_reversal.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/controls_sign_shuffle.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/controls_vol_tercile.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/correlation_matrix.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/diagnostics.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/main_indicator.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/pairs_1306T.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/pairs_1321T.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/pairs_1591T.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/pairs_2516T.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/residual_vs_1321.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/rule_counts.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/sign_agreement.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/summary_by_series.csv",
+  "backtest_data/phase2_runs/P2-03/iter0_20260906/train_val_split.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/band_crossing_1321.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/controls_individual_stocks.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/controls_sign_reversal.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/controls_sign_shuffle.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/controls_vol_tercile.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/correlation_matrix.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/diagnostics.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/main_indicator.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/pairs_1306T.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/pairs_1321T.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/pairs_1591T.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/pairs_2516T.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/residual_vs_1321.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/rule_counts.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/sign_agreement.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/summary_by_series.csv",
+  "backtest_data/phase2_runs/P2-03/iter1_20260906/train_val_split.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/correlation_with_1306.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/main_indicator.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/pairs_1305T.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/pairs_1306T.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/pairs_1321T.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/pairs_1348T.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/residual_vs_1321.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/rule_counts.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/sign_agreement.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/summary_by_series.csv",
+  "backtest_data/phase2_runs/P2-03/iter2_20260906/train_val_split.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/calendar_holiday_counts_by_decade.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/calendar_holidays.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/calendar_rule_days.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/condition_diff_table.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/condition_state_table.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/condition_summary_3lines.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/control1_draws.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/control1_stratified_random.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/control2_placebo_shift.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/control3_sign_shuffle.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_alldays_cost_by_year.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_alldays_cost_rolling.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_alldays_gross_by_year.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_alldays_gross_rolling.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_alldays_net_by_year.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_alldays_net_rolling.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_summary.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_tom_cost_by_year.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_tom_cost_rolling.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_tom_gross_by_year.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_tom_gross_rolling.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_tom_net_by_year.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/edge_trend_tom_net_rolling.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/exclusions.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/gate_comparison.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/joint_permutation_argmax.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/joint_permutation_draws.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/joint_permutation_null.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/main_indicators.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/mde.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/pairs_1306.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/pairs_1321.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/pairs_futures.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/sub_indicators.csv",
+  "backtest_data/phase2_runs/P2-04/iter0_20260906/train_val.csv",
+  "backtest_data/phase2_runs/P2-04/iter1_20260906/iter1_best_per_rule.csv",
+  "backtest_data/phase2_runs/P2-04/iter1_20260906/iter1_indicators.csv",
+  "backtest_data/phase2_runs/P2-04/iter1_20260906/iter1_joint_permutation_draws.csv",
+  "backtest_data/phase2_runs/P2-04/iter1_20260906/iter1_joint_permutation_null.csv",
+  "backtest_data/phase2_runs/P2-04/iter1_20260906/iter1_val_summary.csv",
+  "backtest_data/phase2_runs/P2-04/iter2_20260906/iter2_best_per_rule.csv",
+  "backtest_data/phase2_runs/P2-04/iter2_20260906/iter2_indicators.csv",
+  "backtest_data/phase2_runs/P2-04/iter2_20260906/iter2_joint_permutation_draws.csv",
+  "backtest_data/phase2_runs/P2-04/iter2_20260906/iter2_joint_permutation_null.csv",
+  "backtest_data/phase2_runs/P2-04/iter2_20260906/iter2_val_summary.csv",
+  "backtest_data/phase2_sealed/P2-01/UNSEAL_LOG.jsonl",
+  "backtest_data/phase2_sealed/P2-02/UNSEAL_LOG.jsonl",
+  "backtest_data/phase2_sealed/P2-03/UNSEAL_LOG.jsonl"
+ ]
 }
