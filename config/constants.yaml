@@ -286,10 +286,9 @@ jpx_cash_equity:
       — one shared band table applies to the whole TOPIX500 population, and
       the header itself states TOPIX100 is a subset of that population
       (together with TOPIX Mid400). This entry is registered under the
-      "_topix100" name because docs/PHASE2/P2-07/PREREG.md (individual JPX
-      stocks) only needs the tick band that applies to TOPIX100-member
-      tickers, and this is that column (see topix500_membership_note below
-      for the caveat on determining membership by date). Table rows (値段の
+      "_topix500" name to match the page's own column label (see
+      topix500_membership_note below for the caveat on determining
+      membership by date). Table rows (値段の
       水準 -> this column; ETF column and その他の銘柄 column given
       alongside for cross-check, quoted verbatim):
       1,000円以下 -> 0.1円 (ETF 1円 / その他 1円);
