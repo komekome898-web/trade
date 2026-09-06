@@ -35,12 +35,21 @@ This script is resumable and polite:
     until a page returns zero rows (or `--stop-before-ts` is reached).
   - `--dry-run` prints the plan (first window, sleep, output dir) and exits
     without making any network request.
+  - `--rebuild` skips fetching entirely and just (re)consolidates whatever
+    raw/page_*.json files already exist under `--out` into
+    candles_1m.csv.gz / gaps_gt5min.txt / MD5SUMS -- delegates to
+    scripts/build_bitflyer_lightchart_csv.py's rebuild(), makes NO network
+    request. Use this after a fetch run adds new pages, instead of
+    re-fetching to regenerate the derived files.
 
 Usage:
     python scripts/fetch_bitflyer_lightchart.py --dry-run
     python scripts/fetch_bitflyer_lightchart.py \
         --out backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906 \
         --sleep 0.5
+    python scripts/fetch_bitflyer_lightchart.py \
+        --out backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906 \
+        --rebuild
 """
 from __future__ import annotations
 
@@ -54,6 +63,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
 BASE_URL = "https://lightchart.bitflyer.com/api/ohlc"
 WINDOW_MS = 12 * 60 * 60 * 1000  # server buckets requests into 12h windows
@@ -85,7 +98,15 @@ def main() -> int:
     ap.add_argument("--sleep", type=float, default=0.5, help="seconds between requests")
     ap.add_argument("--max-pages", type=int, default=0, help="0 = unlimited")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--rebuild", action="store_true",
+                     help="no network: just consolidate existing raw/page_*.json "
+                          "under --out into candles_1m.csv.gz/gaps_gt5min.txt/MD5SUMS")
     args = ap.parse_args()
+
+    if args.rebuild:
+        import build_bitflyer_lightchart_csv as build_mod
+        build_mod.rebuild(Path(args.out))
+        return 0
 
     if args.before:
         start_dt = datetime.fromisoformat(args.before.replace("Z", "+00:00"))

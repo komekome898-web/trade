@@ -17,6 +17,8 @@
     "data/bitbank_xrp_jpy_1m.csv",
     "backtest_data/binance_BTCUSDT_1m.csv",
     "backtest_data/binance_BTCUSDT_1m_210d_*.csv.gz",
+    "backtest_data/binance_BTCUSDT_1m_20240101_20260831/binance_BTCUSDT_1m_20240101_20260831.csv.gz",
+    "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_20170801_20231231.csv.gz",
     "backtest_data/binance_XRPUSDT_1d.csv",
     "backtest_data/binance_XRPUSDT_1m.csv",
     "backtest_data/binance_XRPUSDT_4h.csv",
@@ -86,6 +88,36 @@
         "taker_buy_base": {"meaning": "taker-buy base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
       },
       "quality": {"unique_key": ["open_time"]}
+    },
+    "binance_BTCUSDT_1m_20240101_20260831.csv.gz": {
+      "columns": {
+        "open_time": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null},
+        "quote_volume": {"meaning": "quote-asset (USDT) volume in the bar", "unit": "USDT", "tz": null, "notes": null},
+        "n_trades": {"meaning": "number of trades in the bar", "unit": "count", "tz": null, "notes": null},
+        "taker_buy_base": {"meaning": "taker-buy base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["open_time"]},
+      "_notes": "backtest_data/binance_BTCUSDT_1m_20240101_20260831/ -- Binance Vision monthly (+ daily fallback for 2026-08, whose monthly archive wasn't published yet) klines, 2024-01-01..2026-08-31, built 2026-09-06 for phase-2 G2. Same column set as binance_BTCUSDT_1m_210d_*.csv.gz. See that directory's README.md."
+    },
+    "binance_BTCUSDT_1m_20170801_20231231.csv.gz": {
+      "columns": {
+        "open_time": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null},
+        "quote_volume": {"meaning": "quote-asset (USDT) volume in the bar", "unit": "USDT", "tz": null, "notes": null},
+        "n_trades": {"meaning": "number of trades in the bar", "unit": "count", "tz": null, "notes": null},
+        "taker_buy_base": {"meaning": "taker-buy base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["open_time"]},
+      "_notes": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/ -- Binance Vision monthly klines, 2017-08-17 (BTCUSDT launch month; 2017-07 archive does not exist) .. 2023-12-31, built 2026-09-06 for phase-2 G2 via the new scripts/fetch_binance_vision.py (generalized from the manual curl build of the 2024 snapshot above). Same column set."
     },
     "binance_BTCUSDT_1s_*.csv": {
       "columns": {
