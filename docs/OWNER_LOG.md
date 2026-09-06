@@ -9,3 +9,4 @@
 | L-005 | 2026-09-06 | 決定 | 「私の作業はできる時に進めます。必要になったときにすぐ手順を呼び出せるようにしてください」 | `docs/OWNER_PROCEDURES.md`、`/owner-procedure` スキル |
 | L-006 | 2026-09-06 | 決定 | P2-07 は「a: 今は閉じる」 | `docs/PHASE2/P2-07/JUDGMENT_PROPOSAL.md`、資源 R10 |
 | L-007 | 2026-09-06 | 決定 | 「g2に進んでください」 | G2(champion 一族)開始。P2-06 は TOPIX 先物 xlsx 待ちで G1 に残す |
+| L-008 | 2026-09-06 | 完了報告 | 「restart_all.bat → share_logs.bat を 1 回実行しました」(P4、I-002 対応後) | コミット 096ce84 に `backtest_data/auto_bitflyer_executions_20260905/` が含まれることを確認(MD5 全一致)。状態板更新 |
