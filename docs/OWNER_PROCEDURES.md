@@ -47,3 +47,10 @@
 ## P5 報告の書き方(記録漏れ防止)
 何かを完了・変更・決定したら、一言でよいので「P1-3 完了(1348 を 4,255 円で約定、9/10)」のように**手順番号付き**で伝える。
 リードはその回のうちに `docs/OWNER_LOG.md` に追記し、`docs/OWNER_STATUS.md` を更新する。
+
+## P6 share_logs の定期実行(1 回だけ登録。委任表 §2)
+PowerShell(管理者不要)で 1 行。毎日 **日本時間 06:30**(取引の少ない時間帯)に `share_logs.bat` を実行:
+```
+schtasks /Create /TN "trade_share_logs" /TR "C:\Users\ryoma\trade\deploy\share_logs.bat" /SC DAILY /ST 06:30 /F
+```
+確認: `schtasks /Query /TN trade_share_logs`。以後、手動の share_logs は不要(依頼があった時だけ)。
