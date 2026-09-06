@@ -1,0 +1,60 @@
+# Cash-ETF auction-fill measurement (docs/PHASE2/EXEC_MEASUREMENT/PREREG.md).
+# NO secrets in this file. The API password lives in .env as KABU_API_PASSWORD only.
+#
+# LIVE requires ALL THREE plus owner approval
+# (docs/PHASE2/EXEC_MEASUREMENT/DESIGN.md section 8 checklist, copied into
+#  docs/OPERATIONS.md section 5.2):
+#   1. enabled: true here
+#   2. live_ack: "I_UNDERSTAND_REAL_MONEY_JPX_ETF" here
+#   3. env ETF_EXEC_LIVE=true
+# Anything less is DRY RUN: the order payload is written to
+# data/etf_measure/events.jsonl and nothing is sent, not even to port 18081.
+#
+# These three are INDEPENDENT of ON1's gate (ON1_LIVE /
+# "I_UNDERSTAND_REAL_MONEY_JPX" / config/on1_live.yaml). Arming one must never
+# arm the other.
+
+enabled: false
+live_ack: ""
+
+# kabuステーションAPI port. 18081 = 検証, 18080 = 本番.
+# Stay on 18081 until the three 不明 of DESIGN section 2.3 are confirmed:
+# where SOR routes 引成/寄成, how ExpireDay 0 resolves at 15:20 / 08:40, and
+# whether those times are accepted at all.
+port: 18081
+
+# 9 = SOR (the 0-yen commission path) / 27 = 東証+.
+# 1 (東証) is refused by the code: the spec says a 新規 order cannot name 東証
+# directly in normal hours.
+exchange: 9
+
+# 2 = 一般 / 4 = 特定 / 12 = 法人. Owner must confirm which account is used.
+account_type: 4
+
+# Must be a SUBSET of the code's ALLOWED_SYMBOLS ("1343", "1591", "1348");
+# anything else is dropped and reported as a config_problem event.
+# 1348 was added by the owner decision recorded in PREREG.md 追記 2026-09-06
+# (MAXIS TOPIX, 1 unit ~4,255 yen, pass bar 2.7 bps). Three symbols expose
+# about 60,500 yen at once; the 60,000 yen cap is PER ORDER, not in total.
+symbols: ["1343", "1591", "1348"]
+
+# May only be LOWERED. The code cap is 60000 yen of fill notional per order and
+# is what stops an order automatically if 1591's unit changes (2027-01-28) or it
+# splits (2027-02-01).
+max_notional_yen_per_symbol: 60000
+
+# Scheduler windows. These may only NARROW the hard windows compiled into
+# bot/jpx/etf_auction_executor.py (entry 15:00-15:24, exit 08:00-08:50);
+# a wider value is ignored and reported as a config_problem event.
+entry_window: ["15:10", "15:24"]
+exit_window: ["08:30", "08:50"]
+
+# PREREG section 3: ex-dividend dates and the business day before them.
+# Frozen into PREREG appendix A BEFORE the first order; empty here is not
+# "no exclusions", it is "appendix A has not been filled in yet".
+# Dates listed here apply to EVERY symbol.
+# Two exclusions are DERIVED in code and must NOT be repeated here:
+#   - the quarterly SQ eve (2nd Friday of 3/6/9/12);
+#   - 1348's ex-dates, read per symbol from its frozen dividend snapshot
+#     backtest_data/jpx_etf_daily_20260906_topix_alt/1348.T.json.
+skip_dates: []

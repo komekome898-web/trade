@@ -1,0 +1,293 @@
+{
+  "dataset": "etf_measure_ledger",
+  "description": "Cash-ETF closing/opening auction fill-cost measurement (docs/PHASE2/EXEC_MEASUREMENT/PREREG.md). One row per round trip: buy 1 trading unit of 1343, 1591 or 1348 at the closing auction with 引成 (FrontOrderType 16) and sell it at the next opening auction with 寄成 (FrontOrderType 13), 50 round trips per symbol (1348 added by the owner decision in PREREG.md 追記 2026-09-06, pass bar 2.7 bps), to replace the ASSUMED 'one tick per side' rounding cost with a measured round-trip execution cost c. Written by src/bot/jpx/etf_auction_executor.py; the ledger row is finalised on a LATER day than the trade, once /orders exposes the fill Details.",
+  "path_glob": [
+    "paper_logs/etf_measure_ledger.csv",
+    "data/etf_measure/events.jsonl",
+    "data/etf_measure/state_1343.json",
+    "data/etf_measure/state_1591.json",
+    "data/etf_measure/state_1348.json",
+    "data/etf_measure/paused.json"
+  ],
+  "source": "kabuステーションAPI (localhost REST): fills from GET /orders?product=1&details=true -> Details[] rows with RecType 8 (約定); trading unit and 値幅制限 from GET /symbol; board snapshots from GET /board. Printed close/open and the linked index come from the daily vendor series the P2-02 / P2-03 judgments used (data/onr/etf_1343_daily.csv, data/onr/reit_index_daily.csv, and the 1591 / 1348 equivalents). 1348's ex-dividend exclusion dates are derived from the frozen dividend snapshot backtest_data/jpx_etf_daily_20260906_topix_alt/1348.T.json rather than re-fetched.",
+  "retention": "PERMANENT. Unlike the ON1/ONR paper ledgers this is NOT re-derivable from inputs: a fill price is an exchange fact that exists nowhere else once /orders ages out. Never delete, never overwrite in place, never rebuild. Rows are appended only.",
+  "file_groups": {
+    "etf_measure_ledger.csv (paper_logs/etf_measure_ledger.csv)": {
+      "columns": {
+        "symbol": {
+          "meaning": "ETF code traded (1343 J-REIT, 1591 JPX400, 1348 TOPIX)",
+          "unit": "string",
+          "tz": null,
+          "notes": "only 1343 / 1591 / 1348 exist in this measurement"
+        },
+        "entry_date": {
+          "meaning": "session whose CLOSING auction the buy was sent for",
+          "unit": "YYYY-MM-DD",
+          "tz": "JST",
+          "notes": null
+        },
+        "exit_date": {
+          "meaning": "next session whose OPENING auction the sell was sent for",
+          "unit": "YYYY-MM-DD",
+          "tz": "JST",
+          "notes": null
+        },
+        "trading_unit": {
+          "meaning": "売買単位 read from GET /symbol TradingUnit at entry",
+          "unit": "口",
+          "tz": null,
+          "notes": "1343 = 10, 1591 = 1 as pre-registered; a mismatch stops the symbol (S6) and no order is sent"
+        },
+        "qty": {
+          "meaning": "quantity actually ordered; always exactly one trading unit",
+          "unit": "口",
+          "tz": null,
+          "notes": null
+        },
+        "exchange": {
+          "meaning": "kabusapi Exchange sent on the order (9 = SOR, 27 = 東証+)",
+          "unit": "code",
+          "tz": null,
+          "notes": null
+        },
+        "exchange_name": {
+          "meaning": "ExchangeName reported back by GET /orders",
+          "unit": "string",
+          "tz": null,
+          "notes": "the only evidence of where SOR actually routed the auction order -- an open 不明 in the spec"
+        },
+        "entry_order_id": {
+          "meaning": "OrderId returned by POST /sendorder for the buy",
+          "unit": "string",
+          "tz": null,
+          "notes": "blank on a dry run"
+        },
+        "exit_order_id": {
+          "meaning": "OrderId for the sell",
+          "unit": "string",
+          "tz": null,
+          "notes": null
+        },
+        "fill_buy": {
+          "meaning": "realised buy price, quantity-weighted over Details[] RecType 8",
+          "unit": "JPY per 口",
+          "tz": null,
+          "notes": "blank when nothing executed"
+        },
+        "fill_sell": {
+          "meaning": "realised sell price, same construction",
+          "unit": "JPY per 口",
+          "tz": null,
+          "notes": null
+        },
+        "fill_buy_time": {
+          "meaning": "ExecutionDay / RecTime of the last buy execution row",
+          "unit": "string as returned by kabusapi",
+          "tz": "JST",
+          "notes": "diagnostic only"
+        },
+        "fill_sell_time": {
+          "meaning": "same for the sell",
+          "unit": "string",
+          "tz": "JST",
+          "notes": null
+        },
+        "print_close": {
+          "meaning": "printed closing price on entry_date",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "from the SAME daily vendor series the P2-02/P2-03 judgments used -- see known_defects"
+        },
+        "print_open": {
+          "meaning": "printed opening price on exit_date",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "print_source": {
+          "meaning": "path of the daily series the two prints came from",
+          "unit": "path",
+          "tz": null,
+          "notes": "recorded per row so a change of series is visible"
+        },
+        "board_close_snapshot": {
+          "meaning": "GET /board CurrentPrice taken just before the entry order was built",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "secondary print reference, independent of the vendor series"
+        },
+        "board_open_snapshot": {
+          "meaning": "GET /board CurrentPrice taken just before the exit order was built",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "pre-open board; not an auction price"
+        },
+        "idx_close": {
+          "meaning": "linked index close on entry_date (東証REIT指数 for 1343, JPX日経400 for 1591, TOPIX for 1348)",
+          "unit": "index points",
+          "tz": null,
+          "notes": "DIAGNOSTIC ONLY -- never enters c or the pass/fail decision"
+        },
+        "idx_open": {
+          "meaning": "linked index open on exit_date",
+          "unit": "index points",
+          "tz": null,
+          "notes": "diagnostic only"
+        },
+        "tick_yen": {
+          "meaning": "呼値 at print_close, from the JPX ETF tick table",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "duplicated from config/constants.yaml jpx_cash_equity.etf_tick_size_yen_by_price_band; a test pins the two copies together"
+        },
+        "tick_bps": {
+          "meaning": "tick_yen / print_close in bps",
+          "unit": "bps",
+          "tz": null,
+          "notes": null
+        },
+        "e_buy_bps": {
+          "meaning": "(fill_buy - print_close) / print_close in bps; positive = bought above the print",
+          "unit": "bps",
+          "tz": null,
+          "notes": null
+        },
+        "e_sell_bps": {
+          "meaning": "(print_open - fill_sell) / print_open in bps; positive = sold below the print",
+          "unit": "bps",
+          "tz": null,
+          "notes": null
+        },
+        "c_bps": {
+          "meaning": "round-trip execution cost: printed overnight return minus realised overnight return, plus commission in bps. THE quantity the measurement exists to produce",
+          "unit": "bps",
+          "tz": null,
+          "notes": "defined as the subtraction; e_buy + e_sell is only a first-order check and a disagreement above 0.5bps is flagged in note"
+        },
+        "c_ticks": {
+          "meaning": "c_bps expressed in ticks (c_bps / tick_bps)",
+          "unit": "ticks",
+          "tz": null,
+          "notes": null
+        },
+        "commission_yen": {
+          "meaning": "sum of Details[] Commission over both legs",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "expected 0 on SOR; a non-zero value is recorded as stop rule S7 (record, do not stop)"
+        },
+        "commission_tax_yen": {
+          "meaning": "sum of Details[] CommissionTax over both legs",
+          "unit": "JPY",
+          "tz": null,
+          "notes": null
+        },
+        "pnl_yen": {
+          "meaning": "(fill_sell - fill_buy) * qty - commissions",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "recorded, but PREREG section 1 FORBIDS using realised pnl as evidence about the overnight premium: n=50 has no power there"
+        },
+        "cum_pnl_yen": {
+          "meaning": "running cumulative pnl_yen across both symbols in ledger order",
+          "unit": "JPY",
+          "tz": null,
+          "notes": "stop rule S4 fires below -15000"
+        },
+        "counted_in_n": {
+          "meaning": "whether this round trip enters the n = 50 estimate",
+          "unit": "True/False",
+          "tz": null,
+          "notes": null
+        },
+        "excluded_reason": {
+          "meaning": "why it does not, when counted_in_n is False",
+          "unit": "string",
+          "tz": null,
+          "notes": "not_filled / partial_fill / print_series_missing -- excluded rows are KEPT as rows, never deleted, so a change in the exclusion rule stays detectable"
+        },
+        "note": {
+          "meaning": "free-text annotation attached at finalisation",
+          "unit": "string",
+          "tz": null,
+          "notes": "usually blank"
+        }
+      }
+    },
+    "events.jsonl (data/etf_measure/events.jsonl)": {
+      "columns": {
+        "ts / time": {
+          "meaning": "wall clock of the event",
+          "unit": "epoch seconds / ISO-8601",
+          "tz": "local (JST on the trading PC)",
+          "notes": null
+        },
+        "symbol / job / event": {
+          "meaning": "which symbol, which job (entry/exit/reconcile/ledger), which outcome",
+          "unit": "string",
+          "tz": null,
+          "notes": "events: dry_run_order, order_accepted, order_state_unknown, order_not_sent, order_rejected, skip, alert, config_problem, stop_rule, row, pending"
+        },
+        "live": {
+          "meaning": "whether the triple LIVE gate was armed for this run",
+          "unit": "bool",
+          "tz": null,
+          "notes": "false means the payload was written here and nothing was sent anywhere"
+        },
+        "payload": {
+          "meaning": "the exact kabusapi RequestSendOrder body",
+          "unit": "object",
+          "tz": null,
+          "notes": "carries no credential: the token is a header and the API password only ever appears in POST /token. Every line is written through logging_setup.redact"
+        }
+      }
+    },
+    "state_<symbol>.json / paused.json (data/etf_measure/)": {
+      "columns": {
+        "status": {
+          "meaning": "per-symbol state machine",
+          "unit": "FLAT / LONG / STATE_UNKNOWN",
+          "tz": null,
+          "notes": "STATE_UNKNOWN on EITHER symbol stops BOTH; it is cleared only by a human after a read-only reconcile"
+        },
+        "position": {
+          "meaning": "the single open long, when status is LONG",
+          "unit": "object",
+          "tz": null,
+          "notes": null
+        },
+        "orders": {
+          "meaning": "per-day send counter, incremented BEFORE the send",
+          "unit": "{date, count}",
+          "tz": "JST",
+          "notes": "cap 2 per symbol per day, so an ambiguous failure still consumes its slot"
+        },
+        "pending": {
+          "meaning": "round trips whose fills are not visible yet",
+          "unit": "list of objects",
+          "tz": null,
+          "notes": "drained into the ledger by the read-only finaliser"
+        },
+        "nofill_streak": {
+          "meaning": "consecutive nights without a full fill",
+          "unit": "count",
+          "tz": null,
+          "notes": "stop rule S3 fires at 2"
+        },
+        "rules (paused.json)": {
+          "meaning": "stop rules that have fired",
+          "unit": "list of {rule, symbol, detail, time}",
+          "tz": null,
+          "notes": "S1/S3/S4/S6. Never auto-resumes; a human calls clear(operator_confirm=True)"
+        }
+      }
+    }
+  },
+  "known_defects": [
+    "print_close / print_open come from the daily vendor series used by the P2-02 and P2-03 judgments; there is NO guarantee they equal the exchange's official close/open. That is exactly why board_close_snapshot / board_open_snapshot are taken as an independent secondary reference -- if the two disagree, c is only as good as the print it is measured against",
+    "GET /orders is eventually consistent, so the fill Details of an order accepted at 15:20 or 08:40 may not be visible for some time. The ledger row is therefore finalised on a LATER run (the next entry job, or a human run of scripts/run_etf_measure_reconcile.py), not by the job that sent the order. A round trip whose orders are not yet visible stays in state_<symbol>.json pending and is NOT written as an unfilled row",
+    "where SOR (Exchange 9) routes a 引成 / 寄成 order, and whether that order joins the exchange auction at all, is not documented in kabu_STATION_API.yaml. exchange_name is recorded per row so the routing can be read off the ledger after the fact; until it is confirmed on the verification port 18081 the routing must be treated as unknown",
+    "cum_pnl_yen runs across BOTH symbols in ledger append order, which is the order fills became visible, not necessarily trade order. It is used only for the S4 stop line, never for inference",
+    "a dry-run round trip produces NO ledger row at all (there is no fill to measure). Dry-run activity is visible only in events.jsonl"
+  ]
+}

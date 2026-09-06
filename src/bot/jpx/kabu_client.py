@@ -58,6 +58,8 @@ ORDER_PATHS = ("/sendorder", "/sendorder/future", "/sendorder/option", "/cancelo
 
 # `product` query value for 先物 on /orders and /positions.
 PRODUCT_FUTURE = "3"
+# `product` query value for 現物 (cash equities / ETFs) on the same two paths.
+PRODUCT_CASH = "1"
 
 # Only these prove the request body never left this process.  A connect timeout
 # means the TCP connection for THIS attempt never completed; the markers are
@@ -168,11 +170,44 @@ class KabuClient:
         return dict(self._call("GET", f"/board/{symbol}@{int(exchange)}",
                                diagnostic=True) or {})
 
+    def symbol_info(self, symbol: str, exchange: int) -> dict:
+        """GET /symbol/{symbol}@{exchange} — 銘柄情報.
+
+        Read-only.  The cash executor reads `TradingUnit` (売買単位) from here
+        and refuses to send unless it equals the pre-registered unit AND the
+        Qty it is about to send; `UpperLimit` / `LowerLimit` are the 値幅制限.
+        """
+        return dict(self._call("GET", f"/symbol/{symbol}@{int(exchange)}",
+                               diagnostic=True) or {})
+
+    def order_by_id(self, order_id: str, *, product: str = PRODUCT_CASH) -> list[dict]:
+        """GET /orders?id=... with 約定明細 (`details=true`).
+
+        Read-only.  `Details[]` is where a fill actually lives: the row with
+        `RecType` 8 (約定) carries `Price` / `Qty` / `Commission` /
+        `CommissionTax`.  Eventually consistent — an empty answer means "not
+        visible yet", never "did not happen".
+        """
+        return list(self._call("GET", "/orders",
+                               params={"product": product, "id": str(order_id),
+                                       "details": "true"},
+                               diagnostic=True) or [])
+
     # ---- order endpoints (never retried) --------------------------------
     def send_future_order(self, payload: dict) -> dict:
         """POST /sendorder/future.  The payload is built and sanity-checked by
         the caller (bot/jpx/on1_executor.py); this method only transports it."""
         return dict(self._call("POST", "/sendorder/future", body=payload) or {})
+
+    def send_cash_order(self, payload: dict) -> dict:
+        """POST /sendorder — 現物 (cash equity / ETF).
+
+        `/sendorder` is already in `ORDER_PATHS`, so the existing contract
+        applies unchanged: never retried, ambiguous failure -> OrderStateUnknown.
+        The payload is built and sanity-checked by the caller
+        (bot/jpx/etf_auction_executor.py); this method only transports it.
+        """
+        return dict(self._call("POST", "/sendorder", body=payload) or {})
 
     def cancel_order(self, order_id: str) -> dict:
         return dict(self._call("POST", "/cancelorder", body={"OrderId": order_id}) or {})
