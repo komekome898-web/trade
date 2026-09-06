@@ -50,7 +50,7 @@ SEALED_SUBDIR = Path("backtest_data") / "phase2_sealed"
 # sync deliberately (a schema's declared time column should always be one of
 # these; see schema/*.json). Order matters: the first candidate present wins.
 TS_CANDIDATES = ["ts", "ts_utc", "timestamp", "date", "entry_date",
-                  "open_time", "exec_date"]
+                  "open_time", "exec_date", "ex_date", "date_entry"]
 
 HASH_CHUNK = 1024 * 1024
 

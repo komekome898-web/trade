@@ -1,0 +1,72 @@
+{
+  "unit": "P2-01",
+  "created_utc": "2026-09-06T00:23:43.206877+00:00",
+  "forward_start": "2026-09-06T00:00:00+00:00",
+  "files": [
+    {
+      "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz",
+      "md5": "0f179b365417d4e307e53672e8cb3237",
+      "time_column": "date",
+      "first_ts": "1990-01-04T00:00:00+00:00",
+      "last_ts": "2026-08-27T00:00:00+00:00",
+      "seal_from_ts": "2020-12-21T00:00:00+00:00",
+      "seal_from_ts_per_file": "2015-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz",
+      "md5": "aed073cf99e230db81bf3b4714fddf10",
+      "time_column": "date",
+      "first_ts": "2007-09-19T00:00:00+00:00",
+      "last_ts": "2026-08-28T00:00:00+00:00",
+      "seal_from_ts": "2020-12-21T00:00:00+00:00",
+      "seal_from_ts_per_file": "2020-12-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/full_day_daily.csv.gz",
+      "md5": "7d97017afaff9f35bd5ca6c9c7193b94",
+      "time_column": "date",
+      "first_ts": "1990-01-04T00:00:00+00:00",
+      "last_ts": "2026-08-27T00:00:00+00:00",
+      "seal_from_ts": "2020-12-21T00:00:00+00:00",
+      "seal_from_ts_per_file": "2015-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/trading_day_daily.csv.gz",
+      "md5": "3f7a96a30b79c0631e78cac6e7c79e98",
+      "time_column": "date",
+      "first_ts": "1990-01-04T00:00:00+00:00",
+      "last_ts": "2026-08-27T00:00:00+00:00",
+      "seal_from_ts": "2020-12-21T00:00:00+00:00",
+      "seal_from_ts_per_file": "2015-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/bars_1min.csv.gz",
+      "md5": "f00b8d899d52adc7ee94d4a7cf240005",
+      "time_column": "date",
+      "first_ts": "2025-12-30T00:00:00+00:00",
+      "last_ts": "2026-08-28T00:00:00+00:00",
+      "seal_from_ts": "2020-12-21T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-06-16T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/nk225_sessions.csv",
+      "md5": "1f909d42e46e27ee2904a18967dd39e7",
+      "time_column": "date",
+      "first_ts": "2026-08-21T00:00:00+00:00",
+      "last_ts": "2026-09-03T00:00:00+00:00",
+      "seal_from_ts": "2020-12-21T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-30T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/on1_ledger.csv",
+      "md5": "56f775625dc107db2ed07046234dc41a",
+      "time_column": "entry_date",
+      "first_ts": "2026-08-21T00:00:00+00:00",
+      "last_ts": "2026-09-02T00:00:00+00:00",
+      "seal_from_ts": "2020-12-21T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-29T00:00:00+00:00"
+    }
+  ],
+  "rule": "everything with ts >= forward_start is sealed | unit-wide boundary: seal_from_ts of primary series night_session_daily.csv.gz (2020-12-21T00:00:00+00:00) applied to every file",
+  "primary_series": "night_session_daily.csv.gz"
+}

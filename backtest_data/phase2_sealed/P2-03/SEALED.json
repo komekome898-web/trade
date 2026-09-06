@@ -1,0 +1,144 @@
+{
+  "unit": "P2-03",
+  "created_utc": "2026-09-06T00:23:44.485663+00:00",
+  "forward_start": "2026-09-06T00:00:00+00:00",
+  "files": [
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1306.T.csv",
+      "md5": "49c51d3c08759234930ccf49fc543d0d",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1311.T.csv",
+      "md5": "ae28e53b1ee967d9405bac64fec548f7",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1321.T.csv",
+      "md5": "4c8963bb707afcb616914adf0307dad8",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1343.T.csv",
+      "md5": "15cac3f3aecc375ec5e9b85b0edbc16a",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1547.T.csv",
+      "md5": "647846625a3270086adbb808e9b050b4",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1557.T.csv",
+      "md5": "f3fff976c590d38f9623bb63b2ddcafe",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1591.T.csv",
+      "md5": "c85fa9d13826bbda54d69c18f459145f",
+      "time_column": "date",
+      "first_ts": "2014-01-23T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-11-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1655.T.csv",
+      "md5": "12bce26301942a8c50d8d6132a0594aa",
+      "time_column": "date",
+      "first_ts": "2017-09-26T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2023-12-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/2516.T.csv",
+      "md5": "af53c67fe88a6d0a105007567daf5bb8",
+      "time_column": "date",
+      "first_ts": "2018-01-30T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2024-02-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/2521.T.csv",
+      "md5": "70c229ed90290b82de5b0dde619f7af8",
+      "time_column": "date",
+      "first_ts": "2018-07-30T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2024-03-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/2558.T.csv",
+      "md5": "7c9ca74a7ba8e071c4818f453084c457",
+      "time_column": "date",
+      "first_ts": "2020-01-07T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2024-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/6758.T.csv",
+      "md5": "cf57511cd8e93db22e99a81a5ded20a3",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/7203.T.csv",
+      "md5": "b2cdf1a61671c0b917b3ec6db1b1c03d",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/8306.T.csv",
+      "md5": "47705636d6638a48a150f1774361732c",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/9984.T.csv",
+      "md5": "98a0b1e2b6eaa95faaf760d59a7ebda1",
+      "time_column": "date",
+      "first_ts": "2011-09-05T00:00:00+00:00",
+      "last_ts": "2026-09-04T00:00:00+00:00",
+      "seal_from_ts": "2022-03-05T00:00:00+00:00",
+      "seal_from_ts_per_file": "2022-03-05T00:00:00+00:00"
+    }
+  ],
+  "rule": "everything with ts >= forward_start is sealed | unit-wide boundary: seal_from_ts of primary series 1321.T.csv (2022-03-05T00:00:00+00:00) applied to every file",
+  "primary_series": "1321.T.csv"
+}

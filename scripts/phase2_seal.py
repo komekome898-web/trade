@@ -78,6 +78,10 @@ def main(argv: list[str] | None = None) -> int:
     src.add_argument("--files", nargs="+", help="explicit list of data files")
     src.add_argument("--dataset", help="schema/<dataset>.json path_glob resolves the files")
     parser.add_argument("--root", default=".", help="repo root (default: cwd)")
+    parser.add_argument("--primary", default=None,
+                        help="basename of the unit's PRIMARY series: its 70/30 calendar boundary is applied to "
+                             "EVERY file of the unit (one seal date per unit, so files with different spans "
+                             "are cut at the same calendar date). Default: per-file boundaries.")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
@@ -96,6 +100,20 @@ def main(argv: list[str] | None = None) -> int:
     except SealedDataError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+
+    if args.primary:
+        prim = [e for e in record["files"] if Path(e["path"]).name == args.primary]
+        if not prim:
+            print(f"error: --primary {args.primary!r} is not among the sealed files", file=sys.stderr)
+            return 1
+        boundary = prim[0]["seal_from_ts"]
+        for e in record["files"]:
+            e["seal_from_ts_per_file"] = e["seal_from_ts"]
+            e["seal_from_ts"] = boundary
+        record["primary_series"] = args.primary
+        record["rule"] = (record.get("rule", "") +
+                          f" | unit-wide boundary: seal_from_ts of primary series {args.primary} "
+                          f"({boundary}) applied to every file")
 
     out_dir = seal_dir(args.unit, root)
     out_dir.mkdir(parents=True, exist_ok=True)
