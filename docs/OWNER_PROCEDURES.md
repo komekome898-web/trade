@@ -54,3 +54,17 @@ PowerShell(管理者不要)で 1 行。毎日 **日本時間 06:30**(取引の�
 schtasks /Create /TN "trade_share_logs" /TR "C:\Users\ryoma\trade\deploy\share_logs.bat" /SC DAILY /ST 06:30 /F
 ```
 確認: `schtasks /Query /TN trade_share_logs`。以後、手動の share_logs は不要(依頼があった時だけ)。
+
+## P7 PC の時計同期(P2-08b 秒スケール研究の前提。1 回設定 + 週 1 確認)
+背景: 自宅 PC の時計は 0.44 秒以上遅れ、週内に 0.8 秒ずれた実測がある(`docs/KNOWLEDGE.md` (ah))。秒スケールの WS 記録は取引所刻印と受信時刻の差を使うため、PC 時計の同期が前提。
+1. 管理者の PowerShell で 1 回:
+   ```
+   w32tm /config /manualpeerlist:"ntp.nict.jp,0x8" /syncfromflags:manual /update
+   w32tm /resync
+   ```
+2. 確認(いつでも可、平日・休日を問わない):
+   ```
+   w32tm /stripchart /computer:ntp.nict.jp /samples:3 /dataonly
+   ```
+   表示される差(例 `+00.0123s`)の絶対値が **0.1 秒未満**なら OK。0.1 秒以上なら手順 1 を再実行。
+3. 結果を「P7 確認 +0.01s(9/8)」のように一言で報告(手順番号付き、P5)。以後は週 1 回(任意の曜日)に手順 2 のみ。
