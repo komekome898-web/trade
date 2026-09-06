@@ -306,13 +306,15 @@ def sign_shuffle_null(
 EDGE_TREND_SLOPE_MDE_Z = 1.959963985 + 0.8416212336
 
 
-_EDGE_TREND_TIME_UNITS = ("year", "month", "day", "hour", "minute", "sample")
-_EDGE_TREND_PERIODS = ("year", "month", "day", "hour")
+_EDGE_TREND_TIME_UNITS = ("year", "month", "week", "day", "hour", "minute", "sample")
+_EDGE_TREND_PERIODS = ("year", "month", "week", "day", "hour")
 # seconds-per-unit for "calendar" axis conversion (month = 365.25/12 days, the
-# same average-month convention as the year constant it is derived from).
+# same average-month convention as the year constant it is derived from;
+# week = 7 exact days, period key = ISO year-week).
 _EDGE_TREND_UNIT_SECONDS = {
     "year": 365.25 * 86400.0,
     "month": (365.25 / 12.0) * 86400.0,
+    "week": 7.0 * 86400.0,
     "day": 86400.0,
     "hour": 3600.0,
     "minute": 60.0,
@@ -331,6 +333,7 @@ def edge_trend(
     n_boot: int = 2000,
     seed: int = 20260906,
     regime_dates: Iterable | None = None,
+    rolling_step: int = 1,
 ) -> dict:
     """The standard "edge trend" sub-indicator (PHASE2_TEMPLATES.md §5).
 
@@ -381,6 +384,13 @@ def edge_trend(
         "事前登録した制度変更日でのみ区分する"). Each date starts a new
         regime; the data's own first and last date close the first and last
         regime. None (default) skips the regime table entirely.
+    rolling_step : evaluate the rolling window (mean + bootstrap CI) at
+        every `rolling_step`-th window end instead of every one (default 1
+        = every end, the original behaviour). The LAST window end is always
+        included, so "last_window" and the judgment sentence are unchanged
+        by this setting; it only thins the "rolling" table, for series with
+        tens of thousands of observations where a CI at every end would
+        cost n × n_boot resamples.
 
     Returns
     -------
@@ -441,6 +451,9 @@ def edge_trend(
         )
     if period is not None and period not in _EDGE_TREND_PERIODS:
         raise ValueError(f"period must be one of {_EDGE_TREND_PERIODS} or None, got {period!r}")
+    rolling_step = int(rolling_step)
+    if rolling_step < 1:
+        raise ValueError(f"rolling_step must be >= 1, got {rolling_step}")
 
     ds = pd.to_datetime(pd.Series(list(dates)).reset_index(drop=True))
     x = np.asarray(values_bps, dtype=float)
@@ -455,7 +468,10 @@ def edge_trend(
 
     # ---- 1. rolling window mean + CI (§5.2) --------------------------------
     rolling_rows = []
-    for end in range(window - 1, n):
+    ends = list(range(window - 1, n, rolling_step))
+    if n >= window and ends[-1] != n - 1:
+        ends.append(n - 1)
+    for end in ends:
         seg = x[end - window + 1 : end + 1]
         means = _moving_block_bootstrap_means(seg, block, n_boot, seed)
         if np.isnan(means).all():
@@ -476,6 +492,8 @@ def edge_trend(
             keys = ds.dt.strftime("%Y")
         elif period == "month":
             keys = ds.dt.strftime("%Y-%m")
+        elif period == "week":
+            keys = ds.dt.strftime("%G-W%V")
         elif period == "day":
             keys = ds.dt.strftime("%Y-%m-%d")
         else:  # "hour"
@@ -584,7 +602,7 @@ def edge_trend(
         "judgment": judgment,
         "params": {"window": window, "block": block, "time_unit": time_unit,
                    "time_axis": time_axis, "period": period, "n_boot": n_boot,
-                   "seed": seed, "n": n},
+                   "seed": seed, "n": n, "rolling_step": rolling_step},
     }
 
 
