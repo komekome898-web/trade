@@ -1,6 +1,6 @@
 {
   "unit": "P2-08",
-  "created_utc": "2026-09-06T12:59:15.990540+00:00",
+  "created_utc": "2026-09-06T13:10:01.239992+00:00",
   "forward_start": "2026-09-06T00:00:00+00:00",
   "files": [
     {
@@ -9,7 +9,7 @@
       "time_column": "ts",
       "first_ts": "2017-01-01T00:00:00+00:00",
       "last_ts": "2017-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2017-09-12T00:00:00+00:00"
     },
     {
@@ -18,7 +18,7 @@
       "time_column": "ts",
       "first_ts": "2018-01-01T00:00:00+00:00",
       "last_ts": "2018-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2018-09-12T00:00:00+00:00"
     },
     {
@@ -27,7 +27,7 @@
       "time_column": "ts",
       "first_ts": "2019-01-01T00:00:00+00:00",
       "last_ts": "2019-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2019-09-12T00:00:00+00:00"
     },
     {
@@ -36,7 +36,7 @@
       "time_column": "ts",
       "first_ts": "2020-01-01T00:00:00+00:00",
       "last_ts": "2020-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2020-09-12T00:00:00+00:00"
     },
     {
@@ -45,7 +45,7 @@
       "time_column": "ts",
       "first_ts": "2021-01-01T00:00:00+00:00",
       "last_ts": "2021-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2021-09-12T00:00:00+00:00"
     },
     {
@@ -54,7 +54,7 @@
       "time_column": "ts",
       "first_ts": "2022-01-01T00:00:00+00:00",
       "last_ts": "2022-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2022-09-12T00:00:00+00:00"
     },
     {
@@ -63,7 +63,7 @@
       "time_column": "ts",
       "first_ts": "2023-01-01T00:00:00+00:00",
       "last_ts": "2023-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2023-09-12T00:00:00+00:00"
     },
     {
@@ -72,7 +72,7 @@
       "time_column": "ts",
       "first_ts": "2024-01-01T00:00:00+00:00",
       "last_ts": "2024-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2024-09-12T00:00:00+00:00"
     },
     {
@@ -81,7 +81,7 @@
       "time_column": "ts",
       "first_ts": "2025-01-01T00:00:00+00:00",
       "last_ts": "2025-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2025-09-12T00:00:00+00:00"
     },
     {
@@ -90,7 +90,7 @@
       "time_column": "ts",
       "first_ts": "2026-01-01T00:00:00+00:00",
       "last_ts": "2026-09-06T00:00:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2026-06-23T00:00:00+00:00"
     },
     {
@@ -99,7 +99,7 @@
       "time_column": "open_time",
       "first_ts": "2017-08-17T04:00:00+00:00",
       "last_ts": "2017-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2017-11-20T00:00:00+00:00"
     },
     {
@@ -108,7 +108,7 @@
       "time_column": "open_time",
       "first_ts": "2018-01-01T00:00:00+00:00",
       "last_ts": "2018-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2018-09-12T00:00:00+00:00"
     },
     {
@@ -117,7 +117,7 @@
       "time_column": "open_time",
       "first_ts": "2019-01-01T00:00:00+00:00",
       "last_ts": "2019-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2019-09-12T00:00:00+00:00"
     },
     {
@@ -126,7 +126,7 @@
       "time_column": "open_time",
       "first_ts": "2020-01-01T00:00:00+00:00",
       "last_ts": "2020-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2020-09-12T00:00:00+00:00"
     },
     {
@@ -135,7 +135,7 @@
       "time_column": "open_time",
       "first_ts": "2021-01-01T00:00:00+00:00",
       "last_ts": "2021-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2021-09-12T00:00:00+00:00"
     },
     {
@@ -144,7 +144,7 @@
       "time_column": "open_time",
       "first_ts": "2022-01-01T00:00:00+00:00",
       "last_ts": "2022-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2022-09-12T00:00:00+00:00"
     },
     {
@@ -153,7 +153,7 @@
       "time_column": "open_time",
       "first_ts": "2023-01-01T00:00:00+00:00",
       "last_ts": "2023-12-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2023-09-12T00:00:00+00:00"
     },
     {
@@ -162,7 +162,7 @@
       "time_column": "open_time",
       "first_ts": "2024-01-01T00:00:00+00:00",
       "last_ts": "2026-08-31T23:59:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2025-11-12T00:00:00+00:00"
     },
     {
@@ -171,7 +171,7 @@
       "time_column": "ts",
       "first_ts": "2026-07-23T12:09:00+00:00",
       "last_ts": "2026-09-05T13:47:00+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2026-08-22T00:00:00+00:00"
     },
     {
@@ -180,11 +180,11 @@
       "time_column": "exec_date",
       "first_ts": "2026-07-23T12:09:27.130000+00:00",
       "last_ts": "2026-08-23T12:25:34.217000+00:00",
-      "seal_from_ts": "2023-12-19T00:00:00+00:00",
+      "seal_from_ts": "2023-12-18T00:00:00+00:00",
       "seal_from_ts_per_file": "2026-08-13T00:00:00+00:00"
     }
   ],
-  "rule": "everything with ts >= forward_start is sealed | unit-wide EXPLICIT boundary (--seal-from): seal_from_ts=2023-12-19T00:00:00+00:00 applied to every file (each file's own 70/30 boundary kept as seal_from_ts_per_file)",
+  "rule": "everything with ts >= forward_start is sealed | unit-wide EXPLICIT boundary (--seal-from): seal_from_ts=2023-12-18T00:00:00+00:00 applied to every file (each file's own 70/30 boundary kept as seal_from_ts_per_file)",
   "boundary_rule": "explicit",
-  "explicit_seal_from": "2023-12-19T00:00:00+00:00"
+  "explicit_seal_from": "2023-12-18T00:00:00+00:00"
 }
