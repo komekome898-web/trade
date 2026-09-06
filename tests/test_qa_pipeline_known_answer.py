@@ -19,6 +19,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "qa"))
 
 import pipeline_known_answer_taker as qt  # noqa: E402
@@ -124,9 +125,12 @@ def test_daily_determinism(tmp_path):
 
 
 def test_daily_computation_path_is_the_real_onr_module(daily_result):
-    assert "research_overnight_onr.py" in daily_result["sealed"]["computation_path"]
-    import research_overnight_onr as onr
-    assert qd.onr is onr  # literally the same imported module, not a reimplementation
+    assert "src/bot/research/overnight.py" in daily_result["sealed"]["computation_path"]
+    from bot.research import overnight
+    assert qd.onr is overnight  # literally the same imported module, not a reimplementation
+    import research_overnight_onr as onr_script
+    assert onr_script.overnight_returns is overnight.overnight_returns  # ONR imports the same fn
+    assert onr_script.drop_glitches is overnight.drop_glitches
 
 
 def test_daily_recovers_planted_premium_in_high_tercile(daily_result):
@@ -180,6 +184,52 @@ def test_daily_data_quality_scan_ran_and_flagged_something(daily_result):
     assert dq["files_checked"] >= 1
     assert "extreme_return" in dq["checks_fired"]
     assert dq["extreme_return_count"] > 0
+
+
+def test_daily_dividend_case_matches_hand_derivation(daily_result):
+    dc = daily_result["dividend_case"]
+    assert dc["exact_match"], f"max abs diff vs hand derivation: {dc['max_abs_diff']}"
+    assert dc["max_abs_diff"] < 1e-12
+    assert len(dc["hand_rows"]) == 3
+
+
+def test_daily_dividend_case_mean_shift_matches_planted_amount(daily_result):
+    dc = daily_result["dividend_case"]
+    assert dc["mean_diff_matches"]
+    assert abs(dc["actual_mean_diff"] - dc["expected_mean_diff"]) < 1e-12
+    assert dc["actual_mean_diff"] > 0  # dividends only ever raise the adjusted leg
+
+
+def test_daily_dividend_case_writes_hand_derivation_file(tmp_path):
+    out = tmp_path / "div_case"
+    out.mkdir()
+    result = qd.run_dividend_known_answer(out)
+    assert (out / "HAND_DERIVATION_dividend.md").exists()
+    assert (out / "dividend_case_etf.csv").exists()
+    assert (out / "dividend_case_dividends.csv").exists()
+    assert result["exact_match"]
+    assert not result["findings"]
+
+
+def test_daily_return_kind_case_recovers_planted_simple_return(daily_result):
+    rc = daily_result["return_kind_case"]
+    assert rc["simple_matches_planted"]
+    assert rc["r_simple"] * 1e4 == pytest.approx(rc["planted_simple_bps"], abs=1e-9)
+
+
+def test_daily_return_kind_case_log_vs_simple_first_order(daily_result):
+    rc = daily_result["return_kind_case"]
+    assert rc["simple_exact_match"]
+    assert rc["log_exact_match"]
+    assert rc["first_order_matches"]
+
+
+def test_daily_return_kind_case_writes_hand_derivation_file(tmp_path):
+    out = tmp_path / "retkind_case"
+    out.mkdir()
+    result = qd.run_return_kind_known_answer(out)
+    assert (out / "HAND_DERIVATION_return_kind.md").exists()
+    assert not result["findings"]
 
 
 def test_daily_never_touches_real_repo_data_or_schema(tmp_path):

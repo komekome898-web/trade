@@ -103,6 +103,15 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from bot.research.overnight import (  # noqa: E402
+    drop_glitches,
+    mean_t,
+    overnight_returns,
+)
+
+
 DATA = ROOT / "backtest_data" / "reit_onr_20260904"
 SEED = 20260904
 CUTOFF = "2026-09-03"
@@ -137,37 +146,17 @@ def load_ohlc(path: Path) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------- return legs #
-
-def overnight_returns(df: pd.DataFrame) -> pd.DataFrame:
-    """r_t = ln(open(t+1)/close(t)), dated at t (the close date)."""
-    o1 = df["open"].shift(-1)
-    r = np.log(o1 / df["close"])
-    out = pd.DataFrame({"date": df["date"], "r": r})
-    return out.iloc[:-1].reset_index(drop=True)
-
+# overnight_returns / drop_glitches now live in src/bot/research/overnight.py
+# (imported above) so QA pipelines can reuse them without importing this
+# research script.
 
 def intraday_returns(df: pd.DataFrame) -> pd.DataFrame:
     r = np.log(df["close"] / df["open"])
     return pd.DataFrame({"date": df["date"], "r": r}).reset_index(drop=True)
 
 
-def drop_glitches(df: pd.DataFrame, threshold: float = GLITCH_ABS_LOG_RET) -> tuple[pd.DataFrame, int]:
-    mask = df["r"].abs() > threshold
-    n = int(mask.sum())
-    return df.loc[~mask].reset_index(drop=True), n
-
-
 # --------------------------------------------------------------- stats -- #
-
-def mean_t(x: np.ndarray) -> tuple[float, float, int]:
-    n = len(x)
-    if n < 2:
-        return (float(x.mean()) if n else float("nan"), float("nan"), n)
-    m = float(x.mean())
-    s = float(x.std(ddof=1))
-    t = m / (s / np.sqrt(n)) if s > 0 else float("nan")
-    return m, t, n
-
+# mean_t now lives in src/bot/research/overnight.py (imported above).
 
 def net_mean_t(x: np.ndarray, cost_bps: float) -> tuple[float, float]:
     cost = cost_bps * 1e-4
