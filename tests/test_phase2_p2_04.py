@@ -20,6 +20,7 @@ So this module holds:
 """
 from __future__ import annotations
 
+import json
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -33,17 +34,26 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.phase2.p2_04_run import (  # noqa: E402
+    ITER1_OUT_DIR,
+    OUT_DIR,
+    RULES,
+    TERCILE_LABELS,
     build_close_pairs,
     build_rule_day_sets,
     derive_holidays,
     diff_ci,
     etf_tick_yen,
     holiday_eves,
+    label_tercile,
     major_sq_marked_days,
+    main,
     mean_ci,
+    primary_series_vol20,
+    run_iteration1,
     second_friday,
     shift_trading_days,
     sq_days,
+    tercile_cutpoints,
     tom_days,
     weekday_days,
 )
@@ -449,3 +459,195 @@ def test_planted_effect_lands_on_the_right_calendar_days():
     miss = pairs.loc[~is_rule, "r_bps"].mean()
     assert hit - miss == pytest.approx(200.0, abs=15.0)
     assert set(exit_dates[is_rule]) <= set(weekday_days(list(exit_dates), 2))
+
+
+# ---------------------------------------------------------------------------
+# 5. ITERATION 1 — the vol tercile: train-fixed cutpoints, no look-ahead
+# ---------------------------------------------------------------------------
+
+def test_tercile_cutpoints_use_only_the_train_rows():
+    """Cutpoints must come ONLY from rows where train_mask is True.
+
+    A val-only outlier (100x every train value) must not move q1/q2 at all --
+    the defining "no look-ahead" property of a train-fixed cutpoint.
+    """
+    train_vals = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0])
+    mask_train_only = np.array([True] * len(train_vals))
+    q1_ref, q2_ref = tercile_cutpoints(train_vals, mask_train_only)
+
+    val_outlier = np.array([900.0, -900.0, 500.0])
+    combined = np.concatenate([train_vals, val_outlier])
+    combined_mask = np.concatenate([mask_train_only, [False, False, False]])
+    q1, q2 = tercile_cutpoints(combined, combined_mask)
+
+    assert q1 == pytest.approx(q1_ref)
+    assert q2 == pytest.approx(q2_ref)
+    # sanity: the outlier really would have moved the cutpoints had it leaked in
+    q1_leaked, q2_leaked = tercile_cutpoints(combined, np.ones(len(combined), dtype=bool))
+    assert q1_leaked != pytest.approx(q1) or q2_leaked != pytest.approx(q2)
+
+
+def test_tercile_cutpoints_ignore_nan_and_need_three_train_obs():
+    vals = np.array([1.0, np.nan, 2.0, 3.0])
+    mask = np.array([True, True, True, True])
+    q1, q2 = tercile_cutpoints(vals, mask)
+    assert np.isfinite(q1) and np.isfinite(q2)          # 3 finite train obs is enough
+
+    q1_few, q2_few = tercile_cutpoints(np.array([1.0, np.nan]), np.array([True, True]))
+    assert np.isnan(q1_few) and np.isnan(q2_few)         # <3 finite train obs -> undefined
+
+
+def test_label_tercile_splits_train_into_thirds_and_marks_nan_empty():
+    train_vals = np.arange(1.0, 10.0)                    # 1..9, evenly spaced
+    q1, q2 = tercile_cutpoints(train_vals, np.ones(len(train_vals), dtype=bool))
+    labels = label_tercile(train_vals, q1, q2)
+    counts = pd.Series(labels).value_counts()
+    assert set(labels) == set(TERCILE_LABELS)
+    assert counts[TERCILE_LABELS[0]] == 3
+    assert counts[TERCILE_LABELS[1]] == 3
+    assert counts[TERCILE_LABELS[2]] == 3
+    assert list(label_tercile(np.array([np.nan]), q1, q2)) == [""]
+    assert list(label_tercile(np.array([1.0]), float("nan"), float("nan"))) == [""]
+
+
+def test_label_tercile_applies_fixed_train_cutpoints_to_val_without_recentring():
+    """The defining no-look-ahead behaviour: val data shifted well above the
+    train range must NOT relabel itself into a fresh set of thirds -- it must
+    fall almost entirely into the top train-defined tercile.
+    """
+    train_vals = np.arange(1.0, 10.0)                    # 1..9
+    q1, q2 = tercile_cutpoints(train_vals, np.ones(len(train_vals), dtype=bool))
+    val_vals = np.arange(100.0, 109.0)                   # far above every train value
+    val_labels = label_tercile(val_vals, q1, q2)
+    assert set(val_labels) == {TERCILE_LABELS[2]}         # every val row is "high"
+    # a same-split (val-only) tercile would instead spread these across all 3 labels
+    q1_val_only, q2_val_only = tercile_cutpoints(val_vals, np.ones(len(val_vals), dtype=bool))
+    assert q1_val_only != pytest.approx(q1)
+    relabelled = label_tercile(val_vals, q1_val_only, q2_val_only)
+    assert set(relabelled) == set(TERCILE_LABELS)
+
+
+def test_primary_series_vol20_uses_only_returns_realised_before_entry():
+    """vol20 attributed to exit day t must be std(returns t-20..t-1) -- NOT
+    including t's own return. Perturbing only the return realised ON t must
+    leave the value assigned to day t unchanged (and change day t+1's, which
+    legitimately depends on it).
+    """
+    n = 40
+    days = pd.date_range("2020-01-01", periods=n, freq="B")
+    rng = np.random.default_rng(0)
+    r = rng.normal(0.0, 0.01, size=n - 1)
+    close_a = np.concatenate([[100.0], 100.0 * np.cumprod(1.0 + r)])
+    df_a = pd.DataFrame({"date": days, "close": close_a})
+    vol_a = primary_series_vol20(df_a)
+
+    r2 = r.copy()
+    r2[25] *= 50.0                                       # blow up ONE day's return
+    close_b = np.concatenate([[100.0], 100.0 * np.cumprod(1.0 + r2)])
+    df_b = pd.DataFrame({"date": days, "close": close_b})
+    vol_b = primary_series_vol20(df_b)
+
+    # r[25] is close(26)'s OWN return (cc[26] = r[25]): the day-26 pair's own
+    # exit-day return, which its own vol20 must NOT see.
+    day_own_exit = days[26]
+    # day 27 is the first exit day whose trailing-20 window (cc[7..26]) reaches
+    # back far enough to include cc[26] -- its vol20 legitimately changes.
+    day_next_exit = days[27]
+    assert vol_a[day_own_exit] == pytest.approx(vol_b[day_own_exit])
+    assert vol_a[day_next_exit] != pytest.approx(vol_b[day_next_exit])
+
+    # hand-check the formula directly. cc[k] (close→close return ending day k)
+    # equals r[k-1]; the first day with a defined vol20 is day 21 (cc[1..20]
+    # is the first full 20-return window, shift(1) moves it onto day 21), and
+    # its value is std(cc[1..20]) = std(r[0..19]), ddof=1 (pandas default).
+    idx = 21
+    expected = pd.Series(r[idx - 21:idx - 1]).std(ddof=1)
+    assert vol_a[days[idx]] == pytest.approx(expected)
+    assert np.isnan(vol_a[days[idx - 1]])                 # one day earlier: still undefined
+
+
+# ---------------------------------------------------------------------------
+# 6. ITERATION 0 byte-identity (adding --iteration 1 must not touch it)
+# ---------------------------------------------------------------------------
+
+def test_iteration0_output_is_byte_identical_to_the_committed_reference(tmp_path):
+    """The frozen PREREG requires iteration 0's default behaviour to be
+    untouched by adding the `--iteration 1` mode. `skip_edge_trend=True` is
+    used ONLY for test speed -- it affects `edge_trend_*.csv` and RESULTS.md
+    §11 alone (excluded from this comparison), every other file below is
+    computed identically either way. The reference directory was generated
+    by the ORIGINAL (pre-iteration-1) script.
+    """
+    ref_dir = OUT_DIR
+    if not ref_dir.exists():
+        pytest.skip("no committed iteration-0 reference run in this checkout")
+    out = tmp_path / "iter0_scratch"
+    assert main(out_dir=out, skip_edge_trend=True) == 0
+    compared = []
+    for f in sorted(ref_dir.glob("*.csv")):
+        if f.name.startswith("edge_trend_"):
+            continue
+        got_path = out / f.name
+        assert got_path.exists(), f"iteration 0 no longer writes {f.name}"
+        assert got_path.read_bytes() == f.read_bytes(), (
+            f"{f.name} is no longer byte-identical to the committed iteration-0 reference")
+        compared.append(f.name)
+    assert len(compared) >= 20
+    assert "main_indicators.csv" in compared and "train_val.csv" in compared
+
+
+# ---------------------------------------------------------------------------
+# 7. ITERATION 1 smoke test (the conditioning ladder step itself)
+# ---------------------------------------------------------------------------
+
+def test_iteration1_unconditional_rows_reproduce_iteration0_train_val():
+    """RESULTS.md §2 claims iteration 1's independently-rebuilt `pairs`/`p1321`
+    give the SAME unconditional train/val numbers as iteration 0's committed
+    `train_val.csv` -- this is the test that backs that claim.
+    """
+    ref_path = OUT_DIR / "train_val.csv"
+    if not ref_path.exists():
+        pytest.skip("no committed iteration-0 reference run in this checkout")
+    ref = pd.read_csv(ref_path).set_index(["rule", "split"])
+
+    from scripts.phase2.p2_04_run import (
+        ITER1_UNCOND_LABEL,
+        _load_and_build_dataset_iter1,
+        _population_for_rule,
+        conditional_indicator,
+    )
+    ds = _load_and_build_dataset_iter1()
+    for rule in RULES:
+        frame, emask, _series = _population_for_rule(rule, ds["pairs"], ds["p1321"],
+                                                      ds["keep_mask"])
+        ev = frame.loc[emask].reset_index(drop=True)
+        rm = ev[f"is_{rule}"].to_numpy(dtype=bool)
+        net = ev["r_net_bps_cons"].to_numpy(dtype=float)
+        gross = ev["r_bps"].to_numpy(dtype=float)
+        splitcol = ev["split"].to_numpy()
+        for split in ("train", "val"):
+            sm = splitcol == split
+            got = conditional_indicator(net[sm], gross[sm], rm[sm])
+            want = ref.loc[(rule, split)]
+            assert got["n"] == int(want["n"]), (rule, split)
+            if got["n"] > 0:
+                assert got["net_mean_cons_bps"] == pytest.approx(
+                    want["net_mean_cons_bps"], abs=1e-9), (rule, split)
+            if np.isfinite(want["ci_lo"]):
+                assert got["net_ci_lo"] == pytest.approx(want["ci_lo"], abs=1e-6)
+                assert got["net_ci_hi"] == pytest.approx(want["ci_hi"], abs=1e-6)
+
+
+def test_iteration1_produces_36_configurations_per_split(tmp_path):
+    out = tmp_path / "iter1_scratch"
+    assert run_iteration1(out_dir=out) == 0
+    ind = pd.read_csv(out / "iter1_indicators.csv")
+    # 9 rules x (1 unconditional + 3 terciles) x 2 splits = 72 rows
+    assert len(ind) == len(RULES) * 4 * 2
+    summary = pd.read_csv(out / "iter1_val_summary.csv")
+    assert len(summary) == len(RULES) * 3                # 27 conditional val rows
+    null_df = pd.read_csv(out / "iter1_joint_permutation_null.csv")
+    assert set(null_df["n_configs"]) == {36}
+    run = json.loads((out / "RUN.json").read_text(encoding="utf-8"))
+    assert run["cumulative_N"] == 36 and run["n_added_this_iteration"] == 27
+    assert "any_configuration_meets_it" in run["stopping_rule"]

@@ -1,0 +1,174 @@
+{
+  "unit": "P2-04",
+  "iteration": 1,
+  "run_date": "2026-09-06",
+  "seed": 20260906,
+  "git_rev": "533df32e8ec5219175335c2f1b74e99bb808ed29",
+  "script": "scripts/phase2/p2_04_run.py",
+  "script_md5": "73afa5ffa55469694cf75d2df79c7b9e",
+  "inputs": [
+    {
+      "path": "backtest_data/n225f_225labo_20260828/full_day_daily.csv.gz",
+      "md5": "7d97017afaff9f35bd5ca6c9c7193b94"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz",
+      "md5": "0f179b365417d4e307e53672e8cb3237"
+    },
+    {
+      "path": "backtest_data/jpx_etf_daily_20260905/1321.T.csv",
+      "md5": "4c8963bb707afcb616914adf0307dad8"
+    }
+  ],
+  "seal_record_md5": "0369dfe963e2e500c41f180989951c0e",
+  "cumulative_N": 36,
+  "n_added_this_iteration": 27,
+  "parameters": {
+    "block": 20,
+    "n_boot": 2000,
+    "n_permutation": 2000,
+    "train_end": "2007-12-31",
+    "vol_tercile_cutpoints_train_fixed": [
+      0.011030496972922547,
+      0.015276350160525249
+    ],
+    "n_train_vol_observations_used_for_cutpoints": 4407
+  },
+  "stopping_rule": {
+    "criterion": "val improvement vs iteration 0's unconditional rule >= per-config MDE",
+    "any_configuration_meets_it": false
+  },
+  "headline": {
+    "null_A_p95_futures": 50.342115815436294,
+    "null_B_p95_futures": 59.20349343735845,
+    "null_A_p95_1321": 137.51687619778951,
+    "null_B_p95_1321": 135.03977354207223,
+    "best_per_rule": [
+      {
+        "rule": "TOM",
+        "series": "先物(主系列)",
+        "state_vol": "3_高",
+        "n_val": 118,
+        "val_net_mean_cons_bps": 2.411502793185504,
+        "val_ci_lo": -38.24879409131322,
+        "val_ci_hi": 45.99858603555901,
+        "iter0_unconditional_val_mean_bps": -10.713808366290712,
+        "val_improvement_bps": 13.125311159476215,
+        "mde_bps": 60.419916150264704,
+        "improvement_ge_mde": false
+      },
+      {
+        "rule": "WD-Mon",
+        "series": "先物(主系列)",
+        "state_vol": "2_中",
+        "n_val": 123,
+        "val_net_mean_cons_bps": -13.140682134738789,
+        "val_ci_lo": -38.48661998041045,
+        "val_ci_hi": 14.85327611970859,
+        "iter0_unconditional_val_mean_bps": -23.207167815625752,
+        "val_improvement_bps": 10.066485680886963,
+        "mde_bps": 32.64551244581538,
+        "improvement_ge_mde": false
+      },
+      {
+        "rule": "WD-Tue",
+        "series": "先物(主系列)",
+        "state_vol": "3_高",
+        "n_val": 114,
+        "val_net_mean_cons_bps": 23.756363191130276,
+        "val_ci_lo": -40.12223708230448,
+        "val_ci_hi": 91.15317643180697,
+        "iter0_unconditional_val_mean_bps": -1.6390149628397328,
+        "val_improvement_bps": 25.395378153970007,
+        "mde_bps": 86.64405453195077,
+        "improvement_ge_mde": false
+      },
+      {
+        "rule": "WD-Wed",
+        "series": "先物(主系列)",
+        "state_vol": "2_中",
+        "n_val": 145,
+        "val_net_mean_cons_bps": 10.273215408973487,
+        "val_ci_lo": -3.6830238882706774,
+        "val_ci_hi": 24.323409717908888,
+        "iter0_unconditional_val_mean_bps": -0.20434992876141767,
+        "val_improvement_bps": 10.477565337734905,
+        "mde_bps": 31.23293576254174,
+        "improvement_ge_mde": false
+      },
+      {
+        "rule": "WD-Thu",
+        "series": "先物(主系列)",
+        "state_vol": "3_高",
+        "n_val": 106,
+        "val_net_mean_cons_bps": 1.225963954134664,
+        "val_ci_lo": -70.06973982951538,
+        "val_ci_hi": 60.15614843251553,
+        "iter0_unconditional_val_mean_bps": -3.613345545210011,
+        "val_improvement_bps": 4.839309499344675,
+        "mde_bps": 67.539607131824,
+        "improvement_ge_mde": false
+      },
+      {
+        "rule": "WD-Fri",
+        "series": "先物(主系列)",
+        "state_vol": "1_低",
+        "n_val": 114,
+        "val_net_mean_cons_bps": 0.8107750881521496,
+        "val_ci_lo": -24.47288015428968,
+        "val_ci_hi": 24.294988275263293,
+        "iter0_unconditional_val_mean_bps": -8.671201421907007,
+        "val_improvement_bps": 9.481976510059157,
+        "mde_bps": 28.52072772578856,
+        "improvement_ge_mde": false
+      },
+      {
+        "rule": "PH",
+        "series": "先物(主系列)",
+        "state_vol": "3_高",
+        "n_val": 28,
+        "val_net_mean_cons_bps": -9.429908408275697,
+        "val_ci_lo": -53.90980968900753,
+        "val_ci_hi": 36.39849379517002,
+        "iter0_unconditional_val_mean_bps": -14.350457404342402,
+        "val_improvement_bps": 4.920548996066705,
+        "mde_bps": 134.82989387089845,
+        "improvement_ge_mde": false
+      },
+      {
+        "rule": "SQm",
+        "series": "1321.T",
+        "state_vol": "1_低",
+        "n_val": 17,
+        "val_net_mean_cons_bps": 1.1170533649700423,
+        "val_ci_lo": null,
+        "val_ci_hi": null,
+        "iter0_unconditional_val_mean_bps": -6.2305178482708214,
+        "val_improvement_bps": 7.3475712132408635,
+        "mde_bps": 75.80208726649218,
+        "improvement_ge_mde": false
+      },
+      {
+        "rule": "SQq",
+        "series": "1321.T",
+        "state_vol": "1_低",
+        "n_val": 7,
+        "val_net_mean_cons_bps": 68.72671091231845,
+        "val_ci_lo": null,
+        "val_ci_hi": null,
+        "iter0_unconditional_val_mean_bps": 25.241043467134187,
+        "val_improvement_bps": 43.48566744518426,
+        "mde_bps": 60.43180314170578,
+        "improvement_ge_mde": false
+      }
+    ]
+  },
+  "outputs": [
+    "RESULTS.md",
+    "iter1_best_per_rule.csv",
+    "iter1_indicators.csv",
+    "iter1_joint_permutation_draws.csv",
+    "iter1_joint_permutation_null.csv",
+    "iter1_val_summary.csv"
+  ]
+}
