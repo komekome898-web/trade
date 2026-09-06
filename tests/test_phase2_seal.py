@@ -193,6 +193,52 @@ def test_shared_or_local_warns_on_sealed_file(root: Path, sealed_unit: dict, mon
     assert p == root / "data" / "prices.csv"
 
 
+# ---------------------------------------------------------------------------
+# --seal-from: explicit unit-wide boundary (not the 70/30 rule)
+# ---------------------------------------------------------------------------
+
+def test_cli_seal_from_sets_explicit_unit_wide_boundary(root: Path, tmp_path: Path, capsys):
+    prices = root / "data" / "prices.csv"
+    explicit_date = _day(12).date().isoformat()  # arbitrary date inside the file's span
+    rc = ps.main(["--unit", "u_explicit", "--files", str(prices),
+                  "--root", str(root), "--seal-from", explicit_date])
+    assert rc == 0
+
+    record = json.loads((seal_dir("u_explicit", root) / "SEALED.json").read_text())
+    assert record["boundary_rule"] == "explicit"
+    assert record["explicit_seal_from"] == _day(12).isoformat()
+    entry = record["files"][0]
+    assert entry["seal_from_ts"] == _day(12).isoformat()
+    # the file's own 70/30 boundary (day 20, per test_seal_record_boundary) is preserved alongside
+    assert entry["seal_from_ts_per_file"] == _day(20).isoformat()
+
+    df = load_unsealed("data/prices.csv", "u_explicit", root=root)
+    kept_days = sorted(parse_ts(t).date().day for t in df["ts_utc"])
+    assert kept_days == list(range(1, 13))  # calendar days 1..12 (offsets 0..11), before day 12
+
+
+def test_cli_seal_from_rejects_bad_date(root: Path, capsys):
+    prices = root / "data" / "prices.csv"
+    rc = ps.main(["--unit", "u_bad", "--files", str(prices),
+                  "--root", str(root), "--seal-from", "not-a-date"])
+    assert rc == 1
+    assert not (seal_dir("u_bad", root) / "SEALED.json").exists()
+
+
+def test_cli_seal_from_and_primary_are_mutually_exclusive(root: Path):
+    prices = root / "data" / "prices.csv"
+    with pytest.raises(SystemExit):
+        ps.main(["--unit", "u_conflict", "--files", str(prices), "--root", str(root),
+                 "--seal-from", "2026-01-10", "--primary", "prices.csv"])
+
+
+def test_existing_behaviour_unchanged_without_seal_from(root: Path, sealed_unit: dict):
+    # sealed_unit fixture uses build_seal() directly (no --seal-from / --primary), matching
+    # scripts/phase2_seal.py's default CLI path -- must carry no boundary_rule key at all.
+    assert "boundary_rule" not in sealed_unit
+    assert "explicit_seal_from" not in sealed_unit
+
+
 def test_shared_or_local_silent_without_phase2_unit(root: Path, sealed_unit: dict, monkeypatch):
     from bot.monitoring.gates import shared_or_local
 

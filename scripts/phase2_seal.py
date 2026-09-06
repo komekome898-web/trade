@@ -78,10 +78,16 @@ def main(argv: list[str] | None = None) -> int:
     src.add_argument("--files", nargs="+", help="explicit list of data files")
     src.add_argument("--dataset", help="schema/<dataset>.json path_glob resolves the files")
     parser.add_argument("--root", default=".", help="repo root (default: cwd)")
-    parser.add_argument("--primary", default=None,
-                        help="basename of the unit's PRIMARY series: its 70/30 calendar boundary is applied to "
-                             "EVERY file of the unit (one seal date per unit, so files with different spans "
-                             "are cut at the same calendar date). Default: per-file boundaries.")
+    bnd = parser.add_mutually_exclusive_group()
+    bnd.add_argument("--primary", default=None,
+                     help="basename of the unit's PRIMARY series: its 70/30 calendar boundary is applied to "
+                          "EVERY file of the unit (one seal date per unit, so files with different spans "
+                          "are cut at the same calendar date). Default: per-file boundaries.")
+    bnd.add_argument("--seal-from", default=None, metavar="YYYY-MM-DD",
+                     help="explicit unit-wide seal boundary (UTC calendar date), applied to EVERY file of "
+                          "the unit instead of the 70/30 calendar rule. Recorded as boundary_rule: "
+                          "'explicit' in SEALED.json (each file's own 70/30 boundary is kept alongside as "
+                          "seal_from_ts_per_file, same as --primary).")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
@@ -114,6 +120,23 @@ def main(argv: list[str] | None = None) -> int:
         record["rule"] = (record.get("rule", "") +
                           f" | unit-wide boundary: seal_from_ts of primary series {args.primary} "
                           f"({boundary}) applied to every file")
+
+    if args.seal_from:
+        try:
+            explicit = datetime.strptime(args.seal_from, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            print(f"error: --seal-from {args.seal_from!r} is not a YYYY-MM-DD date", file=sys.stderr)
+            return 1
+        boundary = explicit.isoformat()
+        for e in record["files"]:
+            e["seal_from_ts_per_file"] = e["seal_from_ts"]
+            e["seal_from_ts"] = boundary
+        record["boundary_rule"] = "explicit"
+        record["explicit_seal_from"] = boundary
+        record["rule"] = (record.get("rule", "") +
+                          f" | unit-wide EXPLICIT boundary (--seal-from): seal_from_ts={boundary} "
+                          f"applied to every file (each file's own 70/30 boundary kept as "
+                          f"seal_from_ts_per_file)")
 
     out_dir = seal_dir(args.unit, root)
     out_dir.mkdir(parents=True, exist_ok=True)

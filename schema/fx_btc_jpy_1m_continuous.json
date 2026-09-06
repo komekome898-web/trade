@@ -1,0 +1,39 @@
+{
+  "dataset": "fx_btc_jpy_1m_continuous",
+  "description": "Phase-2 G2 continuous 1-minute OHLCV series for bitFlyer FX_BTC_JPY, spliced from (a) the corrected frozen REST candle snapshot backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz (2026-07-23 12:09 .. 2026-08-23 12:25) and (b) 1m candles rebuilt with scripts/fetch_history.py's build_candles() from the WS tape executions_*.csv.gz under paper_logs/tape/ (2026-08-23 12:26 .. 2026-09-05 13:47). Built 2026-09-06 (docs/PHASE2/G2_DATA_INVENTORY.md task 2). Does not modify or replace either source file.",
+  "path_glob": [
+    "backtest_data/fx_btc_jpy_1m_continuous_*/candles_1m.csv.gz"
+  ],
+  "source": "part A = backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz verbatim (chosen over the competing backtest_data/candles_FX_BTC_JPY_30d_20260820.csv snapshot -- see schema/candles_fx_btc_jpy.json known_defects, that snapshot's open/close were shown wrong on every checkable minute). part B = paper_logs/tape/executions_2026{0820..0905}.csv.gz, each day rebuilt into 1m OHLCV with scripts/fetch_history.py build_candles() (dropna builder -- a minute with zero executions produces no row, never a fabricated one), then rows with ts <= part A's max ts dropped before concatenation so the two parts never double-cover a minute.",
+  "retention": "one-off phase-2 G2 build artifact under backtest_data/, permanent once written like other backtest_data/ snapshots. Never regenerated in place; a rebuild goes to a newly dated directory.",
+  "columns": {
+    "ts": {
+      "meaning": "start of the 1-minute bucket (UTC)",
+      "unit": "ISO-8601 'YYYY-MM-DD HH:MM:SS+00:00'",
+      "tz": "UTC",
+      "notes": null
+    },
+    "open": {"meaning": "first execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
+    "high": {"meaning": "max execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
+    "low": {"meaning": "min execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
+    "close": {"meaning": "last execution price in the minute", "unit": "JPY", "tz": null, "notes": null},
+    "volume": {"meaning": "sum of execution sizes in the minute", "unit": "BTC", "tz": null, "notes": null},
+    "synthetic": {
+      "meaning": "1 = zero-volume row whose open/high/low/close are byte-identical to the immediately preceding row's (the forward-fill artifact documented in schema/candles_fx_btc_jpy.json known_defects, present only in part A rows -- part A predates the 2026-09-05 synthetic-column fix so this flag was reconstructed here from that rule, not copied from a stored column). 0 = a real bar. All part-B (tape-rebuilt) rows are 0 by construction (build_candles never fabricates a row).",
+      "unit": "0/1",
+      "tz": null,
+      "notes": "reconstructed synthetic flag on part A is a best-effort match to the documented rule, not a re-derivation from raw executions for every row -- treat ambiguous cases (flat OHLC with a genuine predecessor coincidence) as noted in schema/candles_fx_btc_jpy.json"
+    },
+    "source": {
+      "meaning": "provenance of this row: 'frozen_candles_31d_20260823' (part A, REST-derived) or 'paper_logs_tape_ws' (part B, WS-tape-derived)",
+      "unit": "string enum",
+      "tz": null,
+      "notes": null
+    }
+  },
+  "known_defects": [
+    "gaps > 5 minutes exist at the part A/B boundary region and within part B -- see backtest_data/fx_btc_jpy_1m_continuous_20260906/gaps_gt5min.txt and README.md for the full list (17 gaps as of the 2026-09-06 build): most are the recurring ~13min bitFlyer 19:00 UTC maintenance window (also seen in part A per schema/candles_fx_btc_jpy.json), plus two longer gaps (2026-08-25 18:29->2026-08-26 02:55, ~8h26m; 2026-08-27 17:57->2026-08-28 04:18, ~10h21m) that likely reflect a WS recorder/tape-extraction outage (paper_logs/tape/executions_*.csv.gz simply has no rows there) rather than a genuinely quiet market -- not individually root-caused here.",
+    "part A carries the pre-existing candles_FX_BTC_JPY_31d_20260823.csv.gz defects verbatim (zero-volume ffill rows per schema/candles_fx_btc_jpy.json known_defects; this file's `synthetic` column flags the ones matching that rule's detectable signature). part B has no such rows (build_candles drops zero-execution minutes instead of ffilling).",
+    "no overlap-agreement check was run between part A and a from-scratch rebuild of 2026-08-20..08-23 from the tape, because that span is served by part A (REST candles, already verified against the frozen executions snapshot in schema/candles_fx_btc_jpy.json's 2026-09-06 entry); only the non-overlapping tail (ts > part A's max) was taken from part B."
+  ]
+}
