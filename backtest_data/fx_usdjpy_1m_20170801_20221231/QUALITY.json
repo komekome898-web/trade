@@ -1,0 +1,72 @@
+{
+  "dataset": "fx_usdjpy_reference",
+  "file": "usdjpy_1m.csv.gz",
+  "generated": "2026-09-06",
+  "generator": "manual (pandas + line-preserving gzip pass over _work/USDJPY_1m.csv, no data values touched)",
+  "row_count": 2422080,
+  "columns": ["timestamp", "open", "high", "low", "close", "volume", "ask_close"],
+  "period_utc": {
+    "start": "2017-08-01 00:00:00+00:00",
+    "end": "2022-12-30 23:59:00+00:00",
+    "note": "requested range was 2017-08-01..2022-12-31; Dukascopy has no BID prints for 2022-12-31 (a Saturday, market closed) so the last real row is 2022-12-30 23:59 UTC -- same pattern as every other Saturday in the file (see gaps.weekend_gap_count)."
+  },
+  "duplicate_timestamps": 0,
+  "negative_or_zero_price_rows": {
+    "open": 0, "high": 0, "low": 0, "close": 0
+  },
+  "zero_volume_rows": 416995,
+  "negative_volume_rows": 0,
+  "ask_close": {
+    "non_blank_rows": 0,
+    "note": "this backfill fetched Dukascopy BID only (task scope); ask_close kept as an empty column purely for schema/column parity with backtest_data/fx_usdjpy_1m_20260822.csv.gz."
+  },
+  "gaps_over_60min": {
+    "method": "sorted unique timestamps, consecutive diff > 60 minutes",
+    "total": 288,
+    "weekend_gap_count": 278,
+    "weekend_gap_definition": "gap start weekday == Friday AND gap end weekday in {Sunday, Monday} -- the normal weekly FX close/reopen",
+    "non_weekend_gap_count_total": 10,
+    "non_weekend_gap_count_by_year": {
+      "2017": 0,
+      "2018": 2,
+      "2019": 3,
+      "2020": 2,
+      "2021": 2,
+      "2022": 1
+    },
+    "non_weekend_gaps": [
+      {"from": "2018-06-03 23:59:00+00:00", "to": "2018-06-05 00:00:00+00:00", "minutes": 1441.0, "note": "Whit Monday 2018-06-04 (probable European market holiday), not root-caused further"},
+      {"from": "2018-07-29 23:59:00+00:00", "to": "2018-07-31 00:00:00+00:00", "minutes": 1441.0, "note": "2018-07-30 (Monday) missing, not root-caused"},
+      {"from": "2019-06-11 23:59:00+00:00", "to": "2019-06-13 00:00:00+00:00", "minutes": 1441.0, "note": "2019-06-12 (Wednesday) missing, not root-caused"},
+      {"from": "2019-09-26 23:59:00+00:00", "to": "2019-09-29 00:00:00+00:00", "minutes": 2881.0, "note": "2019-09-27 (Friday) missing, weekend absorbed into the same gap"},
+      {"from": "2019-10-01 23:59:00+00:00", "to": "2019-10-03 00:00:00+00:00", "minutes": 1441.0, "note": "2019-10-02 (Wednesday) missing, not root-caused"},
+      {"from": "2020-09-17 23:59:00+00:00", "to": "2020-09-20 00:00:00+00:00", "minutes": 2881.0, "note": "2020-09-18 (Friday) missing, weekend absorbed into the same gap"},
+      {"from": "2020-12-31 23:59:00+00:00", "to": "2021-01-03 00:00:00+00:00", "minutes": 2881.0, "note": "2021-01-01 New Year's Day (Friday) holiday, weekend absorbed into the same gap"},
+      {"from": "2021-09-05 23:59:00+00:00", "to": "2021-09-07 00:00:00+00:00", "minutes": 1441.0, "note": "2021-09-06 (Monday) missing, not root-caused"},
+      {"from": "2021-09-14 23:59:00+00:00", "to": "2021-09-16 00:00:00+00:00", "minutes": 1441.0, "note": "2021-09-15 (Wednesday) missing, not root-caused"},
+      {"from": "2022-10-06 23:59:00+00:00", "to": "2022-10-09 00:00:00+00:00", "minutes": 2881.0, "note": "2022-10-07 (Friday) missing, weekend absorbed into the same gap"}
+    ]
+  },
+  "manifest_cross_check": {
+    "manifest_file": "_work/USDJPY_1m.csv.bid.manifest.json",
+    "manifest_days_ok": 1682,
+    "manifest_days_empty": 283,
+    "manifest_days_total_recorded": 1965,
+    "calendar_days_in_requested_range": 1979,
+    "days_missing_from_manifest_entirely": 14,
+    "note": "the 14 unrecorded days (e.g. 2017-12-10, 2018-06-04, 2019-09-21/27, 2020-03-22, 2022-03-26/10-02/10-07, ...) line up with the non-weekend gaps and ordinary weekend dates found above by direct timestamp analysis of the CSV itself -- a per-day logging gap in the fetch manifest, not evidence of additional missing data beyond what the gap list already shows. The CSV's own timestamps are the source of truth for this QUALITY.json, not the manifest."
+  },
+  "overlap_with_existing_snapshot": {
+    "existing_file": "backtest_data/fx_usdjpy_1m_20260822.csv.gz",
+    "existing_first_row": "2023-01-01 00:00:00+00:00",
+    "this_file_last_row": "2022-12-30 23:59:00+00:00",
+    "overlapping_rows": 0,
+    "note": "one calendar day gap (2022-12-31, a Saturday, market closed) between the two files -- no overlap, no double-count risk if concatenated."
+  },
+  "column_and_time_format_check": {
+    "matches_existing_snapshot": true,
+    "existing_snapshot_header": "timestamp,open,high,low,close,volume,ask_close",
+    "this_file_header": "timestamp,open,high,low,close,volume,ask_close",
+    "timestamp_format": "YYYY-MM-DD HH:MM:SS+00:00 (identical string format to backtest_data/fx_usdjpy_1m_20260822.csv.gz)"
+  }
+}

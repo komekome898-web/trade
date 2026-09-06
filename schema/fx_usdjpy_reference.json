@@ -4,7 +4,7 @@
   "path_glob": [
     "data/fx/USDJPY_1m.csv",
     "backtest_data/fx_usdjpy_1m_*.csv.gz",
-    "backtest_data/fx_usdjpy_1m_20170801_20221231/fx_usdjpy_1m_*.csv.gz",
+    "backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz",
     "backtest_data/gmo_swap_usdjpy.csv"
   ],
   "source": "USDJPY_1m.csv: Dukascopy historical 1-minute bid data, 2023-01-01 onward (validation series for scripts/research_fx_carry.py's carry-as-income study). gmo_swap_usdjpy.csv: GMO Coin's published USD/JPY swap calendar (swapBuy/swapSell in JPY per 10,000 USD notional, swapDays), 2023-04 onward -- see scripts/research_fx_carry.py header comment for the exact provenance and field mapping.",
@@ -34,7 +34,7 @@
       },
       "quality": {"unique_key": ["timestamp"], "skip_checks": ["zero_volume", "maintenance_window"]}
     },
-    "fx_usdjpy_1m_20170801_20221231/fx_usdjpy_1m_*.csv.gz": {
+    "fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz": {
       "columns": {
         "timestamp": {"meaning": "1-minute bar time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
         "open": {"meaning": "bid open", "unit": "JPY per USD", "tz": null, "notes": null},
@@ -42,7 +42,7 @@
         "low": {"meaning": "bid low", "unit": "JPY per USD", "tz": null, "notes": null},
         "close": {"meaning": "bid close", "unit": "JPY per USD", "tz": null, "notes": null},
         "volume": {"meaning": "Dukascopy's own tick-volume proxy for the bar", "unit": "as provided by source", "tz": null, "notes": "frequently 0.0 -- see known_defects"},
-        "ask_close": {"meaning": "ask close", "unit": "JPY per USD", "tz": null, "notes": "blank on rows where the ask series had no print for this minute; see per-directory README for whether the ASK pass completed for this backfill"}
+        "ask_close": {"meaning": "ask close", "unit": "JPY per USD", "tz": null, "notes": "blank on every row -- this backfill only fetched BID (see backtest_data/fx_usdjpy_1m_20170801_20221231/README.md); column kept for schema parity with the other USDJPY_1m file_groups"}
       },
       "quality": {"unique_key": ["timestamp"], "skip_checks": ["zero_volume", "maintenance_window"]}
     },

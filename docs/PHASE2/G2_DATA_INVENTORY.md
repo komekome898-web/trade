@@ -2,6 +2,15 @@
 
 出典: `data/INTAKE_latest.json`(棚卸し台帳)/ `data/QUALITY.json` / `backtest_data/` 一覧 / `schema/*.json`。作成 2026-09-06。
 
+## 0. 追記(2026-09-06、P2-08 補助データ 2 件、前任エージェントの中断分を完了)
+
+| 種別 | パス | span (UTC) | rows | 品質検査 | 台帳 |
+|---|---|---|---|---|---|
+| USDJPY 1分足(Dukascopy BID) | `backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz` | 2017-08-01 00:00 〜 2022-12-30 23:59(既存スナップショット2023-01-01〜と重複なし・列/時刻形式一致) | 2,422,080 | 重複0・負値0・週末外60分超欠損10件(年別内訳・詳細はREADME/QUALITY.json)。`schema/fx_usdjpy_reference.json`のpath_glob/file_groupsキーを実ファイル名に修正済み(前任が誤った glob を残していた) | `data/INTAKE_latest.json`に登録済み(`scripts/intake_ledger.py`実行、2026-09-06) |
+| 現物 BTC_JPY 1分足(lightchart) | `backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_<year>.csv.gz`(12ファイル、`raw_<year>.tar`12本、`candles_1m_index.json`) | 2015-08-02 02:07 〜 2026-09-06 12:00 | 5,828,554(null-OHLC 493,858) | gap>5min 16,590件(年別内訳README)。FX_BTC_JPYとの重なり期間close相関: 年別最低0.9944、全期間プール0.99969(P2-08 BLINDSPOT_AUDIT診断(d)のCPU軽量版) | 同上 |
+
+詳細・出典URL・ライセンス注記・検査結果全文は各ディレクトリの README.md / QUALITY.json を参照。既存の `docs/PHASE2/P2-08/PREREG.md` 調達票(USDJPY対照5・現物ベーシス診断(d)の2行)は取得完了として更新要(未実施、リード側作業)。
+
 ## 1. スナップショット一覧
 
 | 種別 | パス | span (UTC) | rows | gap>5min | 既知の欠陥 |
