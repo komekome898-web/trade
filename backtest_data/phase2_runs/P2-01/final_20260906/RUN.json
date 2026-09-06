@@ -1,0 +1,271 @@
+{
+  "unit": "P2-01",
+  "stage": "final_evaluation_sealed",
+  "roll_rule": "quarterly",
+  "cumulative_N": 2,
+  "run_date": "2026-09-06",
+  "sealed_window": [
+    "2020-12-21",
+    "2026-08-28"
+  ],
+  "seed": 20260906,
+  "git_rev": "c73e5438d9a8cd8220e57fb84255c0cb63432eb1",
+  "script": "scripts/phase2/p2_01_final.py",
+  "script_md5": "16847dcac2553071b2f0cf76bc6748e0",
+  "inputs": [
+    {
+      "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz",
+      "md5": "0f179b365417d4e307e53672e8cb3237"
+    },
+    {
+      "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz",
+      "md5": "aed073cf99e230db81bf3b4714fddf10"
+    },
+    {
+      "path": "paper_logs/nk225_sessions.csv",
+      "md5": "1f909d42e46e27ee2904a18967dd39e7"
+    },
+    {
+      "path": "paper_logs/on1_ledger.csv",
+      "md5": "56f775625dc107db2ed07046234dc41a"
+    }
+  ],
+  "seal_record_md5": "2b18e0ef53a7ec4263e2203aee05f280",
+  "unseal_approved_md5": "d4551e5e72a5fca1c6b778194067c84c",
+  "parameters": {
+    "roll_rule": "quarterly",
+    "glitch_threshold_abs_simple_return": 0.1,
+    "block": 20,
+    "n_boot": 2000,
+    "n_shuffle": 1000,
+    "cost_yen_conservative": 122,
+    "cost_yen_optimistic": 22,
+    "multiplier_yen_per_point": 10,
+    "mde_bps": 6.03,
+    "mde_diff_bps": 8.07,
+    "gross_gate_bps": 14.9
+  },
+  "n_at_each_step": {
+    "day_rows_sealed": 1438,
+    "night_rows_sealed": 1438,
+    "forward_rows_nk225_sessions": 161,
+    "forward_rows_on1_ledger": 9,
+    "day_rows_in_sealed_window": 1438,
+    "pairs_after_endpoint_rule": 1437,
+    "glitches": 1,
+    "roll_adjacent_monthly": 201,
+    "roll_adjacent_quarterly": 66,
+    "nightless_marked": 0,
+    "pairs_without_night_row": 1,
+    "n_base": 1437,
+    "n_clean_glitch_excluded": 1436,
+    "n_roll_excluded_quarterly": 1371,
+    "n_roll_excluded_monthly": 1236,
+    "n_main_quarterly_and_glitch_excluded": 1370,
+    "n_main_monthly_and_glitch_excluded": 1236,
+    "glitches_inside_roll_set_quarterly": 0
+  },
+  "headline": {
+    "mean_r_net_bps_conservative": 2.488616268529659,
+    "ci95": [
+      -2.562504185273258,
+      7.446277193824408
+    ],
+    "mean_gross_bps": 6.057332633512386,
+    "ci95_gross": [
+      1.0339613350154426,
+      10.971356343765704
+    ],
+    "mean_r_net_bps_optimistic": 5.413793616876157,
+    "ci95_optimistic": [
+      0.39193610879790763,
+      10.351214559982763
+    ],
+    "mean_diff_night_minus_day_bps": 5.046233579142513,
+    "ci95_diff": [
+      -1.5699049299835015,
+      11.700380682790712
+    ],
+    "sharpe_annualised": 0.35524642784604893,
+    "hit_rate": 0.5240875912408759,
+    "max_drawdown_yen_1_micro": 136802.0,
+    "total_pnl_yen_1_micro": 182760.0,
+    "best_of_2_null_mean_p95_bps": 5.468154128328601,
+    "best_of_2_null_sharpe_p95": 0.7519711776512038,
+    "observed_best_mean_bps": 6.057332633512386,
+    "observed_best_sharpe": 0.8648477298651907,
+    "single_config_null_mean_p95_bps": 4.7146277455283485,
+    "single_config_null_sharpe_p95": 0.6727289379129977,
+    "alignment_median_abs_prev_close": 40.0,
+    "alignment_median_abs_same_close": 260.0,
+    "alignment_pass": true,
+    "monthly_variant_ci95": [
+      -3.98657265512172,
+      6.465399522620106
+    ],
+    "monthly_variant_ci95_diff": [
+      -1.8427034586361193,
+      12.230524720280725
+    ]
+  },
+  "bar": {
+    "バー1 「累計 N=2 通りの最良」の帰無 95 点を超える(平均、グロス)": {
+      "measured": "実測best 6.057 vs 帰無95点 5.468",
+      "outcome": "満たす"
+    },
+    "バー1(参考)同 Sharpe": {
+      "measured": "実測best 0.865 vs 帰無95点 0.752",
+      "outcome": "満たす"
+    },
+    "バー2 保守コスト後の平均ネット夜間リターンの 95% CI が正": {
+      "measured": "[-2.563, 7.446] bps",
+      "outcome": "満たさない"
+    },
+    "バー3 夜間−日中の差の 95% CI が正": {
+      "measured": "[-1.570, 11.700] bps",
+      "outcome": "満たさない"
+    },
+    "all_three_met": false
+  },
+  "falsification": {
+    "反証文A 平均ネット夜間リターンの 95% CI がゼロを含む": {
+      "measured": "[-2.563, 7.446] bps",
+      "outcome": "満たす"
+    },
+    "反証文B 夜間−日中の差の 95% CI がゼロを含む": {
+      "measured": "[-1.570, 11.700] bps",
+      "outcome": "満たす"
+    },
+    "付帯条件 ロール隣接ペアを含めた場合にのみ成立していないか(含む集合の CI)": {
+      "measured": "[-1.994, 7.485] bps(差 [-0.903, 11.726])",
+      "outcome": "該当しない"
+    },
+    "保留区分 楽観コストでは CI が正・保守ではゼロを含む": {
+      "measured": "楽観 [0.392, 10.351] / 保守 [-2.563, 7.446] bps",
+      "outcome": "満たす"
+    }
+  },
+  "forward_diagnostic": {
+    "rows": 9,
+    "usable_rows": 9,
+    "min_usable_rows_required": 5,
+    "enough_rows": true,
+    "micro_minus_large_entry_n": 9,
+    "micro_minus_large_entry_mean_pt": -2.2222222222222223,
+    "micro_minus_large_entry_median_pt": 0.0,
+    "micro_minus_large_entry_absmean_pt": 16.666666666666668,
+    "micro_minus_large_exit_n": 9,
+    "micro_minus_large_exit_mean_pt": -8.88888888888889,
+    "micro_minus_large_exit_median_pt": -10.0,
+    "micro_minus_large_exit_absmean_pt": 21.11111111111111,
+    "micro_minus_large_roundtrip_absmean_pt": 37.77777777777778,
+    "micro_minus_large_roundtrip_absmean_yen": 377.77777777777777,
+    "ledger_minus_series_entry_n": 5,
+    "ledger_minus_series_entry_mean_pt": -15.0,
+    "ledger_minus_series_entry_median_pt": -20.0,
+    "ledger_minus_series_entry_absmean_pt": 19.0,
+    "ledger_minus_series_exit_n": 4,
+    "ledger_minus_series_exit_mean_pt": -11.25,
+    "ledger_minus_series_exit_median_pt": -12.5,
+    "ledger_minus_series_exit_absmean_pt": 26.25,
+    "ledger_minus_series_roundtrip_absmean_pt": 42.5,
+    "ledger_minus_series_roundtrip_absmean_yen": 425.0,
+    "ledger_gross_bps_mean": -47.36544444444445,
+    "ledger_net_bps_mean": -47.699,
+    "nk225_sessions_rows": 161,
+    "nk225_sessions_first_date": "2026-08-21",
+    "nk225_sessions_last_date": "2026-09-03",
+    "nk225_sessions_rows_by_product": {
+      "mini": 95,
+      "micro": 40,
+      "large": 26
+    },
+    "on1_ledger_first_entry_date": "2026-08-21",
+    "on1_ledger_last_entry_date": "2026-09-02"
+  },
+  "mde": [
+    {
+      "quantity": "σ(r_night) 四半期ロール除外後(封印期間)",
+      "sd_bps": 112.10672384768682,
+      "n": 1371,
+      "se_bps": 3.02770064771153,
+      "mde_bps_independent": 8.482361380974268,
+      "mde_bps_registered": 6.03,
+      "mde_bps_effective_from_ci": 6.6750850633195205
+    },
+    {
+      "quantity": "σ(夜間−日中の差)四半期ロール除外後(封印期間)",
+      "sd_bps": 150.39781407570342,
+      "n": 1371,
+      "se_bps": 4.06183985636827,
+      "mde_bps_independent": 11.37959050192169,
+      "mde_bps_registered": 8.07,
+      "mde_bps_effective_from_ci": 9.303293466477655
+    },
+    {
+      "quantity": "σ(r_net 保守コスト後)主集合",
+      "sd_bps": 108.78638909142072,
+      "n": 1370,
+      "se_bps": 2.9390994265399693,
+      "mde_bps_independent": 8.234137509390113,
+      "mde_bps_registered": 6.03,
+      "mde_bps_effective_from_ci": 7.153308474665401
+    },
+    {
+      "quantity": "σ(夜間−日中の差)主集合",
+      "sd_bps": 147.83234861135622,
+      "n": 1370,
+      "se_bps": 3.9940104148742233,
+      "mde_bps_independent": 11.189560541246076,
+      "mde_bps_registered": 8.07,
+      "mde_bps_effective_from_ci": 9.48431611597916
+    }
+  ],
+  "unseal_log_excerpt": [
+    {
+      "ts_utc": "2026-09-06T02:23:02.213007+00:00",
+      "unit": "P2-01",
+      "path": "backtest_data/n225f_225labo_20260828/day_session_daily.csv.gz",
+      "rows_returned": 1438
+    },
+    {
+      "ts_utc": "2026-09-06T02:23:02.232925+00:00",
+      "unit": "P2-01",
+      "path": "backtest_data/n225f_225labo_20260828/night_session_daily.csv.gz",
+      "rows_returned": 1438
+    },
+    {
+      "ts_utc": "2026-09-06T02:23:02.239461+00:00",
+      "unit": "P2-01",
+      "path": "paper_logs/nk225_sessions.csv",
+      "rows_returned": 161
+    },
+    {
+      "ts_utc": "2026-09-06T02:23:02.241320+00:00",
+      "unit": "P2-01",
+      "path": "paper_logs/on1_ledger.csv",
+      "rows_returned": 9
+    }
+  ],
+  "outputs": [
+    "RESULTS.md",
+    "alignment_check.csv",
+    "bar_and_falsification.csv",
+    "control2_best_of_2_null.csv",
+    "controls.csv",
+    "diagnostic_month.csv",
+    "diagnostic_nights.csv",
+    "diagnostic_regime.csv",
+    "diagnostic_sq_dist.csv",
+    "diagnostic_vol_tercile.csv",
+    "diagnostic_weekday.csv",
+    "diagnostic_year.csv",
+    "exclusions.csv",
+    "forward_diagnostic.csv",
+    "main_indicators.csv",
+    "mde.csv",
+    "nights_distribution.csv",
+    "pairs.csv",
+    "sub_indicators.csv"
+  ]
+}
