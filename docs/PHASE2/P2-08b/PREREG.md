@@ -27,6 +27,8 @@ Tardis 由来は利用規約 9.2 により **`data/tardis/`(gitignore 域)** に
 - **封印台帳に登録するファイル(一意)**: `executions_FX_BTC_JPY_31d_20260823.csv.gz`、`paper_logs/tape/executions_YYYYMMDD.csv.gz`(08-20〜09-06)、`bitflyer_executions_us_20260723_20260906/*.csv.gz`(正規化日次)、
   `binance_BTCUSDT_aggTrades_20260723_20260906/*.csv.gz`、`binance_BTCUSDT_1s_20260723_20260906/*.csv.gz`、`binance_um_BTCUSDT_aggTrades_20260723_20260906/*.csv.gz`。ticker・board_top5 は登録しない(信号にも判定にも使わない。板厚の実測のみ、封印外の 07-23〜08-22 に限る)。
   `sealed.py` は μs epoch(`ts_us`)を解釈できるよう拡張済み(2026-09-07、テスト付き)。`load_diagnostic(path, cutoff)` は**新規実装**(既存に無い)。
+  **封印台帳は作成済み**(2026-09-07、154 ファイル、`--seal-from 2026-08-23`、forward_start 2026-09-07)。Binance の本体データは容量のため git 管理外(`docs/DATA_LOSS_REGISTER.md` #15)だが、
+  SEALED.json にパスと MD5 を登録済みで改変検知は効く。再取得は `scripts/fetch_binance_vision.py --kind aggTrades` で MD5 突合できる。
 - **封印**: 主系列の暦 70/30 floor = **2026-08-23 00:00 UTC**(`phase2_seal.py --unit P2-08b --seal-from 2026-08-23`、REST 31 日・テープ日次・Binance 日次 07-23〜09-06・正規化済み日次を全て登録)。
   開発セット = 07-23 .. 08-22(REST 由来、単一刻印 ms)、train = 07-23 .. 08-12(21 日)、val = 08-13 .. 08-22(10 日)。封印 = 08-23 .. 09-06(WS 由来 μs)+ フォワード。
   開発 → 封印で計測系が REST → WS に変わる: 重なり 08-20〜23 で両系の結果差(欠け率・価格)を既知欠陥 (2) として報告し、最終評価に併記。
