@@ -70,7 +70,13 @@ schtasks /Create /TN "trade_share_logs" /TR "C:\Users\ryoma\trade\deploy\share_l
    それでも駄目なら GUI で代用可: 設定 → 時刻と言語 → 日付と時刻 → 「今すぐ同期」(ボタンがサービスを起動する)。ただし恒久同期のため上のコマンドを後で通すこと。
 2. 確認(いつでも可、平日・休日を問わない):
    ```
-   w32tm /stripchart /computer:ntp.nict.jp /samples:3 /dataonly
+   w32tm /query /status
    ```
-   表示される差(例 `+00.0123s`)の絶対値が **0.1 秒未満**なら OK。0.1 秒以上なら手順 1 を再実行。
+   「最終正常同期時刻」が直近であること、「位相オフセット」の絶対値が **0.1 秒未満**なら OK。0.1 秒以上なら手順 1 の `w32tm /resync` を再実行。
+   `w32tm /stripchart /computer:ntp.nict.jp` は **IPv6 経路がタイムアウトして 0x800705B4 になることがある**(2026-09-07 実例 L-014。同期自体は IPv4 で成功している)。
+   stripchart を使うなら IPv4 を明示する:
+   ```
+   Resolve-DnsName ntp.nict.jp -Type A | Select-Object -First 1 -ExpandProperty IPAddress
+   w32tm /stripchart /computer:<表示された IPv4> /samples:3 /dataonly
+   ```
 3. 結果を「P7 確認 +0.01s(9/8)」のように一言で報告(手順番号付き、P5)。以後は週 1 回(任意の曜日)に手順 2 のみ。
