@@ -316,6 +316,44 @@ def load_unsealed(path: Path | str, unit: str, root: Path | str = REPO_ROOT
     return df.loc[keep].reset_index(drop=True)
 
 
+def load_diagnostic(path: Path | str, cutoff: str | datetime,
+                    time_column: str | None = None) -> pd.DataFrame:
+    """Rows of a DIAGNOSTIC series strictly before ``cutoff``.
+
+    Some units need long external series (other venues, vendor samples) that
+    are not part of the unit's sealed ledger — they inform diagnostics, never
+    the primary indicator. Reading them raw would still leak the sealed
+    period through a correlated market, so this loader exists as the only
+    sanctioned path: it drops every row at or after ``cutoff`` and never
+    returns the sealed window.
+
+    ``cutoff`` is an ISO date/datetime (naive input is read as UTC).
+    ``time_column`` defaults to the first of ``TS_CANDIDATES`` present.
+    """
+    abs_path = Path(path)
+    if isinstance(cutoff, str):
+        cut = datetime.fromisoformat(cutoff)
+    else:
+        cut = cutoff
+    if cut.tzinfo is None:
+        cut = cut.replace(tzinfo=timezone.utc)
+    df = _read_table(abs_path)
+    col = time_column
+    if col is None:
+        for cand in TS_CANDIDATES:
+            if cand in df.columns:
+                col = cand
+                break
+    if col is None or col not in df.columns:
+        raise SealedDataError(
+            f"{abs_path}: no diagnostic time column (looked for "
+            f"{time_column or '/'.join(TS_CANDIDATES)}; columns: "
+            f"{list(df.columns)})")
+    ts = df[col].map(parse_ts)
+    keep = ts.map(lambda d: d is not None and d < cut)
+    return df.loc[keep].reset_index(drop=True)
+
+
 def load_sealed(path: Path | str, unit: str, token: str,
                 root: Path | str = REPO_ROOT) -> pd.DataFrame:
     """The held-out eval-set rows of ``path`` — refuses unless ALL THREE
