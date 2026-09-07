@@ -15,10 +15,15 @@
    "files_checked": 4,
    "files_flagged": 0
   },
+  "bitbank_btc_jpy_transactions": {
+   "checks": {},
+   "files_checked": 109,
+   "files_flagged": 0
+  },
   "bitflyer_execution_flow": {
    "checks": {
     "gaps": {
-     "count": 112243,
+     "count": 117327,
      "examples": [
       {
        "examples": [
@@ -79,7 +84,7 @@
          "ts": "2026-08-31T12:15:09.137000+00:00"
         }
        ],
-       "median_gap_seconds": 2.003,
+       "median_gap_seconds": 0.853,
        "path": "data/executions_FX_BTC_JPY.csv"
       },
       {
@@ -233,10 +238,581 @@
    "files_checked": 4,
    "files_flagged": 4
   },
+  "bitflyer_executions_us": {
+   "checks": {},
+   "files_checked": 48,
+   "files_flagged": 0
+  },
+  "bitflyer_lightchart_1m": {
+   "checks": {
+    "extreme_return": {
+     "count": 31,
+     "examples": [
+      {
+       "examples": [
+        {
+         "prev": 25500.0,
+         "return": -0.21568627450980393,
+         "row": 28832,
+         "value": 20000.0
+        },
+        {
+         "prev": 20000.0,
+         "return": 0.2425,
+         "row": 28849,
+         "value": 24850.0
+        },
+        {
+         "prev": 49100.0,
+         "return": 0.12246435845213849,
+         "row": 129936,
+         "value": 55113.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "prev": 3652800.0,
+         "return": 0.119267958826106,
+         "row": 199666,
+         "value": 4088462.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "prev": 69500.0,
+         "return": -0.1079136690647482,
+         "row": 442060,
+         "value": 62000.0
+        },
+        {
+         "prev": 62000.0,
+         "return": 0.1408225806451613,
+         "row": 442061,
+         "value": 70731.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "prev": 100000.0,
+         "return": -0.1013,
+         "row": 6555,
+         "value": 89870.0
+        },
+        {
+         "prev": 110694.0,
+         "return": 0.12092796357526153,
+         "row": 63166,
+         "value": 124080.0
+        },
+        {
+         "prev": 283804.0,
+         "return": -0.19662865921551492,
+         "row": 208757,
+         "value": 228000.0
+        },
+        {
+         "prev": 228000.0,
+         "return": 0.30603947368421053,
+         "row": 208758,
+         "value": 297777.0
+        },
+        {
+         "prev": 283096.0,
+         "return": -0.1946194930341651,
+         "row": 208765,
+         "value": 228000.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "prev": 1371890.0,
+         "return": 0.2036183659039719,
+         "row": 22175,
+         "value": 1651232.0
+        },
+        {
+         "prev": 1651232.0,
+         "return": -0.20059688765721595,
+         "row": 22176,
+         "value": 1320000.0
+        },
+        {
+         "prev": 1320000.0,
+         "return": 0.13636363636363635,
+         "row": 22182,
+         "value": 1500000.0
+        },
+        {
+         "prev": 1500000.0,
+         "return": -0.11953333333333334,
+         "row": 22183,
+         "value": 1320700.0
+        },
+        {
+         "prev": 1068000.0,
+         "return": 0.40448501872659176,
+         "row": 22205,
+         "value": 1499990.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz"
+      }
+     ],
+     "files": 9
+    },
+    "gaps": {
+     "count": 190,
+     "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 35460.0,
+         "row": 11120,
+         "ts": "2015-08-10T21:50:00+00:00"
+        },
+        {
+         "gap_seconds": 29640.0,
+         "row": 18698,
+         "ts": "2015-08-17T08:13:00+00:00"
+        },
+        {
+         "gap_seconds": 26640.0,
+         "row": 12650,
+         "ts": "2015-08-12T07:23:00+00:00"
+        },
+        {
+         "gap_seconds": 22320.0,
+         "row": 47130,
+         "ts": "2015-09-07T18:11:00+00:00"
+        },
+        {
+         "gap_seconds": 19620.0,
+         "row": 26485,
+         "ts": "2015-08-23T05:26:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 32760.0,
+         "row": 78354,
+         "ts": "2016-02-24T21:05:00+00:00"
+        },
+        {
+         "gap_seconds": 2280.0,
+         "row": 371418,
+         "ts": "2016-09-15T12:37:00+00:00"
+        },
+        {
+         "gap_seconds": 1020.0,
+         "row": 57510,
+         "ts": "2016-02-10T00:16:00+00:00"
+        },
+        {
+         "gap_seconds": 660.0,
+         "row": 53214,
+         "ts": "2016-02-07T00:10:00+00:00"
+        },
+        {
+         "gap_seconds": 660.0,
+         "row": 193644,
+         "ts": "2016-05-15T00:10:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 18540.0,
+         "row": 344161,
+         "ts": "2020-08-27T05:08:00+00:00"
+        },
+        {
+         "gap_seconds": 3840.0,
+         "row": 523853,
+         "ts": "2020-12-30T01:03:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 16740.0,
+         "row": 7143,
+         "ts": "2015-12-03T16:38:00+00:00"
+        },
+        {
+         "gap_seconds": 7260.0,
+         "row": 6543,
+         "ts": "2015-12-03T02:00:00+00:00"
+        },
+        {
+         "gap_seconds": 6180.0,
+         "row": 5282,
+         "ts": "2015-12-02T01:42:00+00:00"
+        },
+        {
+         "gap_seconds": 5100.0,
+         "row": 11053,
+         "ts": "2015-12-06T13:24:00+00:00"
+        },
+        {
+         "gap_seconds": 4680.0,
+         "row": 5900,
+         "ts": "2015-12-02T13:17:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 32580.0,
+         "row": 78080,
+         "ts": "2016-02-24T21:02:00+00:00"
+        },
+        {
+         "gap_seconds": 2280.0,
+         "row": 370917,
+         "ts": "2016-09-15T12:37:00+00:00"
+        },
+        {
+         "gap_seconds": 1680.0,
+         "row": 197521,
+         "ts": "2016-05-18T00:27:00+00:00"
+        },
+        {
+         "gap_seconds": 1620.0,
+         "row": 82566,
+         "ts": "2016-02-28T00:26:00+00:00"
+        },
+        {
+         "gap_seconds": 1500.0,
+         "row": 5015,
+         "ts": "2016-01-04T12:24:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz"
+      }
+     ],
+     "files": 7
+    },
+    "maintenance_window": {
+     "count": 2961,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 32721,
+         "ts": "2015-08-27T19:00:00+00:00",
+         "value": 28010.0
+        },
+        {
+         "row": 48569,
+         "ts": "2015-09-08T19:01:00+00:00",
+         "value": 29259.0
+        },
+        {
+         "row": 48570,
+         "ts": "2015-09-08T19:02:00+00:00",
+         "value": 29290.0
+        },
+        {
+         "row": 61228,
+         "ts": "2015-09-17T19:05:00+00:00",
+         "value": 28353.0
+        },
+        {
+         "row": 61229,
+         "ts": "2015-09-17T19:06:00+00:00",
+         "value": 28375.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 1141,
+         "ts": "2016-01-01T19:00:00+00:00",
+         "value": 52180.0
+        },
+        {
+         "row": 1142,
+         "ts": "2016-01-01T19:01:00+00:00",
+         "value": 52180.0
+        },
+        {
+         "row": 2583,
+         "ts": "2016-01-02T19:03:00+00:00",
+         "value": 52230.0
+        },
+        {
+         "row": 2585,
+         "ts": "2016-01-02T19:05:00+00:00",
+         "value": 52210.0
+        },
+        {
+         "row": 2586,
+         "ts": "2016-01-02T19:06:00+00:00",
+         "value": 52211.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 6901,
+         "ts": "2017-01-05T19:00:00+00:00",
+         "value": 114001.0
+        },
+        {
+         "row": 8341,
+         "ts": "2017-01-06T19:00:00+00:00",
+         "value": 110157.0
+        },
+        {
+         "row": 11221,
+         "ts": "2017-01-08T19:00:00+00:00",
+         "value": 106738.0
+        },
+        {
+         "row": 15541,
+         "ts": "2017-01-11T19:00:00+00:00",
+         "value": 91716.0
+        },
+        {
+         "row": 24181,
+         "ts": "2017-01-17T19:00:00+00:00",
+         "value": 102355.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 24181,
+         "ts": "2018-01-17T19:00:00+00:00",
+         "value": 1091976.0
+        },
+        {
+         "row": 34261,
+         "ts": "2018-01-24T19:00:00+00:00",
+         "value": 1217307.0
+        },
+        {
+         "row": 45781,
+         "ts": "2018-02-01T19:00:00+00:00",
+         "value": 983026.0
+        },
+        {
+         "row": 58741,
+         "ts": "2018-02-10T19:00:00+00:00",
+         "value": 920680.0
+        },
+        {
+         "row": 71701,
+         "ts": "2018-02-19T19:00:00+00:00",
+         "value": 1190350.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 14101,
+         "ts": "2019-01-10T19:00:00+00:00",
+         "value": 392417.0
+        },
+        {
+         "row": 57301,
+         "ts": "2019-02-09T19:00:00+00:00",
+         "value": 393705.0
+        },
+        {
+         "row": 61621,
+         "ts": "2019-02-12T19:00:00+00:00",
+         "value": 396062.0
+        },
+        {
+         "row": 77461,
+         "ts": "2019-02-23T19:00:00+00:00",
+         "value": 451264.0
+        },
+        {
+         "row": 100501,
+         "ts": "2019-03-11T19:00:00+00:00",
+         "value": 428190.0
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz"
+      }
+     ],
+     "files": 24
+    },
+    "zero_volume": {
+     "count": 790813,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 6,
+         "ts": "2015-08-02T02:12:00+00:00"
+        },
+        {
+         "row": 7,
+         "ts": "2015-08-02T02:13:00+00:00"
+        },
+        {
+         "row": 9,
+         "ts": "2015-08-02T02:15:00+00:00"
+        },
+        {
+         "row": 10,
+         "ts": "2015-08-02T02:16:00+00:00"
+        },
+        {
+         "row": 11,
+         "ts": "2015-08-02T02:17:00+00:00"
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 10,
+         "ts": "2016-01-01T00:09:00+00:00"
+        },
+        {
+         "row": 11,
+         "ts": "2016-01-01T00:10:00+00:00"
+        },
+        {
+         "row": 12,
+         "ts": "2016-01-01T00:11:00+00:00"
+        },
+        {
+         "row": 13,
+         "ts": "2016-01-01T00:12:00+00:00"
+        },
+        {
+         "row": 15,
+         "ts": "2016-01-01T00:14:00+00:00"
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 219,
+         "ts": "2017-01-01T03:38:00+00:00"
+        },
+        {
+         "row": 281,
+         "ts": "2017-01-01T04:40:00+00:00"
+        },
+        {
+         "row": 385,
+         "ts": "2017-01-01T06:24:00+00:00"
+        },
+        {
+         "row": 491,
+         "ts": "2017-01-01T08:10:00+00:00"
+        },
+        {
+         "row": 769,
+         "ts": "2017-01-01T12:48:00+00:00"
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 120,
+         "ts": "2018-01-01T01:59:00+00:00"
+        },
+        {
+         "row": 327,
+         "ts": "2018-01-01T05:26:00+00:00"
+        },
+        {
+         "row": 1120,
+         "ts": "2018-01-01T18:39:00+00:00"
+        },
+        {
+         "row": 1142,
+         "ts": "2018-01-01T19:01:00+00:00"
+        },
+        {
+         "row": 1143,
+         "ts": "2018-01-01T19:02:00+00:00"
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 55,
+         "ts": "2019-01-01T00:54:00+00:00"
+        },
+        {
+         "row": 93,
+         "ts": "2019-01-01T01:32:00+00:00"
+        },
+        {
+         "row": 126,
+         "ts": "2019-01-01T02:05:00+00:00"
+        },
+        {
+         "row": 134,
+         "ts": "2019-01-01T02:13:00+00:00"
+        },
+        {
+         "row": 160,
+         "ts": "2019-01-01T02:39:00+00:00"
+        }
+       ],
+       "path": "backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz"
+      }
+     ],
+     "files": 24
+    }
+   },
+   "files_checked": 24,
+   "files_flagged": 24
+  },
   "bitflyer_tape": {
    "checks": {
     "duplicate_keys": {
-     "count": 30855,
+     "count": 31597,
      "examples": [
       {
        "examples": [
@@ -489,10 +1065,10 @@
        "path": "backtest_data/auto_bitflyer_executions_20260905/executions_20260824.csv.gz"
       }
      ],
-     "files": 56
+     "files": 57
     },
     "gaps": {
-     "count": 250675,
+     "count": 258596,
      "examples": [
       {
        "examples": [
@@ -630,11 +1206,11 @@
        "path": "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260824.csv.gz"
       }
      ],
-     "files": 127
+     "files": 129
     }
    },
-   "files_checked": 127,
-   "files_flagged": 127
+   "files_checked": 129,
+   "files_flagged": 129
   },
   "board_round_series_5s": {
    "checks": {
@@ -943,10 +1519,15 @@
    "files_checked": 115,
    "files_flagged": 0
   },
+  "bybit_reachability_check": {
+   "checks": {},
+   "files_checked": 2,
+   "files_flagged": 0
+  },
   "candles_fx_btc_jpy": {
    "checks": {
     "gaps": {
-     "count": 328,
+     "count": 329,
      "examples": [
       {
        "examples": [
@@ -1028,14 +1609,14 @@
          "ts": "2026-09-06T19:12:00+00:00"
         },
         {
-         "gap_seconds": 780.0,
-         "row": 1327,
-         "ts": "2026-08-20T19:12:00+00:00"
+         "gap_seconds": 840.0,
+         "row": 26391,
+         "ts": "2026-09-07T19:12:00+00:00"
         },
         {
          "gap_seconds": 780.0,
-         "row": 2755,
-         "ts": "2026-08-21T19:12:00+00:00"
+         "row": 1327,
+         "ts": "2026-08-20T19:12:00+00:00"
         }
        ],
        "median_gap_seconds": 60.0,
@@ -1755,65 +2336,291 @@
      ],
      "files": 5
     },
-    "zero_volume": {
-     "count": 19850,
+    "gaps": {
+     "count": 33,
      "examples": [
       {
        "examples": [
         {
-         "row": 4,
-         "ts": "2026-07-30 00:03:00+00:00"
+         "gap_seconds": 25260.0,
+         "row": 29521,
+         "ts": "2017-09-06T23:00:00+00:00"
         },
         {
-         "row": 11,
-         "ts": "2026-07-30 00:10:00+00:00"
+         "gap_seconds": 3900.0,
+         "row": 177199,
+         "ts": "2017-12-18T13:34:00+00:00"
         },
         {
-         "row": 19,
-         "ts": "2026-07-30 00:18:00+00:00"
-        },
-        {
-         "row": 27,
-         "ts": "2026-07-30 00:26:00+00:00"
-        },
-        {
-         "row": 29,
-         "ts": "2026-07-30 00:28:00+00:00"
+         "gap_seconds": 820.0,
+         "row": 177063,
+         "ts": "2017-12-18T10:14:00+00:00"
         }
        ],
-       "path": "backtest_data/bitbank_xrp_jpy_1m.csv"
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz"
       },
       {
        "examples": [
         {
-         "row": 4,
-         "ts": "2026-07-30 00:03:00+00:00"
+         "gap_seconds": 120674.0,
+         "row": 54625,
+         "ts": "2018-02-09T09:59:14+00:00"
         },
         {
-         "row": 11,
-         "ts": "2026-07-30 00:10:00+00:00"
+         "gap_seconds": 36060.0,
+         "row": 251377,
+         "ts": "2018-06-26T12:00:00+00:00"
         },
         {
-         "row": 19,
-         "ts": "2026-07-30 00:18:00+00:00"
+         "gap_seconds": 27480.0,
+         "row": 262095,
+         "ts": "2018-07-04T08:00:00+00:00"
         },
         {
-         "row": 27,
-         "ts": "2026-07-30 00:26:00+00:00"
+         "gap_seconds": 25260.0,
+         "row": 453045,
+         "ts": "2018-11-14T09:00:00+00:00"
         },
         {
-         "row": 29,
-         "ts": "2026-07-30 00:28:00+00:00"
+         "gap_seconds": 12660.0,
+         "row": 416055,
+         "ts": "2018-10-19T09:30:00+00:00"
         }
        ],
-       "path": "data/bitbank_xrp_jpy_1m.csv"
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 36060.0,
+         "row": 192781,
+         "ts": "2019-05-15T13:00:00+00:00"
+        },
+        {
+         "gap_seconds": 28860.0,
+         "row": 324540,
+         "ts": "2019-08-15T10:00:00+00:00"
+        },
+        {
+         "gap_seconds": 21660.0,
+         "row": 100921,
+         "ts": "2019-03-12T08:00:00+00:00"
+        },
+        {
+         "gap_seconds": 8460.0,
+         "row": 453660,
+         "ts": "2019-11-13T04:20:00+00:00"
+        },
+        {
+         "gap_seconds": 7260.0,
+         "row": 470797,
+         "ts": "2019-11-25T04:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 21300.0,
+         "row": 71197,
+         "ts": "2020-02-19T17:30:00+00:00"
+        },
+        {
+         "gap_seconds": 13860.0,
+         "row": 511089,
+         "ts": "2020-12-21T18:00:00+00:00"
+        },
+        {
+         "gap_seconds": 12660.0,
+         "row": 257189,
+         "ts": "2020-06-28T05:30:00+00:00"
+        },
+        {
+         "gap_seconds": 9060.0,
+         "row": 165179,
+         "ts": "2020-04-25T04:30:00+00:00"
+        },
+        {
+         "gap_seconds": 7740.0,
+         "row": 90869,
+         "ts": "2020-03-04T11:30:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 17100.0,
+         "row": 164083,
+         "ts": "2021-04-25T08:45:00+00:00"
+        },
+        {
+         "gap_seconds": 16260.0,
+         "row": 322078,
+         "ts": "2021-08-13T06:30:00+00:00"
+        },
+        {
+         "gap_seconds": 9060.0,
+         "row": 156912,
+         "ts": "2021-04-20T04:30:00+00:00"
+        },
+        {
+         "gap_seconds": 7260.0,
+         "row": 389788,
+         "ts": "2021-09-29T09:00:00+00:00"
+        },
+        {
+         "gap_seconds": 5460.0,
+         "row": 92202,
+         "ts": "2021-03-06T03:30:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz"
       }
      ],
-     "files": 2
+     "files": 6
+    },
+    "zero_volume": {
+     "count": 44068,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 2,
+         "ts": "2017-08-17 04:01:00+00:00"
+        },
+        {
+         "row": 6,
+         "ts": "2017-08-17 04:05:00+00:00"
+        },
+        {
+         "row": 7,
+         "ts": "2017-08-17 04:06:00+00:00"
+        },
+        {
+         "row": 8,
+         "ts": "2017-08-17 04:07:00+00:00"
+        },
+        {
+         "row": 9,
+         "ts": "2017-08-17 04:08:00+00:00"
+        }
+       ],
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 87974,
+         "ts": "2018-03-04 14:37:00+00:00"
+        },
+        {
+         "row": 87975,
+         "ts": "2018-03-04 14:38:00+00:00"
+        },
+        {
+         "row": 87976,
+         "ts": "2018-03-04 14:39:00+00:00"
+        },
+        {
+         "row": 87978,
+         "ts": "2018-03-04 14:41:00+00:00"
+        },
+        {
+         "row": 87979,
+         "ts": "2018-03-04 14:42:00+00:00"
+        }
+       ],
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 226322,
+         "ts": "2019-06-07 20:01:00+00:00"
+        },
+        {
+         "row": 226323,
+         "ts": "2019-06-07 20:02:00+00:00"
+        },
+        {
+         "row": 226324,
+         "ts": "2019-06-07 20:03:00+00:00"
+        },
+        {
+         "row": 226325,
+         "ts": "2019-06-07 20:04:00+00:00"
+        },
+        {
+         "row": 226326,
+         "ts": "2019-06-07 20:05:00+00:00"
+        }
+       ],
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 511039,
+         "ts": "2020-12-21 13:20:00+00:00"
+        },
+        {
+         "row": 511040,
+         "ts": "2020-12-21 13:21:00+00:00"
+        },
+        {
+         "row": 511041,
+         "ts": "2020-12-21 13:22:00+00:00"
+        },
+        {
+         "row": 511042,
+         "ts": "2020-12-21 13:23:00+00:00"
+        },
+        {
+         "row": 511043,
+         "ts": "2020-12-21 13:24:00+00:00"
+        }
+       ],
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "row": 14883,
+         "ts": "2021-01-11 08:02:00+00:00"
+        },
+        {
+         "row": 14884,
+         "ts": "2021-01-11 08:03:00+00:00"
+        },
+        {
+         "row": 14885,
+         "ts": "2021-01-11 08:04:00+00:00"
+        },
+        {
+         "row": 14886,
+         "ts": "2021-01-11 08:05:00+00:00"
+        },
+        {
+         "row": 14887,
+         "ts": "2021-01-11 08:06:00+00:00"
+        }
+       ],
+       "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz"
+      }
+     ],
+     "files": 8
     }
    },
-   "files_checked": 13,
-   "files_flagged": 7
+   "files_checked": 21,
+   "files_flagged": 13
   },
   "fx_btc_jpy_1m_continuous": {
    "checks": {
@@ -2040,8 +2847,70 @@
   "fx_usdjpy_reference": {
    "checks": {
     "gaps": {
-     "count": 189,
+     "count": 765,
      "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 172860.0,
+         "row": 161281,
+         "ts": "2017-12-11T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 172860.0,
+         "row": 185761,
+         "ts": "2018-01-01T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 172860.0,
+         "row": 964801,
+         "ts": "2019-09-29T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 172860.0,
+         "row": 1179361,
+         "ts": "2020-03-23T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 172860.0,
+         "row": 1401121,
+         "ts": "2020-09-20T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/fx_usdjpy_1m_20170801_20221231/_work/USDJPY_1m.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 172860.0,
+         "row": 161281,
+         "ts": "2017-12-11T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 172860.0,
+         "row": 185761,
+         "ts": "2018-01-01T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 172860.0,
+         "row": 964801,
+         "ts": "2019-09-29T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 172860.0,
+         "row": 1179361,
+         "ts": "2020-03-23T00:00:00+00:00"
+        },
+        {
+         "gap_seconds": 172860.0,
+         "row": 1401121,
+         "ts": "2020-09-20T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz"
+      },
       {
        "examples": [
         {
@@ -2074,11 +2943,95 @@
        "path": "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
       }
      ],
+     "files": 3
+    },
+    "maintenance_window": {
+     "count": 3029,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 6901,
+         "ts": "2017-08-06T19:00:00+00:00",
+         "value": 110.662
+        },
+        {
+         "row": 6902,
+         "ts": "2017-08-06T19:01:00+00:00",
+         "value": 110.662
+        },
+        {
+         "row": 6903,
+         "ts": "2017-08-06T19:02:00+00:00",
+         "value": 110.662
+        },
+        {
+         "row": 6904,
+         "ts": "2017-08-06T19:03:00+00:00",
+         "value": 110.662
+        },
+        {
+         "row": 6905,
+         "ts": "2017-08-06T19:04:00+00:00",
+         "value": 110.662
+        }
+       ],
+       "path": "backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz"
+      }
+     ],
+     "files": 1
+    },
+    "missing_columns": {
+     "count": 1,
+     "examples": [
+      {
+       "examples": [
+        {
+         "declared_but_absent": [
+          "ask_close"
+         ],
+         "undocumented_in_schema": []
+        }
+       ],
+       "path": "backtest_data/fx_usdjpy_1m_20170801_20221231/_work/USDJPY_1m.csv.gz"
+      }
+     ],
+     "files": 1
+    },
+    "zero_volume": {
+     "count": 416995,
+     "examples": [
+      {
+       "examples": [
+        {
+         "row": 2710,
+         "ts": "2017-08-02 21:09:00+00:00"
+        },
+        {
+         "row": 2854,
+         "ts": "2017-08-02 23:33:00+00:00"
+        },
+        {
+         "row": 3128,
+         "ts": "2017-08-03 04:07:00+00:00"
+        },
+        {
+         "row": 4144,
+         "ts": "2017-08-03 21:03:00+00:00"
+        },
+        {
+         "row": 5581,
+         "ts": "2017-08-04 21:00:00+00:00"
+        }
+       ],
+       "path": "backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz"
+      }
+     ],
      "files": 1
     }
    },
-   "files_checked": 2,
-   "files_flagged": 1
+   "files_checked": 4,
+   "files_flagged": 3
   },
   "intake_ledger_snapshot": {
    "checks": {},
@@ -2731,7 +3684,7 @@
   },
   "okx_oi": {
    "checks": {},
-   "files_checked": 17,
+   "files_checked": 18,
    "files_flagged": 0
   },
   "on1_onr_ledgers": {
@@ -3806,8 +4759,52 @@
   "schema_undefined": {
    "checks": {
     "gaps": {
-     "count": 150,
+     "count": 158,
      "examples": [
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 2665,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/mini_topixf_225labo_20260907/day_session_daily.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 2665,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/mini_topixf_225labo_20260907/full_day_daily.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 2656,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/mini_topixf_225labo_20260907/night_session_daily.csv.gz"
+      },
+      {
+       "examples": [
+        {
+         "gap_seconds": 950400.0,
+         "row": 2665,
+         "ts": "2019-05-07T00:00:00+00:00"
+        }
+       ],
+       "median_gap_seconds": 86400.0,
+       "path": "backtest_data/mini_topixf_225labo_20260907/trading_day_daily.csv.gz"
+      },
       {
        "examples": [
         {
@@ -3818,66 +4815,13 @@
        ],
        "median_gap_seconds": 86400.0,
        "path": "backtest_data/phase2_runs/P2-01/iter0_20260906/pairs.csv"
-      },
-      {
-       "examples": [
-        {
-         "gap_seconds": 950400.0,
-         "row": 2844,
-         "ts": "2019-05-07T00:00:00+00:00"
-        }
-       ],
-       "median_gap_seconds": 86400.0,
-       "path": "backtest_data/phase2_runs/P2-01/iter1_20260906/pairs.csv"
-      },
-      {
-       "examples": [
-        {
-         "gap_seconds": 950400.0,
-         "row": 2703,
-         "ts": "2019-05-07T00:00:00+00:00"
-        }
-       ],
-       "median_gap_seconds": 86400.0,
-       "path": "backtest_data/phase2_runs/P2-01b/history_20260906/pairs_full_history.csv"
-      },
-      {
-       "examples": [
-        {
-         "gap_seconds": 12268800.0,
-         "row": 7544,
-         "ts": "1990-09-21T00:00:00+00:00"
-        },
-        {
-         "gap_seconds": 11750400.0,
-         "row": 7567,
-         "ts": "1992-09-14T00:00:00+00:00"
-        },
-        {
-         "gap_seconds": 11664000.0,
-         "row": 7592,
-         "ts": "1994-09-14T00:00:00+00:00"
-        },
-        {
-         "gap_seconds": 11664000.0,
-         "row": 7602,
-         "ts": "1995-09-14T00:00:00+00:00"
-        },
-        {
-         "gap_seconds": 11577600.0,
-         "row": 7556,
-         "ts": "1991-09-13T00:00:00+00:00"
-        }
-       ],
-       "median_gap_seconds": 604800.0,
-       "path": "backtest_data/phase2_runs/P2-04/iter0_20260906/calendar_rule_days.csv"
       }
      ],
-     "files": 4
+     "files": 12
     }
    },
-   "files_checked": 218,
-   "files_flagged": 4
+   "files_checked": 310,
+   "files_flagged": 12
   },
   "spread_fx_btc_jpy": {
    "checks": {
@@ -3961,7 +4905,7 @@
   "venues": {
    "checks": {
     "duplicate_keys": {
-     "count": 473,
+     "count": 504,
      "examples": [
       {
        "examples": [
@@ -4189,7 +5133,7 @@
        "path": "backtest_data/auto_venues_20260905/quotes_20260901.csv.gz"
       }
      ],
-     "files": 28
+     "files": 29
     },
     "extreme_return": {
      "count": 15,
@@ -4353,7 +5297,7 @@
      "files": 6
     },
     "gaps": {
-     "count": 220946,
+     "count": 232064,
      "examples": [
       {
        "examples": [
@@ -4441,15 +5385,15 @@
        "path": "backtest_data/auto_venues_20260905/quotes_20260901.csv.gz"
       }
      ],
-     "files": 157
+     "files": 162
     }
    },
-   "files_checked": 160,
-   "files_flagged": 160
+   "files_checked": 165,
+   "files_flagged": 165
   },
   "ws_raw_capture": {
    "checks": {},
-   "files_checked": 81,
+   "files_checked": 84,
    "files_flagged": 0
   },
   "yutai": {
@@ -4458,11 +5402,20 @@
    "files_flagged": 0
   }
  },
- "generated_at": "2026-09-06T21:25:55.459431+00:00",
+ "generated_at": "2026-09-07T21:17:43.379862+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 218,
+ "schema_undefined_count": 310,
  "schema_undefined_files": [
-  "backtest_data/binance_BTCUSDT_1m_20240101_20260831/binance_BTCUSDT_1m_20240101_20260831.csv.gz",
+  "backtest_data/audit_fetch_P2-08b_20260906/binance_1s_2026-09-05_head5.csv",
+  "backtest_data/audit_fetch_P2-08b_20260906/binance_aggTrades_2019-06-01_head5.csv",
+  "backtest_data/audit_fetch_P2-08b_20260906/binance_aggTrades_2026-09-05_head5.csv",
+  "backtest_data/audit_fetch_P2-08b_20260906/tardis_sample_FX_BTC_JPY_2020-01-01_head1000.csv",
+  "backtest_data/audit_fetch_P2-08b_20260906/tardis_sample_FX_BTC_JPY_2026-08-01_head1000.csv",
+  "backtest_data/mini_topixf_225labo_20260907/bars_1min.csv.gz",
+  "backtest_data/mini_topixf_225labo_20260907/day_session_daily.csv.gz",
+  "backtest_data/mini_topixf_225labo_20260907/full_day_daily.csv.gz",
+  "backtest_data/mini_topixf_225labo_20260907/night_session_daily.csv.gz",
+  "backtest_data/mini_topixf_225labo_20260907/trading_day_daily.csv.gz",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_diff_table.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_null.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_state_table.csv",
@@ -4677,8 +5630,91 @@
   "backtest_data/phase2_runs/P2-04/iter2_20260906/iter2_joint_permutation_draws.csv",
   "backtest_data/phase2_runs/P2-04/iter2_20260906/iter2_joint_permutation_null.csv",
   "backtest_data/phase2_runs/P2-04/iter2_20260906/iter2_val_summary.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/big_gap_start_by_utc_hour.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/burst_factor.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/control1a_random_all_iter1_best.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/control1b_random_state_iter1_best.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/control4_no_lead_iter1_best.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/control5_jpy.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/control5_jpy_diff.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/control5_jpy_signal_agreement.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/controls_iter1_best.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/dev_set_summary_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/diag_a_minute_shift_iter1_best.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/diag_d_basis_by_month.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/diag_d_basis_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/diag_d_basis_trades.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/diag_d_basis_trades_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/maintenance_gap_start_histogram.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/maintenance_gaps_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/addendum_20260906/reference_stats_check.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/burst_factor.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/configs.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/control1a_random_all_best.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/control1a_random_all_current.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/control1b_random_state_best.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/control1b_random_state_current.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/control2_sign_shuffle_best.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/control2_sign_shuffle_current.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/control4_no_lead.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/controls.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/dev_set_summary_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/diag_a_minute_shift.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/diag_c_cross_correlation.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_best_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_best_cost_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_best_cost_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_best_gross_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_best_gross_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_best_net_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_best_net_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_current_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_current_cost_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_current_cost_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_current_gross_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_current_gross_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_current_net_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_current_net_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/edge_trend_summary.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/known_defects_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/mde.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/null_all_configs.csv.gz",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/null_best_of_27.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/sensitivity_val_2022_only.csv",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/trades_best.csv.gz",
+  "backtest_data/phase2_runs/P2-08/iter0_20260906/trades_current.csv.gz",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/burst_factor.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/condition_diff_table.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/condition_state_table.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/configs.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/control2_sign_shuffle_best.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/controls.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/dev_set_summary_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/edge_trend_best_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/edge_trend_best_cost_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/edge_trend_best_cost_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/edge_trend_best_gross_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/edge_trend_best_gross_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/edge_trend_best_net_rolling.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/edge_trend_best_net_weekly.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/edge_trend_summary.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/gate_reference_check.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/known_defects_by_year.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/mde.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/null_all_configs.csv.gz",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/null_best_of_108.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/null_best_of_27_from_same_draws.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/sensitivity_val_2022_only.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/signal_bars_by_tercile.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/state_minutes.csv",
+  "backtest_data/phase2_runs/P2-08/iter1_20260906/trades_best.csv.gz",
   "backtest_data/phase2_sealed/P2-01/UNSEAL_LOG.jsonl",
   "backtest_data/phase2_sealed/P2-02/UNSEAL_LOG.jsonl",
-  "backtest_data/phase2_sealed/P2-03/UNSEAL_LOG.jsonl"
+  "backtest_data/phase2_sealed/P2-03/UNSEAL_LOG.jsonl",
+  "backtest_data/topixf_225labo_20260907/bars_1min.csv.gz",
+  "backtest_data/topixf_225labo_20260907/day_session_daily.csv.gz",
+  "backtest_data/topixf_225labo_20260907/full_day_daily.csv.gz",
+  "backtest_data/topixf_225labo_20260907/night_session_daily.csv.gz",
+  "backtest_data/topixf_225labo_20260907/trading_day_daily.csv.gz"
  ]
 }
