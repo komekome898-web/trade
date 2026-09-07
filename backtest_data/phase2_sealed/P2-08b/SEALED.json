@@ -1,0 +1,1396 @@
+{
+  "unit": "P2-08b",
+  "created_utc": "2026-09-07T01:51:02.481405+00:00",
+  "forward_start": "2026-09-07T00:00:00+00:00",
+  "files": [
+    {
+      "path": "backtest_data/executions_FX_BTC_JPY_31d_20260823.csv.gz",
+      "md5": "9e4ae57e4d220dd9c8d3ffddec6a2418",
+      "time_column": "exec_date",
+      "first_ts": "2026-07-23T12:09:27.130000+00:00",
+      "last_ts": "2026-08-23T12:25:34.217000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-13T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260820.csv.gz",
+      "md5": "fe018cf55846ad6c8332194e9fcf1772",
+      "time_column": "ts",
+      "first_ts": "2026-08-20T06:13:26.885108+00:00",
+      "last_ts": "2026-08-20T23:59:58.448765+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-20T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260821.csv.gz",
+      "md5": "859e1e2f4d6f2b7c6d3c23fbbaaf1957",
+      "time_column": "ts",
+      "first_ts": "2026-08-21T00:00:04.031913+00:00",
+      "last_ts": "2026-08-21T23:59:52.445376+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-21T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260822.csv.gz",
+      "md5": "adf2eff5336e9e205ef5bedce5c02917",
+      "time_column": "ts",
+      "first_ts": "2026-08-22T00:00:00.938012+00:00",
+      "last_ts": "2026-08-22T23:59:16.860153+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-22T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260823.csv.gz",
+      "md5": "2ad39332a0bcef1b1904dffbde5b6cd6",
+      "time_column": "ts",
+      "first_ts": "2026-08-23T00:00:03.444112+00:00",
+      "last_ts": "2026-08-23T23:59:59.631967+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-23T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260824.csv.gz",
+      "md5": "10fefc8e38ca602eadd5ad3d9378677f",
+      "time_column": "ts",
+      "first_ts": "2026-08-24T00:00:08.490560+00:00",
+      "last_ts": "2026-08-24T23:59:21.286964+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-24T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260825.csv.gz",
+      "md5": "76d084d4fb1323e99ea8b629d924ae6a",
+      "time_column": "ts",
+      "first_ts": "2026-08-25T00:00:00.409170+00:00",
+      "last_ts": "2026-08-25T18:29:29.410663+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-25T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260826.csv.gz",
+      "md5": "f584af29a9a461aaf86c21b41fba45ea",
+      "time_column": "ts",
+      "first_ts": "2026-08-26T02:55:00.303817+00:00",
+      "last_ts": "2026-08-26T23:59:53.986931+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-26T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260827.csv.gz",
+      "md5": "c5f11327295507ae9a805bc63525c6fb",
+      "time_column": "ts",
+      "first_ts": "2026-08-27T00:00:03.497753+00:00",
+      "last_ts": "2026-08-27T17:57:08.606102+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-27T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260828.csv.gz",
+      "md5": "a84ab5523dc277c7baf57356690c1dfb",
+      "time_column": "ts",
+      "first_ts": "2026-08-28T04:18:56.411732+00:00",
+      "last_ts": "2026-08-28T23:59:57.948414+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-28T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260829.csv.gz",
+      "md5": "6073e471a5d467c6ebcf2d29ac9ade71",
+      "time_column": "ts",
+      "first_ts": "2026-08-29T00:00:02.789371+00:00",
+      "last_ts": "2026-08-29T23:59:10.615677+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260901.csv.gz",
+      "md5": "d44ef9f19d68ca7618f312a44a884f71",
+      "time_column": "ts",
+      "first_ts": "2026-09-01T00:00:01.229661+00:00",
+      "last_ts": "2026-09-01T23:59:50.212511+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-01T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260902.csv.gz",
+      "md5": "0d09b6d027d881069d9a948bbfbd131d",
+      "time_column": "ts",
+      "first_ts": "2026-09-02T00:00:00.229528+00:00",
+      "last_ts": "2026-09-02T23:59:44.909797+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-02T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260903.csv.gz",
+      "md5": "47b905270cd95fe26fea012e4ed90078",
+      "time_column": "ts",
+      "first_ts": "2026-09-03T00:00:02.910599+00:00",
+      "last_ts": "2026-09-03T23:58:39.089326+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-03T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260904.csv.gz",
+      "md5": "f154d508371aed76c95596b7f7116951",
+      "time_column": "ts",
+      "first_ts": "2026-09-04T00:00:01.040104+00:00",
+      "last_ts": "2026-09-04T23:58:57.592396+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260905.csv.gz",
+      "md5": "2701acce52678ec733f3228f03d800df",
+      "time_column": "ts",
+      "first_ts": "2026-09-05T00:00:09.128147+00:00",
+      "last_ts": "2026-09-05T23:59:45.629224+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-05T00:00:00+00:00"
+    },
+    {
+      "path": "paper_logs/tape/executions_20260906.csv.gz",
+      "md5": "11c82337d81a569d30503d9f581f8540",
+      "time_column": "ts",
+      "first_ts": "2026-09-06T00:00:08.290910+00:00",
+      "last_ts": "2026-09-06T18:58:46.839239+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-06T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260723.csv.gz",
+      "md5": "2fa7366f95caa4e2bd1b3570b2687440",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-23T12:09:27.130000+00:00",
+      "last_ts": "2026-07-23T23:59:46.267000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260724.csv.gz",
+      "md5": "0f6bb6f0c27af043a827b53805122faf",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-24T00:00:01.520000+00:00",
+      "last_ts": "2026-07-24T23:59:57.930000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260725.csv.gz",
+      "md5": "d01f324fe446a078cbe8f27ef4a4fcfc",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-25T00:00:03.207000+00:00",
+      "last_ts": "2026-07-25T23:59:49.703000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-25T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260726.csv.gz",
+      "md5": "1d22372a7bafc9f9a531b550fdf13cc2",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-26T00:00:31.563000+00:00",
+      "last_ts": "2026-07-26T23:59:55.473000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-26T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260727.csv.gz",
+      "md5": "8bb02f749951261c020850a5d1cdd05f",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-27T00:00:00.993000+00:00",
+      "last_ts": "2026-07-27T23:59:22.357000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-27T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260728.csv.gz",
+      "md5": "a27163d68fb46e81fbb012d0d4fb0c7e",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-28T00:00:00.593000+00:00",
+      "last_ts": "2026-07-28T23:59:52.150000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-28T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260729.csv.gz",
+      "md5": "e90a56f7db1824ec0909c83060513a2c",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-29T00:00:00.003000+00:00",
+      "last_ts": "2026-07-29T23:59:23.907000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260730.csv.gz",
+      "md5": "2b51d53e633e4138013d08cad7f6128d",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-30T00:00:00.227000+00:00",
+      "last_ts": "2026-07-30T23:59:51.897000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260731.csv.gz",
+      "md5": "1efd4d12ddf36095edf0b7bb439657c6",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-31T00:00:01.297000+00:00",
+      "last_ts": "2026-07-31T23:59:59.920000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-31T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260801.csv.gz",
+      "md5": "68dca171642bf4a8a2d1cc10ae870f62",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-01T00:00:01.447000+00:00",
+      "last_ts": "2026-08-01T23:58:01.087000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-01T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260802.csv.gz",
+      "md5": "dabe2b458323da9f5342910bf72a6f91",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-02T00:00:07.113000+00:00",
+      "last_ts": "2026-08-02T23:59:31.700000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-02T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260803.csv.gz",
+      "md5": "027e9628ce035f3154892f7567e76b1d",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-03T00:00:03.303000+00:00",
+      "last_ts": "2026-08-03T23:59:42.740000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-03T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260804.csv.gz",
+      "md5": "d6eed88b364d7011aff767e3555504fa",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-04T00:00:01.073000+00:00",
+      "last_ts": "2026-08-04T23:59:54.367000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260805.csv.gz",
+      "md5": "aafac1f45405b2a97e22e48b35c2877c",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-05T00:00:01.237000+00:00",
+      "last_ts": "2026-08-05T23:59:20.960000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260806.csv.gz",
+      "md5": "ba8318b687a1efe7d09ea8d983ddeae1",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-06T00:00:07.517000+00:00",
+      "last_ts": "2026-08-06T23:59:55.887000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-06T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260807.csv.gz",
+      "md5": "4c0689d4e8a88eb70bf7a4ce775a963d",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-07T00:00:05.550000+00:00",
+      "last_ts": "2026-08-07T23:59:23.863000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-07T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260808.csv.gz",
+      "md5": "b3ec4b45646afb7d976335826cc47a15",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-08T00:00:03.097000+00:00",
+      "last_ts": "2026-08-08T23:59:10.967000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-08T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260809.csv.gz",
+      "md5": "042a5893fb19d476d4366b313bd373de",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-09T00:00:07.410000+00:00",
+      "last_ts": "2026-08-09T23:59:54.830000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-09T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260810.csv.gz",
+      "md5": "14efb7a9c9ec307277f43580dff1eb21",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-10T00:00:00.183000+00:00",
+      "last_ts": "2026-08-10T23:59:15.627000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-10T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260811.csv.gz",
+      "md5": "4a9ceb048c6006ee604983e2d0ecedd3",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-11T00:00:01.303000+00:00",
+      "last_ts": "2026-08-11T23:59:52.883000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-11T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260812.csv.gz",
+      "md5": "93eefac46c13d807067f46c9e9e5232e",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-12T00:00:00.937000+00:00",
+      "last_ts": "2026-08-12T23:59:57.733000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260813.csv.gz",
+      "md5": "f7bd2144db328556413df9c2a56c50be",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-13T00:00:06.447000+00:00",
+      "last_ts": "2026-08-13T23:59:42.997000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-13T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260814.csv.gz",
+      "md5": "66887f8e81ea0bb8463cde83a12a80dd",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-14T00:00:00.313000+00:00",
+      "last_ts": "2026-08-14T23:59:57.723000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-14T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260815.csv.gz",
+      "md5": "2c0f4d513d77db81efaea310121bcaee",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-15T00:00:57.030000+00:00",
+      "last_ts": "2026-08-15T23:59:44.943000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-15T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260816.csv.gz",
+      "md5": "02cb768261a2f2700332d8093b19fefa",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-16T00:00:06.490000+00:00",
+      "last_ts": "2026-08-16T23:59:57.987000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-16T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260817.csv.gz",
+      "md5": "1af15d2ee65d7a8be4c8b1b9f23abbb6",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-17T00:00:03.937000+00:00",
+      "last_ts": "2026-08-17T23:59:30.433000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-17T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260818.csv.gz",
+      "md5": "2139671c751b2946f66897e56a87e8da",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-18T00:00:00.830000+00:00",
+      "last_ts": "2026-08-18T23:59:48.097000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260819.csv.gz",
+      "md5": "af9e65f75063ee5aabe3137808b41d32",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-19T00:00:00.320000+00:00",
+      "last_ts": "2026-08-19T23:59:51.277000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-19T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260820.csv.gz",
+      "md5": "61304f2aa09416f7b914a7d48c10e936",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-20T00:00:02.543000+00:00",
+      "last_ts": "2026-08-20T23:59:58.450000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-20T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260821.csv.gz",
+      "md5": "95c9f799ffbb9f9487b7bff1c2ef0692",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-21T00:00:04.033000+00:00",
+      "last_ts": "2026-08-21T23:59:52.447000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260822.csv.gz",
+      "md5": "b866b90c83254f7d7f74dedcd45e06d5",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-22T00:00:00.937000+00:00",
+      "last_ts": "2026-08-22T23:59:16.860000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260823.csv.gz",
+      "md5": "916b435159d1fe37386cb6bb8c320930",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-23T00:00:03.444112+00:00",
+      "last_ts": "2026-08-23T23:59:59.631967+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260824.csv.gz",
+      "md5": "c7eacca7259212b74e232db564e386e9",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-24T00:00:08.490560+00:00",
+      "last_ts": "2026-08-24T23:59:21.286964+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260825.csv.gz",
+      "md5": "3588d339a7103afb0e4569d5ff6ae971",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-25T00:00:00.409170+00:00",
+      "last_ts": "2026-08-25T18:29:29.410663+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-25T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260826.csv.gz",
+      "md5": "464a4c6e11f5bf9b43be1d4eec136495",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-26T02:55:00.303817+00:00",
+      "last_ts": "2026-08-26T23:59:53.986931+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-26T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260827.csv.gz",
+      "md5": "ab0f4802f6b7ed0a0867a45feae2766b",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-27T00:00:03.497753+00:00",
+      "last_ts": "2026-08-27T17:57:08.606102+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-27T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260828.csv.gz",
+      "md5": "7c4ce00f676c8f388c5572c3c088aabb",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-28T04:18:56.411732+00:00",
+      "last_ts": "2026-08-28T23:59:57.948414+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-28T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260829.csv.gz",
+      "md5": "157d1ac9ffa282dd62ddcd60298aeb11",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-29T00:00:02.789371+00:00",
+      "last_ts": "2026-08-29T23:59:10.615677+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260830.csv.gz",
+      "md5": "d0d731152733161124d5ed07da3773b1",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-30T00:00:06.371614+00:00",
+      "last_ts": "2026-08-30T23:59:58.208695+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260831.csv.gz",
+      "md5": "326087075a0352fd5225b928fb0123f6",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-31T00:00:00.796558+00:00",
+      "last_ts": "2026-08-31T23:59:59.451531+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-31T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260901.csv.gz",
+      "md5": "e4bdf68c5f382ff941b53a7bef19f7ce",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-01T00:00:01.229661+00:00",
+      "last_ts": "2026-09-01T23:59:50.212511+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-01T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260902.csv.gz",
+      "md5": "e37df418cc7082e486af8778ea998a16",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-02T00:00:00.229528+00:00",
+      "last_ts": "2026-09-02T23:59:44.909797+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-02T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260903.csv.gz",
+      "md5": "fbae49a5d55c1dbd21f89f29ecd7d8e3",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-03T00:00:02.910599+00:00",
+      "last_ts": "2026-09-03T23:58:39.089326+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-03T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260904.csv.gz",
+      "md5": "51df78d1d1af91fd623fc2aec93903b6",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-04T00:00:01.040104+00:00",
+      "last_ts": "2026-09-04T23:58:57.592396+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260905.csv.gz",
+      "md5": "2989ffdd464f651c980f96e333e38e48",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-05T00:00:09.128147+00:00",
+      "last_ts": "2026-09-05T23:59:45.629224+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260906.csv.gz",
+      "md5": "73407e3c1fd05a5a724ba34517df9a5e",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-06T00:00:08.290910+00:00",
+      "last_ts": "2026-09-06T18:58:46.839239+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-06T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-23.csv.gz",
+      "md5": "a9a9d6503f88e644c2323f2bcc486c9a",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-23T00:00:00.092008+00:00",
+      "last_ts": "2026-07-23T23:59:59.863886+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-24.csv.gz",
+      "md5": "31b57f73abadbd7c20241d8149529d07",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-24T00:00:00.009711+00:00",
+      "last_ts": "2026-07-24T23:59:58.775493+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-25.csv.gz",
+      "md5": "93fe4d46e03b30bab1433b6eb796174f",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-25T00:00:00.171020+00:00",
+      "last_ts": "2026-07-25T23:59:59.859394+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-25T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-26.csv.gz",
+      "md5": "1c09389bf009f2787df8d73008ff1ec2",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-26T00:00:00.114025+00:00",
+      "last_ts": "2026-07-26T23:59:58.951162+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-26T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-27.csv.gz",
+      "md5": "806c731f8e69c8d7d92d37cc8c9f1c34",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-27T00:00:00.098006+00:00",
+      "last_ts": "2026-07-27T23:59:58.929383+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-27T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-28.csv.gz",
+      "md5": "205cc1dc969560c77b293d545747d69c",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-28T00:00:00.142664+00:00",
+      "last_ts": "2026-07-28T23:59:59.936427+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-28T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-29.csv.gz",
+      "md5": "4339b254503d1ce4fc7c8e322b975175",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-29T00:00:00.092347+00:00",
+      "last_ts": "2026-07-29T23:59:59.966502+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-30.csv.gz",
+      "md5": "a49359811e69e64c48274e928960c0cb",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-30T00:00:00.179933+00:00",
+      "last_ts": "2026-07-30T23:59:59.648529+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-31.csv.gz",
+      "md5": "5ba2c471150242d40939678ab04cf8fa",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-31T00:00:00.151300+00:00",
+      "last_ts": "2026-07-31T23:59:59.776888+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-31T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-01.csv.gz",
+      "md5": "423e89ffa18eafdbaefe0986254187ac",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-01T00:00:00.207874+00:00",
+      "last_ts": "2026-08-01T23:59:59.846767+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-01T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-02.csv.gz",
+      "md5": "9b71413304757e2a505ab77f919d14e4",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-02T00:00:00.079140+00:00",
+      "last_ts": "2026-08-02T23:59:58.792644+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-02T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-03.csv.gz",
+      "md5": "c76e6191eba0a10c746d0779cbaf3f2b",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-03T00:00:00.079585+00:00",
+      "last_ts": "2026-08-03T23:59:55.492647+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-03T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-04.csv.gz",
+      "md5": "d4dee77318462337790698e61b0f6d92",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-04T00:00:00.091576+00:00",
+      "last_ts": "2026-08-04T23:59:56.146089+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-05.csv.gz",
+      "md5": "bf3a0c29431c546c64386d8747223ea8",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-05T00:00:00.165448+00:00",
+      "last_ts": "2026-08-05T23:59:57.818846+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-06.csv.gz",
+      "md5": "f6d3e2419648e4d804a81680e70d842a",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-06T00:00:00.124793+00:00",
+      "last_ts": "2026-08-06T23:59:59.892606+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-06T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-07.csv.gz",
+      "md5": "7ed1fe2ef2a79a35aee1921529ff8ea9",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-07T00:00:00.071749+00:00",
+      "last_ts": "2026-08-07T23:59:59.947402+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-07T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-08.csv.gz",
+      "md5": "a620a8c7bf575715a9c89efb4cbd8cfa",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-08T00:00:00.227145+00:00",
+      "last_ts": "2026-08-08T23:59:58.708405+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-08T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-09.csv.gz",
+      "md5": "de0708bd8c873cbe7953f40864d5298e",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-09T00:00:00.291441+00:00",
+      "last_ts": "2026-08-09T23:59:59.218220+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-09T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-10.csv.gz",
+      "md5": "b757897bd38f8e4158f29d4a3113fc08",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-10T00:00:00.012118+00:00",
+      "last_ts": "2026-08-10T23:59:59.714819+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-10T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-11.csv.gz",
+      "md5": "5ca58e7c3a8f8f8f43cbf6787a7a9845",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-11T00:00:00.397525+00:00",
+      "last_ts": "2026-08-11T23:59:59.854974+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-11T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-12.csv.gz",
+      "md5": "3d245ebec55a3716a401e8225d683cd9",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-12T00:00:00.239454+00:00",
+      "last_ts": "2026-08-12T23:59:58.566540+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-13.csv.gz",
+      "md5": "5d470964fdeaf956752765e86358da36",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-13T00:00:00.061393+00:00",
+      "last_ts": "2026-08-13T23:59:58.651098+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-13T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-14.csv.gz",
+      "md5": "c0a6e1000c205befeb20eee451729966",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-14T00:00:00.023607+00:00",
+      "last_ts": "2026-08-14T23:59:57.636461+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-14T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-15.csv.gz",
+      "md5": "9fbb5d3d2edc64368d38383ddcca693a",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-15T00:00:00.286442+00:00",
+      "last_ts": "2026-08-15T23:59:59.576330+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-15T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-16.csv.gz",
+      "md5": "4e6481dd07c0197adae260e2a5680134",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-16T00:00:00.392597+00:00",
+      "last_ts": "2026-08-16T23:59:58.938301+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-16T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-17.csv.gz",
+      "md5": "7d5c44ada31e01cf33869d5517a7a4ce",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-17T00:00:00.063921+00:00",
+      "last_ts": "2026-08-17T23:59:59.074585+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-17T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-18.csv.gz",
+      "md5": "bd55bfad7770730515ac87e5daeb4626",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-18T00:00:00.452184+00:00",
+      "last_ts": "2026-08-18T23:59:59.057863+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-19.csv.gz",
+      "md5": "4168235e463f6907c2a5119e5e9d1ac5",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-19T00:00:00.250608+00:00",
+      "last_ts": "2026-08-19T23:59:59.639515+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-19T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-20.csv.gz",
+      "md5": "191c11c05a852561fa3801a9a7233c04",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-20T00:00:00.161124+00:00",
+      "last_ts": "2026-08-20T23:59:59.093627+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-20T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-21.csv.gz",
+      "md5": "a92b0df9d4b6d953a1d3a2761e2ad874",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-21T00:00:00.013383+00:00",
+      "last_ts": "2026-08-21T23:59:59.852155+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-22.csv.gz",
+      "md5": "8a4e3a0d1d37ef5f0b1b13cfe575a09a",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-22T00:00:00.422321+00:00",
+      "last_ts": "2026-08-22T23:59:59.047315+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-23.csv.gz",
+      "md5": "64c51519d531b77acbe2f4778fa2e638",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-23T00:00:00.170432+00:00",
+      "last_ts": "2026-08-23T23:59:59.574167+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-24.csv.gz",
+      "md5": "3e4fa4fb6d4341cfa1192026dc9722ee",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-24T00:00:00.121675+00:00",
+      "last_ts": "2026-08-24T23:59:59.753266+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-25.csv.gz",
+      "md5": "fad07651dd435715af61e05166d07b34",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-25T00:00:00.207591+00:00",
+      "last_ts": "2026-08-25T23:59:59.639888+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-25T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-26.csv.gz",
+      "md5": "d416d5927662abd481fd8dcc332863d9",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-26T00:00:00.486221+00:00",
+      "last_ts": "2026-08-26T23:59:59.673920+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-26T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-27.csv.gz",
+      "md5": "1ab83e53a036dffe4c0daedc34eac4ac",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-27T00:00:00.082428+00:00",
+      "last_ts": "2026-08-27T23:59:59.444566+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-27T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-28.csv.gz",
+      "md5": "9d56f49a32d537c818b6f1015bbe9cbc",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-28T00:00:00.006019+00:00",
+      "last_ts": "2026-08-28T23:59:59.032975+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-28T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-29.csv.gz",
+      "md5": "f1f395274b1c84658cd7bef3543b71e8",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-29T00:00:00.241134+00:00",
+      "last_ts": "2026-08-29T23:59:59.730692+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-30.csv.gz",
+      "md5": "5cadc887af3aae1ce898ae9226b4fe30",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-30T00:00:00.280558+00:00",
+      "last_ts": "2026-08-30T23:59:59.878751+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-31.csv.gz",
+      "md5": "86f2054359e4904a996d73df8c43569b",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-31T00:00:00.000145+00:00",
+      "last_ts": "2026-08-31T23:59:59.668320+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-31T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-01.csv.gz",
+      "md5": "54983bce4dc03af4f96b93e51fded560",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-01T00:00:00.322740+00:00",
+      "last_ts": "2026-09-01T23:59:57.360789+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-01T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-02.csv.gz",
+      "md5": "fe3a549e1517f8a997a67f7ddc8b4692",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-02T00:00:00.119342+00:00",
+      "last_ts": "2026-09-02T23:59:58.992850+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-02T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-03.csv.gz",
+      "md5": "c634598ce7d46f1c8e40d52d49b067dd",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-03T00:00:00.405342+00:00",
+      "last_ts": "2026-09-03T23:59:59.904350+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-03T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-04.csv.gz",
+      "md5": "d6551494483d1f0ead6cdc9c170bd273",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-04T00:00:00.008033+00:00",
+      "last_ts": "2026-09-04T23:59:57.637217+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-05.csv.gz",
+      "md5": "2f6dabb52d41fe9210d53270dc1b6eab",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-05T00:00:00.483577+00:00",
+      "last_ts": "2026-09-05T23:59:59.780498+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_BTCUSDT_1s_20260723_20260906/binance_BTCUSDT_1s_20260723_20260906.csv.gz",
+      "md5": "a5c331ee2d37551b498e92a274cbb37b",
+      "time_column": "open_time",
+      "first_ts": "2026-07-23T00:00:00+00:00",
+      "last_ts": "2026-09-05T23:59:59+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-23.csv.gz",
+      "md5": "89e3d95ca0161ffcc815de53f9858b4b",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-23T00:00:00.435000+00:00",
+      "last_ts": "2026-07-23T23:59:59.783000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-24.csv.gz",
+      "md5": "9365cb57243b26ff945d0e5e086d7933",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-24T00:00:00.002000+00:00",
+      "last_ts": "2026-07-24T23:59:59.754000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-25.csv.gz",
+      "md5": "f0977e8e873b9a13dbedb1d1858b46ef",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-25T00:00:00.157000+00:00",
+      "last_ts": "2026-07-25T23:59:58.379000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-25T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-26.csv.gz",
+      "md5": "b8fcaee0af29aa28375fbcf4d44edd74",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-26T00:00:00.049000+00:00",
+      "last_ts": "2026-07-26T23:59:59.741000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-26T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-27.csv.gz",
+      "md5": "5c8d666cdd6840ba57c72caab2f7dfcb",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-27T00:00:00.141000+00:00",
+      "last_ts": "2026-07-27T23:59:59.889000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-27T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-28.csv.gz",
+      "md5": "c70532f7a46fc3b04a4d414c7a2c96d4",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-28T00:00:00.353000+00:00",
+      "last_ts": "2026-07-28T23:59:59.701000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-28T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-29.csv.gz",
+      "md5": "c1bb07342936c94a0f4c8980c0ba0f64",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-29T00:00:00.008000+00:00",
+      "last_ts": "2026-07-29T23:59:59.448000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-30.csv.gz",
+      "md5": "aef3f7e6178ebd6217238e7876c95efb",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-30T00:00:00.083000+00:00",
+      "last_ts": "2026-07-30T23:59:57.908000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-07-31.csv.gz",
+      "md5": "fbc7bbad7882902ebcfce77028052aa8",
+      "time_column": "ts_us",
+      "first_ts": "2026-07-31T00:00:00.129000+00:00",
+      "last_ts": "2026-07-31T23:59:59.958000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-07-31T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-01.csv.gz",
+      "md5": "c1435af85f2d95fbca811b73bf33c012",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-01T00:00:00.081000+00:00",
+      "last_ts": "2026-08-01T23:59:59.912000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-01T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-02.csv.gz",
+      "md5": "57714e25b8db32520b6ab0d626d2a27a",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-02T00:00:00.039000+00:00",
+      "last_ts": "2026-08-02T23:59:59.941000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-02T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-03.csv.gz",
+      "md5": "9263cce018963e021bcf832f15286f6c",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-03T00:00:00.179000+00:00",
+      "last_ts": "2026-08-03T23:59:59.160000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-03T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-04.csv.gz",
+      "md5": "3df0080bfab6a08a048389b6cb77523b",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-04T00:00:00.158000+00:00",
+      "last_ts": "2026-08-04T23:59:59.988000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-05.csv.gz",
+      "md5": "dae20f0bc98068720445d2566cacd721",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-05T00:00:00.008000+00:00",
+      "last_ts": "2026-08-05T23:59:59.987000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-05T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-06.csv.gz",
+      "md5": "988e7b7446569eb889ff52130f0388ff",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-06T00:00:00.043000+00:00",
+      "last_ts": "2026-08-06T23:59:59.654000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-06T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-07.csv.gz",
+      "md5": "9566191b099cb1a2923720a8c0ed66d2",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-07T00:00:00.441000+00:00",
+      "last_ts": "2026-08-07T23:59:59.379000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-07T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-08.csv.gz",
+      "md5": "7913fb6aae435f2be5d88c326b998d52",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-08T00:00:00.002000+00:00",
+      "last_ts": "2026-08-08T23:59:57.339000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-08T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-09.csv.gz",
+      "md5": "8831085f3e01fd0060b8048ec6889b36",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-09T00:00:00.004000+00:00",
+      "last_ts": "2026-08-09T23:59:59.284000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-09T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-10.csv.gz",
+      "md5": "82892dcac4a807e873a96f960c8fea6c",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-10T00:00:00.011000+00:00",
+      "last_ts": "2026-08-10T23:59:59.739000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-10T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-11.csv.gz",
+      "md5": "7a2aaf6f936af554ad9dbc4ddb0d4e27",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-11T00:00:00.003000+00:00",
+      "last_ts": "2026-08-11T23:59:59.978000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-11T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-12.csv.gz",
+      "md5": "ad2f0be7063311f553db51a27c43708a",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-12T00:00:00.005000+00:00",
+      "last_ts": "2026-08-12T23:59:59.763000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-12T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-13.csv.gz",
+      "md5": "3e4dc2f2289a4e14214f03e52f602693",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-13T00:00:00.006000+00:00",
+      "last_ts": "2026-08-13T23:59:59.691000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-13T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-14.csv.gz",
+      "md5": "2211f5abcc71137741327a200a965a4f",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-14T00:00:00.003000+00:00",
+      "last_ts": "2026-08-14T23:59:58.844000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-14T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-15.csv.gz",
+      "md5": "fcff4bf14f7cba3f2a2706697eeff840",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-15T00:00:00.003000+00:00",
+      "last_ts": "2026-08-15T23:59:59.116000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-15T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-16.csv.gz",
+      "md5": "cc767424dc97951a9b9abacac432f5b1",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-16T00:00:00.002000+00:00",
+      "last_ts": "2026-08-16T23:59:59.807000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-16T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-17.csv.gz",
+      "md5": "3b6ac7fd76c26ed36d81ac5f9e19b08b",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-17T00:00:00.011000+00:00",
+      "last_ts": "2026-08-17T23:59:59.488000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-17T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-18.csv.gz",
+      "md5": "511a33a17b2aa24412b879465f185e00",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-18T00:00:00.015000+00:00",
+      "last_ts": "2026-08-18T23:59:59.014000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-18T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-19.csv.gz",
+      "md5": "2282b41c608e289c76ffac254d703ab8",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-19T00:00:00.012000+00:00",
+      "last_ts": "2026-08-19T23:59:59.838000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-19T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-20.csv.gz",
+      "md5": "869c25d83c9188a2944aa78fcae6ba11",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-20T00:00:00.002000+00:00",
+      "last_ts": "2026-08-20T23:59:59.560000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-20T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-21.csv.gz",
+      "md5": "30c5a206e42f52d8accd83cef0d58837",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-21T00:00:00.003000+00:00",
+      "last_ts": "2026-08-21T23:59:59.834000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-21T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-22.csv.gz",
+      "md5": "01261456d66aee91e024450acf3ee6f4",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-22T00:00:00.005000+00:00",
+      "last_ts": "2026-08-22T23:59:59.750000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-22T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-23.csv.gz",
+      "md5": "0e16333a95b8ae199535202d69b37fcc",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-23T00:00:00.003000+00:00",
+      "last_ts": "2026-08-23T23:59:59.958000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-23T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-24.csv.gz",
+      "md5": "22e18b26d5ac1353a7b99614d4d5c701",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-24T00:00:00.003000+00:00",
+      "last_ts": "2026-08-24T23:59:59.963000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-24T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-25.csv.gz",
+      "md5": "39c785fae3b5d3d5838d625f7375b2f1",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-25T00:00:00.010000+00:00",
+      "last_ts": "2026-08-25T23:59:59.468000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-25T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-26.csv.gz",
+      "md5": "5195bb4cfd11de521bed8aab4166ff79",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-26T00:00:00.006000+00:00",
+      "last_ts": "2026-08-26T23:59:59.915000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-26T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-27.csv.gz",
+      "md5": "26ebae326f4371637be0d26cd512a32e",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-27T00:00:00.006000+00:00",
+      "last_ts": "2026-08-27T23:59:59.996000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-27T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-28.csv.gz",
+      "md5": "ec94cebfb371250a234b346faa0e74b8",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-28T00:00:00.020000+00:00",
+      "last_ts": "2026-08-28T23:59:59.787000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-28T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-29.csv.gz",
+      "md5": "29e372fb95a5286638dc57ba54acda71",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-29T00:00:00.003000+00:00",
+      "last_ts": "2026-08-29T23:59:59.157000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-29T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-30.csv.gz",
+      "md5": "ba14478acfda02ab771db1a97a02bc03",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-30T00:00:00.003000+00:00",
+      "last_ts": "2026-08-30T23:59:59.885000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-30T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-08-31.csv.gz",
+      "md5": "2a16af9fbf064f5279f30ee5b46871c1",
+      "time_column": "ts_us",
+      "first_ts": "2026-08-31T00:00:00.001000+00:00",
+      "last_ts": "2026-08-31T23:59:59.466000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-08-31T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-01.csv.gz",
+      "md5": "b67fdb5bbbc413909c50d2319e2d260a",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-01T00:00:00.003000+00:00",
+      "last_ts": "2026-09-01T23:59:59.987000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-01T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-02.csv.gz",
+      "md5": "4eb904efdcb545e78b8841f508e7544d",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-02T00:00:00.003000+00:00",
+      "last_ts": "2026-09-02T23:59:59.556000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-02T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-03.csv.gz",
+      "md5": "5c326365a0fd9062473768eac15643bc",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-03T00:00:00.001000+00:00",
+      "last_ts": "2026-09-03T23:59:59.961000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-03T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-04.csv.gz",
+      "md5": "64f7ac50d0e66f0d47df2306854c7c36",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-04T00:00:00.004000+00:00",
+      "last_ts": "2026-09-04T23:59:58.527000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-04T00:00:00+00:00"
+    },
+    {
+      "path": "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-2026-09-05.csv.gz",
+      "md5": "4a1c75c266e097a1077099455fe20e64",
+      "time_column": "ts_us",
+      "first_ts": "2026-09-05T00:00:00.003000+00:00",
+      "last_ts": "2026-09-05T23:59:59.413000+00:00",
+      "seal_from_ts": "2026-08-23T00:00:00+00:00",
+      "seal_from_ts_per_file": "2026-09-05T00:00:00+00:00"
+    }
+  ],
+  "rule": "everything with ts >= forward_start is sealed | unit-wide EXPLICIT boundary (--seal-from): seal_from_ts=2026-08-23T00:00:00+00:00 applied to every file (each file's own 70/30 boundary kept as seal_from_ts_per_file)",
+  "boundary_rule": "explicit",
+  "explicit_seal_from": "2026-08-23T00:00:00+00:00"
+}
