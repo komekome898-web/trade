@@ -1,0 +1,38 @@
+{
+ "source": "225Labo Topixf_2026.xlsx (owner-downloaded 2026-09-05, uploaded 2026-09-07; free registration, personal-use license)",
+ "source_zip_md5": "8560c0db3171c4989aab3595e5cc4af7",
+ "instrument": "TOPIX futures (large, Osaka; continuous series as provided by 225Labo). Tick 0.5 pt, multiplier JPY 10,000/pt.",
+ "files": {
+  "day_session_daily.csv.gz": "day session daily, 2001-01-04..2026-09-04, 6337 rows",
+  "night_session_daily.csv.gz": "night session daily, 2008-06-17..2026-09-07, 4501 rows",
+  "full_day_daily.csv.gz": "calendar-day full-session daily, 2001-01-04..2026-09-04, 6337 rows",
+  "trading_day_daily.csv.gz": "trading-day convention daily (preceding night + day), 2001-01-04..2026-09-04, 6337 rows",
+  "bars_1min.csv.gz": "1-minute bars 2025-12-30..2026-09-07, 212333 rows; date column uses the trading-day convention (a row's 17:00.. bars are the PRECEDING evening)"
+ },
+ "qc": {
+  "ohlc_integrity_bad_rows": 0,
+  "calendar_gaps_gt10d": [
+   "2019-04-26..2019-05-07 (Golden Week 2019, genuine; same gap as the Nikkei snapshot)"
+  ],
+  "nt_ratio_vs_n225f_day_close": {
+   "matched_days": 6331,
+   "median": 12.1,
+   "min": 9.36,
+   "max": 18.03,
+   "recent_year_medians": {
+    "2023": 14.01,
+    "2024": 14.26,
+    "2025": 14.05,
+    "2026": 15.89
+   }
+  },
+  "large_vs_mini_close_diff_pts": {
+   "matched_days": 4506,
+   "median": 0.5,
+   "p99": 5.0,
+   "max": 19.5
+  }
+ },
+ "license": "personal use only, redistribution prohibited (225labo.com). Repository must stay private.",
+ "unit": "P2-06 (NT ratio mean reversion, triage #61)"
+}
