@@ -1,0 +1,26 @@
+{
+  "dataset": "bybit_reachability_check",
+  "description": "P2-08b reachability check + 2-day schema sample of Bybit's public data dump (spot BTCUSDT) -- a contrast-signal candidate (BLINDSPOT_AUDIT.md #6: 'foreign leads bitFlyer in general' vs 'Binance-specific'), NOT a full data pull. See backtest_data/bybit_reachability_check_20260906/README.md for the full reachability table (spot=monthly-only, trading/perpetual=daily) and the untaken /trading/ schema.",
+  "path_glob": [
+    "backtest_data/bybit_reachability_check_20260906/bybit_spot_BTCUSDT_*.csv.gz"
+  ],
+  "source": "https://public.bybit.com/spot/BTCUSDT/BTCUSDT-YYYY-MM.csv.gz (public, unauthenticated, monthly archive only -- no daily files for spot). Two days (2026-08-01, 2026-08-02) sliced out of the 2026-08 monthly file for a schema sample; manually extracted, not via a repo script.",
+  "retention": "one-off diagnostic sample, not maintained or extended.",
+  "file_groups": {
+    "bybit_spot_BTCUSDT_YYYYMMDD.csv.gz": {
+      "columns": {
+        "id": {"meaning": "Bybit's internal sequence id", "unit": "integer", "tz": null, "notes": null},
+        "timestamp_ms": {"meaning": "exchange timestamp (renamed from the source's bare 'timestamp' to make the unit explicit)", "unit": "epoch milliseconds", "tz": "UTC", "notes": null},
+        "price": {"meaning": "execution price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "execution size", "unit": "BTC", "tz": null, "notes": null},
+        "side": {"meaning": "taker side", "unit": "buy/sell", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["id"]}
+    }
+  },
+  "known_defects": [
+    "not a full P2-08b window pull -- only 2 days for schema confirmation, per the task's explicit scope limit",
+    "Bybit spot ships monthly archives only (no daily granularity) -- a full pull would require downloading whole months and slicing, unlike Binance Vision's daily files",
+    "the separate /trading/ (USDT perpetual) endpoint IS daily and was reachability-checked but not fetched -- see the README for its schema if it is used later"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "dataset": "tardis_bitflyer_trades_samples",
+  "description": "Tardis.dev free monthly samples (first UTC day of each month, no API key) of bitFlyer FX_BTC_JPY trades, 2019-09-01..2026-09-01 (85 days). P2-08b diagnostic-only, sealed-out series (docs/PHASE2/P2-08b/PREREG.md): measures how the bitFlyer<->Tardis-observed propagation/latency characteristics have changed over 2019-2026. NEVER used for trade selection or the study's primary metric.",
+  "path_glob": [
+    "data/tardis/bitflyer_FX_BTC_JPY_trades/FX_BTC_JPY_*.csv.gz"
+  ],
+  "source": "https://datasets.tardis.dev/v1/bitflyer/trades/YYYY/MM/01/FX_BTC_JPY.csv.gz (public, unauthenticated, first-of-month sample only -- any other day requires an API key and 401s). Fetched by scripts/fetch_tardis_samples.py. Redistribution note: Tardis Terms of Service clause 9.2 forbids redistributing raw data or any derived data at finer than 10-minute resolution -- this dataset is therefore kept under data/ (gitignored, confirmed 2026-09-06) and MUST NOT be committed or copied into backtest_data/. Only aggregate statistics (docs/PHASE2/P2-08b/TARDIS_SAMPLES.md) may leave this machine.",
+  "retention": "permanent local cache, one file per fetched month -- but git-ignored by policy (data/), so this is a per-machine cache, not a shared repository artifact.",
+  "file_groups": {
+    "FX_BTC_JPY_YYYYMM01.csv.gz": {
+      "columns": {
+        "exchange": {"meaning": "constant 'bitflyer'", "unit": "string", "tz": null, "notes": null},
+        "symbol": {"meaning": "constant 'FX_BTC_JPY'", "unit": "string", "tz": null, "notes": null},
+        "timestamp": {"meaning": "EXCHANGE trade timestamp", "unit": "epoch microseconds", "tz": "UTC", "notes": "roughly 1.1% of rows have a microsecond value ending in 000, i.e. millisecond precision only, per BLINDSPOT_AUDIT.md #2"},
+        "local_timestamp": {"meaning": "Tardis collection node's OWN receipt time -- NOT this repo's environment, NOT the owner's home PC", "unit": "epoch microseconds", "tz": "UTC", "notes": "collection moved from a London node to GCP asia-northeast1 (Tokyo) on 2020-05-28 (docs.tardis.dev) -- this is visible as a step-change drop in (local_timestamp - timestamp) across that date in docs/PHASE2/P2-08b/TARDIS_SAMPLES.md's daily table"},
+        "id": {"meaning": "bitFlyer execution id for the trade", "unit": "integer", "tz": null, "notes": null},
+        "side": {"meaning": "taker side", "unit": "buy/sell", "tz": null, "notes": null},
+        "price": {"meaning": "execution price", "unit": "JPY", "tz": null, "notes": null},
+        "amount": {"meaning": "execution size", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["id"]}
+    }
+  },
+  "known_defects": [
+    "sparse: only one calendar day per month, no continuity between samples -- unusable for execution-level backtesting, only for cross-year distributional statistics (docs/PHASE2/P2-08b/TARDIS_SAMPLES.md)",
+    "the fraction of seconds with at least one trade varies hugely by year/period (audit measured 9.1% to 55.0% across sampled days) -- 'no trade that second' must be treated as no-observation, not flat price",
+    "local_timestamp reflects Tardis's own collection node, not this repo's network path or the owner's home PC -- do not use it as a proxy for this project's own WS/REST receipt latency",
+    "redistribution-restricted (see source note) -- this schema documents structure only; the data itself never enters backtest_data/ or version control"
+  ]
+}

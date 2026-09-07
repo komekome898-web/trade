@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Fetch Binance Vision monthly (with daily fallback) klines and consolidate
-them into one concatenated CSV, for any symbol/interval/date range.
+them into one concatenated CSV, for any symbol/interval/date range. Also
+supports --kind aggTrades for per-day aggregated-trade dumps (P2-08b).
 
-Source: https://data.binance.vision/data/spot/{monthly,daily}/klines/<SYMBOL>/<INTERVAL>/...
+Source: https://data.binance.vision/data/<market>/{monthly,daily}/<kind>/<SYMBOL>/...
 (public, unauthenticated, S3-backed static file dump maintained by Binance).
+<market> is "spot" (default) or "futures/um" (--market um) -- see BLINDSPOT_AUDIT
+#5 (USDT perpetual as a contrast signal source, docs/PHASE2/P2-08b/).
 
-Layout produced under --out:
+--kind klines (default, unchanged behaviour):
+  Layout produced under --out:
     raw/<SYMBOL>-<INTERVAL>-YYYY-MM.zip[.CHECKSUM]        -- one per month that
         has a published monthly archive
     raw/daily_YYYY_MM/<SYMBOL>-<INTERVAL>-YYYY-MM-DD.zip[.CHECKSUM]
@@ -20,10 +24,31 @@ Layout produced under --out:
                    README needs range/overlap context this script doesn't have)
     MD5SUMS     -- md5 of every raw file + the concatenated csv.gz
 
+  Month range (--start/--end, YYYY-MM) or exact day range (--start-day/--end-day,
+  YYYY-MM-DD, daily archives only -- no monthly lookup, no days outside the
+  window) select the window to fetch.
+
+--kind aggTrades (new): requires --start-day/--end-day (YYYY-MM-DD). Always
+  daily archives (aggTrades has no monthly-consolidated shortcut used here).
+  Layout produced under --out:
+    raw/<SYMBOL>-aggTrades-YYYY-MM-DD.zip[.CHECKSUM]  -- one per UTC day
+    <SYMBOL>-aggTrades-YYYY-MM-DD.csv.gz              -- one per UTC day (NOT
+        concatenated -- P2-08b wants daily files), columns:
+        agg_id, price, qty, first_id, last_id, ts_us, is_buyer_maker
+        ts_us is the exchange timestamp normalized to UTC microseconds (spot
+        dumps have shipped microseconds since 2025-01-01; futures/um dumps
+        are still milliseconds -- see normalize_to_us()). is_buyer_maker is
+        lowercased "true"/"false" regardless of source casing. The upstream
+        is_best_match column (spot only) is dropped -- not part of the
+        registered schema.
+    MD5SUMS     -- md5 of every raw file + every daily csv.gz
+    README.md   -- NOT written by this script (same rationale as above)
+
 Format gotcha handled here: Binance Vision kline open_time/close_time
 switched from millisecond to microsecond epoch integers starting with the
 2025-01 files. Detected per-row (>= 1e14 => microseconds) rather than
-assumed once for the whole range.
+assumed once for the whole range. aggTrades timestamps have the same
+ms->us cutover; normalize_to_us() applies the same threshold.
 
 Resumable: a zip already on disk that passes its own .CHECKSUM is never
 re-downloaded. Re-run any time to continue / retry.
@@ -39,6 +64,16 @@ Usage:
 
     # offline: just re-consolidate raw/ already on disk into the csv.gz + MD5SUMS
     python scripts/fetch_binance_vision.py --out <dir> --consolidate-only
+
+    # exact day range, klines (e.g. a sub-month window), spot
+    python scripts/fetch_binance_vision.py \
+        --symbol BTCUSDT --interval 1s --start-day 2026-07-23 --end-day 2026-09-06 \
+        --out backtest_data/binance_BTCUSDT_1s_20260723_20260906
+
+    # aggTrades, daily csv.gz per day, USDT perpetual (futures/um) contrast source
+    python scripts/fetch_binance_vision.py --kind aggTrades --market um \
+        --symbol BTCUSDT --start-day 2026-07-23 --end-day 2026-09-06 \
+        --out backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906
 """
 from __future__ import annotations
 
@@ -51,14 +86,19 @@ import io
 import sys
 import time
 import zipfile
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
 
-BASE = "https://data.binance.vision/data/spot"
+MARKET_BASE = {
+    "spot": "https://data.binance.vision/data/spot",
+    "um": "https://data.binance.vision/data/futures/um",
+}
+BASE = MARKET_BASE["spot"]  # kept as module-level default for backward compat
 OUT_COLUMNS = ["open_time", "open", "high", "low", "close", "volume",
                "quote_volume", "n_trades", "taker_buy_base"]
+AGGTRADES_OUT_COLUMNS = ["agg_id", "price", "qty", "first_id", "last_id", "ts_us", "is_buyer_maker"]
 US_THRESHOLD = 1e14  # ms epoch for now is ~1.8e12; us epoch is ~1.8e15 -- 1e14 cleanly separates them
 
 
@@ -165,6 +205,105 @@ def normalize_epoch(raw_ts: int) -> int:
     return raw_ts
 
 
+def normalize_to_us(raw_ts: int) -> int:
+    """Return epoch microseconds regardless of whether raw_ts is ms or us
+    (see the ms->us cutover note in the module docstring)."""
+    if raw_ts >= US_THRESHOLD:
+        return raw_ts
+    return raw_ts * 1000
+
+
+def day_range(start_day: str, end_day: str):
+    """Yield 'YYYY-MM-DD' strings inclusive from start_day to end_day."""
+    d = datetime.strptime(start_day, "%Y-%m-%d").date()
+    end = datetime.strptime(end_day, "%Y-%m-%d").date()
+    while d <= end:
+        yield d.isoformat()
+        d += timedelta(days=1)
+
+
+def parse_aggtrades_zip(zip_path: Path) -> list[list[str]]:
+    """Return rows from a Binance Vision aggTrades daily zip, header
+    skipped, as lists of raw string fields (7 cols for futures/um -- no
+    is_best_match -- or 8 cols for spot)."""
+    rows = []
+    with zipfile.ZipFile(zip_path) as zf:
+        names = zf.namelist()
+        assert len(names) == 1, f"expected 1 file in {zip_path}, got {names}"
+        with zf.open(names[0]) as f:
+            text = io.TextIOWrapper(f, encoding="utf-8")
+            reader = csvmod.reader(text)
+            for row in reader:
+                if not row:
+                    continue
+                try:
+                    int(row[0])
+                except ValueError:
+                    continue  # header row (agg_trade_id,price,...)
+                rows.append(row)
+    return rows
+
+
+def write_aggtrades_day_csv(rows: list[list[str]], out_csv: Path) -> int:
+    """Write one day's aggTrades rows to a gzipped csv with the registered
+    P2-08b schema (agg_id, price, qty, first_id, last_id, ts_us,
+    is_buyer_maker), sorted by agg_id. Returns the row count."""
+    parsed = []
+    for row in rows:
+        agg_id, price, qty, first_id, last_id, ts_raw = row[0], row[1], row[2], row[3], row[4], row[5]
+        is_buyer_maker = str(row[6]).strip().lower() == "true"
+        parsed.append((int(agg_id), price, qty, int(first_id), int(last_id),
+                        normalize_to_us(int(ts_raw)), is_buyer_maker))
+    parsed.sort(key=lambda r: r[0])
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(out_csv, "wt", newline="") as f:
+        w = csvmod.writer(f)
+        w.writerow(AGGTRADES_OUT_COLUMNS)
+        for agg_id, price, qty, first_id, last_id, ts_us, is_bm in parsed:
+            w.writerow([agg_id, price, qty, first_id, last_id, ts_us, "true" if is_bm else "false"])
+    return len(parsed)
+
+
+def fetch_aggtrades_daily(session: requests.Session, root: Path, symbol: str, base: str,
+                           start_day: str, end_day: str, sleep: float, dry_run: bool) -> dict:
+    """Fetch one aggTrades daily zip per UTC day in [start_day, end_day] and
+    write one csv.gz per day (P2-08b wants daily files, not one big
+    concatenation -- unlike the klines consolidate() path)."""
+    days = list(day_range(start_day, end_day))
+    if dry_run:
+        print(f"[dry-run] kind=aggTrades symbol={symbol} base={base}")
+        print(f"[dry-run] {len(days)} days: {days[0]} .. {days[-1]}")
+        print(f"[dry-run] out={root}")
+        print("[dry-run] no network request made")
+        return {}
+
+    raw_dir = root / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    ok_days, missing_days, total_rows = [], [], 0
+    for day in days:
+        url = f"{base}/daily/aggTrades/{symbol}/{symbol}-aggTrades-{day}.zip"
+        dest = raw_dir / f"{symbol}-aggTrades-{day}.zip"
+        print(f"day {day}: aggTrades ...", end=" ", flush=True)
+        ok = fetch_one(session, url, dest, sleep)
+        if not ok:
+            print("404 (no data)")
+            missing_days.append(day)
+            continue
+        rows = parse_aggtrades_zip(dest)
+        out_csv = root / f"{symbol}-aggTrades-{day}.csv.gz"
+        n = write_aggtrades_day_csv(rows, out_csv)
+        total_rows += n
+        ok_days.append(day)
+        print(f"OK ({n} rows)")
+
+    stats = {"n_days_ok": len(ok_days), "n_days_missing": len(missing_days),
+              "missing_days": missing_days, "total_rows": total_rows,
+              "range_start_day": days[0], "range_end_day": days[-1]}
+    print(f"aggTrades: days_ok={len(ok_days)} days_missing={len(missing_days)} "
+          f"total_rows={total_rows} missing={missing_days}")
+    return stats
+
+
 def consolidate(root: Path, out_csv: Path, symbol: str, interval: str) -> dict:
     raw_dir = root / "raw"
     zips = sorted(raw_dir.glob(f"{symbol}-{interval}-*.zip")) + \
@@ -224,26 +363,75 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--symbol", default="BTCUSDT")
     ap.add_argument("--interval", default="1m")
-    ap.add_argument("--start", help="YYYY-MM, first month (inclusive)")
-    ap.add_argument("--end", help="YYYY-MM, last month (inclusive)")
+    ap.add_argument("--kind", choices=["klines", "aggTrades"], default="klines",
+                     help="klines (default, unchanged) or aggTrades (P2-08b, always daily files)")
+    ap.add_argument("--market", choices=["spot", "um"], default="spot",
+                     help="spot (default) or um (USDT-margined perpetual futures, contrast source)")
+    ap.add_argument("--start", help="YYYY-MM, first month (inclusive; klines only)")
+    ap.add_argument("--end", help="YYYY-MM, last month (inclusive; klines only)")
+    ap.add_argument("--start-day", help="YYYY-MM-DD, first UTC day (inclusive; exact day-range mode)")
+    ap.add_argument("--end-day", help="YYYY-MM-DD, last UTC day (inclusive; exact day-range mode)")
     ap.add_argument("--out", required=True, help="output directory")
     ap.add_argument("--sleep", type=float, default=0.2, help="seconds between requests")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--consolidate-only", action="store_true",
-                     help="no network: just rebuild the csv.gz + MD5SUMS from raw/ already on disk")
+                     help="no network: just rebuild the csv.gz + MD5SUMS from raw/ already on disk (klines only)")
     args = ap.parse_args()
 
     root = Path(args.out)
     out_csv = root / f"{root.name}.csv.gz"
+    base = MARKET_BASE[args.market]
 
     if args.consolidate_only:
+        if args.kind == "aggTrades":
+            ap.error("--consolidate-only is klines-only; aggTrades writes daily files as it fetches")
         consolidate(root, out_csv, args.symbol, args.interval)
         write_md5sums(root, [out_csv])
         print(f"wrote {root / 'MD5SUMS'}")
         return 0
 
+    if args.kind == "aggTrades":
+        if not args.start_day or not args.end_day:
+            ap.error("--kind aggTrades requires --start-day/--end-day")
+        session = requests.Session()
+        session.headers.update({"User-Agent": "trade-bot-research/1.0 (+backtest data)"})
+        stats = fetch_aggtrades_daily(session, root, args.symbol, base,
+                                       args.start_day, args.end_day, args.sleep, args.dry_run)
+        if args.dry_run:
+            return 0
+        write_md5sums(root, [])
+        print(f"wrote {root / 'MD5SUMS'}")
+        print(f"stats: {stats}")
+        return 0
+
+    if args.start_day and args.end_day:
+        # exact day-range mode for klines: daily archives only, no monthly
+        # lookup, no days outside the window (unlike --start/--end below).
+        if args.dry_run:
+            days = list(day_range(args.start_day, args.end_day))
+            print(f"[dry-run] symbol={args.symbol} interval={args.interval} kind=klines market={args.market}")
+            print(f"[dry-run] {len(days)} days: {days[0]} .. {days[-1]}")
+            print(f"[dry-run] out={root}")
+            print("[dry-run] no network request made")
+            return 0
+        raw_dir = root / "raw"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        session = requests.Session()
+        session.headers.update({"User-Agent": "trade-bot-research/1.0 (+backtest data)"})
+        for day in day_range(args.start_day, args.end_day):
+            url = f"{base}/daily/klines/{args.symbol}/{args.interval}/{args.symbol}-{args.interval}-{day}.zip"
+            dest = raw_dir / f"{args.symbol}-{args.interval}-{day}.zip"
+            print(f"day {day}: klines ...", end=" ", flush=True)
+            ok = fetch_one(session, url, dest, args.sleep)
+            print("OK" if ok else "404 (no data)")
+        stats = consolidate(root, out_csv, args.symbol, args.interval)
+        write_md5sums(root, [out_csv])
+        print(f"wrote {root / 'MD5SUMS'}")
+        print(f"stats: {stats}")
+        return 0
+
     if not args.start or not args.end:
-        ap.error("--start/--end required unless --consolidate-only")
+        ap.error("--start/--end (or --start-day/--end-day) required unless --consolidate-only")
 
     months = list(month_range(args.start, args.end))
 
@@ -262,7 +450,7 @@ def main() -> int:
     monthly_ok, daily_fallback_months = [], []
     for y, m in months:
         ym = f"{y:04d}-{m:02d}"
-        url = f"{BASE}/monthly/klines/{args.symbol}/{args.interval}/{args.symbol}-{args.interval}-{ym}.zip"
+        url = f"{base}/monthly/klines/{args.symbol}/{args.interval}/{args.symbol}-{args.interval}-{ym}.zip"
         dest = raw_dir / f"{args.symbol}-{args.interval}-{ym}.zip"
         print(f"month {ym}: monthly archive ...", end=" ", flush=True)
         ok = fetch_one(session, url, dest, args.sleep)
@@ -277,7 +465,7 @@ def main() -> int:
             day_str = f"{ym}-{d:02d}"
             if date(y, m, d) > date.today():
                 break
-            durl = f"{BASE}/daily/klines/{args.symbol}/{args.interval}/{args.symbol}-{args.interval}-{day_str}.zip"
+            durl = f"{base}/daily/klines/{args.symbol}/{args.interval}/{args.symbol}-{args.interval}-{day_str}.zip"
             ddest = raw_dir / f"daily_{y:04d}_{m:02d}" / f"{args.symbol}-{args.interval}-{day_str}.zip"
             ok_d = fetch_one(session, durl, ddest, args.sleep)
             status = "OK" if ok_d else "404 (no data yet)"

@@ -1,0 +1,29 @@
+{
+  "dataset": "binance_1s_klines_p2_08b",
+  "description": "Binance spot BTCUSDT 1-second klines, 2026-07-23..2026-09-06 UTC, one concatenated csv.gz for the whole window (same consolidation convention as this repo's existing binance_BTCUSDT_1m_* backtest_data builds -- see schema/external_crypto_klines.json). Built for P2-08b (docs/PHASE2/P2-08b/PREREG.md), the second-scale companion to the aggTrades files in schema/binance_aggtrades_p2_08b.json -- use this when per-second OHLCV is enough and aggTrades' per-print detail is not needed.",
+  "path_glob": [
+    "backtest_data/binance_BTCUSDT_1s_20260723_20260906/binance_BTCUSDT_1s_20260723_20260906.csv.gz"
+  ],
+  "source": "https://data.binance.vision/data/spot/daily/klines/BTCUSDT/1s/BTCUSDT-1s-YYYY-MM-DD.zip (public, unauthenticated). Fetched by scripts/fetch_binance_vision.py --interval 1s --start-day 2026-07-23 --end-day 2026-09-06 (exact day-range mode, daily archives only -- no monthly lookup, so the file holds exactly this window and nothing outside it).",
+  "retention": "permanent, dated snapshot for reproducibility.",
+  "file_groups": {
+    "binance_BTCUSDT_1s_20260723_20260906.csv.gz": {
+      "columns": {
+        "open_time": {"meaning": "kline open time", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "open": {"meaning": "open price", "unit": "USDT", "tz": null, "notes": null},
+        "high": {"meaning": "high price", "unit": "USDT", "tz": null, "notes": null},
+        "low": {"meaning": "low price", "unit": "USDT", "tz": null, "notes": null},
+        "close": {"meaning": "close price", "unit": "USDT", "tz": null, "notes": null},
+        "volume": {"meaning": "base-asset volume in the bar", "unit": "BTC", "tz": null, "notes": null},
+        "quote_volume": {"meaning": "quote-asset (USDT) volume in the bar", "unit": "USDT", "tz": null, "notes": null},
+        "n_trades": {"meaning": "number of raw trades in the bar", "unit": "count", "tz": null, "notes": "a 1-second bar with n_trades=0 means no trade printed that second -- treat as 'no observation', not 'price unchanged' (P2-08b known defect #4)"},
+        "taker_buy_base": {"meaning": "base-asset volume from taker-buy-initiated trades in the bar", "unit": "BTC", "tz": null, "notes": null}
+      },
+      "quality": {"unique_key": ["open_time"]}
+    }
+  },
+  "known_defects": [
+    "a second with n_trades=0 is a genuine non-observation (see column note above), not a flat/unchanged price -- matches the same convention applied to bitFlyer's own execution-derived series in this study",
+    "this is spot only -- see schema/binance_aggtrades_p2_08b.json for the futures/um contrast series, which is not mirrored at 1s-kline granularity (aggTrades only)"
+  ]
+}

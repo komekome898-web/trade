@@ -1,0 +1,27 @@
+{
+  "dataset": "bitbank_btc_jpy_transactions",
+  "description": "bitbank BTC/JPY public execution history, first UTC-adjacent JST calendar day of each month, 2017-09-01..2026-09-01 (109 days) -- P2-08b's 9-year yen-market diagnostic proxy for measuring how Binance-to-yen-market propagation time has changed over the long run (docs/PHASE2/P2-08b/PREREG.md, BLINDSPOT_AUDIT.md #1). bitbank is a PRICE-FOLLOWER relative to bitFlyer FX_BTC_JPY (bitFlyer CFD does price discovery; bitbank trails with a floor spread, docs/KNOWLEDGE.md (ac)) -- never an execution venue for this study, diagnostic only, sealed out of selection.",
+  "path_glob": [
+    "backtest_data/bitbank_btc_jpy_transactions_monthly_first_days/btc_jpy_transactions_*.csv.gz"
+  ],
+  "source": "https://public.bitbank.cc/btc_jpy/transactions/YYYYMMDD (public, unauthenticated; bitbankinc/bitbank-api-docs public-api_JP.md \"約定履歴\"). Fetched by scripts/fetch_bitbank_daily.py --day-of-month 1.",
+  "retention": "permanent, dated snapshot for reproducibility.",
+  "file_groups": {
+    "btc_jpy_transactions_YYYYMMDD.csv.gz": {
+      "columns": {
+        "transaction_id": {"meaning": "bitbank's own trade id", "unit": "integer", "tz": null, "notes": null},
+        "side": {"meaning": "taker side", "unit": "buy/sell", "tz": null, "notes": null},
+        "price": {"meaning": "execution price", "unit": "JPY", "tz": null, "notes": "kept as the source string, not re-typed to float"},
+        "amount": {"meaning": "execution size", "unit": "BTC", "tz": null, "notes": "kept as the source string"},
+        "ts_us": {"meaning": "exchange timestamp (bitbank's executed_at, ms) normalized to UTC microseconds (x1000)", "unit": "epoch microseconds", "tz": "UTC", "notes": null}
+      },
+      "quality": {"unique_key": ["transaction_id"]}
+    }
+  },
+  "known_defects": [
+    "diagnostic-only, NEVER an execution venue or selection input for P2-08b -- bitbank trails bitFlyer's own price discovery (docs/KNOWLEDGE.md (ac))",
+    "only the first calendar day of each month is sampled -- monthly/funding-roll effects at month boundaries are not corrected for (assumption, not verified)",
+    "2017-09-01 (shortly after listing) has a much smaller row count than later months -- see the README's per-day _fetch_summary.json for exact counts before assuming a fetch problem",
+    "the utility endpoint has no documented rate limit but this repo's fetcher self-throttles (0.4s between requests) -- do not remove that sleep when re-running"
+  ]
+}

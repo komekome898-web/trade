@@ -1,0 +1,31 @@
+{
+  "dataset": "binance_aggtrades_p2_08b",
+  "description": "Binance aggTrades (aggregated trade prints), daily csv.gz per UTC day, for P2-08b (docs/PHASE2/P2-08b/PREREG.md, second-scale Binance-leads-bitFlyer propagation study). Spot BTCUSDT is the primary signal source for the 2026-07-23..2026-09-06 window; USDT-margined perpetual (futures/um) BTCUSDT over the same window is a contrast source (BLINDSPOT_AUDIT.md #5, not the selection signal); a third directory holds spot aggTrades for the same 85 specific days as the Tardis free-sample bitFlyer trades (docs/PHASE2/P2-08b/TARDIS_SAMPLES.md), for the long-term propagation diagnostic.",
+  "path_glob": [
+    "backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-*.csv.gz",
+    "backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/BTCUSDT-aggTrades-*.csv.gz",
+    "backtest_data/binance_BTCUSDT_aggTrades_tardis_days/BTCUSDT-aggTrades-*.csv.gz"
+  ],
+  "source": "https://data.binance.vision/data/{spot,futures/um}/daily/aggTrades/BTCUSDT/BTCUSDT-aggTrades-YYYY-MM-DD.zip (public, unauthenticated, S3-backed static dump maintained by Binance). Fetched by scripts/fetch_binance_vision.py --kind aggTrades (--market spot or --market um). SHA-256 .CHECKSUM verified per zip before use (see the script).",
+  "retention": "permanent, dated snapshot -- reproducibility archive, not appended forward. One csv.gz per UTC calendar day, never a concatenated multi-day file (unlike this repo's klines convention) since aggTrades volume makes a single multi-month file unwieldy and P2-08b's per-day gap/overlap analysis wants day boundaries preserved.",
+  "file_groups": {
+    "BTCUSDT-aggTrades-YYYY-MM-DD.csv.gz": {
+      "columns": {
+        "agg_id": {"meaning": "Binance aggregated-trade id (monotonic increasing, unique per symbol+market)", "unit": "integer", "tz": null, "notes": null},
+        "price": {"meaning": "trade price", "unit": "USDT", "tz": null, "notes": "kept as the source string, not re-typed to float, to avoid FP rounding of exchange-quoted decimals"},
+        "qty": {"meaning": "aggregated quantity", "unit": "BTC", "tz": null, "notes": "same string-preservation note as price"},
+        "first_id": {"meaning": "first underlying raw trade id folded into this aggregate", "unit": "integer", "tz": null, "notes": null},
+        "last_id": {"meaning": "last underlying raw trade id folded into this aggregate", "unit": "integer", "tz": null, "notes": null},
+        "ts_us": {"meaning": "exchange timestamp, normalized to UTC microseconds", "unit": "epoch microseconds", "tz": "UTC", "notes": "Binance Vision aggTrades timestamps are milliseconds through 2024-12-31 and microseconds from 2025-01-01 onward (see github.com/binance/binance-public-data README) -- fetch_binance_vision.py's normalize_to_us() detects and normalizes both to microseconds so every file in this dataset uses one unit. This window (2026) is natively microseconds already."},
+        "is_buyer_maker": {"meaning": "true if the buyer was the resting (maker) side, i.e. a sell-initiated (taker-sell) print; false if taker-buy", "unit": "true/false (lowercased)", "tz": null, "notes": "spot dumps ship an extra is_best_match column (best-price-match flag) which is dropped here -- not part of this registered schema, and not present at all in futures/um dumps"}
+      },
+      "quality": {"unique_key": ["agg_id"]}
+    }
+  },
+  "known_defects": [
+    "spot vs futures/um are separate markets with independent agg_id sequences -- do not compare agg_id across the two directories, only ts_us/price",
+    "futures/um (USDT-margined perpetual) is a CONTRAST source only in P2-08b -- not used for the study's primary signal or selection (BLINDSPOT_AUDIT.md #5)",
+    "the *_tardis_days directory covers only the 85 specific first-of-month UTC days matched to data/tardis/bitflyer_FX_BTC_JPY_trades/ (diagnostic-only, long-term propagation timeline) -- it is NOT a contiguous window and must not be treated as one",
+    "row counts vary by roughly 10x across the 2026-07-23..2026-09-06 window depending on volatility/volume that day -- an empty or sparse day is not necessarily a fetch failure, cross-check against the corresponding 1s klines volume column"
+  ]
+}

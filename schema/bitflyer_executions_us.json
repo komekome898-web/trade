@@ -1,0 +1,49 @@
+{
+  "dataset": "bitflyer_executions_us",
+  "description": "P2-08b unified bitFlyer FX_BTC_JPY execution series, 2026-07-23..2026-09-06, one UTC-microsecond schema across the two raw sources this repo holds (REST 31-day snapshot, WS tape recording). Built by scripts/normalize_bitflyer_executions.py. Primary-source rule follows PREREG.md's calendar seal boundary: days 2026-07-23..2026-08-22 use the REST snapshot (real execution ids), days 2026-08-23..2026-09-06 use the WS tape (no execution id carried by that extraction -- left blank). See overlap_check.csv for a day-by-day cross-check of the days both sources cover (2026-08-20..2026-08-23).",
+  "path_glob": [
+    "backtest_data/bitflyer_executions_us_20260723_20260906/executions_*.csv.gz",
+    "backtest_data/bitflyer_executions_us_20260723_20260906/overlap_check.csv",
+    "backtest_data/bitflyer_executions_us_20260723_20260906/gaps.csv"
+  ],
+  "source": "backtest_data/executions_FX_BTC_JPY_31d_20260823.csv.gz (REST /v1/getexecutions frozen snapshot, ms exchange timestamp) + paper_logs/tape/executions_YYYYMMDD.csv.gz (WS lightning_executions_FX_BTC_JPY recording extracted by scripts/extract_tape.py, exchange timestamp at native sub-ms precision). Combined by scripts/normalize_bitflyer_executions.py.",
+  "retention": "permanent, dated snapshot for reproducibility; not appended forward (the input sources themselves keep growing independently -- re-run the script to rebuild a fresher window).",
+  "file_groups": {
+    "executions_YYYYMMDD.csv.gz": {
+      "columns": {
+        "id": {"meaning": "bitFlyer execution id, REST days only", "unit": "integer, or blank", "tz": null, "notes": "blank for every row on WS-primary days (2026-08-23 onward) -- the WS tape extraction (scripts/extract_tape.py) does not carry an execution id at all, see schema/bitflyer_tape.json's own note on the same limitation"},
+        "ts_us": {"meaning": "EXCHANGE execution timestamp, normalized to UTC microseconds", "unit": "epoch microseconds", "tz": "UTC", "notes": "REST source is natively millisecond precision (x1000 here, trailing 3 digits always zero); WS source is natively sub-millisecond (commonly 7 fractional digits as bitFlyer sends it, truncated to microsecond precision here)"},
+        "side": {"meaning": "taker side", "unit": "BUY/SELL", "tz": null, "notes": null},
+        "price": {"meaning": "execution price", "unit": "JPY", "tz": null, "notes": null},
+        "size": {"meaning": "execution size", "unit": "BTC", "tz": null, "notes": null},
+        "source": {"meaning": "which raw source this day's rows came from", "unit": "'rest' or 'ws'", "tz": null, "notes": "one value for the WHOLE day, per the calendar cutover rule above -- not a per-row mixed selection"}
+      },
+      "quality": {"unique_key": ["id"], "_unique_key_note": "id is only a real unique key on 'rest' days; on 'ws' days id is blank for every row (composite (ts_us, price, size, side) is the closest practical key, and is still probabilistic -- see schema/bitflyer_tape.json)"}
+    },
+    "overlap_check.csv": {
+      "columns": {
+        "date": {"meaning": "UTC calendar day (YYYYMMDD)", "unit": "string", "tz": "UTC", "notes": "only days where BOTH the REST snapshot and a WS tape file exist, i.e. 2026-08-20..2026-08-23"},
+        "overlap_start_utc": {"meaning": "start of the intersection of REST's and WS's actual timestamp range that day", "unit": "ISO-8601", "tz": "UTC", "notes": "clips a partial-coverage day (WS starts mid-day on 2026-08-20; REST ends mid-day on 2026-08-23) so the count comparison is apples-to-apples"},
+        "overlap_end_utc": {"meaning": "end of that intersection", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "rest_count_in_window": {"meaning": "REST row count within [overlap_start_utc, overlap_end_utc]", "unit": "count", "tz": null, "notes": null},
+        "ws_count_in_window": {"meaning": "WS row count within the same window", "unit": "count", "tz": null, "notes": null},
+        "count_diff": {"meaning": "rest_count_in_window - ws_count_in_window", "unit": "count", "tz": null, "notes": null},
+        "ws_drop_rate_pct": {"meaning": "count_diff / rest_count_in_window * 100", "unit": "percent", "tz": null, "notes": "the headline 'WS 欠け率' figure quoted in README.md (~0.6-2.8% across the 4 overlap days). A per-trade composite-key match was tried first and rejected -- see the code comment in scripts/normalize_bitflyer_executions.py: bitFlyer's REST and WS execution feeds split partial fills at different granularity, so an exact (ts, price, size, side) key match spuriously reports ~70% mismatch on the SAME trades. This same-window row-count comparison instead reproduces the audit's own cited figures."}
+      }
+    },
+    "gaps.csv": {
+      "columns": {
+        "gap_start_utc": {"meaning": "timestamp of the last execution before the gap", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "gap_end_utc": {"meaning": "timestamp of the first execution after the gap", "unit": "ISO-8601", "tz": "UTC", "notes": null},
+        "duration_s": {"meaning": "gap length", "unit": "seconds", "tz": null, "notes": "only gaps > 300s are listed"},
+        "is_maintenance_window": {"meaning": "whether the gap overlaps bitFlyer's documented daily maintenance window (18:59-19:12 UTC)", "unit": "true/false", "tz": null, "notes": "false entries are the ones worth investigating as real outages (see README.md for the two known multi-hour WS recorder outages in this window)"}
+      }
+    }
+  },
+  "known_defects": [
+    "WS-primary days (2026-08-23 onward) carry no execution id at all -- id is blank by construction, not a data-quality gap",
+    "the REST<->WS overlap check uses a millisecond-bucket composite key, not a true id join -- both rest_only_count and ws_only_count can include a small number of key-collision artifacts, not only genuine misses",
+    "known WS recorder outages within the 2026-08-23..2026-09-06 window (see gaps.csv, is_maintenance_window=false rows): the home-PC WS recorder stopped for multi-hour stretches on at least two occasions -- these show as real gaps in the unified series, not bitFlyer-side maintenance",
+    "a second with zero rows in this series is 'no observation', not 'price unchanged' -- consistent with the same convention used for the Binance klines/aggTrades side of P2-08b"
+  ]
+}
