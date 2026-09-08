@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
-"""R9-L1: two elements from the owner's legacy bots, tested as pre-registered.
+"""VOID — 2026-09-08 の全捨てで、この docstring の事前登録とバーは失効した。
+
+このスクリプトは、オーナーの旧 bot 由来の 2 要素(katsuo のヒゲ先端無効化ストップ、
+matilda の vr レジーム指標)を、当時の事前登録どおりに検定するために書かれた。
+**その事前登録・判定バー・出所文書はすべて破棄済み**(CLAUDE.md §5.1)。
+
+道具としてのコード(足の組み立て、ヒゲ・レンジ・vr の計算、分割、集計)は使える。
+**再び使うなら、新しい事前登録を MDE つきで書いてから**にすること。
+以下の docstring は「当時どう組んだか」の記録であり、根拠ではない。
+
+--- 以下、旧 docstring ---
+R9-L1: two elements from the owner's legacy bots, tested as pre-registered.
 
 PRE-REGISTRATION
 ================

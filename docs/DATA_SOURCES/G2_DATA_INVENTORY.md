@@ -43,11 +43,11 @@
 | 項目 | 値 | source_type |
 |---|---|---|
 | taker_fee_pct | 0.0% | primary_document(egress不可のため二次確認: API docs+実コード) |
-| quoted_spread_median_bps | 1.9bps | measured(16日tape) |
-| realized_taker_one_way_bps | 1.0〜1.3bps | measured |
-| realized_round_trip_bps | 2.0〜2.6bps | measured |
+| quoted_spread_median_bps | **失効(2026-09-08 の全捨て)** — 単位ごとに測り直す | discarded |
+| realized_taker_one_way_bps | **失効(2026-09-08 の全捨て)** — 単位ごとに測り直す | discarded |
+| realized_round_trip_bps | **失効(2026-09-08 の全捨て)** — 単位ごとに測り直す | discarded |
 | funding_swap_daily_pct | 0.06%/日 | measured(3日サンプル) |
-| taker_round_trip_floor_bps_OLD(5.8-7.9bps) | **非推奨**(未検証前提を含む) | assumed/deprecated |
+| taker_round_trip_floor_bps_OLD | **失効(2026-09-08 の全捨て)** — 単位ごとに測り直す | discarded |
 
 ## 5. 60日分足シールに向けて不足しているもの・入手法
 
