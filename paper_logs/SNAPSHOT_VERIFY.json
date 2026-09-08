@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-07T21:04:15.997123+00:00",
+  "generated_at": "2026-09-08T21:19:41.444240+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -578,6 +578,20 @@
     {
       "unit": "auto_okx_open_interest_5m_20260907",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260907\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260908",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260908\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -1879,6 +1893,20 @@
       "extra": []
     },
     {
+      "unit": "executions_FX_BTC_JPY_31d_20260908",
+      "md5sums_path": "backtest_data\\executions_FX_BTC_JPY_31d_20260908\\MD5SUMS",
+      "file_count": 3,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "README.md"
+      ]
+    },
+    {
       "unit": "fx_btc_jpy_1m_continuous_20260906",
       "md5sums_path": "backtest_data\\fx_btc_jpy_1m_continuous_20260906\\MD5SUMS",
       "file_count": 3,
@@ -2023,6 +2051,18 @@
       "extra": [
         "README.txt"
       ]
+    },
+    {
+      "unit": "jpx_daily_report_json_20260908",
+      "md5sums_path": "backtest_data\\jpx_daily_report_json_20260908\\MD5SUMS",
+      "file_count": 9,
+      "status": "verified",
+      "checked": 9,
+      "matched": 9,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
     },
     {
       "unit": "jpx_etf_daily_20260905",
@@ -2929,19 +2969,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 2424,
+    "checked": 2438,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 63,
-    "verified": 33,
+    "unit_count": 66,
+    "verified": 36,
     "verified_line_ending_only": 21,
     "newly_sealed": 0,
     "mismatch_units": 9,
     "total_mismatches": 1,
     "total_line_ending_only": 99,
     "total_missing": 954,
-    "total_extra_untracked": 457,
+    "total_extra_untracked": 459,
     "ledger_mismatches": 0
   },
   "ok": false

@@ -1,8 +1,8 @@
 {
-  "n_trades": 1,
-  "cum_pnl_yen": -10.0,
-  "mean_bps": -5.196,
-  "gap_mean_bps": null,
+  "n_trades": 2,
+  "cum_pnl_yen": -55.0,
+  "mean_bps": -14.367,
+  "gap_mean_bps": -0.053,
   "guard": "ok",
-  "last_date": "2026-09-07"
+  "last_date": "2026-09-08"
 }
