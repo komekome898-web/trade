@@ -40,11 +40,13 @@ description: "How the lead delegates research/implementation to subagents in thi
 3. 逆選択の反実仮想(取り逃しをtakerで入った場合 vs 実約定)
 4. アブレーション(条件を1つずつ外した寄与分解)
 5. サニティ(ルックアヘッド0・ポジション重複0・再実行決定性・epoch変換クロスチェック)
-6. 注意点・限界(サンプル不足、in-sample選択、近似の方向バイアス)
+6. **なぜそうなるのかの理解**(`research-protocol` §0.2 の 3 問。**これが無い報告は差し戻す**)
+7. 注意点・限界(サンプル不足、in-sample選択、近似の方向バイアス)
 
 【制約】
 - スクリプトは read-only・冪等・ネットワークなし・seed固定。docstring 冒頭に事前登録を書く
 - 陰性結果をそのまま報告すること。基準未達を「惜しい」と書かない
+- **判定だけを返さない。** 「どこで負けたか → 言える機構 → 設計のどこに触れば動くか」を必ず書く
 - Do not commit. Do not push.
 ```
 
