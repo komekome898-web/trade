@@ -17,7 +17,9 @@ API の制約(2026-09-08 実測):
 - **返ってきた行をそのまま保存する。** 列を足さない・削らない・解釈しない。
 - **窓ごとの取得結果を `.progress.json` に残す。** これがあると「0 件だった時間」と
   「まだ取っていない時間」を区別できる — **陰性と不明を分ける**ための最低条件。
-- 窓が飽和(= `limit` ちょうど)したら**15 分に割って取り直す**。取りこぼしを黙って作らない。
+- 窓が飽和(= `limit` ちょうど)したら**半分に割って取り直す**(1 秒まで再帰)。
+  飽和するのはカスケードした時間 = 一番見たい時間なので、ここで諦めない。
+  1 秒でも飽和したら台帳に区間を残す — **取りこぼしを黙って作らない**。
 - 再実行は**続きから**(取得済みの窓は飛ばして追記)。
 
 Usage:
@@ -74,22 +76,35 @@ def fetch_window(contract: str, frm: int, to: int) -> list[dict]:
     raise RuntimeError(f"{MAX_RETRY} 回失敗: {contract} {_utc(frm)}")
 
 
-def fetch_hour(contract: str, frm: int) -> tuple[list[dict], bool]:
-    """1 時間ぶん。飽和したら 15 分に割って取り直す。返り値は (行, 飽和したか)。"""
-    rows = fetch_window(contract, frm, frm + HOUR - 1)
+def fetch_span(contract: str, frm: int, to: int,
+               truncated: list[tuple[int, int]]) -> list[dict]:
+    """[frm, to] を取る。**飽和したら半分に割って取り直す**(1 秒まで再帰)。
+
+    飽和 = `limit` ちょうど返った = API に切られている = **取りこぼしている**。
+    そして飽和するのは清算がカスケードした時間で、それはカツオの機構にとって
+    **一番見たい時間**である。だから「15 分まで割って諦める」ではなく、
+    **1 秒になるまで割る**。1 秒でも飽和したらそれ以上は割れないので、
+    `truncated` に積んで**取りこぼしたことを台帳に残す**(黙って落とさない)。
+    """
+    rows = fetch_window(contract, frm, to)
+    time.sleep(PAUSE)
     if len(rows) < LIMIT:
-        return rows, False
-    # 飽和 = 取りこぼしている。細かく割る(それでも飽和するなら記録に残す)
-    _log(f"  飽和({LIMIT} 件): {_utc(frm)} — 15 分に分割")
-    out: list[dict] = []
-    for q in range(4):
-        sub = frm + q * 900
-        part = fetch_window(contract, sub, sub + 899)
-        if len(part) >= LIMIT:
-            _log(f"  **15 分でも飽和**: {_utc(sub)} — 取りこぼしあり")
-        out.extend(part)
-        time.sleep(PAUSE)
-    return out, True
+        return rows
+    if frm >= to:
+        # 1 秒に 1000 件以上。これ以上は API の粒度で割れない
+        _log(f"  **1 秒でも飽和**: {_utc(frm)} ({frm}) — 取りこぼし確定")
+        truncated.append((frm, to))
+        return rows
+    mid = frm + (to - frm) // 2
+    _log(f"  飽和({LIMIT} 件): {_utc(frm)} 幅 {to - frm + 1}s — 半分に分割")
+    return (fetch_span(contract, frm, mid, truncated)
+            + fetch_span(contract, mid + 1, to, truncated))
+
+
+def fetch_hour(contract: str, frm: int) -> tuple[list[dict], list[tuple[int, int]]]:
+    """1 時間ぶん。返り値は (行, 割り切れずに取りこぼした区間)。"""
+    truncated: list[tuple[int, int]] = []
+    return fetch_span(contract, frm, frm + HOUR - 1, truncated), truncated
 
 
 def main() -> int:
@@ -126,14 +141,17 @@ def main() -> int:
     try:
         with gzip.open(data_path, "at", encoding="utf-8") as fh:
             for i, frm in enumerate(todo, 1):
-                rows, saturated = fetch_hour(args.contract, frm)
+                rows, truncated = fetch_hour(args.contract, frm)
                 for row in rows:
                     fh.write(json.dumps(row, ensure_ascii=False,
                                         separators=(",", ":")) + "\n")
                 fh.flush()
-                progress[str(frm)] = {"n": len(rows), "sat": saturated}
+                progress[str(frm)] = {"n": len(rows),
+                                      "trunc": [list(t) for t in truncated]}
                 total += len(rows)
                 empty_run = empty_run + 1 if not rows else 0
+                if truncated:
+                    _log(f"  {_utc(frm)}: **取りこぼし {len(truncated)} 区間**")
                 if i % 100 == 0 or i == len(todo):
                     prog_path.write_text(json.dumps(progress, separators=(",", ":")),
                                          encoding="utf-8")
@@ -156,7 +174,7 @@ def main() -> int:
         "hours_requested": len(windows),
         "hours_fetched": len(progress),
         "hours_empty": sum(1 for v in progress.values() if v["n"] == 0),
-        "hours_saturated": sorted(int(k) for k, v in progress.items() if v["sat"]),
+        "hours_with_truncation": {k: v["trunc"] for k, v in progress.items() if v["trunc"]},
         "rows": total,
         "note": "行は API の返り値そのまま。取得済みの時間は .progress.json が真実 "
                 "(0 件だった時間と、取っていない時間を区別するため)。"
@@ -166,7 +184,7 @@ def main() -> int:
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     _log(f"完了: {total} 件 -> {data_path}")
     _log(f"  取得した時間 {len(progress)} / 空だった時間 {manifest['hours_empty']} / "
-         f"飽和 {len(manifest['hours_saturated'])}")
+         f"取りこぼしのある時間 {len(manifest['hours_with_truncation'])}")
     return 0
 
 
