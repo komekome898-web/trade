@@ -112,20 +112,9 @@ PAGE = """<!doctype html>
   .sub { color: var(--muted); }
   .empty { color: var(--muted); padding: 16px; }
   [hidden] { display: none !important; }
-  /* collectors / gates: a progress bar sized by the pre-registered bar */
-  .prog { display: inline-block; width: 90px; height: 6px; border-radius: 3px;
-          background: color-mix(in srgb, var(--line) 70%, transparent);
-          vertical-align: middle; overflow: hidden; margin-right: 8px; }
-  .prog i { display: block; height: 100%; background: var(--accent); }
-  .prog.done i { background: var(--ok); }
-  .gates { display: flex; align-items: center; gap: 10px 20px; flex-wrap: wrap;
-           padding: 10px 14px; }
-  .gates .g { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-  .gates .g .k { color: var(--muted); }
-  .gates .g .purpose { color: var(--muted); font-size: 11px; }
   td.purpose { color: var(--muted); font-size: 11.5px; }
 
-  /* ---- console: 4 grouped sections (データ蓄積 / ゲート開放 / ペーパー / その他) --- */
+  /* ---- console: 3 grouped sections (データ蓄積 / ペーパー / その他) ---------- */
   .group-h { font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
              color: var(--muted); margin: 4px 2px -10px; }
   /* 推定建値台帳: single-hue continuous-quantity bar, value label in ink (not muted) */
@@ -223,32 +212,16 @@ PAGE = """<!doctype html>
     <div class="scroll"><table id="t-ledger"></table></div>
   </section>
 
-  <div class="group-h">2. ゲート開放</div>
-  <section>
-    <h2>判定ゲート (確定済み判定と係属中の必要サンプル・目的つき)</h2>
-    <div class="gates" id="gates"></div>
-  </section>
-
-  <div class="group-h">3. ペーパートレード</div>
+  <div class="group-h">2. ペーパートレード <span class="sub">紙上台帳の現況のみ</span></div>
   <div class="tiles" id="tiles-paper"></div>
-  <div class="grid2">
-    <section>
-      <h2>メインBOT: 最近の判断</h2>
-      <div class="scroll"><table id="t-dec"></table></div>
-    </section>
-    <section>
-      <h2>バーストスキャル(退役・棄却済み 第16報)</h2>
-      <div class="scroll"><table id="t-scalp"></table></div>
-    </section>
-  </div>
 
-  <div class="group-h">4. その他 <span class="sub">API状態・Kill Switch・レーダーは上部の帯とタイルに表示中</span></div>
+  <div class="group-h">3. その他 <span class="sub">API状態・Kill Switch・レーダーは上部の帯とタイルに表示中</span></div>
   <section>
-    <h2>推定建値台帳 <span class="sub">ΔOI配分・按分退出・表示専用(G6フェーズC待ち)</span></h2>
+    <h2>推定建値台帳 <span class="sub">ΔOI配分・按分退出・表示専用</span></h2>
     <div class="oi" id="ladder"></div>
   </section>
   <section>
-    <h2>BTC長期チャートと市場加熱度 <span class="sub">月足ローソク・2015年〜 / 表示専用(方向予測は棄却済み)</span></h2>
+    <h2>BTC長期チャートと市場加熱度 <span class="sub">月足ローソク・2015年〜 / 表示専用</span></h2>
     <div class="chartwrap"><canvas id="a-chart"></canvas><div class="tip" id="a-tip"></div></div>
     <div class="legend" id="a-legend"></div>
   </section>
@@ -380,56 +353,26 @@ function apiTile(a) {
     `p95 ${p95} / ${health}`);
 }
 
-// ON1 フォワード・ペーパー (aggregate.py: on1; docs/PREREG_on1_forward.md)。
-// 日経225マイクロのオーバーナイト紙上取引。null = 台帳未生成 (fetch_all が
-// scripts/paper_on1.py を書くまで) — その間も「未稼働」タイルで存在は見せる。
-// guard は PREREG §3 の警告/停止線の現在値 (OK / 警告 / 停止)。
+// ON1 フォワード・ペーパー (aggregate.py: on1)。日経225マイクロの
+// オーバーナイト紙上取引。null = 台帳未生成 (fetch_all が scripts/paper_on1.py を
+// 書くまで)。**監視線(警告/停止の判定条件)は 2026-09-08 の全捨てで撤去した** —
+// 根拠だった事前登録が失効しているため、台帳の現況だけを出す。
 function on1Tiles(o) {
   if (o == null) return tile("ON1 紙上 (日経ON)", "未稼働");
   if (!o.trades) return tile("ON1 紙上 (日経ON)", "取引0", "", `スキップ ${o.skipped ?? 0}`);
-  const guardBad = o.guard && o.guard !== "OK";
   const fr = o.friction_yen != null ? ` / 摩擦 ${fmt(o.friction_yen, 1)}円` : "";
-  return tile("ON1 紙上損益", `${fmt(o.cum_net_yen, 0)}円`, pnlCls(o.cum_net_yen),
-              `${fmt(o.mean_net_bps, 1)}bps ${o.trades}回`) +
-         tile("ON1 監視線", o.guard || "—", guardBad ? "neg" : "pos",
+  return tile("ON1 紙上台帳", `${o.trades}回`, "sub",
               `〜${(o.last_exit_date || "").slice(4, 6)}/${(o.last_exit_date || "").slice(6, 8)}${fr}`);
 }
 
-// ONR フォワード・ペーパー (aggregate.py: onr; docs/PREREG_onr_forward.md)。
-// J-REIT ETF 1343 のオーバーナイト紙上取引。null = 台帳未生成 (fetch_all が
-// scripts/paper_onr.py を書くまで)。guard は scripts/paper_onr.py が
-// status.json に書いた判定 (ok/caution/stop, PREREG §3・付録A)。
+// ONR フォワード・ペーパー (aggregate.py: onr)。J-REIT ETF 1343 の
+// オーバーナイト紙上取引。null = 台帳未生成。**監視線(ok/caution/stop の
+// 判定条件)は 2026-09-08 の全捨てで撤去した** — 台帳の現況だけを出す。
 function onrTiles(o) {
   if (o == null) return tile("ONR 紙上 (1343 ON)", "未稼働");
   if (!o.n_trades) return tile("ONR 紙上 (1343 ON)", "取引0");
-  const guardLabel = {ok: "OK", caution: "注意", stop: "停止"}[o.guard] || (o.guard || "—");
-  const guardBad = o.guard && o.guard !== "ok";
-  const gap = o.gap_mean_bps != null ? ` / 乖離 ${fmt(o.gap_mean_bps, 1)}bps` : "";
-  return tile("ONR 紙上損益", `${fmt(o.cum_pnl_yen, 0)}円`, pnlCls(o.cum_pnl_yen),
-              `${fmt(o.mean_bps, 1)}bps ${o.n_trades}回${gap}`) +
-         tile("ONR 監視線", guardLabel, guardBad ? "neg" : "pos",
+  return tile("ONR 紙上台帳", `${o.n_trades}回`, "sub",
               `〜${(o.last_date || "").slice(5).replace("-", "/")}`);
-}
-
-// チャンピオン (aggregate.py: gates[key="champion"]; report #22)。判定は既に
-// FAIL で確定しており(§5)、以後の稼働はC2窓内サブセットを埋める収集運搬役
-// でしかない — その2点を1タイルで明記する(判定ゲート表の同じ行が数値の
-// 出所)。
-function championTile(gates) {
-  const g = (gates || []).find(x => x.key === "champion");
-  if (!g) return "";
-  return tile("チャンピオン (xborder_momentum)", `判定済み ${g.verdict || "—"}`, "sub",
-    "収集運搬役として稼働中(C2判定まで)");
-}
-
-// S12 時計バースト30分 (scripts/research_clock_burst.py --status-json;
-// data/s12_status.json, fetch_all.bat が毎日書く)。n・フレッシュ期間・最終日
-// だけの安全な要約 — n<30の間は判定文を一切出さない安全弁はスクリプト側に
-// あり、このタイルは統計を持たない。
-function s12Tile(s) {
-  if (s == null) return tile("S12 新鮮n", "未収集");
-  const last = s.last_day ? s.last_day.slice(5).replace("-", "/") : "—";
-  return tile("S12 新鮮n", `${fmt(s.n, 0)}/${fmt(s.need, 0)}`, "", `最終 ${last}`);
 }
 
 // 推定建値台帳 (aggregate.py: ladder -> scripts/research_position_ladder.py
@@ -633,8 +576,6 @@ async function refresh() {
     tile("最大DD", fmt(b.max_drawdown_pct, 2) + " %") +
     positionTile(b) +
     tile("約定回数", fmt(b.trade_count, 0) + " 回") +
-    tile("スキャル損益 / 回数", `${fmt(d.scalp.total_pnl_jpy, 0)}円`, pnlCls(d.scalp.total_pnl_jpy),
-         `${d.scalp.trades}回`) +
     attentionTile(d.attention) +
     tile("エラー数", fmt(b.error_count, 0)) +
     apiTile(d.api_health) +
@@ -643,12 +584,12 @@ async function refresh() {
     ingestTile("収集: board_top", (d.ingest || {}).board_top) +
     ingestTile("収集: venues", (d.ingest || {}).venues);
 
-  // 3. ペーパートレード: champion (判定済みFAIL・収集運搬役) + ON1台帳 + ONR台帳 + S12
+  // ペーパートレード: 紙上台帳の現況のみ。チャンピオン/スキャルパーの履歴、
+  // 判定条件(監視線)、必要量(S12 の n 進捗)は全捨てで撤去した。
   const tp = document.getElementById("tiles-paper");
-  if (tp) tp.innerHTML = championTile(d.gates) + on1Tiles(d.on1) + onrTiles(d.onr) + s12Tile(d.s12);
+  if (tp) tp.innerHTML = on1Tiles(d.on1) + onrTiles(d.onr);
 
   renderLadder(d.ladder);
-  renderGates(d.gates || []);
 
   // long-horizon attention chart: redraw only when the monthly series changed
   const aNew = d.attention_chart || [];
@@ -657,46 +598,15 @@ async function refresh() {
     drawAttentionChart();
   }
 
-  // 最近の判断: times in JST, reasons in Japanese, and — for the rows that
-  // were actually trades — the fill price and, on an exit, the realized P&L.
-  // All four are computed server-side (monitoring/aggregate.py) because
-  // whether a filled order opened or closed depends on the whole log.
-  const dec = d.decisions || [];
-  document.getElementById("t-dec").innerHTML = dec.length ?
-    "<tr><th>時刻 (JST)</th><th>シグナル</th><th>判断</th>" +
-    "<th class='num'>約定価格</th><th class='num'>損益</th><th>理由</th></tr>" +
-    dec.map(r => `<tr><td class="mono">${r.time_jst || ""}</td>` +
-      `<td>${r.signal_ja || r.strategy_signal || ""}</td>` +
-      `<td>${r.decision_ja || r.decision || ""}</td>` +
-      `<td class="num mono">${r.fill_price != null ? fmt(r.fill_price, 0) : ""}</td>` +
-      `<td class="num mono ${r.realized_pnl_jpy != null ? dirCls(r.realized_pnl_jpy) : ""}">` +
-        `${r.realized_pnl_jpy != null ?
-           (r.realized_pnl_jpy > 0 ? "+" : "") + fmt(r.realized_pnl_jpy, 1) + "円" : ""}</td>` +
-      `<td title="${r.reason || ""}">${(r.reason_ja || r.reason || "").slice(0, 60)}</td></tr>`).join("")
-    : "<tr><td class='empty'>判断ログなし(シグナル待ちは正常です)</td></tr>";
-
-  const sc = d.scalp.recent || [];
-  document.getElementById("t-scalp").innerHTML = sc.length ?
-    "<tr><th>時刻</th><th>イベント</th><th>方向</th><th class='num'>価格</th><th class='num'>損益</th></tr>" +
-    sc.map(r => `<tr><td class="mono">${new Date(r.ts * 1000).toLocaleTimeString("ja-JP")}</td>` +
-      `<td>${r.event}</td><td>${r.side || ""}</td>` +
-      `<td class="num mono">${fmt(r.price, 0)}</td>` +
-      `<td class="num mono">${r.pnl_jpy != null ? fmt(r.pnl_jpy, 1) : ""}</td></tr>`).join("")
-    : "<tr><td class='empty'>イベントなし(退役済み — 記録のみ)</td></tr>";
-
-  // データ収集: the plain collectors first (no pre-registered bar on them),
-  // then one row per pending gate carrying 必要量 / 進捗 / 残り時間. Every row
-  // ends in a 目的 cell -- static text (COLLECTOR_PURPOSE / g.purpose), never
-  // computed from the row's own freshness.
+  // データ収集: 収集そのものの健全性だけ。必要量・進捗・残り時間の列と
+  // 判定ゲートの行は 2026-09-08 の全捨てで撤去した(判定条件が失効したため)。
+  // 目的セルは静的テキスト (COLLECTOR_PURPOSE) で、行の鮮度からは計算しない。
   const col = Object.entries(d.collectors || {});
   document.getElementById("t-col").innerHTML =
-    "<tr><th>データ</th><th>最終更新</th><th class='num'>サイズ</th>" +
-    "<th>必要量</th><th>進捗</th><th class='num'>残り時間</th><th>目的</th></tr>" +
+    "<tr><th>データ</th><th>最終更新</th><th class='num'>サイズ</th><th>目的</th></tr>" +
     col.map(([k, v]) => `<tr><td>${k}</td><td>${v ? age(v.age_sec) : "未収集"}</td>` +
       `<td class="num mono">${v ? fmt(v.size / 1e6, 1) + " MB" : "—"}</td>` +
-      `<td class="sub">—</td><td class="sub">—</td><td class="num sub">—</td>` +
-      `<td class="purpose">${COLLECTOR_PURPOSE[k] || "—"}</td></tr>`).join("") +
-    (d.gates || []).map(g => gateRow(g, d)).join("");
+      `<td class="purpose">${COLLECTOR_PURPOSE[k] || "—"}</td></tr>`).join("");
 
   renderDataLedger(d.data_ledger);
 }
@@ -737,58 +647,9 @@ const COLLECTOR_PURPOSE = {
   "Binance日次": "G6特徴量・レジーム監視",
   "USDJPY": "円換算",
   "Binance 1m": "外部特徴量(短期足)参考",
-  "bitbank 1m": "退役スキャルパーの参考系列",
+  "bitbank 1m": "国内他ベニューの参考系列",
   "spread record": "実効スプレッド計測",
 };
-
-const UNIT_JA = {trades: "回", rows: "行", days: "日"};
-
-// The remaining time is a projection at the rate the data has ACTUALLY been
-// arriving (aggregate/gates.py: units accumulated / seconds observed), so it
-// is always prefixed ≈. No rate — nothing collected yet, or the collector has
-// never run — is "—", never an optimistic guess.
-function eta(sec) {
-  if (sec == null) return "—";
-  if (sec <= 0) return "到達済み";
-  if (sec < 86400) return `≈${(sec / 3600).toFixed(1)}時間`;
-  if (sec < 86400 * 90) return `≈${(sec / 86400).toFixed(1)}日`;
-  return `≈${(sec / 86400 / 30.44).toFixed(1)}ヶ月`;
-}
-
-function progBar(g) {
-  return `<span class="prog${g.done ? " done" : ""}">` +
-    `<i style="width:${Math.max(0, Math.min(100, g.pct || 0))}%"></i></span>`;
-}
-
-// A gate that has been formally judged (report in docs/, KNOWLEDGE §3/§5) is
-// a settled fact: 判定済み + the registered numbers, never a progress bar —
-// a bar would read as "still collecting toward a verdict" when the verdict
-// already exists.
-function verdictText(g) {
-  return `判定済み: ${g.verdict}(${g.verdict_detail})— ${g.verdict_note}`;
-}
-
-function gateRow(g, d) {
-  const u = UNIT_JA[g.unit] || "";
-  const dec = g.unit === "days" ? 1 : 0;
-  // the OI row keeps the live readings it always carried in its label
-  const extra = g.key === "oi" ? oiValues(d.oi_snapshot) : "";
-  const purpose = `<td class="purpose">${g.purpose || "—"}</td>`;
-  const head = `<tr><td>${g.label}${extra}</td>` +
-    `<td>${g.age_sec != null ? age(g.age_sec) : "未収集"}</td>` +
-    `<td class="num mono sub">${g.detail || "—"}</td>` +
-    `<td class="sub" title="${g.bar}">${g.bar}</td>`;
-  if (g.verdict) {
-    return head +
-      `<td><span class="down">${verdictText(g)}</span> ` +
-        `<span class="sub mono">${fmt(g.have, dec)}${u}収集済み</span></td>` +
-      `<td class="num sub">—</td>` + purpose + `</tr>`;
-  }
-  return head +
-    `<td>${progBar(g)}<span class="mono">${fmt(g.have, dec)}/${fmt(g.need, dec)}${u}</span> ` +
-      `<span class="sub mono">${g.pct != null ? fmt(g.pct, 0) + "%" : "—"}</span></td>` +
-    `<td class="num mono">${eta(g.eta_sec)}</td>` + purpose + `</tr>`;
-}
 
 // OI/DVOL snapshot recorder (scripts/record_oi.py): one row per collector run.
 function oiValues(oi) {
@@ -802,28 +663,6 @@ function oiValues(oi) {
   return vals ? ` <span class="sub">${vals}</span>` : "";
 }
 
-// 判定ゲート strip: the same numbers as the collectors table, compressed to
-// one glanceable line — n/required for every pending pre-registered sample.
-function renderGates(gates) {
-  const el = document.getElementById("gates");
-  if (!el) return;
-  if (!gates.length) { el.innerHTML = '<span class="empty">係属ゲートなし</span>'; return; }
-  el.innerHTML = gates.map(g => {
-    const u = UNIT_JA[g.unit] || "";
-    const dec = g.unit === "days" ? 1 : 0;
-    const purpose = g.purpose ? `<span class="purpose">${g.purpose}</span>` : "";
-    if (g.verdict) {
-      return `<span class="g" title="${verdictText(g)}${g.purpose ? " / " + g.purpose : ""}">` +
-        `<span class="k">${g.label}</span>` +
-        `<span class="down">判定済み ${g.verdict}</span>` +
-        `<span class="sub">${g.verdict_note}</span>${purpose}</span>`;
-    }
-    return `<span class="g" title="${g.bar} / 残り ${eta(g.eta_sec)}${g.purpose ? " / " + g.purpose : ""}">` +
-      `<span class="k">${g.label}</span>${progBar(g)}` +
-      `<span class="mono${g.done ? " up" : ""}">${fmt(g.have, dec)}/${fmt(g.need, dec)}${u}</span>` +
-      `<span class="sub mono">${eta(g.eta_sec)}</span>${purpose}</span>`;
-  }).join("");
-}
 // ===========================================================================
 // マーケットタブ — /api/market (bot/monitoring/market_view.collect_market)
 // ===========================================================================

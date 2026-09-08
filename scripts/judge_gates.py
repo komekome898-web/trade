@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Judgment harness for every pre-registered PENDING gate (docs/KNOWLEDGE.md).
+"""VOID — 2026-09-08 の全捨てで、判定対象のバーがすべて失効した。
+
+`bot.monitoring.gates` の判定バーは、破棄済みの研究結果に由来する
+(CLAUDE.md §5.1)。**このハーネスの出力を判定の根拠に使ってはならない。**
+新しい事前登録(MDE つき)を書き、バーを測り直してから使うこと。
+
+--- 以下、旧 docstring ---
+Judgment harness for every pre-registered PENDING gate (docs/KNOWLEDGE.md).
 
 Read-only, idempotent, no network. It opens the files the running components
 already write on the owner's machine — logs/bot.jsonl, data/scalp_paper.jsonl,

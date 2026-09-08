@@ -112,8 +112,11 @@ def test_aggregate_on1_reads_ledger_and_guard(tmp_path):
 def test_dashboard_page_renders_on1_tiles():
     page = (ROOT / "scripts" / "dashboard.py").read_text(encoding="utf-8")
     assert "on1Tiles(d.on1)" in page
-    for field in ("cum_net_yen", "mean_net_bps", "guard", "friction_yen", "last_exit_date"):
+    # 台帳の現況だけ。損益・平均bps・監視線(判定条件)は 2026-09-08 の全捨てで撤去。
+    for field in ("trades", "friction_yen", "last_exit_date"):
         assert f"o.{field}" in page
+    for gone in ("cum_net_yen", "mean_net_bps", "guard"):
+        assert f"o.{gone}" not in page, gone
 
 
 def test_attention_gauge_z_and_missing(tmp_path):

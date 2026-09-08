@@ -248,5 +248,8 @@ def test_aggregate_onr_reads_status_and_shared_or_local(tmp_path):
 def test_dashboard_page_renders_onr_tiles():
     page = (ROOT / "scripts" / "dashboard.py").read_text(encoding="utf-8")
     assert "onrTiles(d.onr)" in page
-    for field in ("cum_pnl_yen", "mean_bps", "guard", "gap_mean_bps", "last_date", "n_trades"):
+    # 台帳の現況だけ。損益・平均bps・監視線(判定条件)は 2026-09-08 の全捨てで撤去。
+    for field in ("last_date", "n_trades"):
         assert f"o.{field}" in page
+    for gone in ("cum_pnl_yen", "mean_bps", "guard", "gap_mean_bps"):
+        assert f"o.{gone}" not in page, gone

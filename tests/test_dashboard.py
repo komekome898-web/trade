@@ -12,8 +12,10 @@ def test_collect_status_empty_root(tmp_path):
     d = collect_status(tmp_path)
     assert d["components"]["main_bot"]["state"] == "missing"
     assert d["components"]["ws_recorder"]["state"] == "missing"
-    assert d["scalp"]["trades"] == 0
-    assert d["decisions"] == []
+    # 履歴系(チャンピオン/スキャルパー)・判定ゲート・必要量は 2026-09-08 の
+    # 全捨てでダッシュボードから撤去した。ペイロードにも載らない。
+    for gone in ("scalp", "decisions", "gates", "s12"):
+        assert gone not in d, gone
 
 
 def test_collect_status_full(tmp_path):
@@ -35,9 +37,8 @@ def test_collect_status_full(tmp_path):
     d = collect_status(tmp_path, now=now)
     assert d["components"]["main_bot"]["state"] == "ok"
     assert d["bot"]["last_price"] == 11000000
-    assert d["scalp"]["trades"] == 1
-    assert d["scalp"]["total_pnl_jpy"] == 12.5
-    assert d["decisions"][0]["strategy_signal"] == "HOLD"
+    for gone in ("scalp", "decisions", "gates", "s12"):
+        assert gone not in d, gone
 
 
 def test_overlay_and_active_modules_surfaced(tmp_path):
@@ -216,34 +217,6 @@ def test_ladder_all_rows_pre_cutoff_yields_no_rungs(tmp_path):
 
 
 # ---- S12 clock-burst status tile (data/s12_status.json passthrough) --------
-def test_s12_status_missing_is_none(tmp_path):
-    assert collect_status(tmp_path)["s12"] is None
-
-
-def test_s12_status_passes_through_as_written(tmp_path):
-    (tmp_path / "data").mkdir()
-    (tmp_path / "data" / "s12_status.json").write_text(json.dumps({
-        "n": 23, "need": 30, "fresh_start": "2026-08-25T12:00:00+00:00",
-        "fresh_end": "2026-09-02T00:00:00+00:00", "last_day": "2026-09-02",
-        "generated_at": 1_800_000_000.0}), encoding="utf-8")
-    s12 = collect_status(tmp_path)["s12"]
-    assert s12["n"] == 23 and s12["need"] == 30 and s12["last_day"] == "2026-09-02"
-
-
-# ---- gate 目的 text (§A2 dashboard reorg) -----------------------------------
-def test_every_gate_carries_a_purpose_and_the_bar_string_is_unchanged(tmp_path):
-    gates = collect_status(tmp_path)["gates"]
-    keys = {g["key"] for g in gates}
-    assert keys == {"champion", "c2", "oi", "board", "spreadmm", "funding"}
-    for g in gates:
-        assert g["purpose"], g["key"]
-    oi_gate = next(g for g in gates if g["key"] == "oi")
-    assert "フェーズC" in oi_gate["purpose"]
-    # the registered bar text (fail-close design) is untouched by the purpose annotation
-    assert oi_gate["bar"] == ">= 2900行 (30日)"
-
-
-# ---- データ蓄積表: extended collectors dict ----------------------------------
 def test_collectors_include_the_new_data_inventory_rows(tmp_path):
     labels = set(collect_status(tmp_path)["collectors"])
     for label in ("板記録 (WS)", "ティッカー/板上位テープ", "venues (bitbank/GMO/bF現物)",
@@ -297,18 +270,6 @@ PAIRED_LOG = [
     _decision("2026-08-20T05:31:00+00:00", "HOLD", "REJECTED",
               "BUY entry vetoed by module long_only", 900.5),
 ]
-
-
-def test_decision_times_are_jst(tmp_path):
-    """The bot stamps UTC; the owner reads JST. 05:00Z is 14:00 JST, and the
-    format is MM/DD HH:MM:SS so a date rollover is visible."""
-    _write_log(tmp_path, PAIRED_LOG)
-    rows = {r["timestamp"]: r for r in collect_status(tmp_path)["decisions"]}
-    assert rows["2026-08-20T05:00:00+00:00"]["time_jst"] == "08/20 14:00:00"
-    # 16:30 UTC is already the next day in JST
-    _write_log(tmp_path, [_decision("2026-08-20T16:30:05+00:00", "HOLD", "HOLD",
-                                    "no cross")])
-    assert collect_status(tmp_path)["decisions"][0]["time_jst"] == "08/21 01:30:05"
 
 
 @pytest.mark.parametrize("raw,japanese", [
@@ -407,227 +368,10 @@ def test_unknown_reason_passes_through_raw():
     assert decision_ja("ORDER_SENT") == "発注" and decision_ja("HOLD") == "様子見"
 
 
-def test_entry_and_exit_rows_carry_the_fill_price_and_realized_pnl(tmp_path):
-    """The pairing is positional (a BUY on top of a short is an EXIT) and the
-    log's PnL field is CUMULATIVE, so an exit's own P&L is the step in it.
-    Both facts need the whole log — the page cannot derive either from a row."""
-    _write_log(tmp_path, PAIRED_LOG)
-    rows = {r["timestamp"]: r for r in collect_status(tmp_path)["decisions"]}
-
-    entry = rows["2026-08-20T05:00:00+00:00"]
-    assert entry["trade_kind"] == "entry" and entry["trade_side"] == "LONG"
-    assert entry["fill_price"] == 11_000_000.0
-    assert entry["realized_pnl_jpy"] is None      # an entry realizes nothing
-
-    exit_row = rows["2026-08-20T05:10:00+00:00"]
-    assert exit_row["trade_kind"] == "exit" and exit_row["trade_side"] == "LONG"
-    assert exit_row["fill_price"] == 11_123_456.0
-    assert exit_row["realized_pnl_jpy"] == 1234.5
-
-    # the SELL is an ENTRY (the book was flat), not a close of the long above
-    short = rows["2026-08-20T05:20:00+00:00"]
-    assert short["trade_kind"] == "entry" and short["trade_side"] == "SHORT"
-    # and the BUY that follows CLOSES it, at a loss: 900.5 - 1234.5
-    close = rows["2026-08-20T05:30:00+00:00"]
-    assert close["trade_kind"] == "exit" and close["trade_side"] == "SHORT"
-    assert close["realized_pnl_jpy"] == -334.0
-
-    # a row that sent no order is labelled but carries no trade numbers
-    refused = rows["2026-08-20T05:31:00+00:00"]
-    assert refused["trade_kind"] is None
-    assert refused["fill_price"] is None and refused["realized_pnl_jpy"] is None
-    assert refused["decision_ja"] == "発注却下"
-
-
-def test_decision_enrichment_reuses_the_one_pairing_implementation(tmp_path):
-    """market_view.parse_bot_events is the repo's single pairing rule (chart
-    markers, gate judge, this table). A second one would eventually disagree
-    with the chart about what an order did."""
-    from bot.monitoring.market_view import parse_bot_events
-
-    _write_log(tmp_path, PAIRED_LOG)
-    events = parse_bot_events(tmp_path / "logs" / "bot.jsonl")
-    priced = [(r["fill_price"], r["realized_pnl_jpy"])
-              for r in reversed(collect_status(tmp_path)["decisions"])
-              if r["trade_kind"]]
-    assert priced == [(e["price"], e["pnl"] if e["kind"] == "exit" else None)
-                      for e in events]
-
-
-# ---- 判定ゲート: progress against the pre-registered bars -------------------
 def _gates(payload) -> dict:
     return {g["key"]: g for g in payload["gates"]}
 
 
-def test_gate_bars_come_from_the_judge(tmp_path):
-    """The console's 必要量 and judge_gates' PASS bar have to be one number."""
-    import sys
-
-    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve()
-                          .parents[1] / "scripts"))
-    import judge_gates as jg
-    from bot.monitoring import gates as g
-
-    assert jg.MAIN_TRADES_BAR is g.MAIN_TRADES_BAR == 30
-    assert jg.OI_ROWS_BAR is g.OI_ROWS_BAR == 2900
-    assert jg.BOARD_DAYS_BAR is g.BOARD_DAYS_BAR == 7.0
-    assert jg.BOARD_BYTES_BAR is g.BOARD_BYTES_BAR == 500_000_000
-    assert jg.FUNDING_N_BAR is g.FUNDING_N_BAR == 63
-    # C2's subset bar is registered in judge_gates (composite.yaml deviation);
-    # the console's copy must be the same number
-    assert jg.SUBSET_N_BAR == g.C2_TRADES_BAR == 15
-    assert g.SPREADMM_BOARD_DAYS_BAR == 14.0     # §4 spread-MM phase 2
-
-    needs = {k: v["need"] for k, v in _gates(collect_status(tmp_path)).items()}
-    assert needs == {"champion": 30.0, "c2": 15.0, "oi": 2900.0, "board": 7.0,
-                     "spreadmm": 14.0, "funding": 63.0}
-
-
-def test_champion_gate_counts_closed_round_trips_not_fills(tmp_path):
-    """status.json's trade_count is FILLS (an entry and its exit are two); §5
-    counts trades. PAIRED_LOG holds two closed round trips."""
-    _write_log(tmp_path, PAIRED_LOG)
-    champ = _gates(collect_status(tmp_path))["champion"]
-    assert champ["have"] == 2.0 and champ["need"] == 30.0
-    assert champ["unit"] == "trades" and champ["done"] is False
-
-
-def test_champion_gate_matches_judge_gates_beyond_market_views_4mb_tail(tmp_path):
-    """market_view (the decisions table / chart markers) only ever reads a
-    4 MB tail of logs/bot.jsonl. The champion GATE must not inherit that limit
-    — a round trip old enough to sit beyond the tail still has to be counted,
-    exactly as scripts/judge_gates.py counts it from the whole file."""
-    import sys
-    from pathlib import Path as _P
-
-    old_trade = [
-        _decision("2020-01-01T00:00:00+00:00", "BUY", "ORDER_SENT",
-                  "old entry", 0.0, execution_price=1_000_000.0,
-                  order_size=0.01, execution_status="FILLED"),
-        _decision("2020-01-01T00:10:00+00:00", "CLOSE", "ORDER_SENT",
-                  "old exit", 100.0, execution_price=1_001_000.0,
-                  order_size=0.01, execution_status="FILLED"),
-    ]
-    # >4 MB of HOLD filler so the round trip above sits well outside
-    # market_view.LOG_TAIL_BYTES (4 MB) once the file is read from the end.
-    filler = [_decision(f"2020-06-{1 + i % 28:02d}T00:00:00+00:00", "HOLD",
-                        "HOLD", "x" * 2000) for i in range(2600)]
-    _write_log(tmp_path, old_trade + filler + PAIRED_LOG)
-    log_path = tmp_path / "logs" / "bot.jsonl"
-    assert log_path.stat().st_size > 4 * 1024 * 1024   # the scenario is real
-
-    console_have = _gates(collect_status(tmp_path))["champion"]["have"]
-
-    sys.path.insert(0, str(_P(__file__).resolve().parents[1] / "scripts"))
-    import judge_gates as jg
-    trades, _meta = jg.load_champion_trades(tmp_path)
-    assert console_have == len(trades)
-    # the old round trip (1) + PAIRED_LOG's two (2) = 3; proves it was not
-    # silently dropped by a tail read
-    assert console_have == 3.0
-
-
-def test_c2_gate_counts_the_same_window_subset_as_judge_gates(tmp_path):
-    """The C2 row (entries inside 12:30-15:00 UTC, / 15) must show the very n
-    judge_gates' G4a judges — one sample log, two readers, one number. The
-    window is half-open [12:30, 15:00): 12:30 is inside, 15:00 is not."""
-    import sys
-    from pathlib import Path as _P
-
-    from bot.monitoring.gates import clear_cache
-
-    sys.path.insert(0, str(_P(__file__).resolve().parents[1] / "scripts"))
-    import judge_gates as jg
-    from tests.test_judge_gates import BASE_DAY, NOTIONAL, champion_log, write_bot
-
-    step = 0.2 / 100 * NOTIONAL
-    rows = champion_log(12, 0.2, hour=13)                       # inside
-    rows += champion_log(7, 0.2, hour=3,                        # outside
-                         base=BASE_DAY + 30 * 86400, start_cum=12 * step)
-    rows += champion_log(1, 0.2, hour=12, minute=30,            # edge: inside
-                         base=BASE_DAY + 60 * 86400, start_cum=19 * step)
-    rows += champion_log(1, 0.2, hour=15, minute=0,             # edge: outside
-                         base=BASE_DAY + 61 * 86400, start_cum=20 * step)
-    write_bot(tmp_path, rows)
-    clear_cache()
-
-    gates = _gates(collect_status(tmp_path))
-    g4a = next(r for r in jg.judge_all(tmp_path, iters=200) if r.gate_id == "G4a")
-    assert gates["c2"]["have"] == g4a.n == 13
-    assert gates["c2"]["need"] == 15.0 and gates["c2"]["done"] is False
-    assert gates["c2"]["unit"] == "trades"
-    # and the champion row still counts the full set the judge's G1 counts
-    assert gates["champion"]["have"] == 21.0
-
-
-def test_champion_gate_is_a_settled_verdict_not_a_pending_bar(tmp_path):
-    """Report #22 judged the champion at n=30: FAIL. The row carries that
-    verdict verbatim (KNOWLEDGE §3/§5) so the console cannot show the rejected
-    strategy as still awaiting judgment."""
-    _write_log(tmp_path, PAIRED_LOG)
-    champ = _gates(collect_status(tmp_path))["champion"]
-    assert champ["verdict"] == "FAIL"
-    assert champ["verdict_detail"] == "net −0.148%/取引、第22報"
-    assert champ["verdict_note"] == "C2判定まで収集継続"
-    # the count is still measured (the paper run feeds C2), just not a bar
-    assert champ["have"] == 2.0
-    # no other gate claims a verdict — they are genuinely pending
-    for key, gate in _gates(collect_status(tmp_path)).items():
-        if key != "champion":
-            assert "verdict" not in gate
-
-
-def test_spreadmm_gate_counts_board_days_toward_14(tmp_path):
-    """The spread-MM phase-2 countdown reads the SAME data/ws span as G7 but
-    against the 14-day bar (§4, report #26) and with NO byte bar: 8 recorded
-    days clears G7's day bar yet is only ~57% of the phase-2 sample, and a
-    15-day span completes it however small the files are."""
-    import os
-    from datetime import datetime, timezone
-
-    from bot.monitoring.gates import DAY_SEC, board_gate, clear_cache, spreadmm_gate
-
-    def record(root, days):
-        clear_cache()
-        ws = root / "data" / "ws"
-        ws.mkdir(parents=True)
-        now = 1_800_000_000.0
-        for day in range(days):
-            start = now - (days - day) * DAY_SEC
-            stamp = datetime.fromtimestamp(start, tz=timezone.utc).strftime(
-                "%Y%m%d_%H%M%S")
-            f = ws / f"board_{stamp}.jsonl.gz"
-            f.write_bytes(b"x" * 1_000_000)
-            os.utime(f, (start, start + DAY_SEC))
-        return now
-
-    eight = tmp_path / "eight"
-    now = record(eight, 8)
-    g = spreadmm_gate(eight, now)
-    assert g["unit"] == "days" and g["need"] == 14.0
-    assert g["have"] == pytest.approx(8.0, abs=0.01)
-    assert g["done"] is False and g["pct"] == pytest.approx(57.1, abs=0.2)
-    # same scan as the board gate: the two rows agree on the measured days
-    assert g["have"] == board_gate(eight, now)["have"]
-
-    fifteen = tmp_path / "fifteen"
-    now = record(fifteen, 15)
-    g = spreadmm_gate(fifteen, now)
-    assert g["have"] >= 14.0 and g["done"] is True and g["eta_sec"] == 0.0
-    # ...while G7 still refuses to call 15 MB of recordings 0.5 GB
-    assert board_gate(fifteen, now)["done"] is False
-
-
-def test_spreadmm_gate_empty_workspace_is_zero_not_an_error(tmp_path):
-    from bot.monitoring.gates import clear_cache, spreadmm_gate
-
-    clear_cache()
-    g = spreadmm_gate(tmp_path, 1_800_000_000.0)
-    assert g["have"] == 0.0 and g["done"] is False
-    assert g["eta_sec"] is None and g["age_sec"] is None
-
-
-# ---- 収集の鮮度 (data/tape, data/venues) ------------------------------------
 def test_ingest_freshness_reads_the_newest_dated_shard(tmp_path):
     """data/tape shards are daily and dated in the filename; the tile reports
     the newest DATE (lexicographic max), whatever order mtimes landed in.
@@ -700,115 +444,6 @@ def test_progress_eta_is_unknown_rather_than_optimistic():
     assert done["eta_sec"] == 0.0 and done["done"] is True and done["pct"] == 100.0
 
 
-def test_board_gate_waits_for_the_later_of_its_two_bars(tmp_path):
-    """data/ws must reach BOTH 7 days and ~0.5 GB (§4 reports f, g). At 1 MB a
-    day the byte bar is centuries out and it is the byte bar that decides."""
-    import os
-    from datetime import datetime, timezone
-
-    from bot.monitoring.gates import DAY_SEC, board_gate, clear_cache
-
-    clear_cache()
-    ws = tmp_path / "data" / "ws"
-    ws.mkdir(parents=True)
-    now = 1_800_000_000.0
-    for day in range(3):
-        # the span is read off the STAMPED start in the filename (first file)
-        # and the last file's mtime, exactly as judge_gates measures it
-        start = now - (3 - day) * DAY_SEC
-        stamp = datetime.fromtimestamp(start, tz=timezone.utc).strftime(
-            "%Y%m%d_%H%M%S")
-        f = ws / f"board_{stamp}.jsonl.gz"
-        f.write_bytes(b"x" * 1_000_000)
-        os.utime(f, (start, start + DAY_SEC))
-    g = board_gate(tmp_path, now)
-    assert g["unit"] == "days" and g["need"] == 7.0
-    assert g["have"] == pytest.approx(3.0, abs=0.01)
-    # days alone would be ~4 more days; the 0.5 GB bar dominates
-    assert g["eta_sec"] > 100 * DAY_SEC
-    assert "3.0 MB / 3ファイル" in g["detail"]
-
-
-def test_board_gate_done_and_pct_fold_both_bars(tmp_path):
-    """8 days clears BOARD_DAYS_BAR (7) alone, but 8 MB of recordings is
-    nowhere near BOARD_BYTES_BAR (~0.5 GB) — the row must stay NOT done, and
-    its pct must reflect the bar that is actually behind (~1.6%), not the
-    days bar that already reads 100%."""
-    import os
-    from datetime import datetime, timezone
-
-    from bot.monitoring.gates import DAY_SEC, board_gate, clear_cache
-
-    clear_cache()
-    ws = tmp_path / "data" / "ws"
-    ws.mkdir(parents=True)
-    now = 1_800_000_000.0
-    for day in range(8):
-        start = now - (8 - day) * DAY_SEC
-        stamp = datetime.fromtimestamp(start, tz=timezone.utc).strftime(
-            "%Y%m%d_%H%M%S")
-        f = ws / f"board_{stamp}.jsonl.gz"
-        f.write_bytes(b"x" * 1_000_000)          # 1 MB/day -> 8 MB total
-        os.utime(f, (start, start + DAY_SEC))
-    g = board_gate(tmp_path, now)
-    assert g["have"] >= 7.0                      # the DAYS bar alone is met
-    assert g["done"] is False                    # the BYTES bar is not
-    assert g["pct"] == pytest.approx(1.6, abs=0.2)
-
-
-def test_oi_and_funding_gates_read_the_real_files(tmp_path):
-    from datetime import datetime, timedelta, timezone
-
-    from bot.monitoring.gates import DAY_SEC, clear_cache
-
-    clear_cache()
-    (tmp_path / "data").mkdir()
-    start = datetime(2026, 7, 1, tzinfo=timezone.utc)
-    rows = ["ts_utc,okx_usdt_oi,okx_usd_oi,okx_ls_ratio,dvol,deribit_oi"]
-    for i in range(96 * 10):                       # 10 days at 15 min
-        rows.append((start + timedelta(minutes=15 * i)).isoformat() +
-                    ",1.0,2.0,1.1,38.0,3.0")
-    (tmp_path / "data" / "oi_snapshots.csv").write_text("\n".join(rows) + "\n",
-                                                        encoding="utf-8")
-    candles = ["ts,open,high,low,close,volume"]
-    for day in range(4):                           # 4 settlement days covered
-        for minute in (0, 30):
-            ts = start + timedelta(days=day, hours=13, minutes=minute)
-            candles.append(f"{ts.isoformat()},1,1,1,1,1")
-    (tmp_path / "data" / "candles_FX_BTC_JPY.csv").write_text(
-        "\n".join(candles) + "\n", encoding="utf-8")
-
-    now = (start + timedelta(days=10)).timestamp()
-    gates = _gates(collect_status(tmp_path, now=now))
-    oi = gates["oi"]
-    assert oi["have"] == 960.0 and oi["need"] == 2900.0
-    assert oi["rate_per_day"] == pytest.approx(96.0, rel=0.02)
-    assert oi["eta_sec"] == pytest.approx((2900 - 960) / 96 * DAY_SEC, rel=0.02)
-    funding = gates["funding"]
-    assert funding["have"] == 4.0 and funding["need"] == 63.0
-    assert funding["unit"] == "days"
-
-
-def test_gate_file_scans_are_memoised_on_mtime_and_size(tmp_path, monkeypatch):
-    """The console polls every 5s and the candle file has tens of thousands of
-    rows; re-reading it per poll to draw one progress bar is not affordable."""
-    from bot.monitoring import gates as g
-
-    g.clear_cache()
-    (tmp_path / "data").mkdir()
-    (tmp_path / "data" / "oi_snapshots.csv").write_text(
-        "ts_utc,dvol\n2026-07-01T00:00:00+00:00,38.0\n", encoding="utf-8")
-    calls = []
-    real = g.csv_first_last_ts
-    monkeypatch.setattr(g, "csv_first_last_ts",
-                        lambda p, column="ts_utc": calls.append(p) or real(p, column))
-    now = 1_800_000_000.0
-    for _ in range(5):
-        g.oi_gate(tmp_path, now)
-    assert len(calls) == 1
-
-
-# ---- マーケットタブ ---------------------------------------------------------
 def _serve(tmp_path, monkeypatch):
     """The real handler on a throwaway localhost port, rooted at tmp_path so
     the endpoints answer over an empty workspace instead of the live data/."""
@@ -990,7 +625,7 @@ const window = {devicePixelRatio: 1, addEventListener() {}};
 
 const api = new Function(
   "document", "window", "fetch", "setInterval", "clearInterval", "navigator",
-  src + "\nreturn {refresh, tileFont, eta, TILE_W, TILE_CH, TILE_SUB, TILE_MAX, TILE_MIN};"
+  src + "\nreturn {refresh, tileFont, TILE_W, TILE_CH, TILE_SUB, TILE_MAX, TILE_MIN};"
 )(document, window,
   () => Promise.resolve({json: () => Promise.resolve(data)}),
   () => 7, () => 0, {});
@@ -1023,15 +658,11 @@ api.refresh().then(() => {
     probe_fonts: PROBES.map(p => api.tileFont(p[0], p[1])),
     probe_widths: PROBES.map(p => width(p[0], p[1])),
     tile_w: api.TILE_W, tile_max: api.TILE_MAX, tile_min: api.TILE_MIN,
-    decisions: els["t-dec"].innerHTML,
     collectors: els["t-col"].innerHTML,
-    gates: els["gates"].innerHTML,
     tilesPaper: els["tiles-paper"].innerHTML,
     ladder: els["ladder"].innerHTML,
     banner: els["banner"].textContent,
     updated: els["updated"].textContent,
-    eta_samples: [api.eta(null), api.eta(0), api.eta(3600), api.eta(86400 * 20),
-                  api.eta(86400 * 400)],
   }));
 }).catch(e => { console.error(e && e.stack || String(e)); process.exit(3); });
 """
@@ -1150,59 +781,6 @@ def test_console_position_tile_shows_the_entry_price(tmp_path):
 
 
 @pytest.mark.skipif(_node() is None, reason="node not installed")
-def test_console_decisions_table_is_jst_japanese_and_priced(tmp_path):
-    workspace = tmp_path / "ws"
-    workspace.mkdir()
-    now = _console_workspace(workspace)
-    r = _render_console_in_node(tmp_path, collect_status(workspace, now=now))
-    table = r["decisions"]
-
-    assert "時刻 (JST)" in table and "08/20 14:00:00" in table
-    assert "先行 +0.42% / 5本" in table          # reason in Japanese
-    assert "発注却下" in table and "様子見" in table
-    assert "11,123,456" in table                 # the exit's fill price
-    assert "+1,234.5円" in table                 # realized, signed
-    assert "-334円" in table or "-334.0円" in table
-    # signed and coloured with the page's shared up/down semantics
-    assert 'class="num mono up"' in table and 'class="num mono down"' in table
-
-
-@pytest.mark.skipif(_node() is None, reason="node not installed")
-def test_console_collectors_show_requirement_progress_and_eta(tmp_path):
-    workspace = tmp_path / "ws"
-    workspace.mkdir()
-    now = _console_workspace(workspace)
-    payload = collect_status(workspace, now=now)
-    r = _render_console_in_node(tmp_path, payload)
-    table, strip = r["collectors"], r["gates"]
-
-    for header in ("必要量", "進捗", "残り時間"):
-        assert header in table
-    # every gate is a row with its bar, and a chip in the strip
-    for gate in payload["gates"]:
-        assert gate["label"] in table and gate["bar"] in table
-        assert gate["label"] in strip
-    assert "480/2,900行" in table                     # OI rows
-    # the champion row is a SETTLED verdict (report #22), not a progress bar
-    assert "判定済み: FAIL(net −0.148%/取引、第22報)— C2判定まで収集継続" in table
-    assert "2/30回" not in table and "2回収集済み" in table
-    assert "0/15回" in table                          # C2 inside-window subset
-    assert "2/7日" in table                           # board days recorded
-    assert "2/14日" in table                          # spread-MM 14-day bar
-    assert "0/63日" in table                          # funding-window days
-    # every PENDING gate draws a bar; the settled champion row draws none
-    assert table.count('class="prog') == len(payload["gates"]) - 1
-    # the estimate is labelled as one, and an unknown rate is not guessed
-    assert "≈" in table
-    assert r["eta_samples"] == ["—", "到達済み", "≈1.0時間", "≈20.0日", "≈13.1ヶ月"]
-    # the plain collectors keep their row and simply have no bar
-    assert "bitFlyer candles" in table and "Binance 1m" in table
-    # 収集の鮮度 tiles: the tape shards show their stamped date + age, and the
-    # never-recorded data/venues shows 未収集 instead of erroring
-    assert "08/20" in r["tiles"] and "未収集" in r["tiles"]
-
-
-@pytest.mark.skipif(_node() is None, reason="node not installed")
 def test_console_renders_an_empty_payload_without_errors(tmp_path):
     """Every runtime file missing: empty states, no exception, no NaN."""
     from bot.monitoring.gates import clear_cache
@@ -1212,51 +790,14 @@ def test_console_renders_an_empty_payload_without_errors(tmp_path):
     empty.mkdir()
     r = _render_console_in_node(tmp_path, collect_status(empty, now=1_800_000_000.0))
 
-    assert "判断ログなし" in r["decisions"]
     assert "フラット" in r["tiles"]
     assert "NaN" not in r["tiles"] and "undefined" not in r["tiles"]
-    # nothing collected: the settled champion verdict still shows, the pending
-    # gates all sit at zero, and the freshness tiles say 未収集 rather than err
-    assert "判定済み FAIL" in r["gates"]
-    assert "0/15回" in r["gates"] and "0/2,900行" in r["gates"]
-    assert "0/14日" in r["gates"]
-    assert r["gates"].count("—") >= 4          # no rate anywhere: no guesses
     assert "未収集" in r["collectors"]
     assert r["tiles"].count("未収集") >= 3      # ticker / board_top / venues
-    # 3. ペーパートレード: champion still shows its settled verdict, S12 says
-    # 未収集 rather than erroring, and 4. その他 の推定建値台帳 says so too
-    assert "判定済み FAIL" in r["tilesPaper"]
-    assert "S12" in r["tilesPaper"] and "未収集" in r["tilesPaper"]
+    # ペーパートレード: 台帳が無ければ「未稼働」。判定条件も必要量も出さない。
+    assert "未稼働" in r["tilesPaper"]
+    assert "判定" not in r["tilesPaper"] and "監視線" not in r["tilesPaper"]
     assert "未収集" in r["ladder"]
-
-
-@pytest.mark.skipif(_node() is None, reason="node not installed")
-def test_console_paper_trading_section_shows_champion_on1_and_s12(tmp_path):
-    workspace = tmp_path / "ws"
-    workspace.mkdir()
-    now = _console_workspace(workspace)
-    payload = collect_status(workspace, now=now)
-    payload["s12"] = {"n": 23, "need": 30, "fresh_start": "2026-08-25T12:00:00+00:00",
-                      "fresh_end": "2026-09-02T00:00:00+00:00", "last_day": "2026-09-02",
-                      "generated_at": now}
-    r = _render_console_in_node(tmp_path, payload)
-    tp = r["tilesPaper"]
-    assert "チャンピオン" in tp and "判定済み FAIL" in tp and "収集運搬役" in tp
-    assert "23" in tp and "30" in tp and "S12" in tp
-    assert "09/02" in tp  # last_day, MM/DD
-
-
-@pytest.mark.skipif(_node() is None, reason="node not installed")
-def test_console_data_table_and_gates_carry_a_purpose_column(tmp_path):
-    workspace = tmp_path / "ws"
-    workspace.mkdir()
-    now = _console_workspace(workspace)
-    r = _render_console_in_node(tmp_path, collect_status(workspace, now=now))
-    assert "目的" in r["collectors"]
-    assert "G8資金調達窓" in r["collectors"]        # bitFlyer candles row's purpose
-    assert "G6フェーズC" in r["collectors"]          # OI snapshot row's purpose
-    # the gates strip carries the same purpose text server-side attached
-    assert "監視モード" in r["gates"] or "フェーズC" in r["gates"]
 
 
 @pytest.mark.skipif(_node() is None, reason="node not installed")
@@ -2018,3 +1559,38 @@ def test_data_ledger_surfaced_in_collect_status(tmp_path):
     d = collect_status(tmp_path)
     assert d["data_ledger"] is not None
     assert d["data_ledger"]["schema_undefined"]["files"] == 1
+
+
+# ---------------------------------------------------------------------------
+# 2026-09-08 の全捨て(CLAUDE.md §5.1, OWNER_LOG L-021)で撤去したものの見張り。
+# ダッシュボードは「データ収集が生きているか」と「紙上台帳の現況」だけを出す。
+# 判定条件・必要量・戦略の履歴が戻ってきたら、ここで落ちる。
+# ---------------------------------------------------------------------------
+
+def test_payload_carries_no_verdicts_no_requirements_no_trade_history(tmp_path):
+    """collect_status のペイロードから、判定ゲート・必要量・履歴が消えている。"""
+    d = collect_status(tmp_path)
+    for gone in ("gates", "s12", "decisions", "scalp"):
+        assert gone not in d, gone
+
+
+def test_aggregate_does_not_import_the_void_gate_bars():
+    """判定バー(失効)を読む経路が aggregate に残っていない。"""
+    from pathlib import Path
+
+    src = (Path(__file__).resolve().parents[1]
+           / "src" / "bot" / "monitoring" / "aggregate.py").read_text(encoding="utf-8")
+    assert "collect_gates" not in src
+    assert "GATE_PURPOSE" not in src
+
+
+def test_console_page_has_no_gate_or_history_sections():
+    """HTML からゲート表・判断ログ表・スキャル表と、その描画関数が消えている。"""
+    page = _dashboard_page()
+    for gone in ('id="gates"', 'id="t-dec"', 'id="t-scalp"', 'class="gates"',
+                 'class="prog', "renderGates", "gateRow", "verdictText",
+                 "championTile", "s12Tile", "d.gates", "d.scalp", "d.decisions"):
+        assert gone not in page, gone
+    # 収集そのものは全て継続している
+    assert 'id="t-col"' in page and "データ収集" in page
+    assert 'id="t-ledger"' in page and "データ台帳" in page

@@ -1,4 +1,17 @@
-"""Pre-registered coverage bars (docs/KNOWLEDGE.md §4 / §5) and the cheap
+"""VOID — 2026-09-08 の全捨てで、ここに書かれた判定バーはすべて失効した。
+
+このモジュールは事前登録された到達量バー(判定条件)と、その進捗の読み取りを
+持っていた。バーの出所である研究結果は破棄済み(CLAUDE.md §5.1)なので、
+**この値を新しい判定の根拠に使ってはならない**。ダッシュボードからは
+判定ゲートの表示・必要量の進捗・チャンピオンの判定タイルを撤去済みで、
+`bot.monitoring.aggregate` はもう `collect_gates` を呼ばない。
+
+計測の部品(`cached_scan` / `parse_ts` / `shared_or_local` など)は道具として
+生きており、他所から使われている。バーを使う関数を再び使いたければ、
+先に新しい事前登録を書くこと。
+
+--- 以下、旧 docstring ---
+Pre-registered coverage bars (docs/KNOWLEDGE.md §4 / §5) and the cheap
 progress reading the dashboard shows against them.
 
 The BARS live here, not in scripts/judge_gates.py, so the judge and the
