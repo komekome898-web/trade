@@ -116,8 +116,9 @@ def probe_coinalyze(key: str) -> None:
             print(f"  {iv:>6}  **730 日前でもデータあり**(それ以上は未確認)")
             continue
         edge = ca_depth_edge(key, iv, 1, 730)
+        note = "  ※ 窓が 6 時間なので daily の境目は概算" if iv == "daily" else ""
         print(f"  {iv:>6}  約 **{edge:.0f} 日**まで "
-              f"({_day(time.time() - edge * 86400)} 頃)")
+              f"({_day(time.time() - edge * 86400)} 頃){note}")
 
 
 # --------------------------------------------------------------------------- #
