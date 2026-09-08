@@ -329,7 +329,11 @@ SEED = 20260828
 ENTRY_MULT = 2.0        # entry_setting
 STEP_MULT = 1.0         # step_setting  (grid spacing)
 EXIT_MULT = 0.8         # step_exit     (apportioned TP)
-MAX_RUNGS = 7           # pos_count / order_count
+MAX_RUNGS = 7           # order_count = sizemax // sizemin (static path).
+# Fidelity note (docs/AUDIT_2026-09/K2_matilda_v37_source_recheck.md, 2026-09-08):
+# the original ships fukuri=1, so lot_calc() overwrites order_count to 5 while flat
+# (7 only when the range is expanding).  Left at 7 because the run is frozen and the
+# rung sweep N=1..10 (report af Q3) moves unit bps by <0.15 bps.  pos_count is dead code.
 BREAKEXITSIZE = 3
 BREAK_DELAY = 1
 VOLA_COUNT = 40         # minutes
