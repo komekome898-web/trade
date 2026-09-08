@@ -206,7 +206,8 @@ def _summarize(positions: pd.DataFrame) -> dict:
     }
 
 
-@pytest.mark.skipif(not FULL_TAPE_DIR.exists(), reason="v3 full-tape packet not present")
+@pytest.mark.skipif(not FULL_TAPE_DIR.exists() or not SEALED_PATH.exists(),
+                    reason="封印回答は 2026-09-08 の全捨てで削除済み(v3 full-tape packet も同様)")
 def test_sealed_full_tape_numbers_reproduce_from_clean_simulator():
     with gzip.open(FULL_TAPE_DIR / "ticker_qa_maker3_v3_tape.csv.gz", "rt") as f:
         ticker_df = pd.read_csv(f)

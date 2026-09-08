@@ -56,7 +56,7 @@ schtasks /Create /TN "trade_share_logs" /TR "C:\Users\ryoma\trade\deploy\share_l
 確認: `schtasks /Query /TN trade_share_logs`。以後、手動の share_logs は不要(依頼があった時だけ)。
 
 ## P7 PC の時計同期(P2-08b 秒スケール研究の前提。1 回設定 + 週 1 確認)
-背景: 自宅 PC の時計は 0.44 秒以上遅れ、週内に 0.8 秒ずれた実測がある(`docs/KNOWLEDGE.md` (ah))。秒スケールの WS 記録は取引所刻印と受信時刻の差を使うため、PC 時計の同期が前提。
+背景: 自宅 PC の時計は 0.44 秒以上遅れ、週内に 0.8 秒ずれた実測がある((削除済み文書) (ah))。秒スケールの WS 記録は取引所刻印と受信時刻の差を使うため、PC 時計の同期が前提。
 1. 管理者の PowerShell で 1 回。**先に Windows Time サービスを起動する**(ドメイン未参加の PC では既定で停止しており、
    これを飛ばすと `w32tm /config` が **0x80070426「そのサービスを開始できませんでした」** で失敗する。2026-09-07 実例 L-013):
    ```

@@ -1,4 +1,4 @@
-"""Cash-ETF auction-fill measurement executor (docs/PHASE2/EXEC_MEASUREMENT).
+"""Cash-ETF auction-fill measurement executor (事前登録は 2026-09-08 の全捨てで失効).
 
 The test plan is DESIGN.md §7; the numbered comments below are its item
 numbers, so a missing guard is traceable back to the line of the design that
@@ -32,8 +32,6 @@ from bot.risk.kill_switch import KillSwitch
 from bot.settings import Secret
 
 REPO = Path(__file__).resolve().parents[1]
-DESIGN = REPO / "docs" / "PHASE2" / "EXEC_MEASUREMENT" / "DESIGN.md"
-PREREG = REPO / "docs" / "PHASE2" / "EXEC_MEASUREMENT" / "PREREG.md"
 
 PRICE = {"1343": 1925.0, "1591": 37000.0, "1348": 4255.0}
 UNIT = dict(EXPECTED_TRADING_UNIT)
@@ -873,34 +871,13 @@ def test_45_the_bootstrap_read_out_is_deterministic(tmp_path):
     assert first["verdict"] == "pass"              # bar 6.3bps, mean ~2.9bps
 
 
-def test_46_the_pass_bars_match_the_pre_registration_text():
-    """The bars are TRANSCRIBED from the judgment proposals, so the constant and
-    the document must not be able to drift apart."""
-    text = PREREG.read_text(encoding="utf-8")
-    body, addendum = text.split("## 追記")
-    for symbol in ("1343", "1591"):
-        bar = em.PASS_BAR_BPS[symbol]
-        row = [line.strip() for line in body.splitlines()
-               if line.strip().startswith(f"| {symbol} ") and "CI" in line]
-        assert row, symbol
-        assert f"< {bar}bps" in row[0], (symbol, row[0])
-    # 1348 was added later, by the owner decision in the addendum -- its bar is
-    # transcribed from there, not from the frozen table above it.
-    assert "1348" in addendum
-    assert f"**{em.PASS_BAR_BPS['1348']}bps**" in addendum
-    assert "1 口 4,255 円" in addendum and em.EXPECTED_TRADING_UNIT["1348"] == 1
+def test_46_pass_bars_are_void_pending_a_new_pre_registration():
+    """2026-09-08 の全捨てで、旧 PREREG とその合格バーは失効した。
+    定数はコードに残っているが、**新しい事前登録を書くまで判定に使ってはならない**。
+    ここでは「定数が存在し、対象銘柄と対応している」ことだけを確かめる。"""
     assert set(em.PASS_BAR_BPS) == set(ALLOWED_SYMBOLS)
     assert em.TARGET_N_PER_SYMBOL == 50
-    assert f"各銘柄 {em.TARGET_N_PER_SYMBOL} 往復" in text
-    assert em.STOP_CUM_PNL_YEN == -15_000.0 and "−15,000 円" in text
-    assert em.BOOTSTRAP_BLOCK == 5 and em.BOOTSTRAP_N == 2000
-    assert "ブロック長 5" in text and "2,000 回" in text
-
-
-# ===========================================================================
-# 47  secrets
-# ===========================================================================
-
+    assert em.STOP_CUM_PNL_YEN == -15_000.0
 
 def test_47_no_credential_can_reach_the_event_log(tmp_path):
     secret = "kabu-api-password-not-a-real-one"
@@ -1191,22 +1168,18 @@ def test_existing_on1_bats_are_untouched():
 
 
 def test_operations_section_5_2_carries_the_owner_checklist():
+    """合格バーは 2026-09-08 の全捨てで失効したので、本文からは消えている。
+    残るのは運用の骨格(実行ファイル・ゲート・ポート・安全装置・締切)。"""
     ops = (REPO / "docs" / "OPERATIONS.md").read_text(encoding="utf-8")
     assert "## 5.2" in ops
     section = ops.split("## 5.2")[1].split("\n## ")[0]
     for needle in ("etf_measure_entry.bat", "etf_measure_exit.bat",
                    "run_etf_measure_reconcile.py", "ETF_EXEC_LIVE",
                    LIVE_ACK_PHRASE, "18081", "18080", "STATE_UNKNOWN",
-                   "KILL", "60,000", "6.1bps", "6.3bps", "2027-01-27"):
+                   "KILL", "60,000", "2027-01-27"):
         assert needle in section, needle
-    # the checklist itself, copied from DESIGN section 8
-    design = DESIGN.read_text(encoding="utf-8")
-    checklist = design.split("## 8.")[1].split("\n## ")[0]
-    boxes = [line.strip() for line in checklist.splitlines()
-             if line.strip().startswith("- [ ]")]
-    assert len(boxes) >= 20
-    assert section.count("- [ ]") >= len(boxes)
-
+    assert "6.1bps" not in section and "6.3bps" not in section
+    assert section.count("- [ ]") >= 20
 
 def test_the_schema_documents_every_ledger_column():
     schema = json.loads((REPO / "schema" / "etf_measure_ledger.json").read_text(

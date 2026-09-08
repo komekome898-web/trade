@@ -201,17 +201,6 @@ def test_mde_sanity_none_when_not_reported(answers):
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize("n", [1, 2, 3])
-def test_real_auditor_reports_score_6_of_6_and_4_of_4(n):
-    """Regression check on the three real blind-audit reports
-    (docs/AUDIT_2026-09/QA_auditor{1,2,3}.md) against the real sealed
-    answers: all three should score 6/6 correct verdicts and 4/4 planted
-    traps (auditor 3 writes traps in Japanese: 交差/反転, メンテ, 収集時刻,
-    スケール)."""
-    report_path = REPO_ROOT / "docs" / "AUDIT_2026-09" / f"QA_auditor{n}.md"
-    answers_path = REPO_ROOT / "docs" / "QA" / "answers_sealed.json"
-    report = report_path.read_text(encoding="utf-8")
-    real_answers = json.loads(answers_path.read_text(encoding="utf-8"))
-    result = sa.score(report, real_answers)
-    assert result["verdict_accuracy"]["rate"] == 1.0, result["per_claim"]
-    assert result["trap_detection"]["rate"] == 1.0, result["trap_detection"]
+
+# 実監査レポートを採点していたテストは、対象文書が 2026-09-08 の全捨てで削除されたため撤去した。
+# 採点ロジック自体のテスト(上記)は残っている。

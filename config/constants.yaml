@@ -1,3 +1,14 @@
+# =============================================================================
+# 2026-09-08 全捨ての注記(オーナー決定、docs/DISCUSSIONS/2026-09-08_matilda_intent_vs_test.md)
+#
+# このファイルのうち「相場を測った値」(スプレッド・実現コスト・逆選択・約定率など)は
+# すべて **失効** させた。値そのものは削除していないが、`status: discarded_2026-09-08`
+# が付いた項目は **新しい研究の前提として引用してはならない**。コストは単位ごとに測り直す。
+#
+# 失効していないもの: 制度・仕様の事実(手数料率・呼値・売買単位・商品コード)、
+# データの保持期間(data_retention.*)。これらは相場についての主張ではない。
+# =============================================================================
+
 # Provenance registry for cost/market constants used across the project
 # (QA_PLAN_2026-09.md §1-2 item 4).
 #
@@ -26,21 +37,23 @@ bitflyer_fx_btc_jpy:
     source_type: primary_document
     source_url: "https://bitflyer.com/ja-jp/s/commission"
     verified_on: "unverified (egress blocked): bitflyer.com returns HTTP 403/Akamai 'Access Denied' to this session's proxy IP on every path (root, /ja-jp/commission, /ja-jp/s/commission); lightning.bitflyer.com (same operator, docs subdomain) is reachable but its /docs pages do not carry the fee schedule text. Fee value cross-checked instead via docs/NOTE_CRYPTO_CFD_2026-08-20.md (official API docs quote: 'The product_code for BTC-CFD/JPY used in each API will be FX_BTC_JPY'; 手数料0%・レバレッジ最大2倍は変更なし) and confirmed as the value the live order path actually consumes."
-    measured_by: "config/products.yaml FX_BTC_JPY.taker_fee_pct=0.0 is read by src/bot/products.py:ProductSpec and used at src/bot/main.py order path; independently re-confirmed against the live 16-day tape in docs/AUDIT_2026-09/E2_cost_floor_maker_second.md (fee term = 0 in all three cost-floor methods)."
+    measured_by: "config/products.yaml FX_BTC_JPY.taker_fee_pct=0.0 is read by src/bot/products.py:ProductSpec and used at src/bot/main.py order path; independently re-confirmed against the live 16-day tape in (削除済み文書) (fee term = 0 in all three cost-floor methods)."
     notes: >-
       0% taker/maker fee for bitFlyer Crypto CFD (successor to Lightning FX,
       discontinued 2024-03-28; API product_code FX_BTC_JPY unchanged). Do NOT
       use config.yaml `costs.taker_fee_pct: 0.15` for this product — that is
       a generic spot-tier default (see spot pairs in config/products.yaml)
       never applied to FX_BTC_JPY; using it here was an audited error
-      (docs/AUDIT_2026-09/02_provenance_costs.md, E2_cost_floor_maker_second.md).
+      ((削除済み文書), E2_cost_floor_maker_second.md).
 
   quoted_spread_median_bps:
+
+    status: discarded_2026-09-08
     value: 1.9
     unit: bps
     source_type: measured
     measured_by: >-
-      docs/AUDIT_2026-09/E2_cost_floor_maker_second.md and
+      (削除済み文書) and
       E3_maker_arbiter.md; tape
       paper_logs/tape/{ticker,executions}_2026{0820..0904}.csv.gz,
       2026-08-20 06:13Z .. 2026-09-04 12:32Z (16 days,
@@ -51,15 +64,17 @@ bitflyer_fx_btc_jpy:
       1.95bps on the 2026-08-20..31 subset; 2.02bps from an independent
       1s board_top5 snapshot series; 1.78bps on 5s board_round snapshots.
       All cluster at ≈1.9bps. Supersedes the earlier single 4h-session
-      figure of 2.22bps (docs/RESEARCH_REPORT_2026-08-20g.md) — that number
+      figure of 2.22bps ((削除済み文書)) — that number
       is now judged "数値差異" (14-16% high), not wrong order of magnitude.
 
   realized_taker_one_way_bps:
+
+    status: discarded_2026-09-08
     value: [1.0, 1.3]
     unit: bps
     source_type: measured
     measured_by: >-
-      docs/AUDIT_2026-09/E2_cost_floor_maker_second.md, method (b)
+      (削除済み文書), method (b)
       "realized: fill price vs immediately-preceding mid", n=750,122
       executions, same 16-day tape as quoted_spread_median_bps above.
     verified_on: "2026-09-05"
@@ -73,16 +88,18 @@ bitflyer_fx_btc_jpy:
       cross-check, different window).
 
   realized_round_trip_bps:
+
+    status: discarded_2026-09-08
     value: [2.0, 2.6]
     unit: bps
     source_type: measured
     measured_by: >-
-      docs/AUDIT_2026-09/E2_cost_floor_maker_second.md, three
+      (削除済み文書), three
       independent methods on the same 16-day tape: (a) fee(0) +
       quoted-spread median = 1.91bps; (b) realized fill-vs-mid,
       volume-weighted = 2.58-2.80bps; (c) 0.01BTC board-walk,
       median 2.16bps / mean 2.29bps (top-5 depth sufficient 99.90%
-      of the time). docs/AUDIT_2026-09/C_board_imbalance_taker.md
+      of the time). (削除済み文書)
       independently measures 1.77-1.91bps over the same window.
     verified_on: "2026-09-05"
     notes: >-
@@ -91,18 +108,20 @@ bitflyer_fx_btc_jpy:
       5.8-7.9bps floor below — see taker_round_trip_floor_bps_OLD.
 
   taker_round_trip_floor_bps_OLD:
+
+    status: discarded_2026-09-08
     value: [5.8, 7.9]
     unit: bps
     source_type: assumed
     deprecated: true
     reason: "unmeasured 2bps/leg slippage (02_provenance_costs.md)"
-    verified_on: "2026-09-05 (deprecated by docs/AUDIT_2026-09/E2_cost_floor_maker_second.md and E3_maker_arbiter.md)"
+    verified_on: "2026-09-05 (deprecated by (削除済み文書) and E3_maker_arbiter.md)"
     notes: >-
-      docs/AUDIT_2026-09/02_provenance_costs.md traces every one of
+      (削除済み文書) traces every one of
       5.8bps / 7.9bps / 3.96bps(side) / 3.2bps(side) and the "JFSA
       venue floor map" back to one un-derived assumption — 2bps of
       taker slippage per leg — first written with no measurement
-      shown in docs/RESEARCH_REPORT_2026-08-20d.md (2026-08-20),
+      shown in (削除済み文書) (2026-08-20),
       then compounded with genuinely-measured spread figures across
       KNOWLEDGE.md and several PREREG/RESEARCH_REPORT files. DO NOT
       use for new judgment bars (research-protocol pre-registration);
@@ -396,7 +415,7 @@ jpx_cash_equity:
       TODO: measure from kabu API board snapshots (kabuステーション PUSH
       board data, per src/bot/jpx/kabu_client.py) once a recording script
       exists. No repo script currently records JPX ETF board depth/spread;
-      docs/AUDIT_2026-09/02_provenance_costs.md flags "JPX ETFのコスト定数"
+      (削除済み文書) flags "JPX ETFのコスト定数"
       as a data-provenance gap. Do not use a value here until measured.
 
   closing_auction_time_since_2024_11_05:
@@ -440,7 +459,7 @@ data_retention:
     unit: days
     source_type: measured
     measured_by: >-
-      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 1: live query
+      (削除済み文書) row 1: live query
       of GET /v1/executions?product_code=FX_BTC_JPY with `before=` at
       id offsets; API itself returns
       {"status":-156,"error_message":"Execution history is limited to
@@ -454,7 +473,7 @@ data_retention:
     unit: days
     source_type: measured
     measured_by: >-
-      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 2:
+      (削除済み文書) row 2:
       GET /api/v5/rubik/stat/contracts/open-interest-volume,
       period=1H, binary-searched begin/end boundary; returns data
       through 30 days back, errors {"code":"50030","msg":"Illegal
@@ -467,7 +486,7 @@ data_retention:
     unit: days
     source_type: measured
     measured_by: >-
-      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 3 (noted in
+      (削除済み文書) row 3 (noted in
       passing while testing the long-short-account-ratio-contract
       endpoint): the 5m granularity errors at only ~2-3 days back,
       much tighter than the 30d wall seen at 1H.
@@ -479,7 +498,7 @@ data_retention:
     unit: days
     source_type: measured
     measured_by: >-
-      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 3:
+      (削除済み文書) row 3:
       GET /api/v5/rubik/stat/contracts/long-short-account-ratio-contract
       (instId=BTC-USDT-SWAP, period=1H); does NOT hard-error at
       30/31/32/60 days (still code 0, i.e. success) — data goes empty
@@ -511,7 +530,7 @@ data_retention:
     unit: date
     source_type: measured
     measured_by: >-
-      docs/AUDIT_2026-09/AQ_AR_due_diligence_infra.md row 4: S3
+      (削除済み文書) row 4: S3
       list-type=2 listing directly against the data.binance.vision
       bucket. Monthly klines (BTCUSDT) exist 2017-08..2026-07 (216
       keys). Monthly fundingRate (BTCUSDT futures/um) exist 2020-01..
