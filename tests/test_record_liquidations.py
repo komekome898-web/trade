@@ -138,3 +138,69 @@ def test_procedure_p9_tells_the_owner_not_to_paste_the_key():
     p9 = proc.split("## P9")[1]
     assert "チャットに貼らないでください" in p9
     assert ".env" in p9
+
+
+# ---------------------------------------------------------------------------
+# Gate.io の履歴取り込み(scripts/fetch_gate_liquidations.py)。
+# ネットワークには出ない。**取りこぼしを黙って作らない**という一点だけを固定する。
+# ---------------------------------------------------------------------------
+
+gate = _load("fetch_gate_liquidations")
+
+
+def _fake_gate(counts: dict[tuple[int, int], int]):
+    """区間 -> 返す件数、の表から fetch_window の代役を作る。既定は 0 件。"""
+    calls: list[tuple[int, int]] = []
+
+    def fetch_window(contract, frm, to):          # noqa: ARG001
+        calls.append((frm, to))
+        return [{"time": frm, "n": i} for i in range(counts.get((frm, to), 0))]
+
+    return fetch_window, calls
+
+
+def test_hour_is_taken_in_one_request_when_it_fits(monkeypatch):
+    """飽和していない時間は割らない(無駄に叩かない)。"""
+    fw, calls = _fake_gate({(1000, 1000 + gate.HOUR - 1): 5})
+    monkeypatch.setattr(gate, "fetch_window", fw)
+    monkeypatch.setattr(gate.time, "sleep", lambda *_: None)
+    rows, truncated = gate.fetch_hour("BTC_USDT", 1000)
+    assert len(rows) == 5 and truncated == []
+    assert calls == [(1000, 1000 + gate.HOUR - 1)]
+
+
+def test_saturated_window_is_split_and_the_pieces_do_not_overlap(monkeypatch):
+    """飽和したら半分に割る。**割った区間は重ならず、隙間も空けない**
+    — 重なれば偽の重複が生まれ、隙間が空けば黙って落ちるため。"""
+    frm, to = 0, gate.HOUR - 1
+    fw, calls = _fake_gate({(frm, to): gate.LIMIT})
+    monkeypatch.setattr(gate, "fetch_window", fw)
+    monkeypatch.setattr(gate.time, "sleep", lambda *_: None)
+    gate.fetch_hour("BTC_USDT", frm)
+
+    leaves = [c for c in calls if c != (frm, to)]
+    assert leaves, "飽和したのに割っていない"
+    leaves.sort()
+    assert leaves[0][0] == frm and leaves[-1][1] == to
+    for (a_frm, a_to), (b_frm, _b_to) in zip(leaves, leaves[1:]):
+        assert b_frm == a_to + 1, (a_frm, a_to, b_frm)   # 隙間も重なりも無い
+
+
+def test_a_second_that_still_saturates_is_recorded_as_truncated(monkeypatch):
+    """1 秒でも飽和したら**取りこぼしを台帳に残す**。黙って落とさない。"""
+    frm = 0
+    counts = {(a, b): gate.LIMIT for a in range(gate.HOUR) for b in range(a, gate.HOUR)}
+    fw, _calls = _fake_gate(counts)
+    monkeypatch.setattr(gate, "fetch_window", fw)
+    monkeypatch.setattr(gate.time, "sleep", lambda *_: None)
+    _rows, truncated = gate.fetch_hour("BTC_USDT", frm)
+    assert truncated, "全区間が飽和したのに取りこぼしが記録されていない"
+    assert all(a == b for a, b in truncated), "1 秒まで割り切ってから諦めること"
+
+
+def test_the_gate_dataset_has_a_schema():
+    schema = json.loads((REPO / "schema" / "gate_liquidations.json").read_text(encoding="utf-8"))
+    assert schema["path_glob"] == ["backtest_data/gate_liquidations_*/*.jsonl.gz"]
+    assert set(schema["columns"]) >= {"time", "size", "fill_price", "order_price"}
+    # 被覆はサイドカーが真実、という約束が明文化されていること
+    assert any("progress.json" in d for d in schema["known_defects"])

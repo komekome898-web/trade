@@ -1,0 +1,16 @@
+{
+  "source": "https://api.gateio.ws/api/v4/futures/usdt/liq_orders",
+  "auth": "none",
+  "contract": "BTC_USDT",
+  "fetched_utc": "2026-09-08T17:18:59+00:00",
+  "window_covered_utc": [
+    "2026-06-10 16:00",
+    "2026-09-08 16:00"
+  ],
+  "hours_requested": 2160,
+  "hours_fetched": 2160,
+  "hours_empty": 167,
+  "hours_with_truncation": {},
+  "rows": 79183,
+  "note": "行は API の返り値そのまま。取得済みの時間は .progress.json が真実 (0 件だった時間と、取っていない時間を区別するため)。窓はローリングなので、古い側は再取得できない。"
+}
