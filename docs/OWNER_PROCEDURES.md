@@ -80,3 +80,49 @@ schtasks /Create /TN "trade_share_logs" /TR "C:\Users\ryoma\trade\deploy\share_l
    w32tm /stripchart /computer:<表示された IPv4> /samples:3 /dataonly
    ```
 3. 結果を「P7 確認 +0.01s(9/8)」のように一言で報告(手順番号付き、P5)。以後は週 1 回(任意の曜日)に手順 2 のみ。
+
+## P8 清算(強制決済)ストリームの到達確認と記録開始(1 回。**急ぐ**)
+
+**なぜ急ぐか**: 清算フローの履歴は**どこにも売っていないし、無料アーカイブも無い**。
+記録を始めた日から先しか残らないので、**始めるまでの毎日が永久に空白**になる。
+価格・建玉・資金調達は後から遡れるので急がない。急ぐのはこれだけ。
+(背景: 旧 bot カツオの「ロスカットの連鎖が燃料を使い切る」という機構の直接観測。L-024 / L-025)
+
+### 1. 到達確認(3〜5 分)
+
+PowerShell をリポジトリのフォルダで開いて:
+
+```
+.venv\Scripts\python.exe scripts\check_liquidation_feeds.py
+```
+
+4 取引所(Binance / Bybit / OKX / BitMEX)に順に GET と WebSocket 接続を試し、
+**清算メッセージが実際に来るか**を各 60 秒待つ。読み取り専用・認証なし・発注なし。
+終わると `data\liquidation_feed_check.json` が出来るので、**画面の「まとめ」を貼るか、
+このファイルを共有**してください。
+
+> **「清算未発生」は「届かない」ではありません。** 清算は常時起きるものではないので、
+> 接続できていれば記録に使えます。表示はその 2 つを区別しています。
+
+### 2. 記録開始
+
+`deploy\start_all.bat` に**常駐プロセスとして追加済み**なので、次に
+
+```
+deploy\restart_all.bat
+```
+
+を実行すれば動き出します(pull → install → 停止 → 起動)。
+起動後、`logs\liquidations.out.log` に「接続」の行が出ていれば記録中です。
+
+出力先は `data\liquidations\<取引所>_<日付>.jsonl.gz`。
+`share_logs.bat` が毎日 06:30 に共有するので、こちらでも読めます。
+
+### 3. 確認(1 回だけ、翌日)
+
+```
+dir data\liquidations
+```
+
+ファイルが日付ごとに増えていれば正常です。増えていなければ
+`logs\liquidations.out.log` の最後の 20 行を共有してください。

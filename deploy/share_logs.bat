@@ -72,6 +72,10 @@ rem (incident I-002). git does not expand wildcards itself, so loop the
 rem matching directories one by one.
 echo [share_logs] adding retention snapshots (backtest_data\auto_*)
 for /d %%D in (backtest_data\auto_*) do git add "%%D"
+
+rem 清算ストリーム: 買えないデータなので、PC 1 コピーのままにしない (L-026)
+echo [share_logs] adding liquidation stream (data\liquidations)
+if exist "data\liquidations" git add -f "data\liquidations"
 rem Commit only when there is something staged (quiet no-op otherwise).
 git diff --cached --quiet || git commit -m "paper logs snapshot %date% %time%"
 

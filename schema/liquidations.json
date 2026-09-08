@@ -1,0 +1,21 @@
+{
+  "dataset": "liquidations",
+  "description": "Forced-liquidation (強制決済) stream captured live from high-leverage crypto venues, one JSON line per WebSocket message, written by scripts/record_liquidations.py. Recorded because this is the one dataset in the project that cannot be bought or backfilled: no venue publishes a free liquidation archive, so history exists only from the moment recording starts (docs/DATA_PERISHABILITY.md section 2). Motivation: the owner's katsuo bot read long wicks as the fingerprint of a liquidation cascade running out of fuel; this dataset observes that flow directly instead of through the wick proxy (docs/STRATEGY_IDEAS.md O-3c, O-6).",
+  "path_glob": [
+    "data/liquidations/*.jsonl.gz"
+  ],
+  "source": "scripts/record_liquidations.py, run as a resident process by deploy/start_all.bat (\"liq-recorder\"). Public WebSocket streams, no auth, no orders: Binance USD-M !forceOrder@arr, Bybit v5 linear allLiquidation.BTCUSDT, OKX v5 liquidation-orders (instType SWAP), BitMEX liquidation:XBTUSD.",
+  "retention": "permanent once written; files are per-venue per-UTC-day and are appended to, never rewritten. Shared to git by deploy/share_logs.bat (git add -f, since data/ is otherwise ignored) so the record is not a single copy on the owner's PC.",
+  "columns": {
+    "venue": {"meaning": "which feed the message came from", "unit": "string, one of the keys in record_liquidations.VENUES", "tz": null, "notes": "the venues differ in symbol coverage: binance_um is ALL symbols, the others are BTC only as subscribed"},
+    "recv_us": {"meaning": "when THIS RECORDER received the message", "unit": "Unix epoch microseconds", "tz": "UTC (time.time())", "notes": "NOT the exchange's own timestamp -- that lives inside raw. Keeping both is deliberate: the difference is the observation delay, which any cross-venue timing study needs. The recorder's clock accuracy is the owner PC's NTP sync (procedure P7)"},
+    "raw": {"meaning": "the venue's message, parsed from JSON and stored verbatim", "unit": "object", "tz": null, "notes": "deliberately NOT normalised into a common schema. The mechanism is not yet understood, so no field is dropped by the writer's interpretation; normalisation is the reader's job. If a message is not valid JSON it is stored as {\"_unparsed\": \"<text>\"}"}
+  },
+  "known_defects": [
+    "control messages are recorded too: welcome banners, subscribe acknowledgements, pongs and (BitMEX) an initial 'partial' snapshot of currently-open liquidation orders. A reader must filter for the venue's actual liquidation payload rather than counting lines.",
+    "reconnects can duplicate messages. The writer appends and never dedupes, on purpose (dropping a line is worse than storing it twice); the reader must dedupe, e.g. on the venue's own order/trade id inside raw.",
+    "a gap in the file is indistinguishable from a period with no liquidations. The recorder logs connect/disconnect lines to logs/liquidations.out.log -- that log, not the data file, is what says whether the stream was up. Treat coverage as unknown for any window without a corresponding log.",
+    "reachability is route-dependent and was NOT settled from the development session: from that route Binance's REST answered 451 and Bybit's 403 (datacenter IP), while the Binance WebSocket opened but delivered nothing in a 2-minute test, and OKX's WebSocket was reset while its REST worked. Only BitMEX was proven end to end there. scripts/check_liquidation_feeds.py exists to settle this from the owner's PC (procedure P8); until it has been run, which venues are actually being captured is unverified.",
+    "the daily file rolls on the recorder's UTC date, so a message received either side of midnight lands in the file for the day it was RECEIVED, which can differ from the day inside raw for a venue reporting in another convention."
+  ]
+}
