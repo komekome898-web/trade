@@ -75,8 +75,10 @@ FEEDS: dict[str, dict] = {
         "rest": "https://www.bitmex.com/api/v1/liquidation?symbol=XBTUSD&count=1",
         "ws": "wss://ws.bitmex.com/realtime?subscribe=liquidation:XBTUSD",
         "sub": None,
+        # partial は購読直後の「現在オープンの清算注文」スナップショットで、
+        # 空のことが多い。**中身がある時だけ**清算と数える(0 件を 1 件と誤らせない)。
         "hit": lambda m: isinstance(m, dict) and m.get("table") == "liquidation"
-        and m.get("action") in {"insert", "partial", "update"},
+        and m.get("action") in {"insert", "partial", "update"} and m.get("data"),
         "note": "BitMEX XBTUSD。カツオの原典ベニュー。**履歴なし**(公開約定に清算フラグも無い)",
     },
 }
