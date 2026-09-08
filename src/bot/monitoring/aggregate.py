@@ -701,7 +701,13 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
             "ws_recorder": {"state": _liveness(ws_age, 300, 1200),
                             "age_sec": ws_age},
         },
-        "bot": status,
+        # 稼働している PAPER プロセスの「現在の状態」だけ。成績(残高・損益・
+        # 最大DD・約定回数)は 2026-09-08 の全捨てで落とした(L-022) — 判定が
+        # 失効した戦略の履歴だからで、ダッシュボードの枠組みは後日ペーパー
+        # トレードを改めて登録するときに再利用する。status.json 側は無変更。
+        "bot": {k: status.get(k) for k in
+                ("mode", "last_price", "position_size", "entry_price",
+                 "error_count", "overlay", "active_modules")},
         # Composite telemetry, surfaced beside the bot block instead of buried
         # in it. Both stay None under a strategy that has no overlay / no
         # module framework (xborder_momentum), which is not the same as an

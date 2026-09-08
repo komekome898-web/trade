@@ -749,7 +749,7 @@ def test_console_tiles_never_wrap_to_a_second_line(tmp_path):
     # the CSS says it outright, whatever the font arithmetic does
     assert "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" in page
     # every rendered tile carries a computed size inside the allowed band
-    assert r["tile_count"] >= 12 and len(r["tile_fonts"]) == r["tile_count"]
+    assert r["tile_count"] >= 9 and len(r["tile_fonts"]) == r["tile_count"]
     for px in r["tile_fonts"]:
         assert r["tile_min"] <= px <= r["tile_max"]
     # and the longest values the console can hold still fit the box
@@ -1572,6 +1572,14 @@ def test_payload_carries_no_verdicts_no_requirements_no_trade_history(tmp_path):
     d = collect_status(tmp_path)
     for gone in ("gates", "s12", "decisions", "scalp"):
         assert gone not in d, gone
+    # メインBOT は「現在の状態」だけ。成績(残高・損益・最大DD・約定回数)は
+    # 積み上げた履歴なので載せない(L-022)。枠 = "bot" キー自体は残す。
+    assert "bot" in d
+    for gone in ("balance_jpy", "daily_pnl_jpy", "total_pnl_jpy",
+                 "max_drawdown_pct", "trade_count"):
+        assert gone not in d["bot"], gone
+    for kept in ("mode", "last_price", "position_size"):
+        assert kept in d["bot"], kept
 
 
 def test_aggregate_does_not_import_the_void_gate_bars():
@@ -1589,8 +1597,13 @@ def test_console_page_has_no_gate_or_history_sections():
     page = _dashboard_page()
     for gone in ('id="gates"', 'id="t-dec"', 'id="t-scalp"', 'class="gates"',
                  'class="prog', "renderGates", "gateRow", "verdictText",
-                 "championTile", "s12Tile", "d.gates", "d.scalp", "d.decisions"):
+                 "championTile", "s12Tile", "d.gates", "d.scalp", "d.decisions",
+                 "b.balance_jpy", "b.daily_pnl_jpy", "b.total_pnl_jpy",
+                 "b.max_drawdown_pct", "b.trade_count"):
         assert gone not in page, gone
+    # 枠組みは再利用するので残す(後日ペーパートレードを改めて登録するとき)
+    assert "function tile(" in page and "positionTile" in page
+    assert 'id="tiles"' in page and 'id="tiles-paper"' in page
     # 収集そのものは全て継続している
     assert 'id="t-col"' in page and "データ収集" in page
     assert 'id="t-ledger"' in page and "データ台帳" in page

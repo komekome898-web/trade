@@ -568,14 +568,12 @@ async function refresh() {
 
   const b = d.bot || {};
   document.getElementById("tiles").innerHTML =
+    // 成績タイル(仮想残高・本日/累積損益・最大DD・約定回数)は 2026-09-08 の
+    // 全捨てで撤去した(L-022)。タイルの枠組み(tile / positionTile / .tiles 行)は
+    // そのまま残してあり、ペーパートレードを改めて登録するときに再利用する。
     tile("モード", (b.mode || "—").toUpperCase()) +
     tile("価格 (FX_BTC_JPY)", fmt(b.last_price, 0)) +
-    tile("仮想残高", fmt(b.balance_jpy, 0) + " 円") +
-    tile("本日損益", fmt(b.daily_pnl_jpy, 1) + " 円", pnlCls(b.daily_pnl_jpy)) +
-    tile("累積損益", fmt(b.total_pnl_jpy, 1) + " 円", pnlCls(b.total_pnl_jpy)) +
-    tile("最大DD", fmt(b.max_drawdown_pct, 2) + " %") +
     positionTile(b) +
-    tile("約定回数", fmt(b.trade_count, 0) + " 回") +
     attentionTile(d.attention) +
     tile("エラー数", fmt(b.error_count, 0)) +
     apiTile(d.api_health) +
