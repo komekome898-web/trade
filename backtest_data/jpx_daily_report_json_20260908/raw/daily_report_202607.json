@@ -1,0 +1,137 @@
+{
+    "UpdateDate": "2026/08/03 16:31",
+    "TableDatas": [
+        {
+            "TradeDate": "20260731",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260731.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260731.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260731.zip"
+        },
+        {
+            "TradeDate": "20260730",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260730.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260730.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260730.zip"
+        },
+        {
+            "TradeDate": "20260729",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260729.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260729.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260729.zip"
+        },
+        {
+            "TradeDate": "20260728",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260728.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260728.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260728.zip"
+        },
+        {
+            "TradeDate": "20260727",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260727.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260727.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260727.zip"
+        },
+        {
+            "TradeDate": "20260724",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260724.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260724.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260724.zip"
+        },
+        {
+            "TradeDate": "20260723",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260723.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260723.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260723.zip"
+        },
+        {
+            "TradeDate": "20260722",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260722.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260722.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260722.zip"
+        },
+        {
+            "TradeDate": "20260721",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260721.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260721.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260721.zip"
+        },
+        {
+            "TradeDate": "20260717",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260717.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260717.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260717.zip"
+        },
+        {
+            "TradeDate": "20260716",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260716.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260716.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260716.zip"
+        },
+        {
+            "TradeDate": "20260715",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260715.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260715.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260715.zip"
+        },
+        {
+            "TradeDate": "20260714",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260714.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260714.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260714.zip"
+        },
+        {
+            "TradeDate": "20260713",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260713.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260713.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260713.zip"
+        },
+        {
+            "TradeDate": "20260710",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260710.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260710.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260710.zip"
+        },
+        {
+            "TradeDate": "20260709",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260709.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260709.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260709.zip"
+        },
+        {
+            "TradeDate": "20260708",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260708.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260708.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260708.zip"
+        },
+        {
+            "TradeDate": "20260707",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260707.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260707.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260707.zip"
+        },
+        {
+            "TradeDate": "20260706",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260706.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260706.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260706.zip"
+        },
+        {
+            "TradeDate": "20260703",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260703.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260703.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260703.zip"
+        },
+        {
+            "TradeDate": "20260702",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260702.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260702.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260702.zip"
+        },
+        {
+            "TradeDate": "20260701",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_OSE_20260701.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202607/ssop_dyr_flex_20260701.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202607/Daily_Report_TOCOM_20260701.zip"
+        }
+    ]
+}

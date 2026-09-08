@@ -170,6 +170,18 @@ def main() -> int:
         try:
             resp = session.get(targets[td], timeout=120)
             resp.raise_for_status()
+            # Keep the raw zip: JPX drops the previous calendar year's reports
+            # around Jan 1 (config/constants.yaml data_retention.jpx_daily_report_months,
+            # measured 2026-09-08) and the zip carries every product, while the
+            # parsed CSV keeps only the Nikkei rows. Best-effort; never fatal.
+            try:
+                raw_dir = OUT_DIR / "raw"
+                raw_dir.mkdir(parents=True, exist_ok=True)
+                raw_path = raw_dir / f"ose_daily_{td}.zip"
+                if not raw_path.exists():
+                    raw_path.write_bytes(resp.content)
+            except OSError as e:
+                print(f"jpx_daily: {td} raw save failed (continuing): {e}")
             zf = zipfile.ZipFile(io.BytesIO(resp.content))
             name = next((n for n in zf.namelist() if n.startswith("sif_dyr_") and "flex" not in n), None)
             if name is None:

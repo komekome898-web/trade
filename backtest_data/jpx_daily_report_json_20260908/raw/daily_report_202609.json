@@ -1,0 +1,35 @@
+{
+    "UpdateDate": "2026/09/08 09:03",
+    "TableDatas": [
+        {
+            "TradeDate": "20260907",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_OSE_20260907.zip",
+            "FlexSecuritiesOptions": "-",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_TOCOM_20260907.zip"
+        },
+        {
+            "TradeDate": "20260904",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_OSE_20260904.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202609/ssop_dyr_flex_20260904.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_TOCOM_20260904.zip"
+        },
+        {
+            "TradeDate": "20260903",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_OSE_20260903.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202609/ssop_dyr_flex_20260903.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_TOCOM_20260903.zip"
+        },
+        {
+            "TradeDate": "20260902",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_OSE_20260902.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202609/ssop_dyr_flex_20260902.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_TOCOM_20260902.zip"
+        },
+        {
+            "TradeDate": "20260901",
+            "OseAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_OSE_20260901.zip",
+            "FlexSecuritiesOptions": "/automation/markets/statistics-derivatives/daily/files/202609/ssop_dyr_flex_20260901.pdf",
+            "TocomAll": "/automation/markets/statistics-derivatives/daily/files/202609/Daily_Report_TOCOM_20260901.zip"
+        }
+    ]
+}

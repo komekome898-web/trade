@@ -493,6 +493,19 @@ data_retention:
       Re-check periodically — this boundary is not stated in OKX docs,
       only observed.
 
+  jpx_daily_report_months:
+    value: current_calendar_year
+    unit: months
+    source_type: measured
+    measured_by: >-
+      GET https://www.jpx.co.jp/automation/markets/statistics-derivatives/daily/json/daily_report_YYYYMM.json
+      for 202101..202609 on 2026-09-08: 202601..202609 return HTTP 200,
+      202510 and everything earlier returns 404 (21KB HTML error page).
+      NOTE: HEAD requests to this host are unreliable (they returned 404 for
+      months that GET serves at 200) -- always probe with GET.
+    verified_on: "2026-09-08"
+    notes: "The monthly index that lists each day's OSE report zip is kept only for the current calendar year, so the previous year's indexes (and the zips they link) roll off around Jan 1. scripts/fetch_jpx_daily.py parses only the Nikkei rows and used to discard the zip; raw zips are now kept under data/jpx_daily/raw/. Next rollover: 2027-01-01."
+
   binance_vision_metrics_daily_only_since:
     value: "2020-09-01"
     unit: date
