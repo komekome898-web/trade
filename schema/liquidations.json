@@ -1,6 +1,6 @@
 {
   "dataset": "liquidations",
-  "description": "Forced-liquidation (強制決済) stream captured live from high-leverage crypto venues, one JSON line per WebSocket message, written by scripts/record_liquidations.py. Recorded because this is the one dataset in the project that cannot be bought or backfilled: no venue publishes a free liquidation archive, so history exists only from the moment recording starts (docs/DATA_PERISHABILITY.md section 2). Motivation: the owner's katsuo bot read long wicks as the fingerprint of a liquidation cascade running out of fuel; this dataset observes that flow directly instead of through the wick proxy (docs/STRATEGY_IDEAS.md O-3c, O-6).",
+  "description": "Forced-liquidation (強制決済) stream captured live from high-leverage crypto venues, one JSON line per WebSocket message, written by scripts/record_liquidations.py. Recorded because the venues differ in whether they publish history at all: Gate.io serves per-event liquidations for a rolling ~90 days and OKX for ~24 hours, but Binance and BitMEX offer no history whatsoever, so for those the record exists only from the moment recording starts. Full route-by-route measurement in docs/DATA_SOURCES/LIQUIDATION_HISTORY_SURVEY.md. Motivation: the owner's katsuo bot read long wicks as the fingerprint of a liquidation cascade running out of fuel; this dataset observes that flow directly instead of through the wick proxy (docs/STRATEGY_IDEAS.md O-3c, O-6).",
   "path_glob": [
     "data/liquidations/*.jsonl.gz"
   ],

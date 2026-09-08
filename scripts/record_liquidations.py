@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """清算(強制決済)ストリームの記録 — `data/liquidations/<venue>_<YYYYMMDD>.jsonl.gz`。
 
-**このデータは買えない。記録を始めた日から先しか残らない。**(`docs/DATA_PERISHABILITY.md` §2)
-止まっている間の清算は永久に空白になるので、`deploy/start_all.bat` で常駐させる。
+**履歴の有無は取引所で違う**(全経路の実測: `docs/DATA_SOURCES/LIQUIDATION_HISTORY_SURVEY.md`)。
+Gate.io はローリング約 90 日、OKX は約 24 時間を REST で公開しているが、**Binance と BitMEX は
+ストリームのみで履歴が無い** — この 2 つは止まっている間が永久に空白になるので、
+`deploy/start_all.bat` で常駐させる。OKX の 24 時間は欠測の修復に使える。
 
 読み取り専用・認証なし・発注なし。書くのは上記ファイルだけ。
 

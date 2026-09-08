@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """清算(強制決済)フィードの到達確認 — オーナー PC で 1 回走らせるための道具。
 
-なぜ要るか: 清算フローの履歴は買えない。**記録を始めた日から先しか残らない**ので、
-どの取引所のストリームがオーナー PC から届くかを先に確かめる必要がある
-(`docs/STRATEGY_IDEAS.md` O-3c、L-025)。
+なぜ要るか: 清算フローは取引所によって**履歴の有無が違う**。Gate.io はローリング約 90 日、
+OKX は約 24 時間を公開しているが、**Binance と BitMEX はストリームのみで履歴が無い**
+(全経路の実測: `docs/DATA_SOURCES/LIQUIDATION_HISTORY_SURVEY.md`)。
+履歴を持たない取引所ぶんは自前で記録するしかないので、まずどれが届くかを確かめる。
+
+**このスクリプトは WS で記録できるかだけを見る。** Gate.io の 90 日は REST の取り込みで、
+別建て(未実装)。ここに Gate が出てこないのはそのため。
 
 このスクリプトがすること:
   1. 各取引所の REST に GET して応答コードを見る(**HEAD は使わない** — 偽の 404 を返す
@@ -46,7 +50,7 @@ FEEDS: dict[str, dict] = {
         "ws": "wss://fstream.binance.com/ws/!forceOrder@arr",
         "sub": None,
         "hit": lambda m: isinstance(m, dict) and m.get("e") == "forceOrder",
-        "note": "Binance USD-M 先物。全銘柄の強制決済。履歴なし(ストリームのみ)",
+        "note": "Binance USD-M 先物。全銘柄の強制決済。**履歴なし**(記録しないと永久に空白)",
     },
     "bybit": {
         "rest": "https://api.bybit.com/v5/market/time",
@@ -54,7 +58,7 @@ FEEDS: dict[str, dict] = {
         "sub": {"op": "subscribe", "args": ["allLiquidation.BTCUSDT"]},
         "hit": lambda m: isinstance(m, dict) and str(m.get("topic", "")).startswith(
             ("allLiquidation", "liquidation")),
-        "note": "Bybit linear perps。BTCUSDT の強制決済",
+        "note": "Bybit linear perps。**履歴なし**(公開アーカイブに清算フラグが無い)",
     },
     "okx": {
         "rest": ("https://www.okx.com/api/v5/public/liquidation-orders"
@@ -65,7 +69,7 @@ FEEDS: dict[str, dict] = {
         "hit": lambda m: isinstance(m, dict)
         and m.get("arg", {}).get("channel") == "liquidation-orders"
         and m.get("data"),
-        "note": "OKX SWAP。**REST に履歴あり**(ストリームが駄目でも遡れる可能性)",
+        "note": "OKX SWAP。REST はローリング約 24 時間(実測)= 欠測の修復に使える",
     },
     "bitmex": {
         "rest": "https://www.bitmex.com/api/v1/liquidation?symbol=XBTUSD&count=1",
@@ -73,7 +77,7 @@ FEEDS: dict[str, dict] = {
         "sub": None,
         "hit": lambda m: isinstance(m, dict) and m.get("table") == "liquidation"
         and m.get("action") in {"insert", "partial", "update"},
-        "note": "BitMEX XBTUSD。カツオの原典ベニュー",
+        "note": "BitMEX XBTUSD。カツオの原典ベニュー。**履歴なし**(公開約定に清算フラグも無い)",
     },
 }
 
