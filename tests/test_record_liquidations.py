@@ -110,3 +110,31 @@ def test_dataset_has_a_schema():
     assert schema["path_glob"] == ["data/liquidations/*.jsonl.gz"]
     assert set(schema["columns"]) == {"venue", "recv_us", "raw"}
     assert schema["known_defects"]
+
+
+# ---------------------------------------------------------------------------
+# 手順 P9: 集計サービスの鍵。**鍵を出力に出さない**ことが唯一の安全要件。
+# ---------------------------------------------------------------------------
+
+def test_depth_checker_never_prints_the_key():
+    """鍵は `.env` からしか読まず、出力には長さしか出さない。"""
+    src = (REPO / "scripts" / "check_liquidation_history_depth.py").read_text(encoding="utf-8")
+    # 鍵の変数をそのまま print / f-string に埋めていないこと
+    assert "print(key" not in src and "{key}" not in src
+    assert "os.environ.get(\"COINALYZE_API_KEY\"" in src
+    assert "load_dotenv" in src
+    # ヘッダとしてだけ使う
+    assert '"api_key": key' in src or "'api_key': key" in src
+
+
+def test_key_names_are_declared_in_env_example():
+    env = (REPO / ".env.example").read_text(encoding="utf-8")
+    assert "COINALYZE_API_KEY=" in env and "COINGLASS_API_KEY=" in env
+
+
+def test_procedure_p9_tells_the_owner_not_to_paste_the_key():
+    proc = (REPO / "docs" / "OWNER_PROCEDURES.md").read_text(encoding="utf-8")
+    assert "## P9" in proc
+    p9 = proc.split("## P9")[1]
+    assert "チャットに貼らないでください" in p9
+    assert ".env" in p9
