@@ -2,7 +2,7 @@
   "mode": "paper",
   "running": true,
   "api_connected": true,
-  "last_price": 12471269.0,
+  "last_price": 12231797.0,
   "balance_jpy": 189934.3139400007,
   "position_size": 0.0,
   "entry_price": null,
@@ -14,14 +14,14 @@
   "last_execution": null,
   "error_count": 0,
   "consecutive_api_errors": 0,
-  "last_data_time": 1788730213.8740182,
+  "last_data_time": 1788816609.572848,
   "kill_switch": null,
   "overlay": null,
   "active_modules": null,
   "api_condition": "NORMAL",
   "api_health_status": "NORMAL",
-  "api_health_age_sec": 10.4,
-  "api_latency_ms": 86.2,
+  "api_health_age_sec": 5.1,
+  "api_latency_ms": 36.4,
   "api_error_rate": 0.0,
-  "updated_at": 1788730213.8923142
+  "updated_at": 1788816609.589047
 }
