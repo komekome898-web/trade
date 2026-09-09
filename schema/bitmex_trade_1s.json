@@ -1,0 +1,29 @@
+{
+  "dataset": "bitmex_trade_1s",
+  "description": "One-second bars for BitMEX XBTUSD, derived from the exchange's public tick-level trade archive by scripts/fetch_bitmex_archive.py. Mirrored under a hard deadline: BitMEX's own announcement API said on 2026-09-01 that XBTUSD settles 2026-09-16 12:00 UTC and the exchange closes 2026-09-23, and nothing guarantees the archive outlives it. This is the venue the owner's katsuo bot traded, so it is the only data on which the historical half of the wick mechanism can be tested at all (docs/STRATEGY_IDEAS.md O-3, O-6 layer 1).",
+  "path_glob": [
+    "backtest_data/bitmex_trade_1s_XBTUSD/*/*.csv.gz"
+  ],
+  "source": "GET https://s3-eu-west-1.amazonaws.com/public.bitmex.com/data/trade/<YYYYMMDD>.csv.gz -- public, no auth. Each daily file holds every symbol; XBTUSD is about 84% of the rows. The archive spans 2014-11-22 to 2025-02-22 and stopped being updated well before the closure announcement, so 2025-02-22 is its end, not a fetch failure.",
+  "retention": "permanent snapshot, and unrepeatable: the upstream archive is expected to disappear with the exchange. Re-running the script only adds days not already in progress.json; it never rewrites a file.",
+  "columns": {
+    "ts": {"meaning": "the second the trades fell in", "unit": "ISO-8601 to the second", "tz": "UTC", "notes": "BitMEX writes 2019-09-04D00:00:02.645644000; the D is replaced by T and the sub-second part dropped. Seconds with no trade are ABSENT, not zero-filled -- about 76% of seconds have a trade on an active 2019 day, so a reader that assumes a continuous index will misalign"},
+    "o": {"meaning": "first trade price in the second", "unit": "USD", "tz": null, "notes": "trade prices, not quotes: there is no book in this dataset"},
+    "h": {"meaning": "highest trade price in the second", "unit": "USD", "tz": null, "notes": "the wick mechanism reads highs and lows, so this is the column that matters most"},
+    "l": {"meaning": "lowest trade price in the second", "unit": "USD", "tz": null, "notes": null},
+    "c": {"meaning": "last trade price in the second", "unit": "USD", "tz": null, "notes": null},
+    "vol": {"meaning": "total size traded in the second", "unit": "contracts (XBTUSD: 1 contract = 1 USD)", "tz": null, "notes": "inverse contract -- size is quoted in USD, not BTC. Converting to BTC needs division by price, which the raw archive also gives as homeNotional but this dataset does not keep"},
+    "buy_vol": {"meaning": "the part of vol whose aggressor was the buyer", "unit": "contracts", "tz": null, "notes": "sell-side aggression is vol - buy_vol. Forced liquidation of a long arrives as aggressive SELLING, so this column is how the cascade's direction is read here -- the archive carries no liquidation flag of its own"},
+    "n": {"meaning": "number of trades in the second", "unit": "count", "tz": null, "notes": null},
+    "max_size": {"meaning": "largest single trade in the second", "unit": "contracts", "tz": null, "notes": "kept because collapsing ticks to a second destroys the trade-size distribution, and a cascade is partly recognisable by whether the volume arrived as one block or as many small prints"},
+    "n_large": {"meaning": "trades of at least 100,000 contracts in the second", "unit": "count", "tz": null, "notes": "the 100,000 threshold is an arbitrary starting point, not a measured one. Any study that leans on it must justify the level or recompute from raw"}
+  },
+  "known_defects": [
+    "COVERAGE IS DEFINED BY progress.json, NOT BY THE FILES. A date missing from it was never fetched; a date present with absent=true is not published by BitMEX. Without checking it, a missing day cannot be told from a quiet day -- the negative-versus-unknown line again.",
+    "THIS IS A LOSSY DERIVATION AND THE SOURCE IS GOING AWAY. Individual trades, their ids, their exact sub-second times and their size distribution beyond max_size and n_large are gone, and once the archive is taken down they cannot be recovered. Any question needing tick resolution has to be asked before the exchange closes, using --keep-raw.",
+    "no liquidation flag exists anywhere in this data. The archive publishes trades only; BitMEX's REST /liquidation endpoint returns currently-open liquidation orders, not history. Liquidations can only be INFERRED here (from aggression, size and speed), never observed, which is exactly the proxy the katsuo mechanism was built on.",
+    "XBTUSD is an inverse contract quoted in USD, and 2019 prices are pre-halving and pre-2021 regime. Nothing about the size units or the volatility level transfers to a USDT-margined venue without conversion.",
+    "the archive ends 2025-02-22 for reasons of its own, so this dataset says nothing about BitMEX in 2025-2026. The final weeks in particular -- delisting from 2026-09-02, XBTUSD settling 2026-09-16 -- are a wind-down, and live recordings from that window must not be mixed in as if they were normal trading.",
+    "only the days actually requested exist. The mirror was built era by era against a deadline, so absence of a year means it was not fetched in time, not that it was unavailable."
+  ]
+}
