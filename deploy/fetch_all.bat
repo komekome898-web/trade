@@ -2,6 +2,13 @@
 rem Periodic data collection for Windows Task Scheduler (bitFlyer + external).
 cd /d "%~dp0.."
 if not exist logs mkdir logs
+rem The console codepage is cp932. A log line containing a character cp932
+rem cannot encode (an em dash, for one) raises UnicodeEncodeError inside
+rem print() and KILLS the component - that is how the liquidation recorder
+rem died on its first disconnect (2026-09-09). UTF-8 mode plus errors=replace
+rem makes output incapable of raising, for every script launched here.
+set PYTHONUTF8=1
+set PYTHONIOENCODING=utf-8:replace
 rem Time-critical, cheap collector FIRST (DATA_QA_TRIAGE: the 2026-08-31 2.9h OI gap
 rem was a stalled earlier step in this sequential batch, not an outage). Nothing
 rem network-heavy runs before it.

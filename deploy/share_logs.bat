@@ -73,9 +73,16 @@ rem matching directories one by one.
 echo [share_logs] adding retention snapshots (backtest_data\auto_*)
 for /d %%D in (backtest_data\auto_*) do git add "%%D"
 
-rem 清算ストリーム: 買えないデータなので、PC 1 コピーのままにしない (L-026)
-echo [share_logs] adding liquidation stream (data\liquidations)
-if exist "data\liquidations" git add -f "data\liquidations"
+rem Liquidation stream: cannot be bought back, so it must not stay as one copy
+rem on this PC (L-026). COPY it like everything else above - do NOT `git add -f`
+rem the live directory. The recorder appends to those .gz files continuously, so
+rem tracking them makes the working tree permanently dirty and `git pull
+rem --rebase` can then never run: restart_all.bat died on exactly that
+rem (2026-09-09). Copying leaves data\ untracked and the tree clean.
+echo [share_logs] copying liquidation stream (data\liquidations)
+if not exist paper_logs\liquidations mkdir paper_logs\liquidations
+if exist data\liquidations\*.jsonl.gz copy /Y data\liquidations\*.jsonl.gz paper_logs\liquidations\ >nul 2>&1
+git add paper_logs\liquidations
 rem Commit only when there is something staged (quiet no-op otherwise).
 git diff --cached --quiet || git commit -m "paper logs snapshot %date% %time%"
 

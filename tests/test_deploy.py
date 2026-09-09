@@ -56,13 +56,28 @@ def test_restart_all_aborts_before_restarting_on_a_failed_update():
     text = _text("restart_all.bat")
     # every step is guarded, and every guard leaves the script
     assert text.count("if errorlevel 1 (") == 5
-    assert text.count("goto :aborted") == 6         # 5 steps + the missing venv
+    # one exit per errorlevel guard, plus the two preconditions that are checked
+    # before anything runs at all: no venv, and a merge left unfinished
+    assert text.count("goto :aborted") == 7
     assert "if not exist \"%PIP%\"" in text        # no venv is a failure too
     stop = text.index('call "%~dp0stop_all.bat"')
-    for guard in ("*** FAILED: git pull ***", "*** FAILED: pip install ***"):
+    for guard in ("*** FAILED: git pull ***", "*** FAILED: pip install ***",
+                  "*** BLOCKED: an earlier merge was never finished ***"):
         assert text.index(guard) < stop
     assert text.rstrip().endswith("exit /b 1")     # aborted path is the last
     assert ":aborted" in text and "exit /b 0" in text
+
+
+def test_restart_all_names_the_way_out_of_an_unfinished_merge():
+    """git's own error ("You have not concluded your merge") does not say how to
+    get out, and on 2026-09-09 that stalled every pull and every restart until
+    it was asked about. The file that hits the wall names the one command."""
+    text = _text("restart_all.bat")
+    assert 'if exist ".git\\MERGE_HEAD"' in text
+    merge_guard = text.index("*** BLOCKED: an earlier merge was never finished ***")
+    assert text.index("git commit --no-edit", merge_guard) > merge_guard
+    # and it must be checked BEFORE the pull that it would otherwise break
+    assert merge_guard < text.index("git pull --rebase")
 
 
 def test_restart_all_verifies_components_are_gone_before_starting():
