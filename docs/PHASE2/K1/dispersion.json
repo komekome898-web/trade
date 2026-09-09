@@ -7,6 +7,8 @@
   "max_hold": 96,
   "feet": {
     "1": {
+      "foot": 1,
+      "variant": "both",
       "bars": 1523877,
       "signals": 165917,
       "signal_rate": 0.1089,
@@ -23,7 +25,66 @@
       "capped_at_96": 1153,
       "capped_share": 0.0069
     },
+    "1:invalid": {
+      "foot": 1,
+      "variant": "invalid",
+      "bars": 1523877,
+      "signals": 165917,
+      "signal_rate": 0.1089,
+      "trades": 165917,
+      "sd_trade_bp": 85.6,
+      "iqr_trade_bp": [
+        -29.0,
+        -7.5
+      ],
+      "hold_median": 7,
+      "hold_p25": 2,
+      "hold_p75": 34,
+      "hold_p95": 96.0,
+      "capped_at_96": 25735,
+      "capped_share": 0.1551
+    },
+    "1:opposite": {
+      "foot": 1,
+      "variant": "opposite",
+      "bars": 1523877,
+      "signals": 165917,
+      "signal_rate": 0.1089,
+      "trades": 165917,
+      "sd_trade_bp": 57.1,
+      "iqr_trade_bp": [
+        -18.4,
+        23.6
+      ],
+      "hold_median": 7,
+      "hold_p25": 3,
+      "hold_p75": 16,
+      "hold_p95": 65.0,
+      "capped_at_96": 5072,
+      "capped_share": 0.0306
+    },
+    "1:global_lc": {
+      "foot": 1,
+      "variant": "global_lc",
+      "bars": 1523877,
+      "signals": 165917,
+      "signal_rate": 0.1089,
+      "trades": 165917,
+      "sd_trade_bp": 40.8,
+      "iqr_trade_bp": [
+        -16.4,
+        13.3
+      ],
+      "hold_median": 3,
+      "hold_p25": 1,
+      "hold_p75": 6,
+      "hold_p95": 20.0,
+      "capped_at_96": 771,
+      "capped_share": 0.0046
+    },
     "3": {
+      "foot": 3,
+      "variant": "both",
       "bars": 520960,
       "signals": 107945,
       "signal_rate": 0.2072,
@@ -40,7 +101,66 @@
       "capped_at_96": 209,
       "capped_share": 0.0019
     },
+    "3:invalid": {
+      "foot": 3,
+      "variant": "invalid",
+      "bars": 520960,
+      "signals": 107945,
+      "signal_rate": 0.2072,
+      "trades": 107945,
+      "sd_trade_bp": 119.5,
+      "iqr_trade_bp": [
+        -43.5,
+        -10.2
+      ],
+      "hold_median": 7,
+      "hold_p25": 2,
+      "hold_p75": 33,
+      "hold_p95": 96.0,
+      "capped_at_96": 16395,
+      "capped_share": 0.1519
+    },
+    "3:opposite": {
+      "foot": 3,
+      "variant": "opposite",
+      "bars": 520960,
+      "signals": 107945,
+      "signal_rate": 0.2072,
+      "trades": 107945,
+      "sd_trade_bp": 69.4,
+      "iqr_trade_bp": [
+        -19.4,
+        24.1
+      ],
+      "hold_median": 5,
+      "hold_p25": 2,
+      "hold_p75": 11,
+      "hold_p95": 31.0,
+      "capped_at_96": 784,
+      "capped_share": 0.0073
+    },
+    "3:global_lc": {
+      "foot": 3,
+      "variant": "global_lc",
+      "bars": 520960,
+      "signals": 107945,
+      "signal_rate": 0.2072,
+      "trades": 107945,
+      "sd_trade_bp": 51.5,
+      "iqr_trade_bp": [
+        -20.2,
+        15.2
+      ],
+      "hold_median": 3,
+      "hold_p25": 1,
+      "hold_p75": 5,
+      "hold_p95": 13.0,
+      "capped_at_96": 133,
+      "capped_share": 0.0012
+    },
     "5": {
+      "foot": 5,
+      "variant": "both",
       "bars": 314169,
       "signals": 80858,
       "signal_rate": 0.2574,
@@ -57,7 +177,66 @@
       "capped_at_96": 71,
       "capped_share": 0.0009
     },
+    "5:invalid": {
+      "foot": 5,
+      "variant": "invalid",
+      "bars": 314169,
+      "signals": 80858,
+      "signal_rate": 0.2574,
+      "trades": 80858,
+      "sd_trade_bp": 150.4,
+      "iqr_trade_bp": [
+        -52.8,
+        -11.8
+      ],
+      "hold_median": 7.0,
+      "hold_p25": 2.0,
+      "hold_p75": 34.0,
+      "hold_p95": 96.0,
+      "capped_at_96": 12501,
+      "capped_share": 0.1546
+    },
+    "5:opposite": {
+      "foot": 5,
+      "variant": "opposite",
+      "bars": 314169,
+      "signals": 80858,
+      "signal_rate": 0.2574,
+      "trades": 80858,
+      "sd_trade_bp": 79.5,
+      "iqr_trade_bp": [
+        -20.0,
+        26.1
+      ],
+      "hold_median": 5.0,
+      "hold_p25": 2.0,
+      "hold_p75": 9.0,
+      "hold_p95": 24.0,
+      "capped_at_96": 262,
+      "capped_share": 0.0032
+    },
+    "5:global_lc": {
+      "foot": 5,
+      "variant": "global_lc",
+      "bars": 314169,
+      "signals": 80858,
+      "signal_rate": 0.2574,
+      "trades": 80858,
+      "sd_trade_bp": 61.4,
+      "iqr_trade_bp": [
+        -22.6,
+        17.7
+      ],
+      "hold_median": 2.0,
+      "hold_p25": 1.0,
+      "hold_p75": 5.0,
+      "hold_p95": 12.0,
+      "capped_at_96": 33,
+      "capped_share": 0.0004
+    },
     "15": {
+      "foot": 15,
+      "variant": "both",
       "bars": 105056,
       "signals": 38610,
       "signal_rate": 0.3675,
@@ -74,7 +253,66 @@
       "capped_at_96": 1,
       "capped_share": 0.0
     },
+    "15:invalid": {
+      "foot": 15,
+      "variant": "invalid",
+      "bars": 105056,
+      "signals": 38610,
+      "signal_rate": 0.3675,
+      "trades": 38609,
+      "sd_trade_bp": 254.9,
+      "iqr_trade_bp": [
+        -86.7,
+        -17.8
+      ],
+      "hold_median": 8,
+      "hold_p25": 2,
+      "hold_p75": 37,
+      "hold_p95": 96.0,
+      "capped_at_96": 6271,
+      "capped_share": 0.1624
+    },
+    "15:opposite": {
+      "foot": 15,
+      "variant": "opposite",
+      "bars": 105056,
+      "signals": 38610,
+      "signal_rate": 0.3675,
+      "trades": 38609,
+      "sd_trade_bp": 113.3,
+      "iqr_trade_bp": [
+        -26.0,
+        30.5
+      ],
+      "hold_median": 4,
+      "hold_p25": 2,
+      "hold_p75": 7,
+      "hold_p95": 16.0,
+      "capped_at_96": 17,
+      "capped_share": 0.0004
+    },
+    "15:global_lc": {
+      "foot": 15,
+      "variant": "global_lc",
+      "bars": 105056,
+      "signals": 38610,
+      "signal_rate": 0.3675,
+      "trades": 38609,
+      "sd_trade_bp": 90.3,
+      "iqr_trade_bp": [
+        -31.7,
+        22.4
+      ],
+      "hold_median": 2,
+      "hold_p25": 1,
+      "hold_p75": 4,
+      "hold_p95": 9.0,
+      "capped_at_96": 1,
+      "capped_share": 0.0
+    },
     "30": {
+      "foot": 30,
+      "variant": "both",
       "bars": 52544,
       "signals": 22331,
       "signal_rate": 0.425,
@@ -91,7 +329,66 @@
       "capped_at_96": 1,
       "capped_share": 0.0
     },
+    "30:invalid": {
+      "foot": 30,
+      "variant": "invalid",
+      "bars": 52544,
+      "signals": 22331,
+      "signal_rate": 0.425,
+      "trades": 22330,
+      "sd_trade_bp": 350.1,
+      "iqr_trade_bp": [
+        -123.2,
+        -23.8
+      ],
+      "hold_median": 8.0,
+      "hold_p25": 3.0,
+      "hold_p75": 40.0,
+      "hold_p95": 96.0,
+      "capped_at_96": 3764,
+      "capped_share": 0.1686
+    },
+    "30:opposite": {
+      "foot": 30,
+      "variant": "opposite",
+      "bars": 52544,
+      "signals": 22331,
+      "signal_rate": 0.425,
+      "trades": 22330,
+      "sd_trade_bp": 153.3,
+      "iqr_trade_bp": [
+        -29.4,
+        38.8
+      ],
+      "hold_median": 3.0,
+      "hold_p25": 2.0,
+      "hold_p75": 6.0,
+      "hold_p95": 14.0,
+      "capped_at_96": 2,
+      "capped_share": 0.0001
+    },
+    "30:global_lc": {
+      "foot": 30,
+      "variant": "global_lc",
+      "bars": 52544,
+      "signals": 22331,
+      "signal_rate": 0.425,
+      "trades": 22330,
+      "sd_trade_bp": 118.9,
+      "iqr_trade_bp": [
+        -39.6,
+        29.7
+      ],
+      "hold_median": 2.0,
+      "hold_p25": 1.0,
+      "hold_p75": 4.0,
+      "hold_p95": 8.0,
+      "capped_at_96": 0,
+      "capped_share": 0.0
+    },
     "60": {
+      "foot": 60,
+      "variant": "both",
       "bars": 26276,
       "signals": 12472,
       "signal_rate": 0.4747,
@@ -100,6 +397,63 @@
       "iqr_trade_bp": [
         -57.5,
         37.3
+      ],
+      "hold_median": 2.0,
+      "hold_p25": 1.0,
+      "hold_p75": 4.0,
+      "hold_p95": 8.0,
+      "capped_at_96": 0,
+      "capped_share": 0.0
+    },
+    "60:invalid": {
+      "foot": 60,
+      "variant": "invalid",
+      "bars": 26276,
+      "signals": 12472,
+      "signal_rate": 0.4747,
+      "trades": 12472,
+      "sd_trade_bp": 496.8,
+      "iqr_trade_bp": [
+        -182.7,
+        -35.4
+      ],
+      "hold_median": 8.0,
+      "hold_p25": 3.0,
+      "hold_p75": 40.0,
+      "hold_p95": 96.0,
+      "capped_at_96": 2065,
+      "capped_share": 0.1656
+    },
+    "60:opposite": {
+      "foot": 60,
+      "variant": "opposite",
+      "bars": 26276,
+      "signals": 12472,
+      "signal_rate": 0.4747,
+      "trades": 12472,
+      "sd_trade_bp": 190.6,
+      "iqr_trade_bp": [
+        -40.4,
+        46.3
+      ],
+      "hold_median": 3.0,
+      "hold_p25": 2.0,
+      "hold_p75": 6.0,
+      "hold_p95": 12.0,
+      "capped_at_96": 1,
+      "capped_share": 0.0001
+    },
+    "60:global_lc": {
+      "foot": 60,
+      "variant": "global_lc",
+      "bars": 26276,
+      "signals": 12472,
+      "signal_rate": 0.4747,
+      "trades": 12472,
+      "sd_trade_bp": 153.1,
+      "iqr_trade_bp": [
+        -55.5,
+        35.9
       ],
       "hold_median": 2.0,
       "hold_p25": 1.0,

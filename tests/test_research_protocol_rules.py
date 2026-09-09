@@ -79,6 +79,42 @@ def test_k1_prereg_carries_no_fee_bar():
     assert "L-048" in text
 
 
+def test_preparatory_measurements_are_held_to_the_same_standard():
+    """§1.1: 事前登録の数値を作る測定にも、定義との突き合わせ・サニティ・
+    独立再現・網羅性を課す(I-005)。
+
+    K1 では準備測定が §4.2 の決済ルールの片方の枝を実装しておらず、その値が
+    事前登録に載り、オーナーの指示を覆す根拠にまでなっていた。"""
+    text = _text(PROTOCOL)
+    assert "1.1" in text
+    assert "準備測定も測定である" in text
+    # 4 つの要求がすべて残っていること
+    assert "条項ごとの突き合わせ" in text or "条項を 2 つ読むだけ" in text
+    assert "決定を覆す測定は、独立に再現するまで根拠にしない" in text
+    assert "網羅性" in text
+
+
+def test_k1_dispersion_table_matches_the_measured_json():
+    """事前登録 §5.2 の `sd_trade` が、再現可能な測定の出力と一致すること。
+
+    旧表は**測定を伴わない数字**(決済ルールの片枝を落とした実装の出力)が
+    残っていた。数字と出力を機械的に結び、手で書き換えられないようにする。"""
+    import json
+
+    out = REPO / "docs" / "PHASE2" / "K1" / "dispersion.json"
+    assert out.exists(), "dispersion.json が無い(事前登録の sd_trade が再現できない)"
+    data = json.loads(out.read_text(encoding="utf-8"))
+    text = _text(K1_PREREG)
+    feet = data["feet"]
+    # 族の 6 水準すべてが測られていること(1/3/30 分が未測定だったのが I-005 の欠陥 1)
+    for foot in (1, 3, 5, 15, 30, 60):
+        assert str(foot) in feet, f"{foot} 分の sd_trade が測られていない"
+        sd = feet[str(foot)]["sd_trade_bp"]
+        assert f"{sd:.1f} bp" in text, f"{foot} 分の sd_trade {sd} bp が事前登録に無い"
+    # 撤回した旧値が本文の表に戻っていないこと(訂正枠の中での引用は別扱い)
+    assert "| 15 分 | 70.0 bp | 74.5 bp | **255.2 bp**" not in text
+
+
 def test_k1_family_size_is_stated_once():
     """族の大きさが文書内で食い違っていないこと(§6 が 324 のまま残っていた)。"""
     text = _text(K1_PREREG)
