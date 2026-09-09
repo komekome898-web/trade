@@ -124,12 +124,29 @@ def c1_counts_match(text: str, sections: dict[str, str]) -> list[Finding]:
 
     L-049: §7 の番号が `1, 2, 3, 3b, 3c, 4, 5` と枝番だったため、
     **著者自身が「6 種」と数え間違えた**。人は自分の書いた表を数え直さない。
+
+    照合するのは「**これからこの数だけ並べる**」という宣言、すなわち
+    **主張の 2 行以内に表 / 番号付きリストが始まるもの**だけ。
+    散文が挟まる「11 通りの組がある」「最大 144 通りの探索面」は宣言ではないので対象外
+    (K1 で実際に誤検出した。**誤検出を放置すると「どうせ誤検出」で本物を見逃す**)。
     """
     out = []
     for head, body in sections.items():
-        for m in re.finditer(r"\*\*?(\d+)\s*(種|個|水準|通り)\*\*?", body):
+        lines = body.splitlines()
+        offsets, pos = [], 0
+        for ln in lines:
+            offsets.append(pos)
+            pos += len(ln) + 1
+        for i, ln in enumerate(lines):
+            m = re.search(r"\*\*?(\d+)\s*(種|個|水準|通り)\*\*?", ln)
+            if not m:
+                continue
+            nxt = [x.strip() for x in lines[i + 1:i + 3]]
+            if not any(x.startswith("|") or re.match(r"^\d+\.\s", x) for x in nxt):
+                continue
             claimed = int(m.group(1))
-            actual = table_rows(body, m.end()) or list_items(body, m.end())
+            after = offsets[i] + len(ln)
+            actual = table_rows(body, after) or list_items(body, after)
             if actual and actual != claimed:
                 out.append(
                     Finding(
@@ -267,6 +284,8 @@ def c6_coverage(text: str, measured: Path | None) -> list[Finding]:
 
     I-005: 族には 6 水準あるのに準備測定は 3 水準しか埋めておらず、
     しかも埋まっていた 3 つの値も**事前登録の定義を実装していない測定**から出ていた。
+    L-052: 族が 3 軸(足 × 門 × 強さ)になったので、**全軸**を見る
+    (旧版は足の軸しか見ておらず、独立監査 #8 に「隣の軸に同じ穴」と指摘された)。
     """
     if measured is None or not measured.exists():
         return [
@@ -277,33 +296,40 @@ def c6_coverage(text: str, measured: Path | None) -> list[Finding]:
             )
         ]
     data = json.loads(measured.read_text(encoding="utf-8"))
-    feet = {k: v for k, v in data.get("feet", {}).items() if ":" not in k}
+    cells = data.get("cells", {})
+    fam = data.get("family", {})
     out = []
-    # 族の水準を事前登録から読む(§3 の足の行)
-    m = re.search(r"\*\*足\*\*\s*`foot`\s*\|\s*([0-9 /]+)分", text)
-    if m:
-        declared = [x.strip() for x in m.group(1).split("/") if x.strip()]
-        missing = [d for d in declared if d not in feet]
-        if missing:
-            out.append(
-                Finding(
-                    "C6 網羅性",
-                    "I-005: 族の一部が未測定のまま完成と称していた",
-                    f"族に宣言された水準 {declared} のうち **{missing} が測定されていない**",
-                )
-            )
-    for foot, r in sorted(feet.items(), key=lambda kv: int(kv[0])):
-        sd = r.get("sd_trade_bp")
-        if sd is None:
+    if not cells or not fam:
+        return [
+            Finding("C6 網羅性", "I-005: 準備測定が族の一部しか埋めていなかった",
+                    "測定出力に `cells` / `family` が無い(族の全セルを測った形になっていない)")
+        ]
+    # 族の全セルが測られているか(足 × 門 × 強さ の直積)
+    expected = {f"{f}|{g}|{s}" for f in fam["feet"] for g in fam["gates"] for s in fam["strengths"]}
+    missing = sorted(expected - set(cells))
+    if missing:
+        out.append(
+            Finding("C6 網羅性", "I-005: 族の一部が未測定のまま完成と称していた",
+                    f"族 {len(expected)} セルのうち **{len(missing)} セルが未測定**: "
+                    + ", ".join(missing[:5]) + (" …" if len(missing) > 5 else ""))
+        )
+    # 事前登録が族の大きさを正しく書いているか
+    m = re.search(r"族の大きさ = (\d+) × (\d+) × (\d+) = (\d+)", text)
+    if m and int(m.group(4)) != len(expected):
+        out.append(
+            Finding("C6 網羅性", "L-046: 族の大きさの直し忘れ(§6 が 324 のまま残っていた)",
+                    f"事前登録は族を **{m.group(4)}** と書くが、測定出力は **{len(expected)}** セル")
+        )
+    # 本文に載せた代表セルの数値が測定出力と一致するか
+    for key, cell in cells.items():
+        if "|s19/b24|both" not in key:
             continue
-        if f"{sd:.1f} bp" not in text:
+        sd = cell.get("sd_trade_bp")
+        if sd is not None and f"{sd}" not in text:
             out.append(
-                Finding(
-                    "C6 数値の一致",
-                    "I-005: 事前登録の数値が、測定を伴わない値だった",
-                    f"{foot} 分の `sd_trade` = {sd} bp が事前登録の本文に無い"
-                    "(測定と文書がずれている)",
-                )
+                Finding("C6 数値の一致", "I-005: 事前登録の数値が、測定を伴わない値だった",
+                        f"{key} の `sd_trade` = {sd} bp が事前登録の本文に無い"
+                        "(測定と文書がずれている)")
             )
     return out
 

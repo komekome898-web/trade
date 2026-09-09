@@ -91,25 +91,51 @@ def test_c5_fires_when_jargon_has_no_glossary():
 
 
 def test_c6_fires_when_the_family_is_only_partly_measured(tmp_path: Path):
-    """I-005 の再現: 族に 6 水準あるのに、準備測定は 3 水準しか埋まっていない。"""
+    """I-005 の再現: 族の直積のうち一部しか測っていない。
+
+    L-052 で族が 3 軸(足 × 門 × 強さ)になったので、**全軸**を見る。
+    旧版は足の軸しか見ておらず、独立監査 #8 に「隣の軸に同じ穴が残っている」と
+    指摘された — **検査そのものが網羅性を欠いていた**。"""
     measured = tmp_path / "m.json"
     measured.write_text(
-        json.dumps({"feet": {f: {"sd_trade_bp": 1.0} for f in ("5", "15", "60")}}),
+        json.dumps({
+            "family": {"feet": [5, 15], "gates": ["s19/b24", "s19/b-"], "strengths": ["both"]},
+            "cells": {"5|s19/b24|both": {"n": 1, "sd_trade_bp": 1.0}},
+        }),
         encoding="utf-8",
     )
-    text = "| **足** `foot` | 1 / 3 / 5 / 15 / 30 / 60 分 | 6 |\n1.0 bp\n"
-    findings = pf.c6_coverage(text, measured)
+    findings = pf.c6_coverage("1.0", measured)
     assert "C6" in _codes(findings)
-    assert "'1'" in findings[0].detail and "'30'" in findings[0].detail
+    assert "3 セルが未測定" in findings[0].detail
+
+
+def test_c6_fires_when_the_family_size_in_the_text_disagrees(tmp_path: Path):
+    """L-046 の再現: `h` を軸から外したのに §6 が族の大きさを直し忘れていた。"""
+    measured = tmp_path / "m.json"
+    measured.write_text(
+        json.dumps({
+            "family": {"feet": [5], "gates": ["a", "b"], "strengths": ["x", "y"]},
+            "cells": {f"5|{g}|{s}": {"n": 1, "sd_trade_bp": 1.0}
+                      for g in ("a", "b") for s in ("x", "y")},
+        }),
+        encoding="utf-8",
+    )
+    findings = pf.c6_coverage("族の大きさ = 1 × 2 × 3 = 6 である。1.0", measured)
+    assert any("測定出力は **4** セル" in f.detail for f in findings)
 
 
 def test_c6_fires_when_the_document_disagrees_with_the_measurement(tmp_path: Path):
     """I-005 の核心: 事前登録の数値が、測定出力と違う(手で書いた値が残っている)。"""
     measured = tmp_path / "m.json"
-    measured.write_text(json.dumps({"feet": {"15": {"sd_trade_bp": 92.8}}}), encoding="utf-8")
-    text = "15 分の sd_trade は **255.2 bp** である\n"  # 旧・誤りの値
-    findings = pf.c6_coverage(text, measured)
-    assert any("92.8" in f.detail for f in findings)
+    measured.write_text(
+        json.dumps({
+            "family": {"feet": [15], "gates": ["s19/b24"], "strengths": ["both"]},
+            "cells": {"15|s19/b24|both": {"n": 1, "sd_trade_bp": 112.6}},
+        }),
+        encoding="utf-8",
+    )
+    findings = pf.c6_coverage("15 分の sd_trade は **255.2 bp** である\n", measured)
+    assert any("112.6" in f.detail for f in findings)
 
 
 def test_c7_fires_on_a_bare_threshold_in_the_judgment(tmp_path: Path):
@@ -119,6 +145,18 @@ def test_c7_fires_on_a_bare_threshold_in_the_judgment(tmp_path: Path):
 
 
 # --------------------------------------------------------------- 陰性 --------
+
+
+def test_c1_ignores_a_count_that_is_not_a_declaration():
+    """「11 通りの組がある」「最大 144 通りの探索面」のように、**主張の直後に表が来ない**ものは
+    「これからこの数だけ並べる」という宣言ではないので照合しない。
+    K1 で実際に誤検出した。**誤検出を放置すると「どうせ誤検出」で本物を見逃す。**"""
+    text = (
+        "## 3. 族\n\n残るのは **11 通り**: a b c。\n\n"
+        "**必ず入れる 3 つの参照点**:\n\n| 組 | 意味 |\n|---|---|\n"
+        "| a | 1 |\n| b | 2 |\n| c | 3 |\n"
+    )
+    assert not pf.c1_counts_match(text, pf.split_sections(text))
 
 
 def test_a_correct_count_is_silent():
