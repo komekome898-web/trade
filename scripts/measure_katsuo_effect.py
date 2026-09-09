@@ -89,8 +89,13 @@ def label(gate) -> str:
     return f"s{st}/b{'-' if b is None else int(b)}"
 
 
-def signals(bars, small, big):
-    """意図どおりのシグナル。返すのは足ごとの (signal, lcprice, candle_sign, strength)。"""
+def signals(bars, small, big, trunc=True):
+    """意図どおりのシグナル。返すのは足ごとの (signal, lcprice, candle_sign, strength)。
+
+    `trunc=True`(既定)は原典どおり `int()` でドル単位に切り捨ててから向きを比べる。
+    `trunc=False` は切り捨てずに比べる。**原典からの逸脱**なので、HANDOFF §3 手 2 のとおり
+    「原典どおり」と並べて出す用途に限る。既定を変えない(他の測定はすべて原典どおり)。
+    """
     out = []
     for _ts, o, h, l, c in bars:
         candle = c - o
@@ -100,9 +105,10 @@ def signals(bars, small, big):
             continue
         top, under = (h - c, o - l) if csign == 1 else (h - o, c - l)
         body = abs(candle)
-        if int(top) > int(under):
+        t_cmp, u_cmp = (int(top), int(under)) if trunc else (top, under)
+        if t_cmp > u_cmp:
             sig, w, lc = -1, top, h
-        elif int(under) > int(top):
+        elif u_cmp > t_cmp:
             sig, w, lc = 1, under, l
         else:
             out.append((0, 0.0, csign, ""))

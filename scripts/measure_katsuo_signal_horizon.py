@@ -103,8 +103,15 @@ def day_bootstrap(day_sum, day_n, rng, reps=BOOTSTRAP):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
-    ap.add_argument("--out", default=str(REPO / "docs" / "PHASE2" / "K1" / "signal_horizon.json"))
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--no-trunc", action="store_true",
+                    help="向きの比較で int() 切り捨てを外す(HANDOFF §3 手 2。原典からの逸脱なので"
+                         "既定の出力とは別ファイルに書く)")
     args = ap.parse_args()
+    trunc = not args.no_trunc
+    if args.out is None:
+        args.out = str(REPO / "docs" / "PHASE2" / "K1"
+                       / ("signal_horizon.json" if trunc else "signal_horizon_notrunc.json"))
 
     print(f"探索区間 {EXPLORE_START} 〜 {EXPLORE_END}(判定区間 2020-2021 には触れない)")
     seconds = base.load_seconds(EXPLORE_START, EXPLORE_END)
@@ -155,7 +162,7 @@ def main() -> None:
             }
 
         for g in gs:
-            sg = eff.signals(bars, g[0], g[1])
+            sg = eff.signals(bars, g[0], g[1], trunc=trunc)
             idx = [(i, s[0], s[3]) for i, s in enumerate(sg) if s[0] != 0]
             for keep in STRENGTHS:
                 sub = idx if keep == "both" else [x for x in idx if x[2] == keep]
@@ -254,6 +261,7 @@ def main() -> None:
         "note": ("建玉を持たず、シグナルの足から h 本先の終値までの符号付きリターン。"
                  "決済ルールを使わない。経費は引いていない。探索区間 2017-2019 のみ。"),
         "explore": [EXPLORE_START.isoformat(), EXPLORE_END.isoformat()],
+        "trunc": trunc,
         "bootstrap_reps": BOOTSTRAP, "seed": SEED,
         "family": {"feet": list(args.feet), "gates": [eff.label(g) for g in gs],
                    "strengths": list(STRENGTHS), "horizons": list(HORIZONS)},
