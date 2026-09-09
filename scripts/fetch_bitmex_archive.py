@@ -179,8 +179,12 @@ def main() -> int:
         "resolution": "1-second bars derived from tick data; raw ticks kept only where "
                       "--keep-raw was used. o/h/l/c/vol/buy_vol/n plus max_size and "
                       f"n_large (trades >= {LARGE_TRADE}) to retain trade-size texture.",
-        "days_requested": len(days),
-        "days_with_data": len(got),
+        # 累積(progress 全体)と今回ぶんを混ぜない。混ぜると
+        # 「731 日要求して 1,826 日ぶんある」という無意味な行になる。
+        "days_requested_this_run": len(days),
+        "range_this_run": [d0.isoformat(), d1.isoformat()],
+        "days_covered_total": len(got),
+        "range_covered_total": [min(got), max(got)] if got else None,
         "days_absent_from_archive": sum(1 for v in progress.values() if v["absent"]),
         "bars": sum(v["bars"] for v in got.values()),
         "trades": sum(v["trades"] for v in got.values()),
