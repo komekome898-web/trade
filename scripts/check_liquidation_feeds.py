@@ -42,6 +42,14 @@ except ImportError:  # pragma: no cover - reported, not raised
 
 REPO = Path(__file__).resolve().parents[1]
 
+# **出力で死なせない。** Windows の既定コンソールは cp932 で、表現できない文字を
+# print すると UnicodeEncodeError になる(記録器が実際にこれで落ちた 2026-09-09)。
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        pass
+
 # 清算フィードの定義。sub = 接続後に送る購読メッセージ(None なら URL に含む)。
 # 「清算らしいメッセージか」の判定は hit() が行う — 板やハートビートを数えないため。
 FEEDS: dict[str, dict] = {
@@ -50,7 +58,21 @@ FEEDS: dict[str, dict] = {
         "ws": "wss://fstream.binance.com/ws/!forceOrder@arr",
         "sub": None,
         "hit": lambda m: isinstance(m, dict) and m.get("e") == "forceOrder",
+        # **対照ストリーム**: 最も賑やかな約定ストリーム。清算が 0 件でも
+        # これが来るなら「静かなだけ」、これも来ないなら「この経路には
+        # fstream のデータが流れていない」と切り分けられる。
+        # 2026-09-09、開発セッションの経路では対照すら 0 件だった。
+        "control_ws": "wss://fstream.binance.com/ws/btcusdt@aggTrade",
         "note": "Binance USD-M 先物。全銘柄の強制決済。**履歴なし**(記録しないと永久に空白)",
+    },
+    "binance_cm": {
+        "rest": "https://dapi.binance.com/dapi/v1/ping",
+        "ws": "wss://dstream.binance.com/ws/!forceOrder@arr",
+        "sub": None,
+        "hit": lambda m: isinstance(m, dict) and m.get("e") == "forceOrder",
+        "control_ws": "wss://dstream.binance.com/ws/btcusd_perp@aggTrade",
+        "note": "Binance COIN-M(現物建て証拠金)。USD-M の代わりではなく別系統。"
+                "**履歴なし**。2026-09-09 に実際に届くことを確認",
     },
     "bybit": {
         "rest": "https://api.bybit.com/v5/market/time",
@@ -133,6 +155,32 @@ async def check_ws(name: str, spec: dict, wait_sec: float) -> dict:
     return out
 
 
+async def check_control(spec: dict, wait_sec: float = 15.0) -> dict | None:
+    """対照ストリームが来るかだけ見る(清算そのものは見ない)。
+
+    「清算が 0 件」の理由を**静かなだけ / データが流れていない**に切り分ける。
+    対照が来ないのに清算を待っても意味がない。
+    """
+    url = spec.get("control_ws")
+    if not url or websockets is None:
+        return None
+    n = 0
+    try:
+        async with websockets.connect(url, ssl=ssl.create_default_context(),
+                                      open_timeout=20, close_timeout=5) as ws:
+            deadline = time.monotonic() + wait_sec
+            while time.monotonic() < deadline:
+                try:
+                    await asyncio.wait_for(
+                        ws.recv(), timeout=max(1.0, deadline - time.monotonic()))
+                except asyncio.TimeoutError:
+                    break
+                n += 1
+    except Exception as e:  # noqa: BLE001
+        return {"messages": n, "error": f"{type(e).__name__}: {e}"[:200]}
+    return {"messages": n}
+
+
 async def run(venues: list[str], wait_sec: float) -> dict:
     result = {"checked_utc": datetime.now(timezone.utc).isoformat(),
               "wait_sec": wait_sec, "venues": {}}
@@ -148,15 +196,29 @@ async def run(venues: list[str], wait_sec: float) -> dict:
                   f"{ws['liquidations']} 件")
         else:
             print(f"  WS    接続不可  {ws.get('error', '')[:100]}")
-        result["venues"][name] = {"rest": rest, "ws": ws, "note": spec["note"]}
+        entry = {"rest": rest, "ws": ws, "note": spec["note"]}
+        if spec.get("control_ws") and ws.get("connected") and not ws["liquidations"]:
+            ctrl = await check_control(spec)
+            entry["control"] = ctrl
+            if ctrl is not None:
+                print(f"  対照  {ctrl['messages']} 件"
+                      + ("  <- 0 件 = この経路にデータが流れていない"
+                         if not ctrl["messages"] else "  (= 清算が無いだけ)"))
+        result["venues"][name] = entry
     return result
 
 
 def verdict(v: dict) -> str:
     """記録に使えるか。**清算が 0 件でも接続できていれば「使える」**
-    (清算は常時起きるものではない)。"""
+    (清算は常時起きるものではない)。ただし**対照ストリームも 0 件**なら
+    「静かなだけ」ではなく**データが流れていない**ので、使えるとは言わない。"""
     if v["ws"].get("connected"):
-        return "使える(記録可)" if v["ws"]["liquidations"] else "使える(接続OK・清算未発生)"
+        if v["ws"]["liquidations"]:
+            return "使える(記録可)"
+        ctrl = v.get("control")
+        if ctrl is not None and not ctrl.get("messages"):
+            return "接続はできるがデータが来ない(対照も 0 件)"
+        return "使える(接続OK・清算未発生)"
     if v["rest"]["ok"]:
         return "WS 不可 / REST は届く(ポーリングなら可)"
     return "届かない"

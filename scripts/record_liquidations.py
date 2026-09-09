@@ -28,6 +28,7 @@ import argparse
 import asyncio
 import gzip
 import json
+import os
 import ssl
 import sys
 import time
@@ -42,12 +43,35 @@ except ImportError:
 
 REPO = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO / "data" / "liquidations"
+LOCK_PATH = REPO / "data" / "liquidations.lock"
+
+# **出力で死なせない。** Windows の既定コンソールは cp932 で、そこに cp932 が
+# 表現できない文字(em ダッシュなど)を print すると UnicodeEncodeError が上がる。
+# 2026-09-09、記録器はこれで**最初の切断時に落ちた** — 例外処理の中の
+# ログ行そのものが例外を投げたため。ログは記録の付随物であって、
+# 記録を止める理由にしてはならない。
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 - 古い Python / 差し替えられた stdout
+        pass
 
 # 購読の定義。`keepalive` はその取引所が要求する生存確認(None なら
 # websockets 自身の ping フレームで足りる)。
 VENUES: dict[str, dict] = {
+    # USD-M。**接続はできるがデータが来ないことがある**(2026-09-09 実測):
+    # 開発セッションの経路では対照の btcusdt@aggTrade すら 0 件、
+    # オーナー PC でも 12 時間 0 件。購読名の誤りではなく fstream への
+    # 経路の問題と見ている。届く経路では最大手の清算が全銘柄で取れるので残す。
     "binance_um": {
         "url": "wss://fstream.binance.com/ws/!forceOrder@arr",
+        "sub": None,
+        "keepalive": None,
+    },
+    # COIN-M。**こちらは実際に届いた**(同 2026-09-09、40 秒で 13 件)。
+    # USD-M とは別商品(証拠金が現物建て)なので代替ではなく別系統として持つ。
+    "binance_cm": {
+        "url": "wss://dstream.binance.com/ws/!forceOrder@arr",
         "sub": None,
         "keepalive": None,
     },
@@ -71,6 +95,8 @@ VENUES: dict[str, dict] = {
 
 BACKOFF_START = 2.0
 BACKOFF_MAX = 120.0
+LOCK_STALE_SEC = 180.0          # これを過ぎた鍵は死んだプロセスのものとみなす
+LOCK_BEAT_SEC = 45.0            # 生きている間はこの間隔で鍵の時刻を更新する
 
 
 def _log(msg: str) -> None:
@@ -159,9 +185,59 @@ async def record_venue(venue: str, deadline: float | None) -> None:
         _log(f"{venue}: 終了 {writer.lines} 行")
 
 
-async def run(venues: list[str], minutes: float | None) -> None:
+def _acquire_lock() -> object | None:
+    """**同じファイルに 2 つのプロセスが追記するのを防ぐ。**
+
+    書き出しは gzip の追記なので、2 プロセスが同時に書くとメンバが混ざって
+    ファイルごと読めなくなりうる。start_all の起動ガードは stop_all の
+    取りこぼしなどで擦り抜けうるので、記録器自身が持つ(2026-09-09)。
+    """
+    try:
+        sys.path.insert(0, str(REPO / "src"))
+        from bot.jpx.run_lock import LockBusy, RunLock
+    except Exception:  # noqa: BLE001 - 鍵が無いより記録が動く方が大事
+        _log("警告: run_lock を読めないので二重起動ガードなしで動く")
+        return None
+    # 常駐プロセスなので **鍵の時刻を更新し続ける**(`_heartbeat`)。
+    # RunLock の陳腐化判定は「取得してからの経過」なので、更新しないと
+    # 数分後には自分の鍵が陳腐扱いになり、ガードが無くなってしまう。
+    # 逆に更新だけでは、クラッシュ後に鍵が残って**二度と起動できない**ので、
+    # 陳腐化の窓は短く取る(落ちたら次のウォッチドッグで復帰する)。
+    lock = RunLock(LOCK_PATH, stale_after_sec=LOCK_STALE_SEC)
+    try:
+        lock.acquire()
+    except LockBusy as e:
+        _log(f"既に記録器が動いている({e})。二重に書かないので終了する。"
+             "止めたい場合は deploy\\stop_all.bat を使う")
+        return False
+    return lock
+
+
+async def _heartbeat(lock) -> None:
+    """鍵の時刻を更新し続ける = 「このプロセスは生きている」の表明。"""
+    while True:
+        await asyncio.sleep(LOCK_BEAT_SEC)
+        try:
+            LOCK_PATH.write_text(
+                json.dumps({"pid": os.getpid(), "ts": time.time()}), encoding="utf-8")
+        except Exception as e:  # noqa: BLE001 - 鍵の更新失敗で記録は止めない
+            _log(f"警告: 鍵の更新に失敗 {type(e).__name__}: {str(e)[:80]}")
+
+
+async def run(venues: list[str], minutes: float | None, lock=None) -> None:
     deadline = None if minutes is None else time.monotonic() + minutes * 60
-    await asyncio.gather(*(record_venue(v, deadline) for v in venues))
+    beat = asyncio.create_task(_heartbeat(lock)) if lock else None
+    try:
+        # **1 つの取引所が落ちても他を巻き込まない。** return_exceptions が無いと
+        # 最初の例外で gather 全体が終わり、他の取引所の記録まで止まる。
+        results = await asyncio.gather(
+            *(record_venue(v, deadline) for v in venues), return_exceptions=True)
+        for venue, r in zip(venues, results):
+            if isinstance(r, BaseException) and not isinstance(r, asyncio.CancelledError):
+                _log(f"{venue}: 異常終了 {type(r).__name__}: {str(r)[:200]}")
+    finally:
+        if beat is not None:
+            beat.cancel()
 
 
 def main() -> int:
@@ -178,11 +254,18 @@ def main() -> int:
         print(f"不明なベニュー: {unknown}。選べるのは {list(VENUES)}", file=sys.stderr)
         return 2
 
+    lock = _acquire_lock()
+    if lock is False:
+        return 3
+
     _log(f"記録開始: {venues} -> {OUT_DIR}")
     try:
-        asyncio.run(run(venues, args.minutes))
+        asyncio.run(run(venues, args.minutes, lock))
     except KeyboardInterrupt:
         _log("停止(Ctrl+C)")
+    finally:
+        if lock:
+            lock.release()
     return 0
 
 

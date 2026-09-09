@@ -8,6 +8,7 @@ from __future__ import annotations
 import gzip
 import importlib.util
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -204,3 +205,86 @@ def test_the_gate_dataset_has_a_schema():
     assert set(schema["columns"]) >= {"time", "size", "fill_price", "order_price"}
     # 被覆はサイドカーが真実、という約束が明文化されていること
     assert any("progress.json" in d for d in schema["known_defects"])
+
+
+# ---------------------------------------------------------------------------
+# 2026-09-09 の事故から。記録器は **落ちない** ことと **二重に書かない** ことが
+# 本体の機能より優先する — 止まっていた時間は永久に埋まらないため。
+# ---------------------------------------------------------------------------
+
+def test_logging_cannot_kill_the_recorder_on_a_cp932_console():
+    """Windows の既定コンソールは cp932。表現できない文字(em ダッシュ等)を
+    print すると UnicodeEncodeError が上がり、**切断処理の中のログ行が
+    プロセスを殺した**(実際に起きた)。出力側を UTF-8 + replace に固定する。"""
+    for name in ("record_liquidations", "check_liquidation_feeds"):
+        src = (REPO / "scripts" / f"{name}.py").read_text(encoding="utf-8")
+        assert 'reconfigure(encoding="utf-8", errors="replace")' in src, name
+
+
+def test_launchers_force_utf8_for_every_component():
+    """個々のスクリプトに頼らず、起動側でも UTF-8 を強制する
+    (同じ地雷は他の 40 スクリプトにも埋まっている)。"""
+    for bat in ("start_all.bat", "fetch_all.bat"):
+        text = (REPO / "deploy" / bat).read_text(encoding="utf-8", errors="surrogateescape")
+        assert "PYTHONUTF8=1" in text, bat
+        assert "PYTHONIOENCODING=utf-8:replace" in text, bat
+
+
+def test_every_launched_component_is_also_stopped_and_verified():
+    """**start_all が起動するものは、stop_all が止め、restart_all が確認する。**
+    記録器がこの 2 つから漏れていたため、restart_all は「再起動した」と表示
+    しながら記録器だけ古いコードで走り続けていた(2026-09-09)。"""
+    deploy = REPO / "deploy"
+    start = deploy / "start_all.bat"
+    launched = re.findall(r'^call :launch\s+"[^"]+"\s+"[^"]+"\s+(\S+)',
+                          start.read_text(encoding="utf-8", errors="surrogateescape"),
+                          flags=re.M)
+    assert "record_liquidations.py" in launched, "前提が変わった"
+    stop = (deploy / "stop_all.bat").read_text(encoding="utf-8", errors="surrogateescape")
+    restart = (deploy / "restart_all.bat").read_text(encoding="utf-8", errors="surrogateescape")
+    for token in launched:
+        assert token in stop, f"stop_all が {token} を止めない"
+        assert token in restart, f"restart_all が {token} の停止を確認しない"
+
+
+def test_the_recorder_refuses_to_run_twice(tmp_path, monkeypatch):
+    """2 プロセスが同じ gzip に追記するとメンバが混ざって読めなくなりうる。
+    鍵は**取れなければ起動しない**(警告ではなく拒否)。"""
+    monkeypatch.setattr(rec, "LOCK_PATH", tmp_path / "liq.lock")
+    first = rec._acquire_lock()
+    assert first not in (False, None), "1 つ目が鍵を取れていない"
+    assert rec._acquire_lock() is False, "2 つ目が起動してしまう"
+    first.release()
+    second = rec._acquire_lock()
+    assert second not in (False, None), "解放後に取り直せない"
+    second.release()
+
+
+def test_stop_all_clears_the_lock_so_a_restart_can_start():
+    """強制終了された記録器の鍵が残ると、直後の start_all が起動できない。
+    殺した側が片付ける。"""
+    stop = (REPO / "deploy" / "stop_all.bat").read_text(
+        encoding="utf-8", errors="surrogateescape")
+    assert "liquidations.lock" in stop and "del" in stop
+
+
+def test_one_dead_venue_does_not_take_the_others_down():
+    """gather は既定だと最初の例外で全体を畳む。1 取引所の異常で
+    他の取引所の記録まで止めない。"""
+    src = (REPO / "scripts" / "record_liquidations.py").read_text(encoding="utf-8")
+    assert "return_exceptions=True" in src
+
+
+def test_binance_control_stream_separates_quiet_from_blocked():
+    """**「清算 0 件」を「静かなだけ」と読むのは、対照が来ている時だけ**。
+    対照も 0 件なら、その経路にはデータが流れていない。"""
+    assert "control_ws" in chk.FEEDS["binance_um"]
+    quiet_but_alive = {"rest": {"ok": True},
+                       "ws": {"connected": True, "liquidations": 0},
+                       "control": {"messages": 120}}
+    silent = {"rest": {"ok": True},
+              "ws": {"connected": True, "liquidations": 0},
+              "control": {"messages": 0}}
+    assert "使える" in chk.verdict(quiet_but_alive)
+    assert "使える" not in chk.verdict(silent)
+    assert "データが来ない" in chk.verdict(silent)

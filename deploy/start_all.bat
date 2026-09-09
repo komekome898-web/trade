@@ -13,6 +13,13 @@ rem  revive it. stop_all.bat still covers a stray instance.
 rem ============================================================
 cd /d "%~dp0.."
 if not exist logs mkdir logs
+rem The console codepage is cp932. A log line containing a character cp932
+rem cannot encode (an em dash, for one) raises UnicodeEncodeError inside
+rem print() and KILLS the component - that is how the liquidation recorder
+rem died on its first disconnect (2026-09-09). UTF-8 mode plus errors=replace
+rem makes output incapable of raising, for every script launched here.
+set PYTHONUTF8=1
+set PYTHONIOENCODING=utf-8:replace
 
 call :launch "main-bot"    "scripts\run_paper.py"       run_paper.py       "logs\run_paper.out.log"
 call :launch "ws-recorder" "scripts\record_realtime.py" record_realtime.py "logs\recorder.out.log"
