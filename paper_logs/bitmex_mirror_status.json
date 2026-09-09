@@ -1,17 +1,24 @@
 {
-  "updated_utc": "2026-09-09T03:00:53+00:00",
+  "updated_utc": "2026-09-09T21:25:45+00:00",
   "plan": {
     "trade": {
       "files": 3746,
       "bytes": 47935215305,
-      "missing_files": 3743,
-      "missing_bytes": 47935207930
+      "missing_files": 3726,
+      "missing_bytes": 47935129329
+    },
+    "quote": {
+      "files": 3746,
+      "bytes": 197790496383,
+      "missing_files": 3746,
+      "missing_bytes": 197790496383
     }
   },
-  "downloaded_files": 3,
-  "downloaded_bytes": 15768,
-  "remaining_files": 0,
+  "downloaded_files": 5675,
+  "downloaded_bytes": 71716290782,
+  "remaining_files": 1797,
+  "remaining_bytes": 174009334930,
+  "rate_mb_s": 1.11,
   "failed": [],
-  "free_bytes": 15684161536,
-  "note": "STATUS.json is the truth about what is on disk. A key listed in failed was attempted and did not complete; re-running retries it. A key in neither the directory nor failed was never attempted."
+  "free_bytes": 354944548864
 }

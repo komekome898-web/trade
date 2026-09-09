@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-08T21:19:41.444240+00:00",
+  "generated_at": "2026-09-09T19:29:53.432242+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -592,6 +592,20 @@
     {
       "unit": "auto_okx_open_interest_5m_20260908",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260908\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260909",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260909\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -1845,6 +1859,18 @@
       ]
     },
     {
+      "unit": "bitmex_trade_1s_XBTUSD",
+      "md5sums_path": "backtest_data\\bitmex_trade_1s_XBTUSD\\MD5SUMS",
+      "file_count": 682,
+      "status": "verified",
+      "checked": 682,
+      "matched": 682,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
       "unit": "board_round_20260904",
       "md5sums_path": "backtest_data\\board_round_20260904\\MD5SUMS",
       "file_count": 5,
@@ -2034,6 +2060,18 @@
           "actual": "d659197a5c59a46f9fa16ae8aad98811"
         }
       ],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "gate_liquidations_20260908",
+      "md5sums_path": "backtest_data\\gate_liquidations_20260908\\MD5SUMS",
+      "file_count": 3,
+      "status": "verified",
+      "checked": 3,
+      "matched": 3,
+      "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
       "extra": []
@@ -2969,19 +3007,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 2438,
+    "checked": 3125,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 66,
-    "verified": 36,
+    "unit_count": 69,
+    "verified": 39,
     "verified_line_ending_only": 21,
     "newly_sealed": 0,
     "mismatch_units": 9,
     "total_mismatches": 1,
     "total_line_ending_only": 99,
     "total_missing": 954,
-    "total_extra_untracked": 459,
+    "total_extra_untracked": 460,
     "ledger_mismatches": 0
   },
   "ok": false
