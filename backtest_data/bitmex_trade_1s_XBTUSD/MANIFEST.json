@@ -1,13 +1,13 @@
 {
   "source": "https://s3-eu-west-1.amazonaws.com/public.bitmex.com/data/trade/",
   "symbol": "XBTUSD",
-  "fetched_utc": "2026-09-09T02:55:02+00:00",
+  "fetched_utc": "2026-09-09T03:34:49+00:00",
   "why_now": "BitMEX announced the exchange closes 2026-09-23 and XBTUSD settles 2026-09-16 12:00 UTC (its own announcement API, read 2026-09-09). The public trade archive already stops at 2025-02-22 and is not guaranteed to outlive the exchange.",
   "resolution": "1-second bars derived from tick data; raw ticks kept only where --keep-raw was used. o/h/l/c/vol/buy_vol/n plus max_size and n_large (trades >= 100000) to retain trade-size texture.",
-  "days_requested": 365,
-  "days_with_data": 365,
+  "days_requested": 730,
+  "days_with_data": 1095,
   "days_absent_from_archive": 0,
-  "bars": 20319947,
-  "trades": 230089227,
+  "bars": 49054818,
+  "trades": 449902574,
   "coverage_note": "progress.json is the truth about coverage: a date missing from it was never fetched; a date present with absent=true is not published by BitMEX."
 }
