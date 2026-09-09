@@ -185,4 +185,7 @@
 - 測定の実行: `PYTHONPATH=src:scripts python scripts/measure_katsuo_*.py`
   (`scripts` をパスに入れないと相互 import が通らない)
 - **全族の実行は 10〜20 分かかる。** `delegated-study` §4 のとおり切り離して回す
+- **測定は 1 本ずつしか回せない。** 秒バー 4,900 万行を Python のリストに載せるので
+  **1 プロセス約 9 GB**、箱は 15 GB。2026-09-09 に 2 本同時に走らせて **2 本とも OOM で落ちた**
+  (`dmesg` に `Memory cgroup out of memory` が 2 件)。落ちたプロセスはログに 1 行しか残さない
 - 1 秒バーは `backtest_data/bitmex_trade_1s_XBTUSD/`(2017-2021、1,826 日 / 7,874 万本)
