@@ -59,14 +59,26 @@ BOOTSTRAP = 200
 SEED = 20260909
 
 
+def cell_rng(*parts) -> random.Random:
+    """**セルごとに独立な乱数**。種はセルの名前から決まるので、
+    他のセルを足しても・順番を変えても・一部の足だけ回しても、そのセルの区間は同じになる。"""
+    return random.Random(f"{SEED}|" + "|".join(str(p) for p in parts))
+
+
 def day_bootstrap(day_sum, day_n, rng, reps=BOOTSTRAP):
     """日単位のブロックブートストラップで平均の 95% 区間を返す。
 
     **日ごとの (合計, 件数) を先に畳んでから日を復元抽出する。**
     抽出した日の値を全部プールして平均を取るのと**厳密に同じ**で、
     プールを毎回作り直さない分だけ速い(セル数が 4 桁になるので必要)。
+
+    `rng` は**セルごとに作る**(`cell_rng` 参照)。単一の乱数列を全セルで使い回すと、
+    **測る項目を 1 つ足しただけで既に報告した区間が動く。** 実際 2026-09-09 に
+    年ごとの区間を足したところ、全セルの区間がわずかに変わり、
+    0 を跨がないセルの数が 767 → 770 に動いた。**「種 20260909」と書いてある以上、
+    それは再現できなければならない。**
     """
-    days = list(day_sum.keys())
+    days = sorted(day_sum.keys())   # dict の並び順に依存させない
     if not days:
         return (float("nan"), float("nan"))
     sums = [day_sum[d] for d in days]
@@ -94,7 +106,6 @@ def main() -> None:
     ap.add_argument("--out", default=str(REPO / "docs" / "PHASE2" / "K1" / "signal_horizon.json"))
     args = ap.parse_args()
 
-    rng = random.Random(SEED)
     print(f"探索区間 {EXPLORE_START} 〜 {EXPLORE_END}(判定区間 2020-2021 には触れない)")
     seconds = base.load_seconds(EXPLORE_START, EXPLORE_END)
     gs = eff.gates()
@@ -121,6 +132,7 @@ def main() -> None:
             tot = 0.0
             cnt = 0
             gap = 0
+            byear: dict[str, list] = {}
             for i in range(n_bars - h):
                 if close[i] <= 0:
                     continue
@@ -130,11 +142,16 @@ def main() -> None:
                 cnt += 1
                 if ts[i + h] - ts[i] != nominal * h:
                     gap += 1
+                b = byear.setdefault(str(year[i]), [0.0, 0])
+                b[0] += v
+                b[1] += 1
             fwd[h] = arr
             baseline[f"{foot}|{h}"] = {
                 "foot": foot, "h": h, "n": cnt,
                 "mean_fwd_bp": round(tot / cnt, 4) if cnt else None,
                 "gap_share": round(gap / cnt, 4) if cnt else None,
+                "per_year": {y: {"n": v[1], "mean_fwd_bp": round(v[0] / v[1], 4)}
+                             for y, v in sorted(byear.items()) if v[1]},
             }
 
         for g in gs:
@@ -155,6 +172,9 @@ def main() -> None:
                     buy_tot = sell_tot = 0.0
                     buy_n = sell_n = 0
                     ysum: dict[str, list] = {}
+                    # 年ごとの区間も出す。年で符号が変わる行が誤差の範囲かを読むため
+                    yday: dict[str, tuple[dict, dict]] = {}
+                    ybuy: dict[str, list] = {}
                     for i, sig, _stg in sub:
                         v = arr[i]
                         if v is None:
@@ -174,15 +194,27 @@ def main() -> None:
                         else:
                             sell_tot += v
                             sell_n += 1
-                        y = ysum.setdefault(str(year[i]), [0.0, 0])
+                        ykey = str(year[i])
+                        y = ysum.setdefault(ykey, [0.0, 0])
                         y[0] += r
                         y[1] += 1
+                        ys, yn = yday.setdefault(ykey, ({}, {}))
+                        ys[d] = ys.get(d, 0.0) + r
+                        yn[d] = yn.get(d, 0) + 1
+                        yb = ybuy.setdefault(ykey, [0.0, 0, 0.0, 0])
+                        if sig == 1:
+                            yb[0] += v
+                            yb[1] += 1
+                        else:
+                            yb[2] += v
+                            yb[3] += 1
                     if cnt < 30:
                         continue
                     mean = tot / cnt
                     var = (sq - cnt * mean * mean) / (cnt - 1) if cnt > 1 else float("nan")
-                    lo, hi = day_bootstrap(dsum, dn, rng)
-                    cells[f"{foot}|{eff.label(g)}|{keep}|{h}"] = {
+                    key = f"{foot}|{eff.label(g)}|{keep}|{h}"
+                    lo, hi = day_bootstrap(dsum, dn, cell_rng(key))
+                    cells[key] = {
                         "foot": foot, "gate": eff.label(g), "strength": keep, "h": h,
                         "n": cnt,
                         "mean_bp": round(mean, 4),
@@ -194,8 +226,22 @@ def main() -> None:
                         "buy_fwd_bp": round(buy_tot / buy_n, 4) if buy_n else None,
                         "sell_n": sell_n,
                         "sell_fwd_bp": round(sell_tot / sell_n, 4) if sell_n else None,
-                        "per_year": {y: {"n": v[1], "mean_bp": round(v[0] / v[1], 3)}
-                                     for y, v in sorted(ysum.items()) if v[1]},
+                        "per_year": {
+                            y: {
+                                "n": v[1],
+                                "mean_bp": round(v[0] / v[1], 3),
+                                "ci95_bp": [round(x, 3) for x in
+                                            day_bootstrap(yday[y][0], yday[y][1],
+                                                          cell_rng(key, y))],
+                                "days": len(yday[y][0]),
+                                "buy_n": ybuy[y][1],
+                                "buy_fwd_bp": (round(ybuy[y][0] / ybuy[y][1], 3)
+                                               if ybuy[y][1] else None),
+                                "sell_n": ybuy[y][3],
+                                "sell_fwd_bp": (round(ybuy[y][2] / ybuy[y][3], 3)
+                                                if ybuy[y][3] else None),
+                            }
+                            for y, v in sorted(ysum.items()) if v[1]},
                     }
         done = [v for k, v in cells.items() if v["foot"] == foot]
         if done:
