@@ -57,13 +57,24 @@ if exist ".git\MERGE_HEAD" (
   echo   copy the output into the Claude chat.
   goto :aborted
 )
-git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
+rem --autostash: a rebase refuses to start on a dirty tree, and this machine
+rem writes data files continuously. Anything uncommitted is set aside and put
+rem back automatically instead of stopping the update.
+git pull --rebase --autostash origin claude/bitflyer-trading-bot-hhxxaf
 if errorlevel 1 (
   echo.
   echo *** FAILED: git pull ***
   echo Nothing was stopped - the bot is still running the old code.
   echo A conflict or a local edit blocks the pull; copy the lines
   echo above into the Claude chat.
+  echo.
+  echo If it says "unstaged changes", see which files with:
+  echo.
+  echo     git status --short
+  echo.
+  echo   A live data file that git is TRACKING is the usual cause - it is
+  echo   being appended to right now, so it is never clean. Those belong in
+  echo   paper_logs as copies, not tracked in place.
   goto :aborted
 )
 echo       ok

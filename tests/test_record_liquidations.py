@@ -102,13 +102,14 @@ def test_the_recorder_is_wired_into_start_all_and_share_logs():
     share = (REPO / "deploy" / "share_logs.bat").read_text(
         encoding="utf-8", errors="surrogateescape")
     assert "record_liquidations.py" in start_all
-    assert "data\\liquidations" in share
+    assert "paper_logs\\liquidations" in share
 
 
 def test_dataset_has_a_schema():
     """DATA_QA の不変条件: 全ファイルに schema がある。"""
     schema = json.loads((REPO / "schema" / "liquidations.json").read_text(encoding="utf-8"))
-    assert schema["path_glob"] == ["data/liquidations/*.jsonl.gz"]
+    assert schema["path_glob"] == ["data/liquidations/*.jsonl.gz",
+                                   "paper_logs/liquidations/*.jsonl.gz"]
     assert set(schema["columns"]) == {"venue", "recv_us", "raw"}
     assert schema["known_defects"]
 
@@ -288,3 +289,21 @@ def test_binance_control_stream_separates_quiet_from_blocked():
     assert "使える" in chk.verdict(quiet_but_alive)
     assert "使える" not in chk.verdict(silent)
     assert "データが来ない" in chk.verdict(silent)
+
+
+def test_share_logs_never_tracks_a_file_that_is_being_written(tmp_path=None):
+    """**書き込み中のファイルを git に追跡させない。**
+
+    追跡すると、常駐の書き手がいる限り作業ツリーが永久に汚れ、
+    `git pull --rebase` が二度と通らなくなる — `restart_all.bat` が
+    実際にそれで止まった(2026-09-09)。他の生データと同じく **コピーを共有**する。
+    """
+    share = (REPO / "deploy" / "share_logs.bat").read_text(
+        encoding="utf-8", errors="surrogateescape")
+    for line in share.splitlines():
+        if line.strip().startswith("rem") or "git add" not in line:
+            continue
+        # data\ で始まるパス = 常駐プロセスが書いている生データ。
+        # backtest_data\ は書き終わったスナップショットなので対象外。
+        if re.search(r"(?<![A-Za-z0-9_])data\\", line):
+            raise AssertionError(f"生データを直接追跡している: {line.strip()}")
