@@ -196,7 +196,7 @@ CLAUDE.md §5.2(L-020)は「**なぜを出さずに判定だけ返す報告は�
 残るのは **11 通り**: `s-/b-` `s-/b24` `s-/b40` `s10/b-` `s10/b24` `s10/b40`
 `s19/b-` `s19/b24` `s19/b40` `s30/b-` `s30/b40`。
 
-**族の大きさ = 198**(足 1 / 3 / 5 / 15 / 30 / 60 × 門 11 通り × 強さ strong / weak / both)**。** これを多重性に算入する(§6)。
+**族の大きさ = {{family.size}}**(足 {{family.feet}} × 門 11 通り × 強さ {{family.strengths}})**。** これを多重性に算入する(§6)。
 
 **必ず入れる 3 つの参照点**(何と比べているかを見失わないため):
 
@@ -464,16 +464,16 @@ r = signal × (close[決済] / close[建玉] - 1) × 10^4
 
 | 足 | 取引 `n` | **`sd_trade`** | `sd_sig(2)` | 保有中央値 | 上限 96 本 到達 |
 |---|---|---|---|---|---|
-| 1 分 | 36,213 | **83.3** | 58.4 | 4 | 6.2% |
-| 3 分 | 44,440 | **88** | 67.6 | 3 | 2.4% |
-| 5 分 | 43,781 | **93.7** | 75.2 | 3 | 1.2% |
-| 15 分 | 33,915 | **112.6** | 99.1 | 2 | 0.2% |
-| 30 分 | 24,882 | **134.4** | 122.7 | 2 | 0.1% |
-| 60 分 | 16,803 | **161.4** | 155 | 2 | 0.0% |
+| 1 分 | {{cell:1|s19/b24|both.n}} | **{{cell:1|s19/b24|both.sd_trade_bp}}** | {{cell:1|s19/b24|both.sd_sig2_bp}} | {{cell:1|s19/b24|both.hold_median}} | {{cell:1|s19/b24|both.capped_share}} |
+| 3 分 | {{cell:3|s19/b24|both.n}} | **{{cell:3|s19/b24|both.sd_trade_bp}}** | {{cell:3|s19/b24|both.sd_sig2_bp}} | {{cell:3|s19/b24|both.hold_median}} | {{cell:3|s19/b24|both.capped_share}} |
+| 5 分 | {{cell:5|s19/b24|both.n}} | **{{cell:5|s19/b24|both.sd_trade_bp}}** | {{cell:5|s19/b24|both.sd_sig2_bp}} | {{cell:5|s19/b24|both.hold_median}} | {{cell:5|s19/b24|both.capped_share}} |
+| 15 分 | {{cell:15|s19/b24|both.n}} | **{{cell:15|s19/b24|both.sd_trade_bp}}** | {{cell:15|s19/b24|both.sd_sig2_bp}} | {{cell:15|s19/b24|both.hold_median}} | {{cell:15|s19/b24|both.capped_share}} |
+| 30 分 | {{cell:30|s19/b24|both.n}} | **{{cell:30|s19/b24|both.sd_trade_bp}}** | {{cell:30|s19/b24|both.sd_sig2_bp}} | {{cell:30|s19/b24|both.hold_median}} | {{cell:30|s19/b24|both.capped_share}} |
+| 60 分 | {{cell:60|s19/b24|both.n}} | **{{cell:60|s19/b24|both.sd_trade_bp}}** | {{cell:60|s19/b24|both.sd_sig2_bp}} | {{cell:60|s19/b24|both.hold_median}} | {{cell:60|s19/b24|both.capped_share}} |
 
-**族 198 セル全体の分布**: `n` は **最小 3,678 / 中央 18,941 / 最大 172,306**。
-**`n < 1,000` のセルは 0 件。** 最悪は `60|s30/b-|strong`(n = 3,678、
-`sd_trade` = 182.3 bp)。
+**族 198 セル全体の分布**: `n` は **最小 {{stat.min_n}} / 中央 {{stat.median_n}} / 最大 {{stat.max_n}}**。
+**`n < 1,000` のセルは 0 件。** 最悪は `{{stat.argmin_n}}`(n = {{stat.min_n}}、
+`sd_trade` = {{cell:60|s30/b-|strong.sd_trade_bp}} bp)。
 
 > **検出力の桁感**(t 公式。**判定には使わない** — 実際の MDE は §8.6 の段 0 で帰無から出す):
 > `2.80 × sd/√n` で見ると、**15 分足の代表セルで約 1.7 bp、最悪セルで約 8.4 bp**。
@@ -497,11 +497,11 @@ r = signal × (close[決済] / close[建玉] - 1) × 10^4
 
 | 決済 | 色条件 | `sd_trade` | 保有中央値 | 上限到達 |
 |---|---|---|---|---|
-| **両方(主指標)** | **あり(原典)** | **112.6** | **2** | 0.2% |
-| 両方 | なし | 112 | 2 | 0.2% |
-| 無効化のみ | あり(原典) | 363 | 18 | 23.0% |
-| 無効化のみ | なし | 352.6 | 15 | 21.8% |
-| 反対シグナルのみ | あり / なし | 127.5 | 3 | 0.4% |
+| **両方(主指標)** | **あり(原典)** | **{{exit:15|both|colour=1.sd_trade_bp}}** | **{{exit:15|both|colour=1.hold_median}}** | {{exit:15|both|colour=1.capped_share}} |
+| 両方 | なし | {{exit:15|both|colour=0.sd_trade_bp}} | {{exit:15|both|colour=0.hold_median}} | {{exit:15|both|colour=0.capped_share}} |
+| 無効化のみ | あり(原典) | {{exit:15|invalid|colour=1.sd_trade_bp}} | {{exit:15|invalid|colour=1.hold_median}} | {{exit:15|invalid|colour=1.capped_share}} |
+| 無効化のみ | なし | {{exit:15|invalid|colour=0.sd_trade_bp}} | {{exit:15|invalid|colour=0.hold_median}} | {{exit:15|invalid|colour=0.capped_share}} |
+| 反対シグナルのみ | あり / なし | {{exit:15|opposite|colour=1.sd_trade_bp}} | {{exit:15|opposite|colour=1.hold_median}} | {{exit:15|opposite|colour=1.capped_share}} |
 
 **読み取れること(「なぜ」の材料。判定ではない)**:
 

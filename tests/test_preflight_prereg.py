@@ -182,8 +182,119 @@ def test_a_table_header_is_not_a_definition():
 # ----------------------------------------------------- 本番の事前登録 --------
 
 
+# 2 回目の独立監査で出た**未処理の指摘**。トリアージで直したらここから消す。
+# **「0 件」と主張する代わりに「既知の分だけ」と主張する**ことで、
+# 新しい欠陥が入った瞬間に赤くなる一方、既知の未処理を隠さずに済む。
+KNOWN_OPEN = {
+    "「**判定区間の判定規則**」が事前登録に無い",       # 監査 2 回目 #13
+    "「**信頼区間の算出方法**」が事前登録に無い",       # 監査 2 回目 #17
+    "「**補助帰無の手順**」が事前登録に無い",           # 監査 2 回目 #26
+}
+
+
 @pytest.mark.skipif(not K1.exists(), reason="K1 の事前登録が無い")
-def test_k1_passes_preflight():
-    """**K1 は層 1 を通っていること。** 実行の前提(層 1 の不合格条件)。"""
-    findings = pf.run(K1, K1_MEASURED)
-    assert not findings, "\n".join(str(f) for f in findings)
+def test_k1_preflight_has_only_the_known_open_findings():
+    """**K1 は層 1 を通っていないこと自体は隠さない。**
+
+    2 回目の独立監査で重大 18 件が出ており、K1 は実行できる状態にない。
+    ここで「0 件」を主張すると、直っていないものを直ったことにしてしまう。
+    そこで**既知の未処理と完全に一致すること**を主張する:
+
+    - 新しい欠陥が入れば **知らない指摘が増えて赤くなる**
+    - 既知の未処理を直せば **KNOWN_OPEN から消し忘れて赤くなる**
+
+    どちらの向きにも効く。**K1 の実行可否は `KNOWN_OPEN` が空になってから。**
+    """
+    current = {f.detail for f in pf.run(K1, K1_MEASURED)}
+    unexpected = current - KNOWN_OPEN
+    assert not unexpected, "**新しい欠陥**:\n" + "\n".join(sorted(unexpected))
+    fixed = KNOWN_OPEN - current
+    assert not fixed, ("直ったのに KNOWN_OPEN に残っている(消すこと):\n"
+                       + "\n".join(sorted(fixed)))
+
+
+@pytest.mark.skipif(not K1.exists(), reason="K1 の事前登録が無い")
+def test_k1_is_not_executable_while_findings_remain():
+    """**未処理がある間は「実行してよい」と言えない**ことを、テストとして固定する。"""
+    if KNOWN_OPEN:
+        assert pf.run(K1, K1_MEASURED), "KNOWN_OPEN が空でないのに層 1 が 0 件を返している"
+
+
+# ------------------------------------- L-054 で足した 3 つ(型を潰す検査) ----
+
+
+def test_c8_fires_when_the_document_is_hand_edited(tmp_path: Path):
+    """L-054: 数値を手で書ける限り、直した端から測定とずれる。
+
+    **PREREG.md は生成物**であり、`.tmpl` + 測定出力から作り直せなければならない。
+    ここでは「手で編集された文書」を再現して発火を見る。"""
+    (tmp_path / "dispersion.json").write_text(
+        json.dumps({"family": {"feet": [15], "gates": ["g"], "strengths": ["both"]},
+                    "cells": {"15|g|both": {"n": 10, "sd_trade_bp": 112.6, "capped_share": 0.0}}}),
+        encoding="utf-8")
+    (tmp_path / "PREREG.md.tmpl").write_text("sd は {{cell:15|g|both.sd_trade_bp}} bp\n", encoding="utf-8")
+    doc = tmp_path / "PREREG.md"
+    doc.write_text("sd は 999 bp\n", encoding="utf-8")  # 手で書き換えられた状態
+    findings = pf.c8_generated_not_typed(doc)
+    assert "C8" in _codes(findings)
+    assert "一致しない" in findings[0].detail
+
+
+def test_c8_fires_when_a_reference_cannot_be_resolved(tmp_path: Path):
+    """参照が解決できないのは、数値が欠けているのと同じ。黙って空にしない。"""
+    (tmp_path / "dispersion.json").write_text(
+        json.dumps({"family": {"feet": [15], "gates": ["g"], "strengths": ["both"]}, "cells": {}}),
+        encoding="utf-8")
+    (tmp_path / "PREREG.md.tmpl").write_text("{{cell:15|g|both.sd_trade_bp}}\n", encoding="utf-8")
+    (tmp_path / "PREREG.md").write_text("x\n", encoding="utf-8")
+    assert "C8" in _codes(pf.c8_generated_not_typed(tmp_path / "PREREG.md"))
+
+
+def test_c8_is_silent_when_the_document_is_freshly_generated(tmp_path: Path):
+    (tmp_path / "dispersion.json").write_text(
+        json.dumps({"family": {"feet": [15], "gates": ["g"], "strengths": ["both"]},
+                    "cells": {"15|g|both": {"n": 10, "sd_trade_bp": 112.6, "capped_share": 0.0}}}),
+        encoding="utf-8")
+    (tmp_path / "PREREG.md.tmpl").write_text("sd は {{cell:15|g|both.sd_trade_bp}} bp\n", encoding="utf-8")
+    (tmp_path / "PREREG.md").write_text("sd は 112.6 bp\n", encoding="utf-8")
+    assert not pf.c8_generated_not_typed(tmp_path / "PREREG.md")
+
+
+def test_c9_fires_on_each_rule_that_was_actually_missing():
+    """L-054: **書かれていないものは、読んでも見つからない。**
+
+    2 回目の独立監査の重大 18 件のうち 4 件が「規則そのものが無い」だった。
+    必須項目は**実際に抜けた実例からだけ**足す(想像で増やさない)。"""
+    findings = pf.c9_required_sections("何も書いていない事前登録")
+    assert len(findings) == len(pf.REQUIRED)
+    assert any("判定区間の判定規則" in f.detail for f in findings)
+
+
+def test_c9_is_silent_when_every_required_rule_is_present():
+    text = "\n".join(f"### {marker}\n本文\n" for marker, _ in pf.REQUIRED)
+    assert not pf.c9_required_sections(text)
+
+
+def test_c10_fires_on_the_arithmetic_that_was_actually_wrong():
+    """L-054 の実例: アブレーションの探索面を「144 通り」と書いたが、実際は 48 通り。
+    **掛け算を 1 回すれば分かった。** 検査器が式を評価して突き合わせる。"""
+    findings = pf.c10_computations_check_out("探索面は【計算: 2*3*2*4 = 144】通りある。")
+    assert "C10" in _codes(findings)
+    assert "48" in findings[0].detail
+
+
+def test_c10_fires_on_the_significance_claim_that_was_backwards():
+    """もう一つの実例: 「198 セルの最大の 95 点は 2.49 sd 相当」(実際は 3.65)。
+    片側/両側と多重性を含む逆関数なので、**書く前に評価するしかない**。"""
+    findings = pf.c10_computations_check_out("最大の 95 点は【計算: 0.95**(1/198) = 0.5】である。")
+    assert "C10" in _codes(findings)
+
+
+def test_c10_is_silent_when_the_computation_is_right():
+    assert not pf.c10_computations_check_out("族は【計算: 6*11*3 = 198】セルである。")
+
+
+def test_c10_rejects_an_expression_it_cannot_verify():
+    """評価できない式を「計算した」と称せないこと。**印だけ付けて中身が無いのを防ぐ。**"""
+    findings = pf.c10_computations_check_out("【計算: __import__('os').getpid() = 1】")
+    assert "C10" in _codes(findings)

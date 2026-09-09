@@ -321,11 +321,16 @@ def c6_coverage(text: str, measured: Path | None) -> list[Finding]:
                     f"事前登録は族を **{m.group(4)}** と書くが、測定出力は **{len(expected)}** セル")
         )
     # 本文に載せた代表セルの数値が測定出力と一致するか
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import render_prereg  # noqa: PLC0415
+
     for key, cell in cells.items():
         if "|s19/b24|both" not in key:
             continue
         sd = cell.get("sd_trade_bp")
-        if sd is not None and f"{sd}" not in text:
+        # **整形は生成器と同じ関数を使う。** 別々に整形すると「88.0 と 88」で
+        # 検査どうしが食い違い、本物の不一致と区別できなくなる(実際に起きた)
+        if sd is not None and render_prereg._fmt(sd, "sd_trade_bp") not in text:
             out.append(
                 Finding("C6 数値の一致", "I-005: 事前登録の数値が、測定を伴わない値だった",
                         f"{key} の `sd_trade` = {sd} bp が事前登録の本文に無い"
@@ -367,7 +372,106 @@ def c7_provenance_on_thresholds(sections: dict[str, str]) -> list[Finding]:
     return out
 
 
-CHECKS = "C1 数え上げ / C2 記号の一意性 / C3 射程の漏れ / C4 未処理 / C5 用語 / C6 網羅性 / C7 出所"
+
+# ---- L-054 で追加。**個別の欠陥ではなく、欠陥の「型」を潰す 3 つ** ----------
+
+REQUIRED = [
+    ("判定区間の判定規則", "封印区間を開くときの規則(閾値・帰無の再実行の有無・"
+                        "見るセル・多重性・MDE)。**線を決めずに封印を開けば、"
+                        "結果を見てから読み方を決められる**(独立監査 2 回目 #13)"),
+    ("信頼区間の算出方法", "効果量に信頼区間を付けると宣言しながら、出し方が書かれていなかった。"
+                        "t 公式は自ら否認し、帰無は族の最大統計量しか作らない(#17)"),
+    ("補助帰無の手順", "N1 プラセボ入口は向き(買い / 売り)が指定されておらず、"
+                    "書かれたとおりには実行できなかった(#26)"),
+    ("前提表", "CLAUDE.md §5.2 が要求する、バイアスの向きつきの前提一覧(1 回目 #14)"),
+]
+
+_CALC = re.compile(r"【計算:\s*(?P<expr>[^=】]+?)\s*=\s*(?P<val>[-\d.,]+)\s*】")
+_SAFE = (
+    "Expression", "BinOp", "UnaryOp", "Constant", "Add", "Sub", "Mult", "Div",
+    "Pow", "USub", "UAdd", "Mod", "FloorDiv", "Tuple", "Load",
+)
+
+
+def c8_generated_not_typed(prereg: Path) -> list[Finding]:
+    """C8 事前登録の数値は**生成物**であり、手で書かれていないこと。
+
+    L-054: 2 回の監査で最も多かった欠陥の型が「文書の数値が測定と食い違う」だった。
+    個別に直しても、直した端から新しい数値が手で書かれる。
+    **数値を書ける場所を無くす**のが対処 — `PREREG.md.tmpl` に参照を書き、
+    `scripts/render_prereg.py` が測定出力から埋める。
+    ここでは「生成し直した結果と現在の文書が一致するか」だけを見る。
+    """
+    tmpl = prereg.with_suffix(".md.tmpl")
+    if not tmpl.exists():
+        return [Finding("C8 生成", "L-054: 数値が手書きだと測定とずれる",
+                        f"テンプレート {tmpl.name} が無い。**数値が手書きのままである**")]
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import render_prereg  # noqa: PLC0415
+
+    data = json.loads((prereg.parent / "dispersion.json").read_text(encoding="utf-8"))
+    text, errors = render_prereg.render(tmpl.read_text(encoding="utf-8"), data)
+    out = []
+    for e in dict.fromkeys(errors):
+        out.append(Finding("C8 生成", "L-054: 解決できない参照は数値の欠落と同じ", e))
+    if not errors and text != prereg.read_text(encoding="utf-8"):
+        out.append(Finding(
+            "C8 生成", "L-054: 文書の数値が測定とずれる",
+            f"{prereg.name} が {tmpl.name} + 測定出力と一致しない。"
+            "**手で編集された可能性がある。** `python scripts/render_prereg.py` で作り直す"))
+    return out
+
+
+def c9_required_sections(text: str) -> list[Finding]:
+    """C9 **抜け落ち**を捕まえる。
+
+    誤った断定は読めば見つかるが、**書かれていないものは読んでも見つからない**。
+    2 回目の監査の重大 18 件のうち 4 件が「規則そのものが無い」だった。
+    必須項目は**実際に抜けた実例からだけ**足す(想像で増やさない)。
+    """
+    return [
+        Finding("C9 必須項目", f"独立監査: {why}", f"「**{marker}**」が事前登録に無い")
+        for marker, why in REQUIRED
+        if marker not in text
+    ]
+
+
+def c10_computations_check_out(text: str) -> list[Finding]:
+    """C10 **計算を伴う断定は、計算が合っていること**。
+
+    L-054: 「条件 2 が条件 1 を包含する」(実際は逆)、「探索面は 144 通り」(実際は 48)は
+    どちらも**掛け算 1 回・逆関数 1 回で確かめられた**のに確かめなかった。
+    そこで `【計算: 式 = 値】` と書かせ、**検査器が式を評価して値と突き合わせる**。
+    書けない主張は `【未検証】` と印を付け、§5 の判定条件の変更根拠には使えない(C11 相当は層 2)。
+    """
+    import ast  # noqa: PLC0415
+
+    out = []
+    for m in _CALC.finditer(text):
+        expr, val = m.group("expr"), m.group("val").replace(",", "")
+        try:
+            tree = ast.parse(expr, mode="eval")
+        except SyntaxError:
+            out.append(Finding("C10 計算", "L-054: 計算を伴う断定を確かめずに書いた",
+                               f"式として解釈できない: `{expr}`"))
+            continue
+        bad = [type(n).__name__ for n in ast.walk(tree)
+               if type(n).__name__ not in _SAFE]
+        if bad:
+            out.append(Finding("C10 計算", "L-054: 計算を伴う断定を確かめずに書いた",
+                               f"式に使えない要素がある({', '.join(sorted(set(bad)))}): `{expr}`"))
+            continue
+        got = eval(compile(tree, "<calc>", "eval"), {"__builtins__": {}}, {})  # noqa: S307
+        want = float(val)
+        if abs(got - want) > max(abs(want) * 0.01, 1e-9):
+            out.append(Finding(
+                "C10 計算", "L-054: 「144 通り」「2.49 sd」はどちらも計算すれば分かった",
+                f"`{expr}` は **{got:g}** だが、文書は **{want:g}** と書いている"))
+    return out
+
+
+CHECKS = ("C1 数え上げ / C2 記号の一意性 / C3 射程の漏れ / C4 未処理 / C5 用語 / "
+          "C6 網羅性 / C7 出所 / C8 生成 / C9 必須項目 / C10 計算")
 
 
 def run(path: Path, measured: Path | None) -> list[Finding]:
@@ -381,6 +485,9 @@ def run(path: Path, measured: Path | None) -> list[Finding]:
         *c5_jargon_explained(text, sections),
         *c6_coverage(text, measured),
         *c7_provenance_on_thresholds(sections),
+        *c8_generated_not_typed(path),
+        *c9_required_sections(text),
+        *c10_computations_check_out(text),
     ]
 
 
