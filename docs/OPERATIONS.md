@@ -471,12 +471,19 @@ pull がコンフリクトした・pip が落ちたのに再起動してしま�
 コード更新は必ず**2点セット**で行うこと:
 
 ```powershell
-git pull
+git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
 .venv\Scripts\pip install -e ".[dev]"   # 新しい依存ライブラリを取り込む(Linuxは .venv/bin/pip)
 ```
 
 `git pull` だけでは新規追加されたライブラリが入らず、該当コンポーネントが
 起動直後にクラッシュする(例: websockets 追加時の板記録・スキャルパー)。
+
+**`--rebase` を省かないこと。** この PC には未 push の自動コミット(paper logs の共有)が
+溜まりうるので、素の `git pull` はマージコミットのメッセージを聞きにきて **vim が開く**。
+編集せずに閉じると `MERGE_HEAD` が残り、**以後すべての `git pull` と `restart_all.bat` が
+止まる**(2026-09-09 に実際に起きた)。もし開いてしまったら `Esc` → `:wq` → `Enter` で確定、
+既に閉じてしまって詰まっているなら **`git commit --no-edit`** で決着する。
+エディタを二度と開かせないなら 1 回だけ: `git config core.editor "cmd /c exit"`。
 
 ### 旧 `data/orders.sqlite3` を引き継ぐ時の注意(1回だけ)
 

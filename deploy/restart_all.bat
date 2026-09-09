@@ -38,6 +38,25 @@ echo [1/5] git pull
 rem --rebase: a local paper-logs commit that has not been pushed yet must
 rem never open a merge-commit editor here (that looks like a freeze and,
 rem when killed, leaves MERGE_HEAD behind and blocks every later pull).
+rem A merge left unfinished by an EARLIER manual `git pull` blocks this step
+rem too, and git's own message does not say how to get out. Name the fix
+rem here rather than making the operator ask (happened 2026-09-09).
+if exist ".git\MERGE_HEAD" (
+  echo.
+  echo *** BLOCKED: an earlier merge was never finished ***
+  echo A previous `git pull` opened an editor for the merge message and
+  echo it was closed without saving, so the merge is still half-done.
+  echo Nothing was stopped - the bot is still running the old code.
+  echo.
+  echo Finish it with ONE command, then run this file again:
+  echo.
+  echo     git commit --no-edit
+  echo.
+  echo   --no-edit accepts the prepared message and opens no editor.
+  echo   If it reports unmerged paths instead, run `git status` and
+  echo   copy the output into the Claude chat.
+  goto :aborted
+)
 git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
 if errorlevel 1 (
   echo.
