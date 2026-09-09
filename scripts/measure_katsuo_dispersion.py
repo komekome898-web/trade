@@ -123,7 +123,7 @@ def signals(bars):
     return out
 
 
-def trades(bars, sigs, max_hold: int = MAX_HOLD):
+def trades(bars, sigs, max_hold: int = MAX_HOLD, variant: str = "both"):
     """カツオ自身の決済で 1 取引を切る(事前登録 §4.2)。
 
     建値 = シグナル足の終値。決済は次の早い方:
@@ -131,12 +131,36 @@ def trades(bars, sigs, max_hold: int = MAX_HOLD):
       2. 反対シグナルが出た足
     上限 max_hold 本で打ち切る(**原典に無い制約**なので到達率を報告する)。
 
+    `variant` は §7 のアブレーション 4(決済ルールの分解)。
+    2026-09-09 に前回の測定と保有中央値が食い違った(8 本 vs 2 本)ので、
+    **どちらのルールがその差を作るのかを測定で切り分ける**ためにも使う。
+
+    - ``both``       : 無効化 + 反対シグナル(主指標)
+    - ``invalid``    : 無効化のみ
+    - ``opposite``   : 反対シグナルのみ
+    - ``global_lc``  : ``both`` だが lcprice を原典どおりグローバルに更新(§3-a)
+
     **戻り値は符号付きリターン(bp)と保有本数だけ。** 呼び出し側は平均を取らない。
     """
     n = len(bars)
     rets: list[float] = []
     holds: list[int] = []
     capped = 0
+
+    # 原典の lcprice はグローバルで、シグナルが出るたびに上書きされる(§3-a)。
+    # variant="global_lc" のときだけ、その挙動を各時点で再現するために先に畳んでおく。
+    running_lc = None
+    if variant == "global_lc":
+        running_lc = [0.0] * n
+        cur = 0.0
+        for k in range(n):
+            if sigs[k][0] != 0:
+                cur = sigs[k][1]
+            running_lc[k] = cur
+
+    use_invalid = variant in ("both", "invalid", "global_lc")
+    use_opposite = variant in ("both", "opposite", "global_lc")
+
     for i in range(n):
         s, lc, _ = sigs[i]
         if s == 0:
@@ -149,12 +173,13 @@ def trades(bars, sigs, max_hold: int = MAX_HOLD):
         for j in range(i + 1, limit + 1):
             cj = bars[j][4]
             sj = sigs[j][0]
-            if sj == -s:
+            if use_opposite and sj == -s:
                 exit_j = j
                 break
             # 無効化は「シグナルなしの足」でのみ見る(原典 §3-b の挙動をそのまま)
-            if sj == 0:
-                if (s == 1 and cj <= lc) or (s == -1 and cj >= lc):
+            if use_invalid and sj == 0:
+                line = running_lc[j - 1] if running_lc is not None else lc
+                if (s == 1 and cj <= line) or (s == -1 and cj >= line):
                     exit_j = j
                     break
         if exit_j is None:
@@ -188,6 +213,13 @@ def _sd(vals) -> float:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
+    ap.add_argument(
+        "--variants",
+        nargs="+",
+        default=["both"],
+        choices=["both", "invalid", "opposite", "global_lc"],
+        help="決済ルールの分解(§7 アブレーション 4)。既定は主指標の both のみ",
+    )
     ap.add_argument("--out", default=str(REPO / "docs" / "PHASE2" / "K1" / "dispersion.json"))
     args = ap.parse_args()
 
@@ -199,32 +231,38 @@ def main() -> None:
     for foot in args.feet:
         bars = fold(seconds, foot)
         sigs = signals(bars)
-        rets, holds, capped = trades(bars, sigs)
-        rs, hs = sorted(rets), sorted(holds)
         n_sig = sum(1 for s, _, _ in sigs if s != 0)
-        results[str(foot)] = {
-            "bars": len(bars),
-            "signals": n_sig,
-            "signal_rate": round(n_sig / len(bars), 4) if bars else None,
-            "trades": len(rets),
-            # **ばらつきのみ。平均は出さない(判定の先取りを避ける)**
-            "sd_trade_bp": round(_sd(rets), 1),
-            "iqr_trade_bp": [round(_pct(rs, 0.25), 1), round(_pct(rs, 0.75), 1)],
-            "hold_median": round(_pct(hs, 0.5), 1),
-            "hold_p25": round(_pct(hs, 0.25), 1),
-            "hold_p75": round(_pct(hs, 0.75), 1),
-            "hold_p95": round(_pct(hs, 0.95), 1),
-            "capped_at_96": capped,
-            "capped_share": round(capped / len(rets), 4) if rets else None,
-        }
-        r = results[str(foot)]
-        print(
-            f"{foot:>3}分: 足 {r['bars']:>9,} / シグナル {r['signals']:>8,}"
-            f" ({r['signal_rate']:.1%}) / 取引 {r['trades']:>8,}"
-            f" / sd_trade {r['sd_trade_bp']:>7.1f} bp"
-            f" / 保有中央値 {r['hold_median']:>5.1f} 本"
-            f" / 上限到達 {r['capped_share']:.1%}"
-        )
+        for variant in args.variants:
+            rets, holds, capped = trades(bars, sigs, variant=variant)
+            rs, hs = sorted(rets), sorted(holds)
+            key = str(foot) if variant == "both" else f"{foot}:{variant}"
+            results[key] = {
+                "foot": foot,
+                "variant": variant,
+                "bars": len(bars),
+                "signals": n_sig,
+                "signal_rate": round(n_sig / len(bars), 4) if bars else None,
+                "trades": len(rets),
+                # **ばらつきのみ。平均は出さない(判定の先取りを避ける)**
+                "sd_trade_bp": round(_sd(rets), 1),
+                "iqr_trade_bp": [round(_pct(rs, 0.25), 1), round(_pct(rs, 0.75), 1)],
+                "hold_median": round(_pct(hs, 0.5), 1),
+                "hold_p25": round(_pct(hs, 0.25), 1),
+                "hold_p75": round(_pct(hs, 0.75), 1),
+                "hold_p95": round(_pct(hs, 0.95), 1),
+                "capped_at_96": capped,
+                "capped_share": round(capped / len(rets), 4) if rets else None,
+            }
+            r = results[key]
+            print(
+                f"{foot:>3}分 {variant:>9}: 足 {r['bars']:>9,}"
+                f" / シグナル {r['signals']:>8,} ({r['signal_rate']:.1%})"
+                f" / 取引 {r['trades']:>8,}"
+                f" / sd_trade {r['sd_trade_bp']:>7.1f} bp"
+                f" / 保有 中央 {r['hold_median']:>5.1f} 25% {r['hold_p25']:>5.1f}"
+                f" 75% {r['hold_p75']:>5.1f} 95% {r['hold_p95']:>5.1f}"
+                f" / 上限到達 {r['capped_share']:.1%}"
+            )
 
     Path(args.out).write_text(
         json.dumps(

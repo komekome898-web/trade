@@ -1,0 +1,112 @@
+{
+  "note": "K1 の検出力の材料のみ。mean(r) は意図的に計算していない。対象は探索区間 2017-2019 のみで、判定区間 2020-2021 には触れていない。",
+  "explore": [
+    "2017-01-01",
+    "2019-12-31"
+  ],
+  "max_hold": 96,
+  "feet": {
+    "1": {
+      "bars": 1523877,
+      "signals": 165917,
+      "signal_rate": 0.1089,
+      "trades": 165917,
+      "sd_trade_bp": 42.8,
+      "iqr_trade_bp": [
+        -17.4,
+        13.4
+      ],
+      "hold_median": 3,
+      "hold_p25": 1,
+      "hold_p75": 7,
+      "hold_p95": 24.0,
+      "capped_at_96": 1153,
+      "capped_share": 0.0069
+    },
+    "3": {
+      "bars": 520960,
+      "signals": 107945,
+      "signal_rate": 0.2072,
+      "trades": 107945,
+      "sd_trade_bp": 53.5,
+      "iqr_trade_bp": [
+        -21.5,
+        15.8
+      ],
+      "hold_median": 3,
+      "hold_p25": 1,
+      "hold_p75": 5,
+      "hold_p95": 16.0,
+      "capped_at_96": 209,
+      "capped_share": 0.0019
+    },
+    "5": {
+      "bars": 314169,
+      "signals": 80858,
+      "signal_rate": 0.2574,
+      "trades": 80858,
+      "sd_trade_bp": 63.7,
+      "iqr_trade_bp": [
+        -23.8,
+        18.7
+      ],
+      "hold_median": 2.0,
+      "hold_p25": 1.0,
+      "hold_p75": 5.0,
+      "hold_p95": 14.0,
+      "capped_at_96": 71,
+      "capped_share": 0.0009
+    },
+    "15": {
+      "bars": 105056,
+      "signals": 38610,
+      "signal_rate": 0.3675,
+      "trades": 38609,
+      "sd_trade_bp": 92.8,
+      "iqr_trade_bp": [
+        -33.2,
+        23.1
+      ],
+      "hold_median": 2,
+      "hold_p25": 1,
+      "hold_p75": 4,
+      "hold_p95": 10.0,
+      "capped_at_96": 1,
+      "capped_share": 0.0
+    },
+    "30": {
+      "bars": 52544,
+      "signals": 22331,
+      "signal_rate": 0.425,
+      "trades": 22330,
+      "sd_trade_bp": 127.8,
+      "iqr_trade_bp": [
+        -41.4,
+        30.5
+      ],
+      "hold_median": 2.0,
+      "hold_p25": 1.0,
+      "hold_p75": 4.0,
+      "hold_p95": 9.0,
+      "capped_at_96": 1,
+      "capped_share": 0.0
+    },
+    "60": {
+      "bars": 26276,
+      "signals": 12472,
+      "signal_rate": 0.4747,
+      "trades": 12472,
+      "sd_trade_bp": 158.1,
+      "iqr_trade_bp": [
+        -57.5,
+        37.3
+      ],
+      "hold_median": 2.0,
+      "hold_p25": 1.0,
+      "hold_p75": 4.0,
+      "hold_p95": 8.0,
+      "capped_at_96": 0,
+      "capped_share": 0.0
+    }
+  }
+}
