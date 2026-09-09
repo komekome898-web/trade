@@ -7,6 +7,12 @@
 方法: すべて **GET**(HEAD は使わない)。当セッションの経路からの実測なので、
 **地域制限は オーナー PC と異なりうる**。日付は 2026-09-08。
 
+> **【2026-09-08 追記・L-032】この但し書きは現実になった。** オーナー PC からは
+> Binance REST も Bybit REST も **200**、OKX の WS も接続できた
+> (`LIQUIDATION_FEED_REACHABILITY.md`)。したがって**下表のうち 451 / 403 を理由に
+> 「取れない」としたものは、オーナー PC で測り直すまで「不明」である**。
+> 中身が空・列が無いことを確かめたものは経路と無関係なので変わらない。
+
 ---
 
 ## 1. 結論(先に)
@@ -36,7 +42,7 @@
 | 経路 | 結果 |
 |---|---|
 | **Binance Vision** `data/futures/um/daily/liquidationSnapshot/` | S3 の一覧 API で **KeyCount=0** = **接頭辞は存在するが中身が空**。配布していない(以前の「1 ファイルが 404」より強い証拠) |
-| **Binance REST** `fapi/v1/allForceOrders` | 451(当経路の地域制限)。仮に通っても提供は短期のみ |
+| **Binance REST** `fapi/v1/allForceOrders` | **「取れない」ではなく「不明」**。当経路では 451(地域制限)だが、オーナー PC からは同ホストの REST が 200(L-032)。**オーナー PC で測り直す**。仮に通っても提供は短期のみ |
 | **Bybit 公開アーカイブ** `public.bybit.com/trading/BTCUSDT/` | 約定は **2020-03-25 から**あるが、列は `timestamp,symbol,side,size,price,tickDirection,trdMatchID,grossValue,homeNotional,foreignNotional,RPI` — **清算フラグが無い**ので清算を identify できない |
 | **BitMEX 公開約定アーカイブ** | 生存(2019-09-04 も取得可)だが**清算フラグ無し**。REST `/api/v1/liquidation` は**現在オープンの清算注文のみ**で履歴ではない |
 | **Deribit** 公開約定 | 現行 API の約定オブジェクトに **`liquidation` フィールドが無い**(実測キー: amount / contracts / direction / index_price / instrument_name / mark_price / price / starbase_match_id / starbase_timestamp / tick_direction / timestamp / trade_id / trade_seq) |
