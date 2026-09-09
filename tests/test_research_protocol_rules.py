@@ -94,30 +94,20 @@ def test_preparatory_measurements_are_held_to_the_same_standard():
     assert "網羅性" in text
 
 
-def test_k1_dispersion_table_matches_the_measured_json():
-    """事前登録 §5.2 の `sd_trade` が、再現可能な測定の出力と一致すること。
+def test_k1_numbers_and_family_are_enforced_by_the_preflight():
+    """事前登録の数値・族の大きさ・網羅性の照合は、**出荷前検査に一本化した**。
 
-    旧表は**測定を伴わない数字**(決済ルールの片枝を落とした実装の出力)が
-    残っていた。数字と出力を機械的に結び、手で書き換えられないようにする。"""
-    import json
+    ここに同じ検査を書くと、族の形が変わるたびに 2 箇所を直すことになり、
+    片方だけ直して食い違う(**まさに I-005 と L-052 で起きた失敗**)。
+    実体は `scripts/preflight_prereg.py` の C6 にあり、
+    `tests/test_preflight_prereg.py` が「過去の欠陥で発火すること」まで固定している。
+    本テストは**その一本化が外れていないこと**だけを見る。
+    """
+    import sys
 
-    out = REPO / "docs" / "PHASE2" / "K1" / "dispersion.json"
-    assert out.exists(), "dispersion.json が無い(事前登録の sd_trade が再現できない)"
-    data = json.loads(out.read_text(encoding="utf-8"))
-    text = _text(K1_PREREG)
-    feet = data["feet"]
-    # 族の 6 水準すべてが測られていること(1/3/30 分が未測定だったのが I-005 の欠陥 1)
-    for foot in (1, 3, 5, 15, 30, 60):
-        assert str(foot) in feet, f"{foot} 分の sd_trade が測られていない"
-        sd = feet[str(foot)]["sd_trade_bp"]
-        assert f"{sd:.1f} bp" in text, f"{foot} 分の sd_trade {sd} bp が事前登録に無い"
-    # 撤回した旧値が本文の表に戻っていないこと(訂正枠の中での引用は別扱い)
-    assert "| 15 分 | 70.0 bp | 74.5 bp | **255.2 bp**" not in text
+    sys.path.insert(0, str(REPO / "scripts"))
+    import preflight_prereg as pf
 
-
-def test_k1_family_size_is_stated_once():
-    """族の大きさが文書内で食い違っていないこと(§6 が 324 のまま残っていた)。"""
-    text = _text(K1_PREREG)
-    assert "6 × 9 × 3 = 162" in text
-    # 帰無の節が古い族の大きさを判定に使っていないこと
-    assert "族全体(**324**)" not in text
+    assert pf.c6_coverage.__doc__ and "網羅性" in pf.c6_coverage.__doc__
+    findings = pf.run(K1_PREREG, K1_PREREG.parent / "dispersion.json")
+    assert not findings, "\n".join(str(f) for f in findings)
