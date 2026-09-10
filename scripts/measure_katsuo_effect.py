@@ -133,11 +133,16 @@ def signals(bars, small, big, trunc=True, flip_body=False):
     return out
 
 
-def simulate(bars, sigs, keep=None):
+def simulate(bars, sigs, keep=None, use_invalid=True):
     """建玉 1 単位でカツオの 4 分岐を回し、1 取引ずつの符号付きリターン(bp)を返す。
 
     `keep` で強さを絞ったとき、**絞られて外れたシグナルは「シグナル無し」として扱う**
     (その足でも無効化の判定は走りうる)。これは選択であり、事実として記録する。
+
+    `use_invalid=False` は **H2a**(`docs/PHASE2/K1/H2_PREREG.md` §2、オーナー決定 L-073):
+    ヒゲ先端の無効化(損切り)の枝を外し、決済は反対シグナルだけにする。第 7 部
+    `measure_katsuo_exit_ablation.simulate(mode="opposite_only")` と同じ経路(再現ゲートで確認)。
+    既定 `True` の出力は原典と同一(テストで固定)。
     """
     pos = 0            # +1 買い / -1 売り / 0 なし
     entry = 0.0
@@ -157,8 +162,8 @@ def simulate(bars, sigs, keep=None):
         actionable = sig != 0 and (keep is None or strength == keep)
 
         if not actionable:
-            # 無効化: 足の色が建玉と反対のときだけ見る(原典どおり)
-            if pos != 0 and csign == -pos:
+            # 無効化: 足の色が建玉と反対のときだけ見る(原典どおり)。H2a では見ない
+            if use_invalid and pos != 0 and csign == -pos:
                 if (pos == 1 and c <= lcline) or (pos == -1 and c >= lcline):
                     close(i, c, "invalidated")
             continue
@@ -207,12 +212,25 @@ def main() -> None:
     ap.add_argument("--out", default=None)
     ap.add_argument("--flip-body", action="store_true",
                     help="H1(H1_PREREG.md §2): 実体 ≥ ヒゲ の足は実体を逆張りする。別ファイル effect_flipbody.json")
+    ap.add_argument("--no-invalidation", action="store_true",
+                    help="H2a(H2_PREREG.md §2): ヒゲ先端の無効化を外し反対シグナルだけで決済。"
+                         "別ファイル effect_noinval.json(--flip-body と併用なら effect_flip_noinval.json)")
     k1_source.add_source_args(ap)
     args = ap.parse_args()
     start, end = k1_source.resolve_range(args)
+    use_invalid = not args.no_invalidation
     if args.out is None:
-        args.out = str(k1_source.out_dir(args.source)
-                       / ("effect_flipbody.json" if args.flip_body else "effect.json"))
+        name = {(False, True): "effect.json", (True, True): "effect_flipbody.json",
+                (False, False): "effect_noinval.json", (True, False): "effect_flip_noinval.json"}[
+                    (args.flip_body, use_invalid)]
+        args.out = str(k1_source.out_dir(args.source) / name)
+    # H2a 単独の再現ゲート: 第 7 部 exit_ablation.json の opposite_only と n・平均が一致すること
+    ref = {}
+    if not use_invalid and not args.flip_body:
+        ea = k1_source.out_dir(args.source) / "exit_ablation.json"
+        if ea.exists():
+            ref = json.loads(ea.read_text("utf-8"))["cells"]
+    repro = []
 
     rng = random.Random(SEED)
     print(f"{args.source} 区間 {start} 〜 {end}(BitMEX の判定区間 2020-2021 には触れない)")
@@ -229,7 +247,7 @@ def main() -> None:
         for g in gs:
             sg = signals(bars, g[0], g[1], flip_body=args.flip_body)
             for keep in STRENGTHS:
-                tr = simulate(bars, sg, None if keep == "both" else keep)
+                tr = simulate(bars, sg, None if keep == "both" else keep, use_invalid=use_invalid)
                 if len(tr) < 30:
                     continue
                 rs = [r for _i, r, _h, _w in tr]
@@ -237,6 +255,19 @@ def main() -> None:
                 mean = sum(rs) / n
                 sd = math.sqrt(sum((x - mean) ** 2 for x in rs) / (n - 1)) if n > 1 else float("nan")
                 lo, hi = block_bootstrap(tr, ts, rng)
+                srt = sorted(rs)
+                quant = {k: round(srt[min(n - 1, int(q * (n - 1)))], 2) for k, q in
+                         (("p05", 0.05), ("p25", 0.25), ("p50", 0.50), ("p75", 0.75), ("p95", 0.95))}
+                if ref:
+                    rc = ref.get(f"opposite_only|{foot}|{label(g)}|{keep}")
+                    if rc is not None:
+                        ok = rc["n"] == n and abs(rc["mean_bp"] - mean) < 2e-3
+                        repro.append({"key": f"{foot}|{label(g)}|{keep}", "ok": ok, "n": n,
+                                      "n_ref": rc["n"], "mean": round(mean, 3), "mean_ref": rc["mean_bp"]})
+                        if not ok:
+                            raise SystemExit(f"再現ゲート不一致(H2a vs exit_ablation opposite_only): "
+                                             f"{foot}|{label(g)}|{keep} n {n} vs {rc['n']}, "
+                                             f"mean {mean:.3f} vs {rc['mean_bp']}")
                 per_year = {}
                 for y in sorted(set(years)):
                     ys = [r for i, r, _h, _w in tr if years[i] == y]
@@ -251,6 +282,7 @@ def main() -> None:
                     "mean_bp": round(mean, 3),
                     "ci95_bp": [round(lo, 3), round(hi, 3)],
                     "sd_bp": round(sd, 1),
+                    "quantiles_bp": quant,
                     "hold_median": sorted(h for _i, _r, h, _w in tr)[n // 2],
                     "exit_reasons": why,
                     "per_year": per_year,
@@ -267,12 +299,15 @@ def main() -> None:
                  "探索区間 2017-2019 のみ。帰無・MDE・判定バーは作っていない。"),
         "explore": [start.isoformat(), end.isoformat()],
         "source": args.source, "load": k1_source.last_load,
-        "flip_body": args.flip_body,
+        "flip_body": args.flip_body, "use_invalid": use_invalid,
+        "reproduction_gate": repro,
         "bootstrap_reps": BOOTSTRAP, "seed": SEED,
         "family": {"feet": list(args.feet), "gates": [label(g) for g in gs],
                    "strengths": list(STRENGTHS)},
         "cells": cells,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
+    if repro:
+        print(f"再現ゲート(H2a vs exit_ablation opposite_only) {sum(r['ok'] for r in repro)}/{len(repro)} 一致")
     print(f"\nセル {len(cells)} 件 → {args.out}")
 
 
