@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import csv
 import gzip
+import os
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -28,6 +29,13 @@ import measure_katsuo_dispersion as base
 
 REPO = Path(__file__).resolve().parents[1]
 K1 = REPO / "docs" / "PHASE2" / "K1"
+
+# BitMEX の封印(`docs/PHASE2/K1/JUDGEMENT_PREREG.md` §1/§7)。判定区間 2020-2021 を
+# 開けるには CLI の `--open-seal` と環境変数の**両方**が要る。開封は 1 回きり(L-085)
+# なので承認の値もその L 行に固定する(以後この設計で封印は使わない)。
+SEAL_END = date(2019, 12, 31)
+SEAL_APPROVAL_ENV = "K1_SEAL_APPROVAL"
+SEAL_APPROVAL_VALUE = "L-085"
 
 BINANCE_FILES = (
     [REPO / "backtest_data" / "binance_BTCUSDT_1m_20170801_20231231" / f"binance_BTCUSDT_1m_{y}.csv.gz"
@@ -68,11 +76,23 @@ def add_source_args(ap) -> None:
                     help="足の開始日(UTC)。既定はソースごと")
     ap.add_argument("--end", type=date.fromisoformat, default=None,
                     help="足の終了日(UTC、含む)。既定はソースごと")
+    ap.add_argument("--open-seal", action="store_true",
+                    help="BitMEX の封印(判定区間 2020-2021)を開ける。環境変数 "
+                         f"{SEAL_APPROVAL_ENV}={SEAL_APPROVAL_VALUE} も要る"
+                         "(docs/PHASE2/K1/JUDGEMENT_PREREG.md §1/§7)。開封は 1 回きり")
 
 
 def resolve_range(args) -> tuple[date, date]:
     start = args.start if args.start is not None else default_start(args.source)
     end = args.end if args.end is not None else default_end(args.source)
+    if args.source == "bitmex" and end > SEAL_END:
+        opened = (getattr(args, "open_seal", False)
+                  and os.environ.get(SEAL_APPROVAL_ENV) == SEAL_APPROVAL_VALUE)
+        assert opened, (
+            f"BitMEX の封印: end は {SEAL_END} 以下でなければならない({end} が渡された)。"
+            f"開けるには --open-seal と環境変数 {SEAL_APPROVAL_ENV}={SEAL_APPROVAL_VALUE} の"
+            "両方が要る(docs/PHASE2/K1/JUDGEMENT_PREREG.md §1/§7)"
+        )
     return start, end
 
 
