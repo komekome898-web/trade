@@ -149,7 +149,7 @@ def delay_signals(sigs):
     return out
 
 
-def simulate(bars, sigs, keep=None, use_invalid=True):
+def simulate(bars, sigs, keep=None, use_invalid=True, prices=None):
     """建玉 1 単位でカツオの 4 分岐を回し、1 取引ずつの符号付きリターン(bp)を返す。
 
     `keep` で強さを絞ったとき、**絞られて外れたシグナルは「シグナル無し」として扱う**
@@ -159,6 +159,15 @@ def simulate(bars, sigs, keep=None, use_invalid=True):
     ヒゲ先端の無効化(損切り)の枝を外し、決済は反対シグナルだけにする。第 7 部
     `measure_katsuo_exit_ablation.simulate(mode="opposite_only")` と同じ経路(再現ゲートで確認)。
     既定 `True` の出力は原典と同一(テストで固定)。
+
+    `prices`(既定 `None`、`docs/PHASE2/K1/XVENUE_PREREG.md` §3 Deliverable A)は**値付けだけを
+    別の取引所に切り替える**ための列。与えたときは、すべての約定(新規・決済・ドテン建て直し)が
+    `bars[i][4]` の代わりに `prices[i]` を使う。**判断(シグナル・色・`use_invalid=True` の無効化
+    ラインの判定)は常に `bars`/`sigs` のまま**(建玉機械の状態遷移は決して価格取引所に依らない)。
+    `prices[i] <= 0` の足は、`bars[i][4] <= 0` の足と同じ扱いで**丸ごと飛ばす**
+    (どちらの取引所でも「値が無い足では何もしない」を対称に保つ選択。飛ばした足では
+    無効化判定も走らない — `bars` 側だけ有効な値でも `prices` 側が壊れていれば信用しない)。
+    既定 `None` の出力は原典と 1 bit も変わらない(テストで固定)。
     """
     pos = 0            # +1 買い / -1 売り / 0 なし
     entry = 0.0
@@ -175,23 +184,30 @@ def simulate(bars, sigs, keep=None, use_invalid=True):
         c = bars[i][4]
         if c <= 0:
             continue
+        if prices is not None:
+            p = prices[i]
+            if p <= 0:
+                continue
+        else:
+            p = c
         actionable = sig != 0 and (keep is None or strength == keep)
 
         if not actionable:
             # 無効化: 足の色が建玉と反対のときだけ見る(原典どおり)。H2a では見ない
+            # 判定は常に bars の終値 c(= 決定)。約定価格だけ p(既定は c と同じ)
             if use_invalid and pos != 0 and csign == -pos:
                 if (pos == 1 and c <= lcline) or (pos == -1 and c >= lcline):
-                    close(i, c, "invalidated")
+                    close(i, p, "invalidated")
             continue
 
         if pos == sig:
             lcline = lc                     # 同じ向き: 増し玉はしない。ラインだけ更新
         elif pos == -sig:
-            close(i, c, "reversed" if strength == "strong" else "opposite_weak")
+            close(i, p, "reversed" if strength == "strong" else "opposite_weak")
             if strength == "strong":        # 強いシグナルはドテン(逆に建てる)
-                pos, entry, entry_i, lcline = sig, c, i, lc
+                pos, entry, entry_i, lcline = sig, p, i, lc
         else:                               # 建玉なし: 強弱を問わず新規
-            pos, entry, entry_i, lcline = sig, c, i, lc
+            pos, entry, entry_i, lcline = sig, p, i, lc
 
     return trades
 
