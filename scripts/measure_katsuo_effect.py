@@ -90,12 +90,18 @@ def label(gate) -> str:
     return f"s{st}/b{'-' if b is None else int(b)}"
 
 
-def signals(bars, small, big, trunc=True):
+def signals(bars, small, big, trunc=True, flip_body=False):
     """意図どおりのシグナル。返すのは足ごとの (signal, lcprice, candle_sign, strength)。
 
     `trunc=True`(既定)は原典どおり `int()` でドル単位に切り捨ててから向きを比べる。
     `trunc=False` は切り捨てずに比べる。**原典からの逸脱**なので、HANDOFF §3 手 2 のとおり
     「原典どおり」と並べて出す用途に限る。既定を変えない(他の測定はすべて原典どおり)。
+
+    `flip_body=True` は **H1**(`docs/PHASE2/K1/H1_PREREG.md` §2、オーナー承認 L-070):
+    門を通った足で **実体 ≥ 勝った側のヒゲ** なら、向きを実体と逆(`sig = -csign`)にし、
+    無効化ラインを新しい向きの側の極値(売りなら高値、買いなら安値)に置く。強さは定義どおり
+    `sig == csign` で決めるので、反転した足は必ず "weak" になる。小門の枝は `w > body` を要求するので、
+    この足は大門の枝だけが通す。既定 `False` の出力は原典と 1 bit も変わらない(テストで固定)。
     """
     out = []
     for _ts, o, h, l, c in bars:
@@ -120,6 +126,9 @@ def signals(bars, small, big, trunc=True):
         if not (ok_small or ok_big):
             out.append((0, 0.0, csign, ""))
             continue
+        if flip_body and body >= w:
+            sig = -csign                        # 実体を逆張り(H1)
+            lc = h if sig == -1 else l          # 新しい向きの側の極値
         out.append((sig, lc, csign, "strong" if sig == csign else "weak"))
     return out
 
@@ -196,11 +205,14 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
     ap.add_argument("--out", default=None)
+    ap.add_argument("--flip-body", action="store_true",
+                    help="H1(H1_PREREG.md §2): 実体 ≥ ヒゲ の足は実体を逆張りする。別ファイル effect_flipbody.json")
     k1_source.add_source_args(ap)
     args = ap.parse_args()
     start, end = k1_source.resolve_range(args)
     if args.out is None:
-        args.out = str(k1_source.out_dir(args.source) / "effect.json")
+        args.out = str(k1_source.out_dir(args.source)
+                       / ("effect_flipbody.json" if args.flip_body else "effect.json"))
 
     rng = random.Random(SEED)
     print(f"{args.source} 区間 {start} 〜 {end}(BitMEX の判定区間 2020-2021 には触れない)")
@@ -215,7 +227,7 @@ def main() -> None:
         ts = [b[0] for b in bars]
         years = [datetime.utcfromtimestamp(t).year for t in ts]
         for g in gs:
-            sg = signals(bars, g[0], g[1])
+            sg = signals(bars, g[0], g[1], flip_body=args.flip_body)
             for keep in STRENGTHS:
                 tr = simulate(bars, sg, None if keep == "both" else keep)
                 if len(tr) < 30:
@@ -255,6 +267,7 @@ def main() -> None:
                  "探索区間 2017-2019 のみ。帰無・MDE・判定バーは作っていない。"),
         "explore": [start.isoformat(), end.isoformat()],
         "source": args.source, "load": k1_source.last_load,
+        "flip_body": args.flip_body,
         "bootstrap_reps": BOOTSTRAP, "seed": SEED,
         "family": {"feet": list(args.feet), "gates": [label(g) for g in gs],
                    "strengths": list(STRENGTHS)},

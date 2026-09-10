@@ -108,20 +108,29 @@ def main() -> None:
     ap.add_argument("--no-trunc", action="store_true",
                     help="向きの比較で int() 切り捨てを外す(HANDOFF §3 手 2。原典からの逸脱なので"
                          "既定の出力とは別ファイルに書く)")
+    ap.add_argument("--flip-body", action="store_true",
+                    help="H1(H1_PREREG.md §2): 実体 ≥ ヒゲ の足は実体を逆張りする。"
+                         "別ファイル signal_horizon_flipbody.json に書き、反転した足だけのセル"
+                         "(strength='flipped')も出す")
     k1_source.add_source_args(ap)
     args = ap.parse_args()
     trunc = not args.no_trunc
+    flip = args.flip_body
+    assert not (flip and not trunc), "--flip-body と --no-trunc は同時に使わない(1 周 1 機構)"
     start, end = k1_source.resolve_range(args)
     if args.out is None:
-        args.out = str(k1_source.out_dir(args.source)
-                       / ("signal_horizon.json" if trunc else "signal_horizon_notrunc.json"))
+        name = ("signal_horizon_flipbody.json" if flip
+                else "signal_horizon.json" if trunc else "signal_horizon_notrunc.json")
+        args.out = str(k1_source.out_dir(args.source) / name)
+    strengths = list(STRENGTHS) + (["flipped"] if flip else [])
 
     print(f"{args.source} 区間 {start} 〜 {end}(BitMEX の判定区間 2020-2021 には触れない)")
     seconds = k1_source.load_bars(args.source, start, end)
     gs = eff.gates()
     print(f"  バー {len(seconds):,} 行 / 族 = 足 {len(args.feet)} × 門 {len(gs)}"
-          f" × 強さ {len(STRENGTHS)} × ホライズン {len(HORIZONS)}"
-          f" = {len(args.feet) * len(gs) * len(STRENGTHS) * len(HORIZONS)} セル")
+          f" × 強さ {len(strengths)} × ホライズン {len(HORIZONS)}"
+          f" = {len(args.feet) * len(gs) * len(strengths) * len(HORIZONS)} セル"
+          + (" (H1: 実体 ≥ ヒゲ の足を反転。'flipped' は反転した足だけ)" if flip else ""))
 
     cells = {}
     baseline = {}
@@ -165,10 +174,19 @@ def main() -> None:
             }
 
         for g in gs:
-            sg = eff.signals(bars, g[0], g[1], trunc=trunc)
+            sg = eff.signals(bars, g[0], g[1], trunc=trunc, flip_body=flip)
             idx = [(i, s[0], s[3]) for i, s in enumerate(sg) if s[0] != 0]
-            for keep in STRENGTHS:
-                sub = idx if keep == "both" else [x for x in idx if x[2] == keep]
+            if flip:
+                # 反転が起きた足 = 原典と向きが違う足(原典を別に計算して比べる。API は変えない)
+                sg0 = eff.signals(bars, g[0], g[1], trunc=trunc)
+                flipped = {i for i, (a, b) in enumerate(zip(sg0, sg)) if a[0] != b[0]}
+            for keep in strengths:
+                if keep == "both":
+                    sub = idx
+                elif keep == "flipped":
+                    sub = [x for x in idx if x[0] in flipped]
+                else:
+                    sub = [x for x in idx if x[2] == keep]
                 if len(sub) < 30:
                     continue
                 for h in HORIZONS:
@@ -265,10 +283,10 @@ def main() -> None:
                  "決済ルールを使わない。経費は引いていない。探索区間 2017-2019 のみ。"),
         "explore": [start.isoformat(), end.isoformat()],
         "source": args.source, "load": k1_source.last_load,
-        "trunc": trunc,
+        "trunc": trunc, "flip_body": flip,
         "bootstrap_reps": BOOTSTRAP, "seed": SEED,
         "family": {"feet": list(args.feet), "gates": [eff.label(g) for g in gs],
-                   "strengths": list(STRENGTHS), "horizons": list(HORIZONS)},
+                   "strengths": strengths, "horizons": list(HORIZONS)},
         "baseline_unconditional": baseline,
         "cells": cells,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
