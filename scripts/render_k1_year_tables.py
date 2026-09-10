@@ -20,11 +20,18 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-SRC = REPO / "docs" / "PHASE2" / "K1" / "signal_horizon.json"
+K1 = REPO / "docs" / "PHASE2" / "K1"
+SRC = K1 / "signal_horizon.json"
 
-YEARS = ("2017", "2018", "2019")
-MARKET = {"2017": "+1335%", "2018": "**−73%**", "2019": "+94%"}
+# 相場の列は BitMEX 2017-2019 の表のために書いたもの。他の `--dir` では出さない(手打ちしない)
+MARKET_BITMEX = {"2017": "+1335%", "2018": "**−73%**", "2019": "+94%"}
+MARKET = MARKET_BITMEX
 LABEL = {"strong": "強い", "weak": "弱い", "both": "両方"}
+
+
+def years_of(d):
+    """年はデータから取る(2017-2019 のハードコードをしない)。"""
+    return tuple(sorted({y for c in d["cells"].values() for y in c["per_year"]}))
 
 
 def fmt(v, digits=2, plus=True):
@@ -41,7 +48,7 @@ def table1(d, gate, feet, horizons, strengths):
            "|---|---|---|---|---|---|" + "---|" * len(horizons)]
     for foot in feet:
         for st in strengths:
-            for y in YEARS:
+            for y in years_of(d):
                 key0 = f"{foot}|{gate}|{st}|{horizons[0]}"
                 if key0 not in C or y not in C[key0]["per_year"]:
                     continue
@@ -57,7 +64,7 @@ def table1(d, gate, feet, horizons, strengths):
                     star = "*" if (lo > 0 or hi < 0) else ""
                     cells.append(f"**{fmt(p['mean_bp'])}{star}**" if star
                                  else fmt(p["mean_bp"]))
-                out.append(f"| {foot} 分 | {LABEL[st]} | {y} | {MARKET[y]} | "
+                out.append(f"| {foot} 分 | {LABEL[st]} | {y} | {MARKET.get(y, '—')} | "
                            f"{py0['n']:,} | {py0['days']} | " + " | ".join(cells) + " |")
     return "\n".join(out)
 
@@ -73,7 +80,7 @@ def table2(d, gate, feet, h, strengths):
             b = B.get(f"{foot}|{h}")
             if not c or not b:
                 continue
-            for y in YEARS:
+            for y in years_of(d):
                 if y not in c["per_year"] or y not in b.get("per_year", {}):
                     continue
                 p = c["per_year"][y]
@@ -93,11 +100,17 @@ def table2(d, gate, feet, h, strengths):
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--src", default=str(SRC))
+    ap.add_argument("--src", default=None)
+    ap.add_argument("--dir", default=str(K1), help="JSON のあるディレクトリ(--src が無いとき)")
     ap.add_argument("--gates", nargs="+", default=["s19/b24", "s-/b-"])
     ap.add_argument("--strengths", nargs="+", default=["strong", "weak"])
     ap.add_argument("--split-h", type=int, default=3)
     args = ap.parse_args()
+    if args.src is None:
+        args.src = str(Path(args.dir) / "signal_horizon.json")
+    global MARKET
+    if Path(args.dir).resolve() != K1.resolve():
+        MARKET = {}
 
     d = json.loads(Path(args.src).read_text("utf-8"))
     feet = d["family"]["feet"]

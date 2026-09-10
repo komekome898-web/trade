@@ -36,6 +36,7 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 
+import k1_source
 import measure_katsuo_dispersion as base
 import measure_katsuo_effect as eff
 from measure_katsuo_signal_horizon import cell_rng, day_bootstrap
@@ -98,14 +99,20 @@ def simulate(bars, sigs, keep, mode):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
-    ap.add_argument("--out", default=str(REPO / "docs" / "PHASE2" / "K1" / "exit_ablation.json"))
+    ap.add_argument("--out", default=None)
+    k1_source.add_source_args(ap)
     args = ap.parse_args()
+    start, end = k1_source.resolve_range(args)
+    if args.out is None:
+        args.out = str(k1_source.out_dir(args.source) / "exit_ablation.json")
+    # 再現ゲートの参照は同じソースの effect.json
+    effect = k1_source.out_dir(args.source) / "effect.json"
 
-    ref = json.loads(EFFECT.read_text("utf-8"))["cells"] if EFFECT.exists() else {}
-    print(f"探索区間 {EXPLORE_START} 〜 {EXPLORE_END}(判定区間 2020-2021 には触れない)")
-    seconds = base.load_seconds(EXPLORE_START, EXPLORE_END)
+    ref = json.loads(effect.read_text("utf-8"))["cells"] if effect.exists() else {}
+    print(f"{args.source} 区間 {start} 〜 {end}(BitMEX の判定区間 2020-2021 には触れない)")
+    seconds = k1_source.load_bars(args.source, start, end)
     gs = eff.gates()
-    print(f"  秒バー {len(seconds):,} 行 / 変種 {len(MODES)} × 足 {len(args.feet)} × 門 {len(gs)} × 強さ 3")
+    print(f"  バー {len(seconds):,} 行 / 変種 {len(MODES)} × 足 {len(args.feet)} × 門 {len(gs)} × 強さ 3")
 
     cells = {}
     repro = []
@@ -139,7 +146,7 @@ def main() -> None:
                     for _i, _r, _h, w in tr:
                         why[w] = why.get(w, 0) + 1
                     per_year = {}
-                    for y in (2017, 2018, 2019):
+                    for y in sorted(set(years)):
                         ys = [r for i, r, _h, _w in tr if years[i] == y]
                         if ys:
                             per_year[str(y)] = {"n": len(ys), "mean_bp": round(sum(ys) / len(ys), 3)}
@@ -166,6 +173,9 @@ def main() -> None:
 
     Path(args.out).write_text(json.dumps({
         "note": "決済ルールのアブレーション。探索区間 2017-2019 のみ。判定・帰無・MDE・経費は無し。",
+        "explore": [start.isoformat(), end.isoformat()],
+        "source": args.source, "load": k1_source.last_load,
+        "reference": str(effect),
         "modes": list(MODES), "fixed_h": FIXED_H,
         "reproduction_gate": repro, "cells": cells,
     }, ensure_ascii=False, indent=2), encoding="utf-8")

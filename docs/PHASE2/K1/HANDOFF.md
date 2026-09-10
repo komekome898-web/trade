@@ -202,7 +202,12 @@
 - 測定の実行: `PYTHONPATH=src:scripts python scripts/measure_katsuo_*.py`
   (`scripts` をパスに入れないと相互 import が通らない)
 - **全族の実行は 10〜20 分かかる。** `delegated-study` §4 のとおり切り離して回す
-- **測定は 1 本ずつしか回せない。** 秒バー 4,900 万行を Python のリストに載せるので
-  **1 プロセス約 9 GB**、箱は 15 GB。2026-09-09 に 2 本同時に走らせて **2 本とも OOM で落ちた**
-  (`dmesg` に `Memory cgroup out of memory` が 2 件)。落ちたプロセスはログに 1 行しか残さない
+- **BitMEX の測定は 1 本ずつしか回せない。他の測定(Binance 側も)と同居させない。** 秒バー 4,900 万行を
+  Python のリストに載せるので **1 プロセスのピーク RSS は約 12 GB**(2026-09-10 実測 11.86〜12.33 GB。
+  当初「約 9 GB」と書いたのは過小)、箱は 15 GB。2026-09-09 に 2 本同時に走らせて 2 本とも OOM で落ち、
+  2026-09-10 にも Binance 1 本(1.5〜4 GB)と並走させて BitMEX 側が落ちた(計 3 件)。
+  落ちたプロセスはログに 1 行しか残さない。**`pgrep -f` で走行中を調べると自分の bash に自己一致する**
+  ので、`ps -eo args | grep "^python scripts/measure_katsuo"` のように先頭一致で見る
+- **K1-B(Binance 現物、同条件・同方法)**: 設計 `BINANCE_PLAN.md`、出力 `docs/PHASE2/K1/binance/`、
+  検査 `binance/CHECKS.md` + `scripts/check_k1_binance.py`(再実行可)。`--source binance` は全 5 本に付いている
 - 1 秒バーは `backtest_data/bitmex_trade_1s_XBTUSD/`(2017-2021、1,826 日 / 7,874 万本)

@@ -47,6 +47,7 @@ import random
 from datetime import date, datetime
 from pathlib import Path
 
+import k1_source
 import measure_katsuo_dispersion as base  # 秒バーの読み込みと足の畳み込みを共有
 
 REPO = Path(__file__).resolve().parents[1]
@@ -194,14 +195,18 @@ def block_bootstrap(trades, bar_ts, rng, reps=BOOTSTRAP):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
-    ap.add_argument("--out", default=str(REPO / "docs" / "PHASE2" / "K1" / "effect.json"))
+    ap.add_argument("--out", default=None)
+    k1_source.add_source_args(ap)
     args = ap.parse_args()
+    start, end = k1_source.resolve_range(args)
+    if args.out is None:
+        args.out = str(k1_source.out_dir(args.source) / "effect.json")
 
     rng = random.Random(SEED)
-    print(f"探索区間 {EXPLORE_START} 〜 {EXPLORE_END}(判定区間 2020-2021 には触れない)")
-    seconds = base.load_seconds(EXPLORE_START, EXPLORE_END)
+    print(f"{args.source} 区間 {start} 〜 {end}(BitMEX の判定区間 2020-2021 には触れない)")
+    seconds = k1_source.load_bars(args.source, start, end)
     gs = gates()
-    print(f"  秒バー {len(seconds):,} 行 / 族 = 足 {len(args.feet)} × 門 {len(gs)} × 強さ 3"
+    print(f"  バー {len(seconds):,} 行 / 族 = 足 {len(args.feet)} × 門 {len(gs)} × 強さ 3"
           f" = {len(args.feet) * len(gs) * 3} セル")
 
     cells = {}
@@ -221,7 +226,7 @@ def main() -> None:
                 sd = math.sqrt(sum((x - mean) ** 2 for x in rs) / (n - 1)) if n > 1 else float("nan")
                 lo, hi = block_bootstrap(tr, ts, rng)
                 per_year = {}
-                for y in (2017, 2018, 2019):
+                for y in sorted(set(years)):
                     ys = [r for i, r, _h, _w in tr if years[i] == y]
                     if ys:
                         per_year[str(y)] = {"n": len(ys), "mean_bp": round(sum(ys) / len(ys), 3)}
@@ -248,7 +253,8 @@ def main() -> None:
     Path(args.out).write_text(json.dumps({
         "note": ("カツオの 4 分岐を建玉 1 単位で回した 1 取引あたりの符号付きリターン。"
                  "探索区間 2017-2019 のみ。帰無・MDE・判定バーは作っていない。"),
-        "explore": [EXPLORE_START.isoformat(), EXPLORE_END.isoformat()],
+        "explore": [start.isoformat(), end.isoformat()],
+        "source": args.source, "load": k1_source.last_load,
         "bootstrap_reps": BOOTSTRAP, "seed": SEED,
         "family": {"feet": list(args.feet), "gates": [label(g) for g in gs],
                    "strengths": list(STRENGTHS)},

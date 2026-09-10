@@ -9,7 +9,8 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-SRC = REPO / "docs" / "PHASE2" / "K1" / "body_wick.json"
+K1 = REPO / "docs" / "PHASE2" / "K1"
+SRC = K1 / "body_wick.json"
 RATIOS = ("[0,0.25)", "[0.25,0.5)", "[0.5,0.75)", "[0.75,1)", "[1,2)", "[2,+)")
 WICKS = ("[0,5)", "[5,10)", "[10,19)", "[19,24)", "[24,40)", "[40,70)", "[70,+)")
 FEET = (1, 3, 5, 15, 30, 60)
@@ -128,9 +129,12 @@ def wick_side_diff(d, h):
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--src", default=str(SRC))
+    ap.add_argument("--src", default=None)
+    ap.add_argument("--dir", default=str(K1), help="JSON のあるディレクトリ(--src が無いとき)")
     ap.add_argument("--h", type=int, default=3)
     args = ap.parse_args()
+    if args.src is None:
+        args.src = str(Path(args.dir) / "body_wick.json")
     d = json.loads(Path(args.src).read_text("utf-8"))
     h = args.h
     rg = d["reproduction_gate"]

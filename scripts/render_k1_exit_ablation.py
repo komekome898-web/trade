@@ -33,10 +33,12 @@ def fmt(c):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--gate", default="s19/b24")
+    ap.add_argument("--dir", default=str(K1), help="JSON のあるディレクトリ")
     args = ap.parse_args()
-    A = json.loads((K1 / "exit_ablation.json").read_text("utf-8"))
-    S = json.loads((K1 / "signal_horizon.json").read_text("utf-8"))["cells"]
+    A = json.loads((Path(args.dir) / "exit_ablation.json").read_text("utf-8"))
+    S = json.loads((Path(args.dir) / "signal_horizon.json").read_text("utf-8"))["cells"]
     C = A["cells"]
+    years = sorted({y for c in C.values() for y in c["per_year"]})   # 年はデータから取る
     rg = A["reproduction_gate"]
     print(f"再現ゲート: {sum(r['ok'] for r in rg)}/{len(rg)} 一致(`full` が `effect.json` の全セルと n・平均で一致)\n")
 
@@ -72,9 +74,9 @@ def main() -> None:
                 print(f"| {foot} 分 | {LABEL[s]} | {MODE_LABEL[m]} | {c['mean_bp']:+.2f} | {c['sd_bp']} | "
                       f"{q['p05']:+.1f} | {q['p50']:+.1f} | {q['p95']:+.1f} | {c['min_bp']:+.0f} | {c['max_bp']:+.0f} |")
 
-    print(f"\n### 表 L — 門 `{args.gate}`: 年ごとの平均(2017 / 2018 / 2019)\n")
-    print("| 足 | 強さ | 変種 | 2017 | 2018 | 2019 |")
-    print("|---|---|---|---|---|---|")
+    print(f"\n### 表 L — 門 `{args.gate}`: 年ごとの平均({' / '.join(years)})\n")
+    print("| 足 | 強さ | 変種 | " + " | ".join(years) + " |")
+    print("|---|---|---|" + "---|" * len(years))
     for foot in (3, 5, 15, 30):
         for s in ("strong", "weak"):
             for m in ("full", "opposite_only"):
@@ -83,7 +85,7 @@ def main() -> None:
                     continue
                 py = c["per_year"]
                 print(f"| {foot} 分 | {LABEL[s]} | {MODE_LABEL[m]} | " + " | ".join(
-                    f"{py[y]['mean_bp']:+.2f} (n={py[y]['n']:,})" if y in py else "—" for y in ("2017", "2018", "2019")) + " |")
+                    f"{py[y]['mean_bp']:+.2f} (n={py[y]['n']:,})" if y in py else "—" for y in years) + " |")
 
     print(f"\n### 表 K — 門 `{args.gate}`: 差の分解(bp)\n")
     print("母集団の差 = 3 本固定 − 第 4 部 h=3 / 決済ルールの差 = 原典 − 3 本固定\n")

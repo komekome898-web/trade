@@ -45,6 +45,7 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 
+import k1_source
 import measure_katsuo_dispersion as base
 import measure_katsuo_effect as eff
 from measure_katsuo_signal_horizon import cell_rng, day_bootstrap
@@ -88,14 +89,20 @@ def direction_and_shape(o, h, l, c):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
-    ap.add_argument("--out", default=str(REPO / "docs" / "PHASE2" / "K1" / "body_wick.json"))
+    ap.add_argument("--out", default=None)
+    k1_source.add_source_args(ap)
     args = ap.parse_args()
+    start, end = k1_source.resolve_range(args)
+    if args.out is None:
+        args.out = str(k1_source.out_dir(args.source) / "body_wick.json")
+    # 再現ゲートの参照は同じソースの signal_horizon.json
+    sh = k1_source.out_dir(args.source) / "signal_horizon.json"
 
-    ref = json.loads(SH.read_text("utf-8"))["cells"] if SH.exists() else {}
+    ref = json.loads(sh.read_text("utf-8"))["cells"] if sh.exists() else {}
 
-    print(f"探索区間 {EXPLORE_START} 〜 {EXPLORE_END}(判定区間 2020-2021 には触れない)")
-    seconds = base.load_seconds(EXPLORE_START, EXPLORE_END)
-    print(f"  秒バー {len(seconds):,} 行")
+    print(f"{args.source} 区間 {start} 〜 {end}(BitMEX の判定区間 2020-2021 には触れない)")
+    seconds = k1_source.load_bars(args.source, start, end)
+    print(f"  バー {len(seconds):,} 行")
 
     cells = {}
     baseline = {}
@@ -213,6 +220,9 @@ def main() -> None:
     Path(args.out).write_text(json.dumps({
         "note": ("ヒゲ長 × 実体比 × 強さ の層ごとの h 本先リターン(建玉なし)。"
                  "探索区間 2017-2019 のみ。判定・帰無・MDE・経費は無し。"),
+        "explore": [start.isoformat(), end.isoformat()],
+        "source": args.source, "load": k1_source.last_load,
+        "reference": str(sh),
         "bins": {"wick_bp": list(WICK_BINS), "ratio": list(RATIO_BINS)},
         "horizons": list(HORIZONS), "gates": list(GATES),
         "reproduction_gate": repro,

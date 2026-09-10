@@ -43,6 +43,7 @@ import random
 from datetime import date, datetime
 from pathlib import Path
 
+import k1_source
 import measure_katsuo_dispersion as base
 import measure_katsuo_effect as eff
 
@@ -107,16 +108,18 @@ def main() -> None:
     ap.add_argument("--no-trunc", action="store_true",
                     help="向きの比較で int() 切り捨てを外す(HANDOFF §3 手 2。原典からの逸脱なので"
                          "既定の出力とは別ファイルに書く)")
+    k1_source.add_source_args(ap)
     args = ap.parse_args()
     trunc = not args.no_trunc
+    start, end = k1_source.resolve_range(args)
     if args.out is None:
-        args.out = str(REPO / "docs" / "PHASE2" / "K1"
+        args.out = str(k1_source.out_dir(args.source)
                        / ("signal_horizon.json" if trunc else "signal_horizon_notrunc.json"))
 
-    print(f"探索区間 {EXPLORE_START} 〜 {EXPLORE_END}(判定区間 2020-2021 には触れない)")
-    seconds = base.load_seconds(EXPLORE_START, EXPLORE_END)
+    print(f"{args.source} 区間 {start} 〜 {end}(BitMEX の判定区間 2020-2021 には触れない)")
+    seconds = k1_source.load_bars(args.source, start, end)
     gs = eff.gates()
-    print(f"  秒バー {len(seconds):,} 行 / 族 = 足 {len(args.feet)} × 門 {len(gs)}"
+    print(f"  バー {len(seconds):,} 行 / 族 = 足 {len(args.feet)} × 門 {len(gs)}"
           f" × 強さ {len(STRENGTHS)} × ホライズン {len(HORIZONS)}"
           f" = {len(args.feet) * len(gs) * len(STRENGTHS) * len(HORIZONS)} セル")
 
@@ -260,7 +263,8 @@ def main() -> None:
     Path(args.out).write_text(json.dumps({
         "note": ("建玉を持たず、シグナルの足から h 本先の終値までの符号付きリターン。"
                  "決済ルールを使わない。経費は引いていない。探索区間 2017-2019 のみ。"),
-        "explore": [EXPLORE_START.isoformat(), EXPLORE_END.isoformat()],
+        "explore": [start.isoformat(), end.isoformat()],
+        "source": args.source, "load": k1_source.last_load,
         "trunc": trunc,
         "bootstrap_reps": BOOTSTRAP, "seed": SEED,
         "family": {"feet": list(args.feet), "gates": [eff.label(g) for g in gs],

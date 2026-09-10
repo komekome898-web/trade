@@ -27,9 +27,10 @@ def fmt(c):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--gate", default="s19/b24")
+    ap.add_argument("--dir", default=str(K1), help="JSON のあるディレクトリ")
     args = ap.parse_args()
-    T = json.loads((K1 / "signal_horizon.json").read_text("utf-8"))
-    N = json.loads((K1 / "signal_horizon_notrunc.json").read_text("utf-8"))
+    T = json.loads((Path(args.dir) / "signal_horizon.json").read_text("utf-8"))
+    N = json.loads((Path(args.dir) / "signal_horizon_notrunc.json").read_text("utf-8"))
     assert T.get("trunc", True) is True and N["trunc"] is False
     CT, CN = T["cells"], N["cells"]
 
@@ -61,7 +62,7 @@ def main() -> None:
             continue
         print(f"| `{g}` | {fmt(a1)} | {fmt(b1)} | {a1['n']:,} → {b1['n']:,} | {fmt(a2)} | {fmt(b2)} |")
 
-    print("\n### 族全体(1,638 セル)\n")
+    print(f"\n### 族全体({len(CT):,} セル)\n")
     print("| | 0 を跨がないセル | うち正 | うち負 |")
     print("|---|---|---|---|")
     for name, C in (("原典どおり", CT), ("切り捨てなし", CN)):

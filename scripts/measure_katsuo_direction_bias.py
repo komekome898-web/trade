@@ -43,6 +43,7 @@ import json
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+import k1_source
 import measure_katsuo_dispersion as base
 import measure_katsuo_effect as eff
 
@@ -201,19 +202,29 @@ def share(d, a, b):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
-    ap.add_argument("--out", default=str(REPO / "docs" / "PHASE2" / "K1" / "direction_bias.json"))
+    ap.add_argument("--out", default=None)
+    k1_source.add_source_args(ap)
     args = ap.parse_args()
+    start, end = k1_source.resolve_range(args)
+    if args.out is None:
+        args.out = str(k1_source.out_dir(args.source) / "direction_bias.json")
 
-    print(f"探索区間 {EXPLORE_START} 〜 {EXPLORE_END}(判定区間 2020-2021 には触れない)")
-    seconds = base.load_seconds(EXPLORE_START, EXPLORE_END)
-    print(f"  BitMEX 秒バー {len(seconds):,} 行")
-    bmins = load_binance_minutes((2017, 2018, 2019))
-    print(f"  Binance 分バー {len(bmins):,} 行(最初 "
-          f"{datetime.utcfromtimestamp(bmins[0][0])} / 最後 "
-          f"{datetime.utcfromtimestamp(bmins[-1][0])})")
+    print(f"{args.source} 区間 {start} 〜 {end}(BitMEX の判定区間 2020-2021 には触れない)")
+    seconds = k1_source.load_bars(args.source, start, end)
+    print(f"  {args.source} バー {len(seconds):,} 行")
+    # 取引所の比較(同窓の BitMEX vs Binance)は BitMEX を主データにしたときだけ行う。
+    # Binance を主データにしたときは主データそのものが Binance なので、この比較は作らない
+    venue_compare = args.source == "bitmex"
+    if venue_compare:
+        bmins = load_binance_minutes(range(start.year, end.year + 1))
+        print(f"  Binance 分バー {len(bmins):,} 行(最初 "
+              f"{datetime.utcfromtimestamp(bmins[0][0])} / 最後 "
+              f"{datetime.utcfromtimestamp(bmins[-1][0])})")
 
     gs = eff.gates()
-    result = {"feet": {}, "venue": {}, "match_from": MATCH_FROM}
+    result = {"feet": {}, "venue": {}, "match_from": MATCH_FROM,
+              "source": args.source, "explore": [start.isoformat(), end.isoformat()],
+              "load": k1_source.last_load}
 
     for foot in args.feet:
         bars = base.fold(seconds, foot)
@@ -227,6 +238,13 @@ def main() -> None:
             bc["entry_weak"] = stage_d(bars, sg, "weak", years)
             cells[eff.label(g)] = bc
         result["feet"][str(foot)] = {"stage_a": a, "gates": cells}
+
+        if not venue_compare:
+            print(f"  {foot:>3}分 | 段A 買い {share(a['trunc'], 'buy', 'sell'):.2f}%"
+                  f"(切捨なし {share(a['raw'], 'buy', 'sell'):.2f}%)"
+                  f" | 上ヒゲ平均 {a['sum_top_bp'] / max(a['signed'], 1):.1f}bp"
+                  f" 下ヒゲ平均 {a['sum_under_bp'] / max(a['signed'], 1):.1f}bp")
+            continue
 
         # ---- 取引所の比較(同じ窓に切り揃える)
         bm = [b for b in bars if b[0] >= MATCH_FROM]
