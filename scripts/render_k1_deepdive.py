@@ -39,6 +39,12 @@ def cell(d, foot, st, h):
     return d["cells"].get(f"{foot}|{GATE}|{st}|{h}")
 
 
+def ratio_labels(d):
+    """実体比の層のラベルを JSON の `bootstrap.ratio_bins` から作る(手打ちしない)。"""
+    e = d["bootstrap"]["ratio_bins"]
+    return [f"[{e[i]:g},{e[i + 1]:g})" for i in range(len(e) - 1)] + [f"[{e[-1]:g},+)"]
+
+
 def years(d):
     ys = set()
     for c in d["cells"].values():
@@ -50,8 +56,8 @@ def years(d):
 
 def t1(venues, hs=(1, 3, 5)):
     print("### 表 S1 — 区間の頑健性: 日ブロック 200 回で 0 を跨がないセルが、ブロックを変えても跨がないか(門 `s19/b24`、h=1/3/5、足 6 × 強さ 2)\n")
-    print("| 取引所 | セル数 | 日 200 で `*` | うち 日 1000 でも | うち 週 200 でも | うち 週 1000 でも | うち 月 200 でも | `*` の符号が変わった |")
-    print("|---|---|---|---|---|---|---|---|")
+    print("| 取引所 | セル数 | 日 200 で `*` | うち 日 1000 でも | うち 週 200 でも | うち 週 1000 でも | うち 月 200 でも |")
+    print("|---|---|---|---|---|---|---|")
     for name, d in venues:
         tot = base = 0
         keep = {"day_1000": 0, "week_200": 0, "week_1000": 0, "month_200": 0}
@@ -68,7 +74,7 @@ def t1(venues, hs=(1, 3, 5)):
                     for k in keep:
                         if star(c["d2"][k]):
                             keep[k] += 1
-        print(f"| {name} | {tot} | {base} | {keep['day_1000']} | {keep['week_200']} | {keep['week_1000']} | {keep['month_200']} | 0(平均は同じ) |")
+        print(f"| {name} | {tot} | {base} | {keep['day_1000']} | {keep['week_200']} | {keep['week_1000']} | {keep['month_200']} |")
     print()
 
 
@@ -203,8 +209,8 @@ def t6y(venues, foot_list=(5, 15), h=3):
 
 def t7(venues, h=3):
     print(f"### 表 S8 — 実体比の層(D9b、`|実体| / ヒゲ`、h={h})。各マス: 平均 bp (n)\n")
-    bins = ["[0,0.25)", "[0.25,0.5)", "[0.5,0.75)", "[0.75,1)", "[1,2)", "[2,+)"]
     for name, d in venues:
+        bins = ratio_labels(d)
         print(f"**{name}**\n")
         print("| 足 | 強さ | " + " | ".join(bins) + " |")
         print("|---|---|" + "---|" * len(bins))
@@ -220,7 +226,7 @@ def t7(venues, h=3):
 
 
 def t7y(venues, foot_list=(5, 15), h=3):
-    print(f"### 表 S9 — 実体比の層の年別(h={h}): 「実体 < 0.25 ヒゲ」と「実体 ≥ ヒゲ([1,2) と [2,+) を n で加重)」の平均 bp (n)\n")
+    print(f"### 表 S9 — 実体比の層の年別(h={h}): 最小の層(実体 < 0.25 ヒゲ)と、上位 2 層(実体 ≥ ヒゲ。n で加重)の平均 bp (n)\n")
     for name, d in venues:
         ys = years(d)
         print(f"**{name}**\n")
@@ -232,12 +238,13 @@ def t7y(venues, foot_list=(5, 15), h=3):
                 if not c:
                     continue
                 py = c["d9b"]["per_year"]
+                labels = ratio_labels(d)          # 層のラベルは JSON から(手打ちしない)
                 small, big = [], []
                 for y in ys:
                     p = py.get(y, {})
-                    s = p.get("[0,0.25)")
+                    s = p.get(labels[0])
                     small.append(f"{f(s['mean_bp'], 1)} ({s['n']})" if s else "—")
-                    parts = [p[k] for k in ("[1,2)", "[2,+)") if k in p]
+                    parts = [p[k] for k in labels[-2:] if k in p]
                     n = sum(x["n"] for x in parts)
                     big.append(f"{f(sum(x['mean_bp'] * x['n'] for x in parts) / n, 1)} ({n})" if n else "—")
                 print(f"| {foot} 分 | {lab} | 実体 < 0.25 ヒゲ | " + " | ".join(small) + " |")
