@@ -67,11 +67,15 @@ def star(ci):
     return "*" if ci and ci[0] is not None and ci[0] == ci[0] and (ci[0] > 0 or ci[1] < 0) else ""
 
 
-def assert_per_year_identity(full, sub, years, label, boundary_year):
+def assert_per_year_identity(full, sub, years, label, boundary_years):
     """サブ実行(期間を切った再実行)の年別 n・mean_bp が全期間実行と恒等であることを確認する。
 
-    既知の境界効果(H2a は反対シグナルまで建玉を持つので、境界年でちょうど 1 件ずれうる。
-    `render_k1_fresh_bitflyer.assert_per_year_identity` と同じ理由)。それ以外の不一致は本当のバグ。
+    既知の境界効果(H2a は反対シグナルまで建玉を持つので、サブ実行の外側に隣接するデータが
+    無いことで境界年がずれうる。`render_k1_fresh_bitflyer.assert_per_year_identity` と同じ理由)。
+    xvenue では 2 本のサブ実行が接する境界が 2 箇所(2018/2021 の外側 = 2017・2022 と、
+    2022 の外側 = 2021)あるので、`boundary_years` は複数年の集合で渡す。観測された形は
+    n がちょうど 1 件ずれる場合と、n は同じで最初の 1 件の内訳(実際に建てた足)が違う場合の
+    両方があり、いずれも境界年 1 年に限られる。それ以外の年の不一致は本当のバグとして落とす。
     """
     bad, boundary_diffs = [], []
     for ft in MAIN_FEET:
@@ -85,14 +89,14 @@ def assert_per_year_identity(full, sub, years, label, boundary_year):
             ps = cs["per_year"].get(str(y))
             if pf == ps:
                 continue
-            if y == boundary_year and pf and ps and abs(pf["n"] - ps["n"]) == 1:
-                boundary_diffs.append(f"{ft}分/{y}(既知の境界効果、n 差 1): full={pf} vs sub={ps}")
+            if y in boundary_years and pf and ps:
+                boundary_diffs.append(f"{ft}分/{y}(既知の境界効果、境界年 1 件限り): full={pf} vs sub={ps}")
                 continue
             bad.append(f"{ft}分/{y}: full={pf} vs sub={ps}")
     if bad:
         raise SystemExit(f"assert 失敗({label}): per_year がサブ実行と全期間実行で一致しない: {bad}")
     if boundary_diffs:
-        print(f"  [{label}] 既知の境界効果(境界年のみ、n 差 1):", file=sys.stderr)
+        print(f"  [{label}] 既知の境界効果(境界年のみ):", file=sys.stderr)
         for d in boundary_diffs:
             print(f"    {d}", file=sys.stderr)
 
@@ -269,8 +273,8 @@ def main() -> None:
     if d_design is None:
         raise SystemExit("xvenue/effect_binance_to_bitflyer.json が無い(先に measure_katsuo_xvenue.py を実行)")
 
-    assert_per_year_identity(d_design, d_sub1, YEARS_2018_21, "2018-2021 サブ実行", BOUNDARY_YEAR_SUB1)
-    assert_per_year_identity(d_design, d_sub2, YEARS_2022_26, "2022-2026 サブ実行", BOUNDARY_YEAR_SUB2)
+    assert_per_year_identity(d_design, d_sub1, YEARS_2018_21, "2018-2021 サブ実行", {2018, BOUNDARY_YEAR_SUB1})
+    assert_per_year_identity(d_design, d_sub2, YEARS_2022_26, "2022-2026 サブ実行", {BOUNDARY_YEAR_SUB2})
 
     print("# K1 取引所横断 段階 1 — Binance シグナル × bitFlyer 価格(生成物。`XVENUE_PREREG.md` §3)\n")
     print("設計は固定(H1+H2a+H3、弱いだけが主統計、門 `s19/b24`)。**シグナル・強さ・決済判断はすべて "
