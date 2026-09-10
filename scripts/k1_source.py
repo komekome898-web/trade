@@ -18,6 +18,12 @@
 bitFlyer FX_BTC_JPY のチャート用 1 分 OHLCV(`backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/
 candles_1m_{year}.csv.gz`)を読む。
 
+`bybit` は `XVENUE_PREREG.md` §2 段階 2(L-095)用: Bybit BTCUSDT 無期限の 1 分 OHLC
+(`backtest_data/bybit_BTCUSDT_1m_20260910/bybit_BTCUSDT_1m_{year}.csv.gz`。列 `ts,open,high,low,close`、
+`ts` は UTC epoch 秒で分の頭に揃っている。`fetch_bybit_minutes.py` が作る)を読む。
+2022〜2024 は `kline_for_metatrader4` アーカイブ(取得時に UTC+3 → UTC へ補正済み)、
+2025〜2026-08 は日次約定ファイルを畳んだもの(約定の無い分は行を作らない。他ソースと同じ扱い)。
+
 **時刻の基準(先に確認した事実)**: `ts` 列は ISO-8601 文字列で、全行に明示的な `+00:00`
 オフセットが付いている(README・`candles_1m_index.json` の年別 first/last と実データの
 先頭行を確認。ミリ秒ではなく秒粒度、JST ではなく最初から UTC)。したがって
@@ -61,10 +67,15 @@ BINANCE_FILES = (
 )
 
 BITFLYER_DIR = REPO / "backtest_data" / "bitflyer_lightchart_FX_BTC_JPY_1m_20260906"
+BYBIT_DIR = REPO / "backtest_data" / "bybit_BTCUSDT_1m_20260910"
 
 
 def bitflyer_file(year: int) -> Path:
     return BITFLYER_DIR / f"candles_1m_{year}.csv.gz"
+
+
+def bybit_file(year: int) -> Path:
+    return BYBIT_DIR / f"bybit_BTCUSDT_1m_{year}.csv.gz"
 
 
 # ソースごとの既定の期間と出力ディレクトリ。bitmex は従来どおり(探索区間 2017-2019、判定区間は封印)
@@ -72,6 +83,7 @@ SOURCES = {
     "bitmex": {"start": date(2017, 1, 1), "end": date(2019, 12, 31), "out_dir": K1},
     "binance": {"start": date(2017, 8, 17), "end": date(2026, 8, 31), "out_dir": K1 / "binance"},
     "bitflyer": {"start": date(2017, 1, 1), "end": date(2026, 8, 31), "out_dir": K1 / "bitflyer"},
+    "bybit": {"start": date(2022, 1, 1), "end": date(2026, 8, 31), "out_dir": K1 / "xvenue"},
 }
 
 # 直近の読み込みの事実(行数・落とした件数)。報告用
@@ -183,6 +195,37 @@ def load_bitflyer_minutes(start: date, end: date):
     return rows, n_read, n_dropped
 
 
+def load_bybit_minutes(start: date, end: date):
+    """Bybit BTCUSDT 無期限の 1 分足を (epoch秒, o, h, l, c) で返す。
+
+    `ts` 列は取得時に UTC epoch 秒へ揃えてある(`fetch_bybit_minutes.py`。kline は
+    UTC+3 補正済み、約定畳み込みはもとから UTC)。約定の無い分はファイルに行自体が無いので、
+    ここで落とす行は無い(dropped は常に 0。binance/bitflyer と形を揃えるためだけに返す)。
+
+    戻り値は (rows, n_read, n_dropped)。`n_read` は期間内の行数。
+    """
+    lo = int(datetime(start.year, start.month, start.day, tzinfo=timezone.utc).timestamp())
+    hi = int(datetime(end.year, end.month, end.day, tzinfo=timezone.utc).timestamp()) + 86400
+    rows = []
+    n_read = 0
+    for year in range(start.year, end.year + 1):
+        path = bybit_file(year)
+        if not path.exists():
+            continue
+        with gzip.open(path, "rt", newline="") as fh:
+            reader = csv.reader(fh)
+            header = next(reader, None)
+            assert header is not None and header[:5] == ["ts", "open", "high", "low", "close"], (path, header)
+            for r in reader:
+                ts = int(r[0])
+                if ts < lo or ts >= hi:
+                    continue
+                n_read += 1
+                rows.append((ts, float(r[1]), float(r[2]), float(r[3]), float(r[4])))
+    rows.sort(key=lambda x: x[0])
+    return rows, n_read, 0
+
+
 def load_bars(source: str, start: date, end: date):
     """出所を切り替えて足の列 [(ts, o, h, l, c), ...] を返す。`fold()` にそのまま渡せる。"""
     global last_load
@@ -221,6 +264,25 @@ def load_bars(source: str, start: date, end: date):
             ),
         }
         print(f"  bitFlyer 分足 {n_read:,} 行のうち null OHLC(約定 0)を {n_dropped:,} 行落とし {len(rows):,} 行"
+              f"(1 分足の fold() は行数・o/h/l/c とも恒等。ts が分の境界に無い行 {off_minute:,})")
+        return rows
+    if source == "bybit":
+        rows, n_read, n_dropped = load_bybit_minutes(start, end)
+        # 1 分足では fold() が恒等(binance/bitflyer と同じ設計書 §4.3 の扱い)
+        bars1 = base.fold(rows, 1)
+        assert len(bars1) == len(rows) == n_read - n_dropped, (len(bars1), len(rows), n_read, n_dropped)
+        assert all(a[1:] == b[1:] for a, b in zip(rows, bars1)), "1 分足の fold() で o/h/l/c が変わった"
+        off_minute = sum(1 for r in rows if r[0] % 60 != 0)
+        last_load = {
+            "source": source, "rows": len(rows), "rows_read": n_read,
+            "dropped_null_ohlc": n_dropped, "open_time_off_minute": off_minute,
+            "timestamp_basis": (
+                "ts column is UTC epoch seconds, corrected at acquisition time (kline_for_metatrader4 "
+                "archive timestamps are UTC+3 broker time, corrected -3h; daily trade-fold minutes were "
+                "already UTC); minute-aligned; no conversion performed here"
+            ),
+        }
+        print(f"  Bybit 分足 {n_read:,} 行(欠測分は元データに行が無いため落とし 0 件、{len(rows):,} 行)"
               f"(1 分足の fold() は行数・o/h/l/c とも恒等。ts が分の境界に無い行 {off_minute:,})")
         return rows
     raise ValueError(source)

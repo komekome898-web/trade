@@ -60,9 +60,20 @@ OUT_DIR = REPO / "docs" / "PHASE2" / "K1" / "xvenue"
 BINANCE_REF = REPO / "docs" / "PHASE2" / "K1" / "binance" / "effect_flip_noinval_delay.json"
 
 # Binance の手元データが始まる日(k1_source.SOURCES["binance"]["start"])を bitFlyer の
-# 範囲(2017-01-01〜2026-08-31)と交わらせた既定期間(プレレジ §2)
+# 範囲(2017-01-01〜2026-08-31)と交わらせた既定期間(プレレジ §2、段階 1)
 DEFAULT_START = date(2017, 8, 17)
 DEFAULT_END = date(2026, 8, 31)
+
+# 段階 2(Bybit、XVENUE_PREREG.md §2)の既定期間。シグナル取引所ごとに既定の範囲・命名が違う
+# ("bybit" 未消費期間 2022-01-01〜2026-08-31)ので、signal_source をキーに切り替える。
+# 無いキー(binance/bitflyer)は従来どおり DEFAULT_START/END を使う(挙動不変)。
+DEFAULT_RANGES = {
+    "bybit": (date(2022, 1, 1), date(2026, 8, 31)),
+}
+
+
+def default_range(signal_source: str) -> tuple[date, date]:
+    return DEFAULT_RANGES.get(signal_source, (DEFAULT_START, DEFAULT_END))
 
 FEET = eff.FEET                    # (1, 3, 5, 15, 30, 60)
 MAIN_FEET = (5, 15)
@@ -388,7 +399,10 @@ def run_vol_terciles(signal_source, price_source, start, end):
         print(f"  {foot}分: own edges {result['feet'][str(foot)]['edges_bp_own']} bp"
               f" / 取引 {len(all_trades):,} 件(訓練 {len(train):,} 件) / vol 無し {n_no_vol:,} 件")
 
-    write_json(result, OUT_DIR / "vol_terciles.json")
+    # 段階 1(signal_source=binance)は既存名 vol_terciles.json のまま(既に参照済み)。
+    # 他ソース(段階 2 の bybit など)は接頭辞を付けて別ファイルにする
+    out_name = "vol_terciles.json" if signal_source == "binance" else f"{signal_source}_vol_terciles.json"
+    write_json(result, OUT_DIR / out_name)
     return result
 
 
@@ -396,16 +410,17 @@ def run_vol_terciles(signal_source, price_source, start, end):
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--signal-source", choices=("binance", "bitflyer"), default="binance")
-    ap.add_argument("--price-source", choices=("binance", "bitflyer"), default="bitflyer")
+    ap.add_argument("--signal-source", choices=("binance", "bitflyer", "bybit"), default="binance")
+    ap.add_argument("--price-source", choices=("binance", "bitflyer", "bybit"), default="bitflyer")
     ap.add_argument("--start", type=date.fromisoformat, default=None)
     ap.add_argument("--end", type=date.fromisoformat, default=None)
     ap.add_argument("--gate", action="store_true", help="再現ゲートのみ実行")
     ap.add_argument("--vol-terciles", action="store_true", help="ボラ三分位のみ実行")
     args = ap.parse_args()
 
-    start = args.start if args.start is not None else DEFAULT_START
-    end = args.end if args.end is not None else DEFAULT_END
+    def_start, def_end = default_range(args.signal_source)
+    start = args.start if args.start is not None else def_start
+    end = args.end if args.end is not None else def_end
 
     if args.gate:
         run_gate(start, end)
@@ -417,13 +432,15 @@ def main() -> None:
 
     design, ref, alignment = run_design(args.signal_source, args.price_source, start, end)
 
-    full_range = start == DEFAULT_START and end == DEFAULT_END
+    full_range = start == def_start and end == def_end
     suffix = "" if full_range else f"_{start.year}_{end.year}"
     base_name = f"effect_{args.signal_source}_to_{args.price_source}"
     write_json(design, OUT_DIR / f"{base_name}{suffix}.json")
     write_json(ref, OUT_DIR / f"{base_name}_sameclose{suffix}.json")
     if full_range:
-        write_json(alignment, OUT_DIR / "alignment.json")
+        # 段階 1(binance)は既存名 alignment.json のまま(参照済み)。他ソースは接頭辞を付ける
+        align_name = "alignment.json" if args.signal_source == "binance" else f"{args.signal_source}_alignment.json"
+        write_json(alignment, OUT_DIR / align_name)
 
     print(f"\nセル 設計 {len(design['cells'])} 件 / 参考列 {len(ref['cells'])} 件")
 

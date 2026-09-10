@@ -47,3 +47,4 @@ backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/raw/
 backtest_data/binance_BTCUSDT_aggTrades_tardis_days/*.csv.gz
 backtest_data/binance_BTCUSDT_aggTrades_tardis_days/raw/
 backtest_data/bybit_reachability_check_20260906/raw/
+backtest_data/bybit_BTCUSDT_1m_20260910/*.csv.gz

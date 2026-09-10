@@ -7,7 +7,11 @@
 **閾値(事前登録どおり、先に決める)**: 古い終値 > 10% または欠測 > 5% の年は
 `excluded_from_reading: true` を立てる(表には出すが読みからは外す)。
 
+`--source` で切り替え可能(既定 `bitflyer`、後方互換で出力名も不変)。段階 2(`XVENUE_PREREG.md`)
+用に `--source bybit` を追加(同じ閾値、出力は `xvenue/bybit_data_check.json`)。
+
     PYTHONPATH=src:scripts python scripts/check_k1_bitflyer_data.py
+    PYTHONPATH=src:scripts python scripts/check_k1_bitflyer_data.py --source bybit
 """
 from __future__ import annotations
 
@@ -46,14 +50,22 @@ def minutes_expected(year: int, start: date, end: date) -> int:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--start", type=date.fromisoformat, default=k1_source.default_start("bitflyer"))
-    ap.add_argument("--end", type=date.fromisoformat, default=k1_source.default_end("bitflyer"))
-    ap.add_argument("--out", default=str(k1_source.out_dir("bitflyer") / "data_check.json"))
+    ap.add_argument("--source", choices=sorted(k1_source.SOURCES), default="bitflyer")
+    ap.add_argument("--start", type=date.fromisoformat, default=None)
+    ap.add_argument("--end", type=date.fromisoformat, default=None)
+    ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
-    rows = k1_source.load_bars("bitflyer", args.start, args.end)
+    start = args.start if args.start is not None else k1_source.default_start(args.source)
+    end = args.end if args.end is not None else k1_source.default_end(args.source)
+    args.start, args.end = start, end
+    if args.out is None:
+        out_name = "data_check.json" if args.source == "bitflyer" else f"{args.source}_data_check.json"
+        args.out = str(k1_source.out_dir(args.source) / out_name)
+
+    rows = k1_source.load_bars(args.source, args.start, args.end)
     load_meta = dict(k1_source.last_load)
-    print(f"読み込み {args.start} 〜 {args.end}: {len(rows):,} 行(bitFlyer)")
+    print(f"読み込み {args.start} 〜 {args.end}: {len(rows):,} 行({args.source})")
 
     bars_by_foot = {ft: base.fold(rows, ft) for ft in FEET}
     sigs_by_foot = {ft: eff.signals(bars_by_foot[ft], SMALL, BIG) for ft in FEET}
@@ -121,9 +133,11 @@ def main() -> None:
               f" / 除外={excluded}")
 
     result = {
-        "note": ("bitFlyer FX_BTC_JPY lightchart 1 分足のデータ検査(FRESH_BITFLYER_PREREG.md §1)。"
+        "note": (f"{args.source} 1 分足のデータ検査(FRESH_BITFLYER_PREREG.md §1 と同じ閾値・列。"
+                 "bybit は XVENUE_PREREG.md §2 段階 2、L-095)。"
                  "閾値: 古い終値 > 10% または欠測 > 5% の年は excluded_from_reading=true。"
                  "zero_volume_share は k1_source.load_bars が volume 列を返さないため判定不能(null)。"),
+        "source": args.source,
         "range": [args.start.isoformat(), args.end.isoformat()],
         "thresholds": {"stale_close_share_gt": STALE_THRESHOLD, "missing_share_gt": MISSING_THRESHOLD},
         "gate": GATE_NAME,
