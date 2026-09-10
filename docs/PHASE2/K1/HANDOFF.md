@@ -230,5 +230,5 @@
 - **深掘り(第 9 部)**: `scripts/measure_katsuo_robustness.py --source {bitmex,binance}`(D1〜D11、門 2 つ × 180 セル、
   BitMEX 431 秒 / Binance 272 秒。`--dump-cell KEY --dump-path P` で 1 セルの行を CSV に)→ `render_k1_robustness.py --dir`(全診断の表)、
   `render_k1_deepdive.py`(両取引所の要約 表 S1〜S12)。先読み・符号のテストは `tests/test_k1_lookahead.py`(8 件)。
-  全スイートは **1,746 件**(2026-09-10 実測)(CLAUDE.md の「976 件」は古かった)
+  全スイートは **1,751 件**(2026-09-10 実測。bitFlyer フレッシュ確認の `tests/test_k1_bitflyer_source.py` 5 件を追加)(CLAUDE.md の「976 件」は古かった)
 - 1 秒バーは `backtest_data/bitmex_trade_1s_XBTUSD/`(2017-2021、1,826 日 / 7,874 万本)
