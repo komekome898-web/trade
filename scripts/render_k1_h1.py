@@ -128,6 +128,8 @@ def t_year(name, d, gate="s19/b24", h=3):
             print(f"| シグナル h={h} | {ft} 分 | {LABEL[st]} | " + " | ".join(row) + " |")
     for ft in FEET:
         for st, lab in STRENGTHS:
+            if not (ef0 and ef1):
+                break
             c0 = ef0["cells"].get(f"{ft}|{gate}|{st}")
             c1 = ef1["cells"].get(f"{ft}|{gate}|{st}")
             if not c1:
