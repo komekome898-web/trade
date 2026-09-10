@@ -121,7 +121,12 @@ def main() -> None:
                     if len(tr) < 30:
                         continue
                     n = len(tr)
-                    mean = sum(r for _i, r, _h, _w in tr) / n
+                    rs = sorted(r for _i, r, _h, _w in tr)
+                    mean = sum(rs) / n
+                    # 損切りを外す変種は裾が変わりうるので、平均だけでなく散らばりと分位も出す
+                    sd = (sum((x - mean) ** 2 for x in rs) / (n - 1)) ** 0.5 if n > 1 else float("nan")
+                    q = {k: rs[min(n - 1, int(f * (n - 1)))] for k, f in
+                         (("p05", 0.05), ("p25", 0.25), ("p50", 0.50), ("p75", 0.75), ("p95", 0.95))}
                     key = f"{mode}|{foot}|{eff.label(g)}|{keep}"
                     dsum: dict[int, float] = {}
                     dn: dict[int, int] = {}
@@ -142,6 +147,9 @@ def main() -> None:
                         "mode": mode, "foot": foot, "gate": eff.label(g), "strength": keep,
                         "n": n, "mean_bp": round(mean, 3),
                         "ci95_bp": [round(lo, 3), round(hi, 3)],
+                        "sd_bp": round(sd, 1),
+                        "quantiles_bp": {k: round(v, 2) for k, v in q.items()},
+                        "min_bp": round(rs[0], 1), "max_bp": round(rs[-1], 1),
                         "hold_median": sorted(h for _i, _r, h, _w in tr)[n // 2],
                         "exit_reasons": why, "per_year": per_year,
                     }
