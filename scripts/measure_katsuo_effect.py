@@ -133,6 +133,22 @@ def signals(bars, small, big, trunc=True, flip_body=False):
     return out
 
 
+def delay_signals(sigs):
+    """**H3**(`docs/PHASE2/K1/H3_PREREG.md` §2、オーナー決定 L-076): 行動を 1 本遅らせる。
+
+    足 j で行う行動(向き・無効化ライン・強さ)は足 j−1 のシグナルのもの、色は**実際の足 j** のもの。
+    これを `simulate()` にそのまま渡すと、建玉の入口・ドテン・反対シグナル決済がすべて 1 本遅れ、
+    約定価格は足 j の終値になる。最初の足には前の足が無いのでシグナル無し。
+    """
+    if not sigs:
+        return []
+    out = [(0, 0.0, sigs[0][2], "")]
+    for j in range(1, len(sigs)):
+        sig, lc, _cs, strength = sigs[j - 1]
+        out.append((sig, lc, sigs[j][2], strength))
+    return out
+
+
 def simulate(bars, sigs, keep=None, use_invalid=True):
     """建玉 1 単位でカツオの 4 分岐を回し、1 取引ずつの符号付きリターン(bp)を返す。
 
@@ -215,6 +231,9 @@ def main() -> None:
     ap.add_argument("--no-invalidation", action="store_true",
                     help="H2a(H2_PREREG.md §2): ヒゲ先端の無効化を外し反対シグナルだけで決済。"
                          "別ファイル effect_noinval.json(--flip-body と併用なら effect_flip_noinval.json)")
+    ap.add_argument("--delay-entry", action="store_true",
+                    help="H3(H3_PREREG.md §2): 行動を 1 本遅らせる(足 i のシグナルを足 i+1 の終値で執行)。"
+                         "ファイル名に _delay を付ける")
     k1_source.add_source_args(ap)
     args = ap.parse_args()
     start, end = k1_source.resolve_range(args)
@@ -223,10 +242,12 @@ def main() -> None:
         name = {(False, True): "effect.json", (True, True): "effect_flipbody.json",
                 (False, False): "effect_noinval.json", (True, False): "effect_flip_noinval.json"}[
                     (args.flip_body, use_invalid)]
+        if args.delay_entry:
+            name = name.replace(".json", "_delay.json")
         args.out = str(k1_source.out_dir(args.source) / name)
     # H2a 単独の再現ゲート: 第 7 部 exit_ablation.json の opposite_only と n・平均が一致すること
     ref = {}
-    if not use_invalid and not args.flip_body:
+    if not use_invalid and not args.flip_body and not args.delay_entry:
         ea = k1_source.out_dir(args.source) / "exit_ablation.json"
         if ea.exists():
             ref = json.loads(ea.read_text("utf-8"))["cells"]
@@ -246,6 +267,8 @@ def main() -> None:
         years = [datetime.utcfromtimestamp(t).year for t in ts]
         for g in gs:
             sg = signals(bars, g[0], g[1], flip_body=args.flip_body)
+            if args.delay_entry:
+                sg = delay_signals(sg)              # H3
             for keep in STRENGTHS:
                 tr = simulate(bars, sg, None if keep == "both" else keep, use_invalid=use_invalid)
                 if len(tr) < 30:
@@ -299,7 +322,7 @@ def main() -> None:
                  "探索区間 2017-2019 のみ。帰無・MDE・判定バーは作っていない。"),
         "explore": [start.isoformat(), end.isoformat()],
         "source": args.source, "load": k1_source.last_load,
-        "flip_body": args.flip_body, "use_invalid": use_invalid,
+        "flip_body": args.flip_body, "use_invalid": use_invalid, "delay_entry": args.delay_entry,
         "reproduction_gate": repro,
         "bootstrap_reps": BOOTSTRAP, "seed": SEED,
         "family": {"feet": list(args.feet), "gates": [label(g) for g in gs],
