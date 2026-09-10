@@ -31,7 +31,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 
 ## 3. 運用の要点
 
-- テスト: `PYTHONPATH=src python -m pytest -q`(現在 1,739 件。2026-09-10 実測)
+- テスト: `PYTHONPATH=src python -m pytest -q`(現在 1,746 件。2026-09-10 実測)
 - **`git pull` 後は必ず `pip install -e ".[dev]"`**。依存追加を取り込まないとコンポーネントが起動直後に落ちる → 詳細 `docs/OPERATIONS.md` §4.5(Windows は `deploy\restart_all.bat` が pull→install→停止→起動を失敗時中断つきで実行)
 - Windows 運用(3プロセス並走・ウォッチドッグ・タスクスケジューラ2件)→ `docs/OPERATIONS.md` §5。ON1 実弾ジョブ(平日15:35/8:35の2タスク・二重ゲート・STATE_UNKNOWN 復帰手順)→ §5.1
 - 緊急停止: リポジトリ直下に `KILL` ファイルを作成
