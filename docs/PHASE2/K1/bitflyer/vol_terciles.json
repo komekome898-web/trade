@@ -1,0 +1,755 @@
+{
+  "note": "bitFlyer のボラ三分位。境目は bitFlyer 2017-2019 の設計(H1+H2a+H3、弱い、s19/b24)の取引の入口 vol_prev(直前 100 本の対数リターン絶対値の平均)の 33/66 パーセンタイルから決め、全年(2017-2026)をその境目で分類する(2020-2026 は見ずに当てる)。参考列は BitMEX で決めた固定の境目を同じ集合に当てたもの。帰無・MDE・判定バーは作っていない。",
+  "gate": "s19/b24",
+  "design": {
+    "flip_body": true,
+    "use_invalid": false,
+    "delay_entry": true,
+    "keep": "weak"
+  },
+  "vol_window": 100,
+  "edges_computed_on": [
+    "2017-01-01",
+    "2019-12-31"
+  ],
+  "bitmex_fixed_edges_bp": {
+    "5": [
+      21.79,
+      35.17
+    ],
+    "15": [
+      29.58,
+      48.68
+    ]
+  },
+  "range": [
+    "2017-01-01",
+    "2026-08-31"
+  ],
+  "load": {
+    "source": "bitflyer",
+    "rows": 4954388,
+    "rows_read": 5082104,
+    "dropped_null_ohlc": 127716,
+    "open_time_off_minute": 0,
+    "timestamp_basis": "ts column is ISO-8601 with explicit +00:00 offset (already UTC, second-granularity, minute-aligned); parsed via datetime.fromisoformat(ts).timestamp(); no ms->s or JST->UTC conversion performed (none was needed)"
+  },
+  "feet": {
+    "5": {
+      "n_bars": 1008926,
+      "edges_bp_own": [
+        20.28,
+        33.81
+      ],
+      "edges_bp_bitmex_fixed": [
+        21.79,
+        35.17
+      ],
+      "n_no_vol": 1,
+      "n_trades_total": 24796,
+      "n_trades_2017_2019": 13133,
+      "per_year_own_edges": {
+        "2017": {
+          "low": {
+            "n": 1491,
+            "mean_bp": -1.082,
+            "total_bp": -1612.8
+          },
+          "mid": {
+            "n": 1928,
+            "mean_bp": -0.164,
+            "total_bp": -316.6
+          },
+          "high": {
+            "n": 2426,
+            "mean_bp": 5.186,
+            "total_bp": 12581.3
+          }
+        },
+        "2018": {
+          "low": {
+            "n": 1598,
+            "mean_bp": -3.969,
+            "total_bp": -6342.2
+          },
+          "mid": {
+            "n": 1721,
+            "mean_bp": 5.516,
+            "total_bp": 9493.5
+          },
+          "high": {
+            "n": 1562,
+            "mean_bp": 3.074,
+            "total_bp": 4800.9
+          }
+        },
+        "2019": {
+          "low": {
+            "n": 1288,
+            "mean_bp": 0.108,
+            "total_bp": 139.3
+          },
+          "mid": {
+            "n": 728,
+            "mean_bp": 6.985,
+            "total_bp": 5085.3
+          },
+          "high": {
+            "n": 390,
+            "mean_bp": 4.243,
+            "total_bp": 1654.9
+          }
+        },
+        "2020": {
+          "low": {
+            "n": 1194,
+            "mean_bp": 1.551,
+            "total_bp": 1852.3
+          },
+          "mid": {
+            "n": 518,
+            "mean_bp": 9.166,
+            "total_bp": 4747.7
+          },
+          "high": {
+            "n": 494,
+            "mean_bp": 15.361,
+            "total_bp": 7588.5
+          }
+        },
+        "2021": {
+          "low": {
+            "n": 1542,
+            "mean_bp": -1.216,
+            "total_bp": -1874.5
+          },
+          "mid": {
+            "n": 1470,
+            "mean_bp": 7.672,
+            "total_bp": 11278.3
+          },
+          "high": {
+            "n": 965,
+            "mean_bp": 6.375,
+            "total_bp": 6152.3
+          }
+        },
+        "2022": {
+          "low": {
+            "n": 1190,
+            "mean_bp": 2.006,
+            "total_bp": 2387.2
+          },
+          "mid": {
+            "n": 516,
+            "mean_bp": 2.307,
+            "total_bp": 1190.3
+          },
+          "high": {
+            "n": 290,
+            "mean_bp": 1.45,
+            "total_bp": 420.6
+          }
+        },
+        "2023": {
+          "low": {
+            "n": 728,
+            "mean_bp": -9.683,
+            "total_bp": -7049.5
+          },
+          "mid": {
+            "n": 95,
+            "mean_bp": -1.617,
+            "total_bp": -153.7
+          },
+          "high": {
+            "n": 18,
+            "mean_bp": 30.24,
+            "total_bp": 544.3
+          }
+        },
+        "2024": {
+          "low": {
+            "n": 897,
+            "mean_bp": -5.737,
+            "total_bp": -5145.7
+          },
+          "mid": {
+            "n": 260,
+            "mean_bp": -9.998,
+            "total_bp": -2599.5
+          },
+          "high": {
+            "n": 88,
+            "mean_bp": 17.108,
+            "total_bp": 1505.5
+          }
+        },
+        "2025": {
+          "low": {
+            "n": 621,
+            "mean_bp": 0.728,
+            "total_bp": 452.3
+          },
+          "mid": {
+            "n": 211,
+            "mean_bp": -8.857,
+            "total_bp": -1868.8
+          },
+          "high": {
+            "n": 24,
+            "mean_bp": -11.404,
+            "total_bp": -273.7
+          }
+        },
+        "2026": {
+          "low": {
+            "n": 431,
+            "mean_bp": -0.18,
+            "total_bp": -77.6
+          },
+          "mid": {
+            "n": 91,
+            "mean_bp": 9.284,
+            "total_bp": 844.9
+          },
+          "high": {
+            "n": 20,
+            "mean_bp": -1.348,
+            "total_bp": -27.0
+          }
+        }
+      },
+      "per_year_bitmex_fixed_edges": {
+        "2017": {
+          "low": {
+            "n": 1722,
+            "mean_bp": 0.693,
+            "total_bp": 1193.8
+          },
+          "mid": {
+            "n": 1876,
+            "mean_bp": -2.437,
+            "total_bp": -4572.2
+          },
+          "high": {
+            "n": 2247,
+            "mean_bp": 6.244,
+            "total_bp": 14030.4
+          }
+        },
+        "2018": {
+          "low": {
+            "n": 1845,
+            "mean_bp": -3.269,
+            "total_bp": -6030.9
+          },
+          "mid": {
+            "n": 1579,
+            "mean_bp": 6.921,
+            "total_bp": 10928.1
+          },
+          "high": {
+            "n": 1457,
+            "mean_bp": 2.097,
+            "total_bp": 3055.0
+          }
+        },
+        "2019": {
+          "low": {
+            "n": 1377,
+            "mean_bp": 0.783,
+            "total_bp": 1077.9
+          },
+          "mid": {
+            "n": 672,
+            "mean_bp": 6.281,
+            "total_bp": 4221.1
+          },
+          "high": {
+            "n": 357,
+            "mean_bp": 4.427,
+            "total_bp": 1580.5
+          }
+        },
+        "2020": {
+          "low": {
+            "n": 1272,
+            "mean_bp": 2.706,
+            "total_bp": 3441.6
+          },
+          "mid": {
+            "n": 479,
+            "mean_bp": 9.386,
+            "total_bp": 4496.0
+          },
+          "high": {
+            "n": 455,
+            "mean_bp": 13.739,
+            "total_bp": 6251.0
+          }
+        },
+        "2021": {
+          "low": {
+            "n": 1805,
+            "mean_bp": 0.188,
+            "total_bp": 338.7
+          },
+          "mid": {
+            "n": 1296,
+            "mean_bp": 6.966,
+            "total_bp": 9028.0
+          },
+          "high": {
+            "n": 876,
+            "mean_bp": 7.066,
+            "total_bp": 6189.4
+          }
+        },
+        "2022": {
+          "low": {
+            "n": 1278,
+            "mean_bp": 0.495,
+            "total_bp": 632.8
+          },
+          "mid": {
+            "n": 447,
+            "mean_bp": 9.524,
+            "total_bp": 4257.2
+          },
+          "high": {
+            "n": 271,
+            "mean_bp": -3.291,
+            "total_bp": -891.9
+          }
+        },
+        "2023": {
+          "low": {
+            "n": 743,
+            "mean_bp": -9.691,
+            "total_bp": -7200.7
+          },
+          "mid": {
+            "n": 85,
+            "mean_bp": 3.145,
+            "total_bp": 267.3
+          },
+          "high": {
+            "n": 13,
+            "mean_bp": 21.122,
+            "total_bp": 274.6
+          }
+        },
+        "2024": {
+          "low": {
+            "n": 955,
+            "mean_bp": -6.161,
+            "total_bp": -5884.0
+          },
+          "mid": {
+            "n": 212,
+            "mean_bp": -10.512,
+            "total_bp": -2228.5
+          },
+          "high": {
+            "n": 78,
+            "mean_bp": 24.011,
+            "total_bp": 1872.8
+          }
+        },
+        "2025": {
+          "low": {
+            "n": 653,
+            "mean_bp": 0.29,
+            "total_bp": 189.2
+          },
+          "mid": {
+            "n": 184,
+            "mean_bp": -8.064,
+            "total_bp": -1483.8
+          },
+          "high": {
+            "n": 19,
+            "mean_bp": -20.827,
+            "total_bp": -395.7
+          }
+        },
+        "2026": {
+          "low": {
+            "n": 449,
+            "mean_bp": -1.399,
+            "total_bp": -627.9
+          },
+          "mid": {
+            "n": 76,
+            "mean_bp": 18.114,
+            "total_bp": 1376.6
+          },
+          "high": {
+            "n": 17,
+            "mean_bp": -0.495,
+            "total_bp": -8.4
+          }
+        }
+      }
+    },
+    "15": {
+      "n_bars": 338236,
+      "edges_bp_own": [
+        27.85,
+        47.01
+      ],
+      "edges_bp_bitmex_fixed": [
+        29.58,
+        48.68
+      ],
+      "n_no_vol": 5,
+      "n_trades_total": 20500,
+      "n_trades_2017_2019": 9468,
+      "per_year_own_edges": {
+        "2017": {
+          "low": {
+            "n": 902,
+            "mean_bp": 4.296,
+            "total_bp": 3875.4
+          },
+          "mid": {
+            "n": 1367,
+            "mean_bp": 0.209,
+            "total_bp": 285.7
+          },
+          "high": {
+            "n": 1616,
+            "mean_bp": 9.676,
+            "total_bp": 15636.5
+          }
+        },
+        "2018": {
+          "low": {
+            "n": 1117,
+            "mean_bp": -6.761,
+            "total_bp": -7552.3
+          },
+          "mid": {
+            "n": 1173,
+            "mean_bp": 5.871,
+            "total_bp": 6887.1
+          },
+          "high": {
+            "n": 1195,
+            "mean_bp": 10.598,
+            "total_bp": 12665.1
+          }
+        },
+        "2019": {
+          "low": {
+            "n": 1135,
+            "mean_bp": -6.39,
+            "total_bp": -7252.7
+          },
+          "mid": {
+            "n": 614,
+            "mean_bp": -1.311,
+            "total_bp": -805.1
+          },
+          "high": {
+            "n": 344,
+            "mean_bp": -2.04,
+            "total_bp": -701.8
+          }
+        },
+        "2020": {
+          "low": {
+            "n": 1050,
+            "mean_bp": -0.439,
+            "total_bp": -460.6
+          },
+          "mid": {
+            "n": 525,
+            "mean_bp": -0.19,
+            "total_bp": -99.9
+          },
+          "high": {
+            "n": 333,
+            "mean_bp": 12.462,
+            "total_bp": 4150.0
+          }
+        },
+        "2021": {
+          "low": {
+            "n": 1062,
+            "mean_bp": -5.052,
+            "total_bp": -5365.2
+          },
+          "mid": {
+            "n": 1454,
+            "mean_bp": -3.019,
+            "total_bp": -4390.3
+          },
+          "high": {
+            "n": 805,
+            "mean_bp": 6.938,
+            "total_bp": 5585.0
+          }
+        },
+        "2022": {
+          "low": {
+            "n": 1155,
+            "mean_bp": 0.959,
+            "total_bp": 1108.2
+          },
+          "mid": {
+            "n": 489,
+            "mean_bp": 2.036,
+            "total_bp": 995.6
+          },
+          "high": {
+            "n": 244,
+            "mean_bp": 9.906,
+            "total_bp": 2417.1
+          }
+        },
+        "2023": {
+          "low": {
+            "n": 759,
+            "mean_bp": -0.533,
+            "total_bp": -404.4
+          },
+          "mid": {
+            "n": 131,
+            "mean_bp": 4.618,
+            "total_bp": 604.9
+          },
+          "high": {
+            "n": 4,
+            "mean_bp": 66.263,
+            "total_bp": 265.1
+          }
+        },
+        "2024": {
+          "low": {
+            "n": 978,
+            "mean_bp": -1.85,
+            "total_bp": -1808.9
+          },
+          "mid": {
+            "n": 297,
+            "mean_bp": -3.725,
+            "total_bp": -1106.3
+          },
+          "high": {
+            "n": 86,
+            "mean_bp": 2.282,
+            "total_bp": 196.2
+          }
+        },
+        "2025": {
+          "low": {
+            "n": 728,
+            "mean_bp": 1.122,
+            "total_bp": 816.8
+          },
+          "mid": {
+            "n": 261,
+            "mean_bp": 3.278,
+            "total_bp": 855.5
+          },
+          "high": {
+            "n": 10,
+            "mean_bp": 57.252,
+            "total_bp": 572.5
+          }
+        },
+        "2026": {
+          "low": {
+            "n": 527,
+            "mean_bp": -5.796,
+            "total_bp": -3054.4
+          },
+          "mid": {
+            "n": 109,
+            "mean_bp": -0.204,
+            "total_bp": -22.2
+          },
+          "high": {
+            "n": 25,
+            "mean_bp": -13.454,
+            "total_bp": -336.3
+          }
+        }
+      },
+      "per_year_bitmex_fixed_edges": {
+        "2017": {
+          "low": {
+            "n": 1035,
+            "mean_bp": 4.407,
+            "total_bp": 4561.3
+          },
+          "mid": {
+            "n": 1328,
+            "mean_bp": -1.364,
+            "total_bp": -1811.2
+          },
+          "high": {
+            "n": 1522,
+            "mean_bp": 11.201,
+            "total_bp": 17047.6
+          }
+        },
+        "2018": {
+          "low": {
+            "n": 1231,
+            "mean_bp": -6.772,
+            "total_bp": -8336.0
+          },
+          "mid": {
+            "n": 1142,
+            "mean_bp": 6.724,
+            "total_bp": 7678.5
+          },
+          "high": {
+            "n": 1112,
+            "mean_bp": 11.383,
+            "total_bp": 12657.5
+          }
+        },
+        "2019": {
+          "low": {
+            "n": 1221,
+            "mean_bp": -5.019,
+            "total_bp": -6127.8
+          },
+          "mid": {
+            "n": 575,
+            "mean_bp": -1.309,
+            "total_bp": -752.9
+          },
+          "high": {
+            "n": 297,
+            "mean_bp": -6.326,
+            "total_bp": -1878.9
+          }
+        },
+        "2020": {
+          "low": {
+            "n": 1133,
+            "mean_bp": 0.38,
+            "total_bp": 430.9
+          },
+          "mid": {
+            "n": 466,
+            "mean_bp": -2.857,
+            "total_bp": -1331.3
+          },
+          "high": {
+            "n": 309,
+            "mean_bp": 14.531,
+            "total_bp": 4490.0
+          }
+        },
+        "2021": {
+          "low": {
+            "n": 1307,
+            "mean_bp": -5.713,
+            "total_bp": -7467.0
+          },
+          "mid": {
+            "n": 1272,
+            "mean_bp": -1.442,
+            "total_bp": -1833.9
+          },
+          "high": {
+            "n": 742,
+            "mean_bp": 6.914,
+            "total_bp": 5130.3
+          }
+        },
+        "2022": {
+          "low": {
+            "n": 1260,
+            "mean_bp": 1.358,
+            "total_bp": 1711.0
+          },
+          "mid": {
+            "n": 405,
+            "mean_bp": 1.041,
+            "total_bp": 421.6
+          },
+          "high": {
+            "n": 223,
+            "mean_bp": 10.71,
+            "total_bp": 2388.3
+          }
+        },
+        "2023": {
+          "low": {
+            "n": 785,
+            "mean_bp": -0.164,
+            "total_bp": -128.9
+          },
+          "mid": {
+            "n": 109,
+            "mean_bp": 5.454,
+            "total_bp": 594.5
+          },
+          "high": {
+            "n": 0,
+            "mean_bp": null,
+            "total_bp": 0.0
+          }
+        },
+        "2024": {
+          "low": {
+            "n": 1023,
+            "mean_bp": -1.339,
+            "total_bp": -1370.1
+          },
+          "mid": {
+            "n": 258,
+            "mean_bp": -5.726,
+            "total_bp": -1477.4
+          },
+          "high": {
+            "n": 80,
+            "mean_bp": 1.607,
+            "total_bp": 128.6
+          }
+        },
+        "2025": {
+          "low": {
+            "n": 773,
+            "mean_bp": 0.898,
+            "total_bp": 694.1
+          },
+          "mid": {
+            "n": 218,
+            "mean_bp": 5.072,
+            "total_bp": 1105.7
+          },
+          "high": {
+            "n": 8,
+            "mean_bp": 55.624,
+            "total_bp": 445.0
+          }
+        },
+        "2026": {
+          "low": {
+            "n": 556,
+            "mean_bp": -6.686,
+            "total_bp": -3717.5
+          },
+          "mid": {
+            "n": 81,
+            "mean_bp": 5.81,
+            "total_bp": 470.6
+          },
+          "high": {
+            "n": 24,
+            "mean_bp": -6.915,
+            "total_bp": -166.0
+          }
+        }
+      }
+    }
+  }
+}
