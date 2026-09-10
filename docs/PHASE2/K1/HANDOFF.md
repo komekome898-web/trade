@@ -12,7 +12,7 @@
 
 1. `CLAUDE.md` を読む。とくに **§5.1 全捨て**(git 履歴から過去の結論を掘り起こさない)
 2. `docs/OWNER_STATUS.md` を読む(オーナーに指示を出す前に必須)
-3. `docs/PHASE2/K1/RESULT.md` の **第 3〜7 部**を読む(第 1・2 部は手続きの記録)
+3. `docs/PHASE2/K1/RESULT.md` の **第 3〜8 部**を読む(第 1・2 部は手続きの記録。**第 8 部 §8.4 が現在地**)
 4. `.claude/skills/research-protocol` を読む
 5. **`docs/DISCUSSIONS/2026-09-09_the_day_nothing_shipped.md` を読む。**
    前任のリードが 1 日を溶かした失敗の記録である。**同じ型を繰り返さないため**に読む
