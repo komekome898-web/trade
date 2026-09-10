@@ -219,7 +219,10 @@
   当初「約 9 GB」と書いたのは過小)、箱は 15 GB。2026-09-09 に 2 本同時に走らせて 2 本とも OOM で落ち、
   2026-09-10 にも Binance 1 本(1.5〜4 GB)と並走させて BitMEX 側が落ちた(計 3 件)。
   落ちたプロセスはログに 1 行しか残さない。**`pgrep -f` で走行中を調べると自分の bash に自己一致する**
-  ので、`ps -eo args | grep "^python scripts/measure_katsuo"` のように先頭一致で見る
+  ので、`ps -eo args | grep "^python scripts/measure_katsuo"` のように先頭一致で見る。
+  **4 件目(2026-09-10、H1)**: 「Binance が終わったら BitMEX を回す」待機ループの grep を
+  `measure_katsuo_[a-z_]* --source binance` と書き、`.py` に一致せず**即座に BitMEX が並走を始めた**(2.7 GB まで上がった時点で手動停止、
+  OOM は回避)。待機条件は `grep -q '[m]easure_katsuo_.*--source binance'` のように**実際の args で一度試してから**使う
 - **K1-B(Binance 現物、同条件・同方法)**: 設計 `BINANCE_PLAN.md`、出力 `docs/PHASE2/K1/binance/`、
   検査 `binance/CHECKS.md` + `scripts/check_k1_binance.py`(再実行可)。`--source binance` は全 5 本に付いている
 - **深掘り(第 9 部)**: `scripts/measure_katsuo_robustness.py --source {bitmex,binance}`(D1〜D11、門 2 つ × 180 セル、
