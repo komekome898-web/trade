@@ -151,6 +151,35 @@ def table_q(ab, gate):
     return "\n".join(out)
 
 
+def table_r(bm_w, bn, gate, feet, hs):
+    """同じ窓 2017-08-17〜12-31 の横並び。BitMEX は `--start 2017-08-17 --end 2017-12-31` で再実行した
+    `binance/bitmex_2017w_signal_horizon.json`、Binance は `per_year` の 2017(= 8/17 からしか無い)。"""
+    if not bm_w or not bn:
+        return "(bitmex_2017w_signal_horizon.json または binance/signal_horizon.json が無い)"
+    out = ["| 足 | 強さ | h | BitMEX 平均 | n | 買い側 | 売り側 | 相場 | Binance 平均 | n | 買い側 | 売り側 | 相場 |",
+           "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for foot in feet:
+        for s in ("strong", "weak"):
+            for h in hs:
+                a = bm_w["cells"].get(f"{foot}|{gate}|{s}|{h}")
+                b = bn["cells"].get(f"{foot}|{gate}|{s}|{h}")
+                if not a or not b or "2017" not in b["per_year"]:
+                    continue
+                p = b["per_year"]["2017"]
+                ma = bm_w["baseline_unconditional"][f"{foot}|{h}"]["mean_fwd_bp"]
+                mb = bn["baseline_unconditional"][f"{foot}|{h}"]["per_year"]["2017"]["mean_fwd_bp"]
+                out.append(f"| {foot} 分 | {LABEL[s]} | {h} | {fmt(a['mean_bp'], sig(a))} | {a['n']:,} | {a['buy_fwd_bp']:+.2f} | "
+                           f"{a['sell_fwd_bp']:+.2f} | {ma:+.2f} | {fmt(p['mean_bp'], p['ci95_bp'][0] > 0 or p['ci95_bp'][1] < 0)} | "
+                           f"{p['n']:,} | {p['buy_fwd_bp']:+.2f} | {p['sell_fwd_bp']:+.2f} | {mb:+.2f} |")
+    n_sig = sum(1 for c in bm_w["cells"].values() if sig(c))
+    st = [c["mean_bp"] for c in bm_w["cells"].values() if c["strength"] == "strong"]
+    wk = [c["mean_bp"] for c in bm_w["cells"].values() if c["strength"] == "weak"]
+    out.append("")
+    out.append(f"BitMEX 同窓の族全体: 0 を跨がないセル {n_sig}/{len(bm_w['cells'])}、強い平均 {sum(st) / len(st):+.2f}、"
+               f"弱い平均 {sum(wk) / len(wk):+.2f}(Binance 2017 は表 M の行)。")
+    return "\n".join(out)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--gate", default="s19/b24")
@@ -172,6 +201,9 @@ def main() -> None:
     print(table_p(load(K1 / "binance" / "body_wick.json")))
     print(f"\n### 表 Q — Binance: 決済変種の年ごとの平均(門 `{args.gate}`)\n")
     print(table_q(load(K1 / "binance" / "exit_ablation.json"), args.gate))
+    print(f"\n### 表 R — 同じ窓 2017-08-17〜12-31 の横並び(門 `{args.gate}`)\n")
+    print("BitMEX は同じ窓で再実行(`--source bitmex --start 2017-08-17 --end 2017-12-31`)。買い側・売り側は符号なし。\n")
+    print(table_r(load(K1 / "binance" / "bitmex_2017w_signal_horizon.json"), bn, args.gate, (1, 3, 5, 15, 30, 60), (1, 3, 5)))
 
 
 if __name__ == "__main__":
