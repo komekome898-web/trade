@@ -1,0 +1,242 @@
+{
+  "note": "bitFlyer FX_BTC_JPY lightchart 1 分足のデータ検査(FRESH_BITFLYER_PREREG.md §1)。閾値: 古い終値 > 10% または欠測 > 5% の年は excluded_from_reading=true。zero_volume_share は k1_source.load_bars が volume 列を返さないため判定不能(null)。",
+  "range": [
+    "2017-01-01",
+    "2026-08-31"
+  ],
+  "thresholds": {
+    "stale_close_share_gt": 0.1,
+    "missing_share_gt": 0.05
+  },
+  "gate": "s19/b24",
+  "load": {
+    "source": "bitflyer",
+    "rows": 4954388,
+    "rows_read": 5082104,
+    "dropped_null_ohlc": 127716,
+    "open_time_off_minute": 0,
+    "timestamp_basis": "ts column is ISO-8601 with explicit +00:00 offset (already UTC, second-granularity, minute-aligned); parsed via datetime.fromisoformat(ts).timestamp(); no ms->s or JST->UTC conversion performed (none was needed)"
+  },
+  "per_year": {
+    "2017": {
+      "minutes_present": 519072,
+      "minutes_expected": 525600,
+      "missing_share": 0.0124,
+      "stale_close_share": 0.0189,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 9,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 104412,
+          "n_signal": 26052,
+          "pass_rate": 0.2495
+        },
+        "15": {
+          "n_bars": 34985,
+          "n_signal": 16260,
+          "pass_rate": 0.4648
+        }
+      },
+      "excluded_from_reading": false
+    },
+    "2018": {
+      "minutes_present": 521307,
+      "minutes_expected": 525600,
+      "missing_share": 0.0082,
+      "stale_close_share": 0.0057,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 6,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 104647,
+          "n_signal": 22661,
+          "pass_rate": 0.2165
+        },
+        "15": {
+          "n_bars": 34993,
+          "n_signal": 15329,
+          "pass_rate": 0.4381
+        }
+      },
+      "excluded_from_reading": false
+    },
+    "2019": {
+      "minutes_present": 519892,
+      "minutes_expected": 525600,
+      "missing_share": 0.0109,
+      "stale_close_share": 0.0021,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 2,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 104414,
+          "n_signal": 12314,
+          "pass_rate": 0.1179
+        },
+        "15": {
+          "n_bars": 34951,
+          "n_signal": 10579,
+          "pass_rate": 0.3027
+        }
+      },
+      "excluded_from_reading": false
+    },
+    "2020": {
+      "minutes_present": 519967,
+      "minutes_expected": 527040,
+      "missing_share": 0.0134,
+      "stale_close_share": 0.0015,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 2,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 104416,
+          "n_signal": 11564,
+          "pass_rate": 0.1107
+        },
+        "15": {
+          "n_bars": 34955,
+          "n_signal": 9940,
+          "pass_rate": 0.2844
+        }
+      },
+      "excluded_from_reading": false
+    },
+    "2021": {
+      "minutes_present": 518630,
+      "minutes_expected": 525600,
+      "missing_share": 0.0133,
+      "stale_close_share": 0.0044,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 4,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 104389,
+          "n_signal": 20909,
+          "pass_rate": 0.2003
+        },
+        "15": {
+          "n_bars": 34971,
+          "n_signal": 16387,
+          "pass_rate": 0.4686
+        }
+      },
+      "excluded_from_reading": false
+    },
+    "2022": {
+      "minutes_present": 520884,
+      "minutes_expected": 525600,
+      "missing_share": 0.009,
+      "stale_close_share": 0.0019,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 0,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 104547,
+          "n_signal": 10270,
+          "pass_rate": 0.0982
+        },
+        "15": {
+          "n_bars": 35011,
+          "n_signal": 9777,
+          "pass_rate": 0.2793
+        }
+      },
+      "excluded_from_reading": false
+    },
+    "2023": {
+      "minutes_present": 473526,
+      "minutes_expected": 525600,
+      "missing_share": 0.0991,
+      "stale_close_share": 0.0384,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 2,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 103911,
+          "n_signal": 4524,
+          "pass_rate": 0.0435
+        },
+        "15": {
+          "n_bars": 34980,
+          "n_signal": 4865,
+          "pass_rate": 0.1391
+        }
+      },
+      "excluded_from_reading": true
+    },
+    "2024": {
+      "minutes_present": 504759,
+      "minutes_expected": 527040,
+      "missing_share": 0.0423,
+      "stale_close_share": 0.0136,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 0,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 104457,
+          "n_signal": 6567,
+          "pass_rate": 0.0629
+        },
+        "15": {
+          "n_bars": 35095,
+          "n_signal": 7328,
+          "pass_rate": 0.2088
+        }
+      },
+      "excluded_from_reading": false
+    },
+    "2025": {
+      "minutes_present": 516897,
+      "minutes_expected": 525600,
+      "missing_share": 0.0166,
+      "stale_close_share": 0.0034,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 0,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 104388,
+          "n_signal": 4470,
+          "pass_rate": 0.0428
+        },
+        "15": {
+          "n_bars": 35024,
+          "n_signal": 5291,
+          "pass_rate": 0.1511
+        }
+      },
+      "excluded_from_reading": false
+    },
+    "2026": {
+      "minutes_present": 339454,
+      "minutes_expected": 349920,
+      "missing_share": 0.0299,
+      "stale_close_share": 0.006,
+      "zero_volume_share": null,
+      "ohlc_inconsistent_count": 0,
+      "extreme_return_gt_1000bp_count": 0,
+      "gate_s19_b24_pass_rate": {
+        "5": {
+          "n_bars": 69345,
+          "n_signal": 2887,
+          "pass_rate": 0.0416
+        },
+        "15": {
+          "n_bars": 23271,
+          "n_signal": 3501,
+          "pass_rate": 0.1504
+        }
+      },
+      "excluded_from_reading": false
+    }
+  }
+}
