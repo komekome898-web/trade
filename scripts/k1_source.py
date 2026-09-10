@@ -14,6 +14,22 @@
 - 1 分足では `fold()` が恒等であること(1 分足の行数 = 読み込んだ行数 − 落とした行数、
   かつ各行が同じ)を assert する(設計書 §4.3)
 
+`bitflyer` は `FRESH_BITFLYER_PREREG.md` §1/§7(L-090)の 1 回きりのフレッシュ確認用:
+bitFlyer FX_BTC_JPY のチャート用 1 分 OHLCV(`backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/
+candles_1m_{year}.csv.gz`)を読む。
+
+**時刻の基準(先に確認した事実)**: `ts` 列は ISO-8601 文字列で、全行に明示的な `+00:00`
+オフセットが付いている(README・`candles_1m_index.json` の年別 first/last と実データの
+先頭行を確認。ミリ秒ではなく秒粒度、JST ではなく最初から UTC)。したがって
+`datetime.fromisoformat(ts).timestamp()` で得られる epoch 秒がそのまま UTC。JST→UTC の変換や
+ms→s の変換は不要(binance の `open_time` と同じ扱いで、変換ステップが無いだけ)。
+サンプル年(2017 全行, 2026 全行)を目視で確認: 分の境界(秒=00)からずれた `ts` は 0 件。
+
+**約定なしの分の扱い**: このソースは binance の `n_trades==0` に相当する行を、値を
+埋めずに `open/high/low/close` を**空文字(null)**にして残す(README: 「forward-fill しない」)。
+`open` が空の行は**落とす**(binance と同じ「約定 0 の分は行を作らない」規則に揃える。
+落とした件数は `last_load` に記録)。
+
 測定スクリプトはここから `load_bars(source, start, end)` だけを呼び、それ以降の経路
 (`fold` / `signals` / `simulate` / ブートストラップ)は出所に依らず同じものを通る。
 """
@@ -44,10 +60,18 @@ BINANCE_FILES = (
        / "binance_BTCUSDT_1m_20240101_20260831.csv.gz"]
 )
 
+BITFLYER_DIR = REPO / "backtest_data" / "bitflyer_lightchart_FX_BTC_JPY_1m_20260906"
+
+
+def bitflyer_file(year: int) -> Path:
+    return BITFLYER_DIR / f"candles_1m_{year}.csv.gz"
+
+
 # ソースごとの既定の期間と出力ディレクトリ。bitmex は従来どおり(探索区間 2017-2019、判定区間は封印)
 SOURCES = {
     "bitmex": {"start": date(2017, 1, 1), "end": date(2019, 12, 31), "out_dir": K1},
     "binance": {"start": date(2017, 8, 17), "end": date(2026, 8, 31), "out_dir": K1 / "binance"},
+    "bitflyer": {"start": date(2017, 1, 1), "end": date(2026, 8, 31), "out_dir": K1 / "bitflyer"},
 }
 
 # 直近の読み込みの事実(行数・落とした件数)。報告用
@@ -126,6 +150,39 @@ def load_binance_minutes(start: date, end: date):
     return rows, n_read, n_dropped
 
 
+def load_bitflyer_minutes(start: date, end: date):
+    """bitFlyer FX_BTC_JPY lightchart の 1 分足を (epoch秒, o, h, l, c) で返す。
+
+    `open` が空(約定 0 の分。null OHLC)の行は落とす(binance の n_trades==0 と同じ扱い)。
+    `ts` 列はすでに UTC の ISO-8601(`+00:00` 明示)なので JST→UTC の変換は無い。
+
+    戻り値は (rows, n_read, n_dropped)。`n_read` は期間内の行数(落とす前)。
+    """
+    lo = int(datetime(start.year, start.month, start.day, tzinfo=timezone.utc).timestamp())
+    hi = int(datetime(end.year, end.month, end.day, tzinfo=timezone.utc).timestamp()) + 86400
+    rows = []
+    n_read = n_dropped = 0
+    for year in range(start.year, end.year + 1):
+        path = bitflyer_file(year)
+        if not path.exists():
+            continue
+        with gzip.open(path, "rt", newline="") as fh:
+            reader = csv.reader(fh)
+            header = next(reader, None)
+            assert header is not None and header[:5] == ["ts", "open", "high", "low", "close"], (path, header)
+            for r in reader:
+                ts = int(datetime.fromisoformat(r[0]).timestamp())
+                if ts < lo or ts >= hi:
+                    continue
+                n_read += 1
+                if r[1] == "":
+                    n_dropped += 1
+                    continue
+                rows.append((ts, float(r[1]), float(r[2]), float(r[3]), float(r[4])))
+    rows.sort(key=lambda x: x[0])
+    return rows, n_read, n_dropped
+
+
 def load_bars(source: str, start: date, end: date):
     """出所を切り替えて足の列 [(ts, o, h, l, c), ...] を返す。`fold()` にそのまま渡せる。"""
     global last_load
@@ -146,5 +203,24 @@ def load_bars(source: str, start: date, end: date):
                      "dropped_n_trades_0": n_dropped, "open_time_off_minute": off_minute}
         print(f"  Binance 分足 {n_read:,} 行のうち n_trades==0 を {n_dropped:,} 行落とし {len(rows):,} 行"
               f"(1 分足の fold() は行数・o/h/l/c とも恒等。open_time が分の境界に無い行 {off_minute:,})")
+        return rows
+    if source == "bitflyer":
+        rows, n_read, n_dropped = load_bitflyer_minutes(start, end)
+        # 1 分足では fold() が恒等(binance と同じ設計書 §4.3 の扱い)
+        bars1 = base.fold(rows, 1)
+        assert len(bars1) == len(rows) == n_read - n_dropped, (len(bars1), len(rows), n_read, n_dropped)
+        assert all(a[1:] == b[1:] for a, b in zip(rows, bars1)), "1 分足の fold() で o/h/l/c が変わった"
+        off_minute = sum(1 for r in rows if r[0] % 60 != 0)
+        last_load = {
+            "source": source, "rows": len(rows), "rows_read": n_read,
+            "dropped_null_ohlc": n_dropped, "open_time_off_minute": off_minute,
+            "timestamp_basis": (
+                "ts column is ISO-8601 with explicit +00:00 offset (already UTC, second-granularity, "
+                "minute-aligned); parsed via datetime.fromisoformat(ts).timestamp(); no ms->s or "
+                "JST->UTC conversion performed (none was needed)"
+            ),
+        }
+        print(f"  bitFlyer 分足 {n_read:,} 行のうち null OHLC(約定 0)を {n_dropped:,} 行落とし {len(rows):,} 行"
+              f"(1 分足の fold() は行数・o/h/l/c とも恒等。ts が分の境界に無い行 {off_minute:,})")
         return rows
     raise ValueError(source)
