@@ -5,6 +5,7 @@
     (b) 表 L-b: 門 `s19/b24`: 年ごとの総損益 bp(建玉 1 単位)と取引数、4 腕 — L-075
     (c) 表 L-c: 全 13 門 × 足 6、強さ 3: 分解 3 量と全期間の総損益(4 腕)
     (d) 表 L-d: 原典の土台での DD と第 12 部 ①(遅らせた機械)の差 = 経路の効果
+    (e) 表 L-e: 門 `s19/b24`: 分解 2 量(入口・出口)の年別(取引数は 4 腕で同じなので、年別平均の差がそのまま年別の分解)
 
     PYTHONPATH=src:scripts python scripts/render_k1_h3_decomp.py > docs/PHASE2/K1/H3_DECOMP_TABLES.md
 """
@@ -112,6 +113,33 @@ def t_d(name, d):
     print()
 
 
+def t_e(name, bl, d, gate="s19/b24"):
+    ys = years_of(d)
+    print(f"### 表 L-e ({name}、土台 {bl}) — 門 `{gate}`: 入口の遅れ / 出口の遅れ の年別(bp / 取引 = 年別平均 DE − EE / ED − EE)。右端は 2017 を除く全期間(取引数で重み付け)\n")
+    print("| 足 | 強さ | 量 | " + " | ".join(ys) + " | 2017 除く |")
+    print("|---|---|---|" + "---|" * (len(ys) + 1))
+    for ft in FEET:
+        for st, lab in STRENGTHS:
+            c = d["cells"].get(f"{ft}|{gate}|{st}")
+            if not c:
+                continue
+            a = c["arms"]
+            for arm, qlab in (("DE", "入口の遅れ"), ("ED", "出口の遅れ")):
+                row, s_ex, n_ex = [], 0.0, 0
+                for y in ys:
+                    p0, p1 = a["EE"]["per_year"].get(y), a[arm]["per_year"].get(y)
+                    if not p0:
+                        row.append("—")
+                        continue
+                    dv = p1["mean_bp"] - p0["mean_bp"]
+                    row.append(f(dv))
+                    if y != "2017":
+                        s_ex += dv * p0["n"]
+                        n_ex += p0["n"]
+                print(f"| {ft} 分 | {lab} | {qlab} | " + " | ".join(row) + f" | **{f(s_ex / n_ex) if n_ex else '—'}** |")
+    print()
+
+
 def main() -> None:
     print("# H3 の分解 — 入口の遅れ × 出口の遅れ(生成物。`H3_DECOMP_PREREG.md` §2)\n")
     print("`*` = 日ブロックブートストラップ 200 回の 95% 区間が 0 を跨がない(種はセル名 × 腕)。単位 bp、経費なし。"
@@ -129,6 +157,7 @@ def main() -> None:
             t_a(name, bl, d)
             t_b(name, bl, d)
             t_c(name, bl, d)
+            t_e(name, bl, d)
             if bl == "原典":
                 t_d(name, d)
 
