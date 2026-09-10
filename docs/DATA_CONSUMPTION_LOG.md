@@ -33,6 +33,7 @@
 | Binance 現物 aggTrades 45日(2026-07-23 〜 09-06)+ 1s + 無期限 | **未消費** | P2-08b 用に取得。中身は読んでいない |
 | bitbank 約定 109日 | **未消費** | 取得のみ |
 | USD/JPY 1分足 3.5年 | **選択に消費** | FX 系の全研究 |
+| Binance BTCUSDT 現物 1分足 2017-08-17〜2026-08-31 + bitFlyer FX_BTC_JPY 1分足 同区間(UTC の分で内部結合) | **選択に消費(K1 取引所横断 段階 1、一度きり)** | K1 取引所横断 段階 1(オーナー承認 L-093、`docs/PHASE2/K1/XVENUE_PREREG.md`)。Binance のヒゲシグナル(原典の門 + H1 + H3)を bitFlyer FX_BTC_JPY の価格で値付け(H2a)。設計固定。以後この組み合わせ(Binance シグナル × bitFlyer 価格)ではこの設計を使えない |
 
 ## 3. JPX / 国内
 
