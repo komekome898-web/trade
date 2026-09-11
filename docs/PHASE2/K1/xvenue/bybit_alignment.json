@@ -1,0 +1,53 @@
+{
+  "note": "UTC の分の内部結合。どちらかの取引所に無い分は落とす。dropped_share はその取引所側の分のうち結合後に残らなかった割合。",
+  "signal_source": "bybit",
+  "price_source": "bitflyer",
+  "range": [
+    "2022-01-01",
+    "2026-08-31"
+  ],
+  "totals": {
+    "minutes_signal": 2453760,
+    "minutes_price": 2355520,
+    "minutes_both": 2355520,
+    "dropped_share_signal": 0.04,
+    "dropped_share_price": 0.0
+  },
+  "per_year": {
+    "2022": {
+      "minutes_signal": 525600,
+      "minutes_price": 520884,
+      "minutes_both": 520884,
+      "dropped_share_signal": 0.009,
+      "dropped_share_price": 0.0
+    },
+    "2023": {
+      "minutes_signal": 525600,
+      "minutes_price": 473526,
+      "minutes_both": 473526,
+      "dropped_share_signal": 0.0991,
+      "dropped_share_price": 0.0
+    },
+    "2024": {
+      "minutes_signal": 527040,
+      "minutes_price": 504759,
+      "minutes_both": 504759,
+      "dropped_share_signal": 0.0423,
+      "dropped_share_price": 0.0
+    },
+    "2025": {
+      "minutes_signal": 525600,
+      "minutes_price": 516897,
+      "minutes_both": 516897,
+      "dropped_share_signal": 0.0166,
+      "dropped_share_price": 0.0
+    },
+    "2026": {
+      "minutes_signal": 349920,
+      "minutes_price": 339454,
+      "minutes_both": 339454,
+      "dropped_share_signal": 0.0299,
+      "dropped_share_price": 0.0
+    }
+  }
+}

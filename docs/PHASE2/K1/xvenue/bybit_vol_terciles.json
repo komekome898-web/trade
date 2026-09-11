@@ -1,0 +1,411 @@
+{
+  "note": "K1 取引所横断・ボラ三分位(主統計セル: 門 s19/b24、足 5・15、弱い)。局所ボラは signal_source 側(直前 100 本の |log(close/close[-1])| × 1e4 の平均、measure_katsuo_robustness.FootData.vol_prev と同一定義)。edges_bp_own は「この設計の Binance 2018-2019の取引の vol_prev から決めた境目」固定(事前登録どおり)。signal_source=binance は自前の2018-2019取引から直接計算、他ソース(訓練窓にデータが無い)は既存 vol_terciles.json の値を再利用(再計算しない)。edges_bp_bitmex_fixed は第 15 部の BitMEX 固定値(再計算しない既存の数値)。",
+  "signal_source": "bybit",
+  "price_source": "bitflyer",
+  "gate": "s19/b24",
+  "design": {
+    "flip_body": true,
+    "use_invalid": false,
+    "delay_entry": true,
+    "keep": "weak"
+  },
+  "vol_window": 100,
+  "edges_train_years": [
+    2018,
+    2019
+  ],
+  "bitmex_fixed_edges_bp": {
+    "5": [
+      21.79,
+      35.17
+    ],
+    "15": [
+      29.58,
+      48.68
+    ]
+  },
+  "range": [
+    "2022-01-01",
+    "2026-08-31"
+  ],
+  "feet": {
+    "5": {
+      "n_bars": 486648,
+      "edges_bp_own": [
+        18.28,
+        30.27
+      ],
+      "edges_bp_own_basis": "docs/PHASE2/K1/xvenue/vol_terciles.json (stored Binance 2018-2019 edges, not recomputed; signal_source has no 2018-2019 data)",
+      "edges_bp_bitmex_fixed": [
+        21.79,
+        35.17
+      ],
+      "n_no_vol": 2,
+      "n_trades_total": 5066,
+      "n_trades_2018_2019": 0,
+      "per_year_own_edges": {
+        "2022": {
+          "low": {
+            "n": 976,
+            "mean_bp": 3.599,
+            "total_bp": 3512.6
+          },
+          "mid": {
+            "n": 502,
+            "mean_bp": 1.207,
+            "total_bp": 606.1
+          },
+          "high": {
+            "n": 329,
+            "mean_bp": 1.08,
+            "total_bp": 355.4
+          }
+        },
+        "2023": {
+          "low": {
+            "n": 618,
+            "mean_bp": -5.247,
+            "total_bp": -3242.4
+          },
+          "mid": {
+            "n": 116,
+            "mean_bp": 23.322,
+            "total_bp": 2705.4
+          },
+          "high": {
+            "n": 20,
+            "mean_bp": 43.352,
+            "total_bp": 867.0
+          }
+        },
+        "2024": {
+          "low": {
+            "n": 823,
+            "mean_bp": 2.601,
+            "total_bp": 2140.9
+          },
+          "mid": {
+            "n": 305,
+            "mean_bp": -7.15,
+            "total_bp": -2180.7
+          },
+          "high": {
+            "n": 70,
+            "mean_bp": 31.998,
+            "total_bp": 2239.8
+          }
+        },
+        "2025": {
+          "low": {
+            "n": 514,
+            "mean_bp": -0.871,
+            "total_bp": -447.7
+          },
+          "mid": {
+            "n": 193,
+            "mean_bp": 2.136,
+            "total_bp": 412.3
+          },
+          "high": {
+            "n": 39,
+            "mean_bp": -37.007,
+            "total_bp": -1443.3
+          }
+        },
+        "2026": {
+          "low": {
+            "n": 427,
+            "mean_bp": -10.667,
+            "total_bp": -4554.7
+          },
+          "mid": {
+            "n": 104,
+            "mean_bp": 13.964,
+            "total_bp": 1452.2
+          },
+          "high": {
+            "n": 28,
+            "mean_bp": 41.398,
+            "total_bp": 1159.2
+          }
+        }
+      },
+      "per_year_bitmex_fixed_edges": {
+        "2022": {
+          "low": {
+            "n": 1172,
+            "mean_bp": 3.509,
+            "total_bp": 4112.4
+          },
+          "mid": {
+            "n": 403,
+            "mean_bp": 5.16,
+            "total_bp": 2079.7
+          },
+          "high": {
+            "n": 232,
+            "mean_bp": -7.405,
+            "total_bp": -1718.0
+          }
+        },
+        "2023": {
+          "low": {
+            "n": 677,
+            "mean_bp": -2.892,
+            "total_bp": -1957.9
+          },
+          "mid": {
+            "n": 70,
+            "mean_bp": 26.371,
+            "total_bp": 1845.9
+          },
+          "high": {
+            "n": 7,
+            "mean_bp": 63.13,
+            "total_bp": 441.9
+          }
+        },
+        "2024": {
+          "low": {
+            "n": 975,
+            "mean_bp": 1.593,
+            "total_bp": 1552.8
+          },
+          "mid": {
+            "n": 175,
+            "mean_bp": -3.928,
+            "total_bp": -687.4
+          },
+          "high": {
+            "n": 48,
+            "mean_bp": 27.804,
+            "total_bp": 1334.6
+          }
+        },
+        "2025": {
+          "low": {
+            "n": 592,
+            "mean_bp": 0.909,
+            "total_bp": 538.1
+          },
+          "mid": {
+            "n": 142,
+            "mean_bp": -15.966,
+            "total_bp": -2267.1
+          },
+          "high": {
+            "n": 12,
+            "mean_bp": 20.855,
+            "total_bp": 250.3
+          }
+        },
+        "2026": {
+          "low": {
+            "n": 470,
+            "mean_bp": -8.558,
+            "total_bp": -4022.1
+          },
+          "mid": {
+            "n": 70,
+            "mean_bp": 16.49,
+            "total_bp": 1154.3
+          },
+          "high": {
+            "n": 19,
+            "mean_bp": 48.657,
+            "total_bp": 924.5
+          }
+        }
+      }
+    },
+    "15": {
+      "n_bars": 163381,
+      "edges_bp_own": [
+        24.81,
+        42.31
+      ],
+      "edges_bp_own_basis": "docs/PHASE2/K1/xvenue/vol_terciles.json (stored Binance 2018-2019 edges, not recomputed; signal_source has no 2018-2019 data)",
+      "edges_bp_bitmex_fixed": [
+        29.58,
+        48.68
+      ],
+      "n_no_vol": 3,
+      "n_trades_total": 5591,
+      "n_trades_2018_2019": 0,
+      "per_year_own_edges": {
+        "2022": {
+          "low": {
+            "n": 918,
+            "mean_bp": -0.482,
+            "total_bp": -442.7
+          },
+          "mid": {
+            "n": 607,
+            "mean_bp": 4.801,
+            "total_bp": 2914.2
+          },
+          "high": {
+            "n": 280,
+            "mean_bp": 4.248,
+            "total_bp": 1189.3
+          }
+        },
+        "2023": {
+          "low": {
+            "n": 696,
+            "mean_bp": 1.489,
+            "total_bp": 1036.2
+          },
+          "mid": {
+            "n": 137,
+            "mean_bp": 4.962,
+            "total_bp": 679.8
+          },
+          "high": {
+            "n": 24,
+            "mean_bp": 16.257,
+            "total_bp": 390.2
+          }
+        },
+        "2024": {
+          "low": {
+            "n": 868,
+            "mean_bp": -1.857,
+            "total_bp": -1612.1
+          },
+          "mid": {
+            "n": 403,
+            "mean_bp": 4.699,
+            "total_bp": 1893.6
+          },
+          "high": {
+            "n": 68,
+            "mean_bp": -0.709,
+            "total_bp": -48.2
+          }
+        },
+        "2025": {
+          "low": {
+            "n": 627,
+            "mean_bp": 6.463,
+            "total_bp": 4052.5
+          },
+          "mid": {
+            "n": 275,
+            "mean_bp": 1.67,
+            "total_bp": 459.3
+          },
+          "high": {
+            "n": 16,
+            "mean_bp": 46.15,
+            "total_bp": 738.4
+          }
+        },
+        "2026": {
+          "low": {
+            "n": 465,
+            "mean_bp": -5.14,
+            "total_bp": -2390.1
+          },
+          "mid": {
+            "n": 180,
+            "mean_bp": 2.872,
+            "total_bp": 517.0
+          },
+          "high": {
+            "n": 24,
+            "mean_bp": 14.896,
+            "total_bp": 357.5
+          }
+        }
+      },
+      "per_year_bitmex_fixed_edges": {
+        "2022": {
+          "low": {
+            "n": 1199,
+            "mean_bp": 2.43,
+            "total_bp": 2913.4
+          },
+          "mid": {
+            "n": 381,
+            "mean_bp": -2.868,
+            "total_bp": -1092.9
+          },
+          "high": {
+            "n": 225,
+            "mean_bp": 8.179,
+            "total_bp": 1840.2
+          }
+        },
+        "2023": {
+          "low": {
+            "n": 767,
+            "mean_bp": 3.205,
+            "total_bp": 2458.1
+          },
+          "mid": {
+            "n": 88,
+            "mean_bp": -6.008,
+            "total_bp": -528.7
+          },
+          "high": {
+            "n": 2,
+            "mean_bp": 88.397,
+            "total_bp": 176.8
+          }
+        },
+        "2024": {
+          "low": {
+            "n": 1042,
+            "mean_bp": -0.503,
+            "total_bp": -523.7
+          },
+          "mid": {
+            "n": 260,
+            "mean_bp": 7.622,
+            "total_bp": 1981.7
+          },
+          "high": {
+            "n": 37,
+            "mean_bp": -33.1,
+            "total_bp": -1224.7
+          }
+        },
+        "2025": {
+          "low": {
+            "n": 750,
+            "mean_bp": 3.489,
+            "total_bp": 2616.6
+          },
+          "mid": {
+            "n": 167,
+            "mean_bp": 15.55,
+            "total_bp": 2596.9
+          },
+          "high": {
+            "n": 1,
+            "mean_bp": 36.725,
+            "total_bp": 36.7
+          }
+        },
+        "2026": {
+          "low": {
+            "n": 566,
+            "mean_bp": -4.7,
+            "total_bp": -2660.2
+          },
+          "mid": {
+            "n": 83,
+            "mean_bp": 11.63,
+            "total_bp": 965.3
+          },
+          "high": {
+            "n": 20,
+            "mean_bp": 8.965,
+            "total_bp": 179.3
+          }
+        }
+      }
+    }
+  }
+}

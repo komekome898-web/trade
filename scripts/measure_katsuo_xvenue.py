@@ -355,12 +355,26 @@ def run_vol_terciles(signal_source, price_source, start, end):
     price_rows = k1_source.load_bars(price_source, start, end)
     sig_joined, price_joined, common_ts, _sm, _pm = join_minutes(sig_rows, price_rows)
 
+    # signal_source の 訓練窓(2018-2019)自身の取引から境目 (2) を作れるのは Binance だけ
+    # (Bybit 等は 2022 以降しかデータが無く、訓練窓が空になる)。事前登録どおり、境目 (2) は
+    # 「この設計の Binance 2018-2019 の取引」で固定 — signal_source が Binance でなければ
+    # 既存の vol_terciles.json(段階 1 の出力、再計算しない)から読む
+    binance_ref_edges = None
+    if signal_source != "binance":
+        ref_path = OUT_DIR / "vol_terciles.json"
+        if ref_path.exists():
+            ref = json.loads(ref_path.read_text("utf-8"))
+            binance_ref_edges = {int(k): tuple(v["edges_bp_own"]) for k, v in ref["feet"].items()
+                                  if v.get("edges_bp_own")}
+
     result = {
-        "note": ("K1 取引所横断 段階 1・ボラ三分位(主統計セル: 門 s19/b24、足 5・15、弱い)。"
+        "note": ("K1 取引所横断・ボラ三分位(主統計セル: 門 s19/b24、足 5・15、弱い)。"
                  "局所ボラは signal_source 側(直前 100 本の |log(close/close[-1])| × 1e4 の平均、"
                  "measure_katsuo_robustness.FootData.vol_prev と同一定義)。"
-                 "edges_bp_own は signal_source " f"{VOL_TRAIN_START_YEAR}-{VOL_TRAIN_END_YEAR} の"
-                 "この設計の取引の vol_prev から決めた境目、edges_bp_bitmex_fixed は"
+                 "edges_bp_own は「この設計の Binance " f"{VOL_TRAIN_START_YEAR}-{VOL_TRAIN_END_YEAR}"
+                 "の取引の vol_prev から決めた境目」固定(事前登録どおり)。signal_source=binance は自前の"
+                 f"{VOL_TRAIN_START_YEAR}-{VOL_TRAIN_END_YEAR}取引から直接計算、他ソース(訓練窓にデータが"
+                 "無い)は既存 vol_terciles.json の値を再利用(再計算しない)。edges_bp_bitmex_fixed は"
                  "第 15 部の BitMEX 固定値(再計算しない既存の数値)。"),
         "signal_source": signal_source, "price_source": price_source,
         "gate": MAIN_GATE_LABEL, "design": {"flip_body": True, "use_invalid": False, "delay_entry": True, "keep": "weak"},
@@ -383,12 +397,19 @@ def run_vol_terciles(signal_source, price_source, start, end):
             y = year_of(ts[entry_i])
             all_trades.append((y, r, v))
         train = [t for t in all_trades if VOL_TRAIN_START_YEAR <= t[0] <= VOL_TRAIN_END_YEAR]
-        edges_own = edges_from_vol([v for _y, _r, v in train])
+        if signal_source == "binance":
+            edges_own = edges_from_vol([v for _y, _r, v in train])
+            edges_own_basis = "self (this run's Binance 2018-2019 trades)"
+        else:
+            edges_own = binance_ref_edges.get(foot) if binance_ref_edges else None
+            edges_own_basis = ("docs/PHASE2/K1/xvenue/vol_terciles.json (stored Binance 2018-2019 "
+                                "edges, not recomputed; signal_source has no 2018-2019 data)")
         n_no_vol = sum(1 for _y, _r, v in all_trades if v != v)
         years = sorted(set(y for y, _r, _v in all_trades))
         result["feet"][str(foot)] = {
             "n_bars": len(sig_bars),
             "edges_bp_own": [round(edges_own[0], 2), round(edges_own[1], 2)] if edges_own else None,
+            "edges_bp_own_basis": edges_own_basis,
             "edges_bp_bitmex_fixed": list(BITMEX_FIXED_EDGES[foot]),
             "n_no_vol": n_no_vol,
             "n_trades_total": len(all_trades),
@@ -397,6 +418,7 @@ def run_vol_terciles(signal_source, price_source, start, end):
             "per_year_bitmex_fixed_edges": per_year_tercile(all_trades, BITMEX_FIXED_EDGES[foot], years),
         }
         print(f"  {foot}分: own edges {result['feet'][str(foot)]['edges_bp_own']} bp"
+              f"({edges_own_basis})"
               f" / 取引 {len(all_trades):,} 件(訓練 {len(train):,} 件) / vol 無し {n_no_vol:,} 件")
 
     # 段階 1(signal_source=binance)は既存名 vol_terciles.json のまま(既に参照済み)。
