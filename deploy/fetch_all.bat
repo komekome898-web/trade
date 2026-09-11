@@ -20,7 +20,17 @@ rem retention snapshot halves those windows). Was missing here until 2026-09-05.
 ".venv\Scripts\python.exe" "scripts\fetch_okx.py" >> "logs\fetch.out.log" 2>&1
 rem Best-effort: turns data\ws WS recordings into compact daily tape CSVs
 rem (data\tape) that share_logs.bat can carry past the 31-day API limit.
-".venv\Scripts\python.exe" "scripts\extract_tape.py" >> "logs\fetch.out.log" 2>&1
+rem --board-top 10 (EXEC_FLOOR_PREREG.md sec7 row 1, owner L-098) additionally
+rem reconstructs the order book to 1-second top-10 depth samples
+rem (data\tape\board_top10_YYYYMMDD.csv.gz, ~5-7MB/day estimated from the
+rem top-5 on-demand baseline of ~2.7MB/day avg -- see docs/OWNER_PROCEDURES.md
+rem P11). Manifest-tracked and incremental like the executions/ticker output.
+".venv\Scripts\python.exe" "scripts\extract_tape.py" --board-top 10 >> "logs\fetch.out.log" 2>&1
+rem Funding rate + FX/spot basis daily log (EXEC_FLOOR_PREREG.md sec7 row 2,
+rem owner L-098): public endpoints only, idempotent (dedup by settlement
+rem time) -- safe to run every 15 minutes on this schedule. See
+rem docs/OWNER_PROCEDURES.md P12.
+".venv\Scripts\python.exe" "scripts\record_funding_basis.py" >> "logs\fetch.out.log" 2>&1
 rem ON1 forward paper tracking: JPX daily report (published T+1 09:00 JST) ->
 rem session prints -> paper ledger (docs/PREREG_on1_forward.md)
 ".venv\Scripts\python.exe" "scripts\fetch_jpx_daily.py" >> "logs\fetch.out.log" 2>&1

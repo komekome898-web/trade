@@ -36,6 +36,9 @@ copy /Y data\paper_onr\status.json paper_logs\onr_status.json >nul 2>&1
 rem S12 clock-burst status tile feed (n / fresh period / last day only)
 copy /Y data\s12_status.json paper_logs\s12_status.json >nul 2>&1
 dir /-C data\ws > paper_logs\ws_listing.txt 2>nul
+rem This wildcard also carries the daily board_top10_YYYYMMDD.csv.gz files
+rem (EXEC_FLOOR_PREREG.md sec7 row 1, owner L-098; extract_tape.py --board-top 10
+rem in fetch_all.bat) alongside executions/ticker -- no separate copy line needed.
 if not exist paper_logs\tape mkdir paper_logs\tape
 if exist data\tape\*.csv.gz copy /Y data\tape\*.csv.gz paper_logs\tape\ >nul 2>&1
 if not exist paper_logs\venues mkdir paper_logs\venues
@@ -48,6 +51,14 @@ rem the 1GB data\ws raw recordings stay local, only the ~8MB derived series
 rem and its coverage report are shared)
 copy /Y data\board_round\series_5s.csv.gz paper_logs\board_round_series_5s.csv.gz >nul 2>&1
 copy /Y data\board_round\coverage.json paper_logs\board_round_coverage.json >nul 2>&1
+rem Funding rate history + FX/spot basis daily log (EXEC_FLOOR_PREREG.md
+rem sec7 row 2, owner L-098; scripts\record_funding_basis.py in fetch_all.bat)
+copy /Y data\funding_rate_history.csv paper_logs\funding_rate_history.csv >nul 2>&1
+copy /Y data\basis_log.csv paper_logs\basis_log.csv >nul 2>&1
+rem Order-ack latency probe, read-only (EXEC_FLOOR_PREREG.md sec7 row 3,
+rem owner L-098; deploy\probe_latency.bat / scripts\probe_api_latency.py)
+if not exist paper_logs\latency mkdir paper_logs\latency
+if exist data\latency\api_probe.csv copy /Y data\latency\api_probe.csv paper_logs\latency\ >nul 2>&1
 
 rem Data governance: the intake ledger and quality report are produced by
 rem fetch_all.bat (unattended, scheduled). This interactive script only
