@@ -123,6 +123,75 @@ class BookState:
         return (bid_depth - ask_depth) / total
 
 
+def walk_book(levels: list[tuple[float, float]], size: float) -> tuple[float, float, bool]:
+    """Walk a discrete book, best level first, filling up to ``size``.
+
+    ``levels`` is ``[(price, size_at_price), ...]`` ordered best first
+    (best bid/ask first, worsening thereafter); the caller picks which side
+    to pass in. This is a pure function -- no book object, no I/O -- so it
+    works equally on a live ``BookState`` snapshot (``sorted(state.asks
+    .items())`` etc.) or on a recorded ``board_top5`` row.
+
+    Returns ``(vwap, filled_size, exhausted)``:
+
+    * ``vwap`` -- size-weighted average fill price over the size actually
+      filled (``0.0`` if nothing filled).
+    * ``filled_size`` -- total size filled; ``<= size``, and strictly less
+      only when the given levels ran out before ``size`` was reached.
+    * ``exhausted`` -- ``True`` iff ``filled_size < size`` -- the levels
+      handed in did not have enough depth to fill the order (for a
+      top-N snapshot this means "ran off the edge of the N levels sampled",
+      not necessarily the true edge of the live book).
+
+    ``size <= 0`` is a no-op fill (``0.0, 0.0, False``): not "exhausted",
+    since there is no shortfall to report. A level with non-positive size
+    is skipped (defensive against a malformed/padded row).
+    """
+    if size <= 0:
+        return 0.0, 0.0, False
+    remaining = size
+    cost = 0.0
+    filled = 0.0
+    for price, lvl_size in levels:
+        if remaining <= 0:
+            break
+        if lvl_size <= 0:
+            continue
+        take = min(remaining, lvl_size)
+        cost += take * price
+        filled += take
+        remaining -= take
+    vwap = cost / filled if filled > 0 else 0.0
+    return vwap, filled, filled < size
+
+
+def walk_cost_bp(levels: list[tuple[float, float]], size: float, mid: float,
+                  side: str) -> tuple[float | None, float, bool]:
+    """One-way board-walk cost of filling ``size`` versus ``mid``, in bp.
+
+    ``side`` is ``"buy"`` (pass the ask levels, best-first -- cost is how
+    far the fill price sits ABOVE mid) or ``"sell"`` (pass the bid levels,
+    best-first -- cost is how far the fill price sits BELOW mid). Positive
+    ``cost_bp`` means paying more than mid, which is the expected sign for
+    a taker order walking away from the touch.
+
+    Returns ``(cost_bp, filled_size, exhausted)``; ``cost_bp`` is ``None``
+    when nothing filled at all (``size <= 0``, an empty book, or a
+    non-positive ``mid``) -- ``filled_size``/``exhausted`` still come from
+    :func:`walk_book` so a caller can tell "no mid" apart from "no size".
+    """
+    if side not in ("buy", "sell"):
+        raise ValueError(f"side must be 'buy' or 'sell', got {side!r}")
+    vwap, filled, exhausted = walk_book(levels, size)
+    if filled <= 0 or mid is None or mid <= 0:
+        return None, filled, exhausted
+    if side == "buy":
+        cost_bp = (vwap - mid) / mid * 1e4
+    else:
+        cost_bp = (mid - vwap) / mid * 1e4
+    return cost_bp, filled, exhausted
+
+
 def iter_messages(path: str | Path) -> Iterator[tuple[float, str, dict]]:
     """Yield ``(rts, channel, message)`` for channel messages in one file.
 
