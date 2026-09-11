@@ -34,6 +34,7 @@
 | bitbank 約定 109日 | **未消費** | 取得のみ |
 | USD/JPY 1分足 3.5年 | **選択に消費** | FX 系の全研究 |
 | Binance BTCUSDT 現物 1分足 2017-08-17〜2026-08-31 + bitFlyer FX_BTC_JPY 1分足 同区間(UTC の分で内部結合) | **選択に消費(K1 取引所横断 段階 1、一度きり)** | K1 取引所横断 段階 1(オーナー承認 L-093、`docs/PHASE2/K1/XVENUE_PREREG.md`)。Binance のヒゲシグナル(原典の門 + H1 + H3)を bitFlyer FX_BTC_JPY の価格で値付け(H2a)。設計固定。以後この組み合わせ(Binance シグナル × bitFlyer 価格)ではこの設計を使えない |
+| Bybit BTCUSDT 無期限 1分足 2022-01-01〜2026-08-31(`backtest_data/bybit_BTCUSDT_1m_20260910/`。2022-2024 は `kline_for_metatrader4` アーカイブ、2025-01〜2026-08 は日次約定ファイルを畳んだもの)+ bitFlyer FX_BTC_JPY 1分足 同区間(UTC の分で内部結合) | **選択に消費(K1 取引所横断 段階 2、一度きり)** | K1 取引所横断 段階 2(オーナー承認 L-095、`docs/PHASE2/K1/XVENUE_PREREG.md` §2 段階 2)。Bybit のヒゲシグナル(原典の門 + H1 + H3、フレッシュ = このデータを読むのは初めて)を bitFlyer FX_BTC_JPY の価格で値付け(H2a)。設計固定。以後この組み合わせ(Bybit シグナル × bitFlyer 価格)ではこの設計を使えない。参考列としてシグナル=価格=Bybit(同一取引所)の同じ設計も 1 回実行した |
 
 ## 3. JPX / 国内
 
