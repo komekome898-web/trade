@@ -22,6 +22,9 @@ echo [share_logs] copying logs and data files
 if not exist paper_logs mkdir paper_logs
 copy /Y logs\bot.jsonl        paper_logs\ >nul 2>&1
 copy /Y logs\status.json      paper_logs\ >nul 2>&1
+rem nightly unattended restart (deploy\nightly_restart.bat, P4-N): the lead reads
+rem this log the next morning instead of asking the owner (L-122 / L-125).
+copy /Y logs\nightly_restart.log paper_logs\ >nul 2>&1
 copy /Y data\scalp_paper.jsonl paper_logs\ >nul 2>&1
 copy /Y data\oi_snapshots.csv paper_logs\ >nul 2>&1
 copy /Y data\spread_FX_BTC_JPY.csv paper_logs\ >nul 2>&1

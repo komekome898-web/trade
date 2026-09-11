@@ -48,3 +48,5 @@ backtest_data/binance_BTCUSDT_aggTrades_tardis_days/*.csv.gz
 backtest_data/binance_BTCUSDT_aggTrades_tardis_days/raw/
 backtest_data/bybit_reachability_check_20260906/raw/
 backtest_data/bybit_BTCUSDT_1m_20260910/*.csv.gz
+# untracked copy executed by deploy/nightly_restart.bat (see its header)
+deploy/_restart_all_copy.bat

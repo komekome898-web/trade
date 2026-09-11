@@ -22,6 +22,11 @@ rem  fails, nothing further runs: the bot keeps running the code
 rem  it already had (or stays stopped) - the safe outcome.
 rem  Restarting into a half-updated tree, or starting a second
 rem  copy of a component, is not.
+rem  TRADE_NONINTERACTIVE=1 (set by deploy\nightly_restart.bat, the
+rem  scheduled nightly run) skips the two `pause` lines: under Task
+rem  Scheduler a pause would wait forever for a key that never comes and
+rem  the task would hang until the next day's run is skipped as a
+rem  duplicate. Double-clicked by hand, the pauses still show the result.
 rem  ASCII only - the console codepage is cp932 and non-ASCII
 rem  output renders as mojibake.
 rem ============================================================
@@ -142,7 +147,7 @@ echo  DONE - updated and restarted.
 echo  Dashboard: http://127.0.0.1:8300
 echo  Logs: logs\run_paper.out.log / logs\recorder.out.log
 echo ============================================================
-pause
+if not defined TRADE_NONINTERACTIVE pause
 exit /b 0
 
 :aborted
@@ -150,5 +155,5 @@ echo.
 echo ============================================================
 echo  ABORTED - the remaining steps were skipped.
 echo ============================================================
-pause
+if not defined TRADE_NONINTERACTIVE pause
 exit /b 1
