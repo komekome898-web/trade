@@ -43,7 +43,7 @@
 | 板 top5(高頻度) | `data/tape/board_top5_*.csv.gz`, `paper_logs/tape/board_top5_*.csv.gz` | 2026-08-20〜08-27 | 取得済 | 2026-09-11 | — | 嵐予兆・秒スケール研究 |
 | 約定・ticker(高頻度テープ) | `data/tape/executions_*.csv.gz`, `data/tape/ticker_*.csv.gz` | 2026-08-20〜08-27 | 取得済 | 2026-09-11 | — | 同上 |
 | WS 生ログ(jsonl) | `data/ws/FX_BTC_JPY_*.jsonl.gz` | 2026-08-20 の複数スロット | 取得済 | 2026-09-11 | — | 未使用 |
-| **WS 生ログ(オーナー PC、未共有)** | オーナー PC `data\ws\FX_BTC_JPY_*.jsonl.gz`(板・ticker・約定の生 WS。共有されるのは抽出後の `data\tape\*` のみ) | 2026-08-20 頃〜現在。**保持日数はこの環境から未確認**(P11 手順 1 の `dir data\ws` で判明) | **PC に未共有の可能性** | 2026-09-11 | 手順 P11(板 10 段への抽出 → `share_logs.bat` で共有。生ログ自体は共有しない) | ④-1 経費の床の再実行(`docs/PHASE2/EXEC/RESULT.md` §1.6、L-098) |
+| **WS 生ログ(オーナー PC、未共有)** | オーナー PC `data\ws\FX_BTC_JPY_*.jsonl.gz`(板・ticker・約定の生 WS。共有されるのは抽出後の `data\tape\*` のみ) | **2026-08-20 06:13 UTC 〜 2026-09-11(23 日分。オーナー確認 2026-09-12、L-120。最古 9.2 MB、最新は書き込み中 24.5 MB)** | **PC に未共有の可能性** | 2026-09-11 | 手順 P11(板 10 段への抽出 → `share_logs.bat` で共有。生ログ自体は共有しない) | ④-1 経費の床の再実行(`docs/PHASE2/EXEC/RESULT.md` §1.6、L-098) |
 | 約定 31日ロングテープ(us、tardis形式) | `backtest_data/bitflyer_executions_us_20260723_20260906/` | 2026-07-23〜09-06 | 取得済 | 2026-09-11 | — | 未使用 |
 | tardis 形式 約定 | `data/tardis/bitflyer_FX_BTC_JPY_trades/` | 詳細未確認(ディレクトリ存在のみ確認) | 取得済 | 2026-09-11 | — | 未使用 |
 | 約定 31日スナップショット(2本) | `backtest_data/candles_FX_BTC_JPY_31d_20260823.csv.gz`, `backtest_data/executions_FX_BTC_JPY_31d_20260823.csv.gz` | 〜2026-08-23 | 取得済 | 2026-09-11 | — | 未使用 |
