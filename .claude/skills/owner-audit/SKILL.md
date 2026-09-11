@@ -1,0 +1,66 @@
+---
+name: owner-audit
+description: "Invoke the owner-auditor subagent on any pre-registration/report/survey before it goes to the owner, and answer its questions in the artifact before delivery. Use before delivering docs/PHASE2/**/PREREG.md, RESULT.md, or any docs/DISCUSSIONS survey to the owner."
+---
+
+# オーナー監査の呼び出し(L-104 / L-105)
+
+## これは何か
+
+`.claude/agents/owner-auditor.md`(下位モデル)に、オーナーが過去に実際に指摘した型
+(`docs/AUDITOR/PRINCIPLES.md` の P1〜P9)が成果物に残っていないかを検査させる。
+**承認機関ではない。判定でもない。** 返るのは問いの一覧だけで、採否はリードが決める。
+
+**ブロッキングフックではない。** 呼ぶかどうか・いつ呼ぶかはリードの判断。仕組みで強制しない
+(CLAUDE.md §5.2 — 規則を機械で縛ることは偽陰性を防がない。読む・答える運用を守ることが本体)。
+
+## いつ呼ぶか
+
+次のいずれかを**オーナーに渡す前**:
+
+- 事前登録(`PREREG.md` / `*_PREREG.md` 系)
+- 研究報告(`docs/PHASE2/**/RESULT.md` の新規部、`docs/RESEARCH_REPORT_*.md`)
+- 外部調査サーベイ・データ在庫調査などの調達票類
+
+## 呼び方
+
+Agent(Task)ツールで `subagent_type: owner-auditor` を指定し、渡すのは**成果物のパスのみ**。
+どの事案か・オーナーが何を言ったかを説明文に書かない —— 監査役は白紙で読む方が効く
+(`research-protocol` §1.3 層 3 の独立監査と同じ理由)。
+
+```
+Task(
+  subagent_type: "owner-auditor",
+  description: "Audit <artifact> before delivery",
+  prompt: "<成果物への絶対パス>を検査してください。"
+)
+```
+
+複数ファイルにまたがる成果物(prereg + 生成された表など)は、主たる文書 1 本 + 関連パスを
+列挙して渡す。
+
+## 受け取ったら(リードの義務)
+
+**返ってきた問い 1 つずつに、成果物の中で答えるか、`採用しない: 理由` と明記するまで
+オーナーに渡さない。** 会話でだけ答えて成果物に書かないのは不可 —— 会話は失われるが
+文書は残る(CLAUDE.md §7 と同じ理由)。
+
+- severity「止める」が 1 件でも残っている状態では届けない
+- 「直す」は届ける前に直すか、直さない理由を明記する
+- 「聞く」はオーナーへの質問としてそのまま渡すか、リードの判断とその根拠を書いて渡す
+- 監査役が「該当なし」と返した場合はそのまま届けてよい(何も追記する必要はない)
+
+## 限界(オーナーに伝えること)
+
+- 監査役は`KNOWN_ANSWERS.md`の 16 件から抽出した**既知の型**にしか強い。未知の盲点は
+  見つけない(L-104 のリード回答どおり)
+- 下位モデルなので、複雑な数値の当否(相場についての主張の真偽)は判定できない —
+  検査対象は手続き(範囲明記・出所・網羅性・なぜ・射程の整合)であって結論ではない
+- 誤検出(false alarm)の実測は `docs/AUDITOR/EVAL_*.md` を参照。ここで割合の高い指摘型は
+  優先して直し、低い型は参考程度に扱う
+
+## 改良
+
+監査役のプロンプト自体の改訂は**リードが決める**(このスキル・エージェント定義を書く側の
+仕事であり、監査役自身に自己改訂させない)。改良案は `docs/AUDITOR/EVAL_*.md` の
+測定結果から出す。
