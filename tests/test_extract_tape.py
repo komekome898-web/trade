@@ -521,3 +521,28 @@ def test_board_top_leaves_exec_and_ticker_outputs_identical(tmp_path):
     # executions/ticker payloads byte-identical with and without --board-top
     for name in plain:
         assert board[name] == plain[name]
+
+
+# ---- double-start guard ----------------------------------------------------
+
+def test_main_skips_when_lock_held(tmp_path, capsys):
+    ws = tmp_path / "ws"; ws.mkdir()
+    out = tmp_path / "tape"; out.mkdir()
+    lock = et.RunLock(out / ".extract_tape.lock")
+    lock.acquire()
+    try:
+        rc = et.main(["--ws-dir", str(ws), "--out-dir", str(out)])
+    finally:
+        lock.release()
+    assert rc == 0
+    assert "already running - skipped" in capsys.readouterr().out
+    assert not (out / "manifest.json").exists()
+
+
+def test_main_releases_lock_after_run(tmp_path, capsys):
+    ws = tmp_path / "ws"; ws.mkdir()
+    out = tmp_path / "tape"; out.mkdir()
+    rc = et.main(["--ws-dir", str(ws), "--out-dir", str(out)])
+    assert rc == 0
+    assert not (out / ".extract_tape.lock").exists()
+    assert "already running" not in capsys.readouterr().out

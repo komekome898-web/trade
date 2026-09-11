@@ -82,6 +82,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from bot.jpx.run_lock import LockBusy, RunLock  # noqa: E402
+
 DEFAULT_WS_DIR = ROOT / "data" / "ws"
 DEFAULT_OUT_DIR = ROOT / "data" / "tape"
 
@@ -90,6 +93,9 @@ TICKER_FIELDS = ["ts", "best_bid", "best_ask", "best_bid_size", "best_ask_size"]
 EXEC_CHANNEL_PREFIX = "lightning_executions_"
 TICKER_CHANNEL_PREFIX = "lightning_ticker_"
 DEFAULT_MIN_AGE_SEC = 60.0
+# A full first backfill of --board-top over weeks of raw WS is measured in
+# hours, not minutes; anything older than this is a corpse.
+LOCK_STALE_SEC = 12 * 3600.0
 
 # Raised by gzip/zlib when the compressed stream stops short (truncated
 # tail from a live/killed recorder). gzip.BadGzipFile is an OSError.
@@ -432,9 +438,25 @@ def main(argv: list[str] | None = None) -> int:
         print(f"extract_tape: no {ws_dir}, nothing to do")
         return 0
 
-    files_advanced, exec_rows, ticker_rows, board_rows = run(
-        ws_dir, out_dir, manifest_path, args.min_age_sec,
-        board_top=max(0, args.board_top))
+    # Double-start guard. fetch_all.bat runs this every 15 minutes and a
+    # first --board-top backfill over weeks of raw WS can take longer than
+    # that; a second instance (the next scheduled run, or a manual run on
+    # top of it) would read the same manifest, walk the same files and
+    # append the same rows twice. The lock is the file itself (same guard
+    # as the ON1 jobs); a lock older than stale_after_sec is a corpse from
+    # a killed run and is taken over.
+    lock = RunLock(out_dir / ".extract_tape.lock", stale_after_sec=LOCK_STALE_SEC)
+    try:
+        lock.acquire()
+    except LockBusy as e:
+        print(f"extract_tape: already running - skipped ({e})")
+        return 0
+    try:
+        files_advanced, exec_rows, ticker_rows, board_rows = run(
+            ws_dir, out_dir, manifest_path, args.min_age_sec,
+            board_top=max(0, args.board_top))
+    finally:
+        lock.release()
     msg = (f"extract_tape: {files_advanced} file(s) advanced, "
            f"{exec_rows} execution row(s) written, "
            f"{ticker_rows} ticker row(s) written")
