@@ -17,6 +17,30 @@ Gate.io はローリング約 90 日、OKX は約 24 時間を REST で公開し
   前提にする(生を消さないため)。
 - 切断は起きるものとして扱う。指数バックオフで再接続し、1 行だけログに出す。
 
+**gzip の書き方(2026-09-12、L-121)**: `Writer` は 1 つの gzip メンバを開いたまま
+保持しない。行はメモリ上のバッファに積み、`FLUSH_MAX_LINES` 行(既定 200)か
+`FLUSH_INTERVAL_SEC` 秒(既定 5)のどちらか早い方に達したら、バッファを
+`gzip.compress()` で**完結した 1 メンバ**にしてから 1 回の追記(`open(path, "ab")`)
+で書き出す。清算はバースト性が強く数時間 0 件のこともあるので、時間側のトリガは
+「メッセージが来た時にだけ経過時間を見る」方式で、メッセージが無い間はタイマーで
+スピンしない。日付が変わった時と `close()` 時にも必ず flush する。
+これで**ハードキル(`Stop-Process -Force`)後に壊れるのは直前の未 flush 分だけ**になる
+— 以前の `gzip.open(path, "at")` を開いたままにする設計は、キル時に終端マーカーの無い
+メンバを残し、再起動後の追記がそのメンバの途中に新しいヘッダを継ぎ足すことで
+`zlib.error: invalid block type` を起こしファイル全体を読めなくした(2026-09-11、
+オーナー PC で 10 ファイル発生)。回収は `scripts/repair_liquidation_gz.py`
+(読み取り専用)。詳細 `docs/OWNER_PROCEDURES.md` P14。
+
+**既存ファイルの自己修復(2026-09-12)**: この修正を配る夜間自動再起動
+(オーナー承認、L-125)自体が、修正を取り込む前の旧 `Writer` をハードキルする
+— つまり**この修正が入って最初に起動する時、その日のファイルは既に壊れている
+可能性がある**。そこで `Writer` は日付を切り替える(=その日のファイルを初めて
+使う)たびに、既存ファイルの**最後のメンバが完結しているか**を確認する。
+不完全なら、そのファイルには**追記しない** — `<venue>_<day>.truncN.jsonl.gz`
+(N は 1, 2, ... で既存を上書きしない)へ退避し、ログに 1 行出してから、
+同じファイル名で新規に書き始める。退避したファイルは
+`scripts/repair_liquidation_gz.py` が `*.trunc*.jsonl.gz` としてそのまま拾う。
+
 Usage:
     python scripts/record_liquidations.py                     # 到達確認済みの既定ベニュー
     python scripts/record_liquidations.py --venues bitmex,okx
@@ -44,6 +68,12 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO / "data" / "liquidations"
 LOCK_PATH = REPO / "data" / "liquidations.lock"
+
+sys.path.insert(0, str(REPO / "src"))
+try:
+    from bot.research.gz_members import decompress_piece, split_raw_members
+except Exception:  # noqa: BLE001 - 自己修復が読めなくても記録は止めない
+    decompress_piece = split_raw_members = None
 
 # **出力で死なせない。** Windows の既定コンソールは cp932 で、そこに cp932 が
 # 表現できない文字(em ダッシュなど)を print すると UnicodeEncodeError が上がる。
@@ -98,37 +128,112 @@ BACKOFF_MAX = 120.0
 LOCK_STALE_SEC = 180.0          # これを過ぎた鍵は死んだプロセスのものとみなす
 LOCK_BEAT_SEC = 45.0            # 生きている間はこの間隔で鍵の時刻を更新する
 
+# Writer の flush トリガ(2026-09-12、L-121)。行数優先で、静かな時間帯は
+# 秒側が「次のメッセージが来た時」にだけ効く(タイマースレッドでスピンしない)。
+FLUSH_MAX_LINES = 200
+FLUSH_INTERVAL_SEC = 5.0
+
 
 def _log(msg: str) -> None:
     print(f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} {msg}", flush=True)
 
 
 class Writer:
-    """UTC 日付ごとの gzip JSONL。追記のみ、日付をまたいだら開き直す。"""
+    """UTC 日付ごとの gzip JSONL。**1 つの gzip メンバを開いたまま保持しない**
+    (2026-09-12、L-121 — 経緯はモジュール docstring)。行はメモリのバッファに積み、
+    `FLUSH_MAX_LINES` 行か `FLUSH_INTERVAL_SEC` 秒のどちらか早い方に達したら
+    `gzip.compress()` で完結した 1 メンバを作って 1 回の `open(path, "ab")` で
+    追記する。時間側のトリガは `write()` が呼ばれた時にしか見ないので、
+    メッセージが来ない間はタイマーがスピンしない — 静かな時間帯の代償は
+    「次のメッセージが来るまで flush されない」だけで、CPU コストは無い。
+    日付が変わった時と `close()` 時にも必ず flush する。
+    **ハードキルで失われるのは直前の未 flush 分だけ**であり、ファイル全体が
+    読めなくなることはない。
+    """
 
     def __init__(self, venue: str) -> None:
         self.venue = venue
         self._day: str | None = None
-        self._fh = None
+        self._path: Path | None = None
+        self._buf: list[bytes] = []
+        self._last_flush = time.monotonic()
         self.lines = 0
 
     def write(self, obj: dict) -> None:
         day = datetime.now(timezone.utc).strftime("%Y%m%d")
         if day != self._day:
-            self.close()
+            self.flush()
             OUT_DIR.mkdir(parents=True, exist_ok=True)
             path = OUT_DIR / f"{self.venue}_{day}.jsonl.gz"
-            self._fh = gzip.open(path, "at", encoding="utf-8")
+            self._heal_if_needed(path, day)
+            self._path = path
             self._day = day
-            _log(f"{self.venue}: -> {path.name}")
-        self._fh.write(json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n")
-        self._fh.flush()
+            self._last_flush = time.monotonic()
+            _log(f"{self.venue}: -> {self._path.name}")
+        line = json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n"
+        self._buf.append(line.encode("utf-8"))
         self.lines += 1
+        if self._should_flush():
+            self.flush()
+
+    def _heal_if_needed(self, path: Path, day: str) -> None:
+        """**その日のファイルを初めて使う時**(=通常の日付切り替え、または
+        プロセス再起動直後の最初の write — `__init__` は `_day=None` で
+        始まるので、同じ日に再起動しても必ずここを通る)に、既存ファイルの
+        **最後のメンバが完結しているか**を検査する。2026-09-12、L-121:
+        この修正を配る夜間自動再起動(L-125)自体が旧 `Writer` をハードキル
+        するので、修正後の最初の起動時にはまだ壊れたファイルが残っている
+        ことが前提。不完全なら**そのファイルには絶対に追記しない**
+        — `<venue>_<day>.truncN.jsonl.gz`(N は既存を上書きしない次の番号)
+        へ退避し、ログに 1 行出してから、同じファイル名で新規に書き始める。
+        退避先は `scripts/repair_liquidation_gz.py` が `*.trunc*.jsonl.gz`
+        としてそのまま拾う。検査自体が読めない場合(自己修復機構の import
+        失敗)は、記録を止めないために**検査せず追記を続ける**(壊れた
+        ファイルへの追記が再発するリスクはあるが、記録停止より優先度が低い)。
+        """
+        if not path.exists():
+            return
+        if split_raw_members is None or decompress_piece is None:
+            _log(f"{self.venue}: 警告: 自己修復機構を読めないので "
+                 f"警告: 自己修復なし - {path.name} の末尾メンバを検査せず追記する")
+            return
+        try:
+            pieces = split_raw_members(path.read_bytes())
+            healthy = bool(pieces) and decompress_piece(pieces[-1]).complete
+        except Exception as e:  # noqa: BLE001 - 読めない = 不完全とみなす(安全側)
+            _log(f"{self.venue}: 警告: {path.name} の検査に失敗 "
+                 f"{type(e).__name__}: {str(e)[:80]} — 不完全として退避する")
+            healthy = False
+        if healthy:
+            return
+        n = 1
+        while True:
+            moved = OUT_DIR / f"{self.venue}_{day}.trunc{n}.jsonl.gz"
+            if not moved.exists():
+                break
+            n += 1
+        path.rename(moved)
+        _log(f"{self.venue}: {path.name} の末尾メンバが不完全 "
+             f"-> {moved.name} へ退避して新規作成")
+
+    def _should_flush(self) -> bool:
+        if not self._buf:
+            return False
+        return (len(self._buf) >= FLUSH_MAX_LINES
+                or time.monotonic() - self._last_flush >= FLUSH_INTERVAL_SEC)
+
+    def flush(self) -> None:
+        """バッファを1個の完結した gzip メンバとして追記する。空なら何もしない。"""
+        if not self._buf or self._path is None:
+            return
+        data = gzip.compress(b"".join(self._buf))
+        with open(self._path, "ab") as f:
+            f.write(data)
+        self._buf = []
+        self._last_flush = time.monotonic()
 
     def close(self) -> None:
-        if self._fh is not None:
-            self._fh.close()
-            self._fh = None
+        self.flush()
 
 
 async def _keepalive(ws, payload, period: float) -> None:

@@ -270,10 +270,11 @@ def test_truncated_jsonl_gz_yields_partial_count_and_truncated_flag(tmp_path: Pa
         json.dumps({"ts": 1767225700.0 + i, "x": 100 + i}) + "\n" for i in range(50))
     _multi_member_truncated_gz(path, [good_lines], last_member_lines)
 
-    row_count, first_ts, last_ts, truncated = il.scan_jsonl(path, gz=True, cap=None)
+    row_count, first_ts, last_ts, truncated, member_split = il.scan_jsonl(path, gz=True, cap=None)
     assert truncated is True
     assert row_count is not None and row_count >= 5
     assert first_ts is not None
+    assert member_split is None
 
 
 def test_scan_one_marks_truncated_and_keeps_partial_row_count(tmp_path: Path):
@@ -292,6 +293,77 @@ def test_scan_one_marks_truncated_and_keeps_partial_row_count(tmp_path: Path):
     assert rec["row_count"] is not None and rec["row_count"] >= 7
     assert rec["first_ts"] is not None
     assert "scan_error" in rec
+
+
+# ---- gzip member-boundary corruption fallback (2026-09-12, L-121) -------
+# Not the tolerated EOFError (a member simply cut off with nothing after
+# it) but a hard-killed recorder's unterminated member immediately followed
+# by a fresh member's header — this raises zlib.error from a plain read,
+# and scan_jsonl must fall back to the member-split reader instead of
+# failing the scan.
+
+
+def _unterminated_member(text: str) -> bytes:
+    import zlib
+    comp = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+    return comp.compress(text.encode("utf-8")) + comp.flush(zlib.Z_SYNC_FLUSH)
+
+
+def _closed_member(text: str) -> bytes:
+    return gzip.compress(text.encode("utf-8"))
+
+
+def test_scan_jsonl_falls_back_to_member_split_on_boundary_corruption(tmp_path: Path):
+    dead_rows = [json.dumps({"ts": 1767225600.0 + i, "x": i}) + "\n" for i in range(6)]
+    live_rows = [json.dumps({"ts": 1767225700.0 + i, "x": 100 + i}) + "\n" for i in range(4)]
+    path = tmp_path / "boundary_corrupt.jsonl.gz"
+    path.write_bytes(_unterminated_member("".join(dead_rows)) + _closed_member("".join(live_rows)))
+
+    # sanity: a plain gzip read really does fail the way the incident did
+    import zlib
+    with pytest.raises(zlib.error):
+        with gzip.open(path, "rt", encoding="utf-8") as f:
+            f.read()
+
+    row_count, first_ts, last_ts, truncated, member_split = il.scan_jsonl(path, gz=True, cap=None)
+    assert truncated is False
+    assert member_split is not None
+    assert member_split["members"] == 2
+    assert row_count == 10 == member_split["lines_recovered"]
+    assert first_ts is not None and last_ts is not None
+
+
+def test_scan_one_reports_member_split_scan_error_and_keeps_recovered_count(tmp_path: Path):
+    (tmp_path / "data").mkdir()
+    path = tmp_path / "data" / "bitmex_20260909.jsonl.gz"
+    dead_rows = [json.dumps({"ts": 1767225600.0 + i, "x": i}) + "\n" for i in range(3)]
+    live_rows = [json.dumps({"ts": 1767225700.0 + i, "x": 100 + i}) + "\n" for i in range(2)]
+    path.write_bytes(_unterminated_member("".join(dead_rows)) + _closed_member("".join(live_rows)))
+
+    rec = il.scan_one("data/bitmex_20260909.jsonl.gz", path, cap=None)
+    assert rec["row_count"] == 5
+    assert rec.get("truncated") is not True
+    assert rec.get("recovered_via_member_split") is True
+    assert "gzip member boundary corruption" in rec["scan_error"]
+    assert "2 members" in rec["scan_error"] and "5 lines recovered" in rec["scan_error"]
+
+
+def test_full_ledger_run_survives_a_boundary_corrupted_file(tree: Path):
+    """The ledger as a whole must not die on one corrupted file — it keeps
+    the recovered row count and moves on, same spirit as the EOFError path."""
+    dead_rows = [json.dumps({"ts": 1767225600.0 + i, "x": i}) + "\n" for i in range(4)]
+    live_rows = [json.dumps({"ts": 1767225700.0 + i, "x": 100 + i}) + "\n" for i in range(3)]
+    (tree / "data" / "liquidations").mkdir()
+    path = tree / "data" / "liquidations" / "bybit_20260909.jsonl.gz"
+    path.write_bytes(_unterminated_member("".join(dead_rows)) + _closed_member("".join(live_rows)))
+
+    ledger = tree / "data" / "INTAKE.jsonl"
+    latest = tree / "data" / "INTAKE_latest.json"
+    index = il.run(tree, full=False, ledger_path=ledger, latest_path=latest)
+
+    rec = index["data/liquidations/bybit_20260909.jsonl.gz"]
+    assert rec["row_count"] == 7
+    assert rec.get("recovered_via_member_split") is True
 
 
 # ---- summary ---------------------------------------------------------

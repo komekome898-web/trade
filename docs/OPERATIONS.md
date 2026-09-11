@@ -520,7 +520,16 @@ git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
 更新して再起動 `deploy\restart_all.bat`(§4.5。pull + pip install + 停止 + 起動) /
 緊急停止はリポジトリ直下に `KILL` ファイル作成(メインBOT・スキャルパー両方が停止)。
 
-ログ: `logs\run_paper.out.log`(メイン)/ `logs\recorder.out.log`(板記録)。
+ログ: `logs\run_paper.out.log`(メイン)/ `logs\recorder.out.log`(板記録)/
+`logs\liquidations.out.log`(清算ストリーム記録、`scripts\record_liquidations.py`)。
+
+清算記録は `data\liquidations\<venue>_<日付>.jsonl.gz` に書く際、gzip の 1 メンバを
+開いたまま保持しない(2026-09-12、L-121)。行は最大 200 行 or 5 秒ごとに完結した
+1 メンバとして追記されるので、`Stop-Process -Force` で失われるのは直前の未 flush 分
+だけで、ファイル全体が読めなくなることはない。日付を切り替える(≒ プロセス起動)
+たびに、既存ファイルの最後のメンバが不完全なら自動で `*.trunc<N>.jsonl.gz` へ退避
+してから新規に書き始める(旧設計で壊れたファイルの回収は `scripts\repair_liquidation_gz.py`。
+手順 `docs/OWNER_PROCEDURES.md` P14)。
 
 常時稼働の信頼性は Linux + systemd の方が高いため、Raspberry Pi 等があればそちらを推奨します。
 

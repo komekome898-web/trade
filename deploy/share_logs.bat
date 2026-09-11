@@ -25,6 +25,9 @@ copy /Y logs\status.json      paper_logs\ >nul 2>&1
 rem nightly unattended restart (deploy\nightly_restart.bat, P4-N): the lead reads
 rem this log the next morning instead of asking the owner (L-122 / L-125).
 copy /Y logs\nightly_restart.log paper_logs\ >nul 2>&1
+rem liquidation recorder log: the self-heal line ("不完全 -> ... へ退避") after a
+rem restart is read from here (P14), so the owner never has to open it.
+copy /Y logs\liquidations.out.log paper_logs\ >nul 2>&1
 copy /Y data\scalp_paper.jsonl paper_logs\ >nul 2>&1
 copy /Y data\oi_snapshots.csv paper_logs\ >nul 2>&1
 copy /Y data\spread_FX_BTC_JPY.csv paper_logs\ >nul 2>&1
@@ -105,7 +108,11 @@ rem this branch too, so an un-pulled clone would be rejected as
 rem non-fast-forward. paper_logs is written only from this machine, so
 rem the rebase cannot conflict on it.
 echo [share_logs] git pull --rebase
-git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
+rem --autostash: same reason as restart_all.bat - this machine writes tracked
+rem files continuously, and a rebase refuses to start on a dirty tree. Without
+rem it every nightly share since 2026-09-09 could fail here and nothing reached
+rem the research session (found 2026-09-12, L-128).
+git pull --rebase --autostash origin claude/bitflyer-trading-bot-hhxxaf
 if errorlevel 1 (
   echo.
   echo *** git pull failed - copy the error above into the Claude chat. ***

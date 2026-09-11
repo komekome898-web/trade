@@ -48,12 +48,15 @@ import hashlib
 import json
 import re
 import sys
+import zlib
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "src"))
+from bot.research.gz_members import recover_json_lines  # noqa: E402
 
 ROOT_NAMES = ["data", "paper_logs", "backtest_data", "data/archive"]
 
@@ -224,9 +227,29 @@ def scan_csv(path: Path, gz: bool, cap: Optional[int]):
 
 
 def scan_jsonl(path: Path, gz: bool, cap: Optional[int]):
-    """Returns (row_count, first_ts, last_ts, truncated). See scan_csv's
-    docstring on EOFError from a truncated gzip member: rows read so far
-    are kept and truncated=True is reported rather than raising."""
+    """Returns (row_count, first_ts, last_ts, truncated, member_split). See
+    scan_csv's docstring on EOFError from a truncated gzip member: rows read
+    so far are kept and truncated=True is reported rather than raising.
+    `member_split` is None unless the file hit a gzip MEMBER BOUNDARY
+    corruption (zlib.error / gzip.BadGzipFile — not the tolerated EOFError):
+    a hard-killed recorder's unterminated member with a fresh member's
+    header appended right after it (see docs/OWNER_PROCEDURES.md P14, L-121).
+    In that case this falls back to `bot.research.gz_members.recover_json_lines`
+    (shared with scripts/repair_liquidation_gz.py), which finds each member's
+    own byte range before decompressing so the dead member's truncation is
+    never fed the next member's header, and `member_split` is
+    `{"members": N, "lines_recovered": M}` for the caller (scan_one) to
+    report."""
+    try:
+        row_count, first_ts, last_ts, truncated = _scan_jsonl_normal(path, gz, cap)
+        return row_count, first_ts, last_ts, truncated, None
+    except (zlib.error, gzip.BadGzipFile):
+        if not gz:
+            raise  # this failure mode only makes sense for gzip input
+        return _scan_jsonl_via_member_split(path, cap)
+
+
+def _scan_jsonl_normal(path: Path, gz: bool, cap: Optional[int]):
     row_count = 0
     ts_key: Optional[str] = None
     ts_key_resolved = False
@@ -259,6 +282,34 @@ def scan_jsonl(path: Path, gz: bool, cap: Optional[int]):
     if ts_key is None:
         return row_count, None, None, truncated
     return row_count, _first_parseable(head_vals), _last_parseable(tail_vals), truncated
+
+
+def _scan_jsonl_via_member_split(path: Path, cap: Optional[int]):
+    """Fallback for a gzip member-boundary corruption: re-derive rows from
+    scratch via the raw-magic member splitter instead of trusting whatever
+    the normal streaming loop counted before it hit the bad bytes (that
+    count is not trustworthy — see gz_members' module docstring on
+    zlib.decompressobj losing a call's output when it raises)."""
+    result = recover_json_lines(path.read_bytes())
+    row_count = len(result.lines)
+    ts_key: Optional[str] = None
+    ts_key_resolved = False
+    head_vals: list[Any] = []
+    tail_vals = deque(maxlen=cap) if cap else []
+    for line in result.lines:
+        obj = json.loads(line)  # already validated as a JSON object by recover_json_lines
+        if not ts_key_resolved:
+            ts_key = find_ts_key(obj)
+            ts_key_resolved = True
+        if ts_key is not None and ts_key in obj:
+            val = obj[ts_key]
+            if cap is None or len(head_vals) < cap:
+                head_vals.append(val)
+            tail_vals.append(val)
+    first_ts = _first_parseable(head_vals) if ts_key else None
+    last_ts = _last_parseable(tail_vals) if ts_key else None
+    member_split = {"members": result.members_found, "lines_recovered": row_count}
+    return row_count, first_ts, last_ts, False, member_split
 
 
 # --------------------------------------------------------------------------
@@ -312,8 +363,9 @@ def scan_one(rel: str, p: Path, cap: Optional[int]) -> dict:
         try:
             if fmt == "csv":
                 row_count, first_ts, last_ts, truncated = scan_csv(p, gz, cap)
+                member_split = None
             else:
-                row_count, first_ts, last_ts, truncated = scan_jsonl(p, gz, cap)
+                row_count, first_ts, last_ts, truncated, member_split = scan_jsonl(p, gz, cap)
             rec["row_count"] = row_count
             rec["first_ts"] = first_ts
             rec["last_ts"] = last_ts
@@ -325,6 +377,16 @@ def scan_one(rel: str, p: Path, cap: Optional[int]) -> dict:
                 # ledger and never drop what was read.
                 rec["scan_error"] = "EOFError (truncated/in-progress gzip): partial read kept"
                 rec["truncated"] = True
+            elif member_split is not None:
+                # A gzip MEMBER BOUNDARY corruption (a hard-killed recorder's
+                # unterminated member followed by a fresh member's header —
+                # see docs/OWNER_PROCEDURES.md P14, L-121): row_count above
+                # is what the member-split fallback recovered, not zero.
+                rec["scan_error"] = (
+                    f"gzip member boundary corruption: {member_split['members']} "
+                    f"members, {member_split['lines_recovered']} lines recovered "
+                    "via member split")
+                rec["recovered_via_member_split"] = True
         except EOFError as exc:
             # Defense in depth: something raised EOFError outside the
             # scan_csv/scan_jsonl read loops (e.g. while opening). No

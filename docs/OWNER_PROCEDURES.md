@@ -66,7 +66,9 @@ bitFlyer の日次メンテナンス窓(04:00〜04:10 JST)の中なら失うも�
 して中断する(`GIT_TERMINAL_PROMPT=0`)。
 
 **前提**: `nightly_restart.bat` がまだ PC に無いなら、先に手動で `deploy\restart_all.bat` を 1 回実行して
-取り込む(清算記録の修正 = 次に渡す手順 P14 と同じ回でよい。P14 はこの文書にまだ無い)。
+取り込む(清算記録の修正 = P14 と同じ回でよい)。**この登録より後は、清算記録器が毎晩
+04:02 に無人でハードキルされる** — P14 の自己修復(壊れたファイルを自動で `.truncN` に退避)は
+これを前提にしているので、この登録の前に P14 の記録器の修正が入っていることを先に確認すること。
 
 1. cmd または PowerShell(管理者不要)で 1 行:
    ```
@@ -458,64 +460,42 @@ type data\latency\api_probe.csv
 - `deploy\share_logs.bat`(毎日06:30)が `data\latency\api_probe.csv` を
   `paper_logs\latency\` へ共有するので、実行中でもリードが途中経過を読める。
 
-## P14 清算記録の gzip 回収(2026-09-12、L-121)
+## P14 清算記録の gzip 破損の修正(2026-09-12、L-121。オーナーの作業は下の 3 手を 1 回)
 
-**何が起きたか**: 清算(強制決済)記録器(`record_liquidations.py`)は、これまで
-1つの gzip の「メンバ」を開いたまま起動し続ける作り方だった。`deploy\stop_all.bat`
-での強制終了(`Stop-Process -Force`)やクラッシュでプロセスが落ちると、その
-メンバは「ここで終わり」という印(終端マーカー)が付かないまま残る。次に記録器が
-起動すると、そこに気づかず**新しいメンバのヘッダを直後に継ぎ足す**ため、
-ファイルを読もうとすると `invalid block type` のような gzip エラーで**丸ごと
-読めなくなる**。オーナー PC でこれが起きたファイルは 10 個
-(`data\liquidations\{binance_cm,bitmex,bybit,okx}_20260911.jsonl.gz`、
-`{bitmex,bybit,okx}_20260909.jsonl.gz`、`paper_logs\liquidations\*_20260909.jsonl.gz`)。
+**何が起きたか**: 清算(強制決済)の記録器は、1 日分の gzip を「開いたまま」書き続ける作りだった。
+`restart_all.bat` の強制終了で終端が書かれず、再起動後の記録器が同じファイルに続きを足すため、
+読む側は途中で `invalid block type` になる。壊れたのは再起動した日(09-09・09-11)の 10 ファイル。
 
-記録器自体は直した(メンバを開いたまま保持せず、少量ずつ完結した形で書くように
-変更。詳細は `record_liquidations.py` のコード先頭のコメント)。**この修正が効くのは
-次に `deploy\restart_all.bat` を実行した後から**であり、それより前に壊れた
-上記 10 ファイルは直っていない。直すには下記の回収スクリプトを走らせる。
+**回収できるか(範囲を明記)**: この環境で**合成データ**により再現し、区切りで分けて読めば全行が
+回収できることを確認した。**実物の 10 ファイルはこの環境に届いていない**(share_logs の途絶、L-128)ので、
+実物での回収は**未実行**。届き次第リードが実行し、結果を状態板に書く。
 
-**元のファイルは一切書き換えない・削除しない。** 回収スクリプトは読むだけで、
-結果は別の場所(`data\liquidations_repaired\`)に新しいファイルとして作る。
-壊れた元ファイルはそのまま残るので、失敗しても何度でもやり直せる。
+**直したもの(コード。次の `restart_all.bat` で PC に入る)**:
+- 記録器は少量ずつ完結した塊で書く(強制終了で失うのは最後の数秒分だけ)。**ただしテストは
+  「閉じずに捨てる」近似で、OS レベルの強制終了は再現していない。** 初回の実物ログで確認する。
+- 起動時にその日のファイルが壊れていれば `<取引所>_<日付>.trunc1.jsonl.gz` に退避してから新しく書く
+  (ログに 1 行出る)。検査の部品が読めなかった場合は「警告: 自己修復なし」の行を出して退避せずに続ける。
+  この行は毎朝の自律点検が探す。
+- 回収スクリプト `scripts\repair_liquidation_gz.py`(原本は触らず別の場所に書く)。**リードが共有された
+  複製に対してこの環境で実行する。オーナーは実行しない。**
+- `intake_ledger` は壊れたファイルも区切りで読んで数える(scan failed にならない)。
+- `share_logs.bat` に `--autostash`(汚れた木で pull が失敗する仮説への対応)と、`logs\liquidations.out.log`・
+  `logs\nightly_restart.log` の共有を追加。**途絶の原因が PC の停止なら、この修正では直らない**。
+  下の手順 ③ がその切り分けを兼ねる。
 
-**なお、記録器自体が自動で治す部分もある**: 修正を配る `restart_all.bat` は、
-配る前の古い記録器を強制終了させてから新しい記録器を起動する。つまり
-**修正後に最初に起動した時、その日のファイルがまだ壊れていることがある** —
-このケースは記録器自身が起動時に検知し、壊れたファイルを
-`<取引所>_<日付>.trunc1.jsonl.gz` のような名前に自動で退避してから、
-同じ名前で新しいファイルを書き始める(ログに1行出る)。**この分はオーナーが
-何もする必要はない** — 退避されたファイルも下記の回収スクリプトが
-そのまま拾う(`*.trunc*.jsonl.gz` も対象)。
+**前提の依存**: 「翌朝の共有から確認する」は share_logs の途絶が解消していることが前提。解消したかは
+手順 ③ の画面と、翌朝の共有コミットの有無で分かる(リードが確認)。
 
-### 手順
+### オーナーの手順(3 手を 1 回。以後は自動)
 
-1. まず `deploy\restart_all.bat` を実行(pull・依存更新・記録器の再起動。
-   これをやらないと直った記録器が動かない)。
-2. PowerShell で、まず `--dry-run` で何が回収できるか確認(何も書き出さない):
+① `deploy\restart_all.bat` を 1 回(記録器の修正・`nightly_restart.bat`・`share_logs.bat` の修正を取り込む)。
+② P4-N の登録(cmd または PowerShell で 1 行):
    ```
-   cd C:\Users\ryoma\trade
-   .venv\Scripts\python.exe scripts\repair_liquidation_gz.py --dry-run data\liquidations paper_logs\liquidations
+   schtasks /Create /TN "trade_nightly_restart" /TR "C:\Users\ryoma\trade\deploy\nightly_restart.bat" /SC DAILY /ST 04:02 /F
    ```
-   (`python` を直接使わない — `.venv\Scripts\python.exe` を必ず使う。)
-3. 表示された内容(各ファイルの `members` / `recovered` / `discarded` /
-   `original_readable_as_is`)を見て問題なければ、実際に書き出す
-   (`--dry-run` を外すだけ):
-   ```
-   .venv\Scripts\python.exe scripts\repair_liquidation_gz.py data\liquidations paper_logs\liquidations
-   ```
-   結果は `data\liquidations_repaired\` の下に、元のディレクトリ構造を保った形
-   (`data\liquidations_repaired\data\liquidations\...` など)で作られる。
-4. `deploy\share_logs.bat` の対象には入っていないので、回収した中身を
-   リードに送るには、上記コマンドの**画面出力をそのまま貼る**か、
-   `data\liquidations_repaired\` 以下のファイルを直接送る。
+③ `deploy\share_logs.bat` を 1 回手動実行。画面に `***` で始まる行が出たときだけ、その行を貼る。
+   出なければ何も送らなくてよい(翌朝からはリードが共有コミットで確認する)。
 
-### 送り返してほしいもの
-
-- 手順2・3の画面出力(各ファイルの `members` / `recovered` / `discarded` /
-  `original_readable_as_is` と、末尾の合計行)。
-- `logs\liquidations.out.log`(この記録器専用のログ。`share_logs.bat` には
-  含まれないので `type logs\liquidations.out.log` で直接確認し、
-  「不完全 -> ... へ退避」という行があれば、その行だけ貼る
-  — 自動退避が実際に起きたかどうかの記録として)。
+**未確認のまま渡すもの**: Windows での実行(強制終了のタイミング、cp932 の表示、Task Scheduler 下の挙動)。
+初回の `liquidations.out.log` と `nightly_restart.log` でリードが確認する。
 
