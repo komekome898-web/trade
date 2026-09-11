@@ -1,0 +1,6 @@
+# 2026-09-12 15:49 UTC  この環境(Claude Code remote コンテナ)から bitFlyer に届くかの実測(L-123)
+.env: 無い(設計どおり。API キーはオーナー PC のみ)
+REST https://api.bitflyer.com/v1/getticker?product_code=FX_BTC_JPY : HTTP 200, 0.85 s
+WS  wss://ws.lightstream.bitflyer.com/json-rpc lightning_ticker_FX_BTC_JPY : 接続成功、初回メッセージ 1.08 s
+uptime: 16 分(同日にコンテナ再起動 2 回。バックグラウンドの記録・測定はすべて消えた)
+結論: 到達はする。**連続記録ができない**(常駐プロセスが再起動で消える)。遅延はオーナー PC の 0.06 s に対し 0.85 s で、発注元の代理にならない。
