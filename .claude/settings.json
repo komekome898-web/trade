@@ -42,6 +42,17 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .claude/hooks/owner_turn_digest.sh",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

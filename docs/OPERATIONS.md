@@ -867,8 +867,8 @@ ticker(10秒毎)を公開 REST のみで記録し、`data/venues/quotes_YYYYMMDD
 
 ## 6.6 フック(規則を読む導線)
 
-オーナー承認(L-102/L-103)。`.claude/settings.json` に3つの Claude Code フックを
-登録済み(`.claude/hooks/*.sh`、POSIX sh・常に exit 0・2秒未満)。**表示のみ**で
+オーナー承認(L-102/L-103)。`.claude/settings.json` に Claude Code フックを
+登録済み、2026-09-12 に 5 つ(`.claude/hooks/*.sh`、POSIX sh・常に exit 0・2秒未満)。**表示のみ**で
 チェックもブロックも行わない — 該当する操作の直前/直後に関連規則を CLAUDE.md や
 スキルから実行時に grep して見せるだけ:
 
@@ -877,9 +877,14 @@ ticker(10秒毎)を公開 REST のみで記録し、`data/venues/quotes_YYYYMMDD
 2. `PreToolUse`(`Write`/`Edit`、対象が `docs/PHASE2/**/*PREREG*.md` または
    `docs/**/*_PREREG.md` のときのみ)— 同ルールと research-protocol §1 の
    出所3分類(一次資料/実測/仮定)ルールを表示。
-3. `SessionStart` — 直近7日で `backtest_data/auto_*/` `paper_logs/` `data/tape/`
-   `data/latency/` に届いたファイル一覧(最大40行)と `docs/OWNER_STATUS.md` の
-   先頭15行を表示。
+3. `SessionStart` — 共有経路の死活(最後の `paper_logs` 共有コミットの時刻と経過時間。
+   26 時間超なら途絶の警告。I-006)、直近7日で `backtest_data/auto_*/` `paper_logs/` `data/tape/`
+   `data/latency/` に届いたファイル一覧(最大40行)、`docs/OWNER_STATUS.md` の先頭15行を表示。
+4. `UserPromptSubmit`(`owner_turn_digest.sh`、2026-09-12、L-130)— オーナーの発言のたびに
+   状態板の要点を注入: 共有経路の死活、オーナーに今求めている行動(「PC 運用」行の次の一手)、
+   太字で始まる行(進行中の項目と恒久規則)、恒久規則 3 つ(日本語のみ / 有料インフラを提案しない /
+   出力の再送を求めない)。**状態板に書くだけでは読まれない**(I-006 の根本原因)ので、読む側を
+   機械で保証する。`git push` 前のフック(`Bash`)は L-112 の権限順位を表示。
 
 無効化するには `.claude/settings.json` の該当エントリを削除するか、
 `.claude/settings.local.json` で同じ matcher に空の hooks 配列を上書きする。
