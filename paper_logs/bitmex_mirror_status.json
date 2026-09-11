@@ -1,24 +1,24 @@
 {
-  "updated_utc": "2026-09-09T21:25:45+00:00",
+  "updated_utc": "2026-09-11T21:31:51+00:00",
   "plan": {
     "trade": {
       "files": 3746,
       "bytes": 47935215305,
-      "missing_files": 3726,
-      "missing_bytes": 47935129329
+      "missing_files": 0,
+      "missing_bytes": 0
     },
     "quote": {
       "files": 3746,
       "bytes": 197790496383,
-      "missing_files": 3746,
-      "missing_bytes": 197790496383
+      "missing_files": 283,
+      "missing_bytes": 66131305093
     }
   },
-  "downloaded_files": 5675,
-  "downloaded_bytes": 71716290782,
-  "remaining_files": 1797,
-  "remaining_bytes": 174009334930,
-  "rate_mb_s": 1.11,
+  "downloaded_files": 275,
+  "downloaded_bytes": 63978540791,
+  "remaining_files": 8,
+  "remaining_bytes": 2152764302,
+  "rate_mb_s": 1.36,
   "failed": [],
-  "free_bytes": 354944548864
+  "free_bytes": 178425761792
 }
