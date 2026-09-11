@@ -273,3 +273,150 @@ deploy\mirror_bitmex.bat
 
 急ぎで見たいときだけ: `logs\bitmex_mirror.log` の末尾に速度と残り時間が出ています。
 
+## P11 板の上位10段の毎日抽出(経費の床 E-b。オーナー承認 2026-09-11 L-098)
+
+**何が変わるか**: `deploy\fetch_all.bat`(タスクスケジューラで15分ごと)が
+`scripts\extract_tape.py --board-top 10` を実行するようになった。板WS記録
+(`data\ws\*.jsonl.gz`)から板を再構成し、1秒ごとの上位10段(bid/ask 各10段の
+価格・サイズ)を `data\tape\board_top10_YYYYMMDD.csv.gz` に追記する。従来の
+`board_top5_*`(オンデマンド、研究窓のみ手動実行)とは別ファイルで、こちらは
+**毎日・自動**。マニフェスト(`data\tape\manifest.json`)で既処理分を記憶する
+差分実行なので、再実行しても重複しない。
+
+**容量の見込み**: 実測済みの上位5段(オンデマンド、2026-08-20〜26の7日、
+1秒サンプル)が平均 約2.7MB/日・最大 約3.5MB/日(gzip後)。上位10段は列数が
+ほぼ倍(価格・サイズ×2段分)になるため、**約5〜7MB/日**と見込む。
+10MB/日の目安(このタスクの発注条件)を下回るので、**サンプリングは変更しない**
+(既に1秒間隔=1Hzのまま)。週4本(約28日)の運用でも 150〜200MB程度。
+
+**自動で始まるか**: はい。`restart_all.bat`(pull → 依存更新 → 再起動)を
+実行すれば、次の `fetch_all.bat` の定期実行(15分ごと、既存のタスク
+`bitflyer-fetch`)から自動的に始まる。追加の手順・登録は不要。
+
+**バックフィル(1回だけ。既に溜まっている生WS記録の分も上位10段を作る)**:
+オーナーPCの `data\ws\*.jsonl.gz`(板WS生記録)は共有されたことがなく
+(共有していたのは抽出後の `executions_*`・`ticker_*` だけ)、これまで手元に
+残っている分がそのまま残っている。`extract_tape.py` は**毎回 `data\ws` の
+中身を全件スキャンする**(「今日のファイルだけ」ではない)ので、`--board-top 10`
+を初めて実行した回に、残っている生WS記録**全期間分**の板上位10段が自動的に
+一括生成される(ファイルごと・行ごとのマニフェストカーソルが「未処理」のままだから)。
+つまり特別な別コマンドは要らない — ただし初回は再構成に時間がかかりうるので、
+15分ごとの定期実行に紛れ込ませず、**手動で1回、様子を見ながら**流すことを勧める。
+
+1. どの期間が残っているか確認(生WS記録のファイル名 `<商品>_YYYYMMDD_HHMMSS.jsonl.gz`
+   の先頭と末尾が最古・最新の日付):
+   ```
+   dir data\ws
+   ```
+   一覧の一番上(最古)と一番下(最新)のファイル名の日付を見る。
+2. 手動で1回流す(初回のみ。時間がかかる場合は待つ — 途中で閉じても、
+   マニフェストのおかげで再実行すれば続きから進む):
+   ```
+   cd C:\Users\ryoma\trade
+   .venv\Scripts\activate
+   set PYTHONPATH=src
+   python scripts\extract_tape.py --board-top 10
+   ```
+3. 出力サイズの見込み: 残っている日数 × 約5〜7MB/日(下記の見積り)。
+   例: 手順1で最古が2026-08-20と出た場合、2026-09-11時点で約3週間分 ≈
+   **100〜150MB程度**(`data\tape\board_top10_YYYYMMDD.csv.gz` が日付ごとに
+   分割生成される)。
+4. 完了後は `dir data\tape\board_top10_*.csv.gz` で、手順1で見えた最古の日付から
+   今日まで揃っているか確認。以後は `fetch_all.bat` の15分ごとの実行が新しい分だけ
+   増分で追記する(マニフェストが既処理を記憶しているので、この手動実行と重複しない)。
+
+**日々の確認**:
+
+1. `deploy\restart_all.bat` を実行(pull と依存の更新を含む)。
+2. 15〜30分待って確認:
+   ```
+   dir data\tape\board_top10_*.csv.gz
+   ```
+   その日の日付のファイルができていれば動いている。
+3. ログで抽出行数を見たい場合:
+   ```
+   findstr "board row" logs\fetch.out.log
+   ```
+4. `deploy\share_logs.bat`(毎日06:30、P6)が `data\tape\*.csv.gz` を
+   `paper_logs\tape\` にまとめて共有するので、`board_top10_*` も
+   従来の `executions_*`・`ticker_*` と一緒にリードへ届く。個別の確認は不要。
+
+## P12 資金調達率とベーシスの日次ログ(経費の床 E-g。オーナー承認 2026-09-11 L-098)
+
+**何が変わるか**: `deploy\fetch_all.bat` が `scripts\record_funding_basis.py`
+を実行するようになった。公開APIのみ(認証キー不要・注文系エンドポイントに
+触れない)で、
+- 現在の資金調達率(`/v1/getfundingrate`)と、直近の確定済み調達率
+  (`/v1/getfundingratehistory`、まだ記録していない分だけ)を
+  `data\funding_rate_history.csv`(既存ファイル。列: calculation_date,
+  settlement_date, rate)に追記する。settlement_date で重複排除するので
+  何度実行しても増殖しない。
+- FX_BTC_JPY と BTC_JPY(現物)の公開ティッカーから mid-to-mid のベーシス、
+  および分足ファイル(`data\candles_FX_BTC_JPY.csv` /
+  `data\candles_BTC_JPY.csv`、あれば)の1分終値ベーシスを
+  `data\basis_log.csv`(新規ファイル)に追記する。こちらは時系列そのものなので
+  毎回追記する(重複排除はしない)。
+
+**自動で始まるか**: はい。P11 と同じく `restart_all.bat` の後、既存の
+`fetch_all.bat` の定期実行(15分ごと)から自動的に始まる。
+
+1. `deploy\restart_all.bat` を実行。
+2. 15〜30分待って確認:
+   ```
+   type data\basis_log.csv
+   ```
+   最新行の ts_utc がここ数十分以内なら動いている。`funding_rate_history.csv`
+   は8時間ごとにしか新しい確定行が増えないので、行数が増えていなくても正常
+   (現在の調達率の行だけは毎回試みる)。
+3. `deploy\share_logs.bat`(毎日06:30)が両ファイルをそのままリードへ届ける。
+4. 常駐モード(任意。fetch_all の15分ごとで十分なので通常は不要):
+   ```
+   python scripts\record_funding_basis.py --loop 3600
+   ```
+   1時間ごとに繰り返す。Ctrl+C で停止。
+
+## P13 API応答遅延の読み取り専用プローブ(経費の床 E-h。オーナー承認 2026-09-11 L-098。1週間)
+
+**何を測るか**: 認証つき読み取り専用エンドポイント(`getpermissions`。
+`check_api.py` が既に使っているのと同じ。**注文系エンドポインではない**)1本と、
+公開エンドポイント(`getticker` FX_BTC_JPY)1本を30秒ごとに叩き、往復時間を
+`data\latency\api_probe.csv` に記録する。**注文応答そのものの遅延ではない**
+(実弾を使わずに測れる最も近い代理量。E-h は「注文応答遅延は未測定」と明記した
+まま進む)。板WS記録(`data\ws\`)が動いていれば、その最新の ticker メッセージの
+受信遅れ(rts)も同じ行に併記し、両方の時計を並べられるようにする。
+**LIVE_MODE では起動を拒否する**(PAPER の認証情報だけで確認済み — 読み取り
+専用の権限で十分)。発注は一切しない。
+
+### 1週間だけ動かす手順
+
+1. `deploy\restart_all.bat` を1回実行(pull と依存の更新のため。プローブ自体は
+   常駐リストには入れていないので、これ単独では起動しない)。
+2. `deploy\probe_latency.bat` をダブルクリック(または PowerShell で実行)。
+   最小化した別ウィンドウ(`bitflyer-latency-probe`)で168時間(1週間)・
+   30秒間隔で動き始める。閉じずに1週間放置してよい(パソコンをスリープさせない
+   こと)。
+3. 既に動いている場合は二重起動せず「already running - skipped」と出る
+   (再度ダブルクリックしても安全)。
+
+### 動いているかの確認
+
+```
+type logs\latency_probe.out.log
+```
+直近の行に `public:getticker=200(…ms)` のように出ていれば正常。
+```
+type data\latency\api_probe.csv
+```
+数十行ごとに新しい行が増えていれば正常(30秒間隔なので1時間で約120行 =
+公開・認証つき各1行×2)。
+
+### 停止
+
+- ウィンドウ(`bitflyer-latency-probe`)を閉じる、または PowerShell で:
+  ```
+  taskkill /FI "WINDOWTITLE eq bitflyer-latency-probe*"
+  ```
+- 168時間経過すると自動的に終了する(そのまま放置でよい)。
+- `deploy\share_logs.bat`(毎日06:30)が `data\latency\api_probe.csv` を
+  `paper_logs\latency\` へ共有するので、実行中でもリードが途中経過を読める。
+

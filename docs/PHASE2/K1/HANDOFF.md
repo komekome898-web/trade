@@ -230,6 +230,10 @@
 - **深掘り(第 9 部)**: `scripts/measure_katsuo_robustness.py --source {bitmex,binance}`(D1〜D11、門 2 つ × 180 セル、
   BitMEX 431 秒 / Binance 272 秒。`--dump-cell KEY --dump-path P` で 1 セルの行を CSV に)→ `render_k1_robustness.py --dir`(全診断の表)、
   `render_k1_deepdive.py`(両取引所の要約 表 S1〜S12)。先読み・符号のテストは `tests/test_k1_lookahead.py`(8 件)。
-  全スイートは **1,765 件**(2026-09-11 実測。K1 取引所横断 段階 2 の `tests/test_k1_bybit_source.py`
-  9 件を追加。直前は段階 1 の `tests/test_k1_xvenue.py` 5 件追加で 1,756 件)(CLAUDE.md の「976 件」は古かった)
+  全スイートは **1,814 件**(2026-09-11 実測。board.py の板歩行コスト関数
+  `tests/test_board_walk.py` 18 件 + 経費の床の記録3点(板上位10段の抽出・資金調達率/
+  ベーシスログ・APIレイテンシプローブ)`tests/test_record_funding_basis.py` 16 件・
+  `tests/test_probe_api_latency.py` 15 件を追加。直前は段階 2 の
+  `tests/test_k1_bybit_source.py` 9 件追加で 1,765 件、その前は段階 1 の
+  `tests/test_k1_xvenue.py` 5 件追加で 1,756 件)(CLAUDE.md の「976 件」は古かった)
 - 1 秒バーは `backtest_data/bitmex_trade_1s_XBTUSD/`(2017-2021、1,826 日 / 7,874 万本)

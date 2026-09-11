@@ -805,12 +805,23 @@ best_bid_size, best_ask_size`。気配が変化した行のみ記録)として�
 実測、S10 雪崩時スリッページ実測。ticker 追加後の初回実行では、抽出済みの
 過去ファイルからも ticker を自動バックフィルする(約定は二重出力されない)。
 
-**板深度(オンデマンド、壁板手前指値研究用)** — `--board-top N` を付けると
+**板深度(オンデマンド N=5、壁板手前指値研究用)** — `--board-top N` を付けると
 BOARD チャンネルから板を再構成し、1秒サンプルの top-N 深度を
 `data/tape/board_topN_YYYYMMDD.csv.gz` に追加抽出する(実測 N=5 で約3.5MB/日と
 大きいため fetch_all には組み込まず、研究窓が決まった時にオーナーが1回だけ叩く。
 未指定の通常実行は板カーソルを進めないので後からのバックフィルが可能)。
 実行例: `python scripts\extract_tape.py --board-top 5`
+
+**板深度(N=10、毎日自動。経費の床 E-b、オーナー承認 2026-09-11 L-098)** —
+上記とは独立に、`fetch_all.bat` が `extract_tape.py --board-top 10` を
+**毎日(15分ごとのタスクから)自動実行**し、`data/tape/board_top10_YYYYMMDD.csv.gz`
+を継続的に積む(実測 top-5 平均約2.7MB/日から見積もり、top-10 で約5〜7MB/日。
+10MB/日の目安を下回るので1秒サンプリングのまま変更なし)。`extract_tape.py` は
+毎回 `data/ws` 全件を走査するため、`--board-top 10` を初めて流した回に
+**残っている生WS記録の全期間分を自動的にバックフィル**する(特別なコマンドは
+不要。初回は時間がかかるため手動で1回様子を見て流すことを推奨)。
+`share_logs.bat` は既存の `data/tape/*.csv.gz` ワイルドカードでこれも共有する。
+手順: `docs/OWNER_PROCEDURES.md` P11。
 
 **マルチベニュー公開データ(`scripts/record_venues.py`、常駐)** — Round 22 ベニュー調査の
 後続研究(クロスベニュー・リード/ラグ、CFD−現物ベーシス再監査、リベート maker 判定)用に、
@@ -825,6 +836,25 @@ ticker(10秒毎)を公開 REST のみで記録し、`data/venues/quotes_YYYYMMDD
 初めて作るため、bitFlyer の日次メンテナンス(04:00–04:10 JST = 19:00–19:10 UTC)中の再接続
 試行で空の .jsonl.gz スタブが量産されることはない(過去に生成済みの空
 スタブは無害・放置でよい)。
+
+**資金調達率とベーシスの日次ログ(経費の床 E-g、オーナー承認 2026-09-11 L-098)** —
+`fetch_all.bat` が `scripts/record_funding_basis.py` を実行する。公開API
+のみ(認証不要)で、現在の資金調達率(`/v1/getfundingrate`)と未記録の確定済み
+調達率(`/v1/getfundingratehistory`)を `data/funding_rate_history.csv`
+(settlement_date で重複排除)に、FX_BTC_JPY対BTC_JPYの mid-to-mid ベーシス
+(+ 分足ファイルがあれば1分終値ベーシス)を `data/basis_log.csv`(新規)に
+追記する。両方とも `share_logs.bat` が共有する。単独の常駐モードも可能:
+`python scripts/record_funding_basis.py --loop 3600`。手順: P12。
+
+**API応答遅延の読み取り専用プローブ(経費の床 E-h、オーナー承認 2026-09-11 L-098。
+1週間限定)** — `deploy/probe_latency.bat` で `scripts/probe_api_latency.py`
+を起動すると、認証つき読み取り専用エンドポイント(`getpermissions`。注文系では
+ない)と公開エンドポイント(`getticker` FX_BTC_JPY)を30秒ごとに叩き、往復時間を
+`data/latency/api_probe.csv` に記録する(**注文応答遅延そのものではない代理量**。
+実弾は使わない)。板WS記録が動いていれば ticker の受信遅れ(rts)も同じ行に
+併記する。**LIVE_MODE が有効だと起動を拒否する**。既定 168時間(1週間)で
+自動停止。`fetch_all.bat`/`start_all.bat` の常駐リストには含まれない(手動起動・
+1週間限定の測定用)。手順: P13。
 
 ## 7. 次フェーズのチェックリスト
 
