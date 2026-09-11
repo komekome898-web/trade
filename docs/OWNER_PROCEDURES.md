@@ -313,10 +313,16 @@ deploy\mirror_bitmex.bat
    マニフェストのおかげで再実行すれば続きから進む):
    ```
    cd C:\Users\ryoma\trade
-   .venv\Scripts\activate
+   .venv\Scripts\python.exe --version
+   set PYTHONUTF8=1
    set PYTHONPATH=src
-   python scripts\extract_tape.py --board-top 10
+   .venv\Scripts\python.exe scripts\extract_tape.py --board-top 10
    ```
+   **Python の版について**: 2 行目が `Python 3.11.x` 以上を出せば OK(`pyproject.toml` の
+   `requires-python = ">=3.11"`)。`.venv\Scripts\python.exe` は `fetch_all.bat` が 15 分ごとに
+   使っているのと同じ実体なので、版は自動実行と一致する。**P4 の `pip install -e ".[dev]"` が通った
+   時点で版の条件は満たされている**(満たさなければ pip がその段で止まり、restart_all が中断する)。
+   素の `python` や `py` は別の Python に当たりうるので使わない。
 3. 出力サイズの見込み: 残っている日数 × 約5〜7MB/日(下記の見積り)。
    例: 手順1で最古が2026-08-20と出た場合、2026-09-11時点で約3週間分 ≈
    **100〜150MB程度**(`data\tape\board_top10_YYYYMMDD.csv.gz` が日付ごとに
@@ -371,7 +377,7 @@ deploy\mirror_bitmex.bat
 3. `deploy\share_logs.bat`(毎日06:30)が両ファイルをそのままリードへ届ける。
 4. 常駐モード(任意。fetch_all の15分ごとで十分なので通常は不要):
    ```
-   python scripts\record_funding_basis.py --loop 3600
+   .venv\Scripts\python.exe scripts\record_funding_basis.py --loop 3600
    ```
    1時間ごとに繰り返す。Ctrl+C で停止。
 
