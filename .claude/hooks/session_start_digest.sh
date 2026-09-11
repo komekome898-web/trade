@@ -33,6 +33,24 @@ else
     fi
 fi
 
+# I-006: 共有経路の死活。最後の paper_logs 共有コミットの時刻と経過時間を必ず出す。
+HEART=""
+if command -v git >/dev/null 2>&1 && [ -d "$ROOT/.git" ]; then
+    LAST_TS="$(git log -1 --format=%ct -- paper_logs 2>/dev/null || true)"
+    if [ -n "$LAST_TS" ]; then
+        NOW_TS="$(date +%s)"
+        AGE_H=$(( (NOW_TS - LAST_TS) / 3600 ))
+        LAST_STR="$(git log -1 --format=%ci -- paper_logs 2>/dev/null || true)"
+        if [ "$AGE_H" -gt 26 ]; then
+            HEART="!!! 共有が途絶えている: 最後の paper_logs 共有コミット ${LAST_STR}(${AGE_H} 時間前)。オーナーに何かを約束する前に原因を絞る(I-006)"
+        else
+            HEART="共有経路: 最後の paper_logs 共有コミット ${LAST_STR}(${AGE_H} 時間前)"
+        fi
+    else
+        HEART="共有経路: paper_logs の共有コミットが見つからない"
+    fi
+fi
+
 STATUS_HEAD=""
 if [ -f "$ROOT/docs/OWNER_STATUS.md" ]; then
     STATUS_HEAD="$(head -n 15 "$ROOT/docs/OWNER_STATUS.md" 2>/dev/null || true)"
@@ -40,7 +58,9 @@ else
     STATUS_HEAD="(docs/OWNER_STATUS.md が見つからない)"
 fi
 
-MSG="前回以降に届いた共有ファイル
+MSG="${HEART}
+
+前回以降に届いた共有ファイル
 ${LIST_BLOCK}
 
 --- docs/OWNER_STATUS.md (先頭15行) ---
