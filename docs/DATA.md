@@ -71,7 +71,7 @@
 | OKX 建玉(OI)・L/S比 スナップショット(自前記録) | `backtest_data/auto_okx_open_interest_5m_20260905/`(同 09-06〜09-08 も同様)、`backtest_data/auto_okx_long_short_ratio_20260905/`、`data/okx_btc_oi_*.csv`、`data/okx_btc_lsratio_*.csv` | 2026-08-23 以降、5分/1時間粒度で継続記録 | 取得済 | 2026-09-11 | — | 未使用(自前構築中の履歴、判定はまだ) |
 | Coinalyze(清算・OIの集計値、鍵必須) | `https://api.coinalyze.net/v1/*` | — | **試行して不可(HTTP 401、API キー必須。方法: GET、この環境から実測)** | 2026-09-11 | `docs/DATA/probes/20260911_crypto_cfd_board_liq_funding_basis.log` | 未使用 |
 | Gate.io 個別清算約定(90日、鍵不要) | `backtest_data/gate_liquidations_20260908/BTC_USDT.jsonl.gz` | 2026-06-10〜09-08(2,160時間、79,183件、欠測167時間) | 取得済 | 2026-09-11 | `docs/DATA/probes/20260911_crypto_cfd_board_liq_funding_basis.log`(再確認、既存台帳は L-030) | P8(清算研究、進行中) |
-| BitMEX XBTUSD 1秒足(取引所閉鎖前の保全) | `backtest_data/bitmex_trade_1s_XBTUSD/` | 2017〜2021 完了分(1,826日) | 取得済(**中身は未読み。ディレクトリ名のみ確認、指示により内容非参照**) | 2026-09-11 | — | K1 段階の対照 |
+| BitMEX XBTUSD 1秒足(取引所閉鎖前の保全) | `backtest_data/bitmex_trade_1s_XBTUSD/` | 2017〜2021(1,826 日、7,874 万本) | 取得済。**2017〜2019 は K1 の探索区間として全読(第 1〜14 部)、2020〜2021 は封印として 2026-09-10 に一度だけ開封(L-085、第 15 部)。この設計での再利用は不可** | 2026-09-11 | `docs/DATA_CONSUMPTION_LOG.md` | K1 全部(第 1〜15 部) |
 | Kraken XBTUSD 1分足 | `data/kraken_XBTUSD_1m.csv` | 単一ファイル | 取得済 | 2026-09-11 | — | 未使用 |
 | Deribit DVOL(ボラ指数) | `data/deribit_dvol_1h.csv`, `data/deribit_dvol_1m_7d.csv` | 1時間粒度(全期間)/1分粒度(直近7日) | 取得済 | 2026-09-11 | — | 未使用 |
 | 現物 BTC/ETH 日足(Bitstamp/Coinbase/Yahoo、複数取引所横断) | `backtest_data/daily_btcusd_*.csv.gz`, `backtest_data/daily_ethusd_*.csv.gz` | 〜2026-08-28 | 取得済 | 2026-09-11 | — | 未使用 |
