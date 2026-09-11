@@ -856,6 +856,25 @@ ticker(10秒毎)を公開 REST のみで記録し、`data/venues/quotes_YYYYMMDD
 自動停止。`fetch_all.bat`/`start_all.bat` の常駐リストには含まれない(手動起動・
 1週間限定の測定用)。手順: P13。
 
+## 6.6 フック(規則を読む導線)
+
+オーナー承認(L-102/L-103)。`.claude/settings.json` に3つの Claude Code フックを
+登録済み(`.claude/hooks/*.sh`、POSIX sh・常に exit 0・2秒未満)。**表示のみ**で
+チェックもブロックも行わない — 該当する操作の直前/直後に関連規則を CLAUDE.md や
+スキルから実行時に grep して見せるだけ:
+
+1. `PreToolUse`(`Agent` ツール)— 委任前に CLAUDE.md §5.2 の「取れない・無い」の
+   主張ルール(L-099)+ 調達票の必須項目を表示。
+2. `PreToolUse`(`Write`/`Edit`、対象が `docs/PHASE2/**/*PREREG*.md` または
+   `docs/**/*_PREREG.md` のときのみ)— 同ルールと research-protocol §1 の
+   出所3分類(一次資料/実測/仮定)ルールを表示。
+3. `SessionStart` — 直近7日で `backtest_data/auto_*/` `paper_logs/` `data/tape/`
+   `data/latency/` に届いたファイル一覧(最大40行)と `docs/OWNER_STATUS.md` の
+   先頭15行を表示。
+
+無効化するには `.claude/settings.json` の該当エントリを削除するか、
+`.claude/settings.local.json` で同じ matcher に空の hooks 配列を上書きする。
+
 ## 7. 次フェーズのチェックリスト
 
 - [ ] `check_api.py` 成功(認証OK・出金権限なし・最低注文数量と手数料率の実測)
