@@ -1,0 +1,110 @@
+# probe log: 板深さ/清算/資金調達率/基差 の公開データ到達性 — 2026-09-11T06:35:48Z
+# method: curl -sS -D- -o /dev/null (HEAD相当) または小さいGET。すべてプロキシ経由($HTTPS_PROXY)。この環境から実行
+
+## bitFlyer board depth (現在の板、履歴ではない)
+method=GET url=https://api.bitflyer.com/v1/board?product_code=FX_BTC_JPY probed_at=2026-09-11T06:35:48Z
+http_code=200 bytes=45351 time=0.940670s
+first200: {"mid_price":11896234.0,"bids":[{"price":11895889.0,"size":0.06077799},{"price":11895555.0,"size":0.0573074},{"price":11895540.0,"size":0.02},{"price":11894877.0,"size":0.02},{"price":11894791.0,"size
+
+## bitFlyer executions (直近約定、31日で消える)
+method=GET url=https://api.bitflyer.com/v1/executions?product_code=FX_BTC_JPY&count=1 probed_at=2026-09-11T06:35:49Z
+http_code=200 bytes=222 time=0.695632s
+first200: [{"id":2651120857,"side":"BUY","price":11896600.0,"size":0.01,"exec_date":"2026-09-11T06:35:48.833","buy_child_order_acceptance_id":"JRF20260911-063548-006985","sell_child_order_acceptance_id":"JRF202
+
+## Binance USD-M futures funding rate history
+method=GET url=https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=2 probed_at=2026-09-11T06:35:50Z
+http_code=451 bytes=224 time=0.318476s
+first200: {   "code": 0,   "msg": "Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received t
+
+## Binance USD-M futures order book depth (現在)
+method=GET url=https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=5 probed_at=2026-09-11T06:35:50Z
+http_code=451 bytes=224 time=0.444779s
+first200: {   "code": 0,   "msg": "Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received t
+
+## Binance USD-M futures force-orders (清算、直近のみ)
+method=GET url=https://fapi.binance.com/fapi/v1/allForceOrders?symbol=BTCUSDT&limit=2 probed_at=2026-09-11T06:35:51Z
+http_code=451 bytes=224 time=0.560980s
+first200: {   "code": 0,   "msg": "Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received t
+
+## Bybit funding rate history (linear perp)
+method=GET url=https://api.bybit.com/v5/market/funding/history?category=linear&symbol=BTCUSDT&limit=2 probed_at=2026-09-11T06:35:51Z
+http_code=403 bytes=96 time=0.271964s
+first200: {     error:The Amazon CloudFront distribution is configured to block access from your country }
+
+## Bybit order book depth (現在)
+method=GET url=https://api.bybit.com/v5/market/orderbook?category=linear&symbol=BTCUSDT&limit=5 probed_at=2026-09-11T06:35:52Z
+http_code=403 bytes=96 time=0.224168s
+first200: {     error:The Amazon CloudFront distribution is configured to block access from your country }
+
+## OKX funding rate (現在値)
+method=GET url=https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP probed_at=2026-09-11T06:35:52Z
+http_code=200 bytes=524 time=2.235710s
+first200: {"code":"0","data":[{"formulaType":"withRate","fundingRate":"0.0000722459869643","fundingTime":"1789113600000","impactValue":"20000.0000000000000000","instId":"BTC-USDT-SWAP","instType":"SWAP","intere
+
+## OKX funding rate history
+method=GET url=https://www.okx.com/api/v5/public/funding-rate-history?instId=BTC-USDT-SWAP&limit=2 probed_at=2026-09-11T06:35:54Z
+http_code=200 bytes=424 time=1.204588s
+first200: {"code":"0","data":[{"formulaType":"withRate","fundingRate":"0.0000876022471315","fundingTime":"1789084800000","instId":"BTC-USDT-SWAP","instType":"SWAP","method":"current_period","realizedRate":"0.00
+
+## OKX order book depth (現在)
+method=GET url=https://www.okx.com/api/v5/market/books?instId=BTC-USDT-SWAP&sz=5 probed_at=2026-09-11T06:35:55Z
+http_code=200 bytes=369 time=0.948898s
+first200: {"code":"0","msg":"","data":[{"asks":[["77166.5","446.83","0","22"],["77166.8","0.02","0","2"],["77167","0.02","0","1"],["77167.1","53","0","1"],["77167.5","0.01","0","1"]],"bids": [["77166.4","1001.2
+
+## OKX mark price / basis 系 (現在値)
+method=GET url=https://www.okx.com/api/v5/public/mark-price?instType=SWAP&instId=BTC-USDT-SWAP probed_at=2026-09-11T06:35:56Z
+http_code=200 bytes=115 time=2.860708s
+first200: {"code":"0","data":[{"instId":"BTC-USDT-SWAP","instType":"SWAP","markPx":"77166.6","ts":"1789108560472"}],"msg":""}
+
+## OKX index ticker (basis計算用の指数)
+method=GET url=https://www.okx.com/api/v5/market/index-tickers?instId=BTC-USDT probed_at=2026-09-11T06:35:59Z
+http_code=200 bytes=188 time=2.015258s
+first200: {"code":"0","data":[{"instId":"BTC-USDT","idxPx":"77201","high24h":"78530.4","low24h":"76467.1","open24h":"78184.9","sodUtc0":"76569.5","sodUtc8":"77250.4","ts":"1789108560062"}],"msg":""}
+
+## Coinalyze 清算集計 (鍵無しルート、L-027台帳の再確認)
+method=GET url=https://api.coinalyze.net/v1/liquidation-history?symbols=BTCUSDT_PERP.A&interval=1hour&from=1 probed_at=2026-09-11T06:36:01Z
+http_code=401 bytes=37 time=0.433825s
+first200: {"message":"Invalid/Missing API key"}
+
+## Gate.io 清算 (個別約定、L-030台帳の再確認)
+method=GET url=https://api.gateio.ws/api/v4/futures/usdt/liq_orders?contract=BTC_USDT&limit=2 probed_at=2026-09-11T06:36:02Z
+http_code=200 bytes=267 time=0.901278s
+first200: [{"contract":"BTC_USDT","left":"0","size":"-4266","order_size":"4266","fill_price":"77398","order_price":"77625.6","time":1789107273},{"contract":"BTC_USDT","left":"0","size":"-189","order_size":"189"
+
+## Tardis.dev (第三者・有料。無鍵ルートの有無)
+method=GET url=https://api.tardis.dev/v1/exchanges/binance-futures probed_at=2026-09-11T06:36:03Z
+http_code=200 bytes=374016 time=3.330843s
+first200: {"id":"binance-futures","name":"Binance USDS-M Futures","enabled":true,"availableSince":"2019-11-17T00:00:00.000Z","availableChannels":["trade","depth","depthSnapshot","bookTicker","forceOrder","ticke
+
+## CryptoDataDownload (第三者・無料、板深さ/清算は無い想定の確認)
+method=GET url=https://www.cryptodatadownload.com/data/binance/ probed_at=2026-09-11T06:36:06Z
+http_code=200 bytes=77791 time=0.359897s
+first200: <!DOCTYPE html> <html class="wide wow-animation" lang="en">   <head>  <!-- Google tag (gtag.js) --> <script async src="https://www.googletagmanager.com/gtag/js?id=G-RW03VFD87H"></script> <script>   wi
+
+## 追加プローブ
+### Binance spot API (futures とは別ホスト。地域制限の切り分け)
+method=GET url=https://api.binance.com/api/v3/time probed_at=2026-09-11T06:36:25Z
+http_code=451 bytes=224 time=0.395587s
+first200: {   "code": 0,   "msg": "Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received t
+
+### OKX index candles history (基差の履歴計算に使える指数の過去値)
+method=GET url=https://www.okx.com/api/v5/market/index-candles?instId=BTC-USDT&bar=1H&limit=2 probed_at=2026-09-11T06:36:26Z
+http_code=200 bytes=148 time=1.664985s
+first200: {"code":"0","data":[["1789106400000","77255","77435.1","77177.9","77202.2","0"],["1789102800000","77113","77257.1","77065.8","77255","1"]],"msg":""}
+
+### OKX mark price candles history (基差の履歴計算に使えるmarkの過去値)
+method=GET url=https://www.okx.com/api/v5/market/mark-price-candles?instId=BTC-USDT-SWAP&bar=1H&limit=2 probed_at=2026-09-11T06:36:27Z
+http_code=200 bytes=154 time=0.428266s
+first200: {"code":"0","data":[["1789106400000","77224.3","77412.2","77137.5","77166.4","0"],["1789102800000","77075.8","77228.3","77029.9","77224.3","1"]],"msg":""}
+
+## 追加プローブ2: Bybit 静的アーカイブ(api.bybit.com とは別ホスト)
+### Bybit public data archive root
+method=GET url=https://public.bybit.com/ probed_at=2026-09-11T06:36:46Z
+http_code=200 bytes=542 time=0.503034s
+first200: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"> <html> <head> <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> <title>Directory listing fo
+
+### Bybit trading(無期限) 日次アーカイブ 一覧
+method=GET url=https://public.bybit.com/trading/BTCUSDT/ probed_at=2026-09-11T06:36:47Z
+http_code=200 bytes=172680 time=0.538070s
+first200: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"> <html> <head> <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> <title>Directory listing fo
+
