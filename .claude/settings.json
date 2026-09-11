@@ -20,6 +20,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .claude/hooks/git_push_audit_reminder.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionStart": [
