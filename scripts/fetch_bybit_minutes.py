@@ -29,7 +29,10 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import http.client
 import io
+import json
+import socket
 import time
 import urllib.error
 import urllib.request
@@ -60,6 +63,14 @@ def _month_range(year: int):
         yield start, end
 
 
+# 一時的失敗として再試行する例外(ネットワーク・プロキシ・切断のみ。プログラムの誤りは再試行しない)。
+# `http.client.IncompleteRead`(実際に発生: Content-Length 分読めずに切れる)を含む
+TRANSIENT_EXC = (
+    urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ConnectionError,
+    http.client.IncompleteRead, http.client.HTTPException, socket.timeout, OSError,
+)
+
+
 def fetch_bytes(url: str) -> bytes:
     """GET url、一時的失敗は最大 MAX_RETRIES 回・指数バックオフで再試行する。"""
     last_exc = None
@@ -67,14 +78,14 @@ def fetch_bytes(url: str) -> bytes:
         try:
             with urllib.request.urlopen(url, timeout=60) as resp:
                 return resp.read()
-        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ConnectionError) as exc:
+        except TRANSIENT_EXC as exc:
             last_exc = exc
             if attempt == MAX_RETRIES - 1:
                 break
             wait = BACKOFF_BASE * (2 ** attempt)
-            print(f"    再試行 {attempt + 1}/{MAX_RETRIES}({exc}): {wait}s 待機")
+            print(f"    再試行 {attempt + 1}/{MAX_RETRIES}({exc!r}): {wait}s 待機")
             time.sleep(wait)
-    raise RuntimeError(f"取得失敗(4 回再試行後): {url}: {last_exc}")
+    raise RuntimeError(f"取得失敗(4 回再試行後): {url}: {last_exc!r}")
 
 
 def correct_kline_timestamp(dt_naive: datetime) -> int:
@@ -195,29 +206,77 @@ def fetch_kline_years(years):
         write_year_csv(y, by_year[y])
 
 
+CHECKPOINT_PATH = Path(
+    "/tmp/claude-0/-home-user-trade/fa7bf0d4-a5c4-55b7-991b-874b590e00a3/scratchpad/bybit_fetch_checkpoint.json"
+)
+FLUSH_EVERY_DAYS = 15  # この日数ごとに年別ファイルへ書き出す(クラッシュ時の再処理を上限する)
+
+
+def _load_checkpoint() -> set[str]:
+    if CHECKPOINT_PATH.exists():
+        return set(json.loads(CHECKPOINT_PATH.read_text("utf-8")).get("completed_days", []))
+    return set()
+
+
+def _save_checkpoint(completed_days: set[str]) -> None:
+    CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CHECKPOINT_PATH.write_text(json.dumps({"completed_days": sorted(completed_days)}), encoding="utf-8")
+
+
 def fetch_trade_days(start: date, end: date):
-    """2025〜2026 の日次約定ファイルを 1 日ずつ取得→分に畳む→即削除。年別に集計して書く。"""
+    """2025〜2026 の日次約定ファイルを 1 日ずつ取得→分に畳む→即削除。年別に集計して書く。
+
+    **再開可能**: `FLUSH_EVERY_DAYS` 日ごと(・年境界・末尾)に年別ファイルへ書き出し、
+    書き出した日付をチェックポイント(`CHECKPOINT_PATH`、リポジトリ外)に記録する。
+    一時的失敗が 4 回の再試行後も続いた場合(`fetch_bytes` が例外を投げる)は、その時点までの
+    チェックポイント済みの日は失われない。再実行時はチェックポイント済みの日を自動でスキップする。
+    """
+    completed = _load_checkpoint()
+    skipped = 0
     by_year: dict[int, list] = {}
+    pending_days: set[str] = set()
     day = start
     n_days = (end - start).days + 1
     i = 0
+    n_since_flush = 0
+
+    def flush(reason: str):
+        nonlocal by_year, pending_days, n_since_flush
+        if not by_year:
+            return
+        for y, rows in by_year.items():
+            _merge_and_write_year(y, rows)
+        completed.update(pending_days)
+        _save_checkpoint(completed)
+        print(f"  [checkpoint:{reason}] {len(pending_days)} 日分を書き出し・記録"
+              f"(チェックポイント合計 {len(completed):,} 日)")
+        by_year = {}
+        pending_days = set()
+        n_since_flush = 0
+
     while day <= end:
         i += 1
+        if day.isoformat() in completed:
+            skipped += 1
+            day += timedelta(days=1)
+            continue
         url = TRADE_URL.format(day=day.isoformat())
         print(f"trade {day}({i}/{n_days}): 取得")
         raw = fetch_bytes(url)
         trades = parse_trade_csv(raw)
         bars = fold_trades_to_minutes(trades)
         by_year.setdefault(day.year, []).extend(bars)
+        pending_days.add(day.isoformat())
+        n_since_flush += 1
         print(f"    約定 {len(trades):,} 件 → 分 {len(bars):,} 本")
         del raw, trades
-        day += timedelta(days=1)
-        # 年境界・末尾でその年分を書き出し、メモリを解放する
-        if day.year != (day - timedelta(days=1)).year or day > end:
-            for y, rows in list(by_year.items()):
-                if y != day.year or day > end:
-                    _merge_and_write_year(y, rows)
-                    del by_year[y]
+        next_day = day + timedelta(days=1)
+        year_boundary = next_day.year != day.year
+        if n_since_flush >= FLUSH_EVERY_DAYS or year_boundary or next_day > end:
+            flush("年境界" if year_boundary else ("末尾" if next_day > end else f"{FLUSH_EVERY_DAYS}日ごと"))
+        day = next_day
+    if skipped:
+        print(f"  再開: チェックポイント済み {skipped:,} 日をスキップ")
 
 
 def _merge_and_write_year(year: int, new_rows):
