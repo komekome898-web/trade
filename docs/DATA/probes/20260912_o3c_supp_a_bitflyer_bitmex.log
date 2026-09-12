@@ -1,0 +1,111 @@
+O-3c 補遺A プローブログ(bitFlyer清算識別 / BitMEX清算経路 / bitFlyer SFD・ロスカット一次資料)
+実施日: 2026-09-12(UTC)。全件この環境の egress から。curlは$HTTPS_PROXY経由、WebFetchはツール内蔵フェッチャ。
+
+--- A1: bitFlyer 自身の清算識別 ---
+
+[1] 2026-09-12T06:35:04Z GET https://api.bitflyer.com/v1/executions?product_code=FX_BTC_JPY&count=1 (HEAD相当、-o /dev/null)
+HTTP 200, bytes=229
+
+[2] 2026-09-12T06:35:09Z GET https://api.bitflyer.com/v1/executions?product_code=FX_BTC_JPY&count=2
+HTTP 200, bytes=451
+先頭200文字: {"id":2651206072,"side":"BUY","price":11875570.0,"size":0.001,"exec_date":"2026-09-12T06:35:08.633","buy_child_order_acceptance_id":"JRF20260912-063508-010494","sell_child_order_acceptance_id":"JRF2
+
+[3] 2026-09-12T06:37:52Z GET https://api.bitflyer.com/v1/getticker?product_code=FX_BTC_JPY
+HTTP 200, bytes=378
+先頭200文字: {"product_code":"FX_BTC_JPY","state":"RUNNING","timestamp":"2026-09-12T06:37:52.663","tick_id":39449884,"best_bid":11876836.0,"best_ask":11878462.0,"best_bid_size":0.04299966,"best_ask_size":0.0336
+
+[4] 2026-09-12T06:37:53Z GET https://api.bitflyer.com/v1/getboardstate?product_code=FX_BTC_JPY
+HTTP 200, bytes=37
+先頭200文字: {"health":"NORMAL","state":"RUNNING"}
+
+[5] 2026-09-12T06:xx WebFetch https://lightning.bitflyer.com/docs?lang=en (prompt: executions/lightning_executionsのフィールド一覧、清算識別フィールドの有無)
+結果: 200相当(ツールが本文取得に成功)。要約: HTTP Private "Get Executions"のフィールドは
+id, child_order_id, side, price, size, commission, exec_date, child_order_acceptance_id のみ。
+清算/ロスカット識別のフィールド・フラグ・エンドポイントは無し。"Get Margin Status"に
+margin_call_amount / margin_call_due_date はあるが約定側とは別物。
+
+--- A2: BitMEX 清算履歴の代替経路 ---
+
+[6] 2026-09-12T06:35:00Z GET https://www.bitmex.com/api/v1/insurance?symbol=XBTUSD&count=3
+HTTP 200, bytes=253
+先頭200文字: [{"currency":"XBt","timestamp":"2016-02-28T12:00:00.000Z","walletBalance":574252089},{"currency":"XBt","timestamp":"2016-02-29T12:00:00.000Z","walletBalance":573444663},{"currency":"XBt","timestam
+
+[7] 2026-09-12T06:35:12Z GET https://www.bitmex.com/api/v1/insurance?symbol=XBTUSD&count=2&reverse=true
+HTTP 200, bytes=178
+先頭200文字: [{"currency":"XBt","timestamp":"2026-09-11T12:00:00.000Z","walletBalance":369931944182},{"currency":"USDt","timestamp":"2026-09-11T12:00:00.000Z","walletBalance":30584279083948}]
+
+[8] 2026-09-12T06:35:03Z GET https://www.bitmex.com/api/v1/liquidation?symbol=XBTUSD&count=3&startTime=2020-01-01
+HTTP 200, bytes=2
+先頭200文字: []
+(注: startTime パラメータ自体は受理されるが、過去分は返らない。現在オープンの清算注文のみを返す仕様と一致)
+
+[9] 2026-09-12T06:35:02Z GET http://web.archive.org/cdx/search/cdx?url=public.bitmex.com*&filter=original:.*[Ll]iquidat.*&limit=20&output=json (curl, プレーンHTTP)
+結果: curl エラー(URL内の角括弧をcurlがレンジ指定と誤認、リクエスト未達)
+
+[10] 2026-09-12T06:35:11Z GET http://web.archive.org/cdx/search/cdx?url=public.bitmex.com&matchType=prefix&filter=urlkey:.*liquidat.*&limit=20&output=json (curl, プロキシ経由, プレーンHTTP)
+HTTP 405, bytes=343
+内容: エージェントプロキシが「HTTPSのCONNECTトンネルのみ受理、プレーンHTTP/絶対形式リクエストは非対応」と返す
+
+[11] 2026-09-12T06:35:18Z GET https://web.archive.org/cdx/search/cdx?...(同上、HTTPSに変更)
+結果: curl エラー35 (Recv failure: Connection reset by peer)
+
+[12] 2026-09-12T06:35:29Z GET https://web.archive.org/cdx/search/cdx?url=public.bitmex.com&matchType=prefix&collapse=urlkey&limit=30&output=json
+結果: curl エラー35 (Connection reset by peer) — archive.org へのHTTPS到達も本環境から不可
+
+[13] WebFetch https://web.archive.org/web/2026/https://bitflyer.com/ja-jp/faq/7-23
+結果: ツールエラー「Claude Code is unable to fetch from web.archive.org」(WebFetchはweb.archive.orgをブロックリスト)
+
+[14] WebFetch https://web.archive.org/web/2026/https://bitflyer.com/ja-jp/faq/7-33
+結果: 同上「unable to fetch from web.archive.org」
+
+[15] 2026-09-12T06:36:02Z GET https://raw.githubusercontent.com/ccxt/ccxt/master/python/ccxt/bitmex.py (curl -o /tmp/bitmex_ccxt.py)
+HTTP 200, bytes=161713
+grep結果: 'fetchLiquidations': True (94行目)、def fetch_liquidations (3074行目)、def parse_liquidation (3117行目)
+本文(3074-3115行目)を確認: publicGetLiquidation を symbol/startTime(since)/count(limit)/endTime(until) 付きで呼ぶ実装。
+コメント内のレスポンス例は orderID/symbol/side/price/leavesQty のみで timestamp 無し。
+parse_liquidationも 'timestamp': None, 'datetime': None を明示的にセットしている
+(ccxt自身がBitMEXの清算オブジェクトに時刻が無いことを実装コメントで認めている)。
+
+[16] WebFetch https://docs.tardis.dev/historical-data-details/bitmex
+結果: 200相当。BitMEXのチャンネル一覧に "liquidation": "Liquidation events stream" が明記されている
+(trade/orderBookL2/quote/liquidation/instrument/settlement/funding/insurance 等と併記)。
+料金・提供期間の詳細本文は今回未取得(ページ内の別セクション、時間予算のため深追いせず)。
+
+--- A3: bitFlyer SFD・証拠金維持率・ロスカット 一次資料 ---
+
+[17] 2026-09-12T06:36:09Z GET https://bitflyer.com/ja-jp/sfd (curl --http1.1 -A "Mozilla/5.0")
+結果: curl エラー52 (Empty reply from server)
+
+[18] (直前) GET https://bitflyer.com/ja-jp/sfd (curl -x $HTTPS_PROXY -A ... , HTTP/2)
+結果: curl エラー92 (HTTP/2 stream reset, INTERNAL_ERROR)
+
+[19] WebFetch https://bitflyer.com/ja-jp/sfd
+結果: HTTP 403 Forbidden
+
+[20] WebFetch https://bitflyer.com/en-jp/sfd
+結果: HTTP 403 Forbidden
+
+[21] 2026-09-12T06:37:33Z WebFetch https://bitflyer.com/ja-jp/faq/7-23
+結果: HTTP 403 Forbidden
+
+[22] 2026-09-12T06:37:xx GET https://bitflyer.com/ja-jp/faq/7-23 (curl --http1.1 -x $HTTPS_PROXY, UAなし)
+HTTP 403, bytes=388
+先頭200文字: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access "http://bitflyer.com/ja-jp/faq/7-23" on this server.<P>\nReference #18.d53d117.1789195053.6e9a528
+
+[23] 2026-09-12T06:36:48Z GET https://lightning.bitflyer.com/docs (curl --http1.1 -x $HTTPS_PROXY -A Mozilla, -o /dev/null)
+HTTP 200, bytes=79486
+(bitflyer.com直下のFAQ/SFDページはWAFで403一貫、lightning.bitflyer.com/docs(APIリファレンス)は到達可能— ホストが別でWAFの適用範囲が異なる)
+
+[24] WebFetch https://lightning.bitflyer.com/docs?lang=en#margin-and-leverage
+結果: 200相当。"Get Margin Status" の keep_rate フィールドの説明はあるが、
+証拠金維持率の具体的な数値しきい値(50%等)やロスカット発動条件の記載はこのAPIリファレンス内には無し
+(APIドキュメントであり利用規約/FAQ文書ではないため)。
+
+[25] WebSearch "bitFlyer SFD 乖離率 手数料 公式" → https://bitflyer.com/ja-jp/faq/7-33 のタイトル・スニペットを確認(本文全体は未取得、[19]の403のため)
+[26] WebSearch "bitFlyer FX 証拠金維持率 ロスカット 50% 公式" → https://bitflyer.com/ja-jp/faq/7-23, 7-11, 7-9 のタイトル・スニペットを確認(本文全体は未取得、[21][22]の403のため)
+
+--- deploy/mirror_bitmex.bat 確認(ファイル読み、プローブではない) ---
+[27] Read /home/user/trade/deploy/mirror_bitmex.bat, /home/user/trade/scripts/mirror_bitmex_archive.py
+PREFIXES = {"trade": "data/trade/", "quote": "data/quote/", "porl": "data/porl/"} (mirror_bitmex_archive.py 55行目)
+対象: data/trade/ (47.9GB, 全銘柄全期間の1件ごと約定), data/quote/ (197.8GB, 最良気配更新), data/porl/。
+「liquidation」名のプレフィックスは無い(S3バケット一覧側にそもそも存在しないことは既報のO3C_PROCUREMENT_2026-09-12.mdで確認済み、本票は取得対象コードの側から再確認)。
