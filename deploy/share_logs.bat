@@ -35,6 +35,7 @@ rem the raw tail is swamped by repair_gz_listing output; also share the last 200
 rem that mention the P11/P12/P13 collectors so the lead can diagnose them (2026-09-12).
 powershell -NoProfile -Command "if (Test-Path 'logs\fetch.out.log') { Select-String -Path 'logs\fetch.out.log' -Pattern 'extract_tape|board row|record_funding|probe_api|Traceback|Error' | Select-Object -Last 200 | ForEach-Object { $_.Line } | Set-Content 'paper_logs\fetch.out.collectors.log' }" >nul 2>&1
 powershell -NoProfile -Command "if (Test-Path 'logs\latency_probe.out.log') { Get-Content 'logs\latency_probe.out.log' -Tail 400 | Set-Content 'paper_logs\latency_probe.out.tail.log' }" >nul 2>&1
+copy /Y logs\latency_probe.launch.log paper_logs\ >nul 2>&1
 copy /Y data\scalp_paper.jsonl paper_logs\ >nul 2>&1
 copy /Y data\oi_snapshots.csv paper_logs\ >nul 2>&1
 copy /Y data\spread_FX_BTC_JPY.csv paper_logs\ >nul 2>&1

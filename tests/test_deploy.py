@@ -115,3 +115,28 @@ def test_restart_all_is_documented_as_the_recommended_update_path():
     for step in ("git pull", 'pip install -e ".[dev]"', "stop_all.bat",
                  "start_all.bat"):
         assert step in section
+
+
+def test_no_bare_parentheses_inside_bat_blocks():
+    """cmd ends an `if (...) else (...)` block at the first unescaped `)`. An echo
+    line such as `echo starting (168h, 30s interval)` inside a block therefore
+    kills the batch with a syntax error before the block's real work runs -
+    exactly how deploy/probe_latency.bat never launched the probe (L-133,
+    2026-09-12). Inside a block, parentheses in echo text must be ^( ^)."""
+    import re
+    bad = []
+    for bat in BATS:
+        depth = 0
+        for n, line in enumerate(bat.read_text(encoding="utf-8", errors="surrogateescape").splitlines(), 1):
+            stripped = line.strip()
+            if stripped.lower().startswith("rem "):
+                continue
+            if depth > 0 and stripped.lower().startswith("echo"):
+                if re.search(r"(?<!\^)[()]", stripped[4:]):
+                    bad.append(f"{bat.name}:{n}: {stripped}")
+            # track block depth on the *command* part only (ignore quoted strings)
+            unquoted = re.sub(r'"[^"]*"', "", stripped)
+            unquoted = re.sub(r"\^.", "", unquoted)
+            depth += unquoted.count("(") - unquoted.count(")")
+            depth = max(depth, 0)
+    assert not bad, "\n".join(bad)

@@ -27,8 +27,15 @@ set PYTHONIOENCODING=utf-8:replace
 powershell -NoProfile -Command "$m = Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%%'\" | Where-Object { $_.CommandLine -like '*probe_api_latency.py*' }; if ($m) { exit 1 } else { exit 0 }"
 if errorlevel 1 (
     echo [latency-probe] already running - skipped
+    echo %DATE% %TIME% skipped-already-running>> logs\latency_probe.launch.log
 ) else (
-    echo [latency-probe] starting (168h, 30s interval) -^> data\latency\api_probe.csv
+    rem NOTE 2026-09-12: this echo used to contain bare parentheses "(168h, 30s interval)".
+    rem Inside an if/else ( ... ) block cmd treats the first ")" as the end of the block,
+    rem so the batch died on a syntax error before ever reaching `start` - the probe
+    rem never launched and wrote nothing (owner report L-133). Parentheses in echo
+    rem lines inside blocks must be escaped as ^( ^) (tests/test_deploy.py enforces it).
+    echo [latency-probe] starting ^(168h, 30s interval^) -^> data\latency\api_probe.csv
+    echo %DATE% %TIME% launch>> logs\latency_probe.launch.log
     start "bitflyer-latency-probe" /min cmd /c ".venv\Scripts\python.exe scripts\probe_api_latency.py %* >> logs\latency_probe.out.log 2>&1"
 )
 echo.
