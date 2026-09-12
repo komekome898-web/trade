@@ -68,6 +68,7 @@
 - `owner_turn_digest`: 「共有経路・使用率・求めている行動」の 3 行に縮小。進行中項目の行は状態板を読めば足りる。
 - `prereg_source_reminder`・`budget_delegation_reminder`・`session_start_digest`: 現状維持。
 - 2 週間、各フックの発火回数を記録し、その実測で削除の可否を再提案する。
+- **欠陥の修正(実測 2026-09-12)**: `settings.json` のフック指定が相対パス(`sh .claude/hooks/...`)のため、作業ディレクトリがリポジトリ直下から外れると全フックが「No such file」で失敗し、**Bash・Read・Write・Edit・Agent が使えなくなる**(保管先の確認で `cd backtest_data/...` した直後に発生。以後この回の保存は GitHub API 経由で行った)。`$CLAUDE_PROJECT_DIR` を使った絶対パスに直す。これは §6 の承認を待たずに直してよい不具合修正(規則の変更ではない)。
 
 ### 4.5 予算(承認済み §0)
 - 週間予算の 10% を生成(4.1・4.2・週次ゼロベース)に確保し、節約で削らない。
