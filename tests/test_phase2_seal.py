@@ -1,4 +1,5 @@
-"""Tests for docs/PHASE2_SPEC.md §3 (data sealing):
+"""Tests for the phase-2 data-sealing design (2026-09-05 owner agreement,
+research-protocol skill §0.6):
 scripts/phase2_seal.py + src/bot/research/sealed.py."""
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 """ETF measurement entry job: 引成 (FrontOrderType 16) BUY of 1 trading unit.
 
-Scheduled at 15:20 on weekdays (docs/OPERATIONS.md §5.2), before the 15:30
+Scheduled at 15:20 on weekdays (docs/OPERATIONS_JPX.md §5.2), before the 15:30
 closing auction.  Everything that decides whether an order is actually sent
 lives in bot/jpx/etf_auction_executor.py; this file is only the process wrapper
 + double-start guard.

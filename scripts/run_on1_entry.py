@@ -1,6 +1,6 @@
 """ON1 entry job: 15:40 引成 buy, 1 Nikkei 225 micro contract.
 
-Scheduled at 15:35 on weekdays (docs/OPERATIONS.md §5.1).  Everything that
+Scheduled at 15:35 on weekdays (docs/OPERATIONS_JPX.md §5.1).  Everything that
 decides whether an order is actually sent lives in bot/jpx/on1_executor.py; this
 file is only the process wrapper + double-start guard.
 

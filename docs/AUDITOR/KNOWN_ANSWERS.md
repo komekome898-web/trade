@@ -48,8 +48,8 @@
 
 ### KA-03 — 出典: L-099
 
-- **Before**(作業ツリーに現存。復元不要): `docs/PHASE2/EXEC/EXEC_FLOOR_TABLES.md` 738/826/830 行、
-  `docs/PHASE2/EXEC/exec_floor.json` 同趣旨の note — 「板は 2026-08-20〜08-26 しか無い」を前提に
+- **Before**(作業ツリーに現存。復元不要): `results/PHASE2/EXEC/EXEC_FLOOR_TABLES.md` 738/826/830 行、
+  `results/PHASE2/EXEC/exec_floor.json` 同趣旨の note — 「板は 2026-08-20〜08-26 しか無い」を前提に
   §4-1 を計算。オーナー PC には未共有の生 WS(`data/ws/*.jsonl.gz`)が全期間分残っている可能性が
   未検証のまま計算に使われていた。Kraken / Bitstamp / Coinbase を候補から外した判断は
   委任先への指示文・会話上のものでリポジトリに追跡可能な文書が見当たらず(未コミット)、

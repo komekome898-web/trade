@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""④-1 執行層の経費の床: `docs/PHASE2/EXEC/exec_floor.json` を表 E-a〜E-i の Markdown
-(`docs/PHASE2/EXEC/EXEC_FLOOR_TABLES.md`)に整形する。截断なし(EXEC_FLOOR_PREREG.md §8)。
+"""④-1 執行層の経費の床: `results/PHASE2/EXEC/exec_floor.json` を表 E-a〜E-i の Markdown
+(`results/PHASE2/EXEC/EXEC_FLOOR_TABLES.md`)に整形する。截断なし(EXEC_FLOOR_PREREG.md §8)。
 
     PYTHONPATH=src:scripts python scripts/render_exec_floor.py
 """
@@ -10,8 +10,8 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-IN_JSON = REPO / "docs" / "PHASE2" / "EXEC" / "exec_floor.json"
-OUT_MD = REPO / "docs" / "PHASE2" / "EXEC" / "EXEC_FLOOR_TABLES.md"
+IN_JSON = REPO / "results" / "PHASE2" / "EXEC" / "exec_floor.json"
+OUT_MD = REPO / "results" / "PHASE2" / "EXEC" / "EXEC_FLOOR_TABLES.md"
 
 HOUR_LABELS = [f"{h:02d}-{h+3:02d}" for h in range(0, 24, 3)]
 WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -69,7 +69,7 @@ def main() -> None:
         lines.append("")
 
     h(1, "EXEC_FLOOR_TABLES -- ④-1 執行層の経費の床(表 E-a〜E-i)")
-    p(f"生成元: `docs/PHASE2/EXEC/exec_floor.json`。{data['note']}")
+    p(f"生成元: `results/PHASE2/EXEC/exec_floor.json`。{data['note']}")
     dr = data["data_ranges"]
     p(f"データ範囲: ticker/executions {dr['ticker_executions'][0]}〜{dr['ticker_executions'][1]} / "
       f"board_top5 {dr['board_top5'][0]}〜{dr['board_top5'][1]} / "

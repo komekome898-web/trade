@@ -34,7 +34,7 @@ description: "How the lead delegates research/implementation to subagents in thi
 - 判定区間は一度だけ実行し、そのまま報告する
 - コスト: **本単位で測った値を書く**(他単位からの流用禁止。過去の定数は 2026-09-08 に全て失効)
 
-【意図合わせ】着手前に `INTENT_MAP.md`(`research-protocol` §0.5、書式は `docs/PHASE2_TEMPLATES.md` §8)を
+【意図合わせ】着手前に `INTENT_MAP.md`(`research-protocol` §0.5、書式は同skill §15)を
 出すこと。意図の 1 項ずつに実装を突き合わせ、○ / △代理 / ✕未実装 / ＋意図に無い実装 を付ける。
 **これが無い事前登録は受理しない。** 実装からも走査して ＋ を挙げること(意図 → 実装 の一方向では見落とす)。
 

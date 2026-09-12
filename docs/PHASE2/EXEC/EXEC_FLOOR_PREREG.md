@@ -85,5 +85,5 @@ K1 の経費後の成績(並べるだけ)/ 実弾 / 指値の本当の約定率(
 ## 8. 手順
 
 1. オーナー承認(OWNER_LOG に L 行)
-2. 委任: `src/bot/research/board.py` に「サイズ X を食う片道コスト」の関数を追加(テスト付き)→ データ検査 → E-a〜E-i を生成(`scripts/measure_exec_floor.py` → `docs/PHASE2/EXEC/exec_floor.json`、表 `EXEC_FLOOR_TABLES.md`)→ 数値要約
+2. 委任: `src/bot/research/board.py` に「サイズ X を食う片道コスト」の関数を追加(テスト付き)→ データ検査 → E-a〜E-i を生成(`scripts/measure_exec_floor.py` → `results/PHASE2/EXEC/exec_floor.json`、表 `EXEC_FLOOR_TABLES.md`)→ 数値要約
 3. リードが §3・§4 と照合して報告。§7 の記録はオーナー判断

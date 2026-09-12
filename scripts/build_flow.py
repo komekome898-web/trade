@@ -8,8 +8,8 @@ Usage: python scripts/build_flow.py [PRODUCT ...]   (default: all stored)
 Writes data/flow_<product>.csv with columns:
 open, high, low, close, volume, buy_vol, sell_vol, trades, synthetic
 
-DATA QA 2026-09-05 (docs/DATA_QA_TRIAGE.md bitflyer_execution_flow/
-maintenance_window+zero_volume): a minute with zero executions used to be
+DATA QA 2026-09-05 (bitflyer_execution_flow/maintenance_window+zero_volume,
+git history): a minute with zero executions used to be
 forward-filled (open/high/low/close copied from the previous real minute,
 volume/buy_vol/sell_vol/trades zeroed) with no way to tell it apart from a
 real bar -- the exact same defect already found and fixed in

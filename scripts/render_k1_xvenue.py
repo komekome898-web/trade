@@ -1,21 +1,21 @@
 """K1 取引所横断 段階 1 の表(`XVENUE_PREREG.md` §3、表 (a)〜(f))を機構 JSON から生成する(手打ちしない)。
 
 読むもの:
-    docs/PHASE2/K1/xvenue/effect_binance_to_bitflyer.json               … 設計(2017-08-17〜2026-08-31、1 回)
-    docs/PHASE2/K1/xvenue/effect_binance_to_bitflyer_sameclose.json     … 参考列 (iii)
-    docs/PHASE2/K1/xvenue/effect_binance_to_bitflyer_2018_2021.json     … 設計・副期間区間
-    docs/PHASE2/K1/xvenue/effect_binance_to_bitflyer_2022_2026.json     … 設計・主期間区間
-    docs/PHASE2/K1/xvenue/alignment.json                                … 結合の統計
-    docs/PHASE2/K1/xvenue/vol_terciles.json                             … ボラ三分位
-    docs/PHASE2/K1/binance/effect_flip_noinval_delay.json               … 参考列 (i)(既存・再計算しない)
-    docs/PHASE2/K1/bitflyer/effect_flip_noinval_delay.json              … 参考列 (ii)(既存・再計算しない)
+    results/PHASE2/K1/xvenue/effect_binance_to_bitflyer.json               … 設計(2017-08-17〜2026-08-31、1 回)
+    results/PHASE2/K1/xvenue/effect_binance_to_bitflyer_sameclose.json     … 参考列 (iii)
+    results/PHASE2/K1/xvenue/effect_binance_to_bitflyer_2018_2021.json     … 設計・副期間区間
+    results/PHASE2/K1/xvenue/effect_binance_to_bitflyer_2022_2026.json     … 設計・主期間区間
+    results/PHASE2/K1/xvenue/alignment.json                                … 結合の統計
+    results/PHASE2/K1/xvenue/vol_terciles.json                             … ボラ三分位
+    results/PHASE2/K1/binance/effect_flip_noinval_delay.json               … 参考列 (i)(既存・再計算しない)
+    results/PHASE2/K1/bitflyer/effect_flip_noinval_delay.json              … 参考列 (ii)(既存・再計算しない)
 
 per_year にある n・mean_bp だけが年ごとの値。総損益 = n × mean_bp。
 セルごとの区間・sd・分位・保有中央値は測った期間全体で 1 つの値(サブ実行の期間合算値を使う)。
 サブ実行の per_year は全期間実行の per_year と、既知の境界効果(1 取引のずれ、境界年のみ)を
 除いて一致することを assert する(`render_k1_fresh_bitflyer.py` と同じ形)。
 
-    PYTHONPATH=src:scripts python scripts/render_k1_xvenue.py > docs/PHASE2/K1/xvenue/XVENUE_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_xvenue.py > results/PHASE2/K1/xvenue/XVENUE_TABLES.md
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 XV = K1 / "xvenue"
 BF = K1 / "bitflyer"
 BN = K1 / "binance"

@@ -8,7 +8,7 @@
 土台 2(原典 / H1+H2a)× 取引所 2。Binance は 2017 が終値の古い足を含むため、
 年別の内訳が出る場所には 2017 を除いた値も並べる(D6.5.3)。
 
-    PYTHONPATH=src:scripts python scripts/render_k1_round5.py > docs/PHASE2/K1/ROUND5_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_round5.py > results/PHASE2/K1/ROUND5_TABLES.md
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 VENUES = (("BitMEX", K1), ("Binance", K1 / "binance"))
 BASES = (("原典", ""), ("H1+H2a", "_flip_noinval"))
 RESIDUAL_BASES = (("H1", "_flipbody"), ("H1+H2a", "_flip_noinval"))

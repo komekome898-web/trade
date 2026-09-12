@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """④-1 執行層の経費の床(`docs/PHASE2/EXEC/EXEC_FLOOR_PREREG.md` §2/§8)。
 
-表 E-a〜E-i を生成し `docs/PHASE2/EXEC/exec_floor.json` に書く。過去の経費の数値は
+表 E-a〜E-i を生成し `results/PHASE2/EXEC/exec_floor.json` に書く。過去の経費の数値は
 一つも引用しない(`CLAUDE.md` §5.1)。すべて今回生のテープ/板/約定/資金調達率/遅延
 ファイルから作る。実弾は使わない(K1 の値は RESULT.md §18.2 から**並べるだけ**で
 再計算しない)。
@@ -44,7 +44,7 @@ import measure_katsuo_dispersion as base  # noqa: E402
 import measure_katsuo_effect as eff  # noqa: E402
 
 DATA_DIR = REPO / "backtest_data" / "auto_bitflyer_executions_20260905"
-OUT_JSON = REPO / "docs" / "PHASE2" / "EXEC" / "exec_floor.json"
+OUT_JSON = REPO / "results" / "PHASE2" / "EXEC" / "exec_floor.json"
 
 TICKER_START = date(2026, 8, 20)
 TICKER_END = date(2026, 9, 5)

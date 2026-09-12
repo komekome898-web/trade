@@ -40,7 +40,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_TMPL = REPO / "docs" / "PHASE2" / "K1" / "PREREG.md.tmpl"
 DEFAULT_OUT = REPO / "docs" / "PHASE2" / "K1" / "PREREG.md"
-DEFAULT_DATA = REPO / "docs" / "PHASE2" / "K1" / "dispersion.json"
+DEFAULT_DATA = REPO / "results" / "PHASE2" / "K1" / "dispersion.json"
 
 REF = re.compile(r"\{\{([^}]+)\}\}")
 

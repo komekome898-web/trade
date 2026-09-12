@@ -1,4 +1,4 @@
-"""Tests for scripts/constants_inventory.py (DATA_QA_CHECKLIST item 8)."""
+"""Tests for scripts/constants_inventory.py (config/constants.yaml source-tracking requirement)."""
 from __future__ import annotations
 
 import sys

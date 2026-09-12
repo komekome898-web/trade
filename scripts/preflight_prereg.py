@@ -30,6 +30,22 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+DOCS_PHASE2 = REPO / "docs" / "PHASE2"
+RESULTS_PHASE2 = REPO / "results" / "PHASE2"
+
+
+def default_measured(prereg: Path) -> Path:
+    """PREREG.md と同じ研究単位の測定出力(`dispersion.json`)。
+
+    文書(PREREG.md)は `docs/PHASE2/<unit>/` に残るが、生成物(JSON)は
+    `results/PHASE2/<unit>/` に移した(M1)。同じ相対位置を results 側に写す。
+    """
+    try:
+        rel = prereg.resolve().parent.relative_to(DOCS_PHASE2.resolve())
+    except ValueError:
+        return prereg.parent / "dispersion.json"
+    return RESULTS_PHASE2 / rel / "dispersion.json"
+
 
 # 本文でこの語を使うなら、用語節に説明が要る(L-049: オーナーが読めない事前登録は監査できない)
 JARGON = [
@@ -409,7 +425,7 @@ def c8_generated_not_typed(prereg: Path) -> list[Finding]:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import render_prereg  # noqa: PLC0415
 
-    data = json.loads((prereg.parent / "dispersion.json").read_text(encoding="utf-8"))
+    data = json.loads(default_measured(prereg).read_text(encoding="utf-8"))
     text, errors = render_prereg.render(tmpl.read_text(encoding="utf-8"), data)
     out = []
     for e in dict.fromkeys(errors):
@@ -494,11 +510,12 @@ def run(path: Path, measured: Path | None) -> list[Finding]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("prereg", nargs="?", default=str(REPO / "docs" / "PHASE2" / "K1" / "PREREG.md"))
-    ap.add_argument("--measured", default=None, help="準備測定の出力 JSON(既定は同じ階層の dispersion.json)")
+    ap.add_argument("--measured", default=None,
+                    help="準備測定の出力 JSON(既定は results/PHASE2/<unit>/dispersion.json)")
     args = ap.parse_args()
 
     path = Path(args.prereg)
-    measured = Path(args.measured) if args.measured else path.parent / "dispersion.json"
+    measured = Path(args.measured) if args.measured else default_measured(path)
 
     findings = run(path, measured)
     print(f"出荷前検査: {path}")

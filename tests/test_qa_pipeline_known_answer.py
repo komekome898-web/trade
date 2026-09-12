@@ -1,6 +1,6 @@
 """Fast tests for scripts/qa/pipeline_known_answer_taker.py and
 pipeline_known_answer_daily.py -- the PIPELINE known-answer tests required
-by docs/PHASE2_SPEC.md §5 before grid groups G1-G3 (docs/PHASE2_GRID.md)
+by the 2026-09-05 owner-agreed phase-2 design before grid groups G1-G3 (docs/PHASE2_GRID.md)
 can start. These check that OUR OWN backtest/evaluation code recovers a
 planted effect and reports a null as null; they are NOT auditor tests.
 

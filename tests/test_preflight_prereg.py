@@ -31,7 +31,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 import preflight_prereg as pf  # noqa: E402
 
 K1 = REPO / "docs" / "PHASE2" / "K1" / "PREREG.md"
-K1_MEASURED = REPO / "docs" / "PHASE2" / "K1" / "dispersion.json"
+K1_MEASURED = REPO / "results" / "PHASE2" / "K1" / "dispersion.json"
 
 
 def _codes(findings) -> set[str]:

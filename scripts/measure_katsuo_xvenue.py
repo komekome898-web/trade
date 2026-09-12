@@ -27,7 +27,7 @@
     xvenue/alignment.json                                   … 結合の統計(既定期間のみ)
 
 再現ゲート(`--gate`): 結合していない Binance の生の足に `prices=None` を渡した設計セルが
-`docs/PHASE2/K1/binance/effect_flip_noinval_delay.json` の全 234 セルと一致すること
+`results/PHASE2/K1/binance/effect_flip_noinval_delay.json` の全 234 セルと一致すること
 (n と平均 bp、2e-3 以内)。
 
 ボラ三分位(`--vol-terciles`): 主統計セル(門 `s19/b24`、足 5・15、弱い)について、
@@ -56,8 +56,8 @@ import measure_katsuo_effect as eff
 import measure_katsuo_robustness as rb
 
 REPO = Path(__file__).resolve().parents[1]
-OUT_DIR = REPO / "docs" / "PHASE2" / "K1" / "xvenue"
-BINANCE_REF = REPO / "docs" / "PHASE2" / "K1" / "binance" / "effect_flip_noinval_delay.json"
+OUT_DIR = REPO / "results" / "PHASE2" / "K1" / "xvenue"
+BINANCE_REF = REPO / "results" / "PHASE2" / "K1" / "binance" / "effect_flip_noinval_delay.json"
 
 # Binance の手元データが始まる日(k1_source.SOURCES["binance"]["start"])を bitFlyer の
 # 範囲(2017-01-01〜2026-08-31)と交わらせた既定期間(プレレジ §2、段階 1)
@@ -402,7 +402,7 @@ def run_vol_terciles(signal_source, price_source, start, end):
             edges_own_basis = "self (this run's Binance 2018-2019 trades)"
         else:
             edges_own = binance_ref_edges.get(foot) if binance_ref_edges else None
-            edges_own_basis = ("docs/PHASE2/K1/xvenue/vol_terciles.json (stored Binance 2018-2019 "
+            edges_own_basis = ("results/PHASE2/K1/xvenue/vol_terciles.json (stored Binance 2018-2019 "
                                 "edges, not recomputed; signal_source has no 2018-2019 data)")
         n_no_vol = sum(1 for _y, _r, v in all_trades if v != v)
         years = sorted(set(y for y, _r, _v in all_trades))

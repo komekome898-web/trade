@@ -336,7 +336,7 @@ def test_sign_shuffle_null_empty_input():
 #
 # All the edge_trend tests here use a reduced n_boot (100 instead of the
 # pre-registered 2,000) purely to keep the test suite fast -- window=250 and
-# block=20 stay at the PHASE2_TEMPLATES.md §5.8 pre-registered values, and a
+# block=20 stay at the research-protocol skill §12.8 (旧 PHASE2_TEMPLATES.md §5.8) pre-registered values, and a
 # smaller n_boot only widens the bootstrap CIs slightly, it does not bias
 # them, so effects several times past the MDE (as planted below) still
 # recover cleanly. Each planted scenario is computed ONCE per test module
@@ -540,7 +540,7 @@ def test_edge_trend_half_split_matches_manual_split(positive_result, positive_se
 
 # ------------------------------------------------------------- state_split
 #
-# PHASE2_TEMPLATES.md §6 ("条件分析"). The two headline tests are known-answer
+# research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6) ("条件分析"). The two headline tests are known-answer
 # tapes: a tape with a planted +30bps offset on ONE state of ONE variable at
 # sigma 110 must flag exactly that variable's pairs as 候補, and the same tape
 # without the offset must flag nothing.

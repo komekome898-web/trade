@@ -2,12 +2,12 @@
 
 読むもの:
     2017-2019(既存。**再計算しない**):
-        docs/PHASE2/K1/effect_flip_noinval_delay.json  … 判定の設計(H1+H2a+H3)
-        docs/PHASE2/K1/effect_flip_noinval.json        … 参考列(H1+H2a、その足の終値)
-    2020-2021(封印を開けて 1 回だけ実行。`docs/PHASE2/K1/judgement/` 配下):
+        results/PHASE2/K1/effect_flip_noinval_delay.json  … 判定の設計(H1+H2a+H3)
+        results/PHASE2/K1/effect_flip_noinval.json        … 参考列(H1+H2a、その足の終値)
+    2020-2021(封印を開けて 1 回だけ実行。`results/PHASE2/K1/judgement/` 配下):
         effect_flip_noinval_delay_2020_2021.json / effect_flip_noinval_2020_2021.json
     Binance(in-sample、参照):
-        docs/PHASE2/K1/binance/effect_flip_noinval_delay.json
+        results/PHASE2/K1/binance/effect_flip_noinval_delay.json
     ボラ三分位(Deliverable C): vol_terciles_2017_2021.json
 
 **per_year に無い量**(セルごとの区間・sd・分位・保有中央値)は、その JSON が測った
@@ -21,7 +21,7 @@ per_year にある n・mean_bp だけが年ごとの値で、総損益 = n × me
 (c) 参考列(その足の終値)の同じ形 (d) 参考: 「両方」「強い」の 2020〜2021
 (e) Binance の同じ設計(in-sample)の 2020・2021 を横に (f) ボラ三分位
 
-    PYTHONPATH=src:scripts python scripts/render_k1_judgement.py > docs/PHASE2/K1/judgement/JUDGEMENT_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_judgement.py > results/PHASE2/K1/judgement/JUDGEMENT_TABLES.md
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 J = K1 / "judgement"
 
 FEET = (1, 3, 5, 15, 30, 60)

@@ -60,7 +60,7 @@ BitMEX 側の測定と**同じコード経路**を通す。**複製しない。*
 
 ## 3. 測るもの(BitMEX と同じ 5 本 + 切り捨てなし)
 
-出力先は `docs/PHASE2/K1/binance/`。ファイル名は BitMEX 側と同じ。
+出力先は `results/PHASE2/K1/binance/`。ファイル名は BitMEX 側と同じ。
 
 | # | スクリプト | 出力 | BitMEX 側の対応 |
 |---|---|---|---|
@@ -110,7 +110,7 @@ BitMEX 側の測定と**同じコード経路**を通す。**複製しない。*
 2. §4.2 の再現ゲートの結果(一致 / 不一致の一覧)
 3. §4.3 の内部整合
 4. 5 本 + 1 本の実行ログ(セル数、所要時間)
-5. 描画 4 本の出力(`binance/` に対して)を `docs/PHASE2/K1/binance/TABLES.md` にまとめて置く
+5. 描画 4 本の出力(`binance/` に対して)を `results/PHASE2/K1/binance/TABLES.md` にまとめて置く
 6. **数字の解釈は書かない。** 事実だけ。解釈はリードが第 8 部に書く
 7. Do not commit. Do not push.
 

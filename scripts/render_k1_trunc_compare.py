@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 LABEL = {"strong": "強い", "weak": "弱い"}
 
 

@@ -31,6 +31,9 @@ copy /Y logs\liquidations.out.log paper_logs\ >nul 2>&1
 rem fetch_all / latency-probe logs, last 400 lines each: the lead diagnoses P11
 rem (board_top10 backfill) and P13 (api probe) from these instead of asking (KA-30).
 powershell -NoProfile -Command "if (Test-Path 'logs\fetch.out.log') { Get-Content 'logs\fetch.out.log' -Tail 400 | Set-Content 'paper_logs\fetch.out.tail.log' }" >nul 2>&1
+rem the raw tail is swamped by repair_gz_listing output; also share the last 200 lines
+rem that mention the P11/P12/P13 collectors so the lead can diagnose them (2026-09-12).
+powershell -NoProfile -Command "if (Test-Path 'logs\fetch.out.log') { Select-String -Path 'logs\fetch.out.log' -Pattern 'extract_tape|board row|record_funding|probe_api|Traceback|Error' | Select-Object -Last 200 | ForEach-Object { $_.Line } | Set-Content 'paper_logs\fetch.out.collectors.log' }" >nul 2>&1
 powershell -NoProfile -Command "if (Test-Path 'logs\latency_probe.out.log') { Get-Content 'logs\latency_probe.out.log' -Tail 400 | Set-Content 'paper_logs\latency_probe.out.tail.log' }" >nul 2>&1
 copy /Y data\scalp_paper.jsonl paper_logs\ >nul 2>&1
 copy /Y data\oi_snapshots.csv paper_logs\ >nul 2>&1

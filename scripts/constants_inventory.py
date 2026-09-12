@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Inventory of unsourced constants in config/constants.yaml (DATA_QA_CHECKLIST
-item 8): every entry whose `source_type` is `assumed` (including
+"""Inventory of unsourced constants in config/constants.yaml (the source-tracking
+requirement documented in docs/DATA.md §0): every entry whose `source_type` is `assumed` (including
 `deprecated: true` ones — a deprecated constant is by construction no longer
 sourced for new judgments), or whose `value` is null.
 
@@ -179,7 +179,7 @@ GENERIC_PLAN = {
 
 def render_todo_doc(flagged: list[FlaggedConstant]) -> str:
     lines = []
-    lines.append("# 未計測・非推奨定数の一覧と計測計画(DATA_QA_CHECKLIST item 8)")
+    lines.append("# 未計測・非推奨定数の一覧と計測計画(config/constants.yaml 出所追跡)")
     lines.append("")
     lines.append(
         "`config/constants.yaml` のうち `source_type: assumed`(`deprecated: true` を含む)"

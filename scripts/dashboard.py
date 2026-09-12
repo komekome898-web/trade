@@ -611,7 +611,7 @@ async function refresh() {
 
 // データ台帳: aggregate.py:_data_ledger — data/INTAKE_latest.json (files/rows/
 // span/最終更新) + data/QUALITY.json (品質フラグ件数) を台帳から集計した表示専用
-// テーブル。手計算はしない(DATA_GOVERNANCE_PLAN.md「台帳が数字の唯一の出所」)。
+// テーブル。手計算はしない(docs/DATA.md §0「受領台帳(intake ledger)」の設計)。
 function renderDataLedger(ledger) {
   const rows = Object.entries(ledger || {}).sort((a, b) => a[0].localeCompare(b[0]));
   document.getElementById("t-ledger").innerHTML = rows.length ?

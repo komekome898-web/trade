@@ -423,7 +423,8 @@ def shared_or_local(root: Path, rel: str, shared_name: str | None = None) -> Pat
     basename "ledger.csv" get distinct paper_logs names like on1_ledger.csv /
     onr_ledger.csv). Defaults to rel's own basename.
 
-    Phase-2 sealing (docs/PHASE2_SPEC.md §3, implementation note below): when
+    Phase-2 sealing (2026-09-05 owner-agreed design, research-protocol skill
+    §0.6; implementation note below): when
     env ``PHASE2_UNIT`` names an active research unit and the path this
     resolves to is listed in that unit's
     ``backtest_data/phase2_sealed/<unit>/SEALED.json``, the path is still
@@ -465,8 +466,8 @@ def shared_or_local(root: Path, rel: str, shared_name: str | None = None) -> Pat
 
 
 def shared_or_local_dir(root: Path, rel: str, shared_name: str | None = None) -> Path:
-    """Directory analogue of ``shared_or_local`` (docs/DATA_QA_CHECKLIST.md
-    item 10 / DATA_GOVERNANCE_PLAN.md §2.2): some shared copies are a whole
+    """Directory analogue of ``shared_or_local`` (docs/DATA.md
+    §0, the "single source of truth" row): some shared copies are a whole
     directory of per-day files (``data/tape/executions_YYYYMMDD.csv.gz`` etc.)
     rather than one file, so a single mtime comparison on the dir itself is
     meaningless -- compare the newest file mtime inside each candidate

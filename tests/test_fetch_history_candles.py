@@ -1,7 +1,7 @@
 """Tests for the 1-minute candle builders in scripts/fetch_history.py and
 scripts/fetch_deep.py.
 
-DATA QA 2026-09-05 (docs/DATA_QA_TRIAGE.md candles_fx_btc_jpy/zero_volume):
+DATA QA 2026-09-05 (candles_fx_btc_jpy/zero_volume, git history):
 data/candles_FX_BTC_JPY.csv has zero_volume rows whose open/high/low/close
 are NON-flat -- reproduced here as the exact output of fetch_deep.py's old
 ffill(open/high/low/close) + fillna(volume, 0.0), which independently

@@ -4,16 +4,16 @@
 だけ(サブ実行による境界 assert は不要。1 回の実行がそのまま全期間)。
 
 読むもの:
-    docs/PHASE2/K1/xvenue/effect_bybit_to_bitflyer.json           … 設計
-    docs/PHASE2/K1/xvenue/effect_bybit_to_bitflyer_sameclose.json … 参考列 (iii)
-    docs/PHASE2/K1/xvenue/effect_bybit_to_bybit.json              … 参考列 (i) Bybit 同一取引所
-    docs/PHASE2/K1/bitflyer/effect_flip_noinval_delay.json        … 参考列 (ii) bitFlyer 自身(既存)
-    docs/PHASE2/K1/xvenue/effect_binance_to_bitflyer.json         … 段階 1(Binance→bitFlyer、既存)
-    docs/PHASE2/K1/xvenue/bybit_alignment.json                    … 結合の統計(設計の組み合わせ)
-    docs/PHASE2/K1/xvenue/bybit_data_check.json                   … データ検査
-    docs/PHASE2/K1/xvenue/bybit_vol_terciles.json                 … ボラ三分位
+    results/PHASE2/K1/xvenue/effect_bybit_to_bitflyer.json           … 設計
+    results/PHASE2/K1/xvenue/effect_bybit_to_bitflyer_sameclose.json … 参考列 (iii)
+    results/PHASE2/K1/xvenue/effect_bybit_to_bybit.json              … 参考列 (i) Bybit 同一取引所
+    results/PHASE2/K1/bitflyer/effect_flip_noinval_delay.json        … 参考列 (ii) bitFlyer 自身(既存)
+    results/PHASE2/K1/xvenue/effect_binance_to_bitflyer.json         … 段階 1(Binance→bitFlyer、既存)
+    results/PHASE2/K1/xvenue/bybit_alignment.json                    … 結合の統計(設計の組み合わせ)
+    results/PHASE2/K1/xvenue/bybit_data_check.json                   … データ検査
+    results/PHASE2/K1/xvenue/bybit_vol_terciles.json                 … ボラ三分位
 
-    PYTHONPATH=src:scripts python scripts/render_k1_xvenue2.py > docs/PHASE2/K1/xvenue/XVENUE2_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_xvenue2.py > results/PHASE2/K1/xvenue/XVENUE2_TABLES.md
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 XV = K1 / "xvenue"
 BF = K1 / "bitflyer"
 

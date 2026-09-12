@@ -1,15 +1,15 @@
 """K1 フレッシュ確認 — bitFlyer の表(`FRESH_BITFLYER_PREREG.md` §2)を機構 JSON から生成する(手打ちしない)。
 
 読むもの:
-    docs/PHASE2/K1/bitflyer/effect_flip_noinval_delay.json         … 設計(2017-2026、1 回)
-    docs/PHASE2/K1/bitflyer/effect_flip_noinval.json               … 参考列(その足の終値)
-    docs/PHASE2/K1/bitflyer/effect_flip_noinval_delay_2017_2021.json … 設計・副期間区間(2017-2021 サブ実行)
-    docs/PHASE2/K1/bitflyer/effect_flip_noinval_delay_2022_2026.json … 設計・主期間区間(2022-2026 サブ実行)
-    docs/PHASE2/K1/bitflyer/vol_terciles.json                      … ボラ三分位(bitFlyer own edges / BitMEX 固定 edges)
-    docs/PHASE2/K1/bitflyer/data_check.json                        … データ検査
-    docs/PHASE2/K1/effect_flip_noinval_delay.json                  … BitMEX 2017-2019(既存・再計算しない)
-    docs/PHASE2/K1/judgement/effect_flip_noinval_delay_2020_2021.json … BitMEX 2020-2021(既存)
-    docs/PHASE2/K1/binance/effect_flip_noinval_delay.json          … Binance(in-sample、既存)
+    results/PHASE2/K1/bitflyer/effect_flip_noinval_delay.json         … 設計(2017-2026、1 回)
+    results/PHASE2/K1/bitflyer/effect_flip_noinval.json               … 参考列(その足の終値)
+    results/PHASE2/K1/bitflyer/effect_flip_noinval_delay_2017_2021.json … 設計・副期間区間(2017-2021 サブ実行)
+    results/PHASE2/K1/bitflyer/effect_flip_noinval_delay_2022_2026.json … 設計・主期間区間(2022-2026 サブ実行)
+    results/PHASE2/K1/bitflyer/vol_terciles.json                      … ボラ三分位(bitFlyer own edges / BitMEX 固定 edges)
+    results/PHASE2/K1/bitflyer/data_check.json                        … データ検査
+    results/PHASE2/K1/effect_flip_noinval_delay.json                  … BitMEX 2017-2019(既存・再計算しない)
+    results/PHASE2/K1/judgement/effect_flip_noinval_delay_2020_2021.json … BitMEX 2020-2021(既存)
+    results/PHASE2/K1/binance/effect_flip_noinval_delay.json          … Binance(in-sample、既存)
 
 per_year にある n・mean_bp だけが年ごとの値で、総損益 = n × mean_bp。
 セルごとの区間・sd・分位・保有中央値は測った期間全体で 1 つの値である
@@ -18,7 +18,7 @@ per_year にある n・mean_bp だけが年ごとの値で、総損益 = n × me
 
 出すもの(§2、a〜g)。表を手で書き換えない — このスクリプトの出力をそのまま `FRESH_TABLES.md` にする。
 
-    PYTHONPATH=src:scripts python scripts/render_k1_fresh_bitflyer.py > docs/PHASE2/K1/bitflyer/FRESH_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_fresh_bitflyer.py > results/PHASE2/K1/bitflyer/FRESH_TABLES.md
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 BF = K1 / "bitflyer"
 J = K1 / "judgement"
 BN = K1 / "binance"

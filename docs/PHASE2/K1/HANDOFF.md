@@ -174,7 +174,7 @@
 
 | | |
 |---|---|
-| 独立監査 2 回目の 37 件 | 文書側(整合・射程・必須項目)が**手つかず**。`AUDIT_TRIAGE_2.md` |
+| 独立監査 2 回目の 37 件 | 文書側(整合・射程・必須項目)が**手つかず**。`AUDIT_TRIAGE.md`(2 回目の節) |
 | 層 1(`scripts/preflight_prereg.py`)の C9 3 件 | 判定区間の判定規則 / 信頼区間の算出方法 / 補助帰無の手順 が事前登録に無い。`tests/test_preflight_prereg.py` の `KNOWN_OPEN` に登録済み |
 | 事前登録 `PREREG.md` | **L-056 以降の決定(帰無・MDE・バーを作らない)が反映されていない。** 現状 `RESULT.md` が実態で、`PREREG.md` は古い |
 
@@ -231,7 +231,7 @@
   **4 件目(2026-09-10、H1)**: 「Binance が終わったら BitMEX を回す」待機ループの grep を
   `measure_katsuo_[a-z_]* --source binance` と書き、`.py` に一致せず**即座に BitMEX が並走を始めた**(2.7 GB まで上がった時点で手動停止、
   OOM は回避)。待機条件は `grep -q '[m]easure_katsuo_.*--source binance'` のように**実際の args で一度試してから**使う
-- **K1-B(Binance 現物、同条件・同方法)**: 設計 `BINANCE_PLAN.md`、出力 `docs/PHASE2/K1/binance/`、
+- **K1-B(Binance 現物、同条件・同方法)**: 設計 `BINANCE_PLAN.md`、出力 `results/PHASE2/K1/binance/`、
   検査 `binance/CHECKS.md` + `scripts/check_k1_binance.py`(再実行可)。`--source binance` は全 5 本に付いている
 - **深掘り(第 9 部)**: `scripts/measure_katsuo_robustness.py --source {bitmex,binance}`(D1〜D11、門 2 つ × 180 セル、
   BitMEX 431 秒 / Binance 272 秒。`--dump-cell KEY --dump-path P` で 1 セルの行を CSV に)→ `render_k1_robustness.py --dir`(全診断の表)、

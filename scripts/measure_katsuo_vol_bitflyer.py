@@ -14,7 +14,7 @@ bitFlyer は封印もメモリ制約も無いので、2 パスに分けず 1 回
 foot ごとに `fold()` する(既定の読み込み範囲 2017-01-01〜2026-08-31、約 5M 行 → 十分小さい)。
 
     PYTHONPATH=src:scripts python scripts/measure_katsuo_vol_bitflyer.py \
-        --out docs/PHASE2/K1/bitflyer/vol_terciles.json
+        --out results/PHASE2/K1/bitflyer/vol_terciles.json
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ import measure_katsuo_effect as eff
 import measure_katsuo_robustness as rb
 
 REPO = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = REPO / "docs" / "PHASE2" / "K1" / "bitflyer" / "vol_terciles.json"
+DEFAULT_OUT = REPO / "results" / "PHASE2" / "K1" / "bitflyer" / "vol_terciles.json"
 
 FEET = (5, 15)
 GATE_NAME = "s19/b24"

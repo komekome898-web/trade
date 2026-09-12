@@ -6,7 +6,7 @@
     (c) 全 13 門 × 足 6、強さ「両方」: 全期間の総損益(4 腕)と原典より増えた年の数
     (d) 決済理由(門 `s19/b24`)
 
-    PYTHONPATH=src:scripts python scripts/render_k1_h3.py > docs/PHASE2/K1/H3_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_h3.py > results/PHASE2/K1/H3_TABLES.md
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 VENUES = (("BitMEX", K1), ("Binance", K1 / "binance"))
 FEET = (1, 3, 5, 15, 30, 60)
 STRENGTHS = (("both", "両方"), ("weak", "弱い"), ("strong", "強い"))

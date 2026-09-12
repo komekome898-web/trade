@@ -42,7 +42,7 @@ import measure_katsuo_effect as eff
 from measure_katsuo_signal_horizon import cell_rng, day_bootstrap
 
 REPO = Path(__file__).resolve().parents[1]
-EFFECT = REPO / "docs" / "PHASE2" / "K1" / "effect.json"
+EFFECT = REPO / "results" / "PHASE2" / "K1" / "effect.json"
 
 EXPLORE_START = date(2017, 1, 1)
 EXPLORE_END = date(2019, 12, 31)

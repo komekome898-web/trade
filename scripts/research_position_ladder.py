@@ -120,7 +120,7 @@ def main() -> int:
     ap.add_argument("--csv", type=Path, default=None,
                     help="override the input CSV; default is the freshest "
                          "of paper_logs/oi_snapshots.csv or data/oi_snapshots.csv "
-                         "(single source of truth, docs/DATA_QA_CHECKLIST.md #10)")
+                         "(single source of truth, docs/DATA.md §0)")
     ap.add_argument("--write-prices", action="store_true",
                     help="persist back-joined btc_usd cells into the CSV "
                          "(always writes the LOCAL copy, never paper_logs/, "

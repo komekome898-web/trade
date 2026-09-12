@@ -1,6 +1,6 @@
 """ETF measurement exit job: 寄成 (FrontOrderType 13) SELL of the one long.
 
-Scheduled at 08:40 on weekdays (docs/OPERATIONS.md §5.2), before the 9:00
+Scheduled at 08:40 on weekdays (docs/OPERATIONS_JPX.md §5.2), before the 9:00
 opening auction and deliberately 5 minutes after the ON1 exit job so two jobs
 never hit the same kabuステーション at the same minute.
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""PIPELINE known-answer test — taker execution (docs/PHASE2_SPEC.md §5).
+"""PIPELINE known-answer test — taker execution (the known-answer-test
+requirement from the 2026-09-05 owner-agreed phase-2 design).
 
 Not an auditor test: this checks that OUR OWN code paths (src/bot/backtest/
 engine.py's run_backtest + src/bot/backtest/metrics.py's compute_metrics,

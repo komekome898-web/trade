@@ -21,7 +21,7 @@
 | A1 | 「落とす行」は `n_trades == 0` の行だけ。`volume == 0` や `o=h=l=c` は落とさない | 設計書 §1。D-04 で `n_trades==0 ⇔ volume==0` を確かめた(事実: 両者は一致) |
 | A2 | 足の時刻は `open_time` を UTC の epoch 秒にしたもの。`fold()` が 60·foot 秒で切り下げる | 設計書 §1。秒≠0 の行(D-03b)は切り下げで分の頭に寄る |
 | A3 | 「1 分足で `fold()` が恒等」は **落とした後の行**についての主張と読む | 設計書 §4.3 の文面。落とさない版では衝突 1 件で成り立たない(D-09) |
-| A4 | BitMEX 側の「同じ方法」の基準はコミット済み `docs/PHASE2/K1/*.json`(HEAD)。比較は意味的(dict の順不問、float は相対 1e-9) | 設計書 §4.2 |
+| A4 | BitMEX 側の「同じ方法」の基準はコミット済み `results/PHASE2/K1/*.json`(HEAD)。比較は意味的(dict の順不問、float は相対 1e-9) | 設計書 §4.2 |
 | A5 | 実装者が BitMEX を再実行して既定パスに上書きした場合、作業ツリー vs HEAD の差分を再現ゲートとみなす。差分ゼロは「再実行して一致」と「未実施」を区別できない | R 系が判定不能になる理由。別置き(`--bitmex-rerun-dir`)を推奨 |
 | A6 | 検査者の再実装(`my_direction` / `my_gate`)は `RESULT.md` §1.3 の擬似コードだけから書いた。`eff.signals` は読んだが写していない | O-11f/g・O-12 の独立性の根拠。同じ誤読をしている可能性は残る(§9) |
 | A7 | 既存 `direction_bias.json` の `venue.binance`(BitMEX 測定の副産物)は、Binance を **落とさずに** `fold()` したもの(事実: 本数 1,242,003 = 生 1,242,004 − 衝突 1) | O-11b/c・O-12 の基準として使う。1 分足では落とす/落とさないで向き・門の数が一致するはず(落とす行は全て同値足) |
@@ -131,7 +131,7 @@
 - (e) 重大。**結果: R 系 5 本とも差分 0、O-09 / O-10 合格**(§7.2)。実装者の `compare_gate.py` は再実行側だけの top-level メタを除いて全葉を厳密比較しており、検査者の再比較と結論が一致する
 
 ### C-15 BitMEX 経路の不変(差分から)
-- **事実(差分)**: 5 本とも `base.load_seconds(EXPLORE_START, EXPLORE_END)` → `k1_source.load_bars(args.source, start, end)`。`bitmex` は `base.load_seconds` を呼ぶだけ(L-05 で 1 日分が同一)。`SOURCES['bitmex']` = 2017-01-01〜2019-12-31、出力 `docs/PHASE2/K1`(L-09)。`measure_katsuo_dispersion.py`(`load_seconds`/`fold`)は無変更(S-03)。年のハードコードは `sorted(set(years))` に置換(S-02)。`direction_bias` の venue 比較は `bitmex` 時だけ、Binance 側は従来の `load_binance_minutes(range(2017, 2020))`(落とさない版のまま → 既存 JSON と一致するはず)
+- **事実(差分)**: 5 本とも `base.load_seconds(EXPLORE_START, EXPLORE_END)` → `k1_source.load_bars(args.source, start, end)`。`bitmex` は `base.load_seconds` を呼ぶだけ(L-05 で 1 日分が同一)。`SOURCES['bitmex']` = 2017-01-01〜2019-12-31、出力 `results/PHASE2/K1`(L-09)。`measure_katsuo_dispersion.py`(`load_seconds`/`fold`)は無変更(S-03)。年のハードコードは `sorted(set(years))` に置換(S-02)。`direction_bias` の venue 比較は `bitmex` 時だけ、Binance 側は従来の `load_binance_minutes(range(2017, 2020))`(落とさない版のまま → 既存 JSON と一致するはず)
 - 差分で見つけた **軽微**: JSON の `note` が BitMEX 時代の文面のまま(「探索区間 2017-2019 のみ」)で Binance 出力にも書かれる(O-03b)。`render_k1_year_tables.py` の相場ラベルは `--dir` が K1 以外なら消す実装(S-06)
 - (e) 重大(経路が変わっていれば全部が別の測定)。差分の目視は済み、機械検査は R 系待ち
 

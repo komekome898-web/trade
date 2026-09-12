@@ -3,7 +3,7 @@
 
 なぜ要るか: 清算履歴の入手経路を全部当たった結果、取引所側で遡れるのは
 Gate.io の約 90 日(**1 件ごと**)と OKX の約 24 時間だけだった
-(`docs/DATA_SOURCES/LIQUIDATION_HISTORY_SURVEY.md`)。集計サービスがそれより
+(`docs/DATA/surveys/LIQUIDATION_HISTORY_SURVEY.md`)。集計サービスがそれより
 **深い / 細かい**ものを持っているなら設計が変わるので、キーを入れて実測する。
 
 測るのは 3 つ:

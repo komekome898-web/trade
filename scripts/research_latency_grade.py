@@ -102,7 +102,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from bot.monitoring.gates import shared_or_local_dir  # noqa: E402
 
-# Single source of truth (docs/DATA_QA_CHECKLIST.md #10): prefer
+# Single source of truth (docs/DATA.md §0): prefer
 # paper_logs/tape/ over this checkout's local data/tape/ when it holds
 # newer files.
 TAPE = shared_or_local_dir(ROOT, "data/tape", shared_name="tape")

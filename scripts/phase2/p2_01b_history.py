@@ -24,7 +24,7 @@ backtest_data/phase2_runs/P2-01b/history_20260906/):
   (a) decomposition_dev_vs_sealed.csv   -- gross/cost/net, dev vs sealed-period
       (PREREG §2's own table, built here from a fresh read to cross-check it)
   (b) edge_trend on gross r_night / cost_bps / net r_net over the full history
-      (`bot.research.overnight.edge_trend`, PHASE2_TEMPLATES.md §5): rolling
+      (`bot.research.overnight.edge_trend`, research-protocol skill §12 (旧 PHASE2_TEMPLATES.md §5)): rolling
       window, period table, slope+CI+MDE, half-split, regime table, judgment
   (c) leg decomposition (a)(b)(c) per regime, with CIs
   (d) H1 identity check: cost_bps(t) * close(t) * 10 == 122 for every pair
@@ -90,7 +90,7 @@ REGIME_DATES = [
     pd.Timestamp("2024-11-05"),
 ]
 
-# edge_trend pre-registered call parameters (PHASE2_TEMPLATES.md §5.8: window
+# edge_trend pre-registered call parameters (research-protocol skill §12.8 (旧 PHASE2_TEMPLATES.md §5.8): window
 # and block are fixed; time_unit/time_axis/period are this unit's explicit
 # choice, stated here and in RESULTS.md so a rerun cannot silently drift).
 EDGE_TREND_PARAMS = dict(window=250, block=20, time_unit="year",
@@ -351,7 +351,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT) -> int:
         ("judgment", "判定文", -1),
     ]))
     md.append("")
-    md.append("判定文は PHASE2_TEMPLATES.md §5.7 の固定規則(拡大 = 傾き CI が正でゼロを含まず"
+    md.append("判定文は research-protocol skill §12.7 (旧 PHASE2_TEMPLATES.md §5.7) の固定規則(拡大 = 傾き CI が正でゼロを含まず"
               "**かつ**直近 250 夜の CI が正。縮小 = 傾き CI が負でゼロを含まず**または**"
               "直近 250 夜の CI が負。それ以外は判定不能)。判定不能を「安定」と読み替えない。")
     md.append("")

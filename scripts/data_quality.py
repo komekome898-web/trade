@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Data quality checks over the intake ledger's inventory.
 
-Why this exists: docs/DATA_GOVERNANCE_PLAN.md / docs/QA_PLAN_2026-09.md list
+Why this exists: docs/DATA.md §0 / docs/QA_PLAN_2026-09.md list
 concrete quality failures found by hand during audits (crossed order books,
 maintenance-window synthetic bars, a `t`/`ts` column mixup, zero-volume days,
 extreme single-step returns) and ask for an automatic, repeatable check that

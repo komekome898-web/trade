@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 SRC = K1 / "body_wick.json"
 RATIOS = ("[0,0.25)", "[0.25,0.5)", "[0.5,0.75)", "[0.75,1)", "[1,2)", "[2,+)")
 WICKS = ("[0,5)", "[5,10)", "[10,19)", "[19,24)", "[24,40)", "[40,70)", "[70,+)")

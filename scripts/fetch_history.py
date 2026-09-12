@@ -28,8 +28,8 @@ def _order_new_rows(new_rows: list[dict]) -> list[dict]:
     trade (before=None, then before=<oldest id seen>), so the raw list it
     accumulates is newest-first/descending -- appending it as-is to an
     otherwise-ascending file writes a strictly-decreasing run of ids/
-    timestamps on every single run. See docs/DATA_QA_TRIAGE.md
-    bitflyer_execution_flow/non_monotonic (538,325 flagged rows) and its
+    timestamps on every single run. See the 2026-09-05 data-quality triage
+    (bitflyer_execution_flow/non_monotonic, 538,325 flagged rows, git history) and its
     downstream gaps miscount on data/executions_FX_BTC_JPY.csv and
     data/executions_XRP_JPY.csv."""
     return sorted(new_rows, key=lambda t: int(t["id"]))
@@ -42,7 +42,7 @@ def build_candles(executions: "pd.DataFrame") -> "pd.DataFrame":
     never written as a zero-volume row. `synthetic` is always 0 here since
     this builder never fabricates a bar; it exists so the column set matches
     fetch_deep.py's output (which does forward-fill gaps and needs the flag
-    to mark them). See docs/DATA_QA_TRIAGE.md candles_fx_btc_jpy/zero_volume.
+    to mark them). See the 2026-09-05 data-quality triage (candles_fx_btc_jpy/zero_volume, git history).
     """
     df = executions.copy()
     df["ts"] = pd.to_datetime(df["exec_date"], format="mixed", utc=True)
@@ -82,8 +82,8 @@ def main() -> int:
         time.sleep(0.6)
 
     if new_rows:
-        # DATA QA 2026-09-05 (docs/DATA_QA_TRIAGE.md bitflyer_execution_flow/
-        # non_monotonic+gaps): the loop above pages BACKWARD from the newest
+        # DATA QA 2026-09-05 (bitflyer_execution_flow/non_monotonic+gaps,
+        # git history): the loop above pages BACKWARD from the newest
         # trade (before=None, then before=oldest id seen so far), so
         # new_rows arrives newest-first/descending. Appending it in that
         # order writes a strictly-decreasing run of ids/timestamps into an

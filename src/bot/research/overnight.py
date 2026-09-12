@@ -6,11 +6,11 @@ Everything here is generic time-series computation: the close(t) ->
 open(t+1) "overnight" leg (as a log or a simple return), a gross
 data-glitch filter, a one-sample mean/t-stat, two resampling-based
 inference helpers (block bootstrap CI, sign-shuffle null), the
-"edge trend" standard sub-indicator (`edge_trend`, PHASE2_TEMPLATES.md §5:
+"edge trend" standard sub-indicator (`edge_trend`, research-protocol skill §12 (旧 PHASE2_TEMPLATES.md §5):
 rolling-window mean+CI, yearly table, slope+CI+MDE, half-split difference,
 optional regime table, and the fixed 拡大/縮小/判定不能 judgment sentence),
 and the "condition analysis" standard sub-indicator (`state_split`,
-PHASE2_TEMPLATES.md §6: per-state n/mean/CI, cost-net mean/CI, pairwise
+research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6): per-state n/mean/CI, cost-net mean/CI, pairwise
 state differences with CI and MDE, one joint block-permutation null for the
 largest difference across every variable, and the fixed 候補/判定不能/差なし
 verdict). No instrument, window, cost, or verdict is baked in — callers
@@ -297,11 +297,11 @@ def sign_shuffle_null(
 
 
 # ---------------------------------------------------------------------------
-# edge trend (standard sub-indicator, PHASE2_TEMPLATES.md §5)
+# edge trend (standard sub-indicator, research-protocol skill §12 (旧 PHASE2_TEMPLATES.md §5))
 # ---------------------------------------------------------------------------
 
 # alpha=0.05 two-sided / power=0.8: Z_(1-alpha/2) + Z_power. Same convention as
-# scripts/phase2/p2_01_run.py's MDE rows; PHASE2_TEMPLATES.md §5.4 quotes this
+# scripts/phase2/p2_01_run.py's MDE rows; research-protocol skill §12.4 (旧 PHASE2_TEMPLATES.md §5.4) quotes this
 # rounded to 2.8016.
 EDGE_TREND_SLOPE_MDE_Z = 1.959963985 + 0.8416212336
 
@@ -335,7 +335,7 @@ def edge_trend(
     regime_dates: Iterable | None = None,
     rolling_step: int = 1,
 ) -> dict:
-    """The standard "edge trend" sub-indicator (PHASE2_TEMPLATES.md §5).
+    """The standard "edge trend" sub-indicator (research-protocol skill §12 (旧 PHASE2_TEMPLATES.md §5)).
 
     Describes whether the expected value of a per-observation series (e.g.
     a night's gross overnight return, its per-pair cost, or its net return,
@@ -607,7 +607,7 @@ def edge_trend(
 
 
 # ---------------------------------------------------------------------------
-# condition analysis (standard sub-indicator, PHASE2_TEMPLATES.md §6)
+# condition analysis (standard sub-indicator, research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6))
 # ---------------------------------------------------------------------------
 
 # Same alpha=0.05 two-sided / power=0.8 constant the slope MDE uses
@@ -659,7 +659,7 @@ def state_split(
     seed: int,
     cost_bps=None,
 ) -> dict:
-    """The standard "condition analysis" sub-indicator (PHASE2_TEMPLATES.md §6).
+    """The standard "condition analysis" sub-indicator (research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6)).
 
     Describes WHERE a per-observation edge is larger or smaller, over state
     variables the caller pre-registered, without ever letting that answer

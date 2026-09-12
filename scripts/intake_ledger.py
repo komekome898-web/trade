@@ -3,7 +3,7 @@
 project holds (`data/`, `paper_logs/`, `backtest_data/`, `data/archive/` if
 present).
 
-Why this exists: `docs/DATA_GOVERNANCE_PLAN.md` — a research checkout has
+Why this exists: `docs/DATA.md` §0 — a research checkout has
 read a stale local copy while a newer shared copy existed, a 210-day claim
 turned out to rest on a 21-day overlap, and file counts/row counts have been
 asserted from memory instead of measured. The ledger is the single place

@@ -5,7 +5,9 @@
 **検証を進めてからでは分離できない**。だから後の 2 つは測る前に潰す。
 
 今週の教訓がここにも効く: **散文にしか無い規則は静かに消える**。
-規則が 4 箇所(規約・プロトコル・テンプレート・委任)に揃っていることを固定する。
+規則が 3 箇所(規約・プロトコル・委任)に揃っていることを固定する
+(旧テンプレート `docs/PHASE2_TEMPLATES.md` §8 は 2026-09-12 の文書整理で
+`research-protocol` skill §0.5/§15 に統合され、独立した入口ではなくなった)。
 中身の良し悪しは測れないので、**要求が存在すること**だけを見る。
 """
 from __future__ import annotations
@@ -18,7 +20,6 @@ REPO = Path(__file__).resolve().parents[1]
 
 PROTOCOL = REPO / ".claude" / "skills" / "research-protocol" / "SKILL.md"
 DELEGATION = REPO / ".claude" / "skills" / "delegated-study" / "SKILL.md"
-TEMPLATES = REPO / "docs" / "PHASE2_TEMPLATES.md"
 CLAUDE_MD = REPO / "CLAUDE.md"
 WORKED_EXAMPLE = REPO / "docs" / "legacy" / "KATSUO_INTENT_MAP.md"
 
@@ -27,7 +28,7 @@ def _text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("path", [PROTOCOL, DELEGATION, TEMPLATES, CLAUDE_MD])
+@pytest.mark.parametrize("path", [PROTOCOL, DELEGATION, CLAUDE_MD])
 def test_the_requirement_is_stated_wherever_a_unit_starts(path: Path):
     """単位を始めうる 4 つの入口すべてに要求が書かれていること。
     1 箇所だけだと、別の入口から入った回で飛ばされる。"""
@@ -58,11 +59,10 @@ def test_the_four_verdicts_exist_with_the_proxy_case():
     とくに **△代理** と **＋意図に無い実装** が要る —
     この 2 つが無い突き合わせは「実装されているか」しか見ておらず、
     今回のカツオ(ヒゲは清算の代理)を捕まえられない。"""
-    for path in (PROTOCOL, TEMPLATES):
-        text = _text(path)
-        assert "代理" in text, path.name
-        assert "未実装" in text, path.name
-        assert "意図に無い" in text, path.name
+    text = _text(PROTOCOL)
+    assert "代理" in text
+    assert "未実装" in text
+    assert "意図に無い" in text
 
 
 def test_a_negative_without_the_map_is_downgraded_to_unknown():
@@ -75,8 +75,7 @@ def test_a_negative_without_the_map_is_downgraded_to_unknown():
 def test_the_map_must_be_built_from_the_code_side_too():
     """意図 → 実装 の一方向だけでは **＋(意図に無い実装)を見落とす**。
     カツオでは決済の固定ドル階段と 2 本目の指値がそれだった。"""
-    for path in (PROTOCOL, TEMPLATES):
-        assert "見落とす" in _text(path), path.name
+    assert "見落とす" in _text(PROTOCOL)
 
 
 def test_the_worked_example_exists_and_carries_all_four_verdicts():

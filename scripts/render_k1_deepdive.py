@@ -3,7 +3,7 @@
 `render_k1_robustness.py` は 1 取引所の全診断を全部出す(4,000 行超)。ここでは第 9 部の本文が引く
 **取引所横並びの要約**だけを出す。数字の出所はすべて `robustness.json` のセル。
 
-    PYTHONPATH=src:scripts python scripts/render_k1_deepdive.py > docs/PHASE2/K1/DEEPDIVE_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_deepdive.py > results/PHASE2/K1/DEEPDIVE_TABLES.md
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 VENUES = (("BitMEX", K1 / "robustness.json"), ("Binance", K1 / "binance" / "robustness.json"))
 FEET = (1, 3, 5, 15, 30, 60)
 STRENGTHS = (("strong", "強い"), ("weak", "弱い"))

@@ -119,7 +119,7 @@ echo.
 
 echo [4/5] verify components are stopped
 powershell -NoProfile -Command ^
-  "$p = Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%%'\" | Where-Object { $_.CommandLine -like '*run_paper.py*' -or $_.CommandLine -like '*run_scalp_paper.py*' -or $_.CommandLine -like '*record_realtime.py*' -or $_.CommandLine -like '*record_venues.py*' -or $_.CommandLine -like '*record_liquidations.py*' -or $_.CommandLine -like '*dashboard.py*' }; if ($p) { $p | ForEach-Object { Write-Host ('still running: PID ' + $_.ProcessId + ' ' + $_.CommandLine) }; exit 1 } else { exit 0 }"
+  "$p = Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%%'\" | Where-Object { $_.CommandLine -like '*run_paper.py*' -or $_.CommandLine -like '*run_scalp_paper.py*' -or $_.CommandLine -like '*record_realtime.py*' -or $_.CommandLine -like '*record_venues.py*' -or $_.CommandLine -like '*record_liquidations.py*' -or $_.CommandLine -like '*probe_api_latency.py*' -or $_.CommandLine -like '*dashboard.py*' }; if ($p) { $p | ForEach-Object { Write-Host ('still running: PID ' + $_.ProcessId + ' ' + $_.CommandLine) }; exit 1 } else { exit 0 }"
 if errorlevel 1 (
   echo.
   echo *** FAILED: component^(s^) still running after stop_all.bat ***

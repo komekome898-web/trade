@@ -1,4 +1,4 @@
-"""Tests for scripts/verify_snapshots.py (DATA_QA_CHECKLIST item 5)."""
+"""Tests for scripts/verify_snapshots.py (docs/DATA.md §0, byte-exact snapshot verification)."""
 from __future__ import annotations
 
 import json

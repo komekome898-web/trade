@@ -8,7 +8,8 @@ close daily holding pairs, micro-futures costs for the futures-based rules
 and per-price-band ETF tick costs for the SQ rules, block-bootstrap
 inference, three controls, two joint block-permutation nulls (A and B), the
 per-rule MDE, the train/val split, the standard condition analysis
-(PHASE2_TEMPLATES.md §6) and the standard edge-trend sub-indicator (§5).
+(research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6)) and the standard
+edge-trend sub-indicator (research-protocol skill §12, 旧 PHASE2_TEMPLATES.md §5).
 
 Every input file is read through `bot.research.sealed.load_unsealed(path,
 "P2-04")`, so the sealed evaluation window is structurally unreachable from

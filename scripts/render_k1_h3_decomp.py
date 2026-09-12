@@ -7,7 +7,7 @@
     (d) 表 L-d: 原典の土台での DD と第 12 部 ①(遅らせた機械)の差 = 経路の効果
     (e) 表 L-e: 門 `s19/b24`: 分解 2 量(入口・出口)の年別(取引数は 4 腕で同じなので、年別平均の差がそのまま年別の分解)
 
-    PYTHONPATH=src:scripts python scripts/render_k1_h3_decomp.py > docs/PHASE2/K1/H3_DECOMP_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_h3_decomp.py > results/PHASE2/K1/H3_DECOMP_TABLES.md
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 VENUES = (("BitMEX", K1), ("Binance", K1 / "binance"))
 BASES = (("原典", "delay_decomp.json"), ("H1+H2a", "delay_decomp_flip_noinval.json"))
 FEET = (1, 3, 5, 15, 30, 60)

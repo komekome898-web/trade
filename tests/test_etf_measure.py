@@ -1170,7 +1170,7 @@ def test_existing_on1_bats_are_untouched():
 def test_operations_section_5_2_carries_the_owner_checklist():
     """合格バーは 2026-09-08 の全捨てで失効したので、本文からは消えている。
     残るのは運用の骨格(実行ファイル・ゲート・ポート・安全装置・締切)。"""
-    ops = (REPO / "docs" / "OPERATIONS.md").read_text(encoding="utf-8")
+    ops = (REPO / "docs" / "OPERATIONS_JPX.md").read_text(encoding="utf-8")
     assert "## 5.2" in ops
     section = ops.split("## 5.2")[1].split("\n## ")[0]
     for needle in ("etf_measure_entry.bat", "etf_measure_exit.bat",

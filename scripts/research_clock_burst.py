@@ -214,7 +214,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 from bot.monitoring.gates import shared_or_local_dir  # noqa: E402
 
-# Single source of truth (docs/DATA_QA_CHECKLIST.md #10): pick whichever of
+# Single source of truth (docs/DATA.md §0): pick whichever of
 # paper_logs/tape/ or data/tape/ holds the newer files, instead of always
 # hard-coding paper_logs/ (which would silently miss local-only days on the
 # operator PC, where the local copy is authoritative by construction).

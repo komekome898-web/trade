@@ -34,8 +34,8 @@ def build_candles(executions: "pd.DataFrame") -> "pd.DataFrame":
     exactly those rows (1) so they can be told apart from a real bar that
     legitimately traded; real rows are 0. Without this flag such a row is
     indistinguishable from a genuine moving-price bar with zero volume --
-    see docs/DATA_QA_TRIAGE.md candles_fx_btc_jpy/zero_volume and
-    schema/candles_fx_btc_jpy.json known_defects for how this was found.
+    see the 2026-09-05 data-quality triage (candles_fx_btc_jpy/zero_volume, git
+    history) and schema/candles_fx_btc_jpy.json known_defects for how this was found.
     """
     df = executions.copy()
     df["ts"] = pd.to_datetime(df["exec_date"], format="mixed", utc=True)

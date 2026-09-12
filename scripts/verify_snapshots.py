@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Verify the integrity of everything under backtest_data/ (DATA_QA_CHECKLIST
-item 5).
+"""Verify the integrity of everything under backtest_data/ (docs/DATA.md
+§0, byte-exact snapshot verification).
 
 For every "unit" under backtest_data/ -- each immediate subdirectory
 (recursively, so nested files like ``raw/foo.csv`` are covered) plus the

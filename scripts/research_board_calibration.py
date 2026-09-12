@@ -172,7 +172,7 @@ from bot.monitoring.gates import shared_or_local_dir  # noqa: E402
 
 
 def default_tape_dir() -> Path:
-    # Single source of truth (docs/DATA_QA_CHECKLIST.md #10): prefer
+    # Single source of truth (docs/DATA.md §0): prefer
     # paper_logs/tape/ over this checkout's local data/tape/ when the shared
     # copy holds newer files. research_wall_front.py, research_m4_finecheck.py,
     # research_matilda_taro.py and research_matilda_modern.py reuse this same

@@ -60,7 +60,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from bot.monitoring.gates import shared_or_local_dir  # noqa: E402
 
 WS_DIR = ROOT / "data" / "ws"  # no paper_logs mirror (too large to share)
-# Single source of truth (docs/DATA_QA_CHECKLIST.md #10): tape/ IS mirrored
+# Single source of truth (docs/DATA.md §0): tape/ IS mirrored
 # into paper_logs/, so prefer that copy when it is newer than local.
 TAPE = shared_or_local_dir(ROOT, "data/tape", shared_name="tape")
 EPOCH = pd.Timestamp("1970-01-01", tz="UTC")

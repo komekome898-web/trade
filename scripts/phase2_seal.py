@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Seal the evaluation data for one phase-2 research unit (docs/PHASE2_SPEC.md
-§3), BEFORE any iteration on that unit begins.
+"""Seal the evaluation data for one phase-2 research unit (2026-09-05
+owner-agreed design; see .claude/skills/research-protocol/SKILL.md §0.6), BEFORE any iteration on that unit begins.
 
 For each input file this computes:
   * the last 30% of its time span, split by CALENDAR date (not row count) —

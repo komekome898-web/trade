@@ -50,7 +50,7 @@ from pathlib import Path
 import measure_katsuo_dispersion as base
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 
 # BitMEX の封印(`docs/PHASE2/K1/JUDGEMENT_PREREG.md` §1/§7)。判定区間 2020-2021 を
 # 開けるには CLI の `--open-seal` と環境変数の**両方**が要る。開封は 1 回きり(L-085)

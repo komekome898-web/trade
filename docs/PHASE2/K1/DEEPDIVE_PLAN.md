@@ -58,7 +58,7 @@
 
 ### 1.3 出力
 
-- `docs/PHASE2/K1/robustness.json`(bitmex)/ `docs/PHASE2/K1/binance/robustness.json`
+- `results/PHASE2/K1/robustness.json`(bitmex)/ `results/PHASE2/K1/binance/robustness.json`
 - `--dump-cell "5|s19/b24|weak|3" --dump-path <file>` で、そのセルのシグナル足ごとの行を CSV に書く(検査者用。リポジトリには置かない)
 - `scripts/render_k1_robustness.py --dir <dir>` が D1〜D10 の表を Markdown で出す。**族の全水準を載せる**(足 6 × 強さ strong/weak を必ず全部。h は 1/3/5 を主、全 h も出せること)
 

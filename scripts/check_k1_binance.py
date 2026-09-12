@@ -1,15 +1,15 @@
 """K1-B(Binance 現物で同条件・同方法)の**独立検査**。read-only・ネットワークなし。
 
 設計は `docs/PHASE2/K1/binance/CHECKS.md`(検査 ID はそこと対応)。
-実装者の成果物(`scripts/k1_source.py`、`docs/PHASE2/K1/binance/*.json`、`TABLES.md`)と
-BitMEX 側のコミット済み出力(`docs/PHASE2/K1/*.json`)を読み、各検査の
+実装者の成果物(`scripts/k1_source.py`、`results/PHASE2/K1/binance/*.json`、`TABLES.md`)と
+BitMEX 側のコミット済み出力(`results/PHASE2/K1/*.json`)を読み、各検査の
 **合格 / 不合格 / 判定不能 / 情報** と根拠の数値を印字する。存在しない入力は「未生成」と出して落ちない。
 
   PYTHONPATH=src:scripts python scripts/check_k1_binance.py
       [--skip-data]                 データ全走査(約 1 分)を飛ばす(O 系の一部が判定不能になる)
       [--skip-loader-full]          実装者の loader で全期間を読む検査(L-08、約 1〜2 分)を飛ばす
       [--bitmex-rerun-dir DIR]      `--source bitmex` 再実行の出力が別ディレクトリにあるとき
-      [--binance-dir DIR]           既定 docs/PHASE2/K1/binance
+      [--binance-dir DIR]           既定 results/PHASE2/K1/binance
 
 書き込みは一切しない(subprocess は python 自身と `git show`/`git diff`/`git status` の読み取りだけ)。
 """
@@ -31,7 +31,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 BN1 = REPO / "backtest_data" / "binance_BTCUSDT_1m_20170801_20231231"
 BN2 = REPO / "backtest_data" / "binance_BTCUSDT_1m_20240101_20260831"
 BITMEX = REPO / "backtest_data" / "bitmex_trade_1s_XBTUSD"
@@ -437,7 +437,7 @@ def check_loader(rep: Report, facts, full: bool):
         bm = srcs["bitmex"]
         ok = (bm.get("start") == date(2017, 1, 1) and bm.get("end") == date(2019, 12, 31)
               and Path(bm.get("out_dir", "")).resolve() == K1.resolve())
-        rep.check("L-09", ok, f"SOURCES['bitmex'] = {bm}(期待 2017-01-01〜2019-12-31、出力 docs/PHASE2/K1)")
+        rep.check("L-09", ok, f"SOURCES['bitmex'] = {bm}(期待 2017-01-01〜2019-12-31、出力 results/PHASE2/K1)")
         bn = srcs.get("binance", {})
         rep.check("L-09b", bn.get("start") == date(2017, 8, 17) and bn.get("end") == date(2026, 8, 31),
                   f"SOURCES['binance'] = {bn}(期待 2017-08-17〜2026-08-31)")
@@ -486,7 +486,7 @@ def git(*args):
 
 
 def check_static(rep: Report):
-    rc, out = git("status", "--porcelain", "--", "scripts", "docs/PHASE2/K1")
+    rc, out = git("status", "--porcelain", "--", "scripts", "results/PHASE2/K1")
     changed = [l[3:] for l in out.splitlines()] if rc == 0 else []
     rep.info("S-01", f"作業ツリーで変更/追加されたファイル({len(changed)}): {', '.join(changed) or '無し'}")
 

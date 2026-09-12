@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 LABEL = {"strong": "強い", "weak": "弱い", "both": "両方"}
 MODES = ("fixed_h3", "full", "invalid_only", "opposite_only")
 MODE_LABEL = {"fixed_h3": "3 本固定", "full": "原典(第 2 部)", "invalid_only": "無効化のみ",

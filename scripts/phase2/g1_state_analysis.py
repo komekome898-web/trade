@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""G1 条件分析 — PHASE2_TEMPLATES.md §6 applied to P2-01 / P2-02 / P2-03.
+"""G1 条件分析 — research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6) applied to P2-01 / P2-02 / P2-03.
 
 DESCRIPTIVE, POST-SEAL, HYPOTHESIS-GENERATING ONLY.
 
@@ -454,7 +454,7 @@ BANNER = """> ## ⚠ この文書は記述であって判定ではない
 >
 > - **記述的・封印後・仮説生成のみ**。P2-01 / P2-02 / P2-03 の封印は既に消費され、
 >   最終評価と判定案は確定している。本書の数値は **その判定を一切変えない**
->   (`docs/PHASE2_TEMPLATES.md` §6.4「条件分析は主検定の判定を変えない」)。
+>   (research-protocol skill §13.4、旧 `docs/PHASE2_TEMPLATES.md` §6.4「条件分析は主検定の判定を変えない」)。
 > - ここで「候補」と付いた状態は、**次の単位の材料**でしかない。使うには
 >   §6.4 のとおり **条件付き仮説として新規単位を事前登録**し(探索面 N に加算)、
 >   封印が残っていれば封印で、無ければフォワードで検証する。
@@ -467,7 +467,7 @@ BANNER = """> ## ⚠ この文書は記述であって判定ではない
 
 def write_results(results: dict[str, list[dict]], out_dir: Path) -> None:
     lines: list[str] = []
-    lines.append("# G1 3 単位の条件分析(PHASE2_TEMPLATES.md §6)— 2026-09-06")
+    lines.append("# G1 3 単位の条件分析(research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6))— 2026-09-06")
     lines.append("")
     lines.append(BANNER)
     lines.append("")

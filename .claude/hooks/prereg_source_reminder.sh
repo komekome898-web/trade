@@ -29,6 +29,23 @@ case "$FILE_PATH" in
     */docs/*_PREREG.md|docs/*_PREREG.md) MATCH=1 ;;
 esac
 
+# F7(文書整理 2026-09-12、L-131): docs/ 直下に新しいファイルを作ろうとした瞬間に
+# 「増やさない規則」を表示する(表示のみ)。既存ファイルの編集には出さない。
+case "$FILE_PATH" in
+    */docs/*|docs/*)
+        REL="${FILE_PATH#*docs/}"
+        case "$REL" in
+            */*) ;;  # サブディレクトリは対象外
+            *)
+                if [ ! -e "$FILE_PATH" ]; then
+                    MSG7="[増やさない規則 — docs/INDEX.md 冒頭] (i) 一度きりの納品物(計画・チェックリスト・監査)は docs/ 直下に置かず DISCUSSIONS/ か AUDITOR/VERDICTS/ に日付つきで。(ii) 生成物は docs/ に書かない(results/ へ)。(iii) 「状態」は台帳 4 本(OWNER_STATUS / DATA / DATA_CONSUMPTION_LOG / NEGATIVE_FACTS)以外に作らない。既存の文書に追記できないか先に確認する。"
+                    E7="$(printf '%s' "$MSG7" | sed 's/\\/\\\\/g; s/"/\\"/g')"
+                    printf '{"systemMessage":"%s","hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"%s"}}' "$E7" "$E7"
+                    exit 0
+                fi ;;
+        esac ;;
+esac
+
 [ "$MATCH" = "1" ] || exit 0
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)" || exit 0

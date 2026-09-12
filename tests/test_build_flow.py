@@ -1,7 +1,7 @@
 """Tests for scripts/build_flow.py's per-minute order-flow builder.
 
-DATA QA 2026-09-05 (docs/DATA_QA_TRIAGE.md bitflyer_execution_flow/
-maintenance_window+zero_volume): build_flow() forward-fills a minute with
+DATA QA 2026-09-05 (bitflyer_execution_flow/maintenance_window+zero_volume,
+git history): build_flow() forward-fills a minute with
 zero executions from the previous real minute (open/high/low/close copied,
 volume/buy_vol/sell_vol/trades zeroed) -- the exact same shape as the
 already-fixed scripts/fetch_deep.py candle builder (see

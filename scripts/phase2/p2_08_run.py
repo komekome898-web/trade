@@ -1070,7 +1070,7 @@ def gated_reference_check(bf: pd.DataFrame, grid_m: Grid, mm: np.ndarray, gate: 
 
 def condition_analysis(a: dict, grid: Grid, terc: np.ndarray, c1w: float, period: str,
                        n_boot: int) -> dict:
-    """PHASE2_TEMPLATES §6 on an UNCONDITIONED ledger: net (conservative)
+    """research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6) on an UNCONDITIONED ledger: net (conservative)
     per trade split by the tercile at the entry-signal minute (`sig_i`),
     time-ordered, block = EDGE_BLOCK, joint permutation null from
     `state_split`."""

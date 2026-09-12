@@ -6,7 +6,7 @@
 h は既定で 1/3/5、`--h` で全ホライズンも出せる。
 
     PYTHONPATH=src:scripts python scripts/render_k1_robustness.py \
-        --dir docs/PHASE2/K1/binance > docs/PHASE2/K1/binance/ROBUSTNESS_TABLES.md
+        --dir results/PHASE2/K1/binance > results/PHASE2/K1/binance/ROBUSTNESS_TABLES.md
 """
 from __future__ import annotations
 
@@ -263,7 +263,7 @@ def t_d11_year(doc, gate, strengths, h, years):
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--dir", default=str(REPO / "docs" / "PHASE2" / "K1"))
+    ap.add_argument("--dir", default=str(REPO / "results" / "PHASE2" / "K1"))
     ap.add_argument("--src", default=None)
     ap.add_argument("--h", type=int, nargs="+", default=[1, 3, 5])
     ap.add_argument("--gates", nargs="+", default=None)

@@ -39,7 +39,7 @@ IN_CSV = ROOT / "data" / "jpx_daily" / "nk225_sessions.csv"
 
 
 def _in_csv() -> Path:
-    # Single source of truth (docs/DATA_QA_CHECKLIST.md #10): prefer
+    # Single source of truth (docs/DATA.md §0): prefer
     # paper_logs/nk225_sessions.csv over this checkout's local copy when the
     # shared one is newer. On the operator PC the local file just written by
     # fetch_jpx_daily.py is always newest, so this is a no-op there. A test

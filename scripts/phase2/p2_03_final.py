@@ -779,7 +779,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
             "measured": f"楽観 [{opt['ci_lo']:.3f}, {opt['ci_hi']:.3f}] / "
                         f"保守 [{cons['ci_lo']:.3f}, {cons['ci_hi']:.3f}] bps",
             "outcome": "満たす" if hold else "満たさない",
-            "trigger": "スプレッドの実測(kabu ステーションの板記録、docs/CONSTANTS_TODO.md)"
+            "trigger": "スプレッドの実測(kabu ステーションの板記録)"
                        " / 同一指数の高価格代替銘柄(TOPIX: 1348.T)の取得",
         })
 

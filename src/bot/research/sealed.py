@@ -1,4 +1,5 @@
-"""Phase-2 data sealing (docs/PHASE2_SPEC.md §3).
+"""Phase-2 data sealing (2026-09-05 owner-agreed design; see
+.claude/skills/research-protocol/SKILL.md §0.6 for the surviving agreement).
 
 Each phase-2 research unit gets an evaluation set sealed away BEFORE any
 iteration begins, so that "iterating without overfitting" can be enforced by

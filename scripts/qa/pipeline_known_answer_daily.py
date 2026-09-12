@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""PIPELINE known-answer test — daily execution (docs/PHASE2_SPEC.md §5).
+"""PIPELINE known-answer test — daily execution (the known-answer-test
+requirement from the 2026-09-05 owner-agreed phase-2 design).
 
 Not an auditor test: checks that the actual daily overnight-premium
 computation path used by ON1/ONR research recovers a planted effect and
@@ -21,7 +22,7 @@ Construction (see generate()):
   - overnight premium (close(t) -> open(t+1)) is planted at +Y bps/day,
     Y in {0, 2, 5}, ONLY on days whose GARCH intraday-vol lands in the
     trailing (in-sample) HIGH VOL TERCILE — a planted regime concentration
-    (PHASE2_SPEC.md's daily units include a regime-conditioned hypothesis
+    (the phase-2 daily units include a regime-conditioned hypothesis
     class; low/mid tercile carry zero planted drift by construction).
   - the ETF (only) carries two data-quality traps real jpx_etf_daily.json
     known_defects have both been observed: a 10:1 UNADJUSTED split (a real

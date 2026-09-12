@@ -3,7 +3,7 @@
 
 なぜ要るか: 清算フローは取引所によって**履歴の有無が違う**。Gate.io はローリング約 90 日、
 OKX は約 24 時間を公開しているが、**Binance と BitMEX はストリームのみで履歴が無い**
-(全経路の実測: `docs/DATA_SOURCES/LIQUIDATION_HISTORY_SURVEY.md`)。
+(全経路の実測: `docs/DATA/surveys/LIQUIDATION_HISTORY_SURVEY.md`)。
 履歴を持たない取引所ぶんは自前で記録するしかないので、まずどれが届くかを確かめる。
 
 **このスクリプトは WS で記録できるかだけを見る。** Gate.io の 90 日は REST の取り込みで、
@@ -11,7 +11,7 @@ OKX は約 24 時間を公開しているが、**Binance と BitMEX はストリ
 
 このスクリプトがすること:
   1. 各取引所の REST に GET して応答コードを見る(**HEAD は使わない** — 偽の 404 を返す
-     ことがある。`docs/DATA_PERISHABILITY.md` §5 の方法上の注意)
+     ことがある。L-099 の教訓: GET で確認する)
   2. 各取引所の WebSocket に接続し、購読を送り、**実際にメッセージが来るか**を待つ
   3. 結果を表で出し、`data/liquidation_feed_check.json` に書く
 

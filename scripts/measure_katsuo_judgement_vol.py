@@ -17,7 +17,7 @@ H2a(`use_invalid=False`)+ H3(`delay_signals`)、強さは **「弱い」だけ**
 n・mean_bp・total_bp。
 
     K1_SEAL_APPROVAL=L-085 PYTHONPATH=src:scripts python scripts/measure_katsuo_judgement_vol.py \
-        --open-seal --out docs/PHASE2/K1/judgement/vol_terciles_2017_2021.json
+        --open-seal --out results/PHASE2/K1/judgement/vol_terciles_2017_2021.json
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ import measure_katsuo_effect as eff
 import measure_katsuo_robustness as rb
 
 REPO = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = REPO / "docs" / "PHASE2" / "K1" / "judgement" / "vol_terciles_2017_2021.json"
+DEFAULT_OUT = REPO / "results" / "PHASE2" / "K1" / "judgement" / "vol_terciles_2017_2021.json"
 
 FEET = (5, 15)
 GATE_NAME = "s19/b24"

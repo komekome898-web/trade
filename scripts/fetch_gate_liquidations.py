@@ -2,7 +2,7 @@
 """Gate.io の**1 件ごと**の清算(強制決済)履歴を、消える前に取り込む。
 
 なぜ急ぐか: 入手経路を全部当たった結果、**分解能のある清算履歴を過去に遡れるのは
-Gate.io だけ**だった(`docs/DATA_SOURCES/LIQUIDATION_HISTORY_SURVEY.md`)。
+Gate.io だけ**だった(`docs/DATA/surveys/LIQUIDATION_HISTORY_SURVEY.md`)。
 認証不要・1 件ごと・ローリング**約 90 日**。**窓は動く**ので、取り込まなければ毎日 1 日分ずつ
 永久に失われる。Coinalyze の分足は 7 日しか無く、Binance と BitMEX は履歴を持たない。
 

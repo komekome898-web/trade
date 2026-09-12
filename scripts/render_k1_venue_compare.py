@@ -1,10 +1,10 @@
 """第 8 部(K1-B: Binance 現物で同条件・同方法)の分析表を生成する(手打ちしない)。
 
 読むもの:
-    docs/PHASE2/K1/signal_horizon.json           … BitMEX 2017-2019(第 4 部)
-    docs/PHASE2/K1/binance/signal_horizon.json   … Binance 2017-08-17〜2026-08-31
-    docs/PHASE2/K1/binance/body_wick.json        … 第 5 部 表 E 相当(あれば)
-    docs/PHASE2/K1/binance/exit_ablation.json    … 第 7 部相当(あれば)
+    results/PHASE2/K1/signal_horizon.json           … BitMEX 2017-2019(第 4 部)
+    results/PHASE2/K1/binance/signal_horizon.json   … Binance 2017-08-17〜2026-08-31
+    results/PHASE2/K1/binance/body_wick.json        … 第 5 部 表 E 相当(あれば)
+    results/PHASE2/K1/binance/exit_ablation.json    … 第 7 部相当(あれば)
 
 出す表:
     表 M  年ごとの有意セルの割合と、強い/弱いの平均効果(§4.4 と同じ量)を **両取引所・全年**で
@@ -22,7 +22,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 LABEL = {"strong": "強い", "weak": "弱い", "both": "両方"}
 
 

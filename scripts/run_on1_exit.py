@@ -1,6 +1,6 @@
 """ON1 exit job: 8:40 成行 sell (返済) of the single micro long.
 
-Scheduled at 8:35 on weekdays (docs/OPERATIONS.md §5.1).  See
+Scheduled at 8:35 on weekdays (docs/OPERATIONS_JPX.md §5.1).  See
 bot/jpx/on1_executor.py for why this is a plain 成行 and not 寄成 — 寄成 does not
 exist in the kabusapi futures FrontOrderType table.
 """

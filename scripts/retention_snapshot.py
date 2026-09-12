@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-empt retention-limited source expiry with automatic snapshots.
 
-docs/QA_PLAN_2026-09.md §1-2 item 5 / docs/DATA_GOVERNANCE_PLAN.md §2.7:
+docs/QA_PLAN_2026-09.md §1-2 item 5 / docs/DATA.md §0 (automatic snapshots row):
 several upstream sources this project reads enforce a hard (or empirically
 observed) retention window -- bitFlyer's own execution history API caps at
 31 days, OKX's rubik endpoints cap open interest at 30 days (1H) or 2-3 days

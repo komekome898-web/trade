@@ -7,7 +7,7 @@
     (c) 機構 足 × 門 13 × 強さ 3: 原典 → 反転(平均・sd・保有中央値・n)
     (d) 門 `s19/b24` の年別(シグナル単体 h=3 と機構)
 
-    PYTHONPATH=src:scripts python scripts/render_k1_h1.py > docs/PHASE2/K1/H1_TABLES.md
+    PYTHONPATH=src:scripts python scripts/render_k1_h1.py > results/PHASE2/K1/H1_TABLES.md
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 VENUES = (("BitMEX", K1), ("Binance", K1 / "binance"))
 FEET = (1, 3, 5, 15, 30, 60)
 STRENGTHS = (("strong", "強い"), ("weak", "弱い"), ("both", "両方"))

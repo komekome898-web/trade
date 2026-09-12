@@ -217,7 +217,7 @@ def main() -> None:
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
     ap.add_argument("--exit-variants", action="store_true",
                     help="原典の門(s=19/b=24・両方)についてのみ、決済ルールを分解して測る")
-    ap.add_argument("--out", default=str(REPO / "docs" / "PHASE2" / "K1" / "dispersion.json"))
+    ap.add_argument("--out", default=str(REPO / "results" / "PHASE2" / "K1" / "dispersion.json"))
     args = ap.parse_args()
 
     print(f"探索区間 {EXPLORE_START} 〜 {EXPLORE_END}(判定区間には触れない)")

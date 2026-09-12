@@ -20,7 +20,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-K1 = REPO / "docs" / "PHASE2" / "K1"
+K1 = REPO / "results" / "PHASE2" / "K1"
 SRC = K1 / "signal_horizon.json"
 
 # 相場の列は BitMEX 2017-2019 の表のために書いたもの。他の `--dir` では出さない(手打ちしない)

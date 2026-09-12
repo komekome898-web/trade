@@ -253,7 +253,7 @@ def _data_ledger(root: Path) -> dict[str, dict[str, Any]] | None:
     (scripts/intake_ledger.py) and quality-flag counts from data/QUALITY.json
     (scripts/data_quality.py) — both read via ``shared_or_local`` so the
     console always shows the operator's shared copy over a stale local one
-    (docs/DATA_GOVERNANCE_PLAN.md §2: "台帳が数字の唯一の出所" — these
+    (docs/DATA.md §0, the "受領台帳(intake ledger)" row: "台帳が数字の唯一の出所" — these
     counts are never recomputed by hand). Rows are grouped by the SAME
     schema/*.json dataset boundary data_quality.py itself uses (imported by
     identity, see _data_quality_module), so a file counted in one table's row
