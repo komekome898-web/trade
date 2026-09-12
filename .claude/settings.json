@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh .claude/hooks/agent_delegation_reminder.sh",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/agent_delegation_reminder.sh",
             "timeout": 5
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh .claude/hooks/prereg_source_reminder.sh",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/prereg_source_reminder.sh",
             "timeout": 5
           }
         ]
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh .claude/hooks/git_push_audit_reminder.sh",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/git_push_audit_reminder.sh",
             "timeout": 5
           }
         ]
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh .claude/hooks/budget_delegation_reminder.sh",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/budget_delegation_reminder.sh",
             "timeout": 5
           }
         ]
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh .claude/hooks/session_start_digest.sh",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session_start_digest.sh",
             "timeout": 5
           }
         ]
@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh .claude/hooks/owner_turn_digest.sh",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_turn_digest.sh",
             "timeout": 5
           }
         ]

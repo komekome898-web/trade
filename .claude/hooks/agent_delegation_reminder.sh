@@ -3,9 +3,20 @@
 # ブロックも行わない)。CLAUDE.md §5.2 の該当行を実行時に grep して表示するので、
 # 本文を書き換えても文言はドリフトしない。失敗しても常に exit 0(作業を止めない)。
 
+#
+# 発火条件(L-144 で限定。以前は Agent 呼び出しのたびに無条件で発火していた):
+# 委任文に「調達 / データ需要 / 経路 / 取得」のいずれかを含むときだけ。
+# 調達以外の委任(再枠組み・棚卸し・実装)では表示しない。
+
 set -e
 
 export LC_ALL=C.utf8 2>/dev/null || true
+
+INPUT="$(cat 2>/dev/null || true)"
+case "$INPUT" in
+  *調達*|*データ需要*|*経路*|*取得*) ;;
+  *) exit 0 ;;
+esac
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)" || exit 0
 CLAUDE_MD="$ROOT/CLAUDE.md"

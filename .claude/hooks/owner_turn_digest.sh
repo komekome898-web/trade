@@ -24,20 +24,18 @@ if command -v git >/dev/null 2>&1 && [ -d "$ROOT/.git" ]; then
 fi
 
 BUDGET="$(grep -E "^\| 週間トークン上限" "$ROOT/docs/OWNER_STATUS.md" 2>/dev/null | awk -F"|" '{print $3}' | cut -c1-200 || true)"
-ROWS=""
 if [ -f "$ROOT/docs/OWNER_STATUS.md" ]; then
-    # 太字で始まる行 = 進行中の項目と恒久規則。各行は 320 文字で切る(要点だけ)。
-    ROWS="$(grep -E '^\| \*\*' "$ROOT/docs/OWNER_STATUS.md" 2>/dev/null | cut -c1-320 || true)"
     NEXT="$(grep -E '^\| PC 運用' "$ROOT/docs/OWNER_STATUS.md" 2>/dev/null | awk -F'|' '{print $5}' | cut -c1-300 || true)"
 fi
 
+# L-144 で 3 行に縮小。進行中の項目の一覧はここに貼らない
+# (在庫を毎回目の前に置くと、そこからしか考えられなくなる = L-142 の原因 3)。
+# 必要なら docs/OWNER_STATUS.md を自分で読む。
 MSG="[状態板の要点 — 返答の前に読む(I-006)]
 ${HEART}
 トークン(最終報告値。自主上限 70% を超えたら重い工程を止める = 規則、提案ではない):${BUDGET}
 オーナーに今求めている行動:${NEXT:- (無し)}
-進行中の項目と恒久規則:
-${ROWS:-(状態板が読めない)}
-規則: オーナーに見える文は日本語のみ / 有料インフラは提案しない / 出力の再送を求めない(共有で届くものは自分で確認)"
+規則: オーナーに見える文は日本語のみ / 有料インフラは提案しない / 出力の再送を求めない。詳細は docs/OWNER_STATUS.md(必要なときに自分で読む)"
 
 ESCAPED="$(printf '%s' "$MSG" | sed 's/\\/\\\\/g; s/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')"
 printf '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"%s"}}' "$ESCAPED"
