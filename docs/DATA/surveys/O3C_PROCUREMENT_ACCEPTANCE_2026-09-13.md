@@ -114,3 +114,63 @@
 
 **順位の変化の有無(訂正4bに関連)**: 補遺Dの§D1順位表(建玉USD降順、1〜15位)は**訂正前→訂正後で変化なし**
 (単位の取り違えは出来高列の一部数値のみに影響し、順位付けの根拠である建玉には影響しないため)。
+
+---
+
+## §6 台帳への反映(2026-09-13)
+
+Binance COIN-M アーカイブの実取得(`backtest_data/binance_cm_o3c_20260913/`)により判明した欠測を受けて、
+`docs/PHASE2/O3C/DATA_AVAILABILITY.md` を訂正し、調達票5本+実取得README由来の候補行を `docs/DATA.md` §2
+へ反映した(機械的な訂正・反映のみ。判断・結論は変更していない)。
+
+### (1) `docs/DATA.md` §2 に追加した行(資産名、20件)
+
+1. Binance COIN-M BTCUSD_PERP liquidationSnapshot
+2. Binance COIN-M BTCUSD_PERP metrics
+3. Binance USD-M liquidationSnapshot アーカイブ(全シンボル、KeyCount=0)
+4. BitMEX 公開バルクアーカイブの清算専用フォルダ(存在しない)
+5. CoinGlass 個別イベント清算(`/api/futures/liquidation/order`)
+6. OKX 1分足(無期限、history-candles)
+7. Gate 1分足(candlesticks、真のOHLC)
+8. ccxt `fetchLiquidations`(bitmex)実装
+9. Tardis.dev BitMEX `liquidation`チャネル
+10. Binance USD-M BTCUSDT metrics
+11. Binance COIN-M BTCUSD_PERP aggTrades/trades
+12. OKX rubik open-interest-history(保持期間の実測)
+13. OKX rubik long-short-account-ratio(保持期間の実測)
+14. Gate contract_stats(建玉・L/S比・mark_price)
+15. BitMEX instrument 建玉(openInterest、現在値のみ)
+16. CryptoCompare(CoinDesk Data) histominute(gate.io)
+17. Hyperliquid `userFills`/`userFillsByTime`
+18. Hyperliquid `candleSnapshot`
+19. Hyperliquid `metaAndAssetCtxs`
+20. Hyperliquid S3アーカイブ(板 L2Book想定)
+
+### (2) 重複のため追加しなかったもの
+
+- Bybit 公開バルクアーカイブの清算フォルダ無し(親票候補) — `docs/DATA.md` 既存行(Bybit静的アーカイブ
+  `public.bybit.com`、「板・清算・資金調達率は無く約定のみ」)に既に記載済み
+- BitMEX 1分足(bucketed trade REST、親票候補) — `docs/DATA.md` 既存行(BitMEX XBTUSD 1秒足、2017〜2021、
+  取得済のローカルアーカイブ)が同一資産をより高い状態(取得済)で既に包含
+- BitMEX 保険基金 日次残高(補遺A候補) — `docs/DATA.md` 既存行(2026-09-12付、状態「取得済」、
+  2016-02-28〜2026-09-11・9,804件)に既に記載済み(本検収票冒頭の「関連する観察」で既報)
+- Bybit v5 open-interest(補遺B候補) — `docs/DATA.md` 既存行(Bybit REST API 全般、HTTP 403 CloudFront
+  地域ブロック)が同一の否定的事実を既に包括的に記載
+
+### (3) 既存行を更新したもの
+
+なし(該当する既存行はいずれも期間・状態が現行のまま有効で、更新の必要は無かった)。
+
+### (4) `DATA_AVAILABILITY.md` で訂正した箇所
+
+- 冒頭注記: 2026-09-13の実取得で欠測が判明し窓を訂正した旨を追記(取り消し線方式ではなく新規注記行)
+- §1主表: Binance COIN-M の「清算イベント」行(期間・状態を472/478日の実測に更新)、「建玉・L/S比」行
+  (期間・状態をO-3c窓内379/478日の実測に更新)。「約定」行は本体未取得のため無変更
+- §2a: Binance COIN-M「清算+約定」行 — 約定側が本体未取得のため「約477日」を撤回し「不明」に訂正
+- §2b: Binance COIN-M「3点が揃う窓」行 — liquidationSnapshot∩metrics の実ファイル突き合わせにより、
+  「約477日」を撤回し、**375日・7区間**(2023-06-25〜09-08[76日]/09-10〜09-22[13日]/09-24[1日]/
+  09-26〜11-18[54日]/11-20〜2024-03-03[105日]/06-09〜06-10[2日]/06-13〜10-14[124日])に訂正
+- §4: 「Binance COIN-M `liquidationSnapshot` … 本体一括取得は未実施」行を「取得済(2026-09-13、
+  472/478日)」に訂正
+
+いずれも元の誤った値は取り消し線で残し、訂正後の値を追記した(追記専用の原則)。
