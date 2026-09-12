@@ -28,6 +28,10 @@ copy /Y logs\nightly_restart.log paper_logs\ >nul 2>&1
 rem liquidation recorder log: the self-heal line ("不完全 -> ... へ退避") after a
 rem restart is read from here (P14), so the owner never has to open it.
 copy /Y logs\liquidations.out.log paper_logs\ >nul 2>&1
+rem fetch_all / latency-probe logs, last 400 lines each: the lead diagnoses P11
+rem (board_top10 backfill) and P13 (api probe) from these instead of asking (KA-30).
+powershell -NoProfile -Command "if (Test-Path 'logs\fetch.out.log') { Get-Content 'logs\fetch.out.log' -Tail 400 | Set-Content 'paper_logs\fetch.out.tail.log' }" >nul 2>&1
+powershell -NoProfile -Command "if (Test-Path 'logs\latency_probe.out.log') { Get-Content 'logs\latency_probe.out.log' -Tail 400 | Set-Content 'paper_logs\latency_probe.out.tail.log' }" >nul 2>&1
 copy /Y data\scalp_paper.jsonl paper_logs\ >nul 2>&1
 copy /Y data\oi_snapshots.csv paper_logs\ >nul 2>&1
 copy /Y data\spread_FX_BTC_JPY.csv paper_logs\ >nul 2>&1
