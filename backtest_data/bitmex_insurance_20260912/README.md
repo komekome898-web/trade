@@ -94,11 +94,11 @@ USD 1/1079、USDe 1/947、USDc 1/585。減少日が一定数あること自体�
 `$HTTPS_PROXY`(エージェントプロキシ)+ CA バンドル `/root/.ccr/ca-bundle.crt`。詳細は
 `docs/DATA/probes/20260912_bitmex_insurance_fetch.log` の全20行。
 
-## `docs/DATA.md` §2 追記案(リード検収後に §2 へ反映済み 2026-09-12)
+## `docs/DATA.md` §2 追記案(**未反映**。リード検収済み 2026-09-12。セッション障害のため台帳への追記は次回セッションで gz/csv のコミットと同時に行う)
 
 | 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
 |---|---|---|---|---|---|---|
-| BitMEX 保険基金 日次残高(全通貨) | `backtest_data/bitmex_insurance_20260912/`(`insurance.jsonl.gz` / `insurance_daily.csv`) | 2016-02-28〜2026-09-11、通貨: XBt/USDt/Gwei/USD/USDe/USDc、9,804レコード、欠測日0 | 恒久保存済み(BitMEX 2026-09-23閉鎖前の退避) | 2026-09-12 | `docs/DATA/probes/20260912_bitmex_insurance_fetch.log` | 通貨×日 |
+| BitMEX 保険基金 日次残高(全通貨) | `backtest_data/bitmex_insurance_20260912/`(`insurance.jsonl.gz` / `insurance_daily.csv`) | 2016-02-28〜2026-09-11、通貨: XBt/USDt/Gwei/USD/USDe/USDc、9,804レコード、欠測日0 | 取得済(BitMEX 2026-09-23閉鎖前の退避) | 2026-09-12 | `docs/DATA/probes/20260912_bitmex_insurance_fetch.log` | O-3c(未使用。清算強度の長期代理の候補。注: ウォレット残高であり清算イベントの代理ではない) |
 
 **注記**: このデータは保険基金の**ウォレット残高**であり、清算イベントの代理にはならない
 (`docs/DATA/surveys/O3C_PROCUREMENT_SUPP_A_2026-09-12.md` A2 既報のとおり)。用途は保険基金残高
