@@ -30,8 +30,12 @@
 - **Gate**(`liq_orders` の `time` フィールド): 取引所発だが**秒精度**
   (`DATA_AVAILABILITY.md` §1 実測)。`ts_ms = int(time) * 1000` として ms に揃えるが、
   実際の精度は秒のまま(下 3 桁は常に `000`)であることをここに明記する。
-  `size` の符号がオーダー方向: 負 = 売り = ロングの強制決済、正 = 買い = ショートの
-  強制決済(Binance と同じ符号規約)。数量は `abs(size)`、価格は `fill_price`。
+  `size` は「清算された建玉のサイズ」そのもの(Binance のような「強制決済注文自体の
+  方向」ではない。一次資料: `docs/DATA/surveys/O3C_VERIFY_LIQUIDATION_SIDE_2026-09-13.md`
+  主張2)。符号の正負が long/short のどちらかは一次資料には無く、**傍証**
+  (同ファイル「## 傍証による決着」節、2026-09-13)で決めた: **正 = ロングの強制決済
+  (強制売り)、負 = ショートの強制決済(強制買い)**。数量は `abs(size)`、価格は
+  `fill_price`。
 - **BitMEX は対象外**(取引所発の時刻フィールドが無い。`INTENT_MAP.md` §4 I-06 参照)。
 
 ## 規模(`total_size` / `notional`)の注意
@@ -136,13 +140,24 @@ def load_gate_liquidations(path: str | Path) -> list[LiquidationEvent]:
 
     `liquidations.read_rows`(gzip の途中切れに強い読み手)をそのまま再利用する。
     `time` は**秒精度**(下 3 桁は ms に揃えるためだけの 0 埋め、精度そのものは秒のまま)。
+
+    **`size` の符号 → long/short の対応は一次資料に無く、傍証で決めた
+    (2026-09-13、`docs/DATA/surveys/O3C_VERIFY_LIQUIDATION_SIDE_2026-09-13.md`
+    「## 傍証による決着」節)。** 判定の根拠(BTC_USDT, 2026-06-10〜09-08, 79,183 件):
+    `size` の符号ごとに清算を 60 秒ギャップでバースト化し、同一バースト内の
+    最初→最後の `fill_price` の変化(bp)の向きを見た。複数件(n_events>=2)の
+    バーストに限ると、`size > 0` のバースト 3,195 件中 2,555 件(80.0%)が価格下降、
+    `size < 0` のバースト 3,176 件中 2,557 件(80.5%)が価格上昇と、**符号ごとに
+    明確に逆方向へ偏った**。ロング建玉の強制決済は市場に売りをぶつけるので価格は
+    下がる方向に集中するはず → **`size > 0` = ロングの強制決済、`size < 0` = ショートの
+    強制決済**と判定した(旧実装は逆だった)。
     """
     rows = read_rows(path).rows
     events = [
         LiquidationEvent(
             exchange="gate",
             ts_ms=int(row["time"]) * 1000,
-            side="long" if float(row["size"]) < 0 else "short",
+            side="long" if float(row["size"]) > 0 else "short",
             qty=abs(float(row["size"])),
             price=float(row["fill_price"]),
         )

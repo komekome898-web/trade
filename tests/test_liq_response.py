@@ -6,6 +6,8 @@
 """
 from __future__ import annotations
 
+import gzip
+import json
 import math
 import random
 
@@ -16,6 +18,7 @@ from bot.research.liq_response import (
     build_cascades,
     build_dataset,
     compute_reactions,
+    load_gate_liquidations,
     sample_no_liquidation_windows,
     sample_placebo_windows,
 )
@@ -175,6 +178,32 @@ def test_direction_all_short():
 def test_direction_mixed():
     c = build_cascades([_ev(0, "long"), _ev(1_000, "short")], "gate")[0]
     assert c.direction == "mixed"
+
+
+# --------------------------------------------------------------------------- #
+# (4b) Gate の size 符号 → long/short の対応(傍証で確定済み、固定する)
+# --------------------------------------------------------------------------- #
+
+def test_load_gate_liquidations_positive_size_is_long(tmp_path):
+    """正の `size` = ロング清算、負の `size` = ショート清算(2026-09-13 の傍証による決着。
+    `docs/DATA/surveys/O3C_VERIFY_LIQUIDATION_SIDE_2026-09-13.md` 参照。
+    バースト内 first→last の `fill_price` が正の size で下降・負の size で上昇に
+    明確に偏ったことから決めた対応で、退行させない)。"""
+    path = tmp_path / "BTC_USDT.jsonl.gz"
+    rows = [
+        {"contract": "BTC_USDT", "left": "0", "size": "5", "order_size": "5",
+         "fill_price": "100", "order_price": "100", "time": 1_700_000_000},
+        {"contract": "BTC_USDT", "left": "0", "size": "-7", "order_size": "7",
+         "fill_price": "100", "order_price": "100", "time": 1_700_000_010},
+    ]
+    with gzip.open(path, "wt", encoding="utf-8") as fh:
+        for row in rows:
+            fh.write(json.dumps(row) + "\n")
+
+    events = load_gate_liquidations(path)
+    by_size = {e.qty: e for e in events}
+    assert by_size[5.0].side == "long"
+    assert by_size[7.0].side == "short"
 
 
 # --------------------------------------------------------------------------- #
