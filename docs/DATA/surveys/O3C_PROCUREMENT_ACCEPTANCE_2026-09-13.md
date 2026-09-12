@@ -174,3 +174,44 @@ Binance COIN-M アーカイブの実取得(`backtest_data/binance_cm_o3c_2026091
   472/478日)」に訂正
 
 いずれも元の誤った値は取り消し線で残し、訂正後の値を追記した(追記専用の原則)。
+
+---
+
+## §7 台帳 §1 への反映(2026-09-13)
+
+補遺A(`O3C_PROCUREMENT_SUPP_A_2026-09-12.md`)のうち bitFlyer 自身の事実(A1・A3)を
+`docs/DATA.md` §1 へ反映した(機械的な反映のみ。判断・結論は変更していない)。BitMEX に関する行
+(A2・§4候補)は §2 の領域のため、重複を grep で確認したうえで §2 側に反映した。
+
+### (1) 更新した既存行(§1、1件)
+
+- 「清算・強制決済(losscut) 履歴」— 旧内容(状態: 試行して不可。範囲・方法: 「本 pilot では未探索」、
+  最終確認日 2026-09-11、ログ `20260911_crypto_cfd_board_liq_funding_basis.log`)を、補遺A A1 の実測に
+  基づき更新: 範囲・方法を「bitFlyer Lightning の公開 API リファレンスと実測スキーマ(`/v1/executions`・
+  `getticker`・`getboardstate`)の両方で、約定に清算を識別するフィールドが存在しないことを確認。清算履歴の
+  専用エンドポイントも見つからない」に、最終確認日を 2026-09-12 に、プローブのログを
+  `docs/DATA/probes/20260912_o3c_supp_a_bitflyer_bitmex.log` に、使った単位を「O-3c(調達、2026-09-12)」に
+  書き換えた。状態の値自体は「試行して不可(範囲・方法)」のまま(内容のみ更新)。
+
+### (2) 追加した行(3件)
+
+- §1: 「bitFlyer SFD・証拠金維持率・ロスカット閾値の一次資料(公式FAQ)」— 補遺A A3 に基づく新規行。
+  所在は補遺Aから正確に転記(SFD: `https://bitflyer.com/ja-jp/faq/7-33`、証拠金維持率・ロスカット:
+  `https://bitflyer.com/ja-jp/faq/7-23`, `7-11`, `7-9`)。状態は「試行して不可(範囲・方法)」
+  (この環境から curl HTTP/1.1・HTTP/2・WebFetch の3通りで HTTP 403(WAF)、`lightning.bitflyer.com/docs`
+  は同一環境から200で到達できることからホスト固有の遮断と判断)。**数値の閾値(SFD 乖離率・維持率%)は
+  補遺Aで原文未確認のため台帳には記載していない。**
+- §2: 「archive.org(public.bitmex.com 過去スナップショット確認経路)」— 補遺A A2(ii) に基づく新規行
+  (grep で §2 に該当行が無いことを確認済み)。状態は「試行して不可(WebFetch はツール側ブロック、curl は
+  HTTPS 接続リセット)」。
+- §2: 「`deploy/mirror_bitmex.bat` の保全対象範囲」— 補遺A に基づく新規行(grep で §2 に該当行が無いことを
+  確認済み)。状態は「取得済(コード確認、ダウンロードそのものではない)」。対象は trade/quote/porl の3種の
+  みで liquidation は対象外。
+
+### (3) 重複のため触らなかったもの(§2、3件)
+
+- ccxt `fetchLiquidations`(bitmex)実装 — `docs/DATA.md` §2 に既存行あり(§6反映#8 で既に追加済み)。
+- Tardis.dev BitMEX `liquidation`チャネル — `docs/DATA.md` §2 に既存行あり(§6反映#9 で既に追加済み)。
+- BitMEX 保険基金 日次残高(insurance) — `docs/DATA.md` §2 に既存行あり(2026-09-12付「取得済」、
+  §6の「関連する観察」で既報の別ログ・別取得作業)。補遺A A2(i) のサンプル数件のみの実測はこの既存行を
+  上書きしていない。
