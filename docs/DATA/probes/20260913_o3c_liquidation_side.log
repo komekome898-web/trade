@@ -1,0 +1,74 @@
+O3C 清算イベントの向き検証 — プローブ生ログ
+調査班(下位モデル)。全時刻 UTC。取得方法はすべて curl($HTTPS_PROXY 経由)または WebFetch。
+
+[1] curl GET https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/Liquidation-Order-Streams
+HTTP:302 BYTES:138 UTC:2026-09-12T17:22:39Z
+先頭200文字: <html> <head><title>302 Found</title></head> <body> <center><h1>302 Found</h1></center> <hr><center>nginx</center> </body> </html>
+補足: Location ヘッダは /en/docs/products/derivatives-trading-coin-futures/... へ302。
+
+[2] curl GET https://developers.binance.com/docs/derivatives/coin-margined-futures/trade/All-Force-Orders
+HTTP:302 BYTES:138 UTC:2026-09-12T17:22:41Z (内容は[1]と同型の302 Foundページ)
+
+[3] curl GET (UA=Chrome) https://developers.binance.com/en/docs/products/derivatives-trading-coin-futures/websocket-market-streams/Liquidation-Order-Streams
+HTTP:202 BYTES:2105 UTC:2026-09-12T17:22:4x Z
+先頭200文字: <!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <title></title> <style> body { f
+判定: AWS WAF (awswaf.com challenge.js) のチャレンジページ。この環境(curl, 非JS実行)からは本文に到達不可。
+
+[4] WebFetch https://developers.binance.com/docs/derivatives/coin-margined-futures/websocket-market-streams/Liquidation-Order-Streams
+結果: developers.binance.com のトップページ(製品導入文)しか取得できず、目的の technical reference には到達せず。
+
+[5] curl GET http://archive.org/wayback/available?url=developers.binance.com/en/docs/products/derivatives-trading-coin-futures/websocket-market-streams/Liquidation-Order-Streams
+HTTP:200 BYTES:160 UTC:2026-09-12T17:2x
+結果: {"archived_snapshots": {}} — 新URLのアーカイブなし。
+
+[6] curl GET https://web.archive.org/cdx/search/cdx?url=binance-docs.github.io/apidocs/delivery/en/&output=json (複数呼び出しで年代確認)
+HTTP:200 (複数スナップショット一覧を確認。2020-06〜2024-05まで存在)
+
+[7] curl GET https://binance-docs.github.io/apidocs/delivery/en/
+HTTP:200 BYTES:325 UTC:2026-09-12T17:2x
+先頭200文字: <!DOCTYPE html> <html> <head> <meta charset="utf-8"> <title>Redirecting to https://developers.binance.com/docs/derivatives</title> <meta http-equiv="refresh" content="0;url=https://developers.bi
+判定: 旧ドキュメント(binance-docs.github.io、公式・旧正規ドメイン)は現在 developers.binance.com へ302/meta-refreshで転送するのみで本文は消えている。
+
+[8] curl GET https://web.archive.org/web/20240521073544/https://binance-docs.github.io/apidocs/delivery/en/
+HTTP:200 BYTES:414222 UTC:2026-09-12T17:2x
+先頭200文字: <!doctype html> <html> <head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script> <script type="text/javascript" sr
+判定: 成功。2024-05-21時点でarchive.org保存された公式旧ドキュメント本文(COIN-M futures / delivery API)を取得。以後の引用の出典。
+
+[9] curl GET https://www.gate.io/docs/developers/apiv4/en/
+HTTP:403 BYTES:406 UTC:2026-09-12T17:25:26Z
+先頭200文字: <HTML><HEAD> <TITLE>Access Denied</TITLE> </HEAD><BODY> <H1>Access Denied</H1>  You don't have permission to access "http://www.gate.io/docs/developers/apiv4/en/" on this server.
+判定: Akamai (errors.edgesuite.net) による拒否。この環境(プロキシ経由)から不可。
+
+[10] WebFetch https://www.gate.io/docs/developers/apiv4/en/#list-liquidation-orders
+結果: 301 → https://www.gate.com/docs/developers/apiv4/en/ へのリダイレクト検出のみ(自動追跡せず)。
+
+[11] curl GET https://www.gate.com/docs/developers/apiv4/en/
+HTTP:403 BYTES:405 UTC:2026-09-12T17:25:2x
+判定: [9]と同型のAkamai拒否。この環境から不可(gate.io/gate.comいずれも403)。
+
+[12] WebFetch https://www.gate.com/docs/developers/apiv4/en/
+結果: changelogの断片のみ取得(v4.106.61で order_size 追加の記載を確認)。目的のFuturesLiqOrderモデル定義本文には到達せず。
+
+[13] curl GET https://raw.githubusercontent.com/gateio/gateapi-python/master/docs/FuturesLiqOrder.md
+HTTP:200 BYTES:825 UTC:2026-09-12T17:2x
+先頭200文字: # FuturesLiqOrder  ## Properties Name | Type | Description | Notes ... **size** | **int** | User position size | [optional] [readonly]
+判定: 代替経路(鍵不要)として成功。Gate.io公式GitHub組織(gateio)が配布するSDKの自動生成モデル定義。
+
+[14] curl GET https://raw.githubusercontent.com/gateio/gateapi-python/master/docs/FuturesOrder.md
+HTTP:200 BYTES:5973 UTC:2026-09-12T17:2x
+先頭200文字: # FuturesOrder  Futures order details ## Properties ... **size** | **int** | Required. Trading quantity. Positive for buy, negative for sell.
+
+[15] curl GET https://raw.githubusercontent.com/gateio/gateapi-python/master/docs/FuturesApi.md
+HTTP:200 BYTES:149578 UTC:2026-09-12T17:2x
+判定: list_liquidated_orders (GET /futures/{settle}/liq_orders) のレスポンス型が list[FuturesLiqOrder] であることを確認。
+
+[16] curl GET https://web.archive.org/cdx/search/cdx?url=gate.io/docs/developers/apiv4/en/&output=json&from=20230101
+HTTP:200 (スナップショット一覧確認。2023-04〜2025-03まで存在)
+(1回 SSL_ERROR_SYSCALL で失敗 → リトライで成功。web.archive.org側の一時的切断と判断)
+
+[17] curl GET https://web.archive.org/web/20250318011445/https://www.gate.io/docs/developers/apiv4/en/
+HTTP:200 BYTES:3930818 UTC:2026-09-12T17:2x (1回目 exit35/接続リセットで失敗、2回目リトライで成功)
+先頭200文字: <!DOCTYPE html> <html lang="en-US"> <head><script type="text/javascript" src="https://web-static.archive.org/_static/js/bundle-playback.js?v=2N_sDSC0" charset="utf-8"></script> <script type="text/ja
+判定: 成功。gate.io公式ドキュメントドメイン自体のアーカイブ本文を取得(2025-03-18時点)。liq_ordersのレスポンススキーマ表を含む。[13][14]の記載と一致することを確認。
+
+[18] 手元データ(傍証、一次資料ではない): backtest_data/binance_cm_o3c_20260913/liquidationSnapshot/BTCUSD_PERP/ から2023-06-25/26/27の3日分のzipを解凍しCSVを検査。ネットワーク取得ではないためHTTP項目なし。カラムは time,side,order_type,time_in_force,original_quantity,price,average_price,order_status,last_fill_quantity,accumulated_fill_quantity で[8]のペイロード定義と一致。
