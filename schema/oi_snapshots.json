@@ -7,7 +7,7 @@
     "backtest_data/auto_oi_snapshots_*/oi_snapshots.csv"
   ],
   "source": "OKX public/open-interest, public/rubik/stat/contracts/long-short-account-ratio; Deribit public/get_volatility_index_data and public/ticker -- all read-only, no auth (scripts/record_oi.py)",
-  "retention": "OKX open interest 1H window ~30 days, 5m window ~2-3 days; long/short ratio ~60 days -- per docs/DATA_GOVERNANCE_PLAN.md this is exactly why this file exists (forward recording is the only way to get a long dense history); snapshot to backtest_data/ at roughly half the shortest source retention",
+  "retention": "OKX open interest 1H window ~30 days, 5m window ~2-3 days; long/short ratio ~60 days -- per docs/DATA.md section 0 (formerly DATA_GOVERNANCE_PLAN.md) this is exactly why this file exists (forward recording is the only way to get a long dense history); snapshot to backtest_data/ at roughly half the shortest source retention",
   "columns": {
     "ts_utc": {"meaning": "time this collector run executed (our clock), NOT an exchange timestamp for any individual field below", "unit": "ISO-8601", "tz": "UTC", "notes": "every other cell in the row is 'best available value from that endpoint at this moment', not synchronized to a shared trade time"},
     "okx_usdt_oi": {"meaning": "OKX BTC-USDT-SWAP open interest", "unit": "contracts or USDT notional as returned by public/open-interest (see scripts/record_oi.py for the exact field mapping)", "tz": null, "notes": "empty cell if this call failed/errored -- rows are best-effort per field, a blank never aborts the row"},

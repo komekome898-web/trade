@@ -110,7 +110,7 @@ def test_render_and_write_doc(tree: Path):
 
 
 def test_main_writes_doc_and_returns_zero(tree: Path, monkeypatch):
-    out_path = tree / "docs" / "CONSTANTS_TODO.md"
+    out_path = tree / "results" / "CONSTANTS_INVENTORY.md"
     monkeypatch.setattr(sys, "argv",
                          ["constants_inventory.py", "--root", str(tree), "--out", str(out_path)])
     rc = ci.main()
@@ -121,7 +121,7 @@ def test_main_writes_doc_and_returns_zero(tree: Path, monkeypatch):
 
 
 def test_no_write_skips_doc(tree: Path, monkeypatch):
-    out_path = tree / "docs" / "CONSTANTS_TODO.md"
+    out_path = tree / "results" / "CONSTANTS_INVENTORY.md"
     monkeypatch.setattr(sys, "argv",
                          ["constants_inventory.py", "--root", str(tree), "--out", str(out_path),
                           "--no-write"])

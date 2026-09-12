@@ -9,7 +9,7 @@ cd /d "%~dp0.."
 rem -ErrorAction SilentlyContinue: killing a parent python can take its child
 rem down first, so a later Stop-Process may find the PID already gone — fine.
 powershell -NoProfile -Command ^
-  "Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%%'\" | Where-Object { $_.CommandLine -like '*run_paper.py*' -or $_.CommandLine -like '*run_scalp_paper.py*' -or $_.CommandLine -like '*record_realtime.py*' -or $_.CommandLine -like '*record_venues.py*' -or $_.CommandLine -like '*record_liquidations.py*' -or $_.CommandLine -like '*probe_api_latency.py*' -or $_.CommandLine -like '*dashboard.py*' } | ForEach-Object { Write-Host ('stopping PID ' + $_.ProcessId); Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+  "Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%%'\" | Where-Object { $_.CommandLine -like '*run_paper.py*' -or $_.CommandLine -like '*run_scalp_paper.py*' -or $_.CommandLine -like '*record_realtime.py*' -or $_.CommandLine -like '*record_venues.py*' -or $_.CommandLine -like '*record_liquidations.py*' -or $_.CommandLine -like '*dashboard.py*' } | ForEach-Object { Write-Host ('stopping PID ' + $_.ProcessId); Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 rem The liquidation recorder holds a lock file so two copies can never append
 rem to the same gzip. A force-killed recorder leaves it behind, and start_all
 rem would then refuse to start - so the authority that killed it clears it.

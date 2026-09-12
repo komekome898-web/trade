@@ -36,7 +36,7 @@ bitflyer_fx_btc_jpy:
     unit: percent_of_notional
     source_type: primary_document
     source_url: "https://bitflyer.com/ja-jp/s/commission"
-    verified_on: "unverified (egress blocked): bitflyer.com returns HTTP 403/Akamai 'Access Denied' to this session's proxy IP on every path (root, /ja-jp/commission, /ja-jp/s/commission); lightning.bitflyer.com (same operator, docs subdomain) is reachable but its /docs pages do not carry the fee schedule text. Fee value cross-checked instead via docs/NOTE_CRYPTO_CFD_2026-08-20.md (official API docs quote: 'The product_code for BTC-CFD/JPY used in each API will be FX_BTC_JPY'; 手数料0%・レバレッジ最大2倍は変更なし) and confirmed as the value the live order path actually consumes."
+    verified_on: "unverified (egress blocked): bitflyer.com returns HTTP 403/Akamai 'Access Denied' to this session's proxy IP on every path (root, /ja-jp/commission, /ja-jp/s/commission); lightning.bitflyer.com (same operator, docs subdomain) is reachable but its /docs pages do not carry the fee schedule text. Fee value cross-checked instead via docs/OPERATIONS.md section 1 (formerly NOTE_CRYPTO_CFD_2026-08-20.md) (official API docs quote: 'The product_code for BTC-CFD/JPY used in each API will be FX_BTC_JPY'; 手数料0%・レバレッジ最大2倍は変更なし) and confirmed as the value the live order path actually consumes."
     measured_by: "config/products.yaml FX_BTC_JPY.taker_fee_pct=0.0 is read by src/bot/products.py:ProductSpec and used at src/bot/main.py order path; independently re-confirmed against the live 16-day tape in (削除済み文書) (fee term = 0 in all three cost-floor methods)."
     notes: >-
       0% taker/maker fee for bitFlyer Crypto CFD (successor to Lightning FX,
@@ -134,7 +134,7 @@ bitflyer_fx_btc_jpy:
     unit: percent_of_notional_per_day
     source_type: measured
     measured_by: >-
-      docs/NOTE_CRYPTO_CFD_2026-08-20.md, via
+      docs/OPERATIONS.md section 1 (商品仕様の確認 2026-08-20, formerly NOTE_CRYPTO_CFD_2026-08-20.md), via
       /v1/getfundingrate + /v1/getfundingratehistory, 3-day sample
       at note-writing time.
     verified_on: "2026-08-20"

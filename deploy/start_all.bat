@@ -26,10 +26,6 @@ call :launch "ws-recorder" "scripts\record_realtime.py" record_realtime.py "logs
 call :launch "venue-recorder" "scripts\record_venues.py" record_venues.py  "logs\venues.out.log"
 rem 清算(強制決済)ストリーム。履歴が買えない唯一のデータなので止めない (L-026)
 call :launch "liq-recorder" "scripts\record_liquidations.py" record_liquidations.py "logs\liquidations.out.log"
-rem read-only API latency probe (P13, L-098). 168h then exits; the guard above
-rem relaunches it on the next start_all, so the nightly restart keeps it alive
-rem without anyone double-clicking probe_latency.bat (L-132 / KA-30).
-call :launch "latency-probe" "scripts\probe_api_latency.py" probe_api_latency.py "logs\latency_probe.out.log"
 call :launch "dashboard"   "scripts\dashboard.py"       dashboard.py       "logs\dashboard.out.log"
 
 echo.

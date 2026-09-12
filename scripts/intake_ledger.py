@@ -18,7 +18,7 @@ Design:
   - `data/INTAKE_latest.json` is a materialized index keyed by path, always
     rewritten in full from the current scan — the fast thing to read.
   - A file that disappears is NEVER dropped: its last known record is kept
-    with status "missing" (see the DATA_GOVERNANCE_PLAN self-report about a
+    with status "missing" (see docs/DATA.md section 0, formerly the DATA_GOVERNANCE_PLAN self-report, about a
     prior local-copy mixup — the ledger must make disappearance visible, not
     silently drop the row).
   - Nothing under the scanned roots is ever opened for writing, moved, or

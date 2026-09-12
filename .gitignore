@@ -37,7 +37,7 @@ htmlcov/
 # P2-08b の大容量スナップショット(合計 5.5GB)。Binance Vision は保持期限なしの公開アーカイブで
 # CHECKSUM 付き、bybit も公開。各ディレクトリの README.md・MD5SUMS・索引は git に入れてあり、
 # `scripts/fetch_binance_vision.py` で同一ファイルを再取得・突合できる。オーナー PC が毎日 pull する
-# リポジトリを肥大させないため、本体データのみ除外(`docs/DATA_LOSS_REGISTER.md` #15)。
+# リポジトリを肥大させないため、本体データのみ除外(`docs/DATA.md` §8 損失・欠損 #15)。
 backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/*.csv.gz
 backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/raw/
 backtest_data/binance_BTCUSDT_1s_20260723_20260906/*.csv.gz

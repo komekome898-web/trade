@@ -51,14 +51,14 @@ rem upstream window into backtest_data\auto_<source>_<date>\, before the
 rem intake ledger below records them. Never overwrites, never touches the
 rem original files; skips a source with no snapshot due yet.
 ".venv\Scripts\python.exe" "scripts\retention_snapshot.py" >> "logs\fetch.out.log" 2>&1
-rem Data governance (docs/DATA_GOVERNANCE_PLAN.md, docs/QA_PLAN_2026-09.md):
+rem Data governance (docs/DATA.md section 0, formerly DATA_GOVERNANCE_PLAN.md):
 rem intake ledger (data\INTAKE.jsonl append-only history + data\INTAKE_latest.json
 rem materialized index of every file under data\, paper_logs\, backtest_data\,
 rem data\archive\) MUST run before data_quality.py, which only reads that index
 rem and never re-walks the filesystem itself. Both are read-only over the data
 rem they inventory/check -- neither ever writes, moves or deletes a data file.
 ".venv\Scripts\python.exe" "scripts\intake_ledger.py" >> "logs\fetch.out.log" 2>&1
-rem Snapshot integrity (DATA_QA_CHECKLIST item 5): verifies every MD5SUMS
+rem Snapshot integrity (docs/DATA.md section 0): verifies every MD5SUMS
 rem under backtest_data\ against the files on disk, creates a new MD5SUMS
 rem for any snapshot dir that lacks one, and cross-checks against the intake
 rem ledger above -> data\SNAPSHOT_VERIFY.json. Read-only over data files;
@@ -66,6 +66,6 @@ rem the only write is a brand-new MD5SUMS. Non-zero exit on any mismatch is
 rem intentionally ignored here so the rest of fetch_all still runs.
 ".venv\Scripts\python.exe" "scripts\verify_snapshots.py" >> "logs\fetch.out.log" 2>&1
 rem Read-only listing of every data\ws recording (member count, complete?, recoverable
-rem rows) -> data\WS_GZ_LISTING.json; shared by share_logs.bat (DATA_QA_CHECKLIST item 6).
+rem rows) -> data\WS_GZ_LISTING.json; shared by share_logs.bat (docs/DATA.md section 0).
 ".venv\Scripts\python.exe" "scripts\repair_gz_listing.py" --json "data\WS_GZ_LISTING.json" >> "logs\fetch.out.log" 2>&1
 ".venv\Scripts\python.exe" "scripts\data_quality.py" >> "logs\fetch.out.log" 2>&1

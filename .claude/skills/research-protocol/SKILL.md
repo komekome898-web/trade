@@ -459,7 +459,7 @@ description: "Pre-registered validation protocol for any new trading strategy, t
    3 = SQ までの日数)。各反復は開発セットのみ、val の主指標の改善 < MDE が 3 回続けば停止(仕様 §4)。順序は変えない。
 6. **記述の書式**: 状態 × 指標の表 1 枚と、「効く状況 / 効かない状況 / 判定不能な状況」の 3 行の平文要約。
 
-実装: `src/bot/research/overnight.py: state_split(values, states, ...)`。RESULTS.md に「条件分析」節として出力する。
+実装: `src/bot/research/overnight.py: state_split(values, states, ...)`(2026-09-06 追加予定)。RESULTS.md に「条件分析」節として出力する。
 
 ## 14. 調達票とリード盲点監査(2026-09-06 追加、委任表 §3)(旧 PHASE2_TEMPLATES.md より)
 

@@ -5,7 +5,7 @@ requirement documented in docs/DATA.md §0): every entry whose `source_type` is 
 sourced for new judgments), or whose `value` is null.
 
 For each flagged entry this prints a table (path, value, unit, source_type,
-deprecated, consumers) and writes `docs/CONSTANTS_TODO.md` (Japanese) with a
+deprecated, consumers) and writes `results/CONSTANTS_INVENTORY.md` (Japanese) with a
 measurement plan per entry. "Consumers" is a best-effort grep of src/ and
 scripts/ (*.py, excluding __pycache__) for the constant's bare name and its
 full "group.name" path — this only finds textual references (string literals
@@ -14,13 +14,13 @@ a comment/identifier elsewhere); it cannot prove a constant feeds a live
 judgment, only that the name appears somewhere in the code.
 
 This script only reads config/constants.yaml and the src/scripts trees, and
-only ever writes docs/CONSTANTS_TODO.md — nothing under data/, paper_logs/,
+only ever writes results/CONSTANTS_INVENTORY.md — nothing under data/, paper_logs/,
 or backtest_data/ is touched.
 
 Usage:
     python scripts/constants_inventory.py                 # table + write doc
     python scripts/constants_inventory.py --root /path
-    python scripts/constants_inventory.py --out /path/to/CONSTANTS_TODO.md
+    python scripts/constants_inventory.py --out /path/to/CONSTANTS_INVENTORY.md
     python scripts/constants_inventory.py --no-write       # table only
 """
 from __future__ import annotations
@@ -228,7 +228,7 @@ def main() -> int:
                                   formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=str(REPO_ROOT), help="repo root (default: this repo)")
     ap.add_argument("--out", default=None,
-                     help="output doc path (default: <root>/docs/CONSTANTS_TODO.md)")
+                     help="output doc path (default: <root>/results/CONSTANTS_INVENTORY.md)")
     ap.add_argument("--no-write", action="store_true", help="print table only, do not write the doc")
     args = ap.parse_args()
 
@@ -239,7 +239,7 @@ def main() -> int:
     print_table(flagged)
 
     if not args.no_write:
-        out_path = Path(args.out) if args.out else root / "docs" / "CONSTANTS_TODO.md"
+        out_path = Path(args.out) if args.out else root / "results" / "CONSTANTS_INVENTORY.md"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(render_todo_doc(flagged), encoding="utf-8")
         print(f"\nwrote {out_path}")

@@ -28,7 +28,7 @@ bitFlyer 側でAPIキーに**自宅の固定IPがあればIP制限**を掛ける
 オーナーからの「bitFlyer FXは廃止されたのでは」という指摘を受けた事実確認の記録。
 
 1. **Lightning FX は 2024-03-28 に廃止済み**。後継は「bitFlyer Crypto CFD」
-2. **APIの商品コードは `FX_BTC_JPY` のまま継続**(公式APIドキュメントに明記: "The product_code for BTC-CFD/JPY used in each API will be FX_BTC_JPY")。実測時点でも state=RUNNING・板厚50BTC超・約定継続を確認
+2. **APIの商品コードは `FX_BTC_JPY` のまま継続**(公式APIドキュメントに明記: "The product_code for BTC-CFD/JPY used in each API will be FX_BTC_JPY")。本日のAPI実測でも state=RUNNING・板厚50BTC超・約定継続を確認 — 本BOTが21日分収集してきたデータと(検証結果への言及は 2026-09-08 の全捨て §5.1 により除く)は、すべて現行のCrypto CFDのもの
 3. **SFDは存在しない**。代わりに**資金調達率(FR)が8時間ごと**(UTC 05/13/21時決済)に授受される。上限±0.375%/回。実測(直近3日): 平均|rate| 0.021%/回 ≒ 0.062%/日、符号は両方向(受取りの回もある)
 4. **手数料0%・レバレッジ最大2倍**は変更なし(コストモデルは正しかった)
 5. **最小発注数量は 2024-10-21 に 0.01 → 0.001 BTC-CFD へ引き下げ済み**
