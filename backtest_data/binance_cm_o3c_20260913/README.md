@@ -166,3 +166,104 @@ README・MD5SUMSと同様に追跡対象にしてよい**。`.gitignore` への�
 
 **注記**: metrics の連続97日欠測(2024-03-04〜06-08)は本単位では未調査の事実として記録するのみで、
 原因(配信欠落 or 該当期間データ非存在)についての主張はしない。
+
+## fundingRate(2026-09-13 追記)
+
+O-3c Q2(価格帯予測)の入力の1つ「建玉の積み上げ + 資金調達率 + L/S比」のうち、資金調達率が
+`metrics`(日次アーカイブ)には列として存在しないため、**別系統の月次アーカイブ**から取得した。
+
+- 取得日時(UTC): 2026-09-12T17:48:58Z 〜 2026-09-12T17:49:16Z(約18秒)
+- URL: `https://data.binance.vision/data/futures/cm/monthly/fundingRate/BTCUSD_PERP/BTCUSD_PERP-fundingRate-YYYY-MM.zip`
+  (+同名 `.CHECKSUM`)。**日次版は存在しない**(`.../cm/daily/fundingRate/BTCUSD_PERP/` は Key 0 件、
+  リードが事前確認済み)。月次アーカイブは Key 96 件、最古 `BTCUSD_PERP-fundingRate-2022-07.zip`。
+- スクリプト: `scripts/fetch_binance_cm_o3c.py --kind fundingRate`(既存スクリプトを拡張。
+  `MONTHLY_KINDS = {"fundingRate"}` で月次パス(`cm/monthly/...-YYYY-MM.zip`)とURLの月次生成
+  `month_range()` を追加。`fetch_day` は `fetch_period` に一般化し、日次/月次のどちらでも
+  sha256 検証・失敗時1回再取得の既存ロジックをそのまま使う。他の kind の挙動・パスは変更していない)
+- 期間: **2023-05 〜 2024-11**(19か月。O-3c の窓 2023-06-25〜2024-10-14 の前後1か月の余裕を持たせた)
+- 取得ログ: `docs/DATA/probes/20260913_binance_cm_o3c_fetch.log`(1か月1行 ×19行、kind=fundingRate。
+  各行: UTC時刻・kind・period(YYYY-MM)・URL・HTTPコード・バイト数・CHECKSUM一致可否)
+
+### 取得できた月・欠測月
+
+**19か月中 19か月 OK / 欠測0 / CHECKSUM失敗0**(再取得は一度も発動しなかった)。
+2023-05 〜 2024-11 の全月が揃っている。
+
+### ファイル数・バイト数(実測)
+
+| kind | 対象月数 | OK | 欠測 | CHECKSUM失敗 | zipファイル数 | 総バイト数(実測、zip+.CHECKSUM) |
+|---|---|---|---|---|---|---|
+| fundingRate | 19 | 19 | 0 | 0 | 19 | 16,952 bytes(約16.6 KiB) |
+
+ファイル総数(zip + .CHECKSUM 合計): **38**(19 × 2)。
+
+### CHECKSUM検証
+
+全19件のダウンロードについて、Binance Vision配布の `.CHECKSUM`(sha256)との一致をスクリプト内で検証
+(成功19 / 失敗0)。取得後に全19件を独立に `sha256sum` で再検証しても不一致は0件だった。
+
+### 中身の確認(1か月分を解凍・列名と先頭3行)
+
+`BTCUSD_PERP-fundingRate-2023-06.zip`
+
+列名: `calc_time,funding_interval_hours,last_funding_rate`
+
+```
+1685577600011,8,0.00010000
+1685606400000,8,0.00010000
+1685635200001,8,0.00010000
+```
+
+(`calc_time` は ms の UNIX 時刻。上記3行を UTC 変換すると `2023-06-01T00:00:00.011Z` /
+`2023-06-01T08:00:00Z` / `2023-06-01T16:00:00.001Z` — 8時間ごとの資金調達時刻(00/08/16時 UTC)と一致。
+これは時刻列そのものの変換であり、価格・レートの値には触れていない。)
+
+### git の扱い(実測根拠)
+
+実測 **16,952 bytes(約16.6 KiB)は100MBの閾値を大きく下回るため、本体(zip・.CHECKSUM)も
+README・MD5SUMSと同様に追跡対象のまま**とした。`.gitignore` への除外行は追加していない
+(確認: 既存の `.gitignore` に `binance_cm_o3c_20260913/aggTrades/**/*.zip` 等の除外行はあるが
+`fundingRate/` に対する行は無く、今回も追加していない)。
+
+### `MD5SUMS` 追記
+
+fundingRate 分38行(19ファイル×2)を追記。追記前2,653行 → 追記後2,691行。
+
+## `metrics` の `create_time` が UTC かどうかの確認(2026-09-13、時刻列のみの確認・判定用データの測定ではない)
+
+**方法**: `metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2023-06-25.zip` と
+`liquidationSnapshot/BTCUSD_PERP/BTCUSD_PERP-liquidationSnapshot-2023-06-25.zip`(同じ日)を解凍し、
+liquidationSnapshot 側の `time`(ms の UNIX 時刻、UTC が確定)を UTC 変換して日付レンジを確認、
+metrics 側の `create_time`(タイムゾーン表記のないナイーブな日時文字列、5分刻み)の日付レンジと突き合わせた。
+
+**観測事実**:
+- metrics-2023-06-25.csv: `create_time` は `2023-06-25 00:00:00` 始まり `2023-06-25 23:55:00` 終わり
+  (5分刻み288行、全行が単一の日付 `2023-06-25` に収まる。日付の飛び出しなし)
+- liquidationSnapshot-2023-06-25.csv: `time`(ms epoch)の最小値 `1687656471926` → UTC変換で
+  `2023-06-25T01:27:51.926Z`、最大値 `1687732427835` → UTC変換で `2023-06-25T22:33:47.835Z`。
+  いずれも `2023-06-25` の範囲内(この日はliquidationイベントが日付境界の近くに無く、
+  境界そのものの厳密な検証にはなっていない)
+- 別途、今回取得した `fundingRate-2023-06.zip` の `calc_time`(ms epoch)を UTC 変換すると
+  `1685577600011` → `2023-06-01T00:00:00.011Z`、`1685606400000` → `2023-06-01T08:00:00Z`、
+  `1685635200001` → `2023-06-01T16:00:00.001Z` となり、Binance の資金調達時刻(00/08/16時UTC)と
+  一致した(これは `fundingRate` の epoch 列自体がUTCであることの確認であり、`metrics` の
+  `create_time` を直接検証するものではない)
+
+**限界(なぜ3値のうち「UTCと一致」と断定できないか、事実として明記)**: `metrics` の
+`create_time` には UNIX epoch のような曖昧さのない時刻表現が無く、ナイーブな日時文字列のみである。
+liquidationSnapshot 側と比較して「同じ日付ラベルの範囲に収まっている」ことは確認できたが、これは
+必要条件であって十分条件ではない。**もし `create_time` が UTC ではなく固定オフセット
+(例: JST=UTC+9)で、かつファイル分割の基準も `create_time` 自身の暦日(そのタイムゾーンでの
+0時〜24時)であった場合**、ファイル名は同じ `2023-06-25` になり、かつファイル内は同様に
+`00:00:00`〜`23:55:00` のきれいな288行に収まってしまうため、**この検証方法では区別できない**
+(liquidationSnapshot 側は真のUTC暦日で分割されている一方、metrics側が別タイムゾーンの暦日で
+分割されていても、ラベルの一致という点では見分けがつかない)。`metrics` 内に epoch 等の
+独立した時刻アンカーが無く、`liquidationSnapshot`/`fundingRate` との間に「同一の実時刻の
+出来事」を指し示す共有点も無いため、これ以上の突き合わせでは価格・サイズに触れずに検証を
+進める手段が無かった。
+
+**結論: 判断できない**(UTCと一致でも矛盾でもない=違反は見つからなかったが、上記の理由で
+UTCであることの証明にはならない)。一次資料(Binance公式ドキュメントでの `create_time` の
+定義)による確認、または本番運用のAPIリクエスト(このアーカイブ経由でない生きたAPI呼び出し)
+による突き合わせが必要。**実装が UTC と仮定している箇所は、この不確実性を前提にしたまま
+残っている**ことを記録する。
