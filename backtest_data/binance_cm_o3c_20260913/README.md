@@ -36,7 +36,7 @@ O-3c(強制決済フローの直接観測)向けの一括取得。Binance Vision
 COIN-M metrics 自体がこの期間存在しなかったかは未調査)。liquidationSnapshot 側は同期間で欠測していない
 (`2024-06-01/11/12` の3日のみ)ため、2種別間で欠測パターンが一致しない。
 
-## aggTrades(未取得・容量見積のみ)
+## aggTrades(2026-09-13 追記: 取得完了。以下は取得前の見積りメモ、原文のまま残す)
 
 取得は行っていない(委任元の指示により、この回は容量見積のみで終える)。
 
@@ -46,6 +46,59 @@ COIN-M metrics 自体がこの期間存在しなかったかは未調査)。liqu
 - 478日換算の見積り: 平均 × 478 ≈ **1.48 GB**(サンプル13日のみの外挿。実測ではない)
 - 見積りは 10 GB を大きく下回るため容量上の障害はない(このコンテナの空き容量は約13GB)が、
   **取得の実施はこの回のスコープ外**(委任元指示)。次回、この見積りとともに実施可否を判断すること。
+
+## aggTrades 取得結果(2026-09-13 実施。上記見積りに基づきリード承認済みの取得単位)
+
+- 取得日時(UTC): 2026-09-12T16:45:49Z 〜 2026-09-12T17:00:07Z(約14分)
+- URL: `https://data.binance.vision/data/futures/cm/daily/aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-YYYY-MM-DD.zip`
+  (+同名 `.CHECKSUM`)
+- スクリプト: `scripts/fetch_binance_cm_o3c.py --kind aggTrades`(既存スクリプトを流用。sha256 検証・失敗時1回再取得は実装済み)
+- 期間: 2023-06-25 〜 2024-10-14(全478日、UTC日次)
+- 取得ログ: `docs/DATA/probes/20260913_binance_cm_o3c_fetch.log`(1日1行 ×478行、kind=aggTrades。
+  各行: UTC時刻・kind・day・URL・HTTPコード・バイト数・CHECKSUM一致可否)
+
+### 日ごとの取得可否(欠測日を明記)
+
+**478日中 475日 OK / 3日 欠測(404) / CHECKSUM失敗 0日**(再取得は一度も発動しなかった)。
+
+欠測日: `2023-09-25`, `2024-06-11`, `2024-06-12`
+(この3日はいずれも liquidationSnapshot 側でも欠測と記録済みの日と一致する。原因は未調査 — 事実として
+「この3日はCOIN-M側のアーカイブ自体が404だった」ことのみ確認、Binance側の配信欠落か該当日にデータが
+存在しなかったかは未調査)。
+
+上記3日以外の475日はすべて OK(zip取得・CHECKSUM検証とも成功)。
+
+### ファイル数・バイト数(実測)
+
+| kind | 対象日数 | OK | 欠測 | CHECKSUM失敗 | zipファイル数 | 総バイト数(実測、zip+.CHECKSUM) |
+|---|---|---|---|---|---|---|
+| aggTrades | 478 | 475 | 3 | 0 | 475 | 1,263,157,187 bytes(約1.18 GiB / 1.26 GB) |
+
+ファイル総数(zip + .CHECKSUM 合計): **950**(475 × 2)。
+
+### CHECKSUM検証
+
+全475件のダウンロードについて、Binance Vision配布の `.CHECKSUM`(sha256)との一致を検証。
+**成功475 / 失敗0**。取得後に全475件を独立に再検証(sha256sum突合)しても不一致は0件だった。
+
+### 中身の確認(1日分を解凍・列名と先頭3行)
+
+`BTCUSD_PERP-aggTrades-2023-06-25.zip`
+
+列名: `agg_trade_id,price,quantity,first_trade_id,last_trade_id,transact_time,is_buyer_maker`
+
+```
+261091940,30542.8,1.0,640356821,640356821,1687651202018,true
+261091941,30542.9,12.0,640356822,640356822,1687651203499,false
+261091942,30542.8,2.0,640356823,640356823,1687651207509,true
+```
+
+### git の扱い(実測根拠)
+
+**実測 1,263,157,187 bytes(約1.18 GiB)は100MBの閾値を大きく超えるため、本体(zip・.CHECKSUM)を
+`.gitignore` で除外した**(追加行: `backtest_data/binance_cm_o3c_20260913/aggTrades/**/*.zip` と
+同 `*.CHECKSUM`)。README.md・MD5SUMS はこれまでの liquidationSnapshot/metrics と同様に追跡対象のまま
+残している(このディレクトリ配下のもう一つの `MD5SUMS` に aggTrades 分475件×2=950行を追記済み)。
 
 ## ファイル数・バイト数(実測)
 
@@ -66,7 +119,8 @@ COIN-M metrics 自体がこの期間存在しなかったかは未調査)。liqu
 ## `MD5SUMS`
 
 このディレクトリ配下の全ファイル(README.md自身を除く)のmd5。`md5sum -c MD5SUMS` で検証可能
-(ディレクトリを cd してから実行)。1,702行。
+(ディレクトリを cd してから実行)。1,702行(liquidationSnapshot + metrics 時点)。
+**2026-09-13 追記: aggTrades 分950行(475ファイル×2)を追記し、現在は合計2,653行。**
 
 ## 中身の確認(1日分を解凍・列名と先頭3行)
 
