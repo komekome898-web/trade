@@ -129,7 +129,7 @@ ADL は**同ページに記述が無い**。別ページ
 | 取引所 | 商品 | OI(建玉) | 24h出来高 | 取得方法・時刻(UTC) |
 |---|---|---|---|---|
 | **Hyperliquid** | BTC 無期限 | **35,904.56 BTC**(markPx 77,285 換算で ≒ $2.77B) | **$3,579,640,198**(想定ドル建て、`dayNtlVlm`)/ 46,081.56 BTC(`dayBaseVlm`) | `api.hyperliquid.xyz/info` `metaAndAssetCtxs`、POST、2026-09-12T06:43:15Z(ログ4行目) |
-| OKX | BTC-USDT-SWAP(無期限、USDT建ての1本のみ。OKXは他にBTC-USD建ての無期限も別途存在し、これはOKXのBTC無期限全体ではない) | 27,442.95 BTC(`oiCcy`、≒$2.12B `oiUsd`) | 105,123.55 BTC(`volCcy24h`、≒$10.51B `vol24h`のUSDT建て名目) | `www.okx.com/api/v5/public/open-interest`, `.../market/ticker`、GET、2026-09-12T06:45:39〜40Z(ログ27〜28行目) |
+| OKX | BTC-USDT-SWAP(無期限、USDT建ての1本のみ。OKXは他にBTC-USD建ての無期限も別途存在し、これはOKXのBTC無期限全体ではない) | 27,442.95 BTC(`oiCcy`、≒$2.12B `oiUsd`) | 105,123.55 BTC(`volCcy24h`)、~~≒$10.51B(`vol24h`のUSDT建て名目)~~→`vol24h`(10,512,355.09)はコントラクト枚数(`volCcy24h`÷0.01と一致、105123.5509/0.01=10512355.09。USD名目値ではない)。ドル換算(自己算出、独立の一次資料での検算ではない): 同時刻のticker `last`=77,290 USDT(ログ28行目、2026-09-12T06:45:40Z)を使い 105,123.5509 BTC×77,290 ≒ $8.12B(訂正 2026-09-13、検収§2) | `www.okx.com/api/v5/public/open-interest`, `.../market/ticker`、GET、2026-09-12T06:45:39〜40Z(ログ27〜28行目) |
 | Binance | BTCUSDT 無期限 | 未取得 | 未取得 | **試行して不可(この環境からHTTP 451地域制限、既報 `docs/DATA.md` §2)**。オーナーPCでの再測が必要 |
 | Bybit | BTCUSDT 無期限 | 未取得 | 未取得 | **試行して不可(この環境からHTTP 403地域ブロック、既報)**。オーナーPCでの再測が必要 |
 | Gate | BTC_USDT 無期限 | 未取得 | 未取得 | 未試行(本票では手を付けていない) |

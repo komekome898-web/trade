@@ -36,7 +36,7 @@
 | この環境 | `fapi.binance.com/fapi/v1/allForceOrders`, `dapi.binance.com/dapi/v1/allForceOrders` | **試行して不可(HTTP 451、地域制限。方法: GET、実測 2026-09-12)**。ログ: 本票冒頭のログ 1〜2 行目。オーナー PC からは fapi REST が 200 と既報(`LIQUIDATION_FEED_REACHABILITY.md` L-032)なので dapi 側もオーナー PC で測り直す価値がある(**未試行、PC での到達確認が必要**) |
 | オーナー PC | 同上 REST。過去に fapi 200 を確認済みだが `allForceOrders` 自体(限定的な直近ウィンドウのみ返す仕様)はオーナー PC でも未実測 | PC での到達確認が必要 |
 | 公開アーカイブ・API | **Binance Vision `data/futures/cm/daily/liquidationSnapshot/<SYMBOL>/`**(COIN-M のみ) | **取得済み範囲を実測**: `BTCUSD_PERP-liquidationSnapshot-YYYY-MM-DD.zip`(CSV、1 件ごと、鍵不要)。**2023-06-25〜2024-10-14** が存在(2024-10-14 が最後に存在した日、2024-10-15 以降は KeyCount=0)。**2024-06-01 のみ単発欠測**(前後は存在)。**UM(USDT-M)の同アーカイブは全シンボル・全期間で KeyCount=0**(`BTCUSDT`・root とも再確認)。サンプル1件(`2023-06-25.zip`, 1733 bytes)を解凍し中身を確認: `time(ms),side,order_type,time_in_force,original_quantity,price,average_price,order_status,last_fill_quantity,accumulated_fill_quantity` — **1 件ごとの強制決済(force order)そのもの** |
-| 第三者データ | CoinGlass(個別イベント `liquidation/order` エンドポイント、鍵必須)、Tardis.dev(取引所別データセットに liquidation が含まれるか未確認) | CoinGlass: **試行して不可(HTTP 401、鍵必須。方法: GET、実測 2026-09-12)**。深さ不明。Tardis: 未試行(`DATA.md` にメタデータ到達のみの既存記録あり) |
+| 第三者データ | CoinGlass(個別イベント `liquidation/order` エンドポイント、鍵必須)、Tardis.dev(取引所別データセットに liquidation が含まれるか未確認) | CoinGlass: **試行して不可(~~HTTP 401~~→HTTP 200(本文JSONが`{"code":"401","msg":"API key missing."}`)、鍵必須。方法: GET、実測 2026-09-12)**(訂正 2026-09-13、検収§2)。深さ不明。Tardis: 未試行(`DATA.md` にメタデータ到達のみの既存記録あり) |
 | 有料 | CoinGlass 有料プラン(鍵で解放される可能性)、Kaiko / Amberdata 等の機関向けティックデータ | 未試行(価格・契約が必要。ドキュメントの存在のみ確認: `docs.coinglass.com/reference/liquidation-order` に到達、200) |
 
 **Binance の結論(この段では)**: **COIN-M(dapi、BTCUSD_PERP)は Binance Vision で 2023-06-25〜2024-10-14 の約 16 か月分を 1 件ごと・鍵不要で取得できる。USD-M(fapi、BTCUSDT)はこの経路では過去分ゼロ**(ライブ WS のみ、`data/liquidations` 記録開始 2026-09-08 以降しか存在しない、既報どおり)。
@@ -91,7 +91,7 @@
 | **OKX** | `liquidation-orders` REST(鍵不要) | ローリング約 24 時間 | 既報のとおり(未取得の追加取得はしていない) |
 | **Bybit** | 無し(無料) | 2026-09-08〜(自前 WS 記録のみ) | 試行して不可(公開アーカイブにフォルダ自体無し) |
 | **BitMEX** | 無し(無料。かつ時刻フィールド自体が無い) | 2026-09-08〜(自前 WS 記録のみ、時刻は受信時刻) | 試行して不可(公開アーカイブにフォルダ自体無し) |
-| 全取引所横断(有料) | CoinGlass 個別イベントエンドポイント | 未確認(鍵必須、401) | 試行して不可(鍵無し。方法: GET、ログ本票) |
+| 全取引所横断(有料) | CoinGlass 個別イベントエンドポイント | 未確認(鍵必須、~~401~~→HTTP 200・本文JSON `code:401`(訂正 2026-09-13、検収§2)) | 試行して不可(鍵無し。方法: GET、ログ本票) |
 
 ---
 
@@ -131,7 +131,7 @@
 | Binance COIN-M 個別清算(liquidationSnapshot、公開アーカイブ) | `https://data.binance.vision/data/futures/cm/daily/liquidationSnapshot/BTCUSD_PERP/` | 2023-06-25〜2024-10-14(約16か月、2024-06-01のみ単発欠測、以降は配布終了) | 未試行(到達性・1件のサンプルDLのみ確認。本体一括取得は未実施) | 2026-09-12 | `docs/DATA/probes/20260912_o3c_liquidation_history.log` | 未使用 |
 | Binance USD-M 個別清算アーカイブ(liquidationSnapshot) | `https://data.binance.vision/data/futures/um/daily/liquidationSnapshot/` | 該当なし | **試行して不可(全シンボル・全期間で KeyCount=0。方法: GET S3 list-objects、実測 2026-09-12)** | 2026-09-12 | `docs/DATA/probes/20260912_o3c_liquidation_history.log` | 未使用 |
 | Bybit・BitMEX 個別清算(公開バルクアーカイブ) | `public.bybit.com/`, `public.bitmex.com/`(S3 REST) | 該当なし | **試行して不可(いずれもディレクトリ一覧に「清算」名のフォルダが存在しない。方法: GET、実測 2026-09-12)** | 2026-09-12 | `docs/DATA/probes/20260912_o3c_liquidation_history.log` | 未使用 |
-| CoinGlass 個別イベント清算(`/api/futures/liquidation/order`) | `https://open-api-v4.coinglass.com/api/futures/liquidation/order` | 不明(鍵必須) | **試行して不可(HTTP 401。方法: GET、実測 2026-09-12)** | 2026-09-12 | `docs/DATA/probes/20260912_o3c_liquidation_history.log` | 未使用 |
+| CoinGlass 個別イベント清算(`/api/futures/liquidation/order`) | `https://open-api-v4.coinglass.com/api/futures/liquidation/order` | 不明(鍵必須) | **試行して不可(~~HTTP 401~~→HTTP 200(本文JSONが`code:401`「API key missing」)。方法: GET、実測 2026-09-12。訂正 2026-09-13、検収§2)** | 2026-09-12 | `docs/DATA/probes/20260912_o3c_liquidation_history.log` | 未使用 |
 | OKX 1分足(無期限、history-candles) | `https://www.okx.com/api/v5/market/history-candles?instId=BTC-USDT-SWAP&bar=1m` | 2020-01-01〜現在(2019-10-01は空、境界未特定) | 未試行(到達性・範囲のみ確認、本体未取得) | 2026-09-12 | `docs/DATA/probes/20260912_o3c_liquidation_history.log` | 未使用 |
 | Gate 1分足(無期限、futures candlesticks REST) | `https://api.gateio.ws/api/v4/futures/usdt/candlesticks?contract=BTC_USDT&interval=1m` | 直近 約5〜8日のみ(それ以前は"too long ago"で400) | **試行して不可(APIの遡及上限。方法: GET、from/toを5/8/10/15/30日前で実測、実測2026-09-12)** | 2026-09-12 | `docs/DATA/probes/20260912_o3c_liquidation_history.log` | 未使用 |
 | BitMEX 1分足(bucketed trade REST) | `https://www.bitmex.com/api/v1/trade/bucketed?binSize=1m&symbol=XBTUSD` | 2017-01-01に実データ確認(手元1秒足2017〜2021と重複区間あり) | 未試行(到達性のみ確認、本体は手元の1秒足から代替可能) | 2026-09-12 | `docs/DATA/probes/20260912_o3c_liquidation_history.log` | 未使用 |
@@ -152,7 +152,7 @@ CLAUDE.md §5.2 / research-squad SKILL §3 の規則により、本票で「試�
 2. Binance Vision UM `liquidationSnapshot` — 全シンボル・全期間で KeyCount=0(公開アーカイブ側の性質、経路とは無関係)。
 3. Bybit REST 全般 — この環境から HTTP 403(地域制限、既報の再確認)。
 4. Bybit・BitMEX の清算専用公開バルクアーカイブ — ディレクトリ一覧にフォルダ自体が存在しない。
-5. CoinGlass 個別イベント清算エンドポイント — HTTP 401(鍵必須)。
+5. CoinGlass 個別イベント清算エンドポイント — ~~HTTP 401~~→HTTP 200(本文JSONが`code:401`)(鍵必須)(訂正 2026-09-13、検収§2)。
 6. Gate 1 分足の 5〜8 日より前 — API 自体の遡及上限(400 "too long ago")。
 7. OKX 公式バルクダウンロード(推測パス) — HTTP 404。ただし正しい URL を特定できていないため「無い」ではなく**未確認**として扱う(取れないの4分類には入れていない)。
 

@@ -9,7 +9,7 @@
 `docs/DATA/surveys/O3C_PROCUREMENT_2026-09-12.md`、`docs/DATA.md` §2。**既知事項は繰り返さない**。
 本票は差分(未確認だった経路の実測・新たに判明した経路)のみを追加する。
 
-プローブの生ログ: `docs/DATA/probes/20260912_o3c_supp_b_oi_vap_gate1m.log`(63 エントリ、方法・URL・
+プローブの生ログ: `docs/DATA/probes/20260912_o3c_supp_b_oi_vap_gate1m.log`(~~63~~→61 エントリ(訂正 2026-09-13、検収§2、`grep -c`実測)、方法・URL・
 HTTP コード・バイト数・先頭200文字・UTC時刻)。方法はすべて GET。この環境の egress からの実測
 (`$HTTPS_PROXY` 経由の curl)。うち 1 件(Gate `contract_stats` limit=2000 の確認)は約1.2MBの応答
 だったが単発リクエストで一括ダウンロードではない。

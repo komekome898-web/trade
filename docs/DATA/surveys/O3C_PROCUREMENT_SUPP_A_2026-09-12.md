@@ -61,7 +61,7 @@ HTTPコード・バイト数・先頭200文字・UTC時刻)。方法はcurl(`$HT
 | **Kaiko** | 未試行(本票では検索していない) |
 | **CryptoTick** | 未試行(本票では検索していない) |
 | **archive.org**(public.bitmex.comの過去スナップショット) | **この環境からは到達不能**(WebFetchはweb.archive.orgをブロックリスト、curlはHTTPS接続リセット。方法・ログ[9]〜[14])。オーナーPCでの到達確認が必要 |
-| **CoinGlass** | 親票で既報(鍵必須、401)。BitMEX個別は未確認のまま |
+| **CoinGlass** | 親票で既報(鍵必須、~~401~~→HTTP 200・本文JSON `code:401`(訂正 2026-09-13、検収§2))。BitMEX個別は未確認のまま |
 
 ### (iii) ccxtの`fetchLiquidations`(bitmex)
 
@@ -87,7 +87,7 @@ PREFIXES = {"trade": "data/trade/", "quote": "data/quote/", "porl": "data/porl/"
 
 | カテゴリ | 経路 | 結果 |
 |---|---|---|
-| この環境 | `bitflyer.com/ja-jp/sfd`, `bitflyer.com/en-jp/sfd`, `bitflyer.com/ja-jp/faq/7-23`, `7-33` | **試行して不可(HTTP 403、WAFの`Access Denied`。方法: curl(HTTP/1.1・HTTP/2 双方)およびWebFetch、実測2026-09-12、ログ[17]〜[22])**。同じ環境から`lightning.bitflyer.com/docs`(APIリファレンス、別ホスト)は200で到達できており、**地域制限ではなくbitflyer.comメインサイトのWAF/Bot対策**と見られる(推定) |
+| この環境 | `bitflyer.com/ja-jp/sfd`, `bitflyer.com/en-jp/sfd`, `bitflyer.com/ja-jp/faq/7-23`, `7-33` | **試行して不可(HTTP 403、WAFの`Access Denied`。方法: curl(HTTP/1.1・HTTP/2 双方)およびWebFetch、実測2026-09-12、~~ログ[17]〜[22]~~→ログ[19]〜[22](訂正 2026-09-13、検収§2: [17]はcurlエラー52 Empty reply from server、[18]はcurlエラー92 HTTP/2 stream reset。いずれも403応答ではなくコネクションレベルの失敗のため根拠から除外。実際に403本文`Access Denied`が確認できるのは[19][20][21][22]のみ))**。同じ環境から`lightning.bitflyer.com/docs`(APIリファレンス、別ホスト)は200で到達できており、**地域制限ではなくbitflyer.comメインサイトのWAF/Bot対策**と見られる(推定) |
 | オーナーPC | 同上 | **PCでの到達確認が必要**(通常のブラウザ相当のアクセスであれば到達する可能性が高い=推定。この環境固有のブロックである可能性が高いため) |
 | 公開アーカイブ・API | `lightning.bitflyer.com/docs`(公式APIリファレンス) | 到達可能(200)だが、**証拠金維持率の数値しきい値(%)やロスカット発動条件の記載はAPIリファレンスには無い**(実測、ログ[24])。これらはFAQ/約款側の文書であり、APIドキュメントの対象外 |
 | 第三者データ | 個人ブログ・解説サイト(`zerokara-blog.com`, `zerozero-kasoutasuka.com`等、WebSearchのスニペットで確認) | **一次資料ではない**(本skill §5の規則により一次資料として不採用。参考情報としてのみ扱う) |
