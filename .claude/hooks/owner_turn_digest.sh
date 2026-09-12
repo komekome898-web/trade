@@ -23,6 +23,7 @@ if command -v git >/dev/null 2>&1 && [ -d "$ROOT/.git" ]; then
     fi
 fi
 
+BUDGET="$(grep -E "^\| 週間トークン上限" "$ROOT/docs/OWNER_STATUS.md" 2>/dev/null | awk -F"|" '{print $3}' | cut -c1-200 || true)"
 ROWS=""
 if [ -f "$ROOT/docs/OWNER_STATUS.md" ]; then
     # 太字で始まる行 = 進行中の項目と恒久規則。各行は 320 文字で切る(要点だけ)。
@@ -32,6 +33,7 @@ fi
 
 MSG="[状態板の要点 — 返答の前に読む(I-006)]
 ${HEART}
+トークン(最終報告値。自主上限 70% を超えたら重い工程を止める = 規則、提案ではない):${BUDGET}
 オーナーに今求めている行動:${NEXT:- (無し)}
 進行中の項目と恒久規則:
 ${ROWS:-(状態板が読めない)}

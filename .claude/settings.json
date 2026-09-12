@@ -30,6 +30,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Read|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .claude/hooks/budget_delegation_reminder.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionStart": [
