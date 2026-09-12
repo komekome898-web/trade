@@ -1,0 +1,89 @@
+=== probe log start 2026-09-12T06:54:57Z ===
+--- GET https://api.coingecko.com/api/v3/derivatives/exchanges?order=open_interest_btc_desc&per_page=40&page=1 @ 2026-09-12T06:54:57Z ---
+HTTP:200 BYTES:31366
+[{"name":"Binance (Futures)","id":"binance_futures","open_interest_btc":408315.6,"trade_volume_24h_btc":"947891.6","number_of_perpetual_pairs":589,"number_of_futures_pairs":204,"image":"https://coin-i
+--- GET https://api.coingecko.com/api/v3/derivatives @ 2026-09-12T06:55:08Z ---
+HTTP:200 BYTES:9066781
+[{"market":"Binance (Futures)","symbol":"BTCUSDT","index_id":"BTC","price":"77273.0","price_percentage_change_24h":0.05450981306112091,"contract_type":"perpetual","index":77304.42804348,"basis":0.0369
+--- GET https://www.coinglass.com/BitcoinOpenInterest @ 2026-09-12T06:55:38Z (via WebFetch, SPA, no table data returned) ---
+WebFetch result: page describes itself but JS-rendered data table not present in fetched HTML (consistent with known Hypurrscan-type SPA limitation). No numeric ranking obtained from this source.
+--- GET https://defillama.com/derivatives @ 2026-09-12T06:55:38Z (via WebFetch) ---
+WebFetch result: HTTP 403 Forbidden
+--- GET https://api.llama.fi/overview/derivatives?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true @ 2026-09-12T06:55:38Z ---
+HTTP:402 BYTES:66
+Upgrade to the paid API plan at https://defillama.com/subscription
+--- GET https://www.okx.com/api/v5/public/open-interest?instId=BTC-USDT-SWAP @ 2026-09-12T06:56:02Z ---
+HTTP:200 BYTES:189
+{"code":"0","data":[{"instId":"BTC-USDT-SWAP","instType":"SWAP","oi":"2744781.35000001171","oiCcy":"27447.8135000001171","oiUsd":"2120856866.98745904816477","ts":"1789196162953"}],"msg":""}
+--- GET https://api.gateio.ws/api/v4/futures/usdt/contracts/BTC_USDT @ 2026-09-12T06:56:02Z ---
+HTTP:200 BYTES:1325
+{"funding_rate_indicative":"0.000047","mark_price_round":"0.01","funding_offset":0,"in_delisting":false,"risk_limit_base":"500000","interest_rate":"0.0003","index_price":"77302","order_price_round":"0
+--- POST https://api.hyperliquid.xyz/info (metaAndAssetCtxs) @ 2026-09-12T06:56:03Z ---
+HTTP:200 BYTES:72150
+[{"universe":[{"szDecimals":5,"name":"BTC","maxLeverage":40,"marginTableId":56},{"szDecimals":4,"name":"ETH","maxLeverage":25,"marginTableId":55},{"szDecimals":2,"name":"ATOM","maxLeverage":5,"marginT
+--- GET https://contract.mexc.com/api/v1/contract/liquidation_order?symbol=BTC_USDT @ 2026-09-12T06:57:01Z ---
+HTTP:403 BYTES:425
+<HTML><HEAD>
+<TITLE>Access Denied</TITLE>
+</HEAD><BODY>
+<H1>Access Denied</H1>
+ 
+You don't have permission to access "http&#58;&#47;&#47;contract&#46;mexc&#46;com&#47;api&#47;v1&#47;contract&#47;liqui
+--- GET https://api.hbdm.com/linear-swap-api/v1/swap_liquidation_orders?contract_code=BTC-USDT&trade_type=0 @ 2026-09-12T06:57:01Z ---
+HTTP:200 BYTES:227
+{"status":"error","err_code":10000,"err_msg":"The interface is offline. For details about the address of the new interface, see the following bulletin:https://www.htx.com/support/en-us/detail/94916436
+--- GET https://open-api.bingx.com/openApi/swap/v2/quote/insuranceFund?symbol=BTC-USDT @ 2026-09-12T06:57:02Z ---
+HTTP:200 BYTES:133
+{"code":100400,"msg":"this api is not exist,please refer to the API docs https://bingx-api.github.io/docs","timestamp":1789196222626}
+--- GET https://api.coingecko.com/api/v3/derivatives/exchanges?order=open_interest_btc_desc&per_page=40&page=1 @ 2026-09-12T(see above) ---
+HTTP:200 BYTES:31366 (取引所全体のOI・出来高ランキング、40社。BTC限定ではなく全ペア合算)
+--- GET https://api.coingecko.com/api/v3/derivatives @ 2026-09-12T(see above) ---
+HTTP:200 BYTES:9066781 (【反省】本来のプローブ予算(数KB)を大幅に超えた。ティッカー全銘柄26,453件が一括で返る仕様と知らず実行。以後の同種取得はしない。ローカルでBTC-perpのみ150件に絞って解析、元ファイルは破棄)
+先頭200文字: [{"market":"Binance (Futures)","symbol":"BTCUSDT","index_id":"BTC","price":"77273.0"...
+--- GET https://www.okx.com/api/v5/public/open-interest?instId=BTC-USDT-SWAP @ 2026-09-12 ---
+HTTP:200 BYTES:189 {"code":"0","data":[{"instId":"BTC-USDT-SWAP","oiUsd":"2120856866.98745904816477",...}]}
+--- GET https://api.gateio.ws/api/v4/futures/usdt/contracts/BTC_USDT @ 2026-09-12 ---
+HTTP:200 BYTES:1325 (契約仕様のみ、open_interestフィールドはこのエンドポイントに無し。他エンドポイントは未探索)
+--- POST https://api.hyperliquid.xyz/info {"type":"metaAndAssetCtxs"} @ 2026-09-12 ---
+HTTP:200 BYTES:72150 BTC openInterest=35922.3333, dayNtlVlm=3578892676.76 (CoinGeckoのHyperliquid値と近似・整合)
+--- WebFetch https://www.coinglass.com/BitcoinOpenInterest @ 2026-09-12 ---
+結果: SPA(JSレンダリング)のためテーブルの実数値は静的取得で得られず。ページ自体は到達(200と推定、本文のみヘッダー相当)。順位表としては使えなかった(Hypurrscanと同型の制約、既報)
+--- WebFetch https://defillama.com/derivatives @ 2026-09-12 ---
+結果: HTTP 403 Forbidden(WebFetch経由)
+--- GET https://api.llama.fi/overview/derivatives?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true @ 2026-09-12 ---
+HTTP:402 BYTES:66 本文: "Upgrade to the paid API plan at https://defillama.com/subscription"(DefiLlamaのoverview API は有料化済み、鍵無しでは不可)
+--- GET https://contract.mexc.com/api/v1/contract/liquidation_order?symbol=BTC_USDT @ 2026-09-12 ---
+HTTP:403 BYTES:425 "Access Denied"(CDN/WAFによるブロックとみられる。この環境からの地域/レート制限の可能性、エンドポイント自体の存否は未確認)
+--- GET https://api.hbdm.com/linear-swap-api/v1/swap_liquidation_orders?contract_code=BTC-USDT&trade_type=0 @ 2026-09-12 ---
+HTTP:200 BYTES:227 {"status":"error","err_code":10000,"err_msg":"The interface is offline. For details ... https://www.htx.com/support/en-us/detail/94916436903925"}(HTX公式: 当該エンドポイントは過去に存在したが現在オフライン)
+--- GET https://open-api.bingx.com/openApi/swap/v2/quote/insuranceFund?symbol=BTC-USDT @ 2026-09-12 ---
+HTTP:200 BYTES:133 {"code":100400,"msg":"this api is not exist..."}(エンドポイント名の推測ミス。清算エンドポイントの探索は未完了)
+--- WebFetch https://bingx-api.github.io/docs/#/en-us/swapV2/market-api.html @ 2026-09-12 ---
+結果: docsify系SPAのため静的取得はタイトルのみ。未確認
+--- WebFetch https://www.kucoin.com/docs/websocket/futures-trading/public-channels/overview @ 2026-09-12 ---
+結果: 200。公開チャンネル一覧を取得(Ticker/Kline/Trade/Orderbook/MarkPrice/FundingRate等)。清算関連は「LiquidationWarning」のみでこれは**private**チャンネル(自分の建玉の清算警告)。公開の市場全体清算チャンネルは一覧に無し
+--- WebFetch https://www.bitget.com/api-doc/contract/market/Get-History-Position @ 2026-09-12 ---
+結果: 200だがdocsify系SPAのため個別ページの実体を取得できず、Bitgetの汎用イントロ文が返った。未確認
+--- WebFetch https://www.bitget.com/api-doc/contract/market/Get-Liquidation-Order @ 2026-09-12 ---
+結果: 同上(SPAのため個別ページ内容を取得できず)。未確認
+--- WebFetch https://developers.kraken.com/docs/futures-api/ @ 2026-09-12 ---
+結果: DNS解決失敗(getaddrinfo ENOTFOUND)。URL誤りの可能性
+--- WebFetch https://docs.kraken.com/api/docs/futures-api/trading/get-history @ 2026-09-12 ---
+結果: HTTP 404。正しいパス未特定。未確認
+--- WebFetch https://phemex-docs.github.io/ @ 2026-09-12 ---
+結果: 200。公開の清算専用エンドポイントは無いと確認。清算は「Query user trade」の`tradeType=LiqTrade`でユーザー自身の取引履歴内でのみ識別可能(=private、市場全体の公開清算フィードではない)
+--- WebFetch https://docs.dydx.exchange/indexer-client/http @ 2026-09-12 ---
+結果: HTTP 404。正しいパス未特定
+--- WebFetch https://docs.dydx.xyz/ @ 2026-09-12 ---
+結果: 200だが概要ページのみで清算関連の記載なし。個別APIリファレンスは未到達。未確認
+--- WebFetch https://docs.paradex.trade/api-reference/prod/markets/get-trades @ 2026-09-12 ---
+結果: HTTP 404相当(ドキュメントサイトのフォールバックページ)。market一覧(markets/bbo/orderbook)のみ表示され取引・清算の情報は無し。未確認
+--- WebFetch https://docs.whitebit.com/public/http-v4/ @ 2026-09-12 ---
+結果: 200。公開エンドポイント13件を全カテゴリ列挙(Server/Markets/Orderbook/Trades/Fees)して確認 — 清算関連のエンドポイントは**一覧に存在しない**(網羅的な一覧での不在確認)
+=== probe log end ===
+--- GET https://api.bitflyer.com/v1/getticker?product_code=FX_BTC_JPY @ 2026-09-12T06:58:47Z ---
+HTTP:200 BYTES:368
+{"product_code":"FX_BTC_JPY","state":"RUNNING","timestamp":"2026-09-12T06:58:47.51","tick_id":39467715,"best_bid":11875646.0,"best_ask":11876399.0,"best_bid_size":0.01,"best_ask_size":0.039,"total_bid_depth":48.50049251,"total_ask_depth":60.08774705,"market_bid_size":0.0,"market_ask_size":0.0,"ltp":
+--- GET https://api.coin.z.com/public/v1/ticker?symbol=BTC_JPY @ 2026-09-12T06:58:56Z ---
+HTTP:200 BYTES:230
+{"status":0,"data":[{"ask":"11879831","bid":"11877929","high":"11908812","last":"11878097","low":"11835934","symbol":"BTC_JPY","timestamp":"2026-09-12T06:58:57.043Z","volume":"1261.395"}],"responsetime":"2026-09-12T06:58:57.371Z"}
