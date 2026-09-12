@@ -1,5 +1,5 @@
 {
-  "updated_utc": "2026-09-11T21:31:51+00:00",
+  "updated_utc": "2026-09-11T21:56:55+00:00",
   "plan": {
     "trade": {
       "files": 3746,
@@ -14,11 +14,10 @@
       "missing_bytes": 66131305093
     }
   },
-  "downloaded_files": 275,
-  "downloaded_bytes": 63978540791,
-  "remaining_files": 8,
-  "remaining_bytes": 2152764302,
-  "rate_mb_s": 1.36,
+  "downloaded_files": 283,
+  "downloaded_bytes": 66131305093,
+  "remaining_files": 0,
   "failed": [],
-  "free_bytes": 178425761792
+  "free_bytes": 176239095808,
+  "note": "STATUS.json is the truth about what is on disk. A key listed in failed was attempted and did not complete; re-running retries it. A key in neither the directory nor failed was never attempted."
 }

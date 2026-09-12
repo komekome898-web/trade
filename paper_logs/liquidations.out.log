@@ -1,0 +1,245 @@
+2026-09-08T15:41:39+00:00 �L�^�J�n: ['binance_um', 'bybit', 'okx', 'bitmex'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-08T15:41:39+00:00 binance_um: �ڑ�
+2026-09-08T15:41:39+00:00 okx: �ڑ�
+2026-09-08T15:41:39+00:00 okx: -> okx_20260908.jsonl.gz
+2026-09-08T15:41:39+00:00 bitmex: �ڑ�
+2026-09-08T15:41:39+00:00 bitmex: -> bitmex_20260908.jsonl.gz
+2026-09-08T15:41:40+00:00 bybit: �ڑ�
+2026-09-08T15:41:40+00:00 bybit: -> bybit_20260908.jsonl.gz
+2026-09-08T18:18:30+00:00 bybit: �I�� 511 �s
+2026-09-08T18:18:30+00:00 okx: �I�� 1987 �s
+2026-09-08T18:18:32+00:00 bitmex: �I�� 379 �s
+2026-09-08T18:18:35+00:00 binance_um: �I�� 0 �s
+Traceback (most recent call last):
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\windows_events.py", line 463, in finish_socket_func
+    return ov.getresult()
+           ~~~~~~~~~~~~^^
+OSError: [WinError 64] �w�肳�ꂽ�l�b�g���[�N���͗��p�ł��܂���B
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\proactor_events.py", line 287, in _loop_reading
+    length = fut.result()
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\windows_events.py", line 807, in _poll
+    value = callback(transferred, key, ov)
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\windows_events.py", line 467, in finish_socket_func
+    raise ConnectionResetError(*exc.args)
+ConnectionResetError: [WinError 64] �w�肳�ꂽ�l�b�g���[�N���͗��p�ł��܂���B
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 137, in record_venue
+    raw = await asyncio.wait_for(ws.recv(), timeout=timeout)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\tasks.py", line 488, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\ryoma\trade\.venv\Lib\site-packages\websockets\asyncio\connection.py", line 316, in recv
+    raise self.protocol.close_exc from self.recv_exc
+websockets.exceptions.ConnectionClosedError: no close frame received or sent
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 190, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 183, in main
+    asyncio.run(run(venues, args.minutes))
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\runners.py", line 205, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 164, in run
+    await asyncio.gather(*(record_venue(v, deadline) for v in venues))
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 153, in record_venue
+    _log(f"{venue}: �ؒf {type(e).__name__}: {str(e)[:120]} "
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         f"\u2014 {backoff:.0f}s ��ɍĐڑ�")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 77, in _log
+    print(f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} {msg}", flush=True)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 91: illegal multibyte sequence
+2026-09-08T18:58:36+00:00 �L�^�J�n: ['binance_um', 'bybit', 'okx', 'bitmex'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-08T18:58:37+00:00 binance_um: �ڑ�
+2026-09-08T18:58:37+00:00 okx: �ڑ�
+2026-09-08T18:58:37+00:00 okx: -> okx_20260908.jsonl.gz
+2026-09-08T18:58:37+00:00 bitmex: �ڑ�
+2026-09-08T18:58:37+00:00 bitmex: -> bitmex_20260908.jsonl.gz
+2026-09-08T18:58:38+00:00 bybit: �ڑ�
+2026-09-08T18:58:38+00:00 bybit: -> bybit_20260908.jsonl.gz
+2026-09-08T20:10:22+00:00 bitmex: �I�� 174 �s
+2026-09-08T20:10:23+00:00 okx: �I�� 584 �s
+2026-09-08T20:10:23+00:00 bybit: �I�� 218 �s
+2026-09-08T20:10:28+00:00 binance_um: �I�� 0 �s
+Traceback (most recent call last):
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\windows_events.py", line 463, in finish_socket_func
+    return ov.getresult()
+           ~~~~~~~~~~~~^^
+OSError: [WinError 64] �w�肳�ꂽ�l�b�g���[�N���͗��p�ł��܂���B
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\proactor_events.py", line 287, in _loop_reading
+    length = fut.result()
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\windows_events.py", line 807, in _poll
+    value = callback(transferred, key, ov)
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\windows_events.py", line 467, in finish_socket_func
+    raise ConnectionResetError(*exc.args)
+ConnectionResetError: [WinError 64] �w�肳�ꂽ�l�b�g���[�N���͗��p�ł��܂���B
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 137, in record_venue
+    raw = await asyncio.wait_for(ws.recv(), timeout=timeout)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\tasks.py", line 488, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "C:\Users\ryoma\trade\.venv\Lib\site-packages\websockets\asyncio\connection.py", line 316, in recv
+    raise self.protocol.close_exc from self.recv_exc
+websockets.exceptions.ConnectionClosedError: no close frame received or sent
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 190, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 183, in main
+    asyncio.run(run(venues, args.minutes))
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\runners.py", line 205, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\ryoma\AppData\Local\Programs\Python\Python314\Lib\asyncio\base_events.py", line 720, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 164, in run
+    await asyncio.gather(*(record_venue(v, deadline) for v in venues))
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 153, in record_venue
+    _log(f"{venue}: �ؒf {type(e).__name__}: {str(e)[:120]} "
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         f"\u2014 {backoff:.0f}s ��ɍĐڑ�")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ryoma\trade\scripts\record_liquidations.py", line 77, in _log
+    print(f"{datetime.now(timezone.utc).isoformat(timespec='seconds')} {msg}", flush=True)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92: illegal multibyte sequence
+2026-09-08T21:00:39+00:00 �L�^�J�n: ['binance_um', 'bybit', 'okx', 'bitmex'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-08T21:00:42+00:00 binance_um: �ڑ�
+2026-09-08T21:00:42+00:00 okx: �ڑ�
+2026-09-08T21:00:42+00:00 bitmex: �ڑ�
+2026-09-08T21:00:42+00:00 bitmex: -> bitmex_20260908.jsonl.gz
+2026-09-08T21:00:42+00:00 okx: -> okx_20260908.jsonl.gz
+2026-09-08T21:00:42+00:00 bybit: �ڑ�
+2026-09-08T21:00:42+00:00 bybit: -> bybit_20260908.jsonl.gz
+2026-09-09T00:00:03+00:00 okx: -> okx_20260909.jsonl.gz
+2026-09-09T00:00:07+00:00 bybit: -> bybit_20260909.jsonl.gz
+2026-09-09T00:00:21+00:00 bitmex: -> bitmex_20260909.jsonl.gz
+2026-09-09T02:01:33+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx', 'bitmex'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-09T02:01:34+00:00 binance_cm: 接続
+2026-09-09T02:01:34+00:00 binance_um: 接続
+2026-09-09T02:01:34+00:00 okx: 接続
+2026-09-09T02:01:34+00:00 okx: -> okx_20260909.jsonl.gz
+2026-09-09T02:01:34+00:00 bitmex: 接続
+2026-09-09T02:01:34+00:00 bitmex: -> bitmex_20260909.jsonl.gz
+2026-09-09T02:01:34+00:00 bybit: 接続
+2026-09-09T02:01:34+00:00 bybit: -> bybit_20260909.jsonl.gz
+2026-09-09T02:01:36+00:00 binance_cm: -> binance_cm_20260909.jsonl.gz
+2026-09-09T08:58:24+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-09T08:58:30+00:00 bitmex: 接続
+2026-09-09T16:56:50+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-09T16:56:58+00:00 okx: 接続
+2026-09-09T18:59:02+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-09T18:59:05+00:00 okx: 接続
+2026-09-09T20:03:45+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-09T20:03:49+00:00 bitmex: 接続
+2026-09-09T22:37:13+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-09T22:37:16+00:00 bitmex: 接続
+2026-09-09T23:13:31+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-09T23:13:36+00:00 bitmex: 接続
+2026-09-10T00:00:02+00:00 okx: -> okx_20260910.jsonl.gz
+2026-09-10T00:00:03+00:00 binance_cm: -> binance_cm_20260910.jsonl.gz
+2026-09-10T00:00:12+00:00 bybit: -> bybit_20260910.jsonl.gz
+2026-09-10T00:00:17+00:00 bitmex: -> bitmex_20260910.jsonl.gz
+2026-09-10T18:15:51+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-10T18:15:55+00:00 bybit: 接続
+2026-09-10T20:20:13+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-10T20:20:16+00:00 bitmex: 接続
+2026-09-11T06:18:34+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx', 'bitmex'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-11T06:19:14+00:00 binance_cm: 接続
+2026-09-11T06:19:14+00:00 binance_um: 接続
+2026-09-11T06:19:14+00:00 bitmex: 接続
+2026-09-11T06:19:14+00:00 bitmex: -> bitmex_20260911.jsonl.gz
+2026-09-11T06:19:14+00:00 okx: 接続
+2026-09-11T06:19:14+00:00 bybit: 接続
+2026-09-11T06:19:14+00:00 okx: -> okx_20260911.jsonl.gz
+2026-09-11T06:19:14+00:00 bybit: -> bybit_20260911.jsonl.gz
+2026-09-11T06:19:21+00:00 binance_cm: -> binance_cm_20260911.jsonl.gz
+2026-09-11T08:11:18+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-09-11T08:11:29+00:00 okx: 接続
+2026-09-11T08:18:34+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx', 'bitmex'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-11T08:18:35+00:00 binance_cm: 接続
+2026-09-11T08:18:35+00:00 binance_um: 接続
+2026-09-11T08:18:35+00:00 okx: 接続
+2026-09-11T08:18:35+00:00 okx: -> okx_20260911.jsonl.gz
+2026-09-11T08:18:35+00:00 bitmex: 接続
+2026-09-11T08:18:35+00:00 bitmex: -> bitmex_20260911.jsonl.gz
+2026-09-11T08:18:36+00:00 bybit: 接続
+2026-09-11T08:18:36+00:00 bybit: -> bybit_20260911.jsonl.gz
+2026-09-11T08:18:39+00:00 binance_cm: -> binance_cm_20260911.jsonl.gz
+2026-09-11T10:37:21+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T10:37:24+00:00 okx: 接続
+2026-09-11T11:49:04+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T11:49:06+00:00 okx: 接続
+2026-09-11T16:41:55+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-09-11T16:41:58+00:00 okx: 接続
+2026-09-11T17:19:16+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T17:19:18+00:00 bybit: 接続
+2026-09-11T17:40:16+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T17:40:19+00:00 bitmex: 接続
+2026-09-11T19:44:06+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T19:44:09+00:00 bitmex: 接続
+2026-09-11T20:10:28+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T20:10:31+00:00 bybit: 接続
+2026-09-11T20:39:07+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T20:39:09+00:00 okx: 接続
+2026-09-11T21:37:13+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T21:37:17+00:00 bybit: 接続
+2026-09-11T21:39:31+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T21:39:34+00:00 bitmex: 接続
+2026-09-11T22:18:37+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-11T22:18:39+00:00 bybit: 接続
+2026-09-12T00:00:02+00:00 bitmex: -> bitmex_20260912.jsonl.gz
+2026-09-12T00:00:02+00:00 bybit: -> bybit_20260912.jsonl.gz
+2026-09-12T00:00:05+00:00 binance_cm: -> binance_cm_20260912.jsonl.gz
+2026-09-12T00:00:14+00:00 okx: -> okx_20260912.jsonl.gz
+2026-09-12T00:20:44+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx', 'bitmex'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-12T00:20:46+00:00 binance_cm: 接続
+2026-09-12T00:20:46+00:00 binance_um: 接続
+2026-09-12T00:20:46+00:00 okx: 接続
+2026-09-12T00:20:46+00:00 okx: okx_20260912.jsonl.gz の末尾メンバが不完全 -> okx_20260912.trunc1.jsonl.gz へ退避して新規作成
+2026-09-12T00:20:46+00:00 okx: -> okx_20260912.jsonl.gz
+2026-09-12T00:20:46+00:00 bybit: 接続
+2026-09-12T00:20:46+00:00 bitmex: 接続
+2026-09-12T00:20:46+00:00 bitmex: bitmex_20260912.jsonl.gz の末尾メンバが不完全 -> bitmex_20260912.trunc1.jsonl.gz へ退避して新規作成
+2026-09-12T00:20:46+00:00 bitmex: -> bitmex_20260912.jsonl.gz
+2026-09-12T00:20:46+00:00 bybit: bybit_20260912.jsonl.gz の末尾メンバが不完全 -> bybit_20260912.trunc1.jsonl.gz へ退避して新規作成
+2026-09-12T00:20:46+00:00 bybit: -> bybit_20260912.jsonl.gz
+2026-09-12T00:20:50+00:00 binance_cm: binance_cm_20260912.jsonl.gz の末尾メンバが不完全 -> binance_cm_20260912.trunc1.jsonl.gz へ退避して新規作成
+2026-09-12T00:20:50+00:00 binance_cm: -> binance_cm_20260912.jsonl.gz
