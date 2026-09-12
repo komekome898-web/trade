@@ -1,0 +1,22 @@
+2026-09-12T07:38:23Z === fetch_bitmex_insurance.py start proxy='http://127.0.0.1:39545' verify='/root/.ccr/ca-bundle.crt' ===
+2026-09-12T07:38:25Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=0&reverse=false HTTP 200 records=500
+2026-09-12T07:38:26Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:27Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=1000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:29Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=1500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:31Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=2000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:33Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=2500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:35Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=3000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:37Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=3500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:39Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=4000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:40Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=4500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:42Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=5000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:44Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=5500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:46Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=6000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:47Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=6500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:49Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=7000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:51Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=7500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:53Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=8000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:54Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=8500&reverse=false HTTP 200 records=500
+2026-09-12T07:38:56Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=9000&reverse=false HTTP 200 records=500
+2026-09-12T07:38:58Z GET https://www.bitmex.com/api/v1/insurance?count=500&start=9500&reverse=false HTTP 200 records=304
+2026-09-12T07:38:58Z === fetch complete: total_records=9804 ===
