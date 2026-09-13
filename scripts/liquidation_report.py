@@ -41,8 +41,12 @@ IS_LIQUIDATION = {
 
 
 def count_liquidations(venue: str, path: Path) -> tuple[int, int]:
-    """(清算メッセージ数, 全メッセージ数)。判定が無い venue は (-1, n)。"""
-    rows = read_rows(path).rows
+    """(清算メッセージ数, 全メッセージ数)。判定が無い venue は (-1, n)。
+
+    点検ツールなので `strict=False`(破損があっても例外にせず読めた分を使う。
+    破損そのものは `summarise()` 側の `truncated`/`error` で報告する)。
+    """
+    rows = read_rows(path, strict=False).rows
     pred = IS_LIQUIDATION.get(venue)
     if pred is None:
         return -1, len(rows)
@@ -83,6 +87,7 @@ def main() -> int:
             "file": path.name, "venue": s.venue, "messages": s.rows,
             "liquidations": liq, "span_utc": s.span_utc,
             "bad_lines": s.bad_lines, "truncated_tail": s.truncated_tail,
+            "truncated": s.truncated, "error": s.error,
             "backwards": s.backwards, "duplicate_recv_us": s.duplicate_recv_us,
             "gaps": [{"from_us": a, "sec": b} for a, b in s.gaps],
         })
@@ -100,6 +105,8 @@ def main() -> int:
     print("\n--- 健全性 ---")
     for r in report:
         notes = []
+        if r["truncated"]:
+            notes.append(f"**gzip 破損で読み切れていない({r['error']})**")
         if r["bad_lines"]:
             notes.append(f"**途中の壊れた行 {r['bad_lines']}**")
         if r["backwards"]:

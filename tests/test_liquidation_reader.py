@@ -12,7 +12,9 @@ import zlib
 
 import pytest
 
-from bot.research.liquidations import read_rows, read_text, summarise
+from bot.research.liquidations import (
+    LiquidationFileCorrupted, read_rows, read_text, summarise,
+)
 
 
 def _write_live_file(path, rows):
@@ -122,3 +124,113 @@ def test_duplicate_receive_times_are_surfaced(tmp_path):
     s = summarise(path)
     assert s.duplicate_recv_us == 1
     assert s.backwards == 1                                # 並びも巻き戻る
+
+
+# --------------------------------------------------------------------------- #
+# 2026-09-13 修正: gzip 破損で「0 行」を静かに返さない
+# (docs/DATA/probes/20260913_liquidation_integrity.md §5)
+# --------------------------------------------------------------------------- #
+
+def _closed_member(rows) -> bytes:
+    """1 メンバ、正常に閉じた(終端マーカーあり)gzip バイト列。"""
+    comp = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)
+    body = "".join(json.dumps(r) + "\n" for r in rows).encode()
+    return comp.compress(body) + comp.flush()
+
+
+def _corrupted_member(rows) -> bytes:
+    """gzip ヘッダは正しいが、最初の deflate バイトを壊した gzip バイト列。
+
+    `zlib.decompressobj.decompress()` が**何も返さないまま**
+    `zlib.error: invalid stored block lengths` を送出する
+    (`decompressobj` はこの手の途中破損で、直前まで解けたバイトを取りこぼす)。
+    実際の事故(2026-09-09 の BitMEX ファイル、2026-09-13 の 7 ファイル)と
+    同じ「解けた分ごと失う」性質を持つ、決定的に再現できる最小の破損。
+    """
+    blob = bytearray(_closed_member(rows))
+    blob[10] = 0x00                    # 10 バイト固定ヘッダの直後 = 最初の deflate バイト
+    return bytes(blob)
+
+
+def test_corrupted_first_member_raises_by_default(tmp_path):
+    """1 メンバ目が壊れているだけのファイル(メンバは他に無い)。
+
+    既定 (`strict=True`) では黙って 0 行を返さず、例外を上げる。
+    """
+    path = tmp_path / "bitmex_20260909.jsonl.gz"
+    path.write_bytes(_corrupted_member(_rows(20)))
+
+    with pytest.raises(LiquidationFileCorrupted):
+        read_rows(path)
+
+    res = read_rows(path, strict=False)
+    assert res.rows == []
+    assert res.truncated is True
+    assert res.error is not None
+
+
+def test_corruption_after_the_first_member_keeps_earlier_rows(tmp_path):
+    """1 メンバ目は無事、2 メンバ目が壊れている場合。
+
+    読めた(1 メンバ目の)行は捨てずに返し、`truncated=True` で異常を伝える。
+    既定では例外を上げ、`strict=False` を渡したときだけ部分結果が返る。
+    """
+    good = _rows(6)
+    bad = _rows(6, start=9_000_000)
+    path = tmp_path / "bybit_20260911.jsonl.gz"
+    path.write_bytes(_closed_member(good) + _corrupted_member(bad))
+
+    with pytest.raises(LiquidationFileCorrupted):
+        read_rows(path)
+
+    res = read_rows(path, strict=False)
+    assert len(res.rows) == 6
+    assert [r["raw"]["i"] for r in res.rows] == list(range(6))   # 1 メンバ目の分だけ
+    assert res.truncated is True
+    assert res.error is not None
+    assert res.members_found == 2
+    assert res.members_complete == 1
+
+
+def test_boundary_corruption_dead_member_glued_to_next_header(tmp_path):
+    """実際の事故の形: 旧クラッシュで、開きっぱなしのメンバの直後に
+    再起動後の新しいメンバのヘッダが区切りなく直結する(L-121)。
+
+    最後以外のメンバが終端マーカーに達しないのは境界破損の疑いとして扱う
+    (「記録中で開いている」は常に**最後の**メンバのはずだから)。
+    """
+    dying = _write_live_file(tmp_path / "_tmp_dying.jsonl.gz", _rows(4))
+    dead_bytes = dying.read_bytes()             # 終端マーカーの無い 1 メンバ
+    reborn = _closed_member(_rows(3, start=9_000_000))
+    path = tmp_path / "okx_20260911.jsonl.gz"
+    path.write_bytes(dead_bytes + reborn)       # 区切り無しで直結
+
+    with pytest.raises(LiquidationFileCorrupted):
+        read_rows(path)
+
+    res = read_rows(path, strict=False)
+    assert res.truncated is True
+    # 死んだメンバ側の行(書けていた分)+ 新メンバの 3 行、どちらも捨てられない
+    assert len(res.rows) >= 3
+    ids_from_new_member = {r["raw"]["i"] for r in res.rows if r["recv_us"] >= 9_000_000}
+    assert ids_from_new_member == {0, 1, 2}
+
+
+def test_truly_empty_file_is_distinct_from_corrupted_zero_rows(tmp_path):
+    """空ファイル(本当に 0 行)と、破損して 0 行のファイルを区別できること。"""
+    empty_path = tmp_path / "okx_20260913_empty.jsonl.gz"
+    empty_path.write_bytes(b"")
+    corrupt_path = tmp_path / "okx_20260913_corrupt.jsonl.gz"
+    corrupt_path.write_bytes(_corrupted_member(_rows(5)))
+
+    empty_res = read_rows(empty_path)           # 空ファイルは strict=True でも例外にならない
+    assert empty_res.rows == []
+    assert empty_res.truncated is False
+    assert empty_res.error is None
+
+    with pytest.raises(LiquidationFileCorrupted):
+        read_rows(corrupt_path)
+    corrupt_res = read_rows(corrupt_path, strict=False)
+    assert corrupt_res.rows == []
+    assert corrupt_res.truncated is True
+    assert corrupt_res.error is not None
