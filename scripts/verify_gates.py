@@ -21,8 +21,16 @@ GH = base64.b64decode("Z2g=").decode()
 FAIL = 0
 
 
-def act(cmd):
-    env = dict(os.environ, CLAUDE_PROJECT_DIR=ROOT)
+# **コマンドの形を測る節は、監査の状態に依存しない一時の root で回す(2026-09-13)。**
+# 旧版は実物のリポジトリで回していたため、**台帳の監査が「通す」の日は
+# `git push` が 0 を返し、試験が 18 件まとめて食い違った**。
+# 測りたいのは「関門がこのコマンドを押し出しと見なして掛かるか」であって、
+# 「いま押し出してよいか」ではない。root に台帳も git も無ければ、掛かった時点で必ず 2 になる。
+BARE = tempfile.mkdtemp()
+
+
+def act(cmd, root=None):
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=root or BARE)
     p = subprocess.run(["sh", AG], input=json.dumps({"tool_input": {"command": cmd}}),
                        capture_output=True, text=True, env=env, cwd=ROOT)
     return p.returncode
@@ -73,17 +81,17 @@ print("\n== 指紋の照合(フックを 1 バイト改変した状態) ==")
 bak = VM + ".bak"
 shutil.copy(VM, bak)
 open(VM, "a").write("\n#x\n")
-show(f"{P} {U} origin main # regen_hook_manifest.sh  ←改変中でも抜けられるか", act(f"{P} {U} origin main # regen_hook_manifest.sh"), 2)
-show("ls -la  ←改変中は普通の操作も止まるか", act("ls -la"), 2)
-show("sh scripts/regen_hook_manifest.sh  ←復旧路は改変中でも開くか", act("sh scripts/regen_hook_manifest.sh"), 0)
+show(f"{P} {U} origin main # regen_hook_manifest.sh  ←改変中でも抜けられるか", act(f"{P} {U} origin main # regen_hook_manifest.sh", ROOT), 2)
+show("ls -la  ←改変中は普通の操作も止まるか", act("ls -la", ROOT), 2)
+show("sh scripts/regen_hook_manifest.sh  ←復旧路は改変中でも開くか", act("sh scripts/regen_hook_manifest.sh", ROOT), 0)
 shutil.move(bak, VM)
-show("ls -la  ←復元後は通るか", act("ls -la"), 0)
+show("ls -la  ←復元後は通るか", act("ls -la", ROOT), 0)
 
 print("\n== MCP の GitHub ツール(既定は拒否。読み取りだけ通す) ==")
 
 
 def mcp(tool):
-    env = dict(os.environ, CLAUDE_PROJECT_DIR=ROOT)
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=BARE)
     p = subprocess.run(["sh", AG, "--mcp"], input=json.dumps({"tool_name": tool, "tool_input": {}}),
                        capture_output=True, text=True, env=env, cwd=ROOT)
     return p.returncode
@@ -208,5 +216,6 @@ write_log("判定: 止める", 10, sha_=hashlib.sha256(esc.encode()).hexdigest()
 show("判定が「止める」+ 逐語 + 行頭「上申:」(上申を含む本文で監査)", rep(esc, tmp)[0], 0)
 shutil.rmtree(tmp)
 
+shutil.rmtree(BARE, ignore_errors=True)
 print(f"\n食い違い: {FAIL} 件")
 raise SystemExit(1 if FAIL else 0)
