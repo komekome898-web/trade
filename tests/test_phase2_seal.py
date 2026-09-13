@@ -35,6 +35,21 @@ def _day(n: int) -> datetime:
 # 1. calendar boundary, uneven row density
 # ---------------------------------------------------------------------------
 
+
+def write_audit_record(root: Path, unit: str, stage: str) -> None:
+    """4 つ目の門(2026-09-13、L-164)が要求する監査の記録を、一時の root に置く。
+
+    本番では `owner-model-auditor` が返した逐語をリードが ACTION_LOG に転記する。
+    ここで同じ形を合成するのは、**門の「記録があれば通す」側も測るため**
+    (拒否される側しか測っていない、というのが 2026-09-13 の 3 本目の監査の指摘だった)。
+    """
+    log = root / "docs" / "AUDITOR" / "ACTION_LOG.md"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    body = "\n".join(f"> 指摘の本文 {i} 行目。これは監査役が書いた文である。" for i in range(1, 10))
+    log.write_text(f"## 試験\n\n監査対象: {unit}/{stage}\n**監査役**: `owner-model-auditor`\n\n"
+                   f"{body}\n\n判定: 通す\n", encoding="utf-8")
+
+
 def test_calendar_boundary_ignores_row_density():
     # 1000 rows crammed into day 0, then one row per day out to day 10 (11
     # calendar days total, span = 10 days). By ROW COUNT the 70th percentile
@@ -141,9 +156,20 @@ def test_load_sealed_refuses_with_wrong_token(root: Path, sealed_unit: dict, mon
         load_sealed("data/prices.csv", "u1", "wrong-token", root=root)
 
 
+def test_load_sealed_refuses_without_an_audit_record(root: Path, sealed_unit: dict,
+                                                     monkeypatch):
+    """4 つ目の門: 監査の記録が無ければ、他の 3 つが揃っていても開かない。"""
+    monkeypatch.setenv("PHASE2_FINAL_EVAL", "u1")
+    (seal_dir("u1", root) / "UNSEAL_APPROVED").write_text("owner ack\n")
+    with pytest.raises(SealedDataError) as e:
+        load_sealed("data/prices.csv", "u1", UNSEAL_TOKEN, root=root)
+    assert "監査" in str(e.value)
+
+
 def test_load_sealed_succeeds_with_all_three_and_logs(root: Path, sealed_unit: dict, monkeypatch):
     monkeypatch.setenv("PHASE2_FINAL_EVAL", "u1")
     (seal_dir("u1", root) / "UNSEAL_APPROVED").write_text("owner ack\n")
+    write_audit_record(root, "u1", "封印の開封")   # 4 つ目の門(L-164)
 
     df = load_sealed("data/prices.csv", "u1", UNSEAL_TOKEN, root=root)
     kept_days = sorted(parse_ts(t).date().day for t in df["ts_utc"])
