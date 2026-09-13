@@ -111,3 +111,20 @@ def test_require_audit_exits_with_2(tmp_path, unit, stage):
     with pytest.raises(SystemExit) as e:
         require_audit(unit, stage, tmp_path)
     assert e.value.code == 2
+
+
+def test_gate_ignores_the_key_quoted_in_prose(tmp_path):
+    """**鍵は行頭に固定されていること(14 本目の監査の一括点検)。**
+
+    台帳は監査役の指摘を逐語で載せるので、鍵の文字列が地の文の引用として現れる
+    (実例: ACTION_LOG 561 行目)。`find_audit` は「最後に現れた鍵」を節の先頭にするので、
+    行頭固定でないと**後から書いた引用が本物の記録を上書きする**。
+    """
+    from _research_audit_gate import find_audit
+    _audit_record(tmp_path, "U1", "結果")            # 本物(判定: 通す)
+    log = tmp_path / "docs" / "AUDITOR" / "ACTION_LOG.md"
+    log.write_text(log.read_text(encoding="utf-8")
+                   + "\n## 別の節\n\n> 監査役は「監査対象: U1/結果」の節を作れと書いた。\n"
+                     "\n判定: 止める\n", encoding="utf-8")
+    ok, why = find_audit("U1", "結果", tmp_path)
+    assert ok, f"地の文の引用が本物の記録を上書きしている: {why}"

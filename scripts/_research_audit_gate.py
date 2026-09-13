@@ -63,8 +63,14 @@ def find_audit(unit: str, stage: str, root: Path | str | None = None) -> tuple[b
 
     key = f"監査対象: {unit}/{stage}"
     start = None
+    # **鍵は行頭に固定する(2026-09-13、14 本目の監査の一括点検)。**
+    # 台帳は監査役の指摘を逐語で載せるので、**鍵の文字列が地の文の引用として現れる**
+    # (実例: ACTION_LOG 561 行目)。行のどこでも一致させると、引用から節が始まる。
+    # 13 本目で `_require_action_audit.sh` の同じ穴を直したが、**同じ根本原因を持つ箇所を
+    # 一度に洗い出していなかった**ため、14 本目で 2 か所目・3 か所目が出た。
+    # 監査役の処方: 「**1 箇所ずつのモグラ叩きでは終わらない。全部の鍵一致を一度に洗い出せ**」
     for i, line in enumerate(lines):
-        if key in line:
+        if line.startswith(key):
             start = i  # 最後に現れたものを使う
     if start is None:
         return False, f"「{key}」の節が {LOG_REL} に無い。**この一手はまだ監査を通していない。**"

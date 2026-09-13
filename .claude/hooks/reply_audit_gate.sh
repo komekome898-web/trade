@@ -80,7 +80,7 @@ except Exception:
 key = "返答sha256: " + sha
 start = None
 for i, l in enumerate(lines):
-    if key in l:
+    if l.startswith(key):   # **行頭に固定**(14 本目の監査の一括点検。地の文の引用を拾わない)
         start = i
 if start is None:
     out("NOSEC")
