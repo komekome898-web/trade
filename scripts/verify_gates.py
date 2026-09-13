@@ -127,7 +127,8 @@ def prepush(stdin_text):
 # 決めていた。ところが関門は「その範囲に ACTION_LOG の追記があるか」も見るので、
 # **期待値の立て方が関門の判定より甘く、実測が食い違った。**試験の側が間違っていた。
 def _temp_repo(verdict: str, stop_wired: bool, sample_today: bool = True,
-               sample_marker_only: bool = False, decoy_next_section: bool = False) -> str:
+               sample_marker_only: bool = False, decoy_next_section: bool = False,
+               prose_key_first: bool = False) -> str:
     import datetime, subprocess as sp, textwrap
     d = tempfile.mkdtemp()
     os.makedirs(os.path.join(d, "docs/AUDITOR")); os.makedirs(os.path.join(d, ".claude"))
@@ -146,7 +147,13 @@ def _temp_repo(verdict: str, stop_wired: bool, sample_today: bool = True,
     # 節の切り出しが壊れていれば、その別節の中身が今日の分として数えられる。
     decoy = (f"## 別の日の抜き取り\n\n抜き取り: 1999-01-01\n**監査役**: `owner-model-auditor`\n\n"
              f"{body}\n\n抜き取り判定: 通す\n\n" if decoy_next_section else "")
-    log = (f"## 監査\n\n監査対象: U1/結果\n**監査役**: `owner-model-auditor`\n\n{body}\n\n"
+    # **13 本目の監査が挙げた抜け道**: 台帳は監査役の指摘を逐語で載せるので、
+    # **地の文の中に鍵の文字列そのものが引用として現れる**。鍵が行頭に固定されていないと、
+    # その引用から節が始まり、無関係な地の文が今日の抜き取りとして数えられる。
+    prose = (f"## 引用を含む節\n\n> リードは「抜き取り: {today}」の 1 行だけを足せば通る、と指摘された。\n"
+             f"**監査役**: `owner-model-auditor`\n\n{body}\n\n抜き取り判定: 通す\n\n"
+             if prose_key_first else "")
+    log = (prose + f"## 監査\n\n監査対象: U1/結果\n**監査役**: `owner-model-auditor`\n\n{body}\n\n"
            + (f"## 本日の抜き取り\n\n抜き取り: {today}\n\n" + decoy if sample_marker_only else
               (f"## 抜き取り\n\n抜き取り: {today}\n**監査役**: `owner-model-auditor`\n\n{body}\n\n"
                f"抜き取り判定: 通す\n\n" if sample_today else ""))
@@ -179,6 +186,9 @@ for label, kw, want in [
     ("抜き取りの行だけ + 直後に別の日の正規の抜き取り節 → 止まる ←12 本目の監査",
      dict(verdict="通す", stop_wired=False, sample_marker_only=True,
           decoy_next_section=True), 1),
+    ("地の文に鍵の文字列が先に現れる(本物のマーカーは無し)→ 止まる ←13 本目の監査",
+     dict(verdict="通す", stop_wired=False, sample_today=False,
+          prose_key_first=True), 1),
 ]:
     d = _temp_repo(**kw)
     show(label, _prepush_in(d), want)
