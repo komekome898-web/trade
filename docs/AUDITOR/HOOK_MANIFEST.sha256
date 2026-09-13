@@ -1,0 +1,26 @@
+# フックと設定の指紋(2026-09-13 新設)
+#
+# オーナー指示(逐語、2026-09-13): 「なんでフックを自分で書き換える前提で話してる？
+# 私が指示した時以外変えないものでないとフックの意味をなさない。」
+#
+# 規則: フックと settings.json は**オーナーの指示があったときだけ**変更する。
+# 変更したら、同じコミットで (a) OWNER_LOG に指示の逐語を記録し (b) 本ファイルを再生成する。
+# 関門はこの指紋と実物を突き合わせ、食い違えば**すべての関門対象の操作を拒否する**。
+#
+# 再生成: sh scripts/regen_hook_manifest.sh
+5d7b9293b85c24b340f5ac5c524e10fb144f7a670d28dcb0bf2b44973d805228  .claude/hooks/action_audit_gate.sh
+c9e715899bcaaeb2aff6c878476405661f26d1db0ee327fc6144ddc488a95404  .claude/hooks/agent_delegation_reminder.sh
+cc0184712cc6ce0aaee5b2e4edf95dabcc25c1a8ec81ca1103e76542c9a33490  .claude/hooks/budget_delegation_reminder.sh
+5216fff7872b0a5061764003591e99ff75250de3af386b205aeb6c0c1bc17d81  .claude/hooks/git_push_audit_reminder.sh
+4c71fcaa383d34a1f47c2d5f2290563d1a711ac02f46db4d0c70a63b1e0e9a41  .claude/hooks/owner_turn_digest.sh
+cf9ccc4d91e78dc670710d4f277724ac2c4c7fac82c462bba90032736c8a78a6  .claude/hooks/prereg_source_reminder.sh
+e1f91bf168850a9b8fe91f0ddadcc1a9ad000e34bd19617d751f309e7024231f  .claude/hooks/session_start_digest.sh
+a0cc07a8e983bab853e6675150d9ead9ae1eea5232fee3ef69d1dc2e16e6314c  .claude/settings.json
+5d7b9293b85c24b340f5ac5c524e10fb144f7a670d28dcb0bf2b44973d805228  .claude/hooks/action_audit_gate.sh
+c9e715899bcaaeb2aff6c878476405661f26d1db0ee327fc6144ddc488a95404  .claude/hooks/agent_delegation_reminder.sh
+cc0184712cc6ce0aaee5b2e4edf95dabcc25c1a8ec81ca1103e76542c9a33490  .claude/hooks/budget_delegation_reminder.sh
+5216fff7872b0a5061764003591e99ff75250de3af386b205aeb6c0c1bc17d81  .claude/hooks/git_push_audit_reminder.sh
+4c71fcaa383d34a1f47c2d5f2290563d1a711ac02f46db4d0c70a63b1e0e9a41  .claude/hooks/owner_turn_digest.sh
+cf9ccc4d91e78dc670710d4f277724ac2c4c7fac82c462bba90032736c8a78a6  .claude/hooks/prereg_source_reminder.sh
+e1f91bf168850a9b8fe91f0ddadcc1a9ad000e34bd19617d751f309e7024231f  .claude/hooks/session_start_digest.sh
+3dca465fe1525c14dd764592c8f5682e125ea044cf02a725db60c001b91586bc  .claude/settings.json

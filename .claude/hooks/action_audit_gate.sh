@@ -52,6 +52,37 @@ printf '%s\n' "$NORM" | grep -Eq '^(/[^ ]*/)?gh +(pr +(create|merge|close|edit|r
 ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 cd "$ROOT" 2>/dev/null || exit 0
 
+# --- フックと設定の改竄の検知(2026-09-13、オーナー指示) ---
+# オーナー逐語: 「なんでフックを自分で書き換える前提で話してる？
+#               私が指示した時以外変えないものでないとフックの意味をなさない。」
+# 指紋が食い違えば**すべての関門対象の操作を拒否する**。
+MANIFEST="docs/AUDITOR/HOOK_MANIFEST.sha256"
+if [ -f "$MANIFEST" ]; then
+  BAD="$(grep -v '^#' "$MANIFEST" | grep -v '^$' | while read -r h f; do
+    [ -f "$f" ] || { printf '%s(消えている) ' "$f"; continue; }
+    cur="$(sha256sum "$f" | cut -d' ' -f1)"
+    [ "$cur" = "$h" ] || printf '%s ' "$f"
+  done)"
+  if [ -n "$BAD" ]; then
+    cat >&2 <<EOF
+[行動監査の関門] 操作を拒否した。**フックまたは設定が、台帳の指紋と食い違っている。**
+
+食い違ったファイル: ${BAD}
+
+オーナー逐語(2026-09-13):
+「**なんでフックを自分で書き換える前提で話してる？私が指示した時以外変えないものでないと
+フックの意味をなさない。**」
+
+**フックと settings.json は、オーナーの指示があったときだけ変更する。**
+変更した場合は、同じコミットで
+  (a) docs/OWNER_LOG.md に指示の逐語を記録し
+  (b) sh scripts/regen_hook_manifest.sh で指紋を再生成する
+こと。**指示が無いなら、変更を元に戻すこと。**
+EOF
+    exit 2
+  fi
+fi
+
 LOG="docs/AUDITOR/ACTION_LOG.md"
 
 # 未反映のコミット範囲を求める。上流が無い(初回 push)場合は HEAD の 1 つ手前から。
