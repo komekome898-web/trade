@@ -44,7 +44,9 @@ except Exception:
 # (2026-09-13 の監査で `git -C <path> push` が素通りすることが判明したため書き直した)
 NORM="$(printf '%s' "$CMD" | tr ';&|' '\n' | sed "s/^[[:space:]]*//; s/^bash -c ['\"]//; s/^sh -c ['\"]//")"
 printf '%s\n' "$NORM" | grep -Eq '^(/[^ ]*/)?git( +-C +[^ ]+)?( +-[^ ]+)* +push' && FIRE=1
-printf '%s\n' "$NORM" | grep -Eq '^(/[^ ]*/)?gh +(pr|repo|api|release|workflow)' && FIRE=1
+# gh は**書き込み系だけ**。`gh pr view` / `gh api`(読み取り)まで止めると、調べない方向に効く
+# (2026-09-13 の 2 回目の監査の指摘 5。オーナー: 「私が提案しないと調査範囲を広げないのはおかしくないですか？」)
+printf '%s\n' "$NORM" | grep -Eq '^(/[^ ]*/)?gh +(pr +(create|merge|close|edit|review|comment|ready)|repo +(create|delete|edit|fork|rename|archive)|release +(create|delete|edit|upload)|workflow +(run|enable|disable)|api +(-X *)?(POST|PUT|PATCH|DELETE))' && FIRE=1
 [ "$MCP" = "1" ] || [ "${FIRE:-0}" = "1" ] || exit 0
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
@@ -80,8 +82,23 @@ if printf '%s\n' "$CHANGED" | grep -qx "$LOG"; then
   ADDED="$(git diff "$RANGE" -- "$LOG" 2>/dev/null | grep '^+' | grep -v '^+++')"
   MISS=""
   printf '%s' "$ADDED" | grep -q 'owner-model-auditor' || MISS="${MISS} 監査役の名前"
-  printf '%s' "$ADDED" | grep -q '判定: *通す' || MISS="${MISS} 「判定: 通す」の行"
-  # 指摘の本文が 3 行以上(見出しだけの空の追記を弾く)
+  # **判定は「最後に現れた行」だけを見る。**
+  # 2026-09-13 の 2 回目の監査で判明した欠陥: 文字列 `判定: 通す` を追記のどこかから拾う実装だと、
+  # 「リードが自分で『判定: 通す』と書けば通る」という**指摘の本文の引用が、そのまま鍵になる**。
+  # 止まらないと書いた文章そのものが、止まらない鍵になっていた。
+  # 判定は「**行頭が `判定:` の行**のうち、最後のもの」だけを見る。
+  # 行頭に限るのは、地の文の中の引用(例: 「リードが自分で『判定: 通す』と書けば通る」)を
+  # 判定として拾わないため。2026-09-13 の 2 回目の監査で、まさにそれが起きた。
+  VERDICT_LINE="$(printf '%s\n' "$ADDED" | grep '^+判定:' | tail -1)"
+  if [ -z "$VERDICT_LINE" ]; then
+    MISS="${MISS} 行頭の「判定:」の行"
+  else
+    case "$VERDICT_LINE" in
+      "+判定: 通す"*) ;;
+      *) MISS="${MISS} 最後の判定が [${VERDICT_LINE#+}] (行頭の判定が「判定: 通す」でなければ push しない)" ;;
+    esac
+  fi
+  # 指摘の本文が 8 行以上(見出しだけの空の追記を弾く)
   [ "$(printf '%s' "$ADDED" | wc -l)" -ge 8 ] || MISS="${MISS} 指摘の本文"
   if [ -z "$MISS" ]; then exit 0; fi
   cat >&2 <<EOF
