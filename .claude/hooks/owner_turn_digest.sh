@@ -35,7 +35,9 @@ MSG="[状態板の要点 — 返答の前に読む(I-006)]
 ${HEART}
 トークン(最終報告値。自主上限 70% を超えたら重い工程を止める = 規則、提案ではない):${BUDGET}
 オーナーに今求めている行動:${NEXT:- (無し)}
-規則: オーナーに見える文は日本語のみ / 有料インフラは提案しない / 出力の再送を求めない。詳細は docs/OWNER_STATUS.md(必要なときに自分で読む)"
+オーナーの規則(逐語): 日本語のみ(L-126)/ 有料インフラは提案しない(L-124)
+リードの規則(オーナーの指示ではない。経緯 L-122「やってるやろいい加減にしろや」): PC の状態は届いたものから自分で確かめる
+詳細は docs/OWNER_STATUS.md(必要なときに自分で読む)"
 
 ESCAPED="$(printf '%s' "$MSG" | sed 's/\\/\\\\/g; s/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')"
 printf '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"%s"}}' "$ESCAPED"
