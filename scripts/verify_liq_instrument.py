@@ -382,6 +382,15 @@ def run_tie_scenario() -> dict:
 
 
 def main() -> int:
+    # **ホライズンを指定できるようにする(2026-09-13、測定後監査の指摘)。**
+    # 旧版は 15 分に固定。09-13 の実欠陥は「1 分バーの終値」が原因でタイが起きたので、
+    # **短いホライズンほどタイが起きやすいはず**。射程に書くより測る方が安い。
+    import argparse as _ap
+    global HORIZON_MIN
+    _a = _ap.ArgumentParser()
+    _a.add_argument("--horizon", type=int, default=HORIZON_MIN,
+                    help="反応を測る水平線(分)。既定 15")
+    HORIZON_MIN = _a.parse_args().horizon
     print("=" * 78)
     print("O-3c 測定器(liq_response.py)の合成データ検証")
     print("=" * 78)
