@@ -1,0 +1,9 @@
+real_long      n= 3314 tie= 2611( 78.8%) tie内訳: fine無し=    0 fine=0  1843 fine≠0   768 | 非タイで両方符号あり=  701 一致=  499(71.2%) tie窓の継続秒 中央=0.0
+real_short     n= 2288 tie= 1931( 84.4%) tie内訳: fine無し=    0 fine=0  1490 fine≠0   441 | 非タイで両方符号あり=  357 一致=  273(76.5%) tie窓の継続秒 中央=0.0
+placebo_long   n=  394 tie=    1(  0.3%) tie内訳: fine無し=    1 fine=0     0 fine≠0     0 | 非タイで両方符号あり=    0 一致=    0(nan%) tie窓の継続秒 中央=60.0
+placebo_short  n=  299 tie=    0(  0.0%) tie内訳: fine無し=    0 fine=0     0 fine≠0     0 | 非タイで両方符号あり=    0 一致=    0(nan%) tie窓の継続秒 中央=nan
+noliq_long     n= 3314 tie= 2630( 79.4%) tie内訳: fine無し= 2630 fine=0     0 fine≠0     0 | 非タイで両方符号あり=    0 一致=    0(nan%) tie窓の継続秒 中央=0.0
+noliq_short    n= 2288 tie= 1921( 84.0%) tie内訳: fine無し= 1921 fine=0     0 fine≠0     0 | 非タイで両方符号あり=    0 一致=    0(nan%) tie窓の継続秒 中央=0.0
+real_long      継続秒 min=0.0 p50=0.0 p90=56.1 max=406.0
+placebo_long   継続秒 min=60.0 p50=60.0 p90=60.0 max=60.0
+noliq_long     継続秒 min=0.0 p50=0.0 p90=56.1 max=406.0

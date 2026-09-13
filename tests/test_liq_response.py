@@ -293,3 +293,152 @@ def test_load_binance_cm_liquidations_raises_when_no_zip_found(tmp_path):
     empty.mkdir()
     with pytest.raises(FileNotFoundError):
         load_binance_cm_liquidations(empty)
+
+
+# --------------------------------------------------------------------------- #
+# 転換(内部の値動き × その後の反応): タイを黙って落とさない
+#
+# 段 0 の実行スクリプト(`scripts/run_o3c_stage0.py` の内側で操作的に定義された
+# `reversal()`)は `internal_bp == 0` の行を NaN として落としていた。カスケードは
+# 1 分バーに収まることが多く、タイは実群で 8 割・プラセボで 0% と**群間で非対称**に
+# 出るため、非無作為な部分集合と全体を比べる形になっていた。以下はその再発防止。
+# --------------------------------------------------------------------------- #
+
+def _rev_row(cid, internal_bp, bp, first_price=None, last_price=None, start_ms=0):
+    """転換の計算に必要な列だけを持つ合成行。"""
+    return {
+        "cascade_id": cid, "start_ms": start_ms, "end_ms": start_ms + 10_000,
+        "internal_bp": internal_bp, "bp_1m": bp,
+        "first_price": first_price, "last_price": last_price,
+        "anchor_price": 100.0,
+    }
+
+
+def test_reversal_default_keeps_ties_and_drops_no_rows():
+    """既定(`tie_policy="keep"`)ではタイの行が 1 つも落ちない。"""
+    from bot.research.liq_response import reversal_scores
+
+    rows = [
+        _rev_row("a", 5.0, 10.0),    # 内部 +、反応 + → 転換 -10
+        _rev_row("b", 0.0, 10.0),    # タイ
+        _rev_row("c", 0.0, -4.0),    # タイ
+        _rev_row("d", -2.0, 6.0),    # 内部 -、反応 + → 転換 +6
+    ]
+    g = reversal_scores(rows, "bp_1m", name="real")
+    assert g.n_rows == 4
+    assert g.n_used == 4                      # 1 行も落ちていない
+    assert g.n_excluded == 0 and g.n_excluded_tie == 0
+    assert g.exclusion_rate == 0.0
+    assert g.n_tie == 2 and g.tie_rate == 0.5
+    assert g.scores == [-10.0, 0.0, 0.0, 6.0]  # タイは符号 0 = 別の水準として残る
+    assert g.mean == (-10.0 + 0.0 + 0.0 + 6.0) / 4
+
+
+def test_reversal_drop_reports_the_number_it_excluded():
+    """除外を選んだときは、除外件数と除外率が戻り値に必ず現れる。"""
+    from bot.research.liq_response import reversal_scores
+
+    rows = [_rev_row("a", 5.0, 10.0), _rev_row("b", 0.0, 10.0), _rev_row("c", 0.0, -4.0),
+            _rev_row("d", -2.0, 6.0)]
+    g = reversal_scores(rows, "bp_1m", name="real", tie_policy="drop")
+    assert g.n_rows == 4
+    assert g.n_tie == 2
+    assert g.n_excluded_tie == 2               # 黙って消えない
+    assert g.n_used == 2 and g.scores == [-10.0, 6.0]
+    assert g.exclusion_rate == 0.5
+    # 行数の内訳は必ず閉じる(どこかへ消えた行が無い)
+    assert g.n_rows == g.n_used + g.n_excluded_tie + g.n_excluded_missing
+
+
+def test_reversal_missing_values_counted_separately_from_ties():
+    """本物の欠測(NaN)はタイとは別に数える。どの方針でも集計には入れない。"""
+    from bot.research.liq_response import reversal_scores
+
+    rows = [_rev_row("a", 5.0, 10.0), _rev_row("b", float("nan"), 10.0),
+            _rev_row("c", 5.0, float("nan")), _rev_row("d", 0.0, 3.0)]
+    g = reversal_scores(rows, "bp_1m", name="real")
+    assert g.n_excluded_missing == 2
+    assert g.n_tie == 1 and g.n_excluded_tie == 0
+    assert g.n_used == 2
+    assert g.n_rows == g.n_used + g.n_excluded_tie + g.n_excluded_missing
+
+
+def test_reversal_raises_when_groups_are_excluded_at_different_rates():
+    """群間の除外率が大きく違えば、警告ではなく例外(既定 strict=True)。"""
+    import pytest
+
+    from bot.research.liq_response import ReversalExclusionImbalance, compute_reversal
+
+    # 実群は 8 割がタイ、対照はタイ無し(段 0 で実際に起きた形)
+    real = [_rev_row(f"r{i}", 0.0, 1.0) for i in range(8)] + \
+           [_rev_row(f"r{i}", 3.0, 1.0) for i in range(8, 10)]
+    control = [_rev_row(f"c{i}", 3.0, 1.0) for i in range(10)]
+
+    with pytest.raises(ReversalExclusionImbalance) as ei:
+        compute_reversal({"real": real, "placebo": control}, "bp_1m", tie_policy="drop")
+    msg = str(ei.value)
+    assert "80.0%" in msg and "0.0%" in msg      # 群ごとの除外率が本文に出る
+
+    # 既定(タイを落とさない)なら除外が起きないので例外にならない
+    rep = compute_reversal({"real": real, "placebo": control}, "bp_1m")
+    assert rep.max_exclusion_gap == 0.0
+    assert rep.exclusion_rates == {"real": 0.0, "placebo": 0.0}
+    assert rep.groups["real"].n_tie == 8
+
+    # 診断目的で通したいときは strict=False を明示する(そのとき除外率は残る)
+    rep2 = compute_reversal({"real": real, "placebo": control}, "bp_1m",
+                            tie_policy="drop", strict=False)
+    assert rep2.exclusion_rates == {"real": 0.8, "placebo": 0.0}
+    assert rep2.max_exclusion_gap == 0.8
+    assert [r["n_excluded_tie"] for r in rep2.summary_rows()] == [8, 0]
+
+
+def test_reversal_refine_uses_cascade_prices_when_the_minute_bar_collapses():
+    """1 分バーの終値では潰れるが `first_price`/`last_price` では区別できる行。
+
+    カスケードが 1 本のバーに収まると粗い内部方向は 0(タイ)になる。`refine` は
+    その行だけカスケード自身の価格で符号を取り直し、**それでも決まらない行は
+    落とさずに 0 のまま残す**。
+    """
+    from bot.research.liq_response import reversal_scores
+
+    rows = [
+        # バーでは潰れる(0)が、清算約定の価格は 100.0 → 99.0(内部 -)
+        _rev_row("collapsed_down", 0.0, 8.0, first_price=100.0, last_price=99.0),
+        # バーでは潰れる(0)が、清算約定の価格は 100.0 → 101.0(内部 +)
+        _rev_row("collapsed_up", 0.0, 8.0, first_price=100.0, last_price=101.0),
+        # 細かい価格でも動いていない → タイのまま(落とさない)
+        _rev_row("really_flat", 0.0, 8.0, first_price=100.0, last_price=100.0),
+        # 対照窓は first/last を持たない → タイのまま(落とさない)
+        _rev_row("control_like", 0.0, 8.0, first_price=None, last_price=None),
+    ]
+    fine = reversal_scores(rows, "bp_1m", name="real", tie_policy="refine")
+    assert fine.n_rows == 4 and fine.n_used == 4 and fine.n_excluded == 0
+    assert fine.n_tie == 4 and fine.n_tie_resolved == 2
+    assert fine.scores == [8.0, -8.0, 0.0, 0.0]
+
+    # 既定(keep)では 4 行ともタイのまま = 0。落ちる行はどちらでも無い。
+    kept = reversal_scores(rows, "bp_1m", name="real")
+    assert kept.scores == [0.0, 0.0, 0.0, 0.0] and kept.n_used == 4
+
+
+def test_attach_internal_direction_marks_ties_not_nan_and_keeps_every_row():
+    """1 分バーの終値で作った価格系列では、1 分に収まる窓の内部方向は 0(NaN ではない)。"""
+    from bot.research.liq_response import attach_internal_direction, compute_reactions
+
+    # 1 分ごとの終値だけを持つ系列(段 0 の実行と同じ作り)
+    bars = [(m * 60_000, 100.0 + m) for m in range(0, 10)]
+    prices = PriceSeries.from_trades(bars)
+    # 分 3 の内側で始まり内側で終わるカスケード(3:10 → 3:40)
+    inside = Cascade("x_real_000000", "x", "real", 190_000, 220_000, 2, 10.0, "long", 100.5, 99.5)
+    # 分 3 から分 5 にまたがるカスケード
+    across = Cascade("x_real_000001", "x", "real", 190_000, 310_000, 2, 10.0, "long", 100.5, 99.5)
+    rows = compute_reactions([inside, across], prices, horizons_min=(1,))
+    attach_internal_direction(rows, prices)
+
+    assert len(rows) == 2                       # 行は落ちない
+    assert rows[0]["internal_bp"] == 0.0        # 同じバーの終値どうし = タイ(NaN ではない)
+    assert rows[1]["internal_bp"] != 0.0        # バーをまたげば符号が付く
+    assert not math.isnan(rows[0]["internal_bp"])
+    # 細かい分解能(カスケード自身の価格)では、収まった窓にも符号がある
+    assert rows[0]["internal_bp_fine"] < 0.0

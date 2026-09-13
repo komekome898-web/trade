@@ -15,6 +15,10 @@
 3. `sample_placebo_windows` / `sample_no_liquidation_windows` — 対照群
    (清算を伴わない出来高急増 / 清算の無い時間帯)を、カスケードと同じ形
    (開始・終了・規模)で作る。
+4. `attach_internal_direction` / `reversal_scores` / `compute_reversal` — 「転換」
+   (内部の値動きと、その後の反応の符号が逆か)。**タイ(内部の値動きがちょうど 0)を
+   既定では落とさず**、落とす場合も件数と群ごとの除外率を必ず戻り値に載せ、
+   除外率が群間で離れたら既定で例外にする(`ReversalExclusionImbalance`)。
 
 ## 時刻の扱い(取引所ごと。全て UTC ms に正規化してから扱う)
 
@@ -352,6 +356,283 @@ def compute_reactions(
             row[col] = float("nan") if fut is None else (fut[1] - anchor[1]) / anchor[1] * 10_000.0
         rows.append(row)
     return rows
+
+
+# --------------------------------------------------------------------------- #
+# 核 3-bis: 「転換」(内部の値動きと、その後の反応の符号が逆か)
+#
+# 段 0 の実行スクリプトが実行時に操作的に定義した統計量を、測定器の側に移したもの。
+# 実行時の定義は `internal_bp == 0`(タイ)の行を **NaN として黙って落として**いた。
+# カスケードは数秒〜数十秒で終わるため 1 分バーでは起点と終点が同じ終値になり、
+# タイは実カスケードで 8 割、窓の長いプラセボで 0% と **群間で非対称に**発生する。
+# ここでは (a) 既定でタイを落とさない、(b) 落とした件数を必ず返す、
+# (c) 群ごとの除外率を必ず返す、(d) 除外率が群間で離れたら既定で例外、とする。
+# --------------------------------------------------------------------------- #
+
+TiePolicy = Literal["keep", "drop", "refine"]
+
+INTERNAL_BP_KEY = "internal_bp"
+INTERNAL_BP_FINE_KEY = "internal_bp_fine"
+
+
+class ReversalExclusionImbalance(RuntimeError):
+    """群ごとの除外率が離れすぎているときに `compute_reversal(strict=True)` が送出する。
+
+    「黙って落とした部分集合どうしを比べていた」という事故(段 0 の転換指標)を
+    二度と静かに通さないためのもの。`liquidations.read_rows` と同じ約束で、
+    **既定が strict=True**、診断目的でどうしても通したいときだけ `strict=False`。
+    """
+
+
+def _as_float(v: object) -> float:
+    """数にならないもの(None・空欄・文字列 "nan")は NaN にする。**0.0 にはしない。**"""
+    if v is None:
+        return float("nan")
+    try:
+        return float(v)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return float("nan")
+
+
+def _sign(x: float) -> float:
+    """符号。**タイ(0)は 0 を返す**(NaN にしない)。NaN は NaN のまま。"""
+    if x != x:  # NaN
+        return float("nan")
+    if x > 0:
+        return 1.0
+    if x < 0:
+        return -1.0
+    return 0.0
+
+
+def attach_internal_direction(
+    rows: Sequence[dict],
+    prices: PriceSeries,
+    max_staleness_ms: int | None = 300_000,
+    key: str = INTERNAL_BP_KEY,
+    fine_key: str = INTERNAL_BP_FINE_KEY,
+) -> list[dict]:
+    """各行に「内部の値動き」(窓の始め → 終わりの価格変化、bp)を 2 つの分解能で付ける。
+
+    - `key`(**粗い**。段 0 の判定時と逐語で同じ定義): 価格系列から
+      `at_or_before(start_ms)` を起点、行の `anchor_price`(= `at_or_before(end_ms)`)を終点にする。
+      価格系列が 1 分バーの終値のとき、**窓が 1 本のバーに収まれば起点と終点は同じ終値**になり、
+      値はちょうど 0(タイ)になる。これは欠測ではなく**分解能の不足**である。
+    - `fine_key`(**細かい**): カスケード自身が持つ `first_price` / `last_price`
+      (清算約定そのものの価格)から計算する。両方ある行だけで、
+      **対照窓(プラセボ・無清算窓)は持たないので NaN**。
+
+    行は**落とさない**(`compute_reactions` と同じ約束)。引けない行は NaN を入れるだけ。
+    戻り値は入力の `rows` そのもの(その場で書き込む)。
+    """
+    for r in rows:
+        anchor_start = prices.at_or_before(int(r["start_ms"]), max_staleness_ms)
+        end_price = _as_float(r.get("anchor_price"))
+        if anchor_start is None or end_price != end_price or not anchor_start[1]:
+            r[key] = float("nan")
+        else:
+            sp = anchor_start[1]
+            r[key] = (end_price - sp) / sp * 10_000.0
+
+        fp, lp = _as_float(r.get("first_price")), _as_float(r.get("last_price"))
+        if fp != fp or lp != lp or fp == 0.0:
+            r[fine_key] = float("nan")
+        else:
+            r[fine_key] = (lp - fp) / fp * 10_000.0
+    return list(rows)
+
+
+def _fine_internal_bp(row: dict, fine_key: str = INTERNAL_BP_FINE_KEY) -> float:
+    """細かい分解能の内部方向。`fine_key` が無ければ `first_price`/`last_price` から作る。
+
+    `attach_internal_direction` を通していない行(`compute_reactions` の出力そのまま)でも
+    `tie_policy="refine"` が働くようにするため。作れない行は NaN(0.0 にしない)。
+    """
+    v = _as_float(row.get(fine_key))
+    if v == v:
+        return v
+    fp, lp = _as_float(row.get("first_price")), _as_float(row.get("last_price"))
+    if fp != fp or lp != lp or fp == 0.0:
+        return float("nan")
+    return (lp - fp) / fp * 10_000.0
+
+
+@dataclass(frozen=True)
+class ReversalGroup:
+    """1 群ぶんの転換スコアと、**何を落としたかの内訳**。
+
+    `scores` は実際に集計に使える有限値だけを並べたもの。落とした行は必ず
+    `n_excluded_tie` / `n_excluded_missing` のどちらかに数えられ、
+    `n_rows == len(scores) + n_excluded_tie + n_excluded_missing` が常に成り立つ。
+    """
+
+    name: str
+    n_rows: int
+    scores: list[float]
+    n_tie: int                 # 粗い内部方向が 0 だった行(方針に関わらず数える)
+    n_tie_resolved: int        # そのうち細かい分解能で符号が付いた行(refine のときのみ)
+    n_excluded_tie: int        # タイとして除外した行(drop のときのみ > 0)
+    n_excluded_missing: int    # 内部方向か反応 bp が NaN で計算できなかった行
+
+    @property
+    def n_used(self) -> int:
+        return len(self.scores)
+
+    @property
+    def n_excluded(self) -> int:
+        return self.n_excluded_tie + self.n_excluded_missing
+
+    @property
+    def exclusion_rate(self) -> float:
+        """除外率(0 行なら NaN。**0 を返して「除外なし」に見せない**)。"""
+        if self.n_rows == 0:
+            return float("nan")
+        return self.n_excluded / self.n_rows
+
+    @property
+    def tie_rate(self) -> float:
+        if self.n_rows == 0:
+            return float("nan")
+        return self.n_tie / self.n_rows
+
+    @property
+    def mean(self) -> float:
+        if not self.scores:
+            return float("nan")
+        return sum(self.scores) / len(self.scores)
+
+
+@dataclass(frozen=True)
+class ReversalReport:
+    """群をまたいだ転換スコアの計算結果。**除外率を群ごとに必ず持ち歩く。**"""
+
+    bp_key: str
+    tie_policy: TiePolicy
+    groups: dict[str, ReversalGroup]
+
+    @property
+    def exclusion_rates(self) -> dict[str, float]:
+        return {name: g.exclusion_rate for name, g in self.groups.items()}
+
+    @property
+    def max_exclusion_gap(self) -> float:
+        """群どうしの除外率の差の最大値(1 群以下なら 0.0)。NaN の群は除く。"""
+        rates = [r for r in self.exclusion_rates.values() if r == r]
+        if len(rates) < 2:
+            return 0.0
+        return max(rates) - min(rates)
+
+    def scores(self, name: str) -> list[float]:
+        return self.groups[name].scores
+
+    def summary_rows(self) -> list[dict]:
+        """表に貼れる形(1 群 1 行)。件数と除外率を必ず含む。"""
+        return [
+            {
+                "group": g.name, "n_rows": g.n_rows, "n_used": g.n_used,
+                "n_tie": g.n_tie, "n_tie_resolved": g.n_tie_resolved,
+                "n_excluded_tie": g.n_excluded_tie,
+                "n_excluded_missing": g.n_excluded_missing,
+                "exclusion_rate": g.exclusion_rate, "tie_rate": g.tie_rate,
+                "mean": g.mean,
+            }
+            for g in self.groups.values()
+        ]
+
+
+def reversal_scores(
+    rows: Sequence[dict],
+    bp_key: str,
+    name: str = "group",
+    tie_policy: TiePolicy = "keep",
+    internal_key: str = INTERNAL_BP_KEY,
+    fine_key: str = INTERNAL_BP_FINE_KEY,
+) -> ReversalGroup:
+    """1 群ぶんの転換スコア `-sign(内部の値動き) × 反応bp` を作る。
+
+    `tie_policy`(**既定は `"keep"` = 落とさない**):
+
+    - `"keep"`: タイ(内部の値動きがちょうど 0)を**別の水準として残す**。
+      `sign = 0` なのでスコアは 0 になる(「どちらへも転換していない」)。
+      **行は落ちない**ので群ごとの件数が非対称に減らない。
+      ただし推定量は「タイを 0 と見なした平均」であり、`"drop"` の平均とは**別の量**である。
+    - `"drop"`: タイを除外する(段 0 の実行時の振る舞い)。**除外件数は必ず
+      `n_excluded_tie` に現れる。**群間で除外率が違えば `compute_reversal` が例外にする。
+    - `"refine"`: タイの行だけ**分解能を上げて**判定し直す。粗い内部方向(1 分バーの終値差)が
+      0 でも、カスケード自身の `first_price` → `last_price` に符号があればそれを使う
+      (`fine_key` があればそれを、無ければ `first_price`/`last_price` から作る)。
+      それでも 0 のまま、または細かい値が無い行は `"keep"` と同じく 0 のまま残す(落とさない)。
+      **対照窓は `first_price`/`last_price` を持たない**ので、この方針は実群だけを細かくする。
+      分解能が群で揃わなくなるので、主にはせず感度として使うこと。
+
+    NaN(内部方向が引けない / 反応 bp が引けない)は `n_excluded_missing` に数える。
+    これは分解能の問題ではなく本物の欠測なので、どの方針でも集計に入れない。
+    """
+    scores: list[float] = []
+    n_tie = n_tie_resolved = n_excluded_tie = n_excluded_missing = 0
+    for r in rows:
+        internal = _as_float(r.get(internal_key))
+        bp = _as_float(r.get(bp_key))
+        if internal != internal or bp != bp:
+            n_excluded_missing += 1
+            continue
+        sign = _sign(internal)
+        if sign == 0.0:
+            n_tie += 1
+            if tie_policy == "drop":
+                n_excluded_tie += 1
+                continue
+            if tie_policy == "refine":
+                fine_sign = _sign(_fine_internal_bp(r, fine_key))
+                if fine_sign == fine_sign and fine_sign != 0.0:
+                    sign = fine_sign
+                    n_tie_resolved += 1
+        scores.append(0.0 if sign == 0.0 else -sign * bp)
+    return ReversalGroup(
+        name=name, n_rows=len(rows), scores=scores,
+        n_tie=n_tie, n_tie_resolved=n_tie_resolved,
+        n_excluded_tie=n_excluded_tie, n_excluded_missing=n_excluded_missing,
+    )
+
+
+def compute_reversal(
+    groups: "dict[str, Sequence[dict]]",
+    bp_key: str,
+    tie_policy: TiePolicy = "keep",
+    internal_key: str = INTERNAL_BP_KEY,
+    fine_key: str = INTERNAL_BP_FINE_KEY,
+    strict: bool = True,
+    max_exclusion_gap: float = 0.10,
+) -> ReversalReport:
+    """複数の群の転換スコアをまとめて作り、**群ごとの除外率を突き合わせる**。
+
+    `strict=True`(既定・`liquidations.read_rows` と同じ約束): 群どうしの除外率の差が
+    `max_exclusion_gap`(既定 0.10 = 10 ポイント)を**超えたら
+    `ReversalExclusionImbalance` を送出する**(警告ではなく例外)。
+    非無作為に落とした部分集合と、ほぼ全部残った群とを比べる形を黙って通さないため。
+    `strict=False` を明示したときだけ、除外率を戻り値に持たせたまま先へ通す。
+    """
+    report = ReversalReport(
+        bp_key=bp_key, tie_policy=tie_policy,
+        groups={
+            name: reversal_scores(
+                rows, bp_key, name=name, tie_policy=tie_policy,
+                internal_key=internal_key, fine_key=fine_key,
+            )
+            for name, rows in groups.items()
+        },
+    )
+    gap = report.max_exclusion_gap
+    if strict and gap > max_exclusion_gap:
+        detail = ", ".join(
+            f"{n}={g.n_excluded}/{g.n_rows}({g.exclusion_rate:.1%}; tie={g.n_excluded_tie})"
+            for n, g in report.groups.items()
+        )
+        raise ReversalExclusionImbalance(
+            f"{bp_key}: 群間の除外率の差 {gap:.1%} が上限 {max_exclusion_gap:.1%} を超えた [{detail}]。"
+            f"tie_policy='keep' なら落とさない。診断目的で通すなら strict=False を明示する"
+        )
+    return report
 
 
 # --------------------------------------------------------------------------- #
