@@ -58,6 +58,15 @@
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/action_audit_gate.sh --mcp"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/_verify_manifest.sh"
+          }
+        ]
       }
     ],
     "SessionStart": [

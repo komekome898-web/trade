@@ -41,10 +41,31 @@ except Exception:
 
 [ "$MCP" = "1" ] || [ -n "$CMD" ] || exit 0
 
-# **復旧路は常に開ける。**2026-09-13 の実測: 指紋の照合を全操作に広げた直後、
+# **復旧路は開けるが、「鍵」にはしない。**2026-09-13 の実測: 指紋の照合を全操作に広げた直後、
 # フック自身の指紋が変わって**復旧手順(再生成)まで拒否され、関門が自分を直せなくなった。**
 # 監査役はこれを事前に予言していた(「オーナーが禁じたまさにその行動へリードを追い込む形になっている」)。
-case "$CMD" in *regen_hook_manifest.sh*) exit 0 ;; esac
+#
+# **4 本目の監査で実測された欠陥(2026-09-13)**:
+#   旧版は `case "$CMD" in *regen_hook_manifest.sh*)` という**部分一致**だったため、
+#     `git push origin main # regen_hook_manifest.sh`  → exit 0(監査の記録ゼロで push が通った)
+#     `sh scripts/regen_hook_manifest.sh && git push`  → exit 0
+#   **コメントを 1 つ足すだけで、指紋の照合も push の関門も丸ごと素通りする万能の鍵だった。**
+# → **コマンド全体が復旧手順そのものであるときだけ**通す。区切り・コメント・置換・
+#   リダイレクトが 1 つでもあれば復旧路として認めない。
+# (改行も区切りなので、1 行かどうかを先に見る。$'\n' は sh に無いので行数で判定する)
+CMD_LINES="$(printf '%s\n' "$CMD" | grep -c '')"
+case "$CMD" in
+  *';'*|*'&'*|*'|'*|*'#'*|*'`'*|*'$('*|*'>'*|*'<'*) ;;
+  *)
+    # **CMD 自体は書き換えない**(書き換えると下の push 検出まで壊れる)。
+    if [ "$CMD_LINES" = "1" ]; then CAND="$CMD"; else CAND="(multiline)"; fi
+    case "$(printf '%s' "$CAND" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')" in
+      "sh scripts/regen_hook_manifest.sh"|"sh ./scripts/regen_hook_manifest.sh"|\
+      "bash scripts/regen_hook_manifest.sh"|"bash ./scripts/regen_hook_manifest.sh"|\
+      "scripts/regen_hook_manifest.sh"|"./scripts/regen_hook_manifest.sh")
+        exit 0 ;;
+    esac ;;
+esac
 
 # **指紋の照合を、コマンドの種類を見る前に行う。**2026-09-13 の監査の指摘:
 # 旧版は push 系以外を先に落としてから照合していたため、実質 push のときしか見ていなかった。

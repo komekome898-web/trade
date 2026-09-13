@@ -1,5 +1,5 @@
 #!/bin/sh
-# Stop フック — 2026-09-13、オーナー指示(L-156)により新設 / 同日 3 本の監査を受けて作り直し。
+# Stop フック — 2026-09-13、オーナー指示(L-156)により新設 / 同日 4 本の監査を受けて作り直し。
 #
 # オーナー逐語:
 #   「**穴1 返答しようとするときにその出力に監査をかければいいのでは？**」
@@ -7,19 +7,31 @@
 #     指摘されたことを出さずに後でまとめて出すから書き換えるんやろ**」
 #   「**そしてまたもや理由もなく手段を考えもせずできないと断定している。**」
 #
-# **初版の欠陥(監査 3 本が全部指摘した。すべて実測で確認済み)**:
+# **初版の欠陥(監査 3 本が全部指摘。すべて実測で確認済み)**:
 #   1. `prompt_id` だけを鍵にしており、**返答本文を一切見ていなかった。**
-#      → ACTION_LOG に一度「判定: 通す」が載れば、**本文をどう書き換えても通った。**
-#      オーナーの語は「**その出力**に監査をかける」であって、ターンではない。
-#   2. 判定の抽出が `awk`(該当行から**ファイル末尾まで**)だったため、
-#      **後から別の節に書いた「判定: 通す」が、前の prompt_id の関門を開けた。**
-#   3. push 側の関門にはある「監査役の名前」「本文 8 行以上」の確認が**入っていなかった。
-#      塞いだはずの穴より弱かった。**
-#   4. `prompt_id` や python3 が取れないと `exit 0`(素通り)だった。
-#      push 側は「**判定できないときは通さない**」なのに逆向き。
-#   5. **「判定: 止める」で詰んだとき、オーナーへ上申する経路が無かった。**
-#      L-112 / CLAUDE.md §8 は「直す **か** 両論を添えてオーナーへ上申する」の 2 つの出口を
-#      定めているのに、**関門が上申の側を物理的に塞いでいた。**
+#   2. 判定の抽出がファイル末尾まで伸び、後の節の「判定: 通す」が前の関門を開けた。
+#   3. push 側にある「監査役の名前」「本文 8 行以上」の確認が入っていなかった。
+#   4. `prompt_id` や python3 が取れないと素通りだった。
+#   5. 「判定: 止める」で詰んだとき、オーナーへ上申する経路が無かった(L-112 違反)。
+#
+# **2 版の欠陥(4 本目の監査が実測した。これがこの版で直すもの)**:
+#   6. **上申の出口が文字列 2 つで開いた。**本文のどこかに `判定: 止める` があり、
+#      行頭に `上申:` の行があれば通った。**その判定が監査役のものである保証が無く、
+#      本文の残りを一切見ていなかった。**実測で「監査を一度も通していない任意の本文」が通った。
+#      リードは「黙って先へ進む抜け道にはならない」と書いていたが、**事実と違った。**
+#   7. **穴 3 に機械が付いていなかった。**逐語 8 行以上を要求していたのは
+#      **ACTION_LOG の中身**であって、**オーナーが見る返答本文ではなかった。**
+#      オーナーの語は「**監査役の出力をそのままここに出力すればいい**」である。
+#
+# **この版の判定(両方の出口に同じ実体を要求する)**:
+#   ACTION_LOG に「返答sha256: <この返答の指紋>」の節があり、その節が
+#     - `owner-model-auditor` を含み
+#     - 「### 監査役の返答(逐語)」の塊を持ち
+#     - **その塊の実質行のうち 8 行以上が、返答本文の中に逐語で存在する**  ← 穴 3 の機械
+#   そのうえで、節の判定が
+#     - 「判定: 通す」          → 通す
+#     - 「判定: 止める」        → **行頭「上申:」の行があるときだけ**通す(L-112 の 2 つ目の出口)
+#   それ以外は通さない。**判定できないときは通さない。**
 
 # --- 指紋の照合(フック・設定・監査役の定義)。返答のときも必ず走らせる ---
 sh "$(dirname "$0")/_verify_manifest.sh" </dev/null || exit 2
@@ -31,77 +43,148 @@ cd "$ROOT" 2>/dev/null || exit 0
 command -v python3 >/dev/null 2>&1 || {
   echo "[返答の関門] python3 が無く判定できない。**判定できないときは通さない。**" >&2; exit 2; }
 
-PID="$(printf '%s' "$INPUT" | python3 -c 'import json,sys
-try: print((json.load(sys.stdin).get("prompt_id") or "")[:8])
-except Exception: print("")' 2>/dev/null)"
-REPLY="$(printf '%s' "$INPUT" | python3 -c 'import json,sys
-try: sys.stdout.write(json.load(sys.stdin).get("last_assistant_message") or "")
-except Exception: pass' 2>/dev/null)"
-
+# **本文はファイルに落としてから扱う。**コマンド置換 `$(...)` は末尾の改行を削るので、
+# 変数に入れた時点で指紋が「末尾の改行が落ちた版」になってしまう(2026-09-13 の実測で判明)。
+# 環境変数に載せると長い本文で上限にも当たる。
 mkdir -p /tmp/hookprobe 2>/dev/null
-printf '%s' "$REPLY" > /tmp/hookprobe/last_reply.txt
+RF=/tmp/hookprobe/last_reply.txt
+printf '%s' "$INPUT" | python3 -c 'import json,sys
+try: sys.stdout.write(json.load(sys.stdin).get("last_assistant_message") or "")
+except Exception: pass' > "$RF" 2>/dev/null
 
 # 返答本文の指紋。**これが「その出力に監査をかける」の実体。**
-SHA="$(printf '%s' "$REPLY" | sha256sum | cut -c1-16)"
+SHA="$(sha256sum "$RF" | cut -c1-16)"
 
-[ -n "$PID" ] || { echo "[返答の関門] prompt_id が取れず判定できない。**判定できないときは通さない。**" >&2; exit 2; }
-
-# --- 出口 2: オーナーへの上申(L-112 / CLAUDE.md §8) ---
-# 「止める」をリードが単独で退けることはできないが、**両論を添えてオーナーへ上申する道は塞がない。**
-# 上申と認めるのは、**返答本文に監査役の「判定: 止める」が逐語で含まれ、かつ「上申:」の行がある**場合だけ。
-# = オーナーに止めの判定をそのまま見せたうえで渡す形。**黙って先へ進む抜け道にはならない。**
-if printf '%s' "$REPLY" | grep -q '判定: 止める' && printf '%s' "$REPLY" | grep -q '^上申:'; then
-  exit 0
-fi
+[ -s "$RF" ] || { echo "[返答の関門] 返答本文が取れず判定できない。**判定できないときは通さない。**" >&2; exit 2; }
 
 LOG="docs/AUDITOR/ACTION_LOG.md"
-OK=0
-if [ -f "$LOG" ]; then
-  # **節はこの見出しからで切る**(旧版はファイル末尾まで拾い、後の節の判定を借りていた)
-  SEC="$(awk -v k="返答sha256: $SHA" '
-    index($0,k){f=1}
-    f && /^## / && !index($0,k){ if(seen){exit} seen=1 }
-    f{print}' "$LOG")"
-  if [ -n "$SEC" ]; then
-    V="$(printf '%s\n' "$SEC" | grep '^判定:' | head -1)"
-    N="$(printf '%s\n' "$SEC" | grep -c '')"
-    case "$V" in
-      "判定: 通す"*)
-        printf '%s\n' "$SEC" | grep -q 'owner-model-auditor' && [ "$N" -ge 8 ] && OK=1 ;;
-    esac
-  fi
-fi
-[ "$OK" = "1" ] && exit 0
+RESULT="$(REPLY_FILE="$RF" SHA="$SHA" LOG="$LOG" python3 - <<'PY' 2>/dev/null
+import os, sys, io
+
+sha   = os.environ.get("SHA", "")
+log   = os.environ.get("LOG", "")
+try:
+    reply = io.open(os.environ.get("REPLY_FILE", ""), encoding="utf-8").read()
+except Exception:
+    print("NOREPLY"); sys.exit(0)
+
+def out(tok, *rest):
+    print("\t".join([tok] + [str(r) for r in rest]))
+    sys.exit(0)
+
+try:
+    lines = io.open(log, encoding="utf-8").read().split("\n")
+except Exception:
+    out("NOLOG")
+
+key = "返答sha256: " + sha
+start = None
+for i, l in enumerate(lines):
+    if key in l:
+        start = i
+if start is None:
+    out("NOSEC")
+
+# 節はこの見出しからで切る(旧版はファイル末尾まで拾い、後の節の判定を借りていた)
+end = len(lines)
+for j in range(start + 1, len(lines)):
+    if lines[j].startswith("## "):
+        end = j
+        break
+sec = lines[start:end]
+
+if not any("owner-model-auditor" in l for l in sec):
+    out("NONAME")
+
+# 「### 監査役の返答(逐語)」の塊を取り出す
+vb_start = None
+for j, l in enumerate(sec):
+    if l.startswith("###") and "監査役の返答" in l:
+        vb_start = j + 1
+        break
+if vb_start is None:
+    out("NOVERBATIM")
+vb_end = len(sec)
+for j in range(vb_start, len(sec)):
+    if sec[j].startswith("###"):
+        vb_end = j
+        break
+verbatim = sec[vb_start:vb_end]
+
+# **穴 3 の機械**: 逐語の塊の実質行が、返答本文の中に逐語で存在するか数える。
+# 実質行 = 記号や囲みを除いた中身が 10 文字以上の行(表の罫線・空行・``` を数えないため)
+def substantive(l):
+    s = l.strip().lstrip("#>*-| ").strip()
+    return len(s) >= 10 and s not in ("```",)
+
+cand = [l for l in verbatim if substantive(l)]
+hit = 0
+for l in cand:
+    if l.strip() and l.strip() in reply:
+        hit += 1
+if hit < 8:
+    out("NOTPASTED", hit, len(cand))
+
+verdict = ""
+for l in sec:
+    if l.startswith("判定:"):
+        verdict = l.strip()
+        break
+if not verdict:
+    out("NOVERDICT")
+
+if verdict.startswith("判定: 通す"):
+    out("OK")
+if verdict.startswith("判定: 止める"):
+    for l in reply.split("\n"):
+        if l.startswith("上申:"):
+            out("OK_ESCALATE")
+    out("STOPNOESC")
+out("BADVERDICT", verdict)
+PY
+)"
+
+TOKEN="$(printf '%s' "$RESULT" | head -1 | cut -f1)"
+case "$TOKEN" in
+  OK|OK_ESCALATE) exit 0 ;;
+esac
+
+case "$TOKEN" in
+  NOREPLY)    WHY="返答本文のファイルが読めず判定できない。**判定できないときは通さない。**" ;;
+  NOLOG)      WHY="ACTION_LOG.md が読めない" ;;
+  NOSEC)      WHY="この返答本文(sha256 先頭 16 桁: $SHA)の節が ACTION_LOG に無い。**まだ監査を通していない。**" ;;
+  NONAME)     WHY="節に監査役の名前 owner-model-auditor が無い" ;;
+  NOVERBATIM) WHY="節に「### 監査役の返答(逐語)」の塊が無い" ;;
+  NOTPASTED)  WHY="**監査役の逐語が返答本文に貼られていない**(本文に見つかった逐語の行数: $(printf '%s' "$RESULT" | cut -f2) / 必要 8)。これが穴 3 の機械である" ;;
+  NOVERDICT)  WHY="節に行頭の「判定:」が無い" ;;
+  STOPNOESC)  WHY="監査の判定が「止める」である。**リードが単独で退けることはできない**(L-112)。直すか、行頭「上申:」でオーナーへ渡すこと" ;;
+  BADVERDICT) WHY="判定が通す/止めるのどちらでもない: $(printf '%s' "$RESULT" | cut -f2)" ;;
+  *)          WHY="判定に失敗した。**判定できないときは通さない。**" ;;
+esac
 
 cat >&2 <<EOF
 [返答の関門] このターンを終わらせない。
 
-理由: **いま出そうとしている返答本文**(sha256 先頭 16 桁: $SHA)について、
-      ACTION_LOG に監査の記録が無い。
+理由: ${WHY}
 
 オーナー逐語(2026-09-13、L-156):
 「**返答しようとするときにその出力に監査をかければいいのでは？**」
+「**監査役の出力をそのままここに出力すればいいだけ。指摘されたことを出さずに
+  後でまとめて出すから書き換えるんやろ**」
 
-**鍵は prompt_id ではなく返答本文そのもの。**本文が 1 文字でも変われば、この指紋も変わる。
-(初版は prompt_id を鍵にしており、一度通せば本文を書き換え放題だった。監査 3 本が指摘。)
+**鍵は返答本文そのもの。**本文が 1 文字でも変われば指紋も変わる。
+**さらに、監査役の逐語が本文に実体として貼られていなければ通らない。**
+(2 版は「判定: 止める」と「上申:」という文字列 2 つで開いた。4 本目の監査が実測した。)
 
-出口は 2 つ。**どちらかを選ぶこと。**
-
-【出口 1】監査を通す
+手順:
  1. 返答の原文は /tmp/hookprobe/last_reply.txt にある(いま書き出した)
  2. \`owner-model-auditor\` を呼ぶ。渡すのは (a) この一手 (b) 応えているオーナーの逐語
     (c) **上の原文**
- 3. 返ってきた指摘と 3 行の判定を、**逐語でこの会話に出す**(後でまとめない)
+ 3. **返ってきた指摘を逐語でこの返答本文に貼る**(後でまとめない)
  4. ACTION_LOG に次を含む節を作る:
-      「返答sha256: $SHA」/ 「owner-model-auditor」/ 監査役の返答の逐語(8 行以上)/
-      行頭の「判定: 通す」
- 5. **本文を 1 文字でも変えたら指紋が変わる。**変えたなら監査からやり直す
-
-【出口 2】オーナーへ上申する(L-112 / CLAUDE.md §8)
- 「止める」をリード単独で退けることはできないが、**両論を添えてオーナーへ渡す道は開いている。**
- 返答本文に次の両方を入れること:
-   - 監査役の「**判定: 止める**」を**逐語で**(オーナーに判定をそのまま見せる)
-   - 行頭に「**上申:**」で始まる行(何を判断してほしいか)
- これを満たせばターンを終えられる。**黙って先へ進む抜け道にはならない。**
+      「返答sha256: $SHA」/ 「owner-model-auditor」/
+      「### 監査役の返答(逐語)」+ 逐語 / 行頭の「判定:」
+ 5. 判定が「止める」なら、直すか、行頭「**上申:**」の行を本文に入れてオーナーへ渡す
+ 6. **本文を 1 文字でも変えたら指紋が変わる。**変えたなら 2 からやり直す
 EOF
 exit 2
