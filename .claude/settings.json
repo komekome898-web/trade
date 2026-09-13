@@ -40,6 +40,15 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/action_audit_gate.sh"
+          }
+        ]
       }
     ],
     "SessionStart": [
