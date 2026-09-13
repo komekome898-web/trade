@@ -3832,3 +3832,178 @@ Manager, or wait and re-run this file.
 ============================================================
  ABORTED - the remaining steps were skipped.
 ============================================================
+============================================================
+nightly_restart start 2026/09/14  4:02:06.12
+============================================================
+ bitflyer-bot: update and restart
+============================================================
+
+[1/5] git pull
+From https://github.com/komekome898-web/trade
+ * branch            claude/bitflyer-trading-bot-hhxxaf -> FETCH_HEAD
+   9eab36f..ac9c423  claude/bitflyer-trading-bot-hhxxaf -> origin/claude/bitflyer-trading-bot-hhxxaf
+Updating 9eab36f..ac9c423
+Updating files:  60% (28/46)Updating files:  63% (29/46)Updating files:  65% (30/46)Updating files:  67% (31/46)Updating files:  69% (32/46)Updating files:  71% (33/46)Updating files:  73% (34/46)Updating files:  76% (35/46)Updating files:  78% (36/46)Updating files:  80% (37/46)Updating files:  82% (38/46)Updating files:  84% (39/46)Updating files:  86% (40/46)Updating files:  89% (41/46)Updating files:  91% (42/46)Updating files:  93% (43/46)Updating files:  95% (44/46)Updating files:  97% (45/46)Updating files: 100% (46/46)Updating files: 100% (46/46), done.
+Fast-forward
+ .claude/agents/owner-model-auditor.md              |  179 +++
+ .claude/hooks/_require_action_audit.sh             |  100 ++
+ .claude/hooks/_verify_manifest.sh                  |   42 +
+ .claude/hooks/action_audit_gate.sh                 |  120 ++
+ .claude/hooks/owner_turn_digest.sh                 |    4 +-
+ .claude/hooks/reply_audit_gate.sh                  |  193 +++
+ .claude/settings.json                              |   43 +
+ .claude/skills/research-protocol/SKILL.md          |   31 +
+ CLAUDE.md                                          |  108 +-
+ docs/AUDITOR/ACTION_LOG.md                         |  437 +++++++
+ docs/AUDITOR/HOOK_MANIFEST.sha256                  |   15 +
+ docs/AUDITOR/KNOWN_ANSWERS_ADDENDUM.md             |  180 +--
+ docs/AUDITOR/OWNER_MODEL_SOURCE.md                 | 1327 ++++++++++++++++++++
+ .../VERDICTS/2026-09-13_o3c_prereg_skeleton.md     |   17 -
+ docs/DATA.md                                       |    2 +-
+ docs/DATA/probes/20260913_liquidation_integrity.md |   78 ++
+ docs/DISCUSSIONS/2026-09-13_root_cause.md          |   85 ++
+ docs/DISCUSSIONS/2026-09-13_worst_day.md           |  318 +++++
+ docs/INCIDENTS.md                                  |   63 +-
+ docs/OPERATIONS.md                                 |    7 +-
+ docs/OWNER_LOG.md                                  |   13 +-
+ docs/OWNER_STATUS.md                               |   25 +-
+ docs/PHASE2/O3C/BRANCH_MAP.md                      |  712 +++++++++++
+ docs/PHASE2/O3C/INTENT_MAP.md                      |    2 +-
+ docs/PHASE2/O3C/OWNER_INTENT_2026-09-12.md         |   24 +
+ docs/PHASE2/O3C/PREREG_SKELETON.md                 |  127 --
+ docs/PHASE2/O3C/TRIGGER_TRACE.md                   |  999 +++++++++++++++
+ docs/PROJECT_GOAL.md                               |   20 +-
+ githooks/pre-push                                  |   55 +
+ .../binance_cm_20260911.trunc1.jsonl.gz            |  Bin 0 -> 1168074 bytes
+ .../liquidations/bitmex_20260909.trunc1.jsonl.gz   |  Bin 0 -> 26196 bytes
+ .../liquidations/bitmex_20260911.trunc1.jsonl.gz   |  Bin 0 -> 18843 bytes
+ .../liquidations/bybit_20260909.trunc1.jsonl.gz    |  Bin 0 -> 51318 bytes
+ .../liquidations/bybit_20260911.trunc1.jsonl.gz    |  Bin 0 -> 52943 bytes
+ .../liquidations/okx_20260909.trunc1.jsonl.gz      |  Bin 0 -> 411505 bytes
+ .../liquidations/okx_20260911.trunc1.jsonl.gz      |  Bin 0 -> 282933 bytes
+ scripts/explore_o3c_oi_axis.py                     |  277 ++++
+ scripts/install_git_hooks.sh                       |    9 +
+ scripts/liquidation_report.py                      |   11 +-
+ scripts/regen_hook_manifest.sh                     |   22 +
+ scripts/run_o3c_stage0.py                          |  323 +++++
+ scripts/verify_gates.py                            |  170 +++
+ src/bot/research/liq_response.py                   |  291 ++++-
+ src/bot/research/liquidations.py                   |  138 +-
+ tests/test_liq_response.py                         |  165 +++
+ tests/test_liquidation_reader.py                   |  114 +-
+ 46 files changed, 6511 insertions(+), 335 deletions(-)
+ create mode 100644 .claude/agents/owner-model-auditor.md
+ create mode 100644 .claude/hooks/_require_action_audit.sh
+ create mode 100755 .claude/hooks/_verify_manifest.sh
+ create mode 100755 .claude/hooks/action_audit_gate.sh
+ create mode 100755 .claude/hooks/reply_audit_gate.sh
+ create mode 100644 docs/AUDITOR/ACTION_LOG.md
+ create mode 100644 docs/AUDITOR/HOOK_MANIFEST.sha256
+ create mode 100644 docs/AUDITOR/OWNER_MODEL_SOURCE.md
+ delete mode 100644 docs/AUDITOR/VERDICTS/2026-09-13_o3c_prereg_skeleton.md
+ create mode 100644 docs/DATA/probes/20260913_liquidation_integrity.md
+ create mode 100644 docs/DISCUSSIONS/2026-09-13_root_cause.md
+ create mode 100644 docs/DISCUSSIONS/2026-09-13_worst_day.md
+ create mode 100644 docs/PHASE2/O3C/BRANCH_MAP.md
+ delete mode 100644 docs/PHASE2/O3C/PREREG_SKELETON.md
+ create mode 100644 docs/PHASE2/O3C/TRIGGER_TRACE.md
+ create mode 100755 githooks/pre-push
+ create mode 100644 paper_logs/liquidations/binance_cm_20260911.trunc1.jsonl.gz
+ create mode 100644 paper_logs/liquidations/bitmex_20260909.trunc1.jsonl.gz
+ create mode 100644 paper_logs/liquidations/bitmex_20260911.trunc1.jsonl.gz
+ create mode 100644 paper_logs/liquidations/bybit_20260909.trunc1.jsonl.gz
+ create mode 100644 paper_logs/liquidations/bybit_20260911.trunc1.jsonl.gz
+ create mode 100644 paper_logs/liquidations/okx_20260909.trunc1.jsonl.gz
+ create mode 100644 paper_logs/liquidations/okx_20260911.trunc1.jsonl.gz
+ create mode 100644 scripts/explore_o3c_oi_axis.py
+ create mode 100644 scripts/install_git_hooks.sh
+ create mode 100755 scripts/regen_hook_manifest.sh
+ create mode 100644 scripts/run_o3c_stage0.py
+ create mode 100644 scripts/verify_gates.py
+      ok
+
+[2/5] pip install -e ".[dev]"
+Obtaining file:///C:/Users/ryoma/trade
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: requests>=2.31 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (2.34.2)
+Requirement already satisfied: urllib3>=2 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (2.7.0)
+Requirement already satisfied: pandas>=2.0 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (3.0.5)
+Requirement already satisfied: numpy>=1.24 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (2.5.2)
+Requirement already satisfied: PyYAML>=6.0 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (6.0.3)
+Requirement already satisfied: python-dotenv>=1.0 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (1.2.3)
+Requirement already satisfied: websockets>=12.0 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (17.0.1)
+Requirement already satisfied: pdfplumber>=0.11 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (0.11.10)
+Requirement already satisfied: pytest>=7.4 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (9.1.1)
+Requirement already satisfied: numba>=0.60 in .\.venv\Lib\site-packages (from bitflyer-bot==0.1.0) (0.67.0)
+Requirement already satisfied: llvmlite<0.50,>=0.49.0dev0 in .\.venv\Lib\site-packages (from numba>=0.60->bitflyer-bot==0.1.0) (0.49.0)
+Requirement already satisfied: python-dateutil>=2.8.2 in .\.venv\Lib\site-packages (from pandas>=2.0->bitflyer-bot==0.1.0) (2.9.0.post0)
+Requirement already satisfied: tzdata in .\.venv\Lib\site-packages (from pandas>=2.0->bitflyer-bot==0.1.0) (2026.3)
+Requirement already satisfied: pdfminer.six==20260107 in .\.venv\Lib\site-packages (from pdfplumber>=0.11->bitflyer-bot==0.1.0) (20260107)
+Requirement already satisfied: Pillow>=12.2.0 in .\.venv\Lib\site-packages (from pdfplumber>=0.11->bitflyer-bot==0.1.0) (12.3.0)
+Requirement already satisfied: pypdfium2>=5.9.0 in .\.venv\Lib\site-packages (from pdfplumber>=0.11->bitflyer-bot==0.1.0) (5.13.0)
+Requirement already satisfied: charset-normalizer>=2.0.0 in .\.venv\Lib\site-packages (from pdfminer.six==20260107->pdfplumber>=0.11->bitflyer-bot==0.1.0) (3.5.1)
+Requirement already satisfied: cryptography>=36.0.0 in .\.venv\Lib\site-packages (from pdfminer.six==20260107->pdfplumber>=0.11->bitflyer-bot==0.1.0) (50.0.1)
+Requirement already satisfied: cffi>=2.0.0 in .\.venv\Lib\site-packages (from cryptography>=36.0.0->pdfminer.six==20260107->pdfplumber>=0.11->bitflyer-bot==0.1.0) (2.1.1)
+Requirement already satisfied: pycparser in .\.venv\Lib\site-packages (from cffi>=2.0.0->cryptography>=36.0.0->pdfminer.six==20260107->pdfplumber>=0.11->bitflyer-bot==0.1.0) (3.0)
+Requirement already satisfied: colorama>=0.4 in .\.venv\Lib\site-packages (from pytest>=7.4->bitflyer-bot==0.1.0) (0.4.6)
+Requirement already satisfied: iniconfig>=1.0.1 in .\.venv\Lib\site-packages (from pytest>=7.4->bitflyer-bot==0.1.0) (2.3.0)
+Requirement already satisfied: packaging>=22 in .\.venv\Lib\site-packages (from pytest>=7.4->bitflyer-bot==0.1.0) (26.3)
+Requirement already satisfied: pluggy<2,>=1.5 in .\.venv\Lib\site-packages (from pytest>=7.4->bitflyer-bot==0.1.0) (1.6.0)
+Requirement already satisfied: pygments>=2.7.2 in .\.venv\Lib\site-packages (from pytest>=7.4->bitflyer-bot==0.1.0) (2.21.0)
+Requirement already satisfied: six>=1.5 in .\.venv\Lib\site-packages (from python-dateutil>=2.8.2->pandas>=2.0->bitflyer-bot==0.1.0) (1.17.0)
+Requirement already satisfied: idna<4,>=2.5 in .\.venv\Lib\site-packages (from requests>=2.31->bitflyer-bot==0.1.0) (3.19)
+Requirement already satisfied: certifi>=2023.5.7 in .\.venv\Lib\site-packages (from requests>=2.31->bitflyer-bot==0.1.0) (2026.7.22)
+Building wheels for collected packages: bitflyer-bot
+  Building editable for bitflyer-bot (pyproject.toml): started
+  Building editable for bitflyer-bot (pyproject.toml): finished with status 'done'
+  Created wheel for bitflyer-bot: filename=bitflyer_bot-0.1.0-0.editable-py3-none-any.whl size=1445 sha256=6d8ddfea71b0801e8eef733f1fc98b412c1882096c6ea0b2809dfc93442e73f1
+  Stored in directory: C:\Users\ryoma\AppData\Local\Temp\pip-ephem-wheel-cache-s9laijvm\wheels\9e\57\20\c39e0ac576e1dfca491280deb87d799be6f1a05fee9e9f90db
+Successfully built bitflyer-bot
+Installing collected packages: bitflyer-bot
+  Attempting uninstall: bitflyer-bot
+    Found existing installation: bitflyer-bot 0.1.0
+    Uninstalling bitflyer-bot-0.1.0:
+      Successfully uninstalled bitflyer-bot-0.1.0
+Successfully installed bitflyer-bot-0.1.0
+      ok
+
+[3/5] stop_all.bat
+stopping PID 12860
+stopping PID 15336
+stopping PID 13632
+stopping PID 15312
+stopping PID 5344
+stopping PID 6884
+stopping PID 12248
+stopping PID 12028
+stopping PID 11176
+stopping PID 1384
+All bot components stopped.
+      ok
+
+[4/5] verify components are stopped
+      ok
+
+[5/5] start_all.bat
+[main-bot] starting...
+[ws-recorder] starting...
+[venue-recorder] starting...
+[liq-recorder] starting...
+[latency-probe] starting...
+[dashboard] starting...
+
+Done. Dashboard: http://127.0.0.1:8300
+Logs: logs\run_paper.out.log / logs\recorder.out.log
+
+============================================================
+ DONE - updated and restarted.
+ Dashboard: http://127.0.0.1:8300
+ Logs: logs\run_paper.out.log / logs\recorder.out.log
+============================================================
