@@ -126,7 +126,8 @@ def prepush(stdin_text):
 # 旧版は「いまの HEAD の直前からの範囲」を使い、期待値を ACTION_LOG の最後の判定だけから
 # 決めていた。ところが関門は「その範囲に ACTION_LOG の追記があるか」も見るので、
 # **期待値の立て方が関門の判定より甘く、実測が食い違った。**試験の側が間違っていた。
-def _temp_repo(verdict: str, stop_wired: bool, sample_today: bool = True) -> str:
+def _temp_repo(verdict: str, stop_wired: bool, sample_today: bool = True,
+               sample_marker_only: bool = False) -> str:
     import datetime, subprocess as sp, textwrap
     d = tempfile.mkdtemp()
     os.makedirs(os.path.join(d, "docs/AUDITOR")); os.makedirs(os.path.join(d, ".claude"))
@@ -141,7 +142,9 @@ def _temp_repo(verdict: str, stop_wired: bool, sample_today: bool = True) -> str
     today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")  # 関門と同じ UTC
     body = "\n".join(f"> 指摘の本文 {i} 行目。これは監査役が書いた文である。" for i in range(1, 10))
     log = (f"## 監査\n\n監査対象: U1/結果\n**監査役**: `owner-model-auditor`\n\n{body}\n\n"
-           + (f"抜き取り: {today}\n\n抜き取り判定: 通す\n\n" if sample_today else "")
+           + (f"抜き取り: {today}\n" if sample_marker_only else
+              (f"## 抜き取り\n\n抜き取り: {today}\n**監査役**: `owner-model-auditor`\n\n{body}\n\n"
+               f"抜き取り判定: 通す\n\n" if sample_today else ""))
            + f"## 処置\n\n判定: {verdict}\n")
     open(os.path.join(d, "docs/AUDITOR/ACTION_LOG.md"), "w").write(log)
     stop = ('[{"hooks":[{"command":"sh .claude/hooks/reply_audit_gate.sh"}]}]'
@@ -166,6 +169,8 @@ for label, kw, want in [
     ("監査が「通す」+ 本日の抜き取りあり → 通る", dict(verdict="通す", stop_wired=False), 0),
     ("監査が「止める」→ 止まる", dict(verdict="止める", stop_wired=False), 1),
     ("本日の抜き取りが無い → 止まる", dict(verdict="通す", stop_wired=False, sample_today=False), 1),
+    ("抜き取りの行だけ足した(中身なし)→ 止まる ←11 本目の監査",
+     dict(verdict="通す", stop_wired=False, sample_marker_only=True), 1),
 ]:
     d = _temp_repo(**kw)
     show(label, _prepush_in(d), want)

@@ -91,8 +91,21 @@ fi
 # 「本日の抜き取りが無い」と誤判定する(2026-09-13 に実測。JST は既に 09-14 だった)。
 # オーナーに見せる時刻は JST、台帳の日付は UTC、と使い分ける。
 TODAY="$(date -u +%Y-%m-%d)"
-if ! grep -q "^抜き取り: $TODAY" "$LOG" 2>/dev/null; then
+# **マーカーの行だけでは通さない(2026-09-13、11 本目の監査)。**
+# 旧版は `抜き取り: <日付>` の行があるかしか見ておらず、**その 1 行を足すだけで
+# (監査を回さず、判定も書かずに)検査を満たせた**。行動監査の側では「監査役の名前 +
+# 判定 + 本文 8 行」を要求しているのに、抜き取りの側だけ素通りだった。
+# **同じ種類の穴を一方だけ塞ぐ**という、5 本目の監査が指摘した型そのもの。
+SAMPLE_SEC="$(awk -v k="抜き取り: $TODAY" '
+  index($0,k){f=1}
+  f && /^## / && !index($0,k){ if(seen){exit} seen=1 }
+  f{print}' "$LOG" 2>/dev/null)"
+if [ -z "$SAMPLE_SEC" ]; then
   MISS="${MISS} 本日($TODAY)の抜き取り監査"
+else
+  printf '%s' "$SAMPLE_SEC" | grep -q 'owner-model-auditor'     || MISS="${MISS} 本日の抜き取りに監査役の名前"
+  printf '%s\n' "$SAMPLE_SEC" | grep -q '^抜き取り判定:'     || MISS="${MISS} 本日の抜き取りの行頭「抜き取り判定:」"
+  [ "$(printf '%s' "$SAMPLE_SEC" | grep -c '')" -ge 8 ]     || MISS="${MISS} 本日の抜き取りの本文(8 行以上)"
 fi
 
 # **戻し条件を機械にする(2026-09-13、10 本目の監査)。**
