@@ -7,7 +7,10 @@
 # 結果 settings.json の期待値が 4 本並び、**監査の有無に関係なく全 push が拒否される**状態になっていた。
 # 対策: 見出しは書かず、台帳は毎回まっさらに生成する。
 cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}" || exit 1
-for f in .claude/hooks/*.sh .claude/settings.json .claude/agents/owner-model-auditor.md; do
+# **githooks/ も台帳に入れる(2026-09-13、5 本目の監査のあと)。**
+# 押し出しの関門の本体は git 側の `githooks/pre-push` に移った。台帳に入れなければ、
+# **オーナーが禁じた「無検知で書き換えられるフック」がまた増えることになる。**
+for f in .claude/hooks/*.sh githooks/* .claude/settings.json .claude/agents/owner-model-auditor.md; do
   [ -f "$f" ] || continue
   printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$f"
 done | sort -k2 > docs/AUDITOR/HOOK_MANIFEST.sha256

@@ -125,11 +125,14 @@ for l in cand:
 if hit < 8:
     out("NOTPASTED", hit, len(cand))
 
+# **判定は「行頭が 判定: の行」のうち最後のものだけを見る。**
+# 5 本目の監査の指摘: 押し出し側は 2 本目の教訓(引用文中の「判定: 通す」が鍵になった)を受けて
+# 「最後の行頭の判定」に直したのに、こちらは「最初の一致」のままで**非対称**だった。
+# 「同じ種類の穴を一方だけ塞いで他方は塞がない」ことへの指摘。
 verdict = ""
 for l in sec:
     if l.startswith("判定:"):
         verdict = l.strip()
-        break
 if not verdict:
     out("NOVERDICT")
 

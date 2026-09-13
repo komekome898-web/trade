@@ -1,0 +1,49 @@
+#!/bin/sh
+# git 自身が実行する押し出しの関門(2026-09-13、5 本目の監査を受けて新設)。
+#
+# **なぜ git 側に置くか。**
+# それまでの関門は Claude Code の Bash フックで「コマンド文字列が押し出しに見えるか」を
+# 正規表現で判定していた。5 本目の監査が静的読解で抜け道を挙げ、**実機で 8 件とも再現した**:
+#   env git push / "git" push / git "push" / git${IFS}push / eval '...' / xargs 経由 /
+#   command git push / \git push
+# いずれも**行頭が git でない、または git と push が 1 語になる**書き方で、正規表現を外れる。
+# 個別に潰しても、シェルの言い換えは無限にある。**方式そのものが弱い。**
+# オーナー逐語(L-100):
+#   「**以前に指摘したときも慌てて色んなドキュメントを作ってましたが、改善が見られないようです。
+#     構造的に防ぐにはどうすればいいと思いますか？**」
+#
+# → **どう呼ばれても、押し出しをするのは git である。**だから関門を git に置く。
+#   env でも eval でも xargs でも別名でもスクリプト経由でも、git は必ずこのフックを実行する。
+#
+# **限界(正直に書く)**: `.git/hooks` はリポジトリに入らないので、**新しい clone では
+# `sh scripts/install_git_hooks.sh` を走らせるまで効かない**(このフックの実体は追跡されている
+# `githooks/` に置き、`core.hooksPath` で指す)。また `--no-verify` を付ければ git は
+# フックを飛ばす。**この関門はうっかりを止めるものであって、意図した迂回は止めない。**
+# 迂回はコミットの差分と reflog に残る。
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 1
+cd "$ROOT" || exit 1
+
+# 指紋の照合(フック・設定・監査役の定義が台帳と一致しているか)
+[ -f .claude/hooks/_verify_manifest.sh ] && { sh .claude/hooks/_verify_manifest.sh </dev/null || exit 1; }
+
+Z=0000000000000000000000000000000000000000
+STATUS=0
+
+# git は「<ローカル参照> <ローカルsha> <リモート参照> <リモートsha>」を標準入力に渡す
+while read -r _lref lsha _rref rsha; do
+  [ -n "$lsha" ] || continue
+  [ "$lsha" = "$Z" ] && continue                      # 削除の押し出しは対象外
+  if [ "$rsha" = "$Z" ] || [ -z "$rsha" ]; then
+    RANGE="$lsha"                                     # 新しい枝: そのコミット群すべて
+  else
+    RANGE="$rsha..$lsha"
+  fi
+  sh .claude/hooks/_require_action_audit.sh "$RANGE" || STATUS=1
+done
+
+if [ "$STATUS" != "0" ]; then
+  echo "" >&2
+  echo "[pre-push] git 側の関門が押し出しを止めた。**コマンドの書き方を変えても迂回できない。**" >&2
+fi
+exit "$STATUS"
