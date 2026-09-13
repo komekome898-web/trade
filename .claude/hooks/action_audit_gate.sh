@@ -10,9 +10,22 @@
 #
 # 判定: push しようとしている未反映のコミット群に docs/AUDITOR/ACTION_LOG.md の変更が
 #       含まれていなければ拒否する。
-# 抜け道は残る(このファイル自体をリードが書き換えられる)。ただしこの環境は毎回
-# リポジトリを新しく clone するため、**こっそり緩めても次のセッションで消え、
-# 恒久的に緩めるには commit が要り、それは差分に出る。**
+# 塞いだ経路(2026-09-13、実際にコマンド文字列で確認した範囲):
+#   git push / git -C <path> push / /usr/bin/git push / gh (repo 書き込み系) /
+#   bash -c '...' や sh -c '...' の中の上記 / 区切り(; & |)の後ろの上記
+# **塞げていない経路(実測ではなく、この環境で利用可能なツール一覧から列挙)**:
+#   mcp__github__create_or_update_file / push_files / merge_pull_request 等(Bash を経ない)
+#     → これらは settings.json の matcher に追加して同じ関門に掛ける
+#   **オーナーへの会話の返答そのもの**(ツールを経ないので、フックでは原理的に掛けられない)
+#   測定の実行・データの破棄・事前登録の作成・委任の発注(push より前に完了する行動)
+# **このファイル自体をリードが書き換えられる。**ただしこの環境は毎回リポジトリを
+# 新しく clone するため、こっそり緩めても次のセッションで消え、
+# 恒久的に緩めるには commit が要り、それは差分に出る。
+# **全経路を試した結果ではない。上は「この環境のツール一覧を見て列挙した範囲」である。**
+
+# --mcp: Bash を経ない GitHub 書き込みツール。コマンド文字列が無いので無条件に関門へ。
+MCP=0
+[ "$1" = "--mcp" ] && MCP=1
 
 INPUT="$(cat)"
 
@@ -24,10 +37,15 @@ except Exception:
     print("")
 ' 2>/dev/null)"
 
-[ -z "$CMD" ] && exit 0
+[ "$MCP" = "1" ] || [ -n "$CMD" ] || exit 0
 
 # コマンドの各区切りの先頭が `git push` のものだけを対象にする(誤発火を避ける)
-printf '%s' "$CMD" | tr ';&|' '\n' | sed 's/^[[:space:]]*//' | grep -q '^git push' || exit 0
+# push に相当する操作を、区切り・パス・ラッパを跨いで拾う。
+# (2026-09-13 の監査で `git -C <path> push` が素通りすることが判明したため書き直した)
+NORM="$(printf '%s' "$CMD" | tr ';&|' '\n' | sed "s/^[[:space:]]*//; s/^bash -c ['\"]//; s/^sh -c ['\"]//")"
+printf '%s\n' "$NORM" | grep -Eq '^(/[^ ]*/)?git( +-C +[^ ]+)?( +-[^ ]+)* +push' && FIRE=1
+printf '%s\n' "$NORM" | grep -Eq '^(/[^ ]*/)?gh +(pr|repo|api|release|workflow)' && FIRE=1
+[ "$MCP" = "1" ] || [ "${FIRE:-0}" = "1" ] || exit 0
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 cd "$ROOT" 2>/dev/null || exit 0
@@ -57,7 +75,29 @@ EOF
 fi
 
 if printf '%s\n' "$CHANGED" | grep -qx "$LOG"; then
-  exit 0
+  # ログが触られただけでは通さない。今回の範囲の追記に、監査が実際に走った形跡
+  # (監査役の名前 + 判定行 + 指摘の本文)が含まれることを要求する。
+  ADDED="$(git diff "$RANGE" -- "$LOG" 2>/dev/null | grep '^+' | grep -v '^+++')"
+  MISS=""
+  printf '%s' "$ADDED" | grep -q 'owner-model-auditor' || MISS="${MISS} 監査役の名前"
+  printf '%s' "$ADDED" | grep -q '判定: *通す' || MISS="${MISS} 「判定: 通す」の行"
+  # 指摘の本文が 3 行以上(見出しだけの空の追記を弾く)
+  [ "$(printf '%s' "$ADDED" | wc -l)" -ge 8 ] || MISS="${MISS} 指摘の本文"
+  if [ -z "$MISS" ]; then exit 0; fi
+  cat >&2 <<EOF
+[行動監査の関門] push を拒否した。
+
+理由: ACTION_LOG.md は変更されているが、監査が実際に走った形跡が足りない。
+不足:${MISS}
+
+**これは「記録を省いて通すための空の追記」を弾く判定である**
+(オーナー指摘 2026-09-13:「指摘の件数を上げるだけの意味のないものになっています」)。
+
+**なお、この判定でもリードが自分で「判定: 通す」と書けば通る。
+監査役がリードの管理下にあるという問題は、これでは解決していない。
+解決にはオーナーの判断が要る(ACTION_LOG の未決事項を参照)。**
+EOF
+  exit 2
 fi
 
 cat >&2 <<'EOF'
