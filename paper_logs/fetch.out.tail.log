@@ -1,6 +1,3 @@
-      missing: ./raw/BTCUSDT-aggTrades-2026-08-01.zip.CHECKSUM
-      missing: ./raw/BTCUSDT-aggTrades-2026-09-01.zip
-      missing: ./raw/BTCUSDT-aggTrades-2026-09-01.zip.CHECKSUM
   [MISMATCH] binance_um_BTCUSDT_aggTrades_20260723_20260906: 0 mismatched, 135 missing, 1 extra-untracked
       missing: ./BTCUSDT-aggTrades-2026-07-23.csv.gz
       missing: ./BTCUSDT-aggTrades-2026-07-24.csv.gz
@@ -255,7 +252,7 @@
       mismatch: progress.json expected=2548a8683435fabf0307f4469e417e1f actual=d53942506cfa86e75e2867960f075282
   [ok, line-ending-only] board_round_20260904: 1/2 matched, 1 line-ending-only (3 extra-untracked)
   [ok] burst_events_20260820: 99/99 matched
-  [newly_sealed] bybit_BTCUSDT_1m_20260910: sealed 1 files -> backtest_data\bybit_BTCUSDT_1m_20260910\MD5SUMS
+  [ok] bybit_BTCUSDT_1m_20260910: 1/1 matched
   [ok] bybit_reachability_check_20260906: 3/3 matched
   [ok] executions_FX_BTC_JPY_31d_20260908: 2/2 matched (1 extra-untracked)
   [ok] fx_btc_jpy_1m_continuous_20260906: 3/3 matched
@@ -269,6 +266,7 @@
   [ok] jpx_daily_report_json_20260908: 9/9 matched
   [ok, line-ending-only] jpx_etf_daily_20260905: 30/33 matched, 3 line-ending-only
   [ok] jpx_etf_daily_20260906_topix_alt: 9/9 matched
+  [newly_sealed] liquidations_repaired_20260912: sealed 15 files -> backtest_data\liquidations_repaired_20260912\MD5SUMS
   [ok] mini_topixf_225labo_20260907: 7/7 matched
   [ok] n225f_225labo_20260828: 7/7 matched (2 extra-untracked)
   [ok, line-ending-only] nk225_events_20260904: 3/4 matched, 1 line-ending-only (2 extra-untracked)
@@ -292,7 +290,7 @@
   [ok] topixf_225labo_20260907: 7/7 matched
   [ok, line-ending-only] venue_survey_20260827: 31/35 matched, 4 line-ending-only
   [ok, line-ending-only] yutai_20260904: 2/3 matched, 1 line-ending-only
-ledger cross-check (data\INTAKE_latest.json): 4276 files checked, 0 mismatches
+ledger cross-check (data\INTAKE_latest.json): 4293 files checked, 0 mismatches
 overall: FAIL
 wrote C:\Users\ryoma\trade\data\SNAPSHOT_VERIFY.json
 file                                 bytes     members  complete  last_ok  recoverable_bytes
@@ -394,7 +392,9 @@ FX_BTC_JPY_20260911_061913.jsonl.gz  5672076   118      118       yes      50193
 FX_BTC_JPY_20260911_081835.jsonl.gz  28159286  491      491       yes      241450957        
 FX_BTC_JPY_20260911_163059.jsonl.gz  577314    10       10        yes      4756458          
 FX_BTC_JPY_20260911_164034.jsonl.gz  84905     2        2         yes      696431           
-FX_BTC_JPY_20260911_164207.jsonl.gz  1865550   33       33        yes      15579618         
+FX_BTC_JPY_20260911_164207.jsonl.gz  7496708   140      140       yes      64561178         
+FX_BTC_JPY_20260911_190457.jsonl.gz  13608692  315      315       yes      132780967        
+FX_BTC_JPY_20260912_002046.jsonl.gz  21231074  642      642       yes      256743793        
 
-98 files scanned, 34 with a truncated last member, 13619563207 decompressed bytes recoverable in total
+100 files scanned, 34 with a truncated last member, 14058069527 decompressed bytes recoverable in total
 wrote C:\Users\ryoma\trade\data\WS_GZ_LISTING.json

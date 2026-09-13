@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-11T17:13:57.128488+00:00",
+  "generated_at": "2026-09-12T11:03:48.173725+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -634,6 +634,20 @@
     {
       "unit": "auto_okx_open_interest_5m_20260911",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260911\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260912",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260912\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -3096,14 +3110,13 @@
       "unit": "bybit_BTCUSDT_1m_20260910",
       "md5sums_path": "backtest_data\\bybit_BTCUSDT_1m_20260910\\MD5SUMS",
       "file_count": 1,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 1
+      "extra": []
     },
     {
       "unit": "bybit_reachability_check_20260906",
@@ -3346,6 +3359,19 @@
       "line_ending_mismatches": [],
       "missing": [],
       "extra": []
+    },
+    {
+      "unit": "liquidations_repaired_20260912",
+      "md5sums_path": "backtest_data\\liquidations_repaired_20260912\\MD5SUMS",
+      "file_count": 15,
+      "status": "newly_sealed",
+      "checked": 0,
+      "matched": 0,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [],
+      "sealed_file_count": 15
     },
     {
       "unit": "mini_topixf_225labo_20260907",
@@ -4206,19 +4232,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 4276,
+    "checked": 4293,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 72,
-    "verified": 40,
+    "unit_count": 74,
+    "verified": 42,
     "verified_line_ending_only": 21,
     "newly_sealed": 1,
     "mismatch_units": 10,
     "total_mismatches": 3,
     "total_line_ending_only": 99,
     "total_missing": 954,
-    "total_extra_untracked": 1608,
+    "total_extra_untracked": 1609,
     "ledger_mismatches": 0
   },
   "ok": false

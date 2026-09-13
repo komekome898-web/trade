@@ -243,3 +243,25 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-09-12T00:20:46+00:00 bybit: -> bybit_20260912.jsonl.gz
 2026-09-12T00:20:50+00:00 binance_cm: binance_cm_20260912.jsonl.gz の末尾メンバが不完全 -> binance_cm_20260912.trunc1.jsonl.gz へ退避して新規作成
 2026-09-12T00:20:50+00:00 binance_cm: -> binance_cm_20260912.jsonl.gz
+2026-09-12T07:51:44+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-12T07:51:48+00:00 okx: 接続
+2026-09-12T13:07:12+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-12T13:07:14+00:00 bybit: 接続
+2026-09-12T14:38:37+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-12T14:38:39+00:00 okx: 接続
+2026-09-12T18:14:43+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-12T18:14:50+00:00 bybit: 接続
+2026-09-12T19:09:41+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-12T19:09:45+00:00 bitmex: 接続
+2026-09-12T20:03:24+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx', 'bitmex'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-12T20:03:27+00:00 binance_cm: 接続
+2026-09-12T20:03:27+00:00 okx: 接続
+2026-09-12T20:03:27+00:00 okx: -> okx_20260912.jsonl.gz
+2026-09-12T20:03:27+00:00 binance_um: 接続
+2026-09-12T20:03:27+00:00 bitmex: 接続
+2026-09-12T20:03:27+00:00 bitmex: -> bitmex_20260912.jsonl.gz
+2026-09-12T20:03:27+00:00 bybit: 接続
+2026-09-12T20:03:27+00:00 bybit: -> bybit_20260912.jsonl.gz
+2026-09-12T20:03:36+00:00 binance_cm: -> binance_cm_20260912.jsonl.gz
+2026-09-12T21:10:17+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-12T21:10:22+00:00 bitmex: 接続
