@@ -40,6 +40,25 @@ except Exception:
 
 [ "$MCP" = "1" ] || [ -n "$CMD" ] || exit 0
 
+# --- MCP は「書き込みを列挙する」のではなく「読み取りだけを通す」= 既定は拒否 ---
+# 6 本目の監査の指摘: settings.json の matcher が書き込み系 5 個の**列挙**だったため、
+# GitHub MCP が今後別名の書き込みツール(ref の更新など)を増やしたら素通りする。
+# **これは正規表現で言い換えを 1 つずつ潰していた旧方式と同型で、列挙は無限である。**
+# → matcher は `mcp__github__.*` に広げ、ここで**読み取りと分かるものだけ**を通す。
+# 知らないツールは通さない。**判定できないときは通さない**という他の判定と同じ向きにする。
+if [ "$MCP" = "1" ]; then
+  TOOL="$(printf '%s' "$INPUT" | python3 -c 'import json,sys
+try: print(json.load(sys.stdin).get("tool_name",""))
+except Exception: print("")' 2>/dev/null)"
+  case "$TOOL" in
+    mcp__github__get_*|mcp__github__list_*|mcp__github__search_*|\
+    mcp__github__issue_read|mcp__github__pull_request_read|\
+    mcp__github__actions_get|mcp__github__actions_list|\
+    mcp__github__subscribe_pr_activity|mcp__github__unsubscribe_pr_activity)
+      exit 0 ;;
+  esac
+fi
+
 # **復旧路は開けるが、「鍵」にはしない。**2026-09-13 の実測: 指紋の照合を全操作に広げた直後、
 # フック自身の指紋が変わって**復旧手順(再生成)まで拒否され、関門が自分を直せなくなった。**
 # 監査役はこれを事前に予言していた(「オーナーが禁じたまさにその行動へリードを追い込む形になっている」)。

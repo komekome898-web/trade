@@ -79,6 +79,54 @@ show("sh scripts/regen_hook_manifest.sh  ←復旧路は改変中でも開くか
 shutil.move(bak, VM)
 show("ls -la  ←復元後は通るか", act("ls -la"), 0)
 
+print("\n== MCP の GitHub ツール(既定は拒否。読み取りだけ通す) ==")
+
+
+def mcp(tool):
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=ROOT)
+    p = subprocess.run(["sh", AG, "--mcp"], input=json.dumps({"tool_name": tool, "tool_input": {}}),
+                       capture_output=True, text=True, env=env, cwd=ROOT)
+    return p.returncode
+
+
+show("mcp__github__get_me(読み取り)", mcp("mcp__github__get_me"), 0)
+show("mcp__github__list_commits(読み取り)", mcp("mcp__github__list_commits"), 0)
+show("mcp__github__push_files(書き込み)", mcp("mcp__github__push_files"), 2)
+show("mcp__github__create_branch(旧版の列挙に無い書き込み)", mcp("mcp__github__create_branch"), 2)
+show("mcp__github__update_ref(将来ありうる未知のツール)", mcp("mcp__github__update_ref"), 2)
+
+print("\n== git 側の関門(本体)を直接叩く ==")
+# 6 本目の監査の指摘: 31 件すべてが Bash 側のフックしか呼んでおらず、
+# **「そちらが本体である」と自称する githooks/pre-push を一度も実行していなかった。**
+# git は「<ローカル参照> <ローカルsha> <リモート参照> <リモートsha>」を標準入力で渡す。
+PRE = os.path.join(ROOT, "githooks/pre-push")
+Z = "0" * 40
+HEAD = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+                      cwd=ROOT).stdout.strip()
+BASE = subprocess.run(["git", "rev-parse", "HEAD~1"], capture_output=True, text=True,
+                      cwd=ROOT).stdout.strip()
+
+
+def prepush(stdin_text):
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=ROOT)
+    p = subprocess.run(["sh", PRE, "origin", "https://example.invalid/r.git"],
+                       input=stdin_text, capture_output=True, text=True, env=env, cwd=ROOT)
+    return p.returncode
+
+
+# いまの HEAD の直前からの範囲は、ACTION_LOG の最後の判定で決まる。
+# 「通す」でなければ止まるのが正しい。ここでは最後の判定を実際に読んで期待値を決める。
+log_txt = open(os.path.join(ROOT, "docs/AUDITOR/ACTION_LOG.md"), encoding="utf-8").read()
+last = [l for l in log_txt.split("\n") if l.startswith("判定:")]
+expect_range = 0 if (last and last[-1].startswith("判定: 通す")) else 1
+show(f"通常の範囲(台帳の最後の判定は {last[-1] if last else '無し'})",
+     prepush(f"refs/heads/x {HEAD} refs/heads/x {BASE}\n"), expect_range)
+show("削除の押し出し(ローカル sha がゼロ)は対象外なので通る",
+     prepush(f"refs/heads/x {Z} refs/heads/x {BASE}\n"), 0)
+show("標準入力が空(押し出す参照が無い)なら通る", prepush(""), 0)
+show("判定できない範囲(存在しない sha)は通さない",
+     prepush("refs/heads/x " + "f" * 40 + " refs/heads/x " + "e" * 40 + "\n"), 1)
+
 print("\n== 返答の関門 ==")
 tmp = tempfile.mkdtemp()
 os.makedirs(os.path.join(tmp, "docs/AUDITOR"))

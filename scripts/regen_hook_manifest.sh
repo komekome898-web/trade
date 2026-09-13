@@ -10,7 +10,12 @@ cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}" || exit 1
 # **githooks/ も台帳に入れる(2026-09-13、5 本目の監査のあと)。**
 # 押し出しの関門の本体は git 側の `githooks/pre-push` に移った。台帳に入れなければ、
 # **オーナーが禁じた「無検知で書き換えられるフック」がまた増えることになる。**
-for f in .claude/hooks/*.sh githooks/* .claude/settings.json .claude/agents/owner-model-auditor.md; do
+# 関門の導入と再生成そのものを行うスクリプトも台帳に入れる(6 本目の監査の指摘)。
+# `install_git_hooks.sh` を書き換えれば `core.hooksPath` を別の場所へ向けられるので、
+# **関門の本体と同じ重さのファイルである。**
+for f in .claude/hooks/*.sh githooks/* .claude/settings.json \
+         .claude/agents/owner-model-auditor.md \
+         scripts/install_git_hooks.sh scripts/regen_hook_manifest.sh; do
   [ -f "$f" ] || continue
   printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$f"
 done | sort -k2 > docs/AUDITOR/HOOK_MANIFEST.sha256

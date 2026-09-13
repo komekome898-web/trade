@@ -15,11 +15,17 @@
 # → **どう呼ばれても、押し出しをするのは git である。**だから関門を git に置く。
 #   env でも eval でも xargs でも別名でもスクリプト経由でも、git は必ずこのフックを実行する。
 #
-# **限界(正直に書く)**: `.git/hooks` はリポジトリに入らないので、**新しい clone では
-# `sh scripts/install_git_hooks.sh` を走らせるまで効かない**(このフックの実体は追跡されている
-# `githooks/` に置き、`core.hooksPath` で指す)。また `--no-verify` を付ければ git は
-# フックを飛ばす。**この関門はうっかりを止めるものであって、意図した迂回は止めない。**
-# 迂回はコミットの差分と reflog に残る。
+# **限界(全部書く。6 本目の監査の指摘「書いていない穴があれば、それが指摘である」)**:
+#   1. `.git/hooks` はリポジトリに入らないので、**新しい clone では
+#      `sh scripts/install_git_hooks.sh` を走らせるまで効かない**(このフックの実体は
+#      追跡されている `githooks/` に置き、`core.hooksPath` で指す)。
+#   2. `--no-verify` を付ければ git はフックを飛ばす。
+#   3. **`git -c core.hooksPath=<別の場所> push` や `git config core.hooksPath <別の場所>` で
+#      このフックごと無効にできる。**(2) と同じ重さの迂回である。
+#   4. `githooks/pre-push` と `scripts/install_git_hooks.sh` は指紋の台帳に入れてあるので、
+#      **書き換えると他の操作が止まる**。ただし台帳を同じコミットで直せば通る。
+# **この関門はうっかりを止めるものであって、意図した迂回は止めない。**
+# 迂回はコミットの差分と reflog に残る。**「拒否する」ではなく「残る」が正しい記述である。**
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 1
 cd "$ROOT" || exit 1
