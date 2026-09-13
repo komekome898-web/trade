@@ -104,8 +104,16 @@ def load_binance_cm_liquidations(
     (欠測 6 日、README 参照)は単に無視される(呼び出し側は自分でカバレッジを見る)。
     """
     root = Path(root)
+    zips = sorted(root.glob("*-liquidationSnapshot-*.zip"))
+    if not zips:
+        # 黙って 0 件を返さない(2026-09-13、read_rows と同じ欠陥をここでも塞ぐ)。
+        # パスを 1 階層間違えると空が返り、「清算が無かった」と読めてしまう。
+        raise FileNotFoundError(
+            f"liquidationSnapshot の zip が 1 つも見つからない: {root} "
+            f"(期待するのは .../liquidationSnapshot/<SYMBOL>/ のような zip を直接含むディレクトリ)"
+        )
     events: list[LiquidationEvent] = []
-    for zpath in sorted(root.glob("*-liquidationSnapshot-*.zip")):
+    for zpath in zips:
         # ファイル名 "<SYMBOL>-liquidationSnapshot-YYYY-MM-DD.zip" から日付を取る
         day = date.fromisoformat("-".join(zpath.stem.rsplit("-", 3)[1:]))
         if start is not None and day < start:

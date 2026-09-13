@@ -277,3 +277,19 @@ def test_build_dataset_keeps_all_rows_across_kinds():
     assert len(rows) == len(real) + len(placebo) + len(no_liq) == 3
     kinds = {r["kind"] for r in rows}
     assert kinds == {"real", "placebo", "no_liquidation"}
+
+
+def test_load_binance_cm_liquidations_raises_when_no_zip_found(tmp_path):
+    """パスを間違えたときに黙って 0 件を返さない(2026-09-13)。
+
+    `read_rows` と同じ欠陥。1 階層違うディレクトリを渡すと空が返り、
+    「その期間に清算が無かった」と読めてしまう。
+    """
+    import pytest
+
+    from bot.research.liq_response import load_binance_cm_liquidations
+
+    empty = tmp_path / "wrong_level"
+    empty.mkdir()
+    with pytest.raises(FileNotFoundError):
+        load_binance_cm_liquidations(empty)
