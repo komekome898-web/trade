@@ -127,7 +127,7 @@ def prepush(stdin_text):
 # 決めていた。ところが関門は「その範囲に ACTION_LOG の追記があるか」も見るので、
 # **期待値の立て方が関門の判定より甘く、実測が食い違った。**試験の側が間違っていた。
 def _temp_repo(verdict: str, stop_wired: bool, sample_today: bool = True,
-               sample_marker_only: bool = False) -> str:
+               sample_marker_only: bool = False, decoy_next_section: bool = False) -> str:
     import datetime, subprocess as sp, textwrap
     d = tempfile.mkdtemp()
     os.makedirs(os.path.join(d, "docs/AUDITOR")); os.makedirs(os.path.join(d, ".claude"))
@@ -141,8 +141,13 @@ def _temp_repo(verdict: str, stop_wired: bool, sample_today: bool = True,
     git("add", "-A"); git("commit", "-q", "-m", "first")
     today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")  # 関門と同じ UTC
     body = "\n".join(f"> 指摘の本文 {i} 行目。これは監査役が書いた文である。" for i in range(1, 10))
+    # **12 本目の監査が挙げた抜け道**: 今日の抜き取りをマーカー 1 行で済ませ、
+    # その直後に「監査役の名前 + 抜き取り判定 + 本文」を持つ**別の節**を置くと、
+    # 節の切り出しが壊れていれば、その別節の中身が今日の分として数えられる。
+    decoy = (f"## 別の日の抜き取り\n\n抜き取り: 1999-01-01\n**監査役**: `owner-model-auditor`\n\n"
+             f"{body}\n\n抜き取り判定: 通す\n\n" if decoy_next_section else "")
     log = (f"## 監査\n\n監査対象: U1/結果\n**監査役**: `owner-model-auditor`\n\n{body}\n\n"
-           + (f"抜き取り: {today}\n" if sample_marker_only else
+           + (f"## 本日の抜き取り\n\n抜き取り: {today}\n\n" + decoy if sample_marker_only else
               (f"## 抜き取り\n\n抜き取り: {today}\n**監査役**: `owner-model-auditor`\n\n{body}\n\n"
                f"抜き取り判定: 通す\n\n" if sample_today else ""))
            + f"## 処置\n\n判定: {verdict}\n")
@@ -171,6 +176,9 @@ for label, kw, want in [
     ("本日の抜き取りが無い → 止まる", dict(verdict="通す", stop_wired=False, sample_today=False), 1),
     ("抜き取りの行だけ足した(中身なし)→ 止まる ←11 本目の監査",
      dict(verdict="通す", stop_wired=False, sample_marker_only=True), 1),
+    ("抜き取りの行だけ + 直後に別の日の正規の抜き取り節 → 止まる ←12 本目の監査",
+     dict(verdict="通す", stop_wired=False, sample_marker_only=True,
+          decoy_next_section=True), 1),
 ]:
     d = _temp_repo(**kw)
     show(label, _prepush_in(d), want)
