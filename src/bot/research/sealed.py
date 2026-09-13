@@ -381,6 +381,23 @@ def load_sealed(path: Path | str, unit: str, token: str,
         reasons.append(f"missing owner approval file {approved}")
     if token != UNSEAL_TOKEN:
         reasons.append("wrong confirmation token")
+    # 4 つ目の門(2026-09-13、L-164): 監査の記録。
+    # 2026-09-13、判定区間を開けたあとで測定器の欠陥が次々に出て 1 日分の研究を捨てた。
+    # 判定区間は一度しか開けられないので、**開ける前**に監査を要求する。
+    # 関門をここに置くのは、どう呼ばれても開封が起きるのがこの関数だからである
+    # (押し出しの関門を git 自身に置いたのと同じ理屈)。
+    try:
+        import sys as _sys
+        _scripts = str(Path(root) / "scripts")
+        if _scripts not in _sys.path:
+            _sys.path.insert(0, _scripts)
+        from _research_audit_gate import find_audit as _find_audit  # type: ignore
+        _ok, _why = _find_audit(unit, "封印の開封", root)
+    except Exception as _exc:  # 関門が読めないときは通さない
+        _ok, _why = False, f"監査の関門を読み込めない({_exc})。**判定できないときは通さない。**"
+    if not _ok:
+        reasons.append(f"監査の記録が無い: {_why}(docs/AUDITOR/ACTION_LOG.md に "
+                       f"「監査対象: {unit}/封印の開封」の節と行頭の「判定: 通す」が要る)")
     if reasons:
         raise SealedDataError(
             f"refusing to unseal {unit!r}: " + "; ".join(reasons))

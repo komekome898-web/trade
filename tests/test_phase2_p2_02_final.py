@@ -40,13 +40,39 @@ from phase2 import p2_02_run as p2  # noqa: E402
 # 1. the three unseal guards
 # ---------------------------------------------------------------------------
 
-def _guard_root(tmp_path: Path, approved: bool) -> Path:
+def write_audit_record(root: Path, unit: str, stage: str) -> None:
+    """4 つ目の門(2026-09-13、L-164)が要求する監査の記録を、一時の root に置く。
+
+    本番では `owner-model-auditor` が返した逐語をリードが ACTION_LOG に転記する。
+    ここでは同じ形を合成して、**門が「記録があれば通す」側も測れるように**する
+    (拒否される側しか測っていない、というのが 2026-09-13 の 3 本目の監査の指摘だった)。
+    """
+    log = root / "docs" / "AUDITOR" / "ACTION_LOG.md"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    body = "\n".join(f"> 指摘の本文 {i} 行目。これは監査役が書いた文である。" for i in range(1, 10))
+    log.write_text(
+        f"## 試験\n\n監査対象: {unit}/{stage}\n**監査役**: `owner-model-auditor`\n\n"
+        f"{body}\n\n判定: 通す\n", encoding="utf-8")
+
+
+def _guard_root(tmp_path: Path, approved: bool, audited: bool = True) -> Path:
     d = tmp_path / "backtest_data" / "phase2_sealed" / "P2-02"
     d.mkdir(parents=True)
     if approved:
         (d / "UNSEAL_APPROVED").write_text("unit: P2-02\napproved_by: test\n",
                                            encoding="utf-8")
+    if audited:
+        write_audit_record(tmp_path, "P2-02", "封印の開封")
     return tmp_path
+
+
+def test_guard_refuses_without_an_audit_record(tmp_path, monkeypatch):
+    """4 つ目の門: 監査の記録が無ければ、他の 3 つが揃っていても開かない。"""
+    root = _guard_root(tmp_path, approved=True, audited=False)
+    monkeypatch.setenv("PHASE2_FINAL_EVAL", "P2-02")
+    with pytest.raises(Exception) as e:
+        pf.check_guards(root=root, token=UNSEAL_TOKEN)
+    assert "監査" in str(e.value)
 
 
 def test_guards_pass_only_when_all_three_are_present(tmp_path, monkeypatch):
@@ -176,6 +202,8 @@ def _build_synthetic_root(tmp_path: Path) -> tuple[Path, list, list]:
     (root / "paper_logs").mkdir(parents=True)
     seal = root / "backtest_data" / "phase2_sealed" / "P2-02"
     seal.mkdir(parents=True)
+    # 4 つ目の門(2026-09-13、L-164): 合成の root にも監査の記録を置く。
+    write_audit_record(root, "P2-02", "封印の開封")
     (seal / "UNSEAL_APPROVED").write_text("unit: P2-02\napproved_by: test\n",
                                           encoding="utf-8")
 

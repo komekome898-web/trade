@@ -1,5 +1,5 @@
 {
-  "_停止の記録": "2026-09-13、オーナー指示「フックを一回とめろ」(L-160)により、止める力を持つ 3 つの関門(行動の関門 Bash / 同 MCP / 指紋の照合 Write|Edit|Agent / 返答の関門 Stop)を外した。git 側の pre-push も core.hooksPath を外して停止した。**リードの判断で戻さない。**戻すときは下の _停止前の設定 を hooks に戻し、sh scripts/install_git_hooks.sh を実行し、sh scripts/regen_hook_manifest.sh を走らせる。表示のみの 6 本はそのまま動かしてある。",
+  "_停止の記録": "2026-09-13 L-160 で全関門を停止し、L-164 で戻した。戻したのは 行動の関門(Bash)/ 同(MCP、既定拒否)/ 指紋の照合(Write・Edit・Agent)/ git の pre-push。**返答の全件関門は戻していない**(上の注記)。",
   "hooks": {
     "PreToolUse": [
       {
@@ -41,33 +41,7 @@
             "timeout": 5
           }
         ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session_start_digest.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_turn_digest.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  },
-  "_停止前の設定": {
-    "PreToolUse に戻すもの": [
+      },
       {
         "matcher": "Bash",
         "hooks": [
@@ -96,7 +70,32 @@
         ]
       }
     ],
-    "Stop に戻すもの": [
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session_start_digest.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_turn_digest.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "_停止前の設定": {
+    "注記": "2026-09-13 L-164。止める力のある関門を戻したが、**Stop(返答 1 件ずつの関門)は戻していない**。空回りしていたため、抜き取り(1 日 1 件、押し出しのときに確認)に置き換えた。reply_audit_gate.sh は配線されていないが、抜き取りで「止める」が出た翌日に全件へ戻すときのために残してある。",
+    "Stop に戻すもの(全件監査へ戻す日だけ)": [
       {
         "matcher": "",
         "hooks": [

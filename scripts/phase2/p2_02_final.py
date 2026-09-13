@@ -142,6 +142,20 @@ def check_guards(root: Path | str = REPO_ROOT, token: str = UNSEAL_TOKEN,
         reasons.append(f"missing owner approval file {approved}")
     if token != UNSEAL_TOKEN:
         reasons.append("wrong confirmation token")
+    # 4 つ目の門(2026-09-13、L-164)。`bot.research.sealed.load_sealed` と同じものを
+    # ここにも置く。**この関数は load_sealed を写した二重実装なので、片方だけ門を足すと
+    # 「同じ種類の穴を一方だけ塞ぐ」ことになる**(2026-09-13 の 5 本目の監査の指摘)。
+    try:
+        import sys as _sys
+        _g = str(Path(__file__).resolve().parent.parent)
+        if _g not in _sys.path:
+            _sys.path.insert(0, _g)
+        from _research_audit_gate import find_audit as _find_audit  # type: ignore
+        _ok, _why = _find_audit(unit, "封印の開封", root)
+    except Exception as _exc:
+        _ok, _why = False, f"監査の関門を読み込めない({_exc})。**判定できないときは通さない。**"
+    if not _ok:
+        reasons.append(f"監査の記録が無い: {_why}")
     if reasons:
         raise SealedDataError(
             "refusing the P2-02 final evaluation: " + "; ".join(reasons))

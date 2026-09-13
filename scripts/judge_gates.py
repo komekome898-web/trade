@@ -996,7 +996,29 @@ def main(argv: Sequence[str] | None = None) -> int:
                     help="bootstrap iterations for the day-clustered CI")
     ap.add_argument("--seed", type=int, default=20260821, help="bootstrap seed")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    # 測定後・報告前の関門(2026-09-13、L-164。オーナーの追加提案)
+    ap.add_argument("--unit", default=None,
+                    help="研究単位の名前。渡すと docs/AUDITOR/ACTION_LOG.md に "
+                         "「監査対象: <unit>/結果」の節と行頭の「判定: 通す」を要求する")
     args = ap.parse_args(argv)
+
+    # **なぜここに関門があるか**: 2026-09-13 の測定の欠陥 10 件は、事前登録の監査では
+    # 捕まらないものだった(設計は正しく、測定器が壊れても止まらず、もっともらしい数値を
+    # 返していた)。捕まえられるのは**出てきた数値そのものを見る監査**だけである。
+    # この監査は「測定が事前登録どおりに動いたか」を見るためのもので、
+    # 判定そのものをやり直すためではない。
+    if args.unit:
+        import sys as _sys
+        from pathlib import Path as _Path
+        _sys.path.insert(0, str(_Path(__file__).resolve().parent))
+        from _research_audit_gate import require_audit as _require_audit
+        _require_audit(args.unit, "結果", _Path(args.root).resolve())
+    else:
+        # **`--no-audit-gate` という抜け道は作らない。**--unit を省けば同じことなので、
+        # 外す旗は「関門を外すための正当な手段」に見えるだけで意味が無く、
+        # A-9(検査を通すことの目的化)の入口になる。代わりに、監査を通っていないことを表示する。
+        print("[注意] --unit を渡していないので、測定後の監査の関門は掛かっていない。"
+              "この出力をオーナーへの報告に使うなら、--unit を付けて監査を通すこと。", file=sys.stderr)
 
     since = None
     if args.since:
