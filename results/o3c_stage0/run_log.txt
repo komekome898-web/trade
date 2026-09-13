@@ -1,0 +1,8 @@
+liquidation events loaded: n=26014 time=0.1s range=1718237899046..1728883631079
+cascades: total=5638 long=3314 short=2288 mixed=36
+1min bars built: files=124 rows=24299128 bars=178523 time=73.9s
+controls built: placebo_long=394 placebo_short=299 noliq_long=3314 noliq_short=2288 time=591.7s (seeds 42..45)
+reactions computed: time=0.2s
+csv written: /home/user/trade/results/o3c_stage0/stage0_binance_cm_2024-06-13_2024-10-14.csv rows=11933
+stats csv written: /home/user/trade/results/o3c_stage0/stage0_stats.csv rows=8
+TOTAL TIME: 685.2s
