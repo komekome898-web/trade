@@ -91,6 +91,32 @@ if ! grep -q "^抜き取り: $TODAY" "$LOG" 2>/dev/null; then
   MISS="${MISS} 本日($TODAY)の抜き取り監査"
 fi
 
+# **戻し条件を機械にする(2026-09-13、10 本目の監査)。**
+# 指摘: 「止めるが出たら翌日は全件に戻す」は**リードの約束であって機械ではなかった**。
+# §0.1 が「リードの自覚に依存する仕組みは機能しない」と書いた直後に、同じ形で書いていた。
+# → **最後の抜き取りの判定が「止める」なら、返答の全件関門(Stop)が配線されていることを要求する。**
+# 節は**次の見出し(`## `)で切る**。切らないと、抜き取りの後ろに並ぶ別の監査の
+# 「判定: 通す」を抜き取りの判定として拾ってしまう(2 本目の監査が押し出し側で見つけた型)。
+LAST_SAMPLE_VERDICT="$(awk '
+  /^抜き取り: /{f=1; v=""; next}
+  f && /^## /{f=0}
+  f && /^判定:/{v=$0}
+  END{print v}' "$LOG" 2>/dev/null)"
+case "$LAST_SAMPLE_VERDICT" in
+  "判定: 止める"*)
+    if ! grep -q 'reply_audit_gate.sh' .claude/settings.json 2>/dev/null \
+       || ! python3 - <<'PY' 2>/dev/null
+import json,sys
+d=json.load(open(".claude/settings.json"))
+wired=any("reply_audit_gate.sh" in h.get("command","")
+          for g in d.get("hooks",{}).get("Stop",[]) for h in g.get("hooks",[]))
+sys.exit(0 if wired else 1)
+PY
+    then
+      MISS="${MISS} 返答の全件監査への復帰(最後の抜き取りが「止める」だった。settings.json の Stop に reply_audit_gate.sh を戻すこと)"
+    fi ;;
+esac
+
 [ -z "$MISS" ] && exit 0
 
 cat >&2 <<EOF

@@ -26,10 +26,18 @@ from pathlib import Path
 LOG_REL = "docs/AUDITOR/ACTION_LOG.md"
 
 # このファイルを呼んでいる場所(増やしたらここにも書く)
+# **10 本目の監査の訂正**: 旧版はここに「scripts/phase2_seal.py — 封印の作成と開封」と
+# 書いていたが、`phase2_seal.py` は封印の**作成**しかせず、この関門を呼んでいない(grep で 0 件)。
+# 開封(held-out を読む)を行うのは `sealed.py: load_sealed` と、その写しである
+# `p2_02_final.py: check_guards` の 2 本である。**記述が実装と違っていた。**
 WIRED = [
-    "scripts/phase2_seal.py  — 封印の作成と開封",
-    "scripts/judge_gates.py  — 結果の読み出し(測定後・報告前)",
+    "src/bot/research/sealed.py: load_sealed        — 封印の開封(4 つ目の門)",
+    "scripts/phase2/p2_02_final.py: check_guards    — 同上(load_sealed の二重実装)",
+    "scripts/judge_gates.py (--unit は必須)          — 結果の読み出し(測定後・報告前)",
 ]
+# 呼び出し口が消されていないことは `tests/test_audit_gates_wired.py` が毎回の pytest で測る
+# (指紋の台帳は共有部品にしか掛かっておらず、呼び出し側の現役コードに掛けると
+#  普通の研究作業が止まるため。台帳の範囲はオーナーが決めること。)
 
 AUDITORS = ("owner-model-auditor", "owner-auditor")
 
