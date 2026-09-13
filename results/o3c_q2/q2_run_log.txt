@@ -1,0 +1,24 @@
+[    0.0s] 読み込み開始: aggTrades
+[  117.4s] aggTrades 読み込み完了 n=24299128
+[  117.4s] 読み込み開始: metrics
+[  117.8s] metrics 読み込み完了 oi_n=35678 ls_n=35669
+[  117.8s] 読み込み開始: liquidationSnapshot
+[  118.0s] liquidationSnapshot 読み込み完了 n=26014
+[  138.3s] カスケード構成完了 total=5638 long=3314 short=2288 mixed=36
+[  149.3s] 起点ループ完了 起点数=124 skipped=0 マッチ行数=5602
+[  149.3s] 最初の起点(00:05 UTC)以前に始まったカスケード(照合対象外)=0
+[  149.3s] 最後の窓の終端より後に始まったカスケード(照合対象外)=0
+[  149.4s] CSV 書き出し完了: /home/user/trade/results/o3c_q2/q2_cascade_matches.csv (5602 行)
+[  151.9s] method=a direction=long n_eff=3314 nan=0 的中率=0.03621 95%CI=[0.02987,0.04255]
+[  152.1s] method=a direction=short n_eff=2288 nan=0 的中率=0.03846 95%CI=[0.03059,0.04677]
+[  152.4s] method=b direction=long n_eff=3314 nan=0 的中率=0.03259 95%CI=[0.02686,0.03893]
+[  152.6s] method=b direction=short n_eff=2288 nan=0 的中率=0.03409 95%CI=[0.02710,0.04196]
+[  152.9s] method=c direction=long n_eff=3314 nan=0 的中率=0.27429 95%CI=[0.25920,0.28938]
+[  153.1s] method=c direction=short n_eff=2288 nan=0 的中率=0.30288 95%CI=[0.28409,0.32125]
+[  153.1s] 判定 method=a direction=long -> 予測できている
+[  153.1s] 判定 method=a direction=short -> 予測できている
+[  153.1s] 判定 method=b direction=long -> 予測できている
+[  153.1s] 判定 method=b direction=short -> 予測できている
+[  153.1s] 判定 method=c direction=long -> 予測できている
+[  153.1s] 判定 method=c direction=short -> 予測できている
+[  153.1s] summary JSON 書き出し完了: /home/user/trade/results/o3c_q2/q2_summary.json
