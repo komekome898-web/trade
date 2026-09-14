@@ -2,7 +2,7 @@
 O-3c 測定器(liq_response.py)の合成データ検証
 ==============================================================================
 
-[設定] SEED=20260913 N_REAL=300 N_CONTROL=300 HORIZON_MIN=1 R_BP=20.0 I_BP_RANGE=(15.0, 60.0) NOISE_STD_BP=4.0 GAP_MS=60000
+[設定] SEED=20260913 N_REAL=300 N_CONTROL=300 horizon=1 R_BP=20.0 I_BP_RANGE=(15.0, 60.0) NOISE_STD_BP=4.0 GAP_MS=60000
 
 [素の合成データ] 投入イベント数=1489 build_cascades が作った実カスケード数=300 (投入 N_REAL=300 と一致するはず)
   group=real: n_rows=300 n_used=300 n_tie=0 n_excluded_tie=0 n_excluded_missing=0 exclusion_rate=0.0000 mean=20.3777
@@ -33,35 +33,44 @@ O-3c 測定器(liq_response.py)の合成データ検証
 [変異a: 5件に1件を黙って落とす] 投入 real=300 → 生き残った real 行数=240(期待: N と不一致になるはず)
 
 --- 変異a の4条件 ---
-[NG] 1_効果の大きさ: 仕込んだ R=20.00bp / 測定平均=0.0000bp / |差|=20.0000bp(許容=3.0bp)
-[OK] 2_零効果: 平均=0.0000bp, SEM=0.0000bp, 95%CI=[0.0000, 0.0000](0 を含むか: True)
+[OK] 1_効果の大きさ: 仕込んだ R=20.00bp / 測定平均=20.6178bp / |差|=0.6178bp(許容=3.0bp)
+[NG] 2_零効果: 平均=20.6178bp, SEM=0.2592bp, 95%CI=[20.1099, 21.1258](0 を含むか: False)
 [NG] 3_事象の数: real: 投入300 / report.n_rows=240 / n_used=240 / exclusion_rate=0.0000 | control: 投入300 / report.n_rows=240 / n_used=240 / exclusion_rate=0.0000
-[NG] 4_符号: 符号一致率=0.0000(n=240, 閾値=0.95)
+[OK] 4_符号: 符号一致率=1.0000(n=240, 閾値=0.95)
 
 [変異b: bp の符号を反転]
 
 --- 変異b の4条件 ---
-[NG] 1_効果の大きさ: 仕込んだ R=20.00bp / 測定平均=0.0000bp / |差|=20.0000bp(許容=3.0bp)
-[OK] 2_零効果: 平均=0.0000bp, SEM=0.0000bp, 95%CI=[0.0000, 0.0000](0 を含むか: True)
+[NG] 1_効果の大きさ: 仕込んだ R=20.00bp / 測定平均=-20.3777bp / |差|=40.3777bp(許容=3.0bp)
+[NG] 2_零効果: 平均=-20.3777bp, SEM=0.2280bp, 95%CI=[-20.8246, -19.9308](0 を含むか: False)
 [OK] 3_事象の数: real: 投入300 / report.n_rows=300 / n_used=300 / exclusion_rate=0.0000 | control: 投入300 / report.n_rows=300 / n_used=300 / exclusion_rate=0.0000
 [NG] 4_符号: 符号一致率=0.0000(n=300, 閾値=0.95)
 
 [変異c: bp を半分に薄める]
 
 --- 変異c の4条件 ---
-[NG] 1_効果の大きさ: 仕込んだ R=20.00bp / 測定平均=0.0000bp / |差|=20.0000bp(許容=3.0bp)
-[OK] 2_零効果: 平均=0.0000bp, SEM=0.0000bp, 95%CI=[0.0000, 0.0000](0 を含むか: True)
+[NG] 1_効果の大きさ: 仕込んだ R=20.00bp / 測定平均=10.1889bp / |差|=9.8111bp(許容=3.0bp)
+[NG] 2_零効果: 平均=10.1889bp, SEM=0.1140bp, 95%CI=[9.9654, 10.4123](0 を含むか: False)
 [OK] 3_事象の数: real: 投入300 / report.n_rows=300 / n_used=300 / exclusion_rate=0.0000 | control: 投入300 / report.n_rows=300 / n_used=300 / exclusion_rate=0.0000
-[NG] 4_符号: 符号一致率=0.0000(n=300, 閾値=0.95)
+[OK] 4_符号: 符号一致率=1.0000(n=300, 閾値=0.95)
+
+[変異e: 地平線を 1 分ではなく 11 分で読ませる]
+
+--- 変異e の4条件 ---
+[NG] 1_効果の大きさ: 仕込んだ R=20.00bp / 測定平均=nanbp / |差|=nanbp(許容=3.0bp)
+[NG] 2_零効果: n_used=0 で CI が計算できない
+[OK] 3_事象の数: real: 投入300 / report.n_rows=300 / n_used=0 / exclusion_rate=1.0000 | control: 投入300 / report.n_rows=300 / n_used=0 / exclusion_rate=1.0000
+[NG] 4_符号: 符号一致率=nan(n=0, 閾値=0.95)
 
 ==============================================================================
 変異d: タイ(internal_bp == 0)— 09-13 に実カスケードの約 8 割を落とした型
 ==============================================================================
-  tie_policy=keep: {'real': {'n_rows': 300, 'n_used': 300, 'n_tie': 38, 'n_tie_resolved': 0, 'excl': 0.0, 'mean': 0.0}, 'control': {'n_rows': 300, 'n_used': 300, 'n_tie': 300, 'n_tie_resolved': 0, 'excl': 0.0, 'mean': 0.0}}
-  tie_policy=refine: {'real': {'n_rows': 300, 'n_used': 300, 'n_tie': 38, 'n_tie_resolved': 38, 'excl': 0.0, 'mean': 0.0}, 'control': {'n_rows': 300, 'n_used': 300, 'n_tie': 300, 'n_tie_resolved': 0, 'excl': 0.0, 'mean': 0.0}}
-  tie_policy=drop: {'real': {'n_rows': 300, 'n_used': 262, 'n_tie': 38, 'n_tie_resolved': 0, 'excl': 0.1267, 'mean': 0.0}, 'control': {'n_rows': 300, 'n_used': 0, 'n_tie': 300, 'n_tie_resolved': 0, 'excl': 1.0, 'mean': nan}}
+  tie_policy=keep: {'real': {'n_rows': 300, 'n_used': 300, 'n_tie': 38, 'n_tie_resolved': 0, 'excl': 0.0, 'mean': 19.866}, 'control': {'n_rows': 300, 'n_used': 300, 'n_tie': 300, 'n_tie_resolved': 0, 'excl': 0.0, 'mean': 0.0}}
+  tie_policy=refine: {'real': {'n_rows': 300, 'n_used': 300, 'n_tie': 38, 'n_tie_resolved': 38, 'excl': 0.0, 'mean': 19.866}, 'control': {'n_rows': 300, 'n_used': 300, 'n_tie': 300, 'n_tie_resolved': 0, 'excl': 0.0, 'mean': 0.0}}
+  tie_policy=drop: {'real': {'n_rows': 300, 'n_used': 262, 'n_tie': 38, 'n_tie_resolved': 0, 'excl': 0.1267, 'mean': 22.747}, 'control': {'n_rows': 300, 'n_used': 0, 'n_tie': 300, 'n_tie_resolved': 0, 'excl': 1.0, 'mean': nan}}
   群間の除外率が非対称 + strict=True: 止まった: ReversalExclusionImbalance
   → タイが実際に発生したか: True / 群間差で止まったか: True
+  → **タイの場面でも仕込んだ効果が残っているか**: True (keep の実群平均=19.866 / 仕込んだ R=20.0 / 許容=3.0)
 
 ==============================================================================
 変異試験のまとめ(検出できたか)
@@ -69,9 +78,10 @@ O-3c 測定器(liq_response.py)の合成データ検証
 [検出できた] a_カスケードを黙って落とす
 [検出できた] b_符号を反転
 [検出できた] c_効果を半分に薄める
+[検出できた] e_地平線を読み違える
 [検出できた] d_タイ(09-13 の型)
 
 ==============================================================================
 最終判定: 合格(0)
-  内訳: 素の合成データが4条件を満たすか = True  / 3件の変異すべてを検出できたか = True
+  内訳: 素の合成データが4条件を満たすか = True  / 変異すべてを検出できたか = True
 ==============================================================================

@@ -588,21 +588,46 @@ def test_report_is_deterministic_and_idempotent(tmp_path):
         assert f"[{gate_id}]" in first
 
 
+def _write_result_audit(root, unit="TESTUNIT"):
+    """測定後・報告前の関門(CLAUDE.md §5.0 の 2)を通すための記録を tmp に置く。
+
+    2026-09-13 に `--unit` を必須にしたので、`main` を呼ぶ試験はこの記録が要る。
+    関門は `--root` を台帳の根として見る(`judge_gates.py` の `_require_audit` の呼び出し)。
+    """
+    log = root / "docs" / "AUDITOR" / "ACTION_LOG.md"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    body = "\n".join(f"> 指摘の本文 {i} 行目。これは監査役が書いた文である。" for i in range(1, 10))
+    log.write_text(f"## 試験\n\n監査対象: {unit}/結果\n**監査役**: `owner-model-auditor`\n\n"
+                   f"{body}\n\n判定: 通す\n", encoding="utf-8")
+
+
 def test_main_prints_table_and_json(tmp_path, capsys):
     write_bot(tmp_path, champion_log(30, 0.2))
-    assert jg.main(["--root", str(tmp_path), "--bootstrap", "100"]) == 0
+    _write_result_audit(tmp_path)
+    base = ["--root", str(tmp_path), "--unit", "TESTUNIT"]
+    assert jg.main(base + ["--bootstrap", "100"]) == 0
     out = capsys.readouterr().out
     assert "PENDING-GATE JUDGMENT" in out and "PASS" in out
 
-    assert jg.main(["--root", str(tmp_path), "--bootstrap", "100", "--json"]) == 0
+    assert jg.main(base + ["--bootstrap", "100", "--json"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert len(payload["gates"]) == 9
     assert payload["gates"][0]["status"] == jg.PASS
 
 
 def test_main_rejects_an_unparseable_since(tmp_path, capsys):
-    assert jg.main(["--root", str(tmp_path), "--since", "last tuesday"]) == 2
+    _write_result_audit(tmp_path)
+    assert jg.main(["--root", str(tmp_path), "--unit", "TESTUNIT",
+                    "--since", "last tuesday"]) == 2
     assert "cannot parse" in capsys.readouterr().err
+
+
+def test_main_refuses_without_a_result_audit(tmp_path):
+    """**関門が実際に止める側も測る**(通る側だけ測ると関門の意味が無い)。"""
+    write_bot(tmp_path, champion_log(30, 0.2))
+    with pytest.raises(SystemExit) as e:
+        jg.main(["--root", str(tmp_path), "--unit", "TESTUNIT", "--bootstrap", "100"])
+    assert e.value.code == 2
 
 
 def test_files_are_never_written_or_modified(tmp_path):

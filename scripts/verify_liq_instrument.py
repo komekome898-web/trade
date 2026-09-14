@@ -11,7 +11,7 @@
 使い方:
     PYTHONPATH=src python3 scripts/verify_liq_instrument.py
 
-終了コード: 0 = 合格(素の合成データで 4 条件すべて通過し、かつ 3 件の変異試験
+終了コード: 0 = 合格(素の合成データで 4 条件すべて通過し、かつ変異試験の全件
 すべてで壊れたことを検出できた)。1 = 不合格(いずれか)。
 """
 from __future__ import annotations
@@ -203,6 +203,34 @@ def mutate_flip_sign(cascades, prices, horizons_min):
     return rows
 
 
+def mutate_wrong_horizon(cascades, prices, horizons_min, offset_min: int = 10):
+    """(e) **測定器に別の地平線を読ませる**(2026-09-14 追加)。
+
+    なぜ要るか: 合成データは反転を「地平線の位置ちょうどに置いた 1 段の階段」として
+    仕込むので、**仕込み量はどの地平線でも同じ**である(実測: h=1/15/60 のいずれでも
+    先頭スロットの反転は +18.6000bp で一致)。だから「4 本とも同じ平均が出た」ことは
+    測定器が地平線を正しく読んだ証拠にならない。**その疑いをここで潰す。**
+
+    期待する挙動: 頼んだ地平線がデータの階段とずれると、階段の手前を読むので反応は 0、
+    階段より後ろだと価格点が無いので nan になり、どちらも条件 1(効果の大きさ)で落ちる。
+    (実測、データ=15 分: 5 分で読むと 0.0000 / 25 分で読むと nan・n_used=0)
+
+    **短い地平線では手前にずらせない**(h=1 のとき `max(1, 1-10)` が 1 に潰れ、
+    「間違った地平線」が正しい地平線と一致して変異が空振りする。2026-09-14 に実測で発覚。
+    最初の版はこれで h=1 だけ「検出できなかった」と出していた)。なので
+    **10 分以下では行き過ぎ側にずらす。**
+    """
+    rows = compute_reactions(cascades, prices, horizons_min=horizons_min)
+    wrong = [h - offset_min if h > offset_min else h + offset_min for h in horizons_min]
+    bad = compute_reactions(cascades, prices, horizons_min=tuple(wrong))
+    by_id = {r["cascade_id"]: r for r in bad}
+    for r in rows:
+        src = by_id.get(r["cascade_id"])
+        for h, w in zip(horizons_min, wrong):
+            r[f"bp_{h}m"] = None if src is None else src.get(f"bp_{w}m")
+    return rows
+
+
 def mutate_halve_effect(cascades, prices, horizons_min):
     """(c) 反応 bp を半分にする(効果を薄める)。"""
     rows = compute_reactions(cascades, prices, horizons_min=horizons_min)
@@ -334,10 +362,10 @@ def quantize_prices(prices: PriceSeries, tick: float) -> PriceSeries:
                        price=[round(p / tick) * tick for p in prices.price])
 
 
-def run_tie_scenario() -> dict:
+def run_tie_scenario(horizon: int = HORIZON_MIN) -> dict:
     """タイを起こし、測定器が (1) どう扱うか (2) 群間差で止まるかを測る。"""
     out = {}
-    bundle = build_synthetic(SEED, r_bp=R_BP)
+    bundle = build_synthetic(SEED, r_bp=R_BP, horizon_min=horizon)
     real_cascades = build_cascades(bundle.events, "synthetic", gap_ms=GAP_MS)
     all_casc = list(real_cascades) + list(bundle.control_cascades)
 
@@ -348,7 +376,7 @@ def run_tie_scenario() -> dict:
     # 「at_or_before(start_ms)(渡した系列)」→「anchor_price(compute_reactions が入れた値)」
     # で計算されるので、片方だけ粗くしてもタイにならない(最初そう書いて n_tie=0 になった)。
     # 実データでこれが起きたのは「1 分バーの終値」を両方に使っていたときである。
-    base_rows = compute_reactions(all_casc, coarse, (HORIZON_MIN,))
+    base_rows = compute_reactions(all_casc, coarse, (horizon,))
     rows = attach_internal_direction([dict(r) for r in base_rows], coarse)
     real_rows = [r for r in rows if r["kind"] == "real"]
     ctrl_rows = [r for r in rows if r["kind"] == "no_liquidation"]
@@ -356,7 +384,7 @@ def run_tie_scenario() -> dict:
     for policy in ("keep", "refine", "drop"):
         try:
             rep = compute_reversal({"real": real_rows, "control": ctrl_rows},
-                                   f"bp_{HORIZON_MIN}m", tie_policy=policy, strict=False)
+                                   f"bp_{horizon}m", tie_policy=policy, strict=False)
             out[policy] = {r["group"]: dict(n_rows=r["n_rows"], n_used=r["n_used"],
                                             n_tie=r["n_tie"],
                                             n_tie_resolved=r["n_tie_resolved"],
@@ -367,12 +395,12 @@ def run_tie_scenario() -> dict:
             out[policy] = {"例外": f"{type(exc).__name__}: {exc}"}
 
     # 群間の除外率が非対称なとき、strict=True が止めるか
-    fine_rows = compute_reactions(all_casc, bundle.prices, (HORIZON_MIN,))
+    fine_rows = compute_reactions(all_casc, bundle.prices, (horizon,))
     ctrl_fine = attach_internal_direction(
         [dict(r) for r in fine_rows if r["kind"] == "no_liquidation"], bundle.prices)
     try:
         compute_reversal({"real": real_rows, "control": ctrl_fine},
-                         f"bp_{HORIZON_MIN}m", tie_policy="drop", strict=True)
+                         f"bp_{horizon}m", tie_policy="drop", strict=True)
         out["strict_非対称"] = "**止まらなかった(素通り)**"
     except ReversalExclusionImbalance as exc:
         out["strict_非対称"] = f"止まった: {type(exc).__name__}"
@@ -385,23 +413,28 @@ def main() -> int:
     # **ホライズンを指定できるようにする(2026-09-13、測定後監査の指摘)。**
     # 旧版は 15 分に固定。09-13 の実欠陥は「1 分バーの終値」が原因でタイが起きたので、
     # **短いホライズンほどタイが起きやすいはず**。射程に書くより測る方が安い。
+    # **グローバルを書き換えない(2026-09-14、測定後監査 2 回目の指摘の診断結果)。**
+    # 初版は `global horizon` で書き換えたが、`build_synthetic` と `run_pipeline` の
+    # **既定引数は定義時に 15 で束縛済み**なので変わらなかった。結果、データは +15 分に
+    # 仕込まれたまま条件だけが `bp_60m` を探し、**全行 NaN → 全除外**になった。
+    # 60 分の「不合格」は測定器ではなく**この旗のバグ**だった(実測で確認)。
+    # → ホライズンは引数で明示的に通す。
     import argparse as _ap
-    global HORIZON_MIN
     _a = _ap.ArgumentParser()
     _a.add_argument("--horizon", type=int, default=HORIZON_MIN,
                     help="反応を測る水平線(分)。既定 15")
-    HORIZON_MIN = _a.parse_args().horizon
+    horizon = _a.parse_args().horizon
     print("=" * 78)
     print("O-3c 測定器(liq_response.py)の合成データ検証")
     print("=" * 78)
 
     # --- 素の合成データ(R=R_BP)で 4 条件を測る ---
     print(f"\n[設定] SEED={SEED} N_REAL={N_REAL} N_CONTROL={N_CONTROL} "
-          f"HORIZON_MIN={HORIZON_MIN} R_BP={R_BP} I_BP_RANGE={I_BP_RANGE} "
+          f"horizon={horizon} R_BP={R_BP} I_BP_RANGE={I_BP_RANGE} "
           f"NOISE_STD_BP={NOISE_STD_BP} GAP_MS={GAP_MS}")
 
-    bundle_main = build_synthetic(SEED, r_bp=R_BP)
-    report_main, rows_main, real_cascades_main = run_pipeline(bundle_main)
+    bundle_main = build_synthetic(SEED, r_bp=R_BP, horizon_min=horizon)
+    report_main, rows_main, real_cascades_main = run_pipeline(bundle_main, horizon_min=horizon)
     print(f"\n[素の合成データ] 投入イベント数={len(bundle_main.events)} "
           f"build_cascades が作った実カスケード数={len(real_cascades_main)} "
           f"(投入 N_REAL={N_REAL} と一致するはず)")
@@ -415,8 +448,8 @@ def main() -> int:
     main_ok = print_condition_table("素の合成データ(R={:.1f}bp)の4条件".format(R_BP), results_main)
 
     # --- 零効果(R=0)シナリオ ---
-    bundle_zero = build_synthetic(SEED + 1, r_bp=0.0)
-    report_zero, rows_zero, real_cascades_zero = run_pipeline(bundle_zero)
+    bundle_zero = build_synthetic(SEED + 1, r_bp=0.0, horizon_min=horizon)
+    report_zero, rows_zero, real_cascades_zero = run_pipeline(bundle_zero, horizon_min=horizon)
     print(f"\n[零効果(R=0)] 実カスケード数={len(real_cascades_zero)}")
     for row in report_zero.summary_rows():
         print(f"  group={row['group']}: n_rows={row['n_rows']} n_used={row['n_used']} "
@@ -447,7 +480,7 @@ def main() -> int:
     # (a) カスケードの一部を黙って落とす
     real_cascades_a = build_cascades(bundle_main.events, "synthetic", gap_ms=GAP_MS)
     all_cascades_a = list(real_cascades_a) + list(bundle_main.control_cascades)
-    rows_a = mutate_drop_some(all_cascades_a, bundle_main.prices, (HORIZON_MIN,), drop_every=5)
+    rows_a = mutate_drop_some(all_cascades_a, bundle_main.prices, (horizon,), drop_every=5)
     rows_a = attach_internal_direction(rows_a, bundle_main.prices)
     real_rows_a = [r for r in rows_a if r["kind"] == "real"]
     control_rows_a = [r for r in rows_a if r["kind"] == "no_liquidation"]
@@ -455,7 +488,7 @@ def main() -> int:
           f"{len(real_rows_a)}(期待: N と不一致になるはず)")
     try:
         report_a = compute_reversal({"real": real_rows_a, "control": control_rows_a},
-                                     f"bp_{HORIZON_MIN}m")
+                                     f"bp_{horizon}m")
         results_a = check_conditions(report_a, {"real": real_rows_a, "control": control_rows_a},
                                       N_REAL, N_CONTROL, R_BP)
         ok_a = print_condition_table("変異a の4条件", results_a)
@@ -467,12 +500,12 @@ def main() -> int:
 
     # (b) 符号を反転
     rows_b = mutate_flip_sign(list(real_cascades_main) + list(bundle_main.control_cascades),
-                               bundle_main.prices, (HORIZON_MIN,))
+                               bundle_main.prices, (horizon,))
     rows_b = attach_internal_direction(rows_b, bundle_main.prices)
     real_rows_b = [r for r in rows_b if r["kind"] == "real"]
     control_rows_b = [r for r in rows_b if r["kind"] == "no_liquidation"]
     report_b = compute_reversal({"real": real_rows_b, "control": control_rows_b},
-                                 f"bp_{HORIZON_MIN}m")
+                                 f"bp_{horizon}m")
     results_b = check_conditions(report_b, {"real": real_rows_b, "control": control_rows_b},
                                   N_REAL, N_CONTROL, R_BP)
     print("\n[変異b: bp の符号を反転]")
@@ -482,12 +515,12 @@ def main() -> int:
 
     # (c) 効果を半分に
     rows_c = mutate_halve_effect(list(real_cascades_main) + list(bundle_main.control_cascades),
-                                  bundle_main.prices, (HORIZON_MIN,))
+                                  bundle_main.prices, (horizon,))
     rows_c = attach_internal_direction(rows_c, bundle_main.prices)
     real_rows_c = [r for r in rows_c if r["kind"] == "real"]
     control_rows_c = [r for r in rows_c if r["kind"] == "no_liquidation"]
     report_c = compute_reversal({"real": real_rows_c, "control": control_rows_c},
-                                 f"bp_{HORIZON_MIN}m")
+                                 f"bp_{horizon}m")
     results_c = check_conditions(report_c, {"real": real_rows_c, "control": control_rows_c},
                                   N_REAL, N_CONTROL, R_BP)
     print("\n[変異c: bp を半分に薄める]")
@@ -495,19 +528,48 @@ def main() -> int:
     cond1_c = next(r for r in results_c if r.name == "1_効果の大きさ")
     mutation_caught["c_効果を半分に薄める"] = not cond1_c.passed
 
+    # (e) 別の地平線を読ませる(2026-09-14 追加。下の「同じ平均が 4 本で並ぶ」への答え)
+    rows_e = mutate_wrong_horizon(list(real_cascades_main) + list(bundle_main.control_cascades),
+                                   bundle_main.prices, (horizon,))
+    rows_e = attach_internal_direction(rows_e, bundle_main.prices)
+    real_rows_e = [r for r in rows_e if r["kind"] == "real"]
+    control_rows_e = [r for r in rows_e if r["kind"] == "no_liquidation"]
+    report_e = compute_reversal({"real": real_rows_e, "control": control_rows_e},
+                                 f"bp_{horizon}m")
+    results_e = check_conditions(report_e, {"real": real_rows_e, "control": control_rows_e},
+                                  N_REAL, N_CONTROL, R_BP)
+    wrong_h = horizon - 10 if horizon > 10 else horizon + 10
+    print(f"\n[変異e: 地平線を {horizon} 分ではなく {wrong_h} 分で読ませる]")
+    ok_e = print_condition_table("変異e の4条件", results_e)
+    cond1_e = next(r for r in results_e if r.name == "1_効果の大きさ")
+    mutation_caught["e_地平線を読み違える"] = not cond1_e.passed
+
     # --- 変異d: タイ(09-13 の実在の欠陥の型)---
     print("\n" + "=" * 78)
     print("変異d: タイ(internal_bp == 0)— 09-13 に実カスケードの約 8 割を落とした型")
     print("=" * 78)
-    tie_out = run_tie_scenario()
+    tie_out = run_tie_scenario(horizon)
     for policy in ("keep", "refine", "drop"):
         print(f"  tie_policy={policy}: {tie_out.get(policy)}")
     print(f"  群間の除外率が非対称 + strict=True: {tie_out.get('strict_非対称')}")
     real_keep = tie_out.get("keep", {}).get("real", {})
     tie_seen = isinstance(real_keep, dict) and real_keep.get("n_tie", 0) > 0
     stopped = "止まった" in str(tie_out.get("strict_非対称", ""))
+    # **効果の大きさも合否に入れる(2026-09-14、測定後監査 2 回目の指摘)。**
+    # 旧版は「タイが起きたか」と「群間差で止まったか」しか見ておらず、
+    # **仕込んだ効果が粗い刻みに飲まれて 0 になっても「検出できた」と出ていた**。
+    # 監査役: 「検査を通すことが目的で、性能を測るのに重要な箇所を条件から外している型に近い」
+    keep_mean = real_keep.get("mean") if isinstance(real_keep, dict) else None
+    effect_survived = keep_mean is not None and abs(keep_mean - R_BP) <= TOLERANCE_BP
     mutation_caught["d_タイ(09-13 の型)"] = bool(tie_seen and stopped)
     print(f"  → タイが実際に発生したか: {tie_seen} / 群間差で止まったか: {stopped}")
+    print(f"  → **タイの場面でも仕込んだ効果が残っているか**: {effect_survived} "
+          f"(keep の実群平均={keep_mean} / 仕込んだ R={R_BP} / 許容={TOLERANCE_BP})")
+    if not effect_survived:
+        print("     ← **残っていない。粗い刻みが効果を飲んでいる。**"
+              "これは測定器の欠陥ではなく『この分解能では測れない』という射程の事実だが、"
+              "**合否に入れないと見逃すので入れる。**")
+    tie_effect_ok = effect_survived
 
     print("\n" + "=" * 78)
     print("変異試験のまとめ(検出できたか)")
@@ -517,11 +579,11 @@ def main() -> int:
         all_mutations_caught = all_mutations_caught and caught
         print(f"[{'検出できた' if caught else '検出できなかった(重大な発見)'}] {name}")
 
-    overall_pass = clean_pass and all_mutations_caught
+    overall_pass = clean_pass and all_mutations_caught and tie_effect_ok
     print("\n" + "=" * 78)
     print(f"最終判定: {'合格(0)' if overall_pass else '不合格(1)'}")
     print("  内訳: 素の合成データが4条件を満たすか =", clean_pass,
-          " / 3件の変異すべてを検出できたか =", all_mutations_caught)
+          " / 変異すべてを検出できたか =", all_mutations_caught)
     print("=" * 78)
 
     return 0 if overall_pass else 1

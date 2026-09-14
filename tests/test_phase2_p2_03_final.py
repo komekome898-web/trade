@@ -164,11 +164,27 @@ def _collapse_two_bars(df: pd.DataFrame, i: int) -> pd.DataFrame:
     return df
 
 
+def _write_unseal_audit(root: Path, unit: str = "P2-03") -> None:
+    """封印の 4 つ目の門(CLAUDE.md §5.0 の 1、2026-09-13)を通すための記録。
+
+    既存の 3 門(env / 承認ファイル / トークン)と同じ扱いで、この試験用の根に置く。
+    **門そのものが効くかは `test_guards_pass_only_when_all_three_are_present` の系列と
+    `tests/test_audit_gates_wired.py` が別に測る。**ここは「門があるせいで
+    本筋の試験が動かせない」のを解くためだけの記録である。
+    """
+    log = root / "docs" / "AUDITOR" / "ACTION_LOG.md"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    body = "\n".join(f"> 指摘の本文 {i} 行目。これは監査役が書いた文である。" for i in range(1, 10))
+    log.write_text(f"## 試験\n\n監査対象: {unit}/封印の開封\n**監査役**: `owner-model-auditor`\n\n"
+                   f"{body}\n\n判定: 通す\n", encoding="utf-8")
+
+
 def _build_root(tmp_path: Path, seal_from: str, planted_bps: float = 8.0,
                 n: int = 900, defect_at: int | None = None) -> tuple[Path, pd.DataFrame]:
     """A temporary repo root carrying a synthetic snapshot, seal record and
     owner approval. Returns (root, the 1306.T frame as written)."""
     root = tmp_path / "root"
+    _write_unseal_audit(root)
     snap = root / "backtest_data" / SNAPSHOT_REL_NAME
     snap.mkdir(parents=True)
     (root / "config").mkdir(parents=True)
