@@ -15,7 +15,8 @@
   1. 素の合成データで条件 1・3・4(R=±20 のシナリオ)と条件 2(R=0 の別シナリオ)を満たす
   2. 変異試験 a〜e の全件で、壊れたことを検出できた
   3. タイの場面で、**理想の推定器が取り出せるなら `tie_policy=refine` も取り出せた**
-     (理想の推定器 = 測定器を使わず真の向きから計算する上限。`ideal_estimator`)。
+     (`known_direction_estimator` = 測定器を使わず真の向きから計算する推定器。
+      **「上限」ではない** — 時間分解能のタイでは `drop` に負ける。関数の説明を見よ)。
      **理想が取り出せないなら、その分解能では誰にも測れないので射程の事実として通す。**
      keep / drop の値は診断として全部印字する。
      (2026-09-14。初版は `keep` だけ、2 版は「3 方針すべて」だった。
@@ -82,6 +83,22 @@ SIGN_MATCH_THRESHOLD = 0.95  # 条件4(符号)。内部方向の符号がノイ�
                               # 完全な100%を要求すると稀な反転で誤って不合格になるため
                               # 0.95 を閾値にした。
 ZERO_CI_Z = 1.96  # 95% 信頼区間の z 値(正規近似)。
+
+# --- 時間分解能でタイを作るための値(2026-09-14 追加、12・13 本目の監査)------------
+# **なぜ要るか**: 09-13 に実際に焼かれたのは「カスケードが数秒〜数十秒で終わるため
+# 1 分バーでは起点と終点が同じ終値になる」という**時間分解能**のタイである
+# (`liq_response.py` 365〜367 行)。**この検証は価格の格子で作ったタイしか通していなかった。**
+# 通そうとしたら n_tie=0 で再現しなかった。理由は**合成の価格系列が疎**だったこと
+# (1 カスケードにつき 3 点、スロット幅 2 時間)。だから背景の点を置く。
+BG_STEP_MS = 60_000   # 背景の価格点の間隔(1 分)。実データの分足に合わせた。
+                       # これより粗いと、間引く前から疎になって再現の意味が無くなる。
+BG_NOISE_BP = 0.5      # 背景の価格点に乗せるノイズ(bp)。**カスケード内部の動きの下限
+                       # I_BP_RANGE[0]=15bp の 1/30、測定ノイズ NOISE_STD_BP=4.0 の 1/8。**
+                       # 意図は「バーの間は静かで、カスケードだけが動く」状況を作ること。
+                       # **大きくすると内部の動きがノイズに埋もれてタイが減る**ので、
+                       # 小さめに取った。**この値で n_tie が決まるので、変えたら結果が変わる。**
+BAR_MS_LIST = (60_000, 10_000, 1_000)  # 間引くバー幅。1 分 = 09-13 に実際に使っていた幅。
+                                        # 10 秒・1 秒はカスケード長(5〜45 秒)を跨ぐ/跨がない境目。
 
 
 # --------------------------------------------------------------------------- #
@@ -383,8 +400,84 @@ def quantize_prices(prices: PriceSeries, tick: float) -> PriceSeries:
                        price=[round(p / tick) * tick for p in prices.price])
 
 
-def ideal_estimator(bundle, tick_bp: float, horizon: int) -> float:
-    """**測定器を使わずに**、丸めた価格から仕込んだ効果を取り出す上限を出す(2026-09-14 新設)。
+def build_dense(seed: int, r_bp: float, horizon_min: int = HORIZON_MIN,
+                 n_real: int = N_REAL, n_control: int = N_CONTROL) -> SyntheticBundle:
+    """**背景の価格点を置いた密な系列**を作る(2026-09-14、12 本目の監査)。
+
+    `build_synthetic` は 1 カスケードにつき 3 点しか置かないので、1 分バーに間引いても
+    **起点の直前のバーが 2 時間前の点**になり、時間分解能のタイが起きない。
+    実データのバーは連続しているので、直前のバーはほぼ同じ価格になる。それを再現する。
+    **射程 1(系列が疎)と射程 12(時間分解能のタイ)は同じ穴だった。**
+    """
+    rng = random.Random(seed)
+    roles = ["real"] * n_real + ["control"] * n_control
+    rng.shuffle(roles)
+    events: list[LiquidationEvent] = []
+    controls: list[Cascade] = []
+    pts: list[tuple[int, float]] = []
+    P0 = 5_000_000.0
+    for i, role in enumerate(roles):
+        slot = BASE_TS_MS + i * SLOT_MS
+        start = slot + 5 * 60_000
+        dur = rng.randint(*CASCADE_DURATION_RANGE_MS)
+        end = start + dur
+        fut = end + horizon_min * 60_000
+        n1 = rng.gauss(0.0, NOISE_STD_BP); n2 = rng.gauss(0.0, NOISE_STD_BP)
+        if role == "real":
+            side = rng.choice(["long", "short"]); sg = -1.0 if side == "long" else 1.0
+            i_bp = rng.uniform(*I_BP_RANGE)
+            p_start = P0
+            p_end = p_start * (1 + (sg * i_bp + n1) / 10_000.0)
+            p_fut = p_end * (1 + (-sg * r_bp + n2) / 10_000.0)
+            ne = rng.randint(*N_EVENTS_RANGE)
+            ts_l = sorted(rng.sample(range(start + 1, end), ne - 2)) if ne > 2 else []
+            for ts in [start] + ts_l + [end]:
+                fr = (ts - start) / dur if dur else 0.0
+                events.append(LiquidationEvent(exchange="synthetic", ts_ms=ts, side=side,
+                                               qty=rng.uniform(0.1, 2.0),
+                                               price=p_start + (p_end - p_start) * fr))
+        else:
+            p_start = P0
+            p_end = p_start * (1 + n1 / 10_000.0)
+            p_fut = p_end * (1 + n2 / 10_000.0)
+            controls.append(Cascade(cascade_id=f"synthetic_no_liq_{i:06d}", exchange="synthetic",
+                                    kind="no_liquidation", start_ms=start, end_ms=end,
+                                    n_events=0, total_size=0.0, direction="none",
+                                    first_price=None, last_price=None))
+        t = slot
+        while t < slot + SLOT_MS:
+            if t < start:   base = p_start
+            elif t < end:   base = p_start + (p_end - p_start) * ((t - start) / dur if dur else 0)
+            elif t < fut:   base = p_end + (p_fut - p_end) * ((t - end) / (fut - end))
+            else:           base = p_fut
+            pts.append((t, base * (1 + rng.gauss(0.0, BG_NOISE_BP) / 10_000.0)))
+            t += BG_STEP_MS
+        pts += [(start, p_start), (end, p_end), (fut, p_fut)]
+    pts.sort()
+    return SyntheticBundle(events=events, control_cascades=controls,
+                           prices=PriceSeries.from_trades(pts),
+                           n_real=n_real, n_control=n_control)
+
+
+def to_bars(prices: PriceSeries, bar_ms: int) -> PriceSeries:
+    """各バーの**最後の点だけ**を残す(= バーの終値)。価格は丸めない。"""
+    last: dict[int, tuple[int, float]] = {}
+    for ts, p in zip(prices.ts_ms, prices.price):
+        last[ts // bar_ms] = (ts, p)
+    return PriceSeries.from_trades(sorted(last.values()))
+
+
+def known_direction_estimator(bundle, tick_bp: float, horizon: int) -> float:
+    """**向きだけを与えた推定器**(2026-09-14 新設 → 同日 13 本目の監査を受けて改名)。
+
+    **「上限」ではない。**初版は `ideal_estimator` と名付け、説明に
+    「これ以上うまくはできない上限である」と書いた。**その語はある経路で成り立たない。**
+    時間分解能で作ったタイ(1 分バー)では、この推定器が反転 +14.319 / 継続 −25.421 を返す一方、
+    **同じ系列から `drop` が +19.910 / −20.090(仕込み ±20 からのずれ 0.090bp)を取り出す**
+    (`evidence_2026-09-14/12`)。**上限が `keep` にも `drop` にも負けている。**
+    理由: この推定器は**向きは知っているが、読み出しは間引いた系列のまま**なので、
+    バーの陳腐化をそのまま被る。`drop` は被った行を落とすので被らない。
+    → **上限と呼べるのは「価格の格子で作ったタイ」の経路に限る**(そこでは失われるのが向きだけ)。
 
     **なぜ要るか**: タイの場面で 3 方針の値が食い違ったとき、
     「測定器が落としている」のか「その分解能では誰にも測れない」のかが分けられなかった。
@@ -423,7 +516,7 @@ def run_tie_scenario(horizon: int = HORIZON_MIN, r_bp: float = R_BP) -> dict:
     # 「at_or_before(start_ms)(渡した系列)」→「anchor_price(compute_reactions が入れた値)」
     # で計算されるので、片方だけ粗くしてもタイにならない(最初そう書いて n_tie=0 になった)。
     # 実データでこれが起きたのは「1 分バーの終値」を両方に使っていたときである。
-    out["理想の推定器"] = ideal_estimator(bundle, 40.0, horizon)
+    out["向きを与えた推定器"] = known_direction_estimator(bundle, 40.0, horizon)
 
     base_rows = compute_reactions(all_casc, coarse, (horizon,))
     rows = attach_internal_direction([dict(r) for r in base_rows], coarse)
@@ -618,7 +711,7 @@ def main() -> int:
     #
     # 直前の版は「3 方針すべてが許容内」を要求し、**外れたら「この分解能では測れない」と書いていた。**
     # **それは測っていない断定だった。**測定器を使わない**理想の推定器**(真の向きを知っていて
-    # 丸めた価格から反応を計算するだけ。`ideal_estimator`)で確かめると、
+    # 丸めた価格から反応を計算するだけ。`known_direction_estimator`)で確かめると、
     # **40bp の刻みでも仕込み値は取り出せる**(実測: 3 種 × 2 地平線 × 両方向の 12 件で
     # 理想は常に許容内)。つまり**分解能の限界ではなく、方針の問題だった。**
     #
@@ -633,10 +726,10 @@ def main() -> int:
     # 「3 方針の多数決」から「**測定器を使わない独立の上限との一致**」に置き換えた。
     # 独立の上限は仕込み値を知らずに計算でき、リードが都合よく動かせない。
     # **ただし基準を結果を見たあとに変えたことは事実なので、監査に掛けて判断を仰ぐ。**
-    ideal = tie_out.get("理想の推定器")
+    ideal = tie_out.get("向きを与えた推定器")
     ideal_ok = ideal is not None and ideal == ideal and abs(ideal - r_bp) <= TOLERANCE_BP
     print("  → **タイの場面で仕込んだ効果が取り出せるか**")
-    print(f"     理想の推定器(測定器を使わない上限): {ideal} / 仕込み R={r_bp} "
+    print(f"     向きを与えた推定器(向きだけ与える。上限ではない): {ideal} / 仕込み R={r_bp} "
           f"/ |差|={'nan' if ideal != ideal else format(abs(ideal - r_bp), '.3f')} → "
           f"{'測れる' if ideal_ok else '**この分解能では誰にも測れない(射程の事実)**'}")
     for policy in ("keep", "refine", "drop"):
@@ -696,6 +789,54 @@ def main() -> int:
             print(f"     [分解] 非タイ {nu} 行の平均={md} (仕込みからの偏り={md - r_bp:+.3f}bp) "
                   f"× {nu}/{nr} = {nu * md / nr:.3f} = keep の平均({rr_keep.get('mean')})")
             print("            ← **keep の値は「偏り」と「タイ行の 0 埋め」の積である。**")
+
+    # --- 変異f: **時間分解能で作ったタイ**(09-13 に実際に焼かれた経路)-------------
+    print("\n" + "=" * 78)
+    print("変異f: 時間分解能で作ったタイ — **09-13 に実際に焼かれた経路**")
+    print("=" * 78)
+    print(f"  背景の点: {BG_STEP_MS/1000:.0f} 秒ごと / ノイズ {BG_NOISE_BP}bp / 種 {SEED}")
+    print(f"  {'バー':>8} {'n_tie':>7} {'向きを与えた推定器':>20} {'keep':>10} {'refine':>10} {'drop':>10}")
+    dense = build_dense(SEED, r_bp=r_bp, horizon_min=horizon)
+    time_tie_seen = False
+    time_tie_rows = []
+    for bar_ms in BAR_MS_LIST:
+        bars = to_bars(dense.prices, bar_ms)
+        casc = list(build_cascades(dense.events, "synthetic", gap_ms=GAP_MS)) \
+               + list(dense.control_cascades)
+        rows_f = attach_internal_direction(
+            [dict(x) for x in compute_reactions(casc, bars, (horizon,))], bars)
+        vals = {}
+        n_tie_f = 0
+        for pol in ("keep", "refine", "drop"):
+            rep = compute_reversal({"real": [x for x in rows_f if x["kind"] == "real"],
+                                    "control": [x for x in rows_f if x["kind"] == "no_liquidation"]},
+                                   f"bp_{horizon}m", tie_policy=pol, strict=False)
+            rr = [x for x in rep.summary_rows() if x["group"] == "real"][0]
+            vals[pol] = rr["mean"]; n_tie_f = rr["n_tie"]
+        kd = []
+        for c in build_cascades(dense.events, "synthetic", gap_ms=GAP_MS):
+            e = bars.at_or_before(c.end_ms, 300_000)
+            f_ = bars.at_or_before(c.end_ms + horizon * 60_000, 300_000)
+            if e is None or f_ is None or e[1] == 0:
+                continue
+            sg = -1.0 if c.direction == "long" else 1.0
+            v = -sg * ((f_[1] / e[1] - 1.0) * 10_000.0)
+            if v == v:
+                kd.append(v)
+        kdm = statistics.mean(kd) if kd else float("nan")
+        fm = lambda v: "nan" if v is None or v != v else f"{v:+.3f}"
+        print(f"  {bar_ms//1000:>6}秒 {n_tie_f:>7} {fm(kdm):>20} {fm(vals['keep']):>10} "
+              f"{fm(vals['refine']):>10} {fm(vals['drop']):>10}")
+        if n_tie_f > 0:
+            time_tie_seen = True
+        time_tie_rows.append((bar_ms, n_tie_f, kdm, vals))
+    # **この経路が再現していること自体を合否に入れる。**
+    # 再現しなければ「通していない」のと同じで、09-13 の型を素通りさせる。
+    mutation_caught["f_時間分解能のタイ(09-13 の型)"] = time_tie_seen
+    print(f"  → タイが実際に発生したか: {time_tie_seen}")
+    print("  → **この経路では『向きを与えた推定器』が `drop` に負ける。**")
+    print("     だから**この推定器は上限ではない**(関数の説明に書いた)。")
+    print("     **どの方針が良いかはタイの作られ方で逆転する。一般解は無い。**")
 
     print("\n" + "=" * 78)
     print("変異試験のまとめ(検出できたか)")
