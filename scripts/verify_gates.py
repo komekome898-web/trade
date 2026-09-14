@@ -256,6 +256,93 @@ write_log("判定: 止める", 10, sha_=hashlib.sha256(esc.encode()).hexdigest()
 show("判定が「止める」+ 逐語 + 行頭「上申:」(上申を含む本文で監査)", rep(esc, tmp)[0], 0)
 shutil.rmtree(tmp)
 
+# ==========================================================================
+# ①③④⑤ の関門(2026-09-14、L-169 で承認)。**通る側と止まる側の両方を測る。**
+#
+# なぜここに足すか: 2026-09-14 の段 0 で、リードが書いた関門は 4 版とも欠陥だった。
+# **`verify_gates.py` に両側の試験が入るまで「効いている」と書かない**と PLAN.md に書いた。
+# ただしこの道具の限界も同じ日に分かっている:
+#   **関門の部品を直接叩くので、「ハーネスがその関門を呼んでいるか」は見ていない。**
+#   そちらは「止まるはずの操作をして止まるか」でしか確かめられない。
+# ==========================================================================
+def hook(name, payload, root=None):
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=root or ROOT)
+    p = subprocess.run(["sh", os.path.join(ROOT, ".claude", "hooks", name)],
+                       input=json.dumps(payload), capture_output=True, text=True,
+                       env=env, cwd=ROOT)
+    return p.returncode
+
+def _pre(tool, fp=None, cmd=None):
+    ti = {}
+    if fp:  ti["file_path"] = fp
+    if cmd: ti["command"] = cmd
+    return {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": ti}
+
+hk = tempfile.mkdtemp()
+os.makedirs(os.path.join(hk, ".claude", "state"), exist_ok=True)
+
+# ③(a) 保護パスの拒否
+show("③a オーナーの逐語への Edit は止まる",
+     hook("deny_protected_paths.sh", _pre("Edit", ROOT + "/docs/PROJECT_GOAL.md"), hk), 2)
+show("③a フックへの Edit は止まる",
+     hook("deny_protected_paths.sh", _pre("Edit", ROOT + "/.claude/hooks/x.sh"), hk), 2)
+show("③a 普通の文書への Edit は通る",
+     hook("deny_protected_paths.sh", _pre("Edit", ROOT + "/docs/OWNER_LOG.md"), hk), 0)
+open(os.path.join(hk, ".claude", "state", "owner_unlock_intent"), "w").close()
+show("③a 解除ファイルがあれば通る(穴であることを測る)",
+     hook("deny_protected_paths.sh", _pre("Edit", ROOT + "/docs/PROJECT_GOAL.md"), hk), 0)
+os.remove(os.path.join(hk, ".claude", "state", "owner_unlock_intent"))
+
+# ③(b) 行動系 + 全面停止
+hk2 = tempfile.mkdtemp(); os.makedirs(os.path.join(hk2, ".claude", "state"), exist_ok=True)
+show("③b ゴール未読で書き始めようとすると止まる",
+     hook("owner_options_gate.sh", _pre("Write", ROOT + "/src/x.py"), hk2), 2)
+show("③b 記録(ACTION_LOG)は例外で通る",
+     hook("owner_options_gate.sh", _pre("Edit", ROOT + "/docs/AUDITOR/ACTION_LOG.md"), hk2), 0)
+hook("owner_options_gate.sh", _pre("Read", ROOT + "/docs/PROJECT_GOAL.md"), hk2)
+show("③b ゴールを開いた後は通る",
+     hook("owner_options_gate.sh", _pre("Write", ROOT + "/src/x.py"), hk2), 0)
+open(os.path.join(hk2, ".claude", "state", "awaiting_owner_choice"), "w").write("試験")
+show("③b 選択待ちなら Bash も止まる(案 A = 全面停止)",
+     hook("owner_options_gate.sh", _pre("Bash", cmd="ls"), hk2), 2)
+hook("owner_options_gate.sh", {"hook_event_name": "UserPromptSubmit"}, hk2)
+show("③b オーナーの発言で待ちが解ける",
+     hook("owner_options_gate.sh", _pre("Bash", cmd="ls"), hk2), 0)
+
+# ④ 表示のみ。**拒否しない**(閾値は P5 を 2 週間測ってから。A-12)
+hk3 = tempfile.mkdtemp(); os.makedirs(os.path.join(hk3, ".claude", "state"), exist_ok=True)
+show("④ 作業単位の関門は拒否しない(表示だけ)",
+     hook("move_budget.sh", _pre("Bash", cmd="ls"), hk3), 0)
+
+# ⑤ read-do は表示のみ
+show("⑤ read-do の入口は拒否しない(表示だけ)",
+     hook("readdo_notice.sh",
+          {"hook_event_name": "PostToolUse", "tool_name": "Agent",
+           "tool_response": {"content": "判定: 止める"}}, hk3), 0)
+
+# ① TRACE のスキーマに自由文が混ざっていないか
+import glob as _glob
+_tr = sorted(_glob.glob(os.path.join(ROOT, "docs", "AUDITOR", "TRACE", "*.json")))
+if _tr:
+    _d = json.load(open(_tr[-1], encoding="utf-8"))
+    _allowed = {"move", "tools", "n_tools", "read_goal", "first_write_at", "table_shown",
+                "claims_without_output", "claims_total", "audit_calls",
+                "audit_pasted_immediately", "audit_followed_by_real_edit",
+                "protected_writes", "readdo_reads", "unlock_created"}
+    _bad = 0
+    for _m in _d.get("moves", []):
+        if set(_m) - _allowed:
+            _bad = 1
+        for _k, _v in _m.items():
+            if _k != "tools" and isinstance(_v, str):
+                _bad = 1      # 自由文が入った
+    show("① TRACE に想定外のキー / 自由文が無い", _bad, 0)
+else:
+    show("① TRACE が 1 つ以上ある", 0, 1)
+
+for _t in (hk, hk2, hk3):
+    shutil.rmtree(_t, ignore_errors=True)
+
 shutil.rmtree(BARE, ignore_errors=True)
 print(f"\n食い違い: {FAIL} 件")
 raise SystemExit(1 if FAIL else 0)

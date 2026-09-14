@@ -55,3 +55,14 @@ backtest_data/binance_cm_o3c_20260913/aggTrades/**/*.CHECKSUM
 backtest_data/bybit_BTCUSDT_1m_20260910/*.csv.gz
 # untracked copy executed by deploy/nightly_restart.bat (see its header)
 deploy/_restart_all_copy.bat
+
+# ③④ の実行時の状態(機械ごとに違う。共有しない)
+# transcript_path / move_counter / goal_seen_this_turn / awaiting_owner_choice / owner_unlock_*
+.claude/state/*
+# **ただし解除ファイルだけは追跡対象に戻す(2026-09-14、35 本目の監査)。**
+# 丸ごと無視にすると、解除が差分にも指紋の台帳にも pytest にも残らない。
+# **限界: これで塞がるのは「作って残したまま」だけである。**
+# 同じ手の中で「作って通して消す」と、差分には何も出ない。
+# **そちらは `trace_metrics.py` の R4(道具の入力に `owner_unlock_` が現れた回数)で数える。**
+# 2 つの出所が食い違ったら、**差分の方を正とする**(TRACE は言及も数えるため)。
+!.claude/state/owner_unlock_*
