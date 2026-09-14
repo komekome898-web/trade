@@ -217,12 +217,12 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 |---|---|---|---|
 | ① | `scripts/trace_metrics.py` + `.claude/hooks/trace_snapshot.sh` | 会話の記録から**リードが著者でない**行動記録 `docs/AUDITOR/TRACE/*.json` を作る | 止めない |
 | ① | `.claude/agents/owner-model-auditor.md` §0.5 | **行動の監査の入力を「オーナーの逐語 + TRACE」だけに限る。**測定後の監査は `owner-auditor` に分けた(L-169「ア」) | — |
-| ② | `docs/AUDITOR/PROCESS_METRICS.md` → `TREND.md` | P1〜P6。**「判定: 通す」の件数は成果の指標に数えない** | — |
+| ② | `docs/AUDITOR/PROCESS_METRICS.md` → `TREND.md` | P1〜P7。**「判定: 通す」の件数は成果の指標に数えない** | — |
 | ③(a) | `.claude/hooks/deny_protected_paths.sh` | オーナーの逐語・ゴール・フック・監査役定義への書き込みを**拒否** | **止める** |
 | ③(b) | `.claude/hooks/owner_options_gate.sh` + `/owner-options` | 選択待ちなら**道具を 1 つも通さない**(案 A = 全面停止)。ゴール未読の最初の書き込みも止める | **止める** |
 | ④ | `.claude/hooks/move_budget.sh` | 1 手の道具呼び出しを数えて節目に 1 行。**閾値は 2026-09-28 までに P5 を測ってから置く**(A-12) | 止めない |
 | ⑤ | `docs/AUDITOR/READDO/` 5 枚 + `readdo_notice.sh` | 危機時の **read-do**。開く条件は機械が決める。表示は 1 行だけ | 止めない |
-| ⑥ | `TREND.md` の R1〜R4 と撤去条件 | **回避を測る。**2026-12-07 までに P1〜P6 が動かなければ ①〜⑤ を撤去する | — |
+| ⑥ | `TREND.md` の R1〜R4 と撤去条件 | **回避を測る。**2026-12-07 までに P1〜P7 が動かなければ ①〜⑤ を撤去する | — |
 
 **「書いた」ことと「効いている」ことは別である。**`verify_gates.py` は関門の部品を直接叩くだけで、
 **ハーネスが呼んでいるかを見ていない**(§3)。**止まるはずの操作をして止まるかを実測するまで、
