@@ -1,0 +1,60 @@
+$ python3 scripts/verify_gates.py
+== 5 本目の監査が挙げた言い換え(すべて拒否されなければならない) ==
+  [2] 期待 2 一致  env を前に置く: env git push origin main
+  [2] 期待 2 一致  git を引用符で囲む: "git" push origin main
+  [2] 期待 2 一致  push を引用符で囲む: git "push" origin main
+  [2] 期待 2 一致  ${IFS} で区切る: git${IFS}push origin main
+  [2] 期待 2 一致  eval で包む: eval 'git push origin main'
+  [2] 期待 2 一致  xargs 経由: xargs -I{} git push origin main </dev/null
+  [2] 期待 2 一致  command を前に置く: command git push origin main
+  [2] 期待 2 一致  バックスラッシュ付き: \git push origin main
+  [2] 期待 2 一致  空白を増やす: git  push  origin  main
+  [2] 期待 2 一致  素の押し出し(対照): git push origin main
+
+== 4 本目の監査が挙げた復旧路の抜け道 / 押し出しの経路 ==
+  [2] 期待 2 一致  git push origin main # regen_hook_manifest.sh  ←コメントで素通りした
+  [2] 期待 2 一致  sh scripts/regen_hook_manifest.sh && git push
+  [2] 期待 2 一致  git push origin main; sh scripts/regen_hook_manifest.sh
+  [0] 期待 0 一致  sh scripts/regen_hook_manifest.sh  ←復旧路そのもの
+  [0] 期待 0 一致  ./scripts/regen_hook_manifest.sh  ←復旧路そのもの
+  [0] 期待 0 一致  ls -la  ←普通の操作は通る
+  [2] 期待 2 一致  /usr/bin/git -C /home/user/trade push origin main
+  [2] 期待 2 一致  gh pr create --fill
+  [0] 期待 0 一致  gh pr view 1  ←読み取りは止めない
+
+== 指紋の照合(フックを 1 バイト改変した状態) ==
+  [2] 期待 2 一致  git push origin main # regen_hook_manifest.sh  ←改変中でも抜けられるか
+  [2] 期待 2 一致  ls -la  ←改変中は普通の操作も止まるか
+  [0] 期待 0 一致  sh scripts/regen_hook_manifest.sh  ←復旧路は改変中でも開くか
+  [0] 期待 0 一致  ls -la  ←復元後は通るか
+
+== MCP の GitHub ツール(既定は拒否。読み取りだけ通す) ==
+  [0] 期待 0 一致  mcp__github__get_me(読み取り)
+  [0] 期待 0 一致  mcp__github__list_commits(読み取り)
+  [2] 期待 2 一致  mcp__github__push_files(書き込み)
+  [2] 期待 2 一致  mcp__github__create_branch(旧版の列挙に無い書き込み)
+  [2] 期待 2 一致  mcp__github__update_ref(将来ありうる未知のツール)
+
+== git 側の関門(本体)を直接叩く ==
+  [0] 期待 0 一致  監査が「通す」+ 本日の抜き取りあり → 通る
+  [1] 期待 1 一致  監査が「止める」→ 止まる
+  [1] 期待 1 一致  本日の抜き取りが無い → 止まる
+  [1] 期待 1 一致  抜き取りの行だけ足した(中身なし)→ 止まる ←11 本目の監査
+  [1] 期待 1 一致  抜き取りの行だけ + 直後に別の日の正規の抜き取り節 → 止まる ←12 本目の監査
+  [1] 期待 1 一致  地の文に鍵の文字列が先に現れる(本物のマーカーは無し)→ 止まる ←13 本目の監査
+  [0] 期待 0 一致  削除の押し出し(ローカル sha がゼロ)は対象外なので通る
+  [0] 期待 0 一致  標準入力が空(押し出す参照が無い)なら通る
+  [1] 期待 1 一致  判定できない範囲(存在しない sha)は通さない
+
+== 返答の関門 ==
+  [2] 期待 2 一致  4 本目の監査が実測した上申の抜け道(監査ゼロ・文字列 2 つ)
+  [2] 期待 2 一致  未監査の普通の本文
+  [0] 期待 0 一致  逐語を貼った本文 + 台帳に「判定: 通す」の節
+  [2] 期待 2 一致  本文を 1 文字変えた(指紋が変わる)
+  [2] 期待 2 一致  逐語が 3 行しかない節(穴 3 の機械が働くか)
+  [2] 期待 2 一致  判定が「止める」で上申の行が無い本文
+  [2] 期待 2 一致  節の先頭側に行頭「判定: 通す」があり、最後が「止める」(判定の非対称)
+  [2] 期待 2 一致  おとり: 後の節が地の文に鍵を引用(本物は「止める」。鍵が行頭固定か)
+  [0] 期待 0 一致  判定が「止める」+ 逐語 + 行頭「上申:」(上申を含む本文で監査)
+
+食い違い: 0 件

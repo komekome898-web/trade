@@ -312,12 +312,25 @@ def check_conditions(report: ReversalReport, rows: dict[str, list[dict]],
         sign_internal = 1.0 if internal > 0 else (-1.0 if internal < 0 else 0.0)
         score = -sign_internal * bp
         n_checked += 1
+        # **仕込んだ効果の向きと一致するか**を見る。
+        # **2026-09-14 の欠陥**: 旧版は `if r_bp > 0: (score>0 を数える) else: n_match += 1` で、
+        # **`else` が r_bp<0(継続側)も飲み込んでいた**。継続側を初めて回した瞬間、
+        # 符号一致率が構造的に 1.0000 になり、**変異 b(符号反転)が検出できなくなっていた**
+        # (実測: 継続側 h=1/5/15/60 のすべてで `[検出できなかった(重大な発見)] b_符号を反転`)。
+        # しかも表示の「[r_bp=0 のため参考値]」は `r_bp == 0` のときしか付かないので、
+        # **継続側では普通の `[OK] 符号一致率=1.0000` に見えていた。**
+        # これは 09-13 に焼かれた型(壊れても止まらず、もっともらしい数値を返す)そのもの。
+        # 監査役の [直す]「継続側を一度も測っていない」を実行して初めて出た。
         if r_bp > 0:
             if score > 0:
                 n_match += 1
+        elif r_bp < 0:
+            if score < 0:
+                n_match += 1
         else:
-            # r_bp==0 のときは「向きが無い」ので符号一致の代わりに近傍(|score|が小さいか)を見る
-            n_match += 1  # 条件4は r_bp>0 のシナリオでのみ意味を持つ(呼び出し側で判定に使う)
+            # r_bp == 0 は「向きが無い」ので符号一致に意味が無い。参考値として 1.0 にする
+            # (下の表示で [r_bp=0 のため参考値] と明示し、合否は条件 2 が担う)。
+            n_match += 1
     frac_match = n_match / n_checked if n_checked else float("nan")
     ok4 = (frac_match == frac_match) and frac_match >= SIGN_MATCH_THRESHOLD
     results.append(ConditionResult(
@@ -362,10 +375,10 @@ def quantize_prices(prices: PriceSeries, tick: float) -> PriceSeries:
                        price=[round(p / tick) * tick for p in prices.price])
 
 
-def run_tie_scenario(horizon: int = HORIZON_MIN) -> dict:
+def run_tie_scenario(horizon: int = HORIZON_MIN, r_bp: float = R_BP) -> dict:
     """タイを起こし、測定器が (1) どう扱うか (2) 群間差で止まるかを測る。"""
     out = {}
-    bundle = build_synthetic(SEED, r_bp=R_BP, horizon_min=horizon)
+    bundle = build_synthetic(SEED, r_bp=r_bp, horizon_min=horizon)
     real_cascades = build_cascades(bundle.events, "synthetic", gap_ms=GAP_MS)
     all_casc = list(real_cascades) + list(bundle.control_cascades)
 
@@ -423,17 +436,24 @@ def main() -> int:
     _a = _ap.ArgumentParser()
     _a.add_argument("--horizon", type=int, default=HORIZON_MIN,
                     help="反応を測る水平線(分)。既定 15")
-    horizon = _a.parse_args().horizon
+    # **継続(トレンド化)側も測れるようにする(2026-09-14、測定後監査 3 回目の指摘)。**
+    # オーナーの原文は「トレンド転換が起きるか**またはそれがトレンドになるのか**」の両方を
+    # 観測対象にしている(`OWNER_INTENT_2026-09-12.md` §1.1)。合成データは
+    # `reversal_move_bp = -s * r_bp` なので、**r_bp を負にすると継続側**を仕込める。
+    _a.add_argument("--r-bp", type=float, default=R_BP, dest="r_bp",
+                    help="仕込む効果の大きさ(bp)。負にすると継続(トレンド化)側。既定 20.0")
+    _args = _a.parse_args()
+    horizon, r_bp = _args.horizon, _args.r_bp
     print("=" * 78)
     print("O-3c 測定器(liq_response.py)の合成データ検証")
     print("=" * 78)
 
-    # --- 素の合成データ(R=R_BP)で 4 条件を測る ---
+    # --- 素の合成データ(R=r_bp)で 4 条件を測る ---
     print(f"\n[設定] SEED={SEED} N_REAL={N_REAL} N_CONTROL={N_CONTROL} "
-          f"horizon={horizon} R_BP={R_BP} I_BP_RANGE={I_BP_RANGE} "
+          f"horizon={horizon} R_BP={r_bp} I_BP_RANGE={I_BP_RANGE} "
           f"NOISE_STD_BP={NOISE_STD_BP} GAP_MS={GAP_MS}")
 
-    bundle_main = build_synthetic(SEED, r_bp=R_BP, horizon_min=horizon)
+    bundle_main = build_synthetic(SEED, r_bp=r_bp, horizon_min=horizon)
     report_main, rows_main, real_cascades_main = run_pipeline(bundle_main, horizon_min=horizon)
     print(f"\n[素の合成データ] 投入イベント数={len(bundle_main.events)} "
           f"build_cascades が作った実カスケード数={len(real_cascades_main)} "
@@ -444,8 +464,8 @@ def main() -> int:
               f"n_excluded_missing={row['n_excluded_missing']} "
               f"exclusion_rate={row['exclusion_rate']:.4f} mean={row['mean']:.4f}")
 
-    results_main = check_conditions(report_main, rows_main, N_REAL, N_CONTROL, R_BP)
-    main_ok = print_condition_table("素の合成データ(R={:.1f}bp)の4条件".format(R_BP), results_main)
+    results_main = check_conditions(report_main, rows_main, N_REAL, N_CONTROL, r_bp)
+    main_ok = print_condition_table("素の合成データ(R={:.1f}bp)の4条件".format(r_bp), results_main)
 
     # --- 零効果(R=0)シナリオ ---
     bundle_zero = build_synthetic(SEED + 1, r_bp=0.0, horizon_min=horizon)
@@ -467,7 +487,7 @@ def main() -> int:
     cond134_main_ok = all(r.passed for r in results_main if r.name != "2_零効果")
     clean_pass = cond134_main_ok and cond2_zero_ok
 
-    print(f"\n>>> 素の合成データの正式判定(条件1,3,4 @ R={R_BP}bp のシナリオ + "
+    print(f"\n>>> 素の合成データの正式判定(条件1,3,4 @ R={r_bp}bp のシナリオ + "
           f"条件2 @ R=0 のシナリオ): {'合格' if clean_pass else '不合格'}")
 
     # --- 変異試験 ---
@@ -490,7 +510,7 @@ def main() -> int:
         report_a = compute_reversal({"real": real_rows_a, "control": control_rows_a},
                                      f"bp_{horizon}m")
         results_a = check_conditions(report_a, {"real": real_rows_a, "control": control_rows_a},
-                                      N_REAL, N_CONTROL, R_BP)
+                                      N_REAL, N_CONTROL, r_bp)
         ok_a = print_condition_table("変異a の4条件", results_a)
         cond3_a = next(r for r in results_a if r.name == "3_事象の数")
         mutation_caught["a_カスケードを黙って落とす"] = not cond3_a.passed
@@ -507,7 +527,7 @@ def main() -> int:
     report_b = compute_reversal({"real": real_rows_b, "control": control_rows_b},
                                  f"bp_{horizon}m")
     results_b = check_conditions(report_b, {"real": real_rows_b, "control": control_rows_b},
-                                  N_REAL, N_CONTROL, R_BP)
+                                  N_REAL, N_CONTROL, r_bp)
     print("\n[変異b: bp の符号を反転]")
     ok_b = print_condition_table("変異b の4条件", results_b)
     cond4_b = next(r for r in results_b if r.name == "4_符号")
@@ -522,7 +542,7 @@ def main() -> int:
     report_c = compute_reversal({"real": real_rows_c, "control": control_rows_c},
                                  f"bp_{horizon}m")
     results_c = check_conditions(report_c, {"real": real_rows_c, "control": control_rows_c},
-                                  N_REAL, N_CONTROL, R_BP)
+                                  N_REAL, N_CONTROL, r_bp)
     print("\n[変異c: bp を半分に薄める]")
     ok_c = print_condition_table("変異c の4条件", results_c)
     cond1_c = next(r for r in results_c if r.name == "1_効果の大きさ")
@@ -537,7 +557,7 @@ def main() -> int:
     report_e = compute_reversal({"real": real_rows_e, "control": control_rows_e},
                                  f"bp_{horizon}m")
     results_e = check_conditions(report_e, {"real": real_rows_e, "control": control_rows_e},
-                                  N_REAL, N_CONTROL, R_BP)
+                                  N_REAL, N_CONTROL, r_bp)
     wrong_h = horizon - 10 if horizon > 10 else horizon + 10
     print(f"\n[変異e: 地平線を {horizon} 分ではなく {wrong_h} 分で読ませる]")
     ok_e = print_condition_table("変異e の4条件", results_e)
@@ -548,7 +568,7 @@ def main() -> int:
     print("\n" + "=" * 78)
     print("変異d: タイ(internal_bp == 0)— 09-13 に実カスケードの約 8 割を落とした型")
     print("=" * 78)
-    tie_out = run_tie_scenario(horizon)
+    tie_out = run_tie_scenario(horizon, r_bp)
     for policy in ("keep", "refine", "drop"):
         print(f"  tie_policy={policy}: {tie_out.get(policy)}")
     print(f"  群間の除外率が非対称 + strict=True: {tie_out.get('strict_非対称')}")
@@ -560,11 +580,11 @@ def main() -> int:
     # **仕込んだ効果が粗い刻みに飲まれて 0 になっても「検出できた」と出ていた**。
     # 監査役: 「検査を通すことが目的で、性能を測るのに重要な箇所を条件から外している型に近い」
     keep_mean = real_keep.get("mean") if isinstance(real_keep, dict) else None
-    effect_survived = keep_mean is not None and abs(keep_mean - R_BP) <= TOLERANCE_BP
+    effect_survived = keep_mean is not None and abs(keep_mean - r_bp) <= TOLERANCE_BP
     mutation_caught["d_タイ(09-13 の型)"] = bool(tie_seen and stopped)
     print(f"  → タイが実際に発生したか: {tie_seen} / 群間差で止まったか: {stopped}")
     print(f"  → **タイの場面でも仕込んだ効果が残っているか**: {effect_survived} "
-          f"(keep の実群平均={keep_mean} / 仕込んだ R={R_BP} / 許容={TOLERANCE_BP})")
+          f"(keep の実群平均={keep_mean} / 仕込んだ R={r_bp} / 許容={TOLERANCE_BP})")
     if not effect_survived:
         print("     ← **残っていない。粗い刻みが効果を飲んでいる。**"
               "これは測定器の欠陥ではなく『この分解能では測れない』という射程の事実だが、"
