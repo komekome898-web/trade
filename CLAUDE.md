@@ -126,6 +126,13 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
   **前版はこれを「関門が効いているかの確認」と書いていた。誤りだった。**2026-09-14 の段 0 で、`verify_gates.py` が食い違い 0 件を返す一方で、`_verify_manifest.sh` が実際の食い違いに対して `Edit` を止めていない、という状態を実測した。**この道具は当の欠陥を検出できない。**
   **「フックが呼ばれているか」を確かめる唯一の方法は、実際に止まるはずの操作をして、止まるかを見ることである**(手順は `docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md`)。
 - **プロジェクト側のフックは、作業場所が「信頼済み」でないと 1 本も実行されない(2026-09-14 に原因を特定)。**`~/.claude.json` の `projects["<絶対パス>"].hasTrustDialogAccepted` が `false` だと、`.claude/settings.json` のフックは**警告も出さずに全部飛ばされる**。クラウド側の実行環境では信頼のダイアログが出ないので `false` のままになる。**確認**: `python3 -c "import json;print(json.load(open('/root/.claude.json'))['projects']['/home/user/trade']['hasTrustDialogAccepted'])"`。**`true` でなければ、この体制のフックは 1 本も動いていない。**
+- **数え直しは `git ls-files` 経由で行う(2026-09-14 実測)。**リードが使う検索の道具は、
+  **リポジトリ全体を検索すると約 256 KiB を超えるファイルを警告なしで飛ばす。**
+  実測: `docs/AUDITOR/ACTION_LOG.md`(422,689 バイト)は全体検索で 0 件、**名指しすると 20 件**。
+  `docs/OWNER_LOG.md`(253,446 バイト)は出たが、**上限まで 9 KB しかない。**
+  **この体制で一番よく数え直す 2 つの台帳が、どちらも消える側にある。**
+  使う形: `git ls-files -z | xargs -0 grep -c '<語>'`(上限が無い)。
+  **「全部数えた」と書く前にこの形で数える。**範囲を `docs/` などに切ったら、切ったことを書く。
 - 緊急停止: リポジトリ直下に `KILL` ファイルを作成
 - ダッシュボード: http://127.0.0.1:8300
 

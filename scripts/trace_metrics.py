@@ -19,7 +19,7 @@
   python3 scripts/trace_metrics.py                 # 既定の記録を読んで TRACE を書く
   python3 scripts/trace_metrics.py --print         # 標準出力にも出す
   python3 scripts/trace_metrics.py --jsonl PATH    # 記録を明示する
-  python3 scripts/trace_metrics.py --rollup        # P1〜P6 を TREND.md に追記する
+  python3 scripts/trace_metrics.py --rollup        # P1〜P7 を TREND.md に追記する
 """
 from __future__ import annotations
 
@@ -250,7 +250,7 @@ def parse(path: Path) -> dict:
 
 
 def rollup(trace: dict) -> dict:
-    """P1〜P6。**定義は docs/AUDITOR/PROCESS_METRICS.md にあり、ここが実装である。**"""
+    """P1〜P7。**定義は docs/AUDITOR/PROCESS_METRICS.md にあり、ここが実装である。**"""
     mv = trace["moves"]
     wrote = [m for m in mv if m["first_write_at"] is not None]
     audits = sum(m["audit_calls"] for m in mv)
