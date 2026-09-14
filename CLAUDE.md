@@ -127,7 +127,8 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
   **「フックが呼ばれているか」を確かめる唯一の方法は、実際に止まるはずの操作をして、止まるかを見ることである**(手順は `docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md`)。
 - **プロジェクト側のフックは、作業場所が「信頼済み」でないと 1 本も実行されない(2026-09-14 に原因を特定)。**`~/.claude.json` の `projects["<絶対パス>"].hasTrustDialogAccepted` が `false` だと、`.claude/settings.json` のフックは**警告も出さずに全部飛ばされる**。クラウド側の実行環境では信頼のダイアログが出ないので `false` のままになる。**確認**: `python3 -c "import json;print(json.load(open('/root/.claude.json'))['projects']['/home/user/trade']['hasTrustDialogAccepted'])"`。**`true` でなければ、この体制のフックは 1 本も動いていない。**
 - **数え直しは範囲を切らずに打ち、そのコマンドを結果と一緒に出す(2026-09-14、L-173)。**
-  **1 本では出ない。3 つ要る**(38 本目の監査): ファイル数 = `git ls-files -z | xargs -0 grep -lZ '<語>' | tr -dc '\0' | wc -c`、
+  **1 本では出ない。次を**全部**打つ**(38・39 本目の監査。**本数は書かない** — 書くと
+  コマンドを足すたびに古くなる): ファイル数 = `git ls-files -z | xargs -0 grep -lZ '<語>' | tr -dc '\0' | wc -c`、
   行数 = `git ls-files -z | xargs -0 grep -c '<語>' | grep -v ':0$'`、出現数 = `git ls-files -z | xargs -0 grep -oh '<語>' | wc -l`。
   **範囲を `docs/` などに切ったら、切ったことを結果に書く。「全部数えた」と書かない。**
   経緯: 2026-09-14 に `| grep -v ACTION_LOG` と `grep -rn 'P1〜P6' docs/ CLAUDE.md` という
