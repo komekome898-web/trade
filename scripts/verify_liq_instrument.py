@@ -575,21 +575,60 @@ def main() -> int:
     real_keep = tie_out.get("keep", {}).get("real", {})
     tie_seen = isinstance(real_keep, dict) and real_keep.get("n_tie", 0) > 0
     stopped = "止まった" in str(tie_out.get("strict_非対称", ""))
-    # **効果の大きさも合否に入れる(2026-09-14、測定後監査 2 回目の指摘)。**
-    # 旧版は「タイが起きたか」と「群間差で止まったか」しか見ておらず、
-    # **仕込んだ効果が粗い刻みに飲まれて 0 になっても「検出できた」と出ていた**。
-    # 監査役: 「検査を通すことが目的で、性能を測るのに重要な箇所を条件から外している型に近い」
-    keep_mean = real_keep.get("mean") if isinstance(real_keep, dict) else None
-    effect_survived = keep_mean is not None and abs(keep_mean - r_bp) <= TOLERANCE_BP
     mutation_caught["d_タイ(09-13 の型)"] = bool(tie_seen and stopped)
     print(f"  → タイが実際に発生したか: {tie_seen} / 群間差で止まったか: {stopped}")
-    print(f"  → **タイの場面でも仕込んだ効果が残っているか**: {effect_survived} "
-          f"(keep の実群平均={keep_mean} / 仕込んだ R={r_bp} / 許容={TOLERANCE_BP})")
-    if not effect_survived:
-        print("     ← **残っていない。粗い刻みが効果を飲んでいる。**"
-              "これは測定器の欠陥ではなく『この分解能では測れない』という射程の事実だが、"
-              "**合否に入れないと見逃すので入れる。**")
-    tie_effect_ok = effect_survived
+
+    # **合否は 3 方針すべてに課す(2026-09-14、測定後監査 4 回目の [止める] 2 件)。**
+    #
+    # 旧版は `keep` の実群平均だけを見ていた。監査役が生ログから割り算で示したとおり、
+    # **それは 2 つの誤差の打ち消し合いを「合格」と読んでいた**:
+    #   反転側 262×22.747÷300 = 19.866(非タイ分が +2.747bp 過大 → 38/300 の 0 埋めで薄まって相殺)
+    #   継続側 262×(-17.256)÷300 = -15.070(非タイ分の偏りは +2.744bp で**同じ量**。
+    #                                        こちらは薄まりが重なって外れただけ)
+    # **同じ一つの現象が、片方では True、片方では False として報告されていた。**
+    #
+    # さらに実測すると、40bp の刻みではタイ行の反応そのものが量子化の産物になっている:
+    #   反転側のタイ 38 行は `bp` が全部 0.0 / 継続側のタイ 38 行は全部 ±40.0(刻み 1 個分)。
+    # だから反転側では `refine` が「38 件解決」と数えても平均は `keep` と同一(19.866)になる。
+    # **どの方針が「正しい」かではなく、どの方針でも仕込み値は取り出せていない。**
+    #
+    # → 合否は **3 方針すべてが許容内**を要求する。**緩めたのではなく締めた。**
+    #   締めた結果、反転側も不合格になる(drop=22.747 が許容 ±3 を外れる)。
+    #   監査役: 「同じ測定の 3 つの方針のうち 1 つだけを出して不合格と書くのは、
+    #             測っていない族を説明なしに外す形である」
+    print("  → **タイの場面で仕込んだ効果が取り出せるか(3 方針すべてに課す)**")
+    tie_effect_ok = True
+    for policy in ("keep", "refine", "drop"):
+        rr = tie_out.get(policy, {}).get("real", {})
+        m = rr.get("mean") if isinstance(rr, dict) else None
+        ok = m is not None and m == m and abs(m - r_bp) <= TOLERANCE_BP
+        tie_effect_ok = tie_effect_ok and ok
+        n_used = rr.get("n_used") if isinstance(rr, dict) else None
+        n_tie = rr.get("n_tie") if isinstance(rr, dict) else None
+        diff = "nan" if (m is None or m != m) else f"{abs(m - r_bp):.3f}"
+        print(f"     {policy:>6}: 実群平均={m} / 仕込み R={r_bp} / |差|={diff} "
+              f"(許容={TOLERANCE_BP}) / n_used={n_used} / n_tie={n_tie} → {'OK' if ok else 'NG'}")
+    # 打ち消し合いを読み手が割り算しなくて済むように、その場で分解して出す。
+    rr_keep = tie_out.get("keep", {}).get("real", {})
+    rr_drop = tie_out.get("drop", {}).get("real", {})
+    if isinstance(rr_keep, dict) and isinstance(rr_drop, dict) and rr_drop.get("n_rows"):
+        md, nu, nr = rr_drop.get("mean"), rr_drop.get("n_used"), rr_drop.get("n_rows")
+        if md is not None and md == md and nu:
+            print(f"     [分解] 非タイ {nu} 行の平均={md} (仕込みからの偏り={md - r_bp:+.3f}bp) "
+                  f"× {nu}/{nr} = {nu * md / nr:.3f} = keep の平均({rr_keep.get('mean')})")
+            print("            ← **keep の値は「偏り」と「タイ行の 0 埋め」の積である。"
+                  "許容内に入っても、それは打ち消し合いであって効果の回収ではない。**")
+    if not tie_effect_ok:
+        # **言い過ぎない(2026-09-14)。**最初にここへ「どの方針でも仕込み値に戻らない」と
+        # 書いたが、継続側の `refine` は -20.137 で戻っている。**外れた方針だけを名指しする。**
+        ng = [p for p in ("keep", "refine", "drop")
+              if not (isinstance(tie_out.get(p, {}).get("real", {}), dict)
+                      and (lambda m: m is not None and m == m and abs(m - r_bp) <= TOLERANCE_BP)(
+                          tie_out.get(p, {}).get("real", {}).get("mean")))]
+        print(f"     ← **外れた方針: {', '.join(ng)}。**40bp の刻みではタイ行の反応が"
+              "量子化の産物(0.0 か ±刻み 1 個分)になるため、どの値が出るかは方針で変わる。"
+              "**これは測定器の欠陥ではなく『この分解能では測れない』という射程の事実だが、"
+              "合否に入れないと見逃すので入れる。**")
 
     print("\n" + "=" * 78)
     print("変異試験のまとめ(検出できたか)")
