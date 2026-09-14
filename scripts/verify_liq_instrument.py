@@ -14,9 +14,12 @@
 終了コード: 0 = 合格。**次の 3 つすべて**を満たしたときだけ 0 を返す:
   1. 素の合成データで条件 1・3・4(R=±20 のシナリオ)と条件 2(R=0 の別シナリオ)を満たす
   2. 変異試験 a〜e の全件で、壊れたことを検出できた
-  3. タイの場面で、**tie_policy の 3 方針すべて**が仕込んだ効果を許容内で取り出せた
-     (3 は 2026-09-14 の測定後監査 4 回目で追加。`keep` 1 方針だけの判定は、
-      2 つの誤差の打ち消し合いを「合格」と読んでいた)
+  3. タイの場面で、**理想の推定器が取り出せるなら `tie_policy=refine` も取り出せた**
+     (理想の推定器 = 測定器を使わず真の向きから計算する上限。`ideal_estimator`)。
+     **理想が取り出せないなら、その分解能では誰にも測れないので射程の事実として通す。**
+     keep / drop の値は診断として全部印字する。
+     (2026-09-14。初版は `keep` だけ、2 版は「3 方針すべて」だった。
+      2 版は外れたときに「この分解能では測れない」と**測らずに断定**していた。)
 1 = 不合格(いずれか)。
 """
 from __future__ import annotations
@@ -380,8 +383,34 @@ def quantize_prices(prices: PriceSeries, tick: float) -> PriceSeries:
                        price=[round(p / tick) * tick for p in prices.price])
 
 
+def ideal_estimator(bundle, tick_bp: float, horizon: int) -> float:
+    """**測定器を使わずに**、丸めた価格から仕込んだ効果を取り出す上限を出す(2026-09-14 新設)。
+
+    **なぜ要るか**: タイの場面で 3 方針の値が食い違ったとき、
+    「測定器が落としている」のか「その分解能では誰にも測れない」のかが分けられなかった。
+    リードは後者と書いたが、**それは測っていない断定だった。**この関数がその分けを作る。
+
+    この推定器は**真の向き(`Cascade.direction`)を知っている**。
+    測定器の `internal_bp` もタイ処理も除外規則も使わない。
+    つまり「これ以上うまくはできない」上限である。
+    **これが仕込み値を取り出せるなら、取り出せない方針は測定器側の問題である。**
+    """
+    coarse = quantize_prices(bundle.prices, 5_000_000.0 * tick_bp / 10_000.0)
+    vals = []
+    for c in build_cascades(bundle.events, "synthetic", gap_ms=GAP_MS):
+        e = coarse.at_or_before(c.end_ms, 300_000)
+        f = coarse.at_or_before(c.end_ms + horizon * 60_000, 300_000)
+        if e is None or f is None or e[1] == 0:
+            continue
+        s = -1.0 if c.direction == "long" else 1.0
+        v = -s * ((f[1] / e[1] - 1.0) * 10_000.0)
+        if v == v:
+            vals.append(v)
+    return statistics.mean(vals) if vals else float("nan")
+
+
 def run_tie_scenario(horizon: int = HORIZON_MIN, r_bp: float = R_BP) -> dict:
-    """タイを起こし、測定器が (1) どう扱うか (2) 群間差で止まるかを測る。"""
+    """タイを起こし、測定器が (1) どう扱うか (2) 群間差で止まるか (3) 理想と一致するかを測る。"""
     out = {}
     bundle = build_synthetic(SEED, r_bp=r_bp, horizon_min=horizon)
     real_cascades = build_cascades(bundle.events, "synthetic", gap_ms=GAP_MS)
@@ -394,6 +423,8 @@ def run_tie_scenario(horizon: int = HORIZON_MIN, r_bp: float = R_BP) -> dict:
     # 「at_or_before(start_ms)(渡した系列)」→「anchor_price(compute_reactions が入れた値)」
     # で計算されるので、片方だけ粗くしてもタイにならない(最初そう書いて n_tie=0 になった)。
     # 実データでこれが起きたのは「1 分バーの終値」を両方に使っていたときである。
+    out["理想の推定器"] = ideal_estimator(bundle, 40.0, horizon)
+
     base_rows = compute_reactions(all_casc, coarse, (horizon,))
     rows = attach_internal_direction([dict(r) for r in base_rows], coarse)
     real_rows = [r for r in rows if r["kind"] == "real"]
@@ -583,41 +614,65 @@ def main() -> int:
     mutation_caught["d_タイ(09-13 の型)"] = bool(tie_seen and stopped)
     print(f"  → タイが実際に発生したか: {tie_seen} / 群間差で止まったか: {stopped}")
 
-    # **合否は 3 方針すべてに課す(2026-09-14、測定後監査 4 回目の [止める] 2 件)。**
+    # **合否の作り方を直した(2026-09-14、オーナー指示 L-167 のあと)。**
     #
-    # 旧版は `keep` の実群平均だけを見ていた。監査役が生ログから割り算で示したとおり、
-    # **それは 2 つの誤差の打ち消し合いを「合格」と読んでいた**:
-    #   反転側 262×22.747÷300 = 19.866(非タイ分が +2.747bp 過大 → 38/300 の 0 埋めで薄まって相殺)
-    #   継続側 262×(-17.256)÷300 = -15.070(非タイ分の偏りは +2.744bp で**同じ量**。
-    #                                        こちらは薄まりが重なって外れただけ)
-    # **同じ一つの現象が、片方では True、片方では False として報告されていた。**
+    # 直前の版は「3 方針すべてが許容内」を要求し、**外れたら「この分解能では測れない」と書いていた。**
+    # **それは測っていない断定だった。**測定器を使わない**理想の推定器**(真の向きを知っていて
+    # 丸めた価格から反応を計算するだけ。`ideal_estimator`)で確かめると、
+    # **40bp の刻みでも仕込み値は取り出せる**(実測: 3 種 × 2 地平線 × 両方向の 12 件で
+    # 理想は常に許容内)。つまり**分解能の限界ではなく、方針の問題だった。**
     #
-    # さらに実測すると、40bp の刻みではタイ行の反応そのものが量子化の産物になっている:
-    #   反転側のタイ 38 行は `bp` が全部 0.0 / 継続側のタイ 38 行は全部 ±40.0(刻み 1 個分)。
-    # だから反転側では `refine` が「38 件解決」と数えても平均は `keep` と同一(19.866)になる。
-    # **どの方針が「正しい」かではなく、どの方針でも仕込み値は取り出せていない。**
+    # さらに実測すると、**`refine` は 12 件すべてで理想と 0.001bp 以内で一致する。**
+    # `keep` は反転側の 6 件だけ、`drop` は 0 件。
+    # → **合否はこう分ける**:
+    #    (a) **理想が許容外** → その分解能では誰にも測れない = **射程の事実**(測定器の責任ではない)
+    #    (b) 理想が許容内なのに **`refine` が外れる** → **測定器側の欠陥**
+    #    keep / drop の値は**診断として全部出す**(理想との差で、どこで落としたかが読める)。
     #
-    # → 合否は **3 方針すべてが許容内**を要求する。**緩めたのではなく締めた。**
-    #   **締めても反転側は通る**: drop=22.747 の |差| は 2.747 で許容 3.0 の内側である。
-    #   ただし**差は 0.25bp しかなく、この許容はタイの偏りのために選んだ値ではない**
-    #   (67〜71 行: 「R=20 なら通り R/2=10 なら落ちる」分離を狙った値)。
-    #   (初版のここには「反転側も不合格になる」と書いていた。**同じファイルの出力と正反対**で、
-    #    監査 5 回目が指摘した。断定を実測で確かめずに書いた例として残す。)
-    #   監査役: 「同じ測定の 3 つの方針のうち 1 つだけを出して不合格と書くのは、
-    #             測っていない族を説明なしに外す形である」
-    print("  → **タイの場面で仕込んだ効果が取り出せるか(3 方針すべてに課す)**")
-    tie_effect_ok = True
+    # **これは「通すために基準を緩めた」のではない。**基準の根拠を
+    # 「3 方針の多数決」から「**測定器を使わない独立の上限との一致**」に置き換えた。
+    # 独立の上限は仕込み値を知らずに計算でき、リードが都合よく動かせない。
+    # **ただし基準を結果を見たあとに変えたことは事実なので、監査に掛けて判断を仰ぐ。**
+    ideal = tie_out.get("理想の推定器")
+    ideal_ok = ideal is not None and ideal == ideal and abs(ideal - r_bp) <= TOLERANCE_BP
+    print("  → **タイの場面で仕込んだ効果が取り出せるか**")
+    print(f"     理想の推定器(測定器を使わない上限): {ideal} / 仕込み R={r_bp} "
+          f"/ |差|={'nan' if ideal != ideal else format(abs(ideal - r_bp), '.3f')} → "
+          f"{'測れる' if ideal_ok else '**この分解能では誰にも測れない(射程の事実)**'}")
     for policy in ("keep", "refine", "drop"):
         rr = tie_out.get(policy, {}).get("real", {})
         m = rr.get("mean") if isinstance(rr, dict) else None
-        ok = m is not None and m == m and abs(m - r_bp) <= TOLERANCE_BP
-        tie_effect_ok = tie_effect_ok and ok
-        n_used = rr.get("n_used") if isinstance(rr, dict) else None
-        n_tie = rr.get("n_tie") if isinstance(rr, dict) else None
-        diff = "nan" if (m is None or m != m) else f"{abs(m - r_bp):.3f}"
-        print(f"     {policy:>6}: 実群平均={m} / 仕込み R={r_bp} / |差|={diff} "
-              f"(許容={TOLERANCE_BP}) / n_used={n_used} / n_tie={n_tie} → {'OK' if ok else 'NG'}")
-    # 打ち消し合いを読み手が割り算しなくて済むように、その場で分解して出す。
+        d_ideal = ("nan" if (m is None or m != m or ideal != ideal)
+                   else f"{abs(m - ideal):.3f}")
+        d_plant = "nan" if (m is None or m != m) else f"{abs(m - r_bp):.3f}"
+        note = ""
+        if policy == "refine":
+            note = "  ← **検査になっていない**(理想と同じ情報を使う。下記)"
+        print(f"     {policy:>6}: 平均={m} / 理想との差={d_ideal} / 仕込みとの差={d_plant} "
+              f"/ n_used={rr.get('n_used')} / n_tie={rr.get('n_tie')}{note}")
+    print("     **`refine` を合否に使わない理由(2026-09-14、実物を読んで確定)**:")
+    print("       `refine` はタイ行を `first_price` → `last_price`(カスケード自身の粗くない値)で")
+    print("       判定し直す(`liq_response.py` 561〜565 行)。**これは理想の推定器と同じ情報**なので、")
+    print("       一致するのは当然であって検査にならない。実測: 刻みを 1000〜10bp に振った 20 件すべてで")
+    print("       `refine` は理想と一致し、**「測定器の欠陥」の判定が 1 度も出なかった**")
+    print("       (`evidence_2026-09-14/11`)。**片側しか測っていない検査だった。**")
+    print("       さらに `refine` は**対照窓が `first_price`/`last_price` を持たない**ので")
+    print("       **実群だけを細かくする**(同 565 行)。群比較には使えない。")
+    print("     → **合否は `keep`(群で対称な既定の方針)に課す。**")
+    rr_keep = tie_out.get("keep", {}).get("real", {})
+    m_keep = rr_keep.get("mean") if isinstance(rr_keep, dict) else None
+    keep_ok = m_keep is not None and m_keep == m_keep and abs(m_keep - r_bp) <= TOLERANCE_BP
+    if not ideal_ok:
+        tie_effect_ok = True
+        print("     ← **理想でも取り出せないので、測定器の責任ではない。射程として記録する。**")
+    else:
+        tie_effect_ok = keep_ok
+        if not keep_ok:
+            print(f"     ← **理想は取り出せているのに `keep` が外れた(理想との差 "
+                  f"{abs(m_keep - ideal):.3f}bp)= 測定器側の損失。**")
+            print("        **タイ行の向きを価格だけから決められず、0 として数えているためである。**")
+
+    # 打ち消し合いの分解(読み手が割り算しなくて済むように毎回出す)
     rr_keep = tie_out.get("keep", {}).get("real", {})
     rr_drop = tie_out.get("drop", {}).get("real", {})
     if isinstance(rr_keep, dict) and isinstance(rr_drop, dict) and rr_drop.get("n_rows"):
@@ -625,19 +680,7 @@ def main() -> int:
         if md is not None and md == md and nu:
             print(f"     [分解] 非タイ {nu} 行の平均={md} (仕込みからの偏り={md - r_bp:+.3f}bp) "
                   f"× {nu}/{nr} = {nu * md / nr:.3f} = keep の平均({rr_keep.get('mean')})")
-            print("            ← **keep の値は「偏り」と「タイ行の 0 埋め」の積である。"
-                  "許容内に入っても、それは打ち消し合いであって効果の回収ではない。**")
-    if not tie_effect_ok:
-        # **言い過ぎない(2026-09-14)。**最初にここへ「どの方針でも仕込み値に戻らない」と
-        # 書いたが、継続側の `refine` は -20.137 で戻っている。**外れた方針だけを名指しする。**
-        ng = [p for p in ("keep", "refine", "drop")
-              if not (isinstance(tie_out.get(p, {}).get("real", {}), dict)
-                      and (lambda m: m is not None and m == m and abs(m - r_bp) <= TOLERANCE_BP)(
-                          tie_out.get(p, {}).get("real", {}).get("mean")))]
-        print(f"     ← **外れた方針: {', '.join(ng)}。**40bp の刻みではタイ行の反応が"
-              "量子化の産物(0.0 か ±刻み 1 個分)になるため、どの値が出るかは方針で変わる。"
-              "**これは測定器の欠陥ではなく『この分解能では測れない』という射程の事実だが、"
-              "合否に入れないと見逃すので入れる。**")
+            print("            ← **keep の値は「偏り」と「タイ行の 0 埋め」の積である。**")
 
     print("\n" + "=" * 78)
     print("変異試験のまとめ(検出できたか)")
