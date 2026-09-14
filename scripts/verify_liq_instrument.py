@@ -662,10 +662,25 @@ def main() -> int:
     rr_keep = tie_out.get("keep", {}).get("real", {})
     m_keep = rr_keep.get("mean") if isinstance(rr_keep, dict) else None
     keep_ok = m_keep is not None and m_keep == m_keep and abs(m_keep - r_bp) <= TOLERANCE_BP
+    # **「射程」を合格に合流させない(2026-09-14、12 本目の監査の [止める])。**
+    # 直前の版は `if not ideal_ok: tie_effect_ok = True` で、**理想が外れると `keep` を一切見ずに
+    # 合格にしていた。**その分岐に入る刻みで `keep` が実際に返す値は(`evidence_11`):
+    #   150bp 継続 +0.000(仕込み −20)/ 100bp 継続 +0.000 / 80bp 継続 +0.000 /
+    #   150bp 反転 +33.838(仕込み +20 の 1.7 倍)
+    # **報告 §1.5 が「効果が無いときと区別のつかない数字が警告なく返る」「粗い区間の
+    # 『効果なし』がそのまま陰性として積み上がる(A-18)」と書いた、まさにその領域で、
+    # 関門が合格を出していた。**「測定器の責任ではない」は**責任の帰属**の話であって、
+    # **合否にしてよい理由ではない。**
+    # → **射程は第 3 の状態**にし、`overall_pass` には合流させない。終了コードも分ける。
     if not ideal_ok:
-        tie_effect_ok = True
-        print("     ← **理想でも取り出せないので、測定器の責任ではない。射程として記録する。**")
+        tie_effect_ok = False
+        tie_out_of_scope = True
+        print("     ← **理想でも取り出せない = この分解能ではこの量を測れない。**")
+        print("        **これは測定器の責任ではないが、合格でもない。第 3 の状態(射程)として出す。**")
+        print(f"        参考: この領域で keep が返す値 = {m_keep}(仕込み {r_bp})。"
+              "**効果の有無と区別がつかない数字が、警告なく返っている。**")
     else:
+        tie_out_of_scope = False
         tie_effect_ok = keep_ok
         if not keep_ok:
             print(f"     ← **理想は取り出せているのに `keep` が外れた(理想との差 "
@@ -695,9 +710,16 @@ def main() -> int:
     print(f"最終判定: {'合格(0)' if overall_pass else '不合格(1)'}")
     # **第 3 項を必ず印字する(2026-09-14、監査 5 回目)。**
     # 旧版は 2 項しか出さなかったので、継続側のログが「内訳は全部 True なのに不合格」と読めた。
+    # **ラベルを実物に合わせる(2026-09-14、12 本目の監査の [止める] 3)。**
+    # 前版は「タイの3方針すべてが許容内か」と印字していたが、**印字している量は
+    # 3 方針ではなく `tie_effect_ok`(理想の関門 + `keep`)である。**
+    # 40bp では偶然どちらも同じ答えになるだけで、100bp 継続では 3 方針とも許容外なのに
+    # 「3方針すべてが許容内か = True」と出ていた。
     print("  内訳: 素の合成データが4条件を満たすか =", clean_pass,
           " / 変異すべてを検出できたか =", all_mutations_caught,
-          " / タイの3方針すべてが許容内か =", tie_effect_ok)
+          " / タイで keep が理想どおり取り出せたか =", tie_effect_ok,
+          ("(**射程: この分解能では誰にも測れない。合格でも不合格でもない**)"
+           if tie_out_of_scope else ""))
     print("=" * 78)
 
     return 0 if overall_pass else 1
