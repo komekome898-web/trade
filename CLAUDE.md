@@ -129,7 +129,12 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 - **数え直しは範囲を切らずに打ち、そのコマンドを結果と一緒に出す(2026-09-14、L-173)。**
   **1 本では出ない。次を**全部**打つ**(38・39 本目の監査。**本数は書かない** — 書くと
   コマンドを足すたびに古くなる): ファイル数 = `git ls-files -z | xargs -0 grep -lZ '<語>' | tr -dc '\0' | wc -c`、
-  行数 = `git ls-files -z | xargs -0 grep -c '<語>' | grep -v ':0$'`、出現数 = `git ls-files -z | xargs -0 grep -oh '<語>' | wc -l`。
+  行数 = `git ls-files -z | xargs -0 grep -c '<語>' | grep -v ':0$'`、
+  **ファイルごとの出現数** = `git ls-files -z | xargs -0 grep -o '<語>' | cut -d: -f1 | uniq -c`、
+  出現数の合計 = `git ls-files -z | xargs -0 grep -oh '<語>' | wc -l`。
+  **「ファイルごとの出現数」を落とさない**(40 本目の監査): これが無いと、
+  誰かの数と食い違ったときに**どのファイルでずれたかが 1 回で分からない。**
+  前版はこの 1 本だけ欠けていて、`docs/INCIDENTS.md` の枠と「全部」が別の集合を指していた。
   **範囲を `docs/` などに切ったら、切ったことを結果に書く。「全部数えた」と書かない。**
   経緯: 2026-09-14 に `| grep -v ACTION_LOG` と `grep -rn 'P1〜P6' docs/ CLAUDE.md` という
   **自分で範囲を切ったコマンドの結果に「全文検索して確定」と書き、2 度続けて数え落とした**
