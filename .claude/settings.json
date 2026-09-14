@@ -91,6 +91,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/reply_audit_gate.sh",
+            "timeout": 20
+          }
+        ]
+      }
     ]
   },
   "_停止前の設定": {
