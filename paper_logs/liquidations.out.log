@@ -344,3 +344,14 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-09-15T18:39:06+00:00 bybit: 接続
 2026-09-15T20:12:20+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
 2026-09-15T20:12:26+00:00 bitmex: 接続
+2026-09-15T22:06:51+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-15T22:08:17+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-15T22:08:20+00:00 bitmex: 接続
+2026-09-15T22:08:21+00:00 bybit: 接続
+2026-09-16T00:00:04+00:00 bitmex: -> bitmex_20260916.jsonl.gz
+2026-09-16T00:00:06+00:00 binance_cm: -> binance_cm_20260916.jsonl.gz
+2026-09-16T00:00:06+00:00 bybit: -> bybit_20260916.jsonl.gz
+2026-09-16T00:47:48+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-16T00:49:47+00:00 bybit: 終了 11333 行
+2026-09-16T20:16:01+00:00 bitmex: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-09-16T20:16:17+00:00 bitmex: 接続
