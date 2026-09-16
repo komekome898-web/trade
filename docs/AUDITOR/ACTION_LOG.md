@@ -3259,6 +3259,8 @@ I-008 の宿題を残したまま押し出すことも**残してよい**(期限
 
 ### 監査役の返答(逐語。1 本目)
 
+監査役: `owner-model-auditor`(行動の監査。§0.5 のとおり入力は逐語 + TRACE)
+
 > ```
 > [止める] 「`grep -rn 'I-008'` で参照元を全部数え」が、実物と合っていない
 > 根拠(オーナー逐語): 「**あなたの断定癖は私ですら注意していないと見過ごしてしまう**ので言いました」
@@ -4709,6 +4711,8 @@ PreToolUse:Write hook error: [sh "$CLAUDE_PROJECT_DIR"/.claude/hooks/deny_protec
 
 ### 監査役の返答(逐語。1 本目)
 
+監査役: `owner-model-auditor`(行動の監査。§0.5 のとおり入力は逐語 + TRACE)
+
 > **開いた実物**: `.claude/settings.json`(現物)、`ACTION_LOG.md` 4562〜4619 行(節 037 の全文)、`HOOK_MANIFEST.sha256`、`scripts/verify_gates.py` 355〜397 行、`OWNER_LOG.md` L-160 / L-175 / L-176 / L-177、`INCIDENTS.md` I-010 と番号注記、`STAGE0_hook_probe.md` 282〜307 行(「解決」節の全文)、`CLAUDE.md` §3・§5.0・§5.0b の現物、`OWNER_STATUS.md` 1〜30 行、`TRACE/2026-09-16_fa7bf0d4.json`(手 68〜75・100〜104・109・124 と rollup)、`/root/.claude.json` の `hasTrustDialogAccepted`(`true`)、`.claude/hooks/`(15 本、台帳の 15 本と一致、試験用ファイルの残りなし)、`.claude/state/`(解除ファイルなし)。
 >
 > **開けなかった / この監査役の道具では検査できないもの**: (a) `settings.json` の変更前後の差分(git を叩けない。台帳 037 は「剥がした鍵」だけを退避しており、変更前の `hooks` 全文は台帳からは復元できない)。現物の配線は退避が指す添字と矛盾しない、というところまで。(b) `.claude/hooks/*.sh` が一字も変わっていないかの sha256 照合(計算する道具がない)。(c) TRACE のどの手が 037 かの確定(手ごとの時刻が無い)。
@@ -4795,7 +4799,7 @@ $ git grep -n 'hasTrustDialogAccepted: false\|hasTrustDialogAccepted` が `false
 CLAUDE.md:132:- **プロジェクト側のフックは、作業場所が「信頼済み」でないと 1 本も実行されない(2026-09-14 に原因
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/PLAN.md:39:> 原因は `~/.claude.json` の `hasTrustDialogAccepted: false`(直した)。
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/PLAN.md:479:   (原因は `hasTrustDialogAccepted: false`。直した)。
-docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:102:**作業場所が「信頼済み」になっていない。**Claude Code �
+docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:102:**作業場所が「信頼済み」になっていない。**Claude Code 
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:148:5. **原因は `hasTrustDialogAccepted: false`。**(測定 5)直した。
 docs/INCIDENTS.md:68:> ことが実測された**(原因の最有力は `~/.claude.json` の `hasTrustDialogAccepted: false`。
 docs/OWNER_LOG.md:167:| L-170 | 2026-09-14 | **【この行の「原因は特定できていない」は L-171 で解消した。原因 = `hasTrustDia
@@ -4815,6 +4819,8 @@ https://json.schemastore.org/claude-code-settings.json 142 True
 ```
 
 ### 監査役の返答(逐語。2 本目)
+
+監査役: `owner-model-auditor`(行動の監査。§0.5 のとおり入力は逐語 + TRACE)
 
 > まず方向について。オーナー逐語「(1) フックが走らない原因を切り分けて修正してください」(L-176)に対し、リードは 8 通りの切り分け・バイナリの読解・診断ログ・別プロセスでの再現・本番経路での確認まで**自分で**やっている(§2.5-C・F: 在庫を開き、調査範囲を自分で広げている)。修正そのものは通る。**止めるのは修正ではなく、その記録の形である。**
 >
@@ -4877,6 +4883,8 @@ https://json.schemastore.org/claude-code-settings.json 142 True
 
 ### 監査役の返答(逐語。3 本目)
 
+監査役: `owner-model-auditor`(行動の監査。§0.5 のとおり入力は逐語 + TRACE)
+
 検査に使った実物: `docs/AUDITOR/OWNER_MODEL_SOURCE.md`(全 1328 行)、`docs/AUDITOR/ACTION_LOG.md` 4562〜4877 行(節 037 の全文。4877 行で終端)、`docs/OWNER_STATUS.md`(全 91 行)、`docs/OWNER_LOG.md` L-170〜L-177、`docs/INCIDENTS.md` 58〜82 行、`scripts/verify_gates.py` 350〜416 行、`docs/AUDITOR/claude-code-settings.schema.json`(存在確認)、`PLAN.md` 36〜41・476〜481 行、`STAGE0_hook_probe.md` 98〜105・144〜151・280〜308 行、`docs/AUDITOR/TRACE/2026-09-16_fa7bf0d4.json`(手 1〜67 と rollup)、`.git/COMMIT_EDITMSG` と `.git/logs/HEAD` 936 行(c3bb2eb の本文)、リポジトリ全体の `hasTrustDialogAccepted` grep。
 
 開けなかったもの: `git show c3bb2eb` そのもの(git を叩けない)。差分は上の実物の現在の状態で代用した。1 本目・2 本目の逐語は、私の元の出力が手元に無いので**形**(見出し・6 件/5 件の枠・3 行の締め)だけ見た。形の崩れ・欠落は見当たらない。ただし逐語どおりかは原理的に確かめられない。
@@ -4938,7 +4946,7 @@ e051c49: 4471863 を祖先に持つ(2026-09-15 06:38:20 +0900 paper logs snapsho
 
 ```
 $ git grep -n -e hasTrustDialogAccepted -e "1 行だけでフックが全部飛ぶ" -e "1 本残らず" | grep -v -e 誤診 -e 未測定 -e 撤回 -e ACTION_LOG
-.claude/hooks/deny_protected_paths.sh:18:#   - このフック自体、`~/.claude.json` の `hasTrustDialogAccepted` が false なら走ら�
+.claude/hooks/deny_protected_paths.sh:18:#   - このフック自体、`~/.claude.json` の `hasTrustDialogAccepted` が false なら走ら
 CLAUDE.md:132:- **プロジェクト側のフックは、作業場所が「信頼済み」でないと 1 本も実行されない(2026-09-14
 CLAUDE.md:217:  **`~/.claude.json` の `projects["<絶対パス>"].hasTrustDialogAccepted` を `false` にすると、
 CLAUDE.md:218:  `.claude/settings.json` のフックが 1 本残らず、警告も出さずに飛ぶ。**
@@ -4948,7 +4956,7 @@ docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:102:**作
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:120:$ python3 -c "... e['hasTrustDialogAccepted']=True ..."
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:121:変更前 hasTrustDialogAccepted = False
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:122:変更後 hasTrustDialogAccepted = True
-docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:197:2026-09-14 の段 0 で `hasTrustDialogAccepted` を `true` に�
+docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:197:2026-09-14 の段 0 で `hasTrustDialogAccepted` を `true` に
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:259:**`hasTrustDialogAccepted` を `true` にしても直らなかっ
 docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md:82:- **`hasTrustDialogAccepted` を `true` にしても直っていなかった。*
 ```
@@ -4965,6 +4973,8 @@ docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md:82:- **`hasTrustDialogA
 | (判定外)コミット本文の `Claude-Session:` 行 | §6 の「モデル名」は Claude / Opus 等のモデルの名を指す。この行は会話の**リンク**で、ハーネスが付ける `Co-Authored-By:` の**モデル名**行(状態板 51 行で違反として数えたもの)とは別物と判断して、**残す。**ここに書いた理由でオーナーが判断できる |
 
 ### 監査役の返答(逐語。4 本目)
+
+監査役: `owner-model-auditor`(行動の監査。§0.5 のとおり入力は逐語 + TRACE)
 
 検査に使った実物: `docs/AUDITOR/OWNER_MODEL_SOURCE.md`(全 1328 行)、`docs/AUDITOR/ACTION_LOG.md` 4562〜4965 行(節 037 の全文。4965 行で終端)、`docs/OWNER_STATUS.md` 1〜70 行、`docs/OWNER_LOG.md` 167〜174 行(L-170〜L-177)、`docs/AUDITOR/TREND.md` 全 40 行、`PLAN.md` 385〜424 行、`CLAUDE.md` 128〜139・210〜244 行、`STAGE0_hook_probe.md` 96〜107・194〜199・256〜261 行、`2026-09-16_scope_claim_gate_proposal.md` 78〜85 行、`.claude/hooks/deny_protected_paths.sh` 12〜21 行、`docs/INCIDENTS.md` 58〜82 行、`.git/COMMIT_EDITMSG`(19a10d8 の本文)、`.git/logs/HEAD` 936〜937 行、`TRACE/2026-09-16_fa7bf0d4.json`(手 1〜67・120〜124 と rollup)、リポジトリ全体の grep 3 本(`hasTrustDialogAccepted|1 行だけでフックが全部飛ぶ|1 本残らず` / `全部飛|全部無視|1 本も動いていない|警告も出さずに` / `必要条件`。いずれも `ACTION_LOG.md` だけをファイル単位で除外)。
 
@@ -5025,13 +5035,13 @@ CLAUDE.md:217:  **`~/.claude.json` の `projects["<絶対パス>"].hasTrustDialo
 CLAUDE.md:218:  `.claude/settings.json` のフックが 1 本残らず、警告も出さずに飛ぶ。**
 CLAUDE.md:239:  `projects["/home/user/trade"].hasTrustDialogAccepted` が **`false`** だった。
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:98:              print(d['projects']['/home/user/
-docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:102:**作業場所が「信頼済み」になっ�
+docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:102:**作業場所が「信頼済み」になっ
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:120:$ python3 -c "... e['hasTrustDialogAccepted']
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:121:変更前 hasTrustDialogAccepted = False
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:122:変更後 hasTrustDialogAccepted = True
 docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:197:2026-09-14 の段 0 で `hasTrustDialogAccept
-docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:259:**`hasTrustDialogAccepted` を `true` にし�
-docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md:82:- **`hasTrustDialogAccepted` を `true` にしても直っ�
+docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md:259:**`hasTrustDialogAccepted` を `true` にし
+docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md:82:- **`hasTrustDialogAccepted` を `true` にしても直っ
 docs/OWNER_LOG.md:172:| L-175 | 2026-09-16 | **オーナーの発言は無い。実測の記録**(`ACTION_LOG` 036 の 1
 ```
 
@@ -5042,18 +5052,18 @@ docs/OWNER_LOG.md:172:| L-175 | 2026-09-16 | **オーナーの発言は無い。
 ```
 $ git grep -n -e "必要条件" -e "全部無視" -e "実在する" -- ":!docs/AUDITOR/ACTION_LOG.md" | grep -v -e 未測定
 .claude/skills/research-protocol/SKILL.md:298:単位には**上流(現象が実在するか)と下流(実際に取れるか)**があり、
-.claude/skills/research-squad/SKILL.md:206:4. `verify` の引用が実在するURLの実在するテキストと一致するか(サンプルで再確�
+.claude/skills/research-squad/SKILL.md:206:4. `verify` の引用が実在するURLの実在するテキストと一致するか(サンプルで再確
 CLAUDE.md:132:- **プロジェクト側のフックは、作業場所が「信頼済み」でないと 1 本も実行されない(2026-09-14 の記述
-backtest_data/binance_cm_o3c_20260913/README.md:255:必要条件であって十分条件ではない。**もし `create_time` が UTC ではなく固�
-backtest_data/phase2_runs/P2-01b/history_20260906/RESULTS.md:34:(a) 引け→夜間寄り、(b) 夜間寄り→夜間引け、(c) 夜間引け→翌�
+backtest_data/binance_cm_o3c_20260913/README.md:255:必要条件であって十分条件ではない。**もし `create_time` が UTC ではなく固
+backtest_data/phase2_runs/P2-01b/history_20260906/RESULTS.md:34:(a) 引け→夜間寄り、(b) 夜間寄り→夜間引け、(c) 夜間引け→翌
 docs/AUDITOR/EVAL_2026-09-11.md:11:無い)。代わりに、このリポジトリに実在するローカル `claude` CLI を使い、
-docs/DATA/surveys/O3C_PROCUREMENT_2026-09-12.md:19:| 1 | **Binance COIN-M(dapi)の `liquidationSnapshot` は Binance Vision に実在する**(前回�
+docs/DATA/surveys/O3C_PROCUREMENT_2026-09-12.md:19:| 1 | **Binance COIN-M(dapi)の `liquidationSnapshot` は Binance Vision に実在する**(前回
 docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md:27:`CLAUDE.md` §5.0 に「**限界(全部書く)**」が実在するので、素朴な語一
-docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md:72:| **鳴りすぎると無視される**(Drew 2014) | 引き金を「数える・直すに�
+docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md:72:| **鳴りすぎると無視される**(Drew 2014) | 引き金を「数える・直すに
 docs/OPERATIONS.md:444:1. bitFlyer の画面か `getchildorders` で、その注文が実在するか確認する
 docs/OWNER_LOG.md:54:| L-051 | 2026-09-09 | 指示 + 実施報告 | 「**指摘される前に自分で回すチェックを設計してください**
 "docs/PHASE2/INSTRUMENT_VERIFY/evidence_2026-09-14/08_\344\270\212\347\224\263\343\201\231\343\202\213\351\226\242\351\226\200\343\201\256\345\256\237
-scripts/judge_board_round.py:28:  再測 PREREG)。いずれも満たさない → **板不均衡 taker を機構水準で最終閉鎖**(効果は実�
+scripts/judge_board_round.py:28:  再測 PREREG)。いずれも満たさない → **板不均衡 taker を機構水準で最終閉鎖**(効果は実
 scripts/phase2/p2_01b_history.py:368:              "分母は夜間行が実在するペアのみ(欠損夜は除く)。")
 ```
 
@@ -5068,6 +5078,8 @@ scripts/phase2/p2_01b_history.py:368:              "分母は夜間行が実在�
 | (指摘外だが同じ一手の中)催促の要約に「求めている行動: 無し」が出続けていた | 要約器 `owner_turn_digest.sh` は状態板 5 行目ではなく表の `| PC 運用 |` 行の 5 列目を読む(37 行を読んで確認)。その列を pull の要請に差し替えた。**フックは触っていない**(状態板の表を直しただけ) |
 
 ### 監査役の返答(逐語。5 本目)
+
+監査役: `owner-model-auditor`(行動の監査。§0.5 のとおり入力は逐語 + TRACE)
 
 検査に使った実物: `docs/AUDITOR/OWNER_MODEL_SOURCE.md`(全 1328 行)、`docs/AUDITOR/ACTION_LOG.md` 4925〜5069 行(037 節の 3 巡目の実測から末尾まで。5069 行で終端)、`CLAUDE.md` 128〜139・210〜239 行、`docs/OWNER_LOG.md` 167〜174 行(L-170〜L-177)、`docs/OWNER_STATUS.md` 1〜20・70〜91 行、`.claude/hooks/owner_turn_digest.sh` 26〜42 行、`.claude/hooks/deny_protected_paths.sh` 10〜23 行、`.git/COMMIT_EDITMSG`(f022029 の本文)、`.git/logs/HEAD` 937〜938 行、`TRACE/2026-09-16_fa7bf0d4.json`(手 1〜67 の全文、保護パス書き込みが非 0 の手の一覧、手 105〜124 の位置、rollup)。
 
@@ -5126,3 +5138,24 @@ $ sed -n 132p CLAUDE.md
 ```
 
 判定: 通す(5 本目の監査の逐語は上。押し出し前の [直す] 1 件は直して実物を貼った)
+
+(注: 上の (F)・(G) の貼り付けは `cut -c1-120` がバイト単位で切ったため、行末に不完全な文字のバイトが残っていた。2026-09-16 に不完全なバイトだけを落とした。文字は足していない。)
+
+### 返答sha256: d078a47402e59b3f
+
+オーナーへの L-176 (1) の完了報告。監査: `owner-model-auditor` 5 巡(037 節)。返答本文に貼った 5 本目の逐語:
+
+### 監査役の返答(逐語。5 本目の抜粋、返答本文と同じ行)
+
+> [直す] 4 巡目の [直す] の直し残しが CLAUDE.md 132 行に 1 か所あり、(H) の機械がそれを出したのに、監査役の「確認済み」を広げて読んで通している
+> 根拠(オーナー逐語): 「あなたの断定癖は私ですら注意していないと見過ごしてしまう」(出典: OWNER_MODEL_SOURCE.md §2-2 / OWNER_LOG L-057)
+>                     「丁寧に指示してるし、指摘もしてる。なのに何故同じミスを繰り返すんですか？」(出典: §3-2 / worst_day 発言 26)
+> 何が食い違っているか:
+>   - CLAUDE.md 132 行の実物: 「下の【解決】のとおり、これは原因ではなかった。必要条件としての記述として残す」…「`true` でなければ、この体制のフックは 1 本も動いていない。」。「必要条件としての記述として残す」は必要条件であることを前提にした文で、末尾は無限定の断定。直下の 133 行は「`true` が必要条件かは、コード上はそう読めるだけで未測定」。隣り合う 2 行が同じ語「必要条件」を、片方は事実、片方は未測定として書いている。
+>   - 4 巡目の [直す] が名指しした語はまさに「必要条件」(133・237 行)であり、132 行はその直し残し。リード自身が L-173 に書いた「直した範囲の外に同じ主張が残る」の型。
+> オーナーの負荷: 増える(PC 側で pull 1 回。真因がリポジトリ内のファイルなので取り込みはオーナーにしかできない。4 巡目と同じ。5 列目の差し替えで催促の要約に pull の要請が出るようになるので、状態板を自分で開く手間は減る)
+> 品質: 上がる(4 巡目の 2 件は実物で直っている。残るのは 132 行の直し残し 1 か所で、直下の 133 行が正しい記述を持っている)
+> 判定: 通す
+> 上の [直す] 1 件を直し、直した 132 行の実物を 037 に貼ってから押し出すこと。
+
+判定: 通す
