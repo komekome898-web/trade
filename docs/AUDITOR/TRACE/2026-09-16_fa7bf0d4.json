@@ -3285,50 +3285,55 @@
   {
    "move": 124,
    "tools": {
-    "Bash": 1
+    "Bash": 34,
+    "Read": 2,
+    "Write": 2,
+    "Edit": 1,
+    "Agent": 5,
+    "ToolSearch": 1
    },
-   "n_tools": 1,
-   "read_goal": false,
-   "first_write_at": null,
+   "n_tools": 45,
+   "read_goal": true,
+   "first_write_at": 5,
    "table_shown": false,
-   "claims_without_output": 0,
-   "claims_total": 0,
-   "audit_calls": 0,
-   "audit_pasted_immediately": 0,
-   "audit_followed_by_real_edit": 0,
-   "protected_writes": 0,
+   "claims_without_output": 1,
+   "claims_total": 4,
+   "audit_calls": 5,
+   "audit_pasted_immediately": 1,
+   "audit_followed_by_real_edit": 1,
+   "protected_writes": 2,
    "protected_by_path": {
     "docs/PROJECT_GOAL.md": 0,
     "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
-    ".claude/hooks/": 0,
+    ".claude/hooks/": 2,
     ".claude/settings.json": 0,
     ".claude/agents/": 0
    },
    "readdo_reads": 0,
    "unlock_created": 0,
-   "unlock_in_test": 0
+   "unlock_in_test": 2
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
-   "num": 1,
-   "den": 20,
-   "value": 0.05
+   "num": 2,
+   "den": 21,
+   "value": 0.0952
   },
   "P2_table_shown_before_first_write": {
    "num": 3,
-   "den": 20,
-   "value": 0.15
+   "den": 21,
+   "value": 0.1429
   },
   "P3_claim_with_output": {
-   "num": 152,
-   "den": 287,
-   "value": 0.5296
+   "num": 155,
+   "den": 291,
+   "value": 0.5326
   },
   "P4_audit_pasted_immediately": {
-   "num": 9,
-   "den": 70,
-   "value": 0.1286
+   "num": 10,
+   "den": 75,
+   "value": 0.1333
   },
   "P5_tools_per_move": {
    "median": 3,
@@ -3336,9 +3341,9 @@
    "n": 99
   },
   "P6_findings_applied": {
-   "num": 24,
-   "den": 70,
-   "value": 0.3429,
+   "num": 25,
+   "den": 75,
+   "value": 0.3333,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
@@ -3353,14 +3358,14 @@
    "note_key": "excludes_test_origin"
   },
   "R4b_unlock_in_test": {
-   "num": 11,
+   "num": 13,
    "den": null,
    "value": null
   },
   "R5_protected_by_path": {
    "docs/PROJECT_GOAL.md": 0,
    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
-   ".claude/hooks/": 34,
+   ".claude/hooks/": 36,
    ".claude/settings.json": 6,
    ".claude/agents/": 1
   }
