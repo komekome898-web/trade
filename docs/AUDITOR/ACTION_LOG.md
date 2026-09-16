@@ -5278,6 +5278,9 @@ $ sed -n 132p CLAUDE.md
 返答sha256: 834728648f3a8553
 返答sha256: 9be3da1f40952b11
 
+返答sha256: af507f6cef2264ae
+返答sha256: 0b21d705e96d980b
+(上 2 行は、PC 側の pull 済みを確かめた段落を足した版)
 (末尾改行の有無で 2 つ併記)
 
 ### 監査役の返答(逐語。owner-model-auditor、返答本文と同じ行)
