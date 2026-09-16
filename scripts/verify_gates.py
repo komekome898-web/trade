@@ -357,6 +357,37 @@ if _tr:
 else:
     show("① TRACE が 1 つ以上ある", 0, 1)
 
+# 【2026-09-16、L-176】`.claude/settings.json` にスキーマ外の鍵が無いこと(両側)。
+# 2026-09-13 13:55 に `_停止前の設定`(辞書型の未知キー)を上位に置いた瞬間から、
+# Claude Code の設定スキーマ検証が `hooks` を「無かったもの」として読み、
+# **プロジェクト側のフックが 3 日間 1 本も走っていなかった**(実測は ACTION_LOG 037)。
+# 「信頼の旗」と誤診して 2 日を失った。**この検査はその型をそのまま捕まえる。**
+# 見るのは (a) 上位に `_` 始まり / 非 ASCII の鍵が無い、(b) hooks の組と各項目に
+# 決まった鍵以外が無い、の 2 点。**Claude Code の検証器そのものではない**(呼べない)。
+def _settings_clean(path):
+    try:
+        d = json.load(open(path, encoding="utf-8"))
+    except Exception:
+        return 1
+    bad = 0
+    for k in d:
+        if k.startswith("_") or not k.isascii():
+            bad = 1
+    for ev, arr in (d.get("hooks") or {}).items():
+        for g in arr:
+            if set(g) - {"matcher", "hooks"}:
+                bad = 1
+            for h in g.get("hooks", []):
+                if set(h) - {"type", "command", "timeout"}:
+                    bad = 1
+    return bad
+show("settings.json にスキーマ外の鍵が無い(通る側)",
+     _settings_clean(os.path.join(ROOT, ".claude", "settings.json")), 0)
+_tmp_s = os.path.join(tempfile.mkdtemp(), "settings.json")
+json.dump({"hooks": {}, "_退避": {"hooks": {}}}, open(_tmp_s, "w"))
+show("settings.json に辞書型の未知キーがあれば落ちる(止まる側 = 2026-09-13 の型)",
+     _settings_clean(_tmp_s), 1)
+
 for _t in (hk, hk2, hk3):
     shutil.rmtree(_t, ignore_errors=True)
 
