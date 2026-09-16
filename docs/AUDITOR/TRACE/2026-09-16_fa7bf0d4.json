@@ -3285,19 +3285,19 @@
   {
    "move": 124,
    "tools": {
-    "Bash": 34,
+    "Bash": 37,
     "Read": 2,
     "Write": 2,
     "Edit": 1,
     "Agent": 5,
     "ToolSearch": 1
    },
-   "n_tools": 45,
+   "n_tools": 48,
    "read_goal": true,
    "first_write_at": 5,
    "table_shown": false,
-   "claims_without_output": 1,
-   "claims_total": 4,
+   "claims_without_output": 3,
+   "claims_total": 6,
    "audit_calls": 5,
    "audit_pasted_immediately": 1,
    "audit_followed_by_real_edit": 1,
@@ -3327,8 +3327,8 @@
   },
   "P3_claim_with_output": {
    "num": 155,
-   "den": 291,
-   "value": 0.5326
+   "den": 293,
+   "value": 0.529
   },
   "P4_audit_pasted_immediately": {
    "num": 10,
