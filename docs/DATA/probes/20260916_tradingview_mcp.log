@@ -1,0 +1,28 @@
+# TradingView MCP probes - 2026-09-16T12:57:22Z
+---- https://www.tradingview.com/mcp/docs (2026-09-16T12:57:22Z) ----
+方法:curl(HTTPS_PROXY経由GET) HTTPコード:HTTP/1.1 200 バイト数:61805 先頭200文字: <!DOCTYPE html><html lang="en"><head>	<meta charset="utf-8">	<meta name="viewport" content="width=device-width, initial-scale=1">	<title>TradingView MCP Server — Connect Claude, ChatGPT and ot
+---- https://www.tradingview.com/policies/ (2026-09-16T12:57:23Z) ----
+方法:curl(HTTPS_PROXY経由GET) HTTPコード:HTTP/1.1 200 バイト数:224068 先頭200文字: <!DOCTYPE html><html lang="en" dir="ltr" class="is-not-authenticated is-not-pro  theme-light" data-theme="light"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, i
+---- https://www.tradingview.com/mcp/ (2026-09-16T12:57:24Z) ----
+方法:curl(HTTPS_PROXY経由GET) HTTPコード:HTTP/1.1 200 バイト数:146648 先頭200文字: <!DOCTYPE html><html lang="en" dir="ltr" class="is-not-authenticated is-not-pro  theme-dark" data-theme="dark"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, ini
+---- https://mcp.tradingview.com/mcp (2026-09-16T12:57:24Z) ----
+方法:curl(HTTPS_PROXY経由GET) HTTPコード:HTTP/1.1 200 バイト数:54 先頭200文字: {"detail":"This server requires OAuth authentication"}
+---- https://www.tradingview.com/support/solutions/43000590599/ (2026-09-16T12:57:25Z) ----
+方法:curl(HTTPS_PROXY経由GET) HTTPコード:HTTP/1.1 200 バイト数:0 先頭200文字: 
+---- https://www.tradingviewapi.com/pricing/ (2026-09-16T12:57:25Z) ----
+方法:curl(HTTPS_PROXY経由GET) HTTPコード:HTTP/1.1 200 バイト数:178756 先頭200文字: <!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TradingView Data API Pricing: Free to Mega ($0-$80)</title><met
+# リードの検収プローブ(同日、curl は HTTPS_PROXY 経由 GET)- 2026-09-16T13:02:14Z
+---- https://symbol-search.tradingview.com/symbol_search/v3/?text=FXBTCJPY (2026-09-16T13:02:14Z) ----
+方法:curl GET HTTPコード:200 バイト数:528 先頭200文字: {"symbols_remaining":0,"symbols":[{"symbol":"<em>FXBTCJPY</em>","description":"FX Bitcoin / Yen","type":"spot","exchange":"bitFlyer","found_by_isin":false,"found_by_cusip":false,"currency_code":"JPY",
+---- https://www.tradingview.com/symbols/BTCJPY/?exchange=BITFLYER (2026-09-16T13:02:14Z) ----
+方法:curl GET(-L) HTTPコード:200 バイト数:366120 先頭200文字:  <!DOCTYPE html> <html lang="en" dir="ltr" class="is-not-authenticated is-not-pro  theme-light"  data-theme="light"> <head><meta charset="utf-8" /> <meta name="viewport" content="width=device-width, i
+---- https://www.tradingview.com/mcp/docs(再取得・検算用) (2026-09-16T13:02:14Z) ----
+方法:curl GET HTTPコード:200 バイト数:61805 先頭200文字: <!DOCTYPE html>  <html lang="en"> <head>  <meta charset="utf-8">  <meta name="viewport" content="width=device-width, initial-scale=1">  <title>TradingView MCP Server — Connect Claude, ChatGPT and ot
+---- https://www.tradingview.com/policies/(再取得・検算用) (2026-09-16T13:02:14Z) ----
+方法:curl GET HTTPコード:200 バイト数:224067 先頭200文字:  <!DOCTYPE html> <html lang="en" dir="ltr" class="is-not-authenticated is-not-pro  theme-light"  data-theme="light"> <head><meta charset="utf-8" /> <meta name="viewport" content="width=device-width, i
+---- https://www.tradingview.com/symbols/FXBTCJPY/?exchange=BITFLYER (2026-09-16T13:12:52Z) ----
+方法:curl GET(-L) HTTPコード:200 バイト数:366366 先頭200文字:  <!DOCTYPE html> <html lang="en" dir="ltr" class="is-not-authenticated is-not-pro  theme-light"  data-theme="light"> <head><meta charset="utf-8" /> <meta name="viewport" content="width=device-width, i
+---- https://api.bitflyer.com/v1/getmarkets (2026-09-16T13:12:52Z) ----
+方法:curl GET HTTPコード:200 バイト数:435 先頭200文字: [{"product_code":"BTC_JPY","market_type":"Spot"},{"product_code":"XRP_JPY","market_type":"Spot"},{"product_code":"ETH_JPY","market_type":"Spot"},{"product_code":"XLM_JPY","market_type":"Spot"},{"produ
+---- https://api.bitflyer.com/v1/getmarkets 応答の全文(435 バイト。上の 200 文字の記録に FX_BTC_JPY が写っていなかったため、監査 3 巡目の指摘で全文を追記。2026-09-16T13:15:37Z) ----
+[{"product_code":"BTC_JPY","market_type":"Spot"},{"product_code":"XRP_JPY","market_type":"Spot"},{"product_code":"ETH_JPY","market_type":"Spot"},{"product_code":"XLM_JPY","market_type":"Spot"},{"product_code":"MONA_JPY","market_type":"Spot"},{"product_code":"ELF_JPY","market_type":"Spot"},{"product_code":"ETH_BTC","market_type":"Spot"},{"product_code":"BCH_BTC","market_type":"Spot"},{"product_code":"FX_BTC_JPY","market_type":"FX"}]
