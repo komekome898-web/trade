@@ -442,3 +442,166 @@ def test_attach_internal_direction_marks_ties_not_nan_and_keeps_every_row():
     assert not math.isnan(rows[0]["internal_bp"])
     # 細かい分解能(カスケード自身の価格)では、収まった窓にも符号がある
     assert rows[0]["internal_bp_fine"] < 0.0
+
+
+# --------------------------------------------------------------------------- #
+# 第 4 の方針(2026-09-16): 群で対称かつ向きを保つタイ方針の候補
+#
+# `refine` は**実群だけが持つ** `first_price`/`last_price` を使うので群で非対称、
+# `keep` は向きを 0 に潰す。ここで確かめるのは候補 3 つ(`widen`/`ohlc`/`symfine`)が
+#   (a) 実群と対照群に同じ入力・同じ規則で当たる(実群だけの列を読まない)
+#   (b) 1 行も落とさない
+#   (c) タイ行に符号を付ける
+#   (d) 反応 `bp_*` を向きの決定に読まない
+# を満たすこと。**値が仕込みを取り出せるかは単体テストの守備範囲ではない**
+# (それは `scripts/verify_liq_instrument.py` の合成データ検証で測る)。
+# --------------------------------------------------------------------------- #
+
+def _collapsing_bars() -> PriceSeries:
+    """[190_000, 220_000] の窓が 1 点に潰れる 1 分バーの終値系列。"""
+    return PriceSeries.from_trades([
+        (0, 100.0), (60_000, 100.0), (120_000, 100.0),
+        (180_000, 100.0), (240_000, 99.0), (300_000, 99.0),
+    ])
+
+
+def _win_row(cid: str, kind: str, bp: float, start_ms: int = 190_000, end_ms: int = 220_000,
+             first_price=None, last_price=None) -> dict:
+    return {
+        "cascade_id": cid, "kind": kind, "start_ms": start_ms, "end_ms": end_ms,
+        "bp_1m": bp, "first_price": first_price, "last_price": last_price,
+        "anchor_price": 100.0,
+    }
+
+
+def test_widen_resolves_the_collapsed_window_in_both_groups_alike():
+    """`widen` は窓を前後に同じ点数だけ広げ、**実群にも対照群にも同じ値**を付ける。"""
+    from bot.research.liq_response import (
+        INTERNAL_BP_WIDE_KEY, attach_internal_direction, attach_widened_direction,
+        compute_reversal,
+    )
+
+    prices = _collapsing_bars()
+    real = [_win_row("r0", "real", 8.0, first_price=100.0, last_price=99.0)]
+    ctrl = [_win_row("c0", "no_liquidation", 8.0)]        # 対照は first/last を持たない
+    rows = attach_internal_direction(real + ctrl, prices)
+    assert [r["internal_bp"] for r in rows] == [0.0, 0.0]  # 両群ともタイ
+    attach_widened_direction(rows, prices, k_steps=1)
+
+    # 100.0(1 点前) → 99.0(1 点後)= -100bp。**実群と対照群でまったく同じ値。**
+    assert real[0][INTERNAL_BP_WIDE_KEY] == ctrl[0][INTERNAL_BP_WIDE_KEY] == -100.0
+
+    rep = compute_reversal({"real": real, "control": ctrl}, "bp_1m", tie_policy="widen")
+    for g in rep.groups.values():
+        assert g.n_rows == 1 and g.n_used == 1 and g.n_excluded == 0   # (b) 落とさない
+        assert g.n_tie == 1 and g.n_tie_resolved == 1                  # (c) 符号が付く
+        assert g.scores == [8.0]        # -sign(-100) * 8.0
+    assert rep.max_exclusion_gap == 0.0                                # (a) 群で対称
+
+
+def test_widen_ignores_cascade_only_prices():
+    """(a)/(d): `widen` は `first_price`/`last_price` も `bp_*` も読まない。"""
+    from bot.research.liq_response import INTERNAL_BP_WIDE_KEY, attach_widened_direction
+
+    prices = _collapsing_bars()
+    # 実群だけが持つ値を**逆向きに**置いても、反応 bp を反転させても、結果は同じ。
+    a = _win_row("a", "real", 8.0, first_price=100.0, last_price=101.0)
+    b = _win_row("b", "real", -8.0, first_price=None, last_price=None)
+    attach_widened_direction([a, b], prices, k_steps=1)
+    assert a[INTERNAL_BP_WIDE_KEY] == b[INTERNAL_BP_WIDE_KEY] == -100.0
+
+
+def test_widen_yields_nan_at_the_edge_of_the_series_and_keeps_the_row():
+    """広げ先が系列の外に出たら NaN。**行は落とさず `keep` と同じ 0 に戻る。**"""
+    from bot.research.liq_response import (
+        INTERNAL_BP_WIDE_KEY, attach_internal_direction, attach_widened_direction,
+        reversal_scores,
+    )
+
+    prices = _collapsing_bars()
+    edge = _win_row("edge", "real", 8.0, start_ms=10_000, end_ms=20_000)  # 1 点前が無い
+    attach_internal_direction([edge], prices)
+    attach_widened_direction([edge], prices, k_steps=1)
+    assert math.isnan(edge[INTERNAL_BP_WIDE_KEY])
+    g = reversal_scores([edge], "bp_1m", name="real", tie_policy="widen")
+    assert g.n_rows == 1 and g.n_used == 1 and g.n_excluded == 0
+    assert g.n_tie == 1 and g.n_tie_resolved == 0 and g.scores == [0.0]
+
+
+def test_ohlc_uses_bar_open_to_close_and_spans_straddling_windows():
+    """`ohlc` は起点のバーの**始値**→終点のバーの**終値**。窓が跨いでも両端を取る。"""
+    from bot.research.liq_response import INTERNAL_BP_BAR_KEY, attach_bar_direction
+
+    bars = [
+        (120_000, 100.0, 100.0, 100.0, 100.0),
+        (180_000, 100.0, 100.0, 99.0, 99.5),    # 起点のバー: 始値 100.0
+        (240_000, 99.5, 99.5, 99.0, 99.0),      # 終点のバー: 終値 99.0
+    ]
+    inside = _win_row("inside", "real", 8.0, start_ms=190_000, end_ms=220_000)
+    across = _win_row("across", "real", 8.0, start_ms=190_000, end_ms=250_000)
+    outside = _win_row("outside", "real", 8.0, start_ms=600_000, end_ms=610_000)
+    attach_bar_direction([inside, across, outside], bars, 60_000)
+    assert inside[INTERNAL_BP_BAR_KEY] == (99.5 - 100.0) / 100.0 * 10_000.0
+    assert across[INTERNAL_BP_BAR_KEY] == (99.0 - 100.0) / 100.0 * 10_000.0
+    assert math.isnan(outside[INTERNAL_BP_BAR_KEY])   # バーが無い時刻は NaN(行は残る)
+
+
+def test_symfine_reads_the_same_fine_series_for_both_groups():
+    """`symfine` は**両群に同じ細かい系列**を当てる(`refine` との違いはここだけ)。"""
+    from bot.research.liq_response import (
+        INTERNAL_BP_SYM_KEY, attach_symmetric_fine_direction, compute_reversal,
+    )
+
+    fine = PriceSeries.from_trades([
+        (180_000, 100.0), (190_000, 100.0), (200_000, 99.5), (220_000, 99.0), (240_000, 99.0),
+    ])
+    real = [_win_row("r0", "real", 8.0, first_price=100.0, last_price=99.0)]
+    ctrl = [_win_row("c0", "no_liquidation", 8.0)]
+    for r in real + ctrl:
+        r["internal_bp"] = 0.0          # 粗い系列ではタイ
+    attach_symmetric_fine_direction(real + ctrl, fine)
+    # 190_000 の 100.0 → 220_000 の 99.0 = -100bp。**対照窓にも同じ値が付く。**
+    assert real[0][INTERNAL_BP_SYM_KEY] == ctrl[0][INTERNAL_BP_SYM_KEY] == -100.0
+
+    rep = compute_reversal({"real": real, "control": ctrl}, "bp_1m", tie_policy="symfine")
+    assert rep.max_exclusion_gap == 0.0
+    for g in rep.groups.values():
+        assert g.n_used == g.n_rows and g.n_tie_resolved == 1 and g.scores == [8.0]
+
+
+def test_new_policies_leave_non_tie_rows_and_the_three_old_policies_untouched():
+    """新方針はタイ行にしか触らない。既存 3 方針の値は 1 つも動かない。"""
+    from bot.research.liq_response import INTERNAL_BP_WIDE_KEY, reversal_scores
+
+    rows = [
+        _rev_row("nontie", 5.0, 10.0),                 # タイではない行
+        _rev_row("tie", 0.0, 10.0, first_price=100.0, last_price=99.0),
+    ]
+    # 非タイ行にも列は付くが、方針は読まない(符号は `internal_bp` のまま)
+    for r in rows:
+        r[INTERNAL_BP_WIDE_KEY] = 500.0               # わざと逆向きの値を置く
+    assert reversal_scores(rows, "bp_1m", tie_policy="keep").scores == [-10.0, 0.0]
+    assert reversal_scores(rows, "bp_1m", tie_policy="refine").scores == [-10.0, 10.0]
+    assert reversal_scores(rows, "bp_1m", tie_policy="drop").scores == [-10.0]
+    # widen はタイ行だけを +500bp の符号(+)で解く → -(+1)*10.0 = -10.0
+    w = reversal_scores(rows, "bp_1m", tie_policy="widen")
+    assert w.scores == [-10.0, -10.0] and w.n_tie_resolved == 1 and w.n_excluded == 0
+
+
+def test_new_policies_fall_back_to_keep_when_the_column_is_absent_or_zero():
+    """列が無い・NaN・0 の行は `keep` と同じく 0 のまま残す(**落とさない**)。"""
+    from bot.research.liq_response import (
+        INTERNAL_BP_BAR_KEY, INTERNAL_BP_SYM_KEY, INTERNAL_BP_WIDE_KEY, reversal_scores,
+    )
+
+    absent = _rev_row("absent", 0.0, 10.0)
+    nan_row = _rev_row("nan", 0.0, 10.0)
+    zero_row = _rev_row("zero", 0.0, 10.0)
+    for key in (INTERNAL_BP_WIDE_KEY, INTERNAL_BP_BAR_KEY, INTERNAL_BP_SYM_KEY):
+        nan_row[key] = float("nan")
+        zero_row[key] = 0.0
+    for policy in ("widen", "ohlc", "symfine"):
+        g = reversal_scores([absent, nan_row, zero_row], "bp_1m", tie_policy=policy)
+        assert g.n_rows == 3 and g.n_used == 3 and g.n_excluded == 0
+        assert g.n_tie == 3 and g.n_tie_resolved == 0
+        assert g.scores == [0.0, 0.0, 0.0]

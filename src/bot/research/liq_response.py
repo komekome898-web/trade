@@ -369,10 +369,25 @@ def compute_reactions(
 # (c) 群ごとの除外率を必ず返す、(d) 除外率が群間で離れたら既定で例外、とする。
 # --------------------------------------------------------------------------- #
 
-TiePolicy = Literal["keep", "drop", "refine"]
+TiePolicy = Literal["keep", "drop", "refine", "widen", "ohlc", "symfine"]
 
 INTERNAL_BP_KEY = "internal_bp"
 INTERNAL_BP_FINE_KEY = "internal_bp_fine"
+
+# --- 第 4 の方針(2026-09-16)が読む列 ----------------------------------------
+# `refine` は**実群だけが持つ** `first_price`/`last_price` を使うので群で非対称であり、
+# `keep` は向きを 0 に潰す。**群で対称かつ向きを保つ**方針を足すための列で、
+# どれも「両群が同じ入力から同じ規則で得る量」であることが条件(下の各 attach 関数)。
+INTERNAL_BP_WIDE_KEY = "internal_bp_wide"    # widen が読む
+INTERNAL_BP_BAR_KEY = "internal_bp_bar"      # ohlc が読む
+INTERNAL_BP_SYM_KEY = "internal_bp_sym"      # symfine が読む
+
+#: タイ行の向きをどの列から取るか。`keep`/`drop`/`refine` はここに入らない(挙動を変えない)。
+TIE_DIRECTION_KEYS: dict[str, str] = {
+    "widen": INTERNAL_BP_WIDE_KEY,
+    "ohlc": INTERNAL_BP_BAR_KEY,
+    "symfine": INTERNAL_BP_SYM_KEY,
+}
 
 
 class ReversalExclusionImbalance(RuntimeError):
@@ -455,6 +470,122 @@ def _fine_internal_bp(row: dict, fine_key: str = INTERNAL_BP_FINE_KEY) -> float:
     if fp != fp or lp != lp or fp == 0.0:
         return float("nan")
     return (lp - fp) / fp * 10_000.0
+
+
+def attach_widened_direction(
+    rows: Sequence[dict],
+    prices: PriceSeries,
+    k_steps: int = 1,
+    key: str = INTERNAL_BP_WIDE_KEY,
+    max_staleness_ms: int | None = 300_000,
+) -> list[dict]:
+    """**窓を両側に同じ点数だけ広げた**内部方向を付ける(`tie_policy="widen"` が読む)。
+
+    起点側は `at_or_before(start_ms)` の点から `k_steps` 個**前**、終点側は
+    `at_or_before(end_ms)` の点から `k_steps` 個**後**を取り、その 2 点の変化を bp で入れる。
+    窓が 1 本のバーに収まって起点と終点が同じ点に潰れた行でも、**その点の前後の点は別物**
+    なので符号が付く。
+
+    `k_steps=1` の根拠: 潰れたタイを解くのに必要な最小の広げ幅が 1 点(前後 1 点ずつ)であり、
+    大きくするほど**反応窓の中身を余計に取り込む**(下の射程)。**最小のものを固定する。**
+
+    第 4 の方針の必要条件(2026-09-16 の事前登録)への対応:
+    - (a) **同じ規則を両群に同じ入力で当てる**: 使うのは `prices`(両群に同じ系列)と
+      行の `start_ms`/`end_ms` だけ。実群だけが持つ `first_price`/`last_price` は読まない。
+    - (b) **行を落とさない**: 値を 1 列足すだけで、除外は `reversal_scores` 側でも起きない。
+    - (c) **向きを 0 に潰さない**: 前後の点が違えば符号が付く(付かなければ `keep` と同じ 0)。
+    - (d) **反応 `bp_*` を読まない**: この関数は行の `bp_*` を一切参照しない。
+      **ただし射程**: 終点側に広げた点は `end_ms` より**後**の価格なので、
+      反応窓 `[end_ms, end_ms + h]` と**時間的に重なる**。`bp_*` の値そのものは使わないが、
+      **反応窓の冒頭の値動きを向きの決定に使っている**ことになる。
+      合成データでは重なりは 1 点(ここでは 60 秒)で、反応 15 分のうちの数 % にすぎないが、
+      **実データでこの重なりが無害だとは測っていない。**
+    """
+    n = len(prices.ts_ms)
+    for r in rows:
+        i = bisect.bisect_right(prices.ts_ms, int(r["start_ms"])) - 1
+        j = bisect.bisect_right(prices.ts_ms, int(r["end_ms"])) - 1
+        lo, hi = i - k_steps, j + k_steps
+        if i < 0 or j < 0 or lo < 0 or hi >= n:
+            r[key] = float("nan")
+            continue
+        if max_staleness_ms is not None and (
+            int(r["start_ms"]) - prices.ts_ms[i] > max_staleness_ms
+            or int(r["end_ms"]) - prices.ts_ms[j] > max_staleness_ms
+        ):
+            r[key] = float("nan")
+            continue
+        p_lo, p_hi = prices.price[lo], prices.price[hi]
+        r[key] = float("nan") if not p_lo else (p_hi - p_lo) / p_lo * 10_000.0
+    return list(rows)
+
+
+def attach_bar_direction(
+    rows: Sequence[dict],
+    bars: Sequence[tuple[int, float, float, float, float]],
+    bar_ms: int,
+    key: str = INTERNAL_BP_BAR_KEY,
+) -> list[dict]:
+    """**OHLC バーの 始値 → 終値**から内部方向を付ける(`tie_policy="ohlc"` が読む)。
+
+    `bars` は `(バー開始 ms, o, h, l, c)` の列(`PriceSeries.from_ohlc_bars` と同じ形。
+    ただしここは close だけでなく open も使うので、系列ではなくバーそのものを受け取る)。
+    起点 `start_ms` を含むバーの **始値**と、終点 `end_ms` を含むバーの **終値**の差を bp で入れる。
+    窓が 1 本のバーに収まる行では、そのバーの **始値 → 終値**そのものになる。
+
+    (a) 両群に同じバー列を同じ規則で当てる(実群だけの値は読まない)/ (b) 行を落とさない /
+    (c) 始値と終値が違えば符号が付く / (d) `bp_*` を読まない。
+    **射程は `attach_widened_direction` と同じ**: 終点を含むバーの終値は `end_ms` より
+    **後**にあるので、反応窓の冒頭と時間的に重なる。
+    """
+    if not bars:
+        for r in rows:
+            r[key] = float("nan")
+        return list(rows)
+    starts = [int(b[0]) for b in bars]
+    for r in rows:
+        i = bisect.bisect_right(starts, int(r["start_ms"])) - 1
+        j = bisect.bisect_right(starts, int(r["end_ms"])) - 1
+        if i < 0 or j < 0:
+            r[key] = float("nan")
+            continue
+        # バーの間に穴がある(その時刻を含むバーが無い)行は NaN にする。
+        if (int(r["start_ms"]) - starts[i] >= bar_ms
+                or int(r["end_ms"]) - starts[j] >= bar_ms):
+            r[key] = float("nan")
+            continue
+        o, c = float(bars[i][1]), float(bars[j][4])
+        r[key] = float("nan") if not o else (c - o) / o * 10_000.0
+    return list(rows)
+
+
+def attach_symmetric_fine_direction(
+    rows: Sequence[dict],
+    fine_prices: PriceSeries,
+    key: str = INTERNAL_BP_SYM_KEY,
+    max_staleness_ms: int | None = 300_000,
+) -> list[dict]:
+    """**間引く前の細かい系列**を両群に当てて内部方向を付ける(`tie_policy="symfine"` が読む)。
+
+    `refine` との違いはここだけ: `refine` は**実群だけが持つ** `first_price`/`last_price`
+    (清算約定そのものの価格)を使うので群で非対称になる。この関数は
+    **両群が同じ細かい価格系列**を持つ場合に、その系列から `start_ms` → `end_ms` を読む。
+
+    (a) 両群に同じ系列を同じ規則で当てる / (b) 行を落とさない / (c) 細かい系列で動いていれば
+    符号が付く / (d) `bp_*` を読まない。**窓の外は一切見ない**ので、`widen`・`ohlc` にある
+    「反応窓と重なる」射程はこの方針には**無い**。
+
+    **要る入力**: 間引く前の系列が**対照群にも**あること。無ければこの方針は使えない
+    (`fine_prices` が粗い系列と同じなら、タイはそのまま残って `keep` と同じ挙動になる)。
+    """
+    for r in rows:
+        s = fine_prices.at_or_before(int(r["start_ms"]), max_staleness_ms)
+        e = fine_prices.at_or_before(int(r["end_ms"]), max_staleness_ms)
+        if s is None or e is None or not s[1]:
+            r[key] = float("nan")
+        else:
+            r[key] = (e[1] - s[1]) / s[1] * 10_000.0
+    return list(rows)
 
 
 @dataclass(frozen=True)
@@ -564,6 +695,12 @@ def reversal_scores(
       それでも 0 のまま、または細かい値が無い行は `"keep"` と同じく 0 のまま残す(落とさない)。
       **対照窓は `first_price`/`last_price` を持たない**ので、この方針は実群だけを細かくする。
       分解能が群で揃わなくなるので、主にはせず感度として使うこと。
+    - `"widen"` / `"ohlc"` / `"symfine"`(**2026-09-16 追加。第 4 の方針の候補**):
+      タイの行だけ、**両群が同じ入力から同じ規則で得た別の列**で符号を決め直す。
+      列を作るのはそれぞれ `attach_widened_direction` / `attach_bar_direction` /
+      `attach_symmetric_fine_direction` で、**どの情報から向きを取るかはその docstring にある。**
+      列が無い・NaN・0 の行は `"keep"` と同じく 0 のまま残す(**落とさない**)。
+      `refine` と違い**実群だけが持つ値を読まない**ので、群で対称である。
 
     NaN(内部方向が引けない / 反応 bp が引けない)は `n_excluded_missing` に数える。
     これは分解能の問題ではなく本物の欠測なので、どの方針でも集計に入れない。
@@ -586,6 +723,11 @@ def reversal_scores(
                 fine_sign = _sign(_fine_internal_bp(r, fine_key))
                 if fine_sign == fine_sign and fine_sign != 0.0:
                     sign = fine_sign
+                    n_tie_resolved += 1
+            elif tie_policy in TIE_DIRECTION_KEYS:
+                alt_sign = _sign(_as_float(r.get(TIE_DIRECTION_KEYS[tie_policy])))
+                if alt_sign == alt_sign and alt_sign != 0.0:
+                    sign = alt_sign
                     n_tie_resolved += 1
         scores.append(0.0 if sign == 0.0 else -sign * bp)
     return ReversalGroup(

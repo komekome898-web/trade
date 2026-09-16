@@ -34,12 +34,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from bot.research.liq_response import (  # noqa: E402
+    INTERNAL_BP_KEY,
     Cascade,
     LiquidationEvent,
     PriceSeries,
     ReversalExclusionImbalance,
     ReversalReport,
+    attach_bar_direction,
     attach_internal_direction,
+    attach_symmetric_fine_direction,
+    attach_widened_direction,
     build_cascades,
     compute_reactions,
     compute_reversal,
@@ -408,7 +412,8 @@ def quantize_prices(prices: PriceSeries, tick: float) -> PriceSeries:
 
 
 def build_dense(seed: int, r_bp: float, horizon_min: int = HORIZON_MIN,
-                 n_real: int = N_REAL, n_control: int = N_CONTROL) -> SyntheticBundle:
+                 n_real: int = N_REAL, n_control: int = N_CONTROL,
+                 dur_range: tuple[int, int] = CASCADE_DURATION_RANGE_MS) -> SyntheticBundle:
     """**背景の価格点を置いた密な系列**を作る(2026-09-14、12 本目の監査)。
 
     `build_synthetic` は 1 カスケードにつき 3 点しか置かないので、1 分バーに間引いても
@@ -426,7 +431,7 @@ def build_dense(seed: int, r_bp: float, horizon_min: int = HORIZON_MIN,
     for i, role in enumerate(roles):
         slot = BASE_TS_MS + i * SLOT_MS
         start = slot + 5 * 60_000
-        dur = rng.randint(*CASCADE_DURATION_RANGE_MS)
+        dur = rng.randint(*dur_range)
         end = start + dur
         fut = end + horizon_min * 60_000
         n1 = rng.gauss(0.0, NOISE_STD_BP); n2 = rng.gauss(0.0, NOISE_STD_BP)
@@ -559,6 +564,141 @@ def run_tie_scenario(horizon: int = HORIZON_MIN, r_bp: float = R_BP) -> dict:
     except Exception as exc:
         out["strict_非対称"] = f"別の例外: {type(exc).__name__}: {exc}"
     return out
+
+
+# --------------------------------------------------------------------------- #
+# タイ 8 割の場面で 4 方針を測る(+ 第 4 の方針の候補、2026-09-16)
+# --------------------------------------------------------------------------- #
+# **この 8 行と既存の 4 列(向きを与えた推定器 / keep / refine / drop)は
+# `evidence_2026-09-14/14` と同じものである。**比較の土台なので変えない。
+# 足したのは候補の列だけ。
+#
+# **第 4 の方針の必要条件**(2026-09-16 の事前登録、逐語):
+#   (a) 同じ規則を実群と対照群の両方に同じ入力で当てる(実群だけが持つ情報を使わない)
+#   (b) タイ行を落とさない(対照群の n_used が n_rows から減らない。除外率の差 < 0.10)
+#   (c) 向きを 0 に潰さない(タイ行の符号を、両群が持つ情報から決める)
+#   (d) 反応(bp_*)を向きの決定に使わない(循環)
+# 候補ごとの「どの情報から向きを取るか」は `liq_response.py` の各 attach 関数の docstring。
+
+TIE_SCENARIOS = (
+    # (カスケード長 ms, バー ms, 表示ラベル(長さ), 表示ラベル(バー))
+    ((5_000, 45_000),   60_000, "5〜45秒",   "60秒"),
+    ((60_000, 120_000), 60_000, "60〜120秒", "60秒"),
+    ((5_000, 45_000),  300_000, "5〜45秒",  "300秒"),
+    ((1_000, 10_000),   60_000, "1〜10秒",   "60秒"),
+)
+CANDIDATE_POLICIES = ("widen", "ohlc", "symfine")
+WIDEN_K_STEPS = 1  # 潰れたタイを解くのに必要な最小の広げ幅(前後 1 点ずつ)。
+                   # 大きくするほど反応窓の中身を余計に取り込むので、最小を固定する。
+
+
+def to_ohlc_bars(prices: PriceSeries, bar_ms: int) -> list[tuple[int, float, float, float, float]]:
+    """密な系列から `(バー開始 ms, o, h, l, c)` の列を作る(`ohlc` 方針の入力)。
+
+    `to_bars` は各バーの**最後の点だけ**を残すので始値が失われる。ここは始値も残す。
+    **両群に同じバー列を当てる**(片群だけ細かくしない)。
+    """
+    buckets: dict[int, list[float]] = {}
+    for ts, p in zip(prices.ts_ms, prices.price):
+        buckets.setdefault(ts // bar_ms, []).append(p)
+    return [(k * bar_ms, v[0], max(v), min(v), v[-1]) for k, v in sorted(buckets.items())]
+
+
+def reachable_mean_range(real_rows: list[dict], bp_key: str) -> tuple[float, float, int, int]:
+    """**どんなタイ方針でも届かない外側**を測る(2026-09-16)。
+
+    タイ方針が決められるのは符号 ∈ {−1, 0, +1} だけで、**反応 `bp` は既に決まっている**。
+    だからタイ行 1 件のスコアは `−|bp| … +|bp|` の範囲しか取れない。
+    全タイ行の符号を自由に選んだときに平均が取りうる区間 `[下限, 上限]` を返す。
+    **この区間の外にある値は、どんな第 4 の方針を作っても出せない。**
+    (区間の内側にあることは「届く」を意味するだけで、**規則で届くとは限らない**。)
+    """
+    nontie: list[float] = []
+    tie_abs: list[float] = []
+    for r in real_rows:
+        internal = r.get(INTERNAL_BP_KEY)
+        bp = r.get(bp_key)
+        if internal is None or bp is None or internal != internal or bp != bp:
+            continue
+        if internal == 0.0:
+            tie_abs.append(abs(float(bp)))
+        else:
+            s = 1.0 if internal > 0 else -1.0
+            nontie.append(-s * float(bp))
+    n = len(nontie) + len(tie_abs)
+    if n == 0:
+        return float("nan"), float("nan"), 0, 0
+    base, span = sum(nontie), sum(tie_abs)
+    return (base - span) / n, (base + span) / n, len(nontie), len(tie_abs)
+
+
+def run_policy4_table(horizon: int = HORIZON_MIN) -> None:
+    """8 行 ×(既存 3 方針 + 候補 3 つ)を出す。**判定はここではしない**(表を出すだけ)。"""
+    print("\n" + "=" * 78)
+    print("タイ 8 割の場面で 4 方針を測る(+ 第 4 の方針の候補、2026-09-16)")
+    print("=" * 78)
+    print("  8 行と既存 4 列は `evidence_2026-09-14/14` と同じ。足したのは候補の列だけ。")
+    print(f"  仕込み ±{R_BP}bp / 許容 ±{TOLERANCE_BP}bp / 種 {SEED} / 地平線 {horizon} 分 "
+          f"/ widen の K={WIDEN_K_STEPS}")
+    head = (f"  {'カスケード長':>10} {'バー':>6} {'n_tie':>6} {'割合':>7} {'向き':>5} "
+            f"{'向きを与えた':>12} {'keep':>9} {'refine':>9} {'drop':>9} {'drop n_used':>11}")
+    for pol in CANDIDATE_POLICIES:
+        head += f" {pol:>9}"
+        head += f" {'対照 n_used/n_rows':>18}"
+    print(head)
+    fm = lambda x: "nan" if x is None or x != x else f"{x:+.3f}"
+    for dur_range, bar_ms, lab_d, lab_b in TIE_SCENARIOS:
+        for r_bp, lab_r in ((R_BP, "反転"), (-R_BP, "継続")):
+            dense = build_dense(SEED, r_bp=r_bp, horizon_min=horizon, dur_range=dur_range)
+            bars = to_bars(dense.prices, bar_ms)
+            ohlc = to_ohlc_bars(dense.prices, bar_ms)
+            casc = list(build_cascades(dense.events, "synthetic", gap_ms=GAP_MS)) \
+                   + list(dense.control_cascades)
+            rows = attach_internal_direction(
+                [dict(x) for x in compute_reactions(casc, bars, (horizon,))], bars)
+            # **候補の列は 3 つとも両群の全行に同じ規則で付ける。**
+            rows = attach_widened_direction(rows, bars, k_steps=WIDEN_K_STEPS)
+            rows = attach_bar_direction(rows, ohlc, bar_ms)
+            rows = attach_symmetric_fine_direction(rows, dense.prices)
+            real = [x for x in rows if x["kind"] == "real"]
+            ctrl = [x for x in rows if x["kind"] == "no_liquidation"]
+            bp_key = f"bp_{horizon}m"
+            stats: dict[str, tuple] = {}
+            for pol in ("keep", "refine", "drop") + CANDIDATE_POLICIES:
+                rep = compute_reversal({"real": real, "control": ctrl}, bp_key,
+                                        tie_policy=pol, strict=False)
+                rr = [x for x in rep.summary_rows() if x["group"] == "real"][0]
+                cc = [x for x in rep.summary_rows() if x["group"] == "control"][0]
+                stats[pol] = (rr, cc, rep.max_exclusion_gap)
+            kd = []
+            for c in build_cascades(dense.events, "synthetic", gap_ms=GAP_MS):
+                e = bars.at_or_before(c.end_ms, 300_000)
+                f_ = bars.at_or_before(c.end_ms + horizon * 60_000, 300_000)
+                if e is None or f_ is None or e[1] == 0:
+                    continue
+                sg = -1.0 if c.direction == "long" else 1.0
+                v = -sg * ((f_[1] / e[1] - 1.0) * 10_000.0)
+                if v == v:
+                    kd.append(v)
+            kdm = statistics.mean(kd) if kd else float("nan")
+            rr_keep = stats["keep"][0]
+            line = (f"  {lab_d:>10} {lab_b:>6} {rr_keep['n_tie']:>6} "
+                    f"{rr_keep['n_tie'] / rr_keep['n_rows']:>7.1%} {lab_r:>5} "
+                    f"{fm(kdm):>12} {fm(stats['keep'][0]['mean']):>9} "
+                    f"{fm(stats['refine'][0]['mean']):>9} {fm(stats['drop'][0]['mean']):>9} "
+                    f"{stats['drop'][0]['n_used']:>11}")
+            for pol in CANDIDATE_POLICIES:
+                rr, cc, gap = stats[pol]
+                line += f" {fm(rr['mean']):>9}"
+                line += f" {cc['n_used']:>8}/{cc['n_rows']:<4}(差{gap:.3f})"
+            print(line)
+            lo, hi, n_nontie, n_tie_rows = reachable_mean_range(real, bp_key)
+            print(f"      [実群 n_rows={rr_keep['n_rows']} 非タイ={n_nontie} タイ={n_tie_rows}] "
+                  f"**どんなタイ方針でも届く範囲 = [{lo:+.3f}, {hi:+.3f}]** "
+                  f"(仕込み {r_bp:+.1f} / 許容帯 [{r_bp - TOLERANCE_BP:+.1f}, "
+                  f"{r_bp + TOLERANCE_BP:+.1f}])  "
+                  f"n_tie_resolved: "
+                  + " ".join(f"{p}={stats[p][0]['n_tie_resolved']}" for p in CANDIDATE_POLICIES))
 
 
 def main() -> int:
@@ -847,6 +987,11 @@ def main() -> int:
     print("  → **この経路では『向きを与えた推定器』が `drop` に負ける。**")
     print("     だから**この推定器は上限ではない**(関数の説明に書いた)。")
     print("     **どの方針が良いかはタイの作られ方で逆転する。一般解は無い。**")
+
+    # --- タイ 8 割の場面で 4 方針を測る(+ 第 4 の方針の候補、2026-09-16)---------
+    # **合否(overall_pass / 終了コード)には合流させない。**この表は測定であって、
+    # 第 4 の方針の合否は事前登録の別の基準(8 行すべてで許容内)で読む(報告書 §4)。
+    run_policy4_table(horizon)
 
     print("\n" + "=" * 78)
     print("変異試験のまとめ(検出できたか)")

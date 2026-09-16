@@ -120,7 +120,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 
 ## 3. 運用の要点
 
-- テスト: `PYTHONPATH=src python -m pytest -q`(現在 1,842 件。2026-09-12 委任先の実測。清算記録器の完結メンバ書き込みと回収 30 件、extract_tape の二重起動ロック 2 件を追加、board.py の板歩行コスト関数 18 件+経費の床の記録3点(板上位10段・資金調達率/ベーシス・APIレイテンシプローブ)31 件を追加)
+- テスト: `PYTHONPATH=src python -m pytest -q`(現在 1,903 件収集 = 1,902 通過 + 1 スキップ。2026-09-16 委任先の実測(`-q` 無し)。第 4 のタイ方針 7 件を追加。それ以前は 1,842 件、2026-09-12 委任先の実測。清算記録器の完結メンバ書き込みと回収 30 件、extract_tape の二重起動ロック 2 件を追加、board.py の板歩行コスト関数 18 件+経費の床の記録3点(板上位10段・資金調達率/ベーシス・APIレイテンシプローブ)31 件を追加)
 - **`git pull` 後は必ず `pip install -e ".[dev]"`**。依存追加を取り込まないとコンポーネントが起動直後に落ちる → 詳細 `docs/OPERATIONS.md` §4.5(Windows は `deploy\restart_all.bat` が pull→install→停止→起動を失敗時中断つきで実行)
 - Windows 運用(3プロセス並走・ウォッチドッグ・タスクスケジューラ2件)→ `docs/OPERATIONS.md` §5。ON1 実弾ジョブ(平日15:35/8:35の2タスク・二重ゲート・STATE_UNKNOWN 復帰手順)→ `docs/OPERATIONS_JPX.md` §5.1
 - **新しい clone では `sh scripts/install_git_hooks.sh` を 1 回実行する(2026-09-13、5 本目の監査)。** 押し出しの関門の本体は git 自身の `githooks/pre-push` にあり、`.git/` はリポジトリに入らないため、実行するまで効かない。
