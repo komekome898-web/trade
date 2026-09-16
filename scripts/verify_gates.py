@@ -325,16 +325,33 @@ import glob as _glob
 _tr = sorted(_glob.glob(os.path.join(ROOT, "docs", "AUDITOR", "TRACE", "*.json")))
 if _tr:
     _d = json.load(open(_tr[-1], encoding="utf-8"))
+    # **2026-09-16 追加(`ACTION_LOG` 036 の 11 本目の監査)**: `unlock_in_test` と
+    # `protected_by_path`。どちらも**自由文ではない** — 前者は整数、後者は
+    # `trace_metrics.PROTECTED` の固定 5 キー → 整数の辞書である。
+    # **検査は弱めない**: 下で、値が文字列でないことと、`protected_by_path` の
+    # キーが固定集合と完全に一致することを見る。
     _allowed = {"move", "tools", "n_tools", "read_goal", "first_write_at", "table_shown",
                 "claims_without_output", "claims_total", "audit_calls",
                 "audit_pasted_immediately", "audit_followed_by_real_edit",
-                "protected_writes", "readdo_reads", "unlock_created"}
+                "protected_writes", "protected_by_path", "readdo_reads",
+                "unlock_created", "unlock_in_test"}
+    _protected_keys = {"docs/PROJECT_GOAL.md", "docs/AUDITOR/OWNER_MODEL_SOURCE.md",
+                       ".claude/hooks/", ".claude/settings.json", ".claude/agents/"}
     _bad = 0
     for _m in _d.get("moves", []):
         if set(_m) - _allowed:
             _bad = 1
+        _pbp = _m.get("protected_by_path")
+        if _pbp is not None:
+            # **キーが固定集合と完全一致すること。**増えていたら自由文の入口になる
+            if set(_pbp) != _protected_keys:
+                _bad = 1
+            if any(not isinstance(_v, int) for _v in _pbp.values()):
+                _bad = 1
         for _k, _v in _m.items():
-            if _k != "tools" and isinstance(_v, str):
+            if _k in ("tools", "protected_by_path"):
+                continue
+            if isinstance(_v, str):
                 _bad = 1      # 自由文が入った
     show("① TRACE に想定外のキー / 自由文が無い", _bad, 0)
 else:

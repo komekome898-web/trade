@@ -124,10 +124,24 @@ def _is_goal_read(name: str, inp: dict) -> bool:
 
 
 def _is_protected_write(name: str, inp: dict) -> bool:
+    return _protected_write_which(name, inp) is not None
+
+
+def _protected_write_which(name: str, inp: dict):
+    """どの保護パスに当たったかを返す(当たらなければ None)。
+
+    **2026-09-16 追加(`ACTION_LOG` 036 の 11 本目の監査)**: 前版は真偽だけを返しており、
+    **A-16「フック・settings.json をオーナーの指示なく変えない」を後から検査できなかった。**
+    PROTECTED は固定の 5 個なので、**どれに当たったかを記録しても
+    「自由文フィールドを持たせない」という ① の設計に反しない。**
+    """
     if name not in ("Write", "Edit", "NotebookEdit"):
-        return False
+        return None
     fp = str(inp.get("file_path", ""))
-    return any(m in fp for m in PROTECTED)
+    for m in PROTECTED:
+        if m in fp:
+            return m
+    return None
 
 
 def _is_actionlog_write(name: str, inp: dict) -> bool:
@@ -167,8 +181,12 @@ def parse(path: Path) -> dict:
             "audit_pasted_immediately": 0,
             "audit_followed_by_real_edit": 0,
             "protected_writes": 0,
+            # **どの保護パスに当たったか**(固定の 5 個。自由文ではない)
+            "protected_by_path": {m: 0 for m in PROTECTED},
             "readdo_reads": 0,
             "unlock_created": 0,
+            # **試験由来の解除**(`verify_gates.py` / pytest / /tmp)。R4 から分ける
+            "unlock_in_test": 0,
         }
 
     with path.open(encoding="utf-8", errors="replace") as fh:
@@ -229,14 +247,29 @@ def parse(path: Path) -> dict:
                     cur["readdo_reads"] += 1
 
                 # R4: 解除ファイルを作った回数(機械で数える。手で書かない)
+                #
+                # **2026-09-16 訂正(`ACTION_LOG` 036 の 11 本目の監査)**:
+                #   前版は「入力のどこかに owner_unlock_ があれば +1」だった。
+                #   その結果 **`verify_gates.py` の試験(止まる側)が「回避」として数えられ**、
+                #   TRACE の実測は 13 まで膨れていた。**試験を回すほど「回避」が増える。**
+                #   ⑥ の撤去判断(2026-12-07)にこの数を使うと、
+                #   **試験を止めただけで「回避が減った」と読める。**
+                #   → **本物の解除(リポジトリ直下の .claude/state/ に置かれるもの)だけを数え、**
+                #     **試験用の一時ディレクトリ由来は別の欄に分ける。捨てない。**
                 if "owner_unlock_" in json.dumps(inp, ensure_ascii=False):
                     if name in ("Write", "Bash", "Edit"):
-                        cur["unlock_created"] += 1
+                        blob = json.dumps(inp, ensure_ascii=False)
+                        if "/tmp/" in blob or "pytest" in blob or "verify_gates" in blob:
+                            cur["unlock_in_test"] += 1
+                        else:
+                            cur["unlock_created"] += 1
 
                 if _is_goal_read(name, inp):
                     cur["read_goal"] = True
-                if _is_protected_write(name, inp):
+                which = _protected_write_which(name, inp)
+                if which is not None:
                     cur["protected_writes"] += 1
+                    cur["protected_by_path"][which] += 1
                 if name in ("Write", "Edit", "NotebookEdit") and cur["first_write_at"] is None:
                     cur["first_write_at"] = cur["n_tools"]
                 if _is_audit_call(name, inp):
@@ -295,6 +328,15 @@ def rollup(trace: dict) -> dict:
         },
         "R4_unlock_created": {
             "num": sum(m["unlock_created"] for m in mv), "den": None, "value": None,
+            "note_key": "excludes_test_origin",
+        },
+        # **試験由来は捨てずに別に出す。**R4 と足せば前版の数になる(比較できるようにするため)
+        "R4b_unlock_in_test": {
+            "num": sum(m["unlock_in_test"] for m in mv), "den": None, "value": None,
+        },
+        # **保護パスごとの書き込み**(A-16 / A-15 を後から検査できるようにする)
+        "R5_protected_by_path": {
+            m: sum(mm["protected_by_path"].get(m, 0) for mm in mv) for m in PROTECTED
         },
     }
 
