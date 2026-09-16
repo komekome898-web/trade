@@ -4616,3 +4616,93 @@ $ git ls-files -z '*.md' | xargs -0 grep -o '5,186' | cut -d: -f1 | uniq -c
 - `Stop[1]`: `{"_①": "2026-09-14 L-169。返答の切れ目で TRACE を更新する。何も止めない。"}`
 - `PostToolUse[0]`: `{"_⑤": "2026-09-14 L-169。監査役が「止める」を返したら read-do のパスを 1 行だけ出す。"}`
 
+
+### 実測(コマンドと出力。037 の 1 本目の監査 [止める] を受けて貼る。**ここが在処**)
+
+**前提の実測(この会話のプロセスで、直す前)**
+
+```
+$ python3 -c "import json;print(json.load(open('/root/.claude.json'))['projects']['/home/user/trade']['hasTrustDialogAccepted'])"
+True                                   ← 信頼の旗は既に true(09-14 に立てた)
+
+$ ps -o pid,lstart -p 104
+  PID                  STARTED
+  104 Wed Sep 16 10:27:31 2026            ← 旗を立てた後に起動したプロセス
+
+$ tr '\0' '\n' < /proc/104/environ | grep -c 'CLAUDE_CODE_SAFE_MODE'
+0                                      ← 安全モードの環境変数は無い
+$ ps -o args -p 104 | grep -c -- '--bare'
+0                                      ← --bare も無い
+$ cat ~/.claude/remote-settings.json
+{}                                     ← 管理ポリシーは空
+
+$ grep -n 'settings_load_completed' /tmp/claude-code-183691462.diag.log
+9:{"timestamp":"2026-09-16T10:27:32.758Z","level":"info","event":"settings_load_completed","data":{"duration_ms":1,"source_count":4,"error_count":1}}
+36:{"timestamp":"2026-09-16T10:27:38.848Z","level":"info","event":"settings_load_completed","data":{"duration_ms":7,"source_count":4,"error_count":1}}
+                                       ← 設定ソース 4 つのうち 1 つがエラー
+```
+
+**バイナリ内の判定(`/opt/claude-code/bin/claude` 2.1.273 を `grep -ao` で抜粋)**
+
+```
+Failed schema validation(  . This field was ignored; read as unset.
+function qfe(e){if(Xer(e))return!1;return ie().projects?.[e]?.hasTrustDialogAccepted===!0}
+function Er(){return Oe(process.env.CLAUDE_CODE_SAFE_MODE)||i("--safe-mode")}
+```
+(`qfe` = 信頼の判定 `Vp()` の本体。旗は**必要条件**。`Er` = 安全モードの判定)
+
+**切り分け(別プロセス。PreToolUse 全件の `move_budget.sh` が書く `move_counter` の更新で判定)**
+
+```
+$ stat -c '%y' .claude/state/move_counter
+2026-09-14 09:31:58                    ← 2 日間止まっている
+
+$ timeout 120 claude -p "Bash で「ls -1 | head -2」を実行して結果を答えて" --allowedTools Bash --max-turns 3 --model haiku --settings /tmp/hookprobe/raw.json
+  → move_counter 不変(生のコピー)
+$ … --settings /tmp/hookprobe/cleaned.json        (上位もグループ内も剥がした)
+  実験後 move_counter: 2026-09-16 11:55:51        ← **初めて更新された**
+$ … --settings /tmp/hookprobe/strip_top.json      (上位だけ剥がす)
+  → フックが走った(move_counter 更新)
+$ … --settings /tmp/hookprobe/strip_groups.json   (グループ内だけ剥がす)
+  → 走らない(move_counter 不変)
+上位の 4 鍵を 1 つずつ残す:
+  _停止の記録 を残す → 走る(壊さない)
+  _停止前の設定 を残す → 走らない(**壊す**)
+  注記 を残す → 走る(壊さない)
+  _2026-09-14_追加 を残す → 走る(壊さない)
+
+$ git log --format='%h %ad' --date=iso -S'"_停止前の設定"' -- .claude/settings.json | tail -1
+4471863 2026-09-13 13:55:54 +0000     ← 「13:55」の出所
+```
+
+**修正と、修正後の実測**
+
+```
+$ cp <剥がした版> .claude/settings.json
+$ python3 -c "import json;d=json.load(open('.claude/settings.json'));print(list(d))"
+['$schema', 'hooks']
+$ sh scripts/regen_hook_manifest.sh
+再生成した(21 行)。
+$ sh .claude/hooks/_verify_manifest.sh </dev/null && echo 一致
+一致
+$ timeout 120 claude -p "…" --allowedTools Bash --model haiku        (--settings 無し = 本番の経路)
+  → **走る**(move_counter 更新、終了コード 1 = 返答の関門が止めた)
+$ python3 scripts/verify_gates.py | tail -1
+食い違い: 0 件
+```
+
+**この会話のプロセスでの発火(Write 道具で `.claude/hooks/_probe_delete_me.sh` を書こうとした)**
+
+1 回目(ゴール未読の印が立っていなかったので ③(b) が先に止めた):
+```
+PreToolUse:Write hook error: [sh "$CLAUDE_PROJECT_DIR"/.claude/hooks/owner_options_gate.sh]: [関門] この手では、まだゴールとオーナーの逐語を一度も開いていない。
+止めた操作: Write /home/user/trade/.claude/hooks/_probe_delete_me.sh
+```
+`PROJECT_GOAL.md` を Read してから 2 回目(**③(a) が止めた。2 日前は素通りした操作**):
+```
+PreToolUse:Write hook error: [sh "$CLAUDE_PROJECT_DIR"/.claude/hooks/deny_protected_paths.sh]: [関門] この場所への書き込みを拒否した: /home/user/trade/.claude/hooks/_probe_delete_me.sh
+理由: **A-16 / A-15 の機械化。**…
+解除: .claude/state/owner_unlock_hooks が存在するときだけ通る。
+```
+**さらに、この直後のオーナーの発言で `owner_turn_digest.sh`(UserPromptSubmit)が状態板の要点を再注入した**
+(「[状態板の要点 — 返答の前に読む(I-006)]」で始まる追加文脈)。**3 つのイベントで発火を確認した。**

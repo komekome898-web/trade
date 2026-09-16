@@ -363,15 +363,31 @@ else:
 # **プロジェクト側のフックが 3 日間 1 本も走っていなかった**(実測は ACTION_LOG 037)。
 # 「信頼の旗」と誤診して 2 日を失った。**この検査はその型をそのまま捕まえる。**
 # 見るのは (a) 上位に `_` 始まり / 非 ASCII の鍵が無い、(b) hooks の組と各項目に
-# 決まった鍵以外が無い、の 2 点。**Claude Code の検証器そのものではない**(呼べない)。
+# 決まった鍵以外が無い、(c) 上位鍵が `docs/AUDITOR/claude-code-settings.schema.json` の
+# `properties` に含まれる、の 3 点。**Claude Code の検証器そのものは、この試験の中では呼ばない**
+# (`claude -p … --settings <コピー>` で呼べるし、切り分けはそれで行った。試験ごとにモデルを
+# 呼ぶコストと時間を避けるため、ここでは静的な検査にとどめる。「呼べない」ではなく「呼ばない」)。
 def _settings_clean(path):
     try:
         d = json.load(open(path, encoding="utf-8"))
     except Exception:
         return 1
     bad = 0
+    # (c) スキーマ本体との突き合わせ(037 の 1 本目の監査の [足りない]: `_` 始まり以外の
+    #     別名の辞書 — 例 "backup": {...} — も Claude Code 側では同じく落ちる)。
+    #     **注意**: 公開スキーマは `additionalProperties: true` で未知キーを許す(実物で確認)。
+    #     それでも CLI 2.1.273 は辞書型の未知キーで `hooks` を落とした(実測)。**CLI 内部の検証は
+    #     公開スキーマより厳しい**ので、ここは厳しい側(properties に無い鍵は落とす)に合わせる。
+    _schema_props = None
+    try:
+        _schema_props = set(json.load(open(os.path.join(ROOT, "docs", "AUDITOR",
+                            "claude-code-settings.schema.json"), encoding="utf-8")).get("properties", {}))
+    except Exception:
+        _schema_props = None
     for k in d:
         if k.startswith("_") or not k.isascii():
+            bad = 1
+        if _schema_props is not None and k not in _schema_props:
             bad = 1
     for ev, arr in (d.get("hooks") or {}).items():
         for g in arr:
@@ -386,6 +402,9 @@ show("settings.json にスキーマ外の鍵が無い(通る側)",
 _tmp_s = os.path.join(tempfile.mkdtemp(), "settings.json")
 json.dump({"hooks": {}, "_退避": {"hooks": {}}}, open(_tmp_s, "w"))
 show("settings.json に辞書型の未知キーがあれば落ちる(止まる側 = 2026-09-13 の型)",
+     _settings_clean(_tmp_s), 1)
+json.dump({"hooks": {}, "backup": {"hooks": {}}}, open(_tmp_s, "w"))
+show("settings.json に ASCII 名の別名の辞書があっても落ちる(止まる側 = 監査の [足りない])",
      _settings_clean(_tmp_s), 1)
 
 for _t in (hk, hk2, hk3):
