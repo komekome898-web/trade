@@ -55,6 +55,7 @@
 
 | 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
 |---|---|---|---|---|---|---|
+| TradingView MCP 経由の `BITFLYER:FXBTCJPY` 足(1m〜M、最大 5,000 本)・カレンダー・ニュース・スクリーナー(35 ツール) | `https://mcp.tradingview.com/mcp`(リモート MCP、OAuth 2.1、Essential 以上のプラン必須、~100 req/分) | TradingView 本体に `BITFLYER:FXBTCJPY` / `BITFLYER:BTCJPY` が存在(実測)。MCP 経由で取れるかは未試行。利用規約第 3 節が自動売買・アルゴリズム判断への利用を禁止(人が読む用途のみ) | **未試行・閉じた**(オーナー L-179「Essential 以上のプランはないです」。A-3 により購入は提案しない) | 2026-09-16 | `docs/DATA/probes/20260916_tradingview_mcp.log` | `docs/DATA/SCAN_2026-09-16.md`(scan) |
 | FX_BTC_JPY 1分足チャート(lightchart) | `backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/` | 2015-11〜2026-09 | 取得済 | 2026-09-11 | — | K1 フレッシュ確認(L-090)、K1 取引所横断 段階1/2(L-093/L-095) |
 | BTC_JPY 1分足チャート(lightchart、現物) | `backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/` | 2026-09-06 時点スナップショット | 取得済 | 2026-09-11 | — | 未使用 |
 | 板・ticker・約定(1分粒度、監査用) | `backtest_data/auto_bitflyer_executions_20260905/` | 2026-08-20〜09-05 | 取得済 | 2026-09-11 | — | ④-1 経費の床(L-098、`EXEC_FLOOR_PREREG.md`) |
