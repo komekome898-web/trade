@@ -320,6 +320,34 @@ show("⑤ read-do の入口は拒否しない(表示だけ)",
           {"hook_event_name": "PostToolUse", "tool_name": "Agent",
            "tool_response": {"content": "判定: 止める"}}, hk3), 0)
 
+# 全称語の検査(L-174「フックの変更してOK」+ 選択ウ、L-182「研究の段 1 の前に作ってください」)。
+# **表示のみで止めない(2026-09-30 まで)。**鳴る側と鳴らない側の両方を測る。
+# 鳴る = stdout に systemMessage がある / 鳴らない = stdout が空。終了コードはどちらも 0。
+def _stop_out(name, text, root):
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=root)
+    p = subprocess.run(["sh", os.path.join(ROOT, ".claude", "hooks", name)],
+                       input=json.dumps({"hook_event_name": "Stop", "last_assistant_message": text}),
+                       capture_output=True, text=True, env=env, cwd=ROOT)
+    return p.returncode, ("systemMessage" in p.stdout)
+hk4 = tempfile.mkdtemp(); os.makedirs(os.path.join(hk4, ".claude", "state"), exist_ok=True)
+show("全称語: 「全部数えた」に検索の出力が無ければ鳴る(止めない = 0)",
+     _stop_out("universal_claim_notice.sh", "参照元を全部数えた。12 件。", hk4), (0, True))
+show("全称語: 範囲を切っていない検索のコマンドがあれば鳴らない",
+     _stop_out("universal_claim_notice.sh",
+               "全部数えた。git ls-files -z | xargs -0 grep -c I-008", hk4), (0, False))
+show("全称語: 「範囲を切った」と明記していれば鳴らない",
+     _stop_out("universal_claim_notice.sh", "全件見た。範囲を切った(docs/ のみ)。", hk4), (0, False))
+show("全称語: 数えることに係らない全称語(限界を全部書く)は引かない",
+     _stop_out("universal_claim_notice.sh", "限界を全部書く。", hk4), (0, False))
+_hits = os.path.join(hk4, ".claude", "state", "universal_claim_hits.jsonl")
+show("全称語: 引き金があった返答は証拠の有無にかかわらず記録される(3 行)",
+     sum(1 for _ in open(_hits, encoding="utf-8")) if os.path.exists(_hits) else 0, 3)
+show("全称語: settings.json の Stop に配線されている",
+     any("universal_claim_notice.sh" in h.get("command", "")
+         for g in json.load(open(os.path.join(ROOT, ".claude", "settings.json"), encoding="utf-8"))
+                    .get("hooks", {}).get("Stop", []) for h in g.get("hooks", [])), True)
+shutil.rmtree(hk4, ignore_errors=True)
+
 # ① TRACE のスキーマに自由文が混ざっていないか
 import glob as _glob
 _tr = sorted(_glob.glob(os.path.join(ROOT, "docs", "AUDITOR", "TRACE", "*.json")))

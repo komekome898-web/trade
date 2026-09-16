@@ -168,6 +168,15 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/universal_claim_notice.sh",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [
