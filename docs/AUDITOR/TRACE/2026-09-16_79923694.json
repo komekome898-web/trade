@@ -1,0 +1,119 @@
+{
+ "source": "/root/.claude/projects/-home-user-trade/79923694-c23d-42c2-a5fe-ea0f938374b8.jsonl",
+ "n_moves": 2,
+ "moves": [
+  {
+   "move": 1,
+   "tools": {},
+   "n_tools": 0,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 2,
+   "tools": {
+    "Bash": 20,
+    "Read": 6,
+    "Write": 5,
+    "Agent": 1,
+    "Edit": 1,
+    "ToolSearch": 2,
+    "ReadNotifications": 3,
+    "SendMessage": 1
+   },
+   "n_tools": 39,
+   "read_goal": true,
+   "first_write_at": 9,
+   "table_shown": true,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 1,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 1,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  }
+ ],
+ "rollup": {
+  "P1_goal_read_before_first_write": {
+   "num": 1,
+   "den": 1,
+   "value": 1.0
+  },
+  "P2_table_shown_before_first_write": {
+   "num": 1,
+   "den": 1,
+   "value": 1.0
+  },
+  "P3_claim_with_output": {
+   "num": 0,
+   "den": 1,
+   "value": 0.0
+  },
+  "P4_audit_pasted_immediately": {
+   "num": 0,
+   "den": 1,
+   "value": 0.0
+  },
+  "P5_tools_per_move": {
+   "median": 39,
+   "max": 39,
+   "n": 1
+  },
+  "P6_findings_applied": {
+   "num": 1,
+   "den": 1,
+   "value": 1.0,
+   "note_key": "approximation_v2"
+  },
+  "P7_readdo_opened": {
+   "num": 0,
+   "den": null,
+   "value": null
+  },
+  "R4_unlock_created": {
+   "num": 0,
+   "den": null,
+   "value": null,
+   "note_key": "excludes_test_origin"
+  },
+  "R4b_unlock_in_test": {
+   "num": 0,
+   "den": null,
+   "value": null
+  },
+  "R5_protected_by_path": {
+   "docs/PROJECT_GOAL.md": 0,
+   "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+   ".claude/hooks/": 0,
+   ".claude/settings.json": 0,
+   ".claude/agents/": 0
+  }
+ }
+}
