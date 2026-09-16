@@ -129,7 +129,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
   `reply_audit_gate.sh` を直接叩くので `/tmp/hookprobe/last_reply.txt` が更新され、
   **リードは一度それを「Stop フックが走っている証拠」と読み違えた。**中身は試験用の文面である。
   **痕跡の新しさをフックが走った証拠に使わない。**
-- **プロジェクト側のフックは、作業場所が「信頼済み」でないと 1 本も実行されない(2026-09-14 に原因を特定)。**`~/.claude.json` の `projects["<絶対パス>"].hasTrustDialogAccepted` が `false` だと、`.claude/settings.json` のフックは**警告も出さずに全部飛ばされる**。クラウド側の実行環境では信頼のダイアログが出ないので `false` のままになる。**確認**: `python3 -c "import json;print(json.load(open('/root/.claude.json'))['projects']['/home/user/trade']['hasTrustDialogAccepted'])"`。**`true` でなければ、この体制のフックは 1 本も動いていない。**
+- **プロジェクト側のフックは、作業場所が「信頼済み」でないと 1 本も実行されない(2026-09-14 の記述。**下の【解決】のとおり、これは原因ではなかった。必要条件としての記述として残す**)。**`~/.claude.json` の `projects["<絶対パス>"].hasTrustDialogAccepted` が `false` だと、`.claude/settings.json` のフックは**警告も出さずに全部飛ばされる**。クラウド側の実行環境では信頼のダイアログが出ないので `false` のままになる。**確認**: `python3 -c "import json;print(json.load(open('/root/.claude.json'))['projects']['/home/user/trade']['hasTrustDialogAccepted'])"`。**`true` でなければ、この体制のフックは 1 本も動いていない。**
   **【重要・2026-09-16 に実測】`true` は必要条件であって十分条件ではない。**
   **`true` に直した状態で測ったところ、プロジェクト側のフックは 1 本も走っていなかった。**
   実測: 解除ファイルが無い状態で `.claude/hooks/` へ Write したが**止まらなかった**
