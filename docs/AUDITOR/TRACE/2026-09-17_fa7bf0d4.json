@@ -3804,22 +3804,22 @@
   {
    "move": 142,
    "tools": {
-    "Agent": 2,
-    "Bash": 9,
-    "Read": 3,
-    "Edit": 10,
-    "Write": 1,
+    "Agent": 5,
+    "Bash": 35,
+    "Read": 10,
+    "Edit": 58,
+    "Write": 5,
     "ToolSearch": 1
    },
-   "n_tools": 26,
+   "n_tools": 114,
    "read_goal": true,
    "first_write_at": 12,
-   "table_shown": false,
+   "table_shown": true,
    "claims_without_output": 0,
-   "claims_total": 0,
-   "audit_calls": 1,
+   "claims_total": 1,
+   "audit_calls": 4,
    "audit_pasted_immediately": 1,
-   "audit_followed_by_real_edit": 2,
+   "audit_followed_by_real_edit": 5,
    "protected_writes": 0,
    "protected_by_path": {
     "docs/PROJECT_GOAL.md": 0,
@@ -3840,19 +3840,19 @@
    "value": 0.4242
   },
   "P2_table_shown_before_first_write": {
-   "num": 9,
+   "num": 10,
    "den": 33,
-   "value": 0.2727
+   "value": 0.303
   },
   "P3_claim_with_output": {
-   "num": 164,
-   "den": 306,
-   "value": 0.5359
+   "num": 165,
+   "den": 307,
+   "value": 0.5375
   },
   "P4_audit_pasted_immediately": {
    "num": 12,
-   "den": 93,
-   "value": 0.129
+   "den": 96,
+   "value": 0.125
   },
   "P5_tools_per_move": {
    "median": 4.0,
@@ -3860,9 +3860,9 @@
    "n": 114
   },
   "P6_findings_applied": {
-   "num": 42,
-   "den": 93,
-   "value": 0.4516,
+   "num": 45,
+   "den": 96,
+   "value": 0.4688,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {

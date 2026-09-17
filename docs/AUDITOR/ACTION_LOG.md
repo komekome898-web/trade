@@ -5995,3 +5995,172 @@ $ grep -n "tie\|幅 0\|zero.width" scripts/measure_liq_response.py scripts/run_o
 オーナーの負荷: 減る(2 件目には未着手のまま、空欄 3 行だけを聞く形にしており、答えるコストは小さい)
 品質: 上がる(監査で拾われた欠落・誤記が全項目で実物に基づき修正され、対応表と本体の食い違いも縮小した)
 判定: 通す
+
+
+## 050 — L-189(2 件目: 必要データ収集の手段と管理の徹底方法)の検収・破損 11 個の回収・納品前監査・提示(2026-09-17)
+
+**オーナーの逐語**: 「**3件の質問全てYES。着手してください**」(L-189)。原文 §1「**必要データ収集の手段と管理の徹底方法**」。
+
+一手: 調査班(下位モデル)が書いた `docs/PHASE2/O3C/DATA_COLLECTION_2026-09-17.md` と生ログ `docs/DATA/probes/20260917_o3c_collection.log`(5 行)を検収(直した 1 = 生ログ 1・2 行目の取り違え、追記 1 = `SNAPSHOT_VERIFY.json` で O-3c の単位が照合 0 件)、`owner-auditor`(下位モデル)の 9 件(直す 4・聞く 5)を処置(`VERDICTS/2026-09-17_data_collection.md`)、**破損 11 個の回収を本実行**(L-189 の「回収を含む」に入る。原本非破壊、A-14 ではないとリードが判断)、台帳 `docs/DATA.md:96` を回収済みに更新、オーナーに提示して分岐 4 件と 1 件目の対応表(空行 2 行)を伺う。1 件目には着手しない。
+
+### 検収のコマンドと出力(リード、2026-09-17)
+
+```
+$ cut -c1-200 docs/DATA/probes/20260917_o3c_collection.log | sed -n '1,2p'
+2026-09-17T06:32:13Z method=HEAD url=https://www.okx.com/api/v5/rubik/stat/contracts/open-interest-volume?instId=BTC-USDT-SWAP&period=5m http=400 bytes=0 head200="{"code":"401","msg":"API key missing.
+2026-09-17T06:32:13Z method=GET url=https://www.okx.com/api/v5/rubik/stat/contracts/open-interest-volume?instId=BTC-USDT-SWAP&period=5m http=400 bytes=74 head200="{"code":"50014","data":[],"error_mess
+(→ 1・2 行目は OKX rubik。調査班の「CoinGlass 再実測 400」は取り違え。直した)
+$ python3 scripts/repair_liquidation_gz.py --dry-run paper_logs/liquidations/*.trunc1.jsonl.gz 2>&1 | tail -2
+11 ファイル、計 59944 行回収、1 行捨てた。dry-run(書き出しなし)
+$ sed -n '92p' docs/DATA.md | cut -c1-160
+| OKX 建玉(OI)・L/S比 スナップショット(自前記録) | `backtest_data/auto_okx_open_interest_5m_20260905/`(同 09-06〜09-08 も同様)、`backtest_
+$ ls -d backtest_data/auto_okx_open_interest_5m_* | sed 's/.*_//' | tr '\n' ' '
+20260905 20260906 20260907 20260908 20260909 20260910 20260911 20260912 20260915
+$ sed -n '484,494p' config/constants.yaml | grep -n "okx\|value\|unit" | head -3
+1:  okx_open_interest_5m_days:
+2:    value: [2, 3]
+3:    unit: days
+$ wc -l data/INTAKE.jsonl paper_logs/INTAKE.jsonl
+   20283 data/INTAKE.jsonl
+   21975 paper_logs/INTAKE.jsonl
+$ stat -c '%y %n' data/INTAKE.jsonl paper_logs/INTAKE.jsonl | cut -c1-19,36-
+2026-09-08 07:03:30 data/INTAKE.jsonl
+2026-09-16 11:32:12 paper_logs/INTAKE.jsonl
+$ sed -n '139,170p' scripts/retention_snapshot.py | grep -o '^\s*"[a-z_0-9]*", [0-9]*'
+        "bitflyer_executions", 15
+        "okx_open_interest_1h", 14
+        "okx_open_interest_5m", 1
+        "okx_long_short_ratio", 28
+        "oi_snapshots", 14
+        "venues", 14
+$ grep -n "^## P14" docs/OWNER_PROCEDURES.md
+403:## P14 清算記録の gzip 破損の修正(2026-09-12、L-121。オーナーの作業は下の 3 手を 1 回)
+$ python3 -c "import json;s=json.load(open('paper_logs/SNAPSHOT_VERIFY.json'));print(s['generated_at'],s['ok']);print(s['summary'])"
+2026-09-15T08:51:13.251503+00:00 False
+{'unit_count': 77, 'verified': 44, 'verified_line_ending_only': 21, 'newly_sealed': 1, 'mismatch_units': 11, 'total_mismatches': 3, 'total_line_ending_only': 99, 'total_missing': 3645, 'total_extra_untracked': 3351, 'ledger_mismatches': 0}
+(binance_cm_o3c_20260913 の単位: checked 2691, matched 0, missing 2691(先頭 './README.md'), extra 1741(先頭 'README.md'))
+$ head -2 backtest_data/binance_cm_o3c_20260913/MD5SUMS
+6aaabab836a765191f6717e6a6c2a11e  ./README.md
+7ded9599086d1c1cc57dc6896b6ead14  ./liquidationSnapshot/BTCUSD_PERP/BTCUSD_PERP-liquidationSnapshot-2023-06-25.zip
+$ wc -l < backtest_data/binance_cm_o3c_20260913/MD5SUMS; find backtest_data/binance_cm_o3c_20260913 -type f | wc -l
+2691
+2692
+```
+
+### 破損 11 個の回収の本実行(リード、2026-09-17)
+
+```
+$ python3 scripts/repair_liquidation_gz.py --out-dir backtest_data/liquidations_repaired_20260917 paper_logs/liquidations/*.trunc1.jsonl.gz 2>&1 | tail -2
+11 ファイル、計 59944 行回収、1 行捨てた。-> /home/user/trade/backtest_data/liquidations_repaired_20260917
+$ (cd backtest_data/liquidations_repaired_20260917 && find . -type f ! -name MD5SUMS | sed 's|^\./||' | sort | xargs md5sum > MD5SUMS && head -1 MD5SUMS && wc -l < MD5SUMS)
+9b55fc3fbb7ed63f8b79d898988548fb  paper_logs/liquidations/binance_cm_20260911.trunc1.jsonl.gz
+11
+$ for f in backtest_data/liquidations_repaired_20260917/paper_logs/liquidations/*.jsonl.gz; do printf '%s %s\n' "$(gzip -dc "$f" | wc -l)" "$(basename $f)"; done; gzip -dc backtest_data/liquidations_repaired_20260917/paper_logs/liquidations/*.jsonl.gz | wc -l
+9685 binance_cm_20260911.trunc1.jsonl.gz
+235 binance_cm_20260912.trunc1.jsonl.gz
+3480 bitmex_20260909.trunc1.jsonl.gz
+2548 bitmex_20260911.trunc1.jsonl.gz
+50 bitmex_20260912.trunc1.jsonl.gz
+4952 bybit_20260909.trunc1.jsonl.gz
+3957 bybit_20260911.trunc1.jsonl.gz
+62 bybit_20260912.trunc1.jsonl.gz
+20599 okx_20260909.trunc1.jsonl.gz
+14289 okx_20260911.trunc1.jsonl.gz
+87 okx_20260912.trunc1.jsonl.gz
+59944
+$ du -sh backtest_data/liquidations_repaired_20260917
+1.3M	backtest_data/liquidations_repaired_20260917
+```
+
+(MD5SUMS のパスは `./` 無しにした。`./` 付きだと `verify_snapshots.py` が照合できない = 上の SNAPSHOT_VERIFY の所見と同じ穴に落ちるため。)
+
+### 検証器の再実行(リード、2026-09-17)
+
+```
+$ python3 scripts/verify_snapshots.py --no-write 2>&1 | grep "liquidations_repaired"
+  [dry_run] liquidations_repaired_20260912: 15 files, no MD5SUMS -- would seal (--no-write)
+  [ok] liquidations_repaired_20260917: 11/11 matched
+```
+(新しい単位は 11/11 照合。09-12 の回収単位が MD5SUMS 無しで残っていることも分かった = 台帳に無い単位の実例、§C 案 C の対象。)
+
+行動の監査は `owner-model-auditor`(下位モデル)2 巡: 1 巡目「止める」(出典に指した ACTION_LOG 050 が未記入 / 項 8 の要点の潰し)→ 050 を書き、項 8 を直して 2 巡目「通す」(直す 1 = 項 7 の印。直した)。
+
+返答sha256: d0dbbd81a197ea78
+返答sha256: 2d84626c820888b9
+(末尾改行の有無で 2 つ併記)
+
+### 監査役の返答(逐語。owner-model-auditor、返答本文と同じ行)
+
+1 巡目(判定: 止める。止める 1 件 = 出典に指した `ACTION_LOG` 050 が未記入 / 直す 1 件 = 項 8 の要点が日・系統の区別を潰していた。両方直した):
+
+> # 監査結果(owner-model-auditor)
+>
+> 対象: `/tmp/claude-0/-home-user-trade/fa7bf0d4-a5c4-55b7-991b-874b590e00a3/scratchpad/reply9_draft.md`(段2の2件目の提示 + 3→2→1のうち1件目着手前の対応表)。本体 `docs/PHASE2/O3C/DATA_COLLECTION_2026-09-17.md`、監査記録 `docs/AUDITOR/VERDICTS/2026-09-17_data_collection.md`、`docs/OWNER_LOG.md`(L-187〜L-189)、`docs/DATA.md`、`docs/AUDITOR/ACTION_LOG.md`、`backtest_data/liquidations_repaired_20260917/MD5SUMS` を実物で開いて突き合わせた。
+>
+> ---
+>
+> [止める] 「本実行」の証拠として引用する `docs/AUDITOR/ACTION_LOG.md` 050 が実在しない
+>
+> 根拠(オーナー逐語): 「**帰無 1,000 回・アブレーション 6 種・サニティ 5 種、この文章の意味が何一つわからないので全て説明してください**」(出典: `OWNER_MODEL_SOURCE.md` §2-5 / `docs/OWNER_LOG.md` L-049)。「**バー 5bp の意味と根拠は何か。どこからこの手数料は出てきたか**」(同 §2-5 / L-047)。
+>
+> 何が食い違っているか: 本体 `DATA_COLLECTION_2026-09-17.md` は §A の破損回収項目で「コマンドと出力は`docs/AUDITOR/ACTION_LOG.md` 050」、§D の追記案の「プローブのログ」欄でも同じ「`ACTION_LOG.md` 050」を出典として書いている。返答案(reply9_draft.md)もこの本体を「本体」として提示している。しかし `docs/AUDITOR/ACTION_LOG.md` の実物を開くと、見出しは `## 001` から `## 049`(L-188 対応、2026-09-17)までで**終わっており、`050` は存在しない**(`grep '^## \d+'` で確認)。実際の回収作業自体は `backtest_data/liquidations_repaired_20260917/MD5SUMS`(11行)としてディスク上に実在し、本実行そのものは行われている(この点は虚偽ではない)。しかし「コマンドと出力の記録先」として指し示している番号が**まだ書かれていない**。`ACTION_LOG.md` 冒頭の規則「**本ファイルへの追記が無い push は、フックが拒否する**」「**判定をあなたが書かなければいい。監査の判定をそのまま書いてそれに従え**」(E-4)は、この台帳への追記が押し出しの前提であることを示しており、存在しない番号を出典として本体・返答に埋め込んだまま先へ進めるのは、実物を開けば一目で分かる食い違いを見せかけの検証可能性で覆っている状態である。これは §5.0b で①の機械(TRACE)が作られた経緯そのものの型(「実物は一字も変わっていなかった」)と同種の危険信号であり、`docs/AUDITOR/ACTION_LOG.md` に 050 番を実際に書いてから(監査役の逐語を含めて)返答を出すべきである。
+>
+> ---
+>
+> [直す] 項8(Binance清算欠落3日)の要点が、本体の日ごとの確認状況を圧縮しすぎている
+>
+> 根拠(オーナー逐語): 「**あなたの断定癖は私ですら注意していないと見過ごしてしまう**」(出典: `OWNER_MODEL_SOURCE.md` §2-2 / `docs/OWNER_LOG.md` L-057)。
+>
+> 何が食い違っているか: 返答案の項8は「3日とも公開アーカイブで404(09-14実測、09-09は09-17再実測)」と書いているが、本体 §A-8(b)①は「CM側は3日とも2026-09-14に404実測」「2023-09-09だけ09-17午前にUM・CMの両方を再実測」「09-23・06-01のUM側は未プローブ」と、確認できた範囲を日・系統ごとに分けて書いている。返答案の一文はこの区別(CMは3日確認/UMは1日のみ確認)を落として「3日とも」とだけ読める形に均しており、Q3(取れない・無いへの範囲明記)の趣旨からは本体より粗い。「(d)過去分は経路4以外に埋める手段が無い」という結論自体は変わらないため実害は小さいが、要点表と本体の対応を厳密に保つ観点で直す。
+>
+> ---
+>
+> **その他の確認(問題なし)**: §A各項目の数値(99日、17日/478日、11ファイル/59,944行/1行破棄、2,691/1,741/951、9日分のOKXディレクトリ)は本体と一致。有料インフラ・サーバー賃借は提案せず明記して回避(A-3)。「無い/取れていない」はすべて経路(この環境/PC/公開/第三者/有料)と方法を伴っている(O-2、監査役の指摘2・3・8で直された内容も本体に反映済み)。破損11個の回収を「A-14に当たらない」と判断した根拠(原本非破壊・L-189の範囲内)は監査役の指摘9への応答としてリード自身が判断し直しており、権限の逸脱ではない。「判断をお願いすること」4件は選択肢と推し(推定)が別欄に分かれ、yes強要型ではなく、CLAUDE.md §0.1「作業中に判断が必要になったら止めて追加で擦り合わせる」に沿う。1件目着手前の対応表は空行2行だけを問い、埋まっている行には確認を求めていない。監査役の9件はVERDICTSファイルに逐語で残り、返答はそれを要約せず参照している(O-4)。日本語のみ(O-1)。自己採点的な件数の誇張は無い(O-10)。
+>
+> ---
+>
+> オーナーの負荷: 変わらない(`ACTION_LOG.md` 050 の作成と項8の文言修正はいずれもリードが自分で完了できる。オーナーへの新たな確認事項は増えない)
+> 品質: 下がる(実在しない記録番号を出典として本体・返答に埋め込んだまま提示しようとしている)
+> 判定: 止める
+
+2 巡目(判定: 通す。直す 1 件 = 項 7 の印が本体と食い違う。直した):
+
+> ## 検査結果(2 巡目)
+>
+> ### 1 巡目からの修正確認
+>
+> **(1) `ACTION_LOG.md` 050 の実在** — `grep -n '^## 050' docs/AUDITOR/ACTION_LOG.md` で 6000 行目に実在を確認した。内容は検収コマンド・出力(OKX rubik と CoinGlass の取り違え訂正、`repair_liquidation_gz.py` の dry-run、`SNAPSHOT_VERIFY.json` の中身)と、破損 11 個の本実行(`--out-dir backtest_data/liquidations_repaired_20260917`、11 ファイル・59,944 行回収・1 行捨て、MD5SUMS 11 行)を含み、本体 `DATA_COLLECTION_2026-09-17.md` §A・§D・ACTION_LOG 内の数字と全て一致した。**直っている。**
+>
+> **(2) 項 8 の要点** — 返答の表は「CM は 3 日とも 404(09-14)、09-09 だけ UM・CM を 09-17 に再実測、UM の残り 2 日は未プローブ、PC・有料は未確認」に直っており、これは本体 §A-8(監査役の指摘 3 への処置)の日・系統別の書き分けと一致する。**直っている。**
+>
+> ### 新たに見つけたもの
+>
+> [直す] 項 7 の「印」が本体の分類と食い違う
+> 根拠(オーナー逐語): 「**あなたの断定癖は私ですら注意していないと見過ごしてしまう**ので言いました」(出典: `docs/OWNER_LOG.md` L-057 / `OWNER_MODEL_SOURCE.md` §2-2)
+> 何が食い違っているか: 本体 `DATA_COLLECTION_2026-09-17.md` の項目 7(e)は「事実(専用エンドポイント無しの実測)/**仮定**(代替案が機能する保証は無い)」だが、返答の表の項 7 行は「事実 / **未確認**」としている。「仮定(検証されていない前提に立っている)」と「未確認(まだ確かめていない)」は別の状態で、返答は本体の分類を書き換えている。件数としては 1 件、かつ判断の方向(進める/止める)を変えるものではないので、これのみで止める理由にはしない。
+>
+> ### その他の点検(食い違い無し)
+>
+> - 項 1・6・8・9・13・「継続記録: 破損 11 個」の各行は、本体 §A の (a)〜(e) および §B・§D・ACTION_LOG 050 の数字(59,944 行、MD5SUMS 11 行、`docs/DATA.md:96` の更新)と一致した(`docs/DATA.md` の 96 行目を実際に開いて「回収済み」の文言を確認した)。
+> - 「判断をお願いすること」4 件は、いずれも「オーナーの PC でしかできないこと(FAQ の取得)」「継続記録の枠組みに関わること(BitMEX 停止・更新規則)」で、A-13 の「枠組みはオーナーに見せてから進める」に沿っており、A-2(自分で決められることの投げ返し)には当たらない。
+> - 「次 = 1 件目」の対応表は、Binance COIN-M を使うことと「観測表(判定なし)」を「該当語なし」と正直に空欄化しており、L-124 のような置き換えの隠蔽は無い。1 件目には着手していないことも本文と整合する。
+> - `owner-auditor` の 9 件(直す 4・聞く 5)は `VERDICTS/2026-09-17_data_collection.md` に全件処置の記録があり、返答の「検収で直したもの」の要約(項 6・7・9 の判断)と一致する。
+> - O-1(日本語)・O-9(yes 誘導質問)・O-10(自己採点)・A-3(サーバー提案)・A-14(取り返しのつかない決定)への抵触は見つからなかった。破損回収の本実行は原本非破壊であることを ACTION_LOG のコマンド出力で確認しており、A-14 の判断は妥当。
+>
+> オーナーの負荷: 減る(分岐 4 件と空行 2 行だけを一度に聞く形になっており、擦り合わせの往復を増やしていない)
+> 品質: 上がる(前回の 2 件の欠陥が実物で確認できる形に直り、破損データも回収済み)
+> 判定: 通す
+>
+> 関連ファイル:
+> - `/tmp/claude-0/-home-user-trade/fa7bf0d4-a5c4-55b7-991b-874b590e00a3/scratchpad/reply9_draft.md`
+> - `/home/user/trade/docs/AUDITOR/ACTION_LOG.md`(6000〜6075 行目)
+> - `/home/user/trade/docs/PHASE2/O3C/DATA_COLLECTION_2026-09-17.md`
+> - `/home/user/trade/docs/AUDITOR/VERDICTS/2026-09-17_data_collection.md`
+> - `/home/user/trade/docs/DATA.md`(96 行目)
+> - `/home/user/trade/docs/OWNER_LOG.md`(L-187〜L-189)
+
+### 監査役の 3 行(逐語で転記。2 巡目)
+
+オーナーの負荷: 減る(分岐 4 件と空行 2 行だけを一度に聞く形になっており、擦り合わせの往復を増やしていない)
+品質: 上がる(前回の 2 件の欠陥が実物で確認できる形に直り、破損データも回収済み)
+判定: 通す
