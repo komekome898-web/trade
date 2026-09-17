@@ -1,7 +1,7 @@
 # Binance COIN-M (BTCUSD_PERP) 維持証拠金率・清算価格式 — 一次資料確認(2026-09-17)
 
 調査班による一次資料確認(research-squad モード3)。戦略への当否は判定しない。
-生ログ: `docs/DATA/probes/20260917_binance_cm_mmr.log`(全13エントリ、方法・URL・HTTPコード・バイト数・先頭200文字・UTC時刻)。
+生ログ: `docs/DATA/probes/20260917_binance_cm_mmr.log`(全 23 エントリ。[1]〜[13] は調査班、[14]〜[23] はリードの追記、方法・URL・HTTPコード・バイト数・先頭200文字・UTC時刻)。
 
 ---
 
@@ -71,7 +71,7 @@
 ### 判定
 **一次資料で確認(ただし範囲が限定的)。**
 - 確認できたこと(事実): developers.binance.com の COIN-M `leverageBracket` 系エンドポイント(Notional Bracket for Symbol)のレスポンス例に、**symbol=BTCUSD_PERP、bracket=1(段階1)として initialLeverage=125(最大125倍)、qtyCap=50 BTC、qtylFloor=0 BTC、maintMarginRatio=0.004(0.4%)、cum=0** という値が明記されている。
-- **未確認(不明。到達できず)**: これが「例」であって現在の実勢値と保証された記述ではない点、および**段階2以降の表(想定元本/枚数の区切りがどこで切り替わり、MMRがどう上がっていくか)は同ページに1件しか例示が無く、取得できなかった**(ログ[11]、"brackets" 配列の要素は1個のみ)。
+- **【追記で改めた: 段階表の全体は公開 JSON で取得済。以下は初稿の文】** **未確認(不明。到達できず)**: これが「例」であって現在の実勢値と保証された記述ではない点、および**段階2以降の表(想定元本/枚数の区切りがどこで切り替わり、MMRがどう上がっていくか)は同ページに1件しか例示が無く、取得できなかった**(ログ[11]、"brackets" 配列の要素は1個のみ)。
 - **【追記で改めた: 公開 JSON 経路で取得済(生ログ [15][19])。以下は初稿の文】** **BTCUSD_PERP の完全な段階表(全段階の想定元本区切り・最大レバレッジ・MMR)は、この環境からは取得できなかった。** 理由:
   1. 公式の表示ページ https://www.binance.com/en/futures/trading-parameters/perpetual/leverage-margin は表がクライアント側JS/APIで後から埋め込まれるSPAで、静的取得(curlもWebFetchのHTML→Markdown変換も)では「No Data」のプレースホルダしか得られない(ログ[8])。
   2. 該当FAQ(https://www.binance.com/en/support/faq/leverage-and-margin-in-coin-margined-futures-contracts-be2c7d9d95b04a7e8044ed02dd7dfe5c )は本文中で表を上記ページに誘導するだけで、表自体を含まない(ログ[9])。
