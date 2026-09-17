@@ -6164,3 +6164,84 @@ $ python3 scripts/verify_snapshots.py --no-write 2>&1 | grep "liquidations_repai
 オーナーの負荷: 減る(分岐 4 件と空行 2 行だけを一度に聞く形になっており、擦り合わせの往復を増やしていない)
 品質: 上がる(前回の 2 件の欠陥が実物で確認できる形に直り、破損データも回収済み)
 判定: 通す
+
+
+## 051 — L-190(判断 1・2・4 の実装、判断 3 を閉じる、1 件目の観測表)の実施と提示(2026-09-17)
+
+**オーナーの逐語**: 「**判断1と2と4はあなたの推し案でお願いします。3は不要(bitFlyerCFDのレバレッジは2倍、清算などほとんど起きない)**」「**空の行は2件ともYES**」(L-190)。原文 §1「**価格毎の約定履歴の積み上げからどの価格帯で清算が起きるかの予測できるか、できるならエントリーや利確に活かせるか**」。
+
+一手: (1) 実装を下位モデル(opus)に委任 → リード検収(下)→ コミット。(2) 1 件目: リードが設計 `PRICE_LEVEL/DESIGN_2026-09-17.md` を書き、標本走行(6 日)を下位モデル(opus)に委任 → 検収で設計の誤り(清算価格 `price` = 指値)を見つけて `average_price` に改めて再走行 → `owner-auditor` 5 件(直した 4・答えた 1、`VERDICTS/2026-09-17_price_level.md`)→ 2023-06-24 の aggTrades を公開アーカイブから取得(補遺単位)→ 全件 472 日を走らせ(2 回、2 回目が補遺入り)→ `FULL_2026-09-17.md` → `owner-auditor` 6 件(全部直した、`VERDICTS/2026-09-17_price_level_full.md`)。**手順の逸脱(行動の監査 1 巡目が拾った)**: 設計 §3 の「標本をまず見せる」の前に全件を走らせた。返答の冒頭に書いて出す。
+
+### 判断 1・2・4 の実装の検収(リード、2026-09-17)
+
+```
+$ git diff --stat -- deploy scripts/record_liquidations.py scripts/verify_snapshots.py tests | tail -8
+ deploy/fetch_all.bat              |  6 ++++++
+ deploy/share_logs.bat             |  1 +
+ scripts/record_liquidations.py    | 27 +++++++++++++++++++++---
+ scripts/verify_snapshots.py       | 11 ++++++++++
+ tests/test_record_liquidations.py | 24 ++++++++++++++++++++++
+ tests/test_verify_snapshots.py    | 43 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 109 insertions(+), 3 deletions(-)
+(+ 新規 scripts/check_data_ledger.py、tests/test_check_data_ledger.py)
+$ grep -n "DEFAULT_VENUES" scripts/record_liquidations.py | head -2
+137:DEFAULT_VENUES = [v for v in VENUES if v != "bitmex"]
+364:    ap.add_argument("--venues", default=",".join(DEFAULT_VENUES),
+$ PYTHONPATH=src python -m pytest -q tests/test_check_data_ledger.py tests/test_verify_snapshots.py tests/test_record_liquidations.py tests/test_record_liquidations_writer.py tests/test_audit_gates_wired.py 2>&1 | tail -1
+.......                                                                  [100%]   (79 件通過)
+$ python3 scripts/check_data_ledger.py 2>&1 | head -3
+check_data_ledger: docs/DATA.md と実物の相互参照 (基準日 2026-09-17、鮮度のしきい 14 日)
+  単位 109 件 / 台帳に行が無い単位 27 件 / 所在が実在しない行 2 件 / 受領台帳に無いファイル 1773 個 (9 単位) / 最終確認日が古い行 0 件
+(委任先の実測、同じ日) $ python3 scripts/verify_snapshots.py --no-write 2>&1 | grep -E "binance_cm_o3c|liquidations_repaired_20260917"
+  [ok] binance_cm_o3c_20260913: 2691/2691 matched
+  [ok] liquidations_repaired_20260917: 11/11 matched
+```
+
+### 1 件目の標本走行の検収(リード、2026-09-17)
+
+```
+$ python3 - (table.csv を読んで中央値を出す。標準ライブラリのみ)
+rows 2088 liq 1044 ctl 1044
+liq 1044 bin_pct med 28.57 dist_node med 25.76 |gap| med 30.2 |node| med 55.3
+ctl 1044 bin_pct med 63.97 dist_node med 9.57 |gap| med 68.1 |node| med 26.5
+SELL 630 bin_pct med 25.0 dist_node med 58.01 |gap| med 26.3 |node| med 61.4
+BUY 414 bin_pct med 33.33 dist_node med -38.07 |gap| med 37.7 |node| med 44.4
+bin_pct==0 liq 0.11685823754789272
+(p_liq-p0)/p0 med 0.0
+(price 版、訂正前の初回走行) (p_liq-p0)/p0 bp: med -34.7 p5 -40.5 p95 39.8 / (p_avg-p0)/p0 bp: med 0.0 p5 -0.3 p95 0.2 / bin_pct==0 liq 540 51.7%
+$ (cd backtest_data/o3c_price_level_sample_20260917 && md5sum -c MD5SUMS | tail -2)
+table.csv: OK
+summary.json: OK
+$ PYTHONPATH=src python -m pytest -q tests/test_o3c_price_level_table.py 2>&1 | tail -1
+..............                                                           [100%]   (14 件通過)
+```
+
+### 全件走行(リード、2026-09-17)
+
+```
+$ DAYS=$(ls backtest_data/binance_cm_o3c_20260913/liquidationSnapshot/BTCUSD_PERP/*.zip | sed 's/.*Snapshot-//; s/\.zip//' | tr '\n' ',' | sed 's/,$//')
+$ python3 scripts/o3c_price_level_table.py --days "$DAYS" --data-root <本体 + 補遺のシンボリックリンクを束ねた根> --out-dir backtest_data/o3c_price_level_full_20260917
+行 213643(清算 106822 / 対照 106821) p_liq = average_price / 所要 388.06 秒 -> backtest_data/o3c_price_level_full_20260917
+(1 回目、補遺なし: 所要 386.36 秒、同じ行数)
+$ (cd backtest_data/o3c_price_level_full_20260917 && md5sum -c MD5SUMS | tail -2)
+table.csv: OK
+summary.json: OK
+$ python3 - (summary.json の要点)
+rows_total 213643 liq 106822 ctl 106821 outside 58 dropped 0
+days with warning 2   (2023-09-26 と 2024-06-13: 前日の aggTrades zip が無い)
+side counts {'SELL': 65664, 'BUY': 41158}
+bin_pct liq q50 30.95 | ctl q50 76.92 ; dist_node_bp liq q50 9.26 | ctl −1.07 ; dist_gap_bp liq −1.42 | ctl 16.01
+$ python3 - (table.csv から数えた)
+liq 106822 |node| med 78.8 |gap| med 34.4 bin_pct==0 0.107 bin_pct<=10 0.317
+ctl 106821 |node| med 17.6 |gap| med 86.5 bin_pct==0 0.0 bin_pct<=10 0.005
+side BUY q50: bin_pct 23.86 dist_node −70.19 dist_gap 3.28 dist_vwap −127.04 ; SELL: 35.34 / 56.37 / −4.97 / 102.37
+qty q50/q90/q99 17.0 296.0 3198.0 ; top10% qty n 10688 bin_pct med 25.0 |gap| med 23.6
+窓が短い 2 日(527 行)を除く: liq bin_pct 31.03 |node| 78.9 |gap| 34.5 ; ctl 76.92 / 17.6 / 86.6
+```
+
+補遺の取得と、残り 3 日の欠落の確認(`docs/DATA/probes/20260917_o3c_agg_gap.log`):
+```
+$ curl -sS -o ... -w "%{http_code} %{size_download}" .../BTCUSD_PERP-aggTrades-2023-06-24.zip
+200 1178051      (sha256sum -c 公式 .CHECKSUM: OK、展開 89,972 行)
+2023-09-25 zip http=404 / 2024-06-11 zip http=404 / 2024-06-12 zip http=404 (.CHECKSUM も 404、NoSuchKey)
+```
