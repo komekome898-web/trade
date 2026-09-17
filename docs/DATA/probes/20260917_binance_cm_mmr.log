@@ -94,3 +94,11 @@ URL: http://web.archive.org/web/2024/https://www.binance.com/en/futures/trading-
 URL: https://www.binance.com/en/support/announcement/updates-on-the-leverage-margin-tiers-of-multiple-usd%E2%93%A2-m-and-coin-m-perpetual-contracts-2024-03-05-c25886233c164665a425e3e9a730d109
 結果: 到達成功。本文に列挙された対象ペア(WLDUSDT, JASMYUSDT, AIUSDT, MEMEUSDT, DYMUSDT, PIXELUSDT, JUPUSDT, WIFUSDT, XAIUSDT, NFPUSDT, SOLUSD等)の中に BTCUSD_PERP / BTCUSD は含まれていない。この告知は BTCUSD_PERP の段階表の根拠にならない。
 取得日時(UTC): 2026-09-17T13:20頃
+
+# 追加プローブ(リード、監査の指摘で SPA が呼ぶ公開 JSON 経路と dapi を試した)
+[14] [2026-09-17T14:22:13Z] curl GET https://www.binance.com/bapi/futures/v1/public/delivery/common/brackets -> 404 138 | {"status":404,"message":"No message available","timestamp":1789654934830,"error":"Not Found","path":"/v1/public/delivery/common/brackets"}
+[15] [2026-09-17T14:22:14Z] curl GET https://www.binance.com/bapi/futures/v1/friendly/delivery/common/brackets -> 200 58186 | {"code":"000000","message":null,"messageDetail":null,"data":{"brackets":[{"symbol":"BCHUSD_PERP","updateTime":1778576974817,"notionalLimit":100,"riskBrackets":[{"bracketSeq":1,"bracketNotionalFloor":0
+[16] [2026-09-17T14:22:15Z] curl GET https://www.binance.com/bapi/futures/v1/public/future/common/brackets -> 400 96 | {"code":"000002","message":"illegal parameter","messageDetail":null,"data":null,"success":false}
+[17] [2026-09-17T14:22:15Z] curl GET https://dapi.binance.com/dapi/v1/leverageBracket?symbol=BTCUSD_PERP -> 451 224 | {   "code": 0,   "msg": "Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received t
+[18] [2026-09-17T14:22:16Z] curl GET https://www.binance.com/bapi/futures/v1/public/delivery/common/brackets?symbol=BTCUSD_PERP -> 404 138 | {"status":404,"message":"No message available","timestamp":1789654937320,"error":"Not Found","path":"/v1/public/delivery/common/brackets"}
+[19] 2026-09-17T14:23Z curl GET https://www.binance.com/bapi/futures/v1/friendly/delivery/common/brackets -> 200 58186 バイト(再取得)。BTCUSD_PERP の段階 10 本を docs/DATA/probes/20260917_binance_cm_brackets_BTCUSD_PERP.json に保存(updateTime 1778489456820 = 2026-05-11 UTC、notionalLimit 100)。

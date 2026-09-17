@@ -7103,3 +7103,41 @@ $ grep -n '予測できる\|使える\|有効' docs/PHASE2/O3C/PRICE_LEVEL/OI_DI
 ```
 
 納品前の監査: `owner-auditor` 止める 1・直す 4・聞く 5 = 10 件、全部処置(`VERDICTS/2026-09-17_oi_distance.md`)。`CLAUDE.md` §3 のテスト件数を 1,987 に更新。
+
+### 行動の監査 1 巡目の指摘(止める)で足した経路と、段階別 MMR の再計算(リード、2026-09-17)
+
+```
+$ for u in ...; do curl -sS -m 25 -o /tmp/claude-0/bapi.out -w "%{http_code} %{size_download}" "$u"; done   (生ログ [14]〜[19])
+https://www.binance.com/bapi/futures/v1/public/delivery/common/brackets -> 404 138
+https://www.binance.com/bapi/futures/v1/friendly/delivery/common/brackets -> 200 58186   ← 全銘柄の段階表(JSON)
+https://www.binance.com/bapi/futures/v1/public/future/common/brackets -> 400 96
+https://dapi.binance.com/dapi/v1/leverageBracket?symbol=BTCUSD_PERP -> 451 224 (restricted location)
+$ python3 - (BTCUSD_PERP の段階を抜粋 → docs/DATA/probes/20260917_binance_cm_brackets_BTCUSD_PERP.json)
+updateTime 1778489456820 notionalLimit 100
+{'bracketSeq': 1, 'bracketNotionalFloor': 0, 'bracketNotionalCap': 5, 'bracketMaintenanceMarginRate': 0.004, ... 'maxOpenPosLeverage': 125}
+{'bracketSeq': 2, 'bracketNotionalFloor': 5, 'bracketNotionalCap': 10, 'bracketMaintenanceMarginRate': 0.005, ... 'maxOpenPosLeverage': 100}
+{'bracketSeq': 3, 'bracketNotionalFloor': 10, 'bracketNotionalCap': 25, 'bracketMaintenanceMarginRate': 0.01, ... 'maxOpenPosLeverage': 50}
+{'bracketSeq': 4, 'bracketNotionalFloor': 25, 'bracketNotionalCap': 150, 'bracketMaintenanceMarginRate': 0.025, ... 'maxOpenPosLeverage': 20}
+{'bracketSeq': 5, 'bracketNotionalFloor': 150, 'bracketNotionalCap': 400, 'bracketMaintenanceMarginRate': 0.05, ... 'maxOpenPosLeverage': 10}
+(6〜10: 400〜3,500 BTC、10〜50%、5〜1 倍)
+$ python3 - (想定元本 qty*100/p_liq で段階を当て、段階別 MMR と一律 0.004 で L を比較)
+bracket share: {0.004: 0.9862, 0.005: 0.0092, 0.01: 0.0043, 0.025: 0.0003} n 53398
+w8 SELL 約定VWAP 一律0.004: 有効 30020 除外 2806 L q10/50/90 [ 34.  75. 196.] L>125 22.0%
+w8 SELL 約定VWAP 段階別:   有効 30020 除外 2806 L q10/50/90 [ 34.  75. 196.] L>125 21.9%
+w8 SELL 建玉重心 一律0.004: 有効 21039 除外 2028 L q10/50/90 [ 32.  75. 189.] L>125 21.6%
+w8 SELL 建玉重心 段階別:   有効 21040 除外 2027 L q10/50/90 [ 32.  75. 188.] L>125 21.6%
+w8 BUY 約定VWAP 一律0.004: 有効 18951 除外 1621 L q10/50/90 [ 37.  71. 167.] L>125 17.9%
+w8 BUY 約定VWAP 段階別:   有効 18954 除外 1618 L q10/50/90 [ 37.  71. 167.] L>125 17.9%
+w8 BUY 建玉重心 一律0.004: 有効 13689 除外 1089 L q10/50/90 [ 35.  70. 166.] L>125 18.5%
+w8 BUY 建玉重心 段階別:   有効 13690 除外 1088 L q10/50/90 [ 35.  70. 166.] L>125 18.5%
+w24 SELL 約定VWAP 一律0.004: 有効 27066 除外 5760 L q10/50/90 [ 25.  56. 201.] L>125 18.8%
+w24 SELL 約定VWAP 段階別:   有効 27076 除外 5750 L q10/50/90 [ 24.  56. 201.] L>125 18.8%
+w24 SELL 建玉重心 一律0.004: 有効 18937 除外 4096 L q10/50/90 [ 24.  58. 200.] L>125 19.0%
+w24 SELL 建玉重心 段階別:   有効 18942 除外 4091 L q10/50/90 [ 24.  58. 199.] L>125 19.0%
+w24 BUY 約定VWAP 一律0.004: 有効 17696 除外 2876 L q10/50/90 [ 26.  52. 165.] L>125 15.1%
+w24 BUY 約定VWAP 段階別:   有効 17699 除外 2873 L q10/50/90 [ 26.  52. 166.] L>125 15.1%
+w24 BUY 建玉重心 一律0.004: 有効 13107 除外 1832 L q10/50/90 [ 24.  51. 171.] L>125 15.8%
+w24 BUY 建玉重心 段階別:   有効 13107 除外 1832 L q10/50/90 [ 24.  51. 171.] L>125 15.8%
+$ python3 - (w8/summary.json: days_metrics_missing の件数と内訳)
+100 件 = 2023-06-24(補遺日)/ 09-25 / 11-19 + 2024-03-04〜06-08 の 97 日。暦 478 日内は 99 日。清算の表 472 日との重なり 375 → 建玉の無い清算日 97 日。
+```

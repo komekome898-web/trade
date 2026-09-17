@@ -148,3 +148,7 @@
 2. https://www.binance.com/en/support/faq/detail/ceccfcfb4e3a45e3b48b0b1bb1a8ae46 の式の画像を開き、記号列を書き取る(または画像を保存してOCR)。
 
 いずれも「有料」「地域制限(451等)」には当たっていない。到達不能の原因は、この環境の静的フェッチ手段(curl/WebFetch)が①ボット対策チャレンジ、②クライアント側JSでのデータ後埋め、③画像埋め込みの数式、に対応できないことであり、Binance側のアクセス制限そのものではない(事実として区別して記録する)。
+
+## 追記(リード、2026-09-17、行動の監査の指摘 = この環境の経路を尽くす前にオーナー PC を挙げた)
+
+SPA が呼ぶ公開 JSON 経路を curl で試した(生ログ [14]〜[19])。`https://www.binance.com/bapi/futures/v1/friendly/delivery/common/brackets` が HTTP 200 で全銘柄の段階表を返した(BTCUSD_PERP は 10 段階、`updateTime` 2026-05-11 UTC。抜粋 `docs/DATA/probes/20260917_binance_cm_brackets_BTCUSD_PERP.json`)。**主張 A の段階 2 以降は、この経路で「一次資料で確認(限定付き: 表の日付は 2026-05 で、2023〜2024 年当時の表かは不明。JSON の原文をそのまま保存)」に変わる。**表の区切りは API リファレンスの例(段階 1 の `qtyCap 50`)と違う(段階 1 の上限 5 BTC)。`dapi.binance.com/dapi/v1/leverageBracket` は HTTP 451(地域制限)。オーナー PC の経路は不要になった。
