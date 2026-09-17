@@ -7048,3 +7048,58 @@ L-193 への返答の sha256: a63553da155ce9a0(監査なし、オーナー指示
 オーナーの負荷: 変わらない(オーナーに求めるのは §0.1 の空行への 1 回の答えだけ。ただし上の「472/379/99」と「055 が無い」を直さずに出すと、オーナーが問い直すことになり増える。いずれもリードが自分で直せる)
 品質: 上がる(原文の問いにデータで答え、符号・母集団を書き分け、原文の「建玉」に寄せた測り方を出している。直す 6 件はいずれも数字・語の精度で、方向の誤りではない)
 判定: 通す
+
+## 056 — L-195(3つとも進めてください)の実施: 建玉プロファイルからの距離、維持証拠金率の一次資料、レバレッジ換算、検収と提示(2026-09-17)
+
+**オーナーの逐語**: L-195「**3つとも進めてください**」(3 行の文面はリードの返答 055 の対応表の左列。オーナー自身の語ではない)/ L-194「**約定(建玉)が積み上がった位置から離れた位置で清算が起きるのは当たり前だから結果は納得です。レバレッジの大きさによってその距離が近づくと思います。約定のレバレッジは測りにくいので、どのくらい約定から価格が離れると清算が起きるのか測れませんか？**」。
+
+一手: L-195 を `OWNER_LOG` / `OWNER_STATUS` に記録してコミット(e2b4fba)→ 委任 2 本を並行(調査班 sonnet = 維持証拠金率の一次資料確認 `docs/DATA/surveys/BINANCE_CM_MMR_2026-09-17.md`、生ログ `docs/DATA/probes/20260917_binance_cm_mmr.log` / opus = `scripts/o3c_oi_distance.py` + `tests/test_o3c_oi_distance.py` + `OI_DISTANCE_2026-09-17.md` + `backtest_data/o3c_oi_distance_20260917/{w8,w24}`)→ リードが検収(下)→ リードが MMR = 0.004 で L を換算し §7 を足した → `owner-auditor` 10 件(止める 1・直す 4・聞く 5)、全部処置(`VERDICTS/2026-09-17_oi_distance.md`)→ `owner-model-auditor` に返答を掛けて提示。
+
+### 検収のコマンドと出力(リード、2026-09-17)
+
+```
+$ python3 - (w8/w24 の table.csv と summary.json を読む。L = 1/(d/1e4 + 0.004)、d/1e4 + 0.004 <= 0 は除外)
+w8 rows 106796 liq 53398 nan oi 15553 summary nan {... 'oi_dist_vwap_bp_liqdir': 15553 ...}
+  SELL 約定VWAP: n=32826 有効=30020 L q10/25/50/75/90 = [ 33.9  48.8  75.  116.8 196.3]  (d中央値 83.7bp)
+  SELL 建玉平均建値: n=23067 有効=21039 L q10/25/50/75/90 = [ 32.2  48.1  74.9 116.1 188.6]  (d中央値 83.0bp)
+  SELL 側別平均建値: n=23067 有効=21063 L q10/25/50/75/90 = [ 31.9  47.8  74.4 115.4 187.4]  (d中央値 84.0bp)
+  BUY 約定VWAP: n=20572 有効=18951 L q10/25/50/75/90 = [ 36.7  49.1  70.5 106.3 166.6]  (d中央値 92.8bp)
+  BUY 建玉平均建値: n=14778 有効=13689 L q10/25/50/75/90 = [ 34.9  47.8  70.2 108.4 165.9]  (d中央値 93.3bp)
+  BUY 側別平均建値: n=14778 有効=13698 L q10/25/50/75/90 = [ 34.8  47.5  69.8 107.1 164.5]  (d中央値 94.6bp)
+  summary q50 SELL {'dist_vwap_bp_liqdir': 83.7, 'dist_node_bp_liqdir': 55.9, 'oi_dist_vwap_bp_liqdir': 83.0, 'oi_dist_node_bp_liqdir': 54.4, 'oi_side_dist_vwap_bp_liqdir': 84.0, 'oi_side_dist_node_bp_liqdir': 56.2}
+  summary q50 BUY {'dist_vwap_bp_liqdir': 92.8, 'dist_node_bp_liqdir': 60.7, 'oi_dist_vwap_bp_liqdir': 93.3, 'oi_dist_node_bp_liqdir': 53.0, 'oi_side_dist_vwap_bp_liqdir': 94.6, 'oi_side_dist_node_bp_liqdir': 54.9}
+w24 rows 106796 liq 53398 nan oi 15426
+  SELL 約定VWAP: n=32826 有効=27066 L q10/25/50/75/90 = [ 24.5  35.3  56.4 101.7 201.2]  (d中央値 102.4bp)
+  SELL 建玉平均建値: n=23033 有効=18937 L q10/25/50/75/90 = [ 24.2  36.9  58.3 103.3 200.2]  (d中央値 97.3bp)
+  SELL 側別平均建値: n=23033 有効=18971 L q10/25/50/75/90 = [ 23.8  36.7  58.1 103.  199.4]  (d中央値 97.8bp)
+  BUY 約定VWAP: n=20572 有効=17696 L q10/25/50/75/90 = [ 25.9  34.1  51.6  88.3 165.4]  (d中央値 127.1bp)
+  BUY 建玉平均建値: n=14939 有効=13107 L q10/25/50/75/90 = [ 23.6  32.8  50.6  90.1 171.4]  (d中央値 132.1bp)
+  BUY 側別平均建値: n=14939 有効=13135 L q10/25/50/75/90 = [ 23.6  32.6  50.4  89.4 171.4]  (d中央値 133.6bp)
+  summary q50 SELL {'dist_vwap_bp_liqdir': 102.4, 'dist_node_bp_liqdir': 56.4, 'oi_dist_vwap_bp_liqdir': 97.3, 'oi_dist_node_bp_liqdir': 50.9, 'oi_side_dist_vwap_bp_liqdir': 97.8, 'oi_side_dist_node_bp_liqdir': 52.2}
+  summary q50 BUY {'dist_vwap_bp_liqdir': 127.1, 'dist_node_bp_liqdir': 70.3, 'oi_dist_vwap_bp_liqdir': 132.1, 'oi_dist_node_bp_liqdir': 54.5, 'oi_side_dist_vwap_bp_liqdir': 133.6, 'oi_side_dist_node_bp_liqdir': 57.2}
+$ for d in w8 w24; do (cd backtest_data/o3c_oi_distance_20260917/$d && md5sum -c MD5SUMS); done
+table.csv: OK / summary.json: OK / table.csv: OK / summary.json: OK
+$ grep -c '\./' backtest_data/o3c_oi_distance_20260917/*/MD5SUMS
+w24/MD5SUMS:0  w8/MD5SUMS:0
+$ python3 - (§7 の表の行。L > 125 の割合を含む)
+| 8h | SELL | 約定 VWAP | 32,826 | 30,020 | 2,806 | 22.0% | 34 | 49 | 75 | 117 | 196 |
+| 8h | SELL | 建玉 平均建値 | 23,067 | 21,039 | 2,028 | 21.6% | 32 | 48 | 75 | 116 | 189 |
+| 8h | SELL | 側別 平均建値 | 23,067 | 21,063 | 2,004 | 21.3% | 32 | 48 | 74 | 115 | 187 |
+| 8h | BUY | 約定 VWAP | 20,572 | 18,951 | 1,621 | 17.9% | 37 | 49 | 71 | 106 | 167 |
+| 8h | BUY | 建玉 平均建値 | 14,778 | 13,689 | 1,089 | 18.5% | 35 | 48 | 70 | 108 | 166 |
+| 8h | BUY | 側別 平均建値 | 14,778 | 13,698 | 1,080 | 18.1% | 35 | 48 | 70 | 107 | 164 |
+| 24h | SELL | 約定 VWAP | 32,826 | 27,066 | 5,760 | 18.8% | 25 | 35 | 56 | 102 | 201 |
+| 24h | SELL | 建玉 平均建値 | 23,033 | 18,937 | 4,096 | 19.0% | 24 | 37 | 58 | 103 | 200 |
+| 24h | SELL | 側別 平均建値 | 23,033 | 18,971 | 4,062 | 18.7% | 24 | 37 | 58 | 103 | 199 |
+| 24h | BUY | 約定 VWAP | 20,572 | 17,696 | 2,876 | 15.1% | 26 | 34 | 52 | 88 | 165 |
+| 24h | BUY | 建玉 平均建値 | 14,939 | 13,107 | 1,832 | 15.8% | 24 | 33 | 51 | 90 | 171 |
+| 24h | BUY | 側別 平均建値 | 14,939 | 13,135 | 1,804 | 15.9% | 24 | 33 | 50 | 89 | 171 |
+$ python3 - (監査の指摘 4: 想定元本 = qty*100/p_liq)
+liq rows 53398 notional<50BTC 53396 99.996% max notional BTC 115.8 q99 5.65
+$ PYTHONPATH=src timeout 590 python -m pytest tests/ -p no:cacheprovider 2>&1 | tail -2
+1986 passed, 1 skipped in 343.82s (0:05:43)     → 収集 1,987 = 1,974 + 13
+$ grep -n '予測できる\|使える\|有効' docs/PHASE2/O3C/PRICE_LEVEL/OI_DISTANCE_2026-09-17.md
+7:(禁止の宣言の行)  25:(原文の引用)  508:(「1 つも書いていない」の行)   → 判定語の使用 0
+```
+
+納品前の監査: `owner-auditor` 止める 1・直す 4・聞く 5 = 10 件、全部処置(`VERDICTS/2026-09-17_oi_distance.md`)。`CLAUDE.md` §3 のテスト件数を 1,987 に更新。
