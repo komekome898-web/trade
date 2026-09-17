@@ -34,6 +34,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from bot.research.liq_response import (  # noqa: E402
+    ANCHOR_BEFORE_PRICE_KEY,
     INTERNAL_BP_KEY,
     Cascade,
     LiquidationEvent,
@@ -701,6 +702,132 @@ def run_policy4_table(horizon: int = HORIZON_MIN) -> None:
                   + " ".join(f"{p}={stats[p][0]['n_tie_resolved']}" for p in CANDIDATE_POLICIES))
 
 
+# --------------------------------------------------------------------------- #
+# 起点価格の取り直し(2026-09-17、L-184「案Bで進めてください」)
+# --------------------------------------------------------------------------- #
+# **2026-09-16 の測定の続き。**そこでの実測(`REPORT_2026-09-16_policy4.md` §4):
+# タイ行で壊れているのは**向きではなく起点価格**で、`anchor_price` =
+# `at_or_before(end_ms)` がカスケードの手前の点に戻り、反応 bp に
+# カスケード自身の値動きが混ざる。**符号だけを変える方針では直せない**(同 §4 の到達範囲)。
+# ここでは起点そのものの置き方を 3 通り測る。
+#
+# **8 行の場面・種・N・地平線・仕込み ±20.0bp・許容 ±3.0bp は 09-16 と同じ。場面を減らさない。**
+# 既存の列(`keep` / `drop`)は比較の土台としてそのまま並べる。
+#
+# **必要条件**(2026-09-17 の事前登録、逐語):
+#   (a) 実群と対照群に同じ規則・同じ入力で当てる(実群だけの first_price/last_price を使わない)
+#   (b) 行を落とさない(対照群 n_used = n_rows、除外率の差 < 0.10)
+#   (c) 反応 `bp_*` の値を起点の決定に使わない
+# 3 つとも `compute_reactions` の `anchor` 引数の docstring に、どう満たすかを書いた。
+
+#: (表示名, `compute_reactions(anchor=...)`, 内部方向の終点に使う列)
+ANCHOR_CANDIDATES: tuple[tuple[str, str, str], ...] = (
+    # ① 起点 = 終点以後の最初の点。反応窓の終点はずらさない(`at_or_before(end+h)`)。
+    ("①after", "after", "anchor_price"),
+    # ② 起点は①と同じ。反応窓の終点を起点に合わせてずらす(`at_or_before(anchor_ts+h)`)。
+    ("②after_shift", "after_shift", "anchor_price"),
+    # ③ 起点は①と同じだが、**内部方向の終点だけ従来の点(`at_or_before(end)`)に据え置く**。
+    ("③after_int_before", "after", ANCHOR_BEFORE_PRICE_KEY),
+)
+
+
+def _anchor_window_stats(real_rows: list[dict], prices: PriceSeries,
+                          horizon_min: int, mode: str) -> tuple[float, float]:
+    """反応窓が両端でどれだけ食われたかの平均(ms)を返す。**合否には入れない。**
+
+    事前登録の「合わせて測る」。反応窓は 2 か所で短くなる:
+
+    - **起点側**: 起点を `at_or_after(end_ms)` に置くと `anchor_ts - end_ms` だけ、
+      反応の立ち上がりを起点が食う。
+    - **終点側**: 窓の終点は `at_or_before(目標時刻)` なので、粗い系列では
+      `目標時刻 - 実際に引けた点の時刻` だけ手前に落ちる。合成データの価格は
+      `end + h` で頂点に達してそのあと平らなので、食われるのは
+      `max(0, (end + h) - 実際の点)` だけである。
+
+    予想される過小 = 仕込み × (起点側 + 終点側) / h。
+    """
+    h_ms = horizon_min * 60_000
+    a_list: list[float] = []
+    f_list: list[float] = []
+    for r in real_rows:
+        if r.get("anchor_ts_ms") is None:
+            continue
+        a_ts, e_ms = int(r["anchor_ts_ms"]), int(r["end_ms"])
+        a_list.append(a_ts - e_ms)
+        target = (a_ts if mode == "after_shift" else e_ms) + h_ms
+        fut = prices.at_or_before(target, 300_000)
+        if fut is None:
+            continue
+        f_list.append(max(0, (e_ms + h_ms) - fut[0]))
+    a = sum(a_list) / len(a_list) if a_list else float("nan")
+    f = sum(f_list) / len(f_list) if f_list else float("nan")
+    return a, f
+
+
+def run_anchor_table(horizon: int = HORIZON_MIN) -> None:
+    """8 行 ×(既存 keep/drop + 候補 3 つの keep)を出す。**判定はここではしない。**"""
+    print("\n" + "=" * 78)
+    print("起点価格の取り直し(2026-09-17)")
+    print("=" * 78)
+    print("  場面・種・N・地平線は 09-16 の 8 行と同じ。列に候補 3 つを足した。")
+    print(f"  仕込み ±{R_BP}bp / 許容 ±{TOLERANCE_BP}bp / 種 {SEED} / 地平線 {horizon} 分")
+    print("  候補(起点をどの点に置くか):")
+    print("    ①after            : 起点 = at_or_after(end_ms)。窓の終点は at_or_before(end_ms+h) のまま")
+    print("    ②after_shift      : 起点 = ①と同じ。窓の終点を at_or_before(anchor_ts+h) にずらす")
+    print("    ③after_int_before : 起点 = ①と同じ。**内部方向の終点だけ従来の at_or_before(end_ms)** に据え置く")
+    print("  タイ方針はすべて `keep`(群で対称な既定)。候補は起点だけを変える。")
+    fm = lambda x: "nan" if x is None or x != x else f"{x:+.3f}"
+    for dur_range, bar_ms, lab_d, lab_b in TIE_SCENARIOS:
+        for r_bp, lab_r in ((R_BP, "反転"), (-R_BP, "継続")):
+            dense = build_dense(SEED, r_bp=r_bp, horizon_min=horizon, dur_range=dur_range)
+            bars = to_bars(dense.prices, bar_ms)
+            casc = list(build_cascades(dense.events, "synthetic", gap_ms=GAP_MS)) \
+                   + list(dense.control_cascades)
+            bp_key = f"bp_{horizon}m"
+
+            # --- 既存(比較の土台。`run_policy4_table` と同じ作り方)---
+            base_rows = attach_internal_direction(
+                [dict(x) for x in compute_reactions(casc, bars, (horizon,))], bars)
+            base: dict[str, dict] = {}
+            for pol in ("keep", "drop"):
+                rep = compute_reversal(
+                    {"real": [x for x in base_rows if x["kind"] == "real"],
+                     "control": [x for x in base_rows if x["kind"] == "no_liquidation"]},
+                    bp_key, tie_policy=pol, strict=False)
+                base[pol] = [x for x in rep.summary_rows() if x["group"] == "real"][0]
+            print(f"\n  [{lab_d} / {lab_b}バー / {lab_r}] 仕込み {r_bp:+.1f}bp "
+                  f"許容帯 [{r_bp - TOLERANCE_BP:+.1f}, {r_bp + TOLERANCE_BP:+.1f}]")
+            print(f"    既存 keep={fm(base['keep']['mean'])} "
+                  f"(ずれ {abs(base['keep']['mean'] - r_bp):.3f}) "
+                  f"n_tie={base['keep']['n_tie']}/{base['keep']['n_rows']} | "
+                  f"既存 drop={fm(base['drop']['mean'])} n_used={base['drop']['n_used']}")
+
+            for label, mode, end_key in ANCHOR_CANDIDATES:
+                rows = [dict(x) for x in
+                        compute_reactions(casc, bars, (horizon,), anchor=mode)]
+                rows = attach_internal_direction(rows, bars, end_price_key=end_key)
+                real = [x for x in rows if x["kind"] == "real"]
+                ctrl = [x for x in rows if x["kind"] == "no_liquidation"]
+                rep = compute_reversal({"real": real, "control": ctrl}, bp_key,
+                                        tie_policy="keep", strict=False)
+                rr = [x for x in rep.summary_rows() if x["group"] == "real"][0]
+                cc = [x for x in rep.summary_rows() if x["group"] == "control"][0]
+                m = rr["mean"]
+                dev = float("nan") if m is None or m != m else abs(m - r_bp)
+                a_ms, f_ms = _anchor_window_stats(real, bars, horizon, mode)
+                h_ms = horizon * 60_000
+                pred = abs(r_bp) * (a_ms + f_ms) / h_ms
+                print(f"    {label:<18} {fm(m):>9} (ずれ {dev:6.3f}) "
+                      f"n_tie={rr['n_tie']:>3}/{rr['n_rows']:<3} "
+                      f"実 n_used={rr['n_used']}/{rr['n_rows']} "
+                      f"対照 n_used/n_rows={cc['n_used']}/{cc['n_rows']} "
+                      f"(差{rep.max_exclusion_gap:.3f})")
+                print(f"      └ 窓の短縮: 起点側={a_ms/1000:6.1f}秒"
+                      f"(バー幅の{a_ms/bar_ms:5.1%} / 地平線の{a_ms/h_ms:5.1%}) "
+                      f"終点側={f_ms/1000:6.1f}秒(地平線の{f_ms/h_ms:5.1%}) "
+                      f"→ 予想過小={pred:6.3f}bp")
+
+
 def main() -> int:
     # **ホライズンを指定できるようにする(2026-09-13、測定後監査の指摘)。**
     # 旧版は 15 分に固定。09-13 の実欠陥は「1 分バーの終値」が原因でタイが起きたので、
@@ -992,6 +1119,11 @@ def main() -> int:
     # **合否(overall_pass / 終了コード)には合流させない。**この表は測定であって、
     # 第 4 の方針の合否は事前登録の別の基準(8 行すべてで許容内)で読む(報告書 §4)。
     run_policy4_table(horizon)
+
+    # --- 起点価格の取り直し(2026-09-17)-------------------------------------
+    # **合否(overall_pass / 終了コード)には合流させない。**09-16 の節と同じ扱いで、
+    # 表は測定であり、候補の合否は事前登録の別の基準で読む(報告書 §4)。
+    run_anchor_table(horizon)
 
     print("\n" + "=" * 78)
     print("変異試験のまとめ(検出できたか)")

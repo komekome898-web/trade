@@ -605,3 +605,129 @@ def test_new_policies_fall_back_to_keep_when_the_column_is_absent_or_zero():
         assert g.n_rows == 3 and g.n_used == 3 and g.n_excluded == 0
         assert g.n_tie == 3 and g.n_tie_resolved == 0
         assert g.scores == [0.0, 0.0, 0.0]
+
+
+# --------------------------------------------------------------------------- #
+# (8) 起点価格の取り直し(2026-09-17、L-184「案Bで進めてください」)
+#
+# 09-16 の実測で、タイ行で壊れているのは向きではなく**起点価格**だと分かった
+# (`anchor_price` = `at_or_before(end_ms)` がカスケードの手前の点に戻る)。
+# `compute_reactions(anchor=...)` はその起点の置き方を選ぶ。
+# **既定 `"before"` は従来の挙動そのもので、1 行も変えていない**ことをここで固定する。
+# --------------------------------------------------------------------------- #
+
+def _anchor_casc(cid: str = "a0", kind: str = "real",
+                 start_ms: int = 100, end_ms: int = 150) -> Cascade:
+    return Cascade(cascade_id=cid, exchange="synthetic", kind=kind,
+                   start_ms=start_ms, end_ms=end_ms, n_events=2, total_size=1.0,
+                   direction="long", first_price=100.0, last_price=99.0)
+
+
+def test_at_or_after_returns_the_first_point_at_or_after_and_guards_the_gap():
+    """`at_or_after` は `ts_ms` **以後**の最初の点。系列の外・穴は None(行は呼び出し側で残る)。"""
+    s = PriceSeries.from_trades([(100, 10.0), (200, 20.0), (500, 50.0)])
+    assert s.at_or_after(150) == (200, 20.0)
+    assert s.at_or_after(200) == (200, 20.0)      # ちょうどの点は自分自身
+    assert s.at_or_after(99) == (100, 10.0)
+    assert s.at_or_after(501) is None             # 系列の外
+    assert s.at_or_after(201, max_gap_ms=100) is None   # 299ms 先送り > 上限
+    assert s.at_or_after(201, max_gap_ms=299) == (500, 50.0)
+
+
+def test_default_anchor_before_is_byte_for_byte_the_old_behaviour():
+    """既定 `anchor="before"` の行は従来と同じで、**控えの列も付かない**。"""
+    from bot.research.liq_response import ANCHOR_BEFORE_PRICE_KEY, ANCHOR_BEFORE_TS_KEY
+
+    prices = PriceSeries.from_trades([(90, 100.0), (160, 101.0), (60_150, 102.0)])
+    rows = compute_reactions([_anchor_casc()], prices, (1,))
+    assert rows[0]["anchor_ts_ms"] == 90 and rows[0]["anchor_price"] == 100.0
+    assert ANCHOR_BEFORE_TS_KEY not in rows[0] and ANCHOR_BEFORE_PRICE_KEY not in rows[0]
+    # `at_or_before(150 + 60_000)` = 60_150 の点 → (102-100)/100 = +200bp
+    assert rows[0]["bp_1m"] == 200.0
+
+
+def test_anchor_after_moves_the_anchor_past_the_cascade_and_keeps_the_old_one():
+    """`anchor="after"` = `at_or_after(end_ms)`。従来の起点は控えの列に残る。"""
+    from bot.research.liq_response import ANCHOR_BEFORE_PRICE_KEY, ANCHOR_BEFORE_TS_KEY
+
+    prices = PriceSeries.from_trades([(90, 100.0), (160, 101.0), (60_150, 102.0)])
+    rows = compute_reactions([_anchor_casc()], prices, (1,), anchor="after")
+    assert rows[0]["anchor_ts_ms"] == 160 and rows[0]["anchor_price"] == 101.0
+    assert rows[0][ANCHOR_BEFORE_TS_KEY] == 90
+    assert rows[0][ANCHOR_BEFORE_PRICE_KEY] == 100.0
+    # 窓の終点はずらさない(`at_or_before(end_ms + h)` のまま)→ (102-101)/101
+    assert math.isclose(rows[0]["bp_1m"], (102.0 - 101.0) / 101.0 * 10_000.0)
+
+
+def test_anchor_after_shift_moves_the_window_end_with_the_anchor():
+    """`after_shift` は窓の終点も `anchor_ts + h` にずらす(窓の幅を h に保つ)。"""
+    prices = PriceSeries.from_trades(
+        [(90, 100.0), (160, 101.0), (60_150, 102.0), (60_160, 103.0)])
+    keep_end = compute_reactions([_anchor_casc()], prices, (1,), anchor="after")[0]
+    shifted = compute_reactions([_anchor_casc()], prices, (1,), anchor="after_shift")[0]
+    # `after`: at_or_before(150+60_000) = 60_150 の 102.0
+    # `after_shift`: at_or_before(160+60_000) = 60_160 の 103.0
+    assert math.isclose(keep_end["bp_1m"], (102.0 - 101.0) / 101.0 * 10_000.0)
+    assert math.isclose(shifted["bp_1m"], (103.0 - 101.0) / 101.0 * 10_000.0)
+    assert keep_end["anchor_ts_ms"] == shifted["anchor_ts_ms"] == 160
+
+
+def test_anchor_after_applies_the_same_rule_to_both_groups_and_drops_no_row():
+    """(a) 群で同じ規則・同じ入力 / (b) 引けない行も NaN で**残す**。"""
+    prices = PriceSeries.from_trades([(90, 100.0), (160, 101.0), (60_150, 102.0)])
+    cascs = [_anchor_casc("r0", "real"),
+             _anchor_casc("c0", "no_liquidation"),
+             # 系列の外(起点が引けない)行も落とさない
+             _anchor_casc("r1", "real", start_ms=10**9, end_ms=10**9 + 50)]
+    rows = compute_reactions(cascs, prices, (1,), anchor="after")
+    assert len(rows) == 3
+    # 実群と対照群は同じ時刻なので**同じ起点**が付く(実群だけの値を読んでいない証拠)
+    assert rows[0]["anchor_ts_ms"] == rows[1]["anchor_ts_ms"] == 160
+    assert rows[0]["anchor_price"] == rows[1]["anchor_price"] == 101.0
+    assert rows[2]["anchor_ts_ms"] is None and math.isnan(rows[2]["bp_1m"])
+
+
+def test_anchor_choice_does_not_read_the_reaction():
+    """(c) 起点は時刻だけで決まる。**反応窓の中の価格を変えても起点は動かない。**"""
+    base = [(90, 100.0), (160, 101.0)]
+    a = compute_reactions([_anchor_casc()],
+                          PriceSeries.from_trades(base + [(60_150, 102.0)]),
+                          (1,), anchor="after")[0]
+    b = compute_reactions([_anchor_casc()],
+                          PriceSeries.from_trades(base + [(60_150, 999.0)]),
+                          (1,), anchor="after")[0]
+    assert a["anchor_ts_ms"] == b["anchor_ts_ms"] == 160
+    assert a["anchor_price"] == b["anchor_price"] == 101.0
+    assert a["bp_1m"] != b["bp_1m"]      # 反応だけが変わる
+
+
+def test_internal_direction_follows_the_anchor_unless_the_old_column_is_asked_for():
+    """内部方向の終点は既定で**起点に追随**する(= 候補③の字義どおりの形が候補①と恒等)。
+
+    `end_price_key=ANCHOR_BEFORE_PRICE_KEY` を渡したときだけ、
+    内部方向の終点が従来の点(`at_or_before(end_ms)`)に据え置かれる。
+    """
+    from bot.research.liq_response import (
+        ANCHOR_BEFORE_PRICE_KEY, INTERNAL_BP_KEY, attach_internal_direction,
+    )
+
+    prices = PriceSeries.from_trades([(90, 100.0), (160, 101.0), (60_150, 102.0)])
+    rows = compute_reactions([_anchor_casc()], prices, (1,), anchor="after")
+    # 既定: 起点(160 の 101.0)が終点 → (101-100)/100 = +100bp(タイではない)
+    follow = attach_internal_direction([dict(rows[0])], prices)
+    assert follow[0][INTERNAL_BP_KEY] == 100.0
+    # 据え置き: 従来の起点(90 の 100.0)が終点 → 0.0(タイのまま)
+    held = attach_internal_direction([dict(rows[0])], prices,
+                                     end_price_key=ANCHOR_BEFORE_PRICE_KEY)
+    assert held[0][INTERNAL_BP_KEY] == 0.0
+
+
+def test_unknown_anchor_is_rejected():
+    """綴り間違いを黙って既定に落とさない(黙って古い挙動に戻るのが一番危ない)。"""
+    prices = PriceSeries.from_trades([(90, 100.0)])
+    try:
+        compute_reactions([_anchor_casc()], prices, (1,), anchor="後ろ")  # type: ignore[arg-type]
+    except ValueError as exc:
+        assert "anchor" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("不正な anchor が素通りした")

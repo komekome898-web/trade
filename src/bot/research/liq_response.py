@@ -299,12 +299,42 @@ class PriceSeries:
             return None
         return found_ts, self.price[idx]
 
+    def at_or_after(
+        self, ts_ms: int, max_gap_ms: int | None = None
+    ) -> tuple[int, float] | None:
+        """`ts_ms` **以後**で最も古い点を返す(2026-09-17 追加。起点価格の取り直し用)。
+
+        **`at_or_before` の先読み防止の保証はこの関数には無い。**返るのは `ts_ms` 以後の点、
+        つまり呼び出し時刻より**未来**の点である。だからこの関数を「反応 bp の終点」や
+        「予測に使う特徴量」に使ってはならない。**用途は起点(anchor)を
+        カスケード終了『以後』の点に置くことだけ**で、その場合でも
+        「起点の選び方に未来の価格を使う」ことはしていない(選ぶ規則は時刻だけで決まる)。
+
+        `max_gap_ms` は「`ts_ms` からどれだけ先送りしてよいか」の上限(穴の防御)。
+        超えたら `None` を返す = 呼び出し側は NaN として行を残す。
+        """
+        idx = bisect.bisect_left(self.ts_ms, ts_ms)
+        if idx >= len(self.ts_ms):
+            return None
+        found_ts = self.ts_ms[idx]
+        if max_gap_ms is not None and found_ts - ts_ms > max_gap_ms:
+            return None
+        return found_ts, self.price[idx]
+
 
 # --------------------------------------------------------------------------- #
 # 核 2: 反応窓の切り出し
 # --------------------------------------------------------------------------- #
 
 DEFAULT_HORIZONS_MIN: tuple[int, ...] = (1, 5, 15, 60)
+
+#: 起点価格の取り方。`"before"` が従来の唯一の挙動(既定・1 行も変えていない)。
+AnchorMode = Literal["before", "after", "after_shift"]
+
+#: `anchor != "before"` のときだけ行に入る、**従来の起点**の控え(列名)。
+#: 内部方向の終点を従来の点に据え置く候補(報告書の候補③)がこれを読む。
+ANCHOR_BEFORE_TS_KEY = "anchor_before_ts_ms"
+ANCHOR_BEFORE_PRICE_KEY = "anchor_before_price"
 
 
 def compute_reactions(
@@ -313,6 +343,7 @@ def compute_reactions(
     horizons_min: Sequence[int] = DEFAULT_HORIZONS_MIN,
     anchor_max_staleness_ms: int | None = 300_000,
     future_max_staleness_ms: int | None = 300_000,
+    anchor: AnchorMode = "before",
 ) -> list[dict]:
     """カスケード終了時刻を起点に、`horizons_min` 分後の bp 変化を計算する。
 
@@ -327,10 +358,53 @@ def compute_reactions(
     戻り値は 1 カスケード = 1 dict。行は**落とさない**(起点や将来価格が引けない場合は
     その `bp_{h}m` を `float("nan")` にするだけで、カスケード自体の行は必ず出す)。
     ここでは平均や有意性は計算しない(判定はしない)。
+
+    ---
+    **`anchor`(2026-09-17 追加。起点価格の取り直し)**
+
+    2026-09-16 の測定(`docs/PHASE2/INSTRUMENT_VERIFY/REPORT_2026-09-16_policy4.md` §4)で、
+    タイの場面で壊れているのは**向きではなく起点価格**だと実測された。粗い系列では
+    `at_or_before(end_ms)` が**カスケードの手前の点**に戻り、反応 bp に
+    カスケード自身の値動きが丸ごと混ざる。`anchor` はその起点の置き方を選ぶ。
+
+    - `"before"`(**既定・従来の挙動**): 起点 = `at_or_before(end_ms)`、
+      反応窓の終点 = `at_or_before(end_ms + h)`。
+    - `"after"`: 起点 = `at_or_after(end_ms)`(**終点以後の最初の点**)。
+      反応窓の終点は**ずらさない** = `at_or_before(end_ms + h)`。
+    - `"after_shift"`: 起点は `"after"` と同じ。反応窓の終点を**起点に合わせてずらす**
+      = `at_or_before(anchor_ts + h)`。窓の幅を h に保つ取り方。
+
+    `anchor != "before"` のとき、行には従来の起点の控え
+    (`anchor_before_ts_ms` / `anchor_before_price`)も入る。**既定では入らない**ので、
+    従来の呼び出しが返す行の中身は 1 つも変わらない。
+
+    2026-09-17 の事前登録の必要条件への対応(3 つとも `"after"` 系に共通):
+
+    - (a) **実群と対照群に同じ規則・同じ入力で当てる**: 起点を決める入力は
+      `prices`(両群に同じ系列)と `cascade.end_ms` だけ。実群だけが持つ
+      `first_price` / `last_price` は読まない。群ごとの分岐も無い。
+    - (b) **行を落とさない**: 起点や将来価格が引けない行も `bp_*` を NaN にして行は残す
+      (`"before"` と同じ約束)。`at_or_after` は `anchor_max_staleness_ms` を
+      「先送りしてよい上限」として使う。
+    - (c) **反応 `bp_*` の値を起点の決定に使わない**: 起点の選び方は時刻だけで決まる
+      (`bisect` の位置)。価格は選んだあとに読む。
+
+    **射程(合否とは別に必ず書く)**: `"after"` 系の起点は `end_ms` 以後にあるので、
+    **反応窓 `[end_ms, end_ms + h]` の冒頭を起点が食う**。食われる幅は
+    `anchor_ts - end_ms`(最大で系列の点間隔 = バー幅)で、その分だけ反応は
+    **構造的に過小**になる。予想される過小は `仕込み × (anchor_ts - end_ms) / h`。
+    これは欠陥ではなく**この取り方の定義そのもの**であり、
+    `scripts/verify_liq_instrument.py` の「起点価格の取り直し」の節が毎回実測して印字する。
     """
+    if anchor not in ("before", "after", "after_shift"):
+        raise ValueError(f"anchor は before / after / after_shift のいずれか: {anchor!r}")
     rows: list[dict] = []
     for c in cascades:
-        anchor = prices.at_or_before(c.end_ms, anchor_max_staleness_ms)
+        legacy = prices.at_or_before(c.end_ms, anchor_max_staleness_ms)
+        if anchor == "before":
+            anchor_pt = legacy
+        else:
+            anchor_pt = prices.at_or_after(c.end_ms, anchor_max_staleness_ms)
         row: dict = {
             "cascade_id": c.cascade_id,
             "exchange": c.exchange,
@@ -344,16 +418,21 @@ def compute_reactions(
             "direction": c.direction,
             "first_price": c.first_price,
             "last_price": c.last_price,
-            "anchor_ts_ms": anchor[0] if anchor else None,
-            "anchor_price": anchor[1] if anchor else float("nan"),
+            "anchor_ts_ms": anchor_pt[0] if anchor_pt else None,
+            "anchor_price": anchor_pt[1] if anchor_pt else float("nan"),
         }
+        if anchor != "before":
+            row[ANCHOR_BEFORE_TS_KEY] = legacy[0] if legacy else None
+            row[ANCHOR_BEFORE_PRICE_KEY] = legacy[1] if legacy else float("nan")
         for h in horizons_min:
             col = f"bp_{h}m"
-            if anchor is None:
+            if anchor_pt is None:
                 row[col] = float("nan")
                 continue
-            fut = prices.at_or_before(c.end_ms + h * 60_000, future_max_staleness_ms)
-            row[col] = float("nan") if fut is None else (fut[1] - anchor[1]) / anchor[1] * 10_000.0
+            base_ts = anchor_pt[0] if anchor == "after_shift" else c.end_ms
+            fut = prices.at_or_before(base_ts + h * 60_000, future_max_staleness_ms)
+            row[col] = (float("nan") if fut is None
+                        else (fut[1] - anchor_pt[1]) / anchor_pt[1] * 10_000.0)
         rows.append(row)
     return rows
 
@@ -426,6 +505,7 @@ def attach_internal_direction(
     max_staleness_ms: int | None = 300_000,
     key: str = INTERNAL_BP_KEY,
     fine_key: str = INTERNAL_BP_FINE_KEY,
+    end_price_key: str = "anchor_price",
 ) -> list[dict]:
     """各行に「内部の値動き」(窓の始め → 終わりの価格変化、bp)を 2 つの分解能で付ける。
 
@@ -439,10 +519,15 @@ def attach_internal_direction(
 
     行は**落とさない**(`compute_reactions` と同じ約束)。引けない行は NaN を入れるだけ。
     戻り値は入力の `rows` そのもの(その場で書き込む)。
+
+    `end_price_key`(2026-09-17 追加、既定は従来どおり `"anchor_price"`): 粗い内部方向の
+    **終点**にどの列を使うか。`compute_reactions(anchor="after"...)` で起点を動かすと
+    この列も一緒に動く(同じ点に揃う)。**起点だけ動かして内部方向の終点は従来の点に
+    据え置きたい**とき(報告書の候補③)に `ANCHOR_BEFORE_PRICE_KEY` を渡す。
     """
     for r in rows:
         anchor_start = prices.at_or_before(int(r["start_ms"]), max_staleness_ms)
-        end_price = _as_float(r.get("anchor_price"))
+        end_price = _as_float(r.get(end_price_key))
         if anchor_start is None or end_price != end_price or not anchor_start[1]:
             r[key] = float("nan")
         else:
