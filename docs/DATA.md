@@ -130,6 +130,7 @@
 | Binance liquidationSnapshot 欠落 3 日の再プローブ | `https://data.binance.vision/data/futures/{um,cm}/daily/liquidationSnapshot/…-2023-09-09.zip` | 2023-09-09 のみ今回(他 2 日は 09-14 の実測) | 試行して不可(UM・CM とも HTTP 404 `NoSuchKey`、方法: GET、実測 2026-09-17) | 2026-09-17 | `docs/DATA/probes/20260917_o3c_missing.log` | O-3c 段 2 の 3 件目(§8) |
 | Binance USD-M `openInterestHist`(REST) | `https://fapi.binance.com/futures/data/openInterestHist` | 該当なし | 試行して不可(HTTP 451 地域制限、方法: GET、この環境。PC 未確認) | 2026-09-17 | `docs/DATA/probes/20260917_o3c_missing.log` | O-3c 段 2 の 3 件目(§1) |
 | Binance COIN-M aggTrades の補遺 1 日(2023-06-24) | `backtest_data/binance_cm_o3c_supp_20260917/aggTrades/BTCUSD_PERP/` | 2023-06-24 の 1 日(89,972 行)、公式 `.CHECKSUM` の sha256 一致 | 取得済(本体 `binance_cm_o3c_20260913` は 06-25 始まりで、1 件目の窓 24h の最初の日が短かったため) | 2026-09-17 | `docs/AUDITOR/ACTION_LOG.md` 051 | O-3c 1 件目(`o3c_price_level_full_20260917`) |
+| Binance COIN-M `liquidationSnapshot` の重複行 | `backtest_data/binance_cm_o3c_20260913/liquidationSnapshot/BTCUSD_PERP/` | 472 日・106,822 行のうち一意 53,398(全列一致の行が 2 回ずつ。多重度 2 が 53,385 群・4 が 13 群) | 取得済(**1 件の清算 = 2 行**。件数を数えるときは全列一致で一意化する。分位・割合は不変) | 2026-09-17 | `docs/AUDITOR/ACTION_LOG.md` 053(リード実測) | O-3c 1 件目(`PRICE_LEVEL/EXT_2026-09-17.md` §2.0) |
 
 ## 3. 国内暗号資産(bitFlyer 以外)
 

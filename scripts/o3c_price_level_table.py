@@ -347,6 +347,45 @@ def prev_day(day: str) -> str:
     return d.isoformat()
 
 
+def required_prev_days(window_hours: float) -> int:
+    """窓 W を満たすために読む「前の日」の日数。W=24h → 1、W=72h → 3、W=8h → 1。
+
+    その日の 00:00:00 に起きた清算でも W 時間ぶん遡れるように、ceil(W / 24) 日を読む。
+    """
+    return max(1, int(math.ceil(window_hours / 24.0)))
+
+
+def prev_days(day: str, n: int) -> list[str]:
+    """`day` の前 n 日を古い順に返す。"""
+    d0 = _dt.datetime.strptime(day, "%Y-%m-%d").date()
+    return [(d0 - _dt.timedelta(days=i)).isoformat() for i in range(n, 0, -1)]
+
+
+def days_needed(day: str, window_hours: float) -> list[str]:
+    """`day` を処理するのに要る aggTrades の日(前の日 + 当日)。"""
+    return prev_days(day, required_prev_days(window_hours)) + [day]
+
+
+def bundle_ranges(times_ms: Sequence[int], gap_ms: int = 60_000) -> list[tuple[int, int]]:
+    """時刻列(昇順)を束ねて、各束の [開始添字, 終了添字](両端含む)を返す。
+
+    束ね方は `src/bot/research/liq_response.py: build_cascades` と同じ定義:
+    直前のイベントから `gap_ms` を**超えて**空いたら新しい束に切る
+    (`gap_ms` ちょうどは同じ束に残す。同一 ms は当然同じ束)。
+    """
+    n = len(times_ms)
+    if n == 0:
+        return []
+    out: list[tuple[int, int]] = []
+    start = 0
+    for i in range(1, n):
+        if times_ms[i] - times_ms[i - 1] > gap_ms:
+            out.append((start, i - 1))
+            start = i
+    out.append((start, n - 1))
+    return out
+
+
 def process_day(
     day: str,
     root: Path,
@@ -355,12 +394,18 @@ def process_day(
     seed: int,
     agg_cache: dict | None = None,
     liq_price_field: str = DEFAULT_LIQ_PRICE_FIELD,
+    bundle_gap_ms: int | None = None,
 ) -> tuple[list[dict], dict]:
     """1 日分の清算行 + 対照行を作る。戻り値は (行の一覧, その日のメモ)。
 
     liq_price_field: `p_liq` に入れる liquidationSnapshot の列。
       `average_price` = 実際に約定した価格(既定)。
       `price` = 強制決済注文の指値(直前価格から ±35〜40bp ずれた帯になる)。
+
+    bundle_gap_ms: `None`(既定)なら清算 1 件ずつ。整数を渡すと、その間隔以内に並んだ
+      清算を 1 つの束にまとめ(`bundle_ranges`)、**各束の最初の 1 件だけ**を清算行にする。
+      その場合、行に `bundle_n_events`(束の件数)と `bundle_total_qty`(束の数量合計)が付き、
+      対照は束の最初の時刻から ±5 分以上離れた点を束と同数引く。
     """
     if liq_price_field not in LIQ_PRICE_FIELDS:
         raise ValueError(f"--liq-price-field は {LIQ_PRICE_FIELDS} のどれか")
@@ -373,17 +418,26 @@ def process_day(
             cache[d] = load_agg_trades(agg_path(root, d))
         return cache[d]
 
-    parts = []
+    n_prev = required_prev_days(window_hours)
+    prevs = prev_days(day, n_prev)
+    loaded_prev = [d for d in prevs if agg_path(root, d).exists()]
+    missing_prev = [d for d in prevs if d not in loaded_prev]
     prev = prev_day(day)
-    prev_present = agg_path(root, prev).exists()
-    if prev_present:
-        parts.append(agg(prev))
+    prev_present = prev in loaded_prev
+
+    parts = [agg(d) for d in loaded_prev]
     parts.append(agg(day))
-    times = np.concatenate([p[0] for p in parts])
-    prices = np.concatenate([p[1] for p in parts])
-    qtys = np.concatenate([p[2] for p in parts])
-    order = np.argsort(times, kind="stable")
-    times, prices, qtys = times[order], prices[order], qtys[order]
+    if len(parts) == 1:
+        times, prices, qtys = parts[0]
+    else:
+        times = np.concatenate([p[0] for p in parts])
+        prices = np.concatenate([p[1] for p in parts])
+        qtys = np.concatenate([p[2] for p in parts])
+        # 各日は時刻昇順で、日どうしも古い順に並べているので、通常は既に昇順。
+        # 昇順ならソートを飛ばす(安定ソートの結果と同じ。W=72h で重いのを避けるため)。
+        if not bool(np.all(times[1:] >= times[:-1])):
+            order = np.argsort(times, kind="stable")
+            times, prices, qtys = times[order], prices[order], qtys[order]
 
     liq_all = load_liquidations(liq_path(root, day))
     day_start, day_end = day_bounds_ms(day)
@@ -391,38 +445,81 @@ def process_day(
     # p_liq に使う列が空か 0 の行は落とす(件数は記録する)。
     chosen = pd.to_numeric(liq_all[liq_price_field], errors="coerce")
     keep = chosen.notna() & (chosen > 0)
-    dropped = int((~keep).sum())
-    liq = liq_all[keep].reset_index(drop=True)
+
+    bundles_in_file = None
+    bundles_dropped_no_price = None
+    if bundle_gap_ms is None:
+        dropped = int((~keep).sum())
+        liq = liq_all[keep].reset_index(drop=True)
+        extras: list[dict] = [{} for _ in range(len(liq))]
+        # 除外区間は落とした行も含めた全清算時刻で作る(落ちた行も清算ではあるため)。
+        blocking_times = liq_all["time"].tolist()
+    else:
+        # 束ねてから、各束の**最初の 1 件**だけを残す。
+        ranges = bundle_ranges(liq_all["time"].tolist(), bundle_gap_ms)
+        bundles_in_file = len(ranges)
+        qty_all = pd.to_numeric(liq_all["original_quantity"], errors="coerce").fillna(0.0)
+        # liquidationSnapshot は 1 件の清算が**全列まったく同じ行として 2 回**現れる
+        # (2026-09-17 実測、全 472 日で 106,822 行 -> 一意 53,398 行)。束ね方は同一 ms なので
+        # 変わらないが、束の件数は 2 倍に出る。一意にした件数も並べて置く。
+        uniq_mask = ~liq_all.duplicated(keep="first")
+        first_idx: list[int] = []
+        extras = []
+        bundles_dropped_no_price = 0
+        for a, b in ranges:
+            if not bool(keep.iloc[a]):
+                # 束の最初の 1 件に価格が無い束は落とす(件数は記録する)。
+                bundles_dropped_no_price += 1
+                continue
+            first_idx.append(a)
+            um = uniq_mask.iloc[a : b + 1].to_numpy()
+            extras.append(
+                {
+                    "bundle_n_events": b - a + 1,
+                    "bundle_total_qty": float(qty_all.iloc[a : b + 1].sum()),
+                    "bundle_n_events_dedup": int(um.sum()),
+                    "bundle_total_qty_dedup": float(
+                        qty_all.iloc[a : b + 1].to_numpy()[um].sum()
+                    ),
+                }
+            )
+        dropped = bundles_dropped_no_price
+        liq = liq_all.iloc[first_idx].reset_index(drop=True)
+        # 対照は「束の最初の時刻」から ±5 分以上離す(指示の逐語)。
+        blocking_times = liq["time"].tolist()
 
     rng = random.Random(f"{seed}|{day}")
-    # 除外区間は落とした行も含めた全清算時刻で作る(落ちた行も清算ではあるため)。
     ctrl_times = sample_control_times(
-        liq_all["time"].tolist(), day_start, day_end, len(liq), rng
+        blocking_times, day_start, day_end, len(liq), rng
     )
 
     events: list[dict] = []
-    for r in liq.itertuples(index=False):
-        events.append(
-            {
-                "kind": "liq",
-                "time_ms": int(r.time),
-                "side": str(r.side),
-                "qty": float(r.original_quantity),
-                "p_liq": float(getattr(r, liq_price_field)),
-                "p_avg": float(r.average_price),
-            }
-        )
+    for i, r in enumerate(liq.itertuples(index=False)):
+        ev = {
+            "kind": "liq",
+            "time_ms": int(r.time),
+            "side": str(r.side),
+            "qty": float(r.original_quantity),
+            "p_liq": float(getattr(r, liq_price_field)),
+            "p_avg": float(r.average_price),
+        }
+        ev.update(extras[i])
+        events.append(ev)
     for t in ctrl_times:
-        events.append(
-            {
-                "kind": "control",
-                "time_ms": int(t),
-                "side": "",
-                "qty": "",
-                "p_liq": None,  # p0 を入れる
-                "p_avg": "",
-            }
-        )
+        ev = {
+            "kind": "control",
+            "time_ms": int(t),
+            "side": "",
+            "qty": "",
+            "p_liq": None,  # p0 を入れる
+            "p_avg": "",
+        }
+        if bundle_gap_ms is not None:
+            ev["bundle_n_events"] = ""
+            ev["bundle_total_qty"] = ""
+            ev["bundle_n_events_dedup"] = ""
+            ev["bundle_total_qty_dedup"] = ""
+        events.append(ev)
     events.sort(key=lambda e: (e["time_ms"], e["kind"]))
 
     # 大域のビン範囲(読み込んだ約定の全体)にまたがる密な配列で窓を転がす。
@@ -465,8 +562,7 @@ def process_day(
         st = profile_stats(sub_q, gmin + r0, step, p_liq, p0)
         if not st["p_liq_in_range"]:
             out_of_range += 1
-        rows.append(
-            {
+        row = {
                 "kind": ev["kind"],
                 "time_ms": t,
                 "side": ev["side"],
@@ -483,13 +579,25 @@ def process_day(
                 "total_qty": st["total_qty"],
                 "day": day,
             }
-        )
+        if bundle_gap_ms is not None:
+            for k in (
+                "bundle_n_events",
+                "bundle_total_qty",
+                "bundle_n_events_dedup",
+                "bundle_total_qty_dedup",
+            ):
+                row[k] = ev[k]
+        rows.append(row)
 
     note = {
         "day": day,
         "prev_day": prev,
         "prev_day_agg_present": prev_present,
+        "prev_days_required": prevs,
+        "prev_days_loaded": loaded_prev,
+        "prev_days_missing": missing_prev,
         "liq_rows_in_file": int(len(liq_all)),
+        "liq_rows_unique_in_file": int((~liq_all.duplicated(keep="first")).sum()),
         "liq_rows_dropped_no_price": dropped,
         "liq_price_field": liq_price_field,
         "control_points_drawn": len(ctrl_times),
@@ -498,10 +606,15 @@ def process_day(
         "rows_p_liq_outside_window_range": out_of_range,
         "agg_trades_loaded": int(n_trades),
     }
-    if not prev_present:
+    if bundle_gap_ms is not None:
+        note["bundle_gap_ms"] = bundle_gap_ms
+        note["bundles_in_file"] = bundles_in_file
+        note["bundles_dropped_no_price"] = bundles_dropped_no_price
+    if missing_prev:
         note["warning"] = (
-            f"前日 {prev} の aggTrades zip が無いため、この日の早い時刻の窓は "
-            f"{window_hours} 時間より短い(その日の最初の約定までしか遡れない)。"
+            f"前の日 {', '.join(missing_prev)} の aggTrades zip が無いため、"
+            f"この日の早い時刻の窓は {window_hours} 時間より短い"
+            f"(読めた中で最も古い約定までしか遡れない)。"
         )
     return rows, note
 
@@ -542,6 +655,10 @@ def build_summary(
         ),
         "rows_p_liq_outside_window_range": sum(
             int(n.get("rows_p_liq_outside_window_range", 0)) for n in notes
+        ),
+        "days_with_short_window": [n["day"] for n in notes if "warning" in n],
+        "rows_in_days_with_short_window": sum(
+            int(n.get("rows_written", 0)) for n in notes if "warning" in n
         ),
         "side_counts": {
             str(k): int(v) for k, v in liq["side"].value_counts().items()
@@ -590,7 +707,7 @@ def run(
     cache: dict = {}
     all_rows: list[dict] = []
     notes: list[dict] = []
-    for day in days:
+    for i_day, day in enumerate(days):
         rows, note = process_day(
             day, root, window_hours, bin_pct, seed, cache, liq_price_field
         )
@@ -603,11 +720,10 @@ def run(
             f"(前日 aggTrades: {'有' if note['prev_day_agg_present'] else '無'})",
             flush=True,
         )
-        # 直前 2 日分だけ保持してメモリを抑える
-        keep = {day, prev_day(day)}
-        if days.index(day) + 1 < len(days):
-            nxt = days[days.index(day) + 1]
-            keep |= {nxt, prev_day(nxt)}
+        # 次の日に要る日だけ保持してメモリを抑える(W によって要る前の日の数が変わる)
+        keep = set(days_needed(day, window_hours))
+        if i_day + 1 < len(days):
+            keep |= set(days_needed(days[i_day + 1], window_hours))
         for k in list(cache):
             if k not in keep:
                 del cache[k]
@@ -620,6 +736,7 @@ def run(
         "days": days,
         "window_hours": window_hours,
         "bin_pct": bin_pct,
+        "prev_days_read_per_day": required_prev_days(window_hours),
         "seed": seed,
         "liq_price_field": liq_price_field,
         "control_gap_minutes": CONTROL_GAP_MS / 60000,
@@ -657,8 +774,10 @@ def main(argv: list[str] | None = None) -> int:
         for p in (agg_path(root, d), liq_path(root, d)):
             if not p.exists():
                 raise SystemExit(f"必要な zip が無い: {p}")
-        if not agg_path(root, prev_day(d)).exists():
-            print(f"[注意] 前日 {prev_day(d)} の aggTrades が無い。{d} の窓は短くなる。")
+        miss = [p for p in prev_days(d, required_prev_days(a.window_hours))
+                if not agg_path(root, p).exists()]
+        if miss:
+            print(f"[注意] 前の日 {', '.join(miss)} の aggTrades が無い。{d} の窓は短くなる。")
 
     s = run(
         days,

@@ -1,0 +1,7721 @@
+{
+  "params": {
+    "days": [
+      "2023-06-25",
+      "2023-06-26",
+      "2023-06-27",
+      "2023-06-28",
+      "2023-06-29",
+      "2023-06-30",
+      "2023-07-01",
+      "2023-07-02",
+      "2023-07-03",
+      "2023-07-04",
+      "2023-07-05",
+      "2023-07-06",
+      "2023-07-07",
+      "2023-07-08",
+      "2023-07-09",
+      "2023-07-10",
+      "2023-07-11",
+      "2023-07-12",
+      "2023-07-13",
+      "2023-07-14",
+      "2023-07-15",
+      "2023-07-16",
+      "2023-07-17",
+      "2023-07-18",
+      "2023-07-19",
+      "2023-07-20",
+      "2023-07-21",
+      "2023-07-22",
+      "2023-07-23",
+      "2023-07-24",
+      "2023-07-25",
+      "2023-07-26",
+      "2023-07-27",
+      "2023-07-28",
+      "2023-07-29",
+      "2023-07-30",
+      "2023-07-31",
+      "2023-08-01",
+      "2023-08-02",
+      "2023-08-03",
+      "2023-08-04",
+      "2023-08-05",
+      "2023-08-06",
+      "2023-08-07",
+      "2023-08-08",
+      "2023-08-09",
+      "2023-08-10",
+      "2023-08-11",
+      "2023-08-12",
+      "2023-08-13",
+      "2023-08-14",
+      "2023-08-15",
+      "2023-08-16",
+      "2023-08-17",
+      "2023-08-18",
+      "2023-08-19",
+      "2023-08-20",
+      "2023-08-21",
+      "2023-08-22",
+      "2023-08-23",
+      "2023-08-24",
+      "2023-08-25",
+      "2023-08-26",
+      "2023-08-27",
+      "2023-08-28",
+      "2023-08-29",
+      "2023-08-30",
+      "2023-08-31",
+      "2023-09-01",
+      "2023-09-02",
+      "2023-09-03",
+      "2023-09-04",
+      "2023-09-05",
+      "2023-09-06",
+      "2023-09-07",
+      "2023-09-08",
+      "2023-09-10",
+      "2023-09-11",
+      "2023-09-12",
+      "2023-09-13",
+      "2023-09-14",
+      "2023-09-15",
+      "2023-09-16",
+      "2023-09-17",
+      "2023-09-18",
+      "2023-09-19",
+      "2023-09-20",
+      "2023-09-21",
+      "2023-09-22",
+      "2023-09-24",
+      "2023-09-26",
+      "2023-09-27",
+      "2023-09-28",
+      "2023-09-29",
+      "2023-09-30",
+      "2023-10-01",
+      "2023-10-02",
+      "2023-10-03",
+      "2023-10-04",
+      "2023-10-05",
+      "2023-10-06",
+      "2023-10-07",
+      "2023-10-08",
+      "2023-10-09",
+      "2023-10-10",
+      "2023-10-11",
+      "2023-10-12",
+      "2023-10-13",
+      "2023-10-14",
+      "2023-10-15",
+      "2023-10-16",
+      "2023-10-17",
+      "2023-10-18",
+      "2023-10-19",
+      "2023-10-20",
+      "2023-10-21",
+      "2023-10-22",
+      "2023-10-23",
+      "2023-10-24",
+      "2023-10-25",
+      "2023-10-26",
+      "2023-10-27",
+      "2023-10-28",
+      "2023-10-29",
+      "2023-10-30",
+      "2023-10-31",
+      "2023-11-01",
+      "2023-11-02",
+      "2023-11-03",
+      "2023-11-04",
+      "2023-11-05",
+      "2023-11-06",
+      "2023-11-07",
+      "2023-11-08",
+      "2023-11-09",
+      "2023-11-10",
+      "2023-11-11",
+      "2023-11-12",
+      "2023-11-13",
+      "2023-11-14",
+      "2023-11-15",
+      "2023-11-16",
+      "2023-11-17",
+      "2023-11-18",
+      "2023-11-19",
+      "2023-11-20",
+      "2023-11-21",
+      "2023-11-22",
+      "2023-11-23",
+      "2023-11-24",
+      "2023-11-25",
+      "2023-11-26",
+      "2023-11-27",
+      "2023-11-28",
+      "2023-11-29",
+      "2023-11-30",
+      "2023-12-01",
+      "2023-12-02",
+      "2023-12-03",
+      "2023-12-04",
+      "2023-12-05",
+      "2023-12-06",
+      "2023-12-07",
+      "2023-12-08",
+      "2023-12-09",
+      "2023-12-10",
+      "2023-12-11",
+      "2023-12-12",
+      "2023-12-13",
+      "2023-12-14",
+      "2023-12-15",
+      "2023-12-16",
+      "2023-12-17",
+      "2023-12-18",
+      "2023-12-19",
+      "2023-12-20",
+      "2023-12-21",
+      "2023-12-22",
+      "2023-12-23",
+      "2023-12-24",
+      "2023-12-25",
+      "2023-12-26",
+      "2023-12-27",
+      "2023-12-28",
+      "2023-12-29",
+      "2023-12-30",
+      "2023-12-31",
+      "2024-01-01",
+      "2024-01-02",
+      "2024-01-03",
+      "2024-01-04",
+      "2024-01-05",
+      "2024-01-06",
+      "2024-01-07",
+      "2024-01-08",
+      "2024-01-09",
+      "2024-01-10",
+      "2024-01-11",
+      "2024-01-12",
+      "2024-01-13",
+      "2024-01-14",
+      "2024-01-15",
+      "2024-01-16",
+      "2024-01-17",
+      "2024-01-18",
+      "2024-01-19",
+      "2024-01-20",
+      "2024-01-21",
+      "2024-01-22",
+      "2024-01-23",
+      "2024-01-24",
+      "2024-01-25",
+      "2024-01-26",
+      "2024-01-27",
+      "2024-01-28",
+      "2024-01-29",
+      "2024-01-30",
+      "2024-01-31",
+      "2024-02-01",
+      "2024-02-02",
+      "2024-02-03",
+      "2024-02-04",
+      "2024-02-05",
+      "2024-02-06",
+      "2024-02-07",
+      "2024-02-08",
+      "2024-02-09",
+      "2024-02-10",
+      "2024-02-11",
+      "2024-02-12",
+      "2024-02-13",
+      "2024-02-14",
+      "2024-02-15",
+      "2024-02-16",
+      "2024-02-17",
+      "2024-02-18",
+      "2024-02-19",
+      "2024-02-20",
+      "2024-02-21",
+      "2024-02-22",
+      "2024-02-23",
+      "2024-02-24",
+      "2024-02-25",
+      "2024-02-26",
+      "2024-02-27",
+      "2024-02-28",
+      "2024-02-29",
+      "2024-03-01",
+      "2024-03-02",
+      "2024-03-03",
+      "2024-03-04",
+      "2024-03-05",
+      "2024-03-06",
+      "2024-03-07",
+      "2024-03-08",
+      "2024-03-09",
+      "2024-03-10",
+      "2024-03-11",
+      "2024-03-12",
+      "2024-03-13",
+      "2024-03-14",
+      "2024-03-15",
+      "2024-03-16",
+      "2024-03-17",
+      "2024-03-18",
+      "2024-03-19",
+      "2024-03-20",
+      "2024-03-21",
+      "2024-03-22",
+      "2024-03-23",
+      "2024-03-24",
+      "2024-03-25",
+      "2024-03-26",
+      "2024-03-27",
+      "2024-03-28",
+      "2024-03-29",
+      "2024-03-30",
+      "2024-03-31",
+      "2024-04-01",
+      "2024-04-02",
+      "2024-04-03",
+      "2024-04-04",
+      "2024-04-05",
+      "2024-04-06",
+      "2024-04-07",
+      "2024-04-08",
+      "2024-04-09",
+      "2024-04-10",
+      "2024-04-11",
+      "2024-04-12",
+      "2024-04-13",
+      "2024-04-14",
+      "2024-04-15",
+      "2024-04-16",
+      "2024-04-17",
+      "2024-04-18",
+      "2024-04-19",
+      "2024-04-20",
+      "2024-04-21",
+      "2024-04-22",
+      "2024-04-23",
+      "2024-04-24",
+      "2024-04-25",
+      "2024-04-26",
+      "2024-04-27",
+      "2024-04-28",
+      "2024-04-29",
+      "2024-04-30",
+      "2024-05-01",
+      "2024-05-02",
+      "2024-05-03",
+      "2024-05-04",
+      "2024-05-05",
+      "2024-05-06",
+      "2024-05-07",
+      "2024-05-08",
+      "2024-05-09",
+      "2024-05-10",
+      "2024-05-11",
+      "2024-05-12",
+      "2024-05-13",
+      "2024-05-14",
+      "2024-05-15",
+      "2024-05-16",
+      "2024-05-17",
+      "2024-05-18",
+      "2024-05-19",
+      "2024-05-20",
+      "2024-05-21",
+      "2024-05-22",
+      "2024-05-23",
+      "2024-05-24",
+      "2024-05-25",
+      "2024-05-26",
+      "2024-05-27",
+      "2024-05-28",
+      "2024-05-29",
+      "2024-05-30",
+      "2024-05-31",
+      "2024-06-02",
+      "2024-06-03",
+      "2024-06-04",
+      "2024-06-05",
+      "2024-06-06",
+      "2024-06-07",
+      "2024-06-08",
+      "2024-06-09",
+      "2024-06-10",
+      "2024-06-13",
+      "2024-06-14",
+      "2024-06-15",
+      "2024-06-16",
+      "2024-06-17",
+      "2024-06-18",
+      "2024-06-19",
+      "2024-06-20",
+      "2024-06-21",
+      "2024-06-22",
+      "2024-06-23",
+      "2024-06-24",
+      "2024-06-25",
+      "2024-06-26",
+      "2024-06-27",
+      "2024-06-28",
+      "2024-06-29",
+      "2024-06-30",
+      "2024-07-01",
+      "2024-07-02",
+      "2024-07-03",
+      "2024-07-04",
+      "2024-07-05",
+      "2024-07-06",
+      "2024-07-07",
+      "2024-07-08",
+      "2024-07-09",
+      "2024-07-10",
+      "2024-07-11",
+      "2024-07-12",
+      "2024-07-13",
+      "2024-07-14",
+      "2024-07-15",
+      "2024-07-16",
+      "2024-07-17",
+      "2024-07-18",
+      "2024-07-19",
+      "2024-07-20",
+      "2024-07-21",
+      "2024-07-22",
+      "2024-07-23",
+      "2024-07-24",
+      "2024-07-25",
+      "2024-07-26",
+      "2024-07-27",
+      "2024-07-28",
+      "2024-07-29",
+      "2024-07-30",
+      "2024-07-31",
+      "2024-08-01",
+      "2024-08-02",
+      "2024-08-03",
+      "2024-08-04",
+      "2024-08-05",
+      "2024-08-06",
+      "2024-08-07",
+      "2024-08-08",
+      "2024-08-09",
+      "2024-08-10",
+      "2024-08-11",
+      "2024-08-12",
+      "2024-08-13",
+      "2024-08-14",
+      "2024-08-15",
+      "2024-08-16",
+      "2024-08-17",
+      "2024-08-18",
+      "2024-08-19",
+      "2024-08-20",
+      "2024-08-21",
+      "2024-08-22",
+      "2024-08-23",
+      "2024-08-24",
+      "2024-08-25",
+      "2024-08-26",
+      "2024-08-27",
+      "2024-08-28",
+      "2024-08-29",
+      "2024-08-30",
+      "2024-08-31",
+      "2024-09-01",
+      "2024-09-02",
+      "2024-09-03",
+      "2024-09-04",
+      "2024-09-05",
+      "2024-09-06",
+      "2024-09-07",
+      "2024-09-08",
+      "2024-09-09",
+      "2024-09-10",
+      "2024-09-11",
+      "2024-09-12",
+      "2024-09-13",
+      "2024-09-14",
+      "2024-09-15",
+      "2024-09-16",
+      "2024-09-17",
+      "2024-09-18",
+      "2024-09-19",
+      "2024-09-20",
+      "2024-09-21",
+      "2024-09-22",
+      "2024-09-23",
+      "2024-09-24",
+      "2024-09-25",
+      "2024-09-26",
+      "2024-09-27",
+      "2024-09-28",
+      "2024-09-29",
+      "2024-09-30",
+      "2024-10-01",
+      "2024-10-02",
+      "2024-10-03",
+      "2024-10-04",
+      "2024-10-05",
+      "2024-10-06",
+      "2024-10-07",
+      "2024-10-08",
+      "2024-10-09",
+      "2024-10-10",
+      "2024-10-11",
+      "2024-10-12",
+      "2024-10-13",
+      "2024-10-14"
+    ],
+    "window_hours": 24.0,
+    "bin_pct": 0.1,
+    "prev_days_read_per_day": 1,
+    "band_half_bins": 1,
+    "side_offset": {
+      "SELL": -0.0056,
+      "BUY": 0.007
+    },
+    "side_offset_source": "docs/PHASE2/O3C/PRICE_LEVEL/FULL_2026-09-17.md §3 の side 別 dist_node_bp 中央値(SELL +56.4bp / BUY −70.2bp)",
+    "liq_price_field": "average_price",
+    "data_root": "/tmp/claude-0/-home-user-trade/fa7bf0d4-a5c4-55b7-991b-874b590e00a3/scratchpad/merged_root",
+    "symbol": "BTCUSD_PERP",
+    "design": "docs/PHASE2/O3C/PRICE_LEVEL/DESIGN_2026-09-17.md",
+    "extension": "docs/PHASE2/O3C/PRICE_LEVEL/EXT_2026-09-17.md"
+  },
+  "elapsed_sec": 363.99,
+  "rows_total": 22652,
+  "time_points": 11326,
+  "days": 472,
+  "hours_skipped_empty_window": 2,
+  "days_with_short_window": [
+    "2023-09-26",
+    "2024-06-13"
+  ],
+  "by_side": {
+    "BUY": {
+      "time_points": 11326,
+      "time_points_with_liq": 4077,
+      "liq_total": 41158,
+      "liq_in_band_total": 10164,
+      "in_band_rate_weighted": 0.24695077506195637,
+      "band_coverage_weighted": 0.1924379508722484,
+      "band_coverage_log_weighted": 0.19118475227173334,
+      "trade_in_band_rate_weighted": 0.23386046464842802,
+      "trade_in_band_rate_pooled": 0.18207883050855017,
+      "band_coverage_mean": 0.1867340197775031,
+      "quantiles_over_time_points": {
+        "in_band_rate": {
+          "q5": 0.0,
+          "q25": 0.0,
+          "q50": 0.0,
+          "q75": 0.6,
+          "q95": 1.0
+        },
+        "band_coverage": {
+          "q5": 0.0,
+          "q25": 0.15873575,
+          "q50": 0.1927875,
+          "q75": 0.229207,
+          "q95": 0.28782925
+        },
+        "band_coverage_log": {
+          "q5": 0.0,
+          "q25": 0.157895,
+          "q50": 0.191635,
+          "q75": 0.227273,
+          "q95": 0.285714
+        },
+        "trade_in_band_rate": {
+          "q5": 0.0,
+          "q25": 0.0,
+          "q50": 0.0,
+          "q75": 0.27589874999999997,
+          "q95": 0.915494
+        },
+        "n_band_bins": {
+          "q5": 4.0,
+          "q25": 5.0,
+          "q50": 7.0,
+          "q75": 10.0,
+          "q95": 16.0
+        },
+        "n_profile_bins": {
+          "q5": 12.0,
+          "q25": 22.0,
+          "q50": 33.0,
+          "q75": 48.0,
+          "q95": 82.0
+        },
+        "n_nodes": {
+          "q5": 2.0,
+          "q25": 3.0,
+          "q50": 4.0,
+          "q75": 5.0,
+          "q95": 9.0
+        }
+      }
+    },
+    "SELL": {
+      "time_points": 11326,
+      "time_points_with_liq": 4876,
+      "liq_total": 65660,
+      "liq_in_band_total": 16438,
+      "in_band_rate_weighted": 0.2503502893694791,
+      "band_coverage_weighted": 0.19695132802314957,
+      "band_coverage_log_weighted": 0.1978342003350594,
+      "trade_in_band_rate_weighted": 0.24077454568991777,
+      "trade_in_band_rate_pooled": 0.1876939276403909,
+      "band_coverage_mean": 0.19993891091294366,
+      "quantiles_over_time_points": {
+        "in_band_rate": {
+          "q5": 0.0,
+          "q25": 0.0,
+          "q50": 0.0,
+          "q75": 0.6,
+          "q95": 1.0
+        },
+        "band_coverage": {
+          "q5": 0.066201,
+          "q25": 0.1686075,
+          "q50": 0.2009225,
+          "q75": 0.237141,
+          "q95": 0.3031705
+        },
+        "band_coverage_log": {
+          "q5": 0.066667,
+          "q25": 0.169231,
+          "q50": 0.2,
+          "q75": 0.238095,
+          "q95": 0.304348
+        },
+        "trade_in_band_rate": {
+          "q5": 0.0,
+          "q25": 0.0,
+          "q50": 0.0,
+          "q75": 0.30206075,
+          "q95": 0.937251
+        },
+        "n_band_bins": {
+          "q5": 4.0,
+          "q25": 5.0,
+          "q50": 7.0,
+          "q75": 10.0,
+          "q95": 16.0
+        },
+        "n_profile_bins": {
+          "q5": 12.0,
+          "q25": 22.0,
+          "q50": 33.0,
+          "q75": 48.0,
+          "q95": 82.0
+        },
+        "n_nodes": {
+          "q5": 2.0,
+          "q25": 3.0,
+          "q50": 4.0,
+          "q75": 5.0,
+          "q95": 9.0
+        }
+      }
+    }
+  },
+  "per_day": [
+    {
+      "day": "2023-06-25",
+      "prev_days_required": [
+        "2023-06-24"
+      ],
+      "prev_days_loaded": [
+        "2023-06-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 146,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 185646
+    },
+    {
+      "day": "2023-06-26",
+      "prev_days_required": [
+        "2023-06-25"
+      ],
+      "prev_days_loaded": [
+        "2023-06-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 216,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 234743
+    },
+    {
+      "day": "2023-06-27",
+      "prev_days_required": [
+        "2023-06-26"
+      ],
+      "prev_days_loaded": [
+        "2023-06-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 180,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 263998
+    },
+    {
+      "day": "2023-06-28",
+      "prev_days_required": [
+        "2023-06-27"
+      ],
+      "prev_days_loaded": [
+        "2023-06-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 250,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 252810
+    },
+    {
+      "day": "2023-06-29",
+      "prev_days_required": [
+        "2023-06-28"
+      ],
+      "prev_days_loaded": [
+        "2023-06-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 150,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 244786
+    },
+    {
+      "day": "2023-06-30",
+      "prev_days_required": [
+        "2023-06-29"
+      ],
+      "prev_days_loaded": [
+        "2023-06-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 466,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 434145
+    },
+    {
+      "day": "2023-07-01",
+      "prev_days_required": [
+        "2023-06-30"
+      ],
+      "prev_days_loaded": [
+        "2023-06-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 24,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 368176
+    },
+    {
+      "day": "2023-07-02",
+      "prev_days_required": [
+        "2023-07-01"
+      ],
+      "prev_days_loaded": [
+        "2023-07-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 96,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 136603
+    },
+    {
+      "day": "2023-07-03",
+      "prev_days_required": [
+        "2023-07-02"
+      ],
+      "prev_days_loaded": [
+        "2023-07-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 194,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 221449
+    },
+    {
+      "day": "2023-07-04",
+      "prev_days_required": [
+        "2023-07-03"
+      ],
+      "prev_days_loaded": [
+        "2023-07-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 112,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 240821
+    },
+    {
+      "day": "2023-07-05",
+      "prev_days_required": [
+        "2023-07-04"
+      ],
+      "prev_days_loaded": [
+        "2023-07-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 162,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 216343
+    },
+    {
+      "day": "2023-07-06",
+      "prev_days_required": [
+        "2023-07-05"
+      ],
+      "prev_days_loaded": [
+        "2023-07-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 492,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 390014
+    },
+    {
+      "day": "2023-07-07",
+      "prev_days_required": [
+        "2023-07-06"
+      ],
+      "prev_days_loaded": [
+        "2023-07-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 104,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 418823
+    },
+    {
+      "day": "2023-07-08",
+      "prev_days_required": [
+        "2023-07-07"
+      ],
+      "prev_days_loaded": [
+        "2023-07-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 36,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 182199
+    },
+    {
+      "day": "2023-07-09",
+      "prev_days_required": [
+        "2023-07-08"
+      ],
+      "prev_days_loaded": [
+        "2023-07-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 56,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 98234
+    },
+    {
+      "day": "2023-07-10",
+      "prev_days_required": [
+        "2023-07-09"
+      ],
+      "prev_days_loaded": [
+        "2023-07-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 222,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 211733
+    },
+    {
+      "day": "2023-07-11",
+      "prev_days_required": [
+        "2023-07-10"
+      ],
+      "prev_days_loaded": [
+        "2023-07-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 90,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 274420
+    },
+    {
+      "day": "2023-07-12",
+      "prev_days_required": [
+        "2023-07-11"
+      ],
+      "prev_days_loaded": [
+        "2023-07-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 154,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 296401
+    },
+    {
+      "day": "2023-07-13",
+      "prev_days_required": [
+        "2023-07-12"
+      ],
+      "prev_days_loaded": [
+        "2023-07-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 290,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 476823
+    },
+    {
+      "day": "2023-07-14",
+      "prev_days_required": [
+        "2023-07-13"
+      ],
+      "prev_days_loaded": [
+        "2023-07-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 280,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 549784
+    },
+    {
+      "day": "2023-07-15",
+      "prev_days_required": [
+        "2023-07-14"
+      ],
+      "prev_days_loaded": [
+        "2023-07-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 2,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 292168
+    },
+    {
+      "day": "2023-07-16",
+      "prev_days_required": [
+        "2023-07-15"
+      ],
+      "prev_days_loaded": [
+        "2023-07-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 82,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 115715
+    },
+    {
+      "day": "2023-07-17",
+      "prev_days_required": [
+        "2023-07-16"
+      ],
+      "prev_days_loaded": [
+        "2023-07-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 160,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 222446
+    },
+    {
+      "day": "2023-07-18",
+      "prev_days_required": [
+        "2023-07-17"
+      ],
+      "prev_days_loaded": [
+        "2023-07-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 122,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 299841
+    },
+    {
+      "day": "2023-07-19",
+      "prev_days_required": [
+        "2023-07-18"
+      ],
+      "prev_days_loaded": [
+        "2023-07-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 100,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 267666
+    },
+    {
+      "day": "2023-07-20",
+      "prev_days_required": [
+        "2023-07-19"
+      ],
+      "prev_days_loaded": [
+        "2023-07-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 172,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 303880
+    },
+    {
+      "day": "2023-07-21",
+      "prev_days_required": [
+        "2023-07-20"
+      ],
+      "prev_days_loaded": [
+        "2023-07-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 48,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 262339
+    },
+    {
+      "day": "2023-07-22",
+      "prev_days_required": [
+        "2023-07-21"
+      ],
+      "prev_days_loaded": [
+        "2023-07-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 42,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 115799
+    },
+    {
+      "day": "2023-07-23",
+      "prev_days_required": [
+        "2023-07-22"
+      ],
+      "prev_days_loaded": [
+        "2023-07-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 78,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 108995
+    },
+    {
+      "day": "2023-07-24",
+      "prev_days_required": [
+        "2023-07-23"
+      ],
+      "prev_days_loaded": [
+        "2023-07-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 232,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 212305
+    },
+    {
+      "day": "2023-07-25",
+      "prev_days_required": [
+        "2023-07-24"
+      ],
+      "prev_days_loaded": [
+        "2023-07-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 46,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 208247
+    },
+    {
+      "day": "2023-07-26",
+      "prev_days_required": [
+        "2023-07-25"
+      ],
+      "prev_days_loaded": [
+        "2023-07-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 110,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 169982
+    },
+    {
+      "day": "2023-07-27",
+      "prev_days_required": [
+        "2023-07-26"
+      ],
+      "prev_days_loaded": [
+        "2023-07-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 78,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 174536
+    },
+    {
+      "day": "2023-07-28",
+      "prev_days_required": [
+        "2023-07-27"
+      ],
+      "prev_days_loaded": [
+        "2023-07-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 64,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 133004
+    },
+    {
+      "day": "2023-07-29",
+      "prev_days_required": [
+        "2023-07-28"
+      ],
+      "prev_days_loaded": [
+        "2023-07-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 12,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 87466
+    },
+    {
+      "day": "2023-07-30",
+      "prev_days_required": [
+        "2023-07-29"
+      ],
+      "prev_days_loaded": [
+        "2023-07-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 60,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 84859
+    },
+    {
+      "day": "2023-07-31",
+      "prev_days_required": [
+        "2023-07-30"
+      ],
+      "prev_days_loaded": [
+        "2023-07-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 64,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 148940
+    },
+    {
+      "day": "2023-08-01",
+      "prev_days_required": [
+        "2023-07-31"
+      ],
+      "prev_days_loaded": [
+        "2023-07-31"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 220,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 247417
+    },
+    {
+      "day": "2023-08-02",
+      "prev_days_required": [
+        "2023-08-01"
+      ],
+      "prev_days_loaded": [
+        "2023-08-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 224,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 339250
+    },
+    {
+      "day": "2023-08-03",
+      "prev_days_required": [
+        "2023-08-02"
+      ],
+      "prev_days_loaded": [
+        "2023-08-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 66,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 270766
+    },
+    {
+      "day": "2023-08-04",
+      "prev_days_required": [
+        "2023-08-03"
+      ],
+      "prev_days_loaded": [
+        "2023-08-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 80,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 173799
+    },
+    {
+      "day": "2023-08-05",
+      "prev_days_required": [
+        "2023-08-04"
+      ],
+      "prev_days_loaded": [
+        "2023-08-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 4,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 106851
+    },
+    {
+      "day": "2023-08-06",
+      "prev_days_required": [
+        "2023-08-05"
+      ],
+      "prev_days_loaded": [
+        "2023-08-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 24,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 56895
+    },
+    {
+      "day": "2023-08-07",
+      "prev_days_required": [
+        "2023-08-06"
+      ],
+      "prev_days_loaded": [
+        "2023-08-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 132,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 131595
+    },
+    {
+      "day": "2023-08-08",
+      "prev_days_required": [
+        "2023-08-07"
+      ],
+      "prev_days_loaded": [
+        "2023-08-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 188,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 249127
+    },
+    {
+      "day": "2023-08-09",
+      "prev_days_required": [
+        "2023-08-08"
+      ],
+      "prev_days_loaded": [
+        "2023-08-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 132,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 271240
+    },
+    {
+      "day": "2023-08-10",
+      "prev_days_required": [
+        "2023-08-09"
+      ],
+      "prev_days_loaded": [
+        "2023-08-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 54,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 197989
+    },
+    {
+      "day": "2023-08-11",
+      "prev_days_required": [
+        "2023-08-10"
+      ],
+      "prev_days_loaded": [
+        "2023-08-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 38,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 129871
+    },
+    {
+      "day": "2023-08-12",
+      "prev_days_required": [
+        "2023-08-11"
+      ],
+      "prev_days_loaded": [
+        "2023-08-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 2,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 70492
+    },
+    {
+      "day": "2023-08-13",
+      "prev_days_required": [
+        "2023-08-12"
+      ],
+      "prev_days_loaded": [
+        "2023-08-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 30,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 40303
+    },
+    {
+      "day": "2023-08-14",
+      "prev_days_required": [
+        "2023-08-13"
+      ],
+      "prev_days_loaded": [
+        "2023-08-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 150,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 120491
+    },
+    {
+      "day": "2023-08-15",
+      "prev_days_required": [
+        "2023-08-14"
+      ],
+      "prev_days_loaded": [
+        "2023-08-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 78,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 158470
+    },
+    {
+      "day": "2023-08-16",
+      "prev_days_required": [
+        "2023-08-15"
+      ],
+      "prev_days_loaded": [
+        "2023-08-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 138,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 158837
+    },
+    {
+      "day": "2023-08-17",
+      "prev_days_required": [
+        "2023-08-16"
+      ],
+      "prev_days_loaded": [
+        "2023-08-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 816,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 451941
+    },
+    {
+      "day": "2023-08-18",
+      "prev_days_required": [
+        "2023-08-17"
+      ],
+      "prev_days_loaded": [
+        "2023-08-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 392,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 647726
+    },
+    {
+      "day": "2023-08-19",
+      "prev_days_required": [
+        "2023-08-18"
+      ],
+      "prev_days_loaded": [
+        "2023-08-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 86,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 380645
+    },
+    {
+      "day": "2023-08-20",
+      "prev_days_required": [
+        "2023-08-19"
+      ],
+      "prev_days_loaded": [
+        "2023-08-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 44,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 147848
+    },
+    {
+      "day": "2023-08-21",
+      "prev_days_required": [
+        "2023-08-20"
+      ],
+      "prev_days_loaded": [
+        "2023-08-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 116,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 171630
+    },
+    {
+      "day": "2023-08-22",
+      "prev_days_required": [
+        "2023-08-21"
+      ],
+      "prev_days_loaded": [
+        "2023-08-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 182,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 247181
+    },
+    {
+      "day": "2023-08-23",
+      "prev_days_required": [
+        "2023-08-22"
+      ],
+      "prev_days_loaded": [
+        "2023-08-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 228,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 313031
+    },
+    {
+      "day": "2023-08-24",
+      "prev_days_required": [
+        "2023-08-23"
+      ],
+      "prev_days_loaded": [
+        "2023-08-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 128,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 293875
+    },
+    {
+      "day": "2023-08-25",
+      "prev_days_required": [
+        "2023-08-24"
+      ],
+      "prev_days_loaded": [
+        "2023-08-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 126,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 229997
+    },
+    {
+      "day": "2023-08-26",
+      "prev_days_required": [
+        "2023-08-25"
+      ],
+      "prev_days_loaded": [
+        "2023-08-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 4,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 134224
+    },
+    {
+      "day": "2023-08-27",
+      "prev_days_required": [
+        "2023-08-26"
+      ],
+      "prev_days_loaded": [
+        "2023-08-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 32,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 54137
+    },
+    {
+      "day": "2023-08-28",
+      "prev_days_required": [
+        "2023-08-27"
+      ],
+      "prev_days_loaded": [
+        "2023-08-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 88,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 120289
+    },
+    {
+      "day": "2023-08-29",
+      "prev_days_required": [
+        "2023-08-28"
+      ],
+      "prev_days_loaded": [
+        "2023-08-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 382,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 335369
+    },
+    {
+      "day": "2023-08-30",
+      "prev_days_required": [
+        "2023-08-29"
+      ],
+      "prev_days_loaded": [
+        "2023-08-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 134,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 377210
+    },
+    {
+      "day": "2023-08-31",
+      "prev_days_required": [
+        "2023-08-30"
+      ],
+      "prev_days_loaded": [
+        "2023-08-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 314,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 312524
+    },
+    {
+      "day": "2023-09-01",
+      "prev_days_required": [
+        "2023-08-31"
+      ],
+      "prev_days_loaded": [
+        "2023-08-31"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 194,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 332870
+    },
+    {
+      "day": "2023-09-02",
+      "prev_days_required": [
+        "2023-09-01"
+      ],
+      "prev_days_loaded": [
+        "2023-09-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 20,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 187171
+    },
+    {
+      "day": "2023-09-03",
+      "prev_days_required": [
+        "2023-09-02"
+      ],
+      "prev_days_loaded": [
+        "2023-09-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 48,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 89057
+    },
+    {
+      "day": "2023-09-04",
+      "prev_days_required": [
+        "2023-09-03"
+      ],
+      "prev_days_loaded": [
+        "2023-09-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 88,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 123235
+    },
+    {
+      "day": "2023-09-05",
+      "prev_days_required": [
+        "2023-09-04"
+      ],
+      "prev_days_loaded": [
+        "2023-09-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 58,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 147116
+    },
+    {
+      "day": "2023-09-06",
+      "prev_days_required": [
+        "2023-09-05"
+      ],
+      "prev_days_loaded": [
+        "2023-09-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 132,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 182866
+    },
+    {
+      "day": "2023-09-07",
+      "prev_days_required": [
+        "2023-09-06"
+      ],
+      "prev_days_loaded": [
+        "2023-09-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 118,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 218923
+    },
+    {
+      "day": "2023-09-08",
+      "prev_days_required": [
+        "2023-09-07"
+      ],
+      "prev_days_loaded": [
+        "2023-09-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 98,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 219280
+    },
+    {
+      "day": "2023-09-10",
+      "prev_days_required": [
+        "2023-09-09"
+      ],
+      "prev_days_loaded": [
+        "2023-09-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 60,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 90198
+    },
+    {
+      "day": "2023-09-11",
+      "prev_days_required": [
+        "2023-09-10"
+      ],
+      "prev_days_loaded": [
+        "2023-09-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 234,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 219287
+    },
+    {
+      "day": "2023-09-12",
+      "prev_days_required": [
+        "2023-09-11"
+      ],
+      "prev_days_loaded": [
+        "2023-09-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 228,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 400139
+    },
+    {
+      "day": "2023-09-13",
+      "prev_days_required": [
+        "2023-09-12"
+      ],
+      "prev_days_loaded": [
+        "2023-09-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 88,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 402527
+    },
+    {
+      "day": "2023-09-14",
+      "prev_days_required": [
+        "2023-09-13"
+      ],
+      "prev_days_loaded": [
+        "2023-09-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 130,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 309444
+    },
+    {
+      "day": "2023-09-15",
+      "prev_days_required": [
+        "2023-09-14"
+      ],
+      "prev_days_loaded": [
+        "2023-09-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 126,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 251753
+    },
+    {
+      "day": "2023-09-16",
+      "prev_days_required": [
+        "2023-09-15"
+      ],
+      "prev_days_loaded": [
+        "2023-09-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 24,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 145702
+    },
+    {
+      "day": "2023-09-17",
+      "prev_days_required": [
+        "2023-09-16"
+      ],
+      "prev_days_loaded": [
+        "2023-09-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 28,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 84788
+    },
+    {
+      "day": "2023-09-18",
+      "prev_days_required": [
+        "2023-09-17"
+      ],
+      "prev_days_loaded": [
+        "2023-09-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 278,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 205301
+    },
+    {
+      "day": "2023-09-19",
+      "prev_days_required": [
+        "2023-09-18"
+      ],
+      "prev_days_loaded": [
+        "2023-09-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 214,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 351946
+    },
+    {
+      "day": "2023-09-20",
+      "prev_days_required": [
+        "2023-09-19"
+      ],
+      "prev_days_loaded": [
+        "2023-09-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 156,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 345315
+    },
+    {
+      "day": "2023-09-21",
+      "prev_days_required": [
+        "2023-09-20"
+      ],
+      "prev_days_loaded": [
+        "2023-09-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 196,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 286835
+    },
+    {
+      "day": "2023-09-22",
+      "prev_days_required": [
+        "2023-09-21"
+      ],
+      "prev_days_loaded": [
+        "2023-09-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 28,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 197332
+    },
+    {
+      "day": "2023-09-24",
+      "prev_days_required": [
+        "2023-09-23"
+      ],
+      "prev_days_loaded": [
+        "2023-09-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 94,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 56086
+    },
+    {
+      "day": "2023-09-26",
+      "prev_days_required": [
+        "2023-09-25"
+      ],
+      "prev_days_loaded": [],
+      "prev_days_missing": [
+        "2023-09-25"
+      ],
+      "liq_rows_in_file": 62,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 23,
+      "hours_skipped_empty_window": 1,
+      "agg_trades_loaded": 48991,
+      "warning": "前の日 2023-09-25 の aggTrades zip が無いため、この日の早い時刻の窓は 24.0 時間より短い。"
+    },
+    {
+      "day": "2023-09-27",
+      "prev_days_required": [
+        "2023-09-26"
+      ],
+      "prev_days_loaded": [
+        "2023-09-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 196,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 142644
+    },
+    {
+      "day": "2023-09-28",
+      "prev_days_required": [
+        "2023-09-27"
+      ],
+      "prev_days_loaded": [
+        "2023-09-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 202,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 224878
+    },
+    {
+      "day": "2023-09-29",
+      "prev_days_required": [
+        "2023-09-28"
+      ],
+      "prev_days_loaded": [
+        "2023-09-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 136,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 221375
+    },
+    {
+      "day": "2023-09-30",
+      "prev_days_required": [
+        "2023-09-29"
+      ],
+      "prev_days_loaded": [
+        "2023-09-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 14,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 116392
+    },
+    {
+      "day": "2023-10-01",
+      "prev_days_required": [
+        "2023-09-30"
+      ],
+      "prev_days_loaded": [
+        "2023-09-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 114,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 110361
+    },
+    {
+      "day": "2023-10-02",
+      "prev_days_required": [
+        "2023-10-01"
+      ],
+      "prev_days_loaded": [
+        "2023-10-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 346,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 250609
+    },
+    {
+      "day": "2023-10-03",
+      "prev_days_required": [
+        "2023-10-02"
+      ],
+      "prev_days_loaded": [
+        "2023-10-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 108,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 255972
+    },
+    {
+      "day": "2023-10-04",
+      "prev_days_required": [
+        "2023-10-03"
+      ],
+      "prev_days_loaded": [
+        "2023-10-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 110,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 194076
+    },
+    {
+      "day": "2023-10-05",
+      "prev_days_required": [
+        "2023-10-04"
+      ],
+      "prev_days_loaded": [
+        "2023-10-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 158,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 236077
+    },
+    {
+      "day": "2023-10-06",
+      "prev_days_required": [
+        "2023-10-05"
+      ],
+      "prev_days_loaded": [
+        "2023-10-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 176,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 278185
+    },
+    {
+      "day": "2023-10-07",
+      "prev_days_required": [
+        "2023-10-06"
+      ],
+      "prev_days_loaded": [
+        "2023-10-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 10,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 204178
+    },
+    {
+      "day": "2023-10-08",
+      "prev_days_required": [
+        "2023-10-07"
+      ],
+      "prev_days_loaded": [
+        "2023-10-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 66,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 132322
+    },
+    {
+      "day": "2023-10-09",
+      "prev_days_required": [
+        "2023-10-08"
+      ],
+      "prev_days_loaded": [
+        "2023-10-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 166,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 196956
+    },
+    {
+      "day": "2023-10-10",
+      "prev_days_required": [
+        "2023-10-09"
+      ],
+      "prev_days_loaded": [
+        "2023-10-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 98,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 221840
+    },
+    {
+      "day": "2023-10-11",
+      "prev_days_required": [
+        "2023-10-10"
+      ],
+      "prev_days_loaded": [
+        "2023-10-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 244,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 231080
+    },
+    {
+      "day": "2023-10-12",
+      "prev_days_required": [
+        "2023-10-11"
+      ],
+      "prev_days_loaded": [
+        "2023-10-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 54,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 218607
+    },
+    {
+      "day": "2023-10-13",
+      "prev_days_required": [
+        "2023-10-12"
+      ],
+      "prev_days_loaded": [
+        "2023-10-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 84,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 159983
+    },
+    {
+      "day": "2023-10-14",
+      "prev_days_required": [
+        "2023-10-13"
+      ],
+      "prev_days_loaded": [
+        "2023-10-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 6,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 115789
+    },
+    {
+      "day": "2023-10-15",
+      "prev_days_required": [
+        "2023-10-14"
+      ],
+      "prev_days_loaded": [
+        "2023-10-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 54,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 86882
+    },
+    {
+      "day": "2023-10-16",
+      "prev_days_required": [
+        "2023-10-15"
+      ],
+      "prev_days_loaded": [
+        "2023-10-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 516,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 407082
+    },
+    {
+      "day": "2023-10-17",
+      "prev_days_required": [
+        "2023-10-16"
+      ],
+      "prev_days_loaded": [
+        "2023-10-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 164,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 478919
+    },
+    {
+      "day": "2023-10-18",
+      "prev_days_required": [
+        "2023-10-17"
+      ],
+      "prev_days_loaded": [
+        "2023-10-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 100,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 219936
+    },
+    {
+      "day": "2023-10-19",
+      "prev_days_required": [
+        "2023-10-18"
+      ],
+      "prev_days_loaded": [
+        "2023-10-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 138,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 223792
+    },
+    {
+      "day": "2023-10-20",
+      "prev_days_required": [
+        "2023-10-19"
+      ],
+      "prev_days_loaded": [
+        "2023-10-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 330,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 332097
+    },
+    {
+      "day": "2023-10-21",
+      "prev_days_required": [
+        "2023-10-20"
+      ],
+      "prev_days_loaded": [
+        "2023-10-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 309353
+    },
+    {
+      "day": "2023-10-22",
+      "prev_days_required": [
+        "2023-10-21"
+      ],
+      "prev_days_loaded": [
+        "2023-10-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 100,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 184007
+    },
+    {
+      "day": "2023-10-23",
+      "prev_days_required": [
+        "2023-10-22"
+      ],
+      "prev_days_loaded": [
+        "2023-10-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 822,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 572778
+    },
+    {
+      "day": "2023-10-24",
+      "prev_days_required": [
+        "2023-10-23"
+      ],
+      "prev_days_loaded": [
+        "2023-10-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 816,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 957698
+    },
+    {
+      "day": "2023-10-25",
+      "prev_days_required": [
+        "2023-10-24"
+      ],
+      "prev_days_loaded": [
+        "2023-10-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 348,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 729206
+    },
+    {
+      "day": "2023-10-26",
+      "prev_days_required": [
+        "2023-10-25"
+      ],
+      "prev_days_loaded": [
+        "2023-10-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 266,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 451531
+    },
+    {
+      "day": "2023-10-27",
+      "prev_days_required": [
+        "2023-10-26"
+      ],
+      "prev_days_loaded": [
+        "2023-10-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 198,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 353716
+    },
+    {
+      "day": "2023-10-28",
+      "prev_days_required": [
+        "2023-10-27"
+      ],
+      "prev_days_loaded": [
+        "2023-10-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 76,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 254361
+    },
+    {
+      "day": "2023-10-29",
+      "prev_days_required": [
+        "2023-10-28"
+      ],
+      "prev_days_loaded": [
+        "2023-10-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 126,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 201930
+    },
+    {
+      "day": "2023-10-30",
+      "prev_days_required": [
+        "2023-10-29"
+      ],
+      "prev_days_loaded": [
+        "2023-10-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 164,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 255759
+    },
+    {
+      "day": "2023-10-31",
+      "prev_days_required": [
+        "2023-10-30"
+      ],
+      "prev_days_loaded": [
+        "2023-10-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 150,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 280622
+    },
+    {
+      "day": "2023-11-01",
+      "prev_days_required": [
+        "2023-10-31"
+      ],
+      "prev_days_loaded": [
+        "2023-10-31"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 310,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 333968
+    },
+    {
+      "day": "2023-11-02",
+      "prev_days_required": [
+        "2023-11-01"
+      ],
+      "prev_days_loaded": [
+        "2023-11-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 282,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 378347
+    },
+    {
+      "day": "2023-11-03",
+      "prev_days_required": [
+        "2023-11-02"
+      ],
+      "prev_days_loaded": [
+        "2023-11-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 206,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 308184
+    },
+    {
+      "day": "2023-11-04",
+      "prev_days_required": [
+        "2023-11-03"
+      ],
+      "prev_days_loaded": [
+        "2023-11-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 84,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 184684
+    },
+    {
+      "day": "2023-11-05",
+      "prev_days_required": [
+        "2023-11-04"
+      ],
+      "prev_days_loaded": [
+        "2023-11-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 168,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 138167
+    },
+    {
+      "day": "2023-11-06",
+      "prev_days_required": [
+        "2023-11-05"
+      ],
+      "prev_days_loaded": [
+        "2023-11-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 86,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 163986
+    },
+    {
+      "day": "2023-11-07",
+      "prev_days_required": [
+        "2023-11-06"
+      ],
+      "prev_days_loaded": [
+        "2023-11-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 236,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 207392
+    },
+    {
+      "day": "2023-11-08",
+      "prev_days_required": [
+        "2023-11-07"
+      ],
+      "prev_days_loaded": [
+        "2023-11-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 152,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 259255
+    },
+    {
+      "day": "2023-11-09",
+      "prev_days_required": [
+        "2023-11-08"
+      ],
+      "prev_days_loaded": [
+        "2023-11-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 642,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 474750
+    },
+    {
+      "day": "2023-11-10",
+      "prev_days_required": [
+        "2023-11-09"
+      ],
+      "prev_days_loaded": [
+        "2023-11-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 238,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 485933
+    },
+    {
+      "day": "2023-11-11",
+      "prev_days_required": [
+        "2023-11-10"
+      ],
+      "prev_days_loaded": [
+        "2023-11-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 116,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 216029
+    },
+    {
+      "day": "2023-11-12",
+      "prev_days_required": [
+        "2023-11-11"
+      ],
+      "prev_days_loaded": [
+        "2023-11-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 54,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 131123
+    },
+    {
+      "day": "2023-11-13",
+      "prev_days_required": [
+        "2023-11-12"
+      ],
+      "prev_days_loaded": [
+        "2023-11-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 198,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 170605
+    },
+    {
+      "day": "2023-11-14",
+      "prev_days_required": [
+        "2023-11-13"
+      ],
+      "prev_days_loaded": [
+        "2023-11-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 374,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 311108
+    },
+    {
+      "day": "2023-11-15",
+      "prev_days_required": [
+        "2023-11-14"
+      ],
+      "prev_days_loaded": [
+        "2023-11-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 332,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 422882
+    },
+    {
+      "day": "2023-11-16",
+      "prev_days_required": [
+        "2023-11-15"
+      ],
+      "prev_days_loaded": [
+        "2023-11-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 462,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 428000
+    },
+    {
+      "day": "2023-11-17",
+      "prev_days_required": [
+        "2023-11-16"
+      ],
+      "prev_days_loaded": [
+        "2023-11-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 168,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 376415
+    },
+    {
+      "day": "2023-11-18",
+      "prev_days_required": [
+        "2023-11-17"
+      ],
+      "prev_days_loaded": [
+        "2023-11-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 68,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 245724
+    },
+    {
+      "day": "2023-11-19",
+      "prev_days_required": [
+        "2023-11-18"
+      ],
+      "prev_days_loaded": [
+        "2023-11-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 124,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 157147
+    },
+    {
+      "day": "2023-11-20",
+      "prev_days_required": [
+        "2023-11-19"
+      ],
+      "prev_days_loaded": [
+        "2023-11-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 164,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 249251
+    },
+    {
+      "day": "2023-11-21",
+      "prev_days_required": [
+        "2023-11-20"
+      ],
+      "prev_days_loaded": [
+        "2023-11-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 390,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 370474
+    },
+    {
+      "day": "2023-11-22",
+      "prev_days_required": [
+        "2023-11-21"
+      ],
+      "prev_days_loaded": [
+        "2023-11-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 184,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 385346
+    },
+    {
+      "day": "2023-11-23",
+      "prev_days_required": [
+        "2023-11-22"
+      ],
+      "prev_days_loaded": [
+        "2023-11-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 96,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 283649
+    },
+    {
+      "day": "2023-11-24",
+      "prev_days_required": [
+        "2023-11-23"
+      ],
+      "prev_days_loaded": [
+        "2023-11-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 226,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 289786
+    },
+    {
+      "day": "2023-11-25",
+      "prev_days_required": [
+        "2023-11-24"
+      ],
+      "prev_days_loaded": [
+        "2023-11-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 6,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 242749
+    },
+    {
+      "day": "2023-11-26",
+      "prev_days_required": [
+        "2023-11-25"
+      ],
+      "prev_days_loaded": [
+        "2023-11-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 98,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 139017
+    },
+    {
+      "day": "2023-11-27",
+      "prev_days_required": [
+        "2023-11-26"
+      ],
+      "prev_days_loaded": [
+        "2023-11-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 134,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 214996
+    },
+    {
+      "day": "2023-11-28",
+      "prev_days_required": [
+        "2023-11-27"
+      ],
+      "prev_days_loaded": [
+        "2023-11-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 186,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 290424
+    },
+    {
+      "day": "2023-11-29",
+      "prev_days_required": [
+        "2023-11-28"
+      ],
+      "prev_days_loaded": [
+        "2023-11-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 140,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 318515
+    },
+    {
+      "day": "2023-11-30",
+      "prev_days_required": [
+        "2023-11-29"
+      ],
+      "prev_days_loaded": [
+        "2023-11-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 90,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 291137
+    },
+    {
+      "day": "2023-12-01",
+      "prev_days_required": [
+        "2023-11-30"
+      ],
+      "prev_days_loaded": [
+        "2023-11-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 250,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 318967
+    },
+    {
+      "day": "2023-12-02",
+      "prev_days_required": [
+        "2023-12-01"
+      ],
+      "prev_days_loaded": [
+        "2023-12-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 114,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 336799
+    },
+    {
+      "day": "2023-12-03",
+      "prev_days_required": [
+        "2023-12-02"
+      ],
+      "prev_days_loaded": [
+        "2023-12-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 291658
+    },
+    {
+      "day": "2023-12-04",
+      "prev_days_required": [
+        "2023-12-03"
+      ],
+      "prev_days_loaded": [
+        "2023-12-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 670,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 427349
+    },
+    {
+      "day": "2023-12-05",
+      "prev_days_required": [
+        "2023-12-04"
+      ],
+      "prev_days_loaded": [
+        "2023-12-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 546,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 588963
+    },
+    {
+      "day": "2023-12-06",
+      "prev_days_required": [
+        "2023-12-05"
+      ],
+      "prev_days_loaded": [
+        "2023-12-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 320,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 538573
+    },
+    {
+      "day": "2023-12-07",
+      "prev_days_required": [
+        "2023-12-06"
+      ],
+      "prev_days_loaded": [
+        "2023-12-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 274,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 460476
+    },
+    {
+      "day": "2023-12-08",
+      "prev_days_required": [
+        "2023-12-07"
+      ],
+      "prev_days_loaded": [
+        "2023-12-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 210,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 426349
+    },
+    {
+      "day": "2023-12-09",
+      "prev_days_required": [
+        "2023-12-08"
+      ],
+      "prev_days_loaded": [
+        "2023-12-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 114,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 353342
+    },
+    {
+      "day": "2023-12-10",
+      "prev_days_required": [
+        "2023-12-09"
+      ],
+      "prev_days_loaded": [
+        "2023-12-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 64,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 291440
+    },
+    {
+      "day": "2023-12-11",
+      "prev_days_required": [
+        "2023-12-10"
+      ],
+      "prev_days_loaded": [
+        "2023-12-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 676,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 541183
+    },
+    {
+      "day": "2023-12-12",
+      "prev_days_required": [
+        "2023-12-11"
+      ],
+      "prev_days_loaded": [
+        "2023-12-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 306,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 632966
+    },
+    {
+      "day": "2023-12-13",
+      "prev_days_required": [
+        "2023-12-12"
+      ],
+      "prev_days_loaded": [
+        "2023-12-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 278,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 464923
+    },
+    {
+      "day": "2023-12-14",
+      "prev_days_required": [
+        "2023-12-13"
+      ],
+      "prev_days_loaded": [
+        "2023-12-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 208,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 508304
+    },
+    {
+      "day": "2023-12-15",
+      "prev_days_required": [
+        "2023-12-14"
+      ],
+      "prev_days_loaded": [
+        "2023-12-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 194,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 488400
+    },
+    {
+      "day": "2023-12-16",
+      "prev_days_required": [
+        "2023-12-15"
+      ],
+      "prev_days_loaded": [
+        "2023-12-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 90,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 372879
+    },
+    {
+      "day": "2023-12-17",
+      "prev_days_required": [
+        "2023-12-16"
+      ],
+      "prev_days_loaded": [
+        "2023-12-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 238,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 342634
+    },
+    {
+      "day": "2023-12-18",
+      "prev_days_required": [
+        "2023-12-17"
+      ],
+      "prev_days_loaded": [
+        "2023-12-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 350,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 441025
+    },
+    {
+      "day": "2023-12-19",
+      "prev_days_required": [
+        "2023-12-18"
+      ],
+      "prev_days_loaded": [
+        "2023-12-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 280,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 466154
+    },
+    {
+      "day": "2023-12-20",
+      "prev_days_required": [
+        "2023-12-19"
+      ],
+      "prev_days_loaded": [
+        "2023-12-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 286,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 444638
+    },
+    {
+      "day": "2023-12-21",
+      "prev_days_required": [
+        "2023-12-20"
+      ],
+      "prev_days_loaded": [
+        "2023-12-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 166,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 415869
+    },
+    {
+      "day": "2023-12-22",
+      "prev_days_required": [
+        "2023-12-21"
+      ],
+      "prev_days_loaded": [
+        "2023-12-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 124,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 340898
+    },
+    {
+      "day": "2023-12-23",
+      "prev_days_required": [
+        "2023-12-22"
+      ],
+      "prev_days_loaded": [
+        "2023-12-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 48,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 244799
+    },
+    {
+      "day": "2023-12-24",
+      "prev_days_required": [
+        "2023-12-23"
+      ],
+      "prev_days_loaded": [
+        "2023-12-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 134,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 203256
+    },
+    {
+      "day": "2023-12-25",
+      "prev_days_required": [
+        "2023-12-24"
+      ],
+      "prev_days_loaded": [
+        "2023-12-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 88,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 240450
+    },
+    {
+      "day": "2023-12-26",
+      "prev_days_required": [
+        "2023-12-25"
+      ],
+      "prev_days_loaded": [
+        "2023-12-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 308,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 318472
+    },
+    {
+      "day": "2023-12-27",
+      "prev_days_required": [
+        "2023-12-26"
+      ],
+      "prev_days_loaded": [
+        "2023-12-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 146,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 354204
+    },
+    {
+      "day": "2023-12-28",
+      "prev_days_required": [
+        "2023-12-27"
+      ],
+      "prev_days_loaded": [
+        "2023-12-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 208,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 340671
+    },
+    {
+      "day": "2023-12-29",
+      "prev_days_required": [
+        "2023-12-28"
+      ],
+      "prev_days_loaded": [
+        "2023-12-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 308,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 383727
+    },
+    {
+      "day": "2023-12-30",
+      "prev_days_required": [
+        "2023-12-29"
+      ],
+      "prev_days_loaded": [
+        "2023-12-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 116,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 322972
+    },
+    {
+      "day": "2023-12-31",
+      "prev_days_required": [
+        "2023-12-30"
+      ],
+      "prev_days_loaded": [
+        "2023-12-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 114,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 231991
+    },
+    {
+      "day": "2024-01-01",
+      "prev_days_required": [
+        "2023-12-31"
+      ],
+      "prev_days_loaded": [
+        "2023-12-31"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 188,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 236744
+    },
+    {
+      "day": "2024-01-02",
+      "prev_days_required": [
+        "2024-01-01"
+      ],
+      "prev_days_loaded": [
+        "2024-01-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 422,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 400499
+    },
+    {
+      "day": "2024-01-03",
+      "prev_days_required": [
+        "2024-01-02"
+      ],
+      "prev_days_loaded": [
+        "2024-01-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 552,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 740491
+    },
+    {
+      "day": "2024-01-04",
+      "prev_days_required": [
+        "2024-01-03"
+      ],
+      "prev_days_loaded": [
+        "2024-01-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 240,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 712856
+    },
+    {
+      "day": "2024-01-05",
+      "prev_days_required": [
+        "2024-01-04"
+      ],
+      "prev_days_loaded": [
+        "2024-01-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 242,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 551903
+    },
+    {
+      "day": "2024-01-06",
+      "prev_days_required": [
+        "2024-01-05"
+      ],
+      "prev_days_loaded": [
+        "2024-01-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 62,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 442138
+    },
+    {
+      "day": "2024-01-07",
+      "prev_days_required": [
+        "2024-01-06"
+      ],
+      "prev_days_loaded": [
+        "2024-01-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 287806
+    },
+    {
+      "day": "2024-01-08",
+      "prev_days_required": [
+        "2024-01-07"
+      ],
+      "prev_days_loaded": [
+        "2024-01-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 508,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 498713
+    },
+    {
+      "day": "2024-01-09",
+      "prev_days_required": [
+        "2024-01-08"
+      ],
+      "prev_days_loaded": [
+        "2024-01-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 416,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 848273
+    },
+    {
+      "day": "2024-01-10",
+      "prev_days_required": [
+        "2024-01-09"
+      ],
+      "prev_days_loaded": [
+        "2024-01-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 550,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1051498
+    },
+    {
+      "day": "2024-01-11",
+      "prev_days_required": [
+        "2024-01-10"
+      ],
+      "prev_days_loaded": [
+        "2024-01-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 658,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1005954
+    },
+    {
+      "day": "2024-01-12",
+      "prev_days_required": [
+        "2024-01-11"
+      ],
+      "prev_days_loaded": [
+        "2024-01-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 748,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 827330
+    },
+    {
+      "day": "2024-01-13",
+      "prev_days_required": [
+        "2024-01-12"
+      ],
+      "prev_days_loaded": [
+        "2024-01-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 128,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 555219
+    },
+    {
+      "day": "2024-01-14",
+      "prev_days_required": [
+        "2024-01-13"
+      ],
+      "prev_days_loaded": [
+        "2024-01-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 242,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 353491
+    },
+    {
+      "day": "2024-01-15",
+      "prev_days_required": [
+        "2024-01-14"
+      ],
+      "prev_days_loaded": [
+        "2024-01-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 206,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 373182
+    },
+    {
+      "day": "2024-01-16",
+      "prev_days_required": [
+        "2024-01-15"
+      ],
+      "prev_days_loaded": [
+        "2024-01-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 232,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 415505
+    },
+    {
+      "day": "2024-01-17",
+      "prev_days_required": [
+        "2024-01-16"
+      ],
+      "prev_days_loaded": [
+        "2024-01-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 180,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 388999
+    },
+    {
+      "day": "2024-01-18",
+      "prev_days_required": [
+        "2024-01-17"
+      ],
+      "prev_days_loaded": [
+        "2024-01-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 410,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 405384
+    },
+    {
+      "day": "2024-01-19",
+      "prev_days_required": [
+        "2024-01-18"
+      ],
+      "prev_days_loaded": [
+        "2024-01-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 366,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 482287
+    },
+    {
+      "day": "2024-01-20",
+      "prev_days_required": [
+        "2024-01-19"
+      ],
+      "prev_days_loaded": [
+        "2024-01-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 30,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 312836
+    },
+    {
+      "day": "2024-01-21",
+      "prev_days_required": [
+        "2024-01-20"
+      ],
+      "prev_days_loaded": [
+        "2024-01-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 32,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 115081
+    },
+    {
+      "day": "2024-01-22",
+      "prev_days_required": [
+        "2024-01-21"
+      ],
+      "prev_days_loaded": [
+        "2024-01-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 480,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 326024
+    },
+    {
+      "day": "2024-01-23",
+      "prev_days_required": [
+        "2024-01-22"
+      ],
+      "prev_days_loaded": [
+        "2024-01-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 478,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 531278
+    },
+    {
+      "day": "2024-01-24",
+      "prev_days_required": [
+        "2024-01-23"
+      ],
+      "prev_days_loaded": [
+        "2024-01-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 224,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 459282
+    },
+    {
+      "day": "2024-01-25",
+      "prev_days_required": [
+        "2024-01-24"
+      ],
+      "prev_days_loaded": [
+        "2024-01-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 96,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 356206
+    },
+    {
+      "day": "2024-01-26",
+      "prev_days_required": [
+        "2024-01-25"
+      ],
+      "prev_days_loaded": [
+        "2024-01-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 314,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 389843
+    },
+    {
+      "day": "2024-01-27",
+      "prev_days_required": [
+        "2024-01-26"
+      ],
+      "prev_days_loaded": [
+        "2024-01-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 50,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 350446
+    },
+    {
+      "day": "2024-01-28",
+      "prev_days_required": [
+        "2024-01-27"
+      ],
+      "prev_days_loaded": [
+        "2024-01-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 200,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 280983
+    },
+    {
+      "day": "2024-01-29",
+      "prev_days_required": [
+        "2024-01-28"
+      ],
+      "prev_days_loaded": [
+        "2024-01-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 206,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 356680
+    },
+    {
+      "day": "2024-01-30",
+      "prev_days_required": [
+        "2024-01-29"
+      ],
+      "prev_days_loaded": [
+        "2024-01-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 188,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 382374
+    },
+    {
+      "day": "2024-01-31",
+      "prev_days_required": [
+        "2024-01-30"
+      ],
+      "prev_days_loaded": [
+        "2024-01-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 242,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 424627
+    },
+    {
+      "day": "2024-02-01",
+      "prev_days_required": [
+        "2024-01-31"
+      ],
+      "prev_days_loaded": [
+        "2024-01-31"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 182,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 450688
+    },
+    {
+      "day": "2024-02-02",
+      "prev_days_required": [
+        "2024-02-01"
+      ],
+      "prev_days_loaded": [
+        "2024-02-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 134,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 381125
+    },
+    {
+      "day": "2024-02-03",
+      "prev_days_required": [
+        "2024-02-02"
+      ],
+      "prev_days_loaded": [
+        "2024-02-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 26,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 249769
+    },
+    {
+      "day": "2024-02-04",
+      "prev_days_required": [
+        "2024-02-03"
+      ],
+      "prev_days_loaded": [
+        "2024-02-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 80,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 189015
+    },
+    {
+      "day": "2024-02-05",
+      "prev_days_required": [
+        "2024-02-04"
+      ],
+      "prev_days_loaded": [
+        "2024-02-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 154,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 265630
+    },
+    {
+      "day": "2024-02-06",
+      "prev_days_required": [
+        "2024-02-05"
+      ],
+      "prev_days_loaded": [
+        "2024-02-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 58,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 289672
+    },
+    {
+      "day": "2024-02-07",
+      "prev_days_required": [
+        "2024-02-06"
+      ],
+      "prev_days_loaded": [
+        "2024-02-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 180,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 280351
+    },
+    {
+      "day": "2024-02-08",
+      "prev_days_required": [
+        "2024-02-07"
+      ],
+      "prev_days_loaded": [
+        "2024-02-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 204,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 352066
+    },
+    {
+      "day": "2024-02-09",
+      "prev_days_required": [
+        "2024-02-08"
+      ],
+      "prev_days_loaded": [
+        "2024-02-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 484,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 523266
+    },
+    {
+      "day": "2024-02-10",
+      "prev_days_required": [
+        "2024-02-09"
+      ],
+      "prev_days_loaded": [
+        "2024-02-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 474884
+    },
+    {
+      "day": "2024-02-11",
+      "prev_days_required": [
+        "2024-02-10"
+      ],
+      "prev_days_loaded": [
+        "2024-02-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 168,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 354332
+    },
+    {
+      "day": "2024-02-12",
+      "prev_days_required": [
+        "2024-02-11"
+      ],
+      "prev_days_loaded": [
+        "2024-02-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 504,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 524550
+    },
+    {
+      "day": "2024-02-13",
+      "prev_days_required": [
+        "2024-02-12"
+      ],
+      "prev_days_loaded": [
+        "2024-02-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 340,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 611911
+    },
+    {
+      "day": "2024-02-14",
+      "prev_days_required": [
+        "2024-02-13"
+      ],
+      "prev_days_loaded": [
+        "2024-02-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 392,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 587826
+    },
+    {
+      "day": "2024-02-15",
+      "prev_days_required": [
+        "2024-02-14"
+      ],
+      "prev_days_loaded": [
+        "2024-02-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 300,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 583697
+    },
+    {
+      "day": "2024-02-16",
+      "prev_days_required": [
+        "2024-02-15"
+      ],
+      "prev_days_loaded": [
+        "2024-02-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 168,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 496017
+    },
+    {
+      "day": "2024-02-17",
+      "prev_days_required": [
+        "2024-02-16"
+      ],
+      "prev_days_loaded": [
+        "2024-02-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 188,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 397118
+    },
+    {
+      "day": "2024-02-18",
+      "prev_days_required": [
+        "2024-02-17"
+      ],
+      "prev_days_loaded": [
+        "2024-02-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 124,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 356140
+    },
+    {
+      "day": "2024-02-19",
+      "prev_days_required": [
+        "2024-02-18"
+      ],
+      "prev_days_loaded": [
+        "2024-02-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 142,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 393625
+    },
+    {
+      "day": "2024-02-20",
+      "prev_days_required": [
+        "2024-02-19"
+      ],
+      "prev_days_loaded": [
+        "2024-02-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 344,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 565856
+    },
+    {
+      "day": "2024-02-21",
+      "prev_days_required": [
+        "2024-02-20"
+      ],
+      "prev_days_loaded": [
+        "2024-02-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 228,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 645976
+    },
+    {
+      "day": "2024-02-22",
+      "prev_days_required": [
+        "2024-02-21"
+      ],
+      "prev_days_loaded": [
+        "2024-02-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 134,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 551208
+    },
+    {
+      "day": "2024-02-23",
+      "prev_days_required": [
+        "2024-02-22"
+      ],
+      "prev_days_loaded": [
+        "2024-02-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 110,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 452818
+    },
+    {
+      "day": "2024-02-24",
+      "prev_days_required": [
+        "2024-02-23"
+      ],
+      "prev_days_loaded": [
+        "2024-02-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 30,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 351715
+    },
+    {
+      "day": "2024-02-25",
+      "prev_days_required": [
+        "2024-02-24"
+      ],
+      "prev_days_loaded": [
+        "2024-02-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 68,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 300702
+    },
+    {
+      "day": "2024-02-26",
+      "prev_days_required": [
+        "2024-02-25"
+      ],
+      "prev_days_loaded": [
+        "2024-02-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 402,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 454317
+    },
+    {
+      "day": "2024-02-27",
+      "prev_days_required": [
+        "2024-02-26"
+      ],
+      "prev_days_loaded": [
+        "2024-02-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 570,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 690877
+    },
+    {
+      "day": "2024-02-28",
+      "prev_days_required": [
+        "2024-02-27"
+      ],
+      "prev_days_loaded": [
+        "2024-02-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 1304,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1146278
+    },
+    {
+      "day": "2024-02-29",
+      "prev_days_required": [
+        "2024-02-28"
+      ],
+      "prev_days_loaded": [
+        "2024-02-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 654,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1293313
+    },
+    {
+      "day": "2024-03-01",
+      "prev_days_required": [
+        "2024-02-29"
+      ],
+      "prev_days_loaded": [
+        "2024-02-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 272,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 870579
+    },
+    {
+      "day": "2024-03-02",
+      "prev_days_required": [
+        "2024-03-01"
+      ],
+      "prev_days_loaded": [
+        "2024-03-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 124,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 558632
+    },
+    {
+      "day": "2024-03-03",
+      "prev_days_required": [
+        "2024-03-02"
+      ],
+      "prev_days_loaded": [
+        "2024-03-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 178,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 472727
+    },
+    {
+      "day": "2024-03-04",
+      "prev_days_required": [
+        "2024-03-03"
+      ],
+      "prev_days_loaded": [
+        "2024-03-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 866,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 830589
+    },
+    {
+      "day": "2024-03-05",
+      "prev_days_required": [
+        "2024-03-04"
+      ],
+      "prev_days_loaded": [
+        "2024-03-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 1344,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1662704
+    },
+    {
+      "day": "2024-03-06",
+      "prev_days_required": [
+        "2024-03-05"
+      ],
+      "prev_days_loaded": [
+        "2024-03-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 628,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1654068
+    },
+    {
+      "day": "2024-03-07",
+      "prev_days_required": [
+        "2024-03-06"
+      ],
+      "prev_days_loaded": [
+        "2024-03-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 218,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 924215
+    },
+    {
+      "day": "2024-03-08",
+      "prev_days_required": [
+        "2024-03-07"
+      ],
+      "prev_days_loaded": [
+        "2024-03-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 516,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 809218
+    },
+    {
+      "day": "2024-03-09",
+      "prev_days_required": [
+        "2024-03-08"
+      ],
+      "prev_days_loaded": [
+        "2024-03-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 62,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 637045
+    },
+    {
+      "day": "2024-03-10",
+      "prev_days_required": [
+        "2024-03-09"
+      ],
+      "prev_days_loaded": [
+        "2024-03-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 254,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 449755
+    },
+    {
+      "day": "2024-03-11",
+      "prev_days_required": [
+        "2024-03-10"
+      ],
+      "prev_days_loaded": [
+        "2024-03-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 596,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 765890
+    },
+    {
+      "day": "2024-03-12",
+      "prev_days_required": [
+        "2024-03-11"
+      ],
+      "prev_days_loaded": [
+        "2024-03-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 492,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 987727
+    },
+    {
+      "day": "2024-03-13",
+      "prev_days_required": [
+        "2024-03-12"
+      ],
+      "prev_days_loaded": [
+        "2024-03-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 302,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 852187
+    },
+    {
+      "day": "2024-03-14",
+      "prev_days_required": [
+        "2024-03-13"
+      ],
+      "prev_days_loaded": [
+        "2024-03-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 694,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 874148
+    },
+    {
+      "day": "2024-03-15",
+      "prev_days_required": [
+        "2024-03-14"
+      ],
+      "prev_days_loaded": [
+        "2024-03-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 1024,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1236323
+    },
+    {
+      "day": "2024-03-16",
+      "prev_days_required": [
+        "2024-03-15"
+      ],
+      "prev_days_loaded": [
+        "2024-03-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 516,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1095015
+    },
+    {
+      "day": "2024-03-17",
+      "prev_days_required": [
+        "2024-03-16"
+      ],
+      "prev_days_loaded": [
+        "2024-03-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 314,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 740390
+    },
+    {
+      "day": "2024-03-18",
+      "prev_days_required": [
+        "2024-03-17"
+      ],
+      "prev_days_loaded": [
+        "2024-03-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 376,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 759952
+    },
+    {
+      "day": "2024-03-19",
+      "prev_days_required": [
+        "2024-03-18"
+      ],
+      "prev_days_loaded": [
+        "2024-03-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 1046,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1020424
+    },
+    {
+      "day": "2024-03-20",
+      "prev_days_required": [
+        "2024-03-19"
+      ],
+      "prev_days_loaded": [
+        "2024-03-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 794,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1195207
+    },
+    {
+      "day": "2024-03-21",
+      "prev_days_required": [
+        "2024-03-20"
+      ],
+      "prev_days_loaded": [
+        "2024-03-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 424,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1010925
+    },
+    {
+      "day": "2024-03-22",
+      "prev_days_required": [
+        "2024-03-21"
+      ],
+      "prev_days_loaded": [
+        "2024-03-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 496,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 893619
+    },
+    {
+      "day": "2024-03-23",
+      "prev_days_required": [
+        "2024-03-22"
+      ],
+      "prev_days_loaded": [
+        "2024-03-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 244,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 722642
+    },
+    {
+      "day": "2024-03-24",
+      "prev_days_required": [
+        "2024-03-23"
+      ],
+      "prev_days_loaded": [
+        "2024-03-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 218,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 553337
+    },
+    {
+      "day": "2024-03-25",
+      "prev_days_required": [
+        "2024-03-24"
+      ],
+      "prev_days_loaded": [
+        "2024-03-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 442,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 698248
+    },
+    {
+      "day": "2024-03-26",
+      "prev_days_required": [
+        "2024-03-25"
+      ],
+      "prev_days_loaded": [
+        "2024-03-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 280,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 811507
+    },
+    {
+      "day": "2024-03-27",
+      "prev_days_required": [
+        "2024-03-26"
+      ],
+      "prev_days_loaded": [
+        "2024-03-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 374,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 849500
+    },
+    {
+      "day": "2024-03-28",
+      "prev_days_required": [
+        "2024-03-27"
+      ],
+      "prev_days_loaded": [
+        "2024-03-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 180,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 761017
+    },
+    {
+      "day": "2024-03-29",
+      "prev_days_required": [
+        "2024-03-28"
+      ],
+      "prev_days_loaded": [
+        "2024-03-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 184,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 546271
+    },
+    {
+      "day": "2024-03-30",
+      "prev_days_required": [
+        "2024-03-29"
+      ],
+      "prev_days_loaded": [
+        "2024-03-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 58,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 380530
+    },
+    {
+      "day": "2024-03-31",
+      "prev_days_required": [
+        "2024-03-30"
+      ],
+      "prev_days_loaded": [
+        "2024-03-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 90,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 313438
+    },
+    {
+      "day": "2024-04-01",
+      "prev_days_required": [
+        "2024-03-31"
+      ],
+      "prev_days_loaded": [
+        "2024-03-31"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 352,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 473141
+    },
+    {
+      "day": "2024-04-02",
+      "prev_days_required": [
+        "2024-04-01"
+      ],
+      "prev_days_loaded": [
+        "2024-04-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 604,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 789580
+    },
+    {
+      "day": "2024-04-03",
+      "prev_days_required": [
+        "2024-04-02"
+      ],
+      "prev_days_loaded": [
+        "2024-04-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 228,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 784117
+    },
+    {
+      "day": "2024-04-04",
+      "prev_days_required": [
+        "2024-04-03"
+      ],
+      "prev_days_loaded": [
+        "2024-04-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 320,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 633663
+    },
+    {
+      "day": "2024-04-05",
+      "prev_days_required": [
+        "2024-04-04"
+      ],
+      "prev_days_loaded": [
+        "2024-04-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 264,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 698860
+    },
+    {
+      "day": "2024-04-06",
+      "prev_days_required": [
+        "2024-04-05"
+      ],
+      "prev_days_loaded": [
+        "2024-04-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 118,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 581280
+    },
+    {
+      "day": "2024-04-07",
+      "prev_days_required": [
+        "2024-04-06"
+      ],
+      "prev_days_loaded": [
+        "2024-04-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 126,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 459495
+    },
+    {
+      "day": "2024-04-08",
+      "prev_days_required": [
+        "2024-04-07"
+      ],
+      "prev_days_loaded": [
+        "2024-04-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 288,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 553464
+    },
+    {
+      "day": "2024-04-09",
+      "prev_days_required": [
+        "2024-04-08"
+      ],
+      "prev_days_loaded": [
+        "2024-04-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 368,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 665086
+    },
+    {
+      "day": "2024-04-10",
+      "prev_days_required": [
+        "2024-04-09"
+      ],
+      "prev_days_loaded": [
+        "2024-04-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 330,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 709933
+    },
+    {
+      "day": "2024-04-11",
+      "prev_days_required": [
+        "2024-04-10"
+      ],
+      "prev_days_loaded": [
+        "2024-04-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 156,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 660418
+    },
+    {
+      "day": "2024-04-12",
+      "prev_days_required": [
+        "2024-04-11"
+      ],
+      "prev_days_loaded": [
+        "2024-04-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 528,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 732350
+    },
+    {
+      "day": "2024-04-13",
+      "prev_days_required": [
+        "2024-04-12"
+      ],
+      "prev_days_loaded": [
+        "2024-04-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 846,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1030355
+    },
+    {
+      "day": "2024-04-14",
+      "prev_days_required": [
+        "2024-04-13"
+      ],
+      "prev_days_loaded": [
+        "2024-04-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 482,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1068378
+    },
+    {
+      "day": "2024-04-15",
+      "prev_days_required": [
+        "2024-04-14"
+      ],
+      "prev_days_loaded": [
+        "2024-04-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 510,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 933119
+    },
+    {
+      "day": "2024-04-16",
+      "prev_days_required": [
+        "2024-04-15"
+      ],
+      "prev_days_loaded": [
+        "2024-04-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 438,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 906942
+    },
+    {
+      "day": "2024-04-17",
+      "prev_days_required": [
+        "2024-04-16"
+      ],
+      "prev_days_loaded": [
+        "2024-04-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 600,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 883123
+    },
+    {
+      "day": "2024-04-18",
+      "prev_days_required": [
+        "2024-04-17"
+      ],
+      "prev_days_loaded": [
+        "2024-04-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 324,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 804447
+    },
+    {
+      "day": "2024-04-19",
+      "prev_days_required": [
+        "2024-04-18"
+      ],
+      "prev_days_loaded": [
+        "2024-04-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 668,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 897508
+    },
+    {
+      "day": "2024-04-20",
+      "prev_days_required": [
+        "2024-04-19"
+      ],
+      "prev_days_loaded": [
+        "2024-04-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 168,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 793187
+    },
+    {
+      "day": "2024-04-21",
+      "prev_days_required": [
+        "2024-04-20"
+      ],
+      "prev_days_loaded": [
+        "2024-04-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 491419
+    },
+    {
+      "day": "2024-04-22",
+      "prev_days_required": [
+        "2024-04-21"
+      ],
+      "prev_days_loaded": [
+        "2024-04-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 224,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 559406
+    },
+    {
+      "day": "2024-04-23",
+      "prev_days_required": [
+        "2024-04-22"
+      ],
+      "prev_days_loaded": [
+        "2024-04-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 126,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 570813
+    },
+    {
+      "day": "2024-04-24",
+      "prev_days_required": [
+        "2024-04-23"
+      ],
+      "prev_days_loaded": [
+        "2024-04-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 310,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 567009
+    },
+    {
+      "day": "2024-04-25",
+      "prev_days_required": [
+        "2024-04-24"
+      ],
+      "prev_days_loaded": [
+        "2024-04-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 272,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 626535
+    },
+    {
+      "day": "2024-04-26",
+      "prev_days_required": [
+        "2024-04-25"
+      ],
+      "prev_days_loaded": [
+        "2024-04-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 168,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 571472
+    },
+    {
+      "day": "2024-04-27",
+      "prev_days_required": [
+        "2024-04-26"
+      ],
+      "prev_days_loaded": [
+        "2024-04-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 142,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 499699
+    },
+    {
+      "day": "2024-04-28",
+      "prev_days_required": [
+        "2024-04-27"
+      ],
+      "prev_days_loaded": [
+        "2024-04-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 102,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 428006
+    },
+    {
+      "day": "2024-04-29",
+      "prev_days_required": [
+        "2024-04-28"
+      ],
+      "prev_days_loaded": [
+        "2024-04-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 240,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 472662
+    },
+    {
+      "day": "2024-04-30",
+      "prev_days_required": [
+        "2024-04-29"
+      ],
+      "prev_days_loaded": [
+        "2024-04-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 584,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 708040
+    },
+    {
+      "day": "2024-05-01",
+      "prev_days_required": [
+        "2024-04-30"
+      ],
+      "prev_days_loaded": [
+        "2024-04-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 822,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 969183
+    },
+    {
+      "day": "2024-05-02",
+      "prev_days_required": [
+        "2024-05-01"
+      ],
+      "prev_days_loaded": [
+        "2024-05-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 196,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 860292
+    },
+    {
+      "day": "2024-05-03",
+      "prev_days_required": [
+        "2024-05-02"
+      ],
+      "prev_days_loaded": [
+        "2024-05-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 348,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 674595
+    },
+    {
+      "day": "2024-05-04",
+      "prev_days_required": [
+        "2024-05-03"
+      ],
+      "prev_days_loaded": [
+        "2024-05-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 196,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 595452
+    },
+    {
+      "day": "2024-05-05",
+      "prev_days_required": [
+        "2024-05-04"
+      ],
+      "prev_days_loaded": [
+        "2024-05-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 132,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 475161
+    },
+    {
+      "day": "2024-05-06",
+      "prev_days_required": [
+        "2024-05-05"
+      ],
+      "prev_days_loaded": [
+        "2024-05-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 298,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 556838
+    },
+    {
+      "day": "2024-05-07",
+      "prev_days_required": [
+        "2024-05-06"
+      ],
+      "prev_days_loaded": [
+        "2024-05-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 204,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 584445
+    },
+    {
+      "day": "2024-05-08",
+      "prev_days_required": [
+        "2024-05-07"
+      ],
+      "prev_days_loaded": [
+        "2024-05-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 254,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 511509
+    },
+    {
+      "day": "2024-05-09",
+      "prev_days_required": [
+        "2024-05-08"
+      ],
+      "prev_days_loaded": [
+        "2024-05-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 194,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 513683
+    },
+    {
+      "day": "2024-05-10",
+      "prev_days_required": [
+        "2024-05-09"
+      ],
+      "prev_days_loaded": [
+        "2024-05-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 300,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 535261
+    },
+    {
+      "day": "2024-05-11",
+      "prev_days_required": [
+        "2024-05-10"
+      ],
+      "prev_days_loaded": [
+        "2024-05-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 50,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 404551
+    },
+    {
+      "day": "2024-05-12",
+      "prev_days_required": [
+        "2024-05-11"
+      ],
+      "prev_days_loaded": [
+        "2024-05-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 66,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 254630
+    },
+    {
+      "day": "2024-05-13",
+      "prev_days_required": [
+        "2024-05-12"
+      ],
+      "prev_days_loaded": [
+        "2024-05-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 174,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 355885
+    },
+    {
+      "day": "2024-05-14",
+      "prev_days_required": [
+        "2024-05-13"
+      ],
+      "prev_days_loaded": [
+        "2024-05-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 194,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 453171
+    },
+    {
+      "day": "2024-05-15",
+      "prev_days_required": [
+        "2024-05-14"
+      ],
+      "prev_days_loaded": [
+        "2024-05-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 286,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 525415
+    },
+    {
+      "day": "2024-05-16",
+      "prev_days_required": [
+        "2024-05-15"
+      ],
+      "prev_days_loaded": [
+        "2024-05-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 196,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 537603
+    },
+    {
+      "day": "2024-05-17",
+      "prev_days_required": [
+        "2024-05-16"
+      ],
+      "prev_days_loaded": [
+        "2024-05-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 200,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 452332
+    },
+    {
+      "day": "2024-05-18",
+      "prev_days_required": [
+        "2024-05-17"
+      ],
+      "prev_days_loaded": [
+        "2024-05-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 48,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 349149
+    },
+    {
+      "day": "2024-05-19",
+      "prev_days_required": [
+        "2024-05-18"
+      ],
+      "prev_days_loaded": [
+        "2024-05-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 142,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 280158
+    },
+    {
+      "day": "2024-05-20",
+      "prev_days_required": [
+        "2024-05-19"
+      ],
+      "prev_days_loaded": [
+        "2024-05-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 428,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 461330
+    },
+    {
+      "day": "2024-05-21",
+      "prev_days_required": [
+        "2024-05-20"
+      ],
+      "prev_days_loaded": [
+        "2024-05-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 204,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 598710
+    },
+    {
+      "day": "2024-05-22",
+      "prev_days_required": [
+        "2024-05-21"
+      ],
+      "prev_days_loaded": [
+        "2024-05-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 170,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 528146
+    },
+    {
+      "day": "2024-05-23",
+      "prev_days_required": [
+        "2024-05-22"
+      ],
+      "prev_days_loaded": [
+        "2024-05-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 286,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 560371
+    },
+    {
+      "day": "2024-05-24",
+      "prev_days_required": [
+        "2024-05-23"
+      ],
+      "prev_days_loaded": [
+        "2024-05-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 176,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 533386
+    },
+    {
+      "day": "2024-05-25",
+      "prev_days_required": [
+        "2024-05-24"
+      ],
+      "prev_days_loaded": [
+        "2024-05-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 44,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 339609
+    },
+    {
+      "day": "2024-05-26",
+      "prev_days_required": [
+        "2024-05-25"
+      ],
+      "prev_days_loaded": [
+        "2024-05-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 54,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 261194
+    },
+    {
+      "day": "2024-05-27",
+      "prev_days_required": [
+        "2024-05-26"
+      ],
+      "prev_days_loaded": [
+        "2024-05-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 172,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 340322
+    },
+    {
+      "day": "2024-05-28",
+      "prev_days_required": [
+        "2024-05-27"
+      ],
+      "prev_days_loaded": [
+        "2024-05-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 252,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 451777
+    },
+    {
+      "day": "2024-05-29",
+      "prev_days_required": [
+        "2024-05-28"
+      ],
+      "prev_days_loaded": [
+        "2024-05-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 104,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 468023
+    },
+    {
+      "day": "2024-05-30",
+      "prev_days_required": [
+        "2024-05-29"
+      ],
+      "prev_days_loaded": [
+        "2024-05-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 449940
+    },
+    {
+      "day": "2024-05-31",
+      "prev_days_required": [
+        "2024-05-30"
+      ],
+      "prev_days_loaded": [
+        "2024-05-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 158,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 444356
+    },
+    {
+      "day": "2024-06-02",
+      "prev_days_required": [
+        "2024-06-01"
+      ],
+      "prev_days_loaded": [
+        "2024-06-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 92,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 277350
+    },
+    {
+      "day": "2024-06-03",
+      "prev_days_required": [
+        "2024-06-02"
+      ],
+      "prev_days_loaded": [
+        "2024-06-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 182,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 420978
+    },
+    {
+      "day": "2024-06-04",
+      "prev_days_required": [
+        "2024-06-03"
+      ],
+      "prev_days_loaded": [
+        "2024-06-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 170,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 494100
+    },
+    {
+      "day": "2024-06-05",
+      "prev_days_required": [
+        "2024-06-04"
+      ],
+      "prev_days_loaded": [
+        "2024-06-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 140,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 500456
+    },
+    {
+      "day": "2024-06-06",
+      "prev_days_required": [
+        "2024-06-05"
+      ],
+      "prev_days_loaded": [
+        "2024-06-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 112,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 462539
+    },
+    {
+      "day": "2024-06-07",
+      "prev_days_required": [
+        "2024-06-06"
+      ],
+      "prev_days_loaded": [
+        "2024-06-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 322,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 515835
+    },
+    {
+      "day": "2024-06-08",
+      "prev_days_required": [
+        "2024-06-07"
+      ],
+      "prev_days_loaded": [
+        "2024-06-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 4,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 452441
+    },
+    {
+      "day": "2024-06-09",
+      "prev_days_required": [
+        "2024-06-08"
+      ],
+      "prev_days_loaded": [
+        "2024-06-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 38,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 240991
+    },
+    {
+      "day": "2024-06-10",
+      "prev_days_required": [
+        "2024-06-09"
+      ],
+      "prev_days_loaded": [
+        "2024-06-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 58,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 255626
+    },
+    {
+      "day": "2024-06-13",
+      "prev_days_required": [
+        "2024-06-12"
+      ],
+      "prev_days_loaded": [],
+      "prev_days_missing": [
+        "2024-06-12"
+      ],
+      "liq_rows_in_file": 202,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 23,
+      "hours_skipped_empty_window": 1,
+      "agg_trades_loaded": 222485,
+      "warning": "前の日 2024-06-12 の aggTrades zip が無いため、この日の早い時刻の窓は 24.0 時間より短い。"
+    },
+    {
+      "day": "2024-06-14",
+      "prev_days_required": [
+        "2024-06-13"
+      ],
+      "prev_days_loaded": [
+        "2024-06-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 244,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 419768
+    },
+    {
+      "day": "2024-06-15",
+      "prev_days_required": [
+        "2024-06-14"
+      ],
+      "prev_days_loaded": [
+        "2024-06-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 24,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 287159
+    },
+    {
+      "day": "2024-06-16",
+      "prev_days_required": [
+        "2024-06-15"
+      ],
+      "prev_days_loaded": [
+        "2024-06-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 24,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 170970
+    },
+    {
+      "day": "2024-06-17",
+      "prev_days_required": [
+        "2024-06-16"
+      ],
+      "prev_days_loaded": [
+        "2024-06-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 180,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 289719
+    },
+    {
+      "day": "2024-06-18",
+      "prev_days_required": [
+        "2024-06-17"
+      ],
+      "prev_days_loaded": [
+        "2024-06-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 274,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 515354
+    },
+    {
+      "day": "2024-06-19",
+      "prev_days_required": [
+        "2024-06-18"
+      ],
+      "prev_days_loaded": [
+        "2024-06-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 66,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 450573
+    },
+    {
+      "day": "2024-06-20",
+      "prev_days_required": [
+        "2024-06-19"
+      ],
+      "prev_days_loaded": [
+        "2024-06-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 178,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 319458
+    },
+    {
+      "day": "2024-06-21",
+      "prev_days_required": [
+        "2024-06-20"
+      ],
+      "prev_days_loaded": [
+        "2024-06-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 208,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 356430
+    },
+    {
+      "day": "2024-06-22",
+      "prev_days_required": [
+        "2024-06-21"
+      ],
+      "prev_days_loaded": [
+        "2024-06-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 4,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 234139
+    },
+    {
+      "day": "2024-06-23",
+      "prev_days_required": [
+        "2024-06-22"
+      ],
+      "prev_days_loaded": [
+        "2024-06-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 102,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 115085
+    },
+    {
+      "day": "2024-06-24",
+      "prev_days_required": [
+        "2024-06-23"
+      ],
+      "prev_days_loaded": [
+        "2024-06-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 728,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 397971
+    },
+    {
+      "day": "2024-06-25",
+      "prev_days_required": [
+        "2024-06-24"
+      ],
+      "prev_days_loaded": [
+        "2024-06-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 176,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 519726
+    },
+    {
+      "day": "2024-06-26",
+      "prev_days_required": [
+        "2024-06-25"
+      ],
+      "prev_days_loaded": [
+        "2024-06-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 124,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 352127
+    },
+    {
+      "day": "2024-06-27",
+      "prev_days_required": [
+        "2024-06-26"
+      ],
+      "prev_days_loaded": [
+        "2024-06-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 78,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 325117
+    },
+    {
+      "day": "2024-06-28",
+      "prev_days_required": [
+        "2024-06-27"
+      ],
+      "prev_days_loaded": [
+        "2024-06-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 146,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 337392
+    },
+    {
+      "day": "2024-06-29",
+      "prev_days_required": [
+        "2024-06-28"
+      ],
+      "prev_days_loaded": [
+        "2024-06-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 24,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 281058
+    },
+    {
+      "day": "2024-06-30",
+      "prev_days_required": [
+        "2024-06-29"
+      ],
+      "prev_days_loaded": [
+        "2024-06-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 102,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 225277
+    },
+    {
+      "day": "2024-07-01",
+      "prev_days_required": [
+        "2024-06-30"
+      ],
+      "prev_days_loaded": [
+        "2024-06-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 98,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 294013
+    },
+    {
+      "day": "2024-07-02",
+      "prev_days_required": [
+        "2024-07-01"
+      ],
+      "prev_days_loaded": [
+        "2024-07-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 110,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 284777
+    },
+    {
+      "day": "2024-07-03",
+      "prev_days_required": [
+        "2024-07-02"
+      ],
+      "prev_days_loaded": [
+        "2024-07-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 276,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 319084
+    },
+    {
+      "day": "2024-07-04",
+      "prev_days_required": [
+        "2024-07-03"
+      ],
+      "prev_days_loaded": [
+        "2024-07-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 528,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 525159
+    },
+    {
+      "day": "2024-07-05",
+      "prev_days_required": [
+        "2024-07-04"
+      ],
+      "prev_days_loaded": [
+        "2024-07-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 566,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 777520
+    },
+    {
+      "day": "2024-07-06",
+      "prev_days_required": [
+        "2024-07-05"
+      ],
+      "prev_days_loaded": [
+        "2024-07-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 110,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 628795
+    },
+    {
+      "day": "2024-07-07",
+      "prev_days_required": [
+        "2024-07-06"
+      ],
+      "prev_days_loaded": [
+        "2024-07-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 222,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 367026
+    },
+    {
+      "day": "2024-07-08",
+      "prev_days_required": [
+        "2024-07-07"
+      ],
+      "prev_days_loaded": [
+        "2024-07-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 426,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 546790
+    },
+    {
+      "day": "2024-07-09",
+      "prev_days_required": [
+        "2024-07-08"
+      ],
+      "prev_days_loaded": [
+        "2024-07-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 134,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 562737
+    },
+    {
+      "day": "2024-07-10",
+      "prev_days_required": [
+        "2024-07-09"
+      ],
+      "prev_days_loaded": [
+        "2024-07-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 142,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 434752
+    },
+    {
+      "day": "2024-07-11",
+      "prev_days_required": [
+        "2024-07-10"
+      ],
+      "prev_days_loaded": [
+        "2024-07-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 200,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 461031
+    },
+    {
+      "day": "2024-07-12",
+      "prev_days_required": [
+        "2024-07-11"
+      ],
+      "prev_days_loaded": [
+        "2024-07-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 170,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 428572
+    },
+    {
+      "day": "2024-07-13",
+      "prev_days_required": [
+        "2024-07-12"
+      ],
+      "prev_days_loaded": [
+        "2024-07-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 74,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 318492
+    },
+    {
+      "day": "2024-07-14",
+      "prev_days_required": [
+        "2024-07-13"
+      ],
+      "prev_days_loaded": [
+        "2024-07-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 152,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 289336
+    },
+    {
+      "day": "2024-07-15",
+      "prev_days_required": [
+        "2024-07-14"
+      ],
+      "prev_days_loaded": [
+        "2024-07-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 262,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 456671
+    },
+    {
+      "day": "2024-07-16",
+      "prev_days_required": [
+        "2024-07-15"
+      ],
+      "prev_days_loaded": [
+        "2024-07-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 332,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 596496
+    },
+    {
+      "day": "2024-07-17",
+      "prev_days_required": [
+        "2024-07-16"
+      ],
+      "prev_days_loaded": [
+        "2024-07-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 236,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 546598
+    },
+    {
+      "day": "2024-07-18",
+      "prev_days_required": [
+        "2024-07-17"
+      ],
+      "prev_days_loaded": [
+        "2024-07-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 168,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 436746
+    },
+    {
+      "day": "2024-07-19",
+      "prev_days_required": [
+        "2024-07-18"
+      ],
+      "prev_days_loaded": [
+        "2024-07-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 218,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 438868
+    },
+    {
+      "day": "2024-07-20",
+      "prev_days_required": [
+        "2024-07-19"
+      ],
+      "prev_days_loaded": [
+        "2024-07-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 82,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 375901
+    },
+    {
+      "day": "2024-07-21",
+      "prev_days_required": [
+        "2024-07-20"
+      ],
+      "prev_days_loaded": [
+        "2024-07-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 232,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 313930
+    },
+    {
+      "day": "2024-07-22",
+      "prev_days_required": [
+        "2024-07-21"
+      ],
+      "prev_days_loaded": [
+        "2024-07-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 158,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 378743
+    },
+    {
+      "day": "2024-07-23",
+      "prev_days_required": [
+        "2024-07-22"
+      ],
+      "prev_days_loaded": [
+        "2024-07-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 216,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 449900
+    },
+    {
+      "day": "2024-07-24",
+      "prev_days_required": [
+        "2024-07-23"
+      ],
+      "prev_days_loaded": [
+        "2024-07-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 130,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 460009
+    },
+    {
+      "day": "2024-07-25",
+      "prev_days_required": [
+        "2024-07-24"
+      ],
+      "prev_days_loaded": [
+        "2024-07-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 258,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 484325
+    },
+    {
+      "day": "2024-07-26",
+      "prev_days_required": [
+        "2024-07-25"
+      ],
+      "prev_days_loaded": [
+        "2024-07-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 493559
+    },
+    {
+      "day": "2024-07-27",
+      "prev_days_required": [
+        "2024-07-26"
+      ],
+      "prev_days_loaded": [
+        "2024-07-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 256,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 493357
+    },
+    {
+      "day": "2024-07-28",
+      "prev_days_required": [
+        "2024-07-27"
+      ],
+      "prev_days_loaded": [
+        "2024-07-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 62,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 381842
+    },
+    {
+      "day": "2024-07-29",
+      "prev_days_required": [
+        "2024-07-28"
+      ],
+      "prev_days_loaded": [
+        "2024-07-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 290,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 374844
+    },
+    {
+      "day": "2024-07-30",
+      "prev_days_required": [
+        "2024-07-29"
+      ],
+      "prev_days_loaded": [
+        "2024-07-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 184,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 486740
+    },
+    {
+      "day": "2024-07-31",
+      "prev_days_required": [
+        "2024-07-30"
+      ],
+      "prev_days_loaded": [
+        "2024-07-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 224,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 423722
+    },
+    {
+      "day": "2024-08-01",
+      "prev_days_required": [
+        "2024-07-31"
+      ],
+      "prev_days_loaded": [
+        "2024-07-31"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 474,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 521247
+    },
+    {
+      "day": "2024-08-02",
+      "prev_days_required": [
+        "2024-08-01"
+      ],
+      "prev_days_loaded": [
+        "2024-08-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 500,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 686782
+    },
+    {
+      "day": "2024-08-03",
+      "prev_days_required": [
+        "2024-08-02"
+      ],
+      "prev_days_loaded": [
+        "2024-08-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 302,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 618350
+    },
+    {
+      "day": "2024-08-04",
+      "prev_days_required": [
+        "2024-08-03"
+      ],
+      "prev_days_loaded": [
+        "2024-08-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 558,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 454881
+    },
+    {
+      "day": "2024-08-05",
+      "prev_days_required": [
+        "2024-08-04"
+      ],
+      "prev_days_loaded": [
+        "2024-08-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 1904,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1423739
+    },
+    {
+      "day": "2024-08-06",
+      "prev_days_required": [
+        "2024-08-05"
+      ],
+      "prev_days_loaded": [
+        "2024-08-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 358,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 1566918
+    },
+    {
+      "day": "2024-08-07",
+      "prev_days_required": [
+        "2024-08-06"
+      ],
+      "prev_days_loaded": [
+        "2024-08-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 366,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 614551
+    },
+    {
+      "day": "2024-08-08",
+      "prev_days_required": [
+        "2024-08-07"
+      ],
+      "prev_days_loaded": [
+        "2024-08-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 402,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 571351
+    },
+    {
+      "day": "2024-08-09",
+      "prev_days_required": [
+        "2024-08-08"
+      ],
+      "prev_days_loaded": [
+        "2024-08-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 208,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 517717
+    },
+    {
+      "day": "2024-08-10",
+      "prev_days_required": [
+        "2024-08-09"
+      ],
+      "prev_days_loaded": [
+        "2024-08-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 58,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 285715
+    },
+    {
+      "day": "2024-08-11",
+      "prev_days_required": [
+        "2024-08-10"
+      ],
+      "prev_days_loaded": [
+        "2024-08-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 272,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 227645
+    },
+    {
+      "day": "2024-08-12",
+      "prev_days_required": [
+        "2024-08-11"
+      ],
+      "prev_days_loaded": [
+        "2024-08-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 322,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 402589
+    },
+    {
+      "day": "2024-08-13",
+      "prev_days_required": [
+        "2024-08-12"
+      ],
+      "prev_days_loaded": [
+        "2024-08-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 186,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 437764
+    },
+    {
+      "day": "2024-08-14",
+      "prev_days_required": [
+        "2024-08-13"
+      ],
+      "prev_days_loaded": [
+        "2024-08-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 232,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 396314
+    },
+    {
+      "day": "2024-08-15",
+      "prev_days_required": [
+        "2024-08-14"
+      ],
+      "prev_days_loaded": [
+        "2024-08-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 360,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 521952
+    },
+    {
+      "day": "2024-08-16",
+      "prev_days_required": [
+        "2024-08-15"
+      ],
+      "prev_days_loaded": [
+        "2024-08-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 200,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 500890
+    },
+    {
+      "day": "2024-08-17",
+      "prev_days_required": [
+        "2024-08-16"
+      ],
+      "prev_days_loaded": [
+        "2024-08-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 30,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 264116
+    },
+    {
+      "day": "2024-08-18",
+      "prev_days_required": [
+        "2024-08-17"
+      ],
+      "prev_days_loaded": [
+        "2024-08-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 189263
+    },
+    {
+      "day": "2024-08-19",
+      "prev_days_required": [
+        "2024-08-18"
+      ],
+      "prev_days_loaded": [
+        "2024-08-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 126,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 266956
+    },
+    {
+      "day": "2024-08-20",
+      "prev_days_required": [
+        "2024-08-19"
+      ],
+      "prev_days_loaded": [
+        "2024-08-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 196,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 360052
+    },
+    {
+      "day": "2024-08-21",
+      "prev_days_required": [
+        "2024-08-20"
+      ],
+      "prev_days_loaded": [
+        "2024-08-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 188,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 417534
+    },
+    {
+      "day": "2024-08-22",
+      "prev_days_required": [
+        "2024-08-21"
+      ],
+      "prev_days_loaded": [
+        "2024-08-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 144,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 390934
+    },
+    {
+      "day": "2024-08-23",
+      "prev_days_required": [
+        "2024-08-22"
+      ],
+      "prev_days_loaded": [
+        "2024-08-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 308,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 456232
+    },
+    {
+      "day": "2024-08-24",
+      "prev_days_required": [
+        "2024-08-23"
+      ],
+      "prev_days_loaded": [
+        "2024-08-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 84,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 388105
+    },
+    {
+      "day": "2024-08-25",
+      "prev_days_required": [
+        "2024-08-24"
+      ],
+      "prev_days_loaded": [
+        "2024-08-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 78,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 214300
+    },
+    {
+      "day": "2024-08-26",
+      "prev_days_required": [
+        "2024-08-25"
+      ],
+      "prev_days_loaded": [
+        "2024-08-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 132,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 249054
+    },
+    {
+      "day": "2024-08-27",
+      "prev_days_required": [
+        "2024-08-26"
+      ],
+      "prev_days_loaded": [
+        "2024-08-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 356,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 395217
+    },
+    {
+      "day": "2024-08-28",
+      "prev_days_required": [
+        "2024-08-27"
+      ],
+      "prev_days_loaded": [
+        "2024-08-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 292,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 483349
+    },
+    {
+      "day": "2024-08-29",
+      "prev_days_required": [
+        "2024-08-28"
+      ],
+      "prev_days_loaded": [
+        "2024-08-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 178,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 417885
+    },
+    {
+      "day": "2024-08-30",
+      "prev_days_required": [
+        "2024-08-29"
+      ],
+      "prev_days_loaded": [
+        "2024-08-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 172,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 378581
+    },
+    {
+      "day": "2024-08-31",
+      "prev_days_required": [
+        "2024-08-30"
+      ],
+      "prev_days_loaded": [
+        "2024-08-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 20,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 274169
+    },
+    {
+      "day": "2024-09-01",
+      "prev_days_required": [
+        "2024-08-31"
+      ],
+      "prev_days_loaded": [
+        "2024-08-31"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 232,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 226675
+    },
+    {
+      "day": "2024-09-02",
+      "prev_days_required": [
+        "2024-09-01"
+      ],
+      "prev_days_loaded": [
+        "2024-09-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 112,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 297716
+    },
+    {
+      "day": "2024-09-03",
+      "prev_days_required": [
+        "2024-09-02"
+      ],
+      "prev_days_loaded": [
+        "2024-09-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 168,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 305832
+    },
+    {
+      "day": "2024-09-04",
+      "prev_days_required": [
+        "2024-09-03"
+      ],
+      "prev_days_loaded": [
+        "2024-09-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 280,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 385512
+    },
+    {
+      "day": "2024-09-05",
+      "prev_days_required": [
+        "2024-09-04"
+      ],
+      "prev_days_loaded": [
+        "2024-09-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 206,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 405750
+    },
+    {
+      "day": "2024-09-06",
+      "prev_days_required": [
+        "2024-09-05"
+      ],
+      "prev_days_loaded": [
+        "2024-09-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 514,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 447888
+    },
+    {
+      "day": "2024-09-07",
+      "prev_days_required": [
+        "2024-09-06"
+      ],
+      "prev_days_loaded": [
+        "2024-09-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 70,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 372652
+    },
+    {
+      "day": "2024-09-08",
+      "prev_days_required": [
+        "2024-09-07"
+      ],
+      "prev_days_loaded": [
+        "2024-09-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 96,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 221123
+    },
+    {
+      "day": "2024-09-09",
+      "prev_days_required": [
+        "2024-09-08"
+      ],
+      "prev_days_loaded": [
+        "2024-09-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 218,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 301586
+    },
+    {
+      "day": "2024-09-10",
+      "prev_days_required": [
+        "2024-09-09"
+      ],
+      "prev_days_loaded": [
+        "2024-09-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 134,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 338037
+    },
+    {
+      "day": "2024-09-11",
+      "prev_days_required": [
+        "2024-09-10"
+      ],
+      "prev_days_loaded": [
+        "2024-09-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 246,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 367767
+    },
+    {
+      "day": "2024-09-12",
+      "prev_days_required": [
+        "2024-09-11"
+      ],
+      "prev_days_loaded": [
+        "2024-09-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 150,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 394299
+    },
+    {
+      "day": "2024-09-13",
+      "prev_days_required": [
+        "2024-09-12"
+      ],
+      "prev_days_loaded": [
+        "2024-09-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 166,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 344392
+    },
+    {
+      "day": "2024-09-14",
+      "prev_days_required": [
+        "2024-09-13"
+      ],
+      "prev_days_loaded": [
+        "2024-09-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 42,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 265756
+    },
+    {
+      "day": "2024-09-15",
+      "prev_days_required": [
+        "2024-09-14"
+      ],
+      "prev_days_loaded": [
+        "2024-09-14"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 112,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 208303
+    },
+    {
+      "day": "2024-09-16",
+      "prev_days_required": [
+        "2024-09-15"
+      ],
+      "prev_days_loaded": [
+        "2024-09-15"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 214,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 270564
+    },
+    {
+      "day": "2024-09-17",
+      "prev_days_required": [
+        "2024-09-16"
+      ],
+      "prev_days_loaded": [
+        "2024-09-16"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 242,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 359982
+    },
+    {
+      "day": "2024-09-18",
+      "prev_days_required": [
+        "2024-09-17"
+      ],
+      "prev_days_loaded": [
+        "2024-09-17"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 222,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 423865
+    },
+    {
+      "day": "2024-09-19",
+      "prev_days_required": [
+        "2024-09-18"
+      ],
+      "prev_days_loaded": [
+        "2024-09-18"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 192,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 436806
+    },
+    {
+      "day": "2024-09-20",
+      "prev_days_required": [
+        "2024-09-19"
+      ],
+      "prev_days_loaded": [
+        "2024-09-19"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 156,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 380959
+    },
+    {
+      "day": "2024-09-21",
+      "prev_days_required": [
+        "2024-09-20"
+      ],
+      "prev_days_loaded": [
+        "2024-09-20"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 22,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 242959
+    },
+    {
+      "day": "2024-09-22",
+      "prev_days_required": [
+        "2024-09-21"
+      ],
+      "prev_days_loaded": [
+        "2024-09-21"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 118,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 178080
+    },
+    {
+      "day": "2024-09-23",
+      "prev_days_required": [
+        "2024-09-22"
+      ],
+      "prev_days_loaded": [
+        "2024-09-22"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 150,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 271531
+    },
+    {
+      "day": "2024-09-24",
+      "prev_days_required": [
+        "2024-09-23"
+      ],
+      "prev_days_loaded": [
+        "2024-09-23"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 180,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 331116
+    },
+    {
+      "day": "2024-09-25",
+      "prev_days_required": [
+        "2024-09-24"
+      ],
+      "prev_days_loaded": [
+        "2024-09-24"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 88,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 297793
+    },
+    {
+      "day": "2024-09-26",
+      "prev_days_required": [
+        "2024-09-25"
+      ],
+      "prev_days_loaded": [
+        "2024-09-25"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 218,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 309036
+    },
+    {
+      "day": "2024-09-27",
+      "prev_days_required": [
+        "2024-09-26"
+      ],
+      "prev_days_loaded": [
+        "2024-09-26"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 126,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 347117
+    },
+    {
+      "day": "2024-09-28",
+      "prev_days_required": [
+        "2024-09-27"
+      ],
+      "prev_days_loaded": [
+        "2024-09-27"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 40,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 247090
+    },
+    {
+      "day": "2024-09-29",
+      "prev_days_required": [
+        "2024-09-28"
+      ],
+      "prev_days_loaded": [
+        "2024-09-28"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 28,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 151471
+    },
+    {
+      "day": "2024-09-30",
+      "prev_days_required": [
+        "2024-09-29"
+      ],
+      "prev_days_loaded": [
+        "2024-09-29"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 292,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 274101
+    },
+    {
+      "day": "2024-10-01",
+      "prev_days_required": [
+        "2024-09-30"
+      ],
+      "prev_days_loaded": [
+        "2024-09-30"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 430,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 481478
+    },
+    {
+      "day": "2024-10-02",
+      "prev_days_required": [
+        "2024-10-01"
+      ],
+      "prev_days_loaded": [
+        "2024-10-01"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 228,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 512485
+    },
+    {
+      "day": "2024-10-03",
+      "prev_days_required": [
+        "2024-10-02"
+      ],
+      "prev_days_loaded": [
+        "2024-10-02"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 170,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 440811
+    },
+    {
+      "day": "2024-10-04",
+      "prev_days_required": [
+        "2024-10-03"
+      ],
+      "prev_days_loaded": [
+        "2024-10-03"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 130,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 383165
+    },
+    {
+      "day": "2024-10-05",
+      "prev_days_required": [
+        "2024-10-04"
+      ],
+      "prev_days_loaded": [
+        "2024-10-04"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 32,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 247235
+    },
+    {
+      "day": "2024-10-06",
+      "prev_days_required": [
+        "2024-10-05"
+      ],
+      "prev_days_loaded": [
+        "2024-10-05"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 60,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 155320
+    },
+    {
+      "day": "2024-10-07",
+      "prev_days_required": [
+        "2024-10-06"
+      ],
+      "prev_days_loaded": [
+        "2024-10-06"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 234,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 274325
+    },
+    {
+      "day": "2024-10-08",
+      "prev_days_required": [
+        "2024-10-07"
+      ],
+      "prev_days_loaded": [
+        "2024-10-07"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 132,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 356365
+    },
+    {
+      "day": "2024-10-09",
+      "prev_days_required": [
+        "2024-10-08"
+      ],
+      "prev_days_loaded": [
+        "2024-10-08"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 214,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 308828
+    },
+    {
+      "day": "2024-10-10",
+      "prev_days_required": [
+        "2024-10-09"
+      ],
+      "prev_days_loaded": [
+        "2024-10-09"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 278,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 302547
+    },
+    {
+      "day": "2024-10-11",
+      "prev_days_required": [
+        "2024-10-10"
+      ],
+      "prev_days_loaded": [
+        "2024-10-10"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 146,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 309223
+    },
+    {
+      "day": "2024-10-12",
+      "prev_days_required": [
+        "2024-10-11"
+      ],
+      "prev_days_loaded": [
+        "2024-10-11"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 36,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 230157
+    },
+    {
+      "day": "2024-10-13",
+      "prev_days_required": [
+        "2024-10-12"
+      ],
+      "prev_days_loaded": [
+        "2024-10-12"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 96,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 154697
+    },
+    {
+      "day": "2024-10-14",
+      "prev_days_required": [
+        "2024-10-13"
+      ],
+      "prev_days_loaded": [
+        "2024-10-13"
+      ],
+      "prev_days_missing": [],
+      "liq_rows_in_file": 100,
+      "liq_rows_dropped_no_price": 0,
+      "hours_written": 24,
+      "hours_skipped_empty_window": 0,
+      "agg_trades_loaded": 283900
+    }
+  ],
+  "notes": [
+    "観測表のみ。判定(当たる/当たらない、使える/使えない)は書いていない。",
+    "帯 = ノード(数量の上位 10% のビン)の代表価格 × (1 + offset) が入るビンの ±1 ビン。offset は SELL −0.0056 / BUY +0.0070(FULL §3 の side 別中央値)。",
+    "in_band_rate = 次の 1 時間にその side で起きた清算のうち帯に入った件数の割合。",
+    "band_coverage = 帯(範囲外は切り落とし、重なりは 1 回)の価格幅 / プロファイルの最安値〜最高値の幅。band_coverage_log は同じものをビン本数で数えた値。",
+    "trade_in_band_rate = 同じ 1 時間の全 aggTrades のうち帯に入った**件数**の割合(数量では重み付けていない)。",
+    "帯は清算より前の情報(直前 W の積み上げ)だけで引いている。offset の 56 / 70bp は全 472 日の結果から採った値なので、その意味で全期間の情報が入っている(EXT §7)。"
+  ]
+}
