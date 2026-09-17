@@ -196,8 +196,8 @@ L-◯◯◯ で承認)」の形で出す。
 | A1 | `bin_pct`(薄い / 中 / 厚い)の 3 分位 | 24h | 3 | FULL §3 の列 |
 | A2 | 約定ノードからの距離 `dist_node_bp_liqdir` の 3 分位 | 8h | 3 | OI_DIST §2.0 |
 | A2 | 約定ノードからの距離 `dist_node_bp_liqdir` の 3 分位 | 24h | 3 | OI_DIST §2.0 |
-| A3 | 約定 VWAP(重心)からの距離 `dist_vwap_bp_liqdir` の 3 分位 | 8h | 3 | 同上 |
-| A3 | 約定 VWAP(重心)からの距離 `dist_vwap_bp_liqdir` の 3 分位 | 24h | 3 | 同上 |
+| A3 | 約定 VWAP からの距離(建玉の重心 A5 とは別の量) `dist_vwap_bp_liqdir` の 3 分位 | 8h | 3 | 同上 |
+| A3 | 約定 VWAP からの距離(建玉の重心 A5 とは別の量) `dist_vwap_bp_liqdir` の 3 分位 | 24h | 3 | 同上 |
 | A4 | 建玉ノードからの距離 `oi_dist_node_bp_liqdir` の 3 分位 | 8h | 3 | 同上 |
 | A4 | 建玉ノードからの距離 `oi_dist_node_bp_liqdir` の 3 分位 | 24h | 3 | 同上 |
 | A5 | 建玉 平均建値からの距離 `oi_dist_vwap_bp_liqdir` の 3 分位 | 8h | 3 | 同上 |
