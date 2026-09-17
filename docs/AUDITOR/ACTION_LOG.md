@@ -6245,3 +6245,13 @@ $ curl -sS -o ... -w "%{http_code} %{size_download}" .../BTCUSD_PERP-aggTrades-2
 200 1178051      (sha256sum -c 公式 .CHECKSUM: OK、展開 89,972 行)
 2023-09-25 zip http=404 / 2024-06-11 zip http=404 / 2024-06-12 zip http=404 (.CHECKSUM も 404、NoSuchKey)
 ```
+
+### 全テスト(リード、2026-09-17。行動の監査 2 巡目が「出所不明の 1,946」を止めたので走らせた)
+
+```
+$ PYTHONPATH=src python -m pytest 2>&1 | tail -1
+1947 passed, 1 skipped in 346.61s (0:05:46)
+$ grep -c "def test_" tests/test_o3c_price_level_table.py
+14
+```
+(1,948 件収集。`-q` 付きだと集計行が出ないので `-q` 無しで走らせた。委任先が報告した 1,946 は、1 件目のテストが 12 件だった時点の数で、その後 14 件になった。)
