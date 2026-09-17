@@ -69,3 +69,9 @@ rem Read-only listing of every data\ws recording (member count, complete?, recov
 rem rows) -> data\WS_GZ_LISTING.json; shared by share_logs.bat (docs/DATA.md section 0).
 ".venv\Scripts\python.exe" "scripts\repair_gz_listing.py" --json "data\WS_GZ_LISTING.json" >> "logs\fetch.out.log" 2>&1
 ".venv\Scripts\python.exe" "scripts\data_quality.py" >> "logs\fetch.out.log" 2>&1
+rem Ledger cross-check (owner decision L-190): lists backtest_data\ units that
+rem have no row in docs\DATA.md, docs\DATA.md location paths that do not exist,
+rem files placed without going through the intake ledger, and rows whose
+rem "last checked" date is older than 14 days -> data\LEDGER_CHECK.json.
+rem Read-only (writes that one JSON); always exits 0 so it cannot stop this batch.
+".venv\Scripts\python.exe" "scripts\check_data_ledger.py" --json "data\LEDGER_CHECK.json" >> "logs\fetch.out.log" 2>&1

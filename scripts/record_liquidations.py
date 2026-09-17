@@ -41,6 +41,14 @@ Gate.io はローリング約 90 日、OKX は約 24 時間を REST で公開し
 同じファイル名で新規に書き始める。退避したファイルは
 `scripts/repair_liquidation_gz.py` が `*.trunc*.jsonl.gz` としてそのまま拾う。
 
+**bitmex を既定から外した(2026-09-17、L-190)**: XBTUSD は 2026-09-16 12:00 UTC に
+上場廃止・清算済み(`/api/v1/instrument?symbol=XBTUSD` が `"state":"Settled"`、
+`docs/DATA/probes/20260917_o3c_collection.log` 3 行目)で、取引所自体が 2026-09-23 に
+閉鎖する(`docs/PHASE2/O3C/DATA_AVAILABILITY.md:127-128`)。購読先が消えた常駐接続は
+再接続を繰り返すだけなので既定から外す。**`VENUES` の項は残してあるので
+`--venues bitmex` と明示すれば今までどおり接続する**(過去ファイルの読み手と
+`check_liquidation_feeds.py` の判定規則を壊さないため)。
+
 Usage:
     python scripts/record_liquidations.py                     # 到達確認済みの既定ベニュー
     python scripts/record_liquidations.py --venues bitmex,okx
@@ -122,6 +130,11 @@ VENUES: dict[str, dict] = {
         "keepalive": ("ping", 25.0),
     },
 }
+
+# 既定で常駐させるベニュー。**bitmex は 2026-09-17 に既定から外した**(L-190、
+# 冒頭の docstring 参照)。`VENUES` 自体からは消していないので、`--venues bitmex`
+# と明示すれば従来どおり接続できる。
+DEFAULT_VENUES = [v for v in VENUES if v != "bitmex"]
 
 BACKOFF_START = 2.0
 BACKOFF_MAX = 120.0
@@ -345,12 +358,20 @@ async def run(venues: list[str], minutes: float | None, lock=None) -> None:
             beat.cancel()
 
 
-def main() -> int:
+def build_arg_parser() -> argparse.ArgumentParser:
+    """引数パーサ。既定値をテストから直に読めるように関数へ切り出した。"""
     ap = argparse.ArgumentParser()
-    ap.add_argument("--venues", default=",".join(VENUES),
-                    help="カンマ区切り。既定は全部(届かないものは再接続を繰り返すだけで無害)")
+    ap.add_argument("--venues", default=",".join(DEFAULT_VENUES),
+                    help="カンマ区切り。既定は bitmex を除く全部"
+                         "(bitmex は 2026-09-16 に上場廃止・09-23 閉鎖。"
+                         "明示すれば今までどおり接続する)")
     ap.add_argument("--minutes", type=float, default=None,
                     help="この分数で止める(既定: Ctrl+C まで走り続ける)")
+    return ap
+
+
+def main() -> int:
+    ap = build_arg_parser()
     args = ap.parse_args()
 
     venues = [v.strip() for v in args.venues.split(",") if v.strip()]

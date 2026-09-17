@@ -220,3 +220,46 @@ def test_main_exit_zero_when_clean(tmp_path: Path, monkeypatch):
     rc = vs.main()
     assert rc == 0
     assert json.loads(out_path.read_text())["ok"] is True
+
+
+def test_md5sums_with_leading_dot_slash_is_matched(tmp_path: Path):
+    """``./<path>`` 形式の MD5SUMS でも照合される(2026-09-17)。
+
+    `find . -type f | xargs md5sum` が出す形。正規化しないと台帳の全行が
+    missing、実ファイルの全部が extra になる
+    (`backtest_data/binance_cm_o3c_20260913` で実際に起きていた)。
+    """
+    bt = tmp_path / "backtest_data"
+    _write(bt / "unit_dot" / "README.md", "readme-content")
+    _write(bt / "unit_dot" / "sub" / "d.csv", "d-content")
+    r_md5 = il.md5_of(bt / "unit_dot" / "README.md")
+    d_md5 = il.md5_of(bt / "unit_dot" / "sub" / "d.csv")
+    _write(bt / "unit_dot" / "MD5SUMS",
+           f"{r_md5}  ./README.md\n{d_md5}  ./sub/d.csv\n")
+
+    report = vs.run(tmp_path, write_seal=True)
+    unit = {u["unit"]: u for u in report["units"]}["unit_dot"]
+
+    assert unit["status"] == "verified"
+    assert unit["matched"] == 2
+    assert unit["missing"] == []
+    assert unit["extra"] == []
+    assert report["ok"] is True
+
+
+def test_md5sums_without_dot_slash_is_unchanged(tmp_path: Path):
+    """`./` の無い従来形式の挙動は変わらない(不一致もそのまま出る)。"""
+    bt = tmp_path / "backtest_data"
+    _write(bt / "unit_plain" / "a.csv", "a-content")
+    _write(bt / "unit_plain" / "b.csv", "b-content")
+    a_md5 = il.md5_of(bt / "unit_plain" / "a.csv")
+    _write(bt / "unit_plain" / "MD5SUMS",
+           f"{a_md5}  a.csv\n{'0' * 32}  gone.csv\n")
+
+    report = vs.run(tmp_path, write_seal=True)
+    unit = {u["unit"]: u for u in report["units"]}["unit_plain"]
+
+    assert unit["matched"] == 1
+    assert unit["missing"] == ["gone.csv"]
+    assert unit["extra"] == ["b.csv"]
+    assert report["ok"] is False

@@ -109,6 +109,17 @@ def _parse_md5sums(path: Path) -> dict[str, str]:
             continue
         digest, rel = parts
         rel = rel.lstrip("*").strip()
+        # ``md5sum -c`` accepts a leading "./" (that is what ``find . -type f
+        # | xargs md5sum`` emits) and Windows tooling emits ".\\".  The unit's
+        # own file listing is built with ``Path.relative_to`` and never carries
+        # such a prefix, so without stripping it EVERY line reads as "listed
+        # but missing on disk" while every real file reads as "extra".
+        # Measured 2026-09-17: backtest_data/binance_cm_o3c_20260913/MD5SUMS
+        # is written entirely in the "./<path>" form, and the owner PC's
+        # paper_logs/SNAPSHOT_VERIFY.json (2026-09-15) scored that unit
+        # matched=0 / missing=2,691 for exactly this reason.
+        while rel.startswith("./") or rel.startswith(".\\"):
+            rel = rel[2:]
         entries[rel] = digest.strip().lower()
     return entries
 

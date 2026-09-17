@@ -307,3 +307,27 @@ def test_share_logs_never_tracks_a_file_that_is_being_written(tmp_path=None):
         # backtest_data\ は書き終わったスナップショットなので対象外。
         if re.search(r"(?<![A-Za-z0-9_])data\\", line):
             raise AssertionError(f"生データを直接追跡している: {line.strip()}")
+
+
+def test_default_venues_exclude_bitmex():
+    """**bitmex は既定から外す**(2026-09-17、L-190)。
+
+    XBTUSD は 2026-09-16 12:00 UTC に上場廃止・清算済み(`"state":"Settled"`)、
+    取引所は 2026-09-23 に閉鎖。購読先が消えた常駐接続は再接続を繰り返すだけ。
+    """
+    assert "bitmex" not in rec.DEFAULT_VENUES
+    # 他のベニューは落としていない
+    assert set(rec.DEFAULT_VENUES) == set(rec.VENUES) - {"bitmex"}
+    # 引数を渡さなかったときの既定値にも現れない
+    default = rec.build_arg_parser().parse_args([]).venues
+    assert "bitmex" not in default.split(",")
+
+
+def test_bitmex_is_still_accepted_when_named_explicitly():
+    """**定義は残す**。過去ファイルの読み手を壊さないため、明示すれば接続できる。"""
+    assert "bitmex" in rec.VENUES
+    args = rec.build_arg_parser().parse_args(["--venues", "bitmex"])
+    venues = [v.strip() for v in args.venues.split(",") if v.strip()]
+    assert venues == ["bitmex"]
+    # main() の未知ベニュー判定(`v not in VENUES`)を通る
+    assert [v for v in venues if v not in rec.VENUES] == []
