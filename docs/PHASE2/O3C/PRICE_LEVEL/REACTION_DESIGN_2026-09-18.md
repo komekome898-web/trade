@@ -364,7 +364,7 @@ L-◯◯◯ で承認)」の形で出す。
 **在庫の確認(`ls` のみ。事実)**:
 - `backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/` に `candles_1m_2023.csv.gz`(525,600 行)・
   `candles_1m_2024.csv.gz`(527,040 行)。`candles_1m_index.json` が行数と md5 を持つ。
-- `data/tardis/bitflyer_FX_BTC_JPY_trades/` は全 87 ファイル(各月 1 日)。
+- `data/tardis/bitflyer_FX_BTC_JPY_trades/` は`.csv.gz` 85 本(各月 1 日、2019-09-01〜2026-09-01)+ `MD5SUMS` + `_fetch_summary.json` の 87 ファイル。
   **窓 2023-06-25〜2024-10-14 に入るのは `FX_BTC_JPY_20230701.csv.gz` 〜 `FX_BTC_JPY_20241001.csv.gz` の 16 日**
   (2023-07 〜 2024-10 の各 1 日、`FX_BTC_JPY_20230601.csv.gz` は 2023-06-01 で窓の外)。
   **16 日が正しい(本監査 1 で解決)。**台帳側も訂正済み: `docs/DATA.md:67` に 2026-09-18 の訂正を

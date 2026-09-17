@@ -7301,3 +7301,32 @@ L=200: 損失率 long 10.0bp short 10.1bp 近似 10.0bp | 逆算: 近似 200.2 �
 オーナーの負荷: 増える(空行 1 行「按分を価格まで側別に分ける」への答えだけ。これは原文に無い切り方で、CLAUDE.md §0.1「空行があればそこだけ聞く」に当たる = 枠組みの判断としてオーナーが決めること。オーナー PC の作業と「書き始めてよいか」の往復は消えている)
 品質: 上がる
 判定: 通す
+
+## 057 — L-196(6.OK 7.OK 進めてください / 監査役の逐語は求めた時に)の実施: 段 A の設計文書(走らせない)、按分を価格まで側別に分ける版、検収と提示(2026-09-18)
+
+**オーナーの逐語**: L-196「**6.OK 7.OK 進めてください。監査役の効果が信頼できるので、監査役の逐語は私が求めた時に出力するようにしてください。**」(承認された行の文面はリードの返答 056 §7 の左列 = オーナー自身の語ではない)。
+
+一手: L-196 を記録・コミット(dc27d3a)→ 委任 2 本を並行(opus: `docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md`、走らせない / opus: `scripts/o3c_oi_distance.py --side-price split`、`backtest_data/o3c_oi_distance_split_20260918/{w8,w24}`、`OI_DISTANCE_SPLIT_2026-09-18.md`)→ `owner-auditor` 16 件 + 6 件、全部処置(sonnet に委任。`VERDICTS/2026-09-18_reaction_design.md`、`2026-09-18_oi_distance_split.md`)→ リードの検収(下)→ コミット(00d7e27)→ `owner-model-auditor`(返答本文には貼らない。L-196)。
+
+### 検収のコマンドと出力(リード、2026-09-18)
+
+```
+$ ls data/tardis/bitflyer_FX_BTC_JPY_trades/ | grep -c 'csv.gz$'; ls ... | grep -o '20[0-9]\{6\}' | awk '$1>=20230625 && $1<=20241014' | wc -l
+85
+16          → 台帳 docs/DATA.md:67 の「17 標本日」を訂正(窓に入るのは 16。17 は 2023-06-01 を含めた月数)
+$ python3 - (split の summary.json: 側別重心・側別ノードの q50、NaN、VWAP 差、片側 0 件の桶)
+w8 split {'SELL': (83.8, 55.07), 'BUY': (94.05, 54.32)} nan 15553 spread q50 -0.75 43 81
+w24 split {'SELL': (97.23, 51.56), 'BUY': (133.13, 56.38)} nan 15426 spread q50 -0.75 43 81
+$ for d in w8 w24; do (cd backtest_data/o3c_oi_distance_split_20260918/$d && md5sum -c MD5SUMS); done
+table.csv: OK summary.json: OK table.csv: OK summary.json: OK
+$ grep -c '\./' backtest_data/o3c_oi_distance_split_20260918/*/MD5SUMS → w24 0 / w8 0
+$ PYTHONPATH=src python -m pytest tests/test_o3c_oi_distance.py -p no:cacheprovider -o addopts="" | tail -1
+============================== 18 passed in 0.34s ==============================
+$ python3 - (監査役の指摘 1 の再計算: 20260917/w8 と split/w8 の table.csv を kind,time_ms,side で突き合わせ、oi_side_total_delta の完全一致)
+rows 106796 non-nan 37845 exact equal 23042 60.9% rel max 2.6197470506254493e-15     ← 本文の 23,042 / 60.9% を再現。監査役の 21,033 は再現せず(原因未確認)
+$ PYTHONPATH=src timeout 590 python -m pytest tests/ -p no:cacheprovider 2>&1 | tail -1
+1991 passed, 1 skipped in 340.34s (0:05:40)     → 収集 1,992 = 1,987 + 5。CLAUDE.md §3 を更新
+$ grep -n '予測できる\|使える\|有効' docs/PHASE2/O3C/PRICE_LEVEL/OI_DISTANCE_SPLIT_2026-09-18.md → 8:(禁止の宣言) 33:(原文の引用) 440:(「1 つも書いていない」) = 判定語の使用 0
+```
+
+納品前の監査: 設計文書 直す 8・聞く 8 = 16 件(全部処置。委任先が数え直して 8/8、リードの依頼文の 7/9 は再現しなかった旨を VERDICTS に記録)/ SPLIT 直す 3・聞く 3 = 6 件(全部処置)。設計文書の gap の感度は文書どおり 30 / 60 / 180 秒(リードの依頼文の 120 は出所が無く、委任先が O-6 で退けた)。
