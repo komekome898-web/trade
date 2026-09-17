@@ -97,8 +97,127 @@ class LiquidationEvent:
         return self.qty * self.price
 
 
-def load_binance_cm_liquidations(
+@dataclass(frozen=True)
+class DedupStats:
+    """`dedup_exact_rows` が返す内訳。**落とした件数を必ず持ち歩く。**
+
+    `multiplicity` は「同じ中身が何回現れたか」→「その多重度だった群の数」。
+    多重度 1 の群 = 1 回しか現れなかった中身。
+    `n_in == sum(k * v for k, v in multiplicity.items())` と
+    `n_out == sum(multiplicity.values())` が常に成り立つ。
+    """
+
+    n_in: int
+    n_out: int
+    multiplicity: dict[int, int]
+
+    @property
+    def n_dropped(self) -> int:
+        return self.n_in - self.n_out
+
+    @property
+    def drop_rate(self) -> float:
+        """落とした割合(0 件なら NaN。**0 を返して「重複なし」に見せない**)。"""
+        if self.n_in == 0:
+            return float("nan")
+        return self.n_dropped / self.n_in
+
+
+def dedup_exact_rows(rows: Sequence, key=None) -> tuple[list, DedupStats]:
+    """**全列一致の行を 1 件にする**(最初に現れたものを残し、並び順は保つ)。
+
+    `key` を渡すと、その戻り値(ハッシュ可能であること)が一致の判定に使われる。
+    既定は行そのもの(`LiquidationEvent` は `frozen=True` なのでそのまま使える)。
+
+    **1 つでも列が違えば別物として残る**(判定は完全一致だけ)。
+    戻り値は `(一意にした行, DedupStats)` で、**何件落としたかを必ず返す**
+    (`liquidations.read_rows` / `reversal_scores` と同じ約束: 黙って減らさない)。
+
+    経緯(2026-09-17): Binance COIN-M の `liquidationSnapshot` は 1 件の清算が
+    **全列まったく同じ行として 2 回**現れる(全 472 日で 106,822 行 → 一意 53,398 行、
+    多重度 2 が 53,385 群 / 4 が 13 群)。`build_cascades` の `n_events` /
+    `total_size` はそのままだと 2 倍になる。
+    """
+    counts: dict = {}
+    out: list = []
+    n_in = 0
+    for r in rows:
+        n_in += 1
+        k = r if key is None else key(r)
+        c = counts.get(k, 0)
+        counts[k] = c + 1
+        if c == 0:
+            out.append(r)
+    multiplicity: dict[int, int] = {}
+    for c in counts.values():
+        multiplicity[c] = multiplicity.get(c, 0) + 1
+    return out, DedupStats(
+        n_in=n_in, n_out=len(out), multiplicity=dict(sorted(multiplicity.items()))
+    )
+
+
+def _read_binance_cm_rows(
+    root: Path, start: date | None, end: date | None
+):
+    """日次 zip を読み、`(生の CSV 行のタプル, LiquidationEvent)` を yield する。
+
+    生の行は**全 10 列**をそのまま持つ(一意化の判定を「全列一致」にするため。
+    `LiquidationEvent` は 5 列しか持たないので、そちらで一意化すると
+    `order_type` などが違う行まで同じ扱いになりうる)。
+    """
+    zips = sorted(root.glob("*-liquidationSnapshot-*.zip"))
+    if not zips:
+        # 黙って 0 件を返さない(2026-09-13、read_rows と同じ欠陥をここでも塞ぐ)。
+        # パスを 1 階層間違えると空が返り、「清算が無かった」と読めてしまう。
+        raise FileNotFoundError(
+            f"liquidationSnapshot の zip が 1 つも見つからない: {root} "
+            f"(期待するのは .../liquidationSnapshot/<SYMBOL>/ のような zip を直接含むディレクトリ)"
+        )
+    for zpath in zips:
+        # ファイル名 "<SYMBOL>-liquidationSnapshot-YYYY-MM-DD.zip" から日付を取る
+        day = date.fromisoformat("-".join(zpath.stem.rsplit("-", 3)[1:]))
+        if start is not None and day < start:
+            continue
+        if end is not None and day > end:
+            continue
+        with zipfile.ZipFile(zpath) as zf:
+            names = [n for n in zf.namelist() if n.endswith(".csv")]
+            assert len(names) == 1, (zpath, names)
+            with zf.open(names[0]) as fh:
+                reader = csv.reader(io.TextIOWrapper(fh, encoding="utf-8"))
+                header = next(reader, None)
+                assert header is not None and header[0] == "time", (zpath, header)
+                for row in reader:
+                    if not row:
+                        continue
+                    (time_ms, side, _order_type, _tif, _orig_qty, _price,
+                     avg_price, _status, _last_fill, accum_fill) = row[:10]
+                    yield tuple(row), LiquidationEvent(
+                        exchange="binance_cm",
+                        ts_ms=int(time_ms),
+                        side="long" if side == "SELL" else "short",
+                        qty=float(accum_fill),
+                        price=float(avg_price),
+                    )
+
+
+def load_binance_cm_liquidations_with_dedup_stats(
     root: str | Path, start: date | None = None, end: date | None = None
+) -> tuple[list[LiquidationEvent], DedupStats]:
+    """`load_binance_cm_liquidations(..., dedup=True)` と同じものを、内訳付きで返す。
+
+    一意化の判定は**生の CSV 行の全列一致**(`_read_binance_cm_rows` 参照)。
+    """
+    pairs = list(_read_binance_cm_rows(Path(root), start, end))
+    kept, stats = dedup_exact_rows(pairs, key=lambda pe: pe[0])
+    events = [e for _raw, e in kept]
+    events.sort(key=lambda e: e.ts_ms)
+    return events, stats
+
+
+def load_binance_cm_liquidations(
+    root: str | Path, start: date | None = None, end: date | None = None,
+    dedup: bool = False,
 ) -> list[LiquidationEvent]:
     """`backtest_data/binance_cm_o3c_20260913/liquidationSnapshot/<symbol>/` の日次 zip を読む。
 
@@ -106,7 +225,20 @@ def load_binance_cm_liquidations(
     ヘッダを省いて データ行だけを示していたので注意)。列は上の docstring のとおり。
     `time` 列(ms、取引所発)をそのまま `ts_ms` に使う。ファイル自体が無い日
     (欠測 6 日、README 参照)は単に無視される(呼び出し側は自分でカバレッジを見る)。
+
+    `dedup`(2026-09-17 追加。**既定は `False` = 従来の挙動を 1 行も変えていない**):
+    `True` にすると**生の CSV 行が全列一致する行を 1 件にする**。
+    このファイルは 1 件の清算が全列同じ行として 2 回入っており(`dedup_exact_rows` の
+    docstring に実測値)、`build_cascades` の `n_events` / `total_size` は
+    `dedup=False` のままだと 2 倍になる。
+    **既定を `True` にしなかった理由**: 既存の呼び出し
+    (`scripts/measure_liq_response.py` / `run_o3c_stage0.py` / `explore_o3c_oi_axis.py` /
+    `src/bot/research/liq_bands.py`)の出す数が黙って変わるのを避けるため。
+    新しい測定は明示的に `dedup=True` を渡す。落とした件数が要るときは
+    `load_binance_cm_liquidations_with_dedup_stats` を使う。
     """
+    if dedup:
+        return load_binance_cm_liquidations_with_dedup_stats(root, start, end)[0]
     root = Path(root)
     zips = sorted(root.glob("*-liquidationSnapshot-*.zip"))
     if not zips:

@@ -291,3 +291,79 @@ def test_run_writes_table_summary_and_md5sums(synth_root: Path, tmp_path: Path):
     md5 = (out / "MD5SUMS").read_text(encoding="utf-8").splitlines()
     assert [ln.split("  ")[1] for ln in md5] == ["table.csv", "summary.json"]
     assert all(not ln.split("  ")[1].startswith("./") for ln in md5)
+
+
+# --------------------------------------------------------------------------- #
+# --dedup-liq(2026-09-17、L-192 の行 1)
+# --------------------------------------------------------------------------- #
+
+def test_dedup_liq_drops_only_all_column_duplicates(tmp_path: Path):
+    """`--dedup-liq` は**全 10 列一致**の行だけを 1 件にする。既定は落とさない。"""
+    root = tmp_path / "data"
+    for day, rows in AGG_ROWS.items():
+        _write_zip(
+            mod.agg_path(root, day),
+            f"{mod.SYMBOL}-aggTrades-{day}.csv",
+            mod.AGG_NAMES,
+            [(i, p, q, i, i, t, "true") for i, (t, p, q) in enumerate(rows, start=1)],
+        )
+    a, b = LIQ_ROWS[0], LIQ_ROWS[1]
+    c = (a[0], a[1], "MARKET") + a[3:]          # order_type だけ違う -> 残る
+    _write_zip(
+        mod.liq_path(root, DAY),
+        f"{mod.SYMBOL}-liquidationSnapshot-{DAY}.csv",
+        mod.LIQ_NAMES,
+        [a, a, b, b, b, b, c],                  # 多重度 2 / 4 / 1
+    )
+    raw = mod.load_liquidations(mod.liq_path(root, DAY))
+    uniq = mod.load_liquidations(mod.liq_path(root, DAY), dedup=True)
+    assert len(raw) == 7
+    assert len(uniq) == 3
+
+    rows_raw, note_raw = mod.process_day(DAY, root, 24.0, 0.1, seed=1)
+    rows_ded, note_ded = mod.process_day(DAY, root, 24.0, 0.1, seed=1, dedup_liq=True)
+    assert note_raw["dedup_liq"] is False and note_ded["dedup_liq"] is True
+    # liq_rows_in_file は前の走行と比べられるように一意化**前**の行数のまま
+    assert note_raw["liq_rows_in_file"] == note_ded["liq_rows_in_file"] == 7
+    assert note_raw["liq_rows_used"] == 7 and note_ded["liq_rows_used"] == 3
+    assert len([r for r in rows_raw if r["kind"] == "liq"]) == 7
+    assert len([r for r in rows_ded if r["kind"] == "liq"]) == 3
+
+
+def test_dedup_liq_does_not_change_the_bundle_first_rows(tmp_path: Path):
+    """束ねるときは、一意化しても『束の最初の 1 件』の中身が変わらない。
+
+    重複行は同一 ms なので束の境界にも最初の行にも効かない。変わるのは
+    `bundle_n_events`(一意化後は `bundle_n_events_dedup` と同じ値になる)だけ。
+    """
+    root = tmp_path / "data"
+    for day, rows in AGG_ROWS.items():
+        _write_zip(
+            mod.agg_path(root, day),
+            f"{mod.SYMBOL}-aggTrades-{day}.csv",
+            mod.AGG_NAMES,
+            [(i, p, q, i, i, t, "true") for i, (t, p, q) in enumerate(rows, start=1)],
+        )
+    doubled = [r for r in LIQ_ROWS for _ in range(2)]
+    doubled.sort(key=lambda r: r[0])
+    _write_zip(
+        mod.liq_path(root, DAY),
+        f"{mod.SYMBOL}-liquidationSnapshot-{DAY}.csv",
+        mod.LIQ_NAMES,
+        doubled,
+    )
+    raw, n_raw = mod.process_day(DAY, root, 24.0, 0.1, seed=1, bundle_gap_ms=60_000)
+    ded, n_ded = mod.process_day(
+        DAY, root, 24.0, 0.1, seed=1, bundle_gap_ms=60_000, dedup_liq=True
+    )
+    assert n_raw["bundles_in_file"] == n_ded["bundles_in_file"]
+    lr = [r for r in raw if r["kind"] == "liq"]
+    ld = [r for r in ded if r["kind"] == "liq"]
+    assert len(lr) == len(ld)
+    for x, y in zip(lr, ld):
+        for col in ("time_ms", "side", "p_liq", "p0", "bin_pct", "dist_node_bp",
+                    "dist_gap_bp", "dist_vwap_bp", "n_bins", "total_qty"):
+            assert x[col] == y[col], col
+        assert x["bundle_n_events"] == 2 * y["bundle_n_events"]
+        assert y["bundle_n_events"] == y["bundle_n_events_dedup"]
+        assert x["bundle_n_events_dedup"] == y["bundle_n_events_dedup"]

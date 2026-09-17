@@ -1,0 +1,57 @@
+group,metric,raw,dedup
+件数,n_liq_events,106822,53398
+件数,n_cascades,22036,22036
+束あたり件数,n_events_per_cascade.eq1,0,12436
+束あたり件数,n_events_per_cascade.eq2,12427,4034
+束あたり件数,n_events_per_cascade.3to5,4043,3699
+束あたり件数,n_events_per_cascade.ge6,5566,1867
+束あたり件数の分位,n_events_per_cascade.quantiles.q5,2.0,1.0
+束あたり件数の分位,n_events_per_cascade.quantiles.q25,2.0,1.0
+束あたり件数の分位,n_events_per_cascade.quantiles.q50,2.0,1.0
+束あたり件数の分位,n_events_per_cascade.quantiles.q75,6.0,3.0
+束あたり件数の分位,n_events_per_cascade.quantiles.q90,10.0,5.0
+束あたり件数の分位,n_events_per_cascade.quantiles.q95,14.0,7.0
+束あたり件数の分位,n_events_per_cascade.quantiles.q99,32.0,16.0
+束あたり件数の分位,n_events_per_cascade.quantiles.max,244.0,122.0
+束の長さ(ms),cascade_len_ms.eq0,12436,12436
+束の長さ(ms),cascade_len_ms.1-999ms,15,15
+束の長さ(ms),cascade_len_ms.1-10s,2624,2624
+束の長さ(ms),cascade_len_ms.10-60s,5013,5013
+束の長さ(ms),cascade_len_ms.60s-10min,1948,1948
+束の長さ(ms),cascade_len_ms.10-60min,0,0
+束の長さ(ms),cascade_len_ms.ge60min,0,0
+束の長さの分位(ms),cascade_len_ms.quantiles.q5,0.0,0.0
+束の長さの分位(ms),cascade_len_ms.quantiles.q25,0.0,0.0
+束の長さの分位(ms),cascade_len_ms.quantiles.q50,0.0,0.0
+束の長さの分位(ms),cascade_len_ms.quantiles.q75,20019.0,20019.0
+束の長さの分位(ms),cascade_len_ms.quantiles.q90,56897.5,56897.5
+束の長さの分位(ms),cascade_len_ms.quantiles.q95,83011.25,83011.25
+束の長さの分位(ms),cascade_len_ms.quantiles.q99,151872.2500000006,151872.2500000006
+束の長さの分位(ms),cascade_len_ms.quantiles.max,593960.0,593960.0
+幅 0 の束,zero_width.n,12436,12436
+幅 0 の束,zero_width.rate,0.5643492466872391,0.5643492466872391
+束の向き,direction.long,12458,12458
+束の向き,direction.short,9397,9397
+束の向き,direction.mixed,181,181
+清算の間隔(全 472 日),gaps_all_days.quantiles_ms.q0,0.0,902.0
+清算の間隔(全 472 日),gaps_all_days.quantiles_ms.q25,0.0,3009.0
+清算の間隔(全 472 日),gaps_all_days.quantiles_ms.q50,0.0,27921.0
+清算の間隔(全 472 日),gaps_all_days.quantiles_ms.q75,27880.0,320032.0
+清算の間隔(全 472 日),gaps_all_days.quantiles_ms.q90,562017.0,1873882.0000000005
+清算の間隔(全 472 日),gaps_all_days.quantiles_ms.q99,7905829.600000002,11765063.040000001
+清算の間隔(全 472 日),gaps_all_days.quantiles_ms.q100,187806964.0,187806964.0
+清算の間隔(全 472 日),gaps_all_days.n_gap_eq0,53424,0
+清算の間隔(全 472 日),gaps_all_days.rate_gap_eq0,0.500126379644452,0.0
+清算の間隔(全 472 日),gaps_all_days.n_gap_le_60000,84786,31362
+清算の間隔(全 472 日),gaps_all_days.rate_gap_le_60000,0.7937203358890106,0.5873363672116411
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.quantiles_ms.q0,0.0,996.0
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.quantiles_ms.q25,0.0,3843.25
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.quantiles_ms.q50,0.0,33842.5
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.quantiles_ms.q75,33086.25,389484.0
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.quantiles_ms.q90,758614.600000002,2601061.5
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.quantiles_ms.q99,7219892.589999983,8699010.800000012
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.quantiles_ms.q100,28374082.0,28374082.0
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.n_gap_eq0,522,0
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.rate_gap_eq0,0.5028901734104047,0.0
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.n_gap_le_60000,819,297
+清算の間隔(MISSING §4 の 6 日・日ごと),gaps_missing_sample_days.rate_gap_le_60000,0.7890173410404624,0.5755813953488372

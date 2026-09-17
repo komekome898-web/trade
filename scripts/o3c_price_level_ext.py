@@ -90,6 +90,7 @@ def run_bundle(
     bin_pct: float,
     seed: int,
     gap_ms: int = BUNDLE_GAP_MS,
+    dedup_liq: bool = False,
 ) -> dict:
     t0 = time.time()
     cache: dict = {}
@@ -104,6 +105,7 @@ def run_bundle(
             seed,
             cache,
             bundle_gap_ms=gap_ms,
+            dedup_liq=dedup_liq,
         )
         all_rows.extend(rows)
         notes.append(note)
@@ -132,6 +134,7 @@ def run_bundle(
         "seed": seed,
         "liq_price_field": base.DEFAULT_LIQ_PRICE_FIELD,
         "bundle_gap_ms": gap_ms,
+        "dedup_liq": dedup_liq,
         "control_gap_minutes": base.CONTROL_GAP_MS / 60000,
         "data_root": str(root),
         "symbol": base.SYMBOL,
@@ -273,6 +276,8 @@ def process_day_band(
     bin_pct: float,
     agg_cache: dict | None = None,
     half_bins: int = BAND_HALF_BINS,
+    side_offset: dict[str, float] | None = None,
+    dedup_liq: bool = False,
 ) -> tuple[list[dict], dict]:
     """1 日ぶん(正時 24 点 × side 2)の帯の行を作る。"""
     step = base.log_step(bin_pct)
@@ -299,7 +304,8 @@ def process_day_band(
             order = np.argsort(times, kind="stable")
             times, prices, qtys = times[order], prices[order], qtys[order]
 
-    liq_all = base.load_liquidations(base.liq_path(root, day))
+    side_offset = SIDE_OFFSET if side_offset is None else side_offset
+    liq_all = base.load_liquidations(base.liq_path(root, day), dedup=dedup_liq)
     p_liq_all = pd.to_numeric(liq_all["average_price"], errors="coerce")
     keep = p_liq_all.notna() & (p_liq_all > 0)
     liq_t = liq_all.loc[keep, "time"].to_numpy(dtype=np.int64)
@@ -362,7 +368,7 @@ def process_day_band(
             else np.empty(0, dtype=np.int64)
         )
 
-        for side, offset in SIDE_OFFSET.items():
+        for side, offset in side_offset.items():
             bands = band_bins_for_side(nodes, step, offset, half_bins)
             cov, cov_log, n_in_range = band_coverage(bands, lo_bin, n_bins, step)
             sel = ls == side
@@ -399,7 +405,7 @@ def process_day_band(
         "prev_days_missing": missing_prev,
         "liq_rows_in_file": int(len(liq_all)),
         "liq_rows_dropped_no_price": liq_dropped,
-        "hours_written": len(rows) // len(SIDE_OFFSET),
+        "hours_written": len(rows) // len(side_offset),
         "hours_skipped_empty_window": skipped_empty,
         "agg_trades_loaded": int(n_trades_all),
     }
@@ -474,6 +480,61 @@ def _band_agg(sub: pd.DataFrame) -> dict:
     }
 
 
+def compute_fit_offsets(
+    fit_days: list[str],
+    root: Path,
+    window_hours: float,
+    bin_pct: float,
+    seed: int,
+    dedup_liq: bool,
+) -> dict:
+    """帯の位置(side 別 offset)を **`fit_days` だけ**から決める(2026-09-17、L-192 の行 3)。
+
+    取り方は前回(`EXT_2026-09-17.md` §1 の (b))と同じ:
+    `o3c_price_level_table.py` の清算行の `dist_node_bp` の side 別**中央値**を採り、
+    `offset = -中央値 / 1e4` を小数 4 桁に丸める(前回の SELL −0.0056 / BUY +0.0070 と
+    同じ丸め方)。違うのは**期間だけ**(前回は全 472 日、ここは `fit_days`)と、
+    **一意化した清算行を使う**こと。
+    """
+    cache: dict = {}
+    vals: dict[str, list[float]] = {}
+    n_rows = 0
+    for i_day, day in enumerate(fit_days):
+        rows, _note = base.process_day(
+            day, root, window_hours, bin_pct, seed, cache, dedup_liq=dedup_liq
+        )
+        for r in rows:
+            if r["kind"] != "liq":
+                continue
+            n_rows += 1
+            vals.setdefault(str(r["side"]), []).append(float(r["dist_node_bp"]))
+        keep = set(base.days_needed(day, window_hours))
+        if i_day + 1 < len(fit_days):
+            keep |= set(base.days_needed(fit_days[i_day + 1], window_hours))
+        for k in list(cache):
+            if k not in keep:
+                del cache[k]
+        if (i_day + 1) % 20 == 0:
+            print(f"  [fit] {i_day + 1}/{len(fit_days)} 日", flush=True)
+    medians = {s: float(np.median(np.asarray(v))) for s, v in sorted(vals.items())}
+    offsets = {s: round(-m / 1e4, 4) for s, m in medians.items()}
+    return {
+        "fit_days": fit_days,
+        "fit_days_n": len(fit_days),
+        "fit_first_day": fit_days[0] if fit_days else None,
+        "fit_last_day": fit_days[-1] if fit_days else None,
+        "fit_liq_rows": n_rows,
+        "fit_liq_rows_by_side": {s: len(v) for s, v in sorted(vals.items())},
+        "dist_node_bp_median_by_side": medians,
+        "side_offset": offsets,
+        "source": (
+            f"fit 期間 {fit_days[0]}〜{fit_days[-1]}({len(fit_days)} 日)の清算行"
+            f"(一意化{'あり' if dedup_liq else 'なし'})の dist_node_bp の side 別中央値。"
+            f"offset = -中央値 / 1e4 を小数 4 桁に丸めた値(前回と同じ取り方)"
+        ),
+    }
+
+
 def run_band(
     days: list[str],
     root: Path,
@@ -481,13 +542,19 @@ def run_band(
     window_hours: float,
     bin_pct: float,
     half_bins: int = BAND_HALF_BINS,
+    side_offset: dict[str, float] | None = None,
+    dedup_liq: bool = False,
+    fit: dict | None = None,
 ) -> dict:
     t0 = time.time()
+    side_offset = SIDE_OFFSET if side_offset is None else side_offset
     cache: dict = {}
     all_rows: list[dict] = []
     notes: list[dict] = []
     for i_day, day in enumerate(days):
-        rows, note = process_day_band(day, root, window_hours, bin_pct, cache, half_bins)
+        rows, note = process_day_band(
+            day, root, window_hours, bin_pct, cache, half_bins, side_offset, dedup_liq
+        )
         all_rows.extend(rows)
         notes.append(note)
         print(
@@ -514,11 +581,14 @@ def run_band(
             "bin_pct": bin_pct,
             "prev_days_read_per_day": base.required_prev_days(window_hours),
             "band_half_bins": half_bins,
-            "side_offset": SIDE_OFFSET,
+            "side_offset": side_offset,
+            "dedup_liq": dedup_liq,
             "side_offset_source": (
+                fit["source"] if fit else
                 "docs/PHASE2/O3C/PRICE_LEVEL/FULL_2026-09-17.md §3 の side 別 "
                 "dist_node_bp 中央値(SELL +56.4bp / BUY −70.2bp)"
             ),
+            "fit": fit,
             "liq_price_field": "average_price",
             "data_root": str(root),
             "symbol": base.SYMBOL,
@@ -527,7 +597,7 @@ def run_band(
         },
         "elapsed_sec": round(elapsed, 2),
         "rows_total": int(len(df)),
-        "time_points": int(len(df) // len(SIDE_OFFSET)),
+        "time_points": int(len(df) // len(side_offset)),
         "days": len(days),
         "hours_skipped_empty_window": sum(
             int(n["hours_skipped_empty_window"]) for n in notes
@@ -573,27 +643,57 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--bundle-gap-ms", type=int, default=BUNDLE_GAP_MS)
     ap.add_argument("--band-half-bins", type=int, default=BAND_HALF_BINS)
+    ap.add_argument(
+        "--dedup-liq",
+        action="store_true",
+        help="liquidationSnapshot の全列一致の重複行を 1 件にしてから使う(L-192 の行 1)",
+    )
+    ap.add_argument(
+        "--fit-days",
+        default=None,
+        help=(
+            "band のみ。帯の位置(side 別 offset)をこの日だけから決める"
+            "(L-192 の行 3)。--days が測る側(eval)"
+        ),
+    )
     ap.add_argument("--data-root", default=str(base.DEFAULT_DATA_ROOT))
     a = ap.parse_args(argv)
 
     days = [d.strip() for d in a.days.split(",") if d.strip()]
+    fit_days = [d.strip() for d in (a.fit_days or "").split(",") if d.strip()]
     root = Path(a.data_root)
-    for d in days:
+    for d in days + fit_days:
         for p in (base.agg_path(root, d), base.liq_path(root, d)):
             if not p.exists():
                 raise SystemExit(f"必要な zip が無い: {p}")
 
     if a.mode == "bundle":
         s = run_bundle(
-            days, root, Path(a.out_dir), a.window_hours, a.bin_pct, a.seed, a.bundle_gap_ms
+            days, root, Path(a.out_dir), a.window_hours, a.bin_pct, a.seed,
+            a.bundle_gap_ms, a.dedup_liq,
         )
         print(
             f"行 {s['rows_total']}(清算 {s['rows_liq']} / 対照 {s['rows_control']})"
             f" 束 {s['bundles_total']} / 所要 {s['elapsed_sec']} 秒 -> {a.out_dir}"
         )
     else:
+        fit = None
+        side_offset = None
+        if fit_days:
+            fit = compute_fit_offsets(
+                fit_days, root, a.window_hours, a.bin_pct, a.seed, a.dedup_liq
+            )
+            side_offset = fit["side_offset"]
+            print(
+                f"[fit] {fit['fit_first_day']}〜{fit['fit_last_day']}"
+                f"({fit['fit_days_n']} 日、清算行 {fit['fit_liq_rows']})"
+                f" dist_node_bp 中央値 {fit['dist_node_bp_median_by_side']}"
+                f" -> offset {side_offset}",
+                flush=True,
+            )
         s = run_band(
-            days, root, Path(a.out_dir), a.window_hours, a.bin_pct, a.band_half_bins
+            days, root, Path(a.out_dir), a.window_hours, a.bin_pct, a.band_half_bins,
+            side_offset, a.dedup_liq, fit,
         )
         print(
             f"行 {s['rows_total']}(時点 {s['time_points']})"

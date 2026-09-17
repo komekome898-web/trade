@@ -6683,3 +6683,61 @@ $ python3 - (5 走行の全列)
 オーナーの負荷: 変わらない(問いは開いた選択で、枠組みの承認という A-13 上オーナーにしかできない判断のみを求めている)
 品質: 上がる(1 巡目の 2 件の欠陥が実物で確認できる形に直り、数値もすべて実測と一致した)
 判定: 通す
+
+## 054 — L-192(4 行全部進めてください)の実施: 一意化 → `build_cascades` / 前提条件 3 つの数え直し / 帯を前半で決め後半で数える / W = 8h・24h、検収と提示(2026-09-17)
+
+**オーナーの逐語**: 「**4 行全部進めてください**」(L-192)。4 行の文面はリードの返答 053 の表の左列(オーナー自身の語ではない)。原文 §1(`OWNER_INTENT_2026-09-12.md`、L-139)「**価格毎の約定履歴の積み上げからどの価格帯で清算が起きるかの予測できるか、できるならエントリーや利確に活かせるか**」。
+
+一手: L-192 を `OWNER_LOG` / `OWNER_STATUS` に記録して先にコミット(7b960b7)→ 実装と全 472 日の走行を下位モデル(opus)に委任(粒度 60 秒バー・地平線 15 分は合成データの検証と同じ値を仮定として指定)→ リードが検収(下)→ `owner-auditor` に `ROWS4_2026-09-17.md` を通し(8 件、全部処置。うち多重度 4 の理由・分位のずれ・四半期別の中央値はリードが実測)→ 文書の直しは下位モデル(sonnet)に委任 → 結果をオーナーに提示する。
+
+### 検収のコマンドと出力(リード、2026-09-17)
+
+```
+$ python3 - (cascades/ties/band_*/summary.json を読む)
+dedup 106822 53398 {'2': 53385, '4': 13}
+raw n_cascades 22036 zero_width {'n': 12436, 'rate': 0.5643492466872391}
+dedup n_cascades 22036 zero_width {'n': 12436, 'rate': 0.5643492466872391}
+bar60s before  n_rows 22036 n_tie 17309 tie_rate 0.7854873842802687 paths {'time_resolution': 17307, 'price_tick': 2}
+bar60s after_shift n_rows 22036 n_tie 133 tie_rate 0.006035578144853875 paths {'time_resolution': 99, 'price_tick': 34}
+trade before  n_tie_direct 12592 tie_rate_direct 0.5714285714285714 paths {'time_resolution': 12436, 'price_tick': 156}
+trade after_shift n_tie_direct 10154 tie_rate_direct 0.46079143220185154 paths {'time_resolution': 8898, 'price_tick': 1256}
+band_split_w24 fit_days_n 236 fit 2023-06-25〜2024-02-18 dist_node_bp_median_by_side {'BUY': -71.4535, 'SELL': 45.05815} side_offset {'BUY': 0.0071, 'SELL': -0.0045} in_band_rate_weighted BUY 0.24239705750426124 SELL 0.2195234671870186
+band_split_w8  fit_days_n 236 dist_node_bp_median_by_side {'BUY': -59.5854, 'SELL': 47.2188} side_offset {'BUY': 0.006, 'SELL': -0.0047} in_band_rate_weighted BUY 0.27783260069973986 SELL 0.2399609736058334
+band_full_w24  fit_days_n 472 dist_node_bp_median_by_side {'BUY': -70.2617, 'SELL': 56.3526} side_offset {'BUY': 0.007, 'SELL': -0.0056} in_band_rate_weighted BUY 0.24703480458876143 SELL 0.2503960516695101
+band_full_w8   fit_days_n 472 dist_node_bp_median_by_side {'BUY': -60.6858, 'SELL': 55.9076} side_offset {'BUY': 0.0061, 'SELL': -0.0056} in_band_rate_weighted BUY 0.2868948084775423 SELL 0.26474530831099197
+$ for d in backtest_data/o3c_price_level_rows4_20260917/*/; do (cd $d && md5sum -c MD5SUMS --quiet && echo "ok $d"); done
+ok band_full_w24/ ok band_full_w8/ ok band_split_w24/ ok band_split_w8/ ok bundle_w24/ ok bundle_w8/ ok cascades/ ok ties/   (8/8)
+$ grep -c '\./' backtest_data/o3c_price_level_rows4_20260917/*/MD5SUMS | grep -v ':0$' || echo "no ./ prefix"
+no ./ prefix
+$ python3 - (bundle_w24 / bundle_w8 の table.csv を kind で分けて bin_pct の中央値と ≤10 の割合)
+w24 44080 {'control': 76.56, 'liq': 50.0} {'control': 0.0048, 'liq': 0.1663} {'control': 22040, 'liq': 22040}
+w8  44080 {'control': 75.0, 'liq': 35.71} {'control': 0.0093, 'liq': 0.2605} {'control': 22040, 'liq': 22040}
+$ grep -n '予測できる\|使える\|有効\|効いている\|判定:' docs/PHASE2/O3C/PRICE_LEVEL/ROWS4_2026-09-17.md
+7:**観測表のみ。判定(予測できる/できない、当たる/当たらない、使える/使えない、有効/無効)は書かない。**   (禁止の宣言の行だけ。判定語の使用 0)
+$ PYTHONPATH=src timeout 590 python -m pytest tests/ -p no:cacheprovider 2>&1 | tail -3
+1973 passed, 1 skipped in 341.71s (0:05:41)
+$ grep -c '^def test_' tests/test_o3c_price_level_ext.py tests/test_liq_response_dedup.py tests/test_o3c_rows4.py ; grep -c 'def test_' tests/test_o3c_price_level_table.py
+6 / 8 / 10 ; 16(= 14 + 今回の 2)  → 1,948 + 6(053、当時 CLAUDE.md 未更新)+ 8 + 10 + 2 = 1,974 収集
+```
+
+### 監査役の指摘 4・7・5 の実測(リード、2026-09-17)
+
+```
+$ PYTHONPATH=src python3 - (472 日の zip を読み、全列一致で size==4 の群を持つファイルを出す)
+BTCUSD_PERP-liquidationSnapshot-2023-09-21.zip rows 196 mult dist {2: 72, 4: 13}      (他の 471 ファイルに多重度 4 は無い)
+$ PYTHONPATH=src python3 - (MISSING §4 と同じ 6 日、日ごとに np.diff(np.sort(time)) を連結、np.percentile の型を変える)
+linear [33086.25, 758614.600000002, 7219892.589999983]
+higher [33451.0, 778986.0, 7272874.0]          ← MISSING §4 の 33,451 / 778,986 / 7,272,874 と一致
+inverted_cdf [33451.0, 778986.0, 7272874.0]
+$ python3 - (o3c_price_level_full_20260917{,_w8}/table.csv の kind==liq を前半/後半・四半期で分け、dist_node_bp の side 別中央値)
+24h 境界 2024-02-18 2024-02-19 {('前半','BUY'): -71.35, ('前半','SELL'): 45.09, ('後半','BUY'): -69.03, ('後半','SELL'): 69.21}
+8h  境界 2024-02-18 2024-02-19 {('前半','BUY'): -59.57, ('前半','SELL'): 47.26, ('後半','BUY'): -61.82, ('後半','SELL'): 64.33}
+四半期(24h) BUY/SELL: 23Q2 -42.9/55.3, 23Q3 -56.6/46.5, 23Q4 -76.9/37.6, 24Q1 -81.2/47.3, 24Q2 -58.1/73.4, 24Q3 -69.8/79.4, 24Q4 -46.3/75.9
+四半期(8h)  BUY/SELL: 23Q2 -58.2/46.1, 23Q3 -50.2/46.5, 23Q4 -62.3/44.2, 24Q1 -68.6/50.9, 24Q2 -55.5/66.7, 24Q3 -61.6/71.0, 24Q4 -50.2/71.1
+```
+
+納品前の監査: `owner-auditor` 聞く 6・直す 2 = 8 件、全部処置(`VERDICTS/2026-09-17_price_level_rows4.md`)。前の文書 4 本に注記(FULL §2 / EXT §2.1・§3・§4 / MISSING §4・§12・§14-2 / REPORT §0.0 A・B・E 行)。
+
+### 行動の監査 1 巡目(owner-model-auditor、判定: 止める。5 件、全部直した)
+
+止める 1 = 検収の記録(この 054)が無いのに CLAUDE.md §3 と返答が出典に挙げていた → この節を書いた(上の検収・全件テストの出力)。直す 4 = CLAUDE.md §3 の内訳が +26 に対して 20 だった → 053 の 6 件を足した / ROWS4 §8 冒頭「前の文書は 1 文字も編集していない」が実物と食い違う → リードが注記を入れた 4 本と箇所を書いた / ROWS4 §0.1 の原文の出典「L-188 前後」が誤り → `OWNER_INTENT_2026-09-12.md` §1(L-139)に直した / `cascades`・`ties` の `summary.json` の鍵 `owner_verbatim_rowN` にリードの文面が入っていた → `owner_verbatim` = 「4 行全部進めてください」と `lead_rowN_text` に分け(`scripts/o3c_rows4.py` も同じ)、2 ディレクトリの `MD5SUMS` を作り直した(`md5sum -c` 通過)。逐語は返答本文に貼る(下の 2 巡目の後に追記)。

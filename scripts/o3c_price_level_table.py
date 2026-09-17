@@ -322,12 +322,24 @@ def load_agg_trades(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return t[order], p[order], q[order]
 
 
-def load_liquidations(path: Path) -> pd.DataFrame:
-    df = _zip_csv(
-        path,
-        ["time", "side", "original_quantity", "price", "average_price"],
-        LIQ_NAMES,
-    )
+LIQ_USED_COLUMNS = ["time", "side", "original_quantity", "price", "average_price"]
+
+
+def load_liquidations(path: Path, dedup: bool = False) -> pd.DataFrame:
+    """1 日ぶんの liquidationSnapshot。
+
+    `dedup`(2026-09-17 追加、**既定は `False` = 従来の挙動**): `True` のとき
+    **全 10 列を読んで、全列一致の行を 1 件にする**(最初の 1 行を残す)。
+    このファイルは 1 件の清算が全列同じ行として 2 回入っている
+    (`src/bot/research/liq_response.py: dedup_exact_rows` の docstring に実測値)。
+    一意化は必ず**全列**で判定する(使う 5 列だけで判定すると、`order_type` などが
+    違う別物まで同じ扱いになりうる)。戻り値の列は `dedup` によらず使う 5 列。
+    """
+    if dedup:
+        df = _zip_csv(path, LIQ_NAMES, LIQ_NAMES)
+        df = df.drop_duplicates(keep="first")[LIQ_USED_COLUMNS]
+    else:
+        df = _zip_csv(path, LIQ_USED_COLUMNS, LIQ_NAMES)
     return df.sort_values("time", kind="stable").reset_index(drop=True)
 
 
@@ -395,6 +407,7 @@ def process_day(
     agg_cache: dict | None = None,
     liq_price_field: str = DEFAULT_LIQ_PRICE_FIELD,
     bundle_gap_ms: int | None = None,
+    dedup_liq: bool = False,
 ) -> tuple[list[dict], dict]:
     """1 日分の清算行 + 対照行を作る。戻り値は (行の一覧, その日のメモ)。
 
@@ -439,7 +452,8 @@ def process_day(
             order = np.argsort(times, kind="stable")
             times, prices, qtys = times[order], prices[order], qtys[order]
 
-    liq_all = load_liquidations(liq_path(root, day))
+    liq_all_raw = load_liquidations(liq_path(root, day))
+    liq_all = load_liquidations(liq_path(root, day), dedup=True) if dedup_liq else liq_all_raw
     day_start, day_end = day_bounds_ms(day)
 
     # p_liq に使う列が空か 0 の行は落とす(件数は記録する)。
@@ -596,8 +610,10 @@ def process_day(
         "prev_days_required": prevs,
         "prev_days_loaded": loaded_prev,
         "prev_days_missing": missing_prev,
-        "liq_rows_in_file": int(len(liq_all)),
-        "liq_rows_unique_in_file": int((~liq_all.duplicated(keep="first")).sum()),
+        "liq_rows_in_file": int(len(liq_all_raw)),
+        "liq_rows_unique_in_file": int((~liq_all_raw.duplicated(keep="first")).sum()),
+        "liq_rows_used": int(len(liq_all)),
+        "dedup_liq": bool(dedup_liq),
         "liq_rows_dropped_no_price": dropped,
         "liq_price_field": liq_price_field,
         "control_points_drawn": len(ctrl_times),
@@ -702,6 +718,7 @@ def run(
     bin_pct: float,
     seed: int,
     liq_price_field: str = DEFAULT_LIQ_PRICE_FIELD,
+    dedup_liq: bool = False,
 ) -> dict:
     t0 = time.time()
     cache: dict = {}
@@ -709,7 +726,8 @@ def run(
     notes: list[dict] = []
     for i_day, day in enumerate(days):
         rows, note = process_day(
-            day, root, window_hours, bin_pct, seed, cache, liq_price_field
+            day, root, window_hours, bin_pct, seed, cache, liq_price_field,
+            dedup_liq=dedup_liq,
         )
         all_rows.extend(rows)
         notes.append(note)
@@ -739,6 +757,7 @@ def run(
         "prev_days_read_per_day": required_prev_days(window_hours),
         "seed": seed,
         "liq_price_field": liq_price_field,
+        "dedup_liq": dedup_liq,
         "control_gap_minutes": CONTROL_GAP_MS / 60000,
         "data_root": str(root),
         "symbol": SYMBOL,
@@ -765,6 +784,14 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_LIQ_PRICE_FIELD,
         help="p_liq に入れる列。average_price = 約定価格(既定)、price = 強制決済の指値",
     )
+    ap.add_argument(
+        "--dedup-liq",
+        action="store_true",
+        help=(
+            "liquidationSnapshot の全列一致の重複行を 1 件にしてから使う"
+            "(2026-09-17、L-192 の行 1)。既定は従来どおり一意化しない"
+        ),
+    )
     ap.add_argument("--data-root", default=str(DEFAULT_DATA_ROOT))
     a = ap.parse_args(argv)
 
@@ -787,6 +814,7 @@ def main(argv: list[str] | None = None) -> int:
         a.bin_pct,
         a.seed,
         a.liq_price_field,
+        a.dedup_liq,
     )
     print(
         f"行 {s['rows_total']}(清算 {s['rows_liq']} / 対照 {s['rows_control']})"
