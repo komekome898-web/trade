@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/fa7bf0d4-a5c4-55b7-991b-874b590e00a3.jsonl",
- "n_moves": 140,
+ "n_moves": 142,
  "moves": [
   {
    "move": 1,
@@ -3773,18 +3773,76 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 141,
+   "tools": {
+    "Bash": 1,
+    "Skill": 1
+   },
+   "n_tools": 2,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 142,
+   "tools": {
+    "Agent": 2,
+    "Bash": 9,
+    "Read": 3,
+    "Edit": 10,
+    "Write": 1,
+    "ToolSearch": 1
+   },
+   "n_tools": 26,
+   "read_goal": true,
+   "first_write_at": 12,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 1,
+   "audit_pasted_immediately": 1,
+   "audit_followed_by_real_edit": 2,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
-   "num": 13,
-   "den": 32,
-   "value": 0.4062
+   "num": 14,
+   "den": 33,
+   "value": 0.4242
   },
   "P2_table_shown_before_first_write": {
    "num": 9,
-   "den": 32,
-   "value": 0.2812
+   "den": 33,
+   "value": 0.2727
   },
   "P3_claim_with_output": {
    "num": 164,
@@ -3792,19 +3850,19 @@
    "value": 0.5359
   },
   "P4_audit_pasted_immediately": {
-   "num": 11,
-   "den": 92,
-   "value": 0.1196
+   "num": 12,
+   "den": 93,
+   "value": 0.129
   },
   "P5_tools_per_move": {
    "median": 4.0,
    "max": 214,
-   "n": 112
+   "n": 114
   },
   "P6_findings_applied": {
-   "num": 40,
-   "den": 92,
-   "value": 0.4348,
+   "num": 42,
+   "den": 93,
+   "value": 0.4516,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
