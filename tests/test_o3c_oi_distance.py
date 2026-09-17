@@ -287,6 +287,155 @@ def test_implied_leverage_formula_and_nan_boundary():
     assert math.isnan(buy["implied_leverage"])
 
 
+# ------------------------------------------------- (e) --side-price split(09-18)
+
+
+def _split_buckets(t0, vwap, vwap_buy, vwap_sell, delta=100.0, share=0.5):
+    n = len(vwap)
+    return {
+        "t_ms": np.array([t0 + i * MS5 for i in range(n)], dtype=np.int64),
+        "delta": np.full(n, float(delta)),
+        "vwap": np.array(vwap, dtype=np.float64),
+        "buy_share": np.full(n, float(share)),
+        "vwap_buy": np.array(vwap_buy, dtype=np.float64),
+        "vwap_sell": np.array(vwap_sell, dtype=np.float64),
+    }
+
+
+def test_split_uses_buy_only_and_sell_only_vwap():
+    """split では、ロング側が買い taker の VWAP、ショート側が売り taker の VWAP に載る。"""
+    t0 = 1_700_000_000_000
+    b = _split_buckets(t0, [30000.0], [30100.0], [29900.0])
+    p_liq = 30000.0
+    rows = [
+        {"time_ms": t0 + 1000, "side": "SELL", "p_liq": p_liq, "p0": p_liq},
+        {"time_ms": t0 + 1000, "side": "BUY", "p_liq": p_liq, "p0": p_liq},
+    ]
+    same, _ = M.oi_columns_for_rows(rows, b, 60_000, STEP, t0, side_price="same")
+    split, _ = M.oi_columns_for_rows(rows, b, 60_000, STEP, t0, side_price="split")
+
+    def center_bp(price):
+        c = float(BASE.bin_center_price(BASE.bin_index(price, STEP), STEP))
+        return (c - p_liq) / p_liq * 1e4
+
+    # same: 両側とも全体の VWAP のビン。
+    for o in same:
+        assert o["oi_side_dist_vwap_bp"] == pytest.approx(round(center_bp(30000.0), 4))
+        assert o["oi_side_dist_node_bp"] == pytest.approx(round(center_bp(30000.0), 4))
+    # split: SELL(ロング側)は買い taker の VWAP、BUY(ショート側)は売り taker の VWAP。
+    assert split[0]["oi_side_dist_vwap_bp"] == pytest.approx(round(center_bp(30100.0), 4))
+    assert split[1]["oi_side_dist_vwap_bp"] == pytest.approx(round(center_bp(29900.0), 4))
+    assert split[0]["oi_side_dist_vwap_bp"] > split[1]["oi_side_dist_vwap_bp"]
+    # 全体のプロファイルと按分の重みは split でも変わらない。
+    for a, c in zip(same, split):
+        assert a["oi_dist_vwap_bp"] == pytest.approx(c["oi_dist_vwap_bp"])
+        assert a["oi_dist_node_bp"] == pytest.approx(c["oi_dist_node_bp"])
+        assert a["oi_total_delta"] == pytest.approx(c["oi_total_delta"])
+        assert a["oi_side_total_delta"] == pytest.approx(c["oi_side_total_delta"])
+
+
+def test_split_one_side_empty_is_skipped():
+    """片側の約定が 0 件の 5 分は、その側を積まない(重みが 0 なので重心は動かない)。"""
+    t0 = 1_700_000_000_000
+    # 桶 0 は売り taker だけ(買い taker 0 件 -> buy_share 0、vwap_buy は NaN)。
+    b = {
+        "t_ms": np.array([t0, t0 + MS5], dtype=np.int64),
+        "delta": np.array([100.0, 100.0]),
+        "vwap": np.array([30000.0, 31000.0]),
+        "buy_share": np.array([0.0, 0.5]),
+        "vwap_buy": np.array([np.nan, 31050.0]),
+        "vwap_sell": np.array([30000.0, 30950.0]),
+    }
+    p_liq = 30500.0
+    rows = [{"time_ms": t0 + MS5 + 1, "side": "SELL", "p_liq": p_liq, "p0": p_liq}]
+    split, _ = M.oi_columns_for_rows(rows, b, 2 * MS5, STEP, t0, side_price="split")
+    same, _ = M.oi_columns_for_rows(rows, b, 2 * MS5, STEP, t0, side_price="same")
+    # ロング側の重みは桶 1 のぶんだけ(桶 0 は buy_share = 0)。
+    assert split[0]["oi_side_total_delta"] == pytest.approx(50.0)
+    assert same[0]["oi_side_total_delta"] == pytest.approx(50.0)
+    # 重心は桶 1 の買い taker VWAP のビン。
+    c = float(BASE.bin_center_price(BASE.bin_index(31050.0, STEP), STEP))
+    assert split[0]["oi_side_dist_vwap_bp"] == pytest.approx(
+        round((c - p_liq) / p_liq * 1e4, 4)
+    )
+    # 片側 0 件の桶の件数は build_delta_buckets が数える。
+    md = [_metrics(t0, [100.0, 200.0, 300.0])]
+    lookup = {
+        int(t0): (30000.0, 0.0, 10.0, 5, float("nan"), 30000.0),
+        int(t0 + MS5): (31000.0, 0.5, 10.0, 5, 31050.0, 30950.0),
+    }
+    bb = M.build_delta_buckets(md, lookup)
+    assert bb["t_ms"].size == 2
+    assert bb["n_no_buy_taker"] == 1
+    assert bb["n_no_sell_taker"] == 0
+    assert math.isnan(bb["vwap_buy"][0])
+
+
+def test_same_ignores_side_prices():
+    """`same` は側別 VWAP の列を一切見ない(鍵が有っても無くても同じ出力)。"""
+    t0 = 1_700_000_000_000
+    with_side = _split_buckets(
+        t0, [30000.0, 30500.0], [30400.0, 31200.0], [29500.0, 29800.0], share=0.4
+    )
+    without = {k: v for k, v in with_side.items() if k not in ("vwap_buy", "vwap_sell")}
+    p_liq = 30200.0
+    rows = [
+        {"time_ms": t0 + MS5 + 1, "side": s, "p_liq": p_liq, "p0": p_liq}
+        for s in ("SELL", "BUY", "")
+    ]
+    a, na = M.oi_columns_for_rows(rows, with_side, 2 * MS5, STEP, t0, side_price="same")
+    b, nb = M.oi_columns_for_rows(rows, without, 2 * MS5, STEP, t0, side_price="same")
+    assert na == nb
+    assert a == b
+    # 側別の価格が全体とまったく違っても、`same` の側別の列は全体と同じビンに載る。
+    for o in a[:2]:
+        assert o["oi_side_dist_node_bp"] is not None
+
+
+def test_bucket_trade_stats_side_vwaps():
+    """`vwap_buy` / `vwap_sell` は片側の約定だけの VWAP。無い側は NaN。"""
+    day = "2023-06-25"
+    day_start, _ = BASE.day_bounds_ms(day)
+    times = np.array(
+        [day_start + 1, day_start + 2, day_start + 3, day_start + MS5 + 1],
+        dtype=np.int64,
+    )
+    prices = np.array([100.0, 200.0, 400.0, 300.0])
+    qtys = np.array([1.0, 3.0, 1.0, 5.0])
+    maker = np.array([True, False, False, True])  # True = 売り taker
+    bs = M.bucket_trade_stats(day, times, prices, qtys, maker)
+    # 桶 0: 買い taker = (200,3) と (400,1)、売り taker = (100,1)。
+    assert bs["vwap_buy"][0] == pytest.approx((200.0 * 3 + 400.0 * 1) / 4.0)
+    assert bs["vwap_sell"][0] == pytest.approx(100.0)
+    assert bs["n_buy"][0] == 2
+    assert bs["n_sell"][0] == 1
+    # 桶 1: 売り taker だけ -> 買い側は NaN。
+    assert math.isnan(bs["vwap_buy"][1])
+    assert bs["vwap_sell"][1] == pytest.approx(300.0)
+    # 全体の VWAP は両側を合わせたもの(既存の列は変わらない)。
+    assert bs["vwap"][0] == pytest.approx((100.0 + 600.0 + 400.0) / 5.0)
+
+
+def test_side_spread_block_counts_and_quantiles():
+    """側別 VWAP の差(bp)は桶の時刻で一意化して集計する。"""
+    t0 = 1_700_000_000_000
+    acc: dict = {}
+    b = {
+        "t_ms": np.array([t0, t0 + MS5], dtype=np.int64),
+        "vwap": np.array([30000.0, 30000.0]),
+        "vwap_buy": np.array([30003.0, np.nan]),
+        "vwap_sell": np.array([29997.0, 30000.0]),
+    }
+    M.collect_side_spread(b, acc)
+    M.collect_side_spread(b, acc)  # 同じ桶を 2 度読んでも増えない
+    blk = M.side_spread_block(acc)
+    assert blk["buckets_unique"] == 2
+    assert blk["buckets_no_buy_taker"] == 1
+    assert blk["buckets_no_sell_taker"] == 0
+    assert blk["n"] == 1
+    assert blk["q50"] == pytest.approx(2.0)   # (30003−29997)/30000*1e4 = 2bp
+
+
 def test_columns_cover_everything_written():
     """`COLUMNS` に建玉側・符号揃え・レバレッジの列が全部入っている。"""
     for col in M.OI_COLUMNS + M.LEVERAGE_COLUMNS + [d for _, d in M.LIQDIR_SOURCE]:

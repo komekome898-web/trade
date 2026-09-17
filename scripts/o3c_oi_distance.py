@@ -22,6 +22,12 @@ DESIGN_2026-09-17.md`、全件 `FULL_2026-09-17.md`)の `process_day` / `profile
 
 を並べる。
 
+**`--side-price`(2026-09-18 追加)**: 按分した重みを**どの価格に置くか**。
+  * `same`(既定): 両側とも同じ 5 分の全体 VWAP に置く。**2026-09-17 版と 1 つも変わらない。**
+  * `split`: ロング側を**買い taker の約定だけの VWAP**(`is_buyer_maker == False`)、
+    ショート側を**売り taker の約定だけの VWAP**(`is_buyer_maker == True`)に置く。
+    重みの按分は `same` と同じ。全体のプロファイル(`oi_dist_*`)も `same` と同じ。
+
 **観測表のみ。判定(予測できる/できない、当たる/当たらない、使える/使えない、有効/無効)は
 一切書かない。**
 
@@ -122,7 +128,15 @@ LIQ_SIGN = {"SELL": 1.0, "BUY": -1.0}
 # 清算の側 -> 使う按分後のプロファイル。
 SIDE_PROFILE = {"SELL": "long", "BUY": "short"}
 
-OWNER_VERBATIM = "3つとも進めてください"
+SIDE_PRICE_CHOICES = ("same", "split")
+
+# L-196(側別の価格を分ける版)。
+OWNER_VERBATIM = "6.OK 7.OK 進めてください。"
+LEAD_ROW_TEXT = (
+    "按分を価格まで側別に分ける(買い taker だけの VWAP / 売り taker だけの VWAP)版も測る"
+)
+# L-195(2026-09-17 版の 3 行。この表の土台の出どころとして残す)。
+OWNER_VERBATIM_PREV = "3つとも進めてください"
 LEAD_ROWS_TEXT = [
     "(1)「積み上がった位置」= 建玉の増分 ΔOI をその 5 分の VWAP に置いたプロファイル"
     "(平均建値 + 建玉のノード)",
@@ -177,7 +191,10 @@ def bucket_trade_stats(
     戻り値の配列はどれも長さ 288(`BUCKETS_PER_DAY`)。
       `start_ms` 桶の開始時刻 / `vwap` 桶内の出来高加重平均価格(約定なしは NaN) /
       `buy_share` 買い taker の出来高の割合(約定なしは NaN) / `vol` 桶内の出来高 /
-      `n` 桶内の約定件数。
+      `n` 桶内の約定件数 /
+      `vwap_buy` **買い taker の約定だけ**の VWAP(その側の約定が 0 件なら NaN) /
+      `vwap_sell` **売り taker の約定だけ**の VWAP(同上) /
+      `n_buy` / `n_sell` 側ごとの約定件数(`--side-price split` 用)。
     """
     day_start, day_end = base.day_bounds_ms(day)
     n_b = int(BUCKETS_PER_DAY)
@@ -191,15 +208,31 @@ def bucket_trade_stats(
     cnt = np.bincount(k, minlength=n_b)[:n_b]
     buy = ~m  # 買い手が taker = 買い taker
     vol_buy = np.bincount(k[buy], weights=q[buy], minlength=n_b)[:n_b]
+    pq_buy = np.bincount(k[buy], weights=(p * q)[buy], minlength=n_b)[:n_b]
+    cnt_buy = np.bincount(k[buy], minlength=n_b)[:n_b]
+    sell = m  # 買い手が maker = 売り taker
+    vol_sell = np.bincount(k[sell], weights=q[sell], minlength=n_b)[:n_b]
+    pq_sell = np.bincount(k[sell], weights=(p * q)[sell], minlength=n_b)[:n_b]
+    cnt_sell = np.bincount(k[sell], minlength=n_b)[:n_b]
     with np.errstate(invalid="ignore", divide="ignore"):
         vwap = np.where(vol > 0, pq / np.where(vol > 0, vol, 1.0), np.nan)
         buy_share = np.where(vol > 0, vol_buy / np.where(vol > 0, vol, 1.0), np.nan)
+        vwap_buy = np.where(
+            vol_buy > 0, pq_buy / np.where(vol_buy > 0, vol_buy, 1.0), np.nan
+        )
+        vwap_sell = np.where(
+            vol_sell > 0, pq_sell / np.where(vol_sell > 0, vol_sell, 1.0), np.nan
+        )
     return {
         "start_ms": day_start + BUCKET_MS * np.arange(n_b, dtype=np.int64),
         "vwap": vwap,
         "buy_share": buy_share,
         "vol": vol,
         "n": cnt,
+        "vwap_buy": vwap_buy,
+        "vwap_sell": vwap_sell,
+        "n_buy": cnt_buy,
+        "n_sell": cnt_sell,
     }
 
 
@@ -247,7 +280,8 @@ def build_delta_buckets(
     """読み込んだ metrics から ΔOI の桶を作る。
 
     metrics_days: (時刻[ms], OI) の一覧(読めた日だけ。並び順は問わない)。
-    bucket_lookup: 桶の開始時刻[ms] -> (vwap, buy_share, vol, n)。
+    bucket_lookup: 桶の開始時刻[ms] -> (vwap, buy_share, vol, n[, vwap_buy, vwap_sell])。
+      後ろ 2 つは `--side-price split` 用。**無い形の辞書を渡しても動く**(NaN になる)。
 
     ΔOI(T) = OI(T) − OI(T − 5 分)。**直前の行がちょうど 5 分前にある行だけ**を使う
     (metrics の行が飛んでいる所では ΔOI を作らない)。
@@ -255,19 +289,25 @@ def build_delta_buckets(
 
     戻り値:
       `t_ms` / `delta` / `vwap` / `buy_share`  … **ΔOI > 0 かつ VWAP が取れた桶だけ**(昇順)
+      `vwap_buy` / `vwap_sell`  … 同じ桶の側別 VWAP(その側の約定が 0 件なら NaN)
       `t_all`  … ΔOI が作れた行の時刻すべて(符号によらない。被覆の判定に使う)
-      `n_delta_rows` / `n_positive` / `n_positive_no_trades` / `n_nonpositive`
+      `n_delta_rows` / `n_positive` / `n_positive_no_trades` / `n_nonpositive` /
+      `n_no_buy_taker` / `n_no_sell_taker`(残した桶のうち片側の約定が 0 件だったもの)
     """
     empty = {
         "t_ms": np.zeros(0, dtype=np.int64),
         "delta": np.zeros(0),
         "vwap": np.zeros(0),
         "buy_share": np.zeros(0),
+        "vwap_buy": np.zeros(0),
+        "vwap_sell": np.zeros(0),
         "t_all": np.zeros(0, dtype=np.int64),
         "n_delta_rows": 0,
         "n_positive": 0,
         "n_positive_no_trades": 0,
         "n_nonpositive": 0,
+        "n_no_buy_taker": 0,
+        "n_no_sell_taker": 0,
     }
     if not metrics_days:
         return empty
@@ -287,25 +327,36 @@ def build_delta_buckets(
     d_pos = delta[pos]
     vwap = np.empty(t_pos.size, dtype=np.float64)
     share = np.empty(t_pos.size, dtype=np.float64)
+    v_buy = np.empty(t_pos.size, dtype=np.float64)
+    v_sell = np.empty(t_pos.size, dtype=np.float64)
     for i, te in enumerate(t_pos):
         b = bucket_lookup.get(int(te) - BUCKET_MS)
         if b is None or not np.isfinite(b[0]) or b[0] <= 0:
             vwap[i] = np.nan
             share[i] = np.nan
+            v_buy[i] = np.nan
+            v_sell[i] = np.nan
         else:
             vwap[i] = b[0]
             share[i] = b[1]
+            v_buy[i] = float(b[4]) if len(b) > 4 else np.nan
+            v_sell[i] = float(b[5]) if len(b) > 5 else np.nan
     keep = np.isfinite(vwap) & np.isfinite(share)
+    vb, vs = v_buy[keep], v_sell[keep]
     return {
         "t_ms": t_pos[keep],
         "delta": d_pos[keep],
         "vwap": vwap[keep],
         "buy_share": share[keep],
+        "vwap_buy": vb,
+        "vwap_sell": vs,
         "t_all": t_end,
         "n_delta_rows": int(t_end.size),
         "n_positive": int(pos.sum()),
         "n_positive_no_trades": int((~keep).sum()),
         "n_nonpositive": int((~pos).sum()),
+        "n_no_buy_taker": int((~(np.isfinite(vb) & (vb > 0))).sum()),
+        "n_no_sell_taker": int((~(np.isfinite(vs) & (vs > 0))).sum()),
     }
 
 
@@ -338,14 +389,30 @@ def _side_stats(
     return base.profile_stats(qty, lo_bin, step, p_liq, p0)
 
 
+def _side_bins(prices: np.ndarray, step: float) -> tuple[np.ndarray, np.ndarray]:
+    """側別 VWAP -> (ビン番号, 使えるか)。NaN・非正の価格は使わない(ビン番号は 0 を置く)。"""
+    p = np.asarray(prices, dtype=np.float64)
+    ok = np.isfinite(p) & (p > 0)
+    safe = np.where(ok, p, 1.0)
+    return base.bin_index_array(safe, step), ok
+
+
 def oi_columns_for_rows(
     rows: list[dict],
     buckets: dict,
     window_ms: int,
     step: float,
     cov_start: int | None,
+    side_price: str = "same",
 ) -> tuple[list[dict], int]:
-    """時刻の昇順に並んだ行に、建玉側の列を付ける。戻り値は (列の一覧, 被覆外の行数)。"""
+    """時刻の昇順に並んだ行に、建玉側の列を付ける。戻り値は (列の一覧, 被覆外の行数)。
+
+    `side_price`:
+      `same`  … 側別の重みも全体と同じ 5 分の VWAP のビンに置く(2026-09-17 版と同じ)。
+      `split` … ロング側は買い taker だけの VWAP、ショート側は売り taker だけの VWAP の
+                ビンに置く。**全体のプロファイル(`oi_dist_*`)は `same` と同じ。**
+    """
+    split = side_price == "split"
     n_rows = len(rows)
     out: list[dict] = [dict.fromkeys(OI_COLUMNS, np.nan) for _ in range(n_rows)]
     for o in out:
@@ -357,13 +424,26 @@ def oi_columns_for_rows(
         return out, n_rows
 
     bins = base.bin_index_array(buckets["vwap"], step)
-    gmin = int(bins.min())
+    if split:
+        bins_l, ok_l = _side_bins(buckets.get("vwap_buy", np.full(t_b.size, np.nan)), step)
+        bins_s, ok_s = _side_bins(
+            buckets.get("vwap_sell", np.full(t_b.size, np.nan)), step
+        )
+    else:
+        bins_l = bins_s = bins
+        ok_l = ok_s = np.ones(t_b.size, dtype=bool)
+    all_bins = np.concatenate([bins, bins_l[ok_l], bins_s[ok_s]])
+    gmin = int(all_bins.min())
+    width = int(all_bins.max()) - gmin + 1
     rel = (bins - gmin).astype(np.int64)
-    width = int(rel.max()) + 1
+    rel_l = (bins_l - gmin).astype(np.int64)
+    rel_s = (bins_s - gmin).astype(np.int64)
     acc_tot = np.zeros(width, dtype=np.float64)
     acc_long = np.zeros(width, dtype=np.float64)
     acc_short = np.zeros(width, dtype=np.float64)
     acc_cnt = np.zeros(width, dtype=np.int64)
+    acc_cnt_l = np.zeros(width, dtype=np.int64)
+    acc_cnt_s = np.zeros(width, dtype=np.int64)
 
     w_long = buckets["delta"] * buckets["buy_share"]
     w_short = buckets["delta"] * (1.0 - buckets["buy_share"])
@@ -373,19 +453,25 @@ def oi_columns_for_rows(
     for i, r in enumerate(rows):
         t = int(r["time_ms"])
         while hi < t_b.size and t_b[hi] <= t:
-            j = rel[hi]
-            acc_tot[j] += buckets["delta"][hi]
-            acc_long[j] += w_long[hi]
-            acc_short[j] += w_short[hi]
-            acc_cnt[j] += 1
+            acc_tot[rel[hi]] += buckets["delta"][hi]
+            acc_cnt[rel[hi]] += 1
+            if ok_l[hi]:
+                acc_long[rel_l[hi]] += w_long[hi]
+                acc_cnt_l[rel_l[hi]] += 1
+            if ok_s[hi]:
+                acc_short[rel_s[hi]] += w_short[hi]
+                acc_cnt_s[rel_s[hi]] += 1
             hi += 1
         left = t - window_ms
         while lo < hi and t_b[lo] <= left:
-            j = rel[lo]
-            acc_tot[j] -= buckets["delta"][lo]
-            acc_long[j] -= w_long[lo]
-            acc_short[j] -= w_short[lo]
-            acc_cnt[j] -= 1
+            acc_tot[rel[lo]] -= buckets["delta"][lo]
+            acc_cnt[rel[lo]] -= 1
+            if ok_l[lo]:
+                acc_long[rel_l[lo]] -= w_long[lo]
+                acc_cnt_l[rel_l[lo]] -= 1
+            if ok_s[lo]:
+                acc_short[rel_s[lo]] -= w_short[lo]
+                acc_cnt_s[rel_s[lo]] -= 1
             lo += 1
         # 窓の先頭が建玉の被覆に入っているか(入っていなければ建玉側は NaN のまま)。
         if left < cov_start - BUCKET_MS:
@@ -398,13 +484,9 @@ def oi_columns_for_rows(
             continue
         r0, r1 = int(nz[0]), int(nz[-1])
         sub_tot = acc_tot[r0 : r1 + 1].copy()
-        sub_long = acc_long[r0 : r1 + 1].copy()
-        sub_short = acc_short[r0 : r1 + 1].copy()
         sub_cnt = acc_cnt[r0 : r1 + 1]
         # 足し引きの端数が残らないようにする(既存 `process_day` と同じ処理)。
         sub_tot[sub_cnt == 0] = 0.0
-        sub_long[sub_cnt == 0] = 0.0
-        sub_short[sub_cnt == 0] = 0.0
         lo_bin = gmin + r0
         p_liq = float(r["p_liq"])
         p0 = float(r["p0"])
@@ -419,13 +501,42 @@ def oi_columns_for_rows(
             o["oi_total_delta"] = st["total_qty"]
         which = SIDE_PROFILE.get(str(r.get("side") or ""))
         if which is not None:
-            sub_side = sub_long if which == "long" else sub_short
-            st_s = _side_stats(sub_side, lo_bin, step, p_liq, p0)
-            if st_s is not None:
-                o["oi_side_dist_vwap_bp"] = round(st_s["dist_vwap_bp"], 4)
-                o["oi_side_dist_node_bp"] = round(st_s["dist_node_bp"], 4)
-                o["oi_side_total_delta"] = st_s["total_qty"]
+            # 側別プロファイルの範囲は「ロング側とショート側が置かれたビンの最小〜最大」。
+            # `same` では両側とも全体と同じビンに置くので、これは全体の範囲と一致する。
+            nz_s = np.nonzero(acc_cnt_l + acc_cnt_s)[0]
+            if nz_s.size:
+                s0, s1 = int(nz_s[0]), int(nz_s[-1])
+                if which == "long":
+                    sub_side = acc_long[s0 : s1 + 1].copy()
+                    sub_side[acc_cnt_l[s0 : s1 + 1] == 0] = 0.0
+                else:
+                    sub_side = acc_short[s0 : s1 + 1].copy()
+                    sub_side[acc_cnt_s[s0 : s1 + 1] == 0] = 0.0
+                st_s = _side_stats(sub_side, gmin + s0, step, p_liq, p0)
+                if st_s is not None:
+                    o["oi_side_dist_vwap_bp"] = round(st_s["dist_vwap_bp"], 4)
+                    o["oi_side_dist_node_bp"] = round(st_s["dist_node_bp"], 4)
+                    o["oi_side_total_delta"] = st_s["total_qty"]
     return out, n_uncovered
+
+
+def collect_side_spread(buckets: dict, acc: dict) -> None:
+    """桶ごとの「買い taker だけの VWAP − 売り taker だけの VWAP」を bp で溜める。
+
+    キーは桶の時刻なので、**前の日を重ねて読んでも二重に数えない**(§2.6 の注意の型)。
+    値は (差 bp または NaN, 買い taker があったか, 売り taker があったか)。
+    """
+    t = buckets["t_ms"]
+    vb = np.asarray(buckets.get("vwap_buy", np.full(t.size, np.nan)), dtype=np.float64)
+    vs = np.asarray(buckets.get("vwap_sell", np.full(t.size, np.nan)), dtype=np.float64)
+    ref = np.asarray(buckets["vwap"], dtype=np.float64)
+    ok_b = np.isfinite(vb) & (vb > 0)
+    ok_s = np.isfinite(vs) & (vs > 0)
+    both = ok_b & ok_s
+    with np.errstate(invalid="ignore", divide="ignore"):
+        diff = np.where(both, (vb - vs) / ref * 1e4, np.nan)
+    for i in range(t.size):
+        acc[int(t[i])] = (float(diff[i]), bool(ok_b[i]), bool(ok_s[i]))
 
 
 def _apply_liqdir_and_leverage(row: dict, mmr: float | None) -> None:
@@ -467,6 +578,8 @@ def process_day(
     metrics_cache: dict,
     mmr: float | None,
     dedup_liq: bool = True,
+    side_price: str = "same",
+    side_spread_acc: dict | None = None,
 ) -> tuple[list[dict], dict]:
     """1 日分の行(清算 + 対照)を作る。約定側は既存 `process_day` をそのまま呼ぶ。"""
     step = base.log_step(bin_pct)
@@ -503,6 +616,8 @@ def process_day(
                 float(bs["buy_share"][k]),
                 float(bs["vol"][k]),
                 int(bs["n"][k]),
+                float(bs["vwap_buy"][k]),
+                float(bs["vwap_sell"][k]),
             )
 
     metrics_days: list[tuple[np.ndarray, np.ndarray]] = []
@@ -519,7 +634,11 @@ def process_day(
 
     buckets = build_delta_buckets(metrics_days, bucket_lookup)
     cov = coverage_start_ms(buckets["t_all"])
-    oi_cols, n_uncovered = oi_columns_for_rows(rows, buckets, window_ms, step, cov)
+    oi_cols, n_uncovered = oi_columns_for_rows(
+        rows, buckets, window_ms, step, cov, side_price=side_price
+    )
+    if side_spread_acc is not None:
+        collect_side_spread(buckets, side_spread_acc)
 
     for r, o in zip(rows, oi_cols):
         r.update(o)
@@ -527,6 +646,9 @@ def process_day(
 
     note.update(
         {
+            "side_price": side_price,
+            "oi_buckets_no_buy_taker": buckets["n_no_buy_taker"],
+            "oi_buckets_no_sell_taker": buckets["n_no_sell_taker"],
             "metrics_days_required": need,
             "metrics_days_missing": metrics_missing,
             "oi_delta_rows": buckets["n_delta_rows"],
@@ -566,8 +688,38 @@ def _quantile_block(df: pd.DataFrame, absolute: bool = False) -> dict:
     return out
 
 
+def side_spread_block(acc: dict) -> dict:
+    """`collect_side_spread` が溜めたものを分位にまとめる(桶の時刻で一意化済み)。"""
+    if not acc:
+        return {}
+    vals = np.array([v[0] for v in acc.values()], dtype=np.float64)
+    ok_b = np.array([v[1] for v in acc.values()], dtype=bool)
+    ok_s = np.array([v[2] for v in acc.values()], dtype=bool)
+    fin = vals[np.isfinite(vals)]
+    out: dict = {
+        "buckets_unique": int(len(acc)),
+        "buckets_no_buy_taker": int((~ok_b).sum()),
+        "buckets_no_sell_taker": int((~ok_s).sum()),
+        "buckets_both_sides": int((ok_b & ok_s).sum()),
+        "n": int(fin.size),
+    }
+    if fin.size:
+        for q in QUANTILES:
+            out[f"q{q}"] = round(float(np.percentile(fin, q)), 4)
+        out["mean"] = round(float(fin.mean()), 4)
+        out["abs_q50"] = round(float(np.percentile(np.abs(fin), 50)), 4)
+        out["abs_q90"] = round(float(np.percentile(np.abs(fin), 90)), 4)
+        out["min"] = round(float(fin.min()), 4)
+        out["max"] = round(float(fin.max()), 4)
+    return out
+
+
 def build_summary(
-    df: pd.DataFrame, notes: list[dict], params: dict, elapsed_sec: float
+    df: pd.DataFrame,
+    notes: list[dict],
+    params: dict,
+    elapsed_sec: float,
+    side_spread: dict | None = None,
 ) -> dict:
     liq = df[df["kind"] == "liq"]
     ctl = df[df["kind"] == "control"]
@@ -608,7 +760,10 @@ def build_summary(
 
     return {
         "params": params,
+        "side_price": params.get("side_price"),
         "owner_verbatim": OWNER_VERBATIM,
+        "lead_row_text": LEAD_ROW_TEXT,
+        "owner_verbatim_prev": OWNER_VERBATIM_PREV,
         "lead_rows_text": LEAD_ROWS_TEXT,
         "elapsed_sec": round(elapsed_sec, 2),
         "rows_total": int(len(df)),
@@ -635,6 +790,13 @@ def build_summary(
         "oi_delta_positive_no_trades_total": sum(
             int(n.get("oi_delta_positive_no_trades", 0)) for n in notes
         ),
+        "oi_buckets_no_buy_taker_total": sum(
+            int(n.get("oi_buckets_no_buy_taker", 0)) for n in notes
+        ),
+        "oi_buckets_no_sell_taker_total": sum(
+            int(n.get("oi_buckets_no_sell_taker", 0)) for n in notes
+        ),
+        "side_price_spread_bp": side_spread_block(side_spread or {}),
         "nan_counts": nan_counts,
         "quantiles": {
             "liq_all": _quantile_block(liq),
@@ -654,6 +816,13 @@ def build_summary(
             "[T−5 分, T) の aggTrades の VWAP の価格ビンに ΔOI の重みで積んだもの。",
             "側別は同じ 5 分の買い taker / 売り taker の出来高比で ΔOI を割った(仮定)。"
             "SELL 清算にはロング側、BUY 清算にはショート側を当てている。",
+            "--side-price same(既定)は側別の重みも全体と同じ 5 分の VWAP に置く。"
+            "split はロング側を買い taker だけの VWAP、ショート側を売り taker だけの VWAP に置く。"
+            "どちらでも全体のプロファイル(oi_dist_*)と按分の重みは同じ。",
+            "split で片側の約定が 0 件の 5 分は、その側を積まない"
+            "(その側の重みは出来高比が 0 なので厳密に 0 であり、プロファイルの値は変わらない。"
+            "側別プロファイルの価格の範囲とビン数にだけ効く)。件数は "
+            "side_price_spread_bp.buckets_no_buy_taker / _no_sell_taker。",
             "implied_leverage = 1 / (d/1e4 + mmr)、d = oi_dist_vwap_bp_liqdir。"
             "--mmr を渡さなければ列は全部 NaN。",
             "建玉の被覆が窓に足りない行(metrics 欠測・窓が欠測にかかる)は建玉側を NaN にした。",
@@ -676,6 +845,7 @@ def run(
     seed: int,
     mmr: float | None,
     dedup_liq: bool = True,
+    side_price: str = "same",
 ) -> dict:
     t0 = time.time()
     agg_cache: dict = {}
@@ -683,6 +853,7 @@ def run(
     metrics_cache: dict = {}
     all_rows: list[dict] = []
     notes: list[dict] = []
+    side_spread: dict = {}
     for i_day, day in enumerate(days):
         rows, note = process_day(
             day,
@@ -696,6 +867,8 @@ def run(
             metrics_cache,
             mmr,
             dedup_liq=dedup_liq,
+            side_price=side_price,
+            side_spread_acc=side_spread,
         )
         all_rows.extend(rows)
         notes.append(note)
@@ -726,6 +899,7 @@ def run(
         "seed": seed,
         "mmr": mmr,
         "dedup_liq": dedup_liq,
+        "side_price": side_price,
         "liq_price_field": base.DEFAULT_LIQ_PRICE_FIELD,
         "control_gap_minutes": base.CONTROL_GAP_MS / 60000,
         "oi_bucket_minutes": BUCKET_MS / 60000,
@@ -734,8 +908,9 @@ def run(
         "symbol": base.SYMBOL,
         "design": "docs/PHASE2/O3C/PRICE_LEVEL/DESIGN_2026-09-17.md",
         "report": "docs/PHASE2/O3C/PRICE_LEVEL/OI_DISTANCE_2026-09-17.md",
+        "report_split": "docs/PHASE2/O3C/PRICE_LEVEL/OI_DISTANCE_SPLIT_2026-09-18.md",
     }
-    summary = build_summary(df, notes, params, elapsed)
+    summary = build_summary(df, notes, params, elapsed, side_spread)
     (out_dir / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
@@ -759,6 +934,16 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "維持証拠金率(小数)。渡したときだけ implied_leverage を出す。"
             "既定は無し(数を作らない)"
+        ),
+    )
+    ap.add_argument(
+        "--side-price",
+        choices=SIDE_PRICE_CHOICES,
+        default="same",
+        help=(
+            "按分した重みを置く価格。same(既定)= 両側とも全体の 5 分 VWAP"
+            "(2026-09-17 版と同じ)。split = ロング側は買い taker だけの VWAP、"
+            "ショート側は売り taker だけの VWAP"
         ),
     )
     ap.add_argument(
@@ -786,11 +971,13 @@ def main(argv: list[str] | None = None) -> int:
         a.seed,
         a.mmr,
         dedup_liq=not a.no_dedup_liq,
+        side_price=a.side_price,
     )
     print(
         f"行 {s['rows_total']}(清算 {s['rows_liq']} / 対照 {s['rows_control']})"
         f" 建玉あり 清算 {s['rows_oi_covered']['liq']} / 対照 {s['rows_oi_covered']['control']}"
-        f" / W = {a.window_hours}h / 所要 {s['elapsed_sec']} 秒 -> {a.out_dir}"
+        f" / W = {a.window_hours}h / 側別価格 {a.side_price}"
+        f" / 所要 {s['elapsed_sec']} 秒 -> {a.out_dir}"
     )
     return 0
 
