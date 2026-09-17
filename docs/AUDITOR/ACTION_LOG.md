@@ -7141,3 +7141,20 @@ w24 BUY 建玉重心 段階別:   有効 13107 除外 1832 L q10/50/90 [ 24.  51
 $ python3 - (w8/summary.json: days_metrics_missing の件数と内訳)
 100 件 = 2023-06-24(補遺日)/ 09-25 / 11-19 + 2024-03-04〜06-08 の 97 日。暦 478 日内は 99 日。清算の表 472 日との重なり 375 → 建玉の無い清算日 97 日。
 ```
+
+### 2 巡目の指摘で足したもの(リード、2026-09-17)
+
+```
+$ cp /tmp/claude-0/brackets.json docs/DATA/probes/20260917_binance_cm_brackets_full.json && wc -c ...
+58186 docs/DATA/probes/20260917_binance_cm_brackets_full.json     (応答全体。BTCUSD_PERP の抜粋とは別)
+$ WebFetch FAQ(式の画像の src を列挙) → 3 本(生ログ [20])
+$ curl public.bnbstatic.com/.../{c3b0…,4cd2…,8a52…}.png -> 200 20762 / 200 14470 / 200 12584(生ログ [21]〜[23]、docs/DATA/probes/20260917_binance_cm_liq_formula/)
+  画像を Read で開いて目視転記(調査文書の追記 2)。片側 1 建玉・分離マージンでロング LP = EP×L(1+MMR)/(L+1)、ショート LP = EP×L(1−MMR)/(L−1)
+$ python3 - (厳密式と近似 1/L − MMR の比較、MMR = 0.004)
+L=20: 損失率 long 438.1bp short 484.2bp 近似 460.0bp | 逆算 L from d_long: 近似 20.9 厳密 20.0
+L=50: 損失率 long 156.9bp short 163.3bp 近似 160.0bp | 逆算: 近似 50.8 厳密 50.0
+L=75: 損失率 long 92.1bp short 94.6bp 近似 93.3bp | 逆算: 近似 75.7 厳密 75.0
+L=125: 損失率 long 39.7bp short 40.3bp 近似 40.0bp | 逆算: 近似 125.5 厳密 125.0
+L=200: 損失率 long 10.0bp short 10.1bp 近似 10.0bp | 逆算: 近似 200.2 厳密 200.0
+```
+報告書 §7 の古い段落(「取れていない」「50 BTC」「2 件」)を訂正に置き換え、調査文書の総括表・第 2 経路の推奨 3 か所に「追記で不要になった」を付けた。§0.1 の該当語なしの行は 20(委任先 17 + リード 3)。

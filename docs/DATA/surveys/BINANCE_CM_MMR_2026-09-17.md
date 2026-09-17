@@ -84,7 +84,7 @@
 はい。
 - web.archive.org(CDX API・wayback availability API)を代替経路として試行 → **到達不能**。CDX検索は curl でタイムアウト(60秒、HTTP応答無し、ログ[4])、wayback availability API は2回とも HTTP 429(Too Many Requests、ログ[5][6])。WebFetch では明示的に「Claude Code is unable to fetch from web.archive.org」と拒否された(ログ[12])。
 - Binance公式アナウンス(2024-03-05付「Updates on the Leverage & Margin Tiers of Multiple USDⓈ-M and COIN-M Perpetual Contracts」)も確認したが、対象ペア一覧に BTCUSD_PERP / BTCUSD は含まれておらず、根拠にならない(ログ[13])。
-- **第2経路(オーナーPC)**: 未試行。オーナーのブラウザ(通常のCookie・JS実行が効く環境)であれば https://www.binance.com/en/futures/trading-parameters/perpetual/leverage-margin で BTCUSD_PERP を選択し、段階表がそのまま表示される可能性が高い(この環境ではSPAのAPI呼び出しが静的フェッチで見えないだけで、地域制限やHTTPコードの問題ではない)。
+- **第2経路(オーナーPC)**: **【追記で不要になった】**公開 JSON 経路(生ログ [15][19])で段階表の全体が取れた。初稿の文: 未試行。オーナーのブラウザ(通常のCookie・JS実行が効く環境)であれば https://www.binance.com/en/futures/trading-parameters/perpetual/leverage-margin で BTCUSD_PERP を選択し、段階表がそのまま表示される可能性が高い(この環境ではSPAのAPI呼び出しが静的フェッチで見えないだけで、地域制限やHTTPコードの問題ではない)。
 
 ---
 
@@ -130,7 +130,7 @@
 はい。
 - AMP版ページ(https://www.binance.com/ph/amp/support/faq/ceccfcfb4e3a45e3b48b0b1bb1a8ae46 、静的HTMLである可能性を期待)を代替経路として試行 → curl で HTTP 202・0バイト(ログ[7])。WebFetch は同URLで HTTP 404(ログには残していないが実行済み・到達不能)。
 - web.archive.org も試行したが、主張Aと同じ理由で到達不能(ログ[12]、CDX/availability APIも同様に不可)。
-- **第2経路(オーナーPC)**: 未試行。通常のブラウザでこのFAQページを開けば式の画像自体は表示される(ページの到達性そのものに問題は無い)。画像内の式をテキスト化するには、オーナーPCで画像を開いてOCRするか、目視で書き取る作業が別途必要。
+- **第2経路(オーナーPC)**: **【追記 2 で不要になった】**画像を CDN から取得して読んだ。初稿の文: 未試行。通常のブラウザでこのFAQページを開けば式の画像自体は表示される(ページの到達性そのものに問題は無い)。画像内の式をテキスト化するには、オーナーPCで画像を開いてOCRするか、目視で書き取る作業が別途必要。
 
 ---
 
@@ -138,10 +138,12 @@
 
 | 副主張 | 判定 | 根拠(生ログの行) |
 |---|---|---|
-| 最小段階(bracket 1)のMMR = 0.4%、想定元本0〜50 BTC、最大レバレッジ125倍 | 一次資料で確認(限定付き: WebFetch の要約が 2 回一致しただけで、原文バイトとの一致は未照合。「ドキュメント例」である。段階2以降の表は未確認) | [11] |
+| 最小段階(bracket 1)のMMR = 0.4%、想定元本0〜50 BTC、最大レバレッジ125倍 | 一次資料で確認(限定付き: WebFetch の要約が 2 回一致しただけで、原文バイトとの一致は未照合。「ドキュメント例」である。段階2以降の表は**取得済(追記。公開 JSON、2026-05-11 更新の表。2023〜2024 年当時の表かは不明)**) | [11] |
 | BTCUSD_PERP の完全な段階表(全段階) | 一次資料に到達できず(方法: curl/WebFetch、コード: 202/0バイト・SPAのため静的取得不可) | [1][2][7][8][9] |
-| 清算価格の計算式(記号列そのもの) | 一次資料に到達できず(ページには到達したが式が画像でalt無し) | [10] |
+| 清算価格の計算式(記号列そのもの) | **一次資料で確認(追記 2。画像 3 枚を取得し、リードが目視で転記)** | [10]、追記 [20]〜[23] |
 | 清算価格の式の変数定義(WB, TMM1, UPNL1, MMR_B, cumB, SideBOTH 等) | 一次資料で確認(限定付き: WebFetch の要約、原文バイト未照合) | [10] |
+
+**【追記で不要になった(2026-09-17)】下の「第 2 経路(オーナー PC)」の推奨は、公開 JSON 経路で段階表が取れたので取り下げる。文は記録として残す。**
 
 **第2経路(オーナーPC)を推奨する2点**:
 1. https://www.binance.com/en/futures/trading-parameters/perpetual/leverage-margin で BTCUSD_PERP を選択し、表示される段階表(全段)をコピーする。
@@ -151,4 +153,17 @@
 
 ## 追記(リード、2026-09-17、行動の監査の指摘 = この環境の経路を尽くす前にオーナー PC を挙げた)
 
-SPA が呼ぶ公開 JSON 経路を curl で試した(生ログ [14]〜[19])。`https://www.binance.com/bapi/futures/v1/friendly/delivery/common/brackets` が HTTP 200 で全銘柄の段階表を返した(BTCUSD_PERP は 10 段階、`updateTime` 2026-05-11 UTC。抜粋 `docs/DATA/probes/20260917_binance_cm_brackets_BTCUSD_PERP.json`)。**主張 A の段階 2 以降は、この経路で「一次資料で確認(限定付き: 表の日付は 2026-05 で、2023〜2024 年当時の表かは不明。JSON の原文をそのまま保存)」に変わる。**表の区切りは API リファレンスの例(段階 1 の `qtyCap 50`)と違う(段階 1 の上限 5 BTC)。`dapi.binance.com/dapi/v1/leverageBracket` は HTTP 451(地域制限)。オーナー PC の経路は不要になった。
+SPA が呼ぶ公開 JSON 経路を curl で試した(生ログ [14]〜[19])。`https://www.binance.com/bapi/futures/v1/friendly/delivery/common/brackets` が HTTP 200 で全銘柄の段階表を返した(BTCUSD_PERP は 10 段階、`updateTime` 2026-05-11 UTC。抜粋 `docs/DATA/probes/20260917_binance_cm_brackets_BTCUSD_PERP.json`)。**主張 A の段階 2 以降は、この経路で「一次資料で確認(限定付き: 表の日付は 2026-05 で、2023〜2024 年当時の表かは不明。応答全体 58,186 バイトをそのまま `docs/DATA/probes/20260917_binance_cm_brackets_full.json` に保存し、BTCUSD_PERP は抜粋を再整形)」に変わる。**表の区切りは API リファレンスの例(段階 1 の `qtyCap 50`)と違う(段階 1 の上限 5 BTC)。`dapi.binance.com/dapi/v1/leverageBracket` は HTTP 451(地域制限)。オーナー PC の経路は不要になった。
+
+## 追記 2(リード、2026-09-17): 清算価格の式は画像を取得して読んだ
+
+行動の監査の指摘(この環境の経路を尽くす)で、FAQ ページの式の画像 3 枚を CDN から curl で取得(生ログ [20]〜[23]、HTTP 200、`docs/DATA/probes/20260917_binance_cm_liq_formula/*.png`)し、画像を開いて読んだ。**以下はリードが画像を目視で転記したもの(OCR ではない。転記の誤りはリードの責任)。**
+
+- 画像 1(`c3b054659cea972644d9d1aec5c01694.png`):
+  `LP = (B × MMR_B + L × MMR_L + S × MMR_S + sideBOTH × B + L − S) / ((WB − TMM1 + UPNL1 + cum_B + cum_L + cum_S)/CM + sideBOTH × B/EP_B + L/EP_L − S/EP_S)`
+- 画像 2(`4cd2d13b2dbda229afd10b34e28cb785.png`):
+  `TMM1 = MaintenanceMargin2 + MaintenanceMargin3 + … + MaintenanceMarginN`、`MaintenanceMargin2 = Position2 × CM × MMR2 / MP2 − cum2`
+- 画像 3(`8a52fda995cbbf0a65ec8544412e351e.png`):
+  `UPNL1 = UnrealizedPNL2 + UnrealizedPNL3 + … + UnrealizedPNLN`、`UnrealizedPNL1 = Σ Position1 × Side1 × CM × (1/EP1 − 1/MP1)`
+
+**主張 B の判定を「一次資料で確認(画像から目視転記)」に改める。**片側 1 建玉・分離マージン(TMM1 = UPNL1 = 0、cum = 0)・証拠金 WB = B × CM / (EP × L) を入れると、ロングは LP = EP × L(1 + MMR)/(L + 1)、ショートは LP = EP × L(1 − MMR)/(L − 1)。建値からの損失率は (1 − L × MMR)/(L ± 1) で、主張の「1/L − MMR」はその近似(L = 75、MMR = 0.4% で 92.1bp 対 93.3bp、差 1.3%)。主張の形「建値 × L / (L ± 1 ∓ MMR × L)」とは書き方が違う(分子に (1 ± MMR) が付く形)が、損失率の近似としては同じ。

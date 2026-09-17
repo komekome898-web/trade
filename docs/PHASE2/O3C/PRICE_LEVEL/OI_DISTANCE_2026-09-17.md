@@ -515,8 +515,8 @@ W=24h 新 2088 行 / 既存 2088 行  食い違った列 0  []
 
 逐語: L-194「**レバレッジの大きさによってその距離が近づくと思います。約定のレバレッジは測りにくいので**」。
 
-- 維持証拠金率 MMR = **0.004(0.4%)**。出所 = Binance COIN-M API リファレンス「Notional Bracket for Symbol」の BTCUSD_PERP の例(`bracket 1`、`qtyCap 50`、`initialLeverage 125`、`maintMarginRatio 0.004`)。調査班の一次資料確認 `docs/DATA/surveys/BINANCE_CM_MMR_2026-09-17.md`(WebFetch 2 回、同一値。生ログ `docs/DATA/probes/20260917_binance_cm_mmr.log`)。**段階 2 以降の表はこの環境から取れていない**(表示ページは JS で埋まる SPA、`www.binance.com` は curl で HTTP 202・0 バイト、web.archive.org は 429 / タイムアウト。オーナー PC のブラウザなら閲覧できる可能性が高い = 未試行)。清算 1 件の想定元本(`qty` × 100 USD ÷ `p_liq`)を数えると、53,398 件中 53,396 件(99.996%)が 50 BTC 未満で段階 1 に入る(最大 115.8 BTC、99% 点 5.65 BTC。リード実測、`ACTION_LOG` 056)。**残る 2 件と、段階 1 の MMR を一律に当てること自体の向き**: 実際の MMR が段階 1 より高い建玉があれば、真の L = 1/(d/1e4 + MMR真) は本書の L より**小さい**。つまり本書の L は**過大側**にしか外れない(2 件 = 0.004% なので分布への効きは無視できる、推定)。
-- 式: 逆数建ての近似で、建値からの損失率 d/1e4 が 1/L − MMR に達すると清算 → **L = 1 / (d/1e4 + MMR)**。d = プロファイルの重心(約定 VWAP / 建玉プロファイルの重心 / 側別プロファイルの重心。本書で「平均建値」と略しているのは全部この重心で、清算された建玉の実際の建値ではない = §4 の 2・3・5・6 の仮定)からの距離(bp、清算の向きに正)。d/1e4 + MMR ≤ 0(d ≤ −40bp)は換算しない(件数を書く)。公式の清算価格の式そのものは画像で、原文引用は取れていない(調査班の判定「一次資料に到達できず」)。**「建値 = プロファイルの位置」は仮定。**
+- 維持証拠金率 MMR = **0.004(0.4%)**。出所 = Binance COIN-M API リファレンス「Notional Bracket for Symbol」の BTCUSD_PERP の例(`bracket 1`、`qtyCap 50`、`initialLeverage 125`、`maintMarginRatio 0.004`)。調査班の一次資料確認 `docs/DATA/surveys/BINANCE_CM_MMR_2026-09-17.md`(WebFetch 2 回、同一値。生ログ `docs/DATA/probes/20260917_binance_cm_mmr.log`)。**【訂正、2 巡目の行動の監査】この段落の初稿は「段階 2 以降の表はこの環境から取れていない(オーナー PC のブラウザなら閲覧できる可能性)」「50 BTC 未満が 99.996%」「残る 2 件」と書いていた。§7.1 で公開 JSON 経路から段階表の全体を取ったので、それは消して次に置き換える。**今の表(2026-05-11 更新)では段階 1 の上限は 5 BTC で、清算の想定元本(`qty` × 100 USD ÷ `p_liq`)を当てると 98.6% が段階 1、0.9% が段階 2、0.4% が段階 3、0.03% が段階 4(リード実測、`ACTION_LOG` 056)。段階 1 の MMR を一律に当てる向きは、真の MMR が高い建玉ほど真の L = 1/(d/1e4 + MMR真) が本書の L より**小さい** = 本書の L は過大側にしか外れない。段階別に出し直した差は §7.1 のとおり分位で 0〜1、L > 125 の割合で 0〜0.1 ポイント。
+- 式: 逆数建ての近似で、建値からの損失率 d/1e4 が 1/L − MMR に達すると清算 → **L = 1 / (d/1e4 + MMR)**。d = プロファイルの重心(約定 VWAP / 建玉プロファイルの重心 / 側別プロファイルの重心。本書で「平均建値」と略しているのは全部この重心で、清算された建玉の実際の建値ではない = §4 の 2・3・5・6 の仮定)からの距離(bp、清算の向きに正)。d/1e4 + MMR ≤ 0(d ≤ −40bp)は換算しない(件数を書く)。公式の清算価格の式は、画像 3 枚を CDN から取得してリードが目視で転記した(`BINANCE_CM_MMR_2026-09-17.md` 追記 2、`docs/DATA/probes/20260917_binance_cm_liq_formula/`)。片側 1 建玉・分離マージンでロング LP = EP × L(1 + MMR)/(L + 1)、ショート LP = EP × L(1 − MMR)/(L − 1)、損失率 = (1 − L × MMR)/(L ± 1)。本書の「1/L − MMR」はその近似で、L = 75・MMR = 0.4% で 92.1bp 対 93.3bp(差 1.3%)。厳密に逆算するなら L = (1 ∓ d)/(d + MMR)(ロングは 1 − d、ショートは 1 + d)で、本書の L との差は d ≈ 1% で約 1%。**表は近似のまま置く(差が分位の丸めより小さい)。****「建値 = プロファイルの位置」は仮定。**
 - リードの計算(`table.csv` から。コマンドと出力は `ACTION_LOG` 056。この §7 を書いた時点では 056 は未作成で、オーナーに出す前に書く):
 
 | W | 側 | 位置(重心 = 平均建値の近似) | 件数 | 換算できた | 換算できない(d ≤ −40bp) | L > 125 の割合 | L 10% | 25% | **50%** | 75% | 90% |
@@ -540,7 +540,7 @@ W=24h 新 2088 行 / 既存 2088 行  食い違った列 0  []
 
 ### 7.1 段階表の全体(リード、2026-09-17。行動の監査の指摘で、この環境から公開 JSON 経路を試した)
 
-表示ページ(SPA)が表を埋めるために呼ぶ公開 JSON `https://www.binance.com/bapi/futures/v1/friendly/delivery/common/brackets` に curl(`$HTTPS_PROXY` 経由)で到達した(HTTP 200、58,186 バイト。生ログ `docs/DATA/probes/20260917_binance_cm_mmr.log` の [15]・[19]、BTCUSD_PERP の抜粋 `docs/DATA/probes/20260917_binance_cm_brackets_BTCUSD_PERP.json`)。`dapi.binance.com` は HTTP 451(地域制限)。
+表示ページ(SPA)が表を埋めるために呼ぶ公開 JSON `https://www.binance.com/bapi/futures/v1/friendly/delivery/common/brackets` に curl(`$HTTPS_PROXY` 経由)で到達した(HTTP 200、58,186 バイト。生ログ `docs/DATA/probes/20260917_binance_cm_mmr.log` の [15]・[19]。応答全体 58,186 バイトをそのまま `docs/DATA/probes/20260917_binance_cm_brackets_full.json` に保存し、BTCUSD_PERP はそこから抜粋・再整形して `20260917_binance_cm_brackets_BTCUSD_PERP.json`)。`dapi.binance.com` は HTTP 451(地域制限)。
 
 BTCUSD_PERP の段階(`updateTime` 1778489456820 = 2026-05-11 UTC の表。**2023-06〜2024-10 当時の表かは不明**。想定元本の単位は BTC):
 
