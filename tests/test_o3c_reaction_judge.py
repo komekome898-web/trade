@@ -142,14 +142,17 @@ COMMIT_FIELD = "   **凍結した道具のコミット**: **{v}**\n"
 
 @pytest.fixture(autouse=True)
 def _stub_tool_version(monkeypatch):
-    """**この試験環境の作業ツリーは必ず汚れている**(試験そのものが編集中の
-    リポジトリで走る)ので、**(i) 自分の作業ツリー**と**読みの道具の版**だけを固定する。
+    """**試験の最中は道具の 2 ファイル自身を書き換えていることがある**ので、
+    **(i) 自分の道具の汚れ**と**読みの道具の版**だけを固定する。
 
     **関門そのものを外していない。**(i)〜(iii) の通る側・止まる側は
-    `test_the_tool_version_gate_checks_the_worktree_and_the_six_runs` が
+    `test_the_tool_version_gate_checks_the_tools_and_the_six_runs` が
     **この固定を上書きして**両側とも測る(`monkeypatch` は後勝ちである)。
+    **現物のリポジトリでの通る側は
+    `test_the_frozen_tools_are_the_two_script_files_on_the_real_repo` が測る**
+    (10 回目の指摘 16。リードの決定 1・2・3)。
     """
-    monkeypatch.setattr(judge, "git_status", lambda *a, **k: ("clean", []))
+    monkeypatch.setattr(judge, "tool_dirty", lambda *a, **k: (False, 0))
     monkeypatch.setattr(judge, "tool_commit", lambda *a, **k: TOOL_COMMIT)
 
 
@@ -1894,12 +1897,14 @@ def test_the_frozen_tool_commit_is_recorded_and_matched(tmp_path):
     s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
     assert s["tool_commit"] == mine
     blk = s["凍結した道具のコミット(決定 16 + 決定 3・15)"]
-    assert blk["この道具の版(git rev-parse HEAD)"] == mine
+    assert blk["この道具の版(git log -1 --format=%H -- 道具 2 ファイル)"] == mine
     assert blk["事前登録 §14.4 の欄"] == TOOL_COMMIT
-    assert blk["この道具の作業ツリー(git status --porcelain)"] == "clean"
+    assert blk["この道具の凍結した道具の状態"
+               "(git diff --quiet HEAD -- 道具 2 ファイル)"] == "clean"
+    assert blk["見た範囲"] == list(judge.TOOL_FILES_REL)
     assert set(blk["走行ごとの版"]) >= {judge.RUN_W8, judge.RUN_W24}
     assert all(v == TOOL_COMMIT for v in blk["走行ごとの版"].values())
-    assert all(v == "clean" for v in blk["走行ごとの作業ツリー"].values())
+    assert all(v == "clean" for v in blk["走行ごとの道具の状態"].values())
     # (2) 短縮形(先頭 7 桁)でも通る
     root4 = open_gate(tmp_path / "root4")
     write_prereg(root4, commit=TOOL_COMMIT[:7])
@@ -1912,14 +1917,17 @@ def test_the_frozen_tool_commit_is_recorded_and_matched(tmp_path):
     out3 = tmp_path / "out3"
     code, _ = run_judge(tmp_path, days=10, per_day=6, root=root3, out=out3)
     assert code == 1
-    assert not out3.exists()
+    # **決定 4(10 回目の指摘 4)**: 表は 1 枚も書かないが、理由のファイルは残る
+    assert not (out3 / "judgment_576.csv").exists()
+    assert sorted(p.name for p in out3.iterdir()) == [judge.STOPPED_NAME]
     # (4) 欄が「(まだ無い)」= 空 -> 「[止め]」(本版で変えた点)
     root5 = open_gate(tmp_path / "root5")
     write_prereg(root5, commit=None)
     out5 = tmp_path / "out5"
     code, _ = run_judge(tmp_path, days=10, per_day=6, root=root5, out=out5)
     assert code == 1
-    assert not out5.exists()
+    assert not (out5 / "judgment_576.csv").exists()
+    assert sorted(p.name for p in out5.iterdir()) == [judge.STOPPED_NAME]
     # 迂回する旗は作っていない
     text = (ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
     assert "--tool-commit" not in text and "--skip-commit" not in text
@@ -1927,51 +1935,100 @@ def test_the_frozen_tool_commit_is_recorded_and_matched(tmp_path):
         assert flag not in text, flag
 
 
-def test_the_tool_version_gate_checks_the_worktree_and_the_six_runs(tmp_path,
-                                                                    monkeypatch):
-    """**決定 3・15(9 回目の指摘 3・15)**: 版の担保を 1 本にした関門。
+def test_the_tool_version_gate_checks_the_tools_and_the_six_runs(tmp_path,
+                                                                monkeypatch):
+    """**決定 3・15(9 回目)+ 決定 1・2・3・4(10 回目)**: 版の担保を 1 本にした関門。
 
-    **(i) 自分の作業ツリー / (ii) 6 本の版と §14.4 の欄 / (iii) 6 本の汚れ**
+    **(i) 自分の道具の汚れ / (ii) 6 本の版と §14.4 の欄 / (iii) 6 本の道具の汚れ**
     の 3 つを、**通る側と止まる側の両方**で測る。
     **この試験だけは上の `_stub_tool_version` を上書きする**(`monkeypatch` は後勝ち)。
+    **決定 4(10 回目の指摘 4)**: **止まった回には `stopped.txt` が書かれる**
+    (**表は 1 枚も書かない**)。
     """
     # 通る側(3 つとも満たす)
     code, out = run_judge(tmp_path, days=10, per_day=6)
     assert code == 0 and (out / "summary.json").exists()
 
-    # (i) 読みの道具の作業ツリーが汚れている -> 1 ファイルも書かない
-    monkeypatch.setattr(judge, "git_status",
-                        lambda *a, **k: ("dirty", ["scripts/o3c_reaction_judge.py"]))
+    # (i) 読みの道具の側で凍結した道具が汚れている -> 表は 1 枚も書かない
+    monkeypatch.setattr(judge, "tool_dirty", lambda *a, **k: (True, 1))
     out_i = tmp_path / "out_i"
     code, _ = run_judge(tmp_path, days=10, per_day=6, root=open_gate(tmp_path / "root_i"),
                         out=out_i)
-    assert code == 1 and not out_i.exists()
-    monkeypatch.setattr(judge, "git_status", lambda *a, **k: ("clean", []))
+    assert code == 1
+    assert not (out_i / "judgment_576.csv").exists()
+    # **決定 4**: 理由のファイルは残る(検査の名前だけ。値は 1 つも書かない)
+    text = (out_i / judge.STOPPED_NAME).read_text(encoding="utf-8")
+    assert judge.CHK_TOOL_VERSION in text
+    assert "再走行は新しい開封" in text
+    assert "a" * 40 not in text
+    for w in judge.FORBIDDEN:
+        assert w not in text, w
+    monkeypatch.setattr(judge, "tool_dirty", lambda *a, **k: (False, 0))
 
     # (ii) 走行の版が読みの道具と違う -> 止まる
     out_ii = tmp_path / "out_ii"
     code, _ = run_judge(tmp_path / "ii", days=10, per_day=6,
                         root=open_gate(tmp_path / "root_ii"), out=out_ii,
                         run_params={"tool_commit": "b" * 40})
-    assert code == 1 and not out_ii.exists()
+    assert code == 1 and not (out_ii / "judgment_576.csv").exists()
+    text = (out_ii / judge.STOPPED_NAME).read_text(encoding="utf-8")
+    assert judge.CHK_TOOL_VERSION in text and "gap60_w8" in text
+    assert "b" * 40 not in text          # 値は 1 つも書かない(決定 12)
 
-    # (iii) 走行のときに作業ツリーが汚れていた -> 止まる
+    # (iii) 走行のときに道具が汚れていた -> 止まる
     out_iii = tmp_path / "out_iii"
     code, _ = run_judge(tmp_path / "iii", days=10, per_day=6,
                         root=open_gate(tmp_path / "root_iii"), out=out_iii,
                         run_params={"tool_dirty": "dirty"})
-    assert code == 1 and not out_iii.exists()
+    assert code == 1 and not (out_iii / "judgment_576.csv").exists()
+    assert judge.CHK_TOOL_VERSION in (
+        out_iii / judge.STOPPED_NAME).read_text(encoding="utf-8")
 
     # 走行に `tool_commit` の鍵が無い(この機械より前に走った出力)-> 止まる
     out_iv = tmp_path / "out_iv"
     code, _ = run_judge(tmp_path / "iv", days=10, per_day=6,
                         root=open_gate(tmp_path / "root_iv"), out=out_iv,
                         run_params={"tool_commit": None})
-    assert code == 1 and not out_iv.exists()
+    assert code == 1 and not (out_iv / "judgment_576.csv").exists()
 
     # 射程: 読めない感度の走行は版の検査の対象に入らない(上の通る側がその経路である)
     assert "読めない感度の走行はこの検査より前に落ちている" in (
         ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
+
+
+def test_the_frozen_tools_are_the_two_script_files_on_the_real_repo(tmp_path):
+    """**決定 1・2・3(10 回目の指摘 1・2・3・16)**: 版の担保は**道具の 2 ファイルだけ**。
+
+    **10 回目の指摘 16 は「通る側が差し替えの中でしか測られていない」と問うている。**
+    **ここは固定具を使わず、現物のリポジトリで測る**(`_stub_tool_version` は
+    `judge.tool_dirty` / `judge.tool_commit` を差し替えるが、
+    **この試験は差し替え前の実体を `judge.__dict__` からではなく
+    モジュールの原文と実際の `git` の返り値で確かめる**)。
+    """
+    assert judge.TOOL_FILES_REL == ("scripts/o3c_reaction.py",
+                                    "scripts/o3c_reaction_judge.py")
+    src = (ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
+    # 作業ツリー全体を見る呼び出しは 1 つも残っていない
+    assert '"status", "--porcelain"' not in src
+    assert '"rev-parse", "HEAD"' not in src
+    assert '"diff", "--quiet", "HEAD"' in src
+    assert '"log", "-1", "--format=%H"' in src
+    # 迂回する旗は無い
+    for flag in ("--allow-dirty", "--skip-git", "--no-worktree-check", "--tool-commit"):
+        assert flag not in src, flag
+    # 現物の `git` を直に呼ぶ(固定具を通さない)。道具でないファイルは範囲外である。
+    import subprocess
+    def raw_dirty():
+        return subprocess.run(
+            ["git", "-C", str(ROOT), "diff", "--quiet", "HEAD", "--",
+             *judge.TOOL_FILES_REL], capture_output=True).returncode
+    before = raw_dirty()
+    (tmp_path / "noise.txt").write_text("x" * 100, encoding="utf-8")
+    assert raw_dirty() == before
+    got = subprocess.run(
+        ["git", "-C", str(ROOT), "log", "-1", "--format=%H", "--",
+         *judge.TOOL_FILES_REL], capture_output=True, text=True)
+    assert len(got.stdout.strip()) == 40
 
 
 def test_the_f1_reading_records_the_d1_cut(tmp_path):
@@ -2004,6 +2061,8 @@ def test_the_f1_reading_records_the_d1_cut(tmp_path):
     assert v is None and "切り値が出ない" in note
     v, note = judge.f1_cut_note([])
     assert v is None and "切り値が出ない" in note
+    # **上の 4 通り**(0 以上 / 負 / NaN / 群が無い)**が、この試験が測る分岐である**
+    # (10 回目の指摘 12。事前登録 §7.0 の試験の行も「4 通り」に直した)。
 
 
 def test_the_observation_only_table_does_not_carry_the_family_alpha_in_its_mde_column(tmp_path):

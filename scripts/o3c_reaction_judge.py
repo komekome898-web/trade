@@ -196,10 +196,10 @@ PREREG_REL = "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md"
 APPROVAL_FIELD_RE = re.compile(
     r"^[ \t>]*\*\*応答の L 番号\*\*\s*[:：]\s*\*\*(.+?)\*\*\s*$", re.MULTILINE)
 APPROVAL_VALUE_RE = re.compile(r"^L-\d+$")
-# **決定 16(prereg 監査(8 回目)の指摘 16)**: 事前登録 §14.4 の
-# 「凍結した道具のコミット」の欄。**欄が埋まっていれば、この道具自身の
-# `git rev-parse HEAD` と突き合わせ、違えば「[止め]」。**
-# **欄が「(まだ無い)」なら記録だけする**(開封の直前に書き写す欄である)。
+# **決定 16(prereg 監査(8 回目)の指摘 16)+ 決定 3(10 回目の指摘 3)**: 事前登録 §14.4 の
+# 「凍結した道具のコミット」の欄。**この道具自身の
+# `git log -1 --format=%H -- <道具 2 ファイル>` と突き合わせ、違えば「[止め]」。**
+# **欄が「(まだ無い)」でも「[止め]」である**(9 回目の指摘 3 で変えた)。
 COMMIT_FIELD_RE = re.compile(
     r"^[ \t>]*\*\*凍結した道具のコミット\*\*\s*[:：]\s*\*\*(.+?)\*\*\s*$", re.MULTILINE)
 COMMIT_VALUE_RE = re.compile(r"^[0-9a-f]{7,40}$")
@@ -628,15 +628,31 @@ def read_approval_from_prereg(prereg: Path) -> tuple[str | None, str]:
     return value, f"事前登録 §14.4 の「応答の L 番号」の欄({prereg})"
 
 
-def tool_commit(repo: Path | None = None) -> str:
-    """`git rev-parse HEAD`。取れなければ「不明」(prereg 監査(8 回目)の指摘 16)。
+# **凍結した道具の 2 ファイル(prereg 監査(10 回目)の指摘 1・2・3。リードの決定 1・2・3)**。
+# **版の担保はこの 2 ファイルだけに掛ける。**作業ツリー全体は、出力先・台帳・TRACE・
+# 事前登録の欄の書き込みで必ず汚れるので、担保の単位に使えない(指摘 1・2 の実測)。
+# **走行の道具 `scripts/o3c_reaction.py` の `TOOL_FILES_REL` と同じ 2 つである。**
+TOOL_FILES_REL = ("scripts/o3c_reaction.py", "scripts/o3c_reaction_judge.py")
 
-    **読みの道具の版を `summary.json` に残すためだけの関数である。**
+
+def tool_commit(repo: Path | None = None) -> str:
+    """**凍結した道具の 2 ファイルに最後に触れたコミット**。取れなければ「不明」。
+
+    `git log -1 --format=%H -- scripts/o3c_reaction.py scripts/o3c_reaction_judge.py`。
+
+    **prereg 監査(10 回目)の指摘 3。リードの決定 3**:
+    **前版は `git rev-parse HEAD` だった。**欄(事前登録 §14.4)に書き写した値と、
+    **その書き写しをコミットした後の HEAD は定義上一致しない**(指摘 3)。
+    **本版の値は「この 2 ファイルに最後に触れたコミット」なので、
+    事前登録の欄を書き足しても、それをコミットしても動かない。**
+
+    **読みの道具の版を `summary.json` に残し、6 本と欄に突き合わせるための関数である。**
     **判定にも計算にも 1 つも使わない。**
     """
     root = Path(repo) if repo is not None else Path(__file__).resolve().parent.parent
     try:
-        r = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+        r = subprocess.run(["git", "-C", str(root), "log", "-1", "--format=%H",
+                            "--", *TOOL_FILES_REL],
                            capture_output=True, text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         return "不明"
@@ -646,28 +662,30 @@ def tool_commit(repo: Path | None = None) -> str:
     return got
 
 
-def git_status(repo: Path | None = None) -> tuple[str, list[str]]:
-    """`git status --porcelain`。返り値 `("clean" | "dirty" | "不明", 変更ファイルの一覧)`。
+def tool_dirty(repo: Path | None = None) -> tuple[bool, int]:
+    """**凍結した道具の 2 ファイルに未コミットの変更があるか。**
 
-    **prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15**:
-    **版の担保を 1 本にする。**`git rev-parse HEAD` は作業ツリーを見ないので、
-    **未コミットの変更がある状態で走った回を `tool_commit` だけでは見分けられない**
-    (8 回目の処置書が自分でその実例を書いていた = 9 回目の指摘 3)。
+    `git diff --quiet HEAD -- scripts/o3c_reaction.py scripts/o3c_reaction_judge.py` の
+    **終了コードが 0 でなければ「汚れている」**。返り値 `(汚れているか, 終了コード)`。
+    **git が呼べない場合は「汚れている」側に倒す**(終了コード −1)。
+
+    **prereg 監査(10 回目)の指摘 1・2。リードの決定 1・2**:
+    **前版は `git status --porcelain`(作業ツリー全体)だった。**
+    **出力先・台帳 `OPENED.txt`・`docs/AUDITOR/TRACE/*.json`・事前登録の欄の書き込みで
+    作業ツリーは必ず汚れるので、「全体が clean」は成立しない**(指摘 1・2 の実測)。
     """
     root = Path(repo) if repo is not None else Path(__file__).resolve().parent.parent
     try:
-        r = subprocess.run(["git", "-C", str(root), "status", "--porcelain"],
+        r = subprocess.run(["git", "-C", str(root), "diff", "--quiet", "HEAD",
+                            "--", *TOOL_FILES_REL],
                            capture_output=True, text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
-        return "不明", []
-    if r.returncode != 0:
-        return "不明", []
-    files = [ln[3:].strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
-    return ("dirty" if files else "clean"), files
+        return True, -1
+    return (r.returncode != 0), int(r.returncode)
 
 
 def run_dirty_state(run: "Run") -> str:
-    """走行の `summary.json` に残った汚れの状態を読む(`clean` / `dirty` / `不明`)。
+    """走行の `summary.json` に残った**道具の**汚れの状態を読む(`clean` / `dirty` / `不明`)。
 
     **鍵が無い走行(この機械より前に走った出力)は「不明」**として扱い、
     呼び出し側が「[止め]」にする(**決定 3・15**)。
@@ -690,10 +708,16 @@ def check_tool_versions(
 
     次の 3 つを全部満たさなければ理由の一覧を返す(呼び出し側が「[止め]」にする):
 
-      (i)   **読みの道具の作業ツリーが汚れていない**(`git status --porcelain` が空)
+      (i)   **読みの道具の側で、凍結した道具の 2 ファイルに未コミットの変更が無い**
+            (`git diff --quiet HEAD -- scripts/o3c_reaction.py scripts/o3c_reaction_judge.py` が 0)
       (ii)  **判定 2 本 + 感度 4 本の `tool_commit` がすべて同じで、かつ
             §14.4 の「凍結した道具のコミット」欄と一致する**
-      (iii) **6 本とも汚れていない**(各走行の `summary.json` の `tool_dirty`)
+      (iii) **6 本とも道具が汚れていない**(各走行の `summary.json` の `tool_dirty`)
+
+    **10 回目の指摘 1・2・3 で変えた点**: **前版の (i)(iii) は「作業ツリー全体が clean」で、
+    出力先・台帳・TRACE・事前登録の書き込みで必ず汚れるため、6 本を走らせきれない。**
+    (**設計上の帰結。6 本を走らせて確かめたわけではない。****測ったのは「作業ツリーが汚れる」までである**)
+    **(ii) の `tool_commit` は `git rev-parse HEAD` で、欄に書ける値と定義上一致しなかった。**
 
     **射程(隠さずに書く)**: `named_runs` に入るのは**読めた走行だけ**である。
     **読めない感度の走行は、この検査より前に「読めない感度」として落ちており、
@@ -701,7 +725,7 @@ def check_tool_versions(
     """
     bad: list[str] = []
     if my_state != "clean":
-        bad.append(f"読みの道具の作業ツリーが {my_state}(コミット済みの版で読む)")
+        bad.append(f"読みの道具の側で凍結した道具に未コミットの変更がある({my_state})")
     if not frozen_field:
         bad.append("事前登録 §14.4 の「凍結した道具のコミット」欄が埋まっていない"
                    "(開封の直前に書き写す欄である)")
@@ -719,7 +743,7 @@ def check_tool_versions(
     for nm, r in named_runs:
         st = run_dirty_state(r)
         if st != "clean":
-            bad.append(f"{nm}: 走ったときの作業ツリーが {st}")
+            bad.append(f"{nm}: 走ったときに凍結した道具が {st}")
     return bad
 
 
@@ -1506,6 +1530,12 @@ def write_md5(out: Path, names: list[str]) -> None:
 
 STOPPED_NAME = "stopped.txt"
 
+# **決定 4(prereg 監査(10 回目)の指摘 4)**: `stopped.txt` の引き金は **5 つ**である
+# (params / サニティ #14 / 軸の作り方 / 承認の番号 / **道具の版**)。
+# **前版は版の関門だけ `stopped.txt` を書かずに終わっていたので、
+# 「456 日を 6 本開けて、理由のファイルすら残らない」経路があった。**
+CHK_TOOL_VERSION = "道具の版(決定 3・15 + 1・2・3)"
+
 
 # **決定 12(prereg 監査(8 回目)の指摘 12)**: `stopped.txt` に書いてよいのは
 # **検査の名前・走行の名前・件数だけ**である。**値は 1 つも書かない。**
@@ -1536,6 +1566,10 @@ def write_stopped(out: Path, judge_bad: list[tuple[str, str]],
 
     中身は「**破れた検査の名前・走行の名前・件数**」だけである
     (**決定 12(8 回目の指摘 12)。観測量も分割軸の値も 1 つも書かない**)。
+
+    **引き金は 5 つである**(**決定 4。10 回目の指摘 4**):
+    **params / サニティ #14 / 軸の作り方 / 承認の番号 / 道具の版**。
+    **前版は版の関門だけ 1 ファイルも書かずに終わっていた。**
     **表は 1 枚も書かない。**§10.3 の「なぜ」を書くときの材料はこのファイルと
     標準出力(理由の全文はそちらに出る)と `summary.json` の感度の記録である。
     **判定語の走査を通してから書く**(通らなければ検査の名前だけにする)。
@@ -1763,28 +1797,40 @@ def main(argv=None) -> int:
     # **「閉じていれば 1 ファイルも書かない」に揃える。**
     pass_audit_gate(Path(a.root).resolve())
 
-    # --- 決定 3・15(9 回目の指摘 3・15): 版の担保を 1 本にする ------------------
+    # --- 決定 3・15(9 回目)+ 決定 1・2・3・4(10 回目): 版の担保 ---------------
     # **前版は「欄が「(まだ無い)」なら記録だけして進む」だった**ので、
     # **欄を空のままにすれば版の検査は 1 つも掛からなかった。**
-    # **また `git rev-parse HEAD` は作業ツリーを見ないので、未コミットの変更がある
-    # 状態で走った回を見分けられなかった**(9 回目の指摘 3 が実例を挙げている)。
-    # **本版は (i) 自分の作業ツリー / (ii) 6 本の版と §14.4 の欄 / (iii) 6 本の汚れ
-    # の 3 つを 1 つの関門にまとめ、1 つでも欠ければ 1 ファイルも書かずに終わる。**
+    # **9 回目の版は「作業ツリー全体が clean」を要求したので、出力先・台帳・TRACE・
+    # 事前登録の書き込みで必ず汚れ、6 本を走らせきれない**(10 回目の指摘 1・2。
+    # **設計上の帰結。6 本を走らせて確かめたわけではない**)。
+    # **また `tool_commit` が `git rev-parse HEAD` だったので、欄に書ける値
+    # (書き写す直前のコミット)と定義上一致しなかった**(同 指摘 3)。
+    # **本版は担保の単位を「凍結した道具の 2 ファイル」に限る**:
+    # **(i) 読みの道具の側で 2 ファイルに未コミットの変更が無い /
+    # (ii) 6 本の `tool_commit` がすべて同じで §14.4 の欄と一致 /
+    # (iii) 6 本とも道具が汚れていない。**
+    # **1 つでも欠ければ表を 1 枚も書かずに終わる。**
+    # **決定 4(10 回目の指摘 4)**: **このとき `stopped.txt` は書く**
+    # (**前版はこの関門だけ 1 ファイルも書かずに終わったので、
+    # 「456 日を開けて理由のファイルすら残らない」経路があった**)。
     # **本版では台帳の関門 `pass_audit_gate` の後ろに置く**(台帳が閉じている回は、
     # **版の検査より先に止まる** = `tests/test_audit_gates_wired.py` が測っている経路)。
     my_commit = tool_commit()
-    my_state, my_files = git_status()
+    my_dirty, my_rc = tool_dirty()
+    my_state = "dirty" if my_dirty else "clean"
     frozen_commit, frozen_note = read_frozen_commit_from_prereg(prereg)
     version_bad = check_tool_versions(
         [(nm, r) for nm, r in runs.items()] + [(nm, r) for nm, r in sens.items()],
         frozen_field=frozen_commit, my_commit=my_commit, my_state=my_state)
     if version_bad:
+        write_stopped(Path(a.out_dir),
+                      [(CHK_TOOL_VERSION, b) for b in version_bad], {})
         sys.stderr.write(
-            "[止め] 道具の版が担保できない(事前登録 §14.4 の決定 3・15)。"
-            "表を 1 枚も書かずに終わる。\n"
-            f"       この道具: {my_commit} / 作業ツリー: {my_state}"
-            + (f"({' / '.join(my_files[:5])}{' …' if len(my_files) > 5 else ''})"
-               if my_files else "") + "\n"
+            "[止め] 道具の版が担保できない(事前登録 §14.4 の決定 3・15 と 1・2・3)。"
+            "表を 1 枚も書かずに終わる"
+            f"(破れた検査は {Path(a.out_dir) / STOPPED_NAME} に書いた = 決定 4)。\n"
+            f"       この道具: {my_commit} / 凍結した道具の 2 ファイル: {my_state}"
+            f"(git diff --quiet HEAD の終了コード {my_rc})\n"
             f"       {frozen_note}\n"
             + "".join(f"       - {b}\n" for b in version_bad))
         return 1
@@ -2013,7 +2059,8 @@ def main(argv=None) -> int:
     summary = {
         "単位": UNIT,
         "事前登録": "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md(確定版・凍結)",
-        # **決定 16(8 回目の指摘 16)**: 読みの道具の版(`git rev-parse HEAD`)。
+        # **決定 16(8 回目)+ 決定 3(10 回目)**: 読みの道具の版
+        # (`git log -1 --format=%H -- <道具 2 ファイル>`)。
         "tool_commit": my_commit,
         "seed": SEED,
         "reps": REPS,
@@ -2127,19 +2174,23 @@ def main(argv=None) -> int:
         # **決定 16(8 回目の指摘 16)**: 読みの道具の版と、事前登録 §14.4 の
         # 「凍結した道具のコミット」の欄との突き合わせ。
         "凍結した道具のコミット(決定 16 + 決定 3・15)": {
-            "この道具の版(git rev-parse HEAD)": my_commit,
-            "この道具の作業ツリー(git status --porcelain)": my_state,
-            "この道具の変更ファイル": my_files,
+            "この道具の版(git log -1 --format=%H -- 道具 2 ファイル)": my_commit,
+            "この道具の凍結した道具の状態(git diff --quiet HEAD -- 道具 2 ファイル)":
+                my_state,
+            "見た範囲": list(TOOL_FILES_REL),
+            "git diff --quiet HEAD の終了コード": my_rc,
             "事前登録 §14.4 の欄": frozen_commit,
             "欄の出所": frozen_note,
             "走行ごとの版": {nm: r.summary.get("tool_commit")
                              for nm, r in list(runs.items()) + list(sens.items())},
-            "走行ごとの作業ツリー": {nm: run_dirty_state(r)
+            "走行ごとの道具の状態": {nm: run_dirty_state(r)
                                      for nm, r in list(runs.items()) + list(sens.items())},
-            "突き合わせ": ("(i) 読みの道具の作業ツリーが clean / (ii) 判定 2 本 + 感度 4 本の "
-                           "tool_commit がすべて同じで §14.4 の欄と一致 / (iii) 6 本とも "
-                           "clean。1 つでも欠ければ「[止め]」で 1 ファイルも書かない"
-                           "(prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15)。"),
+            "突き合わせ": ("(i) 読みの道具の側で凍結した道具の 2 ファイルに未コミットの"
+                           "変更が無い / (ii) 判定 2 本 + 感度 4 本の tool_commit が"
+                           "すべて同じで §14.4 の欄と一致 / (iii) 6 本とも道具が clean。"
+                           "1 つでも欠ければ「[止め]」で表を 1 枚も書かず、stopped.txt だけを"
+                           "書く(prereg 監査(9 回目)の指摘 3・15 と"
+                           "(10 回目)の指摘 1・2・3・4。リードの決定 1・2・3・4)。"),
             "射程": ("読めない感度の走行はこの検査より前に落ちているので、"
                      "版の検査の対象に入らない(その表は 1 枚も書かれない)。"),
         },

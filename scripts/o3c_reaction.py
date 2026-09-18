@@ -33,14 +33,23 @@
                   (a) `--approval` が事前登録 §14.4 の欄「応答の L 番号」と一致 /
                   (b) その番号が L-199 より後 /
                   (c) `docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が実在 /
+                  (c′) **(c) の続き**: **その L 行に「カ」「キ」「ク」の 3 文字が
+                      すべて含まれる**(**答えが要る 3 件に答えが無い行は通さない**
+                      = 10 回目の指摘 13。**射程: 文字が含まれることしか見ない**)/
                   (d) `--out-dir` が §14.1・§14.2 の 6 つのどれか /
                   (e) `--out-dir` がまだ存在しない(再走行・上書きを止める)/
                   (f) `--days` が渡っていない(日は `judgment_days` に固定。8 回目の指摘 6)/
                   (g) `--out-dir` が `OPENED.txt` にまだ載っていない
                       (**出力先を消してからの再走行**を止める。8 回目の指摘 2。
                       **走行が途中で落ちた回 = `done` の行が無い回も止まる** = 9 回目の指摘 1)/
-                  (i) **作業ツリーが汚れていない**(`git status --porcelain` が空。
-                      **開封はコミット済みの版からだけ** = 9 回目の指摘 3・15)/
+                  (i) **凍結した道具の 2 ファイルに未コミットの変更が無い**
+                      (`git diff --quiet HEAD -- scripts/o3c_reaction.py
+                      scripts/o3c_reaction_judge.py` が 0。
+                      **開封はコミット済みの道具からだけ** = 9 回目の指摘 3・15。
+                      **10 回目の指摘 1・2・3 で「作業ツリー全体が clean」から
+                      道具の 2 ファイルだけに狭めた** = リードの決定 1・2・3。
+                      **出力先・台帳・TRACE・事前登録の書き込みで作業ツリーは必ず汚れるので、
+                      「全体が clean」は 1 本目から成立しない**(設計上の帰結。6 本を走らせて確かめたわけではない)/
                   (j) **`--data-root` が既定のまま**(在庫を差し替えると (h) が
                       空回りする = 9 回目の指摘 20)。
                   1 つでも欠ければ終了コード非 0 で即座に止まる。
@@ -179,11 +188,15 @@ APPROVAL_RE = re.compile(r"^L-\d{3,}$")
 # §14.4 の欄と突き合わせるが、それは 6 本を走らせた後の段である。**
 # **間違った(あるいは古い)L 番号のまま 456 日を 6 回開け終わるまで、何も止まらなかった。**
 # **開封の前に、(a)〜(j) の 10 個を全部通したときだけ走る**
+# (**(c) は 10 回目の指摘 13 で 2 段になった: 行が実在する かつ その行に カ・キ・ク がある**)
 # (事前登録 §3.1・§14.1・§14.4・§14.6):
 #   (a) 事前登録 §14.4 の欄「応答の L 番号」が埋まっていて、`--approval` と一致する
 #   (b) その番号が L-199 より大きい(L-199 は「1 = a、9 = a」への応答であって、
 #       報告 062 への応答ではない)
 #   (c) `docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が実在する(従来どおり)
+#   (c′) **(c) の続き**。その L 行に「カ」「キ」「ク」の 3 文字がすべて含まれる
+#       (10 回目の指摘 13。リードの決定 13。**射程: 文字が含まれることしか見ない**)
+#       **関門の数は (a)〜(j) の 10 個のままである**((c′) は (c) の 2 段目)
 #   (d) `--out-dir` が §14.1・§14.2 の 6 つのパスのどれかである
 #   (e) `--out-dir` が**まだ存在しない**(再走行・上書きを機械で止める
 #       = 「一度だけ開ける」の機械。**開けられる回数の上限は 6 本で、それ以上は
@@ -191,7 +204,8 @@ APPROVAL_RE = re.compile(r"^L-\d{3,}$")
 #   (f) `--days` が渡っていない(日は `judgment_days` の 456 日に固定。8 回目の指摘 6)
 #   (g) `--out-dir` が台帳 `OPENED.txt` にまだ載っていない(8 回目の指摘 2)
 #   (h) **`--mode full` 以外の経路**が判定区間の日を 1 日も含まない(8 回目の指摘 1)
-#   (i) 作業ツリーが汚れていない(9 回目の指摘 3・15。リードの決定 3・15)
+#   (i) 凍結した道具の 2 ファイルに未コミットの変更が無い
+#       (9 回目の指摘 3・15 / 10 回目の指摘 1・2・3。リードの決定 1・2・3)
 #   (j) `--data-root` が既定のまま(9 回目の指摘 20。リードの決定 20)
 PREREG = (
     REPO_ROOT / "docs" / "PHASE2" / "O3C" / "PRICE_LEVEL"
@@ -227,6 +241,16 @@ FULL_OUT_DIRS = tuple(REPO_ROOT / p for p in FULL_OUT_DIRS_REL)
 # **どちらも差分に残る。**
 FULL_OUT_ROOT = REPO_ROOT / "backtest_data" / "o3c_reaction_20260918_full"
 FULL_OPENED_LEDGER = FULL_OUT_ROOT / "OPENED.txt"
+# **凍結した道具の 2 ファイル(prereg 監査(10 回目)の指摘 1・2・3。リードの決定 1・2・3)**。
+# **版の担保はこの 2 ファイルだけに掛ける。**作業ツリー全体は、出力先・台帳・TRACE・
+# 事前登録の欄の書き込みで必ず汚れるので、担保の単位に使えない(指摘 1・2 の実測)。
+TOOL_FILES_REL = ("scripts/o3c_reaction.py", "scripts/o3c_reaction_judge.py")
+
+# **決定 13(10 回目の指摘 13)**: 承認の L 行に、答えが要る 3 件の名前が
+# **3 文字とも含まれていなければ通さない。**
+# **射程: 文字が含まれることしか見ない**(答えの中身は読まない)。
+APPROVAL_LINE_REQUIRED = ("カ", "キ", "ク")
+
 OPENED_HEADER = (
     "# `--mode full` が判定区間 456 日を開けた出力先の台帳"
     "(事前登録 §3.1。prereg 監査(8 回目)の指摘 2)。\n"
@@ -320,14 +344,22 @@ def record_done(
 
 
 def tool_commit(repo: Path = REPO_ROOT) -> str:
-    """`git rev-parse HEAD`。取れなければ「不明」(prereg 監査(8 回目)の指摘 16)。
+    """**凍結した道具の 2 ファイルに最後に触れたコミット**。取れなければ「不明」。
 
-    **走行の出力にこの道具の版を残すためだけの関数である。**
+    `git log -1 --format=%H -- scripts/o3c_reaction.py scripts/o3c_reaction_judge.py`。
+
+    **prereg 監査(10 回目)の指摘 3。リードの決定 3**:
+    **前版は `git rev-parse HEAD` だった。**`HEAD` は事前登録の欄を書き足して
+    コミットするたびに動くので、**「欄に書ける値(直前のコミット)と、そのとき成立する HEAD」が
+    定義上一致しなかった**(指摘 3)。**本版は「この 2 ファイルに最後に触れたコミット」なので、
+    事前登録の欄を書き足しても値が変わらない。**
+
+    **走行の出力にこの道具の版を残し、読みの側が突き合わせるためだけの関数である。**
     **判定にも計算にも 1 つも使わない。**
     """
     try:
         r = subprocess.run(
-            ["git", "-C", str(repo), "rev-parse", "HEAD"],
+            ["git", "-C", str(repo), "log", "-1", "--format=%H", "--", *TOOL_FILES_REL],
             capture_output=True, text=True, timeout=10,
         )
     except (OSError, subprocess.SubprocessError):
@@ -338,36 +370,52 @@ def tool_commit(repo: Path = REPO_ROOT) -> str:
     return got
 
 
-def git_status(repo: Path = REPO_ROOT) -> tuple[str, list[str]]:
-    """`git status --porcelain`。返り値 `("clean" | "dirty" | "不明", 変更ファイルの一覧)`。
+def tool_dirty(repo: Path = REPO_ROOT) -> tuple[bool, int]:
+    """**凍結した道具の 2 ファイルに未コミットの変更があるか。**
 
-    **prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15**:
-    **版の担保を 1 本にする。**`git rev-parse HEAD` は作業ツリーを見ないので、
-    **未コミットの変更がある状態で走った回を `tool_commit` だけでは見分けられない。**
-    **走行と読みの両方がこの結果を `summary.json` に記録し、
-    `--mode full` は作業ツリーが汚れていれば「[止め]」になる**(開封はコミット済みの版からだけ)。
+    `git diff --quiet HEAD -- scripts/o3c_reaction.py scripts/o3c_reaction_judge.py` の
+    **終了コードが 0 でなければ「汚れている」**。返り値 `(汚れているか, 終了コード)`。
+    **git が呼べない場合は「汚れている」側に倒す**(終了コード −1)。
+
+    **prereg 監査(10 回目)の指摘 1・2。リードの決定 1・2**:
+    **前版は `git status --porcelain` で作業ツリー全体を見ていた。**
+    **出力先 `backtest_data/o3c_reaction_20260918_full/`・台帳 `OPENED.txt`・
+    `docs/AUDITOR/TRACE/*.json`・事前登録の欄の書き込みで作業ツリーは必ず汚れるので、
+    「全体が clean」は 1 本目が走った瞬間に成立しなくなり、2 本目は (i) で止まる**
+    (**設計上の帰結。6 本を走らせて確かめたわけではない**)
+    (指摘 1・2 の実測)。**版の担保を「道具のファイル」に限る。**
     """
     try:
         r = subprocess.run(
-            ["git", "-C", str(repo), "status", "--porcelain"],
+            ["git", "-C", str(repo), "diff", "--quiet", "HEAD", "--", *TOOL_FILES_REL],
             capture_output=True, text=True, timeout=30,
         )
     except (OSError, subprocess.SubprocessError):
-        return "不明", []
-    if r.returncode != 0:
-        return "不明", []
-    files = [ln[3:].strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
-    return ("dirty" if files else "clean"), files
+        return True, -1
+    return (r.returncode != 0), int(r.returncode)
 
 
 def _dirty_block(repo: Path = REPO_ROOT) -> dict:
-    """`summary.json` に書く汚れの記録(決定 3・15)。
+    """`summary.json` に書く道具の汚れの記録(決定 1・2・3)。
 
     **走行の後からは作り直せないので、走った回ごとに残す。**
+    **`状態` の語は前版と同じ `clean` / `dirty` である**(読みの側の鍵を変えない)。
     """
-    state, files = git_status(repo)
-    return {"状態": state, "汚れているか": state != "clean",
-            "変更ファイル": files}
+    dirty, rc = tool_dirty(repo)
+    return {"状態": "dirty" if dirty else "clean",
+            "汚れているか": dirty,
+            "見た範囲": list(TOOL_FILES_REL),
+            "git diff --quiet HEAD の終了コード": rc}
+
+
+def tool_version_block(repo: Path = REPO_ROOT) -> dict:
+    """**出力を書く前に 1 回測る**(リードの決定 3「**`tool_dirty` の判定は出力を書く前に行う**」)。
+
+    返り値は `summary.json` に入れる 2 鍵 `{"tool_commit": …, "tool_dirty": …}`。
+    **前版は `df.to_csv()` の後で測っていたので、出力を書いたこと自体が
+    「汚れている」の材料になりえた**(10 回目の指摘 1)。
+    """
+    return {"tool_commit": tool_commit(repo), "tool_dirty": _dirty_block(repo)}
 
 
 def read_approval_from_prereg(prereg: Path = PREREG) -> tuple[str | None, str]:
@@ -401,21 +449,42 @@ def read_approval_from_prereg(prereg: Path = PREREG) -> tuple[str | None, str]:
 # --------------------------------------------------------------------------
 
 
+def approval_line_text(approval: str, owner_log: Path = OWNER_LOG) -> str | None:
+    """`docs/OWNER_LOG.md` の行頭 `| L-NNN |` の**行全体**を返す(無ければ None)。
+
+    **決定 13(10 回目の指摘 13)**: (c′) が行の中身を見るために足した。
+    **最初に一致した 1 行だけを返す。**
+    """
+    if not APPROVAL_RE.match(approval or ""):
+        return None
+    if not owner_log.exists():
+        return None
+    pat = re.compile(r"^\|\s*" + re.escape(approval) + r"\s*\|")
+    with owner_log.open(encoding="utf-8") as fh:
+        for line in fh:
+            if pat.match(line):
+                return line.rstrip("\n")
+    return None
+
+
 def approval_line_exists(approval: str, owner_log: Path = OWNER_LOG) -> bool:
     """`docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が実在するか。
 
     実在しない / ファイルが無い / 形が `L-NNN` でない、のどれでも False。
     """
-    if not APPROVAL_RE.match(approval or ""):
-        return False
-    if not owner_log.exists():
-        return False
-    pat = re.compile(r"^\|\s*" + re.escape(approval) + r"\s*\|")
-    with owner_log.open(encoding="utf-8") as fh:
-        for line in fh:
-            if pat.match(line):
-                return True
-    return False
+    return approval_line_text(approval, owner_log) is not None
+
+
+def approval_line_missing_names(
+    line: str, required: tuple[str, ...] = APPROVAL_LINE_REQUIRED
+) -> list[str]:
+    """**決定 13(10 回目の指摘 13)**: 承認の L 行に無い名前を返す(空なら (c′) を通る)。
+
+    **射程(隠さずに書く)**: **文字が含まれることしか見ない。**
+    「カ」「キ」「ク」が別の意味で書かれていても通るし、
+    **その 3 件に実際に答えているかは読んでいない。**
+    """
+    return [ch for ch in required if ch not in (line or "")]
 
 
 def judgment_day_set(data_root: Path | None = None) -> frozenset[str]:
@@ -448,7 +517,7 @@ def check_approval(
     data_root: Path | None = None,
     days_given: bool = False,
     ledger: Path = FULL_OPENED_LEDGER,
-    worktree: tuple[str, list[str]] | None = None,
+    tool_state: bool | None = None,
     default_data_root: Path | None = None,
 ) -> None:
     """判定区間の日を開ける経路に、承認行の実在を要求する。無ければ SystemExit。
@@ -459,7 +528,7 @@ def check_approval(
 
     - `--mode sample` は既定の標本 6 日(`SAMPLE_DAYS`)だけ無審査で走る。
       それ以外の日を 1 日でも含むなら `--approval L-NNN` が要る。
-    - `--mode full` は **(a)〜(j) の 10 個**を全部通したときだけ走る
+    - `--mode full` は **(a)〜(j) の 10 個**((c) は (c′) を含む 2 段である)を全部通したときだけ走る
       (prereg 監査(7 回目)の指摘 1・18・20、8 回目の指摘 1・2・6、
       9 回目の指摘 3・15・20。上の定数の注)。
     - `--mode anchor` は**出力の側**も絞る
@@ -474,20 +543,28 @@ def check_approval(
     出力先の制限も回数の上限も掛からなかった**(8 回目の指摘 1。
     **§14.4.1 の埋め込みで実際に 456 日が 2 回開いたのがこの経路である**)。
 
-    **prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15**:
-    **(i)** `--mode full` は**作業ツリーが汚れていれば「[止め]」**である
-    (**開封はコミット済みの版からだけ**)。`git status --porcelain` の結果は
-    `summary.json` にも記録する。
+    **prereg 監査(9 回目)の指摘 3・15 / 10 回目の指摘 1・2・3。リードの決定 1・2・3**:
+    **(i)** `--mode full` は**凍結した道具の 2 ファイル(`TOOL_FILES_REL`)に
+    未コミットの変更があれば「[止め]」**である(**開封はコミット済みの道具からだけ**)。
+    `git diff --quiet HEAD -- <2 ファイル>` の結果は `summary.json` にも記録する。
+    **前版は `git status --porcelain`(作業ツリー全体)を見ていたので、
+    出力先・台帳・TRACE・事前登録の書き込みで必ず汚れ、2 本目から通らなかった**
+    (10 回目の指摘 1・2 の実測)。
+
+    **prereg 監査(10 回目)の指摘 13。リードの決定 13**:
+    **(c′)** = **(c) の 2 段目**。承認の L 行に「カ」「キ」「ク」の 3 文字が
+    すべて含まれていなければ「[止め]」。**射程: 文字が含まれることしか見ない。**
+    **関門の数は (a)〜(j) の 10 個のままである。**
 
     **prereg 監査(9 回目)の指摘 20。リードの決定 20**:
     **(j)** `--mode full` は **`--data-root` の変更を受け付けない**(既定以外なら「[止め]」)。
     **(h) の集合は `--data-root` の在庫から作る**ので、在庫を差し替えると (h) だけが
     効かなくなる、という非対称があった(指摘 20)。**full の側でその差し替えを止める。**
 
-    **`prereg` / `allowed_out_dirs` / `data_root` / `ledger` / `worktree` /
+    **`prereg` / `allowed_out_dirs` / `data_root` / `ledger` / `tool_state` /
     `default_data_root` は試験のためだけの既定引数である。CLI の旗にはしていない**
     (`main()` は `data_root` と `days_given` だけを渡し、
-    `prereg` / `allowed_out_dirs` / `ledger` / `worktree` / `default_data_root` は
+    `prereg` / `allowed_out_dirs` / `ledger` / `tool_state` / `default_data_root` は
     渡さない = 迂回できない)。
     """
     if mode != "full":
@@ -559,10 +636,26 @@ def check_approval(
             "報告 062 への応答ではない(prereg 監査(7 回目)の指摘 18)"
         )
     # (c) 承認の行が `docs/OWNER_LOG.md` に実在するか(従来どおり)。
-    if not approval_line_exists(approval, owner_log):
+    line = approval_line_text(approval, owner_log)
+    if line is None:
         raise SystemExit(
             f"[止め] {owner_log} に行頭 `| {approval} |` の行が無い。全件は走らせない"
             "(設計 §9 の機械)"
+        )
+    # (c′) その行に「カ」「キ」「ク」の 3 文字がすべて含まれるか。
+    #      **prereg 監査(10 回目)の指摘 13。リードの決定 13。**
+    #      **前版は (a)〜(c) が「L 番号が欄と一致し、L-199 より後で、行が実在する」だけを見たので、
+    #      答えが要る 3 件(カ・キ・ク)に答えが無い別件の L 行を欄に書き写しても通った。**
+    missing = approval_line_missing_names(line)
+    if missing:
+        raise SystemExit(
+            f"[止め] {owner_log} の `| {approval} |` の行に "
+            f"{' / '.join(missing)} が無い。\n"
+            "       §14.4 の「答えが要る 3 件」(カ = 判定の分岐 / キ = F1 の整合・反証 /"
+            " ク = 対照 (ii) の群の分け方)に答えが無い行では判定区間を開けない"
+            "(prereg 監査(10 回目)の指摘 13)。\n"
+            "       射程: この関門は 3 文字が含まれることしか見ない"
+            "(答えの中身は読んでいない)"
         )
     # (d) 出力先が事前登録 §14.1・§14.2 の 6 つのどれかか。
     if out_dir is None:
@@ -596,16 +689,20 @@ def check_approval(
             "       走行が途中で落ちた回(`done` の行が無い回)も同じく止まる"
             "(prereg 監査(9 回目)の指摘 1)"
         )
-    # (i) 作業ツリーが汚れていないか(開封はコミット済みの版からだけ)。
-    #     **prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15。**
-    state, files = worktree if worktree is not None else git_status()
-    if state != "clean":
-        head = " / ".join(files[:5]) + (" …" if len(files) > 5 else "")
+    # (i) 凍結した道具の 2 ファイルに未コミットの変更が無いか。
+    #     **prereg 監査(9 回目)の指摘 3・15 / 10 回目の指摘 1・2・3。リードの決定 1・2・3。**
+    #     **前版は作業ツリー全体を見ていたので、1 本目が出力先と台帳を書いた瞬間に
+    #     作業ツリーが汚れ、2 本目がここで止まった**(10 回目の指摘 1 の実測)。
+    #     **本版は `git diff --quiet HEAD -- <道具 2 ファイル>` だけを見る。**
+    dirty, rc = (bool(tool_state), -1) if tool_state is not None else tool_dirty()
+    if dirty:
         raise SystemExit(
-            "[止め] 作業ツリーがコミット済みでない"
-            f"(git status --porcelain: {state}{('、' + head) if files else ''})。\n"
-            "       判定区間はコミット済みの版からだけ開ける"
-            "(事前登録 §14.4。prereg 監査(9 回目)の指摘 3・15)"
+            "[止め] 凍結した道具のファイルに未コミットの変更がある"
+            f"(git diff --quiet HEAD -- {' '.join(TOOL_FILES_REL)} の終了コード {rc})。\n"
+            "       判定区間はコミット済みの道具からだけ開ける"
+            "(事前登録 §14.4。prereg 監査(9 回目)の指摘 3・15 / 10 回目の指摘 1・2・3)。\n"
+            "       手順: 道具の 2 ファイルをコミット → その "
+            "`git log -1 --format=%H -- <2 ファイル>` を §14.4 の欄に書き写す → 6 本を走らせる"
         )
     # (j) `--data-root` が既定のままか(在庫の差し替えで (h) が空回りするのを止める)。
     #     **prereg 監査(9 回目)の指摘 20。リードの決定 20。**
@@ -1384,6 +1481,8 @@ def run_anchor(
     granularity: str = "bar60",
 ) -> dict:
     t0 = time.time()
+    # **決定 3(10 回目の指摘 1)**: 出力を 1 バイトも書く前に道具の版と汚れを測る。
+    tool = tool_version_block()
     events, dedup_stats = load_binance_cm_liquidations_with_dedup_stats(liq_dir(root))
     cascades = build_cascades(events, EXCHANGE, gap_ms=gap_ms)
     print(
@@ -1431,6 +1530,7 @@ def run_anchor(
         t0,
         n_points,
         missing,
+        tool,
     )
 
 
@@ -1517,7 +1617,10 @@ def _finish_anchor(
     t0: float,
     n_points: int,
     missing: list[str],
+    tool: dict | None = None,
 ) -> dict:
+    # **決定 3(10 回目の指摘 1)**: `tool` は**出力を書く前に**測った道具の版と汚れ。
+    tool = tool if tool is not None else tool_version_block()
     out_dir.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_dir / "table.csv", index=False)
 
@@ -1542,11 +1645,12 @@ def _finish_anchor(
             "data_root": str(root),
             "design": "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md",
         },
-        # **決定 16(8 回目の指摘 16)**: 走行の道具の版(`git rev-parse HEAD`)。
-        "tool_commit": tool_commit(),
-        # **決定 3・15(9 回目の指摘 3・15)**: 作業ツリーが汚れていたか
-        # (`git status --porcelain`)。**版の担保を 1 本にする。**
-        "tool_dirty": _dirty_block(),
+        # **決定 16(8 回目)+ 決定 3(10 回目)**: 走行の道具の版
+        # (`git log -1 --format=%H -- <道具 2 ファイル>`)。**出力を書く前に測った値である。**
+        "tool_commit": tool["tool_commit"],
+        # **決定 3・15(9 回目)+ 決定 1・2・3(10 回目)**: 道具の 2 ファイルが汚れていたか
+        # (`git diff --quiet HEAD -- <道具 2 ファイル>`)。**版の担保を 1 本にする。**
+        "tool_dirty": tool["tool_dirty"],
         "elapsed_sec": round(time.time() - t0, 2),
         "liq_rows_raw": dedup_stats.n_in,
         "liq_rows_unique": dedup_stats.n_out,
@@ -2252,6 +2356,9 @@ def run_table(
     approval: str | None = None,
 ) -> dict:
     t0 = time.time()
+    # **決定 3(10 回目の指摘 1)**: **道具の版と汚れは、出力を 1 バイトも書く前に測る。**
+    # **前版は表を書いた後で測っていた。**
+    tool = tool_version_block()
     events, dedup_stats = load_binance_cm_liquidations_with_dedup_stats(liq_dir(root))
     cascades = build_cascades(events, EXCHANGE, gap_ms=gap_ms)
     segs = cascade_event_segments(events, cascades)
@@ -2370,6 +2477,7 @@ def run_table(
             "bitflyer_dir": str(BITFLYER_DIR),
             "design": "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md",
         },
+        tool=tool,
     )
     (out_dir / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -2386,7 +2494,11 @@ def build_table_summary(
     dedup_stats,
     elapsed: float,
     params: dict,
+    tool: dict | None = None,
 ) -> dict:
+    """`tool` は**出力を書く前に測った**道具の版と汚れ(決定 3。10 回目の指摘 1)。"""
+    tool = tool if tool is not None else tool_version_block()
+
     def block(sub: pd.DataFrame) -> dict:
         out: dict = {"n": int(len(sub))}
         q: dict = {}
@@ -2474,13 +2586,14 @@ def build_table_summary(
     kinds = [KIND_LIQ, KIND_UNIFORM, KIND_MATCHED]
     summary = {
         "params": params,
-        # **決定 16(8 回目の指摘 16)**: 走行の道具の版を出力に残す
-        # (`git rev-parse HEAD`。取れなければ「不明」)。**params には入れない**
-        # (読みの側の `params` の検査の鍵の数を変えないため)。
-        "tool_commit": tool_commit(),
-        # **決定 3・15(9 回目の指摘 3・15)**: 作業ツリーが汚れていたか。
-        # **読みの側はこれを見て「6 本とも汚れていない」を確かめる。**
-        "tool_dirty": _dirty_block(),
+        # **決定 16(8 回目の指摘 16)+ 決定 3(10 回目の指摘 3)**: 走行の道具の版を
+        # 出力に残す(**`git log -1 --format=%H -- <道具 2 ファイル>`**。取れなければ「不明」)。
+        # **params には入れない**(読みの側の `params` の検査の鍵の数を変えないため)。
+        "tool_commit": tool["tool_commit"],
+        # **決定 3・15(9 回目)+ 決定 1・2・3(10 回目)**: 道具の 2 ファイルが
+        # 汚れていたか。**読みの側はこれを見て「6 本とも汚れていない」を確かめる。**
+        # **出力を書く前に測った値である。**
+        "tool_dirty": tool["tool_dirty"],
         "elapsed_sec": round(elapsed, 2),
         "liq_rows_raw": dedup_stats.n_in,
         "liq_rows_unique": dedup_stats.n_out,

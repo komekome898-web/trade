@@ -34,23 +34,17 @@
     "bitflyer_dir": "/home/user/trade/backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906",
     "design": "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md"
   },
-  "tool_commit": "b5dd8e1c65ac7d7dd993f6fb23b723e36688bfda",
+  "tool_commit": "f154bb06f0cd5002267084e3c190eda3690295ba",
   "tool_dirty": {
     "状態": "dirty",
     "汚れているか": true,
-    "変更ファイル": [
-      "backtest_data/o3c_reaction_20260918_sample/gap60_w24/MD5SUMS",
-      "backtest_data/o3c_reaction_20260918_sample/gap60_w24/summary.json",
-      "backtest_data/o3c_reaction_20260918_sample/gap60_w8/MD5SUMS",
-      "backtest_data/o3c_reaction_20260918_sample/gap60_w8/summary.json",
-      "docs/AUDITOR/TRACE/2026-09-18_fa7bf0d4.json",
+    "見た範囲": [
       "scripts/o3c_reaction.py",
-      "scripts/o3c_reaction_judge.py",
-      "tests/test_o3c_reaction.py",
-      "tests/test_o3c_reaction_judge.py"
-    ]
+      "scripts/o3c_reaction_judge.py"
+    ],
+    "git diff --quiet HEAD の終了コード": 1
   },
-  "elapsed_sec": 9.46,
+  "elapsed_sec": 9.61,
   "liq_rows_raw": 106822,
   "liq_rows_unique": 53398,
   "rows_total": 665,

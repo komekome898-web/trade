@@ -503,15 +503,17 @@ def test_full_mode_requires_an_existing_owner_log_line(tmp_path):
     (欄 = L-200 / 出力先 = まだ無い許された 1 つ)。
     """
     log = tmp_path / "OWNER_LOG.md"
-    log.write_text("| L-200 | 2026-09-18 | 承認 |\n", encoding="utf-8")
+    # **決定 13(10 回目の指摘 13)**: (c′) が「カ」「キ」「ク」を見るので、
+    # (c) だけを見るこの試験でも 3 文字を入れておく。
+    log.write_text("| L-200 | 2026-09-18 | カ・キ・ク に答えた |\n", encoding="utf-8")
     out = tmp_path / "gap60_w8"
     kw = dict(out_dir=out, prereg=_prereg(tmp_path, "L-200"),
-              allowed_out_dirs=(out,), worktree=("clean", []))
+              allowed_out_dirs=(out,), tool_state=False)
     react.check_approval("full", "L-200", log, **kw)  # 実在するので通る
     with pytest.raises(SystemExit):
         react.check_approval("full", "L-999", log,
                              out_dir=out, prereg=_prereg(tmp_path, "L-999"),
-                             allowed_out_dirs=(out,), worktree=("clean", []))
+                             allowed_out_dirs=(out,), tool_state=False)
     with pytest.raises(SystemExit):
         react.check_approval("full", "not-a-number", log, **kw)
 
@@ -921,10 +923,17 @@ def _prereg(tmp_path, value: str):
     return p
 
 
-def _owner_log(tmp_path, *numbers: str):
-    p = tmp_path / "OWNER_LOG.md"
+def _owner_log(tmp_path, *numbers: str, body: str = "カ = 7 分岐 / キ = 対称 / ク = 3 通り"):
+    """承認の L 行を書く。
+
+    **決定 13(10 回目の指摘 13)**: 関門 (c′) は行の中身に
+    **「カ」「キ」「ク」の 3 文字がすべて**含まれることを見る。
+    **既定の `body` はその 3 文字を含む**(通る側)。
+    **止まる側の試験は `body` を差し替える。**
+    """
+    p = tmp_path / f"OWNER_LOG_{abs(hash(body))}.md"
     p.write_text(
-        "".join(f"| {n} | 2026-09-18 | 応答 |\n" for n in numbers), encoding="utf-8"
+        "".join(f"| {n} | 2026-09-18 | {body} |\n" for n in numbers), encoding="utf-8"
     )
     return p
 
@@ -935,7 +944,7 @@ def test_full_mode_gate_passes_when_all_eight_checks_are_met(tmp_path):
     **試験名の「8」は事前登録 §14.1 の関門の表の (a)〜(h) の 8 行を指す**
     (prereg 監査(9 回目)の指摘 9。リードの決定 9「**テスト名 `five_checks` →
     `eight_checks` に改名**」)。**9 回目で足した (i)(j) は別の試験で測る**
-    (`test_full_mode_gate_stops_when_the_worktree_is_dirty` /
+    (`test_full_mode_gate_stops_when_the_frozen_tools_are_dirty` /
     `test_full_mode_gate_rejects_a_non_default_data_root`)。
     """
     out = tmp_path / "gap60_w8"          # 許す一覧は下で差し替える(試験用の既定引数)
@@ -945,7 +954,7 @@ def test_full_mode_gate_passes_when_all_eight_checks_are_met(tmp_path):
         out_dir=out,
         prereg=_prereg(tmp_path, "L-200"),
         allowed_out_dirs=(out,),
-        worktree=("clean", []),
+        tool_state=False,
     )
 
 
@@ -959,7 +968,7 @@ def test_full_mode_gate_stops_on_each_of_the_eight_checks(tmp_path):
     def call(**kw):
         args = dict(approval="L-200", owner_log=log, out_dir=out,
                     prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
-                    worktree=("clean", []))
+                    tool_state=False)
         args.update(kw)
         react.check_approval("full", args.pop("approval"), **args)
 
@@ -991,7 +1000,7 @@ def test_full_mode_gate_stops_on_each_of_the_eight_checks(tmp_path):
             "full", "L-200", owner_log=log, out_dir=tmp_path / "gap60_w24",
             prereg=_prereg(tmp_path, "L-200"),
             allowed_out_dirs=(tmp_path / "gap60_w24",),
-            days=["2024-01-01"], days_given=True, worktree=("clean", []))
+            days=["2024-01-01"], days_given=True, tool_state=False)
     # (g) 出力先が台帳に載っている
     led = tmp_path / "OPENED.txt"
     react.record_opened(tmp_path / "gap30_w8", "L-200", led)
@@ -1000,7 +1009,7 @@ def test_full_mode_gate_stops_on_each_of_the_eight_checks(tmp_path):
             "full", "L-200", owner_log=log, out_dir=tmp_path / "gap30_w8",
             prereg=_prereg(tmp_path, "L-200"),
             allowed_out_dirs=(tmp_path / "gap30_w8",), ledger=led,
-            worktree=("clean", []))
+            tool_state=False)
     # (h) 非 full の経路が判定区間の日を含む(--approval があっても通さない)
     jd = sorted(react.judgment_day_set())
     if jd:
@@ -1008,29 +1017,101 @@ def test_full_mode_gate_stops_on_each_of_the_eight_checks(tmp_path):
             react.check_approval("sample", "L-200", owner_log=log, days=[jd[0]])
 
 
-def test_full_mode_gate_stops_when_the_worktree_is_dirty(tmp_path):
-    """**決定 3・15(9 回目の指摘 3・15)**: 関門 (i)。
+def test_full_mode_gate_stops_when_the_frozen_tools_are_dirty(tmp_path):
+    """**決定 1・2・3(10 回目の指摘 1・2・3)**: 関門 (i)。
 
-    **開封はコミット済みの版からだけである。**`git rev-parse HEAD` は作業ツリーを
-    見ないので、未コミットの変更がある状態で開けても `tool_commit` は「正しい」値を書く
-    (9 回目の指摘 3 が実例を挙げている)。**通る側と止まる側の両方を測る。**
+    **開封はコミット済みの「道具」からだけである。**
+    **9 回目の版は作業ツリー全体を見ていたので、1 本目が出力先と台帳を書いた瞬間に
+    2 本目が止まった**(10 回目の指摘 1・2)。**本版は道具の 2 ファイルだけを見る。**
+    **通る側と止まる側の両方を測る。**
     """
     out = tmp_path / "gap60_w8"
     kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
               prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,))
-    react.check_approval("full", "L-200", worktree=("clean", []), **kw)   # 通る側
-    for state in ("dirty", "不明"):
-        with pytest.raises(SystemExit) as e:
-            react.check_approval("full", "L-200",
-                                 worktree=(state, ["scripts/o3c_reaction.py"]), **kw)
-        assert "[止め]" in str(e.value) and "作業ツリー" in str(e.value)
-    # 既定では実物の `git status --porcelain` を読む(迂回する旗は作っていない)
-    state, files = react.git_status()
-    assert state in ("clean", "dirty", "不明")
-    assert isinstance(files, list)
+    react.check_approval("full", "L-200", tool_state=False, **kw)   # 通る側
+    with pytest.raises(SystemExit) as e:
+        react.check_approval("full", "L-200", tool_state=True, **kw)
+    assert "[止め]" in str(e.value) and "凍結した道具" in str(e.value)
+    # 既定では実物の `git diff --quiet HEAD -- <道具 2 ファイル>` を読む
+    dirty, rc = react.tool_dirty()
+    assert isinstance(dirty, bool) and isinstance(rc, int)
+    assert dirty is (rc != 0)
+    # git の無い場所を指せば「汚れている」側に倒れる(安全側。断定しない)
+    assert react.tool_dirty(tmp_path)[0] is True
     text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
     for flag in ("--allow-dirty", "--skip-git", "--no-worktree-check"):
         assert flag not in text, flag
+
+
+def test_the_frozen_tools_are_the_two_script_files(tmp_path):
+    """**決定 1・2・3(10 回目の指摘 1・2・3)**: 版の担保は**道具の 2 ファイルだけ**。
+
+    **作業ツリー全体を見る道具は残っていない**(`git status --porcelain` を呼ぶ
+    関数が 1 つも無い)。**現物のリポジトリで、道具以外のファイルを書き換えても
+    `tool_dirty` と `tool_commit` が動かないことを測る。**
+    """
+    assert react.TOOL_FILES_REL == ("scripts/o3c_reaction.py",
+                                    "scripts/o3c_reaction_judge.py")
+    text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
+    assert "status\", \"--porcelain" not in text
+    # 現物のリポジトリ: 道具でないファイル(この試験が作る一時ファイル)は範囲外。
+    before_dirty, _ = react.tool_dirty()
+    before_commit = react.tool_commit()
+    (tmp_path / "noise.txt").write_text("x" * 100, encoding="utf-8")
+    assert react.tool_dirty()[0] is before_dirty
+    assert react.tool_commit() == before_commit
+
+
+def test_the_tool_version_is_measured_before_any_output_is_written(tmp_path):
+    """**決定 3(10 回目の指摘 1)**: 道具の版と汚れは**出力を 1 バイトも書く前**に測る。
+
+    **前版は `df.to_csv()` の後で `_dirty_block()` を呼んでいたので、
+    「出力を書いたこと」自体が汚れの材料になりえた。**
+    **`run_table` の本体で `tool_version_block()` の呼び出しが
+    `to_csv` より前にあることを、原文の位置で測る。**
+    """
+    text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
+    body = text.split("def run_table(", 1)[1]
+    assert body.index("tool_version_block()") < body.index("to_csv")
+    anchor = text.split("def _finish_anchor(", 1)[1]
+    assert anchor.index("tool_version_block()") < anchor.index("to_csv")
+    # 走行の出力には、出力を書く前に測った値が入る
+    s = react.run_table(
+        "sample", [react.SAMPLE_DAYS[0]], base.DEFAULT_DATA_ROOT,
+        oid.DEFAULT_METRICS_ROOT, tmp_path / "out", 8.0, 0.1, 60_000, 1, 0.004,
+        "table", approval=None,
+    )
+    assert s["tool_dirty"]["見た範囲"] == list(react.TOOL_FILES_REL)
+
+
+def test_the_approval_line_must_answer_the_three_open_items(tmp_path):
+    """**決定 13(10 回目の指摘 13)**: 関門 (c′)。
+
+    **承認の L 行に「カ」「キ」「ク」の 3 文字がすべて含まれていなければ通さない**
+    (**答えが要る 3 件に答えが無い行を欄に書き写しても通った** = 指摘 13)。
+    **射程: 文字が含まれることしか見ない**(答えの中身は読まない)。
+    """
+    out = tmp_path / "gap60_w8"
+    kw = dict(out_dir=out, prereg=_prereg(tmp_path, "L-200"),
+              allowed_out_dirs=(out,), tool_state=False)
+    # 通る側: 3 文字とも入っている
+    react.check_approval("full", "L-200",
+                         owner_log=_owner_log(tmp_path, "L-200"), **kw)
+    # 止まる側: 1 文字ずつ欠けさせる(3 通り)+ 別件の記録(0 文字)
+    for body in ("キ と ク に答えた", "カ と ク に答えた", "カ と キ に答えた",
+                 "別件の記録(段 B の日程)"):
+        with pytest.raises(SystemExit) as e:
+            react.check_approval(
+                "full", "L-200",
+                owner_log=_owner_log(tmp_path, "L-200", body=body), **kw)
+        assert "[止め]" in str(e.value)
+        assert "カ" in str(e.value) or "キ" in str(e.value) or "ク" in str(e.value)
+    # 射程: 3 文字が別の意味で並んでいるだけでも通る(機械は中身を読まない)
+    react.check_approval(
+        "full", "L-200",
+        owner_log=_owner_log(tmp_path, "L-200", body="カキク"), **kw)
+    assert react.APPROVAL_LINE_REQUIRED == ("カ", "キ", "ク")
+    assert react.approval_line_missing_names("カ キ") == ["ク"]
 
 
 def test_full_mode_gate_rejects_a_non_default_data_root(tmp_path):
@@ -1042,7 +1123,7 @@ def test_full_mode_gate_rejects_a_non_default_data_root(tmp_path):
     out = tmp_path / "gap60_w8"
     kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
               prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
-              worktree=("clean", []))
+              tool_state=False)
     # 通る側: 既定の在庫(`data_root` を渡さない / 既定と同じものを渡す)
     react.check_approval("full", "L-200", **kw)
     react.check_approval("full", "L-200", data_root=base.DEFAULT_DATA_ROOT, **kw)
@@ -1171,7 +1252,7 @@ def test_full_mode_does_not_take_a_days_flag(tmp_path):
     out = tmp_path / "gap60_w8"
     kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
               prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
-              ledger=tmp_path / "OPENED.txt", worktree=("clean", []))
+              ledger=tmp_path / "OPENED.txt", tool_state=False)
     react.check_approval("full", "L-200", **kw)            # 通る(days_given 既定 False)
     with pytest.raises(SystemExit) as e:
         react.check_approval("full", "L-200", days_given=True, **kw)
@@ -1192,7 +1273,7 @@ def test_the_opened_ledger_stops_a_rerun_after_deleting_the_output(tmp_path):
     ledger = tmp_path / "OPENED.txt"
     kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
               prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
-              ledger=ledger, worktree=("clean", []))
+              ledger=ledger, tool_state=False)
     react.check_approval("full", "L-200", **kw)             # 1 本目は通る
     react.record_opened(out, "L-200", ledger)               # 走行の側が追記する
     assert ledger.exists() and str(out.resolve()) in ledger.read_text(encoding="utf-8")
@@ -1206,7 +1287,7 @@ def test_the_opened_ledger_stops_a_rerun_after_deleting_the_output(tmp_path):
     react.check_approval("full", "L-200", owner_log=_owner_log(tmp_path, "L-200"),
                          out_dir=other, prereg=_prereg(tmp_path, "L-200"),
                          allowed_out_dirs=(other,), ledger=ledger,
-                         worktree=("clean", []))
+                         tool_state=False)
 
 
 def test_the_opened_ledger_records_out_dir_time_and_approval(tmp_path):
@@ -1252,7 +1333,7 @@ def test_the_ledger_marks_started_before_the_run_and_done_after_it(tmp_path):
         react.check_approval(
             "full", "L-200", owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
             prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
-            ledger=ledger, worktree=("clean", []))
+            ledger=ledger, tool_state=False)
     assert "OPENED.txt" in str(e.value)
     # 2 本目: 最後まで終わった回(`started` + `done`)
     other = tmp_path / "gap60_w24"
@@ -1292,8 +1373,14 @@ def test_the_run_records_its_own_commit(tmp_path):
     assert s["tool_commit"] == got
     written = json.loads((tmp_path / "out" / "summary.json").read_text(encoding="utf-8"))
     assert written["tool_commit"] == got
-    # **決定 3・15(9 回目の指摘 3・15)**: 作業ツリーの状態も同じ summary に残る
-    assert written["tool_dirty"]["状態"] in ("clean", "dirty", "不明")
+    # **決定 1・2・3(10 回目の指摘 1・2・3)**: 道具の汚れも同じ summary に残る
+    assert written["tool_dirty"]["状態"] in ("clean", "dirty")
     assert written["tool_dirty"]["汚れているか"] is (
         written["tool_dirty"]["状態"] != "clean")
-    assert isinstance(written["tool_dirty"]["変更ファイル"], list)
+    assert written["tool_dirty"]["見た範囲"] == list(react.TOOL_FILES_REL)
+    # **`tool_commit` は「道具の 2 ファイルに最後に触れたコミット」で、HEAD ではない**
+    # (10 回目の指摘 3。**事前登録の欄を書き足しても動かない値である**)。
+    body = (REPO / "scripts" / "o3c_reaction.py").read_text(
+        encoding="utf-8").split("def tool_commit(", 1)[1].split("\ndef ", 1)[0]
+    assert '"log", "-1", "--format=%H"' in body
+    assert '"rev-parse", "HEAD"' not in body
