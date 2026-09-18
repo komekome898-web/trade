@@ -92,6 +92,25 @@
   20''. `n2 < 30` も「**不明(n2 < 30)**」にする(指摘 20。→ `decide`)。
   22''. 列 `対照(ii)の軸の作り方`(own / partner_sign / inherit)を両方の表に足す(指摘 22)。
   8''. `--sens NAME=DIR[:SAMPLE_DIR]`。標本を渡した感度は MDE 列を出す(指摘 8)。
+
+**走行前の再監査(5 回目)で決めた点**(同じく事前登録の本文は別の委任先が同じ決定で直す):
+
+  1'''. **反復回数と種は定数**(`REPS = 2000` / `SEED = 1`)。**引数では変えられない**(指摘 1)。
+        **前版は `--reps` / `--seed` を引数で受けており、凍結値と違っても止まらなかった。**
+        **開封の後に反復を引き直して読みを取り直せる経路だったので、引数ごと消した**(A-6)。
+        `summary.json` には「定数(引数では変えられない)」と書いて残す。
+  2'''. **サニティ #14 は標本の走行にも掛ける**(指摘 2。→ `main`)。
+        `--sample-w8` / `--sample-w24` / `--sens` の `:SAMPLE_DIR` が対象で、
+        **破れれば「[止め]」で終了コード 1**(MDE の `p`・`s` の母集団が黙って変わるのを止める)。
+  3'''. **`summary.json` の「MDE 列が空の理由」は「`:SAMPLE_DIR` を渡していない」と書く**(指摘 3)。
+        **「在庫に無い」とは書かない**(この道具は在庫を 1 度も見ていない)。
+        渡した標本ディレクトリの一覧も `summary.json` に残す。
+  12'''. **走行の `summary.json` の `params` を名前と突き合わせる**(指摘 12。→ `check_run_params`)。
+        判定の 2 本 = `mode: full` / gap 60 秒 / W 8h・24h / 日数 456。
+        標本 = `mode: sample` / 日数 6。感度 = `mode: full` / 日数 456 / gap と W は名前のとおり。
+        **食い違えば「[止め]」で終了コード 1。迂回する旗は作っていない。**
+  16'''. **有限な複製の本数が `REPS` に満たないセルの一覧**(観測量・群・h・本数)を
+        `summary.json` に出す(指摘 16)。**閾値は置かない**(A-12)。
 """
 from __future__ import annotations
 
@@ -100,6 +119,7 @@ import csv
 import hashlib
 import json
 import math
+import re
 import sys
 from pathlib import Path
 from statistics import NormalDist
@@ -116,6 +136,19 @@ N_GROUPS = 48                                # §4
 RUN_W8 = "gap60_w8"                          # §14.1 判定に使う走行
 RUN_W24 = "gap60_w24"
 UNIT = "o3c_reaction_20260918"               # 関門の単位名
+# **決定 1'''(走行前の再監査(5 回目)の指摘 1)**: 反復回数と種は**定数**である。
+# **前版は `--reps` / `--seed` を引数で受けていたので、開封の後に反復を引き直して
+# 読みを取り直せた**(§9.1 は「走行の前に決めた 2,000 回を走行の後に変えない」と書き、
+# 「|t| が 3.86〜3.99 に入る検定では反復の引き直しで判定が変わりうる」とも書いている)。
+# **引数ごと消した。**この 2 つを変えるにはこのファイルを書き換えるしかなく、差分に残る。
+REPS = 2000                                  # §9.1 反復回数(凍結)
+SEED = 1                                     # §9.1 種(凍結)
+# **決定 12'''(同 5 回目の指摘 12)**: 渡されたディレクトリが名前どおりの走行かを
+# `summary.json` の `params` で見る(`scripts/o3c_reaction.py` が書く鍵)。
+JUDGMENT_N_DAYS = 456                        # §3 判定区間の日数
+SAMPLE_N_DAYS = 6                            # §8.6 標本の日数
+GAP_SEC_JUDGE = 60                           # §14.1 判定に使う走行の gap
+WINDOW_HOURS_FIXED = {RUN_W8: 8.0, RUN_W24: 24.0}
 # §10.1 の判定語 + 走行前の再監査(2 回目)の決定 2 で禁じた語。**出力に 1 つも書かない。**
 FORBIDDEN = ("予測できる", "使える", "有効", "差なし", "陰性")
 
@@ -280,7 +313,8 @@ class Run:
             self.summary = json.loads((self.path / "summary.json").read_text(encoding="utf-8"))
         except FileNotFoundError:
             self.summary = {}
-        self.window_hours = (self.summary.get("params") or {}).get("window_hours")
+        self.params = self.summary.get("params") or {}
+        self.window_hours = self.params.get("window_hours")
 
         self.by_kind: dict[str, list[dict]] = {KIND_LIQ: [], KIND_UNI: [], KIND_MAT: []}
         for r in rows:
@@ -465,6 +499,50 @@ def check_axis_kinds(run: Run) -> list[str]:
     extra = sorted(set(got) - set(AXIS_KIND_FIXED))
     if extra:
         bad.append(f"{run.name}: 事前登録に無い軸が測られた: {extra}")
+    return bad
+
+
+def _sens_name_params(name: str) -> tuple[int, float] | None:
+    """感度の名前 `gap<N>_w<M>` から (gap 秒, W 時間) を読む。読めなければ None。"""
+    m = re.fullmatch(r"gap(\d+)_w(\d+)", name)
+    return (int(m.group(1)), float(m.group(2))) if m else None
+
+
+def check_run_params(run: Run, *, mode: str, gap_sec: int | None = None,
+                     window_hours: float | None = None,
+                     n_days: int | None = None, label: str = "") -> list[str]:
+    """**決定 12'''**: 渡されたディレクトリが名前どおりの走行かを `params` で見る。
+
+    **前版は `--run-w8` / `--run-w24` に渡されたものを無条件に `gap60_w8` / `gap60_w24` と
+    名付け、`window_hours` と日数を `summary.json` に写すだけで検査していなかった**
+    (走行前の再監査(5 回目)の指摘 12)。**取り違えを止める機械が無かった。**
+
+    見るのは `scripts/o3c_reaction.py` が書く `params` の 4 つだけである:
+    `mode`(full / sample)/ `gap_ms`(= gap 秒 × 1000)/ `window_hours` / `days` の数。
+    **迂回する旗は作っていない**(標本で試すときも、試験用の `summary.json` を置いた
+    一時ディレクトリを渡す)。
+    """
+    p = run.params
+    who = label or run.name
+    bad: list[str] = []
+    if not p:
+        return [f"{who}: summary.json の params が読めない({run.path})"]
+    got_mode = p.get("mode")
+    if got_mode != mode:
+        bad.append(f"{who}: params.mode が {got_mode!r}(要る値は {mode!r})")
+    if gap_sec is not None:
+        got_ms = p.get("gap_ms")
+        if got_ms != gap_sec * 1000:
+            bad.append(f"{who}: params.gap_ms が {got_ms}(要る値は {gap_sec * 1000})")
+    if window_hours is not None:
+        got_w = p.get("window_hours")
+        if got_w is None or float(got_w) != float(window_hours):
+            bad.append(f"{who}: params.window_hours が {got_w}(要る値は {window_hours})")
+    if n_days is not None:
+        days = p.get("days")
+        got_n = len(days) if isinstance(days, list) else None
+        if got_n != n_days:
+            bad.append(f"{who}: params.days の日数が {got_n}(要る値は {n_days})")
     return bad
 
 
@@ -1156,8 +1234,8 @@ def main(argv=None) -> int:
     ap.add_argument("--sample-w24", default=None,
                     help="標本 6 日の gap60_w24(既定は --sample-w8 の隣の gap60_w24)")
     ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--seed", type=int, default=1, help="§9.1 の種(既定 1)")
-    ap.add_argument("--reps", type=int, default=2000, help="§9.1 の反復回数(既定 2,000)")
+    # **決定 1''': `--seed` と `--reps` は無い。**定数 `SEED` / `REPS` である
+    # (走行前の再監査(5 回目)の指摘 1。**開封の後に引き直せる経路を閉じた**)。
     ap.add_argument("--root", default=str(Path(__file__).resolve().parent.parent),
                     help="監査の台帳(docs/AUDITOR/ACTION_LOG.md)の場所を差し替える引数"
                          "(試験用)。--out-dir がリポジトリの backtest_data/ の下なら"
@@ -1176,7 +1254,10 @@ def main(argv=None) -> int:
 
     s24 = Path(a.sample_w24) if a.sample_w24 else Path(a.sample_w8).parent / RUN_W24
     runs = {RUN_W8: Run(RUN_W8, Path(a.run_w8)), RUN_W24: Run(RUN_W24, Path(a.run_w24))}
-    samples = {RUN_W8: Run(RUN_W8, Path(a.sample_w8)), RUN_W24: Run(RUN_W24, s24)}
+    # 標本の走行は判定の走行と同じ鍵で引くが、**名前は分けておく**
+    # (サニティ #14 や params の検査の文言で、どちらが破れたかが分かるように)。
+    samples = {RUN_W8: Run(f"{RUN_W8}(標本)", Path(a.sample_w8)),
+               RUN_W24: Run(f"{RUN_W24}(標本)", s24)}
 
     sens: dict[str, Run] = {}
     sens_samples: dict[str, Run] = {}
@@ -1193,11 +1274,43 @@ def main(argv=None) -> int:
             return 1
         sens[nm] = Run(nm, Path(d.strip()))
         if smp.strip():
-            sens_samples[nm] = Run(nm, Path(smp.strip()))
+            sens_samples[nm] = Run(f"{nm}(標本)", Path(smp.strip()))
 
-    # --- サニティ #14(決定 6' + 12''): 1 対 1 の対応を走行ごとに測る ----------
+    # --- 決定 12''': 渡されたディレクトリが名前どおりの走行か(params の検査)-----
     bad = []
-    for r in list(runs.values()) + list(sens.values()):
+    for nm, r in runs.items():
+        bad += check_run_params(r, mode="full", gap_sec=GAP_SEC_JUDGE,
+                                window_hours=WINDOW_HOURS_FIXED[nm],
+                                n_days=JUDGMENT_N_DAYS, label=nm)
+    for nm, r in samples.items():
+        bad += check_run_params(r, mode="sample", n_days=SAMPLE_N_DAYS,
+                                label=f"{nm}(標本)")
+    for nm, r in sens.items():
+        want = _sens_name_params(nm)
+        if want is None:
+            bad.append(f"{nm}: --sens の名前が gap<秒>_w<時間> の形でないので、"
+                       f"走行の params と突き合わせられない")
+            continue
+        bad += check_run_params(r, mode="full", gap_sec=want[0], window_hours=want[1],
+                                n_days=JUDGMENT_N_DAYS, label=nm)
+    for nm, r in sens_samples.items():
+        bad += check_run_params(r, mode="sample", n_days=SAMPLE_N_DAYS,
+                                label=f"{nm}(標本)")
+    if bad:
+        sys.stderr.write(
+            "[止め] 渡された走行が名前と合わない(params の検査)。"
+            "表を 1 枚も書かずに終わる。\n"
+            + "".join(f"       - {b}\n" for b in bad)
+        )
+        return 1
+
+    # --- サニティ #14(決定 6' + 12'' + 2'''): 1 対 1 の対応を走行ごとに測る ----
+    # **決定 2'''(5 回目の指摘 2)**: **標本の走行にも掛ける。**
+    # 標本の 1 対 1 が崩れると MDE の `p`・`s` の母集団が黙って変わるので、
+    # 判定の走行と同じ検査を当てる。
+    bad = []
+    for r in (list(runs.values()) + list(samples.values())
+              + list(sens.values()) + list(sens_samples.values())):
         bad += check_pairing(r)
     if bad:
         sys.stderr.write(
@@ -1225,9 +1338,9 @@ def main(argv=None) -> int:
 
     boot = {}
     for name, run in list(runs.items()) + list(sens.items()):
-        rng = np.random.default_rng(a.seed)
+        rng = np.random.default_rng(SEED)          # 決定 1''': 定数(引数では変えられない)
         nd = len(run.days)
-        boot[name] = rng.integers(0, nd, size=(a.reps, nd)) if nd else np.zeros((a.reps, 0), int)
+        boot[name] = rng.integers(0, nd, size=(REPS, nd)) if nd else np.zeros((REPS, 0), int)
 
     judge_rows = build_rows(runs, samples, groups, boot, judge=True)
     if len(judge_rows) != N_TESTS:
@@ -1260,12 +1373,24 @@ def main(argv=None) -> int:
         f"{len(cells)} セル(走行 {RUN_W8})\n"
     )
     reps_used_all = [int(r["有限な複製の本数"]) for r in judge_rows if r.get("有限な複製の本数") != ""]
+    # **決定 16'''(5 回目の指摘 16)**: 本数が `REPS` に満たないセルを 1 行ずつ出す。
+    # **閾値は置かない**(A-12)。**読む人が「本数 2 のセル」と「本数 2,000 のセル」を
+    # 見分けられるようにするための一覧である**(§10.3 の併記の規約)。
+    low_reps_cells = [
+        {"観測量": r["観測量"], "群": r["群"], "h": r["h"],
+         "有限な複製の本数": int(r["有限な複製の本数"]),
+         "1/√(2·n)": round(1.0 / math.sqrt(2 * int(r["有限な複製の本数"])), 6)
+         if int(r["有限な複製の本数"]) > 0 else None}
+        for r in judge_rows
+        if r.get("有限な複製の本数") != "" and int(r["有限な複製の本数"]) < REPS
+    ]
 
     summary = {
         "単位": UNIT,
         "事前登録": "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md(確定版・凍結)",
-        "seed": a.seed,
-        "reps": a.reps,
+        "seed": SEED,
+        "reps": REPS,
+        "seed と reps の出所": "定数(引数では変えられない。決定 1'''。§9.1 で凍結した値)",
         "CI水準": {"alpha": ALPHA, "クラスタ": "UTC 日",
                    "方法": (f"正規近似(差 ± z × ブートストラップ SE。"
                             f"z = {BAR_T_SHOWN} は丸め表示で、計算は norm.ppf(1 − α/2))"),
@@ -1288,11 +1413,11 @@ def main(argv=None) -> int:
                   "§9.1 の「SE の相対誤差 ≈ 1/√(2·reps) = 1.58%」は 2,000 本すべてが"
                   "有限のときの値で、少ないセルはその本数で 1/√(2·n) を読む。"
                   "**閾値は置かない**(A-12)。",
-            "指定した反復回数": a.reps,
+            "指定した反復回数": REPS,
             "最小": (min(reps_used_all) if reps_used_all else None),
             "最大": (max(reps_used_all) if reps_used_all else None),
-            "指定した反復回数に満たないセルの数": sum(
-                1 for v in reps_used_all if v < a.reps),
+            "指定した反復回数に満たないセルの数": len(low_reps_cells),
+            "指定した反復回数に満たないセルの一覧": low_reps_cells,
         },
         "観測のみの表の行数": {
             "observation_only.csv": len(obs_rows),
@@ -1307,17 +1432,42 @@ def main(argv=None) -> int:
                 "サニティ14の結果": r.pairing_report}
             for n, r in list(runs.items()) + list(sens.items())
         },
+        # **決定 2''' + 12'''**: 標本の走行にも #14 と params の検査を掛けた(その結果)。
+        "標本の走行(サニティ #14 と params の検査を掛けた)": {
+            r.name: {"path": str(r.path), "params": {
+                "mode": r.params.get("mode"),
+                "window_hours": r.params.get("window_hours"),
+                "gap_ms": r.params.get("gap_ms"),
+                "日数": (len(r.params.get("days"))
+                         if isinstance(r.params.get("days"), list) else None)},
+                     "サニティ14の結果": r.pairing_report}
+            for r in list(samples.values()) + list(sens_samples.values())
+        },
+        "走行の params の検査": (
+            "判定の 2 本 = mode full / gap 60 秒 / W 8h・24h / 日数 456、"
+            "標本 = mode sample / 日数 6、感度 = mode full / 日数 456 / gap と W は名前のとおり。"
+            "食い違えば「[止め]」で終了コード 1(決定 12'''。迂回する旗は無い)。"
+            "本走行では全部一致した。"),
         "感度(観測のみ)": {
             nm: {"path": str(r.path),
                  "標本(MDE の p・s)": (str(sens_samples[nm].path)
                                        if nm in sens_samples else None),
                  "MDE 列": ("出す" if nm in sens_samples else "空"),
+                 # **決定 3'''(5 回目の指摘 3)**: **在庫の話を書かない。**
+                 # **前版は「対を成す標本の走行が在庫に無い」と機械が一律に書いていたが、
+                 # この道具は在庫を 1 度も見ていない**(見ているのは引数だけ)。
                  "MDE 列が空の理由": (None if nm in sens_samples else
-                                      "対を成す標本の走行が在庫に無い(--sens に "
-                                      ":SAMPLE_DIR を渡していない)")}
+                                      "--sens に :SAMPLE_DIR を渡していない"
+                                      "(在庫の有無はこの道具では見ていない)")}
             for nm, r in sens.items()
         },
         "標本(MDE の p・s)": {n: str(r.path) for n, r in samples.items()},
+        "渡した標本ディレクトリの一覧": {
+            "判定の走行": {n: str(r.path) for n, r in samples.items()},
+            "感度の走行": {nm: str(r.path) for nm, r in sens_samples.items()},
+            "注": "この一覧が、MDE の p・s の出所のすべてである(決定 3''')。"
+                  "**在庫にどのディレクトリがあるかは、この道具では見ていない。**",
+        },
         "対照(ii)の軸の作り方": {
             "own(対照行自身の値)": sorted(
                 {g.name for g in groups if g.control_axis == AX_OWN}),
@@ -1391,6 +1541,15 @@ def main(argv=None) -> int:
             "MDE は p・s を標本 6 日で固定し、n だけ走行後の群の件数から取った(§8.6)。"
             "群の切り方は判定区間の実群で決めた切り値を標本にも当てた(§4)。",
             "前進到達(fwd_node)はどちらの表にも入れていない(1 周目は測定不能。§4.3)。",
+            "反復回数 2,000 と種 1 は定数で、引数では変えられない(決定 1''')。"
+            "開封の後に反復を引き直して読みを取り直す経路は無い(A-6)。",
+            "サニティ #14 は標本の走行(--sample-w8 / --sample-w24 / --sens の :SAMPLE_DIR)にも"
+            "掛けた(決定 2''')。標本の 1 対 1 が崩れると MDE の p・s の母集団が黙って変わるため。",
+            "渡された走行が名前どおりのものかを summary.json の params で検査した(決定 12''')。"
+            "食い違えば表を 1 枚も書かずに終わる。",
+            "有限な複製の本数が 2,000 に満たないセルは一覧に出してある(決定 16''')。"
+            "そのセルは 1.58% ではなく 1/√(2·n) で読み、結果の読みに本数と併記する(§10.3)。"
+            "閾値は置いていない(A-12)。",
         ],
     }
 
@@ -1438,7 +1597,7 @@ def main(argv=None) -> int:
     write_md5(out, names)
 
     print(f"判定の表: {len(judge_rows)} 行 / 観測のみの表: {len(obs_rows)} 行 / 群 {len(groups)}")
-    print(f"有限な複製の本数: 指定 {a.reps} / 最小 {summary['有限な複製の本数']['最小']} / "
+    print(f"有限な複製の本数: 指定 {REPS} / 最小 {summary['有限な複製の本数']['最小']} / "
           f"指定に満たないセル {summary['有限な複製の本数']['指定した反復回数に満たないセルの数']}")
     for nm, rows_ in sens_rows.items():
         print(f"感度(観測のみ)の表 {nm}: {len(rows_)} 行")

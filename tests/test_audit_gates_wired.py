@@ -133,8 +133,13 @@ def test_o3c_reaction_judge_gate_actually_stops_the_write(tmp_path):
     """**呼ばれていることを、止まるはずの操作で測る**(`CLAUDE.md` §3 の「実測」の形)。
 
     台帳が無い根を渡すと、終了コード 1 で**出力ディレクトリが 1 つもできない**。
+
+    **走行前の再監査(5 回目)の指摘 12 で、走行の `params` の検査が関門より前に入った。**
+    そこで**判定の走行の形に `summary.json` を差し替えた一時ディレクトリ**を渡し、
+    **止めるのが関門であること**を測る(迂回する旗は作っていない)。
     """
     import importlib.util
+    import json as _json
 
     spec = importlib.util.spec_from_file_location(
         "o3c_reaction_judge_wired", ROOT / "scripts" / "o3c_reaction_judge.py")
@@ -143,13 +148,32 @@ def test_o3c_reaction_judge_gate_actually_stops_the_write(tmp_path):
     smp = ROOT / "backtest_data" / "o3c_reaction_20260918_sample"
     if not (smp / "gap60_w8" / "table.csv").exists():
         pytest.skip("標本 6 日の出力が無い")
+
+    def place(src: Path, dst: Path, *, mode: str, n_days: int, window_hours: float):
+        dst.mkdir(parents=True, exist_ok=True)
+        for n in ("table.csv", "table_mixed.csv"):
+            if (src / n).exists():
+                (dst / n).write_bytes((src / n).read_bytes())
+        (dst / "summary.json").write_text(_json.dumps(
+            {"params": {"mode": mode, "days": [f"day{i:04d}" for i in range(n_days)],
+                        "window_hours": float(window_hours), "gap_ms": 60000}}),
+            encoding="utf-8")
+        return dst
+
+    r8 = place(smp / "gap60_w8", tmp_path / "run_w8",
+               mode="full", n_days=mod.JUDGMENT_N_DAYS, window_hours=8)
+    r24 = place(smp / "gap60_w24", tmp_path / "run_w24",
+                mode="full", n_days=mod.JUDGMENT_N_DAYS, window_hours=24)
+    s8 = place(smp / "gap60_w8", tmp_path / "sample_w8",
+               mode="sample", n_days=mod.SAMPLE_N_DAYS, window_hours=8)
+    s24 = place(smp / "gap60_w24", tmp_path / "sample_w24",
+                mode="sample", n_days=mod.SAMPLE_N_DAYS, window_hours=24)
     out = tmp_path / "out"
+    mod.REPS = 20                     # 決定 1''': 反復回数は定数(引数では変えられない)
     with pytest.raises(SystemExit) as e:
-        mod.main(["--run-w8", str(smp / "gap60_w8"), "--run-w24", str(smp / "gap60_w24"),
-                  "--sample-w8", str(smp / "gap60_w8"),
-                  "--sample-w24", str(smp / "gap60_w24"),
-                  "--out-dir", str(out), "--root", str(tmp_path / "empty_root"),
-                  "--reps", "20"])
+        mod.main(["--run-w8", str(r8), "--run-w24", str(r24),
+                  "--sample-w8", str(s8), "--sample-w24", str(s24),
+                  "--out-dir", str(out), "--root", str(tmp_path / "empty_root")])
     assert e.value.code == 1
     assert not out.exists(), "関門が閉じているのに出力ディレクトリができている"
 

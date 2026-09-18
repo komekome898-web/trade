@@ -3,7 +3,8 @@
 **判定区間を開ける前に書いた。**合成データだけで測る(判定区間の出力は 1 度も開かない)。
 
 測るもの:
-  1. 分岐(不明(n < 30) / 差あり(+)(−) / 検出されず)が合成データで正しく出ること
+  1. **7 分岐**(不明(n < 30) / 不明(n2 < 30) / 不明(t 未算出) / 差あり(+) / 差あり(−) /
+     不明(MDE 未算出) / 検出されず)が合成データで正しく出ること
   2. §9.1 のブートストラップが**日クラスタ**で引いていること(種を固定すれば再現すること)
   3. §4.3 の 576 行がちょうど出ること(群 48 × 系統 2 × h 6)
   4. §4 の内訳表どおり、W に依らない 12 群が W = 8h の走行からだけ 576 に入ること
@@ -15,6 +16,7 @@
 """
 from __future__ import annotations
 
+import contextlib
 import csv
 import hashlib
 import importlib.util
@@ -116,8 +118,54 @@ def _row(kind, day, cid, side, d, i, reach, matched_liq_id="") -> dict:
     return r
 
 
+def _params(*, mode: str, n_days: int, window_hours: float, gap_sec: int) -> dict:
+    """`scripts/o3c_reaction.py` が書く `params` と同じ鍵を作る(**決定 12'''**)。
+
+    日付そのものは検査に使われない(見るのは**日数**だけ)ので、並びだけを作る。
+    """
+    return {"params": {"mode": mode,
+                       "days": [f"day{i:04d}" for i in range(n_days)],
+                       "window_hours": float(window_hours),
+                       "gap_ms": int(gap_sec) * 1000}}
+
+
+def as_sample(src: Path, dst: Path, *, window_hours: float = 8,
+              gap_sec: int = 60) -> Path:
+    """同じ表を「**標本の走行**」として置き直す(`summary.json` だけ差し替える)。
+
+    **走行前の再監査(5 回目)の指摘 12。リードの決定**:
+    「**標本で試すときは `--allow-sample-as-run` のような迂回旗を作らず、
+    試験用に summary.json を差し替えた一時ディレクトリで検査する**」。
+    表の中身は元のままなので、MDE の `p`・`s` は前版と同じ値になる。
+    """
+    dst.mkdir(parents=True, exist_ok=True)
+    for n in ("table.csv", "table_mixed.csv"):
+        if (src / n).exists():
+            (dst / n).write_bytes((src / n).read_bytes())
+    (dst / "summary.json").write_text(
+        json.dumps(_params(mode="sample", n_days=judge.SAMPLE_N_DAYS,
+                           window_hours=window_hours, gap_sec=gap_sec)),
+        encoding="utf-8")
+    return dst
+
+
+@contextlib.contextmanager
+def frozen(reps: int = 500, seed: int = 1):
+    """**決定 1'''**: 反復回数と種は**定数**なので、試験は定数そのものを差し替える。
+
+    **引数(`--reps` / `--seed`)は無い**(走行前の再監査(5 回目)の指摘 1)。
+    """
+    old_r, old_s = judge.REPS, judge.SEED
+    judge.REPS, judge.SEED = reps, seed
+    try:
+        yield
+    finally:
+        judge.REPS, judge.SEED = old_r, old_s
+
+
 def make_run(path: Path, *, days: int, per_day: int, reach, window_hours: int = 8,
-             n_buy: int = 10_000, mixed_per_day: int = 0) -> Path:
+             n_buy: int = 10_000, mixed_per_day: int = 0, mode: str = "full",
+             gap_sec: int = 60, n_days_param: int | None = None) -> Path:
     """合成の走行ディレクトリを作る。
 
     `reach(kind, day_i, row_i, h)` が戻り到達 2 系統の 0/1 を返す。
@@ -165,8 +213,11 @@ def make_run(path: Path, *, days: int, per_day: int, reach, window_hours: int = 
         w.writeheader()
         for r in mixed:
             w.writerow({c: r.get(c, "") for c in cols})
+    n_days = (n_days_param if n_days_param is not None
+              else (judge.JUDGMENT_N_DAYS if mode == "full" else judge.SAMPLE_N_DAYS))
     (path / "summary.json").write_text(
-        json.dumps({"params": {"window_hours": window_hours, "gap_ms": 60000}}),
+        json.dumps(_params(mode=mode, n_days=n_days, window_hours=window_hours,
+                           gap_sec=gap_sec)),
         encoding="utf-8")
     return path
 
@@ -224,20 +275,24 @@ def run_judge(tmp_path: Path, *, reach=reach_four_branches, reps=500,
     r24 = make_run(tmp_path / "run_w24", days=days, per_day=per_day,
                    reach=w24_reach or reach, window_hours=24, n_buy=n_buy,
                    mixed_per_day=mixed_per_day)
+    # **決定 12'''**: 標本は `mode: sample` / 6 日の `summary.json` を持つ別のディレクトリ。
+    s8 = as_sample(r8, tmp_path / "sample_w8", window_hours=8)
+    s24 = as_sample(r24, tmp_path / "sample_w24", window_hours=24)
     out = out or (tmp_path / "out")
     root = root if root is not None else open_gate(tmp_path / "root")
     argv = [
         "--run-w8", str(r8), "--run-w24", str(r24),
-        "--sample-w8", str(r8), "--sample-w24", str(r24),
-        "--out-dir", str(out), "--root", str(root), "--reps", str(reps),
-        "--seed", str(seed),
+        "--sample-w8", str(s8), "--sample-w24", str(s24),
+        "--out-dir", str(out), "--root", str(root),
     ]
     for nm in (sens or []):
+        g, w = judge._sens_name_params(nm)
         d = make_run(tmp_path / f"sens_{nm}", days=days, per_day=per_day,
-                     reach=reach, window_hours=8, n_buy=n_buy)
+                     reach=reach, window_hours=w, n_buy=n_buy, gap_sec=g)
         argv += ["--sens", f"{nm}={d}"]
     argv += list(extra)
-    code = judge.main(argv)
+    with frozen(reps=reps, seed=seed):
+        code = judge.main(argv)
     return code, out
 
 
@@ -248,8 +303,17 @@ def read_rows(out: Path, name="judgment_576.csv") -> list[dict]:
 # ==========================================================================
 # 1. 4 分岐
 # ==========================================================================
-def test_decide_has_exactly_three_branches_in_order():
-    """**決定 2 + 17' + 1'' + 20''**: 分岐を上から順に当てる(純関数として測る)。"""
+def test_decide_has_exactly_seven_branches_in_order():
+    """**決定 2 + 17' + 1'' + 20''**: **7 分岐**を上から順に当てる(純関数として測る)。
+
+    **走行前の再監査(5 回目)の指摘 15 で名前を直した**(リードの決定「**テスト名を
+    分岐の数に合わせて改名(`seven_branches` など)、docstring も直す**」)。
+    **前版の名前は `..._three_branches_...` のままで、docstring も「決定 2 + 17' + 1'' + 20''」と
+    書きながら数を書いていなかった。**
+    7 分岐 = 不明(n < 30)/ 不明(n2 < 30)/ 不明(t 未算出)/ 差あり(+)/ 差あり(−)/
+    不明(MDE 未算出)/ 検出されず(`judge.BRANCHES` の 7 語)。
+    """
+    assert len(judge.BRANCHES) == 7
     # (1) 欠測を引いた後の実群 n1 < 30 は t や差によらず「不明(n < 30)」
     assert judge.decide(29, 999, 99.0, 0.7, 0.01) == ("不明(n < 30)", "n < 30")
     # (2) **決定 20''**: 対照の n2 < 30 も「不明(n2 < 30)」
@@ -325,11 +389,15 @@ def test_there_is_only_one_z_for_the_bar_the_ci_and_the_mde():
     assert "MDE_Z" in body
 
 
-def test_three_branches_come_out_on_synthetic_data(tmp_path):
-    """合成データで分岐(と両方の符号)が出ること。
+def test_seven_branches_come_out_on_synthetic_data(tmp_path):
+    """合成データで分岐(と両方の符号)が出ること。**分岐は 7 つである。**
 
     **走行前の再監査(4 回目)の指摘 1 で 1 つ増えた**: `t` が非有限のセル(h = 30 / 60)は
     「不明(t 未算出)」で、「検出されず」ではない。
+    **5 回目の指摘 15 で名前を `seven_branches` に直した**(この試験が当てているのは
+    差あり(+)/ 差あり(−)/ 検出されず / 不明(t 未算出)/ 不明(n < 30)の 5 つで、
+    残る 2 つ(不明(n2 < 30)/ 不明(MDE 未算出))は別の試験が当てている
+    = `test_n2_under_30_is_unknown_too` と `test_decide_has_exactly_seven_branches_in_order`)。
     """
     code, out = run_judge(tmp_path, n_buy=20)   # BUY は 20 束 = C_BUY が n < 30
     assert code == 0
@@ -789,12 +857,13 @@ def test_a_broken_pairing_stops_before_any_table_is_written(tmp_path):
         w.writeheader()
         w.writerows(rows)
     out = tmp_path / "out"
-    code = judge.main([
-        "--run-w8", str(r8), "--run-w24", str(r24),
-        "--sample-w8", str(r8), "--sample-w24", str(r24),
-        "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
-        "--reps", "50",
-    ])
+    with frozen(reps=50):
+        code = judge.main([
+            "--run-w8", str(r8), "--run-w24", str(r24),
+            "--sample-w8", str(as_sample(r8, tmp_path / "s8")),
+            "--sample-w24", str(as_sample(r24, tmp_path / "s24", window_hours=24)),
+            "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
+        ])
     assert code == 1
     assert not out.exists(), "サニティ #14 が破れているのに表が書かれている"
 
@@ -851,18 +920,24 @@ def test_sens_with_a_sample_dir_fills_the_mde_column(tmp_path):
     r8 = make_run(tmp_path / "run_w8", days=20, per_day=10, reach=reach_four_branches)
     r24 = make_run(tmp_path / "run_w24", days=20, per_day=10, reach=reach_four_branches,
                    window_hours=24)
-    s30 = make_run(tmp_path / "sens30", days=20, per_day=10, reach=reach_four_branches)
-    smp30 = make_run(tmp_path / "smp30", days=6, per_day=10, reach=reach_four_branches)
-    s180 = make_run(tmp_path / "sens180", days=20, per_day=10, reach=reach_four_branches)
+    s30 = make_run(tmp_path / "sens30", days=20, per_day=10, reach=reach_four_branches,
+                   gap_sec=30)
+    smp30 = as_sample(
+        make_run(tmp_path / "smp30_src", days=6, per_day=10, reach=reach_four_branches,
+                 gap_sec=30),
+        tmp_path / "smp30", gap_sec=30)
+    s180 = make_run(tmp_path / "sens180", days=20, per_day=10, reach=reach_four_branches,
+                    window_hours=24, gap_sec=30)
     out = tmp_path / "out"
-    code = judge.main([
-        "--run-w8", str(r8), "--run-w24", str(r24),
-        "--sample-w8", str(r8), "--sample-w24", str(r24),
-        "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
-        "--reps", "50",
-        "--sens", f"gap30_w8={s30}:{smp30}",      # 標本つき
-        "--sens", f"gap30_w24={s180}",            # 標本なし
-    ])
+    with frozen(reps=50):
+        code = judge.main([
+            "--run-w8", str(r8), "--run-w24", str(r24),
+            "--sample-w8", str(as_sample(r8, tmp_path / "s8")),
+            "--sample-w24", str(as_sample(r24, tmp_path / "s24", window_hours=24)),
+            "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
+            "--sens", f"gap30_w8={s30}:{smp30}",      # 標本つき
+            "--sens", f"gap30_w24={s180}",            # 標本なし
+        ])
     assert code == 0
     with_smp = read_rows(out, "observation_only_gap30_w8.csv")
     without = read_rows(out, "observation_only_gap30_w24.csv")
@@ -945,12 +1020,13 @@ def test_the_axis_kinds_are_checked_against_the_frozen_map(tmp_path):
         w.writeheader()
         w.writerows(rows)
     out = tmp_path / "out"
-    code = judge.main([
-        "--run-w8", str(r8), "--run-w24", str(r24),
-        "--sample-w8", str(r8), "--sample-w24", str(r24),
-        "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
-        "--reps", "20",
-    ])
+    with frozen(reps=20):
+        code = judge.main([
+            "--run-w8", str(r8), "--run-w24", str(r24),
+            "--sample-w8", str(as_sample(r8, tmp_path / "s8")),
+            "--sample-w24", str(as_sample(r24, tmp_path / "s24", window_hours=24)),
+            "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
+        ])
     assert code == 1
     assert not out.exists(), "固定と食い違っているのに表が書かれている"
     # 素の走行では食い違いが 0 件であること
@@ -968,11 +1044,12 @@ def test_the_root_cannot_be_swapped_for_a_real_backtest_out_dir(tmp_path):
     assert judge.check_root_for_out_dir(tmp_path / "out", tmp_path) == []
     # 実際に main を通しても止まり、ディレクトリは作られない
     r8 = make_run(tmp_path / "run_w8", days=3, per_day=4, reach=reach_four_branches)
-    code = judge.main([
-        "--run-w8", str(r8), "--run-w24", str(r8),
-        "--sample-w8", str(r8), "--sample-w24", str(r8),
-        "--out-dir", str(repo_out), "--root", str(tmp_path), "--reps", "10",
-    ])
+    with frozen(reps=10):
+        code = judge.main([
+            "--run-w8", str(r8), "--run-w24", str(r8),
+            "--sample-w8", str(r8), "--sample-w24", str(r8),
+            "--out-dir", str(repo_out), "--root", str(tmp_path),
+        ])
     assert code == 1
     assert not repo_out.exists(), "止めたのに本番側にディレクトリができている"
 
@@ -1011,12 +1088,13 @@ def test_the_pairing_must_be_one_to_one(tmp_path):
     assert any("重複" in b for b in bad), bad
     assert any("引けた相手の件数" in b for b in bad), bad
     out = tmp_path / "out"
-    code = judge.main([
-        "--run-w8", str(r8), "--run-w24", str(r24),
-        "--sample-w8", str(r8), "--sample-w24", str(r24),
-        "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
-        "--reps", "20",
-    ])
+    with frozen(reps=20):
+        code = judge.main([
+            "--run-w8", str(r8), "--run-w24", str(r24),
+            "--sample-w8", str(as_sample(r8, tmp_path / "s8")),
+            "--sample-w24", str(as_sample(r24, tmp_path / "s24", window_hours=24)),
+            "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
+        ])
     assert code == 1
     assert not out.exists()
 
@@ -1085,3 +1163,154 @@ def test_the_prereg_group_counts_are_reproduced_on_the_sample_run():
     assert abs(run.w_sell() - 117 / 224) < 1e-12   # §6.1 の参考値 0.5223
     assert judge.check_pairing(run) == []          # サニティ #14 が標本でも通る
     assert run.pairing_worst_bin_pct_gap <= judge.MATCH_TOL_PCT + 1e-9
+
+
+# ==========================================================================
+# 走行前の再監査(5 回目)で足したもの
+# ==========================================================================
+def test_reps_and_seed_are_constants_and_not_flags(tmp_path):
+    """**決定 1'''(5 回目の指摘 1)**: 反復回数と種は定数で、引数では変えられない。
+
+    **開封の後に `--reps` を変えて読みを引き直せる経路を閉じる**(A-6)。
+    """
+    assert judge.REPS == 2000 and judge.SEED == 1
+    text = (ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
+    assert 'add_argument("--reps"' not in text and 'add_argument("--seed"' not in text
+    # 引数として渡すと argparse が拒否する(終了コード 2)
+    r8 = make_run(tmp_path / "run_w8", days=3, per_day=4, reach=reach_four_branches)
+    base = ["--run-w8", str(r8), "--run-w24", str(r8),
+            "--sample-w8", str(r8), "--sample-w24", str(r8),
+            "--out-dir", str(tmp_path / "out"), "--root", str(tmp_path)]
+    for flag, val in (("--reps", "10"), ("--seed", "2")):
+        with pytest.raises(SystemExit) as e:
+            judge.main(base + [flag, val])
+        assert e.value.code == 2, flag
+    # summary にも「定数」と残る
+    code, out = run_judge(tmp_path / "ok", reps=50, days=10, per_day=6)
+    assert code == 0
+    s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    assert "定数" in s["seed と reps の出所"]
+
+
+def test_sanity_14_is_applied_to_the_sample_runs_too(tmp_path):
+    """**決定 2'''(5 回目の指摘 2)**: サニティ #14 は標本の走行にも掛かる。
+
+    **標本側だけ**を壊す(判定の走行は無傷)。**それでも 1 枚も書かずに止まる。**
+    壊れたのが標本なら MDE の `p`・`s` の母集団が黙って変わるためである。
+    """
+    import csv as _csv
+    r8 = make_run(tmp_path / "run_w8", days=20, per_day=10, reach=reach_four_branches)
+    r24 = make_run(tmp_path / "run_w24", days=20, per_day=10, reach=reach_four_branches,
+                   window_hours=24)
+    s8 = as_sample(r8, tmp_path / "s8")
+    s24 = as_sample(r24, tmp_path / "s24", window_hours=24)
+    p = s8 / "table.csv"                      # 標本の側だけ壊す
+    rows = list(_csv.DictReader(p.open(encoding="utf-8", newline="")))
+    mat = [r for r in rows if r["kind"] == "control_matched"]
+    mat[1]["matched_liq_id"] = mat[0]["matched_liq_id"]
+    mat[1]["day"], mat[1]["bin_pct"] = mat[0]["day"], mat[0]["bin_pct"]
+    with p.open("w", encoding="utf-8", newline="") as fh:
+        w = _csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+    # 判定の走行の側は無傷である(= 止まる理由が標本であることを示す)
+    assert judge.check_pairing(judge.Run(judge.RUN_W8, r8)) == []
+    out = tmp_path / "out"
+    with frozen(reps=20):
+        code = judge.main([
+            "--run-w8", str(r8), "--run-w24", str(r24),
+            "--sample-w8", str(s8), "--sample-w24", str(s24),
+            "--out-dir", str(out), "--root", str(open_gate(tmp_path / "root")),
+        ])
+    assert code == 1
+    assert not out.exists(), "標本の 1 対 1 が崩れているのに表が書かれている"
+
+
+def test_the_run_dirs_must_match_their_names(tmp_path):
+    """**決定 12'''(5 回目の指摘 12)**: `summary.json` の `params` を名前と突き合わせる。
+
+    **前版は渡されたディレクトリを無条件に `gap60_w8` / `gap60_w24` と名付けていた。**
+    **迂回する旗は作らない**(試験用に `summary.json` を差し替えた一時ディレクトリで測る)。
+    """
+    r8 = make_run(tmp_path / "run_w8", days=10, per_day=6, reach=reach_four_branches)
+    r24 = make_run(tmp_path / "run_w24", days=10, per_day=6, reach=reach_four_branches,
+                   window_hours=24)
+    s8 = as_sample(r8, tmp_path / "s8")
+    s24 = as_sample(r24, tmp_path / "s24", window_hours=24)
+    root = open_gate(tmp_path / "root")
+
+    def run(**kw):
+        args = {"run_w8": r8, "run_w24": r24, "sample_w8": s8, "sample_w24": s24}
+        args.update(kw)
+        out = tmp_path / f"out_{len(list(tmp_path.iterdir()))}"
+        with frozen(reps=20):
+            code = judge.main([
+                "--run-w8", str(args["run_w8"]), "--run-w24", str(args["run_w24"]),
+                "--sample-w8", str(args["sample_w8"]),
+                "--sample-w24", str(args["sample_w24"]),
+                "--out-dir", str(out), "--root", str(root)] + list(args.get("extra", [])))
+        return code, out
+
+    # (1) W を取り違えて渡す(24h の走行を --run-w8 に)
+    code, out = run(run_w8=r24)
+    assert code == 1 and not out.exists()
+    # (2) 標本(mode sample)を判定の走行として渡す
+    code, out = run(run_w8=s8)
+    assert code == 1 and not out.exists()
+    # (3) 判定の走行(mode full・456 日)を標本として渡す
+    code, out = run(sample_w8=r8)
+    assert code == 1 and not out.exists()
+    # (4) gap が名前と違う感度
+    bad = make_run(tmp_path / "sens_bad", days=10, per_day=6,
+                   reach=reach_four_branches, gap_sec=60)
+    code, out = run(extra=["--sens", f"gap30_w8={bad}"])
+    assert code == 1 and not out.exists()
+    # (5) 名前が gap<秒>_w<時間> の形でない感度
+    ok = make_run(tmp_path / "sens_ok", days=10, per_day=6,
+                  reach=reach_four_branches, gap_sec=30)
+    code, out = run(extra=["--sens", f"別の名前={ok}"])
+    assert code == 1 and not out.exists()
+    # (6) 名前どおりならそのまま通る
+    code, out = run(extra=["--sens", f"gap30_w8={ok}"])
+    assert code == 0 and (out / "observation_only_gap30_w8.csv").exists()
+    s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    assert "全部一致した" in s["走行の params の検査"]
+    assert s["標本の走行(サニティ #14 と params の検査を掛けた)"][
+        "gap60_w8(標本)"]["params"]["mode"] == "sample"
+    # 迂回する旗を作っていない
+    text = (ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
+    assert "allow-sample-as-run" not in text and "--skip-params" not in text
+
+
+def test_low_reps_cells_are_listed_in_the_summary(tmp_path):
+    """**決定 16'''(5 回目の指摘 16)**: 本数が指定に満たないセルを一覧で出す。
+
+    **閾値は置かない**(A-12)。**本数と `1/√(2·n)` を出すだけである。**
+    """
+    code, out = run_judge(tmp_path, reps=60, days=20, per_day=10)
+    assert code == 0
+    s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    lst = s["有限な複製の本数"]["指定した反復回数に満たないセルの一覧"]
+    assert s["有限な複製の本数"]["指定した反復回数に満たないセルの数"] == len(lst)
+    rows = {(r["観測量"], r["群"], r["h"]): r for r in read_rows(out)}
+    for c in lst:
+        assert c["有限な複製の本数"] < 60
+        assert int(rows[(c["観測量"], c["群"], str(c["h"]))]["有限な複製の本数"]) \
+            == c["有限な複製の本数"]
+        if c["有限な複製の本数"] > 0:
+            assert abs(c["1/√(2·n)"]
+                       - (2 * c["有限な複製の本数"]) ** -0.5) < 1e-6
+
+
+def test_the_empty_mde_reason_does_not_talk_about_the_inventory(tmp_path):
+    """**決定 3'''(5 回目の指摘 3)**: 「在庫に無い」と書かない(在庫を見ていないため)。"""
+    code, out = run_judge(tmp_path, reps=30, days=20, per_day=10, sens=["gap30_w8"])
+    assert code == 0
+    s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    why = s["感度(観測のみ)"]["gap30_w8"]["MDE 列が空の理由"]
+    assert ":SAMPLE_DIR" in why and "在庫の有無はこの道具では見ていない" in why
+    assert "在庫に無い" not in why
+    # 渡した標本の一覧が残る(MDE の p・s の出所のすべて)
+    lst = s["渡した標本ディレクトリの一覧"]
+    assert set(lst["判定の走行"]) == {judge.RUN_W8, judge.RUN_W24}
+    assert lst["感度の走行"] == {}
