@@ -331,6 +331,68 @@ def test_mixed_bundles_are_split_out_of_the_main_table():
     json.dumps(s, ensure_ascii=False)  # summary.json に書ける形であること
 
 
+def test_matched_liq_id_is_the_last_column_and_only_matched_rows_carry_it():
+    """合わせた対照 (ii) の 1 対 1 の相手を `matched_liq_id` 列で残す。
+
+    **走行前の再監査(3 回目)の指摘 6 への処置**(2026-09-18)。
+    読みの道具は `cascade_id` の連番の算術で相手を**復元**していて、相手が mixed 束の
+    ときに静かに外れていた。列で持てば復元が要らない。
+
+    測るもの:
+      - 列は**並びの末尾**に足してある(既にある列の位置が 1 つも動かない)
+      - 実データの標本 6 日で、合わせた対照の行だけが値を持ち、相手が同じ日で、
+        `bin_pct` の差がマッチングの許容(±5.0 ポイント)以内である
+    """
+    import csv
+
+    cols = react.sample_columns()
+    assert cols[-1] == "matched_liq_id"
+    assert cols.count("matched_liq_id") == 1
+    # 末尾に足しただけ = それ以外の列の並びは前の版と同じ
+    assert cols[:-1] == (
+        react.BASE_COLUMNS
+        + react.PROFILE_COLUMNS
+        + oid.OI_COLUMNS
+        + [dst for _, dst in oid.LIQDIR_SOURCE]
+        + oid.LEVERAGE_COLUMNS
+        + ["oi_covered"]
+        + react.ANCHOR_COLUMNS
+        + react.TARGET_PRICE_COLUMNS
+        + react.horizon_columns()
+        + react.DOI_COLUMNS
+        + react.RATIO_OUT_COLUMNS
+        + react.BF_COLUMNS
+    )
+
+    smp = REPO / "backtest_data" / "o3c_reaction_20260918_sample" / "gap60_w8"
+    if not (smp / "table.csv").exists():
+        pytest.skip("標本 6 日の出力が無い")
+    rows = list(csv.DictReader((smp / "table.csv").open(encoding="utf-8", newline="")))
+    mixed_p = smp / "table_mixed.csv"
+    mixed = (
+        list(csv.DictReader(mixed_p.open(encoding="utf-8", newline="")))
+        if mixed_p.exists()
+        else []
+    )
+    by_id = {r["cascade_id"]: r for r in rows if r["kind"] == react.KIND_LIQ}
+    for r in mixed:
+        by_id.setdefault(r["cascade_id"], r)
+
+    n_mat = 0
+    for r in rows + mixed:
+        v = r.get("matched_liq_id") or ""
+        if r["kind"] != react.KIND_MATCHED:
+            assert v == "", (r["kind"], v)       # 束・一様対照・mixed は空
+            continue
+        n_mat += 1
+        p = by_id.get(v)
+        assert p is not None, v                  # 相手が実在する
+        assert p["day"] == r["day"]              # 同じ日
+        d = abs(float(p["bin_pct"]) - float(r["bin_pct"]))
+        assert d <= react.MATCH_TOL_PCT + 1e-9, d
+    assert n_mat == sum(1 for r in rows if r["kind"] == react.KIND_MATCHED) == 213
+
+
 def test_direction_of_mixed_cascade_is_mixed():
     evs = [
         LiquidationEvent(react.EXCHANGE, 0, "long", 1.0, 100.0),

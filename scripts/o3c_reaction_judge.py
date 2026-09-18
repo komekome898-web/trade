@@ -28,12 +28,12 @@
 **「差なし」「陰性」も書かない**(走行前の再監査の決定 2)。
 書いてしまっていないことは、書き出しの最後に自分で走査して確かめる。
 
-**走行前の再監査で決めた 7 点**(事前登録の本文は別の委任先が同じ決定で直す。
+**走行前の再監査(2 回目)で決めた 7 点**(事前登録の本文は別の委任先が同じ決定で直す。
 **本ファイルは事前登録を書き換えていない**):
 
-  1. CI は正規近似 `差 ± 3.925 × ブートストラップ SE`。2,000 回・種 1 は SE の推定に使う。
-     よって「|t| ≥ 3.925」と「CI が 0 を除外」は同値である。→ `bootstrap_diff` / `ci_normal`
-  2. 分岐は 3 つ: 実群 n < 30 →「不明(n < 30)」/ |t| ≥ 3.925 →「差あり(+)(−)」/
+  1. CI は正規近似 `差 ± z × ブートストラップ SE`。2,000 回・種 1 は SE の推定に使う。
+     よって「|t| ≥ z」と「CI が 0 を除外」は同値である。→ `bootstrap_diff` / `ci_normal`
+  2. 分岐は 3 つ: 実群 n < 30 →「不明(n < 30)」/ |t| ≥ z →「差あり(+)(−)」/
      それ以外 →「検出されず(MDE = X)」。→ `decide`
   3. 3 分位の切り値は判定区間の実群の `np.nanpercentile([100/3, 200/3])`、同点は下側、
      欠測はどの群にも入れない。切り値が等しければ中の群は空。空の群も 576 行に出す。
@@ -46,6 +46,24 @@
      観測のみの表に出す。→ `build_groups` / `build_flat_groups_w24`
   7. 「全体」群の 実群 列は差の入力として出すが、その水準を根拠にした文を書かない
      (事前登録 §3 の #1 = a)。→ `main` の標準出力と `summary.json` の注記
+
+**走行前の再監査(3 回目)で決めた 8 点**(同じく事前登録の本文は別の委任先が直す):
+
+  1'. 対照 (ii) の軸の値の作り方を 3 通りに分ける(指摘 1。→ `control_axis_kinds`):
+      **自前(own)** = 対照行にその列の値がある(`bin_pct` / `doi_pre_1h`)。
+      **相手の符号(partner_sign)** = 対照行に**符号なしの大きさ**がある(A2〜A5 の 24 群)。
+      1 対 1 の相手の実群の `side` の符号(`LIQ_SIGN`)を当てて対照自身の軸の値を作る。
+      **受け継ぐ(inherit)** = 対照行に対応物が無い(E の 6 + B1 3 + B2 3 + C 2 = **14 群**)。
+  5'. 対照 (ii) の `*_reactdir` は相手の実群の側の符号を当てる(指摘 5。→ `Run.values`)。
+  6'. 1 対 1 の対応は `matched_liq_id` 列で取る(指摘 6)。**連番の算術による復元はやめた。**
+      走行ごとに **サニティ #14**(相手が実在 / 同日 / `bin_pct` の差が許容内)を通す。
+      → `check_pairing`
+  8'. 相手が mixed 束の合わせた対照は**全群から落とす**(指摘 8。→ `Run.mat_usable`)。
+  11'. `summary.json` に観測のみの表の行数・受け継いだ群・落とした対照の件数を出す(指摘 11)。
+  12'. `z` は 1 本(`norm.ppf(1 − α/2)`)。バー・CI・MDE のすべてに同じ値を使う(指摘 12)。
+  17'. MDE が計算できないセルは「**不明(MDE 未算出)**」にする(指摘 17。→ `decide`)。
+  19'. `--sens NAME=DIR` で感度 4 本の観測のみの表を別ファイルに出す(指摘 19)。
+  20'. W = 24h 側の 12 群(観測のみ)は **W = 24h の実群で切り直した切り値**を使う(指摘 20)。
 """
 from __future__ import annotations
 
@@ -65,19 +83,44 @@ HORIZONS = (1, 5, 15, 30, 60, 240)          # §4.1 h 6 本
 N_TESTS = 576                                # §4.3 2 系統 × 48 群 × h 6
 ALPHA = 0.05 / N_TESTS                       # §4.3 / §8.2
 POWER = 0.80                                 # §8.2 検出力(仮定・委任先)
-BAR_T = 3.925                                # §9 の項 3(両側 α に対応する z = 3.9248)
 MIN_N = 30                                   # §9 の項 1(欠測を引いた後の実群の件数)
 N_GROUPS = 48                                # §4
 RUN_W8 = "gap60_w8"                          # §14.1 判定に使う走行
 RUN_W24 = "gap60_w24"
 UNIT = "o3c_reaction_20260918"               # 関門の単位名
-# §10.1 の判定語 + 走行前の再監査の決定 2 で禁じた語。**出力に 1 つも書かない。**
+# §10.1 の判定語 + 走行前の再監査(2 回目)の決定 2 で禁じた語。**出力に 1 つも書かない。**
 FORBIDDEN = ("予測できる", "使える", "有効", "差なし", "陰性")
 
 _ND = NormalDist()
-Z_ALPHA = _ND.inv_cdf(1 - ALPHA / 2)         # 3.9247896...
+# **z は 1 本だけ**(走行前の再監査(3 回目)の指摘 12。リードの決定)。
+# 丸めた 3.925 と `norm.ppf(1 − α/2)` を使い分けると、同じ α の z が 1 つの判定の中で
+# 2 通りになる(§5「同じ量が 2 か所で別の桁に見えないようにする」)。**バー・CI・MDE の
+# すべてがこの `Z_ALPHA` を使う。**本文の「3.925」は丸め表示であって、計算はこの値である。
+Z_ALPHA = _ND.inv_cdf(1 - ALPHA / 2)         # 3.9247896514056540...
+BAR_T = Z_ALPHA                              # §9 の項 3(両側 α に対応する z)
 Z_POWER = _ND.inv_cdf(POWER)                 # 0.8416212...
 MDE_Z = Z_ALPHA + Z_POWER                    # §8.1 の (z_{1-α/2} + z_{1-β})
+BAR_T_SHOWN = "3.925"                        # 文面に出す丸め表示(計算には使わない)
+
+# 合わせた対照 (ii) のマッチングの許容(`scripts/o3c_reaction.py:140` の
+# `MATCH_TOL_PCT = 5.0` を読んで書いた。**実測**)。サニティ #14 で使う。
+MATCH_TOL_PCT = 5.0
+# 清算の向きの符号(`scripts/o3c_oi_distance.py:127` の `LIQ_SIGN`。**実測**)。
+LIQ_SIGN = {"SELL": 1.0, "BUY": -1.0}
+# `*_liqdir` 列 -> その符号なしの元の列(`scripts/o3c_oi_distance.py:87` の
+# `LIQDIR_SOURCE` を読んで書いた。**実測**)。対照行には**元の列だけ**値がある。
+LIQDIR_SOURCE = {
+    "dist_vwap_bp_liqdir": "dist_vwap_bp",
+    "dist_node_bp_liqdir": "dist_node_bp",
+    "oi_dist_vwap_bp_liqdir": "oi_dist_vwap_bp",
+    "oi_dist_node_bp_liqdir": "oi_dist_node_bp",
+    "oi_side_dist_vwap_bp_liqdir": "oi_side_dist_vwap_bp",
+    "oi_side_dist_node_bp_liqdir": "oi_side_dist_node_bp",
+}
+# 対照 (ii) の軸の値の作り方(走行ごとに**測って**決める。決め打ちにしない)。
+AX_OWN = "own"                   # 対照行にその列の値がある
+AX_PARTNER_SIGN = "partner_sign"  # 対照行に符号なしの大きさがある -> 相手の側の符号を当てる
+AX_INHERIT = "inherit"           # 対照行に対応物が無い -> 1 対 1 の相手の群を受け継ぐ
 
 # --- 観測量の系統(§4.1。前進到達 `fwd_node` は 1 周目では出さない = §4.3)---
 JUDGE_SYSTEMS = (
@@ -164,10 +207,6 @@ def _f(x) -> float:
         return float("nan")
 
 
-def _cascade_index(cid: str) -> int:
-    return int(str(cid).rsplit("_", 1)[1])
-
-
 class Run:
     """1 走行(`--mode full` の出力ディレクトリ)を読んだもの。"""
 
@@ -192,25 +231,30 @@ class Run:
             if r.get("kind") in self.by_kind:
                 self.by_kind[r["kind"]].append(r)
 
-        # 束の行は cascade_id が日ごとに連番である(**実測**: 標本 6 日で 6 日とも連続)。
-        # 合わせた対照の cascade_id の末尾は「その日の何番目の束か」なので、
-        # 日ごとの最小番号を足せば相手の束が一意に決まる(§6.1 の 4「1 対 1 で対応する」)。
-        # mixed の行も番号を持つので、日ごとの最小はそちらも含めて取る。
-        base: dict[str, int] = {}
-        for r in self.by_kind[KIND_LIQ] + mixed:
-            d = r["day"]
-            i = _cascade_index(r["cascade_id"])
-            base[d] = i if d not in base else min(base[d], i)
-        liq_at: dict[tuple[str, int], dict] = {
-            (r["day"], _cascade_index(r["cascade_id"])): r for r in self.by_kind[KIND_LIQ]
-        }
-        self.pair_of_matched: list[dict | None] = []
-        for r in self.by_kind[KIND_MAT]:
-            d = r["day"]
-            j = base.get(d)
-            self.pair_of_matched.append(
-                None if j is None else liq_at.get((d, j + _cascade_index(r["cascade_id"])))
-            )
+        # --- 1 対 1 の対応(決定 6')-----------------------------------------
+        # **`matched_liq_id` 列で取る。**連番の算術による復元はしない
+        # (走行前の再監査(3 回目)の指摘 6: 復元は mixed 束が相手のとき静かに外れ、
+        # 行が黙って落ちていた)。mixed 束の行は `table_mixed.csv` 側にあるので、
+        # 引き当ての辞書は主表の束 + mixed の両方から作る。
+        self.mixed_ids = {r["cascade_id"] for r in mixed}
+        by_id: dict[str, dict] = {r["cascade_id"]: r for r in self.by_kind[KIND_LIQ]}
+        for r in mixed:
+            by_id.setdefault(r["cascade_id"], r)
+        self.pair_of_matched: list[dict | None] = [
+            by_id.get(str(r.get("matched_liq_id") or ""))
+            for r in self.by_kind[KIND_MAT]
+        ]
+        # 決定 8': **相手が mixed 束の合わせた対照は全群から落とす。**
+        # 実群の側は mixed を主表から外しているので、残すと 1 対 1 の対称性が崩れる。
+        self.mat_mixed_partner = [
+            bool(str(r.get("matched_liq_id") or "") in self.mixed_ids)
+            for r in self.by_kind[KIND_MAT]
+        ]
+        self.n_dropped_mixed_partner = int(sum(self.mat_mixed_partner))
+        self.mat_usable = np.array(
+            [not m for m in self.mat_mixed_partner], dtype=bool
+        )
+        self.pairing_worst_bin_pct_gap = float("nan")   # サニティ #14 が埋める
 
         self.days = sorted({r["day"] for r in rows})
         self._day_index = {d: i for i, d in enumerate(self.days)}
@@ -231,7 +275,13 @@ class Run:
 
     def values(self, kind: str, col: str) -> np.ndarray:
         """§6.1 を当てた後の値。対照 (i) の向きの要る量はここでは作らない
-        (下向き / 上向きの 2 本を `updown()` で別々に出してから合成する)。"""
+        (下向き / 上向きの 2 本を `updown()` で別々に出してから合成する)。
+
+        **決定 5'(走行前の再監査(3 回目)の指摘 5)**: 合わせた対照の `*_reactdir` は、
+        1 対 1 の相手の実群の側の符号を当てる。下向き(SELL 側)では
+        `mfe` と `mae` が入れ替わる(`mfe = max(s·up, s·dn)` の定義から)。
+        **「重み付けが要らない」のではなく「相手の符号を当てる」である。**
+        """
         key = (kind, col)
         if key in self._cache:
             return self._cache[key]
@@ -246,6 +296,31 @@ class Run:
             self._cache[key] = out
             return out
         out = self.raw(kind, col)
+        self._cache[key] = out
+        return out
+
+    def matched_partner_sign_axis(self, col: str) -> np.ndarray:
+        """**決定 1'**: 合わせた対照自身の軸の値を「符号なしの大きさ × 相手の側の符号」で作る。
+
+        `*_liqdir` 列は `LIQ_SIGN`(SELL +1 / BUY −1)を掛けたものなので
+        (`scripts/o3c_oi_distance.py:542` の `_apply_liqdir_and_leverage`。**実測**)、
+        対照行に残っている**符号なしの元の列**に相手の側の符号を当てれば、
+        実群と同じ規則で作った**対照自身の**軸の値になる(群を受け継ぐのではない)。
+        丸めも実装に合わせて 4 桁にする。
+        """
+        key = (KIND_MAT, "@" + col)
+        if key in self._cache:
+            return self._cache[key]
+        src = LIQDIR_SOURCE[col]
+        base_v = self.raw(KIND_MAT, src)
+        out = np.full(base_v.size, np.nan)
+        for i, p in enumerate(self.pair_of_matched):
+            if p is None or not math.isfinite(base_v[i]):
+                continue
+            s = LIQ_SIGN.get(str(p.get("side") or ""))
+            if s is None:
+                continue
+            out[i] = round(base_v[i] * s, 4)
         self._cache[key] = out
         return out
 
@@ -264,36 +339,56 @@ class Run:
 # 群(§4 の 48 群)
 # =============================================================================
 class Group:
-    __slots__ = ("name", "run", "axis", "col", "q", "side", "cuts", "pair_inherit")
+    __slots__ = ("name", "run", "axis", "col", "q", "side", "cuts", "control_axis")
 
     def __init__(self, name, run, axis, col=None, q=None, side=None, cuts=None,
-                 pair_inherit=False):
+                 control_axis=AX_OWN):
         self.name, self.run, self.axis = name, run, axis
         self.col, self.q, self.side, self.cuts = col, q, side, cuts
-        # True = その列は束の行にしか無いので、合わせた対照は 1 対 1 の相手の束から
-        # 受け継ぐ(§6.1 の 4)。一様対照は相手が無いのでこの群に入れない。
-        self.pair_inherit = pair_inherit
+        # 対照 (ii) の軸の値をどう作るか(決定 1'。走行ごとに**測って**決める)。
+        #   AX_OWN          = 対照行にその列の値があるので、対照にも同じ切り方を当てる
+        #   AX_PARTNER_SIGN = 対照行に符号なしの大きさがあるので、相手の側の符号を当てて
+        #                     **対照自身の**軸の値を作る(受け継ぎではない)
+        #   AX_INHERIT      = 対照行に対応物が無いので、1 対 1 の相手の群を受け継ぐ
+        self.control_axis = control_axis
 
+    @property
+    def pair_inherit(self) -> bool:
+        """**受け継ぐ**群か(= `AX_INHERIT`)。E 6 + B1 3 + B2 3 + C 2 = 14 群。"""
+        return self.control_axis == AX_INHERIT
 
     @property
     def is_quantile(self) -> bool:
         return self.q is not None
 
 
-def liq_only_columns(run: Run) -> set[str]:
-    """**測って**決める: 対照行に 1 つも値が無い軸の列。
+def control_axis_kinds(run: Run) -> dict[str, str]:
+    """**測って**決める: 軸の列ごとに、対照 (ii) の軸の値をどう作るか(決定 1')。
 
-    実装は対照行に `side` を入れないので(`scripts/o3c_reaction.py:1533`)、
-    `side` から作る列(`*_liqdir` / `implied_leverage`)と束の属性
-    (`bundle_*`)は対照行では空になる(**実測**: 標本 6 日の `table.csv` で
-    control_uniform / control_matched とも 0 件)。
-    **決め打ちにせず、走行ごとに数えて決める。**
+    **前版はここが 2 分岐で、「対照行にその列の値があるのは `bin_pct` と `doi_pre_1h`
+    だけ」と書いていた。数えたのは `*_liqdir` の付いた列だけだった**
+    (走行前の再監査(3 回目)の指摘 1)。**符号なしの列(`dist_node_bp` /
+    `dist_vwap_bp` / `oi_dist_node_bp` / `oi_dist_vwap_bp`)は対照行にも値がある。**
+
+    決め方(**走行ごとに数える。決め打ちにしない**):
+      1. その列自身が対照行で 1 つでも有限 → `AX_OWN`
+      2. `*_liqdir` で、符号なしの元の列が対照行で 1 つでも有限 → `AX_PARTNER_SIGN`
+      3. それ以外 → `AX_INHERIT`
+    `side`(軸 C)は対照行に無く、符号なしの元も無いので必ず `AX_INHERIT`。
     """
-    out = {"side"}
+    out: dict[str, str] = {"side": AX_INHERIT}
     for _axis, col in AXES_W + AXES_FLAT:
-        vals = np.concatenate([run.raw(KIND_MAT, col), run.raw(KIND_UNI, col)])
-        if not bool(np.isfinite(vals).any()):
-            out.add(col)
+        own = np.concatenate([run.raw(KIND_MAT, col), run.raw(KIND_UNI, col)])
+        if bool(np.isfinite(own).any()):
+            out[col] = AX_OWN
+            continue
+        src = LIQDIR_SOURCE.get(col)
+        if src is not None:
+            base_v = np.concatenate([run.raw(KIND_MAT, src), run.raw(KIND_UNI, src)])
+            if bool(np.isfinite(base_v).any()):
+                out[col] = AX_PARTNER_SIGN
+                continue
+        out[col] = AX_INHERIT
     return out
 
 
@@ -312,7 +407,7 @@ def tertile_cuts(vals: np.ndarray) -> tuple[float, float]:
 
 def build_groups(run8: Run, run24: Run) -> list[Group]:
     """§4 の内訳表をそのまま組む。全体 1 + 3 分位 15 軸 × 3 + side 2 = 48 群。"""
-    liq_only = {run8.name: liq_only_columns(run8), run24.name: liq_only_columns(run24)}
+    kinds = {run8.name: control_axis_kinds(run8), run24.name: control_axis_kinds(run24)}
     groups: list[Group] = []
     groups.append(Group("全体", RUN_W8, "—"))
     for axis, col in AXES_W:
@@ -320,14 +415,15 @@ def build_groups(run8: Run, run24: Run) -> list[Group]:
             cuts = tertile_cuts(run.values(KIND_LIQ, col))
             for q in (1, 2, 3):
                 groups.append(Group(f"{axis}_{tag}_Q{q}", run.name, axis, col=col, q=q,
-                                    cuts=cuts, pair_inherit=col in liq_only[run.name]))
+                                    cuts=cuts, control_axis=kinds[run.name][col]))
     for axis, col in AXES_FLAT:
         cuts = tertile_cuts(run8.values(KIND_LIQ, col))
         for q in (1, 2, 3):
             groups.append(Group(f"{axis}_Q{q}", RUN_W8, axis, col=col, q=q, cuts=cuts,
-                                pair_inherit=col in liq_only[RUN_W8]))
+                                control_axis=kinds[RUN_W8][col]))
     for s in ("SELL", "BUY"):
-        groups.append(Group(f"C_{s}", RUN_W8, "C", col="side", side=s, pair_inherit=True))
+        groups.append(Group(f"C_{s}", RUN_W8, "C", col="side", side=s,
+                            control_axis=AX_INHERIT))
     return groups
 
 
@@ -336,16 +432,40 @@ def build_flat_groups_w24(run24: Run) -> list[Group]:
 
     **576 検定には入れない**(判定に使うのは W8h の走行から取った 12 群だけ)。
     ここで作った 12 群は**観測のみの表**に出す(t と判定の列なし)。
+
+    **決定 20'(走行前の再監査(3 回目)の指摘 20)**: 切り値は **W = 24h の実群で
+    切り直す**(W = 8h の切り値を持ち込まない)。W が違えば実群の分布そのものが違うので、
+    W = 8h の切り値を当てると「3 分位」でなくなるためである(**リードの決定**)。
     """
-    liq_only = liq_only_columns(run24)
+    kinds = control_axis_kinds(run24)
     out = [Group("全体", RUN_W24, "—")]
     for axis, col in AXES_FLAT:
-        cuts = tertile_cuts(run24.values(KIND_LIQ, col))
+        cuts = tertile_cuts(run24.values(KIND_LIQ, col))   # ← W = 24h で切り直す
         for q in (1, 2, 3):
             out.append(Group(f"{axis}_Q{q}", RUN_W24, axis, col=col, q=q, cuts=cuts,
-                             pair_inherit=col in liq_only))
+                             control_axis=kinds[col]))
     for s in ("SELL", "BUY"):
-        out.append(Group(f"C_{s}", RUN_W24, "C", col="side", side=s, pair_inherit=True))
+        out.append(Group(f"C_{s}", RUN_W24, "C", col="side", side=s,
+                         control_axis=AX_INHERIT))
+    return out
+
+
+def build_groups_single(run: Run) -> list[Group]:
+    """**決定 19'**: 感度 1 本ぶんの群(その走行の実群だけで切る)。
+
+    全体 1 + 3 分位 9 軸(A1〜A5・E・B1・B2・D)× 3 = 27 + side 2 = **30 群**。
+    **判定には 1 つも使わない**(観測のみの表にしか出さない)。
+    """
+    kinds = control_axis_kinds(run)
+    out = [Group("全体", run.name, "—")]
+    for axis, col in AXES_W + AXES_FLAT:
+        cuts = tertile_cuts(run.values(KIND_LIQ, col))
+        for q in (1, 2, 3):
+            out.append(Group(f"{axis}_Q{q}", run.name, axis, col=col, q=q, cuts=cuts,
+                             control_axis=kinds[col]))
+    for s in ("SELL", "BUY"):
+        out.append(Group(f"C_{s}", run.name, "C", col="side", side=s,
+                         control_axis=AX_INHERIT))
     return out
 
 
@@ -358,33 +478,90 @@ def _quantile_label(v: float, cuts: tuple[float, float]) -> int:
 def membership(run: Run, kind: str, g: Group) -> np.ndarray:
     """その群に入る行の真偽値。
 
-    - 対照行に値がある列(実測で `bin_pct` と `doi_pre_1h`)は、
+    合わせた対照 (ii) の軸の値の作り方は 3 通り(決定 1'。`control_axis_kinds` が
+    走行ごとに**測って**決める):
+
+    - `AX_OWN`(`bin_pct` / `doi_pre_1h`)= 対照行にその列の値があるので、
       **対照にも同じ切り方を当てる**(§4)。
-    - 対照行に値が無い列(実測で残り 13 軸 + side)は、
-      合わせた対照は 1 対 1 の相手の束から受け継ぎ(§6.1 の 4)、
-      一様対照は相手が無いので**この群に入れない**(= 対照 (i) の欄が空になる)。
+    - `AX_PARTNER_SIGN`(A2〜A5 の 4 軸)= 対照行に**符号なしの大きさ**があるので、
+      1 対 1 の相手の側の符号を当てて**対照自身の**軸の値を作り、同じ切り値に当てる。
+    - `AX_INHERIT`(E・B1・B2・C の 14 群)= 対照行に対応物が無いので、
+      **1 対 1 の相手の束の群を受け継ぐ**(§6.1 の 4)。
+
+    一様対照 (i) は 1 対 1 の相手が無いので、`AX_OWN` 以外の群には**入れない**
+    (= その群の 対照 (i) と 差 (i) の欄が空になる)。
+
+    **決定 8'**: 相手が mixed 束の合わせた対照は、どの群からも落とす
+    (実群の側が mixed を主表から外しているので、残すと 1 対 1 が崩れる)。
     """
     rows = run.by_kind[kind]
     n = len(rows)
+    if kind == KIND_MAT:
+        usable = run.mat_usable
     if g.axis == "—":
-        return np.ones(n, dtype=bool)
-    if g.pair_inherit and kind == KIND_UNI:
+        return usable.copy() if kind == KIND_MAT else np.ones(n, dtype=bool)
+    if g.control_axis != AX_OWN and kind == KIND_UNI:
         return np.zeros(n, dtype=bool)
     if g.side is not None:
         if kind == KIND_LIQ:
             return np.array([r.get("side") == g.side for r in rows], dtype=bool)
+        if kind == KIND_UNI:
+            return np.zeros(n, dtype=bool)
         return np.array(
             [(p is not None and p.get("side") == g.side) for p in run.pair_of_matched],
             dtype=bool,
-        )
-    if g.pair_inherit and kind == KIND_MAT:
+        ) & usable
+    if kind == KIND_MAT and g.control_axis == AX_INHERIT:
         vals = np.array(
             [_f(p.get(g.col)) if p is not None else float("nan") for p in run.pair_of_matched],
             dtype=float,
         )
+    elif kind == KIND_MAT and g.control_axis == AX_PARTNER_SIGN:
+        vals = run.matched_partner_sign_axis(g.col)
     else:
         vals = run.values(kind, g.col)
-    return np.array([_quantile_label(v, g.cuts) == g.q for v in vals], dtype=bool)
+    sel = np.array([_quantile_label(v, g.cuts) == g.q for v in vals], dtype=bool)
+    return (sel & usable) if kind == KIND_MAT else sel
+
+
+def check_pairing(run: Run) -> list[str]:
+    """**サニティ #14**(決定 6'): 1 対 1 の対応が成り立っているかを走行ごとに測る。
+
+    3 つを見る。1 つでも破れたら呼び出し側が「[止め]」で終了コード 1 にする
+    (**崩れても静かに行が落ちるだけ、という前版の形を閉じる**)。
+
+      1. すべての合わせた対照に相手が実在する(`matched_liq_id` が引ける)
+      2. 相手が**同じ日**である
+      3. `bin_pct` の差が **±5.0 ポイント以内**(`scripts/o3c_reaction.py:140` の
+         `MATCH_TOL_PCT`。境界を含む = マッチングが `bp ± tol` を閉区間で取るため)
+    """
+    bad: list[str] = []
+    rows = run.by_kind[KIND_MAT]
+    n_missing = n_day = n_tol = 0
+    worst = 0.0
+    for r, p in zip(rows, run.pair_of_matched):
+        if p is None:
+            n_missing += 1
+            continue
+        if p.get("day") != r.get("day"):
+            n_day += 1
+        a, b = _f(r.get("bin_pct")), _f(p.get("bin_pct"))
+        if math.isfinite(a) and math.isfinite(b):
+            d = abs(a - b)
+            worst = max(worst, d)
+            if d > MATCH_TOL_PCT + 1e-9:
+                n_tol += 1
+    if n_missing:
+        bad.append(f"{run.name}: 相手の束が引けない合わせた対照が {n_missing} 件")
+    if n_day:
+        bad.append(f"{run.name}: 相手が別の日の合わせた対照が {n_day} 件")
+    if n_tol:
+        bad.append(
+            f"{run.name}: bin_pct の差が ±{MATCH_TOL_PCT} を超える組が {n_tol} 件"
+            f"(最大 {worst:.4f})"
+        )
+    run.pairing_worst_bin_pct_gap = worst
+    return bad
 
 
 # =============================================================================
@@ -431,7 +608,8 @@ def day_sums(vals: np.ndarray, sel: np.ndarray, day_idx: np.ndarray, n_days: int
 def ci_normal(diff: float, se: float) -> tuple[float, float]:
     """決定 1: CI は正規近似 `差 ± z_{1−α/2} × ブートストラップ SE`。
 
-    **この形なので「|t| ≥ 3.925」と「CI が 0 を除外」は同値である。**
+    **この形なので「|t| ≥ z」と「CI が 0 を除外」は同値である。**
+    **z は `BAR_T`(= `Z_ALPHA` = `norm.ppf(1 − α/2)`)の 1 本だけ**(決定 12')。
     """
     if not (math.isfinite(diff) and math.isfinite(se)):
         return float("nan"), float("nan")
@@ -496,14 +674,22 @@ def mde(kind: str, a: np.ndarray, b: np.ndarray, n1: int, n2: int,
 # 分岐(§10.1 + 走行前の再監査の決定 2)
 # =============================================================================
 UNKNOWN_N = "不明(n < 30)"
+UNKNOWN_MDE = "不明(MDE 未算出)"
 
 
 def decide(n1: int, t: float, diff: float, m: float) -> tuple[str, str]:
-    """(判定, 検出力の欄)。**3 つ**を上から順に当てる(決定 2)。
+    """(判定, 検出力の欄)。上から順に当てる(決定 2 + 決定 17')。
 
     1. その検定に使う**欠測を引いた後の実群 n** が 30 未満 → 「不明(n < 30)」
-    2. |t| ≥ 3.925 → 「差あり(+)」/「差あり(−)」
-    3. それ以外 → 「検出されず(MDE = X)」
+    2. |t| ≥ z(= `BAR_T`。丸め表示 3.925)→ 「差あり(+)」/「差あり(−)」
+    3. MDE が計算できない → **「不明(MDE 未算出)」**
+    4. それ以外 → 「検出されず(MDE = X)」
+
+    **3 は決定 17'(走行前の再監査(3 回目)の指摘 17)で分けた。**
+    前版は MDE が無くても「検出されず(MDE = 未算出)」と書いていたが、
+    **「検出されず」は「この n とこの MDE では検出できなかった」という意味なので、
+    MDE が無い行にその語を当てると、検出力が分からないことを不在の側に読ませてしまう**
+    (`CLAUDE.md` §0.2 の A-18)。**MDE が無い行は「不明」である。**
 
     **「差なし」「陰性」は書かない。**MDE との比較(≥ / <)は別の列に残す。
     """
@@ -511,8 +697,9 @@ def decide(n1: int, t: float, diff: float, m: float) -> tuple[str, str]:
         return UNKNOWN_N, "n < 30"
     if math.isfinite(t) and abs(t) >= BAR_T:
         return ("差あり(+)" if diff > 0 else "差あり(−)"), ""
-    x = _fmt(m) if math.isfinite(m) else "未算出"
-    return f"検出されず(MDE = {x})", ""
+    if not math.isfinite(m):
+        return UNKNOWN_MDE, "MDE 未算出"
+    return f"検出されず(MDE = {_fmt(m)})", ""
 
 
 def mde_mark(diff: float, m: float) -> str:
@@ -593,7 +780,7 @@ def build_rows(runs: dict[str, Run], samples: dict[str, Run], groups: list[Group
     for col, kind, h in systems:
         per_group: dict[str, dict] = {}
         for g in groups:
-            run, smp = runs[g.run], samples[g.run]
+            run, smp = runs[g.run], samples.get(g.run)
             s_liq = sel(g, KIND_LIQ, runs)
             s_uni = sel(g, KIND_UNI, runs)
             s_mat = sel(g, KIND_MAT, runs)
@@ -618,9 +805,14 @@ def build_rows(runs: dict[str, Run], samples: dict[str, Run], groups: list[Group
                 else float("nan")
             )
             # MDE: p・s は標本 6 日(その群の切り方を当てたもの)、n は走行後の件数(§8.6)。
-            sa = smp.values(KIND_LIQ, col)[sel(g, KIND_LIQ, samples)]
-            sb = smp.values(KIND_MAT, col)[sel(g, KIND_MAT, samples)]
-            m_val = mde(kind, sa, sb, n1, n2)
+            # **感度の走行(決定 19')には対を成す標本が無いので MDE を出さない。**
+            # その表は観測のみで、判定にも F1 の読みにも 1 つも入らない。
+            if smp is None:
+                m_val = float("nan")
+            else:
+                sa = smp.values(KIND_LIQ, col)[sel(g, KIND_LIQ, samples)]
+                sb = smp.values(KIND_MAT, col)[sel(g, KIND_MAT, samples)]
+                m_val = mde(kind, sa, sb, n1, n2)
             per_group[g.name] = dict(
                 g=g, n1=n1, n2=n2, liq=m_liq, uni=m_uni,
                 se_uni=se_uni, mat=m_mat, d2=diff2, d1=diff1, t=t, se_b=se_b,
@@ -670,7 +862,8 @@ def f1_reading(cells: list[dict]) -> str:
       整合 = 差あり(+) ≥ 1 かつ 差あり(−) 0
       反証 = 差あり(−) ≥ 1 かつ 差あり(+) 0
       混在 = 両方ある
-      不明 = 差ありが 1 つも無い(**不明(n < 30) と 検出されず の内訳を併記する**)
+      不明 = 差ありが 1 つも無い(**内訳を併記する**。決定 17' で
+             「不明(MDE 未算出)」が内訳に 1 つ増えた)
     """
     if len(cells) != 12:
         return f"読めない(12 セルのはずが {len(cells)} セル)"
@@ -683,8 +876,10 @@ def f1_reading(cells: list[dict]) -> str:
     if neg:
         return f"F1 の反証(差あり(−) {neg} / 差あり(+) 0)"
     few = sum(1 for c in cells if c["判定"] == UNKNOWN_N)
+    nom = sum(1 for c in cells if c["判定"] == UNKNOWN_MDE)
     nod = sum(1 for c in cells if c["判定"].startswith("検出されず"))
-    return f"不明(差あり 0。内訳: 不明(n < 30) {few} / 検出されず {nod})"
+    return (f"不明(差あり 0。内訳: 不明(n < 30) {few} / {UNKNOWN_MDE} {nom} / "
+            f"検出されず {nod})")
 
 
 # =============================================================================
@@ -763,11 +958,37 @@ def main(argv=None) -> int:
     ap.add_argument("--reps", type=int, default=2000, help="§9.1 の反復回数(既定 2,000)")
     ap.add_argument("--root", default=str(Path(__file__).resolve().parent.parent),
                     help="監査の台帳(docs/AUDITOR/ACTION_LOG.md)を探す根。試験でだけ差し替える")
+    ap.add_argument("--sens", action="append", default=[], metavar="NAME=DIR",
+                    help="感度の走行(繰り返し可)。観測のみの表 observation_only_<NAME>.csv "
+                         "を 1 本ずつ出す(t と判定の列なし。決定 19')")
     a = ap.parse_args(argv)
 
     s24 = Path(a.sample_w24) if a.sample_w24 else Path(a.sample_w8).parent / RUN_W24
     runs = {RUN_W8: Run(RUN_W8, Path(a.run_w8)), RUN_W24: Run(RUN_W24, Path(a.run_w24))}
     samples = {RUN_W8: Run(RUN_W8, Path(a.sample_w8)), RUN_W24: Run(RUN_W24, s24)}
+
+    sens: dict[str, Run] = {}
+    for spec in a.sens:
+        if "=" not in spec:
+            sys.stderr.write(f"[止め] --sens は NAME=DIR の形で渡す: {spec}\n")
+            return 1
+        nm, _, d = spec.partition("=")
+        nm = nm.strip()
+        if nm in runs or nm in sens:
+            sys.stderr.write(f"[止め] --sens の名前が重なっている: {nm}\n")
+            return 1
+        sens[nm] = Run(nm, Path(d.strip()))
+
+    # --- サニティ #14(決定 6'): 1 対 1 の対応を走行ごとに測る -----------------
+    bad: list[str] = []
+    for r in list(runs.values()) + list(sens.values()):
+        bad += check_pairing(r)
+    if bad:
+        sys.stderr.write(
+            "[止め] サニティ #14(1 対 1 の対応)が通らない。表を 1 枚も書かずに終わる。\n"
+            + "".join(f"       - {b}\n" for b in bad)
+        )
+        return 1
 
     groups = build_groups(runs[RUN_W8], runs[RUN_W24])
     if len(groups) != N_GROUPS:
@@ -775,7 +996,7 @@ def main(argv=None) -> int:
         return 1
 
     boot = {}
-    for name, run in runs.items():
+    for name, run in list(runs.items()) + list(sens.items()):
         rng = np.random.default_rng(a.seed)
         nd = len(run.days)
         boot[name] = rng.integers(0, nd, size=(a.reps, nd)) if nd else np.zeros((a.reps, 0), int)
@@ -789,6 +1010,14 @@ def main(argv=None) -> int:
     flat24 = build_flat_groups_w24(runs[RUN_W24])
     obs_rows += build_rows(runs, samples, flat24, boot, judge=False,
                            systems=judge_systems())
+    # 決定 19': 感度 1 本ごとに観測のみの表を 1 枚ずつ出す(判定には 1 行も入らない)。
+    sens_rows: dict[str, list[dict]] = {}
+    for nm, r in sens.items():
+        gs = build_groups_single(r)
+        sens_rows[nm] = build_rows(
+            {nm: r}, {}, gs, boot, judge=False,
+            systems=judge_systems() + observation_systems(),
+        )
     cells = f1_cells(judge_rows)
     reading = f1_reading(cells)
 
@@ -800,6 +1029,8 @@ def main(argv=None) -> int:
     write_csv(out / "judgment_576.csv", JUDGE_HEADER, judge_rows)
     write_csv(out / "f1_12cells.csv", JUDGE_HEADER, cells)
     write_csv(out / "observation_only.csv", OBS_HEADER, obs_rows)
+    for nm, rows_ in sens_rows.items():
+        write_csv(out / f"observation_only_{nm}.csv", OBS_HEADER, rows_)
     write_csv(out / "why_frame.csv", WHY_HEADER,
               [{**{k: WHY_PLACEHOLDER for k in WHY_HEADER}, "読み": r} for r in WHY_READINGS])
     (out / "f1_reading.txt").write_text(
@@ -815,26 +1046,53 @@ def main(argv=None) -> int:
         "seed": a.seed,
         "reps": a.reps,
         "CI水準": {"alpha": ALPHA, "クラスタ": "UTC 日",
-                   "方法": "正規近似(差 ± 3.925 × ブートストラップ SE)",
+                   "方法": (f"正規近似(差 ± z × ブートストラップ SE。"
+                            f"z = {BAR_T_SHOWN} は丸め表示で、計算は norm.ppf(1 − α/2))"),
                    "z_{1-α/2}": BAR_T,
-                   "注": "|t| ≥ 3.925 と CI が 0 を除外することは同値である"},
-        "バー": {"|t|": BAR_T, "最低イベント数": MIN_N,
+                   "注": "|t| ≥ z と CI が 0 を除外することは同値である"},
+        "バー": {"|t|": BAR_T, "|t|の丸め表示": BAR_T_SHOWN, "最低イベント数": MIN_N,
                  "最低イベント数の当て先": "その検定に使う、欠測を引いた後の実群の件数 n1",
-                 "z_{1-α/2}": Z_ALPHA, "z_{1-β}": Z_POWER, "MDEの係数": MDE_Z},
-        "分岐": ["不明(n < 30)", "差あり(+)", "差あり(−)", "検出されず(MDE = X)"],
+                 "z_{1-α/2}": Z_ALPHA, "z_{1-β}": Z_POWER, "MDEの係数": MDE_Z,
+                 "注": "バー・CI・MDE は同じ z(norm.ppf(1 − α/2))を使う(決定 12')"},
+        "分岐": ["不明(n < 30)", "差あり(+)", "差あり(−)",
+                 UNKNOWN_MDE, "検出されず(MDE = X)"],
         "検定の数": len(judge_rows),
         "群の数": len(groups),
+        "観測のみの表の行数": {
+            "observation_only.csv": len(obs_rows),
+            **{f"observation_only_{nm}.csv": len(rows_) for nm, rows_ in sens_rows.items()},
+        },
         "走行": {
             n: {"path": str(r.path), "window_hours": r.window_hours,
                 "日数": len(r.days), "行数": {k: len(v) for k, v in r.by_kind.items()},
-                "w_SELL": r.w_sell()}
-            for n, r in runs.items()
+                "w_SELL": r.w_sell(),
+                "相手がmixed束で落とした合わせた対照": r.n_dropped_mixed_partner,
+                "サニティ14_bin_pctの差の最大": r.pairing_worst_bin_pct_gap}
+            for n, r in list(runs.items()) + list(sens.items())
         },
+        "感度(観測のみ)": {nm: str(r.path) for nm, r in sens.items()},
         "標本(MDE の p・s)": {n: str(r.path) for n, r in samples.items()},
+        "対照(ii)の軸の作り方": {
+            "own(対照行自身の値)": sorted(
+                {g.name for g in groups if g.control_axis == AX_OWN}),
+            "partner_sign(符号なしの大きさ × 相手の側の符号)": sorted(
+                {g.name for g in groups if g.control_axis == AX_PARTNER_SIGN}),
+            "inherit(相手の実群の群を受け継ぐ)": sorted(
+                {g.name for g in groups if g.control_axis == AX_INHERIT}),
+        },
+        "受け継いだ群": [
+            {"群": g.name, "走行": g.run, "列": g.col,
+             "n_control_matched": int(membership(runs[g.run], KIND_MAT, g).sum())}
+            for g in groups if g.control_axis == AX_INHERIT
+        ],
+        "受け継いだ群の数": sum(1 for g in groups if g.control_axis == AX_INHERIT),
+        "相手の符号を当てた群の数": sum(
+            1 for g in groups if g.control_axis == AX_PARTNER_SIGN),
         "群ごと": [
             {"群": g.name, "走行": g.run, "軸": g.axis, "列": g.col,
              "分位": g.q, "side": g.side,
              "対照は1対1の束から受け継いだか": g.pair_inherit,
+             "対照(ii)の軸の作り方": g.control_axis,
              "切り値": (list(g.cuts) if g.cuts else None),
              "n_liq": int(membership(runs[g.run], KIND_LIQ, g).sum()),
              "n_control_uniform": int(membership(runs[g.run], KIND_UNI, g).sum()),
@@ -845,19 +1103,31 @@ def main(argv=None) -> int:
         "注記": [
             "対照 (i) の向きの要る量(*_reactdir)は §6.1 の重み付けを通した。"
             "SE の合成は独立を仮定しており、**SE を小さく見る向きの近似**である(§6.1 の 3)。",
-            "合わせた対照は 1 対 1 の相手の束の side を当てた(§6.1 の 4)。"
-            "軸の列が対照行に 1 つも無いとき(走行ごとに数えて決めた。"
-            "summary の「対照は1対1の束から受け継いだか」)も同じ 1 対 1 で群を受け継いだ。"
-            "一様対照は相手が無いのでその群には入れていない"
+            "合わせた対照の *_reactdir は 1 対 1 の相手の束の side の符号を当てた"
+            "(§6.1 の 4。下向き = SELL 側では mfe と mae が入れ替わる)。",
+            "対照 (ii) の軸の値の作り方は 3 通りで、走行ごとに数えて決めた"
+            "(summary の「対照(ii)の軸の作り方」)。own = 対照行自身の値 /"
+            " partner_sign = 対照行の符号なしの大きさに相手の側の符号を当てた対照自身の値 /"
+            " inherit = 対照行に対応物が無いので 1 対 1 の相手の群を受け継いだ。"
+            "一様対照は 1 対 1 の相手が無いので own 以外の群には入れていない"
             "(その群の 対照(i) と 差(i) は空になる)。",
+            "相手が mixed 束の合わせた対照は全群から落とした"
+            "(件数は summary の「相手がmixed束で落とした合わせた対照」)。"
+            "実群の側が mixed を主表から外しているので、残すと 1 対 1 が崩れるためである。",
+            "1 対 1 の対応は table.csv の matched_liq_id 列で取り、"
+            "走行ごとにサニティ #14(相手が実在 / 同日 / bin_pct の差が ±5 以内)を通した。",
             "判定に使う走行は gap 60 秒 × W 8h と gap 60 秒 × W 24h の 2 本で、"
             "W に依らない 12 群は gap60_w8 の走行からだけ 576 検定に入れた(§4 の内訳表)。"
-            "同じ 12 群の W = 24h 側は観測のみの表に出してある(t と判定の列なし)。",
+            "同じ 12 群の W = 24h 側は観測のみの表に出してある(t と判定の列なし)。"
+            "その 12 群の切り値は W = 24h の実群で切り直してある(決定 20')。",
+            "感度の走行(--sens)は observation_only_<NAME>.csv に別の表として出した。"
+            "対を成す標本が無いので MDE の列は空である。判定にも F1 の読みにも入れていない。",
             "「全体」群の 実群 の欄は差の入力として出しているだけで、"
             "その水準を根拠にした文はこの summary にも標準出力にも書いていない"
             "(事前登録 §3 の #1 = a「全体分布の水準を根拠にした主張は書かない」)。",
-            "分岐は 3 つで、不在を断ずる語は 1 つも書かない。"
-            "検出できなかったセルは「検出されず(MDE = X)」と書く。"
+            "不在を断ずる語は 1 つも書かない。"
+            "検出できなかったセルは「検出されず(MDE = X)」と書き、"
+            "MDE が計算できなかったセルは「" + UNKNOWN_MDE + "」と書く(決定 17')。"
             "MDE との比較(≥ / <)は別の列に残してある。",
             "MDE は p・s を標本 6 日で固定し、n だけ走行後の群の件数から取った(§8.6)。"
             "群の切り方は判定区間の実群で決めた切り値を標本にも当てた(§4)。",
@@ -868,8 +1138,9 @@ def main(argv=None) -> int:
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    names = ["judgment_576.csv", "f1_12cells.csv", "observation_only.csv",
-             "why_frame.csv", "f1_reading.txt", "summary.json"]
+    names = (["judgment_576.csv", "f1_12cells.csv", "observation_only.csv"]
+             + [f"observation_only_{nm}.csv" for nm in sens_rows]
+             + ["why_frame.csv", "f1_reading.txt", "summary.json"])
     hits = scan_forbidden(out, names)
     if hits:
         sys.stderr.write("[止め] 出力に判定語が混ざっている: " + " / ".join(hits) + "\n")
@@ -877,6 +1148,8 @@ def main(argv=None) -> int:
     write_md5(out, names)
 
     print(f"判定の表: {len(judge_rows)} 行 / 観測のみの表: {len(obs_rows)} 行 / 群 {len(groups)}")
+    for nm, rows_ in sens_rows.items():
+        print(f"感度(観測のみ)の表 {nm}: {len(rows_)} 行")
     print(f"F1 の 12 セルの読み: {reading}")
     print(f"出力先: {out}")
     return 0

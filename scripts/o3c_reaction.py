@@ -723,6 +723,12 @@ BF_COLUMNS = [
     "bf_xcorr_n",
 ]
 
+# 合わせた対照 (ii) の 1 対 1 の相手の束の `cascade_id`(束の行と一様対照の行では空)。
+# **列の並びの末尾に足す**ので、既にある列の位置は 1 つも動かない
+# (2026-09-18、prereg 監査(3 回目)の指摘 6。読みの道具が 1 対 1 の対応を
+# `cascade_id` の連番の算術で**復元**していたのを、列で取る形に替えるため)。
+MATCHED_PAIR_COLUMNS = ["matched_liq_id"]
+
 
 def sample_columns() -> list[str]:
     return (
@@ -738,6 +744,7 @@ def sample_columns() -> list[str]:
         + DOI_COLUMNS
         + RATIO_OUT_COLUMNS
         + BF_COLUMNS
+        + MATCHED_PAIR_COLUMNS
     )
 
 
@@ -1571,6 +1578,12 @@ def build_day_rows(
                 and np.isfinite(before_price)
                 and before_price > 0
                 else float("nan")
+            ),
+            # 合わせた対照 (ii) の 1 対 1 の相手の束の id(`i` は `cascades_of_day`
+            # の添字である = 上の `cascade_list` の詰め方)。相手が mixed の束なら
+            # その行は `table_mixed.csv` 側に出るが、id はここに残る。
+            "matched_liq_id": (
+                cascades_of_day[i].cascade_id if kind == KIND_MATCHED else ""
             ),
         }
         for k in PROFILE_COLUMNS:
