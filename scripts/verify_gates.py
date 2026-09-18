@@ -211,7 +211,8 @@ show("4 本目の監査が実測した上申の抜け道(監査ゼロ・文字�
 show("未監査の普通の本文", rep("測定を始めます。以上です。", tmp)[0], 2)
 
 verb = [f"> [止める] 実測された指摘の{i}行目。これは監査役が書いた本文である。" for i in range(1, 11)]
-body = "本日の報告です。\n\n" + "\n".join(verb) + "\n\n以上を受けて直しました。\n"
+body = "本日の報告です。監査の記録は ACTION_LOG 900。\n\n以上を受けて直しました。\n"
+body_noref = "本日の報告です。\n\n以上を受けて直しました。\n"
 sha = hashlib.sha256(body.encode()).hexdigest()[:16]
 
 
@@ -223,12 +224,14 @@ def write_log(verdict, n_verb, sha_=None, prefix=""):
 
 
 write_log("判定: 通す", 10)
-show("逐語を貼った本文 + 台帳に「判定: 通す」の節", rep(body, tmp)[0], 0)
+show("節の名前を書いた本文 + 台帳に逐語 10 行と「判定: 通す」の節(4 版、L-197)", rep(body, tmp)[0], 0)
+write_log("判定: 通す", 10, sha_=hashlib.sha256(body_noref.encode()).hexdigest()[:16])
+show("節の名前を書いていない本文(4 版の機械が働くか)", rep(body_noref, tmp)[0], 2)
 write_log("判定: 通す", 10)
 show("本文を 1 文字変えた(指紋が変わる)", rep(body + "(一文字足した)", tmp)[0], 2)
 write_log("判定: 通す", 3)
 rc, err = rep(body, tmp)
-show("逐語が 3 行しかない節(穴 3 の機械が働くか)", rc, 2)
+show("逐語が 3 行しかない節(台帳側の 8 行の要求が働くか)", rc, 2)
 write_log("判定: 止める", 10)
 show("判定が「止める」で上申の行が無い本文", rep(body, tmp)[0], 2)
 write_log("判定: 止める", 10, prefix="判定: 通す と前の回に書かれていた。\n\n")
