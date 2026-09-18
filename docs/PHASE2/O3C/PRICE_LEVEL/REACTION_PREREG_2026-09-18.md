@@ -4341,7 +4341,10 @@ F1 の読みにも入らない**)。
 **試験は 3 本で 127 件 → 138 件**(**実測** 2026-09-18、`--collect-only`):
 `tests/test_o3c_reaction.py` **56 → 63 件** / `tests/test_o3c_reaction_judge.py` **59 → 63 件** /
 `tests/test_audit_gates_wired.py` **12 件のまま**。
-**リポジトリ全体は 2,109 件 → 2,120 件。**
+**リポジトリ全体は 2,109 件 → 2,120 件**(**全件実行は `2119 passed, 1 skipped`**。
+**実測** 2026-09-18、`PYTHONPATH=src python -m pytest`。
+**`-q` を足すと `pyproject.toml` の `addopts = "-q"` と重なって `-qq` になり、
+合計の行が出ない**ので足さない)。
 
 **道具を prereg 監査(7 回目)で直した点(すべて走行の前。2026-09-18)**:
 
