@@ -1,0 +1,102 @@
+# 調達プローブ: Binance COIN-M metrics の L/S 比 2 列(2026-09-18、委任先)
+
+きっかけ: 2026-09-18 の監査の指摘 23。
+`REACTION_RUN12_2026-09-18.md` §6 が「在庫が空であることを確かめただけで、他の経路は
+試していない(未確認)」と書いていたのに対し、`docs/DATA.md:116` に別経路
+(Binance USD-M の公開アーカイブ metrics、到達性確認済み)が台帳に載っている、という指摘。
+
+対象の列: `count_long_short_ratio` / `sum_toptrader_long_short_ratio`
+(+ 同じく空の `count_toptrader_long_short_ratio`)。
+
+環境: この実行環境(クラウド側、外向き HTTPS はプロキシ経由)。
+**オーナー PC では試していない(未確認)。**
+
+--------------------------------------------------------------------------------
+## 0. まず在庫の範囲を確定した(前の報告は「この 1 日」だけだった)
+
+$ python3 -(全 zip を開いて列ごとの空欄を数える)
+zip 日数 379 行 109098
+  count_toptrader_long_short_ratio: 空 109098/109098 (1.0000)  値のある日 0/379
+  sum_toptrader_long_short_ratio:   空 109098/109098 (1.0000)  値のある日 0/379
+  count_long_short_ratio:           空 109098/109098 (1.0000)  値のある日 0/379
+  sum_taker_long_short_vol_ratio:   空 167/109098 (0.0015)     値のある日 379/379
+  sum_open_interest:                空 0/109098 (0.0000)       値のある日 379/379
+
+範囲: `backtest_data/binance_cm_o3c_20260913/metrics/BTCUSD_PERP/` の **379 日すべて**
+(在庫の全部。窓 2023-06-25〜2024-10-14 のうち metrics がある日)。
+**「この 1 日」ではなく全日で 3 列とも 100% 空である(実測)。**
+
+--------------------------------------------------------------------------------
+## 経路 1: Binance USD-M 公開アーカイブ metrics(BTCUSDT)
+出所: `docs/DATA.md:116`(2026-09-12 に到達性のみ確認、本体未取得と記載)
+
+$ curl -sS -o um.zip -w "http_code=%{http_code} size=%{size_download}\n" \
+    "https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2024-02-19.zip"
+http_code=200 size=11387
+md5  5b7e8d09ff2a555d4ed24a17abb130a1  um.zip
+
+$ unzip -q um.zip && python3 -(列ごとの空欄を数える)
+file BTCUSDT-metrics-2024-02-19.csv rows 288
+cols ['create_time', 'symbol', 'sum_open_interest', 'sum_open_interest_value',
+      'count_toptrader_long_short_ratio', 'sum_toptrader_long_short_ratio',
+      'count_long_short_ratio', 'sum_taker_long_short_vol_ratio']
+  create_time:                      空 0/288  例 '2024-02-19 00:00:00'
+  symbol:                           空 0/288  例 'BTCUSDT'
+  sum_open_interest:                空 0/288  例 '85534.50000000'
+  sum_open_interest_value:          空 0/288  例 '4461770305.37595800'
+  count_toptrader_long_short_ratio: 空 0/288  例 '0.78108939'
+  sum_toptrader_long_short_ratio:   空 0/288  例 '1.32284847'
+  count_long_short_ratio:           空 0/288  例 '0.72989940'
+  sum_taker_long_short_vol_ratio:   空 0/288  例 '1.14697060'
+
+**結果: 到達可・8 列とも埋まっている(実測)。ただし別の商品である**
+(USD-M BTCUSDT。段 A の清算は COIN-M BTCUSD_PERP)。**代替になるかは別の判断**で、
+本プローブでは判定しない。
+
+--------------------------------------------------------------------------------
+## 経路 2: 同じ COIN-M アーカイブを取り直す(在庫の壊れか、出所が空か)
+
+$ curl -sS -o cm_new.zip -w "http_code=%{http_code} size=%{size_download}\n" \
+    "https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-02-19.zip"
+http_code=200 size=6538
+md5  702992f535227fba14aa83e2e9ee52ef  cm_new.zip
+md5  702992f535227fba14aa83e2e9ee52ef  backtest_data/binance_cm_o3c_20260913/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-02-19.zip
+
+$ 中身(取り直した方)
+file BTCUSD_PERP-metrics-2024-02-19.csv rows 288
+  count_toptrader_long_short_ratio: 空 288/288
+  sum_toptrader_long_short_ratio:   空 288/288
+  count_long_short_ratio:           空 288/288
+  sum_taker_long_short_vol_ratio:   空 0/288  例 '0.75662107'
+  sum_open_interest:                空 0/288  例 '10118794.00000000'
+
+**結果: 取り直しても同じで、md5 が在庫と一致した(実測)。
+空なのは在庫の壊れではなく、Binance の公開アーカイブ側が COIN-M では空である。**
+
+--------------------------------------------------------------------------------
+## 経路 3: Binance COIN-M REST(dapi)の L/S 比
+
+$ curl -sS "https://dapi.binance.com/futures/data/topLongShortAccountRatio?pair=BTCUSD&period=5m&limit=5"
+http_code=451
+{"code": 0, "msg": "Service unavailable from a restricted location according to 'b. Eligibility' ..."}
+
+$ curl -sS "https://dapi.binance.com/futures/data/globalLongShortAccountRatio?pair=BTCUSD&period=5m&limit=5"
+http_code=451
+同じ本文。
+
+**結果: この環境からは地域制限(451)で不可(実測)。オーナー PC は未確認。**
+なお REST は保持期間が 30 日であることが一次資料に書かれており(未確認: 本プローブでは
+一次資料を開いていない)、2023-06〜2024-10 の窓には届かない可能性がある。
+
+--------------------------------------------------------------------------------
+## まとめ(判定はしない)
+
+| 経路 | 到達 | 当該 2 列 | 範囲 |
+|---|---|---|---|
+| 1 USD-M 公開アーカイブ metrics(BTCUSDT) | 可(HTTP 200) | **埋まっている** | 別商品。1 日だけ実測 |
+| 2 COIN-M 公開アーカイブ metrics(BTCUSD_PERP)取り直し | 可(HTTP 200) | **空**(md5 が在庫と一致) | 1 日だけ実測 + 在庫 379 日は全部空 |
+| 3 COIN-M REST(dapi) | **不可**(HTTP 451、この環境) | — | オーナー PC は未確認 |
+
+**この環境で当該 2 列を COIN-M BTCUSD_PERP について埋める経路は、上の 3 つの範囲では
+見つかっていない。**USD-M BTCUSDT を代理に使うかどうかは設計の判断であり、
+本プローブでは決めない(委任先は判定を書かない)。
