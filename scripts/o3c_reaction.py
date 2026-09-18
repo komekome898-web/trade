@@ -27,13 +27,20 @@
   --mode full     設計 §9 の手順 3。**判定区間 = 標本 6 日と、12 日走行で開いた 10 日を
                   除いた 456 日**(`judgment_days`。2026-09-18 の監査の指摘 4 と
                   指摘 2・14 / 返答 060 の #1)。
-                  **開封前の関門 5 つを全部通したときだけ走る**(prereg 監査(7 回目)の
-                  指摘 1・18・20。`check_approval` の注): (a) `--approval` が事前登録 §14.4 の
-                  欄「応答の L 番号」と一致 / (b) その番号が L-199 より後 /
+                  **開封前の関門 7 つを全部通したときだけ走る**(prereg 監査(7 回目)の
+                  指摘 1・18・20 と 8 回目の指摘 1・2・6。`check_approval` の注):
+                  (a) `--approval` が事前登録 §14.4 の欄「応答の L 番号」と一致 /
+                  (b) その番号が L-199 より後 /
                   (c) `docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が実在 /
                   (d) `--out-dir` が §14.1・§14.2 の 6 つのどれか /
-                  (e) `--out-dir` がまだ存在しない(再走行・上書きを止める)。
+                  (e) `--out-dir` がまだ存在しない(再走行・上書きを止める)/
+                  (f) `--days` が渡っていない(日は `judgment_days` に固定。8 回目の指摘 6)/
+                  (g) `--out-dir` が `OPENED.txt` にまだ載っていない
+                      (**出力先を消してからの再走行**を止める。8 回目の指摘 2)。
                   1 つでも欠ければ終了コード非 0 で即座に止まる。
+                  **判定区間の日は、この `--mode full` 以外では 1 日も開けない**
+                  (`--mode sample --days` と `--mode anchor` は、日集合が判定区間の日を
+                  1 日でも含めば `--approval` があっても止まる = 8 回目の指摘 1)。
 
 **符号の約束(設計 §3 の 2 つの文が食い違っていたので、ここで分けた。報告の §0.1 に
 (該当語なし)の行として出す)**:
@@ -59,6 +66,7 @@ import json
 import math
 import random
 import re
+import subprocess
 import sys
 import time
 import zipfile
@@ -197,6 +205,75 @@ FULL_OUT_DIRS_REL = (
 )
 FULL_OUT_DIRS = tuple(REPO_ROOT / p for p in FULL_OUT_DIRS_REL)
 
+# **開けた出力先の台帳(prereg 監査(8 回目)の指摘 2。リードの決定 2)。**
+# **(e)「出力先が既に在れば止める」だけでは、出力先を消してから走らせ直せば止まらない。**
+# **`--mode full` が走るたびにここへ「出力先・UTC 時刻・approval」を 1 行追記し、
+# 既に載っている出力先は (g) で止める(出力先が在るかどうかに関わらず)。**
+# **この台帳は git で追跡される**(`backtest_data/` の下だが、`.gitignore` の除外は
+# `binance_*` の大容量ディレクトリだけで、この道は 1 つも掛かっていない = 実測)。
+# **残る穴は §3.1 に書いた**: 台帳そのものを消す / この機械を書き換える。
+# **どちらも差分に残る。**
+FULL_OUT_ROOT = REPO_ROOT / "backtest_data" / "o3c_reaction_20260918_full"
+FULL_OPENED_LEDGER = FULL_OUT_ROOT / "OPENED.txt"
+OPENED_HEADER = (
+    "# `--mode full` が判定区間 456 日を開けた出力先の台帳"
+    "(事前登録 §3.1。prereg 監査(8 回目)の指摘 2)。\n"
+    "# 1 行 = <出力先の絶対パス>\\t<UTC 時刻>\\t<--approval の L 番号>。\n"
+    "# ここに載っている出力先は、消してから走らせ直しても関門 (g) で止まる。\n"
+)
+OPENED_LINE_RE = re.compile(r"^(?P<out>[^\t]+)\t(?P<utc>[^\t]+)\t(?P<approval>.+)$")
+
+
+def opened_out_dirs(ledger: Path = FULL_OPENED_LEDGER) -> set[str]:
+    """台帳に載っている出力先(解決済みの絶対パスの文字列)の集合。"""
+    if not ledger.exists():
+        return set()
+    out: set[str] = set()
+    for line in ledger.read_text(encoding="utf-8", errors="replace").splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        m = OPENED_LINE_RE.match(s)
+        if m:
+            out.add(str(Path(m.group("out")).resolve()))
+    return out
+
+
+def record_opened(
+    out_dir: Path, approval: str | None, ledger: Path = FULL_OPENED_LEDGER
+) -> Path:
+    """`--mode full` が走るたびに台帳へ 1 行追記する(関門を通った直後に呼ぶ)。
+
+    **出力を書く前に追記する。**走行が途中で落ちても「開けた」ことは残る
+    (= 落ちた回を消してやり直す経路も (g) で止まる)。
+    """
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    if not ledger.exists():
+        ledger.write_text(OPENED_HEADER, encoding="utf-8")
+    stamp = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    with ledger.open("a", encoding="utf-8") as fh:
+        fh.write(f"{Path(out_dir).resolve()}\t{stamp}\t{approval or '(なし)'}\n")
+    return ledger
+
+
+def tool_commit(repo: Path = REPO_ROOT) -> str:
+    """`git rev-parse HEAD`。取れなければ「不明」(prereg 監査(8 回目)の指摘 16)。
+
+    **走行の出力にこの道具の版を残すためだけの関数である。**
+    **判定にも計算にも 1 つも使わない。**
+    """
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return "不明"
+    got = (r.stdout or "").strip()
+    if r.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", got):
+        return "不明"
+    return got
+
 
 def read_approval_from_prereg(prereg: Path = PREREG) -> tuple[str | None, str]:
     """事前登録 §14.4 の欄「応答の L 番号」を読む。返り値 `(L 番号, 説明)`。
@@ -246,6 +323,25 @@ def approval_line_exists(approval: str, owner_log: Path = OWNER_LOG) -> bool:
     return False
 
 
+def judgment_day_set(data_root: Path | None = None) -> frozenset[str]:
+    """判定区間の日の集合 = 在庫の全日 − 標本 6 日 − 12 日走行の 10 日。
+
+    **prereg 監査(8 回目)の指摘 1。リードの決定 1**:
+    **判定区間の日は 6 本の `--mode full` 以外では開けない。**その判定に使う集合である。
+    `judgment_days()` と同じ定義を集合で返すだけで、**新しい定義を作っていない。**
+
+    **射程**: 集合は**在庫(`--data-root`)から作る。**在庫が読めない / 空なら空集合になり、
+    この関門は何も止めない(**そのときは走らせても読む日が 1 日も無い**)。
+    """
+    root = Path(data_root) if data_root is not None else base.DEFAULT_DATA_ROOT
+    try:
+        days = all_days(root)
+    except OSError:
+        return frozenset()
+    opened = set(SAMPLE_DAYS) | set(SCALE12_JUDGMENT_DAYS_OPENED)
+    return frozenset(d for d in days if d not in opened)
+
+
 def check_approval(
     mode: str,
     approval: str | None,
@@ -254,6 +350,9 @@ def check_approval(
     out_dir: Path | None = None,
     prereg: Path = PREREG,
     allowed_out_dirs: tuple[Path, ...] = FULL_OUT_DIRS,
+    data_root: Path | None = None,
+    days_given: bool = False,
+    ledger: Path = FULL_OPENED_LEDGER,
 ) -> None:
     """判定区間の日を開ける経路に、承認行の実在を要求する。無ければ SystemExit。
 
@@ -263,14 +362,40 @@ def check_approval(
 
     - `--mode sample` は既定の標本 6 日(`SAMPLE_DAYS`)だけ無審査で走る。
       それ以外の日を 1 日でも含むなら `--approval L-NNN` が要る。
-    - `--mode full` は **(a)〜(e) の 5 つ**を全部通したときだけ走る
-      (prereg 監査(7 回目)の指摘 1・18・20。上の定数の注)。
-    - `--mode anchor` は日では止めない。代わりに**出力の側**を絞る
+    - `--mode full` は **(a)〜(g) の 7 つ**を全部通したときだけ走る
+      (prereg 監査(7 回目)の指摘 1・18・20 と 8 回目の指摘 1・2・6。上の定数の注)。
+    - `--mode anchor` は**出力の側**も絞る
       (標本 6 日以外を含む走行では生の `bp_h` 列を書かない = `emit_raw_bp`)。
 
-    **`prereg` と `allowed_out_dirs` は試験のためだけの既定引数である。**
-    **CLI の旗にはしていない**(`main()` はどちらも渡さない = 迂回できない)。
+    **prereg 監査(8 回目)の指摘 1。リードの決定 1**:
+    **判定区間の日は 6 本の `--mode full` 以外では開けない。**
+    `--mode sample --days` と `--mode anchor`(`--days` を持つ・持たないに関わらず
+    全日を読む)について、**日集合が判定区間の日(`judgment_day_set`)を 1 日でも含めば
+    「[止め]」**(**`--approval` があっても通さない**)。
+    **前版は、この 2 経路が (c)「台帳に行頭 `| L-NNN |` がある」だけで通り、
+    出力先の制限も回数の上限も掛からなかった**(8 回目の指摘 1。
+    **§14.4.1 の埋め込みで実際に 456 日が 2 回開いたのがこの経路である**)。
+
+    **`prereg` / `allowed_out_dirs` / `data_root` / `ledger` は試験のためだけの
+    既定引数である。CLI の旗にはしていない**(`main()` は `data_root` と
+    `days_given` だけを渡し、`prereg` / `allowed_out_dirs` / `ledger` は渡さない
+    = 迂回できない)。
     """
+    if mode != "full":
+        # --- 決定 1: 判定区間の日は `--mode full` 以外では 1 日も開けない --------
+        if mode == "anchor" and days is None:
+            # `--mode anchor` は `--days` が無ければ在庫の全日を読む(`run_anchor`)。
+            eff = sorted(judgment_day_set(data_root))
+        else:
+            eff = sorted(set(days or []) & judgment_day_set(data_root))
+        if eff:
+            raise SystemExit(
+                f"[止め] --mode {mode} では判定区間の日を開けない"
+                f"(判定区間の日が {len(eff)} 日含まれている: "
+                f"{', '.join(eff[:5])}{' …' if len(eff) > 5 else ''})。\n"
+                "       判定区間は事前登録 §14.1・§14.2 の 6 本の --mode full だけで開ける"
+                "(prereg 監査(8 回目)の指摘 1。--approval があっても通さない)"
+            )
     if mode == "sample":
         extra = sorted(set(days or []) - set(SAMPLE_DAYS))
         if not extra:
@@ -288,6 +413,16 @@ def check_approval(
         return
     if mode != "full":
         return
+    # (f) `--mode full` は `--days` を受け付けない(日は `judgment_days` に固定)。
+    #     **prereg 監査(8 回目)の指摘 6。リードの決定 6。**
+    #     **前版の `main()` は `if a.days:` を先に見ていたので、`--mode full --days <任意>` が
+    #     (a)〜(e) を全部通り、6 つの出力先の 1 つを 456 日以外の日で消費できた。**
+    if days_given:
+        raise SystemExit(
+            "[止め] --mode full に --days は渡せない。"
+            "判定区間の日は judgment_days(456 日)に固定である"
+            "(prereg 監査(8 回目)の指摘 6)"
+        )
     if not approval:
         raise SystemExit(
             "[止め] --mode full には --approval L-NNN が要る"
@@ -338,6 +473,17 @@ def check_approval(
         raise SystemExit(
             f"[止め] --out-dir {out_dir} は既に存在する。"
             "判定区間は一度だけ開ける(事前登録 §3.1。上書き・再走行はここで止まる)"
+        )
+    # (g) 出力先が既に台帳 `OPENED.txt` に載っているなら止める。
+    #     **prereg 監査(8 回目)の指摘 2。リードの決定 2。**
+    #     **(e) は「出力先が在るとき」しか止めないので、消してから走らせ直せば通った。**
+    #     **台帳は出力先の有無を見ない。**
+    if str(target) in opened_out_dirs(ledger):
+        raise SystemExit(
+            f"[止め] --out-dir {out_dir} は既に {ledger} に載っている"
+            "(この出力先で判定区間を一度開けている)。\n"
+            "       出力先を消してからの再走行もここで止まる"
+            "(事前登録 §3.1。prereg 監査(8 回目)の指摘 2)"
         )
 
 
@@ -1263,6 +1409,8 @@ def _finish_anchor(
             "data_root": str(root),
             "design": "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md",
         },
+        # **決定 16(8 回目の指摘 16)**: 走行の道具の版(`git rev-parse HEAD`)。
+        "tool_commit": tool_commit(),
         "elapsed_sec": round(time.time() - t0, 2),
         "liq_rows_raw": dedup_stats.n_in,
         "liq_rows_unique": dedup_stats.n_out,
@@ -2190,6 +2338,10 @@ def build_table_summary(
     kinds = [KIND_LIQ, KIND_UNIFORM, KIND_MATCHED]
     summary = {
         "params": params,
+        # **決定 16(8 回目の指摘 16)**: 走行の道具の版を出力に残す
+        # (`git rev-parse HEAD`。取れなければ「不明」)。**params には入れない**
+        # (読みの側の `params` の検査の鍵の数を変えないため)。
+        "tool_commit": tool_commit(),
         "elapsed_sec": round(elapsed, 2),
         "liq_rows_raw": dedup_stats.n_in,
         "liq_rows_unique": dedup_stats.n_out,
@@ -2240,7 +2392,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--mode", choices=("anchor", "sample", "full"), required=True)
     ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--days", default=None, help="日(カンマ区切り)。sample は既定で標本 6 日")
+    ap.add_argument(
+        "--days", default=None,
+        help="日(カンマ区切り)。sample は既定で標本 6 日。"
+             "--mode full には渡せない(日は judgment_days に固定 = 8 回目の指摘 6)",
+    )
     ap.add_argument("--gap-sec", type=int, default=DEFAULT_GAP_SEC)
     ap.add_argument("--window-hours", type=float, default=8.0)
     ap.add_argument("--bin-pct", type=float, default=0.1)
@@ -2283,18 +2439,24 @@ def main(argv: list[str] | None = None) -> int:
 
     # 日を先に決めてから関門に掛ける(2026-09-18 の監査の指摘 3。
     # 前版は days を渡さずに呼んでいたので `--mode sample --days <判定区間の日>` が素通りした)。
-    if a.days:
+    # **決定 6(8 回目の指摘 6)**: `--mode full` は `--days` を受け付けない。
+    # **日の決め方より先に関門へ渡す**(関門の (f) が止める)。
+    if a.mode == "full":
+        days = judgment_days(root)
+        # 判定区間 = 標本 6 日と 12 日走行の 10 日を除いた 456 日
+        # (指摘 4 / 指摘 2・14 / 返答 060 の #1)。**`--days` では上書きできない。**
+    elif a.days:
         days = [d.strip() for d in a.days.split(",") if d.strip()]
     elif a.mode == "sample":
         days = list(SAMPLE_DAYS)
-    elif a.mode == "full":
-        # 判定区間 = 標本 6 日と 12 日走行の 10 日を除いた 456 日
-        # (指摘 4 / 指摘 2・14 / 返答 060 の #1)。
-        days = judgment_days(root)
     else:
         days = None
 
-    check_approval(a.mode, a.approval, days=days, out_dir=out_dir)
+    check_approval(a.mode, a.approval, days=days, out_dir=out_dir,
+                   data_root=root, days_given=bool(a.days))
+    if a.mode == "full":
+        # **決定 2(8 回目の指摘 2)**: 開けた出力先を台帳に残す(出力を書く前に)。
+        record_opened(out_dir, a.approval)
 
     if a.mode == "anchor":
         s = run_anchor(root, out_dir, gap_ms, days, granularity=a.granularity)

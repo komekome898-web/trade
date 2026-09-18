@@ -1699,9 +1699,11 @@ def test_a_broken_sensitivity_run_does_not_stop_the_judgment_tables(tmp_path):
 
 
 def test_stopped_txt_records_which_check_broke(tmp_path):
-    """**決定 2'''''**: 判定の側が破れたら `stopped.txt` に破れた検査・走行・理由を書く。
+    """**決定 2'''''**: 判定の側が破れたら `stopped.txt` に破れた検査と走行を書く。
 
     **表は 1 枚も書かない。**§10.3 の「なぜ」を書くときの材料をここに残す。
+    **決定 12(8 回目の指摘 12)で、書くのは「検査の名前・走行の名前・件数」だけになった**
+    (**理由の文言も、鍵の名前も、値も書かない**。理由の全文は標準出力に出る)。
     """
     out = tmp_path / "out"
     code, out = run_judge(tmp_path, days=10, per_day=6, out=out,
@@ -1709,28 +1711,169 @@ def test_stopped_txt_records_which_check_broke(tmp_path):
     assert code == 1
     assert not (out / "judgment_576.csv").exists()
     text = (out / judge.STOPPED_NAME).read_text(encoding="utf-8")
-    assert "params の検査" in text and "mmr" in text
-    assert "gap60_w8" in text
+    assert "params の検査" in text            # 検査の名前
+    assert "gap60_w8" in text                 # 走行の名前
     assert "再走行は新しい開封" in text
+    # **決定 12**: 理由の文言(鍵の名前・値)は 1 つも書かない
+    assert "mmr" not in text and "0.004" not in text
     # 判定語は 1 つも書かない
     for w in judge.FORBIDDEN:
         assert w not in text, w
 
 
+def test_stopped_txt_writes_no_values_only_names_and_counts(tmp_path):
+    """**決定 12(8 回目の指摘 12)**: `stopped.txt` に値を 1 つも書かない。
+
+    **`check_pairing` の理由文は `bin_pct` の差の最大値(§4 の分割軸 B の値)と
+    `cascade_id` の例を含みうる。**§14.4.1 の汚染の線
+    (「§4.3 の観測量も §4 の分割軸の値も含まれない」)に揃える。
+    """
+    # 1 対 1 が崩れた走行を作る(同じ相手を 2 つの対照が指す = `cascade_id` の例が出る)。
+    r8 = make_run(tmp_path / "run_w8", days=10, per_day=6, reach=reach_four_branches)
+    rows = list(csv.DictReader((r8 / "table.csv").open(encoding="utf-8", newline="")))
+    ids = [r["matched_liq_id"] for r in rows if r["kind"] == "control_matched"]
+    first = ids[0]
+    for r in rows:
+        if r["kind"] == "control_matched":
+            r["matched_liq_id"] = first          # 全部を同じ相手に向ける
+            r["bin_pct"] = "99"                  # 差が ±5.0 を超える
+    with (r8 / "table.csv").open("w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    r24 = make_run(tmp_path / "run_w24", days=10, per_day=6,
+                   reach=reach_four_branches, window_hours=24)
+    s8 = as_sample(r8, tmp_path / "s8")
+    s24 = as_sample(r24, tmp_path / "s24", window_hours=24)
+    root = open_gate(tmp_path / "root")
+    out = tmp_path / "out"
+    code = judge.main([
+        "--run-w8", str(r8), "--run-w24", str(r24),
+        "--sample-w8", str(s8), "--sample-w24", str(s24),
+        "--out-dir", str(out), "--root", str(root)]
+        + sens_required_args(tmp_path))
+    assert code == 1
+    text = (out / judge.STOPPED_NAME).read_text(encoding="utf-8")
+    assert "サニティ #14" in text and "gap60_w8" in text
+    # 値は 1 つも出ない: `bin_pct` の差の最大も、`cascade_id` の例も
+    assert "bin_pct" not in text
+    assert first not in text and "binance_cm_real" not in text
+    assert "最大" not in text
+    # 件数(「N 件」)だけは写る
+    assert "件" in text
+    assert not (out / "judgment_576.csv").exists()
+
+
+def test_the_audit_gate_comes_before_stopped_txt(tmp_path):
+    """**決定 11(8 回目の指摘 11)**: 台帳が閉じていれば `stopped.txt` も書かない。
+
+    **前版は `write_stopped` が `pass_audit_gate` より前にあったので、判定側が破れた回は
+    台帳が閉じていても 1 ファイル書かれた。**「1 ファイルも書かない」に揃える。
+    """
+    root = tmp_path / "root"                 # 台帳そのものが無い = 関門は閉じている
+    root.mkdir()
+    write_prereg(root)
+    out = tmp_path / "out"
+    with pytest.raises(SystemExit) as e:
+        run_judge(tmp_path, days=10, per_day=6, root=root, out=out,
+                  run_params={"mmr": None})   # 判定側も破れている
+    assert e.value.code == 1
+    assert not out.exists(), "関門が閉じているのに stopped.txt が書かれている"
+    # 実装でも関門が `write_stopped` より前にある
+    text = (ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
+    assert (text.index("pass_audit_gate(Path(a.root).resolve())")
+            < text.index("write_stopped(Path(a.out_dir)"))
+
+
 def test_the_sensitivity_runs_also_match_the_approval_number(tmp_path):
     """**決定 11'''''(7 回目の指摘 11)**: 感度 4 本も同じ 456 日を開けるので、
-    `params.approval` を事前登録 §14.4 の欄と突き合わせる。"""
+    `params.approval` を事前登録 §14.4 の欄と突き合わせる。
+
+    **決定 14(8 回目の指摘 14)**: **その食い違いは判定側の破れと同じ扱いになった。**
+    **表を 1 枚も書かず `stopped.txt` を書いて終わる**(リードの決定の逐語:
+    「**承認外の番号で 456 日を開けた走行が 1 本でもあれば、1 周目はそこで止めて
+    オーナーに報告する**」)。
+    """
     other = make_run(tmp_path / "sens_other", days=10, per_day=6,
                      reach=reach_four_branches, gap_sec=30,
                      params_override={"approval": "L-999"})
-    code, out = run_judge(tmp_path, days=10, per_day=6,
+    out = tmp_path / "out"
+    code, out = run_judge(tmp_path, days=10, per_day=6, out=out,
                           extra=["--sens", f"gap30_w8={other}"])
+    assert code == 1
+    assert not (out / "judgment_576.csv").exists()
+    assert not list(out.glob("observation_only*.csv"))
+    text = (out / judge.STOPPED_NAME).read_text(encoding="utf-8")
+    assert "承認の番号(決定 14)" in text and "gap30_w8" in text
+    # **決定 12**: 番号そのもの(値)は書かない
+    assert "L-999" not in text and "L-200" not in text
+
+
+def test_a_sensitivity_run_with_the_right_approval_still_passes(tmp_path):
+    """**決定 14 の通る側**: 承認の番号が合っていれば、感度の他の食い違いは
+    従来どおり「その走行の表だけ書かない」で済む(判定の 576 行は書く)。"""
+    ok = make_run(tmp_path / "sens_ok", days=10, per_day=6,
+                  reach=reach_four_branches, gap_sec=30,
+                  params_override={"seed": 2})      # 承認は合っている / 種が違う
+    code, out = run_judge(tmp_path, days=10, per_day=6,
+                          extra=["--sens", f"gap30_w8={ok}"])
+    assert code == 0
+    assert len(read_rows(out)) == 576
+    s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    assert s["承認の L 番号(決定 2'''')"]["突き合わせ先"] == \
+        "判定 2 本 + 感度 4 本の params.approval"
+    assert "感度 4 本" in s["走行の params の検査"]
+
+
+def test_the_frozen_tool_commit_is_recorded_and_matched(tmp_path):
+    """**決定 16(8 回目の指摘 16)**: 読みの道具の版を `summary.json` に残し、
+    事前登録 §14.4 の「凍結した道具のコミット」欄が埋まっていれば突き合わせる。
+
+    **欄が「(まだ無い)」なら記録だけして進む。****違えば「[止め]」で 1 ファイルも書かない。**
+    """
+    mine = judge.tool_commit()
+    assert mine == "不明" or len(mine) == 40
+    # (1) 欄が無い(試験用の写しには書いていない)-> 記録だけして通る
+    code, out = run_judge(tmp_path, days=10, per_day=6)
     assert code == 0
     s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
-    dropped = s["感度の走行の検査(決定 2''''')"]["表を書かなかった感度"]["gap30_w8"]
-    assert any("approval" in d["理由"] for d in dropped), dropped
-    assert "感度 4 本には params.approval" in s["走行の params の検査"] or \
-        "感度 4 本には" in s["走行の params の検査"]
+    assert s["tool_commit"] == mine
+    blk = s["凍結した道具のコミット(決定 16)"]
+    assert blk["この道具の版(git rev-parse HEAD)"] == mine
+    assert blk["事前登録 §14.4 の欄"] is None
+    # (2) 欄が自分の版と一致 -> 通る
+    if mine != "不明":
+        root2 = open_gate(tmp_path / "root2")
+        p = root2 / judge.PREREG_REL
+        p.write_text(p.read_text(encoding="utf-8")
+                     + f"\n   **凍結した道具のコミット**: **{mine}**\n", encoding="utf-8")
+        code, out2 = run_judge(tmp_path, days=10, per_day=6, root=root2,
+                               out=tmp_path / "out2")
+        assert code == 0
+        s2 = json.loads((out2 / "summary.json").read_text(encoding="utf-8"))
+        assert s2["凍結した道具のコミット(決定 16)"]["事前登録 §14.4 の欄"] == mine
+        # 短縮形(先頭 7 桁)でも通る
+        root4 = open_gate(tmp_path / "root4")
+        p4 = root4 / judge.PREREG_REL
+        p4.write_text(p4.read_text(encoding="utf-8")
+                      + f"\n   **凍結した道具のコミット**: **{mine[:7]}**\n",
+                      encoding="utf-8")
+        code, _ = run_judge(tmp_path, days=10, per_day=6, root=root4,
+                            out=tmp_path / "out4")
+        assert code == 0
+    # (3) 欄が別のコミット -> 「[止め]」で 1 ファイルも書かない
+    root3 = open_gate(tmp_path / "root3")
+    p3 = root3 / judge.PREREG_REL
+    p3.write_text(p3.read_text(encoding="utf-8")
+                  + "\n   **凍結した道具のコミット**: **" + "0" * 40 + "**\n",
+                  encoding="utf-8")
+    out3 = tmp_path / "out3"
+    code, _ = run_judge(tmp_path, days=10, per_day=6, root=root3, out=out3)
+    assert code == 1
+    assert not out3.exists()
+    # 迂回する旗は作っていない
+    text = (ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
+    assert "--tool-commit" not in text and "--skip-commit" not in text
 
 
 def test_the_observation_only_table_does_not_carry_the_family_alpha_in_its_mde_column(tmp_path):

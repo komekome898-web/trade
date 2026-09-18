@@ -140,6 +140,7 @@ import hashlib
 import json
 import math
 import re
+import subprocess
 import sys
 from pathlib import Path
 from statistics import NormalDist
@@ -195,6 +196,13 @@ PREREG_REL = "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md"
 APPROVAL_FIELD_RE = re.compile(
     r"^[ \t>]*\*\*応答の L 番号\*\*\s*[:：]\s*\*\*(.+?)\*\*\s*$", re.MULTILINE)
 APPROVAL_VALUE_RE = re.compile(r"^L-\d+$")
+# **決定 16(prereg 監査(8 回目)の指摘 16)**: 事前登録 §14.4 の
+# 「凍結した道具のコミット」の欄。**欄が埋まっていれば、この道具自身の
+# `git rev-parse HEAD` と突き合わせ、違えば「[止め]」。**
+# **欄が「(まだ無い)」なら記録だけする**(開封の直前に書き写す欄である)。
+COMMIT_FIELD_RE = re.compile(
+    r"^[ \t>]*\*\*凍結した道具のコミット\*\*\s*[:：]\s*\*\*(.+?)\*\*\s*$", re.MULTILINE)
+COMMIT_VALUE_RE = re.compile(r"^[0-9a-f]{7,40}$")
 # §10.1 の判定語 + 走行前の再監査(2 回目)の決定 2 で禁じた語。**出力に 1 つも書かない。**
 FORBIDDEN = ("予測できる", "使える", "有効", "差なし", "陰性")
 
@@ -620,6 +628,59 @@ def read_approval_from_prereg(prereg: Path) -> tuple[str | None, str]:
     return value, f"事前登録 §14.4 の「応答の L 番号」の欄({prereg})"
 
 
+def tool_commit(repo: Path | None = None) -> str:
+    """`git rev-parse HEAD`。取れなければ「不明」(prereg 監査(8 回目)の指摘 16)。
+
+    **読みの道具の版を `summary.json` に残すためだけの関数である。**
+    **判定にも計算にも 1 つも使わない。**
+    """
+    root = Path(repo) if repo is not None else Path(__file__).resolve().parent.parent
+    try:
+        r = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                           capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return "不明"
+    got = (r.stdout or "").strip()
+    if r.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", got):
+        return "不明"
+    return got
+
+
+def read_frozen_commit_from_prereg(prereg: Path) -> tuple[str | None, str]:
+    """**決定 16**: 事前登録 §14.4 の「凍結した道具のコミット」の欄を読む。
+
+    返り値 `(コミット, 説明)`。**欄が無い / 「(まだ無い)」/ 16 進でないなら `None`** を返し、
+    呼び出し側は**記録だけ**して先へ進む(開封の直前に書き写す欄だからである)。
+    **埋まっているのに自分の版と違うときだけ「[止め]」にする**(呼び出し側)。
+    """
+    if not prereg.exists():
+        return None, f"事前登録が読めない({prereg})"
+    text = prereg.read_text(encoding="utf-8", errors="replace")
+    fields = [m.strip() for m in COMMIT_FIELD_RE.findall(text)]
+    if not fields:
+        return None, f"事前登録に「凍結した道具のコミット」の欄が 1 つも無い({prereg})"
+    if len(set(fields)) > 1:
+        return None, ("事前登録の「凍結した道具のコミット」の欄が "
+                      f"{len(set(fields))} 通りある: {sorted(set(fields))}")
+    value = fields[0]
+    if not COMMIT_VALUE_RE.match(value):
+        return None, ("事前登録 §14.4 の「凍結した道具のコミット」の欄が埋まっていない"
+                      f"(欄の値: {value!r})")
+    return value, f"事前登録 §14.4 の「凍結した道具のコミット」の欄({prereg})"
+
+
+def commit_matches(field: str, got: str) -> bool:
+    """欄の値と自分の版が同じコミットを指すか(**短縮形も許す**)。
+
+    欄は手書きなので短縮形(7 桁以上)がありうる。**どちらかが他方の前置なら同じとみなす。**
+    `got` が「不明」なら一致しない(= 呼び出し側が「[止め]」にする)。
+    """
+    if not field or not got or got == "不明":
+        return False
+    a, b = field.lower(), got.lower()
+    return a.startswith(b) or b.startswith(a)
+
+
 def check_run_params(run: Run, *, mode: str, gap_sec: int | None = None,
                      window_hours: float | None = None,
                      n_days: int | None = None, label: str = "",
@@ -685,6 +746,30 @@ def check_run_params(run: Run, *, mode: str, gap_sec: int | None = None,
                 f"{who}: params.approval が {got!r}(要る値は {approval!r}"
                 f" = 事前登録 §14.4 の「応答の L 番号」)")
     return bad
+
+
+def check_run_approval(run: Run, approval: str, label: str = "") -> list[str]:
+    """**決定 14(prereg 監査(8 回目)の指摘 14)**: 感度 4 本の `params.approval` の
+    食い違いを**判定側の破れと同じ扱い**にするための、承認の番号だけを見る検査。
+
+    **理由(リードの決定の逐語)**: 「**承認外の番号で 456 日を開けた走行が 1 本でもあれば、
+    1 周目はそこで止めてオーナーに報告する**」。
+    **前版は感度の approval の食い違いを「その走行の表だけ落とす」で済ませていたので、
+    オーナーの応答と違う番号で 456 日を 1 本開けたことが `summary.json` の中にしか
+    残らなかった**(8 回目の指摘 14)。
+
+    **`params` が読めない場合は何も返さない**(「読めない感度」は決定 2''''' の側で
+    扱う = 判定の表は書く)。**ここで見るのは `approval` の食い違いだけである。**
+    """
+    p = run.params
+    if not p:
+        return []
+    who = label or run.name
+    got = p.get("approval")
+    if got != approval:
+        return [f"{who}: params.approval が {got!r}(要る値は {approval!r}"
+                f" = 事前登録 §14.4 の「応答の L 番号」)"]
+    return []
 
 
 def tertile_cuts(vals: np.ndarray) -> tuple[float, float]:
@@ -1323,25 +1408,49 @@ def write_md5(out: Path, names: list[str]) -> None:
 STOPPED_NAME = "stopped.txt"
 
 
+# **決定 12(prereg 監査(8 回目)の指摘 12)**: `stopped.txt` に書いてよいのは
+# **検査の名前・走行の名前・件数だけ**である。**値は 1 つも書かない。**
+# **前版は検査の理由文をそのまま貼っていたので、`bin_pct` の差の最大値(§4 の分割軸 B の値)や
+# `cascade_id` の例が出力に入りえた。**§14.4.1 の汚染の線は
+# 「§4.3 の観測量も §4 の分割軸の値も含まれない」なので、そちらに揃える。
+# **行は理由文から組み立てず、名前と件数だけを拾って新しく作る**
+# (**濾すのではなく作る**ので、拾わなかったものは 1 つも出ない)。
+_COUNT_RE = re.compile(r"(\d+)\s*件")
+
+
+def stopped_line(check: str, msg: str, prefix: str = "") -> str:
+    """破れた 1 件を「検査の名前 / 走行の名前 / 件数」だけの 1 行にする(決定 12)。
+
+    走行の名前は理由文の最初の「:」より前(検査の関数が `f"{who}: …"` で書く)。
+    件数は「N 件」の形で書かれているものだけを写す(**無ければ書かない**)。
+    **理由文そのものは 1 文字も出さない。**
+    """
+    who = msg.split(":", 1)[0].strip() if ":" in msg else "(走行名なし)"
+    m = _COUNT_RE.search(msg)
+    cnt = f" / {m.group(1)} 件" if m else ""
+    return f"  - {prefix}[{check}] {who}{cnt}"
+
+
 def write_stopped(out: Path, judge_bad: list[tuple[str, str]],
                   sens_bad: dict[str, list[tuple[str, str]]]) -> Path:
     """**決定 2'''''(7 回目の指摘 2)**: 判定の側の検査が破れたときの記録を書く。
 
-    中身は「破れた検査・走行・理由」だけである(**観測量は 1 つも書かない**)。
+    中身は「**破れた検査の名前・走行の名前・件数**」だけである
+    (**決定 12(8 回目の指摘 12)。観測量も分割軸の値も 1 つも書かない**)。
     **表は 1 枚も書かない。**§10.3 の「なぜ」を書くときの材料はこのファイルと
-    `summary.json` の感度の記録である。
+    標準出力(理由の全文はそちらに出る)と `summary.json` の感度の記録である。
     **判定語の走査を通してから書く**(通らなければ検査の名前だけにする)。
     """
     lines = ["段 A の読み: 判定の表を 1 枚も書かずに止まった(決定 2''''')。", ""]
-    lines.append("破れた検査(判定に使う走行とその標本):")
+    lines.append("破れた検査(判定に使う走行とその標本。**検査の名前・走行の名前・件数だけ**):")
     for check, msg in judge_bad:
-        lines.append(f"  - [{check}] {msg}")
+        lines.append(stopped_line(check, msg))
     if sens_bad:
         lines.append("")
         lines.append("同じ回に感度の走行でも破れた検査(参考):")
         for nm, items in sens_bad.items():
             for check, msg in items:
-                lines.append(f"  - [{nm}] [{check}] {msg}")
+                lines.append(stopped_line(check, msg, prefix=f"[{nm}] "))
     lines += [
         "",
         "事前登録 §14.6 の決まり: --mode full の再走行はしない。",
@@ -1549,6 +1658,25 @@ def main(argv=None) -> int:
             "       オーナーの応答(L 番号)を §14.4 の欄に書き写してから走らせる。\n")
         return 1
 
+    # --- 決定 16(8 回目の指摘 16): 凍結した道具のコミットと自分の版を突き合わせる ---
+    # **欄が「(まだ無い)」なら記録だけして進む**(開封の直前に書き写す欄である)。
+    # **埋まっていて自分の版と違えば「[止め]」で 1 ファイルも書かない。**
+    my_commit = tool_commit()
+    frozen_commit, frozen_note = read_frozen_commit_from_prereg(prereg)
+    if frozen_commit is not None and not commit_matches(frozen_commit, my_commit):
+        sys.stderr.write(
+            "[止め] 事前登録 §14.4 の「凍結した道具のコミット」と、この道具の版が違う。"
+            "表を 1 枚も書かずに終わる。\n"
+            f"       事前登録の欄: {frozen_commit} / この道具: {my_commit}\n"
+            f"       {frozen_note}\n")
+        return 1
+
+    # --- 決定 11(8 回目の指摘 11): 関門を `stopped.txt` より前に通す ------------
+    # **前版は `write_stopped` が `pass_audit_gate` より前にあったので、
+    # 判定側が破れた回は台帳が閉じていても `stopped.txt` が 1 ファイル書かれた。**
+    # **「閉じていれば 1 ファイルも書かない」に揃える。**
+    pass_audit_gate(Path(a.root).resolve())
+
     # === 3 つの検査(params / サニティ #14 / 軸の作り方)==========================
     # **決定 2'''''(走行前の再監査(7 回目)の指摘 2)**:
     # **前版はこの 3 つのどれか 1 つでも破れると「表を 1 枚も書かずに終わる」形だったので、
@@ -1594,10 +1722,14 @@ def main(argv=None) -> int:
             continue
         # **決定 11'''''(7 回目の指摘 11)**: **感度 4 本も同じ 456 日を開ける**ので、
         # **`params.approval` も判定 2 本と同じ L 番号と突き合わせる。**
+        # **決定 14(8 回目の指摘 14)**: **`approval` の食い違いだけは判定側の破れと
+        # 同じ扱いにする**(承認外の番号で 456 日を開けた走行が 1 本でもあれば、
+        # 1 周目はそこで止めてオーナーに報告する)。**よってここでは `approval=None` で呼び、
+        # 承認の番号は下の `CHK_APPROVAL` で `judge_bad` に入れる。**
         _sens_add(nm, CHK_PARAMS,
                   check_run_params(r, mode="full", gap_sec=want[0],
                                    window_hours=want[1], n_days=JUDGMENT_N_DAYS,
-                                   label=nm, settings=True, approval=approval))
+                                   label=nm, settings=True))
     for nm, r in sens_samples.items():
         want = _sens_name_params(nm)
         if want is None:
@@ -1609,6 +1741,15 @@ def main(argv=None) -> int:
                   check_run_params(r, mode="sample", n_days=SAMPLE_N_DAYS,
                                    gap_sec=want[0], window_hours=want[1],
                                    label=f"{nm}(標本)"))
+
+    # --- 決定 14(8 回目の指摘 14): 承認の番号は感度でも判定側の破れとして扱う ----
+    # **リードの決定の逐語**: 「**感度 4 本の `params.approval` の食い違いは判定側の
+    # 破れと同じ扱い(表を 1 枚も書かず `stopped.txt`)。理由: 承認外の番号で 456 日を
+    # 開けた走行が 1 本でもあれば、1 周目はそこで止めてオーナーに報告する**」。
+    CHK_APPROVAL = "承認の番号(決定 14)"
+    for nm, r in sens.items():
+        judge_bad += [(CHK_APPROVAL, b)
+                      for b in check_run_approval(r, approval, label=nm)]
 
     # --- サニティ #14(決定 6' + 12'' + 2'''): 1 対 1 の対応を走行ごとに測る ----
     # **決定 2'''(5 回目の指摘 2)**: **標本の走行にも掛ける。**
@@ -1742,6 +1883,8 @@ def main(argv=None) -> int:
     summary = {
         "単位": UNIT,
         "事前登録": "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md(確定版・凍結)",
+        # **決定 16(8 回目の指摘 16)**: 読みの道具の版(`git rev-parse HEAD`)。
+        "tool_commit": my_commit,
         "seed": SEED,
         "reps": REPS,
         "seed と reps の出所": ("定数(引数では変えられず、実行時にも 2000 / 1 と"
@@ -1817,7 +1960,11 @@ def main(argv=None) -> int:
             "突き合わせる(決定 2'''' + 11'''''。感度 4 本も同じ 456 日を開けるため)。"
             "判定の側が食い違えば「[止め]」で終了コード 1(決定 12'''。迂回する旗は無い)。"
             "感度の側が食い違えば、その走行の表だけ書かずに判定の表は書く"
-            "(決定 2'''''。下の「感度の走行の検査」)。"),
+            "(決定 2'''''。下の「感度の走行の検査」)。"
+            "ただし感度 4 本の params.approval の食い違いだけは判定側の破れと同じ扱いで、"
+            "表を 1 枚も書かずに " + STOPPED_NAME + " を書いて終わる"
+            "(決定 14。8 回目の指摘 14。承認外の番号で 456 日を開けた走行が 1 本でもあれば"
+            "1 周目はそこで止める)。"),
         # **決定 2'''''(7 回目の指摘 2)**: 感度の側で破れた検査の記録。
         "感度の走行の検査(決定 2''''')": {
             "渡すべき感度": list(SENS_REQUIRED),
@@ -1839,9 +1986,23 @@ def main(argv=None) -> int:
         "承認の L 番号(決定 2'''')": {
             "値": approval,
             "出所": approval_note,
-            "突き合わせ先": "判定 2 本の summary.json の params.approval",
+            # **決定 10(8 回目の指摘 10)**: 7 回目の処置で感度 4 本にも同じ
+            # 突き合わせを当てた(決定 11''''')。**summary の欄も 6 本に直す。**
+            "突き合わせ先": "判定 2 本 + 感度 4 本の params.approval",
             "注": "L-199 は「1 = a、9 = a」への応答であって、§13 の 8 件と"
-                  "§14.4 の待つものへの応答ではない。走行のたびに事前登録の欄から読む。",
+                  "§14.4 の待つものへの応答ではない。走行のたびに事前登録の欄から読む。"
+                  "感度 4 本の食い違いは判定側の破れと同じ扱いで、表を 1 枚も書かずに "
+                  + STOPPED_NAME + " を書いて終わる(決定 14。8 回目の指摘 14)。",
+        },
+        # **決定 16(8 回目の指摘 16)**: 読みの道具の版と、事前登録 §14.4 の
+        # 「凍結した道具のコミット」の欄との突き合わせ。
+        "凍結した道具のコミット(決定 16)": {
+            "この道具の版(git rev-parse HEAD)": my_commit,
+            "事前登録 §14.4 の欄": frozen_commit,
+            "欄の出所": frozen_note,
+            "突き合わせ": ("欄が埋まっていれば突き合わせ、違えば「[止め]」で 1 ファイルも"
+                           "書かない。欄が「(まだ無い)」なら記録だけする"
+                           "(開封の直前に書き写す欄である)。"),
         },
         "反復回数と種の実行時の突き合わせ(決定 4'''')": {
             "REPS": REPS, "凍結したリテラル": REPS_FROZEN_LITERAL,
@@ -1987,7 +2148,10 @@ def main(argv=None) -> int:
             + " / ".join(hits) + "\n")
         return 1
 
-    # --- 表を書く前に関門を通す(閉じていれば 1 枚も書かない)-------------------
+    # --- 表を書く前に関門をもう一度通す(閉じていれば 1 枚も書かない)-----------
+    # **決定 11(8 回目の指摘 11)で、同じ関門を検査より前にも置いた**
+    # (`stopped.txt` も書かせないため)。**ここは残す**: 検査から表を書くまでの間に
+    # 台帳が閉じられた回も止めるためである(**2 回通す。外す旗は無い**)。
     pass_audit_gate(Path(a.root).resolve())
 
     out.mkdir(parents=True, exist_ok=True)

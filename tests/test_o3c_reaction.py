@@ -516,11 +516,20 @@ def test_full_mode_requires_an_existing_owner_log_line(tmp_path):
         react.check_approval("full", "not-a-number", log, **kw)
 
 
-def test_sample_and_anchor_modes_do_not_need_approval():
-    """標本 6 日だけの `--mode sample` と `--mode anchor` は無審査で通る。"""
-    react.check_approval("sample", None)
-    react.check_approval("sample", None, days=list(react.SAMPLE_DAYS))
-    react.check_approval("anchor", None)
+def test_sample_and_anchor_modes_do_not_need_approval(tmp_path):
+    """標本 6 日だけの `--mode sample` と `--mode anchor` は無審査で通る。
+
+    **prereg 監査(8 回目)の指摘 1 で、判定区間の日を含む非 full の経路は
+    `--approval` があっても止まる形になった**(下の試験)。
+    **この試験は「判定区間の日を 1 日も含まない」側だけを見る**ので、
+    在庫の無い一時ディレクトリを `data_root` に渡す(= 判定区間の日は 0 日)。
+    """
+    react.check_approval("sample", None, data_root=tmp_path)
+    react.check_approval("sample", None, days=list(react.SAMPLE_DAYS),
+                         data_root=tmp_path)
+    react.check_approval("anchor", None, data_root=tmp_path)
+    # 実在の在庫でも、日を標本 6 日に切れば通る(`--mode anchor` の手順 1 の形)。
+    react.check_approval("anchor", None, days=list(react.SAMPLE_DAYS))
 
 
 # --------------------------------------------------------------------------- #
@@ -973,7 +982,8 @@ def test_full_mode_gate_has_no_bypass_flag_and_is_wired_into_main():
     text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
     for flag in ("--force", "--skip-approval", "--allow-reopen", "--no-gate"):
         assert flag not in text, flag
-    assert "check_approval(a.mode, a.approval, days=days, out_dir=out_dir)" in text
+    assert ("check_approval(a.mode, a.approval, days=days, out_dir=out_dir,\n"
+            "                   data_root=root, days_given=bool(a.days))") in text
     # 許す出力先は事前登録 §14.1・§14.2 の 6 つである
     assert len(react.FULL_OUT_DIRS_REL) == 6
     assert all(p.startswith("backtest_data/o3c_reaction_20260918_full/")
@@ -1015,3 +1025,155 @@ def test_run_table_records_the_real_approval_number(tmp_path):
     assert s["params"]["approval"] == "L-999"
     written = json.loads((out / "summary.json").read_text(encoding="utf-8"))
     assert written["params"]["approval"] == "L-999"
+
+
+# --------------------------------------------------------------------------- #
+# prereg 監査(8 回目)の指摘 1・2・6・16。リードの決定 1・2・6・16。
+# **通る側と止まる側の両方を測る。迂回する旗は作っていない。**
+# --------------------------------------------------------------------------- #
+
+
+def _inventory(tmp_path, days):
+    """在庫の形だけを作る(`all_days` が読む zip の名前だけ。中身は空)。"""
+    d = tmp_path / "inv" / "liquidationSnapshot" / base.SYMBOL
+    d.mkdir(parents=True, exist_ok=True)
+    for day in days:
+        (d / f"{base.SYMBOL}-liquidationSnapshot-{day}.zip").write_bytes(b"")
+    return tmp_path / "inv"
+
+
+def test_judgment_day_set_is_the_inventory_minus_the_opened_days(tmp_path):
+    """**決定 1**: 判定区間の日の集合 = 在庫 − 標本 6 日 − 12 日走行の 10 日。"""
+    days = (["2023-06-24", "2024-10-15"] + list(react.SAMPLE_DAYS)
+            + list(react.SCALE12_JUDGMENT_DAYS_OPENED))
+    root = _inventory(tmp_path, days)
+    assert react.judgment_day_set(root) == frozenset({"2023-06-24", "2024-10-15"})
+    # 在庫が無ければ空集合(この関門は何も止めない = 射程として関数の注に書いた)
+    assert react.judgment_day_set(tmp_path / "無い") == frozenset()
+
+
+def test_the_judgment_days_cannot_be_opened_outside_full_mode(tmp_path):
+    """**決定 1(8 回目の指摘 1)**: `--mode sample --days` と `--mode anchor` は、
+    判定区間の日を 1 日でも含めば **`--approval` があっても**止まる。
+
+    **前版は (c)「台帳に行頭 `| L-NNN |` がある」だけで通っていた**(指摘 1)。
+    """
+    root = _inventory(tmp_path, ["2023-06-24", "2024-10-15", *react.SAMPLE_DAYS,
+                                 *react.SCALE12_JUDGMENT_DAYS_OPENED])
+    log = _owner_log(tmp_path, "L-200")
+    # 通る側: 標本 6 日だけの sample / 標本 6 日に切った anchor
+    react.check_approval("sample", None, log, days=list(react.SAMPLE_DAYS),
+                         data_root=root)
+    react.check_approval("anchor", None, log, days=list(react.SAMPLE_DAYS),
+                         data_root=root)
+    # 通る側: 12 日走行で既に開いた 10 日は判定区間ではない(承認は要る = 従来どおり)
+    react.check_approval("sample", "L-200", log, days=["2024-02-15"], data_root=root)
+    # 止まる側 1: sample に判定区間の日が 1 日混ざる(承認があっても止まる)
+    with pytest.raises(SystemExit) as e:
+        react.check_approval("sample", "L-200", log,
+                             days=list(react.SAMPLE_DAYS) + ["2023-06-24"],
+                             data_root=root)
+    assert "判定区間の日を開けない" in str(e.value)
+    # 止まる側 2: anchor に判定区間の日が混ざる
+    with pytest.raises(SystemExit):
+        react.check_approval("anchor", "L-200", log, days=["2024-10-15"],
+                             data_root=root)
+    # 止まる側 3: anchor で `--days` を渡さない = 在庫の全日を読む
+    with pytest.raises(SystemExit) as e:
+        react.check_approval("anchor", "L-200", log, days=None, data_root=root)
+    assert "判定区間の日を開けない" in str(e.value)
+
+
+def test_full_mode_does_not_take_a_days_flag(tmp_path):
+    """**決定 6(8 回目の指摘 6)**: `--mode full` に `--days` は渡せない。
+
+    **前版の `main()` は `if a.days:` を先に見ていたので、`--mode full --days <任意>` が
+    (a)〜(e) を全部通り、6 つの出力先の 1 つを 456 日以外の日で消費できた。**
+    """
+    out = tmp_path / "gap60_w8"
+    kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
+              prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
+              ledger=tmp_path / "OPENED.txt")
+    react.check_approval("full", "L-200", **kw)            # 通る(days_given 既定 False)
+    with pytest.raises(SystemExit) as e:
+        react.check_approval("full", "L-200", days_given=True, **kw)
+    assert "--days は渡せない" in str(e.value)
+    # `main()` は --mode full では --days を見ずに judgment_days に固定している
+    text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
+    assert "days_given=bool(a.days)" in text
+    assert 'if a.mode == "full":\n        days = judgment_days(root)' in text
+
+
+def test_the_opened_ledger_stops_a_rerun_after_deleting_the_output(tmp_path):
+    """**決定 2(8 回目の指摘 2)**: 出力先を消してからの再走行も止まる。
+
+    (e) は「出力先が既に在るとき」しか止めない。**台帳 `OPENED.txt` は出力先の有無を
+    見ないので、消してから走らせ直しても (g) で止まる。**
+    """
+    out = tmp_path / "gap60_w8"
+    ledger = tmp_path / "OPENED.txt"
+    kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
+              prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
+              ledger=ledger)
+    react.check_approval("full", "L-200", **kw)             # 1 本目は通る
+    react.record_opened(out, "L-200", ledger)               # 走行の側が追記する
+    assert ledger.exists() and str(out.resolve()) in ledger.read_text(encoding="utf-8")
+    # 出力先を作らずに(= 消した状態で)もう一度呼ぶ -> 台帳で止まる
+    assert not out.exists()
+    with pytest.raises(SystemExit) as e:
+        react.check_approval("full", "L-200", **kw)
+    assert "OPENED.txt" in str(e.value) and "[止め]" in str(e.value)
+    # 台帳に載っていない別の出力先は止まらない
+    other = tmp_path / "gap60_w24"
+    react.check_approval("full", "L-200", owner_log=_owner_log(tmp_path, "L-200"),
+                         out_dir=other, prereg=_prereg(tmp_path, "L-200"),
+                         allowed_out_dirs=(other,), ledger=ledger)
+
+
+def test_the_opened_ledger_records_out_dir_time_and_approval(tmp_path):
+    """**決定 2**: 台帳の 1 行は「出力先・UTC 時刻・approval」である。"""
+    ledger = tmp_path / "OPENED.txt"
+    react.record_opened(tmp_path / "gap30_w8", "L-200", ledger)
+    react.record_opened(tmp_path / "gap180_w8", "L-200", ledger)
+    body = ledger.read_text(encoding="utf-8")
+    rows = [r for r in body.splitlines() if r and not r.startswith("#")]
+    assert len(rows) == 2
+    for r in rows:
+        m = react.OPENED_LINE_RE.match(r)
+        assert m is not None, r
+        assert m.group("approval") == "L-200"
+        assert m.group("utc").endswith("Z")
+    assert react.opened_out_dirs(ledger) == {
+        str((tmp_path / "gap30_w8").resolve()),
+        str((tmp_path / "gap180_w8").resolve()),
+    }
+    # `main()` は関門を通った直後に(出力を書く前に)追記する
+    text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
+    assert "record_opened(out_dir, a.approval)" in text
+    assert text.index("record_opened(out_dir, a.approval)") < text.index("s = run_table(")
+
+
+def test_the_opened_ledger_is_tracked_by_git():
+    """**決定 2**: 台帳は git で追跡する(`.gitignore` の除外が掛かっていない)。"""
+    import subprocess
+    rel = "backtest_data/o3c_reaction_20260918_full/OPENED.txt"
+    r = subprocess.run(["git", "-C", str(REPO), "check-ignore", "-q", rel],
+                       capture_output=True)
+    assert r.returncode == 1, f"{rel} が .gitignore で除外されている"
+    assert react.FULL_OPENED_LEDGER == REPO / rel
+
+
+def test_the_run_records_its_own_commit(tmp_path):
+    """**決定 16(8 回目の指摘 16)**: 走行の出力に `tool_commit` を残す。"""
+    got = react.tool_commit()
+    assert got == "不明" or len(got) == 40
+    # git の無い場所を指せば「不明」になる(断定しないための逃げ道を機械で持つ)
+    assert react.tool_commit(tmp_path) in ("不明", got)
+    s = react.run_table(
+        "sample", [react.SAMPLE_DAYS[0]], base.DEFAULT_DATA_ROOT,
+        oid.DEFAULT_METRICS_ROOT, tmp_path / "out", 8.0, 0.1, 60_000, 1, 0.004,
+        "table", approval=None,
+    )
+    assert s["tool_commit"] == got
+    written = json.loads((tmp_path / "out" / "summary.json").read_text(encoding="utf-8"))
+    assert written["tool_commit"] == got
