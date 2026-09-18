@@ -506,12 +506,12 @@ def test_full_mode_requires_an_existing_owner_log_line(tmp_path):
     log.write_text("| L-200 | 2026-09-18 | 承認 |\n", encoding="utf-8")
     out = tmp_path / "gap60_w8"
     kw = dict(out_dir=out, prereg=_prereg(tmp_path, "L-200"),
-              allowed_out_dirs=(out,))
+              allowed_out_dirs=(out,), worktree=("clean", []))
     react.check_approval("full", "L-200", log, **kw)  # 実在するので通る
     with pytest.raises(SystemExit):
         react.check_approval("full", "L-999", log,
                              out_dir=out, prereg=_prereg(tmp_path, "L-999"),
-                             allowed_out_dirs=(out,))
+                             allowed_out_dirs=(out,), worktree=("clean", []))
     with pytest.raises(SystemExit):
         react.check_approval("full", "not-a-number", log, **kw)
 
@@ -929,8 +929,15 @@ def _owner_log(tmp_path, *numbers: str):
     return p
 
 
-def test_full_mode_gate_passes_when_all_five_checks_are_met(tmp_path):
-    """通る側: 欄と一致 / L-199 より後 / 台帳に実在 / 出力先が 6 つの 1 つ / まだ無い。"""
+def test_full_mode_gate_passes_when_all_eight_checks_are_met(tmp_path):
+    """通る側: 欄と一致 / L-199 より後 / 台帳に実在 / 出力先が 6 つの 1 つ / まだ無い。
+
+    **試験名の「8」は事前登録 §14.1 の関門の表の (a)〜(h) の 8 行を指す**
+    (prereg 監査(9 回目)の指摘 9。リードの決定 9「**テスト名 `five_checks` →
+    `eight_checks` に改名**」)。**9 回目で足した (i)(j) は別の試験で測る**
+    (`test_full_mode_gate_stops_when_the_worktree_is_dirty` /
+    `test_full_mode_gate_rejects_a_non_default_data_root`)。
+    """
     out = tmp_path / "gap60_w8"          # 許す一覧は下で差し替える(試験用の既定引数)
     react.check_approval(
         "full", "L-200",
@@ -938,18 +945,21 @@ def test_full_mode_gate_passes_when_all_five_checks_are_met(tmp_path):
         out_dir=out,
         prereg=_prereg(tmp_path, "L-200"),
         allowed_out_dirs=(out,),
+        worktree=("clean", []),
     )
 
 
-def test_full_mode_gate_stops_on_each_of_the_five_checks(tmp_path):
+def test_full_mode_gate_stops_on_each_of_the_eight_checks(tmp_path):
     """止まる側: (a) 欄が空 / 番号違い、(b) L-199 以下、(c) 台帳に無い、
-    (d) 出力先が 6 つに無い、(e) 出力先が既に在る。**5 つを 1 つずつ崩す。**"""
+    (d) 出力先が 6 つに無い、(e) 出力先が既に在る、(f) `--days` が渡っている、
+    (g) 台帳に載っている、(h) 非 full が判定区間の日を含む。**8 行を 1 つずつ崩す。**"""
     out = tmp_path / "gap60_w8"
     log = _owner_log(tmp_path, "L-199", "L-200", "L-201")
 
     def call(**kw):
         args = dict(approval="L-200", owner_log=log, out_dir=out,
-                    prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,))
+                    prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
+                    worktree=("clean", []))
         args.update(kw)
         react.check_approval("full", args.pop("approval"), **args)
 
@@ -972,9 +982,77 @@ def test_full_mode_gate_stops_on_each_of_the_five_checks(tmp_path):
     out.mkdir()
     with pytest.raises(SystemExit):
         call()
-    # (f) 出力先が渡っていない
+    # (d') 出力先が渡っていない
     with pytest.raises(SystemExit):
         call(out_dir=None)
+    # (f) `--days` が渡っている(日は judgment_days に固定)
+    with pytest.raises(SystemExit):
+        react.check_approval(
+            "full", "L-200", owner_log=log, out_dir=tmp_path / "gap60_w24",
+            prereg=_prereg(tmp_path, "L-200"),
+            allowed_out_dirs=(tmp_path / "gap60_w24",),
+            days=["2024-01-01"], days_given=True, worktree=("clean", []))
+    # (g) 出力先が台帳に載っている
+    led = tmp_path / "OPENED.txt"
+    react.record_opened(tmp_path / "gap30_w8", "L-200", led)
+    with pytest.raises(SystemExit):
+        react.check_approval(
+            "full", "L-200", owner_log=log, out_dir=tmp_path / "gap30_w8",
+            prereg=_prereg(tmp_path, "L-200"),
+            allowed_out_dirs=(tmp_path / "gap30_w8",), ledger=led,
+            worktree=("clean", []))
+    # (h) 非 full の経路が判定区間の日を含む(--approval があっても通さない)
+    jd = sorted(react.judgment_day_set())
+    if jd:
+        with pytest.raises(SystemExit):
+            react.check_approval("sample", "L-200", owner_log=log, days=[jd[0]])
+
+
+def test_full_mode_gate_stops_when_the_worktree_is_dirty(tmp_path):
+    """**決定 3・15(9 回目の指摘 3・15)**: 関門 (i)。
+
+    **開封はコミット済みの版からだけである。**`git rev-parse HEAD` は作業ツリーを
+    見ないので、未コミットの変更がある状態で開けても `tool_commit` は「正しい」値を書く
+    (9 回目の指摘 3 が実例を挙げている)。**通る側と止まる側の両方を測る。**
+    """
+    out = tmp_path / "gap60_w8"
+    kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
+              prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,))
+    react.check_approval("full", "L-200", worktree=("clean", []), **kw)   # 通る側
+    for state in ("dirty", "不明"):
+        with pytest.raises(SystemExit) as e:
+            react.check_approval("full", "L-200",
+                                 worktree=(state, ["scripts/o3c_reaction.py"]), **kw)
+        assert "[止め]" in str(e.value) and "作業ツリー" in str(e.value)
+    # 既定では実物の `git status --porcelain` を読む(迂回する旗は作っていない)
+    state, files = react.git_status()
+    assert state in ("clean", "dirty", "不明")
+    assert isinstance(files, list)
+    text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
+    for flag in ("--allow-dirty", "--skip-git", "--no-worktree-check"):
+        assert flag not in text, flag
+
+
+def test_full_mode_gate_rejects_a_non_default_data_root(tmp_path):
+    """**決定 20(9 回目の指摘 20)**: 関門 (j)。
+
+    **(h) の集合は `--data-root` の在庫から作る**ので、在庫を差し替えると (h) だけが
+    効かなくなる(指摘 20 の非対称)。**`--mode full` ではその差し替えを受け付けない。**
+    """
+    out = tmp_path / "gap60_w8"
+    kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
+              prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
+              worktree=("clean", []))
+    # 通る側: 既定の在庫(`data_root` を渡さない / 既定と同じものを渡す)
+    react.check_approval("full", "L-200", **kw)
+    react.check_approval("full", "L-200", data_root=base.DEFAULT_DATA_ROOT, **kw)
+    # 止まる側: 既定と違う在庫
+    with pytest.raises(SystemExit) as e:
+        react.check_approval("full", "L-200", data_root=tmp_path / "別の在庫", **kw)
+    assert "[止め]" in str(e.value) and "--data-root" in str(e.value)
+    # `main()` は `--data-root` をそのまま関門へ渡している(迂回できない)
+    text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
+    assert "data_root=root" in text
 
 
 def test_full_mode_gate_has_no_bypass_flag_and_is_wired_into_main():
@@ -1093,7 +1171,7 @@ def test_full_mode_does_not_take_a_days_flag(tmp_path):
     out = tmp_path / "gap60_w8"
     kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
               prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
-              ledger=tmp_path / "OPENED.txt")
+              ledger=tmp_path / "OPENED.txt", worktree=("clean", []))
     react.check_approval("full", "L-200", **kw)            # 通る(days_given 既定 False)
     with pytest.raises(SystemExit) as e:
         react.check_approval("full", "L-200", days_given=True, **kw)
@@ -1114,7 +1192,7 @@ def test_the_opened_ledger_stops_a_rerun_after_deleting_the_output(tmp_path):
     ledger = tmp_path / "OPENED.txt"
     kw = dict(owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
               prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
-              ledger=ledger)
+              ledger=ledger, worktree=("clean", []))
     react.check_approval("full", "L-200", **kw)             # 1 本目は通る
     react.record_opened(out, "L-200", ledger)               # 走行の側が追記する
     assert ledger.exists() and str(out.resolve()) in ledger.read_text(encoding="utf-8")
@@ -1127,11 +1205,15 @@ def test_the_opened_ledger_stops_a_rerun_after_deleting_the_output(tmp_path):
     other = tmp_path / "gap60_w24"
     react.check_approval("full", "L-200", owner_log=_owner_log(tmp_path, "L-200"),
                          out_dir=other, prereg=_prereg(tmp_path, "L-200"),
-                         allowed_out_dirs=(other,), ledger=ledger)
+                         allowed_out_dirs=(other,), ledger=ledger,
+                         worktree=("clean", []))
 
 
 def test_the_opened_ledger_records_out_dir_time_and_approval(tmp_path):
-    """**決定 2**: 台帳の 1 行は「出力先・UTC 時刻・approval」である。"""
+    """**決定 2**: 台帳の 1 行は「出力先・UTC 時刻・approval・状態」である。
+
+    **決定 1(9 回目の指摘 1)**: 4 列目に `started` / `done` が付く。
+    """
     ledger = tmp_path / "OPENED.txt"
     react.record_opened(tmp_path / "gap30_w8", "L-200", ledger)
     react.record_opened(tmp_path / "gap180_w8", "L-200", ledger)
@@ -1143,6 +1225,7 @@ def test_the_opened_ledger_records_out_dir_time_and_approval(tmp_path):
         assert m is not None, r
         assert m.group("approval") == "L-200"
         assert m.group("utc").endswith("Z")
+        assert m.group("status") == react.OPENED_STARTED
     assert react.opened_out_dirs(ledger) == {
         str((tmp_path / "gap30_w8").resolve()),
         str((tmp_path / "gap180_w8").resolve()),
@@ -1151,6 +1234,38 @@ def test_the_opened_ledger_records_out_dir_time_and_approval(tmp_path):
     text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
     assert "record_opened(out_dir, a.approval)" in text
     assert text.index("record_opened(out_dir, a.approval)") < text.index("s = run_table(")
+
+
+def test_the_ledger_marks_started_before_the_run_and_done_after_it(tmp_path):
+    """**決定 1(9 回目の指摘 1)**: 落ちた回も「開けた」として残る。
+
+    **`started` は出力を書く前に、`done` は走行が最後まで終わった後に書く。**
+    **途中で落ちた回は `done` が無いまま `started` が残り、
+    その出力先の再走行は (g) で止まる**(= 6 つの出力先の 1 つが死ぬ)。
+    """
+    ledger = tmp_path / "OPENED.txt"
+    out = tmp_path / "gap60_w8"
+    # 1 本目: 途中で落ちた回(`started` だけ)
+    react.record_opened(out, "L-200", ledger)
+    assert react.opened_status(ledger)[str(out.resolve())] == {react.OPENED_STARTED}
+    with pytest.raises(SystemExit) as e:
+        react.check_approval(
+            "full", "L-200", owner_log=_owner_log(tmp_path, "L-200"), out_dir=out,
+            prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,),
+            ledger=ledger, worktree=("clean", []))
+    assert "OPENED.txt" in str(e.value)
+    # 2 本目: 最後まで終わった回(`started` + `done`)
+    other = tmp_path / "gap60_w24"
+    react.record_opened(other, "L-200", ledger)
+    react.record_done(other, "L-200", ledger)
+    assert react.opened_status(ledger)[str(other.resolve())] == {
+        react.OPENED_STARTED, react.OPENED_DONE}
+    # 台帳の見出しに「落ちた回」の帰結が書いてある(オーナーが読む §3.1 と同じ話)
+    assert "done" in react.OPENED_HEADER and "started" in react.OPENED_HEADER
+    # `main()` は走行が最後まで終わってから `done` を足す
+    text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
+    assert "record_done(out_dir, a.approval)" in text
+    assert text.index("s = run_table(") < text.index("record_done(out_dir, a.approval)")
 
 
 def test_the_opened_ledger_is_tracked_by_git():
@@ -1177,3 +1292,8 @@ def test_the_run_records_its_own_commit(tmp_path):
     assert s["tool_commit"] == got
     written = json.loads((tmp_path / "out" / "summary.json").read_text(encoding="utf-8"))
     assert written["tool_commit"] == got
+    # **決定 3・15(9 回目の指摘 3・15)**: 作業ツリーの状態も同じ summary に残る
+    assert written["tool_dirty"]["状態"] in ("clean", "dirty", "不明")
+    assert written["tool_dirty"]["汚れているか"] is (
+        written["tool_dirty"]["状態"] != "clean")
+    assert isinstance(written["tool_dirty"]["変更ファイル"], list)

@@ -133,8 +133,28 @@ def _row(kind, day, cid, side, d, i, reach, matched_liq_id="") -> dict:
 APPROVAL = "L-200"          # 試験用の「応答の L 番号」(事前登録の欄に書き写す値)
 PREREG_FIELD = "   **応答の L 番号**: **{v}**\n"
 
+# **決定 3・15(9 回目の指摘 3・15)**: 版の担保を 1 本にした関門のための固定値。
+# **走行の `summary.json` と事前登録の欄と読みの道具の版が、3 つとも同じであることを
+# 関門が要求する。**試験ではその 3 つをこの値にそろえる。
+TOOL_COMMIT = "a" * 40
+COMMIT_FIELD = "   **凍結した道具のコミット**: **{v}**\n"
 
-def write_prereg(root: Path, value: str = APPROVAL) -> Path:
+
+@pytest.fixture(autouse=True)
+def _stub_tool_version(monkeypatch):
+    """**この試験環境の作業ツリーは必ず汚れている**(試験そのものが編集中の
+    リポジトリで走る)ので、**(i) 自分の作業ツリー**と**読みの道具の版**だけを固定する。
+
+    **関門そのものを外していない。**(i)〜(iii) の通る側・止まる側は
+    `test_the_tool_version_gate_checks_the_worktree_and_the_six_runs` が
+    **この固定を上書きして**両側とも測る(`monkeypatch` は後勝ちである)。
+    """
+    monkeypatch.setattr(judge, "git_status", lambda *a, **k: ("clean", []))
+    monkeypatch.setattr(judge, "tool_commit", lambda *a, **k: TOOL_COMMIT)
+
+
+def write_prereg(root: Path, value: str = APPROVAL,
+                 commit: str | None = TOOL_COMMIT) -> Path:
     """**決定 2''''**: 事前登録 §14.4 の「応答の L 番号」の欄を持つ写しを置く。
 
     **迂回する旗は無い**ので、試験は `--root` を一時ディレクトリにして、
@@ -148,7 +168,8 @@ def write_prereg(root: Path, value: str = APPROVAL) -> Path:
         "| 2 | `--approval` を事前登録の欄から読む | 「応答の L 番号」欄を読む。L-199 ではない |\n"
         "本文には「応答の L 番号」という語が別の意味でも出てくる(上の行 = §0.1 の表)。\n"
         "機械が読むのは下の欄の行だけである。\n\n"
-        + PREREG_FIELD.format(v=value),
+        + PREREG_FIELD.format(v=value)
+        + ("" if commit is None else "\n" + COMMIT_FIELD.format(v=commit)),
         encoding="utf-8")
     return p
 
@@ -157,7 +178,9 @@ def _params(*, mode: str, n_days: int, window_hours: float, gap_sec: int,
             mmr: float | None = judge.MMR_FIXED, seed: int = judge.RUN_SEED_FIXED,
             bin_pct: float = judge.BIN_PCT_FIXED,
             match_order: str = judge.MATCH_ORDER_FIXED,
-            approval: str | None = APPROVAL) -> dict:
+            approval: str | None = APPROVAL,
+            tool_commit: str | None = TOOL_COMMIT,
+            tool_dirty: str = "clean") -> dict:
     """`scripts/o3c_reaction.py` が書く `params` と同じ鍵を作る(**決定 12''' + 1'''' + 2''''**)。
 
     日付そのものは検査に使われない(見るのは**日数**だけ)ので、並びだけを作る。
@@ -175,7 +198,15 @@ def _params(*, mode: str, n_days: int, window_hours: float, gap_sec: int,
          "match_order": match_order}
     if approval is not None:
         p["approval"] = approval
-    return {"params": p}
+    # **決定 3・15(9 回目の指摘 3・15)**: 走行の版と作業ツリーの状態
+    # (`scripts/o3c_reaction.py` が `summary.json` の上位に書く鍵と同じ形)。
+    out: dict = {"params": p,
+                 "tool_dirty": {"状態": tool_dirty,
+                                "汚れているか": tool_dirty != "clean",
+                                "変更ファイル": []}}
+    if tool_commit is not None:
+        out["tool_commit"] = tool_commit
+    return out
 
 
 def as_sample(src: Path, dst: Path, *, window_hours: float = 8,
@@ -1809,6 +1840,28 @@ def test_the_sensitivity_runs_also_match_the_approval_number(tmp_path):
     assert "L-999" not in text and "L-200" not in text
 
 
+def test_the_judgment_runs_approval_is_named_separately_in_stopped_txt(tmp_path):
+    """**決定 14(9 回目の指摘 14)**: 判定 2 本の承認の食い違いも、
+    `stopped.txt` に **「承認の番号(決定 14)」**の名前で出る。
+
+    **前版は `check_run_params` の中だったので、`params の検査(決定 12''')` の名前で
+    出ていた。**`stopped.txt` は理由を書かない(決定 12)ので、
+    **「承認の番号が破れた」ことを `stopped.txt` だけでは見分けられなかった。**
+    """
+    out = tmp_path / "out"
+    code, out = run_judge(tmp_path, days=10, per_day=6, out=out,
+                          run_params={"approval": "L-999"})
+    assert code == 1
+    assert not (out / "judgment_576.csv").exists()
+    text = (out / judge.STOPPED_NAME).read_text(encoding="utf-8")
+    assert "承認の番号(決定 14)" in text
+    assert judge.RUN_W8 in text and judge.RUN_W24 in text
+    # **params の検査とは別の名前で出る**(混ざらない)
+    assert "params の検査" not in text
+    # **決定 12**: 番号そのもの(値)は書かない
+    assert "L-999" not in text and "L-200" not in text
+
+
 def test_a_sensitivity_run_with_the_right_approval_still_passes(tmp_path):
     """**決定 14 の通る側**: 承認の番号が合っていれば、感度の他の食い違いは
     従来どおり「その走行の表だけ書かない」で済む(判定の 576 行は書く)。"""
@@ -1826,54 +1879,131 @@ def test_a_sensitivity_run_with_the_right_approval_still_passes(tmp_path):
 
 
 def test_the_frozen_tool_commit_is_recorded_and_matched(tmp_path):
-    """**決定 16(8 回目の指摘 16)**: 読みの道具の版を `summary.json` に残し、
-    事前登録 §14.4 の「凍結した道具のコミット」欄が埋まっていれば突き合わせる。
+    """**決定 16(8 回目の指摘 16)+ 決定 3・15(9 回目の指摘 3・15)**:
+    読みの道具の版を `summary.json` に残し、事前登録 §14.4 の
+    「凍結した道具のコミット」欄と突き合わせる。
 
-    **欄が「(まだ無い)」なら記録だけして進む。****違えば「[止め]」で 1 ファイルも書かない。**
+    **本版で「欄が「(まだ無い)」なら記録だけして進む」をやめた**
+    (9 回目の指摘 3: **欄を空のままにすれば版の検査が 1 つも掛からなかった**)。
     """
     mine = judge.tool_commit()
-    assert mine == "不明" or len(mine) == 40
-    # (1) 欄が無い(試験用の写しには書いていない)-> 記録だけして通る
+    assert mine == TOOL_COMMIT
+    # (1) 欄が一致 -> 通り、突き合わせの中身が summary に残る
     code, out = run_judge(tmp_path, days=10, per_day=6)
     assert code == 0
     s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
     assert s["tool_commit"] == mine
-    blk = s["凍結した道具のコミット(決定 16)"]
+    blk = s["凍結した道具のコミット(決定 16 + 決定 3・15)"]
     assert blk["この道具の版(git rev-parse HEAD)"] == mine
-    assert blk["事前登録 §14.4 の欄"] is None
-    # (2) 欄が自分の版と一致 -> 通る
-    if mine != "不明":
-        root2 = open_gate(tmp_path / "root2")
-        p = root2 / judge.PREREG_REL
-        p.write_text(p.read_text(encoding="utf-8")
-                     + f"\n   **凍結した道具のコミット**: **{mine}**\n", encoding="utf-8")
-        code, out2 = run_judge(tmp_path, days=10, per_day=6, root=root2,
-                               out=tmp_path / "out2")
-        assert code == 0
-        s2 = json.loads((out2 / "summary.json").read_text(encoding="utf-8"))
-        assert s2["凍結した道具のコミット(決定 16)"]["事前登録 §14.4 の欄"] == mine
-        # 短縮形(先頭 7 桁)でも通る
-        root4 = open_gate(tmp_path / "root4")
-        p4 = root4 / judge.PREREG_REL
-        p4.write_text(p4.read_text(encoding="utf-8")
-                      + f"\n   **凍結した道具のコミット**: **{mine[:7]}**\n",
-                      encoding="utf-8")
-        code, _ = run_judge(tmp_path, days=10, per_day=6, root=root4,
-                            out=tmp_path / "out4")
-        assert code == 0
+    assert blk["事前登録 §14.4 の欄"] == TOOL_COMMIT
+    assert blk["この道具の作業ツリー(git status --porcelain)"] == "clean"
+    assert set(blk["走行ごとの版"]) >= {judge.RUN_W8, judge.RUN_W24}
+    assert all(v == TOOL_COMMIT for v in blk["走行ごとの版"].values())
+    assert all(v == "clean" for v in blk["走行ごとの作業ツリー"].values())
+    # (2) 短縮形(先頭 7 桁)でも通る
+    root4 = open_gate(tmp_path / "root4")
+    write_prereg(root4, commit=TOOL_COMMIT[:7])
+    code, _ = run_judge(tmp_path, days=10, per_day=6, root=root4,
+                        out=tmp_path / "out4")
+    assert code == 0
     # (3) 欄が別のコミット -> 「[止め]」で 1 ファイルも書かない
     root3 = open_gate(tmp_path / "root3")
-    p3 = root3 / judge.PREREG_REL
-    p3.write_text(p3.read_text(encoding="utf-8")
-                  + "\n   **凍結した道具のコミット**: **" + "0" * 40 + "**\n",
-                  encoding="utf-8")
+    write_prereg(root3, commit="0" * 40)
     out3 = tmp_path / "out3"
     code, _ = run_judge(tmp_path, days=10, per_day=6, root=root3, out=out3)
     assert code == 1
     assert not out3.exists()
+    # (4) 欄が「(まだ無い)」= 空 -> 「[止め]」(本版で変えた点)
+    root5 = open_gate(tmp_path / "root5")
+    write_prereg(root5, commit=None)
+    out5 = tmp_path / "out5"
+    code, _ = run_judge(tmp_path, days=10, per_day=6, root=root5, out=out5)
+    assert code == 1
+    assert not out5.exists()
     # 迂回する旗は作っていない
     text = (ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
     assert "--tool-commit" not in text and "--skip-commit" not in text
+    for flag in ("--allow-dirty", "--skip-git", "--no-worktree-check"):
+        assert flag not in text, flag
+
+
+def test_the_tool_version_gate_checks_the_worktree_and_the_six_runs(tmp_path,
+                                                                    monkeypatch):
+    """**決定 3・15(9 回目の指摘 3・15)**: 版の担保を 1 本にした関門。
+
+    **(i) 自分の作業ツリー / (ii) 6 本の版と §14.4 の欄 / (iii) 6 本の汚れ**
+    の 3 つを、**通る側と止まる側の両方**で測る。
+    **この試験だけは上の `_stub_tool_version` を上書きする**(`monkeypatch` は後勝ち)。
+    """
+    # 通る側(3 つとも満たす)
+    code, out = run_judge(tmp_path, days=10, per_day=6)
+    assert code == 0 and (out / "summary.json").exists()
+
+    # (i) 読みの道具の作業ツリーが汚れている -> 1 ファイルも書かない
+    monkeypatch.setattr(judge, "git_status",
+                        lambda *a, **k: ("dirty", ["scripts/o3c_reaction_judge.py"]))
+    out_i = tmp_path / "out_i"
+    code, _ = run_judge(tmp_path, days=10, per_day=6, root=open_gate(tmp_path / "root_i"),
+                        out=out_i)
+    assert code == 1 and not out_i.exists()
+    monkeypatch.setattr(judge, "git_status", lambda *a, **k: ("clean", []))
+
+    # (ii) 走行の版が読みの道具と違う -> 止まる
+    out_ii = tmp_path / "out_ii"
+    code, _ = run_judge(tmp_path / "ii", days=10, per_day=6,
+                        root=open_gate(tmp_path / "root_ii"), out=out_ii,
+                        run_params={"tool_commit": "b" * 40})
+    assert code == 1 and not out_ii.exists()
+
+    # (iii) 走行のときに作業ツリーが汚れていた -> 止まる
+    out_iii = tmp_path / "out_iii"
+    code, _ = run_judge(tmp_path / "iii", days=10, per_day=6,
+                        root=open_gate(tmp_path / "root_iii"), out=out_iii,
+                        run_params={"tool_dirty": "dirty"})
+    assert code == 1 and not out_iii.exists()
+
+    # 走行に `tool_commit` の鍵が無い(この機械より前に走った出力)-> 止まる
+    out_iv = tmp_path / "out_iv"
+    code, _ = run_judge(tmp_path / "iv", days=10, per_day=6,
+                        root=open_gate(tmp_path / "root_iv"), out=out_iv,
+                        run_params={"tool_commit": None})
+    assert code == 1 and not out_iv.exists()
+
+    # 射程: 読めない感度の走行は版の検査の対象に入らない(上の通る側がその経路である)
+    assert "読めない感度の走行はこの検査より前に落ちている" in (
+        ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
+
+
+def test_the_f1_reading_records_the_d1_cut(tmp_path):
+    """**決定 2(9 回目の指摘 2)**: D1 の上側の切り値を `f1_reading.txt` と
+    `summary.json` に必ず残し、**切り値が 0 以上なら射程を書く。**
+
+    **判定は D1(最も負の 3 分位)のままで、走行の後に「負の群」へ読み替えない。**
+    """
+    code, out = run_judge(tmp_path, days=10, per_day=6)
+    assert code == 0
+    txt = (out / "f1_reading.txt").read_text(encoding="utf-8")
+    assert "D1 の上側の切り値(doi_pre_1h)" in txt
+    assert "射程:" in txt
+    s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    blk = s["F1 の D1 の上側の切り値(決定 2)"]
+    assert blk["群"] == judge.F1_GROUP and blk["軸の列"] == "doi_pre_1h"
+    cut = blk["上側の切り値"]
+    if cut is not None and cut >= 0:
+        assert "D1 は負の群と一致しない" in blk["射程"]
+        assert "D1 は負の群と一致しない" in txt
+    # 切り値の作り方そのもの(0 以上・負・出ない、の 3 通り)
+    class _G:
+        def __init__(self, name, cuts):
+            self.name, self.cuts = name, cuts
+    v, note = judge.f1_cut_note([_G(judge.F1_GROUP, (3.5, 9.0))])
+    assert v == 3.5 and "D1 は負の群と一致しない" in note
+    v, note = judge.f1_cut_note([_G(judge.F1_GROUP, (-2.0, 9.0))])
+    assert v == -2.0 and "負" in note
+    v, note = judge.f1_cut_note([_G(judge.F1_GROUP, (float("nan"), float("nan")))])
+    assert v is None and "切り値が出ない" in note
+    v, note = judge.f1_cut_note([])
+    assert v is None and "切り値が出ない" in note
 
 
 def test_the_observation_only_table_does_not_carry_the_family_alpha_in_its_mde_column(tmp_path):

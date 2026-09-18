@@ -646,6 +646,83 @@ def tool_commit(repo: Path | None = None) -> str:
     return got
 
 
+def git_status(repo: Path | None = None) -> tuple[str, list[str]]:
+    """`git status --porcelain`。返り値 `("clean" | "dirty" | "不明", 変更ファイルの一覧)`。
+
+    **prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15**:
+    **版の担保を 1 本にする。**`git rev-parse HEAD` は作業ツリーを見ないので、
+    **未コミットの変更がある状態で走った回を `tool_commit` だけでは見分けられない**
+    (8 回目の処置書が自分でその実例を書いていた = 9 回目の指摘 3)。
+    """
+    root = Path(repo) if repo is not None else Path(__file__).resolve().parent.parent
+    try:
+        r = subprocess.run(["git", "-C", str(root), "status", "--porcelain"],
+                           capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return "不明", []
+    if r.returncode != 0:
+        return "不明", []
+    files = [ln[3:].strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
+    return ("dirty" if files else "clean"), files
+
+
+def run_dirty_state(run: "Run") -> str:
+    """走行の `summary.json` に残った汚れの状態を読む(`clean` / `dirty` / `不明`)。
+
+    **鍵が無い走行(この機械より前に走った出力)は「不明」**として扱い、
+    呼び出し側が「[止め]」にする(**決定 3・15**)。
+    """
+    blk = run.summary.get("tool_dirty")
+    if isinstance(blk, dict):
+        st = blk.get("状態")
+        return st if st in ("clean", "dirty", "不明") else "不明"
+    return "不明"
+
+
+def check_tool_versions(
+    named_runs: list[tuple[str, "Run"]],
+    *,
+    frozen_field: str | None,
+    my_commit: str,
+    my_state: str,
+) -> list[str]:
+    """**決定 3・15(9 回目の指摘 3・15)**: 版の担保を 1 本にする。
+
+    次の 3 つを全部満たさなければ理由の一覧を返す(呼び出し側が「[止め]」にする):
+
+      (i)   **読みの道具の作業ツリーが汚れていない**(`git status --porcelain` が空)
+      (ii)  **判定 2 本 + 感度 4 本の `tool_commit` がすべて同じで、かつ
+            §14.4 の「凍結した道具のコミット」欄と一致する**
+      (iii) **6 本とも汚れていない**(各走行の `summary.json` の `tool_dirty`)
+
+    **射程(隠さずに書く)**: `named_runs` に入るのは**読めた走行だけ**である。
+    **読めない感度の走行は、この検査より前に「読めない感度」として落ちており、
+    その表は 1 枚も書かれない**(決定 2''''')。**よって版の検査の対象から外れる。**
+    """
+    bad: list[str] = []
+    if my_state != "clean":
+        bad.append(f"読みの道具の作業ツリーが {my_state}(コミット済みの版で読む)")
+    if not frozen_field:
+        bad.append("事前登録 §14.4 の「凍結した道具のコミット」欄が埋まっていない"
+                   "(開封の直前に書き写す欄である)")
+    elif not commit_matches(frozen_field, my_commit):
+        bad.append(f"読みの道具の版が §14.4 の欄と違う({my_commit} / 欄 {frozen_field})")
+    for nm, r in named_runs:
+        got = r.summary.get("tool_commit")
+        if not isinstance(got, str) or not got:
+            bad.append(f"{nm}: summary.json に tool_commit が無い")
+            continue
+        if not commit_matches(my_commit, got):
+            bad.append(f"{nm}: 走った道具の版が読みの道具と違う({got})")
+        elif frozen_field and not commit_matches(frozen_field, got):
+            bad.append(f"{nm}: 走った道具の版が §14.4 の欄と違う({got})")
+    for nm, r in named_runs:
+        st = run_dirty_state(r)
+        if st != "clean":
+            bad.append(f"{nm}: 走ったときの作業ツリーが {st}")
+    return bad
+
+
 def read_frozen_commit_from_prereg(prereg: Path) -> tuple[str | None, str]:
     """**決定 16**: 事前登録 §14.4 の「凍結した道具のコミット」の欄を読む。
 
@@ -1340,6 +1417,28 @@ def build_rows(runs: dict[str, Run], samples: dict[str, Run], groups: list[Group
 F1_GROUP = "D_Q1"   # 主軸 D の D1 = `doi_pre_1h` が最も負の 3 分位
 
 
+def f1_cut_note(groups: list) -> tuple[float | None, str]:
+    """**決定 2(9 回目の指摘 2)**: D1 の**上側の切り値**と、その射程の 1 行。
+
+    **F1 の判定は「主軸 D の D1(`doi_pre_1h` が最も負の 3 分位)」のまま**である
+    (**走行後に「負の群」へ読み替えない** = A-6)。
+    **切り値が 0 以上なら「D1 は負の群と一致しない(切り値 X)」を射程として必ず書く。**
+
+    **射程**: 切り値が出ない(群が空 / NaN)ときも、そのことを 1 行書く。
+    """
+    g = next((x for x in groups if getattr(x, "name", None) == F1_GROUP), None)
+    cuts = getattr(g, "cuts", None) if g is not None else None
+    if not cuts or cuts[0] is None or not math.isfinite(float(cuts[0])):
+        return None, ("D1 の上側の切り値が出ない(群が空、または NaN)ので、"
+                      "D1 が負の群と一致するかを確かめられない")
+    cut = float(cuts[0])
+    if cut >= 0:
+        return cut, (f"D1 は負の群と一致しない(切り値 {cut:.6g})"
+                     "。判定は D1(最も負の 3 分位)のまま行う")
+    return cut, (f"D1 の上側の切り値は {cut:.6g}(負)なので、"
+                 "D1 の全員が `doi_pre_1h` < 0 である")
+
+
 def f1_cells(judge_rows: list[dict]) -> list[dict]:
     """主軸 D の D1 × 戻り到達 2 系統 × h 6 本 = 12 セル。走行は gap60_w8。"""
     want = {c.format(h=h) for c, _ in JUDGE_SYSTEMS for h in HORIZONS}
@@ -1658,24 +1757,37 @@ def main(argv=None) -> int:
             "       オーナーの応答(L 番号)を §14.4 の欄に書き写してから走らせる。\n")
         return 1
 
-    # --- 決定 16(8 回目の指摘 16): 凍結した道具のコミットと自分の版を突き合わせる ---
-    # **欄が「(まだ無い)」なら記録だけして進む**(開封の直前に書き写す欄である)。
-    # **埋まっていて自分の版と違えば「[止め]」で 1 ファイルも書かない。**
-    my_commit = tool_commit()
-    frozen_commit, frozen_note = read_frozen_commit_from_prereg(prereg)
-    if frozen_commit is not None and not commit_matches(frozen_commit, my_commit):
-        sys.stderr.write(
-            "[止め] 事前登録 §14.4 の「凍結した道具のコミット」と、この道具の版が違う。"
-            "表を 1 枚も書かずに終わる。\n"
-            f"       事前登録の欄: {frozen_commit} / この道具: {my_commit}\n"
-            f"       {frozen_note}\n")
-        return 1
-
     # --- 決定 11(8 回目の指摘 11): 関門を `stopped.txt` より前に通す ------------
     # **前版は `write_stopped` が `pass_audit_gate` より前にあったので、
     # 判定側が破れた回は台帳が閉じていても `stopped.txt` が 1 ファイル書かれた。**
     # **「閉じていれば 1 ファイルも書かない」に揃える。**
     pass_audit_gate(Path(a.root).resolve())
+
+    # --- 決定 3・15(9 回目の指摘 3・15): 版の担保を 1 本にする ------------------
+    # **前版は「欄が「(まだ無い)」なら記録だけして進む」だった**ので、
+    # **欄を空のままにすれば版の検査は 1 つも掛からなかった。**
+    # **また `git rev-parse HEAD` は作業ツリーを見ないので、未コミットの変更がある
+    # 状態で走った回を見分けられなかった**(9 回目の指摘 3 が実例を挙げている)。
+    # **本版は (i) 自分の作業ツリー / (ii) 6 本の版と §14.4 の欄 / (iii) 6 本の汚れ
+    # の 3 つを 1 つの関門にまとめ、1 つでも欠ければ 1 ファイルも書かずに終わる。**
+    # **本版では台帳の関門 `pass_audit_gate` の後ろに置く**(台帳が閉じている回は、
+    # **版の検査より先に止まる** = `tests/test_audit_gates_wired.py` が測っている経路)。
+    my_commit = tool_commit()
+    my_state, my_files = git_status()
+    frozen_commit, frozen_note = read_frozen_commit_from_prereg(prereg)
+    version_bad = check_tool_versions(
+        [(nm, r) for nm, r in runs.items()] + [(nm, r) for nm, r in sens.items()],
+        frozen_field=frozen_commit, my_commit=my_commit, my_state=my_state)
+    if version_bad:
+        sys.stderr.write(
+            "[止め] 道具の版が担保できない(事前登録 §14.4 の決定 3・15)。"
+            "表を 1 枚も書かずに終わる。\n"
+            f"       この道具: {my_commit} / 作業ツリー: {my_state}"
+            + (f"({' / '.join(my_files[:5])}{' …' if len(my_files) > 5 else ''})"
+               if my_files else "") + "\n"
+            f"       {frozen_note}\n"
+            + "".join(f"       - {b}\n" for b in version_bad))
+        return 1
 
     # === 3 つの検査(params / サニティ #14 / 軸の作り方)==========================
     # **決定 2'''''(走行前の再監査(7 回目)の指摘 2)**:
@@ -1699,10 +1811,15 @@ def main(argv=None) -> int:
     CHK_PARAMS = "params の検査(決定 12''')"
     bad = []
     for nm, r in runs.items():
+        # **決定 14(9 回目の指摘 14)**: **承認の番号だけは `params` の検査から外す。**
+        # **前版は判定 2 本の approval の食い違いが `CHK_PARAMS` の名前で
+        # `stopped.txt` に出たので、「承認の番号が破れた」ことを
+        # `stopped.txt` だけでは見分けられなかった**(`stopped.txt` は理由を書かない
+        # = 決定 12)。**下の `CHK_APPROVAL` で感度 4 本と同じ名前にそろえる。**
         bad += check_run_params(r, mode="full", gap_sec=GAP_SEC_JUDGE,
                                 window_hours=WINDOW_HOURS_FIXED[nm],
                                 n_days=JUDGMENT_N_DAYS, label=nm,
-                                settings=True, approval=approval)
+                                settings=True)
     # **決定 9''''(6 回目の指摘 9)**: 標本の側にも `window_hours` と `gap_ms` を当てる
     # (**標本 4 本の `summary.json` に値がある = 実測済み**)。
     # **前版は `mode` と日数の 2 つしか見ておらず、「W = 24h の標本を `--sample-w8` に
@@ -1746,7 +1863,13 @@ def main(argv=None) -> int:
     # **リードの決定の逐語**: 「**感度 4 本の `params.approval` の食い違いは判定側の
     # 破れと同じ扱い(表を 1 枚も書かず `stopped.txt`)。理由: 承認外の番号で 456 日を
     # 開けた走行が 1 本でもあれば、1 周目はそこで止めてオーナーに報告する**」。
+    # **決定 14(9 回目の指摘 14)**: **判定 2 本の承認の食い違いも同じ名前で出す。**
+    # **`stopped.txt` は検査の名前しか書かない**(決定 12)ので、
+    # **名前が `params の検査` のままだと「承認の番号が破れた」ことが見分けられなかった。**
     CHK_APPROVAL = "承認の番号(決定 14)"
+    for nm, r in runs.items():
+        judge_bad += [(CHK_APPROVAL, b)
+                      for b in check_run_approval(r, approval, label=nm)]
     for nm, r in sens.items():
         judge_bad += [(CHK_APPROVAL, b)
                       for b in check_run_approval(r, approval, label=nm)]
@@ -1848,10 +1971,17 @@ def main(argv=None) -> int:
     out = Path(a.out_dir)
     why_rows = [{**{k: WHY_PLACEHOLDER for k in WHY_HEADER}, "読み": r}
                 for r in WHY_READINGS]
+    # **決定 2(9 回目の指摘 2)**: D1 の上側の切り値を必ず書き残す。
+    # **「負の群」という語は事前登録から消し、判定は D1(最も負の 3 分位)のまま行う。**
+    # **切り値が 0 以上なら、その射程を `f1_reading.txt` にも `summary.json` にも書く。**
+    f1_cut, f1_cut_line = f1_cut_note(groups)
     f1_text = (
         "§7.0 の 4 分岐のうちの読み: " + reading + "\n"
         "見たセル: 主軸 D の D1 × 戻り到達 2 系統 × h 6 本 = "
         f"{len(cells)} セル(走行 {RUN_W8})\n"
+        f"D1 の上側の切り値(doi_pre_1h): "
+        f"{'(出ない)' if f1_cut is None else format(f1_cut, '.6g')}\n"
+        f"射程: {f1_cut_line}\n"
     )
     # **決定 7'''''(7 回目の指摘 7)**: **「最小」「最大」も検定したセルだけから取る。**
     # **前版は `judge_rows` 全部から取っていたので、群が空で本数 0 のセルが混ざり、
@@ -1996,13 +2126,30 @@ def main(argv=None) -> int:
         },
         # **決定 16(8 回目の指摘 16)**: 読みの道具の版と、事前登録 §14.4 の
         # 「凍結した道具のコミット」の欄との突き合わせ。
-        "凍結した道具のコミット(決定 16)": {
+        "凍結した道具のコミット(決定 16 + 決定 3・15)": {
             "この道具の版(git rev-parse HEAD)": my_commit,
+            "この道具の作業ツリー(git status --porcelain)": my_state,
+            "この道具の変更ファイル": my_files,
             "事前登録 §14.4 の欄": frozen_commit,
             "欄の出所": frozen_note,
-            "突き合わせ": ("欄が埋まっていれば突き合わせ、違えば「[止め]」で 1 ファイルも"
-                           "書かない。欄が「(まだ無い)」なら記録だけする"
-                           "(開封の直前に書き写す欄である)。"),
+            "走行ごとの版": {nm: r.summary.get("tool_commit")
+                             for nm, r in list(runs.items()) + list(sens.items())},
+            "走行ごとの作業ツリー": {nm: run_dirty_state(r)
+                                     for nm, r in list(runs.items()) + list(sens.items())},
+            "突き合わせ": ("(i) 読みの道具の作業ツリーが clean / (ii) 判定 2 本 + 感度 4 本の "
+                           "tool_commit がすべて同じで §14.4 の欄と一致 / (iii) 6 本とも "
+                           "clean。1 つでも欠ければ「[止め]」で 1 ファイルも書かない"
+                           "(prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15)。"),
+            "射程": ("読めない感度の走行はこの検査より前に落ちているので、"
+                     "版の検査の対象に入らない(その表は 1 枚も書かれない)。"),
+        },
+        "F1 の D1 の上側の切り値(決定 2)": {
+            "群": F1_GROUP,
+            "軸の列": "doi_pre_1h",
+            "上側の切り値": f1_cut,
+            "射程": f1_cut_line,
+            "読み替えない": ("判定は D1(最も負の 3 分位)のまま行う。"
+                             "走行の後に「負の群」へ読み替えない(A-6)。"),
         },
         "反復回数と種の実行時の突き合わせ(決定 4'''')": {
             "REPS": REPS, "凍結したリテラル": REPS_FROZEN_LITERAL,

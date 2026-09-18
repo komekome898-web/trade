@@ -27,8 +27,9 @@
   --mode full     設計 §9 の手順 3。**判定区間 = 標本 6 日と、12 日走行で開いた 10 日を
                   除いた 456 日**(`judgment_days`。2026-09-18 の監査の指摘 4 と
                   指摘 2・14 / 返答 060 の #1)。
-                  **開封前の関門 7 つを全部通したときだけ走る**(prereg 監査(7 回目)の
-                  指摘 1・18・20 と 8 回目の指摘 1・2・6。`check_approval` の注):
+                  **開封前の関門 10 個を全部通したときだけ走る**(prereg 監査(7 回目)の
+                  指摘 1・18・20、8 回目の指摘 1・2・6、9 回目の指摘 3・15・20。
+                  `check_approval` の注):
                   (a) `--approval` が事前登録 §14.4 の欄「応答の L 番号」と一致 /
                   (b) その番号が L-199 より後 /
                   (c) `docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が実在 /
@@ -36,10 +37,15 @@
                   (e) `--out-dir` がまだ存在しない(再走行・上書きを止める)/
                   (f) `--days` が渡っていない(日は `judgment_days` に固定。8 回目の指摘 6)/
                   (g) `--out-dir` が `OPENED.txt` にまだ載っていない
-                      (**出力先を消してからの再走行**を止める。8 回目の指摘 2)。
+                      (**出力先を消してからの再走行**を止める。8 回目の指摘 2。
+                      **走行が途中で落ちた回 = `done` の行が無い回も止まる** = 9 回目の指摘 1)/
+                  (i) **作業ツリーが汚れていない**(`git status --porcelain` が空。
+                      **開封はコミット済みの版からだけ** = 9 回目の指摘 3・15)/
+                  (j) **`--data-root` が既定のまま**(在庫を差し替えると (h) が
+                      空回りする = 9 回目の指摘 20)。
                   1 つでも欠ければ終了コード非 0 で即座に止まる。
                   **判定区間の日は、この `--mode full` 以外では 1 日も開けない**
-                  (`--mode sample --days` と `--mode anchor` は、日集合が判定区間の日を
+                  ((h)。`--mode sample --days` と `--mode anchor` は、日集合が判定区間の日を
                   1 日でも含めば `--approval` があっても止まる = 8 回目の指摘 1)。
 
 **符号の約束(設計 §3 の 2 つの文が食い違っていたので、ここで分けた。報告の §0.1 に
@@ -172,7 +178,8 @@ APPROVAL_RE = re.compile(r"^L-\d{3,}$")
 # しか見ていなかった**(7 回目の監査の実測)。**読みの側は `params.approval` を事前登録
 # §14.4 の欄と突き合わせるが、それは 6 本を走らせた後の段である。**
 # **間違った(あるいは古い)L 番号のまま 456 日を 6 回開け終わるまで、何も止まらなかった。**
-# **開封の前に、次の 5 つを全部通したときだけ走る**(事前登録 §3.1・§14.1・§14.4・§14.6):
+# **開封の前に、(a)〜(j) の 10 個を全部通したときだけ走る**
+# (事前登録 §3.1・§14.1・§14.4・§14.6):
 #   (a) 事前登録 §14.4 の欄「応答の L 番号」が埋まっていて、`--approval` と一致する
 #   (b) その番号が L-199 より大きい(L-199 は「1 = a、9 = a」への応答であって、
 #       報告 062 への応答ではない)
@@ -181,6 +188,11 @@ APPROVAL_RE = re.compile(r"^L-\d{3,}$")
 #   (e) `--out-dir` が**まだ存在しない**(再走行・上書きを機械で止める
 #       = 「一度だけ開ける」の機械。**開けられる回数の上限は 6 本で、それ以上は
 #       この機械を変えないと走らない**)
+#   (f) `--days` が渡っていない(日は `judgment_days` の 456 日に固定。8 回目の指摘 6)
+#   (g) `--out-dir` が台帳 `OPENED.txt` にまだ載っていない(8 回目の指摘 2)
+#   (h) **`--mode full` 以外の経路**が判定区間の日を 1 日も含まない(8 回目の指摘 1)
+#   (i) 作業ツリーが汚れていない(9 回目の指摘 3・15。リードの決定 3・15)
+#   (j) `--data-root` が既定のまま(9 回目の指摘 20。リードの決定 20)
 PREREG = (
     REPO_ROOT / "docs" / "PHASE2" / "O3C" / "PRICE_LEVEL"
     / "REACTION_PREREG_2026-09-18.md"
@@ -218,14 +230,28 @@ FULL_OPENED_LEDGER = FULL_OUT_ROOT / "OPENED.txt"
 OPENED_HEADER = (
     "# `--mode full` が判定区間 456 日を開けた出力先の台帳"
     "(事前登録 §3.1。prereg 監査(8 回目)の指摘 2)。\n"
-    "# 1 行 = <出力先の絶対パス>\\t<UTC 時刻>\\t<--approval の L 番号>。\n"
-    "# ここに載っている出力先は、消してから走らせ直しても関門 (g) で止まる。\n"
+    "# 1 行 = <出力先の絶対パス>\\t<UTC 時刻>\\t<--approval の L 番号>"
+    "\\t<started|done>。\n"
+    "# `started` = 関門を通って開けた(出力を書く前)。`done` = 走行が最後まで終わった。\n"
+    "# **走行が途中で落ちれば `done` の行は出ない。**その出力先は `started` のまま残り、\n"
+    "# 再走行は出力先の有無に関わらず関門 (g) で止まる"
+    "(prereg 監査(9 回目)の指摘 1。リードの決定 1)。\n"
 )
-OPENED_LINE_RE = re.compile(r"^(?P<out>[^\t]+)\t(?P<utc>[^\t]+)\t(?P<approval>.+)$")
+# **`\t<status>` は後から足した列なので、省略されていても読めるようにする**
+# (古い 3 列の行は `status` が None になる)。
+OPENED_LINE_RE = re.compile(
+    r"^(?P<out>[^\t]+)\t(?P<utc>[^\t]+)\t(?P<approval>[^\t]+)(?:\t(?P<status>.+))?$"
+)
+OPENED_STARTED = "started"
+OPENED_DONE = "done"
 
 
 def opened_out_dirs(ledger: Path = FULL_OPENED_LEDGER) -> set[str]:
-    """台帳に載っている出力先(解決済みの絶対パスの文字列)の集合。"""
+    """台帳に載っている出力先(解決済みの絶対パスの文字列)の集合。
+
+    **`started` / `done` を区別しない。**落ちた回(`started` だけの行)も
+    「開けた」として (g) が止める(prereg 監査(9 回目)の指摘 1。リードの決定 1)。
+    """
     if not ledger.exists():
         return set()
     out: set[str] = set()
@@ -239,21 +265,58 @@ def opened_out_dirs(ledger: Path = FULL_OPENED_LEDGER) -> set[str]:
     return out
 
 
+def opened_status(ledger: Path = FULL_OPENED_LEDGER) -> dict[str, set[str]]:
+    """出力先ごとに台帳に載っている状態(`started` / `done`)の集合。
+
+    **`done` が無い出力先 = 走行が最後まで終わっていない**(途中で落ちた回)。
+    **それでも再走行は (g) で止まる**(リードの決定 1)。
+    """
+    if not ledger.exists():
+        return {}
+    out: dict[str, set[str]] = {}
+    for line in ledger.read_text(encoding="utf-8", errors="replace").splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        m = OPENED_LINE_RE.match(s)
+        if m:
+            key = str(Path(m.group("out")).resolve())
+            out.setdefault(key, set()).add(m.group("status") or "(状態なし)")
+    return out
+
+
 def record_opened(
-    out_dir: Path, approval: str | None, ledger: Path = FULL_OPENED_LEDGER
+    out_dir: Path,
+    approval: str | None,
+    ledger: Path = FULL_OPENED_LEDGER,
+    status: str = OPENED_STARTED,
 ) -> Path:
     """`--mode full` が走るたびに台帳へ 1 行追記する(関門を通った直後に呼ぶ)。
 
-    **出力を書く前に追記する。**走行が途中で落ちても「開けた」ことは残る
+    **出力を書く前に `started` を追記する。**走行が途中で落ちても「開けた」ことは残る
     (= 落ちた回を消してやり直す経路も (g) で止まる)。
+    **最後まで終わった回だけ `record_done` が `done` の行を足す。**
     """
     ledger.parent.mkdir(parents=True, exist_ok=True)
     if not ledger.exists():
         ledger.write_text(OPENED_HEADER, encoding="utf-8")
     stamp = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     with ledger.open("a", encoding="utf-8") as fh:
-        fh.write(f"{Path(out_dir).resolve()}\t{stamp}\t{approval or '(なし)'}\n")
+        fh.write(
+            f"{Path(out_dir).resolve()}\t{stamp}\t{approval or '(なし)'}\t{status}\n"
+        )
     return ledger
+
+
+def record_done(
+    out_dir: Path, approval: str | None, ledger: Path = FULL_OPENED_LEDGER
+) -> Path:
+    """走行が最後まで終わった回に `done` の行を足す(prereg 監査(9 回目)の指摘 1)。
+
+    **`done` が無い出力先は「途中で落ちた回」である。**
+    **それでも再走行は (g) で止まる**(台帳は `started` を見るため)。
+    """
+    return record_opened(out_dir, approval, ledger, status=OPENED_DONE)
 
 
 def tool_commit(repo: Path = REPO_ROOT) -> str:
@@ -273,6 +336,38 @@ def tool_commit(repo: Path = REPO_ROOT) -> str:
     if r.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", got):
         return "不明"
     return got
+
+
+def git_status(repo: Path = REPO_ROOT) -> tuple[str, list[str]]:
+    """`git status --porcelain`。返り値 `("clean" | "dirty" | "不明", 変更ファイルの一覧)`。
+
+    **prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15**:
+    **版の担保を 1 本にする。**`git rev-parse HEAD` は作業ツリーを見ないので、
+    **未コミットの変更がある状態で走った回を `tool_commit` だけでは見分けられない。**
+    **走行と読みの両方がこの結果を `summary.json` に記録し、
+    `--mode full` は作業ツリーが汚れていれば「[止め]」になる**(開封はコミット済みの版からだけ)。
+    """
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(repo), "status", "--porcelain"],
+            capture_output=True, text=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return "不明", []
+    if r.returncode != 0:
+        return "不明", []
+    files = [ln[3:].strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
+    return ("dirty" if files else "clean"), files
+
+
+def _dirty_block(repo: Path = REPO_ROOT) -> dict:
+    """`summary.json` に書く汚れの記録(決定 3・15)。
+
+    **走行の後からは作り直せないので、走った回ごとに残す。**
+    """
+    state, files = git_status(repo)
+    return {"状態": state, "汚れているか": state != "clean",
+            "変更ファイル": files}
 
 
 def read_approval_from_prereg(prereg: Path = PREREG) -> tuple[str | None, str]:
@@ -353,6 +448,8 @@ def check_approval(
     data_root: Path | None = None,
     days_given: bool = False,
     ledger: Path = FULL_OPENED_LEDGER,
+    worktree: tuple[str, list[str]] | None = None,
+    default_data_root: Path | None = None,
 ) -> None:
     """判定区間の日を開ける経路に、承認行の実在を要求する。無ければ SystemExit。
 
@@ -362,8 +459,9 @@ def check_approval(
 
     - `--mode sample` は既定の標本 6 日(`SAMPLE_DAYS`)だけ無審査で走る。
       それ以外の日を 1 日でも含むなら `--approval L-NNN` が要る。
-    - `--mode full` は **(a)〜(g) の 7 つ**を全部通したときだけ走る
-      (prereg 監査(7 回目)の指摘 1・18・20 と 8 回目の指摘 1・2・6。上の定数の注)。
+    - `--mode full` は **(a)〜(j) の 10 個**を全部通したときだけ走る
+      (prereg 監査(7 回目)の指摘 1・18・20、8 回目の指摘 1・2・6、
+      9 回目の指摘 3・15・20。上の定数の注)。
     - `--mode anchor` は**出力の側**も絞る
       (標本 6 日以外を含む走行では生の `bp_h` 列を書かない = `emit_raw_bp`)。
 
@@ -376,10 +474,21 @@ def check_approval(
     出力先の制限も回数の上限も掛からなかった**(8 回目の指摘 1。
     **§14.4.1 の埋め込みで実際に 456 日が 2 回開いたのがこの経路である**)。
 
-    **`prereg` / `allowed_out_dirs` / `data_root` / `ledger` は試験のためだけの
-    既定引数である。CLI の旗にはしていない**(`main()` は `data_root` と
-    `days_given` だけを渡し、`prereg` / `allowed_out_dirs` / `ledger` は渡さない
-    = 迂回できない)。
+    **prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15**:
+    **(i)** `--mode full` は**作業ツリーが汚れていれば「[止め]」**である
+    (**開封はコミット済みの版からだけ**)。`git status --porcelain` の結果は
+    `summary.json` にも記録する。
+
+    **prereg 監査(9 回目)の指摘 20。リードの決定 20**:
+    **(j)** `--mode full` は **`--data-root` の変更を受け付けない**(既定以外なら「[止め]」)。
+    **(h) の集合は `--data-root` の在庫から作る**ので、在庫を差し替えると (h) だけが
+    効かなくなる、という非対称があった(指摘 20)。**full の側でその差し替えを止める。**
+
+    **`prereg` / `allowed_out_dirs` / `data_root` / `ledger` / `worktree` /
+    `default_data_root` は試験のためだけの既定引数である。CLI の旗にはしていない**
+    (`main()` は `data_root` と `days_given` だけを渡し、
+    `prereg` / `allowed_out_dirs` / `ledger` / `worktree` / `default_data_root` は
+    渡さない = 迂回できない)。
     """
     if mode != "full":
         # --- 決定 1: 判定区間の日は `--mode full` 以外では 1 日も開けない --------
@@ -483,7 +592,31 @@ def check_approval(
             f"[止め] --out-dir {out_dir} は既に {ledger} に載っている"
             "(この出力先で判定区間を一度開けている)。\n"
             "       出力先を消してからの再走行もここで止まる"
-            "(事前登録 §3.1。prereg 監査(8 回目)の指摘 2)"
+            "(事前登録 §3.1。prereg 監査(8 回目)の指摘 2)。\n"
+            "       走行が途中で落ちた回(`done` の行が無い回)も同じく止まる"
+            "(prereg 監査(9 回目)の指摘 1)"
+        )
+    # (i) 作業ツリーが汚れていないか(開封はコミット済みの版からだけ)。
+    #     **prereg 監査(9 回目)の指摘 3・15。リードの決定 3・15。**
+    state, files = worktree if worktree is not None else git_status()
+    if state != "clean":
+        head = " / ".join(files[:5]) + (" …" if len(files) > 5 else "")
+        raise SystemExit(
+            "[止め] 作業ツリーがコミット済みでない"
+            f"(git status --porcelain: {state}{('、' + head) if files else ''})。\n"
+            "       判定区間はコミット済みの版からだけ開ける"
+            "(事前登録 §14.4。prereg 監査(9 回目)の指摘 3・15)"
+        )
+    # (j) `--data-root` が既定のままか(在庫の差し替えで (h) が空回りするのを止める)。
+    #     **prereg 監査(9 回目)の指摘 20。リードの決定 20。**
+    dflt = Path(default_data_root if default_data_root is not None
+                else base.DEFAULT_DATA_ROOT).resolve()
+    if data_root is not None and Path(data_root).resolve() != dflt:
+        raise SystemExit(
+            f"[止め] --mode full では --data-root を既定から変えられない"
+            f"(渡された値: {data_root} / 既定: {dflt})。\n"
+            "       在庫を差し替えると関門 (h) の判定区間の日の集合が空になる"
+            "(事前登録 §3.1 の「残る穴」。prereg 監査(9 回目)の指摘 20)"
         )
 
 
@@ -1411,6 +1544,9 @@ def _finish_anchor(
         },
         # **決定 16(8 回目の指摘 16)**: 走行の道具の版(`git rev-parse HEAD`)。
         "tool_commit": tool_commit(),
+        # **決定 3・15(9 回目の指摘 3・15)**: 作業ツリーが汚れていたか
+        # (`git status --porcelain`)。**版の担保を 1 本にする。**
+        "tool_dirty": _dirty_block(),
         "elapsed_sec": round(time.time() - t0, 2),
         "liq_rows_raw": dedup_stats.n_in,
         "liq_rows_unique": dedup_stats.n_out,
@@ -2342,6 +2478,9 @@ def build_table_summary(
         # (`git rev-parse HEAD`。取れなければ「不明」)。**params には入れない**
         # (読みの側の `params` の検査の鍵の数を変えないため)。
         "tool_commit": tool_commit(),
+        # **決定 3・15(9 回目の指摘 3・15)**: 作業ツリーが汚れていたか。
+        # **読みの側はこれを見て「6 本とも汚れていない」を確かめる。**
+        "tool_dirty": _dirty_block(),
         "elapsed_sec": round(elapsed, 2),
         "liq_rows_raw": dedup_stats.n_in,
         "liq_rows_unique": dedup_stats.n_out,
@@ -2491,6 +2630,10 @@ def main(argv: list[str] | None = None) -> int:
         f" / W = {a.window_hours}h / gap = {a.gap_sec}s"
         f" / 所要 {s['elapsed_sec']} 秒 -> {out_dir}"
     )
+    if a.mode == "full":
+        # **決定 1(9 回目の指摘 1)**: 最後まで終わった回だけ `done` を足す。
+        # **落ちた回は `started` のまま残り、再走行は (g) で止まる。**
+        record_done(out_dir, a.approval)
     return 0
 
 
