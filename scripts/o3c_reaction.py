@@ -27,9 +27,13 @@
   --mode full     設計 §9 の手順 3。**判定区間 = 標本 6 日と、12 日走行で開いた 10 日を
                   除いた 456 日**(`judgment_days`。2026-09-18 の監査の指摘 4 と
                   指摘 2・14 / 返答 060 の #1)。
-                  **`--approval L-NNN` が必須で、`docs/OWNER_LOG.md` に行頭
-                  `| L-NNN |` の行が実在するときだけ走る**(設計 §9 の機械)。
-                  無ければ終了コード非 0 で即座に止まる。
+                  **開封前の関門 5 つを全部通したときだけ走る**(prereg 監査(7 回目)の
+                  指摘 1・18・20。`check_approval` の注): (a) `--approval` が事前登録 §14.4 の
+                  欄「応答の L 番号」と一致 / (b) その番号が L-199 より後 /
+                  (c) `docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が実在 /
+                  (d) `--out-dir` が §14.1・§14.2 の 6 つのどれか /
+                  (e) `--out-dir` がまだ存在しない(再走行・上書きを止める)。
+                  1 つでも欠ければ終了コード非 0 で即座に止まる。
 
 **符号の約束(設計 §3 の 2 つの文が食い違っていたので、ここで分けた。報告の §0.1 に
 (該当語なし)の行として出す)**:
@@ -153,6 +157,72 @@ UTC_CHECK_TOP_N = 100
 OWNER_LOG = REPO_ROOT / "docs" / "OWNER_LOG.md"
 APPROVAL_RE = re.compile(r"^L-\d{3,}$")
 
+# --------------------------------------------------------------------------
+# 開封前の関門(prereg 監査(7 回目)の指摘 1・18・20。リードの決定 1・18・20)
+# --------------------------------------------------------------------------
+# **前版の `--mode full` の関門は「`docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が実在するか」
+# しか見ていなかった**(7 回目の監査の実測)。**読みの側は `params.approval` を事前登録
+# §14.4 の欄と突き合わせるが、それは 6 本を走らせた後の段である。**
+# **間違った(あるいは古い)L 番号のまま 456 日を 6 回開け終わるまで、何も止まらなかった。**
+# **開封の前に、次の 5 つを全部通したときだけ走る**(事前登録 §3.1・§14.1・§14.4・§14.6):
+#   (a) 事前登録 §14.4 の欄「応答の L 番号」が埋まっていて、`--approval` と一致する
+#   (b) その番号が L-199 より大きい(L-199 は「1 = a、9 = a」への応答であって、
+#       報告 062 への応答ではない)
+#   (c) `docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が実在する(従来どおり)
+#   (d) `--out-dir` が §14.1・§14.2 の 6 つのパスのどれかである
+#   (e) `--out-dir` が**まだ存在しない**(再走行・上書きを機械で止める
+#       = 「一度だけ開ける」の機械。**開けられる回数の上限は 6 本で、それ以上は
+#       この機械を変えないと走らない**)
+PREREG = (
+    REPO_ROOT / "docs" / "PHASE2" / "O3C" / "PRICE_LEVEL"
+    / "REACTION_PREREG_2026-09-18.md"
+)
+# 欄の形は **応答の L 番号**: **L-NNN**(埋まっていなければ **(まだ無い…)**)。
+# **行の形ごと固定する**(本文の他の場所にある「応答の L 番号」という語を拾わないため)。
+# 読みのスクリプト `scripts/o3c_reaction_judge.py` と同じ正規表現である(同じ欄を読む)。
+APPROVAL_FIELD_RE = re.compile(
+    r"^[ \t>]*\*\*応答の L 番号\*\*\s*[:：]\s*\*\*(.+?)\*\*\s*$", re.MULTILINE
+)
+APPROVAL_VALUE_RE = re.compile(r"^L-(\d+)$")
+# **L-199 より大きくなければ止める**(指摘 18。リードの決定 1 の (b))。
+APPROVAL_MIN_L = 199
+# **`--mode full` で書いてよい出力先(事前登録 §14.1 の 2 本 + §14.2 の感度 4 本)。**
+FULL_OUT_DIRS_REL = (
+    "backtest_data/o3c_reaction_20260918_full/gap60_w8",
+    "backtest_data/o3c_reaction_20260918_full/gap60_w24",
+    "backtest_data/o3c_reaction_20260918_full/gap30_w8",
+    "backtest_data/o3c_reaction_20260918_full/gap180_w8",
+    "backtest_data/o3c_reaction_20260918_full/gap30_w24",
+    "backtest_data/o3c_reaction_20260918_full/gap180_w24",
+)
+FULL_OUT_DIRS = tuple(REPO_ROOT / p for p in FULL_OUT_DIRS_REL)
+
+
+def read_approval_from_prereg(prereg: Path = PREREG) -> tuple[str | None, str]:
+    """事前登録 §14.4 の欄「応答の L 番号」を読む。返り値 `(L 番号, 説明)`。
+
+    **欄が「(まだ無い)」なら `None`** を返し、呼び出し側が「[止め]」にする。
+    **迂回する旗は作っていない**(`--approval` を渡しても、この欄と一致しなければ止まる)。
+    """
+    if not prereg.exists():
+        return None, f"事前登録が読めない({prereg})"
+    text = prereg.read_text(encoding="utf-8", errors="replace")
+    fields = [m.strip() for m in APPROVAL_FIELD_RE.findall(text)]
+    if not fields:
+        return None, f"事前登録に「応答の L 番号」の欄が 1 つも無い({prereg})"
+    if len(set(fields)) > 1:
+        return None, (
+            "事前登録の「応答の L 番号」の欄が "
+            f"{len(set(fields))} 通りある: {sorted(set(fields))}"
+        )
+    value = fields[0]
+    if not APPROVAL_VALUE_RE.match(value):
+        return None, (
+            "事前登録 §14.4 の「応答の L 番号」の欄が埋まっていない"
+            f"(欄の値: {value!r})"
+        )
+    return value, f"事前登録 §14.4 の「応答の L 番号」の欄({prereg})"
+
 
 # --------------------------------------------------------------------------
 # 承認の関門(設計 §9 の手順 2 -> 3 の機械)
@@ -181,6 +251,9 @@ def check_approval(
     approval: str | None,
     owner_log: Path = OWNER_LOG,
     days: list[str] | None = None,
+    out_dir: Path | None = None,
+    prereg: Path = PREREG,
+    allowed_out_dirs: tuple[Path, ...] = FULL_OUT_DIRS,
 ) -> None:
     """判定区間の日を開ける経路に、承認行の実在を要求する。無ければ SystemExit。
 
@@ -190,9 +263,13 @@ def check_approval(
 
     - `--mode sample` は既定の標本 6 日(`SAMPLE_DAYS`)だけ無審査で走る。
       それ以外の日を 1 日でも含むなら `--approval L-NNN` が要る。
-    - `--mode full` は従来どおり常に `--approval L-NNN` が要る。
+    - `--mode full` は **(a)〜(e) の 5 つ**を全部通したときだけ走る
+      (prereg 監査(7 回目)の指摘 1・18・20。上の定数の注)。
     - `--mode anchor` は日では止めない。代わりに**出力の側**を絞る
       (標本 6 日以外を含む走行では生の `bp_h` 列を書かない = `emit_raw_bp`)。
+
+    **`prereg` と `allowed_out_dirs` は試験のためだけの既定引数である。**
+    **CLI の旗にはしていない**(`main()` はどちらも渡さない = 迂回できない)。
     """
     if mode == "sample":
         extra = sorted(set(days or []) - set(SAMPLE_DAYS))
@@ -216,10 +293,51 @@ def check_approval(
             "[止め] --mode full には --approval L-NNN が要る"
             "(設計 §9: 標本 6 日の表をオーナーに見せた回の記録の番号)"
         )
+    # (a) 事前登録 §14.4 の欄と一致するか(欄が空なら止める)。
+    field, note = read_approval_from_prereg(prereg)
+    if field is None:
+        raise SystemExit(
+            "[止め] 事前登録 §14.4 の「応答の L 番号」が読めないので、判定区間を開けない。\n"
+            f"       {note}\n"
+            "       オーナーの応答(L 番号)を §14.4 の欄に書き写してから走らせる。"
+        )
+    if approval != field:
+        raise SystemExit(
+            f"[止め] --approval {approval} が事前登録 §14.4 の欄({field})と違う。"
+            "判定区間を開けない(prereg 監査(7 回目)の指摘 1)"
+        )
+    # (b) L-199 より大きいか(L-199 は「1 = a、9 = a」への応答で、報告 062 への応答ではない)。
+    m = APPROVAL_VALUE_RE.match(approval)
+    if not m or int(m.group(1)) <= APPROVAL_MIN_L:
+        raise SystemExit(
+            f"[止め] --approval {approval} は L-{APPROVAL_MIN_L} より後の番号でない。"
+            f"L-{APPROVAL_MIN_L} は「1 = a、9 = a」への応答であって、"
+            "報告 062 への応答ではない(prereg 監査(7 回目)の指摘 18)"
+        )
+    # (c) 承認の行が `docs/OWNER_LOG.md` に実在するか(従来どおり)。
     if not approval_line_exists(approval, owner_log):
         raise SystemExit(
             f"[止め] {owner_log} に行頭 `| {approval} |` の行が無い。全件は走らせない"
             "(設計 §9 の機械)"
+        )
+    # (d) 出力先が事前登録 §14.1・§14.2 の 6 つのどれかか。
+    if out_dir is None:
+        raise SystemExit(
+            "[止め] --mode full の関門に --out-dir が渡っていない"
+            "(事前登録 §14.1・§14.2 の 6 つのどれかでなければ走らせない)"
+        )
+    target = Path(out_dir).resolve()
+    allowed = [Path(p).resolve() for p in allowed_out_dirs]
+    if target not in allowed:
+        raise SystemExit(
+            f"[止め] --out-dir {out_dir} は事前登録 §14.1・§14.2 の 6 つに無い。\n"
+            "       開けてよい出力先: " + " / ".join(FULL_OUT_DIRS_REL)
+        )
+    # (e) 出力先が既に在るなら止める(再走行・上書きを機械で止める)。
+    if target.exists():
+        raise SystemExit(
+            f"[止め] --out-dir {out_dir} は既に存在する。"
+            "判定区間は一度だけ開ける(事前登録 §3.1。上書き・再走行はここで止まる)"
         )
 
 
@@ -2152,7 +2270,9 @@ def main(argv: list[str] | None = None) -> int:
         "--approval",
         default=None,
         help="--mode full は必須。--mode sample も標本 6 日の外を開けるなら必須"
-        "(docs/OWNER_LOG.md に行頭 `| L-NNN |` が要る)",
+        "(docs/OWNER_LOG.md に行頭 `| L-NNN |` が要る)。"
+        "--mode full では事前登録 §14.4 の欄「応答の L 番号」と一致し、L-199 より後で、"
+        "--out-dir が §14.1・§14.2 の 6 つのどれかで、まだ存在しないことも要る",
     )
     a = ap.parse_args(argv)
 
@@ -2174,7 +2294,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         days = None
 
-    check_approval(a.mode, a.approval, days=days)
+    check_approval(a.mode, a.approval, days=days, out_dir=out_dir)
 
     if a.mode == "anchor":
         s = run_anchor(root, out_dir, gap_ms, days, granularity=a.granularity)

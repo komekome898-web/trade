@@ -174,6 +174,10 @@ JUDGMENT_N_DAYS = 456                        # §3 判定区間の日数
 SAMPLE_N_DAYS = 6                            # §8.6 標本の日数
 GAP_SEC_JUDGE = 60                           # §14.1 判定に使う走行の gap
 WINDOW_HOURS_FIXED = {RUN_W8: 8.0, RUN_W24: 24.0}
+# **決定 2'''''(走行前の再監査(7 回目)の指摘 2)**: 感度は §14.2 の 4 本をすべて渡す。
+# **1 本でも欠ければ「[止め]」**(感度の検査が破れても判定の表は書くようにしたので、
+# 「渡さなければ検査もされない」形を先に塞ぐ)。
+SENS_REQUIRED = ("gap30_w8", "gap180_w8", "gap30_w24", "gap180_w24")
 # **決定 1''''(走行前の再監査(6 回目)の指摘 1)**: 凍結した入力のうち、
 # §14.5 の決定 3 が「6 本すべてに付ける」と書いた `--mmr` と、§14.1 が「主指標に効く」と
 # 書いた `--seed` を、前版の `params` の検査が見ていなかった(**6 回目の監査の実測**:
@@ -1082,7 +1086,11 @@ MDE_COL = "MDE(α=0.05/576)"
 # **決定 7''''(走行前の再監査(6 回目)の指摘 7)**: **感度の表の MDE 列は名前を変える。**
 # §10.2 は「感度の行は 576 にも α にも F1 の読みにも 1 つも入らない」と書いているのに、
 # 前版は感度の表にも族の α の名前が付いた列見出しをそのまま出していた。
-SENS_MDE_COL = "MDE(参考。族の α に入らない)"
+# **決定 6'''''(同 7 回目の指摘 6)**: **`observation_only.csv` の 2,208 行も
+# 576 にも α にも F1 の読みにも 1 行も入らない**(§10.2)。**同じ理由がこの表にも当たる。**
+# **族に入らない行の MDE の列見出しは 1 つにする**(`SENS_MDE_COL` は旧名。同じ文字列)。
+REF_MDE_COL = "MDE(参考。族の α に入らない)"
+SENS_MDE_COL = REF_MDE_COL
 JUDGE_HEADER = [
     "観測量", "群", "h", "n1", "n2", "実群", "対照(i)", "対照(ii)",
     "差(ii)", "差(i)", "対照(i)SE", "走行", "対照(ii)の軸の作り方",
@@ -1092,19 +1100,27 @@ JUDGE_HEADER = [
 # §10.2: 同じ形で出すが、`t` の列と `判定` の列(とそれに付く列)を置かない。
 # **`対照(ii)の軸の作り方` は両方の表に出す**(決定 22''。行単位で読む人が
 # 14 群と 34 群を取り違えないため)。
+OBS_DROPPED_COLS = ("t", "ブートストラップSE", "有限な複製の本数", "CI下限", "CI上限",
+                    "バー近傍", "判定")
 OBS_HEADER = [
-    c for c in JUDGE_HEADER
-    if c not in ("t", "ブートストラップSE", "有限な複製の本数", "CI下限", "CI上限",
-                 "バー近傍", "判定")
+    (REF_MDE_COL if c == MDE_COL else c)
+    for c in JUDGE_HEADER if c not in OBS_DROPPED_COLS
 ]
-# 感度の表だけ MDE の列見出しを差し替える(決定 7''''。列の順は同じ)。
-SENS_HEADER = [SENS_MDE_COL if c == MDE_COL else c for c in OBS_HEADER]
+# 感度の表も同じ見出しである(決定 6'''''。旧名 `SENS_HEADER` は残す)。
+SENS_HEADER = OBS_HEADER
 
 
-def to_sens_rows(rows: list[dict]) -> list[dict]:
-    """感度の表の行の MDE の鍵を `SENS_MDE_COL` に付け替える(決定 7'''')。"""
-    return [{(SENS_MDE_COL if k == MDE_COL else k): v for k, v in r.items()}
+def to_ref_mde_rows(rows: list[dict]) -> list[dict]:
+    """観測のみの表(判定にも α にも入らない行)の MDE の鍵を `REF_MDE_COL` に付け替える。
+
+    決定 7''''(感度の表)+ **決定 6'''''(`observation_only.csv` にも当てる)**。
+    """
+    return [{(REF_MDE_COL if k == MDE_COL else k): v for k, v in r.items()}
             for r in rows]
+
+
+# 旧名(決定 7'''' で入れた名前)。同じ関数である。
+to_sens_rows = to_ref_mde_rows
 
 
 def _fmt(x, nd=6) -> str:
@@ -1304,6 +1320,47 @@ def write_md5(out: Path, names: list[str]) -> None:
     (out / "MD5SUMS").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+STOPPED_NAME = "stopped.txt"
+
+
+def write_stopped(out: Path, judge_bad: list[tuple[str, str]],
+                  sens_bad: dict[str, list[tuple[str, str]]]) -> Path:
+    """**決定 2'''''(7 回目の指摘 2)**: 判定の側の検査が破れたときの記録を書く。
+
+    中身は「破れた検査・走行・理由」だけである(**観測量は 1 つも書かない**)。
+    **表は 1 枚も書かない。**§10.3 の「なぜ」を書くときの材料はこのファイルと
+    `summary.json` の感度の記録である。
+    **判定語の走査を通してから書く**(通らなければ検査の名前だけにする)。
+    """
+    lines = ["段 A の読み: 判定の表を 1 枚も書かずに止まった(決定 2''''')。", ""]
+    lines.append("破れた検査(判定に使う走行とその標本):")
+    for check, msg in judge_bad:
+        lines.append(f"  - [{check}] {msg}")
+    if sens_bad:
+        lines.append("")
+        lines.append("同じ回に感度の走行でも破れた検査(参考):")
+        for nm, items in sens_bad.items():
+            for check, msg in items:
+                lines.append(f"  - [{nm}] [{check}] {msg}")
+    lines += [
+        "",
+        "事前登録 §14.6 の決まり: --mode full の再走行はしない。",
+        "破れた走行に依存する判定は「不明(検査で止まった)」として結果に書き、",
+        "1 周目はそこで終わる。再走行は新しい開封として §3.1 に数え、オーナーの決定が要る。",
+    ]
+    text = "\n".join(lines) + "\n"
+    if scan_rows_forbidden({STOPPED_NAME: text}):
+        # 検査の文言に判定語が混ざった場合だけ、名前の一覧に落とす(語は出さない)。
+        text = ("段 A の読み: 判定の表を 1 枚も書かずに止まった(決定 2''''')。\n"
+                "破れた検査: "
+                + " / ".join(sorted({c for c, _ in judge_bad})) + "\n"
+                "理由の文言に判定語が混ざっていたので、本文は書いていない"
+                "(標準出力を見る)。\n")
+    out.mkdir(parents=True, exist_ok=True)
+    (out / STOPPED_NAME).write_text(text, encoding="utf-8")
+    return out / STOPPED_NAME
+
+
 def scan_forbidden(out: Path, names: list[str]) -> list[str]:
     hits = []
     for n in names:
@@ -1438,6 +1495,7 @@ def main(argv=None) -> int:
 
     sens: dict[str, Run] = {}
     sens_samples: dict[str, Run] = {}
+    sens_unreadable: dict[str, str] = {}   # 決定 2''''': 読めなかった感度(名前 -> 理由)
     for spec in a.sens:
         if "=" not in spec:
             sys.stderr.write(
@@ -1446,12 +1504,39 @@ def main(argv=None) -> int:
         nm, _, rest = spec.partition("=")
         nm = nm.strip()
         d, _, smp = rest.partition(":")       # 決定 8'': 標本は任意
-        if nm in runs or nm in sens:
+        if nm in runs or nm in sens or nm in sens_unreadable:
             sys.stderr.write(f"[止め] --sens の名前が重なっている: {nm}\n")
             return 1
-        sens[nm] = Run(nm, Path(d.strip()))
+        # **決定 2'''''(7 回目の指摘 2)**: 感度の走行が読めないことも「その走行の検査が
+        # 破れた」として扱う(**判定の表は書く**)。**判定の 2 本とその標本は上で素直に
+        # 読んでいる**(読めなければ例外で落ちる = 判定の側は 1 行も出さない)。
+        try:
+            sens[nm] = Run(nm, Path(d.strip()))
+        except OSError as e:
+            sens_unreadable[nm] = f"{nm}: 感度の走行が読めない({d.strip()}): {e}"
+            continue
         if smp.strip():
-            sens_samples[nm] = Run(f"{nm}(標本)", Path(smp.strip()))
+            try:
+                sens_samples[nm] = Run(f"{nm}(標本)", Path(smp.strip()))
+            except OSError as e:
+                sens_unreadable[nm] = (
+                    f"{nm}(標本): 感度の標本が読めない({smp.strip()}): {e}")
+                sens.pop(nm, None)
+
+    # --- 決定 2'''''(7 回目の指摘 2): 感度 4 本は必ず渡す ----------------------
+    # **感度の走行の検査が破れても判定の表は書く**(下)ので、**渡し忘れで感度が
+    # 「無かったこと」になる形を先に塞ぐ。**§14.2 の 4 本をすべて要求する。
+    missing_sens = [nm for nm in SENS_REQUIRED
+                    if nm not in sens and nm not in sens_unreadable]
+    extra_sens = [nm for nm in list(sens) + list(sens_unreadable)
+                  if nm not in SENS_REQUIRED]
+    if missing_sens or extra_sens:
+        sys.stderr.write(
+            "[止め] --sens が §14.2 の 4 本と合わない。表を 1 枚も書かずに終わる。\n"
+            f"       要る名前: {' / '.join(SENS_REQUIRED)}\n"
+            + (f"       渡っていない: {' / '.join(missing_sens)}\n" if missing_sens else "")
+            + (f"       4 本に無い名前: {' / '.join(extra_sens)}\n" if extra_sens else ""))
+        return 1
 
     # --- 決定 2'''': 事前登録 §14.4 の「応答の L 番号」を読む -------------------
     prereg = Path(a.root) / PREREG_REL
@@ -1464,7 +1549,26 @@ def main(argv=None) -> int:
             "       オーナーの応答(L 番号)を §14.4 の欄に書き写してから走らせる。\n")
         return 1
 
+    # === 3 つの検査(params / サニティ #14 / 軸の作り方)==========================
+    # **決定 2'''''(走行前の再監査(7 回目)の指摘 2)**:
+    # **前版はこの 3 つのどれか 1 つでも破れると「表を 1 枚も書かずに終わる」形だったので、
+    # 感度 1 本の食い違いでも 576 行すべてが読めなくなった。**
+    # **456 日を 6 本開けたうえで 1 行も出さずに 1 周目が終わる、という帰結になる。**
+    # **判定の側(判定 2 本とその標本)と感度の側を分ける**:
+    #   * 判定の側が破れたら、**表は書かないが `stopped.txt`(破れた検査・走行・理由)を
+    #     出力先に書く**(§10.3 の「なぜ」の材料をここに残す)。
+    #   * 感度の側が破れたら、**その走行の表だけ書かず `summary.json` に記録し、
+    #     判定の表は書く**(感度は観測のみで、576 にも α にも F1 の読みにも入らない)。
+    judge_bad: list[tuple[str, str]] = []      # (検査の名前, 理由)
+    sens_bad: dict[str, list[tuple[str, str]]] = {nm: [] for nm in sens}
+    for nm, why in sens_unreadable.items():
+        sens_bad.setdefault(nm, []).append(("感度の走行が読めない", why))
+
+    def _sens_add(nm: str, check: str, msgs: list[str]) -> None:
+        sens_bad[nm] += [(check, m) for m in msgs]
+
     # --- 決定 12''': 渡されたディレクトリが名前どおりの走行か(params の検査)-----
+    CHK_PARAMS = "params の検査(決定 12''')"
     bad = []
     for nm, r in runs.items():
         bad += check_run_params(r, mode="full", gap_sec=GAP_SEC_JUDGE,
@@ -1480,61 +1584,78 @@ def main(argv=None) -> int:
                                 gap_sec=GAP_SEC_JUDGE,
                                 window_hours=WINDOW_HOURS_FIXED[nm],
                                 label=f"{nm}(標本)")
+    judge_bad += [(CHK_PARAMS, b) for b in bad]
     for nm, r in sens.items():
         want = _sens_name_params(nm)
         if want is None:
-            bad.append(f"{nm}: --sens の名前が gap<秒>_w<時間> の形でないので、"
-                       f"走行の params と突き合わせられない")
+            _sens_add(nm, CHK_PARAMS,
+                      [f"{nm}: --sens の名前が gap<秒>_w<時間> の形でないので、"
+                       f"走行の params と突き合わせられない"])
             continue
-        bad += check_run_params(r, mode="full", gap_sec=want[0], window_hours=want[1],
-                                n_days=JUDGMENT_N_DAYS, label=nm, settings=True)
+        # **決定 11'''''(7 回目の指摘 11)**: **感度 4 本も同じ 456 日を開ける**ので、
+        # **`params.approval` も判定 2 本と同じ L 番号と突き合わせる。**
+        _sens_add(nm, CHK_PARAMS,
+                  check_run_params(r, mode="full", gap_sec=want[0],
+                                   window_hours=want[1], n_days=JUDGMENT_N_DAYS,
+                                   label=nm, settings=True, approval=approval))
     for nm, r in sens_samples.items():
         want = _sens_name_params(nm)
         if want is None:
-            bad.append(f"{nm}(標本): --sens の名前が gap<秒>_w<時間> の形でないので、"
-                       f"標本の params と突き合わせられない")
+            _sens_add(nm, CHK_PARAMS,
+                      [f"{nm}(標本): --sens の名前が gap<秒>_w<時間> の形でないので、"
+                       f"標本の params と突き合わせられない"])
             continue
-        bad += check_run_params(r, mode="sample", n_days=SAMPLE_N_DAYS,
-                                gap_sec=want[0], window_hours=want[1],
-                                label=f"{nm}(標本)")
-    if bad:
-        sys.stderr.write(
-            "[止め] 渡された走行が名前と合わない(params の検査)。"
-            "表を 1 枚も書かずに終わる。\n"
-            + "".join(f"       - {b}\n" for b in bad)
-        )
-        return 1
+        _sens_add(nm, CHK_PARAMS,
+                  check_run_params(r, mode="sample", n_days=SAMPLE_N_DAYS,
+                                   gap_sec=want[0], window_hours=want[1],
+                                   label=f"{nm}(標本)"))
 
     # --- サニティ #14(決定 6' + 12'' + 2'''): 1 対 1 の対応を走行ごとに測る ----
     # **決定 2'''(5 回目の指摘 2)**: **標本の走行にも掛ける。**
     # 標本の 1 対 1 が崩れると MDE の `p`・`s` の母集団が黙って変わるので、
     # 判定の走行と同じ検査を当てる。
-    bad = []
-    for r in (list(runs.values()) + list(samples.values())
-              + list(sens.values()) + list(sens_samples.values())):
-        bad += check_pairing(r)
-    if bad:
-        sys.stderr.write(
-            "[止め] サニティ #14(1 対 1 の対応)が通らない。表を 1 枚も書かずに終わる。\n"
-            + "".join(f"       - {b}\n" for b in bad)
-        )
-        return 1
+    CHK_PAIRING = "サニティ #14(1 対 1 の対応)"
+    for r in list(runs.values()) + list(samples.values()):
+        judge_bad += [(CHK_PAIRING, b) for b in check_pairing(r)]
+    for nm, r in sens.items():
+        _sens_add(nm, CHK_PAIRING, check_pairing(r))
+    for nm, r in sens_samples.items():
+        _sens_add(nm, CHK_PAIRING, check_pairing(r))
 
     # --- 決定 3'': 対照 (ii) の軸の作り方が事前登録の固定と一致するか ----------
     # **決定 8''''(6 回目の指摘 8)**: **標本の走行にも掛ける。**
     # 標本側の群分けも `control_axis_kinds` の結果で決まる(`membership`)ので、
     # 列の在り方が違えば MDE の `p`・`s` の母集団が変わる。サニティ #14 と同じ形にした。
-    bad = []
-    for r in (list(runs.values()) + list(samples.values())
-              + list(sens.values()) + list(sens_samples.values())):
-        bad += check_axis_kinds(r)
-    if bad:
+    CHK_AXIS = "対照 (ii) の軸の作り方(決定 3'')"
+    for r in list(runs.values()) + list(samples.values()):
+        judge_bad += [(CHK_AXIS, b) for b in check_axis_kinds(r)]
+    for nm, r in sens.items():
+        _sens_add(nm, CHK_AXIS, check_axis_kinds(r))
+    for nm, r in sens_samples.items():
+        _sens_add(nm, CHK_AXIS, check_axis_kinds(r))
+
+    # --- 判定の側が破れたら stopped.txt を書いて終わる(表は 1 枚も書かない)-----
+    if judge_bad:
+        write_stopped(Path(a.out_dir), judge_bad,
+                      {nm: v for nm, v in sens_bad.items() if v})
         sys.stderr.write(
-            "[止め] 対照 (ii) の軸の作り方が事前登録 §4 の固定と違う。"
-            "表を 1 枚も書かずに終わる(測った側に合わせ直さない)。\n"
-            + "".join(f"       - {b}\n" for b in bad)
+            "[止め] 判定に使う走行の検査が通らない。表を 1 枚も書かずに終わる"
+            f"(破れた検査は {Path(a.out_dir) / STOPPED_NAME} に書いた)。\n"
+            + "".join(f"       - [{c}] {b}\n" for c, b in judge_bad)
         )
         return 1
+
+    # --- 感度の側が破れた走行は落とす(判定の表は書く。決定 2''''')--------------
+    sens_dropped = {nm: v for nm, v in sens_bad.items() if v}
+    for nm in sens_dropped:
+        sens.pop(nm, None)
+        sens_samples.pop(nm, None)
+        sys.stderr.write(
+            f"[注意] 感度の走行 {nm} は検査が通らないので、その表を書かない"
+            "(判定の表は書く。理由は summary.json の"
+            "「感度の走行の検査(決定 2''''')」)。\n"
+            + "".join(f"       - [{c}] {b}\n" for c, b in sens_bad[nm])
+        )
 
     groups = build_groups(runs[RUN_W8], runs[RUN_W24])
     if len(groups) != N_GROUPS:
@@ -1556,6 +1677,9 @@ def main(argv=None) -> int:
     flat24 = build_flat_groups_w24(runs[RUN_W24])
     obs_rows += build_rows(runs, samples, flat24, boot, judge=False,
                            systems=judge_systems())
+    # **決定 6'''''(7 回目の指摘 6)**: **この表の行も 576 にも α にも F1 の読みにも
+    # 1 行も入らない**ので、MDE の列見出しを族の α の名前にしない。
+    obs_rows = to_ref_mde_rows(obs_rows)
     # 決定 19': 感度 1 本ごとに観測のみの表を 1 枚ずつ出す(判定には 1 行も入らない)。
     sens_rows: dict[str, list[dict]] = {}
     for nm, r in sens.items():
@@ -1588,7 +1712,13 @@ def main(argv=None) -> int:
         "見たセル: 主軸 D の D1 × 戻り到達 2 系統 × h 6 本 = "
         f"{len(cells)} セル(走行 {RUN_W8})\n"
     )
-    reps_used_all = [int(r["有限な複製の本数"]) for r in judge_rows if r.get("有限な複製の本数") != ""]
+    # **決定 7'''''(7 回目の指摘 7)**: **「最小」「最大」も検定したセルだけから取る。**
+    # **前版は `judge_rows` 全部から取っていたので、群が空で本数 0 のセルが混ざり、
+    # 「最小 0」が出た。**§10.3 は「本数が少ないセル」と「検定が成り立たないセル」を
+    # 別の欄に分けると決めたのに、最小・最大はその区別の外にあった(標準出力も同じ)。
+    _untested = (UNKNOWN_N, UNKNOWN_N2)
+    reps_used_all = [int(r["有限な複製の本数"]) for r in judge_rows
+                     if r.get("有限な複製の本数") != "" and r["判定"] not in _untested]
     # **決定 16'''(5 回目の指摘 16)**: 本数が `REPS` に満たないセルを 1 行ずつ出す。
     # **閾値は置かない**(A-12)。**読む人が「本数 2 のセル」と「本数 2,000 のセル」を
     # 見分けられるようにするための一覧である**(§10.3 の併記の規約)。
@@ -1596,7 +1726,7 @@ def main(argv=None) -> int:
     # **前版は `本数 < REPS` の行を全部入れていたので、群が空で本数 0 のセル
     # (判定は「不明(n < 30)」)も混ざり、`1/√(2·n)` が `None` になっていた。**
     # **「本数が少ないセル」と「検定が成り立たないセル」は別の欄に分ける。**
-    _untested = (UNKNOWN_N, UNKNOWN_N2)
+    # (`_untested` は上で定義済み。決定 7''''' で最小・最大にも同じ区別を当てた。)
     low_reps_cells = [
         {"観測量": r["観測量"], "群": r["群"], "h": r["h"],
          "n1": int(r["n1"]), "n2": int(r["n2"]),
@@ -1639,8 +1769,12 @@ def main(argv=None) -> int:
                   "有限のときの値で、少ないセルはその本数で 1/√(2·n) を読む。"
                   "**閾値は置かない**(A-12)。",
             "指定した反復回数": REPS,
-            "最小": (min(reps_used_all) if reps_used_all else None),
-            "最大": (max(reps_used_all) if reps_used_all else None),
+            "最小(検定したセルだけ)": (min(reps_used_all) if reps_used_all else None),
+            "最大(検定したセルだけ)": (max(reps_used_all) if reps_used_all else None),
+            "最小・最大の当て先": (
+                "群が空 / n < 30 で検定していないセル(判定が「" + UNKNOWN_N + "」か「"
+                + UNKNOWN_N2 + "」)は最小・最大からも外してある(決定 7'''''。"
+                "7 回目の指摘 7。前版は judge_rows 全部から取っていたので「最小 0」が出た)。"),
             "指定した反復回数に満たないセルの数(検定したセルだけ)": len(low_reps_cells),
             "指定した反復回数に満たないセルの一覧(検定したセルだけ)": low_reps_cells,
             "群が空 / n < 30 で検定していないセル数": untested_cells,
@@ -1679,10 +1813,24 @@ def main(argv=None) -> int:
             "感度 = mode full / 日数 456 / gap と W は名前のとおり。"
             "判定 2 本と感度 4 本にはさらに mmr 0.004 / seed 1 / bin_pct 0.1 / "
             "match_order table を突き合わせる(決定 1'''')。"
-            "判定 2 本には params.approval = 事前登録 §14.4 の「応答の L 番号」も"
-            "突き合わせる(決定 2'''')。"
-            "食い違えば「[止め]」で終了コード 1(決定 12'''。迂回する旗は無い)。"
-            "本走行では全部一致した。"),
+            "判定 2 本と感度 4 本には params.approval = 事前登録 §14.4 の「応答の L 番号」も"
+            "突き合わせる(決定 2'''' + 11'''''。感度 4 本も同じ 456 日を開けるため)。"
+            "判定の側が食い違えば「[止め]」で終了コード 1(決定 12'''。迂回する旗は無い)。"
+            "感度の側が食い違えば、その走行の表だけ書かずに判定の表は書く"
+            "(決定 2'''''。下の「感度の走行の検査」)。"),
+        # **決定 2'''''(7 回目の指摘 2)**: 感度の側で破れた検査の記録。
+        "感度の走行の検査(決定 2''''')": {
+            "渡すべき感度": list(SENS_REQUIRED),
+            "表を書かなかった感度": {
+                nm: [{"検査": c, "理由": b} for c, b in items]
+                for nm, items in sens_dropped.items()
+            },
+            "注": ("感度の走行で params / サニティ #14 / 軸の作り方 のどれかが破れたら、"
+                   "その走行の観測のみの表だけを書かず、判定の表は書く。"
+                   "感度の行は 576 にも α にも F1 の読みにも 1 行も入らないためである。"
+                   "判定に使う 2 本とその標本で同じ検査が破れたときは、表を 1 枚も書かずに "
+                   + STOPPED_NAME + " を書いて終わる。"),
+        },
         "凍結した入力の突き合わせ(決定 1'''')": {
             "mmr": MMR_FIXED, "seed": RUN_SEED_FIXED,
             "bin_pct": BIN_PCT_FIXED, "match_order": MATCH_ORDER_FIXED,
@@ -1780,7 +1928,8 @@ def main(argv=None) -> int:
             "感度の走行(--sens)は observation_only_<NAME>.csv に別の表として出した。"
             "`:SAMPLE_DIR` で対を成す標本を渡した感度は MDE の列を出し、渡していない感度は"
             "MDE の列が空である(決定 8''。どちらかは summary の「感度(観測のみ)」)。"
-            "感度の行は判定にも F1 の読みにも 1 行も入れていない。",
+            "感度の行は判定にも F1 の読みにも 1 行も入れていない。"
+            "感度は 4 本とも渡す(渡っていなければ表を 1 枚も書かずに終わる = 決定 2''''')。",
             "不在を断ずる語の走査は、表を 1 枚も書く前にメモリ上の行と文字列へ当てた"
             "(決定 11'')。書き出した後にもう一度走査している(二重の網)。",
             "「全体」群の 実群 の欄は差の入力として出しているだけで、"
@@ -1801,8 +1950,10 @@ def main(argv=None) -> int:
             "「検出されず」に併記する MDE には単位を付けた(決定 5''''。"
             "到達率 = 割合 / bp 系 = bp / 秒 = 秒 / ΔOI = 枚。表は summary の"
             "「MDE の単位の固定表」)。",
-            "感度の表の MDE の列見出しは「MDE(参考。族の α に入らない)」である"
-            "(決定 7''''。判定の表の列見出しと同じ名前にしない)。",
+            "観測のみの表(observation_only.csv と感度の表)の MDE の列見出しは"
+            "「MDE(参考。族の α に入らない)」である(決定 7'''' + 6'''''。"
+            "判定の表 judgment_576.csv / f1_12cells.csv の列見出しと同じ名前にしない。"
+            "どちらの表の行も 576 にも α にも F1 の読みにも 1 行も入らないためである)。",
             "対照 (ii) の軸の作り方の検査(決定 3'')は標本の走行にも掛けた(決定 8'''')。",
             "F1 の 12 セルが揃わなければ表を 1 枚も書かずに終わる(決定 13'''')。",
             "サニティ #14 は標本の走行(--sample-w8 / --sample-w24 / --sens の :SAMPLE_DIR)にも"
@@ -1859,7 +2010,8 @@ def main(argv=None) -> int:
     write_md5(out, names)
 
     print(f"判定の表: {len(judge_rows)} 行 / 観測のみの表: {len(obs_rows)} 行 / 群 {len(groups)}")
-    print(f"有限な複製の本数: 指定 {REPS} / 最小 {summary['有限な複製の本数']['最小']} / "
+    print(f"有限な複製の本数: 指定 {REPS} / "
+          f"最小(検定したセルだけ) {summary['有限な複製の本数']['最小(検定したセルだけ)']} / "
           f"指定に満たないセル(検定したセルだけ) "
           f"{summary['有限な複製の本数']['指定した反復回数に満たないセルの数(検定したセルだけ)']}"
           f" / 群が空・n < 30 で検定していないセル {untested_cells}")

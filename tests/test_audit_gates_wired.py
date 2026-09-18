@@ -184,11 +184,17 @@ def test_o3c_reaction_judge_gate_actually_stops_the_write(tmp_path):
     s24 = place(smp / "gap60_w24", tmp_path / "sample_w24",
                 mode="sample", n_days=mod.SAMPLE_N_DAYS, window_hours=24)
     out = tmp_path / "out"
+    # **決定 2'''''(7 回目の指摘 2)**: `--sens` は §14.2 の 4 本を必ず渡す
+    # (渡さないと関門の前で止まるので、**止めたのが関門であること**が測れない)。
+    # 中身の無い感度は「その表だけ書かない」経路に落ちるだけで、判定の側は止めない。
+    sens = []
+    for nm in mod.SENS_REQUIRED:
+        sens += ["--sens", f"{nm}={tmp_path / 'sens_missing' / nm}"]
     # **決定 4''''(6 回目の指摘 4)**: `REPS` は差し替えない(差し替えると関門の前で止まる)。
     with pytest.raises(SystemExit) as e:
         mod.main(["--run-w8", str(r8), "--run-w24", str(r24),
                   "--sample-w8", str(s8), "--sample-w24", str(s24),
-                  "--out-dir", str(out), "--root", str(empty_root)])
+                  "--out-dir", str(out), "--root", str(empty_root)] + sens)
     assert e.value.code == 1
     assert not out.exists(), "関門が閉じているのに出力ディレクトリができている"
 

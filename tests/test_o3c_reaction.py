@@ -496,13 +496,24 @@ def test_full_mode_requires_approval_flag():
 
 
 def test_full_mode_requires_an_existing_owner_log_line(tmp_path):
+    """台帳の行の実在(関門の (c))。
+
+    **prereg 監査(7 回目)の指摘 1 で、この関門に (a)(b)(d)(e) が足された。**
+    この試験は (c) だけを見るので、他の 4 つは通る形で渡す
+    (欄 = L-200 / 出力先 = まだ無い許された 1 つ)。
+    """
     log = tmp_path / "OWNER_LOG.md"
-    log.write_text("| L-197 | 2026-09-18 | 承認 |\n", encoding="utf-8")
-    react.check_approval("full", "L-197", log)  # 実在するので通る
+    log.write_text("| L-200 | 2026-09-18 | 承認 |\n", encoding="utf-8")
+    out = tmp_path / "gap60_w8"
+    kw = dict(out_dir=out, prereg=_prereg(tmp_path, "L-200"),
+              allowed_out_dirs=(out,))
+    react.check_approval("full", "L-200", log, **kw)  # 実在するので通る
     with pytest.raises(SystemExit):
-        react.check_approval("full", "L-999", log)
+        react.check_approval("full", "L-999", log,
+                             out_dir=out, prereg=_prereg(tmp_path, "L-999"),
+                             allowed_out_dirs=(out,))
     with pytest.raises(SystemExit):
-        react.check_approval("full", "not-a-number", log)
+        react.check_approval("full", "not-a-number", log, **kw)
 
 
 def test_sample_and_anchor_modes_do_not_need_approval():
@@ -879,3 +890,128 @@ def test_run_summary_records_the_approval_number_passed_to_the_run():
     params = json.loads(p.read_text(encoding="utf-8"))["params"]
     assert "approval" in params
     assert params["approval"] is None
+
+
+# --------------------------------------------------------------------------- #
+# 開封前の関門(prereg 監査(7 回目)の指摘 1・18・20。リードの決定 1・18・20)
+#
+# **前版の `--mode full` の関門は「`docs/OWNER_LOG.md` に行頭 `| L-NNN |` の行が
+# 実在するか」しか見ていなかった**ので、**間違った(あるいは古い)L 番号のまま
+# 456 日を 6 回開け終わるまで何も止まらなかった。**
+# **通る側と止まる側の両方を測る。迂回する旗は作っていない。**
+# --------------------------------------------------------------------------- #
+
+
+def _prereg(tmp_path, value: str):
+    # **欄の値ごとに別のファイルにする**(同じ名前だと後から書いた値で上書きされ、
+    # 「止まる側」の試験が黙って通ってしまう)。
+    p = tmp_path / f"PREREG_{abs(hash(value))}.md"
+    p.write_text(
+        "本文\n\n   **応答の L 番号**: **" + value + "**\n\n本文\n", encoding="utf-8"
+    )
+    return p
+
+
+def _owner_log(tmp_path, *numbers: str):
+    p = tmp_path / "OWNER_LOG.md"
+    p.write_text(
+        "".join(f"| {n} | 2026-09-18 | 応答 |\n" for n in numbers), encoding="utf-8"
+    )
+    return p
+
+
+def test_full_mode_gate_passes_when_all_five_checks_are_met(tmp_path):
+    """通る側: 欄と一致 / L-199 より後 / 台帳に実在 / 出力先が 6 つの 1 つ / まだ無い。"""
+    out = tmp_path / "gap60_w8"          # 許す一覧は下で差し替える(試験用の既定引数)
+    react.check_approval(
+        "full", "L-200",
+        owner_log=_owner_log(tmp_path, "L-200"),
+        out_dir=out,
+        prereg=_prereg(tmp_path, "L-200"),
+        allowed_out_dirs=(out,),
+    )
+
+
+def test_full_mode_gate_stops_on_each_of_the_five_checks(tmp_path):
+    """止まる側: (a) 欄が空 / 番号違い、(b) L-199 以下、(c) 台帳に無い、
+    (d) 出力先が 6 つに無い、(e) 出力先が既に在る。**5 つを 1 つずつ崩す。**"""
+    out = tmp_path / "gap60_w8"
+    log = _owner_log(tmp_path, "L-199", "L-200", "L-201")
+
+    def call(**kw):
+        args = dict(approval="L-200", owner_log=log, out_dir=out,
+                    prereg=_prereg(tmp_path, "L-200"), allowed_out_dirs=(out,))
+        args.update(kw)
+        react.check_approval("full", args.pop("approval"), **args)
+
+    # (a-1) 欄が「(まだ無い)」
+    with pytest.raises(SystemExit):
+        call(prereg=_prereg(tmp_path, "(まだ無い。オーナーの応答を待っている。)"))
+    # (a-2) 欄と --approval が違う
+    with pytest.raises(SystemExit):
+        call(approval="L-201")
+    # (b) L-199 は「1 = a、9 = a」への応答であって、報告 062 への応答ではない
+    with pytest.raises(SystemExit):
+        call(approval="L-199", prereg=_prereg(tmp_path, "L-199"))
+    # (c) 台帳にその行が無い
+    with pytest.raises(SystemExit):
+        call(approval="L-777", prereg=_prereg(tmp_path, "L-777"))
+    # (d) 出力先が事前登録の 6 つに無い
+    with pytest.raises(SystemExit):
+        call(out_dir=tmp_path / "どこか別の場所")
+    # (e) 出力先が既に在る(再走行・上書きをここで止める)
+    out.mkdir()
+    with pytest.raises(SystemExit):
+        call()
+    # (f) 出力先が渡っていない
+    with pytest.raises(SystemExit):
+        call(out_dir=None)
+
+
+def test_full_mode_gate_has_no_bypass_flag_and_is_wired_into_main():
+    """迂回する旗を作っていないこと、`main()` が `--out-dir` を関門に渡していること。"""
+    text = (REPO / "scripts" / "o3c_reaction.py").read_text(encoding="utf-8")
+    for flag in ("--force", "--skip-approval", "--allow-reopen", "--no-gate"):
+        assert flag not in text, flag
+    assert "check_approval(a.mode, a.approval, days=days, out_dir=out_dir)" in text
+    # 許す出力先は事前登録 §14.1・§14.2 の 6 つである
+    assert len(react.FULL_OUT_DIRS_REL) == 6
+    assert all(p.startswith("backtest_data/o3c_reaction_20260918_full/")
+               for p in react.FULL_OUT_DIRS_REL)
+
+
+def test_the_approval_field_is_read_from_the_real_prereg():
+    """既定の読み先が事前登録そのものであること(欄はまだ埋まっていない = 走らせない)。"""
+    assert react.PREREG.exists()
+    value, note = react.read_approval_from_prereg()
+    assert value is None, "事前登録 §14.4 の欄が埋まっている(開封の前に読む欄である)"
+    assert "応答の L 番号" in note or "埋まっていない" in note
+
+
+def test_run_table_records_the_real_approval_number(tmp_path):
+    """**決定 3(7 回目の指摘 3)**: `--mode full --approval L-NNN` で L 番号が
+    `summary.json` の `params` に書かれる経路を測る。
+
+    **前版の試験は標本の出力を読んで `params["approval"] is None` を測るだけで、
+    実際の L 番号が書かれる経路は 1 度も測られていなかった**(指摘 3)。
+    **判定区間は開けない**: `run_table` を**標本 6 日のうち 1 日**で直接呼ぶ
+    (`check_approval` を通る経路ではないので、承認の関門は当たらない)。
+    """
+    out = tmp_path / "out"
+    s = react.run_table(
+        "sample",
+        [react.SAMPLE_DAYS[0]],
+        base.DEFAULT_DATA_ROOT,
+        oid.DEFAULT_METRICS_ROOT,
+        out,
+        8.0,
+        0.1,
+        60_000,
+        1,
+        0.004,
+        "table",
+        approval="L-999",
+    )
+    assert s["params"]["approval"] == "L-999"
+    written = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    assert written["params"]["approval"] == "L-999"
