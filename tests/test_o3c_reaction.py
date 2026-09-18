@@ -864,3 +864,18 @@ def test_xcorr_best_lag_finds_a_shifted_series():
     lag, r, n = react.xcorr_best_lag(a, b, 10, 5)
     assert lag == 3.0
     assert r > 0.99 and n >= 5
+
+
+def test_run_summary_records_the_approval_number_passed_to_the_run():
+    """走行に渡した --approval の番号が summary.json の params に残る
+    (prereg 監査(6 回目)の指摘 2。読みの側が事前登録 §14.4 の欄と突き合わせる)。
+    標本の走行は承認なしなので None が入る。鍵が無ければ読みの側の突き合わせが成り立たない。"""
+    import json
+    from pathlib import Path
+
+    p = Path(__file__).resolve().parents[1] / "backtest_data" / "o3c_reaction_20260918_sample" / "gap60_w8" / "summary.json"
+    if not p.exists():
+        pytest.skip("標本の走行の出力が無い")
+    params = json.loads(p.read_text(encoding="utf-8"))["params"]
+    assert "approval" in params
+    assert params["approval"] is None

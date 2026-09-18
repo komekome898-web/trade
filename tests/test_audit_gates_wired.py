@@ -149,16 +149,31 @@ def test_o3c_reaction_judge_gate_actually_stops_the_write(tmp_path):
     if not (smp / "gap60_w8" / "table.csv").exists():
         pytest.skip("標本 6 日の出力が無い")
 
+    approval = "L-200"
+
     def place(src: Path, dst: Path, *, mode: str, n_days: int, window_hours: float):
         dst.mkdir(parents=True, exist_ok=True)
         for n in ("table.csv", "table_mixed.csv"):
             if (src / n).exists():
                 (dst / n).write_bytes((src / n).read_bytes())
-        (dst / "summary.json").write_text(_json.dumps(
-            {"params": {"mode": mode, "days": [f"day{i:04d}" for i in range(n_days)],
-                        "window_hours": float(window_hours), "gap_ms": 60000}}),
-            encoding="utf-8")
+        # **走行前の再監査(6 回目)の指摘 1・2**: 凍結した入力 4 つと承認の L 番号も
+        # `params` の検査に入ったので、**関門より前で止まらないように**そろえて置く。
+        params = {"mode": mode, "days": [f"day{i:04d}" for i in range(n_days)],
+                  "window_hours": float(window_hours), "gap_ms": 60000,
+                  "bin_pct": mod.BIN_PCT_FIXED, "seed": mod.RUN_SEED_FIXED,
+                  "mmr": mod.MMR_FIXED, "match_order": mod.MATCH_ORDER_FIXED}
+        if mode == "full":
+            params["approval"] = approval
+        (dst / "summary.json").write_text(_json.dumps({"params": params}),
+                                          encoding="utf-8")
         return dst
+
+    # **指摘 2**: 承認の L 番号は事前登録 §14.4 の欄から読む。
+    # **台帳(ACTION_LOG)だけが無い根**を作り、止めるのが関門であることを測る。
+    empty_root = tmp_path / "empty_root"
+    prereg = empty_root / mod.PREREG_REL
+    prereg.parent.mkdir(parents=True, exist_ok=True)
+    prereg.write_text(f"   **応答の L 番号**: **{approval}**\n", encoding="utf-8")
 
     r8 = place(smp / "gap60_w8", tmp_path / "run_w8",
                mode="full", n_days=mod.JUDGMENT_N_DAYS, window_hours=8)
@@ -169,11 +184,11 @@ def test_o3c_reaction_judge_gate_actually_stops_the_write(tmp_path):
     s24 = place(smp / "gap60_w24", tmp_path / "sample_w24",
                 mode="sample", n_days=mod.SAMPLE_N_DAYS, window_hours=24)
     out = tmp_path / "out"
-    mod.REPS = 20                     # 決定 1''': 反復回数は定数(引数では変えられない)
+    # **決定 4''''(6 回目の指摘 4)**: `REPS` は差し替えない(差し替えると関門の前で止まる)。
     with pytest.raises(SystemExit) as e:
         mod.main(["--run-w8", str(r8), "--run-w24", str(r24),
                   "--sample-w8", str(s8), "--sample-w24", str(s24),
-                  "--out-dir", str(out), "--root", str(tmp_path / "empty_root")])
+                  "--out-dir", str(out), "--root", str(empty_root)])
     assert e.value.code == 1
     assert not out.exists(), "関門が閉じているのに出力ディレクトリができている"
 

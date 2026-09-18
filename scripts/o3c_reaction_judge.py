@@ -111,6 +111,26 @@
         **食い違えば「[止め]」で終了コード 1。迂回する旗は作っていない。**
   16'''. **有限な複製の本数が `REPS` に満たないセルの一覧**(観測量・群・h・本数)を
         `summary.json` に出す(指摘 16)。**閾値は置かない**(A-12)。
+
+**走行前の再監査(6 回目)で決めた点**(同じく事前登録の本文は別の委任先が同じ決定で直す):
+
+  1''''. **`params` の検査に `mmr` / `seed` / `bin_pct` / `match_order` を足す**(指摘 1。
+        判定 2 本・感度 4 本。→ `check_run_params(..., settings=True)`)。
+        **前版はこの 4 つを見ていなかったので、`--mmr` を付け忘れた走行でも
+        48 群・576 行を通り、軸 E の 72 行が黙って「不明(n < 30)」になった。**
+  2''''. **`--approval` の L 番号は事前登録 §14.4 の「応答の L 番号」の欄から読む**(指摘 2。
+        → `read_approval_from_prereg`)。**欄が埋まっていなければ「[止め]」。**
+        判定 2 本の `params.approval` がそれと違えば「[止め]」。
+  4''''. **`REPS` / `SEED` を `main()` の冒頭でリテラルと突き合わせる**(指摘 4)。
+        **引数を消しただけでは閉じていなかった**(モジュール属性への代入で差し替えられた)。
+  5''''. **「検出されず(MDE = X)」に単位を付ける**(指摘 5。→ `MDE_UNITS` / `mde_unit`)。
+        系統ごとの固定表(到達率 = 割合 / bp 系 = bp / 秒 = 秒 / ΔOI = 枚)から付ける。
+  7''''. **感度の表の MDE の列見出しを `MDE(参考。族の α に入らない)` にする**(指摘 7)。
+  8''''. **`check_axis_kinds` を標本の走行にも掛ける**(指摘 8)。
+  9''''. **標本側の `params` の検査に `window_hours` と `gap_ms` を足す**(指摘 9)。
+  12''''. **本数の一覧から「群が空 / n < 30 で検定していないセル」を除き、
+        その数を別の欄に出す**(指摘 12)。
+  13''''. **F1 の 12 セルが揃わなければ「[止め]」で 1 ファイルも書かない**(指摘 13)。
 """
 from __future__ import annotations
 
@@ -143,12 +163,34 @@ UNIT = "o3c_reaction_20260918"               # 関門の単位名
 # **引数ごと消した。**この 2 つを変えるにはこのファイルを書き換えるしかなく、差分に残る。
 REPS = 2000                                  # §9.1 反復回数(凍結)
 SEED = 1                                     # §9.1 種(凍結)
+# **決定 4''''(走行前の再監査(6 回目)の指摘 4)**: 上の 2 つは**モジュールの属性**なので、
+# ファイルを書き換えなくても import して代入すれば差し替えられる(**6 回目の監査が実測した**)。
+# **`main()` の冒頭でリテラルと突き合わせる。**下の 2 つがその相手である。
+REPS_FROZEN_LITERAL = 2000                   # §9.1(突き合わせの相手。ここも書き換えれば差分に残る)
+SEED_FROZEN_LITERAL = 1
 # **決定 12'''(同 5 回目の指摘 12)**: 渡されたディレクトリが名前どおりの走行かを
 # `summary.json` の `params` で見る(`scripts/o3c_reaction.py` が書く鍵)。
 JUDGMENT_N_DAYS = 456                        # §3 判定区間の日数
 SAMPLE_N_DAYS = 6                            # §8.6 標本の日数
 GAP_SEC_JUDGE = 60                           # §14.1 判定に使う走行の gap
 WINDOW_HOURS_FIXED = {RUN_W8: 8.0, RUN_W24: 24.0}
+# **決定 1''''(走行前の再監査(6 回目)の指摘 1)**: 凍結した入力のうち、
+# §14.5 の決定 3 が「6 本すべてに付ける」と書いた `--mmr` と、§14.1 が「主指標に効く」と
+# 書いた `--seed` を、前版の `params` の検査が見ていなかった(**6 回目の監査の実測**:
+# `implied_leverage` が空でも 48 群・576 行を通り、E 群の 72 行が黙って「不明(n < 30)」になった)。
+# **判定 2 本と感度 4 本には、下の 4 つも突き合わせる。**
+MMR_FIXED = 0.004                            # §14.5 の決定 3(`--mmr 0.004` を 6 本すべてに)
+RUN_SEED_FIXED = 1                           # §14.1(`--seed 1` を 6 本すべてに)
+BIN_PCT_FIXED = 0.1                          # §14.4.1 の埋め込みスクリプトと同じ既定
+MATCH_ORDER_FIXED = "table"                  # §6.2(本走行の順。`reversed` は順序依存の実測用)
+# **決定 2''''(同 6 回目の指摘 2)**: `--approval` に渡す L 番号は、事前登録 §14.4 の
+# 「応答の L 番号」の欄から読む。**欄が埋まっていなければ「[止め]」。**
+PREREG_REL = "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md"
+# 欄の形は **応答の L 番号**: **L-NNN**(埋まっていなければ **(まだ無い…)**)。
+# **行の形ごと固定する**(本文の他の場所にある「応答の L 番号」という語を拾わないため)。
+APPROVAL_FIELD_RE = re.compile(
+    r"^[ \t>]*\*\*応答の L 番号\*\*\s*[:：]\s*\*\*(.+?)\*\*\s*$", re.MULTILINE)
+APPROVAL_VALUE_RE = re.compile(r"^L-\d+$")
 # §10.1 の判定語 + 走行前の再監査(2 回目)の決定 2 で禁じた語。**出力に 1 つも書かない。**
 FORBIDDEN = ("予測できる", "使える", "有効", "差なし", "陰性")
 
@@ -233,6 +275,44 @@ OBS_FLAT_SYSTEMS = (
     ("doi_pre_4h", "mean"),
     ("doi_in", "mean"),
 )
+
+# --- MDE の単位(§10.1 の固定表。走行前の再監査(6 回目)の指摘 5)-------------
+# **前版は「検出されず(MDE = X)」の X に単位を書かなかった**(事前登録 §10.1 は
+# 「**X はその行の MDE 列の値と単位**」と書いていたので、文面と実装が食い違っていた)。
+# **単位は系統ごとに決まっている。**下が事前登録 §10.1 に置いた固定表そのものである。
+UNIT_RATIO = "割合"       # 到達率(0〜1)
+UNIT_BP = "bp"            # 価格変化・最大順行 / 逆行
+UNIT_SEC = "秒"           # 到達までの時間
+UNIT_QTY = "枚"           # ΔOI(建玉の増減)
+_UNIT_TEMPLATES: dict[str, str] = {
+    "reach_back_vwap_{h}m": UNIT_RATIO,
+    "reach_back_node_{h}m": UNIT_RATIO,
+    "reach_node_up_{h}m": UNIT_RATIO,
+    "reach_node_dn_{h}m": UNIT_RATIO,
+    "bp_{h}m_reactdir": UNIT_BP,
+    "mfe_{h}m_reactdir": UNIT_BP,
+    "mae_{h}m_reactdir": UNIT_BP,
+    "doi_post_{h}m": UNIT_QTY,
+    "reach_back_vwap_sec": UNIT_SEC,
+    "reach_back_node_sec": UNIT_SEC,
+    "reach_node_up_sec": UNIT_SEC,
+    "reach_node_dn_sec": UNIT_SEC,
+    "doi_pre_1h": UNIT_QTY,
+    "doi_pre_4h": UNIT_QTY,
+    "doi_in": UNIT_QTY,
+}
+MDE_UNITS: dict[str, str] = {}
+for _tpl, _u in _UNIT_TEMPLATES.items():
+    if "{h}" in _tpl:
+        for _h in HORIZONS:
+            MDE_UNITS[_tpl.format(h=_h)] = _u
+    else:
+        MDE_UNITS[_tpl] = _u
+
+
+def mde_unit(col: str) -> str:
+    """その観測量の MDE の単位(§10.1 の固定表)。表に無ければ空。"""
+    return MDE_UNITS.get(col, "")
 
 # --- 軸(§4 の表)------------------------------------------------------------
 # W に依る軸: 走行ごとに切る(= だから群が 3 + 3 である)。
@@ -508,19 +588,58 @@ def _sens_name_params(name: str) -> tuple[int, float] | None:
     return (int(m.group(1)), float(m.group(2))) if m else None
 
 
+def read_approval_from_prereg(prereg: Path) -> tuple[str | None, str]:
+    """**決定 2''''**: 事前登録 §14.4 の「応答の L 番号」の欄を読む。
+
+    返り値 `(L 番号, 説明)`。**欄が「(まだ無い)」なら `None`** を返し、呼び出し側が
+    「[止め]」で終了コード 1 にする(**迂回する旗は作っていない**。読む場所は
+    `<--root>/docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md` に固定)。
+
+    **前版は `--approval L-199` を §14.1 のコマンドに固定で書いていたが、
+    L-199 は「1 = a、9 = a」への応答であって、§13 の 8 件と §14.4 の待つものへの
+    応答ではない**(走行前の再監査(6 回目)の指摘 2)。
+    **報告への応答が来ていなくても L-199 のまま走れてしまう形だったので、閉じた。**
+    """
+    if not prereg.exists():
+        return None, f"事前登録が読めない({prereg})"
+    text = prereg.read_text(encoding="utf-8", errors="replace")
+    fields = [m.strip() for m in APPROVAL_FIELD_RE.findall(text)]
+    if not fields:
+        return None, f"事前登録に「応答の L 番号」の欄が 1 つも無い({prereg})"
+    if len(set(fields)) > 1:
+        return None, ("事前登録の「応答の L 番号」の欄が "
+                      f"{len(set(fields))} 通りある: {sorted(set(fields))}")
+    value = fields[0]
+    if not APPROVAL_VALUE_RE.match(value):
+        return None, ("事前登録 §14.4 の「応答の L 番号」の欄が埋まっていない"
+                      f"(欄の値: {value!r})")
+    return value, f"事前登録 §14.4 の「応答の L 番号」の欄({prereg})"
+
+
 def check_run_params(run: Run, *, mode: str, gap_sec: int | None = None,
                      window_hours: float | None = None,
-                     n_days: int | None = None, label: str = "") -> list[str]:
+                     n_days: int | None = None, label: str = "",
+                     settings: bool = False,
+                     approval: str | None = None) -> list[str]:
     """**決定 12'''**: 渡されたディレクトリが名前どおりの走行かを `params` で見る。
 
     **前版は `--run-w8` / `--run-w24` に渡されたものを無条件に `gap60_w8` / `gap60_w24` と
     名付け、`window_hours` と日数を `summary.json` に写すだけで検査していなかった**
     (走行前の再監査(5 回目)の指摘 12)。**取り違えを止める機械が無かった。**
 
-    見るのは `scripts/o3c_reaction.py` が書く `params` の 4 つだけである:
+    見るのは `scripts/o3c_reaction.py` が書く `params` である:
     `mode`(full / sample)/ `gap_ms`(= gap 秒 × 1000)/ `window_hours` / `days` の数。
     **迂回する旗は作っていない**(標本で試すときも、試験用の `summary.json` を置いた
     一時ディレクトリを渡す)。
+
+    **決定 1''''(走行前の再監査(6 回目)の指摘 1)**: `settings=True` のとき、
+    **`mmr` / `seed` / `bin_pct` / `match_order` も突き合わせる**(判定 2 本・感度 4 本)。
+    **前版はこの 4 つを見ていなかったので、`--mmr` を付け忘れた走行でも
+    `implied_leverage` 列が空のまま 48 群・576 行を通り、軸 E の 72 行が
+    黙って「不明(n < 30)」になった**(**6 回目の監査の実測**)。
+
+    **決定 2''''(同 6 回目の指摘 2)**: `approval` を渡したとき、
+    **`params.approval` がそれと一致しなければ「[止め]」**(判定 2 本)。
     """
     p = run.params
     who = label or run.name
@@ -543,6 +662,24 @@ def check_run_params(run: Run, *, mode: str, gap_sec: int | None = None,
         got_n = len(days) if isinstance(days, list) else None
         if got_n != n_days:
             bad.append(f"{who}: params.days の日数が {got_n}(要る値は {n_days})")
+    if settings:
+        for key, want in (("mmr", MMR_FIXED), ("seed", RUN_SEED_FIXED),
+                          ("bin_pct", BIN_PCT_FIXED),
+                          ("match_order", MATCH_ORDER_FIXED)):
+            got = p.get(key)
+            same = (
+                (got is not None and float(got) == float(want))
+                if isinstance(want, (int, float)) and not isinstance(want, bool)
+                else got == want
+            )
+            if not same:
+                bad.append(f"{who}: params.{key} が {got!r}(要る値は {want!r})")
+    if approval is not None:
+        got = p.get("approval")
+        if got != approval:
+            bad.append(
+                f"{who}: params.approval が {got!r}(要る値は {approval!r}"
+                f" = 事前登録 §14.4 の「応答の L 番号」)")
     return bad
 
 
@@ -873,10 +1010,11 @@ UNKNOWN_N2 = "不明(n2 < 30)"
 UNKNOWN_T = "不明(t 未算出)"
 UNKNOWN_MDE = "不明(MDE 未算出)"
 BRANCHES = [UNKNOWN_N, UNKNOWN_N2, UNKNOWN_T, "差あり(+)", "差あり(−)",
-            UNKNOWN_MDE, "検出されず(MDE = X)"]
+            UNKNOWN_MDE, "検出されず(MDE = X 単位)"]
 
 
-def decide(n1: int, n2: int, t: float, diff: float, m: float) -> tuple[str, str]:
+def decide(n1: int, n2: int, t: float, diff: float, m: float,
+           unit: str = "") -> tuple[str, str]:
     """(判定, 検出力の欄)。上から順に当てる(決定 2 + 17' + 1'' + 20'')。
 
     1. その検定に使う**欠測を引いた後の実群 n1** が 30 未満 → 「不明(n < 30)」
@@ -912,7 +1050,11 @@ def decide(n1: int, n2: int, t: float, diff: float, m: float) -> tuple[str, str]
         return ("差あり(+)" if diff > 0 else "差あり(−)"), ""
     if not math.isfinite(m):
         return UNKNOWN_MDE, "MDE 未算出"
-    return f"検出されず(MDE = {_fmt(m)})", ""
+    # **決定 5''''(走行前の再監査(6 回目)の指摘 5)**: **単位を必ず併記する。**
+    # 単位は系統ごとの固定表(`MDE_UNITS`。事前登録 §10.1)から来る。
+    # **前版は単位を書いていなかった**(事前登録は「X はその行の MDE 列の値と単位」と
+    # 書いていたので、文面と実装が食い違っていた)。
+    return f"検出されず(MDE = {_fmt(m)}{(' ' + unit) if unit else ''})", ""
 
 
 def bar_near(t: float) -> str:
@@ -936,11 +1078,16 @@ def mde_mark(diff: float, m: float) -> str:
 # =============================================================================
 # 表を組む
 # =============================================================================
+MDE_COL = "MDE(α=0.05/576)"
+# **決定 7''''(走行前の再監査(6 回目)の指摘 7)**: **感度の表の MDE 列は名前を変える。**
+# §10.2 は「感度の行は 576 にも α にも F1 の読みにも 1 つも入らない」と書いているのに、
+# 前版は感度の表にも族の α の名前が付いた列見出しをそのまま出していた。
+SENS_MDE_COL = "MDE(参考。族の α に入らない)"
 JUDGE_HEADER = [
     "観測量", "群", "h", "n1", "n2", "実群", "対照(i)", "対照(ii)",
     "差(ii)", "差(i)", "対照(i)SE", "走行", "対照(ii)の軸の作り方",
     "t", "ブートストラップSE", "有限な複製の本数", "CI下限", "CI上限",
-    "MDE(α=0.05/576)", "MDEとの比較", "検出力", "バー近傍", "隣の分位", "判定",
+    MDE_COL, "MDEとの比較", "検出力", "バー近傍", "隣の分位", "判定",
 ]
 # §10.2: 同じ形で出すが、`t` の列と `判定` の列(とそれに付く列)を置かない。
 # **`対照(ii)の軸の作り方` は両方の表に出す**(決定 22''。行単位で読む人が
@@ -950,6 +1097,14 @@ OBS_HEADER = [
     if c not in ("t", "ブートストラップSE", "有限な複製の本数", "CI下限", "CI上限",
                  "バー近傍", "判定")
 ]
+# 感度の表だけ MDE の列見出しを差し替える(決定 7''''。列の順は同じ)。
+SENS_HEADER = [SENS_MDE_COL if c == MDE_COL else c for c in OBS_HEADER]
+
+
+def to_sens_rows(rows: list[dict]) -> list[dict]:
+    """感度の表の行の MDE の鍵を `SENS_MDE_COL` に付け替える(決定 7'''')。"""
+    return [{(SENS_MDE_COL if k == MDE_COL else k): v for k, v in r.items()}
+            for r in rows]
 
 
 def _fmt(x, nd=6) -> str:
@@ -1058,12 +1213,13 @@ def build_rows(runs: dict[str, Run], samples: dict[str, Run], groups: list[Group
                 "対照(i)SE": _fmt(r["se_uni"]),
                 "走行": g.run,
                 "対照(ii)の軸の作り方": g.control_axis,
-                "MDE(α=0.05/576)": _fmt(r["mde"]),
+                MDE_COL: _fmt(r["mde"]),
                 "MDEとの比較": mde_mark(r["d2"], r["mde"]),
                 "隣の分位": neighbours(g, per_group, judge),
             }
             if judge:
-                verdict, power = decide(r["n1"], r["n2"], r["t"], r["d2"], r["mde"])
+                verdict, power = decide(r["n1"], r["n2"], r["t"], r["d2"], r["mde"],
+                                        mde_unit(col))
                 row.update({
                     "t": _fmt(r["t"], 4), "ブートストラップSE": _fmt(r["se_b"]),
                     "有限な複製の本数": _fmt(r["reps"]),
@@ -1237,14 +1393,35 @@ def main(argv=None) -> int:
     # **決定 1''': `--seed` と `--reps` は無い。**定数 `SEED` / `REPS` である
     # (走行前の再監査(5 回目)の指摘 1。**開封の後に引き直せる経路を閉じた**)。
     ap.add_argument("--root", default=str(Path(__file__).resolve().parent.parent),
-                    help="監査の台帳(docs/AUDITOR/ACTION_LOG.md)の場所を差し替える引数"
-                         "(試験用)。--out-dir がリポジトリの backtest_data/ の下なら"
+                    help="監査の台帳(docs/AUDITOR/ACTION_LOG.md)と事前登録"
+                         "(§14.4 の「応答の L 番号」)の場所を差し替える引数(試験用)。"
+                         "--out-dir がリポジトリの backtest_data/ の下なら"
                          "リポジトリ直下でなければ止まる")
     ap.add_argument("--sens", action="append", default=[], metavar="NAME=DIR[:SAMPLE_DIR]",
                     help="感度の走行(繰り返し可)。観測のみの表 observation_only_<NAME>.csv "
                          "を 1 本ずつ出す(t と判定の列なし。決定 19')。"
                          "`:SAMPLE_DIR` を付けると、その標本から MDE の p・s を取る(決定 8'')")
     a = ap.parse_args(argv)
+
+    # --- 決定 4'''': 反復回数と種を**実行時に**リテラルと突き合わせる -----------
+    # **引数を消しただけでは閉じていなかった**(モジュール属性への代入で差し替えられる
+    # = 走行前の再監査(6 回目)の指摘 4 の実測)。**走行のたびにここで測る。**
+    if REPS != REPS_FROZEN_LITERAL or SEED != SEED_FROZEN_LITERAL:
+        sys.stderr.write(
+            "[止め] 反復回数と種が §9.1 で凍結した値と違う。表を 1 枚も書かずに終わる。\n"
+            f"       REPS = {REPS}(凍結した値は {REPS_FROZEN_LITERAL}) / "
+            f"SEED = {SEED}(凍結した値は {SEED_FROZEN_LITERAL})\n")
+        return 1
+
+    # --- 決定 5'''': MDE の単位の固定表に穴が無いか ----------------------------
+    missing_units = sorted({c for c, _k, _h in judge_systems() + observation_systems()
+                            if not mde_unit(c)})
+    if missing_units:
+        sys.stderr.write(
+            "[止め] MDE の単位の固定表(§10.1)に無い観測量がある。"
+            "表を 1 枚も書かずに終わる。\n"
+            + "".join(f"       - {c}\n" for c in missing_units))
+        return 1
 
     # --- 決定 10'': 本番の出力に試験用の台帳を使わせない -----------------------
     bad = check_root_for_out_dir(Path(a.out_dir), Path(a.root))
@@ -1276,14 +1453,32 @@ def main(argv=None) -> int:
         if smp.strip():
             sens_samples[nm] = Run(f"{nm}(標本)", Path(smp.strip()))
 
+    # --- 決定 2'''': 事前登録 §14.4 の「応答の L 番号」を読む -------------------
+    prereg = Path(a.root) / PREREG_REL
+    approval, approval_note = read_approval_from_prereg(prereg)
+    if approval is None:
+        sys.stderr.write(
+            "[止め] 事前登録 §14.4 の「応答の L 番号」が読めないので、"
+            "表を 1 枚も書かずに終わる。\n"
+            f"       {approval_note}\n"
+            "       オーナーの応答(L 番号)を §14.4 の欄に書き写してから走らせる。\n")
+        return 1
+
     # --- 決定 12''': 渡されたディレクトリが名前どおりの走行か(params の検査)-----
     bad = []
     for nm, r in runs.items():
         bad += check_run_params(r, mode="full", gap_sec=GAP_SEC_JUDGE,
                                 window_hours=WINDOW_HOURS_FIXED[nm],
-                                n_days=JUDGMENT_N_DAYS, label=nm)
+                                n_days=JUDGMENT_N_DAYS, label=nm,
+                                settings=True, approval=approval)
+    # **決定 9''''(6 回目の指摘 9)**: 標本の側にも `window_hours` と `gap_ms` を当てる
+    # (**標本 4 本の `summary.json` に値がある = 実測済み**)。
+    # **前版は `mode` と日数の 2 つしか見ておらず、「W = 24h の標本を `--sample-w8` に
+    # 渡す」取り違えが止まらなかった。**
     for nm, r in samples.items():
         bad += check_run_params(r, mode="sample", n_days=SAMPLE_N_DAYS,
+                                gap_sec=GAP_SEC_JUDGE,
+                                window_hours=WINDOW_HOURS_FIXED[nm],
                                 label=f"{nm}(標本)")
     for nm, r in sens.items():
         want = _sens_name_params(nm)
@@ -1292,9 +1487,15 @@ def main(argv=None) -> int:
                        f"走行の params と突き合わせられない")
             continue
         bad += check_run_params(r, mode="full", gap_sec=want[0], window_hours=want[1],
-                                n_days=JUDGMENT_N_DAYS, label=nm)
+                                n_days=JUDGMENT_N_DAYS, label=nm, settings=True)
     for nm, r in sens_samples.items():
+        want = _sens_name_params(nm)
+        if want is None:
+            bad.append(f"{nm}(標本): --sens の名前が gap<秒>_w<時間> の形でないので、"
+                       f"標本の params と突き合わせられない")
+            continue
         bad += check_run_params(r, mode="sample", n_days=SAMPLE_N_DAYS,
+                                gap_sec=want[0], window_hours=want[1],
                                 label=f"{nm}(標本)")
     if bad:
         sys.stderr.write(
@@ -1320,8 +1521,12 @@ def main(argv=None) -> int:
         return 1
 
     # --- 決定 3'': 対照 (ii) の軸の作り方が事前登録の固定と一致するか ----------
+    # **決定 8''''(6 回目の指摘 8)**: **標本の走行にも掛ける。**
+    # 標本側の群分けも `control_axis_kinds` の結果で決まる(`membership`)ので、
+    # 列の在り方が違えば MDE の `p`・`s` の母集団が変わる。サニティ #14 と同じ形にした。
     bad = []
-    for r in list(runs.values()) + list(sens.values()):
+    for r in (list(runs.values()) + list(samples.values())
+              + list(sens.values()) + list(sens_samples.values())):
         bad += check_axis_kinds(r)
     if bad:
         sys.stderr.write(
@@ -1356,11 +1561,22 @@ def main(argv=None) -> int:
     for nm, r in sens.items():
         gs = build_groups_single(r)
         smp = {nm: sens_samples[nm]} if nm in sens_samples else {}
-        sens_rows[nm] = build_rows(
+        sens_rows[nm] = to_sens_rows(build_rows(
             {nm: r}, smp, gs, boot, judge=False,
             systems=judge_systems() + observation_systems(),
-        )
+        ))
     cells = f1_cells(judge_rows)
+    # **決定 13''''(6 回目の指摘 13)**: **12 セルでなければ「[止め]」で 1 ファイルも書かない。**
+    # **前版は「読めない(12 セルのはずが N セル)」という文字列を返すだけで、
+    # そのまま全部の表が書かれ、終了コードは 0 になっていた。**
+    # 同じスクリプトの他の食い違い(#14 / params / 軸の作り方 / 群の数 / 576 行)は
+    # すべて「[止め]」で 1 ファイルも書かない。**F1 の 12 セルもそれに揃える。**
+    if len(cells) != 12:
+        sys.stderr.write(
+            f"[止め] F1 の 12 セル(§7.0)が {len(cells)} セルしか揃っていない。"
+            "表を 1 枚も書かずに終わる。\n"
+            f"       群 {F1_GROUP} × 戻り到達 2 系統 × h {len(HORIZONS)} 本 = 12 が要る。\n")
+        return 1
     reading = f1_reading(cells)
 
     # --- 出す中身をここで全部そろえる(まだ 1 ファイルも書かない。決定 11'')------
@@ -1376,21 +1592,30 @@ def main(argv=None) -> int:
     # **決定 16'''(5 回目の指摘 16)**: 本数が `REPS` に満たないセルを 1 行ずつ出す。
     # **閾値は置かない**(A-12)。**読む人が「本数 2 のセル」と「本数 2,000 のセル」を
     # 見分けられるようにするための一覧である**(§10.3 の併記の規約)。
+    # **決定 12''''(6 回目の指摘 12)**: **群が空 / n < 30 で検定していないセルを一覧から除く。**
+    # **前版は `本数 < REPS` の行を全部入れていたので、群が空で本数 0 のセル
+    # (判定は「不明(n < 30)」)も混ざり、`1/√(2·n)` が `None` になっていた。**
+    # **「本数が少ないセル」と「検定が成り立たないセル」は別の欄に分ける。**
+    _untested = (UNKNOWN_N, UNKNOWN_N2)
     low_reps_cells = [
         {"観測量": r["観測量"], "群": r["群"], "h": r["h"],
+         "n1": int(r["n1"]), "n2": int(r["n2"]),
          "有限な複製の本数": int(r["有限な複製の本数"]),
          "1/√(2·n)": round(1.0 / math.sqrt(2 * int(r["有限な複製の本数"])), 6)
          if int(r["有限な複製の本数"]) > 0 else None}
         for r in judge_rows
         if r.get("有限な複製の本数") != "" and int(r["有限な複製の本数"]) < REPS
+        and r["判定"] not in _untested
     ]
+    untested_cells = sum(1 for r in judge_rows if r["判定"] in _untested)
 
     summary = {
         "単位": UNIT,
         "事前登録": "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md(確定版・凍結)",
         "seed": SEED,
         "reps": REPS,
-        "seed と reps の出所": "定数(引数では変えられない。決定 1'''。§9.1 で凍結した値)",
+        "seed と reps の出所": ("定数(引数では変えられず、実行時にも 2000 / 1 と"
+                                "突き合わせる。決定 1''' + 4''''。§9.1 で凍結した値)"),
         "CI水準": {"alpha": ALPHA, "クラスタ": "UTC 日",
                    "方法": (f"正規近似(差 ± z × ブートストラップ SE。"
                             f"z = {BAR_T_SHOWN} は丸め表示で、計算は norm.ppf(1 − α/2))"),
@@ -1416,8 +1641,13 @@ def main(argv=None) -> int:
             "指定した反復回数": REPS,
             "最小": (min(reps_used_all) if reps_used_all else None),
             "最大": (max(reps_used_all) if reps_used_all else None),
-            "指定した反復回数に満たないセルの数": len(low_reps_cells),
-            "指定した反復回数に満たないセルの一覧": low_reps_cells,
+            "指定した反復回数に満たないセルの数(検定したセルだけ)": len(low_reps_cells),
+            "指定した反復回数に満たないセルの一覧(検定したセルだけ)": low_reps_cells,
+            "群が空 / n < 30 で検定していないセル数": untested_cells,
+            "この 2 つを分けた理由": (
+                "本数が少ないセル(SE の相対誤差が 1/√(2·n))と、群が空 / n < 30 で"
+                "そもそも検定が成り立たないセル(判定は「" + UNKNOWN_N + "」か「"
+                + UNKNOWN_N2 + "」)は別の話である(決定 12''''。6 回目の指摘 12)。"),
         },
         "観測のみの表の行数": {
             "observation_only.csv": len(obs_rows),
@@ -1445,9 +1675,33 @@ def main(argv=None) -> int:
         },
         "走行の params の検査": (
             "判定の 2 本 = mode full / gap 60 秒 / W 8h・24h / 日数 456、"
-            "標本 = mode sample / 日数 6、感度 = mode full / 日数 456 / gap と W は名前のとおり。"
+            "標本 = mode sample / 日数 6 / gap 60 秒 / W 8h・24h(決定 9'''')、"
+            "感度 = mode full / 日数 456 / gap と W は名前のとおり。"
+            "判定 2 本と感度 4 本にはさらに mmr 0.004 / seed 1 / bin_pct 0.1 / "
+            "match_order table を突き合わせる(決定 1'''')。"
+            "判定 2 本には params.approval = 事前登録 §14.4 の「応答の L 番号」も"
+            "突き合わせる(決定 2'''')。"
             "食い違えば「[止め]」で終了コード 1(決定 12'''。迂回する旗は無い)。"
             "本走行では全部一致した。"),
+        "凍結した入力の突き合わせ(決定 1'''')": {
+            "mmr": MMR_FIXED, "seed": RUN_SEED_FIXED,
+            "bin_pct": BIN_PCT_FIXED, "match_order": MATCH_ORDER_FIXED,
+            "当てた先": "判定の 2 本と感度 4 本(標本には当てていない)",
+        },
+        "承認の L 番号(決定 2'''')": {
+            "値": approval,
+            "出所": approval_note,
+            "突き合わせ先": "判定 2 本の summary.json の params.approval",
+            "注": "L-199 は「1 = a、9 = a」への応答であって、§13 の 8 件と"
+                  "§14.4 の待つものへの応答ではない。走行のたびに事前登録の欄から読む。",
+        },
+        "反復回数と種の実行時の突き合わせ(決定 4'''')": {
+            "REPS": REPS, "凍結したリテラル": REPS_FROZEN_LITERAL,
+            "SEED": SEED, "種の凍結したリテラル": SEED_FROZEN_LITERAL,
+            "注": "引数では変えられず、実行時にも 2000 / 1 と突き合わせる"
+                  "(モジュール属性の差し替えもここで止まる)。",
+        },
+        "MDE の単位の固定表(§10.1。決定 5'''')": _UNIT_TEMPLATES,
         "感度(観測のみ)": {
             nm: {"path": str(r.path),
                  "標本(MDE の p・s)": (str(sens_samples[nm].path)
@@ -1541,8 +1795,16 @@ def main(argv=None) -> int:
             "MDE は p・s を標本 6 日で固定し、n だけ走行後の群の件数から取った(§8.6)。"
             "群の切り方は判定区間の実群で決めた切り値を標本にも当てた(§4)。",
             "前進到達(fwd_node)はどちらの表にも入れていない(1 周目は測定不能。§4.3)。",
-            "反復回数 2,000 と種 1 は定数で、引数では変えられない(決定 1''')。"
+            "反復回数 2,000 と種 1 は定数で、引数では変えられず、"
+            "実行時にも 2000 / 1 と突き合わせる(決定 1''' + 4'''')。"
             "開封の後に反復を引き直して読みを取り直す経路は無い(A-6)。",
+            "「検出されず」に併記する MDE には単位を付けた(決定 5''''。"
+            "到達率 = 割合 / bp 系 = bp / 秒 = 秒 / ΔOI = 枚。表は summary の"
+            "「MDE の単位の固定表」)。",
+            "感度の表の MDE の列見出しは「MDE(参考。族の α に入らない)」である"
+            "(決定 7''''。判定の表の列見出しと同じ名前にしない)。",
+            "対照 (ii) の軸の作り方の検査(決定 3'')は標本の走行にも掛けた(決定 8'''')。",
+            "F1 の 12 セルが揃わなければ表を 1 枚も書かずに終わる(決定 13'''')。",
             "サニティ #14 は標本の走行(--sample-w8 / --sample-w24 / --sens の :SAMPLE_DIR)にも"
             "掛けた(決定 2''')。標本の 1 対 1 が崩れると MDE の p・s の母集団が黙って変わるため。",
             "渡された走行が名前どおりのものかを summary.json の params で検査した(決定 12''')。"
@@ -1582,7 +1844,7 @@ def main(argv=None) -> int:
     write_csv(out / "f1_12cells.csv", JUDGE_HEADER, cells)
     write_csv(out / "observation_only.csv", OBS_HEADER, obs_rows)
     for nm, rows_ in sens_rows.items():
-        write_csv(out / f"observation_only_{nm}.csv", OBS_HEADER, rows_)
+        write_csv(out / f"observation_only_{nm}.csv", SENS_HEADER, rows_)
     write_csv(out / "why_frame.csv", WHY_HEADER, why_rows)
     (out / "f1_reading.txt").write_text(f1_text, encoding="utf-8")
     (out / "summary.json").write_text(
@@ -1598,7 +1860,9 @@ def main(argv=None) -> int:
 
     print(f"判定の表: {len(judge_rows)} 行 / 観測のみの表: {len(obs_rows)} 行 / 群 {len(groups)}")
     print(f"有限な複製の本数: 指定 {REPS} / 最小 {summary['有限な複製の本数']['最小']} / "
-          f"指定に満たないセル {summary['有限な複製の本数']['指定した反復回数に満たないセルの数']}")
+          f"指定に満たないセル(検定したセルだけ) "
+          f"{summary['有限な複製の本数']['指定した反復回数に満たないセルの数(検定したセルだけ)']}"
+          f" / 群が空・n < 30 で検定していないセル {untested_cells}")
     for nm, rows_ in sens_rows.items():
         print(f"感度(観測のみ)の表 {nm}: {len(rows_)} 行")
     print(f"F1 の 12 セルの読み: {reading}")

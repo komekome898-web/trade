@@ -1847,6 +1847,7 @@ def run_table(
     seed: int,
     mmr: float | None,
     match_order: str = "table",
+    approval: str | None = None,
 ) -> dict:
     t0 = time.time()
     events, dedup_stats = load_binance_cm_liquidations_with_dedup_stats(liq_dir(root))
@@ -1959,6 +1960,9 @@ def run_table(
             "control_gap_minutes": CONTROL_GAP_MS / 60000,
             "match_tolerance_pct": MATCH_TOL_PCT,
             "match_order": match_order,
+            # 走行に渡した承認の番号(prereg 監査(6 回目)の指摘 2。読みの側が
+            # 事前登録 §14.4 の欄と突き合わせる)。
+            "approval": approval,
             "data_root": str(root),
             "metrics_root": str(metrics_root),
             "bitflyer_dir": str(BITFLYER_DIR),
@@ -2196,6 +2200,7 @@ def main(argv: list[str] | None = None) -> int:
         a.seed,
         a.mmr,
         a.match_order,
+        approval=a.approval,
     )
     print(
         f"行 {s['rows_total']}("
