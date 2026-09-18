@@ -1,8 +1,6 @@
 fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-06.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-06.zip)
 extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written
 fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-06.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-06.zip)
-extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written
-fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-06.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-06.zip)
 extract_tape: 1 file(s) advanced, 3264 execution row(s) written, 8574 ticker row(s) written
 fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-06.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-06.zip)
 extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written
@@ -197,4 +195,6 @@ intake_ledger: scan failed for data/liquidations/okx_20260911.jsonl.gz: error: E
 extract_tape: 50 file(s) advanced, 55920 execution row(s) written, 77228 ticker row(s) written, 1317305 board row(s) written
 record_funding_basis: +6 funding row(s), 1 basis row
 extract_tape: 27 file(s) advanced, 105165 execution row(s) written, 285184 ticker row(s) written, 279452 board row(s) written
+record_funding_basis: +6 funding row(s), 1 basis row
+extract_tape: 45 file(s) advanced, 190835 execution row(s) written, 307356 ticker row(s) written, 246448 board row(s) written
 record_funding_basis: +6 funding row(s), 1 basis row
