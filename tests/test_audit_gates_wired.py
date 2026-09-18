@@ -105,6 +105,55 @@ def test_judge_gates_requires_a_unit():
     assert "--unit" in out.stderr
 
 
+def test_o3c_reaction_judge_calls_the_gate():
+    """段 A の読みのスクリプトが関門を呼んでいること(走行前の再監査(4 回目)の指摘 9)。
+
+    **呼び出しを消すとここが赤くなる。**前版はこの道具が試験に無く、
+    `require_audit("o3c_reaction_20260918", "結果")` を消してもテストが通っていた
+    (`CLAUDE.md` §5.0 の「関門が呼ばれていることを毎回の pytest で測る」が
+    この道具に掛かっていなかった)。
+
+    **`scripts/_research_audit_gate.py` の `WIRED` の一覧への追記は、
+    このファイルが指紋の台帳(`docs/AUDITOR/HOOK_MANIFEST.sha256`)に載っているため
+    行えていない**(処置書 `2026-09-18_reaction_prereg_r4.md` の 9 に経緯を書いた)。
+    **一覧に無いことをここで測ると、追記されるまで赤いままになるので測らない。**
+    """
+    text = (ROOT / "scripts" / "o3c_reaction_judge.py").read_text(encoding="utf-8")
+    assert "_research_audit_gate" in text, "読みのスクリプトから監査の門が消えている"
+    assert 'require_audit(UNIT, "結果"' in text, "require_audit の呼び出しが消えている"
+    assert 'UNIT = "o3c_reaction_20260918"' in text, "単位名が変わっている"
+    # 関門を外す旗を作っていないこと
+    assert "--no-gate" not in text and "--no-audit-gate" not in text
+    # 表を書く前に呼んでいること(最初の write_csv より前)
+    assert (text.index("pass_audit_gate(Path(a.root)")
+            < text.index('write_csv(out / "judgment_576.csv"'))
+
+
+def test_o3c_reaction_judge_gate_actually_stops_the_write(tmp_path):
+    """**呼ばれていることを、止まるはずの操作で測る**(`CLAUDE.md` §3 の「実測」の形)。
+
+    台帳が無い根を渡すと、終了コード 1 で**出力ディレクトリが 1 つもできない**。
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "o3c_reaction_judge_wired", ROOT / "scripts" / "o3c_reaction_judge.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    smp = ROOT / "backtest_data" / "o3c_reaction_20260918_sample"
+    if not (smp / "gap60_w8" / "table.csv").exists():
+        pytest.skip("標本 6 日の出力が無い")
+    out = tmp_path / "out"
+    with pytest.raises(SystemExit) as e:
+        mod.main(["--run-w8", str(smp / "gap60_w8"), "--run-w24", str(smp / "gap60_w24"),
+                  "--sample-w8", str(smp / "gap60_w8"),
+                  "--sample-w24", str(smp / "gap60_w24"),
+                  "--out-dir", str(out), "--root", str(tmp_path / "empty_root"),
+                  "--reps", "20"])
+    assert e.value.code == 1
+    assert not out.exists(), "関門が閉じているのに出力ディレクトリができている"
+
+
 @pytest.mark.parametrize("unit,stage", [("U1", "封印の開封"), ("U1", "結果")])
 def test_require_audit_exits_with_2(tmp_path, unit, stage):
     from _research_audit_gate import require_audit

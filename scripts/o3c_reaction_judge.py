@@ -21,12 +21,21 @@
 
 **関門**(`CLAUDE.md` §5.0 の 2): 表を 1 枚も書く前に
 `scripts/_research_audit_gate.py: require_audit(<unit>, "結果")` を通す。
-**迂回する旗は作っていない。**`--root` は試験のために台帳の場所を差し替えるだけのもので、
-関門そのものを外さない。
+**迂回する旗は作っていない。**
+
+**`--root` は台帳の場所を差し替える引数である(試験用)**(走行前の再監査(4 回目)の指摘 10。
+リードの決定。**前版は「台帳の場所を差し替えるだけのもので、関門そのものを外さない」と
+書いていたが、`require_audit` が読むのは `<root>/docs/AUDITOR/ACTION_LOG.md` そのものなので、
+別の台帳を指させば別の判定が読まれる**)。
+**機械**: `--out-dir` がリポジトリの `backtest_data/` の下にあるとき、
+`--root` がリポジトリ直下以外なら「[止め]」で終了コード 1(**本番の出力に試験用の台帳を使えない**)。
+使った root は `summary.json` に記録する。
 
 **判定語(予測できる / 使える / 有効)は出力に 1 つも書かない**(事前登録 §10.1 の末尾)。
 **「差なし」「陰性」も書かない**(走行前の再監査の決定 2)。
-書いてしまっていないことは、書き出しの最後に自分で走査して確かめる。
+**走査は表を書く前に、メモリ上の行と文字列に対して行う**(走行前の再監査(4 回目)の指摘 11。
+**前版は 7 ファイルを書き終えた後に走査していたので、見つかっても書いた表が残っていた**)。
+書き出した後にもう一度走査する(二重の網)。
 
 **走行前の再監査(2 回目)で決めた 7 点**(事前登録の本文は別の委任先が同じ決定で直す。
 **本ファイルは事前登録を書き換えていない**):
@@ -64,6 +73,25 @@
   17'. MDE が計算できないセルは「**不明(MDE 未算出)**」にする(指摘 17。→ `decide`)。
   19'. `--sens NAME=DIR` で感度 4 本の観測のみの表を別ファイルに出す(指摘 19)。
   20'. W = 24h 側の 12 群(観測のみ)は **W = 24h の実群で切り直した切り値**を使う(指摘 20)。
+
+**走行前の再監査(4 回目)で決めた点**(同じく事前登録の本文は別の委任先が直す):
+
+  1''. `t` が非有限のセル(SE = 0 / 有限な複製 < 2)は「**不明(t 未算出)**」(指摘 1。→ `decide`)。
+       **「検出されず」にしない**(検定量が出ていない行を不在の側に読ませないため = A-18)。
+  2''. SE の推定に使えた**有限な複製の本数**を列 `有限な複製の本数` に出す(指摘 2。→ `bootstrap_diff`)。
+       `summary.json` に最小の有限な複製の本数も出す。**閾値は置かない**(A-12)。
+  3''. 対照 (ii) の軸の作り方は**事前登録で固定**した(指摘 3。→ `AXIS_KIND_FIXED` / `check_axis_kinds`)。
+       走行ごとに測った結果が固定と違えば「[止め]」で終了コード 1。**黙って合わせない。**
+  10''. `--root` の機械(上の「関門」)。使った root を `summary.json` に残す(指摘 10)。
+  11''. 判定語の走査は**表を書く前**にメモリ上の行と文字列へ当てる(指摘 11。→ `scan_rows_forbidden`)。
+  12''. サニティ #14 に**一意性**を足す(指摘 12。→ `check_pairing`):
+        `matched_liq_id` が重複しない / 対照の件数 = 引けた相手の件数(mixed 相手を含めて)。
+  13''. 各走行の #14 の結果を `summary.json` に残す(指摘 13)。
+  14''. 列 `バー近傍`(`|t|` が z ± 0.065 に入るとき ○)を足す(指摘 14)。**観測のみ。判定は変えない。**
+  15''. `mde()` から `alpha` の枝を消し、**z は定数 1 本**(`MDE_Z`)だけにする(指摘 15)。
+  20''. `n2 < 30` も「**不明(n2 < 30)**」にする(指摘 20。→ `decide`)。
+  22''. 列 `対照(ii)の軸の作り方`(own / partner_sign / inherit)を両方の表に足す(指摘 22)。
+  8''. `--sens NAME=DIR[:SAMPLE_DIR]`。標本を渡した感度は MDE 列を出す(指摘 8)。
 """
 from __future__ import annotations
 
@@ -121,6 +149,34 @@ LIQDIR_SOURCE = {
 AX_OWN = "own"                   # 対照行にその列の値がある
 AX_PARTNER_SIGN = "partner_sign"  # 対照行に符号なしの大きさがある -> 相手の側の符号を当てる
 AX_INHERIT = "inherit"           # 対照行に対応物が無い -> 1 対 1 の相手の群を受け継ぐ
+
+# **決定 3''(走行前の再監査(4 回目)の指摘 3)**: 対照 (ii) の軸の作り方は
+# **事前登録(§4)で固定**する。**前版は走行ごとに測った結果をそのまま使っていたので、
+# 判定区間で内訳が 10/24/14 と違って出ても黙って進んだ。**
+# 本版は測った結果をこの固定と突き合わせ、**違えば「[止め]」で終了コード 1**。
+# **黙って合わせない**(リードの決定の逐語: 「**スクリプトは走行ごとに測った結果が
+# この固定と一致しなければ「[止め]」で終了コード 1(黙って合わせない)**」)。
+#
+# リードの決定の逐語は partner_sign を**符号なしの元の列**の名前で書いている
+# (`dist_node_bp` / `dist_vwap_bp` / `oi_dist_node_bp` / `oi_dist_vwap_bp`)。
+# §4 の軸の列はその `*_liqdir` 版なので、`LIQDIR_SOURCE` の対応で読み替えて置いた
+# (**1 対 1 に対応する。読み替えたことをここに書く**)。
+AXIS_KIND_FIXED: dict[str, str] = {
+    "bin_pct": AX_OWN,
+    "doi_pre_1h": AX_OWN,
+    "dist_node_bp_liqdir": AX_PARTNER_SIGN,      # 元の列 dist_node_bp
+    "dist_vwap_bp_liqdir": AX_PARTNER_SIGN,      # 元の列 dist_vwap_bp
+    "oi_dist_node_bp_liqdir": AX_PARTNER_SIGN,   # 元の列 oi_dist_node_bp
+    "oi_dist_vwap_bp_liqdir": AX_PARTNER_SIGN,   # 元の列 oi_dist_vwap_bp
+    "implied_leverage": AX_INHERIT,
+    "bundle_n_events_dedup": AX_INHERIT,
+    "bundle_total_qty_accum": AX_INHERIT,
+    "side": AX_INHERIT,
+}
+# **決定 14''**: `|t|` がバーの近傍に入る行に印を付ける(観測のみ)。
+# 幅は §9.1 の「ブートストラップ SE 自身の相対誤差 ≈ 1/√(2·reps) = 1.58%」から出した
+# ±0.062 を丸めた **±0.065**(事前登録 §9.1 の「3.86〜3.99」と同じ帯)。
+BAR_NEAR_HALFWIDTH = 0.065
 
 # --- 観測量の系統(§4.1。前進到達 `fwd_node` は 1 周目では出さない = §4.3)---
 JUDGE_SYSTEMS = (
@@ -255,6 +311,7 @@ class Run:
             [not m for m in self.mat_mixed_partner], dtype=bool
         )
         self.pairing_worst_bin_pct_gap = float("nan")   # サニティ #14 が埋める
+        self.pairing_report: dict = {}                  # サニティ #14 の結果(決定 13'')
 
         self.days = sorted({r["day"] for r in rows})
         self._day_index = {d: i for i, d in enumerate(self.days)}
@@ -392,6 +449,25 @@ def control_axis_kinds(run: Run) -> dict[str, str]:
     return out
 
 
+def check_axis_kinds(run: Run) -> list[str]:
+    """**決定 3''**: 測った作り方が事前登録の固定(`AXIS_KIND_FIXED`)と一致するかを見る。
+
+    食い違いを 1 件でも返したら、呼び出し側が「[止め]」で終了コード 1 にする。
+    **測った側に合わせ直さない**(合わせると、判定区間で対照の作り方が黙って変わる)。
+    """
+    got = control_axis_kinds(run)
+    bad: list[str] = []
+    for col, want in sorted(AXIS_KIND_FIXED.items()):
+        have = got.get(col)
+        if have != want:
+            bad.append(f"{run.name}: 軸 {col} の対照 (ii) の作り方が {have} "
+                       f"(事前登録 §4 の固定は {want})")
+    extra = sorted(set(got) - set(AXIS_KIND_FIXED))
+    if extra:
+        bad.append(f"{run.name}: 事前登録に無い軸が測られた: {extra}")
+    return bad
+
+
 def tertile_cuts(vals: np.ndarray) -> tuple[float, float]:
     """§4 の 3 分位: 判定区間の**実群**の軸の値で分位点を決める(決定 3)。
 
@@ -525,24 +601,33 @@ def membership(run: Run, kind: str, g: Group) -> np.ndarray:
 
 
 def check_pairing(run: Run) -> list[str]:
-    """**サニティ #14**(決定 6'): 1 対 1 の対応が成り立っているかを走行ごとに測る。
+    """**サニティ #14**(決定 6' + 決定 12''): 1 対 1 の対応を走行ごとに測る。
 
-    3 つを見る。1 つでも破れたら呼び出し側が「[止め]」で終了コード 1 にする
+    5 つを見る。1 つでも破れたら呼び出し側が「[止め]」で終了コード 1 にする
     (**崩れても静かに行が落ちるだけ、という前版の形を閉じる**)。
 
       1. すべての合わせた対照に相手が実在する(`matched_liq_id` が引ける)
       2. 相手が**同じ日**である
       3. `bin_pct` の差が **±5.0 ポイント以内**(`scripts/o3c_reaction.py:140` の
          `MATCH_TOL_PCT`。境界を含む = マッチングが `bp ± tol` を閉区間で取るため)
+      4. **同じ `matched_liq_id` を 2 つ以上の対照が指していない**(決定 12'')
+      5. **対照の件数 = 引けた相手の件数**(**mixed 相手を含めて数える**。決定 12'')
+
+    **4 と 5 は走行前の再監査(4 回目)の指摘 12 で足した。**
+    **前版は (a)(b)(c) の 3 つしか見ておらず、「1 対 1」そのもの(一意性)を測っていなかった。**
+    §6.1 の 4 と決定 8'(mixed 相手を落とす)はこの一意性に依存している。
     """
     bad: list[str] = []
     rows = run.by_kind[KIND_MAT]
     n_missing = n_day = n_tol = 0
     worst = 0.0
+    seen: dict[str, int] = {}
     for r, p in zip(rows, run.pair_of_matched):
         if p is None:
             n_missing += 1
             continue
+        pid = str(p.get("cascade_id") or "")
+        seen[pid] = seen.get(pid, 0) + 1
         if p.get("day") != r.get("day"):
             n_day += 1
         a, b = _f(r.get("bin_pct")), _f(p.get("bin_pct"))
@@ -551,6 +636,8 @@ def check_pairing(run: Run) -> list[str]:
             worst = max(worst, d)
             if d > MATCH_TOL_PCT + 1e-9:
                 n_tol += 1
+    n_dup = sum(c - 1 for c in seen.values() if c > 1)
+    n_pulled = len(seen)                      # 引けた相手の**異なり数**(mixed 相手も含む)
     if n_missing:
         bad.append(f"{run.name}: 相手の束が引けない合わせた対照が {n_missing} 件")
     if n_day:
@@ -560,7 +647,24 @@ def check_pairing(run: Run) -> list[str]:
             f"{run.name}: bin_pct の差が ±{MATCH_TOL_PCT} を超える組が {n_tol} 件"
             f"(最大 {worst:.4f})"
         )
+    if n_dup:
+        dups = sorted(k for k, c in seen.items() if c > 1)[:5]
+        bad.append(f"{run.name}: 同じ相手を指す合わせた対照が {n_dup} 件ぶん重複"
+                   f"(例: {dups})")
+    if n_pulled != len(rows):
+        bad.append(f"{run.name}: 対照の件数 {len(rows)} と引けた相手の件数 {n_pulled} が違う"
+                   f"(mixed 相手を含めて数えた)")
     run.pairing_worst_bin_pct_gap = worst
+    run.pairing_report = {
+        "対照の件数": len(rows),
+        "引けた相手の異なり数(mixed 相手を含む)": n_pulled,
+        "相手が引けない件数": n_missing,
+        "相手が別の日の件数": n_day,
+        f"bin_pct の差が ±{MATCH_TOL_PCT} を超える件数": n_tol,
+        "同じ相手を指す重複の件数": n_dup,
+        "bin_pct の差の最大": worst,
+        "通過": not bad,
+    }
     return bad
 
 
@@ -621,37 +725,51 @@ def bootstrap_diff(run: Run, sel_liq, sel_ctl, col: str, boot_idx: np.ndarray):
 
     2,000 回・種 1 は**標準誤差の推定にだけ**使う(決定 1)。
     統計量 t = (実群 − 対照 (ii) の差) ÷ (その差のブートストラップ標準誤差)。
-    返り値: (差, t, SE, n1, n2)。
+    返り値: (差, t, SE, n1, n2, **有限な複製の本数**)。
+
+    **決定 2''(走行前の再監査(4 回目)の指摘 2)**: 非有限の複製を落とした後に
+    **残った本数(有限な複製の本数)を返す。****前版はこの本数をどこにも出していなかったので、
+    §9.1 の「反復 2,000 回 → SE の相対誤差 1.58%」がそのセルで成り立つかを読む材料が無かった。**
+    **閾値は置かない**(`CLAUDE.md` §0.2 の A-12)。**本数を出すだけである。**
     """
     n_days = len(run.days)
     sl, cl = day_sums(run.values(KIND_LIQ, col), sel_liq, run.day_idx[KIND_LIQ], n_days)
     sc, cc = day_sums(run.values(KIND_MAT, col), sel_ctl, run.day_idx[KIND_MAT], n_days)
     n1, n2 = int(cl.sum()), int(cc.sum())
     if n1 == 0 or n2 == 0:
-        return float("nan"), float("nan"), float("nan"), n1, n2
+        return float("nan"), float("nan"), float("nan"), n1, n2, 0
     diff = float(sl.sum() / cl.sum() - sc.sum() / cc.sum())
     with np.errstate(invalid="ignore", divide="ignore"):
         a = sl[boot_idx].sum(axis=1) / cl[boot_idx].sum(axis=1)
         b = sc[boot_idx].sum(axis=1) / cc[boot_idx].sum(axis=1)
     d = a - b
     d = d[np.isfinite(d)]
-    if d.size < 2:
-        return diff, float("nan"), float("nan"), n1, n2
+    reps_used = int(d.size)
+    if reps_used < 2:
+        return diff, float("nan"), float("nan"), n1, n2, reps_used
     se = float(d.std(ddof=1))
     t = diff / se if se > 0 else float("nan")
-    return diff, t, se, n1, n2
+    return diff, t, se, n1, n2, reps_used
 
 
 # =============================================================================
 # MDE(§8.5 / §8.6)
 # =============================================================================
-def mde(kind: str, a: np.ndarray, b: np.ndarray, n1: int, n2: int,
-        alpha: float = ALPHA) -> float:
-    """§8.5 の式。`alpha` は倍率で読み替えず**直接渡す**(決定 4 / §8.2 の指摘 18)。
+def mde(kind: str, a: np.ndarray, b: np.ndarray, n1: int, n2: int) -> float:
+    """§8.5 の式。**z は定数 1 本(`MDE_Z`)だけ**(決定 15'')。
 
     `a` / `b` = **標本 6 日**の実群 / 合わせた対照の値。
     **判定区間の切り値で群に分けた標本の行**を渡す(標本で切り直さない)。
     `n1` / `n2` = **走行後の群の件数**(欠測を引いた後)。
+
+    > **【本版で消した・走行前の再監査(4 回目)の指摘 15。リードの決定】**
+    > **前版は `alpha` を引数に取り、`alpha != ALPHA` のときだけ `_ND.inv_cdf(1 − alpha/2)` を
+    > 作り直す枝を持っていた。**
+    > **§5 は「判定のバー・CI・MDE のすべてがこの 1 本(`Z_ALPHA`)を使う」と書いており、
+    > 決定 12' も「z は 1 本」だった。枝が残っていると 2 本目の z が作れる。**
+    > **引数ごと消した。**判定に使う α は `ALPHA`(= 0.05/576)で固定である。
+    > **§8.5 の再現コマンド(事前登録の中の別の `mde()`)は α = 0.05 の表を作るための
+    > 文書側の関数で、本ファイルの関数ではない。**
     """
     a = a[np.isfinite(a)]
     b = b[np.isfinite(b)]
@@ -666,40 +784,69 @@ def mde(kind: str, a: np.ndarray, b: np.ndarray, n1: int, n2: int,
         var = float(a.std(ddof=1)) ** 2 / n1 + float(b.std(ddof=1)) ** 2 / n2
     if not math.isfinite(var) or var < 0:
         return float("nan")
-    z = (_ND.inv_cdf(1 - alpha / 2) + Z_POWER) if alpha != ALPHA else MDE_Z
-    return z * math.sqrt(var)
+    return MDE_Z * math.sqrt(var)
 
 
 # =============================================================================
 # 分岐(§10.1 + 走行前の再監査の決定 2)
 # =============================================================================
 UNKNOWN_N = "不明(n < 30)"
+UNKNOWN_N2 = "不明(n2 < 30)"
+UNKNOWN_T = "不明(t 未算出)"
 UNKNOWN_MDE = "不明(MDE 未算出)"
+BRANCHES = [UNKNOWN_N, UNKNOWN_N2, UNKNOWN_T, "差あり(+)", "差あり(−)",
+            UNKNOWN_MDE, "検出されず(MDE = X)"]
 
 
-def decide(n1: int, t: float, diff: float, m: float) -> tuple[str, str]:
-    """(判定, 検出力の欄)。上から順に当てる(決定 2 + 決定 17')。
+def decide(n1: int, n2: int, t: float, diff: float, m: float) -> tuple[str, str]:
+    """(判定, 検出力の欄)。上から順に当てる(決定 2 + 17' + 1'' + 20'')。
 
-    1. その検定に使う**欠測を引いた後の実群 n** が 30 未満 → 「不明(n < 30)」
-    2. |t| ≥ z(= `BAR_T`。丸め表示 3.925)→ 「差あり(+)」/「差あり(−)」
-    3. MDE が計算できない → **「不明(MDE 未算出)」**
-    4. それ以外 → 「検出されず(MDE = X)」
+    1. その検定に使う**欠測を引いた後の実群 n1** が 30 未満 → 「不明(n < 30)」
+    2. **対照 (ii) の n2 が 30 未満 → 「不明(n2 < 30)」**(決定 20'')
+    3. **`t` が非有限 → 「不明(t 未算出)」**(決定 1'')
+    4. |t| ≥ z(= `BAR_T`。丸め表示 3.925)→ 「差あり(+)」/「差あり(−)」
+    5. MDE が計算できない → **「不明(MDE 未算出)」**
+    6. それ以外 → 「検出されず(MDE = X)」
 
-    **3 は決定 17'(走行前の再監査(3 回目)の指摘 17)で分けた。**
+    **5 は決定 17'(走行前の再監査(3 回目)の指摘 17)で分けた。**
     前版は MDE が無くても「検出されず(MDE = 未算出)」と書いていたが、
     **「検出されず」は「この n とこの MDE では検出できなかった」という意味なので、
     MDE が無い行にその語を当てると、検出力が分からないことを不在の側に読ませてしまう**
     (`CLAUDE.md` §0.2 の A-18)。**MDE が無い行は「不明」である。**
 
+    > **【本版で 2 つ足した・走行前の再監査(4 回目)の指摘 1・20。リードの決定】**
+    > **3(決定 1'')**: `bootstrap_diff` は SE = 0 のときと有限な複製が 2 本未満のときに
+    > `t = nan` を返す。**前版はこの行を n1 ≥ 30 かつ MDE があれば「検出されず」と書いていた。**
+    > **検定量が計算できなかった行を「バーに届かなかった」と書く経路である**(指摘 17 と同じ型 = A-18)。
+    > **`t` が非有限の行は「不明(t 未算出)」である。**
+    > **2(決定 20'')**: **前版は 30 を n1 にだけ当てていた。**
+    > inherit の 14 群や欠測の多い軸では n2 が小さくなりうるので、n2 にも同じ 30 を当てる。
+
     **「差なし」「陰性」は書かない。**MDE との比較(≥ / <)は別の列に残す。
     """
     if n1 < MIN_N:
         return UNKNOWN_N, "n < 30"
-    if math.isfinite(t) and abs(t) >= BAR_T:
+    if n2 < MIN_N:
+        return UNKNOWN_N2, "n2 < 30"
+    if not math.isfinite(t):
+        return UNKNOWN_T, "t 未算出"
+    if abs(t) >= BAR_T:
         return ("差あり(+)" if diff > 0 else "差あり(−)"), ""
     if not math.isfinite(m):
         return UNKNOWN_MDE, "MDE 未算出"
     return f"検出されず(MDE = {_fmt(m)})", ""
+
+
+def bar_near(t: float) -> str:
+    """**決定 14''**: `|t|` が z ± 0.065 に入るとき ○(**観測のみ。判定は変えない**)。
+
+    §9.1 の「`|t|` が 3.86〜3.99 に入る検定では、反復の引き直しで判定が変わりうる」に
+    対応する印である。**前版は帯を本文に書きながら、表にも実装にも印が無かった**
+    (走行前の再監査(4 回目)の指摘 14)。
+    """
+    if not math.isfinite(t):
+        return ""
+    return "○" if abs(abs(t) - BAR_T) <= BAR_NEAR_HALFWIDTH else ""
 
 
 def mde_mark(diff: float, m: float) -> str:
@@ -713,13 +860,17 @@ def mde_mark(diff: float, m: float) -> str:
 # =============================================================================
 JUDGE_HEADER = [
     "観測量", "群", "h", "n1", "n2", "実群", "対照(i)", "対照(ii)",
-    "差(ii)", "差(i)", "対照(i)SE", "走行", "t", "ブートストラップSE", "CI下限", "CI上限",
-    "MDE(α=0.05/576)", "MDEとの比較", "検出力", "隣の分位", "判定",
+    "差(ii)", "差(i)", "対照(i)SE", "走行", "対照(ii)の軸の作り方",
+    "t", "ブートストラップSE", "有限な複製の本数", "CI下限", "CI上限",
+    "MDE(α=0.05/576)", "MDEとの比較", "検出力", "バー近傍", "隣の分位", "判定",
 ]
-# §10.2: 同じ形で出すが、`t` の列と `判定` の列を置かない。
+# §10.2: 同じ形で出すが、`t` の列と `判定` の列(とそれに付く列)を置かない。
+# **`対照(ii)の軸の作り方` は両方の表に出す**(決定 22''。行単位で読む人が
+# 14 群と 34 群を取り違えないため)。
 OBS_HEADER = [
     c for c in JUDGE_HEADER
-    if c not in ("t", "ブートストラップSE", "CI下限", "CI上限", "判定")
+    if c not in ("t", "ブートストラップSE", "有限な複製の本数", "CI下限", "CI上限",
+                 "バー近傍", "判定")
 ]
 
 
@@ -787,8 +938,9 @@ def build_rows(runs: dict[str, Run], samples: dict[str, Run], groups: list[Group
             m_liq, _, n1 = mean_se(run.values(KIND_LIQ, col)[s_liq])
             m_uni, se_uni, _ = control_i(run, s_uni, col, w_sell[g.run])
             m_mat, _, n2 = mean_se(run.values(KIND_MAT, col)[s_mat])
+            reps_used = None
             if judge:
-                diff2, t, se_b, n1, n2 = bootstrap_diff(
+                diff2, t, se_b, n1, n2, reps_used = bootstrap_diff(
                     run, s_liq, s_mat, col, boot[g.run]
                 )
                 lo, hi = ci_normal(diff2, se_b)
@@ -816,7 +968,7 @@ def build_rows(runs: dict[str, Run], samples: dict[str, Run], groups: list[Group
             per_group[g.name] = dict(
                 g=g, n1=n1, n2=n2, liq=m_liq, uni=m_uni,
                 se_uni=se_uni, mat=m_mat, d2=diff2, d1=diff1, t=t, se_b=se_b,
-                lo=lo, hi=hi, mde=m_val,
+                lo=lo, hi=hi, mde=m_val, reps=reps_used,
             )
         for g in groups:
             r = per_group[g.name]
@@ -827,19 +979,22 @@ def build_rows(runs: dict[str, Run], samples: dict[str, Run], groups: list[Group
                 "差(ii)": _fmt(r["d2"]), "差(i)": _fmt(r["d1"]),
                 "対照(i)SE": _fmt(r["se_uni"]),
                 "走行": g.run,
+                "対照(ii)の軸の作り方": g.control_axis,
                 "MDE(α=0.05/576)": _fmt(r["mde"]),
                 "MDEとの比較": mde_mark(r["d2"], r["mde"]),
                 "隣の分位": neighbours(g, per_group, judge),
             }
             if judge:
-                verdict, power = decide(r["n1"], r["t"], r["d2"], r["mde"])
+                verdict, power = decide(r["n1"], r["n2"], r["t"], r["d2"], r["mde"])
                 row.update({
                     "t": _fmt(r["t"], 4), "ブートストラップSE": _fmt(r["se_b"]),
+                    "有限な複製の本数": _fmt(r["reps"]),
                     "CI下限": _fmt(r["lo"]), "CI上限": _fmt(r["hi"]),
-                    "検出力": power, "判定": verdict,
+                    "検出力": power, "バー近傍": bar_near(r["t"]), "判定": verdict,
                 })
             else:
-                row["検出力"] = "n < 30" if r["n1"] < MIN_N else ""
+                row["検出力"] = ("n < 30" if r["n1"] < MIN_N
+                                 else ("n2 < 30" if r["n2"] < MIN_N else ""))
             out.append(row)
     return out
 
@@ -863,7 +1018,8 @@ def f1_reading(cells: list[dict]) -> str:
       反証 = 差あり(−) ≥ 1 かつ 差あり(+) 0
       混在 = 両方ある
       不明 = 差ありが 1 つも無い(**内訳を併記する**。決定 17' で
-             「不明(MDE 未算出)」が内訳に 1 つ増えた)
+             「不明(MDE 未算出)」が、決定 1'' / 20'' で「不明(t 未算出)」
+             「不明(n2 < 30)」が内訳に増えた)
     """
     if len(cells) != 12:
         return f"読めない(12 セルのはずが {len(cells)} セル)"
@@ -876,10 +1032,12 @@ def f1_reading(cells: list[dict]) -> str:
     if neg:
         return f"F1 の反証(差あり(−) {neg} / 差あり(+) 0)"
     few = sum(1 for c in cells if c["判定"] == UNKNOWN_N)
+    few2 = sum(1 for c in cells if c["判定"] == UNKNOWN_N2)
+    not_ = sum(1 for c in cells if c["判定"] == UNKNOWN_T)
     nom = sum(1 for c in cells if c["判定"] == UNKNOWN_MDE)
     nod = sum(1 for c in cells if c["判定"].startswith("検出されず"))
-    return (f"不明(差あり 0。内訳: 不明(n < 30) {few} / {UNKNOWN_MDE} {nom} / "
-            f"検出されず {nod})")
+    return (f"不明(差あり 0。内訳: {UNKNOWN_N} {few} / {UNKNOWN_N2} {few2} / "
+            f"{UNKNOWN_T} {not_} / {UNKNOWN_MDE} {nom} / 検出されず {nod})")
 
 
 # =============================================================================
@@ -922,6 +1080,50 @@ def scan_forbidden(out: Path, names: list[str]) -> list[str]:
     return hits
 
 
+def scan_rows_forbidden(blobs: dict[str, object]) -> list[str]:
+    """**決定 11''**: 表を**書く前**に、メモリ上の行と文字列へ判定語を当てる。
+
+    `blobs` は「出す予定のファイル名 -> 行の一覧 / 文字列 / 辞書」。
+    **前版は 7 ファイルを書き終えた後に走査していたので、見つかっても書いた表が残り、
+    `MD5SUMS` だけが書かれない形になっていた**(走行前の再監査(4 回目)の指摘 11)。
+    §14.6 の関門も サニティ #14 も「1 ファイルも書かない」形なので、ここも揃える。
+    """
+    hits: list[str] = []
+    for name, obj in blobs.items():
+        if isinstance(obj, str):
+            text = obj
+        elif isinstance(obj, list):
+            text = "\n".join(
+                "\t".join(str(v) for v in (r.values() if isinstance(r, dict) else [r]))
+                for r in obj
+            )
+        else:
+            text = json.dumps(obj, ensure_ascii=False)
+        for w in FORBIDDEN:
+            if w in text:
+                hits.append(f"{name}: {w}")
+    return hits
+
+
+def check_root_for_out_dir(out_dir: Path, root: Path) -> list[str]:
+    """**決定 10''**: 本番の出力に試験用の台帳を使わせない。
+
+    `--out-dir` がリポジトリの `backtest_data/` の下にあるのに `--root` が
+    リポジトリ直下でないなら、**別の台帳の「判定: 通す」で本番の表が書ける。**
+    その組を止める(**試験は `--out-dir` も一時ディレクトリに置くので当たらない**)。
+    """
+    repo = Path(__file__).resolve().parent.parent
+    try:
+        out_dir.resolve().relative_to((repo / "backtest_data").resolve())
+    except ValueError:
+        return []
+    if root.resolve() != repo.resolve():
+        return [f"--out-dir がリポジトリの backtest_data/ の下({out_dir})なのに "
+                f"--root がリポジトリ直下ではない({root})。"
+                f"本番の出力に試験用の台帳は使えない。"]
+    return []
+
+
 # =============================================================================
 # 関門(`CLAUDE.md` §5.0 の 2)
 # =============================================================================
@@ -957,35 +1159,61 @@ def main(argv=None) -> int:
     ap.add_argument("--seed", type=int, default=1, help="§9.1 の種(既定 1)")
     ap.add_argument("--reps", type=int, default=2000, help="§9.1 の反復回数(既定 2,000)")
     ap.add_argument("--root", default=str(Path(__file__).resolve().parent.parent),
-                    help="監査の台帳(docs/AUDITOR/ACTION_LOG.md)を探す根。試験でだけ差し替える")
-    ap.add_argument("--sens", action="append", default=[], metavar="NAME=DIR",
+                    help="監査の台帳(docs/AUDITOR/ACTION_LOG.md)の場所を差し替える引数"
+                         "(試験用)。--out-dir がリポジトリの backtest_data/ の下なら"
+                         "リポジトリ直下でなければ止まる")
+    ap.add_argument("--sens", action="append", default=[], metavar="NAME=DIR[:SAMPLE_DIR]",
                     help="感度の走行(繰り返し可)。観測のみの表 observation_only_<NAME>.csv "
-                         "を 1 本ずつ出す(t と判定の列なし。決定 19')")
+                         "を 1 本ずつ出す(t と判定の列なし。決定 19')。"
+                         "`:SAMPLE_DIR` を付けると、その標本から MDE の p・s を取る(決定 8'')")
     a = ap.parse_args(argv)
+
+    # --- 決定 10'': 本番の出力に試験用の台帳を使わせない -----------------------
+    bad = check_root_for_out_dir(Path(a.out_dir), Path(a.root))
+    if bad:
+        sys.stderr.write("[止め] " + "".join(f"{b}\n" for b in bad))
+        return 1
 
     s24 = Path(a.sample_w24) if a.sample_w24 else Path(a.sample_w8).parent / RUN_W24
     runs = {RUN_W8: Run(RUN_W8, Path(a.run_w8)), RUN_W24: Run(RUN_W24, Path(a.run_w24))}
     samples = {RUN_W8: Run(RUN_W8, Path(a.sample_w8)), RUN_W24: Run(RUN_W24, s24)}
 
     sens: dict[str, Run] = {}
+    sens_samples: dict[str, Run] = {}
     for spec in a.sens:
         if "=" not in spec:
-            sys.stderr.write(f"[止め] --sens は NAME=DIR の形で渡す: {spec}\n")
+            sys.stderr.write(
+                f"[止め] --sens は NAME=DIR または NAME=DIR:SAMPLE_DIR の形で渡す: {spec}\n")
             return 1
-        nm, _, d = spec.partition("=")
+        nm, _, rest = spec.partition("=")
         nm = nm.strip()
+        d, _, smp = rest.partition(":")       # 決定 8'': 標本は任意
         if nm in runs or nm in sens:
             sys.stderr.write(f"[止め] --sens の名前が重なっている: {nm}\n")
             return 1
         sens[nm] = Run(nm, Path(d.strip()))
+        if smp.strip():
+            sens_samples[nm] = Run(nm, Path(smp.strip()))
 
-    # --- サニティ #14(決定 6'): 1 対 1 の対応を走行ごとに測る -----------------
-    bad: list[str] = []
+    # --- サニティ #14(決定 6' + 12''): 1 対 1 の対応を走行ごとに測る ----------
+    bad = []
     for r in list(runs.values()) + list(sens.values()):
         bad += check_pairing(r)
     if bad:
         sys.stderr.write(
             "[止め] サニティ #14(1 対 1 の対応)が通らない。表を 1 枚も書かずに終わる。\n"
+            + "".join(f"       - {b}\n" for b in bad)
+        )
+        return 1
+
+    # --- 決定 3'': 対照 (ii) の軸の作り方が事前登録の固定と一致するか ----------
+    bad = []
+    for r in list(runs.values()) + list(sens.values()):
+        bad += check_axis_kinds(r)
+    if bad:
+        sys.stderr.write(
+            "[止め] 対照 (ii) の軸の作り方が事前登録 §4 の固定と違う。"
+            "表を 1 枚も書かずに終わる(測った側に合わせ直さない)。\n"
             + "".join(f"       - {b}\n" for b in bad)
         )
         return 1
@@ -1014,31 +1242,24 @@ def main(argv=None) -> int:
     sens_rows: dict[str, list[dict]] = {}
     for nm, r in sens.items():
         gs = build_groups_single(r)
+        smp = {nm: sens_samples[nm]} if nm in sens_samples else {}
         sens_rows[nm] = build_rows(
-            {nm: r}, {}, gs, boot, judge=False,
+            {nm: r}, smp, gs, boot, judge=False,
             systems=judge_systems() + observation_systems(),
         )
     cells = f1_cells(judge_rows)
     reading = f1_reading(cells)
 
-    # --- 表を書く前に関門を通す(閉じていれば 1 枚も書かない)---------------
-    pass_audit_gate(Path(a.root).resolve())
-
+    # --- 出す中身をここで全部そろえる(まだ 1 ファイルも書かない。決定 11'')------
     out = Path(a.out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    write_csv(out / "judgment_576.csv", JUDGE_HEADER, judge_rows)
-    write_csv(out / "f1_12cells.csv", JUDGE_HEADER, cells)
-    write_csv(out / "observation_only.csv", OBS_HEADER, obs_rows)
-    for nm, rows_ in sens_rows.items():
-        write_csv(out / f"observation_only_{nm}.csv", OBS_HEADER, rows_)
-    write_csv(out / "why_frame.csv", WHY_HEADER,
-              [{**{k: WHY_PLACEHOLDER for k in WHY_HEADER}, "読み": r} for r in WHY_READINGS])
-    (out / "f1_reading.txt").write_text(
+    why_rows = [{**{k: WHY_PLACEHOLDER for k in WHY_HEADER}, "読み": r}
+                for r in WHY_READINGS]
+    f1_text = (
         "§7.0 の 4 分岐のうちの読み: " + reading + "\n"
         "見たセル: 主軸 D の D1 × 戻り到達 2 系統 × h 6 本 = "
-        f"{len(cells)} セル(走行 {RUN_W8})\n",
-        encoding="utf-8",
+        f"{len(cells)} セル(走行 {RUN_W8})\n"
     )
+    reps_used_all = [int(r["有限な複製の本数"]) for r in judge_rows if r.get("有限な複製の本数") != ""]
 
     summary = {
         "単位": UNIT,
@@ -1053,11 +1274,26 @@ def main(argv=None) -> int:
         "バー": {"|t|": BAR_T, "|t|の丸め表示": BAR_T_SHOWN, "最低イベント数": MIN_N,
                  "最低イベント数の当て先": "その検定に使う、欠測を引いた後の実群の件数 n1",
                  "z_{1-α/2}": Z_ALPHA, "z_{1-β}": Z_POWER, "MDEの係数": MDE_Z,
+                 "最低イベント数の当て先2": "対照 (ii) の件数 n2 にも同じ 30 を当てる(決定 20'')",
+                 "バー近傍の帯": {"半幅": BAR_NEAR_HALFWIDTH,
+                                  "注": "|t| が z ± この幅に入る行に列「バー近傍」で ○ を付ける。"
+                                        "観測のみで、判定は変えない(決定 14'')"},
                  "注": "バー・CI・MDE は同じ z(norm.ppf(1 − α/2))を使う(決定 12')"},
-        "分岐": ["不明(n < 30)", "差あり(+)", "差あり(−)",
-                 UNKNOWN_MDE, "検出されず(MDE = X)"],
+        "分岐": BRANCHES,
         "検定の数": len(judge_rows),
         "群の数": len(groups),
+        "監査の台帳の根(--root)": str(Path(a.root).resolve()),
+        "有限な複製の本数": {
+            "注": "セルごとに SE の推定に使えた有限な複製の本数(決定 2'')。"
+                  "§9.1 の「SE の相対誤差 ≈ 1/√(2·reps) = 1.58%」は 2,000 本すべてが"
+                  "有限のときの値で、少ないセルはその本数で 1/√(2·n) を読む。"
+                  "**閾値は置かない**(A-12)。",
+            "指定した反復回数": a.reps,
+            "最小": (min(reps_used_all) if reps_used_all else None),
+            "最大": (max(reps_used_all) if reps_used_all else None),
+            "指定した反復回数に満たないセルの数": sum(
+                1 for v in reps_used_all if v < a.reps),
+        },
         "観測のみの表の行数": {
             "observation_only.csv": len(obs_rows),
             **{f"observation_only_{nm}.csv": len(rows_) for nm, rows_ in sens_rows.items()},
@@ -1067,10 +1303,20 @@ def main(argv=None) -> int:
                 "日数": len(r.days), "行数": {k: len(v) for k, v in r.by_kind.items()},
                 "w_SELL": r.w_sell(),
                 "相手がmixed束で落とした合わせた対照": r.n_dropped_mixed_partner,
-                "サニティ14_bin_pctの差の最大": r.pairing_worst_bin_pct_gap}
+                "サニティ14_bin_pctの差の最大": r.pairing_worst_bin_pct_gap,
+                "サニティ14の結果": r.pairing_report}
             for n, r in list(runs.items()) + list(sens.items())
         },
-        "感度(観測のみ)": {nm: str(r.path) for nm, r in sens.items()},
+        "感度(観測のみ)": {
+            nm: {"path": str(r.path),
+                 "標本(MDE の p・s)": (str(sens_samples[nm].path)
+                                       if nm in sens_samples else None),
+                 "MDE 列": ("出す" if nm in sens_samples else "空"),
+                 "MDE 列が空の理由": (None if nm in sens_samples else
+                                      "対を成す標本の走行が在庫に無い(--sens に "
+                                      ":SAMPLE_DIR を渡していない)")}
+            for nm, r in sens.items()
+        },
         "標本(MDE の p・s)": {n: str(r.path) for n, r in samples.items()},
         "対照(ii)の軸の作り方": {
             "own(対照行自身の値)": sorted(
@@ -1080,6 +1326,11 @@ def main(argv=None) -> int:
             "inherit(相手の実群の群を受け継ぐ)": sorted(
                 {g.name for g in groups if g.control_axis == AX_INHERIT}),
         },
+        "対照(ii)の軸の作り方の固定(事前登録 §4)": AXIS_KIND_FIXED,
+        "対照(ii)の軸の作り方の検査": (
+            "走行ごとに測った結果を事前登録 §4 の固定と突き合わせ、"
+            "食い違えば「[止め]」で終了コード 1(決定 3''。黙って合わせない)。"
+            "本走行では全部一致した。"),
         "受け継いだ群": [
             {"群": g.name, "走行": g.run, "列": g.col,
              "n_control_matched": int(membership(runs[g.run], KIND_MAT, g).sum())}
@@ -1114,33 +1365,72 @@ def main(argv=None) -> int:
             "相手が mixed 束の合わせた対照は全群から落とした"
             "(件数は summary の「相手がmixed束で落とした合わせた対照」)。"
             "実群の側が mixed を主表から外しているので、残すと 1 対 1 が崩れるためである。",
-            "1 対 1 の対応は table.csv の matched_liq_id 列で取り、"
-            "走行ごとにサニティ #14(相手が実在 / 同日 / bin_pct の差が ±5 以内)を通した。",
+            "1 対 1 の対応は table.csv の matched_liq_id 列で取り、走行ごとにサニティ #14"
+            "(相手が実在 / 同日 / bin_pct の差が ±5 以内 / 同じ相手を 2 つ以上の対照が"
+            "指していない / 対照の件数 = 引けた相手の件数(mixed 相手を含めて))を通した"
+            "(決定 12''。結果は走行ごとの「サニティ14の結果」)。",
             "判定に使う走行は gap 60 秒 × W 8h と gap 60 秒 × W 24h の 2 本で、"
             "W に依らない 12 群は gap60_w8 の走行からだけ 576 検定に入れた(§4 の内訳表)。"
             "同じ 12 群の W = 24h 側は観測のみの表に出してある(t と判定の列なし)。"
             "その 12 群の切り値は W = 24h の実群で切り直してある(決定 20')。",
             "感度の走行(--sens)は observation_only_<NAME>.csv に別の表として出した。"
-            "対を成す標本が無いので MDE の列は空である。判定にも F1 の読みにも入れていない。",
+            "`:SAMPLE_DIR` で対を成す標本を渡した感度は MDE の列を出し、渡していない感度は"
+            "MDE の列が空である(決定 8''。どちらかは summary の「感度(観測のみ)」)。"
+            "感度の行は判定にも F1 の読みにも 1 行も入れていない。",
+            "不在を断ずる語の走査は、表を 1 枚も書く前にメモリ上の行と文字列へ当てた"
+            "(決定 11'')。書き出した後にもう一度走査している(二重の網)。",
             "「全体」群の 実群 の欄は差の入力として出しているだけで、"
             "その水準を根拠にした文はこの summary にも標準出力にも書いていない"
             "(事前登録 §3 の #1 = a「全体分布の水準を根拠にした主張は書かない」)。",
             "不在を断ずる語は 1 つも書かない。"
             "検出できなかったセルは「検出されず(MDE = X)」と書き、"
-            "MDE が計算できなかったセルは「" + UNKNOWN_MDE + "」と書く(決定 17')。"
+            "MDE が計算できなかったセルは「" + UNKNOWN_MDE + "」、"
+            "t が計算できなかったセルは「" + UNKNOWN_T + "」(決定 1'')、"
+            "対照の件数が 30 未満のセルは「" + UNKNOWN_N2 + "」(決定 20'')と書く。"
             "MDE との比較(≥ / <)は別の列に残してある。",
             "MDE は p・s を標本 6 日で固定し、n だけ走行後の群の件数から取った(§8.6)。"
             "群の切り方は判定区間の実群で決めた切り値を標本にも当てた(§4)。",
             "前進到達(fwd_node)はどちらの表にも入れていない(1 周目は測定不能。§4.3)。",
         ],
     }
-    (out / "summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
 
     names = (["judgment_576.csv", "f1_12cells.csv", "observation_only.csv"]
              + [f"observation_only_{nm}.csv" for nm in sens_rows]
              + ["why_frame.csv", "f1_reading.txt", "summary.json"])
+
+    # --- 決定 11'': 表を書く前に、メモリ上の行と文字列へ判定語を当てる -----------
+    blobs: dict[str, object] = {
+        "judgment_576.csv": judge_rows,
+        "f1_12cells.csv": cells,
+        "observation_only.csv": obs_rows,
+        **{f"observation_only_{nm}.csv": rows_ for nm, rows_ in sens_rows.items()},
+        "why_frame.csv": why_rows,
+        "f1_reading.txt": f1_text,
+        "summary.json": summary,
+    }
+    hits = scan_rows_forbidden(blobs)
+    if hits:
+        sys.stderr.write(
+            "[止め] 出力に判定語が混ざっている(表を 1 枚も書かずに終わる): "
+            + " / ".join(hits) + "\n")
+        return 1
+
+    # --- 表を書く前に関門を通す(閉じていれば 1 枚も書かない)-------------------
+    pass_audit_gate(Path(a.root).resolve())
+
+    out.mkdir(parents=True, exist_ok=True)
+    write_csv(out / "judgment_576.csv", JUDGE_HEADER, judge_rows)
+    write_csv(out / "f1_12cells.csv", JUDGE_HEADER, cells)
+    write_csv(out / "observation_only.csv", OBS_HEADER, obs_rows)
+    for nm, rows_ in sens_rows.items():
+        write_csv(out / f"observation_only_{nm}.csv", OBS_HEADER, rows_)
+    write_csv(out / "why_frame.csv", WHY_HEADER, why_rows)
+    (out / "f1_reading.txt").write_text(f1_text, encoding="utf-8")
+    (out / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+    # 書き出した後の二重の網(整形で語が生まれていないか)。
     hits = scan_forbidden(out, names)
     if hits:
         sys.stderr.write("[止め] 出力に判定語が混ざっている: " + " / ".join(hits) + "\n")
@@ -1148,6 +1438,8 @@ def main(argv=None) -> int:
     write_md5(out, names)
 
     print(f"判定の表: {len(judge_rows)} 行 / 観測のみの表: {len(obs_rows)} 行 / 群 {len(groups)}")
+    print(f"有限な複製の本数: 指定 {a.reps} / 最小 {summary['有限な複製の本数']['最小']} / "
+          f"指定に満たないセル {summary['有限な複製の本数']['指定した反復回数に満たないセルの数']}")
     for nm, rows_ in sens_rows.items():
         print(f"感度(観測のみ)の表 {nm}: {len(rows_)} 行")
     print(f"F1 の 12 セルの読み: {reading}")
