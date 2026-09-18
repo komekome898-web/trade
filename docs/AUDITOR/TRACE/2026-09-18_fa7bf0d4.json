@@ -4048,20 +4048,20 @@
   {
    "move": 150,
    "tools": {
-    "Bash": 55,
-    "Agent": 17,
+    "Bash": 61,
+    "Agent": 18,
     "ToolSearch": 1,
     "SendMessage": 1,
     "Read": 3,
     "Write": 1
    },
-   "n_tools": 78,
+   "n_tools": 85,
    "read_goal": true,
    "first_write_at": 22,
    "table_shown": true,
    "claims_without_output": 1,
-   "claims_total": 2,
-   "audit_calls": 15,
+   "claims_total": 3,
+   "audit_calls": 16,
    "audit_pasted_immediately": 8,
    "audit_followed_by_real_edit": 1,
    "protected_writes": 0,
@@ -4089,14 +4089,14 @@
    "value": 0.4146
   },
   "P3_claim_with_output": {
-   "num": 176,
-   "den": 320,
-   "value": 0.55
+   "num": 177,
+   "den": 321,
+   "value": 0.5514
   },
   "P4_audit_pasted_immediately": {
    "num": 26,
-   "den": 138,
-   "value": 0.1884
+   "den": 139,
+   "value": 0.1871
   },
   "P5_tools_per_move": {
    "median": 6.0,
@@ -4105,8 +4105,8 @@
   },
   "P6_findings_applied": {
    "num": 62,
-   "den": 138,
-   "value": 0.4493,
+   "den": 139,
+   "value": 0.446,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
