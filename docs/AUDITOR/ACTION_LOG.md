@@ -7306,7 +7306,7 @@ L=200: 損失率 long 10.0bp short 10.1bp 近似 10.0bp | 逆算: 近似 200.2 �
 
 **オーナーの逐語**: L-196「**6.OK 7.OK 進めてください。監査役の効果が信頼できるので、監査役の逐語は私が求めた時に出力するようにしてください。**」(承認された行の文面はリードの返答 056 §7 の左列 = オーナー自身の語ではない)。
 
-一手: L-196 を記録・コミット(dc27d3a)→ 委任 2 本を並行(opus: `docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md`、走らせない / opus: `scripts/o3c_oi_distance.py --side-price split`、`backtest_data/o3c_oi_distance_split_20260918/{w8,w24}`、`OI_DISTANCE_SPLIT_2026-09-18.md`)→ `owner-auditor` 16 件 + 6 件、全部処置(sonnet に委任。`VERDICTS/2026-09-18_reaction_design.md`、`2026-09-18_oi_distance_split.md`)→ リードの検収(下)→ コミット(00d7e27)→ `owner-model-auditor`(返答本文には貼らない。L-196)。
+一手: L-196 を記録・コミット(dc27d3a)→ 委任 2 本を並行(opus: `docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md`、走らせない / opus: `scripts/o3c_oi_distance.py --side-price split`、`backtest_data/o3c_oi_distance_split_20260918/{w8,w24}`、`OI_DISTANCE_SPLIT_2026-09-18.md`)→ `owner-auditor` 16 件 + 6 件、全部処置(sonnet に委任。`VERDICTS/2026-09-18_reaction_design.md`、`2026-09-18_oi_distance_split.md`)→ リードの検収(下)→ コミット(00d7e27)→ `owner-model-auditor`(地の文には出さない。フックが変わるまでは、関門を通すため末尾に折りたたみの印で置く。L-196)。
 
 ### 検収のコマンドと出力(リード、2026-09-18)
 
