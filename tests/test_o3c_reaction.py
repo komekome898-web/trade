@@ -489,6 +489,91 @@ def test_judgment_days_excludes_the_sample_days(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
+# 12 日走行で開いた 10 日を判定区間から外す
+# (2026-09-18 の監査の指摘 2・14 / 返答 060 の #1。a・b に共通の作業)
+# --------------------------------------------------------------------------- #
+
+
+def test_scale12_opened_days_are_the_ten_outside_the_sample():
+    """定数の中身。12 日走行 2024-02-15〜26 から標本 6 日の 2 日を除いた 10 日。"""
+    assert react.SCALE12_JUDGMENT_DAYS_OPENED == (
+        "2024-02-15",
+        "2024-02-16",
+        "2024-02-17",
+        "2024-02-18",
+        "2024-02-21",
+        "2024-02-22",
+        "2024-02-23",
+        "2024-02-24",
+        "2024-02-25",
+        "2024-02-26",
+    )
+    assert len(react.SCALE12_JUDGMENT_DAYS_OPENED) == 10
+    # 標本 6 日(2024-02-19 / 20)とは重ならない。合わせて 12 日走行の 12 日になる。
+    assert not (set(react.SCALE12_JUDGMENT_DAYS_OPENED) & set(react.SAMPLE_DAYS))
+    twelve = set(react.SCALE12_JUDGMENT_DAYS_OPENED) | {"2024-02-19", "2024-02-20"}
+    assert twelve == {f"2024-02-{d:02d}" for d in range(15, 27)}
+
+
+def test_judgment_days_excludes_the_scale12_days_too(monkeypatch):
+    """合成の日付一覧で、標本 6 日と 10 日の両方が外れること(日付で測る)。"""
+    fake = (
+        ["2023-06-24"]
+        + list(react.SAMPLE_DAYS)
+        + list(react.SCALE12_JUDGMENT_DAYS_OPENED)
+        + ["2024-10-15"]
+    )
+    monkeypatch.setattr(react, "all_days", lambda root: list(fake))
+    got = react.judgment_days(Path("."))
+    assert got == ["2023-06-24", "2024-10-15"]
+    assert len(got) == len(fake) - 6 - 10
+
+
+@pytest.mark.skipif(
+    not (
+        REPO
+        / "backtest_data"
+        / "binance_cm_o3c_20260913"
+        / "liquidationSnapshot"
+        / "BTCUSD_PERP"
+    ).exists(),
+    reason="実データ(binance_cm_o3c_20260913)が無い",
+)
+def test_judgment_days_on_the_real_inventory_is_456_days():
+    """実物の在庫で **472 − 6 − 10 = 456 日**になること。日数と日付の両方で測る。
+
+    日付の一覧は `backtest_data/binance_cm_o3c_20260913/liquidationSnapshot/BTCUSD_PERP/`
+    の zip のファイル名から取る(`react.all_days`)。
+    """
+    root = REPO / "backtest_data" / "binance_cm_o3c_20260913"
+    days = react.all_days(root)
+    assert len(days) == 472
+    assert len(set(days)) == 472          # 重複が無い
+    # 外す 16 日が全部在庫にあること(名前の書き間違いをここで捕まえる)。
+    for d in react.SAMPLE_DAYS:
+        assert d in days
+    for d in react.SCALE12_JUDGMENT_DAYS_OPENED:
+        assert d in days
+
+    got = react.judgment_days(root)
+    assert len(got) == 456
+    assert len(got) == 472 - 6 - 10
+    # 日付で: 外した 16 日が 1 日も残っていない。
+    assert not (set(got) & set(react.SAMPLE_DAYS))
+    assert not (set(got) & set(react.SCALE12_JUDGMENT_DAYS_OPENED))
+    # 2024-02-15〜26 の 12 日は 1 日も残らない(標本 2 日 + 開いた 10 日)。
+    assert not (set(got) & {f"2024-02-{d:02d}" for d in range(15, 27)})
+    # 残りは元の順序のまま、外した 16 日を引いた集合と一致する。
+    assert got == [
+        d
+        for d in days
+        if d not in set(react.SAMPLE_DAYS) | set(react.SCALE12_JUDGMENT_DAYS_OPENED)
+    ]
+    # 隣の日(2024-02-14 / 2024-02-27)は残っている = 外し過ぎていない。
+    assert "2024-02-14" in got and "2024-02-27" in got
+
+
+# --------------------------------------------------------------------------- #
 # 生の主観測量を判定区間の日で出さない(指摘 2。リードの決定 2・3)
 # --------------------------------------------------------------------------- #
 
