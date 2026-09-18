@@ -1,0 +1,274 @@
+# Binance COIN-M BTCUSD_PERP metrics 欠測日の再調達プローブ (2026-09-18)
+# 形式: 1 エントリ = UTC時刻 / 方法 / URL / HTTPコード / バイト数 / 本文先頭200文字
+# 実行環境: /home/user/trade, curl (--cacert /root/.ccr/ca-bundle.crt, $HTTPS_PROXY 経由)
+# 書き込み先ディレクトリは作っていない(200 が 1 件も無かったため。理由は末尾の要約)
+
+## 1. 対照(在庫にある日・命名の確認)
+[2026-09-18T11:09:41Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2023-06-25.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:42Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-03.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:42Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-09.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:42Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2026-09-17.zip	HTTP=200	bytes=0
+
+## 2. monthly metrics(COIN-M)の有無
+[2026-09-18T11:09:43Z] HEAD	https://data.binance.vision/data/futures/cm/monthly/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2023-11.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:43Z] HEAD	https://data.binance.vision/data/futures/cm/monthly/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:44Z] HEAD	https://data.binance.vision/data/futures/cm/monthly/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:44Z] HEAD	https://data.binance.vision/data/futures/cm/monthly/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:45Z] HEAD	https://data.binance.vision/data/futures/cm/monthly/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:45Z] GET (S3 ListObjects, delimiter=/)	https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?delimiter=/&prefix=data/futures/cm/monthly/	HTTP=200	bytes=984
+    body[0:200]= '<?xml version="1.0" encoding="UTF-8"?>\n<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>data.binance.vision</Name><Prefix>data/futures/cm/monthly/</Prefix><Marker></Marker><MaxK'
+    → CommonPrefixes は aggTrades / bookTicker / fundingRate / indexPriceKlines / klines /
+      markPriceKlines / premiumIndexKlines / trades の 8 件。metrics/ は無い。
+[2026-09-18T11:09:46Z] GET (S3 ListObjects)	https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?delimiter=/&prefix=data/futures/cm/monthly/metrics/BTCUSD_PERP/	HTTP=200	bytes=313
+    body[0:200]= '<?xml version="1.0" encoding="UTF-8"?>\n<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>data.binance.vision</Name><Prefix>data/futures/cm/monthly/metrics/BTCUSD_PERP/</Prefix><M'
+    → Contents 0 件(KeyCount 0)。COIN-M に monthly/metrics は存在しない。
+
+## 3. daily metrics のキー全件列挙(BTCUSD_PERP)
+[2026-09-18T11:09:46Z] GET (S3 ListObjects, marker ページング)	https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?prefix=data/futures/cm/daily/metrics/BTCUSD_PERP/	HTTP=200
+    → キー 3,583(zip 1,791 + .CHECKSUM 1,792)。zip の日付範囲 2021-07-08 〜 2026-09-17。
+    → 在庫の窓 2023-06-25〜2024-10-14 における欠測 99 日は、アーカイブ側のキー一覧にも 1 件も存在しない。
+
+## 4. 欠測 99 日 × {zip, .CHECKSUM} = 198 件の HEAD(全件、範囲を切っていない)
+[2026-09-18T11:06:46Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2023-09-25.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:46Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2023-09-25.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:47Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2023-11-19.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:47Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2023-11-19.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:47Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-04.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:49Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-04.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:49Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-05.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:49Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-05.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:50Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-06.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:50Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-06.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:50Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-07.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:52Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-07.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:52Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-08.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:52Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-08.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:53Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-09.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:54Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-09.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:54Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-10.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:55Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-10.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:55Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-11.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:55Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-11.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:56Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-12.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:57Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-12.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:57Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-13.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:57Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-13.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:58Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-14.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:58Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-14.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:59Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-15.zip	HTTP=404	bytes=0
+[2026-09-18T11:06:59Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-15.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:06:59Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-16.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:00Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-16.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:00Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-17.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:01Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-17.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:01Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-18.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:02Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-18.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:02Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-19.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:02Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-19.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:03Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-20.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:04Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-20.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:04Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-21.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:05Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-21.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:05Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-22.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:06Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-22.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:06Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-23.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:06Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-23.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:07Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-24.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:07Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-24.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:07Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-25.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:08Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-25.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:08Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-26.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:08Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-26.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:09Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-27.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:09Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-27.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:10Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-28.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:10Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-28.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:11Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-29.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:11Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-29.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:11Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-30.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:12Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-30.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:12Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-31.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:12Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-03-31.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:13Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-01.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:14Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-01.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:14Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-02.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:15Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-02.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:15Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-03.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:16Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-03.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:16Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-04.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:16Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-04.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:17Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-05.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:17Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-05.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:18Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-06.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:18Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-06.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:18Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-07.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:19Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-07.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:19Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-08.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:20Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-08.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:20Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-09.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:21Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-09.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:21Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-10.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:21Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-10.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:22Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-11.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:22Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-11.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:22Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-12.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:24Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-12.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:24Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-13.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:25Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-13.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:26Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-14.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:26Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-14.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:27Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-15.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:27Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-15.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:27Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-16.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:28Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-16.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:29Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-17.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:30Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-17.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:30Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-18.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:31Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-18.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:31Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-19.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:31Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-19.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:32Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-20.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:32Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-20.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:32Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-21.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:33Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-21.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:33Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-22.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:33Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-22.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:34Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-23.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:34Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-23.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:34Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-24.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:35Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-24.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:35Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-25.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:36Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-25.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:36Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-26.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:36Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-26.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:37Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-27.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:37Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-27.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:38Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-28.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:38Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-28.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:39Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-29.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:39Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-29.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:40Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-30.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:40Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-04-30.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:41Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-01.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:41Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-01.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:41Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-02.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:43Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-02.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:43Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-03.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:44Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-03.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:44Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-04.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:45Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-04.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:46Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-05.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:46Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-05.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:47Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-06.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:48Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-06.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:48Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-07.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:49Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-07.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:50Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-08.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:50Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-08.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:50Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-09.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:51Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-09.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:51Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-10.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:51Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-10.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:52Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-11.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:52Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-11.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:53Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-12.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:53Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-12.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:53Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-13.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:54Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-13.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:54Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-14.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:55Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-14.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:55Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-15.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:56Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-15.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:56Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-16.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:56Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-16.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:57Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-17.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:57Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-17.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:58Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-18.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:58Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-18.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:58Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-19.zip	HTTP=404	bytes=0
+[2026-09-18T11:07:59Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-19.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:07:59Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-20.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:00Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-20.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:00Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-21.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:01Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-21.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:02Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-22.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:02Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-22.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:02Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-23.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:03Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-23.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:03Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-24.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:04Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-24.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:04Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-25.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:05Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-25.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:05Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-26.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:05Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-26.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:06Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-27.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:06Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-27.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:07Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-28.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:08Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-28.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:08Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-29.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:08Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-29.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:09Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-30.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:10Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-30.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:11Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-31.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:11Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-05-31.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:11Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-01.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:12Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-01.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:12Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-02.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:13Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-02.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:13Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-03.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:14Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-03.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:14Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-04.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:14Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-04.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:15Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-05.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:15Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-05.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:15Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-06.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:15Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-06.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:16Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-07.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:16Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-07.zip.CHECKSUM	HTTP=404	bytes=0
+[2026-09-18T11:08:17Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-08.zip	HTTP=404	bytes=0
+[2026-09-18T11:08:17Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_PERP/BTCUSD_PERP-metrics-2024-06-08.zip.CHECKSUM	HTTP=404	bytes=0
+    → 198 件すべて HTTP 404(200 は 0 件)。本文は AmazonS3 の <Error><Code>NoSuchKey</Code> XML。
+
+## 5. 欠測が銘柄固有かどうか(近傍銘柄・近傍商品)
+[2026-09-18T11:09:46Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/BTCUSD_240628/BTCUSD_240628-metrics-2024-04-15.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:47Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/ETHUSD_PERP/ETHUSD_PERP-metrics-2024-04-15.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:47Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/ETHUSD_PERP/ETHUSD_PERP-metrics-2024-06-01.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:47Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/ETHUSD_PERP/ETHUSD_PERP-metrics-2023-09-25.zip	HTTP=404	bytes=0
+[2026-09-18T11:09:48Z] HEAD	https://data.binance.vision/data/futures/cm/daily/metrics/ETHUSD_PERP/ETHUSD_PERP-metrics-2023-11-19.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:48Z] HEAD	https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2023-09-25.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:48Z] HEAD	https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2023-11-19.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:49Z] HEAD	https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2024-03-04.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:49Z] HEAD	https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2024-04-15.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:50Z] HEAD	https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2024-05-31.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:51Z] HEAD	https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2024-06-01.zip	HTTP=200	bytes=0
+[2026-09-18T11:09:51Z] HEAD	https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2024-06-08.zip	HTTP=200	bytes=0
+
+    → 追加の全件列挙(S3 ListObjects、marker ページング、2026-09-18):
+      ETHUSD_PERP(COIN-M)の窓 2023-06-25〜2024-10-14 の欠測は 98 日 = BTCUSD_PERP の 99 日から
+      2023-11-19 を除いた集合(2023-09-25 と 2024-03-04〜2024-06-08 は ETH でも欠測)。
+      BTCUSDT(USD-M)の同じ窓の欠測は 0 日。
+      → 2024-03-04〜2024-06-08 の塊と 2023-09-25 は COIN-M の metrics ツリー全体の欠測、
+        2023-11-19 は BTCUSD_PERP だけの欠測(実測)。
+
+## 6. 清算アーカイブ(窓の右端の出所)
+[2026-09-18T11:09:51Z] GET (S3 ListObjects, marker ページング)	https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?prefix=data/futures/cm/daily/liquidationSnapshot/BTCUSD_PERP/	HTTP=200
+    → zip 472 件、2023-06-25 〜 2024-10-14。metrics(2026-09-17 まで)とは右端が違う。
+
+## 7. REST(COIN-M dapi)
+[2026-09-18T11:09:52Z] GET	https://dapi.binance.com/futures/data/openInterestHist?pair=BTCUSD&contractType=PERPETUAL&period=5m&limit=1	HTTP=451	bytes=224
+    body[0:200]= '{\n  "code": 0,\n  "msg": "Service unavailable from a restricted location according to \'b. Eligibility\' in https://www.binance.com/en/terms. Please contact customer service if you believe you received t'
+
+## 8. 第三者データ(鍵なしでの到達性のみ)
+[2026-09-18T11:09:52Z] GET	https://api.coinalyze.net/v1/open-interest-history?symbols=BTCUSD_PERP.A&interval=5min&from=1709510400&to=1709596800	HTTP=401	bytes=37
+    body[0:200]= '{"message":"Invalid/Missing API key"}'
+[2026-09-18T11:09:53Z] GET	https://open-api-v4.coinglass.com/api/futures/open-interest/history?exchange=Binance&symbol=BTCUSD_PERP&interval=5m	HTTP=200	bytes=39
+    body[0:200]= '{"code":"401","msg":"API key missing."}'
+[2026-09-18T11:09:53Z] GET	https://api.tardis.dev/v1/exchanges/binance-delivery	HTTP=200	bytes=113693
+    body[0:200]= '{"id":"binance-delivery","name":"Binance COIN Futures","enabled":true,"availableSince":"2020-06-16T00:00:00.000Z","availableChannels":["trade","depth","depthSnapshot","bookTicker","forceOrder","markPr'
+
+## 9. 要約
+- 欠測 99 日(判定区間内 97 日 + 区間外 2 日 = 2023-09-25 / 2024-06-01)の daily zip と .CHECKSUM は
+  198 件すべて HTTP 404。バケットのキー一覧にも存在しない。
+- COIN-M に monthly/metrics のツリー自体が無い(404 かつ ListObjects が 0 件)ので、monthly 経由の代替は無い。
+- よって新ディレクトリ backtest_data/binance_cm_o3c_supp_20260918/ は作っていない(取得したファイルが 0 件のため)。
+- 未確認: オーナー PC からの到達。PC での到達確認が必要。
