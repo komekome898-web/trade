@@ -1,0 +1,218 @@
+{
+ "source": "/root/.claude/projects/-home-user-trade/2fb929ce-03cc-51a2-b395-7c71362d5555.jsonl",
+ "n_moves": 6,
+ "moves": [
+  {
+   "move": 1,
+   "tools": {
+    "Bash": 17
+   },
+   "n_tools": 17,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": true,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 2,
+   "tools": {},
+   "n_tools": 0,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 3,
+   "tools": {},
+   "n_tools": 0,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 4,
+   "tools": {
+    "Bash": 36,
+    "Read": 1,
+    "Write": 1,
+    "Agent": 2
+   },
+   "n_tools": 40,
+   "read_goal": true,
+   "first_write_at": 34,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 2,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 1
+  },
+  {
+   "move": 5,
+   "tools": {
+    "Bash": 7,
+    "ToolSearch": 1
+   },
+   "n_tools": 8,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 2,
+   "claims_total": 2,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 6,
+   "tools": {
+    "Bash": 5
+   },
+   "n_tools": 5,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  }
+ ],
+ "rollup": {
+  "P1_goal_read_before_first_write": {
+   "num": 1,
+   "den": 1,
+   "value": 1.0
+  },
+  "P2_table_shown_before_first_write": {
+   "num": 0,
+   "den": 1,
+   "value": 0.0
+  },
+  "P3_claim_with_output": {
+   "num": 1,
+   "den": 4,
+   "value": 0.25
+  },
+  "P4_audit_pasted_immediately": {
+   "num": 0,
+   "den": 2,
+   "value": 0.0
+  },
+  "P5_tools_per_move": {
+   "median": 12.5,
+   "max": 40,
+   "n": 4
+  },
+  "P6_findings_applied": {
+   "num": 0,
+   "den": 2,
+   "value": 0.0,
+   "note_key": "approximation_v2"
+  },
+  "P7_readdo_opened": {
+   "num": 0,
+   "den": null,
+   "value": null
+  },
+  "R4_unlock_created": {
+   "num": 0,
+   "den": null,
+   "value": null,
+   "note_key": "excludes_test_origin"
+  },
+  "R4b_unlock_in_test": {
+   "num": 1,
+   "den": null,
+   "value": null
+  },
+  "R5_protected_by_path": {
+   "docs/PROJECT_GOAL.md": 0,
+   "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+   ".claude/hooks/": 0,
+   ".claude/settings.json": 0,
+   ".claude/agents/": 0
+  }
+ }
+}
