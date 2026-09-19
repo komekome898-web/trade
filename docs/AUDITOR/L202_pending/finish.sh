@@ -25,8 +25,9 @@ echo "=== 台帳 ==="; cut -c1-16,66- docs/AUDITOR/HOOK_MANIFEST.sha256
 echo "=== verify_gates ==="
 python3 scripts/verify_gates.py || rollback "verify_gates の食い違い"
 git add -A .claude githooks docs/AUDITOR/HOOK_MANIFEST.sha256 || rollback "git add"
+MSG="$(mktemp)"; cp "$S/commit2.txt" "$MSG"
 git rm -rq docs/AUDITOR/L202_pending 2>/dev/null || true
-git commit -q -F "$S/commit2.txt" || rollback "commit"
+git commit -q -F "$MSG" || rollback "commit"
 echo "=== コミット ==="; git log --oneline -3
 
 push_retry() {
