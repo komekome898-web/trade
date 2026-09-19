@@ -63,6 +63,33 @@ WHY_MD = """# 報告
 平均 +2.18 bp、片側 p = 0.03。
 """
 
+VERIFICATION_MD = """# 監査の報告
+
+## 経緯
+
+指摘 34 件は多すぎる。誤警報が多いと判断した。
+
+## 数え直し
+
+件数は数え直した。
+
+```
+$ grep -c "止める" verdicts.md
+6
+```
+"""
+
+UNIVERSAL_MD = """# 既知解
+
+## 集合
+
+この 16 件が過去の指摘の全件である。根拠は後述する。
+
+## 内訳
+
+内訳はすべて表にした。
+"""
+
 MEASURED_MD = """# 報告
 
 ## 測定対象
@@ -110,6 +137,34 @@ def test_extract_symbol_definition(tmp_path):
     assert len(sd) >= 1
     assert "標準偏差" in sd[0]["a"]
     assert "損益" in sd[0]["b"]
+
+
+def test_extract_verification_claim(tmp_path):
+    art = _write(tmp_path, "ver.md", VERIFICATION_MD)
+    pairs = [p for p in J.extract_pairs(VERIFICATION_MD, art)
+             if p["kind"] == "verification_claim"]
+    assert len(pairs) >= 1
+    got = [p for p in pairs if "数え直した" in p["a"]]
+    assert got, [p["a"] for p in pairs]
+    # b には同じ段落の残りに加えて、直後のコードブロックが入る
+    assert "grep -c" in got[0]["b"] and "```" in got[0]["b"]
+
+
+def test_verification_claim_without_code_block(tmp_path):
+    md = "# 報告\n\n34 件の指摘は全部読んだ。的外れだった。\n"
+    art = _write(tmp_path, "v2.md", md)
+    pairs = [p for p in J.extract_pairs(md, art) if p["kind"] == "verification_claim"]
+    assert len(pairs) == 1
+    assert "読んだ" in pairs[0]["a"]
+    assert "```" not in pairs[0]["b"]
+
+
+def test_extract_universal_claim(tmp_path):
+    art = _write(tmp_path, "uni.md", UNIVERSAL_MD)
+    pairs = [p for p in J.extract_pairs(UNIVERSAL_MD, art) if p["kind"] == "universal_claim"]
+    assert len(pairs) >= 2
+    assert any("全件" in p["a"] for p in pairs)
+    assert any("すべて" in p["a"] for p in pairs)
 
 
 def test_extract_scope_vs_bar(tmp_path):
@@ -215,10 +270,58 @@ def test_presence_composition_boundary():
     assert J.decide_flag("scope_vs_bar", 0.2, None) == (False, None)
 
 
+def test_presence_composition_for_the_two_new_kinds():
+    for kind, qid in (("verification_claim", "is_verification_claim"),
+                      ("universal_claim", "is_universal_claim")):
+        assert J.presence_qid(kind) == qid
+        reason = "not_" + qid.removeprefix("is_")
+        assert J.decide_flag(kind, 0.9, 0.49) == (False, reason)
+        assert J.decide_flag(kind, 0.9, None) == (False, reason)
+        assert J.decide_flag(kind, 0.9, J.PRESENCE) == (True, None)
+        assert J.decide_flag(kind, 0.3499, 0.9) == (False, None)
+        assert J.decide_flag(kind, J.ATTENTION, 0.9) == (True, None)
+
+
+def test_questions_for_the_two_new_kinds():
+    q = J.question_for("verification_claim", {})
+    assert set(q) == {"evidence_attached", "is_verification_claim"}
+    q = J.question_for("universal_claim", {})
+    assert set(q) == {"enumeration_attached", "is_universal_claim"}
+    for kind in ("verification_claim", "universal_claim"):
+        for spec in J.question_for(kind, {}).values():
+            assert spec["type"] == "noul"
+            assert set(spec["criteria"]) == {"true", "false"}
+
+
+def test_violation_probability_for_the_two_new_kinds():
+    qid, p = J.violation_probability(
+        "verification_claim", {"evidence_attached": {"type": "noul", "noul": 0.2}})
+    assert qid == "evidence_attached" and p == pytest.approx(0.8)
+    qid, p = J.violation_probability(
+        "universal_claim", {"enumeration_attached": {"type": "noul", "noul": 0.2}})
+    assert qid == "enumeration_attached" and p == pytest.approx(0.8)
+
+
+def test_new_kinds_end_to_end_keep_both_probabilities(tmp_path, fake_client):
+    fake_client.noul_by_qid = {"is_verification_claim": 0.9, "evidence_attached": 0.1}
+    art = _write(tmp_path, "ver.md", VERIFICATION_MD)
+    out = tmp_path / "out"
+    assert J.main(["audit", str(art), "--out", str(out)]) == 0
+    recs = [r for r in _read_jsonl(out / "ver.jsonl") if r["kind"] == "verification_claim"]
+    assert recs
+    for rec in recs:
+        assert rec["presence_probability"] == 0.9
+        assert rec["violation_probability"] == pytest.approx(0.9)
+        assert rec["flag"] is True and rec["reason"] is None
+    _state, questions = fake_client.calls[0]
+    assert set(questions) == {"evidence_attached", "is_verification_claim"}
+
+
 def test_presence_probability_only_for_negative_claim():
     assert J.presence_probability(
         "negative_claim", {"is_unavailability_claim": {"type": "noul", "noul": 0.7}}) == 0.7
     assert J.presence_probability("scope_vs_bar", {}) is None
+    assert J.presence_qid("scope_vs_bar") is None
 
 
 def test_negative_claim_keeps_both_probabilities(tmp_path, fake_client):
@@ -466,6 +569,55 @@ def test_score_counts_detection_miss_and_false_positive(tmp_path, capsys):
     assert J.main(["score", "--labels", str(labels), "--dir", str(out)]) == 0
     text = capsys.readouterr().out
     assert "検出 1 件 / 見逃し 1 件 / 誤検出 1 件 / 該当なし・印なし 1 件 / 未評価 1 件" in text
+
+
+def _write_summary(out: Path, name: str, n_flag: int) -> None:
+    (out / f"{Path(name).stem}.jsonl").write_text(json.dumps(
+        {"file": name, "kind": "_summary", "n_flag": n_flag, "flag_by_kind": {},
+         "n_pairs": 1, "n_sent": 1, "n_requests": 1, "dry_run": False,
+         "unreachable": None}, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def test_score_controls_are_counted_as_no_correction(tmp_path, capsys):
+    out = tmp_path / "out"
+    out.mkdir()
+    ctrl_dir = tmp_path / "controls"
+    ctrl_dir.mkdir()
+    (ctrl_dir / "CTRL-A.md").write_text("対照 A", encoding="utf-8")
+    (ctrl_dir / "CTRL-B.md").write_text("対照 B", encoding="utf-8")
+    lone = tmp_path / "CTRL-C.md"
+    lone.write_text("対照 C", encoding="utf-8")
+
+    _write_summary(out, "KA-01.md", 2)   # has_answer=1 → 検出
+    _write_summary(out, "CTRL-A.md", 0)  # 対照・印なし → 該当なし
+    _write_summary(out, "CTRL-B.md", 1)  # 対照・印あり → 誤検出
+    _write_summary(out, "CTRL-C.md", 0)  # ファイル指定の対照 → 該当なし
+    labels = tmp_path / "labels.csv"
+    labels.write_text("file,has_answer\nKA-01.md,1\n", encoding="utf-8")
+
+    assert J.main(["score", "--labels", str(labels), "--dir", str(out),
+                   "--controls", str(ctrl_dir), str(lone)]) == 0
+    text = capsys.readouterr().out
+    assert ("検出 1 件 / 見逃し 0 件 / 誤検出 1 件 / 該当なし・印なし 2 件 / 未評価 0 件"
+            "(うち対照 3 件)") in text
+    assert "CTRL-A.md" in text and "CTRL-C.md" in text
+
+
+def test_score_controls_do_not_override_labels(tmp_path, capsys):
+    out = tmp_path / "out"
+    out.mkdir()
+    _write_summary(out, "KA-01.md", 1)
+    ctrl_dir = tmp_path / "controls"
+    ctrl_dir.mkdir()
+    (ctrl_dir / "KA-01.md").write_text("同名", encoding="utf-8")
+    labels = tmp_path / "labels.csv"
+    labels.write_text("file,has_answer\nKA-01.md,1\n", encoding="utf-8")
+    assert J.main(["score", "--labels", str(labels), "--dir", str(out),
+                   "--controls", str(ctrl_dir)]) == 0
+    text = capsys.readouterr().out
+    # ラベル側の 1 行だけが残り、誤検出には数えられない
+    assert "検出 1 件 / 見逃し 0 件 / 誤検出 0 件" in text
+    assert "うち対照" not in text
 
 
 def test_score_treats_dry_run_and_unreachable_as_unevaluated(tmp_path, capsys):

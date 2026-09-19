@@ -16,7 +16,7 @@
 
 使い方:
   python3 scripts/jev_check.py audit <成果物.md> [--out DIR] [--dry-run] [--summary] [--model ID]
-  python3 scripts/jev_check.py score --labels docs/AUDITOR/JEV/labels_2026-09-19.csv --dir data/jev/check/
+  python3 scripts/jev_check.py score --labels <labels.csv> --dir data/jev/check/ [--controls DIR|FILE...]
 
 **数値の解釈や結論はこの道具は書かない。**
 """
@@ -50,6 +50,8 @@ SOURCE_SUFFIXES = (".csv", ".json", ".txt")
 
 # 抽出のパターン(仕様どおりの語をそのまま置く)
 NEGATIVE_RE = re.compile(r"取れない|無い|ない|できない|存在しない|不可|見当たらない|提供していない")
+VERIFICATION_RE = re.compile(r"確認した|読んだ|検証した|実測した|突き合わせた|数え直した|走らせた|実行した")
+UNIVERSAL_RE = re.compile(r"全て|すべて|全件|全部|網羅|漏れなく|残らず|一つも|1 つも")
 SCOPE_HEADING_RE = re.compile(r"射程|範囲|測らない|言えないこと")
 BAR_HEADING_RE = re.compile(r"判定|採用|基準|バー|合否")
 MEASURED_HEADING_RE = re.compile(r"測定対象|測るもの|対象")
@@ -178,6 +180,69 @@ def extract_negative_claims(text: str) -> list[dict]:
                     "b_role": "the rest of the same paragraph",
                 })
     return pairs
+
+
+def _following_code_block(text: str, last_lineno: int) -> str:
+    """段落の直後(空行を挟んでよい)にコード柵があれば、その中身を柵ごと返す。無ければ空。"""
+    lines = text.splitlines()
+    i = last_lineno  # last_lineno は 1 始まりなので、これがそのまま「次の行」の添字
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    if i >= len(lines) or not _strip_quote(lines[i]).startswith("```"):
+        return ""
+    out = [lines[i]]
+    i += 1
+    while i < len(lines):
+        out.append(lines[i])
+        if _strip_quote(lines[i]).startswith("```"):
+            break
+        i += 1
+    return "\n".join(out)
+
+
+def _claim_pairs(text: str, kind: str, pattern: re.Pattern,
+                 a_role: str, b_role: str) -> list[dict]:
+    """「…と主張する文」と「同じ段落の残り + 直後のコードブロック」の対。"""
+    raws = paragraphs(text)
+    logs = dict(logical_lines_by_paragraph(text))
+    pairs = []
+    for start, raw_lines in raws:
+        lines = logs.get(start)
+        if not lines:
+            continue
+        code = _following_code_block(text, start + len(raw_lines) - 1)
+        for ln, body in lines:
+            for part in re.split(r"(?<=。)", body):
+                part = part.strip()
+                if not part or not pattern.search(part):
+                    continue
+                rest = "\n".join(b for l, b in lines if l != ln)
+                b = "\n".join(x for x in (rest, code) if x).strip() or body
+                pairs.append({
+                    "kind": kind,
+                    "anchor": ln,
+                    "a": _clip(part),
+                    "b": _clip(b),
+                    "a_role": a_role,
+                    "b_role": b_role,
+                })
+    return pairs
+
+
+def extract_verification_claims(text: str) -> list[dict]:
+    return _claim_pairs(
+        text, "verification_claim", VERIFICATION_RE,
+        "the sentence claiming that a check, reading, run or comparison was performed",
+        "the rest of the same paragraph and the code block right after it, if any",
+    )
+
+
+def extract_universal_claims(text: str) -> list[dict]:
+    return _claim_pairs(
+        text, "universal_claim", UNIVERSAL_RE,
+        "the sentence claiming completeness",
+        "the rest of the same paragraph and the code block right after it, if any",
+    )
 
 
 def _definition_patterns(term: str) -> list[re.Pattern]:
@@ -351,6 +416,8 @@ def cap_negative_claims(pairs: list[dict]) -> tuple[list[dict], int]:
 def extract_pairs(text: str, artifact: Path) -> list[dict]:
     pairs: list[dict] = []
     pairs += extract_negative_claims(text)
+    pairs += extract_verification_claims(text)
+    pairs += extract_universal_claims(text)
     pairs += extract_symbol_definitions(text)
     pairs += extract_scope_vs_bar(text)
     pairs += extract_intent_vs_measured(text, artifact)
@@ -363,6 +430,87 @@ def extract_pairs(text: str, artifact: Path) -> list[dict]:
 # 問い(1 判断 1 問・肯定形・criteria は具体例つき・英語)
 # ---------------------------------------------------------------------------
 def question_for(kind: str, pair: dict) -> dict:
+    if kind == "verification_claim":
+        # O-3 の族(実行したコマンドと出力を同じ返答に出す)。presence を別の問いに分ける。
+        return {
+            "evidence_attached": {
+                "type": "noul",
+                "instructions": (
+                    "The command that was run and its output, or the file and line that was read, "
+                    "appear in `fragment_a` or `fragment_b`."
+                ),
+                "criteria": {
+                    "true": (
+                        "The command and its output are shown, or the exact source is named. "
+                        "Example: \"git ls-files | xargs grep -c ... -> 12\" with the output pasted "
+                        "underneath, or \"read docs/DATA.md lines 40-52\"."
+                    ),
+                    "false": (
+                        "Only the conclusion of the check is given. Example: \"I checked every "
+                        "entry and they all match\" with no command, no output and no source named."
+                    ),
+                },
+            },
+            "is_verification_claim": {
+                "type": "noul",
+                "instructions": (
+                    "`fragment_a` asserts that the author personally performed a check, reading, "
+                    "run or comparison — as opposed to describing a plan or a rule."
+                ),
+                "criteria": {
+                    "true": (
+                        "The sentence reports something the author already did. Example: "
+                        "\"I read all 34 findings\", \"the counts were re-run\", "
+                        "\"the two tables were compared\"."
+                    ),
+                    "false": (
+                        "The sentence states a plan, a rule or someone else's action. Example: "
+                        "\"the auditor must read every finding\", \"this will be measured later\", "
+                        "\"the procedure says to re-count\"."
+                    ),
+                },
+            },
+        }
+    if kind == "universal_claim":
+        return {
+            "enumeration_attached": {
+                "type": "noul",
+                "instructions": (
+                    "A count, a listing, or command output that enumerates the set appears in "
+                    "`fragment_a` or `fragment_b`."
+                ),
+                "criteria": {
+                    "true": (
+                        "The set is enumerated or counted. Example: a table with one row per item "
+                        "and a total, or \"git ls-files | wc -l -> 2130\" with the output shown."
+                    ),
+                    "false": (
+                        "Completeness is asserted with no enumeration and no count. Example: "
+                        "\"this is the whole set of the owner's corrections\" with nothing listing "
+                        "or counting them."
+                    ),
+                },
+            },
+            "is_universal_claim": {
+                "type": "noul",
+                "instructions": (
+                    "`fragment_a` claims completeness — that a set is entire, that every item was "
+                    "covered, or that nothing was left out."
+                ),
+                "criteria": {
+                    "true": (
+                        "The sentence asserts that nothing is missing. Example: \"these 16 are all "
+                        "of the owner's interventions\", \"every route was tried\", "
+                        "\"no case was left out\"."
+                    ),
+                    "false": (
+                        "The word for 'all' applies to something else, or the sentence does not "
+                        "claim a complete set. Example: \"all of this is explained below\", "
+                        "\"treating every one of them as blocking is excessive\"."
+                    ),
+                },
+            },
+        }
     if kind == "negative_claim":
         return {
             "scope_and_method_attached": {
@@ -466,6 +614,14 @@ def question_for(kind: str, pair: dict) -> dict:
     }
 
 
+# presence を別の問いに分ける種類: kind -> (presence の問い ID, 「添えられているか」の問い ID)
+PRESENCE_QIDS = {
+    "negative_claim": ("is_unavailability_claim", "scope_and_method_attached"),
+    "verification_claim": ("is_verification_claim", "evidence_attached"),
+    "universal_claim": ("is_universal_claim", "enumeration_attached"),
+}
+
+
 def violation_probability(kind: str, answers: dict) -> tuple[str, float]:
     """(問い ID, 「反する」側の確率)。
 
@@ -473,8 +629,9 @@ def violation_probability(kind: str, answers: dict) -> tuple[str, float]:
     確率は code 側で `1 - noul` として出す**(ベンダー: 否定形・二重否定の問いは精度が落ちる)。
     choice は `contradicts` の確率をそのまま使う。
     """
-    if kind == "negative_claim":
-        return "scope_and_method_attached", 1.0 - float(answers["scope_and_method_attached"]["noul"])
+    if kind in PRESENCE_QIDS:
+        qid = PRESENCE_QIDS[kind][1]
+        return qid, 1.0 - float(answers[qid]["noul"])
     if kind == "symbol_definition":
         return "same_meaning", 1.0 - float(answers["same_meaning"]["noul"])
     probs = answers["relation"].get("probabilities") or {}
@@ -486,23 +643,31 @@ def flag_for(p: float) -> bool:
     return p >= ATTENTION
 
 
+def presence_qid(kind: str) -> str | None:
+    """その種類の presence の問い ID(無ければ None)。"""
+    pair = PRESENCE_QIDS.get(kind)
+    return pair[0] if pair else None
+
+
 def presence_probability(kind: str, answers: dict) -> float | None:
-    """`negative_claim` の 2 問目(そもそも不在の主張か)の確率。他の種類では None。"""
-    if kind != "negative_claim":
+    """presence の問い(そもそもその型の主張か)の確率。持たない種類では None。"""
+    qid = presence_qid(kind)
+    if qid is None:
         return None
-    return float(answers["is_unavailability_claim"]["noul"])
+    return float(answers[qid]["noul"])
 
 
 def decide_flag(kind: str, viol: float, presence: float | None) -> tuple[bool, str | None]:
     """(印, 印を付けなかった理由)。
 
-    `negative_claim` は **presence と scope の両方**を満たしたときだけ印を付ける
-    (`is_unavailability_claim >= PRESENCE` かつ `scope_and_method_attached <= 1 - ATTENTION`
-    = 反する側 >= `ATTENTION`)。presence が足りない対も**捨てず**に理由付きで残す。
+    presence を持つ種類は **presence と「添えられているか」の両方**を満たしたときだけ印を付ける
+    (presence >= `PRESENCE` かつ 反する側 >= `ATTENTION`)。
+    presence が足りない対も**捨てず**に理由付きで残す。
     """
-    if kind == "negative_claim":
+    qid = presence_qid(kind)
+    if qid is not None:
         if presence is None or presence < PRESENCE:
-            return False, "not_unavailability_claim"
+            return False, "not_" + qid.removeprefix("is_")
         return flag_for(viol), None
     return flag_for(viol), None
 
@@ -631,7 +796,7 @@ def cmd_audit(args) -> int:
         rec["violation_probability"] = round(viol, 4)
         if presence is not None:
             rec["presence_probability"] = round(presence, 4)
-            rec["presence_answer"] = answers.get("is_unavailability_claim")
+            rec["presence_answer"] = answers.get(presence_qid(pair["kind"]))
         rec["flag"], rec["reason"] = decide_flag(pair["kind"], viol, presence)
         rec["sent"] = True
         rec["model"] = resp.get("model")
@@ -716,18 +881,48 @@ def _load_summaries(out_dir: Path) -> dict[str, dict]:
     return out
 
 
+def _control_files(paths: list[str]) -> list[str]:
+    """`--controls` に渡された dir / ファイルを、成果物名(ファイル名)の一覧に展開する。"""
+    names: list[str] = []
+    for raw in paths:
+        p = Path(raw)
+        if p.is_dir():
+            names += [f.name for f in sorted(p.glob("*.md"))]
+        elif p.is_file():
+            names.append(p.name)
+        else:
+            print(f"[jev_check] 対照が見つからない: {p}", file=sys.stderr)
+    seen: set[str] = set()
+    out = []
+    for n in names:
+        if n not in seen:
+            seen.add(n)
+            out.append(n)
+    return out
+
+
 def cmd_score(args) -> int:
     summaries = _load_summaries(Path(args.dir))
     detected_n = missed_n = false_n = ok_n = 0
     n_unevaluated = 0
 
     with Path(args.labels).open(encoding="utf-8", newline="") as fh:
-        rows = list(csv.DictReader(fh))
+        label_rows = list(csv.DictReader(fh))
+
+    # 対照(オーナーの訂正が無かった成果物)は has_answer=0 の行として足す。
+    # ラベルに同じ名前があればラベルを優先する(二重に数えない)。
+    labeled = {r["file"] for r in label_rows}
+    rows = [(r["file"], int((r.get("has_answer") or "0").strip() or 0)) for r in label_rows]
+    n_controls = 0
+    for name in _control_files(getattr(args, "controls", None) or []):
+        if name in labeled:
+            print(f"[jev_check] 対照 {name} はラベルにもあるのでラベルを使う", file=sys.stderr)
+            continue
+        rows.append((name, 0))
+        n_controls += 1
 
     print(f"{'成果物':<28}{'has_answer':>12}{'印の件数':>10}{'突き合わせ':>12}")
-    for row in rows:
-        fname = row["file"]
-        has_answer = int((row.get("has_answer") or "0").strip() or 0)
+    for fname, has_answer in rows:
         summary = summaries.get(fname)
         # 送っていない回(--dry-run)と、1 つも届かなかった回は「未評価」に置く。
         # 印が 0 件なのは「無かった」からではないので、見逃しに数えない。
@@ -754,7 +949,8 @@ def cmd_score(args) -> int:
 
     print("")
     print(f"検出 {detected_n} 件 / 見逃し {missed_n} 件 / 誤検出 {false_n} 件 / "
-          f"該当なし・印なし {ok_n} 件 / 未評価 {n_unevaluated} 件")
+          f"該当なし・印なし {ok_n} 件 / 未評価 {n_unevaluated} 件"
+          + (f"(うち対照 {n_controls} 件)" if n_controls else ""))
     print(f"しきい値: attention={ATTENTION}(印が 1 つでも付けば検出)")
     return 0
 
@@ -777,6 +973,8 @@ def main(argv: list[str] | None = None) -> int:
     p_score = sub.add_parser("score")
     p_score.add_argument("--labels", required=True)
     p_score.add_argument("--dir", required=True)
+    p_score.add_argument("--controls", nargs="+", default=[],
+                         help="オーナーの訂正が無かった成果物(dir かファイル)。has_answer=0 として採点に入れる")
     p_score.set_defaults(func=cmd_score)
 
     args = ap.parse_args(argv)
