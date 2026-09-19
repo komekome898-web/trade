@@ -2086,10 +2086,10 @@
   {
    "move": 78,
    "tools": {
-    "Bash": 2,
+    "Bash": 4,
     "Agent": 1
    },
-   "n_tools": 3,
+   "n_tools": 5,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
@@ -2133,7 +2133,7 @@
    "value": 0.0
   },
   "P5_tools_per_move": {
-   "median": 4.5,
+   "median": 5.0,
    "max": 32,
    "n": 76
   },
