@@ -1336,9 +1336,9 @@
     "Edit": 2,
     "Read": 1,
     "Write": 1,
-    "Bash": 2
+    "Bash": 3
    },
-   "n_tools": 6,
+   "n_tools": 7,
    "read_goal": true,
    "first_write_at": 1,
    "table_shown": false,
