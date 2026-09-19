@@ -2032,10 +2032,10 @@
   {
    "move": 76,
    "tools": {
-    "Bash": 14,
+    "Bash": 17,
     "Agent": 2
    },
-   "n_tools": 16,
+   "n_tools": 19,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
