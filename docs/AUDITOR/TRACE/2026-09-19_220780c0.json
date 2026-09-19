@@ -517,9 +517,9 @@
    "move": 20,
    "tools": {
     "Agent": 1,
-    "Bash": 1
+    "Bash": 3
    },
-   "n_tools": 2,
+   "n_tools": 4,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

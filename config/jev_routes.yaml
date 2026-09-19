@@ -1,0 +1,66 @@
+# リードの返答に出る「取れない・無い・できない」の文を、**この体制で実際に使える経路**と
+# 突き合わせるための一覧(`scripts/jev_reply.py` が読む)。
+#
+# 出所: CLAUDE.md §5.2(「取れない・無い」の主張には範囲と方法を書く。L-099 / L-027 / L-032)、
+#       §0.2 A-2(自分で確認できることをオーナーに投げ返さない)、
+#       `.claude/skills/research-squad/SKILL.md` §3 手順 1 の固定カテゴリ。
+# **最初の版。リードが後で直す前提**(2026-09-19、L-220)。
+#
+# 使い方: `classes.<種類>.routes[]` が、その種類の主張で「確かめたはずの経路」。
+#   - `name` は state に入れて Jev に見せる(日本語のまま)。
+#   - `words` は **code** が「返答の中でその経路に触れたか」を数えるための語(Jev には送らない)。
+#     語は広めに置く(拾いすぎは印が減る方向ではなく増える方向に効かないので、
+#     `routes_checked` の取りこぼしを避ける側に倒す)。
+
+version: 1
+updated: 2026-09-19
+
+classes:
+
+  data_or_file:
+    label: データ・ファイル・記録が「無い・取れない」
+    routes:
+      - id: local_disk
+        name: この実行環境のディスク(リポジトリ・data/・backtest_data/)
+        words: ["ls ", "find ", "cat ", "grep", "glob", "ディスク", "手元", "リポジトリ", "data/", "backtest_data"]
+      - id: git_history
+        name: git の履歴(`git log --all` / `git show` / 削除済みファイル)
+        words: ["git log", "git show", "git rev-list", "git cat-file", "履歴", "git ls-files"]
+      - id: owner_pc
+        name: オーナー PC の未共有の生データ(paper_logs・取得済みのアーカイブ)
+        words: ["オーナー PC", "オーナーPC", "オーナーの PC", "未共有", "paper_logs", "PC 側"]
+      - id: prior_attachment
+        name: 前の会話の添付・受領台帳(`data/INTAKE.jsonl`)
+        words: ["添付", "INTAKE", "受領", "前の会話", "過去の会話"]
+      - id: public_external
+        name: 外部の公開経路(取引所 API・ミラー・アーカイブ・archive.org)
+        words: ["curl", "WebFetch", "WebSearch", "API", "ミラー", "アーカイブ", "archive.org", "公開"]
+
+  run_model_or_service:
+    label: モデル・サービスが「使えない」
+    routes:
+      - id: env_key
+        name: 環境変数の鍵(`.env` / 実行環境の資格情報)
+        words: ["環境変数", ".env", "鍵", "資格情報", "API キー", "APIキー", "env |"]
+      - id: subagent
+        name: 下位モデルへの委任(Agent の道具。鍵は要らない)
+        words: ["委任", "下位モデル", "Agent", "subagent", "調査班", "サブエージェント"]
+      - id: installed_skill
+        name: 導入済みのスキル・プラグイン(`.claude/skills/`)
+        words: ["スキル", "skill", "プラグイン", "plugin", ".claude/skills"]
+      - id: alternate_service
+        name: 別経路のサービス(中継サービス・代理サーバー・別ベンダーの同等品)
+        words: ["中継", "代理サーバー", "プロキシ", "proxy", "HTTPS_PROXY", "別経路", "別のサービス"]
+
+  capability:
+    label: 操作が「できない」
+    routes:
+      - id: local_tools
+        name: 手元の道具(Bash・Read/Write/Edit・WebFetch・WebSearch・MCP)
+        words: ["Bash", "bash", "WebFetch", "WebSearch", "MCP", "python3", "スクリプト"]
+      - id: delegation
+        name: 委任(下位モデル・調査班)
+        words: ["委任", "下位モデル", "Agent", "調査班"]
+      - id: owner_pc_run
+        name: オーナー PC での実行(Windows の bat・タスクスケジューラ)
+        words: ["オーナー PC", "オーナーPC", "Windows", "bat", "タスクスケジューラ", "PC で実行"]
