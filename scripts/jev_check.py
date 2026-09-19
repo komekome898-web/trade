@@ -71,6 +71,10 @@ CONCLUSION_SECTION_RE = re.compile(r"判定|読み|なぜ")             # 結論
 CONCLUSION_LINE_RE = re.compile(r"整合|反証|混在|差あり|検出されず|不明")  # 判定語を含む行
 DIRECTION_LINE_RE = re.compile(r"逆|反証|起きない")                # 向きを言う結論の行
 MAX_CONCLUSION_LINES = 10  # 結論の行は先頭から 10 行まで(検収の指示 5)
+REPEAT_KINDS = ("control_vs_quantity", "direction_supported", "other_cause_named")
+REPEATS = 3          # 上の 3 種は同じ問いを 3 回送り、確率の平均で印を決める(検収 2 の未決 4)
+NEAR_BAND = 0.10     # 平均がしきい値 ± この幅なら「近傍」と付ける(印そのものは変えない)
+RANKING_TOP = 3      # 集約の行に出す意図の数(高い順 / 低い順)
 # 報告の文書か(報告向けの 3 種はここでだけ当てる。検収の指示 4)
 REPORT_NAME_RE = re.compile(r"RESULT|REPORT|結果")
 REPORT_TITLE_RE = re.compile(r"結果の読み")   # 見るのは **レベル 1 の見出し(表題)だけ**
@@ -483,7 +487,7 @@ def extract_intent_rows(artifact: Path) -> list[dict]:
 # 印を **群ごとに 1 行だけ**付ける種類(検収の指示 3・5)。個々の対には印を付けない。
 AGGREGATED_KINDS = ("purpose_vs_quantity", "conclusion_vs_purpose")
 AGGREGATE_LABEL = {
-    "purpose_vs_quantity": "判定の量は意図のどれも直接測っていない",
+    # `purpose_vs_quantity` は印ではなく順位の表示にしたので、この文は使わない(検収 2 の追加 1)
     "conclusion_vs_purpose": "結論は意図のどれにも答えていない",
 }
 
@@ -525,11 +529,43 @@ def looks_like_report(text: str, artifact: Path) -> bool:
                for s in sections(text))
 
 
-def latest_prereg(artifact: Path) -> Path | None:
+_PREREG_NAME_RE = re.compile(r"[A-Za-z0-9_.\-]*PREREG[A-Za-z0-9_.\-]*\.md")
+_DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def _first_date(*texts: str) -> str:
+    for text in texts:
+        m = _DATE_RE.search(text or "")
+        if m:
+            return m.group(1)
+    return ""
+
+
+def named_prereg(text: str, artifact: Path) -> Path | None:
+    """報告の本文が名指しした `*PREREG*.md`(同じディレクトリに実在するもの、最初の 1 本)。"""
+    for m in _PREREG_NAME_RE.finditer(text):
+        cand = artifact.parent / m.group(0)
+        if cand.is_file() and cand.resolve() != artifact.resolve():
+            return cand
+    return None
+
+
+def latest_prereg(artifact: Path, text: str | None = None) -> Path | None:
     """同じディレクトリの `*PREREG*.md` のうち**名前順の最後**(日付が名前に入っている)。"""
     cands = [p for p in sorted(artifact.parent.glob(PREREG_GLOB))
              if p.resolve() != artifact.resolve()]
-    return cands[-1] if cands else None
+    if not cands:
+        return None
+    if text is not None:
+        named = named_prereg(text, artifact)
+        if named is not None:
+            return named          # (b) 報告が名指ししたもの
+    on = _first_date(artifact.name, text or "")
+    if on:
+        older = [p for p in cands if _first_date(p.name) and _first_date(p.name) < on]
+        if older:
+            return older[-1]      # (c) 報告より古いもののうち名前順の最後
+    return cands[-1]
 
 
 def is_table_row(body: str) -> bool:
@@ -537,7 +573,7 @@ def is_table_row(body: str) -> bool:
     return body.startswith("|")
 
 
-def conclusion_lines(text: str) -> list[tuple[int, str]]:
+def conclusion_lines(text: str, dropped: list[int] | None = None) -> list[tuple[int, str]]:
     """結論の行。**見出しに「判定」「読み」「なぜ」を含む節(レベル 2 以下)の中の行**で、
     判定語(整合 / 反証 / 混在 / 差あり / 検出されず / 不明)を含むもの。先頭から
     `MAX_CONCLUSION_LINES` 行まで。
@@ -553,6 +589,11 @@ def conclusion_lines(text: str) -> list[tuple[int, str]]:
         if not any(lo <= ln <= hi for lo, hi in ranges):
             continue
         if not CONCLUSION_LINE_RE.search(body):
+            continue
+        if is_table_row(body):
+            # 表のデータ行は結論の行にしない(検収 2 の未決 2 = (b))。外した数は末尾 1 行に出す
+            if dropped is not None:
+                dropped.append(ln)
             continue
         out.append((ln, body))
         if len(out) >= MAX_CONCLUSION_LINES:
@@ -650,7 +691,8 @@ def extract_purpose_pairs(text: str, artifact: Path,
     if not report:
         return pairs  # 報告向けの 3 種は当てない
 
-    concl = conclusion_lines(text)
+    table_rows: list[int] = []
+    concl = conclusion_lines(text, table_rows)
 
     # 対 3: 結論の行 × 意図の行。印は結論の行ごとに集約で 1 行
     p3: list[dict] = []
@@ -660,7 +702,6 @@ def extract_purpose_pairs(text: str, artifact: Path,
                 "kind": "conclusion_vs_purpose",
                 "anchor": ln,
                 "intent_id": row["id"],
-                "table_row": is_table_row(body),
                 "a": _clip(body),
                 "b": row["row"],
                 "a_role": "a line carrying the conclusion of the work",
@@ -680,7 +721,6 @@ def extract_purpose_pairs(text: str, artifact: Path,
         p4.append({
             "kind": "other_cause_named",
             "anchor": ln,
-            "table_row": is_table_row(body),
             "a": _clip(body),
             "b": _section_fragment(sec) if sec else _clip(text),
             "a_role": "a line carrying the conclusion of the work",
@@ -698,7 +738,7 @@ def extract_purpose_pairs(text: str, artifact: Path,
     d_ctl = controls[0] if controls else None
     source_of_sections = artifact.name
     if d_quant is None or d_ctl is None:
-        prereg = latest_prereg(artifact)
+        prereg = latest_prereg(artifact, text)
         if prereg is not None:
             try:
                 ptext = prereg.read_text(encoding="utf-8", errors="replace")
@@ -718,7 +758,6 @@ def extract_purpose_pairs(text: str, artifact: Path,
             p5.append({
                 "kind": "direction_supported",
                 "anchor": ln,
-                "table_row": is_table_row(body),
                 "sections_from": source_of_sections,
                 "a": _clip(body),
                 "b": _section_fragment(d_quant),
@@ -736,12 +775,30 @@ def extract_purpose_pairs(text: str, artifact: Path,
     return pairs
 
 
+def near_threshold(value: float, bar: float = ATTENTION) -> bool:
+    """平均がしきい値 ± `NEAR_BAND` に入るか(**印は変えない**。表示に「近傍」と付けるだけ)。"""
+    return abs(float(value) - bar) <= NEAR_BAND
+
+
+def _ranking_line(members: list[dict]) -> str:
+    """「直接測る意図(高い順)/ 測らない意図(低い順)」の 1 行。**数値は出さない。**"""
+    ranked = sorted(members, key=lambda r: r["violation_probability"])  # 肯定側が高い順
+    top = [str(r.get("intent_id") or "?") for r in ranked[:RANKING_TOP]]
+    bottom = [str(r.get("intent_id") or "?") for r in reversed(ranked[-RANKING_TOP:])]
+    return ("判定の量が直接測る意図(高い順): " + " / ".join(top)
+            + "、測らない意図(低い順): " + " / ".join(bottom))
+
+
 def aggregate_records(records: list[dict]) -> list[dict]:
-    """集約する種類の**群ごとに 1 行**の記録を作る(印はここにだけ付く)。
+    """集約する種類の**群ごとに 1 行**の記録を作る。
 
     群 = (種類, anchor)。`purpose_vs_quantity` は判定の量の節が 1 つなので 1 群、
     `conclusion_vs_purpose` は結論の行ごとに 1 群。
-    肯定形の確率(直接測る / 答えている)の**最大値が `PRESENCE` 未満なら印**。
+
+    - `purpose_vs_quantity`: **印を付けない**(`flag=false`, `reason="ranking_only"`)。
+      高い順 / 低い順の意図の番号を並べるだけ(検収 2 の追加 1。「どれかが直接測られていれば
+      印なし」は I-13 のような広い意図 1 本で消えてしまい、I-1 が低くても黙るため)。
+    - `conclusion_vs_purpose`: 答えている意図の最上位を出し、**最大値が `PRESENCE` 未満なら印**。
     """
     groups: dict[tuple[str, int], list[dict]] = {}
     order: list[tuple[str, int]] = []
@@ -761,23 +818,33 @@ def aggregate_records(records: list[dict]) -> list[dict]:
         members = groups[(kind, anchor)]
         best = min(members, key=lambda r: r["violation_probability"])  # 肯定側が最大の 1 件
         top = 1.0 - float(best["violation_probability"])
-        flag = top < PRESENCE
+        if kind == "purpose_vs_quantity":
+            text = _ranking_line(members)
+            flag, reason = False, "ranking_only"
+        else:
+            text = (f"{AGGREGATE_LABEL[kind]}"
+                    f"(答えている意図の最上位 = {best.get('intent_id') or '不明'})")
+            flag, reason = top < PRESENCE, None
+            if not flag:
+                reason = "some_intent_is_answered"
         rec = {
             "kind": kind,
             "aggregate": True,
             "anchor": anchor,
-            "a": f"{AGGREGATE_LABEL[kind]}(最大 p の意図 = {best.get('intent_id') or '不明'})",
-            # `jev_report_intake` の表は `claim` を使うので同じ文を両方に置く
-            "claim": f"{AGGREGATE_LABEL[kind]}"
-                     f"(最大 p の意図 = {best.get('intent_id') or '不明'})",
+            "a": text,
+            "claim": text,
             "b": _clip(str(best.get("a", ""))),
             "n_in_group": len(members),
             "question": best.get("question"),
+            "top_intent": best.get("intent_id"),
             "top_probability": round(top, 4),
+            "ranking": [{"intent_id": r.get("intent_id"),
+                         "probability": round(1.0 - float(r["violation_probability"]), 4)}
+                        for r in sorted(members, key=lambda r: r["violation_probability"])],
             "violation_probability": round(float(best["violation_probability"]), 4),
             "presence": PRESENCE,
             "flag": bool(flag),
-            "reason": None if flag else "some_intent_is_directly_measured",
+            "reason": reason,
             "sent": False,
         }
         for key in ("file", "source"):
@@ -785,6 +852,14 @@ def aggregate_records(records: list[dict]) -> list[dict]:
                 rec[key] = best[key]
         out.append(rec)
     return out
+
+
+def ranking_part(records: list[dict]) -> str:
+    """末尾の 1 行に出す順位の表示(`purpose_vs_quantity` の集約の行)。"""
+    for rec in records:
+        if rec.get("aggregate") and rec.get("kind") == "purpose_vs_quantity":
+            return " " + str(rec["a"])
+    return ""
 
 
 PURPOSE_KINDS = ("purpose_vs_quantity", "control_vs_quantity", "conclusion_vs_purpose",
@@ -881,7 +956,8 @@ def extract_pairs(text: str, artifact: Path,
                                   for k in PURPOSE_KINDS}
         stats["purpose_truncated"] = dropped
         is_report = looks_like_report(text, artifact)
-        concl = conclusion_lines(text) if is_report else []
+        table_rows: list[int] = []
+        concl = conclusion_lines(text, table_rows) if is_report else []
         froms = sorted({p.get("sections_from") for p in purpose
                         if p["kind"] == "direction_supported"} - {None})
         stats["is_report"] = is_report
@@ -892,7 +968,7 @@ def extract_pairs(text: str, artifact: Path,
             "quantity_sections": len(quantity_sections(text)),
             "control_sections": len(control_sections(text)),
             "conclusion_lines": len(concl),
-            "conclusion_table_rows": sum(1 for _ln, b in concl if is_table_row(b)),
+            "conclusion_table_rows_dropped": len(table_rows),
             "direction_sections_from": froms,
         }
     return pairs
@@ -1387,21 +1463,35 @@ def cmd_audit(args) -> int:
         except RedactionError as e:
             print(f"[jev_check] 伏せ字の最終検査に掛かったので送信しない: {e}", file=sys.stderr)
             return 2
-        try:
-            resp = client.evaluate(state=state, questions=questions)
-        except JevError as e:
-            unreachable = str(e)
-            print(f"[jev_check] 送信に失敗({pair['kind']} @ {pair['anchor']}): {e}",
-                  file=sys.stderr)
+        n_try = REPEATS if pair["kind"] in REPEAT_KINDS else 1
+        viols: list[float] = []
+        answers: dict = {}
+        resp = None
+        failed = False
+        for _i in range(n_try):
+            try:
+                resp = client.evaluate(state=state, questions=questions)
+            except JevError as e:
+                unreachable = str(e)
+                print(f"[jev_check] 送信に失敗({pair['kind']} @ {pair['anchor']}): {e}",
+                      file=sys.stderr)
+                failed = True
+                break
+            n_requests += 1
+            answers = resp.get("answers") or {}
+            viols.append(violation_probability(pair["kind"], answers)[1])
+        if failed or not viols:
             records.append(rec)
             continue
-        n_requests += 1
-        answers = resp.get("answers") or {}
-        qid, viol = violation_probability(pair["kind"], answers)
+        qid, _last = violation_probability(pair["kind"], answers)
+        viol = sum(viols) / len(viols)   # 3 回の平均(1 回の種類はそのまま)
         presence = presence_probability(pair["kind"], answers)
         rec["question"] = qid
         rec["probability"] = answers.get(qid)
         rec["violation_probability"] = round(viol, 4)
+        if n_try > 1:
+            rec["repeats"] = [round(v, 4) for v in viols]
+            rec["near_threshold"] = near_threshold(viol)
         if presence is not None:
             rec["presence_probability"] = round(presence, 4)
             rec["presence_answer"] = answers.get(presence_qid(pair["kind"]))
@@ -1422,6 +1512,7 @@ def cmd_audit(args) -> int:
         unreachable = None
 
     n_flag, by_kind = flag_counts(records)
+    n_near = sum(1 for r in records if r.get("near_threshold"))
     summary = {
         "file": artifact.name,
         "kind": "_summary",
@@ -1439,6 +1530,10 @@ def cmd_audit(args) -> int:
         "purpose_pairs": stats.get("purpose_pairs", {k: 0 for k in PURPOSE_KINDS}),
         "purpose_truncated": stats.get("purpose_truncated", {}),
         "purpose_inputs": stats.get("purpose_inputs", {}),
+        "n_near_threshold": n_near,
+        "repeats": REPEATS,
+        "repeat_kinds": list(REPEAT_KINDS),
+        "ranking_line": (ranking_part(records) or "").strip(),
     }
 
     with out_path.open("w", encoding="utf-8") as fh:
@@ -1462,8 +1557,8 @@ def purpose_part(summary: dict) -> str:
     inputs_ = summary.get("purpose_inputs") or {}
     if inputs_.get("is_report") is False:
         detail += " / 報告向けの 3 種は当てない(報告の文書ではない)"
-    if inputs_.get("conclusion_table_rows"):
-        detail += f" / 結論の行のうち表の行 {inputs_['conclusion_table_rows']}"
+    if inputs_.get("conclusion_table_rows_dropped"):
+        detail += f" / 外した表の行 {inputs_['conclusion_table_rows_dropped']}"
     froms = [f for f in (inputs_.get("direction_sections_from") or [])
              if f != summary.get("file")]
     if froms:
@@ -1488,7 +1583,12 @@ def summary_line(summary: dict) -> str:
     by_kind = summary.get("flag_by_kind") or {}
     detail = "、".join(f"{k} {v} 件" for k, v in sorted(by_kind.items())) or "内訳なし"
     tail = "(--dry-run: 1 件も送っていない)" if summary.get("dry_run") else ""
-    return f"印 {summary.get('n_flag', 0)} 件({detail}){tail}{purpose_part(summary)}"
+    near = summary.get("n_near_threshold") or 0
+    near_s = f"(うち近傍 {near} 件)" if near else ""
+    rank = summary.get("ranking_line")
+    rank_s = f" {rank}" if rank else ""
+    return (f"印 {summary.get('n_flag', 0)} 件({detail}){near_s}{tail}"
+            f"{purpose_part(summary)}{rank_s}")
 
 
 def _print_table(artifact: Path, records: list[dict], summary: dict) -> None:
@@ -1520,7 +1620,9 @@ def _print_table(artifact: Path, records: list[dict], summary: dict) -> None:
         p_s = "-" if p is None else f"{p:.3f}"
         head = rec["a"].replace("\n", " ")[:60]
         mark = "要確認" if rec["flag"] else ""
-        print(f"{rec['kind']:<20}{rec['anchor']:>6}{p_s:>12}{mark:>4}  {head}")
+        if rec.get("near_threshold"):
+            mark = (mark + "・近傍") if mark else "近傍"
+        print(f"{rec['kind']:<20}{rec['anchor']:>6}{p_s:>12}{mark:>6}  {head}")
     print(f"(印のしきい値 attention={ATTENTION}。**印であって判断ではない**)")
 
 

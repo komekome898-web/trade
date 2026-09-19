@@ -580,3 +580,32 @@ def test_real_first_report_makes_purpose_pairs(tmp_path):
     assert any(j["kind"] in I.REPORT_PURPOSE_KINDS for j in jobs)
     # 対 5 は報告に 判定の量 / 対照 の節が無いので事前登録から取る(出所を記録に残す)
     assert stats["purpose_inputs"]["conclusion_lines"] <= J.MAX_CONCLUSION_LINES
+
+
+def test_repeat_kinds_are_sent_three_times_in_the_intake(tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_WITH_CONTROL_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    recs = _read_jsonl(out / "RESULT.jsonl")
+    other = [r for r in recs if r["kind"] == "other_cause_named"]
+    assert other and all(len(r["repeats"]) == J.REPEATS == 3 for r in other)
+    assert all(r["near_threshold"] is False for r in other)   # 既定 0.9 → 反する側 0.1
+    # 集約する種類(結論 × 意図)は 1 回のまま
+    concl = [r for r in recs if r["kind"] == "conclusion_vs_purpose"
+             and not r.get("aggregate")]
+    assert concl and all("repeats" not in r for r in concl)
+
+
+def test_conclusion_aggregate_names_the_top_intent(tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_WITH_CONTROL_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    agg = [r for r in _read_jsonl(out / "RESULT.jsonl")
+           if r["kind"] == "conclusion_vs_purpose" and r.get("aggregate")]
+    assert agg
+    assert all("答えている意図の最上位" in r["a"] for r in agg)
+    assert all(r["top_intent"] in ("I-1", "I-3") for r in agg)
+    # 既定の 0.9(= 答えている)なので印は付かない
+    assert all(r["flag"] is False and r["reason"] == "some_intent_is_answered" for r in agg)

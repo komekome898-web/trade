@@ -827,15 +827,23 @@ def test_looks_like_report(tmp_path):
     assert J.looks_like_report(md, art3) is False
 
 
-def test_conclusion_lines_are_narrowed_and_capped(tmp_path):
+def test_conclusion_lines_drop_table_rows(tmp_path):
     rows = "\n".join(f"| 系統 {i} | 検出されず |" for i in range(15))
     md = ("# 結果の読み\n\n## 0. 前置き\n\n差ありに見えるが前置きである。\n\n"
           "## 1. 判定\n\n読みは反証である。\n\n" + rows + "\n")
-    lines = J.conclusion_lines(md)
-    assert len(lines) == J.MAX_CONCLUSION_LINES == 10
+    dropped: list = []
+    lines = J.conclusion_lines(md, dropped)
+    # 表のデータ行は結論の行にしない(外した行番号は残す)
+    assert [b for _ln, b in lines] == ["読みは反証である。"]
+    assert len(dropped) == 15
     # 見出しに「判定 / 読み / なぜ」を含む節の外(§0 前置き)は拾わない
     assert all("前置き" not in b for _ln, b in lines)
-    assert J.is_table_row(lines[-1][1]) is True
+
+
+def test_conclusion_lines_are_capped(tmp_path):
+    body = "\n".join(f"- {i} 番目は検出されずである。" for i in range(15))
+    md = "# 結果の読み\n\n## 1. 判定\n\n" + body + "\n"
+    assert len(J.conclusion_lines(md)) == J.MAX_CONCLUSION_LINES == 10
 
 
 def test_conclusion_vs_purpose_and_other_cause_pairs(tmp_path):
@@ -867,12 +875,33 @@ def test_direction_supported_falls_back_to_the_prereg(tmp_path):
             if p["kind"] == "direction_supported"] == []
 
 
-def test_latest_prereg_is_the_last_by_name(tmp_path):
+def test_prereg_named_in_the_report_wins(tmp_path):
+    """(b) 報告の本文が名指しした事前登録を使う(検収 2 の未決 1)。"""
     for name in ("REACTION_PREREG_2026-09-18.md", "REACTION_R2_PREREG_2026-09-19.md",
                  "REACTION_PREREG_DRAFT_2026-09-18.md"):
         _write(tmp_path, name, PREREG_MD)
-    art = _write(tmp_path, "RESULT.md", RESULT_MD)
-    assert J.latest_prereg(art).name == "REACTION_R2_PREREG_2026-09-19.md"
+    md = ("# 結果の読み — 2026-09-19\n\n"
+          "事前登録: `REACTION_PREREG_2026-09-18.md`。\n\n"
+          "## 1. 判定\n\n読みは反証で、想定とは逆の向きが出た。\n")
+    art = _write(tmp_path, "RESULT.md", md)
+    assert J.latest_prereg(art, md).name == "REACTION_PREREG_2026-09-18.md"
+    pairs = [p for p in J.extract_pairs(md, art) if p["kind"] == "direction_supported"]
+    assert len(pairs) == 1
+    assert pairs[0]["sections_from"] == "REACTION_PREREG_2026-09-18.md"
+
+
+def test_prereg_falls_back_to_the_older_ones(tmp_path):
+    """(c) 名指しが無ければ、報告より古いもののうち名前順の最後。"""
+    for name in ("REACTION_PREREG_2026-09-18.md", "REACTION_R2_PREREG_2026-09-19.md",
+                 "REACTION_PREREG_DRAFT_2026-09-18.md"):
+        _write(tmp_path, name, PREREG_MD)
+    md = "# 結果の読み — 2026-09-19\n\n## 1. 判定\n\n読みは反証である。\n"
+    art = _write(tmp_path, "RESULT.md", md)
+    assert J.latest_prereg(art, md).name == "REACTION_PREREG_DRAFT_2026-09-18.md"
+    # 報告に日付が無ければ全部から名前順の最後
+    md2 = "# 結果の読み\n\n## 1. 判定\n\n読みは反証である。\n"
+    art2 = _write(tmp_path, "RESULT2.md", md2)
+    assert J.latest_prereg(art2, md2).name == "REACTION_R2_PREREG_2026-09-19.md"
 
 
 def test_purpose_questions_and_violation_direction():
@@ -936,11 +965,10 @@ def test_summary_line_lists_each_purpose_kind(tmp_path, fake_client, capsys):
     assert summary["purpose_inputs"]["intent_rows"] == 4
 
 
-def test_purpose_flag_is_one_aggregate_row(tmp_path, fake_client):
+def test_purpose_aggregate_is_a_ranking_without_a_flag(tmp_path, fake_client):
     _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
     art = _write(tmp_path, "PREREG.md", PREREG_MD)
     out = tmp_path / "out"
-    # 既定の 0.1(= どの意図も直接測っていない)→ 集約の行に印が 1 件だけ付く
     assert J.main(["audit", str(art), "--out", str(out)]) == 0
     recs = _read_jsonl(out / "PREREG.jsonl")
     pv = [r for r in recs if r["kind"] == "purpose_vs_quantity"]
@@ -948,23 +976,57 @@ def test_purpose_flag_is_one_aggregate_row(tmp_path, fake_client):
     agg = [r for r in pv if r.get("aggregate")]
     assert len(singles) == 4 and all(r["flag"] is False and r["reason"] == "aggregated"
                                      for r in singles)
-    assert len(agg) == 1 and agg[0]["flag"] is True and agg[0]["n_in_group"] == 4
-    assert "最大 p の意図 = I-" in agg[0]["a"]
-    assert recs[-1]["flag_by_kind"]["purpose_vs_quantity"] == 1
+    # 集約の行は**順位の表示だけ**で印を付けない(検収 2 の追加 1)
+    assert len(agg) == 1 and agg[0]["flag"] is False
+    assert agg[0]["reason"] == "ranking_only"
+    assert "直接測る意図(高い順)" in agg[0]["a"] and "測らない意図(低い順)" in agg[0]["a"]
+    assert [x["intent_id"] for x in agg[0]["ranking"]] and len(agg[0]["ranking"]) == 4
+    assert "purpose_vs_quantity" not in (recs[-1]["flag_by_kind"] or {})
     assert recs[-1]["purpose_pairs"]["purpose_vs_quantity"] == 4  # 対の数は集約を含まない
 
 
-def test_purpose_aggregate_is_not_flagged_when_one_intent_is_measured(
-        tmp_path, fake_client):
+def test_ranking_is_on_the_last_line(tmp_path, fake_client, capsys):
     _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
     art = _write(tmp_path, "PREREG.md", PREREG_MD)
     out = tmp_path / "out"
-    fake_client.noul_by_qid = {"quantity_measures_purpose": 0.8}
+    assert J.main(["audit", str(art), "--out", str(out), "--summary"]) == 0
+    last = capsys.readouterr().out.strip().splitlines()[-1]
+    assert "直接測る意図(高い順)" in last
+    # 順位の行に確率は出さない
+    assert "0." not in last.split("直接測る意図", 1)[1]
+
+
+def test_repeat_kinds_are_sent_three_times_and_averaged(tmp_path, fake_client):
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    out = tmp_path / "out"
+    assert J.REPEATS == 3
+    assert J.REPEAT_KINDS == ("control_vs_quantity", "direction_supported",
+                              "other_cause_named")
     assert J.main(["audit", str(art), "--out", str(out)]) == 0
-    agg = [r for r in _read_jsonl(out / "PREREG.jsonl")
-           if r["kind"] == "purpose_vs_quantity" and r.get("aggregate")]
-    assert len(agg) == 1 and agg[0]["flag"] is False
-    assert agg[0]["reason"] == "some_intent_is_directly_measured"
+    cv = [r for r in _read_jsonl(out / "PREREG.jsonl")
+          if r["kind"] == "control_vs_quantity"]
+    assert len(cv) == 1
+    assert len(cv[0]["repeats"]) == 3
+    assert cv[0]["violation_probability"] == pytest.approx(
+        sum(cv[0]["repeats"]) / 3, abs=1e-4)
+    assert cv[0]["near_threshold"] is False        # 既定は 0.75(= |0.75-0.35| > 0.10)
+    n_control = sum(1 for s, _q in fake_client.calls if "control_group" in s)
+    assert n_control == 3
+
+
+def test_near_threshold_band(tmp_path, fake_client):
+    assert J.NEAR_BAND == 0.10
+    assert J.near_threshold(J.ATTENTION) is True
+    assert J.near_threshold(J.ATTENTION + 0.10) is True
+    assert J.near_threshold(J.ATTENTION + 0.1001) is False
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    out = tmp_path / "out"
+    fake_client.noul_by_qid = {"quantity_confounded_by_start": 0.40}
+    assert J.main(["audit", str(art), "--out", str(out)]) == 0
+    recs = _read_jsonl(out / "PREREG.jsonl")
+    cv = [r for r in recs if r["kind"] == "control_vs_quantity"][0]
+    assert cv["near_threshold"] is True and cv["flag"] is True
+    assert recs[-1]["n_near_threshold"] == 1
 
 
 def test_purpose_state_has_named_fields_only(tmp_path, fake_client):

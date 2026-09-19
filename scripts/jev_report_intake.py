@@ -43,6 +43,8 @@ from scripts.jev_check import (  # noqa: E402
     WHY_HEADING_RE,
     AGGREGATED_KINDS,
     aggregate_records,
+    near_threshold,
+    ranking_part,
     clean_state,
     conclusion_lines,
     control_sections,
@@ -50,8 +52,10 @@ from scripts.jev_check import (  # noqa: E402
     extract_intent_rows,
     extract_purpose_pairs,
     extract_why_section,
+    NEAR_BAND,
+    REPEAT_KINDS,
+    REPEATS,
     flag_counts,
-    is_table_row,
     logical_lines,
     quantity_sections,
     question_for,
@@ -490,7 +494,8 @@ def build_jobs(text: str, prompt_text: str | None, artifact: Path | None = None,
                                   for k in REPORT_PURPOSE_KINDS}
         stats["purpose_truncated"] = {k: v for k, v in dropped.items()
                                       if k in REPORT_PURPOSE_KINDS}
-        concl = conclusion_lines(text)
+        table_rows: list[int] = []
+        concl = conclusion_lines(text, table_rows)
         froms = sorted({p.get("sections_from") for p in purpose
                         if p["kind"] == "direction_supported"} - {None})
         stats["purpose_inputs"] = {
@@ -500,7 +505,7 @@ def build_jobs(text: str, prompt_text: str | None, artifact: Path | None = None,
             "quantity_sections": len(quantity_sections(text)),
             "control_sections": len(control_sections(text)),
             "conclusion_lines": len(concl),
-            "conclusion_table_rows": sum(1 for _ln, b in concl if is_table_row(b)),
+            "conclusion_table_rows_dropped": len(table_rows),
             "direction_sections_from": froms,
         }
 
@@ -681,22 +686,41 @@ def run(text: str, *, source: str, kind: str, prompt_text: str | None, out_dir: 
             print(f"[jev_report_intake] 伏せ字の最終検査に掛かったので送信しない: {e}",
                   file=sys.stderr)
             return 2, {}
-        try:
-            resp = client.evaluate(state=state, questions=job["questions"])
-        except JevError as e:
-            unreachable = str(e)
-            print(f"[jev_report_intake] 送信に失敗({job['kind']} @ {job['anchor']}): {e}",
-                  file=sys.stderr)
+        n_try = REPEATS if job["kind"] in REPEAT_KINDS else 1
+        results: list[dict] = []
+        resp = None
+        failed = False
+        for _i in range(n_try):
+            try:
+                resp = client.evaluate(state=state, questions=job["questions"])
+            except JevError as e:
+                unreachable = str(e)
+                print(f"[jev_report_intake] 送信に失敗({job['kind']} @ {job['anchor']}): {e}",
+                      file=sys.stderr)
+                failed = True
+                break
+            n_requests += 1
+            results.append(resp.get("answers") or {})
+        if failed or not results:
             records.append(base)
             continue
-        n_requests += 1
-        answers = resp.get("answers") or {}
+        answers = results[-1]
         if job["kind"] == "prompt_vs_report":
             for part in job["split"](answers):
                 records.append(dict(base, **part, sent=True, model=resp.get("model")))
         else:
-            rec = dict(base, **job["combine"](answers), sent=True,
-                       model=resp.get("model"))
+            parts = [job["combine"](a) for a in results]
+            combined = dict(parts[-1])
+            if len(parts) > 1:
+                viols = [float(x["violation_probability"]) for x in parts]
+                avg = sum(viols) / len(viols)   # 3 回の平均で印を決める(検収 2 の未決 4)
+                flag, reason = decide_flag(job["kind"], avg, None)
+                combined["violation_probability"] = round(avg, 4)
+                combined["flag"] = bool(flag)
+                combined["reason"] = reason
+                combined["repeats"] = [round(v, 4) for v in viols]
+                combined["near_threshold"] = near_threshold(avg)
+            rec = dict(base, **combined, sent=True, model=resp.get("model"))
             if job["kind"] in AGGREGATED_KINDS:
                 rec["flag"], rec["reason"] = False, "aggregated"
                 rec["intent_id"] = job.get("intent_id")
@@ -734,6 +758,10 @@ def run(text: str, *, source: str, kind: str, prompt_text: str | None, out_dir: 
         "purpose_pairs": stats.get("purpose_pairs", {k: 0 for k in REPORT_PURPOSE_KINDS}),
         "purpose_truncated": stats.get("purpose_truncated", {}),
         "purpose_inputs": stats.get("purpose_inputs", {}),
+        "n_near_threshold": sum(1 for r in records if r.get("near_threshold")),
+        "repeats": REPEATS,
+        "repeat_kinds": list(REPEAT_KINDS),
+        "ranking_line": (ranking_part(records) or "").strip(),
     }
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -793,7 +821,8 @@ def _print_table(source: str, out_path: Path, records: list[dict], summary: dict
             p = rec.get("violation_probability")
             p_s = "-" if p is None else f"{p:.3f}"
             head = str(rec["claim"]).replace("\n", " ")[:56]
-            print(f"{rec['kind']:<22}{rec['anchor']:>6}{p_s:>12}  {head}")
+            near = "・近傍" if rec.get("near_threshold") else ""
+            print(f"{rec['kind']:<22}{rec['anchor']:>6}{p_s:>12}{near:>6}  {head}")
     print(f"(印のしきい値 attention={ATTENTION} / presence={PRESENCE}。"
           "**印であって判断ではない。差し戻すかを決めるのはリード**)")
     print(f"書いた先: {out_path}")

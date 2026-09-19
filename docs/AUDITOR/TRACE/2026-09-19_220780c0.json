@@ -1600,12 +1600,12 @@
   {
    "move": 60,
    "tools": {
-    "Bash": 3,
+    "Bash": 4,
     "Agent": 1,
     "Edit": 2,
     "Read": 1
    },
-   "n_tools": 7,
+   "n_tools": 8,
    "read_goal": true,
    "first_write_at": 4,
    "table_shown": false,
