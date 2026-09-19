@@ -1137,11 +1137,11 @@
    "move": 43,
    "tools": {
     "Edit": 6,
-    "Bash": 7,
+    "Bash": 8,
     "Read": 2,
     "Agent": 1
    },
-   "n_tools": 16,
+   "n_tools": 17,
    "read_goal": true,
    "first_write_at": 1,
    "table_shown": false,
