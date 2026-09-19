@@ -913,10 +913,10 @@
   {
    "move": 35,
    "tools": {
-    "Bash": 21,
+    "Bash": 22,
     "Agent": 1
    },
-   "n_tools": 22,
+   "n_tools": 23,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
