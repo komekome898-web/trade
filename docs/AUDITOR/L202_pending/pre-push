@@ -1,0 +1,34 @@
+#!/bin/sh
+# git 自身が実行する押し出しの関門。
+#
+# 2026-09-13(5 本目の監査)に新設。当初は「押し出す範囲に行動監査の記録があるか」
+# (`_require_action_audit.sh`)も見ていたが、**2026-09-19、L-202 でその部分を撤去した**
+# (行動監査・返答の関門・抜き取りの機械を撤去。経緯は `docs/AUDITOR/ACTION_LOG.md` 063)。
+# 残したのは **指紋の照合** だけ: フック・`settings.json`・`githooks/`・監査役の定義が
+# 台帳 `docs/AUDITOR/HOOK_MANIFEST.sha256` と一致しなければ押し出さない。
+#
+# **なぜ git 側に置くか。**どう呼ばれても、押し出しをするのは git である。
+# env / eval / xargs / 別名 / スクリプト経由、どれでも git は必ずこのフックを実行する。
+#
+# **限界(全部書く)**:
+#   1. `.git/hooks` はリポジトリに入らないので、**新しい clone では
+#      `sh scripts/install_git_hooks.sh` を走らせるまで効かない**。
+#   2. `--no-verify` を付ければ git はフックを飛ばす。
+#   3. `core.hooksPath` を別の場所に向ければ、このフックごと無効にできる。
+#   4. このファイルと `scripts/install_git_hooks.sh` は指紋の台帳に入れてあるので、
+#      書き換えると他の操作が止まる。台帳を同じコミットで直せば通る。
+# **この関門はうっかりを止めるものであって、意図した迂回は止めない。**
+# 迂回はコミットの差分と reflog に残る。
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 1
+cd "$ROOT" || exit 1
+
+# 指紋の照合(フック・設定・監査役の定義が台帳と一致しているか)
+if [ -f .claude/hooks/_verify_manifest.sh ]; then
+  if ! sh .claude/hooks/_verify_manifest.sh </dev/null; then
+    echo "" >&2
+    echo "[pre-push] 指紋の台帳と食い違っているので押し出しを止めた。オーナーの指示で変えたのなら、同じコミットで sh scripts/regen_hook_manifest.sh を実行すること。" >&2
+    exit 1
+  fi
+fi
+exit 0

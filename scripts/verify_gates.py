@@ -6,13 +6,14 @@
 **通る側と止まる側の両方を測る**(「拒否される側しか測っていない」と 2026-09-13 の 3 本目の
 監査に指摘されたため)。
 
-2026-09-19、L-202 で関門を縮めた(経緯は `docs/AUDITOR/ACTION_LOG.md` 063)。残っているのは
+2026-09-19、L-202 で関門を縮める(経緯は `docs/AUDITOR/ACTION_LOG.md` 063。**削除の 1 手が未実施の間は「残したフック 6 本だけ」と pre-push の試験が食い違う** = 実物が縮んでいないことを示す)。残すのは
   - 指紋の照合 `_verify_manifest.sh`(Write / Edit / Agent と、git 側の `githooks/pre-push`)
   - ③(a) 保護パスへの書き込み拒否 `deny_protected_paths.sh`
   - ③(b) 選択待ちの全面停止 `owner_options_gate.sh`
+  - TRACE の記録 `trace_snapshot.sh`(監査役の定義 §0.5 の入力。止めない)
   - `settings.json` の健全性(スキーマ外の鍵が無い / 参照するフックが実在する)
   - 台帳 `HOOK_MANIFEST.sha256` の健全性(載っているファイルが実在する = I-012 の型)
-撤去したもの(押し出しの行動監査・返答の関門・MCP の既定拒否・①④⑤・全称語の検査)の試験は消した。
+撤去するもの(押し出しの行動監査・返答の関門・MCP の既定拒否・④⑤・全称語の検査)の試験は消した。
 
 **この道具の限界(2026-09-14 に実測)**: 関門の**部品**を直接叩くので、
 「ハーネスがその関門を呼んでいるか」は見ていない。それは止まるはずの操作をして止まるかで
@@ -192,10 +193,10 @@ _refs = _referenced_hooks(SETTINGS)
 show(f"参照するフック {len(_refs)} 件が全部実在する(通る側)", _all_exist(_refs), True)
 show("消したフックを参照していれば落ちる(止まる側 = I-012 の型)",
      _all_exist(_refs + ["deleted_hook.sh"]), False)
-show("残したフック 5 本だけを参照している",
+show("残したフック 6 本だけを参照している(L-202 の削除が済んだ状態でだけ一致する)",
      sorted(set(_refs)),
      sorted(["_verify_manifest.sh", "deny_protected_paths.sh", "owner_options_gate.sh",
-             "owner_turn_digest.sh", "session_start_digest.sh"]))
+             "owner_turn_digest.sh", "session_start_digest.sh", "trace_snapshot.sh"]))
 
 # ---------------------------------------------------------------------------
 print("\n== 台帳 HOOK_MANIFEST.sha256 の健全性 ==")
