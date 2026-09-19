@@ -1788,11 +1788,11 @@
   {
    "move": 67,
    "tools": {
-    "Bash": 3,
+    "Bash": 4,
     "Write": 1,
     "Agent": 1
    },
-   "n_tools": 5,
+   "n_tools": 6,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
