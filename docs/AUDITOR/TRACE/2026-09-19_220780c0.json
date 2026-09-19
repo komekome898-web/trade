@@ -1049,11 +1049,11 @@
    "move": 40,
    "tools": {
     "Edit": 3,
-    "Bash": 12,
+    "Bash": 14,
     "Read": 1,
     "Agent": 1
    },
-   "n_tools": 17,
+   "n_tools": 19,
    "read_goal": true,
    "first_write_at": 1,
    "table_shown": false,
