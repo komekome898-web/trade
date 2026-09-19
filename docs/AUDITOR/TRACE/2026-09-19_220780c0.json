@@ -1924,10 +1924,10 @@
   {
    "move": 72,
    "tools": {
-    "Bash": 12,
+    "Bash": 13,
     "Agent": 1
    },
-   "n_tools": 13,
+   "n_tools": 14,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
