@@ -1107,12 +1107,12 @@
   {
    "move": 42,
    "tools": {
-    "Bash": 4,
+    "Bash": 5,
     "Edit": 4,
     "Read": 1,
     "Write": 1
    },
-   "n_tools": 10,
+   "n_tools": 11,
    "read_goal": true,
    "first_write_at": 3,
    "table_shown": false,
