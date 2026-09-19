@@ -349,9 +349,10 @@
    "move": 14,
    "tools": {
     "Agent": 1,
-    "SendMessage": 1
+    "SendMessage": 1,
+    "Bash": 2
    },
-   "n_tools": 2,
+   "n_tools": 4,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

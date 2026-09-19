@@ -79,6 +79,10 @@
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/trace_snapshot.sh",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/jev_notice.sh"
           }
         ]
       }
