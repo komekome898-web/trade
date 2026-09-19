@@ -1194,12 +1194,12 @@
   {
    "move": 45,
    "tools": {
-    "Bash": 3,
+    "Bash": 4,
     "Write": 2,
     "Read": 1,
     "Agent": 2
    },
-   "n_tools": 8,
+   "n_tools": 9,
    "read_goal": true,
    "first_write_at": 3,
    "table_shown": false,
