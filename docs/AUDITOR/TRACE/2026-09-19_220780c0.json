@@ -809,9 +809,9 @@
   {
    "move": 31,
    "tools": {
-    "Bash": 2
+    "Bash": 3
    },
-   "n_tools": 2,
+   "n_tools": 3,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

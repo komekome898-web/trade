@@ -1,0 +1,27 @@
+[
+  {
+    "cycle_id": "2026-09-19T03:00:00Z#1",
+    "proposed_action": "buy",
+    "rationale": "直近 40 分のレンジ中心から下に 2.4 シグマ離れ、板の買い側が売り側の 1.8 倍に厚い。建玉は 0 で、1 単位の建玉は上限の 1 割未満に収まる。",
+    "policy_ref": {"file": "config/risk_limits.yaml", "key": "MAX_POSITION_SIZE_JPY"},
+    "evidence": [
+      {"name": "range_center_distance_sigma", "value": -2.4},
+      {"name": "book_imbalance_bid_over_ask", "value": 1.8},
+      {"name": "position_size_btc", "value": 0.0},
+      {"name": "order_notional_jpy", "value": 11200}
+    ],
+    "constraints_ref": {"file": "config/risk_limits.yaml", "key": "MAX_OPEN_ORDERS"},
+    "mode": "PAPER"
+  },
+  {
+    "cycle_id": "2026-09-19T03:05:00Z#2",
+    "proposed_action": "sell",
+    "rationale": "地合いが弱く見える。前回も同じ形で下がったので、ここは売っておきたい。",
+    "policy_excerpt": "MAX_OPEN_ORDERS: 1",
+    "evidence": [
+      {"name": "open_orders", "value": 1}
+    ],
+    "constraints_ref": {"file": "config/risk_limits.yaml", "key": "MAX_DAILY_LOSS_JPY"},
+    "mode": "PAPER"
+  }
+]

@@ -1,0 +1,8 @@
+{"source": "bot", "title": "BOT START", "message": "mode=PAPER product=FX_BTC_JPY", "urgent": false}
+{"source": "bot", "title": "STATUS", "message": "PAPER FX_BTC_JPY equity=198,430 JPY position=0.000 trades_today=4 kill_switch=None feed_age=2.1s", "urgent": false}
+{"source": "bot", "title": "KILL SWITCH", "message": "reason=DAILY_LOSS detail=daily loss 6,120 JPY over the 6,000 JPY limit. Trading is stopped and NO order can be placed. The switch does not clear itself; reset it only after the cause is understood (KillSwitch().reset(operator_confirm=True)).", "urgent": true}
+{"source": "bot", "title": "ORDER STATE UNKNOWN", "message": "AMBIGUOUS failure on /v1/me/sendchildorder (read timeout after the body was sent). The record is held as STATE_UNKNOWN and is NOT retried. reconcile_unknown will read the venue; no order may be re-sent until the state is settled.", "urgent": true}
+{"source": "bot", "title": "EXCHANGE CONDITION: DEGRADED", "message": "HTTP 429 on 6 of the last 20 calls, latency EWMA 1,840 ms, gethealth=BUSY. Read timeouts widened, new entries halved; a closing order is never gated.", "urgent": false}
+{"source": "quality", "title": "DATA GAP", "message": "bitflyer_execution_flow: no rows for 31 min (median gap 5.1 s). The recorder is running; the feed stopped arriving.", "urgent": false}
+{"source": "watchdog", "title": "BUDGET 70% REACHED", "message": "weekly token usage 70.4% of the self-imposed cap. Heavy steps stop here until the owner says otherwise.", "urgent": false}
+{"source": "bot", "title": "UNEXPECTED EXCEPTION", "message": "step() raised ZoneInfoNotFoundError('No time zone found with key Asia/Tokyo') while formatting the session boundary. The loop caught it and tripped SYSTEM_ERROR.", "urgent": true}

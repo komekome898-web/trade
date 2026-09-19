@@ -1,0 +1,131 @@
+<!--
+  取引所の状態ページ(Statuspage の作り)の**断片**。2026-09-19 に
+  https://status.bitflyer.com/ を GET して観察した骨組みをそのまま写し、
+  試験のために「縮退の部品」と「進行中の障害」を 1 件ずつ足してある(合成)。
+  本文の文言は試験用の合成であって、取引所の告知そのものではない。
+-->
+<html><body class="status">
+  <div class="layout-content status status-index premium">
+    <div class="page-status status-none">
+      <h2 class="status font-large">
+        All Systems Operational
+      </h2>
+      <span class="last-updated-stamp  font-small"></span>
+    </div>
+
+    <div class="components-section font-regular">
+      <div class="components-container one-column">
+        <div class="component-container border-color">
+<div data-component-id="dt7p71v23ck1"
+     class="component-inner-container status-green "
+     data-component-status="operational"
+     data-js-hook="">
+   <span class="name" role="heading" aria-level="2">
+      販売所 Buy/Sell
+   </span>
+  <span
+    class="component-status "
+    title=""
+  >
+    Operational
+  </span>
+</div>
+        </div>
+        <div class="component-container border-color">
+<div data-component-id="d9dfntdzpxk4"
+     class="component-inner-container status-green "
+     data-component-status="operational"
+     data-js-hook="">
+   <span class="name" role="heading" aria-level="2">
+      Lightning 現物 Lightning Spot
+   </span>
+  <span
+    class="component-status "
+    title=""
+  >
+    Operational
+  </span>
+</div>
+        </div>
+        <div class="component-container border-color">
+<div data-component-id="qm3x9vtz1cc7"
+     class="component-inner-container status-yellow "
+     data-component-status="degraded_performance"
+     data-js-hook="">
+   <span class="name" role="heading" aria-level="2">
+      bitFlyer Crypto CFD
+   </span>
+  <span
+    class="component-status "
+    title=""
+  >
+    Degraded Performance
+  </span>
+</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="incidents-list format-expanded">
+      <h2 class="font-largest no-link" id="past-incidents">Past Incidents</h2>
+
+  <div class="status-day font-regular no-incidents">
+    <h3 class="date border-color font-large">Sep <var data-var="date">19</var>, <var data-var="year">2026</var></h3>
+        <p class="color-secondary">No incidents reported today.</p>
+  </div>
+
+  <div class="status-day font-regular ">
+    <h3 class="date border-color font-large">Sep <var data-var="date">18</var>, <var data-var="year">2026</var></h3>
+          <div class="incident-container">
+  <div class="incident-title impact-major font-large">
+    <a class="whitespace-pre-wrap" href="/incidents/0000test0001">注文受付の遅延 Order acceptance delay</a>
+  </div>
+
+  <div class="updates-container">
+      <div class="update font-regular investigating">
+        <strong>Investigating</strong> -
+      	<span class="whitespace-pre-wrap">bitFlyer Crypto CFD において、注文の受付に遅延が発生しています。原因を調査中です。<br /><br />We are investigating a delay in order acceptance on bitFlyer Crypto CFD.</span>
+        <br>
+        <small>
+            Sep <var data-var='date'>18</var>, <var data-var='time'>21:40</var> JST
+        </small>
+      </div>
+  </div>
+</div>
+  </div>
+
+  <div class="status-day font-regular ">
+    <h3 class="date border-color font-large">Sep <var data-var="date">17</var>, <var data-var="year">2026</var></h3>
+          <div class="incident-container">
+  <div class="incident-title impact-maintenance font-large">
+    <a class="whitespace-pre-wrap" href="/incidents/422x7gwzdw82">Maintenance 2026/09</a>
+  </div>
+
+  <div class="updates-container">
+      <div class="update font-regular completed">
+        <strong>Completed</strong> -
+      	<span class="whitespace-pre-wrap">The scheduled maintenance has been completed.</span>
+        <br>
+        <small>
+            Sep <var data-var='date'>17</var>, <var data-var='time'>04:30</var> JST
+        </small>
+      </div>
+      <div class="update font-regular scheduled">
+        <strong>Scheduled</strong> -
+      	<span class="whitespace-pre-wrap">2026 年 9 月 17 日（木）午前 4 時 00 分頃から午前 4 時 30 分頃までの間、メンテナンスを実施します。作業中はすべてのサービスにおいて、数分程度、接続が不安定になる可能性があります。<br /><br />We will conduct maintenance on Thursday, September 17th, 2026 from approx. 4:00 to 4:30 am (JST). During the maintenance, all services may experience connection instability for a few minutes at a time.</span>
+        <br>
+        <small>
+            Sep <var data-var='date'>16</var>, <var data-var='time'>17:14</var> JST
+        </small>
+      </div>
+  </div>
+</div>
+  </div>
+
+  <div class="status-day font-regular no-incidents">
+    <h3 class="date border-color font-large">Sep <var data-var="date">16</var>, <var data-var="year">2026</var></h3>
+        <p class="color-secondary">No incidents reported.</p>
+  </div>
+    </div>
+  </div>
+</body></html>

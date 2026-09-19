@@ -55,6 +55,16 @@
 | 表示だけの Stop フック | `.claude/hooks/jev_notice.sh` | 変わった docs の Markdown に前段を当て要約を表示 |
 | 評価集合 | `docs/AUDITOR/before/` × `answers/`(22 組)| 訂正前の成果物とオーナーの訂正 |
 | X の調査経路 | `.claude/skills/x-research/`、`scripts/x_fetch.py` | 発見 = WebSearch、本文 = fxtwitter |
+| 返答の検査(U12)| `scripts/jev_reply.py` + `config/jev_routes.yaml` | 取れない × 経路一覧、対応表の左右。Stop フックの表示に出る |
+| 調査の検証・仕分け(U5・U6)| `scripts/jev_survey.py verify / triage` | 主張 × 引用、出典の仕分けと順位(重みは code)|
+| 行動記録の検査(U14)| `scripts/jev_trace_export.py --review` | 手ごとの道具の列 + 引用した指示。観測のみ |
+| 委任のモデル選定(U8)| `scripts/jev_delegate.py plan / calibrate` + `config/jev_delegation_tiers.yaml` | 課題の分類 → 段は code の規則表 |
+| 指摘の振り分け・採点(U10・U11)| `scripts/jev_audit_eval.py route-findings / score-findings` | スクリプト化候補・既知解との同型 / 捕捉の候補 |
+| 受領検査(U2)| `scripts/jev_report_intake.py check` | 必須項目・なぜ・判定の語・出所なしの数値・範囲逸脱 |
+| 空白の地図(U1)| `scripts/jev_ideas.py map` | 族 × 市場の件数。過去の結果は入れない |
+| 監査ループの検出(U9)| `scripts/jev_audit_loop.py rounds` | 前の巡と同じ指摘の連鎖の長さ |
+| 発言の種別・事故の同型(U13・U16)| `scripts/jev_owner_log.py classify / calibrate / incident` | 台帳の種別との一致、I-番号の候補 |
+| 通知の仕分け・告知の分類・② の事後検査(U15・U17・U18)| `scripts/jev_ops.py notify / announce / decision-review` | 表示と記録のみ。注文には触れない |
 
 ## 6. 次に足すもの(優先順)
 
