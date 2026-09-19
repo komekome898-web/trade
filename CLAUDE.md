@@ -123,8 +123,8 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 - テスト: `PYTHONPATH=src python -m pytest`(`pyproject.toml` の `addopts = "-q"` があるので手で `-q` を足さない — `-qq` になって末尾の「N passed」の行が消える。2026-09-18 委任先の実測)。現在 2,130 件収集(2026-09-18 リードの実測 `--collect-only`、`ACTION_LOG` 062。件数の履歴は `ACTION_LOG` の各節にある)。
 - **`git pull` 後は必ず `pip install -e ".[dev]"`**。依存追加を取り込まないとコンポーネントが起動直後に落ちる → 詳細 `docs/OPERATIONS.md` §4.5(Windows は `deploy\restart_all.bat` が pull→install→停止→起動を失敗時中断つきで実行)
 - Windows 運用(3プロセス並走・ウォッチドッグ・タスクスケジューラ2件)→ `docs/OPERATIONS.md` §5。ON1 実弾ジョブ(平日15:35/8:35の2タスク・二重ゲート・STATE_UNKNOWN 復帰手順)→ `docs/OPERATIONS_JPX.md` §5.1
-- **新しい clone では `sh scripts/install_git_hooks.sh` を 1 回実行する。**押し出しの関門の本体は git 自身の `githooks/pre-push`(L-202 の 1 手の後は指紋の照合だけ。未実施の間は行動監査も呼ぶ旧版)にあり、`.git/` はリポジトリに入らないため、実行するまで効かない。
-- **フック(2026-09-19、L-202 で 16 本 → 6 本に減らす。範囲はリードの決定、一覧と理由は `docs/AUDITOR/ACTION_LOG.md` 063)**: 残すのは `_verify_manifest.sh`(指紋の照合。Write / Edit / Agent と pre-push)/ `deny_protected_paths.sh`(オーナーの逐語・ゴール・フック・`settings.json`・監査役定義への書き込み拒否 = ③(a))/ `owner_options_gate.sh`(選択待ちの全面停止 + ゴール未読の最初の書き込みを止める = ③(b))/ `session_start_digest.sh`・`owner_turn_digest.sh`(状態板の要点の再注入)/ `trace_snapshot.sh`(監査役の定義 §0.5 の入力)。**削除の 1 手はまだ打てていない**(2026-09-19、Claude Code の自動モードの分類器に拒否された。材料は `docs/AUDITOR/L202_pending/`)。**実物が何本かは `ls .claude/hooks | wc -l` で確かめる。16 本なら未実施。**
+- **新しい clone では `sh scripts/install_git_hooks.sh` を 1 回実行する。**押し出しの関門の本体は git 自身の `githooks/pre-push`(指紋の照合だけ。2026-09-19 まで行動監査も呼んでいた)にあり、`.git/` はリポジトリに入らないため、実行するまで効かない。
+- **フック(2026-09-19、L-202 で 16 本 → 6 本に減らす。範囲はリードの決定、一覧と理由は `docs/AUDITOR/ACTION_LOG.md` 063)**: 残すのは `_verify_manifest.sh`(指紋の照合。Write / Edit / Agent と pre-push)/ `deny_protected_paths.sh`(オーナーの逐語・ゴール・フック・`settings.json`・監査役定義への書き込み拒否 = ③(a))/ `owner_options_gate.sh`(選択待ちの全面停止 + ゴール未読の最初の書き込みを止める = ③(b))/ `session_start_digest.sh`・`owner_turn_digest.sh`(状態板の要点の再注入)/ `trace_snapshot.sh`(監査役の定義 §0.5 の入力)。**削除の 1 手は 2026-09-19 に実施済み**(L-205「打て」、コミット ffe2692。自動モードの分類器に 2 回拒否されたあと、オーナーが許可モードを切り替えて通した)。**実物が何本かは `ls .claude/hooks | wc -l` で確かめる**(実施直後の実測: 6)。
   - **フック・`settings.json`・`githooks/`・監査役の定義はオーナーの指示があったときだけ変える(§0.2 A-16)。**変えたら同じコミットで `sh scripts/regen_hook_manifest.sh`(指紋の台帳 `docs/AUDITOR/HOOK_MANIFEST.sha256` の再生成)。
   - **台帳に載ったファイルを消す・書き換えるときは、削除・台帳の再生成・コミット・押し出しを 1 回の Bash 呼び出しにまとめて最後に打つ(L-202、I-012)。**削除を先にすると `_verify_manifest.sh` が「消失」を検出して、その会話の道具が全部止まる(出所: オーナーの報告 L-202「これは今回の実測から分かったこと」。リードは測っていない)。
   - **`settings.json` にはスキーマの鍵しか置かない**(I-010、2026-09-16: スキーマ外の上位キー 1 つで `hooks` が丸ごと無視され、3 日間フックが 1 本も走っていなかった)。注記は `ACTION_LOG` に書く。
@@ -150,7 +150,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 
 新戦略とパラメータチューニングは**すべて** `.claude/skills/research-protocol` に従う(実行前の事前登録、検出力の事前計算、Train+Val のみで選択 → OOS は一度だけ、フレッシュデータ追試)。
 
-### 5.0 監査を掛ける場所(2026-09-13、L-164 でオーナー承認。2026-09-19、L-202「圧縮」を受けてリードの決定で 4 点 → 3 点に縮める。削除の 1 手は未実施)
+### 5.0 監査を掛ける場所(2026-09-13、L-164 でオーナー承認。2026-09-19、L-202「圧縮」を受けてリードの決定で 4 点 → 3 点に縮めた。削除の 1 手は 2026-09-19 実施済み)
 
 **「全ての行動」から絞った**(オーナー逐語「**claude.mdを厳格にした今は緩和できるはずです**」L-164)。**残したのは、取り返しがつかない場所(研究の関門)と、体制の改変を差分に残す機械だけ。**
 
@@ -162,7 +162,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 
 **2 の条件(検査を通すための調整を防ぐ)**: 監査役には**事前登録と生の出力の両方**を渡す。**監査のあとに数値や図を変えたら、変更点を記録して監査をやり直す。**この監査は「測定が事前登録どおりに動いたか」だけを見る。判定そのものはやり直さない(判定は一度だけ)。
 
-**撤去するもの(2026-09-19、L-202。範囲はリードの決定、一覧と理由は `ACTION_LOG` 063。**削除の 1 手は未実施** — §3)**: 押し出しの行動監査(`action_audit_gate.sh` / `_require_action_audit.sh`。1 日 1 件の抜き取りと「止める」なら返答の全件監査に戻す機械を含む)・返答の関門(`reply_audit_gate.sh`)・MCP の既定拒否・④⑤ の機械(作業単位の関門 / read-do の入口)・全称語の検査(`universal_claim_notice.sh`)・表示のみの催促 4 本。**規則(§0.2 の O-5・A-17 など)は消さない。機械だけを外す。**残すもの: 研究の関門(1・2)、`tests/test_audit_gates_wired.py`(関門が呼ばれていることを pytest で測る)、③(a)(b)、① TRACE の記録(監査役の定義の入力)、指紋の台帳。
+**撤去するもの(2026-09-19、L-202。範囲はリードの決定、一覧と理由は `ACTION_LOG` 063。削除の 1 手は 2026-09-19 に実施済み、ffe2692)**: 押し出しの行動監査(`action_audit_gate.sh` / `_require_action_audit.sh`。1 日 1 件の抜き取りと「止める」なら返答の全件監査に戻す機械を含む)・返答の関門(`reply_audit_gate.sh`)・MCP の既定拒否・④⑤ の機械(作業単位の関門 / read-do の入口)・全称語の検査(`universal_claim_notice.sh`)・表示のみの催促 4 本。**規則(§0.2 の O-5・A-17 など)は消さない。機械だけを外す。**残すもの: 研究の関門(1・2)、`tests/test_audit_gates_wired.py`(関門が呼ばれていることを pytest で測る)、③(a)(b)、① TRACE の記録(監査役の定義の入力)、指紋の台帳。
 
 **限界(全部書く)**:
 - 指紋の台帳が掛かっているのは共有部品 `scripts/_research_audit_gate.py` だけで、**呼び出し側**(`sealed.py` / `p2_02_final.py` / `judge_gates.py`)には掛かっていない(研究のたびに手を入れる現役のコードなので)。代わりに `tests/test_audit_gates_wired.py` が「関門が呼ばれていること」を毎回の pytest で測る。台帳の範囲はオーナーが決めること。

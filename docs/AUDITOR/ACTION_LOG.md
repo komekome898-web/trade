@@ -9275,3 +9275,18 @@ wc -l < .claude/skills/research-protocol/SKILL.md                            →
 ### L-204「監査をとめろ」(2026-09-19)
 
 届いた時点で 2 本とも完了していた。以後この会話では監査役を回さない。一手の監査の「止める」は、監査を回し直さずに上のとおり処置し、L-202 に無い判断(未実施と明記した中間状態を押し出すか)はオーナーに上申する。
+
+### L-205「打て」(2026-09-19)— 最後の 1 手の結果
+
+オーナーが許可モードを auto から切り替えたうえで「打て」。`sh docs/AUDITOR/L202_pending/finish.sh` を打った。
+- 1 回目: 削除・複写・台帳(12 行)・verify_gates(食い違い 0 件)まで通り、**コミットで失敗**(`finish.sh` が材料のディレクトリを `git rm` してからその中のコミット文を読んでいた = リードの書き順の欠陥)。スクリプトの巻き戻しで実物は 16 本・旧 settings.json・旧台帳に戻った(`ls .claude/hooks | wc -l` → 16、`_verify_manifest.sh` → 一致)。直して fb10e8b。
+- 2 回目: 通った。出力(食い違いの行以外は省略、全文は返答に出した):
+```
+再生成した(12 行)。 … 食い違い: 0 件
+ffe2692 L-202: reduce project hooks from 16 to 6, pre-push reduced to the manifest check, manifest regenerated
+ * [new branch]      HEAD -> claude/bitflyer-trading-bot-hhxxaf-y446yr
+   686a9d5..ffe2692  HEAD -> claude/bitflyer-trading-bot-hhxxaf
+```
+- 押し出しの後の実測: `ls .claude/hooks | wc -l` → 6。**削除の後もこの会話の Bash は通った**(古い settings.json が参照する消えたフックは「無い」として扱われ、止めなかった)。L-202「削除の後はその会話でも道具が通らなくなる」は、台帳を再生成しないまま削除したときの挙動で、台帳を同じ呼び出しで再生成すれば通る(この 1 回の実測)。
+- 副作用: `finish.sh` の `-u` が 2 本目の押し出しでローカル枝の上流を `origin/claude/bitflyer-trading-bot-hhxxaf` に付け替えた。害は無いが、次の会話で `git branch -vv` を見て気にしないこと。
+- `CLAUDE.md` §3 / §5.0 と `verify_gates.py` の「未実施」の語を「実施済み」に直した(このコミット)。

@@ -6,7 +6,7 @@
 **通る側と止まる側の両方を測る**(「拒否される側しか測っていない」と 2026-09-13 の 3 本目の
 監査に指摘されたため)。
 
-2026-09-19、L-202 で関門を縮める(経緯は `docs/AUDITOR/ACTION_LOG.md` 063。**削除の 1 手が未実施の間は「残したフック 6 本だけ」と pre-push の試験が食い違う** = 実物が縮んでいないことを示す)。残すのは
+2026-09-19、L-202 で関門を縮めた(経緯は `docs/AUDITOR/ACTION_LOG.md` 063。削除の 1 手が済む前は「残したフック 6 本だけ」と pre-push の試験が食い違っていた = 実物が縮んでいないことを示す)。残したのは
   - 指紋の照合 `_verify_manifest.sh`(Write / Edit / Agent と、git 側の `githooks/pre-push`)
   - ③(a) 保護パスへの書き込み拒否 `deny_protected_paths.sh`
   - ③(b) 選択待ちの全面停止 `owner_options_gate.sh`
