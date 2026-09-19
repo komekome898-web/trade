@@ -1,0 +1,9 @@
+# SIGNAL 探索段 3(2026-09-20、L-247)。候補の観測量 = 清算の前の価格(基準)から測る量。定義の文は英語(手引き §2)。
+r_pre: "signed price change in basis points from the pre-cascade baseline (last trade strictly before the bundle's first liquidation) to h seconds after the bundle's last liquidation; sign such that negative = price is on the side opposite to the cascade direction relative to the baseline"
+overshoot_share: "share of bundles whose price h seconds after the last liquidation lies beyond the pre-cascade baseline on the side opposite to the cascade direction (crossed the baseline = overshoot corrected), versus between the baseline and the bundle's end price (partial retracement = impact decay), versus beyond the end price (continued)"
+retrace_fraction: "fraction of the sweep's move (baseline to bundle end price) that has been retraced h seconds later; 0 = none, 1 = back to baseline, >1 = crossed the baseline"
+sweep_bp: "signed price change from the pre-cascade baseline to the bundle's last liquidation fill, in basis points (the size of the sweep itself)"
+r_end: "signed price change from the bundle's last liquidation fill to h seconds later (the quantity of exploration stages 1 and 2; anchor = liquidation's own fill)"
+time_to_baseline: "seconds until the price first returns to the pre-cascade baseline after the last liquidation (undefined if never within the window)"
+mfe_mae_pre: "largest excursions in and against the cascade direction within h seconds, measured from the pre-cascade baseline, in basis points"
+bf_r_pre: "the same baseline-referenced signed change measured on bitFlyer FX_BTC_JPY 1-minute closes (window offset up to 60 seconds noted)"

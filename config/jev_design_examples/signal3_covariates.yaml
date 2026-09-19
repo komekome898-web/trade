@@ -1,0 +1,12 @@
+# SIGNAL 探索段 3(2026-09-20)。対照で合わせる候補の変数。判定の量 = r_pre / overshoot_share。定義の文は英語。
+sweep_bp: "size of the sweep itself: signed change from the pre-cascade baseline to the last liquidation fill, in basis points"
+next_bundle_gap_s: "seconds from this bundle's last liquidation to the next bundle's first liquidation (a future quantity; known only after the fact)"
+baseline_lag_ms: "milliseconds between the baseline trade and the bundle's first liquidation"
+dist_vwap_bp: "distance in basis points from the cascade price to the volume-weighted average price of the preceding W hours"
+bin_pct: "thinness of the price bin where the cascade occurred (share of the preceding W hours' volume in that bin)"
+bundle_n_events_dedup: "number of liquidation events in the bundle (deduplicated)"
+bundle_total_notional: "total notional value liquidated in the bundle"
+bundle_width_ms: "duration of the bundle in milliseconds"
+implied_leverage: "implied leverage of the liquidated positions"
+side: "whether the cascade liquidated longs (SELL) or shorts (BUY)"
+time_of_day: "UTC hour of the cascade"
