@@ -41,13 +41,22 @@ from scripts.jev_check import (  # noqa: E402
     DEFAULT_MODEL,
     PRESENCE,
     WHY_HEADING_RE,
+    AGGREGATED_KINDS,
+    aggregate_records,
     clean_state,
+    conclusion_lines,
+    control_sections,
     decide_flag,
+    extract_intent_rows,
+    extract_purpose_pairs,
     extract_why_section,
     flag_counts,
+    is_table_row,
     logical_lines,
+    quantity_sections,
     question_for,
     sections,
+    state_for,
     summary_line,
     violation_probability,
 )
@@ -62,6 +71,11 @@ MAX_VERDICT_QUESTIONS = 40  # 判定の語を含む文を Jev に聞く上限(`j
 PROMPT_HEAD_CHARS = 4_000   # 委任文の先頭(仕様どおり)
 CONCLUSION_CHARS = 1_500    # 最後の節の本文(仕様どおり)
 CONTEXT_LINES = 3           # 数値・判定の語の「前後 3 行」(仕様どおり)
+
+# 問いと測定の照合(`docs/JEV.md` §9)のうち **報告向けの 3 種**。
+# 事前登録向けの 2 種(`purpose_vs_quantity` / `control_vs_quantity`)は前段の
+# `jev_check.py audit` が当てる(この道具は報告の受領検査なので当てない)。
+REPORT_PURPOSE_KINDS = ("conclusion_vs_purpose", "other_cause_named", "direction_supported")
 
 # 判定の語(仕様どおりの語をそのまま置く)
 VERDICT_RE = re.compile(r"採用|棄却|合格|却下|不合格|有望|筋が悪い|効く|効かない")
@@ -434,6 +448,16 @@ def combine_origin(answers: dict) -> dict:
             "flag": bool(flag), "reason": reason}
 
 
+def combine_purpose(kind: str):
+    """問いと測定の照合の合成。しきい値・向きは `jev_check` の 1 箇所をそのまま使う。"""
+    def _combine(answers: dict) -> dict:
+        qid, viol = violation_probability(kind, answers)
+        flag, reason = decide_flag(kind, viol, None)
+        return {"question": qid, "violation_probability": round(viol, 4),
+                "flag": bool(flag), "reason": reason}
+    return _combine
+
+
 def combine_why(answers: dict) -> dict:
     """なぜ × 結果の対: `jev_check` の合成をそのまま使う(`contradicts` >= ATTENTION)。"""
     qid, viol = violation_probability("why_section", answers)
@@ -447,9 +471,38 @@ def combine_why(answers: dict) -> dict:
 # ---------------------------------------------------------------------------
 # 本体
 # ---------------------------------------------------------------------------
-def build_jobs(text: str, prompt_text: str | None) -> list[dict]:
-    """Jev へ送る仕事の一覧。state は **すべて code が組む**(判定される側が書かない)。"""
+def build_jobs(text: str, prompt_text: str | None, artifact: Path | None = None,
+               stats: dict | None = None) -> list[dict]:
+    """Jev へ送る仕事の一覧。state は **すべて code が組む**(判定される側が書かない)。
+
+    `artifact`(報告のパス)を渡すと、同じディレクトリの意図マップから目的の逐語を取り、
+    報告向けの 3 種(`REPORT_PURPOSE_KINDS`)の対を作る。**0 件でも黙らない**(末尾の 1 行)。
+    """
     jobs: list[dict] = []
+    dropped: dict[str, int] = {}
+    # この道具の入力は定義上「報告」なので、報告かどうかの判定は掛けない(report=True)
+    purpose = [p for p in (extract_purpose_pairs(text, artifact, dropped, report=True)
+                           if artifact else [])
+               if p["kind"] in REPORT_PURPOSE_KINDS]
+    if stats is not None:
+        intent = extract_intent_rows(artifact) if artifact else []
+        stats["purpose_pairs"] = {k: sum(1 for p in purpose if p["kind"] == k)
+                                  for k in REPORT_PURPOSE_KINDS}
+        stats["purpose_truncated"] = {k: v for k, v in dropped.items()
+                                      if k in REPORT_PURPOSE_KINDS}
+        concl = conclusion_lines(text)
+        froms = sorted({p.get("sections_from") for p in purpose
+                        if p["kind"] == "direction_supported"} - {None})
+        stats["purpose_inputs"] = {
+            "is_report": True,   # この道具の入力は定義上「報告」
+            "intent_rows": len(intent),
+            "intent_sources": sorted({r["source"] for r in intent}),
+            "quantity_sections": len(quantity_sections(text)),
+            "control_sections": len(control_sections(text)),
+            "conclusion_lines": len(concl),
+            "conclusion_table_rows": sum(1 for _ln, b in concl if is_table_row(b)),
+            "direction_sections_from": froms,
+        }
 
     for pair in extract_why_section(text):
         jobs.append({
@@ -519,6 +572,18 @@ def build_jobs(text: str, prompt_text: str | None) -> list[dict]:
                 "combine": combine_origin,
             })
         jobs.append(job)
+
+    # 問いと測定の照合は最後に足す(既存の対の並びを動かさない)
+    for pair in purpose:
+        jobs.append({
+            "kind": pair["kind"],
+            "anchor": pair["anchor"],
+            "claim": _clip(pair["a"], 120),
+            "intent_id": pair.get("intent_id"),
+            "questions": question_for(pair["kind"], pair),
+            "state": state_for(pair),
+            "combine": combine_purpose(pair["kind"]),
+        })
     return jobs
 
 
@@ -563,13 +628,18 @@ CHECK_LABELS = [
     ("verdict_sentence", "判定の語(jev)"),
     ("prompt_vs_report", "範囲逸脱 / 必須項目の未対応(jev)"),
     ("unsourced_number", "出所なしの数値(jev)"),
+    ("conclusion_vs_purpose", "結論 × 目的の逐語(jev)"),
+    ("other_cause_named", "機構以外の原因(jev)"),
+    ("direction_supported", "向きの主張の裏付け(jev)"),
 ]
 
 
 def run(text: str, *, source: str, kind: str, prompt_text: str | None, out_dir: Path,
-        model: str, dry_run: bool, summary_only: bool) -> tuple[int, dict]:
+        model: str, dry_run: bool, summary_only: bool,
+        artifact: Path | None = None) -> tuple[int, dict]:
     records: list[dict] = code_records(text, kind)
-    jobs = build_jobs(text, prompt_text)
+    stats: dict = {}
+    jobs = build_jobs(text, prompt_text, artifact, stats)
 
     client = None
     unreachable: str | None = None
@@ -625,8 +695,14 @@ def run(text: str, *, source: str, kind: str, prompt_text: str | None, out_dir: 
             for part in job["split"](answers):
                 records.append(dict(base, **part, sent=True, model=resp.get("model")))
         else:
-            records.append(dict(base, **job["combine"](answers), sent=True,
-                                model=resp.get("model")))
+            rec = dict(base, **job["combine"](answers), sent=True,
+                       model=resp.get("model"))
+            if job["kind"] in AGGREGATED_KINDS:
+                rec["flag"], rec["reason"] = False, "aggregated"
+                rec["intent_id"] = job.get("intent_id")
+            records.append(rec)
+
+    records += aggregate_records(records)
 
     n_to_send = sum(1 for j in jobs if j["questions"] is not None)
     # 1 つも届かなかったときだけ「未到達」と言う(沈黙を「異常なし」と読ませない。§4-9)
@@ -654,6 +730,10 @@ def run(text: str, *, source: str, kind: str, prompt_text: str | None, out_dir: 
         "unreachable": unreachable,
         "threshold": {"attention": ATTENTION, "presence": PRESENCE},
         "heading_match_rule": HEADING_MATCH_RULE,
+        # 問いと測定の照合(報告向けの 3 種)。**対が 0 件でも黙らない**(末尾の 1 行)
+        "purpose_pairs": stats.get("purpose_pairs", {k: 0 for k in REPORT_PURPOSE_KINDS}),
+        "purpose_truncated": stats.get("purpose_truncated", {}),
+        "purpose_inputs": stats.get("purpose_inputs", {}),
     }
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -675,6 +755,17 @@ def _print_table(source: str, out_path: Path, records: list[dict], summary: dict
           + ("  (--dry-run: 1 件も送っていない)" if summary["dry_run"] else "")
           + ("" if summary["prompt"] else "  (--prompt 無し: 委任文との対は作っていない)"))
     print(f"見出しの一致の規則: {HEADING_MATCH_RULE}")
+    inputs = summary.get("purpose_inputs") or {}
+    if inputs:
+        print("問いと測定の照合の材料: 意図の行 "
+              f"{inputs.get('intent_rows', 0)}(出所 "
+              + ("、".join(inputs.get("intent_sources") or []) or "なし")
+              + f")/ 判定の量の節 {inputs.get('quantity_sections', 0)}"
+              f" / 対照の定義の節 {inputs.get('control_sections', 0)}"
+              f" / 結論の行 {inputs.get('conclusion_lines', 0)}")
+    cut = summary.get("purpose_truncated") or {}
+    if cut:
+        print("上限で切った対: " + "、".join(f"{k} {v} 件" for k, v in sorted(cut.items())))
     print(f"{'検査':<32}{'件数':>6}{'印':>5}{'確率(最小〜最大)':>18}")
     for key, label in CHECK_LABELS:
         rows = [r for r in records if r["kind"] == key]
@@ -739,7 +830,7 @@ def main(argv: list[str] | None = None) -> int:
 
     code, _summary = run(text, source=report.name, kind=a.kind, prompt_text=prompt_text,
                          out_dir=Path(a.out), model=a.model, dry_run=a.dry_run,
-                         summary_only=a.summary)
+                         summary_only=a.summary, artifact=report)
     return code
 
 

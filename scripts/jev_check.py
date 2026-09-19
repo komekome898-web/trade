@@ -43,6 +43,7 @@ from scripts.jev.redact import RedactionError, assert_clean, redact_json  # noqa
 ATTENTION = 0.35  # これ以上なら「要確認」の印を付ける(印を付けるだけで、何も止めない)
 PRESENCE = 0.50   # 「そもそも不在の主張か」の分かれ目(negative_claim の 2 問目)
 MAX_NEGATIVE_PAIRS = 40  # 1 文書あたりの negative_claim の対の上限(超えた分は切る)
+MAX_PURPOSE_PAIRS = 40   # 「問いと測定の照合」の 1 文書・1 種類あたりの対の上限(下の MAX_NEGATIVE_PAIRS と同じ値を使う。新しい数値は置かない)
 MAX_DEFS_PER_SYMBOL = 8  # 同じ記号の定義文は最初の 1 件と後続 (最大 8 件) の対にする(全 2 点組は大きい文書で爆発する: 2026-09-19 実測 79,001 対)
 DEFAULT_MODEL = "jev-1.13.0"
 DEFAULT_OUT_DIR = REPO / "data" / "jev" / "check"
@@ -61,6 +62,19 @@ BAR_HEADING_RE = re.compile(r"判定|採用|基準|バー|合否")
 MEASURED_HEADING_RE = re.compile(r"測定対象|測るもの|対象")
 WHY_HEADING_RE = re.compile(r"なぜ|機構|理解")
 RESULT_HEADING_RE = re.compile(r"結果|判定")
+# 「問いと測定の照合」(L-238 の事例。`docs/JEV.md` §9)で使う見出し・行の語。
+# **2026-09-19 の検収で絞り直した**(前版は見出しに「判定」を含むだけの節を拾い、
+# 事前登録で印が 40/40 に付く雑音になっていた)。
+QUANTITY_HEADING_PRIORITY = ("主指標", "採用基準", "判定に使う")  # 判定の量の節は 1 つだけ
+CONTROL_HEADING_PRIORITY = ("帰無", "対照")                      # 対照の定義の節は 1 つだけ
+CONCLUSION_SECTION_RE = re.compile(r"判定|読み|なぜ")             # 結論の行を探す節(見出し)
+CONCLUSION_LINE_RE = re.compile(r"整合|反証|混在|差あり|検出されず|不明")  # 判定語を含む行
+DIRECTION_LINE_RE = re.compile(r"逆|反証|起きない")                # 向きを言う結論の行
+MAX_CONCLUSION_LINES = 10  # 結論の行は先頭から 10 行まで(検収の指示 5)
+# 報告の文書か(報告向けの 3 種はここでだけ当てる。検収の指示 4)
+REPORT_NAME_RE = re.compile(r"RESULT|REPORT|結果")
+REPORT_TITLE_RE = re.compile(r"結果の読み")   # 見るのは **レベル 1 の見出し(表題)だけ**
+PREREG_GLOB = "*PREREG*.md"                  # 対 5 の差し戻し先(同じディレクトリ、名前順の最後)
 
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
 _BACKTICK_RE = re.compile(r"`([^`\n]{1,40})`")
@@ -372,6 +386,419 @@ def extract_intent_vs_measured(text: str, artifact: Path) -> list[dict]:
     return pairs
 
 
+# ---------------------------------------------------------------------------
+# 問いと測定の照合(L-238 の事例。`docs/JEV.md` §9)
+#
+# 目的の逐語は **同じディレクトリの `*DESIGN*.md` / `INTENT_MAP.md` の意図マップの表**から
+# 取る。**○ / △ / ✕ の全行**を取る(`extract_intent_vs_measured` は `INTENT_MAP.md` の
+# ○ 行しか見ず、2026-09-18 の設計では対が 0 件だった)。＋(意図に無い実装)は原文の意図では
+# ないので取らない。state は probe(`data/jev/probe/20260919_L238_purpose_checks.txt`)と
+# 同じ **名前付きの欄**で組む。
+# ---------------------------------------------------------------------------
+INTENT_SOURCE_GLOBS = ("*DESIGN*.md", "INTENT_MAP.md")
+INTENT_COL_RE = re.compile(r"原文の意図|逐語")
+INTENT_MARK_COL_RE = re.compile(r"印")
+INTENT_MARKS = ("○", "△", "✕", "＋")
+INTENT_TAKEN_MARKS = ("○", "△", "✕")
+_TABLE_SEP_RE = re.compile(r"^\|[\s:|-]*-[\s:|-]*\|?$")
+_CELL_SPLIT_RE = re.compile(r"(?<!\\)\|")
+
+
+def _cells(line: str) -> list[str]:
+    r"""表の 1 行をセルに割る(`\|` は割らない)。"""
+    return [c.strip() for c in _CELL_SPLIT_RE.split(line.strip().strip("|"))]
+
+
+def markdown_tables(text: str) -> list[tuple[list[str], list[tuple[int, str, list[str]]]]]:
+    """(ヘッダのセル, [(行番号, 行, セル)]) の一覧。区切り行 `|---|` のある表だけ。"""
+    lines = text.splitlines()
+    out: list[tuple[list[str], list[tuple[int, str, list[str]]]]] = []
+    i = 0
+    while i < len(lines) - 1:
+        head = lines[i].strip()
+        if head.startswith("|") and _TABLE_SEP_RE.match(lines[i + 1].strip()):
+            rows: list[tuple[int, str, list[str]]] = []
+            j = i + 2
+            while j < len(lines) and lines[j].strip().startswith("|"):
+                rows.append((j + 1, lines[j].strip(), _cells(lines[j])))
+                j += 1
+            out.append((_cells(head), rows))
+            i = j
+            continue
+        i += 1
+    return out
+
+
+def _col_index(header: list[str], pattern: re.Pattern) -> int | None:
+    for i, cell in enumerate(header):
+        if pattern.search(cell):
+            return i
+    return None
+
+
+def _first_mark(cell: str) -> str | None:
+    for ch in cell:
+        if ch in INTENT_MARKS:
+            return ch
+    return None
+
+
+def extract_intent_rows(artifact: Path) -> list[dict]:
+    """同じディレクトリの意図マップの表から ○ / △ / ✕ の全行。見つからなければ空。"""
+    paths: list[Path] = []
+    for pattern in INTENT_SOURCE_GLOBS:
+        paths += sorted(artifact.parent.glob(pattern))
+    rows: list[dict] = []
+    seen: set[Path] = set()
+    for path in paths:
+        if path in seen or path.resolve() == artifact.resolve():
+            continue
+        seen.add(path)
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for header, body in markdown_tables(text):
+            ic = _col_index(header, INTENT_COL_RE)
+            mc = _col_index(header, INTENT_MARK_COL_RE)
+            if ic is None or mc is None:
+                continue
+            for lineno, line, cells in body:
+                if len(cells) <= max(ic, mc):
+                    continue
+                mark = _first_mark(cells[mc])
+                if mark not in INTENT_TAKEN_MARKS:
+                    continue
+                rows.append({
+                    "source": path.name,
+                    "lineno": lineno,
+                    "mark": mark,
+                    "id": cells[0] if cells else "",   # 「#」列(I-1 など)
+                    "intent": cells[ic],
+                    "row": _clip(line),
+                })
+    return rows
+
+
+# 印を **群ごとに 1 行だけ**付ける種類(検収の指示 3・5)。個々の対には印を付けない。
+AGGREGATED_KINDS = ("purpose_vs_quantity", "conclusion_vs_purpose")
+AGGREGATE_LABEL = {
+    "purpose_vs_quantity": "判定の量は意図のどれも直接測っていない",
+    "conclusion_vs_purpose": "結論は意図のどれにも答えていない",
+}
+
+
+def _section_fragment(sec: dict) -> str:
+    return _clip(f"{sec['title']}\n{sec['body']}")
+
+
+def _pick_section(text: str, words: tuple[str, ...],
+                  exclude: int | None = None) -> dict | None:
+    """語の**優先順**に、最初に当たった節を 1 つだけ返す(`exclude` の行の節は飛ばす)。"""
+    secs = sections(text)
+    for word in words:
+        for sec in secs:
+            if word in sec["title"] and sec["lineno"] != exclude:
+                return sec
+    return None
+
+
+def quantity_sections(text: str) -> list[dict]:
+    """判定の量の節。**1 つだけ**(主指標 → 採用基準 → 判定に使う の順、最初の 1 つ)。"""
+    sec = _pick_section(text, QUANTITY_HEADING_PRIORITY)
+    return [sec] if sec else []
+
+
+def control_sections(text: str) -> list[dict]:
+    """対照の定義の節。**1 つだけ**(帰無 → 対照 の順)。判定の量の節と同じ節は選ばない。"""
+    q = quantity_sections(text)
+    sec = _pick_section(text, CONTROL_HEADING_PRIORITY,
+                        exclude=q[0]["lineno"] if q else None)
+    return [sec] if sec else []
+
+
+def looks_like_report(text: str, artifact: Path) -> bool:
+    """報告の文書か。ファイル名に RESULT / REPORT / 結果、または**表題**に「結果の読み」。"""
+    if REPORT_NAME_RE.search(artifact.name):
+        return True
+    return any(s["level"] == 1 and REPORT_TITLE_RE.search(s["title"])
+               for s in sections(text))
+
+
+def latest_prereg(artifact: Path) -> Path | None:
+    """同じディレクトリの `*PREREG*.md` のうち**名前順の最後**(日付が名前に入っている)。"""
+    cands = [p for p in sorted(artifact.parent.glob(PREREG_GLOB))
+             if p.resolve() != artifact.resolve()]
+    return cands[-1] if cands else None
+
+
+def is_table_row(body: str) -> bool:
+    """その行が表のデータ行か(先頭が `|`)。**落とさない**。記録と表示に残すだけ。"""
+    return body.startswith("|")
+
+
+def conclusion_lines(text: str) -> list[tuple[int, str]]:
+    """結論の行。**見出しに「判定」「読み」「なぜ」を含む節(レベル 2 以下)の中の行**で、
+    判定語(整合 / 反証 / 混在 / 差あり / 検出されず / 不明)を含むもの。先頭から
+    `MAX_CONCLUSION_LINES` 行まで。
+
+    レベル 1(表題)の節は文書全体を覆ってしまうので、節としては使わない。
+    """
+    ranges = [(s["lineno"], s["end"]) for s in sections(text)
+              if s["level"] >= 2 and CONCLUSION_SECTION_RE.search(s["title"])]
+    out: list[tuple[int, str]] = []
+    for ln, body in logical_lines(text):
+        if body.startswith("#"):
+            continue
+        if not any(lo <= ln <= hi for lo, hi in ranges):
+            continue
+        if not CONCLUSION_LINE_RE.search(body):
+            continue
+        out.append((ln, body))
+        if len(out) >= MAX_CONCLUSION_LINES:
+            break
+    return out
+
+
+def _section_of(secs: list[dict], lineno: int) -> dict | None:
+    """その行を含むいちばん内側の節。"""
+    hit = None
+    for sec in secs:
+        if sec["lineno"] <= lineno <= sec["end"]:
+            if hit is None or sec["level"] >= hit["level"]:
+                hit = sec
+    return hit
+
+
+def _capped(pairs: list[dict], limit: int, dropped: dict[str, int]) -> list[dict]:
+    """対の数の上限。**集約する種類は「群(anchor)」の数で切る**(群を割らない)。"""
+    if not pairs:
+        return pairs
+    kind = pairs[0]["kind"]
+    if kind in AGGREGATED_KINDS:
+        keys: list[int] = []
+        for pair in pairs:
+            if pair["anchor"] not in keys:
+                keys.append(pair["anchor"])
+        if len(keys) <= limit:
+            return pairs
+        keep = set(keys[:limit])
+        kept = [p for p in pairs if p["anchor"] in keep]
+        dropped[kind] = len(pairs) - len(kept)
+        return kept
+    if len(pairs) <= limit:
+        return pairs
+    dropped[kind] = len(pairs) - limit
+    return pairs[:limit]
+
+
+def extract_purpose_pairs(text: str, artifact: Path,
+                          dropped: dict[str, int] | None = None,
+                          report: bool | None = None) -> list[dict]:
+    """対 1〜5(問いと測定の照合)。1 種類あたり `MAX_PURPOSE_PAIRS` 件で切る。
+
+    `report` を省くと `looks_like_report` で判定する。報告向けの 3 種
+    (対 3・4・5)は **報告の文書にだけ**当てる(検収の指示 4)。
+    """
+    dropped = {} if dropped is None else dropped
+    intent_rows = extract_intent_rows(artifact)
+    quantities = quantity_sections(text)
+    controls = control_sections(text)
+    secs = sections(text)
+    pairs: list[dict] = []
+
+    # 対 1: 意図の行 × 判定の量の節(1 つ)。印は集約で 1 行だけ付ける
+    p1: list[dict] = []
+    for row in intent_rows:
+        for sec in quantities:
+            p1.append({
+                "kind": "purpose_vs_quantity",
+                "anchor": sec["lineno"],
+                "intent_id": row["id"],
+                "a": row["row"],
+                "b": _section_fragment(sec),
+                "a_role": f"a row of the intent map ({row['source']} line {row['lineno']}, "
+                          f"mark {row['mark']})",
+                "b_role": "the section stating the quantity the verdict is made on",
+                "state": {
+                    "owner_purpose": row["row"],
+                    "judgment_quantity": _section_fragment(sec),
+                },
+            })
+    pairs += _capped(p1, MAX_PURPOSE_PAIRS, dropped)
+
+    # 対 2: 対照の定義の節(1 つ)× 判定の量の節(1 つ)= 1 対
+    p2: list[dict] = []
+    for ctl in controls:
+        for sec in quantities:
+            p2.append({
+                "kind": "control_vs_quantity",
+                "anchor": ctl["lineno"],
+                "a": _section_fragment(ctl),
+                "b": _section_fragment(sec),
+                "a_role": "the section defining the control group and how it is matched",
+                "b_role": "the section stating the quantity the verdict is made on",
+                "state": {
+                    "control_group": _section_fragment(ctl),
+                    "judgment_quantity": _section_fragment(sec),
+                },
+            })
+    pairs += _capped(p2, MAX_PURPOSE_PAIRS, dropped)
+
+    if report is None:
+        report = looks_like_report(text, artifact)
+    if not report:
+        return pairs  # 報告向けの 3 種は当てない
+
+    concl = conclusion_lines(text)
+
+    # 対 3: 結論の行 × 意図の行。印は結論の行ごとに集約で 1 行
+    p3: list[dict] = []
+    for ln, body in concl:
+        for row in intent_rows:
+            p3.append({
+                "kind": "conclusion_vs_purpose",
+                "anchor": ln,
+                "intent_id": row["id"],
+                "table_row": is_table_row(body),
+                "a": _clip(body),
+                "b": row["row"],
+                "a_role": "a line carrying the conclusion of the work",
+                "b_role": f"a row of the intent map ({row['source']} line {row['lineno']}, "
+                          f"mark {row['mark']})",
+                "state": {
+                    "report_conclusion": _clip(body),
+                    "owner_purpose": row["row"],
+                },
+            })
+    pairs += _capped(p3, MAX_PURPOSE_PAIRS, dropped)
+
+    # 対 4: 結論の行 × その行を含む節(機構以外の原因を挙げているか)
+    p4: list[dict] = []
+    for ln, body in concl:
+        sec = _section_of(secs, ln)
+        p4.append({
+            "kind": "other_cause_named",
+            "anchor": ln,
+            "table_row": is_table_row(body),
+            "a": _clip(body),
+            "b": _section_fragment(sec) if sec else _clip(text),
+            "a_role": "a line carrying the conclusion of the work",
+            "b_role": "the section that line sits in",
+            "state": {
+                "report_conclusion": _clip(body),
+                "conclusion_section": _section_fragment(sec) if sec else _clip(text),
+            },
+        })
+    pairs += _capped(p4, MAX_PURPOSE_PAIRS, dropped)
+
+    # 対 5: 向きを言う結論の行 × 判定の量の節 × 対照の定義の節。
+    # **報告にその 2 節が無ければ、同じディレクトリの事前登録(名前順の最後)から取る。**
+    d_quant = quantities[0] if quantities else None
+    d_ctl = controls[0] if controls else None
+    source_of_sections = artifact.name
+    if d_quant is None or d_ctl is None:
+        prereg = latest_prereg(artifact)
+        if prereg is not None:
+            try:
+                ptext = prereg.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                ptext = ""
+            if ptext:
+                pq = quantity_sections(ptext)
+                pc = control_sections(ptext)
+                if pq and pc:
+                    d_quant, d_ctl = pq[0], pc[0]
+                    source_of_sections = prereg.name
+    p5: list[dict] = []
+    if d_quant is not None and d_ctl is not None:
+        for ln, body in concl:
+            if not DIRECTION_LINE_RE.search(body):
+                continue
+            p5.append({
+                "kind": "direction_supported",
+                "anchor": ln,
+                "table_row": is_table_row(body),
+                "sections_from": source_of_sections,
+                "a": _clip(body),
+                "b": _section_fragment(d_quant),
+                "a_role": "a line claiming a direction (the opposite of, refuted, "
+                          "does not happen)",
+                "b_role": f"the quantity and the control definition, taken from "
+                          f"{source_of_sections}",
+                "state": {
+                    "report_conclusion": _clip(body),
+                    "judgment_quantity": _section_fragment(d_quant),
+                    "control_group": _section_fragment(d_ctl),
+                },
+            })
+    pairs += _capped(p5, MAX_PURPOSE_PAIRS, dropped)
+    return pairs
+
+
+def aggregate_records(records: list[dict]) -> list[dict]:
+    """集約する種類の**群ごとに 1 行**の記録を作る(印はここにだけ付く)。
+
+    群 = (種類, anchor)。`purpose_vs_quantity` は判定の量の節が 1 つなので 1 群、
+    `conclusion_vs_purpose` は結論の行ごとに 1 群。
+    肯定形の確率(直接測る / 答えている)の**最大値が `PRESENCE` 未満なら印**。
+    """
+    groups: dict[tuple[str, int], list[dict]] = {}
+    order: list[tuple[str, int]] = []
+    for rec in records:
+        if rec.get("kind") not in AGGREGATED_KINDS or not rec.get("sent"):
+            continue
+        if rec.get("violation_probability") is None:
+            continue
+        key = (rec["kind"], rec["anchor"])
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append(rec)
+
+    out: list[dict] = []
+    for kind, anchor in order:
+        members = groups[(kind, anchor)]
+        best = min(members, key=lambda r: r["violation_probability"])  # 肯定側が最大の 1 件
+        top = 1.0 - float(best["violation_probability"])
+        flag = top < PRESENCE
+        rec = {
+            "kind": kind,
+            "aggregate": True,
+            "anchor": anchor,
+            "a": f"{AGGREGATE_LABEL[kind]}(最大 p の意図 = {best.get('intent_id') or '不明'})",
+            # `jev_report_intake` の表は `claim` を使うので同じ文を両方に置く
+            "claim": f"{AGGREGATE_LABEL[kind]}"
+                     f"(最大 p の意図 = {best.get('intent_id') or '不明'})",
+            "b": _clip(str(best.get("a", ""))),
+            "n_in_group": len(members),
+            "question": best.get("question"),
+            "top_probability": round(top, 4),
+            "violation_probability": round(float(best["violation_probability"]), 4),
+            "presence": PRESENCE,
+            "flag": bool(flag),
+            "reason": None if flag else "some_intent_is_directly_measured",
+            "sent": False,
+        }
+        for key in ("file", "source"):
+            if key in best:
+                rec[key] = best[key]
+        out.append(rec)
+    return out
+
+
+PURPOSE_KINDS = ("purpose_vs_quantity", "control_vs_quantity", "conclusion_vs_purpose",
+                 "other_cause_named", "direction_supported")
+# 種類 -> (問い ID, 反する側が「1 - noul」か)。問いは肯定形のまま置く。
+PURPOSE_QIDS: dict[str, tuple[str, bool]] = {
+    "purpose_vs_quantity": ("quantity_measures_purpose", True),
+    "control_vs_quantity": ("quantity_confounded_by_start", False),
+    "conclusion_vs_purpose": ("conclusion_answers_purpose", True),
+    "other_cause_named": ("other_cause_named", True),
+    "direction_supported": ("conclusion_direction_supported", True),
+}
+
+
 def extract_number_vs_source(text: str, artifact: Path) -> list[dict]:
     """本文の数値のうち、同じディレクトリの csv/json/txt のどれにも文字列として現れないもの。
 
@@ -433,7 +860,10 @@ def cap_negative_claims(pairs: list[dict]) -> tuple[list[dict], int]:
     return kept, n_dropped
 
 
-def extract_pairs(text: str, artifact: Path) -> list[dict]:
+def extract_pairs(text: str, artifact: Path,
+                  stats: dict | None = None) -> list[dict]:
+    """対の一覧。`stats` を渡すと、切った件数と「問いと測定の照合」の材料の数を書き込む。"""
+    dropped: dict[str, int] = {}
     pairs: list[dict] = []
     pairs += extract_negative_claims(text)
     pairs += extract_verification_claims(text)
@@ -442,13 +872,158 @@ def extract_pairs(text: str, artifact: Path) -> list[dict]:
     pairs += extract_scope_vs_bar(text)
     pairs += extract_intent_vs_measured(text, artifact)
     pairs += extract_why_section(text)
+    purpose = extract_purpose_pairs(text, artifact, dropped)
+    pairs += purpose
     pairs += extract_number_vs_source(text, artifact)
+    if stats is not None:
+        rows = extract_intent_rows(artifact)
+        stats["purpose_pairs"] = {k: sum(1 for x in purpose if x["kind"] == k)
+                                  for k in PURPOSE_KINDS}
+        stats["purpose_truncated"] = dropped
+        is_report = looks_like_report(text, artifact)
+        concl = conclusion_lines(text) if is_report else []
+        froms = sorted({p.get("sections_from") for p in purpose
+                        if p["kind"] == "direction_supported"} - {None})
+        stats["is_report"] = is_report
+        stats["purpose_inputs"] = {
+            "is_report": is_report,
+            "intent_rows": len(rows),
+            "intent_sources": sorted({r["source"] for r in rows}),
+            "quantity_sections": len(quantity_sections(text)),
+            "control_sections": len(control_sections(text)),
+            "conclusion_lines": len(concl),
+            "conclusion_table_rows": sum(1 for _ln, b in concl if is_table_row(b)),
+            "direction_sections_from": froms,
+        }
     return pairs
 
 
 # ---------------------------------------------------------------------------
 # 問い(1 判断 1 問・肯定形・criteria は具体例つき・英語)
 # ---------------------------------------------------------------------------
+def _purpose_question(kind: str) -> dict:
+    """問いと測定の照合の 1 問(probe `20260919_L238_purpose_checks.txt` の言い回しを踏襲)。"""
+    if kind == "purpose_vs_quantity":
+        return {
+            "quantity_measures_purpose": {
+                "type": "noul",
+                "instructions": (
+                    "Does `judgment_quantity` directly measure what `owner_purpose` asks? "
+                    "Answer yes only if the quantity's value directly expresses the thing the "
+                    "purpose names, not a proxy such as reaching a fixed reference level."
+                ),
+                "criteria": {
+                    "true": (
+                        "The quantity directly expresses what the purpose asks about. Example: "
+                        "the purpose asks whether price reverses after a liquidation cascade and "
+                        "the quantity is the signed price move after the cascade (negative = "
+                        "reversal, positive = continuation)."
+                    ),
+                    "false": (
+                        "The quantity measures something else, or only a proxy for it. Example: "
+                        "the purpose asks whether price overshoots and reverses, and the quantity "
+                        "is whether the price got back to the volume-weighted average of the "
+                        "preceding 8 hours within h minutes."
+                    ),
+                },
+            },
+        }
+    if kind == "control_vs_quantity":
+        return {
+            "quantity_confounded_by_start": {
+                "type": "noul",
+                "instructions": (
+                    "Is the value of `judgment_quantity` strongly determined by where the "
+                    "measurement starts from (for example how far the price already sits from "
+                    "the reference level), a property that the matching described in "
+                    "`control_group` does not equalise between the two groups?"
+                ),
+                "criteria": {
+                    "true": (
+                        "The starting point largely determines the quantity and the control is "
+                        "not matched on it. Example: reaching back to the 8-hour VWAP depends on "
+                        "the distance to that VWAP at t0, and the control is matched only on the "
+                        "thinness of the price bin."
+                    ),
+                    "false": (
+                        "The quantity does not depend on the starting point, or the matching "
+                        "equalises it. Example: the control is drawn to have the same distance "
+                        "to the reference level at t0, or the quantity is a change measured from "
+                        "the starting point itself."
+                    ),
+                },
+            },
+        }
+    if kind == "conclusion_vs_purpose":
+        return {
+            "conclusion_answers_purpose": {
+                "type": "noul",
+                "instructions": (
+                    "Does `report_conclusion` answer the question stated in `owner_purpose`?"
+                ),
+                "criteria": {
+                    "true": (
+                        "The conclusion states, from the measurement, an answer to the question "
+                        "the purpose asks. Example: the purpose asks whether liquidations let one "
+                        "catch reversals and the conclusion says whether reversal was seen after "
+                        "cascades and how often."
+                    ),
+                    "false": (
+                        "The conclusion answers a different question, or does not answer. "
+                        "Example: the purpose asks about catching overshoot and reversal and the "
+                        "conclusion is about whether price returned to a reference level within "
+                        "4 hours."
+                    ),
+                },
+            },
+        }
+    if kind == "other_cause_named":
+        return {
+            "other_cause_named": {
+                "type": "noul",
+                "instructions": (
+                    "Does `report_conclusion`, or `conclusion_section` around it, name any cause "
+                    "other than the mechanism under test that could produce the observed "
+                    "difference?"
+                ),
+                "criteria": {
+                    "true": (
+                        "At least one alternative cause is named. Example: \"the two groups start "
+                        "at different distances from the reference level\", \"97 days are missing "
+                        "from the holdout\", \"the matching depends on the order of the rows\"."
+                    ),
+                    "false": (
+                        "No cause other than the mechanism is named. Example: the conclusion says "
+                        "the mechanism is refuted because the rate is lower than the control's, "
+                        "and nothing else that could produce that gap is mentioned."
+                    ),
+                },
+            },
+        }
+    return {
+        "conclusion_direction_supported": {
+            "type": "noul",
+            "instructions": (
+                "Does the measurement described in `judgment_quantity` and `control_group` "
+                "support the direction claimed in `report_conclusion` (that the effect is the "
+                "opposite of what was assumed, that it is refuted, or that it does not happen)?"
+            ),
+            "criteria": {
+                "true": (
+                    "The measurement, as described, can establish that direction. Example: the "
+                    "quantity is signed so that the claimed direction is read off its sign, and "
+                    "the control is matched on everything else that moves it."
+                ),
+                "false": (
+                    "The same result could arise without the claimed direction. Example: a lower "
+                    "reach-back rate than the control can come from starting farther away, so it "
+                    "does not by itself establish that price fails to reverse."
+                ),
+            },
+        },
+    }
+
+
 def question_for(kind: str, pair: dict) -> dict:
     if kind == "verification_claim":
         # O-3 の族(実行したコマンドと出力を同じ返答に出す)。presence を別の問いに分ける。
@@ -581,6 +1156,8 @@ def question_for(kind: str, pair: dict) -> dict:
                 },
             },
         }
+    if kind in PURPOSE_QIDS:
+        return _purpose_question(kind)
     if kind == "symbol_definition":
         term = pair.get("term", "")
         return {
@@ -655,6 +1232,10 @@ def violation_probability(kind: str, answers: dict) -> tuple[str, float]:
     if kind in PRESENCE_QIDS:
         qid = PRESENCE_QIDS[kind][1]
         return qid, 1.0 - float(answers[qid]["noul"])
+    if kind in PURPOSE_QIDS:
+        qid, invert = PURPOSE_QIDS[kind]
+        p = float(answers[qid]["noul"])
+        return qid, (1.0 - p if invert else p)
     if kind == "symbol_definition":
         return "same_meaning", 1.0 - float(answers["same_meaning"]["noul"])
     probs = answers["relation"].get("probabilities") or {}
@@ -728,6 +1309,9 @@ def clean_state(state: dict) -> dict:
 
 
 def state_for(pair: dict) -> dict:
+    if "state" in pair:
+        # 問いと測定の照合は probe と同じ **名前付きの欄**で渡す(fragment_a/b にしない)
+        return dict(pair["state"])
     state = {
         "kind": pair["kind"],
         "fragment_a_role": pair["a_role"],
@@ -749,7 +1333,8 @@ def cmd_audit(args) -> int:
         print(f"[jev_check] 成果物が無い: {artifact}", file=sys.stderr)
         return 1
     text = artifact.read_text(encoding="utf-8", errors="replace")
-    pairs, n_truncated = cap_negative_claims(extract_pairs(text, artifact))
+    stats: dict = {}
+    pairs, n_truncated = cap_negative_claims(extract_pairs(text, artifact, stats))
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -821,9 +1406,15 @@ def cmd_audit(args) -> int:
             rec["presence_probability"] = round(presence, 4)
             rec["presence_answer"] = answers.get(presence_qid(pair["kind"]))
         rec["flag"], rec["reason"] = decide_flag(pair["kind"], viol, presence)
+        if pair["kind"] in AGGREGATED_KINDS:
+            # 個々の対には印を付けない(印は群ごとの集約の行に 1 件だけ。検収の指示 3・5)
+            rec["flag"], rec["reason"] = False, "aggregated"
+            rec["intent_id"] = pair.get("intent_id")
         rec["sent"] = True
         rec["model"] = resp.get("model")
         records.append(rec)
+
+    records += aggregate_records(records)
 
     n_to_send = sum(1 for p in pairs if p["kind"] != "number_vs_source")
     # 1 つも届かなかったときだけ「未到達」と言う(沈黙を「異常なし」と読ませない)
@@ -835,6 +1426,7 @@ def cmd_audit(args) -> int:
         "file": artifact.name,
         "kind": "_summary",
         "n_pairs": len(pairs),
+        "n_aggregate": sum(1 for r in records if r.get("aggregate")),
         "n_sent": sum(1 for r in records if r["sent"]),
         "n_requests": n_requests,
         "n_flag": n_flag,
@@ -843,6 +1435,10 @@ def cmd_audit(args) -> int:
         "dry_run": bool(args.dry_run),
         "unreachable": unreachable,
         "threshold": {"attention": ATTENTION},
+        # 問いと測定の照合。**対が 0 件でも黙らない**(末尾の 1 行に必ず出す)
+        "purpose_pairs": stats.get("purpose_pairs", {k: 0 for k in PURPOSE_KINDS}),
+        "purpose_truncated": stats.get("purpose_truncated", {}),
+        "purpose_inputs": stats.get("purpose_inputs", {}),
     }
 
     with out_path.open("w", encoding="utf-8") as fh:
@@ -856,6 +1452,35 @@ def cmd_audit(args) -> int:
     return 0
 
 
+def purpose_part(summary: dict) -> str:
+    """問いと測定の照合の対の数(**0 件のときもその旨を必ず出す**)。"""
+    counts = summary.get("purpose_pairs")
+    if counts is None:
+        return ""
+    total = sum(counts.values())
+    detail = " / ".join(f"{k} {v}" for k, v in counts.items())
+    inputs_ = summary.get("purpose_inputs") or {}
+    if inputs_.get("is_report") is False:
+        detail += " / 報告向けの 3 種は当てない(報告の文書ではない)"
+    if inputs_.get("conclusion_table_rows"):
+        detail += f" / 結論の行のうち表の行 {inputs_['conclusion_table_rows']}"
+    froms = [f for f in (inputs_.get("direction_sections_from") or [])
+             if f != summary.get("file")]
+    if froms:
+        detail += " / 対 5 の 2 節の出所 " + "、".join(froms)
+    if total == 0:
+        inputs = summary.get("purpose_inputs") or {}
+        src = "、".join(inputs.get("intent_sources") or []) or "なし"
+        note = ("、報告向けの 3 種は当てない(報告の文書ではない)"
+                if inputs.get("is_report") is False else "")
+        return (f" 目的と測定の照合: 対 0 件(意図マップ: {src}、意図の行 "
+                f"{inputs.get('intent_rows', 0)} / 判定の量の節 "
+                f"{inputs.get('quantity_sections', 0)} / 対照の定義の節 "
+                f"{inputs.get('control_sections', 0)} / 結論の行 "
+                f"{inputs.get('conclusion_lines', 0)}{note})")
+    return f" 目的と測定の照合: 対 {total} 件({detail})"
+
+
 def summary_line(summary: dict) -> str:
     """末尾の 1 行。Stop フックはこの 1 行をそのまま表示に使う。"""
     if summary.get("unreachable"):
@@ -863,7 +1488,7 @@ def summary_line(summary: dict) -> str:
     by_kind = summary.get("flag_by_kind") or {}
     detail = "、".join(f"{k} {v} 件" for k, v in sorted(by_kind.items())) or "内訳なし"
     tail = "(--dry-run: 1 件も送っていない)" if summary.get("dry_run") else ""
-    return f"印 {summary.get('n_flag', 0)} 件({detail}){tail}"
+    return f"印 {summary.get('n_flag', 0)} 件({detail}){tail}{purpose_part(summary)}"
 
 
 def _print_table(artifact: Path, records: list[dict], summary: dict) -> None:
@@ -877,6 +1502,18 @@ def _print_table(artifact: Path, records: list[dict], summary: dict) -> None:
         counts[rec["kind"]] = counts.get(rec["kind"], 0) + 1
     if counts:
         print("種類ごとの件数: " + " / ".join(f"{k}={v}" for k, v in sorted(counts.items())))
+    inputs = summary.get("purpose_inputs") or {}
+    if inputs:
+        print("問いと測定の照合の材料: 意図の行 "
+              f"{inputs.get('intent_rows', 0)}(出所 "
+              + ("、".join(inputs.get("intent_sources") or []) or "なし")
+              + f")/ 判定の量の節 {inputs.get('quantity_sections', 0)}"
+              f" / 対照の定義の節 {inputs.get('control_sections', 0)}"
+              f" / 結論の行 {inputs.get('conclusion_lines', 0)}")
+    cut = summary.get("purpose_truncated") or {}
+    if cut:
+        print("上限で切った対: " + "、".join(f"{k} {v} 件" for k, v in sorted(cut.items()))
+              + f"(1 種類あたり {MAX_PURPOSE_PAIRS} 件まで)")
     print(f"{'対の種類':<20}{'行':>6}{'反する確率':>12}{'印':>4}  先頭")
     for rec in records:
         p = rec["violation_probability"]

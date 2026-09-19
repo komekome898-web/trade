@@ -709,3 +709,287 @@ def test_score_treats_dry_run_and_unreachable_as_unevaluated(tmp_path, capsys):
     assert J.main(["score", "--labels", str(labels), "--dir", str(out)]) == 0
     text = capsys.readouterr().out
     assert "検出 0 件 / 見逃し 0 件 / 誤検出 0 件 / 該当なし・印なし 0 件 / 未評価 2 件" in text
+
+
+# ---------------------------------------------------------------------------
+# 問いと測定の照合(L-238 の事例。`docs/JEV.md` §9)
+# ---------------------------------------------------------------------------
+# 今日の設計 `REACTION_DESIGN_2026-09-18.md` §8 の表の形の小さな複製(列と印だけ同じ)
+DESIGN_INTENT_MD = """# 段 A の設計
+
+## 8. INTENT_MAP(原文の意図 1 項 × この設計の要素)
+
+印: ○ 一致 / △ 代理 / ✕ 未実装 / ＋ 意図に無い実装。
+
+| # | 原文の意図(逐語) | この設計の要素 | 印 | 備考 |
+|---|---|---|---|---|
+| I-1 | 「**清算の監視による値段の上がりすぎ下がりすぎやトレンド転換を捉えることができるか確認**」 | §3 (a)(b)(c) | **△** | 直接あたる観測量が無い |
+| I-3 | 「**海外取引所の高レバ市場**」 | Binance COIN-M | **○** | |
+| I-6 | 「**bitmex を最初に使って検証**」 | 段 A では使わない | **✕** | 清算イベントが無い |
+| I-12 | 「**トレンド転換が起きるか**」 | §3 (b) | **△**(2026-09-18 に ○ から下げた) | 代理 |
+| I-17 | (原文に無い) | §4 E 換算レバレッジ | **＋** | 出所は L-194 |
+"""
+
+PREREG_MD = """# 事前登録
+
+## 6. 主指標と帰無
+
+主指標 = 戻り到達(W 時間 VWAP へ h 分以内に戻ったか)の割合。
+
+## 6.1 対照 (ii) の作り方
+
+同じ日の清算の無い時刻を、ビンの薄さで 1 対 1 に合わせる。出発点の距離は合わせない。
+
+## 9. 採用基準の型
+
+置くバーは |t| ≥ 3.925 だけ。
+"""
+
+RESULT_MD = """# 結果の読み
+
+## 1. 判定
+
+**F1 の読み = 「F1 の反証」**。戻り到達は対照より低く、想定とは逆の向きが出た。
+
+## 4. なぜそうなるのか
+
+候補 1: 機構にエッジが無い。差は 6.5 ポイントで、検出されずの行が 11 ある。
+"""
+
+
+def test_extract_intent_rows_from_design(tmp_path):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    rows = J.extract_intent_rows(art)
+    # ○ / △ / ✕ の全行を取る。＋(意図に無い実装)は取らない
+    assert [r["mark"] for r in rows] == ["△", "○", "✕", "△"]
+    assert "上がりすぎ下がりすぎ" in rows[0]["row"]
+    assert all(r["source"] == "REACTION_DESIGN_2026-09-18.md" for r in rows)
+
+
+def test_intent_rows_empty_without_intent_map(tmp_path):
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    assert J.extract_intent_rows(art) == []
+
+
+def test_quantity_and_control_sections_are_one_each(tmp_path):
+    # 判定の量は 主指標 → 採用基準 → 判定に使う の順で 1 つだけ。
+    # 「判定」を含むだけの節(§3 分割)は拾わない
+    q = J.quantity_sections(PREREG_MD)
+    assert len(q) == 1 and "主指標" in q[0]["title"]
+    c = J.control_sections(PREREG_MD)
+    assert len(c) == 1 and "対照" in c[0]["title"]      # 帰無は §6 と同じ節なので次点の 対照
+    assert c[0]["lineno"] != q[0]["lineno"]
+    md = "# x\n\n## 3. 分割(探索 / 判定の境界)\n\n本文。\n\n## 9. 採用基準の型\n\nバー。\n"
+    q2 = J.quantity_sections(md)
+    assert len(q2) == 1 and "採用基準" in q2[0]["title"]
+
+
+def test_purpose_vs_quantity_pairs(tmp_path):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    pairs = [p for p in J.extract_pairs(PREREG_MD, art) if p["kind"] == "purpose_vs_quantity"]
+    # 意図の行 4 × 判定の量の節 1 = 4(意図の行ごとに 1 対)
+    assert len(pairs) == 4
+    one = pairs[0]
+    assert set(one["state"]) == {"owner_purpose", "judgment_quantity"}
+    assert "上がりすぎ下がりすぎ" in one["state"]["owner_purpose"]
+    assert "主指標" in one["state"]["judgment_quantity"]
+    assert [p["intent_id"] for p in pairs] == ["I-1", "I-3", "I-6", "I-12"]
+
+
+def test_control_vs_quantity_is_one_pair(tmp_path):
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    pairs = [p for p in J.extract_pairs(PREREG_MD, art) if p["kind"] == "control_vs_quantity"]
+    assert len(pairs) == 1
+    assert set(pairs[0]["state"]) == {"control_group", "judgment_quantity"}
+    assert "出発点の距離は合わせない" in pairs[0]["state"]["control_group"]
+    assert pairs[0]["state"]["control_group"] != pairs[0]["state"]["judgment_quantity"]
+
+
+def test_report_kinds_are_not_applied_to_a_prereg(tmp_path):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    kinds = _kinds(J.extract_pairs(PREREG_MD, art))
+    assert J.looks_like_report(PREREG_MD, art) is False
+    for kind in ("conclusion_vs_purpose", "other_cause_named", "direction_supported"):
+        assert kind not in kinds
+
+
+def test_looks_like_report(tmp_path):
+    art = _write(tmp_path, "RESULT_2026-09-19.md", "# 何か\n\n本文。\n")
+    assert J.looks_like_report(art.read_text(encoding="utf-8"), art) is True
+    art2 = _write(tmp_path, "x.md", RESULT_MD)     # 表題に「結果の読み」
+    assert J.looks_like_report(RESULT_MD, art2) is True
+    # 事前登録の §10「結果の読みで必ず出す表」はレベル 2 なので報告にしない
+    md = "# 事前登録\n\n## 10. 結果の読みで必ず出す表\n\n本文。\n"
+    art3 = _write(tmp_path, "PREREG_x.md", md)
+    assert J.looks_like_report(md, art3) is False
+
+
+def test_conclusion_lines_are_narrowed_and_capped(tmp_path):
+    rows = "\n".join(f"| 系統 {i} | 検出されず |" for i in range(15))
+    md = ("# 結果の読み\n\n## 0. 前置き\n\n差ありに見えるが前置きである。\n\n"
+          "## 1. 判定\n\n読みは反証である。\n\n" + rows + "\n")
+    lines = J.conclusion_lines(md)
+    assert len(lines) == J.MAX_CONCLUSION_LINES == 10
+    # 見出しに「判定 / 読み / なぜ」を含む節の外(§0 前置き)は拾わない
+    assert all("前置き" not in b for _ln, b in lines)
+    assert J.is_table_row(lines[-1][1]) is True
+
+
+def test_conclusion_vs_purpose_and_other_cause_pairs(tmp_path):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_MD)
+    pairs = J.extract_pairs(RESULT_MD, art)
+    concl = [p for p in pairs if p["kind"] == "conclusion_vs_purpose"]
+    other = [p for p in pairs if p["kind"] == "other_cause_named"]
+    assert concl and other
+    assert all(set(p["state"]) == {"report_conclusion", "owner_purpose"} for p in concl)
+    assert all(set(p["state"]) == {"report_conclusion", "conclusion_section"} for p in other)
+    assert any("反証" in p["state"]["report_conclusion"] for p in concl)
+
+
+def test_direction_supported_falls_back_to_the_prereg(tmp_path):
+    # 報告に 判定の量 / 対照 の節が無ければ、同じディレクトリの事前登録(名前順の最後)から取る
+    _write(tmp_path, "REACTION_PREREG_2026-09-18.md", PREREG_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_MD)
+    pairs = [p for p in J.extract_pairs(RESULT_MD, art) if p["kind"] == "direction_supported"]
+    assert len(pairs) == 1
+    assert set(pairs[0]["state"]) == {"report_conclusion", "judgment_quantity", "control_group"}
+    assert "逆" in pairs[0]["state"]["report_conclusion"]
+    assert pairs[0]["sections_from"] == "REACTION_PREREG_2026-09-18.md"
+    # 事前登録も無ければ作らない
+    alone = tmp_path / "alone"
+    alone.mkdir()
+    art2 = _write(alone, "RESULT.md", RESULT_MD)
+    assert [p for p in J.extract_pairs(RESULT_MD, art2)
+            if p["kind"] == "direction_supported"] == []
+
+
+def test_latest_prereg_is_the_last_by_name(tmp_path):
+    for name in ("REACTION_PREREG_2026-09-18.md", "REACTION_R2_PREREG_2026-09-19.md",
+                 "REACTION_PREREG_DRAFT_2026-09-18.md"):
+        _write(tmp_path, name, PREREG_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_MD)
+    assert J.latest_prereg(art).name == "REACTION_R2_PREREG_2026-09-19.md"
+
+
+def test_purpose_questions_and_violation_direction():
+    for kind, qid in [("purpose_vs_quantity", "quantity_measures_purpose"),
+                      ("control_vs_quantity", "quantity_confounded_by_start"),
+                      ("conclusion_vs_purpose", "conclusion_answers_purpose"),
+                      ("other_cause_named", "other_cause_named"),
+                      ("direction_supported", "conclusion_direction_supported")]:
+        q = J.question_for(kind, {})
+        assert list(q) == [qid]
+        assert q[qid]["type"] == "noul"
+        assert set(q[qid]["criteria"]) == {"true", "false"}
+    # 肯定形の問いは「1 - noul」が反する側。交絡の問いだけは true 側がそのまま反する側
+    answers = {"quantity_measures_purpose": {"noul": 0.07}}
+    assert J.violation_probability("purpose_vs_quantity", answers)[1] == pytest.approx(0.93)
+    answers = {"quantity_confounded_by_start": {"noul": 0.75}}
+    assert J.violation_probability("control_vs_quantity", answers)[1] == pytest.approx(0.75)
+    answers = {"other_cause_named": {"noul": 0.09}}
+    assert J.violation_probability("other_cause_named", answers)[1] == pytest.approx(0.91)
+
+
+def test_purpose_pairs_are_capped(tmp_path):
+    # 結論の行は 10 行で切れるので、対 4 は上限 40 に届かない(検収の指示 9)
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    body = "\n".join(f"- {i} 番目の判定は差ありである。" for i in range(60))
+    art = _write(tmp_path, "RESULT_many.md", "# 結果の読み\n\n## 1. 判定\n\n" + body + "\n")
+    dropped: dict = {}
+    pairs = J.extract_purpose_pairs(art.read_text(encoding="utf-8"), art, dropped)
+    assert J.MAX_PURPOSE_PAIRS == J.MAX_NEGATIVE_PAIRS == 40
+    assert sum(1 for p in pairs if p["kind"] == "other_cause_named") == 10
+    assert dropped == {}
+    # 集約する種類は「群」の数で切る(群を割らない)
+    many = [{"kind": "conclusion_vs_purpose", "anchor": i} for i in range(50) for _ in range(3)]
+    cut: dict = {}
+    kept = J._capped(many, J.MAX_PURPOSE_PAIRS, cut)
+    assert len({p["anchor"] for p in kept}) == 40
+    assert len(kept) == 120 and cut["conclusion_vs_purpose"] == 30
+
+
+def test_summary_line_reports_zero_purpose_pairs(tmp_path, fake_client, capsys):
+    art = _write(tmp_path, "plain.md", "# 覚書\n\n板が薄い。\n")
+    out = tmp_path / "out"
+    assert J.main(["audit", str(art), "--out", str(out), "--summary"]) == 0
+    last = capsys.readouterr().out.strip().splitlines()[-1]
+    assert "対 0 件" in last
+    assert "意図マップ: なし" in last
+
+
+def test_summary_line_lists_each_purpose_kind(tmp_path, fake_client, capsys):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    out = tmp_path / "out"
+    assert J.main(["audit", str(art), "--out", str(out), "--summary"]) == 0
+    last = capsys.readouterr().out.strip().splitlines()[-1]
+    for kind in J.PURPOSE_KINDS:
+        assert kind in last
+    assert "報告向けの 3 種は当てない" in last
+    summary = _read_jsonl(out / "PREREG.jsonl")[-1]
+    assert summary["purpose_pairs"]["purpose_vs_quantity"] == 4
+    assert summary["purpose_pairs"]["control_vs_quantity"] == 1
+    assert summary["purpose_inputs"]["intent_rows"] == 4
+
+
+def test_purpose_flag_is_one_aggregate_row(tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    out = tmp_path / "out"
+    # 既定の 0.1(= どの意図も直接測っていない)→ 集約の行に印が 1 件だけ付く
+    assert J.main(["audit", str(art), "--out", str(out)]) == 0
+    recs = _read_jsonl(out / "PREREG.jsonl")
+    pv = [r for r in recs if r["kind"] == "purpose_vs_quantity"]
+    singles = [r for r in pv if not r.get("aggregate")]
+    agg = [r for r in pv if r.get("aggregate")]
+    assert len(singles) == 4 and all(r["flag"] is False and r["reason"] == "aggregated"
+                                     for r in singles)
+    assert len(agg) == 1 and agg[0]["flag"] is True and agg[0]["n_in_group"] == 4
+    assert "最大 p の意図 = I-" in agg[0]["a"]
+    assert recs[-1]["flag_by_kind"]["purpose_vs_quantity"] == 1
+    assert recs[-1]["purpose_pairs"]["purpose_vs_quantity"] == 4  # 対の数は集約を含まない
+
+
+def test_purpose_aggregate_is_not_flagged_when_one_intent_is_measured(
+        tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    out = tmp_path / "out"
+    fake_client.noul_by_qid = {"quantity_measures_purpose": 0.8}
+    assert J.main(["audit", str(art), "--out", str(out)]) == 0
+    agg = [r for r in _read_jsonl(out / "PREREG.jsonl")
+           if r["kind"] == "purpose_vs_quantity" and r.get("aggregate")]
+    assert len(agg) == 1 and agg[0]["flag"] is False
+    assert agg[0]["reason"] == "some_intent_is_directly_measured"
+
+
+def test_purpose_state_has_named_fields_only(tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "PREREG.md", PREREG_MD)
+    out = tmp_path / "out"
+    assert J.main(["audit", str(art), "--out", str(out)]) == 0
+    sent = [s for s, q in fake_client.calls if "owner_purpose" in s]
+    assert sent
+    assert all("fragment_a" not in s for s in sent)
+
+
+# ---------------------------------------------------------------------------
+# 今日の実物(設計は同じディレクトリ)
+# ---------------------------------------------------------------------------
+_PREREG = REPO / "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md"
+
+
+@pytest.mark.skipif(not _PREREG.is_file(), reason="実物が無い")
+def test_real_prereg_makes_purpose_pairs():
+    text = _PREREG.read_text(encoding="utf-8")
+    stats: dict = {}
+    pairs = J.extract_pairs(text, _PREREG, stats)
+    assert stats["purpose_inputs"]["intent_rows"] > 0
+    assert stats["purpose_pairs"]["purpose_vs_quantity"] > 0
+    assert stats["purpose_pairs"]["control_vs_quantity"] > 0
+    assert any("上がりすぎ下がりすぎ" in p["state"]["owner_purpose"]
+               for p in pairs if p["kind"] == "purpose_vs_quantity")

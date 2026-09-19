@@ -449,3 +449,134 @@ def test_output_never_says_stop_or_pass(tmp_path, fake_client, capsys):
     printed = capsys.readouterr().out
     assert "止める" not in printed and "通す" not in printed
     assert "印であって判断ではない" in printed
+
+
+# ---------------------------------------------------------------------------
+# 問いと測定の照合(報告向けの 3 種。`docs/JEV.md` §9)
+# ---------------------------------------------------------------------------
+DESIGN_INTENT_MD = """# 段 A の設計
+
+## 8. INTENT_MAP(原文の意図 1 項 × この設計の要素)
+
+| # | 原文の意図(逐語) | この設計の要素 | 印 | 備考 |
+|---|---|---|---|---|
+| I-1 | 「**清算の監視による値段の上がりすぎ下がりすぎやトレンド転換を捉えることができるか確認**」 | §3 (a)(b)(c) | **△** | 代理 |
+| I-3 | 「**海外取引所の高レバ市場**」 | Binance COIN-M | **○** | |
+| I-17 | (原文に無い) | §4 E | **＋** | ここは取らない |
+"""
+
+RESULT_WITH_CONTROL_MD = """# 結果の読み
+
+## 1. 判定
+
+**F1 の読み = 「F1 の反証」**。戻り到達は対照より低く、想定とは逆の向きが出た。
+
+## 2. 主指標
+
+主指標 = 戻り到達(W 時間 VWAP へ h 分以内に戻ったか)の割合。
+
+## 3. 帰無(対照群)
+
+ビンの薄さだけを 1 対 1 に合わせる(出発点の距離は合わせていない)。
+
+## 4. なぜそうなるのか
+
+候補 1: 機構にエッジが無い。差ありは 1 セルだけである。
+"""
+
+
+def test_report_purpose_kinds_are_built(tmp_path):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_WITH_CONTROL_MD)
+    stats: dict = {}
+    jobs = I.build_jobs(RESULT_WITH_CONTROL_MD, None, art, stats)
+    kinds = {j["kind"] for j in jobs}
+    assert I.REPORT_PURPOSE_KINDS == ("conclusion_vs_purpose", "other_cause_named",
+                                      "direction_supported")
+    assert set(I.REPORT_PURPOSE_KINDS) <= kinds
+    # 事前登録向けの 2 種は前段 `jev_check.py` の担当なので、この道具は当てない
+    assert "purpose_vs_quantity" not in kinds
+    assert "control_vs_quantity" not in kinds
+    assert stats["purpose_inputs"]["intent_rows"] == 2  # ○ / △ のみ(＋ は取らない)
+    # 結論の行は「判定 / 読み / なぜ」の節の中の判定語の行だけ、上限 10
+    assert stats["purpose_inputs"]["conclusion_lines"] <= J.MAX_CONCLUSION_LINES
+    # 対 3 は 結論の行 × 意図の行
+    assert (stats["purpose_pairs"]["conclusion_vs_purpose"]
+            == stats["purpose_inputs"]["conclusion_lines"] * 2)
+    concl = [j for j in jobs if j["kind"] == "conclusion_vs_purpose"]
+    assert all(set(j["state"]) == {"report_conclusion", "owner_purpose"} for j in concl)
+    direction = [j for j in jobs if j["kind"] == "direction_supported"]
+    assert all(set(j["state"]) == {"report_conclusion", "judgment_quantity", "control_group"}
+               for j in direction)
+
+
+def test_report_purpose_kinds_absent_without_artifact():
+    stats: dict = {}
+    jobs = I.build_jobs(RESULT_WITH_CONTROL_MD, None, None, stats)
+    assert all(j["kind"] not in I.REPORT_PURPOSE_KINDS for j in jobs)
+    assert stats["purpose_pairs"] == {k: 0 for k in I.REPORT_PURPOSE_KINDS}
+
+
+def test_summary_line_reports_zero_purpose_pairs(tmp_path, fake_client, capsys):
+    art = _write(tmp_path, "plain.md", "# 覚書\n\n板が薄い。\n")
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--out", str(out), "--summary"]) == 0
+    last = capsys.readouterr().out.strip().splitlines()[-1]
+    assert "対 0 件" in last
+
+
+def test_purpose_records_carry_probability_and_flag(tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_WITH_CONTROL_MD)
+    out = tmp_path / "out"
+    fake_client.noul_by_qid = {"conclusion_answers_purpose": 0.27,
+                               "other_cause_named": 0.09,
+                               "conclusion_direction_supported": 0.05}
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    records = _read_jsonl(out / "RESULT.jsonl")
+    concl = [r for r in records if r["kind"] == "conclusion_vs_purpose"
+             and not r.get("aggregate")]
+    assert concl and all(r["violation_probability"] == pytest.approx(0.73) for r in concl)
+    # 個々の対には印を付けない。印は結論の行ごとの集約の行に 1 件
+    assert all(r["flag"] is False and r["reason"] == "aggregated" for r in concl)
+    agg = [r for r in records if r["kind"] == "conclusion_vs_purpose" and r.get("aggregate")]
+    assert agg and all(r["flag"] is True for r in agg)
+    assert len(agg) == len({r["anchor"] for r in concl})
+    other = [r for r in records if r["kind"] == "other_cause_named"]
+    assert other and all(r["violation_probability"] == pytest.approx(0.91) for r in other)
+    assert all(r["flag"] is True for r in other)   # 対 4 は集約しない
+    summary = records[-1]
+    assert summary["purpose_pairs"]["conclusion_vs_purpose"] == len(concl)
+
+
+# ---------------------------------------------------------------------------
+# 今日の実物(報告の初版 `git show 4292fea:...`)
+# ---------------------------------------------------------------------------
+def _real_report(tmp_path: Path) -> Path | None:
+    import subprocess
+    rel = "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_RESULT_2026-09-19.md"
+    r = subprocess.run(["git", "show", f"4292fea:{rel}"], cwd=REPO,
+                       capture_output=True, text=True)
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    return _write(tmp_path, "REACTION_RESULT_v1.md", r.stdout)
+
+
+def test_real_first_report_makes_purpose_pairs(tmp_path):
+    art = _real_report(tmp_path)
+    if art is None:
+        pytest.skip("初版の報告が git に無い")
+    design = REPO / "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md"
+    if design.is_file():
+        _write(tmp_path, design.name, design.read_text(encoding="utf-8"))
+    stats: dict = {}
+    jobs = I.build_jobs(art.read_text(encoding="utf-8"), None, art, stats)
+    n = sum(stats["purpose_pairs"].values())
+    assert n > 0, stats
+    assert stats["purpose_pairs"]["other_cause_named"] > 0
+    if design.is_file():
+        assert stats["purpose_inputs"]["intent_rows"] > 0
+        assert stats["purpose_pairs"]["conclusion_vs_purpose"] > 0
+    assert any(j["kind"] in I.REPORT_PURPOSE_KINDS for j in jobs)
+    # 対 5 は報告に 判定の量 / 対照 の節が無いので事前登録から取る(出所を記録に残す)
+    assert stats["purpose_inputs"]["conclusion_lines"] <= J.MAX_CONCLUSION_LINES
