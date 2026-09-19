@@ -1759,12 +1759,12 @@
   {
    "move": 66,
    "tools": {
-    "Bash": 5,
+    "Bash": 6,
     "Write": 4,
     "Read": 1,
     "Agent": 2
    },
-   "n_tools": 12,
+   "n_tools": 13,
    "read_goal": true,
    "first_write_at": 2,
    "table_shown": false,

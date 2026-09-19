@@ -1,4 +1,4 @@
-# 清算を起点とした値動きの予測可能性(SIGNAL、2026-09-19)。候補の観測量 = 1 周目の表にある列(定義は設計 §3 と scripts/o3c_reaction.py)。
+# 清算を起点とした値動きの予測可能性(SIGNAL、2026-09-19)。候補の観測量 = 1 周目の表にある列、または列から作る量(reversal_fraction は bp_reactdir から作る群の割合。fwd_node は大半の束で未定義)。定義は設計 §3 と scripts/o3c_reaction.py。
 # jev_design.py rank-observables の入力。定義の文は英語(Jev は CJK が弱い。手引き §2)。
 bp_reactdir: "signed price change h minutes after the cascade, in basis points; negative = price moved against the cascade direction (reversal), positive = continued in the cascade direction; defined for every cascade"
 reversal_fraction: "the share of cascades whose signed price change h minutes later is negative (moved against the cascade direction); a rate per group of cascades"
