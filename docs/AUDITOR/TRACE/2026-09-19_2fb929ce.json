@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/2fb929ce-03cc-51a2-b395-7c71362d5555.jsonl",
- "n_moves": 11,
+ "n_moves": 13,
  "moves": [
   {
    "move": 1,
@@ -288,6 +288,59 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 12,
+   "tools": {
+    "Bash": 7
+   },
+   "n_tools": 7,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": true,
+   "claims_without_output": 1,
+   "claims_total": 2,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 13,
+   "tools": {
+    "Bash": 3,
+    "Agent": 1
+   },
+   "n_tools": 4,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
@@ -302,9 +355,9 @@
    "value": 0.5
   },
   "P3_claim_with_output": {
-   "num": 7,
-   "den": 14,
-   "value": 0.5
+   "num": 8,
+   "den": 17,
+   "value": 0.4706
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -312,9 +365,9 @@
    "value": 0.0
   },
   "P5_tools_per_move": {
-   "median": 9.0,
+   "median": 7.5,
    "max": 40,
-   "n": 8
+   "n": 10
   },
   "P6_findings_applied": {
    "num": 1,
