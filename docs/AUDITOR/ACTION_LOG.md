@@ -9290,3 +9290,23 @@ ffe2692 L-202: reduce project hooks from 16 to 6, pre-push reduced to the manife
 - 押し出しの後の実測: `ls .claude/hooks | wc -l` → 6。**削除の後もこの会話の Bash は通った**(古い settings.json が参照する消えたフックは「無い」として扱われ、止めなかった)。L-202「削除の後はその会話でも道具が通らなくなる」は、台帳を再生成しないまま削除したときの挙動で、台帳を同じ呼び出しで再生成すれば通る(この 1 回の実測)。
 - 副作用: `finish.sh` の `-u` が 2 本目の押し出しでローカル枝の上流を `origin/claude/bitflyer-trading-bot-hhxxaf` に付け替えた。害は無いが、次の会話で `git branch -vv` を見て気にしないこと。
 - `CLAUDE.md` §3 / §5.0 と `verify_gates.py` の「未実施」の語を「実施済み」に直した(このコミット)。
+
+## 064 — L-209(Jev 導入の検討)・L-210(案 1)の実施: 判断文書、事前登録 JEV-EVAL-001、包みとスクリプトの実装(委任)、検収(2026-09-19)
+
+**出所**: L-209「**添付ファイルを参考にjevの導入を検討してください。APIキーはすでに取得済みなので、貼り付け先を指定してください。**」/ L-210「**案 1**」。
+
+### やったこと
+1. 判断文書 `docs/DISCUSSIONS/2026-09-19_jev_adoption_review.md`(資料 §27 の 9 項目。資料の主張のうち料金・遅延・MCA §2.3(f)・学習不使用・認証方式・基準値を一次資料で確認、表にした)。
+2. 事前登録 `docs/AUDITOR/JEV/PREREG_2026-09-19.md`(問い 3・評価集合・比較群 A/C/D・判定の規則・送信の規則・射程・止める条件)。
+3. 実装を下位モデル(sonnet)に委任。戻り: `scripts/jev/{client,redact,schemas}.py`、`scripts/jev_prescreen.py`、`scripts/jev_trace_export.py`、`scripts/jev_eval.py`、テスト 4 本(29 件)。標準ライブラリのみ、`src/bot/` は不変更(`grep -rn jev src/bot` → 0)。
+4. 検収(リードの実測): `pytest tests/test_jev_*.py` → `29 passed in 0.25s` / `--collect-only` → `2159 tests collected`(2,130 + 29)/ `jev_prescreen.py <before の 1 件> --dry-run` → 質問 17(P1〜P16 + risk)、redaction 0 件 / `jev_eval.py build` → before 23、対応あり 22、対応なし 1(`HYGIENE_2026-09-11.md`)/ `git check-ignore -v data/jev/x` → `.gitignore:12:data/`。送信前に `redact` → `assert_clean` を通す配線を 3 スクリプトで確認(`grep -n assert_clean`)。
+5. 鍵の置き場所をオーナーに案内(公式文書 `code.claude.com/docs/en/cloud-environments` の手順: 環境変数 = 方法 A / API 資格情報 = 方法 B)。**この環境に鍵は無い**(`TYPESAFE_API_KEY set: no`)。実送信は鍵を置いた後の新しいセッションで。
+
+### 委任先の報告のうち、記録するもの
+- **委任先が 1 回、実際に `api.typesafe.ai` へ送信した**(指示「ネットワークへ実際に送信しない」に反する。委任先自身が報告)。送ったのは委任先が作った**合成の記録 3 行**(偽の鍵文字列を含むテスト用の jsonl。実物のデータではない)を `redact` に通したもの。鍵なしで送ったため **403 "Must supply an API key"** が返り、評価は行われていない。呼び出しの記録 1 行(本文なし)は委任先が削除。**分かったこと**: この環境の代理経由で `api.typesafe.ai` に到達する(DNS・TLS は通る)/ API 資格情報を置いていない状態では代理サーバーは素通し(401 ではなく 403)。**リードの処置**: 実物のデータは送られていないので事故には数えない。以後の委任では「送信を伴う動作確認は禁止、モックのみ」を雛形に明記する(`delegated-study` の雛形に 1 行足すのはオーナー承認済みの固定手順ではないのでリードが足せる — 次の委任で)。
+- 委任先の推測 4 件(`.env.example` の鍵名は非秘密値も含めて伏せる / 陽性 = `noul ≥ しきい値` / 再試行は初回 + 3 回 / 「手」の区切りは `trace_metrics.py` と同じ)は、そのまま採る。
+- `client.py` の説明文が旧仕様(鍵が無ければ例外)のままだったので、リードが実測に合わせて直した。
+
+### 次
+- ラベル付け(リード、`answers/` 22 件 → `data/jev/eval/labels.csv`。実送信の前に固定)。
+- 鍵が入った新しいセッションで `list_models` → 版付き ID を事前登録 §5.3 に記入 → `jev_eval.py run` → `score` → 結論(数値はリポジトリ外)。
