@@ -43,6 +43,7 @@ from scripts.jev.redact import RedactionError, assert_clean, redact_json  # noqa
 ATTENTION = 0.35  # これ以上なら「要確認」の印を付ける(印を付けるだけで、何も止めない)
 PRESENCE = 0.50   # 「そもそも不在の主張か」の分かれ目(negative_claim の 2 問目)
 MAX_NEGATIVE_PAIRS = 40  # 1 文書あたりの negative_claim の対の上限(超えた分は切る)
+MAX_DEFS_PER_SYMBOL = 8  # 同じ記号の定義文は最初の 1 件と後続 (最大 8 件) の対にする(全 2 点組は大きい文書で爆発する: 2026-09-19 実測 79,001 対)
 DEFAULT_MODEL = "jev-1.13.0"
 DEFAULT_OUT_DIR = REPO / "data" / "jev" / "check"
 MAX_FRAGMENT_CHARS = 2_000
@@ -297,7 +298,9 @@ def extract_symbol_definitions(text: str) -> list[dict]:
             uniq.append((ln, s))
         if len(uniq) < 2:
             continue
-        for (ln_a, s_a), (ln_b, s_b) in itertools.combinations(uniq, 2):
+        # 最初の定義 × 後続の定義(先頭 MAX_DEFS_PER_SYMBOL 件)。全 2 点組にしない。
+        first = uniq[0]
+        for (ln_a, s_a), (ln_b, s_b) in ((first, other) for other in uniq[1:1 + MAX_DEFS_PER_SYMBOL]):
             pairs.append({
                 "kind": "symbol_definition",
                 "anchor": ln_a,
