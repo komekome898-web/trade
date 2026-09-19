@@ -34,25 +34,20 @@ for h in (5,15,240):
 w0=[r for r in liq if f(r['bundle_width_ms'])==0 and f(r['bundle_n_events_dedup'])==1]
 v=[f(r['bp_1m_reactdir']) for r in w0 if f(r['bp_1m_reactdir']) is not None]
 print(f'幅0・単発 n={len(w0)} ({len(w0)/len(liq):.4f}) 1分平均 {sum(v)/len(v):.3f}')
-# 4. 対照(一様)の日平均に束の符号 → h=240
-sgn=lambda s: -1.0 if s=='SELL' else 1.0
-liq_by_day=collections.defaultdict(list)
-for r in liq: liq_by_day[r['day']].append(sgn(r['side']))
-# 対照 (i) 一様: 生の bp 列名を確認
-raw=[c for c in rows[0].keys() if c.startswith('bp_240m') and 'reactdir' not in c]
+# 4. 対照の符号。道具と同じ定義: r = bp × sgn(相手の side)、sgn(SELL) = −1 / sgn(BUY) = +1(= 清算行の reactdir = −bp×(SELL:+1, BUY:−1) と同じ向き)。
+#    対照行の *_reactdir 列は side が空欄で符号 +1 のまま入っている(scripts/o3c_signal_explore.py の注記)ので、そのまま平均しない(2 回目の監査の指摘 1 で直した)。
+sg=lambda side: -1.0 if side=='SELL' else 1.0
+cid={r['cascade_id']:r['side'] for r in liq}
+raw=[c for c in rows[0].keys() if c.startswith('bp_240m') and 'reactdir' not in c and not c.endswith('_abs')]
 print('生の 240m 列:',raw)
+cm240=[f(r[raw[0]])*sg(cid[r['matched_liq_id']]) for r in cm if f(r[raw[0]]) is not None and r['matched_liq_id'] in cid]
+print(f'対照(ii) h=240 相手の側で符号を付けた平均 {sum(cm240)/len(cm240):+.3f} n={len(cm240)}')
 cu_day=collections.defaultdict(list)
 for r in cu:
     x=f(r[raw[0]])
     if x is not None: cu_day[r['day']].append(x)
-acc=[]
-for r in liq:
-    d=r['day']
-    if cu_day.get(d): acc.append(-sgn(r['side'])*sum(cu_day[d])/len(cu_day[d]))  # reactdir = -bp*(SELL:+1,BUY:-1) = bp*sgn? 確認用に両符号を出す
-print(f'対照(一様) 日平均×束の符号 h=240: {sum(acc)/len(acc):+.3f}(符号の向きは下の対照(ii)と同じ定義に合わせて読む)')
-# 対照 (ii) の h=240 平均(道具の定義: 相手の side を借りる)
-cm240=[f(r['bp_240m_reactdir']) for r in cm if f(r['bp_240m_reactdir']) is not None]
-print(f'対照(ii) h=240 reactdir 平均 {sum(cm240)/len(cm240):+.3f} n={len(cm240)}')
+acc=[sg(r['side'])*sum(cu_day[r['day']])/len(cu_day[r['day']]) for r in liq if cu_day.get(r['day'])]
+print(f'対照(一様) 日平均 × 束の符号 h=240: {sum(acc)/len(acc):+.3f}(同じ定義)')
 # 5. bitFlyer の反応(清算側)
 for h in (1,5,15):
     v=[f(r[f'bf_bp_{h}m_reactdir']) for r in liq if f(r[f'bf_bp_{h}m_reactdir']) is not None]
