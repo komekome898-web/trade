@@ -3,64 +3,6 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/agent_delegation_reminder.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/prereg_source_reminder.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/git_push_audit_reminder.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Read|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/budget_delegation_reminder.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/action_audit_gate.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__github__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/action_audit_gate.sh --mcp"
-          }
-        ]
-      },
-      {
         "matcher": "Write|Edit|Agent",
         "hooks": [
           {
@@ -86,16 +28,6 @@
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_options_gate.sh",
             "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/move_budget.sh",
-            "timeout": 5
           }
         ]
       }
@@ -136,16 +68,6 @@
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_options_gate.sh",
             "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/move_budget.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/readdo_notice.sh",
-            "timeout": 5
           }
         ]
       }
@@ -155,38 +77,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/reply_audit_gate.sh",
-            "timeout": 20
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/trace_snapshot.sh",
             "timeout": 30
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/universal_claim_notice.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Task|Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/readdo_notice.sh",
-            "timeout": 5
           }
         ]
       }
