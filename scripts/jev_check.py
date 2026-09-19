@@ -41,6 +41,8 @@ from scripts.jev.redact import RedactionError, assert_clean, redact_json  # noqa
 # 定数(しきい値はこの 1 箇所だけ)
 # ---------------------------------------------------------------------------
 ATTENTION = 0.35  # これ以上なら「要確認」の印を付ける(印を付けるだけで、何も止めない)
+PRESENCE = 0.50   # 「そもそも不在の主張か」の分かれ目(negative_claim の 2 問目)
+MAX_NEGATIVE_PAIRS = 40  # 1 文書あたりの negative_claim の対の上限(超えた分は切る)
 DEFAULT_MODEL = "jev-1.13.0"
 DEFAULT_OUT_DIR = REPO / "data" / "jev" / "check"
 MAX_FRAGMENT_CHARS = 2_000
@@ -325,6 +327,27 @@ def extract_number_vs_source(text: str, artifact: Path) -> list[dict]:
     return list(found.values())
 
 
+def cap_negative_claims(pairs: list[dict]) -> tuple[list[dict], int]:
+    """`negative_claim` の対が `MAX_NEGATIVE_PAIRS` を超えたら先頭だけ残す。
+
+    正規表現は広く拾う方針のまま(選ぶのは Jev の `is_unavailability_claim`)なので、
+    1 文書あたりの要求数だけを頭打ちにする。戻り値は (残した対, 落とした件数)。
+    """
+    kept: list[dict] = []
+    n_neg = 0
+    n_dropped = 0
+    for pair in pairs:
+        if pair["kind"] != "negative_claim":
+            kept.append(pair)
+            continue
+        n_neg += 1
+        if n_neg <= MAX_NEGATIVE_PAIRS:
+            kept.append(pair)
+        else:
+            n_dropped += 1
+    return kept, n_dropped
+
+
 def extract_pairs(text: str, artifact: Path) -> list[dict]:
     pairs: list[dict] = []
     pairs += extract_negative_claims(text)
@@ -363,7 +386,29 @@ def question_for(kind: str, pair: dict) -> dict:
                         "not exist\" with nothing said about what was tried."
                     ),
                 },
-            }
+            },
+            # presence は別の問いに分ける(ベンダー: 「use a separate presence judgment when it is
+            # independently useful」)。同じ state への独立した問いなので 1 要求にまとめる。
+            "is_unavailability_claim": {
+                "type": "noul",
+                "instructions": (
+                    "`fragment_a` asserts that some data, route, resource or action is unavailable, "
+                    "nonexistent, unobtainable or impossible (as opposed to an ordinary negated "
+                    "statement such as 'does not apply', 'is not used', 'did not change')."
+                ),
+                "criteria": {
+                    "true": (
+                        "The sentence says something cannot be had or does not exist. Example: "
+                        "\"no free liquidation archive exists anywhere\", or \"OKX open-interest "
+                        "history cannot be obtained\"."
+                    ),
+                    "false": (
+                        "The sentence merely negates an ordinary statement. Example: \"this rule does "
+                        "not apply to 30-minute bars\", \"the value did not change\", or \"we do not "
+                        "use the taker side\"."
+                    ),
+                },
+            },
         }
     if kind == "symbol_definition":
         term = pair.get("term", "")
@@ -441,6 +486,27 @@ def flag_for(p: float) -> bool:
     return p >= ATTENTION
 
 
+def presence_probability(kind: str, answers: dict) -> float | None:
+    """`negative_claim` の 2 問目(そもそも不在の主張か)の確率。他の種類では None。"""
+    if kind != "negative_claim":
+        return None
+    return float(answers["is_unavailability_claim"]["noul"])
+
+
+def decide_flag(kind: str, viol: float, presence: float | None) -> tuple[bool, str | None]:
+    """(印, 印を付けなかった理由)。
+
+    `negative_claim` は **presence と scope の両方**を満たしたときだけ印を付ける
+    (`is_unavailability_claim >= PRESENCE` かつ `scope_and_method_attached <= 1 - ATTENTION`
+    = 反する側 >= `ATTENTION`)。presence が足りない対も**捨てず**に理由付きで残す。
+    """
+    if kind == "negative_claim":
+        if presence is None or presence < PRESENCE:
+            return False, "not_unavailability_claim"
+        return flag_for(viol), None
+    return flag_for(viol), None
+
+
 def flag_counts(records: list[dict]) -> tuple[int, dict[str, int]]:
     """(印の付いた対の件数, 種類ごとの内訳)。"""
     by_kind: dict[str, int] = {}
@@ -495,7 +561,7 @@ def cmd_audit(args) -> int:
         print(f"[jev_check] 成果物が無い: {artifact}", file=sys.stderr)
         return 1
     text = artifact.read_text(encoding="utf-8", errors="replace")
-    pairs = extract_pairs(text, artifact)
+    pairs, n_truncated = cap_negative_claims(extract_pairs(text, artifact))
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -521,7 +587,9 @@ def cmd_audit(args) -> int:
             "question": None,
             "probability": None,
             "violation_probability": None,
+            "presence_probability": None,
             "flag": False,
+            "reason": None,
             "sent": False,
         }
         if "term" in pair:
@@ -557,10 +625,14 @@ def cmd_audit(args) -> int:
         n_requests += 1
         answers = resp.get("answers") or {}
         qid, viol = violation_probability(pair["kind"], answers)
+        presence = presence_probability(pair["kind"], answers)
         rec["question"] = qid
         rec["probability"] = answers.get(qid)
         rec["violation_probability"] = round(viol, 4)
-        rec["flag"] = flag_for(viol)
+        if presence is not None:
+            rec["presence_probability"] = round(presence, 4)
+            rec["presence_answer"] = answers.get("is_unavailability_claim")
+        rec["flag"], rec["reason"] = decide_flag(pair["kind"], viol, presence)
         rec["sent"] = True
         rec["model"] = resp.get("model")
         records.append(rec)
@@ -579,6 +651,7 @@ def cmd_audit(args) -> int:
         "n_requests": n_requests,
         "n_flag": n_flag,
         "flag_by_kind": by_kind,
+        "truncated_pairs": n_truncated,
         "dry_run": bool(args.dry_run),
         "unreachable": unreachable,
         "threshold": {"attention": ATTENTION},
@@ -608,6 +681,8 @@ def summary_line(summary: dict) -> str:
 def _print_table(artifact: Path, records: list[dict], summary: dict) -> None:
     print(f"成果物: {artifact.name}  対の数: {summary['n_pairs']}  "
           f"送った要求の数: {summary['n_requests']}"
+          + (f"  切った negative_claim: {summary['truncated_pairs']} 件"
+             if summary.get("truncated_pairs") else "")
           + ("  (--dry-run: 1 件も送っていない)" if summary["dry_run"] else ""))
     counts: dict[str, int] = {}
     for rec in records:

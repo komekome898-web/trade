@@ -192,6 +192,84 @@ def test_violation_probability_choice_uses_contradicts():
     assert p == pytest.approx(0.85)
 
 
+def test_presence_composition_boundary():
+    """negative_claim は presence と scope の**両方**を満たしたときだけ印が付く。"""
+    assert J.PRESENCE == 0.50
+    # presence が足りない: 印は付かず、理由が残る(捨てない)
+    assert J.decide_flag("negative_claim", 0.9, 0.49) == (False, "not_unavailability_claim")
+    assert J.decide_flag("negative_claim", 0.9, None) == (False, "not_unavailability_claim")
+    # presence 丁度 0.50 は満たす側
+    assert J.decide_flag("negative_claim", 0.9, J.PRESENCE) == (True, None)
+    # presence は満たすが scope は満たさない(反する側が ATTENTION 未満)
+    assert J.decide_flag("negative_claim", 0.3499, 0.9) == (False, None)
+    assert J.decide_flag("negative_claim", J.ATTENTION, 0.9) == (True, None)
+    # scope_and_method_attached <= 1 - ATTENTION が境界(noul=0.65 は印が付く側)
+    _qid, viol = J.violation_probability(
+        "negative_claim", {"scope_and_method_attached": {"type": "noul", "noul": 0.65}})
+    assert J.decide_flag("negative_claim", viol, 0.9) == (True, None)
+    _qid, viol = J.violation_probability(
+        "negative_claim", {"scope_and_method_attached": {"type": "noul", "noul": 0.66}})
+    assert J.decide_flag("negative_claim", viol, 0.9) == (False, None)
+    # 他の種類は presence を見ない
+    assert J.decide_flag("scope_vs_bar", 0.4, None) == (True, None)
+    assert J.decide_flag("scope_vs_bar", 0.2, None) == (False, None)
+
+
+def test_presence_probability_only_for_negative_claim():
+    assert J.presence_probability(
+        "negative_claim", {"is_unavailability_claim": {"type": "noul", "noul": 0.7}}) == 0.7
+    assert J.presence_probability("scope_vs_bar", {}) is None
+
+
+def test_negative_claim_keeps_both_probabilities(tmp_path, fake_client):
+    fake_client.noul_by_qid = {"is_unavailability_claim": 0.49}
+    art = _write(tmp_path, "neg.md", NEGATIVE_MD)
+    out = tmp_path / "out"
+    assert J.main(["audit", str(art), "--out", str(out)]) == 0
+    negs = [r for r in _read_jsonl(out / "neg.jsonl") if r["kind"] == "negative_claim"]
+    assert negs
+    for rec in negs:
+        assert rec["presence_probability"] == 0.49
+        assert rec["violation_probability"] == pytest.approx(0.9)
+        assert rec["flag"] is False
+        assert rec["reason"] == "not_unavailability_claim"
+    # 1 対 = 1 要求、その 1 要求に 2 問
+    state, questions = fake_client.calls[0]
+    assert set(questions) == {"scope_and_method_attached", "is_unavailability_claim"}
+    assert len(fake_client.calls) == len(negs)
+
+
+def test_negative_claim_flags_when_both_conditions_hold(tmp_path, fake_client):
+    art = _write(tmp_path, "neg.md", NEGATIVE_MD)
+    out = tmp_path / "out"
+    assert J.main(["audit", str(art), "--out", str(out)]) == 0
+    negs = [r for r in _read_jsonl(out / "neg.jsonl") if r["kind"] == "negative_claim"]
+    assert negs and all(r["flag"] is True and r["reason"] is None for r in negs)
+
+
+def test_negative_claim_pairs_are_capped_at_40(tmp_path):
+    body = "\n\n".join(f"{i} 番目の経路は存在しない。" for i in range(45))
+    art = _write(tmp_path, "many.md", "# 報告\n\n" + body + "\n")
+    pairs = J.extract_pairs(art.read_text(encoding="utf-8"), art)
+    assert sum(1 for p in pairs if p["kind"] == "negative_claim") == 45
+    kept, n_dropped = J.cap_negative_claims(pairs)
+    assert J.MAX_NEGATIVE_PAIRS == 40
+    assert sum(1 for p in kept if p["kind"] == "negative_claim") == 40
+    assert n_dropped == 5
+    # negative_claim 以外は 1 件も落ちない
+    assert ([p["kind"] for p in kept if p["kind"] != "negative_claim"]
+            == [p["kind"] for p in pairs if p["kind"] != "negative_claim"])
+
+
+def test_truncated_pairs_is_recorded(tmp_path, fake_client):
+    body = "\n\n".join(f"{i} 番目の経路は存在しない。" for i in range(45))
+    art = _write(tmp_path, "many.md", "# 報告\n\n" + body + "\n")
+    out = tmp_path / "out"
+    assert J.main(["audit", str(art), "--out", str(out), "--dry-run"]) == 0
+    summary = _read_jsonl(out / "many.jsonl")[-1]
+    assert summary["truncated_pairs"] == 5
+
+
 def test_flag_counts_is_counts_and_kinds_only():
     total, by_kind = J.flag_counts([
         {"kind": "negative_claim", "flag": True},
@@ -204,8 +282,12 @@ def test_flag_counts_is_counts_and_kinds_only():
     assert J.flag_counts([]) == (0, {})
 
 
-def test_questions_are_one_per_kind():
-    assert list(J.question_for("negative_claim", {})) == ["scope_and_method_attached"]
+def test_questions_per_kind():
+    # negative_claim だけ 2 問(presence の判定を別の問いに分ける)。同じ state なので 1 要求。
+    q = J.question_for("negative_claim", {})
+    assert list(q) == ["scope_and_method_attached", "is_unavailability_claim"]
+    assert q["is_unavailability_claim"]["type"] == "noul"
+    assert set(q["is_unavailability_claim"]["criteria"]) == {"true", "false"}
     assert list(J.question_for("symbol_definition", {"term": "sd"})) == ["same_meaning"]
     for kind in ("scope_vs_bar", "intent_vs_measured", "why_section"):
         q = J.question_for(kind, {})
@@ -222,20 +304,28 @@ class _FakeClient:
     def __init__(self, model=None, **kwargs):
         self.model = model
 
+    # 既定: scope は 0.1(= 反する側 0.9)、presence は 0.9(不在の主張である)
+    noul_by_qid: dict = {}
+
     def evaluate(self, state, questions):
         _FakeClient.calls.append((state, questions))
-        qid = next(iter(questions))
-        if questions[qid]["type"] == "noul":
-            return {"model": "fake", "answers": {qid: {"type": "noul", "noul": 0.1}}}
-        return {"model": "fake", "answers": {qid: {
-            "type": "choice", "choice": "contradicts",
-            "probabilities": {"consistent": 0.1, "contradicts": 0.85, "unrelated": 0.05},
-        }}}
+        answers = {}
+        for qid, spec in questions.items():
+            if spec["type"] == "noul":
+                default = 0.9 if qid == "is_unavailability_claim" else 0.1
+                answers[qid] = {"type": "noul",
+                                "noul": _FakeClient.noul_by_qid.get(qid, default)}
+            else:
+                answers[qid] = {"type": "choice", "choice": "contradicts",
+                                "probabilities": {"consistent": 0.1, "contradicts": 0.85,
+                                                  "unrelated": 0.05}}
+        return {"model": "fake", "answers": answers}
 
 
 @pytest.fixture
 def fake_client(monkeypatch):
     _FakeClient.calls = []
+    _FakeClient.noul_by_qid = {}
     monkeypatch.setattr(J, "JevClient", _FakeClient)
     return _FakeClient
 
