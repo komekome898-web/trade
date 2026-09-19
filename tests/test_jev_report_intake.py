@@ -154,6 +154,19 @@ def test_why_heading_present_and_absent():
     assert why["flag"] is True and why["reason"] == "missing"
 
 
+def test_why_heading_is_only_flagged_for_research():
+    """survey / implementation のテンプレートに「なぜ」の節は無いので印を付けない。
+
+    検査そのものは残し、当てなかった種類では理由を記録に書く(捨てない)。
+    """
+    assert I.WHY_SECTION_KINDS == ("research",)
+    for kind in ("survey", "implementation"):
+        why = [r for r in I.code_records(VERDICT_MD, kind) if r["kind"] == "why_heading"][0]
+        assert why["flag"] is False, kind
+        assert why["reason"] == "not_applicable_for_kind", kind
+        assert why["headings"] == []
+
+
 # ---------------------------------------------------------------------------
 # 1(c) 判定の語の抽出(code)
 # ---------------------------------------------------------------------------
@@ -174,6 +187,50 @@ def test_numbers_present_in_tables_code_or_quotes_are_not_listed():
     assert "12" not in nums, "コードブロックにある数値は突き合わせ先にある"
     assert "55" not in nums, "引用にある数値は突き合わせ先にある"
     assert "77" in nums, "本文にしかない数値は列挙する"
+
+
+NOISE_MD = """# 報告
+
+本文に 61,805 バイトと L-215 と A-3 と KA-17 と I-011 がある。
+箇条の (7) と、9 行、21 件、6 回、8 巡、4 段、5 日目、123 件。
+料金は 12.5% で 5 bp、1200 円である。
+"""
+
+
+def test_thousands_separator_is_one_number():
+    """`61,805` を `61` と `805` に割らない(`jev_check._NUMBER_RE` は割る)。"""
+    assert [m.group(1) for m in J._NUMBER_RE.finditer("61,805 バイト")] == ["61", "805"]
+    assert [m.group(1) for m in I.NUMBER_RE.finditer("61,805 バイト")] == ["61,805"]
+
+
+def test_identifiers_list_numbers_and_counters_are_not_measurements():
+    recs = {r["number"]: r for r in I.extract_unsourced_numbers(NOISE_MD)}
+    for num, why in (("215", "identifier"), ("3", "identifier"), ("17", "identifier"),
+                     ("011", "identifier"), ("7", "list_number"), ("9", "counter"),
+                     ("21", "counter"), ("6", "counter"), ("8", "counter"),
+                     ("4", "counter"), ("5", "counter")):
+        assert recs[num]["measurement"] is False, num
+        assert recs[num]["excluded_as"] == why, num
+    # 測定値・料金・率は残す。助数詞つきでも 3 桁は外さない
+    for num in ("61,805", "12.5%", "5bp", "1200", "123"):
+        assert recs[num]["measurement"] is True, num
+        assert recs[num]["excluded_as"] is None, num
+
+
+def test_excluded_numbers_are_kept_with_a_reason_and_never_sent(tmp_path, fake_client):
+    art = _write(tmp_path, "noise.md", NOISE_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    records = _read_jsonl(out / "noise.jsonl")
+    nums = [r for r in records if r["kind"] == "unsourced_number"]
+    excluded = [r for r in nums if r["reason"] == "not_a_measurement"]
+    assert len(excluded) == 11
+    assert all(r["sent"] is False and r["flag"] is False for r in excluded)
+    assert all(r["excluded_as"] in {"identifier", "list_number", "counter"} for r in excluded)
+    assert records[-1]["n_numbers_excluded"] == 11
+    # 送ったのは測定値の側だけ
+    sent_numbers = {r["number"] for r in nums if r["sent"]}
+    assert sent_numbers == {"61,805", "12.5%", "5bp", "1200", "123"}
 
 
 def test_source_lines_are_counted_by_kind():
@@ -293,9 +350,10 @@ def test_one_request_per_sentence_and_per_number(tmp_path, fake_client):
     assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
     records = _read_jsonl(out / "s.jsonl")
     summary = records[-1]
+    n_sent = len([r for r in records if r.get("sent")])
     n_verdict = len([r for r in records if r["kind"] == "verdict_sentence"])
-    n_number = len([r for r in records if r["kind"] == "unsourced_number"])
-    assert summary["n_requests"] == len(fake_client.calls) == n_verdict + n_number
+    assert n_verdict >= 2
+    assert summary["n_requests"] == len(fake_client.calls) == n_sent
     # state は code が組む(判定される側が書かない)
     state, _q = fake_client.calls[0]
     assert set(state) == {"sentence", "nearby_context"}

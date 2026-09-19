@@ -41,7 +41,6 @@ from scripts.jev_check import (  # noqa: E402
     DEFAULT_MODEL,
     PRESENCE,
     WHY_HEADING_RE,
-    _NUMBER_RE,
     clean_state,
     decide_flag,
     extract_why_section,
@@ -66,6 +65,21 @@ CONTEXT_LINES = 3           # 数値・判定の語の「前後 3 行」(仕様�
 
 # 判定の語(仕様どおりの語をそのまま置く)
 VERDICT_RE = re.compile(r"採用|棄却|合格|却下|不合格|有望|筋が悪い|効く|効かない")
+
+# 数値。`jev_check._NUMBER_RE` と同じ作りに、**桁区切りのカンマを含む数**を 1 つの数として
+# 読む枝を足したもの(`61,805` を `61` と `805` に割らない。2026-09-19 の実測で出た噪音)。
+NUMBER_RE = re.compile(
+    r"(?<![0-9A-Za-z_.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(%|bp)?")
+
+# 「出所が要る数値」から外すもの。**測定値・料金・率・時刻の類だけを問う**ため、
+# 番号(記号つき)・箇条の番号・助数詞つきの小さい件数は外す(件数は code が数えるもの)。
+# 外した数は捨てずに `reason="not_a_measurement"` で記録に残す。
+IDENTIFIER_PREFIX_RE = re.compile(
+    r"(?:(?:^|[^0-9A-Za-z])(?:L-|KA-|I-|A-|O-|P|U)|[#§])$")
+PAREN_OPEN_RE = re.compile(r"[((]$")
+PAREN_CLOSE_RE = re.compile(r"^[))]")
+COUNTER_RE = re.compile(r"^\s*(?:件|行|本|回|個|点|巡|段|日目)")
+MAX_COUNTER_DIGITS = 2  # 助数詞つきで外すのは 2 桁以下の整数だけ
 
 _FENCE_RE = re.compile(r"^\s*```")
 _TABLE_RE = re.compile(r"^\s*\|")
@@ -107,6 +121,8 @@ REQUIRED_ITEMS: dict[str, list[tuple[str, str, list[str]]]] = {
 }
 KINDS = tuple(REQUIRED_ITEMS)
 DEFAULT_KIND = "research"
+# 「なぜ」の節を求めるのは研究の委任だけ(`delegated-study` §2 の 6 番目・§6 の検収)。
+WHY_SECTION_KINDS = ("research",)
 
 
 def _clip(text: str, limit: int = MAX_FRAGMENT_CHARS) -> str:
@@ -222,33 +238,59 @@ def extract_verdict_sentences(text: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # 1(d) 出所の無い数値(code)
 # ---------------------------------------------------------------------------
+def is_measurement(line: str, m: re.Match) -> tuple[bool, str | None]:
+    """その数が「出所の記載を問う対象(測定値・料金・率・時刻の類)」か。
+
+    外すのは、(1) 記号つきの番号(`L-215` `§8` `#3` `P1` `U2` `A-3` `KA-17` `I-011` `O-1`)、
+    (2) 箇条の番号 `(3)`、(3) 助数詞つきの 2 桁以下の整数(`3 行` `16 件` `4 回`)。
+    件数は code が数えるものなので、出所の記載を問う対象にしない(2026-09-19 の指摘)。
+    戻り値は (対象か, 外した理由)。
+    """
+    before = line[:m.start(1)]
+    after = line[m.end(0):]
+    num, unit = m.group(1), (m.group(2) or "")
+    if IDENTIFIER_PREFIX_RE.search(before):
+        return False, "identifier"
+    if PAREN_OPEN_RE.search(before) and PAREN_CLOSE_RE.match(after):
+        return False, "list_number"
+    if not unit and "." not in num and "," not in num and len(num) <= MAX_COUNTER_DIGITS:
+        if COUNTER_RE.match(line[m.end(1):]):
+            return False, "counter"
+    return True, None
+
+
 def extract_unsourced_numbers(text: str) -> list[dict]:
     """本文の数値のうち、同じ報告の 表 / コードブロック / 引用 に文字列として現れないもの。
 
-    作り(行ごとに `_NUMBER_RE` を当て、見出し行は外し、数値+単位で 1 件にまとめる)は
-    `jev_check.extract_number_vs_source` と同じ。突き合わせ先だけを同じ文書の中に替えた。
+    作り(行ごとに数値の正規表現を当て、見出し行は外し、数値+単位で 1 件にまとめる)は
+    `jev_check.extract_number_vs_source` と同じ。替えたのは 2 つだけ:
+    突き合わせ先を同じ文書の中(表 / コードブロック / 引用)にしたことと、
+    番号・件数を `is_measurement` で分けて `reason="not_a_measurement"` に回すこと。
     """
     source, counts = source_text_of(text)
     fences = fence_lines(text)
-    found: dict[str, dict] = {}
+    found: dict[tuple[str, bool], dict] = {}
     for i, line in enumerate(text.splitlines(), start=1):
         if i in fences or _TABLE_RE.match(line) or _QUOTE_LINE_RE.match(line):
             continue  # 突き合わせ先そのものは本文として数えない
         if line.lstrip().startswith("#"):
             continue
-        for m in _NUMBER_RE.finditer(line):
+        for m in NUMBER_RE.finditer(line):
             num, unit = m.group(1), (m.group(2) or "")
             if source and num in source:
                 continue
-            key = num + unit
+            measured, why = is_measurement(line, m)
+            key = (num + unit, measured)
             if key in found:
                 continue
             found[key] = {
                 "kind": "unsourced_number",
                 "anchor": i,
-                "number": key,
+                "number": num + unit,
                 "claim": _clip(line),
                 "no_source_lines": not source,
+                "measurement": measured,
+                "excluded_as": why,
             }
     for rec in found.values():
         rec["source_lines"] = dict(counts)
@@ -457,13 +499,19 @@ def build_jobs(text: str, prompt_text: str | None) -> list[dict]:
             "split": combine_prompt,
         })
 
-    for i, rec in enumerate(extract_unsourced_numbers(text)):
+    n_asked = 0
+    for rec in extract_unsourced_numbers(text):
         job = {"kind": "unsourced_number", "anchor": rec["anchor"], "claim": rec["claim"],
                "number": rec["number"]}
-        if i >= MAX_NUMBER_QUESTIONS:
+        if not rec["measurement"]:
+            # 番号・箇条の番号・助数詞つきの件数。**捨てずに理由を残す**(Jev へは送らない)。
+            job.update({"questions": None, "state": None, "combine": None,
+                        "reason": "not_a_measurement", "excluded_as": rec["excluded_as"]})
+        elif n_asked >= MAX_NUMBER_QUESTIONS:
             job.update({"questions": None, "state": None, "combine": None,
                         "reason": "truncated"})
         else:
+            n_asked += 1
             job.update({
                 "questions": questions_origin(),
                 "state": {"sentence": rec["claim"],
@@ -489,15 +537,20 @@ def code_records(text: str, kind: str) -> list[dict]:
             "reason": None if item["found"] else "missing",
             "sent": False,
         })
+    # 「なぜ」の節は `delegated-study` §2 の 7 項目にしかない。`research-squad` の出力
+    # テンプレート(survey)にも実装の報告にも「なぜ」の節は無いので、**印は research のときだけ**
+    # 付ける(2026-09-19 の実測: survey の報告で必ず鳴っていた)。検査そのものは残し、
+    # 当てなかった種類では理由を記録に書く(捨てない)。
     whys = why_headings(text)
+    applies = kind in WHY_SECTION_KINDS
     out.append({
         "kind": "why_heading",
         "anchor": 0,
         "claim": "「なぜ」の節(見出しに なぜ|機構|理解)",
         "headings": whys,
         "violation_probability": None,
-        "flag": not whys,
-        "reason": None if whys else "missing",
+        "flag": bool(applies and not whys),
+        "reason": (None if whys else "missing") if applies else "not_applicable_for_kind",
         "sent": False,
     })
     return out
@@ -541,6 +594,8 @@ def run(text: str, *, source: str, kind: str, prompt_text: str | None, out_dir: 
         }
         if "number" in job:
             base["number"] = job["number"]
+        if job.get("excluded_as"):
+            base["excluded_as"] = job["excluded_as"]
 
         if job["questions"] is None or dry_run or client is None:
             if job["kind"] == "prompt_vs_report":
@@ -591,6 +646,9 @@ def run(text: str, *, source: str, kind: str, prompt_text: str | None, out_dir: 
         "flag_by_kind": by_kind,
         "counts_by_check": {k: sum(1 for r in records if r["kind"] == k)
                             for k, _label in CHECK_LABELS},
+        "n_numbers_excluded": sum(1 for r in records
+                                  if r.get("reason") == "not_a_measurement"),
+        "why_section_checked": kind in WHY_SECTION_KINDS,
         "prompt": bool(prompt_text is not None),
         "dry_run": bool(dry_run),
         "unreachable": unreachable,
@@ -625,6 +683,14 @@ def _print_table(source: str, out_path: Path, records: list[dict], summary: dict
         span = f"{min(probs):.3f}〜{max(probs):.3f}" if probs else "-"
         n_flag = sum(1 for r in rows if r.get("flag"))
         print(f"{label:<32}{len(rows):>6}{n_flag:>5}{span:>18}")
+    excluded = [r for r in records if r.get("reason") == "not_a_measurement"]
+    if excluded:
+        by_why: dict[str, int] = {}
+        for rec in excluded:
+            by_why[rec["excluded_as"]] = by_why.get(rec["excluded_as"], 0) + 1
+        print("出所を問わなかった数値(番号・箇条の番号・助数詞つきの件数): "
+              + "、".join(f"{k} {v} 件" for k, v in sorted(by_why.items()))
+              + f"(計 {len(excluded)} 件。記録には残している)")
     missing = [r["claim"] for r in records if r["kind"] == "required_item" and r["flag"]]
     if missing:
         print("欠けている必須項目: " + "、".join(missing))
