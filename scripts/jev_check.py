@@ -53,6 +53,9 @@ NEGATIVE_RE = re.compile(r"取れない|無い|ない|できない|存在しな�
 VERIFICATION_RE = re.compile(r"確認した|読んだ|検証した|実測した|突き合わせた|数え直した|走らせた|実行した")
 UNIVERSAL_RE = re.compile(r"全て|すべて|全件|全部|網羅|漏れなく|残らず|一つも|1 つも")
 SCOPE_HEADING_RE = re.compile(r"射程|範囲|測らない|言えないこと")
+# 射程の宣言(「言えないこと」)は可用性の断定ではないので negative_claim から外す。
+# そこは scope_vs_bar の側で見る(2026-09-19、対照で見えた誤検出の型 1)。
+SCOPE_EXCLUDE_HEADING_RE = re.compile(r"射程|言えない|範囲|限界")
 BAR_HEADING_RE = re.compile(r"判定|採用|基準|バー|合否")
 MEASURED_HEADING_RE = re.compile(r"測定対象|測るもの|対象")
 WHY_HEADING_RE = re.compile(r"なぜ|機構|理解")
@@ -155,8 +158,15 @@ def sections(text: str) -> list[dict]:
                 end = j
                 break
         body = "\n".join(lines[i + 1:end]).strip()
-        out.append({"lineno": i + 1, "level": level, "title": title, "body": body})
+        out.append({"lineno": i + 1, "level": level, "title": title, "body": body,
+                    "end": end})  # end = 節の最後の行番号(1 始まり)
     return out
+
+
+def scope_declaration_ranges(text: str) -> list[tuple[int, int]]:
+    """見出しに「射程|言えない|範囲|限界」を含む節の行の範囲(1 始まり、両端を含む)。"""
+    return [(s["lineno"], s["end"]) for s in sections(text)
+            if SCOPE_EXCLUDE_HEADING_RE.search(s["title"])]
 
 
 # ---------------------------------------------------------------------------
@@ -164,8 +174,11 @@ def sections(text: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 def extract_negative_claims(text: str) -> list[dict]:
     pairs = []
+    scope_ranges = scope_declaration_ranges(text)
     for _start, lines in logical_lines_by_paragraph(text):
         for ln, body in lines:
+            if any(lo <= ln <= hi for lo, hi in scope_ranges):
+                continue  # 射程の宣言であって可用性の断定ではない
             for part in re.split(r"(?<=。)", body):
                 part = part.strip()
                 if not part or not NEGATIVE_RE.search(part):
@@ -249,7 +262,8 @@ def _definition_patterns(term: str) -> list[re.Pattern]:
     t = re.escape(term)
     return [
         re.compile(rf"`?{t}`?\s*とは"),
-        re.compile(rf"`?{t}`?\s*[=＝]"),
+        # `X = 値` で値が数値だけのものは代入であって定義ではないので外す(説明文が続くものだけ)
+        re.compile(rf"`?{t}`?\s*[=＝]\s*(?![-+]?\d+(?:\.\d+)?\s*(?:%|bp)?\s*(?:[|、。)\]]|$))"),
         re.compile(rf"`?{t}`?\s*(?:は|が|を|の)?[^。]{{0,60}}?(?:を指す|である|とする|と呼ぶ|のこと)"),
     ]
 
@@ -265,7 +279,10 @@ def extract_symbol_definitions(text: str) -> list[dict]:
         if t and not t.isdigit():
             terms.add(t)
 
-    sents = sentences(text)
+    # 表の行と見出し行は定義候補から外す(表のセル `h=1` を定義と読まない)
+    sents = [(ln, sent) for ln, body in logical_lines(text)
+             if not body.startswith(("|", "#"))
+             for sent in (p.strip() for p in re.split(r"(?<=。)", body)) if sent]
     pairs = []
     for term in sorted(terms):
         pats = _definition_patterns(term)
@@ -551,9 +568,12 @@ def question_for(kind: str, pair: dict) -> dict:
                         "history cannot be obtained\"."
                     ),
                     "false": (
-                        "The sentence merely negates an ordinary statement. Example: \"this rule does "
-                        "not apply to 30-minute bars\", \"the value did not change\", or \"we do not "
-                        "use the taker side\"."
+                        "The sentence merely negates an ordinary statement, or it is a declaration of "
+                        "what this report does not claim or cannot say (a scope statement such as "
+                        "\"言えないこと: ...\", \"射程外\", \"未測定\"). Example: \"this rule does "
+                        "not apply to 30-minute bars\", \"the value did not change\", \"we do not "
+                        "use the taker side\", or \"what this unit cannot say: whether it works on "
+                        "unseen data\"."
                     ),
                 },
             },

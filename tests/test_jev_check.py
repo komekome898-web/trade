@@ -139,6 +139,79 @@ def test_extract_symbol_definition(tmp_path):
     assert "損益" in sd[0]["b"]
 
 
+SCOPE_DECL_MD = """# 報告
+
+## 5. 言えないこと・射程
+
+| 【言えない】 | 未見のデータで効くか(4 周とも同じデータ)。|
+執行の損益は測っていないので取れない。
+
+## 6. 結論
+
+清算の履歴はどこにも無い。
+"""
+
+TABLE_SYMBOL_MD = """# 報告
+
+## 表
+
+| 取引所 | h=1 | h=3 | h=10 |
+|---|---|---|---|
+| A | -1.0 | -1.5 | -1.7 |
+
+## 用語
+
+- `h` = 何本後の足の終値までを見るかである。
+- `bp` = 0.01%。
+"""
+
+
+def test_scope_declaration_section_is_not_a_negative_claim(tmp_path):
+    art = _write(tmp_path, "scope_decl.md", SCOPE_DECL_MD)
+    pairs = [p for p in J.extract_pairs(SCOPE_DECL_MD, art) if p["kind"] == "negative_claim"]
+    # 「言えないこと・射程」の節の中の文は対にしない
+    assert all("未見のデータ" not in p["a"] for p in pairs), [p["a"] for p in pairs]
+    assert all("執行の損益" not in p["a"] for p in pairs), [p["a"] for p in pairs]
+    # 節の外の可用性の断定は残る
+    assert any("どこにも無い" in p["a"] for p in pairs), [p["a"] for p in pairs]
+
+
+def test_scope_declaration_ranges_cover_the_whole_section(tmp_path):
+    ranges = J.scope_declaration_ranges(SCOPE_DECL_MD)
+    assert len(ranges) == 1
+    lo, hi = ranges[0]
+    lines = SCOPE_DECL_MD.splitlines()
+    assert lines[lo - 1].startswith("## 5.")
+    assert any("未見のデータ" in l for l in lines[lo - 1:hi])
+    assert all("どこにも無い" not in l for l in lines[lo - 1:hi])
+
+
+def test_unavailability_criteria_names_scope_declarations():
+    q = J.question_for("negative_claim", {})["is_unavailability_claim"]
+    assert "scope statement" in q["criteria"]["false"]
+    assert "言えないこと" in q["criteria"]["false"]
+
+
+def test_table_cells_and_numeric_assignments_are_not_definitions(tmp_path):
+    art = _write(tmp_path, "tbl.md", TABLE_SYMBOL_MD)
+    pairs = [p for p in J.extract_pairs(TABLE_SYMBOL_MD, art)
+             if p["kind"] == "symbol_definition"]
+    # 表のセル `h=1` `h=3` `h=10` は定義候補にならないので、`h` の定義文は 1 つだけ = 対は 0
+    assert [p for p in pairs if p["term"] == "h"] == []
+    # `bp` = 0.01%(数値だけ)も定義ではない
+    assert [p for p in pairs if p["term"] == "bp"] == []
+
+
+def test_prose_definition_is_still_a_definition(tmp_path):
+    md = ("# 用語\n\n- `sd` = その `h` 本後リターンの標準偏差(bp)。\n\n"
+          "## 表\n\n| 足 | `sd` = 1 |\n\nこの表の `sd` は符号つきの損益である。\n")
+    art = _write(tmp_path, "prose.md", md)
+    pairs = [p for p in J.extract_pairs(md, art)
+             if p["kind"] == "symbol_definition" and p["term"] == "sd"]
+    assert len(pairs) == 1
+    assert "標準偏差" in pairs[0]["a"] and "符号つき" in pairs[0]["b"]
+
+
 def test_extract_verification_claim(tmp_path):
     art = _write(tmp_path, "ver.md", VERIFICATION_MD)
     pairs = [p for p in J.extract_pairs(VERIFICATION_MD, art)
