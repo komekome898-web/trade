@@ -26,7 +26,10 @@ FILES="$( { git diff --name-only HEAD -- 'docs/*.md' 'docs/**/*.md' 2>/dev/null
             git diff --name-only HEAD~3..HEAD -- 'docs/*.md' 'docs/**/*.md' 2>/dev/null; } \
           | grep -vE 'OWNER_LOG|OWNER_STATUS|OWNER_PROCEDURES|ACTION_LOG|INCIDENTS|HOOK_MANIFEST|/TRACE/|/VERDICTS/|/before/|/answers/|DATA_CONSUMPTION_LOG|NEGATIVE_FACTS|docs/DATA\.md|/READDO/|_inventories/' \
           | sort -u | head -5 )"
-[ -n "$FILES" ] || exit 0
+# 返答そのもの(最後の assistant 発言)の検査 — 取れない × 経路一覧、対応表の左右(L-220 の 2)。表示だけ。
+REPLY_LINE="$(PYTHONPATH="$ROOT" timeout 60 python3 "$ROOT/scripts/jev_reply.py" --last-assistant --summary 2>/dev/null | tail -1)"
+[ -n "$REPLY_LINE" ] || REPLY_LINE="jev: 実行失敗(返答の検査が出力を返さなかった)"
+[ -n "$FILES" ] || FILES=""
 
 STATE="$ROOT/.claude/state"; mkdir -p "$STATE" 2>/dev/null
 OUT=""
@@ -37,7 +40,8 @@ for f in $FILES; do
   OUT="${OUT}${f}: ${line}
 "
 done
-[ -n "$OUT" ] || exit 0
+OUT="返答: ${REPLY_LINE}
+${OUT}"
 printf '%s' "$OUT" > "$STATE/jev_last_notice.txt" 2>/dev/null
 printf '%s' "$OUT" | python3 -c 'import json,sys
 msg=sys.stdin.read().rstrip("\n")
