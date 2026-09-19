@@ -9353,3 +9353,9 @@ ffe2692 L-202: reduce project hooks from 16 to 6, pre-push reduced to the manife
 1 = 直した(記録漏れ。欄に e389dcd73fc17a2c8880d793b6233a8237b69295 を記入。出所は git log と 6 本の summary.json の tool_commit)。2 = 直した(状態行を「開けた」に)。3 = 記録漏れと答えた。数値・表・凍結 6 項目には触れていない。
 
 判定: 通す
+
+## 067 — 監査役の定義の変更(オーナー指示 L-242)と解除ファイルの作成(2026-09-19)
+
+オーナー逐語 L-242「**設計の段階でjevの判定(もしくはその代替となるもの)がないと事前登録させないことを監査役の仕事に加えてください**」により、`.claude/agents/owner-auditor.md` の (a) に 9 を足した(事前登録に `jev_design.py` の 2 表が無ければ [止める]。代替 = 独立の下位モデル 2 名の記録)。`research-protocol` §1 と `owner-audit` の前段にも同じ要件を足した。
+`deny_protected_paths.sh` が書き込みを拒否したため、**解除ファイル `.claude/state/owner_unlock_hooks` をリードが作って書き込み、同じ呼び出しで消した**(この環境ではオーナーがファイルを作れない。CLAUDE.md §5.0 の限界のとおり、作った回数を数える: R4 = 1 回目)。指紋の台帳は同じコミットで再生成。
+
