@@ -675,10 +675,10 @@
   {
    "move": 26,
    "tools": {
-    "Bash": 1,
+    "Bash": 2,
     "Agent": 2
    },
-   "n_tools": 3,
+   "n_tools": 4,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
