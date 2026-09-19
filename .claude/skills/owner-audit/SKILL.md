@@ -22,9 +22,22 @@ description: "Invoke the owner-auditor subagent on any pre-registration/report/s
 - 研究報告(`docs/PHASE2/**/RESULT.md` の新規部、`docs/RESEARCH_REPORT_*.md`)
 - 外部調査サーベイ・データ在庫調査などの調達票類
 
+## 前段(Jev。オーナー承認 2026-09-19、L-225「段1を承認する」)
+
+監査役を呼ぶ**前**に、成果物に Jev の前段を当てる(手引き `docs/JEV.md` §5・§8 の U10 と同じ作り):
+
+```
+PYTHONPATH=. python3 scripts/jev_check.py audit <成果物のパス> --out data/jev/check
+```
+
+- 出るのは**対ごとの確率と要確認の印だけ**(取れないの根拠 / 確かめたの証拠 / 全部の数え上げ / 記号の定義 / 射程と判定バー / 意図マップと測定対象 / なぜと結果)。Jev は判定しない。
+- **監査役は全件のまま呼ぶ(省略しない)。**印の付いた対の一覧(`data/jev/check/<成果物>.jsonl` の要確認の行の `kind` / `anchor` / 断片の先頭)を、監査役への prompt に「前段で印が付いた箇所」として**パスと行番号だけ**添える(どの事案かの説明は書かない)。
+- 末尾 1 行(`印 N 件(内訳)` / `jev: 未到達(理由)`)を `VERDICTS/` の記録の先頭に写す。**未到達のときも監査役は呼ぶ**(前段は補助で、無くても監査は成立する)。
+- 数値の結果(確率)は `data/jev/`(リポジトリに入れない)にだけ残す。
+
 ## 呼び方
 
-Agent(Task)ツールで `subagent_type: owner-auditor` を指定し、渡すのは**成果物のパスのみ**。
+Agent(Task)ツールで `subagent_type: owner-auditor` を指定し、渡すのは**成果物のパスのみ**(前段の印の箇所のパスと行番号を除く)。
 どの事案か・オーナーが何を言ったかを説明文に書かない —— 監査役は白紙で読む方が効く
 (`research-protocol` §1.3 層 3 の独立監査と同じ理由)。
 
