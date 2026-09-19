@@ -1,0 +1,13 @@
+# SIGNAL 探索段 2(2026-09-19)。対照で合わせる候補の変数 = 束の時点までに分かる属性 + 起点の取り方に関わる量。判定の量 = bp_reactdir_delta。定義の文は英語。
+anchor_lag_ms: "milliseconds between the bundle's last liquidation and the trade used as the anchor; 0 means the anchor is the liquidation's own fill"
+day_direction_bp: "the day's realized price change signed by the bundle's side (positive = the day moved in the cascade direction), in basis points; known only after the day ends"
+dist_vwap_bp: "distance in basis points from the cascade price to the volume-weighted average price of the preceding W hours, at the moment of the cascade"
+dist_node_bp: "distance in basis points from the cascade price to the nearest high-volume price node of the preceding W hours"
+bin_pct: "thinness of the price bin where the cascade occurred (share of the preceding W hours' volume in that bin)"
+bundle_n_events_dedup: "number of liquidation events in the cascade bundle (deduplicated)"
+bundle_total_notional: "total notional value liquidated in the bundle"
+bundle_width_ms: "duration of the bundle in milliseconds (first to last liquidation)"
+doi_pre_1h: "change in open interest over the hour before the cascade (contracts)"
+side: "whether the cascade liquidated longs (SELL) or shorts (BUY)"
+time_of_day: "UTC hour of the cascade"
+implied_leverage: "implied leverage of the liquidated positions, from the distance to the liquidation price and the maintenance margin rate"

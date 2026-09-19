@@ -1,0 +1,9 @@
+# SIGNAL 探索段 2(2026-09-19、L-246)。候補の観測量 = 起点を清算の約定から Δ 秒離した後の量(456 日の公開アーカイブの約定から新しく作る)。定義の文は英語(手引き §2)。
+bp_reactdir_delta: "signed price change from an anchor taken as the first trade at least DELTA seconds after the last liquidation of the bundle, to h seconds after that anchor, in basis points; negative = moved against the cascade direction (reversal), positive = continued; the same DELTA shift is applied to control times"
+bounce_delta: "signed price change from the last liquidation's own fill (DELTA = 0) to the DELTA-shifted anchor, in basis points; the part of the reversal that happens before the shifted anchor (mechanical bounce of the sweep)"
+reversal_fraction_3way: "share of bundles whose DELTA-shifted signed change at h is negative / zero / positive (three shares per group)"
+liq_side_h_shape: "the cascade-side mean of the DELTA-shifted signed change as a function of h, read on its own (not as a difference from a control), so that the control's day-direction drift cannot shape it"
+mfe_mae_delta: "largest excursion in the cascade direction (mfe) and against it (mae) within h seconds after the shifted anchor, in basis points"
+bf_bp_reactdir_delta: "the same DELTA-shifted signed change measured on bitFlyer FX_BTC_JPY executions at the same instants, in basis points"
+reach_back_vwap: "whether, within h, the price returned to the volume-weighted average price of the preceding W hours (binary per bundle)"
+doi_post: "change in open interest (contracts) from the bundle to h later"
