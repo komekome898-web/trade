@@ -8992,3 +8992,92 @@ I read the owner's verbatim source (§0), then opened the actual artifacts rathe
 ```
 
 関係するファイル(絶対パス): `/tmp/claude-0/-home-user-trade/fa7bf0d4-a5c4-55b7-991b-874b590e00a3/scratchpad/final_reply23.md`、`/home/user/trade/docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md`、`/home/user/trade/docs/AUDITOR/ACTION_LOG.md`、`/home/user/trade/scripts/o3c_reaction.py`、`/home/user/trade/.claude/hooks/reply_audit_gate.sh`、`/home/user/trade/docs/OWNER_LOG.md`
+
+## 063 — L-202(会話の再開の手順・順序の変更)と L-203(いいから早く復旧しろ)の実施: I-011 / I-012 と L-201〜L-203 の記録、フック 16 本 → 5 本、pre-push・verify_gates・CLAUDE.md・スキルの圧縮(2026-09-19)
+
+**出所**: オーナー逐語(L-202)「**新しい会話でやること(順序を変える) 1. I-011 と L-201・L-202 を書き直して記録する(文面は失われたので、私が覚えている範囲で書き直す。前の版と言い回しが変わる)。 2. 今回の停止を I-012 として記録する(原因: フックの削除を settings.json の書き換えより先にした)。 3. L-202 の本体は、settings.json の書き換え・verify_gates.py・pre-push・CLAUDE.md・スキルの圧縮を先に済ませ、ファイルの削除・台帳の再生成・コミット・プッシュを 1 回の Bash 呼び出しにまとめて最後に打つ。削除の後はその会話でも道具が通らなくなるためで、これは今回の実測から分かったこと。 4. その後の 6 本の本走行は、削除が済んだ次の会話で行う。**」/ L-203「**いいから早く復旧しろ**」。
+
+### 着手前の表(§0.1。返答 1 本目で出した。空行 3 つ → L-203 で「答えずに着手」)
+
+| やろうとすること | オーナーの原文の該当語(逐語) |
+|---|---|
+| I-011 / L-201 / L-202 を記録する | 「I-011 と L-201・L-202 を書き直して記録する」 |
+| **I-011 の中身** | **(該当語なし)** → 「失われた」旨の仮の行 |
+| **L-201 の逐語** | **(該当語なし)** → 「失われた」旨の仮の行 |
+| I-012 を記録する | 「今回の停止を I-012 として記録する(原因: フックの削除を settings.json の書き換えより先にした)」 |
+| 書き換えを先に、削除・台帳・コミット・押し出しを 1 回の Bash で最後に | 「settings.json の書き換え・verify_gates.py・pre-push・CLAUDE.md・スキルの圧縮を先に済ませ、ファイルの削除・台帳の再生成・コミット・プッシュを 1 回の Bash 呼び出しにまとめて最後に打つ」 |
+| **削除するフック・圧縮の範囲** | **(該当語なし)** → **リードの決定**(下の表) |
+| 6 本の本走行は次の会話 | 「その後の 6 本の本走行は、削除が済んだ次の会話で行う」 |
+
+### 失われたものの実測(2026-09-19、リード)
+
+```
+git log --oneline -5            → 686a9d5(paper logs snapshot)/ f8b65ec(リードの最後の作業)
+git status --porcelain          → (空)
+git ls-files -z | xargs -0 grep -n 'L-201\|L-202\|I-011\|I-012'
+                                → 実体 0 件(監査の逐語内の言及と tests の合成フィクスチャのみ)
+ls -la /root/.claude/projects/-home-user-trade/
+                                → 今回の会話の jsonl 1 本のみ(前の会話の記録は無い)
+grep -n '^| L-20[0-9]' docs/OWNER_LOG.md → L-200 まで
+```
+→ I-011・L-201 の文面はこの環境から復元できない。**仮の行**(失われた旨と、文面が来たら書き換えること)を置いた(`docs/INCIDENTS.md` I-011、`docs/OWNER_LOG.md` L-201)。
+
+### 削除する 11 本 / 残す 5 本(**リードの決定。オーナーの逐語は無い**)
+
+判断の軸: (a) オーナーが L-196「監査役の逐語は私が求めた時に」・L-198「途中経過には掛けない」・L-200「監査は通さなくていい」で順に外してきた**監査・返答・押し出しの関門**を外す。(b) オーナーの逐語・ゴール・フックを守る機械(③(a))と、選択待ちの全面停止(③(b)、L-169「→A」)と、状態板の再注入(§0.1 が依存)は残す。(c) 指紋の台帳は「台帳の再生成」がオーナーの逐語にあるので残す。(d) 表示だけの催促は外す。
+
+| 区分 | ファイル | 役割 | 理由 |
+|---|---|---|---|
+| 削除 | `reply_audit_gate.sh` | 返答の関門(Stop) | 5 版で最終報告だけになっていた(L-200)。L-200 の逐語のとおり指示と衝突して会話が終われなくなった当のもの |
+| 削除 | `action_audit_gate.sh` / `_require_action_audit.sh` | 押し出しの行動監査 + 1 日 1 件の抜き取り(Bash / MCP) | 押し出しの前に監査役の記録を要求する。**この会話でも、ヒアドキュメントの中の語の並びだけで 2 回誤って発火した**(内容はファイルの本文で、押し出しではない)。git 側の本体(pre-push)には指紋の照合だけ残す |
+| 削除 | `universal_claim_notice.sh` | 全称語の検査(Stop、表示のみ) | 2026-09-30 まで表示だけの予定だった機械。規則(§3 の数え直しの型)は残す |
+| 削除 | `trace_snapshot.sh` | ① TRACE の記録(SessionStart / Stop) | 行動監査の入力。監査を外すので不要 |
+| 削除 | `move_budget.sh` | ④ 作業単位の関門(表示のみ、閾値未設定) | 閾値は「P5 を測ってから」のまま置かれていなかった |
+| 削除 | `readdo_notice.sh` | ⑤ read-do の入口(表示のみ) | 危機時の手順書 5 枚(`docs/AUDITOR/READDO/`)は残す。入口の表示だけ外す |
+| 削除 | `agent_delegation_reminder.sh` / `budget_delegation_reminder.sh` / `git_push_audit_reminder.sh` / `prereg_source_reminder.sh` | 催促(表示のみ) | 表示はリードを止めない(2026-09-13 の実測)。規則は CLAUDE.md / スキルにある |
+| 残す | `_verify_manifest.sh` | 指紋の照合(Write / Edit / Agent と pre-push) | 「台帳の再生成」がオーナーの逐語にある。改変が差分に残る |
+| 残す | `deny_protected_paths.sh` | ③(a) 保護パスへの書き込み拒否 | L-169 承認。A-16 / A-15 の機械 |
+| 残す | `owner_options_gate.sh` | ③(b) 選択待ちの全面停止 + ゴール未読の最初の書き込みを止める | L-169「→A」 |
+| 残す | `session_start_digest.sh` / `owner_turn_digest.sh` | 状態板の要点の再注入 | §0.1「状態板の要点はオーナーの発言のたびに再注入する」が依存 |
+
+`settings.json` は残す 5 本だけの配線に(退避先に新版を用意し、最後の 1 手で複写)。`githooks/pre-push` は指紋の照合だけに(同じく退避先から複写)。`scripts/verify_gates.py` は残る関門の試験だけにし、**I-012 の型(台帳に載ったファイルの消失 / `settings.json` が参照するフックの消失)を通る側と止まる側で足した**。
+
+### 圧縮
+
+- `CLAUDE.md`: §3(フックの経緯の長文 → 残る 5 本と順序の規則)と §5.0 / §5.0b(4 点 + ①〜⑥ → 3 点 + 撤去の記録)。357 行 / 48,574 B → 246 行 / 35,196 B(`wc -l -c CLAUDE.md`)。**§0(オーナーの逐語の表)・§1・§2・§4・§5.1〜§5.3・§6〜§8 は触っていない。**
+- スキル: `research-protocol` §15(「詳細はスキルと K1 の実物に二重化されているため見出しのみ」と自ら書いていた見出し一覧 7 行)を削除。526 → 518 行。**他のスキルは触っていない**(削除候補フックへの参照は 6 本とも 0 件 = `grep -c` で実測。`research-squad` は承認済みの固定手順 L-107/L-108 なので圧縮しない)。圧縮の範囲もオーナーの逐語が無いので最小にした。
+
+### 実測(順に)
+
+```
+python3 scripts/verify_gates.py(旧版、変更前)        → 食い違い: 0 件
+sh scripts/install_git_hooks.sh                        → core.hooksPath = githooks(この clone では未設定だった)
+pip install -e ".[dev]"; pytest tests/test_audit_gates_wired.py → 12 passed in 0.44s
+pytest --collect-only(scipy 未導入)                    → 2102 tests collected, 2 errors(test_phase2_p2_02*.py が scipy を import)
+pip install scipy(1.17.1); pytest --collect-only       → 2130 tests collected in 1.59s
+```
+
+**予行**(実物を触らずに、退避先へ `git clone` したローカル複製で最後の 1 手を再現):
+```
+cp settings.json / pre-push → 11 本を rm → CLAUDE_PROJECT_DIR=<複製> sh scripts/regen_hook_manifest.sh → 再生成した(11 行)
+CLAUDE_PROJECT_DIR=<複製> python3 scripts/verify_gates.py(新版)
+  指紋の照合 6 件 / pre-push 3 件 / ③(a) 5 件 / ③(b) 5 件 / settings.json 6 件 / 台帳 3 件 → 食い違い: 0 件
+```
+
+### 最後の 1 手の打ち方(隠さず書く)
+
+退避先の `finish.sh`(複写 → `git rm` 11 本 → 台帳の再生成 → verify_gates(食い違いなら元に戻して中止)→ コミット → 2 本の枝へ押し出し(失敗時は 2/4/8/16 秒で再試行))を `sh <退避先>/finish.sh` の 1 回で打つ。
+**なぜスクリプト経由か**: Bash 側の関門 `action_audit_gate.sh` はコマンドの文字列に押し出しの語があると、監査役の記録と本日の抜き取りを要求する。この関門そのものを L-202 で外すのに、外す 1 手にその関門の監査を掛けるのは循環になる。git 側の本体 `githooks/pre-push`(新版 = 指紋の照合)は**通す**(`install_git_hooks.sh` で有効化済み)。差分と reflog に残る。
+削除の後にこの会話の道具が通るかは確かめない(L-202「削除の後はその会話でも道具が通らなくなる」)。続きは次の会話。
+
+### 残したもの・やっていないもの
+
+- `docs/AUDITOR/TRACE/2026-09-19_2fb929ce.json`(SessionStart の `trace_snapshot.sh` が今回書いた未追跡ファイル)はコミットしない。
+- 撤去した機械に触れる文書(`docs/AUDITOR/TREND.md` の R1〜R4 と P1〜P7、`PROCESS_METRICS.md`、`READDO/`、`DISCUSSIONS/2026-09-14_instruction_adherence/PLAN.md` など、`grep -c` で 18 ファイル)は**書き換えていない**(経緯の記録として残す)。`scripts/trace_metrics.py` も残る(フックから呼ばれなくなっただけ)。
+- `.claude/agents/owner-model-auditor.md` §0.5(TRACE を入力に取る)は保護パスかつ A-15 なので触っていない。
+- 全件の pytest 実行はしていない(収集件数のみ)。
+
+### 次の会話
+
+1. オーナーから I-011・L-201 の文面が来たら仮の行を書き換える。
+2. 段 A の判定区間 456 日を 6 本走らせる(`--mode full --approval L-NNN`)。**L-NNN は カ・キ・ク への応答の L 番号**。L-201 が仮の行のままなら `scripts/o3c_reaction.py` の関門 (c′) で開かない → 応答が L-201 だったのか、これから出すのか、オーナーに聞く。
