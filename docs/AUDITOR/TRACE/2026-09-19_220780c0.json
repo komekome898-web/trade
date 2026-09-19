@@ -1078,12 +1078,12 @@
    "move": 41,
    "tools": {
     "Edit": 7,
-    "Bash": 13,
+    "Bash": 14,
     "Read": 1,
     "Write": 2,
     "Agent": 1
    },
-   "n_tools": 24,
+   "n_tools": 25,
    "read_goal": true,
    "first_write_at": 1,
    "table_shown": false,
