@@ -1049,16 +1049,17 @@
    "move": 40,
    "tools": {
     "Edit": 3,
-    "Bash": 5,
-    "Read": 1
+    "Bash": 12,
+    "Read": 1,
+    "Agent": 1
    },
-   "n_tools": 9,
+   "n_tools": 17,
    "read_goal": true,
    "first_write_at": 1,
    "table_shown": false,
    "claims_without_output": 0,
    "claims_total": 0,
-   "audit_calls": 0,
+   "audit_calls": 1,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
    "protected_writes": 0,
@@ -1092,7 +1093,7 @@
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
-   "den": 5,
+   "den": 6,
    "value": 0.0
   },
   "P5_tools_per_move": {
@@ -1102,8 +1103,8 @@
   },
   "P6_findings_applied": {
    "num": 1,
-   "den": 5,
-   "value": 0.2,
+   "den": 6,
+   "value": 0.1667,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
