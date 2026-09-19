@@ -41,6 +41,15 @@ class JevClient:
     ) -> None:
         if api_key is None:
             api_key = os.environ.get("TYPESAFE_API_KEY")
+        if not api_key:
+            # オーナー PC では鍵が `.env` にある(L-209「PC は .env」)。フックから呼ばれると環境変数に無いので、
+            # リポジトリ直下の `.env` の TYPESAFE_API_KEY だけを読む(他の鍵は読まない。値はログに出さない)。
+            env_file = Path(__file__).resolve().parents[2] / ".env"
+            if env_file.is_file():
+                for line in env_file.read_text(encoding="utf-8", errors="replace").splitlines():
+                    if line.startswith("TYPESAFE_API_KEY="):
+                        api_key = line.split("=", 1)[1].strip().strip('"').strip("'") or None
+                        break
         # 鍵が無くても構築は失敗させない。この実行環境では、鍵を「API 資格情報」として
         # 代理サーバー側に置く経路がありうる(その場合 api.typesafe.ai 宛ての要求に
         # 代理サーバーが Authorization を付ける。鍵はこのプロセスには渡らない、という前提は
