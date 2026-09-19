@@ -54,7 +54,8 @@ def test_build_move_state_has_the_four_new_items(tmp_path):
     moves = T.split_moves(T.extract_events(_write_record(tmp_path)))
     state = T.build_move_state(moves[0])
     assert set(state) == {"owner_message", "events", "final_assistant_text",
-                          "protected_actions", "events_omitted"}
+                          "protected_actions", "cited_owner_instructions",
+                          "events_omitted"}
     assert state["owner_message"].startswith("1〜3全て")
     assert state["final_assistant_text"] == "scripts には jev_check.py がありました。"
     assert "user_text" not in {ev["kind"] for ev in state["events"]}
@@ -155,3 +156,116 @@ def test_cli_without_review_keeps_the_old_behaviour(tmp_path):
     lines = out.read_text(encoding="utf-8").strip().splitlines()
     assert all(json.loads(x)["kind"] in
                {"user_text", "assistant_text", "tool_call", "tool_result"} for x in lines)
+
+
+# ---------------------------------------------------------------------------
+# 実送信で分かった 2 点(2026-09-19)
+# ---------------------------------------------------------------------------
+SKILL_BODY = "Base directory for this skill: /home/user/trade/.claude/skills/x\n# 研究・実装の委任\n"
+AGENT_MSG = 'Another Claude session sent a message:\n<agent-message from="abc">直せ</agent-message>'
+
+
+def _write_mixed_record(tmp_path: Path) -> Path:
+    """オーナーの発言 1 件と、オーナーの発言でない user 本文 4 件が混ざった記録。"""
+    rows = [
+        {"message": {"role": "user", "content": "表示だけの形でStopに足せ。"}},
+        {"message": {"role": "assistant", "content": [
+            {"type": "tool_use", "name": "Bash",
+             "input": {"command": "git commit -m 'add the display-only hook (L-218)'"}}]}},
+        {"message": {"role": "user", "content": [{"type": "tool_result", "content": "1 file"}]}},
+        {"message": {"role": "user", "content": SKILL_BODY},
+         },
+        {"message": {"role": "assistant", "content": [
+            {"type": "tool_use", "name": "Edit",
+             "input": {"file_path": ".claude/settings.json", "old_string": "a",
+                       "new_string": "b"}}]}},
+        {"message": {"role": "user", "content": [{"type": "tool_result", "content": "ok"}]}},
+        {"message": {"role": "user", "content": AGENT_MSG}},
+        {"message": {"role": "user", "content": "<command-name>/model</command-name>"}},
+        {"message": {"role": "user", "content": "Stop hook feedback:\nuncommitted"}},
+        {"message": {"role": "assistant", "content": [
+            {"type": "text", "text": "フックと settings.json を直しました。"}]}},
+    ]
+    path = tmp_path / "mixed.jsonl"
+    path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
+                    encoding="utf-8")
+    return path
+
+
+def test_non_owner_user_text_is_neither_the_owner_message_nor_a_move_boundary(tmp_path):
+    """(1) スキルの本文・別会話の伝言・スラッシュ命令・Stop フックで手を切らない。"""
+    events = T.extract_events(_write_mixed_record(tmp_path))
+    moves = T.split_moves(events)
+    assert len(moves) == 1, "オーナーの発言でない user 本文で手が切れている"
+    state = T.build_move_state(moves[0])
+    assert state["owner_message"] == "表示だけの形でStopに足せ。"
+    assert "Base directory for this skill:" not in state["owner_message"]
+    kinds = {ev["excluded_kind"] for ev in state["events"] if ev["kind"] == "system_text"}
+    assert kinds == {"skill_body", "agent_message", "slash_command", "stop_hook_feedback"}
+
+
+def test_classify_user_text_names_each_kind():
+    assert T.classify_user_text("表示だけの形でStopに足せ。") is None
+    assert T.classify_user_text(SKILL_BODY) == "skill_body"
+    assert T.classify_user_text(AGENT_MSG) == "agent_message"
+    assert T.classify_user_text("<agent-message from='x'>y</agent-message>") == "agent_message"
+    assert T.classify_user_text("<persisted-output>x") == "persisted_output"
+    assert T.classify_user_text("<system-reminder>x") == "system_reminder"
+    assert T.classify_user_text("Caveat: x") == "other_system"
+
+
+def test_excluded_line_counts_each_kind(tmp_path):
+    events = T.extract_events(_write_mixed_record(tmp_path))
+    counts: dict[str, int] = {}
+    for ev in events:
+        if ev["kind"] == "system_text":
+            counts[ev["excluded_kind"]] = counts.get(ev["excluded_kind"], 0) + 1
+    line = T.excluded_line(counts)
+    assert line.startswith("除外(オーナーの発言でない user 本文): 4 件")
+    assert "skill_body 1 件" in line and "agent_message 1 件" in line
+    assert T.excluded_line({}).endswith("0 件")
+
+
+def test_cited_owner_instructions_are_pulled_from_the_owner_log(tmp_path):
+    """(2) 保護操作の許可の証拠(前の手のオーナーの逐語)を state に入れる。"""
+    events = T.extract_events(_write_mixed_record(tmp_path))
+    move = T.split_moves(events)[0]
+    log = T.load_owner_log()
+    state = T.build_move_state(move, log)
+    cited = state["cited_owner_instructions"]
+    assert [c["id"] for c in cited] == ["L-218"], cited
+    assert "Stop" in cited[0]["quote"]
+    assert len(cited[0]["quote"]) <= T.CITED_MAX_CHARS
+
+
+def test_owner_refs_are_taken_from_the_full_arguments(tmp_path):
+    """引数は state では 300 字に切るが、`L-番号` は切る前の全文から拾う。"""
+    long_msg = "echo あ; " * ((T.ARGS_MAX // 8) + 20) + " L-202"
+    rows = [
+        {"message": {"role": "user", "content": "やれ"}},
+        {"message": {"role": "assistant", "content": [
+            {"type": "tool_use", "name": "Bash", "input": {"command": long_msg}}]}},
+    ]
+    path = tmp_path / "long.jsonl"
+    path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
+                    encoding="utf-8")
+    call = next(ev for ev in T.extract_events(path) if ev["kind"] == "tool_call")
+    assert "L-202" not in call["args_summary"], "300 字の先頭には入っていない前提"
+    assert call["owner_refs"] == ["L-202"]
+
+
+def test_owner_log_takes_only_the_verbatim_column():
+    log = T.load_owner_log()
+    assert log, "OWNER_LOG が 1 行も読めない"
+    assert "L-218" in log
+    # 5 列目(リードの対応)は取らない
+    assert "Stop フックに Jev の検査を" not in log["L-218"]
+    assert all(len(v) <= T.CITED_MAX_CHARS for v in log.values())
+
+
+def test_permission_breach_question_mentions_the_cited_instructions(tmp_path):
+    moves = T.split_moves(T.extract_events(_write_mixed_record(tmp_path)))
+    q = T.questions_for(T.build_move_state(moves[0], T.load_owner_log()))
+    text = q["permission_breach"]["instructions"] + json.dumps(
+        q["permission_breach"]["criteria"], ensure_ascii=False)
+    assert "cited_owner_instructions" in text
