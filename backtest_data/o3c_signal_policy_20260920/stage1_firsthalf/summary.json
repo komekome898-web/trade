@@ -1,0 +1,62 @@
+{
+  "段": "段1(前半200本の動作確認)",
+  "実行時刻(UTC)": "2026-09-20T18:10:34.575614+00:00",
+  "委任文": "docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md",
+  "設計": "docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md(改訂2)",
+  "種": 20260920,
+  "抜いた連鎖の本数": 200,
+  "前半連鎖の総数": 8931,
+  "前半連鎖の内訳(単発/2件/3件以上)": {
+    "2件": 1614,
+    "単発": 5033,
+    "3件以上": 2284
+  },
+  "抜いた本数の内訳(単発/2件/3件以上)": {
+    "3件以上": 45,
+    "単発": 122,
+    "2件": 33
+  },
+  "方策": [
+    "logistic_3択",
+    "logistic_2値0.5",
+    "規則",
+    "完全な判断",
+    "全部逆張り",
+    "全部順張り"
+  ],
+  "遅れ_秒": [
+    0.5,
+    1,
+    2
+  ],
+  "3択の帯(1件目)": [
+    0.42,
+    0.58
+  ],
+  "3択の帯(連鎖の中)": [
+    0.7,
+    0.76
+  ],
+  "欠測(価格が引けなかった行数、遅れ別)": {
+    "0.5": 0,
+    "1": 0,
+    "2": 0
+  },
+  "行数の内訳": {
+    "dist_table.csv": 72,
+    "position_breakdown.csv": 36,
+    "judge_counts.csv": 12,
+    "action_counts.csv": 39,
+    "synthetic_traces.csv": 9
+  },
+  "行数の合計": 168,
+  "数値セル数(tables.md)": 1107,
+  "入力のMD5(読むだけ、書き換えていない)": {
+    "backtest_data/o3c_signal_continue_20260920/rows_continue.csv.gz": "c0c3c98fd88a4306459ebe16b5802db9",
+    "backtest_data/o3c_signal_materials_20260920/rows_materials.csv.gz": "1b88b2483444a88e369706076e3927e9",
+    "config/o3c_signal_logit_first.yaml": "9bafb01d675272c97b2f9cf55c75402c",
+    "config/o3c_signal_logit_chain.yaml": "96ec0710a46bcb9b5ac0233182f0d9e9",
+    "backtest_data/o3c_signal_materials_20260920/logit_ecdf_first.npz": "0187fba59e3526a958582fc5f65327d3",
+    "backtest_data/o3c_signal_materials_20260920/logit_ecdf_chain.npz": "da24154bb12064af56a59ceb8b4a1959"
+  }
+}
