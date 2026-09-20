@@ -14,3 +14,7 @@ print("table rows", rows, "numeric cells", cells)
 PY
 # 出力:
 table rows 57 numeric cells 224
+
+# 同じ数え方を反証者レビュー 1・2 に当てた(2026-09-20、監査 2 回目・指摘 1)
+docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW2_2026-09-19.md table rows 38 numeric cells 156
+docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW_2026-09-19.md table rows 16 numeric cells 58
