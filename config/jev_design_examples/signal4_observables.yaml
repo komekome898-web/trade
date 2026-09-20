@@ -1,0 +1,9 @@
+# SIGNAL 探索段 4(2026-09-20)。候補の観測量。定義の文は英語。
+reversal_by_premove: "mean signed price change from the bundle's last liquidation to h seconds later, stratified by the pre-liquidation move m(T) (signed change over the T seconds before the first liquidation); tests whether the post-liquidation reversal is proportional to the pre-move"
+residual_reversal_at_zero_premove: "mean post-liquidation reversal in the stratum where the pre-liquidation move m(T) is near zero; a non-zero value means the liquidation itself is followed by a reversal not explained by the preceding move"
+continuation_rate: "share of bundles followed by another liquidation bundle within 120 seconds, stratified by sweep size and pre-move"
+continuation_return_share: "share of bundles whose price h seconds after the last liquidation is still on the liquidation side of the last fill (r_end > 0), stratified by sweep size and pre-move"
+retrace_to_T: "retrace fraction relative to the price T seconds before the first liquidation: (p_end - p_h) / (p_end - p_T); > 1 means the price crossed back beyond the pre-move level"
+time_shape_by_premove: "post-liquidation price change at 1, 5, 10, 30 and 60 seconds, by pre-move tertile; whether the accumulation over the first minute depends on the pre-move"
+day_state_split: "reversal and continuation shares split by the day's bundle count tertile (calm vs busy days)"
+bf_same_grid: "bitFlyer and Binance price changes computed on the same 1-minute grid from the same baseline candle, at 5 and 15 minutes"
