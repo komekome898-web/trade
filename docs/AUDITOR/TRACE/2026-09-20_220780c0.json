@@ -5407,10 +5407,10 @@
   {
    "move": 203,
    "tools": {
-    "Bash": 7,
+    "Bash": 11,
     "Agent": 1
    },
-   "n_tools": 8,
+   "n_tools": 12,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
