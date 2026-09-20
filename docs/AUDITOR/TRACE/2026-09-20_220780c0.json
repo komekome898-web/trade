@@ -3242,10 +3242,10 @@
   {
    "move": 121,
    "tools": {
-    "Bash": 11,
+    "Bash": 12,
     "Agent": 1
    },
-   "n_tools": 12,
+   "n_tools": 13,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
