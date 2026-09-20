@@ -1,7 +1,7 @@
 """`scripts/o3c_jev_state.py`(Jev に渡す state を「トレーダーが言う英文の列」で組む
-道具)の試験。
+道具)+ `scripts/o3c_signal_logit.py`(V4 の比較相手の logistic)の試験。
 
-**測るもの**(委任文【作るもの】2)
+**測るもの**(委任文【作るもの】2・段1 委任文 20260920_o3c_signal_v4_prompt.md【作るもの】4)
   1. 文の型が設計(`SIGNAL_MATERIALS_DESIGN_2026-09-20.md` §6.2)の 13 本と一致する
      (合成の値で各文を手計算と比較。BUY/SELL の向きの語、1 件目で連鎖の内側の文
      (型3・4・8・9)が無い、欠測は "unknown")。
@@ -11,6 +11,10 @@
   4. 同じ入力で同じ文(決定性)。
   5. `paper_logs/` を開かない。
   6. 判定語が出力の markdown に無い。
+  7. V4(§7.1 の決定表)の 1 件目に「外す」文が無い / 連鎖の中に「外す」文が無い。
+  8. V4 の criteria が位置(1 件目 / 連鎖の中)で切り替わる。
+  9. N1・N2 が ts 以後を使わない(p0 書き換え不変)。
+  10. logistic の係数が前半だけから決まる(後半の値を変えても同じ)/ 予測が決定的。
 """
 from __future__ import annotations
 
@@ -37,6 +41,12 @@ _spec_js = importlib.util.spec_from_file_location(
 js = importlib.util.module_from_spec(_spec_js)
 assert _spec_js.loader is not None
 _spec_js.loader.exec_module(js)
+
+_spec_lg = importlib.util.spec_from_file_location(
+    "o3c_signal_logit", ROOT / "scripts" / "o3c_signal_logit.py")
+lg = importlib.util.module_from_spec(_spec_lg)
+assert _spec_lg.loader is not None
+_spec_lg.loader.exec_module(lg)
 
 NAN = float("nan")
 
@@ -427,3 +437,162 @@ def test_no_banned_words_in_source_or_sentences():
             js._sent13(row, BANDS),
         ])
         sc.check_no_banned(text, "sentences")
+
+
+# ---------------------------------------------------------------------------
+# (7) V4(決定表 §7.1): 1 件目・連鎖の中に「外す」側の材料の文言が無い
+# ---------------------------------------------------------------------------
+# 「外す」側の材料だけが持つ言い回し(その型が丸ごと消えるか、型の中のその節だけ
+# 消えるかは §7.1 の決定表どおり `o3c_jev_state.py` の docstring に書いた)。
+DROPPED_PHRASES_FIRST = [
+    "of prints, at",                # 型1(想定元本・時刻帯、丸ごと外す。type1 固有)
+    "opposite-side liquidation",    # 型5(A9、丸ごと外す)
+    "Open interest over the last hour",  # 型12(建玉の傾き、丸ごと外す)
+    "over 30 seconds",              # 型10 の偏りの変化(材料13、節だけ外す)
+]
+DROPPED_PHRASES_CHAIN = [
+    "of prints, at",                      # 型1(想定元本・時刻帯、丸ごと外す。type1 固有)
+    "opposite-side liquidation",          # 型5(A9、丸ごと外す)
+    "largest pullback was",               # 型8(A5、丸ごと外す)
+    "Since the cascade began",            # 型9(A3、丸ごと外す)
+    "over 30 seconds",                    # 型10(成行の偏り・変化、丸ごと外す)
+    "pulled back",                        # 型6 の戻り(材料R1、節だけ外す)
+    "not pulled back",
+    "than the previous one",              # 型3 の想定元本の比(材料3、節だけ外す)
+]
+
+
+def _v4_first_dataset(tmp_path, monkeypatch):
+    rows_path, materials_path, continue_path, day, ts1, ts2 = build_synthetic_dataset(tmp_path)
+    times = np.arange(ts1 - 400_000, ts1 + 400_000, 1000, dtype=np.int64)
+    prices = 100.0 + 0.0001 * (times - times[0])
+    sb, fake = _make_builder(tmp_path, times, prices)
+    monkeypatch.setattr(js, "load_window5", fake)
+    return sb
+
+
+def _v4_chain_dataset(tmp_path, monkeypatch):
+    rows_path, materials_path, continue_path, day, ts1, ts2 = build_synthetic_dataset(tmp_path)
+    times = np.arange(ts1 - 400_000, ts2 + 400_000, 1000, dtype=np.int64)
+    prices = 100.0 + 0.0001 * (times - times[0])
+    sb, fake = _make_builder(tmp_path, times, prices)
+    monkeypatch.setattr(js, "load_window5", fake)
+    return sb
+
+
+def test_v4_first_print_has_no_dropped_material_phrases(tmp_path, monkeypatch):
+    sb = _v4_first_dataset(tmp_path, monkeypatch)
+    sentences = sb.build_state_v4("p1")
+    joined = "\n".join(sentences)
+    for phrase in DROPPED_PHRASES_FIRST:
+        assert phrase not in joined, (phrase, sentences)
+    # N1_SEPARATES・N2_SEPARATES が両方 True(screen_N.csv の実測)なので
+    # 1 件目の文には N1・N2 が足されている
+    assert len(sentences) == 8
+
+
+def test_v4_chain_has_no_dropped_material_phrases(tmp_path, monkeypatch):
+    sb = _v4_chain_dataset(tmp_path, monkeypatch)
+    sentences = sb.build_state_v4("p2")
+    joined = "\n".join(sentences)
+    for phrase in DROPPED_PHRASES_CHAIN:
+        assert phrase not in joined, (phrase, sentences)
+    assert len(sentences) == 7
+
+
+# ---------------------------------------------------------------------------
+# (8) V4 の criteria が位置で切り替わる
+# ---------------------------------------------------------------------------
+def test_v4_questions_criteria_differ_by_position():
+    first = js.JEV_QUESTIONS_V4_FIRST["next_print_within_60s"]
+    chain = js.JEV_QUESTIONS_V4_CHAIN["next_print_within_60s"]
+    assert first["criteria"]["yes"] != chain["criteria"]["yes"]
+    assert first["criteria"]["no"] != chain["criteria"]["no"]
+    # instructions(問いの文そのもの)は §7.3 の指定どおり共通
+    assert first["instructions"] == chain["instructions"]
+    assert "fresh extreme" in first["criteria"]["yes"]
+    assert "gaps between prints" in chain["criteria"]["yes"]
+
+
+# ---------------------------------------------------------------------------
+# (9) N1・N2 が ts 以後を使わない(p0 書き換え不変)
+# ---------------------------------------------------------------------------
+def test_v4_n1_n2_ignore_future_prices_and_p0(tmp_path, monkeypatch):
+    rows_path, materials_path, continue_path, day, ts1, ts2 = build_synthetic_dataset(tmp_path)
+    times = np.arange(ts1 - 400_000, ts1 + 400_000, 1000, dtype=np.int64)
+    prices_a = 100.0 + 0.0001 * (times - times[0])
+    prices_b = prices_a.copy()
+    after = times >= ts1  # ts1 自身(p0 に当たる約定)を含めて以後を書き換える
+    prices_b[after] = prices_b[after] + 999.0
+
+    sb_a, fake_a = _make_builder(tmp_path, times, prices_a)
+    monkeypatch.setattr(js, "load_window5", fake_a)
+    v4_a = sb_a.build_state_v4("p1")
+
+    sb_b, fake_b = _make_builder(tmp_path, times, prices_b)
+    monkeypatch.setattr(js, "load_window5", fake_b)
+    v4_b = sb_b.build_state_v4("p1")
+
+    assert v4_a == v4_b
+
+
+def test_n2_position_uses_only_causal_window():
+    times = np.array([0, 60_000, 120_000, 179_000, 179_500, 180_000, 180_500],
+                     dtype=np.int64)
+    prices = np.array([100.0, 101.0, 99.0, 100.5, 100.5, 999.0, 999.0])
+    # ts=180_000。窓は [180000-300000, 180000) = [-120000, 180000)。179500 まで
+    # の約定だけを使う(180000・180500 は含めない)。p_pre は 179500 の 100.5。
+    pos = js.n2_position(times, prices, 180_000, "BUY", 100.5)
+    # 窓内([0,60000,120000,179000,179500])の価格は 100〜101、p_pre=100.5 は
+    # ほぼ中央(BUY の清算方向は高い方)
+    assert 0.0 <= pos <= 1.0
+    pos_future_changed = js.n2_position(
+        np.array([0, 60_000, 120_000, 179_000, 179_500, 180_000, 180_500, 300_000],
+                 dtype=np.int64),
+        np.array([100.0, 101.0, 99.0, 100.5, 100.5, 999.0, 999.0, -5.0]),
+        180_000, "BUY", 100.5)
+    assert pos == pytest.approx(pos_future_changed)
+
+
+# ---------------------------------------------------------------------------
+# (10) logistic(scripts/o3c_signal_logit.py): 前半だけから係数が決まる・決定的
+# ---------------------------------------------------------------------------
+def _synthetic_logit_df(seed: int = 0, n_each: int = 30) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    rows = []
+    for half in ("前半", "後半"):
+        for i in range(n_each):
+            a = rng.normal()
+            b = rng.normal()
+            y = 1 if (a + 0.5 * b + rng.normal(scale=0.1)) > 0 else 0
+            rows.append({"print_id": f"{half}_{i}", "half": half,
+                        "cand_a": a, "cand_b": b, "label_60": y})
+    return pd.DataFrame(rows)
+
+
+def test_logit_newton_predictions_deterministic():
+    df = _synthetic_logit_df()
+    df_fh = df[df["half"] == "前半"].reset_index(drop=True)
+    X, _cuts = lg.build_matrix(df_fh, ["cand_a", "cand_b"])
+    y = df_fh["label_60"].to_numpy(float)
+    beta1 = lg.newton_logistic(X, y)
+    beta2 = lg.newton_logistic(X, y)
+    assert np.array_equal(beta1, beta2)
+    p1 = lg.predict(X, beta1)
+    p2 = lg.predict(X, beta1)
+    assert np.array_equal(p1, p2)
+
+
+def test_logit_beta_determined_by_front_half_only():
+    df = _synthetic_logit_df()
+    beta_a = lg.fit_beta_front_half(df, ["cand_a", "cand_b"])
+
+    df2 = df.copy()
+    back = df2["half"] == "後半"
+    # 後半の材料・ラベルをまるごと書き換えても前半だけの係数は変わらない
+    df2.loc[back, "cand_a"] = df2.loc[back, "cand_a"] + 999.0
+    df2.loc[back, "cand_b"] = df2.loc[back, "cand_b"] - 999.0
+    df2.loc[back, "label_60"] = 1 - df2.loc[back, "label_60"]
+    beta_b = lg.fit_beta_front_half(df2, ["cand_a", "cand_b"])
+
+    assert np.allclose(beta_a, beta_b)

@@ -42,6 +42,12 @@ cont = importlib.util.module_from_spec(_spec_sc)
 assert _spec_sc.loader is not None
 _spec_sc.loader.exec_module(cont)
 
+_spec_mats = importlib.util.spec_from_file_location(
+    "o3c_signal_materials", _HERE / "o3c_signal_materials.py")
+mats = importlib.util.module_from_spec(_spec_mats)
+assert _spec_mats.loader is not None
+_spec_mats.loader.exec_module(mats)
+
 REPO_ROOT = _HERE.parent
 NAN = float("nan")
 
@@ -82,6 +88,15 @@ QUINTILE_SOURCES = {
 W_60S_MS = 60_000
 W_10S_MS = 10_000
 W_5S_MS = 5_000
+N2_WINDOW_MS = 300_000        # N1・N2(設計 §7.2)の N2。直前 5 分。
+
+# --- V4(設計 §7.1・§7.2。委任文 20260920_o3c_signal_v4_prompt.md 段1) ------------
+# N1・N2 を V4 の 1 件目の文に足すかどうか(前半・組 A〈単発 対 多件の最初〉での
+# 分かれ方 |分かれ方 − 0.5| ≥ 0.03、`compute_screen_n()` の実測 = `screen_N.csv`)。
+# N1(= cand_C3 をそのまま流用): 分かれ方 0.5824(|差| 0.0824)→ 分かれる。
+# N2(直前 5 分の値幅の位置): 分かれ方 0.5340(|差| 0.0340)→ 僅差だが分かれる。
+N1_SEPARATES = True
+N2_SEPARATES = True
 
 # --- この道具が決めた定数(設計に無い判断。§4 に列挙・報告にも書く) -----------------
 GAP_RATIO_EPS = 0.15          # 型3「間隔が縮まった/伸びた/変わらない」の判定幅
@@ -114,6 +129,29 @@ BANNED_WORDS = cont.BANNED_WORDS
 price_at_or_before = cont.price_at_or_before
 range_bp_window = cont.range_bp_window
 load_window5 = cont.load_window5
+
+
+def n2_position(times, prices, ts_ms: int, side: str, p_pre: float) -> float:
+    """N2(設計 §7.2)。直前 5 分 `[ts-300000, ts)` の価格レンジの中で p_pre が
+    どこにいるか(0 = 清算と逆向きの端、1 = 清算の向きの端)。ts 以前だけ(窓の右端
+    `ts` は `searchsorted(..., side="left")` により排他 = 自分自身のプリントの
+    約定は含まない、他の窓計算と同じ規則)。"""
+    if times is None or times.size == 0 or p_pre is None or not (
+            math.isfinite(p_pre) and p_pre > 0):
+        return NAN
+    lo, hi = ts_ms - N2_WINDOW_MS, ts_ms
+    i0 = int(np.searchsorted(times, lo, side="left"))
+    i1 = int(np.searchsorted(times, hi, side="left"))
+    if i1 <= i0:
+        return NAN
+    seg = prices[i0:i1]
+    seg_hi, seg_lo = float(seg.max()), float(seg.min())
+    if seg_hi <= seg_lo:
+        return NAN
+    s = cont.REACT_SIGN[side]
+    liq_end = seg_hi if s > 0 else seg_lo
+    opp_end = seg_lo if s > 0 else seg_hi
+    return (p_pre - opp_end) / (liq_end - opp_end)
 
 
 # ===========================================================================
@@ -419,6 +457,84 @@ def _sent13(row: dict, bands: dict) -> str:
 
 
 # ===========================================================================
+# 3b. V4 だけの文(設計 §7.1 の決定表。1 つの文の型が複数の材料をまとめている場所で
+#     材料ごとに「残す」「外す」が分かれた 3 箇所(型3・型6〈連鎖の中〉・型10〈1 件目〉)
+#     だけ、外す側の材料を書かない版を別に用意する。他の型は決定表どおり材料が
+#     全部「残す」側にまとまっている(または全部「外す」側で型ごと消える)ので、
+#     元の型をそのまま使うか、丸ごと呼ばない。
+# ===========================================================================
+def _sent3_v4(row: dict, a: float | None, b: float | None) -> str:
+    """連鎖の中 V4(型3): 間隔の比(材料2、決定表「残して向きを criteria に」)だけを
+    使う。想定元本の比(材料3、決定表「外す」)の「larger/smaller than previous」は
+    書かない。"""
+    ratio2 = row.get("cand_2")
+    gap_word = _trend_word(ratio2, GAP_RATIO_EPS, "shorter", "longer", "about the same")
+    if a is None:
+        return "unknown"
+    if b is None:
+        return f"The previous same-side liquidation was {_secs(a)} seconds ago."
+    return (f"The last two same-side liquidations were {_secs(a)} and {_secs(b)} "
+            f"seconds ago; the gaps are "
+            f"{'getting ' + gap_word if gap_word != 'about the same' else gap_word}.")
+
+
+def _sent6_v4(row: dict) -> str:
+    """連鎖の中 V4(型6): 極値からの秒数(材料A6、決定表「残す」)だけを使う。
+    戻りの大きさ(材料R1、決定表「外す」)の「pulled back / not pulled back」は
+    書かない(1 件目は R1 も「残して向きを criteria に」なので元の `_sent6` を使う)。"""
+    side = row["side"]
+    w = SIDE_WORDS[side]
+    a6 = row.get("cand_A6")
+    if a6 is None or not math.isfinite(a6):
+        return "unknown"
+    return f"Price made a new 60-second {w['extreme']} {_secs(a6)} seconds ago."
+
+
+def _sent10_v4(row: dict, m5: float | None) -> str:
+    """1 件目 V4(型10): 成行の偏り 5 秒(材料9、決定表「残して向きを criteria に」)
+    だけを使う。30 秒との変化(材料13、決定表「外す」)の「more/less one-sided」は
+    書かない(連鎖の中は材料9・13 とも「外す」なので型10 自体を呼ばない)。"""
+    side = row["side"]
+    w = SIDE_WORDS[side]
+    pct5 = _pct(row.get("mat9_taker_imbalance_5s"))
+    if pct5 is None:
+        return "unknown"
+    if m5 is not None and math.isfinite(m5):
+        m5_txt = f"Price {w['pos'] if m5 >= 0 else w['neg']} {_bp(abs(m5))} bp in the last 5 seconds."
+    else:
+        m5_txt = "Price move in the last 5 seconds: unknown."
+    return f"Taker flow in the last 5 seconds: {pct5}% {w['flow']}. {m5_txt}"
+
+
+def _sentN1(row: dict) -> str:
+    """N1(設計 §7.2)。C3(その日の極値からの距離)の「距離 0」を言葉にしたもの。
+    1 件目だけ(分かれれば V4 の 1 件目の文に足す)。"""
+    side = row["side"]
+    w = SIDE_WORDS[side]
+    c3 = row.get("cand_C3")
+    if c3 is None or not math.isfinite(c3):
+        return "unknown"
+    if c3 <= DAY_EXTREME_EPS_BP:
+        return (f"This print is at or beyond a fresh day {w['extreme']}: price is "
+                f"entering territory not yet traded today.")
+    return f"Price is {_bp(c3)} bp short of a fresh day {w['extreme']}."
+
+
+def _sentN2(row: dict, pos: float | None) -> str:
+    """N2(設計 §7.2)。直前 5 分の値幅の中で今どこにいるか(3 段)。1 件目だけ。"""
+    side = row["side"]
+    w = SIDE_WORDS[side]
+    if pos is None or not math.isfinite(pos):
+        return "unknown"
+    if pos >= 2.0 / 3.0:
+        return f"Within the last 5 minutes, price is near the {w['extreme']} end of the range."
+    if pos <= 1.0 / 3.0:
+        return (f"Within the last 5 minutes, price is near the opposite end of the "
+                f"range from the {w['extreme']}.")
+    return "Within the last 5 minutes, price is near the middle of the range."
+
+
+# ===========================================================================
 # 4. 行(print_id)から state を組む
 # ===========================================================================
 class StateBuilder:
@@ -514,7 +630,8 @@ class StateBuilder:
         day = str(row["day"])
         times, prices = self._trades_for_day(day)
         p_pre, _ = price_at_or_before(times, prices, ts - 1)
-        out = {"m60": NAN, "m10": NAN, "m5": NAN, "r60": NAN, "cascade": NAN}
+        out = {"m60": NAN, "m10": NAN, "m5": NAN, "r60": NAN, "cascade": NAN,
+               "p_pre": p_pre}
         if not (p_pre == p_pre and p_pre > 0):
             return out
         for key, w_ms in (("m60", W_60S_MS), ("m10", W_10S_MS), ("m5", W_5S_MS)):
@@ -559,6 +676,39 @@ class StateBuilder:
         sentences.append(_sent13(row, self.bands))
         return sentences
 
+    def build_state_v4(self, print_id: str) -> list[str]:
+        """V4(設計 §7.1 の決定表)。位置(1 件目か否か)は `cand_1 == 0` で code が
+        決める(委任文【作るもの】1)。1 件目と連鎖の中で別の文の集合を返す。"""
+        row = self.row_dict(print_id)
+        i = self.idx_of[print_id]
+        is_first = float(row["cand_1"]) == 0
+        sentences: list[str] = []
+        if is_first:
+            sentences.append(_sent2_first())
+            sentences.append(_sent6(row))                      # A6+R1 とも残す(型そのまま)
+            mv = self._bp_moves(row, i)
+            sentences.append(_sent7(row, mv["m60"], mv["m10"], mv["r60"]))  # 15+11 とも残す
+            sentences.append(_sent10_v4(row, mv["m5"]))         # 9 残す・13 外す
+            sentences.append(_sent11(row, self.bands))          # 8+5' 残す(向きは criteria)
+            sentences.append(_sent13(row, self.bands))          # 14+C3+C4 とも残す
+            if N1_SEPARATES:
+                sentences.append(_sentN1(row))
+            if N2_SEPARATES:
+                pos = n2_position(*self._trades_for_day(str(row["day"])),
+                                  int(row["ts_ms"]), row["side"], mv["p_pre"])
+                sentences.append(_sentN2(row, pos))
+        else:
+            sentences.append(_sent2_nonfirst(row, self.bands))   # 1+F3 残す
+            a, b = self._prev_gaps_s(i)
+            sentences.append(_sent3_v4(row, a, b))                # 2 残す・3(想定元本)外す
+            sentences.append(_sent4(row, self.bands))             # F5 残す
+            sentences.append(_sent6_v4(row))                      # A6 残す・R1 外す
+            mv = self._bp_moves(row, i)
+            sentences.append(_sent7(row, mv["m60"], mv["m10"], mv["r60"]))  # 15+11 とも残す
+            sentences.append(_sent11(row, self.bands))            # 8+5' 残す(criteria)
+            sentences.append(_sent13(row, self.bands))            # 14+C3+C4 残す(C3 は反転)
+        return sentences
+
     def build_state_raw(self, print_id: str) -> dict:
         """V3(前段 `jev_state_for_print` から `price_path_bp_last_60s` を除いたもの)。"""
         row = self.row_dict(print_id)
@@ -569,6 +719,72 @@ class StateBuilder:
                                          self.all_notional, times, prices, mat_row)
         del state["price_path_bp_last_60s"]
         return state
+
+
+# ===========================================================================
+# 4b. N1・N2(設計 §7.2)の前半・組 A(単発 対 多件の最初)での分かれ方
+# ===========================================================================
+SCREEN_N_PATH = (REPO_ROOT / "backtest_data" / "o3c_signal_materials_20260920"
+                 / "screen_N.csv")
+
+
+def compute_screen_n(sb: StateBuilder) -> list[dict]:
+    """N1(= cand_C3 をそのまま流用)・N2(n2_position)の前半・組 A だけでの
+    分かれ方(`o3c_signal_materials.py: separation_prob`・`screen_rows` と同じ数え
+    方。委任文【作るもの】2)。"""
+    df_a = sb.rows_fh[sb.rows_fh["group"] == "A"].reset_index(drop=True)
+    n1_vals = pd.to_numeric(df_a["cand_C3"], errors="coerce").to_numpy(float)
+    n2_vals = np.full(len(df_a), NAN)
+    for idx, r in df_a.iterrows():
+        day = str(r["day"])
+        ts = int(r["ts_ms"])
+        side = str(r["side"])
+        times, prices = sb._trades_for_day(day)
+        p_pre, _ = price_at_or_before(times, prices, ts - 1)
+        n2_vals[idx] = n2_position(times, prices, ts, side, p_pre)
+    work = pd.DataFrame({"pos_label": df_a["pos_label"].to_numpy(object),
+                         "cand_N1": n1_vals, "cand_N2": n2_vals})
+    return mats.screen_rows(work, "A", ["N1", "N2"], "単発", "多件の最初")
+
+
+# ===========================================================================
+# 4c. V4 の問い(設計 §7.3。英文はそのまま。1 件目 / 連鎖の中で criteria が別)
+# ===========================================================================
+_V4_INSTRUCTIONS = ("Will another same-side liquidation print occur within the "
+                    "next 60 seconds?")  # 設計 §7.3「1 件目: instructions は同じ」
+JEV_QUESTIONS_V4_FIRST = {
+    "next_print_within_60s": {
+        "type": "noul",
+        "instructions": _V4_INSTRUCTIONS,
+        "criteria": {
+            "yes": ("the tape is busy and volatility has picked up versus the last "
+                    "hour; price is at or breaking the day's extreme and has just "
+                    "set a fresh extreme; little or no open interest is mapped just "
+                    "ahead (price is entering territory where positions have not "
+                    "been built); the print is small relative to the recent range"),
+            "no": ("a quiet tape, calm volatility, price well inside the day's "
+                   "range, a large amount of open interest mapped just ahead, or "
+                   "an extremely one-sided last 5 seconds on a quiet tape (an "
+                   "isolated forced print)"),
+        },
+    }
+}
+JEV_QUESTIONS_V4_CHAIN = {
+    "next_print_within_60s": {
+        "type": "noul",
+        "instructions": _V4_INSTRUCTIONS,
+        "criteria": {
+            "yes": ("same-side liquidations are coming faster and larger (more in "
+                    "the last 10 seconds and in the cascade so far), the tape is "
+                    "busy and volatility rising, price keeps setting fresh "
+                    "extremes, near the day's extreme, gaps between prints not "
+                    "lengthening"),
+            "no": ("gaps between prints are lengthening, the last extreme was set "
+                   "many seconds ago, price is well inside the day's range, or a "
+                   "large amount of open interest sits just ahead"),
+        },
+    }
+}
 
 
 # ===========================================================================
@@ -697,6 +913,224 @@ def run_preview(sb: StateBuilder, out_dir: Path = STATE_PREVIEW_DIR,
 
 
 # ===========================================================================
+# 6. V4 の前半の確認(委任文【作るもの】5。1 件目 600 + 連鎖の中 300、V1・V4、
+#    1,800 回まで、`keep_alive=True`、2 件/秒)
+# ===========================================================================
+V4_OUT_DIR = REPO_ROOT / "data" / "jev" / "v4"
+V4_PREVIEW_SEED = 20260920
+V4_PREVIEW_N_FIRST = 600
+V4_PREVIEW_N_CHAIN = 300
+V4_PREVIEW_DAY_CAP = 3   # 委任文「日を跨いで偏らないよう 1 日 3 件まで」
+
+
+def pick_v4_preview_ids(sb: StateBuilder, seed: int = V4_PREVIEW_SEED) -> tuple[dict, dict]:
+    """前半から 1 件目 600 + 連鎖の中 300(委任文【作るもの】5)。層化は前段
+    (`pick_preview_ids`)と同じ側 × 材料1の3群の切り値を使い、その集団に実在する
+    群だけを使う(1 件目は cand_1=0 が常に最小の帯に入るので、実質「側」だけの
+    2 群になる)。1 日 3 件まで(**設計に無い判断**: 1件目・連鎖の中それぞれで
+    独立に数える。両方合わせて 1 日 3 件にすると 900 件 ÷ 3 = 300 日分が要るが
+    前半は 228 日しか無く、達成できないため)。"""
+    import random
+    fh = sb.rows_fh
+    mat1_all = pd.to_numeric(fh["cand_1"], errors="coerce").to_numpy(float)
+    lo, hi = cont.ex5.tertile_cuts(mat1_all)   # 前段(pick_preview_ids)と同じ切り値
+    rng = random.Random(seed)
+    picked: dict = {}
+    strata_n: dict = {}
+    for pool_name, pool_df, n_sample in (
+            ("first", fh[fh["cand_1"] == 0], V4_PREVIEW_N_FIRST),
+            ("chain", fh[fh["cand_1"] > 0], V4_PREVIEW_N_CHAIN)):
+        mat1 = pd.to_numeric(pool_df["cand_1"], errors="coerce").to_numpy(float)
+        tert = np.where(mat1 <= lo, 1, np.where(mat1 <= hi, 2, 3))
+        side_arr = pool_df["side"].to_numpy(object)
+        pid_arr = pool_df["print_id"].to_numpy(object)
+        day_arr = pool_df["day"].to_numpy(object)
+        strata = sorted(set(zip(side_arr.tolist(), tert.tolist())))
+        per = n_sample // len(strata)
+        extra = n_sample - per * len(strata)
+        pool_picked: list = []
+        day_count: dict = {}
+        for k, (s, t) in enumerate(strata):
+            mask = (side_arr == s) & (tert == t)
+            idxs = np.nonzero(mask)[0].tolist()
+            rng.shuffle(idxs)
+            target = per + (1 if k < extra else 0)
+            got = 0
+            for ii in idxs:
+                if got >= target:
+                    break
+                d = day_arr[ii]
+                if day_count.get(d, 0) >= V4_PREVIEW_DAY_CAP:
+                    continue
+                pool_picked.append(pid_arr[ii])
+                day_count[d] = day_count.get(d, 0) + 1
+                got += 1
+            strata_n[f"{pool_name}_{s}_{t}"] = got
+        picked[pool_name] = pool_picked
+    return picked, strata_n
+
+
+def run_preview_v4(sb: StateBuilder, out_dir: Path = V4_OUT_DIR,
+                   rate_per_sec: float = RATE_PER_SEC) -> dict:
+    """V1(基準の全材料+基準 criteria)と V4(決定表で絞った材料+位置別 criteria)
+    を同じ印刷(print)に当てる(委任文【作るもの】5)。`keep_alive=True`(L-323)。"""
+    picked, strata_n = pick_v4_preview_ids(sb)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    answers_path = out_dir / "preview_answers.jsonl"
+    client = JevClient(model=JEV_MODEL, log_dir=str(out_dir / "calls"), keep_alive=True)
+    t_last = 0.0
+    n_calls, n_err = 0, 0
+    strata_by_pool = {"first": [], "chain": []}
+    with answers_path.open("w", encoding="utf-8") as fh_out:
+        for pool_name, questions_v4 in (("first", JEV_QUESTIONS_V4_FIRST),
+                                        ("chain", JEV_QUESTIONS_V4_CHAIN)):
+            for pid in picked[pool_name]:
+                sentences_v1 = sb.build_state_sentences(pid)
+                sentences_v4 = sb.build_state_v4(pid)
+                for version, state, questions in (
+                        ("V1", sentences_v1, JEV_QUESTIONS_V1),
+                        ("V4", sentences_v4, questions_v4)):
+                    state_str = json.dumps(state, ensure_ascii=False, sort_keys=True,
+                                           default=str)
+                    assert_clean(state_str)
+                    dt = time.time() - t_last
+                    if dt < 1.0 / rate_per_sec:
+                        time.sleep(1.0 / rate_per_sec - dt)
+                    t_last = time.time()
+                    n_calls += 1
+                    rec = {"print_id": pid, "組": f"{pool_name}_{version}"}
+                    t0c = time.time()
+                    try:
+                        resp = client.evaluate(state, questions)
+                        rec["latency_s"] = round(time.time() - t0c, 3)
+                        usage = resp.get("usage") or {}
+                        qid = next(iter(questions))
+                        ans = resp.get("answers", {}).get(qid, {})
+                        rec["prob"] = ans.get("noul")
+                        rec["input_tokens"] = usage.get("input_tokens")
+                    except JevError as e:
+                        n_err += 1
+                        rec["latency_s"] = round(time.time() - t0c, 3)
+                        rec["error"] = str(e)
+                    fh_out.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    client.close()
+    return {"呼び出し数": n_calls, "エラー数": n_err,
+            "対象件数": {k: len(v) for k, v in picked.items()},
+            "層化の内訳": strata_n}
+
+
+# ===========================================================================
+# 7. V4 の下見の表(`preview_answers.jsonl` を読むだけ。数値は data/jev/ にだけ置く)
+# ===========================================================================
+V4_LOGIT_OOF_PATH = V4_OUT_DIR / "logit_oof.json"
+BOOT_N = 1000
+BOOT_SEED = 20260920
+
+
+def _bootstrap_sep_se(pos: np.ndarray, neg: np.ndarray, n_boot: int = BOOT_N,
+                      seed: int = BOOT_SEED) -> float:
+    """`separation_prob` のブートストラップ SE(復元抽出、両側とも)。"""
+    if pos.size == 0 or neg.size == 0:
+        return NAN
+    rng = np.random.default_rng(seed)
+    vals = np.empty(n_boot)
+    for b in range(n_boot):
+        p = rng.choice(pos, size=pos.size, replace=True)
+        n = rng.choice(neg, size=neg.size, replace=True)
+        vals[b] = mats.separation_prob(p, n)
+    return float(np.nanstd(vals))
+
+
+def _precision_at(prob: np.ndarray, y: np.ndarray, thr: float) -> tuple[float, int]:
+    mask = prob >= thr
+    n = int(mask.sum())
+    if n == 0:
+        return NAN, 0
+    return float(y[mask].mean()), n
+
+
+def build_v4_preview_tables(out_dir: Path = V4_OUT_DIR) -> str:
+    """`preview_answers.jsonl`(委任文【作るもの】5)を読み、1 件目 / 連鎖の中
+    それぞれの V1・V4 の順位分離(ブートストラップ SE つき)・0.05 刻みの分布・
+    閾値ごとの適合率・logistic(out-of-fold)との比較・遅延の分位を md にする。"""
+    answers_path = out_dir / "preview_answers.jsonl"
+    recs = [json.loads(line) for line in answers_path.read_text().splitlines() if line]
+    df = pd.DataFrame(recs)
+    df[["pool", "version"]] = df["組"].str.split("_", n=1, expand=True)
+
+    cont_df = pd.read_csv(DEFAULT_CONTINUE_ROWS, usecols=["print_id", "label_60"],
+                          low_memory=False)
+    label_of = cont_df.set_index("print_id")["label_60"].to_dict()
+    df["label_60"] = df["print_id"].map(label_of)
+
+    oof = {}
+    if V4_LOGIT_OOF_PATH.exists():
+        oof = json.loads(V4_LOGIT_OOF_PATH.read_text())
+    oof_scene = {"first": oof.get("1件目", {}), "chain": oof.get("連鎖の中", {})}
+
+    lines = ["# V4 前半の下見の表(数値は data/jev/ にだけ置く)", "",
+            "委任文: `docs/DATA/delegations/20260920_o3c_signal_v4_prompt.md` 段1",
+            "設計: `docs/PHASE2/O3C/SIGNAL/SIGNAL_MATERIALS_DESIGN_2026-09-20.md` §7.5", ""]
+
+    lat = pd.to_numeric(df["latency_s"], errors="coerce").to_numpy(float)
+    lat = lat[np.isfinite(lat)]
+    lines += ["## 遅延(全呼び出し、p50/p90/p99、秒)", "",
+             f"- p50 {np.percentile(lat, 50):.3f} / p90 {np.percentile(lat, 90):.3f} "
+             f"/ p99 {np.percentile(lat, 99):.3f}(n={lat.size})", ""]
+
+    for pool in ("first", "chain"):
+        pool_label = "1件目" if pool == "first" else "連鎖の中"
+        lines.append(f"## {pool_label}")
+        lines.append("")
+        for version in ("V1", "V4"):
+            sub = df[(df["pool"] == pool) & (df["version"] == version)].copy()
+            prob = pd.to_numeric(sub["prob"], errors="coerce").to_numpy(float)
+            y = pd.to_numeric(sub["label_60"], errors="coerce").to_numpy(float)
+            ok = np.isfinite(prob) & np.isfinite(y)
+            prob_ok, y_ok = prob[ok], y[ok].astype(int)
+            n_err = int((~np.isfinite(prob)).sum())
+            sep = (mats.separation_prob(prob_ok[y_ok == 1], prob_ok[y_ok == 0])
+                  if prob_ok.size else NAN)
+            se = _bootstrap_sep_se(prob_ok[y_ok == 1], prob_ok[y_ok == 0])
+            hit05 = (float(((prob_ok >= 0.5).astype(int) == y_ok).mean())
+                    if prob_ok.size else NAN)
+            bins = np.arange(0, 1.0001, 0.05)
+            hist, _ = np.histogram(prob_ok, bins=bins)
+            lines += [f"### {version}", "",
+                     f"- 件数 {sub.shape[0]}(エラー・欠測 {n_err})",
+                     f"- 順位分離(y=label_60) {sep:.4f} ± {se:.4f}(ブートストラップ SE、"
+                     f"n_boot={BOOT_N})",
+                     f"- 的中(閾値0.5) {hit05:.4f}", "",
+                     "0.05 刻みの分布(件数): " + ", ".join(
+                         f"[{b:.2f},{b+0.05:.2f})={int(c)}"
+                         for b, c in zip(bins[:-1], hist)),
+                     "", "| 閾値 | 適合率 | 件数 |", "|---|---|---|"]
+            for thr in (0.6, 0.7, 0.8):
+                prec, cnt = _precision_at(prob_ok, y_ok, thr)
+                prec_s = f"{prec:.4f}" if prec == prec else "NaN"
+                lines.append(f"| {thr} | {prec_s} | {cnt} |")
+            lines.append("")
+
+        # logistic(out-of-fold)との比較(このプールの前半サンプルに限る)
+        oof_map = oof_scene[pool]
+        if oof_map:
+            sub_v4 = df[(df["pool"] == pool) & (df["version"] == "V4")]
+            jev_prob = pd.to_numeric(sub_v4["prob"], errors="coerce").to_numpy(float)
+            logit_prob = sub_v4["print_id"].map(oof_map).to_numpy(float)
+            y = pd.to_numeric(sub_v4["label_60"], errors="coerce").to_numpy(float)
+            ok = np.isfinite(jev_prob) & np.isfinite(logit_prob) & np.isfinite(y)
+            if int(ok.sum()) >= 2:
+                logit_sep = mats.separation_prob(logit_prob[ok][y[ok] == 1],
+                                                  logit_prob[ok][y[ok] == 0])
+                corr = float(np.corrcoef(jev_prob[ok], logit_prob[ok])[0, 1])
+                lines += ["### logistic(out-of-fold、同じ印刷)との比較", "",
+                         f"- logistic の順位分離(このサンプル、n={int(ok.sum())}) "
+                         f"{logit_sep:.4f}",
+                         f"- Jev(V4)の確率と logistic の相関係数 {corr:.4f}", ""]
+    return "\n".join(lines)
+
+
+# ===========================================================================
 # main
 # ===========================================================================
 def main(argv=None) -> int:
@@ -705,7 +1139,8 @@ def main(argv=None) -> int:
     ap.add_argument("--continue-path", type=Path, default=DEFAULT_CONTINUE_ROWS)
     ap.add_argument("--rows-path", type=Path, default=DEFAULT_ROWS_PRINTS)
     ap.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
-    ap.add_argument("--stage", choices=("bands", "preview", "all"), default="all")
+    ap.add_argument("--stage", choices=("bands", "preview", "screen_n", "v4_preview", "all"),
+                    default="all")
     ap.add_argument("--n-sample", type=int, default=N_PREVIEW)
     a = ap.parse_args(argv)
 
@@ -719,6 +1154,22 @@ def main(argv=None) -> int:
     write_bands_yaml(sb.bands)
     print(f"帯の境界を書いた -> {BANDS_PATH}", flush=True)
     if a.stage == "bands":
+        return 0
+
+    if a.stage == "screen_n":
+        rows = compute_screen_n(sb)
+        cont.write_csv(SCREEN_N_PATH, rows)
+        check_no_banned(SCREEN_N_PATH.read_text(), "screen_N.csv")
+        print(f"screen_N を書いた -> {SCREEN_N_PATH}", flush=True)
+        return 0
+
+    if a.stage == "v4_preview":
+        note = run_preview_v4(sb)
+        note["経過秒"] = round(time.time() - t0, 1)
+        (V4_OUT_DIR / "preview_notes.json").write_text(
+            json.dumps(note, ensure_ascii=False, indent=2))
+        print(f"V4 呼び出し {note['呼び出し数']} 件、エラー {note['エラー数']} 件、"
+              f"{note['経過秒']}秒 -> {V4_OUT_DIR}", flush=True)
         return 0
 
     note = run_preview(sb, n_sample=a.n_sample)
