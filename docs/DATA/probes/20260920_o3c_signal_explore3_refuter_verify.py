@@ -34,3 +34,9 @@ print("  ctrl_a W_b=0 share", round(float(((ca.t_end_ms - ca.ctrl_t_ms)>=0).mean
 for h in (60,300,900):
     mu, se, n = cl(liq[f"bf_r_pre_{h}"].to_numpy(float), liq["day"].to_numpy()); print(f"致命 6: bf_r_pre_{h} {mu:+.3f}±{se:.3f} n={n}")
 print("  bf baseline offset mean s", round(float((liq.t_pre_ms % 60000).mean()/1000),1))
+
+# 追記(2026-09-20、報告の監査 3 回目・指摘 3): §3 の表に r_end(60 秒)の列を足すための値
+print("--- r_end_60 by sweep tertile (F5 cuts: 0.200939 / 8.076017) ---")
+lo, hi = 0.200939, 8.076017
+for tag, m in (("Q1", (S>0)&(S<=lo)), ("Q2", (S>lo)&(S<=hi)), ("Q3", S>hi)):
+    mu, se, n = cl(liq[m]["r_end_60"].to_numpy(float), liq[m]["day"].to_numpy()); print(f"sweep {tag} n={n} r_end_60 {mu:+.3f}±{se:.3f}")
