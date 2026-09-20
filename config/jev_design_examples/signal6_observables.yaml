@@ -8,3 +8,4 @@ calibration_of_probability: "for Jev's and the rule's probability of continuatio
 material_distribution_by_outcome: "for each material known at the print, its distribution among prints that continued versus prints that stopped (no averaging of price moves)"
 price_move_conditional_on_true_label: "signed price move after prints that actually continued versus actually stopped (ex-post, diagnostic only), to bound the value of a perfect decision"
 forward_move_all_prints: "mean and median signed price change from each print to h seconds later, as in exploration 5 (baseline only)"
+control_same_momentum: "the same rule and the same Jev judgment applied at non-liquidation times of the same day matched on the 10-second burst ratio and 5-second taker imbalance bands, with the payoff of following the momentum direction; shows whether the liquidation itself adds anything beyond momentum"
