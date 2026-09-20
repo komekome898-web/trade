@@ -2,3 +2,8 @@
 REFUTER_REVIEW7: 0
 REFUTER_REVIEW8: 0
 累計: 1167 + 0 + 0 = 1167
+
+# 追記(監査 2 回目の指摘 2): 表以外の行の数字を数える粗い数え方(併記用。1〜6 には当てていない)
+# python3: for line in open(path): if line.startswith('|'): continue; toks=re.findall(r'(?<![A-Za-z_])\d+(?:\.\d+)?', line); if len(toks)>=2: n+=len(toks)
+REFUTER_REVIEW7_2026-09-20.md 503
+REFUTER_REVIEW8_2026-09-20.md 287
