@@ -1,0 +1,11 @@
+# SIGNAL 探索段 5(2026-09-20)。対照で合わせる候補の変数。判定の量 = r(h) と 同じ側の次の清算の割合(2 回走らせる)。定義の文は英語。
+m_pre_T: "pre-print move: signed price change over the T seconds before the liquidation print, in basis points (positive = in the liquidation direction)"
+print_impact: "this print's own sweep k: signed price change from the last trade before the print to the first trade at or after it, in basis points"
+recent_density: "number of same-side liquidation prints in the 5 minutes before this print (past only)"
+side: "whether the print liquidated a long (SELL) or a short (BUY)"
+print_notional: "notional value of this liquidation print"
+time_of_day: "UTC hour of the print"
+bin_pct: "thinness of the price bin at the print, computed from the preceding W hours of volume"
+dist_node_bp: "distance in basis points from the print price to the nearest high-volume price node of the preceding W hours"
+prints_per_day: "number of liquidation prints on the same UTC day (a day-state proxy; partly future within the day)"
+next_print_gap_s: "seconds from this print to the next same-side print (a future quantity; known only after the fact)"
