@@ -3933,10 +3933,10 @@
   {
    "move": 147,
    "tools": {
-    "Bash": 4,
+    "Bash": 5,
     "Agent": 1
    },
-   "n_tools": 5,
+   "n_tools": 6,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
