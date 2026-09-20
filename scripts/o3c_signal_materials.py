@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""清算を起点とした値動きの予測可能性 — **材料の選定**の道具(2026-09-20)。
+"""清算を起点とした値動きの予測可能性 — **材料の選定**の道具(2026-09-20、続く2 で 24 本に更新)。
 
-設計: `docs/PHASE2/O3C/SIGNAL/SIGNAL_MATERIALS_DESIGN_2026-09-20.md`
-委任文: `docs/DATA/delegations/20260920_o3c_signal_materials_prompt.md`
+設計: `docs/PHASE2/O3C/SIGNAL/SIGNAL_MATERIALS_DESIGN_2026-09-20.md`(§5.4 が足す 2 本)
+委任文: `docs/DATA/delegations/20260920_o3c_signal_materials_prompt.md`(初回、22 本)、
+       `docs/DATA/delegations/20260920_o3c_signal_materials2_prompt.md`(続き、+R1・F5)
 
 **この道具がすること**
   - 母集団は探索段 5 の行データ `rows_prints.csv.gz` の `kind == "print"`(52,000 件)。
-  - 候補 22 本(設計 §2)を計算する。既存 13 本(1,2,3,5',6,8,9,10,11,12,13,14,15。
+  - 候補 24 本(設計 §2 + §5.4)を計算する。既存 13 本(1,2,3,5',6,8,9,10,11,12,13,14,15。
     4 は外す)は前段の道具 `o3c_signal_continue.py` の材料列を**再利用**するが、
-    5' だけは「先」だけの距離として**作り直す**。新規 9 本(F3,F4,A3,A4,A5,A6,A9,
-    C3,C4)は **ts 以前の約定・清算・5 分値だけ**で新しく計算する(p₀ は使わない)。
+    5' だけは「先」だけの距離として**作り直す**。新規 11 本(F3,F4,A3,A4,A5,A6,A9,
+    C3,C4,R1,F5)は **ts 以前の約定・清算・5 分値だけ**で新しく計算する(p₀ は使わない)。
   - 事後の位置(探索段 5 の `bundle_pos`・`bundle_pos_single`)から 2 組
-    (組 A = 1 件目: 単発 / 多件の最初。組 B = 2 件目以降: 途中 / 多件の最後)を作り、
-    **前半 228 日だけ**で候補ごとの分位・分かれ方の数の表を出す(表は前半だけ)。
+    (組 A = 1 件目: 単発 / 多件の最初、候補 19 本。組 B = 2 件目以降: 途中 / 多件の最後、
+    候補 24 本)を作り、**前半 228 日だけ**で候補ごとの分位・分かれ方の数の表を出す
+    (表は前半だけ)。F5 は 1 件目で定義上 0 なので組 A の候補にしない(F3 と同じ扱い)。
   - 前半だけから実物読み 120 件(組 A 60 + 組 B 60)を乱数(種 20260920、
     1 日 1 件まで)で抜き、候補の値・直前 60 秒の清算・1 秒刻みの値段を markdown にする。
 
@@ -75,6 +77,8 @@ A6_WINDOW_MS = 60_000
 A9_WINDOW_MS = 60_000
 C4_SHORT_MS = 5 * 60_000
 C4_LONG_MS = 3_600_000
+R1_WINDOW_MS = 60_000                        # R1(吸収、戻りの大きさ、直前60秒、全位置)
+F5_WINDOW_MS = 10_000                        # F5(燃料、直前10秒の同じ側清算、組Bだけ)
 BACK_MS = NODE_WINDOW_MS + STALENESS_MS      # 5'(8h の出来高プロファイル)+ C4(1h)を覆う
 FWD_MS = 0                                   # 材料はラベルを使わないので未来は要らない
 PROBE_SEED = 20260920
@@ -87,10 +91,12 @@ EXIST_NUMS = [n for n in sc.MAT_NUMS if n not in (4, 5)]   # 12(既存13 = こ�
 assert EXIST_NUMS == [1, 2, 3, 6, 8, 9, 10, 11, 12, 13, 14, 15]
 
 CAND_NAMES = ["1", "2", "3", "5p", "6", "8", "9", "10", "11", "12", "13", "14", "15",
-              "F3", "F4", "A3", "A4", "A5", "A6", "A9", "C3", "C4"]
-CHAIN_INNER = {"F3", "F4", "A3", "A5"}       # 組 A(1 件目)では欠測 = 組 A の候補にしない
+              "F3", "F4", "A3", "A4", "A5", "A6", "A9", "C3", "C4", "R1", "F5"]
+# 組 A(1 件目)では欠測(F3・F4・A3・A5)/ 定義上 0 で測らない(F5、設計 §5.4)ので
+# 組 A の候補にしない。R1 は「全位置で定義」なので組 A に含める。
+CHAIN_INNER = {"F3", "F4", "A3", "A5", "F5"}
 CAND_GROUP_A = [c for c in CAND_NAMES if c not in CHAIN_INNER]
-assert len(CAND_NAMES) == 22 and len(CAND_GROUP_A) == 18
+assert len(CAND_NAMES) == 24 and len(CAND_GROUP_A) == 19
 
 CHUNK_HEADER = (["print_id", "day", "side", "half", "ts_ms", "bundle_id",
                 "bundle_pos", "bundle_pos_single", "group", "pos_label"]
@@ -147,6 +153,27 @@ def opposite_side_window_sum(pc: "sc.PrintsCSV", i: int, window_ms: int,
     if opp is None or opp not in side_prefix:
         return NAN, NAN
     ts_s, cum = side_prefix[opp]
+    lo, hi = ts - window_ms, ts
+    i0 = int(np.searchsorted(ts_s, lo, side="left"))
+    i1 = int(np.searchsorted(ts_s, hi, side="left"))
+    cnt = i1 - i0
+    if cnt <= 0:
+        return 0.0, 0
+    return float(cum[i1] - cum[i0]), int(cnt)
+
+
+def same_side_window_sum(pc: "sc.PrintsCSV", i: int, window_ms: int, side_prefix: dict):
+    """F5: `[ts − window_ms, ts − 1]` の**同じ側**の想定元本の合計(自分を含まない)。
+
+    `hi = ts` に `searchsorted(..., side="left")` を使うことで、自分自身(ts に
+    ちょうど一致する行)を除外する(`opposite_side_window_sum` と同じ規則)。
+    同じ側の清算が無ければ 0(欠測にしない、設計 §5.4)。
+    """
+    side = str(pc.side[i])
+    ts = int(pc.ts[i])
+    if side not in side_prefix:
+        return 0.0, 0
+    ts_s, cum = side_prefix[side]
     lo, hi = ts - window_ms, ts
     i0 = int(np.searchsorted(ts_s, lo, side="left"))
     i1 = int(np.searchsorted(ts_s, hi, side="left"))
@@ -376,6 +403,19 @@ def compute_new_candidates(pc: "sc.PrintsCSV", nb: dict, i: int, times, prices, 
     rv1h = realized_var_bp2(times, prices, ts, C4_LONG_MS)
     out["C4"] = (rv5 / rv1h) if (rv5 == rv5 and rv1h == rv1h and rv1h > 0) else NAN
 
+    # R1(吸収、戻りの大きさ): 直前60秒 [ts-60,000, ts-1] の約定の価格の、清算の
+    # 向き(s、-s ではない)の最大 sign×(p-p_pre)/p_pre×1e4。全位置で定義(1件目でも)。
+    # 約定が無ければ欠測。p_pre 自身が窓内にあるので、定義できるときは必ず 0 以上
+    # (p_pre が 60 秒の極値なら 0、先まで行って戻っていれば正)。
+    out["R1"] = (sc.path_extreme_bp(times, prices, ts - R1_WINDOW_MS - 1, ts - 1,
+                                    p_pre, s)
+                if ok_pre else NAN)
+
+    # F5(燃料): 直前10秒 [ts-10,000, ts-1] の同じ側の清算(自分を含まない)の
+    # 想定元本の合計。無ければ 0(欠測にしない)。1件目でも 0(組 A の表には入れない)。
+    f5_amt, _f5_cnt = same_side_window_sum(pc, i, F5_WINDOW_MS, side_prefix)
+    out["F5"] = f5_amt
+
     return out
 
 
@@ -460,7 +500,8 @@ def run_stage_rows(out_dir: Path, days: list, half_of: dict, pc: "sc.PrintsCSV",
                     else:
                         _num(d, f"cand_{n}", exist_vals[n][i])
                 _num(d, "cand_5p", float(cand5p_arr[j]))
-                for k in ("F3", "F4", "A3", "A4", "A5", "A6", "A9", "C3", "C4"):
+                for k in ("F3", "F4", "A3", "A4", "A5", "A6", "A9", "C3", "C4",
+                         "R1", "F5"):
                     _num(d, f"cand_{k}", newc[k])
                 d["cand_A9_count"] = (int(newc["A9_count"])
                                       if newc["A9_count"] == newc["A9_count"] else "")
@@ -615,11 +656,12 @@ def select_probes(df_front: pd.DataFrame) -> list:
 
 def build_probe_markdown(picked: list, pc: "sc.PrintsCSV", data_root: Path) -> str:
     trade_cache: dict = {}
-    lines = ["# 材料 22 本の実物読み(O3C SIGNAL、2026-09-20)", "",
-            "委任文: `docs/DATA/delegations/20260920_o3c_signal_materials_prompt.md`。",
+    lines = ["# 材料 24 本の実物読み(O3C SIGNAL、2026-09-20)", "",
+            "委任文: `docs/DATA/delegations/20260920_o3c_signal_materials2_prompt.md`"
+            "(前回 `..._materials_prompt.md` の 120 件と同じ抽出に R1・F5 の行を足した版)。",
             "スクリプト: `scripts/o3c_signal_materials.py`"
             f"(乱数の種 {PROBE_SEED}、前半だけ、日を跨いで重ならないよう 1 日 1 件まで)。",
-            f"候補 22 本の並び: {', '.join(CAND_NAMES)}。",
+            f"候補 24 本の並び: {', '.join(CAND_NAMES)}。",
             "値段の bp は `(価格 − 直前約定 p_pre) / p_pre × 1e4`、清算の向きが正、"
             "`sec=0` 側(ts 直前)が基準。", ""]
     print_id_to_idx = {pid: i for i, pid in enumerate(pc.print_id.tolist())}
@@ -808,6 +850,8 @@ def main(argv=None) -> int:
          f"組 B(2 件目以降: 途中 対 多件の最後、候補 {len(CAND_NAMES)} 本)",
          "- 候補 6(時刻帯)は UTC 6 時間 × 4 帯を出現順(00–06→0 … 18–24→3)の整数に"
          "数値化して分位・分かれ方の数を計算した(設計に数値化の指定なし、報告 (5) 参照)",
+         "- R1(吸収、直前60秒の戻りの大きさ、全位置)・F5(燃料、直前10秒の同じ側清算"
+         "想定元本合計、組 B だけ)を設計 §5.4 に従って足した(既存 22 本の値は変えていない)",
          "", "## 組 A(|分かれ方 − 0.5| の降順)", "", sc.md_table(screen_a), "",
          "## 組 B(|分かれ方 − 0.5| の降順)", "", sc.md_table(screen_b), ""]
     mdtxt = "\n".join(md)

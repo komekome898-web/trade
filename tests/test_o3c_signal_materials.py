@@ -1,7 +1,8 @@
 """`scripts/o3c_signal_materials.py`(清算を起点とした値動きの予測可能性 —
 材料の選定)の試験。
 
-**測るもの**(委任文【テスト】(1)〜(7))
+**測るもの**(委任文【テスト】(1)〜(7)、続き委任文
+`docs/DATA/delegations/20260920_o3c_signal_materials2_prompt.md` の (8)〜(11))
   1. 候補 22 本が ts 以後を使わない(ts 以後の約定・清算・5 分値を消した合成入力で
      同じ値。**p₀ に当たる約定の価格を実際に別の値に書き換えた入力でも同じ値**)。
   2. 2 組の分け方(合成の `bundle_pos`・`bundle_pos_single` で 4 群 -> 2 組)。
@@ -10,6 +11,12 @@
   5. 5' が「先」だけ(通り過ぎた水準は除く)。
   6. 判定語が `tables.md` に無い。
   7. `paper_logs/` を開かない(ソースに文字列が無い)。
+  8. R1・F5 が ts 以後を使わない(1 と同じ 2 通り = ts 以後の価格を変えた入力・
+     p₀ に当たる約定の価格を書き換えた入力で同じ値。(1)のループに R1・F5 を足した)。
+  9. R1 の手計算(合成の約定列で最大の bp が一致、戻り無しのとき ≤ 0、約定無しで欠測)。
+  10. F5 の手計算(10 秒の窓の境界 `ts − 10,000` を含み `ts` を含まない、自分を含まない、
+      反対側を数えない)。
+  11. 組 A の候補に F5 が無く、組 B にはある(R1 は両方にある)。
 """
 from __future__ import annotations
 
@@ -134,7 +141,7 @@ def test_new_candidates_do_not_use_data_after_ts_or_p0(tmp_path):
     for tag, cand5p_x, new_x in (("未来を変えた", cand5p_b, new_b),
                                  ("p0 を書き換えた", cand5p_c, new_c)):
         assert eq(cand5p_a, cand5p_x), f"5' が {tag} 入力で変わった: {cand5p_a} != {cand5p_x}"
-        for k in ("F3", "F4", "A3", "A4", "A5", "A6", "A9", "C3", "C4"):
+        for k in ("F3", "F4", "A3", "A4", "A5", "A6", "A9", "C3", "C4", "R1", "F5"):
             assert eq(new_a[k], new_x[k]), (
                 f"{k} が {tag} 入力で変わった: {new_a[k]} != {new_x[k]}")
     # このプリントは連鎖の 2 件目なので F3/F4/A3/A5 は欠測にならない(前提の確認)
@@ -162,6 +169,113 @@ def test_chain_first_print_has_missing_inner_candidates(tmp_path):
                                    float("nan"))
     for k in ("F3", "F4", "A3", "A5"):
         assert new[k] != new[k], f"1 件目なのに {k} が欠測でない: {new[k]}"
+    # F5 は 1 件目でも定義上 0(欠測にしない)。R1 は「全位置で定義」なので欠測でない
+    # (この合成データは直前60秒に約定があるため)。
+    assert new["F5"] == 0.0, f"1 件目の F5 が 0 でない: {new['F5']}"
+    assert new["R1"] == new["R1"], f"R1 が全位置で定義のはずなのに 1 件目で欠測: {new['R1']}"
+
+
+# ---------------------------------------------------------------------------
+# (9) R1 の手計算
+# ---------------------------------------------------------------------------
+def test_r1_hand_computed(tmp_path):
+    day = "2024-01-02"
+    ts0 = sc.day_start_ms(day) + 3600_000
+    rows = [{"print_id": "p", "day": day, "side": "BUY", "ts_ms": ts0, "t0_ms": ts0,
+            "p0": 100.0, "notional": 100_000.0, "dist_node_bp": 0.0, "oi_covered": 0,
+            "bundle_id": "b1"}]
+    pc = make_prints_csv(tmp_path, rows)
+    nb = sc.same_side_neighbors(pc)
+    chain_cum = sm.build_chain_cum_notional(pc)
+    side_prefix = sm.build_side_prefix(pc)
+    t_oi = np.array([ts0 - 1], dtype=np.int64)
+    oi_lvl = np.array([1000.0])
+
+    def new_for(times, prices, qtys, maker):
+        p_pre, _ = sc.price_at_or_before(times, prices, ts0 - 1)
+        return p_pre, sm.compute_new_candidates(
+            pc, nb, 0, times, prices, qtys, maker, t_oi, oi_lvl, chain_cum,
+            side_prefix, float(p_pre), float("nan"), float("nan"))
+
+    # ケース1: 直前60秒に p_pre(100)より先(上)まで行って戻っている(@101 -> @99 -> @100)
+    times1 = np.array([ts0 - 40_000, ts0 - 20_000, ts0 - 1], dtype=np.int64)
+    prices1 = np.array([101.0, 99.0, 100.0])
+    qtys1 = np.ones(3)
+    maker1 = np.zeros(3, dtype=bool)
+    p_pre1, new1 = new_for(times1, prices1, qtys1, maker1)
+    assert p_pre1 == 100.0
+    # (101-100)/100*1e4 = 100bp が最大
+    assert abs(new1["R1"] - 100.0) < 1e-9, new1["R1"]
+
+    # ケース2: 戻りが無い(単調増加、p_pre 自身〈窓内の最後の点〉が最大) -> 0 以下
+    times2 = np.array([ts0 - 40_000, ts0 - 20_000, ts0 - 1], dtype=np.int64)
+    prices2 = np.array([97.0, 98.0, 100.0])
+    qtys2 = np.ones(3)
+    maker2 = np.zeros(3, dtype=bool)
+    p_pre2, new2 = new_for(times2, prices2, qtys2, maker2)
+    assert new2["R1"] <= 1e-9, new2["R1"]
+
+    # ケース3: p_pre は staleness(300秒)以内で拾えるが、直前60秒の窓には約定が
+    # 無い(100秒前の 1 件だけ) -> R1 は欠測
+    times3 = np.array([ts0 - 100_000], dtype=np.int64)
+    prices3 = np.array([100.0])
+    qtys3 = np.ones(1)
+    maker3 = np.zeros(1, dtype=bool)
+    p_pre3, new3 = new_for(times3, prices3, qtys3, maker3)
+    assert p_pre3 == p_pre3, "p_pre は staleness 300s 以内なので定義できるはず"
+    assert new3["R1"] != new3["R1"], f"直前60秒に約定が無いのに R1 が欠測でない: {new3['R1']}"
+
+
+# ---------------------------------------------------------------------------
+# (10) F5 の手計算
+# ---------------------------------------------------------------------------
+def test_f5_hand_computed(tmp_path):
+    day = "2024-01-02"
+    ts0 = sc.day_start_ms(day) + 3600_000
+    rows = [
+        {"print_id": "self", "day": day, "side": "SELL", "ts_ms": ts0, "t0_ms": ts0,
+         "p0": 100.0, "notional": 500_000.0, "dist_node_bp": 0.0, "oi_covered": 0,
+         "bundle_id": "b1"},
+        # 窓の境界 ts0-10,000 ちょうど(含む)
+        {"print_id": "same_edge", "day": day, "side": "SELL", "ts_ms": ts0 - 10_000,
+         "t0_ms": ts0 - 10_000, "p0": 100.0, "notional": 200_000.0, "dist_node_bp": 0.0,
+         "oi_covered": 0, "bundle_id": "b1"},
+        # 窓の中(9秒前)
+        {"print_id": "same_in", "day": day, "side": "SELL", "ts_ms": ts0 - 9_000,
+         "t0_ms": ts0 - 9_000, "p0": 100.0, "notional": 300_000.0, "dist_node_bp": 0.0,
+         "oi_covered": 0, "bundle_id": "b1"},
+        # 窓の外(境界のすぐ外、10,001ms前)
+        {"print_id": "same_out", "day": day, "side": "SELL", "ts_ms": ts0 - 10_001,
+         "t0_ms": ts0 - 10_001, "p0": 100.0, "notional": 999_000.0, "dist_node_bp": 0.0,
+         "oi_covered": 0, "bundle_id": "b1"},
+        # 反対側(数えない)
+        {"print_id": "opp_in", "day": day, "side": "BUY", "ts_ms": ts0 - 5_000,
+         "t0_ms": ts0 - 5_000, "p0": 100.0, "notional": 777_000.0, "dist_node_bp": 0.0,
+         "oi_covered": 0, "bundle_id": "b2"},
+    ]
+    pc = make_prints_csv(tmp_path, rows)
+    side_prefix = sm.build_side_prefix(pc)
+    i_self = int(np.flatnonzero(pc.print_id == "self")[0])
+    amt, cnt = sm.same_side_window_sum(pc, i_self, sm.F5_WINDOW_MS, side_prefix)
+    assert cnt == 2, f"境界(含む)と窓内の同じ側だけを数えるはずが {cnt} 件"
+    assert abs(amt - (200_000.0 + 300_000.0)) < 1e-6, amt
+
+    # 同じ側の清算が窓に無ければ 0(欠測にしない)。別ファイルに上書きして測る。
+    rows_empty = [rows[0]]  # self だけ
+    pc2 = make_prints_csv(tmp_path, rows_empty)
+    side_prefix2 = sm.build_side_prefix(pc2)
+    amt2, cnt2 = sm.same_side_window_sum(pc2, 0, sm.F5_WINDOW_MS, side_prefix2)
+    assert cnt2 == 0 and amt2 == 0.0
+
+
+# ---------------------------------------------------------------------------
+# (11) 組 A に F5 が無く、組 B にはある
+# ---------------------------------------------------------------------------
+def test_f5_excluded_from_group_a_only():
+    assert "F5" not in sm.CAND_GROUP_A, "F5 は組 A の候補にしないはず(設計 §5.4)"
+    assert "F5" in sm.CAND_NAMES, "F5 は候補一覧(行データ)には出すはず"
+    assert "R1" in sm.CAND_GROUP_A, "R1 は全位置で定義なので組 A に含むはず"
+    assert "R1" in sm.CAND_NAMES
 
 
 # ---------------------------------------------------------------------------
