@@ -258,7 +258,85 @@ instructions: `Will another same-side liquidation print occur within the next 60
 - `data/jev/v4/calls/calls_2026-09-20.jsonl`(`JevClient` の呼び出しログ、state 本文は書かない仕様どおり)
 - `docs/PHASE2/O3C/SIGNAL/V4_STAGE1_REPORT_2026-09-20.md`(本書)
 
-## (9) テストの末尾行(全スイート、`-q` 無し)
+## (10) 反証者 7 を受けた直し(2026-09-20、後半には触れていない)
+
+対象: `docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW7_2026-09-20.md` の致命 C1・C3 と、直すべき D1・D2・D4。
+設計 §7.5.1 のとおりに直した。**Do not commit. Do not push**(継続)。
+
+### 何を変えたか
+
+- **C1(`cand_8` などの点質量で五分位の順位が潰れる)・C3(前半で固定した切り値を後半に当てる経路が無い)・
+  D1(`cand_R1` の同種の退化)**: `scripts/o3c_signal_logit.py` の五分位方式(`quintile_rank`/`build_matrix`、
+  4 切り値の `searchsorted`)を撤去し、**前半の経験分布の中央順位**に置き換えた(`ecdf_mid_rank`)。
+  材料の値 x の順位 = (前半で x 未満の件数 + x 以下の件数) / (2 × 前半の件数)、欠測は 0.5。前半の並べた値を
+  `backtest_data/o3c_signal_materials_20260920/logit_ecdf_{first,chain}.npz` に凍結し(`build_ecdf` /
+  `save_ecdf_npz`)、`apply_frozen_rank` が `searchsorted` で引くだけの関数になった(前半の当てはめにも、
+  将来の後半への適用にも同じ関数を使う)。`config/o3c_signal_logit_{first,chain}.yaml` は「五分位の切り値」を
+  持たず、材料の並び・`ecdf_ファイル`・`ecdf_md5`・係数だけを持つ形に書き直した。R1 は 1 件目の入力
+  (`cand_R1`)としてもともと同じパイプラインを通っていたので、同じ直しで退化が解消される(専用の変更は不要)。
+  前半全件で当てはめ直し、5-fold out-of-fold(順位分離・的中・閾値 0.6/0.7/0.8 の適合率と件数)を
+  `data/jev/v4/logit_firsthalf.md` に書き直した(数値はリポジトリに入れていない)。
+- **D2(較正の良さが未実装)**: 新規 `scripts/o3c_signal_calib.py` に `calibration_goodness` を実装。
+  帯は `[0,0.05) … [0.95,1.0]` の固定 20 本(起点 0、最後の帯だけ両端閉区間)。件数 20 未満の帯は平均から
+  外し、外した帯を戻り値の「外した帯」に入れる。値 = Σ n_b × |実際の割合_b − 帯の中央_b| / Σ n_b(使った帯
+  だけの重み付き平均)。`choose_better(jev_goodness, code_goodness)` は差が 0.01 以内の同点(または値が NaN)
+  なら `"code"` を返す(設計 §7.5「同点なら遅延の短い code」)。合成データの試験 8 件を
+  `tests/test_o3c_signal_calib.py` に追加(完璧に近い較正で値が小さいこと、少数帯の除外、手計算との一致、
+  NaN の扱い、同点境界の扱い)。
+- **D4(`StateBuilder` が帯を毎回再計算)**: `scripts/o3c_jev_state.py` の `StateBuilder.__init__` に
+  `bands_path`(既定 `config/o3c_jev_state_bands.yaml`)を追加。`bands` 引数を明示しない限り、
+  `bands_path` が存在すればそれを読む(`load_bands_yaml`)。存在しなければ前半から計算して書く
+  (`compute_bands` → `write_bands_yaml`)。以前は `bands` 引数を省略すると常にその場で再計算していた。
+
+### 設計に無い判断
+
+- 5-fold out-of-fold の材料の順位は、旧実装(五分位版)と同じ構造(順位化は前半全件から 1 回だけ決め、
+  fold ごとに再学習するのはロジスティックの係数だけ)を踏襲した。設計 §7.5.1 は「前半に当てはめ直し、
+  前半の out-of-fold もやり直す」としか書いておらず、fold ごとに ecdf を作り直すかどうかは明記していない
+  ため、変更前の構造をそのまま維持した(変えていないので新しい判断ではないが、明記する)。
+- `calibration_goodness` の「使った帯」「外した帯」に、件数 0 の帯(そもそもデータが無い帯)は含めない
+  実装にした(「外した」というより「存在しない」帯のため)。
+
+### 試験(委任文【作るもの】4 のうち今回追加した分)
+
+`tests/test_o3c_jev_state.py` に追加:
+- `test_ecdf_mid_rank_point_mass_does_not_collapse`(点質量でも順位が潰れない。0 は frac_zero/2 前後、
+  正の値はその上に分散する)
+- `test_ecdf_mid_rank_matches_hand_formula_with_ties`
+- `test_apply_frozen_rank_reproduces_fit_time_ranks_and_round_trips_npz`(npz 保存・読み込みの往復でも
+  同じ順位、新しい df に当てても同じ値には同じ順位)
+- `test_frozen_ecdf_unaffected_by_back_half_values`(後半の値を変えても前半だけの ecdf は不変)
+- `test_state_builder_uses_bands_from_yaml_when_present` / `_computes_and_writes_bands_when_yaml_missing`
+- `test_state_sentences_change_when_bands_yaml_changes`(yaml の値を変えると文が変わる = yaml を読んでいる)
+
+`tests/test_o3c_signal_calib.py`(新規、8 件)。
+
+### 変更・作成したファイルの MD5(性能の数値ではないので書く)
+
+| ファイル | MD5 |
+|---|---|
+| `scripts/o3c_signal_logit.py` | c60fa4eae7ea6cb15be3f887cfd5ae76 |
+| `scripts/o3c_signal_calib.py` | b7503692fe6829a42b2e276ad4c81862 |
+| `scripts/o3c_jev_state.py` | 8b710da4fef88cffaf74fb00f773dc50 |
+| `config/o3c_signal_logit_first.yaml` | 9bafb01d675272c97b2f9cf55c75402c |
+| `config/o3c_signal_logit_chain.yaml` | 96ec0710a46bcb9b5ac0233182f0d9e9 |
+| `backtest_data/o3c_signal_materials_20260920/logit_ecdf_first.npz` | 0187fba59e3526a958582fc5f65327d3 |
+| `backtest_data/o3c_signal_materials_20260920/logit_ecdf_chain.npz` | da24154bb12064af56a59ceb8b4a1959 |
+
+### 作ったファイル(追加分)
+
+- `scripts/o3c_signal_calib.py`(新規)
+- `tests/test_o3c_signal_calib.py`(新規)
+- `backtest_data/o3c_signal_materials_20260920/logit_ecdf_first.npz`(新規、凍結した経験分布)
+- `backtest_data/o3c_signal_materials_20260920/logit_ecdf_chain.npz`(新規、凍結した経験分布)
+
+### 全スイートの末尾行(この直しの後、`-q` 無し)
+
+```
+2752 passed, 5 skipped, 1 warning in 456.57s (0:07:36)
+```
+
+## (9) テストの末尾行(全スイート、`-q` 無し。段1 実装当初のもの)
 
 ```
 2737 passed, 5 skipped, 1 warning in 461.69s (0:07:41)

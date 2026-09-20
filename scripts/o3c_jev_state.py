@@ -545,7 +545,8 @@ class StateBuilder:
                 continue_path: Path = DEFAULT_CONTINUE_ROWS,
                 rows_path: Path = DEFAULT_ROWS_PRINTS,
                 data_root: Path = DEFAULT_DATA_ROOT,
-                bands: dict | None = None):
+                bands: dict | None = None,
+                bands_path: Path = BANDS_PATH):
         m = pd.read_csv(materials_path, low_memory=False)
         for c in REQUIRED_MATERIALS_COLS:
             if c not in m.columns:
@@ -561,7 +562,17 @@ class StateBuilder:
         r = m.merge(c, on="print_id", how="left")
         self.rows = r.set_index("print_id", drop=False)
         self.rows_fh = r[r["half"] == "前半"]
-        self.bands = bands if bands is not None else compute_bands(self.rows_fh)
+        # 反証者7 D4 の直し: 帯は毎回再計算せず `bands_path`(既定は
+        # `config/o3c_jev_state_bands.yaml`)を読む。ファイルが無いときだけ
+        # 前半から計算して書く(後半にも同じ帯をそのまま使うため。引数 `bands` を
+        # 明示的に渡したとき〈試験など〉はそちらを最優先する)。
+        if bands is not None:
+            self.bands = bands
+        elif bands_path.exists():
+            self.bands = load_bands_yaml(bands_path)
+        else:
+            self.bands = compute_bands(self.rows_fh)
+            write_bands_yaml(self.bands, bands_path)
 
         self.pc = cont.PrintsCSV(rows_path)
         self.nb = cont.same_side_neighbors(self.pc)

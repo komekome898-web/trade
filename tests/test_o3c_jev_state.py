@@ -556,6 +556,7 @@ def test_n2_position_uses_only_causal_window():
 
 # ---------------------------------------------------------------------------
 # (10) logistic(scripts/o3c_signal_logit.py): 前半だけから係数が決まる・決定的
+#      (反証者7 直し後: 五分位の切り値でなく前半の経験分布の中央順位を使う)
 # ---------------------------------------------------------------------------
 def _synthetic_logit_df(seed: int = 0, n_each: int = 30) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
@@ -570,10 +571,27 @@ def _synthetic_logit_df(seed: int = 0, n_each: int = 30) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _synthetic_point_mass_df(seed: int = 1, n_each: int = 200,
+                             frac_zero: float = 0.84) -> pd.DataFrame:
+    """反証者7 C1 の実物(`cand_8`〈連鎖の中〉、0 が 84.1%)と同じ形の合成データ:
+    材料の値の大半(既定 84%)が厳密に 0 で、残りは正の値が広がる。"""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for half in ("前半", "後半"):
+        for i in range(n_each):
+            is_zero = rng.random() < frac_zero
+            v = 0.0 if is_zero else float(rng.exponential(scale=10.0) + 1e-6)
+            y = 1 if (rng.random() < (0.3 if is_zero else 0.7)) else 0
+            rows.append({"print_id": f"{half}_{i}", "half": half,
+                        "cand_v": v, "label_60": y})
+    return pd.DataFrame(rows)
+
+
 def test_logit_newton_predictions_deterministic():
     df = _synthetic_logit_df()
     df_fh = df[df["half"] == "前半"].reset_index(drop=True)
-    X, _cuts = lg.build_matrix(df_fh, ["cand_a", "cand_b"])
+    ecdf = lg.build_ecdf(df_fh, ["cand_a", "cand_b"])
+    X = lg.apply_frozen_rank(ecdf, ["cand_a", "cand_b"], df_fh)
     y = df_fh["label_60"].to_numpy(float)
     beta1 = lg.newton_logistic(X, y)
     beta2 = lg.newton_logistic(X, y)
@@ -596,3 +614,162 @@ def test_logit_beta_determined_by_front_half_only():
     beta_b = lg.fit_beta_front_half(df2, ["cand_a", "cand_b"])
 
     assert np.allclose(beta_a, beta_b)
+
+
+# ---------------------------------------------------------------------------
+# 反証者7 C1・C3・D1 の直し: 前半の経験分布の中央順位(五分位の切り値ではない)
+# ---------------------------------------------------------------------------
+def test_ecdf_mid_rank_point_mass_does_not_collapse():
+    """点質量(84% が 0)でも、0 は「0 の中央順位」(≈ frac_zero/2)に集まり、
+    正の値はその上に(0 と 1 の間の値として)ばらけて並ぶ ── 五分位の切り値方式
+    〈反証者7 C1〉のように全件が同じ 1 帯(0.9 など)に潰れることはない。"""
+    rng = np.random.default_rng(2)
+    n = 10_000
+    frac_zero = 0.84
+    is_zero = rng.random(n) < frac_zero
+    vals = np.where(is_zero, 0.0, rng.exponential(scale=10.0, size=n) + 1e-6)
+    sorted_vals = np.sort(vals)
+
+    rank_zero = lg.ecdf_mid_rank(sorted_vals, np.array([0.0]))[0]
+    assert rank_zero == pytest.approx(frac_zero / 2.0, abs=0.01)
+
+    pos = vals[~is_zero]
+    ranks_pos = lg.ecdf_mid_rank(sorted_vals, pos)
+    # 正の値の順位は 0 の順位より必ず大きい(0 未満/以下の件数を全部含むため)
+    assert bool(np.all(ranks_pos > rank_zero))
+    # 正の値どうしの順位にちゃんと分散がある(1 つの値に潰れていない)
+    assert np.unique(np.round(ranks_pos, 4)).size > 100
+
+
+def test_ecdf_mid_rank_matches_hand_formula_with_ties():
+    sorted_vals = np.array([0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 5.0])  # n=7
+    x = np.array([0.0, 2.0, 5.0, -1.0, 999.0, np.nan])
+    got = lg.ecdf_mid_rank(sorted_vals, x)
+    # 0.0: 未満 0 件・以下 3 件 -> (0+3)/(2*7)
+    assert got[0] == pytest.approx((0 + 3) / 14)
+    # 2.0: 未満 4 件・以下 6 件 -> (4+6)/14
+    assert got[1] == pytest.approx((4 + 6) / 14)
+    # 5.0: 未満 6 件・以下 7 件 -> (6+7)/14
+    assert got[2] == pytest.approx((6 + 7) / 14)
+    # 範囲外(-1: 未満0・以下0 / 999: 未満7・以下7)
+    assert got[3] == pytest.approx(0 / 14)
+    assert got[4] == pytest.approx(14 / 14)
+    # 欠測は 0.5
+    assert got[5] == pytest.approx(0.5)
+
+
+def test_apply_frozen_rank_reproduces_fit_time_ranks_and_round_trips_npz(tmp_path):
+    df = _synthetic_point_mass_df()
+    df_fh = df[df["half"] == "前半"].reset_index(drop=True)
+    features = ["cand_v"]
+
+    ecdf = lg.build_ecdf(df_fh, features)
+    X_fit = lg.apply_frozen_rank(ecdf, features, df_fh)
+
+    # 保存 -> 読み込み(npz の往復)しても同じ順位を返す(C3 の直し: 後半に当てる
+    # のと同じ経路)
+    npz_path = tmp_path / "ecdf.npz"
+    lg.save_ecdf_npz(npz_path, ecdf)
+    ecdf_loaded = lg.load_ecdf_npz(npz_path)
+    X_again = lg.apply_frozen_rank(ecdf_loaded, features, df_fh)
+    assert np.allclose(X_fit, X_again)
+
+    # 新しい(別の)データフレームに同じ凍結した経験分布を当てても、同じ値には
+    # 同じ順位が付く(searchsorted だけで、再計算していないことの確認)
+    df_new = df_fh.iloc[:5].copy()
+    X_new = lg.apply_frozen_rank(ecdf_loaded, features, df_new)
+    assert np.allclose(X_new, X_fit[:5])
+
+
+def test_frozen_ecdf_unaffected_by_back_half_values():
+    """`build_ecdf` は渡された df(前半だけに絞って呼ぶ)自身の値からしか経験分布を
+    作らないので、後半の値をどれだけ変えても前半だけの ecdf は変わらない。"""
+    df = _synthetic_point_mass_df()
+    ecdf_a = lg.build_ecdf(df[df["half"] == "前半"], ["cand_v"])
+
+    df2 = df.copy()
+    back = df2["half"] == "後半"
+    df2.loc[back, "cand_v"] = df2.loc[back, "cand_v"] + 12345.0
+    ecdf_b = lg.build_ecdf(df2[df2["half"] == "前半"], ["cand_v"])
+
+    assert np.array_equal(ecdf_a["cand_v"], ecdf_b["cand_v"])
+
+
+# ---------------------------------------------------------------------------
+# 反証者7 D4: StateBuilder が帯を毎回再計算せず yaml を読む
+# ---------------------------------------------------------------------------
+def _materials_bands_for(materials_path: Path) -> dict:
+    """`_make_builder` と同じ穴埋め(continue 由来の列は合成データに無いので
+    定数で埋めて `compute_bands` に通す)。"""
+    return js.compute_bands(pd.read_csv(materials_path).assign(
+        mat3_notional_raw=1.0, mat8_amt_20bp=NAN, mat8_covered=0.0,
+        mat10_oi_slope_and_funding=1.0))
+
+
+def test_state_builder_uses_bands_from_yaml_when_present(tmp_path):
+    rows_path, materials_path, continue_path, day, ts1, ts2 = build_synthetic_dataset(tmp_path)
+    custom_bands = {"notional": [111.0, 222.0, 333.0, 444.0],
+                    "chain_notional": [1.0, 2.0, 3.0, 4.0],
+                    "last10s_notional": [1.0, 2.0, 3.0, 4.0],
+                    "oi_ahead_20bp": [1.0, 2.0, 3.0, 4.0],
+                    "trade_count_60s": [1.0, 2.0, 3.0, 4.0],
+                    "vol_ratio_c4": [1.0, 2.0, 3.0, 4.0],
+                    "oi_slope_1h": [1.0, 2.0, 3.0, 4.0],
+                    "day_extreme_c3_quartiles": [1.0, 2.0, 3.0]}
+    bands_path = tmp_path / "bands.yaml"
+    js.write_bands_yaml(custom_bands, bands_path)
+
+    sb = js.StateBuilder(materials_path=materials_path, continue_path=continue_path,
+                         rows_path=rows_path, data_root=tmp_path / "unused",
+                         bands_path=bands_path)
+    assert sb.bands["notional"] == custom_bands["notional"]
+
+
+def test_state_builder_computes_and_writes_bands_when_yaml_missing(tmp_path):
+    rows_path, materials_path, continue_path, day, ts1, ts2 = build_synthetic_dataset(tmp_path)
+    bands_path = tmp_path / "does_not_exist.yaml"
+    assert not bands_path.exists()
+    sb = js.StateBuilder(materials_path=materials_path, continue_path=continue_path,
+                         rows_path=rows_path, data_root=tmp_path / "unused",
+                         bands_path=bands_path)
+    assert bands_path.exists()   # 無ければ計算して書く
+    written = js.load_bands_yaml(bands_path)
+    assert set(written.keys()) == set(sb.bands.keys())
+
+
+def test_state_sentences_change_when_bands_yaml_changes(tmp_path, monkeypatch):
+    """yaml の値を変えると文が変わる(= その場で再計算せず yaml を読んでいる
+    ことの確認、反証者7 D4)。"""
+    rows_path, materials_path, continue_path, day, ts1, ts2 = build_synthetic_dataset(tmp_path)
+    times = np.arange(ts1 - 400_000, ts1 + 1000, 1000, dtype=np.int64)
+    prices = np.full(times.size, 100.0)
+
+    def fake_load_window5(data_root, day_, cache, back_ms, fwd_ms):
+        qtys = np.ones(times.size)
+        return times, prices, qtys, [], [day_]
+
+    base_bands = _materials_bands_for(materials_path)
+    # p1 の mat3_notional_raw = 1.0(合成データの cont_row())。切り値を全部 1.0
+    # より小さくすれば最大の帯、全部 1.0 より大きくすれば最小の帯になる。
+    bands_hi_size = dict(base_bands)
+    bands_hi_size["notional"] = [0.1, 0.2, 0.3, 0.4]
+    bands_lo_size = dict(base_bands)
+    bands_lo_size["notional"] = [10.0, 20.0, 30.0, 40.0]
+    path_hi = tmp_path / "bands_hi.yaml"
+    path_lo = tmp_path / "bands_lo.yaml"
+    js.write_bands_yaml(bands_hi_size, path_hi)
+    js.write_bands_yaml(bands_lo_size, path_lo)
+
+    monkeypatch.setattr(js, "load_window5", fake_load_window5)
+    sb_hi = js.StateBuilder(materials_path=materials_path, continue_path=continue_path,
+                            rows_path=rows_path, data_root=tmp_path / "unused",
+                            bands_path=path_hi)
+    sb_lo = js.StateBuilder(materials_path=materials_path, continue_path=continue_path,
+                            rows_path=rows_path, data_root=tmp_path / "unused",
+                            bands_path=path_lo)
+
+    sent_hi = sb_hi.build_state_sentences("p1")[0]
+    sent_lo = sb_lo.build_state_sentences("p1")[0]
+    assert sent_hi != sent_lo
+    assert "largest fifth" in sent_hi
+    assert "smallest fifth" in sent_lo
