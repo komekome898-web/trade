@@ -3376,14 +3376,14 @@
   {
    "move": 126,
    "tools": {
-    "Bash": 1
+    "Bash": 4
    },
-   "n_tools": 1,
+   "n_tools": 4,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
    "claims_without_output": 0,
-   "claims_total": 1,
+   "claims_total": 2,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
@@ -3412,9 +3412,9 @@
    "value": 0.1
   },
   "P3_claim_with_output": {
-   "num": 30,
-   "den": 113,
-   "value": 0.2655
+   "num": 31,
+   "den": 114,
+   "value": 0.2719
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
