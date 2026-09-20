@@ -1,0 +1,115 @@
+境界(前半の五分位、定数):
+  notional: 1.048e+05, 3.345e+05, 9.637e+05, 3.464e+06
+  trade_count_60s: 201, 359, 609, 1178
+  ratio_10s_60s: 0.2507, 0.4056, 0.5618, 0.7746
+  range_ratio: 4874, 1.631e+04, 5.016e+04, 1.879e+05
+  day_extreme_bp: 0.694, 4.803, 28.19, 119.3
+  vol_ratio_5m_1h: 0.05779, 0.1125, 0.2041, 0.4474
+  chain_notional: 1.555e+06, 4.849e+06, 1.267e+07, 3.745e+07
+  last10s_notional: 2.463e+05, 9.577e+05, 3.106e+06, 1.154e+07
+  oi_ahead_20bp: 3962, 8218, 1.461e+04, 2.583e+04
+  interval_ratio: 0.06843, 0.6414, 2.109, 15.5
+
+== 2023-08-17_00168(単発)
+{
+ "this_print": {
+  "side": "SELL liquidation (longs being force-closed)",
+  "size": "fourth fifth of first-half prints",
+  "time_utc": "18-24 UTC"
+ },
+ "position_in_cascade": "first same-side liquidation in the last 60 seconds (no cascade in progress)",
+ "recent_same_side_prints": "none in the last 60 seconds",
+ "same_side_notional_last_10s": "none",
+ "opposite_side_prints_last_60s": "none",
+ "price_extreme": "price set a new 60-second extreme in the liquidation direction 0.1 s ago (no pullback yet)",
+ "price_move": {
+  "last_10s_vs_60s": "fourth fifth (share of the 60-second move that happened in the last 10 seconds)",
+  "print_size_vs_60s_range": "fourth fifth"
+ },
+ "taker_flow": {
+  "last_5s_share_in_liquidation_direction_pct": 100,
+  "trend_5s_minus_30s": "about the same"
+ },
+ "positions_ahead": "open interest within 20 bp ahead: top fifth of first-half prints that had any; within 5 bp: none; nearest liquidation level ahead: none within the mapped range",
+ "oi_and_funding": {
+  "taker_long_short_ratio": 1.19,
+  "funding_rate": "positive"
+ },
+ "day_context": {
+  "distance_from_day_extreme": "fourth fifth",
+  "vol_5m_vs_1h": "second fifth",
+  "trade_count_60s": "bottom fifth"
+ }
+}
+
+== 2023-07-13_00128(多件の最初)
+{
+ "this_print": {
+  "side": "SELL liquidation (longs being force-closed)",
+  "size": "middle fifth of first-half prints",
+  "time_utc": "18-24 UTC"
+ },
+ "position_in_cascade": "first same-side liquidation in the last 60 seconds (no cascade in progress)",
+ "recent_same_side_prints": "none in the last 60 seconds",
+ "same_side_notional_last_10s": "none",
+ "opposite_side_prints_last_60s": "none",
+ "price_extreme": "price set a new 60-second extreme in the liquidation direction 0.1 s ago (no pullback yet)",
+ "price_move": {
+  "last_10s_vs_60s": "top fifth (share of the 60-second move that happened in the last 10 seconds)",
+  "print_size_vs_60s_range": "second fifth"
+ },
+ "taker_flow": {
+  "last_5s_share_in_liquidation_direction_pct": 64,
+  "trend_5s_minus_30s": "about the same"
+ },
+ "positions_ahead": "open interest within 20 bp ahead: second fifth of first-half prints that had any; within 5 bp: none; nearest liquidation level ahead: 121 bp away",
+ "oi_and_funding": {
+  "taker_long_short_ratio": 1.13,
+  "funding_rate": "positive"
+ },
+ "day_context": {
+  "distance_from_day_extreme": "top fifth",
+  "vol_5m_vs_1h": "top fifth",
+  "trade_count_60s": "top fifth"
+ }
+}
+
+== 2023-11-02_00090(多件の最後)
+{
+ "this_print": {
+  "side": "SELL liquidation (longs being force-closed)",
+  "size": "top fifth of first-half prints",
+  "time_utc": "12-18 UTC"
+ },
+ "position_in_cascade": "print number 8 of a same-side cascade that began 34 s ago; notional liquidated so far in this cascade: top fifth of first-half cascades",
+ "recent_same_side_prints": [
+  "33.6 s ago, size second fifth",
+  "26.6 s ago, size top fifth",
+  "18.5 s ago, size middle fifth",
+  "16.5 s ago, size middle fifth",
+  "15.4 s ago, size bottom fifth",
+  "2.5 s ago, size second fifth",
+  "1.2 s ago, size top fifth"
+ ],
+ "same_side_notional_last_10s": "top fifth of first-half prints that had any",
+ "opposite_side_prints_last_60s": "none",
+ "price_extreme": "price set a new 60-second extreme in the liquidation direction 0.6 s ago (no pullback yet)",
+ "price_move": {
+  "last_10s_vs_60s": "second fifth (share of the 60-second move that happened in the last 10 seconds)",
+  "print_size_vs_60s_range": "fourth fifth"
+ },
+ "taker_flow": {
+  "last_5s_share_in_liquidation_direction_pct": 70,
+  "trend_5s_minus_30s": "about the same"
+ },
+ "positions_ahead": "no open interest within 20 bp ahead in the liquidation direction",
+ "oi_and_funding": {
+  "taker_long_short_ratio": 1.31,
+  "funding_rate": "positive"
+ },
+ "day_context": {
+  "distance_from_day_extreme": "middle fifth",
+  "vol_5m_vs_1h": "fourth fifth",
+  "trade_count_60s": "top fifth"
+ }
+}
