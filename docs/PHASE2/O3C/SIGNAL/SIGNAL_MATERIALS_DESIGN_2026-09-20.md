@@ -146,25 +146,36 @@
 | §4-4「数える・比べる・日付は code。Jev には意味の判断だけ」、§10「code が判断の材料を作り、Jev が小さな判定を返し、code がそれで選ぶ」 | 数値の比較(大きいか、近いか、増えたか)を Jev に任せている | 判断の材料を作る仕事を code がしていない |
 | §4-7「数値の結果(検出率など)をリポジトリに残さない(MCA §2.3(f))」 | **Jev の的中率・較正の表を `backtest_data/…/jev/*.csv`、`docs/DATA/probes/*jev*.log`、結果記録に書いてコミットしている** | **体制の規則に反している(§6.4)** |
 
-### 6.2 渡すべき情報 = code が数を「目に見える状況の文」に直したもの
+### 6.2 候補 24 本をどう渡すか(L-304。1 本ずつ。形は 3 種: **列** = 事実の並び / **帯** = 前半の五分位の言葉(bottom / second / middle / fourth / top fifth)/ **小さい数** = 秒・bp・% の整数。生の実数は渡さない。欠測は "unknown"、1 件目で定義できないものは "not applicable (first print)")
 
-**原則**: 24 本の候補の「数」は渡さない。**code が前半の分位(5 段)や定義済みの境界で各候補を状況の文に直し、名前つきの項目として渡す。**数は添えてもよいが、判断の材料は文の方(手引き §3「目に見える具体的な状況」)。境界は前半だけで決めて定数として 1 箇所に置く(§4-5)。
+| 候補 | 中身 | state の項目 | 渡す形(例) |
+|---|---|---|---|
+| 1 | 直前 60 秒の同じ側の件数と経過秒 | `position_in_cascade`、`recent_same_side_prints` | 「print number 8 of a same-side cascade that began 34 s ago」/ 件数 0 なら「no same-side liquidation in the last 60 seconds」。列: 各プリントの「何秒前」と規模の帯 |
+| 2 | 直前 2 つの間隔の比 | `recent_same_side_prints.gap_trend` | 「the gap between the last two prints is longer / about the same / shorter than the gap before it」(比 > 1 が longer。帯) |
+| 3 | 想定元本と直前との比 | `this_print.size`、`this_print.vs_previous` | 規模の帯 / 「larger / about the same / smaller than the previous same-side print」(帯) |
+| 5' | 次の清算水準までの距離(先だけ) | `positions_ahead.nearest_level` | 「N bp away」の小さい数 + 「closer / farther than the last 60-second move」。無ければ「none within the mapped range」 |
+| 6 | 時刻帯 | `this_print.time_utc` | 「12-18 UTC」 |
+| 8 | 先 5 / 10 / 20 bp 以内の建玉 | `positions_ahead` | 「no open interest within 20 bp ahead」/ 「within 20 bp: top fifth; within 5 bp: some / none」。被覆外は「coverage unknown」 |
+| 9 | 直前 5 秒の成行の偏り | `taker_flow.last_5s_pct_in_liquidation_direction` | 整数 %(例 70) |
+| 10 | 建玉の傾きと資金調達率 | `oi_and_funding` | 傾きの帯(「open interest over the last hour: falling / flat / rising」)、資金調達率は「positive / negative / zero」 |
+| 11 | 想定元本 ÷ 直前 60 秒の値幅 | `price_move.print_size_vs_60s_range` | 帯 |
+| 12 | 想定元本 ÷ 直前 60 秒の最大の 1 件 | `this_print.vs_largest_recent` | 「larger than / about the same as / smaller than the largest same-side print of the last 60 s」(帯)。1 件目は not applicable |
+| 13 | 成行の偏りの 5 秒 − 30 秒 | `taker_flow.trend` | 「more one-sided now / about the same / less one-sided now」 |
+| 14 | 直前 60 秒の約定件数 | `day_context.trade_count_60s` | 帯 |
+| 15 | 10 秒 ÷ 60 秒の変位 | `price_move.last_10s_vs_60s` | 帯 |
+| F3 | 連鎖の累計清算額 | `position_in_cascade` | 「notional liquidated so far in this cascade: top fifth of first-half cascades」。1 件目は not applicable |
+| F4 | 連鎖の開始からの建玉の変化 | `position_in_cascade.oi_since_start` | 「unchanged (same 5-minute bar) / down / up」(帯)。1 件目は not applicable |
+| A3 | 連鎖の開始からの値動き ÷ 累計清算額 | `position_in_cascade.move_per_notional` | 帯(「bottom fifth … top fifth of first-half cascades」)。1 件目は not applicable |
+| A4 | 直前 5 秒の値動き ÷ 同じ向きの成行の量 | `taker_flow.move_per_volume_5s` | 帯 |
+| A5 | 直前のプリントからの最大の戻り | `price_extreme.pullback_since_previous_print_bp` | 小さい数(bp)。1 件目は not applicable |
+| A6 | 極値を最後に更新してからの秒数 | `price_extreme` | 「last new 60-second extreme: 0.6 s ago」 |
+| A9 | 直前 60 秒の反対側の清算 | `opposite_side_prints_last_60s` | 列(何秒前、規模の帯)。無ければ「none」 |
+| C3 | 日の極値からの距離 | `day_context.distance_from_day_extreme` | 帯 |
+| C4 | 5 分 ÷ 1 時間の実現変動 | `day_context.vol_5m_vs_1h` | 帯 |
+| R1 | 60 秒の極値からの戻り | `price_extreme` | 「pullback since then: 6 bp」(小さい数。0 なら 0 bp) |
+| F5 | 直前 10 秒の同じ側の清算額 | `same_side_notional_last_10s` | 帯(あるもののみの五分位)。無ければ「none」 |
 
-| 項目(英語の鍵) | 中身(例。code が作る) | 元の候補 |
-|---|---|---|
-| `this_print` | 側、規模の段(前半の分位で very small … very large)、UTC の時間帯 | 3、6 |
-| `position_in_cascade` | "first same-side liquidation in 60 s" / "3rd print of a cascade that began 41 s ago; 2.1M USD liquidated so far" | 1、F3 |
-| `recent_same_side_prints` | 直前 60 秒の列(相対秒、規模の段)。直前 10 秒の合計の段 | 1、2、12、F5 |
-| `opposite_side_prints` | 直前 60 秒の反対側(無ければ "none") | A9 |
-| `price_extreme` | "price printed a new 60-second extreme in the liquidation direction 0.2 s ago" / "extreme was 17 s ago; price has pulled back 6 bp since" | A6、R1、A5 |
-| `price_move` | 直前 5 秒・60 秒の変位の段と向き、10 秒 / 60 秒の比の段 | 4 の代わり、15 |
-| `taker_flow` | "last 5 s: 82% of taker volume in the liquidation direction; last 30 s: 55%"(段も添える) | 9、13、A4 |
-| `positions_ahead` | "no open interest within 10 bp ahead (coverage: yes)" / "large open interest 5–10 bp ahead" / "coverage: unknown" | 8、5'、F4 |
-| `oi_and_funding` | 建玉の傾きと資金調達率の段(増えている / 減っている、正 / 負) | 10 |
-| `day_context` | 日の極値からの距離の段、直前 5 分と 1 時間の荒れの比の段 | C3、C4、11 |
-| 欠測 | 文字 "unknown"(null を使わない) | — |
-
-61 点の値段の列は落とす。
+61 点の値段の列は渡さない。帯の境界は前半だけから取り、定数として 1 箇所に置く(`docs/DATA/probes/20260920_o3c_jev_state_proto.log` の表が現在の値)。試作(3 件)は同じ log。**試作にまだ無いもの**: 2・3 の比・10 の傾き・12・F4・A3・A4・A5(この表で形を決めた。実装で足す)。
 
 ### 6.3 問い(L-303 で直した版。**問いは 1 つ**。前の版の 3 つの「機構の問い」は criteria が state の項目の読み直しで code で決まるもの = 材料だったので、問いから外し、事実として state に置く)
 
