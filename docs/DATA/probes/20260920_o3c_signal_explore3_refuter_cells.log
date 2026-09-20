@@ -1,0 +1,16 @@
+# 反証者レビュー 3 の表の数値セル数(2026-09-20、リード実測)
+# コマンド: 各行が '|' で始まり区切り行でない markdown の表の行について、数字を含むセルが 2 つ以上ある行を本体行とし、
+# 数字を含むセルを数えた(反証者 2 の項目一覧の表 = 「反証者 2 の項目」「設計 §8」を含む行は除く)。
+python3 - <<'PY'
+import re
+rows=0; cells=0
+for line in open('docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW3_2026-09-20.md', encoding='utf-8'):
+    if not line.startswith('|') or re.match(r'^\|\s*-', line): continue
+    parts=[c.strip() for c in line.strip().strip('|').split('|')]
+    nums=[c for c in parts if re.search(r'[0-9]', c)]
+    if len(nums)>=2 and not re.search(r'反証者 2 の項目|設計 §8', line):
+        rows+=1; cells+=len(nums)
+print("table rows", rows, "numeric cells", cells)
+PY
+# 出力:
+table rows 57 numeric cells 224
