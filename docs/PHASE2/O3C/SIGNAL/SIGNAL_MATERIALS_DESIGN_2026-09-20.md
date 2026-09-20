@@ -193,6 +193,15 @@ code 側: 確率を後半で較正して 3 択に使う。**比較の相手**: c
 - 決め方: V1 と V2 のどちらを使うかは前半の一致で決め、理由を書く。V3 より良くなければ、渡し方をここで直す(後半に進まない)。
 - そのあと: 選んだ形で後半 5,000 件(前回と同じ抽出)に一度だけ送り、0.01 刻みの較正と規則との比較。数値は `data/jev/`。
 
+#### 6.5.1 実装の引き取りでリードが直した点(2026-09-20、下見の再実行の前)
+
+委任先(`scripts/o3c_jev_state.py`、試験 25 件)の実装をリードが読み、3 件の実物を出力させて確かめた。直した点(**直す前の呼び出し 146 回は `data/jev/state_preview/answers_partial_oldcriteria_*.jsonl` に退避し、集計に使わない**):
+1. **V1 の問いが前段の古い criteria(momentum / exhausted)のままだった** → 設計 §6.3 の問いと criteria(オーナー承認 L-309)に置き換え、答えは組ごとの問いの鍵で読むように直した。V3(生の数)は前段の問いのまま(比較の基準)。
+2. **符号つきの bp が向きを誤読させる**(SELL の清算で「over the last 10 seconds, +4.6 bp」= 下に 4.6 bp なのに上に読める)→ 型 7・10 は「it fell 4.6 bp」「Price fell 14.7 bp」のように向きを語で書く。試験 2 件も同じ語に直した。
+3. 「the gaps are getting about the same」→「the gaps are about the same」。
+
+委任先の設計に無い判断で、リードが定数として認めたもの(設計の型に幅の指定が無かった): 間隔・規模の「同程度」の幅 = 比 1 ± 0.15 / 成行の偏りの変化「変わらない」の幅 = 0.10 / 戻り 0 とみなす閾値 = 0.05 bp / 日の極値「at」= 0.05 bp 以内、それ以外の 4 段は正の値の四分位 / 建玉の傾きの 5 段 = 前半の五分位 / A3 の文(型 9)は比の復元ではなく価格の経路から直接計算(CSV の丸めで 0 に潰れるため)/ V3 には `assert_clean` を掛けない(材料の変数名が誤検出されるため。値は数値だけで秘密は入り得ない)。
+
 ### 6.4 体制の規則違反(リードの発見、2026-09-20。オーナーに報告)
 
 `docs/JEV.md` §4-7「数値の結果(検出率など)もリポジトリに残さない(契約 MCA §2.3(f): publish benchmarks or performance information about the Services)」に対し、リードは Jev の的中率・較正の表と数値を次にコミットしている: `backtest_data/o3c_signal_continue_20260920/jev/`(q3〜q7_jev.csv、tables_jev.md、summary_jev.json)、`docs/DATA/probes/20260920_o3c_signal_continue_jev_*.log`、`docs/DATA/probes/20260920_jev_continue_call_probe.log`、`SIGNAL_CONTINUE_RESULT_2026-09-20.md` §1・§3、`CONTINUE_JEV_RUN_NOTE_2026-09-20.md`、`CONTINUE_DELEGATE_REPORT_2026-09-20.md`、`REFUTER_REVIEW6_2026-09-20.md`。手引きの規則はリードが書いたもので、リード自身が破った。リポジトリが公開かどうかは未確認(この環境から GitHub の設定を読んでいない)。**オーナーの決定(L-310「一旦そのままでいいです」)**: 既にコミットした分はそのまま(履歴の書き換えもしない)。以後は (a) だけ。以下は決定前の選択肢: (a) 以後は Jev の性能の数値を `data/jev/`(gitignore 済)にだけ書き、リポジトリには手順と件数だけ残す / (b) 既にコミットした数値を消す(履歴には残る。履歴の書き換えはオーナーの指示があるときだけ)。
