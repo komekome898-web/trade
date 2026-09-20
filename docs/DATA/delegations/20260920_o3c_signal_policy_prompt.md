@@ -4,7 +4,7 @@
 
 【読了必須】設計 `docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md`(全文。用語表・§2・§7 を先に)/ 前段の道具 `scripts/o3c_signal_continue.py`(材料・state・Jev の問い・`at_or_after`)と `scripts/o3c_signal_continue_jev.py`(冪等な呼び出しと再開。**そのまま流用**)/ 前段の行データ `backtest_data/o3c_signal_continue_20260920/rows_continue.csv.gz`(材料・ts・p0・half)/ 探索段 5 の `backtest_data/o3c_signal_explore5_20260920/rows_prints.csv.gz`(`bundle_id`・`bundle_pos`・`bundle_pos_single`)/ 5,000 件の較正 `backtest_data/o3c_signal_continue_20260920/jev/q3_jev.csv`(確率の 10 帯 × 実際の続く割合)と選定 `.../jev/selection_manifest.json`(除外する 5,000 件の print_id)。
 
-【段 1: 閾値】設計 §2 Q1 の規則(L-275: 帯の実際の続く割合 ± 2 SE(二項)が基準率(= 5,000 件の較正サンプル自身の続く割合。数え直して `summary.json` に書く)を含む帯 = わからない、幅ごと上 = 続く、下 = 止まる、件数 0 の帯 = わからない)で帯を決める。決めた帯を `summary.json` と報告に書く。
+【段 1: 閾値】設計 §2 Q1 の規則(L-275 + L-277: **帯の幅 0.02**。帯の実際の続く割合 ± 2 SE(二項)が基準率(= 5,000 件の較正サンプル自身の続く割合。数え直して `summary.json` に書く)を含み、かつ基準率を跨ぐ位置の周りで連続している帯 = わからない。その下 = 止まる、その上 = 続く。外側の件数の少ない帯は側に寄せる)で区間を決める。決めた区間(リードの下見では [0.48, 0.54))を `summary.json` と報告に書く。較正の入力は `data/jev/continue/prints_answers.jsonl`(prob 列)と `rows_continue.csv.gz` の label_60。
 
 【段 2: 連鎖の抜き出し】後半の連鎖(`bundle_id`、gap 60、同じ側)のうち、5,000 件のプリントを 1 件でも含む連鎖を除き、残りから 2,000 本を無作為に(種 20260920)。内訳(単発 / 2 件 / 3 件以上)を報告。
 

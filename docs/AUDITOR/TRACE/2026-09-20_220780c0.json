@@ -4067,10 +4067,10 @@
   {
    "move": 152,
    "tools": {
-    "Bash": 7,
+    "Bash": 9,
     "Agent": 1
    },
-   "n_tools": 8,
+   "n_tools": 10,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
