@@ -4433,10 +4433,10 @@
   {
    "move": 166,
    "tools": {
-    "Bash": 3,
+    "Bash": 4,
     "Agent": 1
    },
-   "n_tools": 4,
+   "n_tools": 5,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
