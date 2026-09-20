@@ -3215,10 +3215,10 @@
   {
    "move": 120,
    "tools": {
-    "Bash": 17,
+    "Bash": 19,
     "Agent": 1
    },
-   "n_tools": 18,
+   "n_tools": 20,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
