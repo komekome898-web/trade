@@ -146,3 +146,34 @@ def test_jev_latest_warns_but_does_not_raise(tmp_path, capsys):
     captured = capsys.readouterr()
     assert "jev-latest" in captured.err
     assert client.model == "jev-latest"
+
+
+def test_keep_alive_reuses_one_connection(tmp_path, monkeypatch):
+    """keep_alive=True は http.client の接続を 1 本作って使い回す(2 回送っても構築は 1 回)。"""
+    import http.client
+    from scripts.jev import client as jc
+    calls = {"made": 0}
+
+    class FakeResp:
+        status = 200
+        def read(self):
+            return json.dumps({"model": "jev-1.13.0", "answers": {"q": {"type": "noul", "noul": 0.5}},
+                               "usage": {"input_tokens": 1}}).encode()
+
+    class FakeConn:
+        def __init__(self, *a, **k):
+            calls["made"] += 1
+        def set_tunnel(self, *a, **k):
+            pass
+        def request(self, *a, **k):
+            pass
+        def getresponse(self):
+            return FakeResp()
+        def close(self):
+            pass
+
+    monkeypatch.setattr(http.client, "HTTPSConnection", FakeConn)
+    c = jc.JevClient(api_key="k", model="jev-1.13.0", log_dir=str(tmp_path), keep_alive=True)
+    c.evaluate("s", {"q": {"type": "noul", "instructions": "x"}})
+    c.evaluate("s", {"q": {"type": "noul", "instructions": "x"}})
+    assert calls["made"] == 1

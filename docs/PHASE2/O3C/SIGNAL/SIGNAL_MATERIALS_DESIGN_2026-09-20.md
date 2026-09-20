@@ -205,3 +205,43 @@ code 側: 確率を後半で較正して 3 択に使う。**比較の相手**: c
 ### 6.4 体制の規則違反(リードの発見、2026-09-20。オーナーに報告)
 
 `docs/JEV.md` §4-7「数値の結果(検出率など)もリポジトリに残さない(契約 MCA §2.3(f): publish benchmarks or performance information about the Services)」に対し、リードは Jev の的中率・較正の表と数値を次にコミットしている: `backtest_data/o3c_signal_continue_20260920/jev/`(q3〜q7_jev.csv、tables_jev.md、summary_jev.json)、`docs/DATA/probes/20260920_o3c_signal_continue_jev_*.log`、`docs/DATA/probes/20260920_jev_continue_call_probe.log`、`SIGNAL_CONTINUE_RESULT_2026-09-20.md` §1・§3、`CONTINUE_JEV_RUN_NOTE_2026-09-20.md`、`CONTINUE_DELEGATE_REPORT_2026-09-20.md`、`REFUTER_REVIEW6_2026-09-20.md`。手引きの規則はリードが書いたもので、リード自身が破った。リポジトリが公開かどうかは未確認(この環境から GitHub の設定を読んでいない)。**オーナーの決定(L-310「一旦そのままでいいです」)**: 既にコミットした分はそのまま(履歴の書き換えもしない)。以後は (a) だけ。以下は決定前の選択肢: (a) 以後は Jev の性能の数値を `data/jev/`(gitignore 済)にだけ書き、リポジトリには手順と件数だけ残す / (b) 既にコミットした数値を消す(履歴には残る。履歴の書き換えはオーナーの指示があるときだけ)。
+
+## 7. V4 と後半の一度きりの測定(オーナー指示 L-323「**全てやってください。**」。対象 = L-319〜L-322 のリードの案すべて)
+
+### 7.1 決定表(L-319 で作り直した版。データの向き = 前半全件(1 件目 9,069 / 連鎖の中 12,769)、Jev の向き = 下見 200 件)
+
+規則: 前半で「続いた側の値が大きい確率」が 0.5 から 0.03 以上離れていれば「データが動く」。動くもののうち、Jev が同じ向き → 残す / 逆向き → 逆で与える(事実の文は事実のまま、criteria に「どちらが続く側か」を書く)/ Jev が動かしていない → 残して向きを criteria に書く。動かないものは、Jev が動かしていれば「邪魔」、いなければ「無関係」として文を外す。
+
+| 場面 | 残す | 逆で与える(criteria に向き) | 残して向きを criteria に | 外す |
+|---|---|---|---|---|
+| 1 件目 | 約定件数 | 先の建玉(少ないほど始まる)、日の極値からの距離(近いほど始まる)、荒れの比(荒いほど始まる)、元本 ÷ 値幅(小さいほど始まる) | 極値からの秒数(新しいほど)、極値からの戻り(大きいほど)、成行の偏り 5 秒(一方向なほど始まらない)、10 秒 ÷ 60 秒(大きいほど) | 偏りの変化、想定元本、建玉の傾き、時刻帯、反対側の清算(99% が none) |
+| 連鎖の中 | 直前 10 秒清算額、同じ側の件数、累計清算額、約定件数、極値からの秒数、荒れの比、10 秒 ÷ 60 秒、元本 ÷ 値幅 | 日の極値からの距離(近いほど続く) | 先の建玉(多い側の五分位だけ止まる)、間隔の比(伸びると止まる) | 成行の偏り、偏りの変化、直前からの戻り、極値からの戻り、建玉の傾き、想定元本、時刻帯 |
+
+「外す」は state からその文を消す。「逆で与える」「向きを criteria に」は、criteria を 1 件目と連鎖の中で別に書く(位置は code が知っている)。
+
+### 7.2 1 件目に足す事実(L-320 (2)。「新しい値段の領域に入る局面か」の枠)
+
+- N1: この清算の価格が、その日の(ts までの)極値を清算の向きに超えているか(超えている / 何 bp 手前か)。C3 の「距離 0」を言葉にしたもの。
+- N2: 直前 5 分の値幅の中でいまどこにいるか(清算の向きの端にいる / 中 / 逆の端)。
+- **前半で分かれるかを先に確かめる**(§7.1 と同じ規則、|確率 − 0.5| ≥ 0.03)。分かれなければ V4 に入れない。分かれ方の表の行は 2 本増える(多重性に数える)。
+
+### 7.3 V4 の問いと criteria(1 件目 / 連鎖の中で別)
+
+1 件目: instructions は同じ(60 秒以内に同じ側の次の清算が来るか)。criteria yes: 「the tape is busy and volatility has picked up versus the last hour; price is at or breaking the day's extreme and has just set a fresh extreme; little or no open interest is mapped just ahead (price is entering territory where positions have not been built); the print is small relative to the recent range」/ no: 「a quiet tape, calm volatility, price well inside the day's range, a large amount of open interest mapped just ahead, or an extremely one-sided last 5 seconds on a quiet tape (an isolated forced print)」。
+連鎖の中: yes: 「same-side liquidations are coming faster and larger (more in the last 10 seconds and in the cascade so far), the tape is busy and volatility rising, price keeps setting fresh extremes, near the day's extreme, gaps between prints not lengthening」/ no: 「gaps between prints are lengthening, the last extreme was set many seconds ago, price is well inside the day's range, or a large amount of open interest sits just ahead(前半では多い側の五分位だけが止まる側)」。
+
+### 7.4 code の比較相手 = 前半で固定した logistic
+
+- 入力: §7.1 の「残す」「逆で与える」「向きを criteria に」の材料(1 件目 9 本 + N1・N2 が分かれれば追加 / 連鎖の中 11 本)を前半の五分位の順位(0〜1、欠測 0.5)にしたもの。前半全件で当てはめ、係数を `config/o3c_signal_logit_<場面>.yaml` に固定する。後半では読むだけ。
+- 前半での 5-fold の out-of-fold で順位分離・的中・閾値ごとの適合率を出す(事前の見積もり)。
+
+### 7.5 後半 5,000 件(一度だけ)
+
+- 対象: 前段と同じ選定(`backtest_data/o3c_signal_continue_20260920/jev/selection_manifest.json` の 5,000 件)。Jev V4(接続の使い回し、`jev-1.13.0`)と logistic を同じ件に当てる。呼び出し 5,000。
+- 出す表(数値は `data/jev/` にだけ): 1 件目 / 連鎖の中 それぞれの 0.01 刻みの較正(件数 / 実際に続いた割合)、順位分離、閾値ごとの適合率と件数、Jev と logistic の一致、Jev の遅延(p50 / p90 / p99)、入力トークン。
+- 決め方(事前): **較正の良い方を方策の模擬に使う**。「良い」= 0.05 刻みの帯で |実際の割合 − 帯の中央| の件数重み平均が小さい方。同点(差 0.01 以内)なら遅延の短い code。「わからない」の帯は、選んだ方の 0.01 刻みの較正で、基準率と 2 SE で区別できない連続した帯(L-277 の規則)。
+- **反証者レビューを後半の前に**(§4 の順序)。委任先は後半の段に入る前に止まって渡す。
+
+### 7.6 遅延の項目(L-321。方策の模擬の設計に足す)
+
+方策の模擬の入力に、検知の遅れ(取引所の配信 → 手元)、state 作成、判断(code ≈ 0 / Jev = 実測の分布)、発注の 4 つを足し、合計の遅れ d で入る値段を `at_or_after(t₀ + d)` に置く。d は 0.5 / 1 / 2 秒の 3 通り。検知の遅れと state 作成は PAPER の bot の時刻印から測る(未測定。測るまでは 0.5 / 1 / 2 秒の外側の値として扱う)。前半の実測(§ L-321): +1 秒で逆張りの取り分 0.3 bp、+3 秒で 1.5 bp が消える。
