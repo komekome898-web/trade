@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """清算を起点とした値動きの予測可能性 — 方策の模擬(清算の列に沿って判断を繋ぐ)の道具
-(2026-09-20、**改訂2**: 判断の出所を Jev から前半で固定した logistic に置き換えた版)。
+(2026-09-20、**改訂2 + R2.7**: 判断の出所を Jev から前半で固定した logistic に置き換え、
+反証者レビュー8の致命 C1・C3・直すべき D3 を受けて直した版)。
 
-設計: `docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md`(改訂2が優先)
+設計: `docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md`(改訂2・R2.7が優先)
 委任文(段1): `docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md`
+反証者: `docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW8_2026-09-20.md`
 
 **この道具がすること(段1 = 前半の連鎖 200 本だけ)**
   - 母集団: `rows_continue.csv.gz` の `half == "前半"` の `print` 行を `bundle_id`
@@ -14,10 +16,14 @@
     すべて読むだけ)から出る確率を、改訂2 R2.2 の帯(1件目 [0.42,0.58)・連鎖の中
     [0.70,0.76) が「わからない」)で 3 択にする。**この道具は Jev を 1 回も呼ばない。**
   - 用語表の状態機械(建玉なし/順張り/逆張り × 止まる/続く/わからない の 9 通り ×
-    型A〈決済〉/型B〈ドテン〉)で方策を模擬する。方策 = R2.3:
-    logistic_3択・logistic_2値(0.5)・規則(材料1)・全部逆張り・全部順張り・完全な判断。
+    型A〈決済〉/型B〈ドテン〉)で方策を模擬する。方策 = R2.7(**7 本**): logistic_3択・
+    logistic_2値(0.5)・logistic_2値(基準率、1件目0.436/連鎖の中0.690)・規則(材料1)・
+    全部逆張り・全部順張り・完全な判断(事後のラベルを使った参照 ── 損益の上限ではない、
+    反証者レビュー8 致命-2で「上限」の語を撤回)。
   - 遅れ d = 0.5/1/2 秒(R2.4)。約定は `at_or_after(t+d)`。出口 = 連鎖の終わり
-    (最後のプリント + 60 秒)。損益は建玉の向きで符号(清算の向きではない)。
+    (最後のプリント + 60 秒)+ d。損益は建玉の向きで符号(清算の向きではない)。
+    連鎖の終わりで建玉を強制決済したレグは per-print 出力にも 1 行出す(判断「終わり」・
+    行動「決済」・約定価格・そのレグの損益。反証者レビュー8 致命-3)。
   - 連鎖ごとの損益の分布(中央値・四分位・負の割合・日等重み平均・日クラスタSE)を
     方策×型×遅れで、「わからない」で入らなかった連鎖を 0 として含める表/含めない表、
     位置別(1件目で入った/途中で入った/入らなかった)の内訳、判断の件数・行動の件数。
@@ -123,6 +129,8 @@ MAT1_COL = cont.MAT_COL[1]  # mat1_same_side_count_60s_and_elapsed(= cand_1 と�
 # ---- 状態機械の記号(設計の用語表) ----------------------------------------
 POS_NONE, POS_WITH, POS_AGAINST = "建玉なし", "順張り", "逆張り"
 JUDGE_STOP, JUDGE_CONTINUE, JUDGE_UNKNOWN = "止まる", "続く", "わからない"
+JUDGE_EXIT = "終わり"  # 連鎖の終わりの強制決済の行だけに使う専用ラベル(用語表の3択では
+                       # ない。反証者レビュー8 致命-3、R2.7)
 TYPE_A, TYPE_B = "A", "B"
 
 ACT_NEW_WITH = "新規_順張り"
@@ -158,18 +166,30 @@ STATE_TABLE = {
 ACTIONS_NEEDING_PRICE = {ACT_NEW_WITH, ACT_NEW_AGAINST, ACT_CLOSE,
                          ACT_FLIP_AGAINST, ACT_FLIP_WITH}
 
-# R2.3 の方策一覧。9 通り(建玉状態×判断)の状態機械を実際に回すのは 4 つ
-# (logistic_3択・logistic_2値0.5・規則・完全な判断)。「全部逆張り/全部順張り」は
-# 用語表の「基準の方策 (i)(ii)」で、最初のプリントで一度だけ入り判断を見ずに終わりまで
-# 持つ(状態機械を通らない。型 A/B の分岐が無い)。
-JUDGED_POLICIES = ("logistic_3択", "logistic_2値0.5", "規則", "完全な判断")
+# R2.7 の方策一覧(反証者レビュー8 致命-1: R2.2 が明示する「基準率で2値」比較列が
+# 段1に無かったので足した)。9 通り(建玉状態×判断)の状態機械を実際に回すのは 5 つ
+# (logistic_3択・logistic_2値0.5・logistic_2値基準率・規則・完全な判断)。
+# 「全部逆張り/全部順張り」は用語表の「基準の方策 (i)(ii)」で、最初のプリントで一度だけ
+# 入り判断を見ずに終わりまで持つ(状態機械を通らない。型 A/B の分岐が無い)。
+JUDGED_POLICIES = ("logistic_3択", "logistic_2値0.5", "logistic_2値基準率", "規則",
+                   "完全な判断")
 POLICY_IS_BASELINE = {"全部逆張り": POS_AGAINST, "全部順張り": POS_WITH}
-ALL_POLICIES = JUDGED_POLICIES + tuple(POLICY_IS_BASELINE.keys())  # 6 本
+ALL_POLICIES = JUDGED_POLICIES + tuple(POLICY_IS_BASELINE.keys())  # 7 本(R2.7)
+
+# R2.7 D1: 判断の件数表(judge_counts)は確率の閾値で「続く/止まる」を決める4方策だけを
+# 対象にする(「完全な判断」はラベルの位置=連鎖内の最後かどうかで決まる別種の判断なので
+# 含めない)。位置2×判断3×方策4 = 24 行(件数0の組も明示的に0行として出す)。
+COUNT_JUDGE_POLICIES = ("logistic_3択", "logistic_2値0.5", "logistic_2値基準率", "規則")
 
 # R2.2: 3択の帯(位置ごと、段2の較正から固定。ここでは読むだけで動かさない)。
 BAND_1ST = (0.42, 0.58)     # 止まる: p<0.42 / わからない: [0.42,0.58) / 続く: p>=0.58
 BAND_CHAIN = (0.70, 0.76)   # 止まる: p<0.70 / わからない: [0.70,0.76) / 続く: p>=0.76
 POS_1ST, POS_CHAIN = "1件目", "連鎖の中"
+
+# R2.7 致命-1: 「基準率で2値」の閾値(R2.2 の逐語「1件目0.436/連鎖の中0.690」)。
+# わからない無し(2値)。§7.7 の後半5,000件の基準率(1件目0.436・連鎖の中0.690)そのもの。
+BASE_RATE_1ST = 0.436
+BASE_RATE_CHAIN = 0.690
 
 
 def next_action(position: str, judgment: str, policy_type: str) -> tuple:
@@ -246,6 +266,16 @@ def judge_2way_from_prob(prob) -> str:
     return JUDGE_CONTINUE if float(prob) >= 0.5 else JUDGE_STOP
 
 
+def judge_2way_baserate_from_prob(prob, position: str) -> str:
+    """R2.7 致命-1(R2.2 逐語「基準率で2値(1件目0.436/連鎖の中0.690)」)。位置ごとに
+    閾値が違う2値化(「わからない」無し)。0.5 固定版〈`judge_2way_from_prob`〉との違いは
+    閾値だけ。"""
+    if prob is None or not math.isfinite(float(prob)):
+        return JUDGE_UNKNOWN  # 読めない場合だけ「わからない」扱い(通常は起きない)
+    thr = BASE_RATE_1ST if position == POS_1ST else BASE_RATE_CHAIN
+    return JUDGE_CONTINUE if float(prob) >= thr else JUDGE_STOP
+
+
 def judge_from_rule(mat1) -> str:
     """規則(材料1: 直前60秒の同じ側の件数)≥1 → 続く、0 → 止まる。わからない無し。"""
     v = _f(mat1)
@@ -256,7 +286,10 @@ def judge_from_rule(mat1) -> str:
 
 def judge_perfect(pos_in_cascade: int, cascade_len: int) -> str:
     """完全な判断 = 事後のラベル(この後60秒以内に同じ側の次の清算が来るか)を
-    そのまま判断に使う = 上限。連鎖の最後だけ「止まる」。"""
+    そのまま判断に使う参照点。**損益の上限ではない**(反証者レビュー8 致命-2で
+    用語表・R2.3 の「上限」の語を撤回。当てているのは「続く/止まる」ラベルであって
+    価格経路の損益ではないので、連鎖単位では他方策を下回ることがある)。
+    連鎖の最後だけ「止まる」。"""
     return JUDGE_STOP if pos_in_cascade == cascade_len - 1 else JUDGE_CONTINUE
 
 
@@ -279,6 +312,13 @@ def judgments_for_policy(prints: list, policy: str, logit_prob_of: dict,
         return out
     if policy == "logistic_2値0.5":
         return [judge_2way_from_prob(logit_prob_of.get(p["print_id"])) for p in prints]
+    if policy == "logistic_2値基準率":
+        out = []
+        for p in prints:
+            pid = p["print_id"]
+            pos = position_of_pid.get(pid, POS_1ST)
+            out.append(judge_2way_baserate_from_prob(logit_prob_of.get(pid), pos))
+        return out
     raise ValueError(f"未知の方策: {policy}")
 
 
@@ -367,6 +407,12 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
     """`prints`(ts 順)・`judgments`(同じ長さ)から 1 本の連鎖の損益・回数・保有秒を返す。
     `price_fn(t_ms)` は `(price, matched_ts)` を返す(at_or_after、穴は price_fn 側)。
     損益の符号は建玉の向き(清算の向きではない)。
+
+    `path`(戻り値)の各行は「レグ損益_bp」を持つ(決済・ドテン・連鎖の終わりの強制決済の
+    行だけ数値、他は None)。この列の合計は必ず `pnl_bp` と一致する(反証者レビュー8
+    致命-3。建玉を持ったまま連鎖が終わった場合、`path` の最後にもう1行、判断「終わり」・
+    行動「決済」の強制決済の行が付く ── 集計〈cascade_rows〉には元々含まれていた損益だが、
+    どの print 単位の出力にも現れていなかった)。
     """
     delay_ms = int(round(float(delay_s) * 1000))
     pos = POS_NONE
@@ -381,14 +427,17 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
 
     def close_leg(px, ts):
         nonlocal total_pnl, total_hold_ms
-        total_pnl += entry_dir * (px - entry_price) / entry_price * 1e4
+        leg_pnl = entry_dir * (px - entry_price) / entry_price * 1e4
+        total_pnl += leg_pnl
         total_hold_ms += ts - entry_ts
+        return leg_pnl
 
     fill_lag_ms = []
     for j, (pr, judge) in enumerate(zip(prints, judgments)):
         ts = int(pr["ts_ms"])
         new_pos, action = next_action(pos, judge, policy_type)
         px, matched_t = (NAN, None)
+        leg_pnl = None
         if action in ACTIONS_NEEDING_PRICE:
             target = ts + delay_ms
             px, matched_t = price_fn(target)
@@ -410,33 +459,42 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
                 first_entry_pos = j
         elif action == ACT_CLOSE:
             if entry_price is not None and px == px:
-                close_leg(px, ts)
+                leg_pnl = close_leg(px, ts)
             entry_price = entry_ts = entry_dir = None
         elif action == ACT_FLIP_AGAINST:
             if entry_price is not None and px == px:
-                close_leg(px, ts)
+                leg_pnl = close_leg(px, ts)
             entry_price, entry_ts, entry_dir = px, ts, -side_sign
             entered_ever = True
             n_entries += 1
         elif action == ACT_FLIP_WITH:
             if entry_price is not None and px == px:
-                close_leg(px, ts)
+                leg_pnl = close_leg(px, ts)
             entry_price, entry_ts, entry_dir = px, ts, side_sign
             entered_ever = True
             n_entries += 1
         pos = new_pos
         path_rows.append({"print_id": pr.get("print_id"), "ts_ms": ts,
                           "位置": j, "判断": judge, "行動": action, "建玉": pos,
-                          "約定価格": (px if px == px else None)})
+                          "約定価格": (px if px == px else None),
+                          "レグ損益_bp": leg_pnl})
 
     if pos != POS_NONE and entry_price is not None:
         target = cascade_end_ts + delay_ms
         px, matched_t = price_fn(target)
+        exit_leg_pnl = None
         if px != px:
             missing = True
         else:
-            close_leg(px, cascade_end_ts)
+            exit_leg_pnl = close_leg(px, cascade_end_ts)
             fill_lag_ms.append(matched_t - target)
+        # 反証者レビュー8 致命-3: 連鎖の終わりの強制決済を per-print の道筋にも出す
+        # (判断「終わり」、行動「決済」。集計 total_pnl には元々含まれていた)。
+        path_rows.append({"print_id": None, "ts_ms": cascade_end_ts,
+                          "位置": len(prints), "判断": JUDGE_EXIT, "行動": ACT_CLOSE,
+                          "建玉": POS_NONE,
+                          "約定価格": (px if px == px else None),
+                          "レグ損益_bp": exit_leg_pnl})
         pos = POS_NONE
 
     return {
@@ -505,11 +563,15 @@ def run_simulation(cascades: dict, logit_prob_of: dict, position_of_pid: dict,
         judge_cache = {policy: judgments_for_policy(prints, policy, logit_prob_of,
                                                      position_of_pid)
                        for policy in JUDGED_POLICIES}
-        for policy in JUDGED_POLICIES:
+        # 判断の3択/2値の件数(R2.7 D1): 確率の閾値で決まる4方策
+        # (logistic_3択・logistic_2値0.5・logistic_2値基準率・規則)だけを対象に、
+        # 実際の位置(1件目/連鎖の中)で数える。「完全な判断」はラベルの位置(連鎖内の
+        # 最後かどうか)で決まる別種の判断なので、この確率ベースの件数表には含めない
+        # (D1: 位置2×判断のある方策4 = 24 行の決定式に合わせた)。
+        for policy in COUNT_JUDGE_POLICIES:
             for j, pr in enumerate(prints):
                 pos_label = position_of_pid.get(pr["print_id"], POS_1ST)
-                key_pos = pos_label if policy == "logistic_3択" else "(位置なし)"
-                judge_counts[(policy, key_pos, judge_cache[policy][j])] += 1
+                judge_counts[(policy, pos_label, judge_cache[policy][j])] += 1
 
         for delay in DELAYS_S:
             price_fn = price_cache.raw_at_or_after
@@ -527,16 +589,18 @@ def run_simulation(cascades: dict, logit_prob_of: dict, position_of_pid: dict,
                         "最初に入った位置": entry_bucket(res["first_entry_pos"])})
                     fill_lags[delay].extend(res["fill_lag_ms"])
                     if delay == MAIN_DELAY:
+                        # 反証者レビュー8 致命-3・直すべき-3: 連鎖の終わりの強制決済の行
+                        # (path の末尾に付くことがある)も含めて全行を出す。「建玉」列と
+                        # 「レグ損益_bp」列を足した(D3・致命-3)。
                         for row in res["path"]:
                             action_counts[(policy, ptype, row["行動"])] += 1
-                        for j, pr in enumerate(prints):
                             print_rows.append({
-                                "print_id": pr["print_id"], "bundle_id": bid,
+                                "print_id": row["print_id"], "bundle_id": bid,
                                 "day": day, "side": side, "方策": policy, "型": ptype,
-                                "遅れ_秒": delay, "位置": j,
-                                "判断": res["path"][j]["判断"],
-                                "行動": res["path"][j]["行動"],
-                                "約定価格": res["path"][j]["約定価格"]})
+                                "遅れ_秒": delay, "位置": row["位置"],
+                                "判断": row["判断"], "行動": row["行動"],
+                                "建玉": row["建玉"], "約定価格": row["約定価格"],
+                                "レグ損益_bp": row["レグ損益_bp"]})
             for policy_name, direction in POLICY_IS_BASELINE.items():
                 for ptype in (TYPE_A, TYPE_B):  # 型に依らないが表の形をそろえるため両方書く
                     res = simulate_baseline(prints, s_sign, direction, delay, price_fn,
@@ -617,9 +681,14 @@ def build_position_breakdown(cdf: pd.DataFrame) -> list:
 
 
 def build_judge_count_table(judge_counts: dict) -> list:
+    """R2.7 D1: 位置2×判断3×方策4 = 24 行を明示的に列挙する(観測されなかった組
+    〈例: 規則は「わからない」を持たない〉も件数0の行として出す。決定的な行数)。"""
     rows = []
-    for (policy, pos_label, judge), n in sorted(judge_counts.items()):
-        rows.append({"方策": policy, "位置": pos_label, "判断": judge, "件数": n})
+    for policy in COUNT_JUDGE_POLICIES:
+        for pos_label in (POS_1ST, POS_CHAIN):
+            for judge in (JUDGE_STOP, JUDGE_CONTINUE, JUDGE_UNKNOWN):
+                n = judge_counts.get((policy, pos_label, judge), 0)
+                rows.append({"方策": policy, "位置": pos_label, "判断": judge, "件数": n})
     return rows
 
 
@@ -665,10 +734,12 @@ def build_synthetic_traces() -> list:
         for r in res["path"]:
             rows.append({"合成連鎖": title, "print_id": r["print_id"],
                         "ts_ms": r["ts_ms"], "判断": r["判断"], "行動": r["行動"],
-                        "建玉": r["建玉"], "約定価格": r["約定価格"]})
+                        "建玉": r["建玉"], "約定価格": r["約定価格"],
+                        "レグ損益_bp": _fmt(r["レグ損益_bp"], 4)
+                                  if r["レグ損益_bp"] is not None else ""})
         rows.append({"合成連鎖": title, "print_id": "(連鎖損益)",
                     "ts_ms": "", "判断": "", "行動": "",
-                    "建玉": "", "約定価格": _fmt(res["pnl_bp"], 4)})
+                    "建玉": "", "約定価格": _fmt(res["pnl_bp"], 4), "レグ損益_bp": ""})
     return rows
 
 
@@ -713,7 +784,9 @@ def write_output(out_dir: Path, select_info: dict, built: dict) -> dict:
 
     md = ["# O3C SIGNAL 方策の模擬 — 段1(前半200本)の表", "",
          "- 委任文: `docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md`",
-         "- 設計: `docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md`(改訂2)",
+         "- 設計: `docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md`(改訂2・R2.7)",
+         "- 反証者: `docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW8_2026-09-20.md`(致命 C1・C3・"
+         "直すべき D3 を受けて直した版)",
          f"- 抜いた連鎖: {select_info['抜いた本数']} 本(前半連鎖の総数 "
          f"{select_info['前半連鎖の総数']} 本から種 {SEED})",
          ""]
@@ -738,7 +811,8 @@ def write_output(out_dir: Path, select_info: dict, built: dict) -> dict:
         "実行時刻(UTC)": __import__("datetime").datetime.now(
             __import__("datetime").timezone.utc).isoformat(),
         "委任文": "docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md",
-        "設計": "docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md(改訂2)",
+        "設計": "docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md(改訂2・R2.7)",
+        "反証者": "docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW8_2026-09-20.md",
         "種": SEED,
         "抜いた連鎖の本数": select_info["抜いた本数"],
         "前半連鎖の総数": select_info["前半連鎖の総数"],
@@ -748,6 +822,8 @@ def write_output(out_dir: Path, select_info: dict, built: dict) -> dict:
         "遅れ_秒": list(DELAYS_S),
         "3択の帯(1件目)": list(BAND_1ST),
         "3択の帯(連鎖の中)": list(BAND_CHAIN),
+        "基準率2値の閾値(1件目)": BASE_RATE_1ST,
+        "基準率2値の閾値(連鎖の中)": BASE_RATE_CHAIN,
         "欠測(価格が引けなかった行数、遅れ別)": n_missing,
         "行数の内訳": {name: len(rows) for name, rows, _k in named},
         "行数の合計": total_rows,

@@ -1,7 +1,7 @@
-"""`scripts/o3c_signal_policy.py`(方策の模擬 — 清算の列に沿って判断を繋ぐ、改訂2:
+"""`scripts/o3c_signal_policy.py`(方策の模擬 — 清算の列に沿って判断を繋ぐ、改訂2 + R2.7:
 判断の出所は前半で固定した logistic、Jev は呼ばない)の試験。
 
-**測るもの**(委任文〈段1〉【作るもの】3、(1)〜(9))
+**測るもの**(委任文〈段1〉【作るもの】3、(1)〜(9)、+ 反証者レビュー8〈R2.7〉の直し)
   1. 状態機械: 建玉なし/順張り/逆張り × 止まる/続く/わからない の 9 通りの行動が
      設計の表どおり(合成の連鎖で1本ずつ)。
   2. 型 A は同じプリントで新規を開かない、型 B はドテン。
@@ -10,10 +10,14 @@
   5. 帯の3択が改訂2(R2.2)の値。
   6. 判断が ts 以前だけを使う(ts 以後の約定・清算を変えても判断が同じ。p₀ を
      書き換えても同じ)。
-  7. 完全な判断は事後のラベル(連鎖の道筋の位置)だけを使う。
+  7. 完全な判断は事後のラベル(連鎖の道筋の位置)だけを使う参照点(損益の上限ではない)。
   8. 損益の符号が建玉の向き(清算の向きではない)。
   9. `paper_logs/` を開かない。
   + 判定語なし。
+  R2.7-C1: 基準率2値(1件目0.436/連鎖の中0.690)の判断が帯どおり。
+  R2.7-C3: 出口(連鎖の終わり)の強制決済の行が per-print の道筋に出て、その
+    「レグ損益_bp」の合算が連鎖の損益(`pnl_bp`)と一致する。
+  R2.7-D3: per-print の道筋に建玉(向き・無し)の列がある。
 """
 from __future__ import annotations
 
@@ -187,6 +191,33 @@ def test_band_thresholds_match_revision2():
     assert P.judge_2way_from_prob(0.499999) == P.JUDGE_STOP
 
 
+# ---------------------------------------------------------------------------
+# R2.7-C1: 基準率2値(1件目0.436/連鎖の中0.690)の判断が帯どおり
+# ---------------------------------------------------------------------------
+def test_base_rate_two_value_policy_matches_r27_thresholds():
+    P = sp
+    assert P.BASE_RATE_1ST == 0.436
+    assert P.BASE_RATE_CHAIN == 0.690
+    # 1件目: p>=0.436 で続く、それ未満は止まる(わからない無し)
+    assert P.judge_2way_baserate_from_prob(0.436, P.POS_1ST) == P.JUDGE_CONTINUE
+    assert P.judge_2way_baserate_from_prob(0.435999, P.POS_1ST) == P.JUDGE_STOP
+    # 連鎖の中: p>=0.690 で続く、それ未満は止まる
+    assert P.judge_2way_baserate_from_prob(0.690, P.POS_CHAIN) == P.JUDGE_CONTINUE
+    assert P.judge_2way_baserate_from_prob(0.689999, P.POS_CHAIN) == P.JUDGE_STOP
+    # 同じ確率値でも位置が違えば判断が変わりうる(閾値が位置ごとに違うことの確認)
+    assert P.judge_2way_baserate_from_prob(0.5, P.POS_1ST) == P.JUDGE_CONTINUE
+    assert P.judge_2way_baserate_from_prob(0.5, P.POS_CHAIN) == P.JUDGE_STOP
+    # 確率が読めない -> わからない
+    assert P.judge_2way_baserate_from_prob(None, P.POS_1ST) == P.JUDGE_UNKNOWN
+    assert P.judge_2way_baserate_from_prob(float("nan"), P.POS_CHAIN) == P.JUDGE_UNKNOWN
+    # 方策一覧に入っていること(R2.7: 7本)
+    assert "logistic_2値基準率" in P.JUDGED_POLICIES
+    assert len(P.ALL_POLICIES) == 7
+    assert P.judgments_for_policy(
+        [{"print_id": "a", "ts_ms": 0, "side": "BUY"}], "logistic_2値基準率",
+        {"a": 0.5}, {"a": P.POS_1ST}) == [P.JUDGE_CONTINUE]
+
+
 def test_position_of_uses_cand1_zero_rule():
     assert sp.position_of(0) == sp.POS_1ST
     assert sp.position_of(0.0) == sp.POS_1ST
@@ -228,13 +259,70 @@ def test_judgments_depend_only_on_pre_ts_inputs_not_future_data():
 
 
 # ---------------------------------------------------------------------------
-# (7) 完全な判断は連鎖の道筋の位置だけを使う(事後のラベル = 上限)
+# (7) 完全な判断は連鎖の道筋の位置だけを使う参照点(反証者レビュー8 致命-2:
+#     「上限」の語は撤回。連鎖単位では他方策を下回ることがある)
 # ---------------------------------------------------------------------------
 def test_perfect_judgment_uses_position_in_cascade_only():
     P = sp
     assert [P.judge_perfect(i, 3) for i in range(3)] == [
         P.JUDGE_CONTINUE, P.JUDGE_CONTINUE, P.JUDGE_STOP]
     assert [P.judge_perfect(i, 1) for i in range(1)] == [P.JUDGE_STOP]  # 単発
+
+
+def test_source_does_not_call_perfect_judgment_an_upper_bound():
+    """反証者レビュー8 致命-2: 用語表・R2.3 の「上限」という語は撤回済み。
+    `judge_perfect` の docstring にその撤回の理由が書かれていることも確かめる。"""
+    src = (ROOT / "scripts" / "o3c_signal_policy.py").read_text()
+    assert "上限ではない" in src
+    assert "= 上限" not in src
+
+
+# ---------------------------------------------------------------------------
+# R2.7-C3・D3: 出口の強制決済の行が per-print の道筋に出て、その「レグ損益_bp」の
+# 合算が連鎖の損益(pnl_bp)と一致する。建玉の列がある。
+# ---------------------------------------------------------------------------
+def test_exit_leg_row_appears_in_path_and_sums_to_cascade_pnl():
+    P = sp
+
+    def price_fn(t_ms):
+        return 100.0 + t_ms / 1.0e7, t_ms
+
+    # 型B(ドテン)で連鎖が建玉を持ったまま終わる合成連鎖(前半200本の実測でも
+    # 型Bは入った連鎖の100%がこの「見えないレグ」に依存していた、致命-3)。
+    prints = [{"print_id": "a", "ts_ms": 0, "side": "SELL"},
+             {"print_id": "b", "ts_ms": 15_000, "side": "SELL"}]
+    judgments = [P.JUDGE_STOP, P.JUDGE_CONTINUE]
+    end = 15_000 + P.CASCADE_END_GAP_S * 1000
+    res = P.simulate_cascade(prints, judgments, -1.0, P.TYPE_B, 0, price_fn, end)
+
+    # path の最後の行が出口の強制決済(判断「終わり」・行動「決済」)
+    last = res["path"][-1]
+    assert last["判断"] == P.JUDGE_EXIT == "終わり"
+    assert last["行動"] == P.ACT_CLOSE == "決済"
+    assert last["print_id"] is None
+    assert last["ts_ms"] == end
+    assert last["建玉"] == P.POS_NONE
+    assert last["レグ損益_bp"] is not None
+
+    # レグ損益_bp の合算(None は0扱い)が連鎖の損益と一致する
+    leg_sum = sum(r["レグ損益_bp"] for r in res["path"] if r["レグ損益_bp"] is not None)
+    assert leg_sum == pytest.approx(res["pnl_bp"])
+
+    # 建玉(D3)の列がどの行にもある(向きが状態機械の遷移どおり)
+    assert [r["建玉"] for r in res["path"]] == [
+        P.POS_AGAINST, P.POS_WITH, P.POS_NONE]
+
+    # 型Aで途中で決済されるだけ(出口まで建玉が残らない)場合は出口の行が付かない
+    judgments_a = [P.JUDGE_CONTINUE, P.JUDGE_CONTINUE, P.JUDGE_STOP]
+    prints_a = [{"print_id": "x", "ts_ms": 0, "side": "BUY"},
+               {"print_id": "y", "ts_ms": 10_000, "side": "BUY"},
+               {"print_id": "z", "ts_ms": 20_000, "side": "BUY"}]
+    end_a = 20_000 + P.CASCADE_END_GAP_S * 1000
+    res_a = P.simulate_cascade(prints_a, judgments_a, 1.0, P.TYPE_A, 0, price_fn, end_a)
+    assert len(res_a["path"]) == 3  # 出口の行は付かない(型Aの決済で既に建玉なし)
+    assert res_a["path"][-1]["判断"] != P.JUDGE_EXIT
+    leg_sum_a = sum(r["レグ損益_bp"] for r in res_a["path"] if r["レグ損益_bp"] is not None)
+    assert leg_sum_a == pytest.approx(res_a["pnl_bp"])
 
 
 # ---------------------------------------------------------------------------
@@ -301,6 +389,50 @@ def test_no_verdict_words_in_real_tables_md_if_present():
     txt = out.read_text()
     for w in sp.BANNED_WORDS:
         assert w not in txt
+
+
+# ---------------------------------------------------------------------------
+# R2.7-D1: 表の行数の決定式(judge_counts=24・dist_table=84・position_breakdown=42)
+# ---------------------------------------------------------------------------
+def test_judge_count_table_has_24_rows_decision_formula():
+    """位置2×判断3×方策4(logistic_3択・logistic_2値0.5・logistic_2値基準率・規則)= 24。
+    観測されなかった組(例: 規則は「わからない」を持たない)も件数0の行として出る。"""
+    P = sp
+    rows = P.build_judge_count_table({})  # 空の実測でも行数は変わらない(決定的)
+    assert len(rows) == 24
+    assert all(r["件数"] == 0 for r in rows)
+    policies = {r["方策"] for r in rows}
+    assert policies == set(P.COUNT_JUDGE_POLICIES)
+    assert "完全な判断" not in policies  # ラベルの位置で決まる別種の判断なので含めない
+    positions = {r["位置"] for r in rows}
+    assert positions == {P.POS_1ST, P.POS_CHAIN}
+    judges = {r["判断"] for r in rows}
+    assert judges == {P.JUDGE_STOP, P.JUDGE_CONTINUE, P.JUDGE_UNKNOWN}
+    # 実測を1件混ぜても行数は変わらず、その1件の件数だけ反映される
+    rows2 = P.build_judge_count_table({("規則", P.POS_1ST, P.JUDGE_STOP): 200})
+    assert len(rows2) == 24
+    hit = [r for r in rows2 if r["方策"] == "規則" and r["位置"] == P.POS_1ST
+          and r["判断"] == P.JUDGE_STOP]
+    assert hit == [{"方策": "規則", "位置": P.POS_1ST, "判断": P.JUDGE_STOP, "件数": 200}]
+
+
+def test_dist_and_position_tables_have_r27_row_counts():
+    """dist_table = 方策7×型2×遅れ3×含める/含めない2 = 84。
+    position_breakdown = 方策7×型2×位置3(1件目で入った/途中で入った/入らなかった)= 42。"""
+    P = sp
+    rows = []
+    for policy in P.ALL_POLICIES:
+        for ptype in (P.TYPE_A, P.TYPE_B):
+            for delay in P.DELAYS_S:
+                rows.append({"bundle_id": "b1", "day": "2024-01-01", "side": "BUY",
+                            "方策": policy, "型": ptype, "遅れ_秒": delay,
+                            "pnl_bp": 1.0, "建玉の回数": 1, "保有秒": 60.0,
+                            "入った": 1, "欠測": 0, "最初に入った位置": "1件目で入った"})
+    cdf = pd.DataFrame(rows)
+    dist = P.build_dist_table(cdf)
+    posb = P.build_position_breakdown(cdf)
+    assert len(dist) == 84
+    assert len(posb) == 42
 
 
 # ---------------------------------------------------------------------------
