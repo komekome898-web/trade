@@ -58,3 +58,14 @@ for attr, grp, lo_hi, mband in (("bundle_n_events_dedup","Q3(上位 3 分位)", 
     msel = [(mm <= mq3[0]), (mm > mq3[0]) & (mm <= mq3[1]), (mm > mq3[1])][mband]
     mu, se, n = cl(lq.loc[sel & msel, "r_end_60"].to_numpy(float), lq.loc[sel & msel, "day"].to_numpy())
     print(f"G6 {attr} {grp} × m帯{mband+1}: リード {mu:+.3f}±{se:.3f} n={n} | 委任先 {row['r_end 平均(bp)']:+.3f}±{row['r_end 日クラスタ SE']:.3f} n={row['n']}")
+
+# 追記(2026-09-20、報告の監査 3 回目): (a) SELL / BUY × m Q2 の再計算、(b) 母数 4,338 対 4,337 の差の原因
+mm = liq["m_60"].to_numpy(float); mq = np.nanpercentile(mm, [100/3, 200/3]); r = liq["r_end_60"].to_numpy(float)
+for side in ("SELL", "BUY"):
+    sel = (liq["side"].to_numpy() == side) & (mm > mq[0]) & (mm <= mq[1])
+    mu, se, n = cl(r[sel], liq["day"].to_numpy()[sel]); print(f"G6 side {side} × m Q2: リード {mu:+.3f}±{se:.3f} n={n}")
+g2 = pd.read_csv("backtest_data/o3c_signal_explore4_20260920/g2_continuation.csv")
+row = g2[(g2["掃きの群"].str.startswith("Q1")) & (g2["m の群"].str.startswith("Q1")) & (g2["T(秒)"] == 60) & (g2["h(秒)"] == 60)].iloc[0]
+print("g2 掃きQ1×mQ1: 群の束数", int(row["群の束数"]), "母数(次の束)", int(row["次の束が 120 秒以内の母数"]))
+sel = (liq["sweep_bp"].to_numpy(float) <= 0.200939) & (mm <= mq[0]); nx = liq["next_bundle_gap_s"].to_numpy(float)
+print("リード: 掃き≤0.2009 & m≤q1 の束数", int(sel.sum()), "うち next 有限", int((sel & np.isfinite(nx)).sum()), "| m == q1 ちょうどの束", int((mm == mq[0]).sum()), "| 道具の切り値との差:", "リード q1 =", round(float(mq[0]), 6))
