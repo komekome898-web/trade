@@ -166,18 +166,15 @@
 
 61 点の値段の列は落とす。
 
-### 6.3 問いの分解(1 回の呼び出しで並列、すべて noul、肯定形、criteria は具体的な状況)
+### 6.3 問い(L-303 で直した版。**問いは 1 つ**。前の版の 3 つの「機構の問い」は criteria が state の項目の読み直しで code で決まるもの = 材料だったので、問いから外し、事実として state に置く)
 
-| 鍵 | 問い | criteria(yes / no の具体例) |
+| 鍵 | 問い(英文で送る) | criteria |
 |---|---|---|
-| `fuel_remains` | 清算の向きの届く範囲に、まだ清算される建玉が残っているか | yes: `positions_ahead` に建玉があり、次の水準までの距離が直前 60 秒の変位より近い / no: 先に建玉が無い、または遠い |
-| `pressure_persists` | 押す力が続いているか(値段が清算の向きに極値を更新し続けているか) | yes: 極値の更新が数秒以内、成行の大半が清算の向き / no: 極値の更新から時間が経ち、戻りが出ている |
-| `absorption_present` | 受け手が出ているか | yes: 反対向きの成行が増え、戻りが出ている、反対側の清算がある / no: 反対向きの流れが見えない |
-| `next_print_within_60s` | 60 秒以内に同じ側の次の清算が来るか(いまの問い。結果の較正に使う) | 上の 3 つを踏まえた総合。criteria は状況で書き直す |
+| `next_print_within_60s` | Will another same-side liquidation print occur within the next 60 seconds? | yes: the forced flow still has positions within reach to liquidate and the market is not absorbing it (price keeps making new extremes, taker flow stays one-sided) / no: there are no positions within reach, or opposite-side flow and a pullback are absorbing the forced flow |
 
-code 側: `next_print_within_60s` の確率を後半で較正して 3 択に使う。`fuel_remains`・`pressure_persists`・`absorption_present` は「なぜ」の記録と、結果の問い単独との較正の比較に使う(手引き §10 の型)。**Jev は判定しない。閾値は code の定数、後半で測ってから置く(§4-5)。**
+**state は事実だけ**(L-303): 「no cascade in progress」「longs being force-closed」のような解釈を書かない。先に建玉が有るか、極値から何秒・何 bp 戻ったか、成行の何割が清算の向きか、は code が決める事実で、state に置く。秤にかける(残っているか / 吸収しているか)のは Jev。試作 `docs/DATA/probes/20260920_o3c_jev_state_proto.{py,log}` はこの線で直した。
 
-**比較の相手**: code の規則(直前 60 秒の清算の有無など)が前段で 63〜66% 当てていた。Jev がこの規則を上回らなければ、Jev を判断に置く意味は無い。較正の取り直しでは規則と並べて出す。
+code 側: 確率を後半で較正して 3 択に使う。**比較の相手**: code の規則(直前 60 秒の清算の有無など)が前段で 63〜66% 当てていた。Jev がこれを上回らなければ判断に置く意味は無い。閾値は code の定数、後半で測ってから置く(§4-5)。
 
 ### 6.4 体制の規則違反(リードの発見、2026-09-20。オーナーに報告)
 

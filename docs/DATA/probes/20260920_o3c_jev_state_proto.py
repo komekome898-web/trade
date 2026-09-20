@@ -30,12 +30,12 @@ def state_for(pid):
     same = w[w.side == side]; opp = w[w.side != side]
     same_list = [f"{(ts - t)/1000:.1f} s ago, size {band(n, Q['notional'])}" for t, n in zip(same.ts_ms, same.notional)]
     cnt = int(r.cand_1); el = r.mat1_elapsed_since_burst_s
-    if cnt == 0: pos = 'first same-side liquidation in the last 60 seconds (no cascade in progress)'
+    if cnt == 0: pos = 'no same-side liquidation in the last 60 seconds'
     else: pos = (f"print number {cnt + 1} of a same-side cascade that began {el:.0f} s ago; "
                  f"notional liquidated so far in this cascade: {band(r.cand_F3, Q['chain_notional'])} of first-half cascades")
     a6 = r.cand_A6; r1 = r.cand_R1 if 'cand_R1' in r else float('nan')
-    if math.isfinite(a6) and a6 <= 1.0: ext = f"price set a new 60-second extreme in the liquidation direction {a6:.1f} s ago (no pullback yet)"
-    elif math.isfinite(a6): ext = f"the 60-second extreme was set {a6:.0f} s ago; price has since pulled back {max(r1, 0):.1f} bp against the liquidation direction" if math.isfinite(r1) else f"extreme set {a6:.0f} s ago"
+    if math.isfinite(a6) and a6 <= 1.0: ext = f"last new 60-second extreme in the liquidation direction: {a6:.1f} s ago; pullback since then: 0 bp"
+    elif math.isfinite(a6): ext = f"last new 60-second extreme in the liquidation direction: {a6:.0f} s ago; pullback since then: {max(r1, 0):.1f} bp" if math.isfinite(r1) else f"last new 60-second extreme: {a6:.0f} s ago"
     else: ext = 'unknown'
     cov = int(r.mat8_covered) if math.isfinite(r.mat8_covered) else 0
     if not cov: ahead = 'coverage unknown (open-interest map does not cover this price range)'
@@ -44,7 +44,7 @@ def state_for(pid):
                    f"within 5 bp: {'some' if r.mat8_amt_5bp > 0 else 'none'}; nearest liquidation level ahead: "
                    + (f"{r.cand_5p:.0f} bp away" if math.isfinite(r.cand_5p) else 'none within the mapped range'))
     st = {
-     'this_print': {'side': f"{side} liquidation ({'longs' if side=='SELL' else 'shorts'} being force-closed)",
+     'this_print': {'side': f"{side} liquidation",
                     'size': f"{band(r.mat3_notional_raw, Q['notional'])} of first-half prints", 'time_utc': {0:'00-06 UTC',1:'06-12 UTC',2:'12-18 UTC',3:'18-24 UTC'}.get(int(r.cand_6), 'unknown')},
      'position_in_cascade': pos,
      'recent_same_side_prints': same_list or 'none in the last 60 seconds',
