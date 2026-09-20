@@ -109,6 +109,7 @@ REACT_SIGN = cont.REACT_SIGN
 # ---------------------------------------------------------------------------
 SEED = 20260920
 N_CASCADES_STAGE1 = 200         # 段1: 前半の連鎖から抜く本数(委任文 §2-2)
+N_CASCADES_STAGE2 = 2000        # 段2: 後半の連鎖から抜く本数(段2委任文【作るもの】1)
 DELAYS_S = (0.5, 1, 2)          # R2.4
 MAIN_DELAY = 1                  # print 単位の詳細行・位置別内訳に使う代表の遅れ
                                  # (設計に無い判断: R2.4 は 3 通りを対等に扱い「主」を
@@ -121,9 +122,15 @@ ROWS_CONTINUE = (REPO_ROOT / "backtest_data" / "o3c_signal_continue_20260920"
                  / "rows_continue.csv.gz")
 ROWS_MATERIALS = (REPO_ROOT / "backtest_data" / "o3c_signal_materials_20260920"
                   / "rows_materials.csv.gz")
+CALIB_MANIFEST = (REPO_ROOT / "backtest_data" / "o3c_signal_continue_20260920" / "jev"
+                  / "selection_manifest.json")  # 較正5,000件の選定(段2委任文【作るもの】1)
 DATA_ROOT = cont.DEFAULT_DATA_ROOT
 DEFAULT_OUT = (REPO_ROOT / "backtest_data" / "o3c_signal_policy_20260920"
               / "stage1_firsthalf")
+DEFAULT_OUT_STAGE2 = (REPO_ROOT / "backtest_data" / "o3c_signal_policy_20260920"
+                      / "stage2_secondhalf")
+DELEGATION_STAGE1 = "docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md"
+DELEGATION_STAGE2 = "docs/DATA/delegations/20260920_o3c_signal_policy2_stage2_prompt.md"
 MAT1_COL = cont.MAT_COL[1]  # mat1_same_side_count_60s_and_elapsed(= cand_1 と同一)
 
 # ---- 状態機械の記号(設計の用語表) ----------------------------------------
@@ -372,6 +379,54 @@ def stage1_select(rows_continue_path: Path = ROWS_CONTINUE, seed: int = SEED,
     return {
         "前半連鎖の総数": len(all_cascades),
         "前半連鎖の内訳(単発/2件/3件以上)": breakdown(all_cascades),
+        "抜いた本数": len(picked),
+        "抜いた本数の内訳(単発/2件/3件以上)": breakdown(picked),
+        "cascades": picked,
+    }
+
+
+def load_calibration_bundle_ids(rows_continue_path: Path = ROWS_CONTINUE,
+                                manifest_path: Path = CALIB_MANIFEST) -> set:
+    """段2委任文【作るもの】1・R2.7 D4: 較正5,000件(`selection_manifest.json` の
+    print_id)を `rows_continue.csv.gz` で bundle_id に変換する(突合は print_id →
+    bundle_id、D4 の規定どおり)。"""
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    calib_ids = {p["print_id"] for p in manifest["prints"]}
+    df = pd.read_csv(rows_continue_path, usecols=["print_id", "kind", "bundle_id"],
+                     dtype={"print_id": str, "bundle_id": str})
+    df = df[(df["kind"] == "print") & (df["print_id"].isin(calib_ids))]
+    found = set(df["print_id"])
+    if len(found) != len(calib_ids):
+        missing = calib_ids - found
+        raise SystemExit(f"[止め] 較正5,000件に rows_continue.csv.gz に無い print_id が"
+                         f"ある: {sorted(missing)[:5]}(計 {len(missing)} 件)")
+    return set(df["bundle_id"].tolist())
+
+
+def select_stage2_cascades(rows_continue_path: Path = ROWS_CONTINUE,
+                           manifest_path: Path = CALIB_MANIFEST, seed: int = SEED,
+                           k: int = N_CASCADES_STAGE2) -> dict:
+    """段2: 後半の連鎖から、較正5,000件を含む連鎖(bundle_id で突合、D4)を除き、
+    種 20260920 で k 本抜く。"""
+    df = load_prints_half(rows_continue_path, "後半")
+    all_cascades = cascades_from_prints(df)
+    calib_bids = load_calibration_bundle_ids(rows_continue_path, manifest_path)
+    excluded = [bid for bid in all_cascades if bid in calib_bids]
+    kept = {bid: prints for bid, prints in all_cascades.items() if bid not in calib_bids}
+    picked_ids = sample_cascades(list(kept.keys()), seed, k)
+    picked = {bid: kept[bid] for bid in picked_ids}
+
+    def breakdown(d: dict) -> dict:
+        b: dict = defaultdict(int)
+        for prints in d.values():
+            b[size_bucket(len(prints))] += 1
+        return dict(b)
+
+    return {
+        "後半連鎖の総数(除外前)": len(all_cascades),
+        "後半連鎖の内訳(除外前、単発/2件/3件以上)": breakdown(all_cascades),
+        "除外した連鎖の数(較正5000件を含む)": len(excluded),
+        "除外後の残数": len(kept),
         "抜いた本数": len(picked),
         "抜いた本数の内訳(単発/2件/3件以上)": breakdown(picked),
         "cascades": picked,
@@ -759,7 +814,11 @@ def write_csv_gz(path: Path, rows: list) -> None:
                            for c in cols])
 
 
-def write_output(out_dir: Path, select_info: dict, built: dict) -> dict:
+def write_output(out_dir: Path, select_info: dict, built: dict, *, stage_no: int = 1
+                 ) -> dict:
+    """段1・段2共通の出力書式(段2委任文【作るもの】2: 「段1と同じ道具で」)。
+    段2は `synthetic_traces.csv` を作らない(委任文の構成に無い ── 段1の合成データは
+    テスト用の実データ非依存の例なので、実連鎖しか扱わない段2には不要)。"""
     out_dir.mkdir(parents=True, exist_ok=True)
     cascade_rows = built["cascade_rows"]
     print_rows = built["print_rows"]
@@ -771,25 +830,53 @@ def write_output(out_dir: Path, select_info: dict, built: dict) -> dict:
     posb = build_position_breakdown(cdf)
     jc = build_judge_count_table(built["judge_counts"])
     ac = build_action_count_table(built["action_counts"])
-    synth = build_synthetic_traces()
 
     named = [("dist_table.csv", dist, "連鎖ごとの損益分布(方策×型×遅れ、0含める/含めない)"),
             ("position_breakdown.csv", posb, "位置別(1件目で入った/途中で入った/入らなかった)の内訳"),
             ("judge_counts.csv", jc, "判断(3択/2値)の件数"),
-            ("action_counts.csv", ac, "行動(決済/ドテン/ホールド等)の件数(遅れ1秒)"),
-            ("synthetic_traces.csv", synth, "合成の連鎖3本の状態機械の道筋")]
+            ("action_counts.csv", ac, "行動(決済/ドテン/ホールド等)の件数(遅れ1秒)")]
+    if stage_no == 1:
+        named.append(("synthetic_traces.csv", build_synthetic_traces(),
+                     "合成の連鎖3本の状態機械の道筋"))
     norm = {name: normalize_rows(rows) for name, rows, _k in named}
     for name, rows, _k in named:
         write_csv(out_dir / name, norm[name])
 
-    md = ["# O3C SIGNAL 方策の模擬 — 段1(前半200本)の表", "",
-         "- 委任文: `docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md`",
+    if stage_no == 1:
+        title = "段1(前半200本)"
+        delegation = DELEGATION_STAGE1
+        pop_line = (f"- 抜いた連鎖: {select_info['抜いた本数']} 本(前半連鎖の総数 "
+                   f"{select_info['前半連鎖の総数']} 本から種 {SEED})")
+        stage_label = "段1(前半200本の動作確認)"
+        select_summary = {
+            "前半連鎖の総数": select_info["前半連鎖の総数"],
+            "前半連鎖の内訳(単発/2件/3件以上)": select_info["前半連鎖の内訳(単発/2件/3件以上)"],
+            "抜いた本数の内訳(単発/2件/3件以上)": select_info["抜いた本数の内訳(単発/2件/3件以上)"],
+        }
+    else:
+        title = "段2(後半2,000本、一度だけ)"
+        delegation = DELEGATION_STAGE2
+        pop_line = (f"- 抜いた連鎖: {select_info['抜いた本数']} 本(後半連鎖の総数〈除外前〉"
+                   f"{select_info['後半連鎖の総数(除外前)']} 本、較正5,000件を含む "
+                   f"{select_info['除外した連鎖の数(較正5000件を含む)']} 本を除いた "
+                   f"{select_info['除外後の残数']} 本から種 {SEED})")
+        stage_label = "段2(後半2,000本、一度だけ)"
+        select_summary = {
+            "後半連鎖の総数(除外前)": select_info["後半連鎖の総数(除外前)"],
+            "後半連鎖の内訳(除外前、単発/2件/3件以上)":
+                select_info["後半連鎖の内訳(除外前、単発/2件/3件以上)"],
+            "除外した連鎖の数(較正5000件を含む)":
+                select_info["除外した連鎖の数(較正5000件を含む)"],
+            "除外後の残数": select_info["除外後の残数"],
+            "抜いた本数の内訳(単発/2件/3件以上)": select_info["抜いた本数の内訳(単発/2件/3件以上)"],
+        }
+
+    md = [f"# O3C SIGNAL 方策の模擬 — {title}の表", "",
+         f"- 委任文: `{delegation}`",
          "- 設計: `docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md`(改訂2・R2.7)",
          "- 反証者: `docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW8_2026-09-20.md`(致命 C1・C3・"
          "直すべき D3 を受けて直した版)",
-         f"- 抜いた連鎖: {select_info['抜いた本数']} 本(前半連鎖の総数 "
-         f"{select_info['前半連鎖の総数']} 本から種 {SEED})",
-         ""]
+         pop_line, ""]
     for name, rows, key in named:
         md += [f"## {key}(`{name}`、{len(norm[name])} 行)", "", md_table(norm[name]), ""]
     mdtxt = "\n".join(md)
@@ -807,17 +894,15 @@ def write_output(out_dir: Path, select_info: dict, built: dict) -> dict:
     n_missing = {str(d): int((cdf[(cdf["遅れ_秒"] == d)]["欠測"] == 1).sum())
                 for d in DELAYS_S}
     summary = {
-        "段": "段1(前半200本の動作確認)",
+        "段": stage_label,
         "実行時刻(UTC)": __import__("datetime").datetime.now(
             __import__("datetime").timezone.utc).isoformat(),
-        "委任文": "docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md",
+        "委任文": delegation,
         "設計": "docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md(改訂2・R2.7)",
         "反証者": "docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW8_2026-09-20.md",
         "種": SEED,
         "抜いた連鎖の本数": select_info["抜いた本数"],
-        "前半連鎖の総数": select_info["前半連鎖の総数"],
-        "前半連鎖の内訳(単発/2件/3件以上)": select_info["前半連鎖の内訳(単発/2件/3件以上)"],
-        "抜いた本数の内訳(単発/2件/3件以上)": select_info["抜いた本数の内訳(単発/2件/3件以上)"],
+        **select_summary,
         "方策": list(ALL_POLICIES),
         "遅れ_秒": list(DELAYS_S),
         "3択の帯(1件目)": list(BAND_1ST),
@@ -847,26 +932,37 @@ def write_output(out_dir: Path, select_info: dict, built: dict) -> dict:
 # main
 # ===========================================================================
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="O3C SIGNAL 方策の模擬(段1: 前半200本)")
-    ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    ap = argparse.ArgumentParser(description="O3C SIGNAL 方策の模擬(段1: 前半200本 / "
+                                             "段2: 後半2,000本、一度だけ)")
+    ap.add_argument("--stage", type=int, choices=(1, 2), default=1)
+    ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args(argv)
+    out_dir = a.out if a.out is not None else (DEFAULT_OUT if a.stage == 1
+                                               else DEFAULT_OUT_STAGE2)
 
     t0 = time.time()
-    select_info = stage1_select()
-    print(f"[段1-1] 前半連鎖 {select_info['前半連鎖の総数']} 本から "
-         f"{select_info['抜いた本数']} 本を種 {SEED} で抜いた", flush=True)
+    if a.stage == 1:
+        select_info = stage1_select()
+        print(f"[段1-1] 前半連鎖 {select_info['前半連鎖の総数']} 本から "
+             f"{select_info['抜いた本数']} 本を種 {SEED} で抜いた", flush=True)
+    else:
+        select_info = select_stage2_cascades()
+        print(f"[段2-1] 後半連鎖 {select_info['後半連鎖の総数(除外前)']} 本のうち較正5,000件を"
+             f"含む {select_info['除外した連鎖の数(較正5000件を含む)']} 本を除いた "
+             f"{select_info['除外後の残数']} 本から {select_info['抜いた本数']} 本を種 {SEED} "
+             f"で抜いた", flush=True)
 
     logit_prob_of, position_of_pid = load_logit_probs_for_cascades(select_info["cascades"])
-    print(f"[段1-2] logistic の確率を {len(logit_prob_of)} 件計算した "
+    print(f"[段{a.stage}-2] logistic の確率を {len(logit_prob_of)} 件計算した "
          f"({time.time() - t0:.0f}s)", flush=True)
 
     price_cache = PriceCache(DATA_ROOT)
     built = run_simulation(select_info["cascades"], logit_prob_of, position_of_pid,
                            price_cache)
-    print(f"[段1-3] 方策の模擬を終えた({time.time() - t0:.0f}s)", flush=True)
+    print(f"[段{a.stage}-3] 方策の模擬を終えた({time.time() - t0:.0f}s)", flush=True)
 
-    summary = write_output(a.out, select_info, built)
-    print(f"完了 {time.time() - t0:.0f}s -> {a.out}", flush=True)
+    summary = write_output(out_dir, select_info, built, stage_no=a.stage)
+    print(f"完了 {time.time() - t0:.0f}s -> {out_dir}", flush=True)
     print(json.dumps({"行数の合計": summary["行数の合計"],
                       "数値セル数": summary["数値セル数(tables.md)"]},
                      ensure_ascii=False), flush=True)

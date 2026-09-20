@@ -1,21 +1,23 @@
 {
-  "段": "段1(前半200本の動作確認)",
-  "実行時刻(UTC)": "2026-09-20T18:57:21.027061+00:00",
-  "委任文": "docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md",
+  "段": "段2(後半2,000本、一度だけ)",
+  "実行時刻(UTC)": "2026-09-20T19:00:22.550068+00:00",
+  "委任文": "docs/DATA/delegations/20260920_o3c_signal_policy2_stage2_prompt.md",
   "設計": "docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md(改訂2・R2.7)",
   "反証者": "docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW8_2026-09-20.md",
   "種": 20260920,
-  "抜いた連鎖の本数": 200,
-  "前半連鎖の総数": 8931,
-  "前半連鎖の内訳(単発/2件/3件以上)": {
-    "2件": 1614,
-    "単発": 5033,
-    "3件以上": 2284
+  "抜いた連鎖の本数": 2000,
+  "後半連鎖の総数(除外前)": 12267,
+  "後半連鎖の内訳(除外前、単発/2件/3件以上)": {
+    "単発": 6996,
+    "3件以上": 2979,
+    "2件": 2292
   },
+  "除外した連鎖の数(較正5000件を含む)": 3291,
+  "除外後の残数": 8976,
   "抜いた本数の内訳(単発/2件/3件以上)": {
-    "3件以上": 45,
-    "単発": 122,
-    "2件": 33
+    "単発": 1350,
+    "3件以上": 285,
+    "2件": 365
   },
   "方策": [
     "logistic_3択",
@@ -50,11 +52,10 @@
     "dist_table.csv": 84,
     "position_breakdown.csv": 42,
     "judge_counts.csv": 24,
-    "action_counts.csv": 53,
-    "synthetic_traces.csv": 10
+    "action_counts.csv": 53
   },
-  "行数の合計": 213,
-  "数値セル数(tables.md)": 1318,
+  "行数の合計": 203,
+  "数値セル数(tables.md)": 1300,
   "入力のMD5(読むだけ、書き換えていない)": {
     "backtest_data/o3c_signal_continue_20260920/rows_continue.csv.gz": "c0c3c98fd88a4306459ebe16b5802db9",
     "backtest_data/o3c_signal_materials_20260920/rows_materials.csv.gz": "1b88b2483444a88e369706076e3927e9",

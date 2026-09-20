@@ -472,3 +472,68 @@ def test_stage1_output_present_and_row_estimate_recorded():
     assert summary["抜いた連鎖の本数"] == 200
     assert summary["種"] == sp.SEED
     assert set(summary["方策"]) == set(sp.ALL_POLICIES)
+
+
+# ---------------------------------------------------------------------------
+# 段2: 後半だけを抜く・較正5,000件を含む連鎖を bundle_id で除く(D4)・一度だけ(冪等)
+# ---------------------------------------------------------------------------
+@needs_data
+def test_calibration_bundle_ids_come_from_back_half_only():
+    """較正5,000件の print_id から引いた bundle_id は、全て後半の連鎖に属する
+    (`bundle_id` の文字列は半期をまたいで再利用されうるので、前半と重ならないことは
+    別に保証されない ── `select_stage2_cascades` はそもそも後半だけを母集団にするので、
+    それで十分〈下の `test_stage2_select_excludes_calibration_cascades_and_counts_are_
+    consistent` が実際の除外を print_id 単位で直接確かめる〉)。"""
+    bids = sp.load_calibration_bundle_ids()
+    assert len(bids) > 0
+    back = sp.load_prints_half(sp.ROWS_CONTINUE, "後半")
+    back_bids = set(back["bundle_id"].astype(str))
+    assert bids <= back_bids  # 較正5,000件の連鎖は全て後半に属する
+
+
+@needs_data
+def test_stage2_select_excludes_calibration_cascades_and_counts_are_consistent():
+    info = sp.select_stage2_cascades(k=sp.N_CASCADES_STAGE2)
+    assert info["抜いた本数"] == sp.N_CASCADES_STAGE2
+    assert (info["除外後の残数"] == info["後半連鎖の総数(除外前)"]
+           - info["除外した連鎖の数(較正5000件を含む)"])
+    sizes = sum(info["抜いた本数の内訳(単発/2件/3件以上)"].values())
+    assert sizes == info["抜いた本数"]
+    # 抜いた連鎖はどれも後半で、較正5,000件のprint_idを1件も含まない
+    calib_manifest = __import__("json").loads(sp.CALIB_MANIFEST.read_text())
+    calib_ids = {p["print_id"] for p in calib_manifest["prints"]}
+    for prints in info["cascades"].values():
+        for pr in prints:
+            assert pr["half"] == "後半"
+            assert pr["print_id"] not in calib_ids
+
+
+def test_select_stage2_cascades_is_deterministic_for_fixed_seed():
+    """種が同じなら同じ本数・同じ抜き方(`sample_cascades` が種で決定的なことは既に
+    確認済みなので、ここでは `select_stage2_cascades` の k のデフォルトが
+    N_CASCADES_STAGE2〈2000〉であることだけを確かめる、冪等性の入口)。"""
+    assert sp.N_CASCADES_STAGE2 == 2000
+    import inspect
+    sig = inspect.signature(sp.select_stage2_cascades)
+    assert sig.parameters["k"].default == sp.N_CASCADES_STAGE2
+    assert sig.parameters["seed"].default == sp.SEED
+
+
+@needs_data
+def test_stage2_output_present_and_summary_recorded():
+    summary_path = sp.DEFAULT_OUT_STAGE2 / "summary.json"
+    if not summary_path.exists():
+        pytest.skip("段2がまだこの環境で実行されていない")
+    import json
+    summary = json.loads(summary_path.read_text())
+    assert summary["抜いた連鎖の本数"] == sp.N_CASCADES_STAGE2
+    assert summary["種"] == sp.SEED
+    assert set(summary["方策"]) == set(sp.ALL_POLICIES)
+    assert "synthetic_traces.csv" not in summary["行数の内訳"]
+    # 前半で固定したもの(logistic の係数・ecdf)の MD5 が段1と同じであること
+    s1 = json.loads((sp.DEFAULT_OUT / "summary.json").read_text())
+    for key in ("config/o3c_signal_logit_first.yaml", "config/o3c_signal_logit_chain.yaml",
+               "backtest_data/o3c_signal_materials_20260920/logit_ecdf_first.npz",
+               "backtest_data/o3c_signal_materials_20260920/logit_ecdf_chain.npz"):
+        assert (summary["入力のMD5(読むだけ、書き換えていない)"][key]
+               == s1["入力のMD5(読むだけ、書き換えていない)"][key])
