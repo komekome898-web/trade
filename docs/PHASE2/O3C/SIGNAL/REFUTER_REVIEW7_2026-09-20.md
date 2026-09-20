@@ -332,3 +332,126 @@ print(df.columns.tolist())
   リテラルな辞書であり、データから計算される値ではないので、後半を見ても変わりようがない。
 - `selection_manifest.json` の層化は側・cand_1(ts だけで決まる、結果ラベルに依存しない量)だけを
   使っており、後半の続く/止まるのラベルを覗いた形跡は無い。
+
+---
+
+## 再確認(直しの後、コミット 7640da6。設計 §7.5.1 の方式)
+
+対象: `scripts/o3c_signal_logit.py`(`ecdf_mid_rank` / `apply_frozen_rank`)、
+`backtest_data/o3c_signal_materials_20260920/logit_ecdf_{first,chain}.npz`、
+`config/o3c_signal_logit_{first,chain}.yaml`、`scripts/o3c_signal_calib.py`
+(`calibration_goodness` / `choose_better`)、`scripts/o3c_jev_state.py`(`StateBuilder` の
+`bands_path`)、`tests/test_o3c_jev_state.py`・`tests/test_o3c_signal_calib.py`、
+`V4_STAGE1_REPORT_2026-09-20.md` (10)。**壊すつもりで再確認した。Jev は 1 回も呼んでおらず、
+後半のラベルには触れていない。**
+
+### (1) 点質量の材料(`cand_8` 連鎖の中、`cand_R1` 1 件目)の順位が実データで潰れていないか
+
+再計算(`config/` に凍結された `logit_ecdf_{first,chain}.npz` を実際に読み、`ecdf_mid_rank` に
+前半の実データを通した):
+
+```
+chain cand_8  n=12769 n_finite=12600 frac_zero=0.8410  distinct_ranks=1397  rank_at_0=0.4205  min/max=0.4205/0.9999
+first cand_8  n=9069  n_finite=8988  frac_zero=0.6134  distinct_ranks=2932  rank_at_0=0.3067  min/max=0.3067/0.9999
+first cand_R1 n=9069  n_finite=9069  frac_zero=0.4746  distinct_ranks=4724  rank_at_0=0.2373  min/max=0.2373/0.9999
+```
+
+致命 C1(全件が同じ帯 rank=0.9 に潰れる)・直すべき D1(R1 の帯 0・1 が空になる)は**再現しなかった**。
+0 の値は「0 未満の件数と 0 以下の件数の中間」(理論値 ≈ frac_zero/2: 0.8410/2=0.4205、0.6134/2=0.3067、
+0.4746/2=0.2373、いずれも実測と一致)に集まり、正の値はその上に 1,397〜4,724 通りの別々の順位として
+分散している。壊れていない。
+
+### (2) 後半の値を変えても順位と係数が変わらない経路になっているか
+
+`scripts/o3c_signal_logit.py` を読んだ限り、順位化の経路は `build_ecdf(df, features)`
+(83–91 行、渡された df 自身の有限値を昇順に並べるだけ)と `ecdf_mid_rank`/`apply_frozen_rank`
+(94–121 行、凍結済みの配列に対する `searchsorted` だけ)の 2 つに分離されており、
+`apply_frozen_rank` は**凍結した `ecdf` 辞書と新しい df の材料列以外を一切見ない**(新しい
+`np.quantile` 呼び出しが無い)。`fit_beta_front_half`・`run_scene`(192–247 行)は
+`build_ecdf` を `half=="前半"` に絞った df にしか呼んでいないので、後半の値は経験分布に入らない。
+`test_frozen_ecdf_unaffected_by_back_half_values`(`tests/test_o3c_jev_state.py` 684–695 行)が
+後半の値を書き換えても前半だけの ecdf が変わらないことを検査しており、独立に走らせて確認した
+(47 件、後述)。
+
+一方で、`apply_frozen_rank`/`load_ecdf_npz` を後半データに実際に適用するスクリプトは
+**まだリポジトリに無い**(`grep -rn "apply_frozen_rank\|load_ecdf_npz" scripts/*.py` は
+`o3c_signal_logit.py` 自身しか出さない)。これは致命ではない ── 段2 の測定スクリプト自体が
+まだ書かれていない(委任文の対象外)ため当然だが、**段2 の実装時に `build_ecdf` ではなく
+`apply_frozen_rank`(+ 凍結済み npz)を後半データに使うこと**を、次の委任文に明記しておくべき
+(直すべき、新規 D5 として下に記録)。
+
+### (3) 当てはめ時の順位と `apply_frozen_rank` の順位が前半で一致するか
+
+`config/o3c_signal_logit_{first,chain}.yaml` の `ecdf_md5` が指す
+`logit_ecdf_{first,chain}.npz` を実際に読み込み、**同じ材料表 `rows_materials.csv.gz` から
+`StateBuilder`・`add_n2_column`・`build_ecdf` を独立に組み立て直して**比較した:
+
+```
+first  cand_14/cand_8/cand_C3/cand_C4/cand_11/cand_A6/cand_R1/cand_9/cand_15/cand_N2  各列とも match=True
+chain  cand_F5/cand_1/cand_F3/cand_14/cand_A6/cand_C4/cand_15/cand_11/cand_C3/cand_8/cand_2  各列とも match=True
+```
+
+1 件目 10 本・連鎖の中 11 本、全 21 本の凍結配列が `np.array_equal` で完全一致した(N2 の再計算
+(`_trades_for_day` を含む実データの窓計算、約 27 秒)も込みで確認)。commit された npz は
+「前半だけから」を主張どおり満たしている。
+
+### (4) 較正の良さの関数が §7.5.1 の定義どおりか
+
+`scripts/o3c_signal_calib.py` を読み、独立に動かして確認した。
+
+- 帯: `BIN_EDGES = np.linspace(0.0, 1.0, 21)` = 20 本固定、起点 0。境界値を実際に流して
+  帯番号を確認した結果、`0.00→0` … `0.95→19`、`1.00→19`(最後だけ両端閉区間)で、
+  設計「`[0,0.05) … [0.95,1.0]`」のとおり(浮動小数の丸め対策 `+1e-9` も効いている)。
+- 件数 20 未満の帯の除外: `MIN_COUNT = 20`、`calibration_goodness` は `n_b < min_count` の帯を
+  `excluded`(「外した帯」)に回し重み付き平均から外す。設計の文言と一致。
+- 値の式: `Σ n_b × |actual_b − center_b| / Σ n_b`(使った帯だけ)。設計の式と一致。
+- 同点判定: `choose_better` は `vj < vc - tie_eps` のときだけ `"jev"`、それ以外(同点・
+  Jev が code に劣る・どちらかが NaN)はすべて `"code"`。設計「同点(差 0.01 以内)は遅延の
+  短い code」と一致(NaN の扱いも「値が無ければ code」で安全側)。
+
+`tests/test_o3c_signal_calib.py` の 8 件・`tests/test_o3c_jev_state.py` 追加分を含む当ファイル群を
+独立に実行し、**47 件全て通過**(`PYTHONPATH=src python -m pytest tests/test_o3c_signal_calib.py
+tests/test_o3c_jev_state.py` → `47 passed in 0.61s`)。全スイートも独立に実行し、報告の主張どおり
+**`2752 passed, 5 skipped, 1 warning in 457.18s`** を確認した(段1 報告の同じ行と一致)。
+`config/`・`backtest_data/` の変更ファイル・npz の MD5 も報告の表と全て一致することを
+`md5sum` で確認した。
+
+### (5) 残っている致命があるか
+
+**致命 C2(段1 報告「設計に無い判断」の A3/A9・N2 が段2 に影響しないという整理が不正確)は
+未着手のまま残っている。** 今回の直しは委任文・報告とも C1・C3・D1・D2・D4 だけを対象にしており
+(`V4_STAGE1_REPORT_2026-09-20.md` (10) の対象一覧にも C2 は無い)、コードも変わっていない:
+
+```
+$ grep -n "FEATURES_CHAIN = " -A3 scripts/o3c_signal_logit.py
+FEATURES_CHAIN = ["cand_F5", "cand_1", "cand_F3", "cand_14", "cand_A6", "cand_C4",
+                  "cand_15", "cand_11", "cand_C3", "cand_8", "cand_2"]
+```
+
+依然として `cand_A3`・`cand_A9` を含まない(段1報告 (5)-1 の「推測で埋めた空欄」がそのまま
+`FEATURES_CHAIN` に生きている)。`FEATURES_FIRST` の `cand_N2` も変わらず入っており、
+その定義(報告 (5)-5、設計に数式の無い独自定義)は `config/o3c_signal_logit_first.yaml` の
+`cand_N2` の係数に今回も焼き込み直されている。段2 の「code の比較相手」である logistic が
+これらの未確定判断の上に立っていることに変わりはない。段2 に進む前に、C2 はオーナー/設計側で
+決着させる必要がある(直すか、影響を許容する理由を明記するかの二択)。
+
+新規で直すべき 1 件を追加する:
+
+- **D5(新規、軽微)**: `apply_frozen_rank`/`load_ecdf_npz` を後半データへ実際に使う経路が
+  まだどのスクリプトにも書かれていない。段2 の測定スクリプトを書く委任文に「`build_ecdf` を
+  後半データに再度呼ばないこと、`apply_frozen_rank(load_ecdf_npz(...), features, df_secondhalf)`
+  だけを使うこと」を明記し、可能なら「後半データに対して `build_ecdf` を呼んでいないこと」を
+  静的に検査するテスト(例: 後半データを渡したら例外にする、または `build_ecdf` の呼び出し元が
+  `half=="前半"` に絞っていることをコードレビューで確認する)を足すことを推奨する。C3 自体
+  (経路が存在しない)は直っているが、**正しく使われる保証**はまだコードの外にある。
+
+**致命 C1・C3、直すべき D1・D2・D4 は、実データでの再計算・独立な試験実行・MD5 照合のいずれでも
+再現しなかった。直っている。**
+
+## リードの処置(再確認の後、2026-09-20)
+
+- C1・C3・D1・D2・D4: 直った(再確認で一致)。
+- **C2**: 決着は設計 §7.5(コミット 698809d)に書いた。連鎖の中の logistic の入力 11 本は §7.1 の決定表(残す 8 + 逆で与える 1 + 向きを criteria に 2)と一致し、A3 は事実に分けたので入れない、A9 は連鎖の中で 99% が none。N2 は §7.2 でオーナー承認(L-323)の範囲で、定義(直前 5 分の値幅の中の位置)は委任先の実装をリードが認める。段 1 の報告の「段 2 に影響しない」という文は誤りだったので設計で訂正した。**これで C2 は閉じる**(コードは変えない)。
+- D3(層化の歪み): 較正は位置ごとに取り、全体の数は出さない(§7.5.1)。
+- D5(段 2 で `build_ecdf` を後半に呼ばないこと): 段 2 の委任文に明記した。
+- S1・S2: 多重性に数えた(§7.5.1)。
