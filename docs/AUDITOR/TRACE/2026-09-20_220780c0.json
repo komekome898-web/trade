@@ -3615,10 +3615,10 @@
   {
    "move": 135,
    "tools": {
-    "Bash": 3,
+    "Bash": 4,
     "Agent": 2
    },
-   "n_tools": 5,
+   "n_tools": 6,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
