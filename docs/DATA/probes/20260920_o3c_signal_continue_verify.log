@@ -1,0 +1,24 @@
+MD5 rows_continue.csv.gz: c0c3c98fd88a4306459ebe16b5802db9
+  r = pd.read_csv(D + "rows_continue.csv.gz")
+rows: 74545 columns: 53
+['kind', 'print_id', 'day', 'side', 'half', 'ts_ms', 't0_ms', 'p0', 'notional', 'bundle_id', 'dir_sign', 'k_ticks', 'mat1_same_side_count_60s_and_elapsed', 'mat2_interval_ratio_last_two', 'mat3_notional_and_ratio_to_previous', 'mat4_move_since_cascade_start_and_bounce', 'mat5_distance_to_liquidation_node', 'mat6_time_of_day_band', 'mat8_open_interest_mass_ahead', 'mat9_taker_imbalance_5s', 'mat10_oi_slope_and_funding', 'mat11_notional_over_60s_range', 'mat12_notional_over_max_recent_print', 'mat13_taker_imbalance_trend', 'mat14_trade_count_60s', 'mat15_burst_ratio_10s_over_60s', 'mat1_elapsed_since_burst_s', 'mat3_notional_raw', 'mat4_bounce_bp', 'mat8_amt_5bp', 'mat8_amt_20bp', 'mat8_covered', 'mat10_taker_ls_ratio', 'mat10_funding_rate', 'label_30', 'label_60', 'label_120', 'value_continuation_60', 'p_entry_1', 'p_entry_3', 'p_entry_5', 'p_exit_e1_h30', 'p_exit_e1_h60', 'p_exit_e1_h300', 'p_exit_e3_h30', 'p_exit_e3_h60', 'p_exit_e3_h300', 'p_exit_e5_h30', 'p_exit_e5_h60', 'p_exit_e5_h300', 'q7_matched_print_id', 'q7_band15', 'q7_band9']
+kind counts: {'print': 52000, 'q7_candidate': 22545}
+half values: ['前半', '後半'] 前半 n 21838 日 228 後半 n 30162 日 228
+基準率(前半 60 秒) 0.5847  後半 0.5846  30 秒後半 0.5078  120 秒後半 0.6521
+
+== Q4 再計算(後半、入る t₀+1 秒、60 秒保有)
+all_continue  続く   n=30162  日=228  中央値=-1.0297 負=0.5346 日等重み=-1.0211 SE=0.2686
+all_stop      止まる  n=30162  日=228  中央値=+1.0297 負=0.4638 日等重み=+1.0211 SE=0.2686
+perfect       続く   n=17634  日=227  中央値=+3.3314 負=0.4045 日等重み=+3.0272 SE=0.4383
+perfect       止まる  n=12528  日=228  中央値=+4.6298 負=0.2802 日等重み=+5.9332 SE=0.3409
+
+== Q2 再計算: 前半で 10 分位帯を切り、帯の続く割合 > 前半の基準率 の帯を「続く」と言う規則を後半に当てる
+mat1_same_side_count_60s_and_elapsed         続く帯=[6, 7, 8, 9] n=30162 的中=0.6405 適合=0.6925 再現=0.6925 続く件=17634 | 続く枝 中央値=-1.5787 負=0.5409 SE=0.4253 | 止まる枝 中央値=+0.6071 負=0.4718 SE=0.1738
+mat14_trade_count_60s                        続く帯=[5, 6, 7, 8, 9] n=30162 的中=0.6487 適合=0.6913 再現=0.7213 続く件=18399 | 続く枝 中央値=-1.7525 負=0.5408 SE=0.4308 | 止まる枝 中央値=+0.5257 負=0.4726 SE=0.1498
+mat5_distance_to_liquidation_node            続く帯=[0, 1, 7, 8, 9] n=30162 的中=0.6384 適合=0.6920 再現=0.6874 続く件=17518 | 続く枝 中央値=-1.5438 負=0.5404 SE=0.4257 | 止まる枝 中央値=+0.6244 負=0.4714 SE=0.1955
+mat4_move_since_cascade_start_and_bounce     続く帯=[5, 6, 7, 8, 9] n=30162 的中=0.6336 適合=0.7066 再現=0.6384 続く件=15931 | 続く枝 中央値=-1.7098 負=0.5414 SE=0.4593 | 止まる枝 中央値=+0.6211 負=0.4706 SE=0.1784
+mat9_taker_imbalance_5s                      続く帯=[1, 2, 3, 4, 5, 6] n=30140 的中=0.5878 適合=0.6473 再現=0.6492 続く件=17684 | 続く枝 中央値=-1.6665 負=0.5438 SE=0.4142 | 止まる枝 中央値=+0.5085 負=0.4763 SE=0.1681
+
+== 位置(前 60 秒に同じ側の清算が有るか)ごとの続く割合(後半)と、その群の損益(all_stop 側)
+1 件目(前 60 秒に無し)      n=12528 続く割合=0.4328 逆張りの中央値=+0.6071 負=0.4718 日等重み=+0.1771 SE=0.1738
+2 件目以降               n=17634 続く割合=0.6925 逆張りの中央値=+1.5787 負=0.4581 日等重み=+1.7326 SE=0.4253
