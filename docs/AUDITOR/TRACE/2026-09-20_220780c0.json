@@ -4040,10 +4040,10 @@
   {
    "move": 151,
    "tools": {
-    "Bash": 16,
+    "Bash": 17,
     "Agent": 2
    },
-   "n_tools": 18,
+   "n_tools": 19,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
