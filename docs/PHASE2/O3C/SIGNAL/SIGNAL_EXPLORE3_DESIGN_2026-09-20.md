@@ -30,7 +30,7 @@
 | 機構(燃料切れ)を判定から外す | 「**燃料が尽きる尽きないに関わらず**」(L-243) |
 | 用語(h・Δ・r)の定義を冒頭に置く | 「**h ってなに？**」(2026-09-20) |
 | 「基準を越えた / 基準と終端の間」の 2 区分(行き過ぎの修正 / 減衰) | L-247 の直前にオーナーへ見せた文「**h 後の価格が基準を清算と逆の側に越えていれば行き過ぎの修正、基準と束の終わりの間にあれば減衰**」(リードの文。これを見た上での「異論ないので進めてください」) |
-| 3 つ目の区分(f < 0 = 終端より先へ続いた)・区分を戻り率 f(比)で置くこと・基準が 5 分以内に無ければ NaN・**対照 (a) 掃き合わせ** | **(該当語なし)**— リードの具体化(監査 1 回目・指摘 1)。清算側の行はこの決定に依らない。オーナーの異論があれば対照 (a) は報告から外す。外した場合、F2 の 3 区分は清算側だけの分布になり(対照 (b) は r_end だけ)、問い F2「h 後の価格は基準のどちら側か」は清算側の分布だけで答える。対照 (a) は「同じ大きさの値動きが清算なしで起きたとき、どれだけ戻るか」の参照であり、設計の組み直しは要らない(監査 2 回目・指摘 6) |
+| 3 つ目の区分(f < 0 = 終端より先へ続いた)・区分を戻り率 f(比)で置くこと・基準が 5 分以内に無ければ NaN・**対照 (a) 掃き合わせ** | **(該当語なし)**— リードの具体化(監査 1 回目・指摘 1)。清算側の行はこの決定に依らない。この行は 2026-09-20 に委任の前にオーナーへ見せた(返答待ち)。**リードの決定として、返答を待たずに委任した**: 清算側の行はこの決定に依らず、探索は判定ではなく(456 日の 4 度目の読み)、対照 (a) は外せる(監査 3 回目・指摘 8。§0.1「そこだけ聞く」は満たし、「止まる」は満たしていない)。オーナーの異論があれば対照 (a) は報告から外す。外した場合、F2 の 3 区分は清算側だけの分布になり(対照 (b) は r_end だけ)、問い F2「h 後の価格は基準のどちら側か」は清算側の分布だけで答える。対照 (a) は「同じ大きさの値動きが清算なしで起きたとき、どれだけ戻るか」の参照であり、設計の組み直しは要らない(監査 2 回目・指摘 6) |
 | SE の日クラスタ・gap の併記・多重性の引き継ぎ・反証者レビュー・テスト | `research-protocol` §0.0 / §11 の固定手順。「**スキルの承認をもって聞かずに当ててよい**」(L-179) |
 
 ## 1. 意図と実装の突き合わせ(§0.5。`jev_design.py` はこの表の逐語を読む)
@@ -62,7 +62,7 @@
 ## 3. 候補(`jev_design.py` に渡すもの)
 
 - 候補の観測量: `config/jev_design_examples/signal3_observables.yaml`(8 件)。
-- 対照で合わせる候補の変数: `config/jev_design_examples/signal3_covariates.yaml`(11 件 = 探索段 1 の属性 8 + `sweep_bp` + `next_bundle_gap_s`(未来の量。合わせるに入っても対照の作り方には使えない)+ `baseline_lag_ms`)。
+- 対照で合わせる候補の変数: `config/jev_design_examples/signal3_covariates.yaml`(**13 件** = 探索段 1 の属性 10(側・時刻帯・連続 8 = `dist_node_bp` / `dist_vwap_bp` / `bin_pct` / `doi_pre_1h` / `implied_leverage` / `bundle_n_events_dedup` / `bundle_total_notional` / `bundle_width_ms`)+ `sweep_bp` + `next_bundle_gap_s`(未来の量。合わせるに入っても対照の作り方には使えない)+ `baseline_lag_ms`)。前版は `dist_node_bp` と `doi_pre_1h` を欠いた 11 件で、これはリードの見落とし(監査 3 回目・指摘 3)。足して再実行した。
 
 ## 4. 対照
 
@@ -71,7 +71,7 @@
 - **(a) 掃き合わせ**(手順は機械的に一意。監査 1 回目・指摘 4): 束 b(日 d、側 s、幅 W_b = `end_ms − start_ms`、sweep S_b > 0)ごとに、
   1. 候補時刻 t = その日の 00:00:00 UTC から 10 秒刻み(8,640 点)。区間 [t − W_b − 1 ms, t + 900 秒] が同じ gap のどの束の [`start_ms`, `end_ms`] とも重ならないものだけ残す。
   2. 候補の掃き c_t = (`at_or_after(t)` の価格 − `at_or_before(t − W_b − 1)` の価格)(bp)× sgn(s)。sgn(SELL) = −1、sgn(BUY) = +1(清算側の sweep と同じ符号規則)。
-  3. S_b の 10 分位帯に c_t が入る候補のうち、|c_t − S_b| が最小のものを取る。同値なら早い t。**分位帯の切り方**(監査 2 回目・指摘 4): 同じ gap の S_b > 0 の束の S_b について `numpy.quantile(…, [0.1, …, 0.9])`(既定の線形補間)で切り値 q_1 … q_9 を出し、q_0 = 0、q_10 = +∞ とし、帯 k = [q_{k−1}, q_k)(下限を含み上限を含まない)。S_b の帯もこの規則で決める。**c_t ≤ 0(負または 0)は帯 1 の下限 q_0 = 0 を下回るのでどの帯にも入らず、候補にならない。**切り値が同値で帯が空になる場合はその帯の束は「対照 (a) なし」。
+  3. S_b の 10 分位帯に c_t が入る候補のうち、|c_t − S_b| が最小のものを取る。同値なら早い t。**分位帯の切り方**(監査 2 回目・指摘 4): 同じ gap の S_b > 0 の束の S_b について `numpy.quantile(…, [0.1, …, 0.9])`(既定の線形補間)で切り値 q_1 … q_9 を出し、q_10 = +∞ とし、**帯 1 = (0, q_1)(0 を含まない)、帯 k ≥ 2 = [q_{k−1}, q_k)(下限を含み上限を含まない)**。S_b の帯もこの規則で決める(S_b > 0 なので必ずどこかの帯に入る)。**c_t ≤ 0 は帯 1 の下限 0 を含まないのでどの帯にも入らず、候補にならない**(監査 3 回目・指摘 1 で「下回る」の誤りを直した)。切り値が同値で帯が空になる場合も、帯は正常でもその日の生存候補(手順 1 の重なり除外と手順 4 の置換なしを経た後)が 1 つもその帯に落ちない場合も、その束は「対照 (a) なし」(監査 3 回目・指摘 2)。
   4. 置換なし: 束を `start_ms` の順に処理し、既に取った候補の区間 [t − W_b − 1 ms, t + 900 秒] と重なる候補は使わない。取れなければその束は「対照 (a) なし」。
   5. 対照 (a) の基準 = `at_or_before(t − W_b − 1)`、終端 = `at_or_after(t)`、h 後 = `at_or_before(終端の時刻 + h)`(清算側と同じ非対称の取り方)。f と r_pre・r_end を清算側と同じ式で出す。
   **窓の幅は束ごとの W_b であり、中央値は使わない**(gap ごとに違う中央値を流用する曖昧さを消す)。価格を見て選ぶ規則なので、**対照 (a) は「同じ大きさの値動きの後」の比較であり反事実ではない。**
@@ -80,7 +80,7 @@
 
 ## 5. 設計の段の判定(`jev_design.py`。オーナー指示 L-242)
 
-コマンド(2026-09-20、リードの実測): `PYTHONPATH=src:scripts python3 scripts/jev_design.py rank-observables --purpose-from docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE3_DESIGN_2026-09-20.md --intent S-1,S-3,S-4 --observables config/jev_design_examples/signal3_observables.yaml --md …` と `rank-covariates --quantity "r_pre: …" --covariates config/jev_design_examples/signal3_covariates.yaml --md …`。確率は `data/jev/design/signal3_*.json`(リポジトリに入れない)。
+コマンド(2026-09-20、リードの実測): `PYTHONPATH=src:scripts python3 scripts/jev_design.py rank-observables --purpose-from docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE3_DESIGN_2026-09-20.md --intent S-1,S-3,S-4 --observables config/jev_design_examples/signal3_observables.yaml --md …` と `rank-covariates --quantity "…" --covariates config/jev_design_examples/signal3_covariates.yaml --md …` を **2 回**(判定の量 = `retrace_fraction`(主。F2 が報告する量)と `r_pre`(代理)。監査 3 回目・指摘 4: 前版は代理の r_pre だけで走らせていた)。確率は `data/jev/design/signal3_*.json`(リポジトリに入れない)。
 
 ## 設計の段の判定(jev_design、2026-09-19、モデル jev-1.13.0)
 
@@ -129,7 +129,33 @@
 | 7 | `bf_r_pre` | 無関係(1 以下) |
 | 8 | `sweep_bp` | 無関係(1 以下) |
 
-## 設計の段の判定(jev_design、2026-09-19、モデル jev-1.13.0)
+## 設計の段の判定(jev_design、2026-09-20、モデル jev-1.13.0)
+
+- 判定の量: retrace_fraction: (p_end - p_h) / (p_end - p_pre), the fraction of the sweep (pre-cascade baseline to last liquidation fill) that has been retraced h seconds after the bundle's last liquidation; > 1 means the price crossed back beyond the baseline (overshoot corrected), 0..1 means partial decay, < 0 means the move continued
+- 変数ファイル: `config/jev_design_examples/signal3_covariates.yaml`
+- 意図: (この段は量と変数の対なので意図の番号は無い)
+
+この道具は判定の中身(どの量を選ぶか)を決めない。出すのは順位と語だけで、選ぶのはリードである。確率と期待値は json にだけ残す。
+
+### 対照で合わせる変数
+
+| 順位 | 変数 | 語 |
+|---|---|---|
+| 1 | `sweep_bp` | 合わせなくてよい |
+| 2 | `side` | 合わせなくてよい |
+| 3 | `baseline_lag_ms` | 合わせなくてよい |
+| 4 | `bin_pct` | 合わせなくてよい |
+| 5 | `bundle_width_ms` | 合わせなくてよい |
+| 6 | `dist_node_bp` | 合わせなくてよい |
+| 7 | `next_bundle_gap_s` | 合わせなくてよい |
+| 8 | `bundle_total_notional` | 合わせなくてよい |
+| 9 | `dist_vwap_bp` | 合わせなくてよい |
+| 10 | `bundle_n_events_dedup` | 合わせなくてよい |
+| 11 | `implied_leverage` | 合わせなくてよい |
+| 12 | `doi_pre_1h` | 合わせなくてよい |
+| 13 | `time_of_day` | 合わせなくてよい |
+
+## 設計の段の判定(jev_design、2026-09-20、モデル jev-1.13.0)
 
 - 判定の量: r_pre: signed price change in basis points from the pre-cascade baseline (last trade before the bundle's first liquidation) to h seconds after the bundle's last liquidation; negative = price is on the side opposite to the cascade direction relative to the baseline
 - 変数ファイル: `config/jev_design_examples/signal3_covariates.yaml`
@@ -148,13 +174,14 @@
 | 5 | `next_bundle_gap_s` | 合わせなくてよい |
 | 6 | `bin_pct` | 合わせなくてよい |
 | 7 | `bundle_n_events_dedup` | 合わせなくてよい |
-| 8 | `implied_leverage` | 合わせなくてよい |
-| 9 | `bundle_total_notional` | 合わせなくてよい |
-| 10 | `dist_vwap_bp` | 合わせなくてよい |
-| 11 | `time_of_day` | 合わせなくてよい |
+| 8 | `bundle_total_notional` | 合わせなくてよい |
+| 9 | `dist_node_bp` | 合わせなくてよい |
+| 10 | `implied_leverage` | 合わせなくてよい |
+| 11 | `dist_vwap_bp` | 合わせなくてよい |
+| 12 | `time_of_day` | 合わせなくてよい |
+| 13 | `doi_pre_1h` | 合わせなくてよい |
 
-
-**リードの読み**: (i) S-1・S-3 で戻り率 f(h)(`retrace_fraction`)と 3 区分の割合(`overshoot_share`)が 1・2 位「直接」、S-4 でも 1・2 位。**主な量はこの 2 つ**(F2)。r_pre と r_end(探索段 1・2 の量)は代理として併記し、探索段 2 との一致(r_end の Δ = 0・h = 60 秒 = −6.80)を確認に使う。sweep は目的の量ではなく F1 の記述と F5 の属性(「無関係」でよい)。(ii) 合わせる変数は 11 件とも「合わせなくてよい」。2 位の `sweep_bp` は、対照 (a) の選び方(§4 手順 3)が同じ大きさの値動きを比較の定義に入れる。**実際にそろうかは F0(|c_t − S_b| の分位)で測る**(監査 1 回目・指摘 6。「構造でそろう」の断定は取り下げ)。`next_bundle_gap_s`(5 位)は未来の量なので対照の作り方には使わず、F4 の併記で扱う。**Jev の閾値の較正は未測定**(探索段 2 の設計と同じ注記)。
+**リードの読み**: (i) S-1・S-3 で戻り率 f(h)(`retrace_fraction`)と 3 区分の割合(`overshoot_share`)が 1・2 位「直接」、S-4 でも 1・2 位。**主な量はこの 2 つ**(F2)。r_pre と r_end(探索段 1・2 の量)は代理として併記し、探索段 2 との一致(r_end の Δ = 0・h = 60 秒 = −6.80)を確認に使う。sweep は目的の量ではなく F1 の記述と F5 の属性(「無関係」でよい)。(ii) 合わせる変数は 13 件とも、判定の量が `retrace_fraction` でも `r_pre` でも「合わせなくてよい」。`retrace_fraction` で 1 位(`r_pre` で 2 位)の `sweep_bp` は、対照 (a) の選び方(§4 手順 3)が同じ大きさの値動きを比較の定義に入れる。**実際にそろうかは F0(|c_t − S_b| の分位)で測る**(監査 1 回目・指摘 6。「構造でそろう」の断定は取り下げ)。`next_bundle_gap_s`(5 位)は未来の量なので対照の作り方には使わず、F4 の併記で扱う。**Jev の閾値の較正は未測定**(探索段 2 の設計と同じ注記)。
 
 ## 6. データと段
 
@@ -164,9 +191,9 @@
 - 出力(行数は委任先に数え直しを求める。監査 1 回目・指摘 3 で「31 群」の誤記を直した):
   - **F0**(自己点検): 4 種 × (基準の遅れ + 終端の遅れ + h 後の遅れ 3) = 20 行 × gap 3 本 = 60 行、対照 (a) の合わせ具合 1 行 × gap 3 本 = 3 行。**計 63 行。**
   - **F1**(sweep の分布): 全体・側 2・束の件数 3 = 6 行 + 両側混在で除外した束の割合 1 行 = 7 行 × gap 3 本 = **21 行**。
-  - **F2**: h 3 × {清算 全体、清算 次の束まで 180 秒以上、清算 前の束から 180 秒以上、対照 (a)、対照 (b)-i、対照 (b)-ii} = 18 行 × gap 3 本 = **54 行**。列: 群 / h / n / 含む日数 / r_end 平均 ± SE(6 種すべて)/ r_pre 平均 ± SE(清算と (a))/ f > 1 の割合・0 ≤ f ≤ 1 の割合・f < 0 の割合・f の中央値と分位(清算と (a)。(b) の行は「—」)/ h 後の価格が終端と同じ割合(6 種すべて。3 区分の読みに添える)。
+  - **F2**: h 3 × {清算 全体、清算 次の束まで 180 秒以上、清算 前の束から 180 秒以上、対照 (a)、対照 (b)-i、対照 (b)-ii} = 18 行 × gap 3 本 = **54 行**。列: 群 / h / n / 含む日数 / r_end 平均 ± 日クラスタ SE ± naive SE(6 種すべて)/ r_pre 平均 ± 日クラスタ SE ± naive SE と日で等重みの平均(清算と (a))/ f > 1 の割合・0 ≤ f ≤ 1 の割合・f < 0 の割合・f の中央値と分位(清算と (a)。(b) の行は「—」)/ h 後の価格が終端と同じ割合(6 種すべて。3 区分の読みに添える)。
   - **F3**(越えた幅): h 3 × gap 3 本 = **9 行**(監査 2 回目・指摘 3 で gap 60 限定をやめた)。
-  - **F5**(属性): 33 群(10 属性 30 群 + sweep の 3 分位)× h 3 = **99 行**(gap 60 だけ)。**gap 30 / 180 を F5 で測らない理由**: 10 属性 30 群の切り値は探索段 1 が gap 60 の表で切ったもので(探索段 2 の E4 も gap 60 だけ)、gap ごとに切り直すと群が別物になり探索段 1・2 と並べられない。gap 30 / 180 の属性は**本単位では測らない**(監査 2 回目・指摘 3。縮めた範囲をここに書く)。列に「含む日数」「その属性が欠測で群に入らない束の割合」を置く(反証者 2 の #10)。
+  - **F5**(属性): 33 群(10 属性 30 群 + sweep の 3 分位)× h 3 = **99 行**(gap 60 だけ)。**gap 30 / 180 を F5 で測らない理由**: 10 属性 30 群の切り値は探索段 1 が gap 60 の表で切ったもので(探索段 2 の E4 も gap 60 だけ)、gap ごとに切り直すと群が別物になり探索段 1・2 と並べられない。sweep の 3 分位はこの gap 60 の表に足す列であり、同じ表に置くために gap 60 だけ(sweep 自体の gap 30 / 180 の分布は F1 にある)。gap 30 / 180 の属性は**本単位では測らない**(監査 2 回目・指摘 3。縮めた範囲をここに書く)。**sweep の 3 分位の切り方**(監査 3 回目・指摘 5): gap 60 の清算側で S_b > 0 の束を母集団に、探索段 2 の道具の `tertile_cuts`(`nanpercentile` の 33.3 / 66.7、線形補間)で lo / hi を切り、`tertile_mask` と同じ規則(下 = S_b ≤ lo、中 = lo < S_b ≤ hi、上 = S_b > hi)で分ける。S_b ≤ 0 の束はどの群にも入らず、欠測の割合の列に数える。列に「含む日数」「その属性が欠測で群に入らない束の割合」を置く(反証者 2 の #10)。
   - **合計 246 行**(63 + 21 + 54 + 9 + 99)。`tables.md` + csv + 行データ(`rows_gap*.csv.gz`。清算・対照 (a)・(b) の全行、`prev_bundle_gap_s` / `next_bundle_gap_s` / `baseline_lag_ms` / `sweep_bp` / 各 h の r_pre・r_end・f を含む)+ `summary.json` + `MD5SUMS`。
 - **自前記録は読まない**(テストで測る)。
 
@@ -180,7 +207,7 @@
 - **3 区分の読み方**(反証者 2 の #4): h は 60 秒以上に限り、3 区分は h 後の価格が終端と同じ(約定なし)割合を横に添えて読む。群の間で 3 区分を比べるときは、その割合が同じ桁であることを先に見る。
 - **清算行の重複**(反証者 2 の #7): **既に測ってある**(`docs/DATA.md` §2 の行「Binance COIN-M `liquidationSnapshot` の重複行」、2026-09-17 リード実測、`ACTION_LOG` 053: 472 日・106,822 行のうち一意 53,398、多重度 2 が 53,385 群・4 が 13 群)。反証者 2 の「未確認」はこの記録を見ずに書かれたもので、設計の前版もそれを引き継いだ(監査 2 回目・指摘 5)。この段では委任先に同じ数え方(全列一致)で再計算させ、`summary.json` に多重度の内訳を残して `DATA.md` の値と一致するかを書く。束は 1 周目の重複除去済みの行(`bundle_n_events_dedup`)を使う。
 - **両側混在の束**(反証者 2 の #3): 除外した割合を F1 に gap ごとに出す。
-- SE は日でクラスタ。日で等重みの点推定を併記(探索段 2 の反証者 #6)。
+- SE は日でクラスタ(探索段 2 の道具 `mean_se_cluster` の式)。**naive SE**(母標準偏差 / √n。同じ関数が返す)も併記し、クラスタ化で何倍になるかが読めるようにする。日で等重みの点推定を併記(探索段 2 の反証者 #6)。(監査 3 回目・指摘 6・7: 委任文にあって設計に無かった語をここに置いた)
 - gap: 60 主、30 / 180 併記(固定しない)。
 - 多重性: 探索段なので検定しない。行数 246 を、探索段 1 の 552・探索段 2 の 318・反証者の約 90 に足して次の事前登録に引き継ぐ。
 - 実装: `scripts/o3c_signal_explore3.py`(委任)。テスト: r_end(h = 60 秒)が探索段 2 の Δ = 0 と一致 / 基準が `start_ms` より前 / 3 区分の和が 1 / sweep ≤ 0 の扱い / 対照 (a) の帯が合っていて区間が束と重ならない / 対照 (a) が置換なし / `paper_logs/` を開かない。
