@@ -44,3 +44,17 @@ for lab, mask in (("帯1 前が近い", sel1 & near), ("帯1 前が遠い", sel1
 # 総括 3: m も掃きも小さい束(|m|<1 かつ |掃き|<0.2 相当は反証者の定義が不明なので、反証者の 1,364 に近い定義を試す)
 for lab, mask in (("m<4 & |sweep|<0.2", (m < 4.0) & (np.abs(sw) < 0.2)), ("m<2 & |sweep|<0.2", (m < 2.0) & (np.abs(sw) < 0.2))):
     mu, se, n = cl(r[mask], days[mask]); print(f"小さい束 {lab}: {mu:+.3f}±{se:.3f} n={n}")
+
+# 追記(2026-09-20、報告の監査 1 回目・指摘 1): G6 の 2 セルを再計算(束の件数 Q3 × m Q3、換算レバレッジ Q1 × m Q1、h = 60)
+t = pd.read_csv("backtest_data/o3c_reaction_20260918_full/gap60_w8/table.csv", usecols=["cascade_id","kind","bundle_n_events_dedup","implied_leverage"])
+t = t[t["kind"]=="liq"].drop_duplicates("cascade_id")
+lq = liq.merge(t[["cascade_id","bundle_n_events_dedup","implied_leverage"]], on="cascade_id", how="left")
+g6 = pd.read_csv("backtest_data/o3c_signal_explore4_20260920/g6_attributes.csv")
+mm = lq["m_60"].to_numpy(float); mq3 = np.nanpercentile(mm, [100/3, 200/3])
+for attr, grp, lo_hi, mband in (("bundle_n_events_dedup","Q3(上位 3 分位)", None, 2), ("implied_leverage","Q1(下位 3 分位)", None, 0)):
+    row = g6[(g6["属性"]==attr)&(g6["群"]==grp)&(g6["m の群"].str.startswith(["Q1","Q2","Q3"][mband]))&(g6["h(秒)"]==60)].iloc[0]
+    lo, hi = row["下限"], row["上限"]; v = lq[attr].to_numpy(float)
+    sel = np.isfinite(v) & ((v > lo) if np.isfinite(lo) else True) & ((v <= hi) if np.isfinite(hi) else True)
+    msel = [(mm <= mq3[0]), (mm > mq3[0]) & (mm <= mq3[1]), (mm > mq3[1])][mband]
+    mu, se, n = cl(lq.loc[sel & msel, "r_end_60"].to_numpy(float), lq.loc[sel & msel, "day"].to_numpy())
+    print(f"G6 {attr} {grp} × m帯{mband+1}: リード {mu:+.3f}±{se:.3f} n={n} | 委任先 {row['r_end 平均(bp)']:+.3f}±{row['r_end 日クラスタ SE']:.3f} n={row['n']}")
