@@ -3187,10 +3187,11 @@
   {
    "move": 119,
    "tools": {
-    "SendMessage": 1,
-    "Bash": 3
+    "SendMessage": 2,
+    "Bash": 9,
+    "Agent": 1
    },
-   "n_tools": 4,
+   "n_tools": 12,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
