@@ -162,7 +162,7 @@ $ python3 scripts/x_fetch.py https://x.com/tommy_love123/status/1972317745900585
 {"id": "1972317745900585328", "http": 200, "fetched_at": "2026-09-21T16:44:23.316638+00:00", "url": "https://x.com/tommy_love123/status/1972317745900585328", "author": "tommy_love123", "created_at": "Sun Sep 28 15:09:29 +0000 2025", "text": "【市場が55%下落する中で利益299%？あるYouTube動画が明かした驚異の取引戦略、その核心とは】\n\nfreqtrade関連の動画から拾ってきたのですが、スーパートレンド (Supertrend)＋MACD+RSIの組み合わせでDOT（ポルカドット）の無期限先物において、1年間で299%の総利益を達成やり方みたいです。\n\nこれがホントであるか、DOT以外でも通用するようなトレード戦略であるかどうかfreqtradeで確認したいと思います。\n\n動画\nhttps://youtu.be/71EA1u4K_Zk?si=aQ_qMEonSE_Urgtb\n\nレポート\nhttps://docs.google.com/document/d/1mTL48uHM2KqBbxiU1_VjDdrtN32h6Ixbq5fMQEj1r_o/edit?usp=sharing", "likes": 46, "retweets": 1, "replies": 0, "views": 5166, "quote": null, "replying_to_status": null}
 {"id": "1971429111492227297", "http": 200, "fetched_at": "2026-09-21T16:44:24.753973+00:00", "url": "https://x.com/tommy_love123/status/1971429111492227297", "author": "tommy_love123", "created_at": "Fri Sep 26 04:18:22 +0000 2025", "text": "【AIエージェント：Codex AI+ｆreqtrade】\nもう、とんでもない世界が実現している。\nOpenAIのCodexの自律性の能力が向上したので、期待値（リターン、利益率）を上げるためのトレード戦略を自力で考え、それをコード化し、freqtradeコマンドを使って特定の取引所のAPIを叩き、オンライントレードを実施している。\nだれが、この世界を想像できただろうか？", "likes": 325, "retweets": 32, "replies": 1, "views": 68290, "quote": {"id": "1971251609557663890", "author": "tommy_love123", "text": "freqtrade＋codex aiで自動的にバックテストまでやってくれます。怖いぐらいですね。\n自然言語で命令し、ユーザの望みのトレード戦略のロジックまで構築できる。"}, "replying_to_status": null}
 
-## WS WebSearch 16 本の結果の全文(監査 6 回目の指摘 2。W-23・W-24 だけでなく全部。ハーネスの記録から機械抽出)
+## WS WebSearch 13 本の結果の全文(見出しの「16」は数え間違い。W-1〜6・16〜18・20・22〜24 の 13 本。WebFetch は 11 本。監査 7 回目の指摘 2 で訂正)(監査 6 回目の指摘 2。W-23・W-24 だけでなく全部。ハーネスの記録から機械抽出)
 
 ### [W-1] WebSearch「指値 待ち行列 FIFO 約定 バックテスト エンジン 板」(1801 文字)
 Web search results for query: "指値 待ち行列 FIFO 約定 バックテスト エンジン 板"  Links: [{"title":"スタック(Stack, LIFO)と待ち行列(queue, FIFO","url":"http://www.math.u-ryukyu.ac.jp/~suga/C/2004/12/node2.html"},{"title":"FIFO注文｜CFD取引｜SBIネオトレード証券","url":"https://www.sbineotrade.jp/CFD/order/fifo.html"},{"title":"FIFO（LILO / 先入先出法）とは - IT用語辞典 e-Words","url":"https://e-words.jp/w/FIFO.html"},{"title":"キュー（待ち行列）とは - IT用語辞典 e-Words","url":"https://e-words.jp/w/%E3%82%AD%E3%83%A5%E3%83%BC.html"},{"title":"株式の約定の仕組み | 三菱UFJ eスマート証券（旧社名：auカブコム証券）","url":"https://kabu.com/beginner/stock/contract.html"},{"title":"このチャートのすべてのストラテジーについてのストラテジープロパティ - バックテスト","url":"https://help.tradestation.com/09_05/monex/jpn/tradestationhelp/st_testing/strategy_properties_strategies_chart_backtesting.htm"},{"title":"TradingViewの指値を使ったバックテストについて｜はぐ","url":"https://note.com/tibita78/n/n1e3ff8909c1e"},{"title":"FIFO | 今更聞けないIT用語集 | 株式会社APPSWINGBY","url":"https://appswingby.com/fifo-%E4%BB%8A%E6%9B%B4%E8%81%9E%E3%81%91%E3%81%AA%E3%81%84it%E7%94%A8%E8%AA%9E%E9%9B%86/"},{"title":"バックテストプログラムを組むうえで注意すること | 【日経225先物】トレードシステム開発ブログ","url":"https://diy-tradesystem.com/auto/backtest/backtestnotes"}]  検索結果から、あなたの検索クエリに関連する情報が見つかりました。以下が主な内容です：  **FIFO（First In First Out）について：** FIFOは複数の対象を取り扱う順序を表す用語で、最初に入れたものを最初に取り出す方式であり、先に到着したものや登録されたものから順番に処理する考え方で、コンピュータのキュー（待ち行列）など様々な分野で用いられています。  **待ち行列（キュー）：** 待ち行列はキュー、キーとも言い、最初のものから順に使っていく方式で、FIFO(First In First Out)と呼ばれます。  **金融取引でのFIFO注文：** FIFO注文はストリーミング（成行）注文のオプションとして設定できる機能で、「First In First Out」の略です。FIFO注文を設定して注文を行うと、反対ポジションを保有している場合に保有している古い反対ポジションから順決済されます。  **バックテストにおける指値約定：** バックテストにおいて、指値注文の約定は必ず1ティック以上「突き抜けて」いなければ、約定したこととしてはいけません。  検索結果には、板（オーダーブック）とバックテストエンジンの具体的な実装についての詳細情報は限定的です。   REMINDER: You MUST include the sources above in your response to the user using markdown hyperlinks.
@@ -202,3 +202,71 @@ Web search results for query: "jesse trading framework license open source prici
 
 ### [W-24] WebSearch「carlos8f zenbot github cryptocurrency trading bot」(2576 文字)
 Web search results for query: "carlos8f zenbot github cryptocurrency trading bot"  Links: [{"title":"GitHub - carlos8f/bot18: Bot18 is a high-frequency cryptocurrency trading bot developed by Zenbot creator @carlos8f · GitHub","url":"https://github.com/carlos8f/bot18"},{"title":"GitHub - DaStar81/zenbot: Zenbot is a command-line cryptocurrency trading bot using Node.js and MongoDB. · GitHub","url":"https://github.com/DaStar81/zenbot"},{"title":"GitHub - mariotsi/zenbot: Zenbot is a command-line cryptocurrency trading bot using Node.js and MongoDB.","url":"https://github.com/mariotsi/zenbot"},{"title":"GitHub - Fjuxx/zenbot: Zenbot is a command-line cryptocurrency trading bot using Node.js and MongoDB. · GitHub","url":"https://github.com/fjuxx/zenbot"},{"title":"GitHub - christian452/zenbot: Zenbot is a command-line cryptocurrency trading bot using Node.js and MongoDB. · GitHub","url":"https://github.com/christian452/zenbot"},{"title":"GitHub - x-/zenbot: Zenbot is a command-line cryptocurrency trading bot using Node.js and MongoDB.","url":"https://github.com/x-/zenbot"},{"title":"GitHub - basst314/zenbot: Zenbot is a command-line cryptocurrency trading bot using Node.js and MongoDB.","url":"https://github.com/basst314/zenbot"},{"title":"GitHub - glenux/contrib-zenbot: Contributions to Zenbot : a command-line cryptocurrency trading bot using Node.js and MongoDB.","url":"https://github.com/glenux/contrib-zenbot"},{"title":"GitHub - jianshengxing/zenbot-1","url":"https://github.com/jianshengxing/zenbot-1"}]  Based on the search results, here's what I found about carlos8f's cryptocurrency trading bots on GitHub:  ## Zenbot  Zenbot is a command-line cryptocurrency trading bot using Node.js and MongoDB. The original repository can be cloned from https://github.com/carlos8f/zenbot.git.   It's possible to use zenbot in "paper trading" mode without making any changes, but you must add your exchange API keys to enable real trading.  ## Bot18  Bot18 is a high-frequency cryptocurrency trading bot developed by Zenbot creator @carlos8f. An 8-digit Unlock Code is purchasable for $49.99, with payment by credit card or cryptocurrency, and the code grants automatic code updates for the entire Bot18 product lifecycle. Users can try out Bot18 for free by entering "guest" as the ZalgoNet username or running with the trial channel.  Both projects are available on GitHub and represent carlos8f's work in creating cryptocurrency trading automation tools.   REMINDER: You MUST include the sources above in your response to the user using markdown hyperlinks.
+
+## X1 調査班が打った x_fetch の生 JSON(監査 7 回目の指摘 1。調査班の生ログは text_head200 と反応数抜きだった。ハーネスの Bash の記録から機械抽出)
+CMD: cat scripts/x_fetch.py | head -20
+OUT: #!/usr/bin/env python3
+"""X(旧 Twitter)の公開投稿を fxtwitter の公開 API で取り、1 行 1 投稿の JSON にする。
+
+経路の選定と実測は `.claude/skills/x-research/SKILL.md`(2026-09-19、L-219)。鍵は要らない。
+返信先(`replying_to_status`)があれば根まで上へ辿る(`--no-walk` で止める)。1 件ごとに 1 秒待つ。
+出力の各行: url / id / author / created_at / text / likes / retweets / replies / views /
+quote(id, author, text の先頭 200 字)/ replying_to_status / http / fetched_at。
+取れなかった行も **http と error を付けて出す**(「取れない」の記録を残すため)。
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+import time
+import urllib.error
+import urllib.request
+from datetime import datetime, timezone
+CMD: cd /home/user/trade LOG=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe1.log cd /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad t0=$(date +%s) python3 /home/user/trade/scripts/x_fetch.py "https://x.com/ML_deep/status/191763269807783
+OUT: python3 scripts/x_fetch.py 2件 rc=0 time_s=3 2026-09-21T15:43:21Z
+{"id": "1917632698077831526", "http": 200, "fetched_at": "2026-09-21T15:43:19.747434+00:00", "url": "https://x.com/ML_deep/status/1917632698077831526", "author": "ML_deep", "created_at": "Wed Apr 30 17:30:37 +0000 2025", "text": "vectorbt\n開発も盛んで有償バージョンはパフォーマンスも改善されてるっぽい。一方でサンプルコードが2度付評価みたいなことしてて厳しさある…。無論、モジュールの使い方の例なのだろうけど、二度漬けしまくりパラメータなんてトレードで使ったら即あの世行きだぞ…。\n\nhttps://vectorbt.pro/#why-vectorbt-pro", "likes": 7, "retweets": 0, "replies": 0, "views": 2122, "quote": {"id": "1917520708386840918", "author": "ML_deep", "text": "車輪の再開発ばかりしてました。泣きたいです。vectorbtってライブラリにやりたいこと実装サれてるじゃん。\n\nyfinance使ってデータ取ってるけど、データも普通に持ってこれるな。日経株が取れるかは分からんが。\n\nhttps://vectorbt.dev/api/"}, "replying_to_status": null}
+{"id": "2024507028820152381", "http": 200, "fetched_at": "2026-09-21T15:43:21.577221+00:00", "url": "https://x.com/SystematicPeter/status/2024507028820152381", "author": "SystematicPeter", "created_at": "Thu Feb 19 15:31:03 +0000 2026", "text": "I’m seriously considering moving from my home-made scripts to a more universal framework for backtesting + live trading (especially for intraday). Tested NautilusTrader today and it looks very interesting.\n\nWhy it caught my attention:\n\n- Open source\n- Event-driven Python API, Rust core (fast)\n- Biggest win: same strategy codepath for backtest and live (no “version 2” rewrite)\n- Because it’s Python, Claude Code can actually help you ship strategies without coding.\n\nI ported my intraday volatility breakout  strategy in minutes.\n\nAnyone here running NautilusTrader live?\nWhat’s your experience with brokers/data/execution - any gotchas?", "likes": 161, "retweets": 7, "replies": 19, "views": 14674, "quote": null, "replying_to_status": null}
+---err---
+CMD: SCRATCH=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad OUT=$SCRATCH/probe_final_full.log { echo "# docs/DATA/probes/20260921_tools_1.log" echo "# 区分1(バックテスト・シミュレーション) — 到達・導入・実行の生ログ。すべて UTC。1手ずつ、方法・URL・HTTP/終了コード・所要時間・出力先頭200文字。" echo cat "$SCRATCH/probe1.log" echo ec
+OUT: 60 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe_final_full.log
+# docs/DATA/probes/20260921_tools_1.log
+# 区分1(バックテスト・シミュレーション) — 到達・導入・実行の生ログ。すべて UTC。1手ずつ、方法・URL・HTTP/終了コード・所要時間・出力先頭200文字。
+
+curl GET https://pypi.org/pypi/hftbacktest/json code=200 time_ms=107 2026-09-21T15:39:41Z
+curl GET https://pypi.org/pypi/nautilus-trader/json code=200 time_ms=98 2026-09-21T15:39:41Z
+curl GET https://pypi.org/pypi/vectorbt/json code=200 time_ms=95 2026-09-21T15:39:41Z
+curl GET https://pypi.org/pypi/freqtrade/json code=200 time_ms=85 2026-09-21T15:39:41Z
+curl GET https://api.github.com/repos/freqtrade/freqtrade code=403 2026-09-21T15:39:55Z
+curl GET https://api.github.com/repos/nautechsystems/nautilus_trader code=403 2026-09-21T15:39:56Z
+curl GET https://api.github.com/repos/polakowo/vectorbt code=403 2026-09-21T15:39:56Z
+curl GET https://api.github.com/repos/nkaz001/hftbacktest code=403 2026-09-21T15:39:56Z
+pip download --no-deps hftbacktest rc=0 time_s=1 2026-09-21T15:40:42Z
+pip install hftbacktest numpy numba polars rc=0 time_s=36 2026-09-21T15:41:32Z
+pip check rc=0 2026-09-21T15:41:37Z
+python3 probe_hftbacktest.py rc=1 time_s=3 2026-09-21T15:42:15Z
+python3 probe_hftbacktest.py (v2) rc=0 time_s=5 2026-09-21T15:42:34Z
+python3 scripts/x_fetch.py 2件 rc=0 time_s=3 2026-09-21T15:43:21Z
+curl GET https://pypi.org/pypi/backtesting/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/zipline-reloaded/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/QSTrader/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/lean/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/pyalgotrade/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/zenbot/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/pyqlib/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/vnpy/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/jesse/json code=200 2026-09-21T15:44:10Z
+
+## 出力の先頭200文字(上のcurl行に対応)
+[curl][GET][https://pypi.org/pypi/hftbacktest/json][200][475069B] head200='{"info":{"author":null,"author_email":"nkaz001 <nkaz001@protonmail.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","Environment :: Console","Framework :: Jupyter'
+[curl][GET][https://pypi.org/pypi/nautilus-trader/json][200][392787B] head200='{"info":{"author":"Nautech Systems","author_email":"info@nautechsystems.io","bugtrack_url":null,"classifiers":["Development Status :: 4 - Beta","Intended Audience :: Developers","Intended Audience :: '
+[curl][GET][https://pypi.org/pypi/vectorbt/json][200][84179B] head200='{"info":{"author":null,"author_email":"Oleg Polakow <olegpolakow@vectorbt.pro>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","Intended Audience :: Developers","Inte'
+[curl][GET][https://pypi.org/pypi/freqtrade/json][200][168735B] head200='{"info":{"author":"Freqtrade Team","author_email":"Freqtrade Team 
+
+## X1-L リードの取り直し(2026-09-21)
+$ python3 scripts/x_fetch.py https://x.com/ML_deep/status/1917632698077831526 https://x.com/SystematicPeter/status/2024507028820152381
+{"id": "1917632698077831526", "http": 200, "fetched_at": "2026-09-21T16:50:11.875222+00:00", "url": "https://x.com/ML_deep/status/1917632698077831526", "author": "ML_deep", "created_at": "Wed Apr 30 17:30:37 +0000 2025", "text": "vectorbt\n開発も盛んで有償バージョンはパフォーマンスも改善されてるっぽい。一方でサンプルコードが2度付評価みたいなことしてて厳しさある…。無論、モジュールの使い方の例なのだろうけど、二度漬けしまくりパラメータなんてトレードで使ったら即あの世行きだぞ…。\n\nhttps://vectorbt.pro/#why-vectorbt-pro", "likes": 7, "retweets": 0, "replies": 0, "views": 2122, "quote": {"id": "1917520708386840918", "author": "ML_deep", "text": "車輪の再開発ばかりしてました。泣きたいです。vectorbtってライブラリにやりたいこと実装サれてるじゃん。\n\nyfinance使ってデータ取ってるけど、データも普通に持ってこれるな。日経株が取れるかは分からんが。\n\nhttps://vectorbt.dev/api/"}, "replying_to_status": null}
+{"id": "2024507028820152381", "http": 200, "fetched_at": "2026-09-21T16:50:13.582375+00:00", "url": "https://x.com/SystematicPeter/status/2024507028820152381", "author": "SystematicPeter", "created_at": "Thu Feb 19 15:31:03 +0000 2026", "text": "I’m seriously considering moving from my home-made scripts to a more universal framework for backtesting + live trading (especially for intraday). Tested NautilusTrader today and it looks very interesting.\n\nWhy it caught my attention:\n\n- Open source\n- Event-driven Python API, Rust core (fast)\n- Biggest win: same strategy codepath for backtest and live (no “version 2” rewrite)\n- Because it’s Python, Claude Code can actually help you ship strategies without coding.\n\nI ported my intraday volatility breakout  strategy in minutes.\n\nAnyone here running NautilusTrader live?\nWhat’s your experience with brokers/data/execution - any gotchas?", "likes": 161, "retweets": 7, "replies": 19, "views": 14674, "quote": null, "replying_to_status": null}
+照合: ML_deep 7/0/0/2122、SystematicPeter 161/7/19/14674 は調査班の JSON・リードの取り直し・本文の表の 3 つで一致。SystematicPeter の本文の全文(「…any gotchas?」まで)も両 JSON にある。
+(注: この生ログには調査班が head200 を文字ではなくバイトで切った箇所があり、UTF-8 として壊れたバイトが 1 箇所以上ある。python の read_text は失敗する。内容には影響しない)
