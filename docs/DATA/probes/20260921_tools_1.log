@@ -138,3 +138,15 @@ holoviews==1.23.2 matplotlib==3.11.2 (rc=0)
 ## S 文章の主張の出所(監査 2 回目の指摘 1・2): $ curl -sS https://pypi.org/pypi/<pkg>/json | python3 -c '<description に語が含まれるか>'
    hftbacktest: 'currently for Binance Futures and Bybit' in description: True / W-9 の要約に Binance・Bybit: 無し
    nautilus-trader: 'Identical strategy implementations' in description: True / W-11 の要約に同文言: 無し(W-11 は「バックテストと本番運用で同じコードが動作します」と要約)
+
+## P 浅い 9 件の PyPI の値の打ち直し(監査 3 回目の指摘 7。2026-09-21T16:18:44Z。$ curl -sS https://pypi.org/pypi/<pkg>/json | python3 -c '<info.version / その版の upload_time / info.license / License classifier>')
+backtesting 0.6.6 ['2026-07-22'] AGPL-3.0 ['License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)']
+zipline-reloaded 3.1.1 ['2025-07-19']  []
+QSTrader 0.3.0 ['2024-06-24']  ['License :: OSI Approved :: MIT License']   ← 調査班の表は「未確認(classifiers無し)」= 誤り
+lean 1.0.229 ['2026-08-28']  ['License :: OSI Approved :: Apache Software License']   ← 調査班の表は「未確認(classifiers無し)」= 誤り
+pyalgotrade 0.20 ['2018-08-21']  []
+zenbot 1.0.1 ['2021-05-24'] MIT ['License :: OSI Approved :: MIT License']   (Slack 用の同名別物)
+pyqlib 0.9.7 ['2025-08-15']  ['License :: OSI Approved :: MIT License']
+vnpy 4.4.0 ['2026-05-14'] MIT ['License :: OSI Approved :: MIT License']
+jesse 3.2.1 ['2026-09-21']  ['License :: OSI Approved :: MIT License']   ← 調査班の取得(15:44Z)時点は 3.2.0。releases: 3.2.0 2026-09-17T16:12:06 | 3.2.1 2026-09-21T16:01:52
+## Q freqtrade の PyPI project_urls(監査 3 回目の処置で確認): $ curl -sS https://pypi.org/pypi/freqtrade/json | python3 -c '<info.project_urls>' → {'Bug Tracker': 'https://github.com/freqtrade/freqtrade/issues', 'Documentation': 'https://freqtrade.io', 'Homepage': 'https://github.com/freqtrade/freqtrade'}
