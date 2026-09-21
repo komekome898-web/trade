@@ -1,0 +1,557 @@
+{
+  "generated_at": "2026-09-21T02:50:35.219003+00:00",
+  "data_md": "docs/DATA.md",
+  "max_age_days": 14,
+  "today": "2026-09-21",
+  "skipped_tables": [
+    {
+      "header_line": 14,
+      "header": "部品 | 役割 | 所在",
+      "row_count": 11
+    },
+    {
+      "header_line": 30,
+      "header": "列 | 意味",
+      "row_count": 7
+    },
+    {
+      "header_line": 42,
+      "header": "値 | 意味",
+      "row_count": 5
+    },
+    {
+      "header_line": 179,
+      "header": "資産 | 所在 | 状態 | 最終確認日 | 使った単位",
+      "row_count": 9
+    },
+    {
+      "header_line": 212,
+      "header": "# | 何が | 期間 | 原因 | 復旧可否 | 記録日",
+      "row_count": 15
+    },
+    {
+      "header_line": 268,
+      "header": "ソース | 上限 | 仕組みでの扱い | 状態",
+      "row_count": 5
+    },
+    {
+      "header_line": 291,
+      "header": "ベニュー | 状態【事実・一次情報】 | 期限 | 対応",
+      "row_count": 2
+    }
+  ],
+  "malformed_rows": [],
+  "units_without_ledger_row": [
+    {
+      "unit": "audit_fetch_P2-08_docs_20260906",
+      "file_count": 10
+    },
+    {
+      "unit": "audit_fetch_P2-08b_20260906",
+      "file_count": 11
+    },
+    {
+      "unit": "audit_fetch_bitflyer_history_20260906",
+      "file_count": 94
+    },
+    {
+      "unit": "auto_oi_snapshots_20260905",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_1h_20260905",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260906",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260907",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260908",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260909",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260910",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260911",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260912",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260915",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260918",
+      "file_count": 2
+    },
+    {
+      "unit": "binance_BTCUSDT_1m.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "candles_BTC_JPY_20260820.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "candles_ETH_JPY_20260820.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "candles_FX_BTC_JPY_20260820.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "candles_XRP_JPY_20260820.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "flow_FX_BTC_JPY_20260820.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "liquidations_repaired_20260912",
+      "file_count": 15
+    },
+    {
+      "unit": "liquidations_repaired_20260917",
+      "file_count": 11
+    },
+    {
+      "unit": "o3c_oi_distance_20260917",
+      "file_count": 4
+    },
+    {
+      "unit": "o3c_oi_distance_split_20260918",
+      "file_count": 4
+    },
+    {
+      "unit": "o3c_price_level_band_20260917",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_price_level_bundle_first_20260917",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_price_level_full_20260917",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_price_level_full_20260917_b005",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_price_level_full_20260917_b025",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_price_level_full_20260917_w72",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_price_level_full_20260917_w8",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_price_level_rows4_20260917",
+      "file_count": 16
+    },
+    {
+      "unit": "o3c_price_level_sample_20260917",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_price_level_sample_20260917_limitprice",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_trades",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_trades_sample",
+      "file_count": 2
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_v1_rawcols",
+      "file_count": 3
+    },
+    {
+      "unit": "o3c_reaction_20260918_full",
+      "file_count": 19
+    },
+    {
+      "unit": "o3c_reaction_20260918_judge",
+      "file_count": 10
+    },
+    {
+      "unit": "o3c_reaction_20260918_sample",
+      "file_count": 12
+    },
+    {
+      "unit": "o3c_reaction_20260918_scale12_judgmentdays",
+      "file_count": 4
+    },
+    {
+      "unit": "o3c_signal_continue_20260920",
+      "file_count": 21
+    },
+    {
+      "unit": "o3c_signal_explore2_20260919",
+      "file_count": 10
+    },
+    {
+      "unit": "o3c_signal_explore3_20260920",
+      "file_count": 11
+    },
+    {
+      "unit": "o3c_signal_explore4_20260920",
+      "file_count": 14
+    },
+    {
+      "unit": "o3c_signal_explore5_20260920",
+      "file_count": 11
+    },
+    {
+      "unit": "o3c_signal_explore_20260919",
+      "file_count": 7
+    },
+    {
+      "unit": "o3c_signal_materials_20260920",
+      "file_count": 12
+    },
+    {
+      "unit": "o3c_signal_policy_20260920",
+      "file_count": 17
+    },
+    {
+      "unit": "okx_20260905",
+      "file_count": 5
+    },
+    {
+      "unit": "okx_btc_lsratio_1h_20260823.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "okx_btc_lsratio_5m_20260823.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "okx_btc_oi_1h_20260823.csv",
+      "file_count": 1
+    },
+    {
+      "unit": "okx_btc_oi_5m_20260823.csv",
+      "file_count": 1
+    }
+  ],
+  "missing_paths": [
+    {
+      "line": 68,
+      "asset": "tardis 形式 約定(**標本日 = 各月 1 日**)",
+      "path": "data/tardis/bitflyer_FX_BTC_JPY_trades/"
+    },
+    {
+      "line": 71,
+      "asset": "継続ローリング(生、日次更新)",
+      "path": "data/flow_FX_BTC_JPY.csv"
+    },
+    {
+      "line": 81,
+      "asset": "Binance BTCUSDT 現物 1分足(積み上げ)",
+      "path": "data/binance_BTCUSDT_1m_full.csv"
+    },
+    {
+      "line": 83,
+      "asset": "Binance BTCUSDT 1秒足(高頻度サンプル)",
+      "path": "data/binance_BTCUSDT_1s_hi1.csv"
+    },
+    {
+      "line": 100,
+      "asset": "Kraken XBTUSD 1分足",
+      "path": "data/kraken_XBTUSD_1m.csv"
+    },
+    {
+      "line": 101,
+      "asset": "Deribit DVOL(ボラ指数)",
+      "path": "data/deribit_dvol_1h.csv"
+    },
+    {
+      "line": 101,
+      "asset": "Deribit DVOL(ボラ指数)",
+      "path": "data/deribit_dvol_1m_7d.csv"
+    },
+    {
+      "line": 103,
+      "asset": "資金調達率・基差(自前結合、粒度不明)",
+      "path": "data/basis_1m.csv"
+    },
+    {
+      "line": 132,
+      "asset": "Binance COIN-M aggTrades の読み込み可否(`PriceSeries.from_trades` 用)",
+      "path": "backtest_data/binance_cm_o3c_20260913/aggTrades/BTCUSD_PERP/"
+    },
+    {
+      "line": 142,
+      "asset": "bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(candles/executions/flow)",
+      "path": "data/candles_{BTC,ETH,XRP}_JPY.csv"
+    },
+    {
+      "line": 153,
+      "asset": "FX ファンダメンタルズ・カレンダー",
+      "path": "data/fx/calendar.csv"
+    },
+    {
+      "line": 153,
+      "asset": "FX ファンダメンタルズ・カレンダー",
+      "path": "data/fx/calendar_cache*"
+    },
+    {
+      "line": 153,
+      "asset": "FX ファンダメンタルズ・カレンダー",
+      "path": "data/fx/events/"
+    },
+    {
+      "line": 184,
+      "asset": "ストーム/バーストイベント抽出",
+      "path": "data/storm_events/"
+    },
+    {
+      "line": 184,
+      "asset": "ストーム/バーストイベント抽出",
+      "path": "data/burst_events/"
+    },
+    {
+      "line": 187,
+      "asset": "PC 時計・レイテンシ",
+      "path": "data/latency/ws_vm.csv"
+    }
+  ],
+  "files_not_in_intake": [
+    {
+      "unit": "bitflyer_executions_backfill_20260921",
+      "not_in_ledger": 5,
+      "file_count": 5,
+      "examples": [
+        "backtest_data/bitflyer_executions_backfill_20260921/.progress.json",
+        "backtest_data/bitflyer_executions_backfill_20260921/executions_20260918.csv.gz",
+        "backtest_data/bitflyer_executions_backfill_20260921/executions_20260919.csv.gz"
+      ]
+    },
+    {
+      "unit": "coinalyze_liquidations_20260921",
+      "not_in_ledger": 24,
+      "file_count": 24,
+      "examples": [
+        "backtest_data/coinalyze_liquidations_20260921/.progress.json",
+        "backtest_data/coinalyze_liquidations_20260921/BTCUSD.6_1min.csv",
+        "backtest_data/coinalyze_liquidations_20260921/BTCUSD_PERP.3_1min.csv"
+      ]
+    },
+    {
+      "unit": "o3c_oi_distance_split_20260918",
+      "not_in_ledger": 4,
+      "file_count": 4,
+      "examples": [
+        "backtest_data/o3c_oi_distance_split_20260918/w24/summary.json",
+        "backtest_data/o3c_oi_distance_split_20260918/w24/table.csv",
+        "backtest_data/o3c_oi_distance_split_20260918/w8/summary.json"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor",
+      "not_in_ledger": 2,
+      "file_count": 2,
+      "examples": [
+        "backtest_data/o3c_reaction_20260918_anchor/summary.json",
+        "backtest_data/o3c_reaction_20260918_anchor/table.csv"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_trades",
+      "not_in_ledger": 2,
+      "file_count": 2,
+      "examples": [
+        "backtest_data/o3c_reaction_20260918_anchor_trades/summary.json",
+        "backtest_data/o3c_reaction_20260918_anchor_trades/table.csv"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_trades_sample",
+      "not_in_ledger": 2,
+      "file_count": 2,
+      "examples": [
+        "backtest_data/o3c_reaction_20260918_anchor_trades_sample/summary.json",
+        "backtest_data/o3c_reaction_20260918_anchor_trades_sample/table.csv"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_v1_rawcols",
+      "not_in_ledger": 3,
+      "file_count": 3,
+      "examples": [
+        "backtest_data/o3c_reaction_20260918_anchor_v1_rawcols/README.txt",
+        "backtest_data/o3c_reaction_20260918_anchor_v1_rawcols/summary.json",
+        "backtest_data/o3c_reaction_20260918_anchor_v1_rawcols/table.csv"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_full",
+      "not_in_ledger": 19,
+      "file_count": 19,
+      "examples": [
+        "backtest_data/o3c_reaction_20260918_full/gap180_w24/summary.json",
+        "backtest_data/o3c_reaction_20260918_full/gap180_w24/table.csv.gz",
+        "backtest_data/o3c_reaction_20260918_full/gap180_w24/table_mixed.csv"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_judge",
+      "not_in_ledger": 10,
+      "file_count": 10,
+      "examples": [
+        "backtest_data/o3c_reaction_20260918_judge/f1_12cells.csv",
+        "backtest_data/o3c_reaction_20260918_judge/f1_reading.txt",
+        "backtest_data/o3c_reaction_20260918_judge/judgment_576.csv"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_sample",
+      "not_in_ledger": 12,
+      "file_count": 12,
+      "examples": [
+        "backtest_data/o3c_reaction_20260918_sample/gap180_w8/summary.json",
+        "backtest_data/o3c_reaction_20260918_sample/gap180_w8/table.csv",
+        "backtest_data/o3c_reaction_20260918_sample/gap180_w8/table_mixed.csv"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_scale12_judgmentdays",
+      "not_in_ledger": 4,
+      "file_count": 4,
+      "examples": [
+        "backtest_data/o3c_reaction_20260918_scale12_judgmentdays/README.txt",
+        "backtest_data/o3c_reaction_20260918_scale12_judgmentdays/summary.json",
+        "backtest_data/o3c_reaction_20260918_scale12_judgmentdays/table.csv"
+      ]
+    },
+    {
+      "unit": "o3c_signal_continue_20260920",
+      "not_in_ledger": 21,
+      "file_count": 21,
+      "examples": [
+        "backtest_data/o3c_signal_continue_20260920/jev/q3_jev.csv",
+        "backtest_data/o3c_signal_continue_20260920/jev/q4_jev.csv",
+        "backtest_data/o3c_signal_continue_20260920/jev/q5_jev.csv"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore2_20260919",
+      "not_in_ledger": 10,
+      "file_count": 10,
+      "examples": [
+        "backtest_data/o3c_signal_explore2_20260919/e0_anchor_lag.csv",
+        "backtest_data/o3c_signal_explore2_20260919/e1_delta.csv",
+        "backtest_data/o3c_signal_explore2_20260919/e2_shape.csv"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore3_20260920",
+      "not_in_ledger": 11,
+      "file_count": 11,
+      "examples": [
+        "backtest_data/o3c_signal_explore3_20260920/f0_selfcheck.csv",
+        "backtest_data/o3c_signal_explore3_20260920/f1_sweep.csv",
+        "backtest_data/o3c_signal_explore3_20260920/f2_retrace.csv"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore4_20260920",
+      "not_in_ledger": 14,
+      "file_count": 14,
+      "examples": [
+        "backtest_data/o3c_signal_explore4_20260920/g0_selfcheck.csv",
+        "backtest_data/o3c_signal_explore4_20260920/g1_reversal.csv",
+        "backtest_data/o3c_signal_explore4_20260920/g2_continuation.csv"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore5_20260920",
+      "not_in_ledger": 11,
+      "file_count": 11,
+      "examples": [
+        "backtest_data/o3c_signal_explore5_20260920/h0_selfcheck.csv",
+        "backtest_data/o3c_signal_explore5_20260920/h1_all_prints.csv",
+        "backtest_data/o3c_signal_explore5_20260920/h2_premove.csv"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore_20260919",
+      "not_in_ledger": 7,
+      "file_count": 7,
+      "examples": [
+        "backtest_data/o3c_signal_explore_20260919/q1_direction.csv",
+        "backtest_data/o3c_signal_explore_20260919/q2_size_by_attribute.csv",
+        "backtest_data/o3c_signal_explore_20260919/q3_horizon_shape.csv"
+      ]
+    },
+    {
+      "unit": "o3c_signal_materials_20260920",
+      "not_in_ledger": 12,
+      "file_count": 12,
+      "examples": [
+        "backtest_data/o3c_signal_materials_20260920/logit_ecdf_chain.npz",
+        "backtest_data/o3c_signal_materials_20260920/logit_ecdf_first.npz",
+        "backtest_data/o3c_signal_materials_20260920/rows_materials.csv.gz"
+      ]
+    },
+    {
+      "unit": "o3c_signal_policy_20260920",
+      "not_in_ledger": 17,
+      "file_count": 17,
+      "examples": [
+        "backtest_data/o3c_signal_policy_20260920/stage1_firsthalf/action_counts.csv",
+        "backtest_data/o3c_signal_policy_20260920/stage1_firsthalf/cascades.csv.gz",
+        "backtest_data/o3c_signal_policy_20260920/stage1_firsthalf/dist_table.csv"
+      ]
+    }
+  ],
+  "intake_ledger": {
+    "path": "paper_logs\\INTAKE_latest.json",
+    "selection": "両方あり、新しい paper_logs/ 側を使った",
+    "state": "読込済",
+    "entry_count": 14422
+  },
+  "stale_rows": [],
+  "undated_rows": [],
+  "summary": {
+    "unit_count": 140,
+    "units_without_ledger_row": 55,
+    "missing_paths": 16,
+    "units_with_files_not_in_intake": 19,
+    "files_not_in_intake": 190,
+    "stale_rows": 0,
+    "undated_rows": 0,
+    "skipped_tables": 7,
+    "malformed_rows": 0
+  },
+  "ok": false
+}
