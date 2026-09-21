@@ -1,70 +1,82 @@
-# 当方の道具立ての列挙(2026-09-21、リード実測。監査 2 回目の指摘 2・4・5)
-# コマンド 1: git ls-files src/bot | sed 's|/[^/]*$||' | sort | uniq -c   (package ごとのファイル数)
-      8 src/bot
-      4 src/bot/backtest
-      3 src/bot/exchange
-      4 src/bot/execution
-      2 src/bot/indicators
-      5 src/bot/jpx
-      4 src/bot/market_data
-      7 src/bot/monitoring
-      4 src/bot/order_management
-      3 src/bot/portfolio
-     12 src/bot/research
-      3 src/bot/risk
-     10 src/bot/strategy
-# コマンド 2: git ls-files scripts | grep '\.py$' | awk -F/ '{if (NF>2) print $2"/"; else print $2}' | sed 's/_.*//' | sort | uniq -c | sort -rn   (scripts の接頭辞とサブディレクトリ、再帰)
-     56 research
-     28 fetch
-     22 o3c
-     19 render
-     16 measure
-     14 jev
-     13 qa/
-     13 phase2/
-     11 run
-      7 check
-      7 build
-      5 record
-      4 jev/
-      3 verify
-      2 repair
-      2 paper
-      2 k1
-      2 judge
-      1 x
-      1 validate
-      1 trace
-      1 tp
-      1 retention
-      1 replay
-      1 probe
-      1 preflight
-      1 phase2
-      1 normalize
-      1 mirror
-      1 liquidation
-      1 intake
-      1 extract
-      1 explore
-      1 data
-      1 dashboard
-      1 constants
-      1 
-# コマンド 3: git ls-files scripts/qa scripts/phase2 scripts/jev
-scripts/jev/__init__.py scripts/jev/client.py scripts/jev/redact.py scripts/jev/schemas.py scripts/phase2/__init__.py scripts/phase2/g1_state_analysis.py scripts/phase2/p2_01_final.py scripts/phase2/p2_01_run.py scripts/phase2/p2_01b_history.py scripts/phase2/p2_02_final.py scripts/phase2/p2_02_run.py scripts/phase2/p2_03_final.py scripts/phase2/p2_03_iter2.py scripts/phase2/p2_03_run.py scripts/phase2/p2_04_run.py scripts/phase2/p2_08_data.py scripts/phase2/p2_08_run.py scripts/qa/agreement.py scripts/qa/make_known_answer.py scripts/qa/make_known_answer_maker.py scripts/qa/make_known_answer_maker3.py scripts/qa/make_known_answer_steer.py scripts/qa/maker_fill_ref.py scripts/qa/maker_fill_ref_packet.py scripts/qa/maker_fill_ref_packet_r2.py scripts/qa/pipeline_known_answer_daily.py scripts/qa/pipeline_known_answer_taker.py scripts/qa/score_audit.py scripts/qa/score_claims.py scripts/qa/score_steer.py 
-# コマンド 4: 再現ゲート・参照実装の実物
-scripts/qa/agreement.py
-scripts/qa/maker_fill_ref.py
-scripts/qa/maker_fill_ref_packet.py
-scripts/qa/maker_fill_ref_packet_r2.py
-scripts/replay_scalp_storm.py
-scripts/validate_composite.py
-6:reproduction gate the research protocol requires of any new vehicle (§6: a new
-# コマンド 5: git ls-files src/bot/*.py deploy config tests | wc -l
-src/bot/__init__.py src/bot/atomic_file.py src/bot/constants.py src/bot/logging_setup.py src/bot/main.py src/bot/products.py src/bot/radar.py src/bot/settings.py 
-deploy/bitflyer-bot.service deploy/bitflyer-fetch.service deploy/bitflyer-fetch.timer deploy/check_liq_recorder.bat deploy/etf_measure_entry.bat deploy/etf_measure_exit.bat deploy/fetch_all.bat deploy/mirror_bitmex.bat deploy/nightly_restart.bat deploy/on1_entry.bat deploy/on1_exit.bat deploy/probe_latency.bat deploy/reset_kill.bat deploy/restart_all.bat deploy/run_paper.bat deploy/setup.sh deploy/share_logs.bat deploy/start_all.bat deploy/stop_all.bat 
-32
-139
-# 取得時刻(UTC): 2026-09-21T15:04:40Z
-# コマンド 6(fetch_* の数え方の差): .py だけ = 28 / 拡張子を問わず = 29 / .py 以外 = scripts/fetch_all.sh 
+# 当方の道具立て(git ls-files から生成。2026-09-21T15:12:39Z、HEAD 618ee59。コマンド: python3 scripts/tools_inventory.py)
+
+## src/bot(package: ファイル数 / ファイル名)
+- src/bot: 7 / atomic_file.py constants.py logging_setup.py main.py products.py radar.py settings.py
+- src/bot/backtest: 3 / engine.py metrics.py walk_forward.py
+- src/bot/exchange: 2 / bitflyer_client.py resilience.py
+- src/bot/execution: 3 / gateway.py live.py paper.py
+- src/bot/indicators: 1 / core.py
+- src/bot/jpx: 4 / etf_auction_executor.py kabu_client.py on1_executor.py run_lock.py
+- src/bot/market_data: 3 / external_feed.py feed.py realtime.py
+- src/bot/monitoring: 6 / aggregate.py decision_text.py gates.py market_view.py notifier.py status.py
+- src/bot/order_management: 3 / manager.py order.py reconciler.py
+- src/bot/portfolio: 2 / persistence.py portfolio.py
+- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liquidations.py overnight.py sealed.py xborder_p2.py xborder_p2_fast.py xborder_p2_fx.py xborder_p2_state.py
+- src/bot/risk: 2 / kill_switch.py pre_trade_checks.py
+- src/bot/strategy: 9 / base.py breakout.py composite.py ema_cross.py inago.py range_fade.py rsi_reversion.py wick_reversal.py xborder_momentum.py
+
+## scripts(サブディレクトリは名前/、最上位は接頭辞。.py だけ)
+- research_*: 56 / research_anchor.py research_anchor_v2.py research_attention_vol.py research_avalanche.py research_basis.py research_board_calibration.py research_burst_atlas.py research_calm_range.py research_clock_burst.py research_exit_surface.py research_fast_cycle.py research_fx.py research_fx_carry.py research_fx_event_ticks.py …(+42)
+- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fetch_binance_daily.py fetch_binance_full.py fetch_binance_vision.py fetch_bitbank_daily.py fetch_bitflyer_executions_range.py fetch_bitflyer_lightchart.py fetch_bitmex_archive.py fetch_bitmex_insurance.py fetch_bybit_minutes.py fetch_coinalyze_liquidations.py fetch_daily_lt1.py …(+14)
+- o3c_*: 22 / o3c_bitflyer_spread.py o3c_jev_state.py o3c_oi_distance.py o3c_price_level_ext.py o3c_price_level_table.py o3c_reaction.py o3c_reaction_judge.py o3c_reaction_r2.py o3c_rows4.py o3c_signal_calib.py o3c_signal_continue.py o3c_signal_continue_jev.py o3c_signal_explore.py o3c_signal_explore2.py …(+8)
+- render_*: 19 / render_exec_floor.py render_k1_body_wick.py render_k1_deepdive.py render_k1_exit_ablation.py render_k1_fresh_bitflyer.py render_k1_h1.py render_k1_h2.py render_k1_h3.py render_k1_h3_decomp.py render_k1_judgement.py render_k1_robustness.py render_k1_round5.py render_k1_trunc_compare.py render_k1_venue_compare.py …(+5)
+- measure_*: 16 / measure_exec_floor.py measure_katsuo_body_wick.py measure_katsuo_delay_decomp.py measure_katsuo_direction_bias.py measure_katsuo_dispersion.py measure_katsuo_effect.py measure_katsuo_exit_ablation.py measure_katsuo_judgement_vol.py measure_katsuo_robustness.py measure_katsuo_round5.py measure_katsuo_signal_horizon.py measure_katsuo_vol_bitflyer.py measure_katsuo_xvenue.py measure_liq_bands.py …(+2)
+- jev_*: 14 / jev_audit_eval.py jev_audit_loop.py jev_check.py jev_delegate.py jev_design.py jev_eval.py jev_ideas.py jev_ops.py jev_owner_log.py jev_prescreen.py jev_reply.py jev_report_intake.py jev_survey.py jev_trace_export.py
+- qa/: 13 / agreement.py make_known_answer.py make_known_answer_maker.py make_known_answer_maker3.py make_known_answer_steer.py maker_fill_ref.py maker_fill_ref_packet.py maker_fill_ref_packet_r2.py pipeline_known_answer_daily.py pipeline_known_answer_taker.py score_audit.py score_claims.py score_steer.py
+- phase2/: 12 / g1_state_analysis.py p2_01_final.py p2_01_run.py p2_01b_history.py p2_02_final.py p2_02_run.py p2_03_final.py p2_03_iter2.py p2_03_run.py p2_04_run.py p2_08_data.py p2_08_run.py
+- run_*: 11 / run_backtest.py run_board_round.py run_etf_measure_entry.py run_etf_measure_exit.py run_etf_measure_reconcile.py run_o3c_stage0.py run_on1_entry.py run_on1_exit.py run_on1_reconcile.py run_paper.py run_scalp_paper.py
+- build_*: 7 / build_basis.py build_bitflyer_lightchart_csv.py build_burst_library.py build_flow.py build_fx_event_library.py build_fx_event_library_2005_2014.py build_storm_library.py
+- check_*: 7 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bitflyer_data.py check_kabu_api.py check_liquidation_feeds.py check_liquidation_history_depth.py
+- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py record_realtime.py record_venues.py
+- jev/: 3 / client.py redact.py schemas.py
+- verify_*: 3 / verify_gates.py verify_liq_instrument.py verify_snapshots.py
+- (単発): 2 / _research_audit_gate.py dashboard.py
+- judge_*: 2 / judge_board_round.py judge_gates.py
+- k1_*: 2 / k1_binance_data_quality.py k1_source.py
+- paper_*: 2 / paper_on1.py paper_onr.py
+- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+- constants_*: 1 / constants_inventory.py
+- data_*: 1 / data_quality.py
+- explore_*: 1 / explore_o3c_oi_axis.py
+- extract_*: 1 / extract_tape.py
+- intake_*: 1 / intake_ledger.py
+- liquidation_*: 1 / liquidation_report.py
+- mirror_*: 1 / mirror_bitmex_archive.py
+- normalize_*: 1 / normalize_bitflyer_executions.py
+- phase2_*: 1 / phase2_seal.py
+- preflight_*: 1 / preflight_prereg.py
+- probe_*: 1 / probe_api_latency.py
+- replay_*: 1 / replay_scalp_storm.py
+- retention_*: 1 / retention_snapshot.py
+- tp_*: 1 / tp_operating_curve.py
+- trace_*: 1 / trace_metrics.py
+- validate_*: 1 / validate_composite.py
+- x_*: 1 / x_fetch.py
+- (.py 以外の scripts: 3 = scripts/fetch_all.sh scripts/install_git_hooks.sh scripts/regen_hook_manifest.sh)
+
+## config: 32
+  config/composite.yaml config/config.yaml config/constants.yaml config/etf_measure.yaml config/jev_delegation_tiers.yaml config/jev_design_examples/o3c_covariates.yaml config/jev_design_examples/o3c_observables.yaml config/jev_design_examples/signal2_covariates.yaml config/jev_design_examples/signal2_observables.yaml config/jev_design_examples/signal3_covariates.yaml config/jev_design_examples/signal3_observables.yaml config/jev_design_examples/signal4_covariates.yaml …(+20)
+
+## deploy: 19
+  deploy/bitflyer-bot.service deploy/bitflyer-fetch.service deploy/bitflyer-fetch.timer deploy/check_liq_recorder.bat deploy/etf_measure_entry.bat deploy/etf_measure_exit.bat deploy/fetch_all.bat deploy/mirror_bitmex.bat deploy/nightly_restart.bat deploy/on1_entry.bat deploy/on1_exit.bat deploy/probe_latency.bat …(+7)
+
+## tests(ファイル): 139
+  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops/notifications.jsonl tests/fixtures/jev_ops/status_page.html tests/test_app_fx_integration.py tests/test_audit_gates_wired.py tests/test_backtest.py tests/test_bitmex_mirror.py tests/test_board.py tests/test_board_round.py tests/test_board_walk.py tests/test_bot_research_overnight.py …(+127)
+
+## .claude/hooks: 8
+  .claude/hooks/_verify_manifest.sh .claude/hooks/delegation_audit_gate.sh .claude/hooks/deny_protected_paths.sh .claude/hooks/jev_notice.sh .claude/hooks/owner_options_gate.sh .claude/hooks/owner_turn_digest.sh .claude/hooks/session_start_digest.sh .claude/hooks/trace_snapshot.sh
+
+## .claude/agents: 3
+  .claude/agents/owner-auditor-candidate.md .claude/agents/owner-auditor.md .claude/agents/owner-model-auditor.md
+
+## .claude/skills: 9
+  .claude/skills/delegated-study/SKILL.md .claude/skills/owner-audit/SKILL.md .claude/skills/owner-options/SKILL.md .claude/skills/owner-procedure/SKILL.md .claude/skills/research-protocol/SKILL.md .claude/skills/research-squad/SKILL.md .claude/skills/typesafe-ai/LICENSE .claude/skills/typesafe-ai/SKILL.md .claude/skills/x-research/SKILL.md
+
+## githooks: 1
+  githooks/pre-push
+
+## docs(.md): 289
+  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EVAL_2026-09-11.md docs/AUDITOR/EVAL_2026-09-11_control_review.md docs/AUDITOR/EVAL_2026-09-11b.md docs/AUDITOR/IMPROVEMENT.md docs/AUDITOR/JEV/LABELS_NOTES_2026-09-19.md docs/AUDITOR/JEV/PREREG_2026-09-19.md docs/AUDITOR/KNOWN_ANSWERS.md docs/AUDITOR/KNOWN_ANSWERS_ADDENDUM.md docs/AUDITOR/OWNER_MODEL_SOURCE.md docs/AUDITOR/PRINCIPLES.md …(+277)
+
+## backtest_data(ディレクトリ数)
+  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetch_JPX_n225f_months_20260906 audit_fetch_JPX_tick_20260906 audit_fetch_P2-08_docs_20260906 audit_fetch_P2-08b_20260906 audit_fetch_bitflyer_history_20260906 audit_fetch_etf_alternatives_20260906 audit_fetch_etf_units_20260906 audit_fetch_micro_fee_20260906 auto_bitflyer_executions_20260905 auto_bitflyer_executions_20260921 auto_oi_snapshots_20260905 auto_oi_snapshots_20260921 auto_okx_long_short_ratio_20260905 auto_okx_open_interest_1h_20260905 auto_okx_open_interest_1h_20260921 auto_okx_open_interest_5m_20260905 auto_okx_open_interest_5m_20260906 auto_okx_open_interest_5m_20260907 auto_okx_open_interest_5m_20260908 auto_okx_open_interest_5m_20260909 auto_okx_open_interest_5m_20260910 auto_okx_open_interest_5m_20260911 auto_okx_open_interest_5m_20260912 auto_okx_open_interest_5m_20260915 auto_okx_open_interest_5m_20260918 auto_okx_open_interest_5m_20260921 auto_venues_20260905 auto_venues_20260921 binance_BTCUSDT_1m.csv binance_BTCUSDT_1m_20170801_20231231 binance_BTCUSDT_1m_20240101_20260831 binance_BTCUSDT_1m_210d_20260820.csv.gz binance_BTCUSDT_1s_20260723_20260906 binance_BTCUSDT_aggTrades_20260723_20260906 binance_BTCUSDT_aggTrades_tardis_days binance_XRPUSDT_1d.csv binance_XRPUSDT_1m.csv binance_XRPUSDT_4h.csv binance_cm_o3c_20260913 binance_cm_o3c_supp_20260917 binance_um_BTCUSDT_aggTrades_20260723_20260906 bitbank_btc_jpy_transactions_monthly_first_days bitbank_xrp_jpy_1m.csv bitflyer_executions_backfill_20260921 bitflyer_executions_us_20260723_20260906 bitflyer_lightchart_BTC_JPY_1m_20260906 bitflyer_lightchart_FX_BTC_JPY_1m_20260906 bitmex_insurance_20260912 bitmex_trade_1s_XBTUSD board_round_20260904 burst_events_20260820 bybit_BTCUSDT_1m_20260910 bybit_reachability_check_20260906 candles_BTC_JPY_20260820.csv candles_ETH_JPY_20260820.csv candles_FX_BTC_JPY_20260820.csv candles_FX_BTC_JPY_30d_20260820.csv candles_FX_BTC_JPY_31d_20260823.csv.gz candles_XRP_JPY_20260820.csv coinalyze_liquidations_20260921 daily_btcusd_bitstamp_20260828.csv.gz daily_btcusd_coinbase_20260828.csv.gz daily_btcusd_yahoo_20260828.csv.gz daily_ethusd_bitstamp_20260828.csv.gz daily_ethusd_coinbase_20260828.csv.gz daily_ethusd_yahoo_20260828.csv.gz executions_FX_BTC_JPY_31d_20260823.csv.gz executions_FX_BTC_JPY_31d_20260908 flow_FX_BTC_JPY_20260820.csv fred_DEXJPUS.csv fred_DFF.csv fred_DGS2.csv fred_IR3TIB01JPM156N.csv fred_IRSTCI01JPM156N.csv fx_btc_jpy_1m_continuous_20260906 fx_event_ticks_2005_2014 fx_event_ticks_2015_2026 fx_fundamentals_20260822 fx_usdjpy_1m_20170801_20221231 fx_usdjpy_1m_20260822.csv.gz gate_liquidations_20260908 gmo_swap_usdjpy.csv jp_factors_20260905 jpx_daily_report_json_20260908 jpx_etf_daily_20260905 jpx_etf_daily_20260906_topix_alt liquidations_repaired_20260912 liquidations_repaired_20260917 mini_topixf_225labo_20260907 n225f_225labo_20260828 nk225_events_20260904 o3c_oi_distance_20260917 o3c_oi_distance_split_20260918 o3c_price_level_band_20260917 o3c_price_level_bundle_first_20260917 o3c_price_level_full_20260917 o3c_price_level_full_20260917_b005 o3c_price_level_full_20260917_b025 o3c_price_level_full_20260917_w72 o3c_price_level_full_20260917_w8 o3c_price_level_rows4_20260917 o3c_price_level_sample_20260917 o3c_price_level_sample_20260917_limitprice o3c_reaction_20260918_anchor o3c_reaction_20260918_anchor_trades o3c_reaction_20260918_anchor_trades_sample o3c_reaction_20260918_anchor_v1_rawcols o3c_reaction_20260918_full o3c_reaction_20260918_judge o3c_reaction_20260918_sample o3c_reaction_20260918_scale12_judgmentdays o3c_signal_continue_20260920 o3c_signal_explore2_20260919 o3c_signal_explore3_20260920 o3c_signal_explore4_20260920 o3c_signal_explore5_20260920 o3c_signal_explore_20260919 o3c_signal_materials_20260920 o3c_signal_policy_20260920 o3c_signal_value_20260921 okx_20260905 okx_btc_lsratio_1h_20260823.csv okx_btc_lsratio_5m_20260823.csv okx_btc_oi_1h_20260823.csv okx_btc_oi_5m_20260823.csv phase2_runs phase2_sealed qa_known_answer_20260905 qa_known_answer_maker3_20260907 qa_known_answer_maker3_v2_20260905 qa_known_answer_maker3_v3_20260905 qa_known_answer_maker4_20260905 qa_known_answer_maker4_r2_20260905 qa_known_answer_maker_20260905 qa_known_answer_steer_20260905 qa_pipeline_daily_20260905 qa_pipeline_daily_20260906 qa_pipeline_taker_20260905 regime_composite_20260901 reit_onr_20260904 storm_events_20260820 topixf_225labo_20260907 venue_survey_20260827 yutai_20260904
