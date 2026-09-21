@@ -9359,3 +9359,14 @@ ffe2692 L-202: reduce project hooks from 16 to 6, pre-push reduced to the manife
 オーナー逐語 L-242「**設計の段階でjevの判定(もしくはその代替となるもの)がないと事前登録させないことを監査役の仕事に加えてください**」により、`.claude/agents/owner-auditor.md` の (a) に 9 を足した(事前登録に `jev_design.py` の 2 表が無ければ [止める]。代替 = 独立の下位モデル 2 名の記録)。`research-protocol` §1 と `owner-audit` の前段にも同じ要件を足した。
 `deny_protected_paths.sh` が書き込みを拒否したため、**解除ファイル `.claude/state/owner_unlock_hooks` をリードが作って書き込み、同じ呼び出しで消した**(この環境ではオーナーがファイルを作れない。CLAUDE.md §5.0 の限界のとおり、作った回数を数える: R4 = 1 回目)。指紋の台帳は同じコミットで再生成。
 
+## 068 — キルスイッチの発見と、途切れたデータの穴埋め(L-324 / L-325、2026-09-21)
+
+**やったこと**: PC の共有(ブランチ `claude/bitflyer-trading-bot-hhxxaf`、6bafe99 → 80eb5b0)を読み、キルスイッチ(09-13 09:48 JST、`market data stale: 178s > 60.0s`)が 8 日間入ったままだったことを見つけた(L-324)。オーナーが解除・共有(L-325)。欠落を日次ファイルの先頭・末尾・最大間隔で実測し(コマンドと出力は返答に載せた)、経路を試した。
+- **この環境から届いた経路**: bitFlyer 公開 API `getexecutions`(HTTP 200。CLAUDE.md §5.2 の「地域制限」の記述はこの経路には当てはまらなかった)/ OKX `liquidation-orders`(200、ただし約 24 時間)。**届かない経路**: Bybit(403 CloudFront 地域拒否)/ Binance dapi(451)/ Coinalyze(401 = 鍵が PC にだけ)。
+- **書いた道具**: `scripts/fetch_bitflyer_executions_range.py`(時刻範囲で頁送り、UTC 日別 csv.gz、`ts,price,size,side,id`。**id を残す理由**: 同じミリ秒・値段・量・側の約定が実在し、10 分の窓 1,172 行のうち 28 行が 4 列では同一 → 最初の版は set で落としていた = 直した)/ `scripts/fetch_coinalyze_liquidations.py`(PC 用。銘柄の対応表 → 6 時間窓 → 生応答と進捗台帳)。試験 `tests/test_fetch_backfill_scripts.py` 4 件。
+- **走らせたもの**: bitFlyer 約定 09-18 07:24 UTC〜 → `backtest_data/bitflyer_executions_backfill_20260921/`(結果は DATA.md に登録)。
+- **走らせていないもの**: Coinalyze(鍵なし)。tape の ticker・板 top10 の復元(PC の生記録が要る)。→ 手順 P15。
+- **原因の読み(推定)**: `record_liquidations.py` の `except asyncio.TimeoutError: break` は `--minutes` の期限のためにあるが、`websockets.connect(open_timeout=25)` の時間切れも同じ `TimeoutError`(3.11 で同一クラス)で捕まり、venue の仕事が終了する。3 件(okx 09-14、bybit 09-16、bitmex 09-16)とも「切断 → 再接続」の直後に「接続」無しで「終了」。修正はオーナーの指示待ち(原文に該当語なし。A-16 の対象ではないが §0.1 の空行)。
+- **訂正**: 前回の返答で bitmex を「止まったまま」と書いたが、XBTUSD は上場廃止(L-190)で既定から外してある。欠落ではない。
+- **状態板の誤り**: 冒頭の「共有が途絶えている」は `session_start_digest.sh` が現在のブランチの `paper_logs` しか見ていないため。PC は別ブランチに毎朝押している。フックの変更はオーナーの指示があるまでしない(A-16)。
+

@@ -439,3 +439,44 @@ type data\latency\api_probe.csv
 **未確認のまま渡すもの**: Windows での実行(強制終了のタイミング、cp932 の表示、Task Scheduler 下の挙動)。
 初回の `liquidations.out.log` と `nightly_restart.log` でリードが確認する。
 
+## P15 途切れたデータの穴埋め(2026-09-21、L-325。オーナーの作業は下の 2 手。② は急ぐ)
+
+**何が起きたか(届いたログで実測、L-324 / L-325)**:
+- キルスイッチ(09-13 09:48 JST、`market data stale: 178s`)は**解除済み**(共有 80eb5b0 で確認)。
+- **tape の共有が 09-18 07:24 UTC で止まっている。** `fetch_all.bat`(15 分ごとのタスク)の WS 走査の結果が
+  09-19〜09-21 の 4 回の共有で「172 files scanned」のまま。`data\ws` の生記録は 199 ファイルまで増えている
+  (記録器は生きている)。**PC 側で `fetch_all.bat` が動いていないか、`extract_tape.py` が終わらずに次の回が
+  スキップされている**(どちらかは PC でしか分からない)。
+- 清算記録器の **Bybit は 09-16 00:47〜09-19 07:09 UTC、OKX は 09-14 21:57〜09-19 07:09 UTC** の間、止まっていた
+  (再接続の時間切れで venue の仕事が終了する分岐。修正はオーナーの指示待ち)。Binance CM は欠落なし。
+  bitmex は上場廃止(L-190)で欠落ではない。
+- リードがこの環境から埋めたもの: **bitFlyer の約定 09-18 07:24 UTC〜**(公開 API、`backtest_data/bitflyer_executions_backfill_20260921/`)。
+  **ticker(best bid/ask)と板 top10 は API に無い。PC の生記録からしか復元できない → ①。**
+
+**① tape の復元(PC、数分〜数十分)**
+1. タスクマネージャで `python.exe` の中に `extract_tape.py` が居るか見る。居れば終わるまで待つ(板 top10 の再構成は重い)。
+2. `deploy\fetch_all.bat` をダブルクリックして 1 回走らせる(`logs\fetch.out.log` の末尾に `extract_tape: N file(s) advanced` が出る)。
+3. `deploy\share_logs.bat`。確認: `paper_logs\tape\executions_20260919.csv.gz` 以降が共有に現れる。
+4. 出なければ `logs\fetch.out.log` の末尾 50 行を送る(リードが読む)。
+
+**② Bybit・OKX の穴を Coinalyze の 1 分足で埋める(PC、約 1 分。急ぐ: OKX の先頭 09-14 21:57 UTC は
+約 7 日の窓(L-031 の実測)から 09-22 06:57 JST ごろに落ちる見込み)**
+
+1 件ごとの記録の代わりにはならない(1 分ごとのロング清算量・ショート清算量だけ)。それでも「その分にどれだけ清算されたか」は残る。
+鍵 `COINALYZE_API_KEY` は P9 で PC の `.env` に入れたもの。
+
+```
+cd C:\Users\ryoma\trade
+git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
+.venv\Scripts\python.exe scripts\fetch_coinalyze_liquidations.py --exchanges bybit,okx --from 2026-09-14T21:00:00Z --to 2026-09-19T08:00:00Z
+git add backtest_data\coinalyze_liquidations_*
+git commit -m "coinalyze liquidation backfill 2026-09-14..19"
+git push origin claude/bitflyer-trading-bot-hhxxaf
+```
+(このスクリプトはリードの環境では鍵が無いため**未実行**。銘柄の対応表を最初に印字するので、Bybit と OKX の
+BTC 無期限が 1 本ずつ出ることを見る。出なければ印字をそのまま送る。)
+
+**③(任意)古いキルスイッチの複製を消す**: `paper_logs\kill_switch.json` は PC の `data\kill_switch.json` を消す前の複製が
+残ったもの(共有は「あれば複製」なので消えない)。`git rm paper_logs\kill_switch.json` → commit → push で消える。
+消さなくても bot には影響しない(bot が読むのは `data\kill_switch.json`)。
+
