@@ -5,7 +5,7 @@
 リードの手書き(3 回直して 3 回漏れた: scripts/qa・scripts/phase2・phase2_seal.py)から
 この出力に置き換える。判定はしない。並びは決定的(ソート)。
 
-使い方: python3 scripts/tools_inventory.py [--all-files]
+使い方: python3 scripts/tools_inventory.py [--brief](既定は省略なしの全文)
 """
 from __future__ import annotations
 import argparse
@@ -23,7 +23,7 @@ def ls(*paths: str) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--all-files", action="store_true", help="ファイル名を全部出す(既定は package / 接頭辞ごとの件数と名前)")
+    ap.add_argument("--brief", action="store_true", help="長い群を 14 件で省略する(既定は全部出す = 監査 4 回目の指摘 2)")
     a = ap.parse_args()
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
@@ -53,7 +53,7 @@ def main() -> int:
             groups[(m.group(1) + "_*") if m else "(単発)"].append(parts[1])
     for g in sorted(groups, key=lambda k: (-len(groups[k]), k)):
         names = sorted(groups[g])
-        shown = " ".join(names) if (a.all_files or len(names) <= 14) else " ".join(names[:14]) + f" …(+{len(names) - 14})"
+        shown = " ".join(names) if (not a.brief or len(names) <= 14) else " ".join(names[:14]) + f" …(+{len(names) - 14})"
         print(f"- {g}: {len(names)} / {shown}")
     non_py = [f for f in ls("scripts") if not f.endswith(".py")]
     print(f"- (.py 以外の scripts: {len(non_py)} = {' '.join(non_py)})")
@@ -65,7 +65,7 @@ def main() -> int:
         if label.startswith("docs"):
             fs = [f for f in fs if f.endswith(".md")]
         print(f"\n## {label}: {len(fs)}")
-        if a.all_files or len(fs) <= 12:
+        if not a.brief or len(fs) <= 12:
             print("  " + " ".join(fs))
         else:
             print("  " + " ".join(fs[:12]) + f" …(+{len(fs) - 12})")
