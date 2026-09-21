@@ -151,8 +151,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 **到達できなかった経路とその処置(§5-1、「1回のエラーで不可と書かない」)**:
 - `WebFetch` で `pypi.org/project/hftbacktest` を直接開くと「クライアントチャレンジ」ページ
   (JS 実行が必要な保護)で中身が取れなかった。→ 同じ情報を `curl "$HTTPS_PROXY 経由" pypi.org/pypi/<pkg>/json`
-  (PyPI の JSON API)に切り替えて全件取得できた(下記ログ参照)。**この環境からは pypi.org の
-  HTML ページは WebFetch 経由で不可、JSON API は curl で可** という区別が付いた。
+  (PyPI の JSON API)に切り替えて全件取得できた(下記ログ参照)。**この環境からは pypi.org/project の HTML ページは本文が取れず(WebFetch は W-8 の 1 件、curl はリードが 4 件打って全部 200 だが 3,038 バイトのチャレンジ画面 = 生ログ R)、JSON API は curl で可(13 件すべて 200 = 生ログ 4〜7・18〜26 行)**。
 - `curl https://api.github.com/repos/<owner>/<repo>` は毎回 HTTP 403(本文:
   「GitHub access to this repository is not enabled for this session. Use add_repo...」)。
   これは GitHub API のレート制限ではなく、**このセッションのプロキシがそのリポジトリへの
@@ -160,7 +159,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
   すれば通る可能性があるが、今回は外部ツール調査であり対象リポジトリへの `add_repo` は行って
   いない)。→ 同じ情報(スター数・フォーク数・コミット数・ライセンス)は `WebFetch` で
   `github.com/<owner>/<repo>` の HTML ページを直接開くことで取得できた(下記のツール別表)。
-  **「API は塞がっているが HTML ページは通る」という非対称がある。**リードの取り直しでは `curl` の HTML も 403 だった(生ログ L-5)ので、正確には「curl は API も HTML も不可、WebFetch の HTML は可(W-9・W-11・W-13・W-14)」。
+  **「API は塞がっているが HTML ページは通る」という非対称がある。**リードの取り直しでは `curl` の HTML も 403 だった(hftbacktest = 生ログ L-5、残り 3 リポジトリ = 生ログ R。4/4)ので、正確には「curl は API(4/4 が 403)も HTML(4/4 が 403)も不可、WebFetch の HTML は可(4/4 = W-9・W-11・W-13・W-14)」。
 - 第2経路(オーナーPC): 上のどちらも今回はこの環境から**別の手段で取得できた**ため、
   オーナーPC 経路は不要だった。もし両方とも塞がっていた場合は、オーナーPC で
   `gh api repos/<owner>/<repo>` または通常のブラウザで GitHub ページを開く、が次の手になる。
@@ -198,10 +197,10 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 13. Jesse — 一次資料(ライセンスのみ)+ 推定 = 未検算、W-23(pricing) — 暗号資産専用フレームワーク、MIT+プレミアム機能、最終更新2026-09-17(非常に活発)
 14. Mendl-Labs/BacktestingCore — 推定 = 未検算、W-4(検索結果の GitHub 説明文のみ) — event-driven simulation・walk-forward・遺伝的最適化を謳うコア。詳細未確認
 15. Luczinsritter/event_driven_backtesting_engine — 推定 = 未検算、W-4(検索結果の GitHub 説明文のみ) — look-ahead bias排除を謳う個人プロジェクト、規模・活動未確認
-16. Bot18(carlos8f、Zenbot作者の別製品) — WebSearch の結果の要約のみ(検索語「carlos8f zenbot github cryptocurrency trading bot」、生ログ W-24。一次資料は未取得) — HFT ボット。「$49.99 の8桁アンロックコード制(有料)、無料お試しあり(ZalgoNet "guest")」は検索結果の要約にある文言(**推定 = 未検算、W-24**)
+16. Bot18(carlos8f、Zenbot作者の別製品) — 推定 = 未検算、W-24(検索語「carlos8f zenbot github cryptocurrency trading bot」の結果の要約のみ。一次資料は未取得) — HFT ボット。「$49.99 の8桁アンロックコード制(有料)、無料お試しあり(ZalgoNet "guest")」は検索結果の要約にある文言(**推定 = 未検算、W-24**)
 
 **カテゴリ越境(区分2「執行・botの枠組み」と重複するため一行のみ記載、深掘りは区分2で)**:
-17. ccxt — 一次資料(検索結果のみ) — 多数の暗号資産取引所APIラッパー。多くのバックテスト/執行ツールの内部依存
+17. ccxt — 推定 = 未検算、W-20(検索結果に PyPI の URL が挙がっただけ。curl・WebFetch は未実施) — 多数の暗号資産取引所APIラッパー。多くのバックテスト/執行ツールの内部依存
 
 **未実行(検索計画6本には出たが未クリックの候補は無し。追加のawesome系リスト・依存関係の逆引きは未着手)**
 
