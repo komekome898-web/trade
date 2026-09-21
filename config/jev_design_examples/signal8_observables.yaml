@@ -10,3 +10,11 @@ perfect_judgment_value_label_reference: "per-cascade profit when the judgment at
 knob_contribution_one_at_a_time: "change in first-half total profit when each knob of the chosen fade rule is moved alone while the others are held"
 label_agreement_value_vs_liquidation: "share of prints on which the price-continuation label and the next-liquidation label agree, by half and side"
 per_print_fixed_horizon_move: "signed price move from each print to a fixed horizon (the earlier unit's quantity, kept only as a reference)"
+# --- 計画外の候補(監査 1 回目の指摘 6 で足した。Q0〜Q6 に無い量) ---
+jev_judgment_on_value_label: "per-cascade profit when Jev, not the logistic, judges price continuation at each print"
+pnl_on_bitflyer_prices: "per-cascade profit recomputed on bitFlyer FX_BTC_JPY prices instead of Binance prices"
+control_no_liquidation_same_momentum: "the same policy applied at moments with the same momentum and taker imbalance but no liquidation, as a control"
+order_book_depth_at_print: "visible order book depth within 5 bp of the price at each print"
+position_size_by_cascade_notional: "per-cascade profit when position size is scaled by the liquidated notional at entry"
+daily_loss_cap_rule: "per-day profit when trading stops for the day after a fixed cumulative loss"
+liquidation_label_policy_pnl_net_of_cost: "the earlier unit's liquidation-label policy profit recomputed net of cost (the comparison baseline)"

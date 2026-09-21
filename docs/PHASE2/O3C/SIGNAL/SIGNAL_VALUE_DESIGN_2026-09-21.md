@@ -29,7 +29,7 @@
 | 最適化のノブ 4 つとその格子(§5、189 組)。ノブの選び方は前段の「なぜ」から | **(該当語なし)**(リードの決定。根拠は §5 に 1 ノブずつ) |
 | 最適化は前半だけ、比較は後半の同じ 2,000 本(種 20260920、前段と同じ `bundle_id`)を一度だけ | **(該当語なし)**(自己汚染を避けるリードの決定。前段と同じ本に通すのは「比べる」ため) |
 | ① の帯(「わからない」)を**前半の交差検証(5 分割)**で較正する(前段は後半 5,000 件で較正した) | **(該当語なし)**(後半に触れないためのリードの決定。前段と同じ 5,000 件での較正は再集計として併記) |
-| 費用の材料 = bitFlyer 約定の tardis 標本日 16 日(2023-07-01〜2024-10-01、**PC の `data/tardis/` にだけある**)。この環境からは取れない(§4 に実測) | **(該当語なし)**(リードの決定。PC で 1 コマンドが要る。代替 = この環境にある 2026-07-23〜09-06 の 31 日だが、判定の期間と重なる) |
+| 費用の材料 = bitFlyer 約定の tardis 標本日 16 日(2023-07-01〜2024-10-01。**この環境に 2026-09-21 取り直した**、§4 に実測)で実効スプレッドを測る | **(該当語なし)**(リードの決定。オーナーの作業は無し) |
 | 委任(実装 + 前半の動作確認)→ 反証者レビュー → 後半 → 記録 → 監査役 | 承認済みの固定手順(L-179「**スキルの承認をもって聞かずに当ててよい**」、`delegated-study`・`owner-audit`) |
 
 右が空の行 4 つ(+ 物差しの具体)は**着手前にオーナーに見せる**(この設計がその形)。退けられればその行だけ直す。
@@ -67,8 +67,8 @@
 
 ## 4. 費用(V-3)
 
-- 材料: `data/tardis/bitflyer_FX_BTC_JPY_trades/` の標本日のうち 2023-07-01〜2024-10-01 の 16 日(`docs/DATA.md` §2 に「取得済」、**PC にある**)。**この環境には無い**: `ls data` → `jev` のみ(2026-09-21 リード実測)。取り直しも不可: `curl -sS -o /dev/null -w "HTTP %{http_code}" -r 0-1023 https://datasets.tardis.dev/v1/bitflyer/trades/2023/07/01/FX_BTC_JPY.csv.gz` → `HTTP 403`(同日、この環境の代理経由)。Tardis の利用規約 9.2 により生データは共有しない = **PC で集計の道具を 1 回走らせ、集計(標本日 × 分位の表)だけを `backtest_data/` に置く**(手順は委任の後に `OWNER_PROCEDURES` の P 番号で出す)。
-- 道具の形の確認はこの環境の `backtest_data/bitflyer_executions_us_20260723_20260906/`(同じ tardis 形式、31 日)で行う。**その 31 日の値は費用の主の値には使わない**(判定の期間 2026-08-20〜 と重なる)。
+- 材料: `data/tardis/bitflyer_FX_BTC_JPY_trades/FX_BTC_JPY_2023MMDD.csv.gz`(gitignore 域)の標本日のうち 2023-07-01〜2024-10-01 の 16 日。**この環境に 2026-09-21 に取り直した(リード実測)**: `python3 scripts/fetch_tardis_samples.py --start 2023-07 --end 2024-10 --out data/tardis/bitflyer_FX_BTC_JPY_trades` → `done. 16/16 days ok`(行数 10,490〜130,050 / 日、合計 9.7 MB、`MD5SUMS` あり)。**初版の「この環境からは取れない・取り直しも不可」は誤り**(監査 1 回目の指摘 2・3): 根拠にした curl はバイト範囲要求(`-r 0-1023`)で、それが 403 を返しただけだった。正規のスクリプトは通る。`docs/DATA.md` §2 の「取得済」(2026-09-13、この環境で `ls` 確認)との矛盾の原因: この実行環境は会話ごとに clone から作られ、gitignore 域の `data/` は残らない(`ls data` → `jev` のみ = この会話で作ったもの)。09-13 の記録は別の容器での確認。DATA.md 69 行目に追記した。
+- 生データの扱い: Tardis の利用規約 9.2(一次資料 `https://docs.tardis.dev/legal/terms-of-service`、2026-09-21 取得。逐語: "the Customer shall not: … redistribute or resell the Data or the Services (wholly or in part), except for reselling or redistributing aggregated and calculated Derived Data, including OHLC or OHLCV candles, at a resolution of 10 minutes or longer, where no raw Data is exposed and the Data cannot reasonably be reconstructed")。よって生の約定は `data/`(gitignore 域)に置き、リポジトリ(`backtest_data/`)には**標本日 × 分位の集計表だけ**を入れる(初版の「9.2」の出所は `scripts/fetch_tardis_samples.py` の docstring だった = 一次資料でなかった。指摘 4 で一次資料に替えた)。
 - 引き方: 全方策に同じ c。連鎖 1 本 = c × 建玉の回数(型 B のドテンは 1 回 = c)。滑り(スプレッドを超えて動く分)と Binance→bitFlyer の経路差は**測らない**(報告に書く)。
 
 ## 5. ② の最適化(V-2。前半だけ。事前に固定する格子と規則)
@@ -82,7 +82,7 @@
 
 - 格子 = 3 × 7 × 3 × 3 = **189 組**、遅れ 1 秒、費用込み(c の主の値)。**選ぶ規則(事前固定)**: (a) 前半を日付順に 2 分割した両側で総収支が正、(b) 連鎖 1 本の中央値 > 0、を満たす組の中から**総収支が最大の 1 組**。満たす組が無ければ「無い」と書き、②opt は全部逆張り(素)のまま後半へ(比較は成立させる)。
 - 総収支を物差しにする理由: 「収支」は合計であり、入る回数を減らすノブ(条件・位置)の代償を自然に払わせる。1 本あたりの平均だけで選ぶと機会が消える組が勝つ。
-- これは探索段の格子であり改良ループ(§0.3)ではない。**189 組は多重性に全部算入する。**後半で選んだ 1 組だけを通す。
+- **§0.3(改良ループ)との区別(監査 1 回目の指摘 5 への答え)**: §0.3 は事前登録した判定のあとの「改良 → 再検証」に掛かる縛りで、この単位は判定の前の探索段(§0.0 = 仮説を作るためにデータを見てよい段)にある。ただし縛りの趣旨(どのノブが効いたか言えること・通るまで試さないこと)は守る: (1) 4 ノブは 4 つの機構仮説で、格子で同時に測るのは 出口 × 損切り のように互いに打ち消し合う組があり、1 つずつでは分離できないため。**代わりに Q3 で 1 ノブずつの寄与(他を固定して動かした差)を出す** = どの仮説が総収支を作ったかを 1 本ずつ言える。(2) 格子は 1 回だけで、規則 (a)(b) を満たす組が無ければ「無い」で止める(= 収束しなければ止める)。水準を足して再走行しない。(3) **189 組は多重性に全部算入する。**後半で通すのは選んだ 1 組だけ。判定のあとの改良は §0.3 の形(1 周 1 仮説、事前登録)に戻す。
 
 ## 6. 基準・対照
 
@@ -91,7 +91,7 @@
 ## 7. データと段
 
 - 入力: `backtest_data/o3c_signal_continue_20260920/rows_continue.csv.gz`(材料・価格・両ラベル)、`o3c_signal_materials_20260920/rows_materials.csv.gz`(logistic の材料)、`o3c_signal_policy_20260920/stage2_secondhalf/cascades.csv.gz` の `bundle_id`(後半 2,000 本、前段と同一)、Binance の約定(前段と同じ `aggTrades/BTCUSD_PERP`)、費用 = §4。
-- 段 1(前半だけ、委任): ① の当てはめ・較正、② の格子、費用の道具(31 日で形を確認)、前半 200 本での方策の動作確認。段 1′(PC): 費用の集計 1 回。→ 反証者レビュー。段 2(後半、**一度**): 同じ 2,000 本に Q2・Q4。段 3: 記録(`SIGNAL_VALUE_RESULT_2026-09-21.md`)→ 監査役 → オーナー。
+- 段 1(前半だけ、委任): ① の当てはめ・較正、② の格子、費用の道具(16 標本日の実効スプレッド)、前半 200 本での方策の動作確認。費用の集計はこの環境で段 1 に含める(生データは `data/`、集計だけ `backtest_data/`)。→ 反証者レビュー。段 2(後半、**一度**): 同じ 2,000 本に Q2・Q4。段 3: 記録(`SIGNAL_VALUE_RESULT_2026-09-21.md`)→ 監査役 → オーナー。
 - 未来を使わない検査: 判断・条件は ts 以前、行動の価格は ts + 遅れ以後、損切りの執行も同じ、連鎖の終わりは出口にだけ使う。
 
 ## 8. リードの決定・限界・測らないもの
@@ -105,25 +105,39 @@
 
 行: Q0 20 + Q1 (帯 約 25 + 3) × 2 場面 × 2(OOF / 5,000 件)= 約 112 + Q2 84 + 42 + 10 = 136 + Q3 189 + 1 + 4(寄与)= 194 + Q4 6 本 × (1 + 1 + 3 + 3) = 48 + Q5 16 × 2 + 2 = 34 + Q6 約 20 → **約 564**。引き継ぎ: 前段まで 2,995 + 564。反証者のセルは前段まで 1,167(+ この単位の反証者の分)。事後の切り: 2(変更なし)。後半の読み: 11 度目。
 
-## 10. 設計の段の判定(`jev_design.py`)— 2026-09-21 リードの実測
+## 10. 設計の段の判定(`jev_design.py`)— 2026-09-21 リードの実測(2 回目。1 回目は指摘 6 で置き換えた)
 
-コマンド: `PYTHONPATH=src:scripts python3 scripts/jev_design.py rank-observables --purpose-from <この文書> --intent V-1,V-2,V-3,V-4,V-5,V-6 --observables config/jev_design_examples/signal8_observables.yaml --md …`(問い 66 件、モデル jev-1.13.0)。確率は `data/jev/design/`(リポジトリに入れない)。**Jev は決めない。**rank-covariates は使わない(対照を作らない = §6)。量の日本語: `optimized_fade_vs_policy_second_half` = 後半の同じ 2,000 本での ②opt・素・①・前段の並置(Q4)/ `per_cascade_policy_pnl_net_of_cost` = 費用込みの連鎖 1 本の損益(Q2)/ `per_cascade_policy_pnl_value_label` = 値段のラベルの方策の損益(Q2)/ `optimized_fade_total_pnl_first_half` = 前半の総収支(Q3)/ `daily_pnl_distribution` = 日ごと(Q4)/ `knob_contribution_one_at_a_time` = ノブの寄与(Q3)/ `perfect_judgment_value_label_reference` = 完全な判断(値段)の参照(Q2)/ `value_label_calibration_bands` = 帯(Q1)/ `label_agreement_value_vs_liquidation` = 2 ラベルの一致率(Q0)/ `effective_spread_after_liquidation` = 実効スプレッド(Q5)/ `per_print_fixed_horizon_move` = 前段の固定窓(参照のみ、この単位では出さない)。**リードの読み**: V-1・V-2・V-5 の上位に Q4 の並置と費用込みの損益が並び、V-3 は費用込みと実効スプレッド、V-4 は日ごとと連鎖ごとの分布 = 問い Q1〜Q5 の主の量と一致。「無関係」に落ちた帯(Q1)・一致率(Q0)・寄与(Q3)は判断の部品・自己点検・「なぜ」の材料であって意図を直接測る量ではない、という位置づけで矛盾しない。
+コマンド: (i) `PYTHONPATH=src:scripts python3 scripts/jev_design.py rank-observables --purpose-from <この文書> --intent V-1,V-2,V-3,V-4,V-5,V-6 --observables config/jev_design_examples/signal8_observables.yaml --md …`(候補 18 本、問い 108 件)/ (ii) `… rank-covariates --quantity "<Q4 の量: 後半 2,000 本での方策ごとの連鎖 1 本の費用込み損益>" --covariates config/jev_design_examples/signal8_covariates.yaml --md …`(変数 10 本)。モデル jev-1.13.0。確率は `data/jev/design/`(リポジトリに入れない)。**Jev は決めない。**
+
+**候補の作り方(監査 1 回目の指摘 6 への答え、事実)**: 1 回目の候補 11 本は Q0〜Q6 を書いた**あとに**、その量を英語にして並べたもので、独立ではなかった。2 回目は計画に無い量 7 本(Jev で値段の続きを判断 / bitFlyer 価格での損益 / 清算の無い時刻の対照 / 板の厚み / 想定元本で建玉を変える / 日の損失上限 / 前段の清算ラベルの方策を費用込みで)を足して再実行した。結果、計画外の 7 本はどの意図でも「無関係」で、上位は計画の量のまま(下の表)。**これは「計画の量より意図に近い量が候補の中に無かった」ことしか言わず、候補を先に独立に作った場合と同じ検査ではない**。次の単位からは候補を Q より先に書く。
+
+量の日本語: `optimized_fade_vs_policy_second_half` = 後半の同じ 2,000 本での ②opt・素・①・前段の並置(Q4)/ `per_cascade_policy_pnl_net_of_cost` = 費用込みの連鎖 1 本の損益(Q2)/ `per_cascade_policy_pnl_value_label` = 値段のラベルの方策の損益(Q2)/ `optimized_fade_total_pnl_first_half` = 前半の総収支(Q3)/ `daily_pnl_distribution` = 日ごと(Q4)/ `knob_contribution_one_at_a_time` = ノブの寄与(Q3)/ `perfect_judgment_value_label_reference` = 完全な判断(値段)の参照(Q2)/ `value_label_calibration_bands` = 帯(Q1)/ `label_agreement_value_vs_liquidation` = 2 ラベルの一致率(Q0)/ `effective_spread_after_liquidation` = 実効スプレッド(Q5)/ `liquidation_label_policy_pnl_net_of_cost` = 前段の 3 択(清算)を費用込みで(Q2 の参照)/ `per_print_fixed_horizon_move` = 前段の固定窓(参照のみ)/ 計画外 6 本 = `jev_judgment_on_value_label`・`pnl_on_bitflyer_prices`・`control_no_liquidation_same_momentum`・`order_book_depth_at_print`・`position_size_by_cascade_notional`・`daily_loss_cap_rule`(この単位では測らない。§8)。
+
+**リードの読み(i)**: V-1・V-2・V-5 の上位に Q4 の並置と費用込み・値段ラベルの損益、V-3 に費用込みと実効スプレッド、V-4 に日ごとと連鎖ごとの分布 = Q1〜Q5 の主の量と一致。「無関係」に落ちた帯(Q1)・一致率(Q0)・寄与(Q3)は判断の部品・自己点検・「なぜ」の材料であって意図を直接測る量ではない、という位置づけで矛盾しない。**リードの読み(ii)(監査 1 回目の指摘 1 への答え)**: 対照群は作らない(§6)が、(ii) は「判定の量が構造的に依存する変数」を並べる。「合わせる」と出た 2 本 = 費用 c と遅れ d は、**全方策に同じ値を使う**(§4・§8)ことで揃える。「合わせなくてよい」と出た 8 本のうち、位置・大きさ・側・日は Q2〜Q4 で層別して出す(平均で潰さない、V-4)。前半と後半の基準率のずれ(`half_base_rate`)は §8 の限界 (2) に書いた。
+
 
 ### V-1 「**①をメインに進めたい**」(L-342)(印 ○)
 
 | 順位 | 量 | 語 |
 |---|---|---|
 | 1 | `optimized_fade_vs_policy_second_half` | 代理(2 台) |
-| 2 | `per_cascade_policy_pnl_net_of_cost` | 代理(2 台) |
-| 3 | `per_cascade_policy_pnl_value_label` | 代理(2 台) |
+| 2 | `per_cascade_policy_pnl_value_label` | 代理(2 台) |
+| 3 | `per_cascade_policy_pnl_net_of_cost` | 代理(2 台) |
 | 4 | `optimized_fade_total_pnl_first_half` | 代理(2 台) |
 | 5 | `daily_pnl_distribution` | 無関係(1 以下) |
-| 6 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
-| 7 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
-| 8 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
-| 9 | `value_label_calibration_bands` | 無関係(1 以下) |
-| 10 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
-| 11 | `effective_spread_after_liquidation` | 無関係(1 以下) |
+| 6 | `liquidation_label_policy_pnl_net_of_cost` | 無関係(1 以下) |
+| 7 | `jev_judgment_on_value_label` | 無関係(1 以下) |
+| 8 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
+| 9 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
+| 10 | `pnl_on_bitflyer_prices` | 無関係(1 以下) |
+| 11 | `position_size_by_cascade_notional` | 無関係(1 以下) |
+| 12 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
+| 13 | `value_label_calibration_bands` | 無関係(1 以下) |
+| 14 | `daily_loss_cap_rule` | 無関係(1 以下) |
+| 15 | `control_no_liquidation_same_momentum` | 無関係(1 以下) |
+| 16 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
+| 17 | `effective_spread_after_liquidation` | 無関係(1 以下) |
+| 18 | `order_book_depth_at_print` | 無関係(1 以下) |
 
 ### V-2 「**②の全部逆張りも最適な収支を取れるように最適化して比べるべき**」(L-342)(印 ○)
 
@@ -131,31 +145,45 @@
 |---|---|---|
 | 1 | `optimized_fade_vs_policy_second_half` | 代理(2 台) |
 | 2 | `optimized_fade_total_pnl_first_half` | 代理(2 台) |
-| 3 | `per_cascade_policy_pnl_net_of_cost` | 無関係(1 以下) |
-| 4 | `per_cascade_policy_pnl_value_label` | 無関係(1 以下) |
+| 3 | `per_cascade_policy_pnl_value_label` | 無関係(1 以下) |
+| 4 | `per_cascade_policy_pnl_net_of_cost` | 無関係(1 以下) |
 | 5 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
 | 6 | `daily_pnl_distribution` | 無関係(1 以下) |
-| 7 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
-| 8 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
-| 9 | `value_label_calibration_bands` | 無関係(1 以下) |
-| 10 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
-| 11 | `effective_spread_after_liquidation` | 無関係(1 以下) |
+| 7 | `liquidation_label_policy_pnl_net_of_cost` | 無関係(1 以下) |
+| 8 | `jev_judgment_on_value_label` | 無関係(1 以下) |
+| 9 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
+| 10 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
+| 11 | `position_size_by_cascade_notional` | 無関係(1 以下) |
+| 12 | `pnl_on_bitflyer_prices` | 無関係(1 以下) |
+| 13 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
+| 14 | `value_label_calibration_bands` | 無関係(1 以下) |
+| 15 | `daily_loss_cap_rule` | 無関係(1 以下) |
+| 16 | `control_no_liquidation_same_momentum` | 無関係(1 以下) |
+| 17 | `effective_spread_after_liquidation` | 無関係(1 以下) |
+| 18 | `order_book_depth_at_print` | 無関係(1 以下) |
 
 ### V-3 「**「勝てる」には正答率だけでなく速度とコストも関わります**」(L-321)(印 ○)
 
 | 順位 | 量 | 語 |
 |---|---|---|
 | 1 | `per_cascade_policy_pnl_net_of_cost` | 代理(2 台) |
-| 2 | `effective_spread_after_liquidation` | 代理(2 台) |
-| 3 | `daily_pnl_distribution` | 無関係(1 以下) |
-| 4 | `per_cascade_policy_pnl_value_label` | 無関係(1 以下) |
-| 5 | `optimized_fade_vs_policy_second_half` | 無関係(1 以下) |
-| 6 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
-| 7 | `optimized_fade_total_pnl_first_half` | 無関係(1 以下) |
-| 8 | `value_label_calibration_bands` | 無関係(1 以下) |
-| 9 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
-| 10 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
-| 11 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
+| 2 | `liquidation_label_policy_pnl_net_of_cost` | 代理(2 台) |
+| 3 | `effective_spread_after_liquidation` | 代理(2 台) |
+| 4 | `pnl_on_bitflyer_prices` | 無関係(1 以下) |
+| 5 | `daily_pnl_distribution` | 無関係(1 以下) |
+| 6 | `per_cascade_policy_pnl_value_label` | 無関係(1 以下) |
+| 7 | `daily_loss_cap_rule` | 無関係(1 以下) |
+| 8 | `optimized_fade_vs_policy_second_half` | 無関係(1 以下) |
+| 9 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
+| 10 | `jev_judgment_on_value_label` | 無関係(1 以下) |
+| 11 | `position_size_by_cascade_notional` | 無関係(1 以下) |
+| 12 | `optimized_fade_total_pnl_first_half` | 無関係(1 以下) |
+| 13 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
+| 14 | `value_label_calibration_bands` | 無関係(1 以下) |
+| 15 | `control_no_liquidation_same_momentum` | 無関係(1 以下) |
+| 16 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
+| 17 | `order_book_depth_at_print` | 無関係(1 以下) |
+| 18 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
 
 ### V-4 「**平均で計算したらわからなくなって当然やろ**」(L-260)(印 ○)
 
@@ -165,43 +193,80 @@
 | 2 | `per_cascade_policy_pnl_value_label` | 代理(2 台) |
 | 3 | `per_cascade_policy_pnl_net_of_cost` | 無関係(1 以下) |
 | 4 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
-| 5 | `value_label_calibration_bands` | 無関係(1 以下) |
-| 6 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
-| 7 | `optimized_fade_vs_policy_second_half` | 無関係(1 以下) |
-| 8 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
-| 9 | `optimized_fade_total_pnl_first_half` | 無関係(1 以下) |
-| 10 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
-| 11 | `effective_spread_after_liquidation` | 無関係(1 以下) |
+| 5 | `optimized_fade_vs_policy_second_half` | 無関係(1 以下) |
+| 6 | `control_no_liquidation_same_momentum` | 無関係(1 以下) |
+| 7 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
+| 8 | `value_label_calibration_bands` | 無関係(1 以下) |
+| 9 | `liquidation_label_policy_pnl_net_of_cost` | 無関係(1 以下) |
+| 10 | `daily_loss_cap_rule` | 無関係(1 以下) |
+| 11 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
+| 12 | `optimized_fade_total_pnl_first_half` | 無関係(1 以下) |
+| 13 | `position_size_by_cascade_notional` | 無関係(1 以下) |
+| 14 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
+| 15 | `pnl_on_bitflyer_prices` | 無関係(1 以下) |
+| 16 | `jev_judgment_on_value_label` | 無関係(1 以下) |
+| 17 | `effective_spread_after_liquidation` | 無関係(1 以下) |
+| 18 | `order_book_depth_at_print` | 無関係(1 以下) |
 
 ### V-5 「**実際の運用で使うシグナルとしての価値**」(L-262)(印 △)
 
 | 順位 | 量 | 語 |
 |---|---|---|
 | 1 | `per_cascade_policy_pnl_net_of_cost` | 代理(2 台) |
-| 2 | `per_cascade_policy_pnl_value_label` | 代理(2 台) |
-| 3 | `optimized_fade_vs_policy_second_half` | 代理(2 台) |
-| 4 | `daily_pnl_distribution` | 無関係(1 以下) |
-| 5 | `effective_spread_after_liquidation` | 無関係(1 以下) |
-| 6 | `optimized_fade_total_pnl_first_half` | 無関係(1 以下) |
-| 7 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
-| 8 | `value_label_calibration_bands` | 無関係(1 以下) |
-| 9 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
-| 10 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
-| 11 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
+| 2 | `pnl_on_bitflyer_prices` | 代理(2 台) |
+| 3 | `liquidation_label_policy_pnl_net_of_cost` | 代理(2 台) |
+| 4 | `per_cascade_policy_pnl_value_label` | 代理(2 台) |
+| 5 | `optimized_fade_vs_policy_second_half` | 無関係(1 以下) |
+| 6 | `daily_pnl_distribution` | 無関係(1 以下) |
+| 7 | `jev_judgment_on_value_label` | 無関係(1 以下) |
+| 8 | `effective_spread_after_liquidation` | 無関係(1 以下) |
+| 9 | `position_size_by_cascade_notional` | 無関係(1 以下) |
+| 10 | `control_no_liquidation_same_momentum` | 無関係(1 以下) |
+| 11 | `daily_loss_cap_rule` | 無関係(1 以下) |
+| 12 | `optimized_fade_total_pnl_first_half` | 無関係(1 以下) |
+| 13 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
+| 14 | `value_label_calibration_bands` | 無関係(1 以下) |
+| 15 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
+| 16 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
+| 17 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
+| 18 | `order_book_depth_at_print` | 無関係(1 以下) |
 
 ### V-6 「**清算を検知→jevでこの清算は続くか判断**」(L-262)(印 △)
 
 | 順位 | 量 | 語 |
 |---|---|---|
 | 1 | `per_cascade_policy_pnl_value_label` | 代理(2 台) |
-| 2 | `optimized_fade_vs_policy_second_half` | 無関係(1 以下) |
+| 2 | `jev_judgment_on_value_label` | 代理(2 台) |
 | 3 | `per_cascade_policy_pnl_net_of_cost` | 無関係(1 以下) |
-| 4 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
-| 5 | `value_label_calibration_bands` | 無関係(1 以下) |
-| 6 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
-| 7 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
-| 8 | `daily_pnl_distribution` | 無関係(1 以下) |
-| 9 | `optimized_fade_total_pnl_first_half` | 無関係(1 以下) |
-| 10 | `effective_spread_after_liquidation` | 無関係(1 以下) |
-| 11 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
+| 4 | `optimized_fade_vs_policy_second_half` | 無関係(1 以下) |
+| 5 | `per_print_fixed_horizon_move` | 無関係(1 以下) |
+| 6 | `liquidation_label_policy_pnl_net_of_cost` | 無関係(1 以下) |
+| 7 | `perfect_judgment_value_label_reference` | 無関係(1 以下) |
+| 8 | `value_label_calibration_bands` | 無関係(1 以下) |
+| 9 | `label_agreement_value_vs_liquidation` | 無関係(1 以下) |
+| 10 | `daily_pnl_distribution` | 無関係(1 以下) |
+| 11 | `control_no_liquidation_same_momentum` | 無関係(1 以下) |
+| 12 | `pnl_on_bitflyer_prices` | 無関係(1 以下) |
+| 13 | `position_size_by_cascade_notional` | 無関係(1 以下) |
+| 14 | `order_book_depth_at_print` | 無関係(1 以下) |
+| 15 | `daily_loss_cap_rule` | 無関係(1 以下) |
+| 16 | `optimized_fade_total_pnl_first_half` | 無関係(1 以下) |
+| 17 | `effective_spread_after_liquidation` | 無関係(1 以下) |
+| 18 | `knob_contribution_one_at_a_time` | 無関係(1 以下) |
+
+
+### 対照で合わせる変数
+
+| 順位 | 変数 | 語 |
+|---|---|---|
+| 1 | `effective_spread_c` | 合わせる |
+| 2 | `delay_seconds` | 合わせる |
+| 3 | `entry_position` | 合わせなくてよい |
+| 4 | `cascade_size` | 合わせなくてよい |
+| 5 | `half_base_rate` | 合わせなくてよい |
+| 6 | `side` | 合わせなくてよい |
+| 7 | `pre_volatility_60s` | 合わせなくてよい |
+| 8 | `cascade_notional` | 合わせなくてよい |
+| 9 | `day` | 合わせなくてよい |
+| 10 | `time_of_day` | 合わせなくてよい |
 

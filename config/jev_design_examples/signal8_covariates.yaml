@@ -1,0 +1,11 @@
+# SIGNAL 値段の続き + 全部逆張りの最適化(2026-09-21、L-342)。判定の量(後半 2,000 本での方策ごとの連鎖 1 本の費用込み損益)が構造的に依存し得る変数。
+cascade_size: "number of liquidation prints in the cascade (known only after the cascade ends)"
+entry_position: "position in the cascade at which the policy first entered (first print, or a later print)"
+side: "whether the cascade liquidated longs or shorts"
+time_of_day: "UTC hour of the first print"
+day: "calendar day of the cascade (daily clustering of price regime and volatility)"
+pre_volatility_60s: "realized price range in the 60 s before the first print"
+cascade_notional: "total liquidated notional of the cascade"
+half_base_rate: "share of prints with price continuation in the half the model was fitted on versus the half it is evaluated on"
+delay_seconds: "assumed delay between detection and order (0.5, 1, 2 s)"
+effective_spread_c: "effective spread used as the per-position cost"
