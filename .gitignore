@@ -66,3 +66,9 @@ deploy/_restart_all_copy.bat
 # **そちらは `trace_metrics.py` の R4(道具の入力に `owner_unlock_` が現れた回数)で数える。**
 # 2 つの出所が食い違ったら、**差分の方を正とする**(TRACE は言及も数えるため)。
 !.claude/state/owner_unlock_*
+
+# 2026-09-21 (ACTION_LOG 073): the 6 stage-A main tables are kept in git as
+# table.csv.gz (d971930, L-230); the uncompressed table.csv beside each one is
+# the MD5SUMS-listed working copy that 50 real-data tests read. It is derived
+# (zcat table.csv.gz > table.csv), 91 MB, and must never be deleted as "untracked".
+backtest_data/o3c_reaction_20260918_full/gap*/table.csv

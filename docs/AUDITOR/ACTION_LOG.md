@@ -9404,3 +9404,10 @@ L-331 で見つかった `data_quality.py`(09-18 18:09 JST 起動、3 日居座�
 - **実機でしか分からないこと**: 初回の全件は 600 秒 × 15 分ごとの回で少しずつ進む(何回で終わるかは未測定。進捗行は `logs\fetch_all.out.log`)。側ファイルは 1 本ごとに全体を書き直す(実機の大きさは未測定)。**schema を変えても content_key が同じファイルは前回の結果を再利用する**(schema を変えたら `data/QUALITY.json` と `data/QUALITY.cache.json` を消して 1 回流す。今回は実機にキャッシュが無いので初回から新 schema)。
 - **PC 側**: 旧コードのままだと 15 分ごとの回が `data_quality.py` で止まり、次の回(tape の抽出を含む)が始まらない。`git pull` 1 回で新コードに切り替わる。
 
+## 073 — リードの誤削除と復元: 段 A の主表 `table.csv` × 6(2026-09-21)
+
+- **何をしたか(誤り)**: 停止時のフックが「未追跡ファイルをコミットせよ」と催促するたびに、`backtest_data/o3c_reaction_20260918_full/gap*/table.csv` 6 本を「追跡済み `table.csv.gz` と同一の複製」と `cmp` で確かめて**消した**(本日、L-324 の回)。台帳 `MD5SUMS` がその `table.csv` を正本として載せていること、d971930(L-230)が「gz は保全用、csv は作業用」として意図的に未追跡にしていたことを見ていなかった。結果、全スイートの skip が 4 → 54(`test_o3c_signal_explore2〜5` 49 件 + `test_o3c_reaction_r2` 1 件が「1 周目の表が無い」で skip)。A-11(ぱっと見で判定)に当たる。
+- **復元**: `zcat table.csv.gz > table.csv` × 6、`md5sum -c MD5SUMS` 6 単位とも OK。再実行で該当 5 ファイルの試験が走ることを確認(結果は下)。
+- **再発防止**: `.gitignore` に `backtest_data/o3c_reaction_20260918_full/gap*/table.csv` を理由つきで追加(未追跡の催促に出なくなる)。
+- **再実行の結果**: `pytest tests/test_o3c_signal_explore2.py …explore5.py tests/test_o3c_reaction_r2.py` → `100 passed in 80.73s`(skip 0)。全スイートの skip は 4 件に戻る見込み(全スイートは再実行していない)。
+
