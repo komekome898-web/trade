@@ -465,8 +465,7 @@ type data\latency\api_probe.csv
 1 件ごとの記録の代わりにはならない(1 分ごとのロング清算量・ショート清算量だけ)。それでも「その分にどれだけ清算されたか」は残る。
 鍵 `COINALYZE_API_KEY` は P9 で PC の `.env` に入れたもの。
 
-**注意(2026-09-21 訂正、L-326)**: この道具はリードのブランチ `claude/jev-eval-001-production-fq5o7w` にあり、
-PC のブランチ `claude/bitflyer-trading-bot-hhxxaf` には**まだ無い**。`git pull` では降りてこないので、
+**注意(2026-09-21 訂正、L-326 → L-327 で解消)**: この道具は当初リードのブランチにしか無かったが、L-327 の承認で PC のブランチ `claude/bitflyer-trading-bot-hhxxaf` に合流済み(f6908a4)。**`git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf` で降りる。**下の `git fetch` / `git checkout` の 2 行は不要になったが、打っても害はない。`git pull` では降りてこないので、
 2 行目でファイルだけ取り出す。**先頭の `.venv\Scripts\python.exe` を省くと PowerShell が .py を
 コマンドとして探して失敗する**(「モジュール 'scripts' を読み込むことができませんでした」)。
 
