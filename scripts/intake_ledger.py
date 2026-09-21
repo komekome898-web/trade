@@ -62,6 +62,7 @@ ROOT_NAMES = ["data", "paper_logs", "backtest_data", "data/archive"]
 
 # Ledger's own output files live under data/ — never treat them as data.
 SELF_FILES = {"data/INTAKE.jsonl", "data/INTAKE_latest.json", "data/QUALITY.json",
+              "data/QUALITY.cache.json", "data/QUALITY.cache.json.tmp",
               "data/WS_GZ_LISTING.json", "data/SNAPSHOT_VERIFY.json"}
 
 SKIP_DIR_NAMES = {"__pycache__", ".git"}

@@ -9396,3 +9396,11 @@ L-331 で見つかった `data_quality.py`(09-18 18:09 JST 起動、3 日居座�
 - **tape の穴**: 09-18 07:24〜09-21 02:36 UTC が共有 7aaa2ba で埋まった(数値は L-340 / `DATA.md`)。API の取り直しとの突き合わせで、tape は WS 再接続の ±2 分に約定を落とす(4,173 行の 47%)ことが分かった = 約定だけなら公開 API の方が完全(31 日以内)。
 - **`data_quality.py`**: 今回の実行でも同じ工程で止まった(L-339)。オーナーが止めて bat を先に進めた。修正は委任中(差分スキャン・進捗の出力・EOFError/zlib.error)。
 
+## 072 — `data_quality.py` を 15 分の回を止めない形に直した(委任 → リード検収、2026-09-21)
+
+- **変更**(委任先の 2 段、リードが差分を読んで検収): (1) 差分スキャン: 索引の content_key(bytes / mtime / md5)が前回と同じファイルは検査を飛ばして前回の結果を再利用。`QUALITY.json` に新キー `file_cache`(既存 5 キーは不変)。(2) 進捗をファイルごとに 1 行 `flush=True` で出す。(3) except に `EOFError` / `zlib.error`(末尾切れ・壊れた gz 1 本で run() が落ちていた)。(4) **途中保存**: 1 本検査するごとに `data/QUALITY.cache.json` を原子的に書き直す(殺されても続きから)。(5) **時間予算** `--max-seconds`(`fetch_all.bat` は 600)。超えたら残りを次の回に回して exit 0。(6) `board_top10_*.csv.gz` の schema を `schema/bitflyer_tape.json` に追加(41 列。無いと全行を丸ごと辞書に抱える経路に落ちていた)。(7) リードが `intake_ledger.py` の `SELF_FILES` に `QUALITY.cache.json`(と `.tmp`)を足した(台帳が自分の側ファイルを在庫として拾わないように)。
+- **試験**: 新規 10 件(`tests/test_data_quality_incremental.py`: 2 回目は検査 0 件 / 変更分だけ再検査 / 末尾切れ gz / zlib.error / 旧形式 QUALITY.json / 壊れた JSON / 3 本目で落ちたあと続きから / 予算で 2 本目で打ち切り → 次の回で続き / 予算 0 = 無制限 / board_top10 が schema に当たる)。関連 264 件通過、ruff 通過。全スイートは裏で実行中。
+- **合成データの実測**(20 本 × 20,000 行): 1 回目 1.7 秒 → 2 回目 0.06 秒。予算 0.5 秒で 6 本ずつ進み 3 回で完走。SIGKILL 後も側ファイルに途中までの結果が残り、次の回は続きから。
+- **実機でしか分からないこと**: 初回の全件は 600 秒 × 15 分ごとの回で少しずつ進む(何回で終わるかは未測定。進捗行は `logs\fetch_all.out.log`)。側ファイルは 1 本ごとに全体を書き直す(実機の大きさは未測定)。**schema を変えても content_key が同じファイルは前回の結果を再利用する**(schema を変えたら `data/QUALITY.json` と `data/QUALITY.cache.json` を消して 1 回流す。今回は実機にキャッシュが無いので初回から新 schema)。
+- **PC 側**: 旧コードのままだと 15 分ごとの回が `data_quality.py` で止まり、次の回(tape の抽出を含む)が始まらない。`git pull` 1 回で新コードに切り替わる。
+

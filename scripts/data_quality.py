@@ -89,11 +89,14 @@ import csv
 import fnmatch
 import gzip
 import json
+import os
 import re
 import sys
+import time
+import zlib
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
@@ -576,11 +579,11 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                             try:
                                 o = float(row[ohlc_idx["open"]])
                                 h = float(row[ohlc_idx["high"]])
-                                l = float(row[ohlc_idx["low"]])
+                                lo = float(row[ohlc_idx["low"]])
                                 c = float(row[ohlc_idx["close"]])
                             except (ValueError, TypeError, IndexError):
-                                o = h = l = c = None
-                            if o is not None and o == h == l == c:
+                                o = h = lo = c = None
+                            if o is not None and o == h == lo == c:
                                 maint_count += 1
                                 if len(maint_examples) < MAX_EXAMPLES:
                                     maint_examples.append({"row": row_i, "ts": dt2.isoformat(), "value": o})
@@ -679,7 +682,11 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                     "median_gap_seconds": gap_median,
                     "examples": gap_examples,
                 }
-    except (OSError, gzip.BadGzipFile, csv.Error) as exc:
+    except (OSError, EOFError, zlib.error, gzip.BadGzipFile, csv.Error) as exc:
+        # EOFError: a gzip member without its end-of-stream marker (a file
+        # still being written, or cut off). zlib.error: a corrupt deflate
+        # stream. Neither is an OSError subclass, so without naming them here
+        # one bad file used to abort the whole run() (ACTION_LOG 070).
         result["scan_error"] = {"count": 1, "examples": [{"error": f"{type(exc).__name__}: {exc}"}]}
 
     return _apply_check_switches(result, quality)
@@ -690,7 +697,64 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
 # --------------------------------------------------------------------------
 
 
-def run(root: Path) -> dict:
+QUALITY_REL_PATH = Path("data") / "QUALITY.json"
+# Checkpoint side file: rewritten after every scanned file so a run that is
+# killed part-way (ACTION_LOG 070: 3 days on the owner PC) still leaves the
+# per-file results it did finish, and the next run resumes after them.
+QUALITY_CACHE_REL_PATH = Path("data") / "QUALITY.cache.json"
+
+
+def _read_file_cache(path: Path) -> Optional[dict]:
+    """The `file_cache` dict stored in a JSON file, or None when the file is
+    missing, unreadable, or has no dict-valued `file_cache` (an older
+    QUALITY.json)."""
+    if not path.exists():
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            prev = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    cache = prev.get("file_cache") if isinstance(prev, dict) else None
+    return cache if isinstance(cache, dict) else None
+
+
+def load_previous_cache(root: Path) -> dict:
+    """Per-file cache (rel_path -> {"content_key": [...], "result": {...}})
+    from the checkpoint side file first, else from the previous run's
+    data/QUALITY.json. {} when neither has one."""
+    for rel in (QUALITY_CACHE_REL_PATH, QUALITY_REL_PATH):
+        cache = _read_file_cache(root / rel)
+        if cache is not None:
+            return cache
+    return {}
+
+
+def write_cache_checkpoint(root: Path, file_cache: dict) -> Path:
+    """Atomically rewrite the checkpoint side file (temp file + os.replace,
+    so a kill mid-write cannot leave a half-written JSON behind)."""
+    path = root / QUALITY_CACHE_REL_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"generated_at": datetime.now(timezone.utc).isoformat(), "file_cache": file_cache}, f,
+                  ensure_ascii=False, sort_keys=True)
+    os.replace(tmp, path)
+    return path
+
+
+def _cache_key(rec: dict) -> list:
+    """The ledger record's content identity (bytes / mtime / md5 as
+    intake_ledger.content_key computes it), as a JSON-friendly list."""
+    return list(il.content_key(rec))
+
+
+def run(root: Path, max_seconds: float = 0.0) -> dict:
+    """max_seconds > 0: stop scanning new files once that much wall time has
+    passed since run() started (already-cached files are still reused, they
+    cost no I/O); the unscanned remainder is picked up by the next run via
+    the checkpoint. 0 = no limit."""
+    t_start = time.monotonic()
     latest_path = root / "data" / "INTAKE_latest.json"
     index = il.load_latest(latest_path)
     schemas = load_schemas(root)
@@ -698,23 +762,59 @@ def run(root: Path) -> dict:
     datasets: dict[str, dict] = {}
     schema_undefined: list[str] = []
 
-    for rel_path, rec in sorted(index.items()):
-        if rec.get("status") != "present":
-            continue
-        if il.tabular_kind(Path(rel_path).name) is None:
-            continue
+    # Incremental scan (ACTION_LOG 070): a file whose ledger content_key is
+    # unchanged since the previous QUALITY.json reuses that run's per-file
+    # result instead of being re-read. Files gone from the index drop out
+    # of the cache because only files seen this run are written back.
+    prev_cache = load_previous_cache(root)
+    file_cache: dict[str, dict] = {}
+    # checkpoint = previous entries (still valid until this run reaches or
+    # drops them) overlaid with this run's fresh scans; rewritten per scan.
+    checkpoint: dict[str, dict] = dict(prev_cache)
+    exhausted = False
+    targets = [
+        (rel_path, rec)
+        for rel_path, rec in sorted(index.items())
+        if rec.get("status") == "present" and il.tabular_kind(Path(rel_path).name) is not None
+    ]
+    n_total = len(targets)
+    n_skipped = 0
 
+    for i, (rel_path, rec) in enumerate(targets, start=1):
         schema = match_dataset(rel_path, schemas)
+
+        key = _cache_key(rec)
+        cached = prev_cache.get(rel_path)
+        if isinstance(cached, dict) and cached.get("content_key") == key and isinstance(cached.get("result"), dict):
+            file_result = cached["result"]
+            n_skipped += 1
+        else:
+            if not exhausted and max_seconds > 0 and (time.monotonic() - t_start) > max_seconds:
+                exhausted = True
+                print(
+                    f"data_quality: budget exhausted after {i - 1}/{n_total} files "
+                    f"({time.monotonic() - t_start:.1f}s); the rest resumes next run",
+                    flush=True,
+                )
+            if exhausted:
+                continue  # not checked this run: not counted, not cached, resumes next run
+            t0 = time.monotonic()
+            file_result = scan_file(root, rel_path, schema)
+            print(
+                f"data_quality: {i}/{n_total} {rel_path} {rec.get('row_count')} {time.monotonic() - t0:.1f}s",
+                flush=True,
+            )
+            checkpoint[rel_path] = {"content_key": key, "result": file_result}
+            write_cache_checkpoint(root, checkpoint)
+        file_cache[rel_path] = {"content_key": key, "result": file_result}
+
         if schema is None:
             schema_undefined.append(rel_path)
             dataset_name = "schema_undefined"
         else:
             dataset_name = schema.get("dataset", "schema_undefined")
-
         d = datasets.setdefault(dataset_name, {"files_checked": 0, "files_flagged": 0, "checks": {}})
         d["files_checked"] += 1
-
-        file_result = scan_file(root, rel_path, schema)
         if not file_result:
             continue
         d["files_flagged"] += 1
@@ -732,18 +832,25 @@ def run(root: Path) -> dict:
             if len(agg["examples"]) < MAX_EXAMPLES:
                 agg["examples"].append({"path": rel_path, **{k: v for k, v in payload.items() if k != "count"}})
 
+    if n_skipped:
+        print(f"data_quality: skipped {n_skipped} unchanged", flush=True)
+    # final checkpoint = exactly what QUALITY.json carries: only files seen
+    # this run (entries for files gone from the index drop out here).
+    write_cache_checkpoint(root, file_cache)
+
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "ledger_source": str(latest_path.relative_to(root)) if latest_path.exists() else None,
         "datasets": datasets,
         "schema_undefined_files": sorted(set(schema_undefined)),
         "schema_undefined_count": len(set(schema_undefined)),
+        "file_cache": file_cache,
     }
     return report
 
 
 def write_report(root: Path, report: dict) -> Path:
-    out_path = root / "data" / "QUALITY.json"
+    out_path = root / QUALITY_REL_PATH
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, sort_keys=True, indent=1)
@@ -789,17 +896,20 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--root", default=str(REPO_ROOT), help="repo root (default: this repo)")
     ap.add_argument("--summary", action="store_true", help="print a per-dataset summary table")
+    ap.add_argument("--max-seconds", type=float, default=0.0,
+                    help="stop scanning new files after this many seconds (0 = no limit); "
+                         "the rest resumes next run from data/QUALITY.cache.json")
     args = ap.parse_args()
 
     root = Path(args.root).resolve()
-    report = run(root)
+    report = run(root, max_seconds=args.max_seconds)
     out_path = write_report(root, report)
 
     total_hits = sum(
         sum(c.get("count", 0) for c in d.get("checks", {}).values())
         for d in report["datasets"].values()
     )
-    print(f"data_quality: {len(report['datasets'])} datasets, {total_hits} flagged rows total -> {out_path}")
+    print(f"data_quality: {len(report['datasets'])} datasets, {total_hits} flagged rows total -> {out_path}", flush=True)
 
     if args.summary:
         print()

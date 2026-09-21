@@ -71,7 +71,7 @@ rem intentionally ignored here so the rest of fetch_all still runs.
 rem Read-only listing of every data\ws recording (member count, complete?, recoverable
 rem rows) -> data\WS_GZ_LISTING.json; shared by share_logs.bat (docs/DATA.md section 0).
 ".venv\Scripts\python.exe" "scripts\repair_gz_listing.py" --json "data\WS_GZ_LISTING.json" >> "logs\fetch_all.out.log" 2>&1
-".venv\Scripts\python.exe" "scripts\data_quality.py" >> "logs\fetch_all.out.log" 2>&1
+".venv\Scripts\python.exe" "scripts\data_quality.py" --max-seconds 600 >> "logs\fetch_all.out.log" 2>&1
 rem Ledger cross-check (owner decision L-190): lists backtest_data\ units that
 rem have no row in docs\DATA.md, docs\DATA.md location paths that do not exist,
 rem files placed without going through the intake ledger, and rows whose
