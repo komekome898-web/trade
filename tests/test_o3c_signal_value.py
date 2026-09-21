@@ -532,11 +532,20 @@ def test_stage1_outputs_present_and_consistent_if_run():
     assert "日ごとの内訳(なぜを読むため)" in sel
 
 
-def test_stage2_is_implemented_but_not_run_in_this_unit():
-    """段2 は実装だけ(後半 2,000 本は別の委任で一度だけ)。この環境で走っていない
-    ことを、出力が無いことで確かめる。"""
+def test_stage2_ran_exactly_once_and_kept_the_rows():
+    """段2 は 2026-09-21 に**一度だけ**走った(オーナー承認 L-352)。
+    出力があるなら、連鎖 1 本ごとの行と判断の行が残っていて、Q0 の MD5 照合が
+    前段と一致していること。まだ走っていない環境では飛ばす。"""
     assert callable(vv.run_stage2)
-    assert not (vv.DEFAULT_OUT_STAGE2 / "summary.json").exists()
+    if not (vv.DEFAULT_OUT_STAGE2 / "cascades.csv.gz").exists():
+        pytest.skip("段2 がまだこの環境で実行されていない")
+    for name in ("cascades.csv.gz", "prints_policy.csv.gz", "q0_selfcheck.csv"):
+        assert (vv.DEFAULT_OUT_STAGE2 / name).exists(), name
+    q0 = pd.read_csv(vv.DEFAULT_OUT_STAGE2 / "q0_selfcheck.csv")
+    d = dict(zip(q0["項目"], q0["値"]))
+    assert str(d["前段と同一か"]) == "1"
+    assert str(d["この単位にだけある bundle_id"]) == "0"
+    assert str(d["前段にだけある bundle_id"]) == "0"
 
 # ===========================================================================
 # 反証者レビュー9(2026-09-21)を受けた直しの試験
@@ -862,8 +871,8 @@ def test_stage2_dry_run_builds_every_table_without_reading_the_back_half(tmp_pat
     main = pd.read_csv(out / "q4_main.csv")
     assert {"①3択A", "①3択B", "全部逆張り(素)", "前段の3択(清算)A",
             "完全な判断(値段)A"} <= set(main["方策"])
-    # 後半の本物の出力は作られていない
-    assert not (vv.DEFAULT_OUT_STAGE2 / "summary.json").exists()
+    # dry-run は本物の段2 の出力先には書かない
+    assert out != vv.DEFAULT_OUT_STAGE2
 
 
 def test_synthetic_stage2_inputs_are_synthetic_only():
@@ -1127,3 +1136,151 @@ def test_from_rows_never_reads_the_back_half_source():
     for forbidden in ("ROWS_CONTINUE", "ROWS_MATERIALS", "load_prints",
                       "select_stage2_cascades", "WindowCache"):
         assert forbidden not in body, forbidden
+
+
+# ===========================================================================
+# L-352: 参照行「① 3 択 A、出口 = 最後のプリント + 300 秒 + 遅れ」
+# ===========================================================================
+def test_exit300_reference_changes_only_the_forced_close_time():
+    """判断・帯・行動は ① 3 択 A のまま、**建玉を持ったまま連鎖の終わりに達したときの
+    強制決済の時刻だけ**が「最後のプリント + 300 秒 + 遅れ」になる。"""
+    P = vv.sp
+    times = np.arange(0, 1_200_000, 1_000, dtype=np.int64)
+    prices = 100.0 + times / 1.0e7
+
+    def price_fn(t_ms):
+        return vv.price_at_or_after(times, prices, int(t_ms))
+
+    prints = [{"print_id": "a", "ts_ms": 10_000, "side": "SELL"},
+              {"print_id": "b", "ts_ms": 40_000, "side": "SELL"}]
+    jud = [vv.JUDGE_STOP, vv.JUDGE_UNKNOWN]          # 逆張りで入って持ったまま終わる
+    end60 = 40_000 + vv.CASCADE_END_GAP_S * 1000
+    end300 = 40_000 + vv.EXIT_HOLD_S * 1000
+    r60 = P.simulate_cascade(prints, jud, -1.0, vv.TYPE_A, 1, price_fn, end60)
+    r300 = P.simulate_cascade(prints, jud, -1.0, vv.TYPE_A, 1, price_fn, end300)
+    # 判断と行動の列は同じ(最後の強制決済の行だけ時刻が違う)
+    assert [x["判断"] for x in r60["path"]] == [x["判断"] for x in r300["path"]]
+    assert [x["行動"] for x in r60["path"]] == [x["行動"] for x in r300["path"]]
+    assert r60["path"][-1]["ts_ms"] == end60
+    assert r300["path"][-1]["ts_ms"] == end300
+    assert r300["hold_seconds"] > r60["hold_seconds"]
+    assert r300["n_entries"] == r60["n_entries"]
+    # 途中で決済してしまう連鎖(建玉が残らない)では 2 つは完全に同じ
+    jud_close = [vv.JUDGE_STOP, vv.JUDGE_CONTINUE]   # 型 A は次のプリントで決済
+    c60 = P.simulate_cascade(prints, jud_close, -1.0, vv.TYPE_A, 1, price_fn, end60)
+    c300 = P.simulate_cascade(prints, jud_close, -1.0, vv.TYPE_A, 1, price_fn, end300)
+    assert c60["pnl_bp"] == pytest.approx(c300["pnl_bp"])
+    assert c60["hold_seconds"] == pytest.approx(c300["hold_seconds"])
+
+
+def test_run_policies_emits_the_exit300_reference_line():
+    times = np.arange(0, 1_200_000, 1_000, dtype=np.int64)
+    prices = 100.0 + times / 1.0e7
+    cache = vv.SyntheticCache(times, prices)
+    cascades = {"c1": [
+        {"print_id": "p1", "ts_ms": 10_000, "side": "SELL", "day": "2024-03-01",
+         vv.LABEL_VALUE: 1, vv.sp.MAT1_COL: 0},
+        {"print_id": "p2", "ts_ms": 40_000, "side": "SELL", "day": "2024-03-01",
+         vv.LABEL_VALUE: 0, vv.sp.MAT1_COL: 1}]}
+    prob = {"p1": 0.10, "p2": 0.50}
+    pos = {"p1": vv.POS_1ST, "p2": vv.POS_CHAIN}
+    bands = {vv.POS_1ST: (0.38, 0.5), vv.POS_CHAIN: (0.56, 0.66)}
+    base = {vv.POS_1ST: 0.4343, vv.POS_CHAIN: 0.5999}
+    off = vv.run_policies(cascades, prob, pos, bands, base, cache)
+    on = vv.run_policies(cascades, prob, pos, bands, base, cache, with_exit300=True)
+    assert vv.EXIT300_POLICY not in {r["方策"] for r in off["cascade_rows"]}
+    extra = [r for r in on["cascade_rows"] if r["方策"] == vv.EXIT300_POLICY]
+    assert len(extra) == len(vv.DELAYS_S)            # 型 A のみ × 遅れ 3
+    assert {r["型"] for r in extra} == {vv.TYPE_A}
+    assert {r["出口の理由"] for r in extra} == {vv.EXIT300_REASON}
+    base_rows = [r for r in on["cascade_rows"]
+                 if r["方策"] == "logistic_3択" and r["型"] == vv.TYPE_A]
+    assert len(base_rows) == len(vv.DELAYS_S)
+    # 建玉を持ったまま終わる連鎖なので、300 秒の方が保有秒は長い
+    b1 = [r for r in base_rows if r["遅れ_秒"] == vv.MAIN_DELAY][0]
+    e1 = [r for r in extra if r["遅れ_秒"] == vv.MAIN_DELAY][0]
+    assert e1["保有秒"] > b1["保有秒"]
+    assert e1["建玉の回数"] == b1["建玉の回数"]
+    # Q4 の線と対差に入る
+    assert (vv.EXIT300_LINE, vv.EXIT300_POLICY, vv.TYPE_A) in vv.Q4_LINE_SPEC
+    assert len(vv.Q4_LINE_SPEC) == 7
+    pairs = vv.q4_pairs({n: [] for n, _p, _t in vv.Q4_LINE_SPEC})
+    assert (vv.EXIT300_LINE, "②opt") in pairs
+    assert len(pairs) == 4
+
+
+@needs_data
+def test_stage1_outputs_carry_the_exit300_line():
+    path = vv.DEFAULT_OUT / "dist_table.csv"
+    if not path.exists():
+        pytest.skip("段1 がまだこの環境で実行されていない")
+    d = pd.read_csv(path)
+    assert vv.EXIT300_POLICY in set(d["方策"])
+    pb = pd.read_csv(vv.DEFAULT_OUT / "position_breakdown.csv")
+    assert vv.EXIT300_POLICY in set(pb["方策"])
+    casc = pd.read_csv(vv.DEFAULT_OUT / "cascades.csv.gz", usecols=["方策"])
+    assert vv.EXIT300_POLICY in set(casc["方策"])
+
+
+# ===========================================================================
+# 段2 の未計算ブロックの再開(2026-09-21、リードの決定「未決 1」)
+# ===========================================================================
+
+def test_q5b_label_follows_the_half_that_was_measured():
+    """Q5b の行の「経路」は測った半期を名乗る(段1 = 前半、段2 = 後半)。"""
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    body = src[src.index("def run_q5b("):src.index("# 13. 段2")]
+    head = src[src.index("def run_q5b("):src.index("def run_q5b(") + 500]
+    assert 'half_label: str = "前半"' in head          # 段1 の既定
+    # 行を作るところに「前半」の直書きが残っていない
+    assert "前半" not in body[body.index("rows = []"):]
+    assert 'secs_label = f"秒単位(標本日に掛かる{half_label}の連鎖)"' in body
+    assert 'minute_label = f"1分の始値({half_label}の全連鎖)"' in body
+    # 段2 と再開はどちらも後半を渡す
+    assert src.count("half_label=BACK_HALF") == 2
+
+
+@needs_data
+def test_stage2_q5b_output_names_the_back_half():
+    path = vv.DEFAULT_OUT_STAGE2 / "q5b_secs_secondhalf.csv"
+    if not path.exists():
+        pytest.skip("段2 がまだこの環境で実行されていない")
+    d = pd.read_csv(path)
+    routes = set(d["経路"])
+    assert "秒単位(標本日に掛かる後半の連鎖)" in routes
+    assert "1分の始値(後半の全連鎖)" in routes
+    assert not [r for r in routes if "前半" in r]
+    pop = d[d["区分"] == "(母集団)"]
+    assert int(pop["対の数"].iloc[0]) == 506       # 後半の全連鎖 ∩ 標本日
+
+
+@needs_data
+def test_resume_did_not_touch_the_cascade_rows():
+    """再開は Q1 併記・Q5b・Q0 の追加だけを作り、連鎖ごとの行に触っていない。"""
+    out = vv.DEFAULT_OUT_STAGE2
+    js = out / "resume_summary.json"
+    if not js.exists():
+        pytest.skip("再開がまだこの環境で実行されていない")
+    s = json.loads(js.read_text(encoding="utf-8"))
+    kept = s["触っていないもの(MD5 が前後で同じ)"]
+    for name, md5 in kept.items():
+        assert vv.md5_of(out / name) == md5
+    assert s["Q5b(a) の母集団"] == 506
+
+
+def test_resume_reads_only_the_outside_bundle_back_half_rows():
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    body = src[src.index("def outside_bundle_back_half_rows("):
+               src.index("def run_resume(")]
+    assert 'bundle_id' in body and 'isna()' in body
+    assert vv.BACK_HALF in body
+
+
+def test_resume_raises_when_the_rows_changed():
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    body = src[src.index("def run_resume("):]
+    body = body[:body.index("\ndef ")] if "\ndef " in body else body
+    assert "frozen = {n: md5_of(out_dir / n)" in body
+    assert "after = {n: md5_of(out_dir / n)" in body
+    assert "cascades.csv.gz" in body and "prints_policy.csv.gz" in body
+    assert "raise RuntimeError" in body and "連鎖ごとの行が変わった" in body

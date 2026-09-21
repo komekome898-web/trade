@@ -1,6 +1,6 @@
 {
   "段": "段1(前半だけ)",
-  "実行時刻(UTC)": "2026-09-21T10:06:00.206302+00:00",
+  "実行時刻(UTC)": "2026-09-21T10:43:02.062539+00:00",
   "委任文": "docs/DATA/delegations/20260921_o3c_signal_value_prompt.md",
   "設計": "docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_DESIGN_2026-09-21.md",
   "種": 20260920,
@@ -111,7 +111,7 @@
   },
   "連鎖 1 本ごとの行": {
     "ファイル": "cascades.csv.gz",
-    "行数": 65697
+    "行数": 67497
   },
   "露出": [
     {
@@ -294,7 +294,7 @@
     "config/o3c_signal_logit_value_first.yaml": "a08c164861a7bd549c61545829bd0735",
     "config/o3c_signal_logit_value_chain.yaml": "0360286c0adc1359798d46b158b4fac8"
   },
-  "所要秒": 99.9,
+  "所要秒": 99.4,
   "行数の内訳": {
     "q0_selfcheck.csv": 28,
     "calib_first.csv": 34,
@@ -303,13 +303,13 @@
     "grid.csv": 189,
     "knob_contrib.csv": 16,
     "exposure.csv": 3,
-    "dist_table.csv": 252,
-    "position_breakdown.csv": 126,
+    "dist_table.csv": 270,
+    "position_breakdown.csv": 135,
     "judge_counts.csv": 24,
-    "action_counts.csv": 54,
+    "action_counts.csv": 59,
     "synthetic_traces.csv": 28,
     "q5b_secs_firsthalf.csv": 12
   },
-  "行数の合計": 801,
-  "数値セル数(tables.md)": 8328
+  "行数の合計": 833,
+  "数値セル数(tables.md)": 8626
 }

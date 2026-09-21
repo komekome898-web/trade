@@ -1,0 +1,49 @@
+{
+  "段": "段2 の集計を `from-rows` で組み直したもの",
+  "実行時刻(UTC)": "2026-09-21T11:01:22.550573+00:00",
+  "委任文": "docs/DATA/delegations/20260921_o3c_signal_value_prompt.md",
+  "設計": "docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_DESIGN_2026-09-21.md",
+  "読んだもの": [
+    "cascades.csv.gz",
+    "prints_policy.csv.gz"
+  ],
+  "読んでいないもの": [
+    "rows_continue",
+    "rows_materials",
+    "Binance の約定",
+    "後半の生データ"
+  ],
+  "連鎖 1 本ごとの行": 306855,
+  "並べた線": [
+    "①3択A",
+    "①3択B",
+    "①3択A(出口300秒)",
+    "全部逆張り(素)",
+    "前段の3択(清算)A",
+    "完全な判断(値段)A",
+    "②opt"
+  ],
+  "行から組み直せない表(そのまま残した)": [
+    "q0_selfcheck.csv"
+  ],
+  "費用": {
+    "主のc_bp": 0.0,
+    "p75_bp": NaN
+  },
+  "行数の内訳": {
+    "q0_selfcheck.csv": 9,
+    "dist_table.csv": 306,
+    "position_breakdown.csv": 126,
+    "q4_main.csv": 14,
+    "q4_pair_diff.csv": 8,
+    "q4_by_day.csv": 7,
+    "q4_by_side.csv": 14,
+    "q4_by_size.csv": 19,
+    "q4_by_position.csv": 15,
+    "q4_exposure.csv": 7,
+    "judge_counts.csv": 24,
+    "action_counts.csv": 64
+  },
+  "行数の合計": 613,
+  "数値セル数(tables.md)": 5055
+}
