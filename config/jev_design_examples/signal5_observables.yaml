@@ -1,0 +1,8 @@
+# SIGNAL 探索段 5(2026-09-20)。候補の観測量。起点 = 清算 1 件ごとのプリント。定義の文は英語。
+forward_move_all_prints: "mean and median signed price change from each liquidation print to h seconds later, using no information after the print; negative = price moved back against the liquidation direction"
+forward_move_by_premove: "the same forward move stratified by the pre-print move m(T) (signed change over the T seconds before the print), computed only from data before the print"
+forward_move_by_print_impact_and_premove: "the forward move stratified jointly by this print's own sweep k (price change across the print) and the pre-print move m"
+next_same_side_liquidation_rate: "share of prints followed by another same-side liquidation within 60 or 120 seconds, counted as an outcome (not used as a stratum)"
+forward_move_by_recent_density: "the forward move stratified by the number of same-side liquidations in the 5 minutes before the print (past only)"
+bundle_position_diagnostic: "forward move by the print's position in the exploration-4 bundle (first / middle / last); uses future information, diagnostic only, to reconcile with the bundle-end anchored -6.8 bp"
+control_same_premove: "forward move after non-liquidation times with the same pre-move m(T) over a fixed T-second window (control c')"

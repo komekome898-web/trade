@@ -1,0 +1,8 @@
+# probe `docs/DATA/probes/20260919_jev_select_rank_probe.py` の covariates 6 件を定義文そのままで写した。
+# jev_design.py rank-covariates の変数。
+dist_vwap_bp: distance in bp from the cascade price to the preceding W-hour VWAP at the moment of the cascade
+bin_pct: thinness of the price bin where the cascade occurred (share of volume in that bin)
+doi_pre_1h: change in open interest over the hour before the cascade
+side: whether the cascade liquidated longs or shorts
+time_of_day: UTC hour of the cascade
+cascade_size: number of liquidation events in the cascade

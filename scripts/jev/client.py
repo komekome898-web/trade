@@ -5,7 +5,9 @@
 ヘッダを付けずに送り、実行環境の代理サーバーが「API 資格情報」を付ける経路に依存する
 (2026-09-19 の実測: 資格情報を置いていない状態では 403 "Must supply an API key" が返る =
 代理サーバーは素通し。到達性は確認できた)。401 / 403 は `JevError`。
-ネットワークへは `urllib.request` でのみ触れる(`requests` は使わない)。
+ネットワークへは `urllib.request` でのみ触れる(`requests` は使わない)。**`keep_alive=True` のときだけ**
+標準ライブラリの `http.client` で 1 本の TLS 接続を使い回す(2026-09-20、L-323。1 回ごとの接続の張り直しが
+遅延の大半だったため。代理サーバー(`HTTPS_PROXY`)があれば CONNECT で通す)。
 
 呼び出しのたびに `log_dir/calls_<UTC日付>.jsonl` へ 1 行追記する。**state の本文は書かない**
 (モデル名・質問 ID・state の sha256/文字数・usage・レイテンシ・ステータスだけ)。
@@ -17,7 +19,11 @@ import json
 import os
 import sys
 import time
+import http.client
+import socket
+import ssl
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,9 +44,19 @@ class JevClient:
         timeout: float = 10.0,
         log_dir: str = "data/jev",
         base_url: str = "https://api.typesafe.ai",
+        keep_alive: bool = False,
     ) -> None:
         if api_key is None:
             api_key = os.environ.get("TYPESAFE_API_KEY")
+        if not api_key:
+            # オーナー PC では鍵が `.env` にある(L-209「PC は .env」)。フックから呼ばれると環境変数に無いので、
+            # リポジトリ直下の `.env` の TYPESAFE_API_KEY だけを読む(他の鍵は読まない。値はログに出さない)。
+            env_file = Path(__file__).resolve().parents[2] / ".env"
+            if env_file.is_file():
+                for line in env_file.read_text(encoding="utf-8", errors="replace").splitlines():
+                    if line.startswith("TYPESAFE_API_KEY="):
+                        api_key = line.split("=", 1)[1].strip().strip('"').strip("'") or None
+                        break
         # 鍵が無くても構築は失敗させない。この実行環境では、鍵を「API 資格情報」として
         # 代理サーバー側に置く経路がありうる(その場合 api.typesafe.ai 宛ての要求に
         # 代理サーバーが Authorization を付ける。鍵はこのプロセスには渡らない、という前提は
@@ -58,6 +74,8 @@ class JevClient:
             )
         self.api_key = api_key
         self.model = model
+        self.keep_alive = keep_alive
+        self._conn: http.client.HTTPSConnection | None = None
         self.timeout = timeout
         self.log_dir = Path(log_dir)
         self.base_url = base_url.rstrip("/")
@@ -93,12 +111,66 @@ class JevClient:
             )
         return headers
 
+    # --- 接続の使い回し(keep_alive=True のときだけ使う) ---------------------
+    def _open_conn(self) -> http.client.HTTPSConnection:
+        if self._conn is not None:
+            return self._conn
+        u = urllib.parse.urlparse(self.base_url)
+        host, port = u.hostname, u.port or 443
+        ctx = ssl.create_default_context()
+        proxy = urllib.request.getproxies().get("https")
+        if proxy:
+            pu = urllib.parse.urlparse(proxy)
+            conn = http.client.HTTPSConnection(pu.hostname, pu.port or 3128, context=ctx,
+                                               timeout=self.timeout)
+            conn.set_tunnel(host, port)
+        else:
+            conn = http.client.HTTPSConnection(host, port, context=ctx, timeout=self.timeout)
+        self._conn = conn
+        return conn
+
+    def close(self) -> None:
+        if self._conn is not None:
+            try:
+                self._conn.close()
+            finally:
+                self._conn = None
+
+    def _post_keep_alive(self, path: str, data: bytes, headers: dict) -> tuple[int, bytes]:
+        """1 回送って (status, body) を返す。切れていたら 1 回だけ張り直す。"""
+        for retry in (True, False):
+            conn = self._open_conn()
+            try:
+                conn.request("POST", path, body=data, headers=headers)
+                resp = conn.getresponse()
+                return resp.status, resp.read()
+            except (http.client.HTTPException, ConnectionError, socket.timeout, OSError):
+                self.close()
+                if not retry:
+                    raise
+        raise JevError("到達しない")
+
     def _post(self, path: str, body: dict) -> dict:
         url = f"{self.base_url}{path}"
         data = json.dumps(body, ensure_ascii=False).encode("utf-8")
         headers = self._headers()
         last_err: Exception | None = None
         for attempt, delay in enumerate((*_RETRY_DELAYS, None)):
+            if self.keep_alive:
+                try:
+                    status, raw = self._post_keep_alive(path, data, headers)
+                except (http.client.HTTPException, ConnectionError, socket.timeout, OSError) as e:
+                    raise JevError(f"接続の失敗: {e}") from e
+                if status == 200:
+                    return json.loads(raw.decode("utf-8"))
+                body_head = raw.decode("utf-8", errors="replace")[:200]
+                if status == 401:
+                    raise JevError("401: 鍵が無いか無効。環境変数 TYPESAFE_API_KEY か、環境の API 資格情報を確認")
+                if status in _RETRY_STATUSES and delay is not None:
+                    last_err = JevError(f"{status}: {body_head}")
+                    time.sleep(delay)
+                    continue
+                raise JevError(f"{status}: {body_head}")
             req = urllib.request.Request(url, data=data, headers=headers, method="POST")
             try:
                 with urllib.request.urlopen(req, timeout=self.timeout) as resp:

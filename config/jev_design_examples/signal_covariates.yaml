@@ -1,0 +1,12 @@
+# 清算を起点とした値動きの予測可能性(SIGNAL、2026-09-19)。対照で合わせる候補の変数 = 1 周目の表の列、または列から作る量(time_of_day は time_ms から作る。2026-09-19 の監査 2 で recent_volatility を外した = 表に無く作れない)。
+# jev_design.py rank-covariates の入力(判定の量 = bp_reactdir)。定義の文は英語。
+dist_vwap_bp: "distance in basis points from the cascade price to the volume-weighted average price of the preceding W hours, at the moment of the cascade"
+dist_node_bp: "distance in basis points from the cascade price to the nearest high-volume price node of the preceding W hours"
+bin_pct: "thinness of the price bin where the cascade occurred (share of the preceding W hours' volume in that bin)"
+bundle_n_events_dedup: "number of liquidation events in the cascade bundle (deduplicated)"
+bundle_total_notional: "total notional value liquidated in the bundle"
+bundle_width_ms: "duration of the bundle in milliseconds (first to last liquidation)"
+doi_pre_1h: "change in open interest over the hour before the cascade (contracts)"
+side: "whether the cascade liquidated longs (SELL) or shorts (BUY)"
+time_of_day: "UTC hour of the cascade (derived from the time_ms column)"
+implied_leverage: "implied leverage of the liquidated positions, from the distance to the liquidation price and the maintenance margin rate"

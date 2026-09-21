@@ -1,0 +1,107 @@
+# 委任のモデルの段の表(`scripts/jev_delegate.py` が読む)。
+#
+# 出所: `docs/DELEGATION.md` §7(モデルの使用規則の表と閾値)、
+#       `.claude/skills/delegated-study/SKILL.md` §1(分業の表)、
+#       `docs/JEV.md` §8 の U8。
+#
+# **Jev はここの段を選ばない。**Jev が出すのは分類の確率だけで、段は code が下の `rules` を
+# 上から順に当てて決める(U8 の逐語: 「**Jev が選ぶのではなく、規則の表を当てるための分類**」)。
+# 段を決めるのも「判定」ではない — 出すのは候補と印で、**判断は LLM とオーナー**(L-218)。
+#
+# **固有の製品名はこのファイルだけに置く**(スクリプトにもテストにも書かない)。
+# 段の呼び名(`label`)と役の呼び名(`model_tier`)は上の 2 文書の語をそのまま写す。
+# **最初の版。リードが後で直す前提**(2026-09-19、L-220「まだ有効活用できる用途はあります」)。
+
+version: 1
+updated: 2026-09-19
+
+thresholds:
+  # 選択(choice)の確信度がこの値未満なら、細かい段を名指しせず粗い答えに落とす
+  # (資料 E.16「Classification using confidence」)。
+  # スクリプト先頭の定数 `KIND_CONFIDENT` と同じ値であることを test が検査する。
+  kind_confident: 0.60
+
+tiers:
+  no_delegation:
+    label: "委任しない(リードの判断)"
+    who: "リード"
+    model_tier: "上位モデル"
+    model: opus
+    source: "docs/DELEGATION.md §7(リードの行: 案の選択と枠組み、事前登録の骨子、結果の読み)"
+    compares_as: no_delegation
+
+  no_model:
+    label: "模型不要(スクリプト)"
+    who: "—"
+    model_tier: "モデル不要"
+    model: null
+    source: "docs/JEV.md §4-4(数える・比べる・日付は code)"
+    compares_as: no_model
+
+  implementation:
+    label: "実装の段"
+    who: "下位モデル(委任先)"
+    model_tier: "下位モデル"
+    model: opus
+    source: ".claude/skills/delegated-study/SKILL.md §1(研究・実装: 検証スクリプト作成・実装変更)"
+    compares_as: implementation
+
+  work:
+    label: "作業の段"
+    who: "下位モデル(委任先)"
+    model_tier: "下位モデル"
+    model: sonnet
+    source: ".claude/skills/delegated-study/SKILL.md §1(データ収集: 取得・整形・スナップショット保存)"
+    compares_as: work
+
+  coarse:
+    label: "粗い答え: 作業の段(要確認)"
+    who: "下位モデル(委任先)"
+    model_tier: "下位モデル"
+    model: sonnet
+    source: "資料 E.16(確信度が足りないときは粗い答えを返す)"
+    # 一致件数を数えるときは「作業の段」と同じものとして扱う(段の名前は別のまま)。
+    compares_as: work
+
+# 上から順に当てて、最初に当たった規則の段を候補にする。
+rules:
+  - id: judgment
+    tier: no_delegation
+    kind: judgment_or_design
+    require_kind_confidence: true
+
+  - id: mechanical
+    tier: no_model
+    # noul には確信度が無い(docs/JEV.md §3)ので、確信度は条件に入れない。
+    noul_at_least:
+      is_mechanical: presence
+
+  - id: implementation
+    tier: implementation
+    kind: implementation
+    require_kind_confidence: true
+
+  - id: work
+    tier: work
+    kind_in: [measurement_or_execution, extraction_or_inventory, writing]
+    require_kind_confidence: true
+
+default_tier: coarse
+
+# 段とは別に付ける印。**印であって判断ではない。**
+marks:
+  - id: needs_owner_approval
+    label: "承認が要る"
+    noul_at_least:
+      needs_owner_approval: presence
+  - id: not_bounded
+    label: "完了の形が無い"
+    # 肯定形で聞いた `is_bounded` の「反する側」= 1 - noul(docs/JEV.md §4-3)。
+    noul_complement_at_least:
+      is_bounded: attention
+
+# calibrate 用。リードが実際に指定したモデル -> 段。
+# ここに無いモデルは「対応表に無い」として、一致にも不一致にも数えない。
+model_to_tier:
+  opus: implementation
+  sonnet: work

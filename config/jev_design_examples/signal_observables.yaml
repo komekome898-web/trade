@@ -1,0 +1,11 @@
+# 清算を起点とした値動きの予測可能性(SIGNAL、2026-09-19)。候補の観測量 = 1 周目の表にある列、または列から作る量(reversal_fraction は bp_reactdir から作る群の割合。fwd_node は大半の束で未定義)。定義は設計 §3 と scripts/o3c_reaction.py。
+# jev_design.py rank-observables の入力。定義の文は英語(Jev は CJK が弱い。手引き §2)。
+bp_reactdir: "signed price change h minutes after the cascade, in basis points; negative = price moved against the cascade direction (reversal), positive = continued in the cascade direction; defined for every cascade"
+reversal_fraction: "the share of cascades whose signed price change h minutes later is negative (moved against the cascade direction); a rate per group of cascades"
+mfe_reactdir: "the largest excursion in the cascade direction (continuation side) within h minutes, in basis points"
+mae_reactdir: "the largest excursion against the cascade direction (reversal side) within h minutes, in basis points (negative)"
+reach_back_vwap: "whether, within h minutes, the price returned to the volume-weighted average price of the preceding W hours (binary per cascade)"
+reach_back_node: "whether, within h minutes, the price returned to the nearest high-volume price node of the preceding W hours (binary per cascade)"
+fwd_node: "whether, within h minutes, the price reached the next high-volume node in the cascade direction (binary; undefined for most cascades because no such node exists)"
+time_to_reach: "seconds until the reach-back target was first touched (undefined if never touched)"
+doi_post: "change in open interest (contracts) from the cascade to h minutes later"

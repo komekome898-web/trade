@@ -1,0 +1,17 @@
+# `--mode full` が判定区間 456 日を開けた出力先の台帳(事前登録 §3.1。prereg 監査(8 回目)の指摘 2)。
+# 1 行 = <出力先の絶対パス>\t<UTC 時刻>\t<--approval の L 番号>\t<started|done>。
+# `started` = 関門を通って開けた(出力を書く前)。`done` = 走行が最後まで終わった。
+# **走行が途中で落ちれば `done` の行は出ない。**その出力先は `started` のまま残り、
+# 再走行は出力先の有無に関わらず関門 (g) で止まる(prereg 監査(9 回目)の指摘 1。リードの決定 1)。
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap60_w8	2026-09-19T08:35:54Z	L-208	started
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap60_w8	2026-09-19T08:47:34Z	L-208	done
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap60_w24	2026-09-19T08:47:34Z	L-208	started
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap60_w24	2026-09-19T08:58:26Z	L-208	done
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap30_w8	2026-09-19T08:58:27Z	L-208	started
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap30_w8	2026-09-19T09:10:39Z	L-208	done
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap180_w8	2026-09-19T09:10:39Z	L-208	started
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap180_w8	2026-09-19T09:21:10Z	L-208	done
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap30_w24	2026-09-19T09:21:10Z	L-208	started
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap30_w24	2026-09-19T09:32:46Z	L-208	done
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap180_w24	2026-09-19T09:32:47Z	L-208	started
+/home/user/trade/backtest_data/o3c_reaction_20260918_full/gap180_w24	2026-09-19T09:42:44Z	L-208	done

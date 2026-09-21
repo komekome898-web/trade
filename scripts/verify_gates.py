@@ -193,9 +193,9 @@ _refs = _referenced_hooks(SETTINGS)
 show(f"参照するフック {len(_refs)} 件が全部実在する(通る側)", _all_exist(_refs), True)
 show("消したフックを参照していれば落ちる(止まる側 = I-012 の型)",
      _all_exist(_refs + ["deleted_hook.sh"]), False)
-show("残したフック 6 本だけを参照している(L-202 の削除が済んだ状態でだけ一致する)",
+show("残したフック 6 本 + jev_notice.sh(L-218、表示だけ)だけを参照している",
      sorted(set(_refs)),
-     sorted(["_verify_manifest.sh", "deny_protected_paths.sh", "owner_options_gate.sh",
+     sorted(["_verify_manifest.sh", "deny_protected_paths.sh", "jev_notice.sh", "owner_options_gate.sh",
              "owner_turn_digest.sh", "session_start_digest.sh", "trace_snapshot.sh"]))
 
 # ---------------------------------------------------------------------------

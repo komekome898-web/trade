@@ -1,0 +1,11 @@
+# SIGNAL 続く/止まるの単位(2026-09-20、L-262/L-263)。候補の観測量。起点 = 清算 1 件を検知した瞬間 t₀。定義の文は英語(日本語の行を設計に添える)。
+continuation_label: "whether another same-side liquidation print occurs within 60 seconds after this print (30 and 120 seconds also recorded); the target the decision tries to predict"
+rule_hit_rate_vs_base: "hit rate of a rule built only on the first half of days, measured on the second half, compared with the base rate of continuation"
+jev_hit_rate_vs_base: "hit rate of Jev's continue/stop judgment given the state known at the print, measured on the second half only, compared with the base rate and with the rule"
+payoff_conditional_on_decision: "distribution (median, quartiles, share negative) of the signed price move after prints the decision labelled continue and after prints it labelled stop, separately, for entry at t0+1/3/5 s and exit at 30/60/300 s"
+two_branch_pnl_per_print: "per-print signed outcome of the two-branch logic (go with the liquidation if continue, fade it if stop), as a distribution and per-day, on the second half"
+calibration_of_probability: "for Jev's and the rule's probability of continuation, the observed continuation share in probability bins"
+material_distribution_by_outcome: "for each material known at the print, its distribution among prints that continued versus prints that stopped (no averaging of price moves)"
+price_move_conditional_on_true_label: "signed price move after prints that actually continued versus actually stopped (ex-post, diagnostic only), to bound the value of a perfect decision"
+forward_move_all_prints: "mean and median signed price change from each print to h seconds later, as in exploration 5 (baseline only)"
+control_same_momentum: "the same rule and the same Jev judgment applied at non-liquidation times of the same day matched on the 10-second burst ratio and 5-second taker imbalance bands, with the payoff of following the momentum direction; shows whether the liquidation itself adds anything beyond momentum"

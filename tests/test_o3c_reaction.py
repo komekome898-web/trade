@@ -1150,11 +1150,11 @@ def test_full_mode_gate_has_no_bypass_flag_and_is_wired_into_main():
 
 
 def test_the_approval_field_is_read_from_the_real_prereg():
-    """既定の読み先が事前登録そのものであること(欄はまだ埋まっていない = 走らせない)。"""
+    """既定の読み先が事前登録そのものであること。欄は 2026-09-19 にオーナーの応答 L-208(カ・キ・ク = 後のまま)で
+    埋まった(OWNER_LOG L-208)。それ以前はこの試験が「欄は空」を確かめていた。"""
     assert react.PREREG.exists()
     value, note = react.read_approval_from_prereg()
-    assert value is None, "事前登録 §14.4 の欄が埋まっている(開封の前に読む欄である)"
-    assert "応答の L 番号" in note or "埋まっていない" in note
+    assert value == "L-208", f"事前登録 §14.4 の欄は L-208 のはず: {value!r} / {note}"
 
 
 def test_run_table_records_the_real_approval_number(tmp_path):

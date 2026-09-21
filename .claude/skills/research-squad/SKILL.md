@@ -201,6 +201,16 @@ width-sweep(検索幅を変えて3回撃つ)探索計画、引用・要約の一
 
 ## 6. リードの検収(委任の実行後、必ず行う)
 
+**0. Jev の検査を先に当てる(オーナー承認 2026-09-19、L-225。`docs/JEV.md` §8 の U5・U6・U2)**:
+
+```
+PYTHONPATH=. python3 scripts/jev_survey.py verify <報告.md> --summary     # 主張 × 一次資料の引用(裏付け / 矛盾 / 何も言っていない、経路と方法の記載)
+PYTHONPATH=. python3 scripts/jev_survey.py triage <報告.md> --summary     # 出典の仕分け(一次 / 二次 / 共同体 / 宣伝)・関連・在庫と重複・要プローブ → 順位は code の重み
+PYTHONPATH=. python3 scripts/jev_report_intake.py check <報告.md> --kind survey --summary
+```
+
+印は「どれを先に読むか・どれを再確認するか」の手がかりであって判定ではない。**検索幅は狭めない**(仕分けは取得の後、精読の前)。下の 1〜5 は印の付いた項目から先に行う。末尾 1 行を検収の記録に写す。
+
 1. プローブの生ログが実在し、報告の主張と一致するか(ログを開いて確認)。
 2. `procure` の「試行して不可」に範囲・方法とログパスが付いているか。
 3. `scan` の提案が `STRATEGY_IDEAS.md`/`DATA.md` に**無審査でマージされていない**か。

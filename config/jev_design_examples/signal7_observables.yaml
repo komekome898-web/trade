@@ -1,0 +1,9 @@
+# SIGNAL 方策の模擬(2026-09-20、L-269〜L-274)。候補の観測量。定義の文は英語(日本語の行を設計に添える)。
+per_cascade_policy_pnl: "per-cascade profit in bp of a policy that judges at every liquidation print (stop / continue / unknown) and acts (enter fade, enter with, stay out; then hold, close or reverse at later prints; close at cascade end), reported as a distribution across cascades"
+perfect_judgment_upper_bound_per_cascade: "the same per-cascade profit when the judgment at each print is the ex-post label (whether another same-side print follows within 60 s), computed along the cascade path"
+jev_three_way_judgment_share: "share of prints on which Jev's calibrated probability falls in the continue, stop or unknown band, by ex-post print position (first, middle, last)"
+unknown_band_from_calibration: "the probability bands in which the observed continuation share crosses the base rate (plus neighbours), taken from the 5,000-print calibration and used as the unknown band"
+policy_pnl_by_cascade_size: "per-cascade profit of each policy split by cascade size (single, two prints, three or more)"
+daily_pnl_distribution: "distribution of daily sums of per-cascade profit for each policy (share of negative days, contribution of the top five days)"
+baseline_hold_to_end: "per-cascade profit of entering with (or against) the liquidation at the first print and holding until the cascade end"
+per_print_fixed_horizon_move: "signed price move from each print to a fixed horizon (the previous unit's quantity, kept only as a reference)"

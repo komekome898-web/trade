@@ -1,0 +1,11 @@
+{
+ "product": "FX_BTC_JPY",
+ "since": "2026-09-18T07:24:00Z",
+ "until": null,
+ "oldest_id": 2651624422,
+ "oldest_ts": "2026-09-18T07:18:19.977",
+ "pages": 303,
+ "rows": 151500,
+ "updated_at": "2026-09-21T01:43:36.259823+00:00",
+ "done": true
+}

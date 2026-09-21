@@ -1,0 +1,10 @@
+# probe `docs/DATA/probes/20260919_jev_select_rank_probe.py` の observables 8 件を定義文そのままで写した。
+# jev_design.py rank-observables の候補の量。
+bp_reactdir: signed price change h minutes after the cascade, in bp; negative = moved against the cascade direction (reversal), positive = continued
+reach_back_vwap: whether price returned within h minutes to the volume-weighted average price of the preceding W hours (binary per cascade)
+reach_back_node: whether price returned within h minutes to the nearest high-volume price node of the preceding W hours (binary)
+fwd_node: whether price reached, within h minutes, the next high-volume node in the cascade direction (binary; undefined for 82% of cascades)
+time_to_reach: seconds until the reach-back target was first touched (NaN if never)
+mfe_mae: maximum favorable and maximum adverse excursion in bp within h minutes, measured in the cascade direction
+doi_post: change in open interest (contracts) from the cascade to h minutes later
+reach_rate_vs_control: difference in reach-back rate between cascades and control times (a derived comparison of reach_back_vwap)

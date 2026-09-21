@@ -59,6 +59,7 @@
 | FX_BTC_JPY 1分足チャート(lightchart) | `backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/` | 2015-11〜2026-09 | 取得済 | 2026-09-11 | — | K1 フレッシュ確認(L-090)、K1 取引所横断 段階1/2(L-093/L-095) |
 | BTC_JPY 1分足チャート(lightchart、現物) | `backtest_data/bitflyer_lightchart_BTC_JPY_1m_20260906/` | 2026-09-06 時点スナップショット | 取得済 | 2026-09-11 | — | 未使用 |
 | 板・ticker・約定(1分粒度、監査用) | `backtest_data/auto_bitflyer_executions_20260905/` | 2026-08-20〜09-05 | 取得済 | 2026-09-11 | — | ④-1 経費の床(L-098、`EXEC_FLOOR_PREREG.md`) |
+| 約定(公開 API `getexecutions` の取り直し。tape の穴埋め。列 `ts,price,size,side,id`、ミリ秒精度) | `backtest_data/bitflyer_executions_backfill_20260921/` | 2026-09-18 07:24 UTC〜09-21 01:39 UTC(151,079 件。日次メンテ 19:00〜19:12 UTC 以外に 4 分超の空白なし。tape と重なる 09-18 07:24:00〜44 の 92 件は (price,size,side) が完全一致) | 取得済 | 2026-09-21 | `scripts/fetch_bitflyer_executions_range.py`、`.progress.json`(303 頁)、`ACTION_LOG` 068 | tape 共有の穴(09-18 07:24 UTC〜、L-325、P15 ①)の橋渡し。**ticker・板 top10 はこの経路に無い** |
 | 板 top5(高頻度) | `data/tape/board_top5_*.csv.gz`, `paper_logs/tape/board_top5_*.csv.gz` | 2026-08-20〜08-27 | 取得済 | 2026-09-11 | — | 嵐予兆・秒スケール研究 |
 | 約定・ticker(高頻度テープ) | `data/tape/executions_*.csv.gz`, `data/tape/ticker_*.csv.gz` | 2026-08-20〜08-27 | 取得済 | 2026-09-11 | — | 同上 |
 | WS 生ログ(jsonl) | `data/ws/FX_BTC_JPY_*.jsonl.gz` | 2026-08-20 の複数スロット | 取得済 | 2026-09-11 | — | 未使用 |

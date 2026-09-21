@@ -1,0 +1,13 @@
+fd6e552256d3202b81e7f49f855a447c  rows_gap60.csv.gz
+d174770ad86fbab2cc496be51da3648f  rows_gap30.csv.gz
+905f7f40be088e3712f501f3f25f1806  rows_gap180.csv.gz
+b004da70ea885c755da19c454b5bb6d9  g0_selfcheck.csv
+c3cf18654ca3f9c3b8b1d776595d1521  g1_reversal.csv
+77f2f3b57f06034531843d4bbd27951d  g2_continuation.csv
+609c86c8104318fe9154e495e041cdff  g3_timeshape.csv
+498866f6c0aef61599d68243ac634329  g4_control.csv
+752ab8a1b774c17ce4b2a1cc071ea8a3  g5_daystate.csv
+52c1247cf798ae1687d874a82eb7a86a  g6_attributes.csv
+ae2bc8dcf10a8b2e558d3a6403bb64bd  g7_bitflyer.csv
+2513eee49f238a23dde240f216a69322  tables.md
+1129e3849b4e98e3783007e2be16ebd7  summary.json

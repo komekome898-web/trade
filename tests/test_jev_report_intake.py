@@ -1,0 +1,611 @@
+"""`scripts/jev_report_intake.py` の受領検査を測る。
+
+検査するもの: 必須項目の見出しの検査 / 判定の語の抽出 / 数値の突き合わせ / 模擬送信 / 印の境界。
+
+この道具は何も止めない。出すのは確率と要確認の印だけである(オーナー逐語 L-218)。
+ネットワークには一切触れない(`JevClient` を差し替えるか `--dry-run`)。
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+REPO = Path(__file__).resolve().parents[1]
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+
+import scripts.jev_check as J  # noqa: E402
+import scripts.jev_report_intake as I  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# 合成した報告
+# ---------------------------------------------------------------------------
+RESEARCH_MD = """# 研究報告
+
+## 1. 探索区間の全構成表
+
+| 構成 | n | ネット |
+|---|---|---|
+| A | 120 | 1.4 |
+
+## 2. 判定区間の結果
+
+判定区間は一度だけ走らせた。
+
+## 3. 逆選択の反実仮想
+
+taker で入った場合と比べた。
+
+## 4. アブレーション
+
+条件を 1 つずつ外した。
+
+## 5. サニティ
+
+ルックアヘッド 0、決定性あり。
+
+## 6. なぜそうなるのか
+
+板が薄い時間帯に注文が並ぶ機構である。
+
+## 7. 注意点・限界
+
+サンプルが足りない。
+"""
+
+# 「アブレーション」は見出しでも先頭 2 行でもなく、本文の奥にだけ書いてある
+DEEP_WORD_MD = """# 報告
+
+## 結果
+
+1 行目。
+2 行目。
+3 行目。
+アブレーションはここにしか書いていない。
+"""
+
+VERDICT_MD = """# 報告
+
+## 結果
+
+この族は採用しない。次の族は有望である。
+
+判定の語の混じらない文。
+
+```
+ここは棄却と書いてあるがコード柵の中なので本文ではない
+```
+"""
+
+NUMBER_MD = """# 報告
+
+| 名前 | 値 |
+|---|---|
+| 取引数 | 340 |
+
+本文では 340 取引を測った。別に 77 という数も書く。
+
+```
+出力: 12 件
+```
+
+コードブロックの 12 は突き合わせ先にある。
+
+> 引用の中の 55 も突き合わせ先である。
+
+本文の 55 はそれで裏が取れる。
+"""
+
+
+def _write(tmp_path: Path, name: str, text: str) -> Path:
+    path = tmp_path / name
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def _read_jsonl(path: Path) -> list[dict]:
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
+# ---------------------------------------------------------------------------
+# 1(a) 必須項目の検査(code)
+# ---------------------------------------------------------------------------
+def test_required_items_all_found_for_a_full_research_report():
+    items = I.check_required_items(RESEARCH_MD, "research")
+    assert len(items) == 7
+    assert all(it["found"] for it in items), [it for it in items if not it["found"]]
+
+
+def test_required_items_report_which_one_is_missing():
+    text = RESEARCH_MD.replace("## 4. アブレーション\n\n条件を 1 つずつ外した。\n\n", "")
+    missing = [it["item"] for it in I.check_required_items(text, "research") if not it["found"]]
+    assert missing == ["ablation"]
+
+
+def test_heading_match_looks_only_at_the_heading_and_the_first_two_lines():
+    """規則: 語の一致は見出しと先頭 2 行だけ。本文の奥にある語は当たらない。"""
+    scopes = I.heading_scopes(DEEP_WORD_MD)
+    assert all("アブレーション" not in s for s in scopes), scopes
+    found = {it["item"]: it["found"] for it in I.check_required_items(DEEP_WORD_MD, "research")}
+    assert found["ablation"] is False
+
+
+def test_kinds_have_their_own_item_lists():
+    assert set(I.KINDS) == {"research", "survey", "implementation"}
+    assert len(I.REQUIRED_ITEMS["research"]) == 7
+    assert [it["item"] for it in I.check_required_items("# x\n", "survey")] == [
+        "plan", "sources", "findings", "alt_route", "candidates"]
+    assert [it["item"] for it in I.check_required_items("# x\n", "implementation")] == [
+        "files", "tests", "off_spec", "mapping"]
+
+
+# ---------------------------------------------------------------------------
+# 1(b) 「なぜ」の節(code)
+# ---------------------------------------------------------------------------
+def test_why_heading_present_and_absent():
+    assert I.why_headings(RESEARCH_MD) == ["6. なぜそうなるのか"]
+    assert I.why_headings(VERDICT_MD) == []
+    recs = I.code_records(VERDICT_MD, "research")
+    why = [r for r in recs if r["kind"] == "why_heading"][0]
+    assert why["flag"] is True and why["reason"] == "missing"
+
+
+def test_why_heading_is_only_flagged_for_research():
+    """survey / implementation のテンプレートに「なぜ」の節は無いので印を付けない。
+
+    検査そのものは残し、当てなかった種類では理由を記録に書く(捨てない)。
+    """
+    assert I.WHY_SECTION_KINDS == ("research",)
+    for kind in ("survey", "implementation"):
+        why = [r for r in I.code_records(VERDICT_MD, kind) if r["kind"] == "why_heading"][0]
+        assert why["flag"] is False, kind
+        assert why["reason"] == "not_applicable_for_kind", kind
+        assert why["headings"] == []
+
+
+# ---------------------------------------------------------------------------
+# 1(c) 判定の語の抽出(code)
+# ---------------------------------------------------------------------------
+def test_verdict_sentences_are_split_per_sentence_and_skip_code_fences():
+    claims = [r["claim"] for r in I.extract_verdict_sentences(VERDICT_MD)]
+    assert "この族は採用しない。" in claims
+    assert "次の族は有望である。" in claims
+    assert all("コード柵" not in c for c in claims), claims
+    assert all("判定の語の混じらない文" not in c for c in claims), claims
+
+
+# ---------------------------------------------------------------------------
+# 1(d) 数値の突き合わせ(code)
+# ---------------------------------------------------------------------------
+def test_numbers_present_in_tables_code_or_quotes_are_not_listed():
+    nums = {r["number"] for r in I.extract_unsourced_numbers(NUMBER_MD)}
+    assert "340" not in nums, "表にある数値は突き合わせ先にある"
+    assert "12" not in nums, "コードブロックにある数値は突き合わせ先にある"
+    assert "55" not in nums, "引用にある数値は突き合わせ先にある"
+    assert "77" in nums, "本文にしかない数値は列挙する"
+
+
+NOISE_MD = """# 報告
+
+本文に 61,805 バイトと L-215 と A-3 と KA-17 と I-011 がある。
+箇条の (7) と、9 行、21 件、6 回、8 巡、4 段、5 日目、123 件。
+料金は 12.5% で 5 bp、1200 円である。
+"""
+
+
+def test_thousands_separator_is_one_number():
+    """`61,805` を `61` と `805` に割らない(`jev_check._NUMBER_RE` は割る)。"""
+    assert [m.group(1) for m in J._NUMBER_RE.finditer("61,805 バイト")] == ["61", "805"]
+    assert [m.group(1) for m in I.NUMBER_RE.finditer("61,805 バイト")] == ["61,805"]
+
+
+def test_identifiers_list_numbers_and_counters_are_not_measurements():
+    recs = {r["number"]: r for r in I.extract_unsourced_numbers(NOISE_MD)}
+    for num, why in (("215", "identifier"), ("3", "identifier"), ("17", "identifier"),
+                     ("011", "identifier"), ("7", "list_number"), ("9", "counter"),
+                     ("21", "counter"), ("6", "counter"), ("8", "counter"),
+                     ("4", "counter"), ("5", "counter")):
+        assert recs[num]["measurement"] is False, num
+        assert recs[num]["excluded_as"] == why, num
+    # 測定値・料金・率は残す。助数詞つきでも 3 桁は外さない
+    for num in ("61,805", "12.5%", "5bp", "1200", "123"):
+        assert recs[num]["measurement"] is True, num
+        assert recs[num]["excluded_as"] is None, num
+
+
+def test_excluded_numbers_are_kept_with_a_reason_and_never_sent(tmp_path, fake_client):
+    art = _write(tmp_path, "noise.md", NOISE_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    records = _read_jsonl(out / "noise.jsonl")
+    nums = [r for r in records if r["kind"] == "unsourced_number"]
+    excluded = [r for r in nums if r["reason"] == "not_a_measurement"]
+    assert len(excluded) == 11
+    assert all(r["sent"] is False and r["flag"] is False for r in excluded)
+    assert all(r["excluded_as"] in {"identifier", "list_number", "counter"} for r in excluded)
+    assert records[-1]["n_numbers_excluded"] == 11
+    # 送ったのは測定値の側だけ
+    sent_numbers = {r["number"] for r in nums if r["sent"]}
+    assert sent_numbers == {"61,805", "12.5%", "5bp", "1200", "123"}
+
+
+def test_source_lines_are_counted_by_kind():
+    _source, counts = I.source_text_of(NUMBER_MD)
+    assert counts["table"] >= 3 and counts["code"] >= 3 and counts["quote"] == 1
+
+
+# ---------------------------------------------------------------------------
+# 2 Jev の問い(形)
+# ---------------------------------------------------------------------------
+def test_questions_are_positive_single_judgment_with_examples():
+    for questions in (I.questions_verdict(), I.questions_prompt(), I.questions_origin()):
+        for qid, spec in questions.items():
+            assert spec["type"] == "noul", qid
+            assert set(spec["criteria"]) == {"true", "false"}, qid
+            assert "Example" in spec["criteria"]["true"], qid
+            assert "Example" in spec["criteria"]["false"], qid
+    assert list(I.questions_prompt()) == ["scope_widened", "required_items_addressed"]
+
+
+def test_why_section_question_is_the_one_from_jev_check():
+    pair = {"kind": "why_section", "a_role": "a", "b_role": "b"}
+    assert I.question_for("why_section", pair) == J.question_for("why_section", pair)
+
+
+# ---------------------------------------------------------------------------
+# 3 印の境界(しきい値は `jev_check` から import したもの)
+# ---------------------------------------------------------------------------
+def test_thresholds_come_from_jev_check():
+    assert I.ATTENTION is J.ATTENTION and I.PRESENCE is J.PRESENCE
+
+
+def test_verdict_flag_at_presence_boundary():
+    assert I.combine_verdict({"pronounces_verdict": {"noul": I.PRESENCE}})["flag"] is True
+    assert I.combine_verdict({"pronounces_verdict": {"noul": I.PRESENCE - 0.01}})["flag"] is False
+
+
+def test_origin_flag_at_attention_boundary():
+    on = I.combine_origin({"origin_stated": {"noul": 1.0 - I.ATTENTION}})
+    off = I.combine_origin({"origin_stated": {"noul": 1.0 - I.ATTENTION + 0.01}})
+    assert on["flag"] is True and off["flag"] is False
+    assert on["question"] == "origin_stated"
+
+
+def test_prompt_flags_use_presence_for_scope_and_attention_for_items():
+    widened, items = I.combine_prompt({
+        "scope_widened": {"noul": I.PRESENCE},
+        "required_items_addressed": {"noul": 1.0 - I.ATTENTION},
+    })
+    assert widened["flag"] is True and items["flag"] is True
+    widened2, items2 = I.combine_prompt({
+        "scope_widened": {"noul": I.PRESENCE - 0.01},
+        "required_items_addressed": {"noul": 1.0 - I.ATTENTION + 0.01},
+    })
+    assert widened2["flag"] is False and items2["flag"] is False
+
+
+def test_why_flag_uses_the_contradicts_probability():
+    answers = {"relation": {"probabilities": {"consistent": 0.1, "contradicts": I.ATTENTION,
+                                              "unrelated": 0.05}}}
+    assert I.combine_why(answers)["flag"] is True
+    answers["relation"]["probabilities"]["contradicts"] = I.ATTENTION - 0.01
+    assert I.combine_why(answers)["flag"] is False
+
+
+# ---------------------------------------------------------------------------
+# 4 模擬送信
+# ---------------------------------------------------------------------------
+class _FakeClient:
+    calls: list[tuple] = []
+    noul_by_qid: dict = {}
+
+    def __init__(self, model=None, **kwargs):
+        self.model = model
+
+    def evaluate(self, state, questions):
+        _FakeClient.calls.append((state, questions))
+        answers = {}
+        for qid, spec in questions.items():
+            if spec["type"] == "noul":
+                answers[qid] = {"type": "noul",
+                                "noul": _FakeClient.noul_by_qid.get(qid, 0.9)}
+            else:
+                answers[qid] = {"type": "choice", "choice": "contradicts",
+                                "probabilities": {"consistent": 0.1, "contradicts": 0.85,
+                                                  "unrelated": 0.05}}
+        return {"model": "fake", "answers": answers}
+
+
+@pytest.fixture
+def fake_client(monkeypatch):
+    _FakeClient.calls = []
+    _FakeClient.noul_by_qid = {}
+    monkeypatch.setattr(I, "JevClient", _FakeClient)
+    return _FakeClient
+
+
+def test_dry_run_sends_nothing_and_still_flags_the_code_checks(tmp_path, fake_client, capsys):
+    art = _write(tmp_path, "r.md", VERDICT_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out),
+                   "--dry-run"]) == 0
+    assert fake_client.calls == []
+    records = _read_jsonl(out / "r.jsonl")
+    summary = records[-1]
+    assert summary["dry_run"] is True and summary["n_requests"] == 0
+    assert all(r.get("sent") is False for r in records if r["kind"] != "_summary")
+    # code の検査は --dry-run でも印が付く
+    assert summary["flag_by_kind"]["required_item"] >= 1
+    assert summary["flag_by_kind"]["why_heading"] == 1
+    assert "--dry-run" in capsys.readouterr().out
+
+
+def test_one_request_per_sentence_and_per_number(tmp_path, fake_client):
+    art = _write(tmp_path, "s.md", VERDICT_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    records = _read_jsonl(out / "s.jsonl")
+    summary = records[-1]
+    n_sent = len([r for r in records if r.get("sent")])
+    n_verdict = len([r for r in records if r["kind"] == "verdict_sentence"])
+    assert n_verdict >= 2
+    assert summary["n_requests"] == len(fake_client.calls) == n_sent
+    # state は code が組む(判定される側が書かない)
+    state, _q = fake_client.calls[0]
+    assert set(state) == {"sentence", "nearby_context"}
+    # 既定の 0.9 では判定の語に印が付く(pronounces_verdict >= PRESENCE)
+    assert summary["flag_by_kind"]["verdict_sentence"] == n_verdict
+
+
+def test_prompt_pair_is_one_request_and_two_records(tmp_path, fake_client):
+    art = _write(tmp_path, "p.md", RESEARCH_MD)
+    prompt = _write(tmp_path, "prompt.md", "1. 全構成表を出す\n2. アブレーションを出す\n")
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--prompt", str(prompt),
+                   "--out", str(out)]) == 0
+    records = _read_jsonl(out / "p.jsonl")
+    rows = [r for r in records if r["kind"] == "prompt_vs_report"]
+    assert len(rows) == 2
+    assert {r["question"] for r in rows} == {"scope_widened", "required_items_addressed"}
+    prompt_calls = [c for c in fake_client.calls if "delegation_prompt" in c[0]]
+    assert len(prompt_calls) == 1, "対は 1 要求(問いを 2 つ並べる)"
+    state, _q = prompt_calls[0]
+    assert set(state) == {"delegation_prompt", "report_headings", "report_conclusion"}
+    assert state["report_headings"][0] == "研究報告"
+    assert records[-1]["prompt"] is True
+
+
+def test_without_prompt_no_prompt_pair_is_built(tmp_path, fake_client):
+    art = _write(tmp_path, "np.md", RESEARCH_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    records = _read_jsonl(out / "np.jsonl")
+    assert [r for r in records if r["kind"] == "prompt_vs_report"] == []
+    assert records[-1]["prompt"] is False
+
+
+def test_number_questions_are_capped(tmp_path, fake_client, monkeypatch):
+    monkeypatch.setattr(I, "MAX_NUMBER_QUESTIONS", 2)
+    body = "# 報告\n\n" + "\n".join(f"本文の {n} 番目。" for n in range(101, 110))
+    art = _write(tmp_path, "cap.md", body)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    records = _read_jsonl(out / "cap.jsonl")
+    nums = [r for r in records if r["kind"] == "unsourced_number"]
+    assert len(nums) == 9
+    assert sum(1 for r in nums if r["sent"]) == 2
+    assert all(r["reason"] == "truncated" for r in nums if not r["sent"])
+
+
+def test_summary_line_is_the_last_line(tmp_path, fake_client, capsys):
+    art = _write(tmp_path, "sum.md", VERDICT_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out),
+                   "--summary"]) == 0
+    printed = capsys.readouterr().out.strip().splitlines()
+    assert len(printed) == 1 and printed[0].startswith("印 ")
+
+
+def test_unreachable_is_shown_when_nothing_got_through(tmp_path, monkeypatch, capsys):
+    class _Dead:
+        def __init__(self, *a, **k):
+            raise I.JevError("鍵が無い")
+
+    monkeypatch.setattr(I, "JevClient", _Dead)
+    art = _write(tmp_path, "dead.md", VERDICT_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    printed = capsys.readouterr().out.strip().splitlines()
+    assert printed[-1].startswith("jev: 未到達")
+
+
+def test_returns_2_and_sends_nothing_when_redaction_check_fails(
+        tmp_path, fake_client, monkeypatch):
+    monkeypatch.setattr(J, "redact_json", lambda obj: obj)
+    art = _write(tmp_path, "leak.md", "# 報告\n\n連絡先 someone@example.com は棄却する。\n")
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 2
+    assert fake_client.calls == []
+
+
+def test_missing_files_return_1(tmp_path, capsys):
+    out = tmp_path / "out"
+    assert I.main(["check", str(tmp_path / "nope.md"), "--out", str(out)]) == 1
+    art = _write(tmp_path, "ok.md", "# 報告\n")
+    assert I.main(["check", str(art), "--prompt", str(tmp_path / "nope.md"),
+                   "--out", str(out)]) == 1
+    capsys.readouterr()
+
+
+def test_output_never_says_stop_or_pass(tmp_path, fake_client, capsys):
+    """出力に「止める / 通す」の語を置かない(`docs/JEV.md` §4-1)。"""
+    art = _write(tmp_path, "w.md", RESEARCH_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    printed = capsys.readouterr().out
+    assert "止める" not in printed and "通す" not in printed
+    assert "印であって判断ではない" in printed
+
+
+# ---------------------------------------------------------------------------
+# 問いと測定の照合(報告向けの 3 種。`docs/JEV.md` §9)
+# ---------------------------------------------------------------------------
+DESIGN_INTENT_MD = """# 段 A の設計
+
+## 8. INTENT_MAP(原文の意図 1 項 × この設計の要素)
+
+| # | 原文の意図(逐語) | この設計の要素 | 印 | 備考 |
+|---|---|---|---|---|
+| I-1 | 「**清算の監視による値段の上がりすぎ下がりすぎやトレンド転換を捉えることができるか確認**」 | §3 (a)(b)(c) | **△** | 代理 |
+| I-3 | 「**海外取引所の高レバ市場**」 | Binance COIN-M | **○** | |
+| I-17 | (原文に無い) | §4 E | **＋** | ここは取らない |
+"""
+
+RESULT_WITH_CONTROL_MD = """# 結果の読み
+
+## 1. 判定
+
+**F1 の読み = 「F1 の反証」**。戻り到達は対照より低く、想定とは逆の向きが出た。
+
+## 2. 主指標
+
+主指標 = 戻り到達(W 時間 VWAP へ h 分以内に戻ったか)の割合。
+
+## 3. 帰無(対照群)
+
+ビンの薄さだけを 1 対 1 に合わせる(出発点の距離は合わせていない)。
+
+## 4. なぜそうなるのか
+
+候補 1: 機構にエッジが無い。差ありは 1 セルだけである。
+"""
+
+
+def test_report_purpose_kinds_are_built(tmp_path):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_WITH_CONTROL_MD)
+    stats: dict = {}
+    jobs = I.build_jobs(RESULT_WITH_CONTROL_MD, None, art, stats)
+    kinds = {j["kind"] for j in jobs}
+    assert I.REPORT_PURPOSE_KINDS == ("conclusion_vs_purpose", "other_cause_named",
+                                      "direction_supported")
+    assert set(I.REPORT_PURPOSE_KINDS) <= kinds
+    # 事前登録向けの 2 種は前段 `jev_check.py` の担当なので、この道具は当てない
+    assert "purpose_vs_quantity" not in kinds
+    assert "control_vs_quantity" not in kinds
+    assert stats["purpose_inputs"]["intent_rows"] == 2  # ○ / △ のみ(＋ は取らない)
+    # 結論の行は「判定 / 読み / なぜ」の節の中の判定語の行だけ、上限 10
+    assert stats["purpose_inputs"]["conclusion_lines"] <= J.MAX_CONCLUSION_LINES
+    # 対 3 は 結論の行 × 意図の行
+    assert (stats["purpose_pairs"]["conclusion_vs_purpose"]
+            == stats["purpose_inputs"]["conclusion_lines"] * 2)
+    concl = [j for j in jobs if j["kind"] == "conclusion_vs_purpose"]
+    assert all(set(j["state"]) == {"report_conclusion", "owner_purpose"} for j in concl)
+    direction = [j for j in jobs if j["kind"] == "direction_supported"]
+    assert all(set(j["state"]) == {"report_conclusion", "judgment_quantity", "control_group"}
+               for j in direction)
+
+
+def test_report_purpose_kinds_absent_without_artifact():
+    stats: dict = {}
+    jobs = I.build_jobs(RESULT_WITH_CONTROL_MD, None, None, stats)
+    assert all(j["kind"] not in I.REPORT_PURPOSE_KINDS for j in jobs)
+    assert stats["purpose_pairs"] == {k: 0 for k in I.REPORT_PURPOSE_KINDS}
+
+
+def test_summary_line_reports_zero_purpose_pairs(tmp_path, fake_client, capsys):
+    art = _write(tmp_path, "plain.md", "# 覚書\n\n板が薄い。\n")
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--out", str(out), "--summary"]) == 0
+    last = capsys.readouterr().out.strip().splitlines()[-1]
+    assert "対 0 件" in last
+
+
+def test_purpose_records_carry_probability_and_flag(tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_WITH_CONTROL_MD)
+    out = tmp_path / "out"
+    fake_client.noul_by_qid = {"conclusion_answers_purpose": 0.27,
+                               "other_cause_named": 0.09,
+                               "conclusion_direction_supported": 0.05}
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    records = _read_jsonl(out / "RESULT.jsonl")
+    concl = [r for r in records if r["kind"] == "conclusion_vs_purpose"
+             and not r.get("aggregate")]
+    assert concl and all(r["violation_probability"] == pytest.approx(0.73) for r in concl)
+    # 個々の対には印を付けない。印は結論の行ごとの集約の行に 1 件
+    assert all(r["flag"] is False and r["reason"] == "aggregated" for r in concl)
+    agg = [r for r in records if r["kind"] == "conclusion_vs_purpose" and r.get("aggregate")]
+    assert agg and all(r["flag"] is True for r in agg)
+    assert len(agg) == len({r["anchor"] for r in concl})
+    other = [r for r in records if r["kind"] == "other_cause_named"]
+    assert other and all(r["violation_probability"] == pytest.approx(0.91) for r in other)
+    assert all(r["flag"] is True for r in other)   # 対 4 は集約しない
+    summary = records[-1]
+    assert summary["purpose_pairs"]["conclusion_vs_purpose"] == len(concl)
+
+
+# ---------------------------------------------------------------------------
+# 今日の実物(報告の初版 `git show 4292fea:...`)
+# ---------------------------------------------------------------------------
+def _real_report(tmp_path: Path) -> Path | None:
+    import subprocess
+    rel = "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_RESULT_2026-09-19.md"
+    r = subprocess.run(["git", "show", f"4292fea:{rel}"], cwd=REPO,
+                       capture_output=True, text=True)
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    return _write(tmp_path, "REACTION_RESULT_v1.md", r.stdout)
+
+
+def test_real_first_report_makes_purpose_pairs(tmp_path):
+    art = _real_report(tmp_path)
+    if art is None:
+        pytest.skip("初版の報告が git に無い")
+    design = REPO / "docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md"
+    if design.is_file():
+        _write(tmp_path, design.name, design.read_text(encoding="utf-8"))
+    stats: dict = {}
+    jobs = I.build_jobs(art.read_text(encoding="utf-8"), None, art, stats)
+    n = sum(stats["purpose_pairs"].values())
+    assert n > 0, stats
+    assert stats["purpose_pairs"]["other_cause_named"] > 0
+    if design.is_file():
+        assert stats["purpose_inputs"]["intent_rows"] > 0
+        assert stats["purpose_pairs"]["conclusion_vs_purpose"] > 0
+    assert any(j["kind"] in I.REPORT_PURPOSE_KINDS for j in jobs)
+    # 対 5 は報告に 判定の量 / 対照 の節が無いので事前登録から取る(出所を記録に残す)
+    assert stats["purpose_inputs"]["conclusion_lines"] <= J.MAX_CONCLUSION_LINES
+
+
+def test_repeat_kinds_are_sent_three_times_in_the_intake(tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_WITH_CONTROL_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    recs = _read_jsonl(out / "RESULT.jsonl")
+    other = [r for r in recs if r["kind"] == "other_cause_named"]
+    assert other and all(len(r["repeats"]) == J.REPEATS == 3 for r in other)
+    assert all(r["near_threshold"] is False for r in other)   # 既定 0.9 → 反する側 0.1
+    # 集約する種類(結論 × 意図)は 1 回のまま
+    concl = [r for r in recs if r["kind"] == "conclusion_vs_purpose"
+             and not r.get("aggregate")]
+    assert concl and all("repeats" not in r for r in concl)
+
+
+def test_conclusion_aggregate_names_the_top_intent(tmp_path, fake_client):
+    _write(tmp_path, "REACTION_DESIGN_2026-09-18.md", DESIGN_INTENT_MD)
+    art = _write(tmp_path, "RESULT.md", RESULT_WITH_CONTROL_MD)
+    out = tmp_path / "out"
+    assert I.main(["check", str(art), "--kind", "research", "--out", str(out)]) == 0
+    agg = [r for r in _read_jsonl(out / "RESULT.jsonl")
+           if r["kind"] == "conclusion_vs_purpose" and r.get("aggregate")]
+    assert agg
+    assert all("答えている意図の最上位" in r["a"] for r in agg)
+    assert all(r["top_intent"] in ("I-1", "I-3") for r in agg)
+    # 既定の 0.9(= 答えている)なので印は付かない
+    assert all(r["flag"] is False and r["reason"] == "some_intent_is_answered" for r in agg)
