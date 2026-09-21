@@ -9377,3 +9377,15 @@ ffe2692 L-202: reduce project hooks from 16 to 6, pre-push reduced to the manife
 - **測っていないこと**: 実物の PC で接続待ちの時間切れを再現していない。次に「接続の時間切れ — Ns 後に再接続」の行がログに出て、そのあと「接続」が出れば効いている。
 - **tape の穴(P15 ①)**: オーナーが `fetch_all.bat` → `share_logs.bat` を実行したと報告(L-329)したが、11:38 JST の共有 b08a11a に tape の新しい日は無く、`fetch.out.tail.log`(`logs\fetch.out.log` の末尾 400 行)は 09-19 以降の 5 回の共有で同一。`fetch_all.bat` は全工程を `logs\fetch.out.log` に追記するので、**1 行も増えていない = python 工程が走っていない**。bat の先頭にロックや早期終了は無い(読んだ: `cd /d`、`mkdir logs`、環境変数だけ)。残る仮説: 前回の `extract_tape.py --board-top 10` が 09-18 から終わらず居座り、その間の実行が書けない(タスクスケジューラの多重起動抑止)。PC でしか確かめられないので P15 ① に診断の 2 コマンドを足した。
 
+## 070 — `data_quality.py` が 3 日終わらなかった理由(委任先の読み。実機では未確認)(2026-09-21)
+
+L-331 で見つかった `data_quality.py`(09-18 18:09 JST 起動、3 日居座り)について、委任先に 812 行を読ませた(変更なし)。要点:
+- **読むのは `data/INTAKE_latest.json` の索引だけ**(694-717 行)。索引の csv/csv.gz を **毎回・全件・丸ごと** 1 行ずつ回す。差分キャッシュも行数上限も無い(`intake_ledger.py` には両方ある)。git 追跡分だけで csv 3,872 本 2.69 GB(圧縮)、PC の `data/` にはさらに tape・venues・archive が積み上がる。**無限ループではなく「終わらない量」**。
+- **メモリ**: 全行の `(row_i, delta, dt.isoformat())` と `deltas` を保持(549-550 行)。`board_top10_*.csv.gz` は **どの `schema/*.json` にも当たらず**(`bitflyer_tape.json` は ticker / executions / board_top5 だけ)、`auto_full_row` = 41 列のタプルを全行辞書に保持(474・484 行)。ページングで「進まないプロセス」になりうる。
+- **進捗が 1 行も出ない設計**(最初の print は 802 行 = 全部終わった後。stdout はファイルなのでブロックバッファ)。だからログに何も無いのは仕様どおりで、情報が無い。
+- 候補でないと確かめたもの: `while` 無し・再帰無し・`readline` 無し / gz 破損は例外で止まる(回らない) / ネットワーク・subprocess・ロック・`input()` 無し / WS gz と清算 gz は読まない(399-404 行で csv 以外は即 return)。
+- 構造的欠陥(今回の直接原因ではない): 682 行の except に `EOFError` / `zlib.error` が無い(末尾切れ gz で run() ごと落ちる)。
+- 実機でしか分からないこと: CPU か I/O かページングか / `data/` の量 / 15 分タスクの多重起動の設定 / AV の走査。
+- **直す案(オーナーの指示待ち。原文に該当語なし)**: (a) `intake_ledger` の md5/mtime を使った差分スキャン / (b) 1 ファイルの行数上限 / (c) 全行保持をやめる / (d) except に `EOFError`・`zlib.error` / (e) `board_top10` の schema を足す / (f) ファイルごとの進捗を `flush=True` で出す。
+- **今の tape の穴とは別問題**(tape の抽出は `data_quality` より前の工程)。ただしこのままだと `fetch_all.bat` の 1 回が 15 分を桁で超え、次の回が始まらない。
+
