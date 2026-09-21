@@ -82,8 +82,27 @@ case "$TOOL:$FP" in
 esac
 
 # --- 行動系: ゴールを読まずに書き始めようとしたら止める ---
+# **Bash 経由の書き込みも見る(2026-09-21、L-375「機械直せよ」)。**同日、リードは全部 Bash の
+# ヒアドキュメントで書いたため Write が 0 回で、この検査は一度も発火しなかった(ACTION_LOG 076)。
+# Bash では: 書き込みの語(> / >> / tee / sed -i / cp / mv / rm / open(...,"w") / write_text / to_csv ...)があり、
+# かつ書き先らしい経路が記録(OWNER_LOG / OWNER_STATUS / ACTION_LOG / TRACE)だけでなければ Write と同じ扱い。
+if [ "$TOOL" = "Bash" ]; then
+  FP="$(printf '%s' "$INPUT" | python3 -c '
+import json,sys,re
+try: d=json.load(sys.stdin)
+except Exception: sys.exit(0)
+cmd=(d.get("tool_input") or {}).get("command") or ""
+write=re.compile(r"(^|[^0-9<>&])>{1,2}(?!&)|\btee\b|\bsed\s+-i|\bcp\s|\bmv\s|\brm\s|\btruncate\b|write_text\(|to_csv\(|to_json\(|json\.dump\(|open\([^)]*[\"\x27][wa]")
+if not write.search(cmd): print(""); sys.exit(0)
+paths=re.findall(r"[A-Za-z0-9_./~-]+\.(?:md|py|sh|ya?ml|json|csv|txt|log|gz|npz|toml|cfg|ini)", cmd)
+exempt=("OWNER_LOG.md","OWNER_STATUS.md","ACTION_LOG.md","/docs/AUDITOR/TRACE/","docs/AUDITOR/TRACE/")
+rest=[q for q in paths if not any(e in q for e in exempt) and "/dev/null" not in q]
+print("bash:"+(rest[0] if rest else "(書き先の経路が読めないが書き込みの語がある)") if (rest or not paths) else "")
+' 2>/dev/null)"
+  [ -n "$FP" ] || exit 0
+fi
 case "$TOOL" in
-  Write|Edit|NotebookEdit) ;;
+  Write|Edit|NotebookEdit|Bash) ;;
   *) exit 0 ;;
 esac
 [ -f "$SEEN" ] && exit 0

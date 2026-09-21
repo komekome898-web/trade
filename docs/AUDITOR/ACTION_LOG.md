@@ -9431,3 +9431,11 @@ L-331 で見つかった `data_quality.py`(09-18 18:09 JST 起動、3 日居座�
 - **実測**: `settings.json` の PreToolUse は `_verify_manifest.sh` = `Write|Edit|Agent`、`deny_protected_paths.sh` = `Write|Edit|NotebookEdit`、`owner_options_gate.sh` = 全ツール(ただしゴール未読の検査は「新しい作業単位の最初の Write」に掛かる)。今日のリードは文書・コードを全部 Bash のヒアドキュメント / python で書いたため、Write が 0 回 = ③(b) のゴール未読の門・指紋の照合・保護パスの拒否のどれも書き込みに対して発火していない(Agent には指紋の照合が掛かった)。
 
 - **意味**: 「止まるはずの操作をして止まるかを実測するまで効いていると書かない」(CLAUDE.md §5.0)のとおりで、Bash 経由の書き込みは機械の外にある。フック・settings はオーナーの指示があるときだけ変える(A-16)ので、ここでは事実だけ記録する。
+
+## 077 — 機械の修正(オーナー指示 L-375「機械直せよ」、2026-09-21)
+
+- **変えたもの**: `deny_protected_paths.sh`(Bash の書き込みの語 + 保護パスで拒否)/ `owner_options_gate.sh`(Bash の書き込みの語 + 記録以外の書き先で、ゴール未読なら拒否)/ `settings.json`(指紋の照合の matcher に Bash・SendMessage、③(a) に Bash、新規 `Agent|SendMessage` → `delegation_audit_gate.sh`)/ 新規 `delegation_audit_gate.sh` / `verify_gates.py`(+22 件)/ 台帳の再生成。
+
+- **実測**: `python3 scripts/verify_gates.py` 食い違い 0 件(通る側・止まる側の両方。ログ = scratchpad の verify_gates.log)。`tests/test_audit_gates_wired.py` 通過。
+
+- **限界**: 部品を直接叩いた検査で、ハーネスが呼ぶかは別。次の手で「止まるはずの操作」(監査の記録が無い Agent / ゴール未読の Bash 書き込み)を実際に打って止まるかを見るまで「効いている」と書かない。Bash の検査は語の一致なので、経路を変数に隠した書き込みは拾えない(限界として記録)。
