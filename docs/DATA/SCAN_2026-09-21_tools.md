@@ -5,7 +5,7 @@
 
 ---
 
-## 区分1: バックテスト・シミュレーション — 2026-09-21(1回目の実行。**未完了**。監査 1 回目の指摘 15 件を受けてリードが直した版 = v2。生ログに無かった WebFetch / WebSearch 24 手はリードが機械抽出で補った = 生ログ W 節、リードの取り直しは L 節)
+## 区分1: バックテスト・シミュレーション — 2026-09-21(1回目の実行。**未完了**。監査 1〜8 回目(指摘 15・8・7・5・4・4・2・5 件)を受けてリードが直した版 = v9。版ごとの処置は `docs/AUDITOR/VERDICTS/2026-09-21_tools_scan_cat1.md`。生ログに無かった WebFetch / WebSearch 24 手はリードが機械抽出で補った = 生ログ W 節、リードの取り直しは L 節)
 
 **語の定義(委任文 §4 の印との対応。監査 2 回目の指摘 7・3 回目の指摘 6)**: 印は委任文の 5 種(一次資料 / 実測 / 推定 / 仮定 / 未確認)だけを使う。「**未検算**」は独立の印ではなく「推定」の下位区分で、本文では必ず「推定 = 未検算、W-n」(n = 生ログ W 節の取得の番号)の形で書く。意味は「取得はしたが、WebFetch / WebSearch の**要約**止まりで原文と突き合わせていない」。「未確認」= 取得していない(試したことを併記)。「実測」= この環境で打ったコマンドの出力そのもの。「一次資料」= 原文(PyPI JSON の生データ、原文ページの curl)から取った値。
 
@@ -160,7 +160,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
   すれば通る可能性があるが、今回は外部ツール調査であり対象リポジトリへの `add_repo` は行って
   いない)。→ 同じ情報(スター数・フォーク数・コミット数・ライセンス)は `WebFetch` で
   `github.com/<owner>/<repo>` の HTML ページを直接開くことで取得できた(下記のツール別表)。
-  **「API は塞がっているが HTML ページは通る」という非対称がある。**
+  **「API は塞がっているが HTML ページは通る」という非対称がある。**リードの取り直しでは `curl` の HTML も 403 だった(生ログ L-5)ので、正確には「curl は API も HTML も不可、WebFetch の HTML は可(W-9・W-11・W-13・W-14)」。
 - 第2経路(オーナーPC): 上のどちらも今回はこの環境から**別の手段で取得できた**ため、
   オーナーPC 経路は不要だった。もし両方とも塞がっていた場合は、オーナーPC で
   `gh api repos/<owner>/<repo>` または通常のブラウザで GitHub ページを開く、が次の手になる。
@@ -192,12 +192,12 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 7. QSTrader(quantstart） — 一次資料(ライセンス MIT のみ) — オブジェクト指向のバックテストフレームワーク、最終更新2024-06(約2年前・活動低調の可能性)
 8. Lean CLI(QuantConnect） — 一次資料(ライセンス Apache のみ) — LEAN エンジンをローカル/クラウドで動かす CLI、最終更新2026-08(活発)
 9. PyAlgoTrade — 一次資料(ライセンスのみ) — 最終更新2018-08(**8年前、事実上メンテ停止の疑い。要確認**)
-10. Zenbot(carlos8f、本物) — WebSearch(存在確認のみ) — Node.js+MongoDB の暗号資産ボット、多数のフォークが存在(本家の活動状況は未確認)
+10. Zenbot(carlos8f、本物) — 推定 = 未検算、W-24(検索結果の見出しのみ) — Node.js+MongoDB の暗号資産ボット、多数のフォークが存在(本家の活動状況は未確認)
 11. Qlib(PyPI名 `pyqlib`) — 一次資料(ライセンスのみ) — AI志向の定量投資プラットフォーム、最終更新2025-08
 12. VnPy — 一次資料(ライセンスのみ) — 中国発の量トレードシステム開発フレームワーク、MIT、最終更新2026-05(活発)
 13. Jesse — 一次資料(ライセンスのみ)+ 推定 = 未検算、W-23(pricing) — 暗号資産専用フレームワーク、MIT+プレミアム機能、最終更新2026-09-17(非常に活発)
-14. Mendl-Labs/BacktestingCore — WebSearch(GitHub説明文のみ) — event-driven simulation・walk-forward・遺伝的最適化を謳うコア。詳細未確認
-15. Luczinsritter/event_driven_backtesting_engine — WebSearch(GitHub説明文のみ) — look-ahead bias排除を謳う個人プロジェクト、規模・活動未確認
+14. Mendl-Labs/BacktestingCore — 推定 = 未検算、W-4(検索結果の GitHub 説明文のみ) — event-driven simulation・walk-forward・遺伝的最適化を謳うコア。詳細未確認
+15. Luczinsritter/event_driven_backtesting_engine — 推定 = 未検算、W-4(検索結果の GitHub 説明文のみ) — look-ahead bias排除を謳う個人プロジェクト、規模・活動未確認
 16. Bot18(carlos8f、Zenbot作者の別製品) — WebSearch の結果の要約のみ(検索語「carlos8f zenbot github cryptocurrency trading bot」、生ログ W-24。一次資料は未取得) — HFT ボット。「$49.99 の8桁アンロックコード制(有料)、無料お試しあり(ZalgoNet "guest")」は検索結果の要約にある文言(**推定 = 未検算、W-24**)
 
 **カテゴリ越境(区分2「執行・botの枠組み」と重複するため一行のみ記載、深掘りは区分2で)**:
@@ -238,7 +238,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 3. 当方に無い視点で分析できるか: 一次資料+推定 — 「フィード遅延と約定遅延を分離してモデル化する」という状態変数の系統は当方に無い(§8のAと符合)。ただしそれが当方の戦略の結果を変えるかは未検証
 4. 既存の研究成果を向上できるか: 仮定 — 板の待ち行列を研究の模擬に組み込めば、指値約定の楽観性/悲観性の評価(§8 Aの限界)を改善しうる、という仮説段階
 
-**危険**: 供給網: PyPI配布元とGitHubのProject-URLが一致(実測)。wheelの中身に導入時の外部通信・難読化コードは確認されず(実測、展開して確認)。既知の脆弱性: 未確認(未実施)。外部送信: テレメトリの記載は一次資料に見当たらない(未確認、無効化方法の記録は無し)。自動発注・署名機能: バックテスト専用ライブラリであり、鍵を要する送信機能はライブラリ自体には無い(一次資料の機能一覧に発注APIの記載なし、ライブ接続はBinance/Bybit限定と明記)。宣伝・詐欺の兆候: 無し。X投稿は使用報告のみ確認(下記X節)。
+**危険**: 供給網: PyPI配布元とGitHubのProject-URLが一致(実測)。wheelの中身に導入時の外部通信・難読化コードは確認されず(実測、展開して確認)。既知の脆弱性: 未確認(未実施)。外部送信: テレメトリの記載は一次資料に見当たらない(未確認、無効化方法の記録は無し)。自動発注・署名機能: バックテスト専用ライブラリであり、鍵を要する送信機能はライブラリ自体には無い(一次資料の機能一覧に発注APIの記載なし、ライブ接続はBinance/Bybit限定と明記)。宣伝・詐欺の兆候: 無し(根拠: W-16 の X 検索に hftbacktest への言及が 8 URL、うち 2 件をリードが x_fetch で取得 = 生ログ X3。どちらもリポジトリの説明文の紹介で、宣伝・詐欺の兆候なし。**使用報告は未取得**。下の「X の投稿」表に 2 行)。
 
 ---
 
@@ -318,7 +318,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 
 ---
 
-### 浅い候補の主要事実(1行ずつ、一次資料 PyPI classifiers のみ。深掘りは未実施。**生ログの head200 には版・日付・ライセンスが入っていないので、リードが 9 件全部を打ち直して照合した = 生ログ P 節。QSTrader と Lean のライセンス欄が誤りだった**)
+### 浅い候補の主要事実(1行ずつ、一次資料 PyPI classifiers のみ。深掘りは未実施。**生ログの head200 には版・日付・ライセンスが入っていないので、リードが 9 件全部(この表の 8 件 + 同名別物の zenbot)を打ち直して照合した = 生ログ P 節。zenbot は知見表の「同名別物」の確認のためで、この表には載せない。QSTrader と Lean のライセンス欄が誤りだった**)
 
 | 名前 | ライセンス(一次資料) | 版 | 最終更新(一次資料) | 備考 |
 |---|---|---|---|---|
@@ -335,6 +335,8 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 
 | URL | 著者 | 日時 | 本文(逐語) | いいね/RT/返信/表示 | 印 |
 |---|---|---|---|---|---|
+| https://x.com/raczylo/status/1914625798671159434 | raczylo | 2025-04-22T10:22:17Z | 「hftbacktest is a customizable, high-frequency trading & market-making tool built in Rust and Python. It models order dynamics, latencies and uses tick data for backtesting real crypto markets like Binance Futures. #Rust https://github.com/nkaz001/hftbacktest」 | 1/0/0/126 | 紹介(hftbacktest のリポジトリ説明の転載。使用報告ではない。リードが x_fetch で取得 = 生ログ X3) |
+| https://x.com/carlcarrie/status/1805040022917124402 | carlcarrie | 2024-06-24T00:47:32Z | 「HftBacktest  A high-frequency trading and market-making backtesting library developed in Python and Rust, that factors in limit orders, queue positions, and latencies - for market-making, #AMM  https://github.com/nkaz001/hftbacktest」 | 135/18/0/10807 | 紹介(hftbacktest のリポジトリ説明の転載。使用報告ではない。リードが x_fetch で取得 = 生ログ X3) |
 | https://x.com/ML_deep/status/1917632698077831526 | ML_deep | 2025-04-30T17:30:37Z | 「vectorbt 開発も盛んで有償バージョンはパフォーマンスも改善されてるっぽい。一方でサンプルコードが2度付評価みたいなことしてて厳しさある…。無論、モジュールの使い方の例なのだろうけど、二度漬けしまくりパラメータなんてトレードで使ったら即あの世行きだぞ…。https://vectorbt.pro/#why-vectorbt-pro」 | 7/0/0/2122 | 使用報告(vectorbtの有償版言及+サンプルコードの罠への注意喚起) |
 | https://x.com/tommy_love123/status/1972317745900585328 | tommy_love123 | 2025-09-28T15:09:29Z | 「【市場が55%下落する中で利益299%？あるYouTube動画が明かした驚異の取引戦略、その核心とは】 freqtrade関連の動画から拾ってきたのですが、スーパートレンド (Supertrend)＋MACD+RSIの組み合わせでDOT（ポルカドット）の無期限先物において、1年間で299%の総利益を達成やり方みたいです。 これがホントであるか、DOT以外でも通用するようなトレード戦略であるかどうかfreqtradeで確認したいと思います。 動画 https://youtu.be/71EA1u4K_Zk?si=aQ_qMEonSE_Urgtb レポート https://docs.google.com/document/d/1mTL48uHM2KqBbxiU1_VjDdrtN32h6Ixbq5fMQEj1r_o/edit?usp=sharing」 | 46/1/0/5166 | 他者の主張の転載(299% は動画の主張、投稿者も未確認。リードが x_fetch で取得 = 生ログ X2) |
 | https://x.com/tommy_love123/status/1971429111492227297 | tommy_love123 | 2025-09-26T04:18:22Z | 「【AIエージェント：Codex AI+ｆreqtrade】 もう、とんでもない世界が実現している。 OpenAIのCodexの自律性の能力が向上したので、期待値（リターン、利益率）を上げるためのトレード戦略を自力で考え、それをコード化し、freqtradeコマンドを使って特定の取引所のAPIを叩き、オンライントレードを実施している。 だれが、この世界を想像できただろうか？」(引用元 同著者「freqtrade＋codex aiで自動的にバックテストまでやってくれます。怖いぐらいですね。 自然言語で命令し、ユーザの望みのトレード戦略のロジックまで構築できる。」) | 325/32/1/68290 | 使用報告(Codex + freqtrade で発注まで。区分 6 にも関係。リードが x_fetch で取得 = 生ログ X2) |
