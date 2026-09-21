@@ -8004,10 +8004,10 @@
    "move": 301,
    "tools": {
     "Read": 4,
-    "Bash": 11,
+    "Bash": 13,
     "Agent": 1
    },
-   "n_tools": 16,
+   "n_tools": 18,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,

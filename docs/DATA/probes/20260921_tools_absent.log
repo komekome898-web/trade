@@ -217,3 +217,30 @@ scripts/verify_liq_instrument.py
 ## E-2 src の一致(執行の有無)
 $ git ls-files src | xargs grep -liE 'gmo|bitbank|coincheck|okcoin|zaif'
 src/bot/monitoring/aggregate.py
+
+## E-3 scripts の一致 14 本の中身(どの語に当たったか。監査 6 回目の指摘 1 を受けて追加。2026-09-21T15:34:56Z)
+$ for f in $(git ls-files scripts | xargs grep -liE 'gmo|bitbank|coincheck|okcoin|zaif'); do printf '%s: ' "$f"; grep -oiE 'gmo[ _-]?(coin|click|fx|_fx)?[a-z_]*|bitbank|coincheck|okcoin|zaif' "$f" | tr 'A-Z' 'a-z' | sort | uniq -c | tr '\n' ' '; echo; done
+scripts/constants_inventory.py:       2 gmo        1 gmo-fx       2 gmo_fx_usdjpy 
+scripts/dashboard.py:       2 bitbank       2 gmo 
+scripts/fetch_bitbank_daily.py:       8 bitbank 
+scripts/fetch_external.py:       8 bitbank 
+scripts/judge_board_round.py:       5 gmo       3 gmo        1 gmo btc_jpy       1 gmo decision       1 gmo maker       1 gmo too       6 gmo-cal       1 gmo-maker       1 gmo_       1 gmo_btc_jpy_       3 gmo_day_bar       2 gmo_day_count 
+scripts/record_venues.py:      35 bitbank       7 gmo       5 gmo        1 gmo coin       2 gmo get       1 gmo iso       1 gmo rate       2 gmo request       1 gmo spot       2 gmo status       1 gmo trades       1 gmo-ticker       1 gmo-trades       2 gmo_reqs_per_sec       4 gmo_ticker       3 gmo_ticker_interval       2 gmo_tid       3 gmo_trade_i       3 gmo_trade_symbols       4 gmo_trades       3 gmo_trades_interval 
+scripts/research_fx_carry.py:      12 gmo       2 gmo actual       1 gmo calendar       1 gmo coin       1 gmo did       1 gmo mid       1 gmo offers       1 gmo retry       1 gmo swap       2 gmo-calibrated       1 gmo_mid_bps_day       2 gmo_pid       2 gmo_start       8 gmo_swap_csv       2 gmo_swap_usdjpy       2 gmo_swaps       2 gmo_url 
+scripts/research_fx_event_ticks.py:       6 gmo       2 gmo        2 gmo floor       2 gmo retail       1 gmo sees       2 gmo-floor       1 gmo_bps       4 gmo_floor_roundtrip_bps       1 gmo_t 
+scripts/research_fx_events.py:       1 gmo spread 
+scripts/research_fx_fundamentals.py:       1 gmo  
+scripts/research_fx_s4_judgment.py:       1 gmo       1 gmo retail       1 gmo_floor_roundtrip_bps 
+scripts/research_fx_sessions.py:       1 gmo api 
+scripts/research_fx_tokyofix.py:       1 gmo       1 gmo fills       1 gmo per 
+scripts/research_signals.py:       2 bitbank 
+## E-4 research_fx_* と constants_inventory の gmo は FX(usdjpy・swap・floor)の文脈か
+$ grep -liE 'usdjpy|usd/jpy|dukascopy' $(git ls-files scripts | grep -E 'research_fx_|constants_inventory')
+scripts/constants_inventory.py
+scripts/research_fx_carry.py
+scripts/research_fx_event_ticks.py
+scripts/research_fx_events.py
+scripts/research_fx_fundamentals.py
+scripts/research_fx_s4_judgment.py
+scripts/research_fx_sessions.py
+scripts/research_fx_tokyofix.py

@@ -71,7 +71,7 @@
 - **B 清算連鎖の単位(o3c)に対する別実装の再現ゲート**: 名前で探すと `scripts/validate_composite.py`(composite 用)だけ(ログ B-2)。ログ B の一致一覧のうち o3c のファイルは 0 本(ログ B-3)。
 - **C ルックアヘッドの汎用の自動検出**: 一致は個別の研究スクリプトに埋め込んだ assert 4 本(ログ C-2 に名前)。汎用の検出器(任意の戦略・任意の模擬に掛けられるもの)は無い。ログ C の一致一覧は語の一致(説明文・変数名)で、検出器の存在を示すものではない。
 - **D 実験の追跡の道具**: 一致は `scripts/phase2/` の 5 本で、いずれも台帳 `ITER.md` を文書として参照するもの(ログ D)。道具(実行・パラメータ・結果を自動で記録する機構)は無い。
-- **E bitFlyer 以外の国内の暗号資産の執行**: `src/` の一致は `monitoring/aggregate.py`(表示)だけ(ログ E-2)。`scripts/` の一致は quotes / trades の記録と研究(ログ E に名前)で、執行は無い。kabu(`jpx/`)は株。
+- **E bitFlyer 以外の国内の暗号資産の執行**: `src/` の一致は `monitoring/aggregate.py`(表示)だけ(ログ E-2)。`scripts/` の一致 14 本は 2 群に分かれる(ログ E-3 に 1 本ずつどの語に当たったかを記録): 暗号資産の文脈は 6 本(`dashboard.py`・`fetch_bitbank_daily.py`・`fetch_external.py`・`judge_board_round.py`・`record_venues.py`・`research_signals.py` = GMO コイン / bitbank の quotes・trades の記録と研究)、残る 8 本(`research_fx_*` 7 本と `constants_inventory.py`)の「GMO」は FX(USD/JPY のスワップ・スプレッド。`research_fx_carry.py` の 27 行は GMO コインが公表する USD/JPY スワップ)の文脈で、暗号資産ではない(ログ E-4)。どちらにも執行は無い。ログ E の一致一覧は語の一致であって、執行の有無の証拠ではない(証拠は E-2)。kabu(`jpx/`)は株。
 
 ## 9. 記録の形
 `docs/DATA/SCAN_2026-09-21_tools.md` に区分ごとの節を追記(スキル §4 のテンプレート: 検索計画 / 出典 / 知見(印と含意)/ 候補 に、§3 の候補の一覧と §4 のツールの表を加える)。X の投稿は URL・著者・日時・本文(逐語)・反応数・印(宣伝 / 使用報告)。個人の連絡先は写さない。`STRATEGY_IDEAS.md` / `DATA.md` 向けの一行候補は末尾に提案として(マージしない)。

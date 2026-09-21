@@ -105,3 +105,17 @@
 2. **直した。** 検索語を本文から消し、根拠を「assert に埋め込んだ 4 本(ログ C-2 に名前)」だけにした。当初「多くは『未来』の説明文」と書き足したが、確かめると 48 本中 45 本が lookahead 系の語に一致したので、その文も消した(未確認の形容を足さない)。
 3. **直した。** 「『再現』の語」を消し、「ログ B の一致一覧のうち o3c のファイルは 0 本(ログ B-3、`grep -c o3c` = 0)」に替えた。
 4. **答えた(本文に出典を入れた)。** 出典は `docs/AUDITOR/VERDICTS/2026-09-21_signal_value_design.md` 1 回目の指摘 3(バイト範囲付き `curl` 1 回・HTTP 403 を根拠に「取り直し不可」と書いた)とリードの処置(正規の `scripts/fetch_tardis_samples.py` の GET で 16 標本日すべて取れた)、および `docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_DESIGN_2026-09-21.md` §4。tools の probe ログには無い(別の単位の記録)。
+
+## 6 回目(v9、2026-09-21)— 監査役の出力(逐語)
+
+> 1. [直す] docs/DATA/delegations/20260921_tools_survey_prompt.md:74 — §8「無いもの」E「`scripts/` の一致は quotes / trades の記録と研究(ログ E に名前)で、執行は無い」という特徴づけは、ログ E(docs/DATA/probes/20260921_tools_absent.log:168-186)の実際の一致 14 ファイルのうち少なくとも 8 ファイルの中身と食い違う。research_fx_carry.py / research_fx_event_ticks.py / research_fx_events.py / research_fx_fundamentals.py / research_fx_s4_judgment.py / research_fx_sessions.py / research_fx_tokyofix.py の 7 本は「GMO」の一致理由が GMO コイン(暗号資産取引所)ではなく GMO クリック証券系の FX(外国為替、USD/JPY、Dukascopy ティック)ブランドで、区分 E の対象「bitFlyer 以外の国内の**暗号資産**の執行」自体と資産クラスが異なる(実測: `grep -n "gmo" scripts/research_fx_s4_judgment.py` 等でいずれも USD/JPY・Dukascopy・BLS/FOMC カレンダーの文脈のみで crypto の言及なし)。constants_inventory.py も一致理由は `gmo_fx_usdjpy.spread_sen`(FX スプレッド定数)で同様に非暗号資産。残る scripts(dashboard.py・fetch_bitbank_daily.py・fetch_external.py・judge_board_round.py・record_venues.py・research_signals.py の 6 本)は GMO コイン/bitbank の crypto 文脈で「quotes/trades の記録と研究」の特徴づけに合致するが、地の文はこの 6 本と資産クラスの異なる 8 本を区別せず 14 本を一括して同じ特徴づけで括っている。同じ§8 の A・C 項目には「ログの一致一覧は語の一致であって〜の証拠ではない」という注記が明記されているのに(:70, :72)、E にはこの注記が無い。この節は5回目監査で「本文に検索語も件数も写さず、ログの節名だけで根拠を示す」よう直し方を変えた対象だが、その回で実際に精査されたのは A(待ち行列)・B(再現ゲート)・C(ルックアヘッド)と§5-1の curl 実例のみで、D・E は再検証されていない。E の「執行は無い」という結論自体はログ E-2(src の一致は aggregate.py のみ)で別途支持されており崩れないが、scripts/ 側の特徴づけは不正確なまま(P1: 否定的主張=無いものの根拠に、資産クラスの異なる語の一致を無区別に含めている)。
+>
+> 上記以外の検査結果(指摘なし):
+> - §8「無いもの」A・B・C・D の本文各主張は、ログ docs/DATA/probes/20260921_tools_absent.log の該当節(A-2〜A-4, B-2〜B-3, C-2, D)の実際のコマンド・件数・ファイル名と再実行して照合した限り一致した。D「scripts/phase2/ の5本はいずれもITER.mdを文書として参照するもの」は、当該5ファイルの `mlflow|wandb|experiment_track|多重性の台帳|ITER.md` 一致行を個別に確認し、全行が ITER.md 参照でmlflow/wandb実利用は無いことを確認済み(リポジトリ全体で mlflow/wandb の依存・利用は当該ログ以外に一件も無いことも確認)。
+> - §5-1「今日の実例」(:47)の出典2本は実在し、内容(バイト範囲付き curl の HTTP 403 → 正規スクリプト `scripts/fetch_tardis_samples.py` の GET で 16 標本日すべて取得)を裏付けた。docs/AUDITOR/VERDICTS/2026-09-21_signal_value_design.md の1回目指摘3・その処置、および docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_DESIGN_2026-09-21.md §4(`16/16 days ok`)の記載と一致する。
+> - 1〜5回目の監査への処置(v5〜v9の各差分)を通読した範囲では、オーナー要求 L-377〜L-380(幅広く調べる/料金で足切りしない/到達手段を尽くす/最低環境前提/甘えと抜けを無くす)のいずれかを弱める方向の変更は見当たらなかった。§5-6(登録の要る SaaS の深掘り手順の追加)・§2(区分の2回目以降の続け方)・§8 の機械化(scripts/tools_inventory.py)・§8「無いもの」の裏取りログ化はいずれも要求を強める/具体化する方向の変更だった。
+> - 本文書は CLAUDE.md §5 の研究プレレジ(新戦略・パラメータの事前登録)には当たらず、族・MDE・Jev 設計判定(rank-observables/rank-covariates)を要求する対象ではないと判断した(ツール調査班への委任文であり、効果の測定・判定を含まない)。この点で「該当なし」とした。
+
+リードの処置(v10):
+
+1. **直した(監査役が正しい。リードは E の 14 本の中身を 1 本ずつ見ていなかった)。** ログに E-3(14 本それぞれが当たった語の一覧)と E-4(`research_fx_*` 7 本と `constants_inventory.py` が usdjpy / dukascopy に一致 = FX の文脈)を機械生成で追加し、本文 E を「暗号資産の文脈 6 本 / FX の文脈 8 本(うち `research_fx_carry.py` 27 行は GMO コインが公表する USD/JPY スワップ)/ どちらにも執行は無い / ログ E の一致一覧は語の一致で執行の有無の証拠ではない(証拠は E-2)」に書き換えた。A・C と同じ注記を E にも入れた。
