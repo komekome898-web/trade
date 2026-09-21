@@ -15,6 +15,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import math
@@ -1263,8 +1264,21 @@ def test_resume_did_not_touch_the_cascade_rows():
         pytest.skip("再開がまだこの環境で実行されていない")
     s = json.loads(js.read_text(encoding="utf-8"))
     kept = s["触っていないもの(MD5 が前後で同じ)"]
+    tp = out / "tp_append_summary.json"
+    appended = ({a["ファイル"]: a for a in
+                 json.loads(tp.read_text(encoding="utf-8"))["足した行"]}
+                if tp.exists() else {})
     for name, md5 in kept.items():
-        assert vv.md5_of(out / name) == md5
+        if name in appended:
+            # 2026-09-21(L-355・L-356)に順張り利確の行を**足した**ので、ファイル
+            # 全体の MD5 は変わる。足す前のバイト列がそのまま先頭に残っていること
+            # (= 既存の行が 1 行も変わっていないこと)を見る。
+            a = appended[name]
+            assert a["追加前のファイルのMD5"] == md5
+            head = (out / name).read_bytes()[:a["追加前のバイト数"]]
+            assert hashlib.md5(head).hexdigest() == md5
+        else:
+            assert vv.md5_of(out / name) == md5
     assert s["Q5b(a) の母集団"] == 506
 
 
@@ -1284,3 +1298,272 @@ def test_resume_raises_when_the_rows_changed():
     assert "after = {n: md5_of(out_dir / n)" in body
     assert "cascades.csv.gz" in body and "prints_policy.csv.gz" in body
     assert "raise RuntimeError" in body and "連鎖ごとの行が変わった" in body
+
+
+# ===========================================================================
+# 順張りの利確 5 bp(入り値基準)の変種(2026-09-21、L-355・L-356)
+# ===========================================================================
+def _tp_world(prices_fn, n: int = 900):
+    """合成の約定列(1 秒刻み)と、それを見る偽の窓。"""
+    times = np.arange(0, n * 1000, 1000, dtype=np.int64)
+    prices = np.array([float(prices_fn(int(t))) for t in times])
+    cache = vv.SyntheticCache(times, prices)
+
+    def price_fn(t_ms):
+        return vv.price_at_or_after(times, prices, int(t_ms))
+
+    return times, prices, cache, price_fn
+
+
+def test_take_profit_fill_is_after_the_entry_fill_and_is_the_first_to_reach():
+    """(a) 利確の約定は**入りの約定より後**で、目標価格に**最初に達した**約定。
+    入りより前に目標を超えた約定があっても、それは使わない。"""
+    # 0〜9 秒は 101(目標 100.05 を超えている)、10 秒で 100 に落ちてから入る。
+    def px(t):
+        if t < 10_000:
+            return 101.0
+        if t < 40_000:
+            return 100.0
+        if t < 44_000:
+            return 100.04          # まだ 5 bp に届かない
+        return 100.06              # 44 秒で初めて超える
+    times, prices, cache, price_fn = _tp_world(px)
+    prints = [{"print_id": "a", "ts_ms": 10_000, "side": "BUY"},
+              {"print_id": "b", "ts_ms": 200_000, "side": "BUY"}]
+    jud = [vv.JUDGE_CONTINUE, vv.JUDGE_CONTINUE]
+    end = 200_000 + vv.CASCADE_END_GAP_S * 1000
+    res = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end,
+                                 tp_bp=vv.TP_BP, tp_scan=cache.scan_first_reach)
+    tp_legs = [g for g in res["legs"] if g["出口の理由"] == vv.EXIT_TP]
+    assert len(tp_legs) >= 1
+    g = tp_legs[0]
+    assert g["入りの約定時刻_ms"] == 11_000          # 10 秒 + 遅れ 1 秒
+    assert g["出の約定時刻_ms"] == 44_000            # 初めて 100.05 を超えた約定
+    assert g["出の約定時刻_ms"] > g["入りの約定時刻_ms"]
+    assert g["利確までの秒"] == pytest.approx(33.0)
+    assert g["レグ損益_bp"] >= vv.TP_BP - 1e-9       # 目標以上で閉じている
+    row = [r for r in res["path"] if r["判断"] == vv.sp.JUDGE_TP][0]
+    assert row["約定価格"] == pytest.approx(100.06)
+    assert row["行動"] == vv.sp.ACT_CLOSE
+
+
+def test_take_profit_target_stays_on_the_entry_price_after_a_hold():
+    """(b) 目標は**入り値基準**で、次の清算でホールドしても作り直さない。"""
+    # 入り 100.0 → 20 秒で 100.03(3 bp)→ そこで次の清算(ホールド)→ 100.05。
+    def px(t):
+        if t < 20_000:
+            return 100.0
+        if t < 60_000:
+            return 100.03
+        return 100.05
+    times, prices, cache, price_fn = _tp_world(px)
+    prints = [{"print_id": "a", "ts_ms": 0, "side": "BUY"},
+              {"print_id": "b", "ts_ms": 30_000, "side": "BUY"}]
+    jud = [vv.JUDGE_CONTINUE, vv.JUDGE_UNKNOWN]      # 入って、次はホールド
+    end = 30_000 + vv.CASCADE_END_GAP_S * 1000
+    res = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end,
+                                 tp_bp=vv.TP_BP, tp_scan=cache.scan_first_reach)
+    g = [x for x in res["legs"] if x["出口の理由"] == vv.EXIT_TP][0]
+    # 入り値 100.0 の 5 bp = 100.05。ホールドの時点の値段(100.03)で作り直したなら
+    # 目標は 100.08 になり、この約定列では一度も届かない。
+    assert g["出の約定時刻_ms"] == 60_000
+    assert g["レグ損益_bp"] == pytest.approx(5.0, abs=1e-6)
+    assert res["n_entries"] == 1                     # 建玉は 1 つ
+
+
+def test_take_profit_falls_back_to_the_old_path_when_the_target_is_never_reached():
+    """(c) 届かないなら、従来の道筋(次の清算で 3 択 / 連鎖の終わり)と同じ。"""
+    times, prices, cache, price_fn = _tp_world(lambda t: 100.0)
+    prints = [{"print_id": "a", "ts_ms": 10_000, "side": "BUY"},
+              {"print_id": "b", "ts_ms": 100_000, "side": "BUY"}]
+    end = 100_000 + vv.CASCADE_END_GAP_S * 1000
+    for jud in ([vv.JUDGE_CONTINUE, vv.JUDGE_CONTINUE],
+                [vv.JUDGE_CONTINUE, vv.JUDGE_STOP],
+                [vv.JUDGE_CONTINUE, vv.JUDGE_UNKNOWN],
+                [vv.JUDGE_STOP, vv.JUDGE_CONTINUE],
+                [vv.JUDGE_UNKNOWN, vv.JUDGE_CONTINUE]):
+        a = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end)
+        b = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end,
+                                   tp_bp=vv.TP_BP, tp_scan=cache.scan_first_reach)
+        assert a["pnl_bp"] == pytest.approx(b["pnl_bp"]), jud
+        assert a["hold_seconds"] == pytest.approx(b["hold_seconds"]), jud
+        assert a["n_entries"] == b["n_entries"], jud
+        assert [r["行動"] for r in a["path"]] == [r["行動"] for r in b["path"]], jud
+        assert [r["判断"] for r in a["path"]] == [r["判断"] for r in b["path"]], jud
+        assert not [g for g in b["legs"] if g["出口の理由"] == vv.EXIT_TP]
+
+
+def test_take_profit_never_changes_the_reverse_legs():
+    """(d) 逆張りの建玉の損益は `logistic_3択` と一致する(利確は順張りだけ)。"""
+    times, prices, cache, price_fn = _tp_world(lambda t: 100.0 + t / 1.0e5)
+    prints = [{"print_id": "a", "ts_ms": 10_000, "side": "BUY"},
+              {"print_id": "b", "ts_ms": 100_000, "side": "BUY"},
+              {"print_id": "c", "ts_ms": 200_000, "side": "BUY"}]
+    end = 200_000 + vv.CASCADE_END_GAP_S * 1000
+    for jud in ([vv.JUDGE_STOP, vv.JUDGE_STOP, vv.JUDGE_STOP],
+                [vv.JUDGE_STOP, vv.JUDGE_UNKNOWN, vv.JUDGE_STOP],
+                [vv.JUDGE_UNKNOWN, vv.JUDGE_STOP, vv.JUDGE_UNKNOWN]):
+        a = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end)
+        b = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end,
+                                   tp_bp=vv.TP_BP, tp_scan=cache.scan_first_reach)
+        assert {g["向き"] for g in b["legs"]} == {vv.POS_AGAINST}
+        assert a["pnl_bp"] == pytest.approx(b["pnl_bp"]), jud
+        assert a["hold_seconds"] == pytest.approx(b["hold_seconds"]), jud
+    # 順張りと逆張りが混ざる連鎖(逆張り → 決済 → 順張りで利確)でも、
+    # **逆張りのレグ**は 2 つの版で 1 円も変わらない。
+    jud = [vv.JUDGE_STOP, vv.JUDGE_CONTINUE, vv.JUDGE_CONTINUE]
+    a = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end)
+    b = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end,
+                               tp_bp=vv.TP_BP, tp_scan=cache.scan_first_reach)
+    ra = [g["レグ損益_bp"] for g in a["legs"] if g["向き"] == vv.POS_AGAINST]
+    rb = [g["レグ損益_bp"] for g in b["legs"] if g["向き"] == vv.POS_AGAINST]
+    assert len(ra) == 1 and ra == pytest.approx(rb)
+    # 順張りのレグは利確で閉じ、そこだけが 2 つの版の差になる
+    assert [g["出口の理由"] for g in b["legs"] if g["向き"] == vv.POS_WITH] == [
+        vv.EXIT_TP]
+    assert [g["出口の理由"] for g in a["legs"] if g["向き"] == vv.POS_WITH] == [
+        vv.EXIT_CASCADE_END]
+
+
+def test_leg_rows_sum_to_the_cascade_pnl_and_reconstruct_from_the_print_rows():
+    """レグの損益の合計は連鎖の損益と一致し、道筋の行からも同じレグが組み直せる。"""
+    syn = vv.synthetic_stage2_inputs()
+    cache = vv.SyntheticCache(syn["times"], syn["prices"])
+    bands = {vv.POS_1ST: (0.38, 0.5), vv.POS_CHAIN: (0.56, 0.66)}
+    base = {vv.POS_1ST: 0.4343, vv.POS_CHAIN: 0.5999}
+    built = vv.run_policies(syn["cascades"], syn["prob"], syn["pos"], bands, base,
+                            cache, policies=("logistic_3択", "完全な判断"),
+                            types=(vv.TYPE_A,), baselines={},
+                            count_policies=("logistic_3択",), with_tp=True)
+    assert {r["方策"] for r in built["cascade_rows"]} == {
+        "logistic_3択", "完全な判断", vv.TP_POLICY}
+    by = {}
+    for g in built["leg_rows"]:
+        key = (g["方策"], g["型"], g["遅れ_秒"], g["bundle_id"])
+        by[key] = by.get(key, 0.0) + float(g["レグ損益_bp"])
+    for r in built["cascade_rows"]:
+        key = (r["方策"], r["型"], r["遅れ_秒"], r["bundle_id"])
+        if r["欠測"] or not r["入った"]:
+            continue
+        assert by.get(key, 0.0) == pytest.approx(r["pnl_bp"], abs=1e-9)
+    rec = vv.legs_from_print_rows(built["print_rows"])
+    direct = [g for g in built["leg_rows"] if float(g["遅れ_秒"]) == vv.MAIN_DELAY]
+    key = lambda g: (g["bundle_id"], g["方策"], g["向き"], g["出口の理由"],
+                     round(float(g["レグ損益_bp"]), 6))
+    assert sorted(map(key, rec)) == sorted(map(key, direct))
+
+
+def test_run_policies_can_emit_the_take_profit_line_alone():
+    """段2 は**変種だけ**を通す(`policies=()` + `with_tp=True`)。"""
+    syn = vv.synthetic_stage2_inputs()
+    cache = vv.SyntheticCache(syn["times"], syn["prices"])
+    bands = {vv.POS_1ST: (0.38, 0.5), vv.POS_CHAIN: (0.56, 0.66)}
+    base = {vv.POS_1ST: 0.4343, vv.POS_CHAIN: 0.5999}
+    built = vv.run_policies(syn["cascades"], syn["prob"], syn["pos"], bands, base,
+                            cache, policies=(), types=(vv.TYPE_A,), baselines={},
+                            count_policies=(), with_tp=True)
+    assert {r["方策"] for r in built["cascade_rows"]} == {vv.TP_POLICY}
+    assert {r["方策"] for r in built["print_rows"]} == {vv.TP_POLICY}
+    assert len(built["cascade_rows"]) == len(syn["cascades"]) * len(vv.DELAYS_S)
+
+
+def test_appending_rows_keeps_every_existing_byte(tmp_path):
+    """(e) 行を足しても既存の行は 1 行も変わらない(gzip のメンバーを継ぎ足す)。"""
+    path = tmp_path / "cascades.csv.gz"
+    old = [{"bundle_id": "b1", "方策": "logistic_3択", "pnl_bp": 1.5},
+           {"bundle_id": "b2", "方策": "logistic_3択", "pnl_bp": -2.0}]
+    vv.sp.write_csv_gz(path, old)
+    before = path.read_bytes()
+    md5_before = hashlib.md5(before).hexdigest()
+    new = [{"bundle_id": "b1", "方策": vv.TP_POLICY, "pnl_bp": 3.25}]
+    info = vv.append_csv_gz(path, new)
+    after = path.read_bytes()
+    assert after[:len(before)] == before                   # 1 バイトも動かない
+    assert info["追加前のファイルのMD5"] == md5_before
+    assert (info["追加前の既存行(展開後)のMD5"]
+            == info["追加後に既存行だけを抜き出した(展開後)のMD5"])
+    d = pd.read_csv(path)
+    assert len(d) == 3
+    assert list(d["bundle_id"]) == ["b1", "b2", "b1"]
+    assert float(d[d["方策"] == vv.TP_POLICY]["pnl_bp"].iloc[0]) == pytest.approx(3.25)
+    # 既存の 2 行は値も並びもそのまま
+    assert list(d.iloc[:2]["pnl_bp"]) == pytest.approx([1.5, -2.0])
+
+
+def test_take_profit_policy_is_type_a_with_the_same_bands_as_the_three_way():
+    """変種は型 A・帯は `logistic_3択` と同じものを読むだけ(作り直さない)。"""
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    body = src[src.index("if with_tp and"):src.index("if with_exit300 and")]
+    assert 'judge_cache["logistic_3択"]' in body       # 判断は 3 択のまま
+    assert "TYPE_A" in body and "tp_bp=TP_BP" in body
+    assert vv.TP_BP == 5.0
+    assert vv.TP_POLICY == "logistic_3択(順張り利確5bp・入り値基準)"
+
+
+@needs_data
+def test_stage2_take_profit_rows_were_appended_once():
+    out = vv.DEFAULT_OUT_STAGE2
+    js = out / "tp_append_summary.json"
+    if not js.exists():
+        pytest.skip("順張り利確の追加がまだこの環境で実行されていない")
+    s = json.loads(js.read_text(encoding="utf-8"))
+    assert s["通した方策"] == vv.TP_POLICY
+    assert s["後半の読み"].startswith("12 度目")
+    for a in s["足した行"]:
+        head = (out / a["ファイル"]).read_bytes()[:a["追加前のバイト数"]]
+        assert hashlib.md5(head).hexdigest() == a["追加前のファイルのMD5"]
+    d = pd.read_csv(out / "cascades.csv.gz", usecols=["方策", "型", "遅れ_秒"])
+    tp = d[d["方策"] == vv.TP_POLICY]
+    # 2,000 本 × 遅れ 3 通り × 費用 3 通り、型 A だけ
+    assert len(tp) == 2000 * len(vv.DELAYS_S) * 3
+    assert set(tp["型"]) == {vv.TYPE_A}
+
+
+def test_first_action_has_two_countings_that_differ_only_on_later_entries():
+    """「最初の行動」の数え方 2 通り(連鎖の中で最初に入った行動 / 1 件目のプリントの
+    行動)。違うのは「1 件目では入らず途中で入った連鎖」だけ。"""
+    rows = [
+        # 1 件目は「わからない」で入らず、2 件目で逆張りに入る連鎖
+        {"方策": "P", "型": "A", "遅れ_秒": 1, "bundle_id": "b1", "位置": 0,
+         "行動": vv.sp.ACT_NOTHING},
+        {"方策": "P", "型": "A", "遅れ_秒": 1, "bundle_id": "b1", "位置": 1,
+         "行動": vv.sp.ACT_NEW_AGAINST},
+        # 1 件目で順張りに入る連鎖
+        {"方策": "P", "型": "A", "遅れ_秒": 1, "bundle_id": "b2", "位置": 0,
+         "行動": vv.sp.ACT_NEW_WITH},
+        # 一度も入らない連鎖
+        {"方策": "P", "型": "A", "遅れ_秒": 1, "bundle_id": "b3", "位置": 0,
+         "行動": vv.sp.ACT_NOTHING},
+    ]
+    any_ = vv.first_action_from_print_rows(rows)
+    at0 = vv.first_action_from_print_rows(rows, at_first_print=True)
+    k = lambda b: ("P", "A", 1.0, b)
+    assert any_[k("b1")] == vv.POS_AGAINST and at0[k("b1")] == "入らない"
+    assert any_[k("b2")] == vv.POS_WITH and at0[k("b2")] == vv.POS_WITH
+    assert any_[k("b3")] == "入らない" and at0[k("b3")] == "入らない"
+
+
+def test_tp_tables_rebuild_reads_only_the_written_rows():
+    """`tp-tables` は書かれた行だけを読む(後半の生データも rows_* も読まない)。"""
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    body = src[src.index("def run_tp_tables("):src.index("def run_stage2_tp(")]
+    assert "cascades.csv.gz" in body and "prints_policy.csv.gz" in body
+    for forbidden in ("ROWS_CONTINUE", "ROWS_MATERIALS", "WindowCache(",
+                      "select_stage2_cascades", "run_policies("):
+        assert forbidden not in body, forbidden
+    # 利確までの秒と Q0 は道筋の行から出ないので、その場のものを残す
+    assert '"q_tp_seconds.csv", "q_tp_q0.csv"' in body
+
+
+@needs_data
+def test_stage2_take_profit_tables_match_the_recorded_three_way_line():
+    """足した後も、従来の ① 3 択 A の数は記録(§2 の最初の行動別)と同じまま。"""
+    path = vv.DEFAULT_OUT_STAGE2 / "q_tp_by_first_action.csv"
+    if not path.exists():
+        pytest.skip("順張り利確の表がまだこの環境で作られていない")
+    d = pd.read_csv(path)
+    d = d[(d["数え方"] == vv.FA_FIRST_PRINT) & (d["線"] == vv.TP_BASE_LINE)]
+    got = {str(r["最初の行動"]): int(r["n"]) for _i, r in d.iterrows()}
+    assert got[vv.POS_WITH] == 1047      # 記録 §2「順張り 1,047 本」
+    assert got[vv.POS_AGAINST] == 435    # 「逆張り 435 本」
+    assert got["入らない"] == 518        # 「わからない 518 本」

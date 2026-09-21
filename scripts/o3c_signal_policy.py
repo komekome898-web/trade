@@ -138,7 +138,14 @@ POS_NONE, POS_WITH, POS_AGAINST = "建玉なし", "順張り", "逆張り"
 JUDGE_STOP, JUDGE_CONTINUE, JUDGE_UNKNOWN = "止まる", "続く", "わからない"
 JUDGE_EXIT = "終わり"  # 連鎖の終わりの強制決済の行だけに使う専用ラベル(用語表の3択では
                        # ない。反証者レビュー8 致命-3、R2.7)
+JUDGE_TP = "利確"      # 順張りの建玉を入り値基準の目標で閉じた行だけに使う専用ラベル
+                       # (2026-09-21、L-355・L-356。用語表の3択ではない)
 TYPE_A, TYPE_B = "A", "B"
+
+# レグ(建玉 1 つ)の出口の理由。`simulate_cascade` の戻り値 `legs` に入る。
+EXIT_TP = "利確"
+EXIT_NEXT_PRINT = "次の清算で決済"
+EXIT_CASCADE_END = "連鎖の終わり"
 
 ACT_NEW_WITH = "新規_順張り"
 ACT_NEW_AGAINST = "新規_逆張り"
@@ -458,10 +465,19 @@ def load_logit_probs_for_cascades(cascades: dict, materials_path: Path = ROWS_MA
 # 段4: 方策の模擬(状態機械)
 # ===========================================================================
 def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_type: str,
-                     delay_s: float, price_fn, cascade_end_ts: int) -> dict:
+                     delay_s: float, price_fn, cascade_end_ts: int,
+                     tp_bp: float | None = None, tp_scan=None) -> dict:
     """`prints`(ts 順)・`judgments`(同じ長さ)から 1 本の連鎖の損益・回数・保有秒を返す。
     `price_fn(t_ms)` は `(price, matched_ts)` を返す(at_or_after、穴は price_fn 側)。
     損益の符号は建玉の向き(清算の向きではない)。
+
+    `tp_bp`(bp)と `tp_scan` を渡すと、**順張りの建玉だけ**に「入りの約定価格から
+    `tp_bp` 進んだ価格で利確する」出口が付く(2026-09-21、L-355・L-356)。
+    `tp_scan(after_ts, until_ts, target_px, dir_sign)` は `after_ts` より後・
+    `until_ts` 以下で `dir_sign*(値段 − target_px) >= 0` になる**最初の約定**の
+    `(値段, 時刻ms)` を返す(無ければ `(NaN, None)`)。目標は入り値で決まり、
+    ホールドしても動かない。逆張りの建玉は一切変えない。`tp_bp` が None なら
+    この分岐は 1 行も走らないので、従来の道筋と完全に同じ。
 
     `path`(戻り値)の各行は「レグ損益_bp」を持つ(決済・ドテン・連鎖の終わりの強制決済の
     行だけ数値、他は None)。この列の合計は必ず `pnl_bp` と一致する(反証者レビュー8
@@ -472,11 +488,14 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
     delay_ms = int(round(float(delay_s) * 1000))
     pos = POS_NONE
     entry_price = entry_ts = entry_dir = None
+    entry_fill_ts = None
+    tp_hit = None       # 入りのときに 1 回だけ引く (利確の値段, 利確の約定時刻)
     total_pnl = 0.0
     n_entries = 0
     total_hold_ms = 0
     missing = False
     path_rows = []
+    legs = []
     entered_ever = False
     first_entry_pos = None  # 何件目(0始まり)で最初に建玉を持ったか
 
@@ -487,9 +506,59 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
         total_hold_ms += ts - entry_ts
         return leg_pnl
 
+    def record_leg(reason, leg_pnl, exit_ts, exit_fill_ts, at_pos, tp_seconds=None):
+        legs.append({
+            "位置": at_pos,
+            "向き": (POS_WITH if entry_dir == side_sign else POS_AGAINST),
+            "出口の理由": reason, "レグ損益_bp": leg_pnl,
+            "入りの約定時刻_ms": entry_fill_ts, "出の約定時刻_ms": exit_fill_ts,
+            "保有秒": (exit_ts - entry_ts) / 1000.0,
+            "利確までの秒": tp_seconds})
+
+    def open_leg(px, ts, matched_t, direction):
+        """建玉を作る。順張りで `tp_bp` があるなら、入り値基準の目標に**最初に**
+        達する約定を 1 回だけ引いておく(入りの約定より後・連鎖の終わり + 遅れ まで)。"""
+        nonlocal entry_price, entry_ts, entry_dir, entry_fill_ts, tp_hit
+        entry_price, entry_ts, entry_dir = px, ts, direction
+        entry_fill_ts = matched_t
+        tp_hit = None
+        if (tp_bp is not None and tp_scan is not None and direction == side_sign
+                and px == px and matched_t is not None):
+            target = float(px) * (1.0 + float(direction) * float(tp_bp) * 1e-4)
+            hit_px, hit_ts = tp_scan(int(matched_t),
+                                     int(cascade_end_ts) + delay_ms,
+                                     target, float(direction))
+            if hit_ts is not None and hit_px == hit_px:
+                tp_hit = (float(hit_px), int(hit_ts))
+
+    def take_profit_before(limit_ts: int, at_pos: int) -> bool:
+        """`limit_ts`(目標時刻)までに利確の約定が来ていたら、そこで建玉を閉じる。"""
+        nonlocal pos, entry_price, entry_ts, entry_dir, entry_fill_ts, tp_hit
+        if tp_hit is None or entry_price is None or tp_hit[1] > int(limit_ts):
+            return False
+        hit_px, hit_ts = tp_hit
+        # 他のレグと同じ「目標時刻の時計」に揃える(約定時刻 − 遅れ)。
+        exit_ts = hit_ts - delay_ms
+        leg_pnl = close_leg(hit_px, exit_ts)
+        record_leg(EXIT_TP, leg_pnl, exit_ts, hit_ts, at_pos,
+                   tp_seconds=(hit_ts - entry_fill_ts) / 1000.0)
+        path_rows.append({"print_id": None, "ts_ms": exit_ts, "位置": at_pos,
+                          "判断": JUDGE_TP, "行動": ACT_CLOSE, "建玉": POS_NONE,
+                          "約定価格": hit_px, "レグ損益_bp": leg_pnl})
+        # 値段の付いた行と `fill_lag_ms` は 1 対 1 で並ぶ(`entry_exit_fill_times`)。
+        # 利確の行は ts_ms を「約定時刻 − 遅れ」に置いたので、この行の遅れは 0。
+        fill_lag_ms.append(0)
+        pos = POS_NONE
+        entry_price = entry_ts = entry_dir = entry_fill_ts = None
+        tp_hit = None
+        return True
+
     fill_lag_ms = []
     for j, (pr, judge) in enumerate(zip(prints, judgments)):
         ts = int(pr["ts_ms"])
+        # 利確は成行の判断より先に効く(建玉は 1 つ。閉じたあとは「建玉なし」から
+        # 従来の 3 択が動く)。
+        take_profit_before(ts + delay_ms, j)
         new_pos, action = next_action(pos, judge, policy_type)
         px, matched_t = (NAN, None)
         leg_pnl = None
@@ -501,13 +570,13 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
             else:
                 fill_lag_ms.append(matched_t - target)
         if action == ACT_NEW_WITH:
-            entry_price, entry_ts, entry_dir = px, ts, side_sign
+            open_leg(px, ts, matched_t, side_sign)
             entered_ever = True
             n_entries += 1
             if first_entry_pos is None:
                 first_entry_pos = j
         elif action == ACT_NEW_AGAINST:
-            entry_price, entry_ts, entry_dir = px, ts, -side_sign
+            open_leg(px, ts, matched_t, -side_sign)
             entered_ever = True
             n_entries += 1
             if first_entry_pos is None:
@@ -515,17 +584,21 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
         elif action == ACT_CLOSE:
             if entry_price is not None and px == px:
                 leg_pnl = close_leg(px, ts)
-            entry_price = entry_ts = entry_dir = None
+                record_leg(EXIT_NEXT_PRINT, leg_pnl, ts, matched_t, j)
+            entry_price = entry_ts = entry_dir = entry_fill_ts = None
+            tp_hit = None
         elif action == ACT_FLIP_AGAINST:
             if entry_price is not None and px == px:
                 leg_pnl = close_leg(px, ts)
-            entry_price, entry_ts, entry_dir = px, ts, -side_sign
+                record_leg(EXIT_NEXT_PRINT, leg_pnl, ts, matched_t, j)
+            open_leg(px, ts, matched_t, -side_sign)
             entered_ever = True
             n_entries += 1
         elif action == ACT_FLIP_WITH:
             if entry_price is not None and px == px:
                 leg_pnl = close_leg(px, ts)
-            entry_price, entry_ts, entry_dir = px, ts, side_sign
+                record_leg(EXIT_NEXT_PRINT, leg_pnl, ts, matched_t, j)
+            open_leg(px, ts, matched_t, side_sign)
             entered_ever = True
             n_entries += 1
         pos = new_pos
@@ -534,6 +607,8 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
                           "約定価格": (px if px == px else None),
                           "レグ損益_bp": leg_pnl})
 
+    # 連鎖の終わり + 遅れ より前に利確の約定が来ていたら、そこで閉じている。
+    take_profit_before(cascade_end_ts + delay_ms, len(prints))
     if pos != POS_NONE and entry_price is not None:
         target = cascade_end_ts + delay_ms
         px, matched_t = price_fn(target)
@@ -542,6 +617,8 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
             missing = True
         else:
             exit_leg_pnl = close_leg(px, cascade_end_ts)
+            record_leg(EXIT_CASCADE_END, exit_leg_pnl, cascade_end_ts, matched_t,
+                       len(prints))
             fill_lag_ms.append(matched_t - target)
         # 反証者レビュー8 致命-3: 連鎖の終わりの強制決済を per-print の道筋にも出す
         # (判断「終わり」、行動「決済」。集計 total_pnl には元々含まれていた)。
@@ -559,6 +636,7 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
         "entered": entered_ever,
         "missing": missing,
         "path": path_rows,
+        "legs": legs,
         "fill_lag_ms": fill_lag_ms,
         "first_entry_pos": first_entry_pos,
     }
