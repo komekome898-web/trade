@@ -409,3 +409,11 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-09-21T02:05:42+00:00 bybit: 接続
 2026-09-21T02:05:46+00:00 bybit: -> bybit_20260921.jsonl.gz
 2026-09-21T02:05:55+00:00 binance_cm: -> binance_cm_20260921.jsonl.gz
+2026-09-21T02:36:48+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx'] -> C:\Users\ryoma\trade\data\liquidations
+2026-09-21T02:36:50+00:00 binance_cm: 接続
+2026-09-21T02:36:50+00:00 binance_um: 接続
+2026-09-21T02:36:50+00:00 okx: 接続
+2026-09-21T02:36:50+00:00 okx: -> okx_20260921.jsonl.gz
+2026-09-21T02:36:50+00:00 bybit: 接続
+2026-09-21T02:36:51+00:00 bybit: -> bybit_20260921.jsonl.gz
+2026-09-21T02:36:54+00:00 binance_cm: -> binance_cm_20260921.jsonl.gz
