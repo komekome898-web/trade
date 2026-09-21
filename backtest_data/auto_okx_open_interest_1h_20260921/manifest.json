@@ -1,0 +1,22 @@
+{
+ "created_at": "2026-09-21T03:06:24.896345+00:00",
+ "files": [
+  {
+   "bytes": 41351,
+   "first_ts": "2026-08-22T04:00:00+00:00",
+   "last_ts": "2026-09-21T02:00:00+00:00",
+   "md5": "a00d9cf6bd793555b963934c5f54d40c",
+   "name": "okx_btc_oi_1h.csv",
+   "row_count": 719
+  }
+ ],
+ "first_ts": "2026-08-22T04:00:00+00:00",
+ "last_ts": "2026-09-21T02:00:00+00:00",
+ "notes": "OKX rubik open-interest-volume, period=1H: 30-day hard wall.",
+ "rows": 719,
+ "source": "okx_open_interest_1h",
+ "window": {
+  "interval_days": 14,
+  "retention_days": 30
+ }
+}

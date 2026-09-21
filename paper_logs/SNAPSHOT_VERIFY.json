@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T09:08:32.341447+00:00",
+  "generated_at": "2026-09-21T03:17:38.726861+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -294,8 +294,36 @@
       ]
     },
     {
+      "unit": "auto_bitflyer_executions_20260921",
+      "md5sums_path": "backtest_data\\auto_bitflyer_executions_20260921\\MD5SUMS",
+      "file_count": 94,
+      "status": "verified",
+      "checked": 93,
+      "matched": 93,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
       "unit": "auto_oi_snapshots_20260905",
       "md5sums_path": "backtest_data\\auto_oi_snapshots_20260905\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_oi_snapshots_20260921",
+      "md5sums_path": "backtest_data\\auto_oi_snapshots_20260921\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -324,6 +352,20 @@
     {
       "unit": "auto_okx_open_interest_1h_20260905",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_1h_20260905\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_1h_20260921",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_1h_20260921\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -476,12 +518,40 @@
       ]
     },
     {
+      "unit": "auto_okx_open_interest_5m_20260921",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260921\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
       "unit": "auto_venues_20260905",
       "md5sums_path": "backtest_data\\auto_venues_20260905\\MD5SUMS",
       "file_count": 51,
       "status": "verified",
       "checked": 50,
       "matched": 50,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_venues_20260921",
+      "md5sums_path": "backtest_data\\auto_venues_20260921\\MD5SUMS",
+      "file_count": 131,
+      "status": "verified",
+      "checked": 130,
+      "matched": 130,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
@@ -2184,6 +2254,20 @@
       ]
     },
     {
+      "unit": "bitflyer_executions_backfill_20260921",
+      "md5sums_path": "backtest_data\\bitflyer_executions_backfill_20260921\\MD5SUMS",
+      "file_count": 5,
+      "status": "verified",
+      "checked": 4,
+      "matched": 4,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        ".progress.json"
+      ]
+    },
+    {
       "unit": "bitflyer_executions_us_20260723_20260906",
       "md5sums_path": "backtest_data\\bitflyer_executions_us_20260723_20260906\\MD5SUMS",
       "file_count": 49,
@@ -3464,6 +3548,39 @@
       "extra": []
     },
     {
+      "unit": "coinalyze_liquidations_20260921",
+      "md5sums_path": "backtest_data\\coinalyze_liquidations_20260921\\MD5SUMS",
+      "file_count": 24,
+      "status": "verified",
+      "checked": 4,
+      "matched": 4,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        ".progress.json",
+        "markets.json",
+        "raw/20260914T2100_20260915T0300.json",
+        "raw/20260915T0300_20260915T0900.json",
+        "raw/20260915T0900_20260915T1500.json",
+        "raw/20260915T1500_20260915T2100.json",
+        "raw/20260915T2100_20260916T0300.json",
+        "raw/20260916T0300_20260916T0900.json",
+        "raw/20260916T0900_20260916T1500.json",
+        "raw/20260916T1500_20260916T2100.json",
+        "raw/20260916T2100_20260917T0300.json",
+        "raw/20260917T0300_20260917T0900.json",
+        "raw/20260917T0900_20260917T1500.json",
+        "raw/20260917T1500_20260917T2100.json",
+        "raw/20260917T2100_20260918T0300.json",
+        "raw/20260918T0300_20260918T0900.json",
+        "raw/20260918T0900_20260918T1500.json",
+        "raw/20260918T1500_20260918T2100.json",
+        "raw/20260918T2100_20260919T0300.json",
+        "raw/20260919T0300_20260919T0800.json"
+      ]
+    },
+    {
       "unit": "executions_FX_BTC_JPY_31d_20260908",
       "md5sums_path": "backtest_data\\executions_FX_BTC_JPY_31d_20260908\\MD5SUMS",
       "file_count": 3,
@@ -3771,6 +3888,18 @@
       "unit": "o3c_oi_distance_20260917",
       "md5sums_path": "backtest_data\\o3c_oi_distance_20260917\\MD5SUMS",
       "file_count": 4,
+      "status": "verified",
+      "checked": 4,
+      "matched": 4,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "o3c_oi_distance_split_20260918",
+      "md5sums_path": "backtest_data\\o3c_oi_distance_split_20260918\\MD5SUMS",
+      "file_count": 4,
       "status": "newly_sealed",
       "checked": 0,
       "matched": 0,
@@ -3868,14 +3997,13 @@
       "unit": "o3c_price_level_rows4_20260917",
       "md5sums_path": "backtest_data\\o3c_price_level_rows4_20260917\\MD5SUMS",
       "file_count": 16,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 16,
+      "matched": 16,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 16
+      "extra": []
     },
     {
       "unit": "o3c_price_level_sample_20260917",
@@ -3900,6 +4028,232 @@
       "line_ending_mismatches": [],
       "missing": [],
       "extra": []
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor",
+      "md5sums_path": "backtest_data\\o3c_reaction_20260918_anchor\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_trades",
+      "md5sums_path": "backtest_data\\o3c_reaction_20260918_anchor_trades\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_trades_sample",
+      "md5sums_path": "backtest_data\\o3c_reaction_20260918_anchor_trades_sample\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "o3c_reaction_20260918_anchor_v1_rawcols",
+      "md5sums_path": "backtest_data\\o3c_reaction_20260918_anchor_v1_rawcols\\MD5SUMS",
+      "file_count": 3,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "README.txt"
+      ]
+    },
+    {
+      "unit": "o3c_reaction_20260918_full",
+      "md5sums_path": "backtest_data\\o3c_reaction_20260918_full\\MD5SUMS",
+      "file_count": 19,
+      "status": "newly_sealed",
+      "checked": 0,
+      "matched": 0,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [],
+      "sealed_file_count": 19
+    },
+    {
+      "unit": "o3c_reaction_20260918_judge",
+      "md5sums_path": "backtest_data\\o3c_reaction_20260918_judge\\MD5SUMS",
+      "file_count": 10,
+      "status": "verified",
+      "checked": 10,
+      "matched": 10,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "o3c_reaction_20260918_sample",
+      "md5sums_path": "backtest_data\\o3c_reaction_20260918_sample\\MD5SUMS",
+      "file_count": 12,
+      "status": "newly_sealed",
+      "checked": 0,
+      "matched": 0,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [],
+      "sealed_file_count": 12
+    },
+    {
+      "unit": "o3c_reaction_20260918_scale12_judgmentdays",
+      "md5sums_path": "backtest_data\\o3c_reaction_20260918_scale12_judgmentdays\\MD5SUMS",
+      "file_count": 4,
+      "status": "verified",
+      "checked": 3,
+      "matched": 3,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "README.txt"
+      ]
+    },
+    {
+      "unit": "o3c_signal_continue_20260920",
+      "md5sums_path": "backtest_data\\o3c_signal_continue_20260920\\MD5SUMS",
+      "file_count": 21,
+      "status": "verified",
+      "checked": 11,
+      "matched": 11,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "jev/q3_jev.csv",
+        "jev/q4_jev.csv",
+        "jev/q5_jev.csv",
+        "jev/q7_jev.csv",
+        "jev/selection_manifest.json",
+        "jev/summary_jev.json",
+        "jev/tables_jev.md",
+        "jev_preview_notes.json",
+        "stage1_notes.json",
+        "stage2_notes.json"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore2_20260919",
+      "md5sums_path": "backtest_data\\o3c_signal_explore2_20260919\\MD5SUMS",
+      "file_count": 10,
+      "status": "verified",
+      "checked": 10,
+      "matched": 10,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "o3c_signal_explore3_20260920",
+      "md5sums_path": "backtest_data\\o3c_signal_explore3_20260920\\MD5SUMS",
+      "file_count": 11,
+      "status": "verified",
+      "checked": 10,
+      "matched": 10,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "stage_notes.json"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore4_20260920",
+      "md5sums_path": "backtest_data\\o3c_signal_explore4_20260920\\MD5SUMS",
+      "file_count": 14,
+      "status": "verified",
+      "checked": 13,
+      "matched": 13,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "stage_notes.json"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore5_20260920",
+      "md5sums_path": "backtest_data\\o3c_signal_explore5_20260920\\MD5SUMS",
+      "file_count": 11,
+      "status": "verified",
+      "checked": 10,
+      "matched": 10,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "stage_notes.json"
+      ]
+    },
+    {
+      "unit": "o3c_signal_explore_20260919",
+      "md5sums_path": "backtest_data\\o3c_signal_explore_20260919\\MD5SUMS",
+      "file_count": 7,
+      "status": "verified",
+      "checked": 7,
+      "matched": 7,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "o3c_signal_materials_20260920",
+      "md5sums_path": "backtest_data\\o3c_signal_materials_20260920\\MD5SUMS",
+      "file_count": 12,
+      "status": "mismatch",
+      "checked": 6,
+      "matched": 5,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [
+        "docs/DATA/probes/20260920_o3c_materials_read.md"
+      ],
+      "extra": [
+        "logit_ecdf_chain.npz",
+        "logit_ecdf_first.npz",
+        "screen_A_v1.csv",
+        "screen_B_v1.csv",
+        "screen_N.csv",
+        "stage_notes.json",
+        "tables_v1.md"
+      ]
+    },
+    {
+      "unit": "o3c_signal_policy_20260920",
+      "md5sums_path": "backtest_data\\o3c_signal_policy_20260920\\MD5SUMS",
+      "file_count": 17,
+      "status": "newly_sealed",
+      "checked": 0,
+      "matched": 0,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [],
+      "sealed_file_count": 17
     },
     {
       "unit": "okx_20260905",
@@ -4710,19 +5064,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 6093,
+    "checked": 6514,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 91,
-    "verified": 61,
+    "unit_count": 115,
+    "verified": 82,
     "verified_line_ending_only": 21,
-    "newly_sealed": 2,
-    "mismatch_units": 7,
+    "newly_sealed": 4,
+    "mismatch_units": 8,
     "total_mismatches": 3,
     "total_line_ending_only": 99,
-    "total_missing": 1566,
-    "total_extra_untracked": 1273,
+    "total_missing": 1567,
+    "total_extra_untracked": 1321,
     "ledger_mismatches": 0
   },
   "ok": false

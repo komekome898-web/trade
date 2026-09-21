@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T02:50:35.219003+00:00",
+  "generated_at": "2026-09-21T05:38:22.940411+00:00",
   "data_md": "docs/DATA.md",
   "max_age_days": 14,
   "today": "2026-09-21",
@@ -55,11 +55,23 @@
       "file_count": 94
     },
     {
+      "unit": "auto_bitflyer_executions_20260921",
+      "file_count": 94
+    },
+    {
       "unit": "auto_oi_snapshots_20260905",
       "file_count": 2
     },
     {
+      "unit": "auto_oi_snapshots_20260921",
+      "file_count": 2
+    },
+    {
       "unit": "auto_okx_open_interest_1h_20260905",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_1h_20260921",
       "file_count": 2
     },
     {
@@ -97,6 +109,14 @@
     {
       "unit": "auto_okx_open_interest_5m_20260918",
       "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260921",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_venues_20260921",
+      "file_count": 131
     },
     {
       "unit": "binance_BTCUSDT_1m.csv",
@@ -345,209 +365,21 @@
       "path": "data/latency/ws_vm.csv"
     }
   ],
-  "files_not_in_intake": [
-    {
-      "unit": "bitflyer_executions_backfill_20260921",
-      "not_in_ledger": 5,
-      "file_count": 5,
-      "examples": [
-        "backtest_data/bitflyer_executions_backfill_20260921/.progress.json",
-        "backtest_data/bitflyer_executions_backfill_20260921/executions_20260918.csv.gz",
-        "backtest_data/bitflyer_executions_backfill_20260921/executions_20260919.csv.gz"
-      ]
-    },
-    {
-      "unit": "coinalyze_liquidations_20260921",
-      "not_in_ledger": 24,
-      "file_count": 24,
-      "examples": [
-        "backtest_data/coinalyze_liquidations_20260921/.progress.json",
-        "backtest_data/coinalyze_liquidations_20260921/BTCUSD.6_1min.csv",
-        "backtest_data/coinalyze_liquidations_20260921/BTCUSD_PERP.3_1min.csv"
-      ]
-    },
-    {
-      "unit": "o3c_oi_distance_split_20260918",
-      "not_in_ledger": 4,
-      "file_count": 4,
-      "examples": [
-        "backtest_data/o3c_oi_distance_split_20260918/w24/summary.json",
-        "backtest_data/o3c_oi_distance_split_20260918/w24/table.csv",
-        "backtest_data/o3c_oi_distance_split_20260918/w8/summary.json"
-      ]
-    },
-    {
-      "unit": "o3c_reaction_20260918_anchor",
-      "not_in_ledger": 2,
-      "file_count": 2,
-      "examples": [
-        "backtest_data/o3c_reaction_20260918_anchor/summary.json",
-        "backtest_data/o3c_reaction_20260918_anchor/table.csv"
-      ]
-    },
-    {
-      "unit": "o3c_reaction_20260918_anchor_trades",
-      "not_in_ledger": 2,
-      "file_count": 2,
-      "examples": [
-        "backtest_data/o3c_reaction_20260918_anchor_trades/summary.json",
-        "backtest_data/o3c_reaction_20260918_anchor_trades/table.csv"
-      ]
-    },
-    {
-      "unit": "o3c_reaction_20260918_anchor_trades_sample",
-      "not_in_ledger": 2,
-      "file_count": 2,
-      "examples": [
-        "backtest_data/o3c_reaction_20260918_anchor_trades_sample/summary.json",
-        "backtest_data/o3c_reaction_20260918_anchor_trades_sample/table.csv"
-      ]
-    },
-    {
-      "unit": "o3c_reaction_20260918_anchor_v1_rawcols",
-      "not_in_ledger": 3,
-      "file_count": 3,
-      "examples": [
-        "backtest_data/o3c_reaction_20260918_anchor_v1_rawcols/README.txt",
-        "backtest_data/o3c_reaction_20260918_anchor_v1_rawcols/summary.json",
-        "backtest_data/o3c_reaction_20260918_anchor_v1_rawcols/table.csv"
-      ]
-    },
-    {
-      "unit": "o3c_reaction_20260918_full",
-      "not_in_ledger": 19,
-      "file_count": 19,
-      "examples": [
-        "backtest_data/o3c_reaction_20260918_full/gap180_w24/summary.json",
-        "backtest_data/o3c_reaction_20260918_full/gap180_w24/table.csv.gz",
-        "backtest_data/o3c_reaction_20260918_full/gap180_w24/table_mixed.csv"
-      ]
-    },
-    {
-      "unit": "o3c_reaction_20260918_judge",
-      "not_in_ledger": 10,
-      "file_count": 10,
-      "examples": [
-        "backtest_data/o3c_reaction_20260918_judge/f1_12cells.csv",
-        "backtest_data/o3c_reaction_20260918_judge/f1_reading.txt",
-        "backtest_data/o3c_reaction_20260918_judge/judgment_576.csv"
-      ]
-    },
-    {
-      "unit": "o3c_reaction_20260918_sample",
-      "not_in_ledger": 12,
-      "file_count": 12,
-      "examples": [
-        "backtest_data/o3c_reaction_20260918_sample/gap180_w8/summary.json",
-        "backtest_data/o3c_reaction_20260918_sample/gap180_w8/table.csv",
-        "backtest_data/o3c_reaction_20260918_sample/gap180_w8/table_mixed.csv"
-      ]
-    },
-    {
-      "unit": "o3c_reaction_20260918_scale12_judgmentdays",
-      "not_in_ledger": 4,
-      "file_count": 4,
-      "examples": [
-        "backtest_data/o3c_reaction_20260918_scale12_judgmentdays/README.txt",
-        "backtest_data/o3c_reaction_20260918_scale12_judgmentdays/summary.json",
-        "backtest_data/o3c_reaction_20260918_scale12_judgmentdays/table.csv"
-      ]
-    },
-    {
-      "unit": "o3c_signal_continue_20260920",
-      "not_in_ledger": 21,
-      "file_count": 21,
-      "examples": [
-        "backtest_data/o3c_signal_continue_20260920/jev/q3_jev.csv",
-        "backtest_data/o3c_signal_continue_20260920/jev/q4_jev.csv",
-        "backtest_data/o3c_signal_continue_20260920/jev/q5_jev.csv"
-      ]
-    },
-    {
-      "unit": "o3c_signal_explore2_20260919",
-      "not_in_ledger": 10,
-      "file_count": 10,
-      "examples": [
-        "backtest_data/o3c_signal_explore2_20260919/e0_anchor_lag.csv",
-        "backtest_data/o3c_signal_explore2_20260919/e1_delta.csv",
-        "backtest_data/o3c_signal_explore2_20260919/e2_shape.csv"
-      ]
-    },
-    {
-      "unit": "o3c_signal_explore3_20260920",
-      "not_in_ledger": 11,
-      "file_count": 11,
-      "examples": [
-        "backtest_data/o3c_signal_explore3_20260920/f0_selfcheck.csv",
-        "backtest_data/o3c_signal_explore3_20260920/f1_sweep.csv",
-        "backtest_data/o3c_signal_explore3_20260920/f2_retrace.csv"
-      ]
-    },
-    {
-      "unit": "o3c_signal_explore4_20260920",
-      "not_in_ledger": 14,
-      "file_count": 14,
-      "examples": [
-        "backtest_data/o3c_signal_explore4_20260920/g0_selfcheck.csv",
-        "backtest_data/o3c_signal_explore4_20260920/g1_reversal.csv",
-        "backtest_data/o3c_signal_explore4_20260920/g2_continuation.csv"
-      ]
-    },
-    {
-      "unit": "o3c_signal_explore5_20260920",
-      "not_in_ledger": 11,
-      "file_count": 11,
-      "examples": [
-        "backtest_data/o3c_signal_explore5_20260920/h0_selfcheck.csv",
-        "backtest_data/o3c_signal_explore5_20260920/h1_all_prints.csv",
-        "backtest_data/o3c_signal_explore5_20260920/h2_premove.csv"
-      ]
-    },
-    {
-      "unit": "o3c_signal_explore_20260919",
-      "not_in_ledger": 7,
-      "file_count": 7,
-      "examples": [
-        "backtest_data/o3c_signal_explore_20260919/q1_direction.csv",
-        "backtest_data/o3c_signal_explore_20260919/q2_size_by_attribute.csv",
-        "backtest_data/o3c_signal_explore_20260919/q3_horizon_shape.csv"
-      ]
-    },
-    {
-      "unit": "o3c_signal_materials_20260920",
-      "not_in_ledger": 12,
-      "file_count": 12,
-      "examples": [
-        "backtest_data/o3c_signal_materials_20260920/logit_ecdf_chain.npz",
-        "backtest_data/o3c_signal_materials_20260920/logit_ecdf_first.npz",
-        "backtest_data/o3c_signal_materials_20260920/rows_materials.csv.gz"
-      ]
-    },
-    {
-      "unit": "o3c_signal_policy_20260920",
-      "not_in_ledger": 17,
-      "file_count": 17,
-      "examples": [
-        "backtest_data/o3c_signal_policy_20260920/stage1_firsthalf/action_counts.csv",
-        "backtest_data/o3c_signal_policy_20260920/stage1_firsthalf/cascades.csv.gz",
-        "backtest_data/o3c_signal_policy_20260920/stage1_firsthalf/dist_table.csv"
-      ]
-    }
-  ],
+  "files_not_in_intake": [],
   "intake_ledger": {
-    "path": "paper_logs\\INTAKE_latest.json",
-    "selection": "両方あり、新しい paper_logs/ 側を使った",
+    "path": "data\\INTAKE_latest.json",
+    "selection": "両方あり、新しい data/ 側を使った",
     "state": "読込済",
-    "entry_count": 14422
+    "entry_count": 14977
   },
   "stale_rows": [],
   "undated_rows": [],
   "summary": {
-    "unit_count": 140,
-    "units_without_ledger_row": 55,
+    "unit_count": 145,
+    "units_without_ledger_row": 60,
     "missing_paths": 16,
-    "units_with_files_not_in_intake": 19,
-    "files_not_in_intake": 190,
+    "units_with_files_not_in_intake": 0,
+    "files_not_in_intake": 0,
     "stale_rows": 0,
     "undated_rows": 0,
     "skipped_tables": 7,

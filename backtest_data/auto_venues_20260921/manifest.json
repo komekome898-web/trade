@@ -1,0 +1,1054 @@
+{
+ "created_at": "2026-09-21T03:06:24.896345+00:00",
+ "files": [
+  {
+   "bytes": 867174,
+   "first_ts": "2026-08-27T11:44:23.605000+00:00",
+   "last_ts": "2026-08-27T17:59:21.677000+00:00",
+   "md5": "c63228a366677c7dc6caf92c52ea9c9d",
+   "name": "quotes_20260827.csv.gz",
+   "row_count": 76354
+  },
+  {
+   "bytes": 2574538,
+   "first_ts": "2026-08-28T04:18:45.510000+00:00",
+   "last_ts": "2026-08-28T23:59:56.272000+00:00",
+   "md5": "129b57e8d7153236791646d91d48d60a",
+   "name": "quotes_20260828.csv.gz",
+   "row_count": 240664
+  },
+  {
+   "bytes": 2685666,
+   "first_ts": "2026-08-29T00:00:02.263000+00:00",
+   "last_ts": "2026-08-29T23:59:57.214000+00:00",
+   "md5": "c7dc55d4bf596fd7a87f3a663949a81c",
+   "name": "quotes_20260829.csv.gz",
+   "row_count": 272645
+  },
+  {
+   "bytes": 2983863,
+   "first_ts": "2026-08-30T00:00:02.480000+00:00",
+   "last_ts": "2026-08-30T23:59:59.647000+00:00",
+   "md5": "a35c122aff59291131ffe715c1014568",
+   "name": "quotes_20260830.csv.gz",
+   "row_count": 293484
+  },
+  {
+   "bytes": 3143136,
+   "first_ts": "2026-08-31T00:00:01.985000+00:00",
+   "last_ts": "2026-08-31T23:59:56.509000+00:00",
+   "md5": "9189fb501ecfc8d8fa030b402ab9abbb",
+   "name": "quotes_20260831.csv.gz",
+   "row_count": 293321
+  },
+  {
+   "bytes": 3137064,
+   "first_ts": "2026-09-01T00:00:00.932000+00:00",
+   "last_ts": "2026-09-01T23:59:59.524000+00:00",
+   "md5": "53e09f87fe7edadb66a311228be4d89a",
+   "name": "quotes_20260901.csv.gz",
+   "row_count": 293528
+  },
+  {
+   "bytes": 3117178,
+   "first_ts": "2026-09-02T00:00:04.565000+00:00",
+   "last_ts": "2026-09-02T23:59:55.346000+00:00",
+   "md5": "6bef2ca187b4d02ce5cbe4258dd2b94f",
+   "name": "quotes_20260902.csv.gz",
+   "row_count": 293339
+  },
+  {
+   "bytes": 3209180,
+   "first_ts": "2026-09-03T00:00:00.365000+00:00",
+   "last_ts": "2026-09-03T23:59:57.361000+00:00",
+   "md5": "296f8c0484a5eeb2216c4babc5e688b8",
+   "name": "quotes_20260903.csv.gz",
+   "row_count": 293458
+  },
+  {
+   "bytes": 3103703,
+   "first_ts": "2026-09-04T00:00:02.368000+00:00",
+   "last_ts": "2026-09-04T23:59:56.317000+00:00",
+   "md5": "94c25b4fa54d0b88bbdf2901d339bcc2",
+   "name": "quotes_20260904.csv.gz",
+   "row_count": 293316
+  },
+  {
+   "bytes": 2734587,
+   "first_ts": "2026-09-05T00:00:01.321000+00:00",
+   "last_ts": "2026-09-05T23:59:58.443000+00:00",
+   "md5": "69c5401df1e468e0f3788af16278b74f",
+   "name": "quotes_20260905.csv.gz",
+   "row_count": 271762
+  },
+  {
+   "bytes": 3015624,
+   "first_ts": "2026-09-06T00:00:01.133000+00:00",
+   "last_ts": "2026-09-06T23:59:57.490000+00:00",
+   "md5": "be5eb74debaa10a085a8eea5a73fc6e4",
+   "name": "quotes_20260906.csv.gz",
+   "row_count": 293090
+  },
+  {
+   "bytes": 3102015,
+   "first_ts": "2026-09-07T00:00:02.572000+00:00",
+   "last_ts": "2026-09-07T23:59:59.202000+00:00",
+   "md5": "4e6643047f1a425663445c1c3c7dc875",
+   "name": "quotes_20260907.csv.gz",
+   "row_count": 293152
+  },
+  {
+   "bytes": 3137231,
+   "first_ts": "2026-09-08T00:00:04.203000+00:00",
+   "last_ts": "2026-09-08T23:59:57.210000+00:00",
+   "md5": "d3198d9da23b3897c77950fab79e0ff8",
+   "name": "quotes_20260908.csv.gz",
+   "row_count": 292764
+  },
+  {
+   "bytes": 3128557,
+   "first_ts": "2026-09-09T00:00:02.807000+00:00",
+   "last_ts": "2026-09-09T23:59:56.007000+00:00",
+   "md5": "f487cfa889f2d196de6192bcbb2bee57",
+   "name": "quotes_20260909.csv.gz",
+   "row_count": 293320
+  },
+  {
+   "bytes": 2731265,
+   "first_ts": "2026-09-10T00:00:00.750000+00:00",
+   "last_ts": "2026-09-10T21:07:37.203000+00:00",
+   "md5": "304bdc5a9f354ca4de75f40c6c3c6a0b",
+   "name": "quotes_20260910.csv.gz",
+   "row_count": 258312
+  },
+  {
+   "bytes": 2338772,
+   "first_ts": "2026-09-11T06:19:10.959000+00:00",
+   "last_ts": "2026-09-11T23:59:59.267000+00:00",
+   "md5": "078776915abc85eefdeaf30009b70e56",
+   "name": "quotes_20260911.csv.gz",
+   "row_count": 215804
+  },
+  {
+   "bytes": 2448514,
+   "first_ts": "2026-09-12T00:00:01.528000+00:00",
+   "last_ts": "2026-09-12T23:59:59.537000+00:00",
+   "md5": "f3e78b570c86cd97faf84f77a82e9dd8",
+   "name": "quotes_20260912.csv.gz",
+   "row_count": 258824
+  },
+  {
+   "bytes": 2606245,
+   "first_ts": "2026-09-13T00:00:04.571000+00:00",
+   "last_ts": "2026-09-13T23:59:56.823000+00:00",
+   "md5": "d009aba3a39887b4b3bc4cd85e879373",
+   "name": "quotes_20260913.csv.gz",
+   "row_count": 268920
+  },
+  {
+   "bytes": 2388814,
+   "first_ts": "2026-09-14T00:00:00.741000+00:00",
+   "last_ts": "2026-09-14T23:59:58.533000+00:00",
+   "md5": "db3b1563581fa095dac4bc94517aaa19",
+   "name": "quotes_20260914.csv.gz",
+   "row_count": 221600
+  },
+  {
+   "bytes": 2980974,
+   "first_ts": "2026-09-15T00:00:00.589000+00:00",
+   "last_ts": "2026-09-15T23:59:59.592000+00:00",
+   "md5": "429d9624d05fbe35f5f9a72559368e42",
+   "name": "quotes_20260915.csv.gz",
+   "row_count": 278254
+  },
+  {
+   "bytes": 2950486,
+   "first_ts": "2026-09-16T00:00:00.018000+00:00",
+   "last_ts": "2026-09-16T23:59:55.877000+00:00",
+   "md5": "99cdd66cf2e024b23880899b5c550e9b",
+   "name": "quotes_20260916.csv.gz",
+   "row_count": 275852
+  },
+  {
+   "bytes": 2634487,
+   "first_ts": "2026-09-17T00:00:05.750000+00:00",
+   "last_ts": "2026-09-17T23:59:55.243000+00:00",
+   "md5": "67996ebb2a9bb1555d401723db222012",
+   "name": "quotes_20260917.csv.gz",
+   "row_count": 248512
+  },
+  {
+   "bytes": 2908714,
+   "first_ts": "2026-09-18T00:00:06.411000+00:00",
+   "last_ts": "2026-09-18T23:59:58.632000+00:00",
+   "md5": "b639c00e082c19147b833baf718b9ef3",
+   "name": "quotes_20260918.csv.gz",
+   "row_count": 268848
+  },
+  {
+   "bytes": 2408295,
+   "first_ts": "2026-09-19T00:00:00.030000+00:00",
+   "last_ts": "2026-09-19T23:59:56.510000+00:00",
+   "md5": "214b2794069375b47973718e1bc98314",
+   "name": "quotes_20260919.csv.gz",
+   "row_count": 234062
+  },
+  {
+   "bytes": 2570311,
+   "first_ts": "2026-09-20T00:00:01.509000+00:00",
+   "last_ts": "2026-09-20T23:59:57.453000+00:00",
+   "md5": "8230f347d8e41fd25f79a82d92385def",
+   "name": "quotes_20260920.csv.gz",
+   "row_count": 244135
+  },
+  {
+   "bytes": 364782,
+   "first_ts": "2026-09-21T00:00:02.423000+00:00",
+   "last_ts": "2026-09-21T02:49:47.453000+00:00",
+   "md5": "e41f5bc8eadc13f105459aafcfb4be41",
+   "name": "quotes_20260921.csv.gz",
+   "row_count": 32280
+  },
+  {
+   "bytes": 55866,
+   "first_ts": "2026-08-27T11:30:27.131000+00:00",
+   "last_ts": "2026-08-27T17:55:40.819000+00:00",
+   "md5": "26da582a57eca973a48181056a651c87",
+   "name": "trades_bitbank_btc_jpy_20260827.csv.gz",
+   "row_count": 2146
+  },
+  {
+   "bytes": 155007,
+   "first_ts": "2026-08-28T04:07:51.461000+00:00",
+   "last_ts": "2026-08-28T23:59:31.699000+00:00",
+   "md5": "d3e1241a5c21a90aeb966433796a71a8",
+   "name": "trades_bitbank_btc_jpy_20260828.csv.gz",
+   "row_count": 6238
+  },
+  {
+   "bytes": 110940,
+   "first_ts": "2026-08-29T00:00:07.619000+00:00",
+   "last_ts": "2026-08-29T23:59:46.701000+00:00",
+   "md5": "e09f1309c806e67591ba5fae69c30199",
+   "name": "trades_bitbank_btc_jpy_20260829.csv.gz",
+   "row_count": 3052
+  },
+  {
+   "bytes": 134281,
+   "first_ts": "2026-08-30T00:00:07.959000+00:00",
+   "last_ts": "2026-08-30T23:58:02.749000+00:00",
+   "md5": "a64ba3f799a2a545566ae37495b18d10",
+   "name": "trades_bitbank_btc_jpy_20260830.csv.gz",
+   "row_count": 4403
+  },
+  {
+   "bytes": 165931,
+   "first_ts": "2026-08-31T00:00:00.724000+00:00",
+   "last_ts": "2026-08-31T23:58:30.453000+00:00",
+   "md5": "599ac07b7d0fb9f18f6e3dd77ce74c2e",
+   "name": "trades_bitbank_btc_jpy_20260831.csv.gz",
+   "row_count": 5970
+  },
+  {
+   "bytes": 176612,
+   "first_ts": "2026-09-01T00:00:07.599000+00:00",
+   "last_ts": "2026-09-01T23:59:23.890000+00:00",
+   "md5": "35ba0349f546955f8295d11ae9192888",
+   "name": "trades_bitbank_btc_jpy_20260901.csv.gz",
+   "row_count": 6321
+  },
+  {
+   "bytes": 175670,
+   "first_ts": "2026-09-02T00:00:08.358000+00:00",
+   "last_ts": "2026-09-02T23:59:49.173000+00:00",
+   "md5": "f9b815ac3d87060e539482b6c6c72810",
+   "name": "trades_bitbank_btc_jpy_20260902.csv.gz",
+   "row_count": 6695
+  },
+  {
+   "bytes": 204364,
+   "first_ts": "2026-09-03T00:00:03.241000+00:00",
+   "last_ts": "2026-09-03T23:59:25.518000+00:00",
+   "md5": "0a02d249418cf27e0191cb11c4994b91",
+   "name": "trades_bitbank_btc_jpy_20260903.csv.gz",
+   "row_count": 8262
+  },
+  {
+   "bytes": 186897,
+   "first_ts": "2026-09-04T00:00:07.912000+00:00",
+   "last_ts": "2026-09-04T23:59:26.155000+00:00",
+   "md5": "9ced02205d0c7c73630212ee32e0ec59",
+   "name": "trades_bitbank_btc_jpy_20260904.csv.gz",
+   "row_count": 8092
+  },
+  {
+   "bytes": 108588,
+   "first_ts": "2026-09-05T00:00:05.992000+00:00",
+   "last_ts": "2026-09-05T23:59:43.716000+00:00",
+   "md5": "35a85bf22432ba932182ff79468cb0ee",
+   "name": "trades_bitbank_btc_jpy_20260905.csv.gz",
+   "row_count": 3416
+  },
+  {
+   "bytes": 111965,
+   "first_ts": "2026-09-06T00:00:04.441000+00:00",
+   "last_ts": "2026-09-06T23:59:55.107000+00:00",
+   "md5": "76e86d1b6b484110636659d8f3a16a48",
+   "name": "trades_bitbank_btc_jpy_20260906.csv.gz",
+   "row_count": 4040
+  },
+  {
+   "bytes": 170618,
+   "first_ts": "2026-09-07T00:00:07.925000+00:00",
+   "last_ts": "2026-09-07T23:59:18.239000+00:00",
+   "md5": "6439beaab3f37b1383a8332c6a64e82d",
+   "name": "trades_bitbank_btc_jpy_20260907.csv.gz",
+   "row_count": 6937
+  },
+  {
+   "bytes": 188457,
+   "first_ts": "2026-09-08T00:00:07.434000+00:00",
+   "last_ts": "2026-09-08T23:59:26.900000+00:00",
+   "md5": "ba884954de6001653798f7cdb7597136",
+   "name": "trades_bitbank_btc_jpy_20260908.csv.gz",
+   "row_count": 7713
+  },
+  {
+   "bytes": 180308,
+   "first_ts": "2026-09-09T00:00:00.893000+00:00",
+   "last_ts": "2026-09-09T23:59:58.001000+00:00",
+   "md5": "557f0db025c7c8994483d318fb3604af",
+   "name": "trades_bitbank_btc_jpy_20260909.csv.gz",
+   "row_count": 7291
+  },
+  {
+   "bytes": 147461,
+   "first_ts": "2026-09-10T00:00:00.025000+00:00",
+   "last_ts": "2026-09-10T21:07:08.246000+00:00",
+   "md5": "b8ba66f8293b1c79ff268affa1d2e49a",
+   "name": "trades_bitbank_btc_jpy_20260910.csv.gz",
+   "row_count": 5406
+  },
+  {
+   "bytes": 147248,
+   "first_ts": "2026-09-11T06:00:50.389000+00:00",
+   "last_ts": "2026-09-11T23:59:15.455000+00:00",
+   "md5": "6e6c84e52a08f3caa96a80edfdf84499",
+   "name": "trades_bitbank_btc_jpy_20260911.csv.gz",
+   "row_count": 6128
+  },
+  {
+   "bytes": 134537,
+   "first_ts": "2026-09-12T00:00:02.475000+00:00",
+   "last_ts": "2026-09-12T23:58:20.698000+00:00",
+   "md5": "c0cc14b1037c729c49b6cebfff310bf4",
+   "name": "trades_bitbank_btc_jpy_20260912.csv.gz",
+   "row_count": 4471
+  },
+  {
+   "bytes": 100605,
+   "first_ts": "2026-09-13T00:00:07.192000+00:00",
+   "last_ts": "2026-09-13T23:59:10.125000+00:00",
+   "md5": "43e901d3fd0c6a4c7897ed790348f462",
+   "name": "trades_bitbank_btc_jpy_20260913.csv.gz",
+   "row_count": 3368
+  },
+  {
+   "bytes": 159897,
+   "first_ts": "2026-09-14T00:00:08.314000+00:00",
+   "last_ts": "2026-09-14T23:59:57.825000+00:00",
+   "md5": "82903025a539414dd94e26c8b3b1c107",
+   "name": "trades_bitbank_btc_jpy_20260914.csv.gz",
+   "row_count": 6092
+  },
+  {
+   "bytes": 121054,
+   "first_ts": "2026-09-15T00:00:01.337000+00:00",
+   "last_ts": "2026-09-15T23:58:50.617000+00:00",
+   "md5": "45435f787d7a0e0d19fdb5e8a999b29e",
+   "name": "trades_bitbank_btc_jpy_20260915.csv.gz",
+   "row_count": 4966
+  },
+  {
+   "bytes": 140648,
+   "first_ts": "2026-09-16T00:00:07.107000+00:00",
+   "last_ts": "2026-09-16T23:58:45.950000+00:00",
+   "md5": "279f36e35d67af95addd5e82d8ff851a",
+   "name": "trades_bitbank_btc_jpy_20260916.csv.gz",
+   "row_count": 5703
+  },
+  {
+   "bytes": 131935,
+   "first_ts": "2026-09-17T00:00:07.186000+00:00",
+   "last_ts": "2026-09-17T23:57:30.289000+00:00",
+   "md5": "0504fcefdfc3b4f68ed0b5ae48af00f6",
+   "name": "trades_bitbank_btc_jpy_20260917.csv.gz",
+   "row_count": 4564
+  },
+  {
+   "bytes": 233127,
+   "first_ts": "2026-09-18T00:00:02.999000+00:00",
+   "last_ts": "2026-09-18T23:59:52.276000+00:00",
+   "md5": "b7dbd30d7b436bcc202d8014ad6fed6c",
+   "name": "trades_bitbank_btc_jpy_20260918.csv.gz",
+   "row_count": 11077
+  },
+  {
+   "bytes": 115314,
+   "first_ts": "2026-09-19T00:00:06.052000+00:00",
+   "last_ts": "2026-09-19T23:58:34.669000+00:00",
+   "md5": "e4243a05587bd49b98e0953facaeb8b8",
+   "name": "trades_bitbank_btc_jpy_20260919.csv.gz",
+   "row_count": 4099
+  },
+  {
+   "bytes": 133511,
+   "first_ts": "2026-09-20T00:00:08.740000+00:00",
+   "last_ts": "2026-09-20T23:56:06.561000+00:00",
+   "md5": "9b9061f432f3f0d18e67455a917b7239",
+   "name": "trades_bitbank_btc_jpy_20260920.csv.gz",
+   "row_count": 4453
+  },
+  {
+   "bytes": 28553,
+   "first_ts": "2026-09-21T00:00:01.996000+00:00",
+   "last_ts": "2026-09-21T02:49:40.457000+00:00",
+   "md5": "21e5c8b91a8b376a0d461c392005de5a",
+   "name": "trades_bitbank_btc_jpy_20260921.csv.gz",
+   "row_count": 1426
+  },
+  {
+   "bytes": 120209,
+   "first_ts": "2026-08-27T11:38:58.703000+00:00",
+   "last_ts": "2026-08-27T17:58:25.758000+00:00",
+   "md5": "e4c5cc91f893e921a146f37a9c374fe3",
+   "name": "trades_bitbank_xrp_jpy_20260827.csv.gz",
+   "row_count": 8168
+  },
+  {
+   "bytes": 286253,
+   "first_ts": "2026-08-28T04:13:24.248000+00:00",
+   "last_ts": "2026-08-28T23:59:59.033000+00:00",
+   "md5": "6f49a79869d699d517ddc6f4577d92c2",
+   "name": "trades_bitbank_xrp_jpy_20260828.csv.gz",
+   "row_count": 17394
+  },
+  {
+   "bytes": 225638,
+   "first_ts": "2026-08-29T00:00:05.293000+00:00",
+   "last_ts": "2026-08-29T23:57:27.204000+00:00",
+   "md5": "ad44f4812ebe7ed60fce68bb3d19b4a0",
+   "name": "trades_bitbank_xrp_jpy_20260829.csv.gz",
+   "row_count": 11947
+  },
+  {
+   "bytes": 267250,
+   "first_ts": "2026-08-30T00:00:02.767000+00:00",
+   "last_ts": "2026-08-30T23:59:51.648000+00:00",
+   "md5": "27f882e5dfd3be30848a6d144be3e3e1",
+   "name": "trades_bitbank_xrp_jpy_20260830.csv.gz",
+   "row_count": 14363
+  },
+  {
+   "bytes": 303063,
+   "first_ts": "2026-08-31T00:00:01.775000+00:00",
+   "last_ts": "2026-08-31T23:58:19.038000+00:00",
+   "md5": "c874410a7da49eb4423e273f76947e13",
+   "name": "trades_bitbank_xrp_jpy_20260831.csv.gz",
+   "row_count": 16702
+  },
+  {
+   "bytes": 327307,
+   "first_ts": "2026-09-01T00:00:03.122000+00:00",
+   "last_ts": "2026-09-01T23:59:46.940000+00:00",
+   "md5": "d3840e075d7827d40dcaaa3b53cf1f6e",
+   "name": "trades_bitbank_xrp_jpy_20260901.csv.gz",
+   "row_count": 20162
+  },
+  {
+   "bytes": 328476,
+   "first_ts": "2026-09-02T00:00:03.679000+00:00",
+   "last_ts": "2026-09-02T23:59:21.393000+00:00",
+   "md5": "263be903a647b3e2aca28728c428e175",
+   "name": "trades_bitbank_xrp_jpy_20260902.csv.gz",
+   "row_count": 19507
+  },
+  {
+   "bytes": 432431,
+   "first_ts": "2026-09-03T00:00:00.102000+00:00",
+   "last_ts": "2026-09-03T23:59:39.811000+00:00",
+   "md5": "5731482ad1b0f8eab629ad9a7e63afcd",
+   "name": "trades_bitbank_xrp_jpy_20260903.csv.gz",
+   "row_count": 30316
+  },
+  {
+   "bytes": 365099,
+   "first_ts": "2026-09-04T00:00:01.802000+00:00",
+   "last_ts": "2026-09-04T23:59:03.766000+00:00",
+   "md5": "0961acebd2662727d8481e6a5c7b8404",
+   "name": "trades_bitbank_xrp_jpy_20260904.csv.gz",
+   "row_count": 24560
+  },
+  {
+   "bytes": 242453,
+   "first_ts": "2026-09-05T00:00:02.297000+00:00",
+   "last_ts": "2026-09-05T23:57:22.308000+00:00",
+   "md5": "0636a8947a76116d0fe2890d6639f99a",
+   "name": "trades_bitbank_xrp_jpy_20260905.csv.gz",
+   "row_count": 13651
+  },
+  {
+   "bytes": 253746,
+   "first_ts": "2026-09-06T00:00:03.953000+00:00",
+   "last_ts": "2026-09-06T23:59:59.698000+00:00",
+   "md5": "9532b0cd7f09d178727ec046609534a0",
+   "name": "trades_bitbank_xrp_jpy_20260906.csv.gz",
+   "row_count": 15092
+  },
+  {
+   "bytes": 303625,
+   "first_ts": "2026-09-07T00:00:04.057000+00:00",
+   "last_ts": "2026-09-07T23:59:44.941000+00:00",
+   "md5": "b4e3661ba0c3af9ccea94a2afbe6aca3",
+   "name": "trades_bitbank_xrp_jpy_20260907.csv.gz",
+   "row_count": 18929
+  },
+  {
+   "bytes": 339060,
+   "first_ts": "2026-09-08T00:00:03.026000+00:00",
+   "last_ts": "2026-09-08T23:59:53.889000+00:00",
+   "md5": "72389d94afbec7fd163ddaf77d1236fe",
+   "name": "trades_bitbank_xrp_jpy_20260908.csv.gz",
+   "row_count": 22718
+  },
+  {
+   "bytes": 306578,
+   "first_ts": "2026-09-09T00:00:02.018000+00:00",
+   "last_ts": "2026-09-09T23:59:17.080000+00:00",
+   "md5": "df25af549e3ba34b48df900176e350ba",
+   "name": "trades_bitbank_xrp_jpy_20260909.csv.gz",
+   "row_count": 19386
+  },
+  {
+   "bytes": 273671,
+   "first_ts": "2026-09-10T00:00:02.377000+00:00",
+   "last_ts": "2026-09-10T21:07:15.250000+00:00",
+   "md5": "5776b57f1ea97510db42826034f7c011",
+   "name": "trades_bitbank_xrp_jpy_20260910.csv.gz",
+   "row_count": 17840
+  },
+  {
+   "bytes": 286873,
+   "first_ts": "2026-09-11T06:04:56.302000+00:00",
+   "last_ts": "2026-09-11T23:59:49.957000+00:00",
+   "md5": "221b6cbbf55ee6208fb5d531720b6756",
+   "name": "trades_bitbank_xrp_jpy_20260911.csv.gz",
+   "row_count": 20122
+  },
+  {
+   "bytes": 158462,
+   "first_ts": "2026-09-12T00:00:00.308000+00:00",
+   "last_ts": "2026-09-12T23:59:59.162000+00:00",
+   "md5": "893472aae9749748336fbf972f669f38",
+   "name": "trades_bitbank_xrp_jpy_20260912.csv.gz",
+   "row_count": 6830
+  },
+  {
+   "bytes": 156950,
+   "first_ts": "2026-09-13T00:00:03.373000+00:00",
+   "last_ts": "2026-09-13T23:59:54.175000+00:00",
+   "md5": "8780aee5005b253e79af323a90a926ef",
+   "name": "trades_bitbank_xrp_jpy_20260913.csv.gz",
+   "row_count": 7493
+  },
+  {
+   "bytes": 299942,
+   "first_ts": "2026-09-14T00:00:02.901000+00:00",
+   "last_ts": "2026-09-14T23:59:58.490000+00:00",
+   "md5": "520f3cbc7055854e141048ae9eedfc29",
+   "name": "trades_bitbank_xrp_jpy_20260914.csv.gz",
+   "row_count": 17858
+  },
+  {
+   "bytes": 245006,
+   "first_ts": "2026-09-15T00:00:03.467000+00:00",
+   "last_ts": "2026-09-15T23:59:45.245000+00:00",
+   "md5": "2e96f107987e4d08f4b7b2a129b7a99b",
+   "name": "trades_bitbank_xrp_jpy_20260915.csv.gz",
+   "row_count": 15556
+  },
+  {
+   "bytes": 302460,
+   "first_ts": "2026-09-16T00:00:02.238000+00:00",
+   "last_ts": "2026-09-16T23:59:59.265000+00:00",
+   "md5": "19f4df397b6395a41df6b8d0d268fb3d",
+   "name": "trades_bitbank_xrp_jpy_20260916.csv.gz",
+   "row_count": 20575
+  },
+  {
+   "bytes": 265873,
+   "first_ts": "2026-09-17T00:00:03.012000+00:00",
+   "last_ts": "2026-09-17T23:59:49.424000+00:00",
+   "md5": "067b0e052f3d000d878ca519ac1e1b93",
+   "name": "trades_bitbank_xrp_jpy_20260917.csv.gz",
+   "row_count": 15894
+  },
+  {
+   "bytes": 394481,
+   "first_ts": "2026-09-18T00:00:03.541000+00:00",
+   "last_ts": "2026-09-18T23:58:29.420000+00:00",
+   "md5": "e3257fa6020f53dee020ae312c0f90b6",
+   "name": "trades_bitbank_xrp_jpy_20260918.csv.gz",
+   "row_count": 27370
+  },
+  {
+   "bytes": 321003,
+   "first_ts": "2026-09-19T00:00:03.480000+00:00",
+   "last_ts": "2026-09-19T23:59:37.581000+00:00",
+   "md5": "ac0d6fd62d125c7cd8ced3a6723ec732",
+   "name": "trades_bitbank_xrp_jpy_20260919.csv.gz",
+   "row_count": 23114
+  },
+  {
+   "bytes": 298845,
+   "first_ts": "2026-09-20T00:00:03.067000+00:00",
+   "last_ts": "2026-09-20T23:59:14.560000+00:00",
+   "md5": "68118e6e857b05889bdf3907c94a24ff",
+   "name": "trades_bitbank_xrp_jpy_20260920.csv.gz",
+   "row_count": 18500
+  },
+  {
+   "bytes": 56484,
+   "first_ts": "2026-09-21T00:00:03.754000+00:00",
+   "last_ts": "2026-09-21T02:49:09.824000+00:00",
+   "md5": "ccddc02738b85f36b03664e6b0a50c29",
+   "name": "trades_bitbank_xrp_jpy_20260921.csv.gz",
+   "row_count": 4241
+  },
+  {
+   "bytes": 130429,
+   "first_ts": "2026-08-27T11:30:40.887000+00:00",
+   "last_ts": "2026-08-27T17:59:12.456000+00:00",
+   "md5": "65cab7ccecf627b3271326518e40b0ec",
+   "name": "trades_gmo_btc_20260827.csv.gz",
+   "row_count": 5702
+  },
+  {
+   "bytes": 370878,
+   "first_ts": "2026-08-28T04:13:49.831000+00:00",
+   "last_ts": "2026-08-28T23:59:59.548000+00:00",
+   "md5": "a79262fa94421f56beab9e3ef37da28c",
+   "name": "trades_gmo_btc_20260828.csv.gz",
+   "row_count": 16291
+  },
+  {
+   "bytes": 173753,
+   "first_ts": "2026-08-29T00:00:04.023000+00:00",
+   "last_ts": "2026-08-29T23:59:22.802000+00:00",
+   "md5": "ea3577c5b1a37396c9592ed6f7047b3d",
+   "name": "trades_gmo_btc_20260829.csv.gz",
+   "row_count": 5728
+  },
+  {
+   "bytes": 269563,
+   "first_ts": "2026-08-30T00:00:01.854000+00:00",
+   "last_ts": "2026-08-30T23:59:28.677000+00:00",
+   "md5": "b601a590855d07e3102944848e42bf13",
+   "name": "trades_gmo_btc_20260830.csv.gz",
+   "row_count": 10405
+  },
+  {
+   "bytes": 460358,
+   "first_ts": "2026-08-31T00:00:00.957000+00:00",
+   "last_ts": "2026-08-31T23:59:12.867000+00:00",
+   "md5": "d8e5ef8d5c0d7c139d3070860bc4d9e1",
+   "name": "trades_gmo_btc_20260831.csv.gz",
+   "row_count": 19625
+  },
+  {
+   "bytes": 436591,
+   "first_ts": "2026-09-01T00:00:24.684000+00:00",
+   "last_ts": "2026-09-01T23:58:30.788000+00:00",
+   "md5": "76b5c97b35e5d73a57b42d1f7cddd0b8",
+   "name": "trades_gmo_btc_20260901.csv.gz",
+   "row_count": 18296
+  },
+  {
+   "bytes": 364414,
+   "first_ts": "2026-09-02T00:00:00.237000+00:00",
+   "last_ts": "2026-09-02T23:59:59.601000+00:00",
+   "md5": "c5107182d8fd9f272288594783cb380d",
+   "name": "trades_gmo_btc_20260902.csv.gz",
+   "row_count": 14808
+  },
+  {
+   "bytes": 433687,
+   "first_ts": "2026-09-03T00:00:24.767000+00:00",
+   "last_ts": "2026-09-03T23:59:27.907000+00:00",
+   "md5": "a0e7f9680b9aab4c03b1816aca0a5dac",
+   "name": "trades_gmo_btc_20260903.csv.gz",
+   "row_count": 18550
+  },
+  {
+   "bytes": 356808,
+   "first_ts": "2026-09-04T00:00:04.374000+00:00",
+   "last_ts": "2026-09-04T23:57:20.189000+00:00",
+   "md5": "6ee628736b72d81c0747dc4fc0955284",
+   "name": "trades_gmo_btc_20260904.csv.gz",
+   "row_count": 14980
+  },
+  {
+   "bytes": 177713,
+   "first_ts": "2026-09-05T02:10:05.332000+00:00",
+   "last_ts": "2026-09-05T23:59:40.371000+00:00",
+   "md5": "8702d06b90997ea2149823317c379b56",
+   "name": "trades_gmo_btc_20260905.csv.gz",
+   "row_count": 5959
+  },
+  {
+   "bytes": 192544,
+   "first_ts": "2026-09-06T00:00:24.561000+00:00",
+   "last_ts": "2026-09-06T23:59:21.555000+00:00",
+   "md5": "749b7faccb1e490a663385b2c5ed8d61",
+   "name": "trades_gmo_btc_20260906.csv.gz",
+   "row_count": 6859
+  },
+  {
+   "bytes": 338124,
+   "first_ts": "2026-09-07T00:00:04.768000+00:00",
+   "last_ts": "2026-09-07T23:59:29.795000+00:00",
+   "md5": "ff0d8074802c61c42638d6aa0f9afb9a",
+   "name": "trades_gmo_btc_20260907.csv.gz",
+   "row_count": 13498
+  },
+  {
+   "bytes": 350576,
+   "first_ts": "2026-09-08T00:00:24.562000+00:00",
+   "last_ts": "2026-09-08T23:59:46.907000+00:00",
+   "md5": "74cd91a5211a1e058d14711005cb9c74",
+   "name": "trades_gmo_btc_20260908.csv.gz",
+   "row_count": 13958
+  },
+  {
+   "bytes": 361892,
+   "first_ts": "2026-09-09T00:00:08.626000+00:00",
+   "last_ts": "2026-09-09T23:59:58.209000+00:00",
+   "md5": "26ec693b4cc71fcf37ddc5ad4d25d377",
+   "name": "trades_gmo_btc_20260909.csv.gz",
+   "row_count": 14440
+  },
+  {
+   "bytes": 331114,
+   "first_ts": "2026-09-10T00:00:05.590000+00:00",
+   "last_ts": "2026-09-10T21:07:08.240000+00:00",
+   "md5": "f6ca3ce3643121db55811d0dc0f1f37d",
+   "name": "trades_gmo_btc_20260910.csv.gz",
+   "row_count": 13290
+  },
+  {
+   "bytes": 296333,
+   "first_ts": "2026-09-11T06:13:19.401000+00:00",
+   "last_ts": "2026-09-11T23:58:29.074000+00:00",
+   "md5": "2c281e1c4ac577b923ac7ca3f582cf4e",
+   "name": "trades_gmo_btc_20260911.csv.gz",
+   "row_count": 13158
+  },
+  {
+   "bytes": 169693,
+   "first_ts": "2026-09-12T03:10:03.392000+00:00",
+   "last_ts": "2026-09-12T23:59:51.277000+00:00",
+   "md5": "9d84deb2df854212e0ac83644d20f2dd",
+   "name": "trades_gmo_btc_20260912.csv.gz",
+   "row_count": 5696
+  },
+  {
+   "bytes": 211509,
+   "first_ts": "2026-09-13T00:00:07.473000+00:00",
+   "last_ts": "2026-09-13T23:59:12.636000+00:00",
+   "md5": "5f908cae500c5104b511115c338f61b9",
+   "name": "trades_gmo_btc_20260913.csv.gz",
+   "row_count": 7894
+  },
+  {
+   "bytes": 396242,
+   "first_ts": "2026-09-14T00:00:06.310000+00:00",
+   "last_ts": "2026-09-14T23:57:38.450000+00:00",
+   "md5": "5053521b87a54cc0f8cdd0e0a30021ff",
+   "name": "trades_gmo_btc_20260914.csv.gz",
+   "row_count": 16887
+  },
+  {
+   "bytes": 147263,
+   "first_ts": "2026-09-15T00:00:22.614000+00:00",
+   "last_ts": "2026-09-15T23:58:42.123000+00:00",
+   "md5": "e14b1ad4c559cdafe9d4c28fb0b5021c",
+   "name": "trades_gmo_btc_20260915.csv.gz",
+   "row_count": 5907
+  },
+  {
+   "bytes": 399040,
+   "first_ts": "2026-09-16T00:00:24.666000+00:00",
+   "last_ts": "2026-09-16T23:59:56.588000+00:00",
+   "md5": "2325cd640a32b49c92e942a7d5412d82",
+   "name": "trades_gmo_btc_20260916.csv.gz",
+   "row_count": 16748
+  },
+  {
+   "bytes": 224862,
+   "first_ts": "2026-09-17T00:00:20.395000+00:00",
+   "last_ts": "2026-09-17T23:59:53.468000+00:00",
+   "md5": "64886382d8b821c1a20fc5908d46ee52",
+   "name": "trades_gmo_btc_20260917.csv.gz",
+   "row_count": 8586
+  },
+  {
+   "bytes": 477406,
+   "first_ts": "2026-09-18T00:00:00.414000+00:00",
+   "last_ts": "2026-09-18T23:57:40.835000+00:00",
+   "md5": "aef11864905b14929f48812d1ce2dab5",
+   "name": "trades_gmo_btc_20260918.csv.gz",
+   "row_count": 21839
+  },
+  {
+   "bytes": 227394,
+   "first_ts": "2026-09-19T02:10:13.723000+00:00",
+   "last_ts": "2026-09-19T23:59:16.141000+00:00",
+   "md5": "851dc2e2b027fc841db3b616f0557d08",
+   "name": "trades_gmo_btc_20260919.csv.gz",
+   "row_count": 8876
+  },
+  {
+   "bytes": 305672,
+   "first_ts": "2026-09-20T00:00:24.604000+00:00",
+   "last_ts": "2026-09-20T23:59:56.659000+00:00",
+   "md5": "b8e9d3df64eca3da00aec9ac3dbcf62c",
+   "name": "trades_gmo_btc_20260920.csv.gz",
+   "row_count": 12809
+  },
+  {
+   "bytes": 68235,
+   "first_ts": "2026-09-21T00:00:08.677000+00:00",
+   "last_ts": "2026-09-21T02:50:16.593000+00:00",
+   "md5": "33bb3876461b95a41ca8343cfd8d970c",
+   "name": "trades_gmo_btc_20260921.csv.gz",
+   "row_count": 3325
+  },
+  {
+   "bytes": 466288,
+   "first_ts": "2026-08-27T11:44:53.550000+00:00",
+   "last_ts": "2026-08-27T17:58:42.465000+00:00",
+   "md5": "bc443d44a7a56c73669da4c6a353e614",
+   "name": "trades_gmo_btc_jpy_20260827.csv.gz",
+   "row_count": 26281
+  },
+  {
+   "bytes": 1037566,
+   "first_ts": "2026-08-28T04:15:31.520000+00:00",
+   "last_ts": "2026-08-28T23:59:58.365000+00:00",
+   "md5": "ffdac49d94fee69fdd3fb475efb777e4",
+   "name": "trades_gmo_btc_jpy_20260828.csv.gz",
+   "row_count": 56884
+  },
+  {
+   "bytes": 684177,
+   "first_ts": "2026-08-29T00:00:01.635000+00:00",
+   "last_ts": "2026-08-29T23:59:10.291000+00:00",
+   "md5": "249ea4d12fe2cb38289805648ce8a9c3",
+   "name": "trades_gmo_btc_jpy_20260829.csv.gz",
+   "row_count": 34745
+  },
+  {
+   "bytes": 1071905,
+   "first_ts": "2026-08-30T00:00:02.911000+00:00",
+   "last_ts": "2026-08-30T23:59:40.321000+00:00",
+   "md5": "85e7f12aff29c48fe371270aa2ff17eb",
+   "name": "trades_gmo_btc_jpy_20260830.csv.gz",
+   "row_count": 57809
+  },
+  {
+   "bytes": 1406042,
+   "first_ts": "2026-08-31T00:00:16.463000+00:00",
+   "last_ts": "2026-08-31T23:59:53.049000+00:00",
+   "md5": "37e290d7e7d74a412fae974ff8ede03c",
+   "name": "trades_gmo_btc_jpy_20260831.csv.gz",
+   "row_count": 77966
+  },
+  {
+   "bytes": 1398919,
+   "first_ts": "2026-09-01T00:00:01.996000+00:00",
+   "last_ts": "2026-09-01T23:59:59.139000+00:00",
+   "md5": "aa31405bd4e59abd9403fa38edef2f90",
+   "name": "trades_gmo_btc_jpy_20260901.csv.gz",
+   "row_count": 77380
+  },
+  {
+   "bytes": 1432343,
+   "first_ts": "2026-09-02T00:00:00.153000+00:00",
+   "last_ts": "2026-09-02T23:59:57.337000+00:00",
+   "md5": "9c314e21fece339f5d131a5c1c3fcb64",
+   "name": "trades_gmo_btc_jpy_20260902.csv.gz",
+   "row_count": 79488
+  },
+  {
+   "bytes": 1746022,
+   "first_ts": "2026-09-03T00:00:01.408000+00:00",
+   "last_ts": "2026-09-03T23:58:39.266000+00:00",
+   "md5": "f5609af1a951100d04ad2440f46f1407",
+   "name": "trades_gmo_btc_jpy_20260903.csv.gz",
+   "row_count": 98504
+  },
+  {
+   "bytes": 1358583,
+   "first_ts": "2026-09-04T00:00:00.497000+00:00",
+   "last_ts": "2026-09-04T23:58:57.517000+00:00",
+   "md5": "2df18db04e14727e3acab9b5a63ef191",
+   "name": "trades_gmo_btc_jpy_20260904.csv.gz",
+   "row_count": 74965
+  },
+  {
+   "bytes": 571145,
+   "first_ts": "2026-09-05T02:10:04.169000+00:00",
+   "last_ts": "2026-09-05T23:59:49.625000+00:00",
+   "md5": "f220e2c403570d02d9962bf10c829197",
+   "name": "trades_gmo_btc_jpy_20260905.csv.gz",
+   "row_count": 28051
+  },
+  {
+   "bytes": 763938,
+   "first_ts": "2026-09-06T00:00:22.651000+00:00",
+   "last_ts": "2026-09-06T23:59:44.366000+00:00",
+   "md5": "5b8590451387cd6c3b191520b1472bc9",
+   "name": "trades_gmo_btc_jpy_20260906.csv.gz",
+   "row_count": 39227
+  },
+  {
+   "bytes": 1332883,
+   "first_ts": "2026-09-07T00:00:00.365000+00:00",
+   "last_ts": "2026-09-07T23:59:47.624000+00:00",
+   "md5": "c9faaf3de7d782e2b59e7a0d45c84c03",
+   "name": "trades_gmo_btc_jpy_20260907.csv.gz",
+   "row_count": 74212
+  },
+  {
+   "bytes": 1384344,
+   "first_ts": "2026-09-08T00:00:15.689000+00:00",
+   "last_ts": "2026-09-08T23:59:56.206000+00:00",
+   "md5": "2e0b51e324a7b9c2fe28ac991c142a85",
+   "name": "trades_gmo_btc_jpy_20260908.csv.gz",
+   "row_count": 76562
+  },
+  {
+   "bytes": 1263905,
+   "first_ts": "2026-09-09T00:00:03.651000+00:00",
+   "last_ts": "2026-09-09T23:59:52.179000+00:00",
+   "md5": "f4fc49d967f92cb922ff7fd12afe82f8",
+   "name": "trades_gmo_btc_jpy_20260909.csv.gz",
+   "row_count": 69198
+  },
+  {
+   "bytes": 1010533,
+   "first_ts": "2026-09-10T00:00:00.651000+00:00",
+   "last_ts": "2026-09-10T21:06:58.994000+00:00",
+   "md5": "1acbe2cba9f1e64602f543c2ea160a12",
+   "name": "trades_gmo_btc_jpy_20260910.csv.gz",
+   "row_count": 54843
+  },
+  {
+   "bytes": 946500,
+   "first_ts": "2026-09-11T06:17:25.483000+00:00",
+   "last_ts": "2026-09-11T23:59:02.766000+00:00",
+   "md5": "8f919abb7a8e303650f65cbf22d5d90d",
+   "name": "trades_gmo_btc_jpy_20260911.csv.gz",
+   "row_count": 52352
+  },
+  {
+   "bytes": 422909,
+   "first_ts": "2026-09-12T03:10:37.605000+00:00",
+   "last_ts": "2026-09-12T23:59:59.206000+00:00",
+   "md5": "07b87b8a21bfc427d8be133e180bbee9",
+   "name": "trades_gmo_btc_jpy_20260912.csv.gz",
+   "row_count": 19933
+  },
+  {
+   "bytes": 643792,
+   "first_ts": "2026-09-13T00:00:01.106000+00:00",
+   "last_ts": "2026-09-13T23:56:10.120000+00:00",
+   "md5": "77cc75c4174d66409a6f26f8717a9a72",
+   "name": "trades_gmo_btc_jpy_20260913.csv.gz",
+   "row_count": 32973
+  },
+  {
+   "bytes": 1295915,
+   "first_ts": "2026-09-14T00:02:28.490000+00:00",
+   "last_ts": "2026-09-14T23:59:59.412000+00:00",
+   "md5": "531ac50bfac286f887ea583f595bd471",
+   "name": "trades_gmo_btc_jpy_20260914.csv.gz",
+   "row_count": 71872
+  },
+  {
+   "bytes": 416606,
+   "first_ts": "2026-09-15T00:00:00.106000+00:00",
+   "last_ts": "2026-09-15T23:59:49.007000+00:00",
+   "md5": "b62dba5759e8a590bf4e0fa822dbecf1",
+   "name": "trades_gmo_btc_jpy_20260915.csv.gz",
+   "row_count": 22517
+  },
+  {
+   "bytes": 1129233,
+   "first_ts": "2026-09-16T00:00:00.668000+00:00",
+   "last_ts": "2026-09-16T23:59:58.346000+00:00",
+   "md5": "168790e295e221ee8b485009b0cdde57",
+   "name": "trades_gmo_btc_jpy_20260916.csv.gz",
+   "row_count": 61365
+  },
+  {
+   "bytes": 827975,
+   "first_ts": "2026-09-17T00:00:00.625000+00:00",
+   "last_ts": "2026-09-17T23:59:58.970000+00:00",
+   "md5": "747ae22f9912bc88d3c10fd2fec8f0fa",
+   "name": "trades_gmo_btc_jpy_20260917.csv.gz",
+   "row_count": 44140
+  },
+  {
+   "bytes": 1339856,
+   "first_ts": "2026-09-18T00:00:01.303000+00:00",
+   "last_ts": "2026-09-18T23:59:37.275000+00:00",
+   "md5": "d3b060f9eeaa2ca752554b2077fa0204",
+   "name": "trades_gmo_btc_jpy_20260918.csv.gz",
+   "row_count": 74083
+  },
+  {
+   "bytes": 616611,
+   "first_ts": "2026-09-19T02:10:12.525000+00:00",
+   "last_ts": "2026-09-19T23:59:57.881000+00:00",
+   "md5": "c606ff6872893ea15ee7de2090af8720",
+   "name": "trades_gmo_btc_jpy_20260919.csv.gz",
+   "row_count": 31502
+  },
+  {
+   "bytes": 959637,
+   "first_ts": "2026-09-20T00:00:03.754000+00:00",
+   "last_ts": "2026-09-20T23:59:40.618000+00:00",
+   "md5": "784e6f8e6d042ba1bdc7518bdded3df4",
+   "name": "trades_gmo_btc_jpy_20260920.csv.gz",
+   "row_count": 51257
+  },
+  {
+   "bytes": 172449,
+   "first_ts": "2026-09-21T00:00:09.718000+00:00",
+   "last_ts": "2026-09-21T02:49:47.377000+00:00",
+   "md5": "363663604f616ba1f9551bddb9b1786c",
+   "name": "trades_gmo_btc_jpy_20260921.csv.gz",
+   "row_count": 9699
+  }
+ ],
+ "first_ts": "2026-08-27T11:30:27.131000+00:00",
+ "last_ts": "2026-09-21T02:50:16.593000+00:00",
+ "notes": "Rolling venue tape shards, no upstream expiry; safety copy only.",
+ "rows": 8902139,
+ "source": "venues",
+ "window": {
+  "interval_days": 14,
+  "retention_days": "rolling"
+ }
+}

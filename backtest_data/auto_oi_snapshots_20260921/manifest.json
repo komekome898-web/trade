@@ -1,0 +1,22 @@
+{
+ "created_at": "2026-09-21T03:06:24.896345+00:00",
+ "files": [
+  {
+   "bytes": 140670,
+   "first_ts": "2026-08-20T12:00:18+00:00",
+   "last_ts": "2026-09-21T03:05:08+00:00",
+   "md5": "fcfe291daf1439659fab506b558979e3",
+   "name": "oi_snapshots.csv",
+   "row_count": 1622
+  }
+ ],
+ "first_ts": "2026-08-20T12:00:18+00:00",
+ "last_ts": "2026-09-21T03:05:08+00:00",
+ "notes": "Rolling project ledger, no upstream expiry; safety copy only.",
+ "rows": 1622,
+ "source": "oi_snapshots",
+ "window": {
+  "interval_days": 14,
+  "retention_days": "rolling"
+ }
+}
