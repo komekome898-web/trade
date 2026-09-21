@@ -1,3 +1,15 @@
+# 実行したコマンド(2026-09-21、リード。作業ディレクトリ = リポジトリ直下):
+# python3 - <<EOF
+# import pandas as pd, glob
+# s1=sum(len(pd.read_csv(f)) for f in glob.glob('backtest_data/o3c_signal_value_20260921/stage1_firsthalf/*.csv'))
+# s2=sum(len(pd.read_csv(f)) for f in glob.glob('backtest_data/o3c_signal_value_20260921/stage2_secondhalf/*.csv'))
+# print('stage1 csv rows',s1,'stage2 csv rows',s2)
+# c=pd.read_csv('backtest_data/o3c_signal_value_20260921/stage2_secondhalf/cascades.csv.gz')
+# x=c[(c['遅れ_秒']==1.0)&(c['費用の通り']=='費用あり(主のc)')&(c['型'].isin(['A','-']))]
+# for pol,g in x.groupby('方策'):
+#     print(f"{pol:22s} n={len(g):4d} sum={g.pnl_net_bp.sum():9.1f} med={g.pnl_net_bp.median():7.3f} neg={(g.pnl_net_bp<0).mean():.3f}")
+# EOF
+# --- 出力 ---
 stage1 csv rows 833 stage2 csv rows 696
 logistic_2値0.5         n=2000 sum=  -7746.3 med= -2.988 neg=0.646
 logistic_2値基準率         n=2000 sum=  -7607.0 med= -2.623 neg=0.638
