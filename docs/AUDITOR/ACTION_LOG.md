@@ -9370,3 +9370,10 @@ ffe2692 L-202: reduce project hooks from 16 to 6, pre-push reduced to the manife
 - **訂正**: 前回の返答で bitmex を「止まったまま」と書いたが、XBTUSD は上場廃止(L-190)で既定から外してある。欠落ではない。
 - **状態板の誤り**: 冒頭の「共有が途絶えている」は `session_start_digest.sh` が現在のブランチの `paper_logs` しか見ていないため。PC は別ブランチに毎朝押している。フックの変更はオーナーの指示があるまでしない(A-16)。
 
+## 069 — 記録器の再接続の分岐の修正と、tape の穴の診断(L-329、2026-09-21)
+
+- **直したもの**: `scripts/record_liquidations.py` `record_venue` の `except asyncio.TimeoutError`。3.11 以降 `asyncio.TimeoutError is TimeoutError` なので、`--minutes` の期限(`ws.recv` の `wait_for`)と `websockets.connect(open_timeout=25)` の接続待ちの時間切れが同じ分岐に落ちていた。期限に達していなければ切断と同じ後退(2 → 4 → 8 … 120 秒)で再接続する。**期限の判定は `deadline is not None and time.monotonic() >= deadline`**(期限が無いときの TimeoutError は接続待ちしか無い)。
+- **試験**: `tests/test_record_liquidations.py` に 2 件(接続待ちの時間切れが 3 回続いても 3 回つなぎ直し、後退は 2/4/8 秒 / 期限に達した時間切れは終了)。記録器の試験 38 件通過、ruff 通過。
+- **測っていないこと**: 実物の PC で接続待ちの時間切れを再現していない。次に「接続の時間切れ — Ns 後に再接続」の行がログに出て、そのあと「接続」が出れば効いている。
+- **tape の穴(P15 ①)**: オーナーが `fetch_all.bat` → `share_logs.bat` を実行したと報告(L-329)したが、11:38 JST の共有 b08a11a に tape の新しい日は無く、`fetch.out.tail.log`(`logs\fetch.out.log` の末尾 400 行)は 09-19 以降の 5 回の共有で同一。`fetch_all.bat` は全工程を `logs\fetch.out.log` に追記するので、**1 行も増えていない = python 工程が走っていない**。bat の先頭にロックや早期終了は無い(読んだ: `cd /d`、`mkdir logs`、環境変数だけ)。残る仮説: 前回の `extract_tape.py --board-top 10` が 09-18 から終わらず居座り、その間の実行が書けない(タスクスケジューラの多重起動抑止)。PC でしか確かめられないので P15 ① に診断の 2 コマンドを足した。
+

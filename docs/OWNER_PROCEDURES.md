@@ -458,6 +458,15 @@ type data\latency\api_probe.csv
 2. `deploy\fetch_all.bat` をダブルクリックして 1 回走らせる(`logs\fetch.out.log` の末尾に `extract_tape: N file(s) advanced` が出る)。
 3. `deploy\share_logs.bat`。確認: `paper_logs\tape\executions_20260919.csv.gz` 以降が共有に現れる。
 4. 出なければ `logs\fetch.out.log` の末尾 50 行を送る(リードが読む)。
+5. **(2026-09-21 追記、L-329)** 11:38 JST の共有でも tape は 09-18 のまま、`fetch.out.log` の末尾は 09-18 から一字も変わっていない
+   = `fetch_all.bat` の python 工程が 1 行も書いていない。PowerShell で次の 2 つを打って、出力をそのまま貼る:
+   ```
+   Get-Content logs\fetch.out.log -Tail 20
+   Get-CimInstance Win32_Process -Filter "name='python.exe'" | Select-Object ProcessId,CreationDate,CommandLine | Format-List
+   ```
+   1 つ目で最後に書かれた時刻と行が分かる。2 つ目で `extract_tape.py` などが 09-18 から居座っていれば、それが 15 分ごとの
+   タスクを塞いでいる(同じ python が動いていると次の回は書けない)。居座っていれば、その ProcessId を
+   `Stop-Process -Id <番号>` で止めてから ② の `fetch_all.bat` をもう一度。
 
 **② Bybit・OKX の穴を Coinalyze の 1 分足で埋める(PC、約 1 分。急ぐ: OKX の先頭 09-14 21:57 UTC は
 約 7 日の窓(L-031 の実測)から 09-22 06:57 JST ごろに落ちる見込み)**

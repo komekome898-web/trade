@@ -331,3 +331,94 @@ def test_bitmex_is_still_accepted_when_named_explicitly():
     assert venues == ["bitmex"]
     # main() の未知ベニュー判定(`v not in VENUES`)を通る
     assert [v for v in venues if v not in rec.VENUES] == []
+
+
+# ---- 2026-09-21(L-325 / L-329): 接続待ちの時間切れは「終了」ではなく「再接続」 -------------
+
+def test_connect_timeout_reconnects_instead_of_ending_the_venue(monkeypatch):
+    """okx 09-14 / bybit 09-16 / bitmex 09-16 の穴の原因: `websockets.connect(open_timeout=25)` の
+    TimeoutError が `--minutes` の期限と同じ分岐で捕まり、venue の仕事が終了していた。
+    期限が無いときの TimeoutError は切断と同じく待って再接続する。"""
+    import asyncio
+
+    rec = _load("record_liquidations")
+    attempts = []
+
+    class _Connect:
+        def __init__(self, *a, **k):
+            attempts.append(1)
+
+        async def __aenter__(self):
+            raise TimeoutError("timed out during opening handshake")
+
+        async def __aexit__(self, *a):
+            return False
+
+    class _Stop(Exception):
+        pass
+
+    sleeps = []
+
+    async def fake_sleep(sec):
+        sleeps.append(sec)
+        if len(sleeps) >= 3:
+            raise _Stop()
+
+    class _W:
+        lines = 0
+
+        def __init__(self, venue):
+            pass
+
+        def write(self, r):
+            pass
+
+        def close(self):
+            pass
+
+    logs = []
+    monkeypatch.setattr(rec.websockets, "connect", _Connect)
+    monkeypatch.setattr(rec.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(rec, "Writer", _W)
+    monkeypatch.setattr(rec, "_log", lambda m: logs.append(m))
+    with pytest.raises(_Stop):
+        asyncio.run(rec.record_venue("okx", deadline=None))
+    assert len(attempts) == 3                    # 時間切れのたびに接続し直している
+    assert sleeps == [2.0, 4.0, 8.0]             # 切断と同じ後退
+    assert sum("接続の時間切れ" in m for m in logs) == 3
+    # 「終了」は試験用の _Stop で抜けた finally が書く 1 行だけ(3 回目の待ちより後)
+    assert [m for m in logs if "終了" in m] == logs[-1:]
+
+
+def test_deadline_timeout_still_ends_the_venue(monkeypatch):
+    """`--minutes` の期限に達した TimeoutError は今までどおり終了する。"""
+    import asyncio
+    import time
+
+    rec = _load("record_liquidations")
+
+    class _Connect:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            raise TimeoutError("timed out")
+
+        async def __aexit__(self, *a):
+            return False
+
+    class _W:
+        lines = 0
+
+        def __init__(self, venue):
+            pass
+
+        def close(self):
+            pass
+
+    logs = []
+    monkeypatch.setattr(rec.websockets, "connect", _Connect)
+    monkeypatch.setattr(rec, "Writer", _W)
+    monkeypatch.setattr(rec, "_log", lambda m: logs.append(m))
+    asyncio.run(rec.record_venue("okx", deadline=time.monotonic() + 0.05))
+    assert any("終了" in m for m in logs)

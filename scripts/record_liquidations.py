@@ -290,7 +290,16 @@ async def record_venue(venue: str, deadline: float | None) -> None:
                         if ka is not None:
                             ka.cancel()
             except asyncio.TimeoutError:
-                break                       # --minutes に達しただけ
+                # 2 つの時間切れが同じ例外で来る(3.11 以降 asyncio.TimeoutError は TimeoutError):
+                #   (a) --minutes の期限 = ws.recv の wait_for → 終わってよい
+                #   (b) websockets.connect(open_timeout=25) の接続待ち → 切断と同じ扱いで再接続
+                # 2026-09-21(L-325 / L-329)まで (b) も break していたため、okx 09-14・bybit 09-16・
+                # bitmex 09-16 は「切断 → 再接続」の直後に「接続」無しで「終了」し、数日の穴が開いた。
+                if deadline is not None and time.monotonic() >= deadline:
+                    break                   # (a) --minutes に達しただけ
+                _log(f"{venue}: 接続の時間切れ — {backoff:.0f}s 後に再接続")
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, BACKOFF_MAX)
             except asyncio.CancelledError:
                 raise
             except Exception as e:          # noqa: BLE001 - 切断は通常運転
