@@ -289,7 +289,7 @@ def test_grid_table_has_189_rows_on_a_small_slice():
     cas = vv.cascades_from_prints(sub)
     cache = vv.WindowCache(vv.DATA_ROOT)
     per_chain = vv.run_grid_core(cas, cache, vv.GRID_DELAY_S)
-    cuts = vv.condition_cuts(prints)
+    cuts, _note = vv.condition_cuts(prints)
     rows = vv.build_grid_table(per_chain, cuts, 1.7869, days[0])
     assert len(rows) == 189
     for r in rows:
@@ -481,7 +481,8 @@ def test_spread_output_table_is_aggregates_only():
         pytest.skip("費用の表がまだこの環境で作られていない")
     df = pd.read_csv(path)
     assert set(df.columns) == {"標本日", "半期", "区分", "対の数", "p25_bp", "p50_bp",
-                               "p75_bp", "p90_bp"}
+                               "p75_bp", "p90_bp", "参考_符号付きp50_bp",
+                               "参考_正の対だけp50_bp", "負の対の割合"}
     assert (df["区分"].isin([bsp.SCOPE_ALL, bsp.SCOPE_POST_LIQ])).all()
     c_main, c_p75 = bsp.read_cost(vv.SPREAD_DIR)
     assert math.isfinite(c_main) and math.isfinite(c_p75)
@@ -536,3 +537,408 @@ def test_stage2_is_implemented_but_not_run_in_this_unit():
     ことを、出力が無いことで確かめる。"""
     assert callable(vv.run_stage2)
     assert not (vv.DEFAULT_OUT_STAGE2 / "summary.json").exists()
+
+# ===========================================================================
+# 反証者レビュー9(2026-09-21)を受けた直しの試験
+# ===========================================================================
+
+# --- 致命-1: 連鎖 1 本ごとの行 ---------------------------------------------
+def test_cascade_rows_file_has_the_required_columns_and_cost_dimension():
+    policy_rows = [{
+        "bundle_id": "b1", "day": "2023-07-01", "side": "SELL", "連鎖の大きさ": "2件",
+        "n_prints": 2, "方策": "logistic_3択", "型": vv.TYPE_B, "遅れ_秒": 1,
+        "pnl_bp": 10.0, "建玉の回数": 2, "保有秒": 90.0,
+        "入りの約定時刻_ms": 1_000, "出の約定時刻_ms": 91_000, "入った": 1,
+        "最初に入った位置": "1件目で入った", "出口の理由": "連鎖の終わり+d"}]
+    opt_rows = {"②opt": [{
+        "bundle_id": "b1", "day": "2023-07-01", "side": "SELL", "連鎖の大きさ": "2件",
+        "n_prints": 2, "pnl_bp": 4.0, "建玉の回数": 1, "保有秒": 300.0,
+        "入りの約定時刻": 1_000, "出の約定時刻": 301_000, "入った": 1,
+        "出口の理由": "最後のプリント+300秒+d"}]}
+    costs = {vv.COST_NONE: 0.0, vv.COST_MAIN: 2.0, vv.COST_P75: 4.0}
+    rows = vv.build_cascade_rows_file(policy_rows, costs, opt_rows)
+    assert len(rows) == 2 * len(costs)
+    for r in rows:
+        assert list(r.keys()) == list(vv.CASCADE_COLUMNS)
+    need = {"bundle_id", "day", "side", "連鎖の大きさ", "n_prints", "方策", "型",
+            "遅れ_秒", "費用の通り", "pnl_bp", "pnl_net_bp", "建玉の回数", "保有秒",
+            "入りの約定時刻_ms", "出の約定時刻_ms", "入った", "最初に入った位置",
+            "出口の理由"}
+    assert need == set(vv.CASCADE_COLUMNS)
+    # 費用は c × 建玉の回数
+    main = [r for r in rows if r["費用の通り"] == vv.COST_MAIN and r["方策"] != "②opt"]
+    assert main[0]["pnl_net_bp"] == pytest.approx(10.0 - 2.0 * 2)
+    opt = [r for r in rows if r["費用の通り"] == vv.COST_MAIN and r["方策"] == "②opt"]
+    assert opt[0]["pnl_net_bp"] == pytest.approx(4.0 - 2.0 * 1)
+    assert opt[0]["入りの約定時刻_ms"] == 1_000
+
+
+def test_entry_exit_fill_times_reconstructs_absolute_fill_times():
+    P = vv.sp
+    prints = [{"print_id": "a", "ts_ms": 0, "side": "SELL"},
+              {"print_id": "b", "ts_ms": 15_000, "side": "SELL"}]
+    times = np.array([0, 1_500, 16_500, 75_500, 120_000], dtype=np.int64)
+    prices = np.array([100.0, 100.1, 100.2, 100.3, 100.4])
+
+    def price_fn(t_ms):
+        return vv.price_at_or_after(times, prices, int(t_ms))
+
+    end = 15_000 + vv.CASCADE_END_GAP_S * 1000
+    res = P.simulate_cascade(prints, [vv.JUDGE_STOP, vv.JUDGE_CONTINUE], -1.0,
+                             vv.TYPE_B, 1, price_fn, end)
+    t_in, t_out = vv.entry_exit_fill_times(res, 1)
+    assert t_in == 1_500                 # 0 + 1 秒 -> 次の約定 1,500 ms
+    # 出口の目標は 75,000 + 1 秒 = 76,000 ms。76,000 ms 以後の最初の約定は 120,000 ms
+    # (75,500 ms の約定は目標より前なので取らない)。
+    assert t_out == 120_000
+
+
+# --- 致命-3: 露出(同時建玉・保有時間)-------------------------------------
+def test_max_concurrent_counts_overlapping_positions():
+    assert vv.max_concurrent([]) == 0
+    assert vv.max_concurrent([(0, 10), (10, 20)]) == 1          # 端が触るだけ
+    assert vv.max_concurrent([(0, 10), (5, 20)]) == 2
+    assert vv.max_concurrent([(0, 30), (5, 20), (10, 15), (12, 14)]) == 4
+    assert vv.max_concurrent([(0, 10), (None, 5)]) == 1         # 欠けた区間は飛ばす
+
+
+def test_exposure_of_computes_hours_and_bp_per_hour():
+    rows = [{"pnl_net_bp": 36.0, "保有秒": 1800.0, "入りの約定時刻": 0,
+             "出の約定時刻": 1_800_000},
+            {"pnl_net_bp": 36.0, "保有秒": 1800.0, "入りの約定時刻": 900_000,
+             "出の約定時刻": 2_700_000}]
+    e = vv.exposure_of(rows)
+    assert e["合計保有時間_時間"] == pytest.approx(1.0)
+    assert e["保有1時間あたりの収支_bp/h"] == pytest.approx(72.0)
+    assert e["同時建玉の最大_本"] == 2
+    assert e["平均保有秒"] == pytest.approx(1800.0)
+    assert vv.exposure_of([])["同時建玉の最大_本"] == 0
+
+
+def test_grid_rows_carry_the_exposure_columns_and_empty_reason():
+    per_chain = {}
+    times = np.arange(0, 1_200_000, 1_000, dtype=np.int64)
+    prices = 100.0 + times / 1.0e7
+    for i in range(4):
+        prints = [{"print_id": f"p{i}{j}", "ts_ms": 10_000 + j * 20_000,
+                   "side": "SELL", "day": "2023-07-01",
+                   "mat12_notional_over_max_recent_print": ("" if j == 0 else 5.0),
+                   "mat14_trade_count_60s": 2000.0,
+                   "mat15_burst_ratio_10s_over_60s": 0.9} for j in range(3)]
+        res = {}
+        for ei in range(3):
+            for ex in vv.EXIT_LEVELS:
+                for st in vv.STOP_LEVELS:
+                    res[(ei, ex, st)] = vv.simulate_reverse_entry(
+                        prints, -1.0, ei, ex, vv.STOP_BP[st], 1, times, prices)
+        per_chain[f"b{i}"] = {"day": "2023-07-01", "n_prints": 3, "結果": res,
+                              "entry_rows": prints}
+    cuts = {"材料12≥p75": ("mat12_notional_over_max_recent_print", 1.0),
+            "材料12≥p90": ("mat12_notional_over_max_recent_print", 2.0),
+            "材料14≥p75": ("mat14_trade_count_60s", 1.0),
+            "材料14≥p90": ("mat14_trade_count_60s", 2.0),
+            "材料15≥p75": ("mat15_burst_ratio_10s_over_60s", 0.1),
+            "材料15≥p90": ("mat15_burst_ratio_10s_over_60s", 0.2)}
+    rows = vv.build_grid_table(per_chain, cuts, 1.0, "2023-07-01")
+    assert len(rows) == 189
+    for col in ("合計保有時間_時間", "保有1時間あたりの収支_bp/h", "同時建玉の最大_本",
+                "空の理由"):
+        assert col in rows[0]
+    # 材料12 は 1 件目で欠測なので「1件目から × 材料12」は構造的に空(D-4)
+    empty = [r for r in rows if r["入った本数"] == 0]
+    assert len(empty) == 18
+    assert all(r["入る位置"] == "1件目から" and r["入る条件"].startswith("材料12")
+               for r in empty)
+    assert all("構造的に空" in r["空の理由"] for r in empty)
+    assert all(r["空の理由"] == "" for r in rows if r["入った本数"] > 0)
+    # 露出の表(3 通り)
+    ex = vv.build_exposure_table(per_chain, cuts, 1.0,
+                                 {"素": dict(vv.PLAIN_COMBO)})
+    assert len(ex) == 1 and ex[0]["入った本数"] == 4
+
+
+def test_knob_contribution_carries_hold_time_columns():
+    rows = [_grid_row(1.0, 1.0, 1.0, 1.0, **c) for c in vv.grid_combos()]
+    for r in rows:
+        r["合計保有時間_時間"] = 2.0
+        r["保有1時間あたりの収支_bp/h"] = 0.5
+        r["同時建玉の最大_本"] = 3
+    rows[5]["総収支_bp"] = 99.0
+    kb = vv.knob_contribution(rows, vv.select_combo(rows))
+    assert kb and all("合計保有時間_時間" in r and "同時建玉の最大_本" in r for r in kb)
+
+
+# --- 致命-2: 母集団と日ブロック分割 ----------------------------------------
+def test_day_block_folds_never_split_a_day_and_are_deterministic():
+    days = np.array([f"2023-{1 + (i // 28):02d}-{1 + (i % 28):02d}"
+                     for i in range(140)], dtype=object)
+    rows = np.repeat(days, 3)
+    folds = vv.day_block_folds(rows, n_folds=5, seed=20260920)
+    assert len(folds) == 5
+    assert sorted(np.concatenate(folds).tolist()) == list(range(rows.size))
+    day_of_fold = {}
+    for fi, f in enumerate(folds):
+        for d in set(rows[f].tolist()):
+            assert d not in day_of_fold, d      # 同じ日が 2 つの群に跨らない
+            day_of_fold[d] = fi
+    assert len(day_of_fold) == 140
+    again = vv.day_block_folds(rows, n_folds=5, seed=20260920)
+    assert [f.tolist() for f in again] == [f.tolist() for f in folds]
+    other = vv.day_block_folds(rows, n_folds=5, seed=1)
+    assert [f.tolist() for f in other] != [f.tolist() for f in folds]
+
+
+def test_run_scene_day_blocked_reports_the_day_block_split():
+    rng = np.random.default_rng(7)
+    n = 900
+    days = np.array([f"2023-07-{1 + (i % 25):02d}" for i in range(n)], dtype=object)
+    x = rng.uniform(0, 1, n)
+    df = pd.DataFrame({"print_id": [f"p{i}" for i in range(n)], "day": days,
+                       "cand_14": x, "cand_8": rng.uniform(0, 1, n),
+                       vv.LABEL_VALUE: (rng.uniform(0, 1, n) < x).astype(float)})
+    res = vv.run_scene_day_blocked(df, ["cand_14", "cand_8"], "試験")
+    assert res["report"]["分割"].startswith("日でブロック")
+    assert sum(res["report"]["分割の日数"]) == 25
+    assert res["n"] == n
+    assert set(res["oof_by_pid"]) == set(df["print_id"])
+
+
+@needs_data
+def test_scene_frames_exclude_prints_without_a_bundle():
+    first, chain, outside = vv.build_scene_frames()
+    assert len(first) == 8931          # 連鎖の数と一致(1 連鎖に 1 件目が 1 つ)
+    assert len(chain) == 11866
+    assert len(outside) == 1041
+    assert first["bundle_id"].notna().all()
+    assert chain["bundle_id"].notna().all()
+    assert outside["bundle_id"].isna().all()
+    assert len(first) + len(chain) == 20797
+    q0 = vv.outside_bundle_rows(outside)
+    assert q0[0]["件数"] == 1041
+    assert q0[0]["値段のラベルの割合"] > 0.9
+
+
+@needs_data
+def test_cascades_from_prints_reports_the_rows_it_drops():
+    df = vv.load_stage1_prints()
+    assert vv.bundle_drop_count(df) == 1041
+    cas = vv.cascades_from_prints(df, "試験")
+    assert len(cas) == 8931
+    assert sum(len(v) for v in cas.values()) == 20797
+
+
+@needs_data
+def test_condition_cuts_use_the_bundle_population():
+    df = vv.load_stage1_prints()
+    cuts, note = vv.condition_cuts(df)
+    assert note["材料12"]["母数"] == 20797
+    assert note["材料14"]["母数"] == 20797
+    # 材料12 は 1 件目で全欠測なので有限値は連鎖の中の件数
+    assert note["材料12"]["有限値の件数"] == 11866
+    assert note["材料14"]["有限値の件数"] <= 20797
+    assert set(cuts) == {f"{m}≥{q}" for m in ("材料12", "材料14", "材料15")
+                         for q in ("p75", "p90")}
+
+
+# --- D-1 / D-2: 費用 --------------------------------------------------------
+def test_spread_main_quantiles_are_absolute_values():
+    vals = np.array([-3.0, -1.0, 1.0, 2.0, 5.0])
+    row = bsp._dist_row("2023-07-01", bsp.SCOPE_ALL, vals, "前半")
+    assert row["p50_bp"] == pytest.approx(float(np.percentile(np.abs(vals), 50)))
+    assert row["p50_bp"] == pytest.approx(2.0)          # |{1,1,2,3,5}| の中央値
+    assert row["参考_符号付きp50_bp"] == pytest.approx(1.0)
+    assert row["参考_正の対だけp50_bp"] == pytest.approx(2.0)
+    assert row["負の対の割合"] == pytest.approx(0.4)
+    # 絶対値の中央値は符号付きの中央値以上(負の対が費用を小さく見せない)
+    assert row["p50_bp"] >= row["参考_符号付きp50_bp"]
+
+
+def test_post_liquidation_window_takes_every_liquidation_not_only_the_latest():
+    # 清算が 0 ms と 4,500 ms にある。対が 4,600 ms のとき、直前の清算(4,500)からは
+    # 100 ms しか経っていないが、最初の清算(0)からは 4,600 ms = 窓の中。
+    liq = np.array([0, 4_500], dtype=np.int64)
+    pair_ts = np.array([4_600], dtype=np.int64)
+    assert bool(bsp.mask_post_liquidation(pair_ts, liq)[0]) is True
+    # 窓の外(どの清算からも 5 秒超 / 1 秒未満)は落ちる
+    assert bool(bsp.mask_post_liquidation(np.array([200], dtype=np.int64),
+                                          np.array([0], dtype=np.int64))[0]) is False
+    assert bool(bsp.mask_post_liquidation(np.array([20_000], dtype=np.int64),
+                                          np.array([0], dtype=np.int64))[0]) is False
+    # 直前だけを見る実装なら落ちる対を拾うので、件数は減らない
+    many = np.array([0, 100, 200, 300, 4_500], dtype=np.int64)
+    pts = np.array([1_500, 4_600, 5_200], dtype=np.int64)
+    assert bsp.mask_post_liquidation(pts, many).sum() == 3
+
+
+@needs_tardis
+def test_read_cost_returns_the_absolute_quantiles():
+    if not (vv.SPREAD_DIR / "spread_by_day.csv").exists():
+        pytest.skip("費用の表がまだこの環境で作られていない")
+    df = pd.read_csv(vv.SPREAD_DIR / "spread_by_day.csv")
+    pool = df[(df["標本日"] == bsp.POOL_LABEL) & (df["区分"] == bsp.SCOPE_POST_LIQ)]
+    c_main, c_p75 = bsp.read_cost(vv.SPREAD_DIR)
+    assert c_main == pytest.approx(float(pool["p50_bp"].iloc[0]))
+    assert c_main >= float(pool["参考_符号付きp50_bp"].iloc[0])
+    assert c_p75 == pytest.approx(float(pool["p75_bp"].iloc[0]))
+
+
+# --- D-3: 到達が遅れより早くても取れないとは限らない ------------------------
+def test_residual_move_after_delay_measures_from_the_delayed_fill():
+    times = np.arange(0, 120_000, 1_000, dtype=np.int64)
+    prices = np.full(times.size, 100.0)
+    prices[0:] = 100.0
+    prices[1:] = 100.0 * (1 + 8e-4)      # 1 秒で +8 bp(遅れの前に到達)
+    prices[30:] = 100.0 * (1 + 20e-4)    # そこから更に +12 bp
+    # 遅れ 1 秒の約定は 1,000 ms の値段。そこから t0+60 秒までの最大順行
+    r = vv.residual_move_after_delay(times, prices, 0, 1.0, delay_s=1)
+    p_in = prices[1]
+    want = (prices[59] - p_in) / p_in * 1e4
+    assert r == pytest.approx(want, rel=1e-6)
+    assert r > 0
+
+
+def test_time_to_target_table_has_the_residual_columns():
+    rows = [
+        {"到達秒": 0.5, "再計算したラベル": 1.0, "位置": vv.POS_1ST,
+         "遅れ1秒の約定からの最大順行_bp": 20.0},
+        {"到達秒": 0.8, "再計算したラベル": 1.0, "位置": vv.POS_1ST,
+         "遅れ1秒の約定からの最大順行_bp": 1.0},
+        {"到達秒": 9.0, "再計算したラベル": 1.0, "位置": vv.POS_CHAIN,
+         "遅れ1秒の約定からの最大順行_bp": 30.0},
+    ]
+    tbl = vv.time_to_target_table(rows)
+    whole = [r for r in tbl if r["場面"] == "全体"][0]
+    assert whole["到達1秒未満の件数"] == 2
+    assert whole["到達1秒未満_遅れ1秒の約定からなお5bp以上の割合"] == pytest.approx(0.5)
+    assert whole["到達1秒以上の件数"] == 1
+    assert whole["到達1秒以上_遅れ1秒の約定からなお5bp以上の割合"] == pytest.approx(1.0)
+
+
+# --- D-6: 段2 の停止と dry-run ---------------------------------------------
+def test_require_materials_cover_stops_on_a_missing_print_id():
+    vv.require_materials_cover({"a", "b"}, {"a", "b", "c"}, "試験")
+    with pytest.raises(RuntimeError):
+        vv.require_materials_cover({"a", "b"}, {"a"}, "試験")
+
+
+def test_add_n2_by_day_clears_the_day_cache():
+    """D-6(b): 日が変わるたびに約定のキャッシュを空にする(228 日ぶんを溜めない)。"""
+    class FakeSB:
+        def __init__(self):
+            self._window_cache = {}
+            self._raw_trade_cache = {}
+            self.seen = []
+    calls = []
+
+    def fake_add(sb, g):
+        sb._window_cache[str(g["day"].iloc[0])] = ("x",)
+        calls.append(len(sb._window_cache))
+        return g
+    orig = vv.lg.add_n2_column
+    vv.lg.add_n2_column = fake_add
+    try:
+        df = pd.DataFrame({"day": ["d1", "d1", "d2", "d3"],
+                           "print_id": ["a", "b", "c", "d"]})
+        out = vv.add_n2_by_day(FakeSB(), df)
+    finally:
+        vv.lg.add_n2_column = orig
+    assert len(out) == 4
+    assert calls == [1, 1, 1]        # 毎回 1 日ぶんしか残らない
+
+
+def test_stage2_dry_run_builds_every_table_without_reading_the_back_half(tmp_path):
+    if not (vv.DEFAULT_OUT / "summary.json").exists():
+        pytest.skip("段1 がまだこの環境で実行されていない")
+    if not (vv.SPREAD_DIR / "spread_by_day.csv").exists():
+        pytest.skip("費用の表がまだこの環境で作られていない")
+    out = tmp_path / "dry"
+    summary = vv.run_stage2(out_dir=out, dry_run=True)
+    assert summary["段"].startswith("段2(dry-run")
+    for name in ("q0_selfcheck.csv", "dist_table.csv", "q4_main.csv",
+                 "q4_pair_diff.csv", "q4_by_day.csv", "q4_by_side.csv",
+                 "q4_by_size.csv", "q4_by_position.csv", "q4_exposure.csv",
+                 "cascades.csv.gz", "tables.md", "summary.json", "MD5SUMS"):
+        assert (out / name).exists(), name
+    main = pd.read_csv(out / "q4_main.csv")
+    assert {"①3択A", "①3択B", "全部逆張り(素)", "前段の3択(清算)A",
+            "完全な判断(値段)A"} <= set(main["方策"])
+    # 後半の本物の出力は作られていない
+    assert not (vv.DEFAULT_OUT_STAGE2 / "summary.json").exists()
+
+
+def test_synthetic_stage2_inputs_are_synthetic_only():
+    syn = vv.synthetic_stage2_inputs()
+    assert set(syn["cascades"]) == {"dry_0001", "dry_0002"}
+    ids = [pr["print_id"] for v in syn["cascades"].values() for pr in v]
+    assert all(i.startswith("d") for i in ids)
+    cache = vv.SyntheticCache(syn["times"], syn["prices"])
+    px, t = cache.raw_at_or_after(10_500)
+    assert t == 11_000 and px > 0
+
+
+# --- Q4 の対差と参照 2 本 ---------------------------------------------------
+def test_pair_diff_rows_pair_on_the_same_bundle_id():
+    lines = {
+        "A": [{"bundle_id": "b1", "pnl_net_bp": 5.0},
+              {"bundle_id": "b2", "pnl_net_bp": -1.0},
+              {"bundle_id": "b3", "pnl_net_bp": 2.0}],
+        "B": [{"bundle_id": "b1", "pnl_net_bp": 1.0},
+              {"bundle_id": "b2", "pnl_net_bp": -1.0}],
+    }
+    rows = vv.build_pair_diff_rows(lines, (("A", "B"), ("A", "C")))
+    a_b = [r for r in rows if r["対差"] == "A − B"][0]
+    assert a_b["対の数"] == 2                      # b3 は片側に無いので対にしない
+    assert a_b["対差の合計_bp"] == pytest.approx(4.0)
+    assert a_b["対差が0の本数"] == 1
+    a_c = [r for r in rows if r["対差"] == "A − C"][0]
+    assert a_c["対の数"] == 0 and "備考" in a_c
+
+
+def test_reference_policies_use_the_prior_liquidation_bands_and_perfect_judgment():
+    prints = [{"print_id": "a", "ts_ms": 0, "side": "SELL"},
+              {"print_id": "b", "ts_ms": 10_000, "side": "SELL"}]
+    prob = {"a": 0.41, "b": 0.80}
+    pos = {"a": vv.POS_1ST, "b": vv.POS_CHAIN}
+    got = vv.judgments_for_policy_value(prints, "前段の3択(清算)", prob, pos,
+                                        {vv.POS_1ST: (0.1, 0.2),
+                                         vv.POS_CHAIN: (0.1, 0.2)},
+                                        {vv.POS_1ST: 0.5, vv.POS_CHAIN: 0.5},
+                                        kind=vv.JUDGE_LIQ)
+    # 値段の帯 (0.1,0.2) ではなく前段の帯(1件目 0.42/0.58、連鎖の中 0.70/0.76)を使う
+    assert got == [vv.JUDGE_STOP, vv.JUDGE_CONTINUE]
+    perfect = vv.judgments_for_policy_value(prints, "完全な判断(清算)", prob, pos,
+                                            {}, {}, kind=vv.JUDGE_LIQ)
+    assert perfect == [vv.JUDGE_CONTINUE, vv.JUDGE_STOP]
+    assert vv.REF_POLICIES == ("前段の3択(清算)", "完全な判断(清算)")
+
+
+def test_q4_tables_cover_side_size_position_day_and_exposure():
+    rows = [{"bundle_id": f"b{i}", "day": f"2023-07-{1 + i:02d}",
+             "side": ("BUY" if i % 2 else "SELL"),
+             "連鎖の大きさ": ("単発" if i < 2 else "3件以上"),
+             "最初に入った位置": "1件目で入った",
+             "pnl_net_bp": float(i - 2), "保有秒": 60.0,
+             "入りの約定時刻": i * 100_000, "出の約定時刻": i * 100_000 + 60_000,
+             "入った": 1} for i in range(5)]
+    q4 = vv.build_q4_tables({"X": rows})
+    assert len(q4["並置"]) == 1 and q4["並置"][0]["n"] == 5
+    assert len(q4["日ごと"]) == 1 and q4["日ごと"][0]["日数"] == 5
+    assert {r["水準"] for r in q4["側別"]} == {"BUY", "SELL"}
+    assert {r["水準"] for r in q4["大きさ別"]} == {"単発", "3件以上"}
+    assert {r["水準"] for r in q4["位置別"]} == {"1件目で入った"}
+    assert q4["露出"][0]["合計保有時間_時間"] == pytest.approx(5 * 60 / 3600)
+
+
+def test_bundle_id_fingerprint_is_order_insensitive():
+    a = vv.bundle_id_fingerprint(["b2", "b1", "b3"])
+    b = vv.bundle_id_fingerprint(["b3", "b2", "b1", "b1"])
+    assert a == b
+    assert a != vv.bundle_id_fingerprint(["b1", "b2"])
+
+
+@needs_data
+def test_prior_stage2_bundle_ids_are_2000_when_present():
+    if not vv.PRIOR_STAGE2_CASCADES.exists():
+        pytest.skip("前段の段2 の出力が無い")
+    ids = vv.prior_stage2_bundle_ids()
+    assert len(ids) == 2000

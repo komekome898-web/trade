@@ -12,14 +12,21 @@
     price,amount`(`timestamp` は取引所時刻のマイクロ秒)。
   - **実効スプレッド** = 1 秒以内に隣り合う買い約定と売り約定の価格差 ÷ 中値(bp)。
     「隣り合う」= 時刻順に並べた約定列で**連続する 2 件**(i, i+1)のうち向きが違い、
-    時刻差が 1 秒以内のもの。値は (買いの値段 − 売りの値段) ÷ 中値 × 1e4(符号付き。
+    時刻差が 1 秒以内のもの。生の値は (買いの値段 − 売りの値段) ÷ 中値 × 1e4(符号付き。
     相場が動いている間は負にもなる)。
+  - **主の分位は絶対値で取る**(反証者レビュー9 D-1、リードの決定 2026-09-21)。
+    板を叩いて払う費用は向きに依らず正なので、符号付きの中央値は費用を小さく見せる
+    (実測: 符号付き 1.7869 / 絶対値 1.9176 / 正の対だけ 2.2574)。
+    符号付きの中央値と正の対だけの中央値は**参考列**として同じ表に残す。
   - 標本日ごとに分布(p25 / p50 / p75 / p90、対の数)を **2 通り**で出す:
     (i) 全時刻、(ii) Binance の清算の直後(t₀ + 1〜5 秒)。
+    **「清算直後」は、窓内に清算が複数あっても各清算の [t₀+1, t₀+5] に入る全部の対を取る**
+    (反証者レビュー9 D-2。直前 1 件だけを見ると、より新しい清算から 1 秒未満の対 = 清算の
+    直後の最も荒い瞬間が落ちる)。
   - 清算の時刻は `rows_continue.csv.gz` の `ts_ms` **だけ**を読む
     (`usecols=["kind","day","half","ts_ms"]`。ラベル・価格・材料の列は読まない。
     後半の標本日についても同じで、読むのは時刻だけ)。
-  - 主の c = 清算直後の 16 日プールの中央値、p75 を併記。
+  - 主の c = 清算直後の 16 日プールの**絶対値の中央値**、絶対値の p75 を併記。
 
 **生データは `data/`(gitignore 域)から読むだけで、リポジトリに入れるのは
 標本日 × 分位の集計表だけ**(Tardis 利用規約 9.2、設計 §4)。
@@ -130,18 +137,20 @@ def effective_spread_pairs(t_ms: np.ndarray, price: np.ndarray, sgn: np.ndarray,
 def mask_post_liquidation(pair_ts: np.ndarray, liq_ts: np.ndarray,
                           lo_ms: int = POST_LIQ_LO_MS,
                           hi_ms: int = POST_LIQ_HI_MS) -> np.ndarray:
-    """対の開始時刻が、どれかの清算 t₀ の [t₀+lo, t₀+hi] に入るか。"""
+    """対の開始時刻が、**どれかの**清算 t₀ の [t₀+lo, t₀+hi] に入るか。
+
+    反証者レビュー9 D-2 の直し: 直前の清算 1 件だけを見る実装だと、清算が 1 秒以内に
+    続くとき(連鎖)に、前の清算の窓に入る対でもより新しい清算からの差が lo 未満だと
+    落ちていた(全体の 26%)。ここでは
+    `t₀ ∈ [pair_ts − hi, pair_ts − lo]` を満たす清算が 1 件でもあるかを数える。"""
     pair_ts = np.asarray(pair_ts, dtype=np.int64)
     liq_ts = np.asarray(liq_ts, dtype=np.int64)
     if pair_ts.size == 0 or liq_ts.size == 0:
         return np.zeros(pair_ts.size, dtype=bool)
     liq = np.sort(liq_ts)
-    # 直前(以前)の清算だけ見れば足りる: 窓は t₀ より後ろにしか伸びない。
-    j = np.searchsorted(liq, pair_ts, side="right") - 1
-    ok = j >= 0
-    delta = np.full(pair_ts.size, -1, dtype=np.int64)
-    delta[ok] = pair_ts[ok] - liq[j[ok]]
-    return ok & (delta >= lo_ms) & (delta <= hi_ms)
+    lo_edge = np.searchsorted(liq, pair_ts - hi_ms, side="left")
+    hi_edge = np.searchsorted(liq, pair_ts - lo_ms, side="right")
+    return hi_edge > lo_edge
 
 
 # ===========================================================================
@@ -165,10 +174,17 @@ def liquidation_ts_by_day(rows_continue: Path = ROWS_CONTINUE) -> tuple:
 # 4. 表
 # ===========================================================================
 def _dist_row(day: str, scope: str, vals: np.ndarray, half_label: str) -> dict:
+    """主の分位は**絶対値**(D-1)。符号付きと正の対だけの中央値は参考列。"""
     vals = np.asarray(vals, dtype=float)
-    q = quantiles(vals, list(QUANTILES)) if vals.size else [NAN] * len(QUANTILES)
+    av = np.abs(vals)
+    pos = vals[vals > 0]
+    q = quantiles(av, list(QUANTILES)) if av.size else [NAN] * len(QUANTILES)
+    qs = quantiles(vals, [50]) if vals.size else [NAN]
+    qp = quantiles(pos, [50]) if pos.size else [NAN]
     return {"標本日": day, "半期": half_label, "区分": scope, "対の数": int(vals.size),
-            "p25_bp": q[0], "p50_bp": q[1], "p75_bp": q[2], "p90_bp": q[3]}
+            "p25_bp": q[0], "p50_bp": q[1], "p75_bp": q[2], "p90_bp": q[3],
+            "参考_符号付きp50_bp": qs[0], "参考_正の対だけp50_bp": qp[0],
+            "負の対の割合": (float(np.mean(vals < 0)) if vals.size else NAN)}
 
 
 def build_spread_table(out_dir: Path = DEFAULT_OUT, tardis_dir: Path = TARDIS_DIR,
@@ -204,7 +220,7 @@ def build_spread_table(out_dir: Path = DEFAULT_OUT, tardis_dir: Path = TARDIS_DI
     rows.append(_dist_row(POOL_LABEL, SCOPE_ALL, all_v, "前半+後半"))
     rows.append(_dist_row(POOL_LABEL, SCOPE_POST_LIQ, post_v, "前半+後半"))
 
-    qp = quantiles(post_v, list(QUANTILES)) if post_v.size else [NAN] * 4
+    qp = (quantiles(np.abs(post_v), list(QUANTILES)) if post_v.size else [NAN] * 4)
     c_main, c_p75 = float(qp[1]), float(qp[2])
 
     out_dir = Path(out_dir)
@@ -218,8 +234,12 @@ def build_spread_table(out_dir: Path = DEFAULT_OUT, tardis_dir: Path = TARDIS_DI
           "`rows_continue.csv.gz` の `ts_ms`",
           f"- 対の作り方: 時刻順に連続する 2 件で向きが違い、時刻差 ≤ {PAIR_MAX_GAP_MS} ms。"
           "値 = (買いの値段 − 売りの値段) ÷ 中値 × 1e4",
-          f"- 主の c(清算直後のプールの中央値) = {c_main:.4f} bp / "
-          f"p75 = {c_p75:.4f} bp", "",
+          "- **p25 / p50 / p75 / p90 は絶対値の分位**(D-1)。符号付きと正の対だけの"
+          "中央値は参考列",
+          f"- 清算直後 = **どれかの**清算の [t₀+{POST_LIQ_LO_MS} ms, t₀+{POST_LIQ_HI_MS} ms] "
+          "に入る対(D-2)",
+          f"- 主の c(清算直後のプールの絶対値の中央値) = {c_main:.4f} bp / "
+          f"絶対値の p75 = {c_p75:.4f} bp", "",
           md_table(rows), ""]
     mdtxt = "\n".join(md)
     check_no_banned(mdtxt, "spread/tables.md")
@@ -235,8 +255,15 @@ def build_spread_table(out_dir: Path = DEFAULT_OUT, tardis_dir: Path = TARDIS_DI
         "清算直後の窓_ms": [POST_LIQ_LO_MS, POST_LIQ_HI_MS],
         "全時刻の対の数(プール)": int(all_v.size),
         "清算直後の対の数(プール)": int(post_v.size),
-        "主のc_清算直後プールの中央値_bp": c_main,
-        "併記_清算直後プールのp75_bp": c_p75,
+        "主のc_清算直後プールの絶対値の中央値_bp": c_main,
+        "併記_清算直後プールの絶対値のp75_bp": c_p75,
+        "参考_清算直後プールの符号付きの中央値_bp": (
+            float(quantiles(post_v, [50])[0]) if post_v.size else NAN),
+        "参考_清算直後プールの正の対だけの中央値_bp": (
+            float(quantiles(post_v[post_v > 0], [50])[0])
+            if post_v[post_v > 0].size else NAN),
+        "清算直後の窓の取り方": "どれかの清算の [t0+1s, t0+5s] に入る全部の対(D-2)",
+        "分位の取り方": "絶対値(D-1)",
         "生データはリポジトリに入れない": True,
         "読んだ列(rows_continue)": ["kind", "day", "half", "ts_ms"],
         "所要秒": round(time.time() - t_start, 1),
