@@ -5910,10 +5910,10 @@
   {
    "move": 222,
    "tools": {
-    "Bash": 42,
+    "Bash": 44,
     "ToolSearch": 1
    },
-   "n_tools": 43,
+   "n_tools": 45,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": true,
@@ -5958,7 +5958,7 @@
   },
   "P5_tools_per_move": {
    "median": 4,
-   "max": 43,
+   "max": 45,
    "n": 217
   },
   "P6_findings_applied": {
