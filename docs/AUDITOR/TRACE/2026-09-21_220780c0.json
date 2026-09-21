@@ -6327,8 +6327,11 @@
   },
   {
    "move": 238,
-   "tools": {},
-   "n_tools": 0,
+   "tools": {
+    "Bash": 1,
+    "Agent": 1
+   },
+   "n_tools": 2,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
@@ -6372,9 +6375,9 @@
    "value": 0.0
   },
   "P5_tools_per_move": {
-   "median": 4.0,
+   "median": 4,
    "max": 48,
-   "n": 232
+   "n": 233
   },
   "P6_findings_applied": {
    "num": 13,
