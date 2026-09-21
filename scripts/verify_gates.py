@@ -134,6 +134,60 @@ show("オーナーの発言で待ちが解ける",
      hook("owner_options_gate.sh", _pre("Bash", cmd="ls"), hk2), 0)
 
 # ---------------------------------------------------------------------------
+print("\n== Bash 経由の書き込み(2026-09-21、L-375「機械直せよ」。ACTION_LOG 076 の穴) ==")
+show("③(a): Bash のヒアドキュメントでフックに書くと止まる",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="cat > .claude/hooks/x.sh <<'EOF'\nx\nEOF"), hk), 2)
+show("③(a): python でゴールを書き換えると止まる",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="python3 - <<'EOF'\nopen('docs/PROJECT_GOAL.md','w').write('x')\nEOF"), hk), 2)
+show("③(a): settings.json への sed -i は止まる",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="sed -i 's/a/b/' .claude/settings.json"), hk), 2)
+show("③(a): フックを cat で読むだけなら通る",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="cat .claude/hooks/x.sh; git add .claude/settings.json"), hk), 0)
+show("③(a): 普通の文書への Bash 書き込みは通る",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="printf x >> docs/OWNER_LOG.md"), hk), 0)
+hk3 = tempfile.mkdtemp()
+os.makedirs(os.path.join(hk3, ".claude", "state"), exist_ok=True)
+show("③(b): ゴール未読で Bash のヒアドキュメントで文書を書くと止まる",
+     hook("owner_options_gate.sh", _pre("Bash", cmd="cat > docs/X.md <<'EOF'\nx\nEOF"), hk3), 2)
+show("③(b): ゴール未読で python が open(...,'w') で書くと止まる",
+     hook("owner_options_gate.sh", _pre("Bash", cmd="python3 - <<'EOF'\nopen('scripts/x.py','w').write('x')\nEOF"), hk3), 2)
+show("③(b): 記録(OWNER_LOG)への追記は例外で通る",
+     hook("owner_options_gate.sh", _pre("Bash", cmd="printf 'x' >> docs/OWNER_LOG.md && git commit -q -m x"), hk3), 0)
+show("③(b): 読むだけの Bash は通る",
+     hook("owner_options_gate.sh", _pre("Bash", cmd="grep -n x docs/X.md | head; git status"), hk3), 0)
+hook("owner_options_gate.sh", _pre("Read", ROOT + "/docs/PROJECT_GOAL.md"), hk3)
+show("③(b): ゴールを開いた後は Bash の書き込みも通る",
+     hook("owner_options_gate.sh", _pre("Bash", cmd="cat > docs/X.md <<'EOF'\nx\nEOF"), hk3), 0)
+
+# ---------------------------------------------------------------------------
+print("\n== 委任の関門 delegation_audit_gate.sh(監査の記録が無い委任を止める) ==")
+hk4 = tempfile.mkdtemp()
+os.makedirs(os.path.join(hk4, ".claude", "state"), exist_ok=True)
+os.makedirs(os.path.join(hk4, "docs", "DATA", "delegations"), exist_ok=True)
+os.makedirs(os.path.join(hk4, "docs", "AUDITOR", "VERDICTS"), exist_ok=True)
+_dp = os.path.join(hk4, "docs", "DATA", "delegations", "p.md")
+open(_dp, "w").write("委任文\n")
+_sha = hashlib.sha256(open(_dp, "rb").read()).hexdigest()[:12]
+def _agent(t, prompt):
+    return {"hook_event_name": "PreToolUse", "tool_name": "Agent", "tool_input": {"subagent_type": t, "prompt": prompt}}
+def _send(msg):
+    return {"hook_event_name": "PreToolUse", "tool_name": "SendMessage", "tool_input": {"to": "x", "message": msg}}
+show("委任文の引用が無い Agent は止まる", hook("delegation_audit_gate.sh", _agent("general-purpose", "やって"), hk4), 2)
+show("委任文を引用しても監査の記録が無ければ止まる",
+     hook("delegation_audit_gate.sh", _agent("general-purpose", "docs/DATA/delegations/p.md を読め"), hk4), 2)
+open(os.path.join(hk4, "docs", "AUDITOR", "VERDICTS", "v.md"), "w").write(f"監査した: p.md@{_sha}\n")
+show("監査の記録(指紋つき)があれば通る",
+     hook("delegation_audit_gate.sh", _agent("general-purpose", "docs/DATA/delegations/p.md を読め"), hk4), 0)
+open(_dp, "a").write("書き換え\n")
+show("委任文を書き換えると(指紋が変わり)止まる",
+     hook("delegation_audit_gate.sh", _agent("general-purpose", "docs/DATA/delegations/p.md を読め"), hk4), 2)
+show("会話のメッセージだけの委任(SendMessage)は止まる", hook("delegation_audit_gate.sh", _send("直して"), hk4), 2)
+show("監査役の起動は通る", hook("delegation_audit_gate.sh", _agent("owner-auditor", "検査して"), hk4), 0)
+open(os.path.join(hk4, ".claude", "state", "owner_unlock_delegation"), "w").close()
+show("解除ファイルがあれば通る(穴であることを測る)", hook("delegation_audit_gate.sh", _send("直して"), hk4), 0)
+shutil.rmtree(hk3, ignore_errors=True); shutil.rmtree(hk4, ignore_errors=True)
+
+# ---------------------------------------------------------------------------
 print("\n== settings.json の健全性 ==")
 
 
@@ -193,10 +247,10 @@ _refs = _referenced_hooks(SETTINGS)
 show(f"参照するフック {len(_refs)} 件が全部実在する(通る側)", _all_exist(_refs), True)
 show("消したフックを参照していれば落ちる(止まる側 = I-012 の型)",
      _all_exist(_refs + ["deleted_hook.sh"]), False)
-show("残したフック 6 本 + jev_notice.sh(L-218、表示だけ)だけを参照している",
+show("残したフック 6 本 + jev_notice.sh(L-218)+ delegation_audit_gate.sh(L-375)だけを参照している",
      sorted(set(_refs)),
      sorted(["_verify_manifest.sh", "deny_protected_paths.sh", "jev_notice.sh", "owner_options_gate.sh",
-             "owner_turn_digest.sh", "session_start_digest.sh", "trace_snapshot.sh"]))
+             "owner_turn_digest.sh", "session_start_digest.sh", "trace_snapshot.sh", "delegation_audit_gate.sh"]))
 
 # ---------------------------------------------------------------------------
 print("\n== 台帳 HOOK_MANIFEST.sha256 の健全性 ==")
