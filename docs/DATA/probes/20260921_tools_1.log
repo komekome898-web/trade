@@ -1,0 +1,60 @@
+# docs/DATA/probes/20260921_tools_1.log
+# 区分1(バックテスト・シミュレーション) — 到達・導入・実行の生ログ。すべて UTC。1手ずつ、方法・URL・HTTP/終了コード・所要時間・出力先頭200文字。
+
+curl GET https://pypi.org/pypi/hftbacktest/json code=200 time_ms=107 2026-09-21T15:39:41Z
+curl GET https://pypi.org/pypi/nautilus-trader/json code=200 time_ms=98 2026-09-21T15:39:41Z
+curl GET https://pypi.org/pypi/vectorbt/json code=200 time_ms=95 2026-09-21T15:39:41Z
+curl GET https://pypi.org/pypi/freqtrade/json code=200 time_ms=85 2026-09-21T15:39:41Z
+curl GET https://api.github.com/repos/freqtrade/freqtrade code=403 2026-09-21T15:39:55Z
+curl GET https://api.github.com/repos/nautechsystems/nautilus_trader code=403 2026-09-21T15:39:56Z
+curl GET https://api.github.com/repos/polakowo/vectorbt code=403 2026-09-21T15:39:56Z
+curl GET https://api.github.com/repos/nkaz001/hftbacktest code=403 2026-09-21T15:39:56Z
+pip download --no-deps hftbacktest rc=0 time_s=1 2026-09-21T15:40:42Z
+pip install hftbacktest numpy numba polars rc=0 time_s=36 2026-09-21T15:41:32Z
+pip check rc=0 2026-09-21T15:41:37Z
+python3 probe_hftbacktest.py rc=1 time_s=3 2026-09-21T15:42:15Z
+python3 probe_hftbacktest.py (v2) rc=0 time_s=5 2026-09-21T15:42:34Z
+python3 scripts/x_fetch.py 2件 rc=0 time_s=3 2026-09-21T15:43:21Z
+curl GET https://pypi.org/pypi/backtesting/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/zipline-reloaded/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/QSTrader/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/lean/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/pyalgotrade/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/zenbot/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/pyqlib/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/vnpy/json code=200 2026-09-21T15:44:10Z
+curl GET https://pypi.org/pypi/jesse/json code=200 2026-09-21T15:44:10Z
+
+## 出力の先頭200文字(上のcurl行に対応)
+[curl][GET][https://pypi.org/pypi/hftbacktest/json][200][475069B] head200='{"info":{"author":null,"author_email":"nkaz001 <nkaz001@protonmail.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","Environment :: Console","Framework :: Jupyter'
+[curl][GET][https://pypi.org/pypi/nautilus-trader/json][200][392787B] head200='{"info":{"author":"Nautech Systems","author_email":"info@nautechsystems.io","bugtrack_url":null,"classifiers":["Development Status :: 4 - Beta","Intended Audience :: Developers","Intended Audience :: '
+[curl][GET][https://pypi.org/pypi/vectorbt/json][200][84179B] head200='{"info":{"author":null,"author_email":"Oleg Polakow <olegpolakow@vectorbt.pro>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","Intended Audience :: Developers","Inte'
+[curl][GET][https://pypi.org/pypi/freqtrade/json][200][168735B] head200='{"info":{"author":"Freqtrade Team","author_email":"Freqtrade Team <freqtrade@protonmail.com>","bugtrack_url":null,"classifiers":["Environment :: Console","Intended Audience :: Science/Research","Licen'
+[curl][GET][https://pypi.org/pypi/backtesting/json][200][37267B] head200='{"info":{"author":"Zach Lûster","author_email":null,"bugtrack_url":null,"classifiers":["Framework :: Jupyter","Intended Audience :: Financial and Insurance Industry","Intended Audience :: Science/Rese'
+[curl][GET][https://pypi.org/pypi/zipline-reloaded/json][200][295602B] head200='{"info":{"author":"Quantopian Inc","author_email":"pm@ml4trading.io","bugtrack_url":null,"classifiers":["Development Status :: 4 - Beta","Intended Audience :: Science/Research","Natural Language :: En'
+[curl][GET][https://pypi.org/pypi/QSTrader/json][200][36575B] head200='{"info":{"author":null,"author_email":"Michael Halls-Moore <support@quantstart.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","License :: OSI Approved :: MIT Li'
+[curl][GET][https://pypi.org/pypi/lean/json][200][565667B] head200='{"info":{"author":"QuantConnect","author_email":"support@quantconnect.com","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","Intended Audience :: Developers","Intended '
+[curl][GET][https://pypi.org/pypi/pyalgotrade/json][200][7174B] head200='{"info":{"author":"Gabriel Martin Becedillas Ruiz","author_email":"pyalgotrade@gmail.com","bugtrack_url":null,"classifiers":["Operating System :: OS Independent","Programming Language :: Python :: 2",'
+[curl][GET][https://pypi.org/pypi/zenbot/json][200][9890B] head200='{"info":{"author":"Bence Nagy","author_email":"bence@underyx.me","bugtrack_url":null,"classifiers":["License :: OSI Approved :: MIT License","Programming Language :: Python :: 3","Programming Language'
+[curl][GET][https://pypi.org/pypi/pyqlib/json][200][288030B] head200='{"info":{"author":null,"author_email":null,"bugtrack_url":null,"classifiers":["Development Status :: 3 - Alpha","License :: OSI Approved :: MIT License","Operating System :: MacOS","Operating System :'
+[curl][GET][https://pypi.org/pypi/vnpy/json][200][60482B] head200='{"info":{"author":null,"author_email":"Xiaoyou Chen <xiaoyou.chen@mail.vnpy.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","License :: OSI Approved :: MIT Licen'
+[curl][GET][https://pypi.org/pypi/jesse/json][200][582798B] head200='{"info":{"author":"Saleh Mir","author_email":"saleh@jesse.trade","bugtrack_url":null,"classifiers":["License :: OSI Approved :: MIT License","Operating System :: OS Independent","Programming Language '
+[curl][GET][https://api.github.com/repos/nkaz001/hftbacktest][403(セッションのプロキシがこのリポジトリへの GitHub API アクセスを許可していない)][378B] head200='{"message":"GitHub access to this repository is not enabled for this session. Use add_repo to request access. If add_repo answers that read access is already available and you need GitHub API or write'
+[curl][GET][https://api.github.com/repos/nautechsystems/nautilus_trader][403(セッションのプロキシがこのリポジトリへの GitHub API アクセスを許可していない)][378B] head200='{"message":"GitHub access to this repository is not enabled for this session. Use add_repo to request access. If add_repo answers that read access is already available and you need GitHub API or write'
+[curl][GET][https://api.github.com/repos/polakowo/vectorbt][403(セッションのプロキシがこのリポジトリへの GitHub API アクセスを許可していない)][378B] head200='{"message":"GitHub access to this repository is not enabled for this session. Use add_repo to request access. If add_repo answers that read access is already available and you need GitHub API or write'
+[curl][GET][https://api.github.com/repos/freqtrade/freqtrade][403(セッションのプロキシがこのリポジトリへの GitHub API アクセスを許可していない)][378B] head200='{"message":"GitHub access to this repository is not enabled for this session. Use add_repo to request access. If add_repo answers that read access is already available and you need GitHub API or write'
+
+## pip download / install / pip check の出力先頭200文字
+[pip download --no-deps hftbacktest] Collecting hftbacktest   Downloading hftbacktest-2.4.4-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (15 kB) Downloading hftbacktest-2.4.4-cp311-cp311-manylinux_2_28_x86_64.whl (5.5 MB)    ━━━�
+[pip install hftbacktest numpy numba polars] Collecting hftbacktest   Using cached hftbacktest-2.4.4-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (15 kB) Collecting numpy   Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2
+[pip check] No broken requirements found.
+
+## 最小実行(合成データ、指値の待ち行列消化→約定→成行手仕舞いの1往復を試みたスクリプト)の出力
+[python3 probe_hftbacktest.py v1(失敗、rc=1)] /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe_hftbacktest.py:52: DeprecationWarning: constant_latency() is deprecated; use constant_order_latency().   .constant_latency(1_000_000, 1_000_000) RESULT: {'final_position': 0.0, 'final_balance': 0.0, 'final_fee': 0.0
+注: v1 は OrderDict の添字アクセスで TypeError。v2 で修正(get メソッドへ変更)。
+[python3 probe_hftbacktest.py v2(rc=0、所要5秒)] RESULT: {'final_position': 0.0, 'final_balance': 0.0, 'final_fee': 0.0}
+
+## X(fxtwitter)本文取得
+[x_fetch] 2 行(投稿2件、逐語は本節に別掲。詳細は SCAN_2026-09-21_tools.md 参照)
+[x_fetch][https://x.com/ML_deep/status/1917632698077831526][http=200][author=ML_deep][created_at=Wed Apr 30 17:30:37 +0000 2025] text_head200='vectorbt\n開発も盛んで有償バージョンはパフォーマンスも改善されてるっぽい。一方でサンプルコードが2度付評価みたいなことしてて厳しさある…。無論、モジュールの使い方の例なのだろうけど、二度漬けしまくりパラメータなんてトレードで使ったら即あの世行きだぞ…。\n\nhttps://vectorbt.pro/#why-vectorbt-pro'
+[x_fetch][https://x.com/SystematicPeter/status/2024507028820152381][http=200][author=SystematicPeter][created_at=Thu Feb 19 15:31:03 +0000 2026] text_head200='I’m seriously considering moving from my home-made scripts to a more universal framework for backtesting + live trading (especially for intraday). Tested NautilusTrader today and it looks very interes'
