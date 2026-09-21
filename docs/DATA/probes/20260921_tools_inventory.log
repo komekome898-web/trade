@@ -1,0 +1,70 @@
+# 当方の道具立ての列挙(2026-09-21、リード実測。監査 2 回目の指摘 2・4・5)
+# コマンド 1: git ls-files src/bot | sed 's|/[^/]*$||' | sort | uniq -c   (package ごとのファイル数)
+      8 src/bot
+      4 src/bot/backtest
+      3 src/bot/exchange
+      4 src/bot/execution
+      2 src/bot/indicators
+      5 src/bot/jpx
+      4 src/bot/market_data
+      7 src/bot/monitoring
+      4 src/bot/order_management
+      3 src/bot/portfolio
+     12 src/bot/research
+      3 src/bot/risk
+     10 src/bot/strategy
+# コマンド 2: git ls-files scripts | grep '\.py$' | awk -F/ '{if (NF>2) print $2"/"; else print $2}' | sed 's/_.*//' | sort | uniq -c | sort -rn   (scripts の接頭辞とサブディレクトリ、再帰)
+     56 research
+     28 fetch
+     22 o3c
+     19 render
+     16 measure
+     14 jev
+     13 qa/
+     13 phase2/
+     11 run
+      7 check
+      7 build
+      5 record
+      4 jev/
+      3 verify
+      2 repair
+      2 paper
+      2 k1
+      2 judge
+      1 x
+      1 validate
+      1 trace
+      1 tp
+      1 retention
+      1 replay
+      1 probe
+      1 preflight
+      1 phase2
+      1 normalize
+      1 mirror
+      1 liquidation
+      1 intake
+      1 extract
+      1 explore
+      1 data
+      1 dashboard
+      1 constants
+      1 
+# コマンド 3: git ls-files scripts/qa scripts/phase2 scripts/jev
+scripts/jev/__init__.py scripts/jev/client.py scripts/jev/redact.py scripts/jev/schemas.py scripts/phase2/__init__.py scripts/phase2/g1_state_analysis.py scripts/phase2/p2_01_final.py scripts/phase2/p2_01_run.py scripts/phase2/p2_01b_history.py scripts/phase2/p2_02_final.py scripts/phase2/p2_02_run.py scripts/phase2/p2_03_final.py scripts/phase2/p2_03_iter2.py scripts/phase2/p2_03_run.py scripts/phase2/p2_04_run.py scripts/phase2/p2_08_data.py scripts/phase2/p2_08_run.py scripts/qa/agreement.py scripts/qa/make_known_answer.py scripts/qa/make_known_answer_maker.py scripts/qa/make_known_answer_maker3.py scripts/qa/make_known_answer_steer.py scripts/qa/maker_fill_ref.py scripts/qa/maker_fill_ref_packet.py scripts/qa/maker_fill_ref_packet_r2.py scripts/qa/pipeline_known_answer_daily.py scripts/qa/pipeline_known_answer_taker.py scripts/qa/score_audit.py scripts/qa/score_claims.py scripts/qa/score_steer.py 
+# コマンド 4: 再現ゲート・参照実装の実物
+scripts/qa/agreement.py
+scripts/qa/maker_fill_ref.py
+scripts/qa/maker_fill_ref_packet.py
+scripts/qa/maker_fill_ref_packet_r2.py
+scripts/replay_scalp_storm.py
+scripts/validate_composite.py
+6:reproduction gate the research protocol requires of any new vehicle (§6: a new
+# コマンド 5: git ls-files src/bot/*.py deploy config tests | wc -l
+src/bot/__init__.py src/bot/atomic_file.py src/bot/constants.py src/bot/logging_setup.py src/bot/main.py src/bot/products.py src/bot/radar.py src/bot/settings.py 
+deploy/bitflyer-bot.service deploy/bitflyer-fetch.service deploy/bitflyer-fetch.timer deploy/check_liq_recorder.bat deploy/etf_measure_entry.bat deploy/etf_measure_exit.bat deploy/fetch_all.bat deploy/mirror_bitmex.bat deploy/nightly_restart.bat deploy/on1_entry.bat deploy/on1_exit.bat deploy/probe_latency.bat deploy/reset_kill.bat deploy/restart_all.bat deploy/run_paper.bat deploy/setup.sh deploy/share_logs.bat deploy/start_all.bat deploy/stop_all.bat 
+32
+139
+# 取得時刻(UTC): 2026-09-21T15:04:40Z
+# コマンド 6(fetch_* の数え方の差): .py だけ = 28 / 拡張子を問わず = 29 / .py 以外 = scripts/fetch_all.sh 

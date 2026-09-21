@@ -40,7 +40,7 @@
 - **到達・導入・実行の記録**(§5 の規則で): 試した手段の一覧(方法・URL・コード・時刻)/ 導入の方法と結果 / **最小の実行の中身**(§5-4)/ 所要時間 / `pip check` の結果。
 - **当方の用途との相性**(印つき): 当方のデータ形式(csv.gz の約定・清算、tardis 形式)を入れられるか / 時刻の扱い(UTC・ミリ秒)/ 再現性(乱数の種・決定性)/ 規模(456 日のティックを回すのに要る時間・記憶の見積もり = 小さい実行の実測から**推定**と印を付けて外挿)。
 - **当方に無いもの(全部)**: そのツールの機能・情報・視点のうち当方の道具立て(§8)に無いものを**一次資料の逐語で全部**列挙。当方が使うかどうかで削らない。対応物が無いことが普通という前提。
-- §5.5 の 4 軸(道具として入れられるか / 当方に無い情報が取れるか / 当方に無い視点で分析できるか / 既存の成果を向上できるか)。**4 軸それぞれに 事実 / 推定 / 仮定 の印。**
+- §5.5 の 4 軸(道具として入れられるか / 当方に無い情報が取れるか / 当方に無い視点で分析できるか / 既存の成果を向上できるか)。**4 軸それぞれに 一次資料 / 実測 / 推定 / 仮定 の印(§4 冒頭と同じ 4 分類)。**
 - **危険**(§6 の検査の結果を全部): 供給網(PyPI と GitHub の一致・公開からの日数・ダウンロード数・保守者・既知の脆弱性・難読化・バイナリ配布)/ 外部送信(テレメトリ・鍵の送信先・データの送信先)/ 規約(再配布・商用・地域)/ 自動で発注・署名・資金移動をする機能の有無 / 宣伝・詐欺の兆候(「必ず儲かる」・Telegram だけの配布・ウォレットの秘密鍵を求める・提携リンク)。X の投稿は 宣伝(提携・有料案内)か 使用報告か の印。
 
 ## 5. 到達・導入・実行の規則(甘えを無くす)
@@ -64,22 +64,24 @@
 - **件数の目標は置かない。**見つかった分を全部書き、少なく見せない。深さの足りない候補は「浅い(何が未確認か)」と印を付け、深いものと同じ表に混ぜない。
 
 ## 8. 当方の道具立て(「当方に無いもの」を書くときの参照。物差しではない)
-**列挙の方法**: `CLAUDE.md` §2 の構成地図と `git ls-files src scripts config deploy` の実物から package 単位で全部(2026-09-21、リード実測。記憶ではない)。ファイル単位は `git ls-files src scripts` で自分で確かめる(「当方に無い」と書く前に grep する)。
-- 設定・商品: `src/bot/settings.py`(モード解決・秘密の型)、`products.py`、`constants.py`、`config/`(config / products / risk_limits / composite / on1_live / constants / etf_measure / jev_*)
-- 取引所接続: `exchange/bitflyer_client.py`(REST、曖昧失敗 = `OrderStateUnknown`)、`exchange/resilience.py`(失敗分類・リトライ方針・分割タイムアウト・取引所コンディション監視・API テレメトリ)
-- 市場データ: `market_data/feed.py`(bitFlyer)、`external_feed.py`(Binance)、`realtime.py`(WS)、記録器 `scripts/record_*.py` 5 本(板・約定・清算・建玉・遅延)
-- 戦略: `strategy/` 10 本(breakout / composite / ema_cross / inago / range_fade / rsi_reversion / wick_reversal / xborder_momentum …)。**すべて未検証**
-- 指標: `indicators/core.py`
-- リスク: `risk/kill_switch.py`(自動復帰なし・永続化)、`risk/pre_trade_checks.py`(発注前チェック)
-- 注文・執行・建玉: `order_management/`(manager / order / reconciler = 曖昧失敗の読み取り専用照合)、`execution/`(gateway / paper / live)、`portfolio/`(portfolio / persistence)
-- バックテスト: `backtest/engine.py`(足単位。maker / taker の約定、spread + slippage + taker 手数料、TP / SL / max_hold、決済理由)、`metrics.py`、`walk_forward.py`。**清算連鎖の研究(`scripts/o3c_*.py` 22 本)はこれを使わず手書きの模擬**
-- 監視・通知: `monitoring/`(status.json / notifier = Discord / aggregate / market_view / gates = 係属ゲートの事前登録バーと進捗 / decision_text)、`scripts/dashboard.py`
-- JPX(株): `jpx/`(kabu_client / on1_executor = ON1 状態機械 / etf_auction_executor / run_lock)
-- 研究の部品: `research/`(board = 板再構成 / liquidations / liq_bands / liq_response / overnight / sealed = 封印と開封の門 / xborder_*)、`radar.py`(ストームレーダー)、`scripts/` の research_* 56 / fetch_* 28 / o3c_* 22 / render_* 19 / measure_* 16 / jev_* 14 / run_* 11 / check_* 7 / build_* 7 / verify_* 3 / judge_gates / validate_composite / replay / probe / data_quality / x_fetch
-- 手順と関門: research-protocol(事前登録・MDE・封印・多重性)、delegated-study、research-squad、x-research、`.claude/hooks`(指紋・保護パス・ゴール・委任の関門)、git hooks、監査役(`.claude/agents`)、Jev の道具(jev_check / jev_design / jev_delegate / jev_report_intake / jev_survey)
+**列挙の方法**: `git ls-files src/bot` と `git ls-files scripts`(**サブディレクトリを含む再帰**)を 2026-09-21 に打ち、`CLAUDE.md` §2 の構成地図と突き合わせた。**コマンドと出力は `docs/DATA/probes/20260921_tools_inventory.log`**(監査 2 回目の指摘 2・4・5 で、最上位だけを数えて `scripts/qa/` `scripts/phase2/` を落としていた初版を作り直した)。「当方に無い」と書く前に `git ls-files src scripts | grep -i <語>` で自分で確かめる。
+- 設定・商品: `src/bot/settings.py`(モード解決・秘密の型)、`products.py`、`constants.py`、`atomic_file.py`、`logging_setup.py`、`config/` 32 ファイル(config / products / risk_limits / composite / on1_live / constants / etf_measure / jev_*)
+- 取引所接続: `exchange/`(3)= `bitflyer_client.py`(REST、曖昧失敗 = `OrderStateUnknown`)、`resilience.py`(失敗分類・リトライ方針・分割タイムアウト・取引所コンディション監視・API テレメトリ)
+- 市場データ: `market_data/`(4)= `feed.py`(bitFlyer)、`external_feed.py`(Binance)、`realtime.py`(WS)。記録器 `scripts/record_*.py` 5 本(板・約定・清算・建玉・遅延)
+- 戦略: `strategy/`(10)= breakout / composite / ema_cross / inago / range_fade / rsi_reversion / wick_reversal / xborder_momentum …。**すべて未検証**
+- 指標: `indicators/`(2)
+- リスク: `risk/`(3)= `kill_switch.py`(自動復帰なし・永続化)、`pre_trade_checks.py`(発注前チェック)
+- 注文・執行・建玉: `order_management/`(4: manager / order / reconciler = 曖昧失敗の読み取り専用照合)、`execution/`(4: gateway / paper / live)、`portfolio/`(3: portfolio / persistence)
+- バックテスト: `backtest/`(4)= `engine.py`(足単位。maker / taker の約定、spread + slippage + taker 手数料、TP / SL / max_hold、決済理由)、`metrics.py`、`walk_forward.py`。**清算連鎖の研究(`scripts/o3c_*.py` 22 本)はこれを使わず手書きの模擬**
+- 監視・通知: `monitoring/`(7)= status.json / notifier = Discord / aggregate / market_view / gates = 係属ゲートの事前登録バーと進捗 / decision_text。`scripts/dashboard.py`
+- JPX(株): `jpx/`(5)= kabu_client / on1_executor = ON1 状態機械 / etf_auction_executor / run_lock
+- 研究の部品: `research/`(12)= board = 板再構成 / liquidations / liq_bands / liq_response / overnight / sealed = 封印と開封の門 / xborder_* / gz_members。`radar.py`(ストームレーダー)
+- スクリプト(`.py`、再帰): research_* 56 / fetch_* 28(.py。拡張子を問わなければ 29)/ o3c_* 22 / render_* 19 / measure_* 16 / jev_* 14 + `scripts/jev/` 4(client / redact / schemas)/ **`scripts/qa/` 13**(`agreement.py` = 2 回の監査の一致率、**`maker_fill_ref*.py` = 指値の約定の参照実装**(別実装との突き合わせ用)ほか)/ **`scripts/phase2/` 13**(p2_* の段の道具、`p2_02_final.py` = 開封の門の二重実装、g1_state_analysis)/ run_* 11 / check_* 7 / build_* 7 / record_* 5 / verify_* 3 / repair_* 2 / paper_* 2 / k1_* 2 / judge_* 2 / 単発(**`validate_composite.py` = composite の再現ゲート**、`replay_scalp_storm.py`、`x_fetch.py`、`trace_metrics.py`、`data_quality.py`、`dashboard.py`、`probe_*`、`preflight_*`、`normalize_*`、`mirror_*`、`liquidation_*`、`intake_*`、`extract_*`、`explore_*`、`retention_*`、`constants_*`、`tp_*`)
+- 試験: `tests/` 139 ファイル(pytest、2,876 件)
+- 手順と関門: research-protocol(事前登録・MDE・封印・多重性)、delegated-study、research-squad、x-research、`.claude/hooks` 8 本(指紋・保護パス・ゴール・委任の関門・要点の再注入・TRACE・Jev の表示)、git hooks(pre-push)、監査役(`.claude/agents`)、Jev の道具(jev_check / jev_design / jev_delegate / jev_report_intake / jev_survey / jev_audit_*)
 - データ: `backtest_data/` の恒久スナップショット(Binance の清算・aggTrades・1m / 1s、bitFlyer の約定・板・1 分足、Coinalyze、OKX の建玉 …)、`paper_logs/` の自前記録、台帳 `docs/DATA.md`、品質検査 `scripts/data_quality.py`
-- 運用: `deploy/`(Windows の bat、タスクスケジューラ、systemd)、記録 `docs/OWNER_LOG.md` / `OWNER_STATUS.md` / `AUDITOR/`
-**無いもの(実物で確認)**: ティック単位の板の待ち行列を持つ模擬、別実装との突き合わせ(再現ゲート)、ルックアヘッドの自動検出、実験の追跡の道具(台帳は文書の手書き)、国内取引所の bitFlyer 以外の執行。
+- 運用: `deploy/`(Windows の bat、タスクスケジューラ、systemd の unit / timer)、記録 `docs/OWNER_LOG.md` / `OWNER_STATUS.md` / `AUDITOR/`
+**無いもの(実物で確認、`git ls-files` の grep)**: ティック単位の板の待ち行列を持つ模擬(`maker_fill_ref*` は参照実装で待ち行列は持たない = 要確認して書く)、**清算連鎖の単位(o3c)に対する別実装の再現ゲート**(composite には `validate_composite.py` がある。o3c には無い)、ルックアヘッドの自動検出、実験の追跡の道具(多重性の台帳は文書の手書き)、国内取引所の bitFlyer 以外の執行(kabu は株)。
 
 ## 9. 記録の形
 `docs/DATA/SCAN_2026-09-21_tools.md` に区分ごとの節を追記(スキル §4 のテンプレート: 検索計画 / 出典 / 知見(印と含意)/ 候補 に、§3 の候補の一覧と §4 のツールの表を加える)。X の投稿は URL・著者・日時・本文(逐語)・反応数・印(宣伝 / 使用報告)。個人の連絡先は写さない。`STRATEGY_IDEAS.md` / `DATA.md` 向けの一行候補は末尾に提案として(マージしない)。
