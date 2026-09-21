@@ -304,17 +304,17 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 - **活動**: スター 54.6k、フォーク 11.3k(GitHub ページの WebFetch の要約、生ログ W-14)
 - **対応取引所**: CCXT経由でBinance/Kraken/OKX/Gate/Bybit/Bitget等11以上(スポット)+6(先物)。**bitFlyer/GMOコイン/bitbankは公式`exchanges`ページに個別記載が無い**(WebFetch の要約 = 生ログ W-21。**リードが原文を `curl` で取り直し、bitflyer / bitbank / gmo の語が 0 件、Binance 38・Kraken 27・Bybit 18・OKX 13 件であることを確認 = 生ログ L-2**)。検索結果の要約(推定 = 未検算、W-22)では「bitFlyerはCCXT側のfetchOrder/fetchOHLCV欠如でfreqtradeでは動作しないとされる一覧に載る」とあるが、**この文言は一次資料の逐語ではなく検索エンジンの要約であり、次回 `freqtrade list-exchanges -a` の出力かCCXTの互換表そのものを取得して裏取りする必要がある**
 
-**料金の構造**: 本体はGPLv3で無料。FreqAI(機械学習最適化)は本体機能内、追加課金の記載は一次資料に見当たらない(未確認と推定の中間、確度を上げるには公式FreqAIドキュメントの精読が要る=次回)。Telegram連携は無料のTelegram Bot APIを使う想定(未確認)
+**料金の構造**: 本体はGPLv3で無料。FreqAI(機械学習最適化)は本体機能内、追加課金の記載は PyPI JSON の description に無い(一次資料の範囲は description だけ。公式 FreqAI の文書は未確認 = 未取得、次回)。Telegram連携は無料のTelegram Bot APIを使う想定(未確認)
 
 **到達・導入・実行の記録**: PyPI JSON取得(curl、実測)、GitHub要約取得(WebFetch、実測)、exchanges公式ページ取得(WebFetch、実測、bitFlyer等の記載なしを確認)。**pip install・最小実行は本回では未実施**(未確認)
 
-**X投稿(使用報告、逐語は上記「知見」節に一部引用。要約)**: `@tommy_love123` の投稿(FreqtradeのYouTube動画紹介、SupertrendMACD+RSI戦略でDOT先物299%利益、との主張)は**宣伝寄りの二次紹介**であり、印は「宣伝/未検証の他者主張の転載」とする(freqtrade自体の使用報告ではあるが、299%という数字の裏取りはしていない)。別の投稿(Codex AI+freqtradeの組み合わせ)も同様に紹介系。
+**X投稿(2 件。調査班は W-17 の検索結果の見出しだけで書き、本文を取っていなかった。リードが `x_fetch` で取り直した = 生ログ X2。逐語・著者・日時・反応数は下の「X の投稿」表に載せた)**: `@tommy_love123` 2025-09-28 の投稿は、YouTube 動画の紹介(Supertrend + MACD + RSI で DOT 無期限先物の 1 年の総利益 299% と動画が主張)と「これがホントかを freqtrade で確認したい」という本人の予定で、印は「他者の主張の転載(299% は動画の主張で、投稿者も未確認)」。同 2025-09-26 の投稿は、Codex が戦略を考えてコード化し freqtrade で発注まで行っている、という使用報告(引用元の投稿「freqtrade＋codex ai で自動的にバックテストまで」も同じ著者)。
 
 **当方に無いもの(一次資料の逐語で)**: 「Strategy Optimization by machine learning」「FreqAI...adaptive machine learning methods」(当方の`strategy/`は未検証実装のみで機械学習によるパラメータ自動最適化ループは無い)/「Builtin WebUI」「Manageable via Telegram」(当方は`monitoring/notifier.py`でDiscord通知のみ、双方向のTelegram操作は無い)
 
 **4軸**: 1=一次資料(GPLv3・pip配布を確認、bitFlyer非対応は要検証)/ 2〜4=未確認(導入未実施)
 
-**危険**: 供給網: PyPI JSON の project_urls に github.com/freqtrade/freqtrade がある(生ログ Q、リード再確認)。導入時実行コード: 未確認(wheel/sdist未取得)。既知の脆弱性: 未確認。外部送信: 未確認(Telegram/WebUI機能があるため、鍵の外部送信経路の有無は要検証)。自動発注機能: **有り**(本体がライブ取引ボットである以上、鍵を与えれば発注する設計。本回では鍵は使わず、発注は試みていない)。宣伝の兆候: 上記X投稿の1件は第三者の「299%利益」主張の転載であり、宣伝寄りとして記録。
+**危険**: 供給網: PyPI JSON の project_urls に github.com/freqtrade/freqtrade がある(生ログ Q、リード再確認)。導入時実行コード: 未確認(wheel/sdist未取得)。既知の脆弱性: 未確認。外部送信: 未確認(Telegram/WebUI機能があるため、鍵の外部送信経路の有無は要検証)。自動発注機能: **有り**(一次資料 = PyPI JSON の description、curl = 生ログ 7 行目: 冒頭に「crypto trading bot」、機能一覧に「Dry-run: Run the bot without paying money」= 本番は発注する設計と読める。ソースは未確認。本回では鍵は使わず、発注は試みていない)。宣伝の兆候: 上記X投稿の1件は第三者の「299%利益」主張の転載であり、宣伝寄りとして記録。
 
 ---
 
@@ -336,6 +336,8 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 | URL | 著者 | 日時 | 本文(逐語) | いいね/RT/返信/表示 | 印 |
 |---|---|---|---|---|---|
 | https://x.com/ML_deep/status/1917632698077831526 | ML_deep | 2025-04-30T17:30:37Z | 「vectorbt 開発も盛んで有償バージョンはパフォーマンスも改善されてるっぽい。一方でサンプルコードが2度付評価みたいなことしてて厳しさある…。無論、モジュールの使い方の例なのだろうけど、二度漬けしまくりパラメータなんてトレードで使ったら即あの世行きだぞ…。https://vectorbt.pro/#why-vectorbt-pro」 | 7/0/0/2122 | 使用報告(vectorbtの有償版言及+サンプルコードの罠への注意喚起) |
+| https://x.com/tommy_love123/status/1972317745900585328 | tommy_love123 | 2025-09-28T15:09:29Z | 「【市場が55%下落する中で利益299%？あるYouTube動画が明かした驚異の取引戦略、その核心とは】 freqtrade関連の動画から拾ってきたのですが、スーパートレンド (Supertrend)＋MACD+RSIの組み合わせでDOT（ポルカドット）の無期限先物において、1年間で299%の総利益を達成やり方みたいです。 これがホントであるか、DOT以外でも通用するようなトレード戦略であるかどうかfreqtradeで確認したいと思います。 動画 https://youtu.be/71EA1u4K_Zk?si=aQ_qMEonSE_Urgtb レポート https://docs.google.com/document/d/1mTL48uHM2KqBbxiU1_VjDdrtN32h6Ixbq5fMQEj1r_o/edit?usp=sharing」 | 46/1/0/5166 | 他者の主張の転載(299% は動画の主張、投稿者も未確認。リードが x_fetch で取得 = 生ログ X2) |
+| https://x.com/tommy_love123/status/1971429111492227297 | tommy_love123 | 2025-09-26T04:18:22Z | 「【AIエージェント：Codex AI+ｆreqtrade】 もう、とんでもない世界が実現している。 OpenAIのCodexの自律性の能力が向上したので、期待値（リターン、利益率）を上げるためのトレード戦略を自力で考え、それをコード化し、freqtradeコマンドを使って特定の取引所のAPIを叩き、オンライントレードを実施している。 だれが、この世界を想像できただろうか？」(引用元 同著者「freqtrade＋codex aiで自動的にバックテストまでやってくれます。怖いぐらいですね。 自然言語で命令し、ユーザの望みのトレード戦略のロジックまで構築できる。」) | 325/32/1/68290 | 使用報告(Codex + freqtrade で発注まで。区分 6 にも関係。リードが x_fetch で取得 = 生ログ X2) |
 | https://x.com/SystematicPeter/status/2024507028820152381 | SystematicPeter | 2026-02-19T15:31:03Z | 「I'm seriously considering moving from my home-made scripts to a more universal framework for backtesting + live trading (especially for intraday). Tested NautilusTrader today and it looks very interesting. Why it caught my attention: - Open source - Event-driven Python API, Rust core (fast) - Biggest win: same strategy codepath for backtest and live (no "version 2" rewrite) - Because it's Python, Claude Code can actually help you ship strategies without coding. I ported my intraday volatility breakout strategy in minutes. Anyone here running NautilusTrader live? What's your experience with brokers/data/execution - any gotchas?」 | 161/7/19/14674 | 使用報告(NautilusTraderへの移行検討・実際にポートした報告) |
 
 **発見の語(§3の記録義務)**: `site:x.com hftbacktest OR nautilustrader backtesting queue position`(WebSearch、10件)/ `site:x.com freqtrade OR vectorbt 使ってみた トレード`(WebSearch、10件)。2回のみで3回未満(§3-2は「3回以上」を指示。2 回の記録は生ログ W-16・W-17)。**未実行分は次回に持ち越し**: `site:x.com` での日本語「バックテスト エンジン 自作 やめた」等、別の語での追加検索は本回では未実行。
