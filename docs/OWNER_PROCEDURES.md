@@ -479,6 +479,15 @@ type data\latency\api_probe.csv
    `probe_api_latency.py`・`dashboard.py`(常駐分。止めても `start_all.bat` が 1 時間以内に戻すが、記録に穴が開く)。
    該当する python が無ければ、掴んでいるのは python 以外(見えない)なので **PC を再起動**する(ログオン時のタスクで常駐は全部戻る。
    キルスイッチは入っていないので bot も再開する)。そのあと `deploy\fetch_all.bat` → `deploy\share_logs.bat`。
+7. **(L-336 / L-337 で決着)** 切り分けの結果、失敗するのは `logs\fetch.out.log` への追記だけ(python の起動は正常、resmon に持ち主は出ない)。
+   持ち主を探すのをやめ、**bat のログ先を `logs\fetch_all.out.log` に変えた**(`fetch_all.bat` 18 本と `share_logs.bat` 2 行。共有先の
+   `paper_logs\fetch.out.tail.log` / `fetch.out.collectors.log` の名前はそのまま)。古い `logs\fetch.out.log` は触らない。オーナーの作業:
+   ```
+   git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
+   deploy\fetch_all.bat
+   deploy\share_logs.bat
+   ```
+   1 回目の `fetch_all.bat` は 3 日分の板の再構成で長い(窓が閉じるまで待つ)。上の 5・6 の診断はもう不要。
 
 **② Bybit・OKX の穴を Coinalyze の 1 分足で埋める(PC、約 1 分。急ぐ: OKX の先頭 09-14 21:57 UTC は
 約 7 日の窓(L-031 の実測)から 09-22 06:57 JST ごろに落ちる見込み)**
