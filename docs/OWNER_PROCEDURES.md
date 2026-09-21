@@ -465,11 +465,17 @@ type data\latency\api_probe.csv
 1 件ごとの記録の代わりにはならない(1 分ごとのロング清算量・ショート清算量だけ)。それでも「その分にどれだけ清算されたか」は残る。
 鍵 `COINALYZE_API_KEY` は P9 で PC の `.env` に入れたもの。
 
+**注意(2026-09-21 訂正、L-326)**: この道具はリードのブランチ `claude/jev-eval-001-production-fq5o7w` にあり、
+PC のブランチ `claude/bitflyer-trading-bot-hhxxaf` には**まだ無い**。`git pull` では降りてこないので、
+2 行目でファイルだけ取り出す。**先頭の `.venv\Scripts\python.exe` を省くと PowerShell が .py を
+コマンドとして探して失敗する**(「モジュール 'scripts' を読み込むことができませんでした」)。
+
 ```
 cd C:\Users\ryoma\trade
-git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
+git fetch origin claude/jev-eval-001-production-fq5o7w
+git checkout origin/claude/jev-eval-001-production-fq5o7w -- scripts/fetch_coinalyze_liquidations.py
 .venv\Scripts\python.exe scripts\fetch_coinalyze_liquidations.py --exchanges bybit,okx --from 2026-09-14T21:00:00Z --to 2026-09-19T08:00:00Z
-git add backtest_data\coinalyze_liquidations_*
+git add backtest_data\coinalyze_liquidations_* scripts\fetch_coinalyze_liquidations.py
 git commit -m "coinalyze liquidation backfill 2026-09-14..19"
 git push origin claude/bitflyer-trading-bot-hhxxaf
 ```
