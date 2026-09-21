@@ -1,18 +1,20 @@
 {
   "段": "段2(dry-run、合成データ)",
-  "実行時刻(UTC)": "2026-09-21T09:24:52.114370+00:00",
+  "開始時刻(UTC)": "2026-09-21T10:06:49.060329+00:00",
+  "終了時刻(UTC)": "2026-09-21T10:06:49.487090+00:00",
   "委任文": "docs/DATA/delegations/20260921_o3c_signal_value_prompt.md",
   "設計": "docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_DESIGN_2026-09-21.md",
   "種": 20260920,
-  "抜いた連鎖の本数": 2,
+  "抜いた連鎖の本数": 3,
   "費用": {
     "主のc_bp": 2.004025,
     "p75_bp": 3.922816
   },
   "連鎖 1 本ごとの行": {
     "ファイル": "cascades.csv.gz",
-    "行数": 291
+    "行数": 435
   },
+  "Q5b(a) の母集団": 0,
   "段1から読んだもの(作り直していない)": {
     "帯": {
       "1件目": [
@@ -50,23 +52,24 @@
     "前段の3択(清算)",
     "完全な判断(清算)"
   ],
+  "書き出しの順": "cascades.csv.gz → prints_policy.csv.gz → q0 → 表",
   "所要秒": 0.4,
   "行数の内訳": {
     "q0_selfcheck.csv": 1,
     "calib_5000.csv": 0,
     "dist_table.csv": 288,
-    "position_breakdown.csv": 144,
+    "position_breakdown.csv": 126,
     "judge_counts.csv": 24,
-    "action_counts.csv": 42,
-    "q4_main.csv": 6,
-    "q4_pair_diff.csv": 3,
+    "action_counts.csv": 44,
+    "q4_main.csv": 12,
+    "q4_pair_diff.csv": 6,
     "q4_by_day.csv": 6,
     "q4_by_side.csv": 11,
-    "q4_by_size.csv": 11,
+    "q4_by_size.csv": 16,
     "q4_by_position.csv": 6,
     "q4_exposure.csv": 6,
     "q5b_secs_secondhalf.csv": 0
   },
-  "行数の合計": 548,
-  "数値セル数(tables.md)": 4888
+  "行数の合計": 546,
+  "数値セル数(tables.md)": 4550
 }

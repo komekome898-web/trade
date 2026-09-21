@@ -562,8 +562,8 @@ def test_cascade_rows_file_has_the_required_columns_and_cost_dimension():
         assert list(r.keys()) == list(vv.CASCADE_COLUMNS)
     need = {"bundle_id", "day", "side", "連鎖の大きさ", "n_prints", "方策", "型",
             "遅れ_秒", "費用の通り", "pnl_bp", "pnl_net_bp", "建玉の回数", "保有秒",
-            "入りの約定時刻_ms", "出の約定時刻_ms", "入った", "最初に入った位置",
-            "出口の理由"}
+            "入りの目標時刻_ms", "入りの約定時刻_ms", "出の約定時刻_ms", "入った",
+            "最初に入った位置", "出口の理由"}
     assert need == set(vv.CASCADE_COLUMNS)
     # 費用は c × 建玉の回数
     main = [r for r in rows if r["費用の通り"] == vv.COST_MAIN and r["方策"] != "②opt"]
@@ -868,7 +868,7 @@ def test_stage2_dry_run_builds_every_table_without_reading_the_back_half(tmp_pat
 
 def test_synthetic_stage2_inputs_are_synthetic_only():
     syn = vv.synthetic_stage2_inputs()
-    assert set(syn["cascades"]) == {"dry_0001", "dry_0002"}
+    assert set(syn["cascades"]) == {"dry_0001", "dry_0002", "dry_0003"}
     ids = [pr["print_id"] for v in syn["cascades"].values() for pr in v]
     assert all(i.startswith("d") for i in ids)
     cache = vv.SyntheticCache(syn["times"], syn["prices"])
@@ -886,12 +886,13 @@ def test_pair_diff_rows_pair_on_the_same_bundle_id():
               {"bundle_id": "b2", "pnl_net_bp": -1.0}],
     }
     rows = vv.build_pair_diff_rows(lines, (("A", "B"), ("A", "C")))
-    a_b = [r for r in rows if r["対差"] == "A − B"][0]
+    a_b = [r for r in rows if r["対差"] == "A − B"
+           and r["母集団"] == "両方入った連鎖だけ"][0]
     assert a_b["対の数"] == 2                      # b3 は片側に無いので対にしない
     assert a_b["対差の合計_bp"] == pytest.approx(4.0)
     assert a_b["対差が0の本数"] == 1
-    a_c = [r for r in rows if r["対差"] == "A − C"][0]
-    assert a_c["対の数"] == 0 and "備考" in a_c
+    a_c = [r for r in rows if r["対差"] == "A − C"]
+    assert len(a_c) == 2 and all(r["対の数"] == 0 and "備考" in r for r in a_c)
 
 
 def test_reference_policies_use_the_prior_liquidation_bands_and_perfect_judgment():
@@ -942,3 +943,187 @@ def test_prior_stage2_bundle_ids_are_2000_when_present():
         pytest.skip("前段の段2 の出力が無い")
     ids = vv.prior_stage2_bundle_ids()
     assert len(ids) == 2000
+
+
+# ===========================================================================
+# 反証者レビュー9 の再点検(2026-09-21)を受けた直しの試験
+# ===========================================================================
+
+# --- 致命-4: Q5b(a) の母集団は半期の全連鎖 ∩ 標本日 -------------------------
+def test_q5b_population_is_all_chains_on_sample_days():
+    days = [bsp.day_of_path(q) for q in bsp.sample_day_paths()]
+    if not days:
+        pytest.skip("標本日の約定が無い")
+    d0 = days[0]
+    cas = {"a": [{"ts_ms": 1, "day": d0, "side": "BUY"}],
+           "b": [{"ts_ms": 2, "day": "1999-01-01", "side": "BUY"}],
+           "c": [{"ts_ms": 3, "day": d0, "side": "SELL"},
+                 {"ts_ms": 4, "day": d0, "side": "SELL"}]}
+    got = vv.chains_on_sample_days(cas)
+    assert set(got) == {"a", "c"}
+
+
+def test_stage2_builds_q5b_from_all_back_half_chains_not_the_2000():
+    """段2 は `picked`(抜いた 2,000 本)ではなく後半の全連鎖から Q5b の母集団を作る。"""
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    body = src[src.index("def run_stage2("):src.index("def minute_rows_for(")]
+    assert 'all_back = cascades_from_prints(back_prints, "段2 後半の全連鎖")' in body
+    assert "q5b_source = chains_on_sample_days(all_back)" in body
+    assert "run_q5b(q5b_source," in body
+    assert "run_q5b(picked," not in body
+
+
+@needs_data
+def test_stage1_q5b_population_matches_the_design_count():
+    prints = vv.load_stage1_prints()
+    cas = vv.cascades_from_prints(prints, "試験")
+    assert len(vv.chains_on_sample_days(cas)) == 285      # 設計の「前半 285 本」
+
+
+# --- N-1: 対差と並置の母集団 2 通り ----------------------------------------
+def test_pair_diff_has_both_populations_with_counts():
+    lines = {
+        "A": [{"bundle_id": "b1", "pnl_net_bp": 5.0, "入った": 1},
+              {"bundle_id": "b2", "pnl_net_bp": -1.0, "入った": 1},
+              {"bundle_id": "b3", "pnl_net_bp": 0.0, "入った": 0}],
+        "B": [{"bundle_id": "b1", "pnl_net_bp": 1.0, "入った": 1}],
+    }
+    rows = vv.build_pair_diff_rows(lines, (("A", "B"),),
+                                   universe=["b1", "b2", "b3"])
+    assert len(rows) == 2
+    zero = [r for r in rows if r["母集団"].startswith("0として")][0]
+    both = [r for r in rows if r["母集団"] == "両方入った連鎖だけ"][0]
+    assert zero["対の数"] == 3                     # 入らなかった連鎖も 0 で対にする
+    assert zero["対差の合計_bp"] == pytest.approx(5.0 - 1.0 + (-1.0) + 0.0)
+    assert both["対の数"] == 1                     # B が入ったのは b1 だけ
+    assert both["対差の合計_bp"] == pytest.approx(4.0)
+    for r in rows:
+        assert "対の数" in r
+
+
+def test_q4_main_has_both_populations():
+    rows_a = [{"bundle_id": f"b{i}", "day": "2024-03-01", "side": "BUY",
+               "連鎖の大きさ": "単発", "最初に入った位置": "1件目で入った",
+               "pnl_net_bp": 1.0, "保有秒": 60.0, "入りの約定時刻": i * 1000,
+               "出の約定時刻": i * 1000 + 60_000, "入った": 1} for i in range(4)]
+    rows_b = [rows_a[0]]
+    q4 = vv.build_q4_tables({"A": rows_a, "B": rows_b},
+                            universe=[f"b{i}" for i in range(4)],
+                            day_of={f"b{i}": "2024-03-01" for i in range(4)})
+    main = q4["並置"]
+    assert len(main) == 4                       # 2 本 × 母集団 2 通り
+    b_zero = [r for r in main if r["方策"] == "B"
+              and r["母集団"].startswith("0として")][0]
+    b_ent = [r for r in main if r["方策"] == "B" and r["母集団"] == "入った連鎖だけ"][0]
+    assert b_zero["n"] == 4 and b_ent["n"] == 1
+    assert b_zero["合計_bp"] == pytest.approx(b_ent["合計_bp"])   # 0 を足しても同じ
+
+
+# --- N-2 / N-3: キャッシュと重複定義 ---------------------------------------
+def test_add_n2_by_day_is_defined_once():
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    assert src.count("\ndef add_n2_by_day(") == 1
+
+
+def test_liq_reference_probs_do_not_recompute_n2():
+    """N-2: 参照 2 本の確率は `sp.stage2.compute_logit_probs`(中で `add_n2_column` を
+    1 回呼ぶ)ではなく、日ごとに計算済みの N2 を受け取る経路を使う。"""
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    assert "def compute_liq_logit_probs(df: pd.DataFrame, n2_by_pid: dict)" in src
+    assert "sp.stage2.compute_logit_probs(" not in src
+    import inspect
+    body = inspect.getsource(vv.compute_liq_logit_probs)
+    code = body[body.index('"""', body.index('"""') + 3) + 3:]   # docstring を除く
+    assert "add_n2_column" not in code
+    assert "n2_by_pid.get" in code
+    # 1 回の計算を値段と清算の両方で使い回す
+    assert "prob_liq = compute_liq_logit_probs(df, n2)" in inspect.getsource(
+        vv.compute_probs_for_frame)
+
+
+# --- N-4: 到達時間の母集団 --------------------------------------------------
+def test_time_to_target_table_uses_the_bundle_population():
+    rows = [
+        {"到達秒": 2.0, "再計算したラベル": 1.0, "位置": vv.POS_1ST, "束の中": 1,
+         "遅れ1秒の約定からの最大順行_bp": 9.0},
+        {"到達秒": 3.0, "再計算したラベル": 1.0, "位置": vv.POS_1ST, "束の中": 0,
+         "遅れ1秒の約定からの最大順行_bp": 40.0},
+    ]
+    tbl = vv.time_to_target_table(rows)
+    whole = [r for r in tbl if r["場面"] == "全体"][0]
+    assert whole["値段のラベルが1の件数"] == 1        # 束の外は入れない
+    assert whole["母集団"] == "束の中のプリントだけ"
+    assert whole["母集団から外した件数(束の外)"] == 1
+    tbl_all = vv.time_to_target_table(rows, bundle_only=False)
+    assert [r for r in tbl_all if r["場面"] == "全体"][0]["値段のラベルが1の件数"] == 2
+
+
+@needs_data
+def test_stage1_time_to_target_population_is_20797_based():
+    path = vv.DEFAULT_OUT / "time_to_target.csv"
+    if not path.exists():
+        pytest.skip("段1 がまだこの環境で実行されていない")
+    df = pd.read_csv(path)
+    assert (df["母集団"] == "束の中のプリントだけ").all()
+    assert (df["母集団から外した件数(束の外)"] == 1041).all()
+
+
+# --- 書き出しの順と `入りの目標時刻_ms` ------------------------------------
+def test_stage2_writes_the_rows_before_any_table():
+    src = (ROOT / "scripts" / "o3c_signal_value.py").read_text()
+    body = src[src.index("def run_stage2("):src.index("def minute_rows_for(")]
+    i_rows = body.index("n_cascade_rows = write_cascades_gz(out_dir, cascade_file_rows)")
+    i_prints = body.index('sp.write_csv_gz(out_dir / "prints_policy.csv.gz"')
+    i_tables = body.index("tabs = tables_from_cascade_rows(")
+    i_calib = body.index('write_csv(out_dir / "calib_5000.csv"')
+    i_q5b = body.index("q5b_rows = run_q5b(")
+    assert i_rows < i_prints < i_tables < i_calib < i_q5b
+
+
+def test_cascade_columns_include_the_entry_target_time():
+    assert "入りの目標時刻_ms" in vv.CASCADE_COLUMNS
+    res = {"path": [{"ts_ms": 10_000, "約定価格": 100.0},
+                    {"ts_ms": 40_000, "約定価格": 100.5}],
+           "fill_lag_ms": [250, 400]}
+    assert vv.entry_target_time(res, 1) == 11_000
+    assert vv.entry_target_time({"path": [], "fill_lag_ms": []}, 1) is None
+    # 約定時刻 − 目標時刻 = 約定の遅れ が後から引ける
+    t_in, _t_out = vv.entry_exit_fill_times(res, 1)
+    assert t_in - vv.entry_target_time(res, 1) == 250
+
+
+def test_stage2_dry_run_writes_rows_and_from_rows_reproduces_the_tables(tmp_path):
+    if not (vv.DEFAULT_OUT / "summary.json").exists():
+        pytest.skip("段1 がまだこの環境で実行されていない")
+    if not (vv.SPREAD_DIR / "spread_by_day.csv").exists():
+        pytest.skip("費用の表がまだこの環境で作られていない")
+    out = tmp_path / "dry"
+    vv.run_stage2(out_dir=out, dry_run=True)
+    assert (out / "cascades.csv.gz").exists()
+    assert (out / "prints_policy.csv.gz").exists()
+    casc = pd.read_csv(out / "cascades.csv.gz")
+    assert list(casc.columns)[:len(vv.CASCADE_COLUMNS)] == list(vv.CASCADE_COLUMNS)
+    before = {n: pd.read_csv(out / n) for n in
+              ("dist_table.csv", "q4_main.csv", "q4_pair_diff.csv", "q4_by_day.csv",
+               "q4_exposure.csv", "position_breakdown.csv")}
+    vv.run_from_rows(out)
+    for n, b in before.items():
+        a = pd.read_csv(out / n)
+        assert list(a.columns) == list(b.columns), n
+        assert len(a) == len(b), n
+        for col in a.columns:
+            if pd.api.types.is_numeric_dtype(b[col]):
+                # CSV の 6 桁丸めを 1 往復するので、その分だけずれる
+                assert np.allclose(a[col].to_numpy(float), b[col].to_numpy(float),
+                                   rtol=1e-4, atol=2e-6, equal_nan=True), (n, col)
+            else:
+                assert a[col].astype(str).tolist() == b[col].astype(str).tolist(), n
+
+
+def test_from_rows_never_reads_the_back_half_source():
+    import inspect
+    body = inspect.getsource(vv.run_from_rows) + inspect.getsource(
+        vv.tables_from_cascade_rows)
+    for forbidden in ("ROWS_CONTINUE", "ROWS_MATERIALS", "load_prints",
+                      "select_stage2_cascades", "WindowCache"):
+        assert forbidden not in body, forbidden

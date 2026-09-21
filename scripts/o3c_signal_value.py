@@ -200,6 +200,15 @@ def bundle_drop_count(df: pd.DataFrame) -> int:
     return int(df["bundle_id"].isna().sum()) if "bundle_id" in df.columns else 0
 
 
+def chains_on_sample_days(cascades: dict, tardis_dir=None) -> dict:
+    """Q5b(a) の母集団: 標本日(bitFlyer の約定がある日)に掛かる連鎖だけ。
+    **半期の全連鎖から取る**(設計の「前半 285 本 / 後半 81 本」と同じ数え方。
+    反証者9 の再点検 致命-4: 段2 で抜いた 2,000 本から取ると母集団が狭まる)。"""
+    days = {spread.day_of_path(q) for q in
+            spread.sample_day_paths(tardis_dir or spread.TARDIS_DIR)}
+    return {bid: pr for bid, pr in cascades.items() if str(pr[0]["day"]) in days}
+
+
 def chain_ids_in_day_order(cascades: dict) -> list:
     """連鎖の id を (日, 最初のプリントの時刻) の順に並べる(日ごとの約定を
     1 回読めば済むようにするため。`bundle_id` の並びが日の並びと同じとは限らない)。"""
@@ -248,17 +257,6 @@ def outside_bundle_rows(outside: pd.DataFrame) -> list:
              "1件目(cand_1==0)": int((c1 == 0).sum()),
              "連鎖の中(cand_1>0)": int((c1 > 0).sum()),
              "掛かる日数": int(outside["day"].nunique())}]
-
-
-def add_n2_by_day(sb, df_first: pd.DataFrame) -> pd.DataFrame:
-    """N2(1 件目だけ)を日ごとに計算する(`lg.add_n2_column` をそのまま使い、
-    日が変わるたびに約定のキャッシュを空にして記憶を抑える)。"""
-    parts = []
-    for day, g in df_first.groupby("day", sort=True):
-        parts.append(lg.add_n2_column(sb, g.reset_index(drop=True)))
-        sb._window_cache.clear()
-        sb._raw_trade_cache.clear()
-    return pd.concat(parts, ignore_index=True)
 
 
 def day_block_folds(days_of_rows, n_folds: int = lg.N_FOLDS,
@@ -529,7 +527,10 @@ def _recheck_rows_for_day(g: pd.DataFrame, day: str, times: np.ndarray,
             lab, sec = value_label_and_time_to_target(
                 times, prices, int(r.t0_ms), float(r.p0), float(r.dir_sign))
             old = cont._f(getattr(r, LABEL_VALUE))
+            bid = getattr(r, "bundle_id", None)
+            in_bundle = int(isinstance(bid, str) and bid != "")
             rows.append({"print_id": r.print_id, "day": str(day),
+                         "束の中": in_bundle,
                          "既存のラベル": old, "再計算したラベル": lab,
                          "一致": int((lab == lab and old == old and lab == old)
                                    or (lab != lab and old != old)),
@@ -551,10 +552,15 @@ def recompute_value_labels(df_prints: pd.DataFrame, cache: WindowCache) -> list:
     return rows
 
 
-def time_to_target_table(recheck_rows: list) -> list:
+def time_to_target_table(recheck_rows: list, bundle_only: bool = True) -> list:
+    """5 bp への到達時間。**母集団は `bundle_id` のあるプリントだけ**(反証者9 の再点検 N-4。
+    帯・基準率・分位と揃える)。束の外のプリントは値段のラベルの割合が 0.92 と偏っていて、
+    方策が一度も通らない。"""
     rows = []
+    pool = [r for r in recheck_rows if (not bundle_only) or r.get("束の中", 1)]
+    n_excluded = len(recheck_rows) - len(pool)
     for scene in ("全体", POS_1ST, POS_CHAIN):
-        sel = [r for r in recheck_rows
+        sel = [r for r in pool
                if (scene == "全体" or r["位置"] == scene) and r["再計算したラベル"] == 1.0]
         v = np.array([r["到達秒"] for r in sel], dtype=float)
         v = v[np.isfinite(v)]
@@ -572,7 +578,10 @@ def time_to_target_table(recheck_rows: list) -> list:
         nf, nf_ok, f_share, f_med = resid(fast)
         ns, ns_ok, s_share, s_med = resid(slow)
         rows.append({
-            "場面": scene, "値段のラベルが1の件数": len(sel), "秒が取れた件数": int(v.size),
+            "場面": scene,
+            "母集団": ("束の中のプリントだけ" if bundle_only else "前半の全プリント"),
+            "母集団から外した件数(束の外)": n_excluded,
+            "値段のラベルが1の件数": len(sel), "秒が取れた件数": int(v.size),
             "p10_秒": q[0], "p25_秒": q[1], "p50_秒": q[2], "p75_秒": q[3],
             "p90_秒": q[4],
             "1秒未満の割合": (float(np.mean(v < 1.0)) if v.size else NAN),
@@ -829,6 +838,7 @@ def combo_chain_rows(per_chain: dict, cuts: dict, cost_bp: float, combo: dict,
             "pnl_net_bp": (r["pnl_bp"] - cost_bp * r["建玉の回数"]
                            if r["pnl_bp"] == r["pnl_bp"] else NAN),
             "建玉の回数": r["建玉の回数"], "保有秒": r["保有秒"],
+            "入りの目標時刻": r["入りの目標時刻"],
             "入りの約定時刻": r["入りの約定時刻"], "出の約定時刻": r["出の約定時刻"],
             "入った": 1, "欠測": r["欠測"], "出口の理由": r["出口の理由"],
             "前半の前": (None if split_day is None else int(rec["day"] <= split_day))})
@@ -1127,6 +1137,17 @@ def _baseline_fill_times(res: dict, delay_s: float, entry_ts: int, exit_ts: int
             int(exit_ts) + delay_ms + int(lags[1]))
 
 
+def entry_target_time(res: dict, delay_s: float) -> int | None:
+    """最初に値段を引いた行の**目標時刻**(そのプリントの ts + 遅れ)。
+    反証者9 の再点検: `cascades.csv.gz` に絶対時刻しか無いと、後から約定の遅れを
+    引き算できないので 1 列足す。"""
+    delay_ms = int(round(float(delay_s) * 1000))
+    filled = [r for r in res.get("path", []) if r.get("約定価格") is not None]
+    if not filled:
+        return None
+    return int(filled[0]["ts_ms"]) + delay_ms
+
+
 def entry_exit_fill_times(res: dict, delay_s: float) -> tuple:
     """`sp.simulate_cascade` / `sp.simulate_baseline` の戻り値から、**最初の約定**と
     **最後の約定**の時刻(ms)を復元する(`path` の値段が付いた行と `fill_lag_ms` は
@@ -1190,6 +1211,7 @@ def run_policies(cascades: dict, prob_of: dict, pos_of: dict, bands: dict,
                         "連鎖の大きさ": sb_size, "n_prints": n, "方策": pol, "型": ptype,
                         "遅れ_秒": delay, "pnl_bp": res["pnl_bp"],
                         "建玉の回数": res["n_entries"], "保有秒": res["hold_seconds"],
+                        "入りの目標時刻_ms": entry_target_time(res, delay),
                         "入りの約定時刻_ms": t_in, "出の約定時刻_ms": t_out,
                         "出口の理由": "連鎖の終わり+d",
                         "入った": int(res["entered"]), "欠測": int(res["missing"]),
@@ -1215,6 +1237,8 @@ def run_policies(cascades: dict, prob_of: dict, pos_of: dict, bands: dict,
                         "連鎖の大きさ": sb_size, "n_prints": n, "方策": pol_name,
                         "型": ptype, "遅れ_秒": delay, "pnl_bp": res["pnl_bp"],
                         "建玉の回数": res["n_entries"], "保有秒": res["hold_seconds"],
+                        "入りの目標時刻_ms": (int(prints[0]["ts_ms"])
+                                       + int(round(float(delay) * 1000))),
                         "入りの約定時刻_ms": t_in, "出の約定時刻_ms": t_out,
                         "出口の理由": "連鎖の終わり+d",
                         "入った": int(res["entered"]), "欠測": int(res["missing"]),
@@ -1227,8 +1251,8 @@ def run_policies(cascades: dict, prob_of: dict, pos_of: dict, bands: dict,
 
 CASCADE_COLUMNS = ("bundle_id", "day", "side", "連鎖の大きさ", "n_prints", "方策",
                    "型", "遅れ_秒", "費用の通り", "pnl_bp", "pnl_net_bp", "建玉の回数",
-                   "保有秒", "入りの約定時刻_ms", "出の約定時刻_ms", "入った",
-                   "最初に入った位置", "出口の理由")
+                   "保有秒", "入りの目標時刻_ms", "入りの約定時刻_ms", "出の約定時刻_ms",
+                   "入った", "最初に入った位置", "出口の理由")
 
 
 def build_cascade_rows_file(policy_rows: list, costs: dict,
@@ -1247,6 +1271,7 @@ def build_cascade_rows_file(policy_rows: list, costs: dict,
                 "pnl_net_bp": (gross - c * r["建玉の回数"]
                                if gross == gross else NAN),
                 "建玉の回数": r["建玉の回数"], "保有秒": r["保有秒"],
+                "入りの目標時刻_ms": r.get("入りの目標時刻_ms"),
                 "入りの約定時刻_ms": r.get("入りの約定時刻_ms"),
                 "出の約定時刻_ms": r.get("出の約定時刻_ms"),
                 "入った": r["入った"],
@@ -1263,6 +1288,7 @@ def build_cascade_rows_file(policy_rows: list, costs: dict,
                     "pnl_net_bp": (gross - c * r["建玉の回数"]
                                    if gross == gross else NAN),
                     "建玉の回数": r["建玉の回数"], "保有秒": r["保有秒"],
+                    "入りの目標時刻_ms": r.get("入りの目標時刻"),
                     "入りの約定時刻_ms": r["入りの約定時刻"],
                     "出の約定時刻_ms": r["出の約定時刻"],
                     "入った": r["入った"], "最初に入った位置": "-",
@@ -1702,8 +1728,7 @@ def run_q5b(all_cascades: dict, chosen: dict, prob_of: dict,
     (b) 1 分の粗さ: 入る・出る時刻の次の 1 分の始値の損益を bitFlyer と Binance で。"""
     rows = []
     sample_days = {spread.day_of_path(p) for p in spread.sample_day_paths()}
-    target = {bid: pr for bid, pr in all_cascades.items()
-              if str(pr[0]["day"]) in sample_days}
+    target = chains_on_sample_days(all_cascades)
     delay = GRID_DELAY_S
 
     # 200 本の動作確認と同じ材料を使えない連鎖があるので、①は確率が引けた連鎖だけ。
@@ -1859,16 +1884,27 @@ def _stats_of(vals: np.ndarray, days: np.ndarray) -> dict:
             "日クラスタSE": se_c, "日数": ndays}
 
 
-def build_q4_tables(lines: dict) -> dict:
+def build_q4_tables(lines: dict, universe=None, day_of: dict | None = None) -> dict:
     """`lines` = 表示名 -> 連鎖 1 本ごとの行(`bundle_id`・`day`・`side`・
     `連鎖の大きさ`・`最初に入った位置`・`pnl_net_bp`・`保有秒`・約定時刻)。
-    設計 Q4 の 並置・対差・日ごと・位置別・大きさ別・側別・露出 を作る。"""
+    設計 Q4 の 並置・日ごと・位置別・大きさ別・側別・露出 を作る。
+
+    N-1: 並置は **「0 として含める(全連鎖)」を主**に、「入った連鎖だけ」を併記する
+    (線ごとに分母が変わらないようにする)。"""
     side_by, size_by, pos_by, day_rows, main_rows, expo = [], [], [], [], [], []
+    uni = (sorted(set(universe)) if universe is not None else None)
     for name, rows in lines.items():
         ok = [r for r in rows if r["pnl_net_bp"] == r["pnl_net_bp"]]
         v = np.array([r["pnl_net_bp"] for r in ok], dtype=float)
         d = np.array([r["day"] for r in ok], dtype=object)
-        main_rows.append({"方策": name, **_stats_of(v, d)})
+        if uni is not None and day_of is not None:
+            have = {r["bundle_id"]: r for r in ok}
+            v0 = np.array([have[k]["pnl_net_bp"] if k in have else 0.0 for k in uni],
+                          dtype=float)
+            d0 = np.array([day_of.get(k, "") for k in uni], dtype=object)
+            main_rows.append({"方策": name, "母集団": "0として含める(全連鎖)",
+                              **_stats_of(v0, d0)})
+        main_rows.append({"方策": name, "母集団": "入った連鎖だけ", **_stats_of(v, d)})
         expo.append({"方策": name, "入った本数": sum(1 for r in ok if r.get("入った", 1)),
                      **exposure_of(ok)})
         by_day = defaultdict(float)
@@ -1899,26 +1935,49 @@ def build_q4_tables(lines: dict) -> dict:
             "大きさ別": size_by, "位置別": pos_by, "露出": expo}
 
 
-def build_pair_diff_rows(lines: dict, pairs: tuple) -> list:
-    """連鎖ごとの**対差**(同じ `bundle_id` で対にする)。設計 Q4。"""
-    by_name = {}
+def _line_maps(lines: dict) -> tuple:
+    """線ごとに (bundle_id -> 損益) と (bundle_id -> 入ったか) を作る。"""
+    val, ent = {}, {}
     for name, rows in lines.items():
-        by_name[name] = {r["bundle_id"]: r["pnl_net_bp"] for r in rows
-                         if r["pnl_net_bp"] == r["pnl_net_bp"]}
+        val[name] = {r["bundle_id"]: r["pnl_net_bp"] for r in rows
+                     if r["pnl_net_bp"] == r["pnl_net_bp"]}
+        ent[name] = {r["bundle_id"] for r in rows if int(r.get("入った", 1)) == 1}
+    return val, ent
+
+
+def build_pair_diff_rows(lines: dict, pairs: tuple, universe=None) -> list:
+    """連鎖ごとの**対差**(同じ `bundle_id` で対にする)。設計 Q4。
+
+    反証者9 の再点検 N-1: ②opt は入らない連鎖があり、`set(A) ∩ set(B)` で対にすると
+    線ごとに分母が変わって読み違える。**主は「入らなかった連鎖 = 0 として含める」**
+    (母集団 `universe` の全 `bundle_id` で対にする)、**併記は「両方入った連鎖だけ」**。
+    どちらの表にも対の数を出す。"""
+    val, ent = _line_maps(lines)
+    uni = (sorted(set(universe)) if universe is not None
+           else sorted({k for m in val.values() for k in m}))
     out = []
     for a, b in pairs:
-        if a not in by_name or b not in by_name:
-            out.append({"対差": f"{a} − {b}", "対の数": 0,
-                        "備考": "片側の行が無いので作らない"})
+        if a not in val or b not in val:
+            for scope in ("0として含める(全連鎖)", "両方入った連鎖だけ"):
+                out.append({"対差": f"{a} − {b}", "母集団": scope, "対の数": 0,
+                            "備考": "片側の行が無いので作らない"})
             continue
-        common = sorted(set(by_name[a]) & set(by_name[b]))
-        d = np.array([by_name[a][k] - by_name[b][k] for k in common], dtype=float)
-        q = quantiles(d, [25, 50, 75]) if d.size else [NAN] * 3
-        out.append({"対差": f"{a} − {b}", "対の数": int(d.size),
-                    "対差の合計_bp": float(d.sum()) if d.size else 0.0,
-                    "対差の中央値_bp": q[1], "対差のp25_bp": q[0], "対差のp75_bp": q[2],
-                    "対差が正の割合": (float(np.mean(d > 0)) if d.size else NAN),
-                    "対差が0の本数": int(np.sum(d == 0)) if d.size else 0})
+        for scope in ("0として含める(全連鎖)", "両方入った連鎖だけ"):
+            if scope.startswith("0として"):
+                keys = uni
+                d = np.array([val[a].get(k, 0.0) - val[b].get(k, 0.0) for k in keys],
+                             dtype=float)
+            else:
+                keys = [k for k in uni
+                        if k in ent[a] and k in ent[b] and k in val[a] and k in val[b]]
+                d = np.array([val[a][k] - val[b][k] for k in keys], dtype=float)
+            q = quantiles(d, [25, 50, 75]) if d.size else [NAN] * 3
+            out.append({"対差": f"{a} − {b}", "母集団": scope, "対の数": int(d.size),
+                        "対差の合計_bp": float(d.sum()) if d.size else 0.0,
+                        "対差の中央値_bp": q[1], "対差のp25_bp": q[0],
+                        "対差のp75_bp": q[2],
+                        "対差が正の割合": (float(np.mean(d > 0)) if d.size else NAN),
+                        "対差が0の本数": int(np.sum(d == 0)) if d.size else 0})
     return out
 
 
@@ -1969,25 +2028,54 @@ def add_n2_by_day(sb, df_first: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(parts, ignore_index=True) if parts else df_first
 
 
-def compute_value_probs_for_frame(sb, df: pd.DataFrame) -> tuple:
-    """段2 用: materials の欠落で止まり(D-6(a))、N2 は日ごとにキャッシュを空にして
-    計算する(D-6(b))。"""
+def compute_probs_for_frame(sb, df: pd.DataFrame) -> tuple:
+    """段2 用: N2 を**日ごとに 1 回だけ**計算し(D-6(b) / 再点検 N-2)、その値を
+    値段のラベルと清算のラベル(参照 2 本)の両方に使い回す。
+    materials の欠落は呼び出し側で `require_materials_cover` が止める。"""
     cand1 = pd.to_numeric(df["cand_1"], errors="coerce")
     first = df[cand1 == 0].reset_index(drop=True)
+    n2 = {}
     if len(first):
         first = add_n2_by_day(sb, first)
-    n2 = dict(zip(first["print_id"].astype(str).tolist(),
-                  pd.to_numeric(first.get("cand_N2"), errors="coerce").tolist())
-              ) if len(first) else {}
-    prob = compute_value_logit_probs(sb, df, n2)
+        n2 = dict(zip(first["print_id"].astype(str).tolist(),
+                      pd.to_numeric(first["cand_N2"], errors="coerce").tolist()))
+    prob_value = compute_value_logit_probs(sb, df, n2)
+    prob_liq = compute_liq_logit_probs(df, n2)
     pos = {pid: sp.position_of(c1) for pid, c1 in zip(df["print_id"], df["cand_1"])}
-    return prob, pos
+    return prob_value, prob_liq, pos
+
+
+def compute_liq_logit_probs(df: pd.DataFrame, n2_by_pid: dict) -> dict:
+    """参照 2 本のための**清算のラベル**の logistic(前段の係数・経験分布を読むだけ)。
+    前段の `o3c_signal_stage2` の確率の出し方と同じ経路だが、N2 を渡すので
+    `lg.add_n2_column` を呼ばない(再点検 N-2: あの呼び出しの中では日ごとの解放が
+    効かず、後半 228 日ぶんが溜まる)。"""
+    out = {}
+    ecdf_first = lg.load_ecdf_npz(lg.ECDF_FIRST)
+    ecdf_chain = lg.load_ecdf_npz(lg.ECDF_CHAIN)
+    beta_first = sp.stage2.load_beta(lg.CONFIG_FIRST, lg.FEATURES_FIRST)
+    beta_chain = sp.stage2.load_beta(lg.CONFIG_CHAIN, lg.FEATURES_CHAIN)
+    cand1 = pd.to_numeric(df["cand_1"], errors="coerce")
+    df_first = df[cand1 == 0].reset_index(drop=True).copy()
+    df_chain = df[cand1 > 0].reset_index(drop=True)
+    if len(df_first):
+        df_first["cand_N2"] = [n2_by_pid.get(str(pid), NAN)
+                               for pid in df_first["print_id"]]
+        p = lg.predict(lg.apply_frozen_rank(ecdf_first, lg.FEATURES_FIRST, df_first),
+                       beta_first)
+        out.update(dict(zip(df_first["print_id"].tolist(), p.tolist())))
+    if len(df_chain):
+        p = lg.predict(lg.apply_frozen_rank(ecdf_chain, lg.FEATURES_CHAIN, df_chain),
+                       beta_chain)
+        out.update(dict(zip(df_chain["print_id"].tolist(), p.tolist())))
+    return out
 
 
 def synthetic_stage2_inputs() -> dict:
     """`--dry-run` 用の合成データ(**後半の行は 1 行も読まない**)。
-    2 本の連鎖・偽の約定列で、段2 の組み立て(Q4 の表・対差・露出・cascades の列)を
-    通す。"""
+    3 本の連鎖・偽の約定列で、段2 の組み立て(Q4 の表・対差・露出・cascades の列)を
+    通す。3 本目は ②opt の条件(3 件目以降)に届かない連鎖で、対差の 2 つの母集団
+    (0 として含める / 両方入った)が違う数になることを見るために入れてある。"""
     times = np.arange(0, 800_000 + 1, 1_000, dtype=np.int64)
     prices = 100.0 + times / 1.0e7
     cascades = {
@@ -2001,9 +2089,16 @@ def synthetic_stage2_inputs() -> dict:
         "dry_0002": [
             {"print_id": "d2a", "ts_ms": 200_000, "side": "BUY", "day": "2024-03-02",
              "half": BACK_HALF, LABEL_VALUE: 1, sp.MAT1_COL: 0}],
+        "dry_0003": [
+            {"print_id": "d3a", "ts_ms": 400_000, "side": "BUY", "day": "2024-03-03",
+             "half": BACK_HALF, LABEL_VALUE: 0, sp.MAT1_COL: 0},
+            {"print_id": "d3b", "ts_ms": 430_000, "side": "BUY", "day": "2024-03-03",
+             "half": BACK_HALF, LABEL_VALUE: 1, sp.MAT1_COL: 1}],
     }
-    prob = {"d1a": 0.30, "d1b": 0.80, "d1c": 0.50, "d2a": 0.90}
-    pos = {"d1a": POS_1ST, "d1b": POS_CHAIN, "d1c": POS_CHAIN, "d2a": POS_1ST}
+    prob = {"d1a": 0.30, "d1b": 0.80, "d1c": 0.50, "d2a": 0.90, "d3a": 0.20,
+            "d3b": 0.75}
+    pos = {"d1a": POS_1ST, "d1b": POS_CHAIN, "d1c": POS_CHAIN, "d2a": POS_1ST,
+           "d3a": POS_1ST, "d3b": POS_CHAIN}
     return {"cascades": cascades, "prob": prob, "pos": pos,
             "times": times, "prices": prices}
 
@@ -2021,12 +2116,126 @@ class SyntheticCache:
         return self._t, self._p
 
 
+# ---------------------------------------------------------------------------
+# 段2 の表を「連鎖 1 本ごとの行」から組み直す(`--from-rows`)
+# ---------------------------------------------------------------------------
+Q4_LINE_SPEC = (
+    ("①3択A", "logistic_3択", TYPE_A),
+    ("①3択B", "logistic_3択", TYPE_B),
+    ("全部逆張り(素)", "全部逆張り", TYPE_A),
+    ("前段の3択(清算)A", "前段の3択(清算)", TYPE_A),
+    ("完全な判断(値段)A", "完全な判断", TYPE_A),
+    ("②opt", "②opt", "-"),
+)
+
+
+def tables_from_cascade_rows(cascade_rows: list, cost_label: str,
+                             extra_policies: tuple = REF_POLICIES) -> dict:
+    """`cascades.csv.gz` の行だけから Q2・Q4 の表を組み直す。
+    **後半の生データを読み直さない**(反証者9 の再点検「後から作り直せない欠け」)。"""
+    df = pd.DataFrame(cascade_rows)
+    for col in ("pnl_bp", "pnl_net_bp", "保有秒", "遅れ_秒"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    for col in ("建玉の回数", "入った", "入りの目標時刻_ms", "入りの約定時刻_ms",
+                "出の約定時刻_ms"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    costs = sorted(set(df["費用の通り"]))
+    dist, posb = [], []
+    for label in costs:
+        sub = df[df["費用の通り"] == label].copy()
+        sub["pnl_bp"] = sub["pnl_net_bp"]        # 費用を引いた値で分布を取る
+        sub["欠測"] = 0
+        c = float(sub["c_bp"].iloc[0]) if "c_bp" in sub.columns else NAN
+        for r in sp.build_dist_table(sub):
+            dist.append({"費用": label, **r})
+        for pol in extra_policies:
+            for delay in DELAYS_S:
+                for inc0 in (True, False):
+                    dist.append({"費用": label,
+                                 **sp.dist_stats(sub, pol, TYPE_A, delay, inc0)})
+        for r in sp.build_position_breakdown(sub):
+            posb.append({"費用": label, **r})
+    main = df[df["費用の通り"] == cost_label]
+    lines, universe, day_of = {}, set(), {}
+    for name, pol, ptype in Q4_LINE_SPEC:
+        sel = main[(main["方策"] == pol) & (main["型"] == ptype)
+                   & (main["遅れ_秒"] == MAIN_DELAY)]
+        rows = []
+        for r in sel.to_dict("records"):
+            rows.append({**r, "入りの約定時刻": r.get("入りの約定時刻_ms"),
+                         "出の約定時刻": r.get("出の約定時刻_ms")})
+            universe.add(r["bundle_id"])
+            day_of[r["bundle_id"]] = r["day"]
+        if rows:
+            lines[name] = rows
+    pairs = (("①3択A", "全部逆張り(素)"),)
+    if "②opt" in lines:
+        pairs = (("①3択A", "②opt"), ("①3択A", "全部逆張り(素)"),
+                 ("②opt", "全部逆張り(素)"))
+    q4 = build_q4_tables(lines, universe, day_of)
+    pair_rows = build_pair_diff_rows(lines, pairs, universe)
+    return {"dist": dist, "posb": posb, "q4": q4, "pair": pair_rows,
+            "lines": list(lines)}
+
+
+def run_from_rows(out_dir: Path, cost_label: str = COST_MAIN) -> dict:
+    """既に書かれた `cascades.csv.gz` から Q2・Q4 の表だけを組み直して書き直す。
+    **後半の生データも `rows_continue` も読まない。**"""
+    out_dir = Path(out_dir)
+    path = out_dir / "cascades.csv.gz"
+    if not path.exists():
+        raise SystemExit(f"[止め] {path} が無い")
+    rows = pd.read_csv(path, low_memory=False).to_dict("records")
+    built = tables_from_cascade_rows(rows, cost_label)
+    named = [("dist_table.csv", built["dist"]),
+             ("position_breakdown.csv", built["posb"]),
+             ("q4_main.csv", built["q4"]["並置"]),
+             ("q4_pair_diff.csv", built["pair"]),
+             ("q4_by_day.csv", built["q4"]["日ごと"]),
+             ("q4_by_side.csv", built["q4"]["側別"]),
+             ("q4_by_size.csv", built["q4"]["大きさ別"]),
+             ("q4_by_position.csv", built["q4"]["位置別"]),
+             ("q4_exposure.csv", built["q4"]["露出"])]
+    for name, rs in named:
+        write_csv(out_dir / name, normalize_rows(rs))
+    print(json.dumps({"組み直した表": [n for n, _ in named],
+                      "連鎖 1 本ごとの行": len(rows),
+                      "並べた線": built["lines"]}, ensure_ascii=False), flush=True)
+    return {name: len(rs) for name, rs in named}
+
+
+# ---------------------------------------------------------------------------
+# 段2(後半 2,000 本、一度だけ = 11 度目)
+# ---------------------------------------------------------------------------
+PRIOR_STAGE2_CASCADES = (REPO_ROOT / "backtest_data" / "o3c_signal_policy_20260920"
+                         / "stage2_secondhalf" / "cascades.csv.gz")
+
+
+def bundle_id_fingerprint(ids) -> str:
+    """`bundle_id` の集合の指紋(並べて改行で繋いだ文字列の MD5)。"""
+    import hashlib
+    text = "\n".join(sorted(set(str(x) for x in ids))) + "\n"
+    return hashlib.md5(text.encode("utf-8")).hexdigest()
+
+
+def prior_stage2_bundle_ids(path: Path = PRIOR_STAGE2_CASCADES) -> set:
+    df = pd.read_csv(path, usecols=["bundle_id"], dtype={"bundle_id": str})
+    return set(df["bundle_id"].astype(str))
+
+
 def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR,
                dry_run: bool = False) -> dict:
-    """段2(後半 2,000 本、一度だけ = 11 度目の読み)。**この委任では走らせない。**
+    """段2(後半 2,000 本、一度だけ = 11 度目の読み)。
     段1 で前半から固定した 帯・係数・費用・②opt をそのまま当てる(作り直さない)。
-    `dry_run=True` は合成データで組み立てだけを通す(後半を 1 行も読まない)。"""
+    `dry_run=True` は合成データで組み立てだけを通す(後半を 1 行も読まない)。
+
+    **書き出しの順**(反証者9 の再点検): 連鎖 1 本ごとの行(`cascades.csv.gz`)と
+    プリント 1 行ごとの判断(`prints_policy.csv.gz`)を**最初に**書く。以後の表は
+    その行から組めるので、途中で落ちても後半をもう一度読まずに済む。"""
     t0 = time.time()
+    started = _dt.datetime.now(_dt.timezone.utc).isoformat()
     c_main, c_p75 = spread.read_cost(spread_dir)
     s1 = json.loads((DEFAULT_OUT / "summary.json").read_text(encoding="utf-8"))
     bands = {k: (tuple(v) if v else None) for k, v in s1["①の帯"].items()}
@@ -2037,22 +2246,25 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
     out_dir = Path(out_dir)
     if dry_run and out_dir == Path(DEFAULT_OUT_STAGE2):
         out_dir = OUT_ROOT / "stage2_dryrun"
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     q0_rows = []
+    q5b_source = None
     if dry_run:
         syn = synthetic_stage2_inputs()
         picked = syn["cascades"]
         prob_of, pos_of = syn["prob"], syn["pos"]
-        prob_liq, pos_liq = syn["prob"], syn["pos"]
+        prob_liq = syn["prob"]
         cache = SyntheticCache(syn["times"], syn["prices"])
         select_info = {"抜いた本数": len(picked),
                        "抜いた本数の内訳(単発/2件/3件以上)": {"合成": len(picked)}}
         q0_rows.append({"項目": "dry-run(合成データ、後半を読んでいない)",
                         "値": len(picked)})
+        mat = None
+        sb = None
     else:
         select_info = sp.select_stage2_cascades(k=N_CASCADES_STAGE2)
         picked = select_info["cascades"]
-        # Q0: 後半 2,000 本の bundle_id が前段と同一か(MD5 で照合)
         ours = set(picked.keys())
         prior = prior_stage2_bundle_ids()
         q0_rows += [
@@ -2068,31 +2280,37 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
             raise RuntimeError("[止め] 後半 2,000 本が前段の bundle_id と一致しない "
                                f"(この単位にだけ {len(ours - prior)} 本 / "
                                f"前段にだけ {len(prior - ours)} 本)")
+        # 致命-4: Q5b(a) の母集団は「後半の**全連鎖** ∩ 標本日」(設計の 81 本の定義)
+        back_prints = load_prints(BACK_HALF)
+        n_no_bundle_back = bundle_drop_count(back_prints)
+        all_back = cascades_from_prints(back_prints, "段2 後半の全連鎖")
+        q5b_source = chains_on_sample_days(all_back)
+        q0_rows += [
+            {"項目": "後半のプリント数", "値": len(back_prints)},
+            {"項目": "後半の連鎖数", "値": len(all_back)},
+            {"項目": "後半の束の外(bundle_id 欠損)のプリント", "値": n_no_bundle_back},
+            {"項目": "Q5b(a) の母集団(後半の全連鎖 ∩ 標本日)", "値": len(q5b_source)},
+        ]
         ids = {pr["print_id"] for prints in picked.values() for pr in prints}
+        ids |= {pr["print_id"] for prints in q5b_source.values() for pr in prints}
         mat = pd.read_csv(ROWS_MATERIALS, low_memory=False)
         df = mat[mat["print_id"].isin(ids)].reset_index(drop=True)
-        # D-6(a): 段1 と同じ停止を段2 にも入れる
-        require_materials_cover(ids, set(df["print_id"]), "段2 の後半 2,000 本")
+        require_materials_cover(ids, set(df["print_id"]), "段2 の後半 2,000 本 + Q5b")
         sb = js.StateBuilder()
-        prob_of, pos_of = compute_value_probs_for_frame(sb, df)
-        # 参照 2 本(前段の清算のラベル。係数・経験分布・帯は前段のものを読むだけ)
+        prob_of, prob_liq, pos_of = compute_probs_for_frame(sb, df)
         sb._window_cache.clear()
         sb._raw_trade_cache.clear()
-        prob_liq = sp.stage2.compute_logit_probs(sb, df)
-        sb._window_cache.clear()
-        sb._raw_trade_cache.clear()
-        pos_liq = pos_of
         cache = WindowCache(DATA_ROOT)
+    print(f"[段2-1] 連鎖 {select_info['抜いた本数']} 本 / 確率 {len(prob_of)} 件 "
+          f"({time.time() - t0:.0f}s)", flush=True)
 
     built = run_policies(picked, prob_of, pos_of, bands, base_rates, cache)
-    built_ref = run_policies(picked, prob_liq, pos_liq, bands, base_rates, cache,
+    built_ref = run_policies(picked, prob_liq, pos_of, bands, base_rates, cache,
                              policies=REF_POLICIES, types=(TYPE_A,),
                              baselines={}, kind=JUDGE_LIQ, count_policies=())
     all_policy_rows = built["cascade_rows"] + built_ref["cascade_rows"]
-    dist_rows, pos_rows = _dist_rows_with_cost(all_policy_rows, costs,
-                                              extra_policies=REF_POLICIES)
+    print(f"[段2-2] 方策と参照 2 本({time.time() - t0:.0f}s)", flush=True)
 
-    # ②opt(段1 で選んだ組をそのまま当てる)
     opt_rows = []
     if chosen and chosen.get("選ばれた"):
         combo = chosen["組"]
@@ -2115,39 +2333,37 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
                     "bundle_id": bid, "day": str(prints[0]["day"]),
                     "side": str(prints[0]["side"]),
                     "連鎖の大きさ": sp.size_bucket(len(prints)), "n_prints": len(prints),
+                    "方策": "②opt", "型": "-", "遅れ_秒": GRID_DELAY_S,
                     "pnl_bp": r["pnl_bp"],
-                    "pnl_net_bp": r["pnl_bp"] - c_main * r["建玉の回数"],
                     "建玉の回数": r["建玉の回数"], "保有秒": r["保有秒"],
+                    "入りの目標時刻": r["入りの目標時刻"],
                     "入りの約定時刻": r["入りの約定時刻"], "出の約定時刻": r["出の約定時刻"],
                     "入った": 1, "欠測": 0, "出口の理由": r["出口の理由"],
                     "最初に入った位置": combo["入る位置"]})
 
-    # Q4: 6 本の並置(主の c・遅れ 1 秒)
-    lines = {
-        "①3択A": cascade_rows_from_policy_rows(built["cascade_rows"], "logistic_3択",
-                                              TYPE_A, MAIN_DELAY, c_main),
-        "①3択B": cascade_rows_from_policy_rows(built["cascade_rows"], "logistic_3択",
-                                              TYPE_B, MAIN_DELAY, c_main),
-        "全部逆張り(素)": cascade_rows_from_policy_rows(built["cascade_rows"], "全部逆張り",
-                                                  TYPE_A, MAIN_DELAY, c_main),
-        "前段の3択(清算)A": cascade_rows_from_policy_rows(
-            built_ref["cascade_rows"], "前段の3択(清算)", TYPE_A, MAIN_DELAY, c_main),
-        "完全な判断(値段)A": cascade_rows_from_policy_rows(built["cascade_rows"], "完全な判断",
-                                                    TYPE_A, MAIN_DELAY, c_main),
-    }
-    pairs = (("①3択A", "全部逆張り(素)"),)
-    if opt_rows:
-        lines["②opt"] = opt_rows
-        pairs = (("①3択A", "②opt"), ("①3択A", "全部逆張り(素)"),
-                 ("②opt", "全部逆張り(素)"))
-    q4 = build_q4_tables(lines)
-    pair_rows = build_pair_diff_rows(lines, pairs)
+    # ---- 先に書く: 連鎖 1 本ごとの行 と プリント 1 行ごとの判断 --------------
+    cascade_file_rows = build_cascade_rows_file(
+        all_policy_rows, costs, {"②opt": opt_rows} if opt_rows else None)
+    for r in cascade_file_rows:
+        r["c_bp"] = costs[r["費用の通り"]]
+    n_cascade_rows = write_cascades_gz(out_dir, cascade_file_rows)
+    sp.write_csv_gz(out_dir / "prints_policy.csv.gz", built["print_rows"]
+                    + built_ref["print_rows"])
+    write_csv(out_dir / "q0_selfcheck.csv", normalize_rows(q0_rows))
+    print(f"[段2-3] 連鎖 1 本ごとの行 {n_cascade_rows} 行と判断の行 "
+          f"{len(built['print_rows']) + len(built_ref['print_rows'])} 行を先に書いた "
+          f"({time.time() - t0:.0f}s)", flush=True)
+
+    # ---- 以後の表はその行から組む ------------------------------------------
+    tabs = tables_from_cascade_rows(cascade_file_rows, COST_MAIN)
+    dist_rows, pos_rows = tabs["dist"], tabs["posb"]
+    q4, pair_rows = tabs["q4"], tabs["pair"]
     if not opt_rows:
-        pair_rows.append({"対差": "②opt を含む対差",
+        pair_rows.append({"対差": "②opt を含む対差", "母集団": "-",
                           "備考": "②opt は規則を満たす組が無かったので作らない",
                           "対の数": 0})
 
-    # Q1 併記(前段の 5,000 件に値段のラベルの較正表を当てる)
+    # ---- Q1 併記(前段の 5,000 件に値段のラベルの較正表を当てる) ------------
     calib5000 = []
     if not dry_run:
         manifest = json.loads(Path(sp.CALIB_MANIFEST).read_text(encoding="utf-8"))
@@ -2156,7 +2372,8 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
                           low_memory=False)
         lab = lab[(lab["kind"] == "print") & (lab["print_id"].isin(calib_ids))]
         mat5 = mat[mat["print_id"].isin(calib_ids)].reset_index(drop=True)
-        prob5, pos5 = compute_value_probs_for_frame(sb, mat5)
+        require_materials_cover(calib_ids, set(mat5["print_id"]), "段2 の Q1 併記")
+        prob5, _liq5, pos5 = compute_probs_for_frame(sb, mat5)
         y_of = dict(zip(lab["print_id"], pd.to_numeric(lab[LABEL_VALUE],
                                                        errors="coerce")))
         for scene in (POS_1ST, POS_CHAIN):
@@ -2166,17 +2383,18 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
             cal = calibration_table(pr, yy)
             calib5000 += [{"場面": scene, "母集団": "前段の5,000件(後半)", **r}
                           for r in cal["rows"]]
+        write_csv(out_dir / "calib_5000.csv", normalize_rows(calib5000))
+        print(f"[段2-4] Q1 併記 {len(calib5000)} 行({time.time() - t0:.0f}s)",
+              flush=True)
 
-    # Q5b
+    # ---- Q5b ---------------------------------------------------------------
     q5b_rows = []
     if not dry_run:
-        q5b_rows = run_q5b(picked, chosen, prob_of, pos_of, bands, base_rates,
-                           cache, c_main, cuts, minute_rows_for(picked, cache, c_main))
-
-    out_dir.mkdir(parents=True, exist_ok=True)
-    cascade_file_rows = build_cascade_rows_file(
-        all_policy_rows, costs, {"②opt": opt_rows} if opt_rows else None)
-    n_cascade_rows = write_cascades_gz(out_dir, cascade_file_rows)
+        q5b_rows = run_q5b(q5b_source, chosen, prob_of, pos_of, bands, base_rates,
+                           cache, c_main, cuts,
+                           minute_rows_for(picked, cache, c_main))
+        write_csv(out_dir / "q5b_secs_secondhalf.csv", normalize_rows(q5b_rows))
+        print(f"[段2-5] Q5b {len(q5b_rows)} 行({time.time() - t0:.0f}s)", flush=True)
 
     tables = [
         ("q0_selfcheck.csv", q0_rows, "Q0 自己点検(bundle_id の MD5 照合)"),
@@ -2187,8 +2405,8 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
          "Q2 判断の件数"),
         ("action_counts.csv", sp.build_action_count_table(built["action_counts"]),
          "Q2 行動の件数"),
-        ("q4_main.csv", q4["並置"], "Q4 6 本の並置(費用込み・遅れ 1 秒)"),
-        ("q4_pair_diff.csv", pair_rows, "Q4 連鎖ごとの対差"),
+        ("q4_main.csv", q4["並置"], "Q4 6 本の並置(費用込み・遅れ 1 秒・母集団 2 通り)"),
+        ("q4_pair_diff.csv", pair_rows, "Q4 連鎖ごとの対差(母集団 2 通り)"),
         ("q4_by_day.csv", q4["日ごと"], "Q4 日ごとの合計の分布"),
         ("q4_by_side.csv", q4["側別"], "Q4 側別"),
         ("q4_by_size.csv", q4["大きさ別"], "Q4 大きさ別"),
@@ -2199,14 +2417,17 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
     ]
     summary = {"段": ("段2(dry-run、合成データ)" if dry_run
                     else "段2(後半 2,000 本、一度だけ)"),
-               "実行時刻(UTC)": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+               "開始時刻(UTC)": started,
+               "終了時刻(UTC)": _dt.datetime.now(_dt.timezone.utc).isoformat(),
                "委任文": DELEGATION, "設計": DESIGN, "種": SEED,
                "抜いた連鎖の本数": select_info["抜いた本数"],
                "費用": {"主のc_bp": c_main, "p75_bp": c_p75},
                "連鎖 1 本ごとの行": {"ファイル": "cascades.csv.gz", "行数": n_cascade_rows},
+               "Q5b(a) の母集団": (0 if q5b_source is None else len(q5b_source)),
                "段1から読んだもの(作り直していない)":
                    {"帯": s1["①の帯"], "基準率": s1["①の基準率"], "②opt": chosen},
                "参照 2 本": list(REF_POLICIES),
+               "書き出しの順": "cascades.csv.gz → prints_policy.csv.gz → q0 → 表",
                "所要秒": round(time.time() - t0, 1)}
     return write_output(out_dir, tables, summary)
 
@@ -2234,9 +2455,6 @@ def minute_rows_for(cascades: dict, cache, cost_bp: float) -> list:
     return rows
 
 
-# ===========================================================================
-# main
-# ===========================================================================
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         description="O3C SIGNAL 値段の続き(段1: 前半だけ / 段2: 後半、一度だけ)")
@@ -2248,11 +2466,17 @@ def main(argv=None) -> int:
     p2.add_argument("--out", type=Path, default=DEFAULT_OUT_STAGE2)
     p2.add_argument("--dry-run", action="store_true",
                     help="合成データで組み立てだけを通す(後半を 1 行も読まない)")
+    p3 = sub.add_parser("from-rows",
+                        help="書かれた cascades.csv.gz から Q2・Q4 の表を組み直す"
+                             "(後半の生データを読まない)")
+    p3.add_argument("--out", type=Path, default=DEFAULT_OUT_STAGE2)
     a = ap.parse_args(argv)
     if a.cmd == "stage1":
         run_stage1(a.out, a.half)
-    else:
+    elif a.cmd == "stage2":
         run_stage2(a.out, dry_run=a.dry_run)
+    else:
+        run_from_rows(a.out)
     return 0
 
 

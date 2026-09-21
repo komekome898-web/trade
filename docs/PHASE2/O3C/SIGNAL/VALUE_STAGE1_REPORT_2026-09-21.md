@@ -983,3 +983,96 @@ Binance の約定 / bitFlyer の 1 分足 / `data/tardis/`(gitignore 域)。
 `scripts/o3c_bitflyer_spread.py` → `scripts/o3c_signal_value.py stage1` →
 `scripts/o3c_signal_value.py stage2 --dry-run` → `pytest tests/test_o3c_signal_value.py` →
 全スイート。出力コマンドと結果は (2) と (6)。**コミットも押し出しもしていない。**
+
+---
+
+## (10) 反証者 9 の**再点検**への処置(2026-09-21、段 2 の前)
+
+対象: `REFUTER_REVIEW9_2026-09-21.md` 末尾の「再点検(直しの後)」
+(残る致命 1 = 致命-4、直すべき 4 = N-1〜N-4、+ 書き出しの順と `入りの目標時刻_ms`、示唆 3 = N-5〜N-7)。
+処置はリードの決定による。**段 2 は走らせていない**(`stage2_secondhalf/` を作っていない。
+オーナーが設計の変更点を見てから開始する、というコーディネーターの指示による)。
+
+### 処置の一覧
+
+| # | 指摘 | 処置 |
+|---|---|---|
+| **致命-4** | 段2 の Q5b(a) の母集団が「後半 2,000 本 ∩ 標本日」に狭まっている(設計は「後半の全連鎖 ∩ 標本日」= 81 本) | `chains_on_sample_days(cascades)` を作り、**段 1・段 2 のどちらも半期の全連鎖から取る**ようにした。段 2 は `load_prints("後半")` → `cascades_from_prints` → `chains_on_sample_days` で母集団を作って `run_q5b` に渡す(`picked` は渡さない)。Q5b(b) の 1 分の始値は設計どおり後半 2,000 本のまま。Q0 に「後半のプリント数 / 連鎖数 / 束の外 / Q5b(a) の母集団」の 4 行を足した。試験 `test_q5b_population_is_all_chains_on_sample_days` / `test_stage2_builds_q5b_from_all_back_half_chains_not_the_2000` / `test_stage1_q5b_population_matches_the_design_count`(前半 285 本) |
+| **N-1** | Q4 の並置と対差の分母が線ごとに違う(②opt は入った連鎖だけ) | **主を「入らなかった連鎖 = 0 として含める(母集団の全 `bundle_id` で対にする)」**、併記を「両方入った連鎖だけ」にし、`q4_pair_diff.csv` と `q4_main.csv` の**両方に `母集団` 列と `対の数` / `n`** を出す。dry-run の実測で ②opt は 0 含み 3 / 入った連鎖だけ 1。試験 `test_pair_diff_has_both_populations_with_counts` / `test_q4_main_has_both_populations` |
+| **N-2** | 参照 2 本の `sp.stage2.compute_logit_probs` の中で日ごとのキャッシュ解放が効かない | `compute_liq_logit_probs(df, n2_by_pid)` を作り、**N2 は `add_n2_by_day` が日ごとに計算した値を渡す**(その関数を呼ばない)。`compute_probs_for_frame` が **N2 を 1 回だけ計算して値段と清算の両方に使い回す**(計算量も半分)。試験 `test_liq_reference_probs_do_not_recompute_n2` |
+| **N-3** | `add_n2_by_day` が 2 回定義されている | 1 つに減らした。試験 `test_add_n2_by_day_is_defined_once` |
+| **N-4** | 到達時間の表だけ母集団が 21,838 件のまま | `time_to_target_table` の母集団を**束の中のプリント(20,797)に揃えた**。表に `母集団` と `母集団から外した件数(束の外)` の 2 列を足した。試験 `test_time_to_target_table_uses_the_bundle_population` / `test_stage1_time_to_target_population_is_20797_based` |
+| 書き出しの順 | 段2 が `cascades.csv.gz` を最後に書くので、Q1 併記 / Q5b で落ちると何も残らない | 段2 の順を **`cascades.csv.gz` → `prints_policy.csv.gz` → `q0_selfcheck.csv` → 表** にした。以後の表は**その行から**組む(`tables_from_cascade_rows`)。試験 `test_stage2_writes_the_rows_before_any_table` |
+| `--from-rows` | 後半を読み直さずに集計だけやり直せる口が無い | サブコマンド `from-rows` を足した(`cascades.csv.gz` だけを読み、Q2・Q4 の 9 表を書き直す)。**`rows_continue` / `rows_materials` / `select_stage2_cascades` / `WindowCache` を一切使わない**ことを試験 `test_from_rows_never_reads_the_back_half_source` が source で見る。dry-run の出力で往復させて表が一致することを `test_stage2_dry_run_writes_rows_and_from_rows_reproduces_the_tables` が確かめる(**CSV の 6 桁丸めを 1 往復するので `rtol=1e-4, atol=2e-6` の許容つき**。実測の最大のずれは 1e-6 の桁) |
+| `入りの目標時刻_ms` | 約定の遅れを後から引き算できない | `cascades.csv.gz` に 1 列足した(18 列 → **19 列**)。`入りの約定時刻_ms − 入りの目標時刻_ms` が約定の遅れ。試験 `test_cascade_columns_include_the_entry_target_time` |
+| N-5(示唆) | 露出の 2 つの時計が違う(合計保有時間は目標時刻ベース、同時建玉は約定時刻ベース) | **事実として記す**: `exposure_of` の `合計保有時間` は状態機械の `保有秒`(目標時刻ベース)、`同時建玉の最大` は `入りの約定時刻_ms`〜`出の約定時刻_ms`(約定時刻ベース)。反証者の実測では span ≥ 保有秒 が 56.4%、中央値 span 60.64 秒 対 保有秒 60.0 秒。**揃えていない**(揃えるには保有秒も約定時刻から作り直すことになり、前段の `simulate_cascade` の定義を変える) |
+| N-6(示唆) | `cascades.csv.gz` の `出口の理由` が ① の行では常に「連鎖の終わり+d」 | **事実として記す**: ① の行は固定文字列で、型 A が連鎖の途中で決済した行も「連鎖の終わり+d」になる。②opt の行だけ本当の理由(損切り / 出口 3 種)が入る。**列の意味が方策によって違う**。途中の決済かどうかは `prints_policy.csv.gz` の `判断` 列(「終わり」かどうか)で分かる |
+| N-7(示唆) | 順位分離の低下の内訳 | **事実として記す**(反証者の実測、連鎖の中): 束込み・行の無作為 0.6708 → 束の中だけ・行の無作為 **0.6476**(束の外 903 件を外した分 −0.0232)→ 束の中だけ・日ブロック **0.6466**(日ブロックの分 −0.0010)。**(9) の「致命-2 + S-1」というまとめ方は内訳を隠していた**: 効いたのはほぼ全部が母集団の直しで、直す前の 0.6708 を押し上げていたのは値段のラベルの割合が 0.9231 の束の外 903 件だった |
+
+### 直した後の数(再点検の前 → 後)
+
+| 量 | 再点検の前 | 再点検の後 |
+|---|---|---|
+| 到達時間の母集団 | 前半の全プリント 21,838 | **束の中 20,797**(外した 1,041) |
+| 値段のラベルが 1 の件数(全体 / 1 件目 / 連鎖の中) | 11,958 / 4,004 / 7,954 | **10,997 / 3,879 / 7,118** |
+| 到達 < 1 秒の件数(全体) | 2,546 | **2,020** |
+| 到達 < 1 秒でなお 5 bp 以上(全体) | 78.4%(中央値 20.43 bp) | **74.2%**(中央値 **15.17 bp**) |
+| 到達の p50(全体 / 1 件目 / 連鎖の中) | 7.134 / 13.676 / 4.571 s | **8.304 / 14.092 / 5.593 s** |
+| 1 秒未満の割合(全体) | 21.3% | **18.4%** |
+| `cascades.csv.gz` の列 | 18 | **19**(`入りの目標時刻_ms`) |
+| 段1 の表の行数 / 数値セル | 801 / 8,325 | **801 / 8,328**(到達時間の表に 2 列足した分) |
+| 試験 | 53 件 | **66 件** |
+| 全スイート | 2,843 passed | **2,856 passed, 4 skipped, 1 warning in 487.42s** |
+
+**変わらなかったもの**(到達時間の母集団は ① の当てはめにも ② の格子にも入らないため):
+帯 (0.38, 0.50) / (0.56, 0.66)、基準率 0.4343 / 0.5999、順位分離 0.6608 / 0.6466、
+費用 c = 2.0040 / p75 = 3.9228 bp、格子 189 組(空 18)、規則を満たした組 22、
+**選ばれた組(3 件目以降 / なし / 最後+300 秒 / なし、総収支 +4,113.50 bp)**、露出の 3 行。
+
+### 段 2 の状態
+
+- **走らせていない。**`backtest_data/o3c_signal_value_20260921/stage2_secondhalf/` は**存在しない**
+  (`ls` で確認)。`half == "後半"` の行はこの委任でも 1 行も読んでいない。
+- 走らせたのは **`stage2 --dry-run`(合成の連鎖 3 本)だけ**で、出力は
+  `stage2_dryrun/`(18 ファイル、表 546 行・数値セル 4,550、`cascades.csv.gz` 435 行・
+  `prints_policy.csv.gz` 101 行)。3 本目の合成連鎖は ②opt の条件(3 件目以降)に届かない連鎖で、
+  対差の 2 つの母集団が違う数(3 対 1)になることを見るために足した。
+- `from-rows` は dry-run の出力に対してだけ走らせた(往復で表が一致することの確認)。
+
+### 実行したコマンド(この節の分)
+
+```
+PYTHONPATH=src python3 scripts/o3c_signal_value.py stage1
+PYTHONPATH=src python3 scripts/o3c_signal_value.py stage2 --dry-run
+PYTHONPATH=src python3 scripts/o3c_signal_value.py from-rows --out backtest_data/o3c_signal_value_20260921/stage2_dryrun
+PYTHONPATH=src python -m pytest tests/test_o3c_signal_value.py     # 66 passed in 40.66s
+PYTHONPATH=src python -m pytest                                     # 2856 passed, 4 skipped, 1 warning in 487.42s
+```
+
+`stage1` の出力(直した後、100 秒):
+
+```
+[段1-0] 費用 c(主) = 2.0040 bp / p75 = 3.9228 bp
+[束] 段1 前半: 入力 21838 行のうち bundle_id 欠損 1041 行を落とした(連鎖に入るのは 20797 行、連鎖 8931 本)
+[段1-1] 前半 プリント 21838 件 / 連鎖 8931 本 / 日 228(2 分割の境 2023-10-21)
+[段1-2] 1件目 8931 件 / 連鎖の中 11866 件 / 束の外 1041 件(当てはめには入れない)(20s)
+[段1-3] 日ごとの一巡を終えた(ラベル再計算 21838/21838 一致、②の下ごしらえ 8931 本、51s)
+[段1-4] 当てはめと 5 分割 OOF (51s)
+[段1-5] 1件目: 基準率 0.4343 / 帯 (0.38, 0.5) / 順位分離 0.6608
+[段1-5] 連鎖の中: 基準率 0.5999 / 帯 (0.56, 0.66) / 順位分離 0.6466
+[段1-7] 格子 189 組(1 本も入らない組 18)/ 選ばれた: True (54s)
+[段1-8] 200 本の動作確認 / 連鎖 1 本ごとの行 65697 行(96s)
+[段1-9] Q5b(100s)
+完了 100s -> /home/user/trade/backtest_data/o3c_signal_value_20260921/stage1_firsthalf
+{"行数の合計": 801, "数値セル数": 8328}
+```
+
+### 未決(この節の分)
+
+1. **N-5 の 2 つの時計を揃えるか。**合計保有時間(目標時刻ベース)と同時建玉(約定時刻ベース)は
+   別の時計で測っている。揃えるには前段の `simulate_cascade` の `保有秒` の定義を変えることになる
+   ので、この委任では揃えず事実として書いた ── **リードの判断を仰ぐ**。
+2. **N-6 の `出口の理由` 列の意味を方策ごとに揃えるか。**① の行を「連鎖の終わり+d」固定のまま
+   にするか、`prints_policy.csv.gz` から本当の理由を引いて埋めるか。この委任では固定のまま。
+3. **Q5b(a) の後半の本数**は段 2 を走らせるまで分からない(後半を読まないため = **未測定**)。
+   設計の見積もりは 81 本。段 1 の 285 本と同じ数え方(半期の全連鎖 ∩ 標本日)にはした。
