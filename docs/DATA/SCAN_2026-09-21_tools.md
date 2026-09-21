@@ -5,7 +5,7 @@
 
 ---
 
-## 区分1: バックテスト・シミュレーション — 2026-09-21(1回目の実行)
+## 区分1: バックテスト・シミュレーション — 2026-09-21(1回目の実行。**未完了**。監査 1 回目の指摘 15 件を受けてリードが直した版 = v2。生ログに無かった WebFetch / WebSearch 24 手はリードが機械抽出で補った = 生ログ W 節、リードの取り直しは L 節)
 
 ### 対応表(CLAUDE.md §0.1、委任文 §1 をそのまま引用)
 
@@ -79,7 +79,7 @@
 | 中間 | イベント駆動 バックテスト フレームワーク ティック 板 python オープンソース | event-driven backtesting engine tick order book python open source 2026 |
 | 広い | バックテスト ツール 比較 暗号資産 python 2026 | best python backtesting frameworks 2026 comparison crypto vectorized |
 
-**実行状況**: 6本すべて実行(未実行なし)。加えて幅を跨ぐ追加調査として `zenn.dev` の
+**実行状況**: 6本すべて実行(生ログ W-1〜W-6 に検索語と結果の文字数。調査班は書き忘れ、リードが機械抽出で補った)。加えて幅を跨ぐ追加調査として `zenn.dev` の
 「株式・暗号資産で儲けるための分析支援系OSS一覧」記事を `WebFetch` で深掘りし(§3-2 の
 「一次資料の関連プロジェクトの一覧」に該当)、そこから QSTrader / Lean / PyAlgoTrade / Zenbot /
 Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に別掲。
@@ -128,7 +128,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 | 知見 | 印 | このプロジェクトへの含意 |
 |---|---|---|
 | `hftbacktest` は指値の待ち行列位置(queue position)と feed/order の遅延を明示的にモデル化する専用バックテストツールで、当方の `engine.py` が「持っていない」と自認している機構(§8 の無いもの A)そのものを実装として持つ | 一次資料(PyPI description・GitHub README) | 当方の A(板の待ち行列が研究の模擬に未組み込み)を埋める候補になりうる。採否はリード判断 |
-| `hftbacktest` は現状 Binance Futures と Bybit のライブ実行のみ対応(Rust限定)で、bitFlyer 等の国内取引所には触れていない | 一次資料(README Key Features 最終項) | バックテスト専用としての利用に限られる可能性が高い(執行への転用は別途確認要) |
+| `hftbacktest` は現状 Binance Futures と Bybit のライブ実行のみ対応(Rust限定)で、bitFlyer 等の国内取引所には触れていない | 一次資料(README Key Features 最終項) | ライブ実行の対応先は README に Binance Futures / Bybit の 2 つ(生ログ W-9)。国内取引所についてはソース・issue を見ていない(未確認) |
 | `NautilusTrader` は Rust コアの本番グレード event-driven エンジンで、バックテストと本番で同一コードパスを謳う。対応先は Binance/Bybit/OKX/Coinbase/Kraken/IB 等で、bitFlyer は一次資料の対応表に見当たらない | 一次資料(PyPI description・GitHub) | 執行の枠組み(区分2)としても候補。国内取引所非対応は要件との差分として明記すべき事実 |
 | `vectorbt`(無料版、PyPI)はベクトル化バックテストで「100万戦略を1秒」を謳う一方、`vectorbt.pro` は月額 $25〜(年払いで実質 $20/月、生涯 $500〜)の有料版で、無料版に無い機能(並列化・ポートフォリオ最適化・パターン認識・指値注文サポート等)が PRO 限定というライセンス上の切り分けがある | 一次資料(vectorbt.pro/become-a-member 引用)+ X投稿(使用報告) | まさに L-378 が懸念した「無料の顔をした有料機能差」の実例。無料版だけで何ができ、PRO 限定が何かを区別して書く必要がある |
 | `freqtrade` は CCXT 経由で多数の取引所に対応するが、公式 exchanges ページに bitFlyer / bitbank / GMOコインの個別記載はなく、検索結果の要約(未検算の二次情報)では bitFlyer は CCXT 側の `fetchOrder`/`fetchOHLCV` 欠如で「動作しない」とされていた | 推定(検索結果の要約。一次資料の逐語ページには未到達) | 国内取引所対応は個別に検証が必要。本節では「未検算」として扱う |
@@ -156,7 +156,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 13. Jesse — 一次資料(ライセンスのみ)+推定(pricing未検算) — 暗号資産専用フレームワーク、MIT+プレミアム機能、最終更新2026-09-17(非常に活発)
 14. Mendl-Labs/BacktestingCore — WebSearch(GitHub説明文のみ) — event-driven simulation・walk-forward・遺伝的最適化を謳うコア。詳細未確認
 15. Luczinsritter/event_driven_backtesting_engine — WebSearch(GitHub説明文のみ) — look-ahead bias排除を謳う個人プロジェクト、規模・活動未確認
-16. Bot18(carlos8f、Zenbot作者の別製品) — WebSearch(存在確認のみ) — HFT ボット、$49.99 の8桁アンロックコード制(有料)、無料お試しあり(ZalgoNet "guest")
+16. Bot18(carlos8f、Zenbot作者の別製品) — WebSearch の結果の要約のみ(検索語「carlos8f zenbot github cryptocurrency trading bot」、生ログ W-24。一次資料は未取得) — HFT ボット。「$49.99 の8桁アンロックコード制(有料)、無料お試しあり(ZalgoNet "guest")」は検索結果の要約にある文言で**未検算**
 
 **カテゴリ越境(区分2「執行・botの枠組み」と重複するため一行のみ記載、深掘りは区分2で)**:
 17. ccxt — 一次資料(検索結果のみ) — 多数の暗号資産取引所APIラッパー。多くのバックテスト/執行ツールの内部依存
@@ -172,8 +172,8 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 - **言語・動作環境**: Python >=3.11(実測: pip install が cp311 wheel を選択)。Rust コア(コンパイル済みバイナリ同梱、`.so`)
 - **ライセンス**: MIT(一次資料: PyPIクラシファイア「License :: OSI Approved :: MIT License」)
 - **版と最終更新日**: 2.4.4、最終アップロード 2025-12-10(一次資料: PyPI JSON `urls[0].upload_time`)
-- **活動**: スター 4.7k、フォーク 912(一次資料: WebFetch(github.com/nkaz001/hftbacktest)、コミット数=1,038件との記載あり。コントリビューター数・最終コミット日時は WebFetch 結果に含まれず「未確認」)。PyPI月間ダウンロード 14,033件(一次資料: pypistats.org/api/packages/hftbacktest/recent)
-- **対応取引所**: 国内取引所の記載なし(一次資料 README に Binance Futures / Bybit のみ言及)。国内取引所対応は**無し(README に記載が無いことによる推定)**
+- **活動**: スター 4.7k、フォーク 912、コミット 1,038 件(github.com/nkaz001/hftbacktest の WebFetch の要約、生ログ W-9。コントリビューター数・最終コミット日時は要約に含まれず「未確認」)。PyPI ダウンロード 日次 137 / 週次 1,855 / 月次 14,033 件(pypistats.org/api/packages/hftbacktest/recent の WebFetch、生ログ W-10。リードの取り直しは 429 = 生ログ L-4)
+- **対応取引所**: README の Key Features に Binance Futures / Bybit のみ(生ログ W-9)。国内取引所は README に記載なし。**ソースコード・issue・依存は見ていない(未確認。次回の裏取り項目 7)**
 - **出典**: pypi.org/pypi/hftbacktest/json、github.com/nkaz001/hftbacktest、pypistats.org/api/packages/hftbacktest/recent(いずれも2026-09-21取得)
 
 **料金の構造**: 一次資料(PyPI・GitHub)に料金・課金の記載なし。パッケージ自体は無料(MIT)。隠れた依存: なし(numpy/numba/polars/matplotlib/holoviels は全て無料OSS、実測でインストール確認済み)。**当方の用途(456日分のティックを回す)で課金が発生するか**: 未確認(試したこと: 合成の数件のイベントのみで実行。456日規模のデータ量産・メモリの実測は本回では未実施、次回課題)
@@ -182,7 +182,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 - 試した手段: `curl https://pypi.org/pypi/hftbacktest/json`(200、実測)/ `pip download --no-deps hftbacktest`(scratchpad venv、rc=0、5.5MB wheel取得、1秒)/ `pip install hftbacktest numpy numba polars`(scratchpad venv、rc=0、36秒、依存46パッケージ)
 - 導入: scratchpad の `python3 -m venv venv_tools1` に `pip install`(リポジトリ環境には入れていない)
 - `pip check`: `No broken requirements found.`(実測)
-- 危険検査(§6-1): PyPI配布元とGitHubの一致は Project-URL(`https://github.com/nkaz001/hftbacktest`)で確認。wheel を展開して `setup.py`/導入時実行コードの有無を確認 → **無し**(事前ビルド済みwheelで、pip install時にPythonコードの任意実行は発生しない。`.so` はコンパイル済みRustバイナリで中身の静的監査は本回では未実施)。既知の脆弱性: 未確認(試したこと: PyPI advisory の個別検索は本回では未実施)
+- 危険検査(§6-1): PyPI配布元とGitHubの一致は Project-URL(`https://github.com/nkaz001/hftbacktest`)で確認。初回公開: 2022-11-02(v1.0、PyPI JSON の releases、リード再確認 = 生ログ L-3)。保守者: PyPI の author_email は nkaz001、maintainer 欄なし、Repository の所有者も nkaz001 で名前は一貫(名義は 1 つ。人数は未確認)。週のダウンロード: 1,855(生ログ W-10)。wheel を展開して `setup.py`/導入時実行コードの有無を確認 → **無し**(事前ビルド済みwheelで、pip install時にPythonコードの任意実行は発生しない。`.so` はコンパイル済みRustバイナリで中身の静的監査は本回では未実施)。既知の脆弱性: 未確認(試したこと: PyPI advisory の個別検索は本回では未実施)
 - **最小の実行の中身**: 合成のティック列(板スナップショット2本+板更新1本+約定1本、`np.savez` で `.npz` 保存)を `BacktestAsset().data([...]).risk_adverse_queue_model()...` に読み込ませ、`HashMapMarketDepthBacktest` を構築、指値買い注文(GTC/LIMIT)を送信 → `elapse()` ループで進行 → 約定検出時に成行売りを送信、という「指値→約定→成行手仕舞い」の1往復を試みるスクリプトを実行した(`/tmp/.../probe_hftbacktest.py`、生ログ `docs/DATA/probes/20260921_tools_1.log`)。**結果**: スクリプトはエラー無く完走(rc=0、所要5秒)し、`BacktestAsset`構築・`elapse`・`submit_buy_order`・`state_values`等のAPI呼び出しは実際に動作することを実測したが、**合成データの設計が単純すぎたため指値の約定(FILLED)自体は成立せず、`final_position=0` で終わった**(1回目はさらに `OrderDict` の添字アクセスで `TypeError`、コードを `.get()` に修正して2回目でAPI呼び出し自体は通した)。約定を成立させるには、待ち行列消化のモデル(`risk_adverse_queue_model` 等)が要求するイベント順序をより正確に作り込む必要があり、**その作り込みは本回の予算内では完了しなかった(未完了)**。「取れない」ではなく「動いたが約定条件を満たす合成データの作り込みが未完了」という状態。
 - 所要時間: install 36秒、pip check 数秒、実行スクリプト 5秒
 
@@ -207,8 +207,8 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 - **言語・動作環境**: Python >=3.12, <3.15(一次資料 PyPI requires_python)。Rustコア(PyO3バインディング)
 - **ライセンス**: LGPL-3.0-or-later(一次資料 PyPI classifiers)
 - **版と最終更新日**: 1.231.0、最終アップロード 2026-08-02(一次資料 PyPI JSON)
-- **活動**: スター 29.2k、フォーク 3.9k、コミット21,335件(develop、WebFetch実測)。PyPI月間ダウンロード308,832件(一次資料 pypistats)
-- **対応取引所**: CEX = Binance/BitMEX/Bybit/Coinbase/Kraken/OKX、DEX = Derive/dYdX/Hyperliquid/Lighter、従来市場 = Interactive Brokers、その他 AX Exchange/Betfair/Polymarket(WebFetch要約、README のアダプタ一覧に基づく)。**bitFlyer・GMOコイン・bitbankの記載は一次資料に見当たらない(無し、と推定)**
+- **活動**: スター 29.2k、フォーク 3.9k、コミット 21,335 件(develop。GitHub ページの WebFetch の要約、生ログ W-11)。PyPI ダウンロード 日次 10,182 / 週次 69,156 / 月次 308,832 件(pypistats の WebFetch、生ログ W-12)
+- **対応取引所**: CEX = Binance/BitMEX/Bybit/Coinbase/Kraken/OKX、DEX = Derive/dYdX/Hyperliquid/Lighter、従来市場 = Interactive Brokers、その他 AX Exchange/Betfair/Polymarket(README のアダプタ一覧の WebFetch の要約、生ログ W-11)。**bitFlyer・GMOコイン・bitbank はそのアダプタ一覧に無い。ソース・issue は見ていない(未確認。次回の裏取り項目 7)**
 
 **料金の構造**: 本体はOSS・LGPL、無料。ただしInteractive Brokers等の一部アダプタは接続先自体が有料契約を要する(一次資料未逐語確認、推定)。Databento/Tardisはデータプロバイダーとして統合されており、これらは別途有料サブスクリプションが必要(一次資料に名前のみ言及、料金は各社サイトで別途確認要、未確認)
 
@@ -220,7 +220,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 
 **4軸**: 1=一次資料(LGPL・pip配布・Python3.12+を確認したのみ、実際の導入は未実施なので「入れられるか」は推定)/ 2=未確認(データ取得は未実施)/ 3=推定(研究と本番の同一コードパスという設計思想は当方に無い視点)/ 4=仮定(執行枠組み=区分2として本番投入すれば向上しうるが未検証)
 
-**危険**: 供給網: PyPI Project-URLとGitHubの一致は確認(README上の言及、実測はWebFetch要約経由で間接)。導入時実行コード・難読化の有無: **未確認(wheelを取得していないため)**。既知の脆弱性: 未確認。外部送信: 未確認。自動発注機能: **有り**(本番実行モジュールを持つ設計。ライブラリの性質上、鍵を与えれば発注する。本回では鍵は使わず、発注機能そのものは呼んでいない)。宣伝・詐欺の兆候: 無し(公式OSSプロジェクト、X上の投稿も使用報告のみ確認)。
+**危険**: 供給網: PyPI Project-URLとGitHubの一致は確認(README上の言及、実測はWebFetch要約経由で間接)。導入時実行コード・難読化の有無: **未確認(wheelを取得していないため)**。既知の脆弱性: 未確認。外部送信: 未確認。自動発注機能: **有り、と README の記載から読める**(「Live: Identical strategy implementations between research and live deployment」、WebFetch の要約 = 生ログ W-11。ソースは見ていない = 未検算)。鍵を与えれば発注する設計と読める。本回では鍵は使わず、発注機能そのものは呼んでいない。宣伝・詐欺の兆候: 無し(公式OSSプロジェクト、X上の投稿も使用報告のみ確認)。
 
 ---
 
@@ -229,17 +229,17 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 - **名前/種別**: vectorbt(PyPI、無料・OSS) と vectorbt.pro(別ブランド、有料・非OSS)の2系統。ベクトル化(NumPy/Numba)による高速バックテスト・分析ライブラリ
 - **ライセンス**: 無料版 — PyPI classifiersにライセンス表記なし。GitHub(polakowo/vectorbt)のWebFetch要約では「Apache 2.0 with Commons Clause(フェアコード配布)。個人・団体は無料で使用可能だが、本ソフトウェアを主とした製品・サービスの販売は禁止」(**この文言はWebFetch要約であり、LICENSEファイルの逐語コピーではない。次回、生のLICENSEファイルを取得して裏取りする必要あり = 未検算**)
 - **版と最終更新日(無料版)**: 1.1.0、最終アップロード 2026-07-05(一次資料 PyPI JSON)。依存として `vectorbt-rust` というRustエンジンパッケージ(別名義)がある(一次資料: PyPI description内のバッジ、詳細未確認)
-- **活動**: スター 9.1k、フォーク 1.2k、1,081コミット(WebFetch実測)。アーカイブされていない(WebFetch要約)
+- **活動**: スター 9.1k、フォーク 1.2k、1,081 コミット、アーカイブされていない(GitHub ページの WebFetch の要約、生ログ W-13)
 
 **料金の構造(vectorbt.pro、一次資料の逐語 + URL + 取得日)**:
-出典: https://vectorbt.pro/become-a-member/(2026-09-21取得、WebFetch要約経由。**要約内の引用符付き文言は原文一致の裏取りをしていない=未検算**として扱う)
+出典: https://vectorbt.pro/become-a-member/(2026-09-21 取得、WebFetch の要約 = 生ログ W-19。`vectorbt.pro/pricing/` は 404 = W-15)。**リードが `curl` で原文を取り直し、「Starts at $25 a month」「$300 → $240」「Starts at $500 one time」「non-commercial use only」の 4 つが原文にあることを確認した(生ログ L-1)。**ライセンス文言(GitHub の WebFetch の要約、W-13)は原文未取得のまま = 未検算
 - 月額: 「Starts at $25 a month」
 - 年額(12ヶ月一括): 「Starts at ~~$300~~ $240」相当(月あたり実質$20)
 - 生涯: 「Starts at $500 one time」
 - 利用条件: 「Individual memberships are for personal, non-commercial use only」(個人の非商用利用限定)
 - PRO限定機能(検索結果要約、未検算): 並列化・ポートフォリオ最適化・パターン認識・イベント予測・指値注文・レバレッジ、その他100以上の機能
 
-**無料版とPROの機能差(未検算、要再確認)**: 無料版(`vectorbt`, PyPI)はベクトル化バックテストの基本機能(戦略の大量並列シミュレーション)を持つ。指値注文(limit orders)のサポートはPRO限定機能として言及されている(検索結果要約)。当方の用途(成行・指値混在戦略)で指値サポートが要るなら、**無料版だけでは不十分な可能性がある**。これは「無料の語だけで採用して後から有料と分かる」というL-378が名指しした懸念に直接該当するため、次回の深掘りで最優先に検算する。
+**無料版とPROの機能差(未検算、要再確認)**: 無料版(`vectorbt`, PyPI)はベクトル化バックテストの基本機能(戦略の大量並列シミュレーション)を持つ。指値注文(limit orders)のサポートはPRO限定機能として言及されている(検索結果要約)。無料版に指値のサポートがあるかどうかは未確認(検索結果の要約のみ = 生ログ W-18。一次資料の機能比較は未取得)。「無料の語だけで採用して後から有料と分かる」という L-378 が名指しした型に当たるかは、次回の深掘りで一次資料の逐語を取って確かめる(判定はしない)。
 
 **当方の用途で実際に回したときに課金が発生するか**: 無料版(`pip install vectorbt`)を使う限り課金は発生しない(一次資料、PyPIから無料で入手可能なことを確認)。PRO機能(指値等)を使う場合は上記の会員登録が必要(登録に何を渡すか: 未確認、`become-a-member`ページの決済手段は本回では確認していない)
 
@@ -259,8 +259,8 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 - **できること全部(一次資料 GitHub README「Features」、逐語)**: 「Based on Python 3.11+: For botting on any operating system - Windows, macOS and Linux」「Persistence: Persistence is achieved through sqlite」「Dry-run: Run the bot without paying money」「Backtesting: Run a simulation of your buy/sell strategy」「Strategy Optimization by machine learning: Use machine learning to optimize your buy/sell strategy parameters with real exchange data」「Adaptive prediction modeling: Build a smart strategy with FreqAI that self-trains to the market via adaptive machine learning methods」「Whitelist / Blacklist crypto-currencies」「Builtin WebUI」「Manageable via Telegram」「Display profit/loss in fiat currency」「Performance status report」(出典: pypi.org/pypi/freqtrade/json description、2026-09-21取得)
 - **ライセンス**: GPLv3(一次資料 PyPI classifiers)
 - **版と最終更新日**: 2026.8、最終アップロード 2026-08-31(一次資料 PyPI JSON、非常に活発)
-- **活動**: スター 54.6k、フォーク11.3k(WebFetch実測)
-- **対応取引所**: CCXT経由でBinance/Kraken/OKX/Gate/Bybit/Bitget等11以上(スポット)+6(先物)。**bitFlyer/GMOコイン/bitbankは公式`exchanges`ページに個別記載が無い**(WebFetch実測、記載なしを確認)。検索結果の要約(未検算、逐語未確認)では「bitFlyerはCCXT側のfetchOrder/fetchOHLCV欠如でfreqtradeでは動作しないとされる一覧に載る」とあるが、**この文言は一次資料の逐語ではなく検索エンジンの要約であり、次回 `freqtrade list-exchanges -a` の出力かCCXTの互換表そのものを取得して裏取りする必要がある**
+- **活動**: スター 54.6k、フォーク 11.3k(GitHub ページの WebFetch の要約、生ログ W-14)
+- **対応取引所**: CCXT経由でBinance/Kraken/OKX/Gate/Bybit/Bitget等11以上(スポット)+6(先物)。**bitFlyer/GMOコイン/bitbankは公式`exchanges`ページに個別記載が無い**(WebFetch の要約 = 生ログ W-21。**リードが原文を `curl` で取り直し、bitflyer / bitbank / gmo の語が 0 件、Binance 38・Kraken 27・Bybit 18・OKX 13 件であることを確認 = 生ログ L-2**)。検索結果の要約(未検算、逐語未確認)では「bitFlyerはCCXT側のfetchOrder/fetchOHLCV欠如でfreqtradeでは動作しないとされる一覧に載る」とあるが、**この文言は一次資料の逐語ではなく検索エンジンの要約であり、次回 `freqtrade list-exchanges -a` の出力かCCXTの互換表そのものを取得して裏取りする必要がある**
 
 **料金の構造**: 本体はGPLv3で無料。FreqAI(機械学習最適化)は本体機能内、追加課金の記載は一次資料に見当たらない(未確認と推定の中間、確度を上げるには公式FreqAIドキュメントの精読が要る=次回)。Telegram連携は無料のTelegram Bot APIを使う想定(未確認)
 
@@ -296,7 +296,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 | https://x.com/ML_deep/status/1917632698077831526 | ML_deep | 2025-04-30T17:30:37Z | 「vectorbt 開発も盛んで有償バージョンはパフォーマンスも改善されてるっぽい。一方でサンプルコードが2度付評価みたいなことしてて厳しさある…。無論、モジュールの使い方の例なのだろうけど、二度漬けしまくりパラメータなんてトレードで使ったら即あの世行きだぞ…。https://vectorbt.pro/#why-vectorbt-pro」 | 7/0/0/2122 | 使用報告(vectorbtの有償版言及+サンプルコードの罠への注意喚起) |
 | https://x.com/SystematicPeter/status/2024507028820152381 | SystematicPeter | 2026-02-19T15:31:03Z | 「I'm seriously considering moving from my home-made scripts to a more universal framework for backtesting + live trading (especially for intraday). Tested NautilusTrader today and it looks very interesting. Why it caught my attention: - Open source - Event-driven Python API, Rust core (fast) - Biggest win: same strategy codepath for backtest and live (no "version 2" rewrite) - Because it's Python, Claude Code can actually help you ship strategies without coding. I ported my intraday volatility breakout strategy in minutes. Anyone here running NautilusTrader live? What's your experience with brokers/data/execution - any gotchas?」 | 161/7/19/14674 | 使用報告(NautilusTraderへの移行検討・実際にポートした報告) |
 
-**発見の語(§3の記録義務)**: `site:x.com hftbacktest OR nautilustrader backtesting queue position`(WebSearch、10件)/ `site:x.com freqtrade OR vectorbt 使ってみた トレード`(WebSearch、10件)。2回のみで3回未満(§3-2は「3回以上」を指示)。**未実行分は次回に持ち越し**: `site:x.com` での日本語「バックテスト エンジン 自作 やめた」等、別の語での追加検索は本回では未実行。
+**発見の語(§3の記録義務)**: `site:x.com hftbacktest OR nautilustrader backtesting queue position`(WebSearch、10件)/ `site:x.com freqtrade OR vectorbt 使ってみた トレード`(WebSearch、10件)。2回のみで3回未満(§3-2は「3回以上」を指示。2 回の記録は生ログ W-16・W-17)。**未実行分は次回に持ち越し**: `site:x.com` での日本語「バックテスト エンジン 自作 やめた」等、別の語での追加検索は本回では未実行。
 
 ### STRATEGY_IDEAS.md 向け候補(提案のみ、未マージ)
 - (本区分はツールの調査であり、戦略案そのものは出していない。強いて挙げるなら「hftbacktestのqueue position modelを当方のmaker fill参照実装(scripts/qa/maker_fill_ref.py)と突き合わせて、engine.pyの楽観性/悲観性を定量評価する」という**検証タスクの候補**はあるが、これは戦略ではなく検証手法の話なので、DATA.md/STRATEGY_IDEASどちらにも該当しない。リード判断待ち。)
@@ -318,9 +318,12 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 4. hftbacktestの最小実行を「実際に約定(FILLED)を成立させる」ところまで仕上げる(今回はAPI呼び出しの実測どまり)
 5. NautilusTraderの実際のpip install・最小実行(未実施)
 6. X検索を語を変えて3回以上(§3-2の下限に未達)、awesome系リストと依存関係の逆引きも未着手
+7. hftbacktest・NautilusTrader の「国内取引所の記載なし」を README 以外の経路(ソースコードのアダプタ一覧・issue・依存)で裏取り(1 回目は README の要約だけ)
+8. NautilusTrader の「自動発注機能あり」をソースで確認(1 回目は README の要約だけ)
+9. 生ログに WebFetch / WebSearch を 1 手ずつ残す(1 回目は 24 手すべて書き忘れ、リードが機械抽出で補った)
 
 ### 予算の消費
 
-- 実時間: 開始(委任文読了・tools_inventory実行)から本報告作成まで、ツール呼び出しベースで約20分相当(正確な壁時計は本セッションからは取得不能につき「推定」)。**委任文§7の20分の目安に近い/やや超過している可能性がある**ため、ここで打ち切る。
-- トークン: 本セッション内の正確な消費量は自己計測できない(未確認)。深掘り4件+浅い候補8件+X投稿2件の取得という規模から、目安5万トークンに近いと推定。
-- 上記の理由により、**候補の一覧はまだ空になっていない(残りの候補名を参照)。本区分は未完了。次回の実行で持ち越す。**
+- 調査班の自己申告(v1)は「実時間 約 20 分相当(推定)」「トークン 5 万に近いと推定」だったが、**ハーネスの計測は 188,843 トークン・650 秒(約 10.8 分)・道具呼び出し 65 回**。トークンは委任文 §7 の固定値(5 万)の 3.8 倍で、自己申告は根拠のない推定だった(自己計測できないと書いたうえで数字を出していた)。時間は目安の内側。次回から、トークンは調査班に推定させず、リードがハーネスの計測値を書く。
+- **候補の一覧はまだ空になっていない(残りの候補名を参照)。本区分は未完了。次回の実行で持ち越す。**
+

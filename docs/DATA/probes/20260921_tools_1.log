@@ -58,3 +58,65 @@ curl GET https://pypi.org/pypi/jesse/json code=200 2026-09-21T15:44:10Z
 [x_fetch] 2 行(投稿2件、逐語は本節に別掲。詳細は SCAN_2026-09-21_tools.md 参照)
 [x_fetch][https://x.com/ML_deep/status/1917632698077831526][http=200][author=ML_deep][created_at=Wed Apr 30 17:30:37 +0000 2025] text_head200='vectorbt\n開発も盛んで有償バージョンはパフォーマンスも改善されてるっぽい。一方でサンプルコードが2度付評価みたいなことしてて厳しさある…。無論、モジュールの使い方の例なのだろうけど、二度漬けしまくりパラメータなんてトレードで使ったら即あの世行きだぞ…。\n\nhttps://vectorbt.pro/#why-vectorbt-pro'
 [x_fetch][https://x.com/SystematicPeter/status/2024507028820152381][http=200][author=SystematicPeter][created_at=Thu Feb 19 15:31:03 +0000 2026] text_head200='I’m seriously considering moving from my home-made scripts to a more universal framework for backtesting + live trading (especially for intraday). Tested NautilusTrader today and it looks very interes'
+
+## W リードが機械抽出した WebFetch / WebSearch の記録(2026-09-21。調査班が生ログに書き忘れた 24 手。ハーネスが保存した道具呼び出しの記録から、呼び出し順に番号を振った。WebFetch の結果はページの要約(原文そのものではない)。抽出コマンド: python3 で tool_use(name ∈ {WebFetch, WebSearch})と対応する tool_result を読む)
+W-1 2026-09-21T15:39:03Z WebSearch 指値 待ち行列 FIFO 約定 バックテスト エンジン 板 -> 結果 1801 文字
+W-2 2026-09-21T15:39:04Z WebSearch limit order fill queue position backtesting simulator FIFO market microstructure -> 結果 3036 文字
+W-3 2026-09-21T15:39:04Z WebSearch イベント駆動 バックテスト フレームワーク ティック 板 python オープンソース -> 結果 1917 文字
+W-4 2026-09-21T15:39:05Z WebSearch event-driven backtesting engine tick order book python open source 2026 -> 結果 4193 文字
+W-5 2026-09-21T15:39:05Z WebSearch バックテスト ツール 比較 暗号資産 python 2026 -> 結果 2002 文字
+W-6 2026-09-21T15:39:05Z WebSearch best python backtesting frameworks 2026 comparison crypto vectorized -> 結果 3436 文字
+W-7 2026-09-21T15:39:24Z WebFetch https://zenn.dev/giba/articles/python_stock_analysis_oss_list_by_deepresearch -> 結果 742 文字
+W-8 2026-09-21T15:39:26Z WebFetch https://pypi.org/project/hftbacktest -> 結果 405 文字
+W-9 2026-09-21T15:40:04Z WebFetch https://github.com/nkaz001/hftbacktest -> 結果 356 文字
+W-10 2026-09-21T15:40:05Z WebFetch https://pypistats.org/api/packages/hftbacktest/recent -> 結果 159 文字
+W-11 2026-09-21T15:40:11Z WebFetch https://github.com/nautechsystems/nautilus_trader -> 結果 624 文字
+W-12 2026-09-21T15:40:12Z WebFetch https://pypistats.org/api/packages/nautilus-trader/recent -> 結果 185 文字
+W-13 2026-09-21T15:40:13Z WebFetch https://github.com/polakowo/vectorbt -> 結果 406 文字
+W-14 2026-09-21T15:40:14Z WebFetch https://github.com/freqtrade/freqtrade -> 結果 349 文字
+W-15 2026-09-21T15:42:54Z WebFetch https://vectorbt.pro/pricing/ -> 結果 215 文字
+W-16 2026-09-21T15:42:55Z WebSearch site:x.com hftbacktest OR nautilustrader backtesting queue position -> 結果 3613 文字
+W-17 2026-09-21T15:42:55Z WebSearch site:x.com freqtrade OR vectorbt 使ってみた トレード -> 結果 3156 文字
+W-18 2026-09-21T15:43:05Z WebSearch vectorbt.pro pricing plans -> 結果 2338 文字
+W-19 2026-09-21T15:43:12Z WebFetch https://vectorbt.pro/become-a-member/ -> 結果 592 文字
+W-20 2026-09-21T15:43:32Z WebSearch freqtrade supported exchanges list bitflyer bitbank GMO coin documentation -> 結果 2497 文字
+W-21 2026-09-21T15:43:41Z WebFetch https://www.freqtrade.io/en/stable/exchanges/ -> 結果 271 文字
+W-22 2026-09-21T15:43:46Z WebSearch freqtrade ccxt exchange compatibility bitflyer "not working" fetchOrder fetchOHLCV table -> 結果 2171 文字
+W-23 2026-09-21T15:44:19Z WebSearch jesse trading framework license open source pricing hosted cloud -> 結果 2489 文字
+W-24 2026-09-21T15:44:20Z WebSearch carlos8f zenbot github cryptocurrency trading bot -> 結果 2576 文字
+
+### W の WebFetch の結果(要約の先頭 400 文字。報告の数値の出所)
+[W-7][https://zenn.dev/giba/articles/python_stock_analysis_oss_list_by_deepresearch] # 株式・暗号資産分析用OSS一覧  1. **Backtrader** - "豊富なテクニカル指標と分析機能を内蔵し、過去データを用いたバックテストやライブ取引に対応"  2. **Zipline** - イベント駆動型のアルゴリズムトレーディングシミュレータで、戦略バックテストとライブトレードに対応  3. **Backtesting.py** - 軽量で高速なバックテストフレームワーク。ローソク足データがあれば様々な資産で戦略検証が可能  4. **QSTrader** - オブジェクト指向でモジュール化されたバックテストフレームワーク。長短両建てのシステムトレード戦略をシミュレーション  5. **Freqtrade** - 暗号資産専用の自動売買ボット。機械学習による戦略パラメータ最適化に対応  6. **Jesse** - "300種類以上のテクニカル指標を標準搭載"した暗号資
+[W-8][https://pypi.org/project/hftbacktest] 申し訳ございませんが、提供いただいたウェブページのコンテンツからは、パッケージについての情報を得ることができません。  ページに表示されているのは「クライアントチャレンジ」というエラーメッセージのみで、以下のように述べられています：  "A required part of this site couldn't load. This may be due to a browser extension, network issues, or browser settings."  つまり、ページが正常に読み込まれていない状態です。ご質問いただいたパッケージの説明、ライセンス、バージョン情報、Python対応状況、料金体系、依存関係、公式サイトのリンクなどの情報は、このエラーページには含まれていません。  正しいページにアクセスするか、ブラウザの設定を確認した上で、再度お試しいただくことをお勧
+[W-9][https://github.com/nkaz001/hftbacktest] # hftbacktest リポジトリ情報  提供いただいたページコンテンツに基づいて、以下の情報が確認できます：  **スター数：** 4.7k (4,700)  **フォーク数：** 912  **ライセンス：** MIT  **直近のコミット日時、コントリビューター数、最終リリース日：** 残念ながら、提供されたページコンテンツにはこれらの詳細情報が含まれていません。ページには「1,038 Commits」という履歴があることは示されていますが、最後のコミットの具体的な日時やコントリビューター数、最終リリース日は記載されていません。  これらの情報を取得するには、GitHubのリポジトリページで直接確認するか、Releases や Contributors セクションにアクセスする必要があります。
+[W-10][https://pypistats.org/api/packages/hftbacktest/recent] # hftbacktestのダウンロード数  提供いただいたデータに基づいて、以下がhftbacktestパッケージの最近のダウンロード統計です：  - **日次**：137件 - **週次**：1,855件 - **月次**：14,033件  月次のダウンロード数が最も多く、安定した利用が見られることがわかります。
+[W-11][https://github.com/nautechsystems/nautilus_trader] # NautilusTrader リポジトリ概要  ## プロジェクト規模 - **スター数**: 29.2k - **フォーク数**: 3.9k - **コミット数**: 21,335件（develop ブランチ）  ## ライセンス GNU Lesser General Public License v3.0 (LGPL-3.0-only)  ## 対応する取引所・市場  暗号資産取引所（CEX）: Binance、BitMEX、Bybit、Coinbase、Kraken、OKX  暗号資産取引所（DEX）: Derive、dYdX、Hyperliquid、Lighter  従来市場: Interactive Brokers（マルチベニュー対応）  その他: AX Exchange、Betfair（スポーツ賭博）、Polymarket（予測市場）  データプロバイダー: Databen
+[W-12][https://pypistats.org/api/packages/nautilus-trader/recent] # nautilus-trader のダウンロード統計  提供されたデータに基づくと、「nautilus-trader」パッケージの最近のダウンロード数は以下の通りです：  - **日次**：10,182件 - **週次**：69,156件 - **月次**：308,832件  このパッケージは活発に利用されており、月間のダウンロード数が特に多いことが示されています。
+[W-13][https://github.com/polakowo/vectorbt] # VectorBT リポジトリの概要  **スター数**: 9.1k（9,100以上）  **フォーク数**: 1.2k（1,200以上）  **ライセンス**: Apache 2.0 with Commons Clause（フェアコード配布）。個人・団体は無料で使用可能ですが、本ソフトウェアを主とした製品・サービスの販売は禁止されています。  **アーカイブ状態**: アーカイブされていません。アクティブに開発されており、1,081コミットの履歴があります。  **活発度**: プロジェクトは「アクティブ」です。最新のテストワークフローおよびPyPIリリースワークフローが実装されており、継続的に保守されている状況が確認できます。  このプロジェクトは、NumPy、Numba、Rustを活用した「ベクトル化された」高速バックテスティングエンジンとして、金融データ分析や取引戦略研究に利用さ
+[W-14][https://github.com/freqtrade/freqtrade] # Freqtradeリポジトリ情報  **スター数:** 54.6k  **フォーク数:** 11.3k  **ライセンス:** LICENSEファイルが存在しますが、具体的な種類は提供されたコンテンツに記載されていません。  **対応取引所:** - スポット取引: Binance、Kraken、OKX、Gate、Bybit、Bitgetなど11以上 - 先物取引: Binance、Kraken、OKX、Gate、Bybit、Bitgetなど6つ  **日本の取引所への対応:** 提供されたコンテンツに、bitFlyer、GMOコイン、bitbankへの対応について「記載されていません」。ドキュメントで「exchange-specific notes」を確認することが推奨されています。
+[W-15][https://vectorbt.pro/pricing/] The server returned HTTP 404 Not Found.  The response body was not retrieved. If this URL requires authentication, use an authenticated tool (e.g. `gh` for GitHub, or an MCP-provided fetch tool) instead of WebFetch.
+[W-19][https://vectorbt.pro/become-a-member/] # VectorBT PRO 料金プランの概要  ## 料金プラン  **月額プラン** - "Starts at **$25 a month**" - いつでもキャンセル可能  **年額プラン（12ヶ月）** - "Starts at ~~$300~~ **$240**" または "~~$25~~ **$20 a month**" - 1年間のアクセスを一度の支払いで購入  **生涯プラン** - "Starts at **$500 one time**" - 永続的なアクセス権を取得  ## 無料トライアルについて  ページに無料トライアルの明示的な記載はありませんが、FAQ内に関連項目があります： - "Is there a free trial?" のリンクが掲載されており、詳細は別ページで確認できます  ## 利用条件  "Individual memberships are f
+[W-21][https://www.freqtrade.io/en/stable/exchanges/] # 申し訳ございませんが、提供していただいたウェブページの内容には、bitflyer、bitbank、GMO coinについての記載がありません。  このページは「Exchange-specific Notes」というFreqtradeの公式ドキュメントで、Binance、Kraken、Kucoin、OKX、Bybitなど、特定の取引所についての設定情報や注意事項を扱っています。  ご質問の3つの取引所（bitflyer、bitbank、GMO coin）に関する情報は、このドキュメントには含まれていないため、引用することができません。
+
+### 報告の数値・語が W の結果に含まれるか(リードの照合、2026-09-21)
+W-9: 4.7k=有, 912=有, 1,038=有
+W-10: 14,033=有, 1,855=有, 137=有
+W-11: 29.2k=有, 3.9k=有, 21,335=有
+W-12: 308,832=有, 69,156=有, 10,182=有
+W-13: 9.1k=有, 1.2k=有, 1,081=有
+W-14: 54.6k=有, 11.3k=有
+W-15: 404=有
+W-19: $25 a month=有, $240=有, $500 one time=有, non-commercial use only=有
+W-21: bitflyer=有, bitbank=有, GMO=有
+W-23: JesseGPT=有, MIT=有
+W-24: 49.99=有, Bot18=有, ZalgoNet=有
+
+## L リードの再確認(2026-09-21、curl と PyPI JSON。原文そのもの)
+L-1 $ curl -sS -A 'Mozilla/5.0' https://vectorbt.pro/become-a-member/ | grep -oiE 'starts at[^"\\]{0,40}|\$25[^"\\]{0,20}|\$500[^"\\]{0,20}|\$240[^"\\]{0,20}|non-commercial[^"\\]{0,40}' | sort | uniq -c   (code=200 bytes=132520)
+      1 $240</strong></span><spa / 1 $25</del><span> </span> / 1 Starts at </span><del>$300</del><span> </span><st / 1 Starts at </span><strong>$25 a month</strong></sp / 1 Starts at </span><strong>$500 one time</strong></ / 2 non-commercial use only. By becoming a member, you agr
+L-2 $ curl -sS -A 'Mozilla/5.0' https://www.freqtrade.io/en/stable/exchanges/ | grep -oiE 'bitflyer|bitbank|gmo ?coin' | sort | uniq -c   (code=200 bytes=101976) -> 0 件
+     同ページで grep -oiE 'binance|kraken|bybit|okx' | sort | uniq -c -> Binance 38 / Bybit 18 / Kraken 27 / OKX 13(取引所の一覧が実在するページで、国内 3 社の語だけが無い)
+L-3 $ curl -sS https://pypi.org/pypi/hftbacktest/json | python3 -c '<releases の最古 upload_time と info の author/maintainer/project_urls>'
+     first_release ('2022-11-02T13:09:04', '1.0') / author None / author_email nkaz001 <nkaz001@protonmail.com> / maintainer None / project_urls {'Repository': 'https://github.com/nkaz001/hftbacktest'}
+L-4 $ curl -sS https://pypistats.org/api/packages/hftbacktest/recent -> 429 RATE LIMIT EXCEEDED(リードの取り直しは不可。W-10 の値を使う)
+L-5 $ curl -sS -A 'Mozilla/5.0' https://github.com/nkaz001/hftbacktest -> code=403(この環境の curl では GitHub の HTML は不可。調査班の WebFetch は通った = W-9)
