@@ -7,7 +7,7 @@
 
 ## 区分1: バックテスト・シミュレーション — 2026-09-21(1回目の実行。**未完了**。監査 1 回目の指摘 15 件を受けてリードが直した版 = v2。生ログに無かった WebFetch / WebSearch 24 手はリードが機械抽出で補った = 生ログ W 節、リードの取り直しは L 節)
 
-**語の定義(委任文 §4 の印との対応。監査 2 回目の指摘 7・3 回目の指摘 6)**: 印は委任文の 5 種(一次資料 / 実測 / 推定 / 仮定 / 未確認)だけを使う。「**未検算**」は独立の印ではなく「推定」の下位区分で、本文では必ず「推定 = 未検算(取得したものの番号)」の形で書く。意味は「取得はしたが、WebFetch / WebSearch の**要約**止まりで原文と突き合わせていない」。「未確認」= 取得していない(試したことを併記)。「実測」= この環境で打ったコマンドの出力そのもの。「一次資料」= 原文(PyPI JSON の生データ、原文ページの curl)から取った値。
+**語の定義(委任文 §4 の印との対応。監査 2 回目の指摘 7・3 回目の指摘 6)**: 印は委任文の 5 種(一次資料 / 実測 / 推定 / 仮定 / 未確認)だけを使う。「**未検算**」は独立の印ではなく「推定」の下位区分で、本文では必ず「推定 = 未検算、W-n」(n = 生ログ W 節の取得の番号)の形で書く。意味は「取得はしたが、WebFetch / WebSearch の**要約**止まりで原文と突き合わせていない」。「未確認」= 取得していない(試したことを併記)。「実測」= この環境で打ったコマンドの出力そのもの。「一次資料」= 原文(PyPI JSON の生データ、原文ページの curl)から取った値。
 
 ### 対応表(CLAUDE.md §0.1、委任文 §1 をそのまま引用)
 
@@ -131,12 +131,12 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 |---|---|---|
 | `hftbacktest` は指値の待ち行列位置(queue position)と feed/order の遅延を明示的にモデル化する専用バックテストツールで、当方の `engine.py` が「持っていない」と自認している機構(§8 の無いもの A)そのものを実装として持つ | 一次資料(PyPI JSON の description、curl = 生ログ 4 行目。GitHub は要約 W-9) | 当方の A(板の待ち行列が研究の模擬に未組み込み)を埋める候補になりうる。採否はリード判断 |
 | `hftbacktest` は現状 Binance Futures と Bybit のライブ実行のみ対応(Rust限定)で、bitFlyer 等の国内取引所には触れていない | 一次資料(PyPI JSON の description の Key Features 最終項、curl = 生ログ 4 行目・S 節) | ライブ実行の対応先は Key Features の最終項に「currently for Binance Futures and Bybit」(PyPI JSON の description、curl = 生ログ 4 行目・S 節。GitHub の要約 W-9 には取引所の記載なし)。国内取引所についてはソース・issue を見ていない(未確認) |
-| `NautilusTrader` は Rust コアの本番グレード event-driven エンジンで、バックテストと本番で同一コードパスを謳う。対応先は Binance/Bybit/OKX/Coinbase/Kraken/IB 等で、bitFlyer は一次資料の対応表に見当たらない | 一次資料(PyPI description・GitHub) | 執行の枠組み(区分2)としても候補。国内取引所非対応は要件との差分として明記すべき事実 |
-| `vectorbt`(無料版、PyPI)はベクトル化バックテストで「100万戦略を1秒」を謳う一方、`vectorbt.pro` は月額 $25〜(年払いで実質 $20/月、生涯 $500〜)の有料版で、無料版に無い機能(並列化・ポートフォリオ最適化・パターン認識・指値注文サポート等)が PRO 限定というライセンス上の切り分けがある | 一次資料(vectorbt.pro/become-a-member 引用)+ X投稿(使用報告) | まさに L-378 が懸念した「無料の顔をした有料機能差」の実例。無料版だけで何ができ、PRO 限定が何かを区別して書く必要がある |
-| `freqtrade` は CCXT 経由で多数の取引所に対応するが、公式 exchanges ページに bitFlyer / bitbank / GMOコインの個別記載はなく、検索結果の要約(推定 = 未検算、W-22)では bitFlyer は CCXT 側の `fetchOrder`/`fetchOHLCV` 欠如で「動作しない」とされていた | 推定 = 未検算(検索結果の要約 W-22。一次資料の逐語ページには未到達) | 国内取引所対応は個別に検証が必要。本節では「未検算」として扱う |
+| `NautilusTrader` は Rust コアの本番グレード event-driven エンジンで、バックテストと本番で同一コードパスを謳う。対応先は Binance/Bybit/OKX/Coinbase/Kraken/IB 等で、bitFlyer はその一覧に無い(一覧は GitHub の WebFetch の要約にしか無く、PyPI JSON の description に個別の取引所名は無い) | 一次資料(同一コードパス = PyPI JSON の description、curl = 生ログ 5 行目)+ 推定 = 未検算、W-11(対応先の一覧) | 執行の枠組み(区分2)としても候補。国内取引所非対応は要件との差分として明記すべき事実 |
+| `vectorbt`(無料版、PyPI)はベクトル化バックテストのライブラリで、`vectorbt.pro` は月額 $25〜(年払いで実質 $20/月、生涯 $500〜)の有料版。無料版に無い機能(並列化・ポートフォリオ最適化・パターン認識・指値注文サポート等)が PRO 限定、という切り分けは検索結果の要約にある(v1 にあった「100万戦略を1秒」は出所が見つからず削除 = 生ログ V) | 一次資料(料金 = become-a-member の原文、生ログ L-1)+ 推定 = 未検算、W-18(PRO 限定機能の一覧)+ X 投稿(使用報告、W-17 → x_fetch) | まさに L-378 が懸念した「無料の顔をした有料機能差」の実例。無料版だけで何ができ、PRO 限定が何かを区別して書く必要がある |
+| `freqtrade` は CCXT 経由で多数の取引所に対応するが、公式 exchanges ページに bitFlyer / bitbank / GMOコインの個別記載はなく、検索結果の要約(推定 = 未検算、W-22)では bitFlyer は CCXT 側の `fetchOrder`/`fetchOHLCV` 欠如で「動作しない」とされていた | 推定 = 未検算、W-22(検索結果の要約。一次資料の逐語ページには未到達) | 国内取引所対応は個別に検証が必要。本節では推定 = 未検算、W-22 として扱う |
 | PyPI パッケージ名 `zenbot`(Bence Nagy 作、Slack 用ツール)は、暗号資産トレードボットの Zenbot(carlos8f 作、Node.js+MongoDB)とは**無関係の同名別物** | 実測(pip側メタデータの author/summary を確認) | 名前だけで判断すると誤ったパッケージを入れる危険の実例(§6-1 の「名前の似た別物」) |
 | `backtesting`(Backtesting.py, PyPI名 `backtesting`)のライセンスは AGPL-3.0 | 一次資料(PyPI classifiers) | AGPL はネットワーク経由の利用でもソース開示義務が生じうる強いコピーレフト。商用・社内利用時の法務確認が要る事実として明記 |
-| `jesse`(PyPI)のライセンスは MIT だが、公式サイトの料金ページに `JesseGPT`・プレミアム機能はサブスクリプションと記載され、クラウド型トレードサービスとして他者に提供することは禁止と検索結果に出た(推定 = 未検算、W-23) | 一次資料(PyPI license classifier)+ 推定 = 未検算(pricing の検索結果の要約 W-23、逐語未確認) | コア無料・拡張機能が有料、という構造の別例。逐語確認は次回に持ち越し |
+| `jesse`(PyPI)のライセンスは MIT だが、公式サイトの料金ページに `JesseGPT`・プレミアム機能はサブスクリプションと記載され、クラウド型トレードサービスとして他者に提供することは禁止と検索結果に出た(推定 = 未検算、W-23) | 一次資料(PyPI license classifier)+ 推定 = 未検算、W-23(pricing の検索結果の要約、逐語未確認) | コア無料・拡張機能が有料、という構造の別例。逐語確認は次回に持ち越し |
 
 ### 候補の一覧(発見順、全部、印つき)
 
@@ -155,7 +155,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 10. Zenbot(carlos8f、本物) — WebSearch(存在確認のみ) — Node.js+MongoDB の暗号資産ボット、多数のフォークが存在(本家の活動状況は未確認)
 11. Qlib(PyPI名 `pyqlib`) — 一次資料(ライセンスのみ) — AI志向の定量投資プラットフォーム、最終更新2025-08
 12. VnPy — 一次資料(ライセンスのみ) — 中国発の量トレードシステム開発フレームワーク、MIT、最終更新2026-05(活発)
-13. Jesse — 一次資料(ライセンスのみ)+ 推定 = 未検算(pricing、W-23) — 暗号資産専用フレームワーク、MIT+プレミアム機能、最終更新2026-09-17(非常に活発)
+13. Jesse — 一次資料(ライセンスのみ)+ 推定 = 未検算、W-23(pricing) — 暗号資産専用フレームワーク、MIT+プレミアム機能、最終更新2026-09-17(非常に活発)
 14. Mendl-Labs/BacktestingCore — WebSearch(GitHub説明文のみ) — event-driven simulation・walk-forward・遺伝的最適化を謳うコア。詳細未確認
 15. Luczinsritter/event_driven_backtesting_engine — WebSearch(GitHub説明文のみ) — look-ahead bias排除を謳う個人プロジェクト、規模・活動未確認
 16. Bot18(carlos8f、Zenbot作者の別製品) — WebSearch の結果の要約のみ(検索語「carlos8f zenbot github cryptocurrency trading bot」、生ログ W-24。一次資料は未取得) — HFT ボット。「$49.99 の8桁アンロックコード制(有料)、無料お試しあり(ZalgoNet "guest")」は検索結果の要約にある文言(**推定 = 未検算、W-24**)
@@ -175,7 +175,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 - **ライセンス**: MIT(一次資料: PyPIクラシファイア「License :: OSI Approved :: MIT License」)
 - **版と最終更新日**: 2.4.4、最終アップロード 2025-12-10(一次資料: PyPI JSON `urls[0].upload_time`)
 - **活動**: スター 4.7k、フォーク 912、コミット 1,038 件(github.com/nkaz001/hftbacktest の WebFetch の要約、生ログ W-9。コントリビューター数・最終コミット日時は要約に含まれず「未確認」)。PyPI ダウンロード 日次 137 / 週次 1,855 / 月次 14,033 件(pypistats.org/api/packages/hftbacktest/recent の WebFetch、生ログ W-10。リードの取り直しは 429 = 生ログ L-4)
-- **対応取引所**: Key Features の最終項「currently for Binance Futures and Bybit」(PyPI JSON の description = README 相当の本文。GitHub 上の README 原文との一致は未確認。curl = 生ログ 4 行目・S 節。GitHub の要約 W-9 には取引所の記載なし)。国内取引所はこの description に記載なし。**ソースコード・issue・依存は見ていない(未確認。次回の裏取り項目 7)**
+- **対応取引所**: Key Features の最終項「currently for Binance Futures and Bybit」(PyPI JSON の description。GitHub 上の README 原文は未取得。curl = 生ログ 4 行目・S 節。GitHub の要約 W-9 には取引所の記載なし)。国内取引所はこの description に記載なし。**ソースコード・issue・依存は見ていない(未確認。次回の裏取り項目 7)**
 - **出典**: pypi.org/pypi/hftbacktest/json、github.com/nkaz001/hftbacktest、pypistats.org/api/packages/hftbacktest/recent(いずれも2026-09-21取得)
 
 **料金の構造**: 一次資料(PyPI・GitHub)に料金・課金の記載なし。パッケージ自体は無料(MIT)。隠れた依存: なし(venv の `pip freeze` 43 件の全一覧 = 生ログ D 節。numpy・numba・polars は明示、matplotlib 3.11.2・holoviews 1.23.2 は依存として入った。全部無料の OSS)。**当方の用途(456日分のティックを回す)で課金が発生するか**: 未確認(試したこと: 合成の数件のイベントのみで実行。456日規模のデータ量産・メモリの実測は本回では未実施、次回課題)
@@ -205,9 +205,9 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 #### 2. NautilusTrader
 
 - **名前/種別**: nautilus-trader(PyPI) / 本番グレードのRustコア event-driven トレーディング・バックテストエンジン
-- **できること全部(一次資料 = PyPI JSON の description(README 相当)、curl = 生ログ 5 行目、逐語。GitHub の WebFetch W-11 は要約のみ)**: 「Fast: Rust core with the mimalloc allocator and asynchronous networking using tokio」「Reliable: Type- and thread-safety backed by Rust, with optional Redis-backed state persistence」「Portable: Runs on Linux, macOS, and Windows. Deploy using Docker」「Flexible: Modular adapters integrate any REST API or WebSocket feed」「Advanced: Time in force IOC, FOK, GTC, GTD, DAY, AT_THE_OPEN, AT_THE_CLOSE, advanced order types and conditional triggers. Execution instructions post-only, reduce-only, and icebergs. Contingency orders including OCO, OUO, OTO」「Customizable: User-defined components, or assemble entire systems from scratch using the cache and message bus」「Backtesting: Multiple venues, instruments, and strategies simultaneously using historical quote tick, trade tick, bar, order book, and custom data with nanosecond resolution」「Live: Identical strategy implementations between research and live deployment」「Multi-venue: Run market-making and cross-venue strategies across multiple venues simultaneously」「AI Training: Engine fast enough to train AI trading agents (RL/ES)」(出典: pypi.org/pypi/nautilus-trader/json の description、2026-09-21 取得。GitHub README の原文は未取得)
+- **できること全部(一次資料 = PyPI JSON の description、curl = 生ログ 5 行目、逐語。GitHub の README 原文は未取得。GitHub の WebFetch W-11 は要約のみ)**: 「Fast: Rust core with the mimalloc allocator and asynchronous networking using tokio」「Reliable: Type- and thread-safety backed by Rust, with optional Redis-backed state persistence」「Portable: Runs on Linux, macOS, and Windows. Deploy using Docker」「Flexible: Modular adapters integrate any REST API or WebSocket feed」「Advanced: Time in force IOC, FOK, GTC, GTD, DAY, AT_THE_OPEN, AT_THE_CLOSE, advanced order types and conditional triggers. Execution instructions post-only, reduce-only, and icebergs. Contingency orders including OCO, OUO, OTO」「Customizable: User-defined components, or assemble entire systems from scratch using the cache and message bus」「Backtesting: Multiple venues, instruments, and strategies simultaneously using historical quote tick, trade tick, bar, order book, and custom data with nanosecond resolution」「Live: Identical strategy implementations between research and live deployment」「Multi-venue: Run market-making and cross-venue strategies across multiple venues simultaneously」「AI Training: Engine fast enough to train AI trading agents (RL/ES)」(出典: pypi.org/pypi/nautilus-trader/json の description、2026-09-21 取得。GitHub README の原文は未取得)
 - **言語・動作環境**: Python >=3.12, <3.15(一次資料 PyPI requires_python)。Rustコア(PyO3バインディング)
-- **ライセンス**: PyPI JSON では `license` = LGPL-3.0-or-later、classifier = 「GNU Lesser General Public License v3 or later (LGPLv3+)」(curl、生ログ 5 行目・N 節)。**GitHub README の WebFetch の要約(W-11)は「LGPL-3.0-only」で、食い違う**(or-later と only は別の条件。要約の誤りか README の記載かは原文未取得のため分からない)。LICENSE ファイルの原文は未取得(未確認。次回の裏取り項目 10)
+- **ライセンス**: PyPI JSON では `license` = LGPL-3.0-or-later、classifier = 「GNU Lesser General Public License v3 or later (LGPLv3+)」(curl、生ログ 5 行目・N 節)。**GitHub README の WebFetch の要約(W-11)は「LGPL-3.0-only」で、食い違う**(or-later と only は別の条件。要約の誤りか README の記載かは原文未取得のため分からない)。LICENSE ファイルの原文はリードが取得(生ログ N2): LGPL v3 の定型本文そのもので「以降」の宣言はファイルに無い(定型文にはそもそも無い)。「v3 以降」は PyPI のメタデータ、「v3 のみ」は README の要約 W-11 にだけあり、README 原文は未取得。食い違いは未解消
 - **版と最終更新日**: 1.231.0、最終アップロード 2026-08-02(一次資料 PyPI JSON)
 - **活動**: スター 29.2k、フォーク 3.9k、コミット 21,335 件(develop。GitHub ページの WebFetch の要約、生ログ W-11)。PyPI ダウンロード 日次 10,182 / 週次 69,156 / 月次 308,832 件(pypistats の WebFetch、生ログ W-12)
 - **対応取引所**: CEX = Binance/BitMEX/Bybit/Coinbase/Kraken/OKX、DEX = Derive/dYdX/Hyperliquid/Lighter、従来市場 = Interactive Brokers、その他 AX Exchange/Betfair/Polymarket(README のアダプタ一覧の WebFetch の要約、生ログ W-11)。**bitFlyer・GMOコイン・bitbank はそのアダプタ一覧に無い。ソース・issue は見ていない(未確認。次回の裏取り項目 7)**
@@ -222,7 +222,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 
 **4軸**: 1=一次資料(LGPL・pip配布・Python3.12+を確認したのみ、実際の導入は未実施なので「入れられるか」は推定)/ 2=未確認(データ取得は未実施)/ 3=推定(研究と本番の同一コードパスという設計思想は当方に無い視点)/ 4=仮定(執行枠組み=区分2として本番投入すれば向上しうるが未検証)
 
-**危険**: 供給網: PyPI Project-URLとGitHubの一致は確認(README上の言及、実測はWebFetch要約経由で間接)。導入時実行コード・難読化の有無: **未確認(wheelを取得していないため)**。既知の脆弱性: 未確認。外部送信: 未確認。自動発注機能: **有り、と PyPI JSON の description(README 相当の本文)の記載から読める**(「Live: Identical strategy implementations between research and live deployment」は PyPI JSON の description、curl = 生ログ 5 行目・S 節。GitHub の要約 W-11 は「バックテストと本番運用で同じコードが動作します」と要約。ソースは見ていない = 未確認)。鍵を与えれば発注する設計と読める。本回では鍵は使わず、発注機能そのものは呼んでいない。宣伝・詐欺の兆候: 無し(公式OSSプロジェクト、X上の投稿も使用報告のみ確認)。
+**危険**: 供給網: PyPI Project-URLとGitHubの一致は確認(README上の言及、実測はWebFetch要約経由で間接)。導入時実行コード・難読化の有無: **未確認(wheelを取得していないため)**。既知の脆弱性: 未確認。外部送信: 未確認。自動発注機能: **有り、と PyPI JSON の description の記載から読める**(GitHub の README 原文は未取得。「Live: Identical strategy implementations between research and live deployment」は PyPI JSON の description、curl = 生ログ 5 行目・S 節。GitHub の要約 W-11 は「バックテストと本番運用で同じコードが動作します」と要約。ソースは見ていない = 未確認)。鍵を与えれば発注する設計と読める。本回では鍵は使わず、発注機能そのものは呼んでいない。宣伝・詐欺の兆候: 無し(公式OSSプロジェクト、X上の投稿も使用報告のみ確認)。
 
 ---
 
@@ -234,12 +234,12 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 - **活動**: スター 9.1k、フォーク 1.2k、1,081 コミット、アーカイブされていない(GitHub ページの WebFetch の要約、生ログ W-13)
 
 **料金の構造(vectorbt.pro、一次資料の逐語 + URL + 取得日)**:
-出典: https://vectorbt.pro/become-a-member/(2026-09-21 取得、WebFetch の要約 = 生ログ W-19。`vectorbt.pro/pricing/` は 404 = W-15)。**リードが `curl` で原文を取り直し、「Starts at $25 a month」「$300 → $240」「Starts at $500 one time」「non-commercial use only」の 4 つが原文にあることを確認した(生ログ L-1)。**ライセンス文言(GitHub の WebFetch の要約、W-13)は原文未取得のまま = 推定 = 未検算
+出典: https://vectorbt.pro/become-a-member/(2026-09-21 取得、WebFetch の要約 = 生ログ W-19。`vectorbt.pro/pricing/` は 404 = W-15)。**リードが `curl` で原文を取り直し、「Starts at $25 a month」「$300 → $240」「Starts at $500 one time」「non-commercial use only」の 4 つが原文にあることを確認した(生ログ L-1)。**ライセンス文言は原文未取得のまま(推定 = 未検算、W-13)
 - 月額: 「Starts at $25 a month」
 - 年額(12ヶ月一括): 「Starts at ~~$300~~ $240」相当(月あたり実質$20)
 - 生涯: 「Starts at $500 one time」
 - 利用条件: 「Individual memberships are for personal, non-commercial use only」(個人の非商用利用限定)
-- PRO限定機能(推定 = 未検算、検索結果の要約 W-18): 並列化・ポートフォリオ最適化・パターン認識・イベント予測・指値注文・レバレッジ、その他100以上の機能
+- PRO限定機能(推定 = 未検算、W-18 = 検索結果の要約): 並列化・ポートフォリオ最適化・パターン認識・イベント予測・指値注文・レバレッジ、その他100以上の機能
 
 **無料版とPROの機能差(推定 = 未検算、W-18。要再確認)**: 無料版(`vectorbt`, PyPI)はベクトル化バックテストの基本機能(戦略の大量並列シミュレーション)を持つ。指値注文(limit orders)のサポートはPRO限定機能として言及されている(検索結果要約)。無料版に指値のサポートがあるかどうかは未確認(検索結果の要約のみ = 生ログ W-18。一次資料の機能比較は未取得)。「無料の語だけで採用して後から有料と分かる」という L-378 が名指しした型に当たるかは、次回の深掘りで一次資料の逐語を取って確かめる(判定はしない)。
 
@@ -258,7 +258,7 @@ Qlib を追加発見した。X 経路(§3-2 (b))は下記「X の投稿」節に
 #### 4. freqtrade
 
 - **名前/種別**: freqtrade(PyPI) / 暗号資産専用の自動売買ボット。バックテスト・ドライラン・ライブ実行・機械学習によるパラメータ最適化を一体で持つ
-- **できること全部(一次資料 = PyPI JSON の description(README 相当)、curl = 生ログ 7 行目、逐語。GitHub の WebFetch W-14 は要約のみ)**: 「Based on Python 3.11+: For botting on any operating system - Windows, macOS and Linux」「Persistence: Persistence is achieved through sqlite」「Dry-run: Run the bot without paying money」「Backtesting: Run a simulation of your buy/sell strategy」「Strategy Optimization by machine learning: Use machine learning to optimize your buy/sell strategy parameters with real exchange data」「Adaptive prediction modeling: Build a smart strategy with FreqAI that self-trains to the market via adaptive machine learning methods」「Whitelist / Blacklist crypto-currencies」「Builtin WebUI」「Manageable via Telegram」「Display profit/loss in fiat currency」「Performance status report」(出典: pypi.org/pypi/freqtrade/json description、2026-09-21取得)
+- **できること全部(一次資料 = PyPI JSON の description、curl = 生ログ 7 行目、逐語。GitHub の README 原文は未取得。GitHub の WebFetch W-14 は要約のみ)**: 「Based on Python 3.11+: For botting on any operating system - Windows, macOS and Linux」「Persistence: Persistence is achieved through sqlite」「Dry-run: Run the bot without paying money」「Backtesting: Run a simulation of your buy/sell strategy」「Strategy Optimization by machine learning: Use machine learning to optimize your buy/sell strategy parameters with real exchange data」「Adaptive prediction modeling: Build a smart strategy with FreqAI that self-trains to the market via adaptive machine learning methods」「Whitelist / Blacklist crypto-currencies」「Builtin WebUI」「Manageable via Telegram」「Display profit/loss in fiat currency」「Performance status report」(出典: pypi.org/pypi/freqtrade/json description、2026-09-21取得)
 - **ライセンス**: GPLv3(一次資料 PyPI classifiers)
 - **版と最終更新日**: 2026.8、最終アップロード 2026-08-31(一次資料 PyPI JSON、非常に活発)
 - **活動**: スター 54.6k、フォーク 11.3k(GitHub ページの WebFetch の要約、生ログ W-14)
@@ -314,7 +314,7 @@ Backtesting.py / zipline-reloaded / QSTrader / Lean CLI / PyAlgoTrade / Zenbot(�
 Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engine / Bot18 / ccxt(区分2側で深掘り)
 
 **次回優先すべき項目(浅いまま残った理由と合わせて)**:
-1. vectorbt無料版とPROの機能差の逐語裏取り(`become-a-member`と別に、正式なLICENSEファイルと機能比較表ページを直接取得)— 現状は WebFetch の要約止まり(推定 = 未検算)
+1. vectorbt無料版とPROの機能差の逐語裏取り(`become-a-member`と別に、正式なLICENSEファイルと機能比較表ページを直接取得)— 現状は WebFetch の要約止まり(推定 = 未検算、W-13・W-18)
 2. freqtradeのbitFlyer非対応の一次資料裏取り(`freqtrade list-exchanges -a`をscratchpad venvで実行するか、CCXT互換表の原文を取得)— 現状は検索結果要約のみ
 3. Backtesting.py(AGPL)・PyAlgoTrade(8年更新なし)・zipline-reloaded・QSTrader・Qlib・VnPy・Jesse・Mendl-Labs/BacktestingCore・Luczinsritter/event_driven_backtesting_engine の危険検査(§6-1)・最小実行・4軸評価が未着手
 4. hftbacktestの最小実行を「実際に約定(FILLED)を成立させる」ところまで仕上げる(今回はAPI呼び出しの実測どまり)
@@ -323,7 +323,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 7. hftbacktest・NautilusTrader の「国内取引所の記載なし」を README 以外の経路(ソースコードのアダプタ一覧・issue・依存)で裏取り(1 回目は README の要約だけ)
 8. NautilusTrader の「自動発注機能あり」をソースで確認(1 回目は README の要約だけ)
 9. 生ログに WebFetch / WebSearch を 1 手ずつ残す(1 回目は 24 手すべて書き忘れ、リードが機械抽出で補った)
-10. NautilusTrader のライセンス表記の食い違い(PyPI = LGPL-3.0-or-later / README の要約 = LGPL-3.0-only)を LICENSE ファイルの原文で確かめる
+10. NautilusTrader のライセンス表記の食い違い(PyPI = LGPL-3.0-or-later / README の要約 = LGPL-3.0-only): LICENSE 原文は取得済み(生ログ N2、定型文で決着せず)。README 原文とソースのヘッダで確かめる
 
 ### 予算の消費
 

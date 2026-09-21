@@ -150,3 +150,9 @@ pyqlib 0.9.7 ['2025-08-15']  ['License :: OSI Approved :: MIT License']
 vnpy 4.4.0 ['2026-05-14'] MIT ['License :: OSI Approved :: MIT License']
 jesse 3.2.1 ['2026-09-21']  ['License :: OSI Approved :: MIT License']   ← 調査班の取得(15:44Z)時点は 3.2.0。releases: 3.2.0 2026-09-17T16:12:06 | 3.2.1 2026-09-21T16:01:52
 ## Q freqtrade の PyPI project_urls(監査 3 回目の処置で確認): $ curl -sS https://pypi.org/pypi/freqtrade/json | python3 -c '<info.project_urls>' → {'Bug Tracker': 'https://github.com/freqtrade/freqtrade/issues', 'Documentation': 'https://freqtrade.io', 'Homepage': 'https://github.com/freqtrade/freqtrade'}
+
+## N2 NautilusTrader の LICENSE 原文(監査 4 回目の指摘 5。2026-09-21T16:26:41Z)
+$ curl -sS -A 'Mozilla/5.0' https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/LICENSE -> code=200 bytes=7651 sha256(先頭12)=ee907919ec88(master/LICENSE も同じ 7651 バイト)
+   先頭: 'GNU LESSER GENERAL PUBLIC LICENSE / Version 3, 29 June 2007'。$ grep -n -iE 'any later version|only' → 「any later version」の語は無し(115・117 行の only は別の文脈)。
+   = LICENSE ファイルは LGPL v3 の定型本文そのもので、「v3 のみ」か「v3 以降」かはこのファイルには書かれていない(その宣言は PyPI のメタデータ = LGPL-3.0-or-later / classifier LGPLv3+ にある)。README の要約 W-11 の「LGPL-3.0-only」を裏づける原文はここには無い。README 原文は未取得。
+## V vectorbt の「100万戦略を1秒」の出所(監査 4 回目の指摘 2): $ curl -sS https://pypi.org/pypi/vectorbt/json | python3 -c '<description に million を探す>' → NOT FOUND。W-13(GitHub の要約)にも無し。出所不明のため本文から削除。
