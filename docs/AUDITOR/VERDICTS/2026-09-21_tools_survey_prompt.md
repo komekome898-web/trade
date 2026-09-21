@@ -119,3 +119,28 @@
 リードの処置(v10):
 
 1. **直した(監査役が正しい。リードは E の 14 本の中身を 1 本ずつ見ていなかった)。** ログに E-3(14 本それぞれが当たった語の一覧)と E-4(`research_fx_*` 7 本と `constants_inventory.py` が usdjpy / dukascopy に一致 = FX の文脈)を機械生成で追加し、本文 E を「暗号資産の文脈 6 本 / FX の文脈 8 本(うち `research_fx_carry.py` 27 行は GMO コインが公表する USD/JPY スワップ)/ どちらにも執行は無い / ログ E の一致一覧は語の一致で執行の有無の証拠ではない(証拠は E-2)」に書き換えた。A・C と同じ注記を E にも入れた。
+
+## 7 回目(v10、2026-09-21)— 監査役の出力(逐語)
+
+> 検査対象: `docs/DATA/delegations/20260921_tools_survey_prompt.md`(v10、7 回目)。6 回目の指摘 1 件(§8 E の 14 本の特徴づけ)への処置を検査した。
+>
+> ## 確認した事実
+>
+> - `git diff b31e6cb 9656d42` で変更は本文 §8 の E の 1 行と、`docs/DATA/probes/20260921_tools_absent.log` 末尾への E-3・E-4 追加のみ。他の箇所への変更は無い。
+> - `git ls-files scripts | xargs grep -liE 'gmo|bitbank|coincheck|okcoin|zaif'` を打ち直すと 14 本一致、内訳は本文の「暗号資産 6 本」(`dashboard.py`・`fetch_bitbank_daily.py`・`fetch_external.py`・`judge_board_round.py`・`record_venues.py`・`research_signals.py`)/「FX 8 本」(`research_fx_*` 7 本 + `constants_inventory.py`)と一致。
+> - `grep -liE 'usdjpy|usd/jpy|dukascopy'` を打ち直すと FX 8 本すべてに一致し、E-4 の主張と一致。
+> - `research_fx_carry.py` 27 行目は実際に `GMO Coin ACTUAL published USD/JPY swap calendar` と書かれており、本文の「`research_fx_carry.py` の 27 行は GMO コインが公表する USD/JPY スワップ」と一致。
+> - 6 本(暗号資産文脈)側は実際に `bitbank BTC/JPY`・`GMO BTC_JPY`・`venues (bitbank/GMO/bF現物)` など crypto の文脈で言及されており、8 本(FX 文脈)側は USD/JPY・Dukascopy・GMO-cal(FX スワップ)の文脈。特徴づけは中身と一致。
+> - 両群とも `place_order|submit_order|send_order|create_order|execute_trade|place_child_order` のキーワード一致は 0 件で、「どちらにも執行は無い」という結論と矛盾しない(この単位はキーワード走査による確認であり、既存の E-2 = `src` 側で `aggregate.py`(表示)のみという裏付けと整合する範囲)。
+> - 追加された E への注記「ログ E の一致一覧は語の一致であって、執行の有無の証拠ではない(証拠は E-2)」は A・C の既存注記と同型で、6 回目監査の指摘(A・C にはあるが E に無い)への直接の応答になっている。
+> - E-3・E-4 のログはコマンド・出力(ファイルごとの語の頻度)を機械生成で残しており、CLAUDE.md §3(数え直しはコマンドと結果を一緒に出す)の形式要求を満たす。
+>
+> 以上、今回の変更点(本文 E の 1 行 + ログ E-3・E-4)を実ファイルと照合した限りで、数値・列挙・引用は一致した。今回の変更が他の箇所(A・B・C・D、§5-1 の curl 実例、§8 の機械化部分など)と新たな矛盾を作っている様子も見当たらなかった。
+>
+> ## 指摘
+>
+> 指摘なし。
+
+## 送る版の指紋(7 回目で [止める][直す] なし。オーナー承認 L-381「承認します。進めてください」)
+
+監査済みの版: 20260921_tools_survey_prompt.md@840bf99ca5b0(`sha256sum` の先頭 12 桁、コミット 9656d42 の中身)。この指紋を委任の関門(delegation_audit_gate、8 本目のフック)が照合する。本文を 1 文字でも変えたら指紋が変わり、監査をやり直してから記録し直す。
