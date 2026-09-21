@@ -6408,9 +6408,9 @@
   {
    "move": 241,
    "tools": {
-    "Bash": 5
+    "Bash": 8
    },
-   "n_tools": 5,
+   "n_tools": 8,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
