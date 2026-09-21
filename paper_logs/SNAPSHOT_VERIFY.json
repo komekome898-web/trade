@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T03:17:38.726861+00:00",
+  "generated_at": "2026-09-21T20:49:06.942184+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -3900,14 +3900,13 @@
       "unit": "o3c_oi_distance_split_20260918",
       "md5sums_path": "backtest_data\\o3c_oi_distance_split_20260918\\MD5SUMS",
       "file_count": 4,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 4,
+      "matched": 4,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 4
+      "extra": []
     },
     {
       "unit": "o3c_price_level_band_20260917",
@@ -4083,14 +4082,13 @@
       "unit": "o3c_reaction_20260918_full",
       "md5sums_path": "backtest_data\\o3c_reaction_20260918_full\\MD5SUMS",
       "file_count": 19,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 19,
+      "matched": 19,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 19
+      "extra": []
     },
     {
       "unit": "o3c_reaction_20260918_judge",
@@ -4108,14 +4106,13 @@
       "unit": "o3c_reaction_20260918_sample",
       "md5sums_path": "backtest_data\\o3c_reaction_20260918_sample\\MD5SUMS",
       "file_count": 12,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 12,
+      "matched": 12,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 12
+      "extra": []
     },
     {
       "unit": "o3c_reaction_20260918_scale12_judgmentdays",
@@ -4246,14 +4243,13 @@
       "unit": "o3c_signal_policy_20260920",
       "md5sums_path": "backtest_data\\o3c_signal_policy_20260920\\MD5SUMS",
       "file_count": 17,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 17,
+      "matched": 17,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 17
+      "extra": []
     },
     {
       "unit": "okx_20260905",
@@ -5069,9 +5065,9 @@
   },
   "summary": {
     "unit_count": 115,
-    "verified": 82,
+    "verified": 86,
     "verified_line_ending_only": 21,
-    "newly_sealed": 4,
+    "newly_sealed": 0,
     "mismatch_units": 8,
     "total_mismatches": 3,
     "total_line_ending_only": 99,

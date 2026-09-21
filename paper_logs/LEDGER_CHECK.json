@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T05:38:22.940411+00:00",
+  "generated_at": "2026-09-21T21:01:28.314771+00:00",
   "data_md": "docs/DATA.md",
   "max_age_days": 14,
   "today": "2026-09-21",
@@ -20,22 +20,22 @@
       "row_count": 5
     },
     {
-      "header_line": 179,
+      "header_line": 180,
       "header": "資産 | 所在 | 状態 | 最終確認日 | 使った単位",
       "row_count": 9
     },
     {
-      "header_line": 212,
+      "header_line": 213,
       "header": "# | 何が | 期間 | 原因 | 復旧可否 | 記録日",
       "row_count": 15
     },
     {
-      "header_line": 268,
+      "header_line": 269,
       "header": "ソース | 上限 | 仕組みでの扱い | 状態",
       "row_count": 5
     },
     {
-      "header_line": 291,
+      "header_line": 292,
       "header": "ベニュー | 状態【事実・一次情報】 | 期限 | 対応",
       "row_count": 2
     }
@@ -285,82 +285,87 @@
   ],
   "missing_paths": [
     {
-      "line": 68,
+      "line": 62,
+      "asset": "tape(約定・ticker・板 top10 の日次抽出。`paper_logs/tape/`)",
+      "path": "paper_logs/tape/{executions,ticker,board_top10}_YYYYMMDD.csv.gz"
+    },
+    {
+      "line": 69,
       "asset": "tardis 形式 約定(**標本日 = 各月 1 日**)",
       "path": "data/tardis/bitflyer_FX_BTC_JPY_trades/"
     },
     {
-      "line": 71,
+      "line": 72,
       "asset": "継続ローリング(生、日次更新)",
       "path": "data/flow_FX_BTC_JPY.csv"
     },
     {
-      "line": 81,
+      "line": 82,
       "asset": "Binance BTCUSDT 現物 1分足(積み上げ)",
       "path": "data/binance_BTCUSDT_1m_full.csv"
     },
     {
-      "line": 83,
+      "line": 84,
       "asset": "Binance BTCUSDT 1秒足(高頻度サンプル)",
       "path": "data/binance_BTCUSDT_1s_hi1.csv"
     },
     {
-      "line": 100,
+      "line": 101,
       "asset": "Kraken XBTUSD 1分足",
       "path": "data/kraken_XBTUSD_1m.csv"
     },
     {
-      "line": 101,
+      "line": 102,
       "asset": "Deribit DVOL(ボラ指数)",
       "path": "data/deribit_dvol_1h.csv"
     },
     {
-      "line": 101,
+      "line": 102,
       "asset": "Deribit DVOL(ボラ指数)",
       "path": "data/deribit_dvol_1m_7d.csv"
     },
     {
-      "line": 103,
+      "line": 104,
       "asset": "資金調達率・基差(自前結合、粒度不明)",
       "path": "data/basis_1m.csv"
     },
     {
-      "line": 132,
+      "line": 133,
       "asset": "Binance COIN-M aggTrades の読み込み可否(`PriceSeries.from_trades` 用)",
       "path": "backtest_data/binance_cm_o3c_20260913/aggTrades/BTCUSD_PERP/"
     },
     {
-      "line": 142,
+      "line": 143,
       "asset": "bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(candles/executions/flow)",
       "path": "data/candles_{BTC,ETH,XRP}_JPY.csv"
     },
     {
-      "line": 153,
+      "line": 154,
       "asset": "FX ファンダメンタルズ・カレンダー",
       "path": "data/fx/calendar.csv"
     },
     {
-      "line": 153,
+      "line": 154,
       "asset": "FX ファンダメンタルズ・カレンダー",
       "path": "data/fx/calendar_cache*"
     },
     {
-      "line": 153,
+      "line": 154,
       "asset": "FX ファンダメンタルズ・カレンダー",
       "path": "data/fx/events/"
     },
     {
-      "line": 184,
+      "line": 185,
       "asset": "ストーム/バーストイベント抽出",
       "path": "data/storm_events/"
     },
     {
-      "line": 184,
+      "line": 185,
       "asset": "ストーム/バーストイベント抽出",
       "path": "data/burst_events/"
     },
     {
-      "line": 187,
+      "line": 188,
       "asset": "PC 時計・レイテンシ",
       "path": "data/latency/ws_vm.csv"
     }
@@ -370,14 +375,14 @@
     "path": "data\\INTAKE_latest.json",
     "selection": "両方あり、新しい data/ 側を使った",
     "state": "読込済",
-    "entry_count": 14977
+    "entry_count": 15006
   },
   "stale_rows": [],
   "undated_rows": [],
   "summary": {
     "unit_count": 145,
     "units_without_ledger_row": 60,
-    "missing_paths": 16,
+    "missing_paths": 17,
     "units_with_files_not_in_intake": 0,
     "files_not_in_intake": 0,
     "stale_rows": 0,
