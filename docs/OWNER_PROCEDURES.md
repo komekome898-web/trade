@@ -467,6 +467,18 @@ type data\latency\api_probe.csv
    1 つ目で最後に書かれた時刻と行が分かる。2 つ目で `extract_tape.py` などが 09-18 から居座っていれば、それが 15 分ごとの
    タスクを塞いでいる(同じ python が動いていると次の回は書けない)。居座っていれば、その ProcessId を
    `Stop-Process -Id <番号>` で止めてから ② の `fetch_all.bat` をもう一度。
+6. **(L-330 で確定)** `fetch_all.bat` を手で走らせると「**プロセスはファイルにアクセスできません。別のプロセスが使用中です。**」が
+   18 行出る = 18 本の python 工程が追記する `logs\fetch.out.log` を、別のプロセスが掴んだまま離していない。cmd は追記先を
+   開けないと工程そのものを起動しないので、09-18 から 1 行も増えていない。掴んでいる相手を止めれば直る:
+   ```
+   Get-CimInstance Win32_Process -Filter "name='python.exe'" | Select-Object ProcessId,CreationDate,CommandLine | Format-List
+   ```
+   出力のうち **CommandLine に `extract_tape.py`・`fetch_`・`record_oi.py`・`record_funding_basis.py`・`paper_on`・`research_clock_burst.py` の
+   どれかがあり、CreationDate が 09-18 以前のもの**が犯人。`Stop-Process -Id <番号>` で止める。
+   **止めてはいけないもの**: `run_paper.py`(bot)・板の記録(`record_ws` / `record_board`)・`record_liquidations.py`(清算の記録)・
+   `probe_api_latency.py`・`dashboard.py`(常駐分。止めても `start_all.bat` が 1 時間以内に戻すが、記録に穴が開く)。
+   該当する python が無ければ、掴んでいるのは python 以外(見えない)なので **PC を再起動**する(ログオン時のタスクで常駐は全部戻る。
+   キルスイッチは入っていないので bot も再開する)。そのあと `deploy\fetch_all.bat` → `deploy\share_logs.bat`。
 
 **② Bybit・OKX の穴を Coinalyze の 1 分足で埋める(PC、約 1 分。急ぐ: OKX の先頭 09-14 21:57 UTC は
 約 7 日の窓(L-031 の実測)から 09-22 06:57 JST ごろに落ちる見込み)**
