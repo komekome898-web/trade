@@ -29,9 +29,9 @@
   {
    "move": 2,
    "tools": {
-    "Bash": 7
+    "Bash": 9
    },
-   "n_tools": 7,
+   "n_tools": 9,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": true,
@@ -75,8 +75,8 @@
    "value": null
   },
   "P5_tools_per_move": {
-   "median": 7,
-   "max": 7,
+   "median": 9,
+   "max": 9,
    "n": 1
   },
   "P6_findings_applied": {
