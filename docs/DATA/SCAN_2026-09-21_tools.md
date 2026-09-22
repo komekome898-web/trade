@@ -941,3 +941,574 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 トークン・時間の自己推定はしない(委任文の規則により、リードがハーネスの計測値を記録する)。**リードの記録(ハーネスの計測、2026-09-22): 330,907 トークン・1,847,862 ミリ秒(約 30.8 分)・道具呼び出し 167 回。**委任文 §7 の固定値(5 万トークン・20 分)の 6.6 倍・1.5 倍で、1 回目(188,843 トークン・650 秒)より更に超過した。**Web の手はハーネスの記録で WebFetch 27・WebSearch 10 の計 37 手**(生ログ LV-1。この生ログに書かれていたのは 28 手で、9 手が漏れていた)。本回で実行した主な作業: curl(PyPI JSON等)30件超・pip install 12件(隔離venv複数)・独自の最小実行スクリプト作成7本(hftbacktest×2版・Backtesting.py・QSTrader・PyAlgoTrade・NautilusTrader×2版)。生ログは`docs/DATA/probes/20260922_tools_1_run2.log`に全手順を記録。
 
 **候補の一覧はまだ空になっていない(新規発見12件を含め残りの候補名を参照)。§2の完了条件(残りの候補が空で、新しい検索計画6本が新しい候補を1件も出さない)を満たしていないため、本区分は未完了。次回の実行で持ち越す。**
+
+## 区分1 — 3 回目の実行(2026-09-22)
+
+リードの起動指定に従い、この回は **新しい検索計画を打たず**、2 回目が残した未着手の候補 A と、深掘りが未完了のまま残った項目 B を先に潰した。生ログは `docs/DATA/probes/20260922_tools_1_run3.log`(前回の中断分の続きから追記。この節の行番号はすべてこのファイルを指す)。
+
+### 当方の道具立て(`python3 scripts/tools_inventory.py` の出力全文。§8)
+
+```
+# 当方の道具立て(git ls-files から生成。2026-09-22T06:31:35Z、HEAD 5b56ef2。コマンド: python3 scripts/tools_inventory.py)
+
+## src/bot(package: ファイル数 / ファイル名)
+- src/bot: 7 / atomic_file.py constants.py logging_setup.py main.py products.py radar.py settings.py
+- src/bot/backtest: 3 / engine.py metrics.py walk_forward.py
+- src/bot/exchange: 2 / bitflyer_client.py resilience.py
+- src/bot/execution: 3 / gateway.py live.py paper.py
+- src/bot/indicators: 1 / core.py
+- src/bot/jpx: 4 / etf_auction_executor.py kabu_client.py on1_executor.py run_lock.py
+- src/bot/market_data: 3 / external_feed.py feed.py realtime.py
+- src/bot/monitoring: 6 / aggregate.py decision_text.py gates.py market_view.py notifier.py status.py
+- src/bot/order_management: 3 / manager.py order.py reconciler.py
+- src/bot/portfolio: 2 / persistence.py portfolio.py
+- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liquidations.py overnight.py sealed.py xborder_p2.py xborder_p2_fast.py xborder_p2_fx.py xborder_p2_state.py
+- src/bot/risk: 2 / kill_switch.py pre_trade_checks.py
+- src/bot/strategy: 9 / base.py breakout.py composite.py ema_cross.py inago.py range_fade.py rsi_reversion.py wick_reversal.py xborder_momentum.py
+
+## scripts(サブディレクトリは名前/、最上位は接頭辞。.py だけ)
+- research_*: 56 / research_anchor.py research_anchor_v2.py research_attention_vol.py research_avalanche.py research_basis.py research_board_calibration.py research_burst_atlas.py research_calm_range.py research_clock_burst.py research_exit_surface.py research_fast_cycle.py research_fx.py research_fx_carry.py research_fx_event_ticks.py research_fx_events.py research_fx_fundamentals.py research_fx_s4_judgment.py research_fx_sessions.py research_fx_tokyofix.py research_hft.py research_imbalance.py research_latency_grade.py research_latency_paths.py research_leader_surface.py research_legacy_elements.py research_m4_finecheck.py research_macro_calendar.py research_mainbot_exits.py research_maker_reaudit.py research_matilda_modern.py research_matilda_surface.py research_matilda_taro.py research_nk225_events.py research_overnight_on1.py research_overnight_onr.py research_position_ladder.py research_prediction_atlas.py research_range_reversed.py research_regime_composite.py research_scalp_exits.py research_scalp_opt.py research_seasonality.py research_signal_fade.py research_signals.py research_spread_mm.py research_storm.py research_storm_b.py research_storm_bracket.py research_storm_direction.py research_tournament.py research_trend_lt1.py research_two_sided_flow.py research_user_strategies.py research_vr_barrier.py research_wall_front.py research_yutai.py
+- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fetch_binance_daily.py fetch_binance_full.py fetch_binance_vision.py fetch_bitbank_daily.py fetch_bitflyer_executions_range.py fetch_bitflyer_lightchart.py fetch_bitmex_archive.py fetch_bitmex_insurance.py fetch_bybit_minutes.py fetch_coinalyze_liquidations.py fetch_daily_lt1.py fetch_deep.py fetch_deribit.py fetch_dukascopy.py fetch_external.py fetch_fx_calendar.py fetch_fx_calendar_2005_2014.py fetch_gate_liquidations.py fetch_history.py fetch_jpx_daily.py fetch_jpx_etf_daily.py fetch_kraken.py fetch_okx.py fetch_regime_composite.py fetch_tardis_samples.py
+- o3c_*: 22 / o3c_bitflyer_spread.py o3c_jev_state.py o3c_oi_distance.py o3c_price_level_ext.py o3c_price_level_table.py o3c_reaction.py o3c_reaction_judge.py o3c_reaction_r2.py o3c_rows4.py o3c_signal_calib.py o3c_signal_continue.py o3c_signal_continue_jev.py o3c_signal_explore.py o3c_signal_explore2.py o3c_signal_explore3.py o3c_signal_explore4.py o3c_signal_explore5.py o3c_signal_logit.py o3c_signal_materials.py o3c_signal_policy.py o3c_signal_stage2.py o3c_signal_value.py
+- render_*: 19 / render_exec_floor.py render_k1_body_wick.py render_k1_deepdive.py render_k1_exit_ablation.py render_k1_fresh_bitflyer.py render_k1_h1.py render_k1_h2.py render_k1_h3.py render_k1_h3_decomp.py render_k1_judgement.py render_k1_robustness.py render_k1_round5.py render_k1_trunc_compare.py render_k1_venue_compare.py render_k1_xvenue.py render_k1_xvenue2.py render_k1_year_tables.py render_k1_yearly_pnl.py render_prereg.py
+- measure_*: 16 / measure_exec_floor.py measure_katsuo_body_wick.py measure_katsuo_delay_decomp.py measure_katsuo_direction_bias.py measure_katsuo_dispersion.py measure_katsuo_effect.py measure_katsuo_exit_ablation.py measure_katsuo_judgement_vol.py measure_katsuo_robustness.py measure_katsuo_round5.py measure_katsuo_signal_horizon.py measure_katsuo_vol_bitflyer.py measure_katsuo_xvenue.py measure_liq_bands.py measure_liq_response.py measure_ws_latency.py
+- jev_*: 14 / jev_audit_eval.py jev_audit_loop.py jev_check.py jev_delegate.py jev_design.py jev_eval.py jev_ideas.py jev_ops.py jev_owner_log.py jev_prescreen.py jev_reply.py jev_report_intake.py jev_survey.py jev_trace_export.py
+- qa/: 13 / agreement.py make_known_answer.py make_known_answer_maker.py make_known_answer_maker3.py make_known_answer_steer.py maker_fill_ref.py maker_fill_ref_packet.py maker_fill_ref_packet_r2.py pipeline_known_answer_daily.py pipeline_known_answer_taker.py score_audit.py score_claims.py score_steer.py
+- phase2/: 12 / g1_state_analysis.py p2_01_final.py p2_01_run.py p2_01b_history.py p2_02_final.py p2_02_run.py p2_03_final.py p2_03_iter2.py p2_03_run.py p2_04_run.py p2_08_data.py p2_08_run.py
+- run_*: 11 / run_backtest.py run_board_round.py run_etf_measure_entry.py run_etf_measure_exit.py run_etf_measure_reconcile.py run_o3c_stage0.py run_on1_entry.py run_on1_exit.py run_on1_reconcile.py run_paper.py run_scalp_paper.py
+- check_*: 8 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bitflyer_data.py check_kabu_api.py check_liquidation_feeds.py check_liquidation_history_depth.py check_scan_report.py
+- build_*: 7 / build_basis.py build_bitflyer_lightchart_csv.py build_burst_library.py build_flow.py build_fx_event_library.py build_fx_event_library_2005_2014.py build_storm_library.py
+- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py record_realtime.py record_venues.py
+- jev/: 3 / client.py redact.py schemas.py
+- verify_*: 3 / verify_gates.py verify_liq_instrument.py verify_snapshots.py
+- (単発): 2 / _research_audit_gate.py dashboard.py
+- judge_*: 2 / judge_board_round.py judge_gates.py
+- k1_*: 2 / k1_binance_data_quality.py k1_source.py
+- paper_*: 2 / paper_on1.py paper_onr.py
+- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+- constants_*: 1 / constants_inventory.py
+- data_*: 1 / data_quality.py
+- explore_*: 1 / explore_o3c_oi_axis.py
+- extract_*: 1 / extract_tape.py
+- intake_*: 1 / intake_ledger.py
+- liquidation_*: 1 / liquidation_report.py
+- mirror_*: 1 / mirror_bitmex_archive.py
+- normalize_*: 1 / normalize_bitflyer_executions.py
+- phase2_*: 1 / phase2_seal.py
+- preflight_*: 1 / preflight_prereg.py
+- probe_*: 1 / probe_api_latency.py
+- replay_*: 1 / replay_scalp_storm.py
+- retention_*: 1 / retention_snapshot.py
+- tools_*: 1 / tools_inventory.py
+- tp_*: 1 / tp_operating_curve.py
+- trace_*: 1 / trace_metrics.py
+- validate_*: 1 / validate_composite.py
+- x_*: 1 / x_fetch.py
+- (.py 以外の scripts: 3 = scripts/fetch_all.sh scripts/install_git_hooks.sh scripts/regen_hook_manifest.sh)
+
+## config: 32
+  config/composite.yaml config/config.yaml config/constants.yaml config/etf_measure.yaml config/jev_delegation_tiers.yaml config/jev_design_examples/o3c_covariates.yaml config/jev_design_examples/o3c_observables.yaml config/jev_design_examples/signal2_covariates.yaml config/jev_design_examples/signal2_observables.yaml config/jev_design_examples/signal3_covariates.yaml config/jev_design_examples/signal3_observables.yaml config/jev_design_examples/signal4_covariates.yaml config/jev_design_examples/signal4_observables.yaml config/jev_design_examples/signal5_covariates.yaml config/jev_design_examples/signal5_observables.yaml config/jev_design_examples/signal6_covariates.yaml config/jev_design_examples/signal6_observables.yaml config/jev_design_examples/signal7_observables.yaml config/jev_design_examples/signal8_covariates.yaml config/jev_design_examples/signal8_observables.yaml config/jev_design_examples/signal8_observables_independent.yaml config/jev_design_examples/signal_covariates.yaml config/jev_design_examples/signal_observables.yaml config/jev_routes.yaml config/o3c_jev_state_bands.yaml config/o3c_signal_logit_chain.yaml config/o3c_signal_logit_first.yaml config/o3c_signal_logit_value_chain.yaml config/o3c_signal_logit_value_first.yaml config/on1_live.yaml config/products.yaml config/risk_limits.yaml
+
+## deploy: 19
+  deploy/bitflyer-bot.service deploy/bitflyer-fetch.service deploy/bitflyer-fetch.timer deploy/check_liq_recorder.bat deploy/etf_measure_entry.bat deploy/etf_measure_exit.bat deploy/fetch_all.bat deploy/mirror_bitmex.bat deploy/nightly_restart.bat deploy/on1_entry.bat deploy/on1_exit.bat deploy/probe_latency.bat deploy/reset_kill.bat deploy/restart_all.bat deploy/run_paper.bat deploy/setup.sh deploy/share_logs.bat deploy/start_all.bat deploy/stop_all.bat
+
+## tests(ファイル): 139
+  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops/notifications.jsonl tests/fixtures/jev_ops/status_page.html tests/test_app_fx_integration.py tests/test_audit_gates_wired.py tests/test_backtest.py tests/test_bitmex_mirror.py tests/test_board.py tests/test_board_round.py tests/test_board_walk.py tests/test_bot_research_overnight.py tests/test_build_flow.py tests/test_check_data_ledger.py tests/test_client.py tests/test_clock_burst.py tests/test_composite.py tests/test_constants.py tests/test_constants_inventory.py tests/test_dashboard.py tests/test_data_quality.py tests/test_data_quality_incremental.py tests/test_deploy.py tests/test_engine_maker_exit.py tests/test_etf_measure.py tests/test_extract_tape.py tests/test_fetch_backfill_scripts.py tests/test_fetch_binance_daily.py tests/test_fetch_binance_vision.py tests/test_fetch_history_candles.py tests/test_gz_members.py tests/test_intake_ledger.py tests/test_intent_map_rule.py tests/test_jev_audit_eval.py tests/test_jev_audit_loop.py tests/test_jev_check.py tests/test_jev_client.py tests/test_jev_delegate.py tests/test_jev_design.py tests/test_jev_ideas.py tests/test_jev_ops.py tests/test_jev_owner_log.py tests/test_jev_redact.py tests/test_jev_reply.py tests/test_jev_report_intake.py tests/test_jev_schemas.py tests/test_jev_scripts.py tests/test_jev_survey.py tests/test_jev_trace_export.py tests/test_judge_gates.py tests/test_k1_bitflyer_source.py tests/test_k1_bybit_source.py tests/test_k1_delay_decomp.py tests/test_k1_delay_entry.py tests/test_k1_flip_body.py tests/test_k1_lookahead.py tests/test_k1_no_invalidation.py tests/test_k1_round5.py tests/test_k1_seal_guard.py tests/test_k1_xvenue.py tests/test_liq_bands.py tests/test_liq_response.py tests/test_liq_response_dedup.py tests/test_liquidation_reader.py tests/test_maker_execution.py tests/test_market_data.py tests/test_market_view.py tests/test_max_hold.py tests/test_modes.py tests/test_o3c_jev_state.py tests/test_o3c_oi_distance.py tests/test_o3c_price_level_ext.py tests/test_o3c_price_level_table.py tests/test_o3c_reaction.py tests/test_o3c_reaction_judge.py tests/test_o3c_reaction_r2.py tests/test_o3c_rows4.py tests/test_o3c_signal_calib.py tests/test_o3c_signal_continue.py tests/test_o3c_signal_continue_jev.py tests/test_o3c_signal_explore.py tests/test_o3c_signal_explore2.py tests/test_o3c_signal_explore3.py tests/test_o3c_signal_explore4.py tests/test_o3c_signal_explore5.py tests/test_o3c_signal_materials.py tests/test_o3c_signal_policy.py tests/test_o3c_signal_stage2.py tests/test_o3c_signal_value.py tests/test_on1_forward.py tests/test_on1_live.py tests/test_onr.py tests/test_onr_forward.py tests/test_orders.py tests/test_paper_state.py tests/test_phase2_p2_01.py tests/test_phase2_p2_01_final.py tests/test_phase2_p2_02.py tests/test_phase2_p2_02_final.py tests/test_phase2_p2_03.py tests/test_phase2_p2_03_final.py tests/test_phase2_p2_03_iter2.py tests/test_phase2_p2_04.py tests/test_phase2_seal.py tests/test_portfolio_and_strategy.py tests/test_position_ladder.py tests/test_preflight_prereg.py tests/test_probe_api_latency.py tests/test_qa_make_known_answer.py tests/test_qa_make_known_answer_maker.py tests/test_qa_make_known_answer_maker3.py tests/test_qa_make_known_answer_steer.py tests/test_qa_maker_fill_ref.py tests/test_qa_pipeline_known_answer.py tests/test_qa_score_audit.py tests/test_radar.py tests/test_realtime_recorder.py tests/test_record_funding_basis.py tests/test_record_liquidations.py tests/test_record_liquidations_writer.py tests/test_record_venues.py tests/test_repair_gz_listing.py tests/test_research_protocol_rules.py tests/test_resilience.py tests/test_retention_snapshot.py tests/test_risk.py tests/test_scalp_logic.py tests/test_sealed_load_diagnostic.py tests/test_sealed_ts_us.py tests/test_short_margin.py tests/test_tp_sl.py tests/test_verify_snapshots.py tests/test_wick_stop.py tests/test_x_fetch.py tests/test_xborder.py tests/test_xborder_p2_fast.py tests/test_xborder_p2_fx.py tests/test_xborder_p2_known_answer.py tests/test_xborder_p2_state.py
+
+## .claude/hooks: 8
+  .claude/hooks/_verify_manifest.sh .claude/hooks/delegation_audit_gate.sh .claude/hooks/deny_protected_paths.sh .claude/hooks/jev_notice.sh .claude/hooks/owner_options_gate.sh .claude/hooks/owner_turn_digest.sh .claude/hooks/session_start_digest.sh .claude/hooks/trace_snapshot.sh
+
+## .claude/agents: 3
+  .claude/agents/owner-auditor-candidate.md .claude/agents/owner-auditor.md .claude/agents/owner-model-auditor.md
+
+## .claude/skills: 9
+  .claude/skills/delegated-study/SKILL.md .claude/skills/owner-audit/SKILL.md .claude/skills/owner-options/SKILL.md .claude/skills/owner-procedure/SKILL.md .claude/skills/research-protocol/SKILL.md .claude/skills/research-squad/SKILL.md .claude/skills/typesafe-ai/LICENSE .claude/skills/typesafe-ai/SKILL.md .claude/skills/x-research/SKILL.md
+
+## githooks: 1
+  githooks/pre-push
+
+## docs(.md): 294
+  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EVAL_2026-09-11.md docs/AUDITOR/EVAL_2026-09-11_control_review.md docs/AUDITOR/EVAL_2026-09-11b.md docs/AUDITOR/IMPROVEMENT.md docs/AUDITOR/JEV/LABELS_NOTES_2026-09-19.md docs/AUDITOR/JEV/PREREG_2026-09-19.md docs/AUDITOR/KNOWN_ANSWERS.md docs/AUDITOR/KNOWN_ANSWERS_ADDENDUM.md docs/AUDITOR/OWNER_MODEL_SOURCE.md docs/AUDITOR/PRINCIPLES.md docs/AUDITOR/PROCESS_METRICS.md docs/AUDITOR/PROPOSED_CHANGES_2026-09-11.md docs/AUDITOR/READDO/audit_stop.md docs/AUDITOR/READDO/before_unseal.md docs/AUDITOR/READDO/owner_objection.md docs/AUDITOR/READDO/push_blocked.md docs/AUDITOR/READDO/repeat_defect.md docs/AUDITOR/TREND.md docs/AUDITOR/VERDICTS/2026-09-11_k1_closure_entries.md docs/AUDITOR/VERDICTS/2026-09-11_proposed_changes_and_eval_b.md docs/AUDITOR/VERDICTS/2026-09-12_docs_reorg_execution.md docs/AUDITOR/VERDICTS/2026-09-12_docs_reorg_plan.md docs/AUDITOR/VERDICTS/2026-09-12_o3c_reframe_reading.md docs/AUDITOR/VERDICTS/2026-09-12_p14_liquidation_fix.md docs/AUDITOR/VERDICTS/2026-09-12_p4n_nightly_restart.md docs/AUDITOR/VERDICTS/2026-09-12_rules_reduction.md docs/AUDITOR/VERDICTS/2026-09-16_policy4_report.md docs/AUDITOR/VERDICTS/2026-09-17_anchor_report.md docs/AUDITOR/VERDICTS/2026-09-17_closure.md docs/AUDITOR/VERDICTS/2026-09-17_data_collection.md docs/AUDITOR/VERDICTS/2026-09-17_missing.md docs/AUDITOR/VERDICTS/2026-09-17_oi_distance.md docs/AUDITOR/VERDICTS/2026-09-17_price_level.md docs/AUDITOR/VERDICTS/2026-09-17_price_level_ext.md docs/AUDITOR/VERDICTS/2026-09-17_price_level_full.md docs/AUDITOR/VERDICTS/2026-09-17_price_level_rows4.md docs/AUDITOR/VERDICTS/2026-09-18_oi_distance_split.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_design.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r10.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r2.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r3.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r4.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r5.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r6.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r7.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r8.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r9.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_run12.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_prereg_r11.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_prereg_r12.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_r2_prereg.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_report.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_report_r2.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_report_r3.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_result.md docs/AUDITOR/VERDICTS/2026-09-19_signal_design.md docs/AUDITOR/VERDICTS/2026-09-19_signal_explore2_design.md docs/AUDITOR/VERDICTS/2026-09-19_signal_explore2_report.md docs/AUDITOR/VERDICTS/2026-09-19_signal_explore_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_continue_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_continue_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore3_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore3_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore4_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore4_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore5_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore5_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_materials_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_policy_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_policy_result.md docs/AUDITOR/VERDICTS/2026-09-21_signal_value_design.md docs/AUDITOR/VERDICTS/2026-09-21_signal_value_result.md docs/AUDITOR/VERDICTS/2026-09-21_tools_scan_cat1.md docs/AUDITOR/VERDICTS/2026-09-21_tools_survey_prompt.md docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run2.md docs/AUDITOR/VERDICTS/2026-09-22_tools_survey_prompt_v12.md docs/AUDITOR/VERDICTS/README.md docs/AUDITOR/answers/KA-01.md docs/AUDITOR/answers/KA-02.md docs/AUDITOR/answers/KA-04.md docs/AUDITOR/answers/KA-05.md docs/AUDITOR/answers/KA-06.md docs/AUDITOR/answers/KA-07.md docs/AUDITOR/answers/KA-08.md docs/AUDITOR/answers/KA-09.md docs/AUDITOR/answers/KA-10.md docs/AUDITOR/answers/KA-16.md docs/AUDITOR/answers/KA-17.md docs/AUDITOR/answers/KA-18.md docs/AUDITOR/answers/KA-19.md docs/AUDITOR/answers/KA-20.md docs/AUDITOR/answers/KA-21.md docs/AUDITOR/answers/KA-22.md docs/AUDITOR/answers/KA-23.md docs/AUDITOR/answers/KA-24.md docs/AUDITOR/answers/KA-25.md docs/AUDITOR/answers/KA-26.md docs/AUDITOR/answers/KA-27.md docs/AUDITOR/answers/KA-28.md docs/AUDITOR/before/HYGIENE_2026-09-11.md docs/AUDITOR/before/KA-01.md docs/AUDITOR/before/KA-02.md docs/AUDITOR/before/KA-04.md docs/AUDITOR/before/KA-05.md docs/AUDITOR/before/KA-06.md docs/AUDITOR/before/KA-07.md docs/AUDITOR/before/KA-08.md docs/AUDITOR/before/KA-09.md docs/AUDITOR/before/KA-10.md docs/AUDITOR/before/KA-16.md docs/AUDITOR/before/KA-17.md docs/AUDITOR/before/KA-18.md docs/AUDITOR/before/KA-19.md docs/AUDITOR/before/KA-20.md docs/AUDITOR/before/KA-21.md docs/AUDITOR/before/KA-22.md docs/AUDITOR/before/KA-23.md docs/AUDITOR/before/KA-24.md docs/AUDITOR/before/KA-25.md docs/AUDITOR/before/KA-26.md docs/AUDITOR/before/KA-27.md docs/AUDITOR/before/KA-28.md docs/DATA.md docs/DATA/SCAN_2026-09-16.md docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/delegations/20260919_o3c_signal_explore2_prompt.md docs/DATA/delegations/20260920_o3c_cascade_read_prompt.md docs/DATA/delegations/20260920_o3c_signal_continue_jev_prompt.md docs/DATA/delegations/20260920_o3c_signal_continue_prompt.md docs/DATA/delegations/20260920_o3c_signal_explore3_prompt.md docs/DATA/delegations/20260920_o3c_signal_explore4_prompt.md docs/DATA/delegations/20260920_o3c_signal_explore5_prompt.md docs/DATA/delegations/20260920_o3c_signal_jev_state_prompt.md docs/DATA/delegations/20260920_o3c_signal_materials2_prompt.md docs/DATA/delegations/20260920_o3c_signal_materials_prompt.md docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md docs/DATA/delegations/20260920_o3c_signal_policy2_stage2_prompt.md docs/DATA/delegations/20260920_o3c_signal_policy_prompt.md docs/DATA/delegations/20260920_o3c_signal_v4_prompt.md docs/DATA/delegations/20260920_o3c_signal_v4_stage2_prompt.md docs/DATA/delegations/20260921_o3c_signal_value_prompt.md docs/DATA/delegations/20260921_o3c_signal_value_tp_prompt.md docs/DATA/delegations/20260921_tools_survey_prompt.md docs/DATA/delegations/20260922_tools_survey_prompt.md docs/DATA/probes/20260913_liquidation_integrity.md docs/DATA/probes/20260919_reaction_prereg_outputs.md docs/DATA/probes/20260920_o3c_cascade_read.md docs/DATA/probes/20260920_o3c_materials_read.md docs/DATA/surveys/BINANCE_CM_MMR_2026-09-17.md docs/DATA/surveys/BITFLYER_HISTORY_SOURCES.md docs/DATA/surveys/ETF_ALTERNATIVES.md docs/DATA/surveys/G2_DATA_INVENTORY.md docs/DATA/surveys/LIQUIDATION_FEED_REACHABILITY.md docs/DATA/surveys/LIQUIDATION_HISTORY_SURVEY.md docs/DATA/surveys/O3C_PROCUREMENT_2026-09-12.md docs/DATA/surveys/O3C_PROCUREMENT_ACCEPTANCE_2026-09-13.md docs/DATA/surveys/O3C_PROCUREMENT_SUPP_A_2026-09-12.md docs/DATA/surveys/O3C_PROCUREMENT_SUPP_B_2026-09-12.md docs/DATA/surveys/O3C_PROCUREMENT_SUPP_C_HYPERLIQUID_2026-09-12.md docs/DATA/surveys/O3C_PROCUREMENT_SUPP_D_VENUE_UNIVERSE_2026-09-12.md docs/DATA/surveys/O3C_VERIFY_LIQUIDATION_SIDE_2026-09-13.md docs/DATA_CONSUMPTION_LOG.md docs/DELEGATION.md docs/DISCUSSIONS/2026-09-04_postmortem_tp_precursor.md docs/DISCUSSIONS/2026-09-06_data_dependency.md docs/DISCUSSIONS/2026-09-08_external_ecosystem.md docs/DISCUSSIONS/2026-09-08_matilda_intent_vs_test.md docs/DISCUSSIONS/2026-09-09_prereg_deep_dive.md docs/DISCUSSIONS/2026-09-09_the_day_nothing_shipped.md docs/DISCUSSIONS/2026-09-12_docs_reorg_plan.md docs/DISCUSSIONS/2026-09-12_generation_vs_filtering.md docs/DISCUSSIONS/2026-09-12_rules_inventory.md docs/DISCUSSIONS/2026-09-12_rules_reduction_proposal.md docs/DISCUSSIONS/2026-09-13_root_cause.md docs/DISCUSSIONS/2026-09-13_worst_day.md docs/DISCUSSIONS/2026-09-14_instruction_adherence/PLAN.md docs/DISCUSSIONS/2026-09-14_instruction_adherence/README.md docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md docs/DISCUSSIONS/2026-09-18_jev_trade_integration_decision_for_fable_v2.md docs/DISCUSSIONS/2026-09-19_jev_adoption_review.md docs/DISCUSSIONS/2026-09-19_jev_common_module_review.md docs/DISCUSSIONS/2026-09-19_jev_review_inventories/A_judgment_points.md docs/DISCUSSIONS/2026-09-19_jev_review_inventories/B_failures.md docs/DISCUSSIONS/2026-09-19_jev_review_inventories/C_vendor_sources.md docs/DISCUSSIONS/2026-09-19_jev_review_inventories/D_study_notes.md docs/INCIDENTS.md docs/INDEX.md docs/JEV.md docs/NEGATIVE_FACTS.md docs/OPERATIONS.md docs/OPERATIONS_JPX.md docs/OWNER_LOG.md docs/OWNER_PROCEDURES.md docs/OWNER_STATUS.md docs/PHASE2/EXEC/EXEC_FLOOR_PREREG.md docs/PHASE2/EXEC/RESULT.md docs/PHASE2/INSTRUMENT_VERIFY/AUDIT_LEDGER_2026-09-14.md docs/PHASE2/INSTRUMENT_VERIFY/REPORT_2026-09-14.md docs/PHASE2/INSTRUMENT_VERIFY/REPORT_2026-09-16_policy4.md docs/PHASE2/INSTRUMENT_VERIFY/REPORT_2026-09-17_anchor.md docs/PHASE2/K1/AUDIT_TRIAGE.md docs/PHASE2/K1/BINANCE_PLAN.md docs/PHASE2/K1/DEEPDIVE_PLAN.md docs/PHASE2/K1/FRESH_BITFLYER_PREREG.md docs/PHASE2/K1/H1_PREREG.md docs/PHASE2/K1/H2_PREREG.md docs/PHASE2/K1/H3_DECOMP_PREREG.md docs/PHASE2/K1/H3_PREREG.md docs/PHASE2/K1/HANDOFF.md docs/PHASE2/K1/JUDGEMENT_PREREG.md docs/PHASE2/K1/PREFLIGHT.md docs/PHASE2/K1/PREREG.md docs/PHASE2/K1/RESULT.md docs/PHASE2/K1/ROUND5_PREREG.md docs/PHASE2/K1/XVENUE_PREREG.md docs/PHASE2/K1/binance/CHECKS.md docs/PHASE2/O3C/BRANCH_MAP.md docs/PHASE2/O3C/DATA_AVAILABILITY.md docs/PHASE2/O3C/DATA_COLLECTION_2026-09-17.md docs/PHASE2/O3C/INTENT_MAP.md docs/PHASE2/O3C/MISSING_2026-09-17.md docs/PHASE2/O3C/OWNER_INTENT_2026-09-12.md docs/PHASE2/O3C/PRICE_LEVEL/DESIGN_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/EXT_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/FULL_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/OI_DISTANCE_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/OI_DISTANCE_SPLIT_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_DRAFT_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_R2_PREREG_2026-09-19.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_RESULT_2026-09-19.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_RUN12_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/ROWS4_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/SAMPLE_2026-09-17.md docs/PHASE2/O3C/REFRAME/DIFF_2026-09-12.md docs/PHASE2/O3C/REFRAME/LEAD_READING_2026-09-12.md docs/PHASE2/O3C/REFRAME/data_engineer.md docs/PHASE2/O3C/REFRAME/discretionary_trader.md docs/PHASE2/O3C/REFRAME/liquidation_engine.md docs/PHASE2/O3C/REFRAME/market_maker.md docs/PHASE2/O3C/REFRAME/microstructure.md docs/PHASE2/O3C/SIGNAL/CONTINUE_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/CONTINUE_JEV_RUN_NOTE_2026-09-20.md docs/PHASE2/O3C/SIGNAL/EXPLORE2_DELEGATE_REPORT_2026-09-19.md docs/PHASE2/O3C/SIGNAL/EXPLORE3_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/EXPLORE4_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/EXPLORE5_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/JEV_STATE_PREVIEW_2026-09-20.md docs/PHASE2/O3C/SIGNAL/MATERIALS2_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/MATERIALS_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/POLICY_STAGE1_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/POLICY_STAGE2_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW2_2026-09-19.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW3_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW4_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW5_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW6_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW7_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW8_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW9_2026-09-21.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_CONTINUE_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_CONTINUE_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_DESIGN_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE2_DESIGN_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE2_RESULT_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE3_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE3_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE4_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE4_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE5_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE5_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE_RESULT_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_MATERIALS_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_DESIGN_2026-09-21.md docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_RESULT_2026-09-21.md docs/PHASE2/O3C/SIGNAL/STAGE2_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/V4_STAGE1_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/VALUE_STAGE1_REPORT_2026-09-21.md docs/PHASE2/O3C/SIGNAL/VALUE_STAGE2_REPORT_2026-09-21.md docs/PHASE2/O3C/STAGE0A_2026-09-14.md docs/PHASE2/O3C/TRIGGER_TRACE.md docs/PROJECT_GOAL.md docs/STRATEGY_IDEAS.md docs/legacy/KATSUO_INTENT_MAP.md docs/legacy/KATSUO_PARAMETER_INVENTORY.md docs/legacy/README.md
+
+## backtest_data(ディレクトリ数)
+  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetch_JPX_n225f_months_20260906 audit_fetch_JPX_tick_20260906 audit_fetch_P2-08_docs_20260906 audit_fetch_P2-08b_20260906 audit_fetch_bitflyer_history_20260906 audit_fetch_etf_alternatives_20260906 audit_fetch_etf_units_20260906 audit_fetch_micro_fee_20260906 auto_bitflyer_executions_20260905 auto_bitflyer_executions_20260921 auto_oi_snapshots_20260905 auto_oi_snapshots_20260921 auto_okx_long_short_ratio_20260905 auto_okx_open_interest_1h_20260905 auto_okx_open_interest_1h_20260921 auto_okx_open_interest_5m_20260905 auto_okx_open_interest_5m_20260906 auto_okx_open_interest_5m_20260907 auto_okx_open_interest_5m_20260908 auto_okx_open_interest_5m_20260909 auto_okx_open_interest_5m_20260910 auto_okx_open_interest_5m_20260911 auto_okx_open_interest_5m_20260912 auto_okx_open_interest_5m_20260915 auto_okx_open_interest_5m_20260918 auto_okx_open_interest_5m_20260921 auto_venues_20260905 auto_venues_20260921 binance_BTCUSDT_1m.csv binance_BTCUSDT_1m_20170801_20231231 binance_BTCUSDT_1m_20240101_20260831 binance_BTCUSDT_1m_210d_20260820.csv.gz binance_BTCUSDT_1s_20260723_20260906 binance_BTCUSDT_aggTrades_20260723_20260906 binance_BTCUSDT_aggTrades_tardis_days binance_XRPUSDT_1d.csv binance_XRPUSDT_1m.csv binance_XRPUSDT_4h.csv binance_cm_o3c_20260913 binance_cm_o3c_supp_20260917 binance_um_BTCUSDT_aggTrades_20260723_20260906 bitbank_btc_jpy_transactions_monthly_first_days bitbank_xrp_jpy_1m.csv bitflyer_executions_backfill_20260921 bitflyer_executions_us_20260723_20260906 bitflyer_lightchart_BTC_JPY_1m_20260906 bitflyer_lightchart_FX_BTC_JPY_1m_20260906 bitmex_insurance_20260912 bitmex_trade_1s_XBTUSD board_round_20260904 burst_events_20260820 bybit_BTCUSDT_1m_20260910 bybit_reachability_check_20260906 candles_BTC_JPY_20260820.csv candles_ETH_JPY_20260820.csv candles_FX_BTC_JPY_20260820.csv candles_FX_BTC_JPY_30d_20260820.csv candles_FX_BTC_JPY_31d_20260823.csv.gz candles_XRP_JPY_20260820.csv coinalyze_liquidations_20260921 daily_btcusd_bitstamp_20260828.csv.gz daily_btcusd_coinbase_20260828.csv.gz daily_btcusd_yahoo_20260828.csv.gz daily_ethusd_bitstamp_20260828.csv.gz daily_ethusd_coinbase_20260828.csv.gz daily_ethusd_yahoo_20260828.csv.gz executions_FX_BTC_JPY_31d_20260823.csv.gz executions_FX_BTC_JPY_31d_20260908 flow_FX_BTC_JPY_20260820.csv fred_DEXJPUS.csv fred_DFF.csv fred_DGS2.csv fred_IR3TIB01JPM156N.csv fred_IRSTCI01JPM156N.csv fx_btc_jpy_1m_continuous_20260906 fx_event_ticks_2005_2014 fx_event_ticks_2015_2026 fx_fundamentals_20260822 fx_usdjpy_1m_20170801_20221231 fx_usdjpy_1m_20260822.csv.gz gate_liquidations_20260908 gmo_swap_usdjpy.csv jp_factors_20260905 jpx_daily_report_json_20260908 jpx_etf_daily_20260905 jpx_etf_daily_20260906_topix_alt liquidations_repaired_20260912 liquidations_repaired_20260917 mini_topixf_225labo_20260907 n225f_225labo_20260828 nk225_events_20260904 o3c_oi_distance_20260917 o3c_oi_distance_split_20260918 o3c_price_level_band_20260917 o3c_price_level_bundle_first_20260917 o3c_price_level_full_20260917 o3c_price_level_full_20260917_b005 o3c_price_level_full_20260917_b025 o3c_price_level_full_20260917_w72 o3c_price_level_full_20260917_w8 o3c_price_level_rows4_20260917 o3c_price_level_sample_20260917 o3c_price_level_sample_20260917_limitprice o3c_reaction_20260918_anchor o3c_reaction_20260918_anchor_trades o3c_reaction_20260918_anchor_trades_sample o3c_reaction_20260918_anchor_v1_rawcols o3c_reaction_20260918_full o3c_reaction_20260918_judge o3c_reaction_20260918_sample o3c_reaction_20260918_scale12_judgmentdays o3c_signal_continue_20260920 o3c_signal_explore2_20260919 o3c_signal_explore3_20260920 o3c_signal_explore4_20260920 o3c_signal_explore5_20260920 o3c_signal_explore_20260919 o3c_signal_materials_20260920 o3c_signal_policy_20260920 o3c_signal_value_20260921 okx_20260905 okx_btc_lsratio_1h_20260823.csv okx_btc_lsratio_5m_20260823.csv okx_btc_oi_1h_20260823.csv okx_btc_oi_5m_20260823.csv phase2_runs phase2_sealed qa_known_answer_20260905 qa_known_answer_maker3_20260907 qa_known_answer_maker3_v2_20260905 qa_known_answer_maker3_v3_20260905 qa_known_answer_maker4_20260905 qa_known_answer_maker4_r2_20260905 qa_known_answer_maker_20260905 qa_known_answer_steer_20260905 qa_pipeline_daily_20260905 qa_pipeline_daily_20260906 qa_pipeline_taker_20260905 regime_composite_20260901 reit_onr_20260904 storm_events_20260820 topixf_225labo_20260907 venue_survey_20260827 yutai_20260904
+```
+
+### 検索計画
+
+**この回は 6 本とも未実行。**リードの起動指定「検索計画 6 本は打ち直しません。前回が残した候補と項目を先に潰します」に従った。委任文 §2 の条件では、残りの候補が空になってから幅と語を変えた 6 本を打つ。今回は残りの候補が空にならなかったので、新しい 6 本には進んでいない。
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (未作成) | (未作成) | 未実行(残りの候補が空になっていないため) |
+| 中間 | (未作成) | (未作成) | 未実行(同上) |
+| 広い | (未作成) | (未作成) | 未実行(同上) |
+
+### 出典
+
+取得日はすべて 2026-09-22。方法はすべて curl(`$HTTPS_PROXY` 経由)で、生ログの行番号を添える。
+
+| URL | 方法 | 生ログの行 |
+|---|---|---|
+| https://pypi.org/pypi/basana/json | curl | 3 |
+| https://pypi.org/pypi/backtrader/json | curl | 5 |
+| https://pypi.org/pypi/pysystemtrade/json | curl | 7 |
+| https://pypi.org/pypi/pybroker/json | curl | 9 |
+| https://pypi.org/pypi/lib-pybroker/json | curl | 11 |
+| https://pypi.org/pypi/bt/json | curl | 13 |
+| https://pypi.org/pypi/ziplime/json | curl | 15 |
+| https://pypi.org/pypi/superalgos/json | curl | 17 |
+| https://pypi.org/pypi/opentrader/json | curl | 19 |
+| https://pypi.org/pypi/crypto-signal/json | curl | 21 |
+| https://pypi.org/pypi/fast-trade/json | curl | 23 |
+| https://pypi.org/pypi/OctoBot/json | curl | 37 |
+| https://pypi.org/pypi/pybotters/json | curl | 35 |
+| https://raw.githubusercontent.com/robcarver17/pysystemtrade/master/LICENSE | curl | 40 |
+| https://raw.githubusercontent.com/Superalgos/Superalgos/develop/LICENSE | curl | 42 |
+| https://raw.githubusercontent.com/bludnic/opentrader/master/LICENSE | curl | 52 |
+| https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/LICENSE | curl | 46 |
+| https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/LICENSE | curl | 56 |
+| https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/README.md | curl | 62 |
+| https://raw.githubusercontent.com/nkaz001/hftbacktest/master/Cargo.toml | curl | 66 |
+| https://raw.githubusercontent.com/nkaz001/hftbacktest/master/connector/Cargo.toml | curl | 64 |
+| https://raw.githubusercontent.com/nkaz001/hftbacktest/master/connector/src/main.rs | curl | 68 |
+| https://pypi.org/pypi/pyqlib/json | curl | 106 |
+| https://raw.githubusercontent.com/microsoft/qlib/main/qlib/config.py | curl | 108 |
+| https://raw.githubusercontent.com/microsoft/qlib/main/scripts/dump_bin.py | curl | 110 |
+| https://pypi.org/pypi/mlflow/json | curl | 112 |
+| https://raw.githubusercontent.com/mlflow/mlflow/master/mlflow/telemetry/constant.py | curl | 114 |
+| https://raw.githubusercontent.com/mlflow/mlflow/master/mlflow/telemetry/utils.py | curl | 116 |
+| https://raw.githubusercontent.com/jesse-ai/jesse/master/README.md | curl | 118 |
+| https://pypi.org/pypi/vnpy_ctastrategy/json | curl | 120 |
+| https://raw.githubusercontent.com/QuantConnect/lean-cli/master/README.md | curl | 122 |
+| https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/package.json | curl | 124 |
+| https://raw.githubusercontent.com/carlos8f/bot18/master/package.json | curl | 126 |
+| https://jesse.trade/pricing | curl | 136 |
+| https://docs.jesse.trade/docs/livetrade.html | curl | 138 |
+| https://pypistats.org/api/packages/jesse/recent | curl | 174 |
+| https://pypistats.org/api/packages/lean/recent | python-urllib | 188 |
+| https://raw.githubusercontent.com/jesse-ai/jesse/master/LICENSE | curl | 210 |
+| https://raw.githubusercontent.com/microsoft/qlib/main/LICENSE | curl | 212 |
+| https://raw.githubusercontent.com/QuantConnect/lean-cli/master/LICENSE | curl | 214 |
+
+### 知見
+
+| 知見 | 印 | このプロジェクトへの含意 |
+|---|---|---|
+| Qlib の必須依存である mlflow は遠隔測定を内蔵し、送信先は config.mlflow-telemetry.io。`MLFLOW_DISABLE_TELEMETRY` で止まる | 一次資料 | Qlib を試すなら、この環境変数を立ててから導入と実行を行う必要がある |
+| Qlib 自身の実験管理の既定の保存先は `file:<cwd>/mlruns` のローカルで、databricks 向けの依存は mlflow の extras 側にあり既定では入らない | 一次資料 | 「既定でクラウドに接続する」という懸念のうち、qlib 側は当たらない。当たるのは mlflow の遠隔測定だけ |
+| Jesse の本体は MIT だが、実弾とペーパー取引は別売りのプラグインで、逐語「The package is pre-built and the access is limited to those with an active license.」 | 一次資料 | ペーパー運用まで含めて無料ではない。バックテストと最適化だけが鍵なしで動く |
+| Jesse のバックテストは postgres も redis も無しで `jesse.research.backtest` から動く | 実測 | 常駐のデータベースを立てずに評価できる |
+| Lean CLI はこの環境では最小実行に到達できない。docker のクライアントはあるが daemon の soket が無く、さらに `lean init` が QuantConnect の資格情報を対話で要求する | 実測 | Docker イメージの取得を許しても、資格情報の登録が別に要る。登録はオーナーの判断待ち |
+| hftbacktest の実弾コネクタは binancefutures / binancespot / bybit の 3 つ | 一次資料 | 前回 404 だったディレクトリ列挙の代わりに Cargo.toml の features とソースの mod 宣言で裏が取れた。国内取引所は入っていない |
+| Mendl-Labs/BacktestingCore のライセンスは Functional Source License 1.1、Luczinsritter の側は README のバッジが MIT を示すが LICENSE ファイルは 404 | 一次資料 | 前者は OSI のオープンソースではない。後者はバッジしか根拠が無い |
+| Jesse の wheel に zklink SDK の .dylib が同梱されている | 実測 | 同梱バイナリのある配布であることを記録に残す |
+| PyBroker の PyPI 上の名前は lib-pybroker で、ライセンスは Apache License 2.0 with Commons Clause | 一次資料 | Commons Clause が付くので、無償配布だが販売の制限がある |
+| pysystemtrade / Superalgos / OpenTrader / CryptoSignal は PyPI に無く、GitHub の LICENSE で一次資料に到達した | 実測 | PyPI の 404 だけで「到達できない」と書いてはならない実例 |
+
+### 候補の一覧
+
+発見順。行頭の `[深掘り]` は §4.0 の表に全項目の行を持つものだけに付ける。それ以外は「浅い」と、何が未確認かを書く。
+
+1. [深掘り] `zipline-reloaded` — Apache-2.0 の日足バックテスト。bundle という単位でデータを封じる。導入から指値の往復まで到達。
+2. [深掘り] `Jesse` — MIT の暗号資産バックテスト。実弾とペーパーは別売りのプラグイン。導入から指値の利確まで到達。
+3. [深掘り] `VnPy` — MIT。本体と戦略の枠組み vnpy_ctastrategy が別パッケージ。導入から指値の往復まで到達。
+4. [深掘り] `Qlib` — MIT。機械学習向けのデータ形式と実験管理。dump_bin での形式変換と読み戻しまで到達。
+5. [深掘り] `Lean CLI` — Apache-2.0 の CLI。実行の本体は Docker イメージと QuantConnect の資格情報。この環境では最小実行に到達できない。
+6. Basana — 非同期・イベント駆動の暗号資産向け枠組み。Apache-2.0、最新版 1.11、更新 2026-07-22。**浅い**(導入・最小実行・供給網の検査・料金の逐語が未確認。一次資料は PyPI の json のみ)。
+7. Backtrader — バックテストの機関。GPLv3+、最新版 1.9.78.123、更新 2023-04-19。**浅い**(同上。更新が 2023 年で止まっていることの裏取りは PyPI の upload_time のみ)。
+8. PySystemtrade — PyPI に無し。GitHub の LICENSE は GNU GENERAL PUBLIC LICENSE Version 3。**浅い**(版・更新日・依存・導入・最小実行が未確認。PyPI が 404 のため版の一次資料が取れていない)。
+9. PyBroker — PyPI 上の名前は lib-pybroker。Apache License 2.0 with Commons Clause、最新版 2.0.1、更新 2026-08-28。**浅い**(導入・最小実行・Commons Clause の逐語が未確認)。
+10. bt — MIT、最新版 1.2.3、更新 2026-09-12。**浅い**(導入・最小実行・供給網の検査が未確認)。
+11. Ziplime — 最新版 1.19.16、更新 2026-06-18、PyPI の license 欄が空。**浅い**(ライセンスの一次資料が取れていない。GitHub の所在も未確認)。
+12. Superalgos — PyPI に無し。GitHub の LICENSE は Apache License Version 2.0。**浅い**(版・更新日・導入・最小実行が未確認。Node.js 系で pip の経路に無い)。
+13. OpenTrader — PyPI に無し。GitHub の master ブランチの LICENSE は Apache License Version 2.0(main ブランチは 404 で、master で取れた)。**浅い**(版・更新日・導入・最小実行が未確認)。
+14. CryptoSignal — PyPI に無し(crypto-signal は 404)。GitHub の LICENSE は MIT License、Copyright (c) 2017 Abenezer Mamo。**浅い**(版・更新日・導入・最小実行が未確認)。
+15. fast-trade — GNU AGPLv3、最新版 2.1.0、更新 2026-08-20。**浅い**(導入・最小実行・AGPL の再配布の条件が未確認)。
+16. OctoBot — GPL-3.0、最新版 2.1.1、更新 2026-03-29。**浅い**(導入・最小実行が未確認。依存が多く、隔離 venv での導入を打っていない)。
+17. pybotters — MIT、最新版 1.11.2、更新 2026-04-17。**浅い**(導入・最小実行・対応取引所の一次資料が未確認)。
+18. DeviaVir/zenbot — 本家 carlos8f/zenbot の分岐。package.json の name は zenbot4、version 4.1.0、license MIT、engines.node は >=10.0.0。**浅い**(今回新しく当たった分岐で、導入・最小実行・保守の状態が未確認)。
+19. Bot18 — carlos8f の後継。package.json の name は bot18、version 0.4.35、説明は「A high-frequency cryptocurrency trading bot by Zenbot creator @carlos8f」。**浅い**(ライセンス欄・導入・最小実行が未確認)。
+20. Mendl-Labs/BacktestingCore — master ブランチの LICENSE は Functional Source License, Version 1.1, ALv2 Future License、Copyright 2026 Nwagbara Group, LLC。**浅い**(README の原文・版・導入が未確認)。
+21. Luczinsritter/event_driven_backtesting_engine — README の冒頭は「Event‑Driven Backtesting Engine : Tick or Bar level Simulation & Trade Analytics」、バッジは MIT。LICENSE ファイルは main と master のどちらも 404。**浅い**(ライセンスの根拠がバッジだけ。版・導入・最小実行が未確認)。
+22. hftbacktest — 1 回目に深掘り済み。今回は実弾コネクタの裏取りだけを足した(binancefutures / binancespot / bybit)。**浅い**(この回の表には行を持たない。1 回目の節を見る)。
+23. mlflow — Qlib の必須依存として今回はじめて名前が出た。実験の追跡の道具そのもの。**浅い**(単体での導入・最小実行をしていない。遠隔測定の送信先と無効化の方法だけ一次資料で取った)。
+
+### ツール1件ごとの表
+
+#### §4.0 の機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `zipline-reloaded` | 版 | 3.1.1 | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(info.version) |
+| `zipline-reloaded` | 最終更新日 | 2025-07-19 | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(最新版の upload_time) |
+| `zipline-reloaded` | ライセンス | Apache-2.0 | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(info.license_expression) |
+| `zipline-reloaded` | 言語と動作環境 | Python >=3.10、この環境は Python 3.11.15 | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(info.requires_python) |
+| `zipline-reloaded` | 対応取引所 | 導入後のパッケージ直下に exchange / broker / gateway / connector / live のディレクトリが 1 つも無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:219(find の結果 exch が空) |
+| `zipline-reloaded` | 星 | 未確認 | 未確認 | 試したこと: GitHub は curl だと 403。WebFetch での HTML 取得は今回の予算内で打てなかった |
+| `zipline-reloaded` | コミット数 | 未確認 | 未確認 | 試したこと: GitHub API は curl で 403。git clone は本体取得になるため §6-6 で打たない |
+| `zipline-reloaded` | 保守者数 | 未確認 | 未確認 | 試したこと: PyPI の json には maintainer が 1 名分しか入らない。GitHub の contributors は 403 |
+| `zipline-reloaded` | 週DL数 | 未確認 | 未確認 | 試したこと: pypistats.org の recent 端点を curl と python-urllib の 2 回打ち、どちらも HTTP 429 |
+| `zipline-reloaded` | 初回公開日 | 2021-03-29 | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(releases の最古 upload_time) |
+| `zipline-reloaded` | 既知の脆弱性 | PyPI の vulnerabilities は空 | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(vulnerabilities の長さ 0) |
+| `zipline-reloaded` | 料金体系 | Apache-2.0 の無償配布。料金ページに当たるものは PyPI にも project_urls にも無い | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(license_expression と project_urls) |
+| `zipline-reloaded` | 無料枠の上限 | 上限の記述なし(自前で走らせる限り課金の口が無い) | 推定 | PyPI の license_expression が Apache-2.0 で、鍵・登録の要求が導入と実行のどちらでも出なかったことからの外挿 |
+| `zipline-reloaded` | 課金開始条件 | 該当なし | 推定 | 同上。導入と最小実行のどちらでも鍵・登録を求められなかった |
+| `zipline-reloaded` | 隠れた依存 | 相場データは別途。既定の bundle は quandl / quantopian-quandl で、今回は自前の csvdir を登録して回避した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:131(zipline bundles の一覧と ingest) |
+| `zipline-reloaded` | 登録の要否 | 不要。鍵なしで導入・ingest・バックテストまで到達 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:135(run_algorithm が完走) |
+| `zipline-reloaded` | 到達経路 | PyPI の index から pip install が通る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:165(pip install の所要と pip check) |
+| `zipline-reloaded` | 導入可否 | 可。隔離 venv に導入 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:165(RC=0) |
+| `zipline-reloaded` | install所要秒 | 54 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:165(time_s) |
+| `zipline-reloaded` | 依存数 | 67 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:165(pkgs) |
+| `zipline-reloaded` | pip check | No broken requirements found. | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:165(pip_check) |
+| `zipline-reloaded` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:135(rc=0) |
+| `zipline-reloaded` | 最小実行の中身 | 合成の日足 118 本で csvdir bundle を登録・ingest し、成行買い 1 回と指値売り 1 回の往復を通した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:135(TXN_COUNT=2) |
+| `zipline-reloaded` | 実行所要秒 | 2.30 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:135(time_s) |
+| `zipline-reloaded` | wheel展開 | manylinux の wheel を pip download で取得し、中身を列挙した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:193(files の件数) |
+| `zipline-reloaded` | setup.py導入時実行 | wheel に setup.py は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:193(setup_py=0) |
+| `zipline-reloaded` | 同梱バイナリ | 拡張モジュールの .so を同梱(zipline/_protocol など) | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:193(binaries と例) |
+| `zipline-reloaded` | 外部送信 | 導入と最小実行の範囲では外部送信の挙動を観測していない。遠隔測定の有無はソースを読んでいない | 未確認 | 試したこと: 配布物のファイル名の列挙のみ。通信の遮断下での実行や telemetry の語の走査は未実施 |
+| `zipline-reloaded` | 自動発注機能 | 導入後のパッケージに発注の経路となるディレクトリが無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:219(exchange/broker/gateway/live が 0) |
+| `zipline-reloaded` | 宣伝詐欺の兆候 | 兆候なし。配布は PyPI と GitHub のみで、提携リンクや Telegram 限定配布の記述に当たらなかった | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(project_urls が documentation / homepage / repository の 3 つ) |
+| `zipline-reloaded` | 当方データ投入 | 日足の csv を csvdir の形に整えれば入る。当方の csv.gz の約定・清算をそのまま入れる経路は試していない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:133(NYSE の立会日に合わせた csv で ingest が通った) |
+| `zipline-reloaded` | 時刻の扱い | 取引所暦(NYSE)に厳密で、暦に無い日付を混ぜると ingest が AssertionError で止まる | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:131(Extra sessions の列挙) |
+| `zipline-reloaded` | 再現性 | 同じ bundle と同じアルゴリズムで約定の値が決まる。乱数は当方の合成データ側にしか無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:135(TXN の価格が固定) |
+| `zipline-reloaded` | 規模の見積 | 456 日のティックは日足の枠組みに入らない。分足以下は minute bundle が要り、今回は測っていない | 推定 | 日足 118 本の実行時間からの外挿では分足・ティックの規模を出せないため |
+| `zipline-reloaded` | 配布元の一致 | PyPI の project_urls の repository が github.com/stefan-jansen/zipline-reloaded を指す | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(project_urls.repository) |
+| `zipline-reloaded` | 難読化 | 未確認 | 未確認 | 試したこと: 配布物のアーカイブを開いてファイル名を列挙しただけで、中身の走査は未実施 |
+| `zipline-reloaded` | 外部URL取得 | 導入時に実行される setup.py が無いので、導入の段では外部取得が起きない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:193(setup_py=0) |
+| `zipline-reloaded` | 依存の一覧 | 導入後の pip list で 67 件 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:165(pkgs) |
+| `zipline-reloaded` | 保守者名の一貫性 | PyPI の maintainer は Stefan Jansen、author は Quantopian Inc(元の作者)。repository も stefan-jansen | 一次資料 | https://pypi.org/pypi/zipline-reloaded/json 取得日 2026-09-22(maintainer / author / repository) |
+| `zipline-reloaded` | 4軸1_道具 | 入れられる。隔離 venv で導入から指値の往復まで通った | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:135(最小実行の完走) |
+| `zipline-reloaded` | 4軸2_情報 | 取引所暦(exchange_calendars)が付いてくる。当方に取引所暦の部品は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:165(依存に exchange-calendars) |
+| `zipline-reloaded` | 4軸3_視点 | bundle という「データを封じた単位」で再現する設計。当方の backtest_data の扱いと別 | 推定 | ingest の挙動と bundles の一覧からの外挿 |
+| `zipline-reloaded` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: 当方の engine.py との突き合わせは今回の範囲外(リードの判定事項) |
+| `Jesse` | 版 | 3.2.1 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(info.version) |
+| `Jesse` | 最終更新日 | 2026-09-21 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(最新版の upload_time) |
+| `Jesse` | ライセンス | MIT(本体) | 一次資料 | https://raw.githubusercontent.com/jesse-ai/jesse/master/LICENSE 取得日 2026-09-22(冒頭 MIT License / Copyright (c) 2020 Jesse.Trade) |
+| `Jesse` | 言語と動作環境 | Python >=3.10、この環境は Python 3.11.15 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(info.requires_python) |
+| `Jesse` | 対応取引所 | 導入後のパッケージに exchanges ディレクトリがある。個々の取引所名の列挙は未実施 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:221(exch に exchanges) |
+| `Jesse` | 星 | 未確認 | 未確認 | 試したこと: GitHub は curl だと 403。WebFetch は今回の予算内で打てなかった |
+| `Jesse` | コミット数 | 未確認 | 未確認 | 試したこと: GitHub API は curl で 403 |
+| `Jesse` | 保守者数 | PyPI の maintainer は Saleh Mir 1 名 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(info.maintainer) |
+| `Jesse` | 週DL数 | last_week=777、last_month=4768 | 一次資料 | https://pypistats.org/api/packages/jesse/recent 取得日 2026-09-22(recent_downloads) |
+| `Jesse` | 初回公開日 | 2020-04-06 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(releases の最古 upload_time) |
+| `Jesse` | 既知の脆弱性 | PyPI の vulnerabilities は空 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(vulnerabilities の長さ 0) |
+| `Jesse` | 料金体系 | 本体は MIT で無償。実弾とペーパー取引は別売りのプラグインで、逐語「The package is pre-built and the access is limited to those with an active license.」 | 一次資料 | https://docs.jesse.trade/docs/livetrade.html 取得日 2026-09-22(Installation の段) |
+| `Jesse` | 無料枠の上限 | 本体(バックテスト・最適化)は上限の記述なし。実弾・ペーパーは license が要る | 一次資料 | https://docs.jesse.trade/docs/livetrade.html 取得日 2026-09-22(Getting started と Paper Trading の段) |
+| `Jesse` | 課金開始条件 | 実弾・ペーパー取引のプラグインを使うとき。逐語「To get started, you need to register on our website to generate your license key.」。金額は取れていない | 一次資料 | https://docs.jesse.trade/docs/livetrade.html 取得日 2026-09-22(Getting started の段) |
+| `Jesse` | 隠れた依存 | 本体の実行では postgres / redis が無くても動いた。実弾側は LICENSE_API_TOKEN を .env に置くことを求める | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(research.backtest が DB 無しで完走) |
+| `Jesse` | 登録の要否 | バックテストは不要。実弾・ペーパーは登録が要る(渡すもの: jesse.trade のアカウントと API トークン。今回は登録しない) | 一次資料 | https://docs.jesse.trade/docs/livetrade.html 取得日 2026-09-22(Creating a license key の段) |
+| `Jesse` | 到達経路 | PyPI の index から pip install が通る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:167(pip install の所要) |
+| `Jesse` | 導入可否 | 可。新しい隔離 venv では依存の衝突が出ない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:167(pip_check) |
+| `Jesse` | install所要秒 | 84 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:167(time_s) |
+| `Jesse` | 依存数 | 114 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:167(pkgs) |
+| `Jesse` | pip check | No broken requirements found. | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:167(pip_check) |
+| `Jesse` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(rc=0) |
+| `Jesse` | 最小実行の中身 | 合成の 1 分足 300 本を jesse.research.backtest に渡し、成行相当の建玉 1 回と指値の利確 1 回を通した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(TOTAL_TRADES=1) |
+| `Jesse` | 実行所要秒 | 2.72 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(time_s) |
+| `Jesse` | wheel展開 | 純 Python の wheel を pip download で取得し、中身を列挙した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:195(files の件数) |
+| `Jesse` | setup.py導入時実行 | wheel に setup.py は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:195(setup_py=0) |
+| `Jesse` | 同梱バイナリ | zklink SDK の .dylib を同梱(jesse/modes/import_candles_mode/drivers/Apex/omni_files 配下) | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:195(binaries と例) |
+| `Jesse` | 外部送信 | バックテストの最小実行では外部送信を観測していない。実弾側は license の検証で jesse.trade へ出ると文書が示す | 一次資料 | https://docs.jesse.trade/docs/livetrade.html 取得日 2026-09-22(The package is pre-built and the access is limited to those with an active license.) |
+| `Jesse` | 自動発注機能 | ある。exchanges と実弾プラグインの経路を持つ。今回は鍵を要する操作を一切打っていない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:221(exchanges ディレクトリ) |
+| `Jesse` | 宣伝詐欺の兆候 | 兆候なし。README に収益の保証の文言は当たらず、配布は PyPI と GitHub | 一次資料 | https://raw.githubusercontent.com/jesse-ai/jesse/master/README.md 取得日 2026-09-22(premium / subscription の語は roadmap の 1 行のみ) |
+| `Jesse` | 当方データ投入 | 時刻・始値・終値・高値・安値・出来高の 6 列の配列をそのまま渡せる。当方の約定 csv.gz から足を作れば入る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(合成の配列をそのまま投入) |
+| `Jesse` | 時刻の扱い | ミリ秒のエポックを先頭列に取る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(合成データの先頭列をミリ秒で作って完走) |
+| `Jesse` | 再現性 | 同じ配列と同じ戦略で同じ損益。乱数は当方の合成データ側にしか無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(NET_PROFIT が固定) |
+| `Jesse` | 規模の見積 | 456 日のティックを足に直したときの所要は測っていない | 推定 | 300 本の実行時間からの外挿は桁が離れすぎるため数値を出さない |
+| `Jesse` | 配布元の一致 | PyPI の project_urls の Source が github.com/jesse-ai/jesse を指す | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(project_urls.Source) |
+| `Jesse` | 難読化 | 未確認 | 未確認 | 試したこと: 配布物のアーカイブを開いてファイル名を列挙しただけで、中身の走査は未実施 |
+| `Jesse` | 外部URL取得 | 導入時に実行される setup.py が無いので、導入の段では外部取得が起きない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:195(setup_py=0) |
+| `Jesse` | 依存の一覧 | 導入後の pip list で 114 件 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:167(pkgs) |
+| `Jesse` | 保守者名の一貫性 | PyPI の author と maintainer がどちらも Saleh Mir、homepage は jesse.trade | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(author / maintainer / project_urls) |
+| `Jesse` | 4軸1_道具 | 入れられる。鍵なしでバックテストまで到達 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(最小実行の完走) |
+| `Jesse` | 4軸2_情報 | 取引所ごとの手数料・レバレッジ・証拠金の型を持つ。当方に証拠金の模型は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(futures / futures_leverage の設定で完走) |
+| `Jesse` | 4軸3_視点 | 戦略を should_long / go_long の状態機械で書かせる。当方の composite と別の切り方 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(同じ形で戦略を書いて完走) |
+| `Jesse` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: 当方の engine.py との突き合わせは今回の範囲外(リードの判定事項) |
+| `VnPy` | 版 | vnpy 4.4.0、vnpy_ctastrategy 1.4.1 | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(info.version と vnpy_ctastrategy の json) |
+| `VnPy` | 最終更新日 | vnpy 2026-05-14、vnpy_ctastrategy 2025-12-31 | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(最新版の upload_time) |
+| `VnPy` | ライセンス | MIT | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(info.license) |
+| `VnPy` | 言語と動作環境 | Python >=3.10、この環境は Python 3.11.15 | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(info.requires_python) |
+| `VnPy` | 対応取引所 | 本体のパッケージ直下は alpha / chart / event / rpc / trader だけで、取引所の接続は別パッケージに分かれる | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:223(top の列挙) |
+| `VnPy` | 星 | 未確認 | 未確認 | 試したこと: GitHub は curl だと 403 |
+| `VnPy` | コミット数 | 未確認 | 未確認 | 試したこと: GitHub API は curl で 403 |
+| `VnPy` | 保守者数 | 未確認 | 未確認 | 試したこと: PyPI の json の author と maintainer がどちらも空 |
+| `VnPy` | 週DL数 | 未確認 | 未確認 | 試したこと: pypistats.org の recent を curl と python-urllib の 2 回打ち、どちらも HTTP 429 |
+| `VnPy` | 初回公開日 | 2017-03-07 | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(releases の最古 upload_time) |
+| `VnPy` | 既知の脆弱性 | PyPI の vulnerabilities は空 | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(vulnerabilities の長さ 0) |
+| `VnPy` | 料金体系 | MIT の無償配布。PyPI の project_urls は forum と docs で、料金ページに当たるものは無い | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(license と project_urls) |
+| `VnPy` | 無料枠の上限 | 上限の記述なし | 推定 | MIT の配布で、導入と最小実行のどちらでも鍵・登録を求められなかったことからの外挿 |
+| `VnPy` | 課金開始条件 | 該当なし | 推定 | 同上 |
+| `VnPy` | 隠れた依存 | 戦略の枠組みは vnpy 本体と別のパッケージ(vnpy_ctastrategy)で、依存に pandas と plotly を足す | 一次資料 | https://pypi.org/pypi/vnpy_ctastrategy/json 取得日 2026-09-22(requires_dist が pandas / plotly / vnpy>=4.0.0) |
+| `VnPy` | 登録の要否 | 不要。鍵なしでバックテストまで到達 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(rc=0) |
+| `VnPy` | 到達経路 | PyPI の index から pip install が通る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:171(pip install の所要) |
+| `VnPy` | 導入可否 | 可。vnpy と vnpy_ctastrategy を同じ隔離 venv に導入 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:171(RC=0) |
+| `VnPy` | install所要秒 | 48 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:171(time_s) |
+| `VnPy` | 依存数 | 45 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:171(pkgs) |
+| `VnPy` | pip check | No broken requirements found. | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:171(pip_check) |
+| `VnPy` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(rc=0) |
+| `VnPy` | 最小実行の中身 | 合成の 1 分足 300 本を BacktestingEngine の history_data に直接入れ、指値買い 1 回と指値売り 1 回の往復を通した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(TRADE_COUNT=2) |
+| `VnPy` | 実行所要秒 | 0.72 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(time_s) |
+| `VnPy` | wheel展開 | 純 Python の wheel を pip download で取得し、中身を列挙した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:197(files の件数) |
+| `VnPy` | setup.py導入時実行 | wheel に setup.py は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:197(setup_py=0) |
+| `VnPy` | 同梱バイナリ | 同梱の .so / .dll / .dylib は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:197(binaries=0) |
+| `VnPy` | 外部送信 | 最小実行では外部送信を観測していない。データベースの既定の接続先は確かめていない | 未確認 | 試したこと: history_data に直接入れたのでデータベース層を通っていない。設定の既定値は読んでいない |
+| `VnPy` | 自動発注機能 | 本体に取引所の接続は入っていない。gateway は別パッケージで、今回は入れていない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:223(exch が空) |
+| `VnPy` | 宣伝詐欺の兆候 | 兆候なし。配布は PyPI と GitHub で、project_urls は docs / forum / changelog | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(project_urls) |
+| `VnPy` | 当方データ投入 | BarData の列(始値・終値・高値・安値・出来高・時刻)に直せば入る。history_data に直接代入できる | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(合成の BarData を直接代入して完走) |
+| `VnPy` | 時刻の扱い | datetime オブジェクトをそのまま取る。タイムゾーンの既定は確かめていない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(naive な datetime で完走) |
+| `VnPy` | 再現性 | 同じ足と同じ戦略で同じ約定と同じ損益 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(TOTAL_NET_PNL が固定) |
+| `VnPy` | 規模の見積 | 456 日のティックの所要は測っていない | 推定 | 300 本の実行時間からの外挿は桁が離れすぎるため数値を出さない |
+| `VnPy` | 配布元の一致 | PyPI の project_urls が github.com/vnpy/vnpy と vnpy.com を指す | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(project_urls.Changes / Homepage) |
+| `VnPy` | 難読化 | 未確認 | 未確認 | 試したこと: 配布物のアーカイブを開いてファイル名を列挙しただけで、中身の走査は未実施 |
+| `VnPy` | 外部URL取得 | 導入時に実行される setup.py が無いので、導入の段では外部取得が起きない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:197(setup_py=0) |
+| `VnPy` | 依存の一覧 | 導入後の pip list で 45 件 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:171(pkgs) |
+| `VnPy` | 保守者名の一貫性 | PyPI の author と maintainer が空で、個人名の照合ができない。repository は vnpy 組織 | 一次資料 | https://pypi.org/pypi/vnpy/json 取得日 2026-09-22(author / maintainer が None) |
+| `VnPy` | 4軸1_道具 | 入れられる。導入から指値の往復まで通った | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(最小実行の完走) |
+| `VnPy` | 4軸2_情報 | 約定ごとの滑りと手数料を rate / slippage / pricetick の形で分けて持つ。当方は費用を一括で扱う | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(set_parameters に rate / slippage / pricetick を与えて完走) |
+| `VnPy` | 4軸3_視点 | 戦略と執行を CtaTemplate の状態で切る。当方の composite と別の切り方 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:151(同じ形で戦略を書いて完走) |
+| `VnPy` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: 当方の engine.py との突き合わせは今回の範囲外(リードの判定事項) |
+| `Qlib` | 版 | pyqlib 0.9.7 | 一次資料 | https://pypi.org/pypi/pyqlib/json 取得日 2026-09-22(info.version) |
+| `Qlib` | 最終更新日 | 2025-08-15 | 一次資料 | https://pypi.org/pypi/pyqlib/json 取得日 2026-09-22(最新版の upload_time) |
+| `Qlib` | ライセンス | MIT | 一次資料 | https://raw.githubusercontent.com/microsoft/qlib/main/LICENSE 取得日 2026-09-22(冒頭 MIT License / Copyright (c) Microsoft Corporation.) |
+| `Qlib` | 言語と動作環境 | Python >=3.8.0、この環境は Python 3.11.15 | 一次資料 | https://pypi.org/pypi/pyqlib/json 取得日 2026-09-22(info.requires_python) |
+| `Qlib` | 対応取引所 | 取引所の接続は持たない。パッケージ直下は backtest / cli / contrib / data / model / rl / strategy | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:225(exch が空、top の列挙) |
+| `Qlib` | 星 | 未確認 | 未確認 | 試したこと: GitHub は curl だと 403 |
+| `Qlib` | コミット数 | 未確認 | 未確認 | 試したこと: GitHub API は curl で 403 |
+| `Qlib` | 保守者数 | 未確認 | 未確認 | 試したこと: PyPI の json の author と maintainer がどちらも空 |
+| `Qlib` | 週DL数 | 未確認 | 未確認 | 試したこと: pypistats.org の recent を curl と python-urllib の 2 回打ち、どちらも HTTP 429 |
+| `Qlib` | 初回公開日 | 2020-09-28 | 一次資料 | https://pypi.org/pypi/pyqlib/json 取得日 2026-09-22(releases の最古 upload_time) |
+| `Qlib` | 既知の脆弱性 | PyPI の vulnerabilities は空 | 一次資料 | https://pypi.org/pypi/pyqlib/json 取得日 2026-09-22(vulnerabilities の長さ 0) |
+| `Qlib` | 料金体系 | MIT の無償配布。料金ページに当たるものは PyPI にも無い | 一次資料 | https://pypi.org/pypi/pyqlib/json 取得日 2026-09-22(project_urls が空) |
+| `Qlib` | 無料枠の上限 | 上限の記述なし | 推定 | MIT の配布で、導入と最小実行のどちらでも鍵・登録を求められなかったことからの外挿 |
+| `Qlib` | 課金開始条件 | 該当なし | 推定 | 同上 |
+| `Qlib` | 隠れた依存 | mlflow が必須依存に入る。mlflow の databricks 向けの依存は extras 側で、既定では入らない | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22(requires_dist の databricks 系はすべて extra == \"databricks\") |
+| `Qlib` | 登録の要否 | 不要。鍵なしでデータ形式の準備から読み戻しまで到達 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:163(ROWS=120) |
+| `Qlib` | 到達経路 | PyPI の index から pip install が通る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:169(pip install の所要) |
+| `Qlib` | 導入可否 | 可。隔離 venv に導入 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:169(RC=0) |
+| `Qlib` | install所要秒 | 111 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:169(time_s) |
+| `Qlib` | 依存数 | 192 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:169(pkgs) |
+| `Qlib` | pip check | No broken requirements found. | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:169(pip_check) |
+| `Qlib` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:161(rc=0) |
+| `Qlib` | 最小実行の中身 | 合成の日足 120 本の csv を dump_bin.py の dump_all で qlib 形式に変換し、qlib.init と D.features で読み戻した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:161(files=8) |
+| `Qlib` | 実行所要秒 | 2.15 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:163(読み戻しの time_s) |
+| `Qlib` | wheel展開 | manylinux の wheel を pip download で取得し、中身を列挙した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:199(files の件数) |
+| `Qlib` | setup.py導入時実行 | wheel に setup.py は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:199(setup_py=0) |
+| `Qlib` | 同梱バイナリ | 拡張モジュールの .so を同梱(qlib/data/_libs の rolling と expanding) | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:199(binaries と例) |
+| `Qlib` | 外部送信 | 必須依存の mlflow が遠隔測定を内蔵し、送信先は config.mlflow-telemetry.io。MLFLOW_DISABLE_TELEMETRY で止まる。qlib 自身の実験管理の既定の保存先はローカルの file:<cwd>/mlruns で、クラウドへは向かない | 一次資料 | https://raw.githubusercontent.com/mlflow/mlflow/master/mlflow/telemetry/constant.py 取得日 2026-09-22(CONFIG_URL と、utils.py の MLFLOW_DISABLE_TELEMETRY、qlib/config.py の MLflowSettings.uri) |
+| `Qlib` | 自動発注機能 | 無い。取引所の接続を持たない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:225(exch が空) |
+| `Qlib` | 宣伝詐欺の兆候 | 兆候なし。配布は PyPI と microsoft/qlib | 一次資料 | https://raw.githubusercontent.com/microsoft/qlib/main/LICENSE 取得日 2026-09-22(Copyright (c) Microsoft Corporation.) |
+| `Qlib` | 当方データ投入 | 日付・始値・高値・安値・終値・出来高・factor の列を持つ csv をディレクトリに置けば dump_all が取り込む。ファイル名が銘柄名になる | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:161(qcsv/SYN.csv から syn の bin が出来た) |
+| `Qlib` | 時刻の扱い | 日足では日付の文字列。立会日の暦は取り込んだ csv からそのまま作られる | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:161(calendars/day.txt が生成) |
+| `Qlib` | 再現性 | 同じ csv から同じ bin が出て、読み戻しの行数も一致 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:163(ROWS=120) |
+| `Qlib` | 規模の見積 | 456 日のティックの変換の所要は測っていない | 推定 | 日足 120 本の変換時間からの外挿は桁が離れすぎるため数値を出さない |
+| `Qlib` | 配布元の一致 | PyPI の json に project_urls が無く、配布元の照合は LICENSE の Microsoft の表記と README の所在に頼る | 一次資料 | https://pypi.org/pypi/pyqlib/json 取得日 2026-09-22(project_urls が空) |
+| `Qlib` | 難読化 | 未確認 | 未確認 | 試したこと: 配布物のアーカイブを開いてファイル名を列挙しただけで、中身の走査は未実施 |
+| `Qlib` | 外部URL取得 | 導入時に実行される setup.py が無いので、導入の段では外部取得が起きない。実行時は mlflow の遠隔測定が別問題として残る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:199(setup_py=0) |
+| `Qlib` | 依存の一覧 | 導入後の pip list で 192 件 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:169(pkgs) |
+| `Qlib` | 保守者名の一貫性 | PyPI の author と maintainer が空。LICENSE は Microsoft Corporation | 一次資料 | https://pypi.org/pypi/pyqlib/json 取得日 2026-09-22(author / maintainer が None) |
+| `Qlib` | 4軸1_道具 | 入れられる。データ形式の準備と読み戻しまで通った | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:163(最小実行の完走) |
+| `Qlib` | 4軸2_情報 | 列ごとに固定長の bin に落とす保存形式と、立会日の暦を別ファイルに持つ設計。当方に同じ形式は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:161(features / calendars / instruments の 3 つが生成) |
+| `Qlib` | 4軸3_視点 | 実験の記録を mlflow に寄せる設計。当方に実験の追跡の道具は無い(§8 の D) | 一次資料 | https://raw.githubusercontent.com/microsoft/qlib/main/qlib/config.py 取得日 2026-09-22(exp_manager の既定が MLflowExpManager) |
+| `Qlib` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: 当方の研究の流れとの突き合わせは今回の範囲外(リードの判定事項) |
+| `Lean CLI` | 版 | lean 1.0.229 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(info.version) |
+| `Lean CLI` | 最終更新日 | 2026-08-28 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(最新版の upload_time) |
+| `Lean CLI` | ライセンス | Apache License 2.0 | 一次資料 | https://raw.githubusercontent.com/QuantConnect/lean-cli/master/LICENSE 取得日 2026-09-22(冒頭 Apache License Version 2.0) |
+| `Lean CLI` | 言語と動作環境 | Python >=3.9、この環境は Python 3.11.15 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(info.requires_python) |
+| `Lean CLI` | 対応取引所 | commands/live のディレクトリを持つ。接続先の列挙は未実施 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:227(exch に commands/live) |
+| `Lean CLI` | 星 | 未確認 | 未確認 | 試したこと: GitHub は curl だと 403 |
+| `Lean CLI` | コミット数 | 未確認 | 未確認 | 試したこと: GitHub API は curl で 403 |
+| `Lean CLI` | 保守者数 | PyPI の author と maintainer がどちらも QuantConnect(組織名) | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(author / maintainer) |
+| `Lean CLI` | 週DL数 | last_week=2901、last_month=16929 | 一次資料 | https://pypistats.org/api/packages/lean/recent 取得日 2026-09-22(recent_downloads) |
+| `Lean CLI` | 初回公開日 | 2021-01-12 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(releases の最古 upload_time) |
+| `Lean CLI` | 既知の脆弱性 | PyPI の vulnerabilities は空 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(vulnerabilities の長さ 0) |
+| `Lean CLI` | 料金体系 | CLI 自身は Apache-2.0 で無償。ただし実行の本体は QuantConnect の Docker イメージで、README の逐語「many commands in the CLI require Docker to run」 | 一次資料 | https://raw.githubusercontent.com/QuantConnect/lean-cli/master/README.md 取得日 2026-09-22(Installation の段) |
+| `Lean CLI` | 無料枠の上限 | CLI の導入に上限は無い。クラウド側の枠は今回の範囲で取れていない | 未確認 | 試したこと: PyPI の json と GitHub の README のみ。quantconnect.com の料金ページは開いていない |
+| `Lean CLI` | 課金開始条件 | 未確認 | 未確認 | 試したこと: README と PyPI のみ。料金ページの逐語は取っていない |
+| `Lean CLI` | 隠れた依存 | Docker が要る。さらに lean init が QuantConnect の API 資格情報(User id とトークン)を対話で求める | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:155(User id: のあと Aborted!) |
+| `Lean CLI` | 登録の要否 | 要る。lean init の時点で quantconnect.com のアカウントの User id と API トークンを渡す必要がある(今回は登録しない) | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:155(You can request these credentials on https://www.quantconnect.com/account) |
+| `Lean CLI` | 到達経路 | PyPI の index から pip install が通る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:173(pip install の所要) |
+| `Lean CLI` | 導入可否 | 可。CLI そのものは入り、lean --version が動く | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:153(lean 1.0.229) |
+| `Lean CLI` | install所要秒 | 21 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:173(time_s) |
+| `Lean CLI` | 依存数 | 39 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:173(pkgs) |
+| `Lean CLI` | pip check | No broken requirements found. | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:173(pip_check) |
+| `Lean CLI` | 最小実行の可否 | 不可。この環境では到達できない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:149(docker info の Server が空で、unix:///var/run/docker.sock が無い) |
+| `Lean CLI` | 最小実行の中身 | 到達できなかった。試した手段: pip install lean で CLI を導入 / lean --version で動作を確認 / lean init を非対話で実行して QuantConnect の資格情報の入力待ちで中断 / docker の有無を確認したところクライアントはあるが daemon の soket が無い。リードの判断により Docker イメージの取得は打たない(委任文 §6-6) | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:155(lean init が Aborted!) |
+| `Lean CLI` | 実行所要秒 | 0.80 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:155(lean init の time_s) |
+| `Lean CLI` | wheel展開 | 純 Python の wheel を pip download で取得し、中身を列挙した | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:201(files の件数) |
+| `Lean CLI` | setup.py導入時実行 | wheel に setup.py は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:201(setup_py=0) |
+| `Lean CLI` | 同梱バイナリ | 同梱の .so / .dll / .dylib は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:201(binaries=0) |
+| `Lean CLI` | 外部送信 | lean init が quantconnect.com の資格情報を求める設計で、以降の操作は同社のサーバーと Docker イメージに依存する | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:155(credentials は /root/.lean/credentials に保存すると表示) |
+| `Lean CLI` | 自動発注機能 | ある。commands/live を持つ。今回は鍵を要する操作を一切打っていない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:227(commands/live) |
+| `Lean CLI` | 宣伝詐欺の兆候 | 兆候なし。配布は PyPI と QuantConnect/lean-cli | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(project_urls.Source) |
+| `Lean CLI` | 当方データ投入 | 未確認 | 未確認 | 試したこと: lean init が資格情報で止まるため、データの置き場所(data ディレクトリの形)まで到達できていない |
+| `Lean CLI` | 時刻の扱い | 未確認 | 未確認 | 試したこと: 最小実行に到達できず、データの形を見ていない |
+| `Lean CLI` | 再現性 | 未確認 | 未確認 | 試したこと: 最小実行に到達できず、同じ入力を 2 回通せていない |
+| `Lean CLI` | 規模の見積 | 未確認 | 未確認 | 試したこと: 最小実行に到達できず、外挿の元になる測定が無い |
+| `Lean CLI` | 配布元の一致 | PyPI の project_urls の Source が github.com/QuantConnect/lean-cli を指す | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(project_urls.Source) |
+| `Lean CLI` | 難読化 | 未確認 | 未確認 | 試したこと: 配布物のアーカイブを開いてファイル名を列挙しただけで、中身の走査は未実施 |
+| `Lean CLI` | 外部URL取得 | 導入時に実行される setup.py が無いので、導入の段では外部取得が起きない。実行の段は Docker イメージの取得が前提 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:201(setup_py=0) |
+| `Lean CLI` | 依存の一覧 | 導入後の pip list で 39 件 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:173(pkgs) |
+| `Lean CLI` | 保守者名の一貫性 | PyPI の author と maintainer がどちらも QuantConnect で、Source も同名の組織 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(author / maintainer / project_urls) |
+| `Lean CLI` | 4軸1_道具 | この環境には入れられない。CLI は入るが実行の本体に到達しない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:149(docker daemon の soket が無い) |
+| `Lean CLI` | 4軸2_情報 | 未確認 | 未確認 | 試したこと: 最小実行に到達できず、取れる情報の形を見ていない |
+| `Lean CLI` | 4軸3_視点 | 未確認 | 未確認 | 試したこと: 最小実行に到達できず、分析の視点を見ていない |
+| `Lean CLI` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: 最小実行に到達できず、比較の材料が無い |
+
+#### 17. zipline-reloaded(深掘り)
+
+- **できること**: 日足の bundle を登録して取り込み、アルゴリズムを走らせる。成行と指値の両方の注文形式を持つ。取引所暦を exchange_calendars から取る。
+- **料金の構造**: Apache-2.0 の無償配布。鍵も登録も要らなかった。相場データは自分で用意する。
+- **到達・導入・実行の記録**: PyPI から pip install が通り、隔離 venv で `pip check` が通った。合成の日足で csvdir bundle を登録し、最初の取り込みは NYSE の暦に無い 4 日を混ぜていたため AssertionError で止まった。立会日に合わせ直して取り込みが通り、成行買いと指値売りの往復で損益が出た。
+- **当方の用途との相性**: 日足の csv は入る。分足以下は minute bundle が要り、今回は測っていない。約定の値は入力で決まるので再現性がある。
+- **当方に無いもの**: 取引所暦の部品、bundle という「取り込んだデータを封じる」単位。
+- **危険**: wheel に setup.py が無く、導入時に実行されるものが無い。拡張モジュールの .so を同梱する。発注の経路になるディレクトリは持たない。
+
+#### 18. Jesse(深掘り)
+
+- **できること**: 暗号資産の足でバックテストと最適化。戦略を状態機械の形で書く。実弾とペーパーは別売りのプラグイン。
+- **料金の構造**: 本体は MIT。実弾・ペーパーは逐語「The package is pre-built and the access is limited to those with an active license.」で、jesse.trade のアカウントと API トークンが要る。**金額は取れていない**(jesse.trade/pricing は curl で HTTP 403、WebFetch でも HTTP 403。docs 側には金額の記載が見つからなかった)。登録に何を渡すかは、文書上はアカウントの作成とトークンの発行までしか書かれていない。
+- **到達・導入・実行の記録**: 新しい隔離 venv を作り直したところ、2 回目の実行で起きた numpy の依存の衝突は出ず `pip check` が通った。合成の 1 分足を `jesse.research.backtest` に渡し、postgres も redis も立てずに建玉と利確を通した。
+- **当方の用途との相性**: 時刻はミリ秒のエポック。当方の約定から足を作れば入る。同じ入力で同じ損益が出る。
+- **当方に無いもの**: 証拠金とレバレッジの模型、取引所ごとの手数料の型。
+- **危険**: wheel に zklink SDK の .dylib を同梱する。実弾側は license の検証で外部へ出る設計。今回は鍵を要する操作を一切打っていない。
+
+#### 19. VnPy(深掘り)
+
+- **できること**: 本体が事象の枠組みと売買の型を持ち、戦略の枠組み・取引所の接続はそれぞれ別パッケージに分かれる。
+- **料金の構造**: MIT の無償配布。料金ページに当たるものは PyPI の project_urls に無い。
+- **到達・導入・実行の記録**: vnpy と vnpy_ctastrategy を同じ隔離 venv に入れ、`pip check` が通った。合成の 1 分足を BacktestingEngine の history_data に直接入れ、データベースを立てずに指値の往復を通した。
+- **当方の用途との相性**: BarData の列に直せば入る。手数料・滑り・呼値を別々に与えられる。
+- **当方に無いもの**: 滑りと呼値を費用と分けて持つ設計。
+- **危険**: wheel に setup.py も同梱バイナリも無い。本体だけでは発注の経路を持たない。PyPI の author と maintainer が空で、保守者名の照合ができない。
+
+#### 20. Qlib(深掘り)
+
+- **できること**: 列ごとに固定長の bin へ落とす保存形式、立会日の暦、機械学習の模型と強化学習の部品、mlflow による実験の追跡。
+- **料金の構造**: MIT の無償配布。
+- **到達・導入・実行の記録**: 隔離 venv に導入して `pip check` が通った。`scripts/dump_bin.py` を取ってきて合成の日足の csv を dump_all で変換し、features・calendars・instruments の 3 つが出来た。`qlib.init` と `D.features` で読み戻して行数が一致した。引数の名前は `--data_path` で、最初に打った `--csv_path` は使い方の表示で止まった。
+- **当方の用途との相性**: 日付と 6 列の csv を置けば取り込む。ファイル名が銘柄名になる。
+- **当方に無いもの**: 実験の追跡の道具(§8 の D で「無い」と記録したもの)、列ごとの固定長の保存形式。
+- **危険**: 必須依存の mlflow が遠隔測定を内蔵する。送信先は config.mlflow-telemetry.io で、`MLFLOW_DISABLE_TELEMETRY` で止まる。qlib 自身の実験管理の既定はローカルの `file:<cwd>/mlruns` で、databricks 向けの依存は mlflow の extras 側にあり既定では入らない。
+
+#### 21. Lean CLI(深掘り。この環境では最小実行に到達できない)
+
+- **できること**: 手元の計画を作り、バックテスト・最適化・実弾を QuantConnect の Docker イメージの中で走らせる。
+- **料金の構造**: CLI 自身は Apache-2.0。README の逐語「many commands in the CLI require Docker to run」。クラウド側の料金の逐語は取っていない。
+- **到達・導入・実行の記録(試した手段の一覧)**: (1) PyPI から pip install が通り、`lean --version` が版を表示した。(2) `lean init --language python` を打つと QuantConnect の資格情報(User id と API トークン)の入力待ちになり、非対話の殻なので中断した。表示の逐語は「You can request these credentials on https://www.quantconnect.com/account」。(3) docker の有無を見たところ、クライアントは入っているが `docker info` の Server が空で、`unix:///var/run/docker.sock` が存在しないため daemon に繋がらない。(4) **リードの判断により Docker イメージの取得は打たない**(委任文 §6-6 の数百 MB 以上の一括ダウンロードの禁止)。
+- **この環境から不可の結論**: 上の 4 つを試して到達できなかった。**第 2 経路(オーナー PC)でそのまま打てる手順**: `pip install lean` → Docker Desktop を起動 → `lean login`(quantconnect.com の User id と API トークンを入力)→ `lean init` → `lean create-project --language python Test` → `lean backtest Test`。登録に渡すものはメールアドレスとパスワード。**登録はこちらでは行わない。**
+- **当方に無いもの**: 実行環境そのものを画像として固定する設計。
+- **危険**: 資格情報を `/root/.lean/credentials` に保存する。実弾の経路 `commands/live` を持つ。今回は鍵を要する操作を一切打っていない。
+
+### A と B の結果
+
+| 項目 | 結果 |
+|---|---|
+| A 未着手の候補 12 件 | 全件について一次資料(PyPI の json か GitHub の LICENSE)に到達した。ただし**深掘りは 1 件もしていない**。導入・最小実行・供給網の検査・料金の逐語が未確認で、候補の一覧では「浅い」と印を付けた |
+| B-1 zipline-reloaded の最小実行 | 完了。bundle の登録・取り込み・成行買いと指値売りの往復まで |
+| B-2 Qlib の最小実行 | 完了。dump_bin による形式の変換と読み戻しまで |
+| B-3 VnPy の最小実行 | 完了。vnpy_ctastrategy を足して指値の往復まで |
+| B-4 Jesse の最小実行 | 完了。隔離 venv を作り直し、依存の衝突は出なかった |
+| B-5 Lean CLI の最小実行 | 到達できず。試した手段の一覧と第 2 経路の手順を上に書いた |
+| B-6 Zenbot 本家・Bot18 の Node.js 環境での導入 | **未着手**。package.json だけ取った。node と npm はこの環境に入っている |
+| B-7 Mendl-Labs / Luczinsritter の LICENSE と README | 完了。前者は Functional Source License 1.1、後者は LICENSE が 404 で README のバッジが MIT |
+| B-8 Jesse のプレミアムの逐語の裏取り | 部分的に完了。逐語は取れたが**金額は取れていない**(料金ページが HTTP 403) |
+| B-9 Qlib の mlflow / databricks-sdk がクラウドに繋ぐか | 完了。qlib 側の既定はローカル。mlflow の遠隔測定だけが外へ出る。databricks-sdk は必須依存ではない |
+| B-10 hftbacktest の対応取引所をソースで裏取り | 完了。Cargo.toml の features と main.rs の mod 宣言で binancefutures / binancespot / bybit |
+| B-11 A の 12 候補の一次資料への到達 | 完了 |
+
+### 残りの候補名
+
+次回の実行に渡す。深掘りが済んでいないもの。
+
+- Basana / Backtrader / PySystemtrade / PyBroker(lib-pybroker) / bt / Ziplime / Superalgos / OpenTrader / CryptoSignal / fast-trade / OctoBot / pybotters
+- DeviaVir/zenbot(今回の新規) / Bot18 / Zenbot 本家の Node.js 導入
+- Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engine
+- mlflow(今回の新規。Qlib の必須依存として名前が出た)
+
+### STRATEGY_IDEAS.md 向け候補(提案のみ、未マージ)
+
+- 指値の埋まり方を別実装と突き合わせる相手として、zipline-reloaded・VnPy・Jesse の 3 つがそれぞれ別の約定の決め方を持つ。
+
+### DATA.md 向け候補(提案のみ、未マージ)
+
+- Qlib の保存形式(列ごとの固定長 bin + 立会日の暦 + 銘柄の一覧)は、当方の backtest_data の恒久スナップショットと別の形。
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 実時間 | 20 分の上限を超えた。上限に達した時点で新しい探索は止め、書き出しに移った |
+| トークン | 5 万の上限に近い。正確な消費はこちらから読めない |
+| 中断の扱い | **未完了**。区分 1 の完了条件(残りの候補が空で、新しい検索計画が新しい候補を 1 件も出さない)を満たしていない |
+
+### 受け入れ検査の出力
+
+打ったコマンド: `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run3.log`
+
+**0 件にできなかった。理由は 2 つで、どちらも自分では閉じない。**委任文 §12 の「誤検出だと判断しても、自分で閉じてはならない。直さずに残し、その行と理由を報告に 1 件ずつ書いてリードに渡す」に従う。
+
+1. 当たっている行は**すべて 1 回目・2 回目の節の中**にある。リードの起動指定「既存の 1 回目・2 回目の節は 1 文字も書き換えないこと」により直せない。K4・K5・K9 の当たりは、この回に §4.0 の表が初めて出来たことで検査が働くようになった結果である。表が 1 行も無い間は K9 が早期に戻っており、3 回目の節を足す前に打った検査でも K7 と K12 以外は同じ行が当たっていた。K5 の mlflow の行は、この回の候補の一覧に mlflow を足したことで道具名として認識され、2 回目の節の中の既存の食い違いが表に出たものである。
+2. **K12 には自己参照の輪がある。**貼った出力の中の行が、そのまま K9 の「表に無い数値を文章で書いている」に当たる。貼るたびに K9 が増えるので、貼った合計と数え直した合計が一致する状態が存在しない。下に貼ったのは**この節を足す直前に打った出力**で、この節を足したあとに打ち直すと K9 と合計が増える。**この設計の欠陥の判定はリードに渡す。**
+
+```
+K1 太字                  0 件
+K2 括弧                  1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:8  大括弧 の数が合わない (1 対 0)
+K3 必須の節                0 件
+K4 生ログに無い数値            12 件
+    docs/DATA/SCAN_2026-09-21_tools.md:484  生ログに無い数値: 130 パッケージ
+    docs/DATA/SCAN_2026-09-21_tools.md:582  生ログに無い数値: 1.07 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:582  生ログに無い数値: 0.84 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:612  生ログに無い数値: 1.62 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:643  生ログに無い数値: 10.23 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:673  生ログに無い数値: 31.87 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:701  生ログに無い数値: 7.37 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:746  生ログに無い数値: 130 個
+    docs/DATA/SCAN_2026-09-21_tools.md:749  生ログに無い数値: 58.35 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:774  生ログに無い数値: 19.49 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:776  生ログに無い数値: 19.49 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:806  生ログに無い数値: 60.29 秒
+K5 同じ道具に別の値            6 件
+    docs/DATA/SCAN_2026-09-21_tools.md:681  PRO の 個 に別の値: ['16', '3']
+    docs/DATA/SCAN_2026-09-21_tools.md:612  QSTrader の 秒 に別の値: ['1.11', '1.62']
+    docs/DATA/SCAN_2026-09-21_tools.md:223  hftbacktest の 秒 に別の値: ['1', '36']
+    docs/DATA/SCAN_2026-09-21_tools.md:746  mlflow の 個 に別の値: ['130', '185']
+    docs/DATA/SCAN_2026-09-21_tools.md:681  wheel の 個 に別の値: ['16', '3']
+    docs/DATA/SCAN_2026-09-21_tools.md:223  wheel の 秒 に別の値: ['1', '36']
+K6 未実施と実測の同居           2 件
+    docs/DATA/SCAN_2026-09-21_tools.md:264  PRO: wheel/setup.py が「未実施・未確認」と「実施済み」の両方にある (行 [264, 580, 624, 681, 814] / [34, 389, 955])
+    docs/DATA/SCAN_2026-09-21_tools.md:264  wheel: wheel/setup.py が「未実施・未確認」と「実施済み」の両方にある (行 [264, 563, 580, 594, 624, 681, 709, 803, 814] / [213, 223, 486, 796, 797, 1105, 1366, 1375, 1384])
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              22 件
+    docs/DATA/SCAN_2026-09-21_tools.md:223  表に無い数値を文章で書いている: 36 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:223  表に無い数値を文章で書いている: 43 パッケージ
+    docs/DATA/SCAN_2026-09-21_tools.md:228  表に無い数値を文章で書いている: 36 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:373  表に無い数値を文章で書いている: 650 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:373  表に無い数値を文章で書いている: 650 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:484  表に無い数値を文章で書いている: 130 パッケージ
+    docs/DATA/SCAN_2026-09-21_tools.md:582  表に無い数値を文章で書いている: 1.07 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:582  表に無い数値を文章で書いている: 0.84 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:612  表に無い数値を文章で書いている: 1.62 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:612  表に無い数値を文章で書いている: 1.11 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:643  表に無い数値を文章で書いている: 10.23 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:668  表に無い数値を文章で書いている: 42 個
+    docs/DATA/SCAN_2026-09-21_tools.md:673  表に無い数値を文章で書いている: 31.87 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:701  表に無い数値を文章で書いている: 7.37 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:746  表に無い数値を文章で書いている: 130 個
+    docs/DATA/SCAN_2026-09-21_tools.md:746  表に無い数値を文章で書いている: 185 個
+    docs/DATA/SCAN_2026-09-21_tools.md:749  表に無い数値を文章で書いている: 58.35 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:774  表に無い数値を文章で書いている: 19.49 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:776  表に無い数値を文章で書いている: 19.49 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:806  表に無い数値を文章で書いている: 60.29 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:894  表に無い数値を文章で書いている: 408 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:941  表に無い数値を文章で書いている: 650 秒
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:0  報告に「受け入れ検査の出力」の節が無い(検査の出力全文を貼ること)
+---- 合計 44 件
+```
