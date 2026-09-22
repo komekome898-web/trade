@@ -1,0 +1,371 @@
+=== 区分1 27 回目の実行(仕上げの回) 生ログ 2026-09-22 ===
+=== この回の指定(26 回目の検収 §7 と起動の指定 1〜8): (1) 段 0 の当てはめを直す(54・87 は「該当なし(注文の物を持たない)」/ 92 は確かめる) / (2) 段(機構)と段(既定)が違う件数を数え直す / (3) 段 3 の定義を節に書き当たる候補を当て直す / (4) 区分1-市場影響と約定の模型 の述語を節に書く / (5) 57 番の表に「どの機関か」の欄を足し機関ごとに段を書く / (6) 57 番の _cancelrate を節に足し候補 95・104 との三者の位置関係を書く / (7) 登録の付け替え 3 件を一覧に併記する / (8) 安全側の通算を 1 か所にまとめる
+=== 新しい検索計画は打たない。候補も増やさない。構築・導入・最小実行・登録・鍵の発行・購入・発注はしない。既定値と実装を読むための原典の取得だけを打つ。
+=== 既定枝は ungh.cc の defaultBranch で確かめてから取る。code=000 や TLS 切断は 404 の欄に入れず打ち直す。
+--- 2026-09-22T17:59:55Z method=run target=defaultBranch_10 rc=0 time_s=17.366167241 note=この回に触れる10登録の既定枝と登録名を ungh.cc で確かめる(当てずっぽうの取得をしないため)。登録の付け替え 3 件もここで確かめる
+$ for r in robcarver17/pysystemtrade pst-group/pysystemtrade Ziplime/ziplime Limex-com/ziplime QUANTAXIS/QUANTAXIS yutiansut/QUANTAXIS wondertrader/wondertrader Quentin-Piot/prediction-market-backtester sacha9214/polymarket-fill-model jxm35/LimitOrderBook-MatchingEngine; do curl -sS -o resp.json -w "%{http_code}" "https://ungh.cc/repos/$r"; python3 -c "..."; done
+robcarver17/pysystemtrade => code=200 repo=pst-group/pysystemtrade defaultBranch=develop stars=3523 createdAt=2015-11-27T10:49:08Z pushedAt=2026-09-21T10:55:15Z
+pst-group/pysystemtrade => code=200 repo=pst-group/pysystemtrade defaultBranch=develop stars=3523 createdAt=2015-11-27T10:49:08Z pushedAt=2026-09-21T10:55:15Z
+Ziplime/ziplime => code=404 parse_fail 'repo'
+Limex-com/ziplime => code=200 repo=Limex-com/ziplime defaultBranch=master stars=565 createdAt=2025-03-24T10:28:37Z pushedAt=2026-09-17T09:58:00Z
+QUANTAXIS/QUANTAXIS => code=200 repo=yutiansut/QUANTAXIS defaultBranch=master stars=11224 createdAt=2016-03-29T12:11:19Z pushedAt=2026-09-18T04:59:48Z
+yutiansut/QUANTAXIS => code=200 repo=yutiansut/QUANTAXIS defaultBranch=master stars=11224 createdAt=2016-03-29T12:11:19Z pushedAt=2026-09-18T04:59:48Z
+wondertrader/wondertrader => code=200 repo=wondertrader/wondertrader defaultBranch=master stars=6352 createdAt=2020-03-30T05:43:52Z pushedAt=2026-09-01T02:34:42Z
+Quentin-Piot/prediction-market-backtester => code=200 repo=Quentin-Piot/prediction-market-backtester defaultBranch=master stars=6 createdAt=2026-02-11T16:25:18Z pushedAt=2026-03-07T11:43:49Z
+sacha9214/polymarket-fill-model => code=200 repo=sacha9214/polymarket-fill-model defaultBranch=main stars=0 createdAt=2026-09-17T17:49:32Z pushedAt=2026-09-17T18:16:01Z
+jxm35/LimitOrderBook-MatchingEngine => code=200 repo=jxm35/LimitOrderBook-MatchingEngine defaultBranch=main stars=32 createdAt=2023-09-23T10:18:48Z pushedAt=2025-10-11T11:43:13Z
+--- 2026-09-22T18:00:05Z method=GET url=https://raw.githubusercontent.com/Quentin-Piot/prediction-market-backtester/master/src/pm_bt/execution/simulator.py label=c92_simulator code=200 bytes=11598 rc=0 time_s=0.419820 note=候補92の執行の模擬。注文の物を持つか(段0の当てはめの可否)を確かめる
+from __future__ import annotations
+
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Self
+
+from pydantic import Field
+
+fro
+--- 2026-09-22T18:00:06Z method=run target=c92_order_object rc=0 time_s=.005486870 note=候補92が注文の物を持つか。OrderIntent と _PendingOrder と待ちの列が在る = 注文の物を持つ
+$ grep -n "OrderIntent\|_PendingOrder\|self._pending\|latency_bars\|def execute_bar\|def _execute_order" c92_sim.py
+10:from pm_bt.common.models import BacktestConfig, DomainModel, Fill, OrderIntent
+21:    latency_bars: int = Field(default=0, ge=0)
+34:            latency_bars=config.latency_bars,
+76:class _PendingOrder:
+78:    order: OrderIntent
+110:        self._pending: list[_PendingOrder] = []
+127:    def execute_bar(
+132:        incoming_orders: Sequence[OrderIntent],
+138:            self._pending.append(
+139:                _PendingOrder(ready_bar_index=bar_index + self.config.latency_bars, order=order)
+143:        still_pending: list[_PendingOrder] = []
+144:        for pending in self._pending:
+161:        self._pending = still_pending
+164:    def _execute_order(self, *, snapshot: MarketSnapshot, order: OrderIntent) -> Fill | None:
+--- 2026-09-22T18:00:07Z method=run target=c92_fill_price rc=0 time_s=.005378515 note=候補92の既定の埋まり方。中値と気配の幅を読んで値段を作る(段0の定義「相場の値を1度も見ない」とは食い違う)
+$ grep -n "mid_price=snapshot.mid_price\|half_spread = spread / 2.0\|return _clamp_probability(mid_price + half_spread)\|def _resolve_spread\|default_spread: float = Field\|latency_bars: int = Field" c92_sim.py
+20:    default_spread: float = Field(default=0.02, ge=0.0, le=1.0)
+21:    latency_bars: int = Field(default=0, ge=0)
+170:            mid_price=snapshot.mid_price,
+227:    def _resolve_spread(self, snapshot: MarketSnapshot) -> float:
+239:        half_spread = spread / 2.0
+241:            return _clamp_probability(mid_price + half_spread)
+--- 2026-09-22T18:00:21Z method=run target=c57_engines rc=0 time_s=1.119497854 note=候補57の検証の機関の一覧。src/WtBtCore の *Mocker が機関で、5 つ在る(26 回目に 4 つと書いたのは数え落とし)
+$ curl -sS "https://ungh.cc/repos/wondertrader/wondertrader/files/master" | python3 -c "..."
+files_endpoint code=200 bytes=175251
+Mocker の本数: 5
+src/WtBtCore/CtaMocker.h
+src/WtBtCore/ExecMocker.h
+src/WtBtCore/HftMocker.h
+src/WtBtCore/SelMocker.h
+src/WtBtCore/UftMocker.h
+--- 2026-09-22T18:00:22Z method=run target=c57_cancelrate rc=0 time_s=.005060366 note=候補57の列の目減りの掛け目。既定は 0(MatchEngine.h:57)、当てる場所は .cpp:254 と .cpp:288 の 2 箇所、設定から読む場所は .cpp:20
+$ grep -n "_cancelrate" c57_match.h c57_match.cpp
+c57_match.h:57:	MatchEngine() : _tick_cache(NULL),_cancelrate(0), _sink(NULL)
+c57_match.h:135:	double			_cancelrate;
+c57_match.cpp:20:	_cancelrate = cfg->getDouble("cancelrate");
+c57_match.cpp:254:	ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);
+c57_match.cpp:288:	ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);
+--- 2026-09-22T18:00:23Z method=run target=c57_cancelrate_ctx rc=0 time_s=.009561482 note=候補57の .cpp:253-254(注記つき)。列の初期値を作った直後に、平均の取消率のぶんだけ 1 回だけ割り引く形である
+$ sed -n "246,256p" c57_match.cpp; sed -n "285,290p" c57_match.cpp; sed -n "14,21p" c57_match.cpp
+	if (decimal::ge(price, lastTick->askprice(0)))
+		ordInfo._positive = true;
+	else if (decimal::eq(price, lastTick->bidprice(0)))
+		ordInfo._queue = lastTick->bidqty(0);
+	if (decimal::eq(price, lastTick->price()))
+		ordInfo._queue = (uint32_t)round((lastTick->askqty(0)*lastTick->askprice(0) + lastTick->bidqty(0)*lastTick->bidprice(0)) / (lastTick->askprice(0) + lastTick->bidprice(0)));
+
+	//排队位置按照平均撤单率,撤销掉部分
+	ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);
+	ordInfo._time = curTime;
+
+-- 288 の側 --
+	if (decimal::eq(price, lastTick->price()))
+		ordInfo._queue = (uint32_t)round((lastTick->askqty(0)*lastTick->askprice(0) + lastTick->bidqty(0)*lastTick->bidprice(0)) / (lastTick->askprice(0) + lastTick->bidprice(0)));
+
+	ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);
+	ordInfo._time = curTime;
+
+-- 設定から読む側 --
+
+void MatchEngine::init(WTSVariant* cfg)
+{
+	if (cfg == NULL)
+		return;
+
+	_cancelrate = cfg->getDouble("cancelrate");
+}
+--- 2026-09-22T18:00:40Z method=run target=c57_per_engine rc=1 time_s=.024213934 note=候補57の機関ごとの照合。MatchEngine(列の位置を追う側)を持つのは ExecMocker だけ。高頻度と超高頻度は対手盤の提示量で頭打ちにする形で、列は追わない。足と選択の機関は注文の物を持たない
+$ for f in CtaMocker SelMocker HftMocker UftMocker ExecMocker; do grep -c "MatchEngine" c57_$f.h c57_$f.cpp; grep -c "_orders" c57_$f.h; done
+== CtaMocker: MatchEngine の当たり(h/cpp) / _orders の当たり(h) ==
+c57_CtaMocker.h:0
+c57_CtaMocker.cpp:0
+0
+== SelMocker: MatchEngine の当たり(h/cpp) / _orders の当たり(h) ==
+c57_SelMocker.h:0
+c57_SelMocker.cpp:0
+0
+== HftMocker: MatchEngine の当たり(h/cpp) / _orders の当たり(h) ==
+c57_HftMocker.h:0
+c57_HftMocker.cpp:0
+1
+== UftMocker: MatchEngine の当たり(h/cpp) / _orders の当たり(h) ==
+c57_UftMocker.h:0
+c57_UftMocker.cpp:0
+1
+== ExecMocker: MatchEngine の当たり(h/cpp) / _orders の当たり(h) ==
+c57_ExecMocker.h:2
+c57_ExecMocker.cpp:0
+0
+--- 2026-09-22T18:00:41Z method=run target=c57_hft_uft_qty rc=0 time_s=.010262445 note=高頻度と超高頻度の埋まる量は対手盤の提示量で頭打ちになる(段4)。注文の物の中に列の位置の欄が無い
+$ grep -n "看对手盘的数量\|maxQty = min" c57_HftMocker.cpp c57_UftMocker.cpp; grep -n -A12 "typedef struct _OrderInfo" c57_HftMocker.h
+c57_HftMocker.cpp:726:	double orderQty = ordInfo->_isBuy ? curTick->askqty(0) : curTick->bidqty(0);	//看对手盘的数量
+c57_UftMocker.cpp:909:	double orderQty = ordInfo._isLong ? curTick->askqty(0) : curTick->bidqty(0);	//看对手盘的数量
+c57_HftMocker.cpp:761:	double maxQty = min(orderQty, ordInfo->_left);
+c57_UftMocker.cpp:944:	double maxQty = min(orderQty, ordInfo._left);
+-- 高頻度の注文の物の中身(列の位置の欄が無い) --
+	typedef struct _OrderInfo
+	{
+		bool	_isBuy;
+		char	_code[32];
+		double	_price;
+		double	_total;
+		double	_left;
+		char	_usertag[32];
+		
+		uint32_t	_localid;
+
+		bool	_proced_after_placed;	//下单后是否处理过			
+
+		_OrderInfo()
+		{
+--- 2026-09-22T18:00:42Z method=run target=c57_cta_sel rc=0 time_s=.011132644 note=足と選択の機関の埋まり方。目標の建玉を現在値に定率か定額の滑りを足した値段でそのまま成立させる。注文の物(_orders)は持たない
+$ grep -n "do_set_position\|trdPx = curPx\|_slippage != 0" c57_CtaMocker.cpp; grep -n "_slippage != 0" c57_SelMocker.cpp
+1601:void CtaMocker::do_set_position(const char* stdCode, double qty, double price /* = 0.0 */, const char* userTag /* = "" */)
+1619:	double trdPx = curPx;
+		if (_slippage != 0)
+		{
+			if (_ratio_slippage)
+			{
+				//By Wesley @ 2023.05.05
+				//如果是比率滑点，则要根据目标成交价计算
+				//得到滑点以后，再根据pricetick做一个修正
+				double slp = (_slippage * trdPx / 10000.0);
+				slp = round(slp / commInfo->getPriceTick())*commInfo->getPriceTick();
+
+-- 選択の機関 --
+674:		if (_slippage != 0)
+713:		if (_slippage != 0)
+--- 2026-09-22T18:01:11Z method=run target=get_c57_sources rc=0 time_s=14.319924263 note=候補57の原典の取得(機関 5 本の .h と .cpp、および MatchEngine の .h と .cpp)。上の grep はこの取得物に対して打っている
+$ for f in ...; do curl -sS -o ... -w "..." .../src/WtBtCore/$f; done
+MatchEngine.h code=200 bytes=3063 time_s=0.406724
+MatchEngine.cpp code=200 bytes=9732 time_s=0.159949
+CtaMocker.h code=200 bytes=13315 time_s=0.155403
+CtaMocker.cpp code=200 bytes=64597 time_s=0.176931
+SelMocker.h code=200 bytes=9460 time_s=0.150164
+SelMocker.cpp code=200 bytes=32531 time_s=0.165856
+HftMocker.h code=200 bytes=10177 time_s=0.146113
+HftMocker.cpp code=200 bytes=31508 time_s=0.163276
+UftMocker.h code=200 bytes=10649 time_s=0.158421
+UftMocker.cpp code=200 bytes=35093 time_s=0.167060
+ExecMocker.h code=200 bytes=3646 time_s=0.166691
+ExecMocker.cpp code=200 bytes=10169 time_s=0.146479
+--- 2026-09-22T18:01:21Z method=GET url=https://raw.githubusercontent.com/sacha9214/polymarket-fill-model/main/README.md label=c95_readme code=200 bytes=9371 rc=0 time_s=0.405677 note=候補95の立場の逐語。取り消しは見えないので列を繰り上げない、と自分で書いている側
+# polymarket-fill-model
+
+**Would my resting order actually have been filled?** A queue-aware fill model for
+Polymarket, built by cross-referencing the order book with the trade tape instead of
+guessin
+--- 2026-09-22T18:01:22Z method=run target=c95_cancel_stance rc=0 time_s=.005890905 note=候補95の逐語。原典では 2 行に折れているので 1 行に繋がない
+$ grep -n -B1 -A3 "Cancellations ahead of us" c95_readme.md
+
+- Cancellations ahead of us are **invisible**, so we never move up the queue →
+  **pessimistic** on fill count, and heavily so. RN1 does 6.7 trades per market-hour
+  where this model produces 0.105 — a factor of 64, and I cannot tell how much of it is
+--- 2026-09-22T18:01:24Z method=GET url=https://raw.githubusercontent.com/nkaz001/hftbacktest/master/py-hftbacktest/src/lib.rs label=c23_lib code=200 bytes=26750 rc=0 time_s=0.230915 note=候補23の入口。供給が事象の列で、注文の到着に遅延の模型が掛かるか(段3の当てはめ)
+use std::{ffi::c_void, mem::size_of, ptr::slice_from_raw_parts_mut};
+
+pub use backtest::*;
+pub use depth::*;
+pub use fuse::*;
+#[cfg(feature = "live")]
+use hftbacktest::live::{Instrument, LiveBotBuilde
+--- 2026-09-22T18:01:25Z method=run target=c23_event_feed rc=0 time_s=.010863139 note=候補23の供給の型と遅延の模型。供給は Event の列で、注文の出し入れに entry と resp の遅延が掛かる
+$ grep -n "data: Vec<DataSource<Event>>\|pub enum LatencyModel\|ConstantLatency {\|entry_latency\|resp_latency\|IntpOrderLatency" c23_lib.rs
+110:    data: Vec<DataSource<Event>>,
+pub enum LatencyModel {
+    ConstantLatency {
+        entry_latency: i64,
+        resp_latency: i64,
+    },
+    IntpOrderLatency {
+        data: Vec<DataSource<OrderLatencyRow>>,
+        latency_offset: i64,
+    },
+            data: Vec::new(),
+            latency_model: LatencyModel::ConstantLatency {
+                entry_latency: 0,
+                resp_latency: 0,
+            },
+            asset_type: AssetType::LinearAsset { contract_size: 1.0 },
+--- 2026-09-22T18:01:32Z method=GET url=https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/lib/engine.js label=c13_engine code=200 bytes=38824 rc=0 time_s=0.173647 note=候補13の駆動。約定の到着が事象として入り、時計を進めて戦略を動かすか(段3の当てはめ)
+let tb = require('timebucket')
+  , moment = require('moment')
+  , z = require('zero-fill')
+  , n = require('numbro')
+  // eslint-disable-next-line no-unused-vars
+  , colors = require('colors')
+  , abb
+--- 2026-09-22T18:01:33Z method=run target=c13_trade_event rc=0 time_s=.009567648 note=候補13の事象の受け口と、約定の時刻で進む時計
+$ grep -n "eventBus.on(.trade., queueTrade)\|function onTrade\|latest_trade_time\|lolex.install" c13_engine.js
+23:  eventBus.on('trade', queueTrade)
+907:  function queueTrade(trade, is_preroll){
+911:  function onTrade(trade, is_preroll, cb) {
+954:  function onTrades(trades, is_preroll, cb) {
+    s.period.latest_trade_time = trade.time
+    if (!clock && so.mode !== 'live' && so.mode !== 'paper') clock = lolex.install({ shouldAdvanceTime: false, now: trade.time })
+--- 2026-09-22T18:01:49Z method=GET url=https://raw.githubusercontent.com/rburkholder/trade-frame/master/lib/TFSimulation/SimulateOrderExecution.hpp label=c63_sim code=200 bytes=6043 rc=0 time_s=0.464558 note=候補63の注文の遅延の列。注文が時刻を持って予定表に載るか(段3の当てはめ)
+/************************************************************************
+ * Copyright(c) 2009, One Unified. All rights reserved.                 *
+ * email: info@oneunified.net                     
+--- 2026-09-22T18:01:50Z method=run target=c63_delay_queue rc=0 time_s=.005998486 note=候補63の遅延の列の中身。注文に時刻を持たせて列に入れ、時刻が来たら処理する形か
+$ grep -n "m_lOrderDelay\|m_dtQueueDelay\|ProcessLimitOrders\|dtQueue" c63_sim.hpp
+64:  void SetOrderDelay( const time_duration &dtOrderDelay ) { m_dtQueueDelay = dtOrderDelay; };
+103:  boost::posix_time::time_duration m_dtQueueDelay; // used to simulate network / handling delays
+118:  lOrderQueue_t m_lOrderDelay;  // all orders put in delay queue, taken out then processed as limit or market or stop
+132:  void ProcessDelayQueue( const Quote& quote );
+--- 2026-09-22T18:02:03Z method=run target=c63_delay_default rc=0 time_s=.004850412 note=候補63の遅延の既定値と、気配・約定の到着で処理する側の宣言
+$ grep -n "m_dtQueueDelay\|ProcessDelayQueue\|void NewQuote\|void NewTrade" c63_sim.hpp
+64:  void SetOrderDelay( const time_duration &dtOrderDelay ) { m_dtQueueDelay = dtOrderDelay; };
+67:  void NewQuote( const Quote& quote );
+70:  void NewTrade( const Trade& trade );
+103:  boost::posix_time::time_duration m_dtQueueDelay; // used to simulate network / handling delays
+132:  void ProcessDelayQueue( const Quote& quote );
+--- 2026-09-22T18:03:34Z method=run target=ls_probes rc=0 time_s=.009883924 note=この回の生ログを作ったあとの本数。内訳は run2 から run27
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+26
+docs/DATA/probes/20260922_tools_1_run10.log
+docs/DATA/probes/20260922_tools_1_run11.log
+docs/DATA/probes/20260922_tools_1_run12.log
+docs/DATA/probes/20260922_tools_1_run8.log
+docs/DATA/probes/20260922_tools_1_run9.log
+--- 2026-09-22T18:04:22Z method=run target=safety_tally rc=0 time_s=.006544957 note=安全側の通算を 1 か所にまとめるため、報告書の既存の記録を機械で拾う。作業者向けの手引きの同梱と、外部送信の口と、97 番の別の型
+$ grep -n "作業者向け" docs/DATA/SCAN_2026-09-21_tools.md
+5226:9. **`kahan15/Limit-Order-Book-Simulator`(97 番)の配布物に、作業者向けの指示の文章が入っていた。**ファイル名は `attached_assets/Pasted-Extend-the-existing-file-to-add-a-LIVE-market-dat
+6073:| 20 | **作業者向けの手引きを同梱する登録が、この回の 12 件のうち 2 件あった。**追跡ファイルの全体(根だけでなく下の階層も)を機械で走査した結果、候補 41
+6208:**取り込んだ登録が当方の作業者に指示を出しうる経路は、19 回目までの通算 3 件(候補 44・74・120)にこの 2 件を足して 5 件になった。使う段でオーナーに出す�
+7040:**通算は 5 件から 6 件になった**(44・74・120・41・58 に 19 番を足した)。
+7825:| 10 | **候補 51 には、自動の外部送信の口が 2 つある。**1 つ目の逐語は `requests.post('http://www.yutiansut.com/signal?user_id={}&template={}&strategy_id={}&realaccount={}&code={}&order_dire
+--- 2026-09-22T18:09:41Z method=run target=c57_agent_files rc=0 time_s=.027348746 note=候補57の追跡ファイルの一覧に作業者向けの手引きが在るか(AGENTS.md / CLAUDE.md / .cursor / copilot-instructions)
+$ python3 -c "..."  # wtfiles.json を走査
+追跡ファイルの総数: 1391
+手引きの当たり: 0
+[]
+--- 2026-09-22T18:11:36Z method=run target=verbatim_recheck rc=0 time_s=.013576804 note=この回に引く逐語を grep -cF で 1 件ずつ生ログと突き合わせ、足りなかった分を原典から取り直した。3 件が原典では折れているか字が違っていた
+$ curl で 3 本取り直し、grep -n -A1 で折れ方を見る
+== 候補51 原典 760-761(2 行に折れている) ==
+                order.trade(order.order_id, order.price,
+                            order.amount, order.datetime)
+== 候補19 原典 2187-2188(2 行に折れている) ==
+    This function get called when an order is getting executed you need to update the other timeframe how their last
+    candles looks like
+== 候補91 原典 353(末尾に読点は無い。26 回目の報告の「strength_bps: float = 0.0,」は読点を足していた) ==
+    strength_bps: float = 0.0
+== 候補91 strength_bps の当たり全部 ==
+325:      * ``r <= capacity_threshold``  →  ``strength_bps * sqrt(r)``
+329:        ``strength_bps * (r - threshold) ** capacity_exponent``.
+338:    ``strength_bps`` is the impact (in bps of price) you'd pay if you
+343:    ``strength_bps = 0`` disables impact entirely (existing backtests
+353:    strength_bps: float = 0.0
+362:        if self.strength_bps <= 0:
+369:            bps = float(self.strength_bps) * math.sqrt(ratio)
+371:            base_bps = float(self.strength_bps) * math.sqrt(threshold)
+373:            penalty_bps = float(self.strength_bps) * (excess ** float(self.capacity_exponent))
+--- 2026-09-22T18:11:37Z method=run target=c15_event_grep rc=1 time_s=.471673236 note=候補15 BacktestingCore に事象の列が無いことを、この回に自分で打ち直す(24 回目の報告の語が生ログに無かったため)
+$ curl .../backtest/src/engine.rs | grep -c ...
+c15 code=200 bytes=92753
+VecDeque の当たり: 0
+EventQueue の当たり: 0
+dispatch( の当たり: 0
+--- 2026-09-22T18:11:45Z method=run target=c95_readme_ctx rc=0 time_s=.005078236 note=候補95の README のうち、読み手への案内の文(当方への指示ではない)を逐語で残す
+$ grep -n "This is the part I would want to read first" c95_readme.md
+156:This is the part I would want to read first in someone else's repo:
+--- 2026-09-22T18:11:46Z method=run target=c57_hft_tick_driven rc=0 time_s=.007934077 note=候補57の高頻度の機関が、ティックの到着で注文を処理していること(段3の当てはめ)
+$ grep -n "procOrder" c57_HftMocker.cpp | head
+253:void HftMocker::handle_tick(const char* stdCode, WTSTickData* curTick, uint32_t pxType)
+343:void HftMocker::on_tick(const char* stdCode, WTSTickData* newTick)
+378:				bool bNeedErase = procOrder(localid);
+397:				bool bNeedErase = procOrder(localid);
+431:void HftMocker::on_tick_updated(const char* stdCode, WTSTickData* newTick)
+699:bool HftMocker::procOrder(uint32_t localid)
+-- ティックを受けた側で注文を回す箇所 --
+		_strategy->init(cfgStra->get("params"));
+		_name = _strategy->id();
+	}
+	return true;
+}
+
+void HftMocker::handle_tick(const char* stdCode, WTSTickData* curTick, uint32_t pxType)
+{
+	on_tick(stdCode, curTick);
+}
+
+void HftMocker::handle_order_detail(const char* stdCode, WTSOrdDtlData* curOrdDtl)
+{
+	on_order_detail(stdCode, curOrdDtl);
+}
+
+void HftMocker::handle_order_queue(const char* stdCode, WTSOrdQueData* curOrdQue)
+{
+	on_order_queue(stdCode, curOrdQue);
+}
+--- 2026-09-22T18:12:37Z method=run target=url_manifest rc=0 time_s=.004669173 note=この回に打った URL の全文(出典の表と 1 対 1 で照らせるようにする)
+$ cat urls.txt
+https://ungh.cc/repos/robcarver17/pysystemtrade
+https://ungh.cc/repos/pst-group/pysystemtrade
+https://ungh.cc/repos/Ziplime/ziplime
+https://ungh.cc/repos/Limex-com/ziplime
+https://ungh.cc/repos/QUANTAXIS/QUANTAXIS
+https://ungh.cc/repos/yutiansut/QUANTAXIS
+https://ungh.cc/repos/wondertrader/wondertrader
+https://ungh.cc/repos/Quentin-Piot/prediction-market-backtester
+https://ungh.cc/repos/sacha9214/polymarket-fill-model
+https://ungh.cc/repos/jxm35/LimitOrderBook-MatchingEngine
+https://ungh.cc/repos/wondertrader/wondertrader/files/master
+https://raw.githubusercontent.com/Quentin-Piot/prediction-market-backtester/master/src/pm_bt/execution/simulator.py
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/MatchEngine.h
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/MatchEngine.cpp
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/CtaMocker.h
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/CtaMocker.cpp
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/SelMocker.h
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/SelMocker.cpp
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/HftMocker.h
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/HftMocker.cpp
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/UftMocker.h
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/UftMocker.cpp
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/ExecMocker.h
+https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/ExecMocker.cpp
+https://raw.githubusercontent.com/sacha9214/polymarket-fill-model/main/README.md
+https://raw.githubusercontent.com/nkaz001/hftbacktest/master/py-hftbacktest/src/lib.rs
+https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/lib/engine.js
+https://raw.githubusercontent.com/rburkholder/trade-frame/master/lib/TFSimulation/SimulateOrderExecution.hpp
+https://raw.githubusercontent.com/yutiansut/QUANTAXIS/master/QUANTAXIS/QAStrategy/qactabase.py
+https://raw.githubusercontent.com/jesse-ai/jesse/master/jesse/modes/backtest_mode.py
+https://raw.githubusercontent.com/braedonsaunders/homerun/main/backend/services/backtest/matching_engine.py
+https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/backtest/src/engine.rs
+--- 2026-09-22T18:13:17Z method=run target=acceptance_check rc=0 time_s=.912616648 note=委任文 §12 の受け入れ検査。生ログ 26 本を全部渡して打った最終の実行
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
