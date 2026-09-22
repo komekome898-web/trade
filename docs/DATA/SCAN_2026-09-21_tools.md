@@ -5584,12 +5584,12 @@ X の経路も同じ理由で打っていない。したがって新しい候補
 
 1. [深掘り] `akurkar07/OrderBook`(101 番) — 状態: **構築して動かした。**構築 8.73 秒。付属の試験 5 本が `ctest` で全部通った。
    待ち行列は内部に持つが**公開 API から読めない**。隠し玉・表示サイズ・約定の向き・CSV 入力はいずれも無し。許諾は MIT。
-2. [深掘り] `3yit/Limit-Order-Book-Simulator`(102 番) — 状態: **構築して動かした。C++ と Python の両方。**
-   C++ の構築 24.98 秒、Python の束縛の構築 14.05 秒(ただし `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` を足した後)。
+2. [深掘り] `3yit/Limit-Order-Book-Simulator`(102 番) — 状態: **構築して動かした。C++ と Python の両方。ただし Python の束縛は、配布物のままでは束縛の構築が落ちる(`-DCMAKE_POSITION_INDEPENDENT_CODE=ON` を足して通した)。**
+   C++ の構築 24.98 秒、Python の束縛の構築 14.05 秒(位置独立コードの指定を足した後)。
    **CSV の列の形が判明**(`#timestamp,event,id,side,type,price,quantity`)。先行注文量・隠し玉・約定の向きは無し。許諾は無し。
 3. [深掘り] `IsaacCheng9/order-book-simulator`(103 番) — 状態: **この環境からは到達できない。**docker の 3 経路を全部試して塞がった。
    第 2 経路(オーナー PC)のコマンドは `docker compose -f docker/docker-compose.yml up -d` と `uv sync`、Python は 3.14 以上。許諾は無し。
-4. [深掘り] `jxm35/LimitOrderBook-MatchingEngine`(104 番) — 状態: **`lib/OrderBook` の範囲で構築して動かした。**構築 2.12 秒 + 最小実行 3.78 秒。
+4. [深掘り] `jxm35/LimitOrderBook-MatchingEngine`(104 番) — 状態: **配布物そのままでは構築できない(欠けているヘッダ 2 本を代用、`<cstdint>` の取り込み忘れを補った)。補ったうえで動いた。**`lib/OrderBook` の範囲で、構築 2.12 秒 + 最小実行 3.78 秒。
    **`queuePosition` を整数で返す唯一の実装。**`aggressor_side` も持つ。隠し玉・表示サイズは無し。許諾は無し。
    配布物のままの `cmake` は Boost 1.82 と spdlog が無くて通らない(いずれも `/opt/homebrew/...` を直書き)。
 5. `arXiv:2509.05107`(109 番) — 状態: **浅い。一次資料に到達した**(`code=200`、要旨と分野の逐語を取った)。
@@ -5631,6 +5631,175 @@ X の経路も同じ理由で打っていない。したがって新しい候補
    起動の指定の逐語「**この回も新しい検索計画は打ちません。**」に従い、名前だけを知見 12 に残した。
 5. **103 番で `sortedcontainers` を scratchpad の venv に入れた。**リポジトリの環境には入れていない。
    結局 `pydantic` が無くて import は通らなかった。
+
+### 受け入れ検査の出力
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+## 区分1 — 18 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run18.log`。
+17 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run17.md`)と起動の指定に従う。
+起動の指定の逐語「**この回も新しい検索計画は打ちません。**」「**残りを潰す回です。**」「**(1) を最優先に。**」のとおり、
+この回の狙いは `判別に一次資料が要る` の 14 件の 6 要素の印を確定させることである。
+起動の指定が許した 2 箇所(17 回目の候補 104 と候補 102 の状態の書き方)以外、**既存の節は 1 文字も書き換えていない。**
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断により区分 1 の 1 回目の節を参照して貼っていない。
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**この回も新しい検索計画は打ちません。**」による。X の経路も同じ理由で打っていない。
+新しい候補は 1 件だけで、それは起動の指定が名指しした `LOB-Bench` である(起動の指定の逐語「**`LOB-Bench` を候補に立ててください**」)。
+候補の一覧は 119 番まで伸びた。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://ungh.cc/repos/<所有者>/<登録名>`(GitHub の登録情報の公開の代理) | 2026-09-22 | 星・初回公開日・最終更新日・既定枝 |
+| 2 | `https://ungh.cc/repos/<所有者>/<登録名>/files/<既定枝>`(追跡ファイルの一覧) | 2026-09-22 | 許諾ファイルの有無・検証の実装の有無 |
+| 3 | `https://raw.githubusercontent.com/<所有者>/<登録名>/<既定枝>/<経路>`(配布物の原典) | 2026-09-22 | README と実装の逐語 |
+| 4 | `https://www.backtestingmax.com/pricing/` と同じ場の `assets/Pricing-C89rlNz_.js` | 2026-09-22 | 候補 48 の料金と機能一覧の逐語 |
+| 5 | `https://mypage.atoz-gm.net/p/mt4r` と `https://mypage.atoz-gm.net/p/mt4` | 2026-09-22 | 候補 46 の販売の場の逐語と価格 |
+| 6 | `https://help.goatfundedtrader.com/en/?q=backtest` と `https://www.goatfundedtrader.com/` | 2026-09-22 | 候補 49 の公開の文書の有無 |
+| 7 | `https://openmarket.xyz/` | 2026-09-22 | 候補 40 の機能一覧の逐語 |
+| 8 | `https://pypi.org/pypi/wbt/json` と `https://pypi.org/pypi/czsc/json` | 2026-09-22 | 候補 85 の検証の本体の所在 |
+
+### §4.0 の機械可読の表
+
+**この回に深掘りした道具は 0 件である。**起動の指定の逐語「**深掘りまでは要りません。印が決まれば、それがこの回の成果です。**」に従い、
+到達と一次資料の読みだけを行い、構築も導入も最小実行も 1 件も行っていない。したがって §4.0 の表にこの回の行は無く、
+確定した内容は「知見」と「候補の一覧」に書く。**この回に状態を変えた候補はすべて「浅い」のままである。**
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **候補 40 `OpenMarket` の場を特定した。**`openmarket.xyz` の表題の逐語は「OpenMarket - Market Intelligence Platform」で、本文の逐語に「watch values tick live with Live Lens, backtest over history」「Write, lint and backtest without leaving the chart」「Real-time liquidation maps and heatmaps」「track CVD, funding or open interest」がある。**12 回目の X の投稿が言う清算と資金調達率がここに揃う。**検証はチャートの上で行う形で、足より細かい粒度の記述は本文に無い | 一次資料 | `https://openmarket.xyz/`(2026-09-22 取得)、`20260922_tools_1_run18.log:784` |
+| 2 | **候補 46 の販売の場に到達した。**`mypage.atoz-gm.net/p/mt4r` の逐語「商品代金の24,800円という価格は、新幹線で東京~名古屋間を往復するのと同等の価格です」。有償の追加の逐語は「有償サポート（税別2,500円）」。**無期限の無料の更新を謳う**(逐語「裁量トレード練習君プレミアムは無期限無料でバージョンアップします」) | 一次資料 | `https://mypage.atoz-gm.net/p/mt4r`(2026-09-22 取得)、`20260922_tools_1_run18.log:718` |
+| 3 | **候補 46 の粒度は足である。**手引きの見出しの逐語は「6.2.1分足のデータを他の時間足に展開する」、商品の説明の逐語は「通貨や時間足は規定がありませんので、何分足でも大丈夫です」。**ティックの語は競合の説明の中にしか出ない**(逐語「他社の類似製品だとティックデータを常に最新のものにしようとすると」) | 一次資料 | `https://mypage.atoz-gm.net/p/mt4`(2026-09-22 取得)、`20260922_tools_1_run18.log:718` |
+| 4 | **候補 48 `BacktestingMax` の料金を公式から取った。登録はしていない。**公式の説明の逐語は「BacktestingMax pricing plans: Free forever plan, Premium monthly/yearly, and Lifetime access」。料金の場の中の逐語は `$0`・`$8.33`・`$12.99`・`$99.99`・`$155.88`・`$199.99` と「5 / month」「Monthly」「Lifetime」「Buy Lifetime Access」。無料枠の逐語は「Free forever · No credit card required」「Historical Challenges (free scenarios)」「Most recent 12 months」 | 一次資料 | `https://www.backtestingmax.com/assets/Pricing-C89rlNz_.js`(2026-09-22 取得)、`20260922_tools_1_run18.log:659` |
+| 5 | **候補 48 の粒度は足である。**機能の逐語に「Bar-by-bar playback」と「Intrabar playback」があり、有償側の逐語に「All drawing tools & Indicators」「Custom Indicator Scripting (Python)」「UNLIMITED backtesting sessions」「Unlimited Date Range」「Session saving & playback」「Trade Journal」「Trailing drawdown, daily loss limits, minimum trading days」がある。**板・待ち行列・滑り・市場影響の語は 1 つも無い** | 一次資料 | `https://www.backtestingmax.com/assets/Pricing-C89rlNz_.js`(2026-09-22 取得)、`20260922_tools_1_run18.log:659` |
+| 6 | **候補 49 `GFT Backtest Software` は、この環境から本体にも公開の文書にも到達できなかった。**試した経路は 4 つ。`www.goatfundedtrader.com/backtest` が 404、`www.goatfundedtrader.com/backtesting` が 404、`backtest.goatfundedtrader.com` が 2 回とも 000(時間切れ)、公式の FAQ の検索の逐語が「We couldn't find any articles for: backtest」で当たり 0 件。**本体の入口は `app.goatfundedtrader.com/login` の内側にあり、起動の指定の逐語「登録はせず」に従って踏んでいない** | 実測 | `20260922_tools_1_run18.log:716`・`:750`・`:752`・`:759`・`:811` |
+| 7 | **候補 56 `zvt` の粒度は足である。**README の逐語は `Stock1dHfqKdata`・`Stock1dKdata`・`{entity_shema}{level}{adjust_type}Kdata`・`for level in IntervalLevel:`。検証の説明の逐語は「The so-called strategy backtesting is nothing but repeating the following process」「At a certain time, find the targets which matching conditions, buy and sell them, and see the performance」。**板も約定の模型も README に無い。**追跡ファイルに `LICENSE` が在る | 一次資料 | `https://raw.githubusercontent.com/zvtvz/zvt/master/README.md`(2026-09-22 取得)、`20260922_tools_1_run18.log:418` |
+| 8 | **候補 59 `PandoraTrader` の粒度はティックである。**機能一覧の逐語は「Tick级别回测」。検証の場の説明の逐語は「回测平台主程序，负责实例化回测系统，包括策略，模拟交易模块和模拟撮合等」で、**模擬の照合を持つと自分で書いている。**追跡ファイルに `PandoraSimulator/` と `Interface/include/cwBasicSimulator.h`・`cwPegasusSimulator.h`・`cwTickTradeManager.h` が在る。**照合の実装そのものは取っていない**ので、板の待ち行列と市場影響の有無は未確認。**`LICENSE` も `COPYING` も無い** | 一次資料 | `https://raw.githubusercontent.com/pegasusTrader/PandoraTrader/master/README.md`(2026-09-22 取得)、`20260922_tools_1_run18.log:418`・`:480` |
+| 9 | **候補 63 `trade-frame` は 3 要素を同時に持つ。**README の逐語は「A Simulation Interface is provided for testing strategies off-line. The simulator will accept Orders of type Market and Limit assuming bid/ask data has been captured from the exchange during a live session. A 50ms - 100ms delay queue has been implemented to better simulate round-trip and slippage effects of order submission」。**ティック**(気配と約定を入力にする)・**イベント駆動**(`AddQuoteHandler`・`AddTradeHandler`・`EventHolders`)・**市場影響と約定の模型**(`SetOrderDelay`・`m_dtQueueDelay`・`CalculateCommission`・`ProcessDelayQueue`)である | 一次資料 | `https://raw.githubusercontent.com/rburkholder/trade-frame/master/lib/TFSimulation/SimulateOrderExecution.hpp`(2026-09-22 取得)、`20260922_tools_1_run18.log:480`・`:535` |
+| 10 | **候補 63 の待ち行列は板の列ではない。**`SimulateOrderExecution.hpp` が持つのは `m_lOrderDelay`(逐語のコメント「all orders put in delay queue, taken out then processed as limit or market or stop」)と `m_dtQueueDelay`(逐語のコメント「used to simulate network / handling delays」)で、**自分の注文の遅延の列であって、価格帯の先行注文の列ではない。**指値の埋まりは `ProcessLimitOrders( const Quote& )` と `ProcessLimitOrders( const Trade& )` の 2 つで決める。**候補 104 が持つ `queuePosition` に当たるものは無い** | 一次資料 | `https://raw.githubusercontent.com/rburkholder/trade-frame/master/lib/TFSimulation/SimulateOrderExecution.hpp`(2026-09-22 取得)、`20260922_tools_1_run18.log:535` |
+| 11 | **候補 63 は板の注文ごとの配信を受ける口を持つ。**`SimulationInterface.hpp` の逐語に `AddDepthByMMHandler` と `AddDepthByOrderHandler` がある。**注文ごとの深さという視点は当方に無い。**ただし検証の側がこれを使って先行注文量を出すかは、この回に確かめていない | 一次資料 | `https://raw.githubusercontent.com/rburkholder/trade-frame/master/lib/TFSimulation/SimulationInterface.hpp`(2026-09-22 取得)、`20260922_tools_1_run18.log:480` |
+| 12 | **候補 64 `QuantFabric` は検証の実装を持たない。**README を `回测`・`backtest`・`模拟`・`simulat` で検索して当たり 0 件。追跡ファイルの経路を `backtest`・`simulat`・`paper`・`bar`・`tick`・`queue`・`slippage`・`impact`・`vector` で検索しても当たり 0 件。**実弾の売買の系であり、区分 1 の 6 要素はどれも該当しない。**`LICENSE` は在る | 実測 | `20260922_tools_1_run18.log:156`・`:418` |
+| 13 | **候補 66 `sdoosa-algo-trade-python` も検証の実装を持たない。**追跡ファイルは 49 本で、`src/strategies/`・`src/ordermgmt/`・`src/trademgmt/`・`src/ticker/` だけである。**`TickData.py` は実弾の気配の受け口**(`src/ticker/ZerodhaTicker.py` と対になる)で、検証の入力ではない。**`LICENSE` も `COPYING` も無い** | 実測 | `20260922_tools_1_run18.log:156` |
+| 14 | **候補 71 `FlashFunk` も検証の実装を持たない。**追跡ファイルは 28 本で、`core/src/api.rs`・`builder.rs`・`strategy.rs`・`worker.rs`・`util/channel.rs`・`util/spsc.rs` など実行時の核だけである。README の全文は表題と副題だけで、副題の逐語は「high performance runtime for low-latency」。**`LICENSE` も `COPYING` も無い** | 実測 | `20260922_tools_1_run18.log:156`・`:339` |
+| 15 | **候補 80 `Hummingbot` の検証の粒度は足で、既定は 1 分である。**`backtesting_engine_base.py` の逐語は `backtesting_resolution: str = "1m"` と `interval=self.backtesting_resolution` と `backtesting_candles["reference_price"] = backtesting_candles["close_bt"]`。**ベクトル化ではない**(逐語 `for i, row in processed_features.iterrows():`)。**板も待ち行列も約定の模型も、この経路には無い。**`LICENSE` は在る | 一次資料 | `https://raw.githubusercontent.com/hummingbot/hummingbot/master/hummingbot/strategy_v2/backtesting/backtesting_engine_base.py`(2026-09-22 取得)、`20260922_tools_1_run18.log:351`・`:377` |
+| 16 | **候補 85 `czsc` の粒度は足だが、検証の本体はこの登録の中に無い。**README の逐語は `from czsc import WeightBacktest` と `wb = WeightBacktest(dfw, fee_rate=0.0002)` と `bg = BarGenerator(base_freq='1分钟', freqs=['5分钟', '30分钟', '日线'])`。ところが `czsc/traders/__init__.py` の逐語は `from wbt import WeightBacktest` と `from czsc._native import (...)` で、説明の逐語は「``WeightBacktest`` ：从外部 ``wbt`` 包再次导出」「均来自 ``czsc._native``（Rust 扩展），承担信号生成与多级别交易决策的核心逻辑」。**検証の実装は別の配布物 `wbt` に在り、信号の核は Rust の拡張である** | 一次資料 | `https://raw.githubusercontent.com/waditu/czsc/master/czsc/traders/__init__.py`(2026-09-22 取得)、`20260922_tools_1_run18.log:523` |
+| 17 | **候補 85 の `wbt` は PyPI に在る別の配布物である。**PyPI の逐語は名前 `wbt`、説明「Weight-based backtesting engine for quantitative trading」、`home_page` が `https://github.com/zengbin93/wbt`。**候補 85 を使うと、この別の配布物と Rust の拡張がまとめて入る。**委任文 §6-1 の「取り込むものが変わりうる型」に当たるので、使う段でオーナーに出す所見として残す | 一次資料 | `https://pypi.org/pypi/wbt/json`(2026-09-22 取得)、`20260922_tools_1_run18.log:561` |
+| 18 | **候補 86 `analyzingalpha` の粒度は足である。**追跡ファイルは `candlestick-patterns/` の下に `README.md` と要約の CSV が並び、`2019-09-26-backtrader-backtesting-trading-strategies/` の下に `backtrader-conners-rsi-strategy.py` などが在る。**道具ではなく、記事に付いた写経の集まりである。**`LICENSE` も `COPYING` も無い | 実測 | `20260922_tools_1_run18.log:90` |
+| 19 | **候補 86 の README は中身ではなく git-lfs の指し先である。**取れた全文の逐語は「version https://git-lfs.github.com/spec/v1」「oid sha256:6dcc0e6f7f8f60dc24db05afd6d81f08bd6b197d19a6a2e855091e3567194392」「size 1077」。**`raw.githubusercontent.com` の経路では本文が取れない** | 実測 | `20260922_tools_1_run18.log:339` |
+| 20 | **候補 95 の粒度はティックである。**README の逐語は「A queue-aware fill model for Polymarket, built by cross-referencing the order book with the trade tape」「A fill simulator that tracks **queue position** at the best bid and consumes it with the **real trade tape**」。**約定の列を 1 本ずつ食わせる形なので、粒度は約定 1 本である。**16 回目に外した `区分1-ティック` を、この一次資料で戻す | 一次資料 | `https://raw.githubusercontent.com/sacha9214/polymarket-fill-model/main/README.md`(2026-09-22 取得)、`20260922_tools_1_run18.log:761` |
+| 21 | **候補 119 `LOB-Bench` の一次資料に到達した。**登録は `peernagy/lob_bench`、説明の逐語は「Benchmarking library for generative models of Limit Order Book data (LOBSTER)」。README の逐語は「Ready-made score functions, distance metrics, and impact-response analysis」「Works out-of-the-box with LOBSTER CSVs, yet fully extensible」「pip install lob_bench」「Requires Python ≥ 3.9 plus `numpy`, `pandas`, `scipy`, `matplotlib`」 | 一次資料 | `https://raw.githubusercontent.com/peernagy/lob_bench/main/README.md`(2026-09-22 取得)、`20260922_tools_1_run18.log:588` |
+| 22 | **候補 119 は市場影響の測り方を持つが、検証の機関ではない。**追跡ファイルに `impact.py`・`metrics.py`・`scoring.py`・`partitioning.py`・`eval.py`・`run_bench.py` と `cst_model/` が在り、README の節の見出しの逐語は「Impact-Response Evaluation」。指標の逐語は「Ask/Bid volume (n levels)」「Limit-order levels」「Cancel-order levels」。**生成した板の列と本物の板の列の隔たりを測る道具で、注文を入れて埋まりを決める機関ではない。**`LICENSE` も `COPYING` も無い | 一次資料 | `https://raw.githubusercontent.com/peernagy/lob_bench/main/README.md`(2026-09-22 取得)、`20260922_tools_1_run18.log:588` |
+| 23 | **候補 119 の追跡ファイルに `__pycache__` の残骸が入っている。**逐語は `__pycache__/data_loading.cpython-310.pyc`・`__pycache__/impact.cpython-310.pyc`・`__pycache__/partitioning.cpython-310.pyc`。**委任文 §6-1 の「同梱バイナリ」に当たる形だが、Python の中間ファイルであって外から取ってくる実行体ではない。**導入は PyPI の側から行う形なので、この残骸を踏むかは未確認 | 一次資料 | `https://ungh.cc/repos/peernagy/lob_bench/files/main`(2026-09-22 取得)、`20260922_tools_1_run18.log:588` |
+| 24 | **`ungh.cc` は 2 回 000 を返した。**候補 85 の登録情報と候補 66 の追跡ファイルの一覧である。**起動の指定の逐語「応答が 000 のときは必ず 1 回打ち直す」に従って両方打ち直し、2 回目はどちらも 200 になった。**000 を 404 と同じ欄に書いていない | 実測 | `20260922_tools_1_run18.log:22`・`:26`・`:82`・`:92` |
+| 25 | **許諾は 14 件のうち 3 件にしか無い。**追跡ファイルの一覧に `LICENSE` が在るのは候補 56・64・80 の 3 件。候補 59・66・71・86・119 は `LICENSE` も `COPYING` も無い。候補 63 は `LICENSE.txt` が在る。候補 85 は `LICENSE` が在るが、検証の本体は別の配布物にある | 実測 | `20260922_tools_1_run18.log:74`・`:76`・`:78`・`:80`・`:84`・`:86`・`:88`・`:90`・`:92`・`:586` |
+
+### 候補の一覧
+
+**新しい候補は 1 件(119 番)。**この回に印が決まったのは 15 件で、番号と名前は 15 回目の節のものをそのまま使う。
+**この回は 1 件も深掘りしていないので、15 件すべてが「浅い」である。**
+
+1. `OpenMarket`(40 番) — 状態: **浅い(場を特定し、機能一覧の逐語を取った)。**印は `区分1-足`。
+   未確認: 料金の構造・登録の要否・鍵・検証の粒度がチャートの足より細かいか・規約。**登録はしていない。**
+2. `MT4裁量トレード練習君プレミアム`(46 番) — 状態: **浅い(販売の場に到達し、価格と粒度の逐語を取った)。**印は `区分1-足`。
+   未確認: MT4 本体が要ること以外の動作条件・返金の規約・自動の検証ができるか。**購入していない。**
+3. `BacktestingMax`(48 番) — 状態: **浅い(公式の料金の場から料金と機能一覧の逐語を取った)。**印は `区分1-足`。
+   未確認: 規約の全文・データの出所・再配布の可否・公開の利用者の報告。**登録はしていない。**
+4. `GFT Backtest Software`(49 番) — 状態: **この環境からは到達できない。**4 経路を全部試して塞がった。印は**どの要素にも付けられない**(6 要素とも未確認)。
+   第 2 経路(オーナー PC)でも、入口が `app.goatfundedtrader.com/login` の内側にあるので**登録が要る。**起動の指定の逐語「**登録はせず**」により当方は踏まない。
+5. `zvt`(56 番) — 状態: **浅い(README の一次資料から粒度を確定)。**印は `区分1-足`。
+   未確認: 導入・最小実行・当方のデータの投入・国内取引所の有無。
+6. `PandoraTrader`(59 番) — 状態: **浅い(README の一次資料から粒度を確定)。**印は `区分1-ティック`。
+   未確認: 模擬の照合の中身(板の待ち行列と市場影響の有無)・構築(Windows の `.sln` が主)・許諾が無いこと以外の再配布の条件。
+7. `trade-frame`(63 番) — 状態: **浅い(検証の実装の原典を読んで 3 要素を確定)。**印は `区分1-ティック` と `区分1-イベント駆動` と `区分1-市場影響と約定の模型`。
+   **注文ごとの深さを受ける口を持つ。**未確認: 構築(wxWidgets と Boost が要る)・最小実行・当方の csv.gz の投入。
+8. `QuantFabric`(64 番) — 状態: **区分 1 の 6 要素はどれも該当しない。**印は `区分2 へ`。`判別に一次資料が要る` を外す。
+9. `sdoosa-algo-trade-python`(66 番) — 状態: **区分 1 の 6 要素はどれも該当しない。**印は `区分2 へ`。`判別に一次資料が要る` を外す。
+10. `FlashFunk`(71 番) — 状態: **区分 1 の 6 要素はどれも該当しない。**印は `区分2 へ`。`判別に一次資料が要る` を外す。
+11. `Hummingbot`(80 番) — 状態: **浅い(検証の実装の原典から粒度を確定)。**印は `区分1-足` と `区分2 へ`。
+    未確認: 導入・最小実行・国内取引所の接続の有無・`paper_trade` の側の粒度。
+12. `czsc`(85 番) — 状態: **浅い(README と `czsc/traders/__init__.py` の原典から粒度と本体の所在を確定)。**印は `区分1-足` と `区分4 へ`。
+    **検証の本体は別の配布物 `wbt`、信号の核は Rust の拡張である。**未確認: `wbt` の許諾・Rust の拡張の中身・導入。
+13. `analyzingalpha`(86 番) — 状態: **浅い(追跡ファイルの一覧から粒度を確定)。**印は `区分1-足`。
+    **道具ではなく記事に付いた写経の集まりである。**未確認: 許諾が無いこと以外の再配布の条件・`backtrader` の版。
+14. `sacha9214/polymarket-fill-model`(95 番) — 状態: **16 回目に最小実行まで通した(この回に変わっていない)。**印に `区分1-ティック` を戻す。
+    `判別に一次資料が要る` を外す。根拠は README の逐語「the **real trade tape**」。
+15. `peernagy/lob_bench`(119 番、`LOB-Bench`) — 状態: **浅い(一次資料に到達し、README と追跡ファイルの逐語を取った)。新しい候補。**
+    印は `区分1-ティック` と `区分1-市場影響と約定の模型`。**検証の機関ではなく、生成した板の列を測る物差しである。**
+    未確認: 導入・最小実行・許諾が無いこと以外の再配布の条件・LOBSTER の形式のデータを当方が持っていないこと。
+
+**6 要素ごとの残り(区分 1 に入ったもののうち、状態がまだ確定していない候補の数)**:
+`区分1-足` は 43・44・51・52・53・54・55・57・60・67・70・72・75・87・91・92 に **40・46・48・56・80・85・86** を足して 23 件。
+`区分1-ティック` は 58・90 に **59・63・119** を足して 5 件(95 番は状態が確定しているので数に入れない)。
+`区分1-板の待ち行列` は 96・97・100・109 の 4 件(この回に増減なし)。
+`区分1-イベント駆動` は 41・52・58・61・62・65・68・69 に **63** を足して 9 件。
+`区分1-ベクトル化` は 44・73・74 の 3 件(この回に増減なし。起動の指定 (4) に着手できなかった)。
+`区分1-市場影響と約定の模型` は 106・116 に **63・119** を足して 4 件。
+
+**`判別に一次資料が要る` の残り**: 49 番だけ(登録が要るので当方は踏めない)。14 件のうち 13 件は印が決まった。
+**残りの候補名**: 41 番・43 番・44 番の浅い部分、51 番から 93 番のうち上で印を付けなかったもの、
+94 番・96 番・97 番・100 番から 119 番の浅い部分。
+**39 番と 110 番と 112 番の一覧の残りの節からも、まだ名前を抜いていない。**
+
+### ツール1件ごとの表
+
+| ツール | 何ができるか | 料金の構造 | 当方に無いもの | この環境での到達 |
+|---|---|---|---|---|
+| `OpenMarket` | 清算の地図・資金調達率・建玉・CVD を 1 つの板で並べ、チャートの上で検証を書いて走らせる | 未確認(料金の場をこの回に取っていない) | 清算の地図と、指標をチャート内の editor で書く形 | **可**(場に到達して機能一覧の逐語を取った) |
+| `MT4裁量トレード練習君プレミアム` | MT4 の上で過去の足を再生し、裁量の売買を手で練習する | 24,800円(買い切り)。有償サポート 税別2,500円。更新は無期限無料 | 土日や市場の閉まっている時間に再生できること | **可**(販売の場に到達。購入はしていない) |
+| `BacktestingMax` | browser の上で足を 1 本ずつ再生し、記録を残し、課題の形で合否を出す | 無料枠あり。月額と買い切りの 2 通り。逐語の値は `$0`・`$8.33`・`$12.99`・`$99.99`・`$155.88`・`$199.99` | 課題の形(合否の判定・最大の下落・最小の売買日数)と記録の場 | **可**(料金の場に到達。登録はしていない) |
+| `GFT Backtest Software` | 未確認(公開の文書に記事が 1 件も無い) | 未確認 | 未確認 | **不可**(4 経路が全部塞がり、入口は登録の内側) |
+| `zvt` | 銘柄と事象を 1 つの表の形に揃え、条件に合う銘柄を選んで売買の成績を見る | 無料。鍵も登録も無し | 銘柄と事象を同じ表の形に揃える設計 | **可**(原典に到達。導入はしていない) |
+| `PandoraTrader` | ティックの粒度の検証と、模擬の売買・模擬の照合を持つ実弾の枠組み | 無料。鍵も登録も無し | ティックの粒度の検証と模擬の照合を、実弾と同じ接続の形で持つこと | **可**(原典に到達。構築はしていない) |
+| `trade-frame` | 気配と約定を捕って流し直し、遅延の列で往復と滑りを模して指値・成行・逆指値を埋める | 無料。鍵も登録も無し | **注文の遅延の列で滑りを模す形**と、**注文ごとの深さを受ける口** | **可**(原典に到達。構築はしていない) |
+| `QuantFabric` | 実弾の中高頻度の売買の系(相場・リスク・発注・監視を別の過程に分ける) | 無料。鍵も登録も無し | 相場・リスク・発注・監視を別の過程に分ける構成 | **可**(原典に到達。構築はしていない) |
+| `sdoosa-algo-trade-python` | Zerodha に繋いで日中の戦略を回す実弾の枠組み | 無料。鍵は Zerodha の側で要る | 戦略・注文・建玉・気配を別の層に分ける小さな構成 | **可**(原典に到達。導入はしていない) |
+| `FlashFunk` | 低遅延の実行時の核(作業者・通路・戦略の入れ物)だけを持つ | 無料。鍵も登録も無し | 低遅延の実行時を Rust で書く形 | **可**(原典に到達。構築はしていない) |
+| `Hummingbot` | 多数の取引所に繋ぐ実弾の枠組みと、足の粒度の検証・紙の売買 | 無料。鍵は取引所の側で要る | 建玉・DCA・格子・裁定・XEMM・TWAP・LP を部品として持つ形 | **可**(原典に到達。導入はしていない) |
+| `czsc` | 缠論の信号を出し、重みの列から成績を出す | 無料。鍵も登録も無し | 重みの列を入力にして成績を出す形 | **可**(原典に到達。導入はしていない) |
+| `analyzingalpha` | ローソク足の型ごとの成績の要約と、`backtrader` の戦略の写経 | 無料。鍵も登録も無し | ローソク足の型を 1 つずつ数えて要約を並べる作業の形 | **可**(原典に到達。導入はしていない) |
+| `peernagy/lob_bench` | 生成した板の列と本物の板の列の隔たりを測り、市場影響の応答まで比べる | 無料。鍵も登録も無し。導入は PyPI から | **生成した板の列を測る物差しそのもの**と、市場影響の応答の比べ方 | **可**(原典に到達。導入はしていない) |
+
+### 予算
+
+割当は 1 回 5 万トークン・20 分。**20 分の上限に達したので打ち切った。**
+(1) の 14 件のうち 13 件は印が決まり、1 件(49 番)は登録の内側にあるため印が決まらなかった。
+(2) の `LOB-Bench` は候補 119 として立て、印が決まった。(3) の 2 箇所は直した。
+**(4) の `区分1-ベクトル化` の 3 件(73・74・44)には着手していない。**起動の指定の逐語「**(1) を最優先に。**」に従って予算を (1) に寄せたためで、状態は 17 回目のまま変わっていない。
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **候補 64・66・71 の `判別に一次資料が要る` を外し、`区分2 へ` だけにした。**起動の指定は「印を確定させてください」であって「外してよい」とは書いていない。
+   3 件とも検証の実装が追跡ファイルにも README にも無かったので、区分 1 の 6 要素のどれにも印が付かない。**外してよいかはリードが決めること。**
+2. **候補 49 を `判別に一次資料が要る` に残した。**4 経路が全部塞がり、残る経路は登録だけである。起動の指定の逐語「**登録はせず**」に従って踏んでいない。
+   **これを「不可」として閉じるか、オーナー PC の経路として残すかはリードが決めること。**
+3. **候補 63 に 3 つの印を同時に付けた。**1 つの候補に複数の要素の印が付くと、6 要素の残りの合計が候補の数を超える。
+   既存の節では候補 52 と 58 と 44 が 2 つの印を持つので同じ形だが、3 つは初めてである。
+4. **候補 85 の印に `区分4 へ` を足した。**17 回目までの仕分けは `区分4 へ` と `判別に一次資料が要る` だったので足し直しただけだが、
+   検証の本体が別の配布物にあることが分かったため、区分 1 の印を付けてよいかに迷いが残る。**迷っている事実をここに書く。**
+5. **候補 119 の番号を 119 にした。**118 番までが埋まっていたので次の番号を当てただけで、起動の指定に番号の指示は無い。
 
 ### 受け入れ検査の出力
 
