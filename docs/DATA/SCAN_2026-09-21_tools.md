@@ -4344,10 +4344,10 @@ X の経路も同じ理由で新しくは引いていない。48・49・50 番�
 52. `QuantConnect` — 未着手。**22 番の `Lean CLI` と同じ機関の別の入口なので、別立てにするかはリードが決める。**
 53. `Rqalpha` — 未着手。出典は 39 番の一覧。
 54. `finmarketpy` — 未着手。出典は 39 番の一覧。
-55. `backtesting.py` — 未着手。出典は 39 番の一覧。
+55. `backtesting.py` — **到達済み。21 回目に一本化した。**2 回目の節(`#### 5. Backtesting.py`、565 行)で隔離 venv への導入と最小実行まで済んでおり、逐語は「**指値の1往復に成功**(最小実行)」である。出典は 39 番の一覧と 2 回目の節。
 56. `zvt` — 未着手。出典は 39 番の一覧。
 57. `WonderTrader` — 未着手。出典は 39 番の一覧。
-58. `nautilus_trader` — 未着手。出典は 39 番の一覧。
+58. `nautilus_trader` — **到達済み。21 回目に一本化した。**1 回目の節(`#### 2. NautilusTrader`、244 行)で一次資料に到達済みで、20 回目に README から 4 要素を確定した。出典は 39 番の一覧と 1 回目の節。
 59. `PandoraTrader` — 未着手。出典は 39 番の一覧。
 60. `Hikyuu` — 未着手。出典は 39 番の一覧。
 61. `barter-rs` — 未着手。出典は 39 番の一覧。
@@ -4364,7 +4364,7 @@ X の経路も同じ理由で新しくは引いていない。48・49・50 番�
 72. `QTradeX` — 未着手。出典は 39 番の一覧。
 73. `vectorbt` — 未着手。出典は 39 番の一覧。
 74. `ml-quant-trading` — 未着手。出典は 39 番の一覧。
-75. `Freqtrade` — 未着手。出典は 39 番の一覧。
+75. `Freqtrade` — **到達済み。21 回目に一本化した。**2 回目の節(`#### 4. freqtrade`、297 行 と `#### 4. freqtrade(追加)`、910 行)で隔離 venv に導入して実行まで済んでおり、逐語は「`freqtrade list-exchanges -a` を実測」「bitFlyer 行『missing: fetchOrder, fetchOHLCV』(必須欠落)」「非 -a の使える 79 取引所に bitFlyer は含まれず bitbank は含まれる」である。**当方の市場そのものについての実測である。**出典は 39 番の一覧と 2 回目の節。
 76. `Kelp` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
 77. `openlimits` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
 78. `bTrader` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
@@ -4635,10 +4635,10 @@ GitHub の登録情報の検索 3 本だけで、これは新しい検索計画�
 52. `QuantConnect` — 一覧の原文の説明は「Lean Algorithmic Trading Engine by QuantConnect (Python, C#)」。仕分けは `区分1-足` と `区分1-イベント駆動` と `区分2 へ`。**22 番の `Lean CLI` と同じ機関の別の入口なので、別立てにするかはリードが決める。**未着手。
 53. `Rqalpha` — 説明は「A extendable, replaceable Python algorithmic backtest && trading framework supporting multiple securities」。仕分けは `区分1-足`(推定)と `区分2 へ`。未着手。
 54. `finmarketpy` — 説明は「Python library for backtesting trading strategies & analyzing financial markets」。仕分けは `区分1-足`(推定)と `区分4 へ`。未着手。
-55. `backtesting.py` — 説明は「a Python framework for inferring viability of trading strategies on historical (past) data」。仕分けは `区分1-足`。未着手。
+55. `backtesting.py` — 説明は「a Python framework for inferring viability of trading strategies on historical (past) data」。仕分けは `区分1-足`。**到達済み(21 回目に一本化。2 回目の節 `#### 5. Backtesting.py` に最小実行の記録がある)。**
 56. `zvt` — 説明は「Modular quant framework」の 3 語だけ。仕分けは `判別に一次資料が要る`。未着手。
 57. `WonderTrader` — 説明は「量化研发交易一站式框架」。仕分けは `区分1-足`(推定)と `区分2 へ`。**ティックに対応するかは説明では決まらない。**未着手。
-58. `nautilus_trader` — 説明は「A high-performance algorithmic trading platform and event-driven backtester」。仕分けは `区分1-イベント駆動` と `区分1-ティック`(推定)と `区分2 へ`。未着手。
+58. `nautilus_trader` — 説明は「A high-performance algorithmic trading platform and event-driven backtester」。仕分けは `区分1-イベント駆動` と `区分1-ティック`(推定)と `区分2 へ`。**到達済み(21 回目に一本化。1 回目の節 `#### 2. NautilusTrader` に一次資料の記録がある)。**
 59. `PandoraTrader` — 説明は「High-frequency quantitative trading platform based on c++ development, supporting multiple trading APIs and cross-platform」。仕分けは `区分2 へ` と `判別に一次資料が要る`(模擬を持つかが説明に無い)。未着手。
 60. `Hikyuu` — 説明は「C++/Python quantitative research framework built around reusable strategy components, with its own bar and indicator engine」。仕分けは `区分1-足`(原文が bar engine と書いている)と `区分4 へ`。未着手。
 61. `barter-rs` — 説明は「Open source Rust framework for building event driven live trading and backtesting systems, running strategies on a near identical engine on both sides」。仕分けは `区分1-イベント駆動` と `区分2 へ`。**同じ機関を生と検証の両方で回すという主張は、当方に無い。**未着手。
@@ -4655,7 +4655,8 @@ GitHub の登録情報の検索 3 本だけで、これは新しい検索計画�
 72. `QTradeX` — 説明は「A powerful and flexible Python framework for designing, backtesting, optimizing, and deploying algotrading bots」。仕分けは `区分1-足`(推定)と `区分2 へ`。未着手。
 73. `vectorbt` — 説明は「operates entirely on pandas and NumPy objects, and is accelerated by Numba to analyze any data at speed and scale. This allows for testing of many thousands of strategies in seconds」。仕分けは `区分1-ベクトル化`。未着手。
 74. `ml-quant-trading` — 説明は「PyTorch research stack for ML multi-factor trading with 213 factors, bias correction, portfolio optimization, vectorized backtesting, and public validation reports」。仕分けは `区分1-ベクトル化` と `区分4 へ`。未着手。
-75. `Freqtrade` — 説明は「a free and open source crypto trading bot written in Python ... It contains backtesting, plotting and money management tools as well as strategy optimization by machine learning」。仕分けは `区分1-足`(推定)と `区分2 へ` と `区分4 へ`。**暗号資産で、当方の市場の順序の最初に当たる。**未着手。
+75. `Freqtrade` — 説明は「a free and open source crypto trading bot written in Python ... It contains backtesting, plotting and money management tools as well as strategy optimization by machine learning」。仕分けは `区分1-足`(推定)と `区分2 へ` と `区分4 へ`。**暗号資産で、当方の市場の順序の最初に当たる。**
+**到達済み(21 回目に一本化。2 回目の節 `#### 4. freqtrade` と `#### 4. freqtrade(追加)` に導入と実行の記録がある)。**
 76. `Kelp` — 説明は「a free and open-source trading bot for the Stellar DEX and 100+ centralized exchanges」。一覧に `archived` と書かれている。仕分けは `区分2 へ`。未着手。
 77. `openlimits` — 説明は「A Rust high performance cryptocurrency trading API with support for multiple exchanges and language wrappers」。一覧に `dormant since 2022-07` と書かれている。仕分けは `区分2 へ`。未着手。
 78. `bTrader` — 説明は「Triangle arbitrage trading bot for Binance」。一覧に `archived` と書かれている。仕分けは `区分2 へ`。未着手。
@@ -5926,7 +5927,7 @@ K12 検査の出力の貼付           0 件
 `区分1-ティック` は 58・90・59・63・119 の 5 件(この回に増減なし)。
 `区分1-板の待ち行列` は 96・97・100・109 の 4 件(この回に増減なし)。
 `区分1-イベント駆動` は 41・52・58・61・62・65・68・69・63 の 9 件(この回に増減なし)。
-`区分1-ベクトル化` は 44・73・74 の 3 件(数は変わらないが、**3 件とも印の根拠が一次資料になった**。起動の指定 (1) はこれで済んだ)。
+`区分1-ベクトル化` は 73・74 の 2 件(**44 は 20 回目に外した** = 19 回目のリードの検収 §4(6)。この集計の訂正は 21 回目。19 回目にはこの 3 件とも印の根拠が一次資料になり、起動の指定 (1) はこれで済んだ)。
 `区分1-市場影響と約定の模型` は 106・116・63・119 の 4 件(数は変わらないが、**106 と 116 の印の根拠が一次資料になった**)。
 
 **`判別に一次資料が要る` の残り**: 49 番だけ。**登録の内側にあり、当方は登録しない。**
@@ -6225,3 +6226,264 @@ K12 検査の出力の貼付           0 件
 ---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
 ---- 合計 0 件
 ```
+
+---
+
+## 区分1 — 21 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run21.log`。
+20 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run20.md`)と、その §8 の起動の指定に従う。
+起動の指定の逐語「**「一覧の修復」の回です。印を増やすより先に、数えられる状態にします。**」
+「**新しい検索計画は打たないでください。深掘り(構築・導入・最小実行)もしないでください。**」のとおりに進めた。
+
+**この回にしたこと**: (1) 落ちた 4 件を 121 番から 124 番として立てた / (2) 55・58・75 の状態を一本化した /
+(3) 鍵が取れなかった 11 件を公式の場の URL のホスト名を鍵にして洗い直した / (4) 候補 61・68 の粒度を実装の原典で決めた /
+(5) 19 回目の節の集計から `区分1-ベクトル化` の 44 を外した。
+**導入・構築・最小実行・登録・鍵の発行・購入・発注はこの回に 1 件も無い。**
+
+**1 回目・2 回目の古い節は 1 文字も書き換えていない。**121 番から 124 番も、55・58・75 の一本化も、
+古い節を**参照する**形で現行の番号の側に書いた。
+**既存の節への書き換えは、起動の指定が許した 1〜5 の範囲だけである。**`git diff` の削除行は 7 行で、内訳は
+(a) 13 回目の節の候補 55・58・75 の 3 行(指定 (2))、(b) 14 回目の節の同じ 3 候補の 3 行(指定 (2))、
+(c) 19 回目の節の「6 要素ごとの残り」の `区分1-ベクトル化` の 1 行(指定 (5))である。
+**(b) を触った理由は「原文に無い判断が要った点」の 1 に書いた。**
+
+**生ログの本数**: `ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l` の出力は **20**(生ログ `20260922_tools_1_run21.log:6`)。
+**これはこの回の生ログ `run21.log` を作ったあとに打った値で、内訳は `run2` から `run21` である。**
+**`run1` の生ログは存在しない**(1 回目の証拠は節の中にある)。20 回目の時点の実物は 19 本で、20 回目の報告の「20 本」は数え違いだった。
+
+**字形について**: この回に逐語で引いた原典の行に、非分割ハイフン(`‑` U+2011)などの字形違いは入っていない。
+**ただし 2 箇所だけ、原文の字形をそのまま写した**: 14 回目の節の候補 46 の名前に含まれる全角の中黒と、
+`quanttrader` の公式文書の逐語に含まれる半角の `*`(箇条書きの記号)である。
+**また、2 回目の節の候補 5 の行は原文が全角の丸括弧「（`backtesting`、kernc）」を使っており、この節ではその行を引かずに逐語の部分だけを引いた。**
+
+**原典の在処は、逐語を取る前に必ず追跡ファイルの一覧(`ungh.cc` の `files`)で確かめてから取った**(20 回目の検収 §8(8) の申し送り)。
+この手順で、`barter-rs` の粒度が `barter-data/src/subscription/` の下に在ることと、
+`quanttrader` の粒度が `quanttrader/data/` と `docs/_sources/backtest.md.txt` に在ることを、当てずっぽうの前に確かめている。
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断により区分 1 の 1 回目の節を参照して貼っていない。
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**新しい検索計画は打たないでください。**」による。
+X の経路も同じ理由で打っていない。
+**この回に新しく立てた 121 番から 124 番は、新しい検索で見つけた候補ではない。**1 回目・2 回目の節に既に在って
+現行の番号から落ちていたものを戻しただけである(委任文 §3-3「候補の一覧から黙って落とさない」、20 回目の検収 §5(5) の逐語
+「**一度調べたものを一覧に戻すのは修復であって拡大ではない。**」)。
+候補 61・68・107・108・117・118 について打った GET も、新しい検索ではなく**既存の候補の公式の場と実装の原典の確認**である。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://ungh.cc/repos/barter-rs/barter-rs/files/main` | 2026-09-22 | 候補 61 の粒度の原典の在処の確認 |
+| 2 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/event.rs` | 2026-09-22 | 候補 61 が受け取る事象の型 `DataKind` の逐語 |
+| 3 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/subscription/candle.rs` | 2026-09-22 | 候補 61 の足の型の逐語 |
+| 4 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/subscription/trade.rs` | 2026-09-22 | 候補 61 のティックの型の逐語 |
+| 5 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter/src/backtest/market_data.rs` | 2026-09-22 | 候補 61 の検証の入力の口 |
+| 6 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter/examples/engine_async_with_historic_market_data_and_mock_execution.rs` | 2026-09-22 | 候補 61 の検証が `DataKind` の流れを読むことの確認 |
+| 7 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-execution/src/exchange/mock/account.rs` | 2026-09-22 | 候補 61 の模擬の口座に待ち行列が無いことの確認 |
+| 8 | `https://ungh.cc/repos/letianzj/quanttrader/files/master` | 2026-09-22 | 候補 68 の粒度の原典の在処の確認 |
+| 9 | `https://raw.githubusercontent.com/letianzj/quanttrader/master/docs/_sources/backtest.md.txt` | 2026-09-22 | 候補 68 の検証が受け取る 3 つの供給の逐語 |
+| 10 | `https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/data/bar_event.py` | 2026-09-22 | 候補 68 の足の型の逐語 |
+| 11 | `https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/data/tick_event.py` | 2026-09-22 | 候補 68 のティックの型の逐語 |
+| 12 | `https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/data/backtest_data_feed.py` | 2026-09-22 | 候補 68 の検証の供給が返す型 |
+| 13 | `https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/backtest_engine.py` | 2026-09-22 | 候補 68 の検証の機関が登録する事象の型 |
+| 14 | `https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/brokerage/backtest_brokerage.py` | 2026-09-22 | 候補 68 の指値の埋まり方 |
+| 15 | `https://docs.skelfresearch.com/sigc/backtesting/cost-models/` | 2026-09-22 | 候補 107 のホスト名の鍵と、そこから辿れた登録の鍵 |
+| 16 | `https://databento.com/` | 2026-09-22 | 候補 108 のホスト名の鍵 |
+| 17 | `https://www.exegy.com/` | 2026-09-22 | 候補 117 のホスト名の鍵 |
+| 18 | `https://hyper-quant.tech/` | 2026-09-22 | 候補 118 のホスト名の鍵 |
+| 19 | `docs/DATA/SCAN_2026-09-21_tools.md` の 1 回目の節(244・297 行)と 2 回目の節(565・596・626・711・910 行) | 2026-09-22 | 121 番から 124 番と、55・58・75 の到達の記録 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **候補 61 `barter-rs` の粒度が実装で決まった。**受け取る事象の型の逐語は `pub enum DataKind { Trade(PublicTrade), OrderBookL1(OrderBookL1), OrderBook(OrderBookEvent), Candle(Candle), Liquidation(Liquidation) }` で、`kind_name` はそれぞれ `public_trade` / `l1` / `l2` / `candle` / `liquidation` を返す。**足とティックの両方を受け取る** | 一次資料 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/event.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:198` |
+| 2 | **候補 61 の足の型は正規化された OHLCV である。**逐語は「Normalised Barter OHLCV [`Candle`] model.」で、`pub struct Candle { close_time, open, high, low, close, volume, trade_count }` | 一次資料 | `.../barter-data/src/subscription/candle.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:206` |
+| 3 | **候補 61 のティックの型は約定 1 件ごとである。**逐語は「Normalised Barter [`PublicTrade`] model.」で、`pub struct PublicTrade { id, price, amount, side }` | 一次資料 | `.../barter-data/src/subscription/trade.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:218` |
+| 4 | **候補 61 の検証はその `DataKind` の流れをそのまま読む。**検証の口の逐語は `pub trait BacktestMarketData { type Kind; ... fn stream(&self) -> ... impl Stream<Item = MarketStreamEvent<InstrumentIndex, Self::Kind>> ... }` で、公式の例は `MarketStreamEvent<InstrumentIndex, DataKind>` を読む。**つまり足・ティック・L1・L2・清算のどれでも検証に入る** | 一次資料 | `.../barter/src/backtest/market_data.rs` と `.../barter/examples/engine_async_with_historic_market_data_and_mock_execution.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:227` |
+| 5 | **候補 61 は板を入力に取れるが、自分の注文が列のどこに居るかを追う実装は見つからなかった。**模擬の執行は `barter-execution/src/exchange/mock/account.rs` にあり、**`queue` の語の一致は 0 件**。持っているのは残高・未約定注文・取消済み注文・約定の記録で、待ち行列の位置ではない。**「無い」と書いているのはこのファイルの中についてだけで、道具のどこにも無いという意味ではない** | 実測 | `20260922_tools_1_run21.log:231`(`grep -c -i queue` の出力 0) |
+| 6 | **候補 68 `quanttrader` の粒度は公式の文書で決まった。**逐語は「Currently backtest accepts three data feeds.」「Daily bar or intraday bar from Yahoo Finance.」「Historical intraday bar from Interactive Brokers.」「Live tick recorded from live trading session.」。**足とティックの両方が検証の供給として公式に挙がっている** | 一次資料 | `https://raw.githubusercontent.com/letianzj/quanttrader/master/docs/_sources/backtest.md.txt` 取得日 2026-09-22 / `20260922_tools_1_run21.log:287` |
+| 7 | **候補 68 の実装にも足とティックの 2 つの型がある。**`BarEvent` の逐語は「Bar event, aggregated from TickEvent」で、`interval: int = 86400  # 1day in secs = 24hrs * 60min * 60sec` と OHLCV と `adj_close_price` を持つ。`TickEvent` は `TickType` が `TRADE / BID / ASK / FULL` で、`price` `size` `depth` と `bid_price_L1` `bid_size_L1` `ask_price_L1` `ask_size_L1` と `open_interest` を持つ。**原文の二重空白がそのまま入っている行がある**(`86400  # 1day`) | 一次資料 | `.../quanttrader/data/bar_event.py` と `.../quanttrader/data/tick_event.py` 取得日 2026-09-22 / `20260922_tools_1_run21.log:233` と `:254` |
+| 8 | **候補 68 の検証の機関が登録する事象は `EventType.TICK` だけで、足の事象の処理器は登録されていない。**逐語は `self._events_engine.register_handler(EventType.TICK, self._tick_event_handler)` で、検証の供給 `BacktestDataFeed.stream_next` が返すのも `TickEvent` である。**足は `data_board` 側の値として入り、事象としては刻まれない**(供給の逐語「BacktestDataFeed uses PLACEHOLDER to stream_next; actual data comes from data_board.get_hist_price」) | 一次資料 | `.../quanttrader/backtest_engine.py` と `.../quanttrader/data/backtest_data_feed.py` 取得日 2026-09-22 / `20260922_tools_1_run21.log:306` |
+| 9 | **候補 68 の指値は価格だけで埋まり、待ち行列の位置は持たない。**`_try_cross_order` は指値と逆指値を現値と比べて跨いだかどうかだけを見る。約定の値は `fill.fill_price = current_price` で、直前の行に `# TODO: use bid/ask to fill short/long` と書いてある。`queue` の語の一致はどれも `message queue`(事象の待ち行列)で、板の待ち行列ではない | 一次資料 | `.../quanttrader/brokerage/backtest_brokerage.py` 取得日 2026-09-22 / `20260922_tools_1_run21.log:314` と `:328` |
+| 10 | **鍵が取れなかった 11 件は、公式の場の URL のホスト名を鍵にすると 11 件とも鍵が取れた。**11 件どうしの照合で同じホストに 2 つ以上の番号が落ちる組は **0 件**。報告の全文でそのホスト名に触れている行を数えても、他の候補が同じ場を指している行は 1 本も無い | 実測 | `20260922_tools_1_run21.log:166`〜`:196` |
+| 11 | **候補 107 `sigc` には登録の鍵も在った。**`docs.skelfresearch.com` の頁の中に `https://github.com/Skelf-Research/sigc` への link があり、登録の鍵 `gh:skelf-research/sigc` が取れる。報告の全文での `skelf` の一致は 2 件で、どちらも 107 番の行である。**現行の 1 番から 124 番にこの登録は他に無い** | 一次資料 | `https://docs.skelfresearch.com/sigc/backtesting/cost-models/` 取得日 2026-09-22 / `20260922_tools_1_run21.log:154` と `:193` |
+| 12 | **候補 117 `Exegy` と候補 108 `Databento` の公式の場が確定した。**`www.exegy.com` の表題の逐語は「Exegy Global Market Data Solutions - Exegy」で、13 回目の `WebSearch` の当たりの表題の末尾と一致する。`databento.com` の表題の逐語は「Databento」 | 一次資料 | `https://www.exegy.com/` と `https://databento.com/` 取得日 2026-09-22 / `20260922_tools_1_run21.log:136` と `:146` |
+| 13 | **候補 118 は記事ではなく商品の場だった。**`hyper-quant.tech` の表題の逐語は「HyperTrader \| 866 AI Models & Strategies for Institutional-Grade Crypto Trading」で、**暗号資産を名指ししている。**15 回目に「記事なのか道具なのかが確かめられていない」と書いた点が、ここで片付いた。**中身(機能一覧・料金・登録の要否)はこの回に取っていない** | 一次資料 | `https://hyper-quant.tech/` 取得日 2026-09-22 / `20260922_tools_1_run21.log:164` |
+| 14 | **候補 49 の場には副ホストが 3 つある。**`www.goatfundedtrader.com` と `backtest.goatfundedtrader.com` と `app.goatfundedtrader.com` で、鍵としては `goatfundedtrader.com` に正規化して 1 件と数えた。**`www.` と `docs.` の接頭も同じ規則で外した**(48 番・107 番・117 番) | 実測 | `20260922_tools_1_run21.log:167`〜`:178` |
+| 15 | **候補 109 と候補 119 は近いが別物である。**109 の要旨は 119 番 `LOB-Bench` へ寄与すると書いているが(17 回目の知見 12)、109 は論文、119 は道具で、鍵も `arxiv.org` と `gh:peernagy/lob_bench` で別である。**重複ではない。取り違え注意として記録する** | 実測 | `20260922_tools_1_run21.log:195` |
+
+### 候補の一覧
+
+**この回に新しく立てた番号は 121 番から 124 番の 4 つで、いずれも 1 回目・2 回目の節に既に在ったものの復元である。**
+新しい検索で見つけた候補は 0 件。
+
+#### 落ちていた 4 件の復元(起動の指定 (1))
+
+121. `mhallsmoore/qstrader` — **復元(旧 7 番)。**1 回目・2 回目の節の `#### 7. QSTrader`(596 行)に到達の記録がある。
+   状態: **導入と最小実行まで済み**(逐語「`pip install qstrader`(隔離venv、rc=0、実測)」「**最小の実行**: 成功(rc=0)。`equity curve rows=261, first={'Equity': 1000000.0}, last={'Equity': 698485.43}`」)。
+   **粒度の逐語は「日次リバランス配分」のシミュレータで、指値注文・板・待ち行列という概念がソースのどこにも存在しない**(2 回目の節の実測)。印は `区分1-足`。
+   許諾は MIT、版 0.3.0(2024-06-24)。未確認: 既知の脆弱性・外部送信。
+122. `gbeced/pyalgotrade` — **復元(旧 9 番)。**2 回目の節の `#### 9. PyAlgoTrade`(626 行)に到達の記録がある。
+   状態: **導入と最小実行まで済み**(逐語「**指値の1往復に成功**」)。**2023-11-13 にアーカイブ済みで、後継として Basana を公式に指名している**
+   (逐語「This repository was archived by the owner on Nov 13, 2023. It is now read-only」「This project is deprecated and is no longer mantained. You may be interested in taking a look at Basana」。原文の綴り `mantained` のまま)。
+   印は `区分1-足`(合成の日次 CSV で最小実行が通っている)。**後継の Basana は現行 1 番として既に深掘り済みである。**未確認: `pip check`・脆弱性。
+123. `carlos8f/zenbot` — **復元(旧 10 番)。**2 回目の節の `#### 10. Zenbot(本家、carlos8f)`(711 行)に到達の記録がある。
+   状態: **一次資料に到達(導入はしていない)。2022-02-15 にアーカイブ済み**(逐語「This repository was archived by the owner on Feb 15, 2022. It is now read-only.」)。
+   **現行 13 番 `DeviaVir/zenbot` はその分岐で、登録としては別物である**(20 回目の洗い出しの結果)。**粒度は未確認なので区分 1 の 6 要素の印は付けない。**仕分けは `区分2 へ`。
+124. `ccxt/ccxt` — **復元(旧 17 番)。**1 回目の節(203 行)と 2 回目の節(495 行・914 行)に記録がある。
+   状態: **候補 75 `Freqtrade` の導入に同梱された `ccxt 4.5.82` で実測済み**(逐語「`createOrder=True, cancelOrder=True`」「`fetchOHLCV=None, fetchTickers=None, watchOHLCV=None`」「`fetchOrder='emulated'`」「GMOコインはccxtの取引所ID一覧に**存在しない**」)。
+   **検証の機関ではなく取引所の窓口なので、区分 1 の 6 要素の印は付けない。**仕分けは `区分2 へ` と `区分3 へ`。**深掘りは区分 2 の担当**(1 回目の節の判断)。
+
+#### 一本化した 3 件(起動の指定 (2))
+
+- **55 番 `backtesting.py`** — 現行の番号の側(13 回目の節と 14 回目の節)に**到達済み**と 2 回目の節への参照を書いた。到達の記録は `#### 5. Backtesting.py`(565 行)で、逐語は「**指値の1往復に成功**(最小実行)」。
+- **58 番 `nautilus_trader`** — 同じく**到達済み**と 1 回目の節(`#### 2. NautilusTrader`、244 行)への参照を書いた。20 回目に README から 4 要素を確定済み。
+- **75 番 `Freqtrade`** — 同じく**到達済み**と 2 回目の節(`#### 4. freqtrade`、297 行 と `#### 4. freqtrade(追加)`、910 行)への参照を書いた。
+  逐語は「`freqtrade list-exchanges -a`を実測実行」「bitFlyer 行『missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, watchOHLCV』」
+  「`freqtrade list-exchanges`(非-a、freqtradeが実際に使える79取引所の一覧)にbitFlyerは**含まれず**、bitbankは**含まれる**」。
+  **これは当方の市場そのものについての実測である。**
+- **1 回目・2 回目の古い節は 1 文字も書き換えていない。**書き換えたのは 13 回目と 14 回目の節の、その 3 候補の行だけである。
+
+#### 鍵が取れなかった 11 件の洗い直し(起動の指定 (3))
+
+**鍵は「公式の場の URL のホスト名」にした。**`www.` と `docs.` と `mypage.` などの接頭は外して正規化した。
+**11 件とも鍵が取れた。**候補ごとに、使った鍵とその出所を書く。
+
+| 番号 | 候補 | 使った鍵(ホスト名) | 鍵の出所 | 照合の結果 |
+|---|---|---|---|---|
+| 40 | `OpenMarket` | `openmarket.xyz` | 18 回目の GET(`code=200`、表題「OpenMarket - Market Intelligence Platform」) | 重複なし |
+| 45 | `ForexTester` | `forextester.com` | 13 回目の 5 経路(全部 403 か 404)。**場の綴りは公式の購入頁の URL から取った** | 重複なし |
+| 46 | `MT4裁量トレード練習君プレミアム` | `atoz-gm.net` | 18 回目の GET(`code=200`、販売の場の逐語を取得済み) | 重複なし |
+| 48 | `BacktestingMax` | `backtestingmax.com` | 18 回目の GET(`code=200`、料金の場) | 重複なし |
+| 49 | `GFT Backtest Software` | `goatfundedtrader.com` | 18 回目の 4 経路。副ホストが 3 つあるので正規化して 1 件 | 重複なし |
+| 50 | `AlgoTest` | `algotest.in` | 13 回目の GET(`algotest.in/pricing/` が `code=200`、値は `docs.algotest.in`) | 重複なし |
+| 107 | `sigc` | `skelfresearch.com` | **この回の GET**(`code=200`、表題「Transaction Costs - sigc Documentation」) | 重複なし。**登録の鍵 `gh:skelf-research/sigc` も取れた**(知見 11) |
+| 108 | `Databento` | `databento.com` | **この回の GET**(`code=200`、表題「Databento」) | 重複なし |
+| 109 | `arXiv:2509.05107` | `arxiv.org` | 17 回目の GET(`code=200`、要旨に到達済み) | 重複なし。**119 番とは別物**(知見 15) |
+| 117 | `Exegy` | `exegy.com` | **この回の GET**(`code=200`、表題「Exegy Global Market Data Solutions - Exegy」) | 重複なし |
+| 118 | `Hyper Trading Automation` | `hyper-quant.tech` | **この回の GET**(`code=200`、表題は知見 13) | 重複なし |
+
+**ホスト名すら確定しなかった候補は 0 件である。**したがって「鍵が無いから重複なしとは数えない」という 20 回目の扱いは、
+この 11 件については解消した。**ただしこれは「重複していない」ことが言えたというだけで、11 件の中身(機能一覧・料金・規約・粒度)は依然として浅い。**
+**この 11 件を完了の数に入れるかはリードが決めることで、この節では決めていない**(起動の指定の逐語「**あなたは決めないでください。**」)。
+
+#### 粒度が決まった 2 件(起動の指定 (4))
+
+- **61 番 `barter-rs`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。
+  根拠は知見 1〜4。**20 回目に「README に足・ティック・ローソクの語が 1 つも無い」と書いたのは README の中についてだけで、実装には両方の型が在った。**
+  **`区分1-板の待ち行列` は付けない。**板(L1・L2)を入力として受け取る口はあるが、自分の注文が列のどこに居るかを追う実装は見つからなかった(知見 5)。
+  20 回目の検収 §5(3) の逐語「**板を入力として受け取ることと、待ち行列の位置を模擬することは別である。**」の線をそのまま当てた。
+  **`区分1-市場影響と約定の模型` は未確認**(模擬の執行の約定の作り方をこの回に読んでいない)。
+- **68 番 `quanttrader`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。
+  根拠は知見 6〜8。**公式の文書が検証の供給として足とティックの両方を挙げている。**
+  **`区分1-板の待ち行列` は付けない。**指値は価格だけで埋まり、待ち行列の位置を持たない(知見 9)。
+  **ただし内部の作りには非対称がある**: 検証の機関が刻む事象はティックだけで、足は `data_board` 側の値として入る(知見 8)。
+  **この非対称をどう扱うかはリードへの問いに出した。**
+
+#### 6 要素ごとの残り
+
+**形は 20 回目の節と同じにする。**この回の変更は、**121 番と 122 番を `区分1-足` に足したこと**と、
+**61 番と 68 番の粒度が決まって `区分1-足` と `区分1-ティック` に入ったこと**の 2 つである。
+
+`区分1-足` は 43・44・51・52・53・54・55・57・60・67・70・72・75・87・91・92 と 40・46・48・56・80・85・86 と 73・74・120 と 58・62・69 に
+**61・68・121・122** を足して 33 件。
+`区分1-ティック` は 58・90・59・63・119・52 に **61・68** を足して 8 件。
+`区分1-板の待ち行列` は 96・97・100・109・65・90 の 6 件(この回に増減なし。**61 と 68 は線引きに当てて付けなかった**)。
+`区分1-イベント駆動` は 41・52・58・61・62・65・68・69・63 の 9 件(この回に増減なし)。
+`区分1-ベクトル化` は 73・74 の 2 件(**19 回目の節の集計からも 44 を外した**。起動の指定 (5))。
+`区分1-市場影響と約定の模型` は 106・116・63・119 の 4 件(この回に増減なし)。
+
+**このうち、この回に「未着手」から「到達済み」に変わったのは 55・58・75 の 3 件である**
+(`区分1-足` で 3 件、`区分1-ティック` で 1 件、`区分1-イベント駆動` で 1 件。同じ候補が複数の要素に入るので合計は 3 件ではない)。
+**「残り」の数え方(印を持つ候補の数なのか、状態がまだ確定していない候補の数なのか)は 20 回目の節でも両方に読める。**
+**どちらで数えるかはリードへの問いに出した。この節では 20 回目と同じ形の数をそのまま出している。**
+
+**`判別に一次資料が要る` の残り**: 49 番だけ。**登録の内側にあり、当方は登録しない。**
+**残りの候補名**: 43 番の浅い部分、51 番から 93 番のうち印を付けていないもの、
+94 番・96 番・97 番・100 番から 120 番の浅い部分、**新しく立てた 121 番から 124 番の浅い部分**。
+**39 番と 110 番と 112 番の一覧の残りの節からも、まだ名前を抜いていない。**
+
+### ツール1件ごとの表
+
+**この回に粒度を決めた 2 件と、復元した 4 件を出す。**復元の 4 件の欄は、1 回目・2 回目の節に在る記録の要約で、
+**この回に新しく測ったものではない**(参照先は候補の一覧に行番号で書いた)。
+
+| ツール | 何ができるか | 料金の構造 | 当方に無いもの | この環境での到達 |
+|---|---|---|---|---|
+| `barter-rs` | 足・約定のティック・L1・L2・清算の 5 つの型を同じ流れに載せ、実弾・紙・検証を同じ機関で回す | 未確認(許諾ファイルは登録の根に在るが、条件はこの回に読んでいない) | **5 つの型を 1 つの列挙で扱い、検証の口がその型に対して総称であること**と、監査の流れを外の見張りに渡す形 | **可**(実装の原典に到達。導入はしていない) |
+| `quanttrader` | 日足・日中足・記録したティックの 3 つを検証の供給として受け、事象駆動で検証と実弾を同じ符号で回す | 未確認 | **実弾の記録から作ったティックをそのまま検証に流す形**と、実弾の口(Interactive Brokers)の注文種別の広さ | **可**(実装の原典と公式の文書に到達。導入はしていない) |
+| `mhallsmoore/qstrader` | 日次の予定に沿って目標配分へリバランスする検証を回し、成績表を出す | 無料(MIT)。当方の用途での課金要素は無し | **予定駆動というアーキテクチャ**と `TearsheetStatistics` の成績表 | **可**(2 回目に導入と最小実行まで済み) |
+| `gbeced/pyalgotrade` | 汎用の CSV の足を流し、指値・成行で検証する | 無料。隠れた依存に `tweepy` などが入る | **`tweepy` 依存が示す「X の投稿を信号に取り込む」経路**(未確認) | **可**(2 回目に導入と最小実行まで済み。**アーカイブ済み**) |
+| `carlos8f/zenbot` | 指標に基づく自動売買・検証・紙の取引を、Node.js と MongoDB の上で回す | 無料(MIT)。**MongoDB の用意が別に要る** | **紙の取引と実弾を同じ命令行で切り替える形** | **可**(一次資料に到達。導入はしていない。**アーカイブ済み**) |
+| `ccxt/ccxt` | 多数の取引所の REST と WS を 1 つの符号で叩く窓口 | 未確認(本体は無料。取引所側の条件は別) | **bitFlyer の `fetchOHLCV` が無く `fetchOrder` が `emulated` であるという、窓口の側から見た当方の市場の像** | **可**(2 回目に `Freqtrade` 経由で導入され、実測済み) |
+
+#### §4.0 の機械可読の表
+
+**この回で `[深掘り]` に達した道具は無い。**起動の指定の逐語「**深掘り(構築・導入・最小実行)もしないでください。**」に従い、
+導入も最小実行も 1 件も行っていない。委任文 §4.0 は「深掘りした道具は、文章より先に表に 1 行ずつ書く」と定めており、
+深掘りが 0 件なので **§4.0 の機械可読の表にこの回の行は無い**(18 回目・19 回目・20 回目と同じ)。
+**121 番と 122 番は 2 回目に導入と最小実行まで済んでいるが、その測定は 2 回目の節に在るもので、この回に測り直していない。**
+したがってこの回の表には入れず、候補の一覧に記録と参照先を書いた。
+
+### 予算
+
+割当は 1 回 5 万トークン・20 分。**起動の指定の (1) から (5) はすべて終わった。**
+(1) 落ちた 4 件を 121 番から 124 番として立て、1 回目・2 回目の節の到達の記録を逐語で引いた。
+(2) 55・58・75 の状態を一本化し、現行の番号の側に到達済みと参照を書いた。
+(3) 鍵が取れなかった 11 件を公式の場の URL のホスト名で洗い直し、11 件とも鍵が取れて重複 0 件を確かめた。
+(4) 候補 61・68 の粒度を実装の原典と公式の文書で決めた。
+(5) 19 回目の節の集計から `区分1-ベクトル化` の 44 を外した。
+(6) 書き換えは 1〜5 の範囲だけで、`git diff` の削除行 7 行の内訳を節の冒頭に書いた。
+**新しい検索計画は打っていない。深掘りも 0 件。導入・構築・最小実行・登録・鍵の発行・購入・発注は 1 件も無い。**
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **14 回目の節の候補 55・58・75 の 3 行も直した。**起動の指定が逐語で挙げたのは「**未着手。出典は 39 番の一覧**」の形で、
+   これは 13 回目の節の 3 行である。**しかし 14 回目の節にも同じ 3 候補が「未着手」と書かれており**、そこを残すと
+   「一本化」が済まない(2 箇所のうち新しい側が未着手のままになる)。**そこで 14 回目の側も直した。**
+   削除行が指定の 5 行ではなく 7 行になっているのはこのためである。**直してよかったかを判定するのはリードである。**
+2. **候補 68 の「足」の印を、検証の機関の作りが非対称であるのに付けた。**公式の文書は検証の供給として日足と日中足を明記しているが、
+   検証の機関が刻む事象はティックだけで、足は `data_board` の値として入る。**「公式の文書が足を供給として挙げていれば `区分1-足` を付けてよいか」**、
+   それとも**「事象として刻まれる粒度だけを見るのか」**を決めていただきたい。この回は前者で付けた。
+3. **候補 61 の `区分1-市場影響と約定の模型` を未確認のままにした。**模擬の執行は `barter-execution` に在るが、
+   約定の作り方(滑り・手数料・市場影響)をこの回に読んでいない。**深掘りではないので読まなかったが、読むべきなら次の回で読む。**
+4. **「6 要素ごとの残り」の数え方が 2 通りに読める。**20 回目の節の見出しは「状態がまだ確定していない候補の数」と書いているが、
+   中身は「その印を持つ候補の一覧と数」で、18 回目に確定した 63 番も数に残っている。
+   **どちらで数えるかを決めていただきたい。**この回は 20 回目と同じ形(印を持つ候補の数)で出し、そのうち状態が変わった 3 件を別に書いた。
+5. **候補 123 `carlos8f/zenbot` と候補 124 `ccxt/ccxt` に区分 1 の 6 要素の印を付けていない。**
+   123 は粒度が未確認(2 回目に導入していない)、124 は検証の機関ではなく取引所の窓口であるため。
+   **この 2 件を区分 1 の完了の数に入れるかはリードが決めること。**
+6. **候補 107 に登録の鍵が出たことで、この候補は「場」ではなく「登録された道具」かもしれない。**
+   `gh:skelf-research/sigc` の中身はこの回に取っていない。**仕分けを `判別に一次資料が要る` から動かすかはリードが決めること。**
+
+### 取ってきた文章の中の作業者向けの指示(委任文 §6-3)
+
+**この回に取った原典のうち、作業者向けの手引きを同梱していた登録は 0 件である**(`barter-rs` と `quanttrader` の追跡ファイルの一覧に
+`AGENTS.md` も `CLAUDE.md` も無い)。取ってきた文章の中の指示に従った箇所も無い。
+
+### 受け入れ検査の出力
+
+打ったコマンド(生ログを全部渡した): `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log`
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+**誤検出だと判断して自分で閉じた行は 0 件である。**この回は 13 本すべてが 0 件で通った。

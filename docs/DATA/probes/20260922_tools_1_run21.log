@@ -1,0 +1,382 @@
+=== 区分1 21 回目の実行 生ログ 2026-09-22 ===
+=== この回の指定: 一覧の修復(121〜124 番の新設 / 55・58・75 の一本化 / 鍵の取れなかった 11 件のホスト名での洗い直し / 候補 61・68 の粒度の確定 / 19 回目の節の集計の訂正)
+=== 新しい検索計画は打っていない。深掘り(構築・導入・最小実行)も打っていない。
+--- 2026-09-22T15:50:52Z method=run target=ls_probes note=生ログの本数の実測 rc=0
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+20
+$ ls docs/DATA/probes/20260922_tools_1_run*.log
+docs/DATA/probes/20260922_tools_1_run10.log
+docs/DATA/probes/20260922_tools_1_run11.log
+docs/DATA/probes/20260922_tools_1_run12.log
+docs/DATA/probes/20260922_tools_1_run13.log
+docs/DATA/probes/20260922_tools_1_run14.log
+docs/DATA/probes/20260922_tools_1_run15.log
+docs/DATA/probes/20260922_tools_1_run16.log
+docs/DATA/probes/20260922_tools_1_run17.log
+docs/DATA/probes/20260922_tools_1_run18.log
+docs/DATA/probes/20260922_tools_1_run19.log
+docs/DATA/probes/20260922_tools_1_run2.log
+docs/DATA/probes/20260922_tools_1_run20.log
+docs/DATA/probes/20260922_tools_1_run21.log
+docs/DATA/probes/20260922_tools_1_run3.log
+docs/DATA/probes/20260922_tools_1_run4.log
+docs/DATA/probes/20260922_tools_1_run5.log
+docs/DATA/probes/20260922_tools_1_run6.log
+docs/DATA/probes/20260922_tools_1_run7.log
+docs/DATA/probes/20260922_tools_1_run8.log
+docs/DATA/probes/20260922_tools_1_run9.log
+--- 2026-09-22T15:51:34Z method=GET url=https://ungh.cc/repos/barter-rs/barter-rs/files/main label=c61_files code=200 bytes=36425 rc=0 time_s=1.005713
+{"meta":{"sha":"9770b27a83f844472b93b593b08063affc974b0d"},"files":[{"path":".github/dependabot.yml","mode":"100644","sha":"1684754afb232100ce9518dbc321c9b0ba339408","size":464},{"path":".github/workf
+--- 2026-09-22T15:51:35Z method=GET url=https://ungh.cc/repos/letianzj/quanttrader/files/master label=c68_files code=200 bytes=50774 rc=0 time_s=0.922131
+{"meta":{"sha":"224341d57e146aeaa143516049d2f37ff102dbf0"},"files":[{"path":".github/ISSUE_TEMPLATE.md","mode":"100644","sha":"41ca3240a8d0526c573220e5f464b496a4c16bde","size":322},{"path":".github/wo
+--- 2026-09-22T15:51:52Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/subscription/candle.rs label=c61_candle_rs code=200 bytes=965 rc=0 time_s=0.491942
+use super::SubscriptionKind;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+
+/// Barter [`Subscription`](super::Subscription) [`SubscriptionKind`] that yields [`Candle`]
+/// [`Marke
+--- 2026-09-22T15:51:53Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/subscription/trade.rs label=c61_trade_rs code=200 bytes=959 rc=0 time_s=0.482396
+use super::SubscriptionKind;
+use barter_instrument::Side;
+use barter_macro::{DeSubKind, SerSubKind};
+use serde::{Deserialize, Serialize};
+
+/// Barter [`Subscription`](super::Subscription) [`Subscripti
+--- 2026-09-22T15:51:53Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter/src/backtest/market_data.rs label=c61_backtest_md_rs code=200 bytes=2490 rc=0 time_s=0.265086
+use crate::error::BarterError;
+use barter_data::streams::consumer::MarketStreamEvent;
+use barter_instrument::instrument::InstrumentIndex;
+use chrono::{DateTime, Utc};
+use futures::Stream;
+use std::syn
+--- 2026-09-22T15:51:53Z method=GET url=https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/data/bar_event.py label=c68_bar_event_py code=200 bytes=1588 rc=0 time_s=0.232731
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import pandas as pd
+
+from ..event.event import Event, EventType
+
+__all__ = ["BarEvent"]
+
+
+class BarEvent(Event):
+    """
+    Bar event, aggregated from Ti
+--- 2026-09-22T15:51:53Z method=GET url=https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/data/tick_event.py label=c68_tick_event_py code=200 bytes=1670 rc=0 time_s=0.397274
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from datetime import datetime
+from enum import Enum
+
+import pandas as pd
+
+from ..event.event import Event, EventType
+
+__all__ = ["TickType", "TickEvent"]
+
+--- 2026-09-22T15:51:54Z method=GET url=https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/data/backtest_data_feed.py label=c68_backtest_feed_py code=200 bytes=1986 rc=0 time_s=0.232742
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from typing import Iterator
+
+import pandas as pd
+
+from .data_feed_base import DataFeedBase
+from .tick_event import TickEvent
+
+__all__ = ["BacktestDataFeed
+--- 2026-09-22T15:52:25Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter/examples/engine_async_with_historic_market_data_and_mock_execution.rs label=c61_example_hist_rs code=200 bytes=5068 rc=0 time_s=0.618974
+use barter::{
+    EngineEvent,
+    engine::{
+        clock::HistoricalClock,
+        state::{
+            global::DefaultGlobalData,
+            instrument::{data::DefaultInstrumentMarketData, filter:
+--- 2026-09-22T15:52:25Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-execution/src/exchange/mock/account.rs label=c61_mock_account_rs code=200 bytes=4676 rc=0 time_s=0.449466
+use crate::{
+    UnindexedAccountSnapshot,
+    balance::AssetBalance,
+    order::{
+        Order,
+        id::ClientOrderId,
+        state::{ActiveOrderState, Cancelled, InactiveOrderState, Open, Orde
+--- 2026-09-22T15:52:26Z method=GET url=https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/backtest_engine.py label=c68_backtest_engine_py code=200 bytes=7784 rc=0 time_s=0.444041
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import logging
+from datetime import datetime
+from typing import Any, Tuple
+
+import pandas as pd
+
+from .brokerage.backtest_brokerage import BacktestBrokera
+--- 2026-09-22T15:52:38Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/event.rs label=c61_event_rs code=200 bytes=7335 rc=0 time_s=0.529346
+use crate::{
+    error::DataError,
+    streams::consumer::MarketStreamResult,
+    subscription::{
+        book::{OrderBookEvent, OrderBookL1},
+        candle::Candle,
+        liquidation::Liquidation,
+--- 2026-09-22T15:53:03Z method=GET url=https://raw.githubusercontent.com/letianzj/quanttrader/master/docs/_sources/backtest.md.txt label=c68_docs_backtest code=200 bytes=1527 rc=0 time_s=0.606827
+## Backtest
+
+[This document](https://letianzj.github.io/quanttrading-backtest.html) explains quanttrader backtest framework and code structure.
+
+[This repository](https://github.com/letianzj/QuantRese
+--- 2026-09-22T15:53:15Z method=GET url=https://raw.githubusercontent.com/letianzj/quanttrader/master/quanttrader/brokerage/backtest_brokerage.py label=c68_backtest_brokerage_py code=200 bytes=9101 rc=0 time_s=0.461169
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from ..data.data_board import DataBoard
+from ..data.tick_event import TickEvent
+from ..event.backtest_event_engine import BacktestEventEngine
+from ..order
+--- 2026-09-22T15:53:39Z method=GET url=https://www.exegy.com/ label=c117_host code=200 bytes=114288 rc=0 time_s=1.606723
+<!doctype html>
+<html lang="en-US">
+<head>
+<!--BE Head: Start-->
+	
+<!-- be_ixf, sdk, gho-->
+<meta name="be:sdk" content="php_sdk_1.5.8" />
+<meta name="be:timer" content="18ms" />
+<meta name="be:orig_u
+--- 2026-09-22T15:53:40Z method=GET url=https://databento.com/ label=c108_host code=200 bytes=17781 rc=0 time_s=0.490598
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <link rel="icon" href="/brand/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/brand/favicon.svg" type="image/svg+x
+--- 2026-09-22T15:53:55Z method=GET url=https://docs.skelfresearch.com/sigc/backtesting/cost-models/ label=c107_host code=200 bytes=132424 rc=0 time_s=1.116870
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="descript
+--- 2026-09-22T15:53:57Z method=GET url=https://hyper-quant.tech/ label=c118_host code=200 bytes=173235 rc=0 time_s=2.703008
+<!DOCTYPE html><html lang="en" class="scroll-smooth"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="
+--- 2026-09-22T15:54:55Z method=run target=dedup_host.py note=鍵が取れなかった11件を公式の場のURLのホスト名を鍵にして洗い直した結果 rc=0
+== 1. 11 件に当てた鍵(公式の場の URL のホスト名) ==
+   40 番 OpenMarket                       鍵=openmarket.xyz         出所=R run18:784 code=200 / title=OpenMarket - Market Intelligence Platform
+   45 番 ForexTester                      鍵=forextester.com        出所=R run13 の 5 経路(全部 403/404)。場の綴りは公式の購入頁 https://forextester.com/buy
+   46 番 MT4裁量トレード練習君プレミアム                鍵=mypage.atoz-gm.net     出所=R run18:718 code=200(販売の場の逐語を取得済み)
+   48 番 BacktestingMax                   鍵=backtestingmax.com     出所=R run18:659 code=200(料金の場)。www. を外して正規化
+   49 番 GFT Backtest Software            鍵=goatfundedtrader.com   出所=R run18:716/750/752/759/811(www. と backtest. と app. の 3 つの副ホスト)
+   50 番 AlgoTest                         鍵=algotest.in            出所=R run13(algotest.in/pricing/ code=200、docs.algotest.in に値)
+  107 番 sigc                             鍵=skelfresearch.com      出所=N この回の GET code=200 title=Transaction Costs - sigc Documentation。docs. を外して正規化
+  108 番 Databento                        鍵=databento.com          出所=N この回の GET code=200 title=Databento
+  109 番 arXiv:2509.05107                 鍵=arxiv.org              出所=R run17:1752 code=200(要旨に到達済み)
+  117 番 Exegy                            鍵=exegy.com              出所=N この回の GET code=200 title=Exegy Global Market Data Solutions - Exegy。www. を外して正規化
+  118 番 Hyper Trading Automation         鍵=hyper-quant.tech       出所=N この回の GET code=200 title=HyperTrader | 866 AI Models & Strategies for Institutional-Grade Crypto Trading
+== 2. 11 件どうしの照合(同じホストに 2 つ以上の番号が落ちるか) ==
+  当たり 0 件
+== 3. 報告の全文で、その鍵のホスト名に触れている行の番号(他の候補が同じ場を指していないか) ==
+   40 番 鍵=openmarket.xyz         一致行 2 本: [5680, 5693]
+   45 番 鍵=forextester.com        一致行 2 本: [4262, 4332]
+   46 番 鍵=mypage.atoz-gm.net     一致行 3 本: [5678, 5694, 5695]
+   48 番 鍵=backtestingmax.com     一致行 3 本: [5677, 5696, 5697]
+   49 番 鍵=goatfundedtrader.com   一致行 2 本: [5679, 5698]
+   50 番 鍵=algotest.in            一致行 4 本: [4261, 4279, 4337, 4464]
+  107 番 鍵=skelfresearch.com      一致行 1 本: [4886]
+  108 番 鍵=databento.com          一致行 0 本: []
+  109 番 鍵=arxiv.org              一致行 3 本: [4849, 5375, 5573]
+  117 番 鍵=exegy.com              一致行 0 本: []
+  118 番 鍵=hyper-quant.tech       一致行 1 本: [4897]
+== 4. この回に新しく取れた登録の鍵(ホスト名の頁から辿れたもの) ==
+  107 番 追加の鍵=gh:skelf-research/sigc 出所=N docs.skelfresearch.com の頁の中の link https://github.com/Skelf-Research/sigc / 報告の全文での 'skelf' の一致 2 件
+== 5. 取り違え注意(重複ではないが近い組) ==
+  109 番 arXiv:2509.05107 の要旨は 119 番 LOB-Bench へ寄与すると書いている(17 回目の知見 12)。論文と道具で別物。鍵も arxiv.org と gh:peernagy/lob_bench で別
+  49 番 goatfundedtrader.com は 1 つの場に www. / backtest. / app. の 3 つの副ホストがある。正規化して 1 件と数えた
+--- 2026-09-22T15:54:55Z method=grep target=c61_DataKind note=barter-rs の検証が受け取る事象の型(barter-data/src/event.rs)rc=0
+124:pub enum DataKind {
+125-    Trade(PublicTrade),
+126-    OrderBookL1(OrderBookL1),
+127-    OrderBook(OrderBookEvent),
+128-    Candle(Candle),
+129-    Liquidation(Liquidation),
+130-}
+--- 2026-09-22T15:54:55Z method=grep target=c61_Candle note=barter-data/src/subscription/candle.rs の Candle の定義 rc=0
+26:/// Normalised Barter OHLCV [`Candle`] model.
+27-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+28-pub struct Candle {
+29-    pub close_time: DateTime<Utc>,
+30-    pub open: f64,
+31-    pub high: f64,
+32-    pub low: f64,
+33-    pub close: f64,
+34-    pub volume: f64,
+35-    pub trade_count: u64,
+36-}
+--- 2026-09-22T15:54:55Z method=grep target=c61_PublicTrade note=barter-data/src/subscription/trade.rs の PublicTrade の定義 rc=0
+27:/// Normalised Barter [`PublicTrade`] model.
+28-#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+29-pub struct PublicTrade {
+30-    pub id: String,
+31-    pub price: f64,
+32-    pub amount: f64,
+33-    pub side: Side,
+34-}
+--- 2026-09-22T15:54:55Z method=grep target=c61_backtest_stream note=barter/examples の検証が DataKind の流れを読むこと rc=0
+21:    event::DataKind,
+122:    impl Stream<Item = MarketStreamEvent<InstrumentIndex, DataKind>> + use<>,
+126:        serde_json::from_str::<Vec<MarketStreamResult<InstrumentIndex, DataKind>>>(&data).unwrap();
+--- 2026-09-22T15:54:55Z method=grep target=c61_mock_account note=barter-execution の模擬の口座に待ち行列の語が無いこと rc=1
+0
+--- 2026-09-22T15:55:06Z method=cat target=c68_BarEvent note=quanttrader/data/bar_event.py の BarEvent の定義(先頭30行)rc=0
+class BarEvent(Event):
+    """
+    Bar event, aggregated from TickEvent
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialises bar
+        """
+        self.event_type: EventType = EventType.BAR
+        self.bar_start_time: pd.Timestamp = pd.Timestamp("1970-01-01", tz="UTC")
+        self.interval: int = 86400  # 1day in secs = 24hrs * 60min * 60sec
+        self.full_symbol: str = ""
+        self.open_price: float = 0.0
+        self.high_price: float = 0.0
+        self.low_price: float = 0.0
+        self.close_price: float = 0.0
+        self.adj_close_price: float = 0.0
+        self.volume: int = 0
+
+--- 2026-09-22T15:55:06Z method=cat target=c68_TickEvent note=quanttrader/data/tick_event.py の TickType と TickEvent の定義 rc=0
+class TickType(Enum):
+    """
+    Unlike IB, it does not have tick_size, e.g., TickTypeEnum.BID_SIZE
+    """
+
+    TRADE = 0
+    BID = 1
+    ASK = 2
+    FULL = 3
+
+
+class TickEvent(Event):
+    """
+    Tick event
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialises Tick
+        """
+        self.event_type: EventType = EventType.TICK
+        self.tick_type: TickType = TickType.TRADE
+        self.timestamp: pd.Timestamp = pd.Timestamp("1970-01-01", tz="UTC")
+        self.full_symbol: str = ""
+        self.price: float = 0.0
+        self.size: int = 0
+        self.depth: int = 1
+        self.bid_price_L1: float = 0.0
+        self.bid_size_L1: int = 0
+        self.ask_price_L1: float = 0.0
+        self.ask_size_L1: int = 0
+        self.open_interest: int = 0
+--- 2026-09-22T15:55:06Z method=cat target=c68_docs_backtest note=quanttrader の公式文書 docs/_sources/backtest.md.txt の全文 rc=0
+## Backtest
+
+[This document](https://letianzj.github.io/quanttrading-backtest.html) explains quanttrader backtest framework and code structure.
+
+[This repository](https://github.com/letianzj/QuantResearch/tree/master/backtest) contains examples of some classical strategies and their Sharpe ratios, as well as grid-search based parameter optimization. The backtest is designed to be working together with the [pyfolio](https://github.com/quantopian/pyfolio) library.
+
+One distinctive design in backtest is that it fills market order right away instead of filling against tomorrow's open price. After all, in the daily bar setting, it is better to send out order at 15:59:59 than waiting overnight for next day' open. If you disagree, simply save the market order similar to limit or stop order in the BacktestBrokerage class and then fill it on next tick.
+
+Currently backtest accepts three data feeds.
+
+* Daily bar or intraday bar from Yahoo Finance. See [here](https://medium.com/@letian.zj/free-historical-market-data-download-in-python-74e8edd462cf?source=friends_link&sk=5af814910524a593353ed3146290d50e) for how to download.
+
+* Historical intraday bar from Interactive Brokers. Use [this script](https://github.com/letianzj/quanttrader/blob/master/examples/download_historical_data_from_ib.py) to download.
+
+* Live tick recorded from live trading session. [This video](https://t.co/rXdW8EIbWw?amp=1) demonstrates how to do it in live session.
+
+It is possible to load your own data source by following the above examples.
+
+--- 2026-09-22T15:55:06Z method=grep target=c68_backtest_engine note=検証の機関が登録する事象の型 rc=0
+10:from .data.backtest_data_feed import BacktestDataFeed
+11:from .data.data_board import DataBoard
+12:from .data.tick_event import TickEvent
+131:        self._events_engine.register_handler(EventType.TICK, self._tick_event_handler)
+133:        self._events_engine.register_handler(EventType.ORDER, self._order_event_handler)
+134:        self._events_engine.register_handler(EventType.FILL, self._fill_event_handler)
+137:    def _tick_event_handler(self, tick_event: TickEvent) -> None:
+--- 2026-09-22T15:55:06Z method=grep target=c68_backtest_brokerage note=指値の埋まり方(待ち行列を持たないこと)rc=0
+62:    def _try_cross_order(self, order_event: OrderEvent, current_price: float) -> None:
+63-        """
+64-        Cross standing order against current price.
+65-
+66-        :param order_event: order to be crossed
+67-        :param current_price: current market price
+68-        """
+69-        if order_event.order_type == OrderType.MARKET:
+70-            order_event.order_status = OrderStatus.FILLED
+71-        # stop limit, if buy, limit price < market price < stop price;
+72-        # if sell, limti price > market price > stop price
+73-        # cross if opposite
+74-        # limit: if buy, limit_price >= current_price; if sell, opposite
+--- 2026-09-22T15:55:06Z method=grep target=c68_brokerage_queue note=backtest_brokerage.py に待ち行列の位置の語が無いこと(queue の一致は message queue の語だけ)rc=0
+107:        :return: no return; if orders are filled, they are pushed into message queue
+110:        # put trigged into queue
+169:        :return: no return; fill_event is pushed into message queue
+208:        :return: no return; cancel feedback is pushed into message queue
+--- 2026-09-22T15:55:18Z method=grep target=old_sections_reach note=1・2回目の節に在る到達の記録(121〜124番と55・58・75番の根拠)rc=0
+479:5. Backtesting.py(`backtesting`、kernc） — 実測 — 軽量バックテスト、AGPL-3.0。**指値の1往復に成功**(最小実行)
+483:9. PyAlgoTrade(gbeced） — 実測 — **指値の1往復に成功**。**2023-11-13にアーカイブ済み、後継として"Basana"を公式に指名**(README逐語で確認)
+611:- **最小の実行**: 成功(rc=0)。`equity curve rows=261, first={'Equity': 1000000.0}, last={'Equity': 698485.43}`(実測)。**ただし本ツールは「日次リバランス配分」のシミュレータであり、指値注文・板・待ち行列�
+629:- **できること全部**: PyPI description「Python library for backtesting stock trading strategies」(56文字のみ、詳細はREADME側)。GitHub README(WebFetch要約)で確認した重要事実: **リポジトリは2023-11-13にアーカイブ済�
+642:- **最小の実行**: 成功。合成日次CSV(100本、`Date Time`列必須・特定のdatetimeフォーマット必須という実装依存の癖を実測で発見)で、`limitOrder()`により現在値0.5%下の指値買いを送信 → 約定 → `mar
+717:- **版と最終更新日**: **2022-02-15(Feb 15, 2022)にアーカイブ済み**。調査班の取得結果(W-13)には「archived」しかなく日付が無かったため、**リードが取り直して逐語「This repository was archived by the owner 
+6056:| 4 | **その 3 件は、1 回目・2 回目の節では「未着手」ではなく到達済みだった。**2 回目の節の逐語は、55 番について「`Backtesting.py`(`backtesting`、kernc) — 実測 — 軽量バックテスト、AGPL-3.0。**
+6057:| 5 | **逆に、1 回目・2 回目の節に在って、現行の 1 番から 120 番に対応する番号が 1 つも無い登録が 4 件ある。**`mhallsmoore/qstrader`(旧 7 番。2 回目に最小実行まで打っている)/ `gbeced/pyalgotrade`(�
+--- 2026-09-22T15:55:18Z method=grep target=old_sections_heads note=1・2回目の節の見出しの行番号(参照先)rc=0
+244:#### 2. NautilusTrader
+297:#### 4. freqtrade
+565:#### 5. Backtesting.py
+596:#### 7. QSTrader
+626:#### 9. PyAlgoTrade
+711:#### 10. Zenbot(本家、carlos8f)
+896:#### 2. NautilusTrader(追加)
+910:#### 4. freqtrade(追加)
+--- 2026-09-22T15:55:18Z method=grep target=ccxt_old note=ccxt の 1・2 回目の記録 rc=0
+203:17. ccxt — 推定 = 未検算、W-20(検索結果に PyPI の URL が挙がっただけ。curl・WebFetch は未実施) — 多数の暗号資産取引所APIラッパー。多くのバックテスト/執行ツールの内部依存
+495:17. ccxt — 本回では触っていない(区分2の担当)。ただし freqtrade 経由で ccxt 4.5.82 が導入され、`ccxt.bitflyer().has` を実測(出力 = 生ログ LV-5g): `createOrder=True, cancelOrder=True, fetchOHLCV=None(無), fetchOrder='emulated', fetchTickers=None, watchOHLCV=N
+17. ccxt — 本回では触っていない(区分2の担当)。ただし freqtrade 経由で ccxt 4.5.82 が導入され、`ccxt.bitflyer().has` を実測(出力 = 生ログ LV-5g): `createOrder=True, cancelOrder=True, fetchOHLCV=None(無), fetchOrder='emulated', fetchTickers=None, watchOHLCV=None`。**bitFlyerは発注・キャンセルはccxt経由で可能だが、ローソク足取得(fetchOH
+**ccxt自体のbitFlyer対応状況(区分2向けの補助情報として記録)**: `ccxt.bitflyer().has`を実測(出力 = 生ログ LV-5g): `createOrder=True, cancelOrder=True`(発注・キャンセルは可能)、`fetchOHLCV=None, fetchTickers=None, watchOHLCV=None`(無し)、`fetchOrder='emulated'`(ccxt側のエミュレーションで代替、ネイティブ実装ではない)。**freqtrade�
+--- 2026-09-22T16:00:21Z method=run target=check_scan_report.py note=受け入れ検査を生ログを全部渡して打った(最後の実行)rc=0
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+--- 2026-09-22T16:00:21Z method=run target=git_diff_numstat note=この回の書き換えの量 rc=0
+269	7	docs/DATA/SCAN_2026-09-21_tools.md
+--- 2026-09-22T16:00:21Z method=run target=git_diff_deletions note=削除行の全部(指定 1〜5 の範囲に収まっているかの確認)rc=0
+-55. `backtesting.py` — 未着手。出典は 39 番の一覧。
+-58. `nautilus_trader` — 未着手。出典は 39 番の一覧。
+-75. `Freqtrade` — 未着手。出典は 39 番の一覧。
+-55. `backtesting.py` — 説明は「a Python framework for inferring viability of trading strategies on historical (past) data」。仕分けは `区分1-足`。未着手。
+-58. `nautilus_trader` — 説明は「A high-performance algorithmic trading platform and event-driven backtester」。仕分けは `区分1-イベント駆動` と `区分1-ティック`(推定)と 
+-75. `Freqtrade` — 説明は「a free and open source crypto trading bot written in Python ... It contains backtesting, plotting and money management tools as well as strategy optimization by machin
+-`区分1-ベクトル化` は 44・73・74 の 3 件(数は変わらないが、**3 件とも印の根拠が一次資料になった**。起動の指定 (1) はこれで済んだ)。
