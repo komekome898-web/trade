@@ -494,11 +494,11 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 **新規発見(このセッションで新たに見つかった候補。未着手、次回持ち越し)**:
 18. Basana — PyAlgoTradeの公式アーカイブ通知が後継として名指し(gbeced/pyalgotrade README、一次資料)。未着手
-19. Backtrader — X投稿(PyQuant News、W節参照)とawesome系検索の両方で言及。未着手
-20. PySystemtrade — 同上のX投稿で言及。未着手
-21. PyBroker — 同上のX投稿で言及。未着手
-22. bt — 同上のX投稿で言及(パッケージ名が短く曖昧、要確認)。未着手
-23. Ziplime — X投稿(Quant Science)で「Zipline ではない新しい AI 向け Python ライブラリ」と言及。未着手
+19. Backtrader — 推定 = 未検算、W-35(X の投稿で言及。逐語はリードが x_fetch で取得 = 生ログ LV-4: pyquantnews 2023-11-21「Backtrader Key strength: Notable for its comprehensive feature set, including support for live trading and visualizations…」)+ awesome 系検索でも言及。未着手
+20. PySystemtrade — 推定 = 未検算、W-35(同じ連投「PySystemtrade: Known for its robustness and modularity…」逐語 = 生ログ LV-4)。未着手
+21. PyBroker — 推定 = 未検算、W-35(同じ連投「PyBroker Emphasizes simplicity and user-friendliness for beginners…」逐語 = 生ログ LV-4)。未着手
+22. bt — 推定 = 未検算、W-35(同じ連投「bt Strength lies in its focus on providing a simple, lightweight, and intuitive API…」逐語 = 生ログ LV-4。パッケージ名が短く曖昧、要確認)。未着手
+23. Ziplime — 推定 = 未検算、W-35(quantscience_ 2026-03-10 の逐語「🚨BREAKING: New Python Library for Algorithmic Trading with AI It's called Ziplime (*not* Zipline).」= 生ログ LV-4)。未着手
 24. Superalgos — awesome系検索で発見、ノーコード・Apache-2.0と検索結果に。未着手
 25. OpenTrader — awesome系検索で発見、TypeScript製・CCXT経由100+取引所と検索結果に。未着手
 26. CryptoSignal — awesome系検索で発見。未着手
@@ -506,7 +506,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 28. OctoBot — awesome系検索で発見、月額$9.99のクラウド版ありと検索結果に(料金の逐語未確認)。未着手
 29. pybotters — WebSearchの要約でNautilusTraderの文脈に誤って混在して言及されたが、実体は別プロジェクト(日本の取引所APIクライアント、区分2寄り)。未着手、区分2にも共有推奨
 
-**未実行(検索計画6本には無いが、今回の深掘り過程で見つかった追加調査対象)**: 上記18〜29はいずれも一次資料への到達(PyPI/GitHub)を今回は行っていない。検索結果の見出し・要約のみ(推定 = 未検算)。
+**未実行(検索計画6本には無いが、今回の深掘り過程で見つかった追加調査対象)**: 上記18〜29はいずれも一次資料への到達(PyPI/GitHub)を今回は行っていない。検索結果の見出し・要約のみ(推定 = 未検算、W-35・W-36。X の投稿の逐語はリードが取得 = 生ログ LV-4)。
 
 ### 1回目「次回優先すべき項目」1〜10の結果
 
@@ -625,10 +625,10 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **ライセンス**: Apache-2.0(一次資料PyPI `license_expression`)
 - **版と最終更新日**: 3.1.1、2025-07-19(一次資料。1年以上更新なし)
 - **活動**: スター1.9k・フォーク330・コミット6,694件(WebFetch要約)
-- **対応取引所**: 一次資料に個別取引所の記載なし。NASDAQ Data Link(旧Quandl)のAPIキーが必要な旨をGitHub要約が示す(未検算)
+- **対応取引所**: 一次資料に個別取引所の記載なし。NASDAQ Data Link(旧Quandl)のAPIキーが必要な旨を GitHub の要約が示す(推定 = 未検算、W-6)
 - **出典**: pypi.org/pypi/zipline-reloaded/json、github.com/stefan-jansen/zipline-reloaded
 
-**料金の構造**: 本体無料(Apache-2.0)。NASDAQ Data Linkのヒストリカルデータ取得にはAPIキーが必要と要約にあり(推定=未検算、無料枠の有無は未確認)。隠れた依存: 導入で約40個の新規パッケージ(exchange-calendars・bcolz-zipline・empyrical-reloaded・statsmodels・SQLAlchemy・tables/h5py・Mako/alembic等)が入り、**既存venvのpandasを3.0.6から2.3.3へ強制ダウングレードした**(実測、pip installの出力に明記)
+**料金の構造**: 本体無料(Apache-2.0)。NASDAQ Data Linkのヒストリカルデータ取得にはAPIキーが必要と要約にあり(推定 = 未検算、W-6。無料枠の有無は未確認)。隠れた依存: 導入で約40個の新規パッケージ(exchange-calendars・bcolz-zipline・empyrical-reloaded・statsmodels・SQLAlchemy・tables/h5py・Mako/alembic等)が入り、**既存venvのpandasを3.0.6から2.3.3へ強制ダウングレードした**(実測、pip installの出力に明記)
 
 **到達・導入・実行の記録**:
 - `pip install zipline-reloaded`(隔離venv、rc=0、実測)。`pip check` → No broken requirements found(実測)
@@ -677,7 +677,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **できること全部**: GitHub要約「automated technical-analysis-based trading, backtesting capabilities, and paper trading mode」
 - **言語・動作環境**: Node.js + MongoDB(実測、GitHub要約)
 - **ライセンス**: MIT(一次資料、WebFetch要約)
-- **版と最終更新日**: **2022-02-15にアーカイブ済み**(一次資料、GitHub要約)。最終コミット日は個別に未確認
+- **版と最終更新日**: **2022-02-15(Feb 15, 2022)にアーカイブ済み**。調査班の取得結果(W-13)には「archived」しかなく日付が無かったため、**リードが取り直して逐語「This repository was archived by the owner on Feb 15, 2022. It is now read-only.」を確認した(生ログ LV-3)**。最終コミット日は個別に未確認
 - **活動**: スター8.3k・フォーク2.0k・コミット3,885件(WebFetch要約)。**明示的な廃止警告**「WARNING: project is no longer actively maintained, make sure to update any dependencies if you plan on using this in your project」(一次資料逐語)
 - **対応取引所**: 一次資料(WebFetch要約)= Binance/Bitfinex/Bitstamp/Bittrex/CEX.IO/GDAX/Gemini/HitBTC/Kraken/Poloniex/TheRockTrading。**bitFlyer/bitbank/GMOコインは無い**
 - **出典**: github.com/carlos8f/zenbot(実測取得)
@@ -759,7 +759,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **対応取引所**: **実測(wheel展開、`import_candles_mode/drivers`ディレクトリ)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter の10件。bitFlyer/bitbank/GMOコインは無い**
 - **出典**: pypi.org/pypi/jesse/json、github.com/jesse-ai/jesse、wheel展開の実測(いずれも取得)
 
-**料金の構造**: コアMIT無料。README・PyPI一次資料に課金の直接記載は無し(round1で確認した「JesseGPT等はサブスク」は検索結果の要約 = 推定=未検算、W-23のまま、本回は逐語裏取りに至らず次回課題)
+**料金の構造**: コアMIT無料。README・PyPI一次資料に課金の直接記載は無し(round1で確認した「JesseGPT等はサブスク」は検索結果の要約(推定 = 未検算、W-23)のまま、本回は逐語裏取りに至らず次回課題)
 
 **到達・導入・実行の記録**:
 - `pip install jesse`(既存venv、rc=0、実測)。**ただし共存venvのnumpyを2.xから1.26.4へ強制ダウングレードし、hftbacktest(numpy>=2.0要求)・qstrader(numpy>=2.0要求)・vnpy(numpy>=2.2.3要求)・mlflow・cvxpy等との依存衝突を発生させた(pip自身が警告、実測)**。**方法論上の教訓**: 複数の重量級ツールを1つのvenvに混在させると相互に壊れる。次回以降は候補ごとに隔離venvを分けるべき(本回の後半はhftbacktest/NautilusTrader/vectorbt/freqtradeをそれぞれ別venvに分離して対応した)
@@ -901,6 +901,6 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 ### 予算の消費
 
-トークン・時間の自己推定はしない(委任文の規則により、リードがハーネスの計測値を記録する)。本回で実行した主な作業: WebFetch 20件超・WebSearch 8件・curl(PyPI JSON等)30件超・pip install 12件(隔離venv複数)・独自の最小実行スクリプト作成7本(hftbacktest×2版・Backtesting.py・QSTrader・PyAlgoTrade・NautilusTrader×2版)。生ログは`docs/DATA/probes/20260922_tools_1_run2.log`に全手順を記録。
+トークン・時間の自己推定はしない(委任文の規則により、リードがハーネスの計測値を記録する)。**リードの記録(ハーネスの計測、2026-09-22): 330,907 トークン・1,847,862 ミリ秒(約 30.8 分)・道具呼び出し 167 回。**委任文 §7 の固定値(5 万トークン・20 分)の 6.6 倍・1.5 倍で、1 回目(188,843 トークン・650 秒)より更に超過した。**Web の手はハーネスの記録で WebFetch 27・WebSearch 10 の計 37 手**(生ログ LV-1。この生ログに書かれていたのは 28 手で、9 手が漏れていた)。本回で実行した主な作業: curl(PyPI JSON等)30件超・pip install 12件(隔離venv複数)・独自の最小実行スクリプト作成7本(hftbacktest×2版・Backtesting.py・QSTrader・PyAlgoTrade・NautilusTrader×2版)。生ログは`docs/DATA/probes/20260922_tools_1_run2.log`に全手順を記録。
 
 **候補の一覧はまだ空になっていない(新規発見12件を含め残りの候補名を参照)。§2の完了条件(残りの候補が空で、新しい検索計画6本が新しい候補を1件も出さない)を満たしていないため、本区分は未完了。次回の実行で持ち越す。**
