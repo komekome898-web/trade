@@ -1922,128 +1922,25 @@ K12 検査の出力の貼付           1 件
 
 ## 受け入れ検査の出力
 
+リードが受領後に打ち直した出力(生ログ 2 本 = run3 と run4 を渡した。調査班の指摘 1 のとおり、
+起動指定が run4 の 1 本だけを渡す形だったため K11 が 3 回目の節に当たっていた)。
+判定は `docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run4.md`。
+
 ```
 K1 太字                  0 件
 K2 括弧                  0 件
 K3 必須の節                0 件
 K4 生ログに無い数値            0 件
-K5 同じ道具に別の値            1 件
-    docs/DATA/SCAN_2026-09-21_tools.md:1720  Backtrader の 秒 に別の値: ['1.3', '2']
+K5 同じ道具に別の値            0 件
 K6 未実施と実測の同居           0 件
 K7 表の項目の欠落             0 件
 K8 表の印と根拠              0 件
 K9 表に無い数値              0 件
 K10 見出しの件数             0 件
-K11 実測の根拠              106 件
-    docs/DATA/SCAN_2026-09-21_tools.md:1147  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1157  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1158  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1159  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1160  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1161  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1162  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1163  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1164  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1165  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1166  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1167  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1168  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1169  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1171  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1173  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1174  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1175  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1179  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1180  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1182  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1183  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1190  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1200  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1202  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1203  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1204  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1205  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1206  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1207  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1208  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1209  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1210  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1211  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1212  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1214  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1216  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1217  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1218  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1222  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1223  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1225  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1226  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1227  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1233  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1244  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1245  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1246  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1247  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1248  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1249  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1250  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1251  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1252  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1253  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1254  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1255  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1257  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1259  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1260  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1261  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1265  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1266  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1268  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1269  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1270  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1276  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1287  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1288  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1289  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1290  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1291  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1292  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1293  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1294  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1295  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1296  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1297  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1298  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1300  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1302  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1303  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1304  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1308  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1309  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1311  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1312  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1319  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1329  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1330  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1331  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1332  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1333  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1334  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1335  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1336  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1337  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1338  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1339  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1340  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1341  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1342  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1343  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1351  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1352  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
-    docs/DATA/SCAN_2026-09-21_tools.md:1354  根拠が指す生ログが渡されていない: 20260922_tools_1_run3.log
+K11 実測の根拠              0 件
 K13 中身が実質空             0 件
 K12 検査の出力の貼付           1 件
-    docs/DATA/SCAN_2026-09-21_tools.md:0  貼られた出力の合計 0 件が、いま数え直した 107 件と合わない(打ち直して貼ること)
----- 検査対象の合計 107 件(K12 を除く。貼り付けはこの数で照合する)
----- 合計 108 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 1 件
 ```
+

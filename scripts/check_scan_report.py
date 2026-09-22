@@ -116,19 +116,22 @@ def check_conflicting_values(lines):
     tools = tool_names(lines)
     seen = collections.defaultdict(set)
     pat = re.compile(r"(\d+(?:\.\d+)?)\s*(秒|個|パッケージ)")
+    # §4.0 の表の行は、単位ではなく**項目**で束ねる。単位で束ねると
+    # 「install所要秒 2 秒」と「規模の見積の中の 1.3 秒」が食い違い扱いになった
+    # (2026-09-22 区分 1 の 4 回目、調査班が自分で閉じずに残した 2 件目)。
+    rowitem = {i: c[1] for i, c in read_table(lines)}
     for i, ln in enumerate(lines, 1):
         hit = [t for t in tools if t.lower() in ln.lower()]
         if len(hit) > 2:
             continue
         for t in hit:
-            if True:
-                for num, unit in pat.findall(ln):
-                    seen[(t, unit)].add((num, i))
+            for num, unit in pat.findall(ln):
+                seen[(t, rowitem.get(i, unit))].add((num, i))
     out = []
-    for (t, unit), vals in sorted(seen.items()):
+    for (t, key), vals in sorted(seen.items()):
         nums = {v[0] for v in vals}
         if len(nums) > 1:
-            out.append((min(v[1] for v in vals), "%s の %s に別の値: %s" % (t, unit, sorted(nums))))
+            out.append((min(v[1] for v in vals), "%s の %s に別の値: %s" % (t, key, sorted(nums))))
     return out
 
 def check_contradiction(lines):
