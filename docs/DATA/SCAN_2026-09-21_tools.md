@@ -516,7 +516,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | 2 | freqtradeのbitFlyer非対応の一次資料裏取り | **解決**。隔離venvにfreqtrade導入(ccxt 4.5.82同梱)、`freqtrade list-exchanges -a`を実測: bitFlyer行「missing: fetchOrder, fetchOHLCV」(必須欠落。表の実物 = 生ログ LV-5f)。`freqtrade list-exchanges`(非-a、使える79取引所)にbitFlyerは含まれずbitbankは含まれる(bitbankは「missing opt」のみで必須機能は揃っている)。ccxtの`bitflyer().has`を直接実測: createOrder/cancelOrder=True、fetchOHLCV/fetchTickers/watchOHLCV=None、fetchOrder='emulated' |
 | 3 | 9候補(Backtesting.py〜Luczinsritter)の危険検査・最小実行・4軸 | **部分的に解決**。Backtesting.py・QSTrader・PyAlgoTrade = 危険検査+最小実行+4軸まで完了。zipline-reloaded・Qlib・VnPy・Jesse・Lean CLI = 導入+危険検査(依存一覧・wheel展開確認)まで完了、最小実行は各ツール固有の準備(データバンドル登録/独自バイナリ形式/GUI依存/DB要求/Docker要求)のため次回に持ち越し。Mendl-Labs/BacktestingCore・Luczinsritter = GitHub一次資料の確認のみ(PyPI無し、低優先のため未導入) |
 | 4 | hftbacktestの最小実行を「実際に約定(FILLED)」まで仕上げる | **解決**。event_dtype(ev/exch_ts/local_ts/px/qty/order_id/ival/fval)を一次資料(ソース`types.py`)から読み取り、DEPTH_SNAPSHOT_EVENT→TRADE_EVENTの合成データを再構築。指値買い@100.0が売り約定の消化でstatus=3(FILLED)、exec_qty=1.0、leaves_qty=0.0を実測。成行手仕舞いも成功、num_trades=2 |
-| 5 | NautilusTraderの実際のpip install・最小実行 | **解決**。Python3.12の隔離venvに導入(14依存のみ、軽量)。`nautilus_trader.testkit`は現行リリースに存在せず(developブランチの例が不一致)、`test_kit`(アンダースコア)を使用。BTCUSDT/BINANCEの合成足データでLIMIT買い→FILLED→MARKET売りの1往復を実測(口座残高 BTC 10.0→10.01→10.0、fills report 2件。出力全文 = 生ログ LV-5e) |
+| 5 | NautilusTraderの実際のpip install・最小実行 | **解決**。Python3.12の隔離venvに導入(14依存のみ、軽量)。`nautilus_trader.testkit`は現行リリースに存在せず(developブランチの例が不一致)、`test_kit`(アンダースコア)を使用。BTCUSDT/BINANCEの合成足データでLIMIT買い→FILLED→MARKET売りの1往復が成立(**リードの打ち直しで確認 = 生ログ LV-7**。調査班は背景で起動しただけで出力を読んでいない) |
 | 6 | X検索3回以上・awesome系リスト・依存関係逆引き | **解決**。今回のX関連WebSearchは3回(バックテストエンジン自作/乗り換え、backtesting.py OR zipline OR nautilus trader、+round1の2回で計5回)。awesome系リスト検索1回(新規候補9件発見)。依存関係逆引きはGitHubのdependents機能でBacktesting.pyを確認(0件、ただしGitHubの依存関係グラフ自体が網羅的でない旨の注記あり) |
 | 7 | hftbacktest・NautilusTraderの国内取引所記載なしをソース/issue/依存で裏取り | **解決(NautilusTraderは完全、hftbacktestは複数独立ソースで補強)**。NautilusTrader: `crates/adapters`ディレクトリの実際の一覧(実測、WebFetch)= architect_ax/betfair/binance/bitmex/blockchain/bybit/coinbase/databento/deribit/derive/dydx/hyperliquid/interactive_brokers/kraken/lighter/okx/polymarket/sandbox/tardisの19件、bitFlyer等無し。RELEASES.md(567,723バイト、curl実測)にbitflyer/bitbank/gmoの一致0件(grep)。hftbacktest: `rust/src/live/connector`等のディレクトリパスがいずれも404(到達不能)だったため、README一次資料に加えWebSearchの独立した要約(2件)で「Binance FuturesとBybitのみ」を補強したが、ソースディレクトリそのものの実測はできていない(未確認) |
 | 8 | NautilusTraderの自動発注機能をソースで確認 | **解決(実測に格上げ)**。README記載の確認に留めず、実際にLIMIT注文とMARKET注文を`OrderMatchingEngine(BINANCE)`に送信し約定させることに成功(§5参照)。発注機能が実在し動作することを動作実証で確認 |
@@ -619,7 +619,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 3. 当方に無い視点で分析できるか: 未確認
 4. 既存の研究成果を向上できるか: 仮定 — アーカイブ済みのため新規採用の価値は低いと考えられるが判定はしない。後継のBasanaが本命候補(次回)
 
-**危険**: 供給網: PyPI/GitHub一致(実測、project_urls)。導入時実行: 未確認(wheel展開は本回未実施、sdistなのでビルド時にsetup.pyが実行される点は一般的なPythonパッケージと同じ、悪意ある記述の有無は未確認)。既知の脆弱性: 未確認(8年間パッチが無い、依存のscipy/tweepy側の脆弱性も未確認)。外部送信: **tweepy依存はTwitter API連携を示唆し、鍵を渡せば外部送信が発生しうる構造**(未確認、使わなければ発火しない)。自動発注: ソースは未確認だがbroker抽象化層が存在(GitHub要約)。宣伝の兆候: 無し。**アーカイブ済み・8年間未更新という活動状況そのものが今後の使用における主要なリスク**
+**危険**: 供給網: PyPI/GitHub一致(実測、project_urls)。導入時実行: 未確認(**PyAlgoTrade だけは sdist なので wheel の展開の対象外**。sdistなのでビルド時にsetup.pyが実行される点は一般的なPythonパッケージと同じ、悪意ある記述の有無は未確認)。既知の脆弱性: 未確認(8年間パッチが無い、依存のscipy/tweepy側の脆弱性も未確認)。外部送信: **tweepy依存はTwitter API連携を示唆し、鍵を渡せば外部送信が発生しうる構造**(未確認、使わなければ発火しない)。自動発注: ソースは未確認だがbroker抽象化層が存在(GitHub要約)。宣伝の兆候: 無し。**アーカイブ済み・8年間未更新という活動状況そのものが今後の使用における主要なリスク**
 
 #### 6. zipline-reloaded
 
@@ -645,7 +645,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 **4軸**: 1=実測(導入成功・pip check通過) / 2〜4=未確認(最小実行未完了のため測れず)
 
-**危険**: 供給網: PyPI project_urlsとGitHubの一致(一次資料)。導入時実行: 未確認(wheel展開は本回未実施)。既知の脆弱性: 未確認。外部送信: NASDAQ Data Link連携時にAPIキー送信が発生しうる(未確認、使わなければ発火しない)。自動発注: 無し(バックテスト専用と要約に明記)。宣伝の兆候: 無し
+**危険**: 供給網: PyPI project_urlsとGitHubの一致(一次資料)。導入時実行: **無し**(wheel を展開して確認 = 生ログ LV-8。`setup.py` 相当は 0 件。ただし `.so` が 16 個あり、中身の静的監査は未実施)。既知の脆弱性: 未確認。外部送信: NASDAQ Data Link連携時にAPIキー送信が発生しうる(未確認、使わなければ発火しない)。自動発注: 無し(バックテスト専用と要約に明記)。宣伝の兆候: 無し
 
 ---
 
@@ -673,7 +673,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 **4軸**: 1=実測(CLI導入は成功) / 2〜4=未確認(Docker実行が前提のため測れず)
 
-**危険**: 供給網: PyPI/GitHub一致(一次資料)。導入時実行: 未確認。既知の脆弱性: 未確認。外部送信: QuantConnectクラウドとの通信機能あり(未確認、使わなければ発火しない)。自動発注: 一次資料の対応ブローカー一覧から、ライブ発注機能を持つと読める(未確認、ソース未確認)。宣伝の兆候: 無し。**§6-6の規則によりDockerイメージのpullを見送ったため、実質的な機能検証ができていない点が最大の限界**
+**危険**: 供給網: PyPI/GitHub一致(一次資料)。導入時実行: **無し**(wheel を展開して確認 = 生ログ LV-8。`setup.py` 相当 0 件・`.so` 0 件)。既知の脆弱性: 未確認。外部送信: QuantConnectクラウドとの通信機能あり(未確認、使わなければ発火しない)。自動発注: 一次資料の対応ブローカー一覧から、ライブ発注機能を持つと読める(未確認、ソース未確認)。宣伝の兆候: 無し。**§6-6の規則によりDockerイメージのpullを見送ったため、実質的な機能検証ができていない点が最大の限界**
 
 #### 10. Zenbot(本家、carlos8f)
 
@@ -722,7 +722,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 **4軸**: 1=実測(導入成功) / 2〜4=未確認(最小実行未実施)
 
-**危険**: 供給網: PyPI project_urls確認は本回未実施(次回)。導入時実行: 未確認(wheel展開は本回未実施)。既知の脆弱性: 未確認。**外部送信: mlflow/databricks-sdkの既定動作(ローカル完結かクラウド接続を試みるか)が未確認**、次回の優先確認事項として記録。自動発注: GitHub要約に「order execution」という語があり機能として存在すると読めるが未確認。宣伝の兆候: 無し(Microsoft公式OSS)
+**危険**: 供給網: PyPI project_urls確認は本回未実施(次回)。導入時実行: **無し**(wheel を展開して確認 = 生ログ LV-8。`setup.py` 相当は 0 件。`.so` が 2 個あり中身の静的監査は未実施)。既知の脆弱性: 未確認。**外部送信: mlflow/databricks-sdkの既定動作(ローカル完結かクラウド接続を試みるか)が未確認**、次回の優先確認事項として記録。自動発注: GitHub要約に「order execution」という語があり機能として存在すると読めるが未確認。宣伝の兆候: 無し(Microsoft公式OSS)
 
 #### 12. VnPy
 
@@ -748,7 +748,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 **4軸**: 1=実測(コア導入成功、ただし実運用にはgatewayパッケージ追加が必要) / 2〜4=未確認
 
-**危険**: 供給網: PyPI project_urls確認(一次資料、github.com/vnpy/vnpy/)。導入時実行: 未確認(wheel展開は本回未実施)。既知の脆弱性: 未確認。外部送信: 未確認。自動発注: gatewayパッケージ経由で有り(コア自体には接続機能なし)。宣伝の兆候: 無し(中国語コミュニティ向けQRコード等の勧誘導線はREADMEにあるが詐欺の兆候ではない)
+**危険**: 供給網: PyPI project_urls確認(一次資料、github.com/vnpy/vnpy/)。導入時実行: **無し**(wheel を展開して確認 = 生ログ LV-8。`setup.py` 相当 0 件・`.so` 0 件の純 Python の wheel)。既知の脆弱性: 未確認。外部送信: 未確認。自動発注: gatewayパッケージ経由で有り(コア自体には接続機能なし)。宣伝の兆候: 無し(中国語コミュニティ向けQRコード等の勧誘導線はREADMEにあるが詐欺の兆候ではない)
 
 ---
 
@@ -862,7 +862,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 #### 2. NautilusTrader(追加)
 
-**pip install・最小実行の完全達成**: 1回目は「PyPI JSONとGitHub READMEの取得のみ」で終わっていた。今回、Python3.12の隔離venv(要件`>=3.12,<3.15`を満たす)に導入(14依存のみの軽量インストール、実測)。公式example(`examples/backtest/fx_ema_cross_audusd_bars_from_ticks.py`)は`nautilus_trader.testkit`という現行リリースに存在しないモジュールを参照しており(developブランチのソースと2026-09時点のリリース1.231.0のAPIに不一致がある、実測で発見)、正しいモジュール名`nautilus_trader.test_kit`(アンダースコア)を使う独自スクリプトを作成。BTCUSDT/BINANCEの合成足データでLIMIT買い注文→FILLED→MARKET売り注文で手仕舞いの1往復を実測(出力全文 = 生ログ LV-5e。口座残高がBTC 10.0→10.01→10.0(手数料分USDT減)と正しく変化、fills reportに2件記録)。**「本番グレードの発注機能」という宣伝文句を、実際に動かして裏取りした数少ない候補**
+**pip install・最小実行の完全達成**: 1回目は「PyPI JSONとGitHub READMEの取得のみ」で終わっていた。今回、Python3.12の隔離venv(要件`>=3.12,<3.15`を満たす)に導入(14依存のみの軽量インストール、実測)。公式example(`examples/backtest/fx_ema_cross_audusd_bars_from_ticks.py`)は`nautilus_trader.testkit`という現行リリースに存在しないモジュールを参照しており(developブランチのソースと2026-09時点のリリース1.231.0のAPIに不一致がある、実測で発見)、正しいモジュール名`nautilus_trader.test_kit`(アンダースコア)を使う独自スクリプトを作成。BTCUSDT/BINANCEの合成足データでLIMIT買い注文→FILLED→MARKET売り注文で手仕舞いの1往復が成立。**ただし調査班はこの結果を見ていない**(背景で起動しただけで出力を読んだ記録が無い。hftbacktest と同じ型)。**リードが打ち直して確認した(生ログ LV-7、rc=0)**: 残高は 開始 100,000.00000000 USDT + 10.00000000 BTC → 終了 99,998.35248510 USDT + 10.00000000 BTC(建玉 0.01 BTC を建てて閉じ、費用は USDT 側で 1.64751490 減った)。OrderFilled 2 件・fills report は [2 rows x 36 columns])。**「本番グレードの発注機能」という宣伝文句を、実際に動かして裏取りした数少ない候補(**裏取りしたのはリード**)**
 
 **対応取引所の確定(実測)**: `crates/adapters`ディレクトリの実際の一覧(WebFetch実測)= architect_ax/betfair/binance/bitmex/blockchain/bybit/coinbase/databento/deribit/derive/dydx/hyperliquid/interactive_brokers/kraken/lighter/okx/polymarket/sandbox/tardisの19件。RELEASES.md全文(567,723バイト、curl実測)にbitflyer/bitbank/gmoの一致0件(grep)。**bitFlyer等の非対応は、README要約ではなくソースディレクトリの直接列挙とリリースノート全文検索という2つの独立した一次資料で確定した**
 

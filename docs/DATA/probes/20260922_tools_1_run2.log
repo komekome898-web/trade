@@ -310,3 +310,17 @@ $ python3 scripts/x_fetch.py <W-35 の検索結果に出た 6 URL>
 ### LV-6 hftbacktest の FILLED について(監査 1 回目の指摘 1)
 調査班の記録を機械で調べた結果: v4 は rc=1 で失敗(生ログ 102 行)。v5 はバックグラウンドで起動したところまで(「started pid=28116」)で、**その出力を読んだ記録が無い**($ cat tasks/bl50vqd2z.output → 「Bash completed with no output」の 1 回だけ)。つまり調査班は FILLED の結果を一度も見ずに本文を書いた。
 結果そのものはリードが打ち直して再現した(LV-2)ので主張は真だが、**出所は調査班の実測ではなくリードの再現である。**本文をそう書き直した。
+
+### LV-7 NautilusTrader の最小実行をリードが打ち直した(監査 2 回目の指摘 1。調査班は背景で起動しただけで出力を読んでいない)
+$ timeout 180 $SP/venv_nautilus/bin/python3 $SP/probe_nautilus.py  → rc=0(2026-09-22T02:21Z)
+  Balances starting: 100_000.00000000 USDT / 10.00000000 BTC
+  Balances ending:    99_998.35248510 USDT / 10.00000000 BTC
+  OrderFilled 2 件(O-20231114-221320-001-000-1 = LIMIT 買い、O-20231114-224020-001-000-2 = MARKET 売り)
+  RESULT fills: [2 rows x 36 columns]
+  → 指値買いが約定 → 成行売りで手仕舞い、の 1 往復。建玉は 0.01 BTC を建てて閉じた(net_position=0.010000 → PositionClosed)。BTC の残高は 10.0 で始まり 10.0 で終わり、費用は USDT 側で 1.64751490 減った。
+  調査班が書き込み先にしていた /tmp/nt_out2.txt も残っており(01:50 の実行)、同じ 2 件の OrderFilled と同じ残高を含む。**ただし調査班はこのファイルを読んでいない**(記録に cat 等が無い)。
+
+### LV-8 展開済み wheel の一覧と中身(監査 2 回目の指摘 2。「wheel展開は本回未実施」は誤り)
+$ ls -d $SP/dl/extract/*/ → backtesting-0.6.6 / jesse-3.2.1 / lean-1.0.229 / pyqlib-0.9.7 / qstrader-0.3.0 / vnpy-4.4.0 / zipline_reloaded-3.1.1 の 7 件(全部展開済み)
+$ find <各展開先> -name '*.so' | wc -l → zipline_reloaded 16 / pyqlib 2 / vnpy 0 / lean 0 / qstrader 0
+$ find <各展開先> -maxdepth 2 -name setup.py | wc -l → 全 5 件とも 0(wheel なので導入時に Python コードは実行されない)
