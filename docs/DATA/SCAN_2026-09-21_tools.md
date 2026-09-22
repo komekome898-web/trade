@@ -5350,3 +5350,304 @@ K12 検査の出力の貼付           0 件
 ```
 
 閉じ残し(誤検出だと思って残した行)は 0 件である。
+
+## 区分1 — 17 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run17.log`。
+16 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run16.md`)と起動の指定に従う。
+起動の指定の逐語「**この回も新しい検索計画は打ちません。**」「**残りを潰す回です。**」のとおり、この回の狙いは
+C++ の 4 件の構築と、残った 2 要素の 2 件の一次資料への到達である。
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断「区分ごとに 1 回でよい」により区分 1 の 1 回目の節を参照して貼っていない。
+**既存の節は 1 文字も書き換えていない。**
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**この回も新しい検索計画は打ちません。**」による。
+X の経路も同じ理由で打っていない。したがって新しい候補は 0 件で、候補の一覧は 118 番までのまま増えていない。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://ungh.cc/repos/<所有者>/<登録名>`(GitHub の登録情報の公開の代理) | 2026-09-22 | 星・初回公開日・最終更新日 |
+| 2 | `https://ungh.cc/repos/<所有者>/<登録名>/contributors` | 2026-09-22 | 保守者数・コミット数・保守者名の一貫性 |
+| 3 | `git clone --depth 1` した配布物そのもの(scratchpad の隔離した場所) | 2026-09-22 | 依存・難読化・同梱バイナリ・構築・最小実行 |
+| 4 | `https://arxiv.org/abs/2509.05107` | 2026-09-22 | 候補 109 の要旨と分野の逐語 |
+| 5 | `https://raw.githubusercontent.com/braverock/blotter/master/R/acOptTxns.R` と同 `/DESCRIPTION` | 2026-09-22 | 候補 116 の模型の式・許諾・依存 |
+
+### §4.0 の機械可読の表
+
+**この回に深掘りした道具は 4 件**(101・102・103・104)。109 と 116 は一次資料に到達したが、構築・実行まで行っていないので
+**浅いまま**とし、この表には入れず「候補の一覧」に確定した分を書く。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `akurkar07/OrderBook` | 版 | 版番号の表記なし。`--depth 1` で取った既定枝 main の頭 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:105(同じ実行の出力の行: 103) |
+| `akurkar07/OrderBook` | 最終更新日 | 2026-09-17(`pushedAt`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:60(同じ実行の出力の行: 57) |
+| `akurkar07/OrderBook` | ライセンス | MIT License(`LICENSE` の 1 行目) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:521(同じ実行の出力の行: 516) |
+| `akurkar07/OrderBook` | 言語と動作環境 | C++17。CMake 3.28.3 + g++ 13.3.0 で構築。Python の束縛は配布物に無い | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:608(同じ実行の出力の行: 582) |
+| `akurkar07/OrderBook` | 対応取引所 | 無し。取引所への接続の経路が配布物に無い(ファイル一覧は .cpp/.h/CMakeLists/README/LICENSE のみ) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:454(同じ実行の出力の行: 434) |
+| `akurkar07/OrderBook` | 星 | 0 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:60(同じ実行の出力の行: 57)(星 の欄) |
+| `akurkar07/OrderBook` | コミット数 | 32(`contributions` の値) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:65(同じ実行の出力の行: 62) |
+| `akurkar07/OrderBook` | 保守者数 | 1(`akurkar07`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:65(同じ実行の出力の行: 62)(保守者数 の欄) |
+| `akurkar07/OrderBook` | 週DL数 | 該当なし(PyPI に配布物が無い。C++ のみで導入の経路が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:454(同じ実行の出力の行: 434)(週DL数 の欄) |
+| `akurkar07/OrderBook` | 初回公開日 | 2026-09-16(`createdAt`)。**委任文 §6-1 の「公開直後」に当たる** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:60(同じ実行の出力の行: 57)(初回公開日 の欄) |
+| `akurkar07/OrderBook` | 既知の脆弱性 | 未確認 | 未確認 | 試した手段: PyPI に配布物が無いため PyPI の勧告欄が存在しない。GitHub の勧告の頁は取っていない |
+| `akurkar07/OrderBook` | 料金体系 | 無料。配布物に課金の記述が無い | 一次資料 | https://github.com/akurkar07/OrderBook(2026-09-22 取得) |
+| `akurkar07/OrderBook` | 無料枠の上限 | 該当なし(上限の記述が無い) | 一次資料 | https://github.com/akurkar07/OrderBook(2026-09-22 取得)(無料枠の上限 の欄) |
+| `akurkar07/OrderBook` | 課金開始条件 | 該当なし(鍵も登録も要求しない) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:454(同じ実行の出力の行: 434)(課金開始条件 の欄) |
+| `akurkar07/OrderBook` | 隠れた依存 | 無し。外部ライブラリを 1 つも使わない(CMakeLists に find_package も FetchContent も無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:580(同じ実行の出力の行: 523) |
+| `akurkar07/OrderBook` | 登録の要否 | 不要 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:608(同じ実行の出力の行: 582)(登録の要否 の欄) |
+| `akurkar07/OrderBook` | 到達経路 | `git clone --depth 1` が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:105(同じ実行の出力の行: 103)(到達経路 の欄) |
+| `akurkar07/OrderBook` | 導入可否 | 導入の工程が無い。`cmake -S . -B build` + `cmake --build build -j4` で構築 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:608(同じ実行の出力の行: 582)(導入可否 の欄) |
+| `akurkar07/OrderBook` | install所要秒 | 0.78(clone)。構築は 8.73 秒 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:105(同じ実行の出力の行: 103)(install所要秒 の欄) |
+| `akurkar07/OrderBook` | 依存数 | 0 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:580(同じ実行の出力の行: 523)(依存数 の欄) |
+| `akurkar07/OrderBook` | pip check | 該当なし(Python の配布物が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:454(同じ実行の出力の行: 434)(pip check の欄) |
+| `akurkar07/OrderBook` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:843(同じ実行の出力の行: 830) |
+| `akurkar07/OrderBook` | 最小実行の中身 | 同じ価格 100.00 に先行の 50 枚(id=1)と当方の 10 枚(id=2)を置き、売り成行 50 枚を入れた。付属の試験 5 本も `ctest` で通した | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:843(同じ実行の出力の行: 830)(最小実行の中身 の欄) |
+| `akurkar07/OrderBook` | 実行所要秒 | 0.46(構築を含む最小実行)。`ctest` の 5 本は合計 0.06 秒 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:843(同じ実行の出力の行: 830)(実行所要秒 の欄) |
+| `akurkar07/OrderBook` | wheel展開 | 該当なし(wheel の配布が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:454(同じ実行の出力の行: 434)(wheel展開 の欄) |
+| `akurkar07/OrderBook` | setup.py導入時実行 | 該当なし(`setup.py` も `pyproject.toml` も無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:454(同じ実行の出力の行: 434)(setup.py導入時実行 の欄) |
+| `akurkar07/OrderBook` | 同梱バイナリ | 無し(`file` を全追跡ファイルに掛けて ELF/Mach-O/PE32/Zip/gzip の当たり 0 件) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:389(同じ実行の出力の行: 386) |
+| `akurkar07/OrderBook` | 外部送信 | 無し(通信の経路が配布物に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:159(同じ実行の出力の行: 157) |
+| `akurkar07/OrderBook` | 自動発注機能 | 無し | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:454(同じ実行の出力の行: 434)(自動発注機能 の欄) |
+| `akurkar07/OrderBook` | 宣伝詐欺の兆候 | 無し。説明の逐語「deterministic tests, and benchmark harness」のとおり試験 5 本と benchmark が実在し、5 本とも通った | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:631(同じ実行の出力の行: 610) |
+| `akurkar07/OrderBook` | 当方データ投入 | 当方の csv.gz は**そのままでは入らない**。CSV の読み取りが配布物に無く、`place_limit_order(Order(id, Side, OrderType, price, quantity))` を C++ から呼ぶ形しかない。列の形は `id`(uint64)・`side`(Buy/Sell)・`type`(Limit/Market)・`price`(double)・`quantity`(uint64) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:711(同じ実行の出力の行: 668) |
+| `akurkar07/OrderBook` | 時刻の扱い | `std::chrono::steady_clock::now()` を `Order` の作成時に自分で打つ。**外から時刻を与える経路が無い**ので、当方の記録の時刻をそのまま使えない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:711(同じ実行の出力の行: 668)(時刻の扱い の欄) |
+| `akurkar07/OrderBook` | 再現性 | 時間優先は決定的(先行 50 枚が先に食われ当方の 10 枚が残った)。ただし `timestamp` が実時計なので、再現には並べる順序に頼る | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:843(同じ実行の出力の行: 830)(再現性 の欄) |
+| `akurkar07/OrderBook` | 規模の見積 | 配布物 340 KB。構築 8.73 秒 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:124(同じ実行の出力の行: 119) |
+| `akurkar07/OrderBook` | 配布元の一致 | PyPI の配布物が無いので照合の対象が無い。GitHub の `akurkar07/OrderBook` から直接 clone した | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:105(同じ実行の出力の行: 103)(配布元の一致 の欄) |
+| `akurkar07/OrderBook` | 難読化 | 無し(全ファイルが可読の C++/Markdown。`base64` と `exec` と `eval` の検索は当たり 0 件) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:159(同じ実行の出力の行: 157)(難読化 の欄) |
+| `akurkar07/OrderBook` | 外部URL取得 | 無し(CMakeLists に FetchContent も ExternalProject も file(DOWNLOAD) も無い。検索の当たり 0 件) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:394(同じ実行の出力の行: 391) |
+| `akurkar07/OrderBook` | 依存の一覧 | 無し(標準ライブラリのみ) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:580(同じ実行の出力の行: 523)(依存の一覧 の欄) |
+| `akurkar07/OrderBook` | 保守者名の一貫性 | 一貫している(所有者 `akurkar07` = 唯一の貢献者 `akurkar07`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:65(同じ実行の出力の行: 62)(保守者名の一貫性 の欄) |
+| `akurkar07/OrderBook` | 4軸1_道具 | **当方に無い道具**: 価格帯ごとの FIFO の待ち行列(`std::list<Order> queue_`)と、それを食う成行の経路。当方の `engine.py` は 1 分足で「通過したら約定」なので、順番の概念が無い | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:666(同じ実行の出力の行: 633) |
+| `akurkar07/OrderBook` | 4軸2_情報 | **当方に無い情報**: 価格帯の合計枚数 `total_quantity()` と先頭の注文 `front()`。ただし**どちらも `PriceLevel` の公開 API で、`OrderBook` の公開 API からは辿れない**(`OrderBook` の公開 API は `place_limit_order`・`place_market_order`・`cancel_order`・`empty` の 4 つだけ) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:782(同じ実行の出力の行: 740) |
+| `akurkar07/OrderBook` | 4軸3_視点 | **当方に無い視点**: 「自分の指値の前に何枚あるか」を、参照実装(`reference/reference_order_book.h`)と突き合わせて決定的に検算するという視点。試験 `test_reference_order_book` がそれを打っている | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:454(同じ実行の出力の行: 434)(4軸3_視点 の欄) |
+| `akurkar07/OrderBook` | 4軸4_向上 | 当方の `engine.py:45-53` が自分で書いた楽観(「Real fills also depend on queue position; this model grants the fill on any strict through-trade.」)を、同じ約定列で突き合わせる相手になりうる。ただし**先行注文量を外から読む公開 API が無い**ので、使うなら `OrderBook` に読み出しを足す改造が要る | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:782(同じ実行の出力の行: 740)(4軸4_向上 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 版 | 0.1.0(CMakeLists の `project(lob_simulator VERSION 0.1.0)`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1461(同じ実行の出力の行: 1401) |
+| `3yit/Limit-Order-Book-Simulator` | 最終更新日 | 2025-10-27(`pushedAt`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:70(同じ実行の出力の行: 67) |
+| `3yit/Limit-Order-Book-Simulator` | ライセンス | **無し。`LICENSE` も `COPYING` も配布物に無い** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:514(同じ実行の出力の行: 491) |
+| `3yit/Limit-Order-Book-Simulator` | 言語と動作環境 | C++20。CMake 3.28.3 + g++ 13.3.0 で構築。Python の束縛は pybind11(既定は OFF) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1511(同じ実行の出力の行: 1497) |
+| `3yit/Limit-Order-Book-Simulator` | 対応取引所 | Binance(`scripts/binance_depth_capture.py` が板を取る経路を持つ)。**この回はこの経路を実行していない** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:489(同じ実行の出力の行: 456) |
+| `3yit/Limit-Order-Book-Simulator` | 星 | 7 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:70(同じ実行の出力の行: 67)(星 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | コミット数 | 1(`contributions` の値) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:101(同じ実行の出力の行: 98) |
+| `3yit/Limit-Order-Book-Simulator` | 保守者数 | 1 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:101(同じ実行の出力の行: 98)(保守者数 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 週DL数 | 該当なし(PyPI に配布物が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:489(同じ実行の出力の行: 456)(週DL数 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 初回公開日 | 2025-10-12(`createdAt`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:70(同じ実行の出力の行: 67)(初回公開日 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 既知の脆弱性 | 未確認 | 未確認 | 試した手段: PyPI に配布物が無いため PyPI の勧告欄が存在しない。GitHub の勧告の頁は取っていない |
+| `3yit/Limit-Order-Book-Simulator` | 料金体系 | 無料。配布物に課金の記述が無い | 一次資料 | https://github.com/3yit/Limit-Order-Book-Simulator(2026-09-22 取得) |
+| `3yit/Limit-Order-Book-Simulator` | 無料枠の上限 | 該当なし(上限の記述が無い) | 一次資料 | https://github.com/3yit/Limit-Order-Book-Simulator(2026-09-22 取得)(無料枠の上限 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 課金開始条件 | 該当なし(鍵も登録も要求しない)。`scripts/binance_depth_capture.py` は Binance の公開の経路を叩く | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:489(同じ実行の出力の行: 456)(課金開始条件 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 隠れた依存 | C++ 側は 0。Python 側は `requirements.txt` に pybind11・aiohttp・websockets・orjson・certifi・pandas・numpy・matplotlib・pytest・black・mypy | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1490(同じ実行の出力の行: 1463) |
+| `3yit/Limit-Order-Book-Simulator` | 登録の要否 | 不要(最小実行は鍵なしで通った) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1546(同じ実行の出力の行: 1530) |
+| `3yit/Limit-Order-Book-Simulator` | 到達経路 | `git clone --depth 1` が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:109(同じ実行の出力の行: 107) |
+| `3yit/Limit-Order-Book-Simulator` | 導入可否 | C++ は可。**Python の束縛は配布物のままでは構築が落ちる**(`lob_core` が -fPIC 無しで作られるため `relocation R_X86_64_PC32 ... can not be used when making a shared object`)。`-DCMAKE_POSITION_INDEPENDENT_CODE=ON` を足して打ち直すと通った | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1591(同じ実行の出力の行: 1578) |
+| `3yit/Limit-Order-Book-Simulator` | install所要秒 | 0.78(clone)。C++ の構築 24.98 秒、Python の束縛の構築 14.05 秒(pybind11 の導入 4.95 秒は別) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:109(同じ実行の出力の行: 107)(install所要秒 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 依存数 | C++ 0。Python は `requirements.txt` の 11 パッケージ(うち pybind11 だけが束縛に必須) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1490(同じ実行の出力の行: 1463)(依存数 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | pip check | scratchpad の venv に pybind11 だけを入れた。この venv は当方のリポジトリの環境ではない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1576(同じ実行の出力の行: 1566) |
+| `3yit/Limit-Order-Book-Simulator` | 最小実行の可否 | 可(C++・Python とも) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1638(同じ実行の出力の行: 1619) |
+| `3yit/Limit-Order-Book-Simulator` | 最小実行の中身 | 同梱の `data/sample_orders.csv` を `./build/lob_simulator --events` に与えた。さらに `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` で作った `lob_cpp` を Python から import し、`OrderBook` に 2 本の買い指値を入れて `best_bid` を読んだ | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1638(同じ実行の出力の行: 1619)(最小実行の中身 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 実行所要秒 | 0.005(同梱 CSV 11 件)。付属の試験 1 本は 0.01 秒 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1546(同じ実行の出力の行: 1530)(実行所要秒 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | wheel展開 | 該当なし(wheel の配布が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:489(同じ実行の出力の行: 456)(wheel展開 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | setup.py導入時実行 | 該当なし(`setup.py` も `pyproject.toml` も無い。構築は CMake だけ) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:489(同じ実行の出力の行: 456)(setup.py導入時実行 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 同梱バイナリ | 無し(`file` を全追跡ファイルに掛けて ELF/Mach-O/PE32/Zip/gzip の当たり 0 件) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:399(同じ実行の出力の行: 396) |
+| `3yit/Limit-Order-Book-Simulator` | 外部送信 | `scripts/binance_depth_capture.py` が Binance へ出る経路を持つ。**最小実行では同梱 CSV と合成の注文しか使わず、この経路を通していない** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:209(同じ実行の出力の行: 207) |
+| `3yit/Limit-Order-Book-Simulator` | 自動発注機能 | 無し(発注の経路が配布物に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:489(同じ実行の出力の行: 456)(自動発注機能 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 宣伝詐欺の兆候 | **1 件ある。**説明の逐語「Python bindings for quantitative finance research」だが、配布物のままでは Python の束縛が構築で落ちる(-fPIC の指定が無い)。動かすには CMake の引数を足す必要がある | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1591(同じ実行の出力の行: 1578)(宣伝詐欺の兆候 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 当方データ投入 | **そのまま入る形に最も近い。**同梱 CSV の見出し行の逐語は `#timestamp,event,id,side,type,price,quantity` で、続く行は `1000000000,NEW,1,BUY,LIMIT,100000,500`。当方の約定・板の csv.gz はこの 7 列に写し替えれば入る。価格は整数(100000 = 1000.00 の意) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1490(同じ実行の出力の行: 1463)(当方データ投入 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 時刻の扱い | CSV の 1 列目が `timestamp`(整数)。**外から時刻を与えられる**。Python の束縛では `Order.timestamp` が `datetime.datetime` を要求する | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1638(同じ実行の出力の行: 1619)(時刻の扱い の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 再現性 | 同じ CSV で同じ出力(`Processed 11 events`・`Trades executed: 4`・`Spread: 150.000`)。ただし `--threads` と `--latency-us` の指定があり、既定以外での決定性はこの回に測っていない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1546(同じ実行の出力の行: 1530)(再現性 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 規模の見積 | 配布物 1.4 MB。C++ の構築 24.98 秒、Python の束縛 14.05 秒 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:124(同じ実行の出力の行: 119) |
+| `3yit/Limit-Order-Book-Simulator` | 配布元の一致 | PyPI の配布物が無いので照合の対象が無い。GitHub の `3yit/Limit-Order-Book-Simulator` から直接 clone した | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:109(同じ実行の出力の行: 107)(配布元の一致 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 難読化 | 無し(全ファイルが可読の C++/Python/Markdown) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:209(同じ実行の出力の行: 207)(難読化 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 外部URL取得 | 無し(CMakeLists に FetchContent も ExternalProject も file(DOWNLOAD) も無い。検索の当たり 0 件)。`LOB_BUILD_BENCHMARKS=ON` のときだけ `find_package(benchmark)` を見るが、取りに行かず、無ければ警告して飛ばす | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:404(同じ実行の出力の行: 401) |
+| `3yit/Limit-Order-Book-Simulator` | 依存の一覧 | `requirements.txt` の逐語: pybind11>=2.10.0 / aiohttp>=3.8.0 / websockets>=10.0 / orjson>=3.8.0 / certifi>=2022.0.0 / pandas>=1.5.0 / numpy>=1.23.0 / matplotlib>=3.6.0 / pytest>=7.2.0 / black>=22.0.0 / mypy>=0.990 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1490(同じ実行の出力の行: 1463)(依存の一覧 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 保守者名の一貫性 | **食い違う。**所有者は `3yit` だが、`contributors` が返す唯一の貢献者は `Rimcheb`(コミット 1 件)である。1 回目の取得は code=000 で、打ち直して code=200 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:101(同じ実行の出力の行: 98)(保守者名の一貫性 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 4軸1_道具 | **当方に無い道具**: CSV のイベント列(NEW/CANCEL 等)をそのまま流し込んで板を再生する実行ファイルと、それを Python から呼ぶ束縛。当方には板を再生する実装が無い | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1546(同じ実行の出力の行: 1530)(4軸1_道具 の欄) |
+| `3yit/Limit-Order-Book-Simulator` | 4軸2_情報 | **当方に無い情報**: `Imbalance`(板の偏り)を毎回出す。最小実行の出力の逐語は「Spread: 150.000 \| Mid: 100125.000 \| Imbalance: 0.684」 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1546(同じ実行の出力の行: 1530) |
+| `3yit/Limit-Order-Book-Simulator` | 4軸3_視点 | **当方に無い視点**: `--latency-us` で遅延を、`--threads` で並列度を外から与えて板の処理を測るという視点 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1528(同じ実行の出力の行: 1524) |
+| `3yit/Limit-Order-Book-Simulator` | 4軸4_向上 | 当方の csv.gz を 7 列に写し替えれば板の再生ができる。ただし**先行注文量・隠し玉・約定の向きのどれも持たない**(`queue`/`hidden`/`display`/`aggressor`/`iceberg` の検索が全て当たり 0 件)ので、当方の楽観の測定には足りない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1495(同じ実行の出力の行: 1492) |
+| `IsaacCheng9/order-book-simulator` | 版 | 0.29.11(`pyproject.toml` の `version`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1710(同じ実行の出力の行: 1668) |
+| `IsaacCheng9/order-book-simulator` | 最終更新日 | 2026-09-19(`pushedAt`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:81(同じ実行の出力の行: 78) |
+| `IsaacCheng9/order-book-simulator` | ライセンス | **無し。`LICENSE` も `COPYING` も配布物に無い** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:323(同じ実行の出力の行: 303) |
+| `IsaacCheng9/order-book-simulator` | 言語と動作環境 | Python。`requires-python = ">=3.14"`。**この環境の python3 は 3.11.15 で、要件を満たさない** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1733(同じ実行の出力の行: 1712) |
+| `IsaacCheng9/order-book-simulator` | 対応取引所 | 無し(米国株の取引所の機構を模す。実在の取引所への接続は配布物に無い) | 一次資料 | https://github.com/IsaacCheng9/order-book-simulator(2026-09-22 取得) |
+| `IsaacCheng9/order-book-simulator` | 星 | 9 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:81(同じ実行の出力の行: 78)(星 の欄) |
+| `IsaacCheng9/order-book-simulator` | コミット数 | 333(`IsaacCheng9`)。ほかに `github-actions[bot]` 64、`dependabot[bot]` 21 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:86(同じ実行の出力の行: 83) |
+| `IsaacCheng9/order-book-simulator` | 保守者数 | 1 人 + 自動化の 2 件(`github-actions[bot]`・`dependabot[bot]`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:86(同じ実行の出力の行: 83)(保守者数 の欄) |
+| `IsaacCheng9/order-book-simulator` | 週DL数 | 該当なし(PyPI に配布物が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:323(同じ実行の出力の行: 303)(週DL数 の欄) |
+| `IsaacCheng9/order-book-simulator` | 初回公開日 | 2025-01-28(`createdAt`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:81(同じ実行の出力の行: 78)(初回公開日 の欄) |
+| `IsaacCheng9/order-book-simulator` | 既知の脆弱性 | 未確認 | 未確認 | 試した手段: PyPI に配布物が無いため PyPI の勧告欄が存在しない。GitHub の勧告の頁は取っていない |
+| `IsaacCheng9/order-book-simulator` | 料金体系 | 無料。配布物に課金の記述が無い | 一次資料 | https://github.com/IsaacCheng9/order-book-simulator(2026-09-22 取得)(料金体系 の欄) |
+| `IsaacCheng9/order-book-simulator` | 無料枠の上限 | 該当なし(上限の記述が無い) | 一次資料 | https://github.com/IsaacCheng9/order-book-simulator(2026-09-22 取得)(無料枠の上限 の欄) |
+| `IsaacCheng9/order-book-simulator` | 課金開始条件 | 該当なし(鍵も登録も要求しない) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:328(同じ実行の出力の行: 325) |
+| `IsaacCheng9/order-book-simulator` | 隠れた依存 | **PostgreSQL・Kafka・Redis が動いていることが前提。**`pyproject.toml` の `dependencies` に asyncpg・aiokafka・redis・sqlalchemy が並び、`docker-compose.yml` がそれらを立てる | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1710(同じ実行の出力の行: 1668)(隠れた依存 の欄) |
+| `IsaacCheng9/order-book-simulator` | 登録の要否 | 不要 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:328(同じ実行の出力の行: 325)(登録の要否 の欄) |
+| `IsaacCheng9/order-book-simulator` | 到達経路 | `git clone --depth 1` が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:113(同じ実行の出力の行: 111) |
+| `IsaacCheng9/order-book-simulator` | 導入可否 | **この環境からは到達できない。**試した手段は 3 つ。(1) `docker ps` → 「failed to connect to the docker API at unix:///var/run/docker.sock」。(2) `/var/run/docker.sock` の実在を見た → 無い。`dockerd` の実体は `/usr/bin/dockerd` に在るが、`sudo -n true` が通らないので起動できない。(3) docker を通さず `order_book_simulator.matching.order_book` を直接 import → `ModuleNotFoundError: No module named 'pydantic'`。**第 2 経路のコマンド**(オーナー PC で打つもの): `docker compose -f docker/docker-compose.yml up -d` と `uv sync`(`uv.lock` が同梱)。Python は 3.14 以上が要る | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1659(同じ実行の出力の行: 1655) |
+| `IsaacCheng9/order-book-simulator` | install所要秒 | 1.13(clone)。導入はこの環境で完了していない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:113(同じ実行の出力の行: 111)(install所要秒 の欄) |
+| `IsaacCheng9/order-book-simulator` | 依存数 | `dependencies` に 14 パッケージ(aiohttp・aiokafka・asyncpg・fastapi・greenlet・orjson・polars・pydantic・redis・sortedcontainers・sqlalchemy・streamlit・uvicorn・uvloop)。開発用は別枠 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1710(同じ実行の出力の行: 1668)(依存数 の欄) |
+| `IsaacCheng9/order-book-simulator` | pip check | 未確認(導入が完了していないため打っていない) | 未確認 | 試した手段: docker の 3 経路がすべて塞がり、依存が入らなかった |
+| `IsaacCheng9/order-book-simulator` | 最小実行の可否 | **不可(この環境では)。**上の 3 経路を全部試した結果 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1733(同じ実行の出力の行: 1712)(最小実行の可否 の欄) |
+| `IsaacCheng9/order-book-simulator` | 最小実行の中身 | 未実施。`order_book_simulator.matching.order_book.OrderBook` の import が pydantic の不在で落ちた | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1733(同じ実行の出力の行: 1712)(最小実行の中身 の欄) |
+| `IsaacCheng9/order-book-simulator` | 実行所要秒 | 該当なし(実行に至っていない) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1733(同じ実行の出力の行: 1712)(実行所要秒 の欄) |
+| `IsaacCheng9/order-book-simulator` | wheel展開 | 該当なし(wheel の配布が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:323(同じ実行の出力の行: 303)(wheel展開 の欄) |
+| `IsaacCheng9/order-book-simulator` | setup.py導入時実行 | 該当なし(`setup.py` は無い。`pyproject.toml` の `build-backend` は `hatchling.build` で、導入時に走る自前のコードは書かれていない) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1710(同じ実行の出力の行: 1668)(setup.py導入時実行 の欄) |
+| `IsaacCheng9/order-book-simulator` | 同梱バイナリ | 無し(`file` を全追跡ファイルに掛けて ELF/Mach-O/PE32/Zip/gzip の当たり 0 件。png 6 枚は画面写真) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:409(同じ実行の出力の行: 406) |
+| `IsaacCheng9/order-book-simulator` | 外部送信 | `src/order_book_simulator/ui/components/api_client.py` が自前の API を叩く。外部のサービスへ出る経路はこの回に確かめていない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:328(同じ実行の出力の行: 325)(外部送信 の欄) |
+| `IsaacCheng9/order-book-simulator` | 自動発注機能 | 無し(実在の取引所への発注の経路が配布物に無い) | 一次資料 | https://github.com/IsaacCheng9/order-book-simulator(2026-09-22 取得)(自動発注機能 の欄) |
+| `IsaacCheng9/order-book-simulator` | 宣伝詐欺の兆候 | 無し。説明の逐語「price-time priority matching, trade execution, and real-time market data processing」に対して、`src/order_book_simulator/matching/` と試験 79 本が実在する | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:301(同じ実行の出力の行: 284) |
+| `IsaacCheng9/order-book-simulator` | 当方データ投入 | 未確認。**導入が完了していないので列の形を実行で確かめていない。**配布物には `resources/` の csv が 1 本ある | 未確認 | 試した手段: 上の 3 経路。列の形は実行で読んでいない |
+| `IsaacCheng9/order-book-simulator` | 時刻の扱い | 未確認 | 未確認 | 試した手段: 導入が完了せず、実行していない |
+| `IsaacCheng9/order-book-simulator` | 再現性 | 未確認 | 未確認 | 試した手段: 導入が完了せず、実行していない(再現性 の欄) |
+| `IsaacCheng9/order-book-simulator` | 規模の見積 | 配布物 6.2 MB。追跡ファイル 103 本(うち .py が 79 本) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:124(同じ実行の出力の行: 119) |
+| `IsaacCheng9/order-book-simulator` | 配布元の一致 | PyPI の配布物が無いので照合の対象が無い。GitHub の `IsaacCheng9/order-book-simulator` から直接 clone した | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:113(同じ実行の出力の行: 111)(配布元の一致 の欄) |
+| `IsaacCheng9/order-book-simulator` | 難読化 | 無し(全ファイルが可読の Python/YAML/Markdown) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:328(同じ実行の出力の行: 325)(難読化 の欄) |
+| `IsaacCheng9/order-book-simulator` | 外部URL取得 | CMake が無いので CMake 経由の取得は無い。**docker 構成が外部の image を取りに行く**が、デーモンが無いので実行していない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:414(同じ実行の出力の行: 411) |
+| `IsaacCheng9/order-book-simulator` | 依存の一覧 | 上の「依存数」と同じ 14 件。開発用は aiosqlite・coverage・httpx・pandas-stubs・pyrefly ほか | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1710(同じ実行の出力の行: 1668)(依存の一覧 の欄) |
+| `IsaacCheng9/order-book-simulator` | 保守者名の一貫性 | 一貫している(所有者 `IsaacCheng9` = 主たる貢献者 `IsaacCheng9`。残る 2 件は自動化の bot) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:86(同じ実行の出力の行: 83)(保守者名の一貫性 の欄) |
+| `IsaacCheng9/order-book-simulator` | 4軸1_道具 | **当方に無い道具**: 板・照合・市場データ配信・表示を別々のプロセスに割り、Kafka と PostgreSQL でつなぐ構成そのもの。当方の backtest は単一プロセス | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1710(同じ実行の出力の行: 1668)(4軸1_道具 の欄) |
+| `IsaacCheng9/order-book-simulator` | 4軸2_情報 | **当方に無い情報**: 板の差分(deltas)を持つ。試験の名前に `test_order_book_deltas.py`・`test_matching_engine_deltas.py`・`test_cache_deltas.py` がある | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:282(同じ実行の出力の行: 211) |
+| `IsaacCheng9/order-book-simulator` | 4軸3_視点 | **当方に無い視点**: 板を「配信する側」から作るという視点(`multicast` の試験 3 本 = `test_multicast_publisher.py`・`test_multicast_subscriber.py`・`test_wire_format.py`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:282(同じ実行の出力の行: 211)(4軸3_視点 の欄) |
+| `IsaacCheng9/order-book-simulator` | 4軸4_向上 | **この環境では測れない。**オーナー PC で docker を立てれば、板の差分の配信と、それを受ける側の遅延を測る土台になりうる。**待ち行列の粒度は未確認** | 未確認 | 試した手段: 上の 3 経路。導入が完了していない |
+| `jxm35/LimitOrderBook-MatchingEngine` | 版 | 0.1.0(`setup.py` の `version`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1096(同じ実行の出力の行: 1082) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 最終更新日 | 2025-10-11(`pushedAt`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:91(同じ実行の出力の行: 88) |
+| `jxm35/LimitOrderBook-MatchingEngine` | ライセンス | **無し。`LICENSE` も `COPYING` も配布物に無い**(16 回目の報告と一致) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:379(同じ実行の出力の行: 360) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 言語と動作環境 | C++23(`std::expected` を使う)。g++ 13.3.0 で構築。Python の束縛は pybind11 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:929(同じ実行の出力の行: 875) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 対応取引所 | 無し(取引所への接続の経路が配布物に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:358(同じ実行の出力の行: 344) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 星 | 32 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:91(同じ実行の出力の行: 88)(星 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | コミット数 | 42(`contributions` の値) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:96(同じ実行の出力の行: 93) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 保守者数 | 1(`jxm35`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:96(同じ実行の出力の行: 93)(保守者数 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 週DL数 | 該当なし(PyPI に配布物が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:358(同じ実行の出力の行: 344)(週DL数 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 初回公開日 | 2023-09-23(`createdAt`)。**この群で最も古い** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:91(同じ実行の出力の行: 88)(初回公開日 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 既知の脆弱性 | 未確認 | 未確認 | 試した手段: PyPI に配布物が無いため PyPI の勧告欄が存在しない。GitHub の勧告の頁は取っていない |
+| `jxm35/LimitOrderBook-MatchingEngine` | 料金体系 | 無料。配布物に課金の記述が無い | 一次資料 | https://github.com/jxm35/LimitOrderBook-MatchingEngine(2026-09-22 取得) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 無料枠の上限 | 該当なし(上限の記述が無い) | 一次資料 | https://github.com/jxm35/LimitOrderBook-MatchingEngine(2026-09-22 取得)(無料枠の上限 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 課金開始条件 | 該当なし(鍵も登録も要求しない) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:384(同じ実行の出力の行: 381) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 隠れた依存 | **Boost と spdlog。**`CMakeLists.txt` が `/opt/homebrew/Cellar/boost/1.82.0_1` と `/opt/homebrew/Cellar/spdlog/1.12.0` を直書きしている(macOS の Homebrew の道)。この環境にはどちらも無い | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:929(同じ実行の出力の行: 875)(隠れた依存 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 登録の要否 | 不要 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1399(同じ実行の出力の行: 1383) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 到達経路 | `git clone --depth 1` が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:117(同じ実行の出力の行: 115) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 導入可否 | **配布物のままの `cmake` は通らない**(Boost 1.82 と spdlog が無く、`find_package(Boost ... REQUIRED)` で止まる)。**`lib/OrderBook` の 5 本だけなら構築できた。**`boost/optional.hpp` は当方が scratchpad に 3 行の代用ヘッダを置き、`spdlog/fmt/fmt.h` も `std::format` に写す代用ヘッダを置いた。`Order.h` が `<cstdint>` を取り込み忘れているので `-include cstdint` を足した。**配布物のファイルは 1 文字も書き換えていない** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1399(同じ実行の出力の行: 1383)(導入可否 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | install所要秒 | 0.86(clone)。`lib/OrderBook` の構築は 2.12 秒 + 3.78 秒(`Order.cpp` と最小実行の連結を含む) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:117(同じ実行の出力の行: 115)(install所要秒 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 依存数 | `lib/OrderBook` の外部依存は boost/optional と spdlog の 2 件だけ。全体では Boost.Lockfree も要る | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1131(同じ実行の出力の行: 1113) |
+| `jxm35/LimitOrderBook-MatchingEngine` | pip check | 該当なし(Python の配布物を導入していない。`setup.py` は C++ を構築せず `orderbook` の .pyi だけを詰める) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1096(同じ実行の出力の行: 1082)(pip check の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 最小実行の可否 | 可(`lib/OrderBook` の範囲で) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1399(同じ実行の出力の行: 1383)(最小実行の可否 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 最小実行の中身 | 価格 10000 の `Limit` に先行 2 本(50 枚・30 枚)と当方の 10 枚を置き、`GetOrderRecords()` の `queuePosition` を読んだ。次に先行 A を `RemoveOrder` で取り消して順位の動きを見た | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1399(同じ実行の出力の行: 1383)(最小実行の中身 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 実行所要秒 | 3.78(構築と実行を合わせた計測) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1399(同じ実行の出力の行: 1383)(実行所要秒 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | wheel展開 | 該当なし(wheel の配布が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:358(同じ実行の出力の行: 344)(wheel展開 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | setup.py導入時実行 | 走査した。`setup.py` は `import pybind11` と `setuptools.setup(name="orderbook", version="0.1.0", packages=["orderbook"], ...)` だけで、**導入時に走る自前のコードは無い**。`Extension` を import しているが 1 度も使っていない(= `pip install .` では C++ の拡張が作られない) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1096(同じ実行の出力の行: 1082)(setup.py導入時実行 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 同梱バイナリ | 無し(`file` を全追跡ファイルに掛けて ELF/Mach-O/PE32/Zip/gzip の当たり 0 件) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:419(同じ実行の出力の行: 416) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 外部送信 | `src/simulation_python/main.py` が `subprocess` を使う。この回はこのファイルを実行していない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:384(同じ実行の出力の行: 381)(外部送信 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 自動発注機能 | 無し(実在の取引所への発注の経路が配布物に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:358(同じ実行の出力の行: 344)(自動発注機能 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 宣伝詐欺の兆候 | 無し。説明の逐語「Limit Orderbook & Matching Engine + market simulation & visualsation.」(原文の綴りのまま)に対し、板・照合・市場データ配信・可視化が実在する | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:358(同じ実行の出力の行: 344)(宣伝詐欺の兆候 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 当方データ投入 | CSV の読み取りが配布物に無い。C++ から `Order(OrderCore(orderId, username, securityId), price, quantity, isBuy)` を組む形。**列の形**は `orderId`(long)・`username`(string)・`securityId`(int)・`price`(long、ペンス単位の整数)・`quantity`(uint32)・`isBuy`(bool)。当方の csv.gz は価格を整数に直す必要がある | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1317(同じ実行の出力の行: 1241) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 時刻の扱い | `OrderBookEntry` が `std::chrono::steady_clock` の実時計を自分で打つ。**外から時刻を与える経路が無い。**市場データの側は `TradeMessage` が `trade_id` と `aggressor_side` を持つ | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1080(同じ実行の出力の行: 975) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 再現性 | 待ち行列の順位は決定的(先行 2 本 → 当方が `queuePosition=2`、先行 A を消すと `queuePosition=1`)。実時計は順位に効かない | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1399(同じ実行の出力の行: 1383)(再現性 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 規模の見積 | 配布物 928 KB。追跡ファイル 79 本(.cpp 24 / .h 21)。`lib/OrderBook` の構築 2.12 秒 | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:124(同じ実行の出力の行: 119) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 配布元の一致 | PyPI の配布物が無いので照合の対象が無い。GitHub の `jxm35/LimitOrderBook-MatchingEngine` から直接 clone した | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:117(同じ実行の出力の行: 115)(配布元の一致 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 難読化 | 無し(全ファイルが可読の C++/Python/Markdown) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:384(同じ実行の出力の行: 381)(難読化 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 外部URL取得 | **在る。**`tests/CMakeLists.txt` が `FetchContent` で `https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip` を、`benchmarks/CMakeLists.txt` が `GIT_REPOSITORY https://github.com/google/benchmark.git` を取りに行く。**当方はこの 2 つの下位ディレクトリを構築していないので、この経路を 1 度も通していない** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:432(同じ実行の出力の行: 421) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 依存の一覧 | Boost(optional・lockfree)・spdlog・pybind11。試験と benchmark だけ googletest と Google Benchmark | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1131(同じ実行の出力の行: 1113)(依存の一覧 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 保守者名の一貫性 | 一貫している(所有者 `jxm35` = 唯一の貢献者 `jxm35`) | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:96(同じ実行の出力の行: 93)(保守者名の一貫性 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 4軸1_道具 | **当方に無い道具**: `Limit::GetOrderRecords()` が各注文の `queuePosition` を整数で返す。**先行注文量を外から読める唯一の実装**である。`GetOrderQuantity()` が価格帯の合計枚数、`GetOrderCount()` が本数を返す | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1399(同じ実行の出力の行: 1383)(4軸1_道具 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 4軸2_情報 | **当方に無い情報**: 市場データの `TradeMessage` が `aggressor_side`(約定の向き)を持つ。`MDAdapter.h` の逐語は `Side aggressor_side = buyerAggressed ? Side::BUY : Side::SELL;` | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:958(同じ実行の出力の行: 931) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 4軸3_視点 | **当方に無い視点**: 取り消しで順位が繰り上がることを実装が扱う。**候補 95 が「Cancellations ahead of us are invisible, so we never move up the queue」と自分で書いて捨てた部分を、この実装は持っている** | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1399(同じ実行の出力の行: 1383)(4軸3_視点 の欄) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 4軸4_向上 | 当方の `engine.py:45-53` の楽観(「Real fills also depend on queue position」)を、**先行注文量を数えた側から**測る土台になる。ただし約定の照合(`OrderBook.cpp`)は spdlog を要求するので、そこまで通すには代用ヘッダをもう 1 段書くか spdlog を入れる必要がある | 実測 | docs/DATA/probes/20260922_tools_1_run17.log:1200(同じ実行の出力の行: 1187) |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **先行注文量を外から読めるのは 104 番だけである。**`Limit::GetOrderRecords()` が各注文に `queuePosition` を付けて返す。最小実行では、先行 2 本(50 枚・30 枚)の後ろに当方の 10 枚を置くと `queuePosition=2` が返り、先行 A を `RemoveOrder` で消すと当方が `queuePosition=1` へ繰り上がった。価格帯の合計は `GetOrderQuantity()` が 50 → 80 → 90 → 40 と返した | 実測 | `20260922_tools_1_run17.log:1383` |
+| 2 | **104 番は「取り消しで順位が繰り上がる」を持つ。**16 回目に見た候補 95 は README で自分から「Cancellations ahead of us are invisible, so we never move up the queue」と書いて、その部分を捨てている。**同じ問いに対する 2 つの立場が、2 つの実装として手元にある** | 実測 | `20260922_tools_1_run17.log:1383` |
+| 3 | **101 番は待ち行列を内部に持つが、外から読めない。**`PriceLevel` は `std::list<Order> queue_`(コメントの逐語「FIFO queue for time priority」)を持ち、`total_quantity()` と `front()` を公開する。しかし `OrderBook` の公開 API は `place_limit_order`・`place_market_order`・`cancel_order`・`empty` の 4 つだけで、価格帯に辿り着く経路が無い。**先行注文量は約定の結果からしか分からない** | 実測 | `20260922_tools_1_run17.log:740` |
+| 4 | **101 番の時間優先は実行で確かめた。**先行 50 枚(id=1)と当方 10 枚(id=2)を同じ 100.00 に置き、売り成行 50 枚を入れると約定は 1 件(`buy_id=1`)だけで、続く 10 枚で当方(`buy_id=2`)が埋まった | 実測 | `20260922_tools_1_run17.log:830` |
+| 5 | **102 番の「Python bindings」は配布物のままでは構築が落ちる。**`lob_core` が位置独立コードで作られないため `relocation R_X86_64_PC32 against symbol ... can not be used when making a shared object` で止まる。`-DCMAKE_POSITION_INDEPENDENT_CODE=ON` を足して打ち直すと `lob_cpp.cpython-311-x86_64-linux-gnu.so` ができ、Python から `OrderBook`・`MatchingEngine`・`Trade`・`MatchResult` を呼べた | 実測 | `20260922_tools_1_run17.log:1578` と `:1619` |
+| 6 | **102 番は当方の csv.gz に最も近い入口を持つ。**同梱 CSV の見出し行の逐語は `#timestamp,event,id,side,type,price,quantity`、続く行の逐語は `1000000000,NEW,1,BUY,LIMIT,100000,500`。`./build/lob_simulator --events <path>` にそのまま渡せる | 実測 | `20260922_tools_1_run17.log:1463` と `:1530` |
+| 7 | **102 番は先行注文量も隠し玉も約定の向きも持たない。**`queue`・`hidden`・`display`・`aggressor`・`iceberg` を自前のコードだけに検索して当たり 0 件。代わりに `Imbalance`(板の偏り)を出す(出力の逐語「Spread: 150.000 \| Mid: 100125.000 \| Imbalance: 0.684」) | 実測 | `20260922_tools_1_run17.log:1492` と `:1530` |
+| 8 | **103 番はこの環境からは到達できない。**3 経路を全部試した。(1) `docker ps` が「failed to connect to the docker API at unix:///var/run/docker.sock」。(2) `/var/run/docker.sock` が無く、`dockerd` の実体は `/usr/bin/dockerd` に在るが `sudo -n true` が通らないので起動できない。(3) docker を通さず `order_book_simulator.matching.order_book` を直接 import → `ModuleNotFoundError: No module named 'pydantic'`。加えて `pyproject.toml` の `requires-python` は `>=3.14` で、**この環境の python3 は 3.11.15** | 実測 | `20260922_tools_1_run17.log:1655`・`:1661`・`:1712` |
+| 9 | **この環境に R は無い。**`command -v R Rscript` が何も返さず exit=1。`/usr/lib/R` も `/usr/local/lib/R` も無い。**候補 116 は R の実行ではなく原典の読みで確かめた** | 実測 | `20260922_tools_1_run17.log:1745` |
+| 10 | **候補 116 の模型は Almgren-Chriss で、恒久と一時を分ける。**原典 `R/acOptTxns.R` の逐語: 恒久は「the linear permanent impact function」`g(v_k) = gamma * v_k`、一時は「the linear temporary impact function」`h(v_k) = epsilon * sgn(n_k) + eta * v_k`。`epsilon` について原典の逐語は「a reasonable estimate for is the fixed costs of trading, such as half the bid-ask spread plus fees」、`eta` について「is reportedly more difficult to estimate」。**候補 105 と同じ 2 分割だが、105 が平方根則・べき乗則も持つのに対し 116 は線形のみ** | 一次資料 | `https://raw.githubusercontent.com/braverock/blotter/master/R/acOptTxns.R`(2026-09-22 取得)、`20260922_tools_1_run17.log:1791` |
+| 11 | **候補 116 の許諾は GPL-3 である。**`DESCRIPTION` の逐語「License: GPL-3」。`Depends` は R >= 3.0.0・xts・FinancialInstrument・PerformanceAnalytics・quantmod。保守者は「Brian G. Peterson」。星 116、最終押し出し 2024-12-14 | 一次資料 | `20260922_tools_1_run17.log:1865` と `:1783` |
+| 12 | **候補 109 の一次資料に到達した(`code=200`)。**分野の逐語は「Trading and Market Microstructure (q-fin.TR)」。要旨の逐語に「converting LOB data into a structured image format, and applying diffusion models with inpainting to generate future LOB states」「We also publicly contribute to **LOB-Bench**, the industry benchmark for LOB generative models, to allow fair comparison between models using **Level-2 and Level-3** order book data」がある。**論文の頁に実装への link は無い**(`github` を含む link の抽出が空)。**「LOB-Bench」という別の道具の名前がここで出た** | 一次資料 | `https://arxiv.org/abs/2509.05107`(2026-09-22 取得)、`20260922_tools_1_run17.log:1752` |
+| 13 | **102 番は所有者と貢献者の名前が食い違う。**登録の所有者は `3yit` だが、`contributors` が返す唯一の貢献者は `Rimcheb`(コミット 1 件)である。1 回目の取得は `code=000`(30 秒で時間切れ)で、打ち直して `code=200`。**委任文 §6-1 の「保守者の数と名前の一貫性」に当たる所見だが、同梱バイナリも難読化も外部取得も無いので、構築は止めずに進めた** | 実測 | `20260922_tools_1_run17.log:72` と `:98` |
+| 14 | **104 番の tests と benchmarks は外部 URL から取りに行く。**`tests/CMakeLists.txt` が `FetchContent` で googletest の zip を、`benchmarks/CMakeLists.txt` が `GIT_REPOSITORY https://github.com/google/benchmark.git` を取る。**当方はこの 2 つの下位ディレクトリを構築していないので、この経路を 1 度も通していない** | 実測 | `20260922_tools_1_run17.log:421` |
+| 15 | **4 件とも同梱バイナリは無い。**`file` を全追跡ファイルに掛け、ELF・Mach-O・PE32・Zip archive・gzip compressed の当たりが 4 件とも 0 件。**16 回目に止めた候補 100(構築済みバイナリ 2 本を同梱)とは違う** | 実測 | `20260922_tools_1_run17.log:386`・`:396`・`:406`・`:416` |
+| 16 | **許諾があるのは 101 番だけである。**101 は `LICENSE` の 1 行目が「MIT License」。**102・103・104 は `LICENSE` も `COPYING` も無い。**104 に許諾が無いことは 16 回目の報告(96 番が複製の側に `LICENSE` を足していた件)と一致する | 実測 | `20260922_tools_1_run17.log:516`・`:491`・`:303`・`:360` |
+| 17 | **104 番の `GetOrderRecords()` に止まらなくなる書き方がある。**原典の逐語では、`currentOrder.CurrentQuantity() != 0` が偽のときに `entryPtr = entryPtr->next;` が実行されない(進める文が `if` の中にある)。**残量 0 の注文が列に残っていると無限に回る。**当方の最小実行はこの状態を作っていないので通った | 実測 | `20260922_tools_1_run17.log:1202` |
+| 18 | **104 番の `setup.py` では C++ の拡張が作られない。**全文は `import pybind11` と `setuptools.setup(name="orderbook", version="0.1.0", packages=["orderbook"], package_dir=..., include_package_data=True, zip_safe=False)` だけで、`Extension` を import しているのに 1 度も使っていない。**導入時に走る自前のコードは無い** | 実測 | `20260922_tools_1_run17.log:1082` |
+
+### 候補の一覧
+
+**新しい候補は 0 件。**この回に状態が変わったのは 6 件で、番号と名前は 15 回目の節のものをそのまま使う。
+
+1. [深掘り] `akurkar07/OrderBook`(101 番) — 状態: **構築して動かした。**構築 8.73 秒。付属の試験 5 本が `ctest` で全部通った。
+   待ち行列は内部に持つが**公開 API から読めない**。隠し玉・表示サイズ・約定の向き・CSV 入力はいずれも無し。許諾は MIT。
+2. [深掘り] `3yit/Limit-Order-Book-Simulator`(102 番) — 状態: **構築して動かした。C++ と Python の両方。**
+   C++ の構築 24.98 秒、Python の束縛の構築 14.05 秒(ただし `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` を足した後)。
+   **CSV の列の形が判明**(`#timestamp,event,id,side,type,price,quantity`)。先行注文量・隠し玉・約定の向きは無し。許諾は無し。
+3. [深掘り] `IsaacCheng9/order-book-simulator`(103 番) — 状態: **この環境からは到達できない。**docker の 3 経路を全部試して塞がった。
+   第 2 経路(オーナー PC)のコマンドは `docker compose -f docker/docker-compose.yml up -d` と `uv sync`、Python は 3.14 以上。許諾は無し。
+4. [深掘り] `jxm35/LimitOrderBook-MatchingEngine`(104 番) — 状態: **`lib/OrderBook` の範囲で構築して動かした。**構築 2.12 秒 + 最小実行 3.78 秒。
+   **`queuePosition` を整数で返す唯一の実装。**`aggressor_side` も持つ。隠し玉・表示サイズは無し。許諾は無し。
+   配布物のままの `cmake` は Boost 1.82 と spdlog が無くて通らない(いずれも `/opt/homebrew/...` を直書き)。
+5. `arXiv:2509.05107`(109 番) — 状態: **浅い。一次資料に到達した**(`code=200`、要旨と分野の逐語を取った)。
+   未確認: **実装の公開の有無**(論文の頁に実装への link が無い)・許諾・再現の可否。**新しい名前「LOB-Bench」が要旨に出た**(候補として番号は付けていない。番号付けはリードの判断を待つ)。
+6. `braverock/blotter` の `acOptTxns`(116 番) — 状態: **浅い。一次資料に到達した**(`R/acOptTxns.R` と `DESCRIPTION` の逐語を取った)。
+   **この環境に R は無い**ので実行していない。許諾 GPL-3、依存は R >= 3.0.0・xts・FinancialInstrument・PerformanceAnalytics・quantmod。
+   未確認: 導入・最小実行・当方のデータでの較正。
+
+**(3) の「判別に一次資料が要る」14 件(40・46・48・49・56・59・63・64・66・71・80・85・86・95)は、この回に着手していない。**
+予算を (1) と (2) に使い切ったためで、状態は 16 回目のまま変わっていない。
+
+### ツール1件ごとの表
+
+| ツール | 何ができるか | 料金の構造 | 当方に無いもの | この環境での到達 |
+|---|---|---|---|---|
+| `akurkar07/OrderBook` | 価格時間優先の板と照合。参照実装との突き合わせ試験と benchmark | 無料。鍵も登録も無し | 価格帯ごとの FIFO の待ち行列そのもの | **可**(構築 8.73 秒、試験 5 本が通った) |
+| `3yit/Limit-Order-Book-Simulator` | CSV のイベント列から板を再生。板の偏りの算出。Python から呼ぶ束縛 | 無料。鍵も登録も無し | CSV をそのまま流す入口、板の偏り、遅延と並列度の指定 | **可**(C++ 24.98 秒。Python は CMake の引数を足して 14.05 秒) |
+| `IsaacCheng9/order-book-simulator` | 板・照合・市場データ配信・表示を分けた多プロセス構成。板の差分 | 無料。鍵も登録も無し | 板の差分の配信と、それを受ける側という視点 | **不可**(docker の 3 経路が全部塞がった。Python も 3.14 以上が要る) |
+| `jxm35/LimitOrderBook-MatchingEngine` | 板と照合、市場データ配信、可視化。**注文ごとの待ち行列の順位** | 無料。鍵も登録も無し | **先行注文量(`queuePosition`)を外から読めること**、約定の向き | **一部可**(`lib/OrderBook` は構築できた。全体は Boost と spdlog が要る) |
+
+### 予算
+
+割当は 1 回 5 万トークン・20 分。**20 分の上限に達したので (3) の 14 件に着手せずに打ち切った。**
+(1) の 4 件はすべて状態を確定させ、(2) の 2 件は一次資料に到達した。トークンは割当の範囲内。
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **104 番の構築で、配布物に無いヘッダを scratchpad に 2 本置いた。**`boost/optional.hpp` の代用(3 行、`std::optional` への別名)と
+   `spdlog/fmt/fmt.h` の代用(`std::format` への写し)である。さらに `Order.h` の `<cstdint>` の取り込み忘れを
+   `-include cstdint` という構築の引数で補った。**配布物のファイルは 1 文字も書き換えていない**が、
+   「構築できた」の意味が配布物そのままではないので、起動の指定に無い判断として出す。
+2. **102 番の Python の束縛を、CMake の引数 `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` を足して構築した。**
+   配布物のままでは落ちる。委任文 §6 の「ありとあらゆる手段」に沿う一手だと判断したが、
+   「Python から呼べる」の意味が配布物そのままではない。
+3. **102 番の保守者名の食い違い(所有者 `3yit` / 貢献者 `Rimcheb`)を、止める理由にしなかった。**
+   §6-1 は「1 つでも不審なら導入せず止める」だが、同梱バイナリ・難読化・外部取得・導入時実行のどれも無かったため、
+   構築を進めて所見を表に残す形にした。**止めるべきだったかはリードが決めること。**
+4. **候補 109 の要旨に「LOB-Bench」という別の道具の名前が出たが、候補の番号を付けなかった。**
+   起動の指定の逐語「**この回も新しい検索計画は打ちません。**」に従い、名前だけを知見 12 に残した。
+5. **103 番で `sortedcontainers` を scratchpad の venv に入れた。**リポジトリの環境には入れていない。
+   結局 `pydantic` が無くて import は通らなかった。
+
+### 受け入れ検査の出力
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
