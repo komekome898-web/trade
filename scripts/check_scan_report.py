@@ -101,10 +101,19 @@ def check_numbers_in_log(lines, log):
                 out.append((i, "生ログに無い数値: %s %s" % (num, unit)))
     return out
 
+def tool_names(lines):
+    """道具名は表の 1 列目と候補の一覧から取る(直書きしない)。
+    監査の指摘 5: 区分 1 の固有名詞を直書きしていたため、他の区分では K5/K6 が当たらなかった。"""
+    names = {c[0] for _, c in read_table(lines)}
+    for ln in lines:
+        m = re.match(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?([A-Za-z][A-Za-z0-9_.+-]{2,})", ln)
+        if m:
+            names.add(m.group(1))
+    return sorted(n for n in names if len(n) >= 3)
+
 def check_conflicting_values(lines):
     """K6 同じ道具・同じ単位に別の値(12 回目 = Qlib 185/130、11 回目 = Jesse 60/19.49)。"""
-    tools = ["hftbacktest", "NautilusTrader", "vectorbt", "freqtrade", "Backtesting.py",
-             "zipline", "QSTrader", "Lean", "PyAlgoTrade", "Qlib", "VnPy", "Jesse", "ccxt"]
+    tools = tool_names(lines)
     seen = collections.defaultdict(set)
     pat = re.compile(r"(\d+(?:\.\d+)?)\s*(秒|個|パッケージ)")
     for i, ln in enumerate(lines, 1):
@@ -124,8 +133,7 @@ def check_conflicting_values(lines):
 
 def check_contradiction(lines):
     """K7 同じ道具で「未実施/未確認」と「実測/実施」が同居(2〜4 回目。同じ型が 4 回続いた)。"""
-    tools = ["hftbacktest", "NautilusTrader", "zipline", "QSTrader", "PyAlgoTrade",
-             "Qlib", "VnPy", "Jesse", "Backtesting.py", "Lean"]
+    tools = tool_names(lines)
     neg, pos = collections.defaultdict(list), collections.defaultdict(list)
     for i, ln in enumerate(lines, 1):
         if "wheel" not in ln and "setup.py" not in ln:
@@ -145,6 +153,7 @@ ITEMS = ["版", "最終更新日", "ライセンス", "言語と動作環境", "
          "依存数", "pip check", "最小実行の可否", "最小実行の中身", "実行所要秒", "wheel展開",
          "setup.py導入時実行", "同梱バイナリ", "外部送信", "自動発注機能", "宣伝詐欺の兆候",
          "当方データ投入", "時刻の扱い", "再現性", "規模の見積",
+         "配布元の一致", "難読化", "外部URL取得", "依存の一覧", "保守者名の一貫性",
          "4軸1_道具", "4軸2_情報", "4軸3_視点", "4軸4_向上"]
 MARKS = ["一次資料", "実測", "推定", "仮定", "未確認"]
 
@@ -162,10 +171,15 @@ def check_table_complete(lines):
     rows = read_table(lines)
     if not rows:
         return [(0, "§4.0 の機械可読の表が 1 行も無い(2026-09-22 版の委任文では必須)")]
+    marked = [m.group(1).strip() for m in
+              re.finditer(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]\s*([^\s(（|]+)", "\n".join(lines), re.M)]
     have = {}
     for i, c in rows:
         have.setdefault(c[0], set()).add(c[1])
     out = []
+    for m in marked:
+        if m not in have:
+            out.append((0, "候補の一覧で [深掘り] と印を付けた道具が表に 1 行も無い: " + m))
     for tool, got in sorted(have.items()):
         miss = [x for x in ITEMS if x not in got]
         if miss:
@@ -200,19 +214,65 @@ def check_prose_vs_table(lines):
                 out.append((i, "表に無い数値を文章で書いている: %s %s" % (num, unit)))
     return out
 
+def check_heading_counts(lines):
+    """見出しやラベルの「(N 件)」と直後の列挙の数の不一致(監査 1・3・5・6・7 回目、非数値の型)。"""
+    out = []
+    for i, ln in enumerate(lines):
+        if not (ln.startswith("#") or ln.strip().startswith("**")):
+            continue
+        m = re.search(r"[(（](\d+)\s*件[)）]", ln)
+        if not m:
+            continue
+        want, n, j = int(m.group(1)), 0, i + 1
+        while j < len(lines) and lines[j].strip():
+            if re.match(r"^\s*(?:\d+\.|[-*])\s", lines[j]):
+                n += 1
+            j += 1
+        if n and n != want:
+            out.append((i + 1, "見出しは %d 件と書いているが、直後の列挙は %d 件" % (want, n)))
+    return out
+
+
+def check_measured_evidence(lines, logs):
+    """実測の根拠が実在し、背景起動でないか(監査の止める 1 = 出力を読まずに実測と書いた型)。"""
+    out = []
+    for i, c in read_table(lines):
+        if c[3] != "実測":
+            continue
+        m = re.match(r"([\w./-]+\.log):(\d+)", c[4])
+        if not m:
+            out.append((i, "実測なのに根拠が <生ログ>:<行番号> の形でない: %s / %s = %r" % (c[0], c[1], c[4])))
+            continue
+        name, no = m.group(1).split("/")[-1], int(m.group(2))
+        if name not in logs:
+            out.append((i, "根拠が指す生ログが渡されていない: " + name)); continue
+        body = logs[name]
+        if no < 1 or no > len(body):
+            out.append((i, "根拠の行が生ログに存在しない: %s:%d (全 %d 行)" % (name, no, len(body)))); continue
+        src = body[no - 1]
+        if "started pid=" in src or ("rc=" not in src and "time_s=" not in src):
+            out.append((i, "根拠の行が実行の結果になっていない(背景起動・未読の疑い): %s:%d %r"
+                        % (name, no, src[:60])))
+    return out
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__); return 2
     rep = pathlib.Path(sys.argv[1]); text = rep.read_text(); lines = text.splitlines()
-    log = "".join(pathlib.Path(p).read_text(errors="replace") for p in sys.argv[2:])
+    logs = {pathlib.Path(q).name: pathlib.Path(q).read_text(errors="replace").splitlines()
+            for q in sys.argv[2:]}
+    log = "\n".join("\n".join(v) for v in logs.values())
     checks = [("K1 太字", check_bold(lines)), ("K2 括弧", check_brackets(lines)),
-              ("K3 必須の節", check_sections(text, "## 区分 1(2 回目")),
+              ("K3 必須の節", check_sections(text)),
               ("K4 生ログに無い数値", check_numbers_in_log(lines, log)),
-              ("K6 同じ道具に別の値", check_conflicting_values(lines)),
-              ("K7 未実施と実測の同居", check_contradiction(lines)),
-              ("K8 表の項目の欠落", check_table_complete(lines)),
-              ("K9 表の印と根拠", check_table_marks(lines)),
-              ("K10 表に無い数値", check_prose_vs_table(lines))]
+              ("K5 同じ道具に別の値", check_conflicting_values(lines)),
+              ("K6 未実施と実測の同居", check_contradiction(lines)),
+              ("K7 表の項目の欠落", check_table_complete(lines)),
+              ("K8 表の印と根拠", check_table_marks(lines)),
+              ("K9 表に無い数値", check_prose_vs_table(lines)),
+              ("K10 見出しの件数", check_heading_counts(lines)),
+              ("K11 実測の根拠", check_measured_evidence(lines, logs))]
     bad = 0
     for name, hits in checks:
         print("%-22s %d 件" % (name, len(hits)))
