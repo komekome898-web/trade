@@ -483,7 +483,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 9. PyAlgoTrade(gbeced） — 実測 — **指値の1往復に成功**。**2023-11-13にアーカイブ済み、後継として"Basana"を公式に指名**(README逐語で確認)
 11. Qlib(`pyqlib`、microsoft） — 実測(install) + 未完了(最小実行、独自バイナリ形式の準備が必要) — MIT。**依存185パッケージ**(mlflow/databricks-sdk/redis/pymongo/gym/cvxpy等を含む巨大な足跡)
 12. VnPy(vnpy/vnpy） — 実測(install・コア構成確認) + 未完了(最小実行) — MIT。**コア`vnpy`パッケージにgateway実装・バックテストエンジンは同梱されていない**(alpha/chart/event/traderのみ)。`vnpy_binance`はPyPIに実在(実測)、`vnpy_bitflyer`/`vnpy_bitbank`/`vnpy_gmocoin`はPyPIに存在しない(実測、curl 404)
-13. Jesse(jesse-ai） — 実測(install・危険検査・取引所ドライバのソース確認) + 未完了(最小実行、PostgreSQL+Redis要) — MIT(コア)。**取引所ドライバ(ソース実測)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter。bitFlyer/bitbank/GMOコインは無い**。Apex/Lighter向けの署名用ネイティブバイナリ(zklink_sdk・lighter-signer)を同梱
+13. Jesse(jesse-ai） — 実測(install・危険検査 = wheel 展開まで完了・取引所ドライバのソース確認) + 未完了(最小実行、PostgreSQL+Redis要) — MIT(コア)。**取引所ドライバ(ソース実測)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter。bitFlyer/bitbank/GMOコインは無い**。Apex/Lighter向けの署名用ネイティブバイナリ(zklink_sdk・lighter-signer)を同梱
 
 **一次資料の確認のみで、導入していない(4 件。番号は上の一覧の続き)**:
 10. Zenbot(carlos8f、本家) — 一次資料(README) — **2022-02-15にアーカイブ済み**「project is no longer actively maintained」。Node.js+MongoDBで本回は導入未実施(Python環境外・MongoDB要・archived)
@@ -527,7 +527,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 ### ツール1件ごとの表(2回目、12候補すべて。`#### 5.`〜`#### 16.` の 12 件)
 
-**この節の全 12 件に共通する未確認(監査 1 回目の指摘 10。委任文 §6-1 が挙げる検査項目のうち、本回で埋まっていないもの)**: 週のダウンロード数 = **未確認**(pypistats を叩いていない。1 回目は hftbacktest・NautilusTrader で叩いた)/ 保守者の数と名前の一貫性 = **未確認**(PyPI の author と GitHub の所有者を突き合わせていない)/ 既知の脆弱性の公開勧告 = **未確認**(検索していない)。各ツールの「危険」欄にこの 3 行を書き落としていたので、ここに一括で置く。
+**この節の全 12 件に共通する未確認(監査 1 回目の指摘 10。委任文 §6-1 が挙げる検査項目のうち、本回で埋まっていないもの)**: 週のダウンロード数 = **未確認**(pypistats を叩いていない。1 回目は hftbacktest・NautilusTrader で叩いた)/ 保守者の数と名前の一貫性 = **未確認**(PyPI の author と GitHub の所有者を突き合わせていない)/ 既知の脆弱性の公開勧告 = **未確認**(検索していない)。各ツールの「危険」欄にこの 3 項目を書き落としていたので、ここに一括で置く。**個別の「危険」欄に同じ 3 項目の「未確認」が重ねて書かれている箇所があるが、内容は同じである(この一括注記が全件に効き、個別欄はその再掲)。**
 
 **導入前の検査と導入の順序(監査 1 回目の問い 11 への答え)**: ハーネスの記録で手番を数えると、`pip download`(手 34)→ **wheel の展開と `.so`・導入時実行コードの検査(手 35)** → `pip install`(手 37 以降)の順で、**検査が導入より先**だった(生ログ LV-5h)。委任文 §6-1「導入前の検査」は順序としては守られている。ただし各ツールの「危険」欄が「wheel展開は本回未実施」と書いていたのは誤りで、展開は全 wheel を一括で行っていた(本文のその記述は上で直した)。
 
@@ -560,7 +560,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 3. 当方に無い視点で分析できるか: 推定 — 軽量・高速なAPIで反復実験がしやすい設計思想
 4. 既存の研究成果を向上できるか: 仮定 — 軽量な代替/検算ツールとして使える可能性、未検証
 
-**危険**: 供給網: PyPI/GitHub一致(実測)。導入時実行: 無し(実測、wheel展開)。既知の脆弱性: 未確認。外部送信: 無し(一次資料にテレメトリ記載なし)。自動発注: 無し(バックテスト専用、発注APIへの接続機能は無い)。宣伝・詐欺の兆候: 無し(公式OSS)。**AGPL-3.0であることが唯一の実務上の注意点**(当方が改変して社内利用する分にはAGPLの配布条項は問題にならないことが多いが、外部提供する場合は要確認、法務判断はリード/オーナー)
+**危険**: 供給網: PyPI/GitHub一致(実測)。導入時実行: **無し**(wheel を展開して確認 = 生ログ LV-8。`setup.py` 相当 0 件・`.so` 0 件)。既知の脆弱性: 未確認。外部送信: 無し(一次資料にテレメトリ記載なし)。自動発注: 無し(バックテスト専用、発注APIへの接続機能は無い)。宣伝・詐欺の兆候: 無し(公式OSS)。**AGPL-3.0であることが唯一の実務上の注意点**(当方が改変して社内利用する分にはAGPLの配布条項は問題にならないことが多いが、外部提供する場合は要確認、法務判断はリード/オーナー)
 
 #### 7. QSTrader
 
@@ -780,7 +780,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 **4軸**: 1=実測(導入成功だが依存衝突あり、隔離venvを分ければ解消可能と推定) / 2〜4=未確認
 
-**危険**: 供給網: PyPI project_urls確認(一次資料)。導入時実行: 未確認(wheel展開はした = 生ログ LV-5b。`setup.py`相当の有無は本回未確認)。既知の脆弱性: 未確認。**外部送信: DEX署名用ネイティブバイナリの存在自体が要注意点(鍵を渡さなければ発火しないと見られるが静的監査未実施)**。自動発注: 有り(ライブトレード機能が本体機能)。宣伝の兆候: 無し(README・PyPIとも公式の機能説明のみ)
+**危険**: 供給網: PyPI project_urls確認(一次資料)。導入時実行: **無し**(wheel を展開して確認 = 生ログ LV-8。`setup.py` 相当 0 件。ただし `.so` が 3 個あり、中身の静的監査は未実施)。既知の脆弱性: 未確認。**外部送信: DEX署名用ネイティブバイナリの存在自体が要注意点(鍵を渡さなければ発火しないと見られるが静的監査未実施)**。自動発注: 有り(ライブトレード機能が本体機能)。宣伝の兆候: 無し(README・PyPIとも公式の機能説明のみ)
 
 #### 14. Mendl-Labs/BacktestingCore
 
