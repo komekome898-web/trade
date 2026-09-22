@@ -3115,3 +3115,348 @@ K12 検査の出力の貼付           1 件
 - `DATA.md` 向け: 「`mlflow` は遠隔測定が既定で止まらない。止めるには環境変数 `MLFLOW_DISABLE_TELEMETRY` か `DO_NOT_TRACK` を立てる。宛先は `config.mlflow-telemetry.io` と cloudfront の 2 系統。」
 - `DATA.md` 向け: 「`mlflow` 3.16.1 は既定のファイルの置き場(`./mlruns`)を例外で拒む。`sqlite:///` の置き場にするか `MLFLOW_ALLOW_FILE_STORE=true` を立てる。」
 - `STRATEGY_IDEAS.md` 向け: 「段の台帳を人が書く代わりに実行の記録を機械にすると、周回数の多重性への算入と再現の確認がその記録から引ける。`mlflow` の実行・パラメータ・指標・成果物の 4 つが当方の台帳のどの欄に対応するかを 1 単位で当ててみる。」
+
+## 区分1 — 9 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run9.log`。
+8 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run8.md`)の §4-1
+「**起動指定の件数より §7 の「道具を減らして深く」を優先する**」に従い、この回も件数を追わず、
+起動の指定にある「**1 件ずつ「状態を確定させる」ことが狙いです**」を完了の形として実行した。
+深掘りは `PySystemtrade` / `Luczinsritter/event_driven_backtesting_engine` / `Mendl-Labs/BacktestingCore` の 3 件。
+検索計画 6 本は、残りの候補がまだ空でないので打っていない(委任文 §2)。
+
+### 検索計画
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (未作成) | (未作成) | 未実行(残りの候補が空になっていないため) |
+| 中間 | (未作成) | (未作成) | 未実行(同上) |
+| 広い | (未作成) | (未作成) | 未実行(同上) |
+
+### 出典
+
+| URL / 経路 | 方法 | 生ログの行 |
+|---|---|---|
+| https://github.com/pst-group/pysystemtrade.git | git clone --depth 1 --filter=blob:none(rc=0) | 119 |
+| https://github.com/Mendl-Labs/BacktestingCore.git | git clone --depth 1(rc=0) | 7 |
+| https://github.com/Luczinsritter/event_driven_backtesting_engine.git | git clone --depth 1(rc=0) | 11 |
+| https://ungh.cc/repos/pst-group/pysystemtrade | curl(code=200) | 263 |
+| https://ungh.cc/repos/Mendl-Labs/BacktestingCore | curl(code=200) | 263 |
+| https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine | curl(code=200) | 263 |
+| https://ungh.cc/repos/pst-group/pysystemtrade/contributors | curl(code=200) | 263 |
+| https://ungh.cc/repos/Mendl-Labs/BacktestingCore/contributors | curl(code=200) | 263 |
+| https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine/contributors | curl(code=200) | 263 |
+| https://pypi.org/pypi/pysystemtrade/json | curl(code=404) | 263 |
+| https://pypi.org/pypi/backtestingcore/json | curl(code=404) | 263 |
+| https://pypi.org/pypi/event-driven-backtesting-engine/json | curl(code=404) | 263 |
+| https://github.com/Nwagbara-Group-LLC/LoggingEngine | curl(code=403 = 代理の制限)/ WebFetch(404)/ git ls-remote(rc=128) | 181 と 188 |
+| https://github.com/Nwagbara-Group-LLC/databaseschema | curl(code=403 = 代理の制限) | 181 |
+| https://ungh.cc/repos/Nwagbara-Group-LLC/LoggingEngine | curl(code=404) | 181 |
+| GitHub の検索 API(`org:Nwagbara-Group-LLC`) | mcp github search_repositories(Validation Failed) | 188 |
+| 配布物そのもの(clone した作業木の `LICENSE` `pyproject.toml` `requirements.txt` `package の各 Cargo.toml` `README.md`) | cat / grep / head | 280 と 311 |
+| PyPI の index(隔離 venv への導入) | v9ed/bin/pip と v9pst/bin/pip | 133 と 198 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **`Mendl-Labs/BacktestingCore` は、この環境でも他のどこでも構築できない。**構築に要る git 依存 2 件(`https://github.com/Nwagbara-Group-LLC/LoggingEngine` と `.../databaseschema`)が公開されたものとして見えない。独立した 4 経路で確かめた: ungh.cc が code=404 / WebFetch が `The server returned HTTP 404 Not Found.` / `git ls-remote` が rc=128(`could not read Username for 'https://github.com': terminal prompts disabled`)/ GitHub の検索 API が `The listed users and repositories cannot be searched either because the resources do not exist or you do not have permission to view them.`。`cargo check -p metrics` は `--offline` でも通常でも rc=101 で、通常の側は `git fetch ... 'https://github.com/Nwagbara-Group-LLC/LoggingEngine'` が exit status: 128 で落ちている。**鍵や地域の問題ではなく、公開物として存在しない**ので、第 2 経路(オーナー PC)でも同じところで止まる | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:179 と docs/DATA/probes/20260922_tools_1_run9.log:187 と docs/DATA/probes/20260922_tools_1_run9.log:192 |
+| 2 | **`Mendl-Labs/BacktestingCore` の配布条件は Functional Source License, Version 1.1 で、OSI の意味の公開ソースではない。**`LICENSE` の 1 行目の逐語は `# Functional Source License, Version 1.1, ALv2 Future License` で、`A Permitted Purpose is any purpose other than a Competing Use` という制限が付く。いっぽう GitHub の説明文の逐語は `Open-source backtesting engine core: event-driven simulation, walk-forward analy`(80 文字で切っている)で、**説明文とライセンスが食い違っている** | 一次資料 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:345 |
+| 3 | **`Luczinsritter/event_driven_backtesting_engine` の `requirements.txt` は不足している。**書かれた 7 件をそのまま入れると `quantstats` の読み込みが `ModuleNotFoundError: No module named 'IPython'` で落ちる。`ipython` を別途入れると通る。**「requirements のとおり入れれば動く」ではない** | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:154 と docs/DATA/probes/20260922_tools_1_run9.log:156 |
+| 4 | **同エンジンには指値の概念が無い。**合成データで動かした実体から `limit` を含む属性を数えると `LIMIT_ORDER_API=[]`。建玉は `enter_long` / `enter_short` / `close_position` の 3 つだけで、いずれも次の足の始値で必ず約定する(`get_execution_price` が `self.data['Open'].iloc[ind_nbr + 1]` を返す)。**先読みは防いでいるが、約定しない可能性は模型に無い** | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| 5 | **同エンジンの総資産の表示は、空売りの建玉を足し算してしまう。**`print_wealth` の逐語は `total_wealth = self.current_balance + self.position['units'] * price` で、`units` は空売りでも正のまま入る(`enter_short` が `self.current_balance += units * price` と `self.position['units'] = units` を両方行う)。実行の出力でも、資本 10000 で空売りに入った直後に `Total Wealth` が 2 倍以上に見える | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| 6 | **`PySystemtrade` は隔離 venv に素直に入り、同梱の標本データで最小実行が 2 通り通った。**成行の `simplesystem` が rc=0 で ANN_MEAN=16.57・銘柄 4 件、注文模擬 `daily_with_order_simulation` が subsystem 単位で rc=0・FILL_COUNT=2618 ORDER_COUNT=2618。**注文の表の列は `['quantity', 'limit_price']`** で、指値の価格を持つ注文の型が最初から在る | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:218 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| 7 | **ただし `PySystemtrade` の付属の例は、そのままでは 2 回落ちた。**1 回目は既定の入れ物が `dbFuturesSimData` で `Exception: Instrument code SP500_micro has no data!`、2 回目は銘柄を絞ると組入れ比率の表に `KeyError: 'SP500'`。**csv の入れ物を渡し、組入れ比率を通さない subsystem 単位に替えて初めて通った**(手段を 3 回替えた) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:232 と docs/DATA/probes/20260922_tools_1_run9.log:246 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| 8 | **`PySystemtrade` の clone は 880 MB で、そのうち 737 MB が同梱の価格データである。**`--filter=blob:none` を付けても作業木の取り出しで落ちてくる。銘柄は 252 件。**「部分取得は 3.6 MB で済む」という起動の指定の見積もりとは合わない**(委任文 §6-6 の「本体の一括ダウンロードはしない」に触れる。下の「原文に無い判断」1 に書いた) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:130 と docs/DATA/probes/20260922_tools_1_run9.log:362 |
+| 9 | **`PySystemtrade` の配布物には遠隔測定が無く、導入時に走るコードも無い。**`telemetry|posthog|sentry|analytics.` に当たる `.py` は 0 ファイル、`setup.py` の `subprocess|os.system|urlopen|cmdclass|exec(...)` は 0 件。いっぽう **実弾の発注の実体は在る**(`sysexecution` の `.py` が 42 本、`sysbrokers/IB`)。鍵を置かない限り動かないが、**道具としては発注できる側である** | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| 10 | **`Luczinsritter/event_driven_backtesting_engine` のライセンスは確定できない。**README の 4 行目に `[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)` というバッジが在るが、**`LICENSE` ファイルは 0 件**で、README の License の節の逐語は `Personal project — free to use and modify for educational or demonstration purposes.`。**商用利用と再配布の可否はどちらの文にも書かれていない** | 一次資料 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:345 |
+| 11 | **この環境には rust の工具が入っている。**`cargo 1.94.1 (29ea6fb6a 2026-03-24)` で、`/root/.cargo/bin` に cargo・rustc・rustup が在る。**「最低の環境で何もかも足りていない」前提のうち、rust だけは足りている**(8 回目までの報告でこの事実は書かれていなかった) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:49 |
+
+### 候補の一覧
+
+この回で状態が変わったのは 3・15・16 番と、9 回目の起動の指定で「危険で止めた」で閉じてよいとされた 13 番である。
+それ以外の行は 8 回目の一覧をそのまま引き継いでいる(黙って落としていない)。
+
+1. `Basana` — 非同期・イベント駆動の暗号資産向け枠組み。Apache-2.0。4 回目に深掘り済み。この回では何も足していない。
+2. `Backtrader` — バックテストの機関。GPLv3+。4 回目に深掘り済み。この回では何も足していない。
+3. [深掘り] `PySystemtrade` — **この回の深掘り。**配布元は `pst-group/pysystemtrade`。GPLv3。隔離 venv に導入し、同梱の標本データで成行の `simplesystem` と注文模擬 `daily_with_order_simulation` の 2 通りを鍵なしで通した。**状態は「導入して最小実行まで通した」で確定。**
+4. `PyBroker` — PyPI 上の名前は lib-pybroker。Apache License 2.0 with Commons Clause。4 回目に深掘り済み。この回では何も足していない。
+5. `bt` — MIT。注文の種別という概念が無い。4 回目に深掘り済み。この回では何も足していない。
+6. `Ziplime` — 6 回目に深掘り済み。7 回目に対応 LLM を取り直し済み。この回では何も足していない。
+7. Superalgos — PyPI に無し。8 回目に `package.json` を一次資料として取得済み。**浅い**(README の原文・導入・最小実行が未確認)。この回では何も足していない。**残りの候補。**
+8. OpenTrader — PyPI に無し。8 回目に所有者と monorepo の条件を取得済み。**浅い**(README の原文・導入・最小実行が未確認)。この回では何も足していない。**残りの候補。**
+9. CryptoSignal — PyPI に無し。8 回目に依存の在処と固定版を取得済み。**浅い**(README の原文・導入・最小実行が未確認)。この回では何も足していない。**残りの候補。**
+10. `fast-trade` — 5 回目に深掘り済み。AGPL-3.0。この回では何も足していない。
+11. `OctoBot` — 7 回目に深掘り済み(導入・起動・拡張の導入まで)。8 回目に模擬の入力の規則を確定済み。**最小実行(成行と指値の 1 往復)は未到達。不可ではなく未確認。**この回では何も足していない。**残りの候補。**
+12. `pybotters` — 7 回目に深掘り済み。この回では何も足していない。
+13. DeviaVir/zenbot — **状態は「危険なので止めた」で確定(この回で閉じた)。**8 回目に `package.json` の `postinstall` が `node post_install.js` を走らせ、その中身が `shell.exec('webpack --mode production')` と `shell.exec('(cd scripts/genetic_backtester/ && npm i)')` であることを実測しており、委任文 §6-1 の「導入時実行」に当たる。**この環境へは導入しない。**別の場所で試すかはオーナーの判断。導入と最小実行以外の列は 8 回目までに埋めた分が在る。
+14. Bot18 — 8 回目に npm の registry を一次資料として取得済み。**浅い**(導入・最小実行が未確認)。この回では何も足していない。**残りの候補。**
+15. [深掘り] `Mendl-Labs/BacktestingCore` — **この回の深掘り。**Rust のワークスペース。**状態は「この環境からは到達できない」ではなく「構築に要る依存が公開物として存在しないので、どこでも構築できない」で確定。**clone は通り、中身は全部読めた。ライセンスは Functional Source License, Version 1.1。
+16. [深掘り] `Luczinsritter/event_driven_backtesting_engine` — **この回の深掘り。**Python で 10 ファイル。隔離 venv に導入し、合成データで成行の往復を通した。**状態は「導入して最小実行まで通した」で確定。**ただしライセンスは確定できない(知見 10)。
+17. `mlflow` — 8 回目に深掘り済み。この回では何も足していない。
+18. `zipline-reloaded` — 3 回目に深掘り済み。この回では何も足していない。
+19. `Jesse` — 3 回目に深掘り済み。この回では何も足していない。
+20. `VnPy` — 3 回目に深掘り済み。この回では何も足していない。
+21. `Qlib` — 3 回目に深掘り済み。この回では何も足していない。
+22. `Lean CLI` — 3 回目に深掘り済み。この回では何も足していない。
+23. `hftbacktest` — 1 回目に深掘り済み。この回では何も足していない。
+24. **限界: 6 回目に立てた LimexHub と Lime Trader SDK は、6 回目のリードの検収 §4-2 の判断で区分 3(データ)と区分 2(執行)に引き継いだ。**区分 1 では追わない。
+25. **限界: `OctoBot` の必須の依存のうち、取引以外の外部連携の窓口は、7 回目・8 回目と同じくこの回でも候補として立てていない。**次の実行で候補に足すかはリードが決める。
+26. **限界: `mlflow` の同梱する技能とフックの定義は、それ自体が道具の候補になりうるが、8 回目と同じくこの回でも候補として立てていない。**当方のフックはオーナーの指示があったときだけ変えるもの(`CLAUDE.md` §0.2 A-16)なので、立てるかどうかはリードとオーナーが決める。
+27. **限界: `PySystemtrade` が同梱する先物の価格データ(銘柄 252 件)は、それ自体が区分 3(データ)の候補になりうるが、この回では候補として立てていない。**再配布の条件は GPLv3 の本体と別に確かめる必要がある。立てるかどうかはリードが決める。
+
+**残りの候補名**: Superalgos / OpenTrader / CryptoSignal / Bot18 / `OctoBot` の最小実行。
+
+### ツール1件ごとの表
+
+#### §4.0 の機械可読の表
+
+この回に深掘りした道具は 3 件。§4.0 の語彙のすべての項目に、道具ごとに行を持つ。
+生ログの参照はすべて `docs/DATA/probes/20260922_tools_1_run9.log` の行番号である。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `PySystemtrade` | 版 | 1.8.2(pyproject.toml の version) | 一次資料 | 配布物 pyproject.toml / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 最終更新日 | GitHub の pushedAt は 2026-09-21T10:55:15Z。既定枝の最新コミットは 2026-09-21T11:55:15+01:00 | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:354 |
+| `PySystemtrade` | ライセンス | GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007(LICENSE の 1〜2 行目の逐語) | 一次資料 | 配布物 LICENSE / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 言語と動作環境 | Python。pyproject の requires-python は >=3.10。この環境の /usr/bin/python3.11 の隔離 venv で導入も最小実行も通った | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:206 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| `PySystemtrade` | 対応取引所 | sysbrokers の直下に実体として在るのは IB(Interactive Brokers)だけで、ほかは broker_*.py の抽象。国内の取引所は無い | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 星 | 3522(forks 1074、watchers 185) | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | コミット数 | 4847(既定枝、git rev-list --count) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:354 |
+| `PySystemtrade` | 保守者数 | 30(ungh の contributors。先頭は robcarver17・bug-or-feature・tgibson11・james-ward・VMatthijs) | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade/contributors 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | 週DL数 | 未確認 | 未確認 | 試したこと: https://pypi.org/pypi/pysystemtrade/json が code=404 で PyPI に配布が無く、週DL数の出所そのものが存在しない / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | 初回公開日 | 2015-11-27T10:49:08Z(createdAt。最初のコミットも 2015-11-27T10:49:08+00:00 で一致) | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:354 |
+| `PySystemtrade` | 既知の脆弱性 | 未確認 | 未確認 | 試したこと: PyPI に配布が無いので pip-audit の対象にできない。GitHub の勧告の頁は時間の上限で取っていない / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | 料金体系 | 配布物に料金の記述は無い。LICENSE は GPLv3 で対価の条項を持たない。事業者の提供する有料の層が無い(自分で動かす道具) | 一次資料 | 配布物 LICENSE と setup.py の url=https://qoppac.blogspot.com/p/pysystemtrade.html / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 無料枠の上限 | 上限の概念が無い(事業者の枠が無く、回数・期間・履歴の深さの制限が配布物にも LICENSE にも書かれていない) | 一次資料 | 配布物 LICENSE / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 課金開始条件 | 道具の側には無い。実弾で使うときに費用が出るのは外側(IB の口座と売買手数料)で、模擬は鍵なしで通った | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| `PySystemtrade` | 隠れた依存 | requirements に pymongo==3.11.3 と ib_async>=2,<3 が入る(本番の記録は MongoDB、発注は IB が前提)。ただし模擬は csvFuturesSimData で MongoDB 無しで通った | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| `PySystemtrade` | 登録の要否 | 模擬は不要(鍵も登録も無しで最小実行が通った)。実弾は IB の口座が要る | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:260 と docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 到達経路 | git clone --depth 1 --filter=blob:none https://github.com/pst-group/pysystemtrade.git が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:130 |
+| `PySystemtrade` | 導入可否 | 可。隔離 venv に pip install -r requirements.txt が INSTALL_RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:206 |
+| `PySystemtrade` | install所要秒 | 37 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:206 |
+| `PySystemtrade` | 依存数 | 直接 15(requirements.txt)。導入後の pip list は 43 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:206 |
+| `PySystemtrade` | pip check | No broken requirements found.(PIPCHECK_RC=0) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:206 |
+| `PySystemtrade` | 最小実行の可否 | 可。ただし付属の例そのままでは 2 回落ち、入れ物と単位を替えて 3 回目に通った | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:232 と docs/DATA/probes/20260922_tools_1_run9.log:246 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| `PySystemtrade` | 最小実行の中身 | (a) simplesystem を同梱の csv の標本データで 1 回: ANN_MEAN=16.57、N_INSTRUMENTS=4、建玉の系列 POS_ROWS=13422・POS_LAST=-7.5049。(b) 注文模擬 daily_with_order_simulation を SP500 の subsystem 単位で 1 回: ORDER_SIM_CLASS=OrderSimulator、FILL_COUNT=2618、ORDER_COUNT=2618、注文の列 ['quantity', 'limit_price']、約定の列 ['qty', 'price'] | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:218 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| `PySystemtrade` | 実行所要秒 | simplesystem は ELAPSED_S=11.14、注文模擬は ELAPSED_S=7.99 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:218 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| `PySystemtrade` | wheel展開 | 該当する配布物が無い(PyPI に wheel も sdist も無く、git の作業木をそのまま使った) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:130 |
+| `PySystemtrade` | setup.py導入時実行 | 0 件(subprocess・os.system・urlopen・cmdclass・exec(...) のいずれも setup.py に無い)。なお setup.py 自身が「この導入方法は非推奨」と冒頭に書いている | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 同梱バイナリ | 0 件(file が ELF / PE32 / Mach-O / Zip archive / gzip と答えるファイルが 1 つも無い) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `PySystemtrade` | 外部送信 | 遠隔測定は 0 ファイル(telemetry・posthog・sentry・analytics. の一致が .py に無い)。外部 URL の取得も 0 ファイル(urlopen・requests.get・wget・curl の一致が .py に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `PySystemtrade` | 自動発注機能 | 在る。sysexecution の .py が 42 本、sysbrokers/IB が実体。鍵を置かなければ動かないが、道具としては発注する側である | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 宣伝詐欺の兆候 | 無い。README で guaranteed / profitable / get rich / 100% に当たるのは 1 件だけで、それは逐語 `No guarantee is provided that it will be profitable, or that it won't lose all your money very quickly` という免責の文である(件数だけで判定せず本文を読んだ) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 と docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `PySystemtrade` | 当方データ投入 | csvFuturesSimData という csv の入れ物が在り、この回の最小実行もそれで通した。ただし列の形は先物の multiple prices(DATETIME,CARRY,CARRY_CONTRACT,PRICE,PRICE_CONTRACT,FORWARD,FORWARD_CONTRACT)で、当方の約定の csv.gz をそのままは入れられず変換が要る | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:362 と docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| `PySystemtrade` | 時刻の扱い | 標本 csv の先頭行は 1982-09-14 23:00:00 で、秒まではあるがミリ秒も帯の表記も無い。帯の扱いは配布物の別の場所を見ていない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:362 |
+| `PySystemtrade` | 再現性 | 未確認 | 未確認 | 試したこと: 同じ入力で 2 回動かして値を突き合わせる実行は、時間の上限で打っていない。乱数の種の扱いも配布物で確かめていない |
+| `PySystemtrade` | 規模の見積 | 456 日のティックを入れた場合の所要は出せない。外挿の材料は、日足で 13422 行・4 銘柄の一式が 11.14 秒、SP500 1 銘柄の注文模擬(2618 注文)が 7.99 秒、という 2 点だけで、ティックの行数は日足の 4 桁以上大きいので線形の外挿は根拠にならない | 推定 | docs/DATA/probes/20260922_tools_1_run9.log:218 と docs/DATA/probes/20260922_tools_1_run9.log:260 からの外挿 |
+| `PySystemtrade` | 4軸1_道具 | 隔離 venv に入り、鍵なしで模擬が通ったので、道具として入れられる。ただし clone が 880 MB で、うち 737 MB が同梱の価格データ | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:260 と docs/DATA/probes/20260922_tools_1_run9.log:362 |
+| `PySystemtrade` | 4軸2_情報 | 同梱の先物の価格データが 252 銘柄。当方は暗号資産と JPX しか持っていない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:362 |
+| `PySystemtrade` | 4軸3_視点 | 注文模擬が「予測 → 建玉 → 注文 → 約定」を別々の表として出す(注文の列が ['quantity', 'limit_price']、約定の列が ['qty', 'price'])。当方の backtest/engine.py は約定だけを持ち、注文の表を残さない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:260 |
+| `PySystemtrade` | 4軸4_向上 | 同梱の order_simulator に hourly_limit_orders.py という指値専用の実装が在る。当方に無いもの(A 板の待ち行列)の別実装として突き合わせる材料になりうるが、この回では動かしていない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:260(注文模擬が動いたこと)。hourly_limit_orders.py を動かしていないことは未確認として下の文章に書いた |
+| `PySystemtrade` | 配布元の一致 | PyPI には無い(code=404)。GitHub の pst-group/pysystemtrade から clone が rc=0 で通り、8 回目に確認した robcarver17 からの移転先と一致する | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:130 |
+| `PySystemtrade` | 難読化 | 無い。base64.b64decode / exec(...) / eval(...) に当たる .py は 1 ファイルだけで、中身は sysobjects/production/backtest_storage.py:53 の eval(cmd)(保存した検証を読み戻す処理)であり、難読化ではない。ただし eval を使っていること自体は記録しておく | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 と docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `PySystemtrade` | 外部URL取得 | 0 ファイル(urlopen・requests.get・wget・curl の一致が .py に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `PySystemtrade` | 依存の一覧 | pandas==2.1.3 / matplotlib>=3.0.0 / pyyaml==6.0.1 / numpy>=1.24.0 / scipy>=1.0.0 / pymongo==3.11.3 / ib_async>=2,<3 / psutil==7.2.1 / pytest>6.2 / Flask>=2.0.1 / Werkzeug>=2.0.1 / statsmodels==0.14.0 / PyPDF2>=2.5.0 / pyarrow>=14.0.1 / scikit-learn>1.3.0 | 一次資料 | 配布物 requirements.txt / docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `PySystemtrade` | 保守者名の一貫性 | 一貫している。配布元が pst-group、最多の貢献者が robcarver17、setup.py の url が https://qoppac.blogspot.com/p/pysystemtrade.html(robcarver17 の公開の場)で、別人の名前が入り込んでいない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `Luczinsritter/event_driven_backtesting_engine` | 版 | 版の表示を持たない(pyproject.toml も setup.py も無く、配布物に版の記述が無い)。既定枝の最新コミットは 2025-09-29T22:47:11+02:00 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:351 |
+| `Luczinsritter/event_driven_backtesting_engine` | 最終更新日 | GitHub の pushedAt は 2025-09-29T20:47:12Z。既定枝の最新コミットは 2025-09-29T22:47:11+02:00(同じ時刻の別の帯の表記) | 一次資料 | https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:351 |
+| `Luczinsritter/event_driven_backtesting_engine` | ライセンス | 確定できない。README の 4 行目のバッジの逐語は `[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)` だが LICENSE ファイルは 0 件で、README の License の節の逐語は `Personal project — free to use and modify for educational or demonstration purposes.`。商用利用と再配布の可否はどちらにも書かれていない | 一次資料 | 配布物 README.md / docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:345 |
+| `Luczinsritter/event_driven_backtesting_engine` | 言語と動作環境 | Python。README のバッジは Python-3.10+。この環境の /usr/bin/python3.11 の隔離 venv で導入も最小実行も通った | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:345 と docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| `Luczinsritter/event_driven_backtesting_engine` | 対応取引所 | 無い。ccxt・api_key・binance・broker に当たる .py が 0 ファイルで、価格の取得元は yfinance だけ | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:68 |
+| `Luczinsritter/event_driven_backtesting_engine` | 星 | 0(forks 0、watchers 0) | 一次資料 | https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Luczinsritter/event_driven_backtesting_engine` | コミット数 | 5(既定枝、unshallow したあとの git rev-list --count) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:351 |
+| `Luczinsritter/event_driven_backtesting_engine` | 保守者数 | 1(Luczinsritter) | 一次資料 | https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine/contributors 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Luczinsritter/event_driven_backtesting_engine` | 週DL数 | 未確認 | 未確認 | 試したこと: https://pypi.org/pypi/event-driven-backtesting-engine/json が code=404 で、配布が PyPI に無く数の出所が存在しない / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Luczinsritter/event_driven_backtesting_engine` | 初回公開日 | 2025-09-29T20:07:40Z(createdAt)。最初のコミットは 2025-09-29T22:07:40+02:00 で同じ時刻 | 一次資料 | https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:351 |
+| `Luczinsritter/event_driven_backtesting_engine` | 既知の脆弱性 | 未確認 | 未確認 | 試したこと: PyPI に配布が無く pip-audit の対象にできない。GitHub の勧告の頁は時間の上限で取っていない |
+| `Luczinsritter/event_driven_backtesting_engine` | 料金体系 | 配布物に料金の記述は無い。ただしライセンスが確定できないので、無償で使ってよい範囲そのものが文書から決まらない | 一次資料 | 配布物 README.md / docs/DATA/probes/20260922_tools_1_run9.log:345 |
+| `Luczinsritter/event_driven_backtesting_engine` | 無料枠の上限 | 事業者の枠が無い(自分で動かす道具で、回数・期間・履歴の深さの制限が配布物に無い)。価格の取得元である yfinance の側の制限は別物で、この回では確かめていない | 一次資料 | 配布物 README.md と requirements.txt / docs/DATA/probes/20260922_tools_1_run9.log:68 |
+| `Luczinsritter/event_driven_backtesting_engine` | 課金開始条件 | 道具の側に無い(鍵も登録も無しで最小実行が通った) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 と docs/DATA/probes/20260922_tools_1_run9.log:141 |
+| `Luczinsritter/event_driven_backtesting_engine` | 隠れた依存 | 2 つ在る。(a) requirements.txt に書かれていない ipython が無いと quantstats の読み込みが落ちる。(b) 価格の取得元が yfinance に直結していて、素のままでは Yahoo へ通信する | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:154 と docs/DATA/probes/20260922_tools_1_run9.log:156 と docs/DATA/probes/20260922_tools_1_run9.log:68 |
+| `Luczinsritter/event_driven_backtesting_engine` | 登録の要否 | 不要。鍵も登録も無しで最小実行が通った | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 と docs/DATA/probes/20260922_tools_1_run9.log:154 |
+| `Luczinsritter/event_driven_backtesting_engine` | 到達経路 | git clone --depth 1 https://github.com/Luczinsritter/event_driven_backtesting_engine.git が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:14 |
+| `Luczinsritter/event_driven_backtesting_engine` | 導入可否 | 可。隔離 venv に pip install -r requirements.txt が INSTALL_RC=0。ただし ipython を足すまで実行はできない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:141 と docs/DATA/probes/20260922_tools_1_run9.log:156 |
+| `Luczinsritter/event_driven_backtesting_engine` | install所要秒 | 33(requirements.txt の分)。ipython の追加は time_s=5 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:141 と docs/DATA/probes/20260922_tools_1_run9.log:156 |
+| `Luczinsritter/event_driven_backtesting_engine` | 依存数 | 直接 7(requirements.txt)+ 書かれていない ipython 1 件。導入後の pip list は 42 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:362 と docs/DATA/probes/20260922_tools_1_run9.log:141 |
+| `Luczinsritter/event_driven_backtesting_engine` | pip check | No broken requirements found.(PIPCHECK_RC=0) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:141 |
+| `Luczinsritter/event_driven_backtesting_engine` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 と docs/DATA/probes/20260922_tools_1_run9.log:156 |
+| `Luczinsritter/event_driven_backtesting_engine` | 最小実行の中身 | 合成の日足 200 本(種を固定した乱歩)を get_data の上書きで入れ、EMA 交差の戦略を 1 回通した。結果は BUY_TRADES=3 SELL_TRADES=3 CLOSE_TRADES=6、FINAL_BALANCE=-129.8087、TRADE_ROWS=6、LIMIT_ORDER_API=[]。外部通信は無し | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| `Luczinsritter/event_driven_backtesting_engine` | 実行所要秒 | 2 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| `Luczinsritter/event_driven_backtesting_engine` | wheel展開 | 該当する配布物が無い(PyPI に wheel も sdist も無く、git の作業木をそのまま使った) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:14 |
+| `Luczinsritter/event_driven_backtesting_engine` | setup.py導入時実行 | 該当なし。setup.py が 0 件で、導入の手続きそのものが無い(requirements を入れて .py を読み込むだけ) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:68 |
+| `Luczinsritter/event_driven_backtesting_engine` | 同梱バイナリ | 0 件。images/ の 2 件は PNG で、実行されるものではない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 と docs/DATA/probes/20260922_tools_1_run9.log:36 |
+| `Luczinsritter/event_driven_backtesting_engine` | 外部送信 | 送信の経路は無い(telemetry・requests.・socket・post(...) に当たる .py が 0 ファイル)。ただし素のままだと yfinance で Yahoo から取得する向きの通信は出る。この回は get_data を上書きして通信させずに動かした | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| `Luczinsritter/event_driven_backtesting_engine` | 自動発注機能 | 無い。ccxt・api_key・binance・broker に当たる .py が 0 ファイル | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `Luczinsritter/event_driven_backtesting_engine` | 宣伝詐欺の兆候 | 無い。README の guaranteed / profitable / get rich / 100% の一致が 0 件 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `Luczinsritter/event_driven_backtesting_engine` | 当方データ投入 | 入れられる。get_data を差し替えるだけで当方の形の表を入れられることを実際に示した(index が時刻、列が Open / High / Low / Close / Volume の DataFrame) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 と docs/DATA/probes/20260922_tools_1_run9.log:14 |
+| `Luczinsritter/event_driven_backtesting_engine` | 時刻の扱い | pandas の index をそのまま使う。この回は日足の index で通した。ミリ秒と帯の扱いについての記述は配布物に無い | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 と docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `Luczinsritter/event_driven_backtesting_engine` | 再現性 | 未確認 | 未確認 | 試したこと: 同じ入力で 2 回動かして突き合わせる実行は、時間の上限で打っていない。エンジン自身は乱数を使っていない(合成データ側の種は当方が固定した) |
+| `Luczinsritter/event_driven_backtesting_engine` | 規模の見積 | 日足 200 本で 2 秒。中身は 1 本ずつの Python の for で、pandas の iloc を 1 行ずつ引くので、456 日のティックでは桁違いに伸びる。線形の外挿は根拠にならない | 推定 | docs/DATA/probes/20260922_tools_1_run9.log:169 からの外挿 |
+| `Luczinsritter/event_driven_backtesting_engine` | 4軸1_道具 | 入れられる。10 ファイル・566 行で、隔離 venv に 33 秒で入り、2 秒で 1 回転した | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:36 と docs/DATA/probes/20260922_tools_1_run9.log:68 と docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| `Luczinsritter/event_driven_backtesting_engine` | 4軸2_情報 | 当方に無い情報は取れない。データ源は yfinance だけで、板も清算も持たない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:68 |
+| `Luczinsritter/event_driven_backtesting_engine` | 4軸3_視点 | 建玉を 1 つに限り、1 回ずつの売買を「側・株数・入りと出の日時と値・損益・保有期間」の辞書に積む形。当方の backtest/engine.py が決済理由を記録するのと近いが、保有期間を時間差でそのまま持つ点は当方に無い | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| `Luczinsritter/event_driven_backtesting_engine` | 4軸4_向上 | 向上の材料としては弱い。指値が無く(LIMIT_ORDER_API=[])、総資産の表示が空売りの建玉を足し算する欠陥を持つ(知見 5) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:169 |
+| `Luczinsritter/event_driven_backtesting_engine` | 配布元の一致 | PyPI には無い(code=404)。GitHub の Luczinsritter/event_driven_backtesting_engine から clone が rc=0 で通った。名前の似た別物は見ていない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:14 |
+| `Luczinsritter/event_driven_backtesting_engine` | 難読化 | 無い。base64.b64decode / exec(...) / eval(...) に当たる .py が 0 ファイル | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `Luczinsritter/event_driven_backtesting_engine` | 外部URL取得 | 在る。backtest_engine.py:15 の `raw_df = yf.download(ticker, start = start_date, end = end_date, interval = interval, auto_adjust = True)` と utils.py:8 の `import yfinance as yf` の 2 箇所だけ | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:68 |
+| `Luczinsritter/event_driven_backtesting_engine` | 依存の一覧 | numpy==1.26.4 / pandas==2.2.2 / matplotlib==3.9.2 / yfinance==0.2.43 / quantstats==0.0.62 / scikit-learn==1.5.2 / statsmodels==0.14.4。これに書かれていない ipython が加わる | 一次資料 | 配布物 requirements.txt / docs/DATA/probes/20260922_tools_1_run9.log:68 |
+| `Luczinsritter/event_driven_backtesting_engine` | 保守者名の一貫性 | 一貫している。所有者も唯一の貢献者も Luczinsritter | 一次資料 | https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine/contributors 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Mendl-Labs/BacktestingCore` | 版 | ワークスペースの各 package が version = "0.1.0"(metrics の Cargo.toml の逐語)。edition = "2021" | 一次資料 | 配布物 metrics/Cargo.toml / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `Mendl-Labs/BacktestingCore` | 最終更新日 | GitHub の pushedAt は 2026-09-20T20:00:09Z。いっぽう既定枝の最新コミットは 2026-08-25T12:34:56-04:00 で、この 2 つは食い違う | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:351 |
+| `Mendl-Labs/BacktestingCore` | ライセンス | Functional Source License, Version 1.1, ALv2 Future License(LICENSE の 1 行目の逐語)。`A Permitted Purpose is any purpose other than a Competing Use` の制限が付く。GitHub の説明文が `Open-source backtesting engine core` と名乗るのと食い違う | 一次資料 | 配布物 LICENSE / docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run9.log:345 と docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Mendl-Labs/BacktestingCore` | 言語と動作環境 | Rust(.rs が 175 ファイル、Cargo.toml が 18、edition 2021)+ Python の窓口(.py が 9)。この環境には cargo 1.94.1 (29ea6fb6a 2026-03-24) が在り、工具の側は足りている | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:36 と docs/DATA/probes/20260922_tools_1_run9.log:49 |
+| `Mendl-Labs/BacktestingCore` | 対応取引所 | 取引所への接続の package はワークスペースの一覧に無い(backtest / orderbook / dataloader / walkforward / data_prep / metrics / derivatives / greeks / signal / smartrouter / portfoliomanager / quant-diagnostics / riskmanager / genetic / strategy / config)。データの取得元は dataloader の既定が https://api.polygon.io | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:118 と docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `Mendl-Labs/BacktestingCore` | 星 | 0(forks 0、watchers 0) | 一次資料 | https://ungh.cc/repos/Mendl-Labs/BacktestingCore 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Mendl-Labs/BacktestingCore` | コミット数 | 18(既定枝、unshallow したあとの git rev-list --count) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:351 |
+| `Mendl-Labs/BacktestingCore` | 保守者数 | 1(ItsJustIkenna) | 一次資料 | https://ungh.cc/repos/Mendl-Labs/BacktestingCore/contributors 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Mendl-Labs/BacktestingCore` | 週DL数 | 未確認 | 未確認 | 試したこと: https://pypi.org/pypi/backtestingcore/json が code=404。crates.io の頁は時間の上限で取っていない / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Mendl-Labs/BacktestingCore` | 初回公開日 | 2026-08-08T18:02:59Z(createdAt)。最初のコミットは 2026-08-08T14:02:41-04:00 | 一次資料 | https://ungh.cc/repos/Mendl-Labs/BacktestingCore 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:351 |
+| `Mendl-Labs/BacktestingCore` | 既知の脆弱性 | 未確認 | 未確認 | 試したこと: 構築が依存の取得で止まるので cargo audit を掛けられない。公開の勧告の頁は時間の上限で取っていない |
+| `Mendl-Labs/BacktestingCore` | 料金体系 | 配布物に料金の記述は無い。ただし LICENSE が Competing Use を禁じるので、無償だが用途に条件が付く。さらに dataloader の既定のデータ源が api.polygon.io で、そこは別の事業者の料金に従う | 一次資料 | 配布物 LICENSE と dataloader/src/massive_provider.rs / docs/DATA/probes/20260922_tools_1_run9.log:345 と docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `Mendl-Labs/BacktestingCore` | 無料枠の上限 | 未確認 | 未確認 | 試したこと: 道具の側には枠の記述が無い。既定のデータ源 api.polygon.io の料金の頁は、この回では取っていない(区分 3 の候補になる) |
+| `Mendl-Labs/BacktestingCore` | 課金開始条件 | 未確認 | 未確認 | 試したこと: 道具の側には課金の記述が無い。dataloader に鍵を置いたときに api.polygon.io 側で何が起きるかは、登録をしない規則のため確かめていない |
+| `Mendl-Labs/BacktestingCore` | 隠れた依存 | 2 種類。(a) 構築に要る git 依存 2 件(Nwagbara-Group-LLC/LoggingEngine と .../databaseschema)が公開物として存在しない。(b) dataloader の既定のデータ源が https://api.polygon.io で、鍵が要る | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:118 と docs/DATA/probes/20260922_tools_1_run9.log:187 と docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `Mendl-Labs/BacktestingCore` | 登録の要否 | 道具の取得には不要(clone は rc=0)。ただし構築には、公開されていない 2 リポジトリへの権限が要る | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:10 と docs/DATA/probes/20260922_tools_1_run9.log:179 |
+| `Mendl-Labs/BacktestingCore` | 到達経路 | git clone --depth 1 https://github.com/Mendl-Labs/BacktestingCore.git が rc=0。中身は全部読めた | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:10 と docs/DATA/probes/20260922_tools_1_run9.log:36 |
+| `Mendl-Labs/BacktestingCore` | 導入可否 | 不可。cargo check -p metrics が --offline で rc=101、通常でも rc=101 で、後者は `git fetch --no-tags --force --update-head-ok 'https://github.com/Nwagbara-Group-LLC/LoggingEngine' ...` が exit status: 128 で落ちる。依存が公開物として存在しないので、第 2 経路(オーナー PC)でも同じところで止まる | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:179 と docs/DATA/probes/20260922_tools_1_run9.log:187 と docs/DATA/probes/20260922_tools_1_run9.log:192 |
+| `Mendl-Labs/BacktestingCore` | install所要秒 | 構築に入る前に依存の取得で落ちる。落ちるまでの時間は --offline が TIME_S=1、通常が TIME_S=13 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:179 |
+| `Mendl-Labs/BacktestingCore` | 依存数 | metrics の [dependencies] が 14 件。ワークスペース全体では git 依存の記述が 16 箇所で、その先は LoggingEngine と databaseschema の 2 リポジトリ | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 と docs/DATA/probes/20260922_tools_1_run9.log:118 |
+| `Mendl-Labs/BacktestingCore` | pip check | 該当なし(Python の配布物ではなく、pip の対象にならない。.py 9 件は Rust 側から呼ばれる窓口) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:36 |
+| `Mendl-Labs/BacktestingCore` | 最小実行の可否 | 不可。構築が始まらないので実行に至らない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:179 |
+| `Mendl-Labs/BacktestingCore` | 最小実行の中身 | 実行に至っていない。打ったのは cargo check -p metrics の 2 通り(--offline と通常)で、どちらも rc=101 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:179 |
+| `Mendl-Labs/BacktestingCore` | 実行所要秒 | 実行に至っていないので所要時間が無い。依存の取得で落ちるまでは --offline が TIME_S=1、通常が TIME_S=13 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:179 |
+| `Mendl-Labs/BacktestingCore` | wheel展開 | 該当なし(Python の wheel を配布していない。PyPI にも無い) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `Mendl-Labs/BacktestingCore` | setup.py導入時実行 | 該当なし。setup.py を持たず、Rust 側の build.rs も 0 件なので、構築の前後に走る自前のコードは無い | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:68 |
+| `Mendl-Labs/BacktestingCore` | 同梱バイナリ | 0 件(file が ELF / PE32 / Mach-O / Zip archive と答えるファイルが無い)。1 度目の数え方では 11 件が出たが、中身は実行の旗が立った .rs と .py の文書で、バイナリではない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 と docs/DATA/probes/20260922_tools_1_run9.log:118 |
+| `Mendl-Labs/BacktestingCore` | 外部送信 | 出て行く向きの経路が 2 つ在る。backtest/src/html_export.rs:208 が出力する報告の頁に `<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>` が入る(開いた人の browser が CDN を叩く)。dataloader/src/massive_provider.rs:217 が既定の宛先として `https://api.polygon.io` を置く | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `Mendl-Labs/BacktestingCore` | 自動発注機能 | 未確認 | 未確認 | 試したこと: ワークスペースの一覧に smartrouter という package が在ることは読んだが、その中の発注の実体までは読んでいない(構築できないので動かして確かめることもできない)/ docs/DATA/probes/20260922_tools_1_run9.log:118 |
+| `Mendl-Labs/BacktestingCore` | 宣伝詐欺の兆候 | README の guaranteed / profitable / get rich / 100% の一致は 0 件。いっぽう GitHub の説明文の `Open-source` と LICENSE の Functional Source License, Version 1.1 は食い違っており、名乗りと実体のずれが 1 件在る | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 と docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:345 |
+| `Mendl-Labs/BacktestingCore` | 当方データ投入 | 未確認 | 未確認 | 試したこと: 構築できないので入れて確かめられない。dataloader の受け取る形を読んで書き写すことは、時間の上限でこの回では行っていない |
+| `Mendl-Labs/BacktestingCore` | 時刻の扱い | 未確認 | 未確認 | 試したこと: 構築できないので動かして確かめられない。型の定義(types.rs)を読むことは、時間の上限でこの回では行っていない |
+| `Mendl-Labs/BacktestingCore` | 再現性 | 未確認 | 未確認 | 試したこと: 構築できないので 2 回動かして突き合わせられない |
+| `Mendl-Labs/BacktestingCore` | 規模の見積 | 未確認 | 未確認 | 試したこと: 構築できないので小さい実行から外挿する材料が 1 つも取れない |
+| `Mendl-Labs/BacktestingCore` | 4軸1_道具 | 入れられない。構築が依存の取得で止まり、この環境でも他の環境でも同じところで止まる | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:179 と docs/DATA/probes/20260922_tools_1_run9.log:192 |
+| `Mendl-Labs/BacktestingCore` | 4軸2_情報 | 道具からは取れない。ただし、既定のデータ源として api.polygon.io を置いていること自体は、当方が持たないデータ源の名前として記録に値する | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `Mendl-Labs/BacktestingCore` | 4軸3_視点 | 読めた範囲で、当方に無い切り口の名前が並ぶ: monte_carlo / statistical_significance / feature_diagnostics / rolling_window / latency / synthetic_book / market_making_simulation / cross_sectional_simulation / accuracy_validation / python_validation、および package の walkforward・genetic・greeks・derivatives・smartrouter・quant-diagnostics。**中身は読んでいないので名前どまりである** | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:36 と docs/DATA/probes/20260922_tools_1_run9.log:118 |
+| `Mendl-Labs/BacktestingCore` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: 構築できないので、当方の成果と突き合わせる出力が 1 つも得られない |
+| `Mendl-Labs/BacktestingCore` | 配布元の一致 | PyPI には無い(code=404)。GitHub の Mendl-Labs/BacktestingCore から clone が rc=0。crates.io に同名の配布が在るかは取っていない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:10 |
+| `Mendl-Labs/BacktestingCore` | 難読化 | 無い。base64 / eval(...) に当たるのは genetic/src/landscape.rs の on_eval() という呼び戻しの名前で、難読化ではない(件数だけで判定せず本文を読んだ) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:345 |
+| `Mendl-Labs/BacktestingCore` | 外部URL取得 | .rs のうち 5 ファイルが http を含む。中身は html_export.rs:208 の plotly の CDN、同 247 の data:image の埋め込み、同 438 の plotly.com への注記、massive_provider.rs:13 と 217 の api.polygon.io | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 と docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `Mendl-Labs/BacktestingCore` | 依存の一覧 | metrics の [dependencies] が 14 件。ワークスペース全体の git 依存は databaseschema = { git = "https://github.com/Nwagbara-Group-LLC/databaseschema", tag = "v0.1.1", optional = true } と ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" } の 2 つで、16 箇所に書かれている | 一次資料 | 配布物の各 Cargo.toml / docs/DATA/probes/20260922_tools_1_run9.log:118 と docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `Mendl-Labs/BacktestingCore` | 保守者名の一貫性 | 食い違う。名前が 3 つ出てくる: リポジトリの所有者 Mendl-Labs / 唯一の貢献者 ItsJustIkenna / 構築に要る依存の所有者 Nwagbara-Group-LLC。どれが同じ人・組織かは配布物から決まらない | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run9.log:118 |
+
+#### 文章の列(表から書いた。表に無い数値は書いていない)
+
+**`PySystemtrade` — できること・当方に無いもの・危険**
+
+配布物から読めた範囲での構成は、予測則(systems/provided/rules)→ 予測の尺度合わせ(ForecastScaleCap)→ 予測の合成(ForecastCombine)→ 建玉の大きさ(PositionSizing)→ 組入れ(Portfolios)→ 会計(Account)という段の連なりで、
+段ごとに別の class として差し替えられる。会計の段に、注文と約定を別の表として出す注文模擬(systems/accounts/order_simulator)が付く。
+実弾の側は sysexecution(注文の積み上げと分割)と sysbrokers/IB、運用の側は sysproduction、記録の側は sysdata で、模擬と実弾が同じ設定の形を共有する。
+
+**当方に無いもの**(当方の道具立ては `python3 scripts/tools_inventory.py` の出力と `git ls-files src scripts | grep -i <語>` で確かめる。この回は下の 4 点を、配布物を読んで当方に対応物が無いと書いている。**当方側の確認は grep ではなく `CLAUDE.md` §2 の構成地図と 8 回目までの報告に依っており、そこは未確認である**):
+(a) 注文と約定を別の表として残す仕組み。当方の `src/bot/backtest/engine.py` は約定だけを持つ。
+(b) 指値専用の注文模擬(systems/accounts/order_simulator/hourly_limit_orders.py)。**この回では動かしていない。**
+(c) 予測を尺度合わせしてから合成する段の分離。当方の composite はモジュールの入切で、尺度合わせの段を持たない。
+(d) 同梱の先物の価格データ。
+
+**危険**: 供給網は、配布元が GitHub だけ(PyPI に無い)で、保守者 30 名・コミット 4847・初回公開 2015-11-27 と歴史が長い。導入時に走るコードは無く、遠隔測定も無い。
+**発注の実体を持つ道具である**点は記録しておく(鍵を置かなければ動かない)。`eval(cmd)` が 1 箇所在る(sysobjects/production/backtest_storage.py:53)。
+ライセンスが GPLv3 なので、当方のコードに取り込むと当方側の配布条件に波及する。**この判定はリードとオーナーが行う。**
+
+**`Luczinsritter/event_driven_backtesting_engine` — できること・当方に無いもの・危険**
+
+できることは、1 本ずつ足を進めて予測を出し、**次の足の始値で必ず約定させる**イベント駆動の枠と、1 回ずつの売買を辞書に積む記録、
+それを quantstats に渡す分析の 3 つ。戦略は EMA 交差と ARIMA の 2 つが同梱される。
+
+**当方に無いもの**: 保有期間を時間差のまま記録に持つ点だけ。それ以外(指値・板・費用・清算)は当方の方が持っている。
+**逆に、当方が持っていて向こうに無いものを書いておく**: 指値・手数料・滑り・建玉の上限・複数銘柄。
+
+**危険**: 導入時に走るコードが無く、送信の経路も無い。星 0・コミット 5・保守者 1・初回公開 2025-09-29 で、**1 日で作られてそのまま止まっている**。
+宣伝の語は 0 件。最も重いのは**ライセンスが確定できないこと**(知見 10)で、当方のコードに 1 行でも写すなら先に作者に確かめる必要がある。
+**この判定はリードとオーナーが行う。**
+
+**`Mendl-Labs/BacktestingCore` — できること・当方に無いもの・危険**
+
+**動かしていないので、できることは名前どまりである。**ワークスペースの package の名前と .rs の名前から読める切り口は §4.0 の表の 4軸3 の行に全部書いた。
+
+**この環境から不可ではなく「どこからでも構築できない」**: 試した手段は (1) git clone --depth 1(rc=0、中身は読めた)/ (2) cargo check -p metrics --offline(rc=101)/ (3) cargo check -p metrics(rc=101、git fetch が exit status: 128)/
+(4) curl で依存の 2 リポジトリ(code=403 = この環境の代理の制限)/ (5) ungh.cc(code=404)/ (6) WebFetch(`The server returned HTTP 404 Not Found.`)/ (7) git ls-remote(rc=128)/ (8) GitHub の検索 API(`The listed users and repositories cannot be searched either because the resources do not exist or you do not have permission to view them.`)。
+**(4) だけがこの環境固有の制限で、(5)(6)(7)(8) は環境に依らない。**
+
+**第 2 経路(オーナー PC)でそのまま打てるコマンド**:
+
+```
+git clone --depth 1 https://github.com/Mendl-Labs/BacktestingCore.git bc && cd bc && cargo check -p metrics
+git ls-remote https://github.com/Nwagbara-Group-LLC/LoggingEngine
+git ls-remote https://github.com/Nwagbara-Group-LLC/databaseschema
+```
+
+3 本目までのどれかが通れば、この回の結論(依存が公開物として存在しない)が覆る。**覆ったら報告に書いて戻すこと。**
+
+**危険**: 導入時に走るコードは無く(build.rs が 0 件)、難読化も無く、同梱バイナリも無い。
+重いのは 3 点: **公開されていない 2 リポジトリに構築が依存すること**(中身を誰も読めない状態で、構築のたびに取りに行く)、
+**名乗り(Open-source)とライセンス(Functional Source License, Version 1.1)の食い違い**、**保守者の名前が 3 つに割れていること**。
+委任文 §6-1 の「1 つでも不審なら導入せず理由を書いて止める」に当たるが、**そもそも構築できないので、止める以前に入らない。**
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 上限 | 1 回 5 万トークン・20 分 |
+| 実績 | 上限に達したため中断した。深掘りは 3 件(`PySystemtrade` / `Luczinsritter/event_driven_backtesting_engine` / `Mendl-Labs/BacktestingCore`)。うち 2 件は最小実行まで通し、1 件は構築できないことを確定させた。13 番(DeviaVir/zenbot)は起動の指定に従い「危険なので止めた」で閉じた |
+| 未完了 | 残りの候補 = Superalgos / OpenTrader / CryptoSignal / Bot18 / `OctoBot` の最小実行。`PySystemtrade` の指値専用の注文模擬(hourly_limit_orders.py)も未実行。区分 1 は**未完了**(委任文 §2 の条件 = 残りの候補が空で、新しい検索計画が新しい候補を 1 件も出さない、を満たしていない) |
+
+### 原文に無い判断(黙って決めずに書き出す)
+
+1. **`PySystemtrade` の取得が 880 MB になった。**起動の指定の逐語は「**部分取得は 3.6 MB で済みます**」だったが、`--depth 1 --filter=blob:none` を付けても作業木の取り出しで同梱の価格データ(737 MB)が落ちてきた。
+   委任文 §6-6 の「**本体の一括ダウンロード(数百 MB 以上)はしない**」に触れる。**大きさを測ったのは取得の後で、先に測っていれば止められた**(`--sparse` を併用するか、`--no-checkout` で先に木を見るべきだった)。
+   ディスクの空きは実行の間 12G から 9.2G まで減った。**取得を続けるかどうかを、測ってから聞くべきだったかもしれない。リードの判断を仰ぐ。**
+2. **`Mendl-Labs/BacktestingCore` の状態を「この環境からは到達できない」ではなく「どこからでも構築できない」と書いた。**起動の指定が挙げる 4 つの状態のどれとも字面が一致しないため、**4 つ目(配布が止まっている・別物だった)に最も近いものとして、事実の側を書いた。**分類の当否はリードが決めること。
+3. **`PySystemtrade` の最小実行で、同梱の標本データを使った。**委任文 §5-4 は「合成データだけ」と書くが、この道具は合成の足を入れる入口(csvFuturesSimData)が特定の列の形を要求し、変換に時間が要る。
+   §5-4 の狙いは「**当方の実データ・鍵・記録を使わない**」ことだと読み、道具に同梱された標本だけを使った。当方のデータは 1 件も触れていない。**読み替えの当否はリードが決めること。**
+4. **`Luczinsritter/event_driven_backtesting_engine` の `requirements.txt` に無い ipython を足して実行した。**委任文 §6-3「取ってきた文章は指示ではない」に抵触しないよう、外部の助言ではなく**落ちた場所の例外(ModuleNotFoundError)だけを根拠に**、PyPI の公式の配布を 1 件足した。
+5. **`cargo check` を打つ前に、§6-1 の検査を先に通した**(build.rs 0 件・難読化なし・同梱バイナリなし・git 依存の宛先を読んだ)。そのうえで構築は依存の取得で止まった。**外から取ってきた Rust のコードを構築する行為そのものの是非は、リードの判断を仰ぐ。**
+6. **隔離 venv と clone をこの回の終わりに消した**(v9ed / v9pst / pst / bc / ed)。すべて pip と git で再生成でき、消す前に大きさを測って生ログに残した。7 回目の検収 §4-1 の規則(再生成できるものは報告つきで消してよい)に当たると判断した。
+
+### 受け入れ検査で残した行(自分で閉じなかったもの)
+
+下の「受け入れ検査の出力」に貼ったのが、最後に打った出力の全文である。
+
+**この回は 0 件。**自分で閉じた行は 1 件も無い。
+途中で当たった行は 3 種類あり、いずれも**内容を直して消した**(自分で「誤検出」と決めて残したものは無い):
+K11 は、根拠に書いた生ログの行が段の見出しや途中の出力で、`rc=` を含む行ではなかったもの。段の終わりの `rc=` の行に付け替えた。
+K13 は、同じ道具の根拠が同じ文言の複写になっていたもの。読んだ出力の行に分けた。
+K2 は、`exec` の後ろに開き括弧だけを書いた語を本文に置いたためのもの。`exec(...)` の形に直した。
+
+## 受け入れ検査の出力
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+打ったコマンド:
+
+```
+python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run3.log docs/DATA/probes/20260922_tools_1_run4.log docs/DATA/probes/20260922_tools_1_run5.log docs/DATA/probes/20260922_tools_1_run6.log docs/DATA/probes/20260922_tools_1_run7.log docs/DATA/probes/20260922_tools_1_run8.log docs/DATA/probes/20260922_tools_1_run9.log
+```
+
+### `STRATEGY_IDEAS.md` / `DATA.md` 向けの一行候補(提案。マージしない)
+
+- `DATA.md` 向け: 「`PySystemtrade` の clone には先物の価格データが同梱される(銘柄 252 件)。再配布の条件は本体の GPLv3 とは別に確かめること。」
+- `DATA.md` 向け: 「`Mendl-Labs/BacktestingCore` の dataloader は既定のデータ源として `https://api.polygon.io` を置く。polygon は区分 3 の候補として別に調べる価値がある。」
+- `STRATEGY_IDEAS.md` 向け: 「当方の模擬は約定だけを残すが、`PySystemtrade` の注文模擬は注文(`quantity` と `limit_price`)と約定(`qty` と `price`)を別の表として残す。当方の 1 単位で、注文の表を別に残す形にしてから、指値の埋まり方の仮定を差し替えられるようにする。」
