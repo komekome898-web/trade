@@ -139,6 +139,67 @@ def check_contradiction(lines):
     return [(min(neg[t]), "%s: wheel/setup.py が「未実施・未確認」と「実施済み」の両方にある (行 %s / %s)"
              % (t, neg[t], pos[t])) for t in sorted(neg) if t in pos]
 
+ITEMS = ["版", "最終更新日", "ライセンス", "言語と動作環境", "対応取引所", "星", "コミット数",
+         "保守者数", "週DL数", "初回公開日", "既知の脆弱性", "料金体系", "無料枠の上限",
+         "課金開始条件", "隠れた依存", "登録の要否", "到達経路", "導入可否", "install所要秒",
+         "依存数", "pip check", "最小実行の可否", "最小実行の中身", "実行所要秒", "wheel展開",
+         "setup.py導入時実行", "同梱バイナリ", "外部送信", "自動発注機能", "宣伝詐欺の兆候",
+         "当方データ投入", "時刻の扱い", "再現性", "規模の見積",
+         "4軸1_道具", "4軸2_情報", "4軸3_視点", "4軸4_向上"]
+MARKS = ["一次資料", "実測", "推定", "仮定", "未確認"]
+
+def read_table(lines):
+    """委任文 §4.0 の「道具 | 項目 | 値 | 印 | 根拠」の行を集める。"""
+    rows = []
+    for i, ln in enumerate(lines, 1):
+        c = [x.strip() for x in ln.strip().strip("|").split("|")] if ln.strip().startswith("|") else []
+        if len(c) == 5 and c[1] in ITEMS:
+            rows.append((i, c))
+    return rows
+
+def check_table_complete(lines):
+    """K8 深掘りした道具が 37 項目すべての行を持つか(監査 1 回目 = 危険検査の 3 項目が全候補で欠落)。"""
+    rows = read_table(lines)
+    if not rows:
+        return [(0, "§4.0 の機械可読の表が 1 行も無い(2026-09-22 版の委任文では必須)")]
+    have = {}
+    for i, c in rows:
+        have.setdefault(c[0], set()).add(c[1])
+    out = []
+    for tool, got in sorted(have.items()):
+        miss = [x for x in ITEMS if x not in got]
+        if miss:
+            out.append((rows[0][0], "%s: 表に無い項目 %d 件 (%s%s)"
+                        % (tool, len(miss), "、".join(miss[:4]), " ほか" if len(miss) > 4 else "")))
+    return out
+
+def check_table_marks(lines):
+    """K9 印が 5 語のどれかで、根拠が空でないか(監査 1・10 回目 = 印の誤用)。"""
+    out = []
+    for i, c in read_table(lines):
+        if c[3] not in MARKS:
+            out.append((i, "印が語彙にない: %r (%s / %s)" % (c[3], c[0], c[1])))
+        if not c[4]:
+            out.append((i, "根拠が空: %s / %s" % (c[0], c[1])))
+    return out
+
+def check_prose_vs_table(lines):
+    """K10 文章の数値が表にあるか(監査 10〜12 回目 = 表に無い数字を文章で作る)。"""
+    rows = read_table(lines)
+    if not rows:
+        return []
+    vals = " ".join(c[2] for _, c in rows)
+    tbl_lines = {i for i, _ in rows}
+    out = []
+    pat = re.compile(r"(\d+(?:\.\d+)?)\s*(秒|個|パッケージ)")
+    for i, ln in enumerate(lines, 1):
+        if i in tbl_lines:
+            continue
+        for num, unit in pat.findall(ln):
+            if num not in vals:
+                out.append((i, "表に無い数値を文章で書いている: %s %s" % (num, unit)))
+    return out
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__); return 2
@@ -148,7 +209,10 @@ def main():
               ("K3 必須の節", check_sections(text, "## 区分 1(2 回目")),
               ("K4 生ログに無い数値", check_numbers_in_log(lines, log)),
               ("K6 同じ道具に別の値", check_conflicting_values(lines)),
-              ("K7 未実施と実測の同居", check_contradiction(lines))]
+              ("K7 未実施と実測の同居", check_contradiction(lines)),
+              ("K8 表の項目の欠落", check_table_complete(lines)),
+              ("K9 表の印と根拠", check_table_marks(lines)),
+              ("K10 表に無い数値", check_prose_vs_table(lines))]
     bad = 0
     for name, hits in checks:
         print("%-22s %d 件" % (name, len(hits)))
