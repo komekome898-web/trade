@@ -1,0 +1,105 @@
+# 区分1 3回目 生ログ 開始 2026-09-22T03:54:36Z
+1 tool=Bash cmd=scripts/tools_inventory.py rc=0 t=2026-09-22T03:54:36Z
+2 tool=curl url=https://pypi.org/pypi/basana/json code=200 t=2026-09-22T03:54:49Z time_s=0.08
+    head200=ver=1.11|up=2026-07-22T17:47:41|lic=|lic_expr=Apache-2.0|py=<4,>=3.10|home=https://github.com/gbeced/basana|author=Gabriel Becedillas|reqs=5|summary=A Python async and event driven framework for algorithmic trading, with a focus on crypto currencies.
+3 tool=curl url=https://pypi.org/pypi/backtrader/json code=200 t=2026-09-22T03:54:49Z time_s=0.08
+    head200=ver=1.9.78.123|up=2023-04-19T14:13:18|lic=GPLv3+|lic_expr=None|py=|home=https://github.com/mementum/backtrader|author=Daniel Rodriguez|reqs=1|summary=BackTesting Engine
+4 tool=curl url=https://pypi.org/pypi/pysystemtrade/json code=404 t=2026-09-22T03:54:49Z time_s=0.15
+    head200=(no body)
+5 tool=curl url=https://pypi.org/pypi/pybroker/json code=404 t=2026-09-22T03:54:49Z time_s=0.15
+    head200=(no body)
+6 tool=curl url=https://pypi.org/pypi/lib-pybroker/json code=200 t=2026-09-22T03:54:49Z time_s=0.09
+    head200=ver=2.0.1|up=2026-08-28T03:38:23|lic=Apache License 2.0 with Commons Clause|lic_expr=None|py=>=3.11|home=http://www.pybroker.com|author=Edward West|reqs=19|summary=Algorithmic trading with machine learning
+7 tool=curl url=https://pypi.org/pypi/bt/json code=200 t=2026-09-22T03:54:49Z time_s=0.09
+    head200=ver=1.2.3|up=2026-09-12T00:45:25|lic=MIT|lic_expr=None|py=>=3.9|home=https://github.com/pmorissette/bt|author=None|reqs=53|summary=A flexible backtesting framework for Python
+8 tool=curl url=https://pypi.org/pypi/ziplime/json code=200 t=2026-09-22T03:54:49Z time_s=0.08
+    head200=ver=1.19.16|up=2026-06-18T09:21:46|lic=|lic_expr=None|py=<4.0,>=3.12|home=|author=Ziplime|reqs=30|summary=
+9 tool=curl url=https://pypi.org/pypi/superalgos/json code=404 t=2026-09-22T03:54:50Z time_s=0.15
+    head200=(no body)
+10 tool=curl url=https://pypi.org/pypi/opentrader/json code=404 t=2026-09-22T03:54:50Z time_s=0.14
+    head200=(no body)
+11 tool=curl url=https://pypi.org/pypi/crypto-signal/json code=404 t=2026-09-22T03:54:50Z time_s=0.14
+    head200=(no body)
+12 tool=curl url=https://pypi.org/pypi/fast-trade/json code=200 t=2026-09-22T03:54:50Z time_s=0.19
+    head200=ver=2.1.0|up=2026-08-20T04:59:18|lic=GNU AGPLv3|lic_expr=None|py=>=3.10|home=https://github.com/jrmeier/fast-trade|author=None|reqs=16|summary=Low code backtesting library utilizing pandas and technical analysis indicators
+13 tool=curl url=https://pypi.org/pypi/OctoBot/json code=200 t=2026-09-22T03:54:50Z time_s=0.07
+    head200=Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/json/decoder.py", line 337, in deco
+14 tool=curl url=https://pypi.org/pypi/pybotters/json code=200 t=2026-09-22T03:54:50Z time_s=0.07
+    head200=ver=1.11.2|up=2026-04-17T07:19:41|lic=|lic_expr=MIT|py=>=3.10|home=|author=None|reqs=1|summary=An advanced API client for python crypto bot traders
+15 tool=curl url=https://pypi.org/pypi/OctoBot/json code=200 bytes=407012 t=2026-09-22T03:55:08Z
+OctoBot ver=2.1.1 up=2026-03-29T15:25:05 lic='GPL-3.0' lic_expr=None py=>=3.12 home=https://github.com/Drakkar-Software/OctoBot author=Drakkar-Software reqs=77
+summary= Cryptocurrencies alert / trading bot
+16 tool=curl url=https://raw.githubusercontent.com/robcarver17/pysystemtrade/master/LICENSE code=200 bytes=35140 t=2026-09-22T03:55:09Z time_s=0.39
+    head200=                    GNU GENERAL PUBLIC LICENSE                        Version 3, 29 June 2007   Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>  Everyone is permitted to copy and d
+17 tool=curl url=https://raw.githubusercontent.com/Superalgos/Superalgos/develop/LICENSE code=200 bytes=11357 t=2026-09-22T03:55:09Z time_s=0.39
+    head200=                                 Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUCT
+18 tool=curl url=https://raw.githubusercontent.com/bludnic/opentrader/main/LICENSE code=404 bytes=14 t=2026-09-22T03:55:09Z time_s=0.19
+    head200=404: Not Found
+19 tool=curl url=https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/LICENSE code=200 bytes=1070 t=2026-09-22T03:55:10Z time_s=0.2
+    head200=MIT License  Copyright (c) 2017 Abenezer Mamo  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to dea
+20 tool=curl url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/main/LICENSE code=404 bytes=14 t=2026-09-22T03:55:10Z time_s=0.18
+    head200=404: Not Found
+21 tool=curl url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/LICENSE code=404 bytes=14 t=2026-09-22T03:55:10Z time_s=0.18
+    head200=404: Not Found
+22 tool=curl url=https://raw.githubusercontent.com/bludnic/opentrader/master/LICENSE code=200 bytes=10174 t=2026-09-22T03:55:21Z time_s=0.39
+    head200=                                  Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUC
+23 tool=curl url=https://raw.githubusercontent.com/bludnic/opentrader/main/README.md code=404 bytes=14 t=2026-09-22T03:55:21Z time_s=0.24
+    head200=404: Not Found
+24 tool=curl url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/LICENSE code=200 bytes=3751 t=2026-09-22T03:55:21Z time_s=0.5
+    head200=# Functional Source License, Version 1.1, ALv2 Future License  ## Abbreviation  FSL-1.1-ALv2  ## Notice  Copyright 2026 Nwagbara Group, LLC  ## Terms and Conditions  ### Licensor ("We")  The party off
+25 tool=curl url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/main/LICENSE.md code=404 bytes=14 t=2026-09-22T03:55:22Z time_s=0.17
+    head200=404: Not Found
+26 tool=curl url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/master/LICENSE code=404 bytes=14 t=2026-09-22T03:55:22Z time_s=0.19
+    head200=404: Not Found
+27 tool=curl url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/README.md code=200 bytes=3749 t=2026-09-22T03:55:22Z time_s=0.21
+    head200=# Event‑Driven Backtesting Engine :  Tick or Bar level Simulation & Trade Analytics  [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/) [![License](https://i
+28 tool=curl url=https://raw.githubusercontent.com/nkaz001/hftbacktest/master/connector/Cargo.toml code=200 bytes=1120 t=2026-09-22T03:55:22Z time_s=0.18
+    head200=[package] name = "connector" version = "0.1.0" edition = "2024"  [features] default = ["binancefutures", "binancespot", "bybit"] binancefutures = [] binancespot = [] bybit = []  [dependencies] hftback
+29 tool=curl url=https://raw.githubusercontent.com/nkaz001/hftbacktest/master/Cargo.toml code=200 bytes=699 t=2026-09-22T03:55:22Z time_s=0.2
+    head200=[workspace] resolver = "2" members = [   "hftbacktest",   "hftbacktest-derive",   "py-hftbacktest",   "collector" , "connector"]  [profile.dev] opt-level = 0 debug = true debug-assertions = false over
+30 tool=curl url=https://raw.githubusercontent.com/nkaz001/hftbacktest/master/connector/src/main.rs code=200 bytes=15295 t=2026-09-22T03:55:36Z time_s=0.43
+    head200=use std::{     collections::{HashMap, hash_map::Entry},     fs::read_to_string,     panic,     process::exit,     sync::{Arc, Mutex},     thread,     time::Duration, };  use clap::Parser; use hftbackt
+31 tool=curl url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/LICENSE.md code=404 bytes=14 t=2026-09-22T03:55:36Z time_s=0.38
+    head200=404: Not Found
+--- connector/src/main.rs の mod 宣言 ---
+35:    binancefutures::BinanceFutures,
+36:    binancespot::BinanceSpot,
+37:    bybit::Bybit,
+41:#[cfg(feature = "binancefutures")]
+42:pub mod binancefutures;
+43:#[cfg(feature = "binancespot")]
+44:pub mod binancespot;
+45:#[cfg(feature = "bybit")]
+46:pub mod bybit;
+48:mod connector;
+50:mod utils;
+70:            Ok(()) => {
+76:                        } => match order.req {
+77:                            Status::New => {
+81:                            Status::Canceled => {
+85:                            status => {
+93:                        } => {
+109:            Err(_error) => {
+129:            _ = shutdown_signal.notified() => {
+132:            Some(msg) = rx.recv() => {
+139:                    } => {
+166:                            Entry::Occupied(mut entry) => {
+179:                            Entry::Vacant(entry) => {
+186:                    PublishEvent::LiveEvent(ev) => {
+192:                    PublishEvent::BatchStart(id) => {
+195:                    PublishEvent::BatchEnd(id) => {
+219:        LiveEvent::Feed { symbol, event } => {
+223:                        Some(d) => d,
+224:                        None => return vec![],
+238:                        Some(d) => d,
+--- Luczinsritter README のライセンス行 ---
+4:[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+90:## License
