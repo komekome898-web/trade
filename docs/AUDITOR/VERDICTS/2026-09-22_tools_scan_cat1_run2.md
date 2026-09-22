@@ -227,3 +227,21 @@
 1. **答えた: 出力はハーネスの記録に実在した(監査役の最後の注記のとおり)。ただし数え違いが 1 件出た。** `pip install` の出力全文を記録から取り出して生ログ LV-10 に載せ、「Successfully installed」の行から新規パッケージを数え直した: backtesting 1・qstrader 3・**zipline-reloaded 42**(本文は「約40個」→ 42 に)・vnpy 27・**pyqlib 130**(本文は「185個」→ **130 に訂正**。調査班の数え違い)・**jesse 64**(numpy-1.26.4 を含む = ダウングレードの実在を確認)。固有名詞(bcolz-zipline・exchange-calendars・empyrical-reloaded / mlflow・databricks-sdk・pymongo・cvxpy・lightgbm / ray・psycopg2・eth-account・optuna)はすべて出力に実在した。
 2. **直した。** 「本セッション中に」を「1 回目の実行(15:44Z は 3.2.0、同日 16:01Z に 3.2.1)。2 回目の取得(01:28:59Z)は最初から 3.2.1」に。
 3. **直した(5 箇所 + 本文 2 箇所)。** 生ログの `time_s` の値に置き換えた: QSTrader 1.62 秒・PyAlgoTrade 10.23 秒・**VnPy 19.49 秒**(「約90秒」は誤り)・Qlib 58.35 秒・zipline-reloaded 31.87 秒・Backtesting.py 1.07 秒・Lean CLI 7.37 秒。
+
+## 11 回目(v11、コミット 25e9f5f)— 監査役の出力(逐語、要点)
+
+> ## 決定的検査の結果
+> - パッケージ数の数え直し(手作業で LV-10 の `Successfully installed` 行を再カウント): zipline-reloaded 42・vnpy 27・pyqlib 130・jesse 64 — 本文の主張(42/130/64、および jesse の numpy-1.26.4 実在)と一致。指摘なし。
+> - `time_s` の突き合わせ: backtesting 1.07/0.84、qstrader 1.62、pyalgotrade 10.23、zipline-reloaded 31.87、lean 7.37、vnpy 19.49、pyqlib 58.35 — いずれも生ログの `time_s` と一致。指摘なし。
+>
+> 1. [止める] `:668`・`:802` / LV-10 — 本文は両行とも「出力全文 = 生ログ LV-10」と参照しているが、LV-10 に実際に載っているのは各ツールの `Successfully installed ...` という**最終1行の要約**だけで、`Attempting uninstall` / `Found existing installation` / pip の依存衝突警告(`ERROR: pip's dependency resolver...`)といった行は一件も含まれていない。それにもかかわらず :668 は「既存venvのpandasを3.0.6から2.3.3へ強制ダウングレードした(実測、pip installの出力に明記)」、:802 は「既存venvのnumpyを2.xから1.26.4へ強制ダウングレードし…依存衝突を発生させた(pip自身が警告、実測)」と、アンインストール元のバージョン(3.0.6)や pip 自身の警告文という、この1行には現れ得ない情報まで実測扱いにしている。…LV-10 の見出し「pip install の出力全文」という表現自体も、実際の内容(1行の要約のみ)と一致しない。P10、O-2/O-6。
+>
+> 2. [直す] `:806`(Jesse「所要時間」)— 「install(依存衝突込み)約60秒(実測)」のまま残っている。同じコミット・同じ処置が 7 箇所を正確な `time_s` に置き換えた一方、生ログ 97 行に `pip install jesse rc=0 time_s=60.286559606` が同じ形式で存在するにもかかわらず、この1箇所だけ近似値のまま取り残された。…同型の再発。P5、P9。
+>
+> 3. [聞く] `:612`(QSTrader「所要時間: install 1.62 秒」)/ 生ログ 68 行 — QSTrader本体のインストール(1.62秒)とは別に、公式example実行前に `pip install pytz`(1.11秒)が追加で実行されており、これが無ければ「最小の実行」は成立していない。本文の「隠れた依存: click・seaborn」にはpytzが含まれておらず、所要時間もqstrader本体の1.62秒のみを指している。…この所要時間は「到達に必要だった総インストール時間」ではなく「qstrader単体のpip installの時間」であるという理解でよいか。
+
+## リードの処置(v12)
+
+1. **直した(監査役が正しい。私が LV-10 に最終行だけを載せたのが原因)。** ハーネスの記録から `pip install` の**出力の全文**(6 件、計 14,143 文字)を取り出して LV-10 を差し替えた。全文には `Attempting uninstall: pandas` / `Found existing installation: pandas 3.0.6` / `Uninstalling pandas-3.0.6` / `ERROR: pip's dependency resolver does not currently take into account...` が実在する。**つまり本文のダウングレードと依存衝突の記述は裏づけられた**(pandas 3.0.6 → 2.3.3、numpy → 1.26.4)。見出しも「最終行の要約だけだったものを全文に差し替えた」と明記した。
+2. **直した。** Jesse の所要時間を 60.29 秒(生ログの time_s)に。
+3. **答えた: qstrader 単体の時間である。本文に書いた。** 公式の例を動かすには別に `pip install pytz` 1.11 秒が要り(生ログ 68 行)、pytz は qstrader の宣言依存ではなく例のスクリプト側の要件。その区別を所要時間の欄に書いた。
