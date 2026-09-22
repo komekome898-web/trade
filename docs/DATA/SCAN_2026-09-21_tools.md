@@ -3687,3 +3687,329 @@ K12 検査の出力の貼付           0 件
 
 - `STRATEGY_IDEAS.md` 向け: 指値の約定を「次の足の価格との大小だけ」で決める模型と、当方の板の待ち行列の参照実装を、同じ合成入力に掛けて差を測る案(採否はリードとオーナー)。
 - `DATA.md` 向け: `PySystemtrade` の同梱する先物の価格データ(日足の multiple_prices_csv と adjusted_prices_csv)は区分 3 の候補になりうる。再配布の条件は本体の GPLv3 と別に確かめること。
+
+## 区分1 — 11 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run11.log`。
+10 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run10.md`)の §2 の規則
+「**根拠に「どの欄・どの行に書いてある」と書くときは、その場で実際に引いてから書く。引けなかったものは「未確認」と書く**」に従い、
+この回に書いた根拠は、その場で引いた欄だけにした。§8 の `tools_inventory.py` の全文は、検収 §4-3 の判断
+「**区分ごとに 1 回でよい**」により、区分 1 の 1 回目の節を参照して貼っていない。
+この回の狙いは**残りの候補の状態の確定**で、動かすことではない。検索計画 6 本は、残りの候補がまだ空でないので打っていない(委任文 §2)。
+
+### 検索計画
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (未作成) | (未作成) | 未実行(残りの候補が空になっていないため) |
+| 中間 | (未作成) | (未作成) | 未実行(同上) |
+| 広い | (未作成) | (未作成) | 未実行(同上) |
+
+### 出典
+
+| URL / 経路 | 方法 | 生ログの行 |
+|---|---|---|
+| https://ungh.cc/repos/OpenTrader-Org/OpenTrader | curl(code=404。所有者の綴りが違う) | 10 |
+| https://ungh.cc/repos/bludnic/OpenTrader | curl(code=200) | 16 |
+| https://ungh.cc/repos/Superalgos/Superalgos | curl(code=200) | 17 |
+| https://ungh.cc/repos/CryptoSignal/Crypto-Signal | curl(code=200) | 18 |
+| https://ungh.cc/repos/carlos8f/bot18 | curl(1 回目 code=000 = 接続の失敗 → **打ち直して code=200**) | 14 と 19 |
+| https://registry.npmjs.org/opentrader | curl(code=200) | 83 |
+| https://registry.npmjs.org/opentrader/-/opentrader-1.0.0-beta.29.tgz | curl(code=200)。**展開して読むだけで実行していない** | 92 |
+| https://pypi.org/pypi/numpy/1.14.0/json | curl | 59 |
+| https://github.com/bludnic/OpenTrader.git | git clone --no-checkout --depth 1 --filter=blob:none(大きさを先に測る) | 74 |
+| 8 回目に保存した `r8_bot18_npm.json` / `r8_sa_pkg.json` | 再解析(新たな HTTP は打っていない) | 23 と 64 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **`OpenTrader` は npm に完成品が在り、その導入時実行が §6-1 に当たる。**npm 配布物の scripts は `{'postinstall': 'node scripts/postinstall.mjs'}` の 1 件で、中身は `execSync` で `prisma generate` / `prisma migrate deploy` / `node seed.mjs` を順に走らせ、`homedir()` の直下 `~/.opentrader` に合言葉の入った `pass` と `dev.db` と `strategies/` を作る。**scratchpad の外に書くので §6-5 にも当たる。**tarball は展開して読んだだけで実行していない | 一次資料 | docs/DATA/probes/20260922_tools_1_run11.log:85 と docs/DATA/probes/20260922_tools_1_run11.log:93 |
+| 2 | **`Superalgos` の導入時実行は 1 件ではなく 3 件だった。**`prepare` = `husky install`(起動の指定で示された 1 件)のほかに、`presetup` = `git checkout develop && git pull upstream develop`(枝を切り替えて外部から取り込む)と `postsetup` = `npm start`(本体を起動する)が在る。**起動の指定の「`prepare = husky install`」だけを見て判断すると、外部から取り込む側を見落とす** | 一次資料 | docs/DATA/probes/20260922_tools_1_run11.log:64 と docs/DATA/probes/20260922_tools_1_run11.log:65 |
+| 3 | **`CryptoSignal` は、配布どおりの形ではこの環境に入らない。**試した手段は 3 つで全部だめ: (1) 固定版 `numpy==1.14.0` を python3.10 の隔離 venv に導入 → `STEP1_RC=1`、`setup.py` の中で `AttributeError: module 'collections' has no attribute 'Iterable'` / (2) より古い python を探す → この環境に在るのは 3.10・3.11・3.12・3.13 の 4 本だけ / (3) 公式の Docker → `failed to connect to the docker API at unix:///var/run/docker.sock` でデーモンが居ない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:51 と docs/DATA/probes/20260922_tools_1_run11.log:39 |
+| 4 | **その「入らない」は、この環境に固有ではなく配布物そのものの性質である。**`numpy` 1.14.0 の配布物は 23 件で、wheel の `python_version` は `cp27` / `cp34` / `cp35` / `cp36` と `source` だけ。**cp37 以上の wheel が 1 件も無いので、どの新しい python でも必ず sdist から組み立てることになる** | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:59 |
+| 5 | **`Bot18` は、取得する前に測って見送った。**`unpackedSize` は 82488973 bytes、`fileCount` は 12263。npm の `license` 欄は SPDX ではなく `https://bot18.net/licensing` という URL で、**再配布と商用の条件が配布物から読めない。**一方で `scripts` は空(`None`)なので、導入時実行という意味での危険は無い | 一次資料 | docs/DATA/probes/20260922_tools_1_run11.log:24 と docs/DATA/probes/20260922_tools_1_run11.log:25 と docs/DATA/probes/20260922_tools_1_run11.log:28 |
+| 6 | **`ungh.cc` の応答 000 は実在し、打ち直すと 200 になった。**`carlos8f/bot18` の 1 回目が `SSL_ERROR_SYSCALL` で code=000、同じ URL をそのまま打ち直して code=200。**000 を 404 と同じ欄に書いていたら「配布が無い」と誤る** | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:14 と docs/DATA/probes/20260922_tools_1_run11.log:19 |
+| 7 | **`OctoBot` の模擬の入力は、合成のデータだけで作れて読み戻せた。**`.data` は `octobot_commons.databases.SQLiteDatabase` が開く SQLite で、`description` の表に版・取引所・銘柄・時間足・始端と終端の時刻を入れ、`ohlcv` の表に 1 分足を入れる。合成の 400 本を書いて `WRITE_ROWS=400` `SELECT_COUNT=[(400,)]`、`ExchangeDataImporter` で読み戻して `IMPORTER_EXCHANGE=binance` `AVAILABLE_TABLES=['ohlcv']` `TS_MIN=1700000000` `TS_MAX=1700023940` `OHLCV_ROWS_RETURNED=3`(所要は表の `実行所要秒` の行) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:147 と docs/DATA/probes/20260922_tools_1_run11.log:151 と docs/DATA/probes/20260922_tools_1_run11.log:153 |
+| 8 | **ただし `OctoBot` は §5-4 の中核(成行と指値の 1 往復)には届いていない。**届いたのはデータの層までで、注文の層は動かしていない。**「不可」ではなく「未到達」である** | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:151 |
+| 9 | **`OctoBot` の入れ直しは 1 回で通った。**python3.12 の隔離 venv に `pip install OctoBot` が `INSTALL_RC=0`(所要は表の `install所要秒` の行)、`pip check` は `No broken requirements found.` で `PIPCHECK_RC=0` | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:139 と docs/DATA/probes/20260922_tools_1_run11.log:140 と docs/DATA/probes/20260922_tools_1_run11.log:142 |
+| 10 | **`OpenTrader` の取得は、大きさを先に測る形にしたら 1 MiB で済んだ。**`--no-checkout --depth 1 --filter=blob:none` の clone が `CLONE_RC=0` で 1 MiB、版付けされたファイルは 684 件。最上層の名前は `.changeset` `.devcontainer` `.github` `.husky` `.moon` `app` `bin` `packages` `pro` `scripts` | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:74 と docs/DATA/probes/20260922_tools_1_run11.log:75 |
+
+### 候補の一覧
+
+この回で状態が変わったのは 7・8・9・11・14 の 5 件である。それ以外の行は 10 回目の一覧をそのまま引き継いでいる(黙って落としていない)。
+
+1. `Basana` — 非同期・イベント駆動の暗号資産向け枠組み。Apache-2.0。4 回目に深掘り済み。この回では何も足していない。
+2. `Backtrader` — バックテストの機関。GPLv3+。4 回目に深掘り済み。この回では何も足していない。
+3. `PySystemtrade` — 10 回目に深掘り済み。**状態は「指値の注文模擬まで最小実行を通した」で確定。**この回では何も足していない。
+4. `PyBroker` — PyPI 上の名前は lib-pybroker。Apache License 2.0 with Commons Clause。4 回目に深掘り済み。この回では何も足していない。
+5. `bt` — MIT。注文の種別という概念が無い。4 回目に深掘り済み。この回では何も足していない。
+6. `Ziplime` — 6 回目に深掘り済み。7 回目に対応 LLM を取り直し済み。この回では何も足していない。
+7. [深掘り] `Superalgos` — **この回の深掘り。状態は「危険なので止めた」で確定。**当たった検査は §6-1 の「導入時実行」で、当たった箇所は 3 件(`prepare` = `husky install` / `presetup` = `git checkout develop && git pull upstream develop` / `postsetup` = `npm start`)。**候補としては一覧に残る**(§6-1 は導入と実行だけを止める)。
+8. [深掘り] `OpenTrader` — **この回の深掘り。状態は「危険なので止めた」で確定。**当たった検査は §6-1 の「導入時実行」(`postinstall` が `prisma` の生成と移行と種入れを走らせる)と、§6-5 の「scratchpad 以外にファイルを作らない」(`~/.opentrader` に書く)。**候補としては一覧に残る。**
+9. [深掘り] `CryptoSignal` — **この回の深掘り。状態は「この環境からは到達できない」で確定。**試した手段は 3 つで全部だめ(固定版の導入 / より古い python / 公式の Docker)。第 2 経路のコマンドは下の「第 2 経路」に書いた。
+10. `fast-trade` — 5 回目に深掘り済み。AGPL-3.0。この回では何も足していない。
+11. [深掘り] `OctoBot` — 7 回目に深掘り済み(導入・起動・拡張の導入まで)。8 回目に模擬の入力の規則を確定済み。**この回で隔離 venv を入れ直し、合成の `.data` を書き出して `ExchangeDataImporter` で読み戻すところまで到達した。**ただし**成行と指値の 1 往復は未到達で、状態は確定していない。不可ではなく未到達。残りの候補。**
+12. `pybotters` — 7 回目に深掘り済み。この回では何も足していない。
+13. `DeviaVir/zenbot` — **状態は「危険なので止めた」で確定(9 回目に閉じた)。**この回では何も足していない。
+14. [深掘り] `Bot18` — **この回の深掘り。状態は「測ったうえで取得を見送った」。**`scripts` が空なので導入時実行という意味での危険は無いが、`license` 欄が URL で再配布と商用の条件が読めず、配布物が 82488973 bytes・12263 件で、最後の公開が 2018 年。**「危険で止めた」でも「到達できない」でもないので、取得するかはリードの判断に渡す。残りの候補。**
+15. `Mendl-Labs/BacktestingCore` — **状態は「構築に要る依存が公開物として存在しないので、どこでも構築できない」で確定(9 回目)。**この回では何も足していない。
+16. `Luczinsritter/event_driven_backtesting_engine` — **状態は「導入して最小実行まで通した」で確定(9 回目)。**ライセンスは確定できない。この回では何も足していない。
+17. `mlflow` — 8 回目に深掘り済み。この回では何も足していない。
+18. `zipline-reloaded` — 3 回目に深掘り済み。この回では何も足していない。
+19. `Jesse` — 3 回目に深掘り済み。この回では何も足していない。
+20. `VnPy` — 3 回目に深掘り済み。この回では何も足していない。
+21. `Qlib` — 3 回目に深掘り済み。この回では何も足していない。
+22. `Lean CLI` — 3 回目に深掘り済み。この回では何も足していない。
+23. `hftbacktest` — 1 回目に深掘り済み。この回では何も足していない。
+24. **限界: 6 回目に立てた LimexHub と Lime Trader SDK は、6 回目のリードの検収 §4-2 の判断で区分 3(データ)と区分 2(執行)に引き継いだ。**区分 1 では追わない。
+25. **限界: `OctoBot` の必須の依存のうち、取引以外の外部連携の窓口は、7 回目から 10 回目までと同じくこの回でも候補として立てていない。**次の実行で候補に足すかはリードが決める。
+26. **限界: `mlflow` の同梱する技能とフックの定義は、それ自体が道具の候補になりうるが、8 回目から 10 回目までと同じくこの回でも候補として立てていない。**当方のフックはオーナーの指示があったときだけ変えるもの(`CLAUDE.md` §0.2 A-16)なので、立てるかどうかはリードとオーナーが決める。
+27. **限界: `PySystemtrade` が同梱する先物の価格データは、それ自体が区分 3(データ)の候補になりうるが、9 回目・10 回目と同じくこの回でも候補として立てていない。**
+28. **限界: `PySystemtrade` の実弾の発注の側(`sysexecution` と `sysbrokers/IB`)は、区分 2(執行)の候補になりうるが、区分 1 では追わない。**作業木は消していない(検収の指示どおり)。
+29. **限界: `OpenTrader` の `pro/` の中身と料金ページは読んでいない。**有料の層があるかは未確認で、この回では候補として別立てにしていない。
+30. **限界: `CryptoSignal` の `app/` の原文(発注する経路があるか)は読んでいない。**導入が通らないので実行では確かめられないが、読むことは可能である。次に回すかはリードが決める。
+
+**残りの候補名**: `OctoBot` の成行と指値の 1 往復 / `Bot18` の取得(リードの判断待ち)。
+
+### 第 2 経路(オーナー PC でそのまま打てるコマンド)
+
+`CryptoSignal` は、公式の手順どおり docker のデーモンが居る機械で次を打つ。
+
+```
+git clone --depth 1 https://github.com/CryptoSignal/Crypto-Signal.git
+cd Crypto-Signal
+docker compose up
+```
+
+### ツール1件ごとの表
+
+#### §4.0 の機械可読の表
+
+この回に深掘りした道具は `OpenTrader` / `Superalgos` / `CryptoSignal` / `Bot18` の 4 件で、§4.0 の語彙のすべての項目に行を持つ。
+`OctoBot` は 7 回目の節に全項目の行が在るので、この回はこの回に値が変わった項目だけを足した。
+根拠の欄の `docs/DATA/probes/20260922_tools_1_run11.log:<行>` は、この回の生ログの行番号である。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `OpenTrader` | 版 | npm の dist-tags.latest は 1.0.0-beta.29(公開 2025-03-06T01:25:40.999Z) | 一次資料 | https://registry.npmjs.org/opentrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:83 |
+| `OpenTrader` | 最終更新日 | GitHub の pushedAt は 2025-06-29T16:24:33Z | 一次資料 | https://ungh.cc/repos/bludnic/OpenTrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:16 |
+| `OpenTrader` | ライセンス | npm の license 欄は Apache-2.0 | 一次資料 | https://registry.npmjs.org/opentrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:84 |
+| `OpenTrader` | 言語と動作環境 | TypeScript。根の package.json の engines は node ~22.12、packageManager は pnpm@10.12.1(8 回目)。npm 配布物側の engines は None | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:79 と docs/DATA/probes/20260922_tools_1_run11.log:88 |
+| `OpenTrader` | 対応取引所 | README 逐語「cross-exchange trading with support for 100+ exchanges via CCXT」。国内取引所の名指しは README の冒頭には無い | 一次資料 | 作業木の README.md 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:75 |
+| `OpenTrader` | 星 | 2866 | 一次資料 | https://ungh.cc/repos/bludnic/OpenTrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:16 |
+| `OpenTrader` | コミット数 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「コミット数」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 保守者数 | npm の maintainers は 1 名(bludnic) | 一次資料 | https://registry.npmjs.org/opentrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:86 |
+| `OpenTrader` | 週DL数 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「週DL数」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 初回公開日 | GitHub の createdAt は 2023-12-03T03:41:21Z。npm の版は 63 件 | 一次資料 | https://ungh.cc/repos/bludnic/OpenTrader と https://registry.npmjs.org/opentrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:16 と docs/DATA/probes/20260922_tools_1_run11.log:86 |
+| `OpenTrader` | 既知の脆弱性 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「既知の脆弱性」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 料金体系 | 作業木の最上層に pro/ と pro.Dockerfile が在り、workspaces は app / packages/* / pro/* の 3 つ。pro の中身と料金ページは読んでいない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:79 |
+| `OpenTrader` | 無料枠の上限 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「無料枠の上限」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 課金開始条件 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「課金開始条件」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 隠れた依存 | postinstall が prisma generate と prisma migrate deploy と node seed.mjs を走らせるので、導入時に prisma と SQLite の DB が要る | 一次資料 | package/scripts/postinstall.mjs の逐語 / docs/DATA/probes/20260922_tools_1_run11.log:93 |
+| `OpenTrader` | 登録の要否 | 導入に登録は要らない。ただし postinstall が管理画面用の合言葉を生成して ~/.opentrader/pass に書く | 一次資料 | package/scripts/postinstall.mjs の逐語 / docs/DATA/probes/20260922_tools_1_run11.log:93 |
+| `OpenTrader` | 到達経路 | GitHub の clone(--no-checkout --depth 1 --filter=blob:none)が CLONE_RC=0 で 1 MiB、版付けされたファイルは 684 件。npm の registry は code=200、tarball は code=200 で size=2011575 | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:79 と docs/DATA/probes/20260922_tools_1_run11.log:134 |
+| `OpenTrader` | 導入可否 | **導入していない。**§6-1 の検査に当たったので止めた(理由は setup.py導入時実行 の行) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:88 と docs/DATA/probes/20260922_tools_1_run11.log:134 |
+| `OpenTrader` | install所要秒 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「install所要秒」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 依存数 | npm 配布物の dependencies は 27 件。monorepo の根の dependencies は 0 件(8 回目) | 一次資料 | https://registry.npmjs.org/opentrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:86 |
+| `OpenTrader` | pip check | 該当なし(Python の道具ではない) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:88 |
+| `OpenTrader` | 最小実行の可否 | 未到達。§6-1 で導入を止めたため | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:134 |
+| `OpenTrader` | 最小実行の中身 | 未実行。実行するなら npm i -g opentrader のあと opentrader --help。**--ignore-scripts で入れると prisma の生成が飛ぶので、その形で動くかは未確認** | 推定 | package の bin と postinstall から外挿 / docs/DATA/probes/20260922_tools_1_run11.log:84 と docs/DATA/probes/20260922_tools_1_run11.log:85 |
+| `OpenTrader` | 実行所要秒 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「実行所要秒」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | wheel展開 | 該当なし(npm)。tarball は実行せずに展開して読んだ。fileCount=50、unpackedSize=8845861 | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:88 と docs/DATA/probes/20260922_tools_1_run11.log:134 |
+| `OpenTrader` | setup.py導入時実行 | **在る。**npm 配布物の scripts は {'postinstall': 'node scripts/postinstall.mjs'} の 1 件。中身は execSync で prisma generate / prisma migrate deploy / node seed.mjs を走らせ、homedir() の直下 ~/.opentrader に pass と dev.db と strategies/ を作る | 一次資料 | package/scripts/postinstall.mjs の逐語 / docs/DATA/probes/20260922_tools_1_run11.log:85 と docs/DATA/probes/20260922_tools_1_run11.log:93 |
+| `OpenTrader` | 同梱バイナリ | .node / .so / .exe / .wasm / .dll は 1 件も無い。同梱は frontend/ の JavaScript と dist/ の .mjs | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:134 |
+| `OpenTrader` | 外部送信 | postinstall の中に外部への通信は無い(execSync は prisma と node だけ)。実行時のテレメトリは未確認 | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:134 |
+| `OpenTrader` | 自動発注機能 | 在る。README 逐語「self-hosted cryptocurrency trading bot」「Paper Trading: Test your strategies without risking real money」 | 一次資料 | 作業木の README.md 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:75 |
+| `OpenTrader` | 宣伝詐欺の兆候 | README に「必ず儲かる」の類は無い。Discord / Telegram / Reddit / X の案内のバッジが並ぶが、配布は npm と GitHub の公開経路 | 一次資料 | 作業木の README.md 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:75 |
+| `OpenTrader` | 当方データ投入 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「当方データ投入」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 時刻の扱い | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「時刻の扱い」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 再現性 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「再現性」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 規模の見積 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「規模の見積」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 4軸1_道具 | **この環境には入れられない。**§6-1 の導入時実行に当たり、postinstall が scratchpad の外(homedir)に書くので §6-5 にも当たる | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:134 |
+| `OpenTrader` | 4軸2_情報 | 当方に無い情報は、CCXT 経由の 100 以上の取引所の共通の口と、内蔵の GRID / DCA / RSI の型 | 一次資料 | 作業木の README.md 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:75 |
+| `OpenTrader` | 4軸3_視点 | 当方に無い視点は「bot の設計図を型として配り、同じ型を paper と実弾の両方に掛ける」持ち方 | 推定 | README の Strategies の一覧から外挿 / docs/DATA/probes/20260922_tools_1_run11.log:75 |
+| `OpenTrader` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「4軸4_向上」については、この回はこれ以上の手を打っていない |
+| `OpenTrader` | 配布元の一致 | 一致する。npm の maintainers は bludnic の 1 名で、GitHub の所有者と同じ | 一次資料 | https://registry.npmjs.org/opentrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:86 |
+| `OpenTrader` | 難読化 | 無し。postinstall.mjs も dist/ の .mjs も素の JavaScript | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:134 |
+| `OpenTrader` | 外部URL取得 | postinstall は外部 URL から何も取らない。prisma と node の呼び出しだけ | 一次資料 | package/scripts/postinstall.mjs の逐語 / docs/DATA/probes/20260922_tools_1_run11.log:93 |
+| `OpenTrader` | 依存の一覧 | npm 配布物の dependencies は 27 件。根の devDependencies は @changesets/cli / @moonrepo/cli / execa / husky / lint-staged / oxlint / prettier / prettier-plugin-prisma / ts-node / tsconfig-moon / typescript / vitest(8 回目) | 一次資料 | https://registry.npmjs.org/opentrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:86 |
+| `OpenTrader` | 保守者名の一貫性 | 一貫している。npm も GitHub も bludnic の 1 名 | 一次資料 | https://registry.npmjs.org/opentrader と https://ungh.cc/repos/bludnic/OpenTrader 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:86 と docs/DATA/probes/20260922_tools_1_run11.log:16 |
+| `Superalgos` | 版 | 1.6.1 | 一次資料 | package.json の version(8 回目に取得)/ docs/DATA/probes/20260922_tools_1_run11.log:68 |
+| `Superalgos` | 最終更新日 | GitHub の pushedAt は 2026-09-22T03:34:40Z | 一次資料 | https://ungh.cc/repos/Superalgos/Superalgos 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:17 |
+| `Superalgos` | ライセンス | package.json の license 欄の値は Apache License 2.0(SPDX の綴りではない)。LICENSE 本文は Apache License Version 2.0(3 回目の実測) | 一次資料 | package.json / docs/DATA/probes/20260922_tools_1_run11.log:68 |
+| `Superalgos` | 言語と動作環境 | JavaScript / Node.js。Electron と webpack を使う画面を持つ | 一次資料 | package.json の scripts(dist は electron-builder、serve は webpack-dev-server)/ docs/DATA/probes/20260922_tools_1_run11.log:64 |
+| `Superalgos` | 対応取引所 | 依存に ccxt を持つ。国内取引所の名指しは package.json には無い | 一次資料 | package.json の dependencies(8 回目)/ docs/DATA/probes/20260922_tools_1_run11.log:68 |
+| `Superalgos` | 星 | 5659 | 一次資料 | https://ungh.cc/repos/Superalgos/Superalgos 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:17 |
+| `Superalgos` | コミット数 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「コミット数」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 保守者数 | 未確認(author 欄は Superalgos Contributors という団体名で人数を示さない) | 一次資料 | package.json の author(8 回目)/ docs/DATA/probes/20260922_tools_1_run11.log:68 |
+| `Superalgos` | 週DL数 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「週DL数」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 初回公開日 | GitHub の createdAt は 2019-08-12T17:34:43Z。fork は 6020 | 一次資料 | https://ungh.cc/repos/Superalgos/Superalgos 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:17 |
+| `Superalgos` | 既知の脆弱性 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「既知の脆弱性」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 料金体系 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「料金体系」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 無料枠の上限 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「無料枠の上限」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 課金開始条件 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「課金開始条件」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 隠れた依存 | 導入時に git の upstream への接続が要る。presetup が git checkout develop && git pull upstream develop を走らせる | 一次資料 | package.json の scripts / docs/DATA/probes/20260922_tools_1_run11.log:65 |
+| `Superalgos` | 登録の要否 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「登録の要否」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 到達経路 | ungh の repos 端点が code=200。GitHub の raw で package.json と LICENSE に到達済み(3 回目・8 回目) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:20 |
+| `Superalgos` | 導入可否 | **導入していない。**§6-1 の検査に当たったので止めた(理由は setup.py導入時実行 の行) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:69 |
+| `Superalgos` | install所要秒 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「install所要秒」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 依存数 | 58 | 一次資料 | package.json の dependencies(8 回目)/ docs/DATA/probes/20260922_tools_1_run11.log:68 |
+| `Superalgos` | pip check | 該当なし(Python の道具ではない) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:69 |
+| `Superalgos` | 最小実行の可否 | 未到達。§6-1 で導入を止めたため | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:69 |
+| `Superalgos` | 最小実行の中身 | 未実行。公式の手順は npm install のあと npm run setup で、setup は node setup noShortcuts を走らせ、postsetup が npm start で本体を起動する | 一次資料 | package.json の scripts / docs/DATA/probes/20260922_tools_1_run11.log:66 と docs/DATA/probes/20260922_tools_1_run11.log:67 |
+| `Superalgos` | 実行所要秒 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「実行所要秒」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | wheel展開 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「wheel展開」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | setup.py導入時実行 | **在る(3 件)。**prepare = husky install(npm install のたびに走り git のフックの置き場所を書き換える)/ presetup = git checkout develop && git pull upstream develop(枝を切り替えて外部から取り込む)/ postsetup = npm start(本体を起動する) | 一次資料 | package.json の scripts / docs/DATA/probes/20260922_tools_1_run11.log:64 と docs/DATA/probes/20260922_tools_1_run11.log:65 と docs/DATA/probes/20260922_tools_1_run11.log:67 |
+| `Superalgos` | 同梱バイナリ | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「同梱バイナリ」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 外部送信 | 依存に discord.js・@slack/web-api・@octokit/rest を含む(8 回目)。既定で送るかは未確認 | 一次資料 | package.json の dependencies / docs/DATA/probes/20260922_tools_1_run11.log:68 |
+| `Superalgos` | 自動発注機能 | 在る。GitHub の説明文 逐語「Free, open-source crypto trading bot, automated bitcoin / cryptocurrency trading software, algorithmic trading bots」 | 一次資料 | https://ungh.cc/repos/Superalgos/Superalgos 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:17 |
+| `Superalgos` | 宣伝詐欺の兆候 | 説明文に「必ず儲かる」の類は無い。配布は GitHub の公開経路 | 一次資料 | https://ungh.cc/repos/Superalgos/Superalgos 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:17 |
+| `Superalgos` | 当方データ投入 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「当方データ投入」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 時刻の扱い | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「時刻の扱い」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 再現性 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「再現性」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 規模の見積 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「規模の見積」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 4軸1_道具 | **この環境には入れられない。**§6-1 の導入時実行 3 件に当たる。とくに presetup は外部の枝を取り込み、prepare は git のフックの置き場所を書き換える | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:69 |
+| `Superalgos` | 4軸2_情報 | 当方に無い情報は、画面上で設計図を描く形の bot の組み立てと、データマイニングの層 | 一次資料 | GitHub の説明文 逐語「Visually design your crypto trading bot, leveraging an integrated charting system, data-mining, backtesting, paper trading, and multi-server crypto bot deployments」取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:17 |
+| `Superalgos` | 4軸3_視点 | 当方に無い視点は「複数のサーバーに bot を配って動かす」という持ち方 | 一次資料 | 同上の説明文 / docs/DATA/probes/20260922_tools_1_run11.log:17 |
+| `Superalgos` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「4軸4_向上」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 配布元の一致 | PyPI にも npm にも配布が無く、GitHub だけ。突き合わせる先が存在しない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:20 |
+| `Superalgos` | 難読化 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「難読化」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 外部URL取得 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「外部URL取得」については、この回はこれ以上の手を打っていない |
+| `Superalgos` | 依存の一覧 | 58 件。ccxt・discord.js・@slack/web-api・@octokit/rest を含む(8 回目に全件取得) | 一次資料 | package.json の dependencies / docs/DATA/probes/20260922_tools_1_run11.log:68 |
+| `Superalgos` | 保守者名の一貫性 | 未確認 | 未確認 | 試したこと: §6-1 で導入を止めたので、実行が要る項目は確かめていない。項目「保守者名の一貫性」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 版 | 版の付いた公開物が無い(PyPI にも無い)。GitHub の master の中身だけ | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:20 |
+| `CryptoSignal` | 最終更新日 | GitHub の pushedAt は 2024-07-07T15:33:11Z | 一次資料 | https://ungh.cc/repos/CryptoSignal/Crypto-Signal 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:18 |
+| `CryptoSignal` | ライセンス | MIT License、Copyright (c) 2017 Abenezer Mamo(3 回目の実測) | 一次資料 | https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/LICENSE 取得日 2026-09-22(3 回目) |
+| `CryptoSignal` | 言語と動作環境 | Python。**この環境の python は 3.10 / 3.11 / 3.12 / 3.13 の 4 本で、配布どおりの固定版が要求する cp36 以下は 1 本も無い** | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:55 と docs/DATA/probes/20260922_tools_1_run11.log:61 |
+| `CryptoSignal` | 対応取引所 | 依存に ccxt==1.13.26 を持つ。国内取引所の名指しは依存の一覧には無い | 一次資料 | https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/app/requirements-step-2.txt 取得日 2026-09-22(8 回目) |
+| `CryptoSignal` | 星 | 5639 | 一次資料 | https://ungh.cc/repos/CryptoSignal/Crypto-Signal 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:18 |
+| `CryptoSignal` | コミット数 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「コミット数」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 保守者数 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「保守者数」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 週DL数 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「週DL数」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 初回公開日 | GitHub の createdAt は 2017-09-16T23:49:24Z。fork は 1334 | 一次資料 | https://ungh.cc/repos/CryptoSignal/Crypto-Signal 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:18 |
+| `CryptoSignal` | 既知の脆弱性 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「既知の脆弱性」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 料金体系 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「料金体系」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 無料枠の上限 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「無料枠の上限」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 課金開始条件 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「課金開始条件」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 隠れた依存 | **docker のデーモンが要る。**公式の導入手順は Docker で、直下に Dockerfile と docker-compose.yml が在る(8 回目)。この環境には docker の実行ファイルは在るがデーモンに繋がらない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:41 |
+| `CryptoSignal` | 登録の要否 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「登録の要否」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 到達経路 | ungh の repos 端点が code=200。依存の 2 本は raw.githubusercontent で code=200(8 回目) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:20 |
+| `CryptoSignal` | 導入可否 | **不可。**配布どおりの固定版 numpy==1.14.0 と Cython==0.28.2 を python3.10 の隔離 venv に入れたところ STEP1_RC=1 で止まった | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:55 |
+| `CryptoSignal` | install所要秒 | 3.524(失敗するまでの時間) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:55 |
+| `CryptoSignal` | 依存数 | step-1 が 2 件、step-2 が 16 件(8 回目に全件取得) | 一次資料 | https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/app/requirements-step-2.txt 取得日 2026-09-22 |
+| `CryptoSignal` | pip check | 未到達(導入が失敗したので打てない) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:55 |
+| `CryptoSignal` | 最小実行の可否 | 不可。導入が通らない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:55 |
+| `CryptoSignal` | 最小実行の中身 | 未実行。公式の手順どおりなら docker-compose up で、この環境ではデーモンに繋がらない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:41 |
+| `CryptoSignal` | 実行所要秒 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「実行所要秒」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | wheel展開 | numpy 1.14.0 の配布物は 23 件で、wheel の python_version は cp27 / cp34 / cp35 / cp36 と source のみ。**cp37 以上の wheel が 1 件も無いので、この環境では必ず sdist から組み立てることになる** | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:61 |
+| `CryptoSignal` | setup.py導入時実行 | numpy 1.14.0 の sdist は setup.py で構成を組み立てる。その setup.py が collections.Iterable を参照しており、python3.10 以降では AttributeError で落ちる | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:55 |
+| `CryptoSignal` | 同梱バイナリ | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「同梱バイナリ」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 外部送信 | 依存に twilio・slackweb・python-telegram-bot・webcord を持つ。通知先として外部へ送る作りである | 一次資料 | https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/app/requirements-step-2.txt 取得日 2026-09-22 |
+| `CryptoSignal` | 自動発注機能 | 未確認(依存に ccxt は在るが、発注する経路を配布物の中で追っていない) | 未確認 | 試したこと: 導入が通らないので中身を実行していない。app/ の原文は読んでいない。項目「自動発注機能」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 宣伝詐欺の兆候 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「宣伝詐欺の兆候」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 当方データ投入 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「当方データ投入」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 時刻の扱い | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「時刻の扱い」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 再現性 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「再現性」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 規模の見積 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「規模の見積」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 4軸1_道具 | **この環境には入れられない。**試した手段は 3 つで全部だめ: (1) 配布どおりの固定版を python3.10 の隔離 venv に導入 → STEP1_RC=1 / (2) cp36 以下の python を探す → この環境には無い / (3) 公式の Docker → デーモンに繋がらない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:41 と docs/DATA/probes/20260922_tools_1_run11.log:55 と docs/DATA/probes/20260922_tools_1_run11.log:61 |
+| `CryptoSignal` | 4軸2_情報 | 当方に無い情報は、stockstats と tulipy と TA-lib が持つ指標の組と、複数の通知先(Twilio・Slack・Telegram・Discord)への配り方 | 一次資料 | https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/app/requirements-step-2.txt 取得日 2026-09-22 |
+| `CryptoSignal` | 4軸3_視点 | 当方に無い視点は「指標の閾値を越えたら人に知らせる」までで止める設計(発注まで行かない層) | 推定 | 依存の一覧が通知の道具に偏ることから外挿 / docs/DATA/probes/20260922_tools_1_run11.log:18 |
+| `CryptoSignal` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「4軸4_向上」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 配布元の一致 | PyPI に配布が無く(crypto-signal は 404、3 回目)、突き合わせる先が存在しない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:20 |
+| `CryptoSignal` | 難読化 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「難読化」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 外部URL取得 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「外部URL取得」については、この回はこれ以上の手を打っていない |
+| `CryptoSignal` | 依存の一覧 | step-1 = numpy==1.14.0 / Cython==0.28.2。step-2 = twilio==6.6.3 / ccxt==1.13.26 / structlog==17.2.0 / python-json-logger==0.1.8 / pandas==0.22.0 / stockstats==0.2.0 / TA-lib==0.4.15 / tabulate==0.8.2 / slackweb==1.0.5 / tenacity==4.8.0 / python-telegram-bot==10.0.1 / webcord==0.2 / jinja2==2.10 / requests==2.18.4 / PyYAML==3.12 / tulipy==0.2.1 | 一次資料 | https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/app/requirements-step-1.txt と app/requirements-step-2.txt 取得日 2026-09-22 |
+| `CryptoSignal` | 保守者名の一貫性 | 未確認 | 未確認 | 試したこと: 導入が通らないので、実行が要る項目は確かめていない。項目「保守者名の一貫性」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 版 | npm の dist-tags.latest は 0.4.31(GitHub の package.json は 0.4.35。**配布物と版置き場で食い違う**) | 一次資料 | https://registry.npmjs.org/bot18 取得日 2026-09-22(8 回目)/ docs/DATA/probes/20260922_tools_1_run11.log:23 |
+| `Bot18` | 最終更新日 | npm の最後の公開は 2018-06-04T01:21:23.128Z。GitHub の pushedAt は 2022-12-02T04:32:13Z | 一次資料 | https://registry.npmjs.org/bot18 と https://ungh.cc/repos/carlos8f/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:23 と docs/DATA/probes/20260922_tools_1_run11.log:19 |
+| `Bot18` | ライセンス | npm の license 欄は SPDX ではなく URL で、逐語は https://bot18.net/licensing。**SPDX の識別子が無いので、再配布と商用の条件は配布物からは読めない** | 一次資料 | https://registry.npmjs.org/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:24 |
+| `Bot18` | 言語と動作環境 | JavaScript / Node.js。engines は {'node': '>=8.3.0'} | 一次資料 | https://registry.npmjs.org/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:27 |
+| `Bot18` | 対応取引所 | Bitfinex と Coinbase Pro(1 回目に npm の本文から取得) | 一次資料 | npm のページ本文(1 回目) |
+| `Bot18` | 星 | 203 | 一次資料 | https://ungh.cc/repos/carlos8f/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:19 |
+| `Bot18` | コミット数 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「コミット数」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 保守者数 | npm の maintainers は 1 名(carlos8f) | 一次資料 | https://registry.npmjs.org/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:29 |
+| `Bot18` | 週DL数 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「週DL数」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 初回公開日 | GitHub の createdAt は 2018-05-23T14:22:25Z。npm の版は 43 件 | 一次資料 | https://ungh.cc/repos/carlos8f/bot18 と https://registry.npmjs.org/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:19 と docs/DATA/probes/20260922_tools_1_run11.log:29 |
+| `Bot18` | 既知の脆弱性 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「既知の脆弱性」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 料金体系 | 1 回目に npm の本文から取得した逐語は「$49.99 の 8 桁のアンロックコード」「無料お試し(guest チャンネル)は 10 倍遅く自動売買不可・15 分で自動終了」。**この回では料金ページを取り直していない** | 一次資料 | npm のページ本文(1 回目) |
+| `Bot18` | 無料枠の上限 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「無料枠の上限」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 課金開始条件 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「課金開始条件」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 隠れた依存 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「隠れた依存」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 登録の要否 | アンロックコードが要る(1 回目の逐語)。この回では登録の窓口を開いていない | 一次資料 | npm のページ本文(1 回目) |
+| `Bot18` | 到達経路 | ungh の repos 端点は 1 回目 code=000(SSL_ERROR_SYSCALL)で、打ち直して code=200。npm の registry の JSON は 8 回目に取得済み | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:20 |
+| `Bot18` | 導入可否 | **導入していない。**配布物の大きさを先に測った: unpackedSize=82488973 bytes、fileCount=12263。**82 MB・12263 件を落とす価値があるかは、ライセンス欄が URL で条件が読めないうちは判断できない** | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:30 |
+| `Bot18` | install所要秒 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「install所要秒」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 依存数 | 50 | 一次資料 | https://registry.npmjs.org/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:26 |
+| `Bot18` | pip check | 該当なし(Python の道具ではない) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:30 |
+| `Bot18` | 最小実行の可否 | 未到達。導入していない | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:30 |
+| `Bot18` | 最小実行の中身 | 未実行。bin は {'bot18': './bot18.sh'} なので、入れるなら bot18 --help から | 一次資料 | https://registry.npmjs.org/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:27 |
+| `Bot18` | 実行所要秒 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「実行所要秒」については、この回はこれ以上の手を打っていない |
+| `Bot18` | wheel展開 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「wheel展開」については、この回はこれ以上の手を打っていない |
+| `Bot18` | setup.py導入時実行 | **無い。**npm の scripts は None(空) | 一次資料 | https://registry.npmjs.org/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:25 |
+| `Bot18` | 同梱バイナリ | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「同梱バイナリ」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 外部送信 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「外部送信」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 自動発注機能 | 在る。GitHub の説明文 逐語「Bot18 is a high-frequency cryptocurrency trading bot developed by Zenbot creator @carlos8f」 | 一次資料 | https://ungh.cc/repos/carlos8f/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:19 |
+| `Bot18` | 宣伝詐欺の兆候 | **注意の要る点が 3 つ。**(1) ライセンス欄が SPDX ではなく自社サイトの URL / (2) 有料のアンロックコードを買わせる形で、無料お試しは機能を落としてある(1 回目の逐語)/ (3) 1 回目に取得した npm の本文に「BETA RELEASE...Live trading is discouraged」と作者自身が書いている | 一次資料 | npm のページ本文(1 回目)/ docs/DATA/probes/20260922_tools_1_run11.log:24 |
+| `Bot18` | 当方データ投入 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「当方データ投入」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 時刻の扱い | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「時刻の扱い」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 再現性 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「再現性」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 規模の見積 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「規模の見積」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 4軸1_道具 | 入れていない。ライセンス欄が URL で条件が読めず、配布物が 82 MB・12263 件、最後の公開が 2018 年。**「危険」ではなく「測ったうえで取得を見送った」** | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:30 |
+| `Bot18` | 4軸2_情報 | 当方に無い情報は、板の力の不均衡(power-imbalance)を戦略として持つこと(1 回目に npm の本文から取得) | 一次資料 | npm のページ本文(1 回目) |
+| `Bot18` | 4軸3_視点 | 当方に無い視点は「高頻度の売買を、取引所の生の流れを監視しながら人が手で割り込める形にする」持ち方 | 推定 | npm の本文の説明から外挿(1 回目) |
+| `Bot18` | 4軸4_向上 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「4軸4_向上」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 配布元の一致 | 一致する。npm の maintainers は carlos8f の 1 名で、GitHub の所有者 carlos8f と同じ | 一次資料 | https://registry.npmjs.org/bot18 と https://ungh.cc/repos/carlos8f/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:29 と docs/DATA/probes/20260922_tools_1_run11.log:19 |
+| `Bot18` | 難読化 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「難読化」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 外部URL取得 | 未確認 | 未確認 | 試したこと: 配布物を落としていないので、実行が要る項目は確かめていない。項目「外部URL取得」については、この回はこれ以上の手を打っていない |
+| `Bot18` | 依存の一覧 | 50 件。この回では全件を取り直していない(8 回目に registry の JSON として保存済み) | 一次資料 | https://registry.npmjs.org/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:26 |
+| `Bot18` | 保守者名の一貫性 | 一貫している。npm も GitHub も carlos8f の 1 名 | 一次資料 | https://registry.npmjs.org/bot18 と https://ungh.cc/repos/carlos8f/bot18 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run11.log:29 と docs/DATA/probes/20260922_tools_1_run11.log:19 |
+| `OctoBot` | 最小実行の可否 | **可。**合成の 1 分足 400 本を .data に書き出し、ExchangeDataImporter で読み戻すところまで RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:158 |
+| `OctoBot` | 最小実行の中身 | 合成の 1 分足 400 本を WRITE_ROWS=400 で書き、SELECT_COUNT=[(400,)]。importer の初期化で IMPORTER_EXCHANGE=binance / IMPORTER_SYMBOLS=['BTC/USDT'] / AVAILABLE_TABLES=['ohlcv'] / TS_MIN=1700000000 / TS_MAX=1700023940 を読み、get_ohlcv が OHLCV_ROWS_RETURNED=3。**成行と指値の 1 往復には到達していない**(§5-4 の中核はここではない) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:158 |
+| `OctoBot` | 実行所要秒 | 生ログの real の値をそのまま書くと 0m1.311s | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:158 |
+| `OctoBot` | install所要秒 | 生ログの real の値をそのまま書くと 1m17.989s(python3.12 の隔離 venv に入れ直し。INSTALL_RC=0) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:143 |
+| `OctoBot` | pip check | No broken requirements found.(PIPCHECK_RC=0) | 実測 | docs/DATA/probes/20260922_tools_1_run11.log:143 |
+
+#### 文章による補い(表に書ききれないもの)
+
+- **`OpenTrader` を止めた判断について(原文に無い判断。黙って決めずにここに書く)。**委任文 §6-1 は「1 つでも不審なら導入せず止める」と書き、不審の例として「導入時に外部へ通信」を挙げている。`postinstall` は外部へ通信しない。**それでも止めたのは、§6-5 の「scratchpad 以外にファイルを作らない」に当たるからである**(`homedir()` の直下に書く)。`npm install --ignore-scripts` を使えば `postinstall` を走らせずに入れられるが、その形では `prisma` の生成が飛ぶので動くかどうかが分からない。**どちらを採るかはリードの判断に渡す。**
+- **`Superalgos` を止めた判断について(同じく原文に無い判断)。**起動の指定は `prepare = husky install` を名指ししていたが、実際に引くと `presetup` が `git pull upstream develop` を走らせる。**「外部から取り込む」に当たるので、こちらのほうが重い。**止めた理由は 3 件のうちのこの 1 件である。
+- **`Bot18` を「危険」と書かなかった理由。**`scripts` が空なので導入時実行が無く、配布元も保守者名も一致する。引っかかるのは `license` 欄が SPDX でないことと、配布物の大きさと、2018 年で止まっていることで、これらは**委任文 §6-1 の「不審」の例に当たらない。**よって「危険なので止めた」とは書かず、「測ったうえで取得を見送った」と書いた。
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 時間 | 上限 20 分。超過。残りの候補 5 件のうち 4 件の状態を確定させるところまで打った |
+| トークン | 上限 5 万。**超過している。**表の生成を機械に寄せて出力を抑えたが、それでも足りなかった |
+| 打ち切った作業 | `OctoBot` の成行と指値の 1 往復(注文の層)。新しい検索計画 6 本(残りの候補が空になっていないので、そもそも打つ番ではない) |
+| 常駐プロセス | 残していない(背景で走らせた 4 件はすべて終了を確認した) |
+| リポジトリへの書き込み | `docs/DATA/SCAN_2026-09-21_tools.md` と `docs/DATA/probes/20260922_tools_1_run11.log` の 2 つだけ。コミットはしていない |
+
+## 受け入れ検査の出力
+
+11 回目の提出前に打った最後の出力(生ログ 9 本を渡した)。**誤検出だと判断して自分で閉じた行は 1 件も無い。**
+
+```
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md \
+    docs/DATA/probes/20260922_tools_1_run3.log docs/DATA/probes/20260922_tools_1_run4.log \
+    docs/DATA/probes/20260922_tools_1_run5.log docs/DATA/probes/20260922_tools_1_run6.log \
+    docs/DATA/probes/20260922_tools_1_run7.log docs/DATA/probes/20260922_tools_1_run8.log \
+    docs/DATA/probes/20260922_tools_1_run9.log docs/DATA/probes/20260922_tools_1_run10.log \
+    docs/DATA/probes/20260922_tools_1_run11.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
