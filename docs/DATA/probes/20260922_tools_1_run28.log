@@ -1,0 +1,243 @@
+=== 区分1 28 回目の実行(監査役にかける直前の最後の整え) 生ログ 2026-09-22 ===
+=== この回の指定(27 回目の検収 §7 と起動の指定 1〜6): (1) 段 0 の定義を直し 51・92 を注記つきで段 0 に置く / (2) 段 3 の定義に「足の時計が足を配るのは段 3 ではない」を足す / (3) 安全側の通算を 2 段(手引き 6 + 指示の文章 1 + 外部送信 1 = 8)に直す / (4) 分布の行に「機関ごとの表を見よ」の参照を付ける / (5) 57 番の記述に「列を追うのは執行の機関だけ」と当方の engine.py との比べ方の但し書きを明記する / (6) 区分 1 の要約を 1 節にまとめる(監査役に渡す入口)
+=== 新しい検索計画は打たない。候補も増やさない。構築・導入・最小実行・登録・鍵の発行・購入・発注はしない。原典を読むのは許されている。
+=== 申し送り: 引く逐語を grep -cF で 1 件ずつ生ログと突き合わせる。折れている行は 1 行に繋がない。既定枝は ungh.cc の defaultBranch で確かめる。code=000 や TLS 切断は 404 の欄に入れず打ち直す。
+--- 2026-09-22T18:19:01Z method=run target=ls_probes rc=0 time_s=0.01 note=生ログの本数(この回の run28.log を作ったあとに打った値)
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+27
+--- 2026-09-22T18:19:07Z method=run target=ours_engine_optimism rc=0 time_s=.004 note=当方の engine.py が自ら楽観と書いている箇所の逐語。要約の「3 つの形」の型 3 の根拠
+$ sed -n "40,60p" src/bot/backtest/engine.py
+    (``high > level`` for a long TP, ``low < level`` for a short TP); merely
+    touching it is not a fill. The fill is booked at the level itself with
+    ``maker_fee`` and no spread/slippage, and is only ever checked on bars
+    STRICTLY AFTER the entry bar, so there is no look-ahead.
+
+    1m-bar approximation (optimistic, stated for the record): on a 1-minute
+    bar we only know that the level traded through somewhere inside the
+    minute, not that our specific resting order was reached in the queue, nor
+    whether the stop level was touched EARLIER in the same minute. When the
+    stop and the maker TP are both inside one bar's range the STOP is taken
+    first (conservative), but within a single bar the true sequencing is
+    unknown. Real fills also depend on queue position; this model grants the
+    fill on any strict through-trade. Treat maker-TP results as an upper
+    bound, not a promise.
+
+``stop_mode="wick_invalidation"`` + ``stop_window_bars``
+    Replaces the fixed-percentage protective stop with a STRUCTURAL one: the
+    invalidation level is the extreme of the trailing ``stop_window_bars``
+    COMPLETED bars' wicks as of the fill — ``min(low)`` over bars
+    ``[b - N, b - 1]`` for a long, ``max(high)`` over the same bars for a
+    short, where ``b`` is the fill bar. Bar ``b`` itself is excluded (its own
+--- 2026-09-22T18:19:14Z method=run target=ours_engine_lines rc=0 time_s=.004 note=当方の engine.py の楽観の逐語の行番号。折れている行は 1 行に繋がない
+$ grep -n "optimistic, stated for the record\|Real fills also depend on queue position\|fill on any strict through-trade" src/bot/backtest/engine.py
+45:    1m-bar approximation (optimistic, stated for the record): on a 1-minute
+51:    unknown. Real fills also depend on queue position; this model grants the
+52:    fill on any strict through-trade. Treat maker-TP results as an upper
+--- 2026-09-22T18:19:14Z method=run target=ours_maker_fill_ref_callers rc=0 time_s=.06 note=当方の maker_fill_ref を研究の模擬が呼んでいるか。型 1(機構はあるが実行経路が呼ばない)の当方側の根拠
+$ git ls-files -z | xargs -0 grep -ln "maker_fill_ref"
+  (この行の一つ上の git ls-files 経由の走査は戻らなかったため中断し、下の git grep で打ち直した)
+--- 2026-09-22T18:22:07Z method=run target=ours_maker_fill_ref_callers2 rc=0 time_s=1.0 note=打ち直し。当方の maker_fill_ref を研究の実行経路(src/ と scripts/)が呼んでいるか
+$ git grep -ln "maker_fill_ref" -- src scripts tests docs
+docs/AUDITOR/VERDICTS/2026-09-21_tools_survey_prompt.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run20.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run23.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run26.md
+docs/DATA/SCAN_2026-09-21_tools.md
+docs/DATA/delegations/20260921_tools_survey_prompt.md
+docs/DATA/delegations/20260922_tools_survey_prompt.md
+docs/DATA/probes/20260921_tools_absent.log
+docs/DATA/probes/20260921_tools_inventory.log
+tests/test_qa_maker_fill_ref.py
+--- 2026-09-22T18:22:07Z method=run target=ours_maker_fill_ref_callers3 rc=1 time_s=0.5 note=src/ と scripts/ に絞った走査。当たり 0 件 = 研究の実行経路は呼んでいない(rc=1 は一致なし)
+$ git grep -n "maker_fill_ref" -- src scripts
+  (当たり 0 件)
+--- 2026-09-22T18:22:44Z method=run target=verbatim_recheck rc=0 time_s=8.0 note=この回に引く逐語 55 本を grep -cF で 1 件ずつ生ログ(run2..run28)と突き合わせる。0 件のものは原典を取り直す
+$ while IFS= read -r q; do n=$(grep -cF -- "$q" docs/DATA/probes/20260922_tools_1_run*.log | awk -F: "{s+=\$2} END{print s}"); echo "$n  $q"; done < quotes28.txt
+2  order.trade(order.order_id, order.price,
+1  order.amount, order.datetime)
+1  class _PendingOrder:
+1  self._pending: list[_PendingOrder] = []
+4  half_spread = spread / 2.0
+2  return _clamp_probability(mid_price + half_spread)
+2  default_spread: float = Field(default=0.02, ge=0.0, le=1.0)
+1  ready_bar_index=bar_index + self.config.latency_bars
+4  eventBus.on('trade', queueTrade)
+2  entry_latency: 0,
+3  void ProcessDelayQueue( const Quote& quote );
+1  async for snapshot in book_source.iter_snapshots():
+1  yield Event(EVENT.TICK, calendar_dt=calendar_dt, trading_dt=trading_dt, tick=tick)
+1  void MatchEngine::match_orders(WTSTickData* curTick, OrderIDs& to_erase)
+1  double& quepos = ordInfo._queue;
+2  ordInfo._queue = lastTick->bidqty(0);
+1  double orderQty = ordInfo->_isBuy ? curTick->askqty(0) : curTick->bidqty(0);
+1  double orderQty = ordInfo._isLong ? curTick->askqty(0) : curTick->bidqty(0);
+2  MatchEngine() : _tick_cache(NULL),_cancelrate(0), _sink(NULL)
+7  ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);
+3  _cancelrate = cfg->getDouble("cancelrate");
+1    **pessimistic** on fill count, and heavily so.
+1  - Cancellations ahead of us are **invisible**, so we never move up the queue →
+4  strength_bps: float = 0.0
+1  slippage_model: Optional[SlippageModel] = None,
+2  impact_cost: float = 0.0,
+1  , slippage_model_(std::make_unique<ZeroSlippageModel>())
+1  ('slip_perc', 0.0),
+1  slippage_volume_k: float | None = Field(default=None, ge=0.0)
+1  period_return -= turnover * self.cost_bps / 10000.0;
+1  requests.post('http://www.yutiansut.com/signal?user_id={}&template={}&strategy_id={}&realaccount={}&code={}&order_direction={}&order_offset={}&price={}&volume={}&order_time={}'.format(
+1  attached_assets/Pasted-Extend-the-existing-file-to-add-a-LIVE-market-data-mode_1789237532670.txt
+2  repo=pst-group/pysystemtrade
+3  repo=yutiansut/QUANTAXIS
+1  yield minute, SimulationEvent.BAR
+1  for dt, action in self.clock:
+1  if action == SimulationEvent.BAR:
+1  if action == BAR:
+1  frequency: 1d
+1  double trdPx = curPx;
+5  if (_slippage != 0)
+13  queuePosition
+1  for pending in self._pending:
+1  data: Vec<DataSource<Event>>,
+2  s.period.latest_trade_time = trade.time
+2  lOrderQueue_t m_lOrderDelay;
+1  return GeometricHit{*t_cross, level, true};
+0  volume_limit: Optional[float] = 0.025,
+1  MatchEngine	_matcher;
+2  1m-bar approximation (optimistic, stated for the record): on a 1-minute
+3  Real fills also depend on queue position; this model grants the
+1  execution_price = slippage_model_->get_execution_price(
+2  adj_cost_ratio = self.impact_cost * (trade_val / total_trade_val) ** 2
+1  # Execution depends on volume filler
+2  double maxQty = min(orderQty, ordInfo->_left);
+--- 2026-09-22T18:23:10Z method=run target=verbatim_gap_note rc=0 time_s=.01 note=上の突き合わせで当たり 0 件だったのは 1 本 volume_limit: Optional[float] = 0.025, だけ。24 回目の知見 11 が一次資料(URL)の印で引いたもので、生ログには先頭 200 バイトしか入っていない。原典を取り直して確かめる
+--- 2026-09-22T18:23:10Z method=run target=defaultBranch_pybroker rc=0 time_s=1.0 note=既定枝を ungh.cc で確かめてから取る(当てずっぽうの取得をしない)
+$ curl -sS -o resp.json -w "%{http_code}" "https://ungh.cc/repos/edtechre/pybroker"
+edtechre/pybroker => code=000 repo=bernardopaulsen/almgren-chriss defaultBranch=main stars=0 pushedAt=2023-05-30T19:24:11Z
+  (1 回目は code=000 = 接続の切断。申し送りのとおり 404 の欄に入れず打ち直す。残っていた古い resp.json を読んでしまったので、出力先も作り直した)
+--- 2026-09-22T18:23:35Z method=run target=defaultBranch_pybroker_retry rc=0 time_s=1.0 note=打ち直し
+$ curl -sS --retry 2 -o r.json -w "%{http_code}" "https://ungh.cc/repos/edtechre/pybroker"
+edtechre/pybroker => code=200 repo=edtechre/pybroker defaultBranch=master stars=3545 pushedAt=2026-09-21T16:16:26Z
+--- 2026-09-22T18:23:49Z method=GET url=https://raw.githubusercontent.com/edtechre/pybroker/master/src/pybroker/slippage.py label=c4_slip_recheck code=200 bytes=16822 rc=0 time_s=3.425149 note=24 回目の知見 11 の逐語 volume_limit: Optional[float] = 0.025, を原典で確かめる
+"""Implements slippage models."""
+
+"""Copyright (C) 2023 Edward West. All rights reserved.
+
+This code is licensed under Apache 2.0 with Commons Clause license
+(see LICENSE for details).
+"""
+
+import ma
+--- 2026-09-22T18:23:49Z method=run target=c4_volume_limit rc=0 time_s=.005 note=当たりの本数と行番号
+$ grep -n "volume_limit\|price_impact: float\|class RandomSlippageModel" c4_slip.py
+318:    Share quantity may be capped at ``volume_limit * bar_volume``. Price
+327:        volume_limit: Max participation as a fraction of bar volume.
+333:        price_impact: float = 0.1,
+334:        volume_limit: Optional[float] = 0.025,
+338:        if volume_limit is not None and volume_limit < 0:
+339:            raise ValueError("volume_limit must be >= 0.")
+341:        self.volume_limit = volume_limit
+342:        self._cap_enabled = volume_limit is not None and volume_limit > 0
+345:        self._volume_limit_dec = (
+346:            Decimal(str(volume_limit)) if self._cap_enabled else None
+407:            assert self._volume_limit_dec is not None
+408:            max_shares = self._volume_limit_dec * to_decimal(volume)
+440:            "Consider lowering price_impact or setting volume_limit.",
+backtest_data/qa_known_answer_maker4_20260905/micro/HAND_DERIVATION_d.md
+backtest_data/qa_known_answer_maker4_r2_20260905/micro/HAND_DERIVATION_d.md
+backtest_data/qa_known_answer_maker4_r2_20260905/micro/HAND_DERIVATION_e.md
+backtest_data/qa_known_answer_maker4_r2_20260905/micro/HAND_DERIVATION_i.md
+docs/AUDITOR/VERDICTS/2026-09-21_tools_survey_prompt.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run20.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run23.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run26.md
+--- 2026-09-22T18:24:25Z method=run target=ours_maker_fill_ref_fullscope rc=0 time_s=約130 note=範囲を切らない走査(git ls-files 全体)。先に戻らなかった 1 本が背景で終わったので、その出力をそのまま貼る。backtest_data/ の既知解の手書き導出が参照しているが、これは文書であって実行経路ではない
+$ git ls-files -z | xargs -0 grep -ln "maker_fill_ref"
+backtest_data/qa_known_answer_maker4_20260905/micro/HAND_DERIVATION_d.md
+backtest_data/qa_known_answer_maker4_r2_20260905/micro/HAND_DERIVATION_d.md
+backtest_data/qa_known_answer_maker4_r2_20260905/micro/HAND_DERIVATION_e.md
+backtest_data/qa_known_answer_maker4_r2_20260905/micro/HAND_DERIVATION_i.md
+docs/AUDITOR/VERDICTS/2026-09-21_tools_survey_prompt.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run20.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run23.md
+docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run26.md
+--- 2026-09-22T18:24:25Z method=run target=ours_maker_fill_ref_importers rc=1 time_s=.4 note=import の当たり。実行経路が取り込んでいるか
+$ git grep -n "import maker_fill_ref\|from maker_fill_ref\|qa.maker_fill_ref"
+tests/test_qa_maker_fill_ref.py:38:import maker_fill_ref as ref  # noqa: E402
+tests/test_qa_maker_fill_ref.py:39:import maker_fill_ref_packet_r2 as pkt  # noqa: E402
+docs/DATA/SCAN_2026-09-21_tools.md
+docs/DATA/delegations/20260921_tools_survey_prompt.md
+docs/DATA/delegations/20260922_tools_survey_prompt.md
+docs/DATA/probes/20260921_tools_absent.log
+docs/DATA/probes/20260921_tools_inventory.log
+tests/test_qa_maker_fill_ref.py
+  (当たり 0 件 = 取り込んでいる .py は無い。tests/test_qa_maker_fill_ref.py は別経路で読んでいる)
+  (訂正: 直前の「当たり 0 件」は誤り。import の当たりは tests/test_qa_maker_fill_ref.py の 2 行である。
+   正しい言い方は「src/ と scripts/ に import の当たりは 0 件で、取り込んでいるのは試験だけ」。
+   また 144-151 行と 166-171 行は、背景で走っていた同じ走査が tee -a で書き込んだ重複の出力である。消さずに残す。)
+--- 2026-09-22T18:24:59Z method=run target=type1_not_called rc=0 time_s=.3 note=型 1(機構はあるが検証の実行経路が呼ばない)の該当件数を報告書から数え直す
+$ grep -c "呼んでいなかった" docs/DATA/SCAN_2026-09-21_tools.md ; grep -n "呼んでいなかった" docs/DATA/SCAN_2026-09-21_tools.md | cut -c1-120
+3
+7256:| 15 `Mendl-Labs/BacktestingCore` | 合成の板 `synthetic_book.rs` | **呼んでいなかった**(23 回目に確
+7257:| 107 `sigc` | 費用・影響の模型 `CostModel` | **呼んでいなかった**(22 回目に確定) | `backtest.
+7258:| 20 `VnPy` | 事象の機関 `EventEngine` | **呼んでいなかった**(23 回目に確定) | `vnpy_ctastrategy/
+--- 2026-09-22T18:24:59Z method=run target=type2_default_off rc=0 time_s=.3 note=型 2(呼ぶが既定では無効)の該当を報告書から数え直す。27 回目は 57 番を「7 件目」と書き、26 回目の知見 20 は「5 件」と書いている。どちらが正かを列挙で決める
+$ grep -n "既定では無効" docs/DATA/SCAN_2026-09-21_tools.md | cut -c1-160
+7254:| 4 `PyBroker` | 滑りの模型 | **呼んでいた。ただし既定では無効** | `slippage_model` が `strategy.py` に 19 行(23 回目の知見 12)
+7255:| 33 `backtesting_execution_simulator` | 影響の式 | **呼んでいた。ただし既定では無効** | `execution_price = slippage_model_->get_executi
+7553:| 4 `PyBroker` | **4・6** | **1** | 機構 = 逐語 impact is ``price_impact * (filled_shares / bar_volume) ** 2`` と `volume_limit: Optional[float] = 0.
+7557:| 21 `Qlib` | **4・6** | **1** | 機構 = `adj_cost_ratio = self.impact_cost * (trade_val / total_trade_val) ** 2`(24 回目の知見 9)。既定 = `impac
+7590:**24 回目に「呼ぶが既定では無効」として挙がっていた 3 件(4・33・2)のうち、33 番は照合の機関が既定で働くので、
+7819:| 4 | **候補 91 の影響の関数は、候補 21 `Qlib` と同じ「呼ぶが既定では無効」である。**逐語は `strength_bps: float = 0.0,` �
+7835:| 20 | **「呼ぶが既定では無効」は、この回でさらに 2 件見つかった。**91 番(影響の関数)と 92 番(参加率の影響)であ�
+7872:| 92 `prediction-market-backtester` | **6** | **0** | 機構 = `return self.config.slippage_volume_k * (qty / recent_volume)`。既定 = `slippage_volume_k
+7911:**92 番も「呼ぶが既定では無効」だが、機構が 6 で既定が 0 なので (a) に入れた。**上の 8 件に 92 番を足すと 9 件に�
+8277:(仕組みは在り、値が 0 に置かれている)。**24 回目に格上げした「呼ぶが既定では無効」の型の 7 件目である。**
+  (列挙で決めた結果: 型 2「呼ぶが既定では無効」= 2・4・33・21・91・92・57 の 7 件。
+   26 回目の知見 20 の「5 件」は 33 番を数え落としている(24 回目に 4・33・2 の 3 件として挙がっていたのに、
+   26 回目は「25 回目までの 21・4・2」と 3 件しか数えていない)。27 回目の「7 件目」のほうが列挙と合う。
+   型 1「機構はあるが検証の実行経路が呼ばない」= 15・107・20 の 3 件(上の grep の 3 行)。)
+--- 2026-09-22T18:25:14Z method=run target=stage_distribution_arith rc=0 time_s=.01 note=段(既定)の分布の足し算を打ち直す。27 回目の表の値をそのまま足す
+$ python3 -c "..."
+段ごとの件数: {'0': 2, '1': 7, '2': 5, '3': 1, '4': 6, '5': 5, '6': 8}
+尺度に載る合計 = 34
+該当なし(尺度の外) = 2  (54・87)
+総計 = 36
+印 区分1-市場影響と約定の模型 の総数 = 36
+一致するか: True
+--- 2026-09-22T18:25:14Z method=run target=safety_tally_arith rc=0 time_s=.01 note=安全側の通算を 2 段で数え直す(27 回目の検収 §4(3) の指定)
+$ python3 -c "..."
+作業者向けの手引きの同梱 = 6 ['44', '74', '120', '41', '58', '19']
+指示の文章の同梱 = 1 ['97']
+外部送信の口 = 1 ['51']
+合計 = 8
+--- 2026-09-22T18:28:53Z method=run target=owner_log_l398 rc=0 time_s=.02 note=完了の形の逐語の帰属。L-398 でオーナーが発した語は何か。本文はリードの案 A の文である
+$ grep -n "L-398" docs/OWNER_LOG.md | cut -c1-260
+397:| L-398 | 2026-09-22 | 問い(区分 1 のテーマ)と決定(完了の範囲) | 「**区分1のテーマは何ですか？**」→ リードが委任文 §2 の逐語を提示 → 「**案 A' で**」 | リードの対応: **オーナーの問いで、リ
+  ---
+$ grep -n "L-396" docs/OWNER_LOG.md | cut -c1-200
+395:| L-396 | 2026-09-22 | 指示(区分 1 の完了と、全体の受け取り監査) | 「**区分1を完了まで進めて、その後区分1の全体受け取り監査をしてください**」 | 
+397:| L-398 | 2026-09-22 | 問い(区分 1 のテーマ)と決定(完了の範囲) | 「**区分1のテーマは何ですか？**」→ リードが委任文 §2 の逐語を提示 → 「**案 A' で
+--- 2026-09-22T18:31:03Z method=run target=scope_diagnostic rc=0 time_s=1.2 note=この回の節は §4.0 の行が無いので検査の scope() から外れる。節だけを切り出して scope を通さずに部品を当てた診断。K2 が 1 件当たるが、原因は候補 51 の原典の逐語の閉じない丸括弧で、書き換えないので残す。--all を渡すと道具が落ちるので部品を直接呼んだ
+K1 太字                0 件
+K2 括弧                1 件
+    112 丸括弧 の数が合わない (2 対 0)
+K4 生ログに無い数値          0 件
+K5 同じ道具に別の値          0 件
+K9 表に無い数値            0 件
+K10 見出しの件数           0 件
+--- 2026-09-22T18:31:03Z method=run target=acceptance_check rc=0 time_s=1.0 note=委任文 §12 の受け入れ検査。生ログ 27 本を全部渡して打った最終の実行
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
