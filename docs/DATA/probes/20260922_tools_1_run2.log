@@ -322,5 +322,14 @@ $ timeout 180 $SP/venv_nautilus/bin/python3 $SP/probe_nautilus.py  → rc=0(2026
 
 ### LV-8 展開済み wheel の一覧と中身(監査 2 回目の指摘 2。「wheel展開は本回未実施」は誤り)
 $ ls -d $SP/dl/extract/*/ → backtesting-0.6.6 / jesse-3.2.1 / lean-1.0.229 / pyqlib-0.9.7 / qstrader-0.3.0 / vnpy-4.4.0 / zipline_reloaded-3.1.1 の 7 件(全部展開済み)
-$ find <各展開先> -name '*.so' | wc -l → zipline_reloaded 16 / pyqlib 2 / vnpy 0 / lean 0 / qstrader 0
-$ find <各展開先> -maxdepth 2 -name setup.py | wc -l → 全 5 件とも 0(wheel なので導入時に Python コードは実行されない)
+$ for d in */; do find "$d" -name '*.so' | wc -l; find "$d" -name 'setup.py' | wc -l; done  (展開済み 7 件すべて。監査 3 回目の指摘 4 を受けて対象を明記し、maxdepth を外して数え直した)
+  パッケージ          .so   setup.py
+  backtesting           0      0
+  jesse                 3      0
+  lean                  0      0
+  pyqlib                2      0
+  qstrader              0      0
+  vnpy                  0      0
+  zipline_reloaded     16      0
+  → **7 件すべてで `setup.py` は 0 件**(wheel なので導入時に Python コードは実行されない)。`.so` は zipline_reloaded 16・jesse 3・pyqlib 2 で、中身の静的監査は未実施。
+  (前版の「全 5 件とも 0」は対象を書いておらず、jesse と backtesting を数えていなかった。jesse の `.so` 3 件もこの数え直しで出た)

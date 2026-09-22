@@ -481,10 +481,12 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 7. QSTrader(mhallsmoore） — 実測 — MIT。**日次の目標配分リバランス型で、指値/板の概念がソースに存在しない**(アーキテクチャ上の限界。最小実行はbuy_and_holdリバランスで成功)
 8. Lean CLI(QuantConnect） — 実測(install) + 未完了(最小実行、Docker必須のため) — Apache
 9. PyAlgoTrade(gbeced） — 実測 — **指値の1往復に成功**。**2023-11-13にアーカイブ済み、後継として"Basana"を公式に指名**(README逐語で確認)
-10. Zenbot(carlos8f、本家) — 一次資料(README) — **2022-02-15にアーカイブ済み**「project is no longer actively maintained」。Node.js+MongoDBで本回は導入未実施(Python環境外・MongoDB要・archived)
 11. Qlib(`pyqlib`、microsoft） — 実測(install) + 未完了(最小実行、独自バイナリ形式の準備が必要) — MIT。**依存185パッケージ**(mlflow/databricks-sdk/redis/pymongo/gym/cvxpy等を含む巨大な足跡)
 12. VnPy(vnpy/vnpy） — 実測(install・コア構成確認) + 未完了(最小実行) — MIT。**コア`vnpy`パッケージにgateway実装・バックテストエンジンは同梱されていない**(alpha/chart/event/traderのみ)。`vnpy_binance`はPyPIに実在(実測)、`vnpy_bitflyer`/`vnpy_bitbank`/`vnpy_gmocoin`はPyPIに存在しない(実測、curl 404)
 13. Jesse(jesse-ai） — 実測(install・危険検査・取引所ドライバのソース確認) + 未完了(最小実行、PostgreSQL+Redis要) — MIT(コア)。**取引所ドライバ(ソース実測)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter。bitFlyer/bitbank/GMOコインは無い**。Apex/Lighter向けの署名用ネイティブバイナリ(zklink_sdk・lighter-signer)を同梱
+
+**一次資料の確認のみで、導入していない(4 件。番号は上の一覧の続き)**:
+10. Zenbot(carlos8f、本家) — 一次資料(README) — **2022-02-15にアーカイブ済み**「project is no longer actively maintained」。Node.js+MongoDBで本回は導入未実施(Python環境外・MongoDB要・archived)
 14. Mendl-Labs/BacktestingCore — 一次資料(WebFetch要約) — **Functional Source License 1.1**(2年後にApache2.0化。OSI承認のオープンソースライセンスではない)。スター0・フォーク0・18コミットの新規/未検証プロジェクト。Rust製、PyO3でPythonから戦略記述可能を謳う。本回は未導入(PyPI無し、要Rustビルド、低優先)
 15. Luczinsritter/event_driven_backtesting_engine — 一次資料(WebFetch要約) — スター0・フォーク0・5コミットの個人/学習用プロジェクト、MIT。本回は未導入(低優先)
 16. Bot18(carlos8f、Zenbot作者の別製品) — 一次資料(npmページ本文・GitHub README) — 「$49.99の8桁アンロックコード」「無料お試し(guestチャンネル)は10倍遅く自動売買不可・15分で自動終了」「BETA RELEASE...Live trading is discouraged」の逐語を確認。npm最終公開は約7年前(2019年頃)。本回は未導入(Node.js・古い・低優先)
@@ -519,7 +521,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | 5 | NautilusTraderの実際のpip install・最小実行 | **解決**。Python3.12の隔離venvに導入(14依存のみ、軽量)。`nautilus_trader.testkit`は現行リリースに存在せず(developブランチの例が不一致)、`test_kit`(アンダースコア)を使用。BTCUSDT/BINANCEの合成足データでLIMIT買い→FILLED→MARKET売りの1往復が成立(**リードの打ち直しで確認 = 生ログ LV-7**。調査班は背景で起動しただけで出力を読んでいない) |
 | 6 | X検索3回以上・awesome系リスト・依存関係逆引き | **解決**。今回のX関連WebSearchは3回(バックテストエンジン自作/乗り換え、backtesting.py OR zipline OR nautilus trader、+round1の2回で計5回)。awesome系リスト検索1回(新規候補9件発見)。依存関係逆引きはGitHubのdependents機能でBacktesting.pyを確認(0件、ただしGitHubの依存関係グラフ自体が網羅的でない旨の注記あり) |
 | 7 | hftbacktest・NautilusTraderの国内取引所記載なしをソース/issue/依存で裏取り | **解決(NautilusTraderは完全、hftbacktestは複数独立ソースで補強)**。NautilusTrader: `crates/adapters`ディレクトリの実際の一覧(実測、WebFetch)= architect_ax/betfair/binance/bitmex/blockchain/bybit/coinbase/databento/deribit/derive/dydx/hyperliquid/interactive_brokers/kraken/lighter/okx/polymarket/sandbox/tardisの19件、bitFlyer等無し。RELEASES.md(567,723バイト、curl実測)にbitflyer/bitbank/gmoの一致0件(grep)。hftbacktest: `rust/src/live/connector`等のディレクトリパスがいずれも404(到達不能)だったため、README一次資料に加えWebSearchの独立した要約(2件)で「Binance FuturesとBybitのみ」を補強したが、ソースディレクトリそのものの実測はできていない(未確認) |
-| 8 | NautilusTraderの自動発注機能をソースで確認 | **解決(実測に格上げ)**。README記載の確認に留めず、実際にLIMIT注文とMARKET注文を`OrderMatchingEngine(BINANCE)`に送信し約定させることに成功(§5参照)。発注機能が実在し動作することを動作実証で確認 |
+| 8 | NautilusTraderの自動発注機能をソースで確認 | **解決(ただし実行したのはリード)**。README記載の確認に留めず、LIMIT注文とMARKET注文を`OrderMatchingEngine(BINANCE)`に送信して約定させる試行が行われたが、**調査班は背景で起動しただけで出力を読んでいない。リードが打ち直して約定 2 件を確認した(生ログ LV-7)**。発注機能が実在し動作することをリードの打ち直しで確認 |
 | 9 | 生ログにWebFetch/WebSearchを1手ずつ残す | **解決**。本回は`docs/DATA/probes/20260922_tools_1_run2.log`にWebFetch/WebSearch/curl/pip/pythonの全手順を都度追記した |
 | 10 | NautilusTraderのライセンス表記の食い違い | **解決(食い違いを確定)**。README.md原文(develop、curl実測、200)に「cargo-deny enforces a license allow list compatible with LGPL-3.0-only」「available...under the GNU Lesser General Public License v3.0」と明記。**PyPI JSONのlicense_expression(LGPL-3.0-or-later)と食い違う**。LICENSE.txtファイル自体はLGPLv3の定型文(v3/v3以降どちらにも使われる共通本文)で決着しない。原因(パッケージングミスか意図的併記か)は未確認 |
 
@@ -588,7 +590,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 3. 当方に無い視点で分析できるか: 一次資料+推定 — スケジュール駆動という設計思想自体は当方に無いが、適用可能性は未検証
 4. 既存の研究成果を向上できるか: 仮定 — 現状の当方の研究方向(高頻度・CFD)とは単位が異なり、向上に直結するかは不明
 
-**危険**: 供給網: PyPI/GitHub一致(実測、project_urls)。導入時実行: 未確認(wheel展開は今回未実施)。外部送信: 未確認。自動発注: 無し(バックテスト専用)。宣伝の兆候: 無し
+**危険**: 供給網: PyPI/GitHub一致(実測、project_urls)。導入時実行: **無し**(wheel を展開して確認 = 生ログ LV-8。`setup.py` 相当 0 件・`.so` 0 件)。外部送信: 未確認。自動発注: 無し(バックテスト専用)。宣伝の兆候: 無し
 
 #### 9. PyAlgoTrade
 
