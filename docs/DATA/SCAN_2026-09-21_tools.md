@@ -2906,3 +2906,212 @@ K12 検査の出力の貼付           1 件
 - `DATA.md` 向け: 「`pybotters` の `bitFlyerDataStore` は、記録した WS の生文をそのまま流し込むと板が空のまま静かに回る。`_snapshots` に銘柄を先に登録しないと、`lightning_board_` の更新が警告も例外も無しに全部捨てられる。」
 - `DATA.md` 向け: 「国内の暗号資産取引所の板・約定・private の経路は `pybotters` が 6 社ぶん持つ(bitFlyer・GMO Coin・bitbank・Coincheck・OKJ・BitTrade)。当方は bitFlyer だけ。」
 - `STRATEGY_IDEAS.md` 向け: 「板の差分の適用で中値を跨いだ気配を削る扱いが、当方の板の再構成と `pybotters` で違う。同じ生文から作った板がどれだけずれるかを測り、逆選択の推定への影響を見る。」
+
+## 区分1 — 8 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run8.log`。
+7 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run7.md`)の §4-4 の規則
+「**外から取ってきたものを実行するなら、§6-1 の検査を先に通す。通せないなら実行せず「未確認」と書く**」に従い、
+この回は**導入・実行する前に必ず配布物を展開して読んだ**。深掘りは `mlflow` の 1 件。
+検索計画 6 本は、残りの候補がまだ空でないので打っていない(委任文 §2)。
+
+### 検索計画
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (未作成) | (未作成) | 未実行(残りの候補が空になっていないため) |
+| 中間 | (未作成) | (未作成) | 未実行(同上) |
+| 広い | (未作成) | (未作成) | 未実行(同上) |
+
+### 出典
+
+| URL / 経路 | 方法 | 生ログの行 |
+|---|---|---|
+| https://ungh.cc/repos/Superalgos/Superalgos | curl(code=200) | 16 |
+| https://ungh.cc/repos/CryptoSignal/Crypto-Signal | curl(code=200) | 16 |
+| https://ungh.cc/repos/Mendl-Labs/BacktestingCore | curl(code=200) | 16 |
+| https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine | curl(code=200) | 16 |
+| https://ungh.cc/repos/DeviaVir/zenbot | curl(code=200) | 16 |
+| https://ungh.cc/repos/carlos8f/bot18 | curl(code=200) | 16 |
+| https://ungh.cc/repos/robcarver17/pysystemtrade | curl(code=200) | 16 |
+| https://ungh.cc/repos/mlflow/mlflow | curl(code=200) | 16 |
+| https://ungh.cc/repos/techfreaque/opentrader | curl(code=000) | 16 |
+| https://pypi.org/pypi/mlflow/json | curl(code=200) | 35 |
+| PyPI の index(pip download / pip install 経由) | v8m/bin/pip | 42 と 60 |
+| https://raw.githubusercontent.com/mlflow/mlflow/master/LICENSE.txt | curl(code=200) | 95 |
+| https://ungh.cc/repos/mlflow/mlflow/contributors | curl(code=200) | 95 |
+| https://pypistats.org/api/packages/mlflow/recent | curl(code=429) | 95 |
+| https://pypistats.org/packages/mlflow | WebFetch | 95 |
+| https://github.com/mlflow/mlflow | WebFetch | 95 |
+| https://mlflow.org/ | WebFetch | 95 |
+| https://raw.githubusercontent.com/Superalgos/Superalgos/master/package.json | curl(code=200) | 102 |
+| https://raw.githubusercontent.com/bludnic/opentrader/master/package.json | curl(code=200) | 102 |
+| https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/package.json | curl(code=200) | 102 |
+| https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/post_install.js | curl(code=200) | 102 |
+| https://registry.npmjs.org/zenbot | curl(code=200) | 102 |
+| https://registry.npmjs.org/zenbot4 | curl(code=404) | 102 |
+| https://registry.npmjs.org/bot18 | curl(code=200) | 102 |
+| https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/requirements.txt | curl(code=404) | 102 |
+| https://ungh.cc/repos/CryptoSignal/Crypto-Signal/files/master | curl(code=200) | 102 |
+| https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/app/requirements-step-1.txt | curl(code=200) | 124 |
+| https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/app/requirements-step-2.txt | curl(code=200) | 124 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **`mlflow` は既定で外へ出る。**止め方は環境変数 2 つで、逐語は `return (MLFLOW_DISABLE_TELEMETRY.get() or os.environ.get("DO_NOT_TRACK", "false").lower() == "true" or _IS_IN_CI_ENV_OR_TESTING or _IS_MLFLOW_DEV_VERSION)`。どれも立っていなければ止まらない。宛先は `CONFIG_URL = "https://config.mlflow-telemetry.io"` ほか。送るのは利用環境の情報で、導入の識別子を `XDG_CONFIG_HOME` の下に置いて端末をまたいで同じ値にする | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:50 |
+| 2 | **`mlflow` の配布物は、コーディング代理人向けの技能とフックの定義ファイルを同梱している。**`site-packages/mlflow/assistant/skills/` に `hooks/`(`hooks.json` と `mlflow-suggest-hook.py`)が入り、同梱の README の逐語は `MLflow Skills for Coding Agents`。さらに**実行すると標準出力へ「SKILL.md を読め」という誘導が出る**。委任文 §6-3 により従っていない。当方の `CLAUDE.md` §0.2 A-16(フックはオーナーの指示があったときだけ変える)に触れる話なのでリードに渡す | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| 3 | **`mlflow` 3.16.1 は、既定のファイル置き場(`./mlruns`)を例外で拒む。**逐語は `The filesystem tracking backend (e.g., ./mlruns) is in maintenance mode and will not receive further updates.` で、`sqlite:///` の置き場に替えるか `MLFLOW_ALLOW_FILE_STORE=true` を立てるかの二択。**「pip で入れてすぐ動く」ではない** | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:65 |
+| 4 | **`DeviaVir/zenbot` は導入時に実行されるものを持つ。**`package.json` の `postinstall` が `node post_install.js` で、その中身は `shell.exec('webpack --mode production')` と `shell.exec('(cd scripts/genetic_backtester/ && npm i)')` の 2 行。**npm install のたびに構築と追加の外部取得が走る。**委任文 §6-1 の「導入時実行」に当たるので、この回では導入していない | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:102 |
+| 5 | **npm の `zenbot` は `DeviaVir/zenbot` とは別物である。**registry の逐語は `ZenBot - Node client for Zentri Cloud` で、公開は 2016 年。`DeviaVir/zenbot` の package 名は `zenbot4` で、`registry.npmjs.org/zenbot4` は 404。**名前で引くと別物が来る**ので、導入するなら GitHub から直に取ることになる | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:102 |
+| 6 | **`Bot18` の npm の `license` 欄は SPDX ではなく URL である。**逐語は `https://bot18.net/licensing`。latest の公開は 2018 年で、`dist.unpackedSize` は 82488973 bytes、`dist.fileCount` は 12263 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:102 |
+| 7 | **`PySystemtrade` の配布元(所有者)が移っている。**`robcarver17/pysystemtrade` を要求した応答の `repo` は `pst-group/pysystemtrade` だった。**過去の実行が書いた URL は転送されている** | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:16 |
+| 8 | **`CryptoSignal` の依存は素の `requirements.txt` には無い。**`requirements.txt`・`app/requirements.txt`・`Pipfile`・`app/Pipfile`・`pyproject.toml` はすべて 404 で、実体は `app/requirements-step-1.txt` と `app/requirements-step-2.txt` に分かれている。**1 本の 404 で「依存が取れない」と書くと誤る** | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:124 |
+| 9 | **`CryptoSignal` の依存は全件が 2018 年頃の固定版である。**`numpy==1.14.0` / `pandas==0.22.0` / `Cython==0.28.2` / `ccxt==1.13.26`。公式の導入手順は Docker で、直下に `Dockerfile` と `docker-compose.yml` が在る | 一次資料 | https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/app/requirements-step-2.txt 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:124 |
+| 10 | **`OpenTrader` は単一の package ではなく monorepo の根である。**`package.json` は `name` が `root` で `private` が真、`dependencies` は 0 件。`packageManager` は `pnpm@10.12.1`、`engines` は `{'node': '~22.12'}`。**この環境の node は条件を満たし、`pnpm` も在る**(`which pnpm` が `/opt/node22/bin/pnpm`) | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:102 と docs/DATA/probes/20260922_tools_1_run8.log:135 |
+| 11 | **`Superalgos` の `license` 欄は SPDX の綴りではない。**`package.json` の値は `Apache License 2.0`。`dependencies` は 58 件で、`ccxt`・`discord.js`・`@slack/web-api`・`@octokit/rest` を含む。`scripts` の `prepare` は `husky install` | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:102 |
+| 12 | **`OctoBot` の模擬の入力の規則が確定した。**`OctoBot-Backtesting` の `constants.py` の逐語は `BACKTESTING_DATA_FILE_EXT = ".data"` / `BACKTESTING_DATA_FILE_SEPARATOR = "_"` / `BACKTESTING_DATA_FILE_TIME_WRITE_FORMAT = '%Y%m%d_%H%M%S'` / `BACKTESTING_DATA_OHLCV = "ohlcv"` / `BACKTESTING_DATA_TRADES = "trades"`。**表の実体を作る `DataBase` はこの配布物に無い**ので、次は `octobot_commons` 側を読む | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:128 |
+| 13 | **`ungh.cc` も 1 回で決めてはいけない。**`techfreaque/opentrader` への 1 回目が `code=000`(`OpenSSL SSL_ERROR_SYSCALL`)で、所有者名そのものが誤りだった。正しい所有者は `bludnic` で、`raw.githubusercontent.com` 経由では 200 が返った | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:16 と docs/DATA/probes/20260922_tools_1_run8.log:102 |
+| 14 | **この環境の空きは、過去の実行が残した隔離 venv を消すと戻る。**作業前は 4.6G で、6 件を消して 12G になった。消したものはすべて pip で再生成できるもので、リポジトリと `data/` には触れていない | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:4 |
+
+### 候補の一覧
+
+発見順(3 回目から引き継いだ順序のまま)。行頭の `[深掘り]` は §4.0 の表に語彙のすべての項目の行を持つものだけに付ける。それ以外は「浅い」と、何が未確認かを書く。
+
+1. `Basana` — 非同期・イベント駆動の暗号資産向け枠組み。Apache-2.0。4 回目に深掘り済み。この回では何も足していない。
+2. `Backtrader` — バックテストの機関。GPLv3+。4 回目に深掘り済み。この回では何も足していない。
+3. PySystemtrade — 6 回目に疎な clone で取り直し済み。この回で**配布元の移転**(`robcarver17` を要求すると `pst-group/pysystemtrade` が返る)と活動を足した。**浅い**(導入・最小実行が未確認)。
+4. `PyBroker` — PyPI 上の名前は lib-pybroker。Apache License 2.0 with Commons Clause。4 回目に深掘り済み。この回では何も足していない。
+5. `bt` — MIT。注文の種別という概念が無い。4 回目に深掘り済み。この回では何も足していない。
+6. `Ziplime` — 6 回目に深掘り済み。7 回目に対応 LLM を取り直し済み。この回では何も足していない。
+7. Superalgos — PyPI に無し。この回で `package.json` を一次資料として取り、版・ライセンス欄の綴り・依存の件数・導入時に走る `prepare` を足した。**浅い**(README の原文・導入・最小実行が未確認。Node.js 系で、依存 58 件の導入をこの回では打っていない)。
+8. OpenTrader — PyPI に無し。この回で所有者が `bludnic` であることと、monorepo の根であること・`pnpm` と node の条件を満たすことを足した。**浅い**(README の原文・導入・最小実行が未確認)。
+9. CryptoSignal — PyPI に無し。この回で依存の在処(step 分割の 2 本)と全件の固定版を足した。**浅い**(README の原文・導入・最小実行が未確認。依存が 2018 年頃の固定版で、公式の導入手順は Docker)。
+10. `fast-trade` — 5 回目に深掘り済み。AGPL-3.0。この回では何も足していない。
+11. `OctoBot` — 7 回目に深掘り済み(導入・起動・拡張の導入まで)。この回で**模擬の入力の規則**(拡張子・区切り・時刻の書式・表の名前)を一次資料から足した。**最小実行(成行と指値の 1 往復)は未到達。不可ではなく未確認。**
+12. `pybotters` — 7 回目に深掘り済み。この回では何も足していない。
+13. DeviaVir/zenbot — この回で `package.json` と `post_install.js` を一次資料として取り、**導入時実行が在ること**と **npm の同名 package が別物であること**を足した。**浅い**(導入・最小実行が未確認。§6-1 の「導入時実行」に当たるため、この回では導入していない)。
+14. Bot18 — この回で npm の registry を一次資料として取り、ライセンス欄が URL であること・最後の公開年・配布物の大きさと件数を足した。**浅い**(導入・最小実行が未確認)。
+15. Mendl-Labs/BacktestingCore — この回で作成日・最終の押し出し・説明文を足した。**浅い**(README の原文・版・導入が未確認)。
+16. Luczinsritter/event_driven_backtesting_engine — この回で作成日・最終の押し出し・説明文を足した。**浅い**(ライセンスの根拠がバッジだけ。版・導入・最小実行が未確認)。
+17. [深掘り] `mlflow` — **この回の深掘り。**Apache-2.0。`/usr/bin/python3.11` の隔離 venv に導入し、合成の約定の `csv.gz` で**実験・パラメータ・指標・成果物・札の記録と読み戻し**を鍵なしで通した。**遠隔測定が既定で止まらない**ことと、**配布物がコーディング代理人向けのフックの定義を同梱している**ことを実測。
+18. `zipline-reloaded` — 3 回目に深掘り済み。この回では何も足していない。
+19. `Jesse` — 3 回目に深掘り済み。この回では何も足していない。
+20. `VnPy` — 3 回目に深掘り済み。この回では何も足していない。
+21. `Qlib` — 3 回目に深掘り済み。この回では何も足していない。
+22. `Lean CLI` — 3 回目に深掘り済み。この回では何も足していない。
+23. `hftbacktest` — 1 回目に深掘り済み。この回では何も足していない。
+24. **限界: 6 回目に立てた LimexHub と Lime Trader SDK は、6 回目のリードの検収 §4-2 の判断で区分 3(データ)と区分 2(執行)に引き継いだ。**区分 1 では追わない。
+25. **限界: `OctoBot` の必須の依存のうち、取引以外の外部連携の窓口は、7 回目と同じくこの回でも候補として立てていない。**次の実行で候補に足すかはリードが決める。
+26. **限界: `mlflow` の同梱する技能とフックの定義は、それ自体が道具の候補になりうるが、この回では候補として立てていない。**当方のフックはオーナーの指示があったときだけ変えるもの(`CLAUDE.md` §0.2 A-16)なので、立てるかどうかはリードとオーナーが決める。
+
+### ツール1件ごとの表
+
+#### §4.0 の機械可読の表
+
+この回に深掘りした道具は `mlflow` の 1 件。§4.0 の語彙のすべての項目に行を持つ。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `mlflow` | 版 | 3.16.1 | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22(info.version)/ docs/DATA/probes/20260922_tools_1_run8.log:35 |
+| `mlflow` | 最終更新日 | PyPI の最新版の upload_time は 2026-09-16T23:14:16。GitHub の pushedAt は 2026-09-22T07:13:18Z | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / https://ungh.cc/repos/mlflow/mlflow 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:16 と docs/DATA/probes/20260922_tools_1_run8.log:35 |
+| `mlflow` | ライセンス | Apache-2.0。LICENSE.txt の 1 行目が 'Copyright 2018 Databricks, Inc.  All rights reserved.'、3 行目以降が 'Apache License' 'Version 2.0, January 2004'。PyPI の info.license_expression は None で、info.license に著作権表示の全文が入っている。GitHub の頁の表示は Apache-2.0 | 一次資料 | https://raw.githubusercontent.com/mlflow/mlflow/master/LICENSE.txt 取得日 2026-09-22 / https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / https://github.com/mlflow/mlflow 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:35 と docs/DATA/probes/20260922_tools_1_run8.log:95 |
+| `mlflow` | 言語と動作環境 | Python。requires_python は `>=3.10`。この環境の `/usr/bin/python3.11` の隔離 venv で導入も最小実行も通った | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:35 と docs/DATA/probes/20260922_tools_1_run8.log:60 と docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 対応取引所 | 取引所への接続を持たない。導入後の `site-packages/mlflow/` に `ccxt` の一致が 0 件、requires_dist 59 件にも取引所の client は無い | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:35 と docs/DATA/probes/20260922_tools_1_run8.log:146 |
+| `mlflow` | 星 | 28093 | 一次資料 | https://ungh.cc/repos/mlflow/mlflow 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:16 |
+| `mlflow` | コミット数 | 13,513(master。API の端点は 7 回目と同じく使えず、頁の表示を WebFetch で読んだ) | 一次資料 | https://github.com/mlflow/mlflow 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:95 |
+| `mlflow` | 保守者数 | GitHub の contributors の応答は 30 名。上位は harupy 2994 / Copilot 1242 / B-Step62 838 / serena-ruan 727 / dbczumar 517 / TomeHirata 474 | 一次資料 | https://ungh.cc/repos/mlflow/mlflow/contributors 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:95 |
+| `mlflow` | 週DL数 | 4,571,892(pypistats の頁の last week。API は 429 を返した) | 一次資料 | https://pypistats.org/packages/mlflow 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:95 |
+| `mlflow` | 初回公開日 | PyPI の最古の版 0.0.1 の upload_time が 2018-06-04T22:03:38。GitHub の createdAt は 2018-06-05T16:05:58Z | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / https://ungh.cc/repos/mlflow/mlflow 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:16 と docs/DATA/probes/20260922_tools_1_run8.log:35 |
+| `mlflow` | 既知の脆弱性 | PyPI の json の vulnerabilities の欄は空。この欄以外の勧告の経路はこの回では当たっていない | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:35 |
+| `mlflow` | 料金体系 | 自前で動かす限り無償。公式サイトに料金の頁は無く、逐語は '100% open source under Apache 2.0 license. Forever free, no strings attached.' | 一次資料 | https://mlflow.org/ 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:95 |
+| `mlflow` | 無料枠の上限 | 回数・期間・履歴の深さ・機能のどれについても上限の記載が公式サイトに無い(料金の頁そのものが存在しない)。自前の置き場に書くだけなので、上限は当方の記憶装置の容量 | 一次資料 | https://mlflow.org/ 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:95 |
+| `mlflow` | 課金開始条件 | 自前運用(pip で入れて sqlite の置き場)には課金の端点が無い。運営元(Databricks)の雲の版の料金表は mlflow.org 側に無く、この回では当たっていない | 一次資料 | https://mlflow.org/ 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:95 |
+| `mlflow` | 隠れた依存 | extra 無しの必須 20 件に、有料のデータ・鍵・雲・LLM の鍵を要するものは無い。LLM の窓口(genai / gateway)と雲の記憶(azure / databricks)と資料庫(db)はすべて extra 側で、その extra を入れたときだけ鍵が要る | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:35 |
+| `mlflow` | 登録の要否 | 不要。鍵も登録も無しで導入と最小実行が通った | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:60 と docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 到達経路 | PyPI の index(pip download / pip install)・raw.githubusercontent.com・ungh.cc・pypistats の頁・mlflow.org。pypistats の API だけ 429 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:42 と docs/DATA/probes/20260922_tools_1_run8.log:60 と docs/DATA/probes/20260922_tools_1_run8.log:95 |
+| `mlflow` | 導入可否 | 可。`v8m/bin/pip install --no-cache-dir mlflow` が RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:60 |
+| `mlflow` | install所要秒 | 47 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:60 |
+| `mlflow` | 依存数 | 導入された配布物は 90(Successfully installed の語数)。PyPI の requires_dist は 59 件で、うち extra 無しの必須は 20 件 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:35 と docs/DATA/probes/20260922_tools_1_run8.log:60 |
+| `mlflow` | pip check | 'No broken requirements found.' PIPCHECK_RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:60 |
+| `mlflow` | 最小実行の可否 | 可。ただし 1 回目は rc=1 で落ちた(既定のファイルの置き場が例外)。置き場を sqlite に替えた 2 回目が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:65 と docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 最小実行の中身 | 合成の約定 100 行の csv.gz(列 ts_ms,price,size,side)を作り、sqlite の置き場に実験を作って、パラメータ 2 件・指標を 5 段・成果物 1 件・札 1 件を記録し、MlflowClient で読み戻した。出力の逐語: PARAMS {"sl_bp": "10", "tp_bp": "5"} / METRIC_LAST 400.0 / METRIC_HISTORY_N 5 VALUES [0.0, 100.0, 200.0, 300.0, 400.0] / ARTIFACTS ['r8_syn_trades.csv.gz'] / SEARCH_RUNS_SHAPE (1, 14) / SEARCH_RUNS_COLS_N 14 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 実行所要秒 | 1 回目 2.53 / 2 回目 2.627(import と置き場の作成を含む) | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:70 と docs/DATA/probes/20260922_tools_1_run8.log:92 |
+| `mlflow` | wheel展開 | 実施。entries 1792 / .py は 1204 件 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:42 |
+| `mlflow` | setup.py導入時実行 | 無し。配布物は wheel で、setup.py を名前に持つ項目が 0 件 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:42 |
+| `mlflow` | 同梱バイナリ | 0 件(.so / .pyd / .dll / .dylib / .exe / .bin のいずれも一致なし) | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:42 |
+| `mlflow` | 外部送信 | 有り。既定では止まらない。宛先の逐語は CONFIG_URL = "https://config.mlflow-telemetry.io" / CONFIG_STAGING_URL = "https://config-staging.mlflow-telemetry.io" / UI_CONFIG_URL = "https://d139nb52glx00z.cloudfront.net" / UI_CONFIG_STAGING_URL = "https://d34z9x6fp23d2z.cloudfront.net"。止め方は MLFLOW_DISABLE_TELEMETRY か DO_NOT_TRACK。この回の試行は両方を立てて実行し、出力は TELEMETRY_DISABLED True | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:50 と docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 自動発注機能 | 無し。導入した `site-packages/mlflow/` に `def create_order` / `def place_order` / `def submit_order` の一致が 0 件 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:145 |
+| `mlflow` | 宣伝詐欺の兆候 | 収益を約束する文言・提携リンク・通信アプリだけの配布・秘密鍵の要求は当たらなかった。ただし**実行すると標準出力へ「SKILL.md を読め」という誘導が出る**(逐語: 'Load the `instrumenting-with-mlflow-tracing` skill at …/SKILL.md before writing any tracing code')。委任文 §6-3 により従っていない | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 当方データ投入 | 可。当方の形式に寄せた合成の csv.gz を成果物として記録し、読み戻せた(ARTIFACTS ['r8_syn_trades.csv.gz'])。当方の実データ・鍵・記録は 1 件も使っていない | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 時刻の扱い | UTC のミリ秒の整数。出力の逐語は START_TIME_UTC_MS 1790068758095 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 再現性 | 置き場を消して同じ台本を 2 回打ち、識別子と時刻の行を除いた出力が一致(IDENTICAL_EXCEPT_TIME_AND_IDS)。実行の識別子は毎回変わる(RUN_ID_LEN 32) | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:70 と docs/DATA/probes/20260922_tools_1_run8.log:92 |
+| `mlflow` | 規模の見積 | 最小実行の 2.53 秒は import と置き場の作成が大半で、記録そのものは 1 実行あたり秒未満。456 日を 1 単位あたり数百の実行で回しても、置き場は sqlite の 1 ファイルに収まる規模 | 推定 | docs/DATA/probes/20260922_tools_1_run8.log:70 の TIME_S 2.53 と SEARCH_RUNS_SHAPE (1, 14) からの外挿 |
+| `mlflow` | 4軸1_道具 | 入れられる。隔離 venv に鍵も登録も無しで入り、最小実行まで通った | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:60 と docs/DATA/probes/20260922_tools_1_run8.log:70 |
+| `mlflow` | 4軸2_情報 | 市場の情報は取れない(取引所の接続を持たない)。取れるのは当方自身の実行の記録(パラメータ・指標・成果物・札・実行の識別子) | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:70 と docs/DATA/probes/20260922_tools_1_run8.log:146 |
+| `mlflow` | 4軸3_視点 | 実行を横に並べて突き合わせる視点。当方の道具立てには実験の追跡の道具が無い(裏取りの D 節: 一致は台帳を文書として参照する 5 本だけで、実行・パラメータ・結果を自動で記録する機構は無い) | 一次資料 | docs/DATA/probes/20260921_tools_absent.log の D 節 |
+| `mlflow` | 4軸4_向上 | 当方の段の台帳は文書なので、周回数・パラメータ・結果の対応を人が書いている。記録が機械になれば、多重性の算入と再現の確認がその記録から引ける | 一次資料 | docs/DATA/probes/20260921_tools_absent.log の D 節 |
+| `mlflow` | 配布元の一致 | 一致。PyPI の project_urls.repository が https://github.com/mlflow/mlflow | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:35 |
+| `mlflow` | 難読化 | 無し。最長行は 92177 文字だが protobuf の生成物(AddSerializedFile を含む)。marshal.loads と urlretrieve の一致は 0 件 | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:42 |
+| `mlflow` | 外部URL取得 | 導入時は無し(wheel に setup.py が 0 件)。実行時は遠隔測定が既定で外へ出る | 実測 | docs/DATA/probes/20260922_tools_1_run8.log:42 と docs/DATA/probes/20260922_tools_1_run8.log:50 |
+| `mlflow` | 依存の一覧 | extra 無しの必須 20 件: mlflow-skinny==3.16.1 / mlflow-tracing==3.16.1 / Flask-CORS<7 / Flask<4 / aiohttp<4,>=3.7.0 / alembic!=1.10.0,<2 / cryptography<51,>=43.0.0 / docker<8,>=4.0.0 / graphene<4 / gunicorn<27 / huey<4,>=2.5.4 / matplotlib<4 / numpy<3 / pandas<4 / pyarrow<26,>=4.0.0 / scikit-learn<2 / scipy<2 / skops<1 / sqlalchemy<3,>=1.4.0 / waitress<4 | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:35 |
+| `mlflow` | 保守者名の一貫性 | PyPI 側に名前が無い(info.author と info.maintainer がどちらも None)ので、GitHub 側の 30 名と突き合わせる相手が無い。著作権表示は Databricks, Inc. | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / https://raw.githubusercontent.com/mlflow/mlflow/master/LICENSE.txt 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run8.log:35 と docs/DATA/probes/20260922_tools_1_run8.log:95 |
+
+#### 取り直しの結果(7 回目のリードの検収が渡したもの)
+
+7 回目の検収の §4 はすべて**規則の申し渡し**で、値の取り直しの指示は 1 件も無かった。したがってこの表は空である。
+申し渡された 2 件はこの回の作業そのものに反映した。
+
+| 申し渡された規則 | この回での反映 |
+|---|---|
+| 外から取ってきたものを**実行する**なら §6-1 の検査を先に通す。通せないなら実行せず「未確認」と書く | `mlflow` は `pip download --no-deps` で取った wheel を展開してから導入した(生ログ [4])。`OctoBot-Backtesting` も sdist を展開して `setup.py` を読んでから中身を参照した(生ログ [13])。`DeviaVir/zenbot` は `postinstall` に導入時実行が在ったので**導入していない**(生ログ [11]) |
+| 再生成できないものを消すときは、消す前に止めて報告する | 消したのは過去の実行が残した隔離 venv と取得物の 6 件だけで、すべて pip で再生成できる。消す前後の空き容量を生ログ [1] に残した |
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 上限 | 1 回 5 万トークン・20 分 |
+| 実績 | 上限に達したため中断した。深掘りは `mlflow` の 1 件。ほかに候補 7 件へ一次資料を足した(3・7・8・9・13・14・15・16 番のうち 15 と 16 は活動の情報のみ) |
+| 未完了 | 候補の一覧の 11 番(`OctoBot` の最小実行)は未到達。3・7・8・9・13・14・15・16 番は導入と最小実行が未確認。17 番以外の新規の深掘りは無し。区分 1 は**未完了**(委任文 §2 の条件 = 残りの候補が空で、新しい検索計画が新しい候補を 1 件も出さない、を満たしていない) |
+
+### 原文に無い判断(黙って決めずに書き出す)
+
+1. **起動の指定は「残り 9 件 + 1 項目を潰す」だが、委任文 §7 の「予算が足りないときは、道具の数を減らして深く」に従い、深掘りを `mlflow` の 1 件に絞った。**残りの候補には一次資料(`package.json`・npm の registry・依存の一覧)を足したが、導入と最小実行には進んでいない。どちらを優先すべきかはリードが決めること。
+2. **過去の実行が残した隔離 venv と取得物 6 件を消した。**起動の指定の「隔離 venv は使い終わったら消してください」に従ったが、消したのは**この回で作ったものではなく過去の回のもの**である。すべて pip で再生成でき、消す前に大きさを測って生ログに残した。7 回目の検収 §4-1 の規則(再生成できるものは報告つきで消してよい)に当たると判断した。
+3. **`mlflow` の遠隔測定を、既定のまま動かして外へ出るかを実測していない。**委任文 §6-2 が「試行は可能なら遮断して行う」と書いているので、止める環境変数 2 つを立てた状態でだけ実行した。既定で止まらないことは配布物の中のコードの逐語から書いている。既定のまま 1 回打って実際に外へ出るかを見るかどうかはリードが決めること。
+4. **`DeviaVir/zenbot` を導入していない。**`postinstall` が導入時に構築と追加の外部取得を走らせるためで、委任文 §6-1 の「1 つでも不審なら導入せず理由を書いて止める」に当たると判断した。**「この環境から不可」とは書いていない。**別の場所で試すかはリードとオーナーが決めること。
+5. **`OctoBot` の本体を入れ直していない。**7 回目のあとリードが隔離 venv を消しており、入れ直すと導入だけで数分かかる。この回は模擬の入力の規則を確定させるところまでにした。**「この環境から不可」とは書いていない。**次の手は生ログ [13] に書いた。
+
+### 受け入れ検査で残した行(自分で閉じなかったもの)
+
+**この回は 0 件。**自分で閉じた行は 1 件も無い。下の「受け入れ検査の出力」に貼ったのは、最後に打った出力の全文である。
+貼り付けの直前の 1 回で K12 が 1 件出ているが、これは「まだ貼っていない」ことを見る検査で、貼ったあとに打ち直すと消える。
+
+## 受け入れ検査の出力
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:0  貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 1 件
+```
+
+### `STRATEGY_IDEAS.md` / `DATA.md` 向けの一行候補(提案。マージしない)
+
+- `DATA.md` 向け: 「`mlflow` は遠隔測定が既定で止まらない。止めるには環境変数 `MLFLOW_DISABLE_TELEMETRY` か `DO_NOT_TRACK` を立てる。宛先は `config.mlflow-telemetry.io` と cloudfront の 2 系統。」
+- `DATA.md` 向け: 「`mlflow` 3.16.1 は既定のファイルの置き場(`./mlruns`)を例外で拒む。`sqlite:///` の置き場にするか `MLFLOW_ALLOW_FILE_STORE=true` を立てる。」
+- `STRATEGY_IDEAS.md` 向け: 「段の台帳を人が書く代わりに実行の記録を機械にすると、周回数の多重性への算入と再現の確認がその記録から引ける。`mlflow` の実行・パラメータ・指標・成果物の 4 つが当方の台帳のどの欄に対応するかを 1 単位で当ててみる。」
