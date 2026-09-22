@@ -525,6 +525,36 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | 9 | 生ログにWebFetch/WebSearchを1手ずつ残す | **解決**。本回は`docs/DATA/probes/20260922_tools_1_run2.log`にWebFetch/WebSearch/curl/pip/pythonの全手順を都度追記した |
 | 10 | NautilusTraderのライセンス表記の食い違い | **解決(食い違いを確定)**。README.md原文(develop、curl実測、200)に「cargo-deny enforces a license allow list compatible with LGPL-3.0-only」「available...under the GNU Lesser General Public License v3.0」と明記。**PyPI JSONのlicense_expression(LGPL-3.0-or-later)と食い違う**。LICENSE.txtファイル自体はLGPLv3の定型文(v3/v3以降どちらにも使われる共通本文)で決着しない。原因(パッケージングミスか意図的併記か)は未確認 |
 
+### 出典(2 回目。委任文 §11 の必須項目。1 回目は独立の表があったが 2 回目は各ツールの欄に分散していたので、監査 8 回目の指摘 2 を受けてここに集めた。URL は生ログ `docs/DATA/probes/20260922_tools_1_run2.log` から機械で抽出。取得日はいずれも 2026-09-22)
+
+| 種別 | URL | 方法 |
+|---|---|---|
+| PyPI JSON(12 件) | `pypi.org/pypi/{backtesting,QSTrader,pyalgotrade,zipline-reloaded,lean,pyqlib,vnpy,jesse,backtestingcore,event-driven-backtesting-engine,bot18,vnpy_binance}/json` | curl |
+| PyPI JSON(国内取引所の gateway) | `pypi.org/pypi/{vnpy_bitflyer,vnpy_bitbank,vnpy_gmocoin}/json` | curl(3 件とも 404 = そのパッケージが存在しない) |
+| GitHub ページ | `github.com/{kernc/backtesting.py, mhallsmoore/qstrader, gbeced/pyalgotrade, stefan-jansen/zipline-reloaded, QuantConnect/lean-cli, carlos8f/zenbot, carlos8f/bot18, microsoft/qlib, vnpy/vnpy, jesse-ai/jesse, Mendl-Labs/BacktestingCore, Luczinsritter/event_driven_backtesting_engine, nautechsystems/nautilus_trader}` | WebFetch |
+| GitHub のディレクトリ一覧 | `nautechsystems/nautilus_trader/tree/develop/crates/adapters` ほか / `nkaz001/hftbacktest/tree/master/{rust/src/live/connector, hftbacktest/src/connector, hftbacktest-rs/src/live}`(3 つとも 404) | WebFetch |
+| 原文(raw) | `raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/{LICENSE, README.md, pyproject.toml, examples/backtest/example_01.py}` / `polakowo/vectorbt/master/LICENSE.md` / `mhallsmoore/qstrader/master/examples/buy_and_hold_backtest.py` | curl |
+| 文書 | `hftbacktest.readthedocs.io/en/latest/tutorials/Working with Market Depth and Trades.html` / `vectorbt.pro/` | WebFetch / curl |
+| X の投稿(検索で出た URL。本文の取得はリードが x_fetch で実施 = 生ログ LV-4) | `x.com/{pyquantnews(3 件), quantscience_, GitHubGPT, QuantInsti}` | WebSearch → x_fetch |
+| 検索 | 生ログ LV-1 の W-1〜W-37 のうち WebSearch の分(10 件) | WebSearch |
+
+**到達できなかった経路とその処置(2 回目)**: hftbacktest のソースの connector ディレクトリは 3 つの綴りとも 404(`rust/src/live/connector`・`hftbacktest/src/connector`・`hftbacktest-rs/src/live`)。README 以外の経路でライブ接続先を確かめる試みはここで止まり、**「ソースの直接の列挙は未達」と本文に書いた**(委任文 §5-1 の「全部試すまで不可と書かない」に従い、代わりに複数の独立した記述で補強した)。`pypi.org/pypi/vnpy_{bitflyer,bitbank,gmocoin}/json` の 404 は「そのパッケージが存在しない」という実測で、到達の失敗ではない。
+
+### 知見(2 回目。委任文 §11 の必須項目。監査 8 回目の指摘 1 を受けて追加。印は本文の各節と同じ根拠に基づく)
+
+| 知見 | 印 | このプロジェクトへの含意 |
+|---|---|---|
+| `vectorbt` の無料版には**指値注文の概念そのものがソースに無い**(パッケージ全体の grep で一致 0 件) | 実測(生ログ、隔離 venv での grep) | 当方の戦略は指値の約定を測るものなので、無料版のままでは当方の用途に届かない。PRO の機能差の逐語は次回 |
+| `freqtrade` は bitFlyer を「必須機能の欠落(fetchOrder・fetchOHLCV)」として使えない側に置き、**bitbank は使える側の 79 取引所に入っている** | 実測(`freqtrade list-exchanges -a` と非 -a、生ログ LV-5f。1 回目の「国内 3 社の記載なし」の訂正) | 国内取引所の対応は「記載の有無」ではなく取引所ごとの機能表で決まる。当方が bitFlyer を使う限り freqtrade の執行部は使えない |
+| `ccxt` の bitflyer は `createOrder`・`cancelOrder` は真だが `fetchOHLCV` が無い | 実測(生ログ LV-5g) | 足データは自前で持つ必要がある(当方は既に持っている) |
+| `PyAlgoTrade` は 2023-11-13 にアーカイブ済みで、**公式に後継 Basana を名指し**している | 一次資料(GitHub のアーカイブ表示と README の逐語、W-5) | 候補 18(Basana)はここから出た。古い候補を追うより後継を見る |
+| `Zenbot`(本家)は 2022-02-15 にアーカイブ済み | 一次資料(GitHub のアーカイブ表示の逐語、リードが取り直し = 生ログ LV-3) | 実質的に終了。Node.js + MongoDB で当方の環境とも離れている |
+| `QSTrader` は日次の目標配分リバランス型で、**指値・板・待ち行列の概念がソースに無い** | 実測(モジュール一覧、生ログ LV-5a) | 当方の用途(秒単位・指値の約定)とは設計が違う |
+| 1 つの venv に複数のツールを入れると依存が壊れる(Jesse の導入が numpy を 2.x から 1.26.4 に落とし、hftbacktest 等と衝突。vectorbt は最新の plotly では import 自体が失敗) | 実測(生ログ) | ツールごとに隔離した環境で試すのが前提。当方のリポジトリ環境には入れない(委任文 §5-2 のとおり) |
+| `Mendl-Labs/BacktestingCore` は Functional Source License 1.1(2 年後に Apache 2.0 化)で、OSI 承認のオープンソースではない | 一次資料(GitHub、W-9) | 「無料」と「オープンソース」は別。取り込む前にライセンスの条件を読む必要がある |
+| `hftbacktest` は指値が実際に約定するところまで動く(status=3・exec_qty=1.0・往復 2 件) | 実測(**リードの打ち直し** = 生ログ LV-2) | 当方の `engine.py` に無い待ち行列の模擬を、動く実装として参照できる |
+| `NautilusTrader` は指値約定と成行手仕舞いの 1 往復が動く(残高 USDT が費用分だけ減る) | 実測(**リードの打ち直し** = 生ログ LV-7) | 執行の枠組み(区分 2)の候補として、動作の裏づけがある |
+
 ### ツール1件ごとの表(2回目、12候補すべて。`#### 5.`〜`#### 16.` の 12 件)
 
 **この節の全 12 件に共通する未確認(監査 1 回目の指摘 10。委任文 §6-1 が挙げる検査項目のうち、本回で埋まっていないもの)**: **(12 件すべてで欠けていた 2 項目)** 週のダウンロード数 = **未確認**(pypistats を叩いていない。1 回目は hftbacktest・NautilusTrader で叩いた)/ 保守者の数と名前の一貫性 = **未確認**(PyPI の author と GitHub の所有者を突き合わせていない)/ **(欠けていたのは 1 件だけ)** 既知の脆弱性の公開勧告 = **未確認**(検索していない)。ただしこれを書き落としていたのは **QSTrader の 1 件だけ**で、残り 11 件は個別の「危険」欄に「既知の脆弱性: 未確認」を持っている(数え直した。監査 5 回目の指摘 2)。QSTrader の欄にも同じ記載を足した。**この一括注記が全件に効き、個別欄はその再掲である。**
