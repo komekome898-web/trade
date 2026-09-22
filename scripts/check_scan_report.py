@@ -171,13 +171,18 @@ def check_table_complete(lines):
     rows = read_table(lines)
     if not rows:
         return [(0, "§4.0 の機械可読の表が 1 行も無い(2026-09-22 版の委任文では必須)")]
+    # 名前は必ずバッククォートで囲ませる。区切り記号を足していく直し方は 3 回続けて
+    # 偽陽性を生んだ(括弧・全角括弧・パイプが名前の一部になりうる)ので、曖昧さの元を断った。
+    body = "\n".join(lines)
     marked = [m.group(1).strip() for m in
-              re.finditer(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]\s*(.+?)(?:\s*[—\-–]\s|\s*[(（|]|$)",
-                          "\n".join(lines), re.M)]
+              re.finditer(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]\s*`([^`]+)`", body, re.M)]
+    bad = [(i + 1, "候補の一覧の [深掘り] の道具名がバッククォートで囲まれていない: " + ln.strip()[:60])
+           for i, ln in enumerate(lines, 1)
+           if re.match(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]", ln) and not re.search(r"\[深掘り\]\s*`[^`]+`", ln)]
     have = {}
     for i, c in rows:
         have.setdefault(c[0], set()).add(c[1])
-    out = []
+    out = list(bad)
     for m in marked:
         if m not in have:
             out.append((0, "候補の一覧で [深掘り] と印を付けた道具が表に 1 行も無い: " + m))
@@ -257,13 +262,22 @@ def check_measured_evidence(lines, logs):
     return out
 
 
-def check_checker_output_pasted(text):
-    """報告に受け入れ検査の出力全文の節があるか。
-    これが無いと、調査班が「誤検出」と自分で判断して落とした行をリードが見られない
-    (委任文の監査 1 回目の指摘 8 / 2 回目の指摘 7: 規則だけで機構が無かった)。"""
-    return [] if re.search(r"^#{3,4} *受け入れ検査の出力", text, re.M) else \
-        [(0, "報告に「### 受け入れ検査の出力」の節が無い(検査の出力全文を貼ること)")]
+def check_checker_output_pasted(text, computed):
+    """報告に受け入れ検査の出力の節があり、貼られた合計がいま計算した合計と一致するか。
 
+    節の有無だけを見ていたときは、検査を 1 度も打たずに「すべて 0 件」と書いた偽の出力でも通った
+    (委任文の監査 3 回目の指摘 2)。貼り付けの真正性を、こちらで数え直した値との一致で見る。
+    """
+    if not re.search(r"^#{2,4} *受け入れ検査の出力", text, re.M):
+        return [(0, "報告に「受け入れ検査の出力」の節が無い(検査の出力全文を貼ること)")]
+    m = re.findall(r"----\s*合計\s*(\d+)\s*件", text)
+    if not m:
+        return [(0, "貼られた出力に「---- 合計 N 件」の行が無い(全文をそのまま貼ること)")]
+    pasted = int(m[-1])
+    if pasted != computed:
+        return [(0, "貼られた出力の合計 %d 件が、いま数え直した %d 件と合わない(打ち直して貼ること)"
+                 % (pasted, computed))]
+    return []
 
 def main():
     if len(sys.argv) < 3:
@@ -282,7 +296,9 @@ def main():
               ("K9 表に無い数値", check_prose_vs_table(lines)),
               ("K10 見出しの件数", check_heading_counts(lines)),
               ("K11 実測の根拠", check_measured_evidence(lines, logs)),
-              ("K12 検査の出力の貼付", check_checker_output_pasted(text))]
+              ]
+    checks.append(("K12 検査の出力の貼付",
+                   check_checker_output_pasted(text, sum(len(h) for _, h in checks))))
     bad = 0
     for name, hits in checks:
         print("%-22s %d 件" % (name, len(hits)))
