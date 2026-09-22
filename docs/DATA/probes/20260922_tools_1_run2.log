@@ -1,0 +1,151 @@
+# docs/DATA/probes/20260922_tools_1_run2.log
+# 区分1(バックテスト・シミュレーション)2回目の実行 — 到達・導入・実行の生ログ。すべて UTC。1手ずつ、方法・URL(または検索語)・HTTP/終了コード・所要時間・出力先頭200文字(WebFetch/WebSearchは結果の文字数・要約の先頭200文字も)。先頭200文字は文字単位で切る。
+curl GET https://pypi.org/pypi/backtesting/json code=200 bytes=37267 time_ms=97 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/backtesting/json][200][37267B] head200='{"info":{"author":"Zach Lûster","author_email":null,"bugtrack_url":null,"classifiers":["Framework :: Jupyter","Intended Audience :: Financial and Insurance Industry","Intended Audience :: Science/Rese'
+curl GET https://pypi.org/pypi/zipline-reloaded/json code=200 bytes=295602 time_ms=74 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/zipline-reloaded/json][200][295602B] head200='{"info":{"author":"Quantopian Inc","author_email":"pm@ml4trading.io","bugtrack_url":null,"classifiers":["Development Status :: 4 - Beta","Intended Audience :: Science/Research","Natural Language :: En'
+curl GET https://pypi.org/pypi/QSTrader/json code=200 bytes=36575 time_ms=88 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/QSTrader/json][200][36575B] head200='{"info":{"author":null,"author_email":"Michael Halls-Moore <support@quantstart.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","License :: OSI Approved :: MIT Li'
+curl GET https://pypi.org/pypi/lean/json code=200 bytes=565667 time_ms=97 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/lean/json][200][565667B] head200='{"info":{"author":"QuantConnect","author_email":"support@quantconnect.com","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","Intended Audience :: Developers","Intended '
+curl GET https://pypi.org/pypi/pyalgotrade/json code=200 bytes=7174 time_ms=85 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/pyalgotrade/json][200][7174B] head200='{"info":{"author":"Gabriel Martin Becedillas Ruiz","author_email":"pyalgotrade@gmail.com","bugtrack_url":null,"classifiers":["Operating System :: OS Independent","Programming Language :: Python :: 2",'
+curl GET https://pypi.org/pypi/pyqlib/json code=200 bytes=288030 time_ms=82 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/pyqlib/json][200][288030B] head200='{"info":{"author":null,"author_email":null,"bugtrack_url":null,"classifiers":["Development Status :: 3 - Alpha","License :: OSI Approved :: MIT License","Operating System :: MacOS","Operating System :'
+curl GET https://pypi.org/pypi/vnpy/json code=200 bytes=60482 time_ms=90 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/vnpy/json][200][60482B] head200='{"info":{"author":null,"author_email":"Xiaoyou Chen <xiaoyou.chen@mail.vnpy.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","License :: OSI Approved :: MIT Licen'
+curl GET https://pypi.org/pypi/jesse/json code=200 bytes=584333 time_ms=96 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/jesse/json][200][584333B] head200='{"info":{"author":"Saleh Mir","author_email":"saleh@jesse.trade","bugtrack_url":null,"classifiers":["License :: OSI Approved :: MIT License","Operating System :: OS Independent","Programming Language '
+curl GET https://pypi.org/pypi/bot18/json code=404 bytes=24 time_ms=154 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/bot18/json][404][24B] head200='{"message": "Not Found"}'
+curl GET https://pypi.org/pypi/backtestingcore/json code=404 bytes=24 time_ms=150 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/backtestingcore/json][404][24B] head200='{"message": "Not Found"}'
+curl GET https://pypi.org/pypi/event-driven-backtesting-engine/json code=404 bytes=24 time_ms=176 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/event-driven-backtesting-engine/json][404][24B] head200='{"message": "Not Found"}'
+
+## WebFetch (GitHub ページ、スター・フォーク・コミット数・ライセンス・取引所記載の確認)
+[WebFetch][https://github.com/kernc/backtesting.py] chars=~600 head200='# Backtesting.py Repository Metrics  **Star Count:** 9,000 stars  **Fork Count:** 1,500 forks  **Total Commit Count:** 461 commits (shown in history)  **Last Commit Date:** Not explicitly displaye'
+[WebFetch][https://github.com/stefan-jansen/zipline-reloaded] chars=~800 head200='# Zipline-Reloaded Repository Analysis  **Repository Metrics:** - **Stars:** 1.9k - **Forks:** 330 - **Total Commits:** 6,694 - **Last Commit Date:** Not explicitly shown in provided content - **P'
+[WebFetch][https://github.com/mhallsmoore/qstrader] chars=~700 head200='# QSTrader GitHub Repository Summary  **Star Count:** 3.5k stars  **Fork Count:** 930 forks  **Total Commit Count:** 431 commits  **Last Commit Date:** Not explicitly shown in provided content  **'
+[WebFetch][https://github.com/QuantConnect/lean-cli] chars=~1000 head200='# Lean CLI GitHub Repository Analysis  ## Repository Metrics - **Star Count:** 326 - **Fork Count:** 168 - **Total Commits:** 1,687 commits (shown in commit history) - **Last Commit Date:** Not exp'
+[WebFetch][https://github.com/gbeced/pyalgotrade] chars=~500 head200='# PyAlgoTrade Repository Analysis  **Star Count:** 4.7k stars  **Fork Count:** 1.4k forks  **Total Commit Count:** 1,158 commits  **Last Commit Date:** Not explicitly shown in the provided content'
+[WebFetch][https://github.com/microsoft/qlib] chars=~900 head200='# Qlib Project Summary  **Star Count:** 48.7k stars  **Fork Count:** 7.7k forks  **Total Commit Count:** 2,068 commits  **Last Commit Date:** Not explicitly shown on main branch view  **Primary L'
+[WebFetch][https://github.com/vnpy/vnpy] chars=~900 head200='# VeighNa Project Analysis  **Star Count:** 45.5k stars  **Fork Count:** 12.5k forks  **Total Commits:** 6,904 commits (shown in repository history)  **Last Commit Date:** Not explicitly displaye'
+[WebFetch][https://github.com/jesse-ai/jesse] chars=~700 head200='# Jesse Crypto Trading Bot - Key Information  **Repository Metrics:** - Star count: 8.6k - Fork count: 1.2k - Total commits: 3,491 (shown as "3,491 Commits") - Last commit date: Not explicitly sho'
+[WebFetch][https://github.com/Mendl-Labs/BacktestingCore] chars=~900 head200='# BacktestingCore Repository Analysis  **Repository Status:** Active and exists  **Description:** BacktestingCore is an open-source backtesting engine providing event-driven simulation, walk-forwa'
+[WebFetch][https://github.com/Luczinsritter/event_driven_backtesting_engine] chars=~800 head200='# Repository Analysis: event_driven_backtesting_engine  **Repository Status:** Exists ✓  **Description:** A Python framework for simulating trading strategies using an event-driven architecture'
+[WebSearch]["carlos8f zenbot github cryptocurrency trading bot stars license"] results=9 head200='GitHub - carlos8f/bot18 / GitHub - DaStar81/zenbot / GitHub - mariotsi/zenbot / GitHub - Fjuxx/zenbot / GitHub - christian452/zenbot / GitHub - x-/zenbot / GitHub - basst314/zenbot / GitHub - glenux'
+[WebSearch]["carlos8f bot18 high frequency trading bot npm"] results=10 head200='bot18 - npm / GitHub - carlos8f/bot18 / Releases carlos8f/bot18 / bot18/package.json at with-gui / bot18/motd.txt at with-gui / bot18/bot18.sh at with-gui / bot18/bot18.config-sample.js at with-gui'
+[WebFetch][https://github.com/carlos8f/zenbot] chars=~700 head200='# Zenbot Repository Analysis  **Star Count:** 8.3k  **Fork Count:** 2.0k  **Total Commit Count:** 3,885 commits  **Last Commit Date:** Not specified in visible content  **Primary Language:** JavaSc'
+[WebFetch][https://github.com/carlos8f/bot18] chars=~800 head200='# Bot18 Repository Summary  **Description:** Bot18 is a high-frequency cryptocurrency trading bot created by the Zenbot founder. It monitors live trade streams from Bitfinex and Coinbase Pro, sup'
+[WebSearch]["zenbot bot18 carlos8f archived deprecated abandoned"] results=9 head200='bot18/package.json at with-gui / GitHub - carlos8f/bot18 / bot18/LICENSE.txt at with-gui / Releases carlos8f/bot18 / bot18/.gitignore at with-gui / bot18/motd.txt at with-gui / Introducing Bot18 ·'
+pip download --no-deps -d backtesting backtesting rc=0 time_s=.628544995 2026-09-22T01:30:31Z
+[pip download backtesting] head200='Collecting backtesting   Downloading backtesting-0.6.6-py3-none-any.whl.metadata (8.1 kB) Downloading backtesting-0.6.6-py3-none-any.whl (190 kB)    ━━━━━━━━━━━━━━━━━'
+pip download --no-deps -d zipline-reloaded zipline-reloaded rc=0 time_s=1.206323928 2026-09-22T01:30:32Z
+[pip download zipline-reloaded] head200='Collecting zipline-reloaded   Downloading zipline_reloaded-3.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB) Downloading zipline_reloaded-3.1.1-cp'
+pip download --no-deps -d QSTrader QSTrader rc=0 time_s=.866618369 2026-09-22T01:30:33Z
+[pip download QSTrader] head200='Collecting QSTrader   Downloading qstrader-0.3.0-py3-none-any.whl.metadata (9.9 kB) Downloading qstrader-0.3.0-py3-none-any.whl (74 kB)    ━━━━━━━━━━━━━━━━━━━━�'
+pip download --no-deps -d lean lean rc=0 time_s=.703259960 2026-09-22T01:30:34Z
+[pip download lean] head200='Collecting lean   Downloading lean-1.0.229-py3-none-any.whl.metadata (120 kB)      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12'
+pip download --no-deps -d pyalgotrade pyalgotrade rc=0 time_s=2.368771752 2026-09-22T01:30:36Z
+[pip download pyalgotrade] head200='Collecting pyalgotrade   Downloading PyAlgoTrade-0.20.tar.gz (84 kB)      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 84.6/'
+pip download --no-deps -d pyqlib pyqlib rc=0 time_s=.820582639 2026-09-22T01:30:37Z
+[pip download pyqlib] head200='Collecting pyqlib   Downloading pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (45 kB)      ━━━━━━━━━━━━━━━━━━━━━━━━�'
+pip download --no-deps -d vnpy vnpy rc=0 time_s=.670871735 2026-09-22T01:30:38Z
+[pip download vnpy] head200='Collecting vnpy   Downloading vnpy-4.4.0-py3-none-any.whl.metadata (22 kB) Downloading vnpy-4.4.0-py3-none-any.whl (201 kB)    ━━━━━━━━━━━━━━━━━━━━━━━━�'
+pip download --no-deps -d jesse jesse rc=0 time_s=1.291158417 2026-09-22T01:30:39Z
+[pip download jesse] head200='Collecting jesse   Downloading jesse-3.2.1-py3-none-any.whl.metadata (15 kB) Downloading jesse-3.2.1-py3-none-any.whl (34.9 MB)    ━━━━━━━━━━━━━━━━━━━━━━━'
+pip install backtesting rc=0 time_s=1.071648893 2026-09-22T01:31:14Z
+[pip install backtesting] head200='Collecting backtesting   Using cached backtesting-0.6.6-py3-none-any.whl.metadata (8.1 kB) Requirement already satisfied: numpy>=1.17.0 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af695'
+pip check (after backtesting install) rc=0 2026-09-22T01:31:28Z
+[pip check] head200='No broken requirements found. '
+python3 probe_backtesting.py rc=0 time_s=.835891471 2026-09-22T01:31:28Z
+[python3 probe_backtesting.py] head200='Backtest.run:   0%|          | 0/199 [00:00<?, ?bar/s]                                                      RESULT: # Trades: 1 Return [%]: -0.11950547997583272    EntryPrice  ExitPrice  Size      '
+pip install qstrader rc=0 time_s=1.618806294 2026-09-22T01:31:36Z
+[pip install qstrader] head200='Collecting qstrader   Using cached qstrader-0.3.0-py3-none-any.whl.metadata (9.9 kB) Collecting click>=8.1 (from qstrader)   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB) Requirement alre'
+curl GET api.github.com/repos/mhallsmoore/qstrader/git/trees code=403 2026-09-22T01:31:55Z
+curl GET raw.githubusercontent.com/.../buy_and_hold.py code=200 time_ms=404 2026-09-22T01:32:05Z
+pip install pytz rc=0 time_s=1.105902285 2026-09-22T01:32:19Z
+[pip install pytz] head200='Collecting pytz   Downloading pytz-2026.3.post1-py2.py3-none-any.whl.metadata (22 kB) Downloading pytz-2026.3.post1-py2.py3-none-any.whl (508 kB)    ━━━━━━━━━━━━━━━━━'
+python3 probe_qstrader.py rc=0 time_s=.449320607 2026-09-22T01:32:38Z
+[python3 probe_qstrader.py] head200='Loading CSV files into DataFrames... Loading CSV file for symbol 'EQ:SYN'... Adjusting pricing in CSV files... Adjusting CSV file for symbol 'EQ:SYN'... Initialising simulated broker "Backtest Simulat'
+pip install pyalgotrade rc=0 time_s=10.233442194 2026-09-22T01:33:00Z
+[pip install pyalgotrade] head200='Collecting pyalgotrade   Using cached PyAlgoTrade-0.20.tar.gz (84 kB)   Installing build dependencies: started   Installing build dependencies: finished with status 'done'   Getting requirements to bu'
+pip install lean rc=0 time_s=7.373919287 2026-09-22T01:33:08Z
+[pip install lean] head200='Collecting lean   Using cached lean-1.0.229-py3-none-any.whl.metadata (120 kB) Requirement already satisfied: click>=8.0.4 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratc'
+python3 probe_pyalgotrade.py rc=1 time_s=.218333464 2026-09-22T01:33:30Z
+[python3 probe_pyalgotrade.py] head200='Traceback (most recent call last):   File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe_pyalgotrade.py", line 26, in <module>     feed.addBarsFromCSV("SYN", "pa'
+python3 probe_pyalgotrade.py(v2, Date Time列) rc=1 time_s=.193004667 2026-09-22T01:33:37Z
+[python3 probe_pyalgotrade.py v2] head200='Traceback (most recent call last):   File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe_pyalgotrade.py", line 26, in <module>     feed.addBarsFromCSV("SYN", "pa'
+python3 probe_pyalgotrade.py(v3、datetime形式修正) rc=0 time_s=.198001138 2026-09-22T01:33:43Z
+[python3 probe_pyalgotrade.py v3] head200='RESULT: final_portfolio_value= 1004.4582675977585 RESULT: shares= 0 RESULT: cash= 1004.4582675977585 '
+pip install zipline-reloaded rc=0 time_s=31.871691347 2026-09-22T01:34:23Z
+[pip install zipline-reloaded] head200='Collecting zipline-reloaded   Using cached zipline_reloaded-3.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB) Requirement already satisfied: numpy'
+pip check(zipline-reloaded導入後) 2026-09-22T01:34:35Z
+[pip check] head200='No broken requirements found. '
+pip install vnpy rc=0 time_s=19.493752905 2026-09-22T01:35:03Z
+[pip install vnpy] head200='Collecting vnpy   Using cached vnpy-4.4.0-py3-none-any.whl.metadata (22 kB) Collecting deap>=1.4.2 (from vnpy)   Downloading deap-1.4.4-py3-none-any.whl.metadata (13 kB) Collecting loguru>=0.7.3 (from'
+[python3 -c vnpy構成確認] vnpyコアパッケージのサブモジュールは alpha/chart/event/trader のみ(gateway実装・backtestingエンジンは別パッケージ)
+curl GET https://pypi.org/pypi/vnpy_bitflyer/json code=404
+curl GET https://pypi.org/pypi/vnpy_gmocoin/json code=404
+curl GET https://pypi.org/pypi/vnpy_bitbank/json code=404
+curl GET https://pypi.org/pypi/vnpy_binance/json code=200
+pip install pyqlib rc=0 time_s=58.353269397 2026-09-22T01:36:28Z
+[pip install pyqlib] head200='Collecting pyqlib   Using cached pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (45 kB) Requirement already satisfied: pyyaml in /tmp/claude-0/-home-user-trade/220780'
+pip check(pyqlib導入後) 2026-09-22T01:36:38Z
+[pip check] head200='No broken requirements found. '
+pip install jesse rc=0 time_s=60.286559606 2026-09-22T01:37:44Z
+[pip install jesse] head200='Collecting jesse   Using cached jesse-3.2.1-py3-none-any.whl.metadata (15 kB) Collecting arrow~=1.2.1 (from jesse)   Downloading arrow-1.2.3-py3-none-any.whl.metadata (6.9 kB) Requirement already sati'
+python3 -m venv venv_tools1_hft2(hftbacktest再実行・NautilusTrader導入用の隔離venv、依存衝突回避) rc=0 time_s=3.364988280 2026-09-22T01:38:14Z
+pip install hftbacktest numpy numba polars (venv2) rc=0 time_s=26.419252088 2026-09-22T01:38:40Z
+[pip install venv2 hftbacktest] head200='Collecting hftbacktest   Using cached hftbacktest-2.4.4-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (15 kB) Collecting numpy   Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2'
+python3 probe_hftbacktest_v4.py(FILLED達成試行) rc=1 time_s=1.971348458 2026-09-22T01:39:53Z
+[python3 probe_hftbacktest_v4.py] head200='/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe_hftbacktest_v4.py:7: DeprecationWarning: constant_latency() is deprecated; use constant_order_latency().   .constan'
+curl GET raw.githubusercontent.com/polakowo/vectorbt/master/LICENSE.md code=200 time_ms=426 2026-09-22T01:42:20Z
+curl GET https://vectorbt.pro/ code=200 bytes=314437 time_ms=586 2026-09-22T01:42:31Z
+pip install vectorbt(隔離venv) rc=0 time_s=34.721888880 2026-09-22T01:43:18Z
+[pip install vectorbt] head200='Collecting vectorbt   Downloading vectorbt-1.1.0-py3-none-any.whl.metadata (16 kB) Collecting numpy>=2.4.6 (from vectorbt)   Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x'
+pip install 'plotly<5'(vectorbt import失敗の回避試行) rc=0 time_s=6.058406355 2026-09-22T01:43:55Z
+[pip install plotly<5] head200='Collecting plotly<5   Downloading plotly-4.14.3-py2.py3-none-any.whl.metadata (7.6 kB) Collecting retrying>=1.3.3 (from plotly<5)   Using cached retrying-1.4.2-py3-none-any.whl.metadata (5.5 kB) Requi'
+pip install 'plotly==5.24.1' 'numpy<2' rc=0 time_s=12.033971996 2026-09-22T01:44:19Z
+[pip install plotly==5.24.1 numpy<2] head200='Collecting plotly==5.24.1   Downloading plotly-5.24.1-py3-none-any.whl.metadata (7.3 kB) Collecting numpy<2   Using cached numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metad'
+curl GET https://raw.githubusercontent.com/polakowo/vectorbt/master/LICENSE.md code=200 bytes=12321
+[curl LICENSE.md] head200='"Commons Clause" License Condition v1.0  The Software is provided to you by the Licensor under the License...Software: vectorbt  License: Apache 2.0 with Commons Clause  Licensor: Oleg Polakow'
+curl GET https://vectorbt.pro/ code=200 bytes=314437
+python3 -c import vectorbt(隔離venv venv_vbt、plotly7.1.0のまま) → ImportError(traceback: vectorbt/_settings.py reset_theme → plotly scattermapboxがpropertyとして存在しない) rc=1
+pip install 'plotly<5'(回避試行1) → plotly4.14.3導入、import時に numpy.bool8 属性なしで別のImportError(numpy2.x非互換) rc=1
+pip install 'plotly==5.24.1' 'numpy<2'(回避試行2) → import成功 rc=0 OK VERSION 1.1.0
+grep -rl -i "limit_order\|LimitOrder\|order_type.*Limit" (vectorbtパッケージ全体、隔離venv) → 一致0件(指値注文の概念そのものがソースに存在しない)
+pip install freqtrade(隔離venv) rc=0 time_s=41.391887122 2026-09-22T01:45:54Z
+[pip install freqtrade] head200='Collecting freqtrade   Downloading freqtrade-2026.8-py3-none-any.whl.metadata (17 kB) Collecting ccxt>=4.5.4 (from freqtrade)   Downloading ccxt-4.5.82-py3-none-any.whl.metadata (164 kB)      ━━�'
+freqtrade list-exchanges -a rc=0 time_s=2.298016902 2026-09-22T01:46:03Z
+[freqtrade list-exchanges -a] head200='2026-09-22 01:46:01,009 - freqtrade - INFO - freqtrade 2026.8 2026-09-22 01:46:01,393 - numexpr.utils - INFO - NumExpr defaulting to 4 threads.                                                         '
+freqtrade list-exchanges(非-a、全件) / ccxt bitflyer .has 属性を実測 2026-09-22T01:46:35Z
+freqtrade list-exchanges -a(隔離venv venv_freqtrade、ccxt 4.5.82 同梱) → 105取引所中、bitFlyer行: 「missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, watchOHLCV」/ bitbank行: 「missing opt: fetchTickers, fetchOrders, watchOHLCV」(必須欠落なし)
+freqtrade list-exchanges(非-a、freqtradeが「使える」とする79取引所) → bitbankは含まれる(grep一致)、bitFlyerは含まれない(grep不一致)
+python3 -c ccxt.bitflyer().has 実測: fetchOHLCV=None(無)、fetchOrder='emulated'(ccxt側のエミュレーション)、fetchTickers=None、watchOHLCV=None、createOrder=True、cancelOrder=True
+python3 -c 'gmocoin' in ccxt.exchanges → False(ccxtの取引所一覧にGMOコインという名のIDが無い)。'coincheck' in ccxt.exchanges → True(coincheckは存在、ただしfetchOrder/fetchOHLCV欠落でfreqtradeの-a一覧でも「missing」表示)
+python3 -c ...(OrderDict.keys()探索、6分48秒経過もCPU時間1秒でハング、kill -9で強制終了) rc=killed time_s=408 2026-09-22T01:47:02Z
+curl GET https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/pyproject.toml code=404 2026-09-22T01:47:38Z
+curl GET https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/nautilus_trader/__init__.py code=404 2026-09-22T01:47:39Z
+curl GET https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/README.md code=200 2026-09-22T01:47:39Z
+[curl NautilusTrader README.md(raw, developブランチ)] code=200 → 「cargo-deny enforces a license allow list compatible with LGPL-3.0-only」「The source code for NautilusTrader is available on GitHub under the GNU Lesser General Public License v3.0」— PyPI JSONの license_expression=LGPL-3.0-or-later と食い違う(README/cargo-denyはonly)
+curl GET raw.../nautilus_trader/develop/RELEASES.md code=200 2026-09-22T01:48:25Z
+[WebFetch][https://github.com/nautechsystems/nautilus_trader/tree/develop/crates/adapters] chars=~400 head200='# Subdirectories in /crates/adapters  1. architect_ax 2. betfair 3. binance 4. bitmex 5. blockchain 6. bybit 7. coinbase 8. databento 9. deribit 10. derive 11. dydx 12. hyperliquid 13. interactive_'
+curl GET raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/RELEASES.md code=200 bytes=567723、bitflyer/bitbank/gmo 0件一致(grep rc=1)
+[WebSearch]["nautilus_trader adapters list binance bybit okx coinbase kraken interactive brokers polymarket site:github.com nautechsystems"] results=10 head200='GitHub - pash7ka/nautilus-ctrader-adapter / nautilus_trader/RELEASES.md at master / nautilus_trader/README.md at master / GitHub - nautechsystems/nautilus_trader / Releases nautechsystems/nautilus'
+[WebSearch]["nautilus_trader" bitflyer OR bitbank OR "GMO coin""] results=9 head200='nautilus-trader GitHub Topics / 仮想通貨取引所おすすめ19社比較ランキング / GitHub - pybotters/pybotters An advanced API client for python bot traderes / [□_□] bitcoin BOT for 「BitFlyer,GMO,Liquid」'
+python3.12 -m venv venv_nautilus(NautilusTrader要件Python3.12-3.15) rc=0 time_s=3.013615664 2026-09-22T01:48:51Z
+pip install nautilus-trader rc=0 time_s=21.987052554 2026-09-22T01:49:13Z
+[pip install nautilus-trader] head200='Collecting nautilus-trader   Downloading nautilus_trader-1.231.0-cp312-cp312-manylinux_2_35_x86_64.whl.metadata (39 kB) Collecting click<9.0.0,>=8.4.1 (from nautilus-trader)   Using cached click-8.5.0'
+curl GET raw.../examples/backtest/fx_ema_cross_audusd_bars_from_ticks.py code=200 2026-09-22T01:49:27Z
+curl GET raw.../docs/tutorials/ema_cross.py code=200 2026-09-22T01:49:38Z
+python3.12 -m venv venv_nautilus + pip install nautilus-trader(1.231.0、14依存のみ) 成功
+python3 probe_nautilus.py(v1) rc=1: ImportError AccountType(nautilus_trader.modelから import不可、developブランチのexample.pyの記法が現行リリースと不一致)
+python3 probe_nautilus.py(v2、import修正後) rc=0: LIMIT買い→約定→MARKET売りで手仕舞いの1往復が成立。口座残高 BTC 10.0→10.01→10.0(手数料分USDT減)。fills report 2件(O-...-1, O-...-2)。BINANCEのOrderMatchingEngineで実際に約定処理された(実測)
+[WebSearch]["site:x.com バックテスト エンジン 自作 やめた OR 乗り換えた python"] results=9(X投稿0件、日本語ブログのみ)
+[WebSearch]["site:x.com "backtesting.py" OR "zipline" OR "nautilus trader" crypto strategy review"] results=8(新規発見: PySystemtrade/Backtrader/vectorbt/PyBroker/bt を挙げるPyQuant Newsの投稿、Ziplime(新AIライブラリ)言及の投稿)
+[WebSearch]["awesome python backtesting trading bots list github crypto 2026"] results=9(新規発見候補: Backtrader/Superalgos/OpenTrader/CryptoSignal/fast-trade/OctoBot/best-of-algorithmic-trading一覧)
+[WebFetch][https://github.com/kernc/backtesting.py/network/dependents] chars=~300 head200='Dependents for backtesting.py: We haven't found any dependents for this repository yet. 0 Repositories, 0 Packages(GitHubの依存関係グラフは不完全な場合がある旨の注記あり)'
+
+# 完了時点 2026-09-22T01:57:53Z。常駐プロセス無し(実測、ps aux確認)。隔離venv一覧: venv_tools1(既存流用)/ venv_tools1_hft2(hftbacktest FILLED再現用)/ venv_vbt(vectorbt) / venv_freqtrade / venv_nautilus(Python3.12)。いずれもscratchpad内、リポジトリ環境には導入していない。

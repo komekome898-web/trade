@@ -8476,12 +8476,12 @@
   {
    "move": 318,
    "tools": {
-    "Read": 1,
-    "Bash": 3,
-    "Agent": 1,
+    "Read": 2,
+    "Bash": 5,
+    "Agent": 2,
     "Write": 1
    },
-   "n_tools": 6,
+   "n_tools": 10,
    "read_goal": true,
    "first_write_at": 5,
    "table_shown": false,
