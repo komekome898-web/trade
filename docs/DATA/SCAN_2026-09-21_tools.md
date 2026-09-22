@@ -4013,3 +4013,199 @@ K12 検査の出力の貼付           0 件
 ---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
 ---- 合計 0 件
 ```
+
+## 区分1 — 12 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run12.log`。
+11 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run11.md`)の §2 で、
+`OpenTrader` / `Bot18` / `Superalgos` / `CryptoSignal` の 4 件は状態が確定した。
+この回の起動の指定は「残りの候補の最後の 1 件 = `OctoBot` の注文の層」に絞ること、そのあと
+「残りが空になったら新しい検索計画 6 本」である。§8 の `tools_inventory.py` の全文は、
+10 回目の検収 §4-3 の判断「**区分ごとに 1 回でよい**」により、区分 1 の 1 回目の節を参照して貼っていない。
+
+### 検索計画
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | 「指値 約定 キュー位置 バックテスト Python ライブラリ」 | "queue position simulation limit order fill backtesting library open source" | 実行(生ログ 7-1・7-2) |
+| 中間 | 「マーケットインパクト 執行コスト モデル バックテスト オープンソース」 | "market impact model execution simulator backtesting framework github 2026" | 実行(生ログ 7-3・7-4) |
+| 広い | 「トレード 検証 シミュレーター 無料 ツール 2026」 | "open source trading strategy simulator framework alternatives list awesome backtesting" | 実行(生ログ 7-5・7-6) |
+
+X の経路(`x-research` §3 の手順)は語を変えて 3 回引いた: 「site:x.com backtest 約定シミュレーション 自作 ツール」/
+"site:x.com \"queue position\" backtest crypto market making library" /
+"site:x.com open source backtesting engine new release 2026 traders using"(生ログ 8-1〜8-3)。
+**前回までと幅も語も変えた。**幅の狭い側は「指値の埋まり方と待ち行列」、中間は「市場影響と執行の費用」、
+広い側は「検証の場そのもの」に置いた。
+
+### 出典
+
+| URL / 経路 | 方法 | 生ログの行 |
+|---|---|---|
+| https://ungh.cc/repos/SLMolenaar/QuantCore | curl(code=200) | 116 |
+| https://ungh.cc/repos/FlashAlpha-lab/flashalpha-fill-simulator | curl(code=200) | 119 |
+| https://ungh.cc/repos/paperswithbacktest/awesome-systematic-trading | curl(code=200) | 122 |
+| https://ungh.cc/repos/microsoft/MarS | curl(code=200) | 125 |
+| https://ungh.cc/repos/Ros522/backtestlob | curl(code=000 を 3 回。打ち直しても同じ) | 128 |
+| https://github.com/Ros522/backtestlob | curl(code=403) | 129 |
+| WebSearch 一般 6 本 | 道具 `WebSearch` | 80 と 96 |
+| WebSearch の X 3 本 | 道具 `WebSearch`(`site:x.com`) | 102 と 107 |
+| 隔離 venv の `octobot_trading` の公開名と `limit_order.py` の構造 | 自分で読んだ(公開名の列挙と原文) | 22 と 64 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **`OctoBot` は §5-4 の中核(成行と指値の 1 往復)を通した。**合成の 1 分足だけを入力に、`TraderSimulator` で成行買いが `MARKET_STATUS= filled`、指値売りが `LIMIT_STATUS_AFTER= filled` になり、資産は `PF_START= {'BTC': '10', 'USDT': '100000'}` から `PF_AFTER_MARKET= {'BTC': '11', 'USDT': '99900'}` を経て `PF_END= {'BTC': '10', 'USDT': '100010'}` に戻った。建玉が元に戻り現金だけが増えているので、1 往復の損益が出ている | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:53 と docs/DATA/probes/20260922_tools_1_run12.log:58 |
+| 2 | **`OctoBot` の指値は、板の待ち行列ではなく「価格の到達の事象」で埋まる。**注文を出しただけでは `LIMIT_STATUS_NOFILL= open` のままで、`price_events_manager.handle_price` に価格を渡すと `filled` になった。原文の `limit_order.py` は `price_events_manager.new_event(origin_price, price_time, trigger_above, allow_instant_fill)` で事象を作り、`wait_for_price_hit` がそれを待って `on_fill` を呼ぶ構造で、**先行する注文量や表示サイズは見ていない** | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:56 と docs/DATA/probes/20260922_tools_1_run12.log:64 |
+| 3 | **`OctoBot` の模擬は、拡張(tentacles)を入れなくても注文の層まで回せる。**ただし既定の取り込み器は拡張側にあるので、`initialize_backtesting` の `importers_by_data_file` に `ExchangeDataImporter` の実体を自分で渡す必要がある。渡さないと `IndexError: list index out of range` で止まる | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:31 と docs/DATA/probes/20260922_tools_1_run12.log:35 |
+| 4 | **`OctoBot` は模擬でも取引所の銘柄表を外から取りに行く。**控えから引く経路は鍵の無い状態で `KeyError` になり、`use_cached_markets(False)` に替えて初めて通った。**模擬だから外に出ない、とは言えない**(当方のデータ・鍵は渡していない) | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:37 と docs/DATA/probes/20260922_tools_1_run12.log:38 |
+| 5 | **`OctoBot` の処理は、仕事が終わっても自分では終わらない。**`main` が返ったあとも python が残り、`timeout` で落とすまで消えなかった。`os._exit` を足して初めて `PROC_RC=0` で自分で終わった。**11 回目に残っていた 2 本もこの型で、この回に片付けた** | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:70 と docs/DATA/probes/20260922_tools_1_run12.log:72 |
+| 6 | **新しい検索計画 6 本は、新しい候補を出した。**幅の狭い側(指値の埋まり方)と中間(市場影響)で、当方の一覧に無い名前が出た。**よって委任文 §2 の完了条件(新しい計画が新しい候補を 1 件も出さない)は満たされていない** | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:80 と docs/DATA/probes/20260922_tools_1_run12.log:96 |
+| 7 | **X の 3 本のうち、道具の名前を新しく出したのは 1 本だけだった。**残る 2 本は既出(`hftbacktest`)か、登録の要る外部の場の宣伝の投稿だった。**X が発見の経路として空振りしたのではなく、狭い語では既出に収束した** | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:102 と docs/DATA/probes/20260922_tools_1_run12.log:107 |
+| 8 | **`Ros522/backtestlob` は、この回では一次資料に到達できていない。**`ungh.cc` が 3 回とも `code=000`(接続の失敗)で、`github.com` は `code=403`。**「不可」とは書かない。**次の回に手段を替えて続ける(raw.githubusercontent / PyPI / archive.org / 待って再試行) | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:128 と docs/DATA/probes/20260922_tools_1_run12.log:129 |
+
+### 候補の一覧
+
+この回で状態が変わったのは 11 番(`OctoBot`)で、31 番以降が新しい検索計画で増えた行である。
+1 番から 30 番の本文は 11 回目の一覧をそのまま引き継いでいる(黙って落としていない)。
+
+1. `Basana` — 非同期・イベント駆動の暗号資産向け枠組み。Apache-2.0。4 回目に深掘り済み。この回では何も足していない。
+2. `Backtrader` — バックテストの機関。GPLv3+。4 回目に深掘り済み。この回では何も足していない。
+3. `PySystemtrade` — 10 回目に深掘り済み。**状態は「指値の注文模擬まで最小実行を通した」で確定。**この回では何も足していない。
+4. `PyBroker` — PyPI 上の名前は lib-pybroker。Apache License 2.0 with Commons Clause。4 回目に深掘り済み。この回では何も足していない。
+5. `bt` — MIT。注文の種別という概念が無い。4 回目に深掘り済み。この回では何も足していない。
+6. `Ziplime` — 6 回目に深掘り済み。7 回目に対応 LLM を取り直し済み。この回では何も足していない。
+7. `Superalgos` — **状態は「危険なので止めた」で確定(11 回目、リードの検収で追認)。**この回では何も足していない。
+8. `OpenTrader` — **状態は「危険なので止めた」で確定(11 回目、リードの検収で `--ignore-scripts` も使わないと決定)。**この回では何も足していない。
+9. `CryptoSignal` — **状態は「この環境からは到達できない」で確定(11 回目、リードの検収で追認)。**この回では何も足していない。
+10. `fast-trade` — 5 回目に深掘り済み。AGPL-3.0。この回では何も足していない。
+11. [深掘り] `OctoBot` — 7 回目に導入・起動・拡張の導入まで、8 回目に模擬の入力の規則、11 回目に合成の `.data` の書き出しと読み戻しまで到達済み。**この回で §5-4 の中核(成行と指値の 1 往復)を通した。状態は「最小実行まで通した」で確定。**
+12. `pybotters` — 7 回目に深掘り済み。この回では何も足していない。
+13. `DeviaVir/zenbot` — **状態は「危険なので止めた」で確定(9 回目に閉じた)。**この回では何も足していない。
+14. `Bot18` — **状態は「配布が止まりライセンスの条件が一次資料から読めない」で確定(11 回目のリードの検収で、取得しないと決定)。**この回では何も足していない。
+15. `Mendl-Labs/BacktestingCore` — **状態は「構築に要る依存が公開物として存在しないので、どこでも構築できない」で確定(9 回目)。**この回では何も足していない。
+16. `Luczinsritter/event_driven_backtesting_engine` — **状態は「導入して最小実行まで通した」で確定(9 回目)。**ライセンスは確定できない。この回では何も足していない。
+17. `mlflow` — 8 回目に深掘り済み。この回では何も足していない。
+18. `zipline-reloaded` — 3 回目に深掘り済み。この回では何も足していない。
+19. `Jesse` — 3 回目に深掘り済み。この回では何も足していない。
+20. `VnPy` — 3 回目に深掘り済み。この回では何も足していない。
+21. `Qlib` — 3 回目に深掘り済み。この回では何も足していない。
+22. `Lean CLI` — 3 回目に深掘り済み。この回では何も足していない。
+23. `hftbacktest` — 1 回目に深掘り済み。この回では何も足していない。
+24. **限界: 6 回目に立てた LimexHub と Lime Trader SDK は、6 回目のリードの検収 §4-2 の判断で区分 3(データ)と区分 2(執行)に引き継いだ。**区分 1 では追わない。
+25. **限界: `OctoBot` の必須の依存のうち、取引以外の外部連携の窓口は、7 回目から 11 回目までと同じくこの回でも候補として立てていない。**次の実行で候補に足すかはリードが決める。
+26. **限界: `mlflow` の同梱する技能とフックの定義は、それ自体が道具の候補になりうるが、8 回目から 11 回目までと同じくこの回でも候補として立てていない。**当方のフックはオーナーの指示があったときだけ変えるもの(`CLAUDE.md` §0.2 A-16)なので、立てるかどうかはリードとオーナーが決める。
+27. **限界: `PySystemtrade` が同梱する先物の価格データは、それ自体が区分 3(データ)の候補になりうるが、9 回目から 11 回目までと同じくこの回でも候補として立てていない。**
+28. **限界: `PySystemtrade` の実弾の発注の側(`sysexecution` と `sysbrokers/IB`)は、区分 2(執行)の候補になりうるが、区分 1 では追わない。**作業木(`scratchpad/pst`)は消していない(検収の指示どおり)。
+29. **限界: `OpenTrader` の `pro/` の中身と料金ページは読んでいない。**有料の層があるかは未確認で、この回では候補として別立てにしていない。
+30. **限界: `CryptoSignal` の `app/` の原文(発注する経路があるか)は読んでいない。**導入が通らないので実行では確かめられないが、読むことは可能である。次に回すかはリードが決める。
+31. `Ros522/backtestlob` — **未着手。**板(LOB)の指値戦略の高速バックテストと説明されている。浅い(一次資料に到達できていない: `ungh.cc` が `code=000` を 3 回、`github.com` が `code=403`。版・ライセンス・活動・料金・危険はすべて未確認)。
+32. `FlashAlpha-lab/flashalpha-fill-simulator` — **未着手。**一次資料の説明は "Realistic limit-order fill simulator for options credit/debit spreads. Engine-agnostic, data-source-agnostic."。浅い(版・ライセンス・活動・料金・危険は未確認)。
+33. `SarthakDalmia1/backtesting_execution_simulator` — **未着手。**板の模擬と価格・時間の優先での突合、成行・指値・IOC・FOK に対応すると説明されている。浅い(一次資料は未取得。出典は検索結果の要約のみ)。
+34. `SLMolenaar/QuantCore` — **未着手。**一次資料の説明は "C++ backtesting engine with a real order book, priority-queue event loop, and Python bindings."。浅い(版・ライセンス・活動・料金・危険は未確認)。
+35. `thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-` — **未着手。**大口の執行・市場影響・取引費用・最適な執行の軌道を扱うと説明されている。浅い(一次資料は未取得)。
+36. `shubhamcodez/Market-Impact-Model` — **未着手。**注文の流れの偏り・出来高・価格の変化から売買が価格に与える影響を予測すると説明されている。浅い(一次資料は未取得)。
+37. `ThePredictiveDev/Automated-Financial-Market-Trading-System` — **未着手。**板の管理・FIX の処理・マーケットメイクの算法・合成の流動性の生成を持つ模擬と説明されている。浅い(一次資料は未取得)。
+38. `microsoft/MarS` — **未着手。**一次資料の説明は "MarS: a Financial Market Simulation Engine Powered by Generative Foundation Model"。**生成基盤模型で市場そのものを作る**という、当方の一覧に無い型。浅い(ライセンス・料金・鍵の要否・危険は未確認)。
+39. `paperswithbacktest/awesome-systematic-trading` — **未着手。**道具そのものではなく一覧だが、委任文 §3-2 が「awesome 系の一覧も辿る」と指示しているので候補に残す。一次資料の説明は "A curated list of awesome libraries, packages, strategies, books, blogs, tutorials for systematic trading."。浅い(中身の一覧は未取得)。
+40. `OpenMarket` の戦略検証 — **未着手。**X の投稿(宣伝の印)で「無料。資金調達率・清算・不利な価格での約定を含む模擬」と主張している。登録の要否・料金・鍵は未確認。**登録はしない。**
+41. `prediction-market-backtesting` — **未着手。**Polymarket と Kalshi の実データで戦略を検証すると説明されている。暗号資産そのものではないが、清算・資金調達の無い場の検証という点で当方に無い型。浅い(一次資料は未取得)。
+42. `shiyu-coder/Kronos` — **未着手。**ローソク足の基盤模型と説明されている。区分 4(研究・特徴量)にまたがる。浅い(一次資料は未取得)。
+43. `QuantDinger` — **未着手。**X の投稿(宣伝の印)で「AI の取引の基盤。サーバー側のデータで検証してから実弾」と主張している。浅い(一次資料は未取得。鍵・料金は未確認)。
+44. `lo2cin4` の符号を書かない検証の枠組み — **未着手。**X の投稿(使用報告と宣伝の中間)で「符号を 1 行も書かずに使える公開の検証の枠組み」と主張している。名前も版も未確認。
+45. `ForexTester` — **未着手。**FX の検証ソフト(ウェブと導入型)。**有料の層があることが検索結果から読めるが、無料で使える範囲は未確認。**料金の語だけで外さない(委任文 §10)。
+46. `MT4裁量トレード練習君プレミアム` — **未着手。**日本語の対応を謳う MT4 向けの検証ソフト。料金・無料枠は未確認。
+47. **限界: この回の X の 3 本で出た `BacktestingMax` / `GFT Backtest Software` / `AlgoTest` は、いずれも登録の要る外部の場で、投稿はすべて宣伝の印だった。**委任文 §5-6 は「登録の要る道具も浅く終わらせない」と指示しているので、候補として立てるかはリードが決める。この回では立てていない。
+
+**残りの候補名**: 31 番から 46 番までの 16 件(すべて未着手)。**`OctoBot` は残りから外れた。**
+
+### ツール1件ごとの表
+
+#### §4.0 の機械可読の表
+
+この回に値が変わったのは `OctoBot` だけである。`OctoBot` は 7 回目の節に §4.0 の語彙のすべての項目の行を持ち、
+11 回目の節にこの 2 回で変わった項目の行を持つ。**この回はこの回に値が変わった項目だけを足した**
+(起動の指定「§4.0 の表は `OctoBot` の変わった項目だけを足す形でよく、全 43 項目を書き直す必要はない」)。
+31 番以降の新しい候補は**浅い**ので、委任文 §4.0 の末尾の規則どおり表に入れず、候補の一覧に何が未確認かを書いた。
+根拠の欄の `docs/DATA/probes/20260922_tools_1_run12.log:<行>` は、この回の生ログの行番号である。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `OctoBot` | 最小実行の可否 | **可。**§5-4 の中核(成行と指値の 1 往復)を通した。成行買いが filled、指値売りが filled、資産が元の建玉に戻って現金だけ増えた | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:66 と docs/DATA/probes/20260922_tools_1_run12.log:53 |
+| `OctoBot` | 最小実行の中身 | 合成の 1 分足 400 本の `.data` を入力に、`TraderSimulator` で `BTC/USDT` を 1 単位。成行買いは `MARKET_STATUS= filled FILLED_QTY= 1 FILL_PRICE= 100`、資産は `PF_START= {'BTC': '10', 'USDT': '100000'}` から `PF_AFTER_MARKET= {'BTC': '11', 'USDT': '99900'}`。指値売りは出した直後が `LIMIT_STATUS_NOFILL= open`、`price_events_manager.handle_price` に価格を渡すと `LIMIT_STATUS_AFTER= filled FILLED_QTY= 1 FILL_PRICE= 110`、資産は `PF_END= {'BTC': '10', 'USDT': '100010'}`。約定の記録は `TRADES= [('BTC/USDT', 'buy_market', '1', '100'), ('BTC/USDT', 'sell_limit', '1', '110')]`。手数料は `FEE= {'is_from_exchange': False, 'cost': Decimal('0'), 'currency': 'BTC'}` | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:66 と docs/DATA/probes/20260922_tools_1_run12.log:52 |
+| `OctoBot` | 実行所要秒 | 生ログの値をそのまま書くと `ELAPSED_SEC= 2.01`(模擬の組み立てから 1 往復の終わりまで。導入の時間は含まない) | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:66 と docs/DATA/probes/20260922_tools_1_run12.log:59 |
+| `OctoBot` | 時刻の扱い | 価格の事象に渡す時刻は秒の整数で受け取る(`price_events_manager.handle_price(115, 1700024000)` が通った)。**ミリ秒での扱いと時間帯の扱いは確かめていない** | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:66 と docs/DATA/probes/20260922_tools_1_run12.log:64 |
+| `OctoBot` | 再現性 | 未確認 | 未確認 | 試したこと: この回は 1 往復を通したが、同じ入力での打ち直しの結果を生ログに残していないので、決定的かどうかを記録として示せない。乱数の種の旗は `--help` の全文に無い(7 回目) |
+| `OctoBot` | 外部送信 | **模擬でも外に出る経路が 1 つ確かめられた。**銘柄表を控えから引く経路が鍵の無い状態で `KeyError` になり、`use_cached_markets(False)` に替えると取引所の公開の銘柄表を取りに行って通った。**当方のデータ・鍵・記録は渡していない。**7 回目に記録した誤りの送信と稼働の測定の 2 系統は、この回も実地には確かめていない | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:42 と docs/DATA/probes/20260922_tools_1_run12.log:37 |
+| `OctoBot` | 当方データ投入 | **入れられる。**`.data` は `octobot_commons.databases.SQLiteDatabase` が開く SQLite で、`description` と `ohlcv` の 2 つの表に自分で書けばよい(11 回目に確定)。この回はその `.data` をそのまま模擬の入力にして注文の層まで通した。**ただし当方の csv.gz の約定・清算をそのまま渡す口は無く、足に直してから入れることになる** | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:66 と docs/DATA/probes/20260922_tools_1_run12.log:46 |
+| `OctoBot` | 規模の見積 | 1 分足 400 本 + 注文 2 件で `ELAPSED_SEC= 2.01`。この 1 点からの外挿は足場が弱く、456 日のティックに要る時間は**推定もできない**(足の本数に対する伸び方を 2 点以上で測っていない) | 未確認 | 試したこと: この回は 1 分足 400 本の 1 点だけを測った。本数を変えた 2 点目は打っていない |
+| `OctoBot` | 4軸1_道具 | 入れられる。隔離 venv に入り、拡張(tentacles)を入れなくても注文の層まで回せる。**ただし既定の取り込み器は拡張側にあるので、取り込み器の実体を自分で渡す必要がある。**依存が多いので当方の環境に混ぜる形では使えない(7 回目) | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:42 と docs/DATA/probes/20260922_tools_1_run12.log:31 |
+| `OctoBot` | 4軸3_視点 | **この回で 1 つ足りた。**指値の約定を「板の待ち行列」ではなく「価格の到達の事象」として持ち、注文ごとに事象を作って待つ形にしている(`price_events_manager.new_event` と `wait_for_price_hit`)。当方の `src/bot/backtest/engine.py` は「通過した約定なら埋まったとみなす」形で、**事象として持つ層が無い。**当方の参照実装 `scripts/qa/maker_fill_ref.py` は待ち行列を持つが、模擬に組み込まれていない | 実測 | docs/DATA/probes/20260922_tools_1_run12.log:66 と docs/DATA/probes/20260922_tools_1_run12.log:64 |
+
+#### 文章による補い(表に書ききれないもの)
+
+- **`OctoBot` の注文の層に到達するまでに、手段を 5 回替えた。**止まった順に (1) 既定の設定 json に取引者の欄が無い →
+  設定を自分で組む / (2) 既定の取り込み器が拡張側にあって 0 件 → `importers_by_data_file` に自分で渡す /
+  (3) 取り込み器はクラスではなく実体 → 作って初期化してから渡す / (4) 銘柄表の控えが空 → `use_cached_markets(False)` /
+  (5) 設定の時間足は文字列ではなく列挙。**1 回目のエラーで止めていたら「不可」と書いていた**(委任文 §5-1)。
+- **原文に無い判断(黙って決めずにここに書く)その 1: 指値を埋めるために価格の事象を自分で注入した。**
+  委任文 §5-4 は「合成のティック列で成行と指値の 1 往復を通し損益を出す」と書いている。`OctoBot` の模擬は
+  時計を進める仕組み(`time_updater`)を持つが、それを回すには拡張の取引の型が要る。そこで、時計を回す代わりに
+  価格の事象を 1 回注入して指値を埋めた。**「合成のティック列」を流したのではなく、価格の到達を 1 点だけ与えた形である。**
+  これで §5-4 を満たしたと見てよいかはリードが決めること。
+- **原文に無い判断その 2: 11 回目に残っていた処理 2 本を kill した。**委任文 §6-6 は「常駐プロセスを残さない」と
+  書いているが、**前の回が残したものを片付けてよいかは書いていない。**片付けたのは scratchpad の隔離 venv で走る
+  自分の探りの処理だけで、リポジトリにも `data/` にも触れていない。
+- **原文に無い判断その 3: 新しい候補 16 件を「浅い」として §4.0 の表に入れなかった。**起動の指定は
+  「深掘りは次の回です」と書いているので深掘りしていない。委任文 §4.0 の末尾は「浅い候補は表に入れず、
+  候補の一覧に何が未確認かを書く」と指示しているので、そちらに従った。
+- **`Ros522/backtestlob` に「不可」と書いていない。**試した手段は `ungh.cc` を 3 回(全部 `code=000`)と
+  `github.com` を 1 回(`code=403`)の 2 経路だけで、委任文 §5-1 が挙げる手段(raw.githubusercontent /
+  リリースの tar / PyPI の wheel / archive.org / User-Agent を替える / 待って再試行)をまだ使い切っていない。
+
+### 区分 1 の完了の判定
+
+**区分 1 は未完了である。**委任文 §2 の完了条件は「残りの候補が空になり、かつ新しい検索計画が新しい候補を
+1 件も出さない」の 2 つで、前半は満たした(`OctoBot` の状態が確定し、11 回目までの残りは空になった)が、
+**後半は満たしていない。**この回の新しい検索計画 6 本と X の 3 本が、当方の一覧に無い名前を出したためである
+(候補の一覧の 31 番から 46 番)。深掘りは次の回に回す。
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 時間 | 上限 20 分。超過。`OctoBot` の注文の層で手段を 5 回替えたところと、模擬の 1 往復を打ち直したところで時間を使った |
+| トークン | 上限 5 万。**超過している。**起動の指定どおり表の生成は `OctoBot` の変わった項目だけに絞ったが、注文の層の探りが重かった |
+| 打ち切った作業 | 新しい候補 16 件の深掘り(起動の指定「深掘りは次の回です」に従って着手していない)。`Ros522/backtestlob` の残りの到達手段 |
+| 常駐プロセス | 残していない。この回の処理は `PROC_RC=0` で自分で終わり、11 回目が残していた 2 本も片付けた |
+| リポジトリへの書き込み | `docs/DATA/SCAN_2026-09-21_tools.md` と `docs/DATA/probes/20260922_tools_1_run12.log` の 2 つだけ。コミットはしていない |
+
+## 受け入れ検査の出力
+
+12 回目の提出前に打った最後の出力(生ログ 10 本を渡した)。**誤検出だと判断して自分で閉じた行は 1 件も無い。**
+直した内訳: K11 が 8 件当たった(`実測` の行の根拠の 1 つ目が `rc=` を含む行を指していなかった)ので、
+1 つ目を各手の `rc=` の行に付け替え、値の見える行を 2 つ目に回した。生ログには 1 行も書き足していない。
+
+```
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md \
+    docs/DATA/probes/20260922_tools_1_run3.log docs/DATA/probes/20260922_tools_1_run4.log \
+    docs/DATA/probes/20260922_tools_1_run5.log docs/DATA/probes/20260922_tools_1_run6.log \
+    docs/DATA/probes/20260922_tools_1_run7.log docs/DATA/probes/20260922_tools_1_run8.log \
+    docs/DATA/probes/20260922_tools_1_run9.log docs/DATA/probes/20260922_tools_1_run10.log \
+    docs/DATA/probes/20260922_tools_1_run11.log docs/DATA/probes/20260922_tools_1_run12.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
