@@ -579,7 +579,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - `pip install backtesting`(隔離venv `venv_tools1`、rc=0、実測)。`pip check` → No broken requirements found(実測)
 - 危険検査(§6-1): wheelを展開し`setup.py`等の導入時実行コードの有無を確認 → **無し**(pure-Pythonのwheel、実測 = 生ログ LV-5b)。PyPI Project-URLとGitHubの一致確認(一次資料)。既知の脆弱性: 未確認(未実施)
 - **最小の実行**: 合成OHLC(200本、ランダムウォーク)を生成し、`Strategy.next()`で現在値の0.5%下に1回だけ指値買いを送信、約定後に成行で手仕舞う戦略を実行 → **成功**。`# Trades: 1`、`EntryPrice=98.80`、`ExitPrice=97.81`、`PnL=-11.95`(実測、rc=0。出力全文 = 生ログ LV-5d。生ログ 63 行の head200 は列名の途中で切れている)。**指値の1往復が正しく約定・記録されることを確認した数少ない候補の一つ**
-- 所要時間: install数秒、実行1秒未満
+- 所要時間: install 1.07 秒・実行 0.84 秒(生ログの time_s)
 
 **当方の用途との相性**: pandas.DataFrame(OHLCV+DatetimeIndex)を要求 — 当方のcsv.gz約定履歴は変換層が必要(推定)。時刻はpandas Timestampでタイムゾーン任意(実測で確認、UTCで問題なく動作)。再現性: 合成データに乱数シードを使えば決定的(実測)。規模: 200本で1秒未満(実測)。456日ティック相当への外挿は次回課題(推定不可、実測データなし)
 
@@ -609,7 +609,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 **到達・導入・実行の記録**:
 - `pip install qstrader`(隔離venv、rc=0、実測)。GitHub公式example `examples/buy_and_hold.py`をraw.githubusercontentからcurl取得(200、実測)し、その構造(`FixedSignalsAlphaModel`+`BacktestTradingSession(rebalance='buy_and_hold')`)をそのまま踏襲した合成CSV日次バー(260営業日のランダムウォーク)で実行
 - **最小の実行**: 成功(rc=0)。`equity curve rows=261, first={'Equity': 1000000.0}, last={'Equity': 698485.43}`(実測)。**ただし本ツールは「日次リバランス配分」のシミュレータであり、指値注文・板・待ち行列という概念がソースのどこにも存在しない**(モジュール一覧の実測から確認 = 生ログ LV-5a)。**§5-4が求める「成行と指値の1往復」に相当する処理はこのアーキテクチャでは成立しない** — 目標配分(この場合100%配分のbuy_and_hold)への一括発注のみ
-- 所要時間: install十数秒、実行1秒未満
+- 所要時間: install 1.62 秒(生ログの time_s。「十数秒」は誤り)
 
 **当方の用途との相性**: 日次バーのCSV(`Date`列+OHLCV)を要求(実測、公式exampleのコード)。当方の分足・ティック・清算といった高頻度データとは粒度が大きく異なる(推定: 高頻度戦略の検証には不向き)。時刻: UTCタイムゾーン付きpandas Timestamp(実測)。再現性: 決定的(合成データに乱数シード使用、実測)。規模: 260日で1秒未満(実測)、456日ティック相当への外挿は不可(日次専用のため単位が異なる)
 
@@ -640,7 +640,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - `pip install pyalgotrade`(隔離venv、rc=0、実測。sdistからビルド成功、8年前のリリースだが現行Python 3.11で問題なく動作)
 - `pip check` は本回未実施(次回課題)
 - **最小の実行**: 成功。合成日次CSV(100本、`Date Time`列必須・特定のdatetimeフォーマット必須という実装依存の癖を実測で発見)で、`limitOrder()`により現在値0.5%下の指値買いを送信 → 約定 → `marketOrder()`で手仕舞い。`RESULT: final_portfolio_value=1004.46, shares=0, cash=1004.46`(実測、rc=0)。**指値の1往復に成功した2件目の候補**
-- 所要時間: install数秒、実行1秒未満
+- 所要時間: install 10.23 秒(生ログの time_s)
 
 **当方の用途との相性**: CSV(`Date Time`列、`%Y-%m-%d %H:%M:%S`形式必須)を要求(実測で判明、当方のUTCミリ秒ティックとは変換が必要)。再現性: 決定的(実測)。規模: 100本で1秒未満、456日ティック規模は未計測
 
@@ -665,12 +665,12 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **対応取引所**: 一次資料に個別取引所の記載なし。NASDAQ Data Link(旧Quandl)のAPIキーが必要な旨を GitHub の要約が示す(推定 = 未検算、W-6)
 - **出典**: pypi.org/pypi/zipline-reloaded/json、github.com/stefan-jansen/zipline-reloaded
 
-**料金の構造**: 本体無料(Apache-2.0)。NASDAQ Data Linkのヒストリカルデータ取得にはAPIキーが必要と要約にあり(推定 = 未検算、W-6。無料枠の有無は未確認)。隠れた依存: 導入で約40個の新規パッケージ(exchange-calendars・bcolz-zipline・empyrical-reloaded・statsmodels・SQLAlchemy・tables/h5py・Mako/alembic等)が入り、**既存venvのpandasを3.0.6から2.3.3へ強制ダウングレードした**(実測、pip installの出力に明記)
+**料金の構造**: 本体無料(Apache-2.0)。NASDAQ Data Linkのヒストリカルデータ取得にはAPIキーが必要と要約にあり(推定 = 未検算、W-6。無料枠の有無は未確認)。隠れた依存: 導入で **42 個**の新規パッケージ(出力全文 = 生ログ LV-10)(exchange-calendars・bcolz-zipline・empyrical-reloaded・statsmodels・SQLAlchemy・tables/h5py・Mako/alembic等)が入り、**既存venvのpandasを3.0.6から2.3.3へ強制ダウングレードした**(実測、pip installの出力に明記)
 
 **到達・導入・実行の記録**:
 - `pip install zipline-reloaded`(隔離venv、rc=0、実測)。`pip check` → No broken requirements found(実測)
 - **最小の実行**: **未完了**。zipline-reloadedのバックテストAPI(`run_algorithm`)は「bundle」という事前登録されたデータ供給元(通常はCLIで`zipline ingest`を実行してローカルにデータを取り込む)を前提としており、DataFrameを直接渡す単純な経路が見当たらなかった(試したこと: `run_algorithm`のシグネチャ確認、bundle登録の要否を確認。合成データでのbundle登録スクリプトの作成は本回の予算内で完了しなかった)。「取れない」のではなく「bundle登録という追加の準備工程が必要」という状態
-- 所要時間: install約40秒(実測)
+- 所要時間: install 31.87 秒(生ログの time_s)
 
 **当方の用途との相性**: 未確認(最小実行が未完了のため)
 
@@ -698,7 +698,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 **到達・導入・実行の記録**:
 - `pip install lean`(隔離venv、rc=0、実測。`docker`・`cryptography`・`pydantic`・`rich`等15パッケージ導入)
 - **最小の実行**: **未実施**。実際のバックテストには`lean backtest`コマンドがDockerイメージ(LEANエンジン本体、サイズ未確認だが一般に数百MB〜GB級と推測=推定)をpullする必要があり、§6-6「本体の一括ダウンロード数百MB以上はしない」に抵触する可能性が高いため、本回は意図的に実行を見送った(エラーで諦めたのではなく、規則に照らした判断)。次回、オーナー確認のうえでDocker pullを許可するか判断が必要
-- 所要時間: install数秒(実測)
+- 所要時間: install 7.37 秒(Lean CLI。生ログの time_s)
 
 **当方の用途との相性**: 未確認(最小実行未実施)
 
@@ -743,10 +743,10 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **活動**: スター48.7k・フォーク7.7k・コミット2,068件(WebFetch要約)。Microsoft発
 - **対応取引所**: GitHub要約では中国市場・米国市場のデータセット(Yahoo Finance等)中心。暗号資産・FXへの言及は要約に無し(未確認)
 
-**料金の構造**: 本体無料(MIT)。**依存パッケージが極めて多い**(実測: pip installで185個の新規パッケージが導入され、mlflow・mlflow-tracing・mlflow-skinny・databricks-sdk(クラウド実験管理)・redis・pymongo・gym(強化学習)・cvxpy(凸最適化)・lightgbm・Flask・fastapi・jupyter一式などを含む)。これら自体はOSSで無料だが、**mlflow/databricks-sdkの存在は、既定でクラウドのトラッキングサーバーへの接続を試みる設定になっていないか要確認**(未確認、次回課題。デフォルトでは通常ローカルファイルにフォールバックするのが一般的だが本回は検証していない)
+**料金の構造**: 本体無料(MIT)。**依存パッケージが極めて多い**(実測: pip install で **130 個**の新規パッケージが導入され(出力全文 = 生ログ LV-10。調査班の「185個」は数え違いで、リードが出力から数え直した)、mlflow・mlflow-tracing・mlflow-skinny・databricks-sdk(クラウド実験管理)・redis・pymongo・gym(強化学習)・cvxpy(凸最適化)・lightgbm・Flask・fastapi・jupyter一式などを含む)。これら自体はOSSで無料だが、**mlflow/databricks-sdkの存在は、既定でクラウドのトラッキングサーバーへの接続を試みる設定になっていないか要確認**(未確認、次回課題。デフォルトでは通常ローカルファイルにフォールバックするのが一般的だが本回は検証していない)
 
 **到達・導入・実行の記録**:
-- `pip install pyqlib`(隔離venv、rc=0、実測、約100秒)。`pip check` → No broken requirements found(実測)
+- `pip install pyqlib`(隔離venv、rc=0、実測、58.35 秒 = 生ログの time_s)。`pip check` → No broken requirements found(実測)
 - **最小の実行**: **未実施**。Qlibのバックテストは`qlib.init()`で専用のバイナリデータ形式(`.bin`ファイル、`dump_bin`スクリプトで変換)を指すデータディレクトリを要求する設計であり、pandasのDataFrameを直接渡す単純な経路が標準ドキュメントの範囲では見当たらなかった(試したこと: パッケージ構成の確認のみ、実行スクリプトの作成は本回の予算内で完了しなかった)
 
 **当方の用途との相性**: 未確認
@@ -771,9 +771,9 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 **料金の構造**: コア無料(MIT)。GUI(PySide6/Qt)込みで導入されるため商用配布時のQtライセンス条項の確認が必要な場合がある(未確認、PySide6自体はLGPL/商用デュアルライセンスだが、当方は自社内利用のみなら通常問題にならない=推定)。取引所ごとのgatewayパッケージが個別に必要という構造(コアだけでは接続できない)
 
 **到達・導入・実行の記録**:
-- `pip install vnpy`(隔離venv、rc=0、実測、約90秒)。**PySide6(Qt GUIフレームワーク)一式・ta-lib・deap(遺伝的アルゴリズム)・pyqtgraph等、GUIおよび最適化ツール込みの重い依存**が入った
+- `pip install vnpy`(隔離venv、rc=0、実測、19.49 秒 = 生ログの time_s)。**PySide6(Qt GUIフレームワーク)一式・ta-lib・deap(遺伝的アルゴリズム)・pyqtgraph等、GUIおよび最適化ツール込みの重い依存**が入った
 - **最小の実行**: **未実施**。バックテストエンジンは別パッケージ`vnpy_ctastrategy`等が必要と判明(コアに同梱されていないことをモジュール一覧の実測で確認)。次回、`vnpy_ctastrategy`を追加導入してCTA戦略の最小実行を試す
-- 所要時間: install約90秒(実測)
+- 所要時間: install 19.49 秒(生ログの time_s。「約90秒」は誤り)
 
 **当方の用途との相性**: 未確認
 
@@ -791,7 +791,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **できること全部**: PyPI description「A trading framework for cryptocurrencies」。README「advanced crypto trading framework that aims to simplify researching and defining YOUR OWN trading strategies for backtesting, optimizing, and live trading」
 - **言語・動作環境**: Python>=3.10(一次資料)
 - **ライセンス**: MIT(一次資料PyPI classifier、コア部分)
-- **版と最終更新日**: **3.2.1、2026-09-21T16:01(一次資料。本セッション中に3.2.0→3.2.1へ更新されるのを観測、非常に活発)**
+- **版と最終更新日**: **3.2.1、2026-09-21T16:01(一次資料。3.2.0 → 3.2.1 の更新を観測したのは **1 回目の実行**(15:44Z の取得時は 3.2.0、同日 16:01Z に 3.2.1)。2 回目の取得(01:28:59Z)は最初から 3.2.1。非常に活発)**
 - **活動**: スター8.6k・フォーク1.2k・コミット3,491件(WebFetch要約)
 - **対応取引所**: **実測(wheel展開 = 生ログ LV-5b、`import_candles_mode/drivers`ディレクトリ = 生ログ LV-5c)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter の10件。bitFlyer/bitbank/GMOコインは無い**
 - **出典**: pypi.org/pypi/jesse/json、github.com/jesse-ai/jesse、wheel展開の実測(いずれも取得)
