@@ -27,7 +27,7 @@ def paragraphs(lines):
     return out
 
 def check_bold(lines):
-    """K1 太字(2 回目の監査 13・14 回目)。奇数個 / 入れ子の 2 つの形。"""
+    """太字(2 回目の監査 13・14 回目)。奇数個 / 入れ子の 2 つの形。"""
     out = []
     for i, ln in paragraphs(lines):
         p = bold_spans(ln)
@@ -42,7 +42,7 @@ def check_bold(lines):
     return out
 
 def check_brackets(lines):
-    """K2 括弧の対応(15 回目)。全角を半角に直してから数える(混在は誤検出の元)。"""
+    """括弧の対応(15 回目)。全角を半角に直してから数える(混在は誤検出の元)。"""
     out = []
     for i, ln in paragraphs(lines):
         s = ln.translate(Z2H)
@@ -52,7 +52,7 @@ def check_brackets(lines):
     return out
 
 def check_sections(text, section_head=None):
-    """K3 委任文 §11 が要求する節の存在(8 回目 = 2 回目の節に知見・出典が丸ごと無かった)。
+    """委任文 §11 が要求する節の存在(8 回目 = 2 回目の節に知見・出典が丸ごと無かった)。
 
     区分の節ごとに、その節の中だけを見る。前の版では固定の見出し文字列で分割しようとして
     一度も一致せず、文書全体を見て常に通っていた(= 落ちない検査)。区分の見出しを正規表現で
@@ -90,7 +90,7 @@ def num_in_log(num, log):
     return False
 
 def check_numbers_in_log(lines, log):
-    """K4 本文の数値が生ログに在るか(10・11・12 回目 = 所要時間・依存数の食い違い)。"""
+    """本文の数値が生ログに在るか(10・11・12 回目 = 所要時間・依存数の食い違い)。"""
     out = []
     pat = re.compile(r"(\d+(?:\.\d+)?)\s*(秒|個|パッケージ)")
     for i, ln in enumerate(lines, 1):
@@ -103,7 +103,7 @@ def check_numbers_in_log(lines, log):
 
 def tool_names(lines):
     """道具名は表の 1 列目と候補の一覧から取る(直書きしない)。
-    監査の指摘 5: 区分 1 の固有名詞を直書きしていたため、他の区分では K5/K6 が当たらなかった。"""
+    監査の指摘 5: 区分 1 の固有名詞を直書きしていたため、他の区分では値の食い違いの検査が当たらなかった。"""
     names = {c[0] for _, c in read_table(lines)}
     for ln in lines:
         m = re.match(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?([A-Za-z][A-Za-z0-9_.+-]{2,})", ln)
@@ -112,7 +112,7 @@ def tool_names(lines):
     return sorted(n for n in names if len(n) >= 3)
 
 def check_conflicting_values(lines):
-    """K6 同じ道具・同じ単位に別の値(12 回目 = Qlib 185/130、11 回目 = Jesse 60/19.49)。"""
+    """同じ道具・同じ単位に別の値(12 回目 = Qlib 185/130、11 回目 = Jesse 60/19.49)。"""
     tools = tool_names(lines)
     seen = collections.defaultdict(set)
     pat = re.compile(r"(\d+(?:\.\d+)?)\s*(秒|個|パッケージ)")
@@ -132,7 +132,7 @@ def check_conflicting_values(lines):
     return out
 
 def check_contradiction(lines):
-    """K7 同じ道具で「未実施/未確認」と「実測/実施」が同居(2〜4 回目。同じ型が 4 回続いた)。"""
+    """同じ道具で「未実施/未確認」と「実測/実施」が同居(2〜4 回目。同じ型が 4 回続いた)。"""
     tools = tool_names(lines)
     neg, pos = collections.defaultdict(list), collections.defaultdict(list)
     for i, ln in enumerate(lines, 1):
@@ -167,12 +167,13 @@ def read_table(lines):
     return rows
 
 def check_table_complete(lines):
-    """K8 深掘りした道具が 37 項目すべての行を持つか(監査 1 回目 = 危険検査の 3 項目が全候補で欠落)。"""
+    """深掘りした道具が語彙のすべての項目の行を持つか(監査 1 回目 = 危険検査の 3 項目が全候補で欠落)。"""
     rows = read_table(lines)
     if not rows:
         return [(0, "§4.0 の機械可読の表が 1 行も無い(2026-09-22 版の委任文では必須)")]
     marked = [m.group(1).strip() for m in
-              re.finditer(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]\s*([^\s(（|]+)", "\n".join(lines), re.M)]
+              re.finditer(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]\s*(.+?)(?:\s*[—\-–]\s|\s*[(（|]|$)",
+                          "\n".join(lines), re.M)]
     have = {}
     for i, c in rows:
         have.setdefault(c[0], set()).add(c[1])
@@ -188,7 +189,7 @@ def check_table_complete(lines):
     return out
 
 def check_table_marks(lines):
-    """K9 印が 5 語のどれかで、根拠が空でないか(監査 1・10 回目 = 印の誤用)。"""
+    """印が 5 語のどれかで、根拠が空でないか(監査 1・10 回目 = 印の誤用)。"""
     out = []
     for i, c in read_table(lines):
         if c[3] not in MARKS:
@@ -198,7 +199,7 @@ def check_table_marks(lines):
     return out
 
 def check_prose_vs_table(lines):
-    """K10 文章の数値が表にあるか(監査 10〜12 回目 = 表に無い数字を文章で作る)。"""
+    """文章の数値が表にあるか(監査 10〜12 回目 = 表に無い数字を文章で作る)。"""
     rows = read_table(lines)
     if not rows:
         return []
@@ -256,6 +257,14 @@ def check_measured_evidence(lines, logs):
     return out
 
 
+def check_checker_output_pasted(text):
+    """報告に受け入れ検査の出力全文の節があるか。
+    これが無いと、調査班が「誤検出」と自分で判断して落とした行をリードが見られない
+    (委任文の監査 1 回目の指摘 8 / 2 回目の指摘 7: 規則だけで機構が無かった)。"""
+    return [] if re.search(r"^#{3,4} *受け入れ検査の出力", text, re.M) else \
+        [(0, "報告に「### 受け入れ検査の出力」の節が無い(検査の出力全文を貼ること)")]
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__); return 2
@@ -272,7 +281,8 @@ def main():
               ("K8 表の印と根拠", check_table_marks(lines)),
               ("K9 表に無い数値", check_prose_vs_table(lines)),
               ("K10 見出しの件数", check_heading_counts(lines)),
-              ("K11 実測の根拠", check_measured_evidence(lines, logs))]
+              ("K11 実測の根拠", check_measured_evidence(lines, logs)),
+              ("K12 検査の出力の貼付", check_checker_output_pasted(text))]
     bad = 0
     for name, hits in checks:
         print("%-22s %d 件" % (name, len(hits)))
