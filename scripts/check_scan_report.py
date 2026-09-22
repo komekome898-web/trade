@@ -104,11 +104,7 @@ def check_numbers_in_log(lines, log):
 def tool_names(lines):
     """道具名は表の 1 列目と候補の一覧から取る(直書きしない)。
     監査の指摘 5: 区分 1 の固有名詞を直書きしていたため、他の区分では値の食い違いの検査が当たらなかった。"""
-    names = {c[0] for _, c in read_table(lines)}
-    for ln in lines:
-        m = re.match(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?([A-Za-z][A-Za-z0-9_.+-]{2,})", ln)
-        if m:
-            names.add(m.group(1))
+    names = {c[0] for _, c in read_table(lines)} | set(marked_names(lines))
     return sorted(n for n in names if len(n) >= 3)
 
 def check_conflicting_values(lines):
@@ -130,7 +126,7 @@ def check_conflicting_values(lines):
     out = []
     for (t, key), vals in sorted(seen.items()):
         nums = {v[0] for v in vals}
-        if len(nums) > 1:
+        if len(nums) > 1 and len({v[1] for v in vals}) > 1:
             out.append((min(v[1] for v in vals), "%s の %s に別の値: %s" % (t, key, sorted(nums))))
     return out
 
