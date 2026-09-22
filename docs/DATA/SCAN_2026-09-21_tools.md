@@ -6300,8 +6300,8 @@ X の経路も同じ理由で打っていない。
 | # | 知見 | 印 | 根拠 |
 |---|---|---|---|
 | 1 | **候補 61 `barter-rs` の粒度が実装で決まった。**受け取る事象の型の逐語は `pub enum DataKind { Trade(PublicTrade), OrderBookL1(OrderBookL1), OrderBook(OrderBookEvent), Candle(Candle), Liquidation(Liquidation) }` で、`kind_name` はそれぞれ `public_trade` / `l1` / `l2` / `candle` / `liquidation` を返す。**足とティックの両方を受け取る** | 一次資料 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/event.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:198` |
-| 2 | **候補 61 の足の型は正規化された OHLCV である。**逐語は「Normalised Barter OHLCV [`Candle`] model.」で、`pub struct Candle { close_time, open, high, low, close, volume, trade_count }` | 一次資料 | `.../barter-data/src/subscription/candle.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:206` |
-| 3 | **候補 61 のティックの型は約定 1 件ごとである。**逐語は「Normalised Barter [`PublicTrade`] model.」で、`pub struct PublicTrade { id, price, amount, side }` | 一次資料 | `.../barter-data/src/subscription/trade.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:218` |
+| 2 | **候補 61 の足の型は正規化された OHLCV である。**逐語は「Normalised Barter OHLCV [`Candle`] model.」で、`pub struct Candle { pub close_time: DateTime<Utc>, pub open: f64, pub high: f64, pub low: f64, pub close: f64, pub volume: f64, pub trade_count: u64, }`(**22 回目に内側の型を原典どおりに補った。**原典は 1 欄 1 行で、ここでは 1 行に畳んである) | 一次資料 | `.../barter-data/src/subscription/candle.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:206` と `20260922_tools_1_run22.log:343` |
+| 3 | **候補 61 のティックの型は約定 1 件ごとである。**逐語は「Normalised Barter [`PublicTrade`] model.」で、`pub struct PublicTrade { pub id: String, pub price: f64, pub amount: f64, pub side: Side, }`(**22 回目に内側の型を原典どおりに補った。**原典は 1 欄 1 行で、ここでは 1 行に畳んである) | 一次資料 | `.../barter-data/src/subscription/trade.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:218` と `20260922_tools_1_run22.log:362` |
 | 4 | **候補 61 の検証はその `DataKind` の流れをそのまま読む。**検証の口の逐語は `pub trait BacktestMarketData { type Kind; ... fn stream(&self) -> ... impl Stream<Item = MarketStreamEvent<InstrumentIndex, Self::Kind>> ... }` で、公式の例は `MarketStreamEvent<InstrumentIndex, DataKind>` を読む。**つまり足・ティック・L1・L2・清算のどれでも検証に入る** | 一次資料 | `.../barter/src/backtest/market_data.rs` と `.../barter/examples/engine_async_with_historic_market_data_and_mock_execution.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:227` |
 | 5 | **候補 61 は板を入力に取れるが、自分の注文が列のどこに居るかを追う実装は見つからなかった。**模擬の執行は `barter-execution/src/exchange/mock/account.rs` にあり、**`queue` の語の一致は 0 件**。持っているのは残高・未約定注文・取消済み注文・約定の記録で、待ち行列の位置ではない。**「無い」と書いているのはこのファイルの中についてだけで、道具のどこにも無いという意味ではない** | 実測 | `20260922_tools_1_run21.log:231`(`grep -c -i queue` の出力 0) |
 | 6 | **候補 68 `quanttrader` の粒度は公式の文書で決まった。**逐語は「Currently backtest accepts three data feeds.」「Daily bar or intraday bar from Yahoo Finance.」「Historical intraday bar from Interactive Brokers.」「Live tick recorded from live trading session.」。**足とティックの両方が検証の供給として公式に挙がっている** | 一次資料 | `https://raw.githubusercontent.com/letianzj/quanttrader/master/docs/_sources/backtest.md.txt` 取得日 2026-09-22 / `20260922_tools_1_run21.log:287` |
@@ -6332,7 +6332,9 @@ X の経路も同じ理由で打っていない。
    印は `区分1-足`(合成の日次 CSV で最小実行が通っている)。**後継の Basana は現行 1 番として既に深掘り済みである。**未確認: `pip check`・脆弱性。
 123. `carlos8f/zenbot` — **復元(旧 10 番)。**2 回目の節の `#### 10. Zenbot(本家、carlos8f)`(711 行)に到達の記録がある。
    状態: **一次資料に到達(導入はしていない)。2022-02-15 にアーカイブ済み**(逐語「This repository was archived by the owner on Feb 15, 2022. It is now read-only.」)。
-   **現行 13 番 `DeviaVir/zenbot` はその分岐で、登録としては別物である**(20 回目の洗い出しの結果)。**粒度は未確認なので区分 1 の 6 要素の印は付けない。**仕分けは `区分2 へ`。
+   **現行 13 番 `DeviaVir/zenbot` はその分岐で、登録としては別物である**(20 回目の洗い出しの結果)。仕分けは `区分2 へ`。
+   **粒度は 22 回目に実装の原典で決まった**(印 = `区分1-ティック` と `区分1-足` と `区分1-市場影響と約定の模型`。根拠は 22 回目の節の知見 1〜4)。
+   **21 回目の時点では未確認だったので、この行の「未確認」は 22 回目の決定に置き換えた。**
 124. `ccxt/ccxt` — **復元(旧 17 番)。**1 回目の節(203 行)と 2 回目の節(495 行・914 行)に記録がある。
    状態: **候補 75 `Freqtrade` の導入に同梱された `ccxt 4.5.82` で実測済み**(逐語「`createOrder=True, cancelOrder=True`」「`fetchOHLCV=None, fetchTickers=None, watchOHLCV=None`」「`fetchOrder='emulated'`」「GMOコインはccxtの取引所ID一覧に**存在しない**」)。
    **検証の機関ではなく取引所の窓口なので、区分 1 の 6 要素の印は付けない。**仕分けは `区分2 へ` と `区分3 へ`。**深掘りは区分 2 の担当**(1 回目の節の判断)。
@@ -6378,7 +6380,11 @@ X の経路も同じ理由で打っていない。
   20 回目の検収 §5(3) の逐語「**板を入力として受け取ることと、待ち行列の位置を模擬することは別である。**」の線をそのまま当てた。
   **`区分1-市場影響と約定の模型` は未確認**(模擬の執行の約定の作り方をこの回に読んでいない)。
 - **68 番 `quanttrader`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。
-  根拠は知見 6〜8。**公式の文書が検証の供給として足とティックの両方を挙げている。**
+  **根拠は実装である**(22 回目に並びを直した。21 回目のリードの検収 §4(2) の逐語「**印は、検証の機関が実際に受け取る事象の型で決める。公式の文書が供給として挙げているだけでは付けない。**」)。
+  実装の逐語は `quanttrader/data/bar_event.py` の `class BarEvent(Event)` で、先頭の説明が「Bar event, aggregated from TickEvent」、
+  欄に `interval: int = 86400  # 1day in secs = 24hrs * 60min * 60sec` と OHLCV と `adj_close_price` を持つ(知見 7)。
+  ティックの側は `quanttrader/data/tick_event.py` の `class TickEvent(Event)` で、`TickType` が `TRADE / BID / ASK / FULL`(知見 7)。
+  **公式の文書(`docs/_sources/backtest.md.txt` の「Currently backtest accepts three data feeds.」以下)は、この実装の裏取りとして後ろに置く**(知見 6)。
   **`区分1-板の待ち行列` は付けない。**指値は価格だけで埋まり、待ち行列の位置を持たない(知見 9)。
   **ただし内部の作りには非対称がある**: 検証の機関が刻む事象はティックだけで、足は `data_board` 側の値として入る(知見 8)。
   **この非対称をどう扱うかはリードへの問いに出した。**
@@ -6484,6 +6490,231 @@ K13 中身が実質空             0 件
 K12 検査の出力の貼付           0 件
 ---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
 ---- 合計 0 件
+```
+
+**誤検出だと判断して自分で閉じた行は 0 件である。**この回は 13 本すべてが 0 件で通った。
+
+## 区分1 — 22 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run22.log`。
+21 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run21.md`)と、その §8 の起動の指定に従う。
+起動の指定の逐語「**この回で「区分 1 が今どこまで来ているか」を初めて正しく出します。**」
+「**新しい検索計画は打たないでください。深掘り(構築・導入・最小実行)もしないでください。候補も増やさないでください。**」のとおりに進めた。
+
+**この回にしたこと**: (1) 6 要素を新しい定義で数え直した / (2) 候補 123 の粒度を実装の原典で決めた /
+(3) 候補 124 の印の在処を確かめた / (4) 候補 107 の登録を一次資料として読み、仕分けを決めた /
+(5) 候補 61 の約定の作り方を読んで `区分1-市場影響と約定の模型` を決めた / (6) 候補 61 の逐語を原典どおりに直した /
+(7) 候補 68 の根拠の並びを実装が先に来る形に直した。
+**導入・構築・最小実行・登録・鍵の発行・購入・発注はこの回に 1 件も無い。**
+
+**書き換えの範囲**: `git diff` の削除行は **4 行**で、内訳は
+(a) 21 回目の節の知見 2 の `Candle` の逐語 1 行(指定 6)、(b) 同じ節の知見 3 の `PublicTrade` の逐語 1 行(指定 6)、
+(c) 21 回目の節の候補 123 の「粒度は未確認」の 1 行(指定 2)、(d) 同じ節の候補 68 の根拠の 1 行(指定 7)である。
+**1 回目・2 回目の節にも、13 回目から 20 回目の節にも、削除行は 1 つも掛かっていない。**
+
+**生ログの本数**: `ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l` の出力は **21**(生ログ `20260922_tools_1_run22.log:6`)。
+**これはこの回の生ログ `run22.log` を作ったあとに打った値で、内訳は `run2` から `run22` である**(`run1` の生ログは無い。21 回目と同じ)。
+
+**字形について**: この回に逐語で引いた原典の行に、非分割ハイフン(`‑` U+2011)などの字形違いは入っていない。
+**ただし原文の字形をそのまま写した箇所が 3 つある**: (a) zenbot の `conf-sample.js` の既定値 `c.avg_slippage_pct = 0.045`(先頭の `0` を省かない原文の書き方)、
+(b) `barter-rs` の模擬の取引所の誤りを含む英文 `MockExchange does not supported OrderKind`(原文の `does not supported` のまま)、
+(c) `sigc` の `costs.rs` の注記に入る半角の `*`(`cost = coefficient * participation_rate`)である。
+
+**原典の在処は、逐語を取る前に必ず追跡ファイルの一覧(`ungh.cc` の `files`)で確かめてから取った。**
+当てずっぽうの取得は 0 件、404 も 0 件である。**`ungh.cc` への 1 本目の要求が TLS の切断(`rc=35`)で落ちたので、待って打ち直して通した**
+(生ログ `20260922_tools_1_run22.log:31` が失敗、`:33` が成功。委任文 §5-1「到達は 1 回の HTTP コードで決めない」)。
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断により区分 1 の 1 回目の節を参照して貼っていない。
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**新しい検索計画は打たないでください。**」による。
+X の経路も同じ理由で打っていない。**候補も 1 件も増やしていない。**この回に取った GET は、
+すべて既に一覧に在る候補(61・107・123)の公式の場と実装の原典の確認である。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://ungh.cc/repos/carlos8f/zenbot/files/master` | 2026-09-22 | 候補 123 の原典の在処の確認 |
+| 2 | `https://raw.githubusercontent.com/carlos8f/zenbot/master/lib/engine.js` | 2026-09-22 | 候補 123 が受け取る事象と足の組み立て |
+| 3 | `https://raw.githubusercontent.com/carlos8f/zenbot/master/commands/sim.js` | 2026-09-22 | 候補 123 の検証が読む入力と約定の選択肢 |
+| 4 | `https://raw.githubusercontent.com/carlos8f/zenbot/master/extensions/exchanges/sim/exchange.js` | 2026-09-22 | 候補 123 の模擬の取引所の約定の作り方 |
+| 5 | `https://raw.githubusercontent.com/carlos8f/zenbot/master/conf-sample.js` | 2026-09-22 | 候補 123 の平均の滑りの既定値 |
+| 6 | `https://ungh.cc/repos/barter-rs/barter-rs/files/main` | 2026-09-22 | 候補 61 の模擬の執行の原典の在処の確認 |
+| 7 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-execution/src/exchange/mock/account.rs` | 2026-09-22 | 候補 61 の模擬の口座が持つもの |
+| 8 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-execution/src/exchange/mock/mod.rs` | 2026-09-22 | 候補 61 の約定の作り方(指定 5 の本体) |
+| 9 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/event.rs` | 2026-09-22 | 候補 61 の `DataKind` の逐語の照合(指定 6) |
+| 10 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/subscription/candle.rs` | 2026-09-22 | 候補 61 の `Candle` の内側の型(指定 6) |
+| 11 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/subscription/trade.rs` | 2026-09-22 | 候補 61 の `PublicTrade` の内側の型(指定 6) |
+| 12 | `https://ungh.cc/repos/Skelf-Research/sigc/files/main` | 2026-09-22 | 候補 107 の登録の追跡ファイルの一覧 |
+| 13 | `https://raw.githubusercontent.com/Skelf-Research/sigc/main/README.md` | 2026-09-22 | 候補 107 の正体と許諾の記章 |
+| 14 | `https://raw.githubusercontent.com/Skelf-Research/sigc/main/Cargo.toml` | 2026-09-22 | 候補 107 の許諾と版 |
+| 15 | `https://raw.githubusercontent.com/Skelf-Research/sigc/main/crates/sig_runtime/src/backtest.rs` | 2026-09-22 | 候補 107 の検証の粒度と損益の計算 |
+| 16 | `https://raw.githubusercontent.com/Skelf-Research/sigc/main/crates/sig_runtime/src/costs.rs` | 2026-09-22 | 候補 107 の市場影響の模型 |
+| 17 | `https://raw.githubusercontent.com/Skelf-Research/sigc/main/crates/sig_runtime/src/lib.rs` | 2026-09-22 | 候補 107 の検証の実行経路 |
+| 18 | `https://raw.githubusercontent.com/Skelf-Research/sigc/main/crates/sig_runtime/src/engine.rs` | 2026-09-22 | 候補 107 の実行の機関(IR の実行)の確認 |
+| 19 | `docs/DATA/SCAN_2026-09-21_tools.md` の 14 回目から 21 回目の各節の候補の一覧 | 2026-09-22 | 6 要素の数え直しの入力(候補ごとの状態の出所) |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **候補 123 `carlos8f/zenbot` の検証の機関が受け取る事象は約定 1 件である。**逐語は `function onTrade(trade, is_preroll, cb) {` と `eventBus.on('trade', queueTrade)` で、使うのは `trade.time` `trade.price` `trade.size` `trade.trade_id`。検証の入力も約定の記録で、逐語は `var tradesCollection = collectionService(conf).getTrades()` と `'no trades found! try running `zenbot backfill ' + so.selector.normalized + '` first'` | 一次資料 | `.../lib/engine.js` と `.../commands/sim.js` 取得日 2026-09-22 / `20260922_tools_1_run22.log:656` と `:664` と `:181` |
+| 2 | **候補 123 は受け取った約定から足を自分で組み立て、戦略は足の切り替わりで動く。**逐語は `s.period = { period_id: d.toString(), size: so.period_length, time: d.toMilliseconds(), open: trade.price, high: trade.price, low: trade.price, close: trade.price, volume: 0, close_time: de.toMilliseconds() - 1 }` と `s.period.high = Math.max(trade.price, s.period.high)` と `s.strategy.onPeriod.call(s.ctx, s, function () {`。**足とティックの両方が実装の側に在る** | 一次資料 | `.../lib/engine.js` 取得日 2026-09-22 / `20260922_tools_1_run22.log:137` と `:154` と `:165` |
+| 3 | **候補 123 の指値は現値が跨いだら埋まり、埋まる量は約定の量で頭打ちになり、maker には平均の滑りが掛かる。**逐語は `else if (trade.price <= Number(order.price)) { processBuy(order, trade)` と `let size = Math.min(buy_order.remaining_size, trade.size)` と `price = n(price).add(n(price).multiply(so.avg_slippage_pct / 100)).format('0.00000000')`、既定値の逐語は `c.avg_slippage_pct = 0.045`。**価格だけでなく量も見る** | 一次資料 | `.../extensions/exchanges/sim/exchange.js` と `.../conf-sample.js` 取得日 2026-09-22 / `20260922_tools_1_run22.log:190` と `:216` と `:227` |
+| 4 | **候補 123 に自分の注文が列のどこに居るかを追う実装は見つからなかった。**模擬の取引所 `extensions/exchanges/sim/exchange.js` の `queue` の当たりは **0 件**、`commands/sim.js` も **0 件**。`lib/engine.js` の 7 件はすべて `async.queue` の事象の待ち行列(`eventBus.on('trade', queueTrade)` の処理待ち)で、板の待ち行列ではない。**「無い」と書いているのはこの 3 本の中についてだけである** | 実測 | `20260922_tools_1_run22.log:70`(`grep -c -i queue` の出力) |
+| 5 | **候補 61 `barter-rs` の模擬の取引所は、要求の価格と数量をそのまま約定にする。**約定の逐語は `trade: Trade { ... price: request.state.price, quantity: request.state.quantity, fees, }`、注文の側は `state: Ok(Open { id: order_id.clone(), time_exchange: self.time_exchange(), filled_quantity: request.state.quantity, })`。**相場の値も相場の量も見ていない。**手数料は一定率 `pub fees_percent: Decimal`、遅延は固定値 `pub latency_ms: u64` | 一次資料 | `.../barter-execution/src/exchange/mock/mod.rs` 取得日 2026-09-22 / `20260922_tools_1_run22.log:250` と `:264` と `:242` |
+| 6 | **候補 61 の模擬の取引所が受ける注文は成行だけで、取消は未実装である。**逐語は `if order_kind == OrderKind::Market { Ok(()) } else { Err(UnindexedOrderError::Rejected(ApiError::OrderRejected(format!("MockExchange does not supported OrderKind: {order_kind}"),)))` と `pub fn cancel_order( &mut self, _: OrderRequestCancel<ExchangeId, InstrumentNameExchange>, ) -> Order<ExchangeId, InstrumentNameExchange, Result<Cancelled, UnindexedOrderError>> { unimplemented!() }`(原文の `does not supported` の綴りのまま)。`queue` の当たりは `mod.rs` も `account.rs` も **0 件** | 一次資料 | `.../barter-execution/src/exchange/mock/mod.rs` 取得日 2026-09-22 / `20260922_tools_1_run22.log:276` と `:289` と `:297` |
+| 7 | **候補 61 の `DataKind` の逐語は、報告書の 21 回目の節では既に原典どおりだった。**原典を取り直して照合した逐語は `pub enum DataKind { Trade(PublicTrade), OrderBookL1(OrderBookL1), OrderBook(OrderBookEvent), Candle(Candle), Liquidation(Liquidation), }`(原典は 1 欄 1 行)。**落ちていたのは 21 回目にリードへ渡した報告の文であって、報告書の行ではない。**ただし同じ節の `Candle` と `PublicTrade` の逐語は内側の型が落ちていたので、この回に原典どおりに補った | 一次資料 | `.../barter-data/src/event.rs` 取得日 2026-09-22 / `20260922_tools_1_run22.log:308` と `:343` と `:362` |
+| 8 | **候補 107 `sigc` は「場」ではなく登録された道具である。**README の表題の逐語は「sigc — The Quant's Compiler」で、副題は「A type-safe DSL and high-performance runtime for quantitative trading strategies.」。`Cargo.toml` の逐語は `version = "0.1.0"` `edition = "2021"` `license = "MIT"` `repository = "https://github.com/skelf-Research/sigc"` | 一次資料 | `.../README.md` と `.../Cargo.toml` 取得日 2026-09-22 / `20260922_tools_1_run22.log:369` と `:386` |
+| 9 | **候補 107 の検証は足で、1 本分の実行の遅れを持ち、損益は時間方向の繰り返しで計算する。**逐語は `// One-bar execution lag: the position decided at the close of bar` `// t can only earn the return from bar t+1, so portfolio return at` `// bar t is `weights[t-1] . returns[t]`.` と `for t in 0..n_rows {` と `// Annualize turnover (assuming daily data)`。**したがって `区分1-足` は立ち、`区分1-ベクトル化` は立たない**(リードの線引き「損益・建玉の計算そのものが行列演算で、時間方向の繰り返しが無い」) | 一次資料 | `.../crates/sig_runtime/src/backtest.rs` 取得日 2026-09-22 / `20260922_tools_1_run22.log:394` と `:418` |
+| 10 | **候補 107 には市場影響の模型の実装が在るが、検証の実行経路はそれを呼んでいない。**模型の逐語は `pub enum ImpactModel { None, Linear { coefficient: f64 }, SquareRoot { coefficient: f64 }, AlmgrenChriss { eta: f64, gamma: f64 }, }` と `let participation = notional_abs / adv;`。いっぽう検証の側が差し引くのは `period_return -= turnover * self.cost_bps / 10000.0;` だけで、`backtest.rs` に `CostModel` と `calculate_cost` の当たりは **0 件**。実行経路は `lib.rs` の `backtester: Backtester::new(),` と `let report = self.backtester.run(&weights, &prices, plan)?;` | 一次資料 | `.../costs.rs` と `.../backtest.rs` と `.../lib.rs` 取得日 2026-09-22 / `20260922_tools_1_run22.log:465` と `:695` と `:408` と `:638` |
+| 11 | **候補 107 の登録には根に許諾のファイルが無く、編集器の依存を登録に同梱している。**許諾は `Cargo.toml` の `license = "MIT"` と README の記章だけで、追跡ファイルの一覧に根の `LICENSE` は無い。追跡ファイルは 4,176 本で、そのうち 3,685 本が `editors/vscode/node_modules/` の下に在る | 実測 | `20260922_tools_1_run22.log:633`(追跡ファイルの一覧を数えた出力) |
+| 12 | **「6 要素ごとの残り」は、18 回目から 21 回目まで「残りの数」ではなかった。**見出しは「区分 1 に入ったもののうち、状態がまだ確定していない候補の数」なのに、中身はその印を持つ候補を全部数えていた。**この回から 総数 / 残り の 2 段にする**(定義は 21 回目の検収 §4(4))。数え直しの結果、**6 要素のどれかに印がある候補は 62 件、そのうち一次資料に到達していない残りは 11 件**で、**11 件は全部 `区分1-足`(51・53・54・57・60・67・70・72・87・91・92)である** | 実測 | `20260922_tools_1_run22.log:509`〜`:611`(候補ごとの状態と出所の行番号が 1 件ずつ入っている) |
+| 13 | **20 回目の節の集計が、候補 41 を `区分1-ティック` に足していなかった。**同じ節の候補の一覧の行は「**印は `区分1-イベント駆動` と `区分1-ティック`、および `区分6 へ`**」と書いているのに、集計の行は「`区分1-ティック` は 58・90・59・63・119 に **52** を足して 6 件」で 41 が入っていない。**この回の数え直しでは 41 を `区分1-ティック` に入れた**(候補の一覧の記載が一次で、集計は従とする) | 実測 | `20260922_tools_1_run22.log:648`(報告書 6106 行と 6133 行を並べて出した) |
+| 14 | **6 要素の印が付き始めたのは 14 回目で、候補 1 番から 39 番(42・45・47・50 を含む)にはこの印が一度も付いていない。**14 回目の節の逐語は「**この回で変わったのは、40 番・41 番・43 番・44 番・46 番・48 番・49 番と 51 番から 89 番に、6 要素の仕分けの印が付いたこと**」。**つまり「総数 62 件」は候補の全部ではなく、印の語彙が出来たあとに仕分けられた範囲である** | 一次資料 | 報告書 4576〜4580 行 / `20260922_tools_1_run22.log:651` |
+
+### 候補の一覧
+
+**新しい候補は 0 件。**この回に状態が変わったのは 4 件で、番号と名前は既存の一覧のものをそのまま使う。
+**この回は 1 件も深掘りしていないので、下の 4 件はすべて「浅い」か「一次資料に到達」である。**
+
+1. `carlos8f/zenbot`(123 番) — 状態: **粒度が決まった。**印は `区分1-ティック` と `区分1-足` と `区分1-市場影響と約定の模型`、および `区分2 へ`(既存)。
+   根拠は知見 1〜4。**`区分1-板の待ち行列` は付けない**(自分の注文が列のどこに居るかを追う実装が、読んだ 3 本の中に無い。知見 4)。
+   **`区分1-市場影響と約定の模型` を付けた理由**: 埋まる量が約定の量で頭打ちになり(`Math.min(buy_order.remaining_size, trade.size)`)、
+   maker の約定に平均の滑り(`avg_slippage_pct`、既定 `0.045`)が掛かるので、**価格だけでなく量も見ている**(知見 3)。
+   **2022-02-15 にアーカイブ済み**(21 回目に確認済み、この回に変わっていない)。浅い(未確認: 料金の構造・導入・最小実行・外部送信・MongoDB の用意・許諾の本文)。
+2. `ccxt/ccxt`(124 番) — 状態: **印の在処を確かめた。書き換えは要らなかった。**21 回目の節の候補 124 の行に既に
+   「**検証の機関ではなく取引所の窓口なので、区分 1 の 6 要素の印は付けない。**仕分けは `区分2 へ` と `区分3 へ`。」と明記されている(報告書 6337 行)。
+   **印は空ではない。**この回に足したのは、ここに同じことを逐語で写して、**「未確定」と見分けが付く形にしたこと**だけである。
+3. `sigc`(107 番、`Skelf-Research/sigc`) — 状態: **仕分けが変わった。**`判別に一次資料が要る` を外し、印は `区分1-足`、および `区分4 へ`(ウォークフォワードの文書を持つ)。
+   根拠は知見 8〜11。**「場」ではなく登録された道具だった。**
+   **`区分1-ベクトル化` は付けない**(因子の計算は列指向でも、損益の計算は `for t in 0..n_rows` の繰り返しである。知見 9)。
+   **`区分1-市場影響と約定の模型` はこの回に付けていない**(模型の実装は在るが、検証の実行経路が呼んでいない。知見 10)。**これはリードへの問い 1 に出した。**
+   浅い(未確認: 料金の構造・登録の要否・導入・最小実行・外部送信・`editors/vscode/node_modules/` の中身・根に許諾ファイルが無いことの扱い)。
+4. `barter-rs`(61 番) — 状態: **21 回目に未確認だった `区分1-市場影響と約定の模型` が決まった。印は付けない。**
+   模擬の取引所は要求の価格と数量をそのまま約定にし、相場の値も相場の量も見ない(知見 5)。受ける注文は成行だけで、取消は未実装(知見 6)。
+   **これは「未確認」ではなく「無い」である。**読んだ範囲は `barter-execution/src/exchange/mock/` の `mod.rs` と `account.rs` の 2 本で、**道具のどこにも無いという意味ではない。**
+   既存の印(`区分1-足`・`区分1-ティック`・`区分1-イベント駆動`・`区分2 へ`)は変わらない。
+
+#### 6 要素ごとの 総数 と 残り(数え方を変えた)
+
+**数え方を変えた。**21 回目の検収 §4(4) の定義に従う。
+
+> **総数** = その印を持つ候補の数 / **残り** = そのうち**一次資料に到達していない**ものの数(状態が「未着手」または「判別に一次資料が要る」のまま)。
+> **「浅い」以上は到達済みであり、残りではない。**
+
+**変えた理由**: 18 回目から 21 回目の節の見出しは「**区分 1 に入ったもののうち、状態がまだ確定していない候補の数**」だが、
+中身はその印を持つ候補を全部数えていた(18 回目に印が決まった 40・46・48・56・80・85・86 が、決まった直後に「残り」に足されている)。
+**見出しと中身が食い違っていたので、これまで報告されてきた「残り」は残りの数ではなかった。**
+オーナーが決めた完了の形は逐語「**一次資料に到達した候補が尽きること**」なので、この食い違いは完了の判定そのものを壊す。
+
+**数え方の手順(機械で辿れる形)**: 候補ごとの状態は、**報告書の「候補の一覧」の小節の中で、その候補が最後に書かれた箇条**から読む。
+生ログ `20260922_tools_1_run22.log:509`〜`:611` に、候補 1 件ごとに「状態 / 出所の行番号 / その行の先頭」を出してある。
+さらに `:612`〜`:631` で、印の一覧を報告書から機械で拾い直して下の表と突き合わせてある(差は、この回に決めた 107・123 と、
+20 回目に外した 44 の `区分1-ベクトル化` と、21 回目に「未確認」と書かれていた 61 の `区分1-市場影響と約定の模型` だけ)。
+
+| 要素 | 総数 | 残り | 残りの番号 |
+|---|---|---|---|
+| `区分1-足` | 35 | **11** | 51・53・54・57・60・67・70・72・87・91・92 |
+| `区分1-ティック` | 12 | **0** | なし |
+| `区分1-板の待ち行列` | 16 | **0** | なし |
+| `区分1-イベント駆動` | 10 | **0** | なし |
+| `区分1-ベクトル化` | 2 | **0** | なし |
+| `区分1-市場影響と約定の模型` | 12 | **0** | なし |
+
+**6 要素のどれかに印がある候補は、重複を除いて 62 件。そのうち残りは 11 件で、全部 `区分1-足` である。**
+**残りの 11 件はすべて 39 番の一覧から取った 1 行の説明だけの候補で、状態は「未着手」のまま**(報告書 4634・4636・4637・4640・4643・4650・4653・4655・4671・4679・4680 行)。
+
+**この数え直しで各要素に入った候補(21 回目までの集計から増えた分)**:
+`区分1-足` は 21 回目の 33 件に **107 と 123** を足して 35 件。
+`区分1-ティック` は 21 回目の 8 件に **31・41・95・119 と 123** を足して 12 件(31・95・119 は確定済みとして過去の集計から落ちていたもの、41 は 20 回目の集計の落ち = 知見 13)。
+`区分1-板の待ち行列` は 21 回目の 6 件に **33・37・38・95・98・99・101・102・103・104** を足して 16 件(いずれも確定済みとして過去の集計から落ちていたもの)。
+`区分1-イベント駆動` は 21 回目の 9 件に **37** を足して 10 件。
+`区分1-ベクトル化` は 2 件のまま。
+`区分1-市場影響と約定の模型` は 21 回目の 4 件に **32・35・36・38・98・105 と 123** を足して 12 件。
+
+**注意(この数の射程)**: 総数 62 件は候補の全部ではない。**6 要素の印は 14 回目に始まり、候補 1 番から 39 番(および 42・45・47・50)には一度も付いていない**(知見 14)。
+**この範囲をどう扱うかはリードが決めること**(問い 3)。
+
+**`判別に一次資料が要る` の残り**: **49 番だけ**(107 番はこの回に外した)。**登録の内側にあり、当方は登録しない。**
+**残りの候補名**: 上の 11 件(区分 1 の印を持つ未着手)、43 番の浅い部分、51 番から 93 番のうち印を付けていないもの、
+94 番・96 番・97 番・100 番から 124 番の浅い部分。
+**39 番と 110 番と 112 番の一覧の残りの節からも、まだ名前を抜いていない。**
+
+### ツール1件ごとの表
+
+**この回に粒度と仕分けが決まった 3 件を出す。**いずれもこの回に導入も最小実行もしていない。
+
+| ツール | 何ができるか | 料金の構造 | 当方に無いもの | この環境での到達 |
+|---|---|---|---|---|
+| `carlos8f/zenbot` | 約定の記録から足を組み立て、指標で売買し、模擬の取引所で maker と taker の約定・滑り・手数料を入れて検証する | 未確認(許諾は MIT と 2 回目の節に記録。この回に料金の場は読んでいない。MongoDB の用意が別に要る) | **埋まる量を相手の約定の量で頭打ちにする形**と、**平均の滑りを maker の約定にだけ掛ける形** | **可**(実装の原典に到達。導入はしていない。**アーカイブ済み**) |
+| `sigc` | 型の付いた記述言語で信号と建玉を書き、足の検証を回し、手数料・滑り・市場影響・借株料を別々に見積もる | 未確認(`Cargo.toml` の許諾は MIT。根に許諾ファイルが無い。料金の場は読んでいない) | **市場影響を参加率の関数として選べる形**(線形・平方根・Almgren-Chriss)と、**信号を型の付いた言語として書く形** | **可**(実装の原典に到達。導入はしていない) |
+| `barter-rs` | 足・約定のティック・L1・L2・清算の 5 つの型を同じ流れに載せ、実弾・紙・検証を同じ機関で回す | 未確認(この回に料金と許諾は読んでいない) | **5 つの型を 1 つの列挙で扱い、検証の口がその型に対して総称であること** | **可**(模擬の執行の原典に到達。導入はしていない) |
+
+#### §4.0 の機械可読の表
+
+**この回で `[深掘り]` に達した道具は無い。**起動の指定の逐語「**深掘り(構築・導入・最小実行)もしないでください。**」に従い、
+導入も最小実行も 1 件も行っていない。委任文 §4.0 は「深掘りした道具は、文章より先に表に 1 行ずつ書く」と定めており、
+深掘りが 0 件なので **§4.0 の機械可読の表にこの回の行は無い**(18 回目から 21 回目と同じ)。
+
+### 予算
+
+割当は 1 回 5 万トークン・20 分。**起動の指定の 1 から 7 はすべて終わった。**
+(1) 6 要素を新しい定義で数え直し、総数 / 残り の 2 段で出した(残り 11 件、全部 `区分1-足`)。
+(2) 候補 123 の粒度を実装の原典で決めた。(3) 候補 124 の印が既に明記されていることを確かめ、逐語を写した。
+(4) 候補 107 の登録を読み、`判別に一次資料が要る` を外して `区分1-足` を付けた。
+(5) 候補 61 の約定の作り方を読み、`区分1-市場影響と約定の模型` を付けないと決めた。
+(6) 候補 61 の逐語を原典どおりに直した(`Candle` と `PublicTrade`。`DataKind` は報告書では既に原典どおりだった)。
+(7) 候補 68 の根拠の並びを、実装の逐語が先に来る形に直した。
+**新しい検索計画は打っていない。深掘りも 0 件。候補も増やしていない。導入・構築・最小実行・登録・鍵の発行・購入・発注は 1 件も無い。**
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **候補 107 の `区分1-市場影響と約定の模型` を付けなかった。**市場影響の模型は実装として在る(`ImpactModel` に線形・平方根・Almgren-Chriss、参加率と平均出来高を取る)が、
+   検証の実行経路(`lib.rs` の `self.backtester.run(...)` → `backtest.rs`)が差し引くのは一定の bp の費用だけで、`backtest.rs` から `CostModel` を呼ぶ当たりは 0 件である(知見 10)。
+   **「道具が持っている」で付けるのか、「検証の機関が使っている」で付けるのかを決めていただきたい。**この回は後者で付けなかった。
+   **リードの線引き「印は、検証の機関が実際に受け取る事象の型で決める」は事象の型についての規則で、費用と約定の模型には書かれていない。**
+2. **候補 123 に `区分1-イベント駆動` を付けなかった。**`lib/engine.js` は事象の受け口(`eventBus.on('trade', queueTrade)`)と処理の待ち行列(`async.queue`)を持っており、
+   形としてはイベント駆動である。**しかし他の候補(41・52・58 など)はいずれも原典が自分で "event driven" と名乗っている行を根拠にしており、
+   zenbot の原典でその行をこの回に確かめていない。**付けてよいかを決めていただきたい。
+3. **総数 62 件の射程**。6 要素の印は 14 回目に始まり、候補 1 番から 39 番(および 42・45・47・50)には一度も付いていない(知見 14)。
+   この範囲には 2 回目までに深掘り済みの道具(`Backtrader`・`zipline-reloaded`・`Qlib`・`hftbacktest` など)が入っている。
+   **「区分 1 の完了」を数えるときにこの範囲を入れるのか、入れるなら印を遡って付けるのかを決めていただきたい。**
+4. **20 回目の集計の落ち(候補 41 の `区分1-ティック`)を、この回の数え直しでは候補の一覧の側を採って入れた**(知見 13)。
+   **20 回目の節の集計の行は書き換えていない**(起動の指定「古い回の節は書き換えないでください」)。直すかはリードが決めること。
+5. **候補 61 について「無い」と書いた範囲**。読んだのは `barter-execution/src/exchange/mock/` の 2 本だけである。
+   **`barter` の検証の側に別の約定の模型が在るかは読んでいない。**この範囲で「無い」と書いてよいかを決めていただきたい。
+6. **候補 107 の `区分4 へ` を足した。**起動の指定は「仕分けを決める」であって「区分をまたぐ印を足してよい」とは書いていない。
+   追跡ファイルに `documentation/docs/backtesting/walk-forward.md` と `crates/sig_runtime/src/walk_forward.rs` が在るので足したが、中身は読んでいない。
+
+### 取ってきた文章の中の作業者向けの指示(委任文 §6-3)
+
+**この回に取った登録のうち、作業者向けの手引き(`AGENTS.md` / `CLAUDE.md` / `.cursor` / `copilot-instructions`)を同梱していたものは 0 件である**
+(zenbot の追跡ファイル 290 本、sigc の追跡ファイル 4,176 本を機械で見た。生ログ `20260922_tools_1_run22.log:633`)。
+**ただし sigc の README と `install.sh` は導入の手順を書いている。**この回は読んだだけで、導入はしていない(委任文 §6-3)。
+
+### 受け入れ検査の出力
+
+打ったコマンド(生ログを全部渡した): `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log`
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:0  貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 1 件
 ```
 
 **誤検出だと判断して自分で閉じた行は 0 件である。**この回は 13 本すべてが 0 件で通った。
