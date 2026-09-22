@@ -284,9 +284,9 @@ def check_checker_output_pasted(text, computed):
     """
     if not re.search(r"^#{2,4} *受け入れ検査の出力", text, re.M):
         return [(0, "報告に「受け入れ検査の出力」の節が無い(検査の出力全文を貼ること)")]
-    m = re.findall(r"----\s*合計\s*(\d+)\s*件", text)
+    m = re.findall(r"----\s*検査対象の合計\s*(\d+)\s*件", text)
     if not m:
-        return [(0, "貼られた出力に「---- 合計 N 件」の行が無い(全文をそのまま貼ること)")]
+        return [(0, "貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)")]
     pasted = int(m[-1])
     if pasted != computed:
         return [(0, "貼られた出力の合計 %d 件が、いま数え直した %d 件と合わない(打ち直して貼ること)"
@@ -320,10 +320,41 @@ def check_hollow(lines):
     return out
 
 
+def scope(lines):
+    """検査の対象にする行だけを残し、他は空行にする(行番号を保つため消さずに空にする)。
+
+    外すもの 2 つ。どちらも 2026-09-22 の区分 1 の 3 回目で調査班が見つけて、自分で閉じずに
+    リードに渡してきたもの(委任文 §12 の「誤検出は自分で閉じない」が働いた最初の例)。
+      (a) 「受け入れ検査の出力」の節。検査の出力を貼ると、その中の数値が K9 に当たり、
+          貼るたびに合計が増えて「貼った合計 = 数え直した合計」になる状態が存在しなくなる。
+      (b) §4.0 の表を持たない区分の節。表が要るようになる前に書かれた節なので、
+          表を前提にした検査(K4・K5・K9・K13)を当てても直しようがない。
+    """
+    heads = [i for i, ln in enumerate(lines) if re.match(r"^## 区分\s*\d", ln)] or [0]
+    keep = [False] * len(lines)
+    for k, st in enumerate(heads):
+        en = heads[k + 1] if k + 1 < len(heads) else len(lines)
+        # 「表がある」は §4.0 の表の行(2 列目が語彙の項目)が在ることで判定する。
+        # 列の数だけで見ると、他の 5 列の表(X の投稿など)を持つ節まで対象に入る。
+        if read_table(lines[st:en]):
+            for j in range(st, en):
+                keep[j] = True
+    drop = False
+    for i, ln in enumerate(lines):
+        if re.match(r"^#{2,4} *受け入れ検査の出力", ln):
+            drop = True
+        elif re.match(r"^#{1,4} ", ln):
+            drop = False
+        if drop:
+            keep[i] = False
+    return [ln if keep[i] else "" for i, ln in enumerate(lines)]
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__); return 2
-    rep = pathlib.Path(sys.argv[1]); text = rep.read_text(); lines = text.splitlines()
+    rep = pathlib.Path(sys.argv[1]); text = rep.read_text(); raw_lines = text.splitlines()
+    lines = raw_lines if "--all" in sys.argv else scope(raw_lines)
     logs = {pathlib.Path(q).name: pathlib.Path(q).read_text(errors="replace").splitlines()
             for q in sys.argv[2:]}
     log = "\n".join("\n".join(v) for v in logs.values())
@@ -347,6 +378,8 @@ def main():
         for i, msg in hits:
             print("    %s:%d  %s" % (rep, i, msg))
         bad += len(hits)
+    print("---- 検査対象の合計 %d 件(K12 を除く。貼り付けはこの数で照合する)"
+          % sum(len(h) for n, h in checks if not n.startswith("K12")))
     print("---- 合計 %d 件" % bad)
     return 1 if bad else 0
 

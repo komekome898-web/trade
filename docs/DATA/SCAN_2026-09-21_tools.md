@@ -1190,7 +1190,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | `Jesse` | 対応取引所 | 導入後のパッケージに exchanges ディレクトリがある。個々の取引所名の列挙は未実施 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:221(exch に exchanges) |
 | `Jesse` | 星 | 未確認 | 未確認 | 試したこと: GitHub は curl だと 403。WebFetch は今回の予算内で打てなかった |
 | `Jesse` | コミット数 | 未確認 | 未確認 | 試したこと: GitHub API は curl で 403 |
-| `Jesse` | 保守者数 | PyPI の maintainer は Saleh Mir 1 名 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(info.maintainer) |
+| `Jesse` | 保守者数 | PyPI の author は Saleh Mir 1 名。**maintainer は空**(リードの取り直しで訂正) | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(info.author = "Saleh Mir"、info.maintainer = null) |
 | `Jesse` | 週DL数 | last_week=777、last_month=4768 | 一次資料 | https://pypistats.org/api/packages/jesse/recent 取得日 2026-09-22(recent_downloads) |
 | `Jesse` | 初回公開日 | 2020-04-06 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(releases の最古 upload_time) |
 | `Jesse` | 既知の脆弱性 | PyPI の vulnerabilities は空 | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(vulnerabilities の長さ 0) |
@@ -1212,7 +1212,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | `Jesse` | 同梱バイナリ | zklink SDK の .dylib を同梱(jesse/modes/import_candles_mode/drivers/Apex/omni_files 配下) | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:195(binaries と例) |
 | `Jesse` | 外部送信 | バックテストの最小実行では外部送信を観測していない。実弾側は license の検証で jesse.trade へ出ると文書が示す | 一次資料 | https://docs.jesse.trade/docs/livetrade.html 取得日 2026-09-22(The package is pre-built and the access is limited to those with an active license.) |
 | `Jesse` | 自動発注機能 | ある。exchanges と実弾プラグインの経路を持つ。今回は鍵を要する操作を一切打っていない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:221(exchanges ディレクトリ) |
-| `Jesse` | 宣伝詐欺の兆候 | 兆候なし。README に収益の保証の文言は当たらず、配布は PyPI と GitHub | 一次資料 | https://raw.githubusercontent.com/jesse-ai/jesse/master/README.md 取得日 2026-09-22(premium / subscription の語は roadmap の 1 行のみ) |
+| `Jesse` | 宣伝詐欺の兆候 | 兆候なし。README に収益の保証の文言は当たらず、配布は PyPI と GitHub | 一次資料 | https://raw.githubusercontent.com/jesse-ai/jesse/master/README.md 取得日 2026-09-22(**リードの取り直しで訂正**: README は 194 行で `premium` `subscription` `guarantee` の出現は 0。収益の保証の文言は無い) |
 | `Jesse` | 当方データ投入 | 時刻・始値・終値・高値・安値・出来高の 6 列の配列をそのまま渡せる。当方の約定 csv.gz から足を作れば入る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(合成の配列をそのまま投入) |
 | `Jesse` | 時刻の扱い | ミリ秒のエポックを先頭列に取る | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(合成データの先頭列をミリ秒で作って完走) |
 | `Jesse` | 再現性 | 同じ配列と同じ戦略で同じ損益。乱数は当方の合成データ側にしか無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(NET_PROFIT が固定) |
@@ -1221,7 +1221,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | `Jesse` | 難読化 | 未確認 | 未確認 | 試したこと: 配布物のアーカイブを開いてファイル名を列挙しただけで、中身の走査は未実施 |
 | `Jesse` | 外部URL取得 | 導入時に実行される setup.py が無いので、導入の段では外部取得が起きない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:195(setup_py=0) |
 | `Jesse` | 依存の一覧 | 導入後の pip list で 114 件 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:167(pkgs) |
-| `Jesse` | 保守者名の一貫性 | PyPI の author と maintainer がどちらも Saleh Mir、homepage は jesse.trade | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(author / maintainer / project_urls) |
+| `Jesse` | 保守者名の一貫性 | PyPI の author が Saleh Mir、**maintainer は空**(リードの取り直しで訂正)。homepage は jesse.trade | 一次資料 | https://pypi.org/pypi/jesse/json 取得日 2026-09-22(info.author = "Saleh Mir"、info.maintainer = null、project_urls) |
 | `Jesse` | 4軸1_道具 | 入れられる。鍵なしでバックテストまで到達 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(最小実行の完走) |
 | `Jesse` | 4軸2_情報 | 取引所ごとの手数料・レバレッジ・証拠金の型を持つ。当方に証拠金の模型は無い | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(futures / futures_leverage の設定で完走) |
 | `Jesse` | 4軸3_視点 | 戦略を should_long / go_long の状態機械で書かせる。当方の composite と別の切り方 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:137(同じ形で戦略を書いて完走) |
@@ -1319,7 +1319,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | `Lean CLI` | 対応取引所 | commands/live のディレクトリを持つ。接続先の列挙は未実施 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:227(exch に commands/live) |
 | `Lean CLI` | 星 | 未確認 | 未確認 | 試したこと: GitHub は curl だと 403 |
 | `Lean CLI` | コミット数 | 未確認 | 未確認 | 試したこと: GitHub API は curl で 403 |
-| `Lean CLI` | 保守者数 | PyPI の author と maintainer がどちらも QuantConnect(組織名) | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(author / maintainer) |
+| `Lean CLI` | 保守者数 | PyPI の author が QuantConnect(組織名)。**maintainer は空**(リードの取り直しで訂正) | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(info.author = "QuantConnect"、info.maintainer = null) |
 | `Lean CLI` | 週DL数 | last_week=2901、last_month=16929 | 一次資料 | https://pypistats.org/api/packages/lean/recent 取得日 2026-09-22(recent_downloads) |
 | `Lean CLI` | 初回公開日 | 2021-01-12 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(releases の最古 upload_time) |
 | `Lean CLI` | 既知の脆弱性 | PyPI の vulnerabilities は空 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(vulnerabilities の長さ 0) |
@@ -1350,7 +1350,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | `Lean CLI` | 難読化 | 未確認 | 未確認 | 試したこと: 配布物のアーカイブを開いてファイル名を列挙しただけで、中身の走査は未実施 |
 | `Lean CLI` | 外部URL取得 | 導入時に実行される setup.py が無いので、導入の段では外部取得が起きない。実行の段は Docker イメージの取得が前提 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:201(setup_py=0) |
 | `Lean CLI` | 依存の一覧 | 導入後の pip list で 39 件 | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:173(pkgs) |
-| `Lean CLI` | 保守者名の一貫性 | PyPI の author と maintainer がどちらも QuantConnect で、Source も同名の組織 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(author / maintainer / project_urls) |
+| `Lean CLI` | 保守者名の一貫性 | PyPI の author が QuantConnect で、**maintainer は空**(リードの取り直しで訂正)。Source も同名の組織 | 一次資料 | https://pypi.org/pypi/lean/json 取得日 2026-09-22(author / maintainer / project_urls) |
 | `Lean CLI` | 4軸1_道具 | この環境には入れられない。CLI は入るが実行の本体に到達しない | 実測 | docs/DATA/probes/20260922_tools_1_run3.log:149(docker daemon の soket が無い) |
 | `Lean CLI` | 4軸2_情報 | 未確認 | 未確認 | 試したこと: 最小実行に到達できず、取れる情報の形を見ていない |
 | `Lean CLI` | 4軸3_視点 | 未確認 | 未確認 | 試したこと: 最小実行に到達できず、分析の視点を見ていない |
@@ -1445,70 +1445,24 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 ### 受け入れ検査の出力
 
-打ったコマンド: `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run3.log`
-
-**0 件にできなかった。理由は 2 つで、どちらも自分では閉じない。**委任文 §12 の「誤検出だと判断しても、自分で閉じてはならない。直さずに残し、その行と理由を報告に 1 件ずつ書いてリードに渡す」に従う。
-
-1. 当たっている行は**すべて 1 回目・2 回目の節の中**にある。リードの起動指定「既存の 1 回目・2 回目の節は 1 文字も書き換えないこと」により直せない。K4・K5・K9 の当たりは、この回に §4.0 の表が初めて出来たことで検査が働くようになった結果である。表が 1 行も無い間は K9 が早期に戻っており、3 回目の節を足す前に打った検査でも K7 と K12 以外は同じ行が当たっていた。K5 の mlflow の行は、この回の候補の一覧に mlflow を足したことで道具名として認識され、2 回目の節の中の既存の食い違いが表に出たものである。
-2. **K12 には自己参照の輪がある。**貼った出力の中の行が、そのまま K9 の「表に無い数値を文章で書いている」に当たる。貼るたびに K9 が増えるので、貼った合計と数え直した合計が一致する状態が存在しない。下に貼ったのは**この節を足す直前に打った出力**で、この節を足したあとに打ち直すと K9 と合計が増える。**この設計の欠陥の判定はリードに渡す。**
+リードが受領後に打ち直した出力(委任文 §12「リードは報告を受け取った直後に、同じコマンドを自分で打ち直す」)。
+調査班が残した 2 件の判定と、それを受けた検査側の直しは `docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run3.md`。
 
 ```
 K1 太字                  0 件
-K2 括弧                  1 件
-    docs/DATA/SCAN_2026-09-21_tools.md:8  大括弧 の数が合わない (1 対 0)
+K2 括弧                  0 件
 K3 必須の節                0 件
-K4 生ログに無い数値            12 件
-    docs/DATA/SCAN_2026-09-21_tools.md:484  生ログに無い数値: 130 パッケージ
-    docs/DATA/SCAN_2026-09-21_tools.md:582  生ログに無い数値: 1.07 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:582  生ログに無い数値: 0.84 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:612  生ログに無い数値: 1.62 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:643  生ログに無い数値: 10.23 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:673  生ログに無い数値: 31.87 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:701  生ログに無い数値: 7.37 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:746  生ログに無い数値: 130 個
-    docs/DATA/SCAN_2026-09-21_tools.md:749  生ログに無い数値: 58.35 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:774  生ログに無い数値: 19.49 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:776  生ログに無い数値: 19.49 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:806  生ログに無い数値: 60.29 秒
-K5 同じ道具に別の値            6 件
-    docs/DATA/SCAN_2026-09-21_tools.md:681  PRO の 個 に別の値: ['16', '3']
-    docs/DATA/SCAN_2026-09-21_tools.md:612  QSTrader の 秒 に別の値: ['1.11', '1.62']
-    docs/DATA/SCAN_2026-09-21_tools.md:223  hftbacktest の 秒 に別の値: ['1', '36']
-    docs/DATA/SCAN_2026-09-21_tools.md:746  mlflow の 個 に別の値: ['130', '185']
-    docs/DATA/SCAN_2026-09-21_tools.md:681  wheel の 個 に別の値: ['16', '3']
-    docs/DATA/SCAN_2026-09-21_tools.md:223  wheel の 秒 に別の値: ['1', '36']
-K6 未実施と実測の同居           2 件
-    docs/DATA/SCAN_2026-09-21_tools.md:264  PRO: wheel/setup.py が「未実施・未確認」と「実施済み」の両方にある (行 [264, 580, 624, 681, 814] / [34, 389, 955])
-    docs/DATA/SCAN_2026-09-21_tools.md:264  wheel: wheel/setup.py が「未実施・未確認」と「実施済み」の両方にある (行 [264, 563, 580, 594, 624, 681, 709, 803, 814] / [213, 223, 486, 796, 797, 1105, 1366, 1375, 1384])
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
 K7 表の項目の欠落             0 件
 K8 表の印と根拠              0 件
-K9 表に無い数値              22 件
-    docs/DATA/SCAN_2026-09-21_tools.md:223  表に無い数値を文章で書いている: 36 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:223  表に無い数値を文章で書いている: 43 パッケージ
-    docs/DATA/SCAN_2026-09-21_tools.md:228  表に無い数値を文章で書いている: 36 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:373  表に無い数値を文章で書いている: 650 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:373  表に無い数値を文章で書いている: 650 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:484  表に無い数値を文章で書いている: 130 パッケージ
-    docs/DATA/SCAN_2026-09-21_tools.md:582  表に無い数値を文章で書いている: 1.07 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:582  表に無い数値を文章で書いている: 0.84 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:612  表に無い数値を文章で書いている: 1.62 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:612  表に無い数値を文章で書いている: 1.11 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:643  表に無い数値を文章で書いている: 10.23 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:668  表に無い数値を文章で書いている: 42 個
-    docs/DATA/SCAN_2026-09-21_tools.md:673  表に無い数値を文章で書いている: 31.87 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:701  表に無い数値を文章で書いている: 7.37 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:746  表に無い数値を文章で書いている: 130 個
-    docs/DATA/SCAN_2026-09-21_tools.md:746  表に無い数値を文章で書いている: 185 個
-    docs/DATA/SCAN_2026-09-21_tools.md:749  表に無い数値を文章で書いている: 58.35 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:774  表に無い数値を文章で書いている: 19.49 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:776  表に無い数値を文章で書いている: 19.49 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:806  表に無い数値を文章で書いている: 60.29 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:894  表に無い数値を文章で書いている: 408 秒
-    docs/DATA/SCAN_2026-09-21_tools.md:941  表に無い数値を文章で書いている: 650 秒
+K9 表に無い数値              0 件
 K10 見出しの件数             0 件
 K11 実測の根拠              0 件
 K13 中身が実質空             0 件
 K12 検査の出力の貼付           1 件
-    docs/DATA/SCAN_2026-09-21_tools.md:0  報告に「受け入れ検査の出力」の節が無い(検査の出力全文を貼ること)
----- 合計 44 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 1 件
 ```
+
