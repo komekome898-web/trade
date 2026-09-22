@@ -4209,3 +4209,306 @@ K12 検査の出力の貼付           0 件
 ---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
 ---- 合計 0 件
 ```
+
+## 区分1 — 13 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run13.log`。
+12 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run12.md`)で、`OctoBot` は
+「最小実行まで通した」で確定し、X の投稿に出た 3 件を候補 48・49・50 として立てる決定が出た。
+この回の起動の指定は「残りの候補 19 件の状態を、上から順に確定できたところまで」である。
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断「区分ごとに 1 回でよい」により、
+区分 1 の 1 回目の節を参照して貼っていない。
+
+### 検索計画
+
+**この回は新しい検索計画を打っていない。**委任文 §2 は「前回の残りの候補があれば、まずそれを深掘りする
+(検索計画は打ち直さない)」と定めており、12 回目が残した候補が 19 件あるためである。
+6 本のクエリはいずれも**未実行**で、実行するのは残りの候補が空になった回である。
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (未実行) | (未実行) | 未実行。委任文 §2 の「残りの候補を先に深掘りする」に従った |
+| 中間 | (未実行) | (未実行) | 未実行。同上 |
+| 広い | (未実行) | (未実行) | 未実行。同上 |
+
+X の経路も同じ理由で新しくは引いていない。48・49・50 番はリードの検収 §4 が立てた候補で、
+12 回目に引いた X の投稿を出典として引き継いでいる。
+
+### 出典
+
+| URL / 経路 | 方法 | 生ログの行 |
+|---|---|---|
+| https://ungh.cc/repos/Ros522/backtestlob | curl(code=200。12 回目の 000 が 1 回で解けた) | 4 |
+| https://raw.githubusercontent.com/Ros522/backtestlob/master/README.md | curl(code=200) | 14 |
+| https://ungh.cc/repos/Ros522/backtestlob/files/master | curl(code=200) | 70 |
+| https://raw.githubusercontent.com/Ros522/backtestlob/master/setup.py | curl(code=200) | 75 |
+| https://raw.githubusercontent.com/Ros522/backtestlob/master/src/backtest.cpp | curl(自分で全文を読んだ) | 533 |
+| https://ungh.cc/repos/FlashAlpha-lab/flashalpha-fill-simulator | curl(code=000 → 打ち直して 200) | 129 と 143 |
+| https://raw.githubusercontent.com/FlashAlpha-lab/flashalpha-fill-simulator/master/docs/SPEC.md | curl(自分で読んだ) | 600 |
+| https://ungh.cc/repos/SarthakDalmia1/backtesting_execution_simulator | curl(code=200) | 183 |
+| https://raw.githubusercontent.com/SarthakDalmia1/backtesting_execution_simulator/main/cpp/orderbook/orderbook.hpp | curl(自分で読んだ) | 636 |
+| https://ungh.cc/repos/SLMolenaar/QuantCore | curl(code=000 → 打ち直して 200) | 188 と 193 |
+| https://pypi.org/pypi/quantcore/json | curl(code=200) | 236 |
+| https://raw.githubusercontent.com/SLMolenaar/QuantCore/master/cpp/orderbook/Orderbook.h | curl(自分で読んだ) | 738 |
+| https://ungh.cc/repos/microsoft/MarS | curl(code=200) | 350 |
+| https://raw.githubusercontent.com/microsoft/MarS/main/README.md | curl(自分で読んだ) | 680 |
+| https://ungh.cc/repos/paperswithbacktest/awesome-systematic-trading | curl(code=200) | 356 |
+| https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md | curl(自分で読んだ) | 707 |
+| https://raw.githubusercontent.com/ThePredictiveDev/Automated-Financial-Market-Trading-System/main/README.md | curl(code=200) | 380 |
+| https://ungh.cc/repos/shubhamcodez/Market-Impact-Model | curl(code=000 → 打ち直して 200) | 331 と 338 |
+| https://ungh.cc/repos/shiyu-coder/Kronos | curl(code=000 → 打ち直して 200) | 362 と 369 |
+| https://ungh.cc/repos/thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator- | curl(code=200) | 254 |
+| https://docs.algotest.in/getting-started/pricing-breakdown/backtest-pricing/ | WebFetch(逐語を引いた) | (道具 `WebFetch`。curl では JS の殻で値が無い = 399 行目) |
+| https://forextester.com/buy ほか 5 経路 | curl / WebFetch / archive.org(全部 403 か 404) | 404 と 409 と 414 と 434 と 452 |
+| https://www.gogojungle.co.jp/tools/1 | curl(code=404) | 420 |
+| https://api.osv.dev/v1/query(POST、quantcore) | curl(code=200、空の結果) | 489 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **`Ros522/backtestlob` は、名前に Limit Order Book とあるが、板も待ち行列も持たない。**原文 `src/backtest.cpp` の約定判定は 2 つだけで、`step(low, high)` が「売り指値は price < high なら約定、買い指値は price > low なら約定」、`step_by_tick(side, price)` が「買いの約定履歴なら売り注文を、売りの約定履歴なら買い注文を見る」。**先行注文量・表示サイズ・板の深さに当たる変数が原文に 1 つも無い** | 一次資料 | https://raw.githubusercontent.com/Ros522/backtestlob/master/src/backtest.cpp 2026-09-22 |
+| 2 | **ただし `step_by_tick` は、当方の機関より 1 段細かい。**約定履歴の**攻撃側の向き**を見て、買いの約定なら売り指値だけを埋める。当方の `src/bot/backtest/engine.py` は「通過した約定なら埋まったとみなす」形で向きを見ていない。**待ち行列には届かないが、向きの区別は当方に無い** | 一次資料 | https://raw.githubusercontent.com/Ros522/backtestlob/master/src/backtest.cpp 2026-09-22 |
+| 3 | **`flashalpha-fill-simulator` は、自分の文書で「待ち行列の模型を持たない」と書いている。**`docs/SPEC.md` の限界の表に "**Queue position / size impact** | We assume our limit gets filled by external counterparty flow without us moving the market." とあり、既知の穴の一覧にも "**No size-aware fill model.** Above ~10 contracts at a clip, our limit-and-wait model under-reports slippage. A queue-position model or empirical fill probability vs limit-vs-mid curve from real broker data would close this." とある。**README の「板に座って他人が自分の値を越えるのを待つ」は、待ち行列の位置を数えることではない** | 一次資料 | https://raw.githubusercontent.com/FlashAlpha-lab/flashalpha-fill-simulator/master/docs/SPEC.md 2026-09-22 |
+| 4 | **待ち行列を本当に持っていたのは 3 件である。**`SarthakDalmia1/backtesting_execution_simulator` は価格水準ごとに先頭と末尾を持つ連結リストで FIFO を作り、原文に "Add order to this price level (FIFO)" と書いてある。`SLMolenaar/QuantCore` は価格をキーにした `std::map` の値に注文の並びを持つ。`ThePredictiveDev/Automated-Financial-Market-Trading-System` は README に "Limit order book with strict price-time priority" と書いている | 一次資料 | https://raw.githubusercontent.com/SarthakDalmia1/backtesting_execution_simulator/main/cpp/orderbook/orderbook.hpp と https://raw.githubusercontent.com/SLMolenaar/QuantCore/master/cpp/orderbook/Orderbook.h と https://raw.githubusercontent.com/ThePredictiveDev/Automated-Financial-Market-Trading-System/main/README.md 2026-09-22 |
+| 5 | **`QuantCore` は同じ入力で毎回ちがう結果を返す。**合成のティックと同じ台本で 4 回打ったところ、`RUN_RET` が `97232.81357638627` / `97156.51464644582` / `97344.41882448811` / `97124.6449439495` と 4 通りになった。**乱数の種を渡す口は公開名に無い。**`configure_market_maker` が板を合成する側にあるので、そこが由来と読めるが確かめていない | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:319 と docs/DATA/probes/20260922_tools_1_run13.log:320 |
+| 6 | **`QuantCore` の入力の型は、約定の攻撃側の向きとナノ秒の時刻を持つ。**`TickData(symbol, timestamp_ns, price, quantity, aggressor_side)` で、当方の csv.gz の約定が持つ列とほぼ同じ形である。**当方の機関にはこの入力の型そのものが無い** | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:518 と docs/DATA/probes/20260922_tools_1_run13.log:519 |
+| 7 | **`microsoft/MarS` は、この環境では動かせないと公式が書いている。**README に "We strongly recommend using docker to run MarS. Direct installation without Docker is not supported due to specific system dependencies and CUDA requirements." とあり、production の前提として "we utilized 128 GPUs running parallel simulations" とある。**模型の重みは HuggingFace の Don-Don/mars-order-2m / 5m / 10m で公開されているが、19M 以上は "Release approval ... is currently being requested from Microsoft's Corporate, External, and Legal Affairs (CELA) team." として未公開** | 一次資料 | https://raw.githubusercontent.com/microsoft/MarS/main/README.md 2026-09-22 |
+| 8 | **`awesome-systematic-trading` は、当方の候補の一覧に無い名前を大量に出した。**バックテストと bot の節の表から GitHub のリンクを機械的に抜くと、当方が既に持っている 10 件を除いて新しい名前が残った(下の候補の一覧の 51 番以降)。**したがって委任文 §2 の完了条件の前半(残りの候補が空)は、この回の終わりでも満たされていない** | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:707 |
+| 9 | **同じ一覧の書籍の節は Amazon の提携リンクである。**URL に `tag=darchimbaud-21` が入っている。**道具の節のリンクは GitHub 直で、提携の印は見当たらない。**委任文 §6-1 の「提携リンク」に当たるので記録する | 一次資料 | https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md 2026-09-22 |
+| 10 | **`AlgoTest` の無料枠は、公式文書に逐語で書いてある。**"AlgoTest offers its users 25 free backtests every week on Monday." / "You get 100 backtests for 100 credits." / 7 日の無制限が "599 credits"、30 日の無制限が "1599 credits"。**クレジットと通貨の換算率はこのページに無い。**登録はしていない | 一次資料 | https://docs.algotest.in/getting-started/pricing-breakdown/backtest-pricing/ 2026-09-22 |
+| 11 | **`ForexTester` の公式サイトは、この環境からは 1 文字も読めない。**Cloudflare の遮断で、`curl` の既定の名乗り・ブラウザの名乗り・`WebFetch`・トップページ・archive.org の 5 経路が全部 403 か 404。**archive.org には該当 URL の控えが 1 件も無い**("archived_snapshots": {})。第 2 経路のコマンドは下の限界の欄に書いた | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:404 と docs/DATA/probes/20260922_tools_1_run13.log:414 |
+| 12 | **`backtestlob` の導入は、この会話の自動モードの分類器に止められた。**`pip install git+https://github.com/Ros522/backtestlob` を隔離 venv に対して打とうとしたところ、理由の逐語 `[Code from External]` で拒否された。**「この環境から不可」ではない。**リードが許可の形を決めれば同じコマンドで通る | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:124 |
+
+### 候補の一覧
+
+1 番から 30 番の本文は 12 回目の一覧をそのまま引き継いでいる(黙って落としていない)。
+この回で状態が変わったのは 31 番から 39 番と 45 番と 50 番で、51 番以降が 39 番の一覧から増えた行である。
+
+1. `Basana` — 4 回目に深掘り済み。この回では何も足していない。
+2. `Backtrader` — 4 回目に深掘り済み。この回では何も足していない。
+3. `PySystemtrade` — 10 回目に深掘り済み。この回では何も足していない。
+4. `PyBroker` — 4 回目に深掘り済み。この回では何も足していない。
+5. `bt` — 4 回目に深掘り済み。この回では何も足していない。
+6. `Ziplime` — 6 回目に深掘り済み。この回では何も足していない。
+7. `Superalgos` — 状態は「危険なので止めた」で確定。この回では何も足していない。
+8. `OpenTrader` — 状態は「危険なので止めた」で確定。この回では何も足していない。
+9. `CryptoSignal` — 状態は「この環境からは到達できない」で確定。この回では何も足していない。
+10. `fast-trade` — 5 回目に深掘り済み。この回では何も足していない。
+11. `OctoBot` — 状態は「最小実行まで通した」で確定(12 回目、リードの検収で追認)。この回では触っていない。
+12. `pybotters` — 7 回目に深掘り済み。この回では何も足していない。
+13. `DeviaVir/zenbot` — 状態は「危険なので止めた」で確定。この回では何も足していない。
+14. `Bot18` — 状態は「配布が止まりライセンスの条件が一次資料から読めない」で確定。この回では何も足していない。
+15. `Mendl-Labs/BacktestingCore` — 状態は「構築に要る依存が公開物として存在しない」で確定。この回では何も足していない。
+16. `Luczinsritter/event_driven_backtesting_engine` — 状態は「導入して最小実行まで通した」で確定。この回では何も足していない。
+17. `mlflow` — 8 回目に深掘り済み。この回では何も足していない。
+18. `zipline-reloaded` — 3 回目に深掘り済み。この回では何も足していない。
+19. `Jesse` — 3 回目に深掘り済み。この回では何も足していない。
+20. `VnPy` — 3 回目に深掘り済み。この回では何も足していない。
+21. `Qlib` — 3 回目に深掘り済み。この回では何も足していない。
+22. `Lean CLI` — 3 回目に深掘り済み。この回では何も足していない。
+23. `hftbacktest` — 1 回目に深掘り済み。この回では何も足していない。
+24. **限界: LimexHub と Lime Trader SDK は区分 3 と区分 2 に引き継いだ。**区分 1 では追わない。
+25. **限界: `OctoBot` の必須の依存のうち、取引以外の外部連携の窓口は、この回でも候補として立てていない。**
+26. **限界: `mlflow` の同梱する技能とフックの定義は、この回でも候補として立てていない。**
+27. **限界: `PySystemtrade` が同梱する先物の価格データは、この回でも候補として立てていない。**
+28. **限界: `PySystemtrade` の実弾の発注の側は区分 2 の候補になりうるが、区分 1 では追わない。**作業木 `scratchpad/pst` は消していない。
+29. **限界: `OpenTrader` の `pro/` の中身と料金ページは読んでいない。**
+30. **限界: `CryptoSignal` の `app/` の原文は読んでいない。**
+31. `Ros522/backtestlob` — **状態が変わった。一次資料に到達し、約定の判定の原文を全部読んだ。**版は `setup.py` の `__version__ = '0.0.1'`、既定の枝は master、星は 11、作成は 2019-06-15、最後の押し出しは 2025-09-24。**ファイルの一覧に LICENSE が無く、README にも条件の記載が無いのでライセンスは未確定。**PyPI には同名の配布が無い。pybind11 と C++ の構築が要る。**導入はこの会話の分類器に止められた(理由の逐語 `[Code from External]`)ので、最小実行は通していない。**浅い(料金・活動の細部・週DL数・外部送信は未確認)。
+32. `FlashAlpha-lab/flashalpha-fill-simulator` — **状態が変わった。一次資料に到達した。**MIT、版は `pyproject.toml` の 0.2.1、`requires-python = ">=3.10"`、`dependencies = []`、星は 4、作成は 2026-05-06。**対象はオプションのクレジット/デビットのスプレッドで、暗号資産の板ではない。**自分の文書で待ち行列の模型を持たないと書いている(知見 3)。README と記事のリンクに `utm_source=github` の追跡が付き、有料の `FlashAlpha Historical API (Alpha tier)` に合わせて較正したと書いている。**料金の一次資料(flashalpha.com の料金ページ)は未取得。**浅い(料金・導入・最小実行・外部送信は未確認)。
+33. `SarthakDalmia1/backtesting_execution_simulator` — **状態が変わった。一次資料に到達し、板の原文を読んだ。**MIT(Copyright (c) 2024 Sarthak Dalmia)、既定の枝は main、星は 0、作成は 2026-06-26、最後の押し出しは 2026-09-22(この回と同じ日)。**価格水準ごとの FIFO の待ち行列を持つ**(知見 4)。C++20 + pybind11 で、構築が要る。**保守者は 1 名で星が 0 の若い物なので、委任文 §6-1 の「公開直後・保守者不明」に近い。導入していない。**浅い(料金・導入・最小実行・外部送信・週DL数は未確認)。
+34. [深掘り] `QuantCore` — **状態が変わった。隔離 venv に導入して最小実行まで通した。**§4.0 の表に全項目を書いた。**同じ入力で結果が毎回ちがう**(知見 5)。
+35. `thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-` — **状態が変わった。一次資料に到達した。**既定の枝は main、星は 0、作成は 2026-08-22、リポジトリの説明は "Hi"。**ファイルの一覧に LICENSE が無い。**ファイル名に空白が入ったもの(`src __init__.py` など)があり、package として導入できる形になっていない。浅い(中身・料金・導入・最小実行は未確認)。
+36. `shubhamcodez/Market-Impact-Model` — **状態が変わった。一次資料の登録情報に到達した。**星は 38、作成は 2024-03-23、最後の押し出しは 2024-05-20(2 年以上前)。説明は "The model focuses on predicting the impact of trading activities on stock prices using order flow imbalance, trading volume and price change"。浅い(README・ライセンス・中身・料金は未確認)。
+37. `ThePredictiveDev/Automated-Financial-Market-Trading-System` — **状態が変わった。一次資料に到達し、README を読んだ。**MIT、版は 2.2.0、星は 38、作成は 2024-08-25、最後の押し出しは 2026-08-14。**README の逐語で "Limit order book with strict price-time priority and tick/lot normalization" と "Order book snapshotting (interval-based or on demand) and deterministic" replay を持つと書いている。**FIX 4.2 の会話層、Avellaneda-Stoikov 系のマーケットメイク、複数の場への振り分け、開始と終了の板寄せも持つと書いている。**当方に無いものが多い。**浅い(導入・最小実行・原文の確認・料金・外部送信は未確認)。
+38. `microsoft/MarS` — **状態が変わった。一次資料に到達し、README と板の原文を読んだ。**MIT(Copyright (c) Microsoft Corporation)、星は 1791、作成は 2024-10-28、最後の押し出しは 2026-08-31。板 `mlib/core/orderbook.py` は価格の水準の並びと板寄せの突合を持つ本物の板である。**ただし公式が Docker と CUDA を要求しており、この環境では動かせない**(知見 7)。**この判断は「試して駄目だった」ではなく「公式が要件として書いている」ことに基づく。**浅い(実行・料金・重みの取得の条件・外部送信は未確認)。
+39. `paperswithbacktest/awesome-systematic-trading` — **状態が変わった。一次資料の全文を取り、道具の名前を機械的に抜いた。**星は 14389、作成は 2022-02-05、最後の押し出しは 2026-09-03。**道具そのものではなく一覧なので §4.0 の表には入れない。**抜いた名前は 51 番以降に足した(知見 8)。書籍の節は Amazon の提携リンク(知見 9)。
+40. `OpenMarket` の戦略検証 — **未着手。**12 回目の X の投稿(宣伝の印)が出典。登録の要否・料金・鍵は未確認。**登録はしない。**
+41. `prediction-market-backtesting` — **未着手。**Polymarket と Kalshi の実データで戦略を検証すると説明されている。浅い(一次資料は未取得。**リポジトリの持ち主の名前が分かっていないので、まず名前を確定させる必要がある**)。
+42. `shiyu-coder/Kronos` — **状態が変わった。一次資料の登録情報に到達した。**星は 39336、作成は 2025-07-01、最後の押し出しは 2026-04-13、既定の枝は master。説明は "Kronos: A Foundation Model for the Language of Financial Markets"。**12 回目に書いた「ローソク足の基盤模型」は検索結果の要約からで、一次資料の説明はこの文である。**浅い(README・ライセンス・重み・鍵・料金・実行の要件は未確認)。
+43. `QuantDinger` — **未着手。**12 回目の X の投稿(宣伝の印)が出典。浅い(一次資料は未取得。鍵・料金は未確認)。
+44. `lo2cin4` の符号を書かない検証の枠組み — **未着手。**名前も版も未確認。
+45. `ForexTester` — **状態が変わった。この環境からは到達できない(確定)。**5 経路すべてが Cloudflare に遮断された(知見 11)。**第 2 経路(オーナー PC)でそのまま打てるコマンド**: `curl -sS -L -A "Mozilla/5.0" https://forextester.com/buy -o forextester_buy.html`、またはブラウザで https://forextester.com/buy を開いて料金表の逐語を写す。**料金の語だけで外していない。**
+46. `MT4裁量トレード練習君プレミアム` — **未着手。**販売の場として当てた `https://www.gogojungle.co.jp/tools/1` は code=404 で、正しい商品の番号が分かっていない。浅い(一次資料は未取得)。
+47. **限界: 12 回目の X の 3 件は、リードの検収 §4 で候補 48・49・50 として立った。**この行は履歴として残す。
+48. `BacktestingMax` — **未着手。**登録の要る外部の場。出典は 12 回目の X の投稿(宣伝の印)。浅い(公式サイト・機能一覧・料金・規約は未取得)。
+49. `GFT Backtest Software` — **未着手。**登録の要る外部の場。出典は 12 回目の X の投稿(宣伝の印)。浅い(公式サイト・機能一覧・料金・規約は未取得)。
+50. `AlgoTest` — **状態が変わった。登録なしで取れるものの一部を取った。**無料枠と価格の逐語は知見 10。**インドの株・オプションの場で、暗号資産は扱いが未確認。**公式の料金ページ `https://algotest.in/pricing/` は code=200 で返るが中身が JavaScript の殻で、値は文書の側 `docs.algotest.in` にある。浅い(機能一覧・利用規約・登録に渡すもの・クレジットと通貨の換算率は未確認)。**登録はしていない。**
+
+**ここから 39 番の一覧から増えた行である。いずれも未着手で、名前と出典だけがある。**
+一覧の表から GitHub のリンクを機械的に抜き、当方が既に持っている 10 件(`VnPy` `zipline-reloaded` `Backtrader` `hftbacktest` `PyBroker` `PySystemtrade` `bt` `Jesse` `OctoBot` `Basana`)を除いた残りである。
+**区分 2 や区分 3 に寄るものが混じっているが、委任文 §3-3 の「候補の一覧から黙って落とさない」に従って全部残す。**どこで追うかはリードが決める。
+
+51. `QUANTAXIS` — 未着手。出典は 39 番の一覧。
+52. `QuantConnect` — 未着手。**22 番の `Lean CLI` と同じ機関の別の入口なので、別立てにするかはリードが決める。**
+53. `Rqalpha` — 未着手。出典は 39 番の一覧。
+54. `finmarketpy` — 未着手。出典は 39 番の一覧。
+55. `backtesting.py` — 未着手。出典は 39 番の一覧。
+56. `zvt` — 未着手。出典は 39 番の一覧。
+57. `WonderTrader` — 未着手。出典は 39 番の一覧。
+58. `nautilus_trader` — 未着手。出典は 39 番の一覧。
+59. `PandoraTrader` — 未着手。出典は 39 番の一覧。
+60. `Hikyuu` — 未着手。出典は 39 番の一覧。
+61. `barter-rs` — 未着手。出典は 39 番の一覧。
+62. `qf-lib` — 未着手。出典は 39 番の一覧。
+63. `trade-frame` — 未着手。出典は 39 番の一覧。
+64. `QuantFabric` — 未着手。出典は 39 番の一覧。
+65. `aat` — 未着手。出典は 39 番の一覧。
+66. `sdoosa-algo-trade-python` — 未着手。出典は 39 番の一覧。
+67. `lumibot` — 未着手。出典は 39 番の一覧。
+68. `quanttrader` — 未着手。出典は 39 番の一覧。
+69. `gobacktest` — 未着手。出典は 39 番の一覧。
+70. `PineForge` — 未着手。出典は 39 番の一覧。
+71. `FlashFunk` — 未着手。出典は 39 番の一覧。
+72. `QTradeX` — 未着手。出典は 39 番の一覧。
+73. `vectorbt` — 未着手。出典は 39 番の一覧。
+74. `ml-quant-trading` — 未着手。出典は 39 番の一覧。
+75. `Freqtrade` — 未着手。出典は 39 番の一覧。
+76. `Kelp` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
+77. `openlimits` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
+78. `bTrader` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
+79. `crypto-crawler-rs` — 未着手。出典は 39 番の一覧。区分 3 に寄る。
+80. `Hummingbot` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
+81. `cryptotrader-core` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
+82. `Blackbird` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
+83. `bitcoin-arbitrage` — 未着手。出典は 39 番の一覧。区分 2 に寄る。
+84. `ThetaGang` — 未着手。出典は 39 番の一覧。
+85. `czsc` — 未着手。出典は 39 番の一覧。
+86. `analyzingalpha` — 未着手。出典は 39 番の一覧。
+87. `PyTrendFollow` — 未着手。出典は 39 番の一覧。
+88. `TradeSight` — 未着手。出典は 39 番の一覧。
+89. `PRISM-INSIGHT` — 未着手。出典は 39 番の一覧。
+
+**残りの候補名**: 40 番・41 番・43 番・44 番・46 番・48 番・49 番と、31 番から 39 番と 42 番と 50 番の浅い部分、
+および 51 番から 89 番まで。**39 番の一覧の残りの節(データ源・機械学習・時系列など)からも、まだ名前を抜いていない。**
+
+### ツール1件ごとの表
+
+#### §4.0 の機械可読の表
+
+深掘りしたのは `QuantCore` だけなので、表はこの道具の行だけである。
+31 番から 39 番と 42 番と 45 番と 50 番は一次資料に到達したが、導入と実行を通していないので
+委任文 §4.0 の末尾の規則どおり表に入れず、候補の一覧に何が未確認かを書いた。
+根拠の欄の `docs/DATA/probes/20260922_tools_1_run13.log:<行>` は、この回の生ログの行番号である。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `QuantCore` | 版 | `version= 1.0.0` | 一次資料 | https://pypi.org/pypi/quantcore/json の info.version 2026-09-22 |
+| `QuantCore` | 最終更新日 | GitHub の `pushedAt` は `2026-09-12T12:41:12Z`、PyPI の最新版の `upload_time` は `2026-03-27T23:21:36`。**PyPI の方が古い** | 一次資料 | https://ungh.cc/repos/SLMolenaar/QuantCore と https://pypi.org/pypi/quantcore/json 2026-09-22 |
+| `QuantCore` | ライセンス | `MIT License Copyright (c) 2026 Stefaan Molenaar`。商用・再配布は MIT の条件のとおりで、追加の条項は無い | 一次資料 | https://raw.githubusercontent.com/SLMolenaar/QuantCore/master/LICENSE 2026-09-22 |
+| `QuantCore` | 言語と動作環境 | C++20 の拡張 + Python。`requires_python= >=3.8`。配布の wheel は cp39 から cp312 までの macosx_15_0_arm64 / manylinux_2_26_x86_64 / win_amd64 | 一次資料 | https://pypi.org/pypi/quantcore/json の info.requires_python と releases の wheel の名前 2026-09-22 |
+| `QuantCore` | 対応取引所 | **無し。**公開名の全部を列挙しても、取引所の名前・接続・鍵・発注に当たるものが 1 つも無い。入口は `CSVDataLoader` `ParquetDataLoader` `TickDataLoader` `TickParquetLoader` だけ | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:512 と docs/DATA/probes/20260922_tools_1_run13.log:513 |
+| `QuantCore` | 星 | `"stars":1` | 一次資料 | https://ungh.cc/repos/SLMolenaar/QuantCore 2026-09-22 |
+| `QuantCore` | コミット数 | 未確認。`contributions` は 228 だが、これは寄与の数であってコミット数と同じとは限らない | 未確認 | 試したこと: `https://ungh.cc/repos/SLMolenaar/quantcore/commits/master` は code=404(この端点が無い)。`contributors` の端点は code=200 で `contributions` を返した。GitHub 直は 12 回目に code=403 |
+| `QuantCore` | 保守者数 | 1 名。`[{"id":188557515,"username":"SLMolenaar","contributions":228}]` | 一次資料 | https://ungh.cc/repos/SLMolenaar/quantcore/contributors 2026-09-22 |
+| `QuantCore` | 週DL数 | 未確認 | 未確認 | 試したこと: `https://pypistats.org/api/packages/quantcore/recent` を 3 回打って全部 code=429。`https://api.pepy.tech/api/v2/projects/quantcore` は code=401 で鍵を要求。**鍵は発行しない(委任文 §6-4)** |
+| `QuantCore` | 初回公開日 | PyPI の最初の版は `first= 0.1.0 ['2026-03-10T16:28:20']`。GitHub の `createdAt` は `2025-11-05T00:12:16Z` | 一次資料 | https://pypi.org/pypi/quantcore/json と https://ungh.cc/repos/SLMolenaar/QuantCore 2026-09-22 |
+| `QuantCore` | 既知の脆弱性 | 公開の勧告は無し。OSV に問い合わせて空の結果 `{}` が返った | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:489 と docs/DATA/probes/20260922_tools_1_run13.log:490 |
+| `QuantCore` | 料金体系 | 無料。MIT の配布で、料金ページも購読の仕組みも一次資料に無い | 一次資料 | https://pypi.org/pypi/quantcore/json の全文に料金・購読・鍵の記載が無いこと 2026-09-22 |
+| `QuantCore` | 無料枠の上限 | 上限という考え方が無い。回数・期間・履歴の深さ・機能の制限が一次資料に 1 つも書かれていない | 一次資料 | https://pypi.org/pypi/quantcore/json の全文に回数・期間・機能の制限の記載が無いこと 2026-09-22 |
+| `QuantCore` | 課金開始条件 | 無し。従量・鍵・席・データ購読・登録のどれも一次資料に無い | 一次資料 | https://pypi.org/pypi/quantcore/json の全文に従量・席・購読の記載が無いこと 2026-09-22 |
+| `QuantCore` | 隠れた依存 | 無し。動かすのに別の有料データ・鍵・クラウド・LLM の鍵は要らなかった。合成のティックだけで最小実行が通った | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:307 と docs/DATA/probes/20260922_tools_1_run13.log:308 |
+| `QuantCore` | 登録の要否 | 不要。PyPI から鍵なしで取れた | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:295 |
+| `QuantCore` | 到達経路 | `ungh.cc` が 1 回目に code=000 で、打ち直して code=200。PyPI の json は 1 回で code=200。原文は raw.githubusercontent から取れた | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:188 と docs/DATA/probes/20260922_tools_1_run13.log:193 |
+| `QuantCore` | 導入可否 | 可。scratchpad の隔離 venv に入った。`INSTALL_RC=0` | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:295 |
+| `QuantCore` | install所要秒 | `INSTALL_SEC= 7.28` | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:296 |
+| `QuantCore` | 依存数 | 実行に要るのは numpy と pandas で、連れてくるものを含めて `DEPS= numpy==2.4.6 pandas==3.0.6 python-dateutil==2.9.0.post0 quantcore==1.0.0 six==1.17.0` | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:298 |
+| `QuantCore` | pip check | `No broken requirements found.` で `PIPCHECK_RC=0` | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:297 |
+| `QuantCore` | 最小実行の可否 | 可。合成のティックで模擬が回り、建玉と損益と板の最良値が出た。`PROC_RC=0` | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:307 と docs/DATA/probes/20260922_tools_1_run13.log:308 |
+| `QuantCore` | 最小実行の中身 | 合成のティック 2000 本(`TickData` に銘柄・ナノ秒の時刻・価格・数量・攻撃側の向きを与え、途中で価格を段差で上げた)を `add_tick_data` で入れ、`configure_market_maker` で板を合成し、`SMACrossover` を走らせた。結果は `RUN_RET= 97232.81357638627` / `POSITION= -5.106365811235699` / `REALIZED_PNL= -2758.863047341423` / `TOTAL_FEES= 0.0` / `BEST_BID= 105.25 BEST_ASK= 108.41 MID= 106.83`。**指値を自分で置く口は公開名に無く、指値は `configure_market_maker` が板の側に並べる形である。**したがって **委任文 §5-4 の「成行と指値の 1 往復」のうち、自分の指値を置いて埋める側は通していない** | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:307 と docs/DATA/probes/20260922_tools_1_run13.log:314 |
+| `QuantCore` | 実行所要秒 | `ELAPSED_SEC= 0.01`。合成の作り込みから結果の取り出しまでを含む | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:307 と docs/DATA/probes/20260922_tools_1_run13.log:315 |
+| `QuantCore` | wheel展開 | 開いた。`WHEEL_N_FILES= 18` で、中身は Python の 10 ファイルと共有ライブラリ 1 本と dist-info | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:299 |
+| `QuantCore` | setup.py導入時実行 | 無し。配布は wheel で、`setup.py` も `pyproject.toml` も wheel の中に無い。導入時に走る符号は入っていない | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:299 |
+| `QuantCore` | 同梱バイナリ | 有り。`WHEEL_BINARY= quantcore/_core.cpython-311-x86_64-linux-gnu.so 2813232`。C++ の拡張なので予期されるもの | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:300 |
+| `QuantCore` | 外部送信 | 見当たらない。wheel の Python の側に urllib / requests / socket / subprocess / http / exec / eval / base64 / os.system / telemetry の一致が `SUSPECT_HITS= 0`。共有ライブラリから抜いた URL は `URLS_IN_SO= ['https://gcc.gnu.org/bugs/']` の 1 本だけで、これは GCC が埋める文字列である。**実行中の通信そのものは遮断して測っていない** | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:301 |
+| `QuantCore` | 自動発注機能 | 無し。公開名に取引所への接続・鍵・発注が 1 つも無い。`ExecutionEngine` は模擬の中の突合だけである | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:512 と docs/DATA/probes/20260922_tools_1_run13.log:513 |
+| `QuantCore` | 宣伝詐欺の兆候 | 見当たらない。収益の保証・Telegram だけの配布・秘密鍵の要求・提携リンクのどれも一次資料に無い | 一次資料 | https://raw.githubusercontent.com/SLMolenaar/QuantCore/master/README.md 2026-09-22 |
+| `QuantCore` | 当方データ投入 | **入れられる。**入力の型 `TickData(symbol, timestamp_ns, price, quantity, aggressor_side)` は、当方の csv.gz の約定が持つ列とほぼ同じである。csv と parquet の読み込みも公開されている。**ただし清算・資金調達率に当たる入口は公開名に無い** | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:518 と docs/DATA/probes/20260922_tools_1_run13.log:519 |
+| `QuantCore` | 時刻の扱い | ナノ秒の整数 `timestamp_ns`。時間帯の扱いは公開名 `TradingCalendar` にあるが中身は見ていない。UTC かどうかは未確認 | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:518 と docs/DATA/probes/20260922_tools_1_run13.log:519 |
+| `QuantCore` | 再現性 | **無い。**同じ入力・同じ台本で 4 回打って `RUN_RET` が 4 通りになった。乱数の種を渡す口は公開名に無い | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:319 と docs/DATA/probes/20260922_tools_1_run13.log:320 |
+| `QuantCore` | 規模の見積 | 未確認。合成のティック 2000 本の 1 点しか測っていないので、本数に対する伸び方が分からない。**456 日のティックに要る時間を外挿する足場が無い** | 未確認 | 試したこと: この回は 1 点だけ測った。本数を変えた 2 点目は打っていない |
+| `QuantCore` | 配布元の一致 | 一致する。PyPI の `project_urls` が `https://github.com/SLMolenaar/quantcore` を指し、LICENSE の名義 `Stefaan Molenaar` と PyPI の `author_email` の名義が同じ | 一次資料 | https://pypi.org/pypi/quantcore/json の info.project_urls と info.author_email 2026-09-22 |
+| `QuantCore` | 難読化 | 無し。wheel の Python の側は普通の符号で、圧縮した文字列の実行も base64 の一致も無い | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:301 |
+| `QuantCore` | 外部URL取得 | 無し。導入時も実行時も、外の URL から何かを取りに行く符号が見つからなかった | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:294 と docs/DATA/probes/20260922_tools_1_run13.log:302 |
+| `QuantCore` | 依存の一覧 | PyPI の `requires_dist` は numpy>=1.24.0 と pandas>=2.0.0 が本体で、pytest と pytest-cov が dev、matplotlib と seaborn が viz の追加 | 一次資料 | https://pypi.org/pypi/quantcore/json の info.requires_dist 2026-09-22 |
+| `QuantCore` | 保守者名の一貫性 | 一貫している。GitHub の寄与者・PyPI の `author_email`・LICENSE の名義がすべて `Stefaan Molenaar` / `SLMolenaar` | 一次資料 | https://ungh.cc/repos/SLMolenaar/quantcore/contributors と https://pypi.org/pypi/quantcore/json 2026-09-22 |
+| `QuantCore` | 4軸1_道具 | 入れられる。隔離 venv に鍵なしで入り、合成のデータだけで回った。**ただし結果が毎回ちがうので、当方の判定の道具としてそのまま使うと判定が揺れる** | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:319 と docs/DATA/probes/20260922_tools_1_run13.log:320 |
+| `QuantCore` | 4軸2_情報 | 取れる情報は自分で入れたデータの加工物だけで、外から来る情報は無い。**当方に無い情報は取れない** | 実測 | docs/DATA/probes/20260922_tools_1_run13.log:512 と docs/DATA/probes/20260922_tools_1_run13.log:513 |
+| `QuantCore` | 4軸3_視点 | **当方に無い視点が 2 つある。**1 つは価格の水準ごとに注文の並びを持つ板(原文 `Orderbook.h` の `std::map<Price, OrderPointers, ...>`)で、当方の機関にはこの層が無い。もう 1 つは入力の型が約定の攻撃側の向きを持つことで、当方は向きを見ずに「通過した約定なら埋まったとみなす」形である | 一次資料 | https://raw.githubusercontent.com/SLMolenaar/QuantCore/master/cpp/orderbook/Orderbook.h 2026-09-22 |
+| `QuantCore` | 4軸4_向上 | 未確認。当方の成果を向上できるかは、当方のデータを入れて同じ問いを解かせてみないと分からない。**この回はそれをしていない(合成のデータだけ)** | 未確認 | 試したこと: 合成のティックでの最小実行のみ。当方のデータは委任文 §5-4 の禁止により使っていない |
+
+#### 文章による補い(表に書ききれないもの)
+
+- **`QuantCore` の「指値」は、当方が期待する形とは別である。**戦略の側が出せるのは `SignalType` の BUY と SELL で、
+  自分で価格を指定して板に並べる口は公開名に無い。板に並ぶのは `configure_market_maker(levels, spread, depth)` が
+  合成する相手方の注文で、**自分の注文の待ち行列の位置を測る道具ではない。**原文の板は待ち行列を持つが、
+  Python の側からその位置を読む口があるかは確かめていない。
+- **原文に無い判断その 1: `QuantCore` を「深掘り」として §4.0 の表に入れた。**委任文 §5-4 は
+  バックテスト系の中核を「合成のティック列で成行と**指値**の 1 往復を通し損益を出す」と定めている。
+  `QuantCore` は自分の指値を置く口が無いので、この形のままでは満たせない。**満たした部分(合成のティックで
+  模擬が回り損益が出た)と満たしていない部分(自分の指値を置いて埋める)を表の「最小実行の中身」に
+  書き分けた。**これで深掘りと呼んでよいかはリードが決めること。
+- **原文に無い判断その 2: `backtestlob` の導入を分類器に止められたあと、回避を試みなかった。**
+  委任文 §5-1 は「止まったら手段を替えて続ける」と書いているが、**止めたのはこの会話の許可の仕組みであって
+  取得の経路ではない。**手を替えて同じ符号を走らせるのは、止めた意図を回り込むことになると判断した。
+  原文は全部読んだので、約定の模型については一次資料で確定している。
+- **原文に無い判断その 3: 39 番の一覧から機械的に抜いた名前を、全部候補に足した。**
+  委任文 §3-3 は「候補の一覧から黙って落とさない」と書いており、§2 は「またがるものは両方に書く」と書いている。
+  区分 2 や区分 3 に寄るものも落とさずに残し、どこで追うかはリードに渡した。**この結果、区分 1 の残りは
+  この回の始めより増えている。**
+- **`MarS` に「この環境から不可」とは書いていない。**公式が Docker と CUDA を要件として書いているだけで、
+  こちらで試したのは README の取得までである。**第 2 経路(オーナー PC)のコマンド**:
+  `git clone --depth 1 https://github.com/microsoft/MarS && cd MarS && python download.py`(GPU と Docker が要る)。
+- **`AlgoTest` の料金ページは、道具を替えて初めて読めた。**`curl` では code=200 だが中身が JavaScript の殻で
+  値が入っていない。`WebFetch` も本体のページでは空だった。**文書の側 `docs.algotest.in` に逐語があった。**
+  この型(値が本体のページに無く文書の側にある)は、48 番と 49 番でも起こりうる。
+
+### 区分 1 の完了の判定
+
+**区分 1 は未完了である。**委任文 §2 の完了条件は「残りの候補が空になり、かつ新しい検索計画が新しい候補を
+1 件も出さない」の 2 つで、**前半も後半も満たしていない。**
+前半については、この回で 31 番から 39 番と 42 番と 45 番と 50 番の状態を進めたが、39 番の一覧から
+51 番以降が増えたので、残りはこの回の始めより増えた。後半については、この回は新しい検索計画を打っていない。
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 時間 | 上限 20 分。**超過。**`QuantCore` の公開名の当たりを付けるところで打ち直しが続いた |
+| トークン | 上限 5 万。**超過している。**一次資料の原文(C++ の板の実装)を複数読んだところが重い |
+| 打ち切った作業 | 40 番・41 番・43 番・44 番・46 番・48 番・49 番の一次資料への到達。51 番以降の全部。39 番の一覧の残りの節からの名前の抜き出し |
+| 常駐プロセス | 残していない。この回の処理は `PROC_RC=0` で自分で終わった |
+| リポジトリへの書き込み | `docs/DATA/SCAN_2026-09-21_tools.md` と `docs/DATA/probes/20260922_tools_1_run13.log` の 2 つだけ。コミットはしていない |
+
+## 受け入れ検査の出力(13 回目)
+
+13 回目の提出前に打った最後の出力(生ログ 11 本を渡した)。**誤検出だと判断して自分で閉じた行は 1 件も無い。**
+直した内訳: K13 が 1 件当たった(`QuantCore` の根拠の欄に PyPI の同じ URL を 7 行で複写していた)ので、
+各行が JSON のどの欄を見たかを根拠に書き分けた。K12 が 1 件当たったのは、この節をまだ貼っていなかったためである。
+生ログには、この回に打ったコマンドの記録以外は 1 行も書き足していない。
+
+```
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md \
+    docs/DATA/probes/20260922_tools_1_run3.log docs/DATA/probes/20260922_tools_1_run4.log \
+    docs/DATA/probes/20260922_tools_1_run5.log docs/DATA/probes/20260922_tools_1_run6.log \
+    docs/DATA/probes/20260922_tools_1_run7.log docs/DATA/probes/20260922_tools_1_run8.log \
+    docs/DATA/probes/20260922_tools_1_run9.log docs/DATA/probes/20260922_tools_1_run10.log \
+    docs/DATA/probes/20260922_tools_1_run11.log docs/DATA/probes/20260922_tools_1_run12.log \
+    docs/DATA/probes/20260922_tools_1_run13.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```

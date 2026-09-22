@@ -1,0 +1,785 @@
+# 区分1 13回目の生ログ (2026-09-22 UTC)
+=== 31-1 backtestlob ungh retry
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/Ros522/backtestlob
+UTC= 2026-09-22T11:28:07Z  rc=0  code=200  time_s=0.78
+BODY200= {"repo":{"id":192022723,"name":"backtestlob","repo":"Ros522/backtestlob","description":"Limit Order Book 指値戦略の高速バックテストモジュール","createdAt":"2019-06-15T01:16:47Z","updatedAt":"2023-08-13T15:24:58Z","pushedAt":"2025-09-24T08:56:40Z","stars":11,"watchers":2,"forks":3,"defaultBranch":"master"}}
+
+=== 31-2 backtestlob raw README
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/Ros522/backtestlob/main/README.md
+UTC= 2026-09-22T11:28:08Z  rc=0  code=404  time_s=0.44
+BODY200= 404: Not Found
+
+=== 31-3 backtestlob raw master
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/Ros522/backtestlob/master/README.md
+UTC= 2026-09-22T11:28:08Z  rc=0  code=200  time_s=0.23
+BODY200= # backtestlob
+Limit Order Book 指値戦略の高速バックテスト
+(on pybind11)
+```
+pip3 install git+https://github.com/Ros522/backtestlob
+```
+
+# 将来的な機能
+1. 成行のシミュレーション  
+※現行は引数の注文価格にて常に約定すると判定
+1. 取引所遅延のシミュレーション
+https://github.com/Ros522/lazy_backtest_lob
+1. 取引所APIラッパー
+1. ビジュアライゼーション（by Python）
+
+# 機能
+1. 買い指値に対して、「買い約定履歴 < 指値」　で注文の約定判定を行う 
+2. 売り指値に対して、「売り約定履歴 > 指値」　で注文の約定判定を行う 
+3. 約定したら内部のポジションを更新して、その注文約定の収支、トレード回数返す
+4. 注文はネットアウト注文として保持する
+5. 安値、高値入力で約定判定(step)、または1約定履歴流し込み(step_by_tick)
+6. 成行は試験中
+
+## exported class
+* OrderType
+  - OrderType.LIMIT
+  - OrderType.MARKET
+  
+* Side
+  - Side.BUY
+  - Side.SELL
+  
+* BackTestEnv
+    ### property
+    - size  
+    現在の建玉のサイズを示す
+    - side  
+    現在の建玉が、Side.BUYかSide
+
+=== 31-4 backtestlob ungh files
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/Ros522/backtestlob/files
+UTC= 2026-09-22T11:28:14Z  rc=0  code=404  time_s=0.28
+BODY200= {
+  "error": true,
+  "status": 404,
+  "message": "Cannot find any route matching [GET] https://ungh.cc/repos/Ros522/backtestlob/files"
+}
+
+=== 31-5 backtestlob pypi
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://pypi.org/pypi/backtestlob/json
+UTC= 2026-09-22T11:28:14Z  rc=0  code=404  time_s=0.15
+BODY200= {"message": "Not Found"}
+
+=== 31-6 backtestlob ungh files master
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/Ros522/backtestlob/files/master
+UTC= 2026-09-22T11:28:19Z  rc=0  code=200  time_s=0.64
+BODY200= {"meta":{"sha":"a42353afccd8bdd7f9f640dfd64b513405c98ec9"},"files":[{"path":".gitignore","mode":"100644","sha":"360ea127f87b3549e5f137cca227b969e409cc8b","size":4},{"path":".gitmodules","mode":"100644","sha":"8b137891791fe96927ad78e64b0aad7bded08bdc","size":1},{"path":"CMakeLists.txt","mode":"100644","sha":"7436a6711b7313dc02edea83658f1e52aa2eb377","size":304},{"path":"CMakeSettings.json","mode":"100644","sha":"2fc744e00cc4ed5b3858ec8b90e457a81edb8544","size":477},{"path":"README.md","mode":"100644","sha":"aaeb37165349e25fa8e3d911b495c2b5de8009c2","size":2643},{"path":"setup.py","mode":"100644","sha":"59045f9a14850e988ed53856b22ba4c1f8e3b599","size":3204},{"path":"src/CMakeLists.txt","mode":"100644","sha":"333513dc174175c2b0074270045feddf3e1ab853","size":121},{"path":"src/backtest.cpp","mode":"100644","sha":"c1785f372ed03663ed76e004a135a9998735aee2","size":6233},{"path":"tests/.gitignore","mode":"100644","sha":"360ea127f87b3549e5f137cca227b969e409cc8b","size":4},{"path":"tests/limitorder.py","mode":"100644","sha":"c470dcfba1f93c30b579cb12ab4641178618d047","size":2688},{"path":"tests/marketorder.py","mode":"100644","sha":"93df96a79a06143c2ddaf82aace3cf621300337e","size":2831}]}
+
+=== 31-7 backtestlob raw README rest
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/Ros522/backtestlob/master/setup.py
+UTC= 2026-09-22T11:28:19Z  rc=0  code=200  time_s=0.43
+BODY200= from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
+import sys
+import setuptools
+
+__version__ = '0.0.1'
+
+
+class get_pybind_include(object):
+    """Helper class to determine the pybind11 include path
+    The purpose of this class is to postpone importing pybind11
+    until it is actually installed, so that the ``get_include()``
+    method can be invoked. """
+
+    def __init__(self, user=False):
+        self.user = user
+
+    def __str__(self):
+        import pybind11
+        return pybind11.get_include(self.user)
+
+
+ext_modules = [
+    Extension(
+        'backtestlob',
+        ['src/backtest.cpp'],
+        include_dirs=[
+            # Path to pybind11 headers
+            get_pybind_include(),
+            get_pybind_include(user=True)
+        ],
+        language='c++'
+    ),
+]
+
+
+# As of Python 3.6, CCompiler has a `has_flag` method.
+# cf http://bugs.python.org/issue26689
+def has_flag(compiler, flagname):
+    """Return a boolean indicating whether a flag name is supported on
+    the specified compiler.
+    """
+    import tempfile
+    with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f:
+        f.write('int main (int argc, char **argv) { retur
+
+=== 31-8 backtestlob 導入の試み
+CMD= python3 -m venv v31 && ./v31/bin/pip install "git+https://github.com/Ros522/backtestlob"
+UTC= 2026-09-22  rc=denied  code=n/a  time_s=0.00
+BODY200= 自動モードの分類器に拒否された(理由の逐語: [Code from External])。導入は行っていない。ソース src/backtest.cpp は取得して全文を読んだ。
+
+=== 32-1 flashalpha ungh
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/FlashAlpha-lab/flashalpha-fill-simulator
+UTC= 2026-09-22T11:29:22Z  rc=35  code=000  time_s=11.34
+BODY200= curl: (35) Recv failure: Connection reset by peer
+
+=== 32-2 flashalpha files
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/FlashAlpha-lab/flashalpha-fill-simulator/files/main
+UTC= 2026-09-22T11:29:23Z  rc=0  code=404  time_s=0.82
+BODY200= {
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+
+=== 32-1b flashalpha ungh retry
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/FlashAlpha-lab/flashalpha-fill-simulator
+UTC= 2026-09-22T11:29:28Z  rc=0  code=200  time_s=0.53
+BODY200= {"repo":{"id":1230768999,"name":"flashalpha-fill-simulator","repo":"FlashAlpha-lab/flashalpha-fill-simulator","description":"Realistic limit-order fill simulator for options credit/debit spreads. Engine-agnostic, data-source-agnostic.","createdAt":"2026-05-06T09:54:15Z","updatedAt":"2026-08-27T01:48:26Z","pushedAt":"2026-08-26T10:30:19Z","stars":4,"watchers":0,"forks":2,"defaultBranch":"master"}}
+
+=== 32-3 flashalpha raw README main
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/FlashAlpha-lab/flashalpha-fill-simulator/main/README.md
+UTC= 2026-09-22T11:29:29Z  rc=0  code=404  time_s=0.44
+BODY200= 404: Not Found
+
+=== 32-4 flashalpha files master
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/FlashAlpha-lab/flashalpha-fill-simulator/files/master
+UTC= 2026-09-22T11:29:34Z  rc=0  code=200  time_s=0.72
+BODY200= {"meta":{"sha":"f51de9f917793cd8b6733ffcc6ab65fe910f1d48"},"files":[{"path":".github/workflows/ci.yml","mode":"100644","sha":"c7f2d521ec800c79d20f7238a9bb90fa6375ac42","size":868},{"path":".gitignore","mode":"100644","sha":"68e6ed1c9b54509abacc5cdfef72448bbd5fa7af","size":485},{"path":"CHANGELOG.md","mode":"100644","sha":"88f07e6ece57e1fe5cc3fd5c754cd4d92c026fed","size":3074},{"path":"CONTRIBUTING.md","mode":"100644","sha":"bf448f59a6b275d1632cf801f4c287a0c4e98100","size":1101},{"path":"LICENSE","mode":"100644","sha":"eb3b8df9bd84c970e3fd646a954c6265f46d1c7a","size":1067},{"path":"README.md","mode":"100644","sha":"e6c21ace5f811c4d72e5c6fffe1ce34c5ccf7f77","size":11951},{"path":"docs/SPEC.md","mode":"100644","sha":"bcaff499d5b9ede0216d1cecce6cc9f434b7e800","size":19166},{"path":"docs/examples/01_per_bar_primitive.py","mode":"100644","sha":"038325745a89ffc6f10af41f81a4b7ee576f4c14","size":3232},{"path":"pyproject.toml","mode":"100644","sha":"4e662385237f1a69eae1478e95d57aec3279a64e","size":2221},{"path":"scripts/fetch_real_data.py","mode":"100644","sha":"5d6f967907a7da454b5e7bf13ec7c58723b05a44","size":3903},{"path":"src/fillsim/__init__.py","mode":"100644","sha":"354986ca8fe64a1d04a
+
+=== 32-5 flashalpha raw README master
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/FlashAlpha-lab/flashalpha-fill-simulator/master/README.md
+UTC= 2026-09-22T11:29:34Z  rc=0  code=200  time_s=0.24
+BODY200= # flashalpha-fill-simulator
+
+Realistic limit-order fill simulator for options credit/debit spreads.
+
+> Realistic fills are where most options backtests lie to you. This simulator is
+> calibrated against the **FlashAlpha Historical API** (Alpha tier) so your
+> backtested fills match what actually traded.
+> Background: [Fill model is the edge](https://flashalpha.com/articles/vrp-backtest-fill-model-is-the-edge?utm_source=github&utm_medium=readme&utm_campaign=repo-flashalpha-fill-simulator)
+
+**Engine-agnostic. Data-source-agnostic. Zero runtime dependencies.**
+
+Most options-credit-spread backtests fill at mid (or at bid/ask without queueing). Both lie. This library models what actually happens when you post a limit at MM-edge against a 1-min option chain (or any tick stream): you sit on the book until *someone else's* order crosses your price, with stale-quote guards, deterministic tiebreaking, and a patient-then-cross exit. It's the substrate, not a strategy.
+
+```python
+from datetime import date, datetime
+from fillsim import simulate_fill, Spread, Leg, Config
+
+# A vertical credit spread you've decided to post
+spread = Spread(
+    short=Leg(strike=440, bid=1.30, ask=1.30),
+    long=Le
+
+=== 33-1 SarthakDalmia1 ungh
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/SarthakDalmia1/backtesting_execution_simulator
+UTC= 2026-09-22T11:29:48Z  rc=0  code=200  time_s=0.64
+BODY200= {"repo":{"id":1280956645,"name":"backtesting_execution_simulator","repo":"SarthakDalmia1/backtesting_execution_simulator","description":null,"createdAt":"2026-06-26T05:09:12Z","updatedAt":"2026-09-22T05:56:41Z","pushedAt":"2026-09-22T05:56:37Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+
+=== 34-1 QuantCore ungh
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/SLMolenaar/QuantCore
+UTC= 2026-09-22T11:30:13Z  rc=28  code=000  time_s=25.01
+BODY200= curl: (28) Connection timed out after 25002 milliseconds
+
+=== 34-1b QuantCore ungh retry
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/SLMolenaar/QuantCore
+UTC= 2026-09-22T11:30:19Z  rc=0  code=200  time_s=0.80
+BODY200= {"repo":{"id":1089883891,"name":"QuantCore","repo":"SLMolenaar/QuantCore","description":"C++ backtesting engine with a real order book, priority-queue event loop, and Python bindings.","createdAt":"2025-11-05T00:12:16Z","updatedAt":"2026-09-12T12:41:16Z","pushedAt":"2026-09-12T12:41:12Z","stars":1,"watchers":0,"forks":0,"defaultBranch":"master"}}
+
+=== 33-2 SarthakDalmia1 README
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/SarthakDalmia1/backtesting_execution_simulator/main/README.md
+UTC= 2026-09-22T11:30:19Z  rc=0  code=200  time_s=0.36
+BODY200= # Low-Latency Backtesting & Execution Simulator
+
+A high-performance, tick-level backtesting engine for quantitative trading strategies, built with C++20 and Python bindings.
+
+![C++](https://img.shields.io/badge/C++-20-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.8+-green.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+## Features
+
+- **Limit Order Book Simulation**: Full price-time priority matching engine
+- **Order Types**: Market, Limit, IOC (Immediate or Cancel), FOK (Fill or Kill), GTC
+- **Slippage & Latency Modeling**: Configurable market impact and network latency
+- **Transaction Costs**: Maker/taker fees, tiered pricing, exchange costs
+- **Position & P&L Tracking**: Real-time position management with performance analytics
+- **Event-Driven Architecture**: Time-ordered event queue with nanosecond precision
+- **Pluggable Strategies**: VWAP, Mean Reversion, Market Making, Momentum
+- **Python Bindings**: Full pybind11 integration for strategy development
+- **Memory Pooling**: Pre-allocated memory for zero-allocation hot paths
+- **Lock-Free Queues**: Optional SPSC queues for multi-threaded scenarios
+
+## Performance Target
+
+**Replay 1 day of ticks 
+
+=== 33-3 SarthakDalmia1 files
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/SarthakDalmia1/backtesting_execution_simulator/files/main
+UTC= 2026-09-22T11:30:26Z  rc=0  code=200  time_s=0.68
+BODY200= {"meta":{"sha":"a0a5fcd2d0c033c5853dcef5187a717bc341bc10"},"files":[{"path":".gitignore","mode":"100644","sha":"cda45700ead1ba755be58581eec0eeba703fe747","size":261},{"path":"CMakeLists.txt","mode":"100644","sha":"de354b55b6a36dcad3d7f9c4f699907ebc6a9dda","size":2830},{"path":"DESIGN.md","mode":"100644","sha":"5290574982de5678666d80381fbcc047ead0b6fa","size":55841},{"path":"FINANCE_GUIDE.md","mode":"100644","sha":"3c73387b685f15b1f3018d09345f41e74139394a","size":26761},{"path":"LICENSE","mode":"100644","sha":"21fb2070e3eaa4da722d3e08c1c92d27fb36717e","size":1071},{"path":"README.md","mode":"100644","sha":"8190b313b75888823bf9cc815c1c391b895ae2d1","size":12107},{"path":"benchmarks/results.md","mode":"100644","sha":"8f1845376bf51d271b5e2f78f59d85ef732e225c","size":3070},{"path":"cpp/analytics/markout.cpp","mode":"100644","sha":"72dd61074ac6e09c08ae6786ec5ad227eae24594","size":2868},{"path":"cpp/analytics/markout.hpp","mode":"100644","sha":"419429ed6286b14e6022bb9ade9ed8ca4fea09ca","size":4345},{"path":"cpp/benchmarks/benchmark_main.cpp","mode":"100644","sha":"841f5b623ea14b94981daf38c9a85f3f6021cd98","size":12746},{"path":"cpp/core/memory_pool.cpp","mode":"100644","sha":"7ebb23d80fb2
+
+=== 34-2 QuantCore files
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/SLMolenaar/QuantCore/files/master
+UTC= 2026-09-22T11:30:27Z  rc=0  code=200  time_s=0.70
+BODY200= {"meta":{"sha":"2256628c259e49fc09841bb607e82f97a1a9eee1"},"files":[{"path":".github/workflows/coverage.yml","mode":"100644","sha":"9f76c72d8edcb3dddbbe5e48d80f08dc71b58652","size":1501},{"path":".github/workflows/publish.yml","mode":"100644","sha":"e77c55dc721390472dd8894052c13018e5cb934b","size":2341},{"path":"CMakeLists.txt","mode":"100644","sha":"aa22b250a9bf6328d5c5ef1d7d354d5b6201887b","size":3558},{"path":"CONTRIBUTING.md","mode":"100644","sha":"f4176c577451acabc971636983d92a622042e21d","size":650},{"path":"LICENSE","mode":"100644","sha":"5df67e9f099e0363eafe6e516e1e59b4e41dda9e","size":1073},{"path":"README.md","mode":"100644","sha":"c616d8d52b13a6125b4efcf7188445ac33254b3c","size":6315},{"path":"benchmarks/RESULTS.md","mode":"100644","sha":"06e609dd5b680906f3e499e25a918d858870fd38","size":11322},{"path":"benchmarks/bench_backtest_engine.cpp","mode":"100644","sha":"fd98e04e111b258fe7877debda363cda61051c3a","size":15634},{"path":"benchmarks/bench_python.py","mode":"100644","sha":"9b87834e14528a2937a350cbc4445400b3870523","size":12472},{"path":"benchmarks/bench_tick_data.cpp","mode":"100644","sha":"449e3b02e4f073c7ba913fc545574973cffa852d","size":14829},{"path":"benchmarks/be
+
+=== 34-3 QuantCore pypi
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://pypi.org/pypi/quantcore/json
+UTC= 2026-09-22T11:30:54Z  rc=0  code=200  time_s=0.09
+BODY200= {"info":{"author":null,"author_email":"Stefaan Molenaar <StefaanLMolenaar@gmail.com>","bugtrack_url":null,"classifiers":["Development Status :: 3 - Alpha","Intended Audience :: Developers","Intended Audience :: Financial and Insurance Industry","Programming Language :: C++","Programming Language :: Python :: 3","Programming Language :: Python :: 3.10","Programming Language :: Python :: 3.11","Programming Language :: Python :: 3.12","Programming Language :: Python :: 3.13","Topic :: Office/Business :: Financial :: Investment"],"description":"# QuantCore
+
+![PyPI](https://img.shields.io/pypi/v/quantcore)
+![Build](https://github.com/SLMolenaar/quantcore/actions/workflows/coverage.yml/badge.svg)
+![C++](https://img.shields.io/badge/C%2B%2B-20-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+High-performance backtesting engine written in C++20 with a Python research interface.
+
+---
+
+## Overview
+
+QuantCore is an event-driven backtester built around an enhanced version of [my limit order book simulator](https://github.com/SLMolenaar/orderbook-simulator-cpp). Market events are processed chronologically through a priority queue, so there's no look-ahead bias and 
+
+=== 35-1 Optimal-Execution ungh
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-
+UTC= 2026-09-22T11:30:55Z  rc=0  code=200  time_s=0.88
+BODY200= {"repo":{"id":1342919967,"name":"Optimal-Execution-And-Market-Impact-Simulator-","repo":"thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-","description":"Hi","createdAt":"2026-08-22T15:11:30Z","updatedAt":"2026-08-22T15:39:00Z","pushedAt":"2026-08-22T15:35:39Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+
+=== 36-1 Market-Impact-Model ungh
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/shubhamcodez/Market-Impact-Model
+UTC= 2026-09-22T11:31:06Z  rc=35  code=000  time_s=11.28
+BODY200= curl: (35) Recv failure: Connection reset by peer
+
+version= 1.0.0
+license= MIT License
+         
+         Copyright (c) 2026 Stefaan Molenaar
+         
+         Permission is hereby granted, free of charge, to any person obtaining a copy
+         of this software and associated documentation files (the "Software"), to deal
+         in the Software without restriction, including without limitation the rights
+         to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+         copies of the Software, and to permit persons to whom the Software is
+         furnished to do so, subject to the following conditions:
+         
+         The above copyright notice and this permission notice shall be included in all
+         copies or substantial portions of the Software.
+         
+         THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+         IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+         FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+         AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+         LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+         SOFTWARE.
+          None
+requires_python= >=3.8
+requires_dist= ['numpy>=1.24.0', 'pandas>=2.0.0', 'pytest>=7.0.0; extra == "dev"', 'pytest-cov>=4.0.0; extra == "dev"', 'matplotlib>=3.7.0; extra == "viz"', 'seaborn>=0.12.0; extra == "viz"']
+home= {'Bug Reports': 'https://github.com/SLMolenaar/quantcore/issues', 'Homepage': 'https://github.com/SLMolenaar/quantcore', 'Source': 'https://github.com/SLMolenaar/quantcore'}
+n_releases= 24
+first= 0.1.0 ['2026-03-10T16:28:20']
+last= 1.0.0 ['2026-03-27T23:21:36']
+files_last= ['quantcore-1.0.0-cp310-cp310-macosx_15_0_arm64.whl', 'quantcore-1.0.0-cp310-cp310-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl', 'quantcore-1.0.0-cp310-cp310-win_amd64.whl', 'quantcore-1.0.0-cp311-cp311-macosx_15_0_arm64.whl', 'quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl', 'quantcore-1.0.0-cp311-cp311-win_amd64.whl', 'quantcore-1.0.0-cp312-cp312-macosx_15_0_arm64.whl', 'quantcore-1.0.0-cp312-cp312-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl', 'quantcore-1.0.0-cp312-cp312-win_amd64.whl', 'quantcore-1.0.0-cp39-cp39-macosx_15_0_arm64.whl', 'quantcore-1.0.0-cp39-cp39-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl', 'quantcore-1.0.0-cp39-cp39-win_amd64.whl']
+=== 34-4 QuantCore 隔離venv へ導入
+CMD= python3 -m venv v34 && ./v34/bin/pip download --no-deps --dest dl34 quantcore && ./v34/bin/pip install -q quantcore
+UTC= 2026-09-22T11:31Z  rc=0  code=n/a
+INSTALL_RC=0
+INSTALL_SEC= 7.28
+PIPCHECK= No broken requirements found.  PIPCHECK_RC=0
+DEPS= numpy==2.4.6 pandas==3.0.6 python-dateutil==2.9.0.post0 quantcore==1.0.0 six==1.17.0
+WHEEL_N_FILES= 18
+WHEEL_BINARY= quantcore/_core.cpython-311-x86_64-linux-gnu.so 2813232
+SUSPECT_HITS= 0
+URLS_IN_SO= ['https://gcc.gnu.org/bugs/']  N_URLS= 1
+VERSION= 1.0.0
+
+=== 34-5 QuantCore 最小実行(合成ティック 2000 件)
+CMD= timeout 180 ./v34/bin/python run34.py
+UTC= 2026-09-22T11:36Z  rc=0  PROC_RC=0
+RUN_RET= 97232.81357638627
+POSITION= -5.106365811235699
+REALIZED_PNL= -2758.863047341423
+TOTAL_PNL= -2750.794989359671
+TOTAL_FEES= 0.0
+TRADE_PNLS= [-13.559584243781877, -0.7138941719737719, -14.497681332375299, -14.301616511087417, -14.08570180441523, -1.214845298276316]
+BEST_BID= 105.25 BEST_ASK= 108.41 MID= 106.83
+ELAPSED_SEC= 0.01
+
+=== 34-6 QuantCore 同じ入力で打ち直し 3 回(再現性)
+CMD= for i in 1 2 3; do timeout 120 ./v34/bin/python run34.py; done
+UTC= 2026-09-22T11:37Z  rc=0
+RUN1_RET= 97156.51464644582  POSITION= -4.608950004704314  REALIZED_PNL= -2835.97276504651
+RUN2_RET= 97344.41882448811  POSITION= -0.07757504269686599  REALIZED_PNL= -2655.4547281923014
+RUN3_RET= 97124.6449439495  POSITION= -0.7306349925727904  REALIZED_PNL= -2874.1641210126018
+NOTE= 同一入力で 4 つの異なる値。決定的でない。
+
+=== 34-7 QuantCore 終了時の異常(1 回目のみ観測)
+OUT= ../../../../../libstdc++-v3/src/c++17/memory_resource.cc:1032: void std::pmr::__pool_resource::deallocate(void*, std::size_t, std::size_t): Assertion 'it != _M_unpooled.end() && it->pointer == p' failed.
+NOTE= python 側の TypeError で途中終了した回に出た。正常終了の回では出ていない。
+
+=== 36-ungh try1
+CMD= curl https://ungh.cc/repos/shubhamcodez/Market-Impact-Model
+UTC= 2026-09-22T11:33:19Z rc=35 code=000
+BODY200= curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to ungh.cc:443 
+
+HTTPCODE=000
+
+=== 36-ungh try2
+CMD= curl https://ungh.cc/repos/shubhamcodez/Market-Impact-Model
+UTC= 2026-09-22T11:33:19Z rc=0 code=200
+BODY200= {"repo":{"id":776544214,"name":"Market-Impact-Model","repo":"shubhamcodez/Market-Impact-Model","description":"The model focuses on predicting the impact of trading activities on stock prices using order flow imbalance, trading volume and price change","createdAt":"2024-03-23T19:53:46Z","updatedAt":"2026-06-24T15:17:29Z","pushedAt":"2024-05-20T19:56:15Z","stars":38,"watchers":2,"forks":10,"defaultBranch":"main"}}
+HTTPCODE=200
+
+=== 37-ungh try1
+CMD= curl https://ungh.cc/repos/ThePredictiveDev/Automated-Financial-Market-Trading-System
+UTC= 2026-09-22T11:33:20Z rc=0 code=200
+BODY200= {"repo":{"id":847135564,"name":"Automated-Financial-Market-Trading-System","repo":"ThePredictiveDev/Automated-Financial-Market-Trading-System","description":"This project is a Python-based trading simulator that allows users to simulate trading strategies, manage an order book, and interact with a mock trading environment using various algorithmic traders. The simulator includes a FIX (Financial Information eXchange) protocol handler, a market-making algorithm, and synthetic liquidity generation.","createdAt":"2024-08-25T00:31:23Z","updatedAt":"2026-09-19T20:59:03Z","pushedAt":"2026-08-14T16:45:22Z","stars":38,"watchers":4,"forks":13,"defaultBranch":"main"}}
+HTTPCODE=200
+
+=== 38-ungh try1
+CMD= curl https://ungh.cc/repos/microsoft/MarS
+UTC= 2026-09-22T11:33:21Z rc=0 code=200
+BODY200= {"repo":{"id":879626601,"name":"MarS","repo":"microsoft/MarS","description":"MarS: a Financial Market Simulation Engine Powered by Generative Foundation Model","createdAt":"2024-10-28T09:05:46Z","updatedAt":"2026-09-21T07:17:58Z","pushedAt":"2026-08-31T09:30:00Z","stars":1791,"watchers":26,"forks":193,"defaultBranch":"main"}}
+HTTPCODE=200
+
+=== 39-ungh try1
+CMD= curl https://ungh.cc/repos/paperswithbacktest/awesome-systematic-trading
+UTC= 2026-09-22T11:33:21Z rc=0 code=200
+BODY200= {"repo":{"id":455982203,"name":"awesome-systematic-trading","repo":"paperswithbacktest/awesome-systematic-trading","description":"A curated list of awesome libraries, packages, strategies, books, blogs, tutorials for systematic trading.","createdAt":"2022-02-05T20:48:52Z","updatedAt":"2026-09-22T08:55:06Z","pushedAt":"2026-09-03T09:13:55Z","stars":14389,"watchers":192,"forks":1732,"defaultBranch":"main"}}
+HTTPCODE=200
+
+=== 42-ungh try1
+CMD= curl https://ungh.cc/repos/shiyu-coder/Kronos
+UTC= 2026-09-22T11:33:32Z rc=35 code=000
+BODY200= curl: (35) Recv failure: Connection reset by peer
+
+HTTPCODE=000
+
+=== 42-ungh try2
+CMD= curl https://ungh.cc/repos/shiyu-coder/Kronos
+UTC= 2026-09-22T11:33:33Z rc=0 code=200
+BODY200= {"repo":{"id":1011567289,"name":"Kronos","repo":"shiyu-coder/Kronos","description":"Kronos: A Foundation Model for the Language of Financial Markets","createdAt":"2025-07-01T02:54:32Z","updatedAt":"2026-09-22T10:34:24Z","pushedAt":"2026-04-13T12:38:49Z","stars":39336,"watchers":350,"forks":6553,"defaultBranch":"master"}}
+HTTPCODE=200
+
+=== 35-2 Optimal-Execution files
+CMD= curl https://ungh.cc/repos/thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-/files/main
+UTC= 2026-09-22T11:34:11Z rc=0 code=200
+BODY200= {"meta":{"sha":"794fa647f8c8168a6f30338ea0987d26124d6101"},"files":[{"path":".gitignore","mode":"100644","sha":"ef66affa492879a5adcffbdbfafd16b3384504e6","size":272},{"path":"README.md","mode":"100644","sha":"a65594607c365680a310434b4929675c7b063149","size":11538},{"path":"data","mode":"100644","sha":"8b137891791fe96927ad78e64b0aad7bded08bdc","size":1},{"path":"main.py","mode":"100644","sha":"0510afe765314293e7a2ff8d2fe1df2c58b05944","size":5850},{"path":"outputs","mode":"100644","sha":"32998cd78b02d60994f92a8be42330c79d00f66d","size":1139},{"path":"requirements.txt","mode":"100644","sha":"3c515d01c8776ab61f37030b7054b98b96aec1b7","size":92},{"path":"src __init__.py","mode":"100644","sha":"f5dcc1be8ea73a3148d68be1aa8bc2af59b887f1","size":205},{"path":"src execution.py","mode":"100644","sha":"3042d7d388aec920fc346c45958b3bb0ee181628","size":2318},{"path":"src impact.py","mode":"100644","s
+
+=== 37-2 Automated-FMTS README
+CMD= curl https://raw.githubusercontent.com/ThePredictiveDev/Automated-Financial-Market-Trading-System/main/README.md
+UTC= 2026-09-22T11:34:11Z rc=0 code=200
+BODY200= # 📈 Automated Financial Trading System
+
+<div align="center">
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-109%20passing-brightgreen.svg)](tests)
+[![Version](https://img.shields.io/badge/version-2.2.0-blueviolet.svg)](pyproject.toml)
+[![Contributions](https://img.shields.io/badge/Contributions-Welcome-orange.svg)](CONTRIBUTING.md)
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20,25&height=140&section=header&text=Trade.%20Simulate.%20Understand.&fontSize=38&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=A%20full%20stock%20exchange%2C%20built%20from%20scratch%2C%20that%20runs%20on%20your%20laptop&descAlignY=58&descAlign=50" width="100%"/>
+
+</div>
+
+## What is th
+
+=== 50-1 AlgoTest pricing
+CMD= curl https://algotest.in/pricing/
+UTC= 2026-09-22T11:34:46Z rc=0 code=200
+BODY200=  {"props":{"pageProps":{}},"page":"/pricing","query":{},"buildId":"o7ZRY-4XTZX_vhfF_nPnA","nextExport":true,"autoExport":true,"isFallback":false,"scriptLoader":[{"strategy":"lazyOnload","defer":true,"src":"https://instant.page/5.1.1","type":"module","integrity":"sha384-MWfCL6g1OTGsbSwfuMHc8+8J2u71/LA8dzlIN3ycajckxuZZmF+DNjdm7O6H3PSq"},{"strategy":"lazyOnload","src":"/gtag/js?id=G-MS6Z4BR"},{"strategy":"lazyOnload","id":"google-gtag-init","children":"\n window.dataLayer = window.dataLayer || [];\n window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};\n window.gtag('js', ne
+
+=== 45-1 ForexTester
+CMD= curl https://forextester.com/
+UTC= 2026-09-22T11:34:47Z rc=0 code=403
+BODY200=  Just a moment... *{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width Enable JavaScript and cookies to continue (function(){window._cf_chl_opt = {cFPWv: 'g',cH: 'T_VzgiIR2LwIQQAcz0X9avYttfd7UHoeGqmM8
+
+=== 45-2 ForexTester UA替え
+CMD= curl -A Mozilla... https://forextester.com/buy
+UTC= 2026-09-22T11:35:21Z rc=0 code=403
+BODY200=  Just a moment... *{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width Enable JavaScript and cookies
+
+=== 45-3 ForexTester archive.org
+CMD= curl -A Mozilla... http://archive.org/wayback/available?url=forextester.com/buy
+UTC= 2026-09-22T11:35:29Z rc=0 code=200
+BODY200= {"url": "forextester.com/buy", "archived_snapshots": {}}
+HTTPCODE=200
+
+=== 46-1 MT4練習君 公式
+CMD= curl -A Mozilla... https://www.gogojungle.co.jp/tools/1
+UTC= 2026-09-22T11:35:30Z rc=0 code=404
+BODY200=  
+ 
+ 
+ エラー404（見つかりません） @charset "UTF-8";
+/*!
+ * Bootstrap v3.3.7 (http://getbootstrap.com)
+ * Copyright 2011-2016 Twitter, Inc.
+ * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+ */
+/*! normalize.css v3.0.3 | MIT License | github.com/necolas/normalize.css */html{font-family:sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}body{margin:0}article,aside,details,figcaption,figure,footer,header,hgroup,main,menu,nav,section,summary{d
+
+=== 45-4 ForexTester wayback直
+CMD= curl https://web.archive.org/web/2026/https://forextester.com/buy
+UTC= 2026-09-22T11:35:42Z rc=0 code=404
+BODY200=  
+ 
+ 
+ Wayback Machine 
+ 
+ /*
+ @licstart The following is the entire license notice for the JavaScript code in this page.
+ Copyright (C) 2020 Internet Archive
+ The JavaScript code in this page is free software: you can
+ redistribute it and/or modify it under the terms of the GNU Affero
+ General Public License as published by the Free Software
+ Foundation, either version 3 of the License, or (at your option)
+ any later version. The code is distributed WITHOUT ANY WARRANTY;
+ without even the impli
+
+=== 45-5 ForexTester www無し top
+CMD= curl https://forextester.com/
+UTC= 2026-09-22T11:35:42Z rc=0 code=403
+BODY200=  Just a moment... *{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width Enable JavaScript and cookies
+
+=== 34-8 QuantCore pypistats try1
+CMD= curl https://pypistats.org/api/packages/quantcore/recent
+UTC= 2026-09-22T11:36:15Z rc=0 code=429
+BODY200= <a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+HTTPCODE=429
+
+=== 34-8 QuantCore pypistats try2
+CMD= curl https://pypistats.org/api/packages/quantcore/recent
+UTC= 2026-09-22T11:36:16Z rc=0 code=429
+BODY200= <a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+HTTPCODE=429
+
+=== 34-9 QuantCore contributors try1
+CMD= curl https://ungh.cc/repos/SLMolenaar/quantcore/contributors
+UTC= 2026-09-22T11:36:16Z rc=0 code=200
+BODY200= {"contributors":[{"id":188557515,"username":"SLMolenaar","contributions":228}]}
+HTTPCODE=200
+
+=== 34-10 QuantCore osv脆弱性 try1
+CMD= curl https://api.osv.dev/v1/query
+UTC= 2026-09-22T11:36:17Z rc=0 code=405
+BODY200= {"message":"The current request is matched to the defined url template \"/v1/query\" but its http method is not allowed","code":405}
+
+HTTPCODE=405
+
+=== 34-10 QuantCore osv脆弱性 try2
+CMD= curl https://api.osv.dev/v1/query
+UTC= 2026-09-22T11:36:17Z rc=0 code=405
+BODY200= {"code":405,"message":"The current request is matched to the defined url template \"/v1/query\" but its http method is not allowed"}
+
+HTTPCODE=405
+
+=== 34-11 QuantCore osv POST
+CMD= curl -X POST -d {package:{name:quantcore,ecosystem:PyPI}} https://api.osv.dev/v1/query
+UTC= 2026-09-22T11:36:26Z rc=0 code=200
+BODY200= {}
+HTTPCODE=200
+
+=== 34-12 QuantCore commits
+CMD= curl https://ungh.cc/repos/SLMolenaar/quantcore/commits/master
+UTC= 2026-09-22T11:36:26Z rc=0 code=404
+BODY200= contributions=228 (34-9 より)
+
+=== 34-13 週DL数 https://pypistats.org/api/packages/quantcore/recent
+CMD= curl https://pypistats.org/api/packages/quantcore/recent
+UTC= 2026-09-22T11:36:34Z rc=0 code=429
+BODY200= <a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+HTTPCODE=429
+
+=== 34-13 週DL数 https://api.pepy.tech/api/v2/projects/quantcore
+CMD= curl https://api.pepy.tech/api/v2/projects/quantcore
+UTC= 2026-09-22T11:36:34Z rc=0 code=401
+BODY200= {"message":"No API Key provided"}
+HTTPCODE=401
+
+=== 34-14 QuantCore 公開名の列挙(導入直後に打ったもの)
+CMD= ./v34/bin/python -c "import quantcore;print(dir(quantcore))"
+UTC= 2026-09-22T11:32Z rc=0 code=n/a
+PUBLIC= ['BacktestConfig', 'BacktestEngine', 'BacktestResults', 'BarData', 'BuyAndHold', 'CSVDataLoader', 'CorporateActionsAdjuster', 'DividendEvent', 'EqualWeight', 'ExecutionConfig', 'ExecutionEngine', 'FillEvent', 'FixedPercentage', 'FixedShares', 'GridSearchOptimizer', 'KellyCriterion', 'MarketDataEvent', 'MeanReversion', 'OptimizationResult', 'PairsTrading', 'ParameterGrid', 'ParquetDataLoader', 'PortfolioContext', 'PositionCalculator', 'PositionSizer', 'PositionSizingContext', 'RiskBased', 'RiskCheckResponse', 'RiskCheckResult', 'RiskLimits', 'RiskManager', 'SMACrossover', 'Side', 'SignalEvent', 'SignalType', 'SplitEvent', 'Strategy', 'TickData', 'TickDataLoader', 'TickParquetLoader', 'TradingCalendar', 'VolatilityTargeting', 'WalkForwardAnalyzer', 'WalkForwardResult', 'aggregate_ticks_to_bars', 'create_backtest', 'load_csv_data', 'load_parquet_data', 'load_tick_csv', 'load_tick_parquet', 'monte_carlo_validation', 'run_backtest', 'run_tick_backtest']
+NOTE= 取引所の名前・接続・鍵・発注に当たる公開名は 1 つも無い。
+
+=== 34-15 QuantCore 入力の型と設定の欄
+CMD= ./v34/bin/python -c "print(q.TickData.__init__.__doc__, q.ExecutionConfig fields, q.BacktestEngine methods)"
+UTC= 2026-09-22T11:33Z rc=0 code=n/a
+TICKDATA_INIT= TickData(symbol: str, timestamp_ns: int, price: float, quantity: float, aggressor_side: Side = Side.BUY)
+EXECCONFIG_FIELDS= ['latency_ns', 'maker_fee', 'slippage_pct', 'taker_fee']
+ENGINE_METHODS= ['add_data','add_tick_data','configure_market_maker','get_equity_curve','get_execution_engine','get_portfolio_context','get_position_sizer','get_risk_limits','get_risk_manager','get_timestamps','get_total_fees','get_total_pnl','get_trade_pnls','has_tick_data','run','set_bars_per_year','set_equity_snapshot_interval','set_mm_refresh_interval','set_position_sizer','set_risk_limits','set_strategy','set_volatility_params']
+MM_SIG= configure_market_maker(levels: int, spread: float, depth: float)
+NOTE= 時刻は timestamp_ns(ナノ秒の整数)。約定の向き aggressor_side を入力の型が持つ。
+
+=== 34-16 QuantCore 板の待ち行列(原文)
+CMD= curl https://raw.githubusercontent.com/SLMolenaar/QuantCore/master/cpp/orderbook/Orderbook.h
+UTC= 2026-09-22T11:30Z rc=0 code=200
+SRC= std::map<Price, OrderPointers, std::greater<Price>> bids_;  std::map<Price, OrderPointers, std::less<Price>> asks_;  std::unordered_map<OrderId, OrderEntry> orders_;
+NOTE= 価格ごとに注文の並び(OrderPointers)を持つ。価格・時間の優先。
+
+=== 31-9 backtestlob backtest.cpp(原文。上で全文を読んだものの記録)
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/Ros522/backtestlob/master/src/backtest.cpp
+UTC= 2026-09-22T11:42:05Z  rc=0  code=200  time_s=0.39
+BODY200= ﻿#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+namespace py = pybind11;
+
+class BackTestEnv {
+public:
+	enum Side {
+		UNDEF = -1,
+		BUY = 0,
+		SELL = 1
+	};
+
+	enum OrderType {
+		LIMIT = 0,
+		MARKET = 1
+	};
+
+	struct Order {
+		OrderType type;
+		Side side;
+		float size;
+		float price;
+	};
+
+	struct Position {
+		Side side;
+		float size;
+		float price;
+	};
+private:
+	Position position = { Side::UNDEF,0,0 };
+	std::map<long,Order> orders;
+	long seq = 0;
+
+public:
+	BackTestEnv() {
+	}
+
+	Side get_position_side() {
+		return this->position.side;
+	}
+	float get_position_size() {
+		return this->position.size;
+	}
+	float get_position_price() {
+		return this->position.price;
+	}
+	std::map<long, Order> get_orders() {
+		return orders;
+	}
+
+	float add_position(Order neworder) {
+		float profit = 0;
+		if (this->position.side >= Side::BUY) {
+			if (neworder.side == this->position.side) {
+				float sum_size = this->position.size + neworder.size;
+				float newprice = (this->position.size * this->position.price + neworder.size*neworder.price) / sum_size;
+
+				Position newposion = { neworder.side, sum_size, newprice };
+				this->position = newposion;
+			}
+			else if (neworder.side == Side::BUY && this->
+
+=== 32-6 flashalpha SPEC.md
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/FlashAlpha-lab/flashalpha-fill-simulator/master/docs/SPEC.md
+UTC= 2026-09-22T11:42:05Z  rc=0  code=200  time_s=0.43
+BODY200= # Fill Simulator — Spec
+
+Public behavioral contract for `flashalpha-fill-simulator`. Written for someone reading it cold - to audit, port, or embed it in another backtest engine.
+
+---
+
+## 0. Purpose
+
+Most options-credit-spread backtests fill at mid (or at bid/ask without queueing). Both lie. This simulator is what we use to model **realistic limit-order execution against a 1-min option chain timeseries**, including:
+
+- Limit posting at a configurable price model
+- Concurrent multi-candidate ranking with first-fill-wins
+- Stale-quote rejection
+- Patient-then-cross exit fills
+- Multi-expiry timeline merging (for cross-tenor candidate pools)
+- Deterministic random tiebreak (to defend against EV-oracle leakage)
+
+The simulator is **side-effect free** within a single trade attempt. The per-bar primitive reads a caller-supplied chain snapshot; the loop wrapper reads through a `ChainProvider` such as the in-memory or CSV provider. Nothing else mutates.
+
+---
+
+## 1. Data contract
+
+### Input — option chain (per (ts, expiry) tuple)
+
+```sql
+SELECT ts, strike, bid, ask
+FROM options_<symbol>
+WHERE ts BETWEEN <start> AND <deadline>
+  AND right = <right>
+  AND expiration = <expiry>
+  AND strike
+
+=== 33-4 SarthakDalmia1 orderbook.hpp
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/SarthakDalmia1/backtesting_execution_simulator/main/cpp/orderbook/orderbook.hpp
+UTC= 2026-09-22T11:42:05Z  rc=0  code=200  time_s=0.16
+BODY200= #pragma once
+
+#include "core/types.hpp"
+#include "core/memory_pool.hpp"
+#include "orderbook/order.hpp"
+#include <map>
+#include <unordered_map>
+#include <vector>
+#include <functional>
+#include <algorithm>
+
+namespace backtest {
+
+// ============================================================================
+// Price Level - All orders at a single price
+// ============================================================================
+class PriceLevel {
+public:
+    explicit PriceLevel(Price price) 
+        : price_(price), total_quantity_(), order_count_(0),
+          head_(nullptr), tail_(nullptr) {}
+    
+    Price price() const { return price_; }
+    Quantity total_quantity() const { return total_quantity_; }
+    int order_count() const { return order_count_; }
+    bool empty() const { return order_count_ == 0; }
+    
+    // Add order to this price level (FIFO)
+    void add_order(Order* order);
+
+    // Remove order from this price level
+    void remove_order(Order* order);
+    
+    // Get first order (for matching)
+    Order* front() const { return head_; }
+    
+    // Update quantity after partial fill
+    void update_quantity(Quantity delta) {
+        total_quantity_ -= delta;
+    }
+
+=== 38-2 MarS README
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/microsoft/MarS/main/README.md
+UTC= 2026-09-22T11:42:05Z  rc=0  code=200  time_s=0.19
+BODY200= 
+
+<h3 align="center">
+    <img src="doc/img/MarS_logo.png" alt="MarS Logo" style="width: 70%;"><br>
+    <a href="https://arxiv.org/abs/2409.07486" target="_blank">📄 Paper</a> + <a href="https://mars-lmm.github.io/" target="_blank">🏠️ Project Website</a>
+</h3>
+
+<p align="center">
+    <img src="https://img.shields.io/badge/build-pass-green" alt="build">
+    <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
+    <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="version">
+    <img src="https://img.shields.io/badge/python-3.11%20|%203.12-blue" alt="python">
+    <img src="https://img.shields.io/badge/platform-linux%20-lightgrey" alt="platform">
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome">
+    <img src="https://img.shields.io/badge/docs-latest-brightgreen" alt="documentation">
+</p>
+
+
+## 📢 Announcements
+
+| **Event**                   | **Description**                                                                                              |
+|-----------------------------|-------------------------------------------------------------------------------------------------------------|
+| 📦 Code, Tools & Mo
+
+=== 39-2 awesome README
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md
+UTC= 2026-09-22T11:42:06Z  rc=0  code=200  time_s=0.20
+BODY200= <div align="center">
+  <img src="static/images/awesome-systematic-trading.jpeg" height=200 alt=""/>
+  <h1>Awesome Systematic Trading</h1>
+</div>
+<div align=center><img src="https://awesome.re/badge.svg" /></div>
+
+[希望阅读中文版？点我](./README_zh.md)<br>
+[日本語版はこちら](./README_ja.md)
+
+We are collecting a list of resources papers, softwares, books, articles for finding, developing, and running systematic trading (quantitative trading) strategies.
+
+<!-- omit in toc -->
+### What will you find here?
+
+- [136 libraries and packages](#libraries-and-packages) for research and live trading, with dead and dormant projects flagged
+- [Strategies](#strategies) from published papers, with the Sharpe ratio each one produced when it was coded and run
+- [55 books](#books) for beginners and professionals
+- [22 videos](#videos) and interviews
+- And also some [blogs](#blogs) and [courses](#courses)
+
+<!-- omit in toc -->
+### What the replication record looks like
+
+We have coded and run 4,843 of these papers over their own full history. Some numbers worth
+knowing before you pick one to implement:
+
+- The median replication returns a **Sharpe ratio of 0.37**, and **48% clear a t-st
+
+=== 34-17 QuantCore Orderbook.h
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/SLMolenaar/QuantCore/master/cpp/orderbook/Orderbook.h
+UTC= 2026-09-22T11:42:11Z  rc=0  code=200  time_s=0.18
+BODY200= #pragma once
+
+#include <map>
+#include <unordered_map>
+#include <algorithm>
+#include <numeric>
+#include <chrono>
+#include <vector>
+#include <optional>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include "Order.h"
+#include "OrderModify.h"
+#include "Trade.h"
+#include "LevelInfo.h"
+#include "Types.h"
+#include "Ordertype.h"
+#include "Constants.h"
+#include "MarketDataFeed.h"
+#include "ExchangeRules.h"
+
+class Orderbook {
+private:
+    struct OrderEntry {
+        OrderPointer order_{nullptr};
+        std::size_t  location_; // index into the price level vector
+    };
+
+    std::map<Price, OrderPointers, std::greater<Price>> bids_;
+    std::map<Price, OrderPointers, std::less<Price>>    asks_;
+    std::unordered_map<OrderId, OrderEntry>             orders_;
+
+    std::chrono::system_clock::time_point lastDayReset_;
+    std::chrono::hours dayResetHour_{15};
+    int                dayResetMinute_{59};
+
+    MarketDataStats stats_;
+    uint64_t        lastSequenceNumber_ = 0;
+    bool            isInitialized_      = false;
+
+    ExchangeRules exchangeRules_;
+
+    bool CanMatch(Side side, Price price) const {
+        if (side == Side::Buy) {
+            if (asks_.empty()) return fals
+
