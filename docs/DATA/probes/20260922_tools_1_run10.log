@@ -1,0 +1,642 @@
+=== 区分1 10回目 生ログ 2026-09-22 ===
+
+--- [1] 開始時刻と空き ---
+2026-09-22T10:09:21Z
+/dev/vda        252G   26G   12G  70% /
+rc=0
+
+--- [2] 既存の pst 作業木の中身(run6 の残り)---
+3.6M	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/.git
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/syscore
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysdata
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysobjects
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysquant
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems
+__init__.py
+attenuate_vol
+basic
+dynamic_small_system_optimise
+example
+futures_chapter15
+rob_system
+rules
+scalper
+static_small_system_optimise
+workhorse
+rc=0
+
+--- [3] hourly_limit_orders.py の所在(git ls-tree で作業木に取り出さずに探す)---
+sysexecution/algos/algo_limit_orders.py
+systems/accounts/order_simulator/hourly_limit_orders.py
+systems/provided/example/daily_with_order_simulation.py
+systems/provided/example/daily_with_order_simulation.yaml
+systems/provided/example/hourly_with_order_simulation.py
+rc=0
+--- sparse-checkout list ---
+syscore
+sysdata
+sysobjects
+sysquant
+systems
+rc=0
+
+--- [4] hourly の例と指値の注文模擬の本体(既に作業木に在る)---
+### systems/provided/example/hourly_with_order_simulation.py
+### THIS IS AN EXAMPLE OF HOW TO USE A PROPER ORDER SIMULATOR RATHER THAN VECTORISED
+###   P&L, FOR A SIMPLE TREND SYSTEM USING HOURLY DATA WITH MARKET ORDERS
+
+import matplotlib
+
+matplotlib.use("TkAgg")
+
+from syscore.constants import arg_not_supplied
+
+# from sysdata.sim.csv_futures_sim_data import csvFuturesSimData
+from sysdata.sim.db_futures_sim_data import dbFuturesSimData
+from sysdata.config.configdata import Config
+
+from systems.forecasting import Rules
+from systems.basesystem import System
+
+from systems.rawdata import RawData
+from systems.forecast_combine import ForecastCombine
+from systems.forecast_scale_cap import ForecastScaleCap
+from systems.positionsizing import PositionSizing
+from systems.portfolio import Portfolios
+from systems.accounts.order_simulator.hourly_market_orders import (
+    AccountWithOrderSimulatorForHourlyMarketOrders,
+)
+from systems.accounts.order_simulator.hourly_limit_orders import (
+    AccountWithOrderSimulatorForLimitOrders,
+)
+from systems.accounts.accounts_stage import Account
+
+
+def futures_system(
+    sim_data=arg_not_supplied,
+    use_limit_orders: bool = False,
+    use_vanilla_accounting: bool = False,
+    config_filename="systems.provided.example.hourly_with_order_simulator.yaml",
+):
+    if sim_data is arg_not_supplied:
+        sim_data = dbFuturesSimData()
+
+    config = Config(config_filename)
+    if use_vanilla_accounting:
+        account = Account()
+    elif use_limit_orders:
+        account = AccountWithOrderSimulatorForLimitOrders()
+    else:
+        account = AccountWithOrderSimulatorForHourlyMarketOrders()
+    system = System(
+        [
+            account,
+            Portfolios(),
+            PositionSizing(),
+            ForecastCombine(),
+            ForecastScaleCap(),
+            Rules(),
+            RawData(),
+        ],
+        sim_data,
+        config,
+    )
+
+    return system
+### head -60 systems/accounts/order_simulator/hourly_limit_orders.py
+import datetime
+from typing import Tuple, Callable
+
+import numpy as np
+
+
+from sysobjects.fills import Fill
+from systems.accounts.order_simulator.fills_and_orders import (
+    fill_list_of_simple_orders,
+    empty_list_of_orders_with_no_fills,
+    ListOfSimpleOrdersAndResultingFill,
+)
+from systems.accounts.order_simulator.simple_orders import (
+    ListOfSimpleOrdersWithDate,
+    SimpleOrderWithDate,
+)
+
+from systems.accounts.order_simulator.account_curve_order_simulator import (
+    AccountWithOrderSimulator,
+)
+from systems.accounts.order_simulator.pandl_order_simulator import (
+    DataAtIDXPoint,
+)
+from systems.accounts.order_simulator.hourly_market_orders import (
+    HourlyOrderSimulatorOfMarketOrders,
+)
+from systems.system_cache import diagnostic
+
+
+class HourlyOrderSimulatorOfLimitOrders(HourlyOrderSimulatorOfMarketOrders):
+    @property
+    def orders_fills_function(self) -> Callable:
+        return generate_order_and_fill_at_idx_point_for_limit_orders
+
+
+def generate_order_and_fill_at_idx_point_for_limit_orders(
+    current_position: int,
+    current_datetime: datetime.datetime,
+    data_for_idx: DataAtIDXPoint,
+) -> Tuple[ListOfSimpleOrdersWithDate, Fill]:
+    current_optimal_position = data_for_idx.current_optimal_position
+    if np.isnan(current_optimal_position):
+        quantity = 0
+    else:
+        quantity = round(current_optimal_position) - current_position
+
+    if quantity == 0:
+        notional_datetime_for_empty_fill = data_for_idx.next_datetime
+        return empty_list_of_orders_with_no_fills(
+            fill_datetime=notional_datetime_for_empty_fill
+        )
+
+    simple_order = SimpleOrderWithDate(
+        quantity=quantity,
+        submit_date=current_datetime,
+        limit_price=data_for_idx.current_price,
+    )
+    list_of_orders = ListOfSimpleOrdersWithDate([simple_order])
+    fill = fill_list_of_simple_orders(
+        list_of_orders=list_of_orders,
+rc=0
+
+--- [5] 指値の約定判定の本体 ---
+        list_of_orders=list_of_orders,
+        market_price=data_for_idx.next_price,
+        fill_datetime=data_for_idx.next_datetime,
+    )
+
+    return ListOfSimpleOrdersAndResultingFill(list_of_orders=list_of_orders, fill=fill)
+
+
+class AccountWithOrderSimulatorForLimitOrders(AccountWithOrderSimulator):
+    @diagnostic(not_pickable=True)
+    def get_order_simulator(
+        self, instrument_code, is_subsystem: bool
+    ) -> HourlyOrderSimulatorOfLimitOrders:
+        order_simulator = HourlyOrderSimulatorOfLimitOrders(
+            system_accounts_stage=self,
+            instrument_code=instrument_code,
+            is_subsystem=is_subsystem,
+        )
+        return order_simulator
+### fills_and_orders.py の fill_list_of_simple_orders と関連
+from collections import namedtuple
+import datetime
+from typing import Union
+
+
+from sysobjects.fills import Fill, ListOfFills, empty_fill
+from systems.accounts.order_simulator.simple_orders import (
+    ListOfSimpleOrders,
+    SimpleOrder,
+    SimpleOrderWithDate,
+    empty_list_of_orders_with_date,
+)
+
+
+def fill_list_of_simple_orders(
+    list_of_orders: ListOfSimpleOrders,
+    fill_datetime: datetime.datetime,
+    market_price: float,
+) -> Fill:
+    list_of_fills = [
+        fill_from_simple_order(
+            simple_order=simple_order,
+            fill_datetime=fill_datetime,
+            market_price=market_price,
+        )
+        for simple_order in list_of_orders
+    ]
+    list_of_fills = ListOfFills(list_of_fills)  ## will remove unfilled
+
+    if len(list_of_fills) == 0:
+        return empty_fill(fill_datetime)
+    elif len(list_of_fills) == 1:
+        return list_of_fills[0]
+    else:
+        raise Exception(
+            "List of orders %s has produced more than one fill %s!"
+            % (str(list_of_orders), str(list_of_orders))
+        )
+
+
+def fill_from_simple_order(
+    simple_order: SimpleOrder,
+    market_price: float,
+    fill_datetime: datetime.datetime,
+) -> Fill:
+    if simple_order.is_zero_order:
+        return empty_fill(fill_datetime)
+
+    elif simple_order.is_market_order:
+        fill = fill_from_simple_market_order(
+            simple_order,
+            market_price=market_price,
+            fill_datetime=fill_datetime,
+        )
+    else:
+        ## limit order
+        fill = fill_from_simple_limit_order(
+            simple_order, market_price=market_price, fill_datetime=fill_datetime
+        )
+
+    return fill
+
+
+def fill_from_simple_limit_order(
+    simple_order: Union[SimpleOrder, SimpleOrderWithDate],
+    market_price: float,
+    fill_datetime: datetime.datetime,
+) -> Fill:
+    limit_price = simple_order.limit_price
+    if simple_order.quantity > 0:
+        if limit_price > market_price:
+            return Fill(
+                fill_datetime,
+                simple_order.quantity,
+                limit_price,
+                price_requires_slippage_adjustment=False,
+            )
+
+    if simple_order.quantity < 0:
+        if limit_price < market_price:
+            return Fill(
+                fill_datetime,
+                simple_order.quantity,
+                limit_price,
+                price_requires_slippage_adjustment=True,
+            )
+
+    return empty_fill(fill_datetime)
+
+
+def fill_from_simple_market_order(
+    simple_order: Union[SimpleOrder, SimpleOrderWithDate],
+    market_price: float,
+    fill_datetime: datetime.datetime,
+) -> Fill:
+    return Fill(
+        fill_datetime,
+        simple_order.quantity,
+        market_price,
+        price_requires_slippage_adjustment=True,
+    )
+
+
+ListOfSimpleOrdersAndResultingFill = namedtuple(
+    "ListOfSimpleOrdersAndResultingFill", ["list_of_orders", "fill"]
+)
+
+
+def empty_list_of_orders_with_no_fills(
+    fill_datetime: datetime.datetime,
+) -> ListOfSimpleOrdersAndResultingFill:
+    return ListOfSimpleOrdersAndResultingFill(
+        empty_list_of_orders_with_date(), empty_fill(fill_datetime)
+    )
+rc=0
+
+--- [6] 例の冒頭と、data/ の中身の所在(取り出さずに一覧)---
+### THIS IS AN EXAMPLE OF HOW TO USE A PROPER ORDER SIMULATOR RATHER THAN VECTORISED
+###   P&L, FOR A SIMPLE TREND SYSTEM USING HOURLY DATA WITH MARKET ORDERS
+
+import matplotlib
+
+matplotlib.use("TkAgg")
+
+from syscore.constants import arg_not_supplied
+
+# from sysdata.sim.csv_futures_sim_data import csvFuturesSimData
+from sysdata.sim.db_futures_sim_data import dbFuturesSimData
+from sysdata.config.configdata import Config
+
+from systems.forecasting import Rules
+from systems.basesystem import System
+
+from systems.rawdata import RawData
+from systems.forecast_combine import ForecastCombine
+from systems.forecast_scale_cap import ForecastScaleCap
+from systems.positionsizing import PositionSizing
+from systems.portfolio import Portfolios
+from systems.accounts.order_simulator.hourly_market_orders import (
+    AccountWithOrderSimulatorForHourlyMarketOrders,
+)
+from systems.accounts.order_simulator.hourly_limit_orders import (
+    AccountWithOrderSimulatorForLimitOrders,
+)
+from systems.accounts.accounts_stage import Account
+
+
+### data/ の第2階層のディレクトリ
+data/__init__.py/
+data/futures/adjusted_prices_csv
+data/futures/crypto_spread_roll_calendars_csv
+data/futures/csvconfig
+data/futures/fx_prices_csv
+data/futures/multiple_prices_csv
+data/futures/roll_calendars_csv
+data/test/adjusted_prices_csv
+data/test/csvconfig
+data/tools/__init__.py
+data/tools/contract_comparison.py
+data/tools/example use ContractComparison.ipynb
+rc=0
+
+--- [7] 取得前に大きさを測る(委任文の規則2 = 取得は大きさを測ってから進む)---
+$ git config gc.auto 0  (自動 gc の告知が出力に混ざるため)
+data/futures/multiple_prices_csv : files=252 bytes=465249343 MiB=443.7
+data/futures/adjusted_prices_csv : files=252 bytes=247591250 MiB=236.1
+data/futures/fx_prices_csv : files=12 bytes=3144140 MiB=3.0
+data/futures/csvconfig : files=3 bytes=61172 MiB=0.1
+rc=0
+SP500 と SP500_micro の csv : Terminated
+91M	.git
+rc=0
+
+--- [8] 隔離 venv に PySystemtrade の依存を導入(リポジトリの環境には入れない)---
+$ /usr/bin/python3.11 -m venv $SP/r10/v10pst && pip install -q -r $SP/pst/requirements.txt
++ echo 'INSTALL_RC=0 TIME_S=29'
+INSTALL_RC=0 TIME_S=29
+No broken requirements found.
++ echo PIPCHECK_RC=0
+PIPCHECK_RC=0
+43
+rc=0
+
+--- [9] hourly_limit_orders.py の最小実行(合成データのみ)---
+$ $SP/r10/v10pst/bin/python $SP/r10/pst_limit_min.py $SP/pst
+RUN_RC=1
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r10/pst_limit_min.py", line 7, in <module>
+    from systems.accounts.order_simulator.pandl_order_simulator import (
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py", line 15, in <module>
+    from sysobjects.fills import ListOfFills, Fill
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysobjects/fills.py", line 8, in <module>
+    from sysexecution.orders.named_order_objects import missing_order, named_object
+ModuleNotFoundError: No module named 'sysexecution'
+rc=0
+
+--- [10] 依存の取り出しを追加(sysexecution。大きさを先に測る)---
+sysexecution : files=42 bytes=320231 MiB=0.31
+rc=0
+$ git sparse-checkout add sysexecution
+SPARSE_RC=0
+94M	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst
+rc=0
+
+--- [11] hourly_limit_orders.py の最小実行(合成データのみ。2 回目)---
+$ $SP/r10/v10pst/bin/python $SP/r10/pst_limit_min.py $SP/pst
+RUN_RC=1
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r10/pst_limit_min.py", line 7, in <module>
+    from systems.accounts.order_simulator.pandl_order_simulator import (
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py", line 15, in <module>
+    from sysobjects.fills import ListOfFills, Fill
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysobjects/fills.py", line 10, in <module>
+    from sysexecution.orders.base_orders import Order
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysexecution/orders/base_orders.py", line 14, in <module>
+    from sysobjects.production.tradeable_object import tradeableObject
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysobjects/production/tradeable_object.py", line 2, in <module>
+    from sysobjects.contracts import futuresContract
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysobjects/contracts.py", line 8, in <module>
+    from syslogging.logger import *
+ModuleNotFoundError: No module named 'syslogging'
+rc=0
+
+--- [12] さらに要る部分の大きさを測ってから追加 ---
+syslogging : files=10 bytes=25950 MiB=0.02
+sysinit : files=44 bytes=220623 MiB=0.21
+sysproduction : files=144 bytes=727452 MiB=0.69
+sysbrokers : files=48 bytes=207302 MiB=0.20
+rc=0
+$ git sparse-checkout add syslogging sysinit sysproduction sysbrokers
+SPARSE_RC=0
+99M	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst
+rc=0
+
+--- [13] hourly_limit_orders.py の最小実行(合成データのみ。3 回目)---
+$ $SP/r10/v10pst/bin/python $SP/r10/pst_limit_min.py $SP/pst
+RUN_RC=1
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r10/pst_limit_min.py", line 7, in <module>
+    from systems.accounts.order_simulator.pandl_order_simulator import (
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py", line 15, in <module>
+    from sysobjects.fills import ListOfFills, Fill
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysobjects/fills.py", line 10, in <module>
+    from sysexecution.orders.base_orders import Order
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysexecution/orders/base_orders.py", line 14, in <module>
+    from sysobjects.production.tradeable_object import tradeableObject
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysobjects/production/tradeable_object.py", line 2, in <module>
+    from sysobjects.contracts import futuresContract
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysobjects/contracts.py", line 8, in <module>
+    from syslogging.logger import *
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/syslogging/logger.py", line 7, in <module>
+    from syslogging.adapter import *
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/syslogging/adapter.py", line 3, in <module>
+    from syslogdiag.pst_logger import *
+ModuleNotFoundError: No module named 'syslogdiag'
+rc=0
+
+--- [14] data 以外の最上層をまとめて追加(data だけ除く。大きさは [7] で測り済み)---
+$ git ls-tree -d --name-only HEAD | grep -v '^data$'
+.github dashboard docs examples private sysbrokers syscontrol syscore sysdata sysexecution sysinit syslogdiag syslogging sysobjects sysproduction sysquant systems tests 
+data 以外の合計 : files=711 bytes=31809784 MiB=30.3
+rc=0
+$ git sparse-checkout add $DIRS
+SPARSE_RC=0
+149M	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst
+/dev/vda        252G   27G   11G  72% /
+rc=0
+
+--- [15] hourly_limit_orders.py の最小実行(合成データのみ。4 回目)---
+$ $SP/r10/v10pst/bin/python $SP/r10/pst_limit_min.py $SP/pst
+RUN_RC=0
+Configuring sim logging
+MODULE_FILE=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/hourly_limit_orders.py
+LIMIT_SIM_CLASS_MRO=['HourlyOrderSimulatorOfLimitOrders', 'HourlyOrderSimulatorOfMarketOrders', 'OrderSimulator', 'object']
+SYNTH_BARS=400 PRICE_FIRST=99.632217 PRICE_LAST=98.476012
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py:227: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  current_optimal_position = unrounded_positions[idx]
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py:228: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  next_price = prices[idx + 1]
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py:229: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  current_price = prices[idx]
+MARKET_ORDER_COUNT=2 MARKET_FILL_COUNT=2 MARKET_UNFILLED=0
+MARKET_FINAL_POSITION=-2 MARKET_PNL=-0.374208
+MARKET_ORDER_COLS=['quantity', 'limit_price']
+MARKET_ORDER_HEAD2=                     quantity limit_price / 2026-01-01 00:00:00         2        None / 2026-01-09 08:00:00        -4        None
+MARKET_FILL_HEAD2=                     qty       price / 2026-01-01 01:00:00    2  100.110674 / 2026-01-09 09:00:00   -4   99.199791
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py:227: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  current_optimal_position = unrounded_positions[idx]
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py:228: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  next_price = prices[idx + 1]
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems/accounts/order_simulator/pandl_order_simulator.py:229: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  current_price = prices[idx]
+LIMIT_ORDER_COUNT=5 LIMIT_FILL_COUNT=2 LIMIT_UNFILLED=3
+LIMIT_FINAL_POSITION=-2 LIMIT_PNL=-2.959827
+LIMIT_ORDER_COLS=['quantity', 'limit_price']
+LIMIT_ORDER_HEAD2=                     quantity  limit_price / 2026-01-01 00:00:00         2    99.632217 / 2026-01-01 01:00:00         2   100.110674
+LIMIT_FILL_HEAD2=                     qty       price / 2026-01-01 04:00:00    2  100.447947 / 2026-01-09 09:00:00   -4   98.722023
+LIMIT_PRICE_NONNULL=5 LIMIT_PRICE_NULL=0
+LIMIT_BUY_ORDERS=4 LIMIT_SELL_ORDERS=1
+RULE q=+1 limit=101.0 next_mkt=100.0 -> is_unfilled=False qty=1 price=101.0 slippage_adj=False
+RULE q=+1 limit=99.0 next_mkt=100.0 -> is_unfilled=True qty=0 price=nan slippage_adj=False
+RULE q=-1 limit=99.0 next_mkt=100.0 -> is_unfilled=False qty=-1 price=99.0 slippage_adj=True
+RULE q=-1 limit=101.0 next_mkt=100.0 -> is_unfilled=True qty=0 price=nan slippage_adj=False
+ELAPSED_S=0.03
+rc=0
+
+--- [16] 規模と決定性の実測 ---
+$ $SP/r10/v10pst/bin/python $SP/r10/pst_scale.py $SP/pst
+Configuring sim logging
+SCALE_BARS=10000 ELAPSED_S=0.261 BARS_PER_S=38288.0 ORDERS=78 FILLS=39
+SCALE_BARS=100000 ELAPSED_S=2.623 BARS_PER_S=38125.5 ORDERS=740 FILLS=381
+DETERMINISTIC_TWO_RUNS_IDENTICAL=True
+RUN_RC=0
+
+--- [17] 使った試行スクリプトの全文(合成データのみ。当方のデータ・鍵・記録は使っていない)---
+### $SP/r10/pst_limit_min.py
+# pysystemtrade の systems/accounts/order_simulator/hourly_limit_orders.py を
+# 合成データだけで動かす。当方のデータ・鍵・記録は一切使わない。
+import sys, time, datetime
+sys.path.insert(0, sys.argv[1])
+import numpy as np, pandas as pd
+
+from systems.accounts.order_simulator.pandl_order_simulator import (
+    OrdersSeriesData,
+    generate_positions_orders_and_fills_from_series_data,
+    get_order_sim_daily_data_at_idx_point,
+    generate_order_and_fill_at_idx_point_for_market_orders,
+)
+from systems.accounts.order_simulator.hourly_limit_orders import (
+    generate_order_and_fill_at_idx_point_for_limit_orders,
+    HourlyOrderSimulatorOfLimitOrders,
+)
+t0 = time.time()
+print("MODULE_FILE=%s" % sys.modules["systems.accounts.order_simulator.hourly_limit_orders"].__file__)
+print("LIMIT_SIM_CLASS_MRO=%s" % [c.__name__ for c in HourlyOrderSimulatorOfLimitOrders.__mro__][:4])
+
+# --- 合成の時間足: 1 時間刻み 400 本、乱数の種を固定 ---
+n = 400
+idx = pd.date_range("2026-01-01 00:00:00", periods=n, freq="h")
+rng = np.random.default_rng(20260922)
+price = pd.Series(100.0 * np.exp(np.cumsum(rng.normal(0, 0.002, n))), index=idx)
+# 最適建玉: 前半 +2 枚、後半 -2 枚(= 指値と成行で 1 往復以上が必ず出る)
+opt = pd.Series(np.concatenate([np.full(n // 2, 2.0), np.full(n - n // 2, -2.0)]), index=idx)
+sd = OrdersSeriesData(price_series=price, unrounded_positions=opt)
+print("SYNTH_BARS=%d PRICE_FIRST=%.6f PRICE_LAST=%.6f" % (n, price.iloc[0], price.iloc[-1]))
+
+def pnl(fills, last_price):
+    cash = 0.0; pos = 0
+    for f in fills:
+        cash -= f.qty * f.price; pos += f.qty
+    return cash + pos * last_price, pos
+
+for name, fn in (("MARKET", generate_order_and_fill_at_idx_point_for_market_orders),
+                 ("LIMIT", generate_order_and_fill_at_idx_point_for_limit_orders)):
+    r = generate_positions_orders_and_fills_from_series_data(
+        series_data=sd,
+        passed_idx_data_function=get_order_sim_daily_data_at_idx_point,
+        passed_orders_fills_function=fn)
+    orders = r.list_of_orders; fills = r.list_of_fills
+    p, pos = pnl(fills, float(price.iloc[-1]))
+    print("%s_ORDER_COUNT=%d %s_FILL_COUNT=%d %s_UNFILLED=%d" % (
+        name, len(orders), name, len(fills), name, len(orders) - len(fills)))
+    print("%s_FINAL_POSITION=%d %s_PNL=%.6f" % (name, pos, name, p))
+    df = orders.as_pd_df()
+    print("%s_ORDER_COLS=%s" % (name, list(df.columns)))
+    print("%s_ORDER_HEAD2=%s" % (name, df.head(2).to_string().replace("\n", " / ")))
+    fdf = fills.as_pd_df()
+    print("%s_FILL_HEAD2=%s" % (name, fdf.head(2).to_string().replace("\n", " / ")))
+    if name == "LIMIT":
+        print("LIMIT_PRICE_NONNULL=%d LIMIT_PRICE_NULL=%d" % (
+            int(df["limit_price"].notna().sum()), int(df["limit_price"].isna().sum())))
+        buy = df[df["quantity"] > 0]; sell = df[df["quantity"] < 0]
+        print("LIMIT_BUY_ORDERS=%d LIMIT_SELL_ORDERS=%d" % (len(buy), len(sell)))
+
+# --- 約定判定の規則そのものを 4 通りで直接確かめる ---
+from systems.accounts.order_simulator.fills_and_orders import fill_from_simple_limit_order
+from systems.accounts.order_simulator.simple_orders import SimpleOrderWithDate
+d = datetime.datetime(2026, 1, 1)
+for q, lp, mp in ((1, 101.0, 100.0), (1, 99.0, 100.0), (-1, 99.0, 100.0), (-1, 101.0, 100.0)):
+    f = fill_from_simple_limit_order(SimpleOrderWithDate(quantity=q, limit_price=lp, submit_date=d),
+                                     market_price=mp, fill_datetime=d)
+    print("RULE q=%+d limit=%.1f next_mkt=%.1f -> is_unfilled=%s qty=%s price=%s slippage_adj=%s" % (
+        q, lp, mp, f.is_unfilled, f.qty, f.price, f.price_requires_slippage_adjustment))
+print("ELAPSED_S=%.2f" % (time.time() - t0))
+### $SP/r10/pst_scale.py
+import sys, time
+sys.path.insert(0, sys.argv[1])
+import numpy as np, pandas as pd
+from systems.accounts.order_simulator.pandl_order_simulator import (
+    OrdersSeriesData, generate_positions_orders_and_fills_from_series_data,
+    get_order_sim_daily_data_at_idx_point)
+from systems.accounts.order_simulator.hourly_limit_orders import (
+    generate_order_and_fill_at_idx_point_for_limit_orders)
+import warnings; warnings.simplefilter("ignore")
+for n in (10000, 100000):
+    idx = pd.date_range("2026-01-01", periods=n, freq="min")
+    rng = np.random.default_rng(20260922)
+    price = pd.Series(100.0*np.exp(np.cumsum(rng.normal(0,0.0005,n))), index=idx)
+    opt = pd.Series(np.round(np.sin(np.arange(n)/500.0)*3.0), index=idx)
+    sd = OrdersSeriesData(price_series=price, unrounded_positions=opt)
+    t0=time.time()
+    r = generate_positions_orders_and_fills_from_series_data(
+        series_data=sd, passed_idx_data_function=get_order_sim_daily_data_at_idx_point,
+        passed_orders_fills_function=generate_order_and_fill_at_idx_point_for_limit_orders)
+    el=time.time()-t0
+    print("SCALE_BARS=%d ELAPSED_S=%.3f BARS_PER_S=%.1f ORDERS=%d FILLS=%d" % (
+        n, el, n/el, len(r.list_of_orders), len(r.list_of_fills)))
+# 決定性: 同じ入力を 2 回走らせて結果が一致するか
+idx = pd.date_range("2026-01-01", periods=2000, freq="min")
+rng = np.random.default_rng(20260922)
+price = pd.Series(100.0*np.exp(np.cumsum(rng.normal(0,0.0005,2000))), index=idx)
+opt = pd.Series(np.round(np.sin(np.arange(2000)/300.0)*3.0), index=idx)
+sd = OrdersSeriesData(price_series=price, unrounded_positions=opt)
+outs=[]
+for _ in range(2):
+    r = generate_positions_orders_and_fills_from_series_data(
+        series_data=sd, passed_idx_data_function=get_order_sim_daily_data_at_idx_point,
+        passed_orders_fills_function=generate_order_and_fill_at_idx_point_for_limit_orders)
+    outs.append(r.list_of_fills.as_pd_df().to_csv())
+print("DETERMINISTIC_TWO_RUNS_IDENTICAL=%s" % (outs[0]==outs[1]))
+### $SP/r10/pst_install.sh
+set -x
+SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad
+t0=$(date -u +%s)
+/usr/bin/python3.11 -m venv $SP/r10/v10pst
+$SP/r10/v10pst/bin/pip install --disable-pip-version-check -q -r $SP/pst/requirements.txt
+echo "INSTALL_RC=$? TIME_S=$(( $(date -u +%s) - t0 ))"
+$SP/r10/v10pst/bin/pip check
+echo "PIPCHECK_RC=$?"
+$SP/r10/v10pst/bin/pip list --format=freeze | wc -l
+rc=0
+
+--- [18] 終了時刻・空き・常駐プロセスの確認 ---
+2026-09-22T10:21:02Z
+/dev/vda        252G   27G   11G  72% /
+残っている当方起動のプロセス: 1
+生ログの復帰文字の個数: 0
+rc=0
+
+--- [19] 規模と決定性の再実測(受け入れ検査 K11 が根拠として要求する rc= の行を持つ形で打ち直した)---
+$ $SP/r10/v10pst/bin/python $SP/r10/pst_scale.py $SP/pst
+Configuring sim logging
+SCALE_BARS=10000 ELAPSED_S=0.260 BARS_PER_S=38508.2 ORDERS=78 FILLS=39
+SCALE_BARS=100000 ELAPSED_S=2.580 BARS_PER_S=38752.3 ORDERS=740 FILLS=381
+DETERMINISTIC_TWO_RUNS_IDENTICAL=True
+rc=0
+
+--- [20] 最終の時刻・空き ---
+2026-09-22T10:24:59Z
+/dev/vda        252G   27G   11G  72% /
+rc=0

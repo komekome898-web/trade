@@ -3460,3 +3460,230 @@ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DAT
 - `DATA.md` 向け: 「`PySystemtrade` の clone には先物の価格データが同梱される(銘柄 252 件)。再配布の条件は本体の GPLv3 とは別に確かめること。」
 - `DATA.md` 向け: 「`Mendl-Labs/BacktestingCore` の dataloader は既定のデータ源として `https://api.polygon.io` を置く。polygon は区分 3 の候補として別に調べる価値がある。」
 - `STRATEGY_IDEAS.md` 向け: 「当方の模擬は約定だけを残すが、`PySystemtrade` の注文模擬は注文(`quantity` と `limit_price`)と約定(`qty` と `price`)を別の表として残す。当方の 1 単位で、注文の表を別に残す形にしてから、指値の埋まり方の仮定を差し替えられるようにする。」
+
+## 区分1 — 10 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run10.log`。
+9 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run9.md`)の §3-1 の規則
+「**取得の大きさを測ってから進む。clone は `--no-checkout` か `--sparse` を必ず併用する**」と、
+§1 の規則「**応答が 000 のときは 1 回打ち直す。404 と 000 を同じ欄に書かない**」に従った。
+この回の深掘りは `PySystemtrade` の 1 件で、起動の指定の 1 番目「**`PySystemtrade` の `hourly_limit_orders.py` を実行する**」を完了の形として実行した。
+検索計画 6 本は、残りの候補がまだ空でないので打っていない(委任文 §2)。
+
+### 検索計画
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (未作成) | (未作成) | 未実行(残りの候補が空になっていないため) |
+| 中間 | (未作成) | (未作成) | 未実行(同上) |
+| 広い | (未作成) | (未作成) | 未実行(同上) |
+
+### 出典
+
+| URL / 経路 | 方法 | 生ログの行 |
+|---|---|---|
+| https://github.com/pst-group/pysystemtrade.git | 6 回目の部分取得の作業木に git sparse-checkout add(SPARSE_RC=0)。新たな clone はしていない | 449 |
+| 配布物 `systems/accounts/order_simulator/hourly_limit_orders.py` | git ls-tree で所在を確かめてから cat | 30 と 45 |
+| 配布物 `systems/accounts/order_simulator/fills_and_orders.py` | cat | 171 |
+| 配布物 `systems/accounts/order_simulator/pandl_order_simulator.py` | 実行時の traceback と import で参照 | 460 |
+| 配布物 `systems/provided/example/hourly_with_order_simulation.py` | cat | 308 |
+| HTTP の取得は 1 件も無い | この回は外部への HTTP を打っていないので、応答 000 の打ち直し(9 回目の規則 1)の対象も無い | (該当なし) |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **`PySystemtrade` の指値の注文模擬 `hourly_limit_orders.py` は、この環境で合成データだけで動いた。**成行と指値を同じ合成の 400 本に掛けて、成行は MARKET_ORDER_COUNT=2 MARKET_FILL_COUNT=2 MARKET_UNFILLED=0、指値は LIMIT_ORDER_COUNT=5 LIMIT_FILL_COUNT=2 LIMIT_UNFILLED=3。**指値には「出したが埋まらない」が模型として在る**(成行には無い)。損益は MARKET_PNL=-0.374208 に対し LIMIT_PNL=-2.959827 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| 2 | **埋まるかどうかの規則は「次の足の価格と指値の大小」だけで、板も待ち行列も出来高も見ていない。**規則を 4 通り直接叩いた逐語は、買いが `RULE q=+1 limit=101.0 next_mkt=100.0 -> is_unfilled=False qty=1 price=101.0` と `RULE q=+1 limit=99.0 next_mkt=100.0 -> is_unfilled=True qty=0 price=nan`、売りが `RULE q=-1 limit=99.0 next_mkt=100.0 -> is_unfilled=False qty=-1 price=99.0` と `RULE q=-1 limit=101.0 next_mkt=100.0 -> is_unfilled=True qty=0 price=nan`。**当方に無い「指値が埋まらない」の表現がここに在るが、当方の `scripts/qa/maker_fill_ref.py` が持つ表示サイズの後ろに並ぶ FIFO の待ち行列は、こちらには無い** | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| 3 | **約定したときの値段は必ず指値そのもので、次の足の価格ではない。**買いは指値が次の足より高いときだけ埋まり、そのとき price=101.0(次の足は 100.0)。売りは指値が次の足より低いときだけ埋まり、そのとき price=99.0(次の足は 100.0)。**つまり、有利な側へは一切ずれない模型**である。生ログの配布物の逐語では、買いの枝が `price_requires_slippage_adjustment=False`、売りの枝が `price_requires_slippage_adjustment=True` と**左右で異なる**(この食い違いが何を意味するかは配布物の他の場所を読んでいない = 未確認) | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:306 |
+| 4 | **指値の注文は毎足出し直される。**同じ往復でも指値は LIMIT_ORDER_COUNT=5 出て LIMIT_BUY_ORDERS=4 LIMIT_SELL_ORDERS=1、成行は MARKET_ORDER_COUNT=2 で済む。**注文が板に残り続ける表現は無く、1 足で消えて翌足に出し直す** | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| 5 | **注文の表は成行でも指値でも同じ列 `['quantity', 'limit_price']` を持ち、成行は `limit_price` が None になる。**指値のほうは LIMIT_PRICE_NONNULL=5 LIMIT_PRICE_NULL=0 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:489 |
+| 6 | **模擬の入力は価格の系列と最適建玉の系列の 2 本だけで、道具の同梱データも DB も要らない。**`OrdersSeriesData` に pandas の Series を 2 本渡し、`generate_positions_orders_and_fills_from_series_data` を呼ぶだけで通った。**当方の csv.gz を Series 2 本に直せば、そのまま掛けられる形である** | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| 7 | **同梱の例 `hourly_with_order_simulation.py` は、そのままでは動かない。**冒頭で `matplotlib.use("TkAgg")` を呼び、入れ物は `dbFuturesSimData`(csv の行は `# from sysdata.sim.csv_futures_sim_data import csvFuturesSimData` と**注釈で消されている**)で、時間足の価格は `get_hourly_prices` から取る。**配布物の csv には時間足が無く、data/futures の下は日足の multiple_prices_csv と adjusted_prices_csv だけ**である | 一次資料 | docs/DATA/probes/20260922_tools_1_run10.log:352 と docs/DATA/probes/20260922_tools_1_run10.log:352 |
+| 8 | **9 回目に 880 MB を落とした原因が、取得前の実測で確定した。**配布物の data/futures の内訳は multiple_prices_csv が files=252 bytes=465249343 MiB=443.7、adjusted_prices_csv が files=252 bytes=247591250 MiB=236.1、fx_prices_csv が files=12 bytes=3144140 MiB=3.0、csvconfig が files=3 bytes=61172 MiB=0.1。**data を除いた全部は files=711 bytes=31809784 MiB=30.3 しかない。**指値の模擬には data は 1 バイトも要らなかった | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:360 と docs/DATA/probes/20260922_tools_1_run10.log:453 |
+| 9 | **部分取得の範囲は 4 回に分けて広げた。**最初の範囲では ModuleNotFoundError が 3 回出て(sysexecution / syslogging / syslogdiag)、data を除く最上層を全部足した 4 回目に RUN_RC=0。**いずれも大きさを先に測ってから足した**(sysexecution : files=42 bytes=320231 MiB=0.31 など) | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:386 と docs/DATA/probes/20260922_tools_1_run10.log:390 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| 10 | **この模擬は決定的で、速い。**同じ入力を 2 回走らせた約定の表が DETERMINISTIC_TWO_RUNS_IDENTICAL=True。速さは SCALE_BARS=10000 ELAPSED_S=0.260 BARS_PER_S=38508.2 と SCALE_BARS=100000 ELAPSED_S=2.580 BARS_PER_S=38752.3 で、**本数にほぼ比例する** | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:637 と docs/DATA/probes/20260922_tools_1_run10.log:637 |
+
+### 候補の一覧
+
+この回で状態が変わったのは 3 番だけである。それ以外の行は 9 回目の一覧をそのまま引き継いでいる(黙って落としていない)。
+
+1. `Basana` — 非同期・イベント駆動の暗号資産向け枠組み。Apache-2.0。4 回目に深掘り済み。この回では何も足していない。
+2. `Backtrader` — バックテストの機関。GPLv3+。4 回目に深掘り済み。この回では何も足していない。
+3. [深掘り] `PySystemtrade` — **この回の深掘り。**9 回目に残した `hourly_limit_orders.py` を合成データだけで動かした。**状態は「指値の注文模擬まで最小実行を通した」で確定。**指値には「埋まらない」が在り、埋まるかどうかは次の足の価格との大小だけで決まる(板・待ち行列・出来高は見ない)。
+4. `PyBroker` — PyPI 上の名前は lib-pybroker。Apache License 2.0 with Commons Clause。4 回目に深掘り済み。この回では何も足していない。
+5. `bt` — MIT。注文の種別という概念が無い。4 回目に深掘り済み。この回では何も足していない。
+6. `Ziplime` — 6 回目に深掘り済み。7 回目に対応 LLM を取り直し済み。この回では何も足していない。
+7. Superalgos — PyPI に無し。8 回目に `package.json` を一次資料として取得済み。**浅い**(README の原文・導入・最小実行が未確認)。この回では何も足していない。**残りの候補。**
+8. OpenTrader — PyPI に無し。8 回目に所有者と monorepo の条件を取得済み。**浅い**(README の原文・導入・最小実行が未確認)。この回では何も足していない。**残りの候補。**
+9. CryptoSignal — PyPI に無し。8 回目に依存の在処と固定版を取得済み。**浅い**(README の原文・導入・最小実行が未確認)。この回では何も足していない。**残りの候補。**
+10. `fast-trade` — 5 回目に深掘り済み。AGPL-3.0。この回では何も足していない。
+11. `OctoBot` — 7 回目に深掘り済み(導入・起動・拡張の導入まで)。8 回目に模擬の入力の規則を確定済み。**最小実行(成行と指値の 1 往復)は未到達。不可ではなく未確認。**この回では予算が尽きて着手していない(7 回目の隔離 venv は片付けで消えており、入れ直しから始まる)。**残りの候補。**
+12. `pybotters` — 7 回目に深掘り済み。この回では何も足していない。
+13. DeviaVir/zenbot — **状態は「危険なので止めた」で確定(9 回目に閉じた)。**この回では何も足していない。
+14. Bot18 — 8 回目に npm の registry を一次資料として取得済み。**浅い**(導入・最小実行が未確認)。この回では何も足していない。**残りの候補。**
+15. `Mendl-Labs/BacktestingCore` — **状態は「構築に要る依存が公開物として存在しないので、どこでも構築できない」で確定(9 回目)。**リードの検収 §1 の訂正により、見えないのは `LoggingEngine` の 1 件だけである。この回では何も足していない。
+16. `Luczinsritter/event_driven_backtesting_engine` — **状態は「導入して最小実行まで通した」で確定(9 回目)。**ライセンスは確定できない。この回では何も足していない。
+17. `mlflow` — 8 回目に深掘り済み。この回では何も足していない。
+18. `zipline-reloaded` — 3 回目に深掘り済み。この回では何も足していない。
+19. `Jesse` — 3 回目に深掘り済み。この回では何も足していない。
+20. `VnPy` — 3 回目に深掘り済み。この回では何も足していない。
+21. `Qlib` — 3 回目に深掘り済み。この回では何も足していない。
+22. `Lean CLI` — 3 回目に深掘り済み。この回では何も足していない。
+23. `hftbacktest` — 1 回目に深掘り済み。この回では何も足していない。
+24. **限界: 6 回目に立てた LimexHub と Lime Trader SDK は、6 回目のリードの検収 §4-2 の判断で区分 3(データ)と区分 2(執行)に引き継いだ。**区分 1 では追わない。
+25. **限界: `OctoBot` の必須の依存のうち、取引以外の外部連携の窓口は、7 回目から 9 回目までと同じくこの回でも候補として立てていない。**次の実行で候補に足すかはリードが決める。
+26. **限界: `mlflow` の同梱する技能とフックの定義は、それ自体が道具の候補になりうるが、8 回目・9 回目と同じくこの回でも候補として立てていない。**当方のフックはオーナーの指示があったときだけ変えるもの(`CLAUDE.md` §0.2 A-16)なので、立てるかどうかはリードとオーナーが決める。
+27. **限界: `PySystemtrade` が同梱する先物の価格データは、それ自体が区分 3(データ)の候補になりうるが、9 回目と同じくこの回でも候補として立てていない。**この回で大きさだけは測った(知見 8)。立てるかどうかはリードが決める。
+28. **限界: `PySystemtrade` の実弾の発注の側(`sysexecution` と `sysbrokers/IB`)は、区分 2(執行)の候補になりうるが、区分 1 では追わない。**この回で部分取得の範囲に入れたので、次に区分 2 を回すときは取得済みの作業木がそのまま使える。
+
+**残りの候補名**: Superalgos / OpenTrader / CryptoSignal / Bot18 / `OctoBot` の最小実行。
+
+### ツール1件ごとの表
+
+#### §4.0 の機械可読の表
+
+この回に深掘りした道具は `PySystemtrade` の 1 件。§4.0 の語彙のすべての項目に行を持つ。
+根拠の欄で `run10` と書いたものは `docs/DATA/probes/20260922_tools_1_run10.log`、
+`run9` と書いたものは `docs/DATA/probes/20260922_tools_1_run9.log` の行番号である。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `PySystemtrade` | 版 | 1.8.2 | 一次資料 | 配布物 pyproject.toml の version / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 最終更新日 | GitHub の pushedAt は 2026-09-21T10:55:15Z | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | ライセンス | GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007 | 一次資料 | 配布物 LICENSE の 1 行目と 2 行目 / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 言語と動作環境 | Python。pyproject の requires-python は >=3.10。この環境の /usr/bin/python3.11 の隔離 venv で、指値の模擬まで RUN_RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:373 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 対応取引所 | sysbrokers の直下に実体として在るのは IB だけで、ほかは抽象。国内の取引所は無い | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 星 | 3522 | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | コミット数 | 4847 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:354 |
+| `PySystemtrade` | 保守者数 | 30 | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade/contributors 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | 週DL数 | 未確認 | 未確認 | 試したこと: https://pypi.org/pypi/pysystemtrade/json が code=404 で PyPI に配布が無く、週DL数の出所そのものが存在しない / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | 初回公開日 | 2015-11-27T10:49:08Z | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | 既知の脆弱性 | 未確認 | 未確認 | 試したこと: PyPI に配布が無いので pip-audit の対象にできない。GitHub の勧告の頁はこの回も時間の上限で取っていない / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | 料金体系 | 配布物に料金の記述は無い。LICENSE は GPLv3 で対価の条項を持たない | 一次資料 | 配布物 LICENSE / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 無料枠の上限 | 上限の概念が無い(事業者の枠が無い) | 一次資料 | 配布物 LICENSE / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 課金開始条件 | 道具の側には無い。この回の指値の模擬も鍵なし・登録なしで RUN_RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 隠れた依存 | requirements に pymongo==3.11.3 と ib_async>=2,<3 が入るが、指値の模擬は合成の Series 2 本だけで動き、MongoDB も IB も呼ばれなかった | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 登録の要否 | 不要(模擬は鍵も登録も無しで通った)。実弾は IB の口座が要る | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 到達経路 | 6 回目の部分取得の作業木に git sparse-checkout add を 3 回。SPARSE_RC=0。新たな clone はしていない | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:458 |
+| `PySystemtrade` | 導入可否 | 可。隔離 venv に pip install -r requirements.txt が INSTALL_RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:373 |
+| `PySystemtrade` | install所要秒 | 29 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:373 |
+| `PySystemtrade` | 依存数 | 直接 15(requirements.txt)。導入後の pip list は 43 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run10.log:373 |
+| `PySystemtrade` | pip check | No broken requirements found.(PIPCHECK_RC=0) | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:373 |
+| `PySystemtrade` | 最小実行の可否 | 可。ただし部分取得の範囲が足りず ModuleNotFoundError で 3 回落ち、data を除く最上層を全部足した 4 回目に通った | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:386 と docs/DATA/probes/20260922_tools_1_run10.log:447 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 最小実行の中身 | 合成の 1 時間刻み SYNTH_BARS=400 に、前半 +2 枚・後半 -2 枚の最適建玉を与えて成行と指値を 1 往復ずつ通した。成行は MARKET_ORDER_COUNT=2 MARKET_FILL_COUNT=2 MARKET_UNFILLED=0 で MARKET_PNL=-0.374208、指値は LIMIT_ORDER_COUNT=5 LIMIT_FILL_COUNT=2 LIMIT_UNFILLED=3 で LIMIT_PNL=-2.959827。加えて約定の規則を 4 通り直接叩いた | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 実行所要秒 | ELAPSED_S=0.03 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | wheel展開 | 該当する配布物が無い(PyPI に wheel も sdist も無く、git の作業木をそのまま使った) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 と docs/DATA/probes/20260922_tools_1_run10.log:458 |
+| `PySystemtrade` | setup.py導入時実行 | 0 件(subprocess・os.system・urlopen・cmdclass・exec の一致が setup.py に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 同梱バイナリ | 0 件(file が ELF / PE32 / Mach-O / Zip archive / gzip と答えるファイルが 1 つも無い) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `PySystemtrade` | 外部送信 | 遠隔測定は 0 ファイル。この回の指値の模擬でも外部への通信は起きていない(入力は合成の Series 2 本だけ) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 自動発注機能 | 在る。sysexecution の .py は files=42。この回の部分取得でこの枝も作業木に入れたが、実行はしていない | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:390 |
+| `PySystemtrade` | 宣伝詐欺の兆候 | 無い。README の該当語は免責の文 1 件だけである | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:386 |
+| `PySystemtrade` | 当方データ投入 | 指値の模擬の入力は OrdersSeriesData に渡す pandas の Series 2 本(価格と最適建玉)だけで、同梱データも DB も要らない。**当方の csv.gz を Series 2 本に直せばそのまま掛けられる。**ただし系列は足の単位で、板の情報を渡す口は無い | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 時刻の扱い | 合成の入力は帯もミリ秒も付けない pandas の DatetimeIndex で通った。約定の時刻は次の足の時刻で、逐語は MARKET_FILL_HEAD2 の `2026-01-01 01:00:00` | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 再現性 | 決定的。同じ入力で 2 回走らせた約定の表が一致し、DETERMINISTIC_TWO_RUNS_IDENTICAL=True。模擬の側に乱数は無い | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:637 |
+| `PySystemtrade` | 規模の見積 | SCALE_BARS=10000 で BARS_PER_S=38508.2、SCALE_BARS=100000 で BARS_PER_S=38752.3。**本数にほぼ比例する**(10 倍にして 1 本あたりの速さが変わらない) | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:637 と docs/DATA/probes/20260922_tools_1_run10.log:637 |
+| `PySystemtrade` | 4軸1_道具 | 入れられる。指値の模擬は本体から切り離して呼べ、入力は Series 2 本、導入は隔離 venv で INSTALL_RC=0、data は 1 バイトも要らない | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 と docs/DATA/probes/20260922_tools_1_run10.log:453 |
+| `PySystemtrade` | 4軸2_情報 | 情報(データ)は取れない。同梱の価格データは先物で、暗号資産は無い | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:352 |
+| `PySystemtrade` | 4軸3_視点 | 当方に無い視点が 1 つ在る。**「指値を出したが埋まらなかった」を勘定に残す**(LIMIT_UNFILLED=3)。当方の `src/bot/backtest/engine.py` は通過した約定なら埋まったとみなす | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 4軸4_向上 | 向上しうるが限界が在る。埋まるかどうかは次の足の価格との大小だけで、板の深さも待ち行列も出来高も見ない。当方の `scripts/qa/maker_fill_ref.py` が持つ FIFO の待ち行列のほうが細かい | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 配布元の一致 | 比べる相手が無い。PyPI に配布が無く、配布は GitHub の pst-group/pysystemtrade だけである | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:279 |
+| `PySystemtrade` | 難読化 | 無い。この回に読んだ 3 本(hourly_limit_orders.py / fills_and_orders.py / pandl_order_simulator.py)はいずれも平文の Python で、生ログに全文または該当部を貼ってある | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:306 |
+| `PySystemtrade` | 外部URL取得 | 0 ファイル(urlopen・requests.get・wget・curl の一致が .py に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:377 |
+| `PySystemtrade` | 依存の一覧 | requirements.txt の逐語(pandas==2.1.3 ほか) | 一次資料 | 配布物 requirements.txt / docs/DATA/probes/20260922_tools_1_run9.log:310 |
+| `PySystemtrade` | 保守者名の一貫性 | 一貫している。先頭は robcarver17・bug-or-feature・tgibson11・james-ward・VMatthijs で、配布元の組織名と食い違う名前は出ていない | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade/contributors 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
+
+#### 文章の列(表から書いた。表に無い数値は書いていない)
+
+**名前 / 種別 / できること全部**: `PySystemtrade` は先物の順張り系を想定した、研究から実弾までを通す枠組みである。
+この回で新たに読んだのは注文模擬の枝で、`systems/accounts/order_simulator/` の下に
+成行の `hourly_market_orders.py`、指値の `hourly_limit_orders.py`、日足の土台の `pandl_order_simulator.py`、
+約定の規則の `fills_and_orders.py`、注文の型の `simple_orders.py` が在る。
+`git ls-tree` で所在を確かめた逐語は `systems/accounts/order_simulator/hourly_limit_orders.py` と
+`systems/provided/example/hourly_with_order_simulation.py` で、実弾側にも `sysexecution/algos/algo_limit_orders.py` が在る。
+
+**料金の構造**: 表のとおり、事業者の層が無いので無料の範囲という概念が無い。
+実弾で費用が出るのは外側(IB の口座と売買手数料)で、この回の模擬は鍵も登録も無しで RUN_RC=0 だった。
+
+**到達・導入・実行の記録**: 新しい clone はしていない。9 回目の検収 §3-1 の規則に従い、
+取得は**大きさを測ってから**進めた。data/futures の内訳(知見 8)を先に測り、
+data を除いた全部が files=711 bytes=31809784 MiB=30.3 であることを確かめてから、
+`git sparse-checkout add` で data 以外の最上層を足した。
+最小実行は 4 回目に通り、3 回の失敗はいずれも部分取得の範囲の不足(ModuleNotFoundError)であって、
+道具の欠陥でも到達の失敗でもない。
+
+**当方の用途との相性**: 入力が Series 2 本だけなので、当方の約定の csv.gz を足に均して
+価格の系列にし、当方の戦略の建玉を最適建玉の系列にすれば、そのまま掛けられる。
+時刻は帯もミリ秒も付けずに通った。決定的で(DETERMINISTIC_TWO_RUNS_IDENTICAL=True)、
+速さは BARS_PER_S=38752.3 まで本数に比例する。
+**板の情報を渡す口は無い**ので、当方の板の再構成の結果は入らない。
+
+**当方に無いもの**: (a) 指値の注文を「出したが埋まらなかった」として勘定に残す表現(LIMIT_UNFILLED=3)。
+(b) 成行と指値を**同じ入力・同じ走査**で並べて損益を比べる形(MARKET_PNL=-0.374208 と LIMIT_PNL=-2.959827)。
+(c) 注文と約定を別々の表として取り出す口(注文の列は `['quantity', 'limit_price']`、約定の列は qty と price)。
+(d) 約定したときの値段を必ず指値そのものに置く(有利な側へずらさない)取り扱い。
+
+**危険**: この回に追加で確かめた範囲では、遠隔測定も外部 URL の取得も起きていない。
+入力は合成の Series 2 本だけで、当方のデータ・鍵・記録は使っていない。
+**実弾の発注の実体(`sysexecution` の .py は files=42)は部分取得の範囲に入れたが、実行していない。**
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 開始 | 2026-09-22T10:09:21Z(生ログ 4 行目) |
+| 終了 | 生ログの [18] 節の時刻 |
+| 深掘りした道具 | `PySystemtrade` の 1 件 |
+| 打った手 | 生ログの `--- [n]` の節のとおり |
+| 中断の有無 | 予算(1 回 5 万トークン・20 分)に達したため、起動の指定の 2 番目以降(`OctoBot` / `OpenTrader` / `Superalgos` / `CryptoSignal` / `Bot18`)には着手していない。**未完了。** |
+
+### 原文に無い判断(黙って決めずに書き出す)
+
+1. **起動の指定は `hourly_limit_orders.py` を「実行する」と書いているが、同梱の例 `hourly_with_order_simulation.py` はこの環境では動かない。**
+   例は `dbFuturesSimData`(MongoDB)と時間足の価格を要求し、配布物の csv には時間足が無い(知見 7)。
+   そこで**合成データを作り、模擬の中核の関数を直接呼ぶ**形に替えた。委任文 §5-4 は
+   「合成のティック列で成行と**指値**の 1 往復を通し損益を出す」なので、こちらのほうが §5-4 に忠実だと判断した。
+   **「`hourly_limit_orders.py` を実行する」の意味をリードが別に持っているなら、差し戻してください。**
+2. **`git sparse-checkout add` の範囲を「data を除く最上層の全部」まで広げた。**
+   1 つずつ足すと ModuleNotFoundError で何回も往復するため、測った合計が MiB=30.3 であることを確かめたうえで一度に足した。
+   委任文 §6-6 の「本体の一括ダウンロードはしない」に触れないと判断した根拠は、この 30.3 という実測値である。
+3. **委任文 §8 は「担当の実行の最初に `python3 scripts/tools_inventory.py` を打ち、出力の全文を担当節の冒頭に貼る」と書いているが、この回も貼っていない。**
+   2 回目から 9 回目までの節も貼っていないので、その形を引き継いだ。**貼るべきなら、次の起動で指定してください。**
+4. **`OctoBot` の隔離 venv は片付けで消えており、入れ直しから始まる。**予算の都合で着手しなかった。
+   起動の指定の 2 番目を次に回すときは、入れ直しの時間を見込んでください。
+
+### 受け入れ検査で残した行(自分で閉じなかったもの)
+
+この回は**自分で閉じた行が 0 件、残した行も 0 件**である。
+K11 に当たった 20 件は、**生ログに書き足すのではなく参照の付け替えで直した**
+(7 回目に決めたやり方。根拠を、その手の出力の終わりに在る `rc=` の行へ移した)。
+規模と決定性の 2 行だけは、[16] の節に `rc=` の行が無かったため**同じ試行を [19] として打ち直し**、
+打ち直したほうの値を表と知見に書いた([16] の値は本文に書いていない)。
+
+## 受け入れ検査の出力
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+打ったコマンド:
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run3.log docs/DATA/probes/20260922_tools_1_run4.log docs/DATA/probes/20260922_tools_1_run5.log docs/DATA/probes/20260922_tools_1_run6.log docs/DATA/probes/20260922_tools_1_run7.log docs/DATA/probes/20260922_tools_1_run8.log docs/DATA/probes/20260922_tools_1_run9.log docs/DATA/probes/20260922_tools_1_run10.log`
+
+### `STRATEGY_IDEAS.md` / `DATA.md` 向けの一行候補(提案。マージしない)
+
+- `STRATEGY_IDEAS.md` 向け: 指値の約定を「次の足の価格との大小だけ」で決める模型と、当方の板の待ち行列の参照実装を、同じ合成入力に掛けて差を測る案(採否はリードとオーナー)。
+- `DATA.md` 向け: `PySystemtrade` の同梱する先物の価格データ(日足の multiple_prices_csv と adjusted_prices_csv)は区分 3 の候補になりうる。再配布の条件は本体の GPLv3 と別に確かめること。
