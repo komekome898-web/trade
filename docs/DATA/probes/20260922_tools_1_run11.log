@@ -1,0 +1,162 @@
+=== 区分1 11回目 生ログ 2026-09-22 ===
+
+--- [1] 開始時刻と空き ---
+2026-09-22T10:37:21Z
+/dev/vda        252G   27G   11G  72% /
+rc=0
+
+--- [2] 残りの候補のメタ情報(ungh.cc) ---
+$ curl -sS -o ungh_<repo>.json -w "code=%{http_code}" https://ungh.cc/repos/<repo>
+OpenTrader-Org/OpenTrader code=404  (所有者の綴りが違う。8 回目の実測どおり所有者は bludnic)
+bludnic/OpenTrader code=200
+CryptoSignal/Crypto-Signal code=200
+Superalgos/Superalgos code=200
+carlos8f/bot18 code=000  (SSL_ERROR_SYSCALL。接続の失敗なので 1 回打ち直す)
+carlos8f/bot18 code=200  (打ち直し)
+ungh_bludnic_OpenTrader.json stars= 2866 createdAt= 2023-12-03T03:41:21Z pushedAt= 2025-06-29T16:24:33Z forks= 336 watchers= 50
+ungh_sa.json stars= 5659 createdAt= 2019-08-12T17:34:43Z pushedAt= 2026-09-22T03:34:40Z forks= 6020 watchers= 228
+ungh_CryptoSignal_Crypto-Signal.json stars= 5639 createdAt= 2017-09-16T23:49:24Z pushedAt= 2024-07-07T15:33:11Z forks= 1334 watchers= 306
+ungh_carlos8f_bot18.json stars= 203 createdAt= 2018-05-23T14:22:25Z pushedAt= 2022-12-02T04:32:13Z forks= 26 watchers= 38
+rc=0
+
+--- [3] Bot18 の npm registry(8 回目に取得した r8_bot18_npm.json を再解析)---
+LATEST=0.4.31 PUBLISH_TIME=2018-06-04T01:21:23.128Z
+LICENSE=https://bot18.net/licensing
+SCRIPTS=None
+DEPS_COUNT=50
+ENGINES={'node': '>=8.3.0'}
+UNPACKED_SIZE=82488973 FILE_COUNT=12263
+MAINTAINERS=['carlos8f'] VERSIONS_N=43
+rc=0
+
+--- [4] CryptoSignal: docker デーモンの有無 ---
+$ which docker; docker version
+== docker daemon ==
+GREP_RC=1
+ Built:             Wed Mar 25 16:13:43 2026
+ OS/Arch:           linux/amd64
+ Context:           default
+failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or directory
+VENV_RC=0
+rc=0
+
+--- [5] CryptoSignal: 配布どおりの固定版を隔離 venv(python3.10)に導入 ---
+$ /usr/bin/python3.10 -m venv vcs && ./vcs/bin/pip install "numpy==1.14.0" "Cython==0.28.2"
+1:Collecting numpy==1.14.0
+2:  Downloading numpy-1.14.0.zip (4.9 MB)
+4:  Preparing metadata (setup.py): started
+5:  Preparing metadata (setup.py): finished with status 'done'
+9:  Preparing metadata (setup.py): started
+10:  Preparing metadata (setup.py): finished with status 'error'
+80:      AttributeError: module 'collections' has no attribute 'Iterable'
+84:error: metadata-generation-failed
+95:real	0m3.524s
+98:STEP1_RC=1
+rc=1
+
+--- [6] CryptoSignal: numpy 1.14.0 の配布物(PyPI の JSON)---
+$ curl -sS https://pypi.org/pypi/numpy/1.14.0/json
+FILES=23 PYTHON_VERSIONS=['cp27', 'cp34', 'cp35', 'cp36', 'source'] PACKAGETYPES=['bdist_wheel', 'sdist'] UPLOAD=2018-01-06T23:35:53
+この環境で使える python は /usr/bin/python3.10 /usr/bin/python3.11 /usr/bin/python3.12 /usr/bin/python3.13 の 4 本で、cp36 以下は 1 本も無い
+rc=0
+
+--- [7] Superalgos: package.json の導入時実行(8 回目に取得した r8_sa_pkg.json を再読)---
+SCRIPT prepare = husky install
+SCRIPT presetup = git checkout develop && git pull upstream develop
+SCRIPT setup = node setup noShortcuts
+SCRIPT postsetup = npm start
+VERSION=1.6.1 LICENSE_FIELD=Apache License 2.0 DEPS_COUNT=58
+rc=0
+
+--- [8] OpenTrader: 中身なしの clone(大きさを先に測る)---
+$ git clone --no-checkout --depth 1 --filter=blob:none https://github.com/bludnic/OpenTrader.git ot
+real	0m0.699s
+CLONE_RC=0
+CLONE_MiB=1 TREE_FILES=684
+$ git ls-tree -d --name-only HEAD
+.changeset .devcontainer .github .husky .moon app bin packages pro scripts
+$ grep -rn (postinstall|preinstall|prepare|prepublish) --include=package.json .  -> 一致 0 件(根の package.json に導入時実行は無い)
+rc=0
+
+--- [9] OpenTrader: npm の配布物 opentrader の registry ---
+$ curl -sS https://registry.npmjs.org/opentrader   code=200
+LATEST=1.0.0-beta.29 PUBLISH_TIME=2025-03-06T01:25:40.999Z
+LICENSE=Apache-2.0 ENGINES=None BIN={'opentrader': 'bin/opentrader.mjs'}
+SCRIPTS={'postinstall': 'node scripts/postinstall.mjs'}
+DEPS_COUNT=27 UNPACKED_SIZE=8845861 FILE_COUNT=50
+MAINTAINERS=['bludnic'] VERSIONS_N=63
+rc=0
+
+--- [10] OpenTrader: tarball を実行せずに展開して postinstall.mjs を読む(§6-1)---
+$ curl -sSL -o opentrader.tgz https://registry.npmjs.org/opentrader/-/opentrader-1.0.0-beta.29.tgz
+tarball code=200 size=2011575
+$ tar xzf opentrader.tgz && cat package/scripts/postinstall.mjs
+import { homedir } from "node:os";
+import { execSync } from "node:child_process";
+import { writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { generate } from "random-words";
+
+const APP_DIR = ".opentrader";
+export const appPath = join(homedir(), APP_DIR);
+export const passFilePath = join(appPath, "pass");
+export const dbFilePath = join(appPath, "dev.db");
+export const customStrategiesPath = join(appPath, "strategies");
+
+function runMigrations() {
+  const commands = [
+    "prisma generate --generator client", // generate prisma client
+    `prisma migrate deploy`, // run migrations
+    `node seed.mjs`, // seed the database
+  ];
+
+  for (const command of commands) {
+    const env = { ...process.env, DATABASE_URL: `file:${dbFilePath}` };
+
+    execSync(command, { env, stdio: "inherit" });
+  }
+}
+
+function generatePassword(wordCount = 3, numberCount = 2) {
+  // Generate random words
+  const words = generate({
+    exactly: 1,
+...
+3:import { writeFileSync, existsSync, mkdirSync } from "node:fs";
+13:function runMigrations() {
+42:function savePassword() {
+59:function createCustomStrategiesDir() {
+61:    mkdirSync(customStrategiesPath, { recursive: true });
+65:runMigrations();
+66:savePassword();
+67:createCustomStrategiesDir();
+$ find package -type f ( -name *.node -o -name *.so -o -name *.exe -o -name *.wasm -o -name *.dll )  -> 一致 0 件
+rc=0
+
+--- [11] OctoBot: 隔離 venv の入れ直し(python3.12)---
+$ /usr/bin/python3.12 -m venv voct && ./voct/bin/pip install -q OctoBot && ./voct/bin/pip check
+VENV_RC=0
+real	1m17.989s
+INSTALL_RC=0
+No broken requirements found.
+PIPCHECK_RC=0
+rc=0
+
+--- [12] OctoBot: 合成の .data を書き出して importer で読み戻す(最小実行)---
+$ ./voct/bin/python oct_min.py   (合成の 1 分足 400 本のみ。当方の実データ・鍵は使っていない)
+WRITE_ROWS=400 SELECT_COUNT=[(400,)]
+IMPORTER_EXCHANGE=binance IMPORTER_SYMBOLS=['BTC/USDT'] IMPORTER_TIMEFRAMES=[<TimeFrames.ONE_MINUTE: '1m'>]
+AVAILABLE_TABLES=['ohlcv']
+TS_MIN=1700000000 TS_MAX=1700023940
+OHLCV_ROWS_RETURNED=3
+FIRST_ROW=[1700023940, 'binance', 'BTC/USDT', '1m', [1700023940, 100.0, 101.0, 99.0, 100.0, 5.0]]
+real	0m1.311s
+RC=0
+
+(打ち直しの経緯: 1 回目は db.insert の第 1 引数に .value を渡して AttributeError、
+ 2 回目は get_ohlcv の time_frame に文字列を渡して AttributeError。3 回目に RC=0)
+rc=0
+
+--- [13] 終了時刻 ---
+2026-09-22T10:46:32Z
+rc=0
