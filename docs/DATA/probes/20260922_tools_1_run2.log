@@ -333,3 +333,24 @@ $ for d in */; do find "$d" -name '*.so' | wc -l; find "$d" -name 'setup.py' | w
   zipline_reloaded     16      0
   → **7 件すべてで `setup.py` は 0 件**(wheel なので導入時に Python コードは実行されない)。`.so` は zipline_reloaded 16・jesse 3・pyqlib 2 で、中身の静的監査は未実施。
   (前版の「全 5 件とも 0」は対象を書いておらず、jesse と backtesting を数えていなかった。jesse の `.so` 3 件もこの数え直しで出た)
+
+### LV-9 W-5(PyAlgoTrade の GitHub)の取得結果の全文(監査 9 回目の指摘 2。生ログの head200 が先頭で切れていたため、アーカイブ日付と Basana の逐語が本当に調査班の取得に含まれていたかを確かめた)
+[W-5] https://github.com/gbeced/pyalgotrade
+# PyAlgoTrade Repository Analysis
+
+**Star Count:** 4.7k stars
+
+**Fork Count:** 1.4k forks
+
+**Total Commit Count:** 1,158 commits
+
+**Last Commit Date:** Not explicitly shown in the provided content
+
+**Primary Language:** Python
+
+**License:** LICENSE file present (specific license type not detailed in excerpt)
+
+**Archive/Maintenance Status:** Yes, archived and unmaintained. The repository displays: "This repository was archived by the owner on Nov 13, 2023. It is now read-only."
+
+**Additional Note:** The project includes a deprecation notice stating: "This project is deprecated and is no longer mantained. You may be interested in taking a look at Basana."
+→ **含まれていた。**「This repository was archived by the owner on Nov 13, 2023. It is now read-only.」「This project is deprecated and is no longer mantained. You may be interested in taking a look at Basana.」はどちらも W-5 の結果にある。本文の帰属(W-5)は正しい。Zenbot(LV-3)とは違い、リードの取り直しは要らなかった。

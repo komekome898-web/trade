@@ -529,7 +529,8 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 | 種別 | URL | 方法 |
 |---|---|---|
-| PyPI JSON(12 件) | `pypi.org/pypi/{backtesting,QSTrader,pyalgotrade,zipline-reloaded,lean,pyqlib,vnpy,jesse,backtestingcore,event-driven-backtesting-engine,bot18,vnpy_binance}/json` | curl |
+| PyPI JSON(取得できた 9 件) | `pypi.org/pypi/{backtesting,QSTrader,pyalgotrade,zipline-reloaded,lean,pyqlib,vnpy,jesse,vnpy_binance}/json` | curl(200) |
+| PyPI JSON(404 = そのパッケージが PyPI に無い、3 件) | `pypi.org/pypi/{bot18,backtestingcore,event-driven-backtesting-engine}/json` | curl(404。生ログ 19〜24 行) |
 | PyPI JSON(国内取引所の gateway) | `pypi.org/pypi/{vnpy_bitflyer,vnpy_bitbank,vnpy_gmocoin}/json` | curl(3 件とも 404 = そのパッケージが存在しない) |
 | GitHub ページ | `github.com/{kernc/backtesting.py, mhallsmoore/qstrader, gbeced/pyalgotrade, stefan-jansen/zipline-reloaded, QuantConnect/lean-cli, carlos8f/zenbot, carlos8f/bot18, microsoft/qlib, vnpy/vnpy, jesse-ai/jesse, Mendl-Labs/BacktestingCore, Luczinsritter/event_driven_backtesting_engine, nautechsystems/nautilus_trader}` | WebFetch |
 | GitHub のディレクトリ一覧 | `nautechsystems/nautilus_trader/tree/develop/crates/adapters` ほか / `nkaz001/hftbacktest/tree/master/{rust/src/live/connector, hftbacktest/src/connector, hftbacktest-rs/src/live}`(3 つとも 404) | WebFetch |
@@ -547,7 +548,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | `vectorbt` の無料版には**指値注文の概念そのものがソースに無い**(パッケージ全体の grep で一致 0 件) | 実測(生ログ、隔離 venv での grep) | 当方の戦略は指値の約定を測るものなので、無料版のままでは当方の用途に届かない。PRO の機能差の逐語は次回 |
 | `freqtrade` は bitFlyer を「必須機能の欠落(fetchOrder・fetchOHLCV)」として使えない側に置き、**bitbank は使える側の 79 取引所に入っている** | 実測(`freqtrade list-exchanges -a` と非 -a、生ログ LV-5f。1 回目の「国内 3 社の記載なし」の訂正) | 国内取引所の対応は「記載の有無」ではなく取引所ごとの機能表で決まる。当方が bitFlyer を使う限り freqtrade の執行部は使えない |
 | `ccxt` の bitflyer は `createOrder`・`cancelOrder` は真だが `fetchOHLCV` が無い | 実測(生ログ LV-5g) | 足データは自前で持つ必要がある(当方は既に持っている) |
-| `PyAlgoTrade` は 2023-11-13 にアーカイブ済みで、**公式に後継 Basana を名指し**している | 一次資料(GitHub のアーカイブ表示と README の逐語、W-5) | 候補 18(Basana)はここから出た。古い候補を追うより後継を見る |
+| `PyAlgoTrade` は 2023-11-13 にアーカイブ済みで、**公式に後継 Basana を名指し**している | 一次資料(GitHub のアーカイブ表示と README の逐語、W-5。**取得結果の全文を生ログ LV-9 に載せて、日付と Basana の逐語が調査班の取得に実在することを確かめた**) | 候補 18(Basana)はここから出た。古い候補を追うより後継を見る |
 | `Zenbot`(本家)は 2022-02-15 にアーカイブ済み | 一次資料(GitHub のアーカイブ表示の逐語、リードが取り直し = 生ログ LV-3) | 実質的に終了。Node.js + MongoDB で当方の環境とも離れている |
 | `QSTrader` は日次の目標配分リバランス型で、**指値・板・待ち行列の概念がソースに無い** | 実測(モジュール一覧、生ログ LV-5a) | 当方の用途(秒単位・指値の約定)とは設計が違う |
 | 1 つの venv に複数のツールを入れると依存が壊れる(Jesse の導入が numpy を 2.x から 1.26.4 に落とし、hftbacktest 等と衝突。vectorbt は最新の plotly では import 自体が失敗) | 実測(生ログ) | ツールごとに隔離した環境で試すのが前提。当方のリポジトリ環境には入れない(委任文 §5-2 のとおり) |
