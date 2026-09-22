@@ -7737,3 +7737,316 @@ K12 検査の出力の貼付           0 件
 **リードに渡す判断の点は「原文に無い判断が要った点」の節に 4 件挙げてある**(検査の誤検出ではなく、段の当て方と読み直しの線引きの話である)。
 
 **生ログの本数**: `ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l` の出力は **24**(生ログ `20260922_tools_1_run25.log` の `ls_probes` の節)。
+
+## 区分1 — 26 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run26.log`。
+25 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run25.md`)と、その §8 の起動の指定に従う。
+
+**この回にしたこと**: (1) 一次資料に未到達だった 11 件(51・53・54・57・60・67・70・72・87・91・92)の**全部に一次資料で到達し**、6 要素の印と 段(機構)/段(既定) を決めた /
+(2) 23 番 `hftbacktest` と 6 番 `Ziplime` の段(既定)を埋めた(どちらも原典に既定を入れる行があり、`未確認` を解消した) /
+(3) 19 番 `Jesse` の段 3 を判定した(**段 2 のままが正しい**) / (4) 33 番の段(既定)を 5 に直した。
+**導入・構築・最小実行・登録・鍵の発行・購入・発注はこの回に 1 件も無い。新しい検索計画も打っていない。候補も増やしていない。**
+
+**この回に打った GET について**: 起動の指定の逐語「**構築・導入・最小実行はしないでください。新しい検索計画は打たないでください。候補も増やさないでください。**」に従い、
+導入も最小実行もしていない。25 回目の検収 §5(3) の逐語「**既定値を読むための原典の取得は「深掘り」ではありません。打ってよいです。**」により、
+**一次資料に到達するための取得と、既定値を読むための取得だけを打った。**候補は 1 件も増やしていない。
+
+**書き換えの範囲**: 過去の回の節は 1 行も書き換えていない。指定 1 から 4 はすべて**新しい節への追記だけ**で果たした。
+起動の指定の逐語「**追記だけで果たせるならそのほうがよいです。**」に従った。33 番の訂正も、24 回目の節には触れずこの節に書いた
+(起動の指定の逐語「**24 回目の節は書き換えないでください**」)。
+
+**生ログの本数**: `ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l` の出力は **25**(生ログ `20260922_tools_1_run26.log` の `ls_probes` の節)。
+**これはこの回の生ログ `run26.log` を作ったあとに打った値で、内訳は `run2` から `run26` である**(`run1` の生ログは無い。21 回目から 25 回目と同じ)。
+
+**到達の記録**: HTTP 404 は **0 件**である。**TLS の切断は 2 件あり、どちらも打ち直して `code=200` を得ている**
+(`ungh.cc` の files 端点で 1 件、`ungh.cc/repos/nkaz001/hftbacktest/files/master` で 1 件)。**404 の欄には入れていない。**
+**既定枝は `ungh.cc` の `defaultBranch` で 11 件すべて確かめてから取った。当てずっぽうの取得は 0 件である。**
+
+**字形について**: この回に逐語で引いた原典のうち、**半角の ASCII でない文字を含むものが 2 件あった。**
+1 件目は候補 51 `QUANTAXIS` の設定の注記で、中国語の文である。2 件目は候補 53 `Rqalpha` の設定の注記で、これも中国語の文である。
+**どちらも逐語をそのまま写し、訳を併記した。**訳の側を逐語として扱っていない。
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**新しい検索計画は打たないでください。候補も増やさないでください。**」による。
+X の経路も同じ理由で打っていない。**候補は 1 件も増えていない。**
+この回に取った GET は、**一次資料に未到達だった 11 件の実装の原典**と、**23 番・6 番・19 番の既定と実装**だけである。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md` | 2026-09-22 | 51・53・54・57・60・67・70・72・87 の登録名(所有者と名前)の出所 |
+| 2 | `https://ungh.cc/repos/<11 件の登録>` | 2026-09-22 | 11 件の既定枝・星・作成日・押し出し日。**51 番は付け替えが判明** |
+| 3 | `https://ungh.cc/repos/<登録>/files/<既定枝>` | 2026-09-22 | 51・53・54・57・60・67・70・72・87・91・92 の実装の所在の機械的な絞り込み |
+| 4 | `https://raw.githubusercontent.com/yutiansut/QUANTAXIS/master/QUANTAXIS/QAStrategy/qactabase.py` | 2026-09-22 | 候補 51 の検証の経路の約定 |
+| 5 | `https://raw.githubusercontent.com/yutiansut/QUANTAXIS/master/QUANTAXIS/QAMarket/QAOrder.py` | 2026-09-22 | 候補 51 の `trade` が市場を見ないこと |
+| 6 | `https://raw.githubusercontent.com/ricequant/rqalpha/master/rqalpha/mod/rqalpha_mod_sys_simulation/matcher/bar_matcher.py` | 2026-09-22 | 候補 53 の足の照合と出来高の上限 |
+| 7 | `https://raw.githubusercontent.com/ricequant/rqalpha/master/rqalpha/mod/rqalpha_mod_sys_simulation/matcher/tick_matcher.py` | 2026-09-22 | 候補 53 のティックの照合と逐档の照合 |
+| 8 | `https://raw.githubusercontent.com/ricequant/rqalpha/master/rqalpha/mod/rqalpha_mod_sys_simulation/__init__.py` | 2026-09-22 | 候補 53 の**既定値**の全部 |
+| 9 | `https://raw.githubusercontent.com/ricequant/rqalpha/master/rqalpha/config.yml` | 2026-09-22 | 候補 53 の**既定の足の粗さ** |
+| 10 | `https://raw.githubusercontent.com/ricequant/rqalpha/master/rqalpha/mod/rqalpha_mod_sys_simulation/simulation_event_source.py` | 2026-09-22 | 候補 53 が事象で駆動されること |
+| 11 | `https://raw.githubusercontent.com/cuemacro/finmarketpy/master/src/finmarketpy/backtest/backtestengine.py` | 2026-09-22 | 候補 54 がベクトル化であること |
+| 12 | `https://raw.githubusercontent.com/cuemacro/finmarketpy/master/src/finmarketpy/backtest/backtestrequest.py` | 2026-09-22 | 候補 54 の費用の**既定** |
+| 13 | `https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/MatchEngine.cpp` | 2026-09-22 | 候補 57 が**自分の注文の列の位置**を持つこと |
+| 14 | `https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/MatchEngine.h` | 2026-09-22 | 候補 57 の列の減りの**既定** |
+| 15 | `https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/HftMocker.cpp` | 2026-09-22 | 候補 57 の気配の量による頭打ち |
+| 16 | `https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/ExecMocker.h` | 2026-09-22 | 候補 57 の照合の機関が実行経路に在ること |
+| 17 | `https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/CtaMocker.cpp` | 2026-09-22 | 候補 57 の足の経路の滑り |
+| 18 | `https://raw.githubusercontent.com/fasiondog/hikyuu/master/hikyuu_cpp/hikyuu/trade_sys/system/System.cpp` | 2026-09-22 | 候補 60 が未約定を次の足に持ち越すこと |
+| 19 | `https://raw.githubusercontent.com/Lumiwealth/lumibot/dev/lumibot/backtesting/backtesting_broker.py` | 2026-09-22 | 候補 67 の指値の埋まり方と滑り |
+| 20 | `https://raw.githubusercontent.com/pineforge-4pass/pineforge-engine/main/src/native_matching.hpp` | 2026-09-22 | 候補 70 の足の内側の道筋と交差の時刻 |
+| 21 | `https://raw.githubusercontent.com/pineforge-4pass/pineforge-engine/main/docs/pages/fill-model.md` | 2026-09-22 | 候補 70 の実行の予定表の逐語 |
+| 22 | `https://raw.githubusercontent.com/squidKid-deluxe/QTradeX-Algo-Trading-SDK/master/qtradex/core/backtest.py` | 2026-09-22 | 候補 72 の越え判定 |
+| 23 | `https://raw.githubusercontent.com/chrism2671/PyTrendFollow/master/trading/accountcurve.py` | 2026-09-22 | 候補 87 がベクトル化であることと滑りの当て方 |
+| 24 | `https://raw.githubusercontent.com/braedonsaunders/homerun/main/backend/services/backtest/matching_engine.py` | 2026-09-22 | 候補 91 の列の位置と影響の関数 |
+| 25 | `https://raw.githubusercontent.com/braedonsaunders/homerun/main/backend/services/backtest/book_replay.py` | 2026-09-22 | 候補 91 が板の写真を回すこと |
+| 26 | `https://raw.githubusercontent.com/braedonsaunders/homerun/main/backend/services/backtest/engine.py` | 2026-09-22 | 候補 91 の駆動が足ではないこと |
+| 27 | `https://raw.githubusercontent.com/Quentin-Piot/prediction-market-backtester/master/src/pm_bt/execution/simulator.py` | 2026-09-22 | 候補 92 の影響の関数と**既定** |
+| 28 | `https://raw.githubusercontent.com/nkaz001/hftbacktest/master/py-hftbacktest/src/lib.rs` | 2026-09-22 | 候補 23 の列の模型の**既定** |
+| 29 | `https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/core/run_simulation.py` | 2026-09-22 | 候補 6 の滑りの模型を渡す側(**25 回目の `未確認` の解消**) |
+| 30 | `https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/finance/slippage/fixed_basis_points_slippage.py` | 2026-09-22 | 候補 6 の既定の滑りの中身 |
+| 31 | `https://raw.githubusercontent.com/jesse-ai/jesse/master/jesse/modes/backtest_mode.py` | 2026-09-22 | 候補 19 の分割してできた足の行き先(**段 3 の判定**) |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **候補 57 `WonderTrader` は、自分の注文が列のどこに居るかを追う。**逐語は `double& quepos = ordInfo._queue;` と `if (volume <= quepos)` と `quepos -= volume;` と、列の初期値を作る `ordInfo._queue = lastTick->bidqty(0);` と `ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);`。**当方が持っていないもの(`CLAUDE.md` §8 の A)そのものが、研究の模擬に組み込まれた形で在る。**列の減らし方は「ティックの出来高ぶんだけ前が減る」である | 実測 | `.../src/WtBtCore/MatchEngine.cpp` 取得日 2026-09-22 / `20260922_tools_1_run26.log` の `c57_wondertrader` の節 |
+| 2 | **候補 57 の列の減りの掛け目は既定で 0 である。**逐語は `MatchEngine() : _tick_cache(NULL),_cancelrate(0), _sink(NULL)` で、`init` の逐語は `_cancelrate = cfg->getDouble("cancelrate");`。**列を追うこと自体は旗を持たず無条件に働く**ので、段(既定)は下がらない。下がるのは「前の注文が取り消されて列が早く減る」ぶんだけである | 実測 | 同上 |
+| 3 | **候補 91 `braedonsaunders/homerun` も、自分の注文が列のどこに居るかを追う。**逐語は `queue_ahead_shares: Optional[float] = None` と、板の写真が入れ替わるときの注記 `depth that disappeared between snapshots is volume that traded ahead of us in the FIFO queue.` と `order.queue_ahead_shares = compute_queue_ahead_shares(` と `if order.queue_ahead_shares is not None and order.queue_ahead_shares > 1e-9:`。**同じ値段の段の中の順番は観測できないので `maker_queue_ahead_fraction` の既定 `0.65` を当てる**という逐語の断りが付いている | 実測 | `.../backend/services/backtest/matching_engine.py` 取得日 2026-09-22 / `20260922_tools_1_run26.log` の `c91_homerun` の節 |
+| 4 | **候補 91 の影響の関数は、候補 21 `Qlib` と同じ「呼ぶが既定では無効」である。**逐語は `strength_bps: float = 0.0,` と、同じ類の注記 `strength_bps = 0 disables impact entirely (existing backtests` と、2 つの領域に分かれる式の説明 `(textbook Almgren-Chriss; impact grows concavely with size).`。**列を追うほうは既定で働き、影響のほうは既定で消えている。**1 つの道具の中で向きが分かれる | 実測 | 同上 |
+| 5 | **候補 91 は足を回していない。**逐語は `async for snapshot in book_source.iter_snapshots():` で、同じ機関の説明の逐語は `Canonical L2 book value types + an in-memory replay for tests.` と `sub-second backtest loads ~1.2M snapshots`。**一覧の仕分けは `区分1-足`(推定)だったが、実装は板の写真を回すもので、足は回していない。**機関の原典に `candle` と `ohlc` の一致は無い | 実測 | `.../backend/services/backtest/engine.py` と `.../book_replay.py` 取得日 2026-09-22 / 同じ生ログの `c91_homerun` の節 |
+| 6 | **候補 53 `Rqalpha` の出来高の上限は既定で働く。**逐語は `"volume_limit": True,` と `"volume_percent": 0.25,` と、充てる側の `volume_limit = round(volume * self._volume_percent) - self._turnover[order.order_book_id]` と `fill = min(order.unfilled_quantity, volume_limit)`。**滑りのほうは既定で 0 である**(逐語 `"slippage": 0,`、模型は `"slippage_model": "PriceRatioSlippage",`)。**そのまま使うと「その足の出来高の 4 分の 1 までしか埋まらず、値段は動かない」である** | 実測 | `.../matcher/bar_matcher.py` と `.../rqalpha_mod_sys_simulation/__init__.py` 取得日 2026-09-22 / 同じ生ログの `c53_rqalpha` の節 |
+| 7 | **候補 53 はティックを事象として受け取る口を持つが、既定の粗さは日足である。**逐語は `yield Event(EVENT.TICK, calendar_dt=calendar_dt, trading_dt=trading_dt, tick=tick)` と `yield Event(EVENT.BAR, calendar_dt=dt_bar, trading_dt=dt_bar)`、既定は `frequency: 1d`。**段(機構)と段(既定)が食い違う理由がここである。**逐档の照合(`class CounterPartyOfferMatcher(DefaultTickMatcher):` と `amount = self._a_volume[order_book_id][0]`)は対手方の段の提示量を食うが、**自分の注文が列のどこに居るかは持たない** | 実測 | `.../simulation_event_source.py` と `.../config.yml` と `.../matcher/tick_matcher.py` 取得日 2026-09-22 / 同じ生ログの `c53_rqalpha` の節 |
+| 8 | **候補 51 `QUANTAXIS` の検証の経路は、指定した値段と数量をそのまま成立させる。**逐語は `elif self.running_mode == 'backtest':` の枝の `order.trade(order.order_id, order.price, order.amount, order.datetime)` と `self.acc.receive_simpledeal(` で、`trade` の側は `if self.status in [ORDER_STATUS.SUCCESS_PART, ORDER_STATUS.QUEUED]:` と数量の下限だけを見て、**市場の値段を 1 度も見ない。**滑り・影響・出来高の上限の語は、読んだ 2 本の原典に一致が無い | 実測 | `.../QAStrategy/qactabase.py` と `.../QAMarket/QAOrder.py` 取得日 2026-09-22 / 同じ生ログの `c51_quantaxis` の節 |
+| 9 | **候補 51 は登録の付け替えの「気づけない型」である。**`ungh.cc/repos/QUANTAXIS/QUANTAXIS` は `code=200` を返すが、応答の中身は `repo=yutiansut/QUANTAXIS` である。**25 回目に見つけた候補 3 `PySystemtrade` と同じ型で、404 にならないので打っただけでは気づけない。**既定枝は `master` | 実測 | `20260922_tools_1_run26.log` の `defaultBranch_11` の節 |
+| 10 | **候補 51 には、自動の外部送信の口が 2 つある。**1 つ目の逐語は `requests.post('http://www.yutiansut.com/signal?user_id={}&template={}&strategy_id={}&realaccount={}&code={}&order_direction={}&order_offset={}&price={}&volume={}&order_time={}'.format(` で、**建玉の口座名・銘柄・向き・値段・数量を作者のサーバーへ送る。**既定は `send_wx=False,` で、実弾ではない `sim` の枝にある。2 つ目は検証の終わりの `from QARank import QA_Rank` と `QA_Rank(self.acc).send()` で、同じファイルの注記の逐語は `QARank是我们内部用于评价策略ELO的库 此处并不影响正常使用`(訳: QARank は我々が内部で戦略の ELO を評価するために使う library で、ここは通常の使用に影響しない)。**別の package が入っているときだけ動き、`try` と `except` で包まれている** | 実測 | `.../QAStrategy/qactabase.py` 取得日 2026-09-22 / 同じ生ログの `c51_quantaxis` の節 |
+| 11 | **候補 60 `Hikyuu` は、埋まらなかった注文を次の足へ持ち越す。**逐語は `if (today.highPrice == today.lowPrice && !getParam<bool>("can_trade_when_high_eq_low")) {` と、持ち越しの回数の上限 `if (m_buyRequest.count > getParam<int>("max_delay_count")) {`、既定は `setParam<bool>("can_trade_when_high_eq_low", false);` と `setParam<int>("max_delay_count", 3);`。**値幅の上限か下限に張り付いた足では建てられない、という形の未約定である。**滑りの模型は 6 つあるが(定率・定額・正規・対数正規・切断正規・一様)、**どれも出来高を見ない** | 実測 | `.../trade_sys/system/System.cpp` 取得日 2026-09-22 / 同じ生ログの `c60_hikyuu` の節 |
+| 12 | **候補 67 `lumibot` の指値は、足の幅が跨いだら埋まり、跨がなければ次の足に残る。**逐語は `if low_val <= limit_val <= high_val:` と、飛んだときの `# Gap Up case: Limit wasn't triggered by previous candle but current candle opens higher, fill it now` と、走らせ方の `This method will evaluate the open orders at the beginning of every new bar to`。**滑りは `_get_strategy_slippage_amount` で定額を足す形で、出来高を見ない** | 実測 | `.../lumibot/backtesting/backtesting_broker.py` 取得日 2026-09-22 / 同じ生ログの `c67_lumibot` の節 |
+| 13 | **候補 72 `QTradeX` の越え判定は、足の極値をそのまま使わない。**逐語は `low, high = sorted([price["open"], price["close"]])` と `low = (low + price["low"])/2` と `high = (high + price["high"])/2` で、**その足の「始値と終値の幅」と「極値」の中点を越え判定の境にしている。**同じファイルに、極値をそのまま使う書き方が `# low, high = sorted([price["low"], price["high"]])` として注記で残っている。**越えなければその足では建てず、注文は残らない**(逐語 `operation = None`) | 実測 | `.../qtradex/core/backtest.py` 取得日 2026-09-22 / 同じ生ログの `c72_qtradex` の節 |
+| 14 | **候補 70 `PineForge` は、足の内側に価格の道筋を引き、交差した時刻を持つ当たりを作る。**逐語は `inline double price_at(double from, double to, double t) noexcept {` と `inline std::optional<double> t_for_price(double from, double to, double price) noexcept {` と `return GeometricHit{*t_cross, level, true};`。**その当たりを受け取る側の逐語は `| Execution schedule | Candidate identity, event coordinate, dependency and explicit priority |` である。**出来高の語は、読んだ約定の模型の文書に一致が無い | 実測 | `.../src/native_matching.hpp` と `.../docs/pages/fill-model.md` 取得日 2026-09-22 / 同じ生ログの `c70_pineforge` の節 |
+| 15 | **候補 19 `Jesse` の分割してできた足は、機関に事象としては入らない。**逐語は `storable_temp_candle, current_temp_candle = candle_service.split_candle(current_temp_candle, order.price)` と、その行き先の `candle_service.add_candle(` に渡される `with_execution=False,` と `with_generation=False,`、および同じ関数の説明の逐語 `This function get called when an order is getting executed you need to update the other timeframe how their last candles looks like`。**分割の結果は「他の足の粗さの最後の足がどう見えるか」を直すためのもので、戦略を動かす事象にはならない。**よって**段 2 のままが正しい** | 実測 | `.../jesse/modes/backtest_mode.py` 取得日 2026-09-22 / 同じ生ログの `c19_jesse_split` の節 |
+| 16 | **候補 23 `hftbacktest` の列の模型には既定がある。**逐語は `pub fn new() -> Self {` の中の `queue_model: QueueModel::LogProbQueueModel2 {},` で、選べる側の逐語は `pub enum QueueModel {` の下の `RiskAdverseQueueModel {}` `PowerProbQueueModel { n: f64 }` `LogProbQueueModel {}` `LogProbQueueModel2 {}` `PowerProbQueueModel2 { n: f64 }` `PowerProbQueueModel3 { n: f64 }` `L3FIFOQueueModel {}` である。**明示しなくても列の位置の模型が入るので、段(既定)は 5 である。**25 回目の `未確認` はこれで解消した | 実測 | `.../py-hftbacktest/src/lib.rs` 取得日 2026-09-22 / 同じ生ログの `c23_hftbacktest_default` の節 |
+| 17 | **候補 6 `Ziplime` の滑りの模型を渡す側は、repository の中に在った。**逐語は `if equity_slippage is None:` と `equity_slippage = FixedBasisPointsSlippage()` と `if future_slippage is None:` と `future_slippage = VolatilityVolumeShare(` で、場所は入口の `ziplime/core/run_simulation.py` である。**25 回目に `total_count=0` を返した GitHub の code search は、在るものを見つけられなかった。**既定の滑りの中身は `def __init__(self, basis_points=5.0, volume_limit=0.1):` と `historical_volume * volume_limit` で、**親の `zipline-reloaded` と同じである。**よって段(既定)は 4 で、25 回目の `未確認` は解消した | 実測 | `.../ziplime/core/run_simulation.py` と `.../fixed_basis_points_slippage.py` 取得日 2026-09-22 / 同じ生ログの `c6_ziplime_default` の節 |
+| 18 | **候補 54 `finmarketpy` と候補 87 `PyTrendFollow` は、注文の物を持たない。**54 番の逐語は `portfolio = calculations.calculate_signal_returns_with_tc_matrix(` と `signal_df = signal_df.shift(br.signal_delay)` と費用の `self.__spot_tc_bp = float(spot_tc_bp) / (2.0 * 100.0 * 100.0)`、87 番の逐語は `return (self.positions.shift(2).multiply((self.panama_prices()).diff(), axis=0).fillna(0) * self.point_values()) * self.rates()` と `slippage_multiplier = .5`。**どちらも「建玉の行列」と「値動きの行列」を掛けるだけで、埋まるか埋まらないかの判定そのものが無い** | 実測 | `.../backtestengine.py` `.../backtestrequest.py` `.../trading/accountcurve.py` 取得日 2026-09-22 / 同じ生ログの `c54_finmarketpy` と `c87_pytrendfollow` の節 |
+| 19 | **候補 92 `Quentin-Piot/prediction-market-backtester` は、参加率に比例する影響の関数を持つが既定で無効である。**逐語は `slippage_volume_k: float | None = Field(default=None, ge=0.0)` と `slippage_bps: float = Field(default=0.0, ge=0.0)` と、効かせたときの式 `return self.config.slippage_volume_k * (qty / recent_volume)`。**既定では中値に半値幅を足しただけの値段で必ず埋まる**(逐語 `default_spread: float = Field(default=0.02, ge=0.0, le=1.0)` と `half_spread = spread / 2.0`) | 実測 | `.../src/pm_bt/execution/simulator.py` 取得日 2026-09-22 / 同じ生ログの `c92_pmbt` の節 |
+| 20 | **「呼ぶが既定では無効」は、この回でさらに 2 件見つかった。**91 番(影響の関数)と 92 番(参加率の影響)である。**25 回目までの 21 番 `Qlib`・4 番 `PyBroker`・2 番 `Backtrader` と合わせて、この型は 5 件になった。**逆に**「既定のほうが高い」型**は、25 回目の 1 番 `Basana` に、この回の 53 番 `Rqalpha`(出来高の上限が既定で入る)・23 番 `hftbacktest`(列の模型が既定で入る)・57 番 `WonderTrader`(列の追跡に旗が無い)・91 番(列の追跡に旗が無い)が加わった | 推定 | この回の知見 3・4・6・16 と 25 回目の知見 1・3 から数えた。**個々の逐語はそれぞれの知見の根拠の欄に在る** |
+
+### 候補の一覧
+
+**新しい候補は 0 件。**この回に状態が変わったのは、**一次資料に未到達だった 11 件が全部「一次資料に到達」になった**ことと、
+**23 番・6 番の段(既定)が `未確認` から確定に変わった**こと、**19 番の段 3 の判定**、**33 番の段(既定)の訂正**である。
+番号と名前は既存の一覧のものをそのまま使う。**この回は 1 件も深掘りしていない**(導入と最小実行をしていないため)。
+
+#### 一次資料に到達した 11 件
+
+**この 11 件は、25 回目まで「一覧の 1 行の説明」しか持っていなかった。**この回に実装の原典に到達し、6 要素の印と段を決めた。
+**どれも導入も最小実行もしていないので `[深掘り]` は付けない。**委任文 §4.0 の逐語「**深掘りした道具は、文章より先に下の表に 1 行ずつ書く。**」に従い、
+**深掘りが 0 件なのでこの回の §4.0 の表に行は無い**(18 回目から 25 回目と同じ)。
+
+51. `QUANTAXIS` — **一次資料に到達。登録は `yutiansut/QUANTAXIS`**(一覧の `QUANTAXIS/QUANTAXIS` は付け替え前の名前で、`code=200` のまま中身だけが変わる。知見 9)。既定枝は `master`。印は `区分1-足` のみ。**`区分1-市場影響と約定の模型` は付けない**(知見 8。指定の値段と数量をそのまま成立させ、滑りも影響も出来高の上限も持たない)。**`区分1-イベント駆動` は付けない**(検証の枝の駆動は `data.data.apply(self.x1, axis=1)` で、表の行ごとの走査である)。**`区分1-ベクトル化` は付けない**(行ごとの `apply` は繰り返しであってベクトル化ではない)。および `区分2 へ` と `区分3 へ` と `区分5 へ`。浅い(料金の構造・許諾・導入・最小実行・外部送信の遮断の仕方が未確認)。**危険の欄に 1 件**: 自動の外部送信の口が 2 つ在る(知見 10)。
+53. `Rqalpha` — **一次資料に到達。**登録は `ricequant/rqalpha`、既定枝は `master`。印は `区分1-足` と `区分1-ティック` と `区分1-イベント駆動` と `区分1-市場影響と約定の模型`、および `区分2 へ`。**`区分1-板の待ち行列` は付けない**(逐档の照合は対手方の段の提示量を食うだけで、自分の注文が列のどこに居るかを追わない。知見 7)。**`区分1-ベクトル化` は付けない。**浅い(許諾の本文・料金・導入・最小実行が未確認)。**許諾に注意**: 原典の冒頭に、**非商業の用途と商業の用途で条件が分かれる**と書かれている。
+54. `finmarketpy` — **一次資料に到達。**登録は `cuemacro/finmarketpy`、既定枝は `master`。印は `区分1-足` と `区分1-ベクトル化` と `区分1-市場影響と約定の模型`、および `区分4 へ`。**`区分1-イベント駆動` は付けない**(注文の物が無い。知見 18)。**`区分1-板の待ち行列` は付けない**(原典に `order_book` と `queue` の一致が無い)。浅い(許諾・料金・導入・最小実行が未確認)。
+57. `WonderTrader` — **一次資料に到達。**登録は `wondertrader/wondertrader`、既定枝は `master`。印は `区分1-足` と `区分1-ティック` と **`区分1-板の待ち行列`** と `区分1-イベント駆動` と `区分1-市場影響と約定の模型`、および `区分2 へ`。**この回でいちばん重い発見である**(知見 1・2)。浅い(許諾・料金・構築・最小実行が未確認。C++ の構築が要る)。
+60. `Hikyuu` — **一次資料に到達。**登録は `fasiondog/hikyuu`、既定枝は `master`。印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分4 へ`。**`区分1-ティック` は付けない**(検証の機関が受け取るのは足の列である)。**`区分1-板の待ち行列` と `区分1-イベント駆動` と `区分1-ベクトル化` は付けない。**浅い(許諾・料金・構築・最小実行が未確認)。
+67. `lumibot` — **一次資料に到達。**登録は `Lumiwealth/lumibot`、**既定枝は `dev`**(`main` ではない)。印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分2 へ`。**`区分1-ティック` と `区分1-板の待ち行列` と `区分1-イベント駆動` と `区分1-ベクトル化` は付けない**(知見 12)。浅い(許諾・料金・導入・最小実行・外部の data 源の鍵の要否が未確認)。
+70. `PineForge` — **一次資料に到達。**登録は `pineforge-4pass/pineforge-engine`、既定枝は `main`。印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分8 へ`。**`区分1-イベント駆動` は付けない**(足の走査で駆動し、足の内側の道筋は幾何の計算である)。**`区分1-板の待ち行列` は付けない**(原典の約定の模型の文書に、待ち行列を持たないと読める逐語 `It is not a queue` と、その次の行の `that retroactively settles every individual fill.` が在る。**原典では 2 行に折れている**)。浅い(許諾・料金・構築・最小実行が未確認)。
+72. `QTradeX` — **一次資料に到達。**登録は `squidKid-deluxe/QTradeX-Algo-Trading-SDK`、既定枝は `master`。印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分2 へ`。**残りの 4 要素は付けない**(知見 13)。浅い(許諾・料金・導入・最小実行が未確認)。
+87. `PyTrendFollow` — **一次資料に到達。**登録は `chrism2671/PyTrendFollow`、既定枝は `master`。**最後の押し出しは 2018-04-25 で、一覧の `dormant since 2018-04` と合う。**印は `区分1-足` と `区分1-ベクトル化` と `区分1-市場影響と約定の模型`、および `区分2 へ`。**残りの 3 要素は付けない**(知見 18)。浅い(許諾・料金・導入・最小実行が未確認)。
+91. `braedonsaunders/homerun` — **一次資料に到達。**既定枝は `main`。印は `区分1-ティック` と **`区分1-板の待ち行列`** と `区分1-イベント駆動` と `区分1-市場影響と約定の模型`、および `区分2 へ` と `区分3 へ` と `区分5 へ` と `区分6 へ`。**`区分1-足` を外した**(一覧の仕分けは推定で、実装は板の写真を回している。知見 5)。**57 番に次いで重い。**浅い(許諾・料金・構築・最小実行が未確認。backend と frontend と database が要る)。
+92. `Quentin-Piot/prediction-market-backtester` — **一次資料に到達。**既定枝は `master`。印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分8 へ`。**残りの 4 要素は付けない**(知見 19)。浅い(許諾・料金・導入・最小実行が未確認)。
+
+**51 番から 92 番の間で、この回に触れていない番号の行は上に出していない。**過去の回の一覧がそのまま生きている。
+
+#### 段の表 — この回に決めた分と、直した分
+
+**並びは 25 回目の表の下に足す形にしてある**(25 回目までの 26 件は書き換えていない。33 番だけは訂正なので下の別表に出す)。
+
+| 候補 | 段(機構) | 段(既定) | 段を決めた逐語(出所) | 注記 |
+|---|---|---|---|---|
+| 51 `QUANTAXIS` | **0** | **0** | `order.trade(order.order_id, order.price, order.amount, order.datetime)` と `self.acc.receive_simpledeal(`(この回の知見 8) | **市場の値段を 1 度も見ない。**段 0 の定義「何も見ない」に当てた |
+| 54 `finmarketpy` | **0** | **0** | `calculate_signal_returns_with_tc_matrix(`(この回の知見 18) | **注文の物が無い。**費用は往復の半分を基点で引く定率で、段を上げない |
+| 87 `PyTrendFollow` | **0** | **0** | `slippage_multiplier = .5` と `self.positions.shift(2).multiply(...)`(この回の知見 18) | **注文の物が無い。**滑りは「その日の値動きの半分」で、これも定率である |
+| 92 `prediction-market-backtester` | **6** | **0** | 機構 = `return self.config.slippage_volume_k * (qty / recent_volume)`。既定 = `slippage_volume_k: float \| None = Field(default=None, ge=0.0)` と `slippage_bps: float = Field(default=0.0, ge=0.0)`(この回の知見 19) | **「呼ぶが既定では無効」。**既定では中値に半値幅を足して必ず埋まる |
+| 72 `QTradeX` | **1** | **1** | `low = (low + price["low"])/2` と `high = (high + price["high"])/2` と `operation = None`(この回の知見 13) | 越え判定の境を足の極値より内側に寄せる。**越えなければ注文は残らない**ので段 2 ではない |
+| 60 `Hikyuu` | **2** | **2** | `if (today.highPrice == today.lowPrice && !getParam<bool>("can_trade_when_high_eq_low")) {` と `setParam<int>("max_delay_count", 3);`(この回の知見 11) | 滑りの模型を 6 つ持つが、**どれも出来高を見ない**ので段を上げない |
+| 67 `lumibot` | **2** | **2** | `if low_val <= limit_val <= high_val:` と `This method will evaluate the open orders at the beginning of every new bar to`(この回の知見 12) | 滑りは定額の足し算。出来高を見ない |
+| 70 `PineForge` | **2・3** | **2・3** | 段 2 = 未約定が次の足へ残ること。段 3 = `inline std::optional<double> t_for_price(double from, double to, double price) noexcept {` と `return GeometricHit{*t_cross, level, true};` と `| Execution schedule | Candidate identity, event coordinate, dependency and explicit priority |`(この回の知見 14) | **段 3 に当てた判断は原文に無い。**19 番 `Jesse` と同じ問いだが、**分割の結果が実行の予定表に事象の座標つきで入る**点が違う。**リードへの問い 1 に挙げる** |
+| 53 `Rqalpha` | **3・4** | **4** | 機構 = `yield Event(EVENT.TICK, ..., tick=tick)`(段 3)と `fill = min(order.unfilled_quantity, volume_limit)`(段 4)。既定 = `frequency: 1d` と `"volume_limit": True,` と `"volume_percent": 0.25,`(この回の知見 6・7) | **既定の粗さが日足なので、段 3 は既定に入らない。**滑りは既定で 0 |
+| 57 `WonderTrader` | **3・4・5** | **3・4・5** | 段 5 = `double& quepos = ordInfo._queue;` と `ordInfo._queue = lastTick->bidqty(0);`。段 4 = `double qty = min(volume, ordInfo._left);` と `double maxQty = min(orderQty, ordInfo->_left);`。段 3 = `void MatchEngine::match_orders(WTSTickData* curTick, OrderIDs& to_erase)`(この回の知見 1・2) | **列を追うことに旗が無いので、機構と既定が同じ。**足の経路(`CtaMocker`)は目標建玉を現在値と定率・定額の滑りで成立させるだけで、段を上げない |
+| 91 `braedonsaunders/homerun` | **3・4・5・6** | **3・4・5** | 段 5 = `order.queue_ahead_shares = compute_queue_ahead_shares(` と `depth that disappeared between snapshots is volume that traded ahead of us in the FIFO queue.`。段 6 の機構 = `(textbook Almgren-Chriss; impact grows concavely with size).`、その既定 = `strength_bps: float = 0.0,`。段 3 = `async for snapshot in book_source.iter_snapshots():`(この回の知見 3・4・5) | **1 つの道具の中で向きが分かれる。**列は既定で働き、影響は既定で消える |
+
+**この回に直した 3 件**(25 回目までの表の値を置き換えるもの):
+
+| 候補 | 25 回目まで | **この回** | 直した理由 | 逐語 |
+|---|---|---|---|---|
+| 33 `SarthakDalmia1/backtesting_execution_simulator` | 段(既定) = 表は **5**、24 回目の検収の文は **1** | **5** | **24 回目の検収のリードの誤りの訂正である。**25 回目の検収 §2 の逐語「**このうち候補 33 は誤りである。**」「**つまり既定で無効になるのは滑りだけで、値段・時刻の優先による照合は既定でも働く。段(既定)は 5 が正しい。**」 | `, slippage_model_(std::make_unique<ZeroSlippageModel>())` が差し替えられる側、`matching_engine_` が構築子で無条件に繋がれる側 |
+| 23 `hftbacktest` | 段(既定) = **未確認** | **5** | 列の模型に既定が在ることを原典で確かめた(この回の知見 16) | `queue_model: QueueModel::LogProbQueueModel2 {},` |
+| 6 `Ziplime` | 段(既定) = **未確認** | **4** | 滑りの模型を渡す側が入口に在ることを原典で確かめた(この回の知見 17) | `if equity_slippage is None:` と `equity_slippage = FixedBasisPointsSlippage()` と `def __init__(self, basis_points=5.0, volume_limit=0.1):` |
+
+**19 番 `Jesse` は段 2 のままである。**25 回目の検収 §5(1) の逐語「**次の回に決めるなら読むのはここ**: 分割してできたものが**機関に事象として入る**のか、単に細かい足になるだけか。前者なら段 3。」
+**読んだ結果は後者だった**(この回の知見 15)。**段の欄は変えない。**
+
+**段(既定)の分布**(**最も高い段で 1 件ずつ数える**):
+
+| 段(既定) | 件数 | 候補 |
+|---|---|---|
+| 0 | 4 | 51・54・87・92 |
+| 1 | 7 | 8・32・7・2・4・21・72 |
+| 2 | 5 | 3・19・20・60・67 |
+| 3 | 1 | 70 |
+| 4 | 6 | 13・123・63・18・53・6 |
+| 5 | 5 | 98・38・33・23・57 |
+| 6 | 8 | 1・15・35・36・105・106・116・119 |
+| 未確認 | 0 | なし |
+
+**合計は 36 で、`区分1-市場影響と約定の模型` の印を持つ候補の数と同じである。**
+**`未確認` は 0 になった。**25 回目に残っていた 2 件(23・6)がこの回に確定したためである。
+
+**段(機構)と段(既定)が同じでない候補は 8 件である。**
+**(a) 既定でそのまま使うと段が下がる 8 件** = 2 番(4 から 1)・4 番(4・6 から 1)・21 番(4・6 から 1)・18 番(4・6 から 4)・33 番(5・6 から 5)・6 番(4・6 から 4)・53 番(3・4 から 4)・91 番(3・4・5・6 から 3・4・5)。
+**(b) 既定が決まらないもの** = **無い**(25 回目の 2 件が確定したため)。
+**92 番も「呼ぶが既定では無効」だが、機構が 6 で既定が 0 なので (a) に入れた。**上の 8 件に 92 番を足すと 9 件になる。**この数え方の違いを残しておく。**
+
+#### 6 要素ごとの 総数 と 残り
+
+**数え方**: **総数** = その印を持つ候補の数 / **残り** = そのうち一次資料に到達していないものの数。
+**数える単位は「番号」である**(25 回目までと同じ)。
+
+**3 段の数え直し**:
+
+| 残りの種類 | 25 回目 | この回に埋めた | 26 回目 | 中身 |
+|---|---|---|---|---|
+| **一次資料に未到達** | 11 | 11 | **0** | **尽きた** |
+| **到達済みだが 6 要素の印が無い** | 2 | 0 | **2** | 14 番 `Bot18`・22 番 `Lean CLI` |
+| **到達済みで印もあるが、個別の要素が未決** | 1 | 0 | **1** | 11 番 `OctoBot` の 5 要素 |
+
+| 要素 | 25 回目の総数 | この回の増減 | 26 回目の総数 | 残り(一次資料に未到達) |
+|---|---|---|---|---|
+| `区分1-足` | 52 | **−1**(91 番を外した) | **51** | **0** |
+| `区分1-ティック` | 15 | **+3**(53・57・91) | **18** | **0** |
+| `区分1-板の待ち行列` | 17 | **+2**(57・91) | **19** | **0** |
+| `区分1-イベント駆動` | 16 | **+3**(53・57・91) | **19** | **0** |
+| `区分1-ベクトル化` | 2 | **+2**(54・87) | **4** | **0** |
+| `区分1-市場影響と約定の模型` | 26 | **+10**(53・54・57・60・67・70・72・87・91・92) | **36** | **0** |
+
+**6 要素のどれかに印がある候補は、重複を除いて 80 件で、25 回目から変わらない**(11 件はもともと `区分1-足` の推定で数に入っていた。91 番は足を外したが他の要素が付いたので数から落ちない)。
+**そのうち一次資料に到達していない残りは 0 件である。**
+
+**機関で数えた値の併記**:
+
+| 数え方 | 値 | 何を束ねたか | この回の扱い |
+|---|---|---|---|
+| **番号(登録の単位)** | **80 件** | 何も束ねない | **これを正とする** |
+| 機関(22 番と 52 番を束ねる) | 79 件 | 22 番 `Lean CLI` は 52 番 `QuantConnect` の機関の起動口 | 併記のみ |
+| 機関(13 番と 123 番も束ねる) | 78 件 | 123 番が本家、13 番がその分岐 | 併記のみ |
+
+**`判別に一次資料が要る` の残り**: **49 番だけ**(23 回目から変わらない)。**登録の内側にあり、当方は登録しない。**
+
+**残りの候補名**(次の回に渡すもの): 14 番と 22 番の 6 要素、11 番 `OctoBot` の 5 要素、43 番の浅い部分、
+51 番から 93 番のうち印を付けていないもの、94 番・96 番・97 番・100 番から 124 番の浅い部分。
+**39 番と 110 番と 112 番の一覧の残りの節からも、まだ名前を抜いていない。**
+**この回に到達した 11 件も、料金の構造・許諾・導入・最小実行は未確認のまま残る。**
+
+#### 「尽きた」に数えないもの
+
+起動の指定の逐語「**完了の報告では、この 3 つを「尽きた」に数えず、理由つきで別立てにします。**」に従い、別立てにする。
+
+- **14 番 `Bot18`** — 印が無い。理由: **公開されていない。**
+- **22 番 `Lean CLI`** — 印が無い。理由: **取得していない画像の中に在る。**
+- **11 番 `OctoBot` の 5 要素** — 印はあるが未決。理由: **模擬を回す必要があり、この回の範囲の外である。**
+
+### ツール1件ごとの表
+
+**この回に一次資料へ到達した 11 件と、既定を直した 2 件を出す。**いずれもこの回に導入も最小実行もしていない。
+**25 回目までに書いた列(できること・料金・当方に無いもの・到達)は書き換えず、この回に分かったことを足した。**
+
+| ツール | 何ができるか | 料金の構造 | 当方に無いもの | この環境での到達 |
+|---|---|---|---|---|
+| `QUANTAXIS` | 足の表を行ごとに走査し、指定した値段と数量で建玉を動かす。data の保存と可視化と複数口座を同じ package で持つ | 未確認(この回に料金の場を読んでいない) | **口座・建玉・data の保存・可視化を 1 つの package にまとめる形**/ **検証と実弾と sim を同じ戦略の class の枝で切り替える形** | **可**(実装の原典に到達。**登録は `yutiansut/QUANTAXIS`**) |
+| `Rqalpha` | 足とティックの両方で照合し、その足・その tick の出来高の一定割合までしか埋めない。逐档の照合では対手方の段の提示量を食う | 未確認(この回に料金の場を読んでいない。**許諾が商業と非商業で分かれる**) | **出来高の上限を既定で入れる形**(当方の `engine.py` は埋まる量に上限が無い)/ **足とティックで照合の実装を別の class に分ける形** | **可**(実装の原典に到達。既定値の行まで読んだ) | 
+| `finmarketpy` | 信号の行列を遅らせて収益の行列に掛け、往復の費用を基点で引く。為替と株の分析の部品を持つ | 未確認(この回に料金の場を読んでいない) | **費用を「往復の半分を基点で」与える形**/ **建玉の上限と変動率の目標を行列の操作として当てる形** | **可**(実装の原典に到達。既定値の行まで読んだ) |
+| `WonderTrader` | ティックで照合し、**自分の注文が列のどこに居るかを追う。**気配の提示量で埋まる量が頭打ちになる。足・高頻度・執行・選択の 4 つの機関を持つ | 未確認(この回に料金の場を読んでいない) | **自分の注文の列の位置を持つ照合の機関**(当方は参照実装 `scripts/qa/maker_fill_ref.py` を持つが、研究の模擬が呼んでいない)/ **取り消しの割合で列の初期値を割り引く形**/ **執行の algorithm だけを検証する機関** | **可**(実装の原典に到達。構築はしていない) |
+| `Hikyuu` | 足で建て、値幅の上限か下限に張り付いた足では建てずに次の足へ持ち越す。滑りの模型を 6 つ持つ | 未確認(この回に料金の場を読んでいない) | **「張り付いた足では建てられない」を既定の約定の規則として持つ形**/ **滑りを分布から引く形**(正規・対数正規・切断正規・一様) | **可**(実装の原典に到達。構築はしていない) |
+| `lumibot` | 足の幅が指値を跨いだら埋め、跨がなければ次の足に残す。飛んだ足では始値で埋める。複数の data 源と broker を同じ interface で扱う | 未確認(この回に料金の場を読んでいない) | **飛んだ足を別枝で扱う形**(当方の `engine.py` に相当する枝が無い)/ **検証と実弾で同じ broker の interface を使う形** | **可**(実装の原典に到達。既定枝は `dev`) |
+| `PineForge` | PineScript を C++ に変換し、足の内側に価格の道筋を引いて交差の時刻で順番を作る。決定的な再生を名乗る | 未確認(この回に料金の場を読んでいない) | **足の内側の道筋を幾何として持ち、交差の時刻を事象の座標にする形**/ **別の処理系との一致そのものを設計の目的に据える形** | **可**(実装の原典に到達。構築はしていない) |
+| `QTradeX` | 足で建て、越え判定の境を足の極値より内側に寄せる。最適化と可視化を同じ package に持つ | 未確認(この回に料金の場を読んでいない) | **越え判定の境を「始値終値の幅と極値の中点」に寄せる形**(**当方の `engine.py` は極値をそのまま使う**) | **可**(実装の原典に到達) |
+| `PyTrendFollow` | 建玉の差分と値動きを掛け、滑りをその日の値動きの半分として引く。先物の継ぎ足しと変動率の目標を持つ | 未確認(この回に料金の場を読んでいない) | **滑りを「その日の値動きの半分」と置く形**/ **先物の継ぎ足しを行列の操作として持つ形** | **可**(実装の原典に到達。**2018-04-25 から押し出しが無い**) |
+| `braedonsaunders/homerun` | 板の写真を順に回し、**自分の注文が列のどこに居るかを追う。**深さを食い、影響の関数を当てる。遅延の模型と埋まり方の較正を持つ | 未確認(この回に料金の場を読んでいない) | **自分の注文の列の位置を板の写真の差から減らす形**/ **同じ値段の段の中の順番を観測できないと明示して、割合で当てる形**/ **埋まり方の較正という工程そのもの** | **可**(実装の原典に到達。構築はしていない) |
+| `Quentin-Piot/prediction-market-backtester` | 中値に半値幅を足した値段で埋め、参加率に比例する影響を足せる。遅延を足の本数で表す | 未確認(この回に料金の場を読んでいない) | **遅延を「足の本数」として設定に持つ形**/ **気配の幅を直近の値動きから推定して、無ければ既定に落とす形** | **可**(実装の原典に到達。既定値の行まで読んだ) |
+| `hftbacktest` | 列の位置を考えた埋まり方の模擬。**列の模型は明示しなくても入る** | 未確認(この回に料金の場を読んでいない) | **列の模型を複数用意して、明示しなくても 1 つを既定で入れる形** | **可**(既定の行まで読んだ) |
+| `Ziplime` | 型を持つ事象の列で駆動し、滑りの模型を通して埋める。**入口が既定の模型を入れてくれる** | 未確認(25 回目と同じ。PyPI の `info.license` が `None`) | **構築子には既定を置かず、入口の関数で既定を入れる形**(**構築子だけを読むと「既定が無い」と読み違える**) | **可**(入口の原典に到達。**25 回目の `未確認` を解消**) |
+
+#### §4.0 の機械可読の表
+
+**この回で `[深掘り]` に達した道具は無い。**起動の指定の逐語「**構築・導入・最小実行はしないでください。**」に従い、
+導入も最小実行も 1 件も行っていない。委任文 §4.0 は「深掘りした道具は、文章より先に表に 1 行ずつ書く」と定めており、
+深掘りが 0 件なので **§4.0 の機械可読の表にこの回の行は無い**(18 回目から 25 回目と同じ)。
+
+### 予算
+
+割当は 1 回 5 万 token・20 分。**起動の指定の 1 から 4 はすべて終わった。**
+(1) 一次資料に未到達だった 11 件の**全部**に到達し、6 要素の印と段を決めた。**残りは 0 になった。**
+(2) 23 番と 6 番の段(既定)を埋めた。**どちらも `未確認` を解消できた。**
+(3) 19 番の段 3 を判定した。**段 2 のままが正しい。**
+(4) 33 番の段(既定)を 5 に直し、24 回目の検収のリードの誤りの訂正であることを書いた。**24 回目の節には触れていない。**
+**新しい検索計画は打っていない。深掘りも 0 件。候補も増やしていない。導入・構築・最小実行・登録・鍵の発行・購入・発注は 1 件も無い。**
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **候補 70 `PineForge` に段 3 を当てた。**19 番 `Jesse` と同じ問いだが、逆の答えを出している。
+   分けた根拠は 2 つの逐語である。**`Jesse` 側**: 分割した足を入れるときの引数が `with_execution=False,` で、
+   説明の逐語が `This function get called when an order is getting executed you need to update the other timeframe how their last candles looks like` である。
+   **`PineForge` 側**: 交差の当たりが `return GeometricHit{*t_cross, level, true};` として時刻 `t` を持ち、
+   受け取る側の逐語が `| Execution schedule | Candidate identity, event coordinate, dependency and explicit priority |` である。
+   **「事象の座標を持って予定表に載る」かどうかで分けた。この分け方は原文に無い。**
+2. **段 0 を 4 件(51・54・87・92)に当てた。**このうち 54 番と 87 番は**注文の物そのものを持たない。**
+   段の表の定義の逐語は「0 = 何も見ない」だが、**「埋まるかどうかを判定する機構が無い」ものをこの尺度に載せてよいかは書かれていない。**
+   **尺度の外と扱うべきなら直す。**
+3. **`区分1-市場影響と約定の模型` の印を「約定の可否・量・値段のどれかを決める仕組みがあるか」で付けた。**
+   この線で 51 番だけ付けず、残る 10 件に付けた。**この述語は原文に無い。**
+   **もし「滑りか影響の模型を持つか」で切るなら、54 番と 87 番の扱いが変わる**(どちらも費用を値段に当てるだけで、模型の差し替え口が無い)。
+4. **段(機構)と段(既定)が違う候補の数え方が 2 通りになった。**92 番は機構 6 で既定 0 なので「下がる」に入れたが、
+   既定が 0 なのは影響が消えるからで、**下の段が別の仕組みで決まっている 18 番や 91 番とは性質が違う。**
+   **8 件と数えるか 9 件と数えるかを決めていただきたい。**
+5. **候補 57 の段(既定)を、足の経路ではなく高頻度と執行の経路で書いた。**
+   この道具は機関が 4 つ在り、**どれを使うかは設定で選ぶので「そのまま使ったとき」が 1 つに決まらない。**
+   **足の経路(`CtaMocker`)だけなら段は上がらない。**両方を書くべきか、低いほうを既定とすべきかを決めていただきたい。
+6. **候補 51 の外部送信を「危険」の欄に書いたが、候補から外してはいない。**
+   委任文 §6-1 の逐語「**止めるのは「この環境への導入と実行」だけ**」に従った。**導入はしていないので、止めるものが無い。**
+
+### 取ってきた文章の中の作業者向けの指示(委任文 §6-3)
+
+**この回に読んだ原典の中に、作業者へ何かを実行させる文は 1 件あった。**
+候補 51 の原典に、作者のサーバーへ建玉の内容を送る `requests.post` の行が在る(知見 10)。
+**これは指示の文ではなく実装の行だが、導入すれば黙って動く形なので、同じ扱いで記録する。従っていない。**
+**それ以外の原典には、鍵を入れろ・この URL から入れろ・これを実行しろ、という文は無かった。**
+
+### 受け入れ検査の出力
+
+**最後に打った検査の出力を全文そのまま貼る。**打ったコマンド:
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log`
+(生ログは `run2` から `run26` まで全部渡している)
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+**落とした行は無い。**13 本すべて 0 件である。
+**誤検出だと判断して自分で閉じた行も無い**(委任文 §12 の逐語「**誤検出だと判断しても、自分で閉じてはならない。**」)。
