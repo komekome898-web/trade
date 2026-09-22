@@ -481,7 +481,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 7. QSTrader(mhallsmoore） — 実測 — MIT。**日次の目標配分リバランス型で、指値/板の概念がソースに存在しない**(アーキテクチャ上の限界。最小実行はbuy_and_holdリバランスで成功)
 8. Lean CLI(QuantConnect） — 実測(install) + 未完了(最小実行、Docker必須のため) — Apache
 9. PyAlgoTrade(gbeced） — 実測 — **指値の1往復に成功**。**2023-11-13にアーカイブ済み、後継として"Basana"を公式に指名**(README逐語で確認)
-11. Qlib(`pyqlib`、microsoft） — 実測(install) + 未完了(最小実行、独自バイナリ形式の準備が必要) — MIT。**依存185パッケージ**(mlflow/databricks-sdk/redis/pymongo/gym/cvxpy等を含む巨大な足跡)
+11. Qlib(`pyqlib`、microsoft） — 実測(install) + 未完了(最小実行、独自バイナリ形式の準備が必要) — MIT。**依存 130 パッケージ**(mlflow/databricks-sdk/pymongo/cvxpy/lightgbm 等を含む巨大な足跡。出力全文から数え直した = 生ログ LV-10。調査班の「185」は数え違い)
 12. VnPy(vnpy/vnpy） — 実測(install・コア構成確認) + 未完了(最小実行) — MIT。**コア`vnpy`パッケージにgateway実装・バックテストエンジンは同梱されていない**(alpha/chart/event/traderのみ)。`vnpy_binance`はPyPIに実在(実測)、`vnpy_bitflyer`/`vnpy_bitbank`/`vnpy_gmocoin`はPyPIに存在しない(実測、curl 404)
 13. Jesse(jesse-ai） — 実測(install・危険検査 = wheel 展開まで完了・取引所ドライバのソース確認) + 未完了(最小実行、PostgreSQL+Redis要) — MIT(コア)。**取引所ドライバ(ソース実測)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter。bitFlyer/bitbank/GMOコインは無い**。Apex/Lighter向けの署名用ネイティブバイナリ(zklink_sdk・lighter-signer)を同梱
 
@@ -551,7 +551,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | `PyAlgoTrade` は 2023-11-13 にアーカイブ済みで、**公式に後継 Basana を名指し**している | 一次資料(GitHub のアーカイブ表示と README の逐語、W-5。**取得結果の全文を生ログ LV-9 に載せて、日付と Basana の逐語が調査班の取得に実在することを確かめた**) | 候補 18(Basana)はここから出た。古い候補を追うより後継を見る |
 | `Zenbot`(本家)は 2022-02-15 にアーカイブ済み | 一次資料(GitHub のアーカイブ表示の逐語、リードが取り直し = 生ログ LV-3) | 実質的に終了。Node.js + MongoDB で当方の環境とも離れている |
 | `QSTrader` は日次の目標配分リバランス型で、**指値・板・待ち行列の概念がソースに無い** | 実測(モジュール一覧、生ログ LV-5a) | 当方の用途(秒単位・指値の約定)とは設計が違う |
-| 1 つの venv に複数のツールを入れると依存が壊れる(Jesse の導入が numpy を 2.x から 1.26.4 に落とし、hftbacktest 等と衝突。vectorbt は最新の plotly では import 自体が失敗) | 実測(生ログ) | ツールごとに隔離した環境で試すのが前提。当方のリポジトリ環境には入れない(委任文 §5-2 のとおり) |
+| 1 つの venv に複数のツールを入れると依存が壊れる(Jesse の導入後に numpy が 1.26.4 になり、pip が 5 件の numpy 要求との衝突を警告 = 生ログ LV-10。「2.x から落とした」は ERROR 行からの推定で明示の記録は無い。vectorbt は最新の plotly では import 自体が失敗) | 実測(生ログ) | ツールごとに隔離した環境で試すのが前提。当方のリポジトリ環境には入れない(委任文 §5-2 のとおり) |
 | `Mendl-Labs/BacktestingCore` は Functional Source License 1.1(2 年後に Apache 2.0 化)で、OSI 承認のオープンソースではない | 一次資料(GitHub、W-9) | 「無料」と「オープンソース」は別。取り込む前にライセンスの条件を読む必要がある |
 | `hftbacktest` は指値が実際に約定するところまで動く(status=3・exec_qty=1.0・往復 2 件) | 実測(**リードの打ち直し** = 生ログ LV-2) | 当方の `engine.py` に無い待ち行列の模擬を、動く実装として参照できる |
 | `NautilusTrader` は指値約定と成行手仕舞いの 1 往復が動く(残高 USDT が費用分だけ減る) | 実測(**リードの打ち直し** = 生ログ LV-7) | 執行の枠組み(区分 2)の候補として、動作の裏づけがある |
@@ -799,7 +799,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 **料金の構造**: コアMIT無料。README・PyPI一次資料に課金の直接記載は無し(round1で確認した「JesseGPT等はサブスク」は検索結果の要約(推定 = 未検算、W-23)のまま、本回は逐語裏取りに至らず次回課題)
 
 **到達・導入・実行の記録**:
-- `pip install jesse`(既存venv、rc=0、実測)。**ただし共存venvのnumpyを2.xから1.26.4へ強制ダウングレードし、hftbacktest(numpy>=2.0要求)・qstrader(numpy>=2.0要求)・vnpy(numpy>=2.2.3要求)・mlflow・cvxpy等との依存衝突を発生させた(pip自身が警告、実測)**。**方法論上の教訓**: 複数の重量級ツールを1つのvenvに混在させると相互に壊れる。次回以降は候補ごとに隔離venvを分けるべき(本回の後半はhftbacktest/NautilusTrader/vectorbt/freqtradeをそれぞれ別venvに分離して対応した)
+- `pip install jesse`(既存venv、rc=0、実測)。**ただし共存 venv の numpy が 1.26.4 になり、pip 自身が依存衝突を警告した。警告が numpy の要求として名指しするのは 5 件(hftbacktest numpy<2.3・qstrader numpy>=2.0.0・vnpy numpy>=2.2.3・sparsediffpy numpy>=2.0.0・cvxpy numpy>=2.0.0)= 生ログ LV-10 の jesse 節の ERROR 行。なお mlflow の衝突は numpy ではなく cryptography(42.0.8)なので numpy の列から外した(監査 12 回目の指摘 2)。「2.x から」の部分は ERROR 行からの推定で、`Attempting uninstall: numpy` のような明示の記録は出力に無い(pandas の場合はあった)**(pip自身が警告、実測)**。**方法論上の教訓**: 複数の重量級ツールを1つのvenvに混在させると相互に壊れる。次回以降は候補ごとに隔離venvを分けるべき(本回の後半はhftbacktest/NautilusTrader/vectorbt/freqtradeをそれぞれ別venvに分離して対応した)
 - wheel展開で確認した危険関連の事実: **`libzklink_sdk.so/.dll/.dylib`(Apex DEX向け)・`lighter-signer-*.so/.dll/.dylib`(Lighter DEX向け)というコンパイル済みネイティブバイナリを同梱**。これらはDEX(分散型取引所)のオンチェーン署名用SDKで、鍵を使わない限りは発火しないと見られるが、コンパイル済みバイナリの中身は静的監査していない(未確認)
 - 依存に`ray`(分散計算)・`redis`・`psycopg2-binary`(PostgreSQL)・`eth-account`/`eth-keys`/`eth-utils`/`rlp`/`hexbytes`(Ethereumウォレット関連ライブラリ)・`optuna`(ハイパーパラメータ最適化)・`mcp`(Model Context Protocol、AIエージェント関連)が含まれる(実測、pip installログ)
 - **最小の実行**: **未実施**。Jesseの`backtest`コマンドはプロジェクトディレクトリの初期化(`jesse init`相当)とPostgreSQL・Redisの起動を要求する設計で、本回の予算内では準備が完了しなかった
