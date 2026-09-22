@@ -475,7 +475,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 ### 候補の一覧(1回目からの引き継ぎ + 新規発見、全部、印つき)
 
-**深掘り済み(このセッションで到達・導入・実行・危険検査を実施)**:
+**到達・導入・実行・危険検査まで実施(8 件)**:
 5. Backtesting.py(`backtesting`、kernc） — 実測 — 軽量バックテスト、AGPL-3.0。**指値の1往復に成功**(最小実行)
 6. zipline-reloaded(stefan-jansen） — 実測(install・危険検査) + 未完了(最小実行) — Quantopian由来、Apache-2.0
 7. QSTrader(mhallsmoore） — 実測 — MIT。**日次の目標配分リバランス型で、指値/板の概念がソースに存在しない**(アーキテクチャ上の限界。最小実行はbuy_and_holdリバランスで成功)
@@ -490,7 +490,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 16. Bot18(carlos8f、Zenbot作者の別製品) — 一次資料(npmページ本文・GitHub README) — 「$49.99の8桁アンロックコード」「無料お試し(guestチャンネル)は10倍遅く自動売買不可・15分で自動終了」「BETA RELEASE...Live trading is discouraged」の逐語を確認。npm最終公開は約7年前(2019年頃)。本回は未導入(Node.js・古い・低優先)
 
 **カテゴリ越境(区分2で深掘り)**:
-17. ccxt — 本回では触っていない(区分2の担当)。ただし freqtrade 経由で ccxt 4.5.82 が導入され、`ccxt.bitflyer().has` を実測: `createOrder=True, cancelOrder=True, fetchOHLCV=None(無), fetchOrder='emulated', fetchTickers=None, watchOHLCV=None`。**bitFlyerは発注・キャンセルはccxt経由で可能だが、ローソク足取得(fetchOHLCV)は無い**(区分2向けの参考情報として記録。深掘りは区分2)
+17. ccxt — 本回では触っていない(区分2の担当)。ただし freqtrade 経由で ccxt 4.5.82 が導入され、`ccxt.bitflyer().has` を実測(出力 = 生ログ LV-5g): `createOrder=True, cancelOrder=True, fetchOHLCV=None(無), fetchOrder='emulated', fetchTickers=None, watchOHLCV=None`。**bitFlyerは発注・キャンセルはccxt経由で可能だが、ローソク足取得(fetchOHLCV)は無い**(区分2向けの参考情報として記録。深掘りは区分2)
 
 **新規発見(このセッションで新たに見つかった候補。未着手、次回持ち越し)**:
 18. Basana — PyAlgoTradeの公式アーカイブ通知が後継として名指し(gbeced/pyalgotrade README、一次資料)。未着手
@@ -513,17 +513,21 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 | # | 項目 | 結果 |
 |---|---|---|
 | 1 | vectorbt無料版とPROの機能差の逐語裏取り | **解決**。LICENSE.md原文をraw.githubusercontentからcurl取得(一次資料、200、生ログ)= "Commons Clause"付きApache2.0(Sellの禁止を定義)。無料版のソース全体を`grep -rl -i "limit_order\|LimitOrder\|order_type.*Limit"`で検索し**0件**(実測)。無料版のソースに指値注文という概念自体が存在しないことを確認(PROページの「Limit orders」がPRO限定機能である根拠が、検索結果の要約からソース実測に格上げされた) |
-| 2 | freqtradeのbitFlyer非対応の一次資料裏取り | **解決**。隔離venvにfreqtrade導入(ccxt 4.5.82同梱)、`freqtrade list-exchanges -a`を実測: bitFlyer行「missing: fetchOrder, fetchOHLCV」(必須欠落)。`freqtrade list-exchanges`(非-a、使える79取引所)にbitFlyerは含まれずbitbankは含まれる(bitbankは「missing opt」のみで必須機能は揃っている)。ccxtの`bitflyer().has`を直接実測: createOrder/cancelOrder=True、fetchOHLCV/fetchTickers/watchOHLCV=None、fetchOrder='emulated' |
+| 2 | freqtradeのbitFlyer非対応の一次資料裏取り | **解決**。隔離venvにfreqtrade導入(ccxt 4.5.82同梱)、`freqtrade list-exchanges -a`を実測: bitFlyer行「missing: fetchOrder, fetchOHLCV」(必須欠落。表の実物 = 生ログ LV-5f)。`freqtrade list-exchanges`(非-a、使える79取引所)にbitFlyerは含まれずbitbankは含まれる(bitbankは「missing opt」のみで必須機能は揃っている)。ccxtの`bitflyer().has`を直接実測: createOrder/cancelOrder=True、fetchOHLCV/fetchTickers/watchOHLCV=None、fetchOrder='emulated' |
 | 3 | 9候補(Backtesting.py〜Luczinsritter)の危険検査・最小実行・4軸 | **部分的に解決**。Backtesting.py・QSTrader・PyAlgoTrade = 危険検査+最小実行+4軸まで完了。zipline-reloaded・Qlib・VnPy・Jesse・Lean CLI = 導入+危険検査(依存一覧・wheel展開確認)まで完了、最小実行は各ツール固有の準備(データバンドル登録/独自バイナリ形式/GUI依存/DB要求/Docker要求)のため次回に持ち越し。Mendl-Labs/BacktestingCore・Luczinsritter = GitHub一次資料の確認のみ(PyPI無し、低優先のため未導入) |
 | 4 | hftbacktestの最小実行を「実際に約定(FILLED)」まで仕上げる | **解決**。event_dtype(ev/exch_ts/local_ts/px/qty/order_id/ival/fval)を一次資料(ソース`types.py`)から読み取り、DEPTH_SNAPSHOT_EVENT→TRADE_EVENTの合成データを再構築。指値買い@100.0が売り約定の消化でstatus=3(FILLED)、exec_qty=1.0、leaves_qty=0.0を実測。成行手仕舞いも成功、num_trades=2 |
-| 5 | NautilusTraderの実際のpip install・最小実行 | **解決**。Python3.12の隔離venvに導入(14依存のみ、軽量)。`nautilus_trader.testkit`は現行リリースに存在せず(developブランチの例が不一致)、`test_kit`(アンダースコア)を使用。BTCUSDT/BINANCEの合成足データでLIMIT買い→FILLED→MARKET売りの1往復を実測(口座残高 BTC 10.0→10.01→10.0、fills report 2件) |
+| 5 | NautilusTraderの実際のpip install・最小実行 | **解決**。Python3.12の隔離venvに導入(14依存のみ、軽量)。`nautilus_trader.testkit`は現行リリースに存在せず(developブランチの例が不一致)、`test_kit`(アンダースコア)を使用。BTCUSDT/BINANCEの合成足データでLIMIT買い→FILLED→MARKET売りの1往復を実測(口座残高 BTC 10.0→10.01→10.0、fills report 2件。出力全文 = 生ログ LV-5e) |
 | 6 | X検索3回以上・awesome系リスト・依存関係逆引き | **解決**。今回のX関連WebSearchは3回(バックテストエンジン自作/乗り換え、backtesting.py OR zipline OR nautilus trader、+round1の2回で計5回)。awesome系リスト検索1回(新規候補9件発見)。依存関係逆引きはGitHubのdependents機能でBacktesting.pyを確認(0件、ただしGitHubの依存関係グラフ自体が網羅的でない旨の注記あり) |
 | 7 | hftbacktest・NautilusTraderの国内取引所記載なしをソース/issue/依存で裏取り | **解決(NautilusTraderは完全、hftbacktestは複数独立ソースで補強)**。NautilusTrader: `crates/adapters`ディレクトリの実際の一覧(実測、WebFetch)= architect_ax/betfair/binance/bitmex/blockchain/bybit/coinbase/databento/deribit/derive/dydx/hyperliquid/interactive_brokers/kraken/lighter/okx/polymarket/sandbox/tardisの19件、bitFlyer等無し。RELEASES.md(567,723バイト、curl実測)にbitflyer/bitbank/gmoの一致0件(grep)。hftbacktest: `rust/src/live/connector`等のディレクトリパスがいずれも404(到達不能)だったため、README一次資料に加えWebSearchの独立した要約(2件)で「Binance FuturesとBybitのみ」を補強したが、ソースディレクトリそのものの実測はできていない(未確認) |
 | 8 | NautilusTraderの自動発注機能をソースで確認 | **解決(実測に格上げ)**。README記載の確認に留めず、実際にLIMIT注文とMARKET注文を`OrderMatchingEngine(BINANCE)`に送信し約定させることに成功(§5参照)。発注機能が実在し動作することを動作実証で確認 |
 | 9 | 生ログにWebFetch/WebSearchを1手ずつ残す | **解決**。本回は`docs/DATA/probes/20260922_tools_1_run2.log`にWebFetch/WebSearch/curl/pip/pythonの全手順を都度追記した |
 | 10 | NautilusTraderのライセンス表記の食い違い | **解決(食い違いを確定)**。README.md原文(develop、curl実測、200)に「cargo-deny enforces a license allow list compatible with LGPL-3.0-only」「available...under the GNU Lesser General Public License v3.0」と明記。**PyPI JSONのlicense_expression(LGPL-3.0-or-later)と食い違う**。LICENSE.txtファイル自体はLGPLv3の定型文(v3/v3以降どちらにも使われる共通本文)で決着しない。原因(パッケージングミスか意図的併記か)は未確認 |
 
-### ツール1件ごとの表(2回目、12候補中で深掘りを実施した10件)
+### ツール1件ごとの表(2回目、12候補すべて。`#### 5.`〜`#### 16.` の 12 件)
+
+**この節の全 12 件に共通する未確認(監査 1 回目の指摘 10。委任文 §6-1 が挙げる検査項目のうち、本回で埋まっていないもの)**: 週のダウンロード数 = **未確認**(pypistats を叩いていない。1 回目は hftbacktest・NautilusTrader で叩いた)/ 保守者の数と名前の一貫性 = **未確認**(PyPI の author と GitHub の所有者を突き合わせていない)/ 既知の脆弱性の公開勧告 = **未確認**(検索していない)。各ツールの「危険」欄にこの 3 行を書き落としていたので、ここに一括で置く。
+
+**導入前の検査と導入の順序(監査 1 回目の問い 11 への答え)**: ハーネスの記録で手番を数えると、`pip download`(手 34)→ **wheel の展開と `.so`・導入時実行コードの検査(手 35)** → `pip install`(手 37 以降)の順で、**検査が導入より先**だった(生ログ LV-5h)。委任文 §6-1「導入前の検査」は順序としては守られている。ただし各ツールの「危険」欄が「wheel展開は本回未実施」と書いていたのは誤りで、展開は全 wheel を一括で行っていた(本文のその記述は上で直した)。
 
 #### 5. Backtesting.py
 
@@ -540,8 +544,8 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 **到達・導入・実行の記録**:
 - `pip install backtesting`(隔離venv `venv_tools1`、rc=0、実測)。`pip check` → No broken requirements found(実測)
-- 危険検査(§6-1): wheelを展開し`setup.py`等の導入時実行コードの有無を確認 → **無し**(pure-Pythonのwheel、実測)。PyPI Project-URLとGitHubの一致確認(一次資料)。既知の脆弱性: 未確認(未実施)
-- **最小の実行**: 合成OHLC(200本、ランダムウォーク)を生成し、`Strategy.next()`で現在値の0.5%下に1回だけ指値買いを送信、約定後に成行で手仕舞う戦略を実行 → **成功**。`# Trades: 1`、`EntryPrice=98.80`、`ExitPrice=97.81`、`PnL=-11.95`(実測、rc=0)。**指値の1往復が正しく約定・記録されることを確認した数少ない候補の一つ**
+- 危険検査(§6-1): wheelを展開し`setup.py`等の導入時実行コードの有無を確認 → **無し**(pure-Pythonのwheel、実測 = 生ログ LV-5b)。PyPI Project-URLとGitHubの一致確認(一次資料)。既知の脆弱性: 未確認(未実施)
+- **最小の実行**: 合成OHLC(200本、ランダムウォーク)を生成し、`Strategy.next()`で現在値の0.5%下に1回だけ指値買いを送信、約定後に成行で手仕舞う戦略を実行 → **成功**。`# Trades: 1`、`EntryPrice=98.80`、`ExitPrice=97.81`、`PnL=-11.95`(実測、rc=0。出力全文 = 生ログ LV-5d。生ログ 63 行の head200 は列名の途中で切れている)。**指値の1往復が正しく約定・記録されることを確認した数少ない候補の一つ**
 - 所要時間: install数秒、実行1秒未満
 
 **当方の用途との相性**: pandas.DataFrame(OHLCV+DatetimeIndex)を要求 — 当方のcsv.gz約定履歴は変換層が必要(推定)。時刻はpandas Timestampでタイムゾーン任意(実測で確認、UTCで問題なく動作)。再現性: 合成データに乱数シードを使えば決定的(実測)。規模: 200本で1秒未満(実測)。456日ティック相当への外挿は次回課題(推定不可、実測データなし)
@@ -564,14 +568,14 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **ライセンス**: MIT(一次資料PyPI classifier)
 - **版と最終更新日**: 0.3.0、2024-06-24(一次資料。約2年更新なし)
 - **活動**: スター3.5k・フォーク930・コミット431件(WebFetch要約)
-- **対応取引所**: 実装確認(実測、`import qstrader; os.listdir`) — サブモジュールは`alpha_model/risk_model/asset/trading/exchange/broker/signals/data/system/portcon/simulation/utils/execution`。個別取引所コネクタは無く、CSV日次バーのローカル読み込みが標準(`CSVDailyBarDataSource`、GitHub公式example実測で確認)
+- **対応取引所**: 実装確認(実測、`import qstrader; os.listdir` = 生ログ LV-5a) — サブモジュールは`alpha_model/risk_model/asset/trading/exchange/broker/signals/data/system/portcon/simulation/utils/execution`。個別取引所コネクタは無く、CSV日次バーのローカル読み込みが標準(`CSVDailyBarDataSource`、GitHub公式example実測で確認)
 - **出典**: pypi.org/pypi/QSTrader/json、github.com/mhallsmoore/qstrader、raw.githubusercontent.com/.../examples/buy_and_hold.py(いずれも実測取得)
 
 **料金の構造**: 完全無料(MIT)。隠れた依存: `click`・`seaborn`が新規導入された(実測、pip install出力)。当方の用途での課金要素は無し
 
 **到達・導入・実行の記録**:
 - `pip install qstrader`(隔離venv、rc=0、実測)。GitHub公式example `examples/buy_and_hold.py`をraw.githubusercontentからcurl取得(200、実測)し、その構造(`FixedSignalsAlphaModel`+`BacktestTradingSession(rebalance='buy_and_hold')`)をそのまま踏襲した合成CSV日次バー(260営業日のランダムウォーク)で実行
-- **最小の実行**: 成功(rc=0)。`equity curve rows=261, first={'Equity': 1000000.0}, last={'Equity': 698485.43}`(実測)。**ただし本ツールは「日次リバランス配分」のシミュレータであり、指値注文・板・待ち行列という概念がソースのどこにも存在しない**(モジュール一覧の実測から確認)。**§5-4が求める「成行と指値の1往復」に相当する処理はこのアーキテクチャでは成立しない** — 目標配分(この場合100%配分のbuy_and_hold)への一括発注のみ
+- **最小の実行**: 成功(rc=0)。`equity curve rows=261, first={'Equity': 1000000.0}, last={'Equity': 698485.43}`(実測)。**ただし本ツールは「日次リバランス配分」のシミュレータであり、指値注文・板・待ち行列という概念がソースのどこにも存在しない**(モジュール一覧の実測から確認 = 生ログ LV-5a)。**§5-4が求める「成行と指値の1往復」に相当する処理はこのアーキテクチャでは成立しない** — 目標配分(この場合100%配分のbuy_and_hold)への一括発注のみ
 - 所要時間: install十数秒、実行1秒未満
 
 **当方の用途との相性**: 日次バーのCSV(`Date`列+OHLCV)を要求(実測、公式exampleのコード)。当方の分足・ティック・清算といった高頻度データとは粒度が大きく異なる(推定: 高頻度戦略の検証には不向き)。時刻: UTCタイムゾーン付きpandas Timestamp(実測)。再現性: 決定的(合成データに乱数シード使用、実測)。規模: 260日で1秒未満(実測)、456日ティック相当への外挿は不可(日次専用のため単位が異なる)
@@ -756,7 +760,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **ライセンス**: MIT(一次資料PyPI classifier、コア部分)
 - **版と最終更新日**: **3.2.1、2026-09-21T16:01(一次資料。本セッション中に3.2.0→3.2.1へ更新されるのを観測、非常に活発)**
 - **活動**: スター8.6k・フォーク1.2k・コミット3,491件(WebFetch要約)
-- **対応取引所**: **実測(wheel展開、`import_candles_mode/drivers`ディレクトリ)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter の10件。bitFlyer/bitbank/GMOコインは無い**
+- **対応取引所**: **実測(wheel展開 = 生ログ LV-5b、`import_candles_mode/drivers`ディレクトリ = 生ログ LV-5c)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter の10件。bitFlyer/bitbank/GMOコインは無い**
 - **出典**: pypi.org/pypi/jesse/json、github.com/jesse-ai/jesse、wheel展開の実測(いずれも取得)
 
 **料金の構造**: コアMIT無料。README・PyPI一次資料に課金の直接記載は無し(round1で確認した「JesseGPT等はサブスク」は検索結果の要約(推定 = 未検算、W-23)のまま、本回は逐語裏取りに至らず次回課題)
@@ -774,7 +778,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 **4軸**: 1=実測(導入成功だが依存衝突あり、隔離venvを分ければ解消可能と推定) / 2〜4=未確認
 
-**危険**: 供給網: PyPI project_urls確認(一次資料)。導入時実行: 未確認(wheel展開はしたが`setup.py`相当の有無は本回未確認)。既知の脆弱性: 未確認。**外部送信: DEX署名用ネイティブバイナリの存在自体が要注意点(鍵を渡さなければ発火しないと見られるが静的監査未実施)**。自動発注: 有り(ライブトレード機能が本体機能)。宣伝の兆候: 無し(README・PyPIとも公式の機能説明のみ)
+**危険**: 供給網: PyPI project_urls確認(一次資料)。導入時実行: 未確認(wheel展開はした = 生ログ LV-5b。`setup.py`相当の有無は本回未確認)。既知の脆弱性: 未確認。**外部送信: DEX署名用ネイティブバイナリの存在自体が要注意点(鍵を渡さなければ発火しないと見られるが静的監査未実施)**。自動発注: 有り(ライブトレード機能が本体機能)。宣伝の兆候: 無し(README・PyPIとも公式の機能説明のみ)
 
 #### 14. Mendl-Labs/BacktestingCore
 
@@ -852,13 +856,13 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 #### 1. hftbacktest(追加)
 
-**最小実行の完全達成**: 1回目は「API呼び出しは動くが約定(FILLED)は成立しなかった」で終わっていた。今回、`hftbacktest.types`のevent_dtype(`ev/exch_ts/local_ts/px/qty/order_id/ival/fval`、一次資料=ソース実測)を正確に読み取り、DEPTH_SNAPSHOT_EVENT→TRADE_EVENTの合成データを再構築した結果、**指値買い@100.0がstatus=3(FILLED)・exec_qty=1.0・leaves_qty=0.0で約定し、成行手仕舞いも成功、num_trades=2という完全な1往復を実測した**(生ログ参照)。「取れない」ではなく「イベント順序の作り込みが必要」だったことが確定した
+**最小実行の完全達成(ただし出所はリードの再現)**: 1回目は「API呼び出しは動くが約定(FILLED)は成立しなかった」で終わっていた。今回、`hftbacktest.types`のevent_dtype(`ev/exch_ts/local_ts/px/qty/order_id/ival/fval`、一次資料=ソース実測)を正確に読み取り、DEPTH_SNAPSHOT_EVENT→TRADE_EVENTの合成データを再構築した結果、**指値買い@100.0がstatus=3(FILLED)・exec_qty=1.0・leaves_qty=0.0で約定し、成行手仕舞いも成功、num_trades=2という完全な1往復が成立した**。**ただし調査班はこの結果を見ていない**: v4 は rc=1 で失敗し、v5 はバックグラウンドで起動したところまでで、出力を読んだ記録が無い(生ログ LV-6)。**リードが同じスクリプトを打ち直して上の値を再現した(生ログ LV-2)。**この行の印は「実測(リード)」であって調査班の実測ではない。「取れない」ではなく「イベント順序の作り込みが必要」だったことが確定した
 
-**方法論上の注意点(実測)**: `OrderDict`オブジェクトに対して`.keys()`でイテレートするコードは、numba jitclassの型解決の問題と見られる挙動で**6分48秒経過してもCPU時間1秒のままハングした**(kill -9で強制終了)。`.get(order_id)`による直接アクセスに切り替えたところ正常終了(17ステップ、数秒)。**`orders(0).keys()`や`in`演算子での探索は避け、`.get()`を使うべき**という実務上の知見
+**方法論上の注意点(実測)**: `OrderDict`オブジェクトに対して`.keys()`でイテレートするコードは、numba jitclassの型解決の問題と見られる挙動で**6分48秒経過してもCPU時間1秒のままハングした**(kill -9で強制終了)。`.get(order_id)`による直接アクセスに切り替えたところ正常終了(17ステップ、数秒)。**この 408 秒の実行は委任文 §6-6「1 件の実行は数分まで」を超えている**(生ログ 128 行 rc=killed time_s=408)。超過に気づいた時点で止めるべきだった(監査 1 回目の指摘 9)。**`orders(0).keys()`や`in`演算子での探索は避け、`.get()`を使うべき**という実務上の知見
 
 #### 2. NautilusTrader(追加)
 
-**pip install・最小実行の完全達成**: 1回目は「PyPI JSONとGitHub READMEの取得のみ」で終わっていた。今回、Python3.12の隔離venv(要件`>=3.12,<3.15`を満たす)に導入(14依存のみの軽量インストール、実測)。公式example(`examples/backtest/fx_ema_cross_audusd_bars_from_ticks.py`)は`nautilus_trader.testkit`という現行リリースに存在しないモジュールを参照しており(developブランチのソースと2026-09時点のリリース1.231.0のAPIに不一致がある、実測で発見)、正しいモジュール名`nautilus_trader.test_kit`(アンダースコア)を使う独自スクリプトを作成。BTCUSDT/BINANCEの合成足データでLIMIT買い注文→FILLED→MARKET売り注文で手仕舞いの1往復を実測(口座残高がBTC 10.0→10.01→10.0(手数料分USDT減)と正しく変化、fills reportに2件記録)。**「本番グレードの発注機能」という宣伝文句を、実際に動かして裏取りした数少ない候補**
+**pip install・最小実行の完全達成**: 1回目は「PyPI JSONとGitHub READMEの取得のみ」で終わっていた。今回、Python3.12の隔離venv(要件`>=3.12,<3.15`を満たす)に導入(14依存のみの軽量インストール、実測)。公式example(`examples/backtest/fx_ema_cross_audusd_bars_from_ticks.py`)は`nautilus_trader.testkit`という現行リリースに存在しないモジュールを参照しており(developブランチのソースと2026-09時点のリリース1.231.0のAPIに不一致がある、実測で発見)、正しいモジュール名`nautilus_trader.test_kit`(アンダースコア)を使う独自スクリプトを作成。BTCUSDT/BINANCEの合成足データでLIMIT買い注文→FILLED→MARKET売り注文で手仕舞いの1往復を実測(出力全文 = 生ログ LV-5e。口座残高がBTC 10.0→10.01→10.0(手数料分USDT減)と正しく変化、fills reportに2件記録)。**「本番グレードの発注機能」という宣伝文句を、実際に動かして裏取りした数少ない候補**
 
 **対応取引所の確定(実測)**: `crates/adapters`ディレクトリの実際の一覧(WebFetch実測)= architect_ax/betfair/binance/bitmex/blockchain/bybit/coinbase/databento/deribit/derive/dydx/hyperliquid/interactive_brokers/kraken/lighter/okx/polymarket/sandbox/tardisの19件。RELEASES.md全文(567,723バイト、curl実測)にbitflyer/bitbank/gmoの一致0件(grep)。**bitFlyer等の非対応は、README要約ではなくソースディレクトリの直接列挙とリリースノート全文検索という2つの独立した一次資料で確定した**
 
@@ -872,9 +876,9 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 
 #### 4. freqtrade(追加)
 
-**bitFlyer非対応の一次資料裏取り完了**: 隔離venvにfreqtrade導入(ccxt 4.5.82同梱)。`freqtrade list-exchanges -a`を実測実行: 「bitFlyer」行「missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, watchOHLCV」(105取引所中)。`freqtrade list-exchanges`(非-a、freqtradeが実際に使える79取引所の一覧)にbitFlyerは**含まれず**、bitbankは**含まれる**(bitbank行は「missing opt: fetchTickers, fetchOrders, watchOHLCV」のみで必須機能の欠落なし)。**1回目は「bitFlyer/bitbank/GMOコインは個別記載なし」とまとめていたが、bitbankは実はfreqtradeで使える側に入っていたことが今回の実測で判明した**(round1からの訂正)
+**bitFlyer非対応の一次資料裏取り完了**: 隔離venvにfreqtrade導入(ccxt 4.5.82同梱)。`freqtrade list-exchanges -a`を実測実行: 「bitFlyer」行「missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, watchOHLCV」(表の実物 = 生ログ LV-5f。105取引所中)。`freqtrade list-exchanges`(非-a、freqtradeが実際に使える79取引所の一覧)にbitFlyerは**含まれず**、bitbankは**含まれる**(bitbank行は「missing opt: fetchTickers, fetchOrders, watchOHLCV」のみで必須機能の欠落なし)。**1回目は「bitFlyer/bitbank/GMOコインは個別記載なし」とまとめていたが、bitbankは実はfreqtradeで使える側に入っていたことが今回の実測で判明した**(round1からの訂正)
 
-**ccxt自体のbitFlyer対応状況(区分2向けの補助情報として記録)**: `ccxt.bitflyer().has`を実測: `createOrder=True, cancelOrder=True`(発注・キャンセルは可能)、`fetchOHLCV=None, fetchTickers=None, watchOHLCV=None`(無し)、`fetchOrder='emulated'`(ccxt側のエミュレーションで代替、ネイティブ実装ではない)。**freqtradeがbitFlyerを除外する理由は「バックテストに必須のローソク足取得ができない」ためであり、「発注ができない」わけではない**。GMOコインはccxtの取引所ID一覧に**存在しない**(`'gmocoin' in ccxt.exchanges` → False、実測)
+**ccxt自体のbitFlyer対応状況(区分2向けの補助情報として記録)**: `ccxt.bitflyer().has`を実測(出力 = 生ログ LV-5g): `createOrder=True, cancelOrder=True`(発注・キャンセルは可能)、`fetchOHLCV=None, fetchTickers=None, watchOHLCV=None`(無し)、`fetchOrder='emulated'`(ccxt側のエミュレーションで代替、ネイティブ実装ではない)。**freqtradeがbitFlyerを除外する理由は「バックテストに必須のローソク足取得ができない」ためであり、「発注ができない」わけではない**。GMOコインはccxtの取引所ID一覧に**存在しない**(`'gmocoin' in ccxt.exchanges` → False、実測)
 
 ### STRATEGY_IDEAS.md向け候補(提案のみ、未マージ)
 - (本区分はツールの調査であり戦略案ではない。強いて挙げるなら「hftbacktestの指値約定成功パターン(FILLED実証済み)を当方のmaker fill参照実装(`scripts/qa/maker_fill_ref.py`)と突き合わせ、`engine.py`の楽観性/悲観性を定量評価する」という検証タスクの候補は1回目から引き続き有効。リード判断待ち)
