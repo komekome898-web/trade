@@ -5006,3 +5006,347 @@ K12 検査の出力の貼付           0 件
 
 - `STRATEGY_IDEAS.md` 向け: 指値の埋まり方を板の待ち行列で決める模擬を、当方の `src/bot/backtest/engine.py` の外に置いた参照実装(`scripts/qa/maker_fill_ref.py`)と突き合わせる案。外部の実装は 95 番から 104 番の 10 件が候補になりうる。
 - `DATA.md` 向け: 108 番 `Databento` は板と約定の供給者として区分 3 で追う対象。
+
+## 区分1 — 16 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run16.log`。
+15 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run15.md`)と起動の指定に従う。
+起動の指定の逐語「**委任文 §2 の順序のとおり、この回は新しい検索計画を打ちません。**」と
+「**残りの候補を潰す回です。**」のとおり、この回の狙いは候補の状態の確定である。
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断「区分ごとに 1 回でよい」により区分 1 の 1 回目の節を参照して貼っていない。
+**既存の節は 1 文字も書き換えていない。**
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**委任文 §2 の順序のとおり、この回は新しい検索計画を打ちません。**」による。
+X の経路も同じ理由で打っていない(起動の指定の逐語「**この回は検索計画を打たないので、X も打ちません。**」)。
+リードの回答 1(`site:x.com` は語を変えて 3 本以上)は、**次に検索計画を打つ回で守る。**
+したがって新しい候補は 0 件で、候補の一覧は 118 番までのまま増えていない。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://ungh.cc/repos/<所有者>/<登録名>`(GitHub の登録情報の公開の代理。星・作成日・最終押し出し) | 2026-09-22 | 星・初回公開日・最終更新日 |
+| 2 | `https://ungh.cc/repos/<所有者>/<登録名>/files/HEAD`(配布物のファイル一覧と各ファイルの sha) | 2026-09-22 | 同梱バイナリ・`setup.py` の有無・96 番と 104 番の照合 |
+| 3 | `https://ungh.cc/repos/<所有者>/<登録名>/contributors` | 2026-09-22 | 保守者数・コミット数 |
+| 4 | `https://raw.githubusercontent.com/<所有者>/<登録名>/<枝>/README.md` | 2026-09-22 | できること・限界の逐語 |
+| 5 | `https://pypi.org/pypi/<配布名>/json` | 2026-09-22 | 配布元の一致・週DL数の有無 |
+| 6 | `git clone --depth 1` した配布物そのもの(scratchpad の隔離した場所) | 2026-09-22 | 依存・難読化・署名・最小実行 |
+
+
+### §4.0 の機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `sacha9214/polymarket-fill-model` | 版 | 版番号の表記なし。最新コミット dec7f0f72607 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:534(同じ実行の出力の行: 346) |
+| `sacha9214/polymarket-fill-model` | 最終更新日 | 2026-09-17 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 353) |
+| `sacha9214/polymarket-fill-model` | ライセンス | MIT License(`LICENSE` の 1 行目) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:534(同じ実行の出力の行: 359) |
+| `sacha9214/polymarket-fill-model` | 言語と動作環境 | Python。標準ライブラリのみ(argparse・collections・json・re・sqlite3・statistics・time・urllib.request・pathlib) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:603(同じ実行の出力の行: 198、207) |
+| `sacha9214/polymarket-fill-model` | 対応取引所 | Polymarket(予測市場)のみ。暗号資産の取引所への対応は配布物に無い | 一次資料 | https://github.com/sacha9214/polymarket-fill-model(2026-09-22 取得) |
+| `sacha9214/polymarket-fill-model` | 星 | 0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 353、星 の欄) |
+| `sacha9214/polymarket-fill-model` | コミット数 | 1(`contributions` の値) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 337) |
+| `sacha9214/polymarket-fill-model` | 保守者数 | 1(`sacha9214`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 337、保守者数 の欄) |
+| `sacha9214/polymarket-fill-model` | 週DL数 | 該当なし(PyPI に同名の配布物が無い。`code=404`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 343) |
+| `sacha9214/polymarket-fill-model` | 初回公開日 | 2026-09-17(`createdAt`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 353、初回公開日 の欄) |
+| `sacha9214/polymarket-fill-model` | 既知の脆弱性 | 未確認 | 未確認 | 試した手段: PyPI に配布物が無いため PyPI の勧告欄が存在しない(`code=404`、20260922_tools_1_run16.log:343)。GitHub の勧告の頁は取っていない |
+| `sacha9214/polymarket-fill-model` | 料金体系 | 無料。配布物に課金の記述が無い | 一次資料 | https://github.com/sacha9214/polymarket-fill-model(2026-09-22 取得)(料金体系 の欄) |
+| `sacha9214/polymarket-fill-model` | 無料枠の上限 | 該当なし(配布物に上限の記述が無い) | 一次資料 | https://github.com/sacha9214/polymarket-fill-model(2026-09-22 取得)(無料枠の上限 の欄) |
+| `sacha9214/polymarket-fill-model` | 課金開始条件 | 該当なし(鍵も登録も要求しない。ただし `recorder.py` が Polymarket の公開 API を叩く) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:603(同じ実行の出力の行: 206) |
+| `sacha9214/polymarket-fill-model` | 隠れた依存 | Polymarket の公開 API からの板と約定の記録(`recorder.py`)。当方の csv.gz を入れるなら sqlite3 への変換が要る | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 44) |
+| `sacha9214/polymarket-fill-model` | 登録の要否 | 不要(最小実行は鍵なしで通った) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:307(同じ実行の出力の行: 306) |
+| `sacha9214/polymarket-fill-model` | 到達経路 | `git clone --depth 1` が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:275(同じ実行の出力の行: 275) |
+| `sacha9214/polymarket-fill-model` | 導入可否 | 導入(`pip install`)は不要。`sys.path` に置いて import で動いた | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 309) |
+| `sacha9214/polymarket-fill-model` | install所要秒 | 0.88(clone のみ。install の工程が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:275(同じ実行の出力の行: 275、install所要秒 の欄) |
+| `sacha9214/polymarket-fill-model` | 依存数 | 0(標準ライブラリのみ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:603(同じ実行の出力の行: 198、207、依存数 の欄) |
+| `sacha9214/polymarket-fill-model` | pip check | 該当なし(導入していないため)。同じ venv の `pip check` は `No broken requirements found.` | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:633(同じ実行の出力の行: 240) |
+| `sacha9214/polymarket-fill-model` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 309、最小実行の可否 の欄) |
+| `sacha9214/polymarket-fill-model` | 最小実行の中身 | 合成の板(bid 0.48・先行 100 枚)と合成の約定列を `simulate` に与え、待ち行列を数える場合と数えない場合の埋まり方を比べた。付属の試験 10 件も通した | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 308、306) |
+| `sacha9214/polymarket-fill-model` | 実行所要秒 | 0.09 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 314) |
+| `sacha9214/polymarket-fill-model` | wheel展開 | 該当なし(wheel の配布が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 343、wheel展開 の欄) |
+| `sacha9214/polymarket-fill-model` | setup.py導入時実行 | 該当なし(`setup.py` も `pyproject.toml` も無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 44、setup.py導入時実行 の欄) |
+| `sacha9214/polymarket-fill-model` | 同梱バイナリ | 無し(配布物は .py・.md・.yml・LICENSE のみ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 44、同梱バイナリ の欄) |
+| `sacha9214/polymarket-fill-model` | 外部送信 | `urllib.request` が Polymarket の公開 API を叩く。最小実行では合成データのみを使い、この経路を通していない | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:603(同じ実行の出力の行: 206、308) |
+| `sacha9214/polymarket-fill-model` | 自動発注機能 | 無し(発注の経路が配布物に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 44、自動発注機能 の欄) |
+| `sacha9214/polymarket-fill-model` | 宣伝詐欺の兆候 | 無し。README は 8 節で限界を自分で列挙している | 一次資料 | https://github.com/sacha9214/polymarket-fill-model(2026-09-22 取得)(宣伝詐欺の兆候 の欄) |
+| `sacha9214/polymarket-fill-model` | 当方データ投入 | 未確認。sqlite3 の表 `trades(ts, outcome, side, price, size)` と板の系列 `(ts, bid, ask, bid_sz)` に変換すれば入る形だが、当方の csv.gz を変換して通してはいない | 未確認 | 試した手段: `fillmodel.py` の表の定義を読んだ(20260922_tools_1_run16.log:393)。変換は書いていない |
+| `sacha9214/polymarket-fill-model` | 時刻の扱い | 秒の数値(合成の実行では 0・10・20…)。UTC のミリ秒の扱いは配布物から読み取っていない | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 309、時刻の扱い の欄) |
+| `sacha9214/polymarket-fill-model` | 再現性 | 乱数を使わない。同じ入力で同じ出力 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 309、再現性 の欄) |
+| `sacha9214/polymarket-fill-model` | 規模の見積 | 未確認 | 未確認 | 試した手段: 合成の板 6 点・約定 3 件の実行(0.09 秒、20260922_tools_1_run16.log:314)しか打っていない。456 日への外挿の根拠にするには標本が小さすぎる |
+| `sacha9214/polymarket-fill-model` | 配布元の一致 | PyPI に同名の配布物が無いので照合する相手が無い。GitHub の 1 か所のみ | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 343、配布元の一致 の欄) |
+| `sacha9214/polymarket-fill-model` | 難読化 | 無し(`fillmodel.py` を開いて読んだ。注釈はフランス語) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:491(同じ実行の出力の行: 393) |
+| `sacha9214/polymarket-fill-model` | 外部URL取得 | 導入時の取得は無し。実行時に Polymarket の公開 API を叩く経路がある | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:603(同じ実行の出力の行: 206、外部URL取得 の欄) |
+| `sacha9214/polymarket-fill-model` | 依存の一覧 | 空(標準ライブラリのみ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:603(同じ実行の出力の行: 198、207、依存の一覧 の欄) |
+| `sacha9214/polymarket-fill-model` | 保守者名の一貫性 | `sacha9214` の 1 名のみ。食い違う名前が出てこない | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 337、保守者名の一貫性 の欄) |
+| `sacha9214/polymarket-fill-model` | 4軸1_道具 | 入れられる。標準ライブラリのみで動き、`simulate` を関数として呼べた | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 309、4軸1_道具 の欄) |
+| `sacha9214/polymarket-fill-model` | 4軸2_情報 | 先行注文量(`queue0` = 出したときに前に何枚あったか)と待ち時間を、埋まりの 1 件ごとに返す。当方の `engine.py` はこの量を持たない | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 309、4軸2_情報 の欄) |
+| `sacha9214/polymarket-fill-model` | 4軸3_視点 | 同じ板と同じ約定列で、待ち行列を数える場合と数えない場合の差を出せる。当方の模型の楽観の大きさを直接測る視点 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:314(同じ実行の出力の行: 309、310) |
+| `sacha9214/polymarket-fill-model` | 4軸4_向上 | 未確認。当方のデータで測っていない | 未確認 | 試した手段: 合成データの実行のみ(20260922_tools_1_run16.log:308)。当方の csv.gz は §6-4 により使っていない |
+| `mihircoding/limitOrderBook` | 版 | 版番号の表記なし。最新コミット cc48b54db067 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:534(同じ実行の出力の行: 347) |
+| `mihircoding/limitOrderBook` | 最終更新日 | 2026-09-17 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 364) |
+| `mihircoding/limitOrderBook` | ライセンス | **許諾の記載が無い**(`LICENSE` ファイルが無く、README にも licence / license の語が当たらない) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:534(同じ実行の出力の行: 360、366) |
+| `mihircoding/limitOrderBook` | 言語と動作環境 | Python。板の本体 `src/orderbook.py` は heapq と deque のみ。模擬 `src/simulator.py` が numpy を使う | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:500(同じ実行の出力の行: 422、428) |
+| `mihircoding/limitOrderBook` | 対応取引所 | 無し(合成の注文流だけを扱う) | 一次資料 | https://github.com/mihircoding/limitOrderBook(2026-09-22 取得) |
+| `mihircoding/limitOrderBook` | 星 | 0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 364、星 の欄) |
+| `mihircoding/limitOrderBook` | コミット数 | 8 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 338) |
+| `mihircoding/limitOrderBook` | 保守者数 | 1(`mihircoding`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 338、保守者数 の欄) |
+| `mihircoding/limitOrderBook` | 週DL数 | 該当なし(PyPI に `limitOrderBook` の配布物が無い。`code=404`。近い綴りの `limit-order-book` は `code=200` で別の配布物、中身は未確認) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 446、447) |
+| `mihircoding/limitOrderBook` | 初回公開日 | 2026-08-13 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 364、初回公開日 の欄) |
+| `mihircoding/limitOrderBook` | 既知の脆弱性 | 未確認 | 未確認 | 試した手段: PyPI に配布物が無く勧告欄が無い(20260922_tools_1_run16.log:446)。GitHub の勧告の頁は取っていない |
+| `mihircoding/limitOrderBook` | 料金体系 | 無料。課金の記述が配布物に無い | 一次資料 | https://github.com/mihircoding/limitOrderBook(2026-09-22 取得)(料金体系 の欄) |
+| `mihircoding/limitOrderBook` | 無料枠の上限 | 該当なし | 一次資料 | https://github.com/mihircoding/limitOrderBook(2026-09-22 取得)(無料枠の上限 の欄) |
+| `mihircoding/limitOrderBook` | 課金開始条件 | 該当なし(鍵も登録も無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 324) |
+| `mihircoding/limitOrderBook` | 隠れた依存 | numpy・pandas・matplotlib・pytest(`requirements.txt`)。板の本体だけなら 0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:591(同じ実行の出力の行: 110、113) |
+| `mihircoding/limitOrderBook` | 登録の要否 | 不要 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 324、登録の要否 の欄) |
+| `mihircoding/limitOrderBook` | 到達経路 | `git clone --depth 1` が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:277(同じ実行の出力の行: 277) |
+| `mihircoding/limitOrderBook` | 導入可否 | 導入不要。`sys.path` に置いて `src.orderbook` を import できた | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 324、導入可否 の欄) |
+| `mihircoding/limitOrderBook` | install所要秒 | 0.73(clone のみ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:277(同じ実行の出力の行: 277、install所要秒 の欄) |
+| `mihircoding/limitOrderBook` | 依存数 | 4 個(`requirements.txt` の行数。板の本体は 0) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:591(同じ実行の出力の行: 110、113、依存数 の欄) |
+| `mihircoding/limitOrderBook` | pip check | 該当なし(導入していない) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 324、pip check の欄) |
+| `mihircoding/limitOrderBook` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 324、最小実行の可否 の欄) |
+| `mihircoding/limitOrderBook` | 最小実行の中身 | 先行者の買い 50 枚の後ろに当方の買い 10 枚を並べ、売り 50 枚→売り 10 枚と当てた。先行者が先に食われ、当方が残ることを確かめた | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 323、327) |
+| `mihircoding/limitOrderBook` | 実行所要秒 | 0.04 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 328) |
+| `mihircoding/limitOrderBook` | wheel展開 | 該当なし(wheel の配布が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 446) |
+| `mihircoding/limitOrderBook` | setup.py導入時実行 | 該当なし(`setup.py` も `pyproject.toml` も無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 73) |
+| `mihircoding/limitOrderBook` | 同梱バイナリ | 無し。画像 2 件(`simulation.png`・`docs/index.html` の付属)以外は .py と .md | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 73、同梱バイナリ の欄) |
+| `mihircoding/limitOrderBook` | 外部送信 | 無し(ネットワークを呼ぶ import が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:500(同じ実行の出力の行: 422、428、外部送信 の欄) |
+| `mihircoding/limitOrderBook` | 自動発注機能 | 無し | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 73、自動発注機能 の欄) |
+| `mihircoding/limitOrderBook` | 宣伝詐欺の兆候 | 無し。README は「No order types beyond limit, market, IOC, and FOK: no stops, icebergs, pegged」と限界を自分で書いている | 一次資料 | https://github.com/mihircoding/limitOrderBook(2026-09-22 取得)(宣伝詐欺の兆候 の欄) |
+| `mihircoding/limitOrderBook` | 当方データ投入 | 未確認。`add_limit_order(side, price, quantity)` の 3 つ組に直せば入るが、当方の csv.gz を通していない | 未確認 | 試した手段: 署名を読んだ(20260922_tools_1_run16.log:324 の実行で使用)。変換は書いていない |
+| `mihircoding/limitOrderBook` | 時刻の扱い | 到着の順序で並べる。時刻の引数を取らない(`add_limit_order` の署名に無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 324、時刻の扱い の欄) |
+| `mihircoding/limitOrderBook` | 再現性 | 板の本体は乱数を使わない。合成の注文流(zero-intelligence)は乱数を使う | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 324、再現性 の欄) |
+| `mihircoding/limitOrderBook` | 規模の見積 | 未確認 | 未確認 | 試した手段: 注文 4 本の実行(0.04 秒、20260922_tools_1_run16.log:328)のみ。外挿の根拠にならない |
+| `mihircoding/limitOrderBook` | 配布元の一致 | PyPI に同名(`limitOrderBook`)の配布物が無いので照合の相手が無い。GitHub の 1 か所のみ。綴りの近い `limit-order-book` が PyPI にあるが別の配布物で、この登録を指していない | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 446、447、配布元の一致 の欄) |
+| `mihircoding/limitOrderBook` | 難読化 | 無し(`src/orderbook.py` の import と署名を開いて読んだ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:459(同じ実行の出力の行: 373) |
+| `mihircoding/limitOrderBook` | 外部URL取得 | 無し | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:500(同じ実行の出力の行: 422、428、外部URL取得 の欄) |
+| `mihircoding/limitOrderBook` | 依存の一覧 | numpy>=1.24 / pandas>=2.0 / matplotlib>=3.7 / pytest>=8.0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:591(同じ実行の出力の行: 110、113、依存の一覧 の欄) |
+| `mihircoding/limitOrderBook` | 保守者名の一貫性 | `mihircoding` の 1 名のみ | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 338、保守者名の一貫性 の欄) |
+| `mihircoding/limitOrderBook` | 4軸1_道具 | 入れられる。板の本体は標準ライブラリのみで import できた | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 324、4軸1_道具 の欄) |
+| `mihircoding/limitOrderBook` | 4軸2_情報 | 価格水準ごとの残量(`depth` が `[(100.0, 10)]` を返す)と、部分約定の残り。当方の `engine.py` は板の残量を持たない | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:328(同じ実行の出力の行: 325) |
+| `mihircoding/limitOrderBook` | 4軸3_視点 | 自己約定の防止(STP)・IOC・FOK・遅延の模擬を、同じ `_match` の経路で扱う。当方に無い | 一次資料 | https://github.com/mihircoding/limitOrderBook(2026-09-22 取得)(4軸3_視点 の欄) |
+| `mihircoding/limitOrderBook` | 4軸4_向上 | 未確認。当方のデータで測っていない | 未確認 | 試した手段: 合成の注文 4 本の実行のみ(20260922_tools_1_run16.log:323) |
+| `NickGardi/orderbooksim` | 版 | 版番号の表記なし。最新コミット b767b0c4e86b | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:534(同じ実行の出力の行: 348) |
+| `NickGardi/orderbooksim` | 最終更新日 | 2026-08-22 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 356) |
+| `NickGardi/orderbooksim` | ライセンス | **許諾の記載が無い**(`LICENSE` ファイルが無く、README にも licence / license の語が当たらない) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:534(同じ実行の出力の行: 361、366) |
+| `NickGardi/orderbooksim` | 言語と動作環境 | Python。`matching_engine.py` は sortedcontainers と標準ライブラリのみ。UI は Streamlit | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:611(同じ実行の出力の行: 213、214) |
+| `NickGardi/orderbooksim` | 対応取引所 | 無し(合成の注文流だけを扱う) | 一次資料 | https://github.com/NickGardi/orderbooksim(2026-09-22 取得) |
+| `NickGardi/orderbooksim` | 星 | 0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 356、星 の欄) |
+| `NickGardi/orderbooksim` | コミット数 | 3 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 339) |
+| `NickGardi/orderbooksim` | 保守者数 | 1(`NickGardi`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 339、保守者数 の欄) |
+| `NickGardi/orderbooksim` | 週DL数 | 該当なし(PyPI に同名の配布物が無い。`code=404`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 344) |
+| `NickGardi/orderbooksim` | 初回公開日 | 2026-08-22 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 356、初回公開日 の欄) |
+| `NickGardi/orderbooksim` | 既知の脆弱性 | 未確認 | 未確認 | 試した手段: PyPI に配布物が無く勧告欄が無い(20260922_tools_1_run16.log:344)。GitHub の勧告の頁は取っていない |
+| `NickGardi/orderbooksim` | 料金体系 | 無料。課金の記述が配布物に無い | 一次資料 | https://github.com/NickGardi/orderbooksim(2026-09-22 取得)(料金体系 の欄) |
+| `NickGardi/orderbooksim` | 無料枠の上限 | 該当なし | 一次資料 | https://github.com/NickGardi/orderbooksim(2026-09-22 取得)(無料枠の上限 の欄) |
+| `NickGardi/orderbooksim` | 課金開始条件 | 該当なし | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 330) |
+| `NickGardi/orderbooksim` | 隠れた依存 | streamlit・sortedcontainers・pytest・pandas・plotly(`requirements.txt`)。照合の本体だけなら sortedcontainers の 1 件 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:591(同じ実行の出力の行: 115、119) |
+| `NickGardi/orderbooksim` | 登録の要否 | 不要 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 330、登録の要否 の欄) |
+| `NickGardi/orderbooksim` | 到達経路 | `git clone --depth 1` が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:279(同じ実行の出力の行: 279) |
+| `NickGardi/orderbooksim` | 導入可否 | 照合の本体は sortedcontainers を隔離した venv に入れるだけで動いた | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 330、導入可否 の欄) |
+| `NickGardi/orderbooksim` | install所要秒 | 0.69(clone のみ。sortedcontainers は pytest と同じ 1 回の導入に含めた) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:279(同じ実行の出力の行: 279、install所要秒 の欄) |
+| `NickGardi/orderbooksim` | 依存数 | 5 個(`requirements.txt` の行数) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:591(同じ実行の出力の行: 115、119、依存数 の欄) |
+| `NickGardi/orderbooksim` | pip check | `No broken requirements found.`(同じ venv) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:633(同じ実行の出力の行: 240) |
+| `NickGardi/orderbooksim` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 330、最小実行の可否 の欄) |
+| `NickGardi/orderbooksim` | 最小実行の中身 | 先行の買い 50 枚の後ろに当方の買い 10 枚を並べ、売り 50 枚→売り 10 枚と当てた。当方の注文の `remaining_quantity` が 10 のまま残ることを確かめた | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 329、333) |
+| `NickGardi/orderbooksim` | 実行所要秒 | 0.05 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 334) |
+| `NickGardi/orderbooksim` | wheel展開 | 該当なし(wheel の配布が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 344、wheel展開 の欄) |
+| `NickGardi/orderbooksim` | setup.py導入時実行 | 該当なし(`setup.py` も `pyproject.toml` も無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 48) |
+| `NickGardi/orderbooksim` | 同梱バイナリ | 無し(.py・.md・.toml・Dockerfile のみ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 48、同梱バイナリ の欄) |
+| `NickGardi/orderbooksim` | 外部送信 | 無し(照合の本体にネットワークを呼ぶ import が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:611(同じ実行の出力の行: 213、214、外部送信 の欄) |
+| `NickGardi/orderbooksim` | 自動発注機能 | 無し | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 48、自動発注機能 の欄) |
+| `NickGardi/orderbooksim` | 宣伝詐欺の兆候 | 無し。README は 3 行で「Matching is plain Python; Streamlit is just the UI.」とだけ書く | 一次資料 | https://github.com/NickGardi/orderbooksim(2026-09-22 取得)(宣伝詐欺の兆候 の欄) |
+| `NickGardi/orderbooksim` | 当方データ投入 | 未確認。`Order.create(id, side, price, quantity, timestamp)` に時刻を渡せる形だが、当方の csv.gz を通していない | 未確認 | 試した手段: 署名を読み、合成の注文で呼んだ(20260922_tools_1_run16.log:330)。変換は書いていない |
+| `NickGardi/orderbooksim` | 時刻の扱い | `Order.create` が `timestamp` を受ける(既定は `time.time()`)。数値の秒で、UTC のミリ秒の扱いは配布物に書かれていない | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 330、時刻の扱い の欄) |
+| `NickGardi/orderbooksim` | 再現性 | `timestamp` を明示すれば決定的。既定は現在時刻なので明示が要る | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 330、再現性 の欄) |
+| `NickGardi/orderbooksim` | 規模の見積 | 未確認 | 未確認 | 試した手段: 注文 4 本の実行(0.05 秒、20260922_tools_1_run16.log:334)のみ |
+| `NickGardi/orderbooksim` | 配布元の一致 | PyPI に同名の配布物が無いので照合の相手が無い。GitHub の 1 か所のみ | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:524(同じ実行の出力の行: 344、配布元の一致 の欄) |
+| `NickGardi/orderbooksim` | 難読化 | 無し(`matching_engine.py` の import と関数の一覧を開いて読んだ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:459(同じ実行の出力の行: 374) |
+| `NickGardi/orderbooksim` | 外部URL取得 | 無し | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:611(同じ実行の出力の行: 213、214、外部URL取得 の欄) |
+| `NickGardi/orderbooksim` | 依存の一覧 | streamlit>=1.28.0 / sortedcontainers>=2.4.0 / pytest>=7.4.0 / pandas>=2.0.0 / plotly>=5.18.0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:591(同じ実行の出力の行: 115、119、依存の一覧 の欄) |
+| `NickGardi/orderbooksim` | 保守者名の一貫性 | `NickGardi` の 1 名のみ | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 339、保守者名の一貫性 の欄) |
+| `NickGardi/orderbooksim` | 4軸1_道具 | 入れられる。照合の本体を import して合成の注文で動かせた | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:334(同じ実行の出力の行: 330、4軸1_道具 の欄) |
+| `NickGardi/orderbooksim` | 4軸2_情報 | `throughput_stats`・`orders_per_second`・`trades_per_second` を持つ。当方に無い | 一次資料 | https://github.com/NickGardi/orderbooksim(2026-09-22 取得)(4軸2_情報 の欄) |
+| `NickGardi/orderbooksim` | 4軸3_視点 | `get_book_snapshot(depth)` で任意の深さの板を取り出せる。当方の `engine.py` は板を持たない | 一次資料 | https://github.com/NickGardi/orderbooksim(2026-09-22 取得)(4軸3_視点 の欄) |
+| `NickGardi/orderbooksim` | 4軸4_向上 | 未確認。当方のデータで測っていない | 未確認 | 試した手段: 合成の注文 4 本の実行のみ(20260922_tools_1_run16.log:329) |
+| `DaniyalMlk/slippage` | 版 | 0.1.0(`pyproject.toml` の `version`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:578(同じ実行の出力の行: 127) |
+| `DaniyalMlk/slippage` | 最終更新日 | 2026-09-21 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 357) |
+| `DaniyalMlk/slippage` | ライセンス | MIT(`pyproject.toml` の `license = { text = "MIT" }`、`LICENSE` の 1 行目も MIT License) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:578(同じ実行の出力の行: 131、362) |
+| `DaniyalMlk/slippage` | 言語と動作環境 | Python。`requires-python = ">=3.10"`。試行は Python 3.11.15 の venv | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:578(同じ実行の出力の行: 130、300) |
+| `DaniyalMlk/slippage` | 対応取引所 | 無し(取引所への接続を持たない。CSV を読む) | 一次資料 | https://github.com/DaniyalMlk/slippage(2026-09-22 取得) |
+| `DaniyalMlk/slippage` | 星 | 0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 357、星 の欄) |
+| `DaniyalMlk/slippage` | コミット数 | 53 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 340) |
+| `DaniyalMlk/slippage` | 保守者数 | 1(`DaniyalMlk`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 340、保守者数 の欄) |
+| `DaniyalMlk/slippage` | 週DL数 | 該当なし(PyPI の `slippage` は別物。下の `配布元の一致` を見る) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:549(同じ実行の出力の行: 351) |
+| `DaniyalMlk/slippage` | 初回公開日 | 2026-09-21(この調査の前日) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:540(同じ実行の出力の行: 357、初回公開日 の欄) |
+| `DaniyalMlk/slippage` | 既知の脆弱性 | 未確認 | 未確認 | 試した手段: PyPI の同名の配布物は別物で勧告の照合ができない(20260922_tools_1_run16.log:351)。GitHub の勧告の頁は取っていない |
+| `DaniyalMlk/slippage` | 料金体系 | 無料。課金の記述が配布物に無い | 一次資料 | https://github.com/DaniyalMlk/slippage(2026-09-22 取得)(料金体系 の欄) |
+| `DaniyalMlk/slippage` | 無料枠の上限 | 該当なし | 一次資料 | https://github.com/DaniyalMlk/slippage(2026-09-22 取得)(無料枠の上限 の欄) |
+| `DaniyalMlk/slippage` | 課金開始条件 | 該当なし(鍵も登録も要求しない。最小実行が鍵なしで通った) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 262) |
+| `DaniyalMlk/slippage` | 隠れた依存 | numpy>=1.23 のみ。開発用に pytest・hypothesis・mypy・ruff・scipy | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:578(同じ実行の出力の行: 152、156、160) |
+| `DaniyalMlk/slippage` | 登録の要否 | 不要 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 262、登録の要否 の欄) |
+| `DaniyalMlk/slippage` | 到達経路 | GitHub の tar の取得は `pip` 経由で HTTP 403。`git clone --depth 1` に替えて rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:222(同じ実行の出力の行: 220、233) |
+| `DaniyalMlk/slippage` | 導入可否 | 可。隔離した venv に `pip install ./sl105` が rc=0 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:239(同じ実行の出力の行: 239) |
+| `DaniyalMlk/slippage` | install所要秒 | 10.10 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:239(同じ実行の出力の行: 239、install所要秒 の欄) |
+| `DaniyalMlk/slippage` | 依存数 | 1 個(numpy。導入後の `pip list` は numpy・pip・setuptools・slippage) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:633(同じ実行の出力の行: 241) |
+| `DaniyalMlk/slippage` | pip check | `No broken requirements found.` | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:633(同じ実行の出力の行: 240) |
+| `DaniyalMlk/slippage` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 263) |
+| `DaniyalMlk/slippage` | 最小実行の中身 | 合成の値で線形の市場影響・べき乗則の市場影響・Almgren-Chriss の最適軌道・等速の軌道・平方根則の頂点の影響を計算した | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 261、271) |
+| `DaniyalMlk/slippage` | 実行所要秒 | 0.13 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 272) |
+| `DaniyalMlk/slippage` | wheel展開 | hatchling が clone から wheel を作って入れた(`[tool.hatch.build.targets.wheel] packages = ["src/slippage"]`) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:239(同じ実行の出力の行: 239、171) |
+| `DaniyalMlk/slippage` | setup.py導入時実行 | `setup.py` は無い。`pyproject.toml` の build-backend は hatchling で、導入時に走る自前のコードは無い | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:578(同じ実行の出力の行: 122、123) |
+| `DaniyalMlk/slippage` | 同梱バイナリ | 無し(.py・.md・.toml・.yml・LICENSE のみ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 85) |
+| `DaniyalMlk/slippage` | 外部送信 | 無し(最小実行はネットワークを呼ばずに終わった) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 263、272) |
+| `DaniyalMlk/slippage` | 自動発注機能 | 無し(執行の「計画」を出すだけで、注文を送る経路が無い) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:617(同じ実行の出力の行: 85、自動発注機能 の欄) |
+| `DaniyalMlk/slippage` | 宣伝詐欺の兆候 | 無し。README は「exponent standard error 0.84 exceeds 0.25; the data cannot distinguish a square-root law from a linear one」のように自分の当てはめの弱さを出す | 一次資料 | https://github.com/DaniyalMlk/slippage(2026-09-22 取得)(宣伝詐欺の兆候 の欄) |
+| `DaniyalMlk/slippage` | 当方データ投入 | 未確認。`io.py` が要求する列は `orders.csv` = order_id, symbol, side, quantity, decision_time, arrival_time(+任意の decision_price)/ `fills.csv` = order_id, timestamp, quantity, price(+任意の commission)/ `bars.csv` = symbol, timestamp, open, high, low, close, volume。当方の csv.gz を変換して通してはいない | 未確認 | 試した手段: `io.py` の冒頭の逐語を読んだ(20260922_tools_1_run16.log:379 から docs/DATA/probes/20260922_tools_1_run16.log:384)。変換は書いていない |
+| `DaniyalMlk/slippage` | 時刻の扱い | ISO 8601(`io.py` の逐語「Timestamps are ISO 8601.」) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:472(同じ実行の出力の行: 450) |
+| `DaniyalMlk/slippage` | 再現性 | 乱数を使わない関数を呼んだ範囲では決定的。合成の価格 `simulate_prices` は乱数を使う | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 263、271) |
+| `DaniyalMlk/slippage` | 規模の見積 | 未確認 | 未確認 | 試した手段: 5 期間の軌道の実行(0.13 秒、20260922_tools_1_run16.log:272)のみ。456 日への外挿の根拠にならない |
+| `DaniyalMlk/slippage` | 配布元の一致 | **取れない。**PyPI の `slippage` は版 0.0.1・説明「slippage - Coming soon.」・公開 2026-05-12 の別物で、この GitHub の登録を指す `project_urls` を持たない(`null`)。`pip install slippage` はこの道具を入れない | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:549(同じ実行の出力の行: 351、配布元の一致 の欄) |
+| `DaniyalMlk/slippage` | 難読化 | 無し(`impact.py`・`execution.py`・`io.py` の本文を開いて読んだ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:459(同じ実行の出力の行: 369、371) |
+| `DaniyalMlk/slippage` | 外部URL取得 | 導入時の取得は無し(hatchling の既定の経路のみ) | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:239(同じ実行の出力の行: 239、外部URL取得 の欄) |
+| `DaniyalMlk/slippage` | 依存の一覧 | numpy>=1.23(実行時)。開発用は pytest>=7.4 / hypothesis>=6.80 / mypy>=1.8 / ruff>=0.16,<0.17 / scipy>=1.10 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:578(同じ実行の出力の行: 152、156、160、依存の一覧 の欄) |
+| `DaniyalMlk/slippage` | 保守者名の一貫性 | GitHub は `DaniyalMlk`、`pyproject.toml` の authors は `Daniyal`。PyPI の同名の配布物は author が `null` で別人 | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:546(同じ実行の出力の行: 340、132、351) |
+| `DaniyalMlk/slippage` | 4軸1_道具 | 入れられる。隔離した venv に入り、最小実行が通った | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:239(同じ実行の出力の行: 239、263) |
+| `DaniyalMlk/slippage` | 4軸2_情報 | 実装不足(implementation shortfall)の分解・市場影響の当てはめ・半減期。当方に無い | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 266、269) |
+| `DaniyalMlk/slippage` | 4軸3_視点 | 執行を「軌道」として見る。危険回避の度合いを変えると等速から前倒しに変わる。当方の `engine.py` に無い | 実測 | docs/DATA/probes/20260922_tools_1_run16.log:272(同じ実行の出力の行: 266、269、4軸3_視点 の欄) |
+| `DaniyalMlk/slippage` | 4軸4_向上 | 未確認。当方のデータで測っていない | 未確認 | 試した手段: 合成の値の実行のみ(20260922_tools_1_run16.log:261 から docs/DATA/probes/20260922_tools_1_run16.log:271) |
+
+### 知見
+
+1. **`DaniyalMlk/slippage`(105 番)は PyPI の同名の配布物と別物である。**PyPI の `slippage` は版 0.0.1、説明の逐語「slippage - Coming soon.」、公開 2026-05-12、`project_urls` が `null`。**`pip install slippage` はこの道具を入れない。**委任文 §6-1 の「名前の似た別物」に当たるので、導入するなら GitHub の登録から直接に限る。この回の導入もそうした。
+2. **`sashankzade/limit-order-book-matching-engine`(96 番)は `jxm35/LimitOrderBook-MatchingEngine`(104 番)の複製である。**両者のファイル一覧を sha で突き合わせると、同じ道で同じ sha のファイルが 68 本ある。96 番だけにあるのは `LICENSE` と画像 6 本、104 番だけにあるのは `.clang-format` と `.idea/` の 8 本である。**96 番は README で自分からそう書いている**(逐語「This repository is based on the public `jxm35/LimitOrderBook-MatchingEngine` project. The implementation, architecture, and original benchmark results should be treated as upstream work unless you have independently modified and re-benchmarked them. Preserve the upstream license/attribution when redistributing.」)。**上流の 104 番には `LICENSE` ファイルが無く、複製の側が `LICENSE` を足している。**許諾の出所が食い違う。
+3. **`mihircoding/limitOrderBook`(98 番)と `NickGardi/orderbooksim`(99 番)には許諾の記載が無い。**`LICENSE` ファイルが無く、README に licence / license の語が 1 つも当たらない(grep の rc=1)。**「無料で公開されている」ことと「使ってよい」ことは別である。**
+4. **当方の `src/bot/backtest/engine.py` が自分で認める限界の逐語**(この回に読み直した): 「Real fills also depend on queue position; this model grants the fill on any strict through-trade.」**この回の 95 番の最小実行は、その差を数字で出した。**同じ合成の板・同じ合成の約定列で、待ち行列を数えると埋まりが 1 件、数えないと 2 件になる。**当方の模型は後者である。**
+5. **`DaniyalMlk/slippage`(105 番)の市場影響の模型は、逐語で 3 本立てである。**`LinearImpact` は「Almgren and Chriss (2000)」を名乗り、恒久(`gamma`、逐語「Permanent impact, in price per share.」)と一時(`eta`、逐語「Temporary impact, in price per (share per unit time).」)を分ける。`PowerLawImpact` は一時の影響を速さの `beta` 乗に置き、README は「Empirical estimates of the exponent for equities cluster around 0.5 to 0.6」と書く。`SquareRootLaw` は大口の注文の影響を、注文量を日の出来高で割った比の `delta` 乗に日次の変動率を掛けた形で置き、README は「Quoting the peak as the cost overstates it by half」と、頂点と平均の取り違えを自分で注意している。
+6. **§6-1 の検査で導入を止めた候補は 0 件だが、導入したのは 4 件だけである。**残りは C++ で、この環境で構築していない(下の候補の一覧に「浅い(何が未確認か)」と書く)。導入した 4 件はいずれも `setup.py` を持たず(105 番は hatchling の `pyproject.toml` のみ)、導入時に走る自前のコードが無いことをファイル一覧と `pyproject.toml` の逐語で確かめてから入れた。
+7. **難読化の検査で 95 番に 1 件当たったが、難読化ではない。**難読化の語を探す grep(`exec` ・ `eval` ・ `base64` ・ `__import__` ・ `compile` の 5 語)が `fillmodel.py` で 1 を返したのは、正規表現の `re` の呼び出しに `compile` が入っているためである。**数えた結果をそのまま残し、理由をここに書く。**
+8. **`xavierchuan/OrderMatchingEngine`(100 番)は配布物に構築済みのバイナリを同梱している。**ファイル一覧に `OrderMatchingEngine/matching`(42120 バイト)と `OrderMatchingEngine/src/main.dSYM/Contents/Resources/DWARF/main`(408087 バイト)がある。**委任文 §6-1 の「バイナリ配布」に当たるので、この環境では実行しない。**中身の走査はしていない。
+9. **`kahan15/Limit-Order-Book-Simulator`(97 番)の配布物に、作業者向けの指示の文章が入っていた。**ファイル名は `attached_assets/Pasted-Extend-the-existing-file-to-add-a-LIVE-market-data-mode_1789237532670.txt` で、**ファイル名自体が逐語「Extend the existing file to add a LIVE market data mode」という命令形である。**委任文 §6-3 のとおり従っていない。本文は取っていない。
+
+### 候補の一覧
+
+**この回に新しい候補は無い。**下は、この回に状態が変わった候補だけを、15 回目の一覧の番号で書き直したものである。
+**15 回目までの一覧の他の行は、そのまま残る(黙って落としていない)。**
+
+1. [深掘り] `sacha9214/polymarket-fill-model`(95 番) — 状態: **最小実行まで通した。**仕分けは `区分1-板の待ち行列` と `判別に一次資料が要る`(リードの回答 3 により `区分1-ティック` を外した)。
+2. 96 番 `sashankzade/limit-order-book-matching-engine` — 状態: **別物だった(104 番の複製)。**仕分けは `区分1-板の待ち行列` のまま。浅い(未確認: 構築の可否・最小実行・C++ の依存・許諾の出所)。
+3. 97 番 `kahan15/Limit-Order-Book-Simulator` — 状態: **浅い。**TypeScript と React の web の応用で、Python から呼ぶ経路が配布物に無い。未確認: pnpm の導入・最小実行・待ち行列の扱い・料金。**配布物に作業者向けの指示の文章が同梱されている(知見 9)。**
+4. [深掘り] `mihircoding/limitOrderBook`(98 番) — 状態: **最小実行まで通した。**仕分けは `区分1-板の待ち行列` と `区分1-市場影響と約定の模型` のまま。
+5. [深掘り] `NickGardi/orderbooksim`(99 番) — 状態: **最小実行まで通した。**仕分けは `区分1-板の待ち行列` と `区分5 へ` のまま。
+6. 100 番 `xavierchuan/OrderMatchingEngine` — 状態: **危険なので止めた。**理由: 配布物に構築済みのバイナリを 2 本同梱している(知見 8)。委任文 §6-1 の「バイナリ配布」。**候補の一覧からは落とさない。**浅い(未確認: 最小実行・待ち行列の粒度・バイナリの中身)。
+7. 101 番 `akurkar07/OrderBook` — 状態: **浅い。**C++ と CMake のみで、Python から呼ぶ束縛が配布物に無い。同梱バイナリ無し。未確認: 構築の可否・最小実行・所要時間。
+8. 102 番 `3yit/Limit-Order-Book-Simulator` — 状態: **浅い。**Python の束縛(pybind11)と CSV の入力を名乗る。未確認: 構築の可否・最小実行・CSV の列の形。**`scripts/binance_depth_capture.py` が外部から板を取る経路を持つ。**
+9. 103 番 `IsaacCheng9/order-book-simulator` — 状態: **浅い。**Python だが Docker と PostgreSQL と Kafka の構成で、単体の関数として呼ぶ経路が配布物から読み取れない。未確認: 導入・最小実行・待ち行列の粒度。
+10. 104 番 `jxm35/LimitOrderBook-MatchingEngine` — 状態: **浅い。**C++ と pybind11 で `setup.py` を持つ。**`LICENSE` ファイルが無い。**未確認: 構築の可否・最小実行・`setup.py` の導入時実行の中身。
+11. [深掘り] `DaniyalMlk/slippage`(105 番) — 状態: **最小実行まで通した。**仕分けは `区分1-市場影響と約定の模型` のまま。
+12. 106 番 `almgren-chriss`(PyPI、`bernardopaulsen`) — 状態: **危険なので止めた。**理由: 15 回目に見つけた許諾の食い違い(`license` 欄が GPL、分類子が Other/Proprietary)に加え、`project_urls` の GitHub が綴り違いで**配布元の一致が取れない**(委任文 §6-1)。**候補の一覧からは落とさない。**浅い(未確認: 導入・最小実行・機能の一覧)。
+13. 109 番 `arXiv:2509.05107` — 状態: **浅い。**この回に一次資料へ到達していない。未確認: 実装の公開の有無・許諾・再現の可否。
+14. 116 番 `braverock/blotter` の `acOptTxns` — 状態: **浅い。**R の package で、この環境に R が入っているかを確かめていない。未確認: 到達・導入・最小実行。
+15. 113 番 `avelino/awesome-go` — **`区分外(トレードの道具ではない)`**(リードの回答 2)。一覧に残す。
+16. 115 番 `thedaviddias/llms-txt-hub` — **`区分外(トレードの道具ではない)`**(リードの回答 2)。一覧に残す。
+17. 95 番の仕分けの訂正(リードの回答 3) — `区分1-ティック` を外し、`判別に一次資料が要る` を足した。**`ティック` かどうかは、約定の列の粒度が予測市場の約定に依るため、この回の最小実行でも決まらなかった。**
+
+**(2) `判別に一次資料が要る` の 14 件(40・46・48・49・56・59・63・64・66・71・80・85・86 と 15 回目が足した分)には、この回は着手していない。**予算を (1) に使ったため。起動の指定の逐語「**(1) を最優先に。**」に従った。
+
+**6 要素ごとの残り(区分 1 に入ったもののうち、状態がまだ確定していない候補の数)**:
+`区分1-足` は 43・44・51・52・53・54・55・57・60・67・70・72・75・87・91・92 の 16 件(この回に増減なし)。
+`区分1-ティック` は 58・90 の 2 件(95 番をリードの回答 3 により外した)。
+`区分1-板の待ち行列` は 96・97・100・101・102・103・104・109 の 8 件(95・98・99 の 3 件が確定した)。
+`区分1-イベント駆動` は 41・52・58・61・62・65・68・69 の 8 件(この回に増減なし)。
+`区分1-ベクトル化` は 44・73・74 の 3 件(この回に増減なし)。
+`区分1-市場影響と約定の模型` は 106・116 の 2 件(98・105 の 2 件が確定した)。
+
+**残りの候補名**: 40 番・46 番・48 番・49 番(未着手)、41 番・43 番・44 番の浅い部分、
+51 番から 93 番の全部、94 番・96 番・97 番・100 番から 104 番・106 番から 118 番の浅い部分。
+**39 番と 110 番と 112 番の一覧の残りの節からも、まだ名前を抜いていない。**
+
+### ツール1件ごとの表
+
+**深掘りした 4 件について、委任文 §4 の列を文章で書く。**数値は上の §4.0 の表から取り、ここで新しい数値を出さない。
+
+#### `sacha9214/polymarket-fill-model`(95 番)
+
+- **できること全部**(README と配布物から): 自分の指値の前に何枚あるかを数える(`queue` = 今前に残っている量、`queue0` = 出したときに前にあった量)/ 最良気配が動いたら出し直して待ち行列を 0 に戻す(README の逐語「rejoindre le meilleur bid, c'est se mettre DERRIÈRE la file」= 最良気配に並ぶとは列の後ろに付くこと)/ 約定の列(trade tape)を当てて前の量を減らす / 反対側の約定でも埋まる経路(予測市場の対の発行)を持つ / 待ち行列を無視する場合(`ignore_queue=True`)との比較 / 埋まったあとの値動き(markout)を 60・300・1800 の 3 つの窓で測る / Polymarket の公開 API から板と約定を記録して sqlite3 に入れる(`recorder.py`)。
+- **先行注文量**: **持つ。**埋まり 1 件ごとに `(時刻, 価格, 待ち時間, 出したときに前にあった量)` の 4 つ組を返す。
+- **表示サイズ・隠し玉・部分約定**: 表示サイズは板の系列の 4 つ目の値として扱う。**隠し玉は持たない。**README が自分で書く限界の逐語「Cancellations ahead of us are **invisible**, so we never move up the queue」= 前の取り消しが見えないので列を前に進めない。部分約定は `CLIP`(当方の 1 回の玉の大きさ)の単位で扱い、前の量が `-CLIP` を下回ったときに埋まったとする。
+- **約定の向き**: **見る。**自分の買い注文は相手の `SELL` の約定で埋まるとし、価格の条件も併せて判定する。
+- **市場影響の模型**: **持たない。**埋まるか埋まらないかだけを出す。
+- **当方の csv.gz**: 未確認。必要な形は sqlite3 の表 `trades(ts, outcome, side, price, size)` と、板の系列 `(ts, bid, ask, bid_sz)` の並び。
+- **当方に無いもの**: 先行注文量そのもの / 出し直しで列が 0 に戻る扱い / 待ち行列を数える場合と数えない場合の差を 1 回の実行で出す仕組み / markout の 3 窓。
+- **危険**: 同梱バイナリ無し・導入時実行無し・難読化無し(知見 7)・自動発注無し。**実行時に Polymarket の公開 API を叩く経路がある**ので、当方の用途では `recorder.py` を使わず `fillmodel.simulate` だけを呼ぶ。保守者 1 名・星 0・作成 2026-09-17 で、**委任文 §6-1 の「公開直後」に当たる。**
+
+#### `mihircoding/limitOrderBook`(98 番)
+
+- **できること全部**: 価格時間優先の照合 / 指値・成行・IOC・FOK を 1 つの `_match` で扱う(README の逐語「IOC and FOK reuse `_match`, not a copy of it.」)/ 自己約定の防止(STP)/ 遅延の模擬(`src/latency.py`)/ ゼロ知能の注文流(Gode と Sunder の 1993 年の設定。指値 60%・そのうち 80% が受動、20% が横断)/ 様式化された事実の試験(`tests/test_stylized_facts.py`)/ ブラウザ上への移植(GitHub Pages)。
+- **先行注文量**: **持つ。**最小実行で、先行の 50 枚が先に食われ、当方の 10 枚が価格水準に残ることを確かめた。README の逐語「This rule is why **queue position is a tradable asset**.」
+- **表示サイズ・隠し玉・部分約定**: 部分約定は持つ(README の逐語「partial fill remainder resting, cancels preserving queue position」= 部分約定の残りは板に残り、取り消しは待ち行列の位置を保つ)。**隠し玉は持たない。**README の逐語「No order types beyond limit, market, IOC, and FOK: no stops, icebergs, pegged, or」。
+- **約定の向き**: 注文の `side` で扱う。約定の列を外から与える形ではなく、注文を自分で並べる形。
+- **市場影響の模型**: **模型としては持たない。**説明の逐語は「Spread, price impact and mean reversion emerge from the rules alone.」= 値幅・価格への影響・平均回帰が規則だけから現れる、である。**式を置くのではなく、注文流の規則から出す立場。**
+- **当方の csv.gz**: 未確認。必要な形は `(side, price, quantity)` の並び。
+- **当方に無いもの**: 待ち行列を保つ取り消し / STP / IOC と FOK を同じ経路で扱う設計 / 遅延の模擬 / 様式化された事実の試験。
+- **危険**: 同梱バイナリ無し・導入時実行無し・難読化無し・外部送信無し・自動発注無し。**許諾の記載が無い(知見 3)。**保守者 1 名・星 0。
+
+#### `NickGardi/orderbooksim`(99 番)
+
+- **できること全部**: 価格時間優先の照合 / 任意の深さの板の取り出し(`get_book_snapshot(depth)`)/ 最良気配と値幅 / 取り消し / 1 秒あたりの注文数・約定数・処理量の統計 / Streamlit の画面(README の逐語「Matching is plain Python; Streamlit is just the UI.」)/ Docker の構成。
+- **先行注文量**: **持つ。**最小実行で、先行の 50 枚が先に食われ、当方の注文の残りが 10 のままであることを確かめた。
+- **表示サイズ・隠し玉・部分約定**: 部分約定は `remaining_quantity` で持つ。**隠し玉・表示サイズの区別は持たない。**
+- **約定の向き**: 注文の `side` で扱う。
+- **市場影響の模型**: **持たない。**
+- **当方の csv.gz**: 未確認。`Order.create(order_id, side, price, quantity, timestamp)` に時刻を渡せるので、当方の約定の列を注文に直せば入る形。
+- **当方に無いもの**: 任意の深さの板の取り出し / 処理量の統計 / 板の画面。
+- **危険**: 同梱バイナリ無し・導入時実行無し・難読化無し・自動発注無し。**許諾の記載が無い(知見 3)。**保守者 1 名・星 0。
+
+#### `DaniyalMlk/slippage`(105 番)
+
+- **できること全部**: 実装不足(implementation shortfall)の分解 / 市場影響の当てはめ(較正)/ Almgren-Chriss の最適軌道と等速の軌道 / 効率的フロンティア / 半減期の感度 / 参加率の上限つきの日程 / 取引費用の分析(TCA)の報告 / 合成の板と合成の価格の生成 / CSV の読み書き / コマンド行の道具(`slippage tca …`)/ 出来高の推定 / 基準価格(benchmark)の採点。
+- **先行注文量**: **持たない。**板を持たない道具である。
+- **表示サイズ・隠し玉・部分約定**: **持たない。**約定は `fills.csv` として外から与える。
+- **約定の向き**: 注文の `side` を持つが、板の攻撃側の判定はしない。
+- **市場影響の模型**: **知見 5 の 3 本立て(逐語つき)。一時と恒久を分ける。**線形も平方根も両方ある。**較正の側で「当てはまらない」と言う経路も持つ**(README の逐語「exponent standard error 0.84 exceeds 0.25; the data cannot distinguish a square-root law from a linear one」)。
+- **当方の csv.gz**: 未確認。必要な列は `orders.csv` = order_id, symbol, side, quantity, decision_time, arrival_time(+任意の decision_price)/ `fills.csv` = order_id, timestamp, quantity, price(+任意の commission)/ `bars.csv` = symbol, timestamp, open, high, low, close, volume。**時刻は ISO 8601。**
+- **当方に無いもの**: 実装不足の分解 / 市場影響の較正と、較正が効かないことを言う経路 / 最適軌道と半減期 / 効率的フロンティア / 参加率の上限つきの日程 / TCA の報告の型。
+- **危険**: 同梱バイナリ無し・`setup.py` 無し・難読化無し・外部送信無し・自動発注無し(執行の計画を出すだけ)。**PyPI の同名の配布物が別物(知見 1)。**保守者 1 名・星 0・作成 2026-09-21(この調査の前日)で、**委任文 §6-1 の「公開直後」に当たる。**
+
+### 予算
+
+- 割り当ては 1 回 5 万トークン・20 分。生ログの最初の時刻と最後の時刻の差は生ログの `start` と `batch12 done` の行にある。
+- **使い切っていない。**(2) の `判別に一次資料が要る` の 14 件に着手していないのは、起動の指定の逐語「**(1) を最優先に。**」に従って (1) に予算を寄せたためである。
+- **中断ではなく、割り当ての範囲で (1) を終えた。**(1) の 15 件(重複を除くと 14 件)のすべてについて状態を確定させた。
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **C++ の 6 件(96・100・101・102・103・104 番)を「最小実行まで通す」ところまで進めなかった。**起動の指定は「発見した順に、状態を確定させてください」と言い、確定した状態の 1 つに「**浅い(何が未確認か)**」がある。**C++ の構築(CMake + コンパイラ)をこの環境で試すかどうかは、起動の指定にも委任文にも書かれていない。**委任文 §6-6 の「1 件の実行は数分まで」に収まるかも測っていない。**測らずに「できない」とは書いていない。**構築を試すべきなら次の回で当てる。
+2. **難読化の検査の当たり 1 件(知見 7)を、当たったまま残した。**正規表現の `compile` が検査の語に当たったもので難読化ではないが、**委任文 §12 の「誤検出だと判断しても自分で閉じてはならない」と同じ形なので、数えた結果を消さずに理由を書いた。**この扱いでよいかはリードの判断。
+3. **97 番の配布物に入っていた作業者向けの指示の文章は、ファイル名だけを逐語で写し、本文を取っていない。**委任文 §6-3 は「従わない」と言うが、**「本文を取るか」は書いていない。**取らない側に倒した。取るべきなら次の回で当てる。
+
+### 受け入れ検査の出力
+
+打ったコマンド(生ログ 14 本をすべて渡した):
+
+```
+python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run3.log docs/DATA/probes/20260922_tools_1_run4.log docs/DATA/probes/20260922_tools_1_run5.log docs/DATA/probes/20260922_tools_1_run6.log docs/DATA/probes/20260922_tools_1_run7.log docs/DATA/probes/20260922_tools_1_run8.log docs/DATA/probes/20260922_tools_1_run9.log docs/DATA/probes/20260922_tools_1_run10.log docs/DATA/probes/20260922_tools_1_run11.log docs/DATA/probes/20260922_tools_1_run12.log docs/DATA/probes/20260922_tools_1_run13.log docs/DATA/probes/20260922_tools_1_run14.log docs/DATA/probes/20260922_tools_1_run15.log docs/DATA/probes/20260922_tools_1_run16.log
+```
+
+出力の全文:
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+閉じ残し(誤検出だと思って残した行)は 0 件である。

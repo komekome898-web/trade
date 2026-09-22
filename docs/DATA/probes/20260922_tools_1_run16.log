@@ -1,0 +1,633 @@
+# 区分1 16回目 生ログ (2026-09-22)
+# 委任文: docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154
+UTC 2026-09-22T13:38:22Z start
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/sacha9214/polymarket-fill-model/files/HEAD (先頭200文字)
+curl: (35) Recv failure: Connection reset by peer
+code=000
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/sashankzade/limit-order-book-matching-engine/files/HEAD (先頭200文字)
+{"meta":{"sha":"0adba7b3fb974d7965b57b920d98110922879818"},"files":[{"path":".gitignore","mode":"100644","sha":"0ba1c630d82c8a108f27351b4edc9f15a8a9c6ea","size":634},{"path":"CMakeLists.txt","mode":"1
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/kahan15/Limit-Order-Book-Simulator/files/HEAD (先頭200文字)
+{"meta":{"sha":"f4523c15d1680268d50991bd40beed2f65e4f88c"},"files":[{"path":".gitignore","mode":"100644","sha":"12bc7fa7e05091e2d413d235ef695c1d95805c8a","size":668},{"path":".npmrc","mode":"100644","
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/mihircoding/limitOrderBook/files/HEAD (先頭200文字)
+{"meta":{"sha":"cc48b54db067ba7f4f5cba5b4880cb624121d08b"},"files":[{"path":".gitignore","mode":"100644","sha":"9f24081b285358cb2ec5e4b7a33fa636d4b7bdb1","size":351},{"path":"INTERVIEW.md","mode":"100
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/NickGardi/orderbooksim/files/HEAD (先頭200文字)
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to ungh.cc:443 
+code=000
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/xavierchuan/OrderMatchingEngine/files/HEAD (先頭200文字)
+{"meta":{"sha":"928b5ae234a40ecd2e0da83233a2a09f0d45bdfe"},"files":[{"path":"LICENSE","mode":"100644","sha":"f8cbaa148c8d628d229a0e9ceaede6ec2080486e","size":1066},{"path":"OrderMatchingEngine/Makefil
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/akurkar07/OrderBook/files/HEAD (先頭200文字)
+curl: (35) Recv failure: Connection reset by peer
+code=000
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/3yit/Limit-Order-Book-Simulator/files/HEAD (先頭200文字)
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to ungh.cc:443 
+code=000
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/IsaacCheng9/order-book-simulator/files/HEAD (先頭200文字)
+{"meta":{"sha":"a72e625898acff62e605f14d7f8ca4e2114b0596"},"files":[{"path":".github/workflows/benchmarks.yml","mode":"100644","sha":"229cb77b7db15f25cf7d880590d92da462559dc5","size":2125},{"path":".g
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/jxm35/LimitOrderBook-MatchingEngine/files/HEAD (先頭200文字)
+curl: (35) Recv failure: Connection reset by peer
+code=000
+
+=== CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/DaniyalMlk/slippage/files/HEAD (先頭200文字)
+{"meta":{"sha":"5198f5073aaf743f3daeba19460dca3770808354"},"files":[{"path":".github/workflows/ci.yml","mode":"100644","sha":"7b48de89d0150adc54207cd3bd9e8636b4cfbb30","size":1570},{"path":".gitignore
+
+UTC 2026-09-22T13:39:38Z batch1 done
+=== RETRY (前回 code=000) CMD: curl -sS https://ungh.cc/repos/sacha9214/polymarket-fill-model/files/HEAD | python3 paths.py
+n_files=10
+.github/workflows/tests.yml(270) .gitignore(32) LICENSE(1074) README.md(9371) fillmodel.py(18993) pmdata/__init__.py(83) pmdata/book.py(2908) pmdata/http.py(1158) recorder.py(14152) tests/test_fillmodel.py(6145)
+
+=== RETRY (前回 code=000) CMD: curl -sS https://ungh.cc/repos/NickGardi/orderbooksim/files/HEAD | python3 paths.py
+n_files=11
+.dockerignore(98) .gitignore(81) .streamlit/config.toml(120) Dockerfile(448) README.md(1085) app.py(19983) matching_engine.py(7888) models.py(1192) requirements.txt(85) tests/__init__.py(1) tests/test_matching_engine.py(6464)
+
+=== RETRY (前回 code=000) CMD: curl -sS https://ungh.cc/repos/akurkar07/OrderBook/files/HEAD | python3 paths.py
+n_files=18
+.gitignore(130) CMakeLists.txt(1764) LICENSE(1068) README.md(4525) benchmarks/benchmark_order_book.cpp(15435) reference/reference_order_book.h(6654) src/order.h(826) src/order_book.cpp(7554) src/order_book.h(1031) src/price_level.cpp(2097) src/price_level.h(644) src/types.h(391) tests/test_matching.cpp(11910) tests/test_order_book.cpp(1507) tests/test_price_level.cpp(2737) tests/test_reference_order_book.cpp(4605) tests/test_robustness.cpp(4449) tests/test_utils.h(730)
+
+=== RETRY (前回 code=000) CMD: curl -sS https://ungh.cc/repos/3yit/Limit-Order-Book-Simulator/files/HEAD | python3 paths.py
+n_files=31
+.gitignore(445) CMakeLists.txt(1821) GIT_SETUP.md(4748) README.md(7694) benchmarks/order_book_benchmark.cpp(825) bindings/module.cpp(2265) data/sample_orders.csv(439) include/analytics.hpp(601) include/matching_engine.hpp(1065) include/order.hpp(1186) include/order_book.hpp(1579) include/simulator.hpp(986) requirements.txt(326) scripts/README.md(3815) scripts/benchmark_suite.sh(6456) scripts/binance_depth_capture.py(7776) scripts/cleanup.sh(1777) scripts/generate_sample_data.py(6232) scripts/init_git.sh(2937) scripts/profile.sh(5357) scripts/run_scenarios.sh(4664) scripts/setup_python_bindings.sh(3842) scripts/test_python_bindings.py(5924) src/analytics.cpp(1760) src/main.cpp(3202) src/matching_engine.cpp(1343) src/order_book.cpp(5998) src/simulator.cpp(4826) tests/catch_amalgamated.cpp(382038) tests/catch_amalgamated.hpp(487988) tests/test_order_book.cpp(2095)
+
+=== RETRY (前回 code=000) CMD: curl -sS https://ungh.cc/repos/jxm35/LimitOrderBook-MatchingEngine/files/HEAD | python3 paths.py
+n_files=79
+.clang-format(2065) .gitignore(309) .idea/.gitignore(176) .idea/.name(14) .idea/codeStyles/codeStyleConfig.xml(149) .idea/editor.xml(52496) .idea/misc.xml(444) .idea/modules.xml(425) .idea/networking.iml(200) .idea/vcs.xml(374) CMakeLists.txt(1667) README.md(3960) benchmarks/CMakeLists.txt(351) benchmarks/OrderBookBenchmarks.cpp(11248) lib/CMakeLists.txt(82) lib/MDFeed/CMakeLists.txt(826) lib/MDFeed/include/messages/Messages.h(6447) lib/MDFeed/include/publisher/MDAdapter.h(1476) lib/MDFeed/include/publisher/MarketDataPublisher.h(2435) lib/MDFeed/include/publisher/MulticastPublisher.h(912) lib/MDFeed/include/publisher/MulticastPublisherThread.h(1073) lib/MDFeed/include/receiver/MulticastReceiver.h(1806) lib/MDFeed/include/receiver/ReceiverConfig.h(458) lib/MDFeed/include/utils/PublisherConfig.h(399) lib/MDFeed/include/utils/RingBuffer.h(1016) lib/MDFeed/python/CMakeLists.txt(463) lib/MDFeed/python/bindings.cpp(11057) lib/MDFeed/src/publisher/MarketDataPublisher.cpp(2184) lib/MDFeed/src/publisher/MulticastPublisher.cpp(3676) lib/MDFeed/src/publisher/MulticastPublisherThread.cpp(3170) lib/MDFeed/src/receiver/MulticastReceiver.cpp(9763) lib/OrderBook/CMakeLists.txt(584) lib/OrderBook/include/core/OrderBook.h(3406) lib/OrderBook/include/entries/OrderBookEntry.h(2102) lib/OrderBook/include/orders/Order.h(700) lib/OrderBook/include/orders/OrderCore.h(550) lib/OrderBook/include/securities/Security.h(313) lib/OrderBook/python/CMakeLists.txt(430) lib/OrderBook/python/bindings.cpp(5658) lib/OrderBook/src/core/OrderBook.cpp(11306) lib/OrderBook/src/entries/OrderBookEntry.cpp(2577) lib/OrderBook/src/orders/Order.cpp(566) lib/OrderBook/src/orders/OrderCore.cpp(396) lib/OrderBook/src/securities/Security.cpp(219) lib/OrderEntry/CMakeLists.txt(547) lib/OrderEntry/include/client/OrderEntryClient.h(806) lib/OrderEntry/include/messages/OrderMessages.h(6754) lib/OrderEntry/include/server/OrderEntryServer.h(877) lib/OrderEntry/include/utils/OrderBuffer.h(1192) lib/OrderEntry/include/utils/ServerConfig.h(494) lib/OrderEntry/python/CMakeLists.txt(479) lib/OrderEntry/python/bindings.cpp(11479) lib/OrderEntry/src/client/OrderEntryClient.cpp(3558) lib/OrderEntry/src/server/OrderEntryServer.cpp(4503) orderbook/__init__.py(92) orderbook/_mdfeed_receiver.pyi(9120) orderbook/_orderbook.pyi(3595) orderbook/_orderentry_client.pyi(9345) pyproject.toml(194) setup.py(254) src/CMakeLists.txt(507) src/client/main.cpp(5391) src/exchange/Exchange.cpp(15267) src/exchange/Exchange.h(2723) src/exchange/SymbolManager.cpp(2679) src/exchange/SymbolManager.h(1612) src/exchange/main.cpp(4050) src/order_client/main.cpp(5168) src/order_server/main.cpp(3508) src/simulation_python/gui/__init__.py(22) src/simulation_python/gui/main_window.py(11525) src/simulation_python/main.py(299) src/simulation_python/market_simulator.py(6861) src/simulation_python/requirements.txt(45) stubs/orderbook/_orderbook.pyi(3595) tests/CMakeLists.txt(434) tests/MatchingEngineTests.cpp(3341) tests/OrderBookEntryTests.cpp(600) tests/OrderBookTests.cpp(5844)
+
+UTC 2026-09-22T13:39:58Z batch2 done
+=== CMD: curl -sS https://ungh.cc/repos/sashankzade/limit-order-book-matching-engine/files/HEAD | python3 paths.py
+n_files=77
+.gitignore(634) CMakeLists.txt(1667) LICENSE(1068) README.md(11277) architecture.svg(2520) assets/architecture.svg(2520) assets/benchmarks.png(59199) assets/orderbook_demo.gif(346333) benchmarks.png(59199) benchmarks/CMakeLists.txt(351) benchmarks/OrderBookBenchmarks.cpp(11248) lib/CMakeLists.txt(82) lib/MDFeed/CMakeLists.txt(826) lib/MDFeed/include/messages/Messages.h(6447) lib/MDFeed/include/publisher/MDAdapter.h(1476) lib/MDFeed/include/publisher/MarketDataPublisher.h(2435) lib/MDFeed/include/publisher/MulticastPublisher.h(912) lib/MDFeed/include/publisher/MulticastPublisherThread.h(1073) lib/MDFeed/include/receiver/MulticastReceiver.h(1806) lib/MDFeed/include/receiver/ReceiverConfig.h(458) lib/MDFeed/include/utils/PublisherConfig.h(399) lib/MDFeed/include/utils/RingBuffer.h(1016) lib/MDFeed/python/CMakeLists.txt(463) lib/MDFeed/python/bindings.cpp(11057) lib/MDFeed/src/publisher/MarketDataPublisher.cpp(2184) lib/MDFeed/src/publisher/MulticastPublisher.cpp(3676) lib/MDFeed/src/publisher/MulticastPublisherThread.cpp(3170) lib/MDFeed/src/receiver/MulticastReceiver.cpp(9763) lib/OrderBook/CMakeLists.txt(584) lib/OrderBook/include/core/OrderBook.h(3406) lib/OrderBook/include/entries/OrderBookEntry.h(2102) lib/OrderBook/include/orders/Order.h(700) lib/OrderBook/include/orders/OrderCore.h(550) lib/OrderBook/include/securities/Security.h(313) lib/OrderBook/python/CMakeLists.txt(430) lib/OrderBook/python/bindings.cpp(5658) lib/OrderBook/src/core/OrderBook.cpp(11306) lib/OrderBook/src/entries/OrderBookEntry.cpp(2577) lib/OrderBook/src/orders/Order.cpp(566) lib/OrderBook/src/orders/OrderCore.cpp(396) lib/OrderBook/src/securities/Security.cpp(219) lib/OrderEntry/CMakeLists.txt(547) lib/OrderEntry/include/client/OrderEntryClient.h(806) lib/OrderEntry/include/messages/OrderMessages.h(6754) lib/OrderEntry/include/server/OrderEntryServer.h(877) lib/OrderEntry/include/utils/OrderBuffer.h(1192) lib/OrderEntry/include/utils/ServerConfig.h(494) lib/OrderEntry/python/CMakeLists.txt(479) lib/OrderEntry/python/bindings.cpp(11479) lib/OrderEntry/src/client/OrderEntryClient.cpp(3558) lib/OrderEntry/src/server/OrderEntryServer.cpp(4503) orderbook/__init__.py(92) orderbook/_mdfeed_receiver.pyi(9120) orderbook/_orderbook.pyi(3595) orderbook/_orderentry_client.pyi(9345) orderbook_demo.gif(346333) pyproject.toml(194) setup.py(254) src/CMakeLists.txt(507) src/client/main.cpp(5391) src/exchange/Exchange.cpp(15267) src/exchange/Exchange.h(2723) src/exchange/SymbolManager.cpp(2679) src/exchange/SymbolManager.h(1612) src/exchange/main.cpp(4050) src/order_client/main.cpp(5168) src/order_server/main.cpp(3508) src/simulation_python/gui/__init__.py(22) src/simulation_python/gui/main_window.py(11525) src/simulation_python/main.py(299) src/simulation_python/market_simulator.py(6861) src/simulation_python/requirements.txt(45) stubs/orderbook/_orderbook.pyi(3595) tests/CMakeLists.txt(434) tests/MatchingEngineTests.cpp(3341) tests/OrderBookEntryTests.cpp(600) tests/OrderBookTests.cpp(5844)
+
+=== CMD: curl -sS https://ungh.cc/repos/kahan15/Limit-Order-Book-Simulator/files/HEAD | python3 paths.py
+n_files=187
+.gitignore(668) .npmrc(56) .replit(323) .replitignore(201) README.md(1422) artifacts/api-server/.replit-artifact/artifact.toml(784) artifacts/api-server/build.mjs(3455) artifacts/api-server/package.json(880) artifacts/api-server/src/app.ts(656) artifacts/api-server/src/index.ts(511) artifacts/api-server/src/lib/.gitkeep(0) artifacts/api-server/src/lib/logger.ts(421) artifacts/api-server/src/middlewares/.gitkeep(0) artifacts/api-server/src/routes/health.ts(288) artifacts/api-server/src/routes/index.ts(171) artifacts/api-server/tsconfig.json(335) artifacts/limit-order-book/.replit-artifact/artifact.toml(747) artifacts/limit-order-book/components.json(434) artifacts/limit-order-book/index.html(1370) artifacts/limit-order-book/package.json(2740) artifacts/limit-order-book/public/favicon.svg(163) artifacts/limit-order-book/public/robots.txt(23) artifacts/limit-order-book/src/App.tsx(50147) artifacts/limit-order-book/src/components/error-boundary.tsx(2735) artifacts/limit-order-book/src/components/ui/accordion.tsx(2013) artifacts/limit-order-book/src/components/ui/alert-dialog.tsx(4447) artifacts/limit-order-book/src/components/ui/alert.tsx(1609) artifacts/limit-order-book/src/components/ui/aspect-ratio.tsx(143) artifacts/limit-order-book/src/components/ui/avatar.tsx(1431) artifacts/limit-order-book/src/components/ui/badge.tsx(1528) artifacts/limit-order-book/src/components/ui/breadcrumb.tsx(2735) artifacts/limit-order-book/src/components/ui/button-group.tsx(2222) artifacts/limit-order-book/src/components/ui/button.tsx(2370) artifacts/limit-order-book/src/components/ui/calendar.tsx(7607) artifacts/limit-order-book/src/components/ui/card.tsx(1856) artifacts/limit-order-book/src/components/ui/carousel.tsx(6288) artifacts/limit-order-book/src/components/ui/chart.tsx(10846) artifacts/limit-order-book/src/components/ui/checkbox.tsx(1038) artifacts/limit-order-book/src/components/ui/collapsible.tsx(335) artifacts/limit-order-book/src/components/ui/command.tsx(4918) artifacts/limit-order-book/src/components/ui/context-menu.tsx(7446) artifacts/limit-order-book/src/components/ui/dialog.tsx(3889) artifacts/limit-order-book/src/components/ui/drawer.tsx(3029) artifacts/limit-order-book/src/components/ui/dropdown-menu.tsx(7646) artifacts/limit-order-book/src/components/ui/empty.tsx(2410) artifacts/limit-order-book/src/components/ui/field.tsx(6079) artifacts/limit-order-book/src/components/ui/form.tsx(4232) artifacts/limit-order-book/src/components/ui/hover-card.tsx(1245) artifacts/limit-order-book/src/components/ui/input-group.tsx(4993) artifacts/limit-order-book/src/components/ui/input-otp.tsx(2160) artifacts/limit-order-book/src/components/ui/input.tsx(775) artifacts/limit-order-book/src/components/ui/item.tsx(4519) artifacts/limit-order-book/src/components/ui/kbd.tsx(867) artifacts/limit-order-book/src/components/ui/label.tsx(733) artifacts/limit-order-book/src/components/ui/menubar.tsx(8655) artifacts/limit-order-book/src/components/ui/navigation-menu.tsx(5150) artifacts/limit-order-book/src/components/ui/pagination.tsx(2772) artifacts/limit-order-book/src/components/ui/popover.tsx(1351) artifacts/limit-order-book/src/components/ui/progress.tsx(799) artifacts/limit-order-book/src/components/ui/radio-group.tsx(1421) artifacts/limit-order-book/src/components/ui/resizable.tsx(1733) artifacts/limit-order-book/src/components/ui/scroll-area.tsx(1650) artifacts/limit-order-book/src/components/ui/select.tsx(5773) artifacts/limit-order-book/src/components/ui/separator.tsx(764) artifacts/limit-order-book/src/components/ui/sheet.tsx(4307) artifacts/limit-order-book/src/components/ui/sidebar.tsx(21969) artifacts/limit-order-book/src/components/ui/skeleton.tsx(269) artifacts/limit-order-book/src/components/ui/slider.tsx(1043) artifacts/limit-order-book/src/components/ui/sonner.tsx(902) artifacts/limit-order-book/src/components/ui/spinner.tsx(334) artifacts/limit-order-book/src/components/ui/switch.tsx(1155) artifacts/limit-order-book/src/components/ui/table.tsx(2881) artifacts/limit-order-book/src/components/ui/tabs.tsx(1890) artifacts/limit-order-book/src/components/ui/textarea.tsx(655) artifacts/limit-order-book/src/components/ui/toast.tsx(4871) artifacts/limit-order-book/src/components/ui/toaster.tsx(777) artifacts/limit-order-book/src/components/ui/toggle-group.tsx(1767) artifacts/limit-order-book/src/components/ui/toggle.tsx(1494) artifacts/limit-order-book/src/components/ui/tooltip.tsx(1277) artifacts/limit-order-book/src/hooks/use-mobile.tsx(585) artifacts/limit-order-book/src/hooks/use-toast.ts(3952) artifacts/limit-order-book/src/index.css(35402) artifacts/limit-order-book/src/lib/utils.ts(170) artifacts/limit-order-book/src/main.tsx(446) artifacts/limit-order-book/src/pages/not-found.tsx(739) artifacts/limit-order-book/tsconfig.json(520) artifacts/limit-order-book/vite.config.ts(1803) artifacts/mockup-sandbox/.replit-artifact/artifact.toml(327) artifacts/mockup-sandbox/components.json(426) artifacts/mockup-sandbox/index.html(4325) artifacts/mockup-sandbox/mockupPreviewPlugin.ts(4639) artifacts/mockup-sandbox/package.json(2516) artifacts/mockup-sandbox/src/.generated/mockup-components.ts(171) artifacts/mockup-sandbox/src/App.tsx(3654) artifacts/mockup-sandbox/src/components/ui/accordion.tsx(2001) artifacts/mockup-sandbox/src/components/ui/alert-dialog.tsx(4419) artifacts/mockup-sandbox/src/components/ui/alert.tsx(1598) artifacts/mockup-sandbox/src/components/ui/aspect-ratio.tsx(140) artifacts/mockup-sandbox/src/components/ui/avatar.tsx(1419) artifacts/mockup-sandbox/src/components/ui/badge.tsx(1163) artifacts/mockup-sandbox/src/components/ui/breadcrumb.tsx(2712) artifacts/mockup-sandbox/src/components/ui/button-group.tsx(2209) artifacts/mockup-sandbox/src/components/ui/button.tsx(1925) artifacts/mockup-sandbox/src/components/ui/calendar.tsx(7569) artifacts/mockup-sandbox/src/components/ui/card.tsx(1828) artifacts/mockup-sandbox/src/components/ui/carousel.tsx(6210) artifacts/mockup-sandbox/src/components/ui/chart.tsx(10674) artifacts/mockup-sandbox/src/components/ui/checkbox.tsx(1031) artifacts/mockup-sandbox/src/components/ui/collapsible.tsx(329) artifacts/mockup-sandbox/src/components/ui/command.tsx(4887) artifacts/mockup-sandbox/src/components/ui/context-menu.tsx(7406) artifacts/mockup-sandbox/src/components/ui/dialog.tsx(3835) artifacts/mockup-sandbox/src/components/ui/drawer.tsx(3007) artifacts/mockup-sandbox/src/components/ui/dropdown-menu.tsx(7606) artifacts/mockup-sandbox/src/components/ui/empty.tsx(2396) artifacts/mockup-sandbox/src/components/ui/field.tsx(6044) artifacts/mockup-sandbox/src/components/ui/form.tsx(4175) artifacts/mockup-sandbox/src/components/ui/hover-card.tsx(1237) artifacts/mockup-sandbox/src/components/ui/input-group.tsx(4883) artifacts/mockup-sandbox/src/components/ui/input-otp.tsx(2143) artifacts/mockup-sandbox/src/components/ui/input.tsx(768) artifacts/mockup-sandbox/src/components/ui/item.tsx(4494) artifacts/mockup-sandbox/src/components/ui/kbd.tsx(862) artifacts/mockup-sandbox/src/components/ui/label.tsx(724) artifacts/mockup-sandbox/src/components/ui/menubar.tsx(8608) artifacts/mockup-sandbox/src/components/ui/navigation-menu.tsx(5124) artifacts/mockup-sandbox/src/components/ui/pagination.tsx(2751) artifacts/mockup-sandbox/src/components/ui/popover.tsx(1342) artifacts/mockup-sandbox/src/components/ui/progress.tsx(792) artifacts/mockup-sandbox/src/components/ui/radio-group.tsx(1410) artifacts/mockup-sandbox/src/components/ui/resizable.tsx(1723) artifacts/mockup-sandbox/src/components/ui/scroll-area.tsx(1642) artifacts/mockup-sandbox/src/components/ui/select.tsx(5745) artifacts/mockup-sandbox/src/components/ui/separator.tsx(756) artifacts/mockup-sandbox/src/components/ui/sheet.tsx(4280) artifacts/mockup-sandbox/src/components/ui/sidebar.tsx(21056) artifacts/mockup-sandbox/src/components/ui/skeleton.tsx(266) artifacts/mockup-sandbox/src/components/ui/slider.tsx(1037) artifacts/mockup-sandbox/src/components/ui/sonner.tsx(894) artifacts/mockup-sandbox/src/components/ui/spinner.tsx(331) artifacts/mockup-sandbox/src/components/ui/switch.tsx(1148) artifacts/mockup-sandbox/src/components/ui/table.tsx(2859) artifacts/mockup-sandbox/src/components/ui/tabs.tsx(1877) artifacts/mockup-sandbox/src/components/ui/textarea.tsx(649) artifacts/mockup-sandbox/src/components/ui/toast.tsx(4845) artifacts/mockup-sandbox/src/components/ui/toaster.tsx(772) artifacts/mockup-sandbox/src/components/ui/toggle-group.tsx(1753) artifacts/mockup-sandbox/src/components/ui/toggle.tsx(1486) artifacts/mockup-sandbox/src/components/ui/tooltip.tsx(1267) artifacts/mockup-sandbox/src/hooks/use-mobile.tsx(565) artifacts/mockup-sandbox/src/hooks/use-toast.ts(3767) artifacts/mockup-sandbox/src/index.css(5760) artifacts/mockup-sandbox/src/lib/utils.ts(166) artifacts/mockup-sandbox/src/main.tsx(157) artifacts/mockup-sandbox/tsconfig.json(513) artifacts/mockup-sandbox/vite.config.ts(1592) attached_assets/Pasted-Extend-the-existing-file-to-add-a-LIVE-market-data-mode_1789237532670.txt(2344) lib/api-client-react/package.json(265) lib/api-client-react/src/custom-fetch.ts(11377) lib/api-client-react/src/generated/api.schemas.ts(178) lib/api-client-react/src/generated/api.ts(2544) lib/api-client-react/src/index.ts(194) lib/api-client-react/tsconfig.json(251) lib/api-spec/openapi.yaml(778) lib/api-spec/orval.config.ts(2051) lib/api-spec/package.json(228) lib/api-zod/package.json(189) lib/api-zod/src/generated/api.ts(296) lib/api-zod/src/generated/types/healthStatus.ts(179) lib/api-zod/src/generated/types/index.ts(159) lib/api-zod/src/index.ts(68) lib/api-zod/tsconfig.json(221) lib/db/drizzle.config.ts(352) lib/db/package.json(578) lib/db/src/index.ts(416) lib/db/src/schema/index.ts(743) lib/db/tsconfig.json(244) package.json(649) pnpm-lock.yaml(210608) pnpm-workspace.yaml(6674) replit.md(1521) scripts/package.json(281) scripts/post-merge.sh(72) scripts/src/hello.ts(46) scripts/tsconfig.json(157) tsconfig.base.json(692) tsconfig.json(236)
+
+=== CMD: curl -sS https://ungh.cc/repos/mihircoding/limitOrderBook/files/HEAD | python3 paths.py
+n_files=25
+.gitignore(351) INTERVIEW.md(14353) README.md(16918) RESULTS.md(18499) benchmark.py(11050) docs/build_data.py(4867) docs/data.js(16992) docs/index.html(42004) latency_study.py(11790) pytest.ini(42) requirements.txt(52) run_simulation.py(6852) simulation.png(200769) src/__init__.py(0) src/latency.py(6242) src/order.py(2669) src/orderbook.py(21118) src/simulator.py(5722) tests/test_best_price.py(3899) tests/test_latency.py(5343) tests/test_lazy_cancel.py(10189) tests/test_orderbook.py(7159) tests/test_simulator.py(884) tests/test_stp.py(9751) tests/test_stylized_facts.py(3366)
+
+=== CMD: curl -sS https://ungh.cc/repos/xavierchuan/OrderMatchingEngine/files/HEAD | python3 paths.py
+n_files=12
+LICENSE(1066) OrderMatchingEngine/Makefile(297) OrderMatchingEngine/matching(42120) OrderMatchingEngine/src/main.cpp(250) OrderMatchingEngine/src/main.dSYM/Contents/Info.plist(633) OrderMatchingEngine/src/main.dSYM/Contents/Resources/DWARF/main(408087) OrderMatchingEngine/src/main.dSYM/Contents/Resources/Relocations/aarch64/main.yml(131219) OrderMatchingEngine/src/matching_engine.cpp(3418) OrderMatchingEngine/src/order.h(419) OrderMatchingEngine/src/orderbook.h(972) OrderMatchingEngine/tests/test_orderbook.cpp(818) README.md(2425)
+
+=== CMD: curl -sS https://ungh.cc/repos/IsaacCheng9/order-book-simulator/files/HEAD | python3 paths.py
+n_files=103
+.github/workflows/benchmarks.yml(2125) .github/workflows/format.yml(540) .github/workflows/test.yml(1329) .github/workflows/type-check.yml(618) .github/workflows/version.yml(1887) .gitignore(3454) .python-version(5) README.md(10886) benchmarks/integration/__init__.py(59) benchmarks/integration/integration_benchmark.py(7430) benchmarks/unit/__init__.py(52) benchmarks/unit/delta_payload_benchmark.py(4495) benchmarks/unit/matching_engine_benchmark.py(5058) benchmarks/unit/multicast_benchmark.py(8436) benchmarks/unit/order_book_benchmark.py(4260) benchmarks/unit/run_all_benchmarks.py(1497) benchmarks/unit/websocket_benchmark.py(12749) docker-compose.yml(3412) docker/Dockerfile.gateway(528) docker/Dockerfile.market_data(448) docker/Dockerfile.matching(448) docker/Dockerfile.postgresql(595) docker/Dockerfile.streamlit(695) examples/market_simulator_usage.py(2571) pyproject.toml(2131) resources/nasdaq_stocks_2025_02_11.csv(995229) screenshots/individual_order_book.png(369938) screenshots/market_overview.png(303471) screenshots/submit_limit_order.png(255993) screenshots/submit_market_order.png(252301) screenshots/trade_history_all_stocks.png(607294) screenshots/trade_history_single_stock.png(607294) src/order_book_simulator/common/__init__.py(0) src/order_book_simulator/common/cache.py(8440) src/order_book_simulator/common/models.py(3320) src/order_book_simulator/database/__init__.py(0) src/order_book_simulator/database/connection.py(1148) src/order_book_simulator/database/db_models.py(3669) src/order_book_simulator/database/get_stocks.py(4712) src/order_book_simulator/database/queries.py(7830) src/order_book_simulator/database/schema.sql(3756) src/order_book_simulator/gateway/__init__.py(0) src/order_book_simulator/gateway/app.py(2460) src/order_book_simulator/gateway/app_state.py(515) src/order_book_simulator/gateway/producer.py(6858) src/order_book_simulator/gateway/routers/health_router.py(1008) src/order_book_simulator/gateway/routers/market_data_router.py(7246) src/order_book_simulator/gateway/routers/order_book_router.py(6752) src/order_book_simulator/gateway/routers/ws_router.py(3270) src/order_book_simulator/gateway/validation.py(3311) src/order_book_simulator/gateway/ws_manager.py(5688) src/order_book_simulator/market_data/__init__.py(0) src/order_book_simulator/market_data/analytics.py(8722) src/order_book_simulator/market_data/db_consumer.py(8374) src/order_book_simulator/market_data/persistence.py(4725) src/order_book_simulator/matching/__init__.py(0) src/order_book_simulator/matching/delta_buffer.py(2947) src/order_book_simulator/matching/matching_engine.py(6774) src/order_book_simulator/matching/order_book.py(11897) src/order_book_simulator/matching/order_consumer.py(14387) src/order_book_simulator/multicast/multicast_publisher.py(3575) src/order_book_simulator/multicast/multicast_subscriber.py(4439) src/order_book_simulator/multicast/wire_format.py(2120) src/order_book_simulator/simulator/__init__.py(0) src/order_book_simulator/simulator/cli.py(3226) src/order_book_simulator/simulator/market_simulator.py(16905) src/order_book_simulator/simulator/market_simulator_stats.py(2314) src/order_book_simulator/simulator/random_order_generator.py(5438) src/order_book_simulator/ui/__init__.py(0) src/order_book_simulator/ui/components/__init__.py(0) src/order_book_simulator/ui/components/api_client.py(8133) src/order_book_simulator/ui/components/market_overview.py(3371) src/order_book_simulator/ui/components/order_book.py(3075) src/order_book_simulator/ui/components/order_form.py(3892) src/order_book_simulator/ui/components/trade_history.py(10291) src/order_book_simulator/ui/components/trades.py(0) src/order_book_simulator/ui/components/utils.py(601) src/order_book_simulator/ui/streamlit_app.py(4079) tests/__init__.py(0) tests/conftest.py(13962) tests/integration/test_market_data_persistence.py(4802) tests/test_common/test_cache_deltas.py(4607) tests/test_gateway/test_health_router.py(288) tests/test_gateway/test_market_data_router.py(10462) tests/test_gateway/test_order_book_router.py(2403) tests/test_gateway/test_order_book_router_deltas.py(4443) tests/test_gateway/test_validation.py(4818) tests/test_gateway/test_ws_manager.py(5930) tests/test_gateway/test_ws_router.py(6855) tests/test_market_data/test_analytics.py(2468) tests/test_market_data/test_db_consumer.py(15748) tests/test_matching/test_delta_buffer.py(5192) tests/test_matching/test_matching_engine.py(4916) tests/test_matching/test_matching_engine_deltas.py(4081) tests/test_matching/test_order_book.py(9443) tests/test_matching/test_order_book_deltas.py(7790) tests/test_matching/test_order_consumer.py(10800) tests/test_multicast/test_multicast_publisher.py(4406) tests/test_multicast/test_multicast_subscriber.py(6557) tests/test_multicast/test_wire_format.py(2286) tests/test_simulator/test_cli.py(2049) tests/test_simulator/test_market_simulator.py(1453) uv.lock(244869)
+
+=== CMD: curl -sS https://ungh.cc/repos/DaniyalMlk/slippage/files/HEAD | python3 paths.py
+n_files=47
+.github/workflows/ci.yml(1570) .gitignore(148) LICENSE(1064) README.md(20534) ROADMAP.md(2878) examples/almgren_chriss.py(1338) examples/constrained_schedule.py(1831) examples/end_to_end.py(3761) examples/shortfall_worked_example.py(2273) examples/strategy_comparison.py(3178) pyproject.toml(1773) src/slippage/__init__.py(3701) src/slippage/__main__.py(56) src/slippage/benchmarks.py(4963) src/slippage/calibration.py(15635) src/slippage/cli.py(12222) src/slippage/costs.py(2057) src/slippage/exceptions.py(1707) src/slippage/execution.py(13110) src/slippage/impact.py(8873) src/slippage/io.py(8049) src/slippage/py.typed(0) src/slippage/report.py(9618) src/slippage/scheduling.py(10588) src/slippage/series.py(8720) src/slippage/shortfall.py(12539) src/slippage/simulate.py(6406) src/slippage/synthetic.py(5741) src/slippage/types.py(9118) src/slippage/volume.py(9004) tests/conftest.py(1542) tests/test_benchmarks.py(7762) tests/test_calibration.py(14037) tests/test_cli.py(5446) tests/test_costs.py(2840) tests/test_examples.py(497) tests/test_execution.py(14169) tests/test_impact.py(8831) tests/test_io.py(5376) tests/test_report.py(8162) tests/test_scheduling.py(11857) tests/test_series.py(6753) tests/test_shortfall.py(15122) tests/test_simulate.py(6393) tests/test_synthetic.py(1438) tests/test_types.py(8508) tests/test_volume.py(7666)
+
+UTC 2026-09-22T13:40:16Z batch3 done
+=== CMD: curl -sS -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/f/96.json -w code=%{http_code} https://ungh.cc/repos/sashankzade/limit-order-book-matching-engine/files/HEAD ; 同 104 ; 両者の path+sha を比較
+code=200
+code=200
+96_n=77 104_n=79 同一path同一sha=68 96のみ=7 104のみ=9
+96のみ: ['LICENSE', 'architecture.svg', 'assets/architecture.svg', 'assets/benchmarks.png', 'assets/orderbook_demo.gif', 'benchmarks.png', 'orderbook_demo.gif']
+104のみ: ['.clang-format', '.idea/.gitignore', '.idea/.name', '.idea/codeStyles/codeStyleConfig.xml', '.idea/editor.xml', '.idea/misc.xml', '.idea/modules.xml', '.idea/networking.iml', '.idea/vcs.xml']
+=== CMD: curl -sS -o $S/f/<候補>.md -w code=%{http_code} https://raw.githubusercontent.com/<repo>/<枝>/README.md (11件)
+104 jxm35/LimitOrderBook-MatchingEngine/master code=200 bytes=3960
+105 DaniyalMlk/slippage/main code=200 bytes=20534
+102 3yit/Limit-Order-Book-Simulator/main code=200 bytes=7694
+103 IsaacCheng9/order-book-simulator/main code=200 bytes=10886
+100 xavierchuan/OrderMatchingEngine/main code=200 bytes=2425
+101 akurkar07/OrderBook/main code=200 bytes=4525
+96 sashankzade/limit-order-book-matching-engine/main code=200 bytes=11277
+97 kahan15/Limit-Order-Book-Simulator/main code=200 bytes=1422
+95 sacha9214/polymarket-fill-model/main code=200 bytes=9371
+98 mihircoding/limitOrderBook/main code=200 bytes=16918
+99 NickGardi/orderbooksim/main code=200 bytes=1085
+UTC 2026-09-22T13:41:04Z batch4 done
+=== CMD: §6-1 導入時実行・難読化・外部URL取得の検査(依存ファイルを取得して表示)
+--- 98 mihircoding/limitOrderBook/main/requirements.txt
+numpy>=1.24
+pandas>=2.0
+matplotlib>=3.7
+pytest>=8.0
+--- 99 NickGardi/orderbooksim/main/requirements.txt
+streamlit>=1.28.0
+sortedcontainers>=2.4.0
+pytest>=7.4.0
+pandas>=2.0.0
+plotly>=5.18.0
+--- 105 DaniyalMlk/slippage/main/pyproject.toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "slippage"
+version = "0.1.0"
+description = "An optimal execution and transaction cost analysis engine"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Daniyal" }]
+keywords = [
+    "transaction-cost-analysis",
+    "optimal-execution",
+    "market-impact",
+    "implementation-shortfall",
+    "almgren-chriss",
+    "quantitative-finance",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Typing :: Typed",
+]
+dependencies = ["numpy>=1.23"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "hypothesis>=6.80",
+    "mypy>=1.8",
+    "ruff>=0.16,<0.17",
+    "scipy>=1.10",
+]
+
+[project.scripts]
+slippage = "slippage.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/DaniyalMlk/slippage"
+Issues = "https://github.com/DaniyalMlk/slippage/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/slippage"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.mypy]
+strict = true
+files = ["src/slippage", "tests", "examples"]
+
+[[tool.mypy.overrides]]
+module = ["scipy.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "N", "C4", "PIE"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+
+=== CMD: grep -n '^import\|^from' 95(fillmodel.py) 98(src/*.py) 99(matching_engine.py) の先頭
+--- 95
+82:from __future__ import annotations
+84:import argparse
+85:import collections
+86:import json
+87:import re
+88:import sqlite3
+89:import statistics as st
+90:import time
+91:import urllib.request
+92:from pathlib import Path
+--- 99
+3:from __future__ import annotations
+5:import time
+6:from collections import deque
+7:from typing import Deque, Dict, List, Optional, Tuple
+9:from sortedcontainers import SortedDict
+11:from models import BookSnapshot, Order, PriceLevel, Side, Trade
+UTC 2026-09-22T13:41:26Z batch5 done
+=== CMD: python3 -m venv v16 && v16/bin/pip -q install 'https://github.com/DaniyalMlk/slippage/archive/refs/heads/main.tar.gz' (隔離。§6-1 検査後: pyproject に導入時実行なし・依存 numpy のみ・MIT)
+  ERROR: HTTP error 403 while getting https://github.com/DaniyalMlk/slippage/archive/refs/heads/main.tar.gz
+ERROR: Could not install requirement https://github.com/DaniyalMlk/slippage/archive/refs/heads/main.tar.gz because of HTTP error 403 Client Error: Forbidden for url: https://github.com/DaniyalMlk/slippage/archive/refs/heads/main.tar.gz for URL https://github.com/DaniyalMlk/slippage/archive/refs/heads/main.tar.gz
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+rc=1 install_time_s=0.9984831809997559
+No broken requirements found.
+pip_check_rc=0
+pip==24.0
+setuptools==79.0.1
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+UTC 2026-09-22T13:41:46Z batch6 done
+=== CMD: (403 の第2手段) git clone --depth 1 https://github.com/DaniyalMlk/slippage.git
+Cloning into 'sl105'...
+rc=0 clone_time_s=0.9382481575012207
+724K	sl105
+=== CMD: v16/bin/pip install ./sl105
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+rc=0 install_time_s=10.10490608215332
+No broken requirements found.
+numpy==2.4.6
+pip==24.0
+setuptools==79.0.1
+slippage==0.1.0
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+=== CMD: v16/bin/python min105.py (最小実行: 合成の値で市場影響と Almgren-Chriss の軌道。当方の実データ・鍵は一切使わない)
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/min105.py", line 3, in <module>
+    pr = sp.PowerLawImpact(eta=1e-6, gamma=5e-7, delta=0.5)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: PowerLawImpact.__init__() got an unexpected keyword argument 'delta'
+rc=1 time_s=0.13973236083984375
+=== CMD: (直して再実行) v16/bin/python min105.py
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/min105.py", line 4, in <module>
+    print("LinearImpact.temporary(1e5,1.0)=", li.temporary(1e5,1.0))
+                                              ^^^^^^^^^^^^^^^^^^^^^
+TypeError: LinearImpact.temporary() takes 2 positional arguments but 3 were given
+rc=1 time_s=0.12068343162536621
+=== CMD: (署名を合わせて再実行) v16/bin/python min105.py
+LinearImpact.temporary(rate=1e5)= 0.09999999999999999
+LinearImpact.permanent? gamma= 5e-07 eta= 1e-06
+PowerLawImpact.temporary(rate=1e5)= 0.0009999999999999998
+optimal.trades= [314692.537, 232455.641, 178113.423, 145144.815, 129593.585]
+optimal.holdings= [1000000.0, 685307.463, 452851.822, 274738.399, 129593.585, 0.0]
+optimal.expected_cost= 416989.6927085332 variance= 69029709918.53818 kappa= 0.3447010841850391 half_life= 2.9010642724384055
+linear.trades= [200000.0, 200000.0, 200000.0, 200000.0, 200000.0] expected_cost= 400000.0
+schedule_cost(linear)= ScheduleCost(temporary=200000.0, permanent=200000.0)
+SquareRootLaw.peak_impact(Q=1e5,V=1e7,sigma=0.02)= 0.002
+rc=0 time_s=0.13161849975585938
+=== CMD: git clone --depth 1 (95 polymarket-fill-model / 98 limitOrderBook / 99 orderbooksim)
+Cloning into 'sl95'...
+sl95 rc=0 clone_time_s=0.8791244029998779 size=312K
+Cloning into 'sl98'...
+sl98 rc=0 clone_time_s=0.735253095626831 size=924K
+Cloning into 'sl99'...
+sl99 rc=0 clone_time_s=0.6898167133331299 size=280K
+=== CMD: grep -n 'queue\|hidden\|display\|aggressor\|partial' sl95/fillmodel.py (先頭20行)
+202:def simulate(ser, trades, side: str, ignore_queue: bool = False):
+203:    """Nos fills sur un côté. Retourne [(ts, prix, attente_s, queue_initiale)].
+215:    queue = 0.0           # ce qui reste devant nous
+216:    queue0 = 0.0          # ce qu'il y avait devant nous EN POSTANT
+221:        return bid, (0.0 if ignore_queue else sz), (0.0 if ignore_queue else sz), ts
+237:            price, queue, queue0, since = post(bid, bid_sz, ts)
+241:            queue -= sz
+245:            if queue <= -CLIP:
+246:                # `queue0`, pas la file de l'instant : ce qui compte est le
+248:                fills.append((t_hit, price, t_hit - since, queue0))
+249:                price, queue, queue0, since = post(bid, bid_sz, t_hit)
+328:            nq_fills += len(simulate(ser, tr, side, ignore_queue=True))
+=== CMD: v16/bin/pip install -q pytest sortedcontainers (隔離した venv。§6-1 の検査後)
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+rc=0
+=== CMD: (95 最小実行) v16/bin/python -m pytest sl95/tests -p no:cacheprovider
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl95
+collected 10 items
+
+tests/test_fillmodel.py ..........                                       [100%]
+
+============================== 10 passed in 0.04s ==============================
+time_s=0.24174976348876953
+=== CMD: (95 最小実行2 合成の板と約定列。queue 有無の差) v16/bin/python min95.py
+queue有: fills= [(25, 0.48, 15, 100.0)]
+queue無(ignore_queue=True): fills= [(15, 0.48, 5, 0.0), (25, 0.48, 10, 0.0)]
+同じ板・同じ約定列で件数差 = 1
+CLIP= 5.0
+markout= {60: [], 300: [], 1800: []}
+rc=0 time_s=0.09307575225830078
+=== CMD: (98 最小実行 合成の指値往復・先行注文量) v16/bin/python min98.py
+売り50後の約定= [(100.0, 50, None)]
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/min98.py", line 9, in <module>
+    print("当方の注文 残り=", b.get_order(my_id).remaining if hasattr(b.get_order(my_id),'remaining') else b.get_order(my_id))
+                                                                      ^^^^^^^^^^^
+AttributeError: 'LimitOrderBook' object has no attribute 'get_order'. Did you mean: 'market_order'?
+rc=1 time_s=0.04062461853027344
+=== CMD: (98 最小実行 直して再実行) v16/bin/python min98.py
+売り50後の約定= [(100.0, 50, None)]
+先行者50が先に食われ、当方は未約定のまま: best_bid= 100.0 depth= [(100.0, 10)]
+追加売り10後の約定= [(100.0, 10)]
+往復の損益(買100.0×10 → 売101.0×10)= 10.0
+rc=0 time_s=0.042693376541137695
+=== CMD: (99 最小実行 合成の指値・FIFO) v16/bin/python min99.py
+売り50の約定= [(100.0, 50)]
+残った当方の注文 remaining= 10
+追加売り10の約定= [(100.0, 10)]
+best_bid_ask= (None, None)
+rc=0 time_s=0.04581952095031738
+UTC 2026-09-22T13:44:23Z batch7 done
+=== CMD: ungh contributors + PyPI 有無 (95/98/99/105)
+sacha9214/polymarket-fill-model contributors: {"contributors":[{"id":252882955,"username":"sacha9214","contributions":1}]}
+mihircoding/limitOrderBook contributors: {"contributors":[{"id":84816566,"username":"mihircoding","contributions":8}]}
+NickGardi/orderbooksim contributors: {"contributors":[{"id":44130525,"username":"NickGardi","contributions":3}]}
+DaniyalMlk/slippage contributors: {"contributors":[{"id":103329154,"username":"DaniyalMlk","contributions":53}]}
+--- PyPI 登録の有無
+slippage code=200
+polymarket-fill-model code=404
+orderbooksim code=404
+--- 各 clone の最新コミット
+sl95 dec7f0f72607defd9ce1112e2119e287ebce9f3b 2026-09-17 20:15:43 +0200
+sl98 cc48b54db067ba7f4f5cba5b4880cb624121d08b 2026-09-17 20:21:27 +0000
+sl99 b767b0c4e86be0535f505e0d09d5407a849da074 2026-08-22 18:49:48 -0400
+sl105 5198f5073aaf743f3daeba19460dca3770808354 2026-09-20 22:56:33 -0400
+=== CMD: curl https://pypi.org/pypi/slippage/json | 抜き出し(version/summary/home_page/project_urls/upload_time) — 105 の名前と PyPI の同名配布物が同一かの検査
+{"version": "0.0.1", "summary": "slippage - Coming soon.", "home_page": null, "project_urls": null, "author": null, "license": "MIT", "upload_time": "2026-05-12T23:21:03", "n_releases": 1}
+=== CMD: ungh repos meta (95/98/99/105) 星・作成日・最終更新
+{"repo":{"id":1374834501,"name":"polymarket-fill-model","repo":"sacha9214/polymarket-fill-model","description":"Queue-aware fill model for Polymarket maker orders: crosses the order book with the trade tape to answer whether a resting order would really have been filled","createdAt":"2026-09-17T17:49:32Z","updatedAt":"2026-09-17T18:16:05Z","pushedAt":"2026-09-17T18:16:01Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+curl: (35) Recv failure: Connection reset by peer
+
+{"repo":{"id":1343214090,"name":"orderbooksim","repo":"NickGardi/orderbooksim","description":"Price-time priority limit order book matching engine with live Streamlit UI","createdAt":"2026-08-22T22:35:19Z","updatedAt":"2026-08-22T22:50:32Z","pushedAt":"2026-08-22T22:49:49Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+{"repo":{"id":1378966244,"name":"slippage","repo":"DaniyalMlk/slippage","description":"An optimal execution and transaction cost analysis engine: implementation shortfall decomposition, market impact calibration, and Almgren-Chriss trajectories.","createdAt":"2026-09-21T02:04:33Z","updatedAt":"2026-09-21T02:56:39Z","pushedAt":"2026-09-21T02:56:35Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+=== CMD: 各 clone のライセンス1行目と git rev-list --count HEAD(浅いclone=1)
+sl95 LICENSE1行目: MIT License
+sl98 LICENSE1行目: (LICENSE ファイルなし)
+sl99 LICENSE1行目: (LICENSE ファイルなし)
+sl105 LICENSE1行目: MIT License
+=== RETRY (前回 code=000) CMD: curl -sS https://ungh.cc/repos/mihircoding/limitOrderBook
+{"repo":{"id":1333272152,"name":"limitOrderBook","repo":"mihircoding/limitOrderBook","description":"Price-time priority matching engine and a zero-intelligence order flow simulator. Spread, price impact and mean reversion emerge from the rules alone.","createdAt":"2026-08-13T15:36:18Z","updatedAt":"2026-09-17T20:22:07Z","pushedAt":"2026-09-17T20:21:40Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+=== CMD: 98 と 99 のライセンス表記の探索 (README + ファイル一覧に LICENSE 無し)
+rc=1
+UTC 2026-09-22T13:45:54Z batch8 done
+=== CMD: (難読化の検査) grep -c 'exec(\|eval(\|base64\|__import__\|compile(' 105 の本文 3 本
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl105/src/slippage/impact.py:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl105/src/slippage/execution.py:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl105/src/slippage/io.py:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl95/fillmodel.py:1
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl99/matching_engine.py:0
+=== CMD: (105 の CSV の列) sed -n '3,12p' sl105/src/slippage/io.py
+The formats are deliberately plain, one row per record with a header line:
+
+``orders.csv``
+    ``order_id, symbol, side, quantity, decision_time, arrival_time`` and an
+    optional ``decision_price``.
+``fills.csv``
+    ``order_id, timestamp, quantity, price`` and an optional ``commission``.
+``bars.csv``
+    ``symbol, timestamp, open, high, low, close, volume``.
+
+=== CMD: (105 の ExecutionProblem と LinearImpact の逐語) grep -n 'Almgren and Chriss\|Permanent impact\|Temporary impact\|square-root law' sl105/src/slippage/{impact.py,README}
+11:**The square-root law** (:class:`SquareRootLaw`) describes the impact of a whole
+91:    """Almgren and Chriss (2000): ``g(v) = gamma v`` and ``h(v) = epsilon + eta v``.
+96:        Permanent impact, in price per share.
+98:        Temporary impact, in price per (share per unit time). The time unit
+212:    most published estimates and ``delta = 0.5`` is the square-root law
+=== CMD: (95 の待ち行列の逐語) sed -n '202,218p' sl95/fillmodel.py
+def simulate(ser, trades, side: str, ignore_queue: bool = False):
+    """Nos fills sur un côté. Retourne [(ts, prix, attente_s, queue_initiale)].
+
+    Règle : on rejoint le meilleur bid. Si le meilleur bid bouge, notre ordre
+    n'y est plus — on annule et on repose, ce qui remet la file à zéro. C'est
+    le coût caché de la cotation au toucher : chaque mouvement du bid nous
+    renvoie en fin de file.
+    """
+    serie = ser.get(side) or []
+    if not serie:
+        return []
+    fills = []
+    price = None          # notre prix posté
+    queue = 0.0           # ce qui reste devant nous
+    queue0 = 0.0          # ce qu'il y avait devant nous EN POSTANT
+    since = 0             # depuis quand on est posté
+
+=== CMD: (98 の隠し玉の逐語) grep -n 'icebergs' sl98/README.md
+292:- No order types beyond limit, market, IOC, and FOK: no stops, icebergs, pegged, or
+=== CMD: (当方の engine.py が自分で認める限界) sed -n '46,52p' src/bot/backtest/engine.py
+    bar we only know that the level traded through somewhere inside the
+    minute, not that our specific resting order was reached in the queue, nor
+    whether the stop level was touched EARLIER in the same minute. When the
+    stop and the maker TP are both inside one bar's range the STOP is taken
+    first (conservative), but within a single bar the true sequencing is
+    unknown. Real fills also depend on queue position; this model grants the
+    fill on any strict through-trade. Treat maker-TP results as an upper
+UTC 2026-09-22T13:48:06Z batch9 done
+=== CMD: (98 の import と署名) grep -nE '^(import|from) ' sl98/src/orderbook.py sl98/src/simulator.py
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:13:from the front.
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:46:import heapq
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:47:from collections import deque
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:49:from .order import Order, Side, StpPolicy, Trade
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/simulator.py:15:import numpy as np
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/simulator.py:17:from .order import Side, to_tick
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/simulator.py:18:from .orderbook import LimitOrderBook
+=== CMD: (98 の最小実行で使った署名) grep -n 'def add_limit_order' -A 3 sl98/src/orderbook.py
+148:    def add_limit_order(self, side: Side, price: float, quantity: int,
+149-                        participant_id: str | None = None,
+150-                        stp_policy: StpPolicy = StpPolicy.CANCEL_RESTING
+151-                        ) -> tuple[int, list[Trade]]:
+=== CMD: (99 の Order.create の署名) grep -n 'def create' -A 8 sl99/models.py
+24:    def create(
+25-        cls,
+26-        order_id: int,
+27-        side: Side,
+28-        price: float,
+29-        quantity: float,
+30-        timestamp: Optional[float] = None,
+31-    ) -> "Order":
+32-        ts = time.time() if timestamp is None else timestamp
+UTC 2026-09-22T13:48:41Z batch10 done
+=== CMD: PyPI 登録の有無 (98 limitOrderBook / limit-order-book)
+limitOrderBook code=404
+limit-order-book code=200
+UTC 2026-09-22T13:48:49Z batch11 done
+=== CMD: (105 の時刻の扱い) grep -n 'Timestamps are ISO 8601' sl105/src/slippage/io.py
+13:Timestamps are ISO 8601. Every error names the file and line it came from: a
+UTC 2026-09-22T13:49:14Z batch12 done
+=== CMD: (再実行・rc 付き) 難読化の検査 grep -c 'exec(|eval(|base64|__import__|compile(' 6 本
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl105/src/slippage/impact.py:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl105/src/slippage/execution.py:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl105/src/slippage/io.py:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl95/fillmodel.py:1
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl99/matching_engine.py:0
+rc=0 time_s=0.0048062801361083984
+=== CMD: (再実行・rc 付き) 105 の io.py の列と時刻 sed -n '3,13p'
+The formats are deliberately plain, one row per record with a header line:
+
+``orders.csv``
+    ``order_id, symbol, side, quantity, decision_time, arrival_time`` and an
+    optional ``decision_price``.
+``fills.csv``
+    ``order_id, timestamp, quantity, price`` and an optional ``commission``.
+``bars.csv``
+    ``symbol, timestamp, open, high, low, close, volume``.
+
+Timestamps are ISO 8601. Every error names the file and line it came from: a
+rc=0 time_s=0.0046176910400390625
+=== CMD: (再実行・rc 付き) 95 の simulate の逐語 sed -n '202,218p'
+def simulate(ser, trades, side: str, ignore_queue: bool = False):
+    """Nos fills sur un côté. Retourne [(ts, prix, attente_s, queue_initiale)].
+
+    Règle : on rejoint le meilleur bid. Si le meilleur bid bouge, notre ordre
+    n'y est plus — on annule et on repose, ce qui remet la file à zéro. C'est
+    le coût caché de la cotation au toucher : chaque mouvement du bid nous
+    renvoie en fin de file.
+    """
+    serie = ser.get(side) or []
+    if not serie:
+        return []
+    fills = []
+    price = None          # notre prix posté
+    queue = 0.0           # ce qui reste devant nous
+    queue0 = 0.0          # ce qu'il y avait devant nous EN POSTANT
+    since = 0             # depuis quand on est posté
+
+rc=0 time_s=0.004449367523193359
+=== CMD: (再実行・rc 付き) 98 の import grep -nE '^(import|from) '
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:13:from the front.
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:46:import heapq
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:47:from collections import deque
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/orderbook.py:49:from .order import Order, Side, StpPolicy, Trade
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/simulator.py:15:import numpy as np
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/simulator.py:17:from .order import Side, to_tick
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/sl98/src/simulator.py:18:from .orderbook import LimitOrderBook
+rc=0 time_s=0.005664348602294922
+=== CMD: (再実行・rc 付き) 98 の add_limit_order の署名
+148:    def add_limit_order(self, side: Side, price: float, quantity: int,
+149-                        participant_id: str | None = None,
+150-                        stp_policy: StpPolicy = StpPolicy.CANCEL_RESTING
+151-                        ) -> tuple[int, list[Trade]]:
+rc=0 time_s=0.004721403121948242
+=== CMD: (再実行・rc 付き) 99 の Order.create の署名
+24:    def create(
+25-        cls,
+26-        order_id: int,
+27-        side: Side,
+28-        price: float,
+29-        quantity: float,
+30-        timestamp: Optional[float] = None,
+31-    ) -> "Order":
+32-        ts = time.time() if timestamp is None else timestamp
+rc=0 time_s=0.004486799240112305
+=== CMD: (再実行・rc 付き) PyPI 登録の有無 4 名
+slippage code=200
+polymarket-fill-model code=404
+orderbooksim code=404
+limitOrderBook code=404
+limit-order-book code=200
+rc=0 time_s=0.607999324798584
+=== CMD: (再実行・rc 付き) 各 clone の最新コミットと LICENSE の 1 行目
+sl95 dec7f0f72607defd9ce1112e2119e287ebce9f3b 2026-09-17 20:15:43 +0200
+sl95 LICENSE1行目: MIT License
+sl98 cc48b54db067ba7f4f5cba5b4880cb624121d08b 2026-09-17 20:21:27 +0000
+sl98 LICENSE1行目: (LICENSE ファイルなし)
+sl99 b767b0c4e86be0535f505e0d09d5407a849da074 2026-08-22 18:49:48 -0400
+sl99 LICENSE1行目: (LICENSE ファイルなし)
+sl105 5198f5073aaf743f3daeba19460dca3770808354 2026-09-20 22:56:33 -0400
+sl105 LICENSE1行目: MIT License
+rc=0 time_s=0.0227813720703125
+=== CMD: (再実行・rc 付き) ungh repos meta 4 件
+{"repo":{"id":1374834501,"name":"polymarket-fill-model","repo":"sacha9214/polymarket-fill-model","description":"Queue-aware fill model for Polymarket maker orders: crosses the order book with the trade tape to answer whether a resting order would really have been filled","createdAt":"2026-09-17T17:49:32Z","updatedAt":"2026-09-17T18:16:05Z","pushedAt":"2026-09-17T18:16:01Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+{"repo":{"id":1333272152,"name":"limitOrderBook","repo":"mihircoding/limitOrderBook","description":"Price-time priority matching engine and a zero-intelligence order flow simulator. Spread, price impact and mean reversion emerge from the rules alone.","createdAt":"2026-08-13T15:36:18Z","updatedAt":"2026-09-17T20:22:07Z","pushedAt":"2026-09-17T20:21:40Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+{"repo":{"id":1343214090,"name":"orderbooksim","repo":"NickGardi/orderbooksim","description":"Price-time priority limit order book matching engine with live Streamlit UI","createdAt":"2026-08-22T22:35:19Z","updatedAt":"2026-08-22T22:50:32Z","pushedAt":"2026-08-22T22:49:49Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+{"repo":{"id":1378966244,"name":"slippage","repo":"DaniyalMlk/slippage","description":"An optimal execution and transaction cost analysis engine: implementation shortfall decomposition, market impact calibration, and Almgren-Chriss trajectories.","createdAt":"2026-09-21T02:04:33Z","updatedAt":"2026-09-21T02:56:39Z","pushedAt":"2026-09-21T02:56:35Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+rc=0 time_s=4.237241983413696
+=== CMD: (再実行・rc 付き) ungh contributors 4 件
+{"contributors":[{"id":252882955,"username":"sacha9214","contributions":1}]}
+{"contributors":[{"id":84816566,"username":"mihircoding","contributions":8}]}
+{"contributors":[{"id":44130525,"username":"NickGardi","contributions":3}]}
+{"contributors":[{"id":103329154,"username":"DaniyalMlk","contributions":53}]}
+rc=0 time_s=4.4328529834747314
+=== CMD: (再実行・rc 付き) PyPI の slippage の中身
+{"version": "0.0.1", "summary": "slippage - Coming soon.", "project_urls": null, "author": null, "upload_time": "2026-05-12T23:21:03"}
+rc=0 time_s=0.0716087818145752
+=== CMD: (再実行・rc 付き) 105 の pyproject の要点
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "slippage"
+version = "0.1.0"
+description = "An optimal execution and transaction cost analysis engine"
+readme = "README.md"
+requires-python = ">=3.10"
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Typing :: Typed",
+]
+dependencies = ["numpy>=1.23"]
+
+[project.optional-dependencies]
+dev = [
+--- 依存
+32:dependencies = ["numpy>=1.23"]
+34:[project.optional-dependencies]
+36:    "pytest>=7.4",
+40:    "scipy>=1.10",
+51:packages = ["src/slippage"]
+rc=0 time_s=0.007506847381591797
+=== CMD: (再実行・rc 付き) 98 と 99 の requirements.txt
+--- 98
+numpy>=1.24
+pandas>=2.0
+matplotlib>=3.7
+pytest>=8.0
+--- 99
+streamlit>=1.28.0
+sortedcontainers>=2.4.0
+pytest>=7.4.0
+pandas>=2.0.0
+plotly>=5.18.0
+rc=0 time_s=0.0058710575103759766
+=== CMD: (再実行・rc 付き) 95 の import
+82:from __future__ import annotations
+84:import argparse
+85:import collections
+86:import json
+87:import re
+88:import sqlite3
+89:import statistics as st
+90:import time
+91:import urllib.request
+92:from pathlib import Path
+rc=0 time_s=0.004464387893676758
+=== CMD: (再実行・rc 付き) 99 の import
+3:from __future__ import annotations
+5:import time
+6:from collections import deque
+7:from typing import Deque, Dict, List, Optional, Tuple
+9:from sortedcontainers import SortedDict
+11:from models import BookSnapshot, Order, PriceLevel, Side, Trade
+rc=0 time_s=0.0045163631439208984
+=== CMD: (再実行・rc 付き) 配布物のファイル一覧の再取得(95/98/99/105 の同梱バイナリと setup.py の有無)
+sacha9214/polymarket-fill-model n_files=10 .github/workflows/tests.yml(270) .gitignore(32) LICENSE(1074) README.md(9371) fillmodel.py(18993) pmdata/__init__.py(83) pmdata/book.py(2908) pmdata/http.py(1158) recorder.py(14152) tests/test_fillmodel.py(6145) 
+mihircoding/limitOrderBook n_files=25 .gitignore(351) INTERVIEW.md(14353) README.md(16918) RESULTS.md(18499) benchmark.py(11050) docs/build_data.py(4867) docs/data.js(16992) docs/index.html(42004) latency_study.py(11790) pytest.ini(42) requirements.txt(52) run_simulation.py(6852) simulation.png(200769) src/__init__.py(0) src/latency.py(6242) src/order.py(2669) src/orderbook.py(21118) src/simulator.py(5722) tests/test_best_price.py(3899) tests/test_latency.py(5343) tests/test_lazy_cancel.py(10189) tests/test_orderbook.py(7159) tests/test_simulator.py(884) tests/test_stp.py(9751) tests/test_stylized_facts.py(3366) 
+NickGardi/orderbooksim n_files=11 .dockerignore(98) .gitignore(81) .streamlit/config.toml(120) Dockerfile(448) README.md(1085) app.py(19983) matching_engine.py(7888) models.py(1192) requirements.txt(85) tests/__init__.py(1) tests/test_matching_engine.py(6464) 
+DaniyalMlk/slippage n_files=47 .github/workflows/ci.yml(1570) .gitignore(148) LICENSE(1064) README.md(20534) ROADMAP.md(2878) examples/almgren_chriss.py(1338) examples/constrained_schedule.py(1831) examples/end_to_end.py(3761) examples/shortfall_worked_example.py(2273) examples/strategy_comparison.py(3178) pyproject.toml(1773) src/slippage/__init__.py(3701) src/slippage/__main__.py(56) src/slippage/benchmarks.py(4963) src/slippage/calibration.py(15635) src/slippage/cli.py(12222) src/slippage/costs.py(2057) src/slippage/exceptions.py(1707) src/slippage/execution.py(13110) src/slippage/impact.py(8873) src/slippage/io.py(8049) src/slippage/py.typed(0) src/slippage/report.py(9618) src/slippage/scheduling.py(10588) src/slippage/series.py(8720) src/slippage/shortfall.py(12539) src/slippage/simulate.py(6406) src/slippage/synthetic.py(5741) src/slippage/types.py(9118) src/slippage/volume.py(9004) tests/conftest.py(1542) tests/test_benchmarks.py(7762) tests/test_calibration.py(14037) tests/test_cli.py(5446) tests/test_costs.py(2840) tests/test_examples.py(497) tests/test_execution.py(14169) tests/test_impact.py(8831) tests/test_io.py(5376) tests/test_report.py(8162) tests/test_scheduling.py(11857) tests/test_series.py(6753) tests/test_shortfall.py(15122) tests/test_simulate.py(6393) tests/test_synthetic.py(1438) tests/test_types.py(8508) tests/test_volume.py(7666) 
+rc=0 time_s=4.0158374309539795
+=== CMD: (再実行・rc 付き) 105 の pip list と pip check
+iniconfig==2.3.0
+numpy==2.4.6
+packaging==26.3
+pip==24.0
+pluggy==1.6.0
+Pygments==2.21.0
+pytest==9.1.1
+setuptools==79.0.1
+slippage==0.1.0
+sortedcontainers==2.4.0
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+No broken requirements found.
+rc=0 time_s=0.8357763290405273
