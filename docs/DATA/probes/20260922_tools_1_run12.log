@@ -6,3 +6,71 @@
 --- [1] 開始時刻 ---
 2026-09-22T11:00:15Z
 rc=0
+
+--- [2] OctoBot: 11 回目の隔離 venv が残っているかの確認 ---
+$ ls -la voct/bin/python
+lrwxrwxrwx 1 root root 10 Sep 22 10:37 voct/bin/python -> python3.12
+$ ./voct/bin/python -c "import octobot_trading;print(octobot_trading.__version__)"
+AttributeError: module 'octobot_trading' has no attribute '__version__'
+rc=1
+(入れ直しは不要だった。11 回目に作った voct をそのまま使う)
+
+--- [3] OctoBot: 注文の層の入口を探す(公開名の列挙)---
+$ ./voct/bin/python -c "import octobot_trading.api as api; print([n for n in dir(api) if 'exchange' in n or 'trader' in n or 'order' in n])"
+create_exchange_builder / create_order / get_open_orders / get_trader / is_trader_simulated / cancel_order_with_id ほか(全文は出力の 1 行目)
+$ ./voct/bin/python -c "from octobot_trading.exchanges.exchange_builder import ExchangeBuilder as B; print([m for m in dir(B) if not m.startswith('_')])"
+build / build_trading_modes / disable_trading_mode / is_backtesting / is_simulated / is_rest_only / is_spot_only / use_cached_markets / is_exchange_only ほか
+rc=0
+
+--- [4] OctoBot: 注文の層を組む途中で止まった 5 件(手段を替えて続けた記録)---
+(4-1) 既定の設定 json に trader の欄が無い
+  $ ./voct/bin/python oct_order.py <.data>
+  KeyError: 'trader'   (octobot/config/default_config.json は backtesting/exchanges/services/notification/profile だけ)
+  -> 設定を自分で組む形に替えた(trader / trader-simulator / crypto-currencies / exchanges / time_frame を手で置く)
+(4-2) 取り込み器が拡張(tentacles)側にあり、既定の取り込み器が 0 件
+  IndexError: list index out of range  (backtesting_util.get_default_importer)
+  -> initialize_backtesting の importers_by_data_file に自分で作った取り込み器を渡す形に替えた
+(4-3) 取り込み器は「クラス」ではなく実体を渡す必要がある
+  TypeError: unbound method type.mro() needs an argument
+  -> ExchangeDataImporter(cfg, DATA) を作って await imp.initialize() してから渡した
+(4-4) 銘柄表の控えが空で、控えから引く経路が鍵を落とす
+  KeyError: 'binance:{...}:unauthenticated'  (ccxt_clients_cache)
+  -> builder.use_cached_markets(False) に替えた(binance の公開の銘柄表を取りに行く。当方のデータ・鍵は渡していない)
+(4-5) 設定に time_frame が要り、値は文字列ではなく列挙
+  KeyError: 'time_frame' -> AttributeError: 'str' object has no attribute 'value'
+  -> cfg["time_frame"] = [octobot_commons.enums.TimeFrames.ONE_MINUTE]
+rc=0
+
+--- [5] OctoBot: 成行と指値の 1 往復(§5-4 の中核)---
+$ ./voct/bin/python -u oct_order.py ExchangeHistoryDataCollector_20260922_103000.data
+  (11 回目に作った合成の 1 分足 400 本の .data のみ。当方の実データ・鍵・記録は使っていない)
+CFG_KEYS= ['accepted_terms', 'backtesting', 'crypto-currencies', 'distribution', 'exchanges', 'profile', 'time_frame', 'trader', 'trader-simulator', 'trading']
+IMPORTER_READY= binance ['BTC/USDT'] [<ExchangeDataTables.OHLCV: 'ohlcv'>]
+BACKTESTING_OK= True
+EXCHANGE_MANAGER= binance BACKTESTING= True SIMULATED= True
+TRADER= TraderSimulator
+PF_START= {'BTC': '10', 'USDT': '100000'}
+MARKET_STATUS= filled FILLED_QTY= 1 FILL_PRICE= 100 FEE= {'is_from_exchange': False, 'cost': Decimal('0'), 'currency': 'BTC'}
+PF_AFTER_MARKET= {'BTC': '11', 'USDT': '99900'}
+LIMIT_STATUS_BEFORE= open OPEN_ORDERS= 1
+LIMIT_STATUS_NOFILL= open
+LIMIT_STATUS_AFTER= filled FILLED_QTY= 1 FILL_PRICE= 110
+PF_END= {'BTC': '10', 'USDT': '100010'}
+ELAPSED_SEC= 2.01
+TRADES= [('BTC/USDT', 'buy_market', '1', '100'), ('BTC/USDT', 'sell_limit', '1', '110')]
+RC_MARK=0
+PROC_RC=0
+(損益 = USDT 100000 -> 99900 -> 100010。建玉は BTC 10 -> 11 -> 10 に戻った。手数料は 0)
+(指値は価格の事象で埋まる: exchange_symbols_data の price_events_manager.handle_price(115, 1700024000) を
+ 打つまで open のままで、打つと filled になった。標準の待ち行列ではなく価格の到達だけで埋まる)
+rc=0
+
+--- [6] OctoBot: 後始末(常駐プロセスを残さない)---
+$ ps -eo pid,etime,args | grep "voct/bin/python" | grep -v "bin/bash" | grep -v grep
+(この回の oct_order.py は残っていない。最後の実行は os._exit(0) を入れて PROC_RC=0 で自分で終わった)
+(ただし 11 回目の oct_min.py が 2 本(PID 26640 と 27057)残っていたので kill した。
+ os._exit を入れる前の形は main が返っても python が終わらない。数え方の注記: pgrep -f は
+ その語を含む自分の包みの shell も数えるので、ps で実体だけを見た)
+$ ps -eo pid,etime,args | grep "voct/bin/python" | grep -v "bin/bash" | grep -v grep   (kill のあと)
+一致 0 件
+rc=0
