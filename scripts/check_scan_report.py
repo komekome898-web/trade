@@ -281,9 +281,16 @@ def check_checker_output_pasted(text, computed):
     節の有無だけを見ていたときは、検査を 1 度も打たずに「すべて 0 件」と書いた偽の出力でも通った
     (委任文の監査 3 回目の指摘 2)。貼り付けの真正性を、こちらで数え直した値との一致で見る。
     """
-    if not re.search(r"^#{2,4} *受け入れ検査の出力", text, re.M):
+    heads = [m.start() for m in re.finditer(r"^#{2,4} *受け入れ検査の出力", text, re.M)]
+    if not heads:
         return [(0, "報告に「受け入れ検査の出力」の節が無い(検査の出力全文を貼ること)")]
-    m = re.findall(r"----\s*検査対象の合計\s*(\d+)\s*件", text)
+    # **最後の節の中だけ**を見る。文書全体から拾うと、古い節の貼り付けが新しい節の身代わりになる
+    # (2026-09-22 区分 1 の 6 回目、調査班が自分で閉じずに残した指摘)。
+    tail = text[heads[-1]:]
+    eol = tail.find("\n") + 1          # 見出し行そのものを飛ばしてから次の見出しを探す
+    nxt = re.search(r"^#{1,4} ", tail[eol:], re.M)
+    block = tail[:eol + nxt.start()] if nxt else tail
+    m = re.findall(r"----\s*検査対象の合計\s*(\d+)\s*件", block)
     if not m:
         return [(0, "貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)")]
     pasted = int(m[-1])
