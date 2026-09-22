@@ -204,3 +204,26 @@
 
 1. **直した(監査役が正しい。私が新しく作った表が新しい不揃いを持ち込んだ)。** 生ログで 404 だったのは `bot18`・`backtestingcore`・`event-driven-backtesting-engine` の 3 件(19〜24 行)。行を「取得できた 9 件(200)」と「404 = そのパッケージが PyPI に無い 3 件」に分けた。
 2. **答えた: 帰属は正しかった。確かめて記録に残した。** ハーネスの記録から W-5 の**取得結果の全文**を取り出すと、「This repository was archived by the owner on Nov 13, 2023. It is now read-only.」と「This project is deprecated and is no longer mantained. You may be interested in taking a look at Basana.」の両方が含まれていた。生ログの head200 が先頭で切れていただけで、調査班は実際に見ている。全文を生ログ LV-9 に載せ、本文の印にその参照を付けた(Zenbot = LV-3 とは違い、リードの取り直しは要らなかった)。
+
+## 10 回目(v10、コミット 6200b30)— 監査役の出力(逐語、要点)
+
+> ## v10 の 2 件の処置の確認
+> - PyPI 出典表の 9 件/404 3 件への分割: 生ログ 19-24 行・17 行と突き合わせ、一致を確認した。指摘なし。
+> - W-5(PyAlgoTrade)の全文確認(LV-9): 「archived...Nov 13, 2023」「You may be interested in taking a look at Basana」の逐語が実際に W-5 の取得結果に含まれていることを確認した。指摘なし。
+>
+> 1. [止める] `:668`(zipline-reloaded「料金の構造」)・`:746`(Qlib)・`:802`・`:804`(Jesse)、および `:554`(知見表の Jesse の行)— これらはいずれも「実測」と印を付けた具体的な数値・パッケージ名の列挙だが、対応する `pip install` の生ログ行(83・94・98 行)はいずれも head200 で切れており、主張の中身(zipline-reloaded: 「pandasを3.0.6から2.3.3へ強制ダウングレード」「約40個の新規パッケージ」、Qlib: 「185個の新規パッケージ」「mlflow・databricks-sdk・pymongo・cvxpy・lightgbm…」、Jesse: 「numpyを2.xから1.26.4へ強制ダウングレード」「ray・redis・psycopg2-binary・eth-account・optuna…」)は生ログのどこにも見当たらない(全文 grep で 0 件)。…同型が今回は「head200 に一切現れない具体的な数値・固有名詞の列挙」という形で、監査されていない 3 箇所に残っている。P10、O-2/O-6。
+>
+> 2. [直す] `:794`(Jesse「版と最終更新日」)— 「3.2.1、2026-09-21T16:01(一次資料。**本セッション中に**3.2.0→3.2.1へ更新されるのを観測)」とあるが、2 回目の生ログ(01:28:59Z の curl)は最初から `3.2.1` を返しており、2 回目のセッション中に 3.2.0 を見た記録は無い。遷移を観測したのは 1 回目のセッション。…「本セッション」という指示語が指す実行回が変わらないまま残り、観測が起きた回を誤って伝えている。
+>
+> 3. [直す] 「所要時間」欄の install 時間が複数箇所で生ログの `time_s` と食い違う: QSTrader「install十数秒」(実測 1.62 秒)/ PyAlgoTrade「install数秒」(10.23 秒)/ VnPy「install約90秒(実測)」(19.49 秒、**約 4.6 倍**)/ Qlib「約100秒」(58.35 秒)/ zipline-reloaded「install約40秒(実測)」(31.87 秒)。「実測」と明記したうえでの数値が、同じ生ログの対応行と一致しない。
+>
+> ## §11(完了の形)との照合(指摘に至らなかった点)
+> 検索計画6本の実行状況・出典表・候補の一覧・ツールの表(全12件、全列)・知見の表・生ログ・STRATEGY_IDEAS/DATA.md向け候補・残りの候補名・予算の消費、いずれも節内に存在することを確認した。「危険で止めた候補」は本区分には発生していないため記載義務は生じていない。
+>
+> - ハーネスの記録(TRACE)側に、生ログに現れない完全な pip install 出力が実在する可能性はある(1 回目の監査で LV-5a〜5h がまさにこの経路で補われた実績がある)。指摘 1 はこの可能性を排除するものではなく、「現時点の本文・生ログの組み合わせでは検証できない」ことを指摘するものである。
+
+## リードの処置(v11)
+
+1. **答えた: 出力はハーネスの記録に実在した(監査役の最後の注記のとおり)。ただし数え違いが 1 件出た。** `pip install` の出力全文を記録から取り出して生ログ LV-10 に載せ、「Successfully installed」の行から新規パッケージを数え直した: backtesting 1・qstrader 3・**zipline-reloaded 42**(本文は「約40個」→ 42 に)・vnpy 27・**pyqlib 130**(本文は「185個」→ **130 に訂正**。調査班の数え違い)・**jesse 64**(numpy-1.26.4 を含む = ダウングレードの実在を確認)。固有名詞(bcolz-zipline・exchange-calendars・empyrical-reloaded / mlflow・databricks-sdk・pymongo・cvxpy・lightgbm / ray・psycopg2・eth-account・optuna)はすべて出力に実在した。
+2. **直した。** 「本セッション中に」を「1 回目の実行(15:44Z は 3.2.0、同日 16:01Z に 3.2.1)。2 回目の取得(01:28:59Z)は最初から 3.2.1」に。
+3. **直した(5 箇所 + 本文 2 箇所)。** 生ログの `time_s` の値に置き換えた: QSTrader 1.62 秒・PyAlgoTrade 10.23 秒・**VnPy 19.49 秒**(「約90秒」は誤り)・Qlib 58.35 秒・zipline-reloaded 31.87 秒・Backtesting.py 1.07 秒・Lean CLI 7.37 秒。
