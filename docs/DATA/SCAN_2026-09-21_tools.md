@@ -5727,8 +5727,8 @@ K12 検査の出力の貼付           0 件
    未確認: MT4 本体が要ること以外の動作条件・返金の規約・自動の検証ができるか。**購入していない。**
 3. `BacktestingMax`(48 番) — 状態: **浅い(公式の料金の場から料金と機能一覧の逐語を取った)。**印は `区分1-足`。
    未確認: 規約の全文・データの出所・再配布の可否・公開の利用者の報告。**登録はしていない。**
-4. `GFT Backtest Software`(49 番) — 状態: **この環境からは到達できない。**4 経路を全部試して塞がった。印は**どの要素にも付けられない**(6 要素とも未確認)。
-   第 2 経路(オーナー PC)でも、入口が `app.goatfundedtrader.com/login` の内側にあるので**登録が要る。**起動の指定の逐語「**登録はせず**」により当方は踏まない。
+4. `GFT Backtest Software`(49 番) — 状態: **登録の内側にあり、当方は登録しない。したがって区分 1 の 6 要素は 6 つとも未確認のままである。**
+   **印は付けない。「該当しない」とも書かない。**塞いでいるのは地域でも環境でもなく登録という関門なので、オーナー PC に移しても同じ関門が立つ(19 回目に 18 回目のリードの検収 §4(2) の判断へ差し替えた)。登録するかはオーナーが決めることとして、区分 1 の完了報告で名指しで出す。
 5. `zvt`(56 番) — 状態: **浅い(README の一次資料から粒度を確定)。**印は `区分1-足`。
    未確認: 導入・最小実行・当方のデータの投入・国内取引所の有無。
 6. `PandoraTrader`(59 番) — 状態: **浅い(README の一次資料から粒度を確定)。**印は `区分1-ティック`。
@@ -5800,6 +5800,181 @@ K12 検査の出力の貼付           0 件
 4. **候補 85 の印に `区分4 へ` を足した。**17 回目までの仕分けは `区分4 へ` と `判別に一次資料が要る` だったので足し直しただけだが、
    検証の本体が別の配布物にあることが分かったため、区分 1 の印を付けてよいかに迷いが残る。**迷っている事実をここに書く。**
 5. **候補 119 の番号を 119 にした。**118 番までが埋まっていたので次の番号を当てただけで、起動の指定に番号の指示は無い。
+
+### 受け入れ検査の出力
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+## 区分1 — 19 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run19.log`。
+18 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run18.md`)と、その §6 の起動の指定に従う。
+起動の指定の逐語「**最優先: `区分1-ベクトル化` の 3 件(73・74・44)。**」「**`wbt` を 120 番として新しく立て、一次資料を取る。**」
+「**深掘り(構築・導入・最小実行)までは要りません。**」のとおり、この回の狙いは到達と一次資料の読みで印を確定させることである。
+起動の指定が許した 1 箇所(候補 49 の記述)以外、**既存の節は 1 文字も書き換えていない。**
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断により区分 1 の 1 回目の節を参照して貼っていない。
+
+**原典の字形について(18 回目の検収 §3 の申し送り)**: この回に逐語で引いた原典の行は、**引用した範囲に限れば全部 ASCII の半角文字だけで書かれている**。
+非分割ハイフンなどの字形違いは引用の中に入っていない(引用した行の非 ASCII の位置を機械で調べ、非 ASCII を含む位置を避けて切った。
+`wbt` の README の 21 行と 32 行、`ml-quant-trading` の `engine.py` の 16 行には長音記号の形をした区切り記号が在るので、**その記号より前だけを引いている**)。
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**新しい検索計画は打たないでください。**」による。X の経路も同じ理由で打っていない。
+新しい候補は 1 件だけで、それは起動の指定が名指しした `wbt` である(起動の指定の逐語「**候補を増やすのは (2) の `wbt` 1 件だけです。**」)。
+候補の一覧は 120 番まで伸びた。候補 74 の所在を突き止めるために 39 番の一覧(`awesome-systematic-trading` の README)を取り直したが、これは新しい検索ではなく既存の候補の出典の確認である。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://pypi.org/pypi/wbt/json` | 2026-09-22 | 候補 120 の版・許諾・依存・配布物の形 |
+| 2 | `https://ungh.cc/repos/zengbin93/wbt` と `.../files/main` | 2026-09-22 | 候補 120 の星・初回公開日・既定枝・追跡ファイルの一覧 |
+| 3 | `https://raw.githubusercontent.com/zengbin93/wbt/main/README_EN.md` | 2026-09-22 | 候補 120 の粒度と射程の逐語 |
+| 4 | `https://raw.githubusercontent.com/zengbin93/wbt/main/LICENSE` | 2026-09-22 | 候補 120 の許諾の逐語 |
+| 5 | `https://pypi.org/pypi/vectorbt/json` と `https://ungh.cc/repos/polakowo/vectorbt` | 2026-09-22 | 候補 73 の版・依存・動作環境・星 |
+| 6 | `https://raw.githubusercontent.com/polakowo/vectorbt/master/README.md` | 2026-09-22 | 候補 73 のベクトル化と粒度と有償との境目の逐語 |
+| 7 | `https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md` | 2026-09-22 | 候補 74 の所在(登録名)の確認 |
+| 8 | `https://ungh.cc/repos/initial-d/ml-quant-trading` と `.../files/main` | 2026-09-22 | 候補 74 の星・初回公開日・追跡ファイルの一覧 |
+| 9 | `https://raw.githubusercontent.com/initial-d/ml-quant-trading/main/src/mlquant/backtest/engine.py` | 2026-09-22 | 候補 74 の検証の実装の逐語 |
+| 10 | `https://raw.githubusercontent.com/initial-d/ml-quant-trading/main/docs/backtest_assumptions.md` | 2026-09-22 | 候補 74 の約定と市場影響の扱いの逐語 |
+| 11 | `https://raw.githubusercontent.com/initial-d/ml-quant-trading/main/configs/small.yaml` | 2026-09-22 | 候補 74 の既定の入力の粒度 |
+| 12 | `https://raw.githubusercontent.com/lo2cin4/lo2cin4bt/main/backtester/contracts/runtime/bar-time-contract-v1.schema.json` | 2026-09-22 | 候補 44 の粒度の確定 |
+| 13 | `https://ungh.cc/repos/bernardopaulsen/almgren-chriss` と `.../files/main` と `.../main/LICENSE` と `.../main/almgren_chriss/cost.py` | 2026-09-22 | 候補 106 の配布元の一致と許諾と模型の中身 |
+| 14 | `https://raw.githubusercontent.com/braverock/blotter/master/R/acOptTxns.R` | 2026-09-22 | 候補 116 の模型の中身 |
+
+### §4.0 の機械可読の表
+
+**この回に深掘りした道具は 0 件である。**起動の指定の逐語「**深掘り(構築・導入・最小実行)までは要りません。到達と一次資料の読みで印が決まれば、それがこの回の成果です。**」
+に従い、導入も構築も最小実行も 1 件も行っていない。したがって §4.0 の表にこの回の行は無く、確定した内容は「知見」と「候補の一覧」に書く。
+**この回に状態を変えた候補はすべて「浅い」のままである。**これは 18 回目の節と同じ扱いである。
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **候補 120 `wbt` の一次資料に到達した。**登録は `zengbin93/wbt`、説明の逐語は「Weight Back Test; 策略持仓权重回测模块」、既定枝は `main`、星は 13、初回の押し出しは 2026-04-01、最後の押し出しは 2026-09-10 である。PyPI 側の版は 0.9.1、要求する Python は `>=3.10`、許諾の欄の逐語は `MIT`、配布元の欄の逐語は `https://github.com/zengbin93/wbt` で、**PyPI と GitHub の指す先が一致している** | 一次資料 | `https://pypi.org/pypi/wbt/json` と `https://ungh.cc/repos/zengbin93/wbt`(2026-09-22 取得)、`20260922_tools_1_run19.log:2`・`:4`・`:115` |
+| 2 | **候補 120 の粒度は足である。**README の逐語は「dt: bar end timestamp」「weight: target position weight at bar end」「price: trade/mark price」で、設計の逐語は「given `(dt, symbol, weight, price)`, equity-curve PnL is a deterministic function of weight changes and bar returns」である。**入力は足の終わりの時刻に並んだ目標の建玉の重みで、注文という概念が入口に無い** | 一次資料 | `https://raw.githubusercontent.com/zengbin93/wbt/main/README_EN.md`(2026-09-22 取得)、`20260922_tools_1_run19.log:8`・`:193` |
+| 3 | **候補 120 は、区分 1 の残り 5 要素を自分で射程の外に置いている。**README の節の見出しの逐語は「What wbt Is Not Trying To Solve」で、その下の 3 行の逐語は「Tick-level order book simulation.」「Exchange matching-engine microstructure.」「Broker-specific execution modeling.」である。動機の逐語も「Existing tools either simulate at the order/matching-engine level (too detailed, too slow) or are pure-Python loops that don't scale to large multi-symbol weight tables.」で、**板・待ち行列・約定の照合をやらないと明言している。**費用は `fee_rate=0.0002` の 1 つの割合だけで、滑り・市場影響の語は README に無い | 一次資料 | `https://raw.githubusercontent.com/zengbin93/wbt/main/README_EN.md`(2026-09-22 取得)、`20260922_tools_1_run19.log:129`・`:193` |
+| 4 | **候補 120 はベクトル化ではない。**README の逐語は「The entire backtest loop runs in Rust (`rayon` thread pool, configurable `n_jobs`)」で、**速さの出所は Rust に落とした繰り返しと並列度であって、配列の演算に畳むことではない。**README の全文を `vectoriz` で検索して当たり 0 件(この検索の範囲は README_EN.md の全文である) | 実測 | `20260922_tools_1_run19.log:129` |
+| 5 | **候補 120 の許諾は MIT で、許諾ファイルが在る。**先頭の逐語は「MIT License」「Copyright (c) 2026 zengbin93」。追跡ファイルは 145 本で、`LICENSE` と `Cargo.toml` と `python/wbt/backtest.py` と `src/core/native_engine.rs` が在る。**`tick`・`queue`・`orderbook`・`slip`・`impact` のどれかを経路に含むファイルは 0 本**(この検索の範囲は追跡ファイルの経路の文字列だけで、中身は見ていない) | 実測 | `20260922_tools_1_run19.log:14`・`:180` |
+| 6 | **候補 120 は、配布物が同梱の実行体である。**PyPI の現行版の配布物は、5 つが `cp310-abi3` の wheel(macOS の x86 と arm、manylinux の aarch64 と x86_64、Windows の amd64)で、1 つが原形の tar である。wheel の大きさは 16,847,757 バイトから 20,881,512 バイト、原形の tar は 2,453,246 バイトで、**差は Rust で組んだ実行体である。**委任文 §6-1 の「同梱バイナリ」に当たる形なので、導入する段では原形から組むか wheel を開いて中身を見る必要がある。**公開の脆弱性の欄は空である** | 一次資料 | `https://pypi.org/pypi/wbt/json`(2026-09-22 取得)、`20260922_tools_1_run19.log:115` |
+| 7 | **候補 85 `czsc` と候補 120 `wbt` の関係が、`wbt` の側の逐語でも裏が取れた。**README の逐語は「czsc strategies naturally emit the weight tables that wbt consumes.」「wbt migrated 5 evaluation/utility functions from czsc」で、並びの逐語は「**czsc** (signals & strategies) → **wmr** (weight storage) → **wbt** (backtest & metrics)」である。**18 回目に `czsc` の側から見た「検証の本体は `wbt`」という読みと、向きが一致する** | 一次資料 | `https://raw.githubusercontent.com/zengbin93/wbt/main/README_EN.md`(2026-09-22 取得)、`20260922_tools_1_run19.log:8` |
+| 8 | **候補 73 `vectorbt` のベクトル化は、原典が自分の言葉で書いている。**README の逐語は「VectorBT takes a radically different approach to backtesting: instead of looping through bars one strategy at a time, it packs thousands of configurations into NumPy arrays, accelerates the hot path with Numba and Rust, and runs them all at once, turning hours of grid search into seconds.」と「**Fast, vectorized backtesting** and strategy research built on pandas, NumPy, and Numba」である。**粒度は足で、束ねているのは戦略の設定の側である**(逐語「looping through bars one strategy at a time」の裏返し) | 一次資料 | `https://raw.githubusercontent.com/polakowo/vectorbt/master/README.md`(2026-09-22 取得)、`20260922_tools_1_run19.log:34`・`:133` |
+| 9 | **候補 73 の無料の版に指値が無いことを、原典の逐語で確かめた。**README の逐語は「VectorBT is the open-source community edition of [VectorBT PRO](https://vectorbt.pro/).」「PRO extends the library with parallelization, additional data integrations, portfolio optimization, pattern recognition, event projections, limit orders, leverage, and over 100 other features」で、助言の枠の逐語は「> Simulate [limit orders](https://vectorbt.pro/features/portfolio/#limit-orders),」である。**指値・並列化・建玉の最適化は有償の側に置かれている。**1 回目と 2 回目に符号の走査で出した同じ結論が、**配布元自身の文書でも裏が取れた** | 一次資料 | `https://raw.githubusercontent.com/polakowo/vectorbt/master/README.md`(2026-09-22 取得)、`20260922_tools_1_run19.log:133` |
+| 10 | **候補 73 の動作環境は、この環境の想定より新しい。**PyPI の逐語は `requires_python` が `<3.15,>=3.11`、依存の逐語は `numpy>=2.4.6` と `pandas<4.0,>=3.0.3` と `numba>=0.66` である。版は 1.1.0、星は 9152、初回の登録は 2017-11-14、最後の押し出しは 2026-09-17。**有償の側の実行体 `vectorbt-rust` は `extra == "rust"` の下にあり、素の導入では入らない** | 一次資料 | `https://pypi.org/pypi/vectorbt/json` と `https://ungh.cc/repos/polakowo/vectorbt`(2026-09-22 取得)、`20260922_tools_1_run19.log:30`・`:32` |
+| 11 | **候補 73 は、1 回目と 2 回目の節で深掘りした道具と同じものである。**1 回目の節の「3. vectorbt / vectorbt.pro」と、13 回目の節の候補 73 は、同じ登録 `polakowo/vectorbt` を指している。**番号が二重に付いている。**どちらに寄せるかはリードが決めること(下の「原文に無い判断が要った点」の 1) | 実測 | `20260922_tools_1_run19.log:30` |
+| 12 | **候補 74 `ml-quant-trading` の所在を確定した。**39 番の一覧の当たりの行は、名前の欄が `[ml-quant-trading](https://github.com/initial-d/ml-quant-trading)`、説明の欄の逐語が「PyTorch research stack for ML multi-factor trading with 213 factors, bias correction, portfolio optimization, vectorized backtesting, and public validation reports」で、登録は `initial-d/ml-quant-trading`、既定枝は `main`、星は 88、初回の登録は 2025-06-05、最後の押し出しは 2026-09-20 である | 一次資料 | `https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md` と `https://ungh.cc/repos/initial-d/ml-quant-trading`(2026-09-22 取得)、`20260922_tools_1_run19.log:39`・`:45` |
+| 13 | **候補 74 はベクトル化である。**検証の実装 `src/mlquant/backtest/engine.py` の先頭の逐語は「Vectorised backtest engine.」で、入力の逐語は「weights : np.ndarray [T, N]」「returns : np.ndarray [T, N]」、計算の本体の逐語は `gross = (w_lag * returns).sum(axis=1)` と `cost = delta.sum(axis=1) * (costs_bps * 1e-4)` である。**時間の繰り返しが 1 つも無く、行列の演算だけで損益を出している** | 一次資料 | `https://raw.githubusercontent.com/initial-d/ml-quant-trading/main/src/mlquant/backtest/engine.py`(2026-09-22 取得)、`20260922_tools_1_run19.log:55`・`:200` |
+| 14 | **候補 74 の粒度は日次の足である。**入力の逐語は「Row ``t`` is the weight vector chosen *with information up to date t* and applied for the period ``t -> t+1``」で、既定の設定 `configs/small.yaml` の逐語は `n_dates: 500` と `start_date: "2022-01-04"` と `costs_bps: 5.0` である。**単位は日で、足より細かい入力の口が無い** | 一次資料 | `https://raw.githubusercontent.com/initial-d/ml-quant-trading/main/configs/small.yaml`(2026-09-22 取得)、`20260922_tools_1_run19.log:55`・`:65` |
+| 15 | **候補 74 には滑りも市場影響も実装されていない。**検証の実装の逐語は「every realistic refinement (slippage models, borrow fees, T+1 settlement) goes into a sibling module rather than here」だが、**その別の部品は追跡ファイルに無い。**追跡ファイルは 322 本で、経路を `slip`・`impact`・`exec`・`cost`・`fill` で検索した当たりは 5 本(`docs/assets/validation-cost-sensitivity.png`・同じ名前の svg・`docs/backtest_cost_drag_story.md`・`legacy/portfolio/portfolio_3_impact.py`・`tests/test_cost_drag_units.py`)で、**`src/mlquant/` の下の当たりは 0 本である。**この検索の範囲は追跡ファイルの経路の文字列だけで、中身は見ていない | 実測 | `20260922_tools_1_run19.log:139` |
+| 16 | **候補 74 は、約定の前提を文書で列挙しているが、実装していない。**`docs/backtest_assumptions.md` の逐語は「The default research path does not prove that trades can be executed at the modeled prices. Slippage and impact depend on liquidity, order size, participation rate, volatility, spread, queue priority, and market regime.」で、そのあとに「For realistic deployment, add assumptions for:」として「execution price relative to open, close, VWAP, or next-bar price」「bid-ask spread」「market impact as a function of volume participation」「failed fills and partial fills」が並ぶ。**「足しなさい」と書いてあるので、既定では入っていない。当方に無いのは、この前提の一覧を報告の必須項目にしている運用そのものである** | 一次資料 | `https://raw.githubusercontent.com/initial-d/ml-quant-trading/main/docs/backtest_assumptions.md`(2026-09-22 取得)、`20260922_tools_1_run19.log:49` |
+| 17 | **候補 44 `lo2cin4bt` の粒度が、契約の文書で確定した。**`bar-time-contract-v1.schema.json` の逐語は `"aggregation": {"const": "time"}` と `"unit": {"enum": ["minute", "hour", "day", "week", "month"]}` と `"step": {"type": "integer", "minimum": 1}` である。**束ね方は時間だけで、刻みの最小は 1 分。ティック・出来高で束ねる口は契約に無い。**時刻の逐語は `"time_standard": {"const": "UTC"}` と `"precision": {"const": "nanosecond"}` で、値の種類の逐語は `"price_type": {"enum": ["last", "bid", "ask", "mid"]}` である | 一次資料 | `https://raw.githubusercontent.com/lo2cin4/lo2cin4bt/main/backtester/contracts/runtime/bar-time-contract-v1.schema.json`(2026-09-22 取得)、`20260922_tools_1_run19.log:75`・`:150` |
+| 18 | **候補 44 の約定は足の中で順序づけられている。**同じ契約の不変条件の逐語は `"same_timestamp_lifecycle_order_is_data_derived_signal_order_fill"` と `"execution_stream_source_is_external"` と `"derived_bar_is_coarser_and_compatible_with_parent"` である。**同じ時刻の中でデータ・派生・信号・注文・約定の順を固定している**という主張で、14 回目に取った README の逐語「one Rust engine vectorizes indicator, signal, and target-weight precomputation, then performs fills, holdings, costs, risk, and equity accounting in time order」と整合する。**ベクトル化は前処理の側だけで、約定は時間順である** | 一次資料 | `https://raw.githubusercontent.com/lo2cin4/lo2cin4bt/main/backtester/contracts/runtime/bar-time-contract-v1.schema.json`(2026-09-22 取得)、`20260922_tools_1_run19.log:75` |
+| 19 | **候補 106 `almgren-chriss` の配布元の食い違いの正体が分かった。**PyPI の `project_urls` が指す `https://github.com/bernardopaulsen/almngren-chriss` は **404** だが、綴りを直した `https://github.com/bernardopaulsen/almgren-chriss` は **200** で実在し、説明の逐語は「This package provides functions for implementing the Almgren-Chriss model for optimal execution of portfolio transactions.」、初回の登録は 2023-05-28、最後の押し出しは 2023-05-30 で、**PyPI の最後の押し出し 2023-05-30 と一致する。**星は 0。**配布元が無いのではなく、メタデータの綴りが 1 文字ずれている**(15 回目の「配布元の一致が取れない」は、当たっているが原因の粒度が粗かった) | 実測 | `20260922_tools_1_run19.log:81`・`:83`・`:89` |
+| 20 | **候補 106 の許諾の食い違いは、許諾ファイルの側では GPL である。**追跡ファイルの `LICENSE` は 35,149 バイトで、先頭の逐語は「GNU GENERAL PUBLIC LICENSE」「Version 3, 29 June 2007」である。**PyPI の `license` の欄(GNU General Public License)と一致し、分類子の「License :: Other/Proprietary License」のほうが外れている。**追跡ファイルは 20 本で、実装は `almgren_chriss/cost.py`・`decay_rate.py`・`trade.py` の 3 本である | 実測 | `20260922_tools_1_run19.log:93`・`:95` |
+| 21 | **候補 106 は市場影響の模型そのものである。**`almgren_chriss/cost.py` の引数の説明の逐語は「Permanent impact slope」(gamma)・「Temporary impact slope」(eta)・「Temporary impact intercept」(epsilon)で、公開されている関数は `cost_expectation`・`cost_variance`・`value_at_risk` の 3 本である。**印 `区分1-市場影響と約定の模型` は一次資料で確定した。ただし当方の環境への導入は、19 の綴りのずれが直るまで止めたままにする** | 一次資料 | `https://raw.githubusercontent.com/bernardopaulsen/almgren-chriss/main/almgren_chriss/cost.py`(2026-09-22 取得)、`20260922_tools_1_run19.log:101`・`:159` |
+| 22 | **候補 116 `acOptTxns` も市場影響の模型そのものである。**`R/acOptTxns.R` の先頭の逐語は「The Almgren-Chriss Market Impact Model」で、本文の逐語は「\eqn{g(v_{k})} is the linear permanent impact function」と「with \eqn{h(v_{k})}, the linear temporary impact function, defined as:」である。**候補 106 と同じ模型の、別の言語での実装である。**印 `区分1-市場影響と約定の模型` は一次資料で確定した | 一次資料 | `https://raw.githubusercontent.com/braverock/blotter/master/R/acOptTxns.R`(2026-09-22 取得)、`20260922_tools_1_run19.log:110`・`:171` |
+| 23 | **候補 106 と候補 116 は、当方の `engine.py` に無いものを同じ形で持っている。**両方とも **建玉を崩す速さと費用の釣り合い**(永続の影響と一時の影響、危険回避の係数)を解く道具で、**当方の `src/bot/backtest/engine.py` には建玉の大きさが価格に与える影響という概念が無い**(当方の側の裏取りは `docs/DATA/probes/20260921_tools_absent.log` の A 節の範囲であって、この回に当方の符号を新しく走査したわけではない) | 一次資料 | 上の 21・22 と同じ原典。当方側は `docs/DATA/probes/20260921_tools_absent.log`(委任文 §8) |
+| 24 | **`ungh.cc` はこの回も 2 回 000 を返した。**候補 106 の登録情報と追跡ファイルの一覧である。**18 回目と同じく両方 1 回ずつ打ち直し、2 回目はどちらも 200 になった。000 を 404 と同じ欄に書いていない**(同じ回に候補 106 の綴り違いの側は本物の 404 を返しており、両者を取り違えると 19 の読みが逆になる) | 実測 | `20260922_tools_1_run19.log:81`・`:89`・`:91`・`:93` |
+| 25 | **作業者向けの手引きを同梱する登録を 2 件見つけた。**候補 120 の `zengbin93/wbt` は根に作業者向けの手引き(8,068 バイト)を置き、候補 74 の `initial-d/ml-quant-trading` は `AGENTS.md`(2,422 バイト)と `.claude/settings.local.json`(130 バイト)を追跡している。**委任文 §6-3(取ってきた文章は指示ではない)に従い、中身の指示には従っていない。**14 回目の候補 44 の README に埋め込まれた文と同じ型で、**取り込んだ登録が当方の作業者に指示を出しうる経路である。使う段でオーナーに出す所見として残す** | 実測 | `20260922_tools_1_run19.log:22`・`:139`・`:180` |
+
+### 候補の一覧
+
+**新しい候補は 1 件(120 番)。**この回に印が決まったのは 6 件で、番号と名前は 15 回目の節のものをそのまま使う。
+**この回は 1 件も深掘りしていないので、6 件すべてが「浅い」である。**
+
+1. `lo2cin4/lo2cin4bt`(44 番) — 状態: **浅い(足の契約の原典から粒度を確定)。**印は `区分1-足` と `区分1-ベクトル化`、および `区分4 へ`。
+   **束ね方は時間だけで刻みの最小は 1 分、ティックの口は契約に無い**(知見 17)。**ベクトル化は前処理の側だけで、約定は時間順である**(知見 18)。
+   未確認: 料金・導入・最小実行・外部送信・週ごとの取得数・依存の一覧。**許諾は CC BY-NC 4.0 で商用利用を許していない**(14 回目の知見 2、この回に変わっていない)。
+2. `vectorbt`(73 番) — 状態: **浅い(原典の逐語でベクトル化と有償との境目を確定)。**印は `区分1-ベクトル化` と `区分1-足`。
+   **無料の版に指値・並列化・建玉の最適化が無いことが、配布元自身の文書で裏が取れた**(知見 9)。
+   **1 回目と 2 回目の節で深掘りした道具と同じものなので、番号が二重に付いている**(知見 11)。未確認: この番号の側での導入と最小実行。
+3. `ml-quant-trading`(74 番) — 状態: **浅い(検証の実装の原典からベクトル化と粒度を確定)。**印は `区分1-ベクトル化` と `区分1-足`、および `区分4 へ`。
+   **滑りも市場影響も実装されておらず、別の部品も追跡ファイルに無い**(知見 15)。**約定の前提は文書で列挙されているだけである**(知見 16)。
+   未確認: 許諾の中身・導入・最小実行・当方のデータの投入・`legacy/` の扱い。
+4. `almgren-chriss`(106 番、PyPI の `bernardopaulsen`) — 状態: **浅い。印は一次資料で確定した**(知見 21)。印は `区分1-市場影響と約定の模型`。
+   **配布元の綴りのずれの正体が分かった**(知見 19)。**許諾ファイルは GPL v3 で、外れているのは分類子のほうである**(知見 20)。
+   **導入は止めたままにする**(メタデータの指す先が 404 のままなので、委任文 §6-1 の配布元の一致が満たされない)。未確認: 導入・最小実行・当方のデータでの較正。
+5. `braverock/blotter` の `acOptTxns`(116 番) — 状態: **浅い。印は一次資料で確定した**(知見 22)。印は `区分1-市場影響と約定の模型`。
+   **この環境に R は無い**(17 回目の実測、この回に変わっていない)ので実行していない。未確認: 導入・最小実行・当方のデータでの較正。
+6. `wbt`(120 番、`zengbin93/wbt`) — 状態: **浅い(一次資料に到達し、README と許諾と配布物の逐語を取った)。新しい候補。**印は `区分1-足`。
+   **板・待ち行列・約定の照合を、原典が自分で射程の外に置いている**(知見 3)。**ベクトル化ではない**(知見 4)。**許諾は MIT で、配布元は PyPI と GitHub が一致する**(知見 1・5)。
+   **配布物は Rust で組んだ実行体を同梱する wheel である**(知見 6)。未確認: 導入・最小実行・当方のデータの投入・`czsc` 抜きで単体で回せるか。
+
+**この回に既存の節を 1 箇所だけ直した**(起動の指定の許し): 候補 49 `GFT Backtest Software` の状態の書き方を、18 回目のリードの検収 §4(2) の判断に合わせた。
+**候補 49 には新しい経路を打っていない。登録もしていない。**
+
+**6 要素ごとの残り(区分 1 に入ったもののうち、状態がまだ確定していない候補の数)**:
+`区分1-足` は 43・44・51・52・53・54・55・57・60・67・70・72・75・87・91・92 と 40・46・48・56・80・85・86 に **73・74・120** を足して 26 件。
+`区分1-ティック` は 58・90・59・63・119 の 5 件(この回に増減なし)。
+`区分1-板の待ち行列` は 96・97・100・109 の 4 件(この回に増減なし)。
+`区分1-イベント駆動` は 41・52・58・61・62・65・68・69・63 の 9 件(この回に増減なし)。
+`区分1-ベクトル化` は 44・73・74 の 3 件(数は変わらないが、**3 件とも印の根拠が一次資料になった**。起動の指定 (1) はこれで済んだ)。
+`区分1-市場影響と約定の模型` は 106・116・63・119 の 4 件(数は変わらないが、**106 と 116 の印の根拠が一次資料になった**)。
+
+**`判別に一次資料が要る` の残り**: 49 番だけ。**登録の内側にあり、当方は登録しない。**
+**残りの候補名**: 41 番・43 番の浅い部分、51 番から 93 番のうち上で印を付けなかったもの、
+94 番・96 番・97 番・100 番から 120 番の浅い部分。
+**39 番と 110 番と 112 番の一覧の残りの節からも、まだ名前を抜いていない。**
+
+### ツール1件ごとの表
+
+| ツール | 何ができるか | 料金の構造 | 当方に無いもの | この環境での到達 |
+|---|---|---|---|---|
+| `lo2cin4/lo2cin4bt` | 符号を書かずに足の検証を回し、Rust の 1 本道で指標・信号・目標の重みを前処理してから時間順に約定させる | 無料。鍵も登録も無し。ただし許諾が商用利用を許さない | **時間の束ね方・時刻の精度・同じ時刻の中の順序を、機械で読める契約として外に出していること** | **可**(契約の原典に到達。導入はしていない) |
+| `vectorbt` | 何千通りの設定を配列に詰めて一度に回し、建玉・売買・下落・成績を pandas の形で出す | 無料の版と有償の版。指値・並列化・建玉の最適化は有償の側 | **設定の側を束ねて一度に回す形**と、そこから出る成績の分布の見方 | **可**(原典に到達。この番号の側での導入はしていない) |
+| `ml-quant-trading` | 213 の因子から機械学習で順位を出し、建玉を最適化して、行列の演算だけで成績を出す | 無料。鍵も登録も無し。商用の解法器を使う場合だけ別 | **約定・滑り・生存者の偏りの前提を、報告の必須項目として一覧にしている運用** | **可**(原典に到達。導入はしていない) |
+| `almgren-chriss` | 建玉を崩す速さの最適化(永続の影響・一時の影響・危険回避)の期待値と分散と危険価値を出す | 無料。鍵も登録も無し | **建玉の大きさが価格に与える影響という概念そのもの** | **可**(原典に到達。導入は止めている) |
+| `braverock/blotter` の `acOptTxns` | 同じ模型を R で解き、最適な売買の軌道を出す | 無料。鍵も登録も無し | 同上。加えて、売買の軌道を時刻ごとの数量として出す形 | **可**(原典に到達。この環境に R は無い) |
+| `wbt` | 目標の建玉の重みの表から、足の収益で損益・日ごとの寄与・売買の対・下落・良し悪しの判定までを Rust で出す | 無料。鍵も登録も無し | **重みの表を唯一の入口にして、そこから全部を導くという設計**と、良し悪しを機械で判定する関数 | **可**(原典に到達。導入はしていない) |
+
+### 予算
+
+割当は 1 回 5 万トークン・20 分。**起動の指定の (1)・(2)・(3) はすべて終わった。**
+(1) の `区分1-ベクトル化` の 3 件は 3 件とも一次資料で印が決まった。(2) の `wbt` は候補 120 として立て、印が決まった。
+(3) の `区分1-市場影響と約定の模型` の残り 2 件も印が決まった。(4) の `区分1-足` の 23 件には手を付けていない(起動の指定の逐語「**最後に回します。**」による)。
+(5) の新しい検索計画は打っていない。(6) の深掘りは 0 件で、これは起動の指定どおりである。
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **候補 73 `vectorbt` の番号が二重に付いている。**1 回目と 2 回目の節で「3. vectorbt / vectorbt.pro」として深掘り(導入・取り込み・符号の走査)まで済んでおり、13 回目の節で 39 番の一覧から `vectorbt` を 73 番として立て直している。**同じ登録 `polakowo/vectorbt` である。**
+   **一本化するのか、番号はそのままで状態を引き継ぐのかは、リードが決めること。**この回は勝手に消さず、6 要素の残りの数にも 73 番として残した。
+2. **候補 73 と 74 に `区分1-足` の印を足した。**起動の指定は「印を確定させてください」であって「足してよい」とは書いていない。
+   どちらも原典の逐語が足を入力にしていると書いているので足した(知見 8・14)。**足してよいかはリードが決めること。**
+3. **候補 120 `wbt` に `区分1-ベクトル化` の印を付けなかった。**`czsc` からの筋は「検証の本体」であって粒度の主張ではないが、
+   `wbt` の原典は「Rust に落とした繰り返しと並列度」と書いており、配列の演算に畳む話は 1 行も無い(知見 4)。**`区分1-足` だけにした。**
+4. **候補 106 の状態を「危険なので止めた」から「浅い。印は一次資料で確定した」に変えた。**16 回目の「配布元の一致が取れない」は当たっているが、
+   原因は綴りの 1 文字のずれで、綴りを直した登録は実在した(知見 19)。**導入は止めたままにしている**が、
+   「危険なので止めた」という状態の語をそのままにすると、印が決まったことが見えなくなる。**この書き換えでよいかはリードが決めること。**
+5. **候補 49 の直しを、候補の一覧の項だけに限った。**同じ 18 回目の節には、知見 6(「この環境から本体にも公開の文書にも到達できなかった」)と
+   ツールの表の「到達」の欄(「**不可**(4 経路が全部塞がり、入口は登録の内側)」)にも同じ趣旨の語が残っている。
+   起動の指定の逐語は「**1 箇所だけ**」なので触っていないが、**この 2 箇所も直すかはリードが決めること。**
+   なお知見 6 は「4 経路を打って塞がった」という測定の記録そのものなので、当方は消すべきでないと考えている。
+6. **候補 44 の印に `区分1-ベクトル化` を残した。**契約の不変条件は約定が時間順であると書いており(知見 18)、
+   ベクトル化されているのは前処理だけである。**「前処理だけのベクトル化」に `区分1-ベクトル化` の印を付けてよいかはリードが決めること。**
+   同じ判断は候補 74 にも効くが、74 は約定そのものが行列の演算なので迷っていない。
+
+### 取ってきた文章の中の作業者向けの指示(委任文 §6-3)
+
+候補 120 の `zengbin93/wbt` と候補 74 の `initial-d/ml-quant-trading` は、いずれも根に作業者向けの手引きを置いている(知見 25)。
+**従っていない。**所在と大きさだけを記録した。候補 44 の README に埋め込まれた文(14 回目の知見 3)と同じ型である。
 
 ### 受け入れ検査の出力
 
