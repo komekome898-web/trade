@@ -4768,3 +4768,241 @@ K12 検査の出力の貼付           0 件
 ---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
 ---- 合計 0 件
 ```
+
+## 区分1 — 15 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run15.log`。
+14 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run14.md`)§4 の指定
+「**次の回の検索計画 6 本は、この 2 要素だけを狙う**」に従う。起動の指定の逐語は
+「**板の待ち行列(指値の埋まり方)`` と ``市場影響・約定の模型`` だけを狙う検索計画 6 本**」で、
+配分は板の待ち行列 3 本(狭い / 中間 / 広い)・市場影響と約定の模型 3 本(狭い / 中間 / 広い)、
+日本語と英語を各要素で最低 1 本ずつ、経路は 3 つ(`WebSearch` 一般 / X は `x-research` の手順 / GitHub・PyPI・公式)である。
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断「区分ごとに 1 回でよい」により、区分 1 の 1 回目の節を参照して貼っていない。
+**既存の節は 1 文字も書き換えていない。**
+
+### 検索計画
+
+**6 本とも実行した。**内訳は下の表である。X の経路と GitHub の検索も打った。
+
+| 幅 | 要素 | 言語 | クエリ(逐語) | 新しい候補 |
+|---|---|---|---|---|
+| 狭い | 板の待ち行列 | 英 | `"queue position" limit order fill simulation backtest github python` | 2 件(94・95) |
+| 中間 | 板の待ち行列 | 日 | `板 待ち行列 指値 約定確率 シミュレーション バックテスト ライブラリ` | 0 件 |
+| 広い | 板の待ち行列 | 英 | `limit order book simulator price-time priority matching engine open source library` | 9 件(96 から 104) |
+| 狭い | 市場影響と約定の模型 | 英 | `Almgren-Chriss market impact model python implementation open source execution` | 3 件(105・106・116) |
+| 中間 | 市場影響と約定の模型 | 日 | `市場インパクト 執行コスト モデル Python ライブラリ スリッページ 推定` | 0 件 |
+| 広い | 市場影響と約定の模型 | 英 | `slippage model execution cost simulation backtesting framework transaction cost analysis library` | 3 件(107・117・118) |
+
+X の経路(`.claude/skills/x-research` §3 の発見の段 = `WebSearch` で `site:x.com`、本文は `scripts/x_fetch.py`):
+
+| クエリ(逐語) | 新しい候補 |
+|---|---|
+| `site:x.com queue position fill model backtest order book` | 2 件(108・109) |
+| `site:x.com 市場インパクト モデル 約定 シミュレーション ツール` | 0 件 |
+
+GitHub の検索(MCP の GitHub 検索。`api.github.com/search` は 14 回目の知見 8 のとおりこの環境の proxy が拒むため、最初から第 2 経路で打った):
+
+| クエリ(逐語) | 当たった総数 | 新しい候補 |
+|---|---|---|
+| `queue position fill model limit order backtest in:name,description,readme stars:>3` | 177 | 6 件(110 から 115) |
+| `market impact model execution simulator slippage in:name,description stars:>3` | 0 | 0 件 |
+| `"market impact" backtest fill model simulation language:Python stars:>5` | 0 | 0 件 |
+
+**日本語の 2 本が 0 件だったことは「日本語の道具が無い」ことを意味しない。**引いた語と当たりの中身だけが根拠で、
+`板 待ち行列 指値 約定確率` は待ち行列理論の一般の教材に当たり、`市場インパクト 執行コスト` は
+日本銀行金融研究所の論文と事業者の記事に当たった。**道具の名前が出なかっただけである。**
+
+### 出典
+
+| URL / 経路 | 方法 | 生ログの行 |
+|---|---|---|
+| https://ungh.cc/repos/evan-kolberg/prediction-market-backtesting | curl(1 回目 code=000。打ち直して code=200) | 8 と 32 |
+| https://ungh.cc/repos/sacha9214/polymarket-fill-model | curl(code=200) | 11 |
+| https://ungh.cc/repos/mote/backtest | curl(code=200) | 15 |
+| https://ungh.cc/repos/DaniyalMlk/slippage | curl(code=200) | 19 |
+| https://ungh.cc/repos/mihircoding/limitOrderBook | curl(code=200) | 23 |
+| https://ungh.cc/repos/3yit/Limit-Order-Book-Simulator | curl(code=200) | 27 |
+| https://ungh.cc/repos/sashankzade/limit-order-book-matching-engine | curl(code=200) | 55 |
+| https://ungh.cc/repos/kahan15/Limit-Order-Book-Simulator | curl(code=200) | 59 |
+| https://ungh.cc/repos/NickGardi/orderbooksim | curl(code=200) | 63 |
+| https://ungh.cc/repos/xavierchuan/OrderMatchingEngine | curl(code=200) | 67 |
+| https://ungh.cc/repos/akurkar07/OrderBook | curl(code=200) | 71 |
+| https://ungh.cc/repos/IsaacCheng9/order-book-simulator | curl(1 回目 code=000。打ち直して code=200) | 77 と 87 |
+| https://ungh.cc/repos/jxm35/LimitOrderBook-MatchingEngine | curl(code=200) | 80 |
+| https://pypi.org/pypi/almgren-chriss/json | curl(code=200)。項目の抜き出しは scratchpad の小さな台本 | 84 と 96 |
+| https://x.com/QFinancePapers/status/1965093007297769721 | `scripts/x_fetch.py`(http=200) | 51 |
+| https://x.com/RustTrending/status/1829630731464949780 | `scripts/x_fetch.py`(http=200) | 52 |
+| MCP の GitHub 検索 3 本 | 道具の呼び出し。出力を自分で読んだ | 46 から 48 |
+| `WebSearch` 8 本(上の 6 本 + X の 2 本) | 道具の呼び出し。出力を自分で読んだ | 36 から 44 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **候補 41 の名前は実在した。**登録名は `evan-kolberg/prediction-market-backtesting` で、説明の逐語は「An extension for Nautilus Trader」、既定の枝は `v4.1-alpha` である。**14 回目が「1 文字一致する登録が 0 件」と書いたのは、打ったクエリが当てられなかっただけで、登録は在る。**14 回目が立てた 90 番から 93 番は、この 41 番とは別物である | 一次資料 | https://ungh.cc/repos/evan-kolberg/prediction-market-backtesting 取得日 2026-09-22、`20260922_tools_1_run15.log:32`。MCP の GitHub 検索の出力にも同じ登録が出た(`:46` のクエリ) |
+| 2 | 板の待ち行列を**名指しで**模型にしている道具が、14 回目までの一覧の外に在った。`sacha9214/polymarket-fill-model` の説明の逐語は「Queue-aware fill model for Polymarket maker orders: crosses the order book with the trade tape to answer whether a resting order would really have been filled」で、**板と約定の列を突き合わせて、置いた指値が本当に埋まったかを答える**と自分で名乗っている。当方の `src/bot/backtest/engine.py` が自分で限界と書いている所そのものである | 一次資料 | https://ungh.cc/repos/sacha9214/polymarket-fill-model 取得日 2026-09-22、`20260922_tools_1_run15.log:11` |
+| 3 | **価格と時刻の優先順位(price-time priority)で探すと、板の待ち行列を持つ実装が一度に 9 件出た。**14 回分の検索計画がこの語を一度も使っていない。**「板の待ち行列の候補が 0 件」だったのは、この語を引いていなかったからである** | 実測 | `20260922_tools_1_run15.log:38` のクエリと、`:55` `:59` `:63` `:67` `:71` `:80` `:87` `:27` の登録情報 |
+| 4 | 板の待ち行列で出た 9 件のうち、**作成日がこの 2 週間以内のものが 4 件ある**(`sashankzade/limit-order-book-matching-engine` は 2026-09-13、`kahan15/Limit-Order-Book-Simulator` は 2026-09-12、`akurkar07/OrderBook` は 2026-09-16、`sacha9214/polymarket-fill-model` は 2026-09-17)。**委任文 §6-1 の「公開直後」に当たるので、導入の前に配布元の一致と中身の検査が要る。**星はいずれも 0 である | 一次資料 | 同上の登録情報。`20260922_tools_1_run15.log:55` `:59` `:71` `:11` |
+| 5 | PyPI の `almgren-chriss` は、**同じ配布物の中で許諾の記述が食い違っている。**`license` の欄の逐語は「GNU General Public License」だが、分類子の逐語は「License :: Other/Proprietary License」である。さらに `project_urls` の `GitHub` が指す先は `https://github.com/bernardopaulsen/almngren-chriss` で、**配布名 `almgren-chriss` と綴りが違う**(`almngren`)。**配布元の一致が取れていない。**版は 1.1.0、要求する Python は `>=3.10,<4.0`、依存は `numpy (>=1.0,<2.0)` の 1 件、最後の押し出しは 2023-05-30 である | 一次資料 | https://pypi.org/pypi/almgren-chriss/json 取得日 2026-09-22、`20260922_tools_1_run15.log:96` |
+| 6 | `DaniyalMlk/slippage` の説明の逐語は「An optimal execution and transaction cost analysis engine: implementation shortfall decomposition, market impact calibration, and Almgren-Chriss trajectories.」で、**実現差の分解・市場影響の較正・最適執行の軌道の 3 つを名乗っている。**当方にはどれも無い。ただし**作成日が 2026-09-21 で、この調査の前日**であり、星は 0 である。§6-1 の「公開直後」に当たる | 一次資料 | https://ungh.cc/repos/DaniyalMlk/slippage 取得日 2026-09-22、`20260922_tools_1_run15.log:19` |
+| 7 | `mihircoding/limitOrderBook` は、説明の逐語で「Price-time priority matching engine and a zero-intelligence order flow simulator. Spread, price impact and mean reversion emerge from the rules alone.」と書いている。**規則だけから価格影響が出てくる**という主張で、**板の待ち行列と市場影響の両方にまたがる唯一の新しい候補**である | 一次資料 | https://ungh.cc/repos/mihircoding/limitOrderBook 取得日 2026-09-22、`20260922_tools_1_run15.log:23` |
+| 8 | X の経路では、板の待ち行列に触れる投稿が 2 件取れた。1 件目は `QFinancePapers` の 2025-09-08 の投稿で、本文の逐語は「Painting the market: generative diffusion models for financial limit order book simulation and forecasting. https://arxiv.org/abs/2509.05107」である(印: **使用報告ではない。論文の紹介**)。2 件目は `RustTrending` の 2024-08-30 の投稿で、本文の逐語は「nkaz001 / hftbacktest: A high-frequency trading and market-making backtesting tool in Python and Rust, which accounts for limit orders, queue positions, and latencies, utilizing full tick data for trades and order books, with rea ... ★1705 https://github.com/nkaz001/hftbacktest」である(印: **自動の紹介の投稿**。`hftbacktest` は候補 23 として既出) | 一次資料 | `scripts/x_fetch.py` の出力、`20260922_tools_1_run15.log:51` と `:52` |
+| 9 | 日本語のクエリ 2 本は、**板の約定・市場影響の道具を 1 件も出さなかった。**当たったのは待ち行列理論の一般の教材、日本銀行金融研究所の論文「執行戦略と取引コストに関する研究の進展」、事業者の記事である。**「日本語圏に道具が無い」とは書かない。**引いた語が 2 本だけで、`site:github.com` を付けた日本語の検索も、販売の場(MQL5・note・BOOTH)への検索も打っていないためである | 実測 | `20260922_tools_1_run15.log:37` と `:40` のクエリ、および `WebSearch` の出力 |
+| 10 | `api.github.com/search` を最初から使わず MCP の GitHub 検索で打ったが、**`in:name,description` に語を詰めた 2 本は当たりが 0 件**になった。語を減らした 1 本だけが 177 件に当たった。**当たりが 0 件なのは道具が無いからではなく、クエリの絞りすぎである** | 実測 | `20260922_tools_1_run15.log:46` から `:48` |
+| 11 | `ungh.cc` への `curl` が、同じ URL でも 1 回目に `code=000`(`curl: (35) Recv failure: Connection reset by peer`)になることがある。**2 件で起き、2 件とも打ち直して `code=200` で取れた。**000 を「到達できない」と書いてはならない | 実測 | `20260922_tools_1_run15.log:8` と `:32`、`:77` と `:87` |
+
+### 候補の一覧
+
+1 番から 93 番の本文は 14 回目の一覧をそのまま引き継いでいる(黙って落としていない)。
+**この回で変わったのは、41 番の名前が確定したこと**と、**94 番から 118 番が増えたこと**である。
+仕分けの印の語は 14 回目と同じで、`区分1-足` / `区分1-ティック` / `区分1-板の待ち行列` /
+`区分1-イベント駆動` / `区分1-ベクトル化` / `区分1-市場影響と約定の模型` / `区分N へ` /
+`判別に一次資料が要る` である。**起動の指定の逐語「仕分けの印に「(推定)」は使わないでください」に従い、
+この回は「(推定)」を 1 件も使っていない。**説明に "backtest" としか無いものは `判別に一次資料が要る` に置いた。
+**94 番から 118 番の 1 行の説明は、すべて登録情報または配布物の一次資料の逐語である。記憶では埋めていない。**
+
+**41 番の更新**: `prediction-market-backtesting` — **名前が `evan-kolberg/prediction-market-backtesting` に確定した。**
+説明の逐語は「An extension for Nautilus Trader」。既定の枝は `v4.1-alpha`。
+仕分けは `区分1-イベント駆動`(Nautilus Trader の拡張を名乗るため。58 番 `nautilus_trader` の系)と `区分6 へ`。
+浅い(README・ライセンス・料金・導入・最小実行・外部送信・依存は未確認)。
+**14 回目の「1 文字一致する登録が 0 件」は、この回の一次資料で覆った(知見 1)。**
+90 番から 93 番は 41 番ではないことが確定したが、**候補としては落とさない**(それぞれ別の道具として一覧に残す)。
+
+**ここから、この回の検索計画で新しく出た候補である。いずれも未着手で、名前と一次資料の逐語だけがある。**
+
+94. `mote/backtest` — 説明の逐語は「Simple limit/stop order based backtest library for python」。星 1、作成 2012-12-02、最後の押し出し 2012-09-14。仕分けは `判別に一次資料が要る`(指値と逆指値を扱うとだけあり、足かティックか、待ち行列を持つかが説明では決まらない)。未着手。
+95. `sacha9214/polymarket-fill-model` — 説明の逐語は「Queue-aware fill model for Polymarket maker orders: crosses the order book with the trade tape to answer whether a resting order would really have been filled」。星 0、作成 2026-09-17。仕分けは `区分1-板の待ち行列` と `区分1-ティック`(約定の列と突き合わせると自分で書いている)。**§6-1 の「公開直後」に当たる**(知見 4)。未着手。
+96. `sashankzade/limit-order-book-matching-engine` — 説明の逐語は「A high-performance limit order book and matching engine implementing price-time priority for simulated exchange order matching.」。星 0、作成 2026-09-13。仕分けは `区分1-板の待ち行列`。**§6-1 の「公開直後」に当たる。**未着手。
+97. `kahan15/Limit-Order-Book-Simulator` — 説明の逐語は「Browser-based limit order book simulator with a price-time priority matching engine, synthetic order flow, and live L2 depth streamed from Kraken's public WebSocket with local paper trading and PnL tracking.」。星 0、作成 2026-09-12。仕分けは `区分1-板の待ち行列` と `区分2 へ`(paper の取引)と `区分3 へ`(Kraken の公開 WebSocket の L2)。**§6-1 の「公開直後」に当たる。**未着手。
+98. `mihircoding/limitOrderBook` — 説明の逐語は「Price-time priority matching engine and a zero-intelligence order flow simulator. Spread, price impact and mean reversion emerge from the rules alone.」。星 0、作成 2026-08-13。仕分けは `区分1-板の待ち行列` と `区分1-市場影響と約定の模型`(知見 7)。未着手。
+99. `NickGardi/orderbooksim` — 説明の逐語は「Price-time priority limit order book matching engine with live Streamlit UI」。星 0、作成 2026-08-22。仕分けは `区分1-板の待ち行列` と `区分5 へ`(表示)。未着手。
+100. `xavierchuan/OrderMatchingEngine` — 説明の逐語は「A high-performance C++ order matching engine simulating exchange-style limit/market order execution, cancellations, and stress testing.」。星 14、作成 2025-09-19。仕分けは `区分1-板の待ち行列`。未着手。
+101. `akurkar07/OrderBook` — 説明の逐語は「C++ limit order book engine with price-time priority matching, deterministic tests, and benchmark harness」。星 0、作成 2026-09-16。仕分けは `区分1-板の待ち行列` と `区分8 へ`(決定的な試験を名乗る)。**§6-1 の「公開直後」に当たる。**未着手。
+102. `3yit/Limit-Order-Book-Simulator` — 説明の逐語は「C++20 limit order book simulator modeling real-time market microstructure. Features multi-threaded matching engine, microsecond latency, and Python bindings for quantitative finance research and trading strategy analysis.」。星 7、作成 2025-10-12。仕分けは `区分1-板の待ち行列`。**Python の束縛を名乗るので、当方から呼べる可能性がある。**未着手。
+103. `IsaacCheng9/order-book-simulator` — 説明の逐語は「An equity order matching engine simulating US stock exchange mechanics with an interactive dashboard. Features price-time priority matching, trade execution, and real-time market data processing.」。星 9、作成 2025-01-28。仕分けは `区分1-板の待ち行列` と `区分5 へ`(表示)。未着手。
+104. `jxm35/LimitOrderBook-MatchingEngine` — 説明の逐語は「Limit Orderbook & Matching Engine   + market simulation & visualsation.」(原文の綴りのまま)。星 32、作成 2023-09-23。仕分けは `区分1-板の待ち行列` と `区分5 へ`。**この群では星が最も多く、作成が最も古い。**未着手。
+105. `DaniyalMlk/slippage` — 説明の逐語は「An optimal execution and transaction cost analysis engine: implementation shortfall decomposition, market impact calibration, and Almgren-Chriss trajectories.」。星 0、作成 2026-09-21。仕分けは `区分1-市場影響と約定の模型`。**§6-1 の「公開直後」に当たる**(知見 6)。未着手。
+106. `almgren-chriss`(PyPI、`bernardopaulsen`) — 配布物の説明の逐語は「This package provides functions for implementing the Almgren-Chriss model for optimal execution of portfolio transactions.」。版 1.1.0、最後の押し出し 2023-05-30。仕分けは `区分1-市場影響と約定の模型`。**許諾の記述が配布物の中で食い違い、配布元の GitHub の綴りも一致しない**(知見 5)。未着手。
+107. `sigc`(`docs.skelfresearch.com` の文書) — `WebSearch` の当たりの表題の逐語は「Transaction Costs - sigc Documentation」で、経路は `docs.skelfresearch.com/sigc/backtesting/cost-models/` である。**文書の本体はこの回に取っていない**ので、仕分けは `判別に一次資料が要る`。未着手。
+108. `Databento` — X の発見の段で当たった。`x.com/DatabentoHQ` の投稿が板の待ち行列の語で当たったが、**本文はこの回に取っていない。**仕分けは `区分3 へ`(データの供給者)。未着手。
+109. `arXiv:2509.05107`(生成拡散模型による板の模擬と予測) — X の投稿の本文の逐語「Painting the market: generative diffusion models for financial limit order book simulation and forecasting.」で発見。**論文であり、実装が公開されているかはこの回に確かめていない。**仕分けは `区分1-板の待ち行列`。未着手。
+110. `wangzhe3224/awesome-systematic-trading` — 説明の逐語は「A curated list of insanely awesome libraries, packages and resources for systematic trading. Crypto, Stock, Futures, Options, CFDs, FX, and more | 量化交易 | 量化投资」。道具ではなく一覧。**39 番 `paperswithbacktest/awesome-systematic-trading` と同じ表題だが、所有者が違う別の登録である。**どちらが元かはこの回に確かめていない。仕分けは `判別に一次資料が要る`。未着手。
+111. `HKUDS/Vibe-Trading` — 説明の逐語は「"Vibe-Trading: Your Personal Trading Agent"」。仕分けは `区分6 へ` と `判別に一次資料が要る`(登録の話題に `backtesting` があるが、足かティックか板かは説明では決まらない)。未着手。
+112. `wilsonfreitas/awesome-quant` — 説明の逐語は「A curated list of insanely awesome libraries, packages and resources for Quants (Quantitative Finance)」。道具ではなく一覧。**39 番の一覧とは別の一覧で、ここからも名前を抜けるが、この回は抜いていない。**仕分けは `判別に一次資料が要る`。未着手。
+113. `avelino/awesome-go` — 説明の逐語は「A curated list of awesome Go frameworks, libraries and software」。**トレードの一覧ではない。**GitHub の検索の当たりとして出たので落とさずに記録するが、区分 1 の 6 要素には入らない。仕分けは `区分N へ` にも入れない。未着手。
+114. `ai-boost/awesome-harness-engineering` — 説明の逐語は「Awesome list for AI agent harness engineering: tools, patterns, evals, memory, MCP, permissions, observability, and orchestration.」。仕分けは `区分6 へ`。区分 1 の 6 要素には入らない。未着手。
+115. `thedaviddias/llms-txt-hub` — 説明の逐語は「🤖 The largest directory for AI-ready documentation and tools implementing the proposed llms.txt standard」。**トレードの道具ではない。**落とさずに記録する。区分 1 の 6 要素には入らない。未着手。
+116. `braverock/blotter` の `acOptTxns` — `WebSearch` の当たりの表題の逐語は「acOptTxns: The Almgren-Chriss Market Impact Model in braverock/blotter: Tools for Transaction-Oriented Trading Systems P&L」。**R の package である。**文書の本体はこの回に取っていない。仕分けは `区分1-市場影響と約定の模型`。未着手。
+117. `Exegy` — `WebSearch` の当たりの表題の逐語は「Using Backtesting to Avoid Slippage in Equities Trading - Exegy」。事業者の頁で、道具の名前・料金・登録の要否はこの回に取っていない。仕分けは `判別に一次資料が要る`。未着手。
+118. `Hyper Trading Automation`(`hyper-quant.tech`) — `WebSearch` の当たりの表題の逐語は「Realistic Backtesting: Transaction Costs, Slippage, and Walk-Forward Optimization · Hyper Trading Automation」。記事なのか道具なのかがこの回に確かめられていない。仕分けは `判別に一次資料が要る`。未着手。
+
+**この回の検索で出たが既出の候補**(数えない): `nkaz001/hftbacktest` とその分岐 4 件(`thumper1380` `0xNyk` `luyiming` `nikitium`。いずれも 23 番の同じ道具)/ `SarthakDalmia1/backtesting_execution_simulator`(33 番)/ `OpenByteInc/QuantDinger`(43 番)/ `brndnmtthws/thetagang`(84 番)/ `evan-kolberg/prediction-market-backtesting`(41 番。新しい候補ではなく、41 番の名前の確定である)。
+
+**6 要素ごとの残り(区分 1 に入ったもののうち、状態がまだ確定していない候補の数)**:
+`区分1-足` は 43・44・51・52・53・54・55・57・60・67・70・72・75・87・91・92 の 16 件(この回に増減なし)。
+`区分1-ティック` は 58・90・95 の 3 件。
+`区分1-板の待ち行列` は 95・96・97・98・99・100・101・102・103・104・109 の 11 件。
+`区分1-イベント駆動` は 41・52・58・61・62・65・68・69 の 8 件。
+`区分1-ベクトル化` は 44・73・74 の 3 件(この回に増減なし)。
+`区分1-市場影響と約定の模型` は 98・105・106・116 の 4 件。
+**14 回目に 0 件だった 2 要素は、この回の 6 本で 0 件ではなくなった。**
+板の待ち行列は 11 件、市場影響と約定の模型は 4 件である。**「尽きた」とは書けない状態に戻った。**
+
+**残りの候補名**: 40 番・46 番・48 番・49 番(未着手)、41 番・43 番・44 番の浅い部分、
+51 番から 93 番の全部、94 番から 118 番の全部、および 31 番から 38 番・42 番・45 番・50 番の浅い部分。
+**39 番と 110 番と 112 番の一覧の残りの節からも、まだ名前を抜いていない。**
+
+### ツール1件ごとの表
+
+**この回で `[深掘り]` に達した道具は無い。**委任文 §4.0 は「深掘りした道具は、文章より先に表に 1 行ずつ書く」と
+定めており、深掘りが 0 件なので §4.0 の機械可読の表にこの回の行は無い。
+この回に名前と一次資料に到達した候補は、いずれも委任文 §4.0 の語彙の過半が `未確認` であり、
+規則どおり候補の一覧に「浅い(何が未確認か)」または「未着手」と書いてある。
+**起動の指定の (2)(区分 1 に入っている候補の状態を確定させる)は、予算のため着手していない。**
+
+下は、この回に状態が変わった候補の要約である。**これは §4.0 の表ではない。**
+
+| 候補 | この回で確定したこと | まだ確定していないこと |
+|---|---|---|
+| `evan-kolberg/prediction-market-backtesting`(41 番) | 登録が実在すること・説明の逐語・既定の枝が `v4.1-alpha` であること・作成日 | README・ライセンス・料金・鍵の要否・導入・最小実行・外部送信・依存 |
+| 94 番から 118 番 | 名前と、登録情報または配布物の説明の逐語。星・作成日(GitHub の登録のもの) | すべての列(できること全部・料金・導入・最小実行・当方に無いもの・4 軸・危険) |
+
+### 区分 1 の完了の判定
+
+オーナーの判定(14 回目の節に引いた逐語「**区分 1 の完了 = 委任文 §2 の 6 要素それぞれについて、
+一次資料に到達した候補が尽きること**」)に照らすと、**この回では完了していない。**
+**14 回目に残り 0 件だった 2 要素を狙う 6 本を打ったところ、その 2 要素に新しい候補が出た。**
+これで 6 要素すべてに残りがある。
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **X の 2 本目のクエリ(日本語)が道具を 1 件も出さなかったとき、3 本目を打たずに止めた。**
+   起動の指定は X の経路を「全部使ってください」と言っているが、**何本引くかは書いていない。**
+   委任文 §5-1 の「1 回のエラーで不可と書かない」に触れるおそれがあるので、**「取れない」とは書かず、
+   引いた語と当たりの中身だけを書いた**(知見 9)。日本語の経路をもっと引くべきなら、次の回で足す。
+2. **113 番と 115 番(`awesome-go` と `llms-txt-hub`)は、トレードの道具ではない。**
+   委任文 §10 の「候補の一覧から黙って落とさない」に従って一覧に残したが、
+   **6 要素にも `区分N へ` にも入れていない。**このような当たりを一覧に残すのが正しいか、
+   別の置き場所(検索の当たりの記録)に移すのかは、起動の指定にも委任文にも無い。
+3. **`sacha9214/polymarket-fill-model` に `区分1-ティック` も付けた。**説明の逐語が
+   「crosses the order book with the trade tape」で、約定の列を使うと書いてあるためだが、
+   **これが「ティック単位の模擬」に当たるかは説明だけでは決まらない。**
+   リードの回答 1(「(推定)」を使わず `判別に一次資料が要る` に倒す)に照らすと、
+   `区分1-ティック` を外して `判別に一次資料が要る` を足すほうが正しいかもしれない。**判断はリードに渡す。**
+4. **生ログの 3 行目に、日付の書式が展開されなかった行(`[%s] start UTC %Y-%m-%dT%H:%M:%SZ`)が残っている。**
+   委任文は「生ログは後から書き足さない」と定めているので、**消さずにそのまま残した。**
+   4 行目に打ち直した正しい時刻がある。
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 時間 | 上限 20 分。**超過していない**(最初の手と最後の手の時刻は生ログの 4 行目と 97 行目にある) |
+| トークン | 上限 5 万。**達した。**検索 11 本の出力を読むところと、候補 25 件を 1 件ずつ一次資料で書き下ろすところが重い |
+| 打ち切った作業 | 起動の指定の (2)(区分 1 に入っている候補の状態を確定させる)。94 番から 118 番の深掘り(料金・導入・最小実行・危険の検査)。107 番・108 番・116 番・117 番・118 番の一次資料への到達。110 番と 112 番の一覧からの名前の抜き出し |
+| 常駐プロセス | 残していない。打った手はすべて `curl` と道具の呼び出しと `scripts/x_fetch.py` で、自分で終わった |
+| リポジトリへの書き込み | `docs/DATA/SCAN_2026-09-21_tools.md` と `docs/DATA/probes/20260922_tools_1_run15.log` の 2 つだけ。コミットはしていない |
+| 導入した道具 | **1 件も無い。**この回は到達と登録情報の確認だけで、`pip install` も `git clone` も打っていない |
+
+### 取ってきた文章の中の作業者向けの指示(委任文 §6-3)
+
+**この回に取った一次資料の中に、読み手を作業者として動かす文は 1 件も無かった。**
+取ったのは `ungh.cc` の登録情報(JSON)12 件・PyPI の配布物の情報 1 件・X の投稿の本文 2 件で、
+いずれも説明・許諾・星・日付の欄だけである。README の本文はこの回に 1 件も取っていない。
+
+## 受け入れ検査の出力(15 回目)
+
+15 回目の提出前に打った最後の出力(生ログ 13 本を渡した)。**誤検出だと判断して自分で閉じた行は 1 件も無い。**
+直した内訳: 最初に打った時点で **0 件**だったので、検査に当たった行を直す作業は発生していない。
+生ログには、この回に打ったコマンドと出力の記録以外は 1 行も書き足していない。復帰文字は 0 個である。
+
+```
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md \
+    docs/DATA/probes/20260922_tools_1_run3.log docs/DATA/probes/20260922_tools_1_run4.log \
+    docs/DATA/probes/20260922_tools_1_run5.log docs/DATA/probes/20260922_tools_1_run6.log \
+    docs/DATA/probes/20260922_tools_1_run7.log docs/DATA/probes/20260922_tools_1_run8.log \
+    docs/DATA/probes/20260922_tools_1_run9.log docs/DATA/probes/20260922_tools_1_run10.log \
+    docs/DATA/probes/20260922_tools_1_run11.log docs/DATA/probes/20260922_tools_1_run12.log \
+    docs/DATA/probes/20260922_tools_1_run13.log docs/DATA/probes/20260922_tools_1_run14.log \
+    docs/DATA/probes/20260922_tools_1_run15.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+## `STRATEGY_IDEAS.md` / `DATA.md` 向けの一行候補(提案。マージしない)
+
+- `STRATEGY_IDEAS.md` 向け: 指値の埋まり方を板の待ち行列で決める模擬を、当方の `src/bot/backtest/engine.py` の外に置いた参照実装(`scripts/qa/maker_fill_ref.py`)と突き合わせる案。外部の実装は 95 番から 104 番の 10 件が候補になりうる。
+- `DATA.md` 向け: 108 番 `Databento` は板と約定の供給者として区分 3 で追う対象。
