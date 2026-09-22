@@ -10134,10 +10134,10 @@
    "move": 378,
    "tools": {
     "Read": 3,
-    "Bash": 22,
+    "Bash": 24,
     "Agent": 1
    },
-   "n_tools": 26,
+   "n_tools": 28,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
