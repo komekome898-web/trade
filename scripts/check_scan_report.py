@@ -51,14 +51,29 @@ def check_brackets(lines):
                 out.append((i, "%s の数が合わない (%d 対 %d)" % (name, s.count(o), s.count(c))))
     return out
 
-def check_sections(text, section_head):
-    """K3 委任文 §11 が要求する節の存在(8 回目 = 知見・出典の節が丸ごと無かった)。"""
+def check_sections(text, section_head=None):
+    """K3 委任文 §11 が要求する節の存在(8 回目 = 2 回目の節に知見・出典が丸ごと無かった)。
+
+    区分の節ごとに、その節の中だけを見る。前の版では固定の見出し文字列で分割しようとして
+    一度も一致せず、文書全体を見て常に通っていた(= 落ちない検査)。区分の見出しを正規表現で
+    拾う形に直した。
+    """
     need = ["検索計画", "出典", "知見", "候補の一覧", "ツール1件ごとの表", "予算"]
-    body = text.split(section_head, 1)[-1] if section_head in text else text
-    return [(0, "必須の節が無い: " + n) for n in need if ("### " + n) not in body and ("## " + n) not in body]
+    lines = text.splitlines()
+    heads = [i for i, ln in enumerate(lines) if re.match(r"^## 区分\s*\d", ln)]
+    out = []
+    for k, start in enumerate(heads):
+        end = heads[k + 1] if k + 1 < len(heads) else len(lines)
+        body = "\n".join(lines[start:end])
+        title = lines[start][:40]
+        for n in need:
+            if not re.search(r"^#{3,4} *" + re.escape(n), body, re.M):
+                out.append((start + 1, "節『%s…』に必須の小節が無い: %s" % (title, n)))
+    return out
 
 def num_in_log(num, log):
-    """生ログの数値と丸めを許して突き合わせる(60.286559606 → 60.29 は一致とみなす)。"""
+    """生ログの数値と丸めを許して突き合わせる(60.286559606 → 60.29 は一致とみなす)。
+    生ログは先頭の 0 を省く書き方(.835891471)をするので、取り出しの正規表現もそれに合わせる。"""
     if num in log:
         return True
     try:
