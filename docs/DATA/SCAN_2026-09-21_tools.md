@@ -3552,7 +3552,7 @@ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DAT
 | `PySystemtrade` | 版 | 1.8.2 | 一次資料 | 配布物 pyproject.toml の version / docs/DATA/probes/20260922_tools_1_run9.log:310 |
 | `PySystemtrade` | 最終更新日 | GitHub の pushedAt は 2026-09-21T10:55:15Z | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
 | `PySystemtrade` | ライセンス | GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007 | 一次資料 | 配布物 LICENSE の 1 行目と 2 行目 / docs/DATA/probes/20260922_tools_1_run9.log:310 |
-| `PySystemtrade` | 言語と動作環境 | Python。pyproject の requires-python は >=3.10。この環境の /usr/bin/python3.11 の隔離 venv で、指値の模擬まで RUN_RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:373 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
+| `PySystemtrade` | 言語と動作環境 | Python。**【リードの訂正 2026-09-22】`pyproject.toml` に `requires-python` は無い**(リードが打ち直して一致 0 件。`setup.py` にも `python_requires` は無い)。在るのは整形器の設定 `target-version = ['py310']` で、対応する版の宣言ではない。この環境の /usr/bin/python3.11 の隔離 venv で、指値の模擬まで RUN_RC=0 | 実測 | docs/DATA/probes/20260922_tools_1_run10.log:373 と docs/DATA/probes/20260922_tools_1_run10.log:496 |
 | `PySystemtrade` | 対応取引所 | sysbrokers の直下に実体として在るのは IB だけで、ほかは抽象。国内の取引所は無い | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:310 |
 | `PySystemtrade` | 星 | 3522 | 一次資料 | https://ungh.cc/repos/pst-group/pysystemtrade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run9.log:279 |
 | `PySystemtrade` | コミット数 | 4847 | 実測 | docs/DATA/probes/20260922_tools_1_run9.log:354 |
