@@ -791,7 +791,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - **できること全部**: PyPI description「A trading framework for cryptocurrencies」。README「advanced crypto trading framework that aims to simplify researching and defining YOUR OWN trading strategies for backtesting, optimizing, and live trading」
 - **言語・動作環境**: Python>=3.10(一次資料)
 - **ライセンス**: MIT(一次資料PyPI classifier、コア部分)
-- **版と最終更新日**: **3.2.1、2026-09-21T16:01(一次資料。3.2.0 → 3.2.1 の更新を観測したのは **1 回目の実行**(15:44Z の取得時は 3.2.0、同日 16:01Z に 3.2.1)。2 回目の取得(01:28:59Z)は最初から 3.2.1。非常に活発)**
+- **版と最終更新日**: **3.2.1、2026-09-21T16:01(一次資料。3.2.0 → 3.2.1 の更新を観測したのは 1 回目の実行(15:44Z の取得時は 3.2.0、同日 16:01Z に 3.2.1)。2 回目の取得(01:28:59Z)は最初から 3.2.1。非常に活発)**
 - **活動**: スター8.6k・フォーク1.2k・コミット3,491件(WebFetch要約)
 - **対応取引所**: **実測(wheel展開 = 生ログ LV-5b、`import_candles_mode/drivers`ディレクトリ = 生ログ LV-5c)= Apex/Binance/Bitfinex/Bybit/Coinbase/Gate/Hyperliquid/Kraken/KuCoin/Lighter の10件。bitFlyer/bitbank/GMOコインは無い**
 - **出典**: pypi.org/pypi/jesse/json、github.com/jesse-ai/jesse、wheel展開の実測(いずれも取得)
@@ -799,7 +799,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 **料金の構造**: コアMIT無料。README・PyPI一次資料に課金の直接記載は無し(round1で確認した「JesseGPT等はサブスク」は検索結果の要約(推定 = 未検算、W-23)のまま、本回は逐語裏取りに至らず次回課題)
 
 **到達・導入・実行の記録**:
-- `pip install jesse`(既存venv、rc=0、実測)。**ただし共存 venv の numpy が 1.26.4 になり、pip 自身が依存衝突を警告した。警告が numpy の要求として名指しするのは 5 件(hftbacktest numpy<2.3・qstrader numpy>=2.0.0・vnpy numpy>=2.2.3・sparsediffpy numpy>=2.0.0・cvxpy numpy>=2.0.0)= 生ログ LV-10 の jesse 節の ERROR 行。なお mlflow の衝突は numpy ではなく cryptography(42.0.8)なので numpy の列から外した(監査 12 回目の指摘 2)。「2.x から」の部分は ERROR 行からの推定で、`Attempting uninstall: numpy` のような明示の記録は出力に無い(pandas の場合はあった)**(pip自身が警告、実測)**。**方法論上の教訓**: 複数の重量級ツールを1つのvenvに混在させると相互に壊れる。次回以降は候補ごとに隔離venvを分けるべき(本回の後半はhftbacktest/NautilusTrader/vectorbt/freqtradeをそれぞれ別venvに分離して対応した)
+- `pip install jesse`(既存venv、rc=0、実測)。ただし共存 venv の numpy が 1.26.4 になり、pip 自身が依存衝突を警告した。警告が numpy の要求として名指しするのは 5 件(hftbacktest numpy<2.3,>=2.0・qstrader numpy>=2.0.0・vnpy numpy>=2.2.3・sparsediffpy numpy>=2.0.0・cvxpy numpy>=2.0.0)= 生ログ LV-10 の jesse 節の ERROR 行。なお mlflow の衝突は numpy ではなく cryptography(42.0.8)なので numpy の列から外した(監査 12 回目の指摘 2)。「2.x から」の部分は ERROR 行からの推定で、`Attempting uninstall: numpy` のような明示の記録は出力に無い(pandas の場合はあった)。**方法論上の教訓**: 複数の重量級ツールを1つのvenvに混在させると相互に壊れる。次回以降は候補ごとに隔離venvを分けるべき(本回の後半はhftbacktest/NautilusTrader/vectorbt/freqtradeをそれぞれ別venvに分離して対応した)
 - wheel展開で確認した危険関連の事実: **`libzklink_sdk.so/.dll/.dylib`(Apex DEX向け)・`lighter-signer-*.so/.dll/.dylib`(Lighter DEX向け)というコンパイル済みネイティブバイナリを同梱**。これらはDEX(分散型取引所)のオンチェーン署名用SDKで、鍵を使わない限りは発火しないと見られるが、コンパイル済みバイナリの中身は静的監査していない(未確認)
 - 依存に`ray`(分散計算)・`redis`・`psycopg2-binary`(PostgreSQL)・`eth-account`/`eth-keys`/`eth-utils`/`rlp`/`hexbytes`(Ethereumウォレット関連ライブラリ)・`optuna`(ハイパーパラメータ最適化)・`mcp`(Model Context Protocol、AIエージェント関連)が含まれる(実測、pip installログ)
 - **最小の実行**: **未実施**。Jesseの`backtest`コマンドはプロジェクトディレクトリの初期化(`jesse init`相当)とPostgreSQL・Redisの起動を要求する設計で、本回の予算内では準備が完了しなかった
