@@ -1944,3 +1944,330 @@ K12 検査の出力の貼付           1 件
 ---- 合計 1 件
 ```
 
+
+## 区分1 — 5 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run5.log`。
+4 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run4.md`)で残った
+取り直し 4 件と、深掘り待ちの候補を、発見した順に潰した。**4 回目と同じく、根拠の欄にはどのフィールドを見たかを
+`info.author = "…"` の形で書き、語や件数はその場で数えた値だけを書いた。**
+
+### 当方の道具立て(`python3 scripts/tools_inventory.py` の出力全文。§8)
+
+```
+# 当方の道具立て(git ls-files から生成。2026-09-22T08:07:42Z、HEAD 47bc8e7。コマンド: python3 scripts/tools_inventory.py)
+
+## src/bot(package: ファイル数 / ファイル名)
+- src/bot: 7 / atomic_file.py constants.py logging_setup.py main.py products.py radar.py settings.py
+- src/bot/backtest: 3 / engine.py metrics.py walk_forward.py
+- src/bot/exchange: 2 / bitflyer_client.py resilience.py
+- src/bot/execution: 3 / gateway.py live.py paper.py
+- src/bot/indicators: 1 / core.py
+- src/bot/jpx: 4 / etf_auction_executor.py kabu_client.py on1_executor.py run_lock.py
+- src/bot/market_data: 3 / external_feed.py feed.py realtime.py
+- src/bot/monitoring: 6 / aggregate.py decision_text.py gates.py market_view.py notifier.py status.py
+- src/bot/order_management: 3 / manager.py order.py reconciler.py
+- src/bot/portfolio: 2 / persistence.py portfolio.py
+- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liquidations.py overnight.py sealed.py xborder_p2.py xborder_p2_fast.py xborder_p2_fx.py xborder_p2_state.py
+- src/bot/risk: 2 / kill_switch.py pre_trade_checks.py
+- src/bot/strategy: 9 / base.py breakout.py composite.py ema_cross.py inago.py range_fade.py rsi_reversion.py wick_reversal.py xborder_momentum.py
+
+## scripts(サブディレクトリは名前/、最上位は接頭辞。.py だけ)
+- research_*: 56 / research_anchor.py research_anchor_v2.py research_attention_vol.py research_avalanche.py research_basis.py research_board_calibration.py research_burst_atlas.py research_calm_range.py research_clock_burst.py research_exit_surface.py research_fast_cycle.py research_fx.py research_fx_carry.py research_fx_event_ticks.py research_fx_events.py research_fx_fundamentals.py research_fx_s4_judgment.py research_fx_sessions.py research_fx_tokyofix.py research_hft.py research_imbalance.py research_latency_grade.py research_latency_paths.py research_leader_surface.py research_legacy_elements.py research_m4_finecheck.py research_macro_calendar.py research_mainbot_exits.py research_maker_reaudit.py research_matilda_modern.py research_matilda_surface.py research_matilda_taro.py research_nk225_events.py research_overnight_on1.py research_overnight_onr.py research_position_ladder.py research_prediction_atlas.py research_range_reversed.py research_regime_composite.py research_scalp_exits.py research_scalp_opt.py research_seasonality.py research_signal_fade.py research_signals.py research_spread_mm.py research_storm.py research_storm_b.py research_storm_bracket.py research_storm_direction.py research_tournament.py research_trend_lt1.py research_two_sided_flow.py research_user_strategies.py research_vr_barrier.py research_wall_front.py research_yutai.py
+- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fetch_binance_daily.py fetch_binance_full.py fetch_binance_vision.py fetch_bitbank_daily.py fetch_bitflyer_executions_range.py fetch_bitflyer_lightchart.py fetch_bitmex_archive.py fetch_bitmex_insurance.py fetch_bybit_minutes.py fetch_coinalyze_liquidations.py fetch_daily_lt1.py fetch_deep.py fetch_deribit.py fetch_dukascopy.py fetch_external.py fetch_fx_calendar.py fetch_fx_calendar_2005_2014.py fetch_gate_liquidations.py fetch_history.py fetch_jpx_daily.py fetch_jpx_etf_daily.py fetch_kraken.py fetch_okx.py fetch_regime_composite.py fetch_tardis_samples.py
+- o3c_*: 22 / o3c_bitflyer_spread.py o3c_jev_state.py o3c_oi_distance.py o3c_price_level_ext.py o3c_price_level_table.py o3c_reaction.py o3c_reaction_judge.py o3c_reaction_r2.py o3c_rows4.py o3c_signal_calib.py o3c_signal_continue.py o3c_signal_continue_jev.py o3c_signal_explore.py o3c_signal_explore2.py o3c_signal_explore3.py o3c_signal_explore4.py o3c_signal_explore5.py o3c_signal_logit.py o3c_signal_materials.py o3c_signal_policy.py o3c_signal_stage2.py o3c_signal_value.py
+- render_*: 19 / render_exec_floor.py render_k1_body_wick.py render_k1_deepdive.py render_k1_exit_ablation.py render_k1_fresh_bitflyer.py render_k1_h1.py render_k1_h2.py render_k1_h3.py render_k1_h3_decomp.py render_k1_judgement.py render_k1_robustness.py render_k1_round5.py render_k1_trunc_compare.py render_k1_venue_compare.py render_k1_xvenue.py render_k1_xvenue2.py render_k1_year_tables.py render_k1_yearly_pnl.py render_prereg.py
+- measure_*: 16 / measure_exec_floor.py measure_katsuo_body_wick.py measure_katsuo_delay_decomp.py measure_katsuo_direction_bias.py measure_katsuo_dispersion.py measure_katsuo_effect.py measure_katsuo_exit_ablation.py measure_katsuo_judgement_vol.py measure_katsuo_robustness.py measure_katsuo_round5.py measure_katsuo_signal_horizon.py measure_katsuo_vol_bitflyer.py measure_katsuo_xvenue.py measure_liq_bands.py measure_liq_response.py measure_ws_latency.py
+- jev_*: 14 / jev_audit_eval.py jev_audit_loop.py jev_check.py jev_delegate.py jev_design.py jev_eval.py jev_ideas.py jev_ops.py jev_owner_log.py jev_prescreen.py jev_reply.py jev_report_intake.py jev_survey.py jev_trace_export.py
+- qa/: 13 / agreement.py make_known_answer.py make_known_answer_maker.py make_known_answer_maker3.py make_known_answer_steer.py maker_fill_ref.py maker_fill_ref_packet.py maker_fill_ref_packet_r2.py pipeline_known_answer_daily.py pipeline_known_answer_taker.py score_audit.py score_claims.py score_steer.py
+- phase2/: 12 / g1_state_analysis.py p2_01_final.py p2_01_run.py p2_01b_history.py p2_02_final.py p2_02_run.py p2_03_final.py p2_03_iter2.py p2_03_run.py p2_04_run.py p2_08_data.py p2_08_run.py
+- run_*: 11 / run_backtest.py run_board_round.py run_etf_measure_entry.py run_etf_measure_exit.py run_etf_measure_reconcile.py run_o3c_stage0.py run_on1_entry.py run_on1_exit.py run_on1_reconcile.py run_paper.py run_scalp_paper.py
+- check_*: 8 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bitflyer_data.py check_kabu_api.py check_liquidation_feeds.py check_liquidation_history_depth.py check_scan_report.py
+- build_*: 7 / build_basis.py build_bitflyer_lightchart_csv.py build_burst_library.py build_flow.py build_fx_event_library.py build_fx_event_library_2005_2014.py build_storm_library.py
+- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py record_realtime.py record_venues.py
+- jev/: 3 / client.py redact.py schemas.py
+- verify_*: 3 / verify_gates.py verify_liq_instrument.py verify_snapshots.py
+- (単発): 2 / _research_audit_gate.py dashboard.py
+- judge_*: 2 / judge_board_round.py judge_gates.py
+- k1_*: 2 / k1_binance_data_quality.py k1_source.py
+- paper_*: 2 / paper_on1.py paper_onr.py
+- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+- constants_*: 1 / constants_inventory.py
+- data_*: 1 / data_quality.py
+- explore_*: 1 / explore_o3c_oi_axis.py
+- extract_*: 1 / extract_tape.py
+- intake_*: 1 / intake_ledger.py
+- liquidation_*: 1 / liquidation_report.py
+- mirror_*: 1 / mirror_bitmex_archive.py
+- normalize_*: 1 / normalize_bitflyer_executions.py
+- phase2_*: 1 / phase2_seal.py
+- preflight_*: 1 / preflight_prereg.py
+- probe_*: 1 / probe_api_latency.py
+- replay_*: 1 / replay_scalp_storm.py
+- retention_*: 1 / retention_snapshot.py
+- tools_*: 1 / tools_inventory.py
+- tp_*: 1 / tp_operating_curve.py
+- trace_*: 1 / trace_metrics.py
+- validate_*: 1 / validate_composite.py
+- x_*: 1 / x_fetch.py
+- (.py 以外の scripts: 3 = scripts/fetch_all.sh scripts/install_git_hooks.sh scripts/regen_hook_manifest.sh)
+
+## config: 32
+  config/composite.yaml config/config.yaml config/constants.yaml config/etf_measure.yaml config/jev_delegation_tiers.yaml config/jev_design_examples/o3c_covariates.yaml config/jev_design_examples/o3c_observables.yaml config/jev_design_examples/signal2_covariates.yaml config/jev_design_examples/signal2_observables.yaml config/jev_design_examples/signal3_covariates.yaml config/jev_design_examples/signal3_observables.yaml config/jev_design_examples/signal4_covariates.yaml config/jev_design_examples/signal4_observables.yaml config/jev_design_examples/signal5_covariates.yaml config/jev_design_examples/signal5_observables.yaml config/jev_design_examples/signal6_covariates.yaml config/jev_design_examples/signal6_observables.yaml config/jev_design_examples/signal7_observables.yaml config/jev_design_examples/signal8_covariates.yaml config/jev_design_examples/signal8_observables.yaml config/jev_design_examples/signal8_observables_independent.yaml config/jev_design_examples/signal_covariates.yaml config/jev_design_examples/signal_observables.yaml config/jev_routes.yaml config/o3c_jev_state_bands.yaml config/o3c_signal_logit_chain.yaml config/o3c_signal_logit_first.yaml config/o3c_signal_logit_value_chain.yaml config/o3c_signal_logit_value_first.yaml config/on1_live.yaml config/products.yaml config/risk_limits.yaml
+
+## deploy: 19
+  deploy/bitflyer-bot.service deploy/bitflyer-fetch.service deploy/bitflyer-fetch.timer deploy/check_liq_recorder.bat deploy/etf_measure_entry.bat deploy/etf_measure_exit.bat deploy/fetch_all.bat deploy/mirror_bitmex.bat deploy/nightly_restart.bat deploy/on1_entry.bat deploy/on1_exit.bat deploy/probe_latency.bat deploy/reset_kill.bat deploy/restart_all.bat deploy/run_paper.bat deploy/setup.sh deploy/share_logs.bat deploy/start_all.bat deploy/stop_all.bat
+
+## tests(ファイル): 139
+  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops/notifications.jsonl tests/fixtures/jev_ops/status_page.html tests/test_app_fx_integration.py tests/test_audit_gates_wired.py tests/test_backtest.py tests/test_bitmex_mirror.py tests/test_board.py tests/test_board_round.py tests/test_board_walk.py tests/test_bot_research_overnight.py tests/test_build_flow.py tests/test_check_data_ledger.py tests/test_client.py tests/test_clock_burst.py tests/test_composite.py tests/test_constants.py tests/test_constants_inventory.py tests/test_dashboard.py tests/test_data_quality.py tests/test_data_quality_incremental.py tests/test_deploy.py tests/test_engine_maker_exit.py tests/test_etf_measure.py tests/test_extract_tape.py tests/test_fetch_backfill_scripts.py tests/test_fetch_binance_daily.py tests/test_fetch_binance_vision.py tests/test_fetch_history_candles.py tests/test_gz_members.py tests/test_intake_ledger.py tests/test_intent_map_rule.py tests/test_jev_audit_eval.py tests/test_jev_audit_loop.py tests/test_jev_check.py tests/test_jev_client.py tests/test_jev_delegate.py tests/test_jev_design.py tests/test_jev_ideas.py tests/test_jev_ops.py tests/test_jev_owner_log.py tests/test_jev_redact.py tests/test_jev_reply.py tests/test_jev_report_intake.py tests/test_jev_schemas.py tests/test_jev_scripts.py tests/test_jev_survey.py tests/test_jev_trace_export.py tests/test_judge_gates.py tests/test_k1_bitflyer_source.py tests/test_k1_bybit_source.py tests/test_k1_delay_decomp.py tests/test_k1_delay_entry.py tests/test_k1_flip_body.py tests/test_k1_lookahead.py tests/test_k1_no_invalidation.py tests/test_k1_round5.py tests/test_k1_seal_guard.py tests/test_k1_xvenue.py tests/test_liq_bands.py tests/test_liq_response.py tests/test_liq_response_dedup.py tests/test_liquidation_reader.py tests/test_maker_execution.py tests/test_market_data.py tests/test_market_view.py tests/test_max_hold.py tests/test_modes.py tests/test_o3c_jev_state.py tests/test_o3c_oi_distance.py tests/test_o3c_price_level_ext.py tests/test_o3c_price_level_table.py tests/test_o3c_reaction.py tests/test_o3c_reaction_judge.py tests/test_o3c_reaction_r2.py tests/test_o3c_rows4.py tests/test_o3c_signal_calib.py tests/test_o3c_signal_continue.py tests/test_o3c_signal_continue_jev.py tests/test_o3c_signal_explore.py tests/test_o3c_signal_explore2.py tests/test_o3c_signal_explore3.py tests/test_o3c_signal_explore4.py tests/test_o3c_signal_explore5.py tests/test_o3c_signal_materials.py tests/test_o3c_signal_policy.py tests/test_o3c_signal_stage2.py tests/test_o3c_signal_value.py tests/test_on1_forward.py tests/test_on1_live.py tests/test_onr.py tests/test_onr_forward.py tests/test_orders.py tests/test_paper_state.py tests/test_phase2_p2_01.py tests/test_phase2_p2_01_final.py tests/test_phase2_p2_02.py tests/test_phase2_p2_02_final.py tests/test_phase2_p2_03.py tests/test_phase2_p2_03_final.py tests/test_phase2_p2_03_iter2.py tests/test_phase2_p2_04.py tests/test_phase2_seal.py tests/test_portfolio_and_strategy.py tests/test_position_ladder.py tests/test_preflight_prereg.py tests/test_probe_api_latency.py tests/test_qa_make_known_answer.py tests/test_qa_make_known_answer_maker.py tests/test_qa_make_known_answer_maker3.py tests/test_qa_make_known_answer_steer.py tests/test_qa_maker_fill_ref.py tests/test_qa_pipeline_known_answer.py tests/test_qa_score_audit.py tests/test_radar.py tests/test_realtime_recorder.py tests/test_record_funding_basis.py tests/test_record_liquidations.py tests/test_record_liquidations_writer.py tests/test_record_venues.py tests/test_repair_gz_listing.py tests/test_research_protocol_rules.py tests/test_resilience.py tests/test_retention_snapshot.py tests/test_risk.py tests/test_scalp_logic.py tests/test_sealed_load_diagnostic.py tests/test_sealed_ts_us.py tests/test_short_margin.py tests/test_tp_sl.py tests/test_verify_snapshots.py tests/test_wick_stop.py tests/test_x_fetch.py tests/test_xborder.py tests/test_xborder_p2_fast.py tests/test_xborder_p2_fx.py tests/test_xborder_p2_known_answer.py tests/test_xborder_p2_state.py
+
+## .claude/hooks: 8
+  .claude/hooks/_verify_manifest.sh .claude/hooks/delegation_audit_gate.sh .claude/hooks/deny_protected_paths.sh .claude/hooks/jev_notice.sh .claude/hooks/owner_options_gate.sh .claude/hooks/owner_turn_digest.sh .claude/hooks/session_start_digest.sh .claude/hooks/trace_snapshot.sh
+
+## .claude/agents: 3
+  .claude/agents/owner-auditor-candidate.md .claude/agents/owner-auditor.md .claude/agents/owner-model-auditor.md
+
+## .claude/skills: 9
+  .claude/skills/delegated-study/SKILL.md .claude/skills/owner-audit/SKILL.md .claude/skills/owner-options/SKILL.md .claude/skills/owner-procedure/SKILL.md .claude/skills/research-protocol/SKILL.md .claude/skills/research-squad/SKILL.md .claude/skills/typesafe-ai/LICENSE .claude/skills/typesafe-ai/SKILL.md .claude/skills/x-research/SKILL.md
+
+## githooks: 1
+  githooks/pre-push
+
+## docs(.md): 296
+  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EVAL_2026-09-11.md docs/AUDITOR/EVAL_2026-09-11_control_review.md docs/AUDITOR/EVAL_2026-09-11b.md docs/AUDITOR/IMPROVEMENT.md docs/AUDITOR/JEV/LABELS_NOTES_2026-09-19.md docs/AUDITOR/JEV/PREREG_2026-09-19.md docs/AUDITOR/KNOWN_ANSWERS.md docs/AUDITOR/KNOWN_ANSWERS_ADDENDUM.md docs/AUDITOR/OWNER_MODEL_SOURCE.md docs/AUDITOR/PRINCIPLES.md docs/AUDITOR/PROCESS_METRICS.md docs/AUDITOR/PROPOSED_CHANGES_2026-09-11.md docs/AUDITOR/READDO/audit_stop.md docs/AUDITOR/READDO/before_unseal.md docs/AUDITOR/READDO/owner_objection.md docs/AUDITOR/READDO/push_blocked.md docs/AUDITOR/READDO/repeat_defect.md docs/AUDITOR/TREND.md docs/AUDITOR/VERDICTS/2026-09-11_k1_closure_entries.md docs/AUDITOR/VERDICTS/2026-09-11_proposed_changes_and_eval_b.md docs/AUDITOR/VERDICTS/2026-09-12_docs_reorg_execution.md docs/AUDITOR/VERDICTS/2026-09-12_docs_reorg_plan.md docs/AUDITOR/VERDICTS/2026-09-12_o3c_reframe_reading.md docs/AUDITOR/VERDICTS/2026-09-12_p14_liquidation_fix.md docs/AUDITOR/VERDICTS/2026-09-12_p4n_nightly_restart.md docs/AUDITOR/VERDICTS/2026-09-12_rules_reduction.md docs/AUDITOR/VERDICTS/2026-09-16_policy4_report.md docs/AUDITOR/VERDICTS/2026-09-17_anchor_report.md docs/AUDITOR/VERDICTS/2026-09-17_closure.md docs/AUDITOR/VERDICTS/2026-09-17_data_collection.md docs/AUDITOR/VERDICTS/2026-09-17_missing.md docs/AUDITOR/VERDICTS/2026-09-17_oi_distance.md docs/AUDITOR/VERDICTS/2026-09-17_price_level.md docs/AUDITOR/VERDICTS/2026-09-17_price_level_ext.md docs/AUDITOR/VERDICTS/2026-09-17_price_level_full.md docs/AUDITOR/VERDICTS/2026-09-17_price_level_rows4.md docs/AUDITOR/VERDICTS/2026-09-18_oi_distance_split.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_design.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r10.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r2.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r3.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r4.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r5.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r6.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r7.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r8.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_prereg_r9.md docs/AUDITOR/VERDICTS/2026-09-18_reaction_run12.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_prereg_r11.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_prereg_r12.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_r2_prereg.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_report.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_report_r2.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_report_r3.md docs/AUDITOR/VERDICTS/2026-09-19_reaction_result.md docs/AUDITOR/VERDICTS/2026-09-19_signal_design.md docs/AUDITOR/VERDICTS/2026-09-19_signal_explore2_design.md docs/AUDITOR/VERDICTS/2026-09-19_signal_explore2_report.md docs/AUDITOR/VERDICTS/2026-09-19_signal_explore_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_continue_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_continue_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore3_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore3_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore4_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore4_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore5_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_explore5_report.md docs/AUDITOR/VERDICTS/2026-09-20_signal_materials_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_policy_design.md docs/AUDITOR/VERDICTS/2026-09-20_signal_policy_result.md docs/AUDITOR/VERDICTS/2026-09-21_signal_value_design.md docs/AUDITOR/VERDICTS/2026-09-21_signal_value_result.md docs/AUDITOR/VERDICTS/2026-09-21_tools_scan_cat1.md docs/AUDITOR/VERDICTS/2026-09-21_tools_survey_prompt.md docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run2.md docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run3.md docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run4.md docs/AUDITOR/VERDICTS/2026-09-22_tools_survey_prompt_v12.md docs/AUDITOR/VERDICTS/README.md docs/AUDITOR/answers/KA-01.md docs/AUDITOR/answers/KA-02.md docs/AUDITOR/answers/KA-04.md docs/AUDITOR/answers/KA-05.md docs/AUDITOR/answers/KA-06.md docs/AUDITOR/answers/KA-07.md docs/AUDITOR/answers/KA-08.md docs/AUDITOR/answers/KA-09.md docs/AUDITOR/answers/KA-10.md docs/AUDITOR/answers/KA-16.md docs/AUDITOR/answers/KA-17.md docs/AUDITOR/answers/KA-18.md docs/AUDITOR/answers/KA-19.md docs/AUDITOR/answers/KA-20.md docs/AUDITOR/answers/KA-21.md docs/AUDITOR/answers/KA-22.md docs/AUDITOR/answers/KA-23.md docs/AUDITOR/answers/KA-24.md docs/AUDITOR/answers/KA-25.md docs/AUDITOR/answers/KA-26.md docs/AUDITOR/answers/KA-27.md docs/AUDITOR/answers/KA-28.md docs/AUDITOR/before/HYGIENE_2026-09-11.md docs/AUDITOR/before/KA-01.md docs/AUDITOR/before/KA-02.md docs/AUDITOR/before/KA-04.md docs/AUDITOR/before/KA-05.md docs/AUDITOR/before/KA-06.md docs/AUDITOR/before/KA-07.md docs/AUDITOR/before/KA-08.md docs/AUDITOR/before/KA-09.md docs/AUDITOR/before/KA-10.md docs/AUDITOR/before/KA-16.md docs/AUDITOR/before/KA-17.md docs/AUDITOR/before/KA-18.md docs/AUDITOR/before/KA-19.md docs/AUDITOR/before/KA-20.md docs/AUDITOR/before/KA-21.md docs/AUDITOR/before/KA-22.md docs/AUDITOR/before/KA-23.md docs/AUDITOR/before/KA-24.md docs/AUDITOR/before/KA-25.md docs/AUDITOR/before/KA-26.md docs/AUDITOR/before/KA-27.md docs/AUDITOR/before/KA-28.md docs/DATA.md docs/DATA/SCAN_2026-09-16.md docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/delegations/20260919_o3c_signal_explore2_prompt.md docs/DATA/delegations/20260920_o3c_cascade_read_prompt.md docs/DATA/delegations/20260920_o3c_signal_continue_jev_prompt.md docs/DATA/delegations/20260920_o3c_signal_continue_prompt.md docs/DATA/delegations/20260920_o3c_signal_explore3_prompt.md docs/DATA/delegations/20260920_o3c_signal_explore4_prompt.md docs/DATA/delegations/20260920_o3c_signal_explore5_prompt.md docs/DATA/delegations/20260920_o3c_signal_jev_state_prompt.md docs/DATA/delegations/20260920_o3c_signal_materials2_prompt.md docs/DATA/delegations/20260920_o3c_signal_materials_prompt.md docs/DATA/delegations/20260920_o3c_signal_policy2_prompt.md docs/DATA/delegations/20260920_o3c_signal_policy2_stage2_prompt.md docs/DATA/delegations/20260920_o3c_signal_policy_prompt.md docs/DATA/delegations/20260920_o3c_signal_v4_prompt.md docs/DATA/delegations/20260920_o3c_signal_v4_stage2_prompt.md docs/DATA/delegations/20260921_o3c_signal_value_prompt.md docs/DATA/delegations/20260921_o3c_signal_value_tp_prompt.md docs/DATA/delegations/20260921_tools_survey_prompt.md docs/DATA/delegations/20260922_tools_survey_prompt.md docs/DATA/probes/20260913_liquidation_integrity.md docs/DATA/probes/20260919_reaction_prereg_outputs.md docs/DATA/probes/20260920_o3c_cascade_read.md docs/DATA/probes/20260920_o3c_materials_read.md docs/DATA/surveys/BINANCE_CM_MMR_2026-09-17.md docs/DATA/surveys/BITFLYER_HISTORY_SOURCES.md docs/DATA/surveys/ETF_ALTERNATIVES.md docs/DATA/surveys/G2_DATA_INVENTORY.md docs/DATA/surveys/LIQUIDATION_FEED_REACHABILITY.md docs/DATA/surveys/LIQUIDATION_HISTORY_SURVEY.md docs/DATA/surveys/O3C_PROCUREMENT_2026-09-12.md docs/DATA/surveys/O3C_PROCUREMENT_ACCEPTANCE_2026-09-13.md docs/DATA/surveys/O3C_PROCUREMENT_SUPP_A_2026-09-12.md docs/DATA/surveys/O3C_PROCUREMENT_SUPP_B_2026-09-12.md docs/DATA/surveys/O3C_PROCUREMENT_SUPP_C_HYPERLIQUID_2026-09-12.md docs/DATA/surveys/O3C_PROCUREMENT_SUPP_D_VENUE_UNIVERSE_2026-09-12.md docs/DATA/surveys/O3C_VERIFY_LIQUIDATION_SIDE_2026-09-13.md docs/DATA_CONSUMPTION_LOG.md docs/DELEGATION.md docs/DISCUSSIONS/2026-09-04_postmortem_tp_precursor.md docs/DISCUSSIONS/2026-09-06_data_dependency.md docs/DISCUSSIONS/2026-09-08_external_ecosystem.md docs/DISCUSSIONS/2026-09-08_matilda_intent_vs_test.md docs/DISCUSSIONS/2026-09-09_prereg_deep_dive.md docs/DISCUSSIONS/2026-09-09_the_day_nothing_shipped.md docs/DISCUSSIONS/2026-09-12_docs_reorg_plan.md docs/DISCUSSIONS/2026-09-12_generation_vs_filtering.md docs/DISCUSSIONS/2026-09-12_rules_inventory.md docs/DISCUSSIONS/2026-09-12_rules_reduction_proposal.md docs/DISCUSSIONS/2026-09-13_root_cause.md docs/DISCUSSIONS/2026-09-13_worst_day.md docs/DISCUSSIONS/2026-09-14_instruction_adherence/PLAN.md docs/DISCUSSIONS/2026-09-14_instruction_adherence/README.md docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md docs/DISCUSSIONS/2026-09-16_scope_claim_gate_proposal.md docs/DISCUSSIONS/2026-09-18_jev_trade_integration_decision_for_fable_v2.md docs/DISCUSSIONS/2026-09-19_jev_adoption_review.md docs/DISCUSSIONS/2026-09-19_jev_common_module_review.md docs/DISCUSSIONS/2026-09-19_jev_review_inventories/A_judgment_points.md docs/DISCUSSIONS/2026-09-19_jev_review_inventories/B_failures.md docs/DISCUSSIONS/2026-09-19_jev_review_inventories/C_vendor_sources.md docs/DISCUSSIONS/2026-09-19_jev_review_inventories/D_study_notes.md docs/INCIDENTS.md docs/INDEX.md docs/JEV.md docs/NEGATIVE_FACTS.md docs/OPERATIONS.md docs/OPERATIONS_JPX.md docs/OWNER_LOG.md docs/OWNER_PROCEDURES.md docs/OWNER_STATUS.md docs/PHASE2/EXEC/EXEC_FLOOR_PREREG.md docs/PHASE2/EXEC/RESULT.md docs/PHASE2/INSTRUMENT_VERIFY/AUDIT_LEDGER_2026-09-14.md docs/PHASE2/INSTRUMENT_VERIFY/REPORT_2026-09-14.md docs/PHASE2/INSTRUMENT_VERIFY/REPORT_2026-09-16_policy4.md docs/PHASE2/INSTRUMENT_VERIFY/REPORT_2026-09-17_anchor.md docs/PHASE2/K1/AUDIT_TRIAGE.md docs/PHASE2/K1/BINANCE_PLAN.md docs/PHASE2/K1/DEEPDIVE_PLAN.md docs/PHASE2/K1/FRESH_BITFLYER_PREREG.md docs/PHASE2/K1/H1_PREREG.md docs/PHASE2/K1/H2_PREREG.md docs/PHASE2/K1/H3_DECOMP_PREREG.md docs/PHASE2/K1/H3_PREREG.md docs/PHASE2/K1/HANDOFF.md docs/PHASE2/K1/JUDGEMENT_PREREG.md docs/PHASE2/K1/PREFLIGHT.md docs/PHASE2/K1/PREREG.md docs/PHASE2/K1/RESULT.md docs/PHASE2/K1/ROUND5_PREREG.md docs/PHASE2/K1/XVENUE_PREREG.md docs/PHASE2/K1/binance/CHECKS.md docs/PHASE2/O3C/BRANCH_MAP.md docs/PHASE2/O3C/DATA_AVAILABILITY.md docs/PHASE2/O3C/DATA_COLLECTION_2026-09-17.md docs/PHASE2/O3C/INTENT_MAP.md docs/PHASE2/O3C/MISSING_2026-09-17.md docs/PHASE2/O3C/OWNER_INTENT_2026-09-12.md docs/PHASE2/O3C/PRICE_LEVEL/DESIGN_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/EXT_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/FULL_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/OI_DISTANCE_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/OI_DISTANCE_SPLIT_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_DESIGN_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_PREREG_DRAFT_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_R2_PREREG_2026-09-19.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_RESULT_2026-09-19.md docs/PHASE2/O3C/PRICE_LEVEL/REACTION_RUN12_2026-09-18.md docs/PHASE2/O3C/PRICE_LEVEL/ROWS4_2026-09-17.md docs/PHASE2/O3C/PRICE_LEVEL/SAMPLE_2026-09-17.md docs/PHASE2/O3C/REFRAME/DIFF_2026-09-12.md docs/PHASE2/O3C/REFRAME/LEAD_READING_2026-09-12.md docs/PHASE2/O3C/REFRAME/data_engineer.md docs/PHASE2/O3C/REFRAME/discretionary_trader.md docs/PHASE2/O3C/REFRAME/liquidation_engine.md docs/PHASE2/O3C/REFRAME/market_maker.md docs/PHASE2/O3C/REFRAME/microstructure.md docs/PHASE2/O3C/SIGNAL/CONTINUE_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/CONTINUE_JEV_RUN_NOTE_2026-09-20.md docs/PHASE2/O3C/SIGNAL/EXPLORE2_DELEGATE_REPORT_2026-09-19.md docs/PHASE2/O3C/SIGNAL/EXPLORE3_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/EXPLORE4_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/EXPLORE5_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/JEV_STATE_PREVIEW_2026-09-20.md docs/PHASE2/O3C/SIGNAL/MATERIALS2_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/MATERIALS_DELEGATE_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/POLICY_STAGE1_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/POLICY_STAGE2_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW2_2026-09-19.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW3_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW4_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW5_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW6_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW7_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW8_2026-09-20.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW9_2026-09-21.md docs/PHASE2/O3C/SIGNAL/REFUTER_REVIEW_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_CONTINUE_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_CONTINUE_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_DESIGN_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE2_DESIGN_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE2_RESULT_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE3_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE3_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE4_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE4_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE5_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE5_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_EXPLORE_RESULT_2026-09-19.md docs/PHASE2/O3C/SIGNAL/SIGNAL_MATERIALS_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_DESIGN_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_POLICY_RESULT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_DESIGN_2026-09-21.md docs/PHASE2/O3C/SIGNAL/SIGNAL_VALUE_RESULT_2026-09-21.md docs/PHASE2/O3C/SIGNAL/STAGE2_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/V4_STAGE1_REPORT_2026-09-20.md docs/PHASE2/O3C/SIGNAL/VALUE_STAGE1_REPORT_2026-09-21.md docs/PHASE2/O3C/SIGNAL/VALUE_STAGE2_REPORT_2026-09-21.md docs/PHASE2/O3C/STAGE0A_2026-09-14.md docs/PHASE2/O3C/TRIGGER_TRACE.md docs/PROJECT_GOAL.md docs/STRATEGY_IDEAS.md docs/legacy/KATSUO_INTENT_MAP.md docs/legacy/KATSUO_PARAMETER_INVENTORY.md docs/legacy/README.md
+
+## backtest_data(ディレクトリ数)
+  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetch_JPX_n225f_months_20260906 audit_fetch_JPX_tick_20260906 audit_fetch_P2-08_docs_20260906 audit_fetch_P2-08b_20260906 audit_fetch_bitflyer_history_20260906 audit_fetch_etf_alternatives_20260906 audit_fetch_etf_units_20260906 audit_fetch_micro_fee_20260906 auto_bitflyer_executions_20260905 auto_bitflyer_executions_20260921 auto_oi_snapshots_20260905 auto_oi_snapshots_20260921 auto_okx_long_short_ratio_20260905 auto_okx_open_interest_1h_20260905 auto_okx_open_interest_1h_20260921 auto_okx_open_interest_5m_20260905 auto_okx_open_interest_5m_20260906 auto_okx_open_interest_5m_20260907 auto_okx_open_interest_5m_20260908 auto_okx_open_interest_5m_20260909 auto_okx_open_interest_5m_20260910 auto_okx_open_interest_5m_20260911 auto_okx_open_interest_5m_20260912 auto_okx_open_interest_5m_20260915 auto_okx_open_interest_5m_20260918 auto_okx_open_interest_5m_20260921 auto_venues_20260905 auto_venues_20260921 binance_BTCUSDT_1m.csv binance_BTCUSDT_1m_20170801_20231231 binance_BTCUSDT_1m_20240101_20260831 binance_BTCUSDT_1m_210d_20260820.csv.gz binance_BTCUSDT_1s_20260723_20260906 binance_BTCUSDT_aggTrades_20260723_20260906 binance_BTCUSDT_aggTrades_tardis_days binance_XRPUSDT_1d.csv binance_XRPUSDT_1m.csv binance_XRPUSDT_4h.csv binance_cm_o3c_20260913 binance_cm_o3c_supp_20260917 binance_um_BTCUSDT_aggTrades_20260723_20260906 bitbank_btc_jpy_transactions_monthly_first_days bitbank_xrp_jpy_1m.csv bitflyer_executions_backfill_20260921 bitflyer_executions_us_20260723_20260906 bitflyer_lightchart_BTC_JPY_1m_20260906 bitflyer_lightchart_FX_BTC_JPY_1m_20260906 bitmex_insurance_20260912 bitmex_trade_1s_XBTUSD board_round_20260904 burst_events_20260820 bybit_BTCUSDT_1m_20260910 bybit_reachability_check_20260906 candles_BTC_JPY_20260820.csv candles_ETH_JPY_20260820.csv candles_FX_BTC_JPY_20260820.csv candles_FX_BTC_JPY_30d_20260820.csv candles_FX_BTC_JPY_31d_20260823.csv.gz candles_XRP_JPY_20260820.csv coinalyze_liquidations_20260921 daily_btcusd_bitstamp_20260828.csv.gz daily_btcusd_coinbase_20260828.csv.gz daily_btcusd_yahoo_20260828.csv.gz daily_ethusd_bitstamp_20260828.csv.gz daily_ethusd_coinbase_20260828.csv.gz daily_ethusd_yahoo_20260828.csv.gz executions_FX_BTC_JPY_31d_20260823.csv.gz executions_FX_BTC_JPY_31d_20260908 flow_FX_BTC_JPY_20260820.csv fred_DEXJPUS.csv fred_DFF.csv fred_DGS2.csv fred_IR3TIB01JPM156N.csv fred_IRSTCI01JPM156N.csv fx_btc_jpy_1m_continuous_20260906 fx_event_ticks_2005_2014 fx_event_ticks_2015_2026 fx_fundamentals_20260822 fx_usdjpy_1m_20170801_20221231 fx_usdjpy_1m_20260822.csv.gz gate_liquidations_20260908 gmo_swap_usdjpy.csv jp_factors_20260905 jpx_daily_report_json_20260908 jpx_etf_daily_20260905 jpx_etf_daily_20260906_topix_alt liquidations_repaired_20260912 liquidations_repaired_20260917 mini_topixf_225labo_20260907 n225f_225labo_20260828 nk225_events_20260904 o3c_oi_distance_20260917 o3c_oi_distance_split_20260918 o3c_price_level_band_20260917 o3c_price_level_bundle_first_20260917 o3c_price_level_full_20260917 o3c_price_level_full_20260917_b005 o3c_price_level_full_20260917_b025 o3c_price_level_full_20260917_w72 o3c_price_level_full_20260917_w8 o3c_price_level_rows4_20260917 o3c_price_level_sample_20260917 o3c_price_level_sample_20260917_limitprice o3c_reaction_20260918_anchor o3c_reaction_20260918_anchor_trades o3c_reaction_20260918_anchor_trades_sample o3c_reaction_20260918_anchor_v1_rawcols o3c_reaction_20260918_full o3c_reaction_20260918_judge o3c_reaction_20260918_sample o3c_reaction_20260918_scale12_judgmentdays o3c_signal_continue_20260920 o3c_signal_explore2_20260919 o3c_signal_explore3_20260920 o3c_signal_explore4_20260920 o3c_signal_explore5_20260920 o3c_signal_explore_20260919 o3c_signal_materials_20260920 o3c_signal_policy_20260920 o3c_signal_value_20260921 okx_20260905 okx_btc_lsratio_1h_20260823.csv okx_btc_lsratio_5m_20260823.csv okx_btc_oi_1h_20260823.csv okx_btc_oi_5m_20260823.csv phase2_runs phase2_sealed qa_known_answer_20260905 qa_known_answer_maker3_20260907 qa_known_answer_maker3_v2_20260905 qa_known_answer_maker3_v3_20260905 qa_known_answer_maker4_20260905 qa_known_answer_maker4_r2_20260905 qa_known_answer_maker_20260905 qa_known_answer_steer_20260905 qa_pipeline_daily_20260905 qa_pipeline_daily_20260906 qa_pipeline_taker_20260905 regime_composite_20260901 reit_onr_20260904 storm_events_20260820 topixf_225labo_20260907 venue_survey_20260827 yutai_20260904
+```
+
+### 検索計画
+
+委任文 §2「**2 回目以降の実行**: 前回の「残りの候補名」があれば、まずそれを深掘りする(検索計画は打ち直さない)」と、
+リードの起動指定「**検索計画 6 本はまだ打ち直しません。**残りの候補を先に潰します」に従い、この回も 6 本とも打っていない。
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (未作成) | (未作成) | 未実行(残りの候補が空になっていないため) |
+| 中間 | (未作成) | (未作成) | 未実行(同上) |
+| 広い | (未作成) | (未作成) | 未実行(同上) |
+
+### 出典
+
+| URL / 経路 | 方法 | 生ログの行 |
+|---|---|---|
+| https://github.com/stefan-jansen/zipline-reloaded | WebFetch | 2 |
+| https://github.com/gbeced/basana | WebFetch | 4 |
+| https://github.com/mementum/backtrader | WebFetch | 5 |
+| https://github.com/edtechre/pybroker | WebFetch | 6 |
+| https://github.com/pmorissette/bt | WebFetch | 7 |
+| https://api.github.com/repos/stefan-jansen/zipline-reloaded | curl(403) | 9 |
+| https://pypistats.org/api/packages/lib-pybroker/recent | curl(429) | 12 |
+| https://ungh.cc/repos/stefan-jansen/zipline-reloaded | curl | 26 |
+| https://api.pepy.tech/api/v2/projects/lib-pybroker | curl(401) | 27 |
+| https://web.archive.org/web/2026/https://jesse.trade/pricing | curl(接続切断) | 28 |
+| https://jesse.trade/help/faq/why-do-i-have-to-pay-for-live-i-thought-its-open-source | WebFetch(403) | 29 |
+| https://docs.jesse.trade/docs/livetrade.html | WebFetch | 30 |
+| https://jesse.trade/pricing(UA を 2 種類で) | curl(403) | 31 |
+| http://archive.org/wayback/available?url=jesse.trade/pricing | curl | 33 |
+| https://pypistats.org/packages/lib-pybroker | WebFetch | 25 |
+| https://github.com/robcarver17/pysystemtrade | git clone --depth 1 | 35 |
+| https://pypi.org/pypi/ziplime/json ほか 4 件 | curl | 40 |
+| https://raw.githubusercontent.com/jrmeier/fast-trade/master/LICENSE | curl | 67 |
+| https://ungh.cc/repos/jrmeier/fast-trade | curl | 68 |
+| https://ungh.cc/repos/Ziplime/ziplime | curl(接続時間切れ) | 69 |
+| https://pypistats.org/api/packages/fast-trade/recent | curl(429) | 70 |
+| https://github.com/jrmeier/fast-trade | WebFetch | 71 |
+| https://pypistats.org/packages/fast-trade | WebFetch | 72 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **GitHub のコミット総数は、リポジトリの HTML を `WebFetch` で読めば取れる。**4 回目に「この端点は星と fork しか返さない」として未確認で残した項目が、この経路で埋まった。curl での GitHub API は 403、`mcp__github__list_commits` はこのセッションの許可リスト(`komekome898-web/trade`)外として拒否される | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:2 と :8 と :9 |
+| 2 | **`ungh.cc`(GitHub の公開の読み取り専用の代理)は鍵なしで星の実数を返す。**GitHub の HTML は `1.9k` のように丸めるので、実数が要るときはこちらを使う | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:26 |
+| 3 | 4 回目に「この環境の GitHub 検索の端点だけが返さない」と書かれた `stefan-jansen/zipline-reloaded` は、HTML でも `ungh.cc` でも取れた。**返さないのは検索の端点だけで、リポジトリの情報そのものは 2 経路で取れる** | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:2 と :26 |
+| 4 | **pypistats の API が 429 でも、同じサイトの HTML を `WebFetch` で読むと同じ数が取れる。**4 回目に 4 回とも 429 で諦めた `lib-pybroker` の週DL数は、この経路で埋まった | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:12 と :25 |
+| 5 | **PySystemtrade は「純 Python の研究用リポジトリ」だが、clone すると大きい。**中身の大半は本体のコードではなく同梱の相場データで、`data/` だけで大部分を占める | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:35 と :44 |
+| 6 | **この環境の Python の版が導入の足切りになる道具がある。**`ziplime` と `OctoBot` は `requires_python` が Python 3.12 以上で、この環境の Python 3.11.15 では pip が候補を 1 つも見つけない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:47 と :50 と :52 |
+| 7 | **`fast-trade` は公開されている最新版に、自前の DataFrame を渡す経路の欠陥がある。**`build_data_frame.py` の 311 行の `infer_frequency` は引数 1 個だが、同じファイルの 78 行が引数 2 個で呼ぶ。`chart_period` を指定すると必ず TypeError で止まる | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:60 |
+| 8 | **`fast-trade` は `datafile` を指定しないと取引所からデータを取りに行く。**逃げ道として `datafile` を指定すると `Exchange None not supported` で止まり、対応先は `["binanceus", "binancecom", "coinbase"]` の 3 つだけだった。自前データを渡す正しい経路は `chart_period` を外して DataFrame を直接渡すこと | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:60 と :59 |
+| 9 | **`bt` に続いて `fast-trade` も、注文の種別という概念を持たない。**導入先の `*.py` を走査して `limit_order` / `market_order` / `"limit"` / `order_type` の一致が 0 件。委任文 §5-4 の「成行と指値の 1 往復」がここでも書けない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:57 |
+| 10 | **`fast-trade` は依存に `fastmcp` を持ち、配布物に `mcp_server.py` を同梱する。**バックテストの道具が LLM のエージェントから呼ばれる口を最初から持っている。当方の道具立てには対応物が無い | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:72 |
+| 11 | **Jesse の実弾プラグインの金額は、この環境からはどの経路でも取れなかった。**`jesse.trade` は UA を変えても curl も WebFetch も 403、Wayback には保存が無い(`archived_snapshots` が空)。一方 `docs.jesse.trade` は 200 で、逐語「you need to register on our website to generate your license key」「The package is pre-built and the access is limited to those with an active license」までは取れた。金額の記載はこの文書に無い | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:28 から :33 |
+
+### 候補の一覧
+
+発見順(3 回目から引き継いだ順序のまま)。行頭の `[深掘り]` は §4.0 の表に語彙のすべての項目の行を持つものだけに付ける。それ以外は「浅い」と、何が未確認かを書く。
+
+1. `Basana` — 非同期・イベント駆動の暗号資産向け枠組み。Apache-2.0。4 回目に深掘り済み。この回ではコミット数だけを取り直した。
+2. `Backtrader` — バックテストの機関。GPLv3+。4 回目に深掘り済み。この回ではコミット数だけを取り直した。
+3. PySystemtrade — **この回で clone を打ったが、大きすぎたので止めた。**リードの条件(200 MB を超えたら止めて消す)に従い、測って消した。**浅い**(版・依存・導入・最小実行が未確認)。
+4. `PyBroker` — PyPI 上の名前は lib-pybroker。Apache License 2.0 with Commons Clause。4 回目に深掘り済み。この回ではコミット数と週DL数を取り直した。
+5. `bt` — MIT。注文の種別という概念が無い。4 回目に深掘り済み。この回ではコミット数だけを取り直した。
+6. Ziplime — **この環境では導入できない。**pip が候補を 1 つも見つけない(`requires_python` が Python 3.12 以上、この環境は Python 3.11.15)。**浅い**(ライセンス・GitHub の所在・最小実行が未確認。PyPI の `info.license` が None、`info.license_expression` も None、`project_urls` も None でリポジトリの所在が PyPI からは分からない。`ungh.cc/repos/Ziplime/ziplime` は接続時間切れ)。
+7. Superalgos — PyPI に無し。GitHub の LICENSE は Apache License Version 2.0(3 回目の実測)。**浅い**(版・更新日・導入・最小実行が未確認。Node.js 系で pip の経路に無い。この回は着手していない)。
+8. OpenTrader — PyPI に無し。GitHub の master ブランチの LICENSE は Apache License Version 2.0(3 回目の実測)。**浅い**(版・更新日・導入・最小実行が未確認。この回は着手していない)。
+9. CryptoSignal — PyPI に無し。GitHub の LICENSE は MIT License(3 回目の実測)。**浅い**(版・更新日・導入・最小実行が未確認。この回は着手していない)。
+10. [深掘り] `fast-trade` — **この回の深掘り。**AGPL-3.0。低コードのバックテストの library。導入・最小実行・配布物の検査まで到達。注文の種別の概念が無く、最新版に自前 DataFrame の経路の欠陥がある。依存に `fastmcp` を持ち `mcp_server.py` を同梱する。
+11. OctoBot — GPL-3.0。**この環境では導入できない**(`requires_python` が Python 3.12 以上)。**浅い**(導入・最小実行が未確認)。
+12. pybotters — MIT。**浅い**(導入・最小実行・対応取引所の一次資料が未確認。この回は PyPI の情報だけを取り直した)。
+13. DeviaVir/zenbot — 本家 carlos8f/zenbot の分岐。**浅い**(Node.js の導入・最小実行・保守の状態が未確認。この回は着手していない)。
+14. Bot18 — carlos8f の後継。**浅い**(ライセンス欄・導入・最小実行が未確認。この回は着手していない)。
+15. Mendl-Labs/BacktestingCore — master ブランチの LICENSE は Functional Source License, Version 1.1, ALv2 Future License(4 回目の実測)。**浅い**(README の原文・版・導入が未確認。この回は着手していない)。
+16. Luczinsritter/event_driven_backtesting_engine — LICENSE ファイルは main と master のどちらも 404(4 回目の実測)。**浅い**(ライセンスの根拠がバッジだけ。版・導入・最小実行が未確認。この回は着手していない)。
+17. mlflow — 実験の追跡の道具。**浅い**(単体での導入・最小実行をしていない。この回は PyPI の情報だけを取り直した。`info.license` は Databricks の著作権表示の文言で、SPDX の識別子ではない)。
+18. `zipline-reloaded` — 3 回目に深掘り済み。この回では星とコミット数を取り直した。
+19. `Jesse` — 3 回目に深掘り済み。この回では実弾プラグインの金額を取り直そうとして、どの経路でも取れなかった。
+20. `VnPy` — 3 回目に深掘り済み。この回では何も足していない。
+21. `Qlib` — 3 回目に深掘り済み。この回では何も足していない。
+22. `Lean CLI` — 3 回目に深掘り済み。この回では何も足していない。
+23. `hftbacktest` — 1 回目に深掘り済み。この回では何も足していない。
+
+### ツール1件ごとの表
+
+#### §4.0 の機械可読の表
+
+**この回の深掘りは `fast-trade` の 1 件である。**残りの行は、4 回目のリードの検収が「取り直し」として渡した項目と、
+この回に新しく測った項目だけを持つ(§4.0 の語彙のすべての項目を持つのは `fast-trade` だけ)。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `fast-trade` | 版 | 2.1.0 | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(info.version) |
+| `fast-trade` | 最終更新日 | 2026-08-20T04:59:18 | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(最新版の upload_time) |
+| `fast-trade` | ライセンス | GNU AFFERO GENERAL PUBLIC LICENSE Version 3, 19 November 2007。PyPI の info.license は "GNU AGPLv3"、info.license_expression は None。GitHub の表示は AGPL-3.0 | 一次資料 | https://raw.githubusercontent.com/jrmeier/fast-trade/master/LICENSE 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:73 と :48 と :77 |
+| `fast-trade` | 言語と動作環境 | Python >=3.10。この環境は Python 3.11.15 で導入できた | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(info.requires_python)/ docs/DATA/probes/20260922_tools_1_run5.log:55 |
+| `fast-trade` | 対応取引所 | archive/update_kline.py の supported_exchanges は ["binanceus", "binancecom", "coinbase"]。国内の取引所は入っていない。自前の DataFrame を渡す経路なら取引所に依存しない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:59 |
+| `fast-trade` | 星 | 596(fork 63、watchers 11) | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:74(ungh.cc の stars / forks / watchers) |
+| `fast-trade` | コミット数 | 313 | 一次資料 | https://github.com/jrmeier/fast-trade 取得日 2026-09-22(リポジトリの見出しの Commits)/ docs/DATA/probes/20260922_tools_1_run5.log:77 |
+| `fast-trade` | 保守者数 | PyPI の info.author = None、info.maintainer = None。PyPI からは人数が分からない。GitHub の所有者は jrmeier | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(info.author / info.maintainer)/ docs/DATA/probes/20260922_tools_1_run5.log:48 |
+| `fast-trade` | 週DL数 | last_week=44、last_month=220、last_day=2 | 一次資料 | https://pypistats.org/packages/fast-trade 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:78。API の端点 /api/packages/fast-trade/recent は 429 |
+| `fast-trade` | 初回公開日 | 2020-02-17T01:31:46 | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(releases の最古 upload_time) |
+| `fast-trade` | 既知の脆弱性 | PyPI の vulnerabilities は長さ 0 | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(vulnerabilities) |
+| `fast-trade` | 料金体系 | AGPL-3.0 の無償配布。PyPI の project_urls は Homepage と Repository の 2 つだけで、料金ページに当たるものが無い。**AGPL は、改変して網越しに使わせる場合に原文の公開を求める**ので、無償でも条件が軽いわけではない | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(project_urls)/ https://raw.githubusercontent.com/jrmeier/fast-trade/master/LICENSE 取得日 2026-09-22 |
+| `fast-trade` | 無料枠の上限 | 本体側に上限の記述なし。archive の機能で取引所からデータを取る段では各取引所の API の制限が掛かるが、その条件は本調査では取っていない | 推定 | AGPL の配布と、導入・最小実行のどちらでも鍵・登録を求められなかったことからの外挿(docs/DATA/probes/20260922_tools_1_run5.log:55 と :66) |
+| `fast-trade` | 課金開始条件 | 本体には無い。依存の fastmcp を使って LLM から呼ぶ段では、呼ぶ側のモデルの鍵と課金が要る(この調査では打っていない) | 推定 | requires_dist に fastmcp があることからの外挿(docs/DATA/probes/20260922_tools_1_run5.log:72) |
+| `fast-trade` | 隠れた依存 | 導入した pkgs の中に相場データの提供元は入らない。ただし backtest に datafile を指定して df を渡さないと、archive が取引所からデータを取りに行く経路に入る | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:55 と :60(ValueError: Exchange None not supported) |
+| `fast-trade` | 登録の要否 | 不要。鍵なしで導入・合成の足の投入・最小実行まで到達 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:66 |
+| `fast-trade` | 到達経路 | PyPI の index から pip install が通る | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:55 |
+| `fast-trade` | 導入可否 | 可。隔離 venv に導入 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:55(rc=0) |
+| `fast-trade` | install所要秒 | 72 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:55(install_time_s) |
+| `fast-trade` | 依存数 | 108 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:55(pkgs)。PyPI の requires_dist は 16(うち 4 件は extra == "dev") |
+| `fast-trade` | pip check | No broken requirements found. | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:55(pip_check) |
+| `fast-trade` | 最小実行の可否 | 可。ただし `chart_period` を外す必要がある(付けると TypeError で必ず止まる) | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:60 と :66 |
+| `fast-trade` | 最小実行の中身 | 合成の 1 分足 300 本(乱数の種 7)を DataFrame で直接渡し、sma_short(5)と sma_long(20)を作って「終値 > sma_long で建て、終値 < sma_short で外す」を回した。手数料 comission=0.05。結果は取引 62 件・equity_final 951.71・total_fees 15.228。**成行と指値の往復は書けない**(注文の種別が無く、足の終値で建てて外すだけ) | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:66 から :69 |
+| `fast-trade` | 実行所要秒 | 0.05 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:67(TIME_S) |
+| `fast-trade` | wheel展開 | fast_trade-2.1.0-py3-none-any.whl を pip download --no-deps で取り、41 ファイルを列挙 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:71(FILES) |
+| `fast-trade` | setup.py導入時実行 | wheel に setup.py は 0 件 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:71(setup_py) |
+| `fast-trade` | 同梱バイナリ | 0 件(.so / .pyd / .dll / .dylib / .exe のいずれも無い) | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:71(binaries) |
+| `fast-trade` | 外部送信 | 導入先の .py に現れる外部ホストは api.binance. / api.exchange.coinbase.com / api.fxmacrodata.com / api.hyperliquid.xyz と、説明文の中の文書の URL。api.fxmacrodata.com は FXMacroDataClient の送信先で、当方の道具立てに対応物が無い。ただし走らせた状態での通信の観測はしていない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:58 |
+| `fast-trade` | 自動発注機能 | 配布物に取引所への発注の経路は見当たらない(archive は足の取得のみ)。ただし mcp_server.py を同梱しており、LLM のエージェントから backtest を呼ばせる口はある | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:59 と :72 |
+| `fast-trade` | 宣伝詐欺の兆候 | 兆候なし。配布は PyPI と GitHub のみ。project_urls は 2 つとも同じ GitHub のリポジトリ | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(project_urls) |
+| `fast-trade` | 当方データ投入 | 日付を index にした open/high/low/close/volume の DataFrame をそのまま渡せた。当方の csv.gz の約定・清算をそのまま入れる経路は試していない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:66 と :69(DF_ROWS) |
+| `fast-trade` | 時刻の扱い | 最小実行では tz なしの DatetimeIndex をそのまま受けた。UTC の語が現れるのは archive の 5 ファイル(binance_api.py / cli.py / coinbase_api.py / update_archive.py / update_kline.py)だけで、backtest の中核にはない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:66 と、導入先の *.py の走査 |
+| `fast-trade` | 再現性 | 同じ合成データ・同じ設定で 2 回打ち、2 回とも同じ TypeError と同じ経路になった。乱数の種は当方の合成データ側で置いたもので、道具側に種の指定は見ていない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:64 |
+| `fast-trade` | 規模の見積 | 301 行の足を 0.05 秒で回した。456 日分の 1 分足(約 65 万行)なら、行数に比例すると置いて 100 秒あたりの規模になる。ティック単位は試していない | 推定 | docs/DATA/probes/20260922_tools_1_run5.log:67 と :69 からの外挿(行数に線形と仮定) |
+| `fast-trade` | 4軸1_道具 | 入れられる。pip で入り、自前の DataFrame を渡して回せる。ただし指値が書けないので、当方の指値の埋まり方の研究には使えない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:57 と :66 |
+| `fast-trade` | 4軸2_情報 | archive が binanceus / binancecom / coinbase の足を取る経路を持つ。FXMacroDataClient は api.fxmacrodata.com からマクロの系列を取る。どちらも当方の道具立てに対応物が無い | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:58 と :59 |
+| `fast-trade` | 4軸3_視点 | backtest を dict で書く(コードではなく設定で戦略を書く)形と、pygad による遺伝的算法の最適化、hmmlearn による隠れマルコフの状態、fastmcp による LLM からの呼び出し口。当方の道具立てにはどれも対応物が無い | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:72 |
+| `fast-trade` | 4軸4_向上 | summary が返す欄(market_adjusted_return / perc_missing / position_metrics など)は当方の metrics に無いものを含む。perc_missing は欠測の割合を毎回出すので、当方のデータ品質の確認に対応する視点を持つ | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:68 |
+| `fast-trade` | 配布元の一致 | PyPI の project_urls の Homepage と Repository がどちらも github.com/jrmeier/fast-trade。GitHub 側も同じ | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(project_urls)/ https://github.com/jrmeier/fast-trade 取得日 2026-09-22 |
+| `fast-trade` | 難読化 | 見当たらない。配布物は .py のみで、同梱バイナリ 0 件 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:71 |
+| `fast-trade` | 外部URL取得 | 導入の段では起きない(setup.py が 0 件)。実行の段では datafile を指定して df を渡さないと archive が取引所へ行く | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:71 と :60 |
+| `fast-trade` | 依存の一覧 | pandas>=2.3.3 / matplotlib>=3.10.8 / requests>=2.32.5 / numpy>=2.2.6 / pygad>=3.5.0 / hmmlearn>=0.3.3 / plotly>=6.5.2 / pyarrow>=23.0.0 / pyyaml>=6.0.3 / rich>=14.3.2 / typer>=0.23.0 / fastmcp<3,>=2.14.5(ほかに dev の extra が build / coverage / flake8 / pytest) | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:72(requires_dist) |
+| `fast-trade` | 保守者名の一貫性 | PyPI 側は info.author も info.maintainer も None で名前が無い。GitHub 側の所有者は jrmeier。**PyPI からは照合できない** | 一次資料 | https://pypi.org/pypi/fast-trade/json 取得日 2026-09-22(info.author / info.maintainer)/ https://github.com/jrmeier/fast-trade 取得日 2026-09-22 |
+
+#### 取り直しの結果(4 回目のリードの検収が渡した 4 件)
+
+**§4.0 の表とは別の表にした。**理由は、これらが 3 回目・4 回目に深掘りした道具の「未確認」で残った項目を、
+この回に別の経路で埋めたものだからである。**同じ道具の同じ項目に、前の節では「未確認」、この節では値が入る。**
+どう書くべきかは委任文に無いので、黙って決めずにここに書く(リードの判断を仰ぐ)。
+
+| 道具 | 項目 | 前の節の値 | この回の値 | 印 | 根拠 |
+|---|---|---|---|---|---|
+| `Basana` | コミット数(取り直し) | 未確認 | 590 | 一次資料 | https://github.com/gbeced/basana 取得日 2026-09-22(見出しの Commits)/ docs/DATA/probes/20260922_tools_1_run5.log:4 |
+| `Backtrader` | コミット数(取り直し) | 未確認 | 2404 | 一次資料 | https://github.com/mementum/backtrader 取得日 2026-09-22(見出しの Commits。表示は 2,404 Commits)/ docs/DATA/probes/20260922_tools_1_run5.log:5 |
+| `PyBroker` | コミット数(取り直し) | 未確認 | 1259 | 一次資料 | https://github.com/edtechre/pybroker 取得日 2026-09-22(見出しの Commits。表示は 1,259 Commits)/ docs/DATA/probes/20260922_tools_1_run5.log:6 |
+| `bt` | コミット数(取り直し) | 未確認 | 782 | 一次資料 | https://github.com/pmorissette/bt 取得日 2026-09-22(見出しの Commits)/ docs/DATA/probes/20260922_tools_1_run5.log:7 |
+| `zipline-reloaded` | コミット数(取り直し) | 未確認 | 6694 | 一次資料 | https://github.com/stefan-jansen/zipline-reloaded 取得日 2026-09-22(見出しの Commits。表示は 6,694 Commits)/ docs/DATA/probes/20260922_tools_1_run5.log:2 |
+| `zipline-reloaded` | 星(取り直し) | 未確認 | 1941 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:26(ungh.cc の stars)。GitHub の HTML の表示は丸めた 1.9k |
+| `PyBroker` | 週DL数(取り直し) | 未確認(4 回とも 429) | last_week=885、last_month=4152、last_day=176 | 一次資料 | https://pypistats.org/packages/lib-pybroker 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:25 |
+| `Jesse` | 料金体系(取り直し) | 未確認 | **取れなかった。**金額はこの環境のどの経路でも出ない。取れたのは実弾プラグインの条件の逐語「you need to register on our website to generate your license key」「The package is pre-built and the access is limited to those with an active license」まで | 未確認 | 試したこと: curl https://jesse.trade/pricing を UA 2 種類(ブラウザ風 / trade-research/1.0)で HTTP 403(log:31 と :32)/ WebFetch https://jesse.trade/help/faq/... で HTTP 403(log:29)/ curl https://web.archive.org/web/2026/https://jesse.trade/pricing で接続切断(log:28)/ archive.org の wayback available が archived_snapshots 空(log:33)。取れた一次資料は https://docs.jesse.trade/docs/livetrade.html 取得日 2026-09-22(log:30) |
+
+**`Jesse` の金額の第 2 経路(オーナー PC でそのまま打てるコマンド)**:
+
+```
+curl -sS -o jesse_pricing.html -w '%{http_code}\n' https://jesse.trade/pricing
+curl -sS -o jesse_faq.html -w '%{http_code}\n' 'https://jesse.trade/help/faq/why-do-i-have-to-pay-for-live-i-thought-its-open-source'
+```
+
+`WebSearch` の結果一覧には `https://jesse.trade/blog/news/black-friday-offer-lifetime-access-to-jesses-live-trade-plugin-for-only-599`
+という見出しの項目が出るが、**その頁そのものは開けていない**ので、金額は本調査の値として書かない。
+
+#### 浅い候補について、この回に新しく測ったもの(深掘りではない)
+
+§4.0 の表には入れない(委任文 §4.0「浅い候補(深掘りしていない)は表に入れず」)。
+
+| 道具 | 測ったこと | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| PySystemtrade | clone の大きさ | 878 MB(うち data が 737 MB、.git が 110 MB、examples が 26 MB)。リードの条件の 200 MB を超えたので止めて消した | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:35 と :44 と :45 |
+| Ziplime | 導入の可否 | 不可。pip が候補を 1 つも見つけない(No matching distribution found)。requires_python は <4.0,>=3.12、この環境は Python 3.11.15 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:47 と :52 |
+| Ziplime | PyPI の情報 | version 1.19.16 / 最新版の upload_time 2026-06-18T09:21:46 / info.license = None / info.license_expression = None / info.author = "Ziplime" / info.maintainer = None / project_urls = None / vulnerabilities 長さ 0 / requires_dist 30 件 | 一次資料 | https://pypi.org/pypi/ziplime/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:47 |
+| OctoBot | PyPI の情報 | version 2.1.1 / 最新版の upload_time 2026-03-29T15:25:05 / info.license = "GPL-3.0" / info.author = "Drakkar-Software" / info.maintainer = None / requires_python >=3.12(この環境では導入できない)/ requires_dist 77 件 | 一次資料 | https://pypi.org/pypi/OctoBot/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:50 |
+| pybotters | PyPI の情報 | version 1.11.2 / 最新版の upload_time 2026-04-17T07:19:41 / info.license = None / info.license_expression = "MIT" / info.author = None / info.maintainer = None / requires_python >=3.10 / requires_dist 1 件 / 文書は日本語(project_urls の Documentation が pybotters.readthedocs.io/ja/stable) | 一次資料 | https://pypi.org/pypi/pybotters/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:49 |
+| mlflow | PyPI の情報 | version 3.16.1 / 最新版の upload_time 2026-09-16T23:14:16 / info.license = "Copyright 2018 Databricks, Inc.  All rights reserved." (SPDX の識別子ではない)/ info.author = None / info.maintainer = None / requires_python >=3.10 / requires_dist 59 件 | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:51 |
+
+**PySystemtrade の第 2 経路(オーナー PC で、大きさを避けて中身だけ見るコマンド)**:
+
+```
+git clone --depth 1 --filter=blob:none --sparse https://github.com/robcarver17/pysystemtrade
+cd pysystemtrade && git sparse-checkout set systems sysquant sysobjects syscore
+du -sh . && pip install -e . --dry-run
+```
+
+### 予算
+
+| 項目 | 値 |
+|---|---|
+| 上限 | 1 回 5 万トークン・20 分 |
+| 実績 | 上限に達したため中断した。深掘りは `fast-trade` の 1 件。取り直しは 4 件のうち 3 件が埋まり、`Jesse` の金額だけが取れなかった |
+| 未完了 | 候補の一覧の 7・8・9・13・14・15・16 番はこの回で着手していない。3・6・11・12・17 番は浅いまま。区分 1 は**未完了**(委任文 §2 の条件 = 残りの候補が空で、新しい検索計画が新しい候補を 1 件も出さない、を満たしていない) |
+
+### 受け入れ検査で残した行(自分で閉じなかったもの)
+
+委任文 §12「**誤検出だと判断しても、自分で閉じてはならない。**直さずに残し、その行と理由を報告に 1 件ずつ書いて**リードに渡す**」に従い、K5 の 2 件を残した。
+
+1. **`fast-trade` の `規模の見積` の行。**この 1 つのセルの中に、実測した実行の秒と、そこから外挿した秒の 2 つの数が入っている。
+   検査は「同じ道具の同じ項目に別の値」として拾うが、**外挿の行は「測った値」と「外挿した値」の両方を書かないと
+   何から外挿したかが読めない**(委任文 §4「小さい実行の実測から**推定**と印を付けて外挿」)。
+   4 回目にリードが直した「単位ではなく項目で束ねる」の続きで、**1 つのセルの中の 2 つの数をどう扱うか**が決まっていない。誤検出だと自分で判断して閉じない。
+2. **同じ行が `tools_` という道具名でももう 1 件当たっている。**`tools_` は候補の一覧にも §4.0 の表の 1 列目にも無い。
+   根拠の欄に書いた生ログの道筋 `docs/DATA/probes/20260922_tools_1_run5.log` の一部を、検査が道具名として拾っているように見える。
+   **検査側の欠陥の疑いがあるが、判定するのはリードである。**
+
+## 受け入れ検査の出力
+
+打ったコマンド(生ログを 3 本とも渡す。リードの起動指定のとおり):
+
+```
+python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run3.log docs/DATA/probes/20260922_tools_1_run4.log docs/DATA/probes/20260922_tools_1_run5.log
+```
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            2 件
+    docs/DATA/SCAN_2026-09-21_tools.md:2168  fast-trade の 規模の見積 に別の値: ['0.05', '100']
+    docs/DATA/SCAN_2026-09-21_tools.md:2168  tools_ の 規模の見積 に別の値: ['0.05', '100']
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 2 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 2 件
+```
