@@ -609,7 +609,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 **到達・導入・実行の記録**:
 - `pip install qstrader`(隔離venv、rc=0、実測)。GitHub公式example `examples/buy_and_hold.py`をraw.githubusercontentからcurl取得(200、実測)し、その構造(`FixedSignalsAlphaModel`+`BacktestTradingSession(rebalance='buy_and_hold')`)をそのまま踏襲した合成CSV日次バー(260営業日のランダムウォーク)で実行
 - **最小の実行**: 成功(rc=0)。`equity curve rows=261, first={'Equity': 1000000.0}, last={'Equity': 698485.43}`(実測)。**ただし本ツールは「日次リバランス配分」のシミュレータであり、指値注文・板・待ち行列という概念がソースのどこにも存在しない**(モジュール一覧の実測から確認 = 生ログ LV-5a)。**§5-4が求める「成行と指値の1往復」に相当する処理はこのアーキテクチャでは成立しない** — 目標配分(この場合100%配分のbuy_and_hold)への一括発注のみ
-- 所要時間: install 1.62 秒(生ログの time_s。「十数秒」は誤り)
+- 所要時間: install 1.62 秒(生ログの time_s。「十数秒」は誤り)。**これは qstrader 本体だけの時間で、公式の例を動かすには別に `pip install pytz` 1.11 秒が要った**(生ログ 68 行。pytz は qstrader の宣言依存に入っておらず、例のスクリプト側の要件。監査 11 回目の問い 3 への答え)
 
 **当方の用途との相性**: 日次バーのCSV(`Date`列+OHLCV)を要求(実測、公式exampleのコード)。当方の分足・ティック・清算といった高頻度データとは粒度が大きく異なる(推定: 高頻度戦略の検証には不向き)。時刻: UTCタイムゾーン付きpandas Timestamp(実測)。再現性: 決定的(合成データに乱数シード使用、実測)。規模: 260日で1秒未満(実測)、456日ティック相当への外挿は不可(日次専用のため単位が異なる)
 
@@ -803,7 +803,7 @@ Jesse / Mendl-Labs/BacktestingCore / Luczinsritter/event_driven_backtesting_engi
 - wheel展開で確認した危険関連の事実: **`libzklink_sdk.so/.dll/.dylib`(Apex DEX向け)・`lighter-signer-*.so/.dll/.dylib`(Lighter DEX向け)というコンパイル済みネイティブバイナリを同梱**。これらはDEX(分散型取引所)のオンチェーン署名用SDKで、鍵を使わない限りは発火しないと見られるが、コンパイル済みバイナリの中身は静的監査していない(未確認)
 - 依存に`ray`(分散計算)・`redis`・`psycopg2-binary`(PostgreSQL)・`eth-account`/`eth-keys`/`eth-utils`/`rlp`/`hexbytes`(Ethereumウォレット関連ライブラリ)・`optuna`(ハイパーパラメータ最適化)・`mcp`(Model Context Protocol、AIエージェント関連)が含まれる(実測、pip installログ)
 - **最小の実行**: **未実施**。Jesseの`backtest`コマンドはプロジェクトディレクトリの初期化(`jesse init`相当)とPostgreSQL・Redisの起動を要求する設計で、本回の予算内では準備が完了しなかった
-- 所要時間: install(依存衝突込み)約60秒(実測)
+- 所要時間: install 60.29 秒(生ログの time_s)
 
 **当方の用途との相性**: 未確認
 
