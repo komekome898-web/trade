@@ -6718,3 +6718,349 @@ K12 検査の出力の貼付           1 件
 ```
 
 **誤検出だと判断して自分で閉じた行は 0 件である。**この回は 13 本すべてが 0 件で通った。
+
+## 区分1 — 23 回目の実行(2026-09-22)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run23.log`。
+22 回目のリードの検収(`docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run22.md`)と、その §8 の起動の指定に従う。
+起動の指定の逐語「**最優先: 候補 1〜23 に 6 要素の印を当てる。これがこの回の本体です。**」
+「**新しい検索計画は打たないでください。深掘り(構築・導入・最小実行)もしないでください。候補も増やさないでください。**」のとおりに進めた。
+
+**この回にしたこと**: (1) 候補 1 番から 23 番に 6 要素の印を当てた(本体)/ (2) 候補 123 に `区分1-イベント駆動` を足した /
+(3) 候補 107 の所見を書いた / (4) 候補 107 の `区分4 へ` に `推定` と明記した / (5) 候補 61 の主張に射程を書き、`barter` 側を読んで射程を広げた /
+(6) 数え直しを 2 段で出し直した。
+**導入・構築・最小実行・登録・鍵の発行・購入・発注はこの回に 1 件も無い。**
+
+**書き換えの範囲**: `git diff` の削除行は **0 行**である。指定の 1 から 6 はすべて**新しい節への追記だけ**で果たした。
+**理由**: 候補の状態の読み方は 22 回目が定めた「**報告書の「候補の一覧」の小節の中で、その候補が最後に書かれた箇条から読む**」であり、
+新しい節に書けば、それが最後の箇条になる。**過去の回の節を書き換えずに指定を果たせるので、書き換えていない**
+(起動の指定の逐語「**過去の回の節は、その時点の記録です。**…**後から書き換えると記録でなくなります。**」)。
+**これが指定 5 の「節の主張の側に射程を書く」を満たしているかはリードに確かめていただきたい**(問い 6)。
+
+**生ログの本数**: `ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l` の出力は **22**(生ログ `20260922_tools_1_run23.log:7`)。
+**これはこの回の生ログ `run23.log` を作ったあとに打った値で、内訳は `run2` から `run23` である**(`run1` の生ログは無い。21・22 回目と同じ)。
+
+**字形について**: この回に逐語で引いた原典のうち、**候補 16 番 `Luczinsritter/event_driven_backtesting_engine` の `backtest_engine.py` の説明文には
+非分割ハイフン(`‑` U+2011)が入っている**。逐語は `EventBased class for event‑driven backtesting of trading strategies.` と
+`- Execution at next tick/bar open to eliminate look‑ahead bias` と `- Single‑position management (long or short) with entry/exit logic` で、
+**`event‑driven` `look‑ahead` `Single‑position` の 3 か所が U+2011 である**(生ログ `20260922_tools_1_run23.log` の `c16_evidence` の節)。
+ほかに原文の書き方をそのまま写した箇所が 2 つある: (a) `DeviaVir/zenbot` の `conf-sample.js` の
+`c.avg_slippage_pct = process.env.ZENBOT_AVG_SLIPPAGE_PCT || 0.045`(本家の `c.avg_slippage_pct = 0.045` と書き方が違う)、
+(b) `qlib/backtest/exchange.py` の説明文の `(a.k.a. slippage)` の丸括弧。
+
+**原典の在処は、逐語を取る前に必ず追跡ファイルの一覧(`ungh.cc` の `files`)で確かめてから取った。**
+**当てずっぽうの取得は 0 件。**HTTP 404 は 3 件あり、いずれも**一覧の取得そのもの**である:
+`ungh.cc/repos/jesse-ai/jesse/files/main`(既定枝が `master` だった)/ `ungh.cc/repos/carlos8f/bot18/files/master`(登録が公開されていない)/
+`ungh.cc/repos/bludnic/opentrader/files/{main,master}` と `ungh.cc/repos/Open-Trader/opentrader/files/{main,master}`(既定枝が `dev` だった)。
+**3 件とも枝や在処を替えて打ち直し、`bot18` 以外は 200 で取れた。**
+**TLS の切断(`rc=35`、`code=000`)は 5 件あり、すべて待って打ち直して 200 を得ている。404 の欄には入れていない**
+(委任文 §5-1「到達は 1 回の HTTP コードで決めない」。22 回目の扱いに合わせた)。
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断により区分 1 の 1 回目の節を参照して貼っていない。
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**新しい検索計画は打たないでください。**」による。
+X の経路も同じ理由で打っていない。**候補も 1 件も増やしていない。**この回に取った GET は、
+すべて既に一覧に在る候補(1〜23 番・61 番)の実装の原典と、その在処の確認である。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://ungh.cc/repos/barter-rs/barter-rs/files/main` | 2026-09-22 | 候補 61 の射程(`mock` `slippage` `impact` `fill` に当たる追跡ファイルの洗い出し) |
+| 2 | `https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter/src/backtest/mod.rs` | 2026-09-22 | 候補 61 の検証の入口が使う執行の分岐 |
+| 3 | `https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine/files/main` | 2026-09-22 | 候補 16 の在処 |
+| 4 | `https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/backtest_engine.py` | 2026-09-22 | 候補 16 の駆動の形と足の刻み |
+| 5 | `https://ungh.cc/repos/stefan-jansen/zipline-reloaded/files/main` | 2026-09-22 | 候補 18 の在処 |
+| 6 | `https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/finance/slippage.py` | 2026-09-22 | 候補 18 の滑りの模型 |
+| 7 | `https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/finance/blotter/simulation_blotter.py` | 2026-09-22 | 候補 18 の検証の経路が滑りの模型を呼ぶこと |
+| 8 | `https://ungh.cc/repos/mementum/backtrader/files/master` | 2026-09-22 | 候補 2 の在処 |
+| 9 | `https://raw.githubusercontent.com/mementum/backtrader/master/backtrader/brokers/bbroker.py` | 2026-09-22 | 候補 2 の滑りと出来高の充当 |
+| 10 | `https://raw.githubusercontent.com/mementum/backtrader/master/backtrader/cerebro.py` | 2026-09-22 | 候補 2 の駆動の形 |
+| 11 | `https://ungh.cc/repos/DeviaVir/zenbot/files/unstable` | 2026-09-22 | 候補 13 の在処 |
+| 12 | `https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/lib/engine.js` | 2026-09-22 | 候補 13 の事象の受け口と足の組み立て |
+| 13 | `https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/extensions/exchanges/sim/exchange.js` | 2026-09-22 | 候補 13 の約定の作り方 |
+| 14 | `https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/conf-sample.js` | 2026-09-22 | 候補 13 の滑りの既定値 |
+| 15 | `https://ungh.cc/repos/vnpy/vnpy_ctastrategy/files/main` | 2026-09-22 | 候補 20 の検証の機関の在処 |
+| 16 | `https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/main/vnpy_ctastrategy/backtesting.py` | 2026-09-22 | 候補 20 の足とティックの分岐・滑りの計上・事象の有無 |
+| 17 | `https://ungh.cc/repos/microsoft/qlib/files/main` | 2026-09-22 | 候補 21 の在処 |
+| 18 | `https://raw.githubusercontent.com/microsoft/qlib/main/qlib/backtest/exchange.py` | 2026-09-22 | 候補 21 の市場影響と出来高の上限 |
+| 19 | `https://ungh.cc/repos/jesse-ai/jesse/files/master` | 2026-09-22 | 候補 19 の在処・滑りの当たりの数・同梱の手引き |
+| 20 | `https://raw.githubusercontent.com/jesse-ai/jesse/master/jesse/modes/backtest_mode.py` | 2026-09-22 | 候補 19 の検証が受け取るもの |
+| 21 | `https://ungh.cc/repos/Mendl-Labs/BacktestingCore/files/master` | 2026-09-22 | 候補 15 の在処 |
+| 22 | `https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/backtest/src/synthetic_book.rs` | 2026-09-22 | 候補 15 の板の作り方と待ち行列の有無 |
+| 23 | `https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/backtest/src/simulation.rs` | 2026-09-22 | 候補 15 の実行経路が市場影響を呼ぶこと |
+| 24 | `https://ungh.cc/repos/Superalgos/Superalgos/files/master` | 2026-09-22 | 候補 7 の在処 |
+| 25 | `https://raw.githubusercontent.com/Superalgos/Superalgos/master/Projects/Algorithmic-Trading/TS/Bot-Modules/Trading-Bot/Low-Frequency-Trading/OrdersSimulations.js` | 2026-09-22 | 候補 7 の約定の模擬 |
+| 26 | `https://ungh.cc/repos/Open-Trader/opentrader/files/dev` | 2026-09-22 | 候補 8 の在処(既定枝は `dev`) |
+| 27 | `https://raw.githubusercontent.com/Open-Trader/opentrader/dev/packages/backtesting/src/market-simulator.ts` | 2026-09-22 | 候補 8 の検証が受け取るものと約定の作り方 |
+| 28 | `https://ungh.cc/repos/CryptoSignal/Crypto-Signal/files/master` | 2026-09-22 | 候補 9 に検証の機関が無いこと |
+| 29 | `https://ungh.cc/repos/edtechre/pybroker/files/master` | 2026-09-22 | 候補 4 の在処 |
+| 30 | `https://raw.githubusercontent.com/edtechre/pybroker/master/src/pybroker/slippage.py` | 2026-09-22 | 候補 4 の滑りの模型の種類 |
+| 31 | `https://raw.githubusercontent.com/edtechre/pybroker/master/src/pybroker/strategy.py` | 2026-09-22 | 候補 4 の検証の経路が滑りの模型を受け取ること |
+| 32 | `https://ungh.cc/repos/Open-Trader/opentrader` | 2026-09-22 | 候補 8 の既定枝の確認 |
+| 33 | `https://raw.githubusercontent.com/bludnic/opentrader/master/package.json` | 2026-09-22 | 候補 8 の所有者の確認 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **候補 61 `barter-rs` の検証の入口も、22 回目に読んだ同じ模擬の取引所を使う。**`barter/src/backtest/mod.rs` の執行の組み立ての逐語は `ExecutionConfig::Mock(mock_config) => builder.add_mock(mock_config, clock.clone()),` で、**分岐はこの 1 本だけである。**さらに追跡ファイルの一覧で `mock` `slippage` `impact` `fill` に当たるのは `barter-execution/src/client/mock/mod.rs`・`barter-execution/src/exchange/mock/{account,mod,request}.rs` と例の 2 本だけで、**`slippage` `impact` `fill` という名前のファイルは 1 本も無い** | 一次資料 | `.../barter/src/backtest/mod.rs` と `ungh.cc/repos/barter-rs/barter-rs/files/main` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `c61_ctx` と `c61_paths` の節 |
+| 2 | **候補 16 `Luczinsritter/event_driven_backtesting_engine` は、名前と説明文が「事象で駆動される」と書いているのに、実装は足の添字で駆動されている。**`backtest_engine.py` の `queue` `deque` `Event(` `dispatch` の当たりは **0 件**で、執行の逐語は `exec_date = self.data.index[ind_nbr + 1]` と `exec_price = self.data['Open'].iloc[ind_nbr + 1]` である。説明文の逐語は `EventBased class for event‑driven backtesting of trading strategies.`(`event‑driven` の字形は U+2011) | 実測 | `.../backtest_engine.py` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `c16_evidence` の節 |
+| 3 | **候補 18 `zipline-reloaded` の検証の経路は、滑りの模型を既定で必ず通る。**`simulation_blotter.py` の逐語は `Equity: equity_slippage or FixedBasisPointsSlippage(),` と `for order, txn in slippage.simulate(bar_data, asset, asset_orders):`。模型の側の逐語は `class VolumeShareSlippage(SlippageModel):` と `price * (1 + price_impact * (volume_share ** 2))` と `DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT = 0.025`。**出来高の割合で価格を動かし、埋まる量に上限を掛ける** | 一次資料 | `.../slippage.py` と `.../blotter/simulation_blotter.py` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `c18_evidence` の節 |
+| 4 | **候補 2 `Backtrader` の検証の取引所は滑りと出来高の充当を持つが、駆動は事象の列ではない。**滑りの既定の逐語は `('slip_perc', 0.0),` `('slip_fixed', 0.0),` `('slip_open', False),` `('slip_match', True),` `('slip_limit', True),` `('slip_out', False),`、出来高の側の逐語は `'''Sets a volume filler for volume filling execution'''` と `# Execution depends on volume filler`。いっぽう `cerebro.py` の `queue` の当たりは **0 件**で、駆動は `def _runnext(self, runstrats):` と `def _runonce(self, runstrats):` である | 実測 | `.../brokers/bbroker.py` と `.../cerebro.py` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `c2_evidence` の節 |
+| 5 | **候補 13 `DeviaVir/zenbot` の実装は、候補 123 の本家と同じ 4 つの性質を持つ。**逐語は `eventBus.on('trade', queueTrade)` と `var tradeProcessingQueue = async.queue(function({trade, is_preroll}, callback){` と `s.period = {` と `s.strategy.onPeriod.call(s.ctx, s, function () {` と `let size = Math.min(buy_order.remaining_size, trade.size)` と `c.avg_slippage_pct = process.env.ZENBOT_AVG_SLIPPAGE_PCT \|\| 0.045`。**模擬の取引所 `extensions/exchanges/sim/exchange.js` の `queue` の当たりは 0 件**で、板の待ち行列は無い | 実測 | `.../lib/engine.js` と `.../extensions/exchanges/sim/exchange.js` と `.../conf-sample.js` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `c13_evidence` の節 |
+| 6 | **候補 20 `VnPy` の検証の機関は足とティックの両方を受け取り、滑りを費用と分けて計上し、事象の機関は使わない。**逐語は `if self.mode == BacktestingMode.BAR:` と `long_cross_price = self.bar.low_price` と `else:` と `long_cross_price = self.tick.ask_price_1` と `self.slippage += trade.volume * size * slippage` と `# Net pnl takes account of commission and slippage cost`。**`EventEngine` `Event(` `event_engine` の当たりは `vnpy_ctastrategy/backtesting.py` に 0 件である** | 実測 | `.../vnpy_ctastrategy/backtesting.py` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `evidence_batch` の `c20` の節 |
+| 7 | **候補 21 `Qlib` の検証の取引所は市場影響と出来高の上限を引数として持つ。**逐語は `impact_cost: float = 0.0,` と `:param impact_cost:     market impact cost rate (a.k.a. slippage). A recommended value is 0.1.` と `volume_threshold: Union[tuple, dict, None] = None,` と `open_cost: float = 0.0015,` と `close_cost: float = 0.0025,` と `min_cost: float = 5.0,`。**在処は `qlib/backtest/exchange.py` で、検証の package の中である** | 一次資料 | `.../qlib/backtest/exchange.py` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `evidence_batch` の `c21` の節 |
+| 8 | **候補 15 `Mendl-Labs/BacktestingCore` は、板の模型を持っているのに、検証の実行経路がそれを呼んでいない。**板の側の逐語は `//! The simulator uses these to model realistic slippage and market impact.` と `pub fn from_candle(` と `pub fn calculate_slippage(&self, order_size: f64, side: BookSide) -> (f64, f64) {` と `/// Estimate market impact using a square-root model:`。いっぽう `backtest/src/simulation.rs` から `synthetic_book` と `SyntheticOrderBook` に当たるのは **0 件**で、実行経路が呼ぶのは自分の側の `self.calculate_market_impact(order_size, order_price, avg_volume, config, timestamp)` である。**`synthetic_book.rs` に `queue` `ahead` `fifo` の当たりは 0 件** | 実測 | `.../backtest/src/synthetic_book.rs` と `.../backtest/src/simulation.rs` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `evidence_batch` の `c15` の節 |
+| 9 | **候補 7 `Superalgos` の模擬は滑りと部分約定を持つ。**逐語は `actualSizeSimulation: actualSizeSimulation,` と `feesToBePaidSimulation: feesToBePaidSimulation,` と `percentageFilledSimulation: percentageFilledSimulation,` と `The default way to calculate the Actual Rate is to apply the Slippage defined` と `let slippageAmount = tradingEngineOrder.rate.value * sessionParameters.slippage.config.marketOrderRate / 100`。**同じファイルの `candle` の当たりは 13 件、`queue` の当たりは 0 件** | 実測 | `.../OrdersSimulations.js` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `evidence_batch` の `c7` の節 |
+| 10 | **候補 8 `OpenTrader` の検証は足を 1 本ずつ受け取り、約定は足の終値で決まる。**逐語は `nextCandle(candlestick: ICandlestick) {` と `filledPrice: candlestick.close,` と `if (candlestick.close <= smartTrade.entryOrder.price!) {`。**同じファイルの `slippage` `queue` `volume` の当たりは 0 件。**既定枝は `dev` である | 実測 | `.../packages/backtesting/src/market-simulator.ts` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `evidence_batch` の `c8` の節 |
+| 11 | **候補 9 `CryptoSignal` には検証の機関が無い。**追跡ファイルの一覧で `backtest` と `simulat` に当たるのは **0 件**で、`app/` の最上位は `analysis.py`・`app.py`・`behaviour.py`・`conf.py`・`defaults.yml`・`exchange.py`・`logs.py`・`notification.py`・`outputs.py` である。**これは指標の走査と通知の並びであって、検証の機関の並びではない** | 実測 | `ungh.cc/repos/CryptoSignal/Crypto-Signal/files/master` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `evidence_batch` の `c9` の節 |
+| 12 | **候補 4 `PyBroker` の滑りの模型は、検証の経路が引数として受け取る。**模型の逐語は `class SlippageModel(ABC):` `class FixedSlippageModel(SlippageModel):` `class VolatilitySlippageModel(SlippageModel):` `class VolumeSlippageModel(SlippageModel):`、受け渡しの逐語は `        slippage_model: Optional[SlippageModel] = None,`。`strategy.py` の中で `slippage_model` に当たるのは 19 行ある。**既定は `None` なので、指定しなければ滑りは掛からない** | 実測 | `.../src/pybroker/slippage.py` と `.../src/pybroker/strategy.py` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `evidence_batch` の `c4` の節 |
+| 13 | **候補 19 `Jesse` の登録には作業者向けの手引きが同梱されている。**追跡ファイルの一覧に `AGENTS.md`・`.claude/skills/README.md`・`.claude/skills/jesse-strategy-tests/SKILL.md`・`.agents/skills`(記号連結)が在る。**この回は一覧に在ることを数えただけで、本文は取っていないし従ってもいない**(委任文 §6-3)。同じ一覧で `slippage` に当たるのは **0 件**である | 実測 | `ungh.cc/repos/jesse-ai/jesse/files/master` 取得日 2026-09-22 / `20260922_tools_1_run23.log` の `evidence_batch` の `c19` の節 |
+| 14 | **候補 14 `Bot18` の登録は公開物として見えない。**`ungh.cc/repos/carlos8f/bot18/files/master` は HTTP 404 を返す。**8 回目に取れているのは npm の registry の記述だけ**で、実装の原典に当たるものはこの回も取れていない。**「この環境から不可」とは書かない**(打った経路は ungh.cc の 1 本で、npm の配布物の展開は本体の一括取得になるため委任文 §6-6 で打っていない) | 実測 | `20260922_tools_1_run23.log` の `c14_bot18` の行(code=404) |
+| 15 | **既定枝を推測して打つと 404 になる登録が 3 件あった。**`jesse-ai/jesse` は `master`、`Open-Trader/opentrader` は `dev`、`DeviaVir/zenbot` は `unstable` が既定枝である。`ungh.cc/repos/<owner>/<repo>` の `defaultBranch` を先に読めば 1 回で当たる(`Open-Trader/opentrader` の逐語は `'defaultBranch': 'dev'`)。**`bludnic/opentrader` は `Open-Trader/opentrader` に付け替えられている** | 実測 | `20260922_tools_1_run23.log` の `c8_open_ungh` と `c8_open_files_d` の行 |
+
+### 候補の一覧
+
+**新しい候補は 0 件。**この回に状態が変わったのは 1 番から 23 番の全部と、61 番・107 番・123 番である。
+番号と名前は既存の一覧のものをそのまま使う。**この回は 1 件も深掘りしていない。**
+
+#### 候補 1〜23 に当てた 6 要素の印(この回の本体)
+
+**当て方は 22 回目の検収が定めた線引きに従う**(逐語「**印は、検証の機関が実際に受け取る / 使うもので決める。持っているだけ・文書が挙げているだけでは付けない。**」
+「**板を入力として受け取ることと、待ち行列の位置を模擬することは別である。**」
+「**並列化されたループはベクトル化ではない。**」「**実装が事象で駆動されているかで決める。原典が自分で "event driven" と名乗っているかは条件にしない**」)。
+**根拠の欄には、どの節のどの行の逐語で当てたかを書く。**節の行番号はこの報告書の行である。
+
+1. `Basana` — 印は `区分1-足` と `区分1-イベント駆動` と `区分1-市場影響と約定の模型`、および `区分2 へ`。
+   根拠は 4 回目の節 `#### 1. Basana(深掘り)`(報告書 1817〜1823 行)の逐語「**バーの購読、注文のイベントの購読**」「**流動性の模型 `VolumeShareImpact`(既定)/ `bid_ask_spread`(既定 `Decimal('0.5')`)**」「**非同期のイベント駆動の実行器**」「**binance・bitstamp・ccxt の取引所クライアント**」、および 4 回目の知見 8(報告書 1607 行)。
+   **`区分1-ティック` は付けない**(4 回目に投入したのは合成の日足で、ティックの口は読んでいない)。**`区分1-板の待ち行列` は付けない**(板は最良気配の照会だけ)。
+2. `Backtrader` — 印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分2 へ`。
+   足と `区分2 へ` の根拠は 4 回目の節 `#### 2. Backtrader(深掘り)`(報告書 1828〜1832 行)の逐語「**合成の日足を流し、成行買いと指値売りの往復が約定した**」「**Interactive Brokers・Oanda・VisualChart のストアとブローカー**」。
+   **`区分1-市場影響と約定の模型` はこの回に原典で決めた**(知見 4)。**`区分1-イベント駆動` は付けない**(同じく知見 4。`cerebro.py` の `queue` の当たりが 0 件で、駆動は `_runnext` と `_runonce`)。
+3. `PySystemtrade` — 印は `区分1-足`、および `区分2 へ`。
+   根拠は 9・10 回目の表(報告書 3582 行と 3574 行と 3580 行)の逐語「**ただし系列は足の単位で、板の情報を渡す口は無い**」「**合成の 1 時間刻み SYNTH_BARS=400**」と、`自動発注機能` の逐語「**在る。sysexecution の .py は files=42**」。
+   **`区分1-市場影響と約定の模型` はこの回に決めていない。リードへの問い 1 に出す**(指値の跨ぎ判定と未約定の保持だけで、滑り・市場影響・出来高を見ない)。
+4. `PyBroker` — 印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分2 へ` と `区分4 へ`。
+   足の根拠は 4 回目の節 `#### 3. PyBroker(深掘り)`(報告書 1837 行と 1840 行と 1841 行)の逐語「**symbol / date / open / high / low / close / volume の DataFrame をそのまま渡せた**」。
+   模型の根拠はこの回の知見 12。`区分2 へ` は同節の逐語「**Alpaca の実弾ブローカーと live のデータ**」、`区分4 へ` は「**機械学習の模型の登録と学習 / 最適化 / ブートストラップによる評価**」。
+   **`区分1-ベクトル化` はこの回に決めていない**(同節に `vect.py` の名前は在るが、損益と建玉の計算が行列演算かを読んでいない。リードへの問い 2)。
+5. `bt` — 印は `区分1-足`。
+   根拠は 4 回目の節 `#### 4. bt(深掘り)`(報告書 1848 行と 1849 行)の逐語「**終値の DataFrame は入るが、約定・清算のような明細を入れる形ではない**」。
+   **`区分1-市場影響と約定の模型` は付けない**(同節の逐語「**枠組みに注文の種別が無いため書けない**」)。**`区分1-ベクトル化` はこの回に決めていない**(リードへの問い 2)。
+6. `Ziplime` — 印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分2 へ` と `区分3 へ` と `区分6 へ`。
+   根拠は 6 回目の §4.0 の表(報告書 2469 行・2483 行・2475 行・2461 行)の逐語「**合成の日足 40 本…`LimitOrder(limit_price=1000000.0)`…`MarketOrder()`**」「**滑りの模型が差し替え式で、出来高比・変動率と出来高の比・固定 bp・滑りなしを選べる**」「**`run --exchange-type lime-trader-sdk`…同じ算法ファイルが実弾に回る**」「**依存に `limexhub` と `lime-trader-sdk`…`yfinance` も必須の依存**」、および 7 回目の取り直しの表(報告書 2849 行)の逐語「**`base_url="https://openrouter.ai/api/v1"`**」。
+   **`区分1-イベント駆動` はこの回に決めていない**(駆動の形を読んでいない。リードへの問い 2)。
+7. `Superalgos` — 印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分2 へ`。
+   根拠はこの回の知見 9。`区分2 へ` は 8 回目の知見 11(報告書 2973 行)の逐語「**`dependencies` は 58 件で、`ccxt`・`discord.js`・`@slack/web-api`・`@octokit/rest` を含む**」。
+   **`区分1-板の待ち行列` は付けない**(知見 9。`OrdersSimulations.js` の `queue` の当たりが 0 件)。浅い(README の原文・導入・最小実行が未確認)。
+8. `OpenTrader` — 印は `区分1-足`、および `区分2 へ`。
+   根拠はこの回の知見 10。`区分2 へ` は 8 回目の知見 10(報告書 2972 行)の逐語「**`packageManager` は `pnpm@10.12.1`**」と、この回に読んだ `app/src/commands/backtest.ts` と `packages/backtesting/` の在処。
+   **`区分1-市場影響と約定の模型` はこの回に決めていない。リードへの問い 1 に出す**(跨ぎ判定だけで、滑りも出来高も持たない)。浅い(導入・最小実行が未確認)。
+9. `CryptoSignal` — **区分 1 の 6 要素は付けない。**仕分けは `区分7 へ` と `区分3 へ`。
+   根拠はこの回の知見 11。**検証の機関そのものが無いので、6 要素のどれにも当たらない。**
+   `区分3 へ` は 8 回目の知見 9(報告書 2971 行)の逐語「**`ccxt==1.13.26`**」。浅い(README の原文が未確認)。
+10. `fast-trade` — 印は `区分1-足`、および `区分3 へ` と `区分4 へ` と `区分6 へ`。
+    根拠は 5 回目の §4.0 の表(報告書 2157 行・2139 行・2170 行・2171 行)の逐語「**合成の 1 分足 300 本(乱数の種 7)を DataFrame で直接渡し**」「**`supported_exchanges` は ["binanceus", "binancecom", "coinbase"]**」「**`FXMacroDataClient` は api.fxmacrodata.com からマクロの系列を取る**」「**pygad による遺伝的算法の最適化、hmmlearn による隠れマルコフの状態、fastmcp による LLM からの呼び出し口**」。
+    **`区分1-市場影響と約定の模型` は付けない**(同表の逐語「**成行と指値の往復は書けない**(注文の種別が無く、足の終値で建てて外すだけ)」。差し引くのは手数料だけ)。
+11. `OctoBot` — 印は `区分1-足`(**推定**)、および `区分2 へ` と `区分6 へ`。
+    足の根拠は 7 回目の §4.0 の表(報告書 2837 行)の逐語「**`-o STRATEGY_OPTIMIZER` は「時間足・評価器・リスクを変えて模擬を総当たりする」道具**」。**模擬を 1 度も回していないので `推定` である。**
+    `区分2 へ` は同表の逐語(報告書 2828 行)「**`--simulate` が「模擬の取引者だけで起動する」旗として在る**」、`区分6 へ` は同表(報告書 2814 行)の「**`openai`(LLM の窓口)/ `mcp`(エージェントの相互接続)**」。
+    **残りの 4 要素はこの回に決めていない**(模擬の中身に到達していない。リードへの問い 2)。
+12. `pybotters` — **区分 1 の 6 要素は付けない。**仕分けは `区分2 へ` と `区分3 へ`。
+    根拠は 7 回目の §4.0 の表(報告書 2785 行・2761 行・2793 行)の逐語「**paper や dry-run の模擬は道具の側に無い**」「**国内は bitFlyer・GMO Coin・bitbank・Coincheck・OKJ・BitTrade の 6 社**」。
+    **124 番 `ccxt` と同じ扱いである**(検証の機関ではなく取引所の窓口)。**板の店は持つが、同表の逐語「**待ち行列そのものは持たない**」により `区分1-板の待ち行列` にも当たらない。**
+13. `DeviaVir/zenbot` — 印は `区分1-足` と `区分1-ティック` と `区分1-イベント駆動` と `区分1-市場影響と約定の模型`、および `区分2 へ`。
+    根拠はこの回の知見 5。**123 番の本家と同じ実装を、分岐の枝 `unstable` の原典で 1 件ずつ確かめた**(記憶でも推定でもない)。
+    **`区分1-板の待ち行列` は付けない**(知見 5)。**状態「危険なので止めた」は導入についてのもので、印とは別である。**
+14. `Bot18` — **6 要素はこの回に決まらなかった。**読んだのは 8 回目の npm の registry の記述と、この回の `ungh.cc/repos/carlos8f/bot18/files/master`(HTTP 404)である(知見 14)。
+    **「道具に無い」とは書かない。**実装の原典に当たるものが公開物として見えないだけである。仕分けは `区分2 へ`(**推定**。1 回目の節 `#### 16. Bot18(carlos8f)`(報告書 869 行)の逐語「**Bitfinex・Coinbase Proのライブ取引ストリームを監視**」から)。
+15. `Mendl-Labs/BacktestingCore` — 印は `区分1-足` と `区分1-市場影響と約定の模型`。
+    根拠はこの回の知見 8。**`区分1-板の待ち行列` は付けない**(同じく知見 8。板の模型に待ち行列が無く、さらに実行経路から板を呼んでいない)。
+    **`区分1-イベント駆動` はこの回に決めていない**(9 回目の知見 2(報告書 3164 行)の説明文の逐語「**Open-source backtesting engine core: event-driven simulation, walk-forward analy**」は自称なので条件にしない。`backtest/src/engine.rs` は未読。リードへの問い 2)。
+16. `Luczinsritter/event_driven_backtesting_engine` — 印は `区分1-足`。
+    根拠はこの回の知見 2 と、9 回目の §4.0 の表(報告書 3284 行)の逐語「**合成の日足 200 本(種を固定した乱歩)を get_data の上書きで入れ**」。
+    **`区分1-イベント駆動` は付けない**(知見 2。名前と説明文の自称に反して、実装に事象の列も待ち行列も無い)。
+    **`区分1-ティック` は付けない**(説明文の逐語は `- Execution at next tick/bar open to eliminate look‑ahead bias` だが、データ源は `yf.download(...)` の `interval` の足だけで、ティックを入れる口は読んだ範囲に無い)。
+    **`区分1-市場影響と約定の模型` は付けない**(次の足の始値で必ず全量約定し、9 回目の表(報告書 3284 行)の逐語「**LIMIT_ORDER_API=[]**」のとおり指値の口が無い)。
+17. `mlflow` — **区分 1 の 6 要素は付けない。**仕分けは `区分5 へ`。
+    根拠は 8 回目の §4.0 の表(報告書 3052 行)の逐語「**市場の情報は取れない(取引所の接続を持たない)。取れるのは当方自身の実行の記録**」。
+18. `zipline-reloaded` — 印は `区分1-足` と `区分1-市場影響と約定の模型`。
+    足の根拠は 3 回目の節 `#### 17. zipline-reloaded(深掘り)`(報告書 1361〜1364 行)の逐語「**日足の bundle を登録して取り込み**」「**成行買いと指値売りの往復で損益が出た**」。模型の根拠はこの回の知見 3。
+    **`区分1-イベント駆動` はこの回に決めていない**(駆動の形を読んでいない。リードへの問い 2)。
+19. `Jesse` — 印は `区分1-足`、および `区分2 へ` と `区分6 へ`。
+    足の根拠は 3 回目の節 `#### 18. Jesse(深掘り)`(報告書 1370 行・1374 行)の逐語「**暗号資産の足でバックテストと最適化**」「**合成の 1 分足を `jesse.research.backtest` に渡し**」と、この回に読んだ `jesse/modes/backtest_mode.py` の逐語 `        candles: dict = None,` と `    # initiate candle store` と `    store.candles.init_storage(5000)`。
+    `区分2 へ` は同節の逐語「**実弾とペーパーは別売りのプラグイン**」、`区分6 へ` はこの回の追跡ファイルの一覧の `jesse/mcp/tools/backtest.py`。
+    **`区分1-市場影響と約定の模型` はこの回に決まらなかった。**読んだのは追跡ファイルの一覧(`slippage` の当たり 0 件)と `jesse/modes/backtest_mode.py` で、**約定の実装 `jesse/models/Order.py` と `jesse/services/order_service.py` は未読である**(知見 13)。
+20. `VnPy` — 印は `区分1-足` と `区分1-ティック` と `区分1-市場影響と約定の模型`、および `区分2 へ`。
+    根拠はこの回の知見 6 と、3 回目の節 `#### 19. VnPy(深掘り)`(報告書 1379 行・1383 行)の逐語「**本体が事象の枠組みと売買の型を持ち、戦略の枠組み・取引所の接続はそれぞれ別パッケージに分かれる**」「**手数料・滑り・呼値を別々に与えられる**」。
+    **`区分1-イベント駆動` は付けない**(知見 6。本体は事象の枠組みを持つが、**検証の機関はそれを使っていない**)。
+21. `Qlib` — 印は `区分1-足` と `区分1-市場影響と約定の模型`、および `区分4 へ` と `区分5 へ`。
+    足の根拠は 3 回目の節 `#### 20. Qlib(深掘り)`(報告書 1388 行・1392 行)の逐語「**合成の日足の csv を dump_all で変換し**」、模型の根拠はこの回の知見 7。
+    `区分4 へ` は同節の逐語「**機械学習の模型と強化学習の部品**」、`区分5 へ` は「**mlflow による実験の追跡**」。
+    **`区分1-ベクトル化` はこの回に決めていない**(保存形式が列ごとの固定長であることと、損益の計算が行列演算であることは別である。`qlib/backtest/executor.py` は未読。リードへの問い 2)。
+22. `Lean CLI` — **6 要素はこの回に決まらなかった。**読んだのは 3 回目の節 `#### 21. Lean CLI(深掘り。この環境では最小実行に到達できない)`(報告書 1397〜1401 行)の逐語「**手元の計画を作り、バックテスト・最適化・実弾を QuantConnect の Docker イメージの中で走らせる**」「**`docker info` の Server が空**」である。
+    **検証の機関は取得していない Docker 画像の中にあり、この道具そのものは起動口である。**仕分けは `区分2 へ`(同節の逐語「**実弾の経路 `commands/live` を持つ**」)。
+    **なお 52 番 `QuantConnect` が同じ機関の別の入口として `区分1-足` と `区分1-イベント駆動` を持つ。両者をどう数えるかはリードへの問い 3。**
+23. `hftbacktest` — 印は `区分1-ティック` と `区分1-板の待ち行列` と `区分1-イベント駆動` と `区分1-市場影響と約定の模型`、および `区分2 へ`。
+    根拠は 1 回目の節 `#### 1. hftbacktest`(報告書 212 行)の一次資料の逐語「**Complete tick-by-tick simulation with a customizable time interval or based on the feed and order receipt**」「**Full order book reconstruction based on Level-2 Market-By-Price and Level-3 Market-By-Order feeds**」「**Order fill simulation that takes into account the order queue position, using provided models or your own custom model**」「**Backtest accounting for both feed and order latency, using provided models or your own custom model**」「**Deployment of a live trading bot for quick prototyping and testing using the same algorithm code: currently for Binance Futures and Bybit. (Rust-only)**」と、同節の実測の逐語「**`BacktestAsset().data([...]).risk_adverse_queue_model()...`**」。
+    **`区分1-イベント駆動` は自称ではなく、逐語の「based on the feed and order receipt」と `elapse()` の進め方で当てた。**
+    **`区分1-足` は付けない**(足を受け取る口を読んでいない)。**`区分1-ベクトル化` は付けない**(逐語「**Working in Numba JIT function**」は時間方向の繰り返しを速くする道具であって、行列演算ではない)。
+
+#### この回に印が変わった 3 件(起動の指定 2・3・4・5)
+
+24. `carlos8f/zenbot`(123 番) — **`区分1-イベント駆動` を足した。**印は `区分1-足` と `区分1-ティック` と `区分1-イベント駆動` と `区分1-市場影響と約定の模型`、および `区分2 へ`。
+    根拠は 22 回目の知見 1(報告書 6562 行)の実装の逐語「**`eventBus.on('trade', queueTrade)`**」と、同じ `lib/engine.js` の処理の待ち行列 `async.queue`(22 回目の知見 4、報告書 6565 行)。
+    **自称の有無は条件にしない**(22 回目の検収 §5(2) の逐語「**実装が事象で駆動されているかで決める。原典が自分で "event driven" と名乗っているかは条件にしない**」)。
+    **`区分1-板の待ち行列` は引き続き付けない**(22 回目の知見 4)。**2022-02-15 にアーカイブ済み。**浅い(料金の構造・導入・最小実行・外部送信・MongoDB の用意・許諾の本文が未確認)。
+25. `sigc`(107 番、`Skelf-Research/sigc`) — 印は `区分1-足`、および `区分4 へ`(**推定**)。
+    **`区分4 へ` に `推定` と明記する**(起動の指定 4)。**根拠が追跡ファイルの名前 `documentation/docs/backtesting/walk-forward.md` と `crates/sig_runtime/src/walk_forward.rs` だけで、中身は未読である。**
+    **中身を読んだら `実測` か `一次資料` に上げる。**
+    **所見(起動の指定 3。印は変えない)**: **この道具は市場影響の模型の実装を持っているのに、検証の実行経路がそれを呼んでいない。**
+    模型の逐語は `pub enum ImpactModel { None, Linear { coefficient: f64 }, SquareRoot { coefficient: f64 }, AlmgrenChriss { eta: f64, gamma: f64 }, }`、
+    検証の側が差し引くのは `period_return -= turnover * self.cost_bps / 10000.0;` だけで、`backtest.rs` から `CostModel` を呼ぶ当たりは **0 件**である(22 回目の知見 10、報告書 6571 行)。
+    **これは当方の `src/bot/backtest/engine.py` の 45 行から 53 行が自ら「楽観的」と書いている型と同じである** — **道具が持っている機構と、検証が実際に通す経路が違う。使う段で効く。**
+    **同じ型をこの回にもう 1 件見つけた**: 候補 15 番 `Mendl-Labs/BacktestingCore` の板の模型が、実行経路から呼ばれていない(知見 8)。
+    **したがってこれは 1 件の偶然ではなく、道具を読むときに毎回見るべき型である。**浅い(料金の構造・登録の要否・導入・最小実行・外部送信が未確認)。
+26. `barter-rs`(61 番) — 印は変わらない(`区分1-足`・`区分1-ティック`・`区分1-イベント駆動`・`区分2 へ`)。**`区分1-市場影響と約定の模型` は付けない。**
+    **主張と射程(起動の指定 5)**: **「市場影響と約定の模型は無い」。射程 = 22 回目に読んだ `barter-execution/src/exchange/mock/` の `mod.rs` と `account.rs` の 2 本に加えて、
+    この回に読んだ `barter/src/backtest/mod.rs` と、リポジトリの追跡ファイルの一覧である**(知見 1)。
+    **`barter` 側にも別の約定の模型は無かったので、射程を広げて書き直した。**根拠は 2 つ:
+    (a) 検証の入口 `barter/src/backtest/mod.rs` の執行の分岐は `ExecutionConfig::Mock` の 1 本だけで、22 回目に読んだ模擬の取引所しか呼べない。
+    (b) 追跡ファイルの一覧に `slippage` `impact` `fill` という名前のファイルが 1 本も無く、`mock` に当たるのは模擬の 4 本と例の 2 本だけである。
+    **読んでいないもの(射程の外)**: 模擬の 4 本のうち `client/mock/mod.rs` と `exchange/mock/request.rs` の 2 本、および `barter-execution` の実弾側の実装。
+
+#### 6 要素ごとの 総数 と 残り(3 段で出す)
+
+**数え方は 22 回目と同じ**(逐語「**総数** = その印を持つ候補の数 / **残り** = そのうち**一次資料に到達していない**ものの数」)。
+**この回はそこに「到達済みだが 6 要素の印が無い」の段を足して 3 段にする**(22 回目の検収 §4 の指定)。
+
+| 残りの種類 | 22 回目 | この回に埋めた | 23 回目 |
+|---|---|---|---|
+| **一次資料に未到達** | 11 件(51・53・54・57・60・67・70・72・87・91・92) | 0 件(この回の指定の外) | **11 件**(同じ) |
+| **到達済みだが 6 要素の印が無い** | 23 件(候補 1〜23) | **21 件** | **2 件**(14 番 `Bot18`・22 番 `Lean CLI`) |
+| **到達済みで印もあるが、個別の要素が決まらない** | (段として無かった) | — | **8 件**(下の表) |
+
+**この回に埋めた 21 件の内訳**: 6 要素のどれかが立ったのが 18 件(1・2・3・4・5・6・7・8・10・11・13・15・16・18・19・20・21・23)、
+**「6 要素は付けない」と理由つきで確定したのが 3 件**(9・12・17)。**「付けない」も、決まったことである。**
+
+| 要素 | 22 回目の総数 | この回に足した候補 | 23 回目の総数 | 残り(一次資料に未到達) |
+|---|---|---|---|---|
+| `区分1-足` | 35 | 1・2・3・4・5・6・7・8・10・11・13・15・16・18・19・20・21 | **52** | **11**(51・53・54・57・60・67・70・72・87・91・92) |
+| `区分1-ティック` | 12 | 13・20・23 | **15** | **0** |
+| `区分1-板の待ち行列` | 16 | 23 | **17** | **0** |
+| `区分1-イベント駆動` | 10 | 1・13・23 と 123 | **14** | **0** |
+| `区分1-ベクトル化` | 2 | (無し) | **2** | **0** |
+| `区分1-市場影響と約定の模型` | 12 | 1・2・4・6・7・13・15・18・20・21・23 | **23** | **0** |
+
+**6 要素のどれかに印がある候補は、重複を除いて 80 件**(22 回目の 62 件に、この回の 18 件を足した)。
+**そのうち一次資料に到達していない残りは 11 件で、全部 `区分1-足` である。**
+
+**個別の要素が決まらなかった 8 件(リードへの問い 2 に出す)**:
+
+| 候補 | 決まらなかった要素 | 何を読んで決まらなかったか |
+|---|---|---|
+| 4 番 `PyBroker` | `区分1-ベクトル化` | 4 回目の節に `vect.py` の名前は在るが、`src/pybroker/vect.py` と `portfolio.py` を読んでいない |
+| 5 番 `bt` | `区分1-ベクトル化` | 4 回目の節の「比重のリバランス」の記述だけで、`bt/core.py` の走らせ方を読んでいない |
+| 6 番 `Ziplime` | `区分1-イベント駆動` | 6 回目の §4.0 の表(導入・最小実行・滑りの模型)だけで、駆動の実装を読んでいない |
+| 11 番 `OctoBot` | `区分1-ティック`・`区分1-板の待ち行列`・`区分1-イベント駆動`・`区分1-ベクトル化`・`区分1-市場影響と約定の模型` | 7 回目の `--help` の全文と拡張の導入までで、模擬を 1 度も回していない。`octobot_backtesting.data` の中身が未読 |
+| 15 番 `Mendl-Labs/BacktestingCore` | `区分1-イベント駆動` | 説明文の自称と `backtest/src/synthetic_book.rs`・`simulation.rs` を読んだが、`backtest/src/engine.rs` は未読 |
+| 18 番 `zipline-reloaded` | `区分1-イベント駆動` | 3 回目の節と、この回の `slippage.py`・`simulation_blotter.py` を読んだが、`src/zipline/gens/` の駆動を読んでいない |
+| 19 番 `Jesse` | `区分1-市場影響と約定の模型` | 追跡ファイルの一覧(`slippage` の当たり 0 件)と `jesse/modes/backtest_mode.py` を読んだが、`jesse/models/Order.py` と `jesse/services/order_service.py` が未読 |
+| 21 番 `Qlib` | `区分1-ベクトル化` | 3 回目の節と、この回の `qlib/backtest/exchange.py` を読んだが、`qlib/backtest/executor.py` の進め方が未読 |
+
+**`判別に一次資料が要る` の残り**: **49 番だけ**(22 回目と同じ)。**登録の内側にあり、当方は登録しない。**
+**残りの候補名**: 一次資料に未到達の 11 件、14 番と 22 番の 6 要素、上の表の 8 件の個別の要素、
+43 番の浅い部分、51 番から 93 番のうち印を付けていないもの、94 番・96 番・97 番・100 番から 124 番の浅い部分。
+**39 番と 110 番と 112 番の一覧の残りの節からも、まだ名前を抜いていない。**
+
+### ツール1件ごとの表
+
+**この回に 6 要素の印が決まった候補のうち、新しく原典を読んだ 11 件を出す。**いずれもこの回に導入も最小実行もしていない。
+
+| ツール | 何ができるか | 料金の構造 | 当方に無いもの | この環境での到達 |
+|---|---|---|---|---|
+| `Backtrader` | 足で成行と指値を回し、滑りを率か定額で掛け、出来高の充当器で埋まる量を絞る | GPLv3+ の無償配布(4 回目の節。この回に料金の場は読んでいない) | **滑りの掛け方を 6 つの旗で切り替える形**(率 / 定額 / 始値に掛けるか / 跨ぎで必ず約定させるか / 指値にも掛けるか / 範囲の外でも約定させるか) | **可**(実装の原典に到達。導入は 4 回目に済み) |
+| `PyBroker` | 足で成行と指値を回し、滑りの模型を差し替え、機械学習の模型を登録して最適化する | 無償だが Commons Clause 付き(4 回目の節。この回に料金の場は読んでいない) | **滑りを「定額 / 変動率 / 出来高」の 3 つの模型から選ぶ形**と、**既定が「滑り無し」であることを利用者に明示する形** | **可**(実装の原典に到達。導入は 4 回目に済み) |
+| `Superalgos` | 足で模擬の注文を作り、滑りを設定から差し引き、部分約定の割合を出す | 未確認(`package.json` の許諾欄の綴りは `Apache License 2.0`。この回に料金の場は読んでいない) | **約定の模擬を「実際の大きさ / 実際の値 / 手数料 / 埋まった割合」の 4 つに分けて別々の関数にする形** | **可**(実装の原典に到達。導入はしていない) |
+| `OpenTrader` | 足を 1 本ずつ模擬器に渡し、成行は終値で、指値は終値が跨いだら埋める | 未確認(根の `package.json` の許諾欄は `Apache-2.0`。`pro/` の中身は未読) | **検証の模擬器が「次の足を渡す」1 つの口だけで進む形** | **可**(実装の原典に到達。導入はしていない) |
+| `CryptoSignal` | 取引所から足を取り、指標を走査して通知する(**検証の機関は持たない**) | 未確認(許諾は MIT と 3 回目に記録。この回に料金の場は読んでいない) | **指標の走査と通知だけに絞った並び**(検証を持たないことそのもの) | **可**(追跡ファイルの一覧に到達。導入はしていない) |
+| `DeviaVir/zenbot` | 約定の記録から足を組み立て、指標で売買し、模擬の取引所で maker と taker の約定・滑り・手数料を入れて検証する | 未確認(許諾は MIT と 4 回目に記録。この回に料金の場は読んでいない) | **滑りの既定値を環境変数で差し替えられる形**(本家には無い) | **可**(実装の原典に到達。**導入時実行があるので導入しない**) |
+| `Mendl-Labs/BacktestingCore` | 足から合成の板を作り、注文の大きさから滑りと市場影響を見積もる | 未確認(許諾は Functional Source License 1.1 と 9 回目に記録) | **足 1 本から板の段を合成する形**(`from_candle`)と、**参加率の平方根で市場影響を出す形** | **可**(実装の原典に到達。**構築はできない**) |
+| `zipline-reloaded` | 日足の bundle を取り込み、成行と指値を回し、滑りの模型を必ず通す | Apache-2.0 の無償配布(3 回目の節) | **滑りの模型が「1 本の足で埋められる出来高の割合」に上限を持つ形**と、**株と先物で既定の模型が違う形** | **可**(実装の原典に到達。導入と最小実行は 3 回目に済み) |
+| `VnPy` | 足とティックの両方で指値と逆指値を回し、滑りを費用と分けて積む | MIT の無償配布(3 回目の節) | **同じ検証の機関が足とティックを旗 1 つで切り替える形**と、**滑りの合計を成績の欄として出す形** | **可**(実装の原典に到達。導入と最小実行は 3 回目に済み) |
+| `Qlib` | 列ごとの固定長の保存形式に足を落とし、市場影響と出来高の上限を入れて検証する | MIT の無償配布(3 回目の節) | **市場影響の率を引数 1 つで入れる形**と、**出来高の上限を複数の条件の最小で束ねる形** | **可**(実装の原典に到達。導入と最小実行は 3 回目に済み) |
+| `Luczinsritter/event_driven_backtesting_engine` | 足を 1 本ずつ進め、次の足の始値で建てて外し、1 回ずつの売買を記録する | 未確認(許諾の根拠は README の記章だけ。9 回目に確認) | **無し。**名前が名乗る「事象で駆動される」は実装に無く、**当方の `src/bot/backtest/engine.py` より単純である** | **可**(実装の原典に到達。導入と最小実行は 9 回目に済み) |
+
+#### §4.0 の機械可読の表
+
+**この回で `[深掘り]` に達した道具は無い。**起動の指定の逐語「**深掘り(構築・導入・最小実行)もしないでください。**」に従い、
+導入も最小実行も 1 件も行っていない。委任文 §4.0 は「深掘りした道具は、文章より先に表に 1 行ずつ書く」と定めており、
+深掘りが 0 件なので **§4.0 の機械可読の表にこの回の行は無い**(18 回目から 22 回目と同じ)。
+
+### 予算
+
+割当は 1 回 5 万トークン・20 分。**起動の指定の 1 から 6 はすべて終わった。**
+(1) 候補 1 番から 23 番に 6 要素の印を当てた。21 件が決まり、2 件が決まらなかった。
+(2) 候補 123 に `区分1-イベント駆動` を足した。(3) 候補 107 の所見を書き、同じ型をもう 1 件見つけた。
+(4) 候補 107 の `区分4 へ` に `推定` と明記した。(5) 候補 61 の主張に射程を書き、`barter` 側を読んで射程を広げた。
+(6) 数え直しを 3 段で出し直した。
+**新しい検索計画は打っていない。深掘りも 0 件。候補も増やしていない。導入・構築・最小実行・登録・鍵の発行・購入・発注は 1 件も無い。**
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **`区分1-市場影響と約定の模型` の下限を決めていない。**22 回目に決まった 2 つの例は両端で、その間が空いている:
+   付いた例(123 番)は「**価格だけでなく量も見ている**」、付かなかった例(61 番)は「**相場の値も相場の量も見ていない**」。
+   **この回に出た 3 件は、その中間にある**: 3 番 `PySystemtrade`(指値が次の足の値を跨がなければ埋まらず、埋まらなかったものを勘定に残す)、
+   8 番 `OpenTrader`(指値は `candlestick.close <= price` で埋まる。滑りも出来高も無い)、19 番 `Jesse`(未読)。
+   **「指値の跨ぎ判定だけ」を模型と呼ぶかを決めていただきたい。**呼ぶなら足の検証のほぼ全部が当たるので、要素としての切れ味が落ちる。
+   呼ばないなら、**この 3 件はどの要素にも入らない。**この回はどちらにも倒さず、印を付けずに問いに出した。
+2. **個別の要素が決まらなかった 8 件を、どこまで読ませるか。**上の表に「何を読んで決まらなかったか」を 1 件ずつ書いた。
+   **どれも原典は公開されていて取れるので、「取れない」ではない。**ただし 11 番 `OctoBot` の 5 要素は模擬を回さないと決まらず、それは深掘りに当たる。
+   **深掘りを禁じたままで埋められる 7 件と、深掘りが要る 1 件を分けて指示していただきたい。**
+3. **22 番 `Lean CLI` と 52 番 `QuantConnect` を別々に数えるか。**同じ検証の機関の別の入口で、52 番には `区分1-足` と `区分1-イベント駆動` が付いている。
+   22 番は起動口なので、この回は印を付けずに問いに出した。**一本化するなら総数が 1 減る。**
+4. **9 番・12 番・17 番に「6 要素は付けない」と書いたことを、「埋まった」に数えた。**
+   理由は、オーナーの完了の形が逐語「**6 要素…それぞれについて、一次資料に到達した候補が尽きること**」であり、
+   **「この候補はどの要素にも属さない」と理由つきで言えることは、要素ごとの「尽きた」を言うために必要だからである。**
+   **数え方としてこれでよいかを決めていただきたい。**
+5. **候補 13 番 `DeviaVir/zenbot` に、123 番と同じ 4 つの印を付けた。**分岐なので同じだろうと推定したのではなく、
+   **分岐の枝 `unstable` の原典を 3 本取って 1 件ずつ当てた。**ただし**両者を別の候補として数えると、同じ実装が 2 回数えられる。**
+   一本化するかはリードが決めること(21 回目に `Backtesting.py` と `nautilus_trader` などで一本化した前例がある)。
+6. **過去の回の節を 1 行も書き換えなかった。**指定 7 は「1〜6 に要る範囲でのみ既存の節への書き換えを許す」だが、
+   **書き換えなくても 1〜6 が果たせたので書き換えていない**(候補の状態は「最後に書かれた箇条」から読む規則があるため)。
+   **指定 5 の「節の主張の側に射程を書く」が、これで満たされているかを確かめていただきたい。**満たされていないなら 22 回目の知見 5 の行に追記する。
+
+### 取ってきた文章の中の作業者向けの指示(委任文 §6-3)
+
+**この回に読んだ登録のうち、作業者向けの手引き(`AGENTS.md` / `CLAUDE.md` / `.cursor` / `copilot-instructions`)を同梱していたものは 1 件である。**
+候補 19 番 `Jesse` の追跡ファイルの一覧に `AGENTS.md`・`.claude/skills/README.md`・`.claude/skills/jesse-strategy-tests/SKILL.md`・`.agents/skills` が在る(知見 13)。
+**この回は一覧に在ることを数えただけで、本文は取っていないし従ってもいない。**
+**通算は 5 件から 6 件になった**(44・74・120・41・58 に 19 番を足した)。
+ほかに、候補 15 番 `Mendl-Labs/BacktestingCore` と候補 8 番 `OpenTrader` の README は導入の手順を書いているが、**この回は読んでいない。**
+
+### 受け入れ検査の出力
+
+打ったコマンド(生ログを全部渡した): `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log`
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+**誤検出だと判断して自分で閉じた行は 0 件である。**この回は 13 本すべてが 0 件で通った。
+**生ログの本数**: `ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l` の出力は **22**(生ログ `20260922_tools_1_run23.log:7`)。

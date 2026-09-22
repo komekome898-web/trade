@@ -1,0 +1,508 @@
+=== 区分1 23 回目の実行 生ログ 2026-09-22 ===
+=== この回の指定: 候補 1〜23 に 6 要素の印を当てる(本体)/ 候補 123 に 区分1-イベント駆動 を足す / 候補 107 の所見 / 候補 107 の 区分4 へ に 推定 / 候補 61 の射程と barter 側の確認 / 数え直しを 2 段で
+=== 新しい検索計画は打っていない。深掘り(構築・導入・最小実行)も打っていない。候補も増やしていない。
+=== 原典は ungh.cc の files で在処を確かめてから取る。
+--- 2026-09-22T16:29:15Z method=run target=ls_probes note=生ログの本数の実測 rc=0
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+22
+--- 2026-09-22T16:29:15Z method=GET url=https://ungh.cc/repos/barter-rs/barter-rs/files/main label=c61_barter_files code=200 bytes=36425 rc=0 time_s=0.515616
+{"meta":{"sha":"9770b27a83f844472b93b593b08063affc974b0d"},"files":[{"path":".github/dependabot.yml","mode":"100644","sha":"1684754afb232100ce9518dbc321c9b0ba339408","size":464},{"path":".github/workf
+$ grep -n -E 'barter/src[^"]*' <c61_barter_files>  (一致行を出す)
+1:{"meta":{"sha":"9770b27a83f844472b93b593b08063affc974b0d"},"files":[{"path":".github/dependabot.yml","mode":"100644","sha":"1684754afb232100ce9518dbc321c9b0ba339408","size":464},{"path":".github/workflows/ci.yml","mode":"100644","sha":"187847e11e8a962be54081793698c7da815c5f4e","size":1946},{"path":".github/workflows/release-plz.yml","mode":"100644","sha":"a1c6e01ee5ded64c52d25f575e6ee4bd12c7999c","size":3338},{"path":".gitignore","mode":"100644","sha":"5fd1099e837925931be4942d507bbde3a7f358ad","size":46},{"path":"Cargo.toml","mode":"100644","sha":"f56ffb06c8010aa5c9e216706db7ce8ea75bd743","size":2213},{"path":"LICENSE","mode":"100644","sha":"f5b4bf8c1796cf9a82eb189e0e95e4636c6b576c","size":1086},{"path":"README.md","mode":"100644","sha":"b78f7562023e7f0e5727f24cd5088886e0cdfd2e","size":12296},{"path":"barter-data/Cargo.toml","mode":"100644","sha":"390e01d0c712e65f5e6aed692aa6c3ae0de37b63","size":1750},{"path":"barter-data/LICENSE","mode":"100644","sha":"d33f83b2e97035b26c3b5910bc0138fd4946b446","size":1067},{"path":"barter-data/README.md","mode":"100644","sha":"c6ea0b26754a6dc94f24294e2a070ec602a9dd28","size":14017},{"path":"barter-data/examples/dynamic_multi_stream_multi_exchange.rs","mode":"100644","sha":"cfeec71e318665c94fb3707006c40a2f040e3ac1","size":3996},{"path":"barter-data/examples/indexed_market_stream.rs","mode":"100644","sha":"0e83ab2bbb9f100f39456f37f5b7741189d31ea5","size":3406},{"path":"barter-data/examples/multi_stream_multi_exchange.rs","mode":"100644","sha":"95ce41d1196229acd7f33de9dff35064d4617cf2","size":3603},{"path":"barter-data/examples/order_books_l1_streams.rs","mode":"100644","sha":"a2645dd7eb03ddfcf9a80c4feb24294528628461","size":2703},{"path":"barter-data/examples/order_books_l1_streams_multi_exchange.rs","mode":"100644","sha":"7552c0f8b3a751b0078b7f2c14892775c1e39ba5","size":2234},{"path":"barter-data/examples/order_books_l2_manager.rs","mode":"100644","sha":"7c61a9826b05a6325f36d541598ec8f12397dbce","size":2887},{"path":"barter-data/examples/order_books_l2_streams.rs","mode":"100644","sha":"f57cf164660ccca1eb82136f5157773dc95920f1","size":2693},{"path":"barter-data/examples/public_trades_streams.rs","mode":"100644","sha":"dccd983b03b00d61ad19c1a7ea15f32c06a969ef","size":2747},{"path":"barter-data/examples/public_trades_streams_multi_exchange.rs","mode":"100644","sha":"cf55d3401cae98a411a38d07bacf4250a21d7e98","size":5270},{"path":"barter-data/src/books/manager.rs","mode":"100644","sha":"aa6577563808c2de51040eb86575fa908f1be745","size":4227},{"path":"barter-data/src/books/map.rs","mode":"100644","sha":"01ca379b4b173c2670bea473fc12fdb186a501e5","size":2183},{"path":"barter-data/src/books/mod.rs","mode":"100644","sha":"352946583f8e70bc80d080ed85c832066bca44d1","size":24415},{"path":"barter-data/src/error.rs","mode":"100644","sha":"21daa5db51acde325aa8a023b334eeb71f148250","size":2753},{"path":"barter-data/src/event.rs","mode":"100644","sha":"3f63cd98b68a1f2a7151e43ac469e57e98fc7dca","size":7335},{"path":"barter-data/src/exchange/binance/book/l1.rs","mode":"100644","sha":"4d53f932d2d3d3ba81d87d91ab3198593711bbff","size":6054},{"path":"barter-data/src/exchange/binance/book/l2.rs","mode":"100644","sha":"0d11308ecc6365c1361d522cdc356dd3a6006dfd","size":6956},{"path":"barter-data/src/exchange/binance/book/mod.rs","mode":"100644","sha":"272358d76a0b734a2d401067659fd5d978f50c43","size":1338},{"path":"barter-data/src/exchange/binance/channel.rs","mode":"100644","sha":"d689595cb6e2bfaf214ecaca60acffdc976849eb","size":2906},{"path":"barter-data/src/exchange/binance/futures/l2.rs","mode":"100644","sha":"30eca3eefab42310d863f248747ba57427902b13","size":26912},{"path":"barter-data/src/exchange/binance/futures/liquidation.rs","mode":"100644","sha":"a53e27d99dde45cefd49d486a8a8ef7794666d0b","size":5054},{"path":"barter-data/src/exchange/binance/futures/mod.rs","mode":"100644","sha":"4c7ff8277929053f8897a4c247062658ad630a78","size":2148},{"path":"barter-data/src/exchange/binance/market.rs","mode":"100644","sha":"3119b713003fc281dd6e31e380b6e0767f86a779","size":2051},{"path":"barter-data/src/exchange/binance/mod.rs","mode":"100644","sha":"0ceb0dd9198a18485ddec885a74e03185daad459","size":5362},{"path":"barter-data/src/exchange/binance/spot/l2.rs","mode":"100644","sha":"e33bd4579e85271697696b9cf4024319710e1f37","size":25896},{"path":"barter-data/src/exchange/binance/spot/mod.rs","mode":"100644","sha":"ae0cb0fe9e336fe06d11f9b61d82c0021672351d","size":1534},{"path":"barter-data/src/exchange/binance/subscription.rs","mode":"100644","sha":"35123b5e8aa3f02c9f5cb34789cea2a63c6faf64","size":3760},{"path":"barter-data/src/exchange/binance/trade.rs","mode":"100644","sha":"f16a08dbd14bc022a44a63777f937ef8ba44b221","size":9099},{"path":"barter-data/src/exchange/bitfinex/channel.rs","mode":"100644","sha":"c117937fa4dcdfb5412811b0f86e4e587225da73","size":906},{"path":"barter-data/src/exchange/bitfinex/market.rs","mode":"100644","sha":"897b0a12a56ee11c79deea9b90b2e5b1a2c52019","size":1675},{"path":"barter-data/src/exchange/bitfinex/message.rs","mode":"100644","sha":"0c0aca9cb0f49082620100e250b9dfc478fd80d7","size":8308},{"path":"barter-data/src/exchange/bitfinex/mod.rs","mode":"100644","sha":"dd042d0c1872c7ba02b70beb1fe9340f62f224ae","size":4579},{"path":"barter-data/src/exchange/bitfinex/subscription.rs","mode":"100644","sha":"9d662da424b65e2047edce305e98f5013701c10a","size":12224},{"path":"barter-data/src/exchange/bitfinex/trade.rs","mode":"100644","sha":"12aeecbf38c36aae79fbb8cbe220c1e030300849","size":4009},{"path":"barter-data/src/exchange/bitfinex/validator.rs","mode":"100644","sha":"b676e1e28dd3cf586ddb8c6bcfbd9728f4ee2db5","size":6831},{"path":"barter-data/src/exchange/bitmex/channel.rs","mode":"100644","sha":"4f02a419926abb0d31e452816b4cf178780db3f2","size":873},{"path":"barter-data/src/exchange/bitmex/market.rs","mode":"100644","sha":"ad17ef402225818c9b8fc9c48964d9baa12c217b","size":1684},{"path":"barter-data/src/exchange/bitmex/message.rs","mode":"100644","sha":"5e7926994a98045f964e6a3003fb671fad3662c6","size":1329},{"path":"barter-data/src/exchange/bitmex/mod.rs","mode":"100644","sha":"83a963912d240c86d967cef6a38906f26f954bbe","size":3856},{"path":"barter-data/src/exchange/bitmex/subscription.rs","mode":"100644","sha":"682d37f821f5c248a22dd66497aaba03b0f49009","size":4451},{"path":"barter-data/src/exchange/bitmex/trade.rs","mode":"100644","sha":"420c6cfd4e9eb058eedd618d834eeeb8b4981115","size":7499},{"path":"barter-data/src/exchange/bybit/book/l1.rs","mode":"100644","sha":"6d0c830e511ade74e80dd077f1cc9a15bb9806e1","size":955},{"path":"barter-data/src/exchange/bybit/book/l2.rs","mode":"100644","sha":"189387c85049119688ace27c2dc3b7d190084da2","size":4463},{"path":"barter-data/src/exchange/bybit/book/mod.rs","mode":"100644","sha":"b186ac50880dd51e4d103d8186e2c05416af1327","size":2828},{"path":"barter-data/src/exchange/bybit/channel.rs","mode":"100644","sha":"42423dee35701fe62fd828c1c0614faa7225d378","size":1846},{"path":"barter-data/src/exchange/bybit/futures/mod.rs","mode":"100644","sha":"c5c5fe933878ccaaea541f12d5b7b5ae707fd3dd","size":958},{"path":"barter-data/src/exchange/bybit/market.rs","mode":"100644","sha":"08278182064032e75473b026a3ce71f2806cba80","size":1735},{"path":"barter-data/src/exchange/bybit/message.rs","mode":"100644","sha":"a8604b11c172895c4f57f377e055bea375ac8ae8","size":4614},{"path":"barter-data/src/exchange/bybit/mod.rs","mode":"100644","sha":"8a60c0975506d6ec17c8a0380698a5647d2b0caf","size":5979},{"path":"barter-data/src/exchange/bybit/spot/mod.rs","mode":"100644","sha":"85f2c2f111676d4a03329f3bf85f9e2f7e1ec9f7","size":854},{"path":"barter-data/src/exchange/bybit/subscription.rs","mode":"100644","sha":"c279cefda0fbf3bd8448ee2ca3065b57ce4bc949","size":5478},{"path":"barter-data/src/exchange/bybit/trade.rs","mode":"100644","sha":"a38b966f34004e91a9c1715d0766d58b3ee79b68","size":13386},{"path":"barter-data/src/exchange/coinbase/channel.rs","mode":"100644","sha":"c3a4b270f9b77ae368107c4c33d453673480c5a3","size":959},{"path":"barter-data/src/exchange/coinbase/market.rs","mode":"100644","sha":"78abf81d5c271bccc57de0498c57149c6b5823cb","size":1643},{"path":"barter-data/src/exchange/coinbase/mod.rs","mode":"100644","sha":"3e9aea08da925787b9fb7e8a5148304d49e96679","size":3258},{"path":"barter-data/src/exchange/coinbase/subscription.rs","mode":"100644","sha":"46e8a56eeb1c8a6043b1f64e693a42099c1372ea","size":5503},{"path":"barter-data/src/exchange/coinbase/trade.rs","mode":"100644","sha":"2f627f345cb0bcfc3c547d52a322ac323c11162e","size":5075},{"path":"barter-data/src/exchange/gateio/channel.rs","mode":"100644","sha":"798326b22b7283494a7f2719a82f9cf664578457","size":2092},{"path":"barter-data/src/exchange/gateio/future/mod.rs","mode":"100644","sha":"65410631400c18d68df1c40eb5c76a051930537c","size":2654},{"path":"barter-data/src/exchange/gateio/market.rs","mode":"100644","sha":"5b3dc46432e6b25e70bda6d08cf51434dc3247e5","size":2722},{"path":"barter-data/src/exchange/gateio/message.rs","mode":"100644","sha":"cf5d7028a162ab003229e5495ea1b997eb210b77","size":2048},{"path":"barter-data/src/exchange/gateio/mod.rs","mode":"100644","sha":"98b7c8aae1a3131fccec7d80bfa9a35774c1acfa","size":4699},{"path":"barter-data/src/exchange/gateio/option/mod.rs","mode":"100644","sha":"cc70dbb4bf6941b28aa8c2ae60415fef24ac8157","size":1462},{"path":"barter-data/src/exchange/gateio/perpetual/mod.rs","mode":"100644","sha":"2cc53ded52d9774a6474f9bf98aee07527abfab6","size":2726},{"path":"barter-data/src/exchange/gateio/perpetual/trade.rs","mode":"100644","sha":"4eceda08f96e00ba03361ce0093a1a3ec7459cb9","size":4327},{"path":"barter-data/src/exchange/gateio/spot/mod.rs","mode":"100644","sha":"5a941f31000467051571c5c8262f150a9cb02dc2","size":1498},{"path":"barter-data/src/exchange/gateio/spot/trade.rs","mode":"100644","sha":"2c50c3027ae247a9e4ff76b2d336b204686c6510","size":3278},{"path":"barter-data/src/exchange/gateio/subscription.rs","mode":"100644","sha":"f1ec4b4387c4ebe0f1d4095ef5974ff0f9442746","size":4495},{"path":"barter-data/src/exchange/kraken/book/l1.rs","mode":"100644","sha":"73e6ed624a272ac481ca5f5fb8b17027f34b7f0e","size":8164},{"path":"barter-data/src/exchange/kraken/book/mod.rs","mode":"100644","sha":"2851dbad5885dd0673084ba4f77f2f06bce4a84a","size":56},{"path":"barter-data/src/exchange/kraken/channel.rs","mode":"100644","sha":"1d99c790f0c3413d1ef12156d0565e22515ce439","size":1312},{"path":"barter-data/src/exchange/kraken/market.rs","mode":"100644","sha":"8b2a456f7d761d798bd68c8a5fedae49eb66ef2d","size":1584},{"path":"barter-data/src/exchange/kraken/message.rs","mode":"100644","sha":"7571b63088c51584c8145e6a90ade8d94cea1255","size":5204},{"path":"barter-data/src/exchange/kraken/mod.rs","mode":"100644","sha":"1201271478a8d8ac63b53b96bef6f332be29789b","size":3681},{"path":"barter-data/src/exchange/kraken/subscription.rs","mode":"100644","sha":"878a79ab86587334f999dca6ad3d4cdd11e9fe5a","size":5403},{"path":"barter-data/src/exchange/kraken/trade.rs","mode":"100644","sha":"f460f50e94d03def43b518e539b990f1c5829f4b","size":10628},{"path":"barter-data/src/exchange/mod.rs","mode":"100644","sha":"353d0379d66ffe1ad8df3cf6394972c1e086a835","size":6193},{"path":"barter-data/src/exchange/okx/channel.rs","mode":"100644","sha":"e07c4daa869d9b406dde97d43f826159549e4c1b","size":899},{"path":"barter-data/src/exchange/okx/market.rs","mode":"100644","sha":"e3220a5fe25a4f3032bc6252750aec4318643f02","size":2559},{"path":"barter-data/src/exchange/okx/mod.rs","mode":"100644","sha":"022c1b3031ee236d44eb160326b1e5f3a27ee9c3","size":3300},{"path":"barter-data/src/exchange/okx/subscription.rs","mode":"100644","sha":"0fc4ab01cb3cc8ed5f0d481893bb6fee595f3441","size":5306},{"path":"barter-data/src/exchange/okx/trade.rs","mode":"100644","sha":"4060ff3b5d868df717732ca51bdd8085789d13cf","size":5836},{"path":"barter-data/src/exchange/subscription.rs","mode":"100644","sha":"63fb7e7610038521098ddc94c7251b097d27d911","size":2613},{"path":"barter-data/src/instrument.rs","mode":"100644","sha":"8f277f58cb31b1fa75418c619a90eff1240c997d","size":2709},{"path":"barter-data/src/lib.rs","mode":"100644","sha":"94d108b785e119e65ae82b3232f8e4e60bdfff16","size":16544},{"path":"barter-data/src/streams/builder/dynamic/indexed.rs","mode":"100644","sha":"87916812fc759e55a1f9c055a42b1882c4b4e2b5","size":6621},{"path":"barter-data/src/streams/builder/dynamic/mod.rs","mode":"100644","sha":"9ab4b3c3390d388dff66a3baf5a3ee920f35d8e6","size":47987},{"path":"barter-data/src/streams/builder/mod.rs","mode":"100644","sha":"b34b7c600e2da9689e0c38ca3ffc3e385f74e9b8","size":5444},{"path":"barter-data/src/streams/builder/multi.rs","mode":"100644","sha":"df6326cba8a006b6fd061b21618493ed786a1c27","size":4705},{"path":"barter-data/src/streams/consumer.rs","mode":"100644","sha":"f6affb8fb6ee277ff761b6c745caeb7cbce36700","size":3747},{"path":"barter-data/src/streams/mod.rs","mode":"100644","sha":"3bbec9ab20f781ef3825e3be82a995b9906b61e0","size":1990},{"path":"barter-data/src/streams/reconnect/mod.rs","mode":"100644","sha":"0d0729eecd2d8095a74aaa877e643ed71bc4d6af","size":1534},{"path":"barter-data/src/streams/reconnect/stream.rs","mode":"100644","sha":"8e88a8eafdc0e437c2266140da50102142435b0c","size":7471},{"path":"barter-data/src/subscriber/mapper.rs","mode":"100644","sha":"4decfee4c3186bf6037a89cec83f1048e62fda19","size":3002},{"path":"barter-data/src/subscriber/mod.rs","mode":"100644","sha":"8a813ed2c1db2db37a86bc85812f538e9ec22230","size":3749},{"path":"barter-data/src/subscriber/validator.rs","mode":"100644","sha":"22fc66d82e3283166813cd287daec33e1b89540b","size":4842},{"path":"barter-data/src/subscription/book.rs","mode":"100644","sha":"e0ce17b64503b2b8d2a2cddd8ec1a868da764c26","size":3667},{"path":"barter-data/src/subscription/candle.rs","mode":"100644","sha":"46fd7194986034d769b716afeb0db89038b610a0","size":965},{"path":"barter-data/src/subscription/liquidation.rs","mode":"100644","sha":"10f9e6f638ce39d4d2296c697b05bae50bfc5de3","size":962},{"path":"barter-data/src/subscription/mod.rs","mode":"100644","sha":"e77b50823b4678fc140da550a4ea0faf4982a2d5","size":20638},{"path":"barter-data/src/subscription/trade.rs","mode":"100644","sha":"0702d9a2e2cbb491a42619da977815e47569244b","size":959},{"path":"barter-data/src/transformer/mod.rs","mode":"100644","sha":"ac18fb878429853bd77be138901326c1f0c61a9e","size":1272},{"path":"barter-data/src/transformer/stateless.rs","mode":"100644","sha":"adfcc7499bcfa03e72c67f42f751ecd47190e792","size":2984},{"path":"barter-execution/Cargo.toml","mode":"100644","sha":"42ff513a5112a2c552f0a6aef84fcd721b038f96","size":1290},{"path":"barter-execution/LICENSE","mode":"100644","sha":"18fcb8366f20d2d7e3ae31476e686da4caa46b8c","size":1072},{"path":"barter-execution/README.md","mode":"100644","sha":"8715e24557c1562bbf161d4633aee90e61da275d","size":6762},{"path":"barter-execution/src/balance.rs","mode":"100644","sha":"d1bfa19d180a7bf479229d219c5d00e16e6091c7","size":684},{"path":"barter-execution/src/client/binance/mod.rs","mode":"100644","sha":"8b137891791fe96927ad78e64b0aad7bded08bdc","size":1},{"path":"barter-execution/src/client/mock/mod.rs","mode":"100644","sha":"fe621ca9464651561b5568a412a547e4621d572f","size":10374},{"path":"barter-execution/src/client/mod.rs","mode":"100644","sha":"430a8f1f514bbb2a5caca880e9456131e6aab08e","size":3061},{"path":"barter-execution/src/error.rs","mode":"100644","sha":"c41557b7fc824366dbca116a047144dcb351aff6","size":5074},{"path":"barter-execution/src/exchange/mock/account.rs","mode":"100644","sha":"c559442dba64d2c058f072de5e5b593cb697c44c","size":4676},{"path":"barter-execution/src/exchange/mock/mod.rs","mode":"100644","sha":"1489f32cc20f015f38bcdf4d2a6691aa5a571a8f","size":16956},{"path":"barter-execution/src/exchange/mock/request.rs","mode":"100644","sha":"60d9f2d330498eb5663f8a07f56bf6b651099e17","size":4103},{"path":"barter-execution/src/exchange/mod.rs","mode":"100644","sha":"9afc1d5e9f714155fa459bbe589d26bb7092dca7","size":14},{"path":"barter-execution/src/indexer.rs","mode":"100644","sha":"9cdf4bb40bbf15259ea81aedb80811d51e44c9b7","size":9829},{"path":"barter-execution/src/lib.rs","mode":"100644","sha":"7bdfae19a31422efb341b1f48e3bb598826f4693","size":5740},{"path":"barter-execution/src/map.rs","mode":"100644","sha":"3a512093ddd3e1f75ac908f1037e796bef81fddb","size":14381},{"path":"barter-execution/src/order/id.rs","mode":"100644","sha":"a5d9cd1665d3d3cafe1d3407c395288811ef82bd","size":2438},{"path":"barter-execution/src/order/mod.rs","mode":"100644","sha":"22eab107845952d7855c8da8cbb9592f69abe21a","size":7871},{"path":"barter-execution/src/order/request.rs","mode":"100644","sha":"872e37f1e0140b96c25884e7cd3b8584e286e64c","size":1498},{"path":"barter-execution/src/order/state.rs","mode":"100644","sha":"77dff304301d7370ef418d4694bc6244c8bcfa30","size":3572},{"path":"barter-execution/src/trade.rs","mode":"100644","sha":"0de32097326b16047aa07af55ed04f830a29309d","size":2189},{"path":"barter-instrument/Cargo.toml","mode":"100644","sha":"932e003692fcd10b7ecdd98653ee5c52afa19d1b","size":921},{"path":"barter-instrument/README.md","mode":"100644","sha":"4bd657695c812f45923b30046d65342fb73f6fe7","size":6024},{"path":"barter-instrument/src/asset/mod.rs","mode":"100644","sha":"d0755dba1ff721cab44bdd330e16af4e36530665","size":3481},{"path":"barter-instrument/src/asset/name.rs","mode":"100644","sha":"205f5d791a6b136753d49f93854d7cd0d57032de","size":3408},{"path":"barter-instrument/src/exchange.rs","mode":"100644","sha":"299d6f7d61d468df0be02f0bbca3ff14a78642e4","size":4411},{"path":"barter-instrument/src/index/builder.rs","mode":"100644","sha":"8a905de005c16a7cd4f4305f10c1b6553e93cabe","size":10969},{"path":"barter-instrument/src/index/error.rs","mode":"100644","sha":"9184de87a04c6819e92b53808ec7b8d5506eccdd","size":1105},{"path":"barter-instrument/src/index/mod.rs","mode":"100644","sha":"11efe1fb80cf74510666432c9e98b526ae0954da","size":17346},{"path":"barter-instrument/src/instrument/kind/future.rs","mode":"100644","sha":"7a22f620f7d96f152580065f4b2ec076aef003c8","size":866},{"path":"barter-instrument/src/instrument/kind/mod.rs","mode":"100644","sha":"2d18f6783eb464fea079043ba1c6f2ad535db270","size":4526},{"path":"barter-instrument/src/instrument/kind/option.rs","mode":"100644","sha":"6c20d4967dc6eafa5d81910ded683ac55ebf2eda","size":2659},{"path":"barter-instrument/src/instrument/kind/perpetual.rs","mode":"100644","sha":"f837e8af612a6a5b25c8174927c9b1556c737b1e","size":677},{"path":"barter-instrument/src/instrument/market_data/kind.rs","mode":"100644","sha":"1115f88ddf445e954b4f37f5bf69926939aca1f0","size":1926},{"path":"barter-instrument/src/instrument/market_data/mod.rs","mode":"100644","sha":"a52f9c1b10d11a6e3ed1ff1f91441e478efcd8ae","size":6112},{"path":"barter-instrument/src/instrument/mod.rs","mode":"100644","sha":"cd9302da01e210f044a859bb92e9ecd298a6a2ab","size":8456},{"path":"barter-instrument/src/instrument/name.rs","mode":"100644","sha":"844d468a93bd7dc097f6b198912e310efd8c1a60","size":4691},{"path":"barter-instrument/src/instrument/quote.rs","mode":"100644","sha":"0faff724f07f45f213d05fb3d46f1d4712e25c8a","size":745},{"path":"barter-instrument/src/instrument/spec.rs","mode":"100644","sha":"4651973f6aa9ee8ffc605c52d04484813ebad854","size":1184},{"path":"barter-instrument/src/lib.rs","mode":"100644","sha":"7193267018a507cb5bf61e736682d9eeb481f5c4","size":4384},{"path":"barter-integration/Cargo.toml","mode":"100644","sha":"92af66f72e3288a2636937641727e3b5bd457aab","size":3055},{"path":"barter-integration/LICENSE","mode":"100644","sha":"71caa7870bd2158481dce2b658f6c96c23b50b1c","size":1074},{"path":"barter-integration/README.md","mode":"100644","sha":"45e49b929a5f0a8b2e74e0cff2bc4fe13286ec09","size":13332},{"path":"barter-integration/examples/signed_get_request.rs","mode":"100644","sha":"8445c2f09eb0059dc0a14bf1be45518ee5c9b651","size":4404},{"path":"barter-integration/examples/simple_websocket_integration.rs","mode":"100644","sha":"28912e47d38487c75398929ecb5eed10bc482a96","size":3742},{"path":"barter-integration/src/channel.rs","mode":"100644","sha":"cc19e05a657a35f81cebc53a0a3510566f41d401","size":4511},{"path":"barter-integration/src/collection/mod.rs","mode":"100644","sha":"c4c2f394bc26b27bd6f9e8bd3fb008f9c298f855","size":298},{"path":"barter-integration/src/collection/none_one_or_many.rs","mode":"100644","sha":"5511e8c4388b054eef39b5b379d7a39a8fb4ca6b","size":9951},{"path":"barter-integration/src/collection/one_or_many.rs","mode":"100644","sha":"f4c8de689cedf5c10ca747aee643c57b3ea264cb","size":9333},{"path":"barter-integration/src/collection/snapshot.rs","mode":"100644","sha":"9eb7db9c1b1020ad4d6f0da60737e5642eb203f5","size":2274},{"path":"barter-integration/src/error.rs","mode":"100644","sha":"50d3305db178e4a1fe2b701bb6e84b6d68f74a45","size":2208},{"path":"barter-integration/src/lib.rs","mode":"100644","sha":"67e90a06e5745f9dc80b0d148547620cdf03e803","size":4274},{"path":"barter-integration/src/metric.rs","mode":"100644","sha":"aa980624150d53d160f08c8f8dfad3134e5096de","size":2003},{"path":"barter-integration/src/protocol/http/mod.rs","mode":"100644","sha":"f4c4f5808bd8a4797ceec0cc87ed7bd0980d0cb1","size":3333},{"path":"barter-integration/src/protocol/http/private/encoder.rs","mode":"100644","sha":"d6dfb4289a9d6ce7f0743e40e42d114f64825f78","size":799},{"path":"barter-integration/src/protocol/http/private/mod.rs","mode":"100644","sha":"5d4ae754f662e86e31d8e4275e7b183a9183a545","size":4148},{"path":"barter-integration/src/protocol/http/public/mod.rs","mode":"100644","sha":"064dfb626beffc1083233d80a8b9387cafce06e6","size":486},{"path":"barter-integration/src/protocol/http/rest/client.rs","mode":"100644","sha":"89ce21011ec3c12ab2ed101f795a20cdaef38f4d","size":5068},{"path":"barter-integration/src/protocol/http/rest/mod.rs","mode":"100644","sha":"15395c3ad80b72a99df3471f27674db6db737009","size":1317},{"path":"barter-integration/src/protocol/mod.rs","mode":"100644","sha":"a62fba37a84fe8588cc531c57f15f33226402658","size":719},{"path":"barter-integration/src/protocol/websocket/mod.rs","mode":"100644","sha":"b8aaaf575cdc5726de6cb404e350c124327d4d2c","size":10047},{"path":"barter-integration/src/serde/de/error.rs","mode":"100644","sha":"47958dccd7b8d8987d6889a8c987a7a1e749b651","size":579},{"path":"barter-integration/src/serde/de/mod.rs","mode":"100644","sha":"a0e7440021220c67d1afcec54db9b7f4a007b332","size":4207},{"path":"barter-integration/src/serde/de/util.rs","mode":"100644","sha":"e04cad5c232759d4ca91652e1e2513a1074bc9ff","size":2849},{"path":"barter-integration/src/serde/mod.rs","mode":"100644","sha":"20a04cf6ca7026382fafc0b4a18e7fe4b94f3220","size":179},{"path":"barter-integration/src/serde/se/error.rs","mode":"100644","sha":"cecb58967983e8c4e8ade2c29d402217db8f594f","size":147},{"path":"barter-integration/src/serde/se/mod.rs","mode":"100644","sha":"be23668f4811efe0c7ae43dc1eebb1d7f1b15f71","size":4240},{"path":"barter-integration/src/socket/backoff.rs","mode":"100644","sha":"90dc01f703aea1b48533aaa2bc6376da2c451364","size":2283},{"path":"barter-integration/src/socket/mod.rs","mode":"100644","sha":"c7b90f6e8599b06b60af865fd84c01a9127a89fb","size":5248},{"path":"barter-integration/src/socket/on_connect_err.rs","mode":"100644","sha":"c0ebb9c195d87e2ef88b7370b223facb6333c431","size":7066},{"path":"barter-integration/src/socket/on_stream_err.rs","mode":"100644","sha":"56322c79edb3430cd77b3d47dd4c758193fe505b","size":5718},{"path":"barter-integration/src/socket/on_stream_err_filter.rs","mode":"100644","sha":"ebc18ce8856d719e112364f817662966ba05eb9e","size":5237},{"path":"barter-integration/src/socket/update.rs","mode":"100644","sha":"a1211e03632fd830b99561d2d0382e947f0fd3ca","size":1898},{"path":"barter-integration/src/stream/data.rs","mode":"100644","sha":"9804a91a7334c2177c93bb5bd7c5e68a94dfa86f","size":3636},{"path":"barter-integration/src/stream/ext/forward_by.rs","mode":"100644","sha":"3a5a923c5f207aae33a1e6c1e8d08b7ef2369329","size":6028},{"path":"barter-integration/src/stream/ext/forward_clone_by.rs","mode":"100644","sha":"6a3f976a7627025ef2d6842e96e8261e81c8abf8","size":5311},{"path":"barter-integration/src/stream/ext/indexed.rs","mode":"100644","sha":"96a461cb2093041de22c4bdbf9938376e6d3918b","size":3671},{"path":"barter-integration/src/stream/ext/mod.rs","mode":"100644","sha":"d2a79e968111670c874b718d7cd5c81b81ebdf58","size":2771},{"path":"barter-integration/src/stream/mod.rs","mode":"100644","sha":"6c5eed297d9af64cf81afa345c4cdc70593bc5d8","size":3688},{"path":"barter-integration/src/stream/util/merge.rs","mode":"100644","sha":"8b1833754bc62e4afd8f61be59695045bdf31359","size":2642},{"path":"barter-integration/src/stream/util/mod.rs","mode":"100644","sha":"32fb30db5d16e549afa55798cffb4e2eb3ea70b2","size":129},{"path":"barter-integration/src/subscription.rs","mode":"100644","sha":"1a1bd1a19e84600d73ff4c03aaff5a32d3b0ecf3","size":1256},{"path":"barter-macro/Cargo.toml","mode":"100644","sha":"6fa34023100149f2991a3f0963c526cb0d458a59","size":504},{"path":"barter-macro/LICENSE","mode":"100644","sha":"ff7647027ac0701d2da1f8e3283f81c3f2e59644","size":1063},{"path":"barter-macro/src/lib.rs","mode":"100644","sha":"9ced28636e316eb13b466ba5031e1a639c2bb5bf","size":4116},{"path":"barter/Cargo.toml","mode":"100644","sha":"26a731d37ff8344b86e4a39d61b52bd395ffd932","size":1717},{"path":"barter/LICENSE","mode":"100644","sha":"7eedf0a010e8918d1d751204f0e5ead64a2d3cdd","size":1062},{"path":"barter/README.md","mode":"100644","sha":"edbfb9315eb7906a7a9a14c987ae5c0ea3313979","size":10202},{"path":"barter/benches/backtest/mod.rs","mode":"100644","sha":"adb7ffb03d671da0975b9dcb47db3922771be9bb","size":14901},{"path":"barter/examples/backtests_concurrent.rs","mode":"100644","sha":"a539b5ef98740dda2b4c486c9ea7bd36b1d8bedc","size":4699},{"path":"barter/examples/config/backtest_config.json","mode":"100644","sha":"ac592e1d885d26e8599337fa3024f00c895382e9","size":2224},{"path":"barter/examples/config/system_config.json","mode":"100644","sha":"a63dd83eeb51cd94777206684e9cd29e087ccbbf","size":2026},{"path":"barter/examples/data/binance_spot_market_data_with_disconnect_events.json","mode":"100644","sha":"88afb818eeeea81318d361b30efd6de7ef224390","size":8579},{"path":"barter/examples/data/binance_spot_trades_l1_btcusdt_ethusdt_solusdt.json","mode":"100644","sha":"a45e626237348295096697ed50e47e41ca3ef803","size":16006299},{"path":"barter/examples/engine_async_with_historic_market_data_and_mock_execution.rs","mode":"100644","sha":"2de28c611b20f14dc405e21c49b67d7227270cc6","size":5068},{"path":"barter/examples/engine_sync_with_audit_replica_engine_state.rs","mode":"100644","sha":"d05fccf372ab0e76043444bcf5386ca3760cd836","size":4159},{"path":"barter/examples/engine_sync_with_live_market_data_and_mock_execution_and_audit.rs","mode":"100644","sha":"9c6d939cc059103898321a2795b3684cc1da34ba","size":4181},{"path":"barter/examples/engine_sync_with_multiple_strategies.rs","mode":"100644","sha":"ca87b6e5a043acc3e657c1f65a83e28a958c4a92","size":12933},{"path":"barter/examples/engine_sync_with_risk_manager_open_order_checks.rs","mode":"100644","sha":"355e322170317b1a28383b26065ff4aade75d37e","size":9922},{"path":"barter/examples/statistical_trading_summary.rs","mode":"100644","sha":"6acf20642f0c37b788ca4f86a367132ed08c9287","size":11401},{"path":"barter/src/backtest/market_data.rs","mode":"100644","sha":"2ff65b5c36cf552ba1114d7dbb41fb0a9103c0b3","size":2490},{"path":"barter/src/backtest/mod.rs","mode":"100644","sha":"accccc716ff16d26af1fd52abe1dfa2b14221e24","size":8625},{"path":"barter/src/backtest/summary.rs","mode":"100644","sha":"a54753d3002405497cf43ab95b471be19b486014","size":1488},{"path":"barter/src/engine/action/cancel_orders.rs","mode":"100644","sha":"99d707a5d2717942c731d1646fcbec193598ad4d","size":2165},{"path":"barter/src/engine/action/close_positions.rs","mode":"100644","sha":"2d90ed3dfb3b7fb8f9436e7d509e27213bd03b80","size":2533},{"path":"barter/src/engine/action/generate_algo_orders.rs","mode":"100644","sha":"0e94cbca04921a2bfd64fcffd4b32f58ec72e2a1","size":5714},{"path":"barter/src/engine/action/mod.rs","mode":"100644","sha":"a97c4263647a88bcbd651084d9642e1317710a34","size":2225},{"path":"barter/src/engine/action/send_requests.rs","mode":"100644","sha":"6fe708855e6786cae773d65ddaf6cde4b0777d4c","size":9765},{"path":"barter/src/engine/audit/context.rs","mode":"100644","sha":"e3ff0fa5eb65035ccc972a243ce2cb7205a818ac","size":395},{"path":"barter/src/engine/audit/mod.rs","mode":"100644","sha":"3e6867f0b76a5c988ad5c2b276beb91b183a5efc","size":8067},{"path":"barter/src/engine/audit/state_replica.rs","mode":"100644","sha":"4cf760bd46eda54a82028e33b716d15ab65eb3af","size":5839},{"path":"barter/src/engine/clock.rs","mode":"100644","sha":"cad2f21ca8e51596a43c046a7dc8a8e4c0a301bf","size":11704},{"path":"barter/src/engine/command.rs","mode":"100644","sha":"11673fb591612592204cccf7b211e2effab2a398","size":951},{"path":"barter/src/engine/error.rs","mode":"100644","sha":"0fcebedf2a59eb22bfbaecacd90dccea0ac5b813","size":1860},{"path":"barter/src/engine/execution_tx.rs","mode":"100644","sha":"3c190898dff9894c9e71f3b30777ffb36523a185","size":3468},{"path":"barter/src/engine/mod.rs","mode":"100644","sha":"aefb648997d4228600c79d81fc51fd7d7c5091a6","size":16985},{"path":"barter/src/engine/run.rs","mode":"100644","sha":"27cc23d89e3341496a6fcab63b828e2e365ccc0d","size":6891},{"path":"barter/src/engine/state/asset/filter.rs","mode":"100644","sha":"c727e0c0a74274931ac6be81a59a83612b288c9c","size":546},{"path":"barter/src/engine/state/asset/mod.rs","mode":"100644","sha":"508d036f6175cdb45b1513cd6be7d447cfb536ec","size":13128},{"path":"barter/src/engine/state/builder.rs","mode":"100644","sha":"87d4874f477ca6ec0669eedb5f990d15f91aa957","size":5361},{"path":"barter/src/engine/state/connectivity/mod.rs","mode":"100644","sha":"439a3ae6c620abd51949f2887722696a6cb249dc","size":7966},{"path":"barter/src/engine/state/global.rs","mode":"100644","sha":"692eb181a993b0a215852df3a7419f95b3a1951d","size":872},{"path":"barter/src/engine/state/instrument/data.rs","mode":"100644","sha":"e2d85d4b1081536d145cd856e47ccea0ec13ae32","size":4476},{"path":"barter/src/engine/state/instrument/filter.rs","mode":"100644","sha":"81fa7f18407d3d59966f45fc2accffe32038e250","size":1227},{"path":"barter/src/engine/state/instrument/mod.rs","mode":"100644","sha":"233786a9998da232d24dd1ff3514536552aa58c2","size":15968},{"path":"barter/src/engine/state/mod.rs","mode":"100644","sha":"1bd42c26bca844ef636c5ad20b1b1cf5875c5fcc","size":8880},{"path":"barter/src/engine/state/order/in_flight_recorder.rs","mode":"100644","sha":"4eab6f7bf57b5d9f39c5a2465b5af7af535f9404","size":2310},{"path":"barter/src/engine/state/order/manager.rs","mode":"100644","sha":"edcae9066998d5a7194fd0d158b49178c7284171","size":1140},{"path":"barter/src/engine/state/order/mod.rs","mode":"100644","sha":"e068bf5fa001069466db26acc7addb0e3e54c2c3","size":46830},{"path":"barter/src/engine/state/position.rs","mode":"100644","sha":"67c419ae2d1921064e4b66b64a584cae865f3eec","size":48440},{"path":"barter/src/engine/state/trading/mod.rs","mode":"100644","sha":"3197a9c223f7700040ded39764aaf90f47a93594","size":7188},{"path":"barter/src/error.rs","mode":"100644","sha":"7c3f7ea475d87ce228f1974bd9b57d721f83fd1d","size":1396},{"path":"barter/src/execution/builder.rs","mode":"100644","sha":"05f5d2d6fac5734ff1e541107e11ef949aba3cab","size":17724},{"path":"barter/src/execution/error.rs","mode":"100644","sha":"cfa5f8e3bf17714edece51f36837ec2f6a7089e5","size":832},{"path":"barter/src/execution/manager.rs","mode":"100644","sha":"9279350b84d0ee097da206d032a727afa037c4e6","size":16821},{"path":"barter/src/execution/mod.rs","mode":"100644","sha":"ef158c76c60c79717a31d5f487e0bdb542d7d797","size":1572},{"path":"barter/src/execution/request.rs","mode":"100644","sha":"5f08030acd1208c592285e590576c025b8f6c496","size":1721},{"path":"barter/src/lib.rs","mode":"100644","sha":"611c42502dd4fda62c42bcd9a9705ce40df0d45a","size":9431},{"path":"barter/src/logging.rs","mode":"100644","sha":"962be09cfbea353d4d4e0b04b76e79596201ebfd","size":1805},{"path":"barter/src/risk/check/mod.rs","mode":"100644","sha":"846d085916aca0db6c61fda258d96fc39732252b","size":1978},{"path":"barter/src/risk/check/util.rs","mode":"100644","sha":"59d2c93171deecab89cf7505260db0a64be89477","size":2262},{"path":"barter/src/risk/mod.rs","mode":"100644","sha":"fd288a076a935e09bec602f7a2d21149f4862740","size":4342},{"path":"barter/src/shutdown.rs","mode":"100644","sha":"eac67a49f005561d82149ce1392f225ecac680e7","size":368},{"path":"barter/src/statistic/algorithm.rs","mode":"100644","sha":"a24aa4ad1fd08a571e37eb5a8d78388487e06cf7","size":8017},{"path":"barter/src/statistic/metric/calmar.rs","mode":"100644","sha":"2b6411f8e1f0d9dc424de1c48797caaaeeae548e","size":9695},{"path":"barter/src/statistic/metric/drawdown/max.rs","mode":"100644","sha":"96eac7d0eba776278b6dca90ba3a9403ffd14886","size":6175},{"path":"barter/src/statistic/metric/drawdown/mean.rs","mode":"100644","sha":"689709e50675e02cf45ec4da31cee8bb1af1eaeb","size":5874},{"path":"barter/src/statistic/metric/drawdown/mod.rs","mode":"100644","sha":"b5393a1011a36642dcf93d41c059e8f71b64ed44","size":9556},{"path":"barter/src/statistic/metric/mod.rs","mode":"100644","sha":"8f95ed9d6f61675539b43e5b5de55954be8c5822","size":386},{"path":"barter/src/statistic/metric/profit_factor.rs","mode":"100644","sha":"44ce6d1412c0eb028b88b9fa3c4c5e139b054bf7","size":3293},{"path":"barter/src/statistic/metric/rate_of_return.rs","mode":"100644","sha":"3fd0911c0306b2d10d22d32c3ec2258197076924","size":6390},{"path":"barter/src/statistic/metric/sharpe.rs","mode":"100644","sha":"6409a5b90416f3e1f955c33ea3533729ccbbd1fd","size":4662},{"path":"barter/src/statistic/metric/sortino.rs","mode":"100644","sha":"260d13ba399976a3823d2c68ad391af5f746f0ed","size":9075},{"path":"barter/src/statistic/metric/win_rate.rs","mode":"100644","sha":"3693be845d93fb5b4ad954dae41be05bc4c4e600","size":1682},{"path":"barter/src/statistic/mod.rs","mode":"100644","sha":"09bf0e3e1bcb6cf36299e6c81b0922de88d39cab","size":494},{"path":"barter/src/statistic/summary/asset.rs","mode":"100644","sha":"12c73ad29f3736781eb3bb7a3cdde5f8844a3a36","size":14314},{"path":"barter/src/statistic/summary/dataset/dispersion.rs","mode":"100644","sha":"539a27aa3320fc27246a6813d8620ef0e3c41839","size":8329},{"path":"barter/src/statistic/summary/dataset/mod.rs","mode":"100644","sha":"21ac1f7c8752a5a8b0e9e1745ccec3ff19a52560","size":7490},{"path":"barter/src/statistic/summary/display.rs","mode":"100644","sha":"d5c941639b63d30175dfdc53cfec8f3084bde115","size":11376},{"path":"barter/src/statistic/summary/instrument.rs","mode":"100644","sha":"1ad29a2a4c51cd42c49809065009f4abf92b6f1b","size":5795},{"path":"barter/src/statistic/summary/mod.rs","mode":"100644","sha":"9bf68a5f4c925f79d2fac10eca4d65a720aa7965","size":8970},{"path":"barter/src/statistic/summary/pnl.rs","mode":"100644","sha":"45bb4dc71be992466128741adb41048a56456ec0","size":2219},{"path":"barter/src/statistic/time.rs","mode":"100644","sha":"8d58aceaefe7fee2a9c59f18163a136f104cc7e6","size":2301},{"path":"barter/src/strategy/algo.rs","mode":"100644","sha":"908b13e617fe53eeb79f9d086ef509641ace22fa","size":1199},{"path":"barter/src/strategy/close_positions.rs","mode":"100644","sha":"f3f8db4b63d87bc93ee9e4ace8b6aa6db0ad8eb3","size":4679},{"path":"barter/src/strategy/mod.rs","mode":"100644","sha":"fb9fc8f951ea06902e00412ecb4f66f08a7b5c6e","size":4002},{"path":"barter/src/strategy/on_disconnect.rs","mode":"100644","sha":"f68217a6b97d4d89b3f9dd31e5957d7f864bbba8","size":850},{"path":"barter/src/strategy/on_trading_disabled.rs","mode":"100644","sha":"8d97be12360e574cec0733ea97e17a8967a3874e","size":770},{"path":"barter/src/system/builder.rs","mode":"100644","sha":"1dac385cdc70c4234ceb499f10943670ca47ee48","size":14870},{"path":"barter/src/system/config.rs","mode":"100644","sha":"464b381436aa873b19a5898e00af521cd95d344f","size":5066},{"path":"barter/src/system/mod.rs","mode":"100644","sha":"d935e1ece4b0e27a2efc4e37dc1d983e17874a08","size":7298},{"path":"barter/tests/test_engine_process_engine_event_with_audit.rs","mode":"100644","sha":"97613e94f9526d5965c0a9f39b2ab09fd14fa3a9","size":34586},{"path":"release-plz.toml","mode":"100644","sha":"41218f7c2e630e8b5f3b12ea1a3db14debc9db0a","size":716},{"path":"rust-toolchain.toml","mode":"100644","sha":"91ed6e2aa874bd9184a0a45a25f89730ceb1da06","size":117},{"path":"rustfmt.toml","mode":"100644","sha":"65c600e21da63be27dc95dd87afc73b8faaa3c38","size":46}]}
+grep_rc=0
+--- 2026-09-22T16:29:25Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter/src/backtest/mod.rs label=c61_backtest_mod code=200 bytes=8625 rc=0 time_s=0.267949
+/// Backtesting utilities for algorithmic trading strategies.
+///
+/// This module provides tools for running historical simulations of trading strategies
+/// using market data, and analyzing the perfo
+$ grep -n -E 'Mock|slippage|impact|fill|fee|latency|Execution' <c61_backtest_mod>  (一致行を出す)
+23:    system::{builder::EngineFeedMode, config::ExecutionConfig},
+27:    execution::builder::{ExecutionBuild, ExecutionBuilder},
+54:    pub executions: Vec<ExecutionConfig>,
+203:    // Build Execution infrastructure
+204:    let ExecutionBuild {
+213:            ExecutionBuilder::new(&args_constant.instruments),
+215:                ExecutionConfig::Mock(mock_config) => builder.add_mock(mock_config, clock.clone()),
+grep_rc=0
+--- 2026-09-22T16:29:36Z method=run target=c61_ctx note=barter/src/backtest/mod.rs の 205-225 行 rc=0
+        execution_tx_map,
+        account_channel,
+        futures,
+    } = args_constant
+        .executions
+        .clone()
+        .into_iter()
+        .try_fold(
+            ExecutionBuilder::new(&args_constant.instruments),
+            |builder, config| match config {
+                ExecutionConfig::Mock(mock_config) => builder.add_mock(mock_config, clock.clone()),
+            },
+        )?
+        .build();
+
+    let engine = Engine::new(
+        clock,
+        args_constant.engine_state.clone(),
+        execution_tx_map,
+        args_dynamic.strategy,
+        args_dynamic.risk,
+--- 2026-09-22T16:29:36Z method=run target=c61_paths note=追跡ファイルの一覧から mock|slippage|impact|fill を拾う rc=0
+"path":"barter-execution/src/client/mock/mod.rs"
+"path":"barter-execution/src/exchange/mock/account.rs"
+"path":"barter-execution/src/exchange/mock/mod.rs"
+"path":"barter-execution/src/exchange/mock/request.rs"
+"path":"barter/examples/engine_async_with_historic_market_data_and_mock_execution.rs"
+"path":"barter/examples/engine_sync_with_live_market_data_and_mock_execution_and_audit.rs"
+--- 2026-09-22T16:29:44Z method=GET url=https://ungh.cc/repos/Luczinsritter/event_driven_backtesting_engine/files/main label=c16_files code=200 bytes=1112 rc=0 time_s=0.822662
+{"meta":{"sha":"20929924806b5071dd92f9075c9bf97901e0011c"},"files":[{"path":"README.md","mode":"100644","sha":"d6c4b18cfeb929f80ecad8f4b3485a36b5208b93","size":3749},{"path":"backtest_engine.py","mode
+--- 2026-09-22T16:29:50Z method=GET url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/backtest_engine.py label=c16_engine code=200 bytes=6680 rc=0 time_s=0.260302
+from utils import *
+
+class FinancialData () :
+
+    def __init__ (self, ticker, end_date, days_nbr, interval) :
+        self.ticker = ticker
+        self.days_nbr = days_nbr
+        self.end_dat
+--- 2026-09-22T16:30:21Z method=GET url=https://ungh.cc/repos/stefan-jansen/zipline-reloaded/files/main label=c18_files code=000 bytes= rc=35 time_s=11.340364
+
+--- 2026-09-22T16:30:38Z method=GET url=https://ungh.cc/repos/stefan-jansen/zipline-reloaded/files/main label=c18_files code=200 bytes=52279 rc=0 time_s=0.883700
+{"meta":{"sha":"943010b9da848e317fc520de87edade2b884d329"},"files":[{"path":".claude/tasks/fix_tox_failures.md","mode":"100644","sha":"53047f21bb43b92abd721fd0d5dc923aad90f36b","size":3630},{"path":".
+--- 2026-09-22T16:30:45Z method=GET url=https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/finance/slippage.py label=c18_slippage code=200 bytes=21742 rc=0 time_s=0.254666
+#
+# Copyright 2017 Quantopian, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of th
+--- 2026-09-22T16:30:46Z method=GET url=https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/finance/blotter/simulation_blotter.py label=c18_blotter code=200 bytes=16745 rc=0 time_s=0.573698
+#
+# Copyright 2015 Quantopian, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of th
+--- 2026-09-22T16:31:00Z method=run target=c18_evidence note=zipline-reloaded の逐語 rc=0
+$ sed -n "40,41p;241,253p;269,275p;288,292p;311p" slippage.py
+DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT = 0.025
+DEFAULT_FUTURE_VOLUME_SLIPPAGE_BAR_LIMIT = 0.05
+class VolumeShareSlippage(SlippageModel):
+    """Model slippage as a quadratic function of percentage of historical volume.
+
+    Orders to buy will be filled at::
+
+       price * (1 + price_impact * (volume_share ** 2))
+
+    Orders to sell will be filled at::
+
+       price * (1 - price_impact * (volume_share ** 2))
+
+    where ``price`` is the close price for the bar, and ``volume_share`` is the
+    percentage of minutely volume filled, up to a max of ``volume_limit``.
+        volume_limit=DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT,
+        price_impact=0.1,
+    ):
+        super(VolumeShareSlippage, self).__init__()
+
+        self.volume_limit = volume_limit
+        self.price_impact = price_impact
+    def process_order(self, data, order):
+        volume = data.current(order.asset, "volume")
+
+        max_volume = self.volume_limit * volume
+
+        volume_share = min(total_volume / volume, self.volume_limit)
+$ sed -n "63,67p;391,394p" simulation_blotter.py
+        self.slippage_models = {
+            Equity: equity_slippage or FixedBasisPointsSlippage(),
+            Future: future_slippage
+            or VolatilityVolumeShare(
+                volume_limit=DEFAULT_FUTURE_VOLUME_SLIPPAGE_BAR_LIMIT,
+                slippage = self.slippage_models[type(asset)]
+
+                for order, txn in slippage.simulate(bar_data, asset, asset_orders):
+                    commission = self.commission_models[type(asset)]
+--- 2026-09-22T16:31:00Z method=run target=c16_evidence note=Luczinsritter の逐語 rc=0
+$ sed -n "30,35p;55,65p" backtest_engine.py
+class EventBased (FinancialData) :
+    '''
+    EventBased class for event‑driven backtesting of trading strategies.
+    - Execution at next tick/bar open to eliminate look‑ahead bias
+    - Single‑position management (long or short) with entry/exit logic
+    - Trade journaling: side, units, entry/exit date & price, PnL, duration
+        date = self.data.index[ind_nbr]
+        price = self.data['Close'].iloc[ind_nbr]
+        return date, price
+
+    def get_execution_price(self, ind_nbr): 
+        # Function used to avoid look ahead bias by taking position at the next period
+        exec_date = self.data.index[ind_nbr + 1]
+        exec_price = self.data['Open'].iloc[ind_nbr + 1]
+        return exec_date, exec_price
+
+    def print_balance (self, ind_nbr) : 
+$ grep -c -i -E "queue|deque|Event\(|dispatch" backtest_engine.py
+0
+--- 2026-09-22T16:31:05Z method=GET url=https://ungh.cc/repos/mementum/backtrader/files/master label=c2_files code=000 bytes= rc=35 time_s=0.365880
+
+--- 2026-09-22T16:31:31Z method=GET url=https://ungh.cc/repos/mementum/backtrader/files/master label=c2_files code=200 bytes=44715 rc=0 time_s=0.914282
+{"meta":{"sha":"b853d7c90b6721476eb5a5ea3135224e33db1f14"},"files":[{"path":".github/FUNDING.yml","mode":"100644","sha":"bf96c469801489ca7ab09832df520d5a3b9eb485","size":720},{"path":".gitignore","mod
+--- 2026-09-22T16:31:37Z method=GET url=https://raw.githubusercontent.com/mementum/backtrader/master/backtrader/brokers/bbroker.py label=c2_bbroker code=200 bytes=46016 rc=0 time_s=0.200898
+#!/usr/bin/env python
+# -*- coding: utf-8; py-indent-offset:4 -*-
+###############################################################################
+#
+# Copyright (C) 2015-2023 Daniel Rodriguez
+#
+# This 
+--- 2026-09-22T16:31:46Z method=GET url=https://raw.githubusercontent.com/mementum/backtrader/master/backtrader/cerebro.py label=c2_cerebro code=200 bytes=63600 rc=0 time_s=0.228238
+#!/usr/bin/env python
+# -*- coding: utf-8; py-indent-offset:4 -*-
+###############################################################################
+#
+# Copyright (C) 2015-2023 Daniel Rodriguez
+#
+# This 
+--- 2026-09-22T16:31:55Z method=GET url=https://ungh.cc/repos/DeviaVir/zenbot/files/unstable label=c13_files code=200 bytes=37153 rc=0 time_s=0.939296
+{"meta":{"sha":"52872fb4b5f9d10e2f891d95daec05da0b721ceb"},"files":[{"path":".dockerignore","mode":"100644","sha":"6aaa0aa062b946e341e20152d9f1035e6855128d","size":120},{"path":".editorconfig","mode":
+--- 2026-09-22T16:32:03Z method=GET url=https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/lib/engine.js label=c13_engine code=200 bytes=38824 rc=0 time_s=0.345225
+let tb = require('timebucket')
+  , moment = require('moment')
+  , z = require('zero-fill')
+  , n = require('numbro')
+  // eslint-disable-next-line no-unused-vars
+  , colors = require('colors')
+  , abb
+--- 2026-09-22T16:32:04Z method=GET url=https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/extensions/exchanges/sim/exchange.js label=c13_sim code=200 bytes=8016 rc=0 time_s=0.508043
+let path = require('path')
+  , n = require('numbro')
+  , _ = require('lodash')
+
+module.exports = function sim (conf, s) {
+
+  let latency = 100 // In milliseconds, enough to be realistic without being 
+--- 2026-09-22T16:32:04Z method=GET url=https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/conf-sample.js label=c13_conf code=200 bytes=13510 rc=0 time_s=0.224248
+var c = module.exports = {}
+
+// mongo configuration
+c.mongo = {}
+c.mongo.db = process.env.ZENBOT_MONGODB_DATABASE || 'zenbot4'
+
+// Must provide EITHER c.mongo.connectionString OR c.mongo.host,port,use
+--- 2026-09-22T16:32:27Z method=run target=c13_evidence note=DeviaVir/zenbot の逐語 rc=0
+$ grep -n lib/engine.js
+23:  eventBus.on('trade', queueTrade)
+903:  var tradeProcessingQueue = async.queue(function({trade, is_preroll}, callback){
+931:      s.strategy.onPeriod.call(s.ctx, s, function () {
+$ sed -n "135,140p" lib/engine.js
+    s.period = {
+      period_id: d.toString(),
+      size: so.period_length,
+      time: d.toMilliseconds(),
+      open: trade.price,
+      high: trade.price,
+$ grep -n sim/exchange.js
+202:    let size = Math.min(buy_order.remaining_size, trade.size)
+207:      price = n(price).add(n(price).multiply(so.avg_slippage_pct / 100)).format('0.00000000')
+247:      price = n(price).subtract(n(price).multiply(so.avg_slippage_pct / 100)).format('0.00000000')
+$ grep -c -i queue sim/exchange.js
+0
+$ grep -n avg_slippage_pct conf-sample.js
+162:c.avg_slippage_pct = process.env.ZENBOT_AVG_SLIPPAGE_PCT || 0.045
+--- 2026-09-22T16:32:27Z method=run target=c2_evidence note=backtrader の逐語 rc=0
+$ sed -n "230,235p;349p;697p" brokers/bbroker.py
+        ('slip_perc', 0.0),
+        ('slip_fixed', 0.0),
+        ('slip_open', False),
+        ('slip_match', True),
+        ('slip_limit', True),
+        ('slip_out', False),
+        '''Sets a volume filler for volume filling execution'''
+            # Execution depends on volume filler
+$ grep -c -i -E "queue|Queue" cerebro.py
+0
+$ grep -n -E "def _runnext|def _runonce" cerebro.py
+1377:    def _runnext_old(self, runstrats):
+1443:    def _runonce_old(self, runstrats):
+1498:    def _runnext(self, runstrats):
+1649:    def _runonce(self, runstrats):
+--- 2026-09-22T16:32:38Z method=GET url=https://ungh.cc/repos/jesse-ai/jesse/files/main label=c19_jesse code=404 bytes=84 rc=0 time_s=0.746837
+{
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+--- 2026-09-22T16:32:41Z method=GET url=https://ungh.cc/repos/vnpy/vnpy_ctastrategy/files/main label=c20_vnpy code=200 bytes=4361 rc=0 time_s=0.593828
+{"meta":{"sha":"6ef76981624bf55b2ea978f8587f74d633aafc72"},"files":[{"path":".github/CODE_OF_CONDUCT.md","mode":"100644","sha":"a4fd9119b328a8d48fd6682153922153ec214b37","size":750},{"path":".github/I
+--- 2026-09-22T16:32:45Z method=GET url=https://ungh.cc/repos/microsoft/qlib/files/main label=c21_qlib code=200 bytes=78692 rc=0 time_s=0.595999
+{"meta":{"sha":"be725493eb1a6bbb42bf11b37aa7669f59610ff1"},"files":[{"path":".commitlintrc.js","mode":"100644","sha":"0a4c1ac2ec0487695fb3aca863a01cde80ca9425","size":928},{"path":".deepsource.toml","
+--- 2026-09-22T16:32:57Z method=GET url=https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/main/vnpy_ctastrategy/backtesting.py label=c20_vnpy_bt code=200 bytes=40213 rc=0 time_s=0.569806
+from collections import defaultdict
+from datetime import (
+    date as Date,
+    datetime,
+    timedelta
+)
+from typing import cast, Any
+from collections.abc import Callable
+from functools import lru_c
+--- 2026-09-22T16:33:10Z method=GET url=https://raw.githubusercontent.com/microsoft/qlib/main/qlib/backtest/exchange.py label=c21_qlib_exch code=200 bytes=44235 rc=0 time_s=0.558958
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+from __future__ import annotations
+
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, Dict, List, Opti
+--- 2026-09-22T16:33:26Z method=GET url=https://ungh.cc/repos/jesse-ai/jesse/files/master label=c19_jesse_m code=200 bytes=155089 rc=0 time_s=0.995387
+{"meta":{"sha":"019c7092812dc2cc6bcb8a2f1300b7ac800f83fc"},"files":[{"path":".agents/skills","mode":"120000","sha":"454b8427cd757f30dc7fdb9a325d19c399770417","size":17},{"path":".claude/skills/README.
+--- 2026-09-22T16:33:48Z method=GET url=https://raw.githubusercontent.com/jesse-ai/jesse/master/jesse/modes/backtest_mode.py label=c19_sim code=200 bytes=90101 rc=0 time_s=0.483499
+import os
+import time
+import re
+from typing import Dict, List, Tuple, Optional
+import numpy as np
+import jesse.helpers as jh
+import jesse.services.metrics as stats
+from jesse import exceptions
+from je
+--- 2026-09-22T16:34:02Z method=GET url=https://ungh.cc/repos/Mendl-Labs/BacktestingCore/files/master label=c15_mendl code=200 bytes=24667 rc=0 time_s=0.887731
+{"meta":{"sha":"f8d81ee0b4b65f6fbbf205d011ad2e815054fbc7"},"files":[{"path":".cargo/config.toml","mode":"100644","sha":"ae119a2bc4f0e8fcab98252b61f55d00af9de4d7","size":598},{"path":".gitignore","mode
+--- 2026-09-22T16:34:06Z method=GET url=https://ungh.cc/repos/carlos8f/bot18/files/master label=c14_bot18 code=404 bytes=84 rc=0 time_s=0.581136
+{
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+--- 2026-09-22T16:34:15Z method=GET url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/backtest/src/synthetic_book.rs label=c15_synbook code=200 bytes=11997 rc=0 time_s=0.382730
+//! Synthetic orderbook module for candle-based simulations.
+//!
+//! When only OHLCV data is available (no L2/trade-by-trade), this module
+//! generates an implied bid/ask spread and depth profile fro
+--- 2026-09-22T16:34:25Z method=GET url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/backtest/src/simulation.rs label=c15_sim code=200 bytes=97658 rc=0 time_s=0.302261
+//! Primary SimulationLoop for built-in Rust strategies.
+//!
+//! Used by: `BacktestEngine::run()` for non-Python strategies.
+//! NOT used for Python strategies — see `python_simulation.rs`.
+
+use str
+--- 2026-09-22T16:34:40Z method=GET url=https://ungh.cc/repos/Superalgos/Superalgos/files/master label=c7_supa code=200 bytes=1135161 rc=0 time_s=1.952839
+{"meta":{"sha":"9f0fb59edd4bae7afa08d06c366e0bcb48103aec"},"files":[{"path":".dockerignore","mode":"100644","sha":"b0e63519643c950af23600f399eedeadaef75ec6","size":316},{"path":".eslintignore","mode":
+--- 2026-09-22T16:34:55Z method=GET url=https://ungh.cc/repos/bludnic/opentrader/files/main label=c8_open code=000 bytes= rc=35 time_s=11.105089
+
+--- 2026-09-22T16:34:59Z method=GET url=https://ungh.cc/repos/CryptoSignal/Crypto-Signal/files/master label=c9_cs code=200 bytes=5567 rc=0 time_s=1.706378
+{"meta":{"sha":"7cb9c5c6cd226c6fe2d345e4bda3bec8156cefec"},"files":[{"path":".gitignore","mode":"100644","sha":"095d91aa7bba2d6bc0cc2f7bf28fa9f3461822f3","size":56},{"path":"Dockerfile","mode":"100644
+--- 2026-09-22T16:35:56Z method=GET url=https://ungh.cc/repos/bludnic/opentrader/files/main label=c8_open code=000 bytes= rc=35 time_s=30.363132
+
+--- 2026-09-22T16:36:35Z method=GET url=https://ungh.cc/repos/bludnic/opentrader/files/main label=c8_open code=404 bytes=84 rc=0 time_s=1.008335
+{
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+--- 2026-09-22T16:36:49Z method=GET url=https://ungh.cc/repos/bludnic/opentrader/files/master label=c8_open_m code=404 bytes=84 rc=0 time_s=1.060815
+{
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+--- 2026-09-22T16:36:52Z method=GET url=https://raw.githubusercontent.com/Superalgos/Superalgos/master/Projects/Algorithmic-Trading/TS/Bot-Modules/Trading-Bot/Low-Frequency-Trading/OrdersSimulations.js label=c7_ordersim code=200 bytes=28619 rc=0 time_s=0.277257
+exports.newAlgorithmicTradingBotModulesOrdersSimulations = function (processIndex) {
+    /*
+    When we are backtesting or paper trading, we need to simulate what would have happened at the exchange.
+
+--- 2026-09-22T16:37:08Z method=GET url=https://raw.githubusercontent.com/bludnic/opentrader/master/package.json label=c8_open_pkg code=200 bytes=1411 rc=0 time_s=0.444014
+{
+  "name": "root",
+  "private": true,
+  "author": "bludnic",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "app",
+    "packages/*",
+    "pro/*"
+  ],
+  "engines": {
+    "node": "~22.12"
+  },
+  "bin
+--- 2026-09-22T16:37:12Z method=GET url=https://ungh.cc/repos/bludnic/opentrader label=c8_open_ungh code=200 bytes=367 rc=0 time_s=0.902133
+{"repo":{"id":726678772,"name":"opentrader","repo":"Open-Trader/opentrader","description":"🤖 Open-source crypto trading bot | 📈 DCA & GRID strategies | ✨ UI | ⭐ Star to support the project!"
+--- 2026-09-22T16:37:34Z method=GET url=https://ungh.cc/repos/Open-Trader/opentrader/files/main label=c8_open_files code=000 bytes= rc=35 time_s=11.288632
+
+--- 2026-09-22T16:38:06Z method=GET url=https://ungh.cc/repos/Open-Trader/opentrader/files/main label=c8_open_files code=404 bytes=84 rc=0 time_s=0.770134
+{
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+--- 2026-09-22T16:38:47Z method=GET url=https://ungh.cc/repos/Open-Trader/opentrader/files/master label=c8_open_files_m code=000 bytes= rc=35 time_s=30.305669
+
+--- 2026-09-22T16:39:24Z method=GET url=https://ungh.cc/repos/Open-Trader/opentrader/files/master label=c8_open_files_m code=404 bytes=84 rc=0 time_s=0.790624
+{
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+--- 2026-09-22T16:39:34Z method=GET url=https://ungh.cc/repos/Open-Trader/opentrader/files/dev label=c8_open_files_d code=000 bytes= rc=35 time_s=0.111218
+
+--- 2026-09-22T16:40:06Z method=GET url=https://ungh.cc/repos/Open-Trader/opentrader/files/dev label=c8_open_files_d code=200 bytes=89380 rc=0 time_s=1.077952
+{"meta":{"sha":"8b8e24599599df214b12b4263553885854015b4b"},"files":[{"path":".changeset/README.md","mode":"100644","sha":"e5b6d8d6a67ad0dca8f20117fbfc72e076882d00","size":510},{"path":".changeset/beig
+--- 2026-09-22T16:40:16Z method=GET url=https://raw.githubusercontent.com/Open-Trader/opentrader/dev/packages/backtesting/src/market-simulator.ts label=c8_marketsim code=200 bytes=4998 rc=0 time_s=0.250083
+import type { Trade } from "@opentrader/bot-processor";
+import { ICandlestick, XOrderStatus } from "@opentrader/types";
+import { format, logger } from "@opentrader/logger";
+
+export class MarketSimulat
+--- 2026-09-22T16:40:54Z method=GET url=https://ungh.cc/repos/edtechre/pybroker/files/master label=c4_pybroker_files code=200 bytes=38039 rc=0 time_s=0.975399
+{"meta":{"sha":"95e00fecb1006490601aca7e2e8de609f032e12d"},"files":[{"path":".bench/timeframe-baseline.json","mode":"100644","sha":"faaa9cdb01597d43c131a477b5072bbff95ec08f","size":310},{"path":".clau
+--- 2026-09-22T16:40:56Z method=GET url=https://raw.githubusercontent.com/edtechre/pybroker/master/src/pybroker/slippage.py label=c4_slippage code=200 bytes=16822 rc=0 time_s=0.238433
+"""Implements slippage models."""
+
+"""Copyright (C) 2023 Edward West. All rights reserved.
+
+This code is licensed under Apache 2.0 with Commons Clause license
+(see LICENSE for details).
+"""
+
+import ma
+--- 2026-09-22T16:41:04Z method=GET url=https://raw.githubusercontent.com/edtechre/pybroker/master/src/pybroker/strategy.py label=c4_strategy code=200 bytes=150482 rc=0 time_s=0.295947
+"""Contains implementation for backtesting trading strategies."""
+
+"""Copyright (C) 2023 Edward West. All rights reserved.
+
+This code is licensed under Apache 2.0 with Commons Clause license
+(see LICE
+--- 2026-09-22T16:41:25Z method=run target=evidence_batch note=各候補の逐語(この回に取った原典から) rc=0
+### c20 vnpy_ctastrategy/backtesting.py
+$ sed -n "671,681p"
+    def cross_limit_order(self) -> None:
+        """
+        Cross limit order with last bar/tick data.
+        """
+        if self.mode == BacktestingMode.BAR:
+            long_cross_price = self.bar.low_price
+            short_cross_price = self.bar.high_price
+            long_best_price = self.bar.open_price
+            short_best_price = self.bar.open_price
+        else:
+            long_cross_price = self.tick.ask_price_1
+$ sed -n "1122p;1127p"
+            self.slippage += trade.volume * size * slippage
+        # Net pnl takes account of commission and slippage cost
+$ grep -c -E "EventEngine|Event\(|event_engine"
+0
+### c21 qlib/backtest/exchange.py
+$ sed -n "44,51p;114p"
+        deal_price: Union[str, Tuple[str, str], List[str], None] = None,
+        subscribe_fields: list = [],
+        limit_threshold: Union[Tuple[str, str], float, None] = None,
+        volume_threshold: Union[tuple, dict, None] = None,
+        open_cost: float = 0.0015,
+        close_cost: float = 0.0025,
+        min_cost: float = 5.0,
+        impact_cost: float = 0.0,
+        :param impact_cost:     market impact cost rate (a.k.a. slippage). A recommended value is 0.1.
+### c19 jesse
+$ grep -o -i slippage <files/master> | wc -l
+0
+$ grep -o path <files/master> | grep -i -E "AGENTS|CLAUDE|.agents"
+"path":".agents/skills"
+"path":".claude/skills/README.md"
+"path":".claude/skills/jesse-strategy-tests/SKILL.md"
+"path":"AGENTS.md"
+### c15 Mendl backtest/src/synthetic_book.rs
+$ sed -n "5p;80p;153,157p;201,205p"
+//! The simulator uses these to model realistic slippage and market impact.
+    pub fn from_candle(
+    /// Calculate effective fill price and slippage for a market order that
+    /// walks through the synthetic depth levels.
+    ///
+    /// Returns `(fill_price, slippage_bps)`.
+    pub fn calculate_slippage(&self, order_size: f64, side: BookSide) -> (f64, f64) {
+    /// Estimate market impact using a square-root model:
+    /// `impact_bps = k * sqrt(order_size / bar_volume) * 10000`
+    ///
+    /// `k` is calibrated to the current spread (wider spread → more impact).
+    pub fn calculate_market_impact(&self, order_size: f64, bar_volume: f64) -> f64 {
+$ grep -c -i -E "queue|ahead|fifo" synthetic_book.rs
+0
+$ grep -c -E "synthetic_book|SyntheticOrderBook" simulation.rs
+0
+$ sed -n "913p" simulation.rs
+                        self.calculate_market_impact(order_size, order_price, avg_volume, config, timestamp)
+### c7 Superalgos OrdersSimulations.js
+$ sed -n "7,11p;72p;85,86p"
+        actualSizeSimulation: actualSizeSimulation,
+        actualRateSimulation: actualRateSimulation,
+        feesToBePaidSimulation: feesToBePaidSimulation,
+        amountReceivedSimulation: amountReceivedSimulation,
+        percentageFilledSimulation: percentageFilledSimulation,
+            The default way to calculate the Actual Rate is to apply the Slippage defined
+                    let slippageAmount = tradingEngineOrder.rate.value * sessionParameters.slippage.config.marketOrderRate / 100
+                    if (slippageAmount !== 0) {
+$ grep -c -i candle
+13
+$ grep -c -i queue
+0
+### c8 OpenTrader packages/backtesting/src/market-simulator.ts
+$ sed -n "7,19p;98,113p;124p"
+   * Current candlestick
+   */
+  public candlestick: ICandlestick | null = null;
+  public smartTrades: Trade[] = [];
+
+  get currentCandle(): ICandlestick {
+    if (!this.candlestick) throw new Error("Data.candlestick is undefined");
+
+    return this.candlestick;
+  }
+
+  nextCandle(candlestick: ICandlestick) {
+    this.candlestick = candlestick;
+   * Update order statue to "Filled" based on current asset price:
+   * - `placed -> filled`
+   * @param smartTrade - SmartTrade
+   * @returns Returns `true` if order was fulfilled
+   */
+  private fulfillOrder(smartTrade: Trade): boolean {
+    const candlestick = this.currentCandle;
+
+    const updatedAt = new Date(candlestick.timestamp);
+
+    if (smartTrade.entryOrder && smartTrade.entryOrder.status === XOrderStatus.Placed) {
+      if (smartTrade.entryOrder.type === "Market") {
+        const filledOrder = {
+          ...smartTrade.entryOrder,
+          status: XOrderStatus.Filled,
+          filledPrice: candlestick.close,
+        if (candlestick.close <= smartTrade.entryOrder.price!) {
+$ grep -c -i -E "slippage|queue|volume"
+0
+### c9 CryptoSignal
+$ grep -o -i -E "backtest|simulat" <files/master> | wc -l
+0
+$ grep -o path | grep app/ 最上位
+"path":"app/.gitignore"
+"path":"app/__init__.py"
+"path":"app/analysis.py"
+"path":"app/app.py"
+"path":"app/behaviour.py"
+"path":"app/conf.py"
+"path":"app/defaults.yml"
+"path":"app/exchange.py"
+"path":"app/logs.py"
+"path":"app/notification.py"
+"path":"app/outputs.py"
+"path":"app/requirements-step-1.txt"
+"path":"app/requirements-step-2.txt"
+### c4 PyBroker
+$ grep -n -E "^class " src/pybroker/slippage.py
+36:class SlippageContext:
+101:class SlippageModel(ABC):
+171:class FixedSlippageModel(SlippageModel):
+221:class VolatilitySlippageModel(SlippageModel):
+315:class VolumeSlippageModel(SlippageModel):
+$ grep -c slippage_model src/pybroker/strategy.py
+35
+$ sed -n "702p" src/pybroker/strategy.py
+        slippage_model: Optional[SlippageModel] = None,
