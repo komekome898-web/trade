@@ -157,12 +157,27 @@ ITEMS = ["版", "最終更新日", "ライセンス", "言語と動作環境", "
          "4軸1_道具", "4軸2_情報", "4軸3_視点", "4軸4_向上"]
 MARKS = ["一次資料", "実測", "推定", "仮定", "未確認"]
 
+def norm_name(x):
+    """道具名の表記ゆれを 1 箇所で吸収する。エスケープした縦棒、バッククォート、前後の空白。
+    委任文の監査 4 回目の指摘 1・3・6: 表記の違いで同じ道具が別物になっていた。"""
+    return x.replace("\\|", "|").strip().strip("`").strip()
+
+
+def marked_names(lines):
+    """候補の一覧で [深掘り] と印を付けた道具名。改行を越えない(指摘 2 の閉じ忘れ対策)。"""
+    body = "\n".join(lines)
+    return [norm_name(m.group(1)) for m in
+            re.finditer(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]\s*`([^`\n]+)`", body, re.M)]
+
+
 def read_table(lines):
     """委任文 §4.0 の「道具 | 項目 | 値 | 印 | 根拠」の行を集める。"""
     rows = []
     for i, ln in enumerate(lines, 1):
-        c = [x.strip() for x in ln.strip().strip("|").split("|")] if ln.strip().startswith("|") else []
+        raw = ln.strip().replace("\\|", "\x00")   # `\|` は名前の一部なので退避(指摘 1)
+        c = [x.strip().replace("\x00", "|") for x in raw.strip("|").split("|")] if raw.startswith("|") else []
         if len(c) == 5 and c[1] in ITEMS:
+            c[0] = norm_name(c[0])
             rows.append((i, c))
     return rows
 
@@ -174,8 +189,7 @@ def check_table_complete(lines):
     # 名前は必ずバッククォートで囲ませる。区切り記号を足していく直し方は 3 回続けて
     # 偽陽性を生んだ(括弧・全角括弧・パイプが名前の一部になりうる)ので、曖昧さの元を断った。
     body = "\n".join(lines)
-    marked = [m.group(1).strip() for m in
-              re.finditer(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]\s*`([^`]+)`", body, re.M)]
+    marked = marked_names(lines)
     bad = [(i + 1, "候補の一覧の [深掘り] の道具名がバッククォートで囲まれていない: " + ln.strip()[:60])
            for i, ln in enumerate(lines, 1)
            if re.match(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]", ln) and not re.search(r"\[深掘り\]\s*`[^`]+`", ln)]
@@ -279,6 +293,33 @@ def check_checker_output_pasted(text, computed):
                  % (pasted, computed))]
     return []
 
+def check_hollow(lines):
+    """深掘りと書いた道具の中身が実質空でないか(委任文の監査 4 回目の指摘 4)。
+
+    全項目を「未確認」+ 定型文の根拠で埋めた報告が K1〜K12 を 0 件で通り抜けた。
+    オーナー逐語 L-379「エラー出た瞬間弾くんやろ…全部無理で始めて諦めるような委任文にしないと
+    意味ない」が防ごうとした「浅く終わらせて逃げる」が、機械では見えないまま通っていた。
+    """
+    rows = read_table(lines)
+    if not rows:
+        return []
+    marked, by = set(marked_names(lines)), {}
+    for i, c in rows:
+        by.setdefault(c[0], []).append((i, c))
+    out = []
+    for tool, rs in sorted(by.items()):
+        unk = [c for _, c in rs if c[3] == "未確認"]
+        if tool in marked and len(unk) * 2 > len(rs):
+            out.append((rs[0][0], "%s は [深掘り] と印を付けているが、表の %d/%d 行が「未確認」"
+                        "(深掘りでないなら候補の一覧で「浅い」と書く)" % (tool, len(unk), len(rs))))
+        srcs = [c[4] for _, c in rs if c[4]]
+        for u in set(srcs):
+            if srcs.count(u) > 5:
+                out.append((rs[0][0], "%s の根拠が %d 行で同じ文言の複写: %r"
+                            % (tool, srcs.count(u), u[:40])))
+    return out
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__); return 2
@@ -296,6 +337,7 @@ def main():
               ("K9 表に無い数値", check_prose_vs_table(lines)),
               ("K10 見出しの件数", check_heading_counts(lines)),
               ("K11 実測の根拠", check_measured_evidence(lines, logs)),
+              ("K13 中身が実質空", check_hollow(lines)),
               ]
     checks.append(("K12 検査の出力の貼付",
                    check_checker_output_pasted(text, sum(len(h) for _, h in checks))))
