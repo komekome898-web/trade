@@ -2088,7 +2088,7 @@ K12 検査の出力の貼付           1 件
 | 3 | 4 回目に「この環境の GitHub 検索の端点だけが返さない」と書かれた `stefan-jansen/zipline-reloaded` は、HTML でも `ungh.cc` でも取れた。**返さないのは検索の端点だけで、リポジトリの情報そのものは 2 経路で取れる** | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:2 と :26 |
 | 4 | **pypistats の API が 429 でも、同じサイトの HTML を `WebFetch` で読むと同じ数が取れる。**4 回目に 4 回とも 429 で諦めた `lib-pybroker` の週DL数は、この経路で埋まった | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:12 と :25 |
 | 5 | **PySystemtrade は「純 Python の研究用リポジトリ」だが、clone すると大きい。**中身の大半は本体のコードではなく同梱の相場データで、`data/` だけで大部分を占める | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:35 と :44 |
-| 6 | **この環境の Python の版が導入の足切りになる道具がある。**`ziplime` と `OctoBot` は `requires_python` が Python 3.12 以上で、この環境の Python 3.11.15 では pip が候補を 1 つも見つけない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:47 と :50 と :52 |
+| 6 | **この環境の Python の版が導入の足切りになる道具がある。**`ziplime` と `OctoBot` は `requires_python` が Python 3.12 以上で、既定の `python3`(3.11.15)では pip が候補を 1 つも見つけない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:47 と :50 と :52 |
 | 7 | **`fast-trade` は公開されている最新版に、自前の DataFrame を渡す経路の欠陥がある。**`build_data_frame.py` の 311 行の `infer_frequency` は引数 1 個だが、同じファイルの 78 行が引数 2 個で呼ぶ。`chart_period` を指定すると必ず TypeError で止まる | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:60 |
 | 8 | **`fast-trade` は `datafile` を指定しないと取引所からデータを取りに行く。**逃げ道として `datafile` を指定すると `Exchange None not supported` で止まり、対応先は `["binanceus", "binancecom", "coinbase"]` の 3 つだけだった。自前データを渡す正しい経路は `chart_period` を外して DataFrame を直接渡すこと | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:60 と :59 |
 | 9 | **`bt` に続いて `fast-trade` も、注文の種別という概念を持たない。**導入先の `*.py` を走査して `limit_order` / `market_order` / `"limit"` / `order_type` の一致が 0 件。委任文 §5-4 の「成行と指値の 1 往復」がここでも書けない | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:57 |
@@ -2104,12 +2104,12 @@ K12 検査の出力の貼付           1 件
 3. PySystemtrade — **この回で clone を打ったが、大きすぎたので止めた。**リードの条件(200 MB を超えたら止めて消す)に従い、測って消した。**浅い**(版・依存・導入・最小実行が未確認)。
 4. `PyBroker` — PyPI 上の名前は lib-pybroker。Apache License 2.0 with Commons Clause。4 回目に深掘り済み。この回ではコミット数と週DL数を取り直した。
 5. `bt` — MIT。注文の種別という概念が無い。4 回目に深掘り済み。この回ではコミット数だけを取り直した。
-6. Ziplime — **この環境では導入できない。**pip が候補を 1 つも見つけない(`requires_python` が Python 3.12 以上、この環境は Python 3.11.15)。**浅い**(ライセンス・GitHub の所在・最小実行が未確認。PyPI の `info.license` が None、`info.license_expression` も None、`project_urls` も None でリポジトリの所在が PyPI からは分からない。`ungh.cc/repos/Ziplime/ziplime` は接続時間切れ)。
+6. Ziplime — **既定の `python3` では導入できない。****【リードの訂正 2026-09-22】この環境には `python3.12`(3.12.3)と `python3.13`(3.13.12)も在る(`/usr/bin/python3.12` `/usr/bin/python3.13`、リードの実測)。既定の `python3` が 3.11.15 というだけで、「この環境では導入できない」は誤り。6 回目で python3.12 の隔離 venv に導入させる。** pip が候補を 1 つも見つけない(`requires_python` が Python 3.12 以上、この環境は Python 3.11.15)。**浅い**(ライセンス・GitHub の所在・最小実行が未確認。PyPI の `info.license` が None、`info.license_expression` も None、`project_urls` も None でリポジトリの所在が PyPI からは分からない。`ungh.cc/repos/Ziplime/ziplime` は接続時間切れ)。
 7. Superalgos — PyPI に無し。GitHub の LICENSE は Apache License Version 2.0(3 回目の実測)。**浅い**(版・更新日・導入・最小実行が未確認。Node.js 系で pip の経路に無い。この回は着手していない)。
 8. OpenTrader — PyPI に無し。GitHub の master ブランチの LICENSE は Apache License Version 2.0(3 回目の実測)。**浅い**(版・更新日・導入・最小実行が未確認。この回は着手していない)。
 9. CryptoSignal — PyPI に無し。GitHub の LICENSE は MIT License(3 回目の実測)。**浅い**(版・更新日・導入・最小実行が未確認。この回は着手していない)。
 10. [深掘り] `fast-trade` — **この回の深掘り。**AGPL-3.0。低コードのバックテストの library。導入・最小実行・配布物の検査まで到達。注文の種別の概念が無く、最新版に自前 DataFrame の経路の欠陥がある。依存に `fastmcp` を持ち `mcp_server.py` を同梱する。
-11. OctoBot — GPL-3.0。**この環境では導入できない**(`requires_python` が Python 3.12 以上)。**浅い**(導入・最小実行が未確認)。
+11. OctoBot — GPL-3.0。**既定の `python3` では導入できない**(`requires_python` が Python 3.12 以上)。**【リードの訂正 2026-09-22】この環境には `python3.12`(3.12.3)と `python3.13`(3.13.12)も在る(`/usr/bin/python3.12` `/usr/bin/python3.13`、リードの実測)。既定の `python3` が 3.11.15 というだけで、「この環境では導入できない」は誤り。6 回目で python3.12 の隔離 venv に導入させる。** **浅い**(導入・最小実行が未確認)。
 12. pybotters — MIT。**浅い**(導入・最小実行・対応取引所の一次資料が未確認。この回は PyPI の情報だけを取り直した)。
 13. DeviaVir/zenbot — 本家 carlos8f/zenbot の分岐。**浅い**(Node.js の導入・最小実行・保守の状態が未確認。この回は着手していない)。
 14. Bot18 — carlos8f の後継。**浅い**(ライセンス欄・導入・最小実行が未確認。この回は着手していない)。
@@ -2210,9 +2210,9 @@ curl -sS -o jesse_faq.html -w '%{http_code}\n' 'https://jesse.trade/help/faq/why
 | 道具 | 測ったこと | 値 | 印 | 根拠 |
 |---|---|---|---|---|
 | PySystemtrade | clone の大きさ | 878 MB(うち data が 737 MB、.git が 110 MB、examples が 26 MB)。リードの条件の 200 MB を超えたので止めて消した | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:35 と :44 と :45 |
-| Ziplime | 導入の可否 | 不可。pip が候補を 1 つも見つけない(No matching distribution found)。requires_python は <4.0,>=3.12、この環境は Python 3.11.15 | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:47 と :52 |
+| Ziplime | 導入の可否 | **既定の `python3`(3.11.15)では**不可。pip が候補を 1 つも見つけない(No matching distribution found)。requires_python は <4.0,>=3.12。**この環境には python3.12 / python3.13 も在るので「環境として不可」ではない(リードの訂正・実測)** | 実測 | docs/DATA/probes/20260922_tools_1_run5.log:47 と :52 |
 | Ziplime | PyPI の情報 | version 1.19.16 / 最新版の upload_time 2026-06-18T09:21:46 / info.license = None / info.license_expression = None / info.author = "Ziplime" / info.maintainer = None / project_urls = None / vulnerabilities 長さ 0 / requires_dist 30 件 | 一次資料 | https://pypi.org/pypi/ziplime/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:47 |
-| OctoBot | PyPI の情報 | version 2.1.1 / 最新版の upload_time 2026-03-29T15:25:05 / info.license = "GPL-3.0" / info.author = "Drakkar-Software" / info.maintainer = None / requires_python >=3.12(この環境では導入できない)/ requires_dist 77 件 | 一次資料 | https://pypi.org/pypi/OctoBot/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:50 |
+| OctoBot | PyPI の情報 | version 2.1.1 / 最新版の upload_time 2026-03-29T15:25:05 / info.license = "GPL-3.0" / info.author = "Drakkar-Software" / info.maintainer = None / requires_python >=3.12(**既定の `python3` では**導入できない)/ requires_dist 77 件 | 一次資料 | https://pypi.org/pypi/OctoBot/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:50 |
 | pybotters | PyPI の情報 | version 1.11.2 / 最新版の upload_time 2026-04-17T07:19:41 / info.license = None / info.license_expression = "MIT" / info.author = None / info.maintainer = None / requires_python >=3.10 / requires_dist 1 件 / 文書は日本語(project_urls の Documentation が pybotters.readthedocs.io/ja/stable) | 一次資料 | https://pypi.org/pypi/pybotters/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:49 |
 | mlflow | PyPI の情報 | version 3.16.1 / 最新版の upload_time 2026-09-16T23:14:16 / info.license = "Copyright 2018 Databricks, Inc.  All rights reserved." (SPDX の識別子ではない)/ info.author = None / info.maintainer = None / requires_python >=3.10 / requires_dist 59 件 | 一次資料 | https://pypi.org/pypi/mlflow/json 取得日 2026-09-22 / docs/DATA/probes/20260922_tools_1_run5.log:51 |
 
