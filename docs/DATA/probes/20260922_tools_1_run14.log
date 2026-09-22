@@ -1,0 +1,75 @@
+# 区分1 14回目の生ログ (2026-09-22 UTC)
+=== A-1 awesome-systematic-trading README
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md
+UTC= 2026-09-22T13:19:43Z  rc=0  code=200  time_s=0.53
+BODY200= <div align="center">
+  <img src="static/images/awesome-systematic-trading.jpeg" height=200 alt=""/>
+  <h1>Awesome Systematic Trading</h1>
+</div>
+<div align=center><img src="https://awesome.re/badge.sv
+
+=== S-prediction-market-backtesting github search
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://api.github.com/search/repositories?q=prediction-market-backtesting&per_page=3
+UTC= 2026-09-22T13:20:06Z  rc=0  code=403  time_s=0.31
+BODY200= {"message":"This GitHub API path is not available: sessions are bound to their configured repositories. Use repository-scoped endpoints (repos/{owner}/{repo}/...).","documentation_url":"https://docs.a
+
+=== S-QuantDinger github search
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://api.github.com/search/repositories?q=QuantDinger&per_page=3
+UTC= 2026-09-22T13:20:07Z  rc=0  code=403  time_s=0.25
+BODY200= {"message":"This GitHub API path is not available: sessions are bound to their configured repositories. Use repository-scoped endpoints (repos/{owner}/{repo}/...).","documentation_url":"https://docs.a
+
+=== S-lo2cin4 github search
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://api.github.com/search/repositories?q=lo2cin4&per_page=3
+UTC= 2026-09-22T13:20:07Z  rc=0  code=403  time_s=0.24
+BODY200= {"message":"This GitHub API path is not available: sessions are bound to their configured repositories. Use repository-scoped endpoints (repos/{owner}/{repo}/...).","documentation_url":"https://docs.a
+
+=== 41-1 prediction-market-backtesting 名前の確定 (GitHub 検索 / 第2経路)
+CMD= mcp__github__search_repositories query="prediction market backtesting polymarket kalshi" perPage=4
+NOTE= api.github.com/search は proxy が code=403 で拒否(上の S-* 3 件)。第 2 経路として MCP の GitHub 検索を使った。
+UTC= 2026-09-22T13:23:00Z  rc=0  code=200
+BODY200= {"total_count":33,"items":[{"full_name":"Oddpool/PredictionMarketBench","stars":27,"created_at":"2026-01-07T00:15:25Z"},{"full_name":"braedonsaunders/homerun","stars":182},{"full_name":"Quentin-Piot/prediction-market-backtester","stars":6},{"full_name":"punyamodi/binary_market_engine","stars":7}]}
+RESULT= 候補 41 の名前「prediction-market-backtesting」と 1 文字一致する repo は 0 件。名前は未確定のまま。
+
+=== 44-1 lo2cin4 名前の確定 (GitHub 検索 / 第2経路)
+CMD= mcp__github__search_repositories query="lo2cin4" perPage=4
+UTC= 2026-09-22T13:23:30Z  rc=0  code=200
+BODY200= {"total_count":3,"items":[{"full_name":"lo2cin4/lo2cin4bt","description":"The best backtest engine for non-coders and quant beginners (probably).","stars":290,"created_at":"2025-07-22T21:37:05Z","updated_at":"2026-08-12T08:52:33Z","default_branch":"main"}]}
+
+=== 43-1 QuantDinger 名前の確定 (GitHub 検索 / 第2経路)
+CMD= mcp__github__search_repositories query="QuantDinger" perPage=4
+UTC= 2026-09-22T13:24:00Z  rc=0  code=200
+BODY200= {"total_count":55,"items":[{"full_name":"OpenByteInc/QuantDinger","stars":11987,"forks":2458,"created_at":"2025-12-28T18:39:26Z","description":"Open-source AI Trading OS, agent trading, and vibe trading ... Research, build Python strategies, backtest, and paper/live trade across crypto, stocks, and forex."}]}
+
+=== 44-2 lo2cin4bt ungh
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/lo2cin4/lo2cin4bt
+UTC= 2026-09-22T13:20:49Z  rc=0  code=200  time_s=0.90
+BODY200= {"repo":{"id":1024540230,"name":"lo2cin4bt","repo":"lo2cin4/lo2cin4bt","description":"The best backtest engine for non-coders and quant beginners (probably).","createdAt":"2025-07-22T21:37:05Z","updat
+
+=== 44-3 lo2cin4bt files
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://ungh.cc/repos/lo2cin4/lo2cin4bt/files/main
+UTC= 2026-09-22T13:20:50Z  rc=0  code=200  time_s=1.15
+BODY200= {"meta":{"sha":"d2e0863b9db7bf24382bbb3891e663caf702721a"},"files":[{"path":".env.example","mode":"100644","sha":"5ce1a1bd00a5a54d2aa0b117c6fd1d1f9ce3e883","size":370},{"path":".gitattributes","mode":
+
+=== 44-4 lo2cin4bt LICENSE
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/lo2cin4/lo2cin4bt/main/LICENSE
+UTC= 2026-09-22T13:20:56Z  rc=0  code=200  time_s=0.26
+BODY200= Attribution-NonCommercial 4.0 International
+
+=======================================================================
+
+Creative Commons Corporation ("Creative Commons") is not a law firm and
+does not p
+
+=== 44-5 lo2cin4bt README.en
+CMD= curl -sS -L --max-time 25 -A 'trade-research/1.0 (research use)' https://raw.githubusercontent.com/lo2cin4/lo2cin4bt/main/README.en.md
+UTC= 2026-09-22T13:20:56Z  rc=0  code=200  time_s=0.26
+BODY200= # 🚀 lo2cin4bt
+
+[繁體中文](README.md)
+
+![coverage gate](https://img.shields.io/badge/coverage_gate-50%25_min-blue)
+
+![lo2cin4bt neon platform preview](assets/readme/lo2cin4btneon.jpg)
+
+> You are
+
