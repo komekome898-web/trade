@@ -10,6 +10,17 @@ import re, sys, pathlib, unicodedata, collections
 
 Z2H = str.maketrans("（）［］｛｝", "()[]{}")
 
+ITEMS = ["版", "最終更新日", "ライセンス", "言語と動作環境", "対応取引所", "星", "コミット数",
+         "保守者数", "週DL数", "初回公開日", "既知の脆弱性", "料金体系", "無料枠の上限",
+         "課金開始条件", "隠れた依存", "登録の要否", "到達経路", "導入可否", "install所要秒",
+         "依存数", "pip check", "最小実行の可否", "最小実行の中身", "実行所要秒", "wheel展開",
+         "setup.py導入時実行", "同梱バイナリ", "外部送信", "自動発注機能", "宣伝詐欺の兆候",
+         "当方データ投入", "時刻の扱い", "再現性", "規模の見積",
+         "配布元の一致", "難読化", "外部URL取得", "依存の一覧", "保守者名の一貫性",
+         "4軸1_道具", "4軸2_情報", "4軸3_視点", "4軸4_向上"]
+MARKS = ["一次資料", "実測", "推定", "仮定", "未確認"]
+
+
 def bold_spans(line):
     pos = [m.start() for m in re.finditer(r"\*\*", line)]
     return pos
@@ -131,30 +142,29 @@ def check_conflicting_values(lines):
     return out
 
 def check_contradiction(lines):
-    """同じ道具で「未実施/未確認」と「実測/実施」が同居(2〜4 回目。同じ型が 4 回続いた)。"""
-    tools = tool_names(lines)
-    neg, pos = collections.defaultdict(list), collections.defaultdict(list)
-    for i, ln in enumerate(lines, 1):
-        if "wheel" not in ln and "setup.py" not in ln:
-            continue
-        hit = [t for t in tools if t.lower() in ln.lower()]
-        if len(hit) > 2:
-            continue
-        for t in hit:
-            if True:
-                (neg if re.search(r"未実施|未確認", ln) else pos)[t].append(i)
-    return [(min(neg[t]), "%s: wheel/setup.py が「未実施・未確認」と「実施済み」の両方にある (行 %s / %s)"
-             % (t, neg[t], pos[t])) for t in sorted(neg) if t in pos]
+    """同じセルの中で「印」と「値」が食い違っていないか(監査 2〜4 回目の型)。
 
-ITEMS = ["版", "最終更新日", "ライセンス", "言語と動作環境", "対応取引所", "星", "コミット数",
-         "保守者数", "週DL数", "初回公開日", "既知の脆弱性", "料金体系", "無料枠の上限",
-         "課金開始条件", "隠れた依存", "登録の要否", "到達経路", "導入可否", "install所要秒",
-         "依存数", "pip check", "最小実行の可否", "最小実行の中身", "実行所要秒", "wheel展開",
-         "setup.py導入時実行", "同梱バイナリ", "外部送信", "自動発注機能", "宣伝詐欺の兆候",
-         "当方データ投入", "時刻の扱い", "再現性", "規模の見積",
-         "配布元の一致", "難読化", "外部URL取得", "依存の一覧", "保守者名の一貫性",
-         "4軸1_道具", "4軸2_情報", "4軸3_視点", "4軸4_向上"]
-MARKS = ["一次資料", "実測", "推定", "仮定", "未確認"]
+    元は文章を語で走査していたが、`料金体系` の値に「PyPI にも wheel にも料金の記述は無い」と
+    書いてあるだけで当たる誤検出が出た(2026-09-22 区分 1 の 7 回目、調査班が閉じずに残した指摘)。
+    **表の行の中だけを見る**形に変えた。
+    """
+    # 見るのは、この検査が生まれた原因の 2 項目だけ。全項目に広げたら本物の報告で
+    # 誤検出が 30 件出た(「実測」の値が下位の作業の未実施に触れているだけ、「不可」という
+    # 測定結果そのもの、など)。2026-09-22 区分 1 の 7 回目でリードが実測。
+    WATCH = ("wheel展開", "setup.py導入時実行")
+    done = re.compile(r"展開した|実施した|確認した|実施済み|走査した")
+    notdone = re.compile(r"未実施|未確認")
+    out = []
+    for i, c in read_table(lines):
+        if c[1] not in WATCH:
+            continue
+        v = c[2]
+        if c[3] == "未確認" and done.search(v) and not notdone.search(v):
+            out.append((i, "%s / %s: 印は「未確認」だが値は実施したと書いている: %r" % (c[0], c[1], v[:50])))
+        if c[3] == "実測" and notdone.search(v) and not done.search(v):
+            out.append((i, "%s / %s: 印は「実測」だが値は未実施・未確認と書いている: %r" % (c[0], c[1], v[:50])))
+    return out
+
 
 def norm_name(x):
     """道具名の表記ゆれを 1 箇所で吸収する。エスケープした縦棒、バッククォート、前後の空白。
