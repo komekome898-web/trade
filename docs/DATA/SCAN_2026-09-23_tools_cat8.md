@@ -745,3 +745,252 @@ K12 検査の出力の貼付           1 件
 4. **akurkar07/OrderBookの『Duplicate order IDs are rejected』『Quantity accounting overflow rejected』を境界事例としてE2/E6の対象外としたこと**: これらは注文(発注データ)の検証であり、E2の述語が挙げる『時系列・約定・板・足・参照データ』ではないと判断したが、『板』の状態を構成する注文列という意味では市場データの一部と見ることもでき、線引きに迷いが残る。
 5. **backtrexの『Compare Backtesting Platforms』ページをE1aの対象外としたこと**: 『Side-by-side feature comparison, pricing, honest reviews』というマーケティングページの文言のみを確認しており、実際にそのページの中身(表形式の比較内容)までは開いていない。中身に自動化された出力比較の記述がある可能性は排除できていない(未確認)。
 6. **Testing Maturity Modelの段ごとの詳しい定義に届かなかったこと**: 静的HTMLの取得という手段では、このページのクライアントレンダリング部分(レベルごとの詳細な基準)に届かなかった。他の一次資料(書籍・別のCMMI公式文書など)を探すべきか、それともこの要約段落の逐語で設計票§4.1との突き合わせを進めてよいか。
+
+## 区分8 — 3 回目の実行(2026-09-24)
+起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run3_prompt.md`(指紋 `1ff8dd5b2d7e`)/ 追補 `docs/DATA/delegations/20260923_tools_survey_cat8_addendum.md`(指紋 `46258eebcd93`)/ 2回目起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run2_prompt.md`(指紋 `fbd510552276`)/ 1回目起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run1_prompt.md`(指紋 `0ac68ca101f9`)/ 設計票 `docs/DATA/surveys/CAT8_DESIGN.md`/ 前回検収 `docs/AUDITOR/VERDICTS/2026-09-23_tools_scan_cat8_run2.md` に従う。生ログ: `docs/DATA/probes/20260923_tools_8_run3.log`。期限: `date -u -d '+20 min' +%FT%TZ` で 2026-09-23T23:41:48Z を算出(docs/DATA/probes/20260923_tools_8_run3.log 冒頭の budget 手)。
+### 検索計画
+この回は新しい検索計画を打たない(委任文§2「前回の残りの候補名があれば、まずそれを深掘りする(検索計画は打ち直さない)」)。この回の優先(起動文§1)どおり、残りの候補8-009〜8-016の深掘りとPineForgeのE3a・E3bの当て直しを先にした。
+### 出典
+| # | 経路 | URL / 節 | 内容 | 取得日 |
+|---|---|---|---|---|
+| 1 | GitHub API(ungh.cc) | https://ungh.cc/repos/nicferrari/backtester | リポジトリ情報(defaultBranch=master) | 2026-09-23 |
+| 2 | GitHub API(ungh.cc) | https://ungh.cc/repos/nicferrari/backtester/files/master | ファイル一覧(43本、docs/なし) | 2026-09-23 |
+| 3 | GitHub raw | https://raw.githubusercontent.com/nicferrari/backtester/master/README.md | README全文 | 2026-09-23 |
+| 4 | GitHub raw | https://raw.githubusercontent.com/nicferrari/backtester/master/examples/compare.rs 他examples7本 | 使用例(compare含む) | 2026-09-23 |
+| 5 | GitHub raw | https://raw.githubusercontent.com/nicferrari/backtester/master/src/*.rs(16本全部) | ソース全体 | 2026-09-23 |
+| 6 | arXiv | https://arxiv.org/abs/2603.20319 | 要旨全文 | 2026-09-23 |
+| 7 | arXiv | https://arxiv.org/abs/2512.12924 | 要旨全文 | 2026-09-23 |
+| 8 | X(x_fetch) | https://x.com/WannabeBotter/status/1810558269565571211 | rusty-bot言及の投稿本文再取得 | 2026-09-23 |
+| 9 | GitHub raw | https://raw.githubusercontent.com/polakowo/vectorbt/master/README.md | README全文(314行) | 2026-09-23 |
+| 10 | GitHub API(ungh.cc)+raw | https://ungh.cc/repos/Fincept-Corporation/FinceptTerminal 他README | リポジトリ情報・README(206行) | 2026-09-23 |
+| 11 | GitHub raw | https://raw.githubusercontent.com/pineforge-4pass/pineforge-engine/main/docs/pages/mtf.md | Validation rules節(142-154行) | 2026-09-23 |
+| 12 | GitHub API(ungh.cc) | https://ungh.cc/repos/pineforge-4pass/pineforge-engine/files/main | 全ファイル一覧(1355本、docs/55本) | 2026-09-23 |
+| 13 | GitHub raw | https://raw.githubusercontent.com/pineforge-4pass/pineforge-engine/main/docs/ 配下51本(Doxyfile等ビルド設定4本を除く) | docs/全体の一括取得・grep | 2026-09-23 |
+
+すべて `docs/DATA/probes/20260923_tools_8_run3.log` に手ごとの記録がある(#13は主にpineforge_docs_all_grepの1手で51本を取得)。
+### 知見
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `nicferrari/backtester / E1b / 入力(原文)`: `Data::load(filename: &str, ticker: &str)` はCSVファイル(またはyahoo-finance-api経由)を入力とする | 一次資料 | src/data.rs、docs/DATA/probes/20260923_tools_8_run3.log の nicferrari_backtester_data_rs 節 |
+| 2 | `nicferrari/backtester / E4 / 方式(原文)`: `broker::calculate`が`strategy.choices.iter().zip(strategy.choices.iter().skip(1))`で隣接するバー間の状態遷移を時系列順に処理する | 一次資料 | src/broker.rs 155-172行、docs/DATA/probes/20260923_tools_8_run3.log の nicferrari_backtester_srcrs 節 |
+| 3 | `PineForge / E3a・E3b / 方式(原文)`: `docs/pages/mtf.md`「When the run begins, the source host validates each registered lower-TF site against the run's evaluator input timeframe (`validate_security_timeframes`): ... `lookahead` and `gaps` must be off ... Violations raise at run-time with a precise diagnostic」 | 一次資料 | docs/pages/mtf.md 142-154行、取得日2026-09-23、docs/DATA/probes/20260923_tools_8_run3.log の pineforge_mtf_md_lines 節 |
+| 4 | `PineForge / E3a / 方式(原文)`: `docs/pine_v6_audit_master.md`「`request.security()` [F14]: 3 hard restrictions (support_checker.py:683-760): (1) same-chart symbol only...; (2) `lookahead_on` rejected outright; (3) `currency` / `ignore_invalid_symbol` rejected」= 静的チェッカーによる検出・拒否 | 一次資料 | docs/pine_v6_audit_master.md 157行、取得日2026-09-23、docs/DATA/probes/20260923_tools_8_run3.log の pineforge_docs_all_grep 節 |
+| 5 | `PineForge / E3b / 方式(原文)`: `docs/coverage.md`「`barmerge.lookahead_on` for lower-TF emulation ... *Out of scope by design*. Mechanically possible — just remove the guard — but `lookahead_on` combined with synthesized intrabar bars exposes information from a not-yet-complete sub-bar. That is a backtest-validity footgun」 | 一次資料 | docs/coverage.md 844-850行、取得日2026-09-23、docs/DATA/probes/20260923_tools_8_run3.log の pineforge_docs_all_grep 節 |
+| 6 | `VectorBT / E2 / 方式(原文)`: `data = vbt.YFData.download(symbols, missing_index="drop")` | 一次資料 | README 149・166・245行、docs/DATA/probes/20260923_tools_8_run3.log の vectorbt_readme_grep 節 |
+| 7 | `VectorBT / E5 / 方式(原文)`: `pf = vbt.Portfolio.from_random_signals(price, n=n, init_cash=100, seed=42)` | 一次資料 | README 153行、docs/DATA/probes/20260923_tools_8_run3.log の vectorbt_readme_grep 節 |
+| 8 | `arXiv:2603.20319 / E1a / 方式(原文)`: 「we execute 15 benchmark strategies through five independent open-source engines on 30 non-overlapping stratified asset buckets comprising 180 s&p 500 stocks under four transaction-cost regimes...propose four metrics grounded in metrology to quantify it: engine sensitivity, implementation uncertainty interval, divergence amplification factor, and conclusion stability index」 | 一次資料 | https://arxiv.org/abs/2603.20319 要旨、取得日2026-09-23、docs/DATA/probes/20260923_tools_8_run3.log の arxiv_2603_20319_abs_body 節 |
+| 9 | `arXiv:2512.12924 / E3b / 方式(原文)`: 「a rigorous walk-forward validation framework for algorithmic trading designed to mitigate overfitting and lookahead bias...enforces strict information set discipline」 | 一次資料 | https://arxiv.org/abs/2512.12924 要旨、取得日2026-09-23、docs/DATA/probes/20260923_tools_8_run3.log の arxiv_2512_12924_abs_body 節 |
+| 10 | `arXiv:2512.12924 / E5 / 方式(原文)`: 「the reproducibility crisis in quantitative finance research」「open-source implementation」 | 一次資料 | https://arxiv.org/abs/2512.12924 要旨、取得日2026-09-23、docs/DATA/probes/20260923_tools_8_run3.log の arxiv_2512_12924_abs_body 節 |
+
+### 候補の一覧
+1. [深掘り] `qf-lib` (8-001) — 状態: 深掘り(前回から変更なし、この回は再確認せず)
+2. [深掘り] `PineForge` (8-002) — 状態: 深掘り(この回でE3a・E3bが印に変わり、E1a〜E6の未判別が無くなったため深掘りに復帰)
+3. `prediction-market-backtester` (8-003) — 状態: 浅い(この回は未着手、前回値を維持)
+4. `akurkar07/OrderBook` (8-004) — 状態: 危険で導入停止(この回は未着手)
+5. `Exegy` (8-005) — 状態: 登録が要る(この回は未着手)
+6. `freqtrade` (8-006) — 状態: 浅い(この回は未着手)
+7. `backtrex` (8-007) — 状態: 浅い(この回は未着手)
+8. `FX Replay` (8-008) — 状態: 浅い(この回は未着手)
+9. `nicferrari/backtester` (8-009) — 状態: 浅い(E1a〜E6は全行確定〔未判別なし〕だが、委任文§4.0の機械可読の表〔語彙の全項目〕を書いていないため深掘りの条件を満たさない)
+10. `arXiv:2603.20319` (8-010) — 状態: 判別に一次資料が要る(要旨のみ読み、本文・コードは未読)
+11. `arXiv:2512.12924` (8-011) — 状態: 判別に一次資料が要る(要旨のみ読み、本文・コードは未読)
+12. `VectorBT` (8-012) — 状態: 判別に一次資料が要る(READMEの一部に届いたが公式ドキュメントサイトは未読)
+13. `rusty-bot` (8-013) — 状態: 未着手(X投稿は再取得したが、投稿自体にリポジトリURLが無く、道具本体の一次資料に届いていない)
+14. `Fincept Terminal` (8-014) — 状態: 判別に一次資料が要る(READMEは開いたが宣伝が主で、詳細は700ページの別マニュアル〔未取得〕にある)
+15. `TradingView のリプレイ機能` (8-015) — 状態: 未着手(この回は時間切迫のため着手できず)
+16. `Exactpro の reconciliation testing` (8-016) — 状態: 未着手(この回は時間切迫のため着手できず)
+
+### 要素と段
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 |
+|---|---|---|---|---|---|
+| qf-lib | E1a | なし | - | 実測 | 再確認: `docs/DATA/probes/20260923_tools_8_run2.log` の qflib_E1a_E3a_E6_recheck 節。`reconcil／cross.check／differential.*test／reference.impl／benchmark.against／compare.*implementation` でqf_lib全ソースをgrep、一致0件 |
+| qf-lib | E1b | 印 | 2 | 実測 | 1回目から変更なし(`イベント駆動バックテスタでPnL・トレードを計算する。人が別実装と比較する前提で、突き合わせを自動で行う機能は無い`、`docs/DATA/probes/20260923_tools_8_run1.log` の venv_install 節) |
+| qf-lib | E2 | 印 | 3 | 実測 | 訂正: docs/DATA/probes/20260923_tools_8_run2.log の `qflib_data_cleaner_full` の節。`qf_lib/common/utils/data_cleaner.py` の `DataCleaner` クラス(22-135行)。docstring「Cleans data which is partially incomplete, e.g. has gaps」。`_drop_underfilled_columns` が欠けの割合を`threshold`と比較し自動判定、結果を `self.incorrect_columns`(全欠損列)`self.columns_with_holes`(途中に欠損がある列)`self.start_late_columns`(開始が遅い列と日付の辞書)という公開属性に記録して呼び出し側が読める(=報告する)。段: `threshold`は使う人が指定できる(ア相当)が、結果を次回実行と自動比較して保存する仕組みは無い(イ非該当)ので段5には届かず、対象は qf_lib 独自の `SimpleReturnsDataFrame`(assert isinstance)に限られるため段4にも届かない→段3 |
+| qf-lib | E3a | なし | - | 実測 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の qflib_E1a_E3a_E6_recheck 節。`look.?ahead` でgrepした一致はすべて `get_end_date_without_look_ahead` 系(防止の計算=E3b)で、検出結果を報告する関数は無い |
+| qf-lib | E3b | 印 | 3 | 実測 | 1回目から変更なし(`qf_lib/data_providers/data_provider.py` 51・69-70行の `look_ahead_bias: bool` 引数) |
+| qf-lib | E4 | 印 | 3 | 実測 | 1回目から変更なし(イベント駆動バックテスタが時刻順にデータを読み込み実行ハンドラを動かす構造) |
+| qf-lib | E5 | 印 | 3 | 実測 | 訂正(誤りだった `なし` を直す): `docs/DATA/probes/20260923_tools_8_run2.log` の qflib_E5_correction 節。`backtesting/fast_alpha_model_tester/scenarios_generator.py` 97-98行 docstring「seed used to make the scenarios deterministic」、`backtesting/alpha_model/random_trades_alpha_model.py` 51-52行 同文(ユーザー向けseed引数、段2相当)。さらに qflib_verify_preloaded_data 節: `backtesting/trading_session/backtest_trading_session.py` の `get_preloaded_data_checksum()`(データバンドルのハッシュを返す)と `verify_preloaded_data(expected_checksum)`(一致しなければ ValueError を送出=自動判定)。使う人が `expected_checksum` を指定できる(ア相当)が、チェックサムの対象は `data_bundle`(データ)のみで、E5の対象『実験(コード・データ・設定)』全体には届かないため段4条件(対象の全部を持ち込める)を満たさず段3にとどめた |
+| qf-lib | E6 | なし | - | 実測 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の qflib_E6_recheck 節。`def (assert_／verify_／validate_)` でgrepし、本体コードの一致は `verify_preloaded_data`(E5に計上)と `chart.py` の `assert_is_qfseries`(型チェックの内部ヘルパーで独立した検証機能ではない)のみ。他はすべて `tests/` 配下のテストヘルパー |
+| PineForge | E1a | 印 | 5 | 一次資料 | 1回目から変更なし(README 217・263・267行) |
+| PineForge | E1b | 印 | 5 | 一次資料 | 1回目から変更なし(同上) |
+| PineForge | E2 | なし | - | 一次資料 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の pineforge_broad_recheck 節。`missing／duplicate／outlier／gap／stale／out.of.order／misalign／corrupt` でREADME全文を再検索。一致した箇所(65・230・267行)はいずれも『比較の一致率のgap』『TTYがJSON-RPCストリームをcorruptする』などデータ品質と無関係な文脈 |
+| PineForge | E3a | 印 | 3 | 一次資料 | 訂正: `docs/pages/mtf.md` 142-154行「Validation rules」節(`raw.githubusercontent.com`取得、docs/DATA/probes/20260923_tools_8_run3.log の pineforge_mtf_md_lines 節)。lower-TF `request.security_lower_tf` の登録時に `validate_security_timeframes` がTFの整合性と「`lookahead` and `gaps` must be off」を検査し、違反は「Violations raise at run-time with a precise diagnostic」(実行時に診断メッセージ付きで検出・報告)。さらに `docs/pine_v6_audit_master.md` 157行「`request.security()` [F14]: 3 hard restrictions (support_checker.py:683-760): ... (2) `lookahead_on` rejected outright」= 静的チェッカー(support_checker.py)がPineスクリプトの `lookahead_on` 使用を検出し拒否する(静的な解析)。段: 自動判定だが対象はPineForge自身のPineコンパイラ/request.security機構に限られるため段3。README単独では0件だったが(検収§5)、docs/の全55本中2本(coverage.md・pine_v6_audit_master.md・mtf.md)に一致(docs/DATA/probes/20260923_tools_8_run3.log の pineforge_docs_all_grep 節、51/55本を取得しgrep) |
+| PineForge | E3b | 印 | 3 | 一次資料 | 訂正: 同じ「Validation rules」節。lower-TFの `lookahead`/`gaps` を強制的にOFFにする検査で、違反(=知り得ない情報の混入)を実行前に阻止する。加えて `docs/coverage.md` 844-850行「`barmerge.lookahead_on` for lower-TF emulation」の節:「*Out of scope by design*. Mechanically possible — just remove the guard — but `lookahead_on` combined with synthesized intrabar bars exposes information from a not-yet-complete sub-bar. That is a backtest-validity footgun」= 設計上ガードを外さない理由を明記(防止機構の維持)。ただし上位TF(HTF)集約では `lookahead_on` を「legitimate use case」として許容しており(coverage.md 536・850行)、全面禁止ではなくlower-TF合成パスに限定した防止である点は根拠に残す。段: 自動・PineForge自身の機構限定で段3 |
+| PineForge | E4 | 印 | 3 | 一次資料 | 訂正: 1回目はE1aと同じ根拠(263・267行の formal gate/baseline promotion)を流用しており、監査14回目の指摘4により無効。`docs/DATA/probes/20260923_tools_8_run2.log` の pineforge_e4_context 節でE4専用の原文を確認: README 445行(表)「`strategy_stream_begin` / `_push_tick` / `_push_ticks` / `_advance_time` / `_end` / `_fill_report`」の説明「Warm on OHLCV, then run realtime on ordered trades」。記録したOHLCV・ティックを時刻順(`_advance_time`)に押し込み再実行する構造で、自動判定は無く(pass/failを出す機構ではない)、対象(戦略コード)はPineForge自身のコンパイル済みstrategyオブジェクトに限られるため段3。段5は取り消し |
+| PineForge | E5 | 印 | 5 | 一次資料 | 1回目から変更なし(README 37・328行) |
+| PineForge | E6 | なし | - | 一次資料 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の pineforge_broad_recheck 節。`fuzz／property.based／mutation／coverage／sanitiz` 一致0件(README全文) |
+| prediction-market-backtester | E1a | なし | - | 一次資料 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の predmkt_e1a_recheck 節。`reconcil／cross.check／differential／reference.impl／benchmark.against／compare.*(engine／implementation／platform)` でREADME全文を再検索、一致0件 |
+| prediction-market-backtester | E1b | 印 | 2 | 一次資料 | 1回目から変更なし |
+| prediction-market-backtester | E2 | 印 | 3 | 一次資料 | 1回目から変更なし(`data_quality.json`) |
+| prediction-market-backtester | E3a | 未判別 | 未判別 | 未確認 | 1回目から変更なし(ソース `src/pm_bt/` 未読) |
+| prediction-market-backtester | E3b | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| prediction-market-backtester | E4 | 印 | 3 | 一次資料 | 1回目から変更なし |
+| prediction-market-backtester | E5 | 印 | 5 | 一次資料 | 訂正(根拠を追加): 1回目の baseline文書・gitコミットハッシュに加え、`docs/DATA/probes/20260923_tools_8_run2.log` の predmkt_makesetup/predmkt_makefile/predmkt_setup_script 節。README 151行「optionally verifies `DATA_SHA256`」、`scripts/setup_data.sh`(取得日2026-09-23)33-35行「if [[ -n "$DATA_SHA256" ]]; then ... sha256sum --check --status; fi」。`set -euo pipefail`によりハッシュ不一致で自動的に異常終了する(自動判定)。ユーザーが`DATA_SHA256`を指定でき(ア)、固定したハッシュに対し以後の取得データを照合できる(イ=データの版の固定)ため段5の根拠を補強 |
+| prediction-market-backtester | E6 | なし | - | 一次資料 | 検討(起動文の指示どおりE2・E6に当てた): `DATA_SHA256`の検証はE2の7種(欠け・重複・順序の乱れ・時刻のずれ・外れ値・型や範囲の違反・情報源間の食い違い)のいずれにも直接当たらないため対象外(末尾の問いに記載) |
+| akurkar07/OrderBook | E1a | 印 | 3 | 一次資料 | 1回目から変更なし |
+| akurkar07/OrderBook | E1b | 印 | 2 | 一次資料 | 1回目から変更なし |
+| akurkar07/OrderBook | E2 | なし | - | 一次資料 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の orderbook_broad_recheck 節。`missing／duplicate／outlier／gap／stale／out.of.order／misalign／corrupt／data.quality` でgrep。95行「Active order IDs: Duplicate IDs are rejected」がヒットしたが、これは注文IDの重複検査であり、E2の述語『時系列・約定・板・足・参照データ』の重複ではないため対象外(境界事例として記録) |
+| akurkar07/OrderBook | E3a | なし | - | 一次資料 | 再確認: 同上節。`look.?ahead／future.leak／peek／snoop` 一致0件 |
+| akurkar07/OrderBook | E3b | なし | - | 一次資料 | 再確認: 同上節。同じ0件 |
+| akurkar07/OrderBook | E4 | なし | - | 一次資料 | 再確認: 同上節。`replay／market data／historical.*data／record` 一致0件(記録済み市場データの再生機能への言及なし) |
+| akurkar07/OrderBook | E5 | 印 | 3 | 一次資料 | 1回目から変更なし |
+| akurkar07/OrderBook | E6 | なし | - | 一次資料 | 再確認: 同上節。98行「Quantity accounting: ... rejects an order that would overflow」がヒットしたが、注文数量のオーバーフロー防御でありE1a〜E5に当たらない独立した検証機能とは言えない(境界事例として記録) |
+| Exegy | E1a | 未判別 | 未判別 | 未確認 | 1回目から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| Exegy | E1b | 未判別 | 未判別 | 未確認 | 1回目から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| Exegy | E2 | 未判別 | 未判別 | 未確認 | 1回目から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| Exegy | E3a | 未判別 | 未判別 | 未確認 | 1回目から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| Exegy | E3b | 未判別 | 未判別 | 未確認 | 1回目から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| Exegy | E4 | 未判別 | 未判別 | 未確認 | 1回目から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| Exegy | E5 | 未判別 | 未判別 | 未確認 | 1回目から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| Exegy | E6 | 未判別 | 未判別 | 未確認 | 1回目から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| freqtrade | E1a | なし | - | 一次資料 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の freqtrade_e1a_e6_recheck 節。`lookahead-analysis.md`全文で`reference／other.engine／cross.check／reconcil／independent.implementation`をgrep、一致は見出し語のみ(33行)。監査役の確認(検収§11の3)どおり分類を維持 |
+| freqtrade | E1b | 印 | 2 | 一次資料 | 1回目から変更なし |
+| freqtrade | E2 | 未判別 | 未判別 | 未確認 | 1回目から変更なし(`docs/data-download.md`未読) |
+| freqtrade | E3a | 印 | 3 | 一次資料 | 1回目から変更なし |
+| freqtrade | E3b | 未判別 | 未判別 | 未確認 | 1回目から変更なし(`recursive-analysis.md`は取得したが再現バイアス防止の記述は未確認) |
+| freqtrade | E4 | 未判別 | 未判別 | 未確認 | 1回目から変更なし(`docs/backtesting.md`未読) |
+| freqtrade | E5 | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| freqtrade | E6 | なし | - | 一次資料 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の freqtrade_e1a_e6_recheck 節。`recursive-analysis.md`(取得日2026-09-23)を読んだが、指標の再帰計算によるバックテストと実運用のずれを検出する機能(E3a寄り)で、E1a〜E5以外の独立検証には当たらない |
+| backtrex | E1a | なし | - | 一次資料 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の backtrex_fxreplay_html_recheck/次コマンド節。公式サイトHTML(288,790バイト、取得日2026-09-23)を`compare.{0,40}(implementation／engine／platform)／cross.check／reconcil／benchmark.against／tradingview`でgrep。『Compare Backtesting Platforms & Alternatives』『See how Backtrex compares to TradingView, MetaTrader, and FX Replay for backtesting. Side-by-side feature comparison, pricing, honest reviews by traders』という文言を確認したが、これは機能比較のマーケティングページであり、出力を突き合わせる機能ではない(境界事例として記録) |
+| backtrex | E1b | なし | - | 一次資料 | 1回目から変更なし |
+| backtrex | E2 | 印 | 3 | 一次資料 | 1回目から変更なし |
+| backtrex | E3a | 未判別 | 未判別 | 未確認 | 1回目から変更なし(製品ドキュメント未読) |
+| backtrex | E3b | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| backtrex | E4 | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| backtrex | E5 | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| backtrex | E6 | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| FX Replay | E1a | なし | - | 一次資料 | 再確認: docs/DATA/probes/20260923_tools_8_run2.log の backtrex_fxreplay_html_recheck 節。公式サイトHTML(357,164バイト、取得日2026-09-23)を同語でgrep。TradingViewへの言及は『Charting powered by TradingView lets you track economic events, monitor live prices, and more』のみでチャート描画ライブラリとしての利用、比較機能ではない |
+| FX Replay | E1b | なし | - | 一次資料 | 1回目から変更なし |
+| FX Replay | E2 | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| FX Replay | E3a | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| FX Replay | E3b | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| FX Replay | E4 | 印 | 2 | 一次資料 | 1回目から変更なし |
+| FX Replay | E5 | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| FX Replay | E6 | 未判別 | 未判別 | 未確認 | 1回目から変更なし |
+| nicferrari/backtester | E1a | なし | - | 実測 | `docs/DATA/probes/20260923_tools_8_run3.log` の nicferrari_backtester_allsrc_grep/data_examples_grep 節。README全文(92行超、全文取得)とsrc/全16本(backtester.rs/broker.rs/bt_run.rs/charts.rs/config.rs/data.rs/errors.rs/lib.rs/metrics.rs/orders.rs/risk_manager.rs/stateful.rs/strategies.rs/ta.rs/trades.rs/utilities.rs)・examples/全8本を取得し`reconcil／cross.check／benchmark.against／reference.impl`等でgrep、一致0件。README の`compare`例は`report_vertical`で複数戦略を並べて表示するのみ(同一エンジン内、examples_all.rs 96行「//let's compare them simultaneously」)で、別実装との差分検出ではない |
+| nicferrari/backtester | E1b | 印 | 2 | 実測 | Backtest構造体がPnL・トレード・メトリクスを計算(`broker::calculate`がbroker.rs 155行〜、strategy.choicesの時系列から損益を算出)。人が別実装と比較する前提で、自動での突き合わせ機能は無い(上記grepで確認) |
+| nicferrari/backtester | E2 | なし | - | 実測 | 同上grep。`missing／duplicate／outlier／gap`等でsrc/data.rs(Data構造体、CSV読込・Yahoo取得)を含む全ソースに一致0件。data.rsのload/saveに検証ロジックは見当たらない |
+| nicferrari/backtester | E3a | なし | - | 実測 | 同上grep。`lookahead／look.ahead／future.leak／peek／snoop`一致0件 |
+| nicferrari/backtester | E3b | なし | - | 実測 | 同上grep。同じ0件。防止機構への言及なし |
+| nicferrari/backtester | E4 | 印 | 3 | 実測 | `src/backtester.rs`(Backtest::new)が`broker::calculate`を呼び、broker.rs 155行〜で`strategy.choices`(時系列順に並んだOHLCVベースの判断列)をzip/skip(1)で逐次比較し約定を計算する(時刻順データの逐次処理)。CSV(test_data/NVDA.csv)やYahoo Finance APIから外部データを読み込めるが、戦略は独自の`Strategy`/`Choices`型で書く必要がある(対象の一部=データのみ外部持込み可)ため段3。E4該当の是非(vectorizedなbar処理を「再生」と呼べるか)は末尾の問いに記載 |
+| nicferrari/backtester | E5 | なし | - | 実測 | 同上grep。`reproduc／seed／deterministic`一致0件。乱数の種・環境固定・データ版固定のいずれの言及も見当たらない |
+| nicferrari/backtester | E6 | なし | - | 実測 | 同上grep。`fuzz／property.based／mutation／coverage／sanitiz／assert_／verify_／validate_`類のE1a〜E5に当たらない独立検証機能への言及なし。tests/(metrics_tests.rs・ta_tests.rs・trades_tests.rs)は開発者向け単体テストで、道具の機能として利用者が呼べるものではない(未開封、根拠に含めず) |
+| arXiv:2603.20319 | E1a | 印 | 未判別 | 一次資料 | arXiv:2603.20319要旨(取得日2026-09-23、docs/DATA/probes/20260923_tools_8_run3.log の arxiv_2603_20319_abs_body 節)「we execute 15 benchmark strategies through five independent open-source engines on 30 non-overlapping stratified asset buckets... propose four metrics... to quantify it: engine sensitivity, implementation uncertainty interval, divergence amplification factor, and conclusion stability index」。5つの独立エンジンの出力を突き合わせ差を定量化する手法そのものが論文の主題。段はコード本体(「code and benchmark data are publicly available」とあるが本文中にリポジトリURLを未発見)を開いておらず未判別 |
+| arXiv:2603.20319 | E1b | 未判別 | 未判別 | 未確認 | 論文自体が独自の損益計算実装を提供するか(それとも既存5エンジンの比較のみか)は要旨だけでは判別できない。本文未読 |
+| arXiv:2603.20319 | E2 | 未判別 | 未判別 | 未確認 | 要旨に記載なし。本文未読 |
+| arXiv:2603.20319 | E3a | 未判別 | 未判別 | 未確認 | 要旨に記載なし。本文未読 |
+| arXiv:2603.20319 | E3b | 未判別 | 未判別 | 未確認 | 要旨に記載なし。本文未読 |
+| arXiv:2603.20319 | E4 | 未判別 | 未判別 | 未確認 | 要旨に記載なし(stratified asset bucketsでの実行であり再生とは書かれていない)。本文未読 |
+| arXiv:2603.20319 | E5 | 未判別 | 未判別 | 未確認 | 「code and benchmark data are publicly available」はあるが乱数種・依存固定等の記載は要旨に無い。本文未読 |
+| arXiv:2603.20319 | E6 | 未判別 | 未判別 | 未確認 | 要旨「source-code forensics uncovered seven previously undocumented defects across three engines, abstracted into a five-category failure-mode taxonomy」はE1aの差分手法から派生した欠陥分類とも読め、E1aと別立てのE6機能か判別できない。本文未読(末尾の問いに記載) |
+| arXiv:2512.12924 | E1a | 未判別 | 未判別 | 未確認 | 要旨に記載なし。本文未読 |
+| arXiv:2512.12924 | E1b | 未判別 | 未判別 | 未確認 | 要旨に記載なし。本文未読 |
+| arXiv:2512.12924 | E2 | 未判別 | 未判別 | 未確認 | 要旨に記載なし。本文未読 |
+| arXiv:2512.12924 | E3a | 未判別 | 未判別 | 未確認 | 「mitigate...lookahead bias」「enforces strict information set discipline」は検出ではなく防止(E3b)の文脈で読める。検出を報告する記述は要旨に見当たらない。本文未読 |
+| arXiv:2512.12924 | E3b | 印 | 未判別 | 一次資料 | arXiv:2512.12924要旨(取得日2026-09-23、docs/DATA/probes/20260923_tools_8_run3.log の arxiv_2512_12924_abs_body 節)「We develop a rigorous walk-forward validation framework for algorithmic trading designed to mitigate overfitting and lookahead bias... The framework enforces strict information set discipline, employs rolling window validation across 34 independent test periods...」。段はコード本体(「The framework provides complete mathematical specifications and open-source implementation」とあるが未開封)未確認のため未判別 |
+| arXiv:2512.12924 | E4 | 未判別 | 未判別 | 未確認 | 「rolling window validation across 34 independent test periods」はwalk-forwardの分割手法で、E4述語の「記録した市場データを時刻順に再生」とは異なる可能性がある(検証手法か再生機能かの切り分けは本文が要る)。本文未読 |
+| arXiv:2512.12924 | E5 | 印 | 未判別 | 一次資料 | 同要旨「open-source implementation」「reproducible, honest validation protocol」「addresses the reproducibility crisis in quantitative finance research」。段は本文・コード未読のため未判別 |
+| arXiv:2512.12924 | E6 | 未判別 | 未判別 | 未確認 | 要旨に記載なし。本文未読 |
+| VectorBT | E1a | 未判別 | 未判別 | 未確認 | README(314行取得、docs/DATA/probes/20260923_tools_8_run3.log の vectorbt_readme/vectorbt_readme_grep 節)を`reconcil／cross.check／benchmark.against／reference.impl`でgrep、一致0件だったが、README全体の一部(冒頭〜中盤)しか確認できておらず、公式ドキュメントサイト(vectorbt.dev)は未読のため未判別 |
+| VectorBT | E1b | 未判別 | 未判別 | 未確認 | Portfolio.from_*がPnL・トレードを計算する(同README)が、比較機能の有無を判別する一次資料(docs)は未読 |
+| VectorBT | E2 | 印 | 3 | 一次資料 | 同README 149・166・245行「data = vbt.YFData.download(symbols, missing_index="drop")」。YFData.downloadに欠損インデックスの扱いを指定する引数があり、自動で処理する。段: ユーザーが指定できる(ア相当の一部)が、対象はvbt自身のYFDataラッパー経由のダウンロードに限られる(外部csv.gz読込時の挙動は未確認)ため段3 |
+| VectorBT | E3a | 未判別 | 未判別 | 未確認 | README grep(`purge／embargo`等)は一致0件だが、73行「Robustness testing with walk-forward optimization and label generation for ML workflows」の詳細(ML labelingのpurge/embargoの有無)はREADME抜粋のみでは判別できない。本文(公式ドキュメント)未読 |
+| VectorBT | E3b | 未判別 | 未判別 | 未確認 | 同上。walk-forward optimizationがlookahead防止を含意するかはドキュメント未読のため未判別 |
+| VectorBT | E4 | 未判別 | 未判別 | 未確認 | README冒頭「instead of looping through bars one strategy at a time, it packs thousands of configurations into NumPy arrays」はベクトル化計算の説明で、時刻順の逐次再生とは異なる可能性がある。Simulationの詳細ドキュメント未読 |
+| VectorBT | E5 | 印 | 3 | 一次資料 | 同README 153行「pf = vbt.Portfolio.from_random_signals(price, n=n, init_cash=100, seed=42)」。乱数シード引数で決定的な結果を得られる。段: ユーザー指定可(ア)だが、結果を保存し次回実行と自動比較する仕組みの記載はREADME抜粋に無く(イ未確認)、対象も一部機能(ランダム信号生成)のみのため段3 |
+| VectorBT | E6 | 未判別 | 未判別 | 未確認 | README抜粋に記載なし。公式ドキュメント未読 |
+| rusty-bot | E1a | 未判別 | 未判別 | 未確認 | 台帳の発見の出典(Xの投稿)を再取得したが(docs/DATA/probes/20260923_tools_8_run3.log の rustybot_x_post 節)、投稿本文は別記事(note.com)へのリンクの紹介のみで、`rusty-bot`自体のリポジトリURLは投稿に含まれていない。この回はリポジトリの特定に至らず一次資料未到達 |
+| rusty-bot | E1b | 未判別 | 未判別 | 未確認 | 台帳の発見の出典(Xの投稿)を再取得したが(docs/DATA/probes/20260923_tools_8_run3.log の rustybot_x_post 節)、投稿本文は別記事(note.com)へのリンクの紹介のみで、`rusty-bot`自体のリポジトリURLは投稿に含まれていない。この回はリポジトリの特定に至らず一次資料未到達 |
+| rusty-bot | E2 | 未判別 | 未判別 | 未確認 | 台帳の発見の出典(Xの投稿)を再取得したが(docs/DATA/probes/20260923_tools_8_run3.log の rustybot_x_post 節)、投稿本文は別記事(note.com)へのリンクの紹介のみで、`rusty-bot`自体のリポジトリURLは投稿に含まれていない。この回はリポジトリの特定に至らず一次資料未到達 |
+| rusty-bot | E3a | 未判別 | 未判別 | 未確認 | 台帳の発見の出典(Xの投稿)を再取得したが(docs/DATA/probes/20260923_tools_8_run3.log の rustybot_x_post 節)、投稿本文は別記事(note.com)へのリンクの紹介のみで、`rusty-bot`自体のリポジトリURLは投稿に含まれていない。この回はリポジトリの特定に至らず一次資料未到達 |
+| rusty-bot | E3b | 未判別 | 未判別 | 未確認 | 台帳の発見の出典(Xの投稿)を再取得したが(docs/DATA/probes/20260923_tools_8_run3.log の rustybot_x_post 節)、投稿本文は別記事(note.com)へのリンクの紹介のみで、`rusty-bot`自体のリポジトリURLは投稿に含まれていない。この回はリポジトリの特定に至らず一次資料未到達 |
+| rusty-bot | E4 | 未判別 | 未判別 | 未確認 | 台帳の発見の出典(Xの投稿)を再取得したが(docs/DATA/probes/20260923_tools_8_run3.log の rustybot_x_post 節)、投稿本文は別記事(note.com)へのリンクの紹介のみで、`rusty-bot`自体のリポジトリURLは投稿に含まれていない。この回はリポジトリの特定に至らず一次資料未到達 |
+| rusty-bot | E5 | 未判別 | 未判別 | 未確認 | 台帳の発見の出典(Xの投稿)を再取得したが(docs/DATA/probes/20260923_tools_8_run3.log の rustybot_x_post 節)、投稿本文は別記事(note.com)へのリンクの紹介のみで、`rusty-bot`自体のリポジトリURLは投稿に含まれていない。この回はリポジトリの特定に至らず一次資料未到達 |
+| rusty-bot | E6 | 未判別 | 未判別 | 未確認 | 台帳の発見の出典(Xの投稿)を再取得したが(docs/DATA/probes/20260923_tools_8_run3.log の rustybot_x_post 節)、投稿本文は別記事(note.com)へのリンクの紹介のみで、`rusty-bot`自体のリポジトリURLは投稿に含まれていない。この回はリポジトリの特定に至らず一次資料未到達 |
+| Fincept Terminal | E1a | 未判別 | 未判別 | 未確認 | README(206行、docs/DATA/probes/20260923_tools_8_run3.log の fincept_repo/fincept_readme_grep 節)を取得。冒頭が有料版(Enterprise/Quantcept)の宣伝で占められ、97行「quant lab and backtesting」等41モジュールの詳細は「700-page manual」(https://fincept.in/manual、未取得)にあり、README単体では`lookahead／reconcil／reproduc／seed／missing／duplicate`等いずれも一致0件 |
+| Fincept Terminal | E1b | 未判別 | 未判別 | 未確認 | README(206行、docs/DATA/probes/20260923_tools_8_run3.log の fincept_repo/fincept_readme_grep 節)を取得。冒頭が有料版(Enterprise/Quantcept)の宣伝で占められ、97行「quant lab and backtesting」等41モジュールの詳細は「700-page manual」(https://fincept.in/manual、未取得)にあり、README単体では`lookahead／reconcil／reproduc／seed／missing／duplicate`等いずれも一致0件 |
+| Fincept Terminal | E2 | 未判別 | 未判別 | 未確認 | README(206行、docs/DATA/probes/20260923_tools_8_run3.log の fincept_repo/fincept_readme_grep 節)を取得。冒頭が有料版(Enterprise/Quantcept)の宣伝で占められ、97行「quant lab and backtesting」等41モジュールの詳細は「700-page manual」(https://fincept.in/manual、未取得)にあり、README単体では`lookahead／reconcil／reproduc／seed／missing／duplicate`等いずれも一致0件 |
+| Fincept Terminal | E3a | 未判別 | 未判別 | 未確認 | README(206行、docs/DATA/probes/20260923_tools_8_run3.log の fincept_repo/fincept_readme_grep 節)を取得。冒頭が有料版(Enterprise/Quantcept)の宣伝で占められ、97行「quant lab and backtesting」等41モジュールの詳細は「700-page manual」(https://fincept.in/manual、未取得)にあり、README単体では`lookahead／reconcil／reproduc／seed／missing／duplicate`等いずれも一致0件 |
+| Fincept Terminal | E3b | 未判別 | 未判別 | 未確認 | README(206行、docs/DATA/probes/20260923_tools_8_run3.log の fincept_repo/fincept_readme_grep 節)を取得。冒頭が有料版(Enterprise/Quantcept)の宣伝で占められ、97行「quant lab and backtesting」等41モジュールの詳細は「700-page manual」(https://fincept.in/manual、未取得)にあり、README単体では`lookahead／reconcil／reproduc／seed／missing／duplicate`等いずれも一致0件 |
+| Fincept Terminal | E4 | 未判別 | 未判別 | 未確認 | README(206行、docs/DATA/probes/20260923_tools_8_run3.log の fincept_repo/fincept_readme_grep 節)を取得。冒頭が有料版(Enterprise/Quantcept)の宣伝で占められ、97行「quant lab and backtesting」等41モジュールの詳細は「700-page manual」(https://fincept.in/manual、未取得)にあり、README単体では`lookahead／reconcil／reproduc／seed／missing／duplicate`等いずれも一致0件 |
+| Fincept Terminal | E5 | 未判別 | 未判別 | 未確認 | README(206行、docs/DATA/probes/20260923_tools_8_run3.log の fincept_repo/fincept_readme_grep 節)を取得。冒頭が有料版(Enterprise/Quantcept)の宣伝で占められ、97行「quant lab and backtesting」等41モジュールの詳細は「700-page manual」(https://fincept.in/manual、未取得)にあり、README単体では`lookahead／reconcil／reproduc／seed／missing／duplicate`等いずれも一致0件 |
+| Fincept Terminal | E6 | 未判別 | 未判別 | 未確認 | README(206行、docs/DATA/probes/20260923_tools_8_run3.log の fincept_repo/fincept_readme_grep 節)を取得。冒頭が有料版(Enterprise/Quantcept)の宣伝で占められ、97行「quant lab and backtesting」等41モジュールの詳細は「700-page manual」(https://fincept.in/manual、未取得)にあり、README単体では`lookahead／reconcil／reproduc／seed／missing／duplicate`等いずれも一致0件 |
+| TradingView のリプレイ機能 | E1a | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回はREADME/公式文書を開いていない) |
+| TradingView のリプレイ機能 | E1b | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回はREADME/公式文書を開いていない) |
+| TradingView のリプレイ機能 | E2 | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回はREADME/公式文書を開いていない) |
+| TradingView のリプレイ機能 | E3a | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回はREADME/公式文書を開いていない) |
+| TradingView のリプレイ機能 | E3b | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回はREADME/公式文書を開いていない) |
+| TradingView のリプレイ機能 | E4 | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回はREADME/公式文書を開いていない) |
+| TradingView のリプレイ機能 | E5 | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回はREADME/公式文書を開いていない) |
+| TradingView のリプレイ機能 | E6 | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回はREADME/公式文書を開いていない) |
+| Exactpro の reconciliation testing | E1a | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回は公式文書を開いていない) |
+| Exactpro の reconciliation testing | E1b | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回は公式文書を開いていない) |
+| Exactpro の reconciliation testing | E2 | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回は公式文書を開いていない) |
+| Exactpro の reconciliation testing | E3a | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回は公式文書を開いていない) |
+| Exactpro の reconciliation testing | E3b | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回は公式文書を開いていない) |
+| Exactpro の reconciliation testing | E4 | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回は公式文書を開いていない) |
+| Exactpro の reconciliation testing | E5 | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回は公式文書を開いていない) |
+| Exactpro の reconciliation testing | E6 | 未判別 | 未判別 | 未確認 | 時間切迫のため未着手(この回は公式文書を開いていない) |
+
+### ツール1件ごとの表
+この回で委任文§4の全列(料金の構造・到達と実行の記録・相性・当方に無いもの・4軸・危険)を新規に書く候補は無い。8-009〜8-014は上の「要素と段」表と知見表でE1a〜E6の一次資料は確かめたが、時間の制約で§4の全列(料金・4軸等)には手を付けていない(次回に持ち越す)。8-001〜8-008はこの回で変更なし(§4.0表参照)。
+
+### 4.0 機械可読の表(深掘りした道具: qf-lib / PineForge)
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| qf-lib | 再現性 | seed(scenarios_generator)+checksum(verify_preloaded_data) | 実測 | docs/DATA/probes/20260923_tools_8_run2.log:259(この回で変更なし。2回目報告689行と同じ値) |
+
+### 代替経路
+この回は『この環境から不可』と書いた項目なし。
+
+### 辿る一覧から出た名前
+時間の制約(起動文§2の1〜2の深掘りと訂正を優先したため)により、起動文§2の3(dev.toのreconciliation tools記事・Xの`aiwithjainam`投稿のリポジトリ列挙・zennの仮説検証フレームワーク記事・quantreo/algorier/fortraatersのlook-ahead bias解説記事・1回目検索計画7の結果のライブラリ)を開く作業に、この回は着手できなかった。**未着手。次回に持ち越す。**
+
+### 予算
+**時刻**: 開始(期限算出) 2026-09-23T23:21:48Z(`date -u -d '+20 min'`で期限2026-09-23T23:41:48Zを算出、docs/DATA/probes/20260923_tools_8_run3.log 冒頭)。この節を書いている時点(2026-09-23T23:29台)で期限まで約12分。**トークン数**: 自分自身の消費を計測する手段がこの環境に無く未確認(作った数は書かない)。
+**実行状況**: §2の1(残りの候補8-009〜8-016の深掘り)は**途中**(8-009はE1a〜E6を全行確定させたが§4.0表は未着手、8-010・8-011は要旨のみ、8-012は一部、8-014はREADMEのみ、8-013・8-015・8-016は未着手)、時刻2026-09-23T23:27台に区切った(残り時間を報告書の作成と検査に充てるため。委任文の「時間の制約」だけで済ませず、生ログの時刻と一緒にここに書く)。§2の2(PineForgeのE3a・E3b)は**済み**(docs/pages/mtf.md・docs/coverage.md・docs/pine_v6_audit_master.mdの3文書、docs/の全55本中51本を取得しgrep)。§2の3(辿る一覧)は**未着手**。
+**残りの候補名**: 8-009(§4.0表以降が残り)/ 8-010・8-011(本文・コード未読)/ 8-012(公式ドキュメント未読)/ 8-013(リポジトリ未特定)/ 8-014(700頁マニュアル未読)/ 8-015・8-016(未着手のまま)。
+
+### 受け入れ検査の出力
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log docs/DATA/probes/20260923_tools_8_run2.log docs/DATA/probes/20260923_tools_8_run3.log` の最後に打った出力全文:
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+`python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 3` の最後に打った出力全文:
+```
+読んだもの: 候補の一覧 16 行 / 要素と段の表 128 行(道具 16)/ 知見の表 10 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+(読んだ行数「要素と段の表 128 行(道具 16)」は、この回の候補の一覧16行・「要素と段」16道具×8要素=128行と一致している)
+
+`python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run3.log --require-deadline` の最後に打った出力全文:
+```
+参考: docs/DATA/probes/20260923_tools_8_run3.log の最後の手 2026-09-23T23:27:22Z / 期限 2026-09-23T23:41:48Z / 期限切れの手 なし
+---- 合計 0 件
+```
+
+`git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l` の出力: `0`(1回目・2回目の節から消えた行は無い)
+
+### 判断に迷った点と問い(決めずに列挙)
+1. **`nicferrari/backtester`のE4該当性**: `broker::calculate`は`strategy.choices`という事前に読み込んだ時系列配列をzip/skip(1)で処理するベクトル化計算で、明示的な「時刻を進めて再生する」ループ(PineForgeの`_advance_time`のような)ではない。E4の述語「記録した市場データを時刻順に再生して、戦略・執行・計算を再実行する」に、事前ロード済み配列のベクトル化走査が当たるか(qf-libのイベント駆動処理と同列に扱えるか)を確認したい。この回は印・段3としたが、境界事例である。
+2. **`arXiv:2603.20319`の「source-code forensics で7件の欠陥を発見、5分類のタクソノミー」をE1a単独の産物とみなすかE6にも計上するか**: 要旨だけでは、欠陥検出がE1aの差分比較から自動的に出た副産物か、独立した検証手順(E6)かを判別できない。本文を読めば分かるはずだが、この回は未読。
+3. **PineForgeのE3a・E3bを両方「印」としたことの妥当性**: `docs/pine_v6_audit_master.md`の`support_checker.py`(静的チェッカー、`lookahead_on`を拒否)はE3a(検出)に、`docs/pages/mtf.md`・`docs/coverage.md`の実行時ガードはE3b(防止)に、それぞれ当てた。しかし両方とも同じ「`lookahead_on`を許可しない」という1つの設計判断の異なる側面(静的拒否と実行時ガード)であり、1つの機構を2列に重複計上していないか、確認したい。
+4. **PineForgeの上位TF(HTF)集約での`lookahead_on`許容**(`docs/coverage.md`536・850行「legitimate use case」)をどう扱うか: 下位TF(LTF)合成では禁止、上位TF集約では許容という非対称な設計だが、この回はLTF側の禁止(=E3b該当)だけを根拠にした。HTF側の許容がE3bの評価を弱めないか(「防ぐ機能を持つ」と言えるのは一部の経路だけ)を確認したい。
+5. **`VectorBT`のE2・E5の段を3としたこと**: `missing_index="drop"`・`seed=42`はいずれも`vbt.YFData.download`・`Portfolio.from_random_signals`という個別APIの引数であり、当方のcsv.gz形式データを直接投入した場合にも同じ挙動になるかは未確認(READMEの抜粋のみで判断した)。公式ドキュメントを読めば対象範囲が広がる可能性がある。
+6. **8-013 `rusty-bot`の一次資料の所在**: X投稿(WannabeBotter氏、2024-07-09)は別記事(note.com)への言及のみで、`rusty-bot`自体のリポジトリ・公式サイトのURLを含んでいない。GitHub検索等でリポジトリを探すべきか(候補として残すが、この回はWebSearchを使う時間が無かった)。

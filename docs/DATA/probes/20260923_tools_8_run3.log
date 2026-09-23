@@ -1,0 +1,669 @@
+--- 2026-09-23T23:21:48Z method=budget target=期限 rc=0 time_s=0.004 note=期限
+$ date -u -d '+20 min' +%FT%TZ
+2026-09-23T23:41:48Z
+--- 2026-09-23T23:21:55Z method=run target=nicferrari_backtester_repo rc=35 time_s=11.262 note=8-009 repo info [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://ungh.cc/repos/nicferrari/backtester
+
+--- 2026-09-23T23:22:09Z method=run target=nicferrari_backtester_repo_retry rc=0 time_s=0.844 note=8-009 repo info retry [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://ungh.cc/repos/nicferrari/backtester
+{"repo":{"id":758826130,"name":"backtester","repo":"nicferrari/backtester","description":"Financial backesting library","createdAt":"2024-02-17T07:28:49Z","updatedAt":"2026-04-15T05:51:21Z","pushedAt":"2026-04-08T20:21:45Z","stars":7,"watchers":1,"forks":0,"defaultBranch":"master"}}
+--- 2026-09-23T23:22:13Z method=run target=nicferrari_backtester_files rc=0 time_s=0.591 note=8-009 file listing [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://ungh.cc/repos/nicferrari/backtester/files/master
+{"meta":{"sha":"5e24ad2e84403863557e3cb22ecc4e8940dce54b"},"files":[{"path":".github/workflows/ci.yml","mode":"100644","sha":"4b1afbcf987534c5a484268a5ca8f5647cb13b0e","size":1027},{"path":".gitignore","mode":"100644","sha":"eabd1b7f6142497cedd3cf3e0905c28c47df34f1","size":84},{"path":".idea/.gitignore","mode":"100644","sha":"13566b81b018ad684f3a35fee301741b2734c8f4","size":176},{"path":".idea/backtester.iml","mode":"100644","sha":"d63b718bedd57968dc2cfbc9e56f1107a059465a","size":658},{"path":".idea/modules.xml","mode":"100644","sha":"3f6724dc0bd639dc1973dff8849fe3f7c2919d0e","size":272},{"path":".idea/vcs.xml","mode":"100644","sha":"35eb1ddfbbc029bcab630581847471d7f238ec53","size":167},{"path":"CHANGELOG.md","mode":"100644","sha":"473374acfab6cb0a853eaca8d1ee276fe25b869d","size":1265},{"path":"Cargo.lock","mode":"100644","sha":"d5c9d4932dc9de9e48d8b5fe083a8c4bc05d1cb6","size":65155},{"path":"Cargo.toml","mode":"100644","sha":"e3c310f345ac492e986570db3d69dafb596a90a1","size":579},{"path":"LICENSE-APACHE-2.0","mode":"100644","sha":"7a4a3ea2424c09fbe48d455aed1eaa94d9124835","size":11357},{"path":"README.md","mode":"100644","sha":"550d519c9e82e3c5d0e251c54467b979a83e554f","size":3775},{"path":"benches/performances.rs","mode":"100644","sha":"d5cce2d4434e0af91b945fe9ab115dc676bf4318","size":594},{"path":"examples/backtesting.rs","mode":"100644","sha":"42766de2780757b6f2ff097c1bdb220b5c6680c3","size":1179},{"path":"examples/chart.rs","mode":"100644","sha":"f04b5c42b03d887643cbc54114381b8c2fa00a52","size":805},{"path":"examples/compare.rs","mode":"100644","sha":"ea74da04758327c6f6c9bb4dd23b77916d221137","size":873},{"path":"examples/log.rs","mode":"100644","sha":"b2a0fd659a70829802aff4a94d40300745d3312c","size":850},{"path":"examples/modify_strategy.rs","mode":"100644","sha":"e12ffb2c4013944bccf3ce8156b0518da8a6cf34","size":1350},{"path":"examples/run.rs","mode":"100644","sha":"e777757cdbd3b10e2278f49a787110e2abd9d9cd","size":166},{"path":"examples/stateful.rs","mode":"100644","sha":"0bbbb9d045cc836ddfa615b2e27f4256732b1ecb","size":766},{"path":"examples/strategy.rs","mode":"100644","sha":"5b29ed130d0befc3163a66ef94416ef539f85461","size":1252},{"path":"examples/trades.rs","mode":"100644","sha":"40e7e1d80adf0667458dc62e202b4ad4d9dc0b49","size":740},{"path":"plot.png","mode":"100644","sha":"5c7be95b4695c8dcf01f846bba39ddba25f9edb0","size":198969},{"path":"src/backtester.rs","mode":"100644","sha":"85a5a882e1d0a90703f118f12e1f99f7d47f6cd9","size":3250},{"path":"src/broker.rs","mode":"100644","sha":"f559b3dca2421feee63ec48f90ee9324975ab050","size":11865},{"path":"src/bt_run.rs","mode":"100644","sha":"8359c8d773d1555c4db98503cef67929f7df62c4","size":2513},{"path":"src/charts.rs","mode":"100644","sha":"619f55e54aa33961184e2cb5e24a49353e373e0a","size":14222},{"path":"src/config.rs","mode":"100644","sha":"f6643b363e525a7953b256edd9b04b3dc552124b","size":2712},{"path":"src/data.rs","mode":"100644","sha":"04041058bbb88a9b2b3cd794d6553c8490ff1bdb","size":5616},{"pa
+[出力は 4566 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T23:22:17Z method=run target=nicferrari_backtester_readme rc=0 time_s=0.326 note=8-009 README full [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://raw.githubusercontent.com/nicferrari/backtester/master/README.md
+# rs-backtester
+[![Latest version](https://img.shields.io/crates/v/rs-backtester.svg)](https://crates.io/crates/rs-backtester)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue?style=flat-square)](https://github.com/nicferrari/rs-backtester/blob/master/LICENSE-APACHE-2.0)
+[![Documentation](https://docs.rs/rs-backtester/badge.svg)](https://docs.rs/rs-backtester)
+
+
+rs-backtester is a financial backtesting library entirely written  in Rust with the purpose of being
+easy-to-use yet flexible enough to allow a quick implementation of different strategies
+
+## Get started
+
+To get started:
+- Import the necessary modules:
+```rust
+use std::error::Error;
+use rs_backtester::backtester::Backtest;
+use rs_backtester::data::Data;
+use rs_backtester::strategies::sma_cross;
+use rs_backtester::report::report_horizontal;
+```
+- Define an instance of the Data class. Market data can be retrieved either through yahoo-finance or read from
+a CSV file
+```rust
+let quotes = Data::load("test_data//NVDA.csv","NVDA")?;
+```
+- As an alternative, you can retrieve data directly from yahoo finance with the following
+which makes use of the crate yahoo-finance-api
+```rust
+let quotes = Data::new_from_yahoo("GOOG","1d","6mo")?;
+```
+- Create a function which returns a Strategy or use one provided by the library.<BR>
+A Strategy is basically a vector of Choices (e.g. BUY, SHORTSELL, ...)
+and the indicator(s) used
+```rust
+let sma_cross_strategy = sma_cross(quotes.clone(), 10, 20);
+```
+- Create an instance of the Backtest class
+```rust
+let sma_cross_bt = Backtest::new(sma_cross_strategy,100_000f64);
+```
+- Now:
+  - you can read a report of the backtest
+    ```rust
+    report_horizontal(&[&sma_cross_bt]);
+    ```
+  - you can see the list of trades
+    ```rust
+    sma_cross_bt.print_all_trades();
+    ```
+  - you can chart it (with indicators) - static png or interactive html
+    ```rust
+    plot(sma_cross_bt,plot_config,"plot.png")?;
+    i_plot(sma_cross_bt,"i_plot.html")?;
+    ``` 
+  <img src="https://raw.githubusercontent.com/nicferrari/rs-backtester/master/plot.png" width="400"/><BR>
+  - you can save it to CSV for inspection
+    ```rust
+    sma_cross_bt.to_csv("bt.csv")?;
+    ```
+  - you can also compare multiple strategies at once
+    ```rust
+    report_vertical(&[&buynhold_bt, &sma_bt, &sma_cross_bt, &rsi_bt]);
+    ```
+  - and you can also play with your strategy modifying it by inverting it or transform it in long or short-only
+    ```rust
+    let sma_cross_long = sma_cross_strategy.long_only();
+    ```
+
+### Examples
+- <B>backtesting</B>: how to test a strategy, with and without commission fees
+- <B>compare</B>: how to compare different strategies
+- <B>modify_strategy</B>: how to modify a strategy in long-only, short-only, reverse
+- <B>trades</B>: how to obtain list of trades (with stats) in a Backtest or see details of a single trade
+- <B>strategy</B>: how to build a custom strategy
+- <B>log</B>: how to log (to csv) parts or whole Backtest
+- <B>chart</B>: how to save a plo
+[出力は 3775 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T23:22:28Z method=run target=nicferrari_backtester_compare_rs rc=0 time_s=0.424 note=8-009 compare.rs [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://raw.githubusercontent.com/nicferrari/backtester/master/examples/compare.rs
+use rs_backtester::backtester::Backtest;
+use rs_backtester::data::Data;
+use rs_backtester::metrics::report_vertical;
+use rs_backtester::strategies::{buy_n_hold, rsi_strategy, sma_cross, sma_strategy};
+use std::error::Error;
+
+pub fn main() -> Result<(), Box<dyn Error>> {
+    let filename = "test_data//NVDA.csv";
+    let quotes_arc = Data::load(filename, "NVDA")?;
+    let buynhold = buy_n_hold(quotes_arc.clone());
+    let sma_cross = sma_cross(quotes_arc.clone(), 10, 20);
+    let sma = sma_strategy(quotes_arc.clone(), 10);
+    let rsi = rsi_strategy(quotes_arc.clone(), 15);
+    let buynhold_bt = Backtest::new(buynhold, 100_000.);
+    let sma_cross_bt = Backtest::new(sma_cross, 100_000.);
+    let sma_bt = Backtest::new(sma, 100_000.);
+    let rsi_bt = Backtest::new(rsi, 100_000.);
+    report_vertical(&[&buynhold_bt, &sma_bt, &sma_cross_bt, &rsi_bt]);
+    Ok(())
+}
+--- 2026-09-23T23:22:29Z method=run target=nicferrari_backtester_data_rs rc=0 time_s=0.240 note=8-009 data.rs [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://raw.githubusercontent.com/nicferrari/backtester/master/src/data.rs
+use chrono::{DateTime, FixedOffset, TimeZone};
+use csv::Writer;
+use serde::ser::SerializeSeq;
+use serde::{Serialize, Serializer};
+use std::env;
+use std::error::Error;
+use std::sync::Arc;
+use tokio_test;
+use yahoo_finance_api as yahoo;
+use yahoo_finance_api::Quote;
+
+fn download_data(ticker: &str, interval: &str, range: &str) -> Result<Vec<Quote>, Box<dyn Error>> {
+    let provider = yahoo::YahooConnector::new().unwrap();
+    let response = tokio_test::block_on(provider.get_quote_range(ticker, interval, range)).unwrap();
+    let quotes = response.quotes().unwrap();
+    Ok(quotes)
+}
+///struct to contain all market data (ticker + OHLCV)
+#[derive(Clone, Serialize)]
+pub struct Data {
+    pub ticker: String,
+    #[serde(serialize_with = "serialize_datetime_vec")]
+    pub datetime: Vec<DateTime<FixedOffset>>,
+    pub open: Vec<f64>,
+    pub high: Vec<f64>,
+    pub low: Vec<f64>,
+    pub close: Vec<f64>,
+    pub volume: Vec<u64>,
+}
+
+fn serialize_datetime_vec<S>(
+    datetimes: &Vec<DateTime<FixedOffset>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut seq = serializer.serialize_seq(Some(datetimes.len()))?;
+    for datetime in datetimes {
+        seq.serialize_element(&datetime.to_rfc3339())?;
+    }
+    seq.end()
+}
+
+impl Data {
+    ///retrieve OHLC data from yahoo finance
+    pub fn new_from_yahoo(
+        ticker: &str,
+        interval: &str,
+        range: &str,
+    ) -> Result<Arc<Self>, Box<dyn Error>> {
+        let quotes = download_data(ticker, interval, range)?;
+        let timestamps: Vec<u64> = quotes.iter().map(|s| s.timestamp).collect();
+        let yahoo_datetimes: Vec<DateTime<FixedOffset>> = timestamps
+            .iter()
+            .map(|&ts| {
+                FixedOffset::east_opt(0)
+                    .unwrap()
+                    .timestamp_opt(ts as i64, 0)
+                    .unwrap()
+            })
+            .collect();
+        let opens: Vec<f64> = quotes.iter().map(|s| s.open).collect();
+        let highs: Vec<f64> = quotes.iter().map(|s| s.high).collect();
+        let lows: Vec<f64> = quotes.iter().map(|s| s.low).collect();
+        let closes: Vec<f64> = quotes.iter().map(|s| s.close).collect();
+        let volumes: Vec<u64> = quotes.iter().map(|s| s.volume).collect();
+        println!(
+            "\x1b[34m{} {} data ({}) downloaded from Yahoo!\x1b[0m",
+            ticker, range, interval
+        );
+        Ok(Arc::new(Data {
+            ticker: ticker.to_string(),
+            datetime: yahoo_datetimes,
+            open: opens,
+            high: highs,
+            low: lows,
+            close: closes,
+            volume: volumes,
+        }))
+    }
+    ///save data to filename
+    pub fn save(&self, filename: &str) -> Result<(), Box<dyn Error>> {
+        let mut wrt = Writer::from_path(filename).expect("invalid path");
+        let dates_t: Vec<Vec<String>> = self.datetime.iter().map(|e| vec![e.to_string()]).collect();
+        let open_t: Vec<Vec<String>> = self.open.iter().map(|e| vec![e.
+[出力は 5616 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T23:22:37Z method=run target=nicferrari_backtester_srcrs rc=1 time_s=0.689 note=8-009 backtester.rs+broker.rs grep [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/nicferrari/backtester/master/src/backtester.rs > /tmp/bt.rs; curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/nicferrari/backtester/master/src/broker.rs > /tmp/br.rs; echo ===backtester.rs===; grep -niE '"'"'lookahead|look.ahead|future|leak|missing|duplicate|outlier|reproduc|seed|deterministic|replay'"'"' /tmp/bt.rs; echo ===broker.rs===; grep -niE '"'"'lookahead|look.ahead|future|leak|missing|duplicate|outlier|reproduc|seed|deterministic|replay'"'"' /tmp/br.rs'
+===backtester.rs===
+===broker.rs===
+--- 2026-09-23T23:22:46Z method=run target=nicferrari_backtester_files_full rc=0 time_s=0.513 note=8-009 full file list json parse [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://ungh.cc/repos/nicferrari/backtester/files/master | python3 -c "import json,sys; d=json.load(sys.stdin); print('"'"'\n'"'"'.join(f['"'"'path'"'"'] for f in d['"'"'files'"'"']))"'
+.github/workflows/ci.yml
+.gitignore
+.idea/.gitignore
+.idea/backtester.iml
+.idea/modules.xml
+.idea/vcs.xml
+CHANGELOG.md
+Cargo.lock
+Cargo.toml
+LICENSE-APACHE-2.0
+README.md
+benches/performances.rs
+examples/backtesting.rs
+examples/chart.rs
+examples/compare.rs
+examples/log.rs
+examples/modify_strategy.rs
+examples/run.rs
+examples/stateful.rs
+examples/strategy.rs
+examples/trades.rs
+plot.png
+src/backtester.rs
+src/broker.rs
+src/bt_run.rs
+src/charts.rs
+src/config.rs
+src/data.rs
+src/errors.rs
+src/lib.rs
+src/metrics.rs
+src/orders.rs
+src/risk_manager.rs
+src/stateful.rs
+src/strategies.rs
+src/ta.rs
+src/trades.rs
+src/utilities.rs
+test_data/NVDA.csv
+test_data/bt_runs.toml
+tests/metrics_tests.rs
+tests/ta_tests.rs
+tests/trades_tests.rs
+--- 2026-09-23T23:22:53Z method=run target=nicferrari_backtester_allsrc_grep rc=1 time_s=3.756 note=8-009 grep all src for E1a-E6 keywords [期限 2026-09-23T23:41:48Z]
+$ bash -c '
+for f in bt_run charts config errors lib metrics orders risk_manager stateful strategies ta trades utilities; do
+  curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/nicferrari/backtester/master/src/$f.rs >> /tmp/all_src.rs
+  echo '"'"''"'"' >> /tmp/all_src.rs
+done
+wc -l /tmp/all_src.rs
+grep -niE '"'"'lookahead|look.ahead|future.leak|missing|duplicate|outlier|gap|reproduc|seed|deterministic|replay|reconcil|cross.check|benchmark|reference.impl|checksum|hash'"'"' /tmp/all_src.rs
+'
+1717 /tmp/all_src.rs
+--- 2026-09-23T23:23:29Z method=run target=nicferrari_backtester_data_examples_grep rc=0 time_s=3.137 note=8-009 grep data.rs+examples for keywords [期限 2026-09-23T23:41:48Z]
+$ bash -c '
+curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/nicferrari/backtester/master/src/data.rs > /tmp/data_full.rs
+for f in backtesting chart log modify_strategy run stateful strategy trades; do
+  curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/nicferrari/backtester/master/examples/$f.rs >> /tmp/examples_all.rs
+done
+wc -l /tmp/data_full.rs /tmp/examples_all.rs
+echo ===data.rs===
+grep -niE '"'"'missing|duplicate|outlier|gap|valid|reproduc|seed|deterministic|replay|reconcil|checksum|hash'"'"' /tmp/data_full.rs
+echo ===examples===
+grep -niE '"'"'missing|duplicate|outlier|gap|valid|reproduc|seed|deterministic|replay|reconcil|checksum|hash|compare'"'"' /tmp/examples_all.rs
+'
+  148 /tmp/data_full.rs
+  183 /tmp/examples_all.rs
+  331 total
+===data.rs===
+84:        let mut wrt = Writer::from_path(filename).expect("invalid path");
+===examples===
+96:    //let's compare them simultaneously
+--- 2026-09-23T23:23:55Z method=run target=arxiv_2603_20319_abs rc=0 time_s=0.395 note=8-010 arxiv abstract [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://arxiv.org/abs/2603.20319
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script>document.documentElement.classList.add('js');</script>  <title>[2603.20319] Implementation Risk in Portfolio Backtesting: A Previously Unquantified Source of Error</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/browse/0.3.4/images/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/browse/0.3.4/images/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/browse/0.3.4/images/icons/favicon-16x16.png">
+  <link rel="manifest" href="/static/browse/0.3.4/images/icons/site.webmanifest">
+  <link rel="mask-icon" href="/static/browse/0.3.4/images/icons/safari-pinned-tab.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="stylesheet" type="text/css" media="screen" href="/static/browse/0.3.4/css/arXiv.css?v=20260318" />
+  <link rel="stylesheet" type="text/css" media="print" href="/static/browse/0.3.4/css/arXiv-print.css?v=20200611" />
+  <link rel="stylesheet" type="text/css" media="screen" href="/static/browse/0.3.4/css/browse_search.css" />
+  <link rel="stylesheet" type="text/css" media="screen" href="/static/base/1.0.1/css/arxiv-header-footer.css?v=20260626" />
+  <script language="javascript" src="/static/browse/0.3.4/js/accordion.js" ></script>
+  <script language="javascript" src="/static/browse/0.3.4/js/optin-modal.js?v=20250819"></script>
+  
+  <link rel="canonical" href="https://arxiv.org/abs/2603.20319"/>
+  <meta name="description" content="Abstract page for arXiv paper 2603.20319: Implementation Risk in Portfolio Backtesting: A Previously Unquantified Source of Error"><meta property="og:type" content="website" />
+<meta property="og:site_name" content="arXiv.org" />
+<meta property="og:title" content="Implementation Risk in Portfolio Backtesting: A Previously Unquantified Source of Error" />
+<meta property="og:url" content="https://arxiv.org/abs/2603.20319v1" />
+<meta property="og:image" content="/static/browse/0.3.4/images/arxiv-logo-fb.png" />
+<meta property="og:image:secure_url" content="/static/browse/0.3.4/images/arxiv-logo-fb.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="700" />
+<meta property="og:image:alt" content="arXiv logo"/>
+<meta property="og:description" content="Portfolio backtesting is the primary tool for evaluating investment strategies before deployment, yet practitioners implicitly assume that different engines produce identical results for the same strategy. we formalise implementation risk, the systematic divergence in backtested portfolio metrics arising solely from differences in how engines implement the same logical strategy, and propose four metrics grounded in metrology to quantify it: engine sensitivity, implementation uncertainty interval, divergence amplification factor,
+[出力は 43470 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T23:24:00Z method=run target=arxiv_2603_20319_abs_body rc=0 time_s=0.225 note=8-010 arxiv abstract body text [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://arxiv.org/abs/2603.20319 -o /tmp/arx1.html; python3 -c "
+import re
+t=open('"'"'/tmp/arx1.html'"'"',encoding='"'"'utf-8'"'"').read()
+m=re.search(r'"'"'<blockquote class=\"abstract[^>]*>(.*?)</blockquote>'"'"', t, re.S)
+print(re.sub('"'"'<[^>]+>'"'"','"'"''"'"',m.group(1)).strip() if m else '"'"'NOTFOUND'"'"')
+"'
+Abstract:Portfolio backtesting is the primary tool for evaluating investment strategies before deployment, yet practitioners implicitly assume that different engines produce identical results for the same strategy. we formalise implementation risk, the systematic divergence in backtested portfolio metrics arising solely from differences in how engines implement the same logical strategy, and propose four metrics grounded in metrology to quantify it: engine sensitivity, implementation uncertainty interval, divergence amplification factor, and conclusion stability index. we execute 15 benchmark strategies through five independent open-source engines on 30 non-overlapping stratified asset buckets comprising 180 s&amp;p 500 stocks under four transaction-cost regimes. at zero cost, all five engines agree exactly (maximum divergence 0.000%), isolating transaction-cost implementation as the sole source of disagreement. under nonzero costs, divergence is structured and predictable (spearman rho = 0.93 with cost intensity), remaining below 0.75 percentage points for most strategies but reaching 3.71% for high-turnover rotation strategies. source-code forensics uncovered seven previously undocumented defects across three engines, abstracted into a five-category failure-mode taxonomy. all engines agree on the sign of every performance metric (conclusion stability index = 1), so implementation risk does not alter investment decisions for the strategies studied but introduces measurable ambiguity in performance attribution. code and benchmark data are publicly available.
+--- 2026-09-23T23:24:31Z method=run target=arxiv_2512_12924_abs_body rc=0 time_s=0.393 note=8-011 arxiv abstract body text [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://arxiv.org/abs/2512.12924 -o /tmp/arx2.html; python3 -c "
+import re
+t=open('"'"'/tmp/arx2.html'"'"',encoding='"'"'utf-8'"'"').read()
+m=re.search(r'"'"'<title>(.*?)</title>'"'"', t, re.S)
+print('"'"'TITLE:'"'"', m.group(1) if m else '"'"'NOTFOUND'"'"')
+m=re.search(r'"'"'<blockquote class=\"abstract[^>]*>(.*?)</blockquote>'"'"', t, re.S)
+print(re.sub('"'"'<[^>]+>'"'"','"'"''"'"',m.group(1)).strip() if m else '"'"'NOTFOUND'"'"')
+"'
+TITLE: [2512.12924] Interpretable Hypothesis-Driven Trading:A Rigorous Walk-Forward Validation Framework for Market Microstructure Signals
+Abstract:We develop a rigorous walk-forward validation framework for algorithmic trading designed to mitigate overfitting and lookahead bias. Our methodology combines interpretable hypothesis-driven signal generation with reinforcement learning and strict out-of-sample testing. The framework enforces strict information set discipline, employs rolling window validation across 34 independent test periods, maintains complete interpretability through natural language hypothesis explanations, and incorporates realistic transaction costs and position constraints. Validating five market microstructure patterns across 100 US equities from 2015 to 2024, the system yields modest annualized returns (0.55%, Sharpe ratio 0.33) with exceptional downside protection (maximum drawdown -2.76%) and market-neutral characteristics (beta = 0.058). Performance exhibits strong regime dependence, generating positive returns during high-volatility periods (0.60% quarterly, 2020-2024) while underperforming in stable markets (-0.16%, 2015-2019). We report statistically insignificant aggregate results (p-value 0.34) to demonstrate a reproducible, honest validation protocol that prioritizes interpretability and extends naturally to advanced hypothesis generators, including large language models. The key empirical finding reveals that daily OHLCV-based microstructure signals require elevated information arrival and trading activity to function effectively. The framework provides complete mathematical specifications and open-source implementation, establishing a template for rigorous trading system evaluation that addresses the reproducibility crisis in quantitative finance research. For researchers, practitioners, and regulators, this work demonstrates that interpretable algorithmic trading strategies can be rigorously validated without sacrificing transparency or regulatory compliance.
+--- 2026-09-23T23:24:41Z method=run target=vectorbt_readme rc=0 time_s=0.211 note=8-012 VectorBT README [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://raw.githubusercontent.com/polakowo/vectorbt/master/README.md
+<div align="center">
+    <a href="https://vectorbt.pro/" title="VectorBT PRO">
+        <img src="https://raw.githubusercontent.com/polakowo/vectorbt/master/docs/docs/assets/logo/header-pro.svg" />
+    </a>
+</div>
+<div align="center">
+    <a href="https://vectorbt.dev/" title="vectorbt">
+        <img src="https://raw.githubusercontent.com/polakowo/vectorbt/master/docs/docs/assets/logo/header.svg" />
+    </a>
+</div>
+
+<br>
+
+<p align="center">
+    <a href="https://pepy.tech/project/vectorbt" title="Downloads">
+        <img src="https://img.shields.io/pepy/dt/vectorbt?label=downloads&color=blue" />
+    </a>
+    <a href="https://pypi.org/project/vectorbt" title="PyPI">
+        <img src="https://img.shields.io/pypi/v/vectorbt" />
+    </a>
+    <a href="https://pypi.org/project/vectorbt" title="Supported Python versions">
+        <img src="https://img.shields.io/pypi/pyversions/vectorbt" />
+    </a>
+    <a href="https://hub.docker.com/r/polakowo/vectorbt" title="Docker image version">
+        <img src="https://img.shields.io/docker/v/polakowo/vectorbt?sort=semver&label=docker&color=2496ed&logo=docker&logoColor=white" />
+    </a>
+    <a href="https://hub.docker.com/r/polakowo/vectorbt" title="Docker pulls">
+        <img src="https://img.shields.io/docker/pulls/polakowo/vectorbt?label=docker%20pulls&color=2496ed&logo=docker&logoColor=white" />
+    </a>
+    <a href="https://github.com/polakowo/vectorbt/actions/workflows/tests.yml" title="Tests">
+        <img src="https://img.shields.io/github/actions/workflow/status/polakowo/vectorbt/tests.yml?branch=master&label=tests&logo=githubactions&logoColor=white" />
+    </a>
+    <a href="https://github.com/polakowo/vectorbt/actions/workflows/pypi.yml" title="PyPI release">
+        <img src="https://img.shields.io/github/actions/workflow/status/polakowo/vectorbt/pypi.yml?label=release&logo=githubactions&logoColor=white" />
+    </a>
+    <a href="https://vectorbt.dev/" title="Website">
+        <img src="https://img.shields.io/website?url=https%3A%2F%2Fvectorbt.dev%2F&label=website" />
+    </a>
+    <a href="https://pypi.org/project/vectorbt-rust" title="Rust engine">
+        <img src="https://img.shields.io/pypi/v/vectorbt-rust?label=rust%20engine&color=dea584&logo=rust" />
+    </a>
+    <a href="https://github.com/polakowo/vectorbt/blob/master/LICENSE.md" title="License">
+        <img src="https://img.shields.io/badge/license-Fair%20Code-yellow" />
+    </a>
+</p>
+
+<h3 align="center"><b>Thinks in matrices, backtests at scale.</b></h3>
+
+<p align="center">VectorBT takes a radically different approach to backtesting: instead of looping through bars one strategy at a time, it packs thousands of configurations into NumPy arrays, accelerates the hot path with Numba and Rust, and runs them all at once, turning hours of grid search into seconds.</p>
+
+| ---
+
+Explore thousands of trading ideas across assets and timeframes, analyze portfolio performance down to individual trades, and visualize results interactively, all in a few lines 
+[出力は 13946 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T23:24:47Z method=run target=vectorbt_readme_grep rc=0 time_s=0.181 note=8-012 VectorBT README grep E1-E6 [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/polakowo/vectorbt/master/README.md > /tmp/vbt_readme.md; wc -l /tmp/vbt_readme.md; grep -niE '"'"'lookahead|look.ahead|reproduc|seed|deterministic|missing|duplicate|outlier|reconcil|cross.check|benchmark.against|replay|walk.forward|purge|embargo'"'"' /tmp/vbt_readme.md'
+314 /tmp/vbt_readme.md
+73:- **Robustness testing** with walk-forward optimization and label generation for ML workflows
+149:data = vbt.YFData.download(symbols, missing_index="drop")
+153:pf = vbt.Portfolio.from_random_signals(price, n=n, init_cash=100, seed=42)
+166:data = vbt.YFData.download(symbols, missing_index="drop")
+245:data = vbt.YFData.download(symbols, period="6mo", missing_index="drop")
+--- 2026-09-23T23:25:08Z method=manual target=rustybot_x_post rc=NA time_s=NA note=8-013 X post reread [期限 2026-09-23T23:41:48Z]
+$ x_fetch https://x.com/WannabeBotter/status/1810558269565571211
+
+--- 2026-09-23T23:25:18Z method=run target=pineforge_mtf_md rc=0 time_s=0.450 note=PineForge mtf.md lookahead/gaps passage [期限 2026-09-23T23:41:48Z]
+$ curl -s -A Mozilla/5.0 https://raw.githubusercontent.com/pineforge-4pass/pineforge-engine/main/docs/pages/mtf.md
+# Multi-Timeframe (MTF) {#mtf}
+
+@tableofcontents
+
+PineForge exposes two distinct multi-timeframe surfaces. They look
+similar from Pine but resolve through completely different runtime
+paths, and they have different rules:
+
+| Surface | Pine call | Direction | Bars source |
+| --- | --- | --- | --- |
+| **Upward (HTF)** | `request.security(sym, "60", expr)` | target TF **coarser** than input | aggregated from input bars |
+| **Downward (LTF)** | `request.security_lower_tf(sym, "1", expr)` | target TF **finer** than input | **synthesized** from each input bar's OHLC path |
+
+The downward path is where PineForge diverges from TradingView. TV
+downloads a separate finer-resolution feed when you switch to a lower
+timeframe; PF does **not**. The input feed's resolution is the upper
+bound on what `request.security_lower_tf` can target — beyond that, no
+data exists. Sub-bars are synthesized on demand by walking the input
+bar's OHLC path. See @ref magnifier for the same idea applied to fill
+resolution.
+
+For the upward path and the chart-aggregation rules, see also
+@ref timeframes.
+
+## The script_tf / input_tf model
+
+Every backtest run takes two timeframe strings on
+`run_backtest_full(...)`:
+
+```c
+run_backtest_full(s, bars, n,
+                  /* input_tf  */ "",   // empty → auto-detect from bar timestamps
+                  /* script_tf */ "",   // empty → defaults to input_tf
+                  /* magnifier */ 0, 4, PF_MAGNIFIER_ENDPOINTS,
+                  &report);
+```
+
+The runtime resolves them in order:
+
+1. `input_tf` — what the bar feed actually is. If empty, the runtime
+   computes the median delta between consecutive `pf_bar_t::timestamp`
+   values and snaps to a canonical Pine TF.
+2. `script_tf` — what the strategy script believes it's running on.
+   If empty, defaults to the resolved `input_tf`.
+3. If `script_tf > input_tf`, the runtime aggregates input bars up to
+   script-TF parents before each `on_bar` dispatch. The two timeframes
+   are concatenated by an aggregator (ratio or calendar —
+   `TimeframeAggregator`, `src/timeframe.cpp`).
+
+The report exposes the resolved values and the ratio:
+
+| Report field | Meaning |
+| --- | --- |
+| `input_tf_seconds` | Resolved input TF (after auto-detect). |
+| `script_tf_seconds` | Resolved script TF (after defaulting). |
+| `script_tf_ratio` | `script_tf_seconds / input_tf_seconds`. |
+| `needs_aggregation` | `1` when ratio > 1, `0` otherwise. |
+
+## Switching timeframes — C
+
+```c
+pf_report_t r = {0};
+
+// 1. Both empty → auto-detect input, default script to input.
+run_backtest_full(s, bars, n, "", "", 0, 4, PF_MAGNIFIER_ENDPOINTS, &r);
+//    r.input_tf_seconds  == 900   (15m, auto-detected)
+//    r.script_tf_seconds == 900   (defaulted)
+//    r.script_tf_ratio   == 1
+//    r.needs_aggregation == 0
+
+// 2. Explicit input + explicit higher script → 4:1 aggregation.
+run_backtest_full(s, bars, n, "15", "60", 0, 4, PF_MAGNIFIER_ENDPOINTS, &r);
+//    r.input_tf_seconds  == 900
+//    r.script_tf_seconds == 3600
+//    r.scri
+[出力は 8059 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T23:25:23Z method=run target=pineforge_mtf_md_lines rc=0 time_s=0.152 note=mtf.md line 130-165 for lookahead/gaps passage [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/pineforge-4pass/pineforge-engine/main/docs/pages/mtf.md > /tmp/mtf.md; sed -n '"'"'120,165p'"'"' /tmp/mtf.md'
+            _req_sec_lower_tf_0.clear();
+        }
+        _req_sec_lower_tf_0.push_back(bar.close);
+    }
+
+    void on_source_bar(const Bar& bar) override {
+        // _req_sec_lower_tf_0 is the Pine array returned by
+        // request.security_lower_tf(sym, "1", close).
+        // ... compute on it ...
+    }
+};
+```
+
+`register_security_eval`, `register_security_lower_tf_eval`,
+`security_lower_tf_sub_bar_index` and `security_series_slot_is_new` are the
+Pine source host's (`source::PineStrategyHost`,
+`src/source/pine_security_eval.cpp`). The kernel underneath registers a plain
+aggregating evaluator and keeps the feed store; every `request.security`
+rule on this page — lookahead and gaps publication, Heikin-Ashi, the
+lower-timeframe emulation, the diagnostics below — is source-host state kept
+per `sec_id` beside it.
+
+### Validation rules
+
+When the run begins, the source host validates each registered lower-TF
+site against the run's evaluator input timeframe
+(`validate_security_timeframes`):
+
+- The target TF must be **strictly finer** than the resolved input TF.
+- The input TF (in seconds) must be an **integer multiple** of the
+  target TF — non-clean ratios are rejected.
+- `lookahead` and `gaps` must be off (TV does not expose them on this
+  builtin and PF refuses to fake them).
+
+Violations raise at run-time with a precise diagnostic, e.g.:
+
+```
+request.security_lower_tf requires a timeframe finer than the
+chart's input timeframe: requested 30 from input timeframe 15
+```
+
+### Sub-bar synthesis
+
+For each input bar, the engine generates `input_tf / target_tf`
+synthetic sub-bars by walking the input bar's OHLC endpoints (the
+same path-sampling primitive the bar magnifier uses, see
+--- 2026-09-23T23:25:45Z method=run target=pineforge_all_files rc=0 time_s=1.274 note=PineForge full file list for docs enumeration [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://ungh.cc/repos/pineforge-4pass/pineforge-engine/files/main | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+paths=[f['"'"'path'"'"'] for f in d['"'"'files'"'"']]
+docs=[p for p in paths if p.startswith('"'"'docs/'"'"')]
+print('"'"'total files'"'"', len(paths))
+print('"'"'docs files'"'"', len(docs))
+for p in docs: print(p)
+"'
+total files 1355
+docs files 55
+docs/Doxyfile
+docs/README.md
+docs/_theme/custom.css
+docs/_theme/footer.html
+docs/_theme/header.html
+docs/adr/0001-kernel-adapter-boundary.md
+docs/build.sh
+docs/cheatsheet-runtime-and-execution.md
+docs/ci.md
+docs/coverage.md
+docs/design/native-feature-parity.md
+docs/frozen-market-instruction.md
+docs/groups.dox
+docs/native-refactor-progress.md
+docs/native-scoped-close.md
+docs/native-settlement.md
+docs/pages/abi-stability.md
+docs/pages/configuration.md
+docs/pages/contributing-llm.md
+docs/pages/coverage.md
+docs/pages/examples-c.md
+docs/pages/examples-magnifier.md
+docs/pages/examples-multi.md
+docs/pages/examples-python-sweep.md
+docs/pages/examples-rust.md
+docs/pages/exit-leg-activation.md
+docs/pages/exit-leg-lifecycle-reflection.md
+docs/pages/exit-leg-lifecycle.md
+docs/pages/ffi-python.md
+docs/pages/fill-model.md
+docs/pages/getting-started.md
+docs/pages/index.md
+docs/pages/install.md
+docs/pages/integration-cmake.md
+docs/pages/lifecycle.md
+docs/pages/live-surface.md
+docs/pages/magnifier.md
+docs/pages/market-admission.md
+docs/pages/metrics.md
+docs/pages/mtf.md
+docs/pages/native-engine.md
+docs/pages/pine-to-native.md
+docs/pages/quantity-intent.md
+docs/pages/report-schema.md
+docs/pages/streaming.md
+docs/pages/timeframes.md
+docs/pages/tutorial-macd.md
+docs/pending-placement-receipts.md
+docs/pine-adapter-kernel-notes.md
+docs/pine-intraday-cap-boundary.md
+docs/pine-order-priority-boundary.md
+docs/pine_v6_audit_master.md
+docs/pine_v6_coverage_detail.md
+docs/reservation-expansion-candidate.md
+docs/tv-parity-probe-spec.md
+--- 2026-09-23T23:25:57Z method=run target=pineforge_docs_all_grep rc=0 time_s=12.830 note=PineForge all docs/ files fetched+grep lookahead/gaps/future/snoop/peek/survivorship/purge/embargo/先読み/未来情報 [期限 2026-09-23T23:41:48Z]
+$ bash -c '
+files='"'"'Doxyfile README.md adr/0001-kernel-adapter-boundary.md cheatsheet-runtime-and-execution.md ci.md coverage.md design/native-feature-parity.md frozen-market-instruction.md groups.dox native-refactor-progress.md native-scoped-close.md native-settlement.md pages/abi-stability.md pages/configuration.md pages/contributing-llm.md pages/coverage.md pages/examples-c.md pages/examples-magnifier.md pages/examples-multi.md pages/examples-python-sweep.md pages/examples-rust.md pages/exit-leg-activation.md pages/exit-leg-lifecycle-reflection.md pages/exit-leg-lifecycle.md pages/ffi-python.md pages/fill-model.md pages/getting-started.md pages/index.md pages/install.md pages/integration-cmake.md pages/lifecycle.md pages/live-surface.md pages/magnifier.md pages/market-admission.md pages/metrics.md pages/mtf.md pages/native-engine.md pages/pine-to-native.md pages/quantity-intent.md pages/report-schema.md pages/streaming.md pages/timeframes.md pages/tutorial-macd.md pending-placement-receipts.md pine-adapter-kernel-notes.md pine-intraday-cap-boundary.md pine-order-priority-boundary.md pine_v6_audit_master.md pine_v6_coverage_detail.md reservation-expansion-candidate.md tv-parity-probe-spec.md'"'"'
+mkdir -p /tmp/pf_docs
+n=0
+for f in $files; do
+  n=$((n+1))
+  out=/tmp/pf_docs/$(echo $f | tr '"'"'/'"'"' '"'"'_'"'"')
+  curl -s -A '"'"'Mozilla/5.0'"'"' "https://raw.githubusercontent.com/pineforge-4pass/pineforge-engine/main/docs/$f" -o "$out"
+done
+echo "fetched $n files"
+echo '"'"'=== grep results ==='"'"'
+grep -rniE '"'"'lookahead|look.ahead|future.leak|peek.ahead|survivorship|forward.fill|snoop|purge|embargo|先読み|未来情報|ルックアヘッド'"'"' /tmp/pf_docs/ 
+'
+fetched 51 files
+=== grep results ===
+/tmp/pf_docs/coverage.md:45:| `request.security()`        | Partial                                                                    | Runtime owns the security state machine, ratio / calendar aggregation, lookahead / gaps semantics, lower-TF emulation, and per-security diagnostics.                                                                                                                                                                                                                |
+/tmp/pf_docs/coverage.md:510:    bool gaps_on, lookahead_on;
+/tmp/pf_docs/coverage.md:522:- `configure_security_evaluators()` — called once at the start of `run(...)`; the subclass calls `register_security_eval(sec_id, requested_tf, input_tf, lookahead_on, gaps_on)` for each `request.security()` call site.
+/tmp/pf_docs/coverage.md:523:- `evaluate_security(sec_id, bar, is_complete)` — invoked by the runtime each time a security bar is ready (complete or partial under `lookahead_on`).
+/tmp/pf_docs/coverage.md:536:  - On a partial bar with `lookahead_on`: `eval_partial_count++`, then `evaluate_security(...)` with `is_complete=false`.
+/tmp/pf_docs/coverage.md:546:when `lookahead_on` or `gaps_on` is set — emulation is
+/tmp/pf_docs/coverage.md:547:`lookahead_off / gaps_off` only.
+/tmp/pf_docs/coverage.md:844:#### `barmerge.lookahead_on` for lower-TF emulation
+/tmp/pf_docs/coverage.md:847:`lookahead_on=true` for a lower-TF request.
+/tmp/pf_docs/coverage.md:849:- **Feasibility:** *Out of scope by design*. Mechanically possible — just remove the guard — but `lookahead_on` combined with synthesized intrabar bars exposes information from a not-yet-complete sub-bar. That is a backtest-validity footgun.
+/tmp/pf_docs/coverage.md:850:- **Future story:** No plan to enable it. Higher-TF aggregation already honours `lookahead_on` for partial updates (which is the legitimate use case); the lower-TF synthesis path is fundamentally incompatible with backtest-honest lookahead.
+/tmp/pf_docs/cheatsheet-runtime-and-execution.md:134:     f. purge exit orders if now FLAT
+/tmp/pf_docs/cheatsheet-runtime-and-execution.md:382:  (`session.isfirstbar` is the dual). It is read by **next-bar lookahead** on
+/tmp/pf_docs/cheatsheet-runtime-and-execution.md:410:  not real ticks. With `lookahead_on`, the first sub-bar of a period pushes,
+/tmp/pf_docs/pine_v6_audit_master.md:157:- **`request.security()`** [F14]: 3 hard restrictions (support_checker.py:683-760): (1) same-chart symbol only (`syminfo.tickerid/.ticker`); (2) `lookahead_on` rejected outright; (3) `currency` / `ignore_invalid_symbol` rejected. Allowed params: `symbol, timeframe, expression, gaps, lookahead`.
+/tmp/pf_docs/pine_v6_audit_master.md:211:5. **Corpus probe gaps** — no probe exercises `slippage≠0`, `close_entries_rule`, `risk.max_intraday_loss`/`max_cons_loss_days`, magnifier non-ENDPOINTS modes, `lookahead_on`, `input.color/time/symbol`, `str.format` family, `timestamp()`, `math.random`, `fo
+[出力は 25283 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T23:26:32Z method=run target=fincept_repo rc=0 time_s=30.918 note=8-014 Fincept Terminal repo+readme [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://ungh.cc/repos/Fincept-Corporation/FinceptTerminal | head -c 400; echo; curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/Fincept-Corporation/FinceptTerminal/main/README.md | head -c 1500'
+
+> [!IMPORTANT]
+> ## 🔒 Fincept Terminal **Enterprise** — the private edition. Launch price: **90% off, ends soon.**
+> Proprietary real-time data · Multi-agent AI research · Live broker & algo execution · Priority support
+>
+> | Plan | Was | **Launch price** |
+> |:--|:--:|:--:|
+> | **Exclusive** | ~~$99~~ | **$10** /user/mo |
+> | **Exclusive+** | ~~$199~~ | **$20** /user/mo |
+> | **Exclusive Pro** ⭐ Most popular | ~~$299~~ | **$40** /user/mo |
+>
+> [![Claim launch price](https://img.shields.io/badge/%F0%9F%94%A5_Claim_launch_price_%E2%86%92-C06524?style=for-the-badge)](https://fincept.in/enterprise/signup) &nbsp; [![Compare plans](https://img.shields.io/badge/Compare_plans-1F2328?style=for-the-badge)](https://fincept.in/pricing)
+>
+> <sub>Early seats locked in at launch price for life · No annual lock-in, cancel anytime · This open-source repo stays free under AGPL-3.0</sub>
+
+
+> [!TIP]
+> ## Quantcept — the AI research desk that never closes.
+> Markets · Backtests · Portfolios · Watchlists · Memory — 800+ primary data sources, running around the clock.
+>
+> | Plan | Price |
+> |:--|:--:|
+> | **Free** | **$0** · 350 credits, no card |
+> | **Alpha** | **$3** / 30 days |
+> | **Apex** | **$8** / 30 days |
+>
+> [![Start free](https://img.shields.io/badge/Start_free_%E2%86%92-0E7490?style=for-the-badge)](https://quantcept.io/register) &nbsp; [![See the desk](https://img.shields.io/badge/See_the_desk-1F2328?style=for-the-badge)](https://quantcept.io)
+>
+> <sub>30-day pass
+--- 2026-09-23T23:27:11Z method=run target=fincept_readme_grep rc=0 time_s=0.175 note=8-014 Fincept README grep E-elements [期限 2026-09-23T23:41:48Z]
+$ bash -c 'curl -s -A '"'"'Mozilla/5.0'"'"' https://raw.githubusercontent.com/Fincept-Corporation/FinceptTerminal/main/README.md > /tmp/fincept_readme.md; wc -l /tmp/fincept_readme.md; grep -niE '"'"'lookahead|look.ahead|reconcil|cross.check|reproduc|seed|deterministic|missing|duplicate|outlier|replay|backtest|walk.forward'"'"' /tmp/fincept_readme.md | head -20'
+206 /tmp/fincept_readme.md
+18:> Markets · Backtests · Portfolios · Watchlists · Memory — 800+ primary data sources, running around the clock.
+97:41 modules across six desks — agentic research, quant lab and backtesting, deep fundamental research, markets and execution, macro and global intelligence, and your own workspace. All of it in a [700-page manual](https://fincept.in/manual).
+166:- **[Quantcept](https://quantcept.io)** — AI research desk for markets: primary data, backtests, portfolios, documents and 24/7 monitors. Free to start; Alpha $14 / Apex $24 per 30 days.
+--- 2026-09-23T23:27:18Z method=manual target=tv_replay_note rc=NA time_s=NA note=8-015 TradingView replay: no official doc URL found yet in prior rounds [期限 2026-09-23T23:41:48Z]
+$ 台帳の発見の出典は生ログ参照のみ(run1 98-100行)。この回はWebSearchで公式ドキュメントを探す時間が無く未着手のまま
+
+--- 2026-09-23T23:27:22Z method=manual target=exactpro_note rc=NA time_s=NA note=8-016 Exactpro reconciliation testing: no official doc URL found yet in prior rounds [期限 2026-09-23T23:41:48Z]
+$ 台帳の発見の出典は生ログ参照のみ(run1 95-97行)。この回は時間切迫のため未着手
+
