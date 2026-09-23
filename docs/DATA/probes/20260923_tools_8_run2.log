@@ -1,0 +1,587 @@
+--- 2026-09-23T15:31:53Z method=budget target=期限 rc=0 time_s=0.004 note=期限
+$ date -u -d '+20 min' +%FT%TZ
+2026-09-23T15:51:53Z
+--- 2026-09-23T15:32:16Z method=run target=qflib_E5_correction rc=0 time_s=0.067 note=検収E5誤り訂正: seed/deterministic語で再検索 [期限 2026-09-23T15:51:53Z]
+$ grep -rn -i 'seed\|deterministic' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib '--include=*.py'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/fast_alpha_model_tester/scenarios_generator.py:61:                                frequency: Frequency = Frequency.DAILY, seed: int = None) -> QFSeries:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/fast_alpha_model_tester/scenarios_generator.py:97:        seed: int
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/fast_alpha_model_tester/scenarios_generator.py:98:            seed used to make the scenarios deterministic
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/fast_alpha_model_tester/scenarios_generator.py:116:        trades_lengths = self._get_random_integers(bars_in_the_market, number_of_trades, False, seed) \
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/fast_alpha_model_tester/scenarios_generator.py:123:        days_between_trades = self._get_random_integers(out_days, number_of_trades + 1, include_zero, seed) \
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/fast_alpha_model_tester/scenarios_generator.py:133:    def _get_random_integers(sum_of_values: int, number_of_elements: int, include_zero: bool, seed: int = None):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/fast_alpha_model_tester/scenarios_generator.py:137:        rng = np.random.default_rng(seed)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/alpha_model/random_trades_alpha_model.py:51:    seed: Optional[int]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/alpha_model/random_trades_alpha_model.py:52:        seed used to make the scenarios deterministic
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/alpha_model/random_trades_alpha_model.py:56:                 exposure: Exposure = Exposure.LONG, frequency: Frequency = Frequency.DAILY, seed: Optional[int] = None):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/alpha_model/random_trades_alpha_model.py:67:                                                                seed and seed + i)
+[出力は 7566 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T15:32:43Z method=run target=qflib_E2_7kinds rc=1 time_s=0.092 note=E2述語7種を自分で選んだ語で検索(欠け=missing/gap,重複=duplicate,順序=sort/monotonic,時刻ずれ=timestamp/timezone,外れ値=outlier,型範囲=dtype/validate,情報源食い違い=discrepancy/mismatch/reconcile) [期限 2026-09-23T15:51:53Z]
+$ bash -c '
+for pair in "欠け:missing|gap|nan" "重複:duplicate" "順序の乱れ:sort|monotonic" "時刻のずれ:timestamp|timezone|misalign" "外れ値:outlier|anomaly|zscore" "型や範囲の違反:dtype|validate|assert.*range" "情報源間の食い違い:discrepancy|mismatch|reconcile|cross.source"; do
+  name="${pair%%:*}"; pat="${pair#*:}"
+  echo "=== $name ($pat) ==="
+  grep -rlZi -E "$pat" /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib --include=*.py 2>/dev/null | tr "\0" "\n" | grep -v /tests/
+done
+'
+=== 欠け (missing|gap|nan) ===
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/containers/series/qf_series.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/containers/series/simple_returns_series.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/containers/__init__.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/containers/qf_data_array.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/containers/futures/futures_chain.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/containers/futures/futures_adjustment_method.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/containers/dataframe/qf_dataframe.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_broker.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_position.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_contract_ticker_mapper.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/fast_alpha_model_tester/fast_alpha_models_tester.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/alpha_model/alpha_model.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/execution_handler/slippage/base.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/execution_handler/slippage/square_root_market_impact_slippage.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/execution_handler/slippage/price_based_slippage.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/execution_handler/stop_orders_executor.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506
+[出力は 30600 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T15:32:56Z method=run target=qflib_E2_defs rc=1 time_s=0.122 note=E2 7種: 関数/クラス定義名だけに絞って再検索(前の検索はNaN等の通常利用で広すぎたため) [期限 2026-09-23T15:51:53Z]
+$ bash -c '
+QF="/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib"
+echo "=== 欠け(missing/gap) def ==="; grep -rn -iE "def .*(missing|gap)" "$QF" --include=*.py | grep -v /tests/
+echo "=== 重複(duplicate) def ==="; grep -rn -iE "def .*duplicat" "$QF" --include=*.py | grep -v /tests/
+echo "=== 順序の乱れ(sort/monotonic) def ==="; grep -rn -iE "def .*(sort|monoton|order)" "$QF" --include=*.py | grep -v /tests/
+echo "=== 時刻のずれ(timestamp/timezone) def ==="; grep -rn -iE "def .*(timestamp|timezone|misalign)" "$QF" --include=*.py | grep -v /tests/
+echo "=== 外れ値(outlier) def ==="; grep -rn -iE "def .*(outlier|anomaly|zscore|z_score)" "$QF" --include=*.py | grep -v /tests/
+echo "=== 型や範囲の違反(validate/dtype) def ==="; grep -rn -iE "def .*(valid|dtype|range_check)" "$QF" --include=*.py | grep -v /tests/
+echo "=== 情報源間の食い違い(discrepancy/mismatch/reconcile) def ==="; grep -rn -iE "def .*(discrepan|mismatch|reconcil|cross.source|compare_source)" "$QF" --include=*.py | grep -v /tests/
+'
+=== 欠け(missing/gap) def ===
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/common/utils/data_cleaner.py:115:    def _use_regression_to_fill_missing_data(self, benchmark_tms, columns_type, result_dataframe, empty_values_idx):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/common/utils/close_open_gap/close_open_gap.py:22:def close_open_gap(prices_df: PricesDataFrame, initial_price: int = 1, transaction_cost_percentage: float = 0,
+=== 重複(duplicate) def ===
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/position_sizer/position_sizer.py:281:    def _resolve_signal_duplicates(self, signals: List[Signal]):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/execution_handler/slippage/base.py:133:    def _check_for_duplicates(self, date: datetime, orders: Sequence[Order]):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/common/utils/miscellaneous/consecutive_duplicates.py:27:def drop_consecutive_duplicates(series: QFSeries, method) -> QFSeries:
+=== 順序の乱れ(sort/monotonic) def ===
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/containers/futures/futures_rolling_orders_generator.py:55:    def generate_close_orders(self) -> List[Order]:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_broker.py:117:    def get_open_orders(self) -> Optional[List[Order]]:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_broker.py:139:    def cancel_order(self, order_id: int, symbol: str):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_broker.py:144:    def cancel_all_open_orders(self):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_broker.py:151:    def place_orders(self, orders: Sequence[Order]) -> List[Transaction]:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_broker.py:170:    def _place_order(self, order: Order) -> Transaction:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/pyth
+[出力は 33363 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T15:33:03Z method=run target=qflib_data_cleaner_read rc=0 time_s=0.005 note=data_cleaner.pyを読み、欠けの検出/報告の有無を確認 [期限 2026-09-23T15:51:53Z]
+$ sed -n 1,40p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/common/utils/data_cleaner.py
+#     Copyright 2016-present CERN – European Organization for Nuclear Research
+#
+#     Licensed under the Apache License, Version 2.0 (the "License");
+#     you may not use this file except in compliance with the License.
+#     You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#     Unless required by applicable law or agreed to in writing, software
+#     distributed under the License is distributed on an "AS IS" BASIS,
+#     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#     See the License for the specific language governing permissions and
+#     limitations under the License.
+
+from qf_lib.common.utils.dateutils.get_values_common_dates import get_values_for_common_dates
+from qf_lib.common.utils.returns.beta_and_alpha import beta_and_alpha
+from qf_lib.containers.dataframe.simple_returns_dataframe import SimpleReturnsDataFrame
+from qf_lib.containers.series.cast_series import cast_series
+from qf_lib.containers.series.qf_series import QFSeries
+
+
+class DataCleaner:
+    """
+    Cleans data which is partially incomplete, e.g. has gaps
+
+    Parameters
+    ----------
+    dataframe: SimpleReturnsDataFrame
+        DataFrame of simple returns. If one column has more missing values than the threshold, it is removed
+        from the result.
+    threshold: float
+        top limit of missing data. If the amount of missing data in a series exceeds this limit, the series will be
+        removed. It is a relative value (e.g. 0.02, which corresponds to 2% of the data from the series).
+    """
+    def __init__(self, dataframe: SimpleReturnsDataFrame, threshold: float = 0.05):
+        assert isinstance(dataframe, SimpleReturnsDataFrame)
+        self.dataframe = dataframe
+        self.threshold = threshold
+        self.incorrect_columns = []  # Columns which contain only NaN values.
+        self.start_late_columns = {}  # Columns which start late together with their start date.
+--- 2026-09-23T15:33:08Z method=run target=qflib_data_cleaner_full rc=0 time_s=0.004 note=data_cleaner.py全文を読み、欠けの検出結果の報告方法を確認(E2の述語=検出するか報告する) [期限 2026-09-23T15:51:53Z]
+$ sed -n 40,140p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/common/utils/data_cleaner.py
+        self.start_late_columns = {}  # Columns which start late together with their start date.
+        self.columns_with_holes = []  # Columns which have one or more NaN values in them.
+
+    def proxy_using_value(self, proxy_value: float) -> SimpleReturnsDataFrame:
+        """
+        Removes columns from the DataFrame which have too many missing values. Then, the missing data in the remaining
+        columns is completed using a given proxy_value.
+
+        Parameters
+        ----------
+        proxy_value: float
+            value with which all the missing data should be filled
+
+        Returns
+        -------
+        SimpleReturnsDataFrame
+            completed dataframe without missing data
+        """
+        result_dataframe = self.dataframe.copy(deep=True)
+        empty_values_idx = self.dataframe.isnull()
+
+        self._drop_underfilled_columns(result_dataframe, empty_values_idx)
+        result_dataframe[empty_values_idx] = proxy_value
+
+        return result_dataframe
+
+    def proxy_using_regression(self, benchmark_tms: QFSeries, columns_type: type) -> SimpleReturnsDataFrame:
+        """
+        Removes columns from the DataFrame which have too many missing values. Then, the missing data in the remaining
+        columns is completed using regression with the benchmark.
+
+        Parameters
+        ----------
+        benchmark_tms: QFSeries
+            benchmark used indirectly to proxy the missing data in the Dataframe.
+        columns_type: type
+            type of each column (e.g. PricesSeries, LogReturnsSeries)
+
+        Returns
+        -------
+        SimpleReturnsDataFrame
+            completed dataframe. However it can still contain missing data, because sometimes it is not possible to
+            complete all data using regression (e.g. for data that is missing in the original series there is
+            no corresponding benchmark value).
+        """
+        result_dataframe = self.dataframe.copy(deep=True)
+        empty_values_idx = self.dataframe.isnull()
+
+        self._drop_underfilled_columns(result_dataframe, empty_values_idx)
+        self._use_regression_to_fill_missing_data(
+            benchmark_tms, columns_type, result_dataframe, empty_values_idx)
+
+        return result_dataframe
+
+    def _drop_underfilled_columns(self, result_dataframe, empty_values_idx):
+        columns_to_delete = []
+        for column_name, is_empty_values in empty_values_idx.items():
+            empty_values_ratio = sum(is_empty_values) / len(is_empty_values)  # #empty_values / #all_values
+
+            if empty_values_ratio > self.threshold:
+                columns_to_delete.append(column_name)
+
+                first_valid_index = self.dataframe[column_name].first_valid_index()
+                if empty_values_ratio == 1:
+                    self.incorrect_columns.append(column_name)
+                elif self.dataframe[column_name][first_valid_index:].isnull().any():
+                    self.columns_with_holes.append(column_name)
+                elif 
+[出力は 4547 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T15:33:16Z method=run target=qflib_data_cleaner_tail rc=0 time_s=0.004 note=data_cleaner.py 残り(100-135行)を確認 [期限 2026-09-23T15:51:53Z]
+$ sed -n 100,135p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/common/utils/data_cleaner.py
+                columns_to_delete.append(column_name)
+
+                first_valid_index = self.dataframe[column_name].first_valid_index()
+                if empty_values_ratio == 1:
+                    self.incorrect_columns.append(column_name)
+                elif self.dataframe[column_name][first_valid_index:].isnull().any():
+                    self.columns_with_holes.append(column_name)
+                elif first_valid_index != self.dataframe[column_name].index[0]:
+                    self.start_late_columns[column_name] = first_valid_index
+                else:
+                    assert False, "Unknown reason for dropping column " + column_name
+
+        empty_values_idx.drop(columns_to_delete, axis=1, inplace=True)
+        result_dataframe.drop(columns_to_delete, axis=1, inplace=True)
+
+    def _use_regression_to_fill_missing_data(self, benchmark_tms, columns_type, result_dataframe, empty_values_idx):
+        num_of_columns = result_dataframe.shape[1]
+        for i in range(num_of_columns):
+            column = result_dataframe.iloc[:, i]
+            nans_in_column_idx = empty_values_idx.iloc[:, i]
+            beta, alpha = self._get_beta_and_alpha(
+                benchmark_tms, column, columns_type, nans_in_column_idx)
+
+            benchmark_common_tms, nans_common_idx = get_values_for_common_dates(
+                benchmark_tms, nans_in_column_idx)
+            benchmark_values_for_missing_dates = benchmark_common_tms[nans_common_idx]
+            missing_values = beta * benchmark_values_for_missing_dates + alpha
+            column[nans_in_column_idx] = missing_values
+
+        return result_dataframe
+
+    def _get_beta_and_alpha(self, benchmark_tms, column, columns_type, nans_in_column_idx):
+        column_without_nans = column[~nans_in_column_idx]
+        column_without_nans = cast_series(column_without_nans, columns_type)
+        beta, alpha = beta_and_alpha(column_without_nans, benchmark_tms)
+        return beta, alpha
+--- 2026-09-23T15:33:35Z method=run target=qflib_E1a_E3a_E6_recheck rc=0 time_s=0.053 note=E1a(突き合わせ)/E3a(ルックアヘッド検出)/E6を広い語で再確認 [期限 2026-09-23T15:51:53Z]
+$ bash -c '
+QF="/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib"
+echo "=== E1a: reconcil/cross-check/differential/reference_impl/benchmark_against ==="
+grep -rln -iE "reconcil|cross.check|differential.*test|reference.impl|benchmark.against|compare.*implementation" "$QF" --include=*.py | grep -v /tests/
+echo "=== E3a: look.?ahead(検出/報告 def) ==="
+grep -rn -iE "look.?ahead" "$QF" --include=*.py | grep -v /tests/
+echo "=== E6: assert|verify|validat(独立の検証機能のdef) ==="
+grep -rn -iE "def (assert_|verify_|validate_)" "$QF" --include=*.py | grep -v /tests/
+'
+=== E1a: reconcil/cross-check/differential/reference_impl/benchmark_against ===
+=== E3a: look.?ahead(検出/報告 def) ===
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/execution_handler/slippage/base.py:102:                                                  look_ahead_bias=True)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/execution_handler/market_orders_executor.py:74:        The function uses data provider with look ahead bias = True, as it is necessary to get the current bar at each
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/execution_handler/market_orders_executor.py:108:                                               self._frequency, look_ahead_bias=True)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/data_providers/data_provider.py:51:            start_date: datetime, end_date: datetime = None, frequency: Frequency = None, look_ahead_bias: bool = False,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/data_providers/data_provider.py:69:        look_ahead_bias: bool
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/data_providers/data_provider.py:70:            if set to False, the look-ahead bias will be taken care of to make sure no future data is returned
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/data_providers/data_provider.py:95:    def get_end_date_without_look_ahead(self, end_date: Optional[datetime], frequency: Frequency):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/data_providers/data_provider.py:105:            return self._get_end_date_without_look_ahead_intraday(end_date, frequency)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/data_providers/data_provider.py:120:    def _get_end_date_without_look_ahead_intraday(self, end_date: Optional[datetime], frequency: Frequency):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/data_providers/data_provider.py:128:            => end_date_without_look_ahead = 17:00
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/data_providers/data_provider.py:131:            => end_date_without_look_a
+[出力は 17008 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T15:33:44Z method=run target=qflib_E6_recheck rc=0 time_s=0.015 note=E6独立検証機能(assert_/verify_/validate_定義)を再確認 [期限 2026-09-23T15:51:53Z]
+$ grep -rn -iE 'def (assert_|verify_|validate_)' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib '--include=*.py'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/trading_session/backtest_trading_session.py:113:    def verify_preloaded_data(self, expected_checksum: str):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/tests/helpers/testing_tools/containers_comparison.py:25:def assert_lists_equal(expected_list: Sequence[T], actual_list: Sequence[T],
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/tests/helpers/testing_tools/containers_comparison.py:82:def assert_series_equal(expected_series: pd.Series, actual_series: pd.Series,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/tests/helpers/testing_tools/containers_comparison.py:132:def assert_dataframes_equal(expected_frame: pd.DataFrame, actual_frame: pd.DataFrame,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/tests/helpers/testing_tools/containers_comparison.py:190:def assert_dataarrays_equal(expected_dataarray: xr.DataArray, actual_dataarray: xr.DataArray,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/tests/helpers/testing_tools/containers_comparison.py:273:def assert_same_index(expected_index, actual_index, check_index_type, check_names):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/tests/helpers/testing_tools/containers_comparison.py:287:def assert_same_axis_values(expected_index, actual_index):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/tests/integration_tests/data_providers/yfinance_data_provider/test_yfinance_data_provider.py:41:def assert_equal(result, expected_value, decimals=2):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/tests/integration_tests/data_providers/alpaca/test_alpaca_data_provider.py:46:def assert_equal(result, expected_value, decimals=2):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/plotting/charts/chart.py:216:    def assert_is_qfseries(cls, data_container: Any):
+--- 2026-09-23T15:33:50Z method=run target=qflib_verify_preloaded_data rc=0 time_s=0.006 note=verify_preloaded_dataの中身を読み、E2/E5/E6のどれに当たるか判別 [期限 2026-09-23T15:51:53Z]
+$ sed -n 95,140p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/qflib_venv/lib/python3.11/site-packages/qf_lib/backtesting/trading_session/backtest_trading_session.py
+
+        self._hash_of_data_bundle = compute_container_hash(self.data_provider.data_bundle)
+        self.logger.info("Preloaded data hash value {}".format(self._hash_of_data_bundle))
+
+    def get_preloaded_data_checksum(self) -> str:
+        """
+        Returns the checksum value computed as a hexadecimal digest on the preloaded data bundle.
+
+        Returns
+        -------
+        str
+            checksum of the preloaded data bundle
+        """
+        if self._hash_of_data_bundle is not None:
+            return self._hash_of_data_bundle
+        else:
+            raise ValueError("Not able to compute checksum of data bundle. The data has not been preloaded yet.")
+
+    def verify_preloaded_data(self, expected_checksum: str):
+        """
+        Verifies if the checksum computed on the preloaded data bundle is equal to the expected value. In case of
+        differences ValueError is raised.
+
+        Parameters
+        -----------
+        expected_checksum: str
+            The expected checksum of the data bundle.
+        """
+        if self._hash_of_data_bundle is None:
+            raise ValueError("Not able to compute checksum of data bundle. The data has not been preloaded yet.")
+        elif self._hash_of_data_bundle != expected_checksum:
+            raise ValueError("Data preloading was not successful. The expected checksum does not match the actual "
+                             "value.")
+--- 2026-09-23T15:34:27Z method=run target=refetch_readmes rc=0 time_s=1.116 note=訂正のためREADMEを再取得(PineForge/OrderBook/freqtrade/prediction-market-backtester) [期限 2026-09-23T15:51:53Z]
+$ bash -c '
+SCR="/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8"
+curl -s https://raw.githubusercontent.com/pineforge-4pass/pineforge-engine/main/README.md -o "$SCR/readmes/pineforge_README.md"; echo "pineforge: $(wc -c < $SCR/readmes/pineforge_README.md) bytes"
+curl -s https://raw.githubusercontent.com/akurkar07/OrderBook/main/README.md -o "$SCR/readmes/orderbook_README.md"; echo "orderbook: $(wc -c < $SCR/readmes/orderbook_README.md) bytes"
+curl -s https://raw.githubusercontent.com/Quentin-Piot/prediction-market-backtester/main/README.md -o "$SCR/readmes/predmkt_README.md"; echo "predmkt: $(wc -c < $SCR/readmes/predmkt_README.md) bytes"
+'
+pineforge: 55352 bytes
+orderbook: 4525 bytes
+predmkt: 14 bytes
+--- 2026-09-23T15:34:34Z method=run target=refetch_predmkt_master rc=0 time_s=0.205 note=prediction-market-backtester README再取得(defaultBranch=master、run1のungh記録どおり) [期限 2026-09-23T15:51:53Z]
+$ curl -s https://raw.githubusercontent.com/Quentin-Piot/prediction-market-backtester/master/README.md -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/readmes/predmkt_README.md -w 'bytes=%{size_download} code=%{http_code}'
+bytes=6343 code=200
+--- 2026-09-23T15:34:39Z method=run target=predmkt_makesetup rc=0 time_s=0.005 note=prediction-market-backtester: make setup節のDATA_SHA256記述をE2/E6に当てるため原文確認 [期限 2026-09-23T15:51:53Z]
+$ grep -n -B3 -A5 'DATA_SHA256\|make setup' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/readmes/predmkt_README.md
+142-
+143-```bash
+144-cp .env.example .env
+145:# set DATA_URL (and optionally DATA_SHA256)
+146:make setup
+147-```
+148-
+149:`make setup` is idempotent:
+150-- downloads `data.tar.zst` only if missing
+151:- optionally verifies `DATA_SHA256`
+152-- extracts to `data/`
+153-
+154-## Data Indexing
+155-
+156-```bash
+--- 2026-09-23T15:34:56Z method=run target=predmkt_makefile rc=0 time_s=0.484 note=make setupの実装を確認しDATA_SHA256不一致時の挙動(自動判定か)を見る [期限 2026-09-23T15:51:53Z]
+$ curl -s https://raw.githubusercontent.com/Quentin-Piot/prediction-market-backtester/master/Makefile -w '\ncode=%{http_code} bytes=%{size_download}'
+.PHONY: install install-index lint typecheck test coverage profile-sample setup data-setup index data-index
+
+SOURCE ?= all
+MODE ?= all
+
+install:
+	uv sync --dev
+
+install-index:
+	uv sync --dev --group index
+
+lint:
+	uv run ruff check .
+
+typecheck:
+	uv run basedpyright
+
+test:
+	uv run pytest
+
+coverage:
+	uv run pytest --cov=src/pm_bt --cov-report=term-missing
+
+profile-sample:
+	uv run python scripts/profile_backtest.py --venue kalshi --strategy momentum --config configs/momentum/default.yaml --data-root data --output-root output/profiling --bar-timeframe 5m
+
+setup: data-setup
+
+data-setup:
+	bash scripts/setup_data.sh
+
+index: data-index
+
+data-index: install-index
+	uv run python scripts/index_data.py --source "$(SOURCE)" --mode "$(MODE)"
+
+code=200 bytes=738
+--- 2026-09-23T15:35:00Z method=run target=predmkt_setup_script rc=0 time_s=0.258 note=scripts/setup_data.shの中身を見てDATA_SHA256検証の自動判定の有無を確認 [期限 2026-09-23T15:51:53Z]
+$ curl -s https://raw.githubusercontent.com/Quentin-Piot/prediction-market-backtester/master/scripts/setup_data.sh -w '\ncode=%{http_code} bytes=%{size_download}'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+DATA_DIR="${DATA_DIR:-data}"
+DATA_ARCHIVE="${DATA_ARCHIVE:-data.tar.zst}"
+DATA_URL="${DATA_URL:-}"
+DATA_SHA256="${DATA_SHA256:-}"
+SETUP_MARKER="${DATA_DIR}/.setup_complete"
+
+if [[ -f "$SETUP_MARKER" ]]; then
+  echo "[setup] dataset already initialized at ${DATA_DIR} (marker found)"
+  exit 0
+fi
+
+if [[ ! -f "$DATA_ARCHIVE" ]]; then
+  if [[ -z "$DATA_URL" ]]; then
+    echo "[setup] DATA_URL is required when ${DATA_ARCHIVE} is missing"
+    echo "[setup] set DATA_URL in .env or environment"
+    exit 1
+  fi
+
+  tmp_archive="${DATA_ARCHIVE}.part"
+  echo "[setup] downloading dataset archive from ${DATA_URL}"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl --fail --location --retry 5 --retry-delay 2 --output "$tmp_archive" "$DATA_URL"
+  elif command -v wget >/dev/null 2>&1; then
+    wget --tries=5 --wait=2 --output-document="$tmp_archive" "$DATA_URL"
+  else
+    echo "[setup] curl or wget is required"
+    exit 1
+  fi
+
+  mv "$tmp_archive" "$DATA_ARCHIVE"
+fi
+
+if [[ -n "$DATA_SHA256" ]]; then
+  echo "[setup] verifying sha256"
+  echo "${DATA_SHA256}  ${DATA_ARCHIVE}" | sha256sum --check --status
+fi
+
+echo "[setup] validating archive paths"
+if tar --zstd -tf "$DATA_ARCHIVE" | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
+  echo "[setup] archive contains unsafe paths"
+  exit 1
+fi
+
+echo "[setup] extracting ${DATA_ARCHIVE}"
+mkdir -p "$DATA_DIR"
+extract_tmp="${DATA_DIR}.extract_tmp"
+rm -rf "$extract_tmp"
+mkdir -p "$extract_tmp"
+tar --zstd -xf "$DATA_ARCHIVE" -C "$extract_tmp"
+
+source_root=""
+if [[ -d "${extract_tmp}/data" ]]; then
+  source_root="${extract_tmp}/data"
+elif [[ -d "${extract_tmp}/kalshi" || -d "${extract_tmp}/polymarket" ]]; then
+  source_root="${extract_tmp}"
+fi
+
+if [[ -z "$source_root" ]]; then
+  echo "[setup] unsupported archive root layout; expected data/ or venue directories"
+  rm -rf "$extract_tmp"
+  exit 1
+fi
+
+cp -a "${source_root}/." "${DATA_DIR}/"
+rm -rf "$extract_tmp"
+
+touch "$SETUP_MARKER"
+echo "[setup] complete"
+
+code=200 bytes=2061
+--- 2026-09-23T15:35:36Z method=run target=pineforge_broad_recheck rc=0 time_s=0.013 note=PineForge E2/E3a/E3b/E6を広い語で再確認(元は data quality / look-?ahead のみ) [期限 2026-09-23T15:51:53Z]
+$ bash -c '
+F="/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/readmes/pineforge_README.md"
+echo "=== E2(欠け/重複/外れ値/ずれ/型範囲/情報源) ==="
+grep -n -iE "missing|duplicate|outlier|gap|stale|out.of.order|misalign|corrupt" "$F"
+echo "=== E3a/E3b(先読み類義語) ==="
+grep -n -iE "future.leak|peek|survivorship|forward.fill|snoop" "$F"
+echo "=== E6(独立検証) ==="
+grep -n -iE "fuzz|property.based|mutation|coverage|sanitiz" "$F"
+'
+=== E2(欠け/重複/外れ値/ずれ/型範囲/情報源) ===
+65:Then ask: *"Fetch BTC/USDT 15m for the last 90 days and backtest this strategy"* — the container transpiles Pine → C++ with the bundled [`pineforge-codegen`](https://github.com/pineforge-4pass/pineforge-codegen-oss), compiles, runs, and hands the agent the trade list. Nothing leaves your machine. Mount a directory at `/work`; `-i` is required and `-t` must not be added (a TTY corrupts the JSON-RPC stream).
+230:**PK Willow Pulse UT Williams Live Movement** on **BINANCE:BTCUSDT 15m** moves from strong to excellent: canonical match rises from 96.9% to 100%, with zero trade-count gap and zero entry-price, exit-price, PnL and quantity error at the 90th percentile. Independent comparison of the unfiltered files matches all **12,408 physical trade pairs** on side, entry/exit times, prices and quantity, gaining **10,756 matches with none lost**. Including the displayed PnL in the exact comparison gains **2,193 matches with none lost**; the files use different PnL display precision.
+232:The fix has no strategy, symbol or date lookup. TradingView controls pin both directions, flat entries, reversal/close ordering and funding boundaries. A Cloud diagnostic reproduces the original selected trade CSV across all six observed invocations and confirms that the engine passed signal-cost admission but skipped the price-scale check for a high-value fractional lot. The exact explicit-quantity reversal control exposed a separate gap that remains unchanged by this default-sizing fix. All **704 hard-surface probes** retain their canonical grades, quantity metrics and trade CSVs; **4,189 of 4,190 CSVs are unchanged**. Verifier code, grading rules, profile-selection code, reference tapes, feeds, input files and scored population are unchanged.
+267:Every gap was closed by pinning the rule TradingView actually follows — never by loosening the grader. Each rule was isolated with sensor strategies exported from TradingView (capital sweeps, literal replays, per-bar state encoded into order comments) and landed with a replay test on the recorded bars. Among them: the broker carries money at **ten significant digits** (equity rounding, the whole-order drop band, the one-contract margin call, the raw lot floor on every lot-stepped symbol); a trailing stop restarts from the issuing bar's *close* when `trail_points` changes and never folds that bar's extreme; a zero-offset trail rides the raw running best and its arming open fills at the nearest-tick print; a reversal rejected at placement preserves standing exits and a separately queued `strategy.close`, while the distinct fill-time rejection rules govern stop, limit, and trailing legs; sparse `ta.atr`/`ta.tr` read the chart's previous close on every execution; pivot levels snap to the tick grid; early-close sessions complete their higher-timeframe bucket; and account-currency conversion is left out of the comparison entirely, because TradingView's FX series is a moving target no fixed table re
+[出力は 5686 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T15:35:44Z method=run target=orderbook_broad_recheck rc=0 time_s=0.014 note=akurkar07/OrderBook E2/E3a/E3b/E4/E6を広い語で再確認 [期限 2026-09-23T15:51:53Z]
+$ bash -c '
+F="/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/readmes/orderbook_README.md"
+echo "=== E2 ==="; grep -n -iE "missing|duplicate|outlier|gap|stale|out.of.order|misalign|corrupt|data.quality" "$F"
+echo "=== E3a/E3b ==="; grep -n -iE "look.?ahead|future.leak|peek|snoop" "$F"
+echo "=== E4(replay/market data) ==="; grep -n -iE "replay|market data|historical.*data|record" "$F"
+echo "=== E6 ==="; grep -n -iE "fuzz|property.based|mutation|coverage|sanitiz|valgrind|asan" "$F"
+'
+=== E2 ===
+95:- **Active order IDs**: Duplicate IDs are rejected while the original order is still resting
+=== E3a/E3b ===
+=== E4(replay/market data) ===
+=== E6 ===
+98:- **Quantity accounting**: Price-level aggregate quantity overflow is rejected before mutation; `OrderBook` rejects an order that would overflow a resting level instead of leaking an internal exception
+--- 2026-09-23T15:36:05Z method=run target=freqtrade_e1a_e6_recheck rc=0 time_s=0.979 note=freqtrade E1a(別実装突き合わせ)/E6(独立検証)を広い語で再確認。lookahead-analysis.md全文と関連docsを検索 [期限 2026-09-23T15:51:53Z]
+$ bash -c '
+curl -s https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/lookahead-analysis.md -o /tmp/ft_lookahead.md
+curl -s https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/recursive-analysis.md -o /tmp/ft_recursive.md
+echo "=== lookahead-analysis.md 全文でreference/other.engine/cross.check ==="
+grep -n -iE "reference|other.engine|cross.check|reconcil|independent.implementation" /tmp/ft_lookahead.md
+echo "=== recursive-analysis.md 概要 ==="
+head -c 1500 /tmp/ft_recursive.md
+'
+=== lookahead-analysis.md 全文でreference/other.engine/cross.check ===
+33:## Lookahead-analysis command reference
+=== recursive-analysis.md 概要 ===
+# Recursive analysis
+
+This page explains how to validate your strategy for inaccuracies due to recursive issues with certain indicators.
+
+A recursive formula defines any term of a sequence relative to its preceding term(s). An example of a recursive formula is a<sub>n</sub> = a<sub>n-1</sub> + b.
+
+Why does this matter for Freqtrade? In backtesting, the bot will get full data of the pairs according to the timerange specified. But in a dry/live run, the bot will be limited by the amount of data each exchanges gives.
+
+For example, to calculate a very basic indicator called `steps`, the first row's value is always 0, while the following rows' values are equal to the value of the previous row plus 1. If I were to calculate it using the latest 1000 candles, then the `steps` value of the first row is 0, and the `steps` value at the last closed candle is 999.
+
+What happens if the calculation is using only the latest 500 candles? Then instead of 999, the `steps` value at last closed candle is 499. The difference of the value means your backtest result can differ from your dry/live run result.
+
+The `recursive-analysis` command requires historic data to be available. To learn how to get data for the pairs and exchange you're interested in,
+head over to the [Data Downloading](data-download.md) section of the documentation.
+
+This command is built upon preparing different lengths of data and calculates indicators based on them.
+This does not backtest the strategy itself, but rather only ca
+--- 2026-09-23T15:36:20Z method=run target=backtrex_fxreplay_html_recheck rc=0 time_s=2.017 note=backtrex/FX Replay E1a/E1bをHTML生テキストで再確認(他実装突き合わせ/同種計算出力の言及) [期限 2026-09-23T15:51:53Z]
+$ bash -c '
+curl -s "https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide" -o /tmp/backtrex.html
+curl -s "https://fxreplay.com/" -o /tmp/fxreplay.html
+echo "=== backtrex bytes: $(wc -c < /tmp/backtrex.html) ==="
+grep -io -E "compare.{0,40}(implementation|engine|platform)|cross.check|reconcil|benchmark.against|tradingview" /tmp/backtrex.html | sort -u | head -20
+echo "=== fxreplay bytes: $(wc -c < /tmp/fxreplay.html) ==="
+grep -io -E "compare.{0,40}(implementation|engine|platform)|cross.check|reconcil|benchmark.against|tradingview|mt4|mt5|metatrader" /tmp/fxreplay.html | sort -u | head -20
+'
+=== backtrex bytes: 288790 ===
+Compare Backtesting Platform
+TradingView
+Tradingview
+compareAll\":\"All Comparisons\",\"comparePlatform
+compare\":{\"title\":\"Compare Backtesting Platform
+tradingview
+=== fxreplay bytes: 357164 ===
+TradingView
+tradingview
+--- 2026-09-23T15:36:45Z method=run target=predmkt_e1a_recheck rc=1 time_s=0.004 note=prediction-market-backtester E1a(別実装突き合わせ)を広い語で再確認 [期限 2026-09-23T15:51:53Z]
+$ grep -n -iE 'reconcil|cross.check|differential|reference.impl|benchmark.against|compare.*(engine|implementation|platform)' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/readmes/predmkt_README.md
+
+--- 2026-09-23T15:36:57Z method=run target=pineforge_e4_dedicated rc=0 time_s=0.004 note=PineForge E4専用の原文(E1aと重複しない再生の記述)を探す(監査14回目の指摘4) [期限 2026-09-23T15:51:53Z]
+$ grep -n -iE replay /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/readmes/pineforge_README.md
+267:Every gap was closed by pinning the rule TradingView actually follows — never by loosening the grader. Each rule was isolated with sensor strategies exported from TradingView (capital sweeps, literal replays, per-bar state encoded into order comments) and landed with a replay test on the recorded bars. Among them: the broker carries money at **ten significant digits** (equity rounding, the whole-order drop band, the one-contract margin call, the raw lot floor on every lot-stepped symbol); a trailing stop restarts from the issuing bar's *close* when `trail_points` changes and never folds that bar's extreme; a zero-offset trail rides the raw running best and its arming open fills at the nearest-tick print; a reversal rejected at placement preserves standing exits and a separately queued `strategy.close`, while the distinct fill-time rejection rules govern stop, limit, and trailing legs; sparse `ta.atr`/`ta.tr` read the chart's previous close on every execution; pivot levels snap to the tick grid; early-close sessions complete their higher-timeframe bucket; and account-currency conversion is left out of the comparison entirely, because TradingView's FX series is a moving target no fixed table reproduces.
+411:- C++ unit and recorded TradingView replay tests; CI on Linux + macOS × Release + Debug, sanitizers, and a `find_package` smoke consumer.
+445:| `strategy_stream_api_version` / `_push_bar` / `_order_actions_len` / `_order_action_get` / `_order_actions_clear` / `_state_hash` | Native live extension v1: confirmed input bars, physical fill events and observable replay state |
+554:tests/                  C++ unit, TradingView replay and pure-C ABI tests
+575:- **v0.13.0** (2026-09-05) — the parity campaign, rounds 1–11: TradingView's broker rules pinned with sensor exports and landed with replay tests — ten-significant-digit money, trailing-stop restarts, zero-offset trails, declined-reversal bracket legs, the surviving `strategy.close`, sparse `ta.atr`/`ta.tr`, pivot tick snap, same-bar entry/close transactions, early-close higher-timeframe buckets, 64-bit epoch arrays. Closed test 3,880/3,881; corpus 309/309. ABI v3, 32 symbols, 198 tests.
+--- 2026-09-23T15:37:04Z method=run target=pineforge_e4_context rc=0 time_s=0.005 note=PineForge README 435-450行(Native live extension、_push_barの文脈)を読む [期限 2026-09-23T15:51:53Z]
+$ sed -n 435,450p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/readmes/pineforge_README.md
+|---|---|
+| `strategy_create` / `strategy_free` | Allocate / release a strategy instance |
+| `run_backtest` / `run_backtest_full` | Run with auto-detected timeframe / with timeframe + magnifier configuration |
+| `report_free` | Free arrays inside a filled `pf_report_t` |
+| `strategy_closed_trade_entry_incarnation` | Per-run physical entry provenance of a closed trade |
+| `strategy_set_input` / `strategy_set_override` | Override a Pine `input.*()` value / a `strategy(...)` declaration parameter |
+| `strategy_set_magnifier_volume_weighted` | Toggle the volume-weighted magnifier |
+| `strategy_set_trace_enabled` | Toggle per-bar trace recording |
+| `strategy_set_trade_start_time` | Suppress historical order placement before a time |
+| `strategy_stream_begin` / `_push_tick` / `_push_ticks` / `_advance_time` / `_end` / `_fill_report` | Warm on OHLCV, then run realtime on ordered trades |
+| `strategy_stream_api_version` / `_push_bar` / `_order_actions_len` / `_order_action_get` / `_order_actions_clear` / `_state_hash` | Native live extension v1: confirmed input bars, physical fill events and observable replay state |
+| `strategy_set_chart_timezone` / `strategy_set_syminfo_timezone` / `strategy_set_syminfo_session` | Chart and exchange time |
+| `strategy_set_syminfo_mintick` / `_pointvalue` / `_metadata` / `_type` / `_string` | Symbol tick size, point value, numeric metadata, instrument class, string members |
+| `strategy_set_native_security_feed` / `strategy_set_aux_security_feed` | Feed `request.security()` from a native higher-timeframe series / an auxiliary bar-aligned feed |
+| `strategy_set_account_currency_fx_series` | Effective-time quote-to-account FX |
+| `strategy_get_last_error` | The latest runtime error |
+--- 2026-09-23T15:37:21Z method=run target=pineforge_312_413_source rc=0 time_s=0.005 note=報告の「312戦略」「413件」の出所をREADME本文で確認 [期限 2026-09-23T15:51:53Z]
+$ grep -n -E '312|413|4,189|4,190' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/readmes/pineforge_README.md
+34:- **Proven, not promised.** All 4,190 probes — 312 open reference strategies plus 413 real community scripts on 15 markets and timeframes — grade *excellent* or *strong* against TradingView's own trade lists: **4,182 excellent, 8 strong, zero moderate**. The current full sweep evaluates 2,819,967 TradingView trades, with 2,818,237 matched by the verifier.
+217:**Native policy refactoring · 2026-09-10:** engine [#234](https://github.com/pineforge-4pass/pineforge-engine/pull/234) and codegen [#127](https://github.com/pineforge-4pass/pineforge-codegen-oss/pull/127) preserve **4,182 excellent / 8 strong**. Both the old-engine/new-codegen and new-engine/new-codegen Cloud runs retain all **4,190 raw trade CSVs, counts and full grades** unchanged. The target bands have zero entrants and zero leavers: **net 0, no individual regression**. These changes remove an unused source flag and give Pine cap behavior explicit ownership; they do not claim complete engine independence. The formal gates remain zero-improvement FAILs and the official baseline remains unchanged.
+219:**Round 39 · 2026-09-09:** **4,182 excellent / 8 strong / zero moderate** across all **4,190 scored probes**. This round adds one excellent result, with zero regressions on any canonical metric.
+223:| **Public** — [open corpus](https://github.com/pineforge-4pass/pineforge-corpus) | 312 reference strategies, Apache-2.0, reproducible by anyone | **309/309 graded excellent** (ETH/USDT-perp 15m; the corpus' declared engine-only / anomaly probes are not graded) | 429,866 |
+224:| **Closed test** — the parity campaign | 413 community-shared TradingView scripts across 15 market/timeframe lanes: **3,881 script-lane probes** — private under TradingView's Terms of Service | **3,873 excellent + 8 strong + zero moderate** = 3,881/3,881 (100%) excellent-or-strong | 2,390,101 |
+232:The fix has no strategy, symbol or date lookup. TradingView controls pin both directions, flat entries, reversal/close ordering and funding boundaries. A Cloud diagnostic reproduces the original selected trade CSV across all six observed invocations and confirms that the engine passed signal-cost admission but skipped the price-scale check for a high-value fractional lot. The exact explicit-quantity reversal control exposed a separate gap that remains unchanged by this default-sizing fix. All **704 hard-surface probes** retain their canonical grades, quantity metrics and trade CSVs; **4,189 of 4,190 CSVs are unchanged**. Verifier code, grading rules, profile-selection code, reference tapes, feeds, input files and scored population are unchanged.
+275:JOBS=8 scripts/run_corpus.sh                                    # build 312 .so, run, grade vs TradingView
+392:| TradingView parity | `./scripts/check_corpus_parity.sh --subset` | A trade that moved: 30 probes re-run and hashed against `scripts/corpus_parity_baseline.txt`. The full 312-probe sweep (`--subset` dropped) runs nightly. |
+412:- `corpus/` — the 312-strategy public valida
+[出力は 3817 文字。先頭 3000 文字だけを残した]
+--- 2026-09-23T15:37:39Z method=run target=tmm_primary_source rc=0 time_s=3.036 note=Testing Maturity Modelの一次資料本文を取得(監査9回目: 検索要約のみだった問題への対応) [期限 2026-09-23T15:51:53Z]
+$ curl -s -L https://abstracta.us/blog/software-testing/software-testing-maturity-model/ -o /tmp/tmm_abstracta.html -w 'code=%{http_code} bytes=%{size_download}'
+code=200 bytes=285717
+--- 2026-09-23T15:37:52Z method=run target=tmm_levels_extract rc=0 time_s=0.029 note=TMMの各段の名前と定義を逐語抽出 [期限 2026-09-23T15:51:53Z]
+$ python3 -c '
+import re
+html = open('"'"'/tmp/tmm_abstracta.html'"'"', encoding='"'"'utf-8'"'"', errors='"'"'replace'"'"').read()
+text = re.sub(r'"'"'<[^>]+>'"'"', '"'"' '"'"', html)
+text = re.sub(r'"'"'\s+'"'"', '"'"' '"'"', text)
+i = text.find('"'"'Level 1 Initial'"'"')
+print(text[i-200:i+2500])
+'
+ent to reduce risk and enhance product quality. What Are the Five Levels of Testing Capability Maturity Model (TMM)? What Are the Five Levels of Capability Maturity Model (TMM)? TMM mirrors CMMI with Level 1 Initial, Level 2 Managed, Level 3 Defined, Level 4 Measured, and Level 5 Optimization. Advancing through these levels introduces test-policy definition, integration with development, metrics-driven control, and proactive defect prevention. What Are The Five Levels Of IT Maturity? IT maturity commonly progresses through Initial, Managed, Standardized, Predictive, and Optimized stages, reflecting increasing governance, automation , and alignment with enterprise strategy, which in turn lowers project costs and time-to-release. How We Can Help You With over 16 years of experience and a global presence, Abstracta is a leading technology solutions company with offices in the United States, Chile, Colombia, and Uruguay. We specialize in software development , AI-driven solutions , and end-to-end software testing services . Our expertise spans across industries . We believe that actively bonding ties propels us further and helps us enhance our clients’ software. That’s why we’ve built robust partnerships with industry leaders like Microsoft , Datadog , Tricentis , Perforce BlazeMeter , and Saucelabs to provide the latest in cutting-edge technology. Curious as to which level your team lands for the different areas of quality? So don’t forget to take our free, online software testing maturity assessment ! Check our solutions and boost your test process improvement! Follow us on Linkedin &amp; X to be part of our community! Contact Us Stay connected with Abstracta News, articles, and resources on building better software. Email * Subscribe This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply. Read about our privacy policy . AI-Powered Quality Engineering for Teams Building Complex Software Contact United States +1 415 745-3678 Canada +1 415 745-3678 Chile +56 994186268 Colombia +56 994186268 Uruguay +598 4733 7996 Brazil +11 93930-5488 Follow us Privacy policy © 2026 Abstracta (self.__next_f=self.__next_f||[]).push([0]) self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[339756,[\"/_next/static/chunks/d96012bcfc98706a.js\",\"/_next/static/chunks/963c71eec1d89c3f.js\"],\"default\"]\n3:I[837457,[\"/_next/static/chunks/d96012bcfc98706a.js\",\"/_next/static/chunks/963c71eec1d89c3f.js\"],\"default\"]\n6:I[897367,[\"/_next/static/chunks/d96012bcfc98706a.js\",\"/_next/static/chunks/963c71eec1d89c3f.js\"],\"OutletBoundary\"]\n7:\"$Sreact.suspense\"\n9:I[897367,[\"/_next/static/chunks/d96012bcfc98706a.js\",\"/_next/static/chunks/
+--- 2026-09-23T15:38:00Z method=run target=tmm_levels_detail rc=0 time_s=0.027 note=TMM各段の詳細記述箇所を探す(FAQ要約以外の本文) [期限 2026-09-23T15:51:53Z]
+$ python3 -c '
+import re
+html = open('"'"'/tmp/tmm_abstracta.html'"'"', encoding='"'"'utf-8'"'"', errors='"'"'replace'"'"').read()
+text = re.sub(r'"'"'<[^>]+>'"'"', '"'"' '"'"', html)
+text = re.sub(r'"'"'\s+'"'"', '"'"' '"'"', text)
+for m in re.finditer(r'"'"'Level [1-5][^.]{0,300}'"'"', text):
+    s = m.group(0)
+    if '"'"'Optimiz'"'"' in s or '"'"'Managed'"'"' in s or '"'"'Defined'"'"' in s or '"'"'Initial'"'"' in s or '"'"'Measured'"'"' in s:
+        print('"'"'---'"'"'); print(s[:300])
+'
+---
+Level 1 Initial, Level 2 Managed, Level 3 Defined, Level 4 Measured, and Level 5 Optimization
+---
+Level 1 Initial, Level 2 Managed, Level 3 Defined, Level 4 Measured, and Level 5 Optimization
