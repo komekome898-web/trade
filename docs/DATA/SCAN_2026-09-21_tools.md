@@ -10337,3 +10337,358 @@ K12 検査の出力の貼付           0 件
 
 **合計 11 件。**111 を数えた理由(リードの判断): 27 回目に 97 を数えたときと同じく、**手引きの形をしているかではなく、取り込んだ当方の作業者に指示を出しうるかで数える。**
 
+## 区分1 — 34 回目の実行(2026-09-23)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run34.log`。
+**これは、31 回目の述語を板の待ち行列の側に当て直していなかったことを受けた回である。**台帳を作り直すと、`区分1-板の待ち行列` の印を持つ 19 件のうち 13 件(37・65・90・95・96・97・99・100・101・102・103・104・109)が、`区分1-市場影響と約定の模型` の印も段の表の行も持っていなかった(生ログの `catalog_13` の節。台帳の道具が同じ 13 件を出した)。
+**この回の完了の形は、起動の指定の逐語「13 件を 1 件ずつ、上の述語で当て直してください。」である。**
+当て直しに使った述語の逐語(在処は `docs/AUDITOR/VERDICTS/2026-09-22_tools_scan_cat1_run30.md` の 36〜38 行。実物と 1 文字ずつ突き合わせた = 生ログの `verbatim_src` の節):
+
+> **`区分1-市場影響と約定の模型` の印は、次のどちらかを持つものに付ける。**
+> **(a) 約定の可否・量・値段のどれかを決める仕組み**(段 0〜5)
+> **(b) 市場影響の関数そのもの**(段 6)。検証の機関を持たず、測る側・当てはめる側であっても付ける。
+
+**この回にしたこと**: 13 件について、報告書に既にある逐語を先に読み、遅延と取り消しの扱い(先行注文)を決めるために 13 件とも原典を読み足した。**11 件に印を付け、2 件(100・109)は付けずに理由を書いた。**
+**導入・構築・最小実行・登録・鍵の発行・購入・発注はこの回に 1 件も無い。新しい検索計画は打っていない。候補も増やしていない。**読んだのは原典だけである(100 番は同梱のバイナリに触れず、原典の文字だけを読んだ)。
+
+**書き換えの範囲**: 報告書の末尾にこの節を足しただけで、**既存の節は 1 文字も触っていない。**報告書の `git diff` の削除行は 0 である(生ログの `diff_report` の節)。
+**`scripts/recount_scan_cat1.py` と `scripts/build_tools_catalog.py` はこの回に書き換えていない。**台帳 `docs/DATA/tools_catalog.tsv` は起動の指定のとおり `python3 scripts/build_tools_catalog.py` で作り直した(追跡されていないファイルで、この回の前から在った)。
+
+**生ログの本数**: `ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l` の出力は **33**(この回の生ログ `run34.log` を作ったあとに打った値。生ログの `ls_probes` の節)。
+**内訳は `run2` から `run34` である**(`run1` の生ログは無い。21 回目から 33 回目と同じ)。
+
+**到達の記録**:
+**既定枝は `ungh.cc` の `defaultBranch` で確かめてから取った**: GitHub の 12 件(96 番を含む)はどれも `main` で、応答の `repo` の欄はどれも一覧の登録名と同じだった(付け替えは無い)。
+**`code=000` が出た手は、どれも 404 の欄に入れずに打ち直した**: `ungh.cc` の登録情報の 5 手(65・90・95・99・104)が 1 回目に `code=000`(接続の切断など)で、待ってから打ち直してどれも `code=200`(生ログの `repo_AsyncAlgoTrading_aat_retry1` の節 など)。
+**この回の `code=404` は 0 件である。**
+**生ログの 3 手は当方の道の誤りで読めていない**(`c37_scan`・`c99_scan`・1 回目の `c65_iex_fill`)。取った原典の置き場を相対の道で指したためで、同じ走査を絶対の道で打ち直した(`c37_scan2`・`c99_scan2`・2 回目の `c65_iex_fill`)。打ち直す前の手も生ログから消していない。
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**新しい検索計画は打たないでください。候補も増やさないでください。**」による。
+X の経路も同じ理由で打っていない。**候補は 1 件も増えていない。**
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (打たない) | (打たない) | **打たない。**起動の指定による |
+| 中間 | (打たない) | (打たない) | 同上 |
+| 広い | (打たない) | (打たない) | 同上 |
+
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断により区分 1 の 1 回目の節を参照して貼っていない。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://ungh.cc/repos/<所有者>/<名前>` と `.../files/main`(12 件) | 2026-09-23 | 既定枝の確かめと追跡ファイルの一覧(作業者向けの手引きの所在を含む) |
+| 2 | `https://raw.githubusercontent.com/ThePredictiveDev/Automated-Financial-Market-Trading-System/main/trading_simulator/core/matching_engine.py`・`core/order_book.py`・`backtest/runner.py`・`backtest/replay.py`・`marketdata/liquidity.py`・`cli/args.py`・`cli/main.py`・`config.py` | 2026-09-23 | 候補 37 |
+| 3 | `https://raw.githubusercontent.com/AsyncAlgoTrading/aat/main/aat/exchange/synthetic/__init__.py`・`aat/exchange/generic/csv.py`・`aat/exchange/public/iex.py`・`aat/core/order_book/price_level/price_level.py`・`aat/core/order_book/order_book/order_book.py` | 2026-09-23 | 候補 65 |
+| 4 | `https://raw.githubusercontent.com/Oddpool/PredictionMarketBench/main/src/oddpool_bench/` の 11 本・`README.md`・`episodes/<回>/metadata.json` の 4 本 | 2026-09-23 | 候補 90 |
+| 5 | `https://raw.githubusercontent.com/sacha9214/polymarket-fill-model/main/fillmodel.py` と `README.md` | 2026-09-23 | 候補 95 |
+| 6 | `https://raw.githubusercontent.com/sashankzade/limit-order-book-matching-engine/main/lib/OrderBook/src/core/OrderBook.cpp` と `lib/OrderBook/src/entries/OrderBookEntry.cpp` | 2026-09-23 | 候補 96(104 との突き合わせ) |
+| 7 | `https://raw.githubusercontent.com/kahan15/Limit-Order-Book-Simulator/main/artifacts/limit-order-book/src/App.tsx` | 2026-09-23 | 候補 97 |
+| 8 | `https://raw.githubusercontent.com/NickGardi/orderbooksim/main/matching_engine.py` | 2026-09-23 | 候補 99 |
+| 9 | `https://raw.githubusercontent.com/xavierchuan/OrderMatchingEngine/main/OrderMatchingEngine/src/matching_engine.cpp`・`orderbook.h`・`order.h`・`main.cpp`・`OrderMatchingEngine/tests/test_orderbook.cpp` | 2026-09-23 | 候補 100(原典の文字だけ。バイナリには触れていない) |
+| 10 | `https://raw.githubusercontent.com/akurkar07/OrderBook/main/src/order_book.cpp`・`src/price_level.cpp`・`src/price_level.h` | 2026-09-23 | 候補 101 |
+| 11 | `https://raw.githubusercontent.com/3yit/Limit-Order-Book-Simulator/main/src/order_book.cpp`・`src/matching_engine.cpp`・`src/simulator.cpp`・`include/order_book.hpp`・`include/simulator.hpp` | 2026-09-23 | 候補 102 |
+| 12 | `https://raw.githubusercontent.com/IsaacCheng9/order-book-simulator/main/src/order_book_simulator/matching/order_book.py`・`matching/matching_engine.py`・`simulator/market_simulator.py` | 2026-09-23 | 候補 103 |
+| 13 | `https://raw.githubusercontent.com/jxm35/LimitOrderBook-MatchingEngine/main/lib/OrderBook/src/core/OrderBook.cpp`・`lib/OrderBook/src/entries/OrderBookEntry.cpp`・`src/exchange/Exchange.cpp`・`src/simulation_python/market_simulator.py` | 2026-09-23 | 候補 104 |
+| 14 | `https://arxiv.org/abs/2509.05107` と `https://arxiv.org/html/2509.05107` | 2026-09-23 | 候補 109 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **起動の指定の 13 件は、台帳を機械で抜いた集合と一致した。**`区分1-板の待ち行列` が `○` で `区分1-市場影響と約定の模型` が `○` でない候補は 13 件で、番号も同じ | 実測 | `20260922_tools_1_run34.log` の `catalog_13` の節 |
+| 2 | **候補 95 は、出したときの最良気配の量を先行量に置き、約定の量で減らし、自分の玉の分まで食われたら埋まる。**逐語は `queue0 = 0.0          # ce qu'il y avait devant nous EN POSTANT` と `queue -= sz` と `if queue <= -CLIP:`。既定は `def simulate(ser, trades, side: str, ignore_queue: bool = False):` で列を数える側 | 実測 | `20260922_tools_1_run34.log` の `c95_simulate` の節 |
+| 3 | **候補 95 の原典は、先行の取り消しを見ないことを符号の注記でも書いている。**逐語は `  - les annulations devant nous sont invisibles, donc on ne remonte jamais la` で、README の逐語 `- Cancellations ahead of us are **invisible**, so we never move up the queue →` と同じ立場 | 実測 | 同じ生ログの `c95_simulate` の節 と `verbatim_src` の節 |
+| 4 | **候補 90 は、先行量 `env_ahead` を約定の列で食い、残った約定の量で当方の注文を到着順に埋める。**逐語は `3. Agent fills occur when env_ahead is consumed and trade volume remains` と `# Then fill agent orders FIFO` と `fill_size = min(order.remaining_count, remaining)` | 実測 | 同じ生ログの `c90_consume` の節 |
+| 5 | **候補 90 の README は `pro-rata fill allocation` と書くが、実装の 11 本に `pro-rata` と `allocation` の語は 1 件も無い。**先行量のあとは FIFO で埋める(知見 4)。**20 回目の知見 12 が README から書いた「pro-rata の配分」は、実装とは合わない** | 実測 | 同じ生ログの `c90_prorata_all` の節 と `c90_consume` の節 |
+| 6 | **候補 90 は、先行の取り消しの扱いを 2 つの型から選ばせる。**既定は `maker_queue_mode: str = "trade_only"` で、逐語 `# Agent position only improves via trade consumption`。もう 1 つの型は、写真の板の量が先行量を下回ったら先行量をその量まで下げる(逐語 `# (This assumes some env orders were canceled)` と `queue.env_ahead = current_size`) | 実測 | 同じ生ログの `c90_consume` の節 と `c90_sim_calls` の節 |
+| 7 | **候補 90 の実行の型は回の metadata が決め、同梱の 4 回はどれも maker と taker の両方の型である。**逐語は 4 回とも `"execution_mode": "maker_taker"`。taker の型は板の提示量で頭打ちになる(逐語 `fill_size = min(remaining, level.size)`) | 実測 | 同じ生ログの `c90_meta_mode` の節 と `c90_episodes` の節 |
+| 8 | **候補 37 は値段と時刻の優先の照合を持ち、注文が届くまでの遅延と、量に比例する滑りを持つ。どちらも既定は 0 である。**逐語は `"""Price-time-priority matching engine for a single symbol's OrderBook.` と `available_at = self._current_time + pd.Timedelta(milliseconds=int(self.latency_ms))` と `bps = self.slippage_bps_per_100_shares * units`、既定は `parser.add_argument("--slippage-bps-per-100", type=float, default=0.0)` と `parser.add_argument("--latency-ms", type=int, default=0)` | 実測 | 同じ生ログの `c37_scan2` の節 と `c37_detail` の節 と `c37_cli_defaults` の節 |
+| 9 | **候補 37 の検証の走らせ手は、足の終値を合成の値付け役と取引役に配り、列に並ぶのはその注文である。**逐語は `market_data = {"symbol": symbol, "price": float(row["Close"]), "timestamp": ts}` と `matching_engine.process_delayed_orders(ts)` | 実測 | 同じ生ログの `c37_remove_runner` の節 |
+| 10 | **候補 65 は機関が 3 つあり、埋め方が違う。**合成の取引所は価格帯ごとの `deque` に到着順に積んで食う。CSV と IEX の機関は注文の値のまま必ず埋める(逐語 `order.filled = order.volume`)。CSV の機関は取り消しもできない(逐語 `# Can't cancel, orders execute immediately`) | 実測 | 同じ生ログの `c65_scan` の節 と `c65_paths` の節 と `c65_iex_fill` の節 |
+| 11 | **候補 65 の合成の取引所は、乱数の注文流の中で取り消しを起こし、取り消した注文を列から抜く。利用者の注文は乱数の取り消しから外す。**逐語は `self._orders.remove(order)` と `self._omit_cancel.add(order.id)  # don't cancel user orders` | 実測 | 同じ生ログの `c65_paths` の節 |
+| 12 | **候補 100 の公開された原典には、埋まりを決める本体が無い。**照合の 4 関数の本体は空で、逐語は `void OrderBook::matchBuy(Order& order, bool log) { /* same logic as before */ }`。試験の 3 本も結果を確かめていない(`assert` の呼び出しが無い)。**同梱のバイナリの中身は見ていない** | 実測 | 同じ生ログの `c100_full` の節 と `c100_tests_main` の節 |
+| 13 | **候補 96 の照合の本体 2 本は、104 とバイト単位で同じである。**sha256 が `08d87232941d2ea69f139596e1aa6de74300c801fc90366e49255d6e7b9d6548` と `32275216d858279a7a65d7d3a0adc94bfc2aad7bb8232ac9ac5a82e9808d8520` で一致 | 実測 | 同じ生ログの `c96_vs_104_sha` の節 |
+| 14 | **候補 97 の既定の画面は模擬の型で、値段のあと到着順に埋める。生の板の型では、paper の指値は生の約定で埋まらない。**逐語は `const [mode, setMode] = useState<AppMode>('sim');` と `side === 'buy' ? b.price - a.price \|\| a.sequence - b.sequence : a.price - b.price \|\| a.sequence - b.sequence,`。生の約定を受ける `appendLiveTrades` は約定の列に足すだけで、注文には触れない | 実測 | 同じ生ログの `c97_detail` の節 と `c97_sort_live` の節 |
+| 15 | **候補 99・101・102・103・104 は、先行の注文を取り消すと列から抜くので、後ろの注文が繰り上がる。**逐語は順に `del level[i]` / `queue_.erase(it);` / `level->orders.erase(locator.iterator);` / `del price_level.orders[order_id]` / `prev->next = current->next;` | 実測 | 同じ生ログの `c99_cancel_fill` の節 と `c101_scan` の節 と `c102_scan` の節 と `c103_scan` の節 と `c104_scan` の節 |
+| 16 | **候補 102 の `simulate_latency` は、事象を 1 件処理するたびに実時間で待つもので、注文が届くまでの間の模型ではない。既定は無効。**逐語は `bool simulate_latency{false};` と `std::this_thread::sleep_for(config.latency_per_event);` | 実測 | 同じ生ログの `c102_detail` の節 |
+| 17 | **候補 109 は、生成の模型で先の板の状態を作るもので、注文を入れて埋まりを決める口が本文に無い。**要旨の逐語は `applying diffusion models with inpainting to generate future LOB states`。本文の走査で `execution`・`our order`・`simulator`・`queue` の当たりは 0 件、`price impact` の 1 件は参考文献の表題 | 実測 | 同じ生ログの `c109_abs` の節 と `c109_html` の節 |
+| 18 | **12 件の登録の追跡ファイルに、作業者向けの手引き(`AGENTS.md`・`CLAUDE.md`・`SKILL.md`・`.claude/`・`.cursor`・`.agents/` など)は名前で 1 件も当たらない** | 実測 | 同じ生ログの `files_ThePredictiveDev` の節 と `files_kahan15` の節 と `files_sashankzade` の節 |
+| 19 | **この回の書き換えのあと、段の表の行と `区分1-市場影響と約定の模型` の印は 52 件で一致した** | 実測 | 同じ生ログの `recount_after` の節 |
+
+### 候補の一覧
+
+**この回に候補は 1 件も増えていない。**下の 13 件は既存の番号と名前のまま、最後の記載を足したものである。どれも一次資料に到達している。
+
+37. `ThePredictiveDev/Automated-Financial-Market-Trading-System` — **一次資料に到達し、照合の機関の原典を読んだ。**値段と時刻の優先の照合で、価格帯ごとの `Deque[Order]` を先頭から食う(この回の知見 8)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) と (b) の両方に当たる(照合と、量に比例する滑り)。
+   段(機構) 5・6・段(既定) 5。遅延は在り、既定は 0。取り消しの時点で列が繰り上がる。`区分1-板の待ち行列`・`区分1-イベント駆動` と `区分2 へ` はそのまま。
+65. `aat` — **一次資料に到達し、3 つの機関の原典を読んだ。**合成の取引所は価格帯ごとの到着順の列で埋め、CSV と IEX の機関は注文の値のまま必ず埋める(この回の知見 10)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段は機関ごとに書く: 合成の取引所 5・CSV の取引所 0・IEX の取引所 0。**どの機関が既定かは読んでいない(未確認)。**`区分1-イベント駆動`・`区分1-板の待ち行列` と `区分2 へ` はそのまま。
+90. `Oddpool/PredictionMarketBench` — **一次資料に到達し、実装の 11 本を読んだ。**先行量を約定の列で食い、残った約定の量で当方の注文を到着順に埋める(この回の知見 4)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段(機構) 4・5・段(既定) 4・5(同梱の 4 回がどれも maker と taker の両方の型)。**README の `pro-rata fill allocation` は実装に無い(この回の知見 5)。**`区分1-ティック`・`区分1-板の待ち行列` と `区分6 へ` はそのまま。
+95. `sacha9214/polymarket-fill-model` — **一次資料に到達し、16 回目に最小実行まで通した。**この回は `simulate` の本体を読み直した(この回の知見 2)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる(原典自身の逐語 `A queue-aware fill model for` のとおり、埋まるかを決める)。
+   段(機構) 5・段(既定) 5。先行の取り消しは見ない。`区分1-板の待ち行列`・`区分1-ティック` はそのまま。
+96. `sashankzade/limit-order-book-matching-engine` — **一次資料に到達し、照合の本体 2 本を取って上流と突き合わせた。**上流とバイト単位で同じである(この回の知見 13)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段(機構) 5・段(既定) 5。取り消しの扱いは上流と同じ。**構築していないので、段は上流の最小実行と原典の同一性から当てたもの。**`区分1-板の待ち行列` はそのまま。
+97. `kahan15/Limit-Order-Book-Simulator` — **一次資料に到達し、照合を持つ `App.tsx` を読んだ。**既定の画面は模擬の型で、値段のあと到着順に埋める(この回の知見 14)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段(機構) 5(模擬の型)・4(生の板の paper の型)・段(既定) 5。**同梱の指示の文章(`attached_assets/`)はこの回も取っていない。**`区分1-板の待ち行列` と `区分2 へ`・`区分3 へ` はそのまま。
+99. `NickGardi/orderbooksim` — **一次資料に到達し、16 回目に最小実行まで通した。**この回は取り消しの本体を読んだ(この回の知見 15)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段(機構) 5・段(既定) 5。`区分1-板の待ち行列` と `区分5 へ` はそのまま。
+100. `xavierchuan/OrderMatchingEngine` — **一次資料に到達し、原典の 5 本を全部読んだ。バイナリには触れていない。**公開された原典では照合の 4 関数の本体が空で、埋まりを決める本体が無い(この回の知見 12)。
+   **該当なし。**`区分1-市場影響と約定の模型` は付けない。公開された原典には約定の可否・量・値段を決める本体が無く、市場影響の関数も無い。
+   **射程**: 同梱の構築済みのバイナリ(16 回目の知見 8)の中身は見ていない。バイナリが照合を持つかは未確認。`区分1-板の待ち行列` の印はこの回に動かしていない(下の問い 3)。
+101. `akurkar07/OrderBook` — **一次資料に到達し、17 回目に構築して動かした。**この回は取り消しの本体を読んだ(この回の知見 15)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段(機構) 5・段(既定) 5。`区分1-板の待ち行列` と `区分8 へ` はそのまま。
+102. `3yit/Limit-Order-Book-Simulator` — **一次資料に到達し、17 回目に構築して動かした。**この回は照合と取り消しと遅延の設定を読んだ(この回の知見 15 と 16)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段(機構) 5・段(既定) 5。`区分1-板の待ち行列` はそのまま。
+103. `IsaacCheng9/order-book-simulator` — **一次資料に到達した。この環境からは動かしていない**(17 回目の知見 8)。この回は照合と取り消しの原典を読んだ(この回の知見 15)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段(機構) 5・段(既定) 5。**段は原典の読みからの当てはめ。**`区分1-板の待ち行列` と `区分5 へ` はそのまま。
+104. `jxm35/LimitOrderBook-MatchingEngine` — **一次資料に到達し、17 回目に補って構築して動かした。**この回は取り消しの本体と遅延の語を読んだ(この回の知見 15)。
+   印は `区分1-市場影響と約定の模型` を付ける。述語の (a) に当たる。
+   段(機構) 5・段(既定) 5。`区分1-板の待ち行列` と `区分5 へ` はそのまま。
+109. `arXiv:2509.05107` — **一次資料に到達し、この回は要旨と本文(HTML 版)を読んだ。**生成の模型で先の板の状態を作る論文で、実装への link は要旨の頁にも無い(この回の知見 17)。
+   **該当なし。**`区分1-市場影響と約定の模型` は付けない。板を生成するだけで、注文を入れて埋まりを決める口が本文に無く、市場影響の関数も無い。
+   `区分1-板の待ち行列` の印はこの回に動かしていない(下の問い 3)。
+
+#### 13 件の決め方の一覧
+
+| 番号 | 道具 | 決めたこと | 段(機構)・段(既定) |
+|---|---|---|---|
+| 37 | `ThePredictiveDev/Automated-Financial-Market-Trading-System` | 印を付けた((a) と (b)) | 5・6 / 5 |
+| 65 | `aat` | 印を付けた((a))。段は機関ごと | 合成 5・CSV 0・IEX 0 / 同じ(既定の機関は未確認) |
+| 90 | `Oddpool/PredictionMarketBench` | 印を付けた((a)) | 4・5 / 4・5 |
+| 95 | `sacha9214/polymarket-fill-model` | 印を付けた((a)) | 5 / 5 |
+| 96 | `sashankzade/limit-order-book-matching-engine` | 印を付けた((a)) | 5 / 5 |
+| 97 | `kahan15/Limit-Order-Book-Simulator` | 印を付けた((a))。段は画面の型ごと | 模擬 5・生の板 4 / 5 |
+| 99 | `NickGardi/orderbooksim` | 印を付けた((a)) | 5 / 5 |
+| 100 | `xavierchuan/OrderMatchingEngine` | **付けない。該当なし**(公開された原典に埋まりを決める本体が無い) | — |
+| 101 | `akurkar07/OrderBook` | 印を付けた((a)) | 5 / 5 |
+| 102 | `3yit/Limit-Order-Book-Simulator` | 印を付けた((a)) | 5 / 5 |
+| 103 | `IsaacCheng9/order-book-simulator` | 印を付けた((a)) | 5 / 5 |
+| 104 | `jxm35/LimitOrderBook-MatchingEngine` | 印を付けた((a)) | 5 / 5 |
+| 109 | `arXiv:2509.05107` | **付けない。該当なし**(注文を入れて埋まりを決める口が無い) | — |
+
+#### 段の表 — 33 回目の 41 行に、この回の 11 行を足した
+
+**数え直しの道具は最後の段の表を読むので、33 回目の表(報告書 10138 行からの表)の 41 行の段の値を機械で写し、この回の 11 行を足した**(写しは生ログの `stage41_copy` の節)。
+**41 行の値は 1 つも動かしていない。**遅延と取り消しの扱いの中身は、37 行が 30 回目の表(報告書 9124 行からの表)、4 行が 33 回目の表を在処として指す。
+
+| 候補 | 段(機構) | 段(既定) | 遅延 | 取り消しの扱い(先行注文) |
+|---|---|---|---|---|
+| 51 `QUANTAXIS` | 0 | 0 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 92 `prediction-market-backtester` | 6 | 0 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 8 `OpenTrader` | 1 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 32 `FlashAlpha-lab/flashalpha-fill-simulator` | 1 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 7 `Superalgos` | 1 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 72 `QTradeX` | 1 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 2 `Backtrader` | 4 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 4 `PyBroker` | 4・6 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 21 `Qlib` | 4・6 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 3 `PySystemtrade` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 19 `Jesse` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 20 `VnPy` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 60 `Hikyuu` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 67 `lumibot` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 70 `PineForge` | 2・3 | 2・3 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 13 `DeviaVir/zenbot` | 3・4 | 3・4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 123 `carlos8f/zenbot` | 3・4 | 3・4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 63 `trade-frame` | 3・4 | 3・4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 18 `zipline-reloaded` | 4・6 | 4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 6 `Ziplime` | 4・6 | 4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 53 `Rqalpha` | 3・4 | 4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 23 `hftbacktest` | 3・5 | 3・5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 98 `mihircoding/limitOrderBook` | 5 | 5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 38 `microsoft/MarS` | 5 | 5(推定) | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 33 `SarthakDalmia1/backtesting_execution_simulator` | 5・6 | 5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 57 `WonderTrader` | 3・4・5 | 3・4・5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 1 `Basana` | 4・6 | 4・6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 15 `Mendl-Labs/BacktestingCore` | 6 | 6(推定) | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 35 `thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 36 `shubhamcodez/Market-Impact-Model` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 105 `DaniyalMlk/slippage` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 106 `almgren-chriss` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 116 `braverock/blotter` の `acOptTxns` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 119 `peernagy/lob_bench` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 91 `braedonsaunders/homerun` | 3・4・5・6 | 3・4・5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 54 `finmarketpy` | 該当なし | 該当なし | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 87 `PyTrendFollow` | 該当なし | 該当なし | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 45 `ForexTester` | 2 | 2 | 33 回目の表のとおり(報告書 10138 行からの表) | 同左 |
+| 50 `AlgoTest` | 1 | 1 | 33 回目の表のとおり(報告書 10138 行からの表) | 同左 |
+| 94 `mote/backtest` | 2 | 2 | 33 回目の表のとおり(報告書 10138 行からの表) | 同左 |
+| 111 `HKUDS/Vibe-Trading` | 0(暗号資産の機関)・1(中国株の機関) | 0(暗号資産の機関)・1(中国株の機関) | 33 回目の表のとおり(報告書 10138 行からの表) | 同左 |
+| 37 `ThePredictiveDev/Automated-Financial-Market-Trading-System` | 5・6 | 5 | **在る。**`self.latency_ms: int = 0` と `available_at = self._current_time + pd.Timedelta(milliseconds=int(self.latency_ms))`。**既定は 0**(`parser.add_argument("--latency-ms", type=int, default=0)`) | **軸が立つ。**取り消しの時点で繰り上がる(104 の立場)。逐語 `queue.remove(order)` |
+| 65 `aat` | 5(合成の取引所)・0(CSV の取引所)・0(IEX の取引所) | 5(合成の取引所)・0(CSV の取引所)・0(IEX の取引所)。どれが既定かは未確認 | 未確認(走査 5 本。`latenc`・`delay` の当たり 0 件)。合成の取引所の `self._sleep` は事象の間の待ち(逐語 `0.3` と `else 0.0`)で、注文が届くまでの間の模型ではない | **軸が立つ(合成の取引所)。**取り消しの時点で繰り上がる(104 の立場)。逐語 `self._orders.remove(order)`。CSV と IEX の機関は段 5 に届かないので該当なし |
+| 90 `Oddpool/PredictionMarketBench` | 4・5 | 4・5 | 未確認(走査 12 本。`latenc`・`delay` の当たり 0 件) | **軸が立ち、95・57・98・104 のどれとも違う。**既定 `maker_queue_mode: str = "trade_only"` は 95 と同じ振る舞い。もう 1 つの型では、写真の板の量が先行量を下回ったとき先行量をその量まで下げる(逐語 `queue.env_ahead = current_size`) |
+| 95 `sacha9214/polymarket-fill-model` | 5 | 5 | 未確認(走査 2 本。当たり 0 件) | **持たない(95 の立場 = 見ない)。**逐語 `- Cancellations ahead of us are **invisible**, so we never move up the queue →` |
+| 96 `sashankzade/limit-order-book-matching-engine` | 5 | 5 | 未確認(走査 2 本。当たり 0 件。`Exchange.cpp` は 96 の側を取っていない) | **軸が立つ。**取り消しの時点で繰り上がる(104 の立場)。照合の本体 2 本が上流とバイト単位で同じ |
+| 97 `kahan15/Limit-Order-Book-Simulator` | 5(模擬の型)・4(生の板の paper の型) | 5(既定の画面は模擬の型) | 未確認(走査 1 本。`latenc`・`delay` の当たり 0 件。`setTimeout` の当たり 2 件は通知の消去と再接続) | **軸が立つ(模擬の型)。**取り消しの時点で繰り上がる(104 の立場)。逐語 `bids: book.bids.filter((order) => order.id !== cancelled.id),`。生の板の型では paper の指値が生の約定で埋まらないので、先行注文は立たない |
+| 99 `NickGardi/orderbooksim` | 5 | 5 | 未確認(走査 1 本。当たり 0 件) | **軸が立つ。**取り消しの時点で繰り上がる(104 の立場)。逐語 `del level[i]` |
+| 101 `akurkar07/OrderBook` | 5 | 5 | 未確認(走査 3 本。当たり 0 件) | **軸が立つ。**取り消しの時点で繰り上がる(104 の立場)。逐語 `queue_.erase(it);` |
+| 102 `3yit/Limit-Order-Book-Simulator` | 5 | 5 | **別の意味の遅延を持つ。**`bool simulate_latency{false};` と `std::this_thread::sleep_for(config.latency_per_event);` は事象を 1 件処理するたびの実時間の待ちで、注文が届くまでの間ではない。既定は無効 | **軸が立つ。**取り消しの時点で繰り上がる(104 の立場)。逐語 `level->orders.erase(locator.iterator);`。訂正は取り消して入れ直し、時刻を新しくする(逐語 `updated.timestamp = Clock::now();`)ので列の後ろへ回る |
+| 103 `IsaacCheng9/order-book-simulator` | 5 | 5 | 未確認(走査 3 本。`latenc`・`delay` の当たり 0 件。`sleep` の当たり 2 件は注文の発生の速さの調整と統計の間隔) | **軸が立つ。**取り消しの時点で繰り上がる(104 の立場)。逐語 `del price_level.orders[order_id]` |
+| 104 `jxm35/LimitOrderBook-MatchingEngine` | 5 | 5 | 未確認(走査 4 本。`latenc`・`delay` の当たり 0 件。`sleep` の当たり 5 件は受信と注文の発生の繰り返しの間隔) | **軸が立つ(104 の立場そのもの)。**取り消しの時点で繰り上がる。逐語 `prev->next = current->next;` と、17 回目の最小実行の `queuePosition=2` から `queuePosition=1` への繰り上がり |
+
+**この回の 11 行の段の注記**:
+
+| 候補 | 根拠(段) | 当方の判断が入ったところ |
+|---|---|---|
+| 37 | 段 5 = 価格帯ごとの到着順の列を先頭から食う照合。段 6 = 量に比例する滑り(逐語 `units = max(1.0, quantity / 100.0)`)で、既定 0 | **量に比例する滑りを「市場影響の関数」と読んで段 6 に数えた(問い 2)。**既定では 0 なので段(既定)に入れていない |
+| 65 | 合成の取引所 = 段 5(逐語 `# append order to deque`)。CSV と IEX = 段 0(注文の値のまま `order.filled = order.volume`) | **合成の取引所の板は相場の記録ではなく乱数の注文流で作られる。**どの機関が既定かは読んでいない |
+| 90 | 段 5 = 先行量 `env_ahead` を出したときの板の量で置き、約定の列で食う。段 4 = 約定の量で埋まる量を決める(13 番の `Math.min(buy_order.remaining_size, trade.size)` と同じ型) | taker の型の「板の提示量で頭打ち」も段 4 に当たる(63 番の前例)。段(既定)は同梱の 4 回の metadata から決めた |
+| 95 | 段 5 = 出したときの最良気配の量を先行量に置き、約定の量で減らす | **埋まる量は常に 1 回の玉 `CLIP` で、約定の量は「いつ埋まるか」だけを決めるので段 4 に数えていない** |
+| 96 | 上流と同じ(照合の本体 2 本が同じ sha256) | 構築していない。上流の最小実行を当てたのは同じバイト列だからである |
+| 97 | 段 5 = 値段のあと `a.sequence - b.sequence` の順で埋める。段 4 = 生の板の型で成行が提示量を食う(逐語 `const fill = Math.min(remaining, resting.quantity);`) | **生の板の提示量で頭打ちになる部分約定を、63 番の前例に合わせて段 4 と読んだ** |
+| 99 | 段 5 = 価格帯の `deque` の先頭 `maker = level[0]` から食う | 98 番の前例(照合そのものが値段と時刻の優先なので既定で段 5)に合わせた |
+| 101 | 段 5 = `std::list<Order> queue_;  // FIFO queue for time priority` | **列の位置は公開の口から読めない**(17 回目の知見 3)が、照合が列の順で埋めるので段 5 に数えた |
+| 102 | 段 5 = 価格帯の列を `auto resting_it = level.orders.begin();` から食う | 17 回目の知見 7 は列の量を外から読む口と語の当たりの話で、照合は列の順に埋める。**複数の作業の糸で事象を取り合う形の中で事象の順が決まるかは、読んでいない** |
+| 103 | 段 5 = `# Match against orders at this price level (FIFO via dict order).` | **この環境からは動かしていない。**段は原典の読みからの当てはめ |
+| 104 | 段 5 = `queuePosition` を返す列 | 17 回目の知見 17(残量 0 の注文が列に残ると止まらなくなる書き方)はそのまま残る |
+
+**先行注文の取り消しの立場は、この回で 5 つになった**(30 回目の 4 つに 90 番を足した):
+
+| 立場 | 候補 | 何が起きるか |
+|---|---|---|
+| 見ない | 95 | 列は決して繰り上がらない |
+| 差した時点に率で先に引く | 57 | 既定 0 では 95 と同じ振る舞い |
+| 印を付けて列に残す | 98 | 列は繰り上がらないが、取り消した注文は埋まらない |
+| 取り消しの時点で繰り上がる | 104・この回の 37・65(合成の取引所)・96・97(模擬の型)・99・101・102・103 | 先行が消えると後ろが繰り上がる |
+| **写真の板の減りを取り消しとみなして繰り上げる** | **90(既定は「見ない」側)** | 板の量が先行量を下回ったら、先行量をその量まで下げる |
+
+**90 番の 5 つ目の立場は、30 回目の 91 番と逆向きである。**91 番は写真の間で消えた深さを「前で約定した」とみなし、90 番の型は「取り消された」とみなす。どちらも写真の減りを 1 つの原因に寄せる点は同じである。
+
+#### 板の待ち行列の印を持つ候補のうち、市場影響と約定の模型の印を持たないもの
+
+**2 件: 100 番と 109 番。**(`区分1-板の待ち行列` の 19 件のうち 17 件が `区分1-市場影響と約定の模型` の印を持つ = 生ログの `recount_after` の節)
+- `xavierchuan/OrderMatchingEngine`(100 番): 公開された原典の照合の 4 関数の本体が空(逐語 `/* same logic as before */`)で、約定の可否・量・値段を決める本体が無い。同梱のバイナリは見ていない。
+- `arXiv:2509.05107`(109 番): 生成の模型で先の板の状態を作る論文で、注文を入れて埋まりを決める口が無い。
+
+#### 数え直しの道具の出力
+
+**打った命令**: `python3 scripts/recount_scan_cat1.py`(**貼るのは最後に打った出力である。**生ログの `recount_after` の節)
+
+```
+入力 = docs/DATA/SCAN_2026-09-21_tools.md
+候補の一覧の記載 = 667 件
+印に触れた候補 = 85 件
+
+== 3 段の数え直し
+一次資料に未到達 = 0 件 : なし
+到達済みだが印が無い = 2 件 : 14 番 22 番
+個別の要素が未決 = 1 件 : 11 番
+上の 3 段に入らない別立て = 1 件 : 49 番
+最後の記載が「判別に一次資料が要る」のまま(機械) = 0 件 : なし
+
+== 6 要素ごとの 総数 と 残り
+区分1-足 : 総数 55 件 : 残り 0 件 : 1 2 3 4 5 6 7 8 10 11 13 15 16 18 19 20 21 40 43 44 45 46 48 50 51 52 53 54 55 56 57 58 60 61 62 67 68 69 70 72 73 74 75 80 85 86 87 92 94 107 111 120 121 122 123
+区分1-ティック : 総数 19 件 : 残り 0 件 : 13 20 23 31 41 45 52 53 57 58 59 61 63 68 90 91 95 119 123
+区分1-板の待ち行列 : 総数 19 件 : 残り 0 件 : 23 33 37 38 57 65 90 91 95 96 97 98 99 100 101 102 103 104 109
+区分1-イベント駆動 : 総数 19 件 : 残り 0 件 : 1 6 13 18 23 37 41 52 53 57 58 61 62 63 65 68 69 91 123
+区分1-ベクトル化 : 総数 4 件 : 残り 0 件 : 54 73 74 87
+区分1-市場影響と約定の模型 : 総数 52 件 : 残り 0 件 : 1 2 3 4 6 7 8 13 15 18 19 20 21 23 32 33 35 36 37 38 45 50 51 53 54 57 60 63 65 67 70 72 87 90 91 92 94 95 96 97 98 99 101 102 103 104 105 106 111 116 119 123
+6 要素のどれかに印がある候補 = 84 件
+そのうち到達の記載が無い候補 = 0 件 : なし
+
+== 機関で数えた値
+番号で数えた値 = 84 件
+22 番と 52 番を束ねた値 = 84 件
+13 番と 123 番を束ねた値 = 83 件
+
+== 段の表と印の集合の突き合わせ
+段の表の行 = 52 件
+区分1-市場影響と約定の模型 の印 = 52 件
+段の表にあって印が無い = 0 件 : なし
+印があって段の表に無い = 0 件 : なし
+```
+
+| 数えたもの | 33 回目の値 | この回の道具の値 | 差の中身 |
+|---|---|---|---|
+| 最後の記載が「判別に一次資料が要る」のまま(機械) | 0 | **0** | — |
+| 番号で数えた値 | 84 | **84** | 13 件はもともと印を持つ候補 |
+| `区分1-市場影響と約定の模型` | 41 | **52** | 37・65・90・95・96・97・99・101・102・103・104 |
+| 段の表の行 | 41 | **52** | 同上。印と段の表の食い違いは 0 |
+| `区分1-板の待ち行列` のうち `区分1-市場影響と約定の模型` の印を持たないもの | 13 | **2** | 100・109 |
+
+### ツール1件ごとの表
+
+**この回に `[深掘り]` に達した道具は無い。**起動の指定の逐語「**構築・導入・最小実行もしないでください。**」に従い、導入も最小実行も 1 件も行っていない。
+委任文 §4.0 は「深掘りした道具は、文章より先に下の表に 1 行ずつ書く」と定めており、深掘りが 0 件なので **§4.0 の機械可読の表にこの回の行は無い**(18 回目から 33 回目と同じ)。
+下の表は、この回に原典を読んで分かった危険だけである。**料金と当方に無いものの照合(委任文 §8)は、この回の範囲の外なのでしていない(未確認)。**
+
+| 道具 | 危険(この回の原典の読み) |
+|---|---|
+| `ThePredictiveDev/Automated-Financial-Market-Trading-System` | 作業者向けの手引きは名前で 0 件。導入していない |
+| `aat` | 作業者向けの手引きは名前で 0 件。導入していない |
+| `Oddpool/PredictionMarketBench` | 作業者向けの手引きは名前で 0 件。**README の主張(`pro-rata fill allocation`)が実装と合わない**(この回の知見 5) |
+| `sacha9214/polymarket-fill-model` | 16 回目の表のとおり |
+| `sashankzade/limit-order-book-matching-engine` | 作業者向けの手引きは名前で 0 件。許諾の出所は 16 回目の知見 2 のまま |
+| `kahan15/Limit-Order-Book-Simulator` | 指示の文章の同梱(27 回目の知見 14)はそのまま。この回も本文は取っていない |
+| `NickGardi/orderbooksim` | 16 回目の表のとおり |
+| `xavierchuan/OrderMatchingEngine` | **公開された原典と同梱のバイナリが同じ物を作るかは分からない**(原典の照合の本体が空)。バイナリには触れていない |
+| `akurkar07/OrderBook` | 17 回目の表のとおり |
+| `3yit/Limit-Order-Book-Simulator` | 17 回目の知見 13(保守者名の食い違い)のまま |
+| `IsaacCheng9/order-book-simulator` | 作業者向けの手引きは名前で 0 件。導入していない |
+| `jxm35/LimitOrderBook-MatchingEngine` | 17 回目の知見 14(試験と計測が外部から取りに行く)のまま |
+| `arXiv:2509.05107` | 論文で、取り込む物が無い |
+
+### 予算
+
+割当は 1 回 5 万 token・20 分(委任文 §7)。**起動の指定の 13 件はすべて当て直した。**
+**印を付けたのが 11 件**(37・65・90・95・96・97・99・101・102・103・104)、**付けなかったのが 2 件**(100・109、理由つき)である。
+段の表の行と印は 52 件で一致し、食い違いは 0 件のままである。
+**新しい検索計画は打っていない。深掘りも 0 件。候補も増やしていない。導入・構築・最小実行・登録・鍵の発行・購入・発注は 1 件も無い。**
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **段 3 を、列を追う道具に付けていない。**95 番と 90 番は約定の列を 1 件ずつ時刻つきで当て、照合の機関(37・65・96・97・99・101〜104)は注文の到着を 1 件ずつ処理する。段 3 の定義「**埋まりを決める到着が事象になっている**」に当たると読むこともできる。当方は 98 番の前例(照合の機関は段 5 だけ)に合わせて段 5 だけを書いた。**段 3 を足すべきかを決めていただきたい。**
+2. **37 番の量に比例する滑りを段 6 に数えた。**逐語 `bps = self.slippage_bps_per_100_shares * units` は注文の量に比例して値段を悪くする。定率・定額の滑りは段を上げない(25 回目の段 4 の定義)が、これは量の関数なので「市場影響の関数」と読んだ。**出来高に対する比ではなく量そのものに比例する点で、1 番の「使った出来高の比の 2 乗」(24 回目の知見 3)とは形が違う。段 6 でよいかを決めていただきたい。**
+3. **100 番と 109 番の `区分1-板の待ち行列` の印は動かしていない。**起動の指定の範囲は市場影響と約定の模型の印だからである。100 番の公開された原典は価格だけで並べる `std::priority_queue` で、照合の本体も空である。109 番の本文に `queue` の語は 0 件である。**この 2 件の板の待ち行列の印を見直すかを決めていただきたい。**
+4. **90 番の README の `pro-rata fill allocation` は、実装に無い(この回の知見 5)。**20 回目の知見 12 は README から「こちらは pro-rata の配分である。配分の規則が違う」と書いており、当方は過去の節を触っていない。**20 回目の記載への訂正の追記が要るかを決めていただきたい。**
+5. **65 番は機関ごとに段を書き、どれが既定かを決めていない。**`aat` は設定ファイルで取引所を選ぶ形で、既定の設定を読んでいない。
+6. **97 番の生の板の型を段 4 と読んだのは、63 番の前例(気配の提示量で頭打ち)に合わせたためである。**段 4 の定義は「約定の出来高を読んで」で、提示量は約定の出来高ではない。90 番の taker の型も同じ扱いにした。
+7. **生ログの 3 手が当方の道の誤りで空振りした**(冒頭の到達の記録)。打ち直した手を根拠に使い、空振りの手も消していない。
+
+### 取ってきた文章の中の作業者向けの指示(委任文 §6-3)
+
+**この回に取った 12 件の登録の追跡ファイルを、作業者向けの手引きの名前(`AGENTS.md`・`CLAUDE.md`・`SKILL.md`・`GEMINI.md`・`.cursorrules`・`.claude/`・`.cursor/`・`.agents/`・`copilot-instructions.md`)で走査し、当たりは 12 件とも 0 件だった**(生ログの `files_*` の各節)。
+**97 番の同梱の指示の文章(`attached_assets/` の下)は、この回も本文を取っておらず、従ってもいない。**安全側の通算は 33 回目の 11 件のまま変わらない。
+
+### 受け入れ検査の出力
+
+**最後に打った検査の出力を全文そのまま貼る。**打ったコマンド:
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log`
+(生ログは `run2` から `run34` まで全部渡している)
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+**`--all` を付けて打った結果**: 合計は 49 件、検査対象の合計(K12 を除く)は 48 件で、**この回の書き換えの前の報告書(HEAD)に同じ命令を打った値と同じである。**この回に足した節による増は 0 件である(生ログの `checker_all2` の節)。
+33 回目の節が書いた値(合計 48 件、検査対象 47 件)との差 1 件は、HEAD の時点で既に在る(33 回目の検収の訂正 2 の行、報告書 10319 行の丸括弧)。当方はこの行を触っていない。
+途中で 1 件、この回の節の問い 2 に当たった(冪の演算子 `**` を符号のまま引いたため太字の数が奇数になった)。言い換えて 0 件にした(生ログの `checker_all` の節 と `checker_all2` の節)。
