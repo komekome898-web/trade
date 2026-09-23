@@ -2,7 +2,7 @@
 """Round-1 comparison tables for item 0 (核), 資料係.
 
 Reads the raw `run_battery.py --out` TSVs already produced for this round
-(current_impl / new_impl / the 4 opponents / mutant, each run with
+(current_impl / new_impl / the 5 opponents / mutant, each run with
 `--repeat 2`) and writes 6 blind two-row Markdown tables under
 `docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_1/`:
 
@@ -37,6 +37,14 @@ kinds now: 正しさ always comes from `run_battery.py`'s `verdict` column
 (which itself independently checks `output` against `scenes.py`'s
 `expected` -- see that module's docstring), 再現 always comes from its
 `match_across_runs` column.
+
+2026-09-23 second fix (ROOTCAUSE_2.md b2-1): `_OPP_TARGETS` still listed
+only 4 opponents after `opp_basana` became runnable this round (CONSIDERED.md
+§3 導入ログ) -- its results were, instead, wrongly written as rows inside
+CONSIDERED.md's per-viewpoint tables (a 検討表, which delegation doc Sec.3
+reserves for candidates that could NOT be run). `opp_basana` is now in
+`_OPP_TARGETS`, which is this script's correct destination for any
+directly-runnable opponent's per-scene results.
 """
 from __future__ import annotations
 
@@ -56,7 +64,7 @@ _SCRATCH = Path(
 )
 _OUT_DIR = _REPO_ROOT / "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_1"
 
-_OPP_TARGETS = ["opp_ziplime", "opp_zipline_reloaded", "opp_lib_pybroker", "opp_qf_lib"]
+_OPP_TARGETS = ["opp_ziplime", "opp_zipline_reloaded", "opp_lib_pybroker", "opp_qf_lib", "opp_basana"]
 
 FIELDNAMES = ["target", "scene_id", "viewpoint", "kind", "status", "output", "expected",
               "verdict", "match_across_runs", "detail"]
@@ -112,7 +120,9 @@ def _rank(row: dict) -> tuple[int, int]:
 
 
 def _best_survey_row(scene_id: str, opp_rows: dict[str, dict[str, dict]]) -> dict | None:
-    """Among the 4 opponents' rows for this scene, keep the one 資料係ing the
+    """Among the opponents' rows for this scene (2026-09-23 ROOTCAUSE_2.md
+    b2-1: opp_basana added to _OPP_TARGETS this round -- was runnable but
+    missing from this list), keep the one 資料係ing the
     strongest showing (delegation doc Sec.3: "場面ごとに動かせた道具のうち
     最も良い結果を1行に寄せる" -- picking the toughest available opponent
     per scene is the direction that makes 新実装 harder to win against, not

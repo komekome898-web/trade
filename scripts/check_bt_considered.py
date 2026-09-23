@@ -7,7 +7,8 @@ block, so the counts are never typed by hand.
 
 Format it expects:
 - each viewpoint is a `### 観点...` heading;
-- each viewpoint has a line `動かせた候補: N 件` and either a table whose header
+- each viewpoint has a line `動かせた候補: N 件(12 名前, 34 名前)` naming the runnable candidates by their
+  catalogue number (`動かせた候補: 0 件` when none), and either a table whose header
   has the columns 候補 / 機構 / 実装 / 判断 / 理由 (a 段 column is optional),
   or a line `候補 0 件:` followed by the search command in backticks;
 - the aggregate block sits between `<!-- 集計ここから -->` and `<!-- 集計ここまで -->`.
@@ -41,14 +42,15 @@ def parse(text: str):
             cur = None
             if ln.startswith("### 観点"):
                 cur = {"title": ln[4:].strip(), "line": i + 1, "rows": [], "runnable": None,
-                       "zero": False, "tables": 0}
+                       "zero": False, "tables": 0, "runnable_ids": None}
                 sections.append(cur)
             i += 1
             continue
         if cur is not None:
-            m = re.search(r"動かせた候補[:：]\s*(\d+)\s*件", ln)
+            m = re.search(r"動かせた候補[:：]\s*(\d+)\s*件(?:[(（]([^)）]*)[)）])?", ln)
             if m:
                 cur["runnable"] = int(m.group(1))
+                cur["runnable_ids"] = re.findall(r"(?:^|[,、，]\s*)(\d+)\s", (m.group(2) or "") + " ")
             if re.search(r"候補\s*0\s*件[:：]", ln) and "`" in ln:
                 cur["zero"] = True
             if ln.startswith("|") and "判断" in ln and i + 1 < len(lines) and re.match(r"^\|[\s:|-]+\|?$", lines[i + 1]):
@@ -80,6 +82,8 @@ def check(path: Path, text: str) -> list[str]:
         where = f"{path}:{s['line']} 「{s['title']}」"
         if s["runnable"] is None:
             errs.append(f"{where}: 「動かせた候補: N 件」の行が無い(割合を出せない)")
+        elif s["runnable"] != len(s["runnable_ids"] or []):
+            errs.append(f"{where}: 「動かせた候補: {s['runnable']} 件」の括弧に台帳の番号つきの名前が {len(s['runnable_ids'] or [])} 件しか無い(番号 名前 を , で並べる)")
         if not s["tables"] and not s["zero"]:
             errs.append(f"{where}: 判断の列を持つ表も、「候補 0 件:」と検索のコマンド(` で囲む)も無い")
         seen_heads = set()
@@ -90,6 +94,10 @@ def check(path: Path, text: str) -> list[str]:
                 for need in ("候補", "機構", "実装", "判断", "理由"):
                     if not col(head, need):
                         errs.append(f"{w}: 表の見出しに「{need}」の列が無い")
+            cand = r.get(col(head, "候補") or "", "")
+            num = re.match(r"\s*(\d+)", cand)
+            if num and s["runnable_ids"] and num.group(1) in s["runnable_ids"]:
+                errs.append(f"{w}: 動かせた候補 {cand} が検討表(動かせなかった候補の表)に載っている")
             j = r.get(col(head, "判断") or "", "")
             why = r.get(col(head, "理由") or "", "")
             dan = r.get(col(head, "段") or "", None) if col(head, "段") else None

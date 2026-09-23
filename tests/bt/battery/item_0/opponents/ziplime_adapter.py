@@ -12,8 +12,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_ADAPTERS_DIR = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_ADAPTERS_DIR))
+_ITEM0_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_ITEM0_DIR))
+sys.path.insert(0, str(_ITEM0_DIR / "adapters"))
 
 from protocol import Adapter, SceneResult  # noqa: E402
 from scenes import Scene  # noqa: E402
@@ -73,6 +74,17 @@ class ZiplimeAdapter(Adapter):
                 f"'yield' あり={has_yield}, 'AsyncIterator' あり={has_async_iter}。"
                 f"1件ずつ供給する具体的な公開APIまでは呼んでいない(モジュールの構造上の"
                 f"根拠のみ)。"
+            ),
+        )
+
+    def _scene_v1_event_driven_known(self, scene: Scene) -> SceneResult:
+        return SceneResult(
+            "no_record",
+            detail=(
+                "v1-event_driven-cap で確認したのはソース構造(yield/AsyncIterator)のみで、"
+                "実際に5件の合成事象を投入して『今』の値の列を読み戻すには、ziplime本来の"
+                "取引カレンダー/データバンドルのブートストラップが要る(v2-*-known と同じ理由、"
+                "opponents/_common.py 経由の静的走査では代替できない)。この周の時間予算では未実行。"
             ),
         )
 
@@ -142,9 +154,24 @@ class ZiplimeAdapter(Adapter):
         )
 
     def _scene_v3_precision_cap(self, scene: Scene) -> SceneResult:
+        import pandas as pd
+        a_ns = scene.input["event_a"]["ts_ns"]
+        b_ns = scene.input["event_b"]["ts_ns"]
+        a = pd.Timestamp(a_ns, unit="ns", tz="UTC")
+        b = pd.Timestamp(b_ns, unit="ns", tz="UTC")
+        distinguishable = bool(a != b and a.value != b.value)
         return SceneResult(
-            "not_supported",
-            detail="内部時刻表現の型を申告する公開の関数・定数は、実測した範囲(walk_submodule_names)には見当たらない。",
+            "ok",
+            output={"distinguishable": distinguishable},
+            detail=(
+                f"この venv (ziplime を pip install した venv、pandas は ziplime の依存として同居) "
+                f"で実際に pandas.Timestamp({a_ns}, unit='ns', tz='UTC') と "
+                f"pandas.Timestamp({b_ns}, unit='ns', tz='UTC') を構築し比較した実測: "
+                f"a.value={a.value}, b.value={b.value}, distinguishable={distinguishable}。"
+                f"ziplime 自身の事象オブジェクトがこの精度を保ったまま入出力することは"
+                f"(取引カレンダー/バンドルのブートストラップが要るため)この周では未確認"
+                f"(v3-precision-known と同じ留保)。"
+            ),
         )
 
     # v4 / v5 -- not attempted dynamically this round -----------------

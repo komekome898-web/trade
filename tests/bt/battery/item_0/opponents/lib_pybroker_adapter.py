@@ -10,8 +10,9 @@ import inspect
 import sys
 from pathlib import Path
 
-_ADAPTERS_DIR = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_ADAPTERS_DIR))
+_ITEM0_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_ITEM0_DIR))
+sys.path.insert(0, str(_ITEM0_DIR / "adapters"))
 
 from protocol import Adapter, SceneResult  # noqa: E402
 from scenes import Scene  # noqa: E402
@@ -57,6 +58,17 @@ class LibPybrokerAdapter(Adapter):
                 f"指定して丸ごと実行する形で、1件ずつ事象を外部から供給する公開APIは無い。"
                 f"ExecContext はシンボルごとに足単位で呼ばれるコールバックだが、当方の現状"
                 f"(engine.py)と同型 -- 「足単位のコールバックはあるが事前に全区間のデータが要る」。"
+            ),
+        )
+
+    def _scene_v1_event_driven_known(self, scene: Scene) -> SceneResult:
+        return SceneResult(
+            "no_record",
+            detail=(
+                "v1-event_driven-cap で確認したとおり、pybroker.strategy.Strategy.backtest は"
+                "start_date/end_date の範囲を丸ごと実行する形で、1件ずつ事象を外部から供給する"
+                "公開APIが無い。ExecContext の足単位コールバックから『今』の値の列を読み戻すには"
+                "backtest 用のローカルデータソースを別途組む必要があり、この周の時間予算では未実行。"
             ),
         )
 
@@ -132,7 +144,21 @@ class LibPybrokerAdapter(Adapter):
         return SceneResult("no_record", detail="pybroker は pandas ベースだが、内部の時刻表現を往復させる実行はこの周は未実行。")
 
     def _scene_v3_precision_cap(self, scene: Scene) -> SceneResult:
-        return SceneResult("not_supported", detail="内部時刻表現の型を申告する公開の定数・関数は、実測した範囲には見当たらない。")
+        has_date_prop = "def date(self)" in _EXECCTX_SRC and "np.datetime64" in _EXECCTX_SRC
+        return SceneResult(
+            "no_record",
+            detail=(
+                f"ExecContext のソースを実測: `_curr_date: Optional[np.datetime64]` と "
+                f"`def date(self) -> NDArray[np.datetime64]` の宣言が実在する"
+                f"(has_date_prop実測={has_date_prop})。numpy.datetime64('ns') 自体は int64 ns "
+                f"バックエンドで1ナノ秒差を区別できることを別途この venv で直接確認した"
+                f"(`np.datetime64(1_700_000_000_000_000_000,'ns') != "
+                f"np.datetime64(1_700_000_000_000_000_001,'ns')` -> True)。ただし ExecContext "
+                f"自身にこの場面の2値を実際に流し込んで `.date` を読み戻すには Strategy.backtest "
+                f"の実行(データ・カレンダーのブートストラップ)が要り、この周では未実行のため、"
+                f"pybroker自身の経路としての判定は保留する(型宣言の確認に留まる、no_record)。"
+            ),
+        )
 
     def _scene_v4_lookahead_known(self, scene: Scene) -> SceneResult:
         return SceneResult("no_record", detail="実行にはデータソース接続が要り、この周は未実行。")

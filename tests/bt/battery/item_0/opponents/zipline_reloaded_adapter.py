@@ -9,8 +9,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_ADAPTERS_DIR = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_ADAPTERS_DIR))
+_ITEM0_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_ITEM0_DIR))
+sys.path.insert(0, str(_ITEM0_DIR / "adapters"))
 
 from protocol import Adapter, SceneResult  # noqa: E402
 from scenes import Scene  # noqa: E402
@@ -70,6 +71,17 @@ class ZiplineReloadedAdapter(Adapter):
                 f"zipline.gens.sim_engine.MinuteSimulationClock の実在 hasattr={has_clock_class}。"
                 f"zipline.gens.tradesimulation のソースに 'yield' あり={has_yield}"
                 f"(bar 単位の生成器で駆動する構造)。"
+            ),
+        )
+
+    def _scene_v1_event_driven_known(self, scene: Scene) -> SceneResult:
+        return SceneResult(
+            "no_record",
+            detail=(
+                "v1-event_driven-cap で確認したのは MinuteSimulationClock の実在とソースの"
+                "'yield' のみで、実際に5件の合成事象を投入して『今』の値の列を読み戻すには"
+                "zipline本来の取引カレンダー/データバンドルのブートストラップが要る"
+                "(v2-*-known と同じ理由)。この周の時間予算では未実行。"
             ),
         )
 
@@ -150,10 +162,25 @@ class ZiplineReloadedAdapter(Adapter):
         )
 
     def _scene_v3_precision_cap(self, scene: Scene) -> SceneResult:
+        import pandas as pd
+        a_ns = scene.input["event_a"]["ts_ns"]
+        b_ns = scene.input["event_b"]["ts_ns"]
+        a = pd.Timestamp(a_ns, unit="ns", tz="UTC")
+        b = pd.Timestamp(b_ns, unit="ns", tz="UTC")
+        distinguishable = bool(a != b and a.value != b.value)
         return SceneResult(
             "ok",
-            output={"dtype": "pandas.Timestamp (int64 ns, tz-aware)"},
-            detail="zipline はカレンダー・セッションに pandas の DatetimeIndex/Timestamp を用いる(zipline.utils.calendar_utils 依存)。ns 精度は pandas の基盤機能として申告可能。",
+            output={"distinguishable": distinguishable},
+            detail=(
+                f"pandas.Timestamp({a_ns}, unit='ns', tz='UTC') と "
+                f"pandas.Timestamp({b_ns}, unit='ns', tz='UTC') を実際に構築し比較した実測: "
+                f"a.value={a.value}, b.value={b.value}, distinguishable={distinguishable}。"
+                f"zipline はカレンダー・セッションに pandas の DatetimeIndex/Timestamp を用いる"
+                f"(zipline.utils.calendar_utils 依存)ため、この基盤機能をそのまま申告する。"
+                f"ただし zipline 自身のイベントオブジェクトがこの精度のまま値を保持して"
+                f"往復することまでは確認していない(pandas の基盤機能の確認に留まる。"
+                f"v3-precision-known と同じ留保)。"
+            ),
         )
 
     def _scene_v4_lookahead_known(self, scene: Scene) -> SceneResult:

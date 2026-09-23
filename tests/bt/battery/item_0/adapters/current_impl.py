@@ -231,7 +231,12 @@ class CurrentImplAdapter(Adapter):
     def _scene_v3_precision_cap(self, scene: Scene) -> SceneResult:
         return SceneResult(
             "not_supported",
-            detail="engine.py に内部時刻表現の型を申告する関数・定数・docstring 契約が無い(grep 'ns\\|nanosecond\\|int64' の当たり0件、2026-09-23実測)。",
+            detail=(
+                "engine.py の実測(grep 'ns\\|nanosecond\\|int64' の当たり0件、2026-09-23): "
+                "個々の事象を ts_ns で受け取って読み戻す経路が無く(`_scene_v3_precision_known` "
+                "と同じ理由: candles.index はラベルの素通しのみ)、この場面の入力(ts_ns が"
+                "厳密に1だけ異なる2つの合成事象)を投入して読み戻す手段そのものが存在しない。"
+            ),
         )
 
     # ------------------------------------------------------------------

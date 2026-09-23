@@ -19,7 +19,7 @@ def run(tmp_path, body, write=True):
 
 
 def good():
-    return ("### 観点1: 足\n\n動かせた候補: 2 件\n\n" + HEAD +
+    return ("### 観点1: 足\n\n動かせた候補: 2 件(7 E, 8 F)\n\n" + HEAD +
             "| 1 A | 6 | SCAN 10行 | はい | 再現した | 段 6 が最も高い。opponents/a_repro.py |\n"
             "| 2 B | 2 | SCAN 20行 | はい | スキップ: 明らかに弱い(段が低い) | 段が低い: 段 2 < 6(SCAN 20行) |\n"
             "| 3 C | (空欄) | SCAN 30行 | はい | スキップ: 明らかに弱い(段が低い) | 段が低い: 実装で確かめた段 = 1(SCAN 31行) |\n"
@@ -83,3 +83,13 @@ def test_confirmed_absent_needs_a_line_or_url(tmp_path):
 def test_file_without_viewpoint_headings_is_rejected(tmp_path):
     r = run(tmp_path, "# 検討表\n\n本文だけ\n")
     assert r.returncode == 1 and "`### 観点` の見出しが 1 つも無い" in r.stdout
+
+
+def test_runnable_line_must_name_each_candidate(tmp_path):
+    r = run(tmp_path, good().replace("動かせた候補: 2 件(7 E, 8 F)", "動かせた候補: 2 件(導入した全部)"))
+    assert r.returncode == 1 and "番号つきの名前" in r.stdout
+
+
+def test_runnable_candidate_must_not_be_in_the_review_table(tmp_path):
+    r = run(tmp_path, good().replace("動かせた候補: 2 件(7 E, 8 F)", "動かせた候補: 2 件(2 B, 8 F)"))
+    assert r.returncode == 1 and "動かせた候補 2 B が検討表" in r.stdout

@@ -180,6 +180,13 @@ for _key, _jp, _sample in _EVENT_TYPES:
 _TS_ISO = "2024-01-01T00:00:00.123456789Z"
 _TS_NS_EXPECTED = 1704067200123456789
 
+# Two ts_ns values exactly 1 nanosecond apart, at "now"-scale magnitude
+# (~1.7e18, same order as the other viewpoint-3/4 scenes' epoch-ns values).
+# See v3-precision-cap's derivation below for why this pair -- rather than any
+# implementation's internal type name -- is the requirement-derived probe.
+_TS_A = 1_700_000_000_000_000_000
+_TS_B = _TS_A + 1  # +1 ns, deliberately NOT round in any other unit
+
 V3 = [
     Scene(
         id="v3-precision-known",
@@ -201,20 +208,44 @@ V3 = [
         id="v3-precision-cap",
         viewpoint=3,
         kind="capability",
-        title="内部の時刻表現の型を申告できるか",
-        input={},
-        expected={"unit": "ns", "timezone": "UTC"},
+        title="隣接する1ナノ秒差の2時刻を区別して保持できるか",
+        input={
+            "event_a": {"kind": "clock", "ts_ns": _TS_A},
+            "event_b": {"kind": "clock", "ts_ns": _TS_B},
+        },
+        expected={"distinguishable": True},
         derivation=(
-            "要件(§1直書き)は「時刻はUTCのint64ナノ秒」。対象が機械可読の契約(構造化された"
-            "dict、例:unit/timezoneキー)を持てば、その中身が文字通り unit=='ns' かつ"
-            "timezone=='UTC' であることを直接比較できる(正解はこの2値そのもの)。対象が"
-            "そこまで構造化していない場合(自由記述の型名文字列しか無い場合)は、run_battery.py"
-            "がその文字列に ns/nanosecond 相当の語と utc/tz-aware 相当の語の両方が現れるかを"
-            "機械的に見る(この場合「utc」の明記が無く tz-aware 止まりの申告は、UTCそのものの"
-            "確認ではない点を検討表・比較表の注記に残す)。「int64 ns で持っている」という"
-            "prose の自己申告だけでは数えない。"
+            "2026-09-23再修正(監査役の[止める]、場面集の規則2『場面は振る舞いを試し、作りの形を"
+            "試さない』)。旧版の期待値 {'unit': 'ns', 'timezone': 'UTC'} は、同じコミット"
+            "(baacefa)で同時に追加された新実装の内部契約 src/bot/bt/core/contract.py の "
+            "CORE_CONTRACT['time'] のキー・値と文字通り一致しており、要件文から独立に導いた"
+            "ものか新実装の内部の形をそのまま採用したものか監査役に問われた(git show で同時"
+            "追加を確認済み)。実際、旧版は当方の調査結果側アダプタの実測出力"
+            "(例: zipline-reloaded は {'dtype': 'pandas.Timestamp (int64 ns, tz-aware)'}、"
+            "qf-lib は {'dtype': 'datetime.datetime (microsecond precision)'} で申告してい"
+            "た。'unit'/'timezone' キーを持たないため、実際にはnsを厳密に保持できる"
+            "zipline-reloaded の pandas.Timestamp 経路までもが機械比較で不一致になっていた"
+            "= 新実装の語彙だけが通る設計だった、という欠陥を含んでいた)。"
+            "この版は要件文(『時刻はUTCのint64ナノ秒』)のみから、実装の内部名に頼らない"
+            "観測可能な必要条件を導く: int64ナノ秒である以上、1ナノ秒だけ離れた2つの時刻は"
+            "厳密に異なる整数として区別できねばならない。IEEE754 float64 は仮数部52ビットで"
+            "2**53(=9,007,199,254,740,992)を超える整数を正確に表現できない。"
+            "1,700,000,000,000,000,000(約1.7e18)はこの閾値を大きく超えており、実測"
+            "(`python3 -c \"import math; a=1_700_000_000_000_000_000.0; "
+            "print(math.nextafter(a, math.inf)-a)\"` -> 256.0)のとおり、この桁の float64 は"
+            "隣接する表現可能値の間隔(ULP)が256もあるため、1ナノ秒差の2値は必ず同じ float64 "
+            "に潰れる(区別不能)。よって「distinguishable=True」は要件(int64ナノ秒)だけから"
+            "導ける閉じた必要条件であり、int64・Decimal・厳密な整数保持型のいずれでも自動的に"
+            "満たされ、float64(秒/ns)・datetime.datetime(マイクロ秒止まり)のような精度を"
+            "落とす型では構造的に満たせない。対象がどんなキー名・型名で内部を申告するかには"
+            "一切依存しない。"
         ),
-        measures="対象が内部で時刻をどの型(int64 ns / float 秒 / その他)で持つかを、実装のコードまたは機械可読の契約から申告できるか。",
+        measures=(
+            "対象へ ts_ns が厳密に1だけ異なる2つの合成事象を投入し、対象が報告する2つの"
+            "時刻の値が実際に区別できるか(同じ値に潰れていないか)を実測する。"
+            "「int64 ns で持っている」という自己申告の型名・キー名では判定しない"
+            "(場面集の規則1・規則2)。"
+        ),
     ),
 ]
 

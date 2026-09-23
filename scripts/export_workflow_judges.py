@@ -112,7 +112,7 @@ def collect_battery(paths: list[str]) -> dict:
 def render_battery(item: int, rows: list) -> str:
     lines = [f"# 場面集の監査と直し(項目 {item}、作業者の前。Workflow の記録から逐語で書き出し)", "",
              "監査役(場面):N#k = k 回目の監査、場面の直し:N#k = k 回目の直し(その前の監査の指摘を受けたもの)。", ""]
-    for _, _, lab, aid, res in sorted(rows, key=lambda r: (r[0], -r[1])):
+    for _, _, lab, aid, res in sorted(rows, key=lambda r: (r[0], r[1])):
         lines += [f"## {lab}(agent {aid})", ""]
         if "findings" in res:
             lines += [f"- [{x['level']}] {x['text']}" for x in res["findings"]] or ["(指摘なし)"]

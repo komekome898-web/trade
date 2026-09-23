@@ -10,8 +10,9 @@ import datetime
 import sys
 from pathlib import Path
 
-_ADAPTERS_DIR = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_ADAPTERS_DIR))
+_ITEM0_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_ITEM0_DIR))
+sys.path.insert(0, str(_ITEM0_DIR / "adapters"))
 
 from protocol import Adapter, SceneResult  # noqa: E402
 from scenes import Scene  # noqa: E402
@@ -84,6 +85,34 @@ class QfLibAdapter(Adapter):
             ),
         )
 
+    def _scene_v1_event_driven_known(self, scene: Scene) -> SceneResult:
+        bars = scene.input["events"]
+        timer = SettableTimer(datetime.datetime(2024, 1, 1))
+        mgr = EventManager(timer)
+        notifier = AllEventNotifier()
+        counter = _Counter()
+        notifier.subscribe(counter)
+        mgr.register_notifiers([notifier])
+        for bar in bars:
+            e = Event()
+            e.tag = bar["ts_ns"]  # tag with the real ts_ns, not an index (v1-cap tags with index)
+            mgr.publish(e)
+        for _ in range(len(bars)):
+            mgr.dispatch_next_event()
+        now_sequence = counter.calls
+        output = {"now_sequence": now_sequence}
+        match = output == scene.expected
+        return SceneResult(
+            "ok" if match else "error",
+            output=output,
+            detail=(
+                f"v1-event_driven-cap と同じ `EventManager.publish`/`dispatch_next_event` 経路を使い、"
+                f"今回は各 `Event.tag` に入力の ts_ns を入れて1件ずつ投入・取り出しさせた。"
+                f"リスナーが記録した到着順の tag 列 = {now_sequence}。"
+                f"既知解({scene.expected['now_sequence']})と{'一致' if match else '不一致'}。"
+            ),
+        )
+
     def _generic_v2_cap(self, scene: Scene, key: str, supported: bool, detail: str) -> SceneResult:
         return SceneResult("ok" if supported else "not_supported", output={"supported": supported}, detail=detail)
 
@@ -153,10 +182,28 @@ class QfLibAdapter(Adapter):
         )
 
     def _scene_v3_precision_cap(self, scene: Scene) -> SceneResult:
+        a_ns = scene.input["event_a"]["ts_ns"]
+        b_ns = scene.input["event_b"]["ts_ns"]
+
+        def _ns_to_datetime(ns: int) -> datetime.datetime:
+            return datetime.datetime(1970, 1, 1) + datetime.timedelta(microseconds=ns / 1000.0)
+
+        timer = SettableTimer()
+        timer.set_current_time(_ns_to_datetime(a_ns))
+        a = timer.now()
+        timer.set_current_time(_ns_to_datetime(b_ns))
+        b = timer.now()
+        distinguishable = bool(a != b)
         return SceneResult(
-            "not_supported",
-            output={"dtype": "datetime.datetime (microsecond precision)"},
-            detail="SettableTimer.now() の返り値の型を実測: datetime.datetime。マイクロ秒までしか持たず ns 未満を表現できない。",
+            "ok",
+            output={"distinguishable": distinguishable},
+            detail=(
+                f"SettableTimer に ts_ns={a_ns} と ts_ns={b_ns}(1ナノ秒差)をそれぞれ "
+                f"set_current_time で実際に設定して now() を呼んだ実測: a={a!r}, b={b!r}, "
+                f"distinguishable={distinguishable}。SettableTimer.now() は datetime.datetime "
+                f"(マイクロ秒精度)を返すため、1ナノ秒差の2値は同じ datetime に潰れて"
+                f"区別できないことを実測で確認した(要件のUTC int64ナノ秒を満たさない)。"
+            ),
         )
 
     def _scene_v4_lookahead_known(self, scene: Scene) -> SceneResult:

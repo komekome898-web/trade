@@ -15,7 +15,7 @@ import it:
     <scratchpad>/bt/venvs/item_0/<candidate>/, per delegation doc Sec.4):
         <scratchpad>/bt/venvs/item_0/ziplime/bin/python3 run_battery.py \
             --target opp_ziplime --out OUT.tsv
-        (same pattern for opp_zipline_reloaded / opp_lib_pybroker / opp_qf_lib)
+        (same pattern for opp_zipline_reloaded / opp_lib_pybroker / opp_qf_lib / opp_basana)
 
 Run it twice per target (or pass --repeat 2, the default) so the report
 carries the "did two runs agree" column the delegation doc asks for
@@ -58,17 +58,20 @@ def _load_adapter(target: str) -> Adapter:
         from adapters.new_impl_stub import NewImplAdapter
         return NewImplAdapter()
     if target == "opp_ziplime":
-        from adapters.opponents.ziplime_adapter import ZiplimeAdapter
+        from opponents.ziplime_adapter import ZiplimeAdapter
         return ZiplimeAdapter()
     if target == "opp_zipline_reloaded":
-        from adapters.opponents.zipline_reloaded_adapter import ZiplineReloadedAdapter
+        from opponents.zipline_reloaded_adapter import ZiplineReloadedAdapter
         return ZiplineReloadedAdapter()
     if target == "opp_lib_pybroker":
-        from adapters.opponents.lib_pybroker_adapter import LibPybrokerAdapter
+        from opponents.lib_pybroker_adapter import LibPybrokerAdapter
         return LibPybrokerAdapter()
     if target == "opp_qf_lib":
-        from adapters.opponents.qf_lib_adapter import QfLibAdapter
+        from opponents.qf_lib_adapter import QfLibAdapter
         return QfLibAdapter()
+    if target == "opp_basana":
+        from opponents.basana_adapter import BasanaAdapter
+        return BasanaAdapter()
     if target == "mutant":
         # 審査員の試金石 (delegation doc Sec.3): 新実装の adapter を、観点4だけ
         # 1バーの先読み漏れへすり替える薄いラッパーで包む。in-repo なので
@@ -78,7 +81,7 @@ def _load_adapter(target: str) -> Adapter:
         return LookaheadLeakMutant(NewImplAdapter())
     raise SystemExit(
         f"unknown --target {target!r}. Known targets: current_impl, new_impl, mutant, "
-        f"opp_ziplime, opp_zipline_reloaded, opp_lib_pybroker, opp_qf_lib "
+        f"opp_ziplime, opp_zipline_reloaded, opp_lib_pybroker, opp_qf_lib, opp_basana "
         f"(each opp_* must be run under ITS OWN venv's python -- see module docstring)."
     )
 
