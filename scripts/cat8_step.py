@@ -17,7 +17,7 @@
 (予算の区切りを自己申告に任せないため。2026-09-23 監査 12 回目の指摘 5)。
 結果は要約せず、返ってきた一覧(題名と URL)をそのまま流す。
 """
-import argparse, datetime, pathlib, subprocess, sys, time
+import argparse, datetime, pathlib, shlex, subprocess, sys, time
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--log", required=True)
@@ -29,6 +29,14 @@ ap.add_argument("--keep", type=int, default=3000)
 ap.add_argument("--deadline", help="UTC の ISO 時刻。これを過ぎていたら手を打たずに終了コード 3 で止まる(予算の区切り)")
 ap.add_argument("cmd", nargs=argparse.REMAINDER)
 a = ap.parse_args()
+if a.cmd[:1] == ["--"]:
+    a.cmd = a.cmd[1:]
+
+
+def to_cmdline(cmd):
+    # 引数が 1 つならシェルの文として打つ(パイプなどを使える)。2 つ以上なら 1 つずつ引用して繋ぐ
+    # (空白を含む引数が割れていた = 2026-09-23 監査 13 回目の指摘 1。`date -u -d '+20 min' +%FT%TZ` が失敗した)
+    return cmd[0] if len(cmd) == 1 else shlex.join(cmd)
 
 def one_word(s):
     return "_".join(s.split()) or "-"
@@ -40,30 +48,31 @@ def one_line(s):
 
 _now = datetime.datetime.now(datetime.timezone.utc)
 now = _now.strftime("%Y-%m-%dT%H:%M:%SZ")
+dl_tag = " [期限 %s]" % a.deadline if a.deadline else ""
 if a.deadline:
     dl = datetime.datetime.strptime(a.deadline, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
     if _now > dl:
         with open(a.log, "a") as f:
             f.write("--- %s method=budget target=期限切れ rc=3 time_s=0 note=期限 %s を過ぎたので手を打たなかった\n"
-                    "$ (打たなかった) %s\n" % (now, a.deadline, one_line(" ".join(a.cmd) or a.manual or "")))
+                    "$ (打たなかった) %s\n" % (now, a.deadline, one_line(to_cmdline(a.cmd) if a.cmd else (a.manual or ""))))
         print("[cat8_step] 期限 %s を過ぎた。次の段・次の候補に入らずに、返す前の手順(起動文 §7)へ進む" % a.deadline,
               file=sys.stderr)
         sys.exit(3)
 if a.manual is not None:
     body = sys.stdin.read()
-    head = "--- %s method=%s target=%s rc=NA time_s=NA note=%s" % (now, one_word(a.method), one_word(a.target), one_line(a.note))
+    head = "--- %s method=%s target=%s rc=NA time_s=NA note=%s" % (now, one_word(a.method), one_word(a.target), one_line(a.note) + dl_tag)
     cmdline, out, rc = one_line(a.manual), body, 0
 else:
-    cmd = a.cmd[1:] if a.cmd[:1] == ["--"] else a.cmd
+    cmd = a.cmd
     if not cmd:
         sys.exit("コマンドが無い(-- のあとに書く)")
-    cmdline = " ".join(cmd)
+    cmdline = to_cmdline(cmd)
     t0 = time.monotonic()
     p = subprocess.run(["bash", "-c", cmdline], capture_output=True, text=True, errors="replace")
     dt = time.monotonic() - t0
     rc, out = p.returncode, (p.stdout + p.stderr)
     head = "--- %s method=%s target=%s rc=%d time_s=%.3f note=%s" % (
-        now, one_word(a.method), one_word(a.target), rc, dt, one_line(a.note))
+        now, one_word(a.method), one_word(a.target), rc, dt, one_line(a.note) + dl_tag)
 cut = out[: a.keep]
 tail = "" if len(out) <= a.keep else "\n[出力は %d 文字。先頭 %d 文字だけを残した]" % (len(out), a.keep)
 with open(a.log, "a") as f:

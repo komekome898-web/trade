@@ -246,6 +246,9 @@ def cmd_check(a):
                 errs.append("%s:%d: 生ログの見出しの形が違う: %s" % (lg, i, ln[:80]))
             if LOG_HEAD.match(ln) and not (i < len(ll) and ll[i].startswith("$ ")):
                 errs.append("%s:%d: 見出しの直後が `$ <コマンド>` の行でない(追補 §3)" % (lg, i))
+            if (a.require_deadline and LOG_HEAD.match(ln) and "[期限 " not in ln
+                    and not re.search(r"method=budget target=(期限|期限切れ) ", ln)):
+                errs.append("%s:%d: `--deadline` を付けずに打った手(起動文 §6)" % (lg, i))
     for e in errs:
         print(e)
     print("---- 合計 %d 件" % len(errs))
@@ -363,6 +366,7 @@ def main():
     p = sp.add_parser("set"); p.add_argument("num"); p.add_argument("pairs", nargs="+")
     sp.add_parser("recount")
     p = sp.add_parser("check"); p.add_argument("report", nargs="?"); p.add_argument("logs", nargs="*")
+    p.add_argument("--require-deadline", action="store_true", help="生ログの全部の手に期限が付いているかを見る")
     p = sp.add_parser("check-elements"); p.add_argument("report"); p.add_argument("--round", required=True)
     a = ap.parse_args()
     {"add": cmd_add, "sync": cmd_sync, "set": cmd_set, "recount": cmd_recount, "check": cmd_check,
