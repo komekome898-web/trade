@@ -16,15 +16,37 @@
    **候補の番号は、行の中に `(<数> 番` があればそれを採る。**無ければ行頭の数字を採る。
    (一覧の番号は回によって「候補の番号」と「その回の並び順」の 2 通りが使われている。
    119 番の記載は先頭が並び順の `15.` で、番号は名前の後ろに `(119 番、` の形で在る。)
-3. 印は 6 要素の語の出現ごとに判定する。語の直後から**同じ文の終わりまで**を見て、
+   **「- **68 番 `quanttrader`**」の形の中黒の箇条も候補の行として採る**(2026-09-23、31 回目)。
+   21 回目の節は粒度が決まった 2 件(61 番・68 番)をこの形で書いており、番号つきの行だけを見る
+   作りでは 68 番の `区分1-足` と `区分1-ティック` を数え落としていた(節の 35 件に対し 34 件)。
+3. 印は 6 要素の語の出現ごとに判定する。**同じ文の中で、その語より前に自分以外の候補の
+   「<数> 番」が出ていたら、その出現は数えない**(2026-09-23、31 回目)。22 番 `Lean CLI` の記載は
+   「**なお 52 番 `QuantConnect` が同じ機関の別の入口として `区分1-足` と `区分1-イベント駆動` を持つ。**」
+   であり、この 2 つは 52 番の印である。22 番自身は同じ記載で「**6 要素はこの回に決まらなかった。**」と
+   書かれていて、報告の台帳でも「到達済みだが 6 要素の印が無い」2 件の片方である。
+   語の直後から**同じ文の終わりまで**を見て、
    途中に挟まる語の並び(`と`・読点・符号・他の 6 要素の語)を飛ばした先が
    打ち消しの語(付けない / 付けていない / 付けなかった / 付けず / 入れない / 外す / 外した /
-   決めていない / 決まらなかった / 未確認)で始まればその出現は打ち消し、そうでなければ肯定。
+   決めていない / 決めない / 決めなかった / 決まらなかった / 可能性 / 当たらない / 該当しない /
+   未確認)で始まればその出現は打ち消し、そうでなければ肯定。**「決めない」と「可能性」は
+   2026-09-23(31 回目)に足した。**46 番の記載「名前から `区分1-ティック` の可能性があるが、
+   販売の場に到達していないので決めない。」が肯定として数えられ、節に無い印が 1 件立っていた。
    並びを飛ばすのは「A と B と C は付けない」の形が 1 つの打ち消しで複数の語に掛かるためで、
    直後の何字かだけを見る粗い当て方だと、隣の文の打ち消しを拾って肯定を打ち消してしまう。
    **同じ候補について、その語に触れた最後の記載を採る。**同じ記載の中では最後の出現を採る。
-4. 到達は同じ規則で「一次資料に未到達」「未到達」を打ち消し、「一次資料に到達」「到達済み」を肯定とする。
+4. 到達は、22 回目の節が引いた定義の逐語で決める(報告書の `#### 6 要素ごとの 総数 と 残り(数え方を変えた)`)。
+   > **総数** = その印を持つ候補の数 / **残り** = そのうち**一次資料に到達していない**ものの数
+   > (状態が「未着手」または「判別に一次資料が要る」のまま)。**「浅い」以上は到達済みであり、残りではない。**
+   したがって到達していない側の語は「未着手」「判別に一次資料が要る」「一次資料に未到達」の 3 つ、
+   到達した側の語は「一次資料に到達」「到達済み」「到達の記録」「[深掘り]」「浅い」の 5 つである。
+   記載の中で**最後に出た語**を採り、直後が「を外す」「ではない」「ではなく」ならその語を打ち消す
+   (95 番の記載「`判別に一次資料が要る` を外す。」がこの形)。
+   **裸の「未到達」は採らない。**この報告では 11 番 `OctoBot` の「最小実行(成行と指値の 1 往復)は未到達」の
+   ように、一次資料ではなく最小実行について使われているためである。
    **どちらも書かれていない候補は「到達の記載なし」に入れ、残りには数えない。**
+   (2026-09-23、31 回目に直した。それまでは 4 つの語句の字面だけを見ており、印を持つ 81 件のうち
+   53 件が「到達の記載なし」に落ちていた。落ちた中には 23 回目に一次資料から印を当てた候補 1〜23 が
+   まるごと入っており、報告自身の台帳の「一次資料に未到達 = 0 件」とも噛み合っていなかった。)
 5. 3 段(一次資料に未到達 / 到達済みだが印が無い / 個別の要素が未決)は、
    報告の **最後の「尽きた」に数えないもの の見出し** の下の列挙を読み、その文言で振り分ける。
    見出しに限るのは、本文がこの小節を参照するだけの行を拾わないためである。
@@ -34,6 +56,8 @@
 
 **この道具が見ていないもの(射程)**: 印の中身が原典と合っているか / 段の当てはめが正しいか /
 候補の一覧に書き落とされた印。**書いてあるものを数えるだけである。**
+現に、候補 18 `zipline-reloaded` の `区分1-イベント駆動` は 24 回目の表にだけ在って候補の一覧に無いので、
+この道具では拾えない(候補 6 `Ziplime` は 31 回目に一覧へ足した)。
 """
 import re
 import sys
@@ -42,10 +66,22 @@ import pathlib
 ELEMS = ["区分1-足", "区分1-ティック", "区分1-板の待ち行列",
          "区分1-イベント駆動", "区分1-ベクトル化", "区分1-市場影響と約定の模型"]
 NEG = re.compile(r"付けない|付けていない|付けなかった|付けず|入れない|外す|外した|"
-                 r"決めていない|決まらなかった|当たらない|該当しない|未確認")
+                 r"決めていない|決めない|決めなかった|決まらなかった|可能性|"
+                 r"当たらない|該当しない|未確認")
 NEG_WIN = 24
 CHAIN = re.compile(r"^(?:[\s`*]|と|、|・|および|区分1-[^\s`*、。]+)*")
 BUNDLE = [(22, 52), (13, 123)]
+# 中黒の箇条で書かれた候補の行(21 回目の「粒度が決まった 2 件」がこの形)。
+BULLET = re.compile(r"^\s*[-*]\s+\*{0,2}`?(\d+)\s*番")
+# 記載の中に出る「<数> 番」。自分以外の番号なら、その文の印は自分のものではない。
+OTHER = re.compile(r"(\d+)\s*番")
+# 到達の状態を表す語(規則 4)。True = 到達済みの側、False = まだ到達していない側。
+REACH_WORDS = [("一次資料に未到達", False), ("未着手", False),
+               ("判別に一次資料が要る", False), ("一次資料に到達", True),
+               ("到達済み", True), ("到達の記録", True),
+               ("[深掘り]", True), ("浅い", True)]
+# 「`判別に一次資料が要る` を外す。」の形だけを打ち消しにする。
+STATE_NEG = re.compile(r"^(?:[\s`*」』]|を)*(?:外す|外した|ではない|ではなく)")
 
 
 def candidate_entries(lines):
@@ -60,16 +96,19 @@ def candidate_entries(lines):
             continue
         if inside and re.match(r"^### ", ln):
             inside = False
+        num = None
         if inside and re.match(r"^\s*\d+\.\s", ln):
+            lead = re.split(r"[—–]", ln)[0]
+            m = re.search(r"(\d+)\s*番", lead)
+            num = int(m.group(1)) if m else int(re.match(r"^\s*(\d+)\.", ln).group(1))
+        elif inside and BULLET.match(ln):
+            num = int(BULLET.match(ln).group(1))
+        if num is not None:
             body = [ln]
             j = i + 1
             while j < n and lines[j].startswith("   ") and lines[j].strip():
                 body.append(lines[j])
                 j += 1
-            head = ln
-            lead = re.split(r"[—–]", head)[0]
-            m = re.search(r"(\d+)\s*番", lead)
-            num = int(m.group(1)) if m else int(re.match(r"^\s*(\d+)\.", head).group(1))
             out.append((i + 1, num, " ".join(x.strip() for x in body)))
             i = j
             continue
@@ -77,10 +116,21 @@ def candidate_entries(lines):
     return out
 
 
-def verdict(body, word):
+def _other_candidate(body, start, own):
+    """その語より前、同じ文の中に自分以外の候補の「<数> 番」が出ていれば True。"""
+    if own is None:
+        return False
+    head = body[:start]
+    head = head[head.rfind("。") + 1:]
+    return any(int(x) != own for x in OTHER.findall(head))
+
+
+def verdict(body, word, own=None):
     """その記載の中で、その語が最後に出たところの肯定 / 打ち消しを返す。無ければ None。"""
     last = None
     for m in re.finditer(re.escape(word), body):
+        if _other_candidate(body, m.start(), own):
+            continue
         tail = body[m.end():]
         cut = tail.find("。")
         if cut >= 0:
@@ -90,19 +140,35 @@ def verdict(body, word):
     return last
 
 
+def reach_of(body, own=None):
+    """その記載から到達の状態を返す(規則 4)。書かれていなければ None。"""
+    hits = []
+    for word, side in REACH_WORDS:
+        for m in re.finditer(re.escape(word), body):
+            if any(m.start() >= s and m.end() <= e for s, e, _ in hits):
+                continue
+            if _other_candidate(body, m.start(), own):
+                continue
+            neg = bool(STATE_NEG.match(body[m.end():]))
+            hits.append((m.start(), m.end(), (not side) if neg else side))
+    if not hits:
+        return None
+    hits.sort()
+    return hits[-1][2]
+
+
 def marks(entries):
     """候補ごとの 6 要素の印と、到達の状態を決める。"""
     mk = {}
     reach = {}
     for _, num, body in entries:
         for e in ELEMS:
-            v = verdict(body, e)
+            v = verdict(body, e, num)
             if v is not None:
                 mk.setdefault(num, {})[e] = v
-        for word, val in (("一次資料に未到達", False), ("未到達", False),
-                          ("一次資料に到達", True), ("到達済み", True)):
-            if word in body:
-                reach[num] = val
+        r = reach_of(body, num)
+        if r is not None:
+            reach[num] = r
     return mk, reach
 
 
@@ -163,9 +229,10 @@ def why(lines, num):
     for no, cand, body in candidate_entries(lines):
         if cand != num:
             continue
-        hits = [(e, verdict(body, e)) for e in ELEMS if verdict(body, e) is not None]
-        if hits:
-            print("報告 %d 行 : %s" % (no, " ".join(
+        hits = [(e, verdict(body, e, cand)) for e in ELEMS
+                if verdict(body, e, cand) is not None]
+        if hits or reach_of(body, cand) is not None:
+            print("報告 %d 行 : 到達=%s : %s" % (no, reach_of(body, cand), " ".join(
                 "%s=%s" % (e, "肯定" if v else "打ち消し") for e, v in hits)))
             print("    %s" % body[:200])
 
