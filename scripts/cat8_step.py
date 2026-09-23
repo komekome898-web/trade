@@ -74,6 +74,9 @@ else:
     head = "--- %s method=%s target=%s rc=%d time_s=%.3f note=%s" % (
         now, one_word(a.method), one_word(a.target), rc, dt, one_line(a.note) + dl_tag)
 cut = out[: a.keep]
+# 出力の中の「--- 」「$ 」で始まる行は、見出しやコマンドの行と取り違えられる(2026-09-23、2 回目の生ログの 584・586 行が
+# 見出しの形の検査に当たった)。出力の行だと分かるように、先頭に「| 」を付けて残す。
+cut = "\n".join(("| " + ln) if (ln.startswith("---") or ln.startswith("$ ")) else ln for ln in cut.split("\n"))
 tail = "" if len(out) <= a.keep else "\n[出力は %d 文字。先頭 %d 文字だけを残した]" % (len(out), a.keep)
 with open(a.log, "a") as f:
     f.write(head + "\n$ " + cmdline + "\n" + cut.rstrip("\n") + tail + "\n")
