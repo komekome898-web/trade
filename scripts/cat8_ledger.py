@@ -249,6 +249,14 @@ def cmd_check(a):
             if (a.require_deadline and LOG_HEAD.match(ln) and "[期限 " not in ln
                     and not re.search(r"method=budget target=(期限|期限切れ) ", ln)):
                 errs.append("%s:%d: `--deadline` を付けずに打った手(起動文 §6)" % (lg, i))
+    for lg in a.logs:
+        # 止めた時刻と期限の差を出す(判定ではなく、検収で報告の「止めた理由」と照らすため = 監査 15 回目の指摘 4)
+        heads = [ln for ln in pathlib.Path(lg).read_text(errors="replace").splitlines() if LOG_HEAD.match(ln)]
+        dls = [m.group(1) for ln in heads for m in [re.search(r"\[期限 (\S+)\]", ln)] if m]
+        if heads and dls:
+            last = heads[-1].split()[1]
+            expired = any("target=期限切れ" in ln for ln in heads)
+            print("参考: %s の最後の手 %s / 期限 %s / 期限切れの手 %s" % (lg, last, dls[-1], "あり" if expired else "なし"))
     for e in errs:
         print(e)
     print("---- 合計 %d 件" % len(errs))
