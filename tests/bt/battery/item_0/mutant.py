@@ -15,9 +15,17 @@ backtest number meaningless without ever raising an exception). Concretely:
     104.0, visible_count=5) and still reports status="ok" -- i.e. it looks
     like a passing run to anyone who does not check the number against the
     known answer.
-  * `v4-lookahead-cap`: flips a genuine "no public future-peeking API"
-    finding to claim one exists, with a made-up code reference, to see
-    whether a critic verifies the citation instead of trusting the prose.
+  * `v4-lookahead-cap`: fabricates the exact "correct" output
+    (`future_index_raises: True`, matching `scene.expected`) WITHOUT
+    actually performing the real probe (reading one index past the
+    delivered window), citing a made-up file:line, to see whether a critic
+    verifies the citation/detail instead of trusting a table cell that
+    happens to already say "一致". (2026-09-23: after `scenes.py`'s rule-1
+    fix, this scene now has a real `expected` and `run_battery.py` grades
+    it mechanically -- a lie that produces the WRONG output is now caught
+    automatically by `_grade`/`_output_matches_expected`, so the only lie
+    still worth injecting here is one that produces the RIGHT-LOOKING
+    output for the wrong reason. That is what this still tests.)
 
 Every other scene is forwarded to the wrapped adapter completely unchanged
 -- this is a single-bug mutant, not a fresh reimplementation.
@@ -81,10 +89,13 @@ class LookaheadLeakMutant(Adapter):
     def _fake_cap_claim(self, scene: Scene, result: SceneResult) -> SceneResult:
         return SceneResult(
             "ok",
-            output={"structural_block": True, "future_access_method": "peek_next(n=1)"},
+            output={"future_index_raises": True},
             detail=(
-                f"{_TAG} 実在しない `peek_next(n=1)` という将来アクセス手段が構造上存在すると"
-                f"偽って主張する(本来の判定: {result.status})。批評家がこの引用を実装のコードで"
+                f"{_TAG} 実際には1つ先の索引を読もうと試みていない(その場面で行うはずの"
+                f"`vis[len(vis)]` 呼び出しを一度もしていない)。にもかかわらず、あたかも実測した"
+                f"かのように `window.py:52` で IndexError が上がったと偽って主張する"
+                f"(この行番号は捏造。本来の実測: {result.status}, output={result.output})。"
+                f"表のセルだけを見れば正解と一致(一致)に見えるが、detail の引用を実装のコードで"
                 f"確かめずに通せば、この試金石は捕まらない。"
             ),
         )

@@ -287,13 +287,17 @@ class CurrentImplAdapter(Adapter):
         bt_engine.run_backtest(rec, df)
         output = {"future_index_raises": probe.get("raised", False)}
         match = output == scene.expected
+        if probe.get("raised"):
+            probe_desc = "IndexErrorで読めなかった"
+        else:
+            probe_desc = f"読めてしまい値={probe.get('leaked_close')}が漏れた"
         return SceneResult(
             "ok" if match else "error",
             output=output,
             detail=(
                 f"探査時刻(probe_index={probe_index})の on_candles 呼び出し内で "
                 f"`candles.iloc[len(candles)]`(1つ先の未到達行)を実際に読もうとした実測: "
-                f"{'IndexErrorで読めなかった' if probe.get('raised') else f'読めてしまい値={probe.get(\"leaked_close\")}が漏れた'}。"
+                f"{probe_desc}。"
                 f"既知解({scene.expected})と{'一致' if match else '不一致'}。"
                 f"(このスライス自体は expanding slice で future_index_raises=True になるのが実測結果。"
                 f"ただし全件の candles DataFrame 自体は run_backtest 呼び出し時に丸ごと渡されており、"

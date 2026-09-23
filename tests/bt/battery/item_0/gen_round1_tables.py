@@ -19,16 +19,24 @@ Markdown files (delegation doc Sec.3 "比較の表" + this round's instruction
 returned by this script on stdout, not written into any file, so the judges
 stay blind.
 
-Cell vocabulary (delegation doc Sec.3, exactly these five):
-    一致 / 不一致(値) / 対応なし / 実行の記録なし / 2回の一致
-`known_answer` scenes use the first four (taken straight from run_battery.py's
-own `verdict` column). `capability` scenes have no known answer, so the only
-meaningful measurement left is run-to-run reproducibility: "2回の一致" (both
-runs agreed) or "2回不一致" (they didn't) when the target could actually run
-the scene (status=="ok"); "対応なし"/"実行の記録なし" carry over unchanged.
-`status=="error"` (an uncaught exception) is folded into 不一致(値) for both
-kinds -- run_battery.py's own `_classify_known_answer` already does this for
-known_answer rows.
+Cell shape (delegation doc Sec.3 "比較の表", exactly as specified): each
+cell carries TWO independent readings, joined by "・":
+    正しさ = 一致 / 対応なし / 不一致(値) / 結果なし   (one of these 4)
+    再現   = 2回の実行で同じ / 2回で違う(値) / 結果なし (one of these 3)
+e.g. "不一致(値)・2回で同じ" = "同じ誤りを2回返した" (the delegation doc's
+own worked example).
+
+2026-09-23 fix: this file's round-1 build gave known_answer rows only 正しさ
+and capability rows only 再現, i.e. it silently dropped 正しさ for every
+capability scene and graded them purely by whether two runs agreed with
+EACH OTHER (not with any correct answer) -- exactly the self-report problem
+場面集の規則1 was written to close, reintroduced at the table-generation
+step even after `run_battery.py`'s own `_grade` was fixed to compute a real
+正しさ for both kinds. Both axes are independent and orthogonal for BOTH
+kinds now: 正しさ always comes from `run_battery.py`'s `verdict` column
+(which itself independently checks `output` against `scenes.py`'s
+`expected` -- see that module's docstring), 再現 always comes from its
+`match_across_runs` column.
 """
 from __future__ import annotations
 
@@ -64,36 +72,43 @@ def _load(target: str) -> dict[str, dict]:
     return rows
 
 
+def _correctness(row: dict) -> str:
+    """正しさ axis -- identical rule for known_answer AND capability rows
+    (both are graded by run_battery.py's `_grade` against `scenes.py`'s
+    `expected`; `verdict` is never derived from `status`/`match` alone
+    here -- see this module's docstring)."""
+    return row["verdict"]
+
+
+def _reproducibility(row: dict) -> str:
+    """再現 axis -- independent of 正しさ. `結果なし` when the target could
+    not even be invoked this scene (no basis to compare two runs)."""
+    if row["status"] == "no_record":
+        return "結果なし"
+    return "2回の実行で同じ" if row["match_across_runs"] == "True" else "2回で違う(値)"
+
+
 def _cell(row: dict | None) -> str:
-    """One TSV row -> one of the 5 delegation-doc cell values."""
+    """One TSV row -> "正しさ・再現" (delegation doc Sec.3 "比較の表")."""
     if row is None:
-        return "実行の記録なし"
-    kind = row["kind"]
-    status = row["status"]
-    match = row["match_across_runs"] == "True"
-    if kind == "known_answer":
-        v = row["verdict"]
-        # run_battery.py already emits exactly one of the 4 known_answer words
-        return v
-    # capability
-    if status == "not_supported":
-        return "対応なし"
-    if status == "no_record":
-        return "実行の記録なし"
-    if status == "error":
-        return "不一致(値)"
-    # status == "ok" -- the only axis left to report is run-to-run agreement
-    return "2回の一致" if match else "2回不一致"
+        return "結果なし・結果なし"
+    return f"{_correctness(row)}・{_reproducibility(row)}"
 
 
-_RANK = {  # higher = "better showing" for whichever side is being judged
+_RANK = {  # higher = "better showing" for whichever side is being judged;
+    # keyed by 正しさ alone (再現 breaks ties within a rank via a second
+    # pass below), per 場面集の規則5's ordering: 一致 > 対応なし > 不一致(値) > 結果なし
     "一致": 3,
-    "2回の一致": 3,
     "対応なし": 2,
-    "2回不一致": 1,
     "不一致(値)": 1,
-    "実行の記録なし": 0,
+    "結果なし": 0,
 }
+
+
+def _rank(row: dict) -> tuple[int, int]:
+    correctness_rank = _RANK[_correctness(row)]
+    reproducible_rank = 1 if _reproducibility(row) == "2回の実行で同じ" else 0
+    return (correctness_rank, reproducible_rank)
 
 
 def _best_survey_row(scene_id: str, opp_rows: dict[str, dict[str, dict]]) -> dict | None:
@@ -110,7 +125,7 @@ def _best_survey_row(scene_id: str, opp_rows: dict[str, dict[str, dict]]) -> dic
         candidates.append(row)
     if not candidates:
         return None
-    candidates.sort(key=lambda r: _RANK[_cell(r)], reverse=True)
+    candidates.sort(key=_rank, reverse=True)
     return candidates[0]
 
 

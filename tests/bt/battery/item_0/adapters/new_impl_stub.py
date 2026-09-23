@@ -108,6 +108,26 @@ class NewImplAdapter(Adapter):
             ),
         )
 
+    def _scene_v1_event_driven_known(self, scene: Scene) -> SceneResult:
+        c = self._core
+        bars = [self._bar(b) for b in scene.input["events"]]
+        now_sequence: list[int] = []
+
+        def act(event, ctx):
+            now_sequence.append(ctx.now_ns)
+
+        c.CoreEngine(_Recorder(act), bars).run()
+        output = {"now_sequence": now_sequence}
+        match = output == scene.expected
+        return SceneResult(
+            "ok" if match else "error",
+            output=output,
+            detail=(
+                f"5件のBarEventを1件ずつ流し、各コールバックで ctx.now_ns を記録した列: "
+                f"{now_sequence}。既知解({scene.expected})と{'一致' if match else '不一致'}。"
+            ),
+        )
+
     # ------------------------------------------------------------------
     # viewpoint 2 -- event type coverage
     # ------------------------------------------------------------------
@@ -249,6 +269,11 @@ class NewImplAdapter(Adapter):
         )
 
     def _scene_v4_lookahead_cap(self, scene: Scene) -> SceneResult:
+        # 2026-09-23 fix (場面集の規則1): stop self-reporting a prose verdict
+        # and instead actually attempt to read one event past what should be
+        # visible (index == len(vis), one past the delivered window), the
+        # same public `visible_events()` window that v4-lookahead-known reads
+        # its known answer from.
         c = self._core
         bars = [self._bar(b) for b in scene.input["bars"]]
         k = scene.input["probe_index"]
@@ -256,36 +281,48 @@ class NewImplAdapter(Adapter):
 
         def act(event, ctx):
             vis = ctx.visible_events(c.EventType.BAR)
-            if len(vis) == k + 1 and not probe:
-                probe["max_visible_close"] = max(x.close for x in vis)
-                probe["visible_count"] = len(vis)
+            if len(vis) == k + 1 and "raised" not in probe:
+                try:
+                    leaked = vis[len(vis)]  # one past the end of the delivered window
+                    probe["raised"] = False
+                    probe["leaked_close"] = leaked.close
+                except IndexError:
+                    probe["raised"] = True
 
         c.CoreEngine(_Recorder(act), bars).run()
+        output = {"future_index_raises": probe.get("raised", False)}
+        match = output == scene.expected
+        if probe.get("raised"):
+            probe_desc = "IndexErrorで読めなかった"
+        else:
+            probe_desc = f"読めてしまい値={probe.get('leaked_close')}が漏れた"
         return SceneResult(
-            "ok",
-            output={"structural_block": True, **probe},
+            "ok" if match else "error",
+            output=output,
             detail=(
-                "core は事象を1件ずつデータ源から遅延で読み(engine.py `_refill`)、戦略の文脈"
-                "(StrategyContext)が保持する履歴は『もう届けた事象』だけ(engine.py `_deliver`)。"
-                "発注口は取引所そのものではなく専用の `_OrderPort`。呼び出し終了後は文脈を失効させる"
-                "(api.py `_revoke`、window.py `revoke`)ため、コールバック外から未来の事象を"
-                "たどる公開経路が無い(先読みは『隠す』ではなく『持たせない』構造)。"
+                f"探査時刻(probe_index={k})で `ctx.visible_events(BAR)[len(vis)]` (1つ先の"
+                f"未到達バー)を実際に読もうとした実測: "
+                f"{probe_desc}。"
+                f"既知解({scene.expected})と{'一致' if match else '不一致'}。"
+                f"EventWindow.__getitem__(window.py) は `_end` を超える添字に IndexError を"
+                f"投げる構造で、履歴は『もう届けた事象』だけを保持する(engine.py の `_deliver`)。"
             ),
         )
 
     # ------------------------------------------------------------------
     # viewpoint 5 -- deterministic same-timestamp ordering
     # ------------------------------------------------------------------
-    def _same_ts_events(self):
+    def _same_ts_events(self, reverse: bool = False):
         c = self._core
         ts = 1_700_000_000_000_000_000
-        return [
+        events = [
             c.TradeEvent(received_time_ns=ts, price=1.0, size=1.0, side="buy", trade_id="A"),
             self._bar({"ts_ns": ts, "close": 1.0}),
             c.ClockEvent(received_time_ns=ts),
         ]
+        return list(reversed(events)) if reverse else events
 
-    def _run_once_ordering(self):
+    def _run_once_ordering(self, reverse: bool = False):
         c = self._core
 
         def act(event, ctx):
@@ -293,7 +330,7 @@ class NewImplAdapter(Adapter):
                 ctx.place_order(c.OrderRequest("buy", "limit", 1.0, price=1.0, client_order_id="C"))
 
         rec = _Recorder(act)
-        c.CoreEngine(rec, self._same_ts_events()).run()
+        c.CoreEngine(rec, self._same_ts_events(reverse=reverse)).run()
         return [x.EVENT_TYPE.value for x in rec.seen]
 
     def _scene_v5_order_known(self, scene: Scene) -> SceneResult:
@@ -310,15 +347,26 @@ class NewImplAdapter(Adapter):
         )
 
     def _scene_v5_order_cap(self, scene: Scene) -> SceneResult:
+        # 2026-09-23 fix (場面集の規則1): stop self-reporting "a rule exists"
+        # from prose/contract data alone, and instead actually feed the same
+        # tied-timestamp events in two different INPUT orders (forward and
+        # reversed) and check whether the DELIVERED order is the same both
+        # times -- a rule that is truly content-driven (not just insertion
+        # order) must produce the same result regardless of input order.
+        order_fwd = self._run_once_ordering(reverse=False)
+        order_rev = self._run_once_ordering(reverse=True)
+        output = {"order_independent_of_input_order": order_fwd == order_rev}
+        match = output == scene.expected
         c = self._core
-        order = self._run_once_ordering()
         return SceneResult(
-            "ok",
-            output={"order": order, "rule": c.ORDERING_RULE, "priority": dict(c.DELIVERY_PRIORITY)},
+            "ok" if match else "error",
+            output=output,
             detail=(
-                f"core.ORDERING_RULE(機械可読)と core.DELIVERY_PRIORITY(型ごとの優先度)を読み出し、"
-                f"同一時刻3事象を実行して得た順序 {order} が両者と整合することを確認した"
-                f"(ordering.py:1-45 に文の規則、ordering.py:78 に ORDERING_RULE)。"
+                f"同一時刻3事象(約定・足・時計)を(a)投入順=A,B,C(順方向)と(b)投入順=C,B,A"
+                f"(逆順)の2通りで実行し、実際に届いた順序を比較: 順方向={order_fwd}, "
+                f"逆順={order_rev}。既知解({scene.expected})と{'一致' if match else '不一致'}。"
+                f"core.ORDERING_RULE(機械可読、ordering.py `ORDERING_RULE`)は "
+                f"{c.ORDERING_RULE!r}。"
             ),
         )
 
