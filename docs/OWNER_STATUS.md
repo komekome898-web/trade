@@ -1,6 +1,6 @@
 # オーナー側の状態板(単一の真実。指示を出す前に必ず読む。更新は `docs/OWNER_LOG.md` に追記してから反映)
 
-**区分 8 の欄(区分 8 の会話が書く。ブランチ `claude/tools-survey-cat8`)**: 2026-09-23、設計票 `docs/DATA/surveys/CAT8_DESIGN.md` と区分 8 の追補 `docs/DATA/delegations/20260923_tools_survey_cat8_addendum.md` を監査役に 5 回通した(記録 `docs/AUDITOR/VERDICTS/2026-09-23_tools_scan_cat8_design.md`)。**オーナーに設計票を見せて、起動の前の返答を待っている。調査班の 1 回目はまだ起動していない。**リードの誤り: §0.1 の対応表を書き込みの前に出さなかった(監査 3 回目で指摘)。監査役の指摘として、`scripts/trace_metrics.py` が Bash 経由の書き込みを数えない(リードは未確認、区分 8 では変えない)。
+**区分 8 の欄(区分 8 の会話が書く。ブランチ `claude/tools-survey-cat8`)**: 2026-09-23、設計票 `docs/DATA/surveys/CAT8_DESIGN.md` と区分 8 の追補 `docs/DATA/delegations/20260923_tools_survey_cat8_addendum.md` を監査役に 5 回通した(記録 `docs/AUDITOR/VERDICTS/2026-09-23_tools_scan_cat8_design.md`)。設計票をオーナーに見せた(L-500: 答えの要る問いは無いと伝えた)。**1 回目の準備(台帳と `cat8_ledger.py`・起動文・起動文の監査)に進む。調査班の 1 回目はまだ起動していない。**リードの誤り: §0.1 の対応表を書き込みの前に出さなかった(監査 3 回目で指摘)。監査役の指摘として、`scripts/trace_metrics.py` が Bash 経由の書き込みを数えない(リードは未確認、区分 8 では変えない)。
 
 **進行中の合意(L-416 → L-417、2026-09-23)**: 道具サーベイ区分 8(検証・再現・品質)を、バックテスト環境の Workflow と並行して、**別の会話**(案 1)で進める。オーナー逐語「**区分1の教訓を活かして、調査して資源化まで進めてほしい。一気に終わらせようとせずに手順はきちんと守ること、今のワークフローとの競合に注意すること**」(L-416)。引き継ぎ書 `docs/DATA/surveys/CAT8_HANDOFF.md`、ブランチ `claude/tools-survey-cat8`、`OWNER_LOG` の番号は L-500 から。区分 8 が終わったらこの会話のリードが取り込む。
 
