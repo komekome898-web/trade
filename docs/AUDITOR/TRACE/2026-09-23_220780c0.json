@@ -10685,12 +10685,12 @@
    "move": 398,
    "tools": {
     "Read": 4,
-    "Bash": 35,
+    "Bash": 37,
     "Write": 2,
     "Edit": 5,
     "Agent": 1
    },
-   "n_tools": 47,
+   "n_tools": 49,
    "read_goal": true,
    "first_write_at": 24,
    "table_shown": true,

@@ -36,27 +36,52 @@ def plain(x):
 
 
 def head_word(x):
-    """「**在る。**…」「**該当なし。**…」「未確認(…)」の先頭の判定語だけを取る。"""
-    m = re.match(r"^\**(在る|該当なし|未確認|無い|持たない|持つ)", plain(x))
+    """「**在る。**…」「**該当なし。**…」「未確認(…)」の先頭の判定語だけを取り、語彙を揃える。
+
+    29 回目の書き方: 「**軸が立つ**」= 在る。「**別の意味の…を持つ**」= 語は当たるが別の軸
+    (29 回目の決定「語の一致を軸の証拠にしない」)。これを読めずに、取り消しの扱いを持つ 5 件の判定が
+    空になっていた(2026-09-23 リードが台帳を作り直したときに見つけた)。
+    """
+    t = plain(x)
+    if re.match(r"^軸が立", t):
+        return "在る"
+    if re.match(r"^別の意味の", t):
+        return "該当なし(別の意味)"
+    m = re.match(r"^\**(在る|該当なし|未確認|無い|持たない|持つ)", t)
     return m.group(1) if m else ""
 
 
+POINTER = re.compile(r"の表のとおり|^同左|^同上|を見よ")
+
+
 def stage_table(lines):
-    """最後の「段の表」(候補 | 段(機構) | 段(既定) | 遅延 | 取り消しの扱い)を行ごとに返す。"""
+    """「段の表」(候補 | 段(機構) | 段(既定) | [遅延 | 取り消しの扱い])を、古い表から順に重ねて返す。
+
+    行の集合と段の値は**最後の表**が正(数え直しの道具と同じ)。ただし最後の表は遅延と取り消しの扱いを
+    「30 回目の表のとおり」「同左」と在処で指すことがある(33 回目)。在処を指すだけのマスは読み飛ばし、
+    その行の実物が書かれた前の表の値を引き継ぐ(2026-09-23 リードが台帳を作り直したときに合わせた)。
+    """
     heads = [i for i, l in enumerate(lines) if re.match(r"^\|\s*候補\s*\|\s*段", l.strip())]
     if not heads:
         return {}
-    out, i = {}, heads[-1] + 2
-    while i < len(lines) and lines[i].strip().startswith("|"):
-        c = [x.strip() for x in lines[i].strip().strip("|").split("|")]
-        m = re.match(r"^\*{0,2}(\d+)\*{0,2}\s*`?([^`|]*)`?", c[0])
-        if m and len(c) >= 5:
-            out[int(m.group(1))] = {"名前": m.group(2).strip(), "段(機構)": plain(c[1]),
-                                    "段(既定)": plain(c[2]), "遅延": head_word(c[3]),
-                                    "遅延(原文)": plain(c[3]), "取り消しの扱い": head_word(c[4]),
-                                    "取り消しの扱い(原文)": plain(c[4]), "行": i + 1}
-        i += 1
-    return out
+    acc, last_rows = {}, set()
+    for k, h in enumerate(heads):
+        rows, i = set(), h + 2
+        while i < len(lines) and lines[i].strip().startswith("|"):
+            c = [x.strip() for x in lines[i].strip().strip("|").split("|")]
+            m = re.match(r"^\*{0,2}(\d+)\*{0,2}\s*`?([^`|]*)`?", c[0])
+            if m and len(c) >= 3:
+                n = int(m.group(1)); rows.add(n)
+                d = acc.setdefault(n, {})
+                d.update({"名前": m.group(2).strip() or d.get("名前", ""), "段(機構)": plain(c[1]),
+                          "段(既定)": plain(c[2]), "行": i + 1})
+                for col, key in ((3, "遅延"), (4, "取り消しの扱い")):
+                    if len(c) > col and c[col] and not POINTER.search(plain(c[col])):
+                        d[key] = head_word(c[col]); d[key + "(原文)"] = plain(c[col])
+            i += 1
+        if k == len(heads) - 1:
+            last_rows = rows
+    return {n: d for n, d in acc.items() if n in last_rows}
 
 
 def safety_table(lines):
