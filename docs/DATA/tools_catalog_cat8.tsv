@@ -1,0 +1,6 @@
+番号	名前	初出の回	発見の経路	発見の出典	区分1の番号	状態	E1a	E1b	E2	E3a	E3b	E4	E5	E6	段_E1a	段_E1b	段_E2	段_E3a	段_E3b	段_E4	段_E5	段_E6	他の区分へ	安全側の所見	最後の記載の回	最後の記載の行
+8-001	qf-lib	0	区分1から	https://github.com/quarkfin/qf-lib	62	未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	-	-	-	-	-	-	-	-				
+8-002	PineForge	0	区分1から	https://github.com/pineforge-4pass/pineforge-engine	70	未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	-	-	-	-	-	-	-	-				
+8-003	prediction-market-backtester	0	区分1から	https://github.com/Quentin-Piot/prediction-market-backtester	92	未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	-	-	-	-	-	-	-	-				
+8-004	akurkar07/OrderBook	0	区分1から	https://github.com/akurkar07/OrderBook	101	未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	-	-	-	-	-	-	-	-				
+8-005	Exegy	0	区分1から	https://www.exegy.com/	117	未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	-	-	-	-	-	-	-	-				
