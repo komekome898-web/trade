@@ -237,6 +237,24 @@ def why(lines, num):
             print("    %s" % body[:200])
 
 
+def master_entries(lines):
+    """今の番号体系の候補の記載だけ。1・2 回目の節(独自の番号)と「**限界:**」の注記を除く。"""
+    heads = [i for i, l in enumerate(lines) if re.match(r"^## 区分\s*1", l)]
+    third = next((i for i in heads if re.search(r"3 回目", lines[i])), 0)
+    return [e for e in candidate_entries(lines)
+            if e[0] > third and not re.match(r"^\s*\d+\.\s*\*\*限界", e[2])]
+
+
+def pending_classification(lines):
+    """最後の記載が `判別に一次資料が要る` のまま(外したとは書いていない)候補の番号。"""
+    last = {}
+    for ln, num, body in master_entries(lines):
+        last[num] = body
+    return sorted(n for n, b in last.items()
+                  if "判別に一次資料が要る" in b
+                  and not re.search(r"判別に一次資料が要る`?\s*を外|を外した", b))
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     p = pathlib.Path(args[0] if args else "docs/DATA/SCAN_2026-09-21_tools.md")
@@ -261,6 +279,15 @@ def main():
     if lo.get("その他"):
         print("上の 3 段に入らない別立て = %d 件 : %s"
               % (len(lo["その他"]), " ".join(lo["その他"])))
+    # 上の 3 段は報告書の文章(「尽きた」に数えないもの)から読んでいる = 報告の申告を数えているだけ。
+    # 6 要素の印がまだ付いていない候補は「残り」の集合にそもそも入らないので、
+    # **まだどの要素かを決めていない候補が、完了の数から見えなくなる**。2026-09-23、
+    # 台帳を作ったリードが 8 件(45・50・94・110・111・112・117・118)をこれで見落としていたのを見つけた。
+    # よって、候補ごとの**最後の記載**から機械で数える行を足す。1・2 回目の節(独自の番号体系)と
+    # 「**限界:**」の注記は候補ではないので読まない。
+    pend = pending_classification(lines)
+    print("最後の記載が「判別に一次資料が要る」のまま(機械) = %d 件 : %s"
+          % (len(pend), " ".join("%d 番" % n for n in pend) if pend else "なし"))
     print("")
 
     print("== 6 要素ごとの 総数 と 残り")
