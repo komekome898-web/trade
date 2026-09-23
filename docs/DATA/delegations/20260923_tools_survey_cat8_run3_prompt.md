@@ -4,7 +4,7 @@
 
 **この回の終わり方(有界)**: 次のどちらか早い方で終わる。(a) 期限(§6。開始から 20 分)が来て `cat8_step.py` が終了コード 3 で止まった / (b) §2 の 1〜3 をすべて済ませた。どちらでも §7 を済ませてから返す。**それ以外の理由で止めない**(止めたら、止めた理由を生ログの時刻と一緒に `### 予算` に書く)。次の回を自分で始めない。新しい検索計画は打たない。
 
-**返すもの(先に書いておく)**: この回の節(`## 区分8 — 3 回目の実行(2026-09-24)`)と生ログ `docs/DATA/probes/20260924_tools_8_run3.log`。返答には §2 の 1〜3 の進み具合、深掘りした候補の番号と状態、辿る一覧から書いた名前の数、3 つの検査の合計行、問いの一覧、生ログの行数を書く(§7)。
+**返すもの(先に書いておく)**: この回の節(`## 区分8 — 3 回目の実行(2026-09-24)`)と生ログ `docs/DATA/probes/20260923_tools_8_run3.log`。返答には §2 の 1〜3 の進み具合、深掘りした候補の番号と状態、辿る一覧から書いた名前の数、3 つの検査の合計行、問いの一覧、生ログの行数を書く(§7)。
 
 ## 0. 最初に全部読むもの(この順)
 
@@ -32,7 +32,7 @@
 
 ## 3. 書き換えの範囲
 
-- 書いてよいのは `docs/DATA/SCAN_2026-09-23_tools_cat8.md`(**この回の節 `## 区分8 — 3 回目の実行(2026-09-24)` の追記だけ**。1 回目・2 回目の節は書き換えない)と `docs/DATA/probes/20260924_tools_8_run3.log` の 2 つだけ(追補 §1。生ログの名前は追補の `20260923_tools_8_run<N>.log` の形から日付だけ変わる)。scratchpad 以外にファイルを作らない。
+- 書いてよいのは `docs/DATA/SCAN_2026-09-23_tools_cat8.md`(**この回の節 `## 区分8 — 3 回目の実行(2026-09-24)` の追記だけ**。1 回目・2 回目の節は書き換えない)と `docs/DATA/probes/20260923_tools_8_run3.log` の 2 つだけ(追補 §1。生ログの名前は追補の `20260923_tools_8_run<N>.log` の形のまま。日付の部分は区分 8 の始めた日で、この回の日付ではない)。scratchpad 以外にファイルを作らない。
 - 台帳には書かない。`scripts/cat8_ledger.py` は読むだけの `check-elements` と `check` 以外を打たない。`scripts/cat8_step.py` は打ってよい。
 - 区分 1 の報告・台帳・索引、`src/bot/bt/`・`tests/bt/`・`docs/DISCUSSIONS/2026-09-23_backtest_env/` には触らない。
 - 外部の道具を入れる場所は `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/` の下だけ。
@@ -47,14 +47,14 @@
 
 ## 6. 予算
 
-**25 万トークン・25 分**を上限の目安にする(追補 §5)。1 回目は 32.5 万、2 回目は 29.1 万トークンで、どちらも超えた。**最初の手で期限を出す**: `python3 scripts/cat8_step.py --log docs/DATA/probes/20260924_tools_8_run3.log --method budget --target 期限 --note 期限 -- date -u -d '+20 min' +%FT%TZ`。**以後の `cat8_step.py` にはすべて `--deadline <その時刻>` を付ける。**期限を過ぎると道具が手を打たずに終了コード 3 で止まるので、止まったら §7 へ進む(§7 の検査は `cat8_step.py` を通さずに打つ)。**期限の前に自分から止めない**(2 回目は期限の 14 分前に止めていた)。
+**25 万トークン・25 分**を上限の目安にする(追補 §5)。1 回目は 32.5 万、2 回目は 29.1 万トークンで、どちらも超えた。**最初の手で期限を出す**: `python3 scripts/cat8_step.py --log docs/DATA/probes/20260923_tools_8_run3.log --method budget --target 期限 --note 期限 -- date -u -d '+20 min' +%FT%TZ`。**以後の `cat8_step.py` にはすべて `--deadline <その時刻>` を付ける。**期限を過ぎると道具が手を打たずに終了コード 3 で止まるので、止まったら §7 へ進む(§7 の検査は `cat8_step.py` を通さずに打つ)。**期限の前に自分から止めない**(2 回目は期限の 14 分前に止めていた)。
 
 ## 7. 返す前に(3 回目の完了の形)
 
 完了の形は設計票 §2 の表の「1 回の実行」の行の (a)(b)(追補 §7)。
-1. `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log docs/DATA/probes/20260923_tools_8_run2.log docs/DATA/probes/20260924_tools_8_run3.log` を 0 件にする。誤検出は閉じずに行と理由を書いて渡す。最後の出力の全文を `### 受け入れ検査の出力` に貼る。
+1. `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log docs/DATA/probes/20260923_tools_8_run2.log docs/DATA/probes/20260923_tools_8_run3.log` を 0 件にする。誤検出は閉じずに行と理由を書いて渡す。最後の出力の全文を `### 受け入れ検査の出力` に貼る。
 2. `python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 3` を 0 件にする(最後の出力の全文を同じ節に貼る。1 行目の「読んだもの」の行数が、この回の表の行数と合っていることも見る)。
-3. `python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260924_tools_8_run3.log --require-deadline` を 0 件にする(最後の出力を同じ節に貼る)。
+3. `python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run3.log --require-deadline` を 0 件にする(最後の出力を同じ節に貼る)。
 4. `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l` が 0 であること(1 回目・2 回目の節から消えた行が無い。出力を同じ節に貼る)。
 5. 返答には、次をこの順で書く: §2 の 1〜3 それぞれの進み具合(済み / 途中 / 未着手。途中・未着手なら止めた時刻と理由)/ 深掘りした候補の番号と状態 / PineForge の E3a・E3b の値と段 / 辿る一覧から書いた名前の数(一覧ごと)と、書かなかった名前の数と理由 / 4 つの検査の最後の出力の合計行 / **判断に迷った点と問いの一覧(決めずに)**/ 生ログの行数。
 6. 「区分は完了」とは書かない。
