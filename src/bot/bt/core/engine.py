@@ -86,7 +86,14 @@ from .interfaces import (
     StateUnknown,
     ZeroLatency,
 )
-from .ordering import DELIVERY_PRIORITY, VENUE_CANCEL, VENUE_MARKET_PRIORITY, VENUE_ORDER
+from .ordering import (
+    DELIVERY_PRIORITY,
+    ORIGIN_ENGINE,
+    ORIGIN_SOURCE,
+    VENUE_CANCEL,
+    VENUE_MARKET_PRIORITY,
+    VENUE_ORDER,
+)
 from .strategy import Strategy
 from .time import validate_nanos
 from .window import EventWindow
@@ -343,7 +350,7 @@ class CoreEngine:
         self._history_limit = history_limit
 
         self._heap: list[tuple] = []
-        self._seq = 0
+        self._created = 0  # ordinal of engine-created entries (orders, cancels, notices, timers)
         self._now: Optional[int] = None
         self._first: Optional[int] = None
         self._stopped_at_end = False
@@ -363,7 +370,14 @@ class CoreEngine:
         self._digest = hashlib.sha256()
 
     # -- queue -------------------------------------------------------------
-    def _push(self, time_ns: int, priority: int, kind: int, payload: Any) -> None:
+    def _push(self, time_ns: int, priority: int, kind: int, payload: Any,
+              source_ordinal: Optional[int] = None) -> None:
+        """Queue key = (time_ns, priority, origin, ordinal) -- ordering.py.
+        `source_ordinal` given: the entry comes from the input (origin 0,
+        ordinal = the event's position in the merged input). Otherwise the
+        engine created it (origin 1, ordinal = creation count). The key is
+        unique, so the payload is never compared, and it does not depend on
+        WHEN an input event was pulled from its stream."""
         # The one place every queue time passes: a delay that pushes a time
         # out of int64 fails here, loudly, whichever channel it came from.
         try:
@@ -373,8 +387,12 @@ class CoreEngine:
                 f"queue time {time_ns!r} for {type(payload).__name__} is not an int64 of ns "
                 f"(a latency model or timer produced an out-of-range time): {exc}"
             ) from exc
-        self._seq += 1
-        heapq.heappush(self._heap, (t, priority, self._seq, kind, payload))
+        if source_ordinal is None:
+            self._created += 1
+            key = (t, priority, ORIGIN_ENGINE, self._created)
+        else:
+            key = (t, priority, ORIGIN_SOURCE, source_ordinal)
+        heapq.heappush(self._heap, (*key, kind, payload))
 
     def _refill(self) -> None:
         merger = self._merger
@@ -390,12 +408,13 @@ class CoreEngine:
         etype = event.EVENT_TYPE
         exch = int(event.exchange_time_ns)
         self._source_count += 1
+        ordinal = self._source_count  # position in the merged input (merge order, ordering.py)
         if etype in MARKET_EVENT_TYPES:
-            self._push(exch, VENUE_MARKET_PRIORITY[etype], _K_VENUE_MARKET, event)
+            self._push(exch, VENUE_MARKET_PRIORITY[etype], _K_VENUE_MARKET, event, ordinal)
             delay = _check_delay(self._latency.feed_delay_ns(event), "feed_delay_ns")
         else:
             delay = 0
-        self._push(int(event.received_time_ns) + delay, DELIVERY_PRIORITY[etype], _K_DELIVER, event)
+        self._push(int(event.received_time_ns) + delay, DELIVERY_PRIORITY[etype], _K_DELIVER, event, ordinal)
 
     # -- public ------------------------------------------------------------
     @property
@@ -411,14 +430,14 @@ class CoreEngine:
         if self._end_time_ns is not None and self._heap[0][0] > self._end_time_ns:
             self._stopped_at_end = True
             return False
-        time_ns, _prio, seq, kind, payload = heapq.heappop(self._heap)
+        time_ns, _prio, _origin, _ordinal, kind, payload = heapq.heappop(self._heap)
         if self._now is not None and time_ns < self._now:  # pragma: no cover - invariant
             raise RuntimeError(f"queue went back in time: {time_ns} < {self._now}")
         self._now = time_ns
         if self._first is None:
             self._first = time_ns
         if kind == _K_DELIVER:
-            self._deliver(time_ns, seq, payload)
+            self._deliver(time_ns, payload)
         elif kind == _K_VENUE_MARKET:
             self._venue_market(time_ns, payload)
         elif kind == _K_VENUE_ORDER:
@@ -457,13 +476,18 @@ class CoreEngine:
         )
 
     # -- strategy side -----------------------------------------------------
-    def _deliver(self, time_ns: int, seq: int, event: Event) -> None:
+    def _deliver(self, time_ns: int, event: Event) -> None:
         # A shallow copy with the delivery time and sequence set. The event
         # was validated at construction, and time_ns was validated as int64
         # in `_push` and is >= its received time >= its exchange time.
+        # `seq` is the strategy's own delivery count (1, 2, 3, ...), never a
+        # queue counter: a queue counter also counts entries for events the
+        # strategy has not received yet (e.g. one that happened at the
+        # exchange but reaches us later), and its gaps would let a strategy
+        # count them -- a side channel to the future.
         delivered = copy.copy(event)
         object.__setattr__(delivered, "received_time_ns", time_ns)
-        object.__setattr__(delivered, "seq", seq)
+        object.__setattr__(delivered, "seq", self._deliveries + 1)
         port = self._port
         if delivered.EVENT_TYPE in NOTICE_EVENT_TYPES:
             coid = delivered.client_order_id  # type: ignore[attr-defined]

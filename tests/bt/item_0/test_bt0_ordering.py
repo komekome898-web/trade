@@ -79,7 +79,8 @@ def clock_at(t):
 
 
 def test_rule_is_declared_machine_readably_and_is_total():
-    assert ORDERING_RULE["key"] == ["time_ns", "priority", "seq"]
+    assert ORDERING_RULE["key"] == ["time_ns", "priority", "origin", "ordinal"]
+    assert ORDERING_RULE["depends_on_pull_timing"] is False
     assert ORDERING_RULE["total_order"] is True
     assert set(DELIVERY_PRIORITY) == set(EventType)
     names = ORDERING_RULE["priority_ascending"]

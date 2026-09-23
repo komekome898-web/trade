@@ -21,6 +21,16 @@ item 0 is supposed to have finished: item 6 (portfolio/account) cannot
 first getting engine.py and interfaces.py changed -- which breaks the
 "pluggable without touching the core" promise interfaces.py's own
 docstring makes for exactly this class of change.
+
+Round-1 critic of run 5 (re-check under battery rule 8): the worker
+reported this file's second test as failing through the test's own error.
+Confirmed: (a) it built `LiquidationEvent(side="long")`, but the event's
+`side` is the side of the liquidation ORDER ("buy"/"sell", events.py
+276-291), so construction raised before the engine ran; (b) the recording
+account lacked `apply_liquidation` (so nothing could ever append to
+`liquidation_events`) and the socket methods `on_market_event` /
+`check_order` that the Account protocol now requires. Both fixed below;
+the claim tested (a liquidation reaches the account socket) is unchanged.
 """
 from __future__ import annotations
 
@@ -52,6 +62,15 @@ class _RecordingAccount:
     def apply_funding(self, event) -> None:
         self.funding_events.append(event)
 
+    def apply_liquidation(self, event) -> None:
+        self.liquidation_events.append(event)
+
+    def on_market_event(self, event, venue_time_ns):
+        return ()
+
+    def check_order(self, order, venue_time_ns):
+        return None
+
 
 class LiquidationReachesAccountTest(unittest.TestCase):
     def test_account_protocol_has_a_liquidation_hook(self):
@@ -66,7 +85,7 @@ class LiquidationReachesAccountTest(unittest.TestCase):
 
     def test_engine_notifies_the_account_of_a_liquidation_event(self):
         events = [
-            LiquidationEvent(received_time_ns=T0, seq=0, price=100.0, size=1.0, side="long")
+            LiquidationEvent(received_time_ns=T0, seq=0, price=100.0, size=1.0, side="sell")
         ]
         account = _RecordingAccount()
         engine = CoreEngine(strategy=_NoOpStrategy(), events=events, account=account)

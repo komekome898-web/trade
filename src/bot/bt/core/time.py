@@ -179,7 +179,15 @@ def _iso_to_nanos(value: object, plausible: tuple[int, int]) -> Nanos:
     else:
         sign = 1 if tz[0] == "+" else -1
         digits = tz[1:].replace(":", "")
-        offset = sign * dt.timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
+        hh, mm = int(digits[:2]), int(digits[2:])
+        # An offset outside hh 00..23 / mm 00..59 is malformed; reading
+        # "+09:75" as 10:15 would shift the time silently.
+        if hh > 23 or mm > 59:
+            raise TimestampUnitError(
+                f"ISO timestamp {value!r} has an invalid UTC offset {tz!r} "
+                f"(hours 00..23, minutes 00..59)"
+            )
+        offset = sign * dt.timedelta(hours=hh, minutes=mm)
     base_utc = base.replace(tzinfo=dt.timezone(offset)).astimezone(dt.timezone.utc)
     delta = base_utc - _EPOCH_UTC
     ns = (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + frac_ns

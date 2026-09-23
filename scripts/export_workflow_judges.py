@@ -123,6 +123,22 @@ def render_battery(item: int, rows: list) -> str:
     return "\n".join(lines)
 
 
+REPORT_FIELDS = (("changed_files", "変えたファイル"), ("tests_added", "足した試験の数"), ("test_command", "試験のコマンド"),
+                 ("test_tail", "試験の末尾の行"), ("structural_change", "この周で変えた構造"),
+                 ("unmet", "満たせなかった行・要件の各行の根拠・限界"), ("questions_for_lead", "リードに聞くこと"))
+
+
+def render_report(lab: str, aid: str, res: dict) -> str:
+    """The worker's report is its return value (subagents cannot write report files); write it out verbatim."""
+    lines = [f"# 作業者の報告({lab}、agent {aid}。Workflow の記録の返り値から逐語で書き出し)", ""]
+    for key, title in REPORT_FIELDS:
+        v = res.get(key)
+        lines += [f"## {title}", ""]
+        lines += [f"- {x}" for x in v] if isinstance(v, list) else [str(v)]
+        lines.append("")
+    return "\n".join(lines)
+
+
 def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__)
@@ -140,6 +156,13 @@ def main(argv: list[str]) -> int:
         d.mkdir(parents=True, exist_ok=True)
         (d / "AUDIT.md").write_text(render_audit(item, rnd, sec), encoding="utf-8")
         print(d / "AUDIT.md", {k: len(v) for k, v in sec.items()})
+    labels, results = load(argv)
+    for aid, lab in labels.items():
+        if (m := WORKER.match(lab)) and aid in results:
+            d = REC / f"item_{m.group(1)}" / f"round_{m.group(2)}"
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "REPORT.md").write_text(render_report(lab, aid, results[aid]), encoding="utf-8")
+            print(d / "REPORT.md")
     for item, rows in sorted(collect_battery(argv).items()):
         d = REC / f"item_{item}" / "battery"
         d.mkdir(parents=True, exist_ok=True)

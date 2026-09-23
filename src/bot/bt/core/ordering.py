@@ -3,9 +3,9 @@
 The engine is a discrete-event simulation over ONE priority queue. Every
 queue entry has the key
 
-    (time_ns, priority, seq)
+    (time_ns, priority, origin, ordinal)
 
-and entries are processed in ascending key order. The three parts:
+and entries are processed in ascending key order. The four parts:
 
 1. `time_ns` -- when the entry happens. Venue-side entries use the venue's
    clock (a market event's `exchange_time_ns`; an order's arrival time at
@@ -24,12 +24,20 @@ and entries are processed in ascending key order. The three parts:
    notices (ack -> reject -> fill -> canceled -> state unknown; an order is
    acknowledged before it can fill), and the clock heartbeat last, so a
    timer sees everything else that happened at that instant.
-3. `seq` -- a counter the engine increments on every push. Source events
-   are pushed in merge order (next point), and entries created while
-   processing an entry are pushed in the order they are created, so `seq`
-   is unique and the key is a *total* order: two runs over the same input
-   with the same models process exactly the same sequence. Nothing relies
-   on sort stability or on hash/dict iteration order.
+3. `origin` -- 0 (`ORIGIN_SOURCE`) for an entry made from an input event,
+   1 (`ORIGIN_ENGINE`) for an entry the engine created (an order or cancel
+   reaching the venue, a notice, a timer). Only one priority holds entries
+   of both origins -- `deliver:CLOCK` (a heartbeat from the input and a
+   timer the strategy set) -- and there the input's heartbeat comes first.
+4. `ordinal` -- for an input event, its position in the merged input
+   (next point: exchange time, stream name, position in the stream), which
+   is fixed by the input alone; for an engine-created entry, the count of
+   entries the engine has created so far (creation order). The key is
+   unique, so it is a *total* order, and it is a function of the input and
+   the models' answers only: it does not depend on WHEN the engine pulled
+   an event from its stream (streams are read lazily), on sort stability,
+   or on hash/dict iteration order. Two runs over the same input with the
+   same models process exactly the same sequence.
 
 Several input streams (for example trades, board, bars and funding read
 from separate files) are merged by `(exchange_time_ns, stream name)`: the
@@ -40,10 +48,17 @@ Inside one stream the stream's own order is kept, and a stream that goes
 backwards in `exchange_time_ns` is refused (`EventOrderError`) -- the core
 merges streams, it does not re-sort a stream.
 
-So for events that share a timestamp the rule is: type (`TYPE_ORDER`),
-then stream name, then position inside the stream. Only the last one
-depends on how the input was written, and it is the stream's own sequence
-(for example the venue's print order of two trades in one nanosecond).
+So for input events delivered at the same time the rule is: type
+(`TYPE_ORDER`), then merge order (exchange time, then stream name, then
+position inside the stream). With no feed delay and received time equal
+to exchange time this is: type, then stream name, then position. Only the
+position depends on how the input was written, and it is the stream's own
+sequence (for example the venue's print order of two trades in one
+nanosecond).
+
+The strategy sees `event.seq` = its own delivery count (1, 2, 3, ...), not
+the queue key: the queue also holds entries for events the strategy has
+not received yet, and a counter over the queue would let it count them.
 
 Causality inside one instant: an entry created while processing time T at
 time T (for example an order a strategy placed at T that reaches the venue
@@ -95,6 +110,9 @@ VENUE_MARKET_PRIORITY: dict[EventType, int] = {
 VENUE_ORDER = 10
 VENUE_CANCEL = 11
 
+ORIGIN_SOURCE = 0  # entry made from an input event; ordinal = position in the merged input
+ORIGIN_ENGINE = 1  # entry created by the engine; ordinal = creation count
+
 _DELIVERY_BASE = 20
 DELIVERY_PRIORITY: dict[EventType, int] = {t: _DELIVERY_BASE + i for i, t in enumerate(TYPE_ORDER)}
 
@@ -110,7 +128,7 @@ PRIORITY: dict[str, int] = {
 }
 
 ORDERING_RULE: dict = {
-    "key": ["time_ns", "priority", "seq"],
+    "key": ["time_ns", "priority", "origin", "ordinal"],
     "time_ns": {
         "venue": "exchange_time_ns of market data; arrival time of our order/cancel at the venue",
         "deliver": "received_time_ns + feed delay (market data); venue time + notice delay (notices); timer time",
@@ -118,7 +136,12 @@ ORDERING_RULE: dict = {
     },
     "priority_ascending": [name for name, _ in sorted(PRIORITY.items(), key=lambda kv: kv[1])],
     "type_order_at_one_instant": [t.value for t in TYPE_ORDER],
-    "seq": "engine push counter: merged source order, then creation order; unique per entry",
+    "origin": {"source": ORIGIN_SOURCE, "engine": ORIGIN_ENGINE,
+               "shared_priority": "deliver:CLOCK (input heartbeat before strategy timer)"},
+    "ordinal": {"source": "position in the merged input (merge key below); fixed by the input",
+                "engine": "creation count; fixed by the processing order"},
+    "depends_on_pull_timing": False,
+    "strategy_visible_seq": "the strategy's own delivery count 1, 2, 3, ... (not the queue key)",
     "source_merge": {
         "key": ["exchange_time_ns", "stream name (sorted())", "position inside the stream"],
         "backwards_inside_a_stream": "EventOrderError (never re-sorted)",

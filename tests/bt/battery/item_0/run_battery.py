@@ -53,9 +53,7 @@ OPPONENTS = {
     "opp_quantcore": ("quantcore_adapter", "QuantcoreAdapter"),
     "opp_finmarketpy": ("finmarketpy_adapter", "FinmarketpyAdapter"),
     "opp_quanttrader": ("quanttrader_adapter", "QuanttraderAdapter"),
-    "opp_aat": ("aat_adapter", "AatAdapter"),
     "opp_pyalgotrade": ("pyalgotrade_adapter", "PyalgotradeAdapter"),
-    "opp_octobot": ("octobot_adapter", "OctobotAdapter"),
     "opp_freqtrade": ("freqtrade_adapter", "FreqtradeAdapter"),
     "opp_vnpy": ("vnpy_adapter", "VnpyAdapter"),
 }

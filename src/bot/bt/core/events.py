@@ -128,7 +128,7 @@ class Event:
 
     received_time_ns: Nanos
     exchange_time_ns: Optional[Nanos] = None
-    seq: int = 0  # overwritten by the engine with its delivery sequence number
+    seq: int = 0  # set by the engine on delivery: the strategy's own delivery count (1, 2, 3, ...)
 
     EVENT_TYPE: ClassVar[EventType]
 

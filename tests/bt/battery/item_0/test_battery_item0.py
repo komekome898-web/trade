@@ -76,3 +76,44 @@ def test_pool_reproducible(tmp_path):
     out = tmp_path / "pool.tsv"
     subprocess.run([sys.executable, str(HERE / "gen_pool.py"), "--out", str(out)], check=True, capture_output=True)
     assert out.read_text(encoding="utf-8") == (HERE / "pool.tsv").read_text(encoding="utf-8")
+
+
+def test_considered_table_passes_the_checker():
+    """Rule 9: the review table of unrunnable candidates passes the checker
+    (form, the reason words, and an aggregate block that matches the rows)."""
+    repo = HERE.parents[3]
+    r = subprocess.run([sys.executable, str(repo / "scripts" / "check_bt_considered.py"),
+                        str(HERE / "opponents" / "CONSIDERED.md")], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_every_reproduction_named_in_the_table_runs_every_scene():
+    """A candidate the table marks 再現した is run through all scenes by the runner."""
+    import re
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    for path in set(re.findall(r"opponents/(repro_[\w]+)\.py", text)):
+        rows = run_battery.run_target(path)
+        assert len(rows) == len(scenes.SCENES)
+
+
+def test_considered_table_covers_the_pool_exactly():
+    """Every pool candidate of a viewpoint is either named runnable or has a row
+    in the review table, and nothing outside the pool appears."""
+    import csv
+    import collections
+    import re
+    pool = collections.defaultdict(set)
+    with (HERE / "pool.tsv").open(encoding="utf-8") as f:
+        for r in csv.DictReader(f, delimiter="\t"):
+            if r["viewpoint"].startswith("P0-"):
+                pool[r["viewpoint"]].add(int(r["cand"]))
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    secs = re.split(r"^### 観点 ", text, flags=re.M)[1:]
+    assert sorted(s[:4] for s in secs) == sorted(pool)
+    for s in secs:
+        vp = s[:4]
+        line = re.search(r"動かせた候補: \d+ 件\((.*)\)", s).group(1)
+        run = {int(x) for x in re.findall(r"(?:^|, )(\d+) ", line)}
+        rows = {int(m) for m in re.findall(r"^\| (\d+) ", s, flags=re.M)}
+        assert not run & rows, vp
+        assert run | rows == pool[vp], vp

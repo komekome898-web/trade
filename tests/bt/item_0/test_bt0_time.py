@@ -99,3 +99,15 @@ def test_time_contract_declares_int64_ns_utc():
     assert TIME_CONTRACT["bits"] == 64
     assert TIME_CONTRACT["unit"] == "ns"
     assert TIME_CONTRACT["timezone"] == "UTC"
+
+
+def test_iso_offset_out_of_range_is_refused_not_shifted():
+    import pytest as _pytest
+
+    from bot.bt.core import TimestampUnitError, to_nanos
+
+    for bad in ("2024-01-01T00:00:00+09:75", "2024-01-01T00:00:00+24:00", "2024-01-01T00:00:00-0960"):
+        with _pytest.raises(TimestampUnitError):
+            to_nanos(bad, "iso")
+    assert to_nanos("2024-01-01T09:00:00+0900", "iso") == 1_704_067_200_000_000_000
+    assert to_nanos("2023-12-31T18:30:00.000000001-05:30", "iso") == 1_704_067_200_000_000_001

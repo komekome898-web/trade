@@ -10,7 +10,7 @@ from .interfaces import SOCKETS, socket_methods
 from .ordering import ORDERING_RULE
 from .time import TIME_CONTRACT
 
-CORE_VERSION = "core-3"
+CORE_VERSION = "core-4"
 
 CORE_CONTRACT: dict = {
     "version": CORE_VERSION,

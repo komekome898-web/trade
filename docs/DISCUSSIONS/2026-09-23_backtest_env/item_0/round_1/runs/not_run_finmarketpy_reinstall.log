@@ -1,0 +1,12 @@
+=== 2026-09-23T17:42:44Z start; df:
+/dev/vda          258020 37464       475  99% /
+venv rc=0
+2026-09-23T17:43:20Z free 128MB < 150MB: stopping pip
+Terminated
+pip rc=143
+=== 2026-09-23T17:43:20Z end; df:
+/dev/vda          258020 37813       126 100% /
+=== 2026-09-23T17:43:25Z removed partial venv finmarketpy; df:
+/dev/vda          258020 37785       154 100% /
+=== 2026-09-23T17:43:38Z removed this run's pip temp /tmp/pip-unpack-t_61acpz (317MB); df:
+/dev/vda          258020 37468       471  99% /
