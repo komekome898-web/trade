@@ -1,0 +1,180 @@
+viewpoint	cand	name	rule	scan_lines	pattern
+P0-1	1	Basana	台帳 7 列目 = ○	6836	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	6	Ziplime	台帳 7 列目 = ○	9650	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	13	DeviaVir/zenbot	台帳 7 列目 = ○	6874	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	18	zipline-reloaded	台帳 7 列目 = ○	9857	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	23	hftbacktest	台帳 7 列目 = ○	6906	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	37	ThePredictiveDev/Automated-Financial-Market-Trading-System	台帳 7 列目 = ○	10426	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	41	prediction-market-backtesting	台帳 7 列目 = ○	6106	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	52	QuantConnect	台帳 7 列目 = ○	7292	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	53	Rqalpha	台帳 7 列目 = ○	7850	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	57	WonderTrader	台帳 7 列目 = ○	7852	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	58	nautilus_trader	台帳 7 列目 = ○	6345	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	61	barter-rs	台帳 7 列目 = ○	6926	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	62	qf-lib	台帳 7 列目 = ○	6117	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	63	trade-frame	台帳 7 列目 = ○	6119	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	65	aat	台帳 7 列目 = ○	10429	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	68	quanttrader	台帳 7 列目 = ○	6382	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	69	gobacktest	台帳 7 列目 = ○	6124	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	91	braedonsaunders/homerun	台帳 7 列目 = ○	7858	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-1	123	carlos8f/zenbot	台帳 7 列目 = ○	7298	"awk -F'\t' 'NR==1{next} $7==""○""{print $1""\t""$2}' docs/DATA/tools_catalog.tsv"
+P0-2	34	SLMolenaar/QuantCore	2	4275 4419 4428	ナノ秒\|nanosecond\|マイクロ秒\|microsecond
+P0-2	44	lo2cin4	1	5889	ナノ秒\|nanosecond\|マイクロ秒\|microsecond
+P0-2	58	nautilus_trader	1,2	6061 6152	ナノ秒\|nanosecond\|マイクロ秒\|microsecond
+P0-2	102	3yit/Limit-Order-Book-Simulator	2	4882	ナノ秒\|nanosecond\|マイクロ秒\|microsecond
+P0-3	1	Basana	2,3	1674 1822	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	2	Backtrader	2	1717	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	4	PyBroker	2	1760	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	6	Ziplime	2	2477	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	10	fast-trade	2	2165	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	11	python3	2	4140	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	12	pybotters	2	2787 2793 2794 2908	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	16	Luczinsritter/event_driven_backtesting_engine	2	3297	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	18	zipline-reloaded	2	1173	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	23	hftbacktest	2	227	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	34	SLMolenaar/QuantCore	2	4427	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	40	OpenMarket	1,2	4111 5694 5771	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	41	prediction-market-backtesting	1,1+3a,2	4112 6070 6107	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	57	WonderTrader	1	7858	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	58	nautilus_trader	1,1+3a	6107 6150	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	61	barter-rs	1,2	6302 6305 6422 6653	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	91	braedonsaunders/homerun	1,2	7804 7818 7820 7977	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	103	IsaacCheng9/order-book-simulator	2	5512 5514 5611	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-3	121	mhallsmoore/qstrader	3	614	資金調達\|funding rate\|funding_rate / 清算\|liquidation / 板の差分\|板スナップショット\|板の写真\|order book snapshot\|depth update\|incremental
+P0-4	62	qf-lib	2,2+3a	6118 6154	先読み\|未来の情報\|将来の情報\|データスヌーピング\|data snooping\|peek
+P0-5	3	PySystemtrade	2	3584	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	11	python3	2	4138	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	23	hftbacktest	2	227 892	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	37	ThePredictiveDev/Automated-Financial-Market-Trading-System	2	4324	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	44	lo2cin4	1,2	5890 5942	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	55	backtesting.py	3	584	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	58	nautilus_trader	1	6061	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	70	PineForge	2	4653 7974	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	75	Freqtrade	2	4658	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	98	mihircoding/limitOrderBook	1,2	5117 5547 9011 9148	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	99	NickGardi/orderbooksim	2	5161	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	101	akurkar07/OrderBook	2	4881 5415 5418 5427	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	104	jxm35/LimitOrderBook-MatchingEngine	2	5547	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	105	DaniyalMlk/slippage	2	5204	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	120	wbt	1	5874	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	121	mhallsmoore/qstrader	3	614	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-5	122	gbeced/pyalgotrade	3	645	決定的\|deterministic\|同時刻\|tie.break\|順序
+P0-6	1	Basana	1,2	7176 7666	on_bar\|on_tick\|コールバック\|callback\|戦略 API\|strategy interface\|プラガブル\|差し替え可能\|モジュール式\|pluggable
+P0-6	13	DeviaVir/zenbot	1	6812	on_bar\|on_tick\|コールバック\|callback\|戦略 API\|strategy interface\|プラガブル\|差し替え可能\|モジュール式\|pluggable
+P0-6	23	hftbacktest	2	9234	on_bar\|on_tick\|コールバック\|callback\|戦略 API\|strategy interface\|プラガブル\|差し替え可能\|モジュール式\|pluggable
+P0-6	52	QuantConnect	2	6151	on_bar\|on_tick\|コールバック\|callback\|戦略 API\|strategy interface\|プラガブル\|差し替え可能\|モジュール式\|pluggable
+P0-6	123	carlos8f/zenbot	1	6812	on_bar\|on_tick\|コールバック\|callback\|戦略 API\|strategy interface\|プラガブル\|差し替え可能\|モジュール式\|pluggable
+P0-7	1	Basana	1,2,3	1823 7483 7493 7552 7666	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	3	PySystemtrade	2	3462	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	4	PyBroker	1,2	6985 7558 8854	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	6	Ziplime	2,2+3a	2399 2483 2570 6853 9099	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	8	OpenTrader	1	7539	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	10	fast-trade	2	2399	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	11	python3	2	2712 2827 2836	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	13	DeviaVir/zenbot	2	6989	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	15	Mendl-Labs/BacktestingCore	1,2	7555 8806	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	16	Luczinsritter/event_driven_backtesting_engine	2	3292	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	18	zipline-reloaded	1,2	7478 7492 7556 7665 8399 9099	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	20	VnPy	2	8806	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	23	hftbacktest	2	8473 9234	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	33	SarthakDalmia1/backtesting_execution_simulator	1,2	7189 7352 7551 7558 7692 7885	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	1	7559 8194	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	38	microsoft/MarS	1	7551	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	49	GFT Backtest Software	2+3a	5732	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	52	QuantConnect	2	6151	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	54	finmarketpy	1	8010	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	87	PyTrendFollow	1	8010	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	98	mihircoding/limitOrderBook	1	7550	差し替え\|プラガブル\|モジュール式\|pluggable
+P0-7	107	sigc	2	8806	差し替え\|プラガブル\|モジュール式\|pluggable
+
+# unmapped grep hits (viewpoint, SCAN line, head of the line)
+# P0-2	247	- **できること全部(一次資料 = PyPI JSON の description、curl = 生ログ 5 行目、逐語。GitHub の README 原文
+# P0-3	44	- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liq
+# P0-3	50	- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fe
+# P0-3	59	- check_*: 7 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bi
+# P0-3	60	- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py reco
+# P0-3	67	- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+# P0-3	73	- liquidation_*: 1 / liquidation_report.py
+# P0-3	95	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	110	  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EV
+# P0-3	113	  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetc
+# P0-3	399	- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liq
+# P0-3	405	- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fe
+# P0-3	414	- check_*: 7 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bi
+# P0-3	415	- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py reco
+# P0-3	422	- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+# P0-3	428	- liquidation_*: 1 / liquidation_report.py
+# P0-3	450	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	465	  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EV
+# P0-3	468	  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetc
+# P0-3	965	- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liq
+# P0-3	971	- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fe
+# P0-3	979	- check_*: 8 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bi
+# P0-3	981	- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py reco
+# P0-3	988	- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+# P0-3	994	- liquidation_*: 1 / liquidation_report.py
+# P0-3	1016	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	1031	  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EV
+# P0-3	1034	  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetc
+# P0-3	1493	- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liq
+# P0-3	1499	- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fe
+# P0-3	1507	- check_*: 8 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bi
+# P0-3	1509	- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py reco
+# P0-3	1516	- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+# P0-3	1522	- liquidation_*: 1 / liquidation_report.py
+# P0-3	1544	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	1559	  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EV
+# P0-3	1562	  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetc
+# P0-3	1803	| `bt` | 当方データ投入 | 日付を index にした終値の DataFrame をそのまま渡せた。約定・清算のような明細のデータを入れる形ではない 
+# P0-3	1849	- **当方の用途との相性**: 終値の DataFrame は入るが、約定・清算のような明細を入れる形ではない(実測)。
+# P0-3	1971	- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liq
+# P0-3	1977	- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fe
+# P0-3	1985	- check_*: 8 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bi
+# P0-3	1987	- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py reco
+# P0-3	1994	- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+# P0-3	2000	- liquidation_*: 1 / liquidation_report.py
+# P0-3	2022	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	2037	  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EV
+# P0-3	2040	  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetc
+# P0-3	2295	- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liq
+# P0-3	2301	- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fe
+# P0-3	2309	- check_*: 8 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bi
+# P0-3	2311	- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py reco
+# P0-3	2318	- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+# P0-3	2324	- liquidation_*: 1 / liquidation_report.py
+# P0-3	2346	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	2361	  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EV
+# P0-3	2364	  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetc
+# P0-3	2595	- src/bot/research: 11 / board.py gz_members.py liq_bands.py liq_response.py liq
+# P0-3	2601	- fetch_*: 28 / fetch_aggtrades.py fetch_attention.py fetch_binance_cm_o3c.py fe
+# P0-3	2609	- check_*: 8 / check_api.py check_data_ledger.py check_k1_binance.py check_k1_bi
+# P0-3	2611	- record_*: 5 / record_funding_basis.py record_liquidations.py record_oi.py reco
+# P0-3	2618	- repair_*: 2 / repair_gz_listing.py repair_liquidation_gz.py
+# P0-3	2624	- liquidation_*: 1 / liquidation_report.py
+# P0-3	2646	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	2661	  docs/AUDITOR/ACTION_LOG.md docs/AUDITOR/COVERAGE_2026-09-11.md docs/AUDITOR/EV
+# P0-3	2664	  147: MD5SUMS audit_fetch_1306_split_20260906 audit_fetch_H_20260905 audit_fetc
+# P0-3	3372	**当方に無いもの**: 保有期間を時間差のまま記録に持つ点だけ。それ以外(指値・板・費用・清算)は当方の方が持っている。
+# P0-3	6850	   根拠は 4 回目の節 `#### 4. bt(深掘り)`(報告書 1848 行と 1849 行)の逐語「**終値の DataFrame は入るが、約定・清
+# P0-3	95	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	450	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	1016	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	1544	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	2022	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	2346	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-3	2646	  tests/conftest.py tests/fixtures/jev_ops/decisions.json tests/fixtures/jev_ops
+# P0-4	3166	| 4 | **同エンジンには指値の概念が無い。**合成データで動かした実体から `limit` を含む属性を数えると `LIMIT_ORDER_API=[]`
+# P0-5	563	**導入前の検査と導入の順序(監査 1 回目の問い 11 への答え)**: ハーネスの記録で手番を数えると、`pip download`(手 34)→ **wh
+# P0-5	1612	発見順(3 回目から引き継いだ順序のまま)。行頭の `[深掘り]` は §4.0 の表に語彙のすべての項目の行を持つものだけに付ける。それ以外は「浅い」と、何が
+# P0-5	2100	発見順(3 回目から引き継いだ順序のまま)。行頭の `[深掘り]` は §4.0 の表に語彙のすべての項目の行を持つものだけに付ける。それ以外は「浅い」と、何が
+# P0-5	2412	発見順(3 回目から引き継いだ順序のまま)。行頭の `[深掘り]` は §4.0 の表に語彙のすべての項目の行を持つものだけに付ける。それ以外は「浅い」と、何が
+# P0-5	2721	発見順(3 回目から引き継いだ順序のまま)。行頭の `[深掘り]` は §4.0 の表に語彙のすべての項目の行を持つものだけに付ける。それ以外は「浅い」と、何が
+# P0-5	2980	発見順(3 回目から引き継いだ順序のまま)。行頭の `[深掘り]` は §4.0 の表に語彙のすべての項目の行を持つものだけに付ける。それ以外は「浅い」と、何が
+# P0-5	3505	| 10 | **この模擬は決定的で、速い。**同じ入力を 2 回走らせた約定の表が DETERMINISTIC_TWO_RUNS_IDENTICAL=True
+# P0-5	3617	時刻は帯もミリ秒も付けずに通った。決定的で(DETERMINISTIC_TWO_RUNS_IDENTICAL=True)、
+# P0-5	5015	起動の指定の逐語「**委任文 §2 の順序のとおり、この回は新しい検索計画を打ちません。**」と
+# P0-5	5022	**この回は検索計画を打っていない。**起動の指定の逐語「**委任文 §2 の順序のとおり、この回は新しい検索計画を打ちません。**」による。
+# P0-7	3354	段ごとに別の class として差し替えられる。会計の段に、注文と約定を別の表として出す注文模擬(systems/accounts/order_simulato
+# P0-7	7520	「**段は 2 つ書く。段(機構) = 差し替えれば届く高さ。段(既定) = そのまま使ったときの高さ。**」
+# P0-7	7532	**段(機構)に数える条件**: 「差し替えれば届く」とは、**設定・引数・模型の差し替えで実行経路が呼べる**ことである。
+# P0-7	8407	**事象の受け口に旗が無く、差し替えずに働くためである。**

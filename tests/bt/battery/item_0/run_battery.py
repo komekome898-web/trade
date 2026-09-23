@@ -1,186 +1,160 @@
 #!/usr/bin/env python3
-"""Runner for the item-0 ("核") scene battery.
+"""Run the item-0 scene set against one target, twice, and write a TSV.
 
-Drives one target through every scene in `scenes.SCENES`, twice, and writes a
-TSV report. It does NOT itself know how to import a candidate's package --
-each target must be run under the Python interpreter that can actually
-import it:
+    PYTHONPATH=src python3 run_battery.py --target current_impl --out OUT.tsv
+    PYTHONPATH=src python3 run_battery.py --target new_impl     --out OUT.tsv
+    PYTHONPATH=src python3 run_battery.py --target mutant       --out OUT.tsv
+    <venv>/bin/python run_battery.py --target opp_<name>        --out OUT.tsv
+    python3 run_battery.py --target repro_<name>                --out OUT.tsv
+    python3 run_battery.py --list-targets
 
-    当方の現状 / 新実装 / 試金石 (in-repo, needs `src/` on PYTHONPATH):
-        PYTHONPATH=src python3 run_battery.py --target current_impl --out OUT.tsv
-        PYTHONPATH=src python3 run_battery.py --target new_impl     --out OUT.tsv
-        PYTHONPATH=src python3 run_battery.py --target mutant       --out OUT.tsv
+Each survey tool runs under the interpreter of its own isolated venv
+(scratchpad `bt/venvs/item_0/<name>/`); reproductions run under plain
+python3 (standard library only).
 
-    調査結果の候補 (each installed in its own isolated venv under
-    <scratchpad>/bt/venvs/item_0/<candidate>/, per delegation doc Sec.4):
-        <scratchpad>/bt/venvs/item_0/ziplime/bin/python3 run_battery.py \
-            --target opp_ziplime --out OUT.tsv
-        (same pattern for opp_zipline_reloaded / opp_lib_pybroker / opp_qf_lib / opp_basana)
-
-Run it twice per target (or pass --repeat 2, the default) so the report
-carries the "did two runs agree" column the delegation doc asks for
-(`Sec.3 "比較の表"`: 2回の実行で一致したか).
-
-The resulting table's cells use exactly the delegation doc's vocabulary
-(Sec.1 用語 / Sec.3 場面集の規則5): 一致 / 対応なし / 不一致(値) / 結果なし,
-plus a raw status/output dump for anything that errored.
-
-2026-09-23 fix (場面集の規則1): every scene -- known_answer AND capability
--- is now graded by comparing `SceneResult.output` to `Scene.expected`
-(`_grade`, below). Earlier this file only did that for known_answer scenes;
-a capability scene's `verdict` was just the adapter's own self-reported
-`status` word, so an adapter (or a hostile mutant) that merely *claimed*
-"ok" with a fabricated `output` could not be told apart, by this script,
-from a genuine positive result. `scenes.py` now gives every capability
-scene an `expected` too, so the same closed comparison applies to both
-kinds. See `scenes.py`'s module docstring for the full rationale.
+Columns: scene_id, viewpoint, kind, correctness (正解と一致 / 対応なし /
+不一致 / 結果なし), reproducibility (2 回の実行で同じ / 2 回で違う /
+結果なし), status and output of run 1 and run 2, expected, detail of run 1.
+Correctness is decided here, never by the adapter: a dict `expected` must
+match the same keys in the output (extra keys in the output are ignored),
+anything else must be equal.
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import importlib
+import json
 import sys
 from pathlib import Path
 
-_ITEM0_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(_ITEM0_DIR))
-sys.path.insert(0, str(_ITEM0_DIR / "adapters"))
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE / "adapters"))
+sys.path.insert(0, str(HERE.parents[3] / "src"))
 
 from scenes import SCENES  # noqa: E402
 from adapters.protocol import Adapter, SceneResult  # noqa: E402
 
+# opp_<name> -> (module under opponents/, class name)
+OPPONENTS = {
+    "opp_basana": ("basana_adapter", "BasanaAdapter"),
+    "opp_ziplime": ("ziplime_adapter", "ZiplimeAdapter"),
+    "opp_zipline_reloaded": ("zipline_reloaded_adapter", "ZiplineReloadedAdapter"),
+    "opp_lib_pybroker": ("lib_pybroker_adapter", "LibPybrokerAdapter"),
+    "opp_qf_lib": ("qf_lib_adapter", "QfLibAdapter"),
+    "opp_backtrader": ("backtrader_adapter", "BacktraderAdapter"),
+    "opp_hftbacktest": ("hftbacktest_adapter", "HftbacktestAdapter"),
+    "opp_rqalpha": ("rqalpha_adapter", "RqalphaAdapter"),
+    "opp_fast_trade": ("fast_trade_adapter", "FastTradeAdapter"),
+    "opp_pybotters": ("pybotters_adapter", "PybottersAdapter"),
+    "opp_backtesting": ("backtesting_adapter", "BacktestingAdapter"),
+    "opp_qstrader": ("qstrader_adapter", "QstraderAdapter"),
+    "opp_quantcore": ("quantcore_adapter", "QuantcoreAdapter"),
+    "opp_finmarketpy": ("finmarketpy_adapter", "FinmarketpyAdapter"),
+    "opp_quanttrader": ("quanttrader_adapter", "QuanttraderAdapter"),
+    "opp_aat": ("aat_adapter", "AatAdapter"),
+    "opp_pyalgotrade": ("pyalgotrade_adapter", "PyalgotradeAdapter"),
+    "opp_octobot": ("octobot_adapter", "OctobotAdapter"),
+    "opp_freqtrade": ("freqtrade_adapter", "FreqtradeAdapter"),
+    "opp_vnpy": ("vnpy_adapter", "VnpyAdapter"),
+}
 
-def _load_adapter(target: str) -> Adapter:
+
+def _repro_targets() -> dict[str, tuple[str, str]]:
+    out = {}
+    for p in sorted((HERE / "opponents").glob("repro_*.py")):
+        out[p.stem] = (p.stem, "Adapter")
+    return out
+
+
+def load_adapter(target: str) -> Adapter:
     if target == "current_impl":
         from adapters.current_impl import CurrentImplAdapter
         return CurrentImplAdapter()
     if target == "new_impl":
-        from adapters.new_impl_stub import NewImplAdapter
-        return NewImplAdapter()
-    if target == "opp_ziplime":
-        from opponents.ziplime_adapter import ZiplimeAdapter
-        return ZiplimeAdapter()
-    if target == "opp_zipline_reloaded":
-        from opponents.zipline_reloaded_adapter import ZiplineReloadedAdapter
-        return ZiplineReloadedAdapter()
-    if target == "opp_lib_pybroker":
-        from opponents.lib_pybroker_adapter import LibPybrokerAdapter
-        return LibPybrokerAdapter()
-    if target == "opp_qf_lib":
-        from opponents.qf_lib_adapter import QfLibAdapter
-        return QfLibAdapter()
-    if target == "opp_basana":
-        from opponents.basana_adapter import BasanaAdapter
-        return BasanaAdapter()
+        import bot.bt.core as core
+        mod = importlib.import_module("adapters.new_impl")
+        return mod.make_adapter(core)
     if target == "mutant":
-        # 審査員の試金石 (delegation doc Sec.3): 新実装の adapter を、観点4だけ
-        # 1バーの先読み漏れへすり替える薄いラッパーで包む。in-repo なので
-        # `PYTHONPATH=src` の current_impl/new_impl と同じ実行系列で走る。
-        from mutant import LookaheadLeakMutant
-        from adapters.new_impl_stub import NewImplAdapter
-        return LookaheadLeakMutant(NewImplAdapter())
-    raise SystemExit(
-        f"unknown --target {target!r}. Known targets: current_impl, new_impl, mutant, "
-        f"opp_ziplime, opp_zipline_reloaded, opp_lib_pybroker, opp_qf_lib, opp_basana "
-        f"(each opp_* must be run under ITS OWN venv's python -- see module docstring)."
-    )
+        from mutant import make_mutant_adapter
+        return make_mutant_adapter()
+    table = {**OPPONENTS, **_repro_targets()}
+    if target in table:
+        mod_name, cls = table[target]
+        mod = importlib.import_module(f"opponents.{mod_name}")
+        return getattr(mod, cls)()
+    raise SystemExit(f"unknown target {target!r}; known: current_impl, new_impl, mutant, {', '.join(sorted(table))}")
 
 
-def _output_matches_expected(output, expected) -> bool:
-    """Compare an adapter's real output to a scene's `expected`.
-
-    A dict `expected` is graded as a REQUIRED-SUBSET match against a dict
-    `output`: every key in `expected` must be present in `output` with an
-    equal value; extra keys in `output` (diagnostic/informational fields a
-    capability scene's adapters attach, e.g. `callback_count` alongside
-    `event_driven`) are ignored. This lets heterogeneous adapters (current
-    impl / new impl / opponents) report extra detail without being
-    penalised, while still requiring the specific field(s) the scene cares
-    about to be exactly right. Any other `expected` type (int/str/bool/full
-    dict for a known-answer scene) is graded by plain equality, which is
-    what the known-answer scenes have always used (they build `expected` to
-    equal the adapter's whole output dict already).
-    """
+def _matches(output, expected) -> bool:
     if isinstance(expected, dict):
-        if not isinstance(output, dict):
-            return False
-        return all(output.get(k) == v for k, v in expected.items())
+        return isinstance(output, dict) and all(k in output and output[k] == v for k, v in expected.items())
     return output == expected
 
 
-def _grade(result: SceneResult, expected) -> str:
-    """One SceneResult -> one of the delegation doc's four 正しさ words.
-
-    Applied uniformly to known_answer AND capability scenes (2026-09-23,
-    場面集の規則1) -- see this module's docstring and scenes.py's.
-    """
-    if result.status == "not_supported":
+def correctness(res: SceneResult, expected) -> str:
+    if res.status == "not_supported":
         return "対応なし"
-    if result.status == "no_record":
+    if res.status == "ok":
+        return "正解と一致" if _matches(res.output, expected) else "不一致"
+    return "結果なし"  # error: the target ran into an exception, no result to grade
+
+
+def reproducibility(a: SceneResult, b: SceneResult) -> str:
+    if a.status == "error" and b.status == "error":
         return "結果なし"
-    if result.status == "error":
-        return "不一致(値)"  # an unexpected exception is a failed check, not a "no result"
-    # status == "ok" -- still independently checked against `expected`, never
-    # trusted just because the adapter itself claims "ok" (this is exactly
-    # the check the round-1 build was missing for capability scenes).
-    return "一致" if _output_matches_expected(result.output, expected) else "不一致(値)"
+    same = (a.status, json.dumps(a.output, sort_keys=True, default=repr)) == \
+           (b.status, json.dumps(b.output, sort_keys=True, default=repr))
+    return "2 回の実行で同じ" if same else "2 回で違う"
 
 
-def run_target(target: str, repeat: int = 2) -> list[dict]:
-    adapter = _load_adapter(target)
-    rows: list[dict] = []
-    for scene in SCENES:
-        runs = [adapter.run_scene(scene) for _ in range(repeat)]
-        first = runs[0]
-        match_across_runs = all(
-            (r.status, r.output) == (first.status, first.output) for r in runs
-        )
-        verdict = _grade(first, scene.expected)
-        rows.append(
-            {
-                "target": target,
-                "scene_id": scene.id,
-                "viewpoint": scene.viewpoint,
-                "kind": scene.kind,
-                "status": first.status,
-                "output": first.output,
-                "expected": scene.expected,
-                "verdict": verdict,
-                "match_across_runs": match_across_runs,
-                "detail": first.detail,
-            }
-        )
+def run_target(target: str) -> list[dict]:
+    rows = []
+    adapter_1 = load_adapter(target)
+    adapter_2 = load_adapter(target)  # a fresh adapter for the second run
+    for sc in SCENES:
+        r1 = adapter_1.run_scene(sc)
+        r2 = adapter_2.run_scene(sc)
+        rows.append({
+            "target": target, "scene_id": sc.id, "viewpoint": sc.viewpoint, "kind": sc.kind,
+            "correctness": correctness(r1, sc.expected),
+            "correctness_run2": correctness(r2, sc.expected),
+            "reproducibility": reproducibility(r1, r2),
+            "status_1": r1.status, "output_1": json.dumps(r1.output, ensure_ascii=False, sort_keys=True, default=repr),
+            "status_2": r2.status, "output_2": json.dumps(r2.output, ensure_ascii=False, sort_keys=True, default=repr),
+            "expected": json.dumps(sc.expected, ensure_ascii=False, sort_keys=True),
+            "detail_1": r1.detail.replace("\t", " ").replace("\n", " "),
+        })
     return rows
 
 
+FIELDS = ["target", "scene_id", "viewpoint", "kind", "correctness", "correctness_run2", "reproducibility",
+          "status_1", "output_1", "status_2", "output_2", "expected", "detail_1"]
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--target", required=True, help="one target name (see module docstring for the full list)")
-    parser.add_argument("--out", required=True, type=Path, help="TSV path to write the report to")
-    parser.add_argument("--repeat", type=int, default=2, help="how many times to run each scene (default 2, per delegation doc's determinism check)")
-    args = parser.parse_args()
-
-    rows = run_target(args.target, repeat=args.repeat)
-
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = ["target", "scene_id", "viewpoint", "kind", "status", "output", "expected", "verdict", "match_across_runs", "detail"]
-    with args.out.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(row)
-
-    n_total = len(rows)
-    # `verdict` now uses the same four delegation-doc words for BOTH kinds
-    # (2026-09-23 fix, 場面集の規則1): 一致/対応なし/不一致(値)/結果なし.
-    by_verdict = {v: sum(1 for r in rows if r["verdict"] == v) for v in ("一致", "対応なし", "不一致(値)", "結果なし")}
-    n_mismatched_runs = sum(1 for r in rows if not r["match_across_runs"])
-    print(f"{args.target}: {n_total} scenes -> wrote {args.out}")
-    print(
-        f"  正しさ: 一致={by_verdict['一致']}, 対応なし={by_verdict['対応なし']}, "
-        f"不一致(値)={by_verdict['不一致(値)']}, 結果なし={by_verdict['結果なし']}; "
-        f"再現(2回の実行で不一致)={n_mismatched_runs}"
-    )
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--target")
+    ap.add_argument("--out", type=Path)
+    ap.add_argument("--list-targets", action="store_true")
+    a = ap.parse_args()
+    if a.list_targets:
+        print("\n".join(["current_impl", "new_impl", "mutant", *OPPONENTS, *_repro_targets()]))
+        return
+    if not a.target or not a.out:
+        ap.error("--target and --out are required")
+    rows = run_target(a.target)
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    with a.out.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS, delimiter="\t")
+        w.writeheader()
+        w.writerows(rows)
+    counts: dict[str, int] = {}
+    for r in rows:
+        counts[r["correctness"]] = counts.get(r["correctness"], 0) + 1
+    diff = sum(1 for r in rows if r["reproducibility"] == "2 回で違う")
+    print(f"{a.target}: {len(rows)} scenes -> {a.out}; {counts}; 2 回で違う={diff}")
 
 
 if __name__ == "__main__":

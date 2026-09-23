@@ -1,283 +1,351 @@
-"""Opponent adapter: 候補 qf-lib (`qf_lib` on PyPI, "Tools to prevent look-ahead bias" の記述があった候補。
-REQUIREMENTS.md 観点4では README止まりと記録されていたが、この周で実装のコードまで降りて
-再検証した -- 事象駆動の queue.Queue ベースの EventManager を実測で確認した(下記 v1)。)
+"""Survey candidate 62 `qf-lib` (PyPI `qf-lib` 4.0.7), run in its own venv.
 
-Installed for real in `<scratchpad>/bt/venvs/item_0/qf-lib/` via `pip install qf-lib`.
+Driven through its public API: `BacktestTradingSessionBuilder` (data provider,
+frequency, cash, `set_commission_model`, `set_slippage_model`,
+`set_monitor_settings(BacktestMonitorSettings.no_stats())`),
+`PresetDataProvider` over a `QFDataArray` of daily OHLCV, an
+`AbstractStrategy` subscribed to `CalculateAndPlaceOrdersRegularEvent`
+(the strategy is called at the scheduled time and reads data through the
+data provider), `OrderFactory` / `BacktestBroker` for orders, and a
+`SingleTimeEvent` subclass for a one-off timer.
+
+qf-lib makes a daily bar dated D available after D ends, so a bar whose close
+is T0 + i DAY is dated T0 + (i-1) DAY, and the strategy is triggered at 00:00
+each day. The data array starts 10 days earlier with no values (NaN): qf-lib's
+execution handler reads 7 days of history before the start (measured:
+"Requested start date ... is before data bundle start date").
+Installing it needed PyJWT, oauthlib and requests-oauthlib (its import chain
+loads the Bloomberg DL provider); see the install log.
 """
 from __future__ import annotations
 
-import datetime
+import datetime as D
+import logging
 import sys
 from pathlib import Path
 
-_ITEM0_DIR = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_ITEM0_DIR))
-sys.path.insert(0, str(_ITEM0_DIR / "adapters"))
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE.parent / "adapters"))
 
-from protocol import Adapter, SceneResult  # noqa: E402
-from scenes import Scene  # noqa: E402
-from opponents._common import walk_submodule_names  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
-try:
-    import qf_lib  # noqa: E402
-    from qf_lib.backtesting.events.event_base import Event, AllEventListener, AllEventNotifier  # noqa: E402
-    from qf_lib.backtesting.events.event_manager import EventManager  # noqa: E402
-    from qf_lib.common.utils.dateutils.timer import SettableTimer  # noqa: E402
-    from qf_lib.backtesting.broker.broker import Broker as _Broker  # noqa: E402
-    from qf_lib.backtesting.execution_handler.commission_models.fixed_commission_model import (  # noqa: E402
-        FixedCommissionModel as _FixedCommissionModel,
-    )
-    _IMPORT_ERROR: Exception | None = None
-    _ALL_SUBMODULES = walk_submodule_names(qf_lib)
-except Exception as exc:  # noqa: BLE001
-    _IMPORT_ERROR = exc
-    _ALL_SUBMODULES = []
+from protocol import Adapter, not_supported, ok  # noqa: E402
+import common as C  # noqa: E402
+
+from qf_lib.backtesting.events.time_event.regular_time_event.calculate_and_place_orders_event import \
+    CalculateAndPlaceOrdersRegularEvent  # noqa: E402
+from qf_lib.backtesting.events.time_event.single_time_event.single_time_event import SingleTimeEvent  # noqa: E402
+from qf_lib.backtesting.execution_handler.commission_models.commission_model import CommissionModel  # noqa: E402
+from qf_lib.backtesting.execution_handler.slippage.base import Slippage  # noqa: E402
+from qf_lib.backtesting.monitoring.backtest_monitor import BacktestMonitorSettings  # noqa: E402
+from qf_lib.backtesting.order.execution_style import MarketOrder  # noqa: E402
+from qf_lib.backtesting.order.time_in_force import TimeInForce  # noqa: E402
+from qf_lib.backtesting.strategies.abstract_strategy import AbstractStrategy  # noqa: E402
+from qf_lib.backtesting.trading_session.backtest_trading_session_builder import BacktestTradingSessionBuilder  # noqa: E402
+from qf_lib.common.enums.frequency import Frequency  # noqa: E402
+from qf_lib.common.enums.price_field import PriceField  # noqa: E402
+from qf_lib.common.tickers.tickers import BloombergTicker  # noqa: E402
+from qf_lib.containers.qf_data_array import QFDataArray  # noqa: E402
+from qf_lib.data_providers.preset_data_provider import PresetDataProvider  # noqa: E402
+
+logging.getLogger("qf").setLevel(logging.ERROR)
+logging.disable(logging.WARNING)
+
+TK = BloombergTicker("X Equity")
+FIELDS = [PriceField.Open, PriceField.High, PriceField.Low, PriceField.Close, PriceField.Volume]
+DAY = 86_400 * 10**9
 
 
-class _Counter(AllEventListener):
-    def __init__(self) -> None:
-        self.calls: list = []
+def _date(ns: int) -> D.datetime:
+    return C.ns_to_dt(ns - DAY).replace(tzinfo=None)
 
-    def on_event(self, event) -> None:  # noqa: ANN001
-        self.calls.append(getattr(event, "tag", None))
+
+def run(bars: list[dict], on_call, cash=1_000_000.0, setup=None, timer_at=None):
+    rows = [C.as_bar(b) for b in bars]
+    first = _date(rows[0]["ts_ns"])
+    last = _date(rows[-1]["ts_ns"])
+    dates = pd.DatetimeIndex([first + D.timedelta(days=i) for i in range(-10, (last - first).days + 1)])
+    by_date = {_date(b["ts_ns"]): b for b in rows}
+    if len(by_date) != len(rows):
+        raise ValueError("two bars on the same day: a daily data array has one row per day")
+    vals = np.array([[[float(by_date[d.to_pydatetime()][k]) if d.to_pydatetime() in by_date else np.nan
+                       for k in ("open", "high", "low", "close", "volume")]] for d in dates], dtype=float)
+    arr = QFDataArray.create(dates, [TK], FIELDS, vals)
+    dp = PresetDataProvider(arr, dates[0], dates[-1] + D.timedelta(days=2), Frequency.DAILY)
+    b = BacktestTradingSessionBuilder(None, None, None)
+    b.set_monitor_settings(BacktestMonitorSettings.no_stats())
+    b.set_data_provider(dp)
+    b.set_frequency(Frequency.DAILY)
+    b.set_initial_cash(int(cash))
+    b.set_market_open_and_close_time({"hour": 0, "minute": 1}, {"hour": 23, "minute": 0})
+    if setup:
+        setup(b)
+    start = first + D.timedelta(days=1) - D.timedelta(minutes=1)
+    ts = b.build(start, last + D.timedelta(days=1))
+    st = {"n": 0, "log": [], "clock": []}
+
+    class Timer(SingleTimeEvent):
+        def notify(self, listener):
+            st["clock"].append(C.dt_to_ns(listener.timer.now().replace(tzinfo=D.timezone.utc)))
+
+    class S(AbstractStrategy):
+        def __init__(self, ts):
+            super().__init__(ts)
+            self.ts = ts
+
+        def calculate_and_place_orders(self):
+            st["n"] += 1
+            if st["n"] == 1 and timer_at is not None:
+                Timer.schedule_new_event(C.ns_to_dt(timer_at).replace(tzinfo=None), None)
+            on_call(self, st["n"], st)
+
+    CalculateAndPlaceOrdersRegularEvent.set_trigger_time({"hour": 0, "minute": 0, "second": 0, "microsecond": 0})
+    s = S(ts)
+    s.subscribe(CalculateAndPlaceOrdersRegularEvent)
+    if timer_at is not None:
+        ts.notifiers.scheduler.subscribe(Timer, listener=s)
+    ts.start_trading()
+    Timer._datetimes_to_data.clear()
+    return st, ts
+
+
+def _now(s) -> int:
+    return C.dt_to_ns(s.timer.now().replace(tzinfo=D.timezone.utc))
+
+
+def _closes(s, start):
+    try:
+        v = s.ts.data_provider.get_price(TK, PriceField.Close, start, s.timer.now())
+    except Exception as exc:  # noqa: BLE001
+        return f"{type(exc).__name__}: {exc}"
+    if isinstance(v, float):
+        return [v] if v == v else []
+    return [float(x) for x in v.values if x == x]
+
+
+NON_BAR = ("qf-lib のデータは data provider が返す銘柄ごとの価格の列(PriceField: Open/High/Low/Close/Volume)で、{k} の型は無い。"
+           "試したこと: PriceField に {k} に当たる名前があるかを PriceField[...] で引いた -> {err}")
+
+
+def _pricefield(name: str) -> str:
+    try:
+        PriceField[name]
+    except KeyError as exc:
+        return f"KeyError: {exc}"
+    return "見つかった"
 
 
 class QfLibAdapter(Adapter):
     name = "opp_qf_lib"
 
-    def run_scene(self, scene: Scene) -> SceneResult:
-        if _IMPORT_ERROR is not None:
-            return SceneResult("no_record", detail=f"import failed: {_IMPORT_ERROR}")
-        handler = getattr(self, "_scene_" + scene.id.replace("-", "_"), None)
-        if handler is None:
-            return SceneResult("no_record", detail=f"no handler for {scene.id} this round")
+    def scene_p1_merge_by_time(self, sc):
+        return not_supported(NON_BAR.format(k="Trade・Funding", err=_pricefield("Trade") + " / " + _pricefield("Funding")))
+
+    def scene_p1_one_call_per_event(self, sc):
+        st, _ = run(C.events(sc), lambda s, n, st: st["log"].append(["bar", _now(s)]))
+        return ok({"sequence": st["log"]}, "日足 5 本。毎日 0 時の CalculateAndPlaceOrdersRegularEvent の各回に timer.now()")
+
+    def scene_p1_typed_events(self, sc):
+        return not_supported(NON_BAR.format(k="Trade", err=_pricefield("Trade")))
+
+    def _iso(self, sc):
+        v = int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value)
+        return ok(v, "qf-lib の時刻は pandas の Timestamp / datetime。pd.Timestamp(iso).tz_convert('UTC').value"
+                  "(timer.now() は tz なしの datetime を返す)")
+
+    scene_p2_iso_utc = scene_p2_iso_offset = _iso
+
+    def _ts(self, sc):
+        evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
+               for e in C.events(sc)]
         try:
-            return handler(scene)
+            st, _ = run(evs, lambda s, n, st: st["log"].append(_now(s)))
         except Exception as exc:  # noqa: BLE001
-            return SceneResult("error", detail=f"{type(exc).__name__}: {exc}")
+            return not_supported(f"ナノ秒の時刻の足を日足の配列に入れて走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"observed_ts_ns": st["log"]}, "日足で渡し(日付に丸められる)、timer.now()")
 
-    # v1 -- ACTUALLY driven one event at a time via the real public API ---
-    def _scene_v1_event_driven_cap(self, scene: Scene) -> SceneResult:
-        bars = scene.input["events"]
-        timer = SettableTimer(datetime.datetime(2024, 1, 1))
-        mgr = EventManager(timer)
-        notifier = AllEventNotifier()
-        counter = _Counter()
-        notifier.subscribe(counter)
-        mgr.register_notifiers([notifier])
-        for i, _bar in enumerate(bars):
-            e = Event()
-            e.tag = i
-            mgr.publish(e)
-        for _ in range(len(bars)):
-            mgr.dispatch_next_event()
-        supported = counter.calls == list(range(len(bars)))
-        return SceneResult(
-            "ok" if supported else "error",
-            output={"event_driven": supported, "calls": counter.calls},
-            detail=(
-                f"qf_lib.backtesting.events.event_manager.EventManager を実際にインスタンス化し、"
-                f"5件を `mgr.publish(event)` で1件ずつ投入 → `mgr.dispatch_next_event()` を5回呼んで"
-                f"1件ずつ取り出させた。リスナーが記録した到着順 = {counter.calls}"
-                f"(期待 [0,1,2,3,4] と{'一致' if supported else '不一致'})。"
-                f"内部は queue.Queue で、公開の1件供給API(publish)がある -- このバッテリーの"
-                f"4候補中、唯一この場面を『説明ではなく実行』で確かめられた。"
-            ),
-        )
+    scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
-    def _scene_v1_event_driven_known(self, scene: Scene) -> SceneResult:
-        bars = scene.input["events"]
-        timer = SettableTimer(datetime.datetime(2024, 1, 1))
-        mgr = EventManager(timer)
-        notifier = AllEventNotifier()
-        counter = _Counter()
-        notifier.subscribe(counter)
-        mgr.register_notifiers([notifier])
-        for bar in bars:
-            e = Event()
-            e.tag = bar["ts_ns"]  # tag with the real ts_ns, not an index (v1-cap tags with index)
-            mgr.publish(e)
-        for _ in range(len(bars)):
-            mgr.dispatch_next_event()
-        now_sequence = counter.calls
-        output = {"now_sequence": now_sequence}
-        match = output == scene.expected
-        return SceneResult(
-            "ok" if match else "error",
-            output=output,
-            detail=(
-                f"v1-event_driven-cap と同じ `EventManager.publish`/`dispatch_next_event` 経路を使い、"
-                f"今回は各 `Event.tag` に入力の ts_ns を入れて1件ずつ投入・取り出しさせた。"
-                f"リスナーが記録した到着順の tag 列 = {now_sequence}。"
-                f"既知解({scene.expected['now_sequence']})と{'一致' if match else '不一致'}。"
-            ),
-        )
+    def _type(self, sc):
+        e = C.events(sc)[0]
+        if e["kind"] != "bar":
+            return not_supported(NON_BAR.format(k=e["kind"], err=_pricefield(e["kind"].capitalize())))
+        out = {}
 
-    def _generic_v2_cap(self, scene: Scene, key: str, supported: bool, detail: str) -> SceneResult:
-        return SceneResult("ok" if supported else "not_supported", output={"supported": supported}, detail=detail)
+        def f(s, n, st):
+            st["log"].append(["bar", _now(s)])
+            px = s.ts.data_provider.get_last_available_price(TK)
+            row = s.ts.data_provider.get_price(TK, FIELDS, _date(e["ts_ns"]), s.timer.now())
+            out.update({"open": float(row.iloc[-1][PriceField.Open]), "high": float(row.iloc[-1][PriceField.High]),
+                        "low": float(row.iloc[-1][PriceField.Low]), "close": float(row.iloc[-1][PriceField.Close]),
+                        "volume": float(row.iloc[-1][PriceField.Volume]), "last_available": float(px)})
 
-    def _scene_v2_bar_cap(self, scene: Scene) -> SceneResult:
-        hit = any(n.endswith(".bar_event") or "intraday_bar_event" in n for n in _ALL_SUBMODULES)
-        return self._generic_v2_cap(scene, "bar", hit, f"サブモジュール実測 (intraday_bar_event 等): 当たり={hit}。")
+        st, _ = run([e], f)
+        return ok({"sequence": st["log"], "fields": {k: v for k, v in out.items() if k != "last_available"}},
+                  f"日足 1 本。data_provider.get_price(ticker, OHLCV, 日付, now) の最後の行。get_last_available_price={out.get('last_available')}")
 
-    def _scene_v2_bar_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("no_record", detail="往復の動的実行(データプロバイダ接続)はこの周は未実行。")
+    scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
+    scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
 
-    def _scene_v2_fill_cap(self, scene: Scene) -> SceneResult:
-        hit = any("order" in n.lower() for n in _ALL_SUBMODULES)
-        return self._generic_v2_cap(scene, "fill", hit, "qf_lib.backtesting.order 系サブモジュールの実在を実測。")
+    def scene_p3_mixed_one_run(self, sc):
+        return not_supported(NON_BAR.format(k="Trade・Funding・Liquidation", err=_pricefield("Liquidation")))
 
-    def _scene_v2_fill_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("no_record", detail="未実行。")
+    def scene_p3_clock_timer(self, sc):
+        st, _ = run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: None, timer_at=sc.input["timer_at_ns"])
+        return ok({"clock_calls_ns": st["clock"]}, "1 回目に SingleTimeEvent の子を schedule_new_event(頼む時刻)。呼ばれた時刻の列")
 
-    def _scene_v2_book_snapshot_cap(self, scene: Scene) -> SceneResult:
-        return self._generic_v2_cap(scene, "book_snapshot", False, f"サブモジュール {len(_ALL_SUBMODULES)} 件中、板(orderbook)関連の名前なし(実測)。")
+    def _notice(self, sc):
+        from qf_lib.backtesting.broker import backtest_broker as bb
+        names = [n for n in dir(bb.BacktestBroker) if "notif" in n.lower() or "callback" in n.lower() or "listener" in n.lower()]
+        try:
+            BacktestTradingSessionBuilder(None, None, None).add_order_listener(object())  # type: ignore[attr-defined]
+            r = "受け付けた"
+        except Exception as exc:  # noqa: BLE001
+            r = f"{type(exc).__name__}: {exc}"
+        return not_supported("注文の受付・拒否・約定・取消を戦略に知らせる呼び出しが無い(戦略は broker.get_open_orders / get_positions で問い合わせる)。"
+                             f"試したこと: BacktestTradingSessionBuilder().add_order_listener(...) -> {r}。BacktestBroker の名前で通知に当たるもの: {names}")
 
-    def _scene_v2_book_snapshot_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("not_supported", detail="cap 場面で不在確認済み。")
+    scene_p3_notice_accepted = scene_p3_notice_rejected = scene_p3_notice_filled = _notice
 
-    def _scene_v2_book_delta_cap(self, scene: Scene) -> SceneResult:
-        return self._generic_v2_cap(scene, "book_delta", False, "同上、板の差分に対応する型なし(実測)。")
+    def scene_p4_visible_at_step(self, sc):
+        probe = sc.input["probe_at_ns"]
+        out = {}
+        first = _date(sc.input["events"][0]["ts_ns"])
 
-    def _scene_v2_book_delta_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("not_supported", detail="cap 場面で不在確認済み。")
+        def f(s, n, st):
+            if _now(s) == probe:
+                v = _closes(s, first)
+                out["visible_count"] = len(v) if isinstance(v, list) else None
+                out["max_visible_close"] = max(v) if isinstance(v, list) and v else None
+                out["raw"] = v
 
-    def _scene_v2_funding_cap(self, scene: Scene) -> SceneResult:
-        hit = any("fund" in n.lower() for n in _ALL_SUBMODULES)
-        return self._generic_v2_cap(scene, "funding", hit, f"サブモジュール名の 'fund' 走査、実測当たり={hit}。qf-lib は株式/先物向けで資金調達(perpetual funding)の概念は想定外と見られる。")
+        run(C.events(sc), f)
+        if not out:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
+        return ok(out, "T0 + 4 日の呼び出しに data_provider.get_price(ticker, Close, 最初の日, now)")
 
-    def _scene_v2_funding_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("not_supported", detail="cap 場面で不在確認済み。")
+    def scene_p4_received_time(self, sc):
+        return not_supported(NON_BAR.format(k="受け取れる時刻", err=_pricefield("ReceivedTime")) + "(1 行に日付は 1 つ)")
 
-    def _scene_v2_liquidation_cap(self, scene: Scene) -> SceneResult:
-        hit = any("liquidat" in n.lower() for n in _ALL_SUBMODULES)
-        return self._generic_v2_cap(scene, "liquidation", hit, f"サブモジュール名の 'liquidat' 走査、実測当たり={hit}(モジュール名レベルの走査で、ソース文字列の意味の取り違えは無い)。")
+    def scene_p4_future_read_attempt(self, sc):
+        probe = sc.input["probe_at_ns"]
+        tried, got = [], {"v": False}
+        first = _date(sc.input["events"][0]["ts_ns"])
+        fut = _date([e for e in sc.input["events"] if e["ts_ns"] > probe][0]["ts_ns"])
 
-    def _scene_v2_liquidation_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("not_supported", detail="cap 場面で不在確認済み。")
+        def f(s, n, st):
+            if _now(s) != probe:
+                return
+            dp = s.ts.data_provider
+            for label, fn in [("get_price(ticker, Close, 最初の日, 5 本目の日)", lambda: dp.get_price(TK, PriceField.Close, first, fut)),
+                              ("get_price(..., 5 本目の日 + 1 日)", lambda: dp.get_price(TK, PriceField.Close, first, fut + D.timedelta(days=1))),
+                              ("historical_price(ticker, Close, 6)", lambda: dp.historical_price(TK, PriceField.Close, 6))]:
+                try:
+                    v = fn()
+                    vs = [float(x) for x in getattr(v, "values", [v])]
+                    tried.append(f"{label} -> {vs}")
+                    if 104.0 in vs:
+                        got["v"] = True
+                except Exception as exc:  # noqa: BLE001
+                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:100]}")
 
-    def _scene_v2_clock_cap(self, scene: Scene) -> SceneResult:
-        hit = any("time_event" in n for n in _ALL_SUBMODULES)
-        return self._generic_v2_cap(scene, "clock", hit, f"qf_lib.backtesting.events.time_event 系サブモジュールの実在を実測: 当たり={hit}(MarketOpenEvent/MarketCloseEvent 等の時刻駆動イベント)。")
+        run(C.events(sc), f)
+        if not tried:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
+        return ok({"future_value_obtained": got["v"]}, f"T0 + 4 日の呼び出しに試した: " + " ; ".join(tried))
 
-    def _scene_v2_clock_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("no_record", detail="未実行。")
+    def _no_types(self, sc):
+        return not_supported(NON_BAR.format(k="Trade・Funding・Liquidation", err=_pricefield("Funding")))
 
-    def _scene_v2_order_notice_cap(self, scene: Scene) -> SceneResult:
-        has_broker_methods = hasattr(_Broker, "cancel_order") and hasattr(_Broker, "place_orders")
-        return self._generic_v2_cap(scene, "order_notice", has_broker_methods, f"qf_lib.backtesting.broker.broker.Broker を hasattr で実測: cancel_order/place_orders 実在={has_broker_methods}。受付/拒否/約定を分ける専用イベント型までは未確認(浅い探査)。")
+    scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
-    def _scene_v2_order_notice_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("no_record", detail="未実行。")
+    def scene_p5_same_stream_order(self, sc):
+        try:
+            run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: None)
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"同じ日の 2 本を日足の配列に入れようとした -> {type(exc).__name__}: {exc}")
+        return ok({"prices": []}, "例外は出なかった")
 
-    def _scene_v3_precision_known(self, scene: Scene) -> SceneResult:
-        return SceneResult(
-            "no_record",
-            detail=(
-                "qf_lib.common.utils.dateutils.timer.SettableTimer は Python 標準の datetime.datetime "
-                "(マイクロ秒精度、ns 未満切り捨て)を保持する設計(実測: SettableTimer.now() の型は"
-                "datetime.datetime)。ns 精度の既知解はこの型では原理的に表現できない可能性が高いが、"
-                "他の内部経路(pandas Timestamp 使用箇所)まではこの周で確認していない。"
-            ),
-        )
+    def _order(self, s, qty):
+        orders = s.ts.order_factory.orders({TK: qty}, MarketOrder(), TimeInForce.GTC)
+        return s.ts.broker.place_orders(orders)
 
-    def _scene_v3_precision_cap(self, scene: Scene) -> SceneResult:
-        a_ns = scene.input["event_a"]["ts_ns"]
-        b_ns = scene.input["event_b"]["ts_ns"]
+    def scene_p6_place_then_cancel(self, sc):
+        from qf_lib.backtesting.order import execution_style as es
+        return not_supported("指値の注文の型が無い(execution_style の型は "
+                             + ", ".join(n for n in dir(es) if n.endswith("Order")) + ")。試したこと: execution_style.LimitOrder を引いた -> "
+                             + ("見つかった" if hasattr(es, "LimitOrder") else "AttributeError"))
 
-        def _ns_to_datetime(ns: int) -> datetime.datetime:
-            return datetime.datetime(1970, 1, 1) + datetime.timedelta(microseconds=ns / 1000.0)
+    def scene_p6_cancel_notice(self, sc):
+        return self._notice(sc)
 
-        timer = SettableTimer()
-        timer.set_current_time(_ns_to_datetime(a_ns))
-        a = timer.now()
-        timer.set_current_time(_ns_to_datetime(b_ns))
-        b = timer.now()
-        distinguishable = bool(a != b)
-        return SceneResult(
-            "ok",
-            output={"distinguishable": distinguishable},
-            detail=(
-                f"SettableTimer に ts_ns={a_ns} と ts_ns={b_ns}(1ナノ秒差)をそれぞれ "
-                f"set_current_time で実際に設定して now() を呼んだ実測: a={a!r}, b={b!r}, "
-                f"distinguishable={distinguishable}。SettableTimer.now() は datetime.datetime "
-                f"(マイクロ秒精度)を返すため、1ナノ秒差の2値は同じ datetime に潰れて"
-                f"区別できないことを実測で確認した(要件のUTC int64ナノ秒を満たさない)。"
-            ),
-        )
+    def scene_p6_fill_seen_by_strategy(self, sc):
+        out = {}
 
-    def _scene_v4_lookahead_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("no_record", detail="実行確認にはデータプロバイダ/戦略の用意が要り、この周は未実行。")
+        def f(s, n, st):
+            if n == 1:
+                self._order(s, 1)
+            elif n == 3:
+                out["filled_qty_at_call3"] = float(sum(p.quantity() for p in s.ts.broker.get_positions()))
 
-    def _scene_v4_lookahead_cap(self, scene: Scene) -> SceneResult:
-        return SceneResult(
-            "no_record",
-            detail=(
-                "REQUIREMENTS.md 観点4では『README止まり』(qf-lib は「Tools to prevent look-ahead bias」を"
-                "謳うのみ)と記録されていたが、この周でパッケージ内に "
-                "qf_lib.tests.integration_tests.data_providers.bloomberg.test_bbg_look_ahead_bias という"
-                "専用テストモジュールが実在することを実測した(モジュール名の実在確認のみ、中身の"
-                "読み込み・実行はしていない)。README 止まりではなく実装/試験が存在する可能性が高いが、"
-                "この場面が要求する『戦略側から将来へアクセスできないか』の直接確認はまだ行っていない。"
-            ),
-        )
+        run([C.as_bar(e) for e in C.events(sc)], f)
+        return ok(out, "3 回目に broker.get_positions() の数量(注文の約定済み数量を注文から読む口は無い)")
 
-    def _scene_v5_order_known(self, scene: Scene) -> SceneResult:
-        return SceneResult(
-            "no_record",
-            detail=(
-                "EventManager.dispatch_next_event は queue.Queue(FIFO)から取り出す設計(v1 の実測で"
-                "確認済み)なので、同時刻の複数事象は publish された順に処理される可能性が高いが、"
-                "『同時刻』を明示的に判定する分岐は event_manager.py に見当たらず(_dispatch_event は"
-                "event の型で振り分けるのみ)、複数事象を実際に同時刻で投入して2回一致を見る実行は"
-                "この周は未実行。"
-            ),
-        )
+    def _buy(self, sc, setup):
+        def f(s, n, st):
+            if n == 1:
+                self._order(s, 1)
 
-    def _scene_v5_order_cap(self, scene: Scene) -> SceneResult:
-        return SceneResult("not_supported", detail="同時刻の並びを明記した規則(docstring/コード)は event_manager.py に見当たらない(FIFOキューが暗黙の規則と読める程度)。")
+        st, ts = run([C.as_bar(e) for e in C.events(sc)], f, cash=100_000.0, setup=setup)
+        pos = ts.broker.get_positions()
+        if not pos:
+            return None
+        p = pos[0]
+        qty = float(p.quantity())
+        comm = float(p.total_commission())
+        price = (float(ts.portfolio.initial_cash) - float(ts.portfolio.current_cash) - comm) / qty
+        return {"qty": qty, "commission": comm, "price": price}
 
-    def _scene_v6_order_lifecycle_known(self, scene: Scene) -> SceneResult:
-        return SceneResult("no_record", detail="place_orders/cancel_order の実在は v6-api_surface-cap で確認したが、実発注の動的実行(Broker の具象実装が要る)はこの周は未実行。")
+    def scene_p7_fill_model_swap(self, sc):
+        class Fixed(Slippage):
+            def _get_fill_prices(self, date, orders, no_slippage_fill_prices, fill_volumes):
+                return np.array([12345.0 for _ in orders])
 
-    def _scene_v6_api_surface_cap(self, scene: Scene) -> SceneResult:
-        has_callback = hasattr(AllEventListener, "on_event")
-        has_place = hasattr(_Broker, "place_orders")
-        has_cancel = hasattr(_Broker, "cancel_order")
-        count = sum([has_callback, has_place, has_cancel])
-        return SceneResult(
-            "ok",
-            output={"count": count, "callback": has_callback, "place": has_place, "cancel": has_cancel},
-            detail=f"AllEventListener.on_event 実在={has_callback}(v1で実際に発火も確認済み)、Broker.place_orders={has_place}、Broker.cancel_order={has_cancel}。合計 {count}/3。",
-        )
+        r = self._buy(sc, lambda b: b.set_slippage_model(Fixed))
+        return ok({"fill_price": r["price"] if r else None},
+                  "set_slippage_model(Slippage の子: _get_fill_prices が 12345 を返す)。約定の価格は "
+                  f"(初めの現金 − 今の現金 − 手数料) ÷ 数量 で読んだ(Portfolio の公開の値): {r}")
 
-    def _scene_v7_cost_swap_known(self, scene: Scene) -> SceneResult:
-        order = scene.input["order"]
-        model = _FixedCommissionModel(0.0)
-        fee = model.calculate_commission(order["qty"], order["price"])
-        output = {"fee": float(fee)}
-        match = output == scene.expected
-        return SceneResult(
-            "ok" if match else "error",
-            output=output,
-            detail=(
-                f"qf_lib...FixedCommissionModel(0.0).calculate_commission({order['qty']}, {order['price']}) "
-                f"を実行した実測値={fee}。既知解({scene.expected})と{'一致' if match else '不一致'}。"
-                f"CommissionModel は独立クラスで engine 本体を書き換えず注入可能。"
-            ),
-        )
+    def scene_p7_latency_model_swap(self, sc):
+        try:
+            BacktestTradingSessionBuilder(None, None, None).set_latency_model(object())  # type: ignore[attr-defined]
+            r = "受け付けた"
+        except Exception as exc:  # noqa: BLE001
+            r = f"{type(exc).__name__}: {exc}"
+        return not_supported("遅延の模型を渡す口が無い(set_scheduling_time_delay は約定の予定の時刻をずらす設定で、発注の遅延の模型ではない)。"
+                             f"試したこと: builder.set_latency_model(...) -> {r}")
 
-    def _scene_v7_extension_points_cap(self, scene: Scene) -> SceneResult:
-        kws = {
-            "cost": ["commission"],
-            "latency": ["latency", "delay"],
-            "fill_model": ["slippage", "execution_handler"],
-            "account": ["portfolio", "broker"],
-        }
-        present = {k: any(any(w in n.lower() for w in words) for n in _ALL_SUBMODULES) for k, words in kws.items()}
-        count = sum(present.values())
-        return SceneResult(
-            "ok",
-            output={"count": count, **present},
-            detail=f"サブモジュール名をキーワード走査した実測: {present}。合計 {count}/4。",
-        )
+    def _fee(self, sc, fee):
+        class Flat(CommissionModel):
+            def calculate_commission(self, fill_quantity, fill_price):
+                return fee
+
+        r = self._buy(sc, lambda b: b.set_commission_model(Flat))
+        return ok({"fee": r["commission"] if r else None}, f"set_commission_model(CommissionModel の子: 1 件 {fee})。建玉の total_commission(): {r}")
+
+    def scene_p7_cost_model_swap(self, sc):
+        return self._fee(sc, 0.5)
+
+    def scene_p7_cost_zero(self, sc):
+        return self._fee(sc, 0.0)
+
+    def scene_p7_account_swap(self, sc):
+        try:
+            BacktestTradingSessionBuilder(None, None, None).set_portfolio(object())  # type: ignore[attr-defined]
+            r = "受け付けた"
+        except Exception as exc:  # noqa: BLE001
+            r = f"{type(exc).__name__}: {exc}"
+        return not_supported("口座(Portfolio)は build() の中で作られ、差し替える口が無い(backtest_trading_session_builder.py の build)。"
+                             f"試したこと: builder.set_portfolio(...) -> {r}")

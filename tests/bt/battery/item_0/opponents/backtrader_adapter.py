@@ -1,0 +1,314 @@
+"""Survey candidate 2 `Backtrader` (PyPI `backtrader` 1.9.78.123), run in its own venv.
+
+Driven through its public API: `Cerebro`, `feeds.PandasData`, `Strategy`
+(`next`, `notify_order`, `notify_timer`, `buy`, `sell`, `cancel`, `self.data`
+lines), `Cerebro.add_timer`, the broker's public settings (`setcash`,
+`set_slippage_fixed`, `addcommissioninfo` with a `CommInfoBase` subclass) and
+`Cerebro.setbroker`. Backtrader stores times as float day numbers
+(`bt.date2num` / `num2date`).
+"""
+from __future__ import annotations
+
+import datetime as D
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE.parent / "adapters"))
+
+import pandas as pd  # noqa: E402
+
+from protocol import Adapter, not_supported, ok  # noqa: E402
+import common as C  # noqa: E402
+
+import backtrader as bt  # noqa: E402
+
+STATUS = {bt.Order.Accepted: "accepted", bt.Order.Completed: "filled", bt.Order.Canceled: "canceled",
+          bt.Order.Rejected: "rejected", bt.Order.Margin: "rejected"}
+
+
+def _df(bars: list[dict]) -> pd.DataFrame:
+    rows = [C.as_bar(b) for b in bars]
+    idx = pd.DatetimeIndex([C.ns_to_dt(b["ts_ns"]).replace(tzinfo=None) for b in rows])
+    return pd.DataFrame({k: [float(b[k]) for b in rows] for k in ("open", "high", "low", "close", "volume")}, index=idx)
+
+
+def _ns(strategy_or_data) -> int:
+    d = bt.num2date(strategy_or_data.datetime[0]).replace(tzinfo=D.timezone.utc)
+    return C.dt_to_ns(d)
+
+
+def run(bars, on_next, cash=1_000_000.0, setup=None, notify=None, timer=None, broker=None, preload=True):
+    cer = bt.Cerebro(stdstats=False, preload=preload)
+    if broker is not None:
+        cer.setbroker(broker)
+    cer.broker.setcash(cash)
+    cer.adddata(bt.feeds.PandasData(dataname=_df(bars)))
+    st = {"n": 0, "log": [], "notices": [], "fills": []}
+
+    class S(bt.Strategy):
+        def __init__(self):
+            if timer is not None:
+                self.add_timer(when=timer)
+
+        def next(self):
+            st["n"] += 1
+            on_next(self, st["n"], st)
+
+        def notify_order(self, order):
+            name = STATUS.get(order.status)
+            if name:
+                st["notices"].append(name)
+            if order.status == bt.Order.Completed:
+                st["fills"].append({"price": order.executed.price, "size": order.executed.size,
+                                    "comm": order.executed.comm, "dt": order.executed.dt})
+            if notify:
+                notify(self, order, st)
+
+        def notify_timer(self, t, when, *args, **kwargs):
+            st["log"].append(("clock", C.dt_to_ns(when.replace(tzinfo=D.timezone.utc))))
+
+    cer.addstrategy(S)
+    if setup:
+        setup(cer)
+    cer.run()
+    return st
+
+
+def _try_non_bar(e: dict) -> str:
+    idx = pd.DatetimeIndex([C.ns_to_dt(e["ts_ns"]).replace(tzinfo=None)])
+    df = pd.DataFrame([{k: v for k, v in C.fields_of(e).items() if not isinstance(v, list)}], index=idx)
+    try:
+        cer = bt.Cerebro(stdstats=False)
+        cer.adddata(bt.feeds.PandasData(dataname=df))
+        cer.addstrategy(bt.Strategy)
+        cer.run()
+    except Exception as exc:  # noqa: BLE001
+        return f"feeds.PandasData(dataname=<{list(df.columns)} の DataFrame>) で走らせた -> {type(exc).__name__}: {str(exc)[:160]}"
+    return "feeds.PandasData に渡して例外なく走った(OHLC の列が無いので足の値は NaN)"
+
+
+NON_BAR = "Backtrader のデータは足の feed(lines: datetime/open/high/low/close/volume/openinterest)で、{k} の型は無い。試したこと: {err}"
+
+
+class BacktraderAdapter(Adapter):
+    name = "opp_backtrader"
+
+    # ---------------- P0-1
+    def scene_p1_merge_by_time(self, sc):
+        return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
+
+    def scene_p1_one_call_per_event(self, sc):
+        st = run(C.events(sc), lambda s, n, st: st["log"].append(["bar", _ns(s)]))
+        return ok({"sequence": st["log"]}, "PandasData の足 5 本。next の各回に self.datetime[0] を num2date で読んだ")
+
+    def scene_p1_typed_events(self, sc):
+        return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
+
+    # ---------------- P0-2
+    def _iso(self, sc):
+        d = D.datetime.fromisoformat(sc.input["iso"]).astimezone(D.timezone.utc)
+        back = bt.num2date(bt.date2num(d.replace(tzinfo=None))).replace(tzinfo=D.timezone.utc)
+        return ok(C.dt_to_ns(back), f"Backtrader の時刻は date2num の float(日)。fromisoformat -> {d!r} -> date2num -> num2date = {back!r}")
+
+    scene_p2_iso_utc = scene_p2_iso_offset = _iso
+
+    def _ts(self, sc):
+        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
+        st = run(evs, lambda s, n, st: st["log"].append(_ns(s)))
+        return ok({"observed_ts_ns": st["log"]}, "足(OHLC=100)で渡し、next の self.datetime[0] を ns に直した")
+
+    scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
+
+    # ---------------- P0-3
+    def _type(self, sc):
+        e = C.events(sc)[0]
+        if e["kind"] != "bar":
+            return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
+        out = {}
+
+        def f(s, n, st):
+            st["log"].append(["bar", _ns(s)])
+            out.update({k: float(getattr(s.data, k)[0]) for k in ("open", "high", "low", "close", "volume")})
+
+        st = run([e], f)
+        return ok({"sequence": st["log"], "fields": out}, "足 1 本。next で self.data の lines を読んだ")
+
+    scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
+    scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
+
+    def scene_p3_mixed_one_run(self, sc):
+        return not_supported(NON_BAR.format(k="足以外の 5 種", err=_try_non_bar(C.events(sc)[0])))
+
+    def scene_p3_clock_timer(self, sc):
+        st = run(C.events(sc), lambda s, n, st: None, timer=bt.timer.SESSION_START)
+        return ok({"clock_calls_ns": [t for k, t in st["log"] if k == "clock"]},
+                  "add_timer は 1 日の中の時刻(または SESSION_START/END)で毎日呼ぶ形で、決まった日時を 1 回だけ頼む口は無い。"
+                  "SESSION_START で頼み、notify_timer が呼ばれた時刻を全部記録した")
+
+    def _buy_run(self, sc, place, cash, **kw):
+        def f(s, n, st):
+            if n == 1:
+                st["order"] = place(s)
+
+        return run([C.as_bar(e) for e in C.events(sc)], f, cash=cash, **kw)
+
+    def scene_p3_notice_accepted(self, sc):
+        st = self._buy_run(sc, lambda s: s.buy(size=1, price=90.0, exectype=bt.Order.Limit), 1_000_000)
+        return ok({"notices": st["notices"]}, "約定を足に代えた(any_type)。notify_order で受け取った状態の列(Submitted は数えない)")
+
+    def scene_p3_notice_rejected(self, sc):
+        st = self._buy_run(sc, lambda s: s.buy(size=1), 1_000)
+        return ok({"notices": st["notices"]}, "現金 1,000。成行 1。notify_order の列(Margin は資金不足の拒否として rejected に数えた)")
+
+    def scene_p3_notice_filled(self, sc):
+        st = self._buy_run(sc, lambda s: s.buy(size=1), 1_000_000)
+        return ok({"filled_qty_in_notices": float(sum(f["size"] for f in st["fills"])), "notices": st["notices"]},
+                  f"notify_order(Completed) の executed.size の合計。fills={st['fills']}")
+
+    # ---------------- P0-4
+    def scene_p4_visible_at_step(self, sc):
+        probe = sc.input["probe_at_ns"]
+        out = {}
+
+        def f(s, n, st):
+            if _ns(s) == probe:
+                vals = [s.data.close[-i] for i in range(len(s.data))]
+                out["visible_count"] = len(s.data)
+                out["max_visible_close"] = float(max(vals))
+
+        run(C.events(sc), f)
+        if not out:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
+        return ok(out, "T0 + 4 日の呼び出しに len(self.data) と self.data.close[0..-(len-1)]")
+
+    def scene_p4_received_time(self, sc):
+        return not_supported(NON_BAR.format(k="受け取れる時刻を別に持つ事象", err=_try_non_bar(
+            {"ts_ns": C.events(sc)[0]["ts_ns"], "open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0, "recv_ns": 1}))
+            + "(1 本の足に時刻は datetime の 1 つ)")
+
+    def scene_p4_future_read_attempt(self, sc):
+        probe = sc.input["probe_at_ns"]
+        results = {}
+        for preload in (True, False):
+            tried, got = [], {"v": False}
+
+            def f(s, n, st, tried=tried, got=got):
+                if _ns(s) != probe:
+                    return
+                for label, fn in [("self.data.close[1]", lambda: s.data.close[1]),
+                                  ("self.data.close.get(ago=1)", lambda: list(s.data.close.get(ago=1, size=1))),
+                                  ("self.data.close.array[len(self.data)]", lambda: s.data.close.array[len(s.data)])]:
+                    try:
+                        v = fn()
+                        tried.append(f"{label} -> {v}")
+                        if v == 104.0 or (isinstance(v, list) and 104.0 in v):
+                            got["v"] = True
+                    except Exception as exc:  # noqa: BLE001
+                        tried.append(f"{label} -> {type(exc).__name__}: {exc}")
+
+            run(C.events(sc), f, preload=preload)
+            results[preload] = (got["v"], tried)
+        if not results[True][1] and not results[False][1]:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった")
+        best = min(results[True][0], results[False][0])
+        return ok({"future_value_obtained": best},
+                  f"T0 + 4 日の呼び出しに試した。既定の Cerebro(preload=True): {results[True]} / Cerebro(preload=False): {results[False]}。"
+                  "良い方(値が得られなかった方)を結果にした")
+
+    # ---------------- P0-5
+    def _no_types(self, sc):
+        return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
+
+    scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
+
+    def scene_p5_same_stream_order(self, sc):
+        st = run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: st["log"].append(float(s.data.close[0])))
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 2 本を 1 つの feed で渡した")
+
+    # ---------------- P0-6
+    def scene_p6_place_then_cancel(self, sc):
+        out = {}
+
+        def f(s, n, st):
+            if n == 1:
+                st["o"] = s.buy(size=1, price=90.0, exectype=bt.Order.Limit)
+            elif n == 2:
+                out["open_at_call2"] = len([o for o in s.broker.get_orders_open()])
+                s.cancel(st["o"])
+            elif n == 3:
+                out["open_at_call3"] = len([o for o in s.broker.get_orders_open()])
+
+        run([C.as_bar(e) for e in C.events(sc)], f)
+        return ok(out, "buy(Limit 90) / broker.get_orders_open() / cancel")
+
+    def scene_p6_cancel_notice(self, sc):
+        def f(s, n, st):
+            if n == 1:
+                st["o"] = s.buy(size=1, price=90.0, exectype=bt.Order.Limit)
+            elif n == 2:
+                s.cancel(st["o"])
+
+        st = run([C.as_bar(e) for e in C.events(sc)], f)
+        return ok({"cancel_notice_received": "canceled" in st["notices"], "notices": st["notices"]}, "notify_order の列")
+
+    def scene_p6_fill_seen_by_strategy(self, sc):
+        out = {}
+
+        def f(s, n, st):
+            if n == 1:
+                st["o"] = s.buy(size=1)
+            elif n == 3:
+                out["filled_qty_at_call3"] = float(st["o"].executed.size)
+
+        run([C.as_bar(e) for e in C.events(sc)], f)
+        return ok(out, "3 回目に order.executed.size")
+
+    # ---------------- P0-7
+    def scene_p7_fill_model_swap(self, sc):
+        def setup(cer):
+            cer.broker.set_slippage_fixed(12345.0 - 100.0, slip_open=True, slip_match=True, slip_out=True)
+
+        st = self._buy_run(sc, lambda s: s.buy(size=1), 100_000, setup=setup)
+        return ok({"fill_price": st["fills"][0]["price"] if st["fills"] else None},
+                  "約定の模型を渡す口は無い。公開の設定 set_slippage_fixed(12245, slip_open=True, slip_match=True, slip_out=True) で"
+                  f"始値 100 からの滑りとして 12345 に埋めた。fills={st['fills']}")
+
+    def scene_p7_latency_model_swap(self, sc):
+        try:
+            bt.Cerebro(latency=0.007)  # type: ignore[call-arg]
+            r = "受け付けた"
+        except Exception as exc:  # noqa: BLE001
+            r = f"{type(exc).__name__}: {exc}"
+        return not_supported(f"遅延の模型の口が無い(約定は次の足)。試したこと: bt.Cerebro(latency=...) -> {r}"
+                             "(Cerebro は未知の引数を黙って受けるかを見た)")
+
+    def _fee(self, sc, fee):
+        class Flat(bt.CommInfoBase):
+            params = (("commission", fee), ("stocklike", True), ("commtype", bt.CommInfoBase.COMM_FIXED))
+
+            def _getcommission(self, size, price, pseudoexec):
+                return fee
+
+        st = self._buy_run(sc, lambda s: s.buy(size=1), 100_000, setup=lambda cer: cer.broker.addcommissioninfo(Flat()))
+        return ok({"fee": st["fills"][0]["comm"] if st["fills"] else None}, f"addcommissioninfo(CommInfoBase の子: 1 件 {fee})。fills={st['fills']}")
+
+    def scene_p7_cost_model_swap(self, sc):
+        return self._fee(sc, 0.5)
+
+    def scene_p7_cost_zero(self, sc):
+        return self._fee(sc, 0.0)
+
+    def scene_p7_account_swap(self, sc):
+        rec = []
+
+        class RecBroker(bt.brokers.BackBroker):
+            def notify(self, order):
+                if order.status == bt.Order.Completed:
+                    rec.append(float(order.executed.size))
+                super().notify(order)
+
+        self._buy_run(sc, lambda s: s.buy(size=1), 100_000, broker=RecBroker())
+        return ok({"account_recorded_fill_qty": rec}, "Cerebro.setbroker(BackBroker の子)。子の notify で約定を記録した"
+                  "(Backtrader の broker は口座と約定を 1 つで持つ)")

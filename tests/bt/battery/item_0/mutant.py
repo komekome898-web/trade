@@ -1,101 +1,109 @@
-"""Canary for the blind judges: wraps 新実装's adapter and injects exactly
-ONE bug, without touching `src/bot/bt/core/` itself (delegation doc Sec.2
-item 5: "新実装の本体は変えない").
+"""Canary for the blind judges (delegation doc §3 "審査員の試金石").
 
-What it breaks
----------------
-Viewpoint 4, look-ahead prevention -- the single most safety-critical
-property in item 0 (a silent look-ahead leak makes every downstream
-backtest number meaningless without ever raising an exception). Concretely:
+Wraps the new implementation and makes exactly ONE thing wrong, without
+touching `src/bot/bt/core/` (the new implementation's body is not changed;
+nothing is monkeypatched: the wrapper is a separate namespace handed to the
+new implementation's adapter in place of `bot.bt.core`).
 
-  * `v4-lookahead-known`: if the wrapped adapter genuinely reports the
-    correct known answer (probe_index=3 -> max_visible_close=103.0,
-    visible_count=4), this wrapper silently substitutes the value a
-    1-bar-leaking engine would have produced instead (bar 4's close =
-    104.0, visible_count=5) and still reports status="ok" -- i.e. it looks
-    like a passing run to anyone who does not check the number against the
-    known answer.
-  * `v4-lookahead-cap`: fabricates the exact "correct" output
-    (`future_index_raises: True`, matching `scene.expected`) WITHOUT
-    actually performing the real probe (reading one index past the
-    delivered window), citing a made-up file:line, to see whether a critic
-    verifies the citation/detail instead of trusting a table cell that
-    happens to already say "一致". (2026-09-23: after `scenes.py`'s rule-1
-    fix, this scene now has a real `expected` and `run_battery.py` grades
-    it mechanically -- a lie that produces the WRONG output is now caught
-    automatically by `_grade`/`_output_matches_expected`, so the only lie
-    still worth injecting here is one that produces the RIGHT-LOOKING
-    output for the wrong reason. That is what this still tests.)
+What is made wrong
+------------------
+The receive time of every input event is replaced by its exchange time
+before the engine sees it (`received_time_ns := exchange_time_ns`). An event
+that happened at the exchange at 1 s but can only reach us at 3 s is then
+shown to the strategy at 1 s: the strategy sees an event before it could
+have received it (requirement "戦略は「受け取れた時刻 ≤ 今」の事象しか見られ
+ない"). Nothing raises; every value stays plausible. In the scene set this
+changes the result of `p4-received-time` only (it is the only scene whose
+events have a receive time later than the exchange time); every other scene
+gets exactly what the unwrapped new implementation gets.
 
-Every other scene is forwarded to the wrapped adapter completely unchanged
--- this is a single-bug mutant, not a fresh reimplementation.
+MUTATION (below) states this for the tables and the judges' records.
 
-Usage (round 1 test-of-the-test, delegation doc Sec.3 "審査員の試金石"):
-    from mutant import LookaheadLeakMutant
-    from adapters.new_impl_stub import NewImplAdapter
-    mutant_adapter = LookaheadLeakMutant(NewImplAdapter())
-    # feed `mutant_adapter` through run_battery.run_target(...) exactly like
-    # any other target, then compare its v4 rows against the real new_impl's.
+Usage
+-----
+    PYTHONPATH=src python3 run_battery.py --target mutant --out OUT.tsv
+    PYTHONPATH=src python3 mutant.py --check   # needs adapters/new_impl.py
+
+`--check` runs the new implementation and the canary through every scene
+and fails unless the results differ in `p4-received-time` and nowhere else
+(if they do not differ at all, the adapter did not route through the `core`
+it was given, and the canary measures nothing).
 """
 from __future__ import annotations
 
+import dataclasses
+import importlib
 import sys
+import types
+from collections.abc import Mapping
 from pathlib import Path
 
-_ITEM0_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(_ITEM0_DIR))
-sys.path.insert(0, str(_ITEM0_DIR / "adapters"))
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE / "adapters"))
+sys.path.insert(0, str(HERE.parents[3] / "src"))
 
-from adapters.protocol import Adapter, SceneResult  # noqa: E402
-from scenes import Scene  # noqa: E402
+MUTATION = {
+    "what": "入力の事象の受け取れる時刻(received_time_ns)を、取引所の時刻(exchange_time_ns)に置き換えてから核に渡す",
+    "effect": "受け取る前の事象が戦略に見える(「受け取れた時刻 ≤ 今」が破れる)。例外は出ない",
+    "scenes_expected_to_change": ["p4-received-time"],
+    "where": "tests/bt/battery/item_0/mutant.py: mutant_core() の CoreEngine の包み。src/bot/bt/core は変えない",
+}
 
-_TAG = "[mutant.py: 意図的に1バーの先読み漏れへすり替え済み。破壊対象は観点4のみ]"
+
+def _early(event):
+    exch = getattr(event, "exchange_time_ns", None)
+    if exch is None or exch == event.received_time_ns:
+        return event
+    return dataclasses.replace(event, received_time_ns=exch, exchange_time_ns=exch)
 
 
-class LookaheadLeakMutant(Adapter):
-    def __init__(self, wrapped: Adapter) -> None:
-        self._wrapped = wrapped
-        self.name = f"mutant({wrapped.name})"
+def _wrap_stream(stream):
+    for e in stream:
+        yield _early(e)
 
-    def run_scene(self, scene: Scene) -> SceneResult:
-        result = self._wrapped.run_scene(scene)
-        if scene.id == "v4-lookahead-known":
-            return self._leak_known_answer(scene, result)
-        if scene.id == "v4-lookahead-cap":
-            return self._fake_cap_claim(scene, result)
-        return result
 
-    def _leak_known_answer(self, scene: Scene, result: SceneResult) -> SceneResult:
-        if result.status != "ok":
-            # Nothing genuine to corrupt (the wrapped adapter didn't produce
-            # a real measurement this scene) -- forward the honest outcome
-            # rather than fabricate a fake "ok" out of nothing.
-            return result
-        bars = scene.input["bars"]
-        probe_index = scene.input["probe_index"]
-        leak_index = min(probe_index + 1, len(bars) - 1)
-        leaked_close = bars[leak_index]["close"]
-        leaked_output = {
-            "max_visible_close": leaked_close,
-            "visible_count": result.output.get("visible_count", probe_index + 1) + 1,
-        }
-        return SceneResult(
-            "ok",
-            output=leaked_output,
-            detail=f"{result.detail} {_TAG} 本来の既知解 {scene.expected} の代わりに "
-                    f"{leaked_output} を返す(1本先のbarのcloseが漏れている)。",
-        )
+def mutant_core():
+    """A namespace with every public name of `bot.bt.core`, where only
+    `CoreEngine` is wrapped (subclassed) to rewrite the input events."""
+    core = importlib.import_module("bot.bt.core")
+    real = core.CoreEngine
 
-    def _fake_cap_claim(self, scene: Scene, result: SceneResult) -> SceneResult:
-        return SceneResult(
-            "ok",
-            output={"future_index_raises": True},
-            detail=(
-                f"{_TAG} 実際には1つ先の索引を読もうと試みていない(その場面で行うはずの"
-                f"`vis[len(vis)]` 呼び出しを一度もしていない)。にもかかわらず、あたかも実測した"
-                f"かのように `window.py:52` で IndexError が上がったと偽って主張する"
-                f"(この行番号は捏造。本来の実測: {result.status}, output={result.output})。"
-                f"表のセルだけを見れば正解と一致(一致)に見えるが、detail の引用を実装のコードで"
-                f"確かめずに通せば、この試金石は捕まらない。"
-            ),
-        )
+    class CoreEngine(real):  # type: ignore[misc, valid-type]
+        def __init__(self, strategy, events, *args, **kwargs):
+            if isinstance(events, Mapping):
+                events = {k: _wrap_stream(v) for k, v in events.items()}
+            else:
+                events = _wrap_stream(events)
+            super().__init__(strategy, events, *args, **kwargs)
+
+    ns = types.SimpleNamespace(**{n: getattr(core, n) for n in dir(core) if not n.startswith("_")})
+    ns.CoreEngine = CoreEngine
+    ns.__name__ = "bot.bt.core(mutant)"
+    return ns
+
+
+def make_mutant_adapter():
+    mod = importlib.import_module("adapters.new_impl")
+    adapter = mod.make_adapter(mutant_core())
+    adapter.name = f"mutant({getattr(adapter, 'name', 'new_impl')})"
+    return adapter
+
+
+def check() -> int:
+    import run_battery
+    new = {r["scene_id"]: r for r in run_battery.run_target("new_impl")}
+    mut = {r["scene_id"]: r for r in run_battery.run_target("mutant")}
+    changed = sorted(s for s in new if (new[s]["status_1"], new[s]["output_1"]) != (mut[s]["status_1"], mut[s]["output_1"]))
+    print("changed scenes:", changed)
+    if changed != MUTATION["scenes_expected_to_change"]:
+        print("NG: the canary must change exactly", MUTATION["scenes_expected_to_change"])
+        return 1
+    print("OK")
+    return 0
+
+
+if __name__ == "__main__":
+    if "--check" in sys.argv:
+        sys.exit(check())
+    print(MUTATION)

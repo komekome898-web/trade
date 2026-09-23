@@ -1,0 +1,261 @@
+"""Survey candidate 55 `backtesting.py` (PyPI `backtesting` 0.6.6), run in its own venv.
+
+Driven through its public API: `Backtest(DataFrame, Strategy, cash=,
+commission=, trade_on_close=)`, `Backtest.run()`, and inside `Strategy.next`
+the `self.data` arrays, `self.buy(size=, limit=)`, `self.orders`,
+`Order.cancel()`, `self.trades`, `self.position`. Input is an OHLCV
+DataFrame indexed by time.
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE.parent / "adapters"))
+
+import warnings  # noqa: E402
+
+import pandas as pd  # noqa: E402
+
+from protocol import Adapter, not_supported, ok  # noqa: E402
+import common as C  # noqa: E402
+
+import backtesting as btp  # noqa: E402
+from backtesting import Backtest, Strategy  # noqa: E402
+
+warnings.filterwarnings("ignore")
+
+
+def _df(bars: list[dict]) -> pd.DataFrame:
+    rows = [C.as_bar(b) for b in bars]
+    idx = pd.to_datetime([b["ts_ns"] for b in rows], unit="ns")
+    return pd.DataFrame({"Open": [float(b["open"]) for b in rows], "High": [float(b["high"]) for b in rows],
+                         "Low": [float(b["low"]) for b in rows], "Close": [float(b["close"]) for b in rows],
+                         "Volume": [float(b.get("volume", 1.0)) for b in rows]}, index=idx)
+
+
+def run(bars, fn, cash=1_000_000.0, **kw):
+    st = {"n": 0, "log": []}
+
+    class S(Strategy):
+        def init(self):
+            pass
+
+        def next(self):
+            st["n"] += 1
+            fn(self, st["n"], st)
+
+    bt_ = Backtest(_df(bars), S, cash=cash, **kw)
+    res = bt_.run()
+    return st, res
+
+
+def _now(s) -> int:
+    return int(pd.Timestamp(s.data.index[-1]).value)
+
+
+NON_BAR = "backtesting.py の入力は Open/High/Low/Close(/Volume) の列を持つ DataFrame で、{k} の型は無い。試したこと: {err}"
+
+
+def _try_non_bar(e: dict) -> str:
+    df = pd.DataFrame([{k: v for k, v in C.fields_of(e).items() if not isinstance(v, list)}],
+                      index=pd.to_datetime([e["ts_ns"]], unit="ns"))
+    try:
+        Backtest(df, Strategy).run()
+    except Exception as exc:  # noqa: BLE001
+        return f"Backtest(<{list(df.columns)} の DataFrame>, Strategy).run() -> {type(exc).__name__}: {str(exc)[:160]}"
+    return "Backtest(...).run() は例外なく走った"
+
+
+class BacktestingAdapter(Adapter):
+    name = "opp_backtesting"
+
+    def scene_p1_merge_by_time(self, sc):
+        return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
+
+    def scene_p1_one_call_per_event(self, sc):
+        st, _ = run(C.events(sc), lambda s, n, st: st["log"].append(["bar", _now(s)]))
+        return ok({"sequence": st["log"]}, "足 5 本。next の各回に self.data.index[-1]")
+
+    def scene_p1_typed_events(self, sc):
+        return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
+
+    def _iso(self, sc):
+        v = int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value)
+        return ok(v, "backtesting.py の時刻は DataFrame の DatetimeIndex(pandas)。pd.Timestamp(iso).tz_convert('UTC').value")
+
+    scene_p2_iso_utc = scene_p2_iso_offset = _iso
+
+    def _ts(self, sc):
+        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
+        try:
+            st, _ = run(evs, lambda s, n, st: st["log"].append(_now(s)))
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"足で渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"observed_ts_ns": st["log"]}, "足(OHLC=100)で渡し、next の self.data.index[-1]")
+
+    scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
+
+    def _type(self, sc):
+        e = C.events(sc)[0]
+        if e["kind"] != "bar":
+            return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
+        out = {}
+
+        def f(s, n, st):
+            st["log"].append(["bar", _now(s)])
+            out.update({"open": float(s.data.Open[-1]), "high": float(s.data.High[-1]), "low": float(s.data.Low[-1]),
+                        "close": float(s.data.Close[-1]), "volume": float(s.data.Volume[-1])})
+
+        try:
+            st, _ = run([e], f)
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"足 1 本で走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"sequence": st["log"], "fields": out}, f"足 1 本。next が呼ばれた回数 {st['n']}")
+
+    scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
+    scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
+
+    def scene_p3_mixed_one_run(self, sc):
+        return not_supported(NON_BAR.format(k="足以外の 5 種", err=_try_non_bar(C.events(sc)[0])))
+
+    def _no_api(self, what: str, name: str) -> str:
+        try:
+            Backtest(_df([{"kind": "bar", "ts_ns": 1_700_006_400_000_000_000, "open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}] * 1),
+                     Strategy, **{name: object()})
+        except TypeError as exc:
+            return f"Backtest(..., {name}=...) -> TypeError: {exc}"
+        return f"Backtest(..., {name}=...) は受け付けられた"
+
+    def scene_p3_clock_timer(self, sc):
+        return not_supported("時刻を頼んで呼ばれる口が無い(next は足ごと)。試したこと: " + self._no_api("timer", "timers"))
+
+    def _notice(self, sc):
+        names = [n for n in dir(Strategy) if "notif" in n or "on_" in n]
+        return not_supported(f"注文の受付・拒否・約定・取消を戦略に知らせる呼び出しが無い(Strategy の公開の名前: {[n for n in dir(Strategy) if not n.startswith('_')]}、"
+                             f"通知らしい名前 {names})。試したこと: " + self._no_api("notice", "on_order"))
+
+    scene_p3_notice_accepted = scene_p3_notice_rejected = scene_p3_notice_filled = _notice
+
+    def scene_p4_visible_at_step(self, sc):
+        probe = sc.input["probe_at_ns"]
+        out = {}
+
+        def f(s, n, st):
+            st["log"].append(_now(s))
+            if _now(s) == probe:
+                out["visible_count"] = len(s.data.Close)
+                out["max_visible_close"] = float(max(s.data.Close))
+
+        st, _ = run(C.events(sc), f)
+        if not out:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
+        return ok(out, f"T0 + 4 日の呼び出しの next で len(self.data.Close) と max。呼ばれた時刻 {st['log']}")
+
+    def scene_p4_received_time(self, sc):
+        return not_supported(NON_BAR.format(k="受け取れる時刻", err=_try_non_bar(
+            {"ts_ns": 1_700_006_400_000_000_000, "Open": 1.0, "High": 1.0, "Low": 1.0, "Close": 1.0, "recv_ns": 1})) + "(1 行に時刻は index の 1 つ)")
+
+    def scene_p4_future_read_attempt(self, sc):
+        probe = sc.input["probe_at_ns"]
+        tried, got = [], {"v": False}
+
+        def f(s, n, st):
+            if _now(s) != probe:
+                return
+            for label, fn in [("self.data.Close[len]", lambda: s.data.Close[len(s.data.Close)]),
+                              ("self.data.df (DataFrame)", lambda: list(s.data.df.Close)),
+                              ("self.data.Close.base", lambda: list(s.data.Close.base) if getattr(s.data.Close, "base", None) is not None else None),
+                              ("self._data (元の DataFrame)", lambda: list(s._data.df.Close) if hasattr(s, "_data") else None)]:
+                try:
+                    v = fn()
+                    tried.append(f"{label} -> {v}")
+                    if v == 104.0 or (isinstance(v, list) and 104.0 in [float(x) for x in v]):
+                        got["v"] = True
+                except Exception as exc:  # noqa: BLE001
+                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+
+        run(C.events(sc), f)
+        if not tried:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
+        return ok({"future_value_obtained": got["v"]}, f"T0 + 4 日の呼び出しに試した: " + " ; ".join(tried))
+
+    def _no_types(self, sc):
+        return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
+
+    scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
+
+    def scene_p5_same_stream_order(self, sc):
+        rows = [C.as_bar(e) for e in C.events(sc)]
+        try:
+            st, _ = run(rows, lambda s, n, st: st["log"].append(float(s.data.Close[-1])))
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"同じ時刻の 2 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 2 行を渡した")
+
+    def scene_p6_place_then_cancel(self, sc):
+        out = {}
+
+        def f(s, n, st):
+            if n == 1:
+                s.buy(size=1, limit=90.0)
+            elif n == 2:
+                out["open_at_call2"] = len(s.orders)
+                for o in list(s.orders):
+                    o.cancel()
+            elif n == 3:
+                out["open_at_call3"] = len(s.orders)
+
+        st, _ = run([C.as_bar(e) for e in C.events(sc)], f)
+        return ok(out, f"buy(size=1, limit=90) / self.orders / Order.cancel()。next の回数 {st['n']}")
+
+    def scene_p6_cancel_notice(self, sc):
+        return self._notice(sc)
+
+    def scene_p6_fill_seen_by_strategy(self, sc):
+        out = {}
+
+        def f(s, n, st):
+            if n == 1:
+                s.buy(size=1)
+            elif n == 3:
+                out["filled_qty_at_call3"] = float(s.position.size)
+
+        st, _ = run([C.as_bar(e) for e in C.events(sc)], f)
+        return ok(out, f"3 回目に self.position.size(注文の約定済み数量を注文から読む口は無い)。next の回数 {st['n']}")
+
+    def _buy(self, sc, **kw):
+        def f(s, n, st):
+            st["equity"] = float(s.equity)
+            st["pos"] = float(s.position.size)
+            if n == 1:
+                s.buy(size=1)
+
+        st, res = run([C.as_bar(e) for e in C.events(sc)], f, cash=100_000.0, **kw)
+        return st
+
+    def scene_p7_fill_model_swap(self, sc):
+        return not_supported("約定の模型を渡す口が無い(埋まる値は次の足の始値か trade_on_close の終値、spread で上下にずらすだけ)。試したこと: "
+                             + self._no_api("fill", "fill_model"))
+
+    def scene_p7_latency_model_swap(self, sc):
+        return not_supported("遅延の模型を渡す口が無い。試したこと: " + self._no_api("latency", "latency_model"))
+
+    def _fee(self, sc, fee):
+        st = self._buy(sc, commission=(fee, 0.0))
+        if not st.get("pos"):
+            return ok({"fee": None}, f"commission=({fee}, 0.0)。最後の呼び出しまでに建玉が無かった。{st}")
+        return ok({"fee": round(100_000.0 - st["equity"], 10)},
+                  f"commission=({fee}, 0.0)(1 件あたりの固定額, 率)。約定の値と最後の足の値が同じ 100 なので、"
+                  f"費用 = 初めの現金 − 最後の呼び出しの self.equity と読んだ。{st}")
+
+    def scene_p7_cost_model_swap(self, sc):
+        return self._fee(sc, 0.5)
+
+    def scene_p7_cost_zero(self, sc):
+        return self._fee(sc, 0.0)
+
+    def scene_p7_account_swap(self, sc):
+        return not_supported("口座(_Broker)は Backtest.run の中で作られ、差し替える口が無い。試したこと: " + self._no_api("broker", "broker"))

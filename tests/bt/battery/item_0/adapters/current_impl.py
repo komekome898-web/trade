@@ -1,418 +1,285 @@
-"""Adapter around 当方の現状 (`src/bot/backtest/engine.py` + `src/bot/strategy/base.py`).
+"""Adapter for our current environment (当方の現状): the unmodified
+`src/bot/backtest/engine.py: run_backtest` with `src/bot/strategy/base.py:
+Strategy`, fed a pandas DataFrame of OHLCV rows indexed by a
+`DatetimeIndex` (datetime64[ns, UTC]) -- the input form the engine takes
+(`candles`, engine.py docstring and `candles["close"]` etc.). Time
+conversion on our data path is pandas (`pd.to_datetime(..., utc=True)`, as
+in `src/bot/research/board.py`), so the ISO scenes use `pd.Timestamp`.
 
-This wraps the REAL, unmodified current engine (per delegation doc Sec.4: the
-8 legacy tests and the 12 importers of `src/bot/backtest/` must keep working
-unmodified -- this adapter only imports and calls it, never edits it).
-
-Every `_scene_*` method below actually imports/calls/introspects the real
-module at run time; nothing here is copied from `REQUIREMENTS.md`'s prior
-analysis, even where the answer ends up matching it.
+This adapter only imports and calls the engine; it edits nothing.
 """
 from __future__ import annotations
 
-import inspect
 import sys
 from pathlib import Path
 
 import pandas as pd
 
-_ADAPTERS_DIR = Path(__file__).resolve().parent
-_ITEM0_DIR = _ADAPTERS_DIR.parent
-_REPO_ROOT = _ITEM0_DIR.parents[2]  # tests/bt/battery/item_0 -> tests/bt -> tests -> repo root
-sys.path.insert(0, str(_ITEM0_DIR))
-sys.path.insert(0, str(_REPO_ROOT / "src"))
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parents[3] / "src"))
 
-from protocol import Adapter, SceneResult  # noqa: E402
-from scenes import Scene  # noqa: E402
+from protocol import Adapter, SceneResult, not_supported, ok  # noqa: E402
+import common as C  # noqa: E402
 
-from bot.backtest import engine as bt_engine  # noqa: E402
+from bot.backtest import engine as E  # noqa: E402
 from bot.strategy.base import Signal, SignalType, Strategy  # noqa: E402
 
-_ENGINE_SRC = Path(bt_engine.__file__).read_text(encoding="utf-8")
-_BASE_SRC = Path(inspect.getfile(Strategy)).read_text(encoding="utf-8")
+
+def _df(rows: list[dict]) -> pd.DataFrame:
+    idx = pd.to_datetime([r["ts_ns"] for r in rows], unit="ns", utc=True)
+    return pd.DataFrame([{k: r[k] for k in ("open", "high", "low", "close", "volume")} for r in rows], index=idx)
 
 
-class _RecordingStrategy(Strategy):
-    """Counts calls and records the slice of `candles` it was shown each time."""
+class _Rec(Strategy):
+    """Records what the engine hands over on each call; can emit signals by call number."""
 
-    def __init__(self) -> None:
+    def __init__(self, signals: dict[int, SignalType] | None = None, probe=None) -> None:
         super().__init__()
-        self.calls: list[pd.DataFrame] = []
+        self.seen: list[pd.DataFrame] = []
+        self.signals = signals or {}
+        self.probe = probe
+        self.probe_out = None
 
     @property
     def min_history(self) -> int:
         return 0
 
     def on_candles(self, candles: pd.DataFrame) -> Signal:
-        self.calls.append(candles.copy())
-        return Signal(type=SignalType.HOLD)
+        self.seen.append(candles)
+        n = len(self.seen)
+        if self.probe is not None:
+            out = self.probe(n, candles)
+            if out is not None:
+                self.probe_out = out
+        return Signal(type=self.signals.get(n, SignalType.HOLD))
 
 
-def _bars_to_df(bars: list[dict]) -> pd.DataFrame:
-    rows = [
-        {
-            "open": b.get("open", b["close"]),
-            "high": b.get("high", b["close"]),
-            "low": b.get("low", b["close"]),
-            "close": b["close"],
-            "volume": b.get("volume", 0.0),
-        }
-        for b in bars
-    ]
-    idx = pd.to_datetime([b["ts_ns"] for b in bars], unit="ns", utc=True)
-    return pd.DataFrame(rows, index=idx)
+def _run(rows: list[dict], **kw) -> tuple[_Rec, object]:
+    rec = kw.pop("rec", None) or _Rec()
+    res = E.run_backtest(rec, _df(rows), **kw)
+    return rec, res
 
 
-_NON_BAR_GREP = {
-    "fill": ["fill_event", "TradeEvent", "class Fill"],
-    "book_snapshot": ["orderbook", "order_book", "book_snapshot", "OrderBook"],
-    "book_delta": ["orderbook", "order_book", "book_delta", "OrderBook"],
-    "funding": ["funding"],
-    "liquidation": ["liquidation"],
-    "clock": ["ClockEvent", "clock_event"],
-    "order_notice": ["OrderAccepted", "OrderRejected", "OrderFilled", "order_notice"],
-}
+def _try_non_bar(rows: list[dict]) -> str:
+    """Hand non-OHLCV rows to the engine the only way it takes data and report what happened."""
+    idx = pd.to_datetime([r["ts_ns"] for r in rows], unit="ns", utc=True)
+    df = pd.DataFrame([C.fields_of(r) for r in rows], index=idx)
+    try:
+        E.run_backtest(_Rec(), df)
+    except Exception as exc:  # noqa: BLE001
+        return f"run_backtest(strategy, candles=<{list(df.columns)} の DataFrame>) -> {type(exc).__name__}: {exc}"
+    return "run_backtest は例外を出さずに走った"
+
+
+def _no_kw(kw: str) -> str:
+    try:
+        E.run_backtest(_Rec(), _df([C.as_bar({'kind': 'trade', 'ts_ns': 1, 'price': 1.0})]), **{kw: object()})
+    except TypeError as exc:
+        return f"run_backtest(..., {kw}=...) -> TypeError: {exc}"
+    return f"run_backtest(..., {kw}=...) は受け付けられた"
+
+
+def _seq(rec: _Rec) -> list:
+    return [["bar", int(c.index[-1].value)] for c in rec.seen]
+
+
+def _signal_attempt(field: str) -> str:
+    try:
+        Signal(type=SignalType.HOLD, **{field: 1})
+    except TypeError as exc:
+        return f"Signal(type=HOLD, {field}=...) -> TypeError: {exc}"
+    return f"Signal(..., {field}=...) は受け付けられた"
 
 
 class CurrentImplAdapter(Adapter):
     name = "current_impl"
 
-    def run_scene(self, scene: Scene) -> SceneResult:
-        handler_name = "_scene_" + scene.id.replace("-", "_")
-        handler = getattr(self, handler_name, None)
-        if handler is None:
-            return SceneResult(
-                "no_record",
-                detail=f"CurrentImplAdapter has no handler method {handler_name} for this scene id",
-            )
-        try:
-            return handler(scene)
-        except Exception as exc:  # noqa: BLE001 -- record, don't crash the batch
-            return SceneResult("error", detail=f"{type(exc).__name__}: {exc}")
+    # ---------------- P0-1
+    def scene_p1_merge_by_time(self, sc):
+        rows = C.concatenated(sc)
+        return not_supported("足以外(約定・資金調達)を含む入力を渡す口が無い。試したこと: " + _try_non_bar(rows)
+                             + "。run_backtest の入力は candles 1 つだけ(複数の入力を渡す引数も無い: " + _no_kw("streams") + ")")
 
-    # ------------------------------------------------------------------
-    # viewpoint 1 -- event-driven architecture
-    # ------------------------------------------------------------------
-    def _scene_v1_event_driven_cap(self, scene: Scene) -> SceneResult:
-        sig = inspect.signature(bt_engine.run_backtest)
-        has_feed_api = hasattr(bt_engine, "feed_event") or hasattr(bt_engine, "push_event")
-        has_loop = "for i in range(len(candles))" in _ENGINE_SRC or "for i in range(" in _ENGINE_SRC
-        bars = scene.input["events"]
-        rec = _RecordingStrategy()
-        rec.min_history  # noqa: B018
-        df = _bars_to_df(bars)
-        bt_engine.run_backtest(rec, df)
-        detail = (
-            f"実際に呼んだ: inspect.signature(run_backtest) = {sig} -- "
-            f"'candles' は位置/キーワード引数でDataFrame一括必須(1件ずつ供給する引数なし)。"
-            f"hasattr(bt_engine,'feed_event' or 'push_event') = {has_feed_api}。"
-            f"合成5足を run_backtest(strategy, candles) で実行した結果、戦略コールバックは "
-            f"{len(rec.calls)} 回呼ばれた(足の本数と一致=足単位の内部ループはある)が、"
-            f"呼び出し側(このアダプタ)が事象を1件ずつ追加投入できる公開APIは無く、"
-            f"事前に全件を1つのDataFrameへ組んでから渡す必要があった。"
-        )
-        return SceneResult("not_supported", output={"event_driven": False, "callback_count": len(rec.calls)}, detail=detail)
+    def scene_p1_one_call_per_event(self, sc):
+        rec, _ = _run(C.events(sc))
+        return ok({"sequence": _seq(rec)}, "足 5 本を DataFrame で渡し、on_candles の各呼び出しで candles の最後の行の時刻を記録")
 
-    def _scene_v1_event_driven_known(self, scene: Scene) -> SceneResult:
-        bars = scene.input["events"]
-        rec = _RecordingStrategy()
-        df = _bars_to_df(bars)
-        bt_engine.run_backtest(rec, df)
-        now_sequence = [int(c.index[-1].value) for c in rec.calls]
-        output = {"now_sequence": now_sequence}
-        match = output == scene.expected
-        return SceneResult(
-            "ok" if match else "error",
-            output=output,
-            detail=(
-                f"合成5足を run_backtest(strategy, candles) で実行し、on_candles が呼ばれるたびに"
-                f"渡されたスライスの最終行のインデックス(pandasのns整数)を記録した列: {now_sequence}。"
-                f"既知解({scene.expected})と{'一致' if match else '不一致'}。"
-                f"(engine内部は足単位で逐次スライスを渡しており、1件投入APIの有無とは別に、"
-                f"各コールバックの時刻そのものは壊れずに追跡できる。)"
-            ),
-        )
+    def scene_p1_typed_events(self, sc):
+        return not_supported("約定を渡す口が無い。試したこと: " + _try_non_bar(C.events(sc)[1:]))
 
-    # ------------------------------------------------------------------
-    # viewpoint 2 -- event type coverage
-    # ------------------------------------------------------------------
-    def _scene_v2_bar_cap(self, scene: Scene) -> SceneResult:
-        sample = scene.input["sample"]
-        rec = _RecordingStrategy()
-        df = _bars_to_df([sample])
-        bt_engine.run_backtest(rec, df)
-        ok = len(rec.calls) == 1
-        return SceneResult(
-            "ok" if ok else "error",
-            output={"supported": ok},
-            detail=f"合成足1本を含む DataFrame で run_backtest を実行し、on_candles が {len(rec.calls)} 回呼ばれた。",
-        )
+    # ---------------- P0-2
+    def scene_p2_iso_utc(self, sc):
+        v = int(pd.Timestamp(sc.input["iso"]).value)
+        return ok(v, "当方のデータの道の時刻の変換(pandas)で pd.Timestamp(iso).value")
 
-    def _scene_v2_bar_known(self, scene: Scene) -> SceneResult:
-        sample = scene.input["sample"]
-        rec = _RecordingStrategy()
-        df = _bars_to_df([sample])
-        bt_engine.run_backtest(rec, df)
-        seen = rec.calls[-1].iloc[-1]
-        recovered = {
-            "ts_ns": int(rec.calls[-1].index[-1].value),  # pandas ns since epoch
-            "open": float(seen["open"]),
-            "high": float(seen["high"]),
-            "low": float(seen["low"]),
-            "close": float(seen["close"]),
-            "volume": float(seen["volume"]),
-        }
-        match = recovered == sample
-        return SceneResult(
-            "ok" if match else "error",
-            output=recovered,
-            detail=(
-                f"on_candles に渡された最終行を読み出した: {recovered}。"
-                f"入力サンプルと{'一致' if match else '不一致'}。"
-                f"(この経路は engine 内部で ts_ns をそのまま使っているわけではなく、"
-                f"pandas.to_datetime による往復を経ている点に注意)"
-            ),
-        )
+    def scene_p2_iso_offset(self, sc):
+        v = int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value)
+        return ok(v, "pd.Timestamp(iso).tz_convert('UTC').value")
 
-    def _generic_non_bar_cap(self, scene: Scene, key: str) -> SceneResult:
-        needles = _NON_BAR_GREP[key]
-        hits = {n: (n in _ENGINE_SRC or n in _BASE_SRC) for n in needles}
-        any_hit = any(hits.values())
-        detail = (
-            f"engine.py と strategy/base.py のソース文字列に {needles} を検索した実測: {hits}。"
-            f"該当なし。engine.py の事象概念は「足(DataFrame の行)」1種類のみで、"
-            f"{key} を独立した事象型として表す型・関数が無い。"
-        )
-        return SceneResult("not_supported", output={"supported": any_hit}, detail=detail)
+    def _ts_scene(self, sc):
+        rows = [dict(C.as_bar({"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0}), volume=1.0) for e in C.events(sc)]
+        rec, _ = _run(rows)
+        return ok({"observed_ts_ns": [int(c.index[-1].value) for c in rec.seen]},
+                  "足(OHLC=100)で渡し、各呼び出しの candles.index[-1].value を記録")
 
-    def _generic_non_bar_known(self, scene: Scene, key: str) -> SceneResult:
-        return SceneResult(
-            "not_supported",
-            detail=(
-                f"{key} 型の事象を受理する入口が無い(v2-{key}-cap と同じ実測)ため、"
-                f"往復の既知解テストを走らせる対象が存在しない。"
-            ),
-        )
+    def scene_p2_event_time_exact(self, sc):
+        return self._ts_scene(sc)
 
-    def _scene_v2_fill_cap(self, s): return self._generic_non_bar_cap(s, "fill")
-    def _scene_v2_fill_known(self, s): return self._generic_non_bar_known(s, "fill")
-    def _scene_v2_book_snapshot_cap(self, s): return self._generic_non_bar_cap(s, "book_snapshot")
-    def _scene_v2_book_snapshot_known(self, s): return self._generic_non_bar_known(s, "book_snapshot")
-    def _scene_v2_book_delta_cap(self, s): return self._generic_non_bar_cap(s, "book_delta")
-    def _scene_v2_book_delta_known(self, s): return self._generic_non_bar_known(s, "book_delta")
-    def _scene_v2_funding_cap(self, s): return self._generic_non_bar_cap(s, "funding")
-    def _scene_v2_funding_known(self, s): return self._generic_non_bar_known(s, "funding")
-    def _scene_v2_liquidation_cap(self, s): return self._generic_non_bar_cap(s, "liquidation")
-    def _scene_v2_liquidation_known(self, s): return self._generic_non_bar_known(s, "liquidation")
-    def _scene_v2_clock_cap(self, s): return self._generic_non_bar_cap(s, "clock")
-    def _scene_v2_clock_known(self, s): return self._generic_non_bar_known(s, "clock")
-    def _scene_v2_order_notice_cap(self, s): return self._generic_non_bar_cap(s, "order_notice")
-    def _scene_v2_order_notice_known(self, s): return self._generic_non_bar_known(s, "order_notice")
+    def scene_p2_one_ns_apart(self, sc):
+        return self._ts_scene(sc)
 
-    # ------------------------------------------------------------------
-    # viewpoint 3 -- timestamp precision
-    # ------------------------------------------------------------------
-    def _scene_v3_precision_known(self, scene: Scene) -> SceneResult:
-        uses_index = "candles.index" in _ENGINE_SRC
-        reads_index_for_logic = False  # confirmed by reading engine.py: candles.index is only
-        # ever assigned to equity_curve's index (pass-through label), never parsed/compared.
-        return SceneResult(
-            "not_supported",
-            detail=(
-                f"engine.py を実測: candles.index への参照は{'ある' if uses_index else '無い'}が、"
-                f"唯一の用例は `equity_curve = pd.Series(equity, index=candles.index)` "
-                f"(engine.py:396) というラベルの素通しのみで、時刻を読み取って比較・変換する"
-                f"ロジックは存在しない(grep 'timestamp' src/bot/backtest/engine.py の当たり0件、"
-                f"2026-09-23 実測)。int64 ns への変換を行い、それを読み出して確かめる経路が無いため、"
-                f"この既知解場面は対応なし。"
-            ),
-        )
+    # ---------------- P0-3
+    def _type_scene(self, sc):
+        e = C.events(sc)[0]
+        if e["kind"] != "bar":
+            return not_supported(f"「{e['kind']}」を渡す口が無い。試したこと: " + _try_non_bar([e]))
+        rec, _ = _run([e])
+        last = rec.seen[0].iloc[-1]
+        fields = {k: float(last[k]) for k in ("open", "high", "low", "close", "volume")}
+        return ok({"sequence": _seq(rec), "fields": fields}, "足 1 本を渡し、呼び出しで受け取った行を記録")
 
-    def _scene_v3_precision_cap(self, scene: Scene) -> SceneResult:
-        return SceneResult(
-            "not_supported",
-            detail=(
-                "engine.py の実測(grep 'ns\\|nanosecond\\|int64' の当たり0件、2026-09-23): "
-                "個々の事象を ts_ns で受け取って読み戻す経路が無く(`_scene_v3_precision_known` "
-                "と同じ理由: candles.index はラベルの素通しのみ)、この場面の入力(ts_ns が"
-                "厳密に1だけ異なる2つの合成事象)を投入して読み戻す手段そのものが存在しない。"
-            ),
-        )
+    scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type_scene
+    scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type_scene
 
-    # ------------------------------------------------------------------
-    # viewpoint 4 -- look-ahead prevention
-    # ------------------------------------------------------------------
-    def _scene_v4_lookahead_known(self, scene: Scene) -> SceneResult:
-        bars = scene.input["bars"]
-        probe_index = scene.input["probe_index"]
-        rec = _RecordingStrategy()
-        df = _bars_to_df(bars)
-        bt_engine.run_backtest(rec, df)
-        slice_at_probe = rec.calls[probe_index]
-        max_visible_close = float(slice_at_probe["close"].max())
-        visible_count = len(slice_at_probe)
-        output = {"max_visible_close": max_visible_close, "visible_count": visible_count}
-        match = output == scene.expected
-        return SceneResult(
-            "ok" if match else "error",
-            output=output,
-            detail=(
-                f"合成6足を通し、探査時刻(probe_index={probe_index})時点で on_candles に渡された"
-                f"スライスを直接読み出した: 見えた本数={visible_count}, 見えた close の最大={max_visible_close}。"
-                f"既知解({scene.expected})と{'一致' if match else '不一致'}。"
-                f"engine.py:3-4 の docstring『candles at bar i sees candles[0..i] only』"
-                f"(expanding slice)が実測でも成立している。"
-            ),
-        )
+    def scene_p3_mixed_one_run(self, sc):
+        return not_supported("足以外の 5 種を渡す口が無い。試したこと: " + _try_non_bar([e for e in C.events(sc) if e["kind"] != "bar"]))
 
-    def _scene_v4_lookahead_cap(self, scene: Scene) -> SceneResult:
-        # 2026-09-23 fix (場面集の規則1): stop self-reporting a prose verdict
-        # and instead actually attempt, from inside on_candles, to read one
-        # row past what this callback was handed (candles.iloc[len(candles)]),
-        # the same mechanism v4-lookahead-known reads its known answer from.
-        bars = scene.input["bars"]
-        probe_index = scene.input["probe_index"]
-        rec = _RecordingStrategy()
-        df = _bars_to_df(bars)
-        probe: dict = {}
+    def scene_p3_clock_timer(self, sc):
+        return not_supported("戦略は on_candles から Signal を返すだけで、時刻を頼む口が無い。試したこと: "
+                             + _signal_attempt("timer_ns") + " / " + _no_kw("timers"))
 
-        _orig_on_candles = rec.on_candles
+    def _notice(self, sc):
+        called = []
 
-        def _probing_on_candles(candles: pd.DataFrame):
-            if len(candles) == probe_index + 1 and "raised" not in probe:
+        class Spy(_Rec):
+            def __getattribute__(self, name):
+                if not name.startswith("_") and name not in ("seen", "signals", "probe", "probe_out", "params"):
+                    called.append(name)
+                return super().__getattribute__(name)
+
+        rows = [C.as_bar(e) for e in C.events(sc)]
+        spy = Spy(signals={1: SignalType.BUY})
+        E.run_backtest(spy, _df(rows))
+        return not_supported("戦略へ通知を届ける呼び出しが無い。試したこと: 約定を足に代えて(any_type)1 回目に BUY を返し、"
+                             f"エンジンが戦略に対して呼んだ名前を記録 -> {sorted(set(called))}(on_candles と min_history だけ)。"
+                             "Strategy の文書(base.py 2〜4 行)も「注文を知らない」と書く")
+
+    scene_p3_notice_accepted = scene_p3_notice_rejected = scene_p3_notice_filled = _notice
+
+    # ---------------- P0-4
+    def scene_p4_visible_at_step(self, sc):
+        probe = sc.input["probe_at_ns"]
+        rec = _Rec(probe=lambda n, c: {"visible_count": len(c), "max_visible_close": float(c["close"].max())} if int(c.index[-1].value) == probe else None)
+        _run(C.events(sc), rec=rec)
+        if not rec.probe_out:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった")
+        return ok(rec.probe_out, "T0 + 4 日の呼び出しの on_candles で受け取った candles の件数と close の最大")
+
+    def scene_p4_received_time(self, sc):
+        return not_supported("1 件に時刻を 1 つしか持てない(candles の DataFrame の添字 1 つ)。受け取れる時刻を別に渡す口が無い。試したこと: "
+                             + _no_kw("received_time") + " / " + _no_kw("latency"))
+
+    def scene_p4_future_read_attempt(self, sc):
+        probe = sc.input["probe_at_ns"]
+        future_ts = pd.Timestamp([e for e in sc.input["events"] if e["ts_ns"] > probe][0]["ts_ns"], unit="ns", tz="UTC")
+        tried: list[str] = []
+
+        def probe_fn(n, c):
+            if int(c.index[-1].value) != probe:
+                return None
+            got = False
+            for label, fn in [("candles.iloc[4]", lambda: c.iloc[4]["close"]),
+                              ("candles.loc[5 本目の時刻]", lambda: c.loc[future_ts]["close"]),
+                              ("candles.iloc[-1] の次を shift(-1) で", lambda: c["close"].shift(-1).iloc[-1])]:
                 try:
-                    leaked = candles.iloc[len(candles)]
-                    probe["raised"] = False
-                    probe["leaked_close"] = float(leaked["close"])
-                except IndexError:
-                    probe["raised"] = True
-            return _orig_on_candles(candles)
+                    v = fn()
+                    tried.append(f"{label} -> {v}")
+                    if v == 104.0:
+                        got = True
+                except Exception as exc:  # noqa: BLE001
+                    tried.append(f"{label} -> {type(exc).__name__}")
+            return {"future_value_obtained": got}
 
-        rec.on_candles = _probing_on_candles
-        bt_engine.run_backtest(rec, df)
-        output = {"future_index_raises": probe.get("raised", False)}
-        match = output == scene.expected
-        if probe.get("raised"):
-            probe_desc = "IndexErrorで読めなかった"
-        else:
-            probe_desc = f"読めてしまい値={probe.get('leaked_close')}が漏れた"
-        return SceneResult(
-            "ok" if match else "error",
-            output=output,
-            detail=(
-                f"探査時刻(probe_index={probe_index})の on_candles 呼び出し内で "
-                f"`candles.iloc[len(candles)]`(1つ先の未到達行)を実際に読もうとした実測: "
-                f"{probe_desc}。"
-                f"既知解({scene.expected})と{'一致' if match else '不一致'}。"
-                f"(このスライス自体は expanding slice で future_index_raises=True になるのが実測結果。"
-                f"ただし全件の candles DataFrame 自体は run_backtest 呼び出し時に丸ごと渡されており、"
-                f"戦略実装者が `self` に元の DataFrame への参照を保存すれば、この場面の外側で"
-                f"将来を読める余地は残る -- 規約による防止であり型システムによる強制ではない点は"
-                f"別途 [直す] として報告する。)"
-            ),
-        )
+        rec = _Rec(probe=probe_fn)
+        _run(C.events(sc), rec=rec)
+        if not tried:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった")
+        return ok(rec.probe_out, "T0 + 4 日の呼び出しの on_candles の中で試した: " + "; ".join(tried)
+                  + "。戦略が持つのは渡された candles だけ(エンジンは candles.iloc[: i + 1] を渡す)")
 
-    # ------------------------------------------------------------------
-    # viewpoint 5 -- deterministic same-timestamp ordering
-    # ------------------------------------------------------------------
-    def _scene_v5_order_known(self, scene: Scene) -> SceneResult:
-        return SceneResult(
-            "not_supported",
-            detail=(
-                "engine.py のループは位置インデックス `i` (整数)で進み、DataFrame の行は"
-                "一意な位置を持つため『同一タイムスタンプの複数事象』という状況がそもそも構造上"
-                "発生しない(REQUIREMENTS.md 観点5の当方分析と同じ結論を、この回、"
-                "run_backtest のループ本体を読み直して確認した: engine.py:273 "
-                "`for i in range(len(candles))` に tie-break の分岐は無い)。"
-                "そのため同時刻を2回投入して順序一致を見る、という場面自体が成立しない。"
-            ),
-        )
+    # ---------------- P0-5
+    def scene_p5_same_time_twice(self, sc):
+        return not_supported("同時刻の 4 種(約定・足・資金調達・清算)のうち足以外を渡す口が無い。試したこと: "
+                             + _try_non_bar(C.concatenated(sc)))
 
-    def _scene_v5_order_cap(self, scene: Scene) -> SceneResult:
-        return SceneResult(
-            "not_supported",
-            detail="同時刻の並びの規則を明記した記述(docstring/コード)は engine.py に無い(概念が無いため規則も無い)。",
-        )
+    def scene_p5_hand_over_order(self, sc):
+        return not_supported("足以外を渡す口が無い。試したこと: " + _try_non_bar(C.concatenated(sc, sc.input["hand_over_orders"][0])))
 
-    # ------------------------------------------------------------------
-    # viewpoint 6 -- strategy API completeness
-    # ------------------------------------------------------------------
-    def _scene_v6_order_lifecycle_known(self, scene: Scene) -> SceneResult:
-        has_place = hasattr(Strategy, "place_order") or hasattr(Strategy, "order")
-        has_cancel = hasattr(Strategy, "cancel_order") or hasattr(Strategy, "cancel")
-        return SceneResult(
-            "not_supported",
-            detail=(
-                f"Strategy 抽象クラス(strategy/base.py)を実測: hasattr('place_order' or 'order')="
-                f"{has_place}, hasattr('cancel_order' or 'cancel')={has_cancel}。"
-                f"戦略は on_candles() から Signal(BUY/SELL/CLOSE/HOLD) を返すだけで、発注・取消を"
-                f"能動的に呼ぶメソッドが Strategy に定義されていない(発注可否とサイズは engine 側が"
-                f"Signal を受けて決める)。発注→取消という操作列を戦略側から起こす経路が無いため、"
-                f"この既知解場面は対応なし。"
-            ),
-        )
+    def scene_p5_same_stream_order(self, sc):
+        rows = [C.as_bar(e) for e in C.events(sc)]
+        rec, _ = _run(rows)
+        return ok({"prices": [float(c["close"].iloc[-1]) for c in rec.seen]}, "約定を足に代えて渡し、呼び出しごとの close を記録")
 
-    def _scene_v6_api_surface_cap(self, scene: Scene) -> SceneResult:
-        has_callback = hasattr(Strategy, "on_candles")
-        has_place = hasattr(Strategy, "place_order") or hasattr(Strategy, "order")
-        has_cancel = hasattr(Strategy, "cancel_order") or hasattr(Strategy, "cancel")
-        count = sum([has_callback, has_place, has_cancel])
-        return SceneResult(
-            "ok",
-            output={"count": count, "callback": has_callback, "place": has_place, "cancel": has_cancel},
-            detail=(
-                f"Strategy を hasattr で実測: on_candles={has_callback}, "
-                f"place_order/order={has_place}, cancel_order/cancel={has_cancel}。合計 {count}/3。"
-            ),
-        )
+    # ---------------- P0-6
+    def scene_p6_place_then_cancel(self, sc):
+        return not_supported("戦略に指値を出す口・取り消す口・未決の注文を読む口が無い。Signal は BUY/SELL/CLOSE/HOLD だけ。試したこと: "
+                             + _signal_attempt("limit_price") + " / " + _signal_attempt("cancel"))
 
-    # ------------------------------------------------------------------
-    # viewpoint 7 -- extension points
-    # ------------------------------------------------------------------
-    def _scene_v7_cost_swap_known(self, scene: Scene) -> SceneResult:
-        order = scene.input["order"]
-        zero_costs = bt_engine.CostModel(
-            taker_fee_pct=0.0, maker_fee_pct=0.0, slippage_pct=0.0, spread_pct=0.0
-        )
-        notional = order["qty"] * order["price"]
-        fee = zero_costs.fee(notional)
-        output = {"fee": fee}
-        match = output == scene.expected
-        return SceneResult(
-            "ok" if match else "error",
-            output=output,
-            detail=(
-                f"engine.CostModel(taker_fee_pct=0, maker_fee_pct=0, slippage_pct=0, spread_pct=0) "
-                f"を core(engine.py) のコードを一切書き換えずにコンストラクタで組み立て、"
-                f".fee({notional}) を実行した実測値 = {fee}。既知解({scene.expected})と"
-                f"{'一致' if match else '不一致'}。CostModel は engine.py 内の他クラスから独立した"
-                f"dataclass で、run_backtest(..., costs=...) のキーワード引数として差し替え可能。"
-            ),
-        )
+    def scene_p6_cancel_notice(self, sc):
+        return not_supported("取消の口も通知の口も無い。試したこと: " + _signal_attempt("cancel"))
 
-    def _scene_v7_extension_points_cap(self, scene: Scene) -> SceneResult:
-        sig = inspect.signature(bt_engine.run_backtest)
-        params = set(sig.parameters)
-        has_cost = "costs" in params
-        has_latency = any(p for p in params if "latency" in p or "delay" in p)
-        has_fill_model = any(p for p in params if "fill" in p or "execution" in p)
-        has_account = any(p for p in params if "account" in p or "portfolio" in p)
-        count = sum([has_cost, has_latency, has_fill_model, has_account])
-        return SceneResult(
-            "ok",
-            output={
-                "count": count,
-                "cost": has_cost,
-                "latency": has_latency,
-                "fill_model": has_fill_model,
-                "account": has_account,
-            },
-            detail=(
-                f"run_backtest{sig} のキーワード引数を実測。費用(costs)={has_cost}。"
-                f"'latency'/'delay' を含む引数={has_latency}。'fill'/'execution' を含む引数="
-                f"{has_fill_model}(maker/taker の挙動は引数ではなくハードコードのロジック分岐)。"
-                f"'account'/'portfolio' を含む引数={has_account}。合計 {count}/4"
-                f"(費用のみ核を書き換えずに差し替え可能。約定模型はコード分岐で選ぶのみで独立した"
-                f"注入口ではない。遅延模型・口座模型の引数は無い)。"
-            ),
-        )
+    def scene_p6_fill_seen_by_strategy(self, sc):
+        seen_attrs = []
+
+        def probe(n, c):
+            if n == 3:
+                seen_attrs.append(sorted(a for a in dir(c) if "fill" in a.lower() or "order" in a.lower() or "position" in a.lower())[:5])
+            return None
+
+        rec = _Rec(signals={1: SignalType.BUY}, probe=probe)
+        _run([C.as_bar(e) for e in C.events(sc)], rec=rec)
+        return not_supported("戦略が受け取るのは candles だけで、自分の注文・約定を読む口が無い。試したこと: 1 回目に BUY を返し、"
+                             f"3 回目に受け取った引数を調べた(candles の DataFrame だけ。注文・建玉に当たる属性 {seen_attrs})")
+
+    # ---------------- P0-7
+    def _buy_once(self, sc, **kw):
+        rows = [C.as_bar(e) for e in C.events(sc)]
+        rec = _Rec(signals={1: SignalType.BUY})
+        res = E.run_backtest(rec, _df(rows), order_notional_jpy=100.0, initial_equity_jpy=100_000.0, **kw)
+        return rows, res
+
+    def scene_p7_fill_model_swap(self, sc):
+        class FixedPrice(E.CostModel):
+            def buy_price(self, ref_price: float) -> float:
+                return 12345.0
+
+        _, res = self._buy_once(sc, costs=FixedPrice())
+        opens = [t for t in res.trade_log if t["side"].startswith("OPEN")]
+        return ok({"fill_price": float(opens[0]["price"]) if opens else None},
+                  "約定の模型を渡す口は無いが、公開の CostModel の buy_price を上書きした子を costs= に渡すと約定の価格が決まる"
+                  f"(engine.py: price = costs.buy_price(ref))。trade_log の OPEN の価格を読んだ: {opens}")
+
+    def scene_p7_latency_model_swap(self, sc):
+        return not_supported("遅延の模型を渡す口が無い(約定は常に次の足の始値)。試したこと: " + _no_kw("latency_model")
+                             + " / " + _no_kw("order_delay_ns"))
+
+    def _fee(self, sc, fee_value):
+        class Fixed(E.CostModel):
+            def fee(self, notional: float) -> float:
+                return fee_value
+
+        _, res = self._buy_once(sc, costs=Fixed(spread_pct=0.0, slippage_pct=0.0))
+        return ok({"fee": float(res.metrics.total_fees_jpy)},
+                  f"CostModel の fee を上書きした子を costs= に渡し、約定 1 件(建玉を開いたまま終わる)の metrics.total_fees_jpy を読んだ。trade_log={res.trade_log}")
+
+    def scene_p7_cost_model_swap(self, sc):
+        return self._fee(sc, 0.5)
+
+    def scene_p7_cost_zero(self, sc):
+        return self._fee(sc, 0.0)
+
+    def scene_p7_account_swap(self, sc):
+        return not_supported("口座を渡す口が無い(現金・建玉は run_backtest の中の局所変数)。試したこと: " + _no_kw("account")
+                             + " / " + _no_kw("portfolio"))

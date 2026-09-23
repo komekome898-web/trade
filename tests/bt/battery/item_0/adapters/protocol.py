@@ -1,59 +1,95 @@
-"""Adapter contract for the item-0 scene battery.
+"""The one shape every target is driven through (item-0 battery).
 
-`run_battery.py` drives every target (当方の現状 / 新実装 / 調査結果の候補) through
-the exact same scene list (`scenes.SCENES`) via this one shape. This file is
-the "口だけ決める" deliverable for the new engine's adapter (delegation doc
-Sec.2 item 2): the new engine itself, and its adapter body, are written by
-the worker/materials-person each round against this interface -- nothing here
-is allowed to depend on `src/bot/bt/core` existing yet.
+Targets: the new implementation, our current engine, each runnable survey
+tool, each reproduction of an unrunnable survey candidate, and the canary
+(mutant). `run_battery.py` calls `Adapter.run_scene(scene)` for every scene
+in `scenes.SCENES`, twice, and grades `SceneResult.output` against
+`scene.expected` itself. An adapter never grades.
+
+Rules for adapter authors (they are what the critic checks):
+  * Drive the target only through its public API and its public plug-in
+    points. Do not assign attributes on the target's modules or classes
+    (no monkeypatching) and do not edit its files: a scene that needs that
+    is "not_supported" for the target.
+  * Hand events over in the order and grouping the scene gives. Never sort,
+    merge or drop them in the adapter (that is what is measured).
+  * "observed" values are recorded by the strategy inside its callbacks.
+  * `not_supported` needs a real attempt: `detail` says what was called and
+    the error / refusal it gave (rule 6: a declaration or a missing name is
+    not evidence). A target that silently does something else returns "ok"
+    with what it did and is graded "不一致".
+  * `error` is for an unexpected exception while running the scene.
+  * There is no status for "not run this round" (rule 4): every adapter
+    implements every scene id.
+
+The new implementation's adapter (written each round by the materials
+person, not by the scene keeper) lives at `adapters/new_impl.py` and must
+expose
+
+    def make_adapter(core) -> Adapter
+
+where `core` is a module-like object exposing the public names of
+`bot.bt.core`. The adapter must reach the engine ONLY through `core.<name>`
+(no `import bot.bt.core...` inside the adapter): the canary (`mutant.py`)
+passes a wrapped `core` with one defect, and the canary check in
+`mutant.py --check` fails if the adapter bypasses it.
 """
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+import sys
+from abc import ABC
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
-import sys
-from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scenes import Scene  # noqa: E402
+from scenes import SCENES, Scene  # noqa: E402
 
-Status = Literal["ok", "not_supported", "error", "no_record"]
-# ok           -- the target executed the scene and produced `output`.
-# not_supported-- the target was actually invoked/inspected and this
-#                 capability/event-type genuinely does not exist for it
-#                 (a real negative, not a guess -- `detail` says how it was
-#                 checked).
-# error        -- the target was invoked and raised/misbehaved unexpectedly.
-# no_record    -- the target could not be invoked at all for this scene this
-#                 round (not installed, no bridge written yet, etc). This is
-#                 the "実行の記録なし" bucket from the delegation doc.
+Status = Literal["ok", "not_supported", "error"]
 
 
 @dataclass
 class SceneResult:
     status: Status
     output: Any = None
-    detail: str = ""  # what was actually done / observed; cite file:line or the command run
+    detail: str = ""
+
+
+def method_name(scene_id: str) -> str:
+    return "scene_" + scene_id.replace("-", "_")
 
 
 class Adapter(ABC):
-    """One adapter instance wraps exactly one target (blinded by the runner)."""
+    """One adapter wraps one target. Subclasses define one method per scene:
+    `scene_<id with - replaced by _>(self, scene) -> SceneResult`."""
 
-    #: internal symbolic name (never shown to a blind judge; the runner maps
-    #: it to a random single-letter label per round -- see run_battery.py)
-    name: str
+    name: str = "?"
 
-    @abstractmethod
+    def __init_subclass__(cls, **kw: Any) -> None:
+        super().__init_subclass__(**kw)
+        if getattr(cls, "_abstract", False):
+            return
+        missing = [method_name(s.id) for s in SCENES if not hasattr(cls, method_name(s.id))]
+        if missing:
+            raise TypeError(f"{cls.__name__} does not implement scenes: {missing}")
+
     def run_scene(self, scene: Scene) -> SceneResult:
-        """Execute one scene and return a SceneResult.
+        try:
+            res = getattr(self, method_name(scene.id))(scene)
+        except Exception as exc:  # noqa: BLE001 - recorded, graded as a failed check
+            return SceneResult("error", detail=f"{type(exc).__name__}: {exc}")
+        if not isinstance(res, SceneResult):
+            return SceneResult("error", detail=f"adapter returned {type(res).__name__}, not SceneResult")
+        return res
 
-        Implementations MUST NOT raise for an unsupported scene -- return
-        status="not_supported" instead, with `detail` explaining how the
-        absence was confirmed (grep'd source, called and got an explicit
-        "not implemented", introspected the public API, ...). An uncaught
-        exception is recorded by the runner as status="error" so it still
-        shows up in the report rather than crashing the whole run.
-        """
-        raise NotImplementedError
+
+class _Abstract(Adapter):
+    _abstract = True
+
+
+def not_supported(what_was_tried: str, output: Any = None) -> SceneResult:
+    return SceneResult("not_supported", output=output, detail=what_was_tried)
+
+
+def ok(output: Any, detail: str = "") -> SceneResult:
+    return SceneResult("ok", output=output, detail=detail)

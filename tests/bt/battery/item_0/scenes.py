@@ -1,444 +1,371 @@
-"""Scene definitions for item 0 ("核") of the backtest-environment battery.
+"""Scene set for item 0 (the core). Single source of truth.
 
-This file is the single source of truth for the scene set. `DEFINITIONS.md`
-in this same directory is a generated, human-readable rendering of exactly
-this data (see `gen_definitions.py`) -- if you change a scene here, regenerate
-that file so the two never drift.
+`DEFINITIONS.md` next to this file is generated from this module by
+`gen_definitions.py`; `test_battery_item0.py` fails when the two differ.
 
-Two scene kinds (delegation doc `docs/DATA/delegations/20260923_backtest_env_prompt.md`
-Sec.3 "scene set"):
+Every scene -- value scene or capability scene -- carries an `expected`
+result fixed BEFORE any engine is run, and `run_battery.py` grades what the
+target actually produced against it (rule 1). Capability scenes say which
+observable result only a working capability can produce; nothing is graded
+on a declaration, a type name or an attribute being present (rule 2).
 
-  known_answer -- a synthetic input plus an expected output computed BY HAND
-      (closed form, without looking at any engine). `expected` and
-      `derivation` are filled in below; the derivation is the arithmetic /
-      rule an auditor can redo without running any code.
+Viewpoints are the seven of the fixed requirements file
+docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/REQUIREMENTS.md §2
+(P0-1 .. P0-7). Every viewpoint has at least one value scene (rule 3).
+No tool or product name appears in this file.
 
-  capability -- "can the target actually do X", invoked for real. **Every
-      capability scene below also carries an `expected` and a `derivation`**
-      (2026-09-23 fix, 場面集の規則1: "能力の場面も、呼んだ結果を正解と
-      突き合わせる。「持っている」という申告...は数えない。能力があるかは、
-      その能力を使ったときに出るはずの結果(正解)が出たかで決める").
-      The round-1 build of this file left `expected=None` for every
-      capability scene and `run_battery.py` recorded whatever `status` word
-      the adapter self-reported -- the監査役 rejected this because a
-      mutant's *prose claim* ("a future-peeking method exists!") could not
-      be told apart from a genuine finding by the runner itself; only a
-      human critic re-reading the cited code line by line could catch it.
-      Every capability scene here now states, in `derivation`, exactly what
-      *observable* result an adapter must produce to count as correct, and
-      `expected` is that result (or the required subset of it) so
-      `run_battery.py` can grade it the same mechanical way it grades a
-      known-answer scene -- self-reported prose no longer decides the
-      verdict.
-
-No tool/product name appears in this file (delegation doc Sec.3 item 1:
-"道具の名前は書かない"). Adapters (which DO know which product they wrap)
-translate an opaque `scene_id` + `input` into a `SceneResult` defined in
-`adapters/protocol.py`.
+Common conventions (they are part of every scene's input):
+  * times are ints, nanoseconds since 1970-01-01T00:00:00Z (UTC);
+  * `T0` = 1_700_006_400_000_000_000 (2023-11-15T00:00:00Z), `S` = 1 s, `DAY` = 1 day;
+  * events are one DAY apart unless the scene measures time itself (P0-2,
+    same-time P0-5, the millisecond latency scene), so tools that only take
+    daily bars on a calendar can be measured on everything else;
+  * an event is a dict with `kind` (trade / book_snapshot / book_delta / bar /
+    funding / liquidation) and `ts_ns` (exchange time); `recv_ns` (the time
+    our process can first receive it) defaults to `ts_ns`;
+  * a bar's `ts_ns` is the time the bar is complete (its close time);
+  * in scenes where our order trades, each market trade is 100 units, well
+    above the 1-unit order, so a target's volume cap does not decide them;
+  * a scene whose input has `any_type: True` measures something other than
+    event types: for a target that does not take trades, each trade may be
+    replaced by a bar at the same time with open = high = low = close =
+    the trade's price (and the same receive time); the adapter says so;
+  * an adapter hands the events to the target in the order and the grouping
+    given; it never sorts, merges or drops events itself (that is what is
+    being measured);
+  * "observed" values are what the target handed to the strategy inside
+    its callbacks, recorded by the strategy at that moment -- not values
+    read from a result object after the run.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from itertools import permutations
 from typing import Any, Literal
 
-SceneKind = Literal["known_answer", "capability"]
+SceneKind = Literal["value", "capability"]
+
+T0 = 1_700_006_400_000_000_000  # 2023-11-15T00:00:00Z (a Wednesday, midnight UTC)
+S = 1_000_000_000
+DAY = 86_400 * S
+MS = 1_000_000
+
+VIEWPOINTS = {
+    "P0-1": "核が事象駆動(型を持つ事象を時刻順に流す)であること",
+    "P0-2": "時刻が UTC の int64 ナノ秒で表されること",
+    "P0-3": "8 種の事象型(約定・板の写真・板の差分・足・資金調達・清算・時計・注文の受付/拒否/約定の通知)を扱えること",
+    "P0-4": "戦略が「受け取れた時刻 ≤ 今」の事象しか見られないこと(構造で)",
+    "P0-5": "同時刻の事象の並びが決定的で、規則に従うこと",
+    "P0-6": "戦略の API(事象ごとの呼び出し・発注・取消)",
+    "P0-7": "他項目が核を書き換えずに差し込める口(約定模型・遅延模型・費用・口座)",
+}
 
 
 @dataclass(frozen=True)
 class Scene:
     id: str
-    viewpoint: int  # 1..7, matches REQUIREMENTS.md Sec.2
+    viewpoint: str          # "P0-1" .. "P0-7"
     kind: SceneKind
     title: str
     input: dict[str, Any]
-    measures: str  # what the scene measures, one sentence
-    expected: Any = None          # the correct/required observable result -- for BOTH kinds
-                                   # (2026-09-23: capability scenes are no longer exempt, 場面集の規則1).
-                                   # A dict `expected` is graded as a required-subset match against a
-                                   # dict `output` (extra informational keys in `output` are fine);
-                                   # any other type is graded by exact equality. See run_battery.py
-                                   # `_grade`.
-    derivation: str = ""          # how `expected` was determined -- by hand (known_answer) or by
-                                   # stating the one observable action that only a genuine
-                                   # implementation of the capability can produce (capability)
-    notes: str = ""
+    expected: Any           # the correct result, fixed before any run
+    derivation: str         # how `expected` was obtained, without any engine
+    measures: str           # what the scene measures, one or two sentences
 
 
-# ---------------------------------------------------------------------------
-# Viewpoint 1 -- event-driven architecture (has a catalog column: has/has not)
-# ---------------------------------------------------------------------------
-
-_V1_EVENTS = [
-    {"kind": "bar", "ts_ns": 1_700_000_000_000_000_000 + i * 60_000_000_000,
-     "close": 100.0 + i}
-    for i in range(5)
-]
-
-V1 = [
-    Scene(
-        id="v1-event_driven-cap",
-        viewpoint=1,
-        kind="capability",
-        title="1件ずつ事象を渡して駆動できるか",
-        input={"events": _V1_EVENTS},
-        expected={"event_driven": True},
-        derivation=(
-            "5件の合成事象を1件ずつ(逐次)供給する呼び口の有無そのものが観測できる結果:"
-            "対象の戦略コールバックが事象ごとに1回、計5回呼ばれれば逐次駆動(event_driven=True)、"
-            "1回だけ(または0回)なら一括のベクトル処理でしかない(event_driven=False)。"
-            "5件・0件・1件しかありえない閉じた式であり、手計算そのもの(期待値は5回呼ばれること)。"
-            "「持っている」という自己申告の文字列ではなく、対象へ実際に5件投入して呼ばれた回数を"
-            "数えた結果で判定する(場面集の規則1)。"
-        ),
-        measures=(
-            "対象へ5件の合成事象を1件ずつ(逐次)供給する呼び口があるか。"
-            "一括の配列/DataFrameでしか受け付けられない場合は「持たない」。"
-            "戦略コードが1事象ごとに1回呼ばれた回数を数える(5であれば逐次駆動、"
-            "1であれば一括のベクトル処理とみなす)。"
-        ),
-    ),
-    Scene(
-        id="v1-event_driven-known",
-        viewpoint=1,
-        kind="known_answer",
-        title="逐次供給された各事象で観測される「今」の時刻が入力の時刻列とそのまま一致するか",
-        input={"events": _V1_EVENTS},
-        expected={"now_sequence": [e["ts_ns"] for e in _V1_EVENTS]},
-        derivation=(
-            "入力は ts_ns が単調増加する5件の事象。各事象が戦略に届いたときに対象が報告する"
-            "「今」の値(あるいは処理中の事象の時刻)を、届いた順に並べたものが正解。"
-            "真に1件ずつ届けているなら、この列は入力の ts_ns 列とビット単位で一致するはずで"
-            "(恒等写像、計算不要)、途中でどれか1件でも欠落・重複・別の値に化けていれば"
-            "不一致になる。v1-event_driven-cap が「1件ずつ届く」ことを確認する能力の場面なのに"
-            "対し、この場面は「届いた各時刻の値そのものが壊れていないか」を見る値の場面"
-            "(場面集の規則3: 各観点に値の場面を1つ以上)。"
-        ),
-        measures="事象ごとのコールバックで観測される時刻が、入力の時刻列と欠落・変質なく対応するか。",
-    ),
-]
+def trade(ts: int, price: float, qty: float = 0.01, side: str = "buy", recv: int | None = None) -> dict:
+    e = {"kind": "trade", "ts_ns": ts, "price": price, "qty": qty, "side": side}
+    if recv is not None:
+        e["recv_ns"] = recv
+    return e
 
 
-# ---------------------------------------------------------------------------
-# Viewpoint 2 -- event type coverage (8 types; 3 have a catalog column)
-# ---------------------------------------------------------------------------
-
-_EVENT_TYPES = [
-    ("fill", "約定", {"ts_ns": 1_700_000_000_123_456_789, "price": 5_012_345.0, "qty": 0.01, "side": "buy"}),
-    ("book_snapshot", "板の写真", {"ts_ns": 1_700_000_000_123_456_789,
-                                    "bids": [[5_012_000.0, 0.5]], "asks": [[5_012_500.0, 0.4]]}),
-    ("book_delta", "板の差分", {"ts_ns": 1_700_000_000_123_456_789, "side": "bid", "price": 5_012_000.0, "size": 0.3}),
-    ("bar", "足", {"ts_ns": 1_700_000_000_000_000_000, "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.5, "volume": 12.0}),
-    ("funding", "資金調達", {"ts_ns": 1_700_000_000_000_000_000, "rate": 0.0001}),
-    ("liquidation", "清算", {"ts_ns": 1_700_000_000_123_456_789, "price": 4_990_000.0, "qty": 0.2, "side": "sell"}),
-    ("clock", "時計", {"ts_ns": 1_700_000_000_000_000_000}),
-    ("order_notice", "注文の受付/拒否/約定の通知", {"ts_ns": 1_700_000_000_123_456_789, "notice": "accepted", "order_id": "synthetic-1"}),
-]
-
-V2: list[Scene] = []
-for _key, _jp, _sample in _EVENT_TYPES:
-    V2.append(Scene(
-        id=f"v2-{_key}-cap",
-        viewpoint=2,
-        kind="capability",
-        title=f"事象型「{_jp}」を扱えるか",
-        input={"event_type": _key, "sample": _sample},
-        expected={"supported": True},
-        derivation=(
-            f"「{_jp}」型の合成1件を対象へ実際に投入し、対象がその型を独立した事象として"
-            f"受理・配送したか(supported=True)/しなかったか(supported=False)を実測する。"
-            f"型が無ければ受理のしようがないので supported=False が唯一の正しい観測結果になる"
-            f"——「型・名前がある」という申告だけでは数えない(場面集の規則1)。8種のうち"
-            f"どれだけが supported=True を実測できるかが観点2の網羅性そのもの。"
-        ),
-        measures=f"「{_jp}」型の事象を、実装のコードで確かめられる形で受理・処理できるか(持つ/持たない)。",
-    ))
-    V2.append(Scene(
-        id=f"v2-{_key}-known",
-        viewpoint=2,
-        kind="known_answer",
-        title=f"事象型「{_jp}」の値がそのまま往復するか",
-        input={"event_type": _key, "sample": _sample},
-        expected=dict(_sample),
-        derivation=(
-            "合成の1件をそのまま投入し、対象が保持/報告する値が入力と完全一致するかを見る。"
-            "期待値は入力そのもの(恒等写像)なので手計算は不要 -- 一致しなければ、"
-            "その型を値の損失なく保持できていないことを意味する。"
-        ),
-        measures=f"「{_jp}」型の主要フィールドが欠落・丸め・変質なく保持されるか。",
-    ))
+def bar(ts: int, close: float, o: float | None = None, h: float | None = None,
+        lo: float | None = None, vol: float = 1.0) -> dict:
+    return {"kind": "bar", "ts_ns": ts, "open": close if o is None else o,
+            "high": close if h is None else h, "low": close if lo is None else lo,
+            "close": close, "volume": vol}
 
 
-# ---------------------------------------------------------------------------
-# Viewpoint 3 -- timestamp precision (UTC int64 ns)
-# ---------------------------------------------------------------------------
+SAMPLES: dict[str, dict] = {
+    "trade": trade(T0 + DAY, 5_012_345.0, 0.01, "buy"),
+    "book_snapshot": {"kind": "book_snapshot", "ts_ns": T0 + DAY,
+                      "bids": [[5_012_000.0, 0.5], [5_011_000.0, 1.0]],
+                      "asks": [[5_012_500.0, 0.4], [5_013_000.0, 2.0]]},
+    "book_delta": {"kind": "book_delta", "ts_ns": T0 + DAY, "side": "bid", "price": 5_012_000.0, "qty": 0.3},
+    "bar": bar(T0 + DAY, 100.5, 100.0, 101.0, 99.0, 12.0),
+    "funding": {"kind": "funding", "ts_ns": T0 + DAY, "rate": 0.0001},
+    "liquidation": {"kind": "liquidation", "ts_ns": T0 + DAY, "price": 4_990_000.0, "qty": 0.2, "side": "sell"},
+}
+JP = {"trade": "約定", "book_snapshot": "板の写真", "book_delta": "板の差分", "bar": "足",
+      "funding": "資金調達", "liquidation": "清算", "clock": "時計"}
 
-# 2024-01-01T00:00:00.123456789Z, hand-computed:
-#   days from epoch to 2024-01-01 = 19723 (365*54 + leap days 1970..2023 = 13 -> 19723)
-#   19723 * 86400 = 1,704,067,200 seconds
-#   + 0.123456789 s = 1,704,067,200.123456789 s
-#   * 1e9 -> int64 ns = 1704067200123456789
-_TS_ISO = "2024-01-01T00:00:00.123456789Z"
-_TS_NS_EXPECTED = 1704067200123456789
-
-# Two ts_ns values exactly 1 nanosecond apart, at "now"-scale magnitude
-# (~1.7e18, same order as the other viewpoint-3/4 scenes' epoch-ns values).
-# See v3-precision-cap's derivation below for why this pair -- rather than any
-# implementation's internal type name -- is the requirement-derived probe.
-_TS_A = 1_700_000_000_000_000_000
-_TS_B = _TS_A + 1  # +1 ns, deliberately NOT round in any other unit
-
-V3 = [
-    Scene(
-        id="v3-precision-known",
-        viewpoint=3,
-        kind="known_answer",
-        title="ISO8601(ナノ秒つき)の時刻を int64 UTC ナノ秒へ変換した値",
-        input={"iso": _TS_ISO},
-        expected=_TS_NS_EXPECTED,
-        derivation=(
-            "2024-01-01 00:00:00 UTC は 1970-01-01 からのうるう年を数えて 19723 日 "
-            "(1972,76,80,...,2020 の 13 回のうるう日を含む)。19723*86400=1,704,067,200 秒。"
-            "小数部 .123456789 秒を ns に換算して加算: 1,704,067,200,123,456,789 ns。"
-            "`python3 -c \"import datetime as dt; print(int(dt.datetime(2024,1,1,tzinfo=dt.timezone.utc).timestamp()*1_000_000_000)+123456789)\"` "
-            "でも同じ値が出ることを確認済み(1704067200123456789)。"
-        ),
-        measures="ナノ秒精度のタイムスタンプを、丸めずに int64 UTC ナノ秒として保持できるか。",
-    ),
-    Scene(
-        id="v3-precision-cap",
-        viewpoint=3,
-        kind="capability",
-        title="隣接する1ナノ秒差の2時刻を区別して保持できるか",
-        input={
-            "event_a": {"kind": "clock", "ts_ns": _TS_A},
-            "event_b": {"kind": "clock", "ts_ns": _TS_B},
-        },
-        expected={"distinguishable": True},
-        derivation=(
-            "2026-09-23再修正(監査役の[止める]、場面集の規則2『場面は振る舞いを試し、作りの形を"
-            "試さない』)。旧版の期待値 {'unit': 'ns', 'timezone': 'UTC'} は、同じコミット"
-            "(baacefa)で同時に追加された新実装の内部契約 src/bot/bt/core/contract.py の "
-            "CORE_CONTRACT['time'] のキー・値と文字通り一致しており、要件文から独立に導いた"
-            "ものか新実装の内部の形をそのまま採用したものか監査役に問われた(git show で同時"
-            "追加を確認済み)。実際、旧版は当方の調査結果側アダプタの実測出力"
-            "(例: zipline-reloaded は {'dtype': 'pandas.Timestamp (int64 ns, tz-aware)'}、"
-            "qf-lib は {'dtype': 'datetime.datetime (microsecond precision)'} で申告してい"
-            "た。'unit'/'timezone' キーを持たないため、実際にはnsを厳密に保持できる"
-            "zipline-reloaded の pandas.Timestamp 経路までもが機械比較で不一致になっていた"
-            "= 新実装の語彙だけが通る設計だった、という欠陥を含んでいた)。"
-            "この版は要件文(『時刻はUTCのint64ナノ秒』)のみから、実装の内部名に頼らない"
-            "観測可能な必要条件を導く: int64ナノ秒である以上、1ナノ秒だけ離れた2つの時刻は"
-            "厳密に異なる整数として区別できねばならない。IEEE754 float64 は仮数部52ビットで"
-            "2**53(=9,007,199,254,740,992)を超える整数を正確に表現できない。"
-            "1,700,000,000,000,000,000(約1.7e18)はこの閾値を大きく超えており、実測"
-            "(`python3 -c \"import math; a=1_700_000_000_000_000_000.0; "
-            "print(math.nextafter(a, math.inf)-a)\"` -> 256.0)のとおり、この桁の float64 は"
-            "隣接する表現可能値の間隔(ULP)が256もあるため、1ナノ秒差の2値は必ず同じ float64 "
-            "に潰れる(区別不能)。よって「distinguishable=True」は要件(int64ナノ秒)だけから"
-            "導ける閉じた必要条件であり、int64・Decimal・厳密な整数保持型のいずれでも自動的に"
-            "満たされ、float64(秒/ns)・datetime.datetime(マイクロ秒止まり)のような精度を"
-            "落とす型では構造的に満たせない。対象がどんなキー名・型名で内部を申告するかには"
-            "一切依存しない。"
-        ),
-        measures=(
-            "対象へ ts_ns が厳密に1だけ異なる2つの合成事象を投入し、対象が報告する2つの"
-            "時刻の値が実際に区別できるか(同じ値に潰れていないか)を実測する。"
-            "「int64 ns で持っている」という自己申告の型名・キー名では判定しない"
-            "(場面集の規則1・規則2)。"
-        ),
-    ),
-]
+SCENES: list[Scene] = []
 
 
-# ---------------------------------------------------------------------------
-# Viewpoint 4 -- structural look-ahead prevention
-# ---------------------------------------------------------------------------
-
-# 6 synthetic bars, strictly increasing close price by +1 each bar so any
-# leak of a later bar is detectable by comparing the observed max close to
-# the hand-computed ceiling for step i.
-_LA_BARS = [
-    {"ts_ns": 1_700_000_000_000_000_000 + i * 60_000_000_000, "close": 100.0 + i}
-    for i in range(6)
-]
-
-V4 = [
-    Scene(
-        id="v4-lookahead-known",
-        viewpoint=4,
-        kind="known_answer",
-        title="時刻 t 時点で見える最大 close は bar[t].close を超えない",
-        input={"bars": _LA_BARS, "probe_index": 3},
-        # hand-computed: at step i=3 (0-indexed), only bars[0..3] have been
-        # "received" (ts <= now); their closes are 100,101,102,103 -> max 103.
-        expected={"max_visible_close": 103.0, "visible_count": 4},
-        derivation=(
-            "入力は close が 100,101,102,103,104,105 と単調増加する 6 本の合成足。"
-            "probe_index=3 の時点で「受け取れた時刻 <= 今」を満たすのは bars[0..3] の4本のみ"
-            "(100,101,102,103)なので、見えてよい close の最大値は 103.0、件数は4。"
-            "105 や 104 が見えていれば未来の事象が漏れている。"
-        ),
-        measures="戦略側から観測できる事象が、探査時刻以前に受け取れたものだけに構造的に制限されているか。",
-    ),
-    Scene(
-        id="v4-lookahead-cap",
-        viewpoint=4,
-        kind="capability",
-        title="将来事象への直接アクセス手段の有無",
-        input={"bars": _LA_BARS, "probe_index": 3},
-        expected={"future_index_raises": True},
-        derivation=(
-            "2026-09-23修正(場面集の規則1): 旧版は「構造上そもそも存在しないと申告できるか」を"
-            "文章で自己申告させ、run_battery.py はその申告をそのまま記録するだけだった"
-            "(監査役の指摘、試金石 mutant.py の `_fake_cap_claim` が実在しない"
-            "`peek_next(n=1)` を『存在する』と偽って主張してもこの場面単体では検出できなかった)。"
-            "この版は自己申告をやめ、実際に1つ先(probe_index+1個目、まだ届いていないはずの"
-            "事象)を、known答え合わせの場面(v4-lookahead-known)と同じ経路で取得しようと"
-            "**実際に試す**: probe_index+1件目までしか届いていない時点で、届いた列の"
-            "「1つ先」を公開の手段(索引アクセス等)で読もうとする。正解は「読めない"
-            "(IndexError相当の例外か、読み出し不可を示す明示的な失敗)」= future_index_raises: True。"
-            "黙って値が返る(=1つ先のbarのcloseが読めてしまう)なら False で不一致になる。"
-            "対象がこの実測を行える手段を持たない場合は対応なし。"
-        ),
-        measures=(
-            "戦略コードから「今」より先の事象を取得できる公開の手段(索引アクセス・"
-            "全件配列の直接参照など)が構造上そもそも存在しないか(存在しない=良い)。"
-            "自己申告ではなく、実際に1つ先を読もうと試みて失敗するかを実測する。"
-        ),
-    ),
-]
+def add(**kw: Any) -> None:
+    SCENES.append(Scene(**kw))
 
 
-# ---------------------------------------------------------------------------
-# Viewpoint 5 -- deterministic ordering of same-timestamp events
-# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------- P0-1
+_MERGE_STREAMS = {
+    "trades": [trade(T0 + 2 * DAY, 101.0), trade(T0 + 5 * DAY, 104.0)],
+    "bars": [bar(T0 + 1 * DAY, 100.0), bar(T0 + 4 * DAY, 103.0)],
+    "funding": [{"kind": "funding", "ts_ns": T0 + 3 * DAY, "rate": 0.0001}],
+}
+add(id="p1-merge-by-time", viewpoint="P0-1", kind="value",
+    title="型ごとに分かれた入力を、渡した順ではなく時刻の順に処理するか",
+    input={"streams": _MERGE_STREAMS, "hand_over_order": ["trades", "bars", "funding"],
+           "note": "3 つの入力をこの順で渡す。1 本の入力しか受けない対象には、この順に連結して渡す(並べ替えない)"},
+    expected={"sequence": [["bar", T0 + 1 * DAY], ["trade", T0 + 2 * DAY], ["funding", T0 + 3 * DAY],
+                           ["bar", T0 + 4 * DAY], ["trade", T0 + 5 * DAY]]},
+    derivation="5 件の時刻は T0 から 1,2,3,4,5 日後で互いに異なる。時刻の昇順に並べると 足(1)・約定(2)・資金調達(3)・足(4)・約定(5)。"
+               "渡した順(約定,約定,足,足,資金調達)のまま処理すれば 2,5,1,4,3 日の順になり一致しない。",
+    measures="戦略の呼び出しごとに記録した(事象の型, 時刻)の列が、時刻の昇順と一致するか。")
 
-_SAME_TS = 1_700_000_000_000_000_000
-_TIED_EVENTS = [
-    {"kind": "fill", "ts_ns": _SAME_TS, "tag": "A"},
-    {"kind": "bar", "ts_ns": _SAME_TS, "tag": "B"},
-    {"kind": "order_notice", "ts_ns": _SAME_TS, "tag": "C"},
-    {"kind": "clock", "ts_ns": _SAME_TS, "tag": "D"},
-]
+_SEQ_BARS = [bar(T0 + (i + 1) * DAY, 100.0 + i) for i in range(5)]
+add(id="p1-one-call-per-event", viewpoint="P0-1", kind="value",
+    title="事象 1 件ごとに戦略が 1 回呼ばれ、呼ばれたときの時刻がその事象の時刻か",
+    input={"events": _SEQ_BARS},
+    expected={"sequence": [["bar", e["ts_ns"]] for e in _SEQ_BARS]},
+    derivation="入力は 1 日おきの足 5 本(時刻の昇順)。事象ごとに 1 回呼ぶなら呼び出しは 5 回で、各回の(型, 時刻)は入力と同じ。"
+               "恒等写像なので計算は要らない。",
+    measures="呼び出しの回数と、各呼び出しで戦略が受け取った事象の型と時刻。")
 
-V5 = [
-    Scene(
-        id="v5-order-known",
-        viewpoint=5,
-        kind="known_answer",
-        title="同一タイムスタンプの事象列を2回処理して同じ順序が出るか",
-        input={"events": _TIED_EVENTS},
-        # The known answer here is NOT a specific order (no universal
-        # tie-break rule exists across candidates) -- it is the equality of
-        # run 1 and run 2. This is closed-form and needs no engine: any
-        # deterministic system, by definition, satisfies run1_order == run2_order.
-        expected={"run1_equals_run2": True},
-        derivation=(
-            "「決定的」の定義そのものが closed-form の正解を与える: 同じ入力を2回処理して"
-            "得られる出力順序が一致することが、決定的順序規則を持つことの必要条件。"
-            "一致しない場合、regardless of どんな規則を採用していても、その規則が実装に"
-            "反映されていない(非決定的)と判定できる。"
-        ),
-        measures="同一タイムスタンプの複数事象を処理したとき、出力順序が実行のたびに再現するか。",
-    ),
-    Scene(
-        id="v5-order-cap",
-        viewpoint=5,
-        kind="capability",
-        title="同時刻の並びが投入順ではなく規則に基づくか(投入順を変えて再確認)",
-        input={"events": _TIED_EVENTS, "events_reversed": list(reversed(_TIED_EVENTS))},
-        expected={"order_independent_of_input_order": True},
-        derivation=(
-            "2026-09-23修正(場面集の規則1): 旧版は『規則を明記しているか』を自己申告の文章"
-            "(prose)で答えさせていた(申告文字列が本物の規則かは読者が検証するしかなかった)。"
-            "この版は同じ4件の同時刻事象を(a)元の投入順(A,B,C,D)と(b)逆順(D,C,B,A)の"
-            "2通りで実際に処理させ、出てきた処理順序が両方で一致するかを実測する。"
-            "もし対象が『投入順=処理順』でしかない(=規則ではなく偶然の並びに従っているだけ)"
-            "なら、入力の並びを逆にすれば出力も逆になり不一致になる。内容(型・時刻)に基づく"
-            "決定的な規則を本当に適用しているなら、入力の並びを変えても同じ処理順序が出るのが"
-            "正解(order_independent_of_input_order=True)。v5-order-knownの『同じ入力を2回"
-            "実行して同じ順序か』(再現性)とは別の軸: こちらは『入力の並びを変えても規則が"
-            "支配するか』(規則の実在)を見る。"
-        ),
-        measures="同一タイムスタンプの事象順序を決める規則を、対象が明記(実装のコードまたは契約)しているか。入力の並びを変えても同じ処理順序になるかを実測する。",
-    ),
-]
+add(id="p1-typed-events", viewpoint="P0-1", kind="capability",
+    title="戦略が受け取った事象の型を見分けられるか",
+    input={"events": [bar(T0 + 1 * DAY, 100.0), trade(T0 + 2 * DAY, 100.5)]},
+    expected={"sequence": [["bar", T0 + 1 * DAY], ["trade", T0 + 2 * DAY]]},
+    derivation="足 1 件と約定 1 件を時刻の昇順で 1 本の入力に入れる。型を持つ事象が 1 件ずつ届くなら、"
+               "戦略は 2 回呼ばれ、1 回目に足、2 回目に約定を受け取る。型を区別できなければ型の欄を埋められない。",
+    measures="戦略が呼ばれた時に受け取ったものから、足と約定の別を戦略自身が判別できたか(判別した結果の列)。")
 
+# ---------------------------------------------------------------- P0-2
+ISO_Z = "2024-01-01T00:00:00.123456789Z"
+ISO_JST = "2024-01-01T09:00:00.123456789+09:00"
+ISO_NS = 1_704_067_200_123_456_789
+add(id="p2-iso-utc", viewpoint="P0-2", kind="value",
+    title="ナノ秒つきの ISO 8601(UTC)を対象自身の変換で int64 ナノ秒にした値",
+    input={"iso": ISO_Z, "note": "対象がデータを読むときに使う、対象自身の時刻の変換を使う"},
+    expected=ISO_NS,
+    derivation="1970-01-01 から 2024-01-01 までの日数 = 54 年 × 365 + うるう日 13(1972〜2020)= 19,723 日。"
+               "19,723 × 86,400 = 1,704,067,200 秒。小数部 0.123456789 秒 = 123,456,789 ns を足して "
+               "1,704,067,200,123,456,789。",
+    measures="小数第 9 位まで丸めずに int64 ナノ秒になるか。")
+add(id="p2-iso-offset", viewpoint="P0-2", kind="value",
+    title="時差つき(+09:00)の ISO 8601 を UTC の int64 ナノ秒にした値",
+    input={"iso": ISO_JST, "note": "対象がデータを読むときに使う、対象自身の時刻の変換を使う"},
+    expected=ISO_NS,
+    derivation="+09:00 の 09:00:00.123456789 は UTC の 00:00:00.123456789。よって p2-iso-utc と同じ 1,704,067,200,123,456,789。",
+    measures="時差を UTC に直すか(時差を捨てて 9 時間ずれないか)。")
+add(id="p2-event-time-exact", viewpoint="P0-2", kind="value",
+    title="ナノ秒の端数をもつ事象の時刻が、戦略に届いた時点で 1 ns も変わらないか",
+    input={"events": [{"ts_ns": T0 + 123_456_789}],
+           "note": "型は対象が受ける型を 1 つ選んでよい(足なら OHLC はすべて 100.0、約定なら 価格 100.0 数量 0.01)"},
+    expected={"observed_ts_ns": [T0 + 123_456_789]},
+    derivation="入力の時刻そのもの(恒等写像)。1,700,000,000,123,456,789 ns。",
+    measures="戦略が受け取った事象の時刻を int ナノ秒で読んだ値。")
+add(id="p2-one-ns-apart", viewpoint="P0-2", kind="capability",
+    title="1 ns だけ離れた 2 つの事象の時刻を別の値として保てるか",
+    input={"events": [{"ts_ns": T0}, {"ts_ns": T0 + 1}],
+           "note": "型は対象が受ける型を 1 つ選んでよい(2 件とも同じ型)"},
+    expected={"observed_ts_ns": [T0, T0 + 1]},
+    derivation="int64 ナノ秒なら T0 と T0+1 は別の整数。float64 は 2^53 を超える整数を 256 刻みでしか表せないので"
+               "(1.7e18 の近くの間隔は 256)、秒やナノ秒を float で持つと 2 つは同じ値になる。マイクロ秒止まりの型でも同じ値になる。",
+    measures="戦略が受け取った 2 件の時刻(int ナノ秒)。")
 
-# ---------------------------------------------------------------------------
-# Viewpoint 6 -- strategy API completeness
-# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------- P0-3
+for _k in ["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation"]:
+    _s = dict(SAMPLES[_k])
+    add(id=f"p3-{_k}", viewpoint="P0-3", kind="capability",
+        title=f"事象型「{JP[_k]}」を事象として戦略に届けられるか",
+        input={"events": [_s]},
+        expected={"sequence": [[_k, _s["ts_ns"]]],
+                  "fields": {k: v for k, v in _s.items() if k not in ("kind", "ts_ns")}},
+        derivation=f"「{JP[_k]}」1 件だけを入れる。届けられるなら戦略は 1 回呼ばれ、型は「{JP[_k]}」、中身は入力と同じ(恒等写像)。"
+                   "型が無い対象は「対応なし」(明示の拒否)になる。",
+        measures=f"戦略が受け取った事象の型・時刻・中身が入力の「{JP[_k]}」と一致するか。")
 
-V6 = [
-    Scene(
-        id="v6-order_lifecycle-known",
-        viewpoint=6,
-        kind="known_answer",
-        title="注文を1件発注して1件取消すと未決注文数が0に戻るか",
-        input={"order": {"side": "buy", "qty": 1.0}, "action": "place_then_cancel"},
-        expected={"open_orders_after": 0},
-        derivation=(
-            "発注1件・取消1件という単純な操作列なので、操作後の未決注文数は代数的に "
-            "1 - 1 = 0 。これはどんな注文管理の実装であっても成り立つべき不変条件。"
-        ),
-        measures="発注APIと取消APIが対になって機能するか(戦略が明示的に呼べる形であるか)。",
-    ),
-    Scene(
-        id="v6-api_surface-cap",
-        viewpoint=6,
-        kind="capability",
-        title="事象ごとのコールバック・発注・取消の3種の呼び口",
-        input={},
-        expected={"count": 3},
-        derivation=(
-            "§1直書きの要件は『戦略のAPI(事象ごとの呼び出し・発注・取消)』の3つ。"
-            "対象の公開API(クラス定義・契約データ)を実測して hasattr 相当で3つそれぞれの"
-            "有無を数える。正解は3つとも揃っていること(count=3)。1つでも欠ければ"
-            "count<3で不一致 -- 個数という閉じた整数なので自己申告ではなく実測値そのもので"
-            "判定できる。"
-        ),
-        measures="戦略が呼べる公開APIとして (a) 事象ごとのコールバック (b) 発注 (c) 取消 の3種をそれぞれ持つか(0〜3の数)。",
-    ),
-]
+_MIXED = [dict(SAMPLES[k], ts_ns=T0 + (i + 1) * DAY)
+          for i, k in enumerate(["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation"])]
+add(id="p3-mixed-one-run", viewpoint="P0-3", kind="value",
+    title="6 種の市場の事象を 1 回の実行に混ぜて入れたとき、型と時刻の列",
+    input={"events": _MIXED},
+    expected={"sequence": [[e["kind"], e["ts_ns"]] for e in _MIXED]},
+    derivation="約定・板の写真・板の差分・足・資金調達・清算を 1〜6 日後に 1 件ずつ、時刻の昇順で 1 本の入力に入れる。"
+               "期待は入力の(型, 時刻)の列そのもの。",
+    measures="1 回の実行の中で 6 種が同じ流れに載るか。")
 
+add(id="p3-clock-timer", viewpoint="P0-3", kind="capability",
+    title="戦略が頼んだ時刻に、時計の事象で呼ばれるか",
+    input={"any_type": True, "events": [trade(T0 + 1 * DAY, 100.0, qty=100.0), trade(T0 + 6 * DAY, 100.0, qty=100.0)],
+           "strategy": "1 回目の呼び出し(1 日後)で「4 日後(T0 + 4 DAY)に起こして」と頼む。型は対象が受ける型でよい", "timer_at_ns": T0 + 4 * DAY},
+    expected={"clock_calls_ns": [T0 + 4 * DAY]},
+    derivation="頼んだ時刻は T0 + 4 日。データの事象は 1 日後と 6 日後にしか無いので、4 日後ちょうどに呼ばれるのは時計の事象だけ。",
+    measures="データの事象が無い時刻に、時計の事象として戦略が呼ばれた時刻の列。")
 
-# ---------------------------------------------------------------------------
-# Viewpoint 7 -- extension points (module boundary)
-# ---------------------------------------------------------------------------
+_NOTICE_TRADES = [trade(T0 + i * DAY, 100.0, qty=100.0) for i in (1, 2, 3)]
+add(id="p3-notice-accepted", viewpoint="P0-3", kind="capability",
+    title="注文の受付の通知が、事象として戦略に届くか",
+    input={"any_type": True, "events": _NOTICE_TRADES,
+           "strategy": "1 回目の呼び出しで 指値 買い 数量 1 価格 90.0 を出す(市場は 100.0 なので埋まらない)"},
+    expected={"notices": ["accepted"]},
+    derivation="価格 90 の買い指値は、約定が 100 のまま続くので埋まらない。取消もしない。よって戦略に届く通知は受付の 1 件だけ。",
+    measures="戦略が受け取った、その注文についての通知の種類の列。受け取ったとは、戦略の呼び出しに事象として届いたか、発注の呼び出しの戻り値・例外としてその場で返ったこと。後から戦略が問い合わせて得たものは数えない。")
+add(id="p3-notice-rejected", viewpoint="P0-3", kind="capability",
+    title="注文の拒否の通知が、事象として戦略に届くか",
+    input={"any_type": True, "events": [trade(T0 + i * DAY, 1_000_000.0, qty=100.0) for i in (1, 2, 3)],
+           "account": "現金 1,000 円、レバレッジ無し(現物の口座)",
+           "strategy": "1 回目の呼び出しで 成行 買い 数量 1 を出す"},
+    expected={"notices": ["rejected"]},
+    derivation="必要な資金は 1 × 1,000,000 = 1,000,000 円で、現金 1,000 円を超える。レバレッジ無しなので受けられず、"
+               "届く通知は拒否の 1 件だけ。",
+    measures="戦略が受け取った通知の種類の列(受け取ったの意味は p3-notice-accepted と同じ)。")
+add(id="p3-notice-filled", viewpoint="P0-3", kind="capability",
+    title="注文の約定の通知が、事象として戦略に届くか",
+    input={"any_type": True, "events": _NOTICE_TRADES, "account": "現金 1,000,000 円",
+           "strategy": "1 回目の呼び出しで 成行 買い 数量 1 を出す"},
+    expected={"filled_qty_in_notices": 1.0},
+    derivation="成行の買い 1 は、次の約定(100.0)で全量が埋まる。資金は 100 円で足りる。"
+               "戦略が受け取った約定の通知の数量の合計は 1.0。価格は約定の模型によるので見ない。",
+    measures="戦略が受け取った約定の通知の数量の合計(受け取ったの意味は p3-notice-accepted と同じ)。")
 
-V7 = [
-    Scene(
-        id="v7-cost_swap-known",
-        viewpoint=7,
-        kind="known_answer",
-        title="費用模型をゼロコスト版に差し替えると手数料が0になるか",
-        input={"order": {"side": "buy", "qty": 1.0, "price": 100.0}, "cost_model": "zero"},
-        expected={"fee": 0.0},
-        derivation=(
-            "「ゼロコスト模型」という定義そのものから手数料は恒等的に0。核を書き換えずに"
-            "この模型へ差し替えられれば、既定の非ゼロ手数料が0に変わって出力されるはず。"
-            "差し替え口が無い実装は、この既知解を再現できない(対応なし、または既定値のまま)。"
-        ),
-        measures="核のコードを書き換えずに費用模型を差し替えられるか(構造としての拡張口の有無を、値の変化で確認する)。",
-    ),
-    Scene(
-        id="v7-extension_points-cap",
-        viewpoint=7,
-        kind="capability",
-        title="約定模型・遅延模型・費用・口座の4口",
-        input={},
-        expected={"count": 4},
-        derivation=(
-            "§1直書きの要件は『他項目が差し込む口(約定模型・遅延模型・費用・口座)』の4つ。"
-            "対象の公開API(コンストラクタ引数・契約データ)を実測して4口それぞれの有無を"
-            "数える。正解は4つとも揃っていること(count=4)。個数という閉じた整数なので"
-            "自己申告ではなく実測値そのもので判定できる。"
-        ),
-        measures="約定模型・遅延模型・費用・口座の4要素それぞれについて、核を書き換えずに差し替え可能な口を持つか(0〜4の数)。",
-    ),
-]
+# ---------------------------------------------------------------- P0-4
+_LA_BARS = [bar(T0 + (i + 1) * DAY, 100.0 + i) for i in range(6)]
+add(id="p4-visible-at-step", viewpoint="P0-4", kind="value",
+    title="4 本目の足の時刻(T0 + 4 日)の呼び出しで、戦略が見られる足の数と最大の終値",
+    input={"events": _LA_BARS, "probe_at_ns": T0 + 4 * DAY,
+           "note": "足を受けない対象は、同じ時刻・価格=終値の約定で代えてよい"},
+    expected={"visible_count": 4, "max_visible_close": 103.0},
+    derivation="終値は 100,101,102,103,104,105 と 1 ずつ増え、n 本目の足の時刻は T0 + n 日。T0 + 4 日の呼び出しの時点で届いているのは 1〜4 本目だけなので、"
+               "件数 4、最大の終値 103。104 か 105 が見えれば未来が漏れている。",
+    measures="T0 + 4 日の呼び出しの中で、戦略が対象の公開の手段で読んだ過去の件数と最大の終値。")
+_E1 = trade(T0 + 1 * DAY, 101.0, recv=T0 + 3 * DAY)
+add(id="p4-received-time", viewpoint="P0-4", kind="value",
+    title="取引所の時刻は早いが受け取りが遅い事象を、受け取る前に見せないか",
+    input={"any_type": True, "events": [_E1, trade(T0 + 2 * DAY, 100.0), trade(T0 + 4 * DAY, 102.0)],
+           "note": "価格 101 の約定は 取引所の時刻 T0+1 日・受け取れる時刻 T0+3 日。ほかの 2 件は両者が同じ。"
+                   "入力は取引所の時刻の順に並べてある"},
+    expected={"price101_visible_at_day2": False, "price101_delivered_at_ns": T0 + 3 * DAY,
+              "price101_visible_at_day4": True},
+    derivation="「受け取れた時刻 ≤ 今」の事象しか見せないなら、2 日後の呼び出しでは 101 は見えない(3 日 > 2 日)。"
+               "101 が戦略に届くのは 3 日後、4 日後の呼び出しでは見える。取引所の時刻で届けると 1 日後に見えてしまう。",
+    measures="2 日後と 4 日後の呼び出しで 101 の約定が見えたか、101 が届いた時刻。")
+add(id="p4-future-read-attempt", viewpoint="P0-4", kind="capability",
+    title="T0 + 4 日の呼び出しで、戦略が 1 つ先の足を公開の手段で読みに行ったとき、値が得られないか",
+    input={"events": _LA_BARS, "probe_at_ns": T0 + 4 * DAY,
+           "strategy": "T0 + 4 日の呼び出しの中で、対象が戦略に渡す公開の手段(履歴の添字・データの参照・時刻を指定した問い合わせ)"
+                       "で 5 本目(終値 104)を読もうとする。試した方法を全部記録する",
+           "note": "足を受けない対象は、同じ時刻・価格=終値の約定で代えてよい"},
+    expected={"future_value_obtained": False},
+    derivation="T0 + 4 日の呼び出しの時点で 5 本目(T0 + 5 日)はまだ届いていない。構造で先読みを塞いでいれば、どの公開の手段でも 104 は得られない"
+               "(例外・空の結果・拒否のどれか)。1 つの手段でも 104 が返れば未来が漏れている。",
+    measures="T0 + 4 日の呼び出しの中で、試したどれかの手段で 104 が得られたか。")
 
+# ---------------------------------------------------------------- P0-5
+_TIE_STREAMS = {
+    "trades": [trade(T0 + DAY, 100.0)],
+    "bars": [bar(T0 + DAY, 100.0)],
+    "funding": [{"kind": "funding", "ts_ns": T0 + DAY, "rate": 0.0001}],
+    "liquidation": [{"kind": "liquidation", "ts_ns": T0 + DAY, "price": 99.0, "qty": 0.2, "side": "sell"}],
+}
+add(id="p5-same-time-twice", viewpoint="P0-5", kind="value",
+    title="同時刻の 4 種の事象を 2 回処理して、同じ順になるか",
+    input={"streams": _TIE_STREAMS, "hand_over_order": ["trades", "bars", "funding", "liquidation"],
+           "note": "型ごとの 4 つの入力。1 本しか受けない対象には、この順に連結して渡す"},
+    expected={"same_order_in_two_runs": True},
+    derivation="決定的とは、同じ入力から同じ出力が出ること。定義から、2 回の順は同じでなければならない。",
+    measures="1 回目と 2 回目の(型)の列が同じか。")
+add(id="p5-hand-over-order", viewpoint="P0-5", kind="capability",
+    title="同時刻の 4 種の事象の並びが、入力を渡した順に左右されないか",
+    input={"streams": _TIE_STREAMS,
+           "hand_over_orders": [list(p) for p in permutations(["trades", "bars", "funding", "liquidation"])],
+           "note": "4 つの入力を 24 通りの順で渡して 24 回処理する。1 本しか受けない対象には、その回の順で連結して渡す"},
+    expected={"distinct_orders": 1},
+    derivation="型ごとの入力を渡す順は、データをどのファイルから先に読んだかで変わる、データの中身と無関係な順である。"
+               "同時刻の並びが規則(型・時刻など中身)で決まるなら 24 回とも同じ並びで、異なる並びの数は 1。"
+               "渡した順に従うなら 24 通りになる。",
+    measures="24 回の処理で出た(型)の列が何通りあったか。")
+add(id="p5-same-stream-order", viewpoint="P0-5", kind="value",
+    title="1 本の入力の中の同時刻の 2 件を、入力の順のまま処理するか",
+    input={"events": [trade(T0 + DAY, 100.0), trade(T0 + DAY, 101.0)],
+           "note": "型は対象が受ける型でよい(足なら終値 100 と 101)"},
+    expected={"prices": [100.0, 101.0]},
+    derivation="同じ取引所から来た 1 本の記録の中では、並びが取引所での起きた順である。同時刻でも入れ替えてはならないので、"
+               "処理の順は 100、101。",
+    measures="戦略が受け取った 2 件の価格の順。")
 
-SCENES: list[Scene] = V1 + V2 + V3 + V4 + V5 + V6 + V7
+# ---------------------------------------------------------------- P0-6
+_API_TRADES = [trade(T0 + i * DAY, 100.0, qty=100.0) for i in (1, 2, 3)]
+add(id="p6-place-then-cancel", viewpoint="P0-6", kind="value",
+    title="発注して取り消すと、未決の注文が 1 → 0 になるか",
+    input={"any_type": True, "events": _API_TRADES,
+           "strategy": "1 回目: 指値 買い 数量 1 価格 90.0 を出す。2 回目: 未決の注文の数を記録し、その注文を取り消す。"
+                       "3 回目: 未決の注文の数を記録する"},
+    expected={"open_at_call2": 1, "open_at_call3": 0},
+    derivation="90 の買い指値は 100 の相場では埋まらないので 2 回目には未決が 1 件。2 回目に取り消せば、"
+               "遅延の無い既定の下で 3 回目には 1 − 1 = 0 件。",
+    measures="戦略が呼び出しの中で対象の公開の手段で読んだ未決の注文の数。")
+add(id="p6-cancel-notice", viewpoint="P0-6", kind="capability",
+    title="取消が成ったことが、事象として戦略に届くか",
+    input={"any_type": True, "events": _API_TRADES,
+           "strategy": "p6-place-then-cancel と同じ。戦略が呼び出しの中で受け取った通知を記録する"},
+    expected={"cancel_notice_received": True},
+    derivation="取消を出し、それが成れば、その知らせは戦略に届く事象として 1 件ある。届かなければ False。",
+    measures="取消の成立を知らせる通知を戦略が受け取ったか(受け取ったの意味は p3-notice-accepted と同じ)。")
+add(id="p6-fill-seen-by-strategy", viewpoint="P0-6", kind="capability",
+    title="戦略が出した成行が埋まったことを、戦略が次の呼び出しで読めるか",
+    input={"any_type": True, "events": _API_TRADES, "account": "現金 1,000,000 円",
+           "strategy": "1 回目: 成行 買い 数量 1。3 回目: その注文の約定済みの数量を対象の公開の手段で読む"},
+    expected={"filled_qty_at_call3": 1.0},
+    derivation="成行の買い 1 は 2 日後の約定(100)で全量が埋まる。3 回目にはその注文の約定済み数量は 1.0。",
+    measures="3 回目の呼び出しの中で戦略が読んだ約定済み数量。")
+
+# ---------------------------------------------------------------- P0-7
+_PLUG_TRADES = [trade(T0 + i * DAY, 100.0, qty=100.0) for i in (1, 2, 3)]
+add(id="p7-fill-model-swap", viewpoint="P0-7", kind="capability",
+    title="約定の模型を差し替えると、その模型の値で埋まるか",
+    input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
+           "plug": "約定の模型: 届いた注文を、その場で全量、価格 12345.0 で埋める",
+           "strategy": "1 回目: 成行 買い 数量 1"},
+    expected={"fill_price": 12345.0},
+    derivation="差し替えた模型は相場によらず 12345.0 で埋める。差し替えが効けば約定の価格は 12345.0。"
+               "既定の模型なら 100.0 前後になるので区別できる。",
+    measures="その約定の価格(戦略が受け取った値か、実行の結果の約定の記録)。対象の公開の差し込み口だけを使い、対象のコードを書き換えない。")
+_LAT_TRADES = [trade(T0 + i * MS, 100.0, qty=100.0) for i in range(0, 11)]
+add(id="p7-latency-model-swap", viewpoint="P0-7", kind="capability",
+    title="発注の遅延の模型を差し替えると、注文がその遅れで取引所に着くか",
+    input={"any_type": True, "events": _LAT_TRADES, "account": "現金 100,000 円",
+           "plug": "遅延の模型: 発注の遅れ 7 ms(7,000,000 ns)。配信・取消・通知の遅れは 0",
+           "strategy": "1 回目(T0): 成行 買い 数量 1"},
+    expected={"fill_time_ns": T0 + 7 * MS},
+    derivation="約定は 1 ms おきに T0〜T0+10 ms。T0 に出した注文は T0+7 ms に取引所に着く。成行はそこで最初の約定"
+               "(T0+7 ms、価格 100)で埋まる。着いた時点で埋める模型でも T0+7 ms。",
+    measures="その約定の時刻(int ナノ秒。戦略が受け取った値か、実行の結果の約定の記録)。")
+add(id="p7-cost-model-swap", viewpoint="P0-7", kind="capability",
+    title="費用の模型を差し替えると、その模型の費用が約定に付くか",
+    input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
+           "plug": "費用の模型: 約定 1 件につき 0.5 円(数量・価格によらない)",
+           "strategy": "1 回目: 成行 買い 数量 1"},
+    expected={"fee": 0.5},
+    derivation="約定は 1 件、1 件あたり 0.5 円なので費用は 0.5。",
+    measures="その約定に付いた費用(戦略が受け取ったか、実行の結果の約定の記録から読んだ値)。")
+add(id="p7-cost-zero", viewpoint="P0-7", kind="value",
+    title="費用 0 の模型に差し替えると、費用が 0 になるか",
+    input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
+           "plug": "費用の模型: 常に 0", "strategy": "1 回目: 成行 買い 数量 1"},
+    expected={"fee": 0.0},
+    derivation="模型の定義から費用は恒等的に 0。",
+    measures="その約定に付いた費用。")
+add(id="p7-account-swap", viewpoint="P0-7", kind="capability",
+    title="口座を差し替えると、差し替えた口座が約定を受け取るか",
+    input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
+           "plug": "口座: 渡された約定の数量を記録するだけの口座(対象の口座の差し込み口の形で書く)",
+           "strategy": "1 回目: 成行 買い 数量 1"},
+    expected={"account_recorded_fill_qty": [1.0]},
+    derivation="約定は 1 件で数量 1。差し替えた口座に対象が約定を渡すなら、記録は [1.0]。",
+    measures="差し替えた口座が記録した約定の数量の列。")
 
 assert len(SCENES) == len({s.id for s in SCENES}), "duplicate scene id"
+for _vp in VIEWPOINTS:
+    assert any(s.viewpoint == _vp and s.kind == "value" for s in SCENES), f"{_vp} has no value scene"
