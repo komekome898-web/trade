@@ -7,6 +7,7 @@
   python3 scripts/cat8_ledger.py set <8-NNN> <列>=<値> [...]
   python3 scripts/cat8_ledger.py recount
   python3 scripts/cat8_ledger.py check [<報告.md>] [<生ログ.log> ...]
+  python3 scripts/cat8_ledger.py check-elements <報告.md> --round <回>   (読むだけ。調査班も打つ)
 
 規則の在処は設計票 `docs/DATA/surveys/CAT8_DESIGN.md`(§2 状態の語 / §3 要素の印 / §4.1 段 / §5 台帳の列と番号 /
 §6 この道具の役目)。**数は報告の文章から数えない**(台帳から数える)。
@@ -93,7 +94,7 @@ def new_row(rows, name, route, source, cat1="", rnd=""):
     for e in ELEMS:
         r[e] = "未判別"
     for s in STAGES:
-        r[s] = "-"
+        r[s] = "未判別"
     return r
 
 
@@ -198,7 +199,7 @@ def check_rows(rows):
                 errs.append("%s: %s が印なのに段が無い" % (n, e))
             if r[e] == "なし" and r[s] != "-":
                 errs.append("%s: %s がなしなのに段が %s" % (n, e, r[s]))
-            if r[e] == "未判別" and r[s] not in ("-", "未判別"):
+            if r[e] == "未判別" and r[s] != "未判別":
                 errs.append("%s: %s が未判別なのに段が %s" % (n, e, r[s]))
         if r["状態"] == "深掘り" and any(r[e] == "未判別" for e in ELEMS):
             errs.append("%s: 深掘りなのに未判別の要素がある(設計票 §2)" % n)
@@ -248,6 +249,74 @@ def cmd_check(a):
     sys.exit(1 if errs else 0)
 
 
+EVIDENCE_KINDS = ["一次資料", "実測", "推定", "仮定", "未確認"]
+
+
+def cells(ln):
+    return [c.strip() for c in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
+
+
+def cmd_check_elements(a):
+    """報告の `### 要素と段` の表(道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠)を検査する。読むだけ。
+    受け入れ検査 check_scan_report.py はこの 6 列の表を読まない(監査 8 回目の指摘 3)ので、ここで見る。"""
+    text = pathlib.Path(a.report).read_text()
+    st, en, lines = section(text, a.round)
+    if st is None:
+        sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
+    errs, names, table, in_tab, in_list = [], [], {}, False, False
+    cand_re = re.compile(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`([^`\n]+)`\s*\((8-\d{3}|新)\)")
+    for i in range(st, en):
+        ln = lines[i]
+        if re.match(r"^#{2,4} ", ln):
+            in_list = bool(re.match(r"^#{2,4} *候補の一覧", ln))
+            in_tab = bool(re.match(r"^#{2,4} *要素と段", ln))
+            continue
+        if in_list:
+            m = cand_re.match(ln)
+            if m:
+                names.append(m.group(1))
+                if not re.search(r"状態:\s*(%s)" % "|".join(map(re.escape, STATES)), ln):
+                    errs.append("行 %d: 候補の一覧の行に設計票 §2 の状態が無い: `%s`" % (i + 1, m.group(1)))
+            elif re.match(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`", ln):
+                errs.append("行 %d: 候補の一覧の行に (8-NNN) か (新) が無い: %s" % (i + 1, ln.strip()[:60]))
+        if in_tab and ln.strip().startswith("|"):
+            c = cells(ln)
+            if len(c) != 6 or c[0] in ("道具", "") or set(c[0]) <= set("-: "):
+                continue
+            tool, el, val, stg, kind, ev = c
+            tool = tool.strip("`")
+            table.setdefault(tool, {})
+            if el in table[tool]:
+                errs.append("行 %d: %s の %s が 2 行ある" % (i + 1, tool, el))
+            table[tool][el] = (i + 1, val, stg)
+            if el not in ELEMS:
+                errs.append("行 %d: 要素の語が 8 列に無い: %s" % (i + 1, el))
+            if val not in ELEM_VALUES:
+                errs.append("行 %d: 値が 印/なし/未判別 でない: %s" % (i + 1, val))
+            want = {"印": [v for v in STAGE_VALUES if v != "-"], "なし": ["-"], "未判別": ["未判別"]}.get(val, [])
+            if want and stg not in want:
+                errs.append("行 %d: %s %s は値 %s なので段は %s のどれか(書かれた段: %s)" % (
+                    i + 1, tool, el, val, "/".join(want), stg))
+            if kind not in EVIDENCE_KINDS:
+                errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
+            if not ev:
+                errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
+    for n in names:
+        got = table.get(n, {})
+        miss = [e for e in ELEMS if e not in got]
+        if miss:
+            errs.append("候補 `%s` の「要素と段」の行が欠けている: %s" % (n, " ".join(miss)))
+    for t in table:
+        if t not in names:
+            errs.append("「要素と段」の表の道具が候補の一覧に無い(名前が 1 文字違う?): `%s`" % t)
+    print("読んだもの: 候補の一覧 %d 行 / 要素と段の表 %d 行(道具 %d)" % (
+        len(names), sum(len(v) for v in table.values()), len(table)))
+    for e in errs:
+        print(e)
+    print("---- 合計 %d 件" % len(errs))
+    sys.exit(1 if errs else 0)
+
+
 def cmd_recount(a):
     rows = load()
     print("== 台帳の全行(母集合) = %d 行" % len(rows))
@@ -276,8 +345,10 @@ def main():
     p = sp.add_parser("set"); p.add_argument("num"); p.add_argument("pairs", nargs="+")
     sp.add_parser("recount")
     p = sp.add_parser("check"); p.add_argument("report", nargs="?"); p.add_argument("logs", nargs="*")
+    p = sp.add_parser("check-elements"); p.add_argument("report"); p.add_argument("--round", required=True)
     a = ap.parse_args()
-    {"add": cmd_add, "sync": cmd_sync, "set": cmd_set, "recount": cmd_recount, "check": cmd_check}[a.cmd](a)
+    {"add": cmd_add, "sync": cmd_sync, "set": cmd_set, "recount": cmd_recount, "check": cmd_check,
+     "check-elements": cmd_check_elements}[a.cmd](a)
 
 
 if __name__ == "__main__":
