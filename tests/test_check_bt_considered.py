@@ -62,3 +62,24 @@ def test_hand_edited_aggregate_is_rejected(tmp_path):
 def test_viewpoint_without_table_or_zero_line_is_rejected(tmp_path):
     r = run(tmp_path, good().replace("候補 0 件: `grep -n 板の写真 docs/DATA/SCAN_2026-09-21_tools.md` の当たり 0 行", "判断: 対象なし"))
     assert r.returncode == 1 and "判断の列を持つ表も" in r.stdout
+
+
+def test_reproduced_row_needs_an_existing_reproduction_file(tmp_path):
+    r = run(tmp_path, good().replace("opponents/a_repro.py", "再現の場所は後で書く"))
+    assert r.returncode == 1 and "再現のファイル(opponents/…py)が理由に無い" in r.stdout
+    r = run(tmp_path, good().replace("opponents/a_repro.py", "opponents/missing.py"))
+    assert r.returncode == 1 and "opponents/missing.py が無い" in r.stdout
+
+
+def test_confirmed_absent_needs_a_line_or_url(tmp_path):
+    body = good().replace("| 4 D | 44 | — | いいえ | 再現できない | 危険の 11 件 |",
+                          "| 4 D | 3 | — | はい | 持たないと確認した | 口が無かった |")
+    r = run(tmp_path, body)
+    assert r.returncode == 1 and "持たないと確認した根拠" in r.stdout
+    r = run(tmp_path, body.replace("口が無かった", "SCAN 40行に口が無い"))
+    assert r.returncode == 0, r.stdout
+
+
+def test_file_without_viewpoint_headings_is_rejected(tmp_path):
+    r = run(tmp_path, "# 検討表\n\n本文だけ\n")
+    assert r.returncode == 1 and "`### 観点` の見出しが 1 つも無い" in r.stdout
