@@ -1461,12 +1461,13 @@
   {
    "move": 52,
    "tools": {
-    "Bash": 4,
-    "Read": 1,
+    "Bash": 8,
+    "Read": 2,
     "Workflow": 1,
-    "ToolSearch": 1
+    "ToolSearch": 1,
+    "ScheduleWakeup": 1
    },
-   "n_tools": 7,
+   "n_tools": 13,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
