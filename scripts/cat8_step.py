@@ -13,6 +13,8 @@
   python3 scripts/cat8_step.py --log <生ログ> --method websearch --target <語> --note <文> --manual "<打った問い>" < 結果.txt
 
 --manual のとき、時間と終了コードは道具が測れないので `time_s=NA rc=NA` と書く(作った数を書かない)。
+--deadline <UTC の ISO 時刻> を付けると、その時刻を過ぎていたら手を打たずに生ログに「期限切れ」の 1 手を書き、終了コード 3 で止まる
+(予算の区切りを自己申告に任せないため。2026-09-23 監査 12 回目の指摘 5)。
 結果は要約せず、返ってきた一覧(題名と URL)をそのまま流す。
 """
 import argparse, datetime, pathlib, subprocess, sys, time
@@ -24,6 +26,7 @@ ap.add_argument("--target", required=True)
 ap.add_argument("--note", required=True)
 ap.add_argument("--manual")
 ap.add_argument("--keep", type=int, default=3000)
+ap.add_argument("--deadline", help="UTC の ISO 時刻。これを過ぎていたら手を打たずに終了コード 3 で止まる(予算の区切り)")
 ap.add_argument("cmd", nargs=argparse.REMAINDER)
 a = ap.parse_args()
 
@@ -35,7 +38,17 @@ def one_line(s):
     # 見出しは 1 行でなければならない(改行を含む note が孤立した行を残した = 監査 10 回目の指摘 5)
     return " ".join(s.split()) or "-"
 
-now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+_now = datetime.datetime.now(datetime.timezone.utc)
+now = _now.strftime("%Y-%m-%dT%H:%M:%SZ")
+if a.deadline:
+    dl = datetime.datetime.strptime(a.deadline, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
+    if _now > dl:
+        with open(a.log, "a") as f:
+            f.write("--- %s method=budget target=期限切れ rc=3 time_s=0 note=期限 %s を過ぎたので手を打たなかった\n"
+                    "$ (打たなかった) %s\n" % (now, a.deadline, one_line(" ".join(a.cmd) or a.manual or "")))
+        print("[cat8_step] 期限 %s を過ぎた。次の段・次の候補に入らずに、返す前の手順(起動文 §7)へ進む" % a.deadline,
+              file=sys.stderr)
+        sys.exit(3)
 if a.manual is not None:
     body = sys.stdin.read()
     head = "--- %s method=%s target=%s rc=NA time_s=NA note=%s" % (now, one_word(a.method), one_word(a.target), one_line(a.note))

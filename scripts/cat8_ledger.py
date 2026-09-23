@@ -267,13 +267,28 @@ def cmd_check_elements(a):
     if st is None:
         sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
     errs, names, table, in_tab, in_list = [], [], {}, False, False
+    in_find, in_trace, n_find, n_trace = False, False, 0, 0
     cand_re = re.compile(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`([^`\n]+)`\s*\((8-\d{3}|新)\)")
     for i in range(st, en):
         ln = lines[i]
         if re.match(r"^#{2,4} ", ln):
             in_list = bool(re.match(r"^#{2,4} *候補の一覧", ln))
             in_tab = bool(re.match(r"^#{2,4} *要素と段", ln))
+            in_find = bool(re.match(r"^#{2,4} *知見", ln))
+            in_trace = bool(re.match(r"^#{2,4} *辿る一覧から出た名前", ln))
             continue
+        if in_trace and re.match(r"^\s*-\s*`[^`]+`", ln):
+            n_trace += 1
+        if in_find and ln.strip().startswith("|"):
+            c = cells(ln)
+            if len(c) == 4 and re.fullmatch(r"\d+", c[0]):
+                n_find += 1
+                if c[2] not in EVIDENCE_KINDS:
+                    errs.append("行 %d: 知見の表の印が委任文 §4.1 の 5 語でない: %s" % (i + 1, c[2]))
+                if not re.search(r"https?://|\.log|生ログ", c[3]):
+                    errs.append("行 %d: 知見の表の根拠に URL も生ログの参照も無い: %s" % (i + 1, c[3][:50]))
+            elif len(c) >= 2 and not set("".join(c)) <= set("-: ") and c[0] not in ("#", "道具"):
+                errs.append("行 %d: 知見の表の行が `| # | 知見 | 印 | 根拠 |` の形でない: %s" % (i + 1, ln.strip()[:60]))
         if in_list:
             m = cand_re.match(ln)
             if m:
@@ -312,8 +327,8 @@ def cmd_check_elements(a):
     for t in table:
         if t not in names:
             errs.append("「要素と段」の表の道具が候補の一覧に無い(名前が 1 文字違う?): `%s`" % t)
-    print("読んだもの: 候補の一覧 %d 行 / 要素と段の表 %d 行(道具 %d)" % (
-        len(names), sum(len(v) for v in table.values()), len(table)))
+    print("読んだもの: 候補の一覧 %d 行 / 要素と段の表 %d 行(道具 %d)/ 知見の表 %d 行 / 辿る一覧から出た名前 %d 行" % (
+        len(names), sum(len(v) for v in table.values()), len(table), n_find, n_trace))
     for e in errs:
         print(e)
     print("---- 合計 %d 件" % len(errs))
