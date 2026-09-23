@@ -13,9 +13,23 @@ Sec.3 "scene set"):
       `derivation` are filled in below; the derivation is the arithmetic /
       rule an auditor can redo without running any code.
 
-  capability -- "can the target actually do X", invoked for real. There is
-      no single "correct" value; the runner records what the adapter
-      reports and the scene states what property that answer measures.
+  capability -- "can the target actually do X", invoked for real. **Every
+      capability scene below also carries an `expected` and a `derivation`**
+      (2026-09-23 fix, 場面集の規則1: "能力の場面も、呼んだ結果を正解と
+      突き合わせる。「持っている」という申告...は数えない。能力があるかは、
+      その能力を使ったときに出るはずの結果(正解)が出たかで決める").
+      The round-1 build of this file left `expected=None` for every
+      capability scene and `run_battery.py` recorded whatever `status` word
+      the adapter self-reported -- the監査役 rejected this because a
+      mutant's *prose claim* ("a future-peeking method exists!") could not
+      be told apart from a genuine finding by the runner itself; only a
+      human critic re-reading the cited code line by line could catch it.
+      Every capability scene here now states, in `derivation`, exactly what
+      *observable* result an adapter must produce to count as correct, and
+      `expected` is that result (or the required subset of it) so
+      `run_battery.py` can grade it the same mechanical way it grades a
+      known-answer scene -- self-reported prose no longer decides the
+      verdict.
 
 No tool/product name appears in this file (delegation doc Sec.3 item 1:
 "道具の名前は書かない"). Adapters (which DO know which product they wrap)
@@ -38,8 +52,15 @@ class Scene:
     title: str
     input: dict[str, Any]
     measures: str  # what the scene measures, one sentence
-    expected: Any = None          # only for kind == "known_answer"
-    derivation: str = ""          # only for kind == "known_answer": how `expected` was computed by hand
+    expected: Any = None          # the correct/required observable result -- for BOTH kinds
+                                   # (2026-09-23: capability scenes are no longer exempt, 場面集の規則1).
+                                   # A dict `expected` is graded as a required-subset match against a
+                                   # dict `output` (extra informational keys in `output` are fine);
+                                   # any other type is graded by exact equality. See run_battery.py
+                                   # `_grade`.
+    derivation: str = ""          # how `expected` was determined -- by hand (known_answer) or by
+                                   # stating the one observable action that only a genuine
+                                   # implementation of the capability can produce (capability)
     notes: str = ""
 
 
@@ -47,25 +68,52 @@ class Scene:
 # Viewpoint 1 -- event-driven architecture (has a catalog column: has/has not)
 # ---------------------------------------------------------------------------
 
+_V1_EVENTS = [
+    {"kind": "bar", "ts_ns": 1_700_000_000_000_000_000 + i * 60_000_000_000,
+     "close": 100.0 + i}
+    for i in range(5)
+]
+
 V1 = [
     Scene(
         id="v1-event_driven-cap",
         viewpoint=1,
         kind="capability",
         title="1件ずつ事象を渡して駆動できるか",
-        input={
-            "events": [
-                {"kind": "bar", "ts_ns": 1_700_000_000_000_000_000 + i * 60_000_000_000,
-                 "close": 100.0 + i}
-                for i in range(5)
-            ]
-        },
+        input={"events": _V1_EVENTS},
+        expected={"event_driven": True},
+        derivation=(
+            "5件の合成事象を1件ずつ(逐次)供給する呼び口の有無そのものが観測できる結果:"
+            "対象の戦略コールバックが事象ごとに1回、計5回呼ばれれば逐次駆動(event_driven=True)、"
+            "1回だけ(または0回)なら一括のベクトル処理でしかない(event_driven=False)。"
+            "5件・0件・1件しかありえない閉じた式であり、手計算そのもの(期待値は5回呼ばれること)。"
+            "「持っている」という自己申告の文字列ではなく、対象へ実際に5件投入して呼ばれた回数を"
+            "数えた結果で判定する(場面集の規則1)。"
+        ),
         measures=(
             "対象へ5件の合成事象を1件ずつ(逐次)供給する呼び口があるか。"
             "一括の配列/DataFrameでしか受け付けられない場合は「持たない」。"
             "戦略コードが1事象ごとに1回呼ばれた回数を数える(5であれば逐次駆動、"
             "1であれば一括のベクトル処理とみなす)。"
         ),
+    ),
+    Scene(
+        id="v1-event_driven-known",
+        viewpoint=1,
+        kind="known_answer",
+        title="逐次供給された各事象で観測される「今」の時刻が入力の時刻列とそのまま一致するか",
+        input={"events": _V1_EVENTS},
+        expected={"now_sequence": [e["ts_ns"] for e in _V1_EVENTS]},
+        derivation=(
+            "入力は ts_ns が単調増加する5件の事象。各事象が戦略に届いたときに対象が報告する"
+            "「今」の値(あるいは処理中の事象の時刻)を、届いた順に並べたものが正解。"
+            "真に1件ずつ届けているなら、この列は入力の ts_ns 列とビット単位で一致するはずで"
+            "(恒等写像、計算不要)、途中でどれか1件でも欠落・重複・別の値に化けていれば"
+            "不一致になる。v1-event_driven-cap が「1件ずつ届く」ことを確認する能力の場面なのに"
+            "対し、この場面は「届いた各時刻の値そのものが壊れていないか」を見る値の場面"
+            "(場面集の規則3: 各観点に値の場面を1つ以上)。"
+        ),
+        measures="事象ごとのコールバックで観測される時刻が、入力の時刻列と欠落・変質なく対応するか。",
     ),
 ]
 
@@ -94,6 +142,14 @@ for _key, _jp, _sample in _EVENT_TYPES:
         kind="capability",
         title=f"事象型「{_jp}」を扱えるか",
         input={"event_type": _key, "sample": _sample},
+        expected={"supported": True},
+        derivation=(
+            f"「{_jp}」型の合成1件を対象へ実際に投入し、対象がその型を独立した事象として"
+            f"受理・配送したか(supported=True)/しなかったか(supported=False)を実測する。"
+            f"型が無ければ受理のしようがないので supported=False が唯一の正しい観測結果になる"
+            f"——「型・名前がある」という申告だけでは数えない(場面集の規則1)。8種のうち"
+            f"どれだけが supported=True を実測できるかが観点2の網羅性そのもの。"
+        ),
         measures=f"「{_jp}」型の事象を、実装のコードで確かめられる形で受理・処理できるか(持つ/持たない)。",
     ))
     V2.append(Scene(
@@ -147,6 +203,17 @@ V3 = [
         kind="capability",
         title="内部の時刻表現の型を申告できるか",
         input={},
+        expected={"unit": "ns", "timezone": "UTC"},
+        derivation=(
+            "要件(§1直書き)は「時刻はUTCのint64ナノ秒」。対象が機械可読の契約(構造化された"
+            "dict、例:unit/timezoneキー)を持てば、その中身が文字通り unit=='ns' かつ"
+            "timezone=='UTC' であることを直接比較できる(正解はこの2値そのもの)。対象が"
+            "そこまで構造化していない場合(自由記述の型名文字列しか無い場合)は、run_battery.py"
+            "がその文字列に ns/nanosecond 相当の語と utc/tz-aware 相当の語の両方が現れるかを"
+            "機械的に見る(この場合「utc」の明記が無く tz-aware 止まりの申告は、UTCそのものの"
+            "確認ではない点を検討表・比較表の注記に残す)。「int64 ns で持っている」という"
+            "prose の自己申告だけでは数えない。"
+        ),
         measures="対象が内部で時刻をどの型(int64 ns / float 秒 / その他)で持つかを、実装のコードまたは機械可読の契約から申告できるか。",
     ),
 ]
@@ -188,9 +255,24 @@ V4 = [
         kind="capability",
         title="将来事象への直接アクセス手段の有無",
         input={"bars": _LA_BARS, "probe_index": 3},
+        expected={"future_index_raises": True},
+        derivation=(
+            "2026-09-23修正(場面集の規則1): 旧版は「構造上そもそも存在しないと申告できるか」を"
+            "文章で自己申告させ、run_battery.py はその申告をそのまま記録するだけだった"
+            "(監査役の指摘、試金石 mutant.py の `_fake_cap_claim` が実在しない"
+            "`peek_next(n=1)` を『存在する』と偽って主張してもこの場面単体では検出できなかった)。"
+            "この版は自己申告をやめ、実際に1つ先(probe_index+1個目、まだ届いていないはずの"
+            "事象)を、known答え合わせの場面(v4-lookahead-known)と同じ経路で取得しようと"
+            "**実際に試す**: probe_index+1件目までしか届いていない時点で、届いた列の"
+            "「1つ先」を公開の手段(索引アクセス等)で読もうとする。正解は「読めない"
+            "(IndexError相当の例外か、読み出し不可を示す明示的な失敗)」= future_index_raises: True。"
+            "黙って値が返る(=1つ先のbarのcloseが読めてしまう)なら False で不一致になる。"
+            "対象がこの実測を行える手段を持たない場合は対応なし。"
+        ),
         measures=(
             "戦略コードから「今」より先の事象を取得できる公開の手段(索引アクセス・"
             "全件配列の直接参照など)が構造上そもそも存在しないか(存在しない=良い)。"
+            "自己申告ではなく、実際に1つ先を読もうと試みて失敗するかを実測する。"
         ),
     ),
 ]
@@ -232,9 +314,22 @@ V5 = [
         id="v5-order-cap",
         viewpoint=5,
         kind="capability",
-        title="同時刻の並びの規則が明記されているか",
-        input={"events": _TIED_EVENTS},
-        measures="同一タイムスタンプの事象順序を決める規則を、対象が明記(実装のコードまたは契約)しているか。",
+        title="同時刻の並びが投入順ではなく規則に基づくか(投入順を変えて再確認)",
+        input={"events": _TIED_EVENTS, "events_reversed": list(reversed(_TIED_EVENTS))},
+        expected={"order_independent_of_input_order": True},
+        derivation=(
+            "2026-09-23修正(場面集の規則1): 旧版は『規則を明記しているか』を自己申告の文章"
+            "(prose)で答えさせていた(申告文字列が本物の規則かは読者が検証するしかなかった)。"
+            "この版は同じ4件の同時刻事象を(a)元の投入順(A,B,C,D)と(b)逆順(D,C,B,A)の"
+            "2通りで実際に処理させ、出てきた処理順序が両方で一致するかを実測する。"
+            "もし対象が『投入順=処理順』でしかない(=規則ではなく偶然の並びに従っているだけ)"
+            "なら、入力の並びを逆にすれば出力も逆になり不一致になる。内容(型・時刻)に基づく"
+            "決定的な規則を本当に適用しているなら、入力の並びを変えても同じ処理順序が出るのが"
+            "正解(order_independent_of_input_order=True)。v5-order-knownの『同じ入力を2回"
+            "実行して同じ順序か』(再現性)とは別の軸: こちらは『入力の並びを変えても規則が"
+            "支配するか』(規則の実在)を見る。"
+        ),
+        measures="同一タイムスタンプの事象順序を決める規則を、対象が明記(実装のコードまたは契約)しているか。入力の並びを変えても同じ処理順序になるかを実測する。",
     ),
 ]
 
@@ -263,6 +358,14 @@ V6 = [
         kind="capability",
         title="事象ごとのコールバック・発注・取消の3種の呼び口",
         input={},
+        expected={"count": 3},
+        derivation=(
+            "§1直書きの要件は『戦略のAPI(事象ごとの呼び出し・発注・取消)』の3つ。"
+            "対象の公開API(クラス定義・契約データ)を実測して hasattr 相当で3つそれぞれの"
+            "有無を数える。正解は3つとも揃っていること(count=3)。1つでも欠ければ"
+            "count<3で不一致 -- 個数という閉じた整数なので自己申告ではなく実測値そのもので"
+            "判定できる。"
+        ),
         measures="戦略が呼べる公開APIとして (a) 事象ごとのコールバック (b) 発注 (c) 取消 の3種をそれぞれ持つか(0〜3の数)。",
     ),
 ]
@@ -293,6 +396,13 @@ V7 = [
         kind="capability",
         title="約定模型・遅延模型・費用・口座の4口",
         input={},
+        expected={"count": 4},
+        derivation=(
+            "§1直書きの要件は『他項目が差し込む口(約定模型・遅延模型・費用・口座)』の4つ。"
+            "対象の公開API(コンストラクタ引数・契約データ)を実測して4口それぞれの有無を"
+            "数える。正解は4つとも揃っていること(count=4)。個数という閉じた整数なので"
+            "自己申告ではなく実測値そのもので判定できる。"
+        ),
         measures="約定模型・遅延模型・費用・口座の4要素それぞれについて、核を書き換えずに差し替え可能な口を持つか(0〜4の数)。",
     ),
 ]

@@ -22,8 +22,18 @@ carries the "did two runs agree" column the delegation doc asks for
 (`Sec.3 "比較の表"`: 2回の実行で一致したか).
 
 The resulting table's cells use exactly the delegation doc's vocabulary
-(Sec.3 "比較の表"): 一致 / 不一致(値) / 対応なし / 実行の記録なし, plus a
-raw status/output dump for anything that errored.
+(Sec.1 用語 / Sec.3 場面集の規則5): 一致 / 対応なし / 不一致(値) / 結果なし,
+plus a raw status/output dump for anything that errored.
+
+2026-09-23 fix (場面集の規則1): every scene -- known_answer AND capability
+-- is now graded by comparing `SceneResult.output` to `Scene.expected`
+(`_grade`, below). Earlier this file only did that for known_answer scenes;
+a capability scene's `verdict` was just the adapter's own self-reported
+`status` word, so an adapter (or a hostile mutant) that merely *claimed*
+"ok" with a fabricated `output` could not be told apart, by this script,
+from a genuine positive result. `scenes.py` now gives every capability
+scene an `expected` too, so the same closed comparison applies to both
+kinds. See `scenes.py`'s module docstring for the full rationale.
 """
 from __future__ import annotations
 
@@ -73,15 +83,44 @@ def _load_adapter(target: str) -> Adapter:
     )
 
 
-def _classify_known_answer(result: SceneResult, expected) -> str:
+def _output_matches_expected(output, expected) -> bool:
+    """Compare an adapter's real output to a scene's `expected`.
+
+    A dict `expected` is graded as a REQUIRED-SUBSET match against a dict
+    `output`: every key in `expected` must be present in `output` with an
+    equal value; extra keys in `output` (diagnostic/informational fields a
+    capability scene's adapters attach, e.g. `callback_count` alongside
+    `event_driven`) are ignored. This lets heterogeneous adapters (current
+    impl / new impl / opponents) report extra detail without being
+    penalised, while still requiring the specific field(s) the scene cares
+    about to be exactly right. Any other `expected` type (int/str/bool/full
+    dict for a known-answer scene) is graded by plain equality, which is
+    what the known-answer scenes have always used (they build `expected` to
+    equal the adapter's whole output dict already).
+    """
+    if isinstance(expected, dict):
+        if not isinstance(output, dict):
+            return False
+        return all(output.get(k) == v for k, v in expected.items())
+    return output == expected
+
+
+def _grade(result: SceneResult, expected) -> str:
+    """One SceneResult -> one of the delegation doc's four 正しさ words.
+
+    Applied uniformly to known_answer AND capability scenes (2026-09-23,
+    場面集の規則1) -- see this module's docstring and scenes.py's.
+    """
     if result.status == "not_supported":
         return "対応なし"
     if result.status == "no_record":
-        return "実行の記録なし"
+        return "結果なし"
     if result.status == "error":
-        return "不一致(値)"  # treat an unexpected exception as a failed known-answer check
-    # status == "ok"
-    return "一致" if result.output == expected else "不一致(値)"
+        return "不一致(値)"  # an unexpected exception is a failed check, not a "no result"
+    # status == "ok" -- still independently checked against `expected`, never
+    # trusted just because the adapter itself claims "ok" (this is exactly
+    # the check the round-1 build was missing for capability scenes).
+    return "一致" if _output_matches_expected(result.output, expected) else "不一致(値)"
 
 
 def run_target(target: str, repeat: int = 2) -> list[dict]:
@@ -93,10 +132,7 @@ def run_target(target: str, repeat: int = 2) -> list[dict]:
         match_across_runs = all(
             (r.status, r.output) == (first.status, first.output) for r in runs
         )
-        if scene.kind == "known_answer":
-            verdict = _classify_known_answer(first, scene.expected)
-        else:
-            verdict = first.status  # capability scenes: record the raw capability status/output
+        verdict = _grade(first, scene.expected)
         rows.append(
             {
                 "target": target,
@@ -105,7 +141,7 @@ def run_target(target: str, repeat: int = 2) -> list[dict]:
                 "kind": scene.kind,
                 "status": first.status,
                 "output": first.output,
-                "expected": scene.expected if scene.kind == "known_answer" else "",
+                "expected": scene.expected,
                 "verdict": verdict,
                 "match_across_runs": match_across_runs,
                 "detail": first.detail,
@@ -132,18 +168,15 @@ def main() -> None:
             writer.writerow(row)
 
     n_total = len(rows)
-    # `verdict` uses the delegation doc's Japanese vocabulary for known_answer
-    # rows (対応なし/実行の記録なし/不一致(値)/一致) and the adapter's raw
-    # `status` word for capability rows (ok/not_supported/no_record/error) --
-    # the two kinds are not directly comparable, so tally by real `status`
-    # here (both kinds), which is consistent regardless of scene kind.
-    by_status = {s: sum(1 for r in rows if r["status"] == s) for s in ("ok", "not_supported", "no_record", "error")}
+    # `verdict` now uses the same four delegation-doc words for BOTH kinds
+    # (2026-09-23 fix, 場面集の規則1): 一致/対応なし/不一致(値)/結果なし.
+    by_verdict = {v: sum(1 for r in rows if r["verdict"] == v) for v in ("一致", "対応なし", "不一致(値)", "結果なし")}
     n_mismatched_runs = sum(1 for r in rows if not r["match_across_runs"])
     print(f"{args.target}: {n_total} scenes -> wrote {args.out}")
     print(
-        f"  status: ok={by_status['ok']}, not_supported={by_status['not_supported']}, "
-        f"no_record={by_status['no_record']}, error={by_status['error']}; "
-        f"2回の実行で不一致={n_mismatched_runs}"
+        f"  正しさ: 一致={by_verdict['一致']}, 対応なし={by_verdict['対応なし']}, "
+        f"不一致(値)={by_verdict['不一致(値)']}, 結果なし={by_verdict['結果なし']}; "
+        f"再現(2回の実行で不一致)={n_mismatched_runs}"
     )
 
 

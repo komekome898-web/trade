@@ -40,8 +40,11 @@ def render() -> str:
     lines.append(
         "委任文 `docs/DATA/delegations/20260923_backtest_env_prompt.md` §3「場面集」の定義どおり、"
         "**既知解の場面**(合成の入力 + エンジンを見ずに手計算・閉じた式で出した正解。"
-        "出し方を明記)と、**能力の場面**(「X ができるか」を実際に呼んで試す。単一の正解は無い)"
+        "出し方を明記)と、**能力の場面**(「X ができるか」を実際に呼んで試す)"
         "の2種類のみを置く。**道具の名前は書かない**(場面はどの対象に対しても同一)。"
+        "場面集の規則1(2026-09-23、監査役の指摘を受けて追加)により、**能力の場面にも"
+        "「正解」がある**: 呼んだ結果を正解と突き合わせて判定し、「持っている」という申告"
+        "だけでは数えない。"
     )
     lines.append("")
     lines.append(f"全 {len(SCENES)} 場面(観点別の内訳は下の見出し順)。")
@@ -57,11 +60,8 @@ def render() -> str:
             lines.append(f"### `{s.id}` -- {s.title}({_KIND_LABEL[s.kind]})")
             lines.append("")
             lines.append(f"- **入力**: `{s.input}`")
-            if s.kind == "known_answer":
-                lines.append(f"- **期待**: `{s.expected}`")
-                lines.append(f"- **正解の出し方**: {s.derivation}")
-            else:
-                lines.append("- **期待**: (無し -- 能力の場面。対象の実測をそのまま記録する)")
+            lines.append(f"- **期待**: `{s.expected}`")
+            lines.append(f"- **正解の出し方**: {s.derivation}")
             lines.append(f"- **何を測るか**: {s.measures}")
             if s.notes:
                 lines.append(f"- **注記**: {s.notes}")

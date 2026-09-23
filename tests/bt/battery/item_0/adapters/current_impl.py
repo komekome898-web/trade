@@ -113,6 +113,26 @@ class CurrentImplAdapter(Adapter):
         )
         return SceneResult("not_supported", output={"event_driven": False, "callback_count": len(rec.calls)}, detail=detail)
 
+    def _scene_v1_event_driven_known(self, scene: Scene) -> SceneResult:
+        bars = scene.input["events"]
+        rec = _RecordingStrategy()
+        df = _bars_to_df(bars)
+        bt_engine.run_backtest(rec, df)
+        now_sequence = [int(c.index[-1].value) for c in rec.calls]
+        output = {"now_sequence": now_sequence}
+        match = output == scene.expected
+        return SceneResult(
+            "ok" if match else "error",
+            output=output,
+            detail=(
+                f"合成5足を run_backtest(strategy, candles) で実行し、on_candles が呼ばれるたびに"
+                f"渡されたスライスの最終行のインデックス(pandasのns整数)を記録した列: {now_sequence}。"
+                f"既知解({scene.expected})と{'一致' if match else '不一致'}。"
+                f"(engine内部は足単位で逐次スライスを渡しており、1件投入APIの有無とは別に、"
+                f"各コールバックの時刻そのものは壊れずに追跡できる。)"
+            ),
+        )
+
     # ------------------------------------------------------------------
     # viewpoint 2 -- event type coverage
     # ------------------------------------------------------------------
@@ -241,16 +261,45 @@ class CurrentImplAdapter(Adapter):
         )
 
     def _scene_v4_lookahead_cap(self, scene: Scene) -> SceneResult:
+        # 2026-09-23 fix (場面集の規則1): stop self-reporting a prose verdict
+        # and instead actually attempt, from inside on_candles, to read one
+        # row past what this callback was handed (candles.iloc[len(candles)]),
+        # the same mechanism v4-lookahead-known reads its known answer from.
+        bars = scene.input["bars"]
+        probe_index = scene.input["probe_index"]
+        rec = _RecordingStrategy()
+        df = _bars_to_df(bars)
+        probe: dict = {}
+
+        _orig_on_candles = rec.on_candles
+
+        def _probing_on_candles(candles: pd.DataFrame):
+            if len(candles) == probe_index + 1 and "raised" not in probe:
+                try:
+                    leaked = candles.iloc[len(candles)]
+                    probe["raised"] = False
+                    probe["leaked_close"] = float(leaked["close"])
+                except IndexError:
+                    probe["raised"] = True
+            return _orig_on_candles(candles)
+
+        rec.on_candles = _probing_on_candles
+        bt_engine.run_backtest(rec, df)
+        output = {"future_index_raises": probe.get("raised", False)}
+        match = output == scene.expected
         return SceneResult(
-            "ok",
-            output={"structural_block": True},
+            "ok" if match else "error",
+            output=output,
             detail=(
-                "engine.py の内部ループは `candles.iloc[: i + 1]` 相当の expanding slice を毎回"
-                "新規に切り出して on_candles に渡す構造で(engine.py:3-4 docstring + 上の known 場面の"
-                "実測)、戦略オブジェクトは元の DataFrame 全体への参照を保持しない。"
-                "ただし全件の `candles` DataFrame 自体は run_backtest 呼び出し時に丸ごと渡されており、"
-                "戦略実装者が `self` に保存するなどして参照を保持すれば将来を読める余地は構造的に"
-                "閉じ切れていない(規約による防止であり、型システムによる強制ではない)。"
+                f"探査時刻(probe_index={probe_index})の on_candles 呼び出し内で "
+                f"`candles.iloc[len(candles)]`(1つ先の未到達行)を実際に読もうとした実測: "
+                f"{'IndexErrorで読めなかった' if probe.get('raised') else f'読めてしまい値={probe.get(\"leaked_close\")}が漏れた'}。"
+                f"既知解({scene.expected})と{'一致' if match else '不一致'}。"
+                f"(このスライス自体は expanding slice で future_index_raises=True になるのが実測結果。"
+                f"ただし全件の candles DataFrame 自体は run_backtest 呼び出し時に丸ごと渡されており、"
+                f"戦略実装者が `self` に元の DataFrame への参照を保存すれば、この場面の外側で"
+                f"将来を読める余地は残る -- 規約による防止であり型システムによる強制ではない点は"
+                f"別途 [直す] として報告する。)"
             ),
         )
 
