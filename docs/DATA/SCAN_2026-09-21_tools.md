@@ -7567,7 +7567,7 @@ X の経路も同じ理由で打っていない。**候補も 1 件も増やし�
 
 | 当方 | 段(機構) | 段(既定) | 出所 |
 |---|---|---|---|
-| `src/bot/backtest/engine.py` | **1** | **1** | 自ら「通り抜けた約定なら埋まったとみなす」と書いている(`CLAUDE.md` §8 の A の項) |
+| `src/bot/backtest/engine.py` | **1** | **1** | 自ら「通り抜けた約定なら埋まったとみなす」と書いている(委任文 §8 の A の項) |
 | `scripts/qa/maker_fill_ref.py` | **5** | **該当なし** | 表示サイズの後ろに並び FIFO で埋まる参照実装だが、**研究の模擬がこれを呼んでいない**(同上)。**24 回目の表の型 1 と同じで、どちらの列にも数えられない** |
 
 **つまり当方をそのまま使ったときの高さは段 1 である。**24 回目の検収 §4 の逐語「**当方が道具を選ぶときに効くのは段(既定)のほうである。**」に照らすと、
@@ -7813,7 +7813,7 @@ X の経路も同じ理由で打っていない。**候補は 1 件も増えて�
 
 | # | 知見 | 印 | 根拠 |
 |---|---|---|---|
-| 1 | **候補 57 `WonderTrader` は、自分の注文が列のどこに居るかを追う。**逐語は `double& quepos = ordInfo._queue;` と `if (volume <= quepos)` と `quepos -= volume;` と、列の初期値を作る `ordInfo._queue = lastTick->bidqty(0);` と `ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);`。**当方が持っていないもの(`CLAUDE.md` §8 の A)そのものが、研究の模擬に組み込まれた形で在る。**列の減らし方は「ティックの出来高ぶんだけ前が減る」である | 実測 | `.../src/WtBtCore/MatchEngine.cpp` 取得日 2026-09-22 / `20260922_tools_1_run26.log` の `c57_wondertrader` の節 |
+| 1 | **候補 57 `WonderTrader` は、自分の注文が列のどこに居るかを追う。**逐語は `double& quepos = ordInfo._queue;` と `if (volume <= quepos)` と `quepos -= volume;` と、列の初期値を作る `ordInfo._queue = lastTick->bidqty(0);` と `ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);`。**当方が持っていないもの(委任文 §8 の A)そのものが、研究の模擬に組み込まれた形で在る。**列の減らし方は「ティックの出来高ぶんだけ前が減る」である | 実測 | `.../src/WtBtCore/MatchEngine.cpp` 取得日 2026-09-22 / `20260922_tools_1_run26.log` の `c57_wondertrader` の節 |
 | 2 | **候補 57 の列の減りの掛け目は既定で 0 である。**逐語は `MatchEngine() : _tick_cache(NULL),_cancelrate(0), _sink(NULL)` で、`init` の逐語は `_cancelrate = cfg->getDouble("cancelrate");`。**列を追うこと自体は旗を持たず無条件に働く**ので、段(既定)は下がらない。下がるのは「前の注文が取り消されて列が早く減る」ぶんだけである | 実測 | 同上 |
 | 3 | **候補 91 `braedonsaunders/homerun` も、自分の注文が列のどこに居るかを追う。**逐語は `queue_ahead_shares: Optional[float] = None` と、板の写真が入れ替わるときの注記 `depth that disappeared between snapshots is volume that traded ahead of us in the FIFO queue.` と `order.queue_ahead_shares = compute_queue_ahead_shares(` と `if order.queue_ahead_shares is not None and order.queue_ahead_shares > 1e-9:`。**同じ値段の段の中の順番は観測できないので `maker_queue_ahead_fraction` の既定 `0.65` を当てる**という逐語の断りが付いている | 実測 | `.../backend/services/backtest/matching_engine.py` 取得日 2026-09-22 / `20260922_tools_1_run26.log` の `c91_homerun` の節 |
 | 4 | **候補 91 の影響の関数は、候補 21 `Qlib` と同じ「呼ぶが既定では無効」である。**逐語は `strength_bps: float = 0.0,` と、同じ類の注記 `strength_bps = 0 disables impact entirely (existing backtests` と、2 つの領域に分かれる式の説明 `(textbook Almgren-Chriss; impact grows concavely with size).`。**列を追うほうは既定で働き、影響のほうは既定で消えている。**1 つの道具の中で向きが分かれる | 実測 | 同上 |
@@ -8277,7 +8277,7 @@ X の経路も同じ理由で打っていない。**候補は 1 件も増えて�
 (仕組みは在り、値が 0 に置かれている)。**24 回目に格上げした「呼ぶが既定では無効」の型の 7 件目である。**
 
 **当方の位置**: `scripts/qa/maker_fill_ref.py` は表示サイズの後ろに並ぶ FIFO で、**取り消しの扱いは 95 番の側**である
-(`CLAUDE.md` §8 の A の逐語「表示サイズの後ろに並び FIFO で埋まる」)。**旋盤は無い。**
+(委任文 §8 の A の逐語「表示サイズの後ろに並び FIFO で埋まる」)。**旋盤は無い。**
 
 #### 登録の付け替え 3 件(起動の指定 7)
 
@@ -8365,7 +8365,7 @@ X の経路も同じ理由で打っていない。**候補は 1 件も増えて�
 
 | 当方 | 段(機構) | 段(既定) | 出所 |
 |---|---|---|---|
-| `src/bot/backtest/engine.py` | **1** | **1** | 自ら「通り抜けた約定なら埋まったとみなす」と書いている(`CLAUDE.md` §8 の A の項) |
+| `src/bot/backtest/engine.py` | **1** | **1** | 自ら「通り抜けた約定なら埋まったとみなす」と書いている(委任文 §8 の A の項) |
 | `scripts/qa/maker_fill_ref.py` | **5** | **該当なし** | FIFO の参照実装だが、**研究の模擬がこれを呼んでいない**(同上)。24 回目の表の型 1 と同じで、どちらの列にも数えられない |
 
 #### 段(既定)の分布と、機構と既定が違う件数(起動の指定 2)
@@ -8595,7 +8595,7 @@ X の経路も同じ理由で打っていない。**候補は 1 件も増えて�
 | # | 知見 | 印 | 根拠 |
 |---|---|---|---|
 | 1 | **この回に引く逐語 55 本を `grep -cF` で 1 件ずつ生ログ(`run2` から `run28`)と突き合わせた結果、当たりが 0 件だったのは 1 本だけだった。**それは候補 4 `PyBroker` の `volume_limit: Optional[float] = 0.025,` で、24 回目の知見 11 が**印 `一次資料`(URL と取得日)**で引いたものである。**生ログには GET の本文の先頭 200 バイトしか入らないので、当たりが無いのは当然で、引用の誤りではない。**原典を取り直して打つと `334:        volume_limit: Optional[float] = 0.025,` で、**逐語は原典と一致する** | 実測 | `20260922_tools_1_run28.log` の `verbatim_recheck` と `c4_volume_limit` の節 |
-| 2 | **当方の `src/bot/backtest/engine.py` は、自分で「楽観」と書いている。**逐語は 45 行の `1m-bar approximation (optimistic, stated for the record): on a 1-minute` と、51 行の `unknown. Real fills also depend on queue position; this model grants the` と、52 行の `fill on any strict through-trade. Treat maker-TP results as an upper`。**原典では 3 行に折れているので 1 行に繋がない。**`CLAUDE.md` §8 の A が指す「47・51 行」のうち、楽観を宣言している行は **45 行**である | 実測 | `20260922_tools_1_run28.log` の `ours_engine_optimism` と `ours_engine_lines` の節 |
+| 2 | **当方の `src/bot/backtest/engine.py` は、自分で「楽観」と書いている。**逐語は 45 行の `1m-bar approximation (optimistic, stated for the record): on a 1-minute` と、51 行の `unknown. Real fills also depend on queue position; this model grants the` と、52 行の `fill on any strict through-trade. Treat maker-TP results as an upper`。**原典では 3 行に折れているので 1 行に繋がない。**委任文 §8 の A が指す「47・51 行」のうち、楽観を宣言している行は **45 行**である | 実測 | `20260922_tools_1_run28.log` の `ours_engine_optimism` と `ours_engine_lines` の節 |
 | 3 | **当方の `scripts/qa/maker_fill_ref.py` を、`src/` と `scripts/` の側は 1 本も呼んでいない。**範囲を切らない走査(`git ls-files -z \| xargs -0 grep -ln`)の当たりは、`backtest_data/` の既知解の手書き導出 4 本・`docs/` の 7 本・`tests/test_qa_maker_fill_ref.py` の 1 本である。`import` の当たりは `tests/test_qa_maker_fill_ref.py:38` の `import maker_fill_ref as ref  # noqa: E402` と `:39` の 2 行だけで、**`src/` と `scripts/` には 0 件。**つまり**取り込んでいるのは試験だけで、研究の実行経路ではない** | 実測 | `20260922_tools_1_run28.log` の `ours_maker_fill_ref_fullscope` と `ours_maker_fill_ref_importers` の節 |
 | 4 | **完了の形の逐語の帰属に、書き違いが 1 件ある。**`docs/OWNER_LOG.md` L-398 のオーナーの発言は「**区分1のテーマは何ですか？**」と「**案 A' で**」の 2 つで、**「6 要素それぞれについて、一次資料に到達した候補が尽きること」はリードが書いた案 A' の本文である。**26 回目と 27 回目の節は、この本文を「オーナー逐語 L-398」として引いていた。**オーナーが選んだ決定であることは変わらないが、語はリードのものである**(`CLAUDE.md` §0.2 B の見出しの逐語「**私の指示でないものを私の指示とするのは嘘なのでやめる。経緯となった言葉を書く。**」) | 実測 | `20260922_tools_1_run28.log` の `owner_log_l398` の節 |
 | 5 | **「呼ぶが既定では無効」の件数は 7 件で、26 回目の知見 20 の「5 件」は 33 番を数え落としている。**列挙すると 2 番 `Backtrader`・4 番 `PyBroker`・33 番 `backtesting_execution_simulator`・21 番 `Qlib`・91 番 `braedonsaunders/homerun`・92 番 `prediction-market-backtester`・57 番 `WonderTrader` の 7 件。24 回目は「4・33・2 の 3 件」と書いており、26 回目が「25 回目までの 21・4・2」と 3 件しか引き継がなかったために 1 件落ちた。**27 回目が 57 番を「7 件目」と書いたほうが列挙と合う** | 実測 | `20260922_tools_1_run28.log` の `type2_default_off` の節 |
@@ -8823,7 +8823,7 @@ ExecMocker   h=2 cpp=0     ← ここだけ
 **57 番の既定 0 は「95 番と同じ振る舞い」であって、「取り消しを模擬していない」のではない**(仕組みは在り、値が 0 に置かれている)。
 
 **当方がどこに居るか**: **`scripts/qa/maker_fill_ref.py` は 95 番の側である。**
-表示サイズの後ろに並ぶ FIFO で、**取り消しで繰り上がる扱いも、率で先に引く旋盤も持たない**(`CLAUDE.md` §8 の A の逐語「表示サイズの後ろに並び FIFO で埋まる」)。
+表示サイズの後ろに並ぶ FIFO で、**取り消しで繰り上がる扱いも、率で先に引く旋盤も持たない**(委任文 §8 の A の逐語「表示サイズの後ろに並び FIFO で埋まる」)。
 **しかも `src/` と `scripts/` の側が呼んでいない**(知見 3)ので、**研究の模擬が実際に使っているのは `engine.py` の段 1 である。**
 **つまり当方は、この 3 つの対比の外側(跨いだら埋まる)に居る。**
 
@@ -8884,7 +8884,7 @@ ExecMocker   h=2 cpp=0     ← ここだけ
 3. **要約の「当方より高い段に既定で居るのは 25 件」は、この回に足し算して出した数である。**
    36 件から、段 0 の 2 件・段 1 の 7 件・尺度の外の 2 件を引いた残りである。**この数え方でよいかを決めていただきたい**
    (段 1 の 7 件には当方と同じ段の道具が含まれるので、「当方より高い」に入れていない)。
-4. **`CLAUDE.md` §8 の A は当方の `engine.py` の「47・51 行」を指しているが、楽観を宣言している行は 45 行だった**(知見 2)。
+4. **委任文 §8 の A は当方の `engine.py` の「47・51 行」を指しているが、楽観を宣言している行は 45 行だった**(知見 2)。
    **`CLAUDE.md` は書き換えていない**(§0.2 A-16 の対象ではないが、リードとオーナーの領分なので触らない)。**直すかどうかを決めていただきたい。**
 5. **`scripts/qa/maker_fill_ref.py` を「呼んでいない」と書く範囲を、`src/` と `scripts/` に取った。**
    範囲を切らない走査では `backtest_data/` の既知解の手書き導出 4 本と `tests/test_qa_maker_fill_ref.py` が当たる(知見 3)。
