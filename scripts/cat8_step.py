@@ -30,11 +30,16 @@ a = ap.parse_args()
 def one_word(s):
     return "_".join(s.split()) or "-"
 
+
+def one_line(s):
+    # 見出しは 1 行でなければならない(改行を含む note が孤立した行を残した = 監査 10 回目の指摘 5)
+    return " ".join(s.split()) or "-"
+
 now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 if a.manual is not None:
     body = sys.stdin.read()
-    head = "--- %s method=%s target=%s rc=NA time_s=NA note=%s" % (now, one_word(a.method), one_word(a.target), a.note)
-    cmdline, out, rc = a.manual, body, 0
+    head = "--- %s method=%s target=%s rc=NA time_s=NA note=%s" % (now, one_word(a.method), one_word(a.target), one_line(a.note))
+    cmdline, out, rc = one_line(a.manual), body, 0
 else:
     cmd = a.cmd[1:] if a.cmd[:1] == ["--"] else a.cmd
     if not cmd:
@@ -45,7 +50,7 @@ else:
     dt = time.monotonic() - t0
     rc, out = p.returncode, (p.stdout + p.stderr)
     head = "--- %s method=%s target=%s rc=%d time_s=%.3f note=%s" % (
-        now, one_word(a.method), one_word(a.target), rc, dt, a.note)
+        now, one_word(a.method), one_word(a.target), rc, dt, one_line(a.note))
 cut = out[: a.keep]
 tail = "" if len(out) <= a.keep else "\n[出力は %d 文字。先頭 %d 文字だけを残した]" % (len(out), a.keep)
 with open(a.log, "a") as f:

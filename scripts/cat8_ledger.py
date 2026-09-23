@@ -240,9 +240,12 @@ def cmd_check(a):
             if ln and not (ln.isdigit() and 1 <= int(ln) <= len(lines)):
                 errs.append("%s: 最後の記載の行 %s が報告に無い" % (r["番号"], ln))
     for lg in a.logs:
-        for i, ln in enumerate(pathlib.Path(lg).read_text(errors="replace").splitlines(), 1):
+        ll = pathlib.Path(lg).read_text(errors="replace").splitlines()
+        for i, ln in enumerate(ll, 1):
             if ln.startswith("---") and not LOG_HEAD.match(ln):
                 errs.append("%s:%d: 生ログの見出しの形が違う: %s" % (lg, i, ln[:80]))
+            if LOG_HEAD.match(ln) and not (i < len(ll) and ll[i].startswith("$ ")):
+                errs.append("%s:%d: 見出しの直後が `$ <コマンド>` の行でない(追補 §3)" % (lg, i))
     for e in errs:
         print(e)
     print("---- 合計 %d 件" % len(errs))
