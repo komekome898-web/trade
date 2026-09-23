@@ -1,98 +1,207 @@
-"""V3: strategies can only see events with received_time_ns <= now, enforced
-structurally by the engine, not by a convention the strategy is trusted to
-follow."""
-from __future__ import annotations
+"""The strategy can only see events it has received (received_time_ns <=
+now), by construction -- checked through public AND private paths."""
+import random
 
-import unittest
+import pytest
 
-from bot.bt.core.api import StrategyContext
-from bot.bt.core.engine import CoreEngine
-from bot.bt.core.events import ClockEvent, TradeEvent
-from bot.bt.core.strategy import Strategy
-from bot.bt.core.time import to_nanos
+from bot.bt.core import (
+    CoreEngine,
+    Event,
+    EventType,
+    OrderRequest,
+    StaleContextError,
+    Strategy,
+    ZeroLatency,
+)
+from bot.bt.core.testing import ImmediateFillModel
+from bot.bt.core import NullCostModel
 
-
-def _clock_events(n: int, start_s: int = 1_700_000_000) -> list[ClockEvent]:
-    return [ClockEvent(received_time_ns=to_nanos(start_s + i, "s"), seq=0) for i in range(n)]
-
-
-class _RecordingStrategy(Strategy):
-    def __init__(self) -> None:
-        self.observations: list[tuple[int, int]] = []  # (now_ns, len(visible))
-        self.contexts_seen: list[StrategyContext] = []
-
-    def on_event(self, event, ctx: StrategyContext) -> None:
-        self.observations.append((int(ctx.now_ns), len(ctx.visible_events())))
-        self.contexts_seen.append(ctx)
+from ._util import MS, SEC, T0, Recorder, bar, trade
 
 
-class LookaheadStructuralTest(unittest.TestCase):
-    def test_visible_events_never_exceed_current_index(self):
-        events = _clock_events(5)
-        strategy = _RecordingStrategy()
-        engine = CoreEngine(strategy=strategy, events=events)
-        engine.run()
-        # at step i (0-indexed), exactly i+1 events must be visible
-        self.assertEqual([n for _, n in strategy.observations], [1, 2, 3, 4, 5])
+def test_known_answer_probe_at_index_3_sees_four_bars_max_103():
+    bars = [bar(T0 + i * 60 * SEC, 100.0 + i) for i in range(6)]
+    probe = {}
 
-    def test_no_visible_event_is_ever_in_the_future(self):
-        events = _clock_events(5)
-        strategy = _RecordingStrategy()
-        engine = CoreEngine(strategy=strategy, events=events)
-        engine.run()
-        for ctx in strategy.contexts_seen:
-            now = ctx.now_ns
-            for ev in ctx.visible_events():
-                self.assertLessEqual(int(ev.received_time_ns), int(now))
+    def act(event, ctx):
+        if event is bars[3] or (event.EVENT_TYPE is EventType.BAR and event.close == 103.0):
+            vis = ctx.visible_events(EventType.BAR)
+            probe["count"] = len(vis)
+            probe["max"] = max(e.close for e in vis)
 
-    def test_full_log_is_strictly_larger_than_what_early_steps_see(self):
-        # Proves the restriction is real filtering, not a coincidence of a
-        # short log: the engine's full sorted log has 5 events, but the
-        # first step's context can only see 1.
-        events = _clock_events(5)
-        strategy = _RecordingStrategy()
-        engine = CoreEngine(strategy=strategy, events=events)
-        engine.run()
-        self.assertEqual(len(engine.event_log), 5)
-        first_visible_count = len(strategy.contexts_seen[0].visible_events())
-        self.assertEqual(first_visible_count, 1)
-        self.assertLess(first_visible_count, len(engine.event_log))
-
-    def test_stashed_context_does_not_gain_future_visibility(self):
-        # A strategy that keeps the FIRST context around and queries it
-        # again after later events have been processed must still only see
-        # what was visible at the time that context was built -- because the
-        # underlying tuple was fixed at construction and the engine never
-        # mutates or replaces it.
-        events = _clock_events(5)
-        strategy = _RecordingStrategy()
-        engine = CoreEngine(strategy=strategy, events=events)
-        engine.run()
-        first_ctx = strategy.contexts_seen[0]
-        self.assertEqual(len(first_ctx.visible_events()), 1)
-
-    def test_fresh_context_object_every_event(self):
-        events = _clock_events(3)
-        strategy = _RecordingStrategy()
-        engine = CoreEngine(strategy=strategy, events=events)
-        engine.run()
-        ids = {id(ctx) for ctx in strategy.contexts_seen}
-        self.assertEqual(len(ids), 3)
-
-    def test_mixed_types_respect_visibility_too(self):
-        trade_future = TradeEvent(
-            received_time_ns=to_nanos(1_700_000_010, "s"), seq=0, price=1, size=1, side="buy", trade_id="future"
-        )
-        clock_now = ClockEvent(received_time_ns=to_nanos(1_700_000_000, "s"), seq=0)
-        strategy = _RecordingStrategy()
-        engine = CoreEngine(strategy=strategy, events=[trade_future, clock_now])
-        engine.run()
-        # clock_now is processed first (earlier time); at that point the
-        # later trade must not be visible.
-        first_ctx = strategy.contexts_seen[0]
-        self.assertEqual(len(first_ctx.visible_events()), 1)
-        self.assertEqual(first_ctx.current_event.EVENT_TYPE.value, "CLOCK")
+    CoreEngine(Recorder(act), bars).run()
+    assert probe == {"count": 4, "max": 103.0}
 
 
-if __name__ == "__main__":
-    unittest.main()
+class _Snoop(Strategy):
+    """Walks everything reachable from ctx (public and private attributes,
+    bound-method owners, containers) and records any Event later than now."""
+
+    def __init__(self):
+        self.violations = []
+        self.checked = 0
+
+    def on_event(self, event, ctx):
+        now = int(ctx.now_ns)
+        for e in ctx.visible_events():
+            if int(e.received_time_ns) > now:
+                self.violations.append(("public", e))
+        for e in _reachable_events(ctx):
+            self.checked += 1
+            if int(e.received_time_ns) > now:
+                self.violations.append(("reachable", e))
+
+
+def _reachable_events(root, limit=20000):
+    seen = set()
+    stack = [root]
+    found = []
+    while stack and len(seen) < limit:
+        obj = stack.pop()
+        if id(obj) in seen or isinstance(obj, (str, bytes, int, float, type)) or obj is None:
+            continue
+        seen.add(id(obj))
+        if isinstance(obj, Event):
+            found.append(obj)
+            continue
+        if isinstance(obj, dict):
+            stack.extend(obj.keys())
+            stack.extend(obj.values())
+            continue
+        if isinstance(obj, (list, tuple, set, frozenset)):
+            stack.extend(obj)
+            continue
+        owner = getattr(obj, "__self__", None)
+        if owner is not None:
+            stack.append(owner)
+        if hasattr(obj, "__dict__"):
+            stack.extend(vars(obj).values())
+        for slot in getattr(type(obj), "__slots__", ()):
+            if hasattr(obj, slot):
+                stack.append(getattr(obj, slot))
+    return found
+
+
+def _random_run(seed, n=200):
+    rng = random.Random(seed)
+    events = []
+    t = T0
+    for i in range(n):
+        t += rng.choice([0, 0, 1, 5 * MS, SEC])
+        recv = t + rng.choice([0, 0, 3 * MS, 50 * MS])
+        if rng.random() < 0.5:
+            events.append(trade(recv, 100.0 + rng.random(), exch=t))
+        else:
+            events.append(bar(recv, 100.0 + rng.random(), exch=t))
+    return events
+
+
+class _JitterFeed(ZeroLatency):
+    def __init__(self, seed):
+        self.rng = random.Random(seed)
+
+    def feed_delay_ns(self, event):
+        return self.rng.choice([0, 1, 7 * MS, 2 * SEC])
+
+
+@pytest.mark.parametrize("seed", range(5))
+def test_nothing_reachable_from_ctx_is_in_the_future(seed):
+    snoop = _Snoop()
+    CoreEngine(snoop, _random_run(seed), latency_model=_JitterFeed(seed)).run()
+    assert snoop.checked > 0
+    assert snoop.violations == []
+
+
+def test_ctx_does_not_reference_the_engine_even_privately():
+    holder = {}
+
+    class _Grab(Strategy):
+        def on_event(self, event, ctx):
+            holder.setdefault("reach", []).append(
+                [o for o in _reachable_objects(ctx) if isinstance(o, CoreEngine)]
+            )
+
+    engine = CoreEngine(_Grab(), [trade(T0), trade(T0 + 1)])
+    engine.run()
+    assert holder["reach"] == [[], []]
+
+
+def _reachable_objects(root, limit=20000):
+    seen = {}
+    stack = [root]
+    while stack and len(seen) < limit:
+        obj = stack.pop()
+        if id(obj) in seen or isinstance(obj, (str, bytes, int, float, type)) or obj is None:
+            continue
+        seen[id(obj)] = obj
+        if isinstance(obj, dict):
+            stack.extend(obj.values())
+        elif isinstance(obj, (list, tuple, set, frozenset)):
+            stack.extend(obj)
+        else:
+            owner = getattr(obj, "__self__", None)
+            if owner is not None:
+                stack.append(owner)
+            if hasattr(obj, "__dict__"):
+                stack.extend(vars(obj).values())
+            for slot in getattr(type(obj), "__slots__", ()):
+                if hasattr(obj, slot):
+                    stack.append(getattr(obj, slot))
+    return list(seen.values())
+
+
+def test_source_is_pulled_lazily_so_future_events_do_not_exist_yet():
+    pulled = []
+
+    def source():
+        for i in range(10):
+            e = trade(T0 + i * SEC, 100.0 + i)
+            pulled.append(e)
+            yield e
+
+    counts = []
+    CoreEngine(Recorder(lambda ev, ctx: counts.append(len(pulled))), source()).run()
+    # When the strategy sees event k (0-based), at most k+2 events have been
+    # read from the source: the ones delivered plus one lookahead to know
+    # nothing else shares the instant.
+    assert all(c <= k + 2 for k, c in enumerate(counts)), counts
+
+
+def test_stale_context_cannot_read_history_or_act():
+    kept = []
+    CoreEngine(Recorder(lambda ev, ctx: kept.append(ctx)), [trade(T0), trade(T0 + 1)]).run()
+    stale = kept[0]
+    assert stale.revoked
+    assert stale.now_ns == T0  # the instant it was built for stays readable
+    for call in (
+        lambda: stale.visible_events(),
+        lambda: stale.last(EventType.TRADE),
+        lambda: stale.place_order(OrderRequest("buy", "market", 1.0)),
+        lambda: stale.cancel_order("core-1"),
+        lambda: stale.open_orders(),
+        lambda: stale.set_timer(T0 + 10),
+    ):
+        with pytest.raises(StaleContextError):
+            call()
+    window = stale._StrategyContext__visible_events
+    assert list(window._log) == []
+
+
+def test_fill_model_never_sees_market_data_before_its_exchange_time():
+    fm = ImmediateFillModel()
+    events = _random_run(3)
+    CoreEngine(Recorder(), events, fill_model=fm, cost_model=NullCostModel(),
+               latency_model=_JitterFeed(3)).run()
+    times = [t for t, _ in fm.market_events_seen]
+    assert times == sorted(times)
+    assert all(t == int(e.exchange_time_ns) for t, e in fm.market_events_seen)
+    assert len(fm.market_events_seen) == len(events)
+
+
+def test_strategy_sees_event_at_received_time_not_exchange_time():
+    e = trade(T0 + 5 * MS, exch=T0)
+    rec = Recorder(lambda ev, ctx: rec.now.append(int(ctx.now_ns)))
+    rec.now = []
+    CoreEngine(rec, [e]).run()
+    assert rec.now == [T0 + 5 * MS]
+    assert rec.seen[0].exchange_time_ns == T0

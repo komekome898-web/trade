@@ -1,76 +1,288 @@
-"""The strategy-facing API (requirement V5): an event callback plus
-place/cancel order, and nothing else.
+"""What a strategy can see and do.
 
-`StrategyContext` is the ONLY object a `Strategy` (strategy.py) ever
-receives. It never receives `CoreEngine` itself, so there is no path from
-strategy code to engine-internal state (account balance, open orders, order
-book) other than the read-only, visibility-bounded methods defined here.
-`test_api_coupling.py` measures this directly: it walks `dir(ctx)` and
-asserts the public surface is exactly the five members below, and that none
-of them is (or returns) the engine.
+A strategy is called once per delivered event with a `StrategyContext`.
+The context is the strategy's only handle on the run:
 
-Structural lookahead prevention (requirement V3) lives here too:
-`_StrategyContext__visible_events` (name-mangled by the leading `__`) is a
-bounded view (`window.EventWindow`, or a plain tuple -- both are read-only
-`Sequence[Event]`) of the run's event log ending at, and including, the
-current event -- and `CoreEngine.run` (engine.py) computes that bound BEFORE
-constructing the `StrategyContext` and calling the strategy, so the view
-itself never contains a future event; there is nothing to withhold from a
-public method because the object was never given it. `visible_events()`
-below is the only read path into event history, and every event it can
-possibly return already satisfies `received_time_ns <= now_ns` -- not by a
-runtime filter that could have a bug, but because nothing later ever enters
-the view in the first place. A fresh `StrategyContext` is built for every
-single event and never reused, so a strategy cannot stash one and use it
-later to see a `now` that has since moved forward.
+* `now_ns`, `current_event`, `visible_events(...)`, `last(...)` -- read
+  the history of events already delivered to it (all with
+  `received_time_ns <= now_ns`);
+* `place_order`, `cancel_order`, `set_timer` -- act;
+* `order(id)`, `open_orders()` -- its own orders, as it knows them.
 
-Round-1 critic finding i0-r1-03: the view handed in is O(1) to construct
-(see `window.py`) precisely so that `CoreEngine.run` does not have to copy
-the whole visible history on every iteration just in case a strategy asks
-for it. `visible_events()` only materializes an actual `tuple` -- and only
-as much of one as was actually requested -- when a strategy calls it.
+Structural guarantees (tested in tests/test_lookahead.py and
+tests/test_api_surface.py):
+
+* No path to the future. The history view is backed by the list of events
+  already delivered; the engine appends to it only between callbacks. The
+  order functions are bound methods of `_OrderPort`, an object that holds
+  only the strategy's own order registry and an outbox -- not the engine,
+  not the event source, not the pending queue. So nothing reachable from a
+  context, even through private attributes, holds an event the strategy has
+  not received yet.
+* No acting later. The engine revokes the context when the callback
+  returns; any later attempt to read history or act raises
+  `StaleContextError`, and the history view drops its backing list.
+  (`now_ns` / `current_event` stay readable: they describe the instant
+  the context was built for and reveal nothing later.)
+* The strategy's view of its orders moves only when it acts or when a
+  notice is delivered to it. It never sees the venue's state directly: an
+  order it placed is PENDING_NEW until the ACK notice arrives, however long
+  the latency model says that takes.
 """
 from __future__ import annotations
 
+import dataclasses
+import math
 from dataclasses import dataclass
-from typing import Callable, Optional, Sequence
+from enum import Enum
+from typing import Any, Callable, Mapping, Optional, Sequence, Union
 
-from .events import Event, EventType
-from .time import Nanos
+from .errors import OrderApiError, StaleContextError
+from .events import (
+    ORDER_SIDES,
+    Event,
+    EventType,
+    OrderAckEvent,
+    OrderCanceledEvent,
+    OrderFillEvent,
+    OrderRejectEvent,
+    OrderStateUnknownEvent,
+)
+from .time import Nanos, validate_nanos
 
 
 @dataclass(frozen=True)
 class OrderRequest:
     side: str  # "buy" | "sell"
-    order_type: str  # "market" | "limit" | ... (item 2 defines the full set)
+    order_type: str  # "market" | "limit" | ... -- the set is item 2's to define
     size: float
     price: Optional[float] = None
     client_order_id: str = ""
+    time_in_force: str = "GTC"
+    post_only: bool = False
+    reduce_only: bool = False
+    trigger_price: Optional[float] = None
+    extra: tuple[tuple[str, Any], ...] = ()  # anything else a venue model needs
+
+    def __post_init__(self) -> None:
+        if self.side not in ORDER_SIDES:
+            raise OrderApiError(f"side must be one of {ORDER_SIDES}, got {self.side!r}")
+        if not isinstance(self.order_type, str) or not self.order_type:
+            raise OrderApiError("order_type must be a non-empty str")
+        _require_positive("size", self.size)
+        if self.price is not None:
+            _require_positive("price", self.price)
+        if self.trigger_price is not None:
+            _require_positive("trigger_price", self.trigger_price)
+        if not isinstance(self.client_order_id, str):
+            raise OrderApiError("client_order_id must be str")
+        if not isinstance(self.extra, tuple):
+            raise OrderApiError("extra must be a tuple of (key, value) pairs")
+
+    def extra_dict(self) -> dict:
+        return dict(self.extra)
 
 
 @dataclass(frozen=True)
 class CancelRequest:
     client_order_id: str
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.client_order_id, str) or not self.client_order_id:
+            raise OrderApiError("client_order_id must be a non-empty str")
+
+
+def _require_positive(name: str, value: Any) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise OrderApiError(f"{name} must be a number, got {value!r}")
+    if not math.isfinite(value) or value <= 0:
+        raise OrderApiError(f"{name} must be finite and > 0, got {value!r}")
+
+
+class OrderState(Enum):
+    PENDING_NEW = "PENDING_NEW"  # sent, no answer received yet
+    OPEN = "OPEN"  # acknowledged, not fully filled
+    PENDING_CANCEL = "PENDING_CANCEL"  # cancel sent, no answer received yet
+    FILLED = "FILLED"
+    CANCELED = "CANCELED"
+    REJECTED = "REJECTED"
+    STATE_UNKNOWN = "STATE_UNKNOWN"  # ambiguous answer; held, never resent
+
+
+OPEN_STATES = frozenset(
+    {OrderState.PENDING_NEW, OrderState.OPEN, OrderState.PENDING_CANCEL, OrderState.STATE_UNKNOWN}
+)
+
+_FILL_EPS = 1e-12
+
+
+@dataclass(frozen=True)
+class OrderView:
+    """The strategy's knowledge of one of its orders."""
+
+    request: OrderRequest
+    state: OrderState
+    sent_time_ns: int
+    last_update_ns: int
+    acked: bool = False
+    filled_size: float = 0.0
+    avg_fill_price: Optional[float] = None
+    fees: float = 0.0
+    venue_order_id: str = ""
+    reason: str = ""
+
+    @property
+    def client_order_id(self) -> str:
+        return self.request.client_order_id
+
+    @property
+    def remaining_size(self) -> float:
+        return max(self.request.size - self.filled_size, 0.0)
+
+    @property
+    def is_open(self) -> bool:
+        return self.state in OPEN_STATES
+
+
+class _OrderPort:
+    """The strategy's side of the order channel. Holds the strategy's order
+    registry and an outbox; the engine drains the outbox after each callback
+    and feeds delivered notices back through `_apply_notice`. It has no
+    reference to the engine."""
+
+    def __init__(self) -> None:
+        self._registry: dict[str, OrderView] = {}
+        self._outbox: list[tuple] = []
+        self._counter = 0
+        self._now: int = 0
+
+    # -- strategy-facing (through StrategyContext) --------------------------
+    def place(self, request: OrderRequest) -> str:
+        if not isinstance(request, OrderRequest):
+            raise OrderApiError(f"place_order takes an OrderRequest, got {type(request).__name__}")
+        coid = request.client_order_id
+        if coid:
+            if coid in self._registry:
+                raise OrderApiError(f"duplicate client_order_id {coid!r}")
+        else:
+            while True:
+                self._counter += 1
+                coid = f"core-{self._counter}"
+                if coid not in self._registry:
+                    break
+            request = dataclasses.replace(request, client_order_id=coid)
+        self._registry[coid] = OrderView(
+            request=request,
+            state=OrderState.PENDING_NEW,
+            sent_time_ns=self._now,
+            last_update_ns=self._now,
+        )
+        self._outbox.append(("new", request, self._now))
+        return coid
+
+    def cancel(self, request: Union[CancelRequest, str]) -> None:
+        if isinstance(request, str):
+            request = CancelRequest(request)
+        if not isinstance(request, CancelRequest):
+            raise OrderApiError(f"cancel_order takes a CancelRequest or id, got {type(request).__name__}")
+        view = self._registry.get(request.client_order_id)
+        if view is None:
+            raise OrderApiError(f"cancel for unknown client_order_id {request.client_order_id!r}")
+        if view.state in (OrderState.PENDING_NEW, OrderState.OPEN, OrderState.STATE_UNKNOWN):
+            self._registry[request.client_order_id] = dataclasses.replace(
+                view, state=OrderState.PENDING_CANCEL, last_update_ns=self._now
+            )
+        self._outbox.append(("cancel", request, self._now))
+
+    def set_timer(self, at_ns: int, tag: str) -> None:
+        at = int(validate_nanos(at_ns))
+        if at < self._now:
+            raise OrderApiError(f"timer at {at} is before now {self._now}")
+        if not isinstance(tag, str):
+            raise OrderApiError("timer tag must be str")
+        self._outbox.append(("timer", at, tag))
+
+    def order(self, client_order_id: str) -> Optional[OrderView]:
+        return self._registry.get(client_order_id)
+
+    def open_orders(self) -> tuple[OrderView, ...]:
+        return tuple(v for v in self._registry.values() if v.is_open)
+
+    # -- engine-facing ------------------------------------------------------
+    def _apply_notice(self, event: Event) -> None:
+        coid = event.client_order_id  # type: ignore[attr-defined]
+        view = self._registry[coid]
+        t = int(event.received_time_ns)
+        if isinstance(event, OrderAckEvent):
+            state = OrderState.OPEN if view.state in (OrderState.PENDING_NEW, OrderState.STATE_UNKNOWN) else view.state
+            view = dataclasses.replace(view, state=state, acked=True, venue_order_id=event.venue_order_id)
+        elif isinstance(event, OrderRejectEvent):
+            if event.request_kind == "new":
+                view = dataclasses.replace(view, state=OrderState.REJECTED, reason=event.reason)
+            elif view.state is OrderState.PENDING_CANCEL:
+                back = OrderState.OPEN if view.acked else OrderState.PENDING_NEW
+                view = dataclasses.replace(view, state=back, reason=event.reason)
+            else:
+                view = dataclasses.replace(view, reason=event.reason)
+        elif isinstance(event, OrderFillEvent):
+            filled = view.filled_size + event.size
+            prev_notional = (view.avg_fill_price or 0.0) * view.filled_size
+            avg = (prev_notional + event.price * event.size) / filled
+            state = view.state
+            if filled >= view.request.size * (1 - _FILL_EPS):
+                state = OrderState.FILLED
+            elif state in (OrderState.PENDING_NEW, OrderState.STATE_UNKNOWN):
+                state = OrderState.OPEN
+            view = dataclasses.replace(
+                view, state=state, filled_size=filled, avg_fill_price=avg, fees=view.fees + event.fee
+            )
+        elif isinstance(event, OrderCanceledEvent):
+            view = dataclasses.replace(view, state=OrderState.CANCELED, reason=event.reason)
+        elif isinstance(event, OrderStateUnknownEvent):
+            view = dataclasses.replace(view, state=OrderState.STATE_UNKNOWN, reason=event.detail)
+        else:  # pragma: no cover - engine only routes notices here
+            raise TypeError(type(event).__name__)
+        self._registry[coid] = dataclasses.replace(view, last_update_ns=t)
+
 
 class StrategyContext:
+    """Built by the engine for one callback and revoked when it returns."""
+
     def __init__(
         self,
         visible_events: Sequence[Event],
         current: Event,
         place_order_cb: Callable[[OrderRequest], str],
         cancel_order_cb: Callable[[CancelRequest], None],
+        *,
+        order_lookup_cb: Optional[Callable[[str], Optional[OrderView]]] = None,
+        open_orders_cb: Optional[Callable[[], tuple]] = None,
+        set_timer_cb: Optional[Callable[[int, str], None]] = None,
     ) -> None:
-        # Accepts any read-only Sequence[Event] -- a plain tuple (as tests
-        # construct directly) or a `window.EventWindow` (as CoreEngine.run
-        # passes, for O(1) construction -- see the module docstring and
-        # i0-r1-03). Nothing here assumes it is already a tuple; only
-        # `visible_events()` below decides when to materialize one.
         self.__visible_events = visible_events
         self.__current = current
         self.__place_order_cb = place_order_cb
         self.__cancel_order_cb = cancel_order_cb
+        self.__order_lookup_cb = order_lookup_cb
+        self.__open_orders_cb = open_orders_cb
+        self.__set_timer_cb = set_timer_cb
+        self.__revoked = False
 
+    def _revoke(self) -> None:
+        self.__revoked = True
+        revoke = getattr(self.__visible_events, "revoke", None)
+        if revoke is not None:
+            revoke()
+
+    def __check(self) -> None:
+        if self.__revoked:
+            raise StaleContextError("StrategyContext used after its callback returned")
+
+    # -- read ---------------------------------------------------------------
+    # `now_ns` and `current_event` stay readable after revocation: they are
+    # fixed facts about the instant this context was built for and cannot
+    # reveal anything later. Everything that reads history or acts is
+    # refused after revocation.
     @property
     def now_ns(self) -> Nanos:
         return self.__current.received_time_ns
@@ -79,33 +291,83 @@ class StrategyContext:
     def current_event(self) -> Event:
         return self.__current
 
+    @property
+    def revoked(self) -> bool:
+        return self.__revoked
+
     def visible_events(
         self, event_type: Optional[EventType] = None, n: Optional[int] = None
     ) -> tuple[Event, ...]:
-        """Events with `received_time_ns <= now_ns`, oldest first, optionally
-        filtered to one `event_type` and/or limited to the last `n`. Cannot
-        return an event past `current_event` -- see module docstring.
-
-        `n` is a count contract, not a slice index: `n=0` means "zero
-        events", full stop. It is handled as an explicit branch rather than
-        delegated to `events[-n:]`, because Python's slicing treats `-0` as
-        `0` and that idiom silently degenerates `n=0` into "the whole
-        history" instead (round-1 critic finding i0-r1-02)."""
-        events: Sequence[Event] = self.__visible_events
-        if event_type is not None:
-            events = tuple(e for e in events if e.EVENT_TYPE is event_type)
-        else:
-            events = tuple(events)
+        """Delivered events (all with `received_time_ns <= now_ns`), oldest
+        first, optionally only `event_type` and/or only the last `n`.
+        `n` is a count: `n=0` returns nothing."""
+        self.__check()
+        events = self.__visible_events
         if n is not None:
+            if isinstance(n, bool) or not isinstance(n, int):
+                raise OrderApiError("n must be an int")
             if n <= 0:
                 return ()
-            events = events[-n:]
-        return events
+            if event_type is None:
+                return tuple(events[-n:])
+            picked: list[Event] = []
+            for e in reversed(events):
+                if e.EVENT_TYPE is event_type:
+                    picked.append(e)
+                    if len(picked) == n:
+                        break
+            picked.reverse()
+            return tuple(picked)
+        if event_type is None:
+            return tuple(events)
+        return tuple(e for e in events if e.EVENT_TYPE is event_type)
 
+    def last(self, event_type: EventType) -> Optional[Event]:
+        """Most recent delivered event of `event_type`, or None."""
+        got = self.visible_events(event_type, n=1)
+        return got[0] if got else None
+
+    def order(self, client_order_id: str) -> Optional[OrderView]:
+        self.__check()
+        if self.__order_lookup_cb is None:
+            raise OrderApiError("this context was built without an order registry")
+        return self.__order_lookup_cb(client_order_id)
+
+    def open_orders(self) -> tuple[OrderView, ...]:
+        self.__check()
+        if self.__open_orders_cb is None:
+            raise OrderApiError("this context was built without an order registry")
+        return self.__open_orders_cb()
+
+    # -- act ----------------------------------------------------------------
     def place_order(self, request: OrderRequest) -> str:
-        """Returns the engine-assigned client_order_id (echoes
-        `request.client_order_id` if the strategy supplied a non-empty one)."""
+        """Send a new order; returns its client_order_id (the strategy's own
+        if it set one, else an engine-assigned `core-N`)."""
+        self.__check()
         return self.__place_order_cb(request)
 
-    def cancel_order(self, request: CancelRequest) -> None:
+    def cancel_order(self, request: Union[CancelRequest, str]) -> None:
+        self.__check()
         self.__cancel_order_cb(request)
+
+    def set_timer(self, at_ns: int, tag: str = "") -> None:
+        """Deliver a `ClockEvent(tag=tag)` to this strategy at `at_ns`
+        (>= now_ns)."""
+        self.__check()
+        if self.__set_timer_cb is None:
+            raise OrderApiError("this context was built without timers")
+        self.__set_timer_cb(at_ns, tag)
+
+
+STRATEGY_API: tuple[str, ...] = (
+    "now_ns",
+    "current_event",
+    "revoked",
+    "visible_events",
+    "last",
+    "order",
+    "open_orders",
+    "place_order",
+    "cancel_order",
+    "set_timer",
+)

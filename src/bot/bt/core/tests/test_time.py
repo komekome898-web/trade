@@ -1,110 +1,101 @@
-"""V1: single time representation, unit-mismatch detection."""
-from __future__ import annotations
+from decimal import Decimal
 
-import unittest
+import numpy as np
+import pytest
 
-from bot.bt.core.time import TimestampUnitError, to_nanos, validate_nanos
-
-
-class ValidateNanosTest(unittest.TestCase):
-    def test_accepts_plain_int(self):
-        self.assertEqual(int(validate_nanos(123)), 123)
-
-    def test_rejects_float(self):
-        with self.assertRaises(TimestampUnitError):
-            validate_nanos(123.0)
-
-    def test_rejects_bool(self):
-        # bool is an int subclass in Python; explicitly excluded because it
-        # is never a meaningful timestamp.
-        with self.assertRaises(TimestampUnitError):
-            validate_nanos(True)
-
-    def test_rejects_str(self):
-        with self.assertRaises(TimestampUnitError):
-            validate_nanos("123")
-
-    def test_rejects_out_of_int64_range(self):
-        with self.assertRaises(TimestampUnitError):
-            validate_nanos(2**63)
-        with self.assertRaises(TimestampUnitError):
-            validate_nanos(-(2**63) - 1)
-
-    def test_accepts_int64_bounds(self):
-        validate_nanos(2**63 - 1)
-        validate_nanos(-(2**63))
+from bot.bt.core import TIME_CONTRACT, TimestampUnitError, nanos_to_iso, to_nanos, validate_nanos
 
 
-class ToNanosUnitConversionTest(unittest.TestCase):
-    def test_seconds(self):
-        self.assertEqual(int(to_nanos(1_700_000_000, "s")), 1_700_000_000_000_000_000)
-
-    def test_milliseconds(self):
-        self.assertEqual(int(to_nanos(1_700_000_000_000, "ms")), 1_700_000_000_000_000_000)
-
-    def test_microseconds(self):
-        self.assertEqual(int(to_nanos(1_700_000_000_000_000, "us")), 1_700_000_000_000_000_000)
-
-    def test_nanoseconds_passthrough(self):
-        self.assertEqual(int(to_nanos(1_700_000_000_000_000_000, "ns")), 1_700_000_000_000_000_000)
-
-    def test_iso_utc_z(self):
-        ns = to_nanos("2023-11-14T22:13:20Z", "iso")
-        self.assertEqual(int(ns), 1_700_000_000_000_000_000)
-
-    def test_iso_explicit_offset(self):
-        ns = to_nanos("2023-11-14T22:13:20+00:00", "iso")
-        self.assertEqual(int(ns), 1_700_000_000_000_000_000)
-
-    def test_iso_non_utc_offset_is_normalized(self):
-        # 22:13:20+00:00 == 07:13:20+09:00 the same instant (JST, e.g. bitFlyer local reports)
-        ns = to_nanos("2023-11-15T07:13:20+09:00", "iso")
-        self.assertEqual(int(ns), 1_700_000_000_000_000_000)
-
-    def test_iso_without_tzinfo_rejected(self):
-        with self.assertRaises(TimestampUnitError):
-            to_nanos("2023-11-14T22:13:20", "iso")
-
-    def test_iso_unparseable_rejected(self):
-        with self.assertRaises(TimestampUnitError):
-            to_nanos("not-a-timestamp", "iso")
-
-    def test_iso_wrong_type_rejected(self):
-        with self.assertRaises(TimestampUnitError):
-            to_nanos(1234, "iso")
-
-    def test_unknown_unit_rejected(self):
-        with self.assertRaises(TimestampUnitError):
-            to_nanos(1_700_000_000, "minutes")
-
-    def test_non_numeric_value_rejected(self):
-        with self.assertRaises(TimestampUnitError):
-            to_nanos("1700000000", "s")
-
-    def test_bool_value_rejected(self):
-        with self.assertRaises(TimestampUnitError):
-            to_nanos(True, "s")
+def test_iso_with_nanoseconds_is_exact():
+    # 2024-01-01T00:00:00Z = 19723 days * 86400 s = 1_704_067_200 s (closed form).
+    assert to_nanos("2024-01-01T00:00:00.123456789Z", "iso") == 1_704_067_200_123_456_789
 
 
-class UnitMismatchDetectionTest(unittest.TestCase):
-    """The core failure mode V1 exists to catch: a value scaled for one unit
-    but labelled with another."""
-
-    def test_nanoseconds_value_mislabelled_as_seconds_is_rejected(self):
-        # An ns-scale epoch value (~1.7e18) labelled "s" would convert to
-        # seconds*1e9 -- a date far past year 2100 -- and is caught by the
-        # plausibility window.
-        with self.assertRaises(TimestampUnitError):
-            to_nanos(1_700_000_000_000_000_000, "s")
-
-    def test_milliseconds_value_mislabelled_as_seconds_is_rejected(self):
-        with self.assertRaises(TimestampUnitError):
-            to_nanos(1_700_000_000_000, "s")
-
-    def test_microseconds_value_mislabelled_as_milliseconds_is_rejected(self):
-        with self.assertRaises(TimestampUnitError):
-            to_nanos(1_700_000_000_000_000, "ms")
+def test_iso_offsets_and_padding():
+    assert to_nanos("2024-01-01T09:00:00+09:00", "iso") == 1_704_067_200 * 10**9
+    assert to_nanos("2024-01-01T00:00:00.5Z", "iso") == 1_704_067_200_500_000_000
+    assert to_nanos("2024-01-01 00:00:00.000000001+0000", "iso") == 1_704_067_200_000_000_001
+    assert to_nanos("2024-01-01T00:00:00.1234567890Z", "iso") == 1_704_067_200_123_456_789
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.parametrize(
+    "bad",
+    ["2024-01-01T00:00:00", "2024-01-01T00:00:00.1234567891Z", "2024-13-01T00:00:00Z", "yesterday", 5],
+)
+def test_iso_rejects(bad):
+    with pytest.raises(TimestampUnitError):
+        to_nanos(bad, "iso")
+
+
+def test_units_scale_exactly():
+    assert to_nanos(1_700_000_000, "s") == 1_700_000_000 * 10**9
+    assert to_nanos(1_700_000_000_123, "ms") == 1_700_000_000_123_000_000
+    assert to_nanos(1_700_000_000_123_456, "us") == 1_700_000_000_123_456_000
+    assert to_nanos(1_700_000_000_123_456_789, "ns") == 1_700_000_000_123_456_789
+
+
+def test_float_and_string_seconds_do_not_pick_up_binary_rounding():
+    # float(1700000000.123456) * 1e9 in binary floating point is not an
+    # integer number of ns; the decimal path must give the written value.
+    assert to_nanos(1700000000.123456, "s") == 1_700_000_000_123_456_000
+    assert to_nanos("1700000000.123456789", "s") == 1_700_000_000_123_456_789
+    assert to_nanos(Decimal("1700000000.000000001"), "s") == 1_700_000_000_000_000_001
+
+
+def test_sub_nanosecond_input_is_refused_not_rounded():
+    with pytest.raises(TimestampUnitError):
+        to_nanos("1700000000.1234567891", "s")
+    with pytest.raises(TimestampUnitError):
+        to_nanos(1.5, "ns")
+
+
+@pytest.mark.parametrize("value,unit", [(1_700_000_000_000, "s"), (1_700_000_000_000_000, "ms"), (1_700_000_000_000_000_000, "us")])
+def test_value_too_large_for_its_label_is_rejected_by_default(value, unit):
+    with pytest.raises(TimestampUnitError):
+        to_nanos(value, unit)
+
+
+def test_value_too_small_for_its_label_needs_an_era_window():
+    # Seconds labelled ns land at 1970-01-01T00:00:01.7Z: inside the default
+    # 1970..2100 window, so the default cannot catch this direction.
+    assert to_nanos(1_700_000_000, "ns") == 1_700_000_000
+    era = (to_nanos("2015-01-01T00:00:00Z", "iso"), to_nanos("2030-01-01T00:00:00Z", "iso"))
+    with pytest.raises(TimestampUnitError):
+        to_nanos(1_700_000_000, "ns", plausible=era)
+    with pytest.raises(TimestampUnitError):
+        to_nanos(1_700_000_000, "ms", plausible=era)
+    assert to_nanos(1_700_000_000, "s", plausible=era) == 1_700_000_000 * 10**9
+
+
+def test_rejects_bool_unknown_unit_and_nonfinite():
+    with pytest.raises(TimestampUnitError):
+        to_nanos(True, "s")
+    with pytest.raises(TimestampUnitError):
+        to_nanos(1, "minutes")
+    with pytest.raises(TimestampUnitError):
+        to_nanos(float("nan"), "s")
+    with pytest.raises(TimestampUnitError):
+        to_nanos(None, "s")  # type: ignore[arg-type]
+
+
+def test_validate_nanos_accepts_numpy_int64_and_rejects_float():
+    v = validate_nanos(np.int64(1_700_000_000_000_000_000))
+    assert type(v) is int and v == 1_700_000_000_000_000_000
+    with pytest.raises(TimestampUnitError):
+        validate_nanos(1.7e18)
+    with pytest.raises(TimestampUnitError):
+        validate_nanos(2**63)
+    with pytest.raises(TimestampUnitError):
+        validate_nanos(False)
+
+
+def test_iso_roundtrip():
+    for ns in (0, 1, 1_704_067_200_123_456_789, 4_102_444_799_999_999_999):
+        assert to_nanos(nanos_to_iso(ns), "iso") == ns
+
+
+def test_time_contract_declares_int64_ns_utc():
+    assert TIME_CONTRACT["type"] == "int"
+    assert TIME_CONTRACT["bits"] == 64
+    assert TIME_CONTRACT["unit"] == "ns"
+    assert TIME_CONTRACT["timezone"] == "UTC"

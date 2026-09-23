@@ -1,37 +1,48 @@
-"""Single time representation for the whole core (requirement V1).
+"""Single time representation for the whole core.
 
-Every timestamp that reaches an `Event` (src/bot/bt/core/events.py) is a
-validated int64 nanosecond count since the Unix epoch, UTC. There is exactly
-one sanctioned way to produce one from a raw number or string: `to_nanos`.
-Constructing an `Event` bypasses this only if the caller already has a
-correctly-scaled int, in which case `validate_nanos` (called from
-`Event.__post_init__`) still runs — so the type/range check always applies,
-even to values that skip unit conversion entirely.
+Every timestamp inside the core is an `int` count of nanoseconds since
+1970-01-01T00:00:00Z (UTC), range-checked to int64. `TIME_CONTRACT` states
+this in machine-readable form.
 
-Mixed units are the concrete failure mode this guards against: a feed that
-mistakenly reports milliseconds while another reports seconds and both get
-labelled "ns". `to_nanos` refuses to trust the caller's unit label blindly:
-after conversion it checks the result against a plausibility window
-(roughly 1970..2100). A value that is off by a factor of 1000 (the classic
-s/ms/us mix-up) lands far outside that window and is rejected, rather than
-silently producing a timestamp that is 1000x too large or too small.
+There is one sanctioned way to turn a raw, unit-labelled value into one:
+`to_nanos`. Conversion is exact:
+
+* integers are scaled with integer arithmetic;
+* floats and numeric strings go through `decimal.Decimal` of their shortest
+  decimal representation, so `1700000000.123456789` (as a string) or
+  `1.5` (as a float) convert without binary-float rounding; a value whose
+  decimal representation has sub-nanosecond digits is rejected instead of
+  being rounded silently;
+* ISO-8601 strings are parsed by this module (not by `datetime`, whose
+  resolution stops at microseconds and would drop the last three digits of
+  `...00.123456789Z`) and must carry an explicit offset.
+
+After conversion `to_nanos` checks the result against a plausibility window,
+1970..2100 by default. A value 1000x too LARGE for its label (ms labelled
+s, us labelled ms, ...) lands past 2100 and is rejected. A value too SMALL
+for its label (s labelled ms or ns) still lands inside 1970..2100 (near
+1970), so the default window cannot catch it; a caller that knows its
+data's era passes `plausible=(min_ns, max_ns)` to catch that direction too
+(the data layer does this per source).
 """
 from __future__ import annotations
 
 import datetime as dt
+import numbers
+import re
+from decimal import Decimal, InvalidOperation
 from typing import NewType, Union
+
+from .errors import TimestampUnitError
 
 Nanos = NewType("Nanos", int)
 
-_INT64_MIN = -(2**63)
-_INT64_MAX = 2**63 - 1
+INT64_MIN = -(2**63)
+INT64_MAX = 2**63 - 1
 
-# 1970-01-01T00:00:00Z .. 2100-01-01T00:00:00Z. Wide enough to never reject a
-# real market timestamp in this project's lifetime, narrow enough that a
-# unit mix-up (e.g. seconds mislabelled as nanoseconds, or vice versa) lands
-# outside it by orders of magnitude.
-_PLAUSIBLE_MIN_NS = 0
-_PLAUSIBLE_MAX_NS = 4_102_444_800_000_000_000
+# 1970-01-01T00:00:00Z .. 2100-01-01T00:00:00Z.
+PLAUSIBLE_MIN_NS = 0
+PLAUSIBLE_MAX_NS = 4_102_444_800_000_000_000
 
 _UNIT_TO_NS_FACTOR: dict[str, int] = {
     "s": 1_000_000_000,
@@ -40,90 +51,145 @@ _UNIT_TO_NS_FACTOR: dict[str, int] = {
     "ns": 1,
 }
 
+TIME_CONTRACT: dict = {
+    "type": "int",
+    "bits": 64,
+    "unit": "ns",
+    "epoch": "1970-01-01T00:00:00Z",
+    "timezone": "UTC",
+    "accepted_input_units": sorted(_UNIT_TO_NS_FACTOR) + ["iso"],
+    "rounding": "none (inputs with sub-nanosecond digits are rejected)",
+    "default_plausible_range_ns": [PLAUSIBLE_MIN_NS, PLAUSIBLE_MAX_NS],
+}
+
 _EPOCH_UTC = dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
 
-
-class TimestampUnitError(ValueError):
-    """Unknown unit label, wrong value type, out-of-int64-range result, or a
-    magnitude that is implausible for the declared unit (unit mislabeling)."""
+_ISO_RE = re.compile(
+    r"^(?P<date>\d{4}-\d{2}-\d{2})[T ](?P<h>\d{2}):(?P<m>\d{2}):(?P<s>\d{2})"
+    r"(?:[.,](?P<frac>\d+))?"
+    r"(?P<tz>Z|z|[+-]\d{2}:?\d{2})?$"
+)
 
 
 def validate_nanos(value: object) -> Nanos:
-    """The single choke point every `Event.received_time_ns` passes through.
+    """The choke point every event timestamp passes through.
 
-    Rejects non-int values (including bool, which is an int subclass in
-    Python but never a valid timestamp here) and values outside int64 range.
-    Does NOT do a plausibility check by itself -- callers that go through
-    `to_nanos` already had that check applied during unit conversion; a bare
-    ns int handed straight to an Event constructor is trusted to already be
-    ns (there is no unit label to cross-check it against at this point).
+    Accepts Python ints and integral numpy scalars; rejects bool (an int
+    subclass in Python, never a timestamp), floats (a float cannot carry
+    nanoseconds at epoch scale) and anything outside int64. Does not apply
+    the plausibility window: a bare int handed to an event constructor has
+    no unit label to cross-check. Use `to_nanos` for labelled raw values.
     """
-    if isinstance(value, bool) or not isinstance(value, int):
+    if isinstance(value, bool) or not isinstance(value, numbers.Integral):
         raise TimestampUnitError(
-            f"received_time_ns must be int, got {type(value).__name__}"
+            f"timestamp must be an int of nanoseconds, got {type(value).__name__}"
         )
-    if not (_INT64_MIN <= value <= _INT64_MAX):
-        raise TimestampUnitError(f"{value} does not fit in int64")
-    return Nanos(value)
+    ivalue = int(value)
+    if not (INT64_MIN <= ivalue <= INT64_MAX):
+        raise TimestampUnitError(f"{ivalue} does not fit in int64")
+    return Nanos(ivalue)
 
 
-def to_nanos(value: Union[int, float, str], unit: str) -> Nanos:
-    """Convert `value` in `unit` to a validated `Nanos`.
+def _check_plausible(ns: int, what: str, plausible: tuple[int, int]) -> Nanos:
+    lo, hi = plausible
+    if not (lo <= ns <= hi):
+        raise TimestampUnitError(
+            f"{what} converts to {ns} ns, outside the plausible window "
+            f"[{lo}, {hi}] -- likely a unit mismatch"
+        )
+    return validate_nanos(ns)
 
-    `unit` in {"s", "ms", "us", "ns", "iso"}. This is the only sanctioned
-    entry point for turning a raw, unit-labelled number or ISO-8601 string
-    into a `Nanos` value; anything else must go through here rather than
-    hand-rolling `int(seconds * 1e9)` at a call site, because the
-    plausibility check below only runs here.
+
+def to_nanos(
+    value: Union[int, float, str, Decimal],
+    unit: str,
+    plausible: tuple[int, int] = (PLAUSIBLE_MIN_NS, PLAUSIBLE_MAX_NS),
+) -> Nanos:
+    """Convert `value` expressed in `unit` to validated `Nanos`, exactly.
+
+    `unit` is one of "s", "ms", "us", "ns" or "iso". `plausible` is the
+    inclusive ns window the result must fall in (default 1970..2100).
     """
     if unit == "iso":
-        return _iso_to_nanos(value)
+        return _iso_to_nanos(value, plausible)
     if unit not in _UNIT_TO_NS_FACTOR:
         raise TimestampUnitError(
             f"unknown time unit {unit!r}; expected one of "
             f"{sorted(_UNIT_TO_NS_FACTOR)} or 'iso'"
         )
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    factor = _UNIT_TO_NS_FACTOR[unit]
+    if isinstance(value, bool):
+        raise TimestampUnitError("bool is not a timestamp")
+    if isinstance(value, numbers.Integral):
+        ns = int(value) * factor
+    elif isinstance(value, (float, str, Decimal)) or isinstance(value, numbers.Real):
+        if isinstance(value, float) or (
+            isinstance(value, numbers.Real) and not isinstance(value, (str, Decimal))
+        ):
+            text = repr(float(value))
+        else:
+            text = str(value).strip()
+        try:
+            dec = Decimal(text)
+        except InvalidOperation as exc:
+            raise TimestampUnitError(f"not a number: {value!r}") from exc
+        if not dec.is_finite():
+            raise TimestampUnitError(f"non-finite timestamp {value!r}")
+        scaled = dec * factor
+        if scaled != scaled.to_integral_value():
+            raise TimestampUnitError(
+                f"{value!r} {unit} has sub-nanosecond digits; refusing to round"
+            )
+        ns = int(scaled)
+    else:
         raise TimestampUnitError(
-            f"timestamp value for unit {unit!r} must be int or float, "
-            f"got {type(value).__name__}"
+            f"timestamp value for unit {unit!r} must be int, float, Decimal or "
+            f"numeric str, got {type(value).__name__}"
         )
-    ns = round(value * _UNIT_TO_NS_FACTOR[unit])
-    if not (_PLAUSIBLE_MIN_NS <= ns <= _PLAUSIBLE_MAX_NS):
-        raise TimestampUnitError(
-            f"{value} labelled unit={unit!r} converts to {ns} ns, which "
-            f"falls outside the plausible 1970..2100 window -- likely a "
-            f"unit mismatch (e.g. seconds mislabelled as {unit!r})"
-        )
-    return validate_nanos(ns)
+    return _check_plausible(ns, f"{value!r} labelled unit={unit!r}", plausible)
 
 
-def _iso_to_nanos(value: object) -> Nanos:
+def _iso_to_nanos(value: object, plausible: tuple[int, int]) -> Nanos:
     if not isinstance(value, str):
-        raise TimestampUnitError(
-            f"iso timestamp must be str, got {type(value).__name__}"
-        )
-    text = value.replace("Z", "+00:00") if value.endswith("Z") else value
-    try:
-        parsed = dt.datetime.fromisoformat(text)
-    except ValueError as exc:
-        raise TimestampUnitError(f"unparseable ISO timestamp {value!r}: {exc}") from exc
-    if parsed.tzinfo is None:
+        raise TimestampUnitError(f"iso timestamp must be str, got {type(value).__name__}")
+    m = _ISO_RE.match(value.strip())
+    if m is None:
+        raise TimestampUnitError(f"unparseable ISO-8601 timestamp {value!r}")
+    tz = m.group("tz")
+    if tz is None:
         raise TimestampUnitError(
             f"ISO timestamp {value!r} has no timezone offset; UTC must be explicit"
         )
-    parsed_utc = parsed.astimezone(dt.timezone.utc)
-    delta = parsed_utc - _EPOCH_UTC
-    # Exact integer arithmetic (no float seconds) -- datetime's own
-    # resolution tops out at microseconds, so this is lossless relative to
-    # what the ISO string could express in the first place.
-    ns = (
-        delta.days * 86_400_000_000_000
-        + delta.seconds * 1_000_000_000
-        + delta.microseconds * 1_000
-    )
-    if not (_PLAUSIBLE_MIN_NS <= ns <= _PLAUSIBLE_MAX_NS):
-        raise TimestampUnitError(
-            f"ISO timestamp {value!r} converts to {ns} ns, outside 1970..2100"
+    frac = m.group("frac") or ""
+    if len(frac) > 9:
+        if frac[9:].strip("0"):
+            raise TimestampUnitError(
+                f"ISO timestamp {value!r} has sub-nanosecond digits; refusing to round"
+            )
+        frac = frac[:9]
+    frac_ns = int(frac.ljust(9, "0")) if frac else 0
+    try:
+        base = dt.datetime.fromisoformat(
+            f"{m.group('date')}T{m.group('h')}:{m.group('m')}:{m.group('s')}"
         )
-    return validate_nanos(ns)
+    except ValueError as exc:
+        raise TimestampUnitError(f"invalid calendar value in {value!r}: {exc}") from exc
+    if tz in ("Z", "z"):
+        offset = dt.timedelta(0)
+    else:
+        sign = 1 if tz[0] == "+" else -1
+        digits = tz[1:].replace(":", "")
+        offset = sign * dt.timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
+    base_utc = base.replace(tzinfo=dt.timezone(offset)).astimezone(dt.timezone.utc)
+    delta = base_utc - _EPOCH_UTC
+    ns = (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + frac_ns
+    return _check_plausible(ns, f"ISO timestamp {value!r}", plausible)
+
+
+def nanos_to_iso(ns: int) -> str:
+    """Render validated nanoseconds as `YYYY-MM-DDTHH:MM:SS.fffffffffZ`
+    (exact inverse of `to_nanos(..., "iso")` for in-range values)."""
+    ns = int(validate_nanos(ns))
+    seconds, frac = divmod(ns, 1_000_000_000)
+    base = _EPOCH_UTC + dt.timedelta(seconds=seconds)
+    return base.strftime("%Y-%m-%dT%H:%M:%S") + f".{frac:09d}Z"

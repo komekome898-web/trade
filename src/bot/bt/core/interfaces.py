@@ -1,118 +1,216 @@
-"""Extension-point sockets (requirement V6).
+"""The four sockets other items plug into: fill model (venue), latency
+model, cost model, account.
 
-`CoreEngine` (engine.py) calls these four hooks -- fill, latency, cost,
-account -- but implements none of their logic itself. Each is a
-`typing.Protocol`, not a base class: item 3 (fill/queue model), item 4
-(latency model), item 5 (costs/funding) and item 6 (portfolio/account) each
-write their own concrete class elsewhere (`src/bot/bt/fill/`,
-`src/bot/bt/latency/`, `src/bot/bt/costs/`, `src/bot/bt/portfolio/`) that
-structurally satisfies one of these Protocols, and hand an instance of it
-into `CoreEngine.__init__`. None of that requires editing this file or
-engine.py -- that is what "pluggable without touching the core" means here,
-and `tests/test_extension_points.py` proves it by defining a throwaway
-implementation of each Protocol from outside `core/` and running the engine
-with it.
+Each is a `typing.Protocol`: an implementation anywhere (`src/bot/bt/fill/`,
+`latency/`, `costs/`, `portfolio/`, a test file) that has the methods
+below is accepted by `CoreEngine` without editing this package.
 
-`FillNotice` is the minimal shared contract between a `FillModel` and the
-`CostModel`/`Account` sockets it feeds. Item 3/5/6 may find they need a
-richer shape; changing it is their call to make when they build against it,
-not item 0's to anticipate.
+Venue reports
+-------------
+A fill model answers with `VenueReport`s (`Ack`, `Reject`, `Fill`,
+`Canceled`, `StateUnknown`). The engine checks every report against the
+order's venue-side history (engine.py `_VenueLedger`) and raises
+`VenueProtocolError` on a contradiction, so a buggy fill model fails loudly
+instead of producing fills that could never happen: a report about an order
+that has not reached the venue yet, a fill before the ack, an overfill, a
+report after a terminal state, or no answer to an order or a cancel.
+
+Time
+----
+The fill model is called on the venue's clock: `on_market_event` at the
+event's `exchange_time_ns`, `on_order` / `on_cancel` at the request's
+arrival time at the venue (strategy send time + latency). It is never
+handed an event the venue could not have seen yet.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, Sequence, runtime_checkable
+from typing import Protocol, Sequence, Union, runtime_checkable
 
+from .api import CancelRequest, OrderRequest
 from .events import Event
-from .time import Nanos
+
+
+# --- venue reports -----------------------------------------------------------
+
+@dataclass(frozen=True)
+class Ack:
+    client_order_id: str
+    venue_order_id: str = ""
+
+
+@dataclass(frozen=True)
+class Reject:
+    client_order_id: str
+    reason: str
+    request_kind: str = "new"  # "new" | "cancel"
+
+
+@dataclass(frozen=True)
+class Fill:
+    client_order_id: str
+    price: float
+    size: float
+    liquidity: str = "taker"  # "maker" | "taker"
+
+
+@dataclass(frozen=True)
+class Canceled:
+    client_order_id: str
+    reason: str = "canceled"  # "canceled" | "expired" | "ioc_remainder" | ...
+
+
+@dataclass(frozen=True)
+class StateUnknown:
+    client_order_id: str
+    detail: str = ""
+    request_kind: str = "new"
+
+
+VenueReport = Union[Ack, Reject, Fill, Canceled, StateUnknown]
 
 
 @dataclass(frozen=True)
 class FillNotice:
+    """What the cost model and the account see for one fill. `fee` is 0.0
+    when handed to the cost model and carries the cost model's answer when
+    handed to the account."""
+
     client_order_id: str
     price: float
     size: float
+    side: str = ""
+    liquidity: str = "taker"
+    venue_time_ns: int = 0
     fee: float = 0.0
 
 
+# --- sockets -----------------------------------------------------------------
+
 @runtime_checkable
 class FillModel(Protocol):
-    def on_event(self, event: Event, visible_events: Sequence[Event]) -> list[FillNotice]:
-        """Given the current event and everything visible up to and
-        including it, return zero or more fills it produces. Must not read
-        anything beyond `visible_events` -- the same V3 visibility rule the
-        strategy is held to applies here, because a fill model that could
-        peek ahead would make backtested fills unreachable in real trading.
+    def on_market_event(self, event: Event, venue_time_ns: int) -> Sequence[VenueReport]:
+        """Market data reaches the venue (at `event.exchange_time_ns`).
+        Return fills/cancels (e.g. expiry) for resting orders, or nothing."""
+        ...
 
-        `visible_events` is a read-only `Sequence[Event]` -- in practice
-        `CoreEngine.run` passes a `window.EventWindow` (O(1) to construct,
-        see i0-r1-03), not necessarily a `tuple`. Index it, slice it or
-        iterate it like a tuple; do not assume `isinstance(..., tuple)`."""
+    def on_order(self, order: OrderRequest, venue_time_ns: int) -> Sequence[VenueReport]:
+        """A new order reaches the venue. Must answer it: `Ack` (optionally
+        followed by `Fill`s / `Canceled`), `Reject`, or `StateUnknown`."""
+        ...
+
+    def on_cancel(self, request: CancelRequest, venue_time_ns: int) -> Sequence[VenueReport]:
+        """A cancel reaches the venue for a live order. Must answer it:
+        `Canceled`, `Reject(request_kind="cancel")`, or `StateUnknown`.
+        (Cancels for orders that are not live at the venue are answered by
+        the engine itself and never reach this method.)"""
         ...
 
 
 @runtime_checkable
 class LatencyModel(Protocol):
-    def delay_ns(self, event: Event) -> Nanos:
-        """How long after `event.received_time_ns` this model's effect (a
-        book update becoming visible, an order reaching the venue, ...)
-        should actually take. Item 0 calls this hook per event; using the
-        result to delay/reorder delivery is item 4's engine-wiring work."""
+    def feed_delay_ns(self, event: Event) -> int:
+        """Extra delay, on top of the event's recorded `received_time_ns`,
+        before the strategy receives a market-data event."""
+        ...
+
+    def order_delay_ns(self, order: OrderRequest, sent_time_ns: int) -> int:
+        """Strategy send -> arrival at the venue, for a new order."""
+        ...
+
+    def cancel_delay_ns(self, request: CancelRequest, sent_time_ns: int) -> int:
+        """Strategy send -> arrival at the venue, for a cancel."""
+        ...
+
+    def notice_delay_ns(self, report: VenueReport, venue_time_ns: int) -> int:
+        """Venue report -> the strategy receiving the notice."""
         ...
 
 
 @runtime_checkable
 class CostModel(Protocol):
     def cost(self, fill: FillNotice) -> float:
-        """Total cost (fees, spread paid, funding, ...) attributed to `fill`,
-        in the account's home currency. No default value -- item 5's own
-        requirement row bars an implicit-zero default; `NullCostModel` below
-        exists only so `CoreEngine` is runnable before item 5 exists, and
-        returns 0.0 openly, never silently."""
+        """Fee for this fill, in the account currency (negative = rebate)."""
         ...
 
 
 @runtime_checkable
 class Account(Protocol):
-    def apply_fill(self, fill: FillNotice) -> None: ...
+    def apply_fill(self, fill: FillNotice) -> None:
+        """Called at the fill's venue time, with `fill.fee` set."""
+        ...
 
-    def apply_funding(self, event: Event) -> None: ...
+    def apply_funding(self, event: Event) -> None:
+        """Called at the funding event's venue time."""
+        ...
 
     def apply_liquidation(self, event: Event) -> None:
-        """Symmetric with `apply_funding`: both are venue-side settlement
-        events that can move the account without any `FillNotice` (round-1
-        critic finding i0-r1-04). `LiquidationEvent` (events.py) can
-        represent our own forced liquidation, not just a market-wide print,
-        so it needs the same account socket funding already has -- wired in
-        `CoreEngine.run` (engine.py) the same way, not as a special case."""
+        """Called at the liquidation print's venue time."""
         ...
 
 
+SOCKETS: dict[str, type] = {
+    "fill_model": FillModel,
+    "latency_model": LatencyModel,
+    "cost_model": CostModel,
+    "account": Account,
+}
+
+
+def socket_methods(protocol: type) -> list[str]:
+    return sorted(
+        name
+        for name, value in vars(protocol).items()
+        if callable(value) and not name.startswith("_")
+    )
+
+
+# --- explicit stand-ins ------------------------------------------------------
+
 class NullFillModel:
-    """Produces no fills. Lets `CoreEngine` run before item 3 exists."""
+    """Accepts every order and never fills it; acknowledges every cancel.
+    It is a stand-in so the order lifecycle can run before a real fill model
+    (item 3) is plugged in -- not a model of any venue."""
 
-    def on_event(self, event: Event, visible_events: Sequence[Event]) -> list[FillNotice]:
-        return []
+    def on_market_event(self, event: Event, venue_time_ns: int) -> Sequence[VenueReport]:
+        return ()
+
+    def on_order(self, order: OrderRequest, venue_time_ns: int) -> Sequence[VenueReport]:
+        return (Ack(order.client_order_id, f"null-{order.client_order_id}"),)
+
+    def on_cancel(self, request: CancelRequest, venue_time_ns: int) -> Sequence[VenueReport]:
+        return (Canceled(request.client_order_id),)
 
 
-class NullLatencyModel:
-    """Zero delay. Lets `CoreEngine` run before item 4 exists."""
+class ZeroLatency:
+    """Every delay is 0 ns."""
 
-    def delay_ns(self, event: Event) -> Nanos:
-        return Nanos(0)
+    def feed_delay_ns(self, event: Event) -> int:
+        return 0
+
+    def order_delay_ns(self, order: OrderRequest, sent_time_ns: int) -> int:
+        return 0
+
+    def cancel_delay_ns(self, request: CancelRequest, sent_time_ns: int) -> int:
+        return 0
+
+    def notice_delay_ns(self, report: VenueReport, venue_time_ns: int) -> int:
+        return 0
+
+
+NullLatencyModel = ZeroLatency
 
 
 class NullCostModel:
-    """Zero cost, reported openly as a stand-in -- never a silent default in
-    a run that is meant to price real costs (item 5 owns that)."""
+    """Zero cost, stated explicitly. The engine has no implicit cost model:
+    a fill with no cost model supplied raises `MissingCostModelError`."""
 
     def cost(self, fill: FillNotice) -> float:
         return 0.0
 
 
 class NullAccount:
-    """Discards fills/funding/liquidations. Lets `CoreEngine` run before
-    item 6 exists."""
+    """Discards fills, funding and liquidations."""
 
     def apply_fill(self, fill: FillNotice) -> None:
         return None
