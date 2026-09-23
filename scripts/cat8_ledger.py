@@ -258,6 +258,8 @@ def cmd_check(a):
             last = heads[-1].split()[1]
             expired = any("target=期限切れ" in ln for ln in heads)
             print("参考: %s の最後の手 %s / 期限 %s / 期限切れの手 %s" % (lg, last, dls[-1], "あり" if expired else "なし"))
+        elif heads:
+            print("参考: %s の最初の手 %s / 最後の手 %s / 手の数 %d" % (lg, heads[0].split()[1], heads[-1].split()[1], len(heads)))
     for e in errs:
         print(e)
     print("---- 合計 %d 件" % len(errs))
