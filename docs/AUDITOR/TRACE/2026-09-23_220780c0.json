@@ -12430,19 +12430,21 @@
   {
    "move": 459,
    "tools": {
-    "Read": 5,
-    "Bash": 19,
+    "Read": 7,
+    "Bash": 34,
     "mcp__Claude_Code_Remote__send_later": 1,
     "ReadNotifications": 1,
-    "Workflow": 1
+    "Workflow": 1,
+    "AskUserQuestion": 1,
+    "Agent": 1
    },
-   "n_tools": 27,
+   "n_tools": 46,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
-   "claims_without_output": 0,
-   "claims_total": 1,
-   "audit_calls": 0,
+   "claims_without_output": 1,
+   "claims_total": 2,
+   "audit_calls": 1,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
    "protected_writes": 0,
@@ -12471,12 +12473,12 @@
   },
   "P3_claim_with_output": {
    "num": 148,
-   "den": 401,
-   "value": 0.3691
+   "den": 402,
+   "value": 0.3682
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
-   "den": 142,
+   "den": 143,
    "value": 0.0
   },
   "P5_tools_per_move": {
@@ -12486,8 +12488,8 @@
   },
   "P6_findings_applied": {
    "num": 42,
-   "den": 142,
-   "value": 0.2958,
+   "den": 143,
+   "value": 0.2937,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {

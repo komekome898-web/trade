@@ -123,16 +123,19 @@ def render_battery(item: int, rows: list) -> str:
     return "\n".join(lines)
 
 
+# one-to-one with the delegation §6; older returns (item 0 round 1 of run 5) lack the two newer keys
 REPORT_FIELDS = (("changed_files", "変えたファイル"), ("tests_added", "足した試験の数"), ("test_command", "試験のコマンド"),
-                 ("test_tail", "試験の末尾の行"), ("structural_change", "この周で変えた構造"),
-                 ("unmet", "満たせなかった行・要件の各行の根拠・限界"), ("questions_for_lead", "リードに聞くこと"))
+                 ("test_tail", "試験の末尾の行"), ("requirement_evidence", "要件の各行を満たした根拠(ファイル:行)"),
+                 ("unmet", "満たせなかった行とその理由"), ("external_tool_checks", "外部の道具を入れたときの §4 の検査の結果"),
+                 ("questions_for_lead", "リードに聞くこと"), ("structural_change", "この周で変えた構造"))
+MISSING = "(この返り値にはこの欄が無い。欄を分ける前の返り値で、要件の各行の根拠と §4 の検査の結果は「満たせなかった行とその理由」の欄に混ざっている)"
 
 
 def render_report(lab: str, aid: str, res: dict) -> str:
     """The worker's report is its return value (subagents cannot write report files); write it out verbatim."""
     lines = [f"# 作業者の報告({lab}、agent {aid}。Workflow の記録の返り値から逐語で書き出し)", ""]
     for key, title in REPORT_FIELDS:
-        v = res.get(key)
+        v = res.get(key, MISSING)
         lines += [f"## {title}", ""]
         lines += [f"- {x}" for x in v] if isinstance(v, list) else [str(v)]
         lines.append("")
