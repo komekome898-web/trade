@@ -13,11 +13,11 @@
 ## **リードの誤りの訂正 — 候補 90 は比例配分ではなく FIFO だった**
 
 リードは 20 回目の検収とオーナーへの報告で「**候補 90 は表示量に比例して配る。当方は FIFO で、配分の規則が違う**」と書いた。**README だけを根拠にしていた。**
-リードが原典を取り直して確かめた(既定枝 `main`、`.py` 16 本・145,084 バイト):
+リードが原典を取り直して確かめた(既定枝 `main`、登録に在る `.py` 16 本 = `src/` の実装 11 本・`examples/` 2 本・`tests/` 3 本、計 145,084 バイト):
 
 ```
 README.md:134   … Queue position is simulated based on displayed size and pro-rata fill allocation.
-実装 16 本の pro-rata / pro_rata / prorata の当たり = 0 件
+`.py` 16 本の pro-rata / pro_rata / prorata の当たり = 0 件(実装 11 本も 0 件 = 調査班の数と一致)
 実装           Tracks environment volume ahead and agent orders in FIFO.
                # Then fill agent orders FIFO
 ```

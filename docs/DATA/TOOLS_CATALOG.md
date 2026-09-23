@@ -63,7 +63,7 @@
 | 1. 機構はあるが、検証の実行経路が呼ばない | 107 `sigc`・15 `BacktestingCore`(97KB の検証本体が 12KB の滑りと影響の板に一度も触らない)・20 `VnPy` |
 | 2. 呼ぶが、既定では無効 | 4 `PyBroker`(`slippage_model=None`)・**21 `Qlib`(`impact_cost: float = 0.0`。原典自身が「A recommended value is 0.1.」)**・33(`ZeroSlippageModel`)・2 `Backtrader`・91・92・57(`_cancelrate(0)`) |
 | 3. 当方の `engine.py` | 呼んでいるが、模型そのものが段 1(自ら「楽観的」と明記) |
-| 4. 文書が名乗る機構が、実装に無い | **90: README は「pro-rata fill allocation」と書くが、実装の `.py` 16 本にその語は 0 件で、実際は FIFO** |
+| 4. 文書が名乗る機構が、実装に無い | **90: README は「pro-rata fill allocation」と書くが、登録に在る `.py` 16 本(`src/` の実装 11 本・例 2 本・試験 3 本)のどれにもその語は 0 件で、実装は FIFO**(逐語 `# Then fill agent orders FIFO`。16 本はリードが 34 回目の検収で取り直した数、実装 11 本は調査班の数で、どちらも 0 件) |
 
 **道具を選ぶときは段(既定)と実装を見る。**README や段(機構)だけで選ぶと、当方と同じ楽観を持ち込む。
 
