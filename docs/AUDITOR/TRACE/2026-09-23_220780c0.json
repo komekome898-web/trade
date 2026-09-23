@@ -10715,11 +10715,11 @@
    "move": 399,
    "tools": {
     "Read": 3,
-    "Bash": 28,
+    "Bash": 30,
     "Edit": 2,
     "Agent": 1
    },
-   "n_tools": 34,
+   "n_tools": 36,
    "read_goal": true,
    "first_write_at": 26,
    "table_shown": false,
