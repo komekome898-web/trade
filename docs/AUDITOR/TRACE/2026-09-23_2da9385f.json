@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662.jsonl",
- "n_moves": 10,
+ "n_moves": 11,
  "moves": [
   {
    "move": 1,
@@ -283,38 +283,67 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 11,
+   "tools": {
+    "Read": 2,
+    "Bash": 3,
+    "Write": 2,
+    "Agent": 1
+   },
+   "n_tools": 8,
+   "read_goal": true,
+   "first_write_at": 4,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 2,
+   "audit_calls": 1,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 1,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 1
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
-   "num": 5,
-   "den": 5,
+   "num": 6,
+   "den": 6,
    "value": 1.0
   },
   "P2_table_shown_before_first_write": {
    "num": 1,
-   "den": 5,
-   "value": 0.2
+   "den": 6,
+   "value": 0.1667
   },
   "P3_claim_with_output": {
-   "num": 6,
-   "den": 12,
+   "num": 7,
+   "den": 14,
    "value": 0.5
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
-   "den": 6,
+   "den": 7,
    "value": 0.0
   },
   "P5_tools_per_move": {
-   "median": 7.5,
+   "median": 8,
    "max": 20,
-   "n": 10
+   "n": 11
   },
   "P6_findings_applied": {
-   "num": 4,
-   "den": 6,
-   "value": 0.6667,
+   "num": 5,
+   "den": 7,
+   "value": 0.7143,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
@@ -329,7 +358,7 @@
    "note_key": "excludes_test_origin"
   },
   "R4b_unlock_in_test": {
-   "num": 0,
+   "num": 1,
    "den": null,
    "value": null
   },
