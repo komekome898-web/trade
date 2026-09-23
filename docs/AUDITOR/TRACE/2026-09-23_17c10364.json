@@ -187,9 +187,12 @@
   },
   {
    "move": 8,
-   "tools": {},
-   "n_tools": 0,
-   "read_goal": false,
+   "tools": {
+    "Read": 1,
+    "Bash": 1
+   },
+   "n_tools": 2,
+   "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
    "claims_without_output": 0,
@@ -232,9 +235,9 @@
    "value": null
   },
   "P5_tools_per_move": {
-   "median": 8.5,
+   "median": 3,
    "max": 16,
-   "n": 4
+   "n": 5
   },
   "P6_findings_applied": {
    "num": 0,
