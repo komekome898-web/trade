@@ -8,6 +8,7 @@
   python3 scripts/cat8_ledger.py recount
   python3 scripts/cat8_ledger.py check [<報告.md>] [<生ログ.log> ...]
   python3 scripts/cat8_ledger.py check-elements <報告.md> --round <回>   (読むだけ。調査班も打つ)
+  python3 scripts/cat8_ledger.py import <報告.md> --round <回>   (その回の候補の一覧の状態と「要素と段」の表を台帳に写す。リードが検収で打つ)
 
 規則の在処は設計票 `docs/DATA/surveys/CAT8_DESIGN.md`(§2 状態の語 / §3 要素の印 / §4.1 段 / §5 台帳の列と番号 /
 §6 この道具の役目)。**数は報告の文章から数えない**(台帳から数える)。
@@ -358,6 +359,43 @@ def cmd_check_elements(a):
     sys.exit(1 if errs else 0)
 
 
+def cmd_import(a):
+    """その回の節の候補の一覧の状態と「要素と段」の表の値・段を台帳に写す。変わった所を全部出す。
+    状態は設計票 §2 の 7 語のどれかだけを拾う(2026-09-23、3 回目の検収でリードが手で写したとき、
+    「深掘り(前回から変更なし…)」のように括弧の注記まで状態の列に入れてしまった)。"""
+    rows = load()
+    byname = {r["名前"]: r for r in rows}
+    st, en, lines = section(pathlib.Path(a.report).read_text(), a.round)
+    if st is None:
+        sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
+    words = "|".join(sorted(map(re.escape, STATES), key=len, reverse=True))
+    cand = re.compile(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`([^`\n]+)`\s*\((8-\d{3}|新)\).*?状態:\s*(%s)" % words)
+    in_tab, n = False, 0
+    for i in range(st, en):
+        ln = lines[i]
+        m = cand.match(ln)
+        if m and m.group(1) in byname:
+            r = byname[m.group(1)]
+            if r["状態"] != m.group(3):
+                print("状態: %s %s -> %s" % (r["番号"], r["状態"], m.group(3))); n += 1
+            r["状態"], r["最後の記載の回"], r["最後の記載の行"] = m.group(3), str(a.round), str(i + 1)
+        if re.match(r"^#{2,4} ", ln):
+            in_tab = bool(re.match(r"^#{2,4} *要素と段", ln))
+            continue
+        if in_tab and ln.strip().startswith("|"):
+            c = cells(ln)
+            if len(c) == 6 and c[0].strip("`") in byname and c[1] in ELEMS:
+                r = byname[c[0].strip("`")]
+                if (r[c[1]], r["段_" + c[1]]) != (c[2], c[3]):
+                    print("値: %s %s %s/%s -> %s/%s" % (r["番号"], c[1], r[c[1]], r["段_" + c[1]], c[2], c[3])); n += 1
+                r[c[1]], r["段_" + c[1]] = c[2], c[3]
+    save(rows)
+    errs = check_rows(rows)
+    for e in errs:
+        print("注意: " + e)
+    print("写した(変わった所 %d)。台帳の検査 %d 件" % (n, len(errs)))
+
+
 def cmd_recount(a):
     rows = load()
     print("== 台帳の全行(母集合) = %d 行" % len(rows))
@@ -388,9 +426,10 @@ def main():
     p = sp.add_parser("check"); p.add_argument("report", nargs="?"); p.add_argument("logs", nargs="*")
     p.add_argument("--require-deadline", action="store_true", help="生ログの全部の手に期限が付いているかを見る")
     p = sp.add_parser("check-elements"); p.add_argument("report"); p.add_argument("--round", required=True)
+    p = sp.add_parser("import"); p.add_argument("report"); p.add_argument("--round", required=True)
     a = ap.parse_args()
     {"add": cmd_add, "sync": cmd_sync, "set": cmd_set, "recount": cmd_recount, "check": cmd_check,
-     "check-elements": cmd_check_elements}[a.cmd](a)
+     "check-elements": cmd_check_elements, "import": cmd_import}[a.cmd](a)
 
 
 if __name__ == "__main__":
