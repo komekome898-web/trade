@@ -21,7 +21,9 @@ from pathlib import Path
 
 REC = Path("docs/DISCUSSIONS/2026-09-23_backtest_env")
 LABEL = re.compile(r"^盲検:(\d+)#(\d+):([a-z]+)(\d)$")
-AUDIT_BATTERY = re.compile(r"^監査役\(場面\):(\d+)$")
+AUDIT_BATTERY = re.compile(r"^監査役\(場面\):(\d+)(?:#(\d+))?$")  # "#n" = audit before the worker (run 4 on)
+AUDIT_TABLE = re.compile(r"^監査役\(表\):(\d+)$")
+REPAIR = re.compile(r"^場面の直し:(\d+)#(\d+)$")
 AUDIT_REPORT = re.compile(r"^監査役:(\d+)#(\d+)$")
 WORKER = re.compile(r"^作る:(\d+)#(\d+)$")
 
@@ -57,13 +59,15 @@ def collect(paths: list[str]) -> dict:
 def collect_audit(paths: list[str]) -> dict:
     """Group auditor findings and worker questions by (item, round), one section per source."""
     labels, results = load(paths)
-    out: dict = defaultdict(lambda: {"battery": [], "report": [], "worker": []})
+    out: dict = defaultdict(lambda: {"battery": [], "table": [], "report": [], "worker": []})
     for aid, lab in labels.items():
         res = results.get(aid)
         if res is None:
             continue
-        if m := AUDIT_BATTERY.match(lab):
+        if (m := AUDIT_BATTERY.match(lab)) and m.group(2) is None:
             out[(int(m.group(1)), 1)]["battery"].append((lab, aid, res.get("findings", [])))
+        elif m := AUDIT_TABLE.match(lab):
+            out[(int(m.group(1)), 1)]["table"].append((lab, aid, res.get("findings", [])))
         elif m := AUDIT_REPORT.match(lab):
             out[(int(m.group(1)), int(m.group(2)))]["report"].append((lab, aid, res.get("findings", [])))
         elif m := WORKER.match(lab):
@@ -73,7 +77,8 @@ def collect_audit(paths: list[str]) -> dict:
 
 def render_audit(item: int, rnd: int, sec: dict) -> str:
     lines = [f"# 監査役の出力と作業者の問い(項目 {item} 第 {rnd} 周、Workflow の記録から逐語で書き出し)", ""]
-    titles = (("battery", "監査役(場面集と最初の表)の出力"), ("report", "監査役(作業者の報告)の出力"),
+    titles = (("battery", "監査役(場面集と最初の表)の出力"), ("table", "監査役(最初の表)の出力"),
+              ("report", "監査役(作業者の報告)の出力"),
               ("worker", "作業者の「リードに聞くこと」"))
     for key, title in titles:
         lines += [f"## {title}", ""]
@@ -86,6 +91,35 @@ def render_audit(item: int, rnd: int, sec: dict) -> str:
             for x in items:
                 lines.append(f"- [{x['level']}] {x['text']}" if isinstance(x, dict) else f"- {x}")
             lines.append("")
+    return "\n".join(lines)
+
+
+def collect_battery(paths: list[str]) -> dict:
+    """Audits of the battery before the worker and the 場面係's repairs, in order, per item."""
+    labels, results = load(paths)
+    out: dict = defaultdict(list)
+    for aid, lab in labels.items():
+        res = results.get(aid)
+        if res is None:
+            continue
+        if (m := AUDIT_BATTERY.match(lab)) and m.group(2) is not None:
+            out[int(m.group(1))].append((int(m.group(2)), 0, lab, aid, res))
+        elif m := REPAIR.match(lab):
+            out[int(m.group(1))].append((int(m.group(2)), 1, lab, aid, res))
+    return out
+
+
+def render_battery(item: int, rows: list) -> str:
+    lines = [f"# 場面集の監査と直し(項目 {item}、作業者の前。Workflow の記録から逐語で書き出し)", "",
+             "監査役(場面):N#k = k 回目の監査、場面の直し:N#k = k 回目の直し(その前の監査の指摘を受けたもの)。", ""]
+    for _, _, lab, aid, res in sorted(rows, key=lambda r: (r[0], -r[1])):
+        lines += [f"## {lab}(agent {aid})", ""]
+        if "findings" in res:
+            lines += [f"- [{x['level']}] {x['text']}" for x in res["findings"]] or ["(指摘なし)"]
+        else:
+            lines += [f"- 根本原因の記録: {res.get('rootcause')}", f"- 検討表の道具の出力: {res.get('check_output')}",
+                      f"- 動かせた: {res.get('survey_run')}", f"- 動かせなかった: {res.get('survey_not_run')}"]
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -106,6 +140,11 @@ def main(argv: list[str]) -> int:
         d.mkdir(parents=True, exist_ok=True)
         (d / "AUDIT.md").write_text(render_audit(item, rnd, sec), encoding="utf-8")
         print(d / "AUDIT.md", {k: len(v) for k, v in sec.items()})
+    for item, rows in sorted(collect_battery(argv).items()):
+        d = REC / f"item_{item}" / "battery"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "AUDIT.md").write_text(render_battery(item, rows), encoding="utf-8")
+        print(d / "AUDIT.md", len(rows))
     return 0
 
 
