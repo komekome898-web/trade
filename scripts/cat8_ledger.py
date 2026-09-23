@@ -271,6 +271,7 @@ def cmd_check_elements(a):
         sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
     errs, names, table, in_tab, in_list = [], [], {}, False, False
     in_find, in_trace, n_find, n_trace = False, False, 0, 0
+    alt_head, alt_first = None, None
     cand_re = re.compile(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`([^`\n]+)`\s*\((8-\d{3}|新)\)")
     for i in range(st, en):
         ln = lines[i]
@@ -279,6 +280,12 @@ def cmd_check_elements(a):
             in_tab = bool(re.match(r"^#{2,4} *要素と段", ln))
             in_find = bool(re.match(r"^#{2,4} *知見", ln))
             in_trace = bool(re.match(r"^#{2,4} *辿る一覧から出た名前", ln))
+            if re.match(r"^#{2,4} *代替経路", ln):
+                alt_head = i + 1
+                for k in range(i + 1, en):
+                    if lines[k].strip():
+                        alt_first = None if re.match(r"^#{1,4} ", lines[k]) else lines[k].strip()
+                        break
             continue
         if in_trace and re.match(r"^\s*-\s*`[^`]+`", ln):
             n_trace += 1
@@ -322,6 +329,11 @@ def cmd_check_elements(a):
                 errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
+    if a.round and int(a.round) >= 2:
+        if alt_head is None:
+            errs.append("この回の節に `### 代替経路` の小節が無い(2 回目の起動文 §2 の 1)")
+        elif not alt_first:
+            errs.append("行 %d: `### 代替経路` の本文の 1 行目が空(見出しだけでは Jev の検査も通ってしまう = 監査 14 回目の指摘 1)" % alt_head)
     for n in names:
         got = table.get(n, {})
         miss = [e for e in ELEMS if e not in got]
