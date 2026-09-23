@@ -16,7 +16,7 @@ from bot.bt.core import (
 from bot.bt.core.testing import ImmediateFillModel
 from bot.bt.core import NullCostModel
 
-from ._util import MS, SEC, T0, Recorder, bar, trade
+from bt0_util import MS, SEC, T0, Recorder, bar, trade
 
 
 def test_known_answer_probe_at_index_3_sees_four_bars_max_103():

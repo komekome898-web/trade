@@ -13,7 +13,7 @@ from bot.bt.core import (
     order_events,
 )
 
-from ._util import T0, Recorder, bar, trade
+from bt0_util import T0, Recorder, bar, trade
 
 
 def _same_instant_market():
@@ -83,6 +83,10 @@ def test_rule_is_declared_machine_readably_and_is_total():
     assert ORDERING_RULE["total_order"] is True
     assert set(DELIVERY_PRIORITY) == set(EventType)
     names = ORDERING_RULE["priority_ascending"]
-    assert names[:3] == ["venue:market", "venue:order", "venue:cancel"]
+    assert names[:8] == [
+        "venue:market:LIQUIDATION", "venue:market:FUNDING", "venue:market:BOOK_SNAPSHOT",
+        "venue:market:BOOK_DELTA", "venue:market:TRADE", "venue:market:BAR",
+        "venue:order", "venue:cancel",
+    ]
     assert names.index("deliver:ORDER_ACK") < names.index("deliver:ORDER_FILL")
     assert names[-1] == "deliver:CLOCK"

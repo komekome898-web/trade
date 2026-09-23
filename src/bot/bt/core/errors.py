@@ -21,15 +21,24 @@ class EventValidationError(CoreError, ValueError):
 
 
 class EventOrderError(CoreError, ValueError):
-    """The event source went backwards in `exchange_time_ns`. The core does
-    not re-sort a source silently: a backwards step is a data defect the
-    data layer must detect and report, not something to paper over."""
+    """One input stream went backwards in `exchange_time_ns`. The core
+    merges several streams by time (engine.py), but it does not re-sort a
+    single stream silently: a backwards step inside one stream is a data
+    defect the data layer must detect and report, not something to paper
+    over."""
 
 
 class SourceEventTypeError(CoreError, TypeError):
     """The event source supplied something that is not a market-data or
     clock event (for example an order notice). Order notices are produced by
     the engine from the fill model's reports, never read from a source."""
+
+
+class LookAheadError(CoreError, RuntimeError):
+    """The strategy asked for events at a time after its current time
+    (`until_ns > now_ns`). The history it can reach holds nothing later than
+    `now_ns` anyway; asking for the future is a strategy bug, so it is
+    refused loudly instead of answered with a silently truncated result."""
 
 
 class StaleContextError(CoreError, RuntimeError):
@@ -42,6 +51,12 @@ class OrderApiError(CoreError, ValueError):
     """The strategy used the order API incorrectly (duplicate client order
     id, cancel of an id it never placed, invalid size/price/side, timer in
     the past)."""
+
+
+class AccountSocketError(CoreError, RuntimeError):
+    """The account socket returned something the core cannot use: a
+    pre-trade check answer that is neither None nor a non-empty str, or a
+    forced order that is not an `OrderRequest` or reuses an id."""
 
 
 class VenueProtocolError(CoreError, RuntimeError):

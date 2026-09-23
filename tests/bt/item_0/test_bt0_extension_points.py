@@ -10,7 +10,7 @@ from bot.bt.core import (
 )
 from bot.bt.core.testing import FixedRateCost, ImmediateFillModel, RecordingAccount
 
-from ._util import T0, Recorder, trade
+from bt0_util import T0, Recorder, trade
 
 
 def _buy_once(ev, ctx):
@@ -73,7 +73,11 @@ def test_all_four_sockets_are_called_with_outside_implementations():
                      cost_model=cost, account=acct).run()
     assert venue.calls == ["market", "order"]
     assert lat.calls == ["feed", "order", "notice", "notice"]
-    assert acct.calls[0][1].liquidity == "maker" and acct.calls[0][1].fee == pytest.approx(0.5)
+    # account: the order is checked at the venue before the fill model sees
+    # it, then the fill is booked; the trade was marked before that.
+    assert [k for k, _ in acct.calls] == ["market", "check_order", "fill"]
+    fill = acct.calls[2][1]
+    assert fill.liquidity == "maker" and fill.fee == pytest.approx(0.5)  # 50 * 1 * 0.01
     assert res.models["fill_model"].endswith("_Venue")
     assert res.defaults_used == []
 
@@ -96,6 +100,24 @@ def test_incomplete_socket_is_refused_at_construction():
         CoreEngine(Recorder(), [], account=_NoLiquidation())
 
 
+def test_account_without_the_mark_and_check_hooks_is_refused_at_construction():
+    class _OldShape:
+        def apply_fill(self, f):
+            pass
+
+        def apply_funding(self, e):
+            pass
+
+        def apply_liquidation(self, e):
+            pass
+
+    with pytest.raises(TypeError, match="check_order.*on_market_event|on_market_event.*check_order"):
+        CoreEngine(Recorder(), [], account=_OldShape())
+
+
 def test_contract_lists_the_four_sockets_from_the_protocols():
     assert set(CORE_CONTRACT["sockets"]) == {"fill_model", "latency_model", "cost_model", "account"}
     assert CORE_CONTRACT["sockets"]["fill_model"] == ["on_cancel", "on_market_event", "on_order"]
+    assert CORE_CONTRACT["sockets"]["account"] == [
+        "apply_fill", "apply_funding", "apply_liquidation", "check_order", "on_market_event",
+    ]

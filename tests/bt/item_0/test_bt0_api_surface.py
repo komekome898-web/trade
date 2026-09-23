@@ -1,6 +1,6 @@
 from bot.bt.core import STRATEGY_API, CoreEngine, EventType, OrderRequest
 
-from ._util import T0, Recorder, trade
+from bt0_util import T0, Recorder, trade
 
 
 def test_public_context_surface_is_exactly_the_declared_api():

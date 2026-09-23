@@ -71,3 +71,11 @@ class RecordingAccount:
 
     def apply_liquidation(self, event: Event) -> None:
         self.calls.append(("liquidation", event))
+
+    def on_market_event(self, event: Event, venue_time_ns: int) -> Sequence[OrderRequest]:
+        self.calls.append(("market", event))
+        return ()
+
+    def check_order(self, order: OrderRequest, venue_time_ns: int) -> Optional[str]:
+        self.calls.append(("check_order", order))
+        return None

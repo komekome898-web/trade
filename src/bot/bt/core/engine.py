@@ -18,13 +18,19 @@ Two clocks, one queue:
   request never overtakes an earlier one, a later notice never overtakes an
   earlier one), as on a single connection.
 
-The event source is consumed lazily: the engine pulls the next source event
-only when the queue has nothing earlier to process, so a source can be a
-generator over a file larger than memory, and no future source event is
-held anywhere a strategy could reach. The source must be non-decreasing in
-`exchange_time_ns`; a backwards step raises `EventOrderError` (the core
-never re-sorts data silently). Events sharing a timestamp may arrive in any
-order; ordering.py decides.
+Input is one stream of events, or several named streams (a mapping of
+name -> iterable, e.g. trades, board, bars and funding read from separate
+files). Streams are merged by time (ordering.py: exchange time, then
+stream name in `sorted()` order, then position inside the stream), so the
+events are processed in time order whatever order the streams, or the
+types, were handed over in. Each stream is consumed lazily: the engine
+holds at most one not-yet-processed event per stream and pulls the next
+one only when the queue has nothing earlier to process, so a stream can be
+a generator over a file larger than memory, and no future event is held
+anywhere a strategy could reach. Each stream must be non-decreasing in
+`exchange_time_ns`; a backwards step raises `EventOrderError` naming the
+stream (the core merges streams, it never re-sorts one silently). Events
+sharing a timestamp may arrive in any order; ordering.py decides.
 
 Nothing here is market-specific; fills, delays, fees and bookkeeping are
 the sockets' job (interfaces.py).
@@ -38,15 +44,17 @@ import heapq
 import math
 import numbers
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Iterator, Optional
+from typing import Any, Iterable, Iterator, Mapping, Optional, Union
 
-from .api import CancelRequest, OrderRequest, OrderView, StrategyContext, _OrderPort
+from .api import FORCED_ID_PREFIX, CancelRequest, OrderRequest, OrderView, StrategyContext, _OrderPort
 from .errors import (
+    AccountSocketError,
     CostModelError,
     EventOrderError,
     LatencyModelError,
     MissingCostModelError,
     SourceEventTypeError,
+    TimestampUnitError,
     VenueProtocolError,
 )
 from .events import (
@@ -78,8 +86,9 @@ from .interfaces import (
     StateUnknown,
     ZeroLatency,
 )
-from .ordering import DELIVERY_PRIORITY, VENUE_CANCEL, VENUE_MARKET, VENUE_ORDER
+from .ordering import DELIVERY_PRIORITY, VENUE_CANCEL, VENUE_MARKET_PRIORITY, VENUE_ORDER
 from .strategy import Strategy
+from .time import validate_nanos
 from .window import EventWindow
 
 _K_VENUE_MARKET = 0
@@ -106,6 +115,8 @@ class EngineResult:
     last_time_ns: Optional[int] = None
     stopped_at_end_time: bool = False
     delivery_digest: str = ""  # sha256 over every delivered event, in order
+    forced_orders: list[OrderRequest] = field(default_factory=list)  # from the account socket
+    source_events_by_stream: dict[str, int] = field(default_factory=dict)
 
     @property
     def open_orders(self) -> list[OrderView]:
@@ -219,11 +230,70 @@ def _require_protocol(obj: Any, protocol: type, name: str) -> None:
         raise TypeError(f"{name} {type(obj).__name__} lacks {missing} required by {protocol.__name__}")
 
 
+SINGLE_STREAM_NAME = "events"
+
+
+class _SourceMerger:
+    """Merges named streams by (exchange_time_ns, stream name, position in
+    the stream), holding at most one pending event per stream."""
+
+    def __init__(self, streams: Mapping[str, Iterable[Event]]) -> None:
+        names = list(streams)
+        for name in names:
+            if not isinstance(name, str) or not name:
+                raise TypeError(f"stream names must be non-empty str, got {name!r}")
+        self._names = sorted(names)  # rank = position in sorted(); independent of mapping order
+        self._iters: list[Iterator[Event]] = [iter(streams[n]) for n in self._names]
+        self._last: list[Optional[int]] = [None] * len(self._names)
+        self.counts: list[int] = [0] * len(self._names)
+        self._heads: list[tuple[int, int, Event]] = []  # (exchange_time_ns, rank, event)
+        for rank in range(len(self._names)):
+            self._pull(rank)
+
+    def _pull(self, rank: int) -> None:
+        try:
+            event = next(self._iters[rank])
+        except StopIteration:
+            return
+        name = self._names[rank]
+        if not isinstance(event, Event):
+            raise SourceEventTypeError(
+                f"stream {name!r} yielded {type(event).__name__}, not an Event"
+            )
+        etype = event.EVENT_TYPE
+        if etype not in SOURCE_EVENT_TYPES:
+            raise SourceEventTypeError(
+                f"stream {name!r} yielded {etype.value}; order notices are produced by "
+                f"the engine from the fill model's reports (place an order to get one)"
+            )
+        exch = int(event.exchange_time_ns)
+        last = self._last[rank]
+        if last is not None and exch < last:
+            raise EventOrderError(
+                f"stream {name!r} event #{self.counts[rank]} ({etype.value}) has "
+                f"exchange_time_ns {exch} < previous {last} in the same stream"
+            )
+        self._last[rank] = exch
+        self.counts[rank] += 1
+        heapq.heappush(self._heads, (exch, rank, event))
+
+    def peek_time(self) -> Optional[int]:
+        return self._heads[0][0] if self._heads else None
+
+    def pop(self) -> Event:
+        _exch, rank, event = heapq.heappop(self._heads)
+        self._pull(rank)
+        return event
+
+    def counts_by_name(self) -> dict[str, int]:
+        return dict(zip(self._names, self.counts))
+
+
 class CoreEngine:
     def __init__(
         self,
         strategy: Strategy,
-        events: Iterable[Event],
+        events: Union[Iterable[Event], Mapping[str, Iterable[Event]]],
         fill_model: Optional[FillModel] = None,
         latency_model: Optional[LatencyModel] = None,
         cost_model: Optional[CostModel] = None,
@@ -232,14 +302,19 @@ class CoreEngine:
         end_time_ns: Optional[int] = None,
         history_limit: Optional[int] = None,
     ) -> None:
-        """`history_limit`: if set, the strategy's history keeps at least
-        the last `history_limit` and at most `2 * history_limit` delivered
-        events (bounded memory for long tick runs). None keeps everything."""
+        """`events`: one iterable of source events, or a mapping of stream
+        name -> iterable (merged by time, see ordering.py).
+
+        `history_limit`: if set, the strategy's history keeps at least the
+        last `history_limit` and at most `2 * history_limit` delivered
+        events, overall and per event type (bounded memory for long tick
+        runs). None keeps everything."""
         self._strategy = strategy
-        self._source: Iterator[Event] = iter(events)
-        self._head: Optional[Event] = None
-        self._source_done = False
-        self._last_source_exchange: Optional[int] = None
+        if isinstance(events, Mapping):
+            streams = events
+        else:
+            streams = {SINGLE_STREAM_NAME: events}
+        self._merger = _SourceMerger(streams)
         self._source_count = 0
 
         defaults: list[str] = []
@@ -275,7 +350,10 @@ class CoreEngine:
 
         self._port = _OrderPort()
         self._ledger = _VenueLedger()
+        self._forced: dict[str, OrderRequest] = {}
+        self._forced_list: list[OrderRequest] = []
         self._history: list[Event] = []
+        self._typed_history: dict[EventType, list[Event]] = {t: [] for t in EventType}
         self._deliveries = 0
         self._last_outbound = 0
         self._last_notice = 0
@@ -286,46 +364,34 @@ class CoreEngine:
 
     # -- queue -------------------------------------------------------------
     def _push(self, time_ns: int, priority: int, kind: int, payload: Any) -> None:
+        # The one place every queue time passes: a delay that pushes a time
+        # out of int64 fails here, loudly, whichever channel it came from.
+        try:
+            t = int(validate_nanos(time_ns))
+        except TimestampUnitError as exc:
+            raise TimestampUnitError(
+                f"queue time {time_ns!r} for {type(payload).__name__} is not an int64 of ns "
+                f"(a latency model or timer produced an out-of-range time): {exc}"
+            ) from exc
         self._seq += 1
-        heapq.heappush(self._heap, (int(time_ns), priority, self._seq, kind, payload))
-
-    def _next_source(self) -> Optional[Event]:
-        if self._head is None and not self._source_done:
-            try:
-                self._head = next(self._source)
-            except StopIteration:
-                self._source_done = True
-        return self._head
+        heapq.heappush(self._heap, (t, priority, self._seq, kind, payload))
 
     def _refill(self) -> None:
+        merger = self._merger
         while True:
-            head = self._next_source()
-            if head is None:
+            head_time = merger.peek_time()
+            if head_time is None:
                 return
-            if self._heap and int(head.exchange_time_ns) > self._heap[0][0]:
+            if self._heap and head_time > self._heap[0][0]:
                 return
-            self._head = None
-            self._ingest(head)
+            self._ingest(merger.pop())
 
     def _ingest(self, event: Event) -> None:
-        if not isinstance(event, Event):
-            raise SourceEventTypeError(f"source yielded {type(event).__name__}, not an Event")
         etype = event.EVENT_TYPE
-        if etype not in SOURCE_EVENT_TYPES:
-            raise SourceEventTypeError(
-                f"source yielded {etype.value}; order notices are produced by the "
-                f"engine from the fill model's reports (place an order to get one)"
-            )
         exch = int(event.exchange_time_ns)
-        if self._last_source_exchange is not None and exch < self._last_source_exchange:
-            raise EventOrderError(
-                f"source event #{self._source_count} ({etype.value}) has exchange_time_ns "
-                f"{exch} < previous {self._last_source_exchange}"
-            )
-        self._last_source_exchange = exch
         self._source_count += 1
         if etype in MARKET_EVENT_TYPES:
-            self._push(exch, VENUE_MARKET, _K_VENUE_MARKET, event)
+            self._push(exch, VENUE_MARKET_PRIORITY[etype], _K_VENUE_MARKET, event)
             delay = _check_delay(self._latency.feed_delay_ns(event), "feed_delay_ns")
         else:
             delay = 0
@@ -386,29 +452,34 @@ class CoreEngine:
             last_time_ns=self._now,
             stopped_at_end_time=self._stopped_at_end,
             delivery_digest=self._digest.hexdigest(),
+            forced_orders=list(self._forced_list),
+            source_events_by_stream=self._merger.counts_by_name(),
         )
 
     # -- strategy side -----------------------------------------------------
     def _deliver(self, time_ns: int, seq: int, event: Event) -> None:
         # A shallow copy with the delivery time and sequence set. The event
-        # was validated at construction and time_ns >= its received time >=
-        # its exchange time, so re-running validation would only cost time.
+        # was validated at construction, and time_ns was validated as int64
+        # in `_push` and is >= its received time >= its exchange time.
         delivered = copy.copy(event)
         object.__setattr__(delivered, "received_time_ns", time_ns)
         object.__setattr__(delivered, "seq", seq)
+        port = self._port
         if delivered.EVENT_TYPE in NOTICE_EVENT_TYPES:
-            self._port._apply_notice(delivered)
-        limit = self._history_limit
-        if limit is not None and len(self._history) >= 2 * limit:
-            # amortised O(1): a new list, so no live view is affected
-            self._history = self._history[-(limit - 1):] if limit > 1 else []
-        self._history.append(delivered)
+            coid = delivered.client_order_id  # type: ignore[attr-defined]
+            if not port.knows(coid):
+                # first notice about a forced order: the strategy learns of it now
+                port._adopt(self._forced[coid], time_ns, "forced")
+            port._apply_notice(delivered)
+        self._history = self._append(self._history, delivered)
+        typed = self._typed_history
+        typed[delivered.EVENT_TYPE] = self._append(typed[delivered.EVENT_TYPE], delivered)
         self._deliveries += 1
         self._digest.update(repr(delivered).encode())
         self._digest.update(b"\n")
-        port = self._port
         port._now = time_ns
         window = EventWindow(self._history, len(self._history))
+        typed_windows = {t: EventWindow(lst, len(lst)) for t, lst in typed.items() if lst}
         ctx = StrategyContext(
             visible_events=window,
             current=delivered,
@@ -417,6 +488,7 @@ class CoreEngine:
             order_lookup_cb=port.order,
             open_orders_cb=port.open_orders,
             set_timer_cb=port.set_timer,
+            typed_events=typed_windows,
         )
         try:
             self._strategy.on_event(delivered, ctx)
@@ -424,6 +496,14 @@ class CoreEngine:
             ctx._revoke()
             outbox, port._outbox = port._outbox, []
         self._drain(outbox)
+
+    def _append(self, history: list[Event], event: Event) -> list[Event]:
+        limit = self._history_limit
+        if limit is not None and len(history) >= 2 * limit:
+            # amortised O(1): a new list, so no live view is affected
+            history = history[-(limit - 1):] if limit > 1 else []
+        history.append(event)
+        return history
 
     def _drain(self, outbox: list[tuple]) -> None:
         for item in outbox:
@@ -454,8 +534,47 @@ class CoreEngine:
             self._account.apply_liquidation(event)
         reports = self._fill_model.on_market_event(event, time_ns)
         self._handle_reports(time_ns, reports or (), "on_market_event", None)
+        forced = self._account.on_market_event(event, time_ns) or ()
+        for request in forced:
+            self._force(time_ns, request)
+
+    def _force(self, time_ns: int, request: Any) -> None:
+        if not isinstance(request, OrderRequest):
+            raise AccountSocketError(
+                f"account.on_market_event returned {type(request).__name__}, not an OrderRequest"
+            )
+        coid = request.client_order_id
+        if not coid:
+            coid = f"{FORCED_ID_PREFIX}{len(self._forced_list) + 1}"
+            request = dataclasses.replace(request, client_order_id=coid)
+        elif not coid.startswith(FORCED_ID_PREFIX):
+            raise AccountSocketError(
+                f"forced order id {coid!r} must be empty or start with {FORCED_ID_PREFIX!r}"
+            )
+        if coid in self._forced or coid in self._ledger.state:
+            raise AccountSocketError(f"forced order id {coid!r} is already in use")
+        self._forced[coid] = request
+        self._forced_list.append(request)
+        # A forced order is the venue acting on its own: it reaches the
+        # fill model now, without the strategy's order latency and without
+        # the account's pre-trade check.
+        self._submit_to_venue(time_ns, request)
 
     def _venue_order(self, time_ns: int, order: OrderRequest) -> None:
+        reason = self._account.check_order(order, time_ns)
+        if reason is not None:
+            if not isinstance(reason, str) or not reason:
+                raise AccountSocketError(
+                    f"account.check_order must return None or a non-empty str, got {reason!r}"
+                )
+            self._ledger.arrive(order)
+            self._handle_reports(
+                time_ns, (Reject(order.client_order_id, reason),), "check_order", order.client_order_id
+            )
+            return
+        self._submit_to_venue(time_ns, order)
+
+    def _submit_to_venue(self, time_ns: int, order: OrderRequest) -> None:
         self._ledger.arrive(order)
         reports = self._fill_model.on_order(order, time_ns) or ()
         self._handle_reports(time_ns, reports, "on_order", order.client_order_id)

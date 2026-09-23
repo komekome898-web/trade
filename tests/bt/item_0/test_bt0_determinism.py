@@ -14,7 +14,7 @@ from bot.bt.core import (
 )
 from bot.bt.core.testing import FixedRateCost, ImmediateFillModel, RecordingAccount
 
-from ._util import MS, T0, Recorder, bar, trade
+from bt0_util import MS, T0, Recorder, bar, trade
 
 
 def _events(seed, n=300):

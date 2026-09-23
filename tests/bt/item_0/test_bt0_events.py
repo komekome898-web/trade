@@ -25,7 +25,7 @@ from bot.bt.core import (
     event_from_dict,
 )
 
-from ._util import T0
+from bt0_util import T0
 
 SAMPLES = [
     TradeEvent(received_time_ns=T0 + 123456789, price=5012345.0, size=0.01, side="buy", trade_id="x"),

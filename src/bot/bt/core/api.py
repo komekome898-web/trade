@@ -5,12 +5,14 @@ The context is the strategy's only handle on the run:
 
 * `now_ns`, `current_event`, `visible_events(...)`, `last(...)` -- read
   the history of events already delivered to it (all with
-  `received_time_ns <= now_ns`);
+  `received_time_ns <= now_ns`); asking for a time window that ends after
+  `now_ns` raises `LookAheadError` rather than returning a silently
+  truncated answer;
 * `place_order`, `cancel_order`, `set_timer` -- act;
 * `order(id)`, `open_orders()` -- its own orders, as it knows them.
 
-Structural guarantees (tested in tests/test_lookahead.py and
-tests/test_api_surface.py):
+Structural guarantees (tested in tests/bt/item_0/test_bt0_lookahead.py and
+tests/bt/item_0/test_bt0_api_surface.py):
 
 * No path to the future. The history view is backed by the list of events
   already delivered; the engine appends to it only between callbacks. The
@@ -31,13 +33,15 @@ tests/test_api_surface.py):
 """
 from __future__ import annotations
 
+import bisect
 import dataclasses
 import math
+import numbers
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Mapping, Optional, Sequence, Union
 
-from .errors import OrderApiError, StaleContextError
+from .errors import LookAheadError, OrderApiError, StaleContextError
 from .events import (
     ORDER_SIDES,
     Event,
@@ -93,7 +97,7 @@ class CancelRequest:
 
 
 def _require_positive(name: str, value: Any) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
         raise OrderApiError(f"{name} must be a number, got {value!r}")
     if not math.isfinite(value) or value <= 0:
         raise OrderApiError(f"{name} must be finite and > 0, got {value!r}")
@@ -108,6 +112,8 @@ class OrderState(Enum):
     REJECTED = "REJECTED"
     STATE_UNKNOWN = "STATE_UNKNOWN"  # ambiguous answer; held, never resent
 
+
+FORCED_ID_PREFIX = "forced-"  # client_order_id prefix reserved for the account socket's forced orders
 
 OPEN_STATES = frozenset(
     {OrderState.PENDING_NEW, OrderState.OPEN, OrderState.PENDING_CANCEL, OrderState.STATE_UNKNOWN}
@@ -130,6 +136,7 @@ class OrderView:
     fees: float = 0.0
     venue_order_id: str = ""
     reason: str = ""
+    origin: str = "strategy"  # "strategy" = placed by the strategy; "forced" = by the account socket
 
     @property
     def client_order_id(self) -> str:
@@ -162,6 +169,11 @@ class _OrderPort:
             raise OrderApiError(f"place_order takes an OrderRequest, got {type(request).__name__}")
         coid = request.client_order_id
         if coid:
+            if coid.startswith(FORCED_ID_PREFIX):
+                raise OrderApiError(
+                    f"client_order_id {coid!r}: the prefix {FORCED_ID_PREFIX!r} is reserved "
+                    f"for forced orders from the account socket"
+                )
             if coid in self._registry:
                 raise OrderApiError(f"duplicate client_order_id {coid!r}")
         else:
@@ -194,6 +206,9 @@ class _OrderPort:
             )
         self._outbox.append(("cancel", request, self._now))
 
+    def knows(self, client_order_id: str) -> bool:
+        return client_order_id in self._registry
+
     def set_timer(self, at_ns: int, tag: str) -> None:
         at = int(validate_nanos(at_ns))
         if at < self._now:
@@ -209,6 +224,19 @@ class _OrderPort:
         return tuple(v for v in self._registry.values() if v.is_open)
 
     # -- engine-facing ------------------------------------------------------
+    def _adopt(self, request: OrderRequest, time_ns: int, origin: str) -> None:
+        """Register an order the strategy did not place (a forced order from
+        the account socket). Called by the engine when the first notice
+        about it is delivered, never earlier, so the strategy learns of it
+        only through a notice."""
+        coid = request.client_order_id
+        if coid in self._registry:  # pragma: no cover - the engine checks ids first
+            raise OrderApiError(f"duplicate client_order_id {coid!r}")
+        self._registry[coid] = OrderView(
+            request=request, state=OrderState.PENDING_NEW, sent_time_ns=time_ns,
+            last_update_ns=time_ns, origin=origin,
+        )
+
     def _apply_notice(self, event: Event) -> None:
         coid = event.client_order_id  # type: ignore[attr-defined]
         view = self._registry[coid]
@@ -258,8 +286,13 @@ class StrategyContext:
         order_lookup_cb: Optional[Callable[[str], Optional[OrderView]]] = None,
         open_orders_cb: Optional[Callable[[], tuple]] = None,
         set_timer_cb: Optional[Callable[[int, str], None]] = None,
+        typed_events: Optional[Mapping[EventType, Sequence[Event]]] = None,
     ) -> None:
+        """`typed_events`, if given, maps an event type to the delivered
+        events of that type (same objects, same order as `visible_events`);
+        it only makes `visible_events(event_type)` faster."""
         self.__visible_events = visible_events
+        self.__typed_events = typed_events
         self.__current = current
         self.__place_order_cb = place_order_cb
         self.__cancel_order_cb = cancel_order_cb
@@ -270,9 +303,14 @@ class StrategyContext:
 
     def _revoke(self) -> None:
         self.__revoked = True
-        revoke = getattr(self.__visible_events, "revoke", None)
-        if revoke is not None:
-            revoke()
+        views = [self.__visible_events]
+        if self.__typed_events is not None:
+            views.extend(self.__typed_events.values())
+        for view in views:
+            revoke = getattr(view, "revoke", None)
+            if revoke is not None:
+                revoke()
+        self.__typed_events = None
 
     def __check(self) -> None:
         if self.__revoked:
@@ -296,31 +334,58 @@ class StrategyContext:
         return self.__revoked
 
     def visible_events(
-        self, event_type: Optional[EventType] = None, n: Optional[int] = None
+        self,
+        event_type: Optional[EventType] = None,
+        n: Optional[int] = None,
+        *,
+        since_ns: Optional[int] = None,
+        until_ns: Optional[int] = None,
     ) -> tuple[Event, ...]:
         """Delivered events (all with `received_time_ns <= now_ns`), oldest
-        first, optionally only `event_type` and/or only the last `n`.
-        `n` is a count: `n=0` returns nothing."""
+        first. Filters, all optional: only `event_type`; only those with
+        `since_ns <= received_time_ns <= until_ns`; then only the last `n`
+        (`n` is a count: `n=0` returns nothing).
+
+        `until_ns > now_ns` raises `LookAheadError`: the history holds
+        nothing after now, and a request for the future is a strategy bug
+        that must not be answered with a silently shortened result."""
         self.__check()
-        events = self.__visible_events
+        now = int(self.__current.received_time_ns)
+        if until_ns is not None:
+            until = int(validate_nanos(until_ns))
+            if until > now:
+                raise LookAheadError(
+                    f"visible_events(until_ns={until}) asks for events after now_ns={now}"
+                )
+        else:
+            until = None
+        since = int(validate_nanos(since_ns)) if since_ns is not None else None
+        if n is not None and (isinstance(n, bool) or not isinstance(n, int)):
+            raise OrderApiError("n must be an int")
+        if event_type is not None and not isinstance(event_type, EventType):
+            raise OrderApiError(f"event_type must be an EventType, got {event_type!r}")
+
+        if event_type is None:
+            events: Sequence[Event] = self.__visible_events
+        elif self.__typed_events is not None:
+            events = self.__typed_events.get(event_type, ())
+        else:
+            events = tuple(e for e in self.__visible_events if e.EVENT_TYPE is event_type)
+
+        # Delivered events are in non-decreasing received_time_ns (the
+        # engine's queue never goes back in time), so a range is a slice.
+        lo, hi = 0, len(events)
+        if since is not None:
+            lo = bisect.bisect_left(events, since, key=_recv)
+        if until is not None:
+            hi = bisect.bisect_right(events, until, key=_recv)
         if n is not None:
-            if isinstance(n, bool) or not isinstance(n, int):
-                raise OrderApiError("n must be an int")
             if n <= 0:
                 return ()
-            if event_type is None:
-                return tuple(events[-n:])
-            picked: list[Event] = []
-            for e in reversed(events):
-                if e.EVENT_TYPE is event_type:
-                    picked.append(e)
-                    if len(picked) == n:
-                        break
-            picked.reverse()
-            return tuple(picked)
-        if event_type is None:
-            return tuple(events)
-        return tuple(e for e in events if e.EVENT_TYPE is event_type)
+            lo = max(lo, hi - n)
+        if hi <= lo:
+            return ()
+        return tuple(events[lo:hi])
 
     def last(self, event_type: EventType) -> Optional[Event]:
         """Most recent delivered event of `event_type`, or None."""
@@ -357,6 +422,10 @@ class StrategyContext:
         if self.__set_timer_cb is None:
             raise OrderApiError("this context was built without timers")
         self.__set_timer_cb(at_ns, tag)
+
+
+def _recv(event: Event) -> int:
+    return int(event.received_time_ns)
 
 
 STRATEGY_API: tuple[str, ...] = (

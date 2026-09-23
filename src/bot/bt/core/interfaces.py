@@ -21,11 +21,26 @@ The fill model is called on the venue's clock: `on_market_event` at the
 event's `exchange_time_ns`, `on_order` / `on_cancel` at the request's
 arrival time at the venue (strategy send time + latency). It is never
 handed an event the venue could not have seen yet.
+
+Account
+-------
+The account socket is also called on the venue's clock. Per instant and
+per market event the engine calls, in this order: `apply_funding` /
+`apply_liquidation` (for those event types), the fill model's
+`on_market_event` (its fills reach `apply_fill`), then
+`account.on_market_event`, which may mark positions and return forced
+orders (a margin close-out, say). A forced order goes straight to the fill
+model at that venue time (it does not travel the strategy's order
+channel), and its notices reach the strategy like any other, with
+`OrderView.origin == "forced"`. When one of the strategy's orders reaches
+the venue, `account.check_order` is asked first; a non-None answer is
+the reject reason (insufficient margin, say) and the fill model never sees
+the order.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, Sequence, Union, runtime_checkable
+from typing import Optional, Protocol, Sequence, Union, runtime_checkable
 
 from .api import CancelRequest, OrderRequest
 from .events import Event
@@ -148,6 +163,18 @@ class Account(Protocol):
         """Called at the liquidation print's venue time."""
         ...
 
+    def on_market_event(self, event: Event, venue_time_ns: int) -> Sequence[OrderRequest]:
+        """Called for every market event at its venue time, after the fill
+        model has handled it. Mark positions here. Return forced orders
+        (e.g. a margin close-out) or nothing."""
+        ...
+
+    def check_order(self, order: OrderRequest, venue_time_ns: int) -> Optional[str]:
+        """Called when one of the strategy's orders reaches the venue,
+        before the fill model. Return None to let it through, or a
+        non-empty reject reason."""
+        ...
+
 
 SOCKETS: dict[str, type] = {
     "fill_model": FillModel,
@@ -210,7 +237,8 @@ class NullCostModel:
 
 
 class NullAccount:
-    """Discards fills, funding and liquidations."""
+    """Discards fills, funding and liquidations; never rejects an order and
+    never forces one. A stand-in until item 6's account is plugged in."""
 
     def apply_fill(self, fill: FillNotice) -> None:
         return None
@@ -219,4 +247,10 @@ class NullAccount:
         return None
 
     def apply_liquidation(self, event: Event) -> None:
+        return None
+
+    def on_market_event(self, event: Event, venue_time_ns: int) -> Sequence[OrderRequest]:
+        return ()
+
+    def check_order(self, order: OrderRequest, venue_time_ns: int) -> Optional[str]:
         return None

@@ -11,7 +11,7 @@ from bot.bt.core import (
     SourceEventTypeError,
 )
 
-from ._util import SEC, T0, Recorder, trade
+from bt0_util import SEC, T0, Recorder, trade
 
 
 def test_source_going_backwards_is_an_error_not_a_resort():

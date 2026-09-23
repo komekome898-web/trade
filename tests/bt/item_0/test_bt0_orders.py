@@ -19,7 +19,7 @@ from bot.bt.core import (
 )
 from bot.bt.core.testing import FixedRateCost, ImmediateFillModel, RecordingAccount
 
-from ._util import MS, T0, Recorder, clock, trade
+from bt0_util import MS, T0, Recorder, clock, trade
 
 
 def test_place_then_cancel_returns_open_orders_to_zero():
@@ -58,8 +58,9 @@ def test_ack_then_fill_updates_the_strategy_view_and_account():
     view = res.orders["mine"]
     assert view.state is OrderState.FILLED and view.filled_size == 2.0 and view.avg_fill_price == 100.0
     assert view.fees == pytest.approx(0.2)  # 100 * 2 * 0.001, closed form
-    assert [k for k, _ in acct.calls] == ["fill"]
-    assert acct.calls[0][1].fee == pytest.approx(0.2) and acct.calls[0][1].side == "sell"
+    booked = [c for k, c in acct.calls if k == "fill"]
+    assert len(booked) == 1
+    assert booked[0].fee == pytest.approx(0.2) and booked[0].side == "sell"
 
 
 def test_fill_without_cost_model_is_refused():
@@ -263,4 +264,8 @@ def test_funding_and_liquidation_reach_the_account_at_venue_time():
         LiquidationEvent(received_time_ns=T0 + 9, exchange_time_ns=T0 + 1, price=1.0, size=1.0, side="sell"),
     ]
     CoreEngine(Recorder(), ev, account=acct).run()
-    assert [(k, int(e.exchange_time_ns)) for k, e in acct.calls] == [("funding", T0), ("liquidation", T0 + 1)]
+    assert [(k, int(e.exchange_time_ns)) for k, e in acct.calls if k != "market"] == [
+        ("funding", T0), ("liquidation", T0 + 1),
+    ]
+    # the mark hook sees both, each after its settlement hook
+    assert [k for k, _ in acct.calls] == ["funding", "market", "liquidation", "market"]

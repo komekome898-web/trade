@@ -3,11 +3,13 @@ plugs into. Fixed requirements:
 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/REQUIREMENTS.md.
 
 Modules: time (int64 UTC ns), events (event types), ordering (the total
-order of processing), api (strategy context and order API), interfaces
-(the four sockets), engine (the queue), contract (machine-readable
-guarantees), testing (test doubles, not venue models).
+order of processing and of merging input streams), api (strategy context
+and order API), interfaces (the four sockets), engine (the queue),
+contract (machine-readable guarantees), testing (test doubles, not venue
+models). Tests live in tests/bt/item_0/.
 """
 from .api import (
+    FORCED_ID_PREFIX,
     STRATEGY_API,
     CancelRequest,
     OrderRequest,
@@ -16,13 +18,15 @@ from .api import (
     StrategyContext,
 )
 from .contract import CORE_CONTRACT, CORE_VERSION
-from .engine import CoreEngine, EngineResult
+from .engine import SINGLE_STREAM_NAME, CoreEngine, EngineResult
 from .errors import (
+    AccountSocketError,
     CoreError,
     CostModelError,
     EventOrderError,
     EventValidationError,
     LatencyModelError,
+    LookAheadError,
     MissingCostModelError,
     OrderApiError,
     SourceEventTypeError,
@@ -70,7 +74,7 @@ from .interfaces import (
     VenueReport,
     ZeroLatency,
 )
-from .ordering import DELIVERY_PRIORITY, ORDERING_RULE, order_events
+from .ordering import DELIVERY_PRIORITY, ORDERING_RULE, TYPE_ORDER, VENUE_MARKET_PRIORITY, order_events
 from .strategy import Strategy
 from .time import TIME_CONTRACT, Nanos, nanos_to_iso, to_nanos, validate_nanos
 

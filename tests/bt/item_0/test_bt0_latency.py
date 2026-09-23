@@ -6,7 +6,7 @@ import pytest
 from bot.bt.core import CoreEngine, EventType, LatencyModelError, NullCostModel, OrderRequest
 from bot.bt.core.testing import ImmediateFillModel
 
-from ._util import MS, T0, Recorder, clock, trade
+from bt0_util import MS, T0, Recorder, clock, trade
 
 
 class _Fixed:
