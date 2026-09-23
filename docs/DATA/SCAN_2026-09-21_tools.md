@@ -9996,3 +9996,314 @@ K12 検査の出力の貼付           0 件
 **この回に足した節による増は 0 件である。**当たった行はすべて報告書 9379 行までの過去の節に在り、当方の節の行は 1 件も当たっていない(生ログの `checker_all_head` の節 と `checker_all` の節)。
 **30 回目の節が書いた「46 件」はリードの誤りで、実数は 48 件である**(31 回目の検収 §3)。
 **K12 の 1 件は、貼り付けが既定の(節を絞った)実行の出力であることによる。****当方は自分で閉じずに残した。**
+
+## 区分1 — 33 回目の実行(2026-09-23)
+
+委任文: `docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154`。生ログ: `docs/DATA/probes/20260922_tools_1_run33.log`。
+**これは、32 回目のあとに区分 1 を閉じた報告が誤りだったことを受けた回である。**リードが `scripts/recount_scan_cat1.py` に足した行「最後の記載が「判別に一次資料が要る」のまま(機械)」が、この回の始めに 8 件を出した(生ログの `recount_before` の節)。
+**この回の完了の形は、起動の指定の逐語「この回の終わりにこれが 0 件になることが、この回の完了の形です。」である。**
+オーナーの指示の逐語は L-396「**区分1を完了まで進めて**」で、この回はその続きである。
+
+**この回にしたこと**: 45・50・94・110・111・112・117・118 の 8 件について、1 件ずつ一次資料に当たり、6 要素の印を付けるか、区分 1 の道具ではないと理由つきで決めた。**8 件とも `判別に一次資料が要る` を外した。**
+**導入・構築・最小実行・登録・鍵の発行・購入・発注はこの回に 1 件も無い。新しい検索計画は打っていない。候補も増やしていない。**読んだのは原典だけである。
+
+**書き換えの範囲**: 報告書の末尾にこの節を足しただけで、**既存の節は 1 文字も触っていない。**報告書の `git diff` の削除行は 0 である(生ログの `diff_report` の節)。
+**`scripts/recount_scan_cat1.py` はこの回に書き換えていない。**
+
+**生ログの本数**: `ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l` の出力は **32**(この回の生ログ `run33.log` を作ったあとに打った値。生ログの `ls_probes` の節)。
+**内訳は `run2` から `run33` である**(`run1` の生ログは無い。21 回目から 32 回目と同じ)。
+
+**到達の記録**:
+**既定枝は `ungh.cc` の `defaultBranch` で確かめてから取った**: `mote/backtest` は `master`、`wangzhe3224/awesome-systematic-trading` は `master`、`HKUDS/Vibe-Trading` は `main`、`wilsonfreitas/awesome-quant` は `main` である。
+**`code=000` が出た手は、どれも 404 の欄に入れずに打ち直した**: `ungh.cc` の 3 手(110 と 111 の登録情報は接続の切断と TLS の切断、112 の追跡ファイルの一覧は TLS の切断)は、打ち直してどれも `code=200`。
+`docs.forextester.com` と `blog.forextester.com` は 2 度ずつ打ち直しても `code=000`(プロキシの `CONNECT tunnel failed, response 502`)のままである。**この環境の名前の解決はプロキシ越しで `getent` が引けないので、名前が無いのか経路が落ちたのかは分けられない**(生ログの `c45_retry000` の節)。
+**この回の `code=404` は 1 件で、当方の綴りの誤りである**: 110 の README を `README.md` と綴ったが、追跡ファイルの一覧の名前は `Readme.md` だった。正しい名前で取り直して `code=200`(生ログの `c110_readme` の節 と `c110_readme2` の節)。
+`hyper-quant.tech` は `code=307` で `www.hyper-quant.tech` へ転送するので、`-L` で辿って打ち直した(生ログの `c118_sitemap_follow` の節)。
+`www.exegy.com` の `robots.txt` に `Crawl-delay: 10` があるので、その間を空けて打った。
+**生ログから個人の連絡先を 1 か所伏せた**: 112 の `pyproject.toml` の作者の電子郵便の宛先が出力に写ったので、生ログの該当行を「(個人の連絡先のため生ログでは伏せた)」に置き換えた(委任文 §9「個人の連絡先は写さない」)。
+
+### 検索計画
+
+**この回は検索計画を打っていない。**起動の指定の逐語「**新しい検索計画は打たないでください。候補も増やさないでください。**」による。
+X の経路も同じ理由で打っていない。**候補は 1 件も増えていない。**
+117 と 118 の頁の URL は、検索ではなく、21 回目に確定した公式の場の `sitemap` の中から辿って特定した。
+
+| 幅 | 日本語クエリ | 英語クエリ | 実行 |
+|---|---|---|---|
+| 狭い | (打たない) | (打たない) | **打たない。**起動の指定による |
+| 中間 | (打たない) | (打たない) | 同上 |
+| 広い | (打たない) | (打たない) | 同上 |
+
+§8 の `tools_inventory.py` の全文は、10 回目の検収 §4-3 の判断により区分 1 の 1 回目の節を参照して貼っていない。
+
+### 出典
+
+| # | 出典 | 取得日 | 使った先 |
+|---|---|---|---|
+| 1 | `https://app.forextester.com/` と `https://app.forextester.com/loc-en.DxtuxXmL.js` | 2026-09-23 | 候補 45。**13 回目の 5 経路に無い新しい経路**で、ウェブ版のアプリが読み込む英語の文言の束 |
+| 2 | `https://www.forextester.com/` と `https://help.forextester.com/`(転送先 `https://forextester.com/en/support/`) | 2026-09-23 | 候補 45。どちらも `code=403`(Cloudflare) |
+| 3 | `https://docs.algotest.in/sitemap.xml` と、その中の 4 頁(`product-blogs/backtest-sl-mismatch/`・`product-blogs/difference-backtest-forward-live/`・`crypto-trading/backtest/`・`execution-settings/entry-and-exit-order-type/`) | 2026-09-23 | 候補 50 |
+| 4 | `https://raw.githubusercontent.com/mote/backtest/master/backtest.py` と `.../master/README` | 2026-09-23 | 候補 94 |
+| 5 | `https://raw.githubusercontent.com/wangzhe3224/awesome-systematic-trading/master/Readme.md` と同じ登録の `src/python/main.py`・`src/go/main.go` | 2026-09-23 | 候補 110 |
+| 6 | `https://raw.githubusercontent.com/HKUDS/Vibe-Trading/main/agent/backtest/engines/base.py`・`crypto.py`・`china_a.py`・`_market_hooks.py` | 2026-09-23 | 候補 111 |
+| 7 | `https://raw.githubusercontent.com/wilsonfreitas/awesome-quant/main/README.md` と `.../main/pyproject.toml` | 2026-09-23 | 候補 112 |
+| 8 | `https://www.exegy.com/avoiding-slippage-equities-trading-with-backtesting/` と `https://www.exegy.com/products/exegy-capture-replay/`(どちらも `sitemap` から特定) | 2026-09-23 | 候補 117 |
+| 9 | `https://www.hyper-quant.tech/research/realistic-backtesting-methodology`・`/pricing`・`/docs`・`/docs/api`(どれも `sitemap.xml` から特定) | 2026-09-23 | 候補 118 |
+| 10 | `https://ungh.cc/repos/<所有者>/<名前>` と `.../files/<既定枝>`(94・110・111・112) | 2026-09-23 | 既定枝の確かめと追跡ファイルの一覧 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | **候補 45 は、ウェブ版の場 `app.forextester.com` に届いた。**殻の表題は `Forex Tester Online` で `code=200`。同じ事業者の `www.forextester.com` と `help.forextester.com` は `code=403` のままである。**届いたのはウェブ版だけで、導入型(デスクトップ版)の原典と料金の頁には届いていない** | 実測 | `20260922_tools_1_run33.log` の `c45_fto_shell` の節 と `c45_routes` の節 |
+| 2 | **候補 45 のウェブ版は、1 分足とティックの両方を検証に使うと自分で書いている。**文言の束の逐語は `Data on price changes per minute, including: Open, High, Low, Close prices, and Volume (trading activity).` と `Detailed data on every price change of a financial symbol. Each «tick» is the smallest price movement recorded on the exchange.` と `Floating spread from tick data` である | 実測 | 同じ生ログの `c45_fto_loc` の節 |
+| 3 | **候補 45 のウェブ版は、未約定の注文を持ち、逆指値が値幅の外に出たときの埋まり方を持つ。**逐語は `Cannot place pending order {{posInfo}}. {{reason}}` と `{{ symbol }} moved past the exchange protection band, so the stop order now rests as a limit order at {{ price }} and fills only when the price comes back to it.` である。**文言だけで、登録が要るので動かしていない(文書上の主張・未実行)** | 実測 | 同じ生ログの `c45_fto_loc` の節 |
+| 4 | **候補 45 の文言の束には、待ち行列・板・遅延の語が無い。**`queue`・`order book`・`latency` の当たりは 0 件で、`market impact` の当たり 2 件は建玉の説明文とニュースの表題である | 実測 | 同じ生ログの `c45_fto_loc` の節 と `c45_fto_impact` の節 |
+| 5 | **候補 50 は 1 分足で検証すると文書に書いている。**逐語は `As mentioned earlier, our backtest uses 1-min OHLC data to give results.` で、跳びは `If your Stop Loss was set between these prices, our platform assumes your SL got hit at the open price of the next candle.` と書く | 実測 | 同じ生ログの `c50_granularity` の節 |
+| 6 | **候補 50 の検証は、板の厚みも滑りも既定では見ない。**逐語は `Backtesting a strategy assumes you get the best price as defined by the parameters of the strategy. It does not take into consideration the market depth and liquidity of the instrument, slippages & broker congestion.` と `Solution: Add slippages to reduce differences caused by such factors.` である | 実測 | 同じ生ログの `c50_granularity` の節 |
+| 7 | **候補 50 は暗号資産の検証を名乗る。**13 回目に「暗号資産は扱いが未確認」と書いた点の答えで、逐語は `You can backtest your crypto trading strategies on AlgoTest.` である | 実測 | 同じ生ログの `c50_ordertype` の節 |
+| 8 | **候補 94 は足で回し、指値と逆指値は足の高安の範囲に入れば埋まり、埋まらない注文は次の足へ残る。**逐語は `elif o.level >= bar.lo and o.level <= bar.hi: #welp` と `for oid in self.active:` と `o.nbars += 1`、README は `bar_close which is called for each bar of your data.` である | 実測 | 同じ生ログの `c94_fill` の節 と `c94_readme` の節 |
+| 9 | **候補 94 には遅延・滑り・手数料・出来高の語が 1 つも無い。**走査した 1 本の当たりは 0 件で、`cancel` の当たりは自分の注文の取り消しと OCO(`o1.cancel(o2)`)だけである | 実測 | 同じ生ログの `c94_scan` の節 |
+| 10 | **候補 111 は日足を既定に足ごとに回し、各足の始値に定率の滑りを掛けて埋める。**逐語は `interval = config.get("interval", "1D")` と `and this engine fills at the CURRENT bar's open, so the current bar's` と `return price * (1 + direction * self.slippage_rate)`、暗号資産の既定は `self.slippage_rate: float = config.get("slippage", 0.0005)` である | 実測 | 同じ生ログの `c111_fill` の節 |
+| 11 | **候補 111 の中国株の機関は、値幅の制限で約定を止める。**逐語は `# 3. Price limits, tested at execution time (see _blocked_by_limit).` と `if _blocked_by_limit(state, symbol, direction, bar, _price_limit(symbol)):` である。暗号資産の機関は `"""Crypto: 24/7, long/short/close all allowed."""` | 実測 | 同じ生ログの `c111_china_gate` の節 と `c111_fill` の節 |
+| 12 | **候補 111 の検証の機関 3 本には、出来高・市場影響・遅延・待ち行列の語が無い** | 実測 | 同じ生ログの `c111_scan` の節 |
+| 13 | **候補 111 に作業者向けの手引き(`AGENTS.md`・`CLAUDE.md`・`.claude/`・`.cursor`)は無いが、その道具自身の agent 向けの `SKILL.md` などが 91 本ある**(中身は読んでいない) | 実測 | 同じ生ログの `files_vibe_trading` の節 と `files_vibe_trading_skills` の節 |
+| 14 | **候補 110 は一覧で、同梱の実行物は中身が 1 行の見本だけである。**表題は `# Awesome Systematic Trading`、`src/python/main.py` は `print("Python related.")` | 実測 | 同じ生ログの `c110_readme2` の節 |
+| 15 | **候補 112 は一覧で、作業者向けの手引きを 15 本同梱している。**`AGENTS.md` が 7089 バイト、`CLAUDE.md` が 4653 バイト、ほかに `.claude/` と `.agents/` の下の `SKILL.md` など。**中身は読んでいない** | 実測 | 同じ生ログの `c112_agentfiles_retry` の節 と `c112_readme` の節 |
+| 16 | **候補 117 の当たりの頁は解説の記事で、検証の道具の名前を 1 つも出さない。**事業者の製品は市場データの記録と再生の機器で、逐語は `Exegy Capture Replay is a high-capacity, high-precision packet capture solution with a robust ticker plant function embedded in it` である | 実測 | 同じ生ログの `c117_article` の節 と `c117_capture_replay` の節 |
+| 17 | **候補 118 の検証の機関は公開されていない。**文書の頁の逐語は `API & Live Trading Not Yet Available` と `Hyper Trading Automation is currently in the research and development phase.` で、記事の符号は自社の枠組みの断片である | 実測 | 同じ生ログの `c118_pricing_docs` の節 と `c118_article` の節 |
+| 18 | **候補 118 の場に、委任文 §4 の宣伝・詐欺の兆候に当たる逐語がある。**`guaranteeing risk-free alpha generation` と `to predict price movements with 94% accuracy` | 実測 | 同じ生ログの `c118_article` の節 |
+| 19 | **この回の書き換えのあと、「最後の記載が「判別に一次資料が要る」のまま(機械)」は 0 件になった** | 実測 | 同じ生ログの `recount_after` の節 |
+
+### 候補の一覧
+
+**この回に候補は 1 件も増えていない。**下の 8 件は既存の番号と名前のまま、最後の記載を足したものである。
+
+45. `ForexTester` — **一次資料に到達した。**この回の新しい経路は Forex Tester Online の場 `app.forextester.com` で、`code=200`。13 回目の 5 経路と、この回の `www.forextester.com` と `help.forextester.com` は Cloudflare の `code=403` のままである。
+   **届いたのはウェブ版のアプリが読み込む英語の文言の束で、導入型(デスクトップ版)と料金の頁には届いていない。**13 回目に書いた第 2 経路(オーナー PC)のコマンドはそのまま残る。
+   文言の束の逐語: `Data on price changes per minute, including: Open, High, Low, Close prices, and Volume (trading activity).` / `Floating spread from tick data` / `Cannot place pending order {{posInfo}}. {{reason}}`。
+   印は `区分1-足` と `区分1-ティック` と `区分1-市場影響と約定の模型` を付ける。
+   `区分1-板の待ち行列`・`区分1-イベント駆動`・`区分1-ベクトル化` は付けない。文言の束を走査して待ち行列と板と事象の型の語の当たりが無く、検証は手で足とティックを進める再生である(逐語 `Tick Forward`)。
+   段(機構) 2・段(既定) 2。**これは文言からの当てはめで、登録が要るので動かしていない**(逐語 `Free Registration` と `5-Day Free Trial Subscription`)。**`判別に一次資料が要る` を外す。**
+50. `AlgoTest` — **一次資料に到達し、足かティックかが文書で決まった。**逐語は `As mentioned earlier, our backtest uses 1-min OHLC data to give results.` である。
+   値段は `Backtesting a strategy assumes you get the best price as defined by the parameters of the strategy.`、窓の跳びは `our platform assumes your SL got hit at the open price of the next candle.`、滑りは利用者が足す(`Solution: Add slippages to reduce differences caused by such factors.`)。暗号資産の検証も名乗る。
+   印は `区分1-足` と `区分1-市場影響と約定の模型` を付ける。
+   `区分1-ティック`・`区分1-板の待ち行列`・`区分1-イベント駆動`・`区分1-ベクトル化` は付けない。文書が粒度を 1 分足と書いており、読んだ頁に板と列と事象の型の記述が無い。
+   段(機構) 1・段(既定) 1。**文書上の主張で、登録が要るので動かしていない。****`判別に一次資料が要る` を外す。**
+94. `mote/backtest` — **一次資料に到達した。**既定枝 `master` を `ungh.cc` で確かめ、`backtest.py` と `README` を raw から取った(どちらも `code=200`)。
+   README の逐語は `To use, subclass the BackTest object, and write your strategy logic in` と `bar_close which is called for each bar of your data.`(折れている行は折れたまま引く)。
+   約定の逐語は `elif o.level >= bar.lo and o.level <= bar.hi: #welp` で、埋まらない注文は `for oid in self.active:` と `o.nbars += 1` で次の足へ残る。成行は README の逐語 `stop level. Market orders are filled immediately, at whatever level you` のとおり、指定した値で埋まる。
+   印は `区分1-足` と `区分1-市場影響と約定の模型` を付ける。
+   `区分1-ティック`・`区分1-板の待ち行列`・`区分1-イベント駆動`・`区分1-ベクトル化` は付けない。入力は `readline()` で 1 行ずつ読む足で、事象の型も予定表も持たない。
+   段(機構) 2・段(既定) 2。最後の押し出しは 2012-09-14 で、`print` 文は Python 2 の書き方である。**`判別に一次資料が要る` を外す。**
+110. `wangzhe3224/awesome-systematic-trading` — **一次資料に到達した。**既定枝 `master` の `Readme.md` を raw から取った(`code=200`)。表題は `# Awesome Systematic Trading` で、見出しは `## Backtest + live trading`・`## Data Source`・`## Broker APIs` などの分類である。
+   同梱の `src/python/main.py` の中身は `print("Python related.")` の 1 行で、検証の機関は無い。
+   **区分1 の道具ではない。該当なし(道具ではなく一覧)。**一覧の中身から名前を抜くことはこの回にしていない(起動の指定)。**`判別に一次資料が要る` を外す。**
+111. `HKUDS/Vibe-Trading` — **一次資料に到達した。**既定枝 `main` を `ungh.cc` で確かめ(1 回目 `code=000`、打ち直して `code=200`)、検証の機関の 4 本を raw から取った。
+   粒度の逐語は `interval = config.get("interval", "1D")` と `"""Bar-by-bar execution with market rule enforcement."""`、値段の逐語は `and this engine fills at the CURRENT bar's open, so the current bar's` と `return price * (1 + direction * self.slippage_rate)` である。
+   印は `区分1-足` と `区分1-市場影響と約定の模型` を付ける。
+   `区分1-ティック`・`区分1-板の待ち行列`・`区分1-イベント駆動`・`区分1-ベクトル化` は付けない。信号は目標の建玉の表(逐語 `_target_arr = target_pos[codes].values`)として先にまとめて作られるが、約定は時間順に 1 本ずつで、まとめて作るのは前処理の側だけである。
+   段(機構) 0・段(既定) 0(下の段の表の注記)。仕分けは `区分6 へ` に加えて `区分3 へ`(取り込みの口が `agent/backtest/loaders/` に 42 本)。**`判別に一次資料が要る` を外す。**
+112. `wilsonfreitas/awesome-quant` — **一次資料に到達した。**既定枝 `main` の `README.md` を raw から取った(`code=200`)。逐語は `A curated list of insanely awesome libraries, packages and resources for Quants (Quantitative Finance).` で、見出しは `## Trading & Backtesting`・`## Market Data & Data Sources` などの分類である。
+   同梱の Python は一覧の保守の側の名前(`parse.py`・`cranscrape.py`・`scripts/validate_readme.py` など)で、中身は読んでいない。
+   **区分1 の道具ではない。該当なし(道具ではなく一覧)。**作業者向けの手引きを同梱している(下の §6-3 の小節)。**`判別に一次資料が要る` を外す。**
+117. `Exegy` — **一次資料に到達した。**当たりの頁は `https://www.exegy.com/avoiding-slippage-equities-trading-with-backtesting/` で、表題は `Using Backtesting to Avoid Slippage in Equities Trading - Exegy`。**解説の記事で、検証の道具の名前を 1 つも出さない。**
+   記事の勧めは `If you’re looking for backtesting data sets, ensure accurate backtesting by seeking a dataset from exchanges or market data vendors with comprehensive tick data and NIST-synced timestamps.` で、事業者の製品は市場データの記録と再生の機器である。
+   **区分1 の道具ではない。**仕分けは `区分3 へ`(履歴の市場データの記録と配布)と `区分8 へ`(記録の再生。逐語 `Set replay rates to conduct capacity stress testing for Reg SCI and MiFID II compliance.`)。**`判別に一次資料が要る` を外す。**
+118. `Hyper Trading Automation`(`hyper-quant.tech`) — **一次資料に到達した。**当たりの記事は `https://www.hyper-quant.tech/research/realistic-backtesting-methodology` である。
+   **記事は自社の枠組みの断片の符号を載せるが、検証の機関は公開されていない。**文書の頁の逐語は `API & Live Trading Not Yet Available` と `Hyper Trading Automation is currently in the research and development phase.` である。
+   料金は運用益の分配で、逐語は `If an account realised $10,000 in net profit over a quarter, the illustrative 20% share would be $2,000.` である。
+   **区分1 の道具ではない(手に取れる検証の機関が無い)。**仕分けは `区分6 へ`。**同じ場に宣伝・詐欺の兆候の逐語がある**(この回の知見 18)。**`判別に一次資料が要る` を外す。**
+
+#### 8 件の決め方の一覧
+
+| 番号 | 道具 | 決めたこと | 段(機構)・段(既定) |
+|---|---|---|---|
+| 45 | `ForexTester` | 印を付けた(足・ティック・市場影響と約定の模型) | 2・2 |
+| 50 | `AlgoTest` | 印を付けた(足・市場影響と約定の模型) | 1・1 |
+| 94 | `mote/backtest` | 印を付けた(足・市場影響と約定の模型) | 2・2 |
+| 110 | `wangzhe3224/awesome-systematic-trading` | 区分1 の道具ではない。該当なし(道具ではなく一覧) | — |
+| 111 | `HKUDS/Vibe-Trading` | 印を付けた(足・市場影響と約定の模型)。ほかに `区分6 へ`・`区分3 へ` | 0・0 |
+| 112 | `wilsonfreitas/awesome-quant` | 区分1 の道具ではない。該当なし(道具ではなく一覧) | — |
+| 117 | `Exegy` | 区分1 の道具ではない。`区分3 へ`・`区分8 へ` | — |
+| 118 | `Hyper Trading Automation` | 区分1 の道具ではない。`区分6 へ` | — |
+
+**「別立て」(到達できずに射程つきで書く扱い)にした候補は、この回に 0 件である。**45 番はウェブ版に届いたので別立てにしていないが、導入型には届いていない(下の問い 1)。
+
+#### 段の表 — 30 回目の 37 行に、この回の 4 行を足した
+
+**数え直しの道具は最後の段の表を読むので、30 回目の 37 行の段の値を機械で写し、この回の 4 行を足した**(写しは生ログの `stage37_copy` の節)。
+**37 行の値は 1 つも動かしていない。**遅延と取り消しの扱いの中身は 30 回目の表(報告書 9124 行からの表)が在処である。
+
+| 候補 | 段(機構) | 段(既定) | 遅延 | 取り消しの扱い(先行注文) |
+|---|---|---|---|---|
+| 51 `QUANTAXIS` | 0 | 0 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 92 `prediction-market-backtester` | 6 | 0 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 8 `OpenTrader` | 1 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 32 `FlashAlpha-lab/flashalpha-fill-simulator` | 1 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 7 `Superalgos` | 1 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 72 `QTradeX` | 1 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 2 `Backtrader` | 4 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 4 `PyBroker` | 4・6 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 21 `Qlib` | 4・6 | 1 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 3 `PySystemtrade` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 19 `Jesse` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 20 `VnPy` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 60 `Hikyuu` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 67 `lumibot` | 2 | 2 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 70 `PineForge` | 2・3 | 2・3 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 13 `DeviaVir/zenbot` | 3・4 | 3・4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 123 `carlos8f/zenbot` | 3・4 | 3・4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 63 `trade-frame` | 3・4 | 3・4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 18 `zipline-reloaded` | 4・6 | 4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 6 `Ziplime` | 4・6 | 4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 53 `Rqalpha` | 3・4 | 4 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 23 `hftbacktest` | 3・5 | 3・5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 98 `mihircoding/limitOrderBook` | 5 | 5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 38 `microsoft/MarS` | 5 | 5(推定) | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 33 `SarthakDalmia1/backtesting_execution_simulator` | 5・6 | 5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 57 `WonderTrader` | 3・4・5 | 3・4・5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 1 `Basana` | 4・6 | 4・6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 15 `Mendl-Labs/BacktestingCore` | 6 | 6(推定) | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 35 `thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 36 `shubhamcodez/Market-Impact-Model` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 105 `DaniyalMlk/slippage` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 106 `almgren-chriss` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 116 `braverock/blotter` の `acOptTxns` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 119 `peernagy/lob_bench` | 6 | 6 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 91 `braedonsaunders/homerun` | 3・4・5・6 | 3・4・5 | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 54 `finmarketpy` | 該当なし | 該当なし | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 87 `PyTrendFollow` | 該当なし | 該当なし | 30 回目の表のとおり(報告書 9124 行からの表) | 同左 |
+| 45 `ForexTester` | 2 | 2 | 未確認(走査 1 本 = 文言の束。遅延の語の当たり 0 件) | **該当なし。**段(機構) が 5 に届かないので先行注文という物が立たない |
+| 50 `AlgoTest` | 1 | 1 | **該当なし(文書上の主張)。**逐語 `It does not take into consideration the market depth and liquidity of the instrument, slippages & broker congestion.` | **該当なし。**同じ理由 |
+| 94 `mote/backtest` | 2 | 2 | 未確認(走査 1 本。当たり 0 件) | **該当なし。**当たりは自分の注文の取り消しと OCO の `o1.cancel(o2)` だけ |
+| 111 `HKUDS/Vibe-Trading` | 0 | 0 | 未確認(走査 3 本。当たり 0 件) | **該当なし。**段(機構) が 5 に届かない |
+
+**この回の 4 行の段の注記**:
+
+| 候補 | 根拠(段) | 当方の判断が入ったところ |
+|---|---|---|
+| 45 | 段 2 = 未約定の注文を持つ(`Cannot place pending order`)。値幅の外に出た逆指値は指値として残り、値が戻ったときだけ埋まる | **文言だけから当てた。**量を読むか(段 4)は文言に無いので決められない |
+| 50 | 段 1 = 1 分足の中で逆指値の値に届けば埋まり、跳びなら次の足の始値で埋まる | 未約定の指値を検証の側で残すか(段 2)は、読んだ頁に書かれていない |
+| 94 | 段 2 = 足の高安に入れば埋まり、埋まらない注文は `self.active` に残る | 成行は相場を見ずに指定の値で埋まる(段 0 の形)が、最も高い段で書いた |
+| 111 | 段 0 = 各足の始値に定率の滑りを掛けて、必ず埋まる | **中国株の機関は値幅の制限で約定を止める。**これを「相場に埋まるかを問う」と読むと段 1 に近い。**下の問い 2 に出す** |
+
+#### 数え直しの道具の出力
+
+**打った命令**: `python3 scripts/recount_scan_cat1.py`(**貼るのは最後に打った出力である。**生ログの `recount_after` の節)
+
+```
+入力 = docs/DATA/SCAN_2026-09-21_tools.md
+候補の一覧の記載 = 654 件
+印に触れた候補 = 85 件
+
+== 3 段の数え直し
+一次資料に未到達 = 0 件 : なし
+到達済みだが印が無い = 2 件 : 14 番 22 番
+個別の要素が未決 = 1 件 : 11 番
+上の 3 段に入らない別立て = 1 件 : 49 番
+最後の記載が「判別に一次資料が要る」のまま(機械) = 0 件 : なし
+
+== 6 要素ごとの 総数 と 残り
+区分1-足 : 総数 55 件 : 残り 0 件 : 1 2 3 4 5 6 7 8 10 11 13 15 16 18 19 20 21 40 43 44 45 46 48 50 51 52 53 54 55 56 57 58 60 61 62 67 68 69 70 72 73 74 75 80 85 86 87 92 94 107 111 120 121 122 123
+区分1-ティック : 総数 19 件 : 残り 0 件 : 13 20 23 31 41 45 52 53 57 58 59 61 63 68 90 91 95 119 123
+区分1-板の待ち行列 : 総数 19 件 : 残り 0 件 : 23 33 37 38 57 65 90 91 95 96 97 98 99 100 101 102 103 104 109
+区分1-イベント駆動 : 総数 19 件 : 残り 0 件 : 1 6 13 18 23 37 41 52 53 57 58 61 62 63 65 68 69 91 123
+区分1-ベクトル化 : 総数 4 件 : 残り 0 件 : 54 73 74 87
+区分1-市場影響と約定の模型 : 総数 41 件 : 残り 0 件 : 1 2 3 4 6 7 8 13 15 18 19 20 21 23 32 33 35 36 38 45 50 51 53 54 57 60 63 67 70 72 87 91 92 94 98 105 106 111 116 119 123
+6 要素のどれかに印がある候補 = 84 件
+そのうち到達の記載が無い候補 = 0 件 : なし
+
+== 機関で数えた値
+番号で数えた値 = 84 件
+22 番と 52 番を束ねた値 = 84 件
+13 番と 123 番を束ねた値 = 83 件
+
+== 段の表と印の集合の突き合わせ
+段の表の行 = 41 件
+区分1-市場影響と約定の模型 の印 = 41 件
+段の表にあって印が無い = 0 件 : なし
+印があって段の表に無い = 0 件 : なし
+```
+
+| 数えたもの | 32 回目の値 | この回の道具の値 | 差の中身 |
+|---|---|---|---|
+| 最後の記載が「判別に一次資料が要る」のまま(機械) | 8(この回の始め) | **0** | 8 件とも外した |
+| 一次資料に未到達 | 0 | **0** | — |
+| 到達済みだが 6 要素の印が無い | 2 | **2** | 14 番と 22 番のまま |
+| 個別の要素が未決 | 1 | **1** | 11 番のまま |
+| 上の 3 段に入らない別立て | 1 | **1** | 49 番のまま |
+| 番号で数えた値 | 80 | **84** | 45・50・94・111 |
+| `区分1-足` | 51 | **55** | 45・50・94・111 |
+| `区分1-ティック` | 18 | **19** | 45 |
+| `区分1-市場影響と約定の模型` | 37 | **41** | 45・50・94・111 |
+| 段の表の行 | 37 | **41** | 同上。印と段の表の食い違いは 0 |
+
+### ツール1件ごとの表
+
+**この回に `[深掘り]` に達した道具は無い。**起動の指定の逐語「**構築・導入・最小実行もしないでください。**」に従い、導入も最小実行も 1 件も行っていない。
+委任文 §4.0 は「深掘りした道具は、文章より先に表に 1 行ずつ書く」と定めており、深掘りが 0 件なので **§4.0 の機械可読の表にこの回の行は無い**(18 回目から 32 回目と同じ)。
+下の表は、この回に一次資料から取れた範囲の料金・登録・危険である。**当方に無いものの照合(委任文 §8)は、この回の範囲の外なのでしていない(未確認)。**
+
+| 道具 | 料金と登録(一次資料) | 危険(一次資料と実測) |
+|---|---|---|
+| `ForexTester` | 層の名前 `Starter Plan`・`Pro Plan` と `5-Day Free Trial Subscription` が文言の束に在る。**金額は文言の束に無く、料金の頁は `code=403` で読めない(未確認)**。登録が要る | 殻の HTML が広告と計測の外部の口(`googletagmanager.com`・`facebook.com/tr`・`ad.doubleclick.net`)を読み込む。導入していない |
+| `AlgoTest` | 13 回目の知見 10 の逐語(週ごとの無料の検証の回数とクレジット)が在処。登録が要る | 未確認(登録の内側) |
+| `mote/backtest` | 取った 2 本(README・`backtest.py`)に料金の記述は無い。追跡ファイル 7 本に許諾のファイルが無い | 最後の押し出しは 2012-09-14、星 1。導入していない |
+| `wangzhe3224/awesome-systematic-trading` | 一覧なので料金の対象が無い | 同梱の実行物は 1 行の見本だけ |
+| `HKUDS/Vibe-Trading` | 未確認(この回は検証の機関だけを読んだ) | その道具自身の agent 向けの `SKILL.md` などが 91 本(この回の知見 13)。作成 2026-04-01、星 33857。導入していない |
+| `wilsonfreitas/awesome-quant` | 一覧なので料金の対象が無い | **作業者向けの手引きを 15 本同梱**(この回の知見 15)。中身は読んでいない |
+| `Exegy` | 未確認(製品は機器と管理のサービスで、読んだ頁に金額が無い) | 未確認 |
+| `Hyper Trading Automation` | 運用益の分配(逐語は候補の一覧の 118 番)。`Join 1500+ traders already on the waitlist.` の待ち行列の登録 | **宣伝・詐欺の兆候の逐語が在る**(この回の知見 18)。**使用報告ではなく宣伝の印** |
+
+### 予算
+
+割当は 1 回 5 万 token・20 分。**起動の指定の 8 件はすべて片付いた。**
+**6 要素の印を付けたのが 4 件**(45・50・94・111)、**区分 1 の道具ではないと決めたのが 4 件**(110・112 は一覧、117 は `区分3 へ`・`区分8 へ`、118 は `区分6 へ`)、**別立ては 0 件**である。
+「最後の記載が「判別に一次資料が要る」のまま(機械)」は 8 件から **0 件**になった(この回の完了の形)。
+**新しい検索計画は打っていない。深掘りも 0 件。候補も増やしていない。導入・構築・最小実行・登録・鍵の発行・購入・発注は 1 件も無い。**
+
+### 原文に無い判断が要った点(リードに渡す)
+
+1. **45 番は、ウェブ版のアプリの文言の束から印を付けた。**起動の指定は「到達できなければ別立て」だったが、同じ事業者のウェブ版には届いたので、当方は別立てにしなかった。
+   **文言の束はアプリ自身が画面に出す文で公式の配布物だが、機能の説明書ではなく、導入型(デスクトップ版)の原典でもない。**これを一次資料として印に使ってよいかを決めていただきたい。使えないなら 45 番は別立てに戻る。
+2. **111 番の段を 0 と置いた。**暗号資産の機関は各足の始値で必ず埋まる。**中国株の機関は値幅の制限で約定を止める**(この回の知見 11)。これを「相場に埋まるかを問う」と読むなら段 1 に近いが、段 1 の定義は「価格が跨いだら埋まる」で、値幅の門はそれと違う。**段 0 のままでよいかを決めていただきたい。**
+3. **111 番に同梱の `SKILL.md` など 91 本を、安全側の通算の「作業者向けの手引きの同梱」に数えていない。**その道具自身の agent に読ませる文書で、当方の作業者向けではないが、取り込めば当方の作業者に指示を出しうる経路になる筋は同じである。**数えるかを決めていただきたい。**数えれば通算は 1 件増える。
+4. **118 番は「区分1 の道具ではない」とし、別立てにしなかった。**検証の機関は公開されておらず、一次資料が自分で「開発の段階」と書いている(知見 17)。**到達できないのではなく、手に取れる物がまだ無い**と読んだ。別立てにするかを決めていただきたい。
+5. **117 番の仕分けは、公式の場の 93 頁のうち製品頁 1 本と記事 1 本だけを読んで決めた。**残りの頁は読んでいない。
+6. **段の表は、数え直しの道具が最後の表を読むので、30 回目の 37 行の段の値を写して 41 行にした。**遅延と取り消しの扱いの 37 行分は写さず、30 回目の表を在処として指した。この形でよいかを決めていただきたい。
+7. **生ログから個人の連絡先を 1 か所伏せた**(冒頭の到達の記録)。生ログを書き換えたのはこの 1 か所だけで、この回に作った生ログの中である。
+
+### 取ってきた文章の中の作業者向けの指示(委任文 §6-3)
+
+**作業者向けの手引きの同梱が 1 件あった**: 112 番 `wilsonfreitas/awesome-quant` に、`AGENTS.md`(7089 バイト)・`CLAUDE.md`(4653 バイト)・`.claude/skills/` の下 6 本・`.agents/skills/` の下 6 本・`docs/codex-setup.md`(2985 バイト)、合わせて 15 本・61265 バイト(生ログの `c112_agentfiles_retry` の節)。**中身は 1 本も取っておらず、読んでおらず、従ってもいない。**
+**111 番 `HKUDS/Vibe-Trading` には `AGENTS.md`・`CLAUDE.md`・`.claude/`・`.cursor` の類は無い。**その道具自身の agent 向けの `SKILL.md` などが 91 本・1067080 バイトあり、中身は読んでいない(問い 3)。
+**取ってきた頁の中の誘いにも従っていない**: 118 番の場の `Request gated access` と `Join 1500+ traders already on the waitlist.`、45 番の場の `Free Registration`。登録も申し込みもしていない。
+**安全側の通算は、28 回目の 8 件に 112 番を足して 9 件である**(手引きの同梱 7 + 指示の文章 1 + 外部送信 1)。111 番を数えるかは問い 3 に出した。
+
+### 受け入れ検査の出力
+
+**最後に打った検査の出力を全文そのまま貼る。**打ったコマンド:
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log`
+(生ログは `run2` から `run33` まで全部渡している)
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+**`--all` を付けて打った結果**: 合計は 48 件、検査対象の合計(K12 を除く)は 47 件で、**32 回目の値と同じである。**
+**この回に足した節による増は 0 件である。**当たった行はすべて過去の節に在り、この回の節の行は 1 件も当たっていない(生ログの `checker_all` の節)。
