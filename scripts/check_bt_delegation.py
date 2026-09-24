@@ -7,8 +7,10 @@ Checks, all against primary records:
 4. The definition heading 「周回の数え方と止める条件」 occurs exactly once as a definition and every other
    mention points at it.
 5. No auditor output in the VERDICTS file is abbreviated with 「(…)」 inside a 「監査役の出力」 section (O-4).
+6. Every agent(...) call in the workflow script (except owner-auditor calls) carries the scrutiny text
+   (`${SCRUTINY}` or the judges' 「返す前の吟味」 wording) — L-433 提出前の吟味 wired into every role.
 
-Usage: python3 scripts/check_bt_delegation.py [delegation.md] [OWNER_LOG.md] [VERDICTS.md]
+Usage: python3 scripts/check_bt_delegation.py [delegation.md] [OWNER_LOG.md] [VERDICTS.md] [workflow.js]
 Exit 1 on any error.
 """
 from __future__ import annotations
@@ -18,7 +20,28 @@ import sys
 from pathlib import Path
 
 DEFAULTS = ("docs/DATA/delegations/20260923_backtest_env_prompt.md", "docs/OWNER_LOG.md",
-            "docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md")
+            "docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md",
+            "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_workflow.js")
+
+
+def check_script(script: str) -> list[str]:
+    """Each agent(`...`, {opts}) call must carry the scrutiny text unless it calls the owner-auditor."""
+    errs = []
+    for m in re.finditer(r"agent\(`", script):
+        start = m.end()
+        end = script.find("`,", start)
+        if end < 0:
+            errs.append(f"台本:{script[:start].count(chr(10)) + 1}: agent(` の閉じが見つからない")
+            continue
+        body = script[start:end]
+        opts = script[end : script.find("})", end) + 2]  # the options object ends with "})"; labels may contain ")"
+        if "owner-auditor" in opts:
+            continue
+        if "${SCRUTINY}" in body or "返す前の吟味" in body:
+            continue
+        label = re.search(r"label: `([^`]*)`", opts)
+        errs.append(f"台本:{script[:start].count(chr(10)) + 1}: agent 呼び出し {label.group(1) if label else '?'} に提出前の吟味の文が無い")
+    return errs
 
 
 def owner_rows(log: str) -> dict[str, str]:
@@ -64,8 +87,9 @@ def check(doc: str, log: str, verdicts: str) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    paths = [Path(argv[i]) if i < len(argv) else Path(DEFAULTS[i]) for i in range(3)]
-    errs = check(*(p.read_text(encoding="utf-8") for p in paths))
+    paths = [Path(argv[i]) if i < len(argv) else Path(DEFAULTS[i]) for i in range(4)]
+    errs = check(*(p.read_text(encoding="utf-8") for p in paths[:3]))
+    errs += check_script(paths[3].read_text(encoding="utf-8")) if paths[3].exists() else [f"{paths[3]}: 台本が無い"]
     for e in errs:
         print("NG", e)
     print(f"{'OK' if not errs else 'NG'} 誤り {len(errs)} 件")
