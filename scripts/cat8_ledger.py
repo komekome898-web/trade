@@ -419,6 +419,38 @@ ELEM_TERMS = {
 }
 
 
+# 11 回目以降: `なし` の手は、述語の語を広く当てる(監査 63 回目の指摘 2)。組ごとに、どれか 1 つが
+# 7 列目のどれかの手の `$` の行にあること。語は設計票 §3 の述語の文から取った。
+ELEM_TERMS_WIDE = {
+    "E1a": [r"突き合わせ|突合|reconcil", r"cross.?check|比較|compar", r"diff|差分|一致|mismatch"],
+    "E1b": [r"突き合わせ|突合|reconcil", r"別実装|reference.?impl|参照実装|cross.?check", r"compar|比較|diff|差分"],
+    "E2": [r"欠損|missing|gap|欠け", r"重複|duplicat", r"順序|out.?of.?order|monoton|sort", r"外れ値|outlier|anomal",
+           r"時刻のずれ|clock|skew|timestamp", r"型|範囲|schema|range|valid"],
+    "E3a": [r"ルックアヘッド|look.?ahead", r"survivorship|生存者", r"leak|リーク|未来", r"point.?in.?time|as.?of|時点"],
+    "E3b": [r"ルックアヘッド|look.?ahead", r"embargo", r"purg", r"point.?in.?time|as.?of|時点"],
+    "E4": [r"リプレイ|再生|replay", r"record|記録|capture", r"playback|再実行|rerun"],
+    "E5": [r"再現|reproduc", r"seed|乱数", r"determinis|決定的", r"snapshot|golden|pin|lock|版の固定"],
+    "E6": [r"検証|verif|validat", r"品質|quality", r"test|assert|check"],
+}
+TRUNC_RE = re.compile(r"^\[出力は \d+ 文字。先頭 \d+ 文字だけを残した\]$", re.M)
+CUT_RE = re.compile(r"\|\s*(?:head|tail)\b|\bhead\s+-n?\s*\d|\bgrep\b[^|]*\s-m\s*\d")
+
+
+def step_block(fname, lno):
+    """その行を含む手の見出しから次の見出しの前までの行。"""
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    if not lp.exists():
+        return None
+    ll = lp.read_text().splitlines()
+    k = min(int(lno), len(ll)) - 1
+    while k >= 0 and not ll[k].startswith("--- "):
+        k -= 1
+    e = k + 1
+    while e < len(ll) and not ll[e].startswith("--- "):
+        e += 1
+    return "\n".join(ll[max(k, 0):e])
+
+
 def step_cmdline(fname, lno):
     lp = pathlib.Path("docs/DATA/probes") / fname
     if not lp.exists():
@@ -556,6 +588,18 @@ def cmd_check_elements(a):
                     cmds = [step_cmdline(f, n) or "" for f, _, n in strict_refs(logcol)]
                     if not any(re.search(ELEM_TERMS.get(el, "^$"), c, re.I) for c in cmds):
                         errs.append("行 %d: %s %s は `なし` なのに、7 列目のどの手の `$` の行にも要素の名前の語(%s)が無い" % (i + 1, tool, el, ELEM_TERMS.get(el)))
+                    if int(a.round) >= 11:
+                        # (e) 監査 63 回目の指摘 1・2: 切った出力で `なし` を書かない / 述語の語を広く当てる
+                        for f, _, n in strict_refs(logcol):
+                            c = step_cmdline(f, n) or ""
+                            blk = step_block(f, n) or ""
+                            if CUT_RE.search(c):
+                                errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s が出力を切っている(head・tail・grep -m)" % (i + 1, tool, el, f, n))
+                            if TRUNC_RE.search(blk):
+                                errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s の出力が生ログで切られている(--keep を大きくする)" % (i + 1, tool, el, f, n))
+                        lack = [g for g in ELEM_TERMS_WIDE.get(el, []) if not any(re.search(g, c, re.I) for c in cmds)]
+                        if lack:
+                            errs.append("行 %d: %s %s は `なし` なのに、7 列目の手の `$` の行に当たらない語の組がある: %s" % (i + 1, tool, el, " / ".join(lack)))
             if r7 and not untouched:
                 bad = logcol_errors(logcol)
                 if bad:
