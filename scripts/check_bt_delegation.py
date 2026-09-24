@@ -7,8 +7,8 @@ Checks, all against primary records:
 4. The definition heading 「周回の数え方と止める条件」 occurs exactly once as a definition and every other
    mention points at it.
 5. No auditor output in the VERDICTS file is abbreviated with 「(…)」 inside a 「監査役の出力」 section (O-4).
-6. Every agent(...) call in the workflow script (except owner-auditor calls) carries the scrutiny text
-   (`${SCRUTINY}` or the judges' 「返す前の吟味」 wording) — L-433 提出前の吟味 wired into every role.
+6. Every agent(...) call in the workflow script (except owner-auditor calls) carries the scrutiny constant
+   that matches its role (by label prefix) — L-433 提出前の吟味 wired into every role with the role's own text.
 
 Usage: python3 scripts/check_bt_delegation.py [delegation.md] [OWNER_LOG.md] [VERDICTS.md] [workflow.js]
 Exit 1 on any error.
@@ -21,7 +21,12 @@ from pathlib import Path
 
 DEFAULTS = ("docs/DATA/delegations/20260923_backtest_env_prompt.md", "docs/OWNER_LOG.md",
             "docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md",
-            "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_workflow.js")
+            "scripts/workflows/backtest_env.js")
+
+# label prefix → the scrutiny constant that role must carry (delegation §3 提出前の吟味)
+ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), ("場面の直し:", "SCRUTINY_FIX"),
+                 ("作る:", "SCRUTINY_FIX"), ("表:", "SCRUTINY_TABLE"), ("批評:", "SCRUTINY_CRITIC"),
+                 ("盲検:", "SCRUTINY_JUDGE"), ("欠けているもの", "SCRUTINY_GAPS"))
 
 
 def check_script(script: str) -> list[str]:
@@ -37,10 +42,17 @@ def check_script(script: str) -> list[str]:
         opts = script[end : script.find("})", end) + 2]  # the options object ends with "})"; labels may contain ")"
         if "owner-auditor" in opts:
             continue
-        if "${SCRUTINY}" in body or "返す前の吟味" in body:
-            continue
         label = re.search(r"label: `([^`]*)`", opts)
-        errs.append(f"台本:{script[:start].count(chr(10)) + 1}: agent 呼び出し {label.group(1) if label else '?'} に提出前の吟味の文が無い")
+        name = label.group(1) if label else "?"
+        line = script[:start].count(chr(10)) + 1
+        want = next((c for pre, c in ROLE_SCRUTINY if name.startswith(pre)), None)
+        if want is None:
+            errs.append(f"台本:{line}: agent 呼び出し {name} の役が ROLE_SCRUTINY に無い")
+        elif "${" + want + "}" not in body:
+            errs.append(f"台本:{line}: agent 呼び出し {name} に役の吟味の定数 {want} が無い")
+        others = [c for _, c in ROLE_SCRUTINY if c != want and "${" + c + "}" in body]
+        if others:
+            errs.append(f"台本:{line}: agent 呼び出し {name} に別の役の吟味の定数 {others} が入っている")
     return errs
 
 

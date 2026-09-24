@@ -39,13 +39,15 @@ def test_quoted_ellipsis_in_auditor_text_is_not_a_cut():
     assert cbd.check(DOC, LOG, "### 監査役の出力(逐語)\n1. [聞く] 記録が「(…)」で切られている。\n") == []
 
 
-def test_every_agent_call_in_the_script_carries_the_scrutiny_text():
-    good = "const SCRUTINY = 'x'\nconst a = await agent(`作業 ${SCRUTINY}`, { label: `作る`, model: M })\n" \
-           "const j = await agent(`判定。返す前の吟味: 数え直す`, { label: `盲検`, model: M })\n" \
-           "const au = await agent(`検査`, { label: `監査役`, agentType: 'owner-auditor', model: M })\n"
+def test_every_agent_call_carries_its_own_roles_scrutiny_constant():
+    good = ("const a = await agent(`作業 ${SCRUTINY_FIX}`, { label: `作る:0#1`, model: M })\n"
+            "const j = await agent(`判定 ${SCRUTINY_JUDGE}`, { label: `盲検:0#1:current0`, model: M })\n"
+            "const au = await agent(`検査`, { label: `監査役(表):1`, agentType: 'owner-auditor', model: M })\n")
     assert cbd.check_script(good) == []
-    bad = good + "const t = await agent(`表を作る`, { label: `表:1`, model: M })\n"
-    errs = cbd.check_script(bad)
-    assert len(errs) == 1 and "表:1" in errs[0]
-    auditor_with_parens = "const b = await agent(`検査`, { label: `監査役(表):1`, agentType: 'owner-auditor', model: M })\n"
-    assert cbd.check_script(good + auditor_with_parens) == []
+    missing = good + "const t = await agent(`表を作る`, { label: `表:1#1`, model: M })\n"
+    assert any("表:1#1" in e and "SCRUTINY_TABLE" in e for e in cbd.check_script(missing))
+    wrong = good + "const c = await agent(`批評 ${SCRUTINY_FIX}`, { label: `批評:1#1`, model: M })\n"
+    errs = cbd.check_script(wrong)
+    assert any("SCRUTINY_CRITIC が無い" in e for e in errs) and any("別の役" in e for e in errs)
+    unknown = good + "const u = await agent(`x ${SCRUTINY_FIX}`, { label: `謎:1`, model: M })\n"
+    assert any("ROLE_SCRUTINY に無い" in e for e in cbd.check_script(unknown))
