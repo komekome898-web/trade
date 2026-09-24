@@ -18,11 +18,16 @@ python3 - <<'PY'
 import sys
 missing = set(open(".git/cat8_missing").read().split())
 entries = [e for e in open(".git/cat8_tree", "rb").read().split(b"\0") if e]
-present, skipped = [], []
+present, skipped, present_blobs = [], [], []
 for e in entries:
     meta, path = e.split(b"\t", 1)
     oid = meta.split()[2].decode()
     (skipped if oid in missing else present).append(path)
+    if oid not in missing and meta.split()[1] == b"blob":
+        present_blobs.append(oid)
+# Object ids have no whitespace, so this list is safe for names with newlines (audit 52).
+with open(".git/cat8_present_oids", "w") as f:
+    f.write("".join(o + "\n" for o in present_blobs))
 with open(".git/cat8_present", "wb") as f:
     for p in present:
         f.write(p + b"\0")
@@ -39,8 +44,11 @@ echo "downloaded_bytes: $(du -sb .git | cut -f1)"
 # Size of what the checkout would write, from the local blobs only (no lazy fetch).
 # Refuse the checkout above CAT8_MAX_CHECKOUT_BYTES (default 500 MB; audit 51).
 max_co="${CAT8_MAX_CHECKOUT_BYTES:-524288000}"
-exp_co=$(tr '\0' '\n' < .git/cat8_present | sed 's/^/HEAD:/' \
-  | git cat-file --batch-check='%(objectsize)' | awk '{s+=$1} END{print s+0}')
+git cat-file --batch-check='%(objectsize)' < .git/cat8_present_oids > .git/cat8_sizes
+if grep -qv '^[0-9][0-9]*$' .git/cat8_sizes; then
+  echo "cat8_repo_fetch: a present blob has no size" >&2; exit 1
+fi
+exp_co=$(awk '{s+=$1} END{print s+0}' .git/cat8_sizes)
 echo "expected_checkout_bytes: $exp_co (limit $max_co)"
 if [ "$exp_co" -gt "$max_co" ]; then
   echo "cat8_repo_fetch: checkout would exceed the limit; nothing checked out" >&2
