@@ -1,0 +1,10 @@
+# md5sum of the two orientations of each pair (mapping.tsv), then cmp
+035b6e7200cbc586b21d668218e790cc  round_8/表_jobatl.md
+8b518b11b5b0e3191bd1d5340f88dafa  round_8/表_zymy09.md
+current: differ (表_jobatl.md 表_zymy09.md) :: round_8/表_jobatl.md round_8/表_zymy09.md differ: char 680, line 13
+7478601b0684661ad28a5f8abcde96b8  round_8/表_yedfnu.md
+9d1f20c10f755a79d5cdf26bdee3a22f  round_8/表_23mfp5.md
+survey: differ (表_yedfnu.md 表_23mfp5.md) :: round_8/表_yedfnu.md round_8/表_23mfp5.md differ: char 63655, line 51
+c9b9bfe67eb3e6a4a523731f2c9b36b6  round_8/表_1h87hn.md
+f6c4c36de1355fc5942fa9ea0c0a2386  round_8/表_snjqhj.md
+mutant: differ (表_1h87hn.md 表_snjqhj.md) :: round_8/表_1h87hn.md round_8/表_snjqhj.md differ: char 706, line 13
