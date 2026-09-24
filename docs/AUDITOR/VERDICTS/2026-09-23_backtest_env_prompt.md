@@ -1208,3 +1208,38 @@ decisive 検査(6 回目処置 1〜5 + 処置 6 の反映確認): item14 の §3
 2. 直した: `check_bt_delegation.py` に「監査役(場面)・監査役(定義)・定義・場面の直し・作る の呼び出しには `args.lead_notes` が届いていること」の検査(`ROLE_NOTES`)を足し、試験で配線が外れた形を再現した(`pytest tests/test_check_bt_delegation.py` → 8 passed)。
 
 処置後の版: 9ef8d697ad0a(委任文は変えていない)。
+
+## 起動に使う版の記録(8 回目の起動)
+
+7 回目は項目 0 の第 7 周で「同じ理由 3 周」(i0-r4-02 → i0-r5-01 → i0-r7-02)によりリードへ戻った(L-436)。リードの根本原因の読みと設計 `docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md`、オーナーの選択 L-437・L-438、監査 49・50 回目(50 回目 = 止める 0。50 回目の [直す] 2 の検査を足したとき、`場面の直し:` の呼び出しにもリードの注記が届いていなかったことが見つかり、同じコミットで直した)を経た版。場面集と要件は 7 回目のものを使い(`prebuilt`)、項目 0 の第 8 周から(周の上限なし)。台本 `scripts/workflows/backtest_env.js`(コミット 1e244d3)。
+委任文の指紋: 20260923_backtest_env_prompt.md@9ef8d697ad0a
+
+起動の引数の実物(49 回目の指摘 9。`python3 -c` で `bt_args_run8.json` から出力):
+```
+{
+ "marker": "20260923_backtest_env_prompt.md@9ef8d697ad0a",
+ "prior_rounds": {
+  "0": {
+   "rounds": 12,
+   "critic_chain": {
+    "i0-r6-01": 1,
+    "i0-r7-01": 2
+   }
+  }
+ },
+ "prebuilt.0.attempt_offset": 7,
+ "prebuilt.0.battery_chain": {
+  "br6-1-1": 1,
+  "br6-2-1": 1
+ },
+ "prebuilt.0.last_findings(id)": [
+  "i0-r7-01",
+  "i0-r7-02",
+  "i0-r7-03",
+  "i0-r7-04",
+  "i0-r7-05",
+  "i0-r7-06"
+ ]
+}
+```
+鎖の仕分け(L-438 の案 1 の文面): 実装の側 = 路を渡る物の族(i0-r4-02 → i0-r5-01 → i0-r7-02)は設計を直したので `critic_chain` から外し 0 から / 答えの外の名指しの族(i0-r6-01 → i0-r7-01)は 2 のまま引き継ぐ。場面集の側 = `battery_chain` に 7 回目の監査の [止める] br6-1-1・br6-2-1(各 1)を引き継ぐ(直しは場面係が行い、リードは設計を変えていない)。
