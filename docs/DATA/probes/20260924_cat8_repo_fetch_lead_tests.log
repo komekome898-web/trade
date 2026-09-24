@@ -1,0 +1,89 @@
+--- 2026-09-24T09:50:58Z method=git target=合成リポジトリ rc=0 time_s=0.096 note=LFS の置き換え・それを引く文書・改行と空白と型の文字の名前・シンボリックリンク・行末の属性を持つ合成リポジトリを作る
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt && git init -q src && cd src && printf 'version https://git-lfs.github.com/spec/v1\noid sha256:abc\nsize 12\n' > model.bin && printf 'see version https://git-lfs.github.com/spec/v1\n' > doc.md && printf 'x\n' > "$(printf 'weird\nname.txt')" && echo a > 'star*.txt' && echo b > 'a b.txt' && ln -s model.bin link && printf '* text=auto\n*.bat eol=crlf\n' > .gitattributes && printf 'e\nf\n' > y.bat && git add -A && git -c user.email=a@b -c user.name=a commit -qm t && git ls-tree -r HEAD
+100644 blob eb5b2ee76ee6b034e4f1615fc9f14e1579f7d36f	.gitattributes
+100644 blob 61780798228d17af2d34fce4cfbdf35556832472	a b.txt
+100644 blob f725260ff1883cb32da2d726e49c01102abd24aa	doc.md
+120000 blob 0534594cc6c00308ecfc797531709412a8ce28a6	link
+100644 blob c6f560ebb4c5d4fc3c603040c11391a89faab3be	model.bin
+100644 blob 78981922613b2afb6025042ff6bd878ac1994e85	star*.txt
+100644 blob 587be6b4c3f93f93c489c0111bba5596147a26cb	"weird\nname.txt"
+100644 blob 34eaebd7e7b7fed59f301ffab126e68f469ea1ab	y.bat
+warning: in the working copy of 'y.bat', LF will be replaced by CRLF the next time Git touches it
+--- 2026-09-24T09:50:58Z method=git target=合成リポジトリ rc=0 time_s=0.088 note=URL の行だけ file:// に替えた写しで、core.autocrlf=true の HOME の下で打つ
+$ HOME=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt sh -c 'git config --global core.autocrlf true; sh /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt/f_file.sh file:///tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt/src /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt/out'
+files_in_tree(N): 8
+blobs_not_downloaded(>1MB): 0
+repo: file:///tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt/src
+downloaded_bytes: 30778
+expected_checkout_bytes: 159 (limit 524288000)
+checked_out_files: 8 (expected 8)
+checked_out_bytes(without .git): 159
+lfs_pointers(not content): 1
+  lfs_pointer: model.bin
+warning: filtering not recognized by server, ignoring
+--- 2026-09-24T09:50:58Z method=git target=th2-net/.github rc=0 time_s=0.941 note=取得の道具を実物で打つ
+$ sh scripts/cat8_repo_fetch.sh th2-net/.github /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt/.github
+files_in_tree(N): 113
+blobs_not_downloaded(>1MB): 0
+repo: th2-net/.github
+downloaded_bytes: 111764
+expected_checkout_bytes: 212001 (limit 524288000)
+checked_out_files: 113 (expected 113)
+checked_out_bytes(without .git): 212001
+lfs_pointers(not content): 0
+--- 2026-09-24T09:50:59Z method=git target=th2-net/th2-common-py rc=0 time_s=0.766 note=取得の道具を実物で打つ
+$ sh scripts/cat8_repo_fetch.sh th2-net/th2-common-py /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt/th2-common-py
+files_in_tree(N): 127
+blobs_not_downloaded(>1MB): 0
+repo: th2-net/th2-common-py
+downloaded_bytes: 123420
+expected_checkout_bytes: 253589 (limit 524288000)
+checked_out_files: 127 (expected 127)
+checked_out_bytes(without .git): 253589
+lfs_pointers(not content): 0
+--- 2026-09-24T09:51:00Z method=git target=th2-net/viewer rc=0 time_s=11.608 note=取得の道具を実物で打つ
+$ sh scripts/cat8_repo_fetch.sh th2-net/viewer /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt/viewer
+files_in_tree(N): 25999
+blobs_not_downloaded(>1MB): 14
+  skipped: package-lock.json
+  skipped: webpack-starter/node_modules/@babel/parser/lib/index.js.map
+  skipped: webpack-starter/node_modules/@material-ui/core/umd/material-ui.development.js
+  skipped: webpack-starter/node_modules/@material-ui/styles/node_modules/csstype/index.d.ts
+  skipped: webpack-starter/node_modules/@material-ui/system/node_modules/csstype/index.d.ts
+  skipped: webpack-starter/node_modules/@mui/material/umd/material-ui.development.js
+  skipped: webpack-starter/node_modules/node-sass/vendor/darwin-x64-93/binding.node
+  skipped: webpack-starter/node_modules/node-sass/vendor/linux-x64-83/binding.node
+  skipped: webpack-starter/node_modules/typescript/lib/tsc.js
+  skipped: webpack-starter/node_modules/typescript/lib/tsserver.js
+  skipped: webpack-starter/node_modules/typescript/lib/tsserverlibrary.js
+  skipped: webpack-starter/node_modules/typescript/lib/typescript.js
+  skipped: webpack-starter/node_modules/typescript/lib/typescriptServices.js
+  skipped: webpack-starter/node_modules/typescript/lib/typingsInstaller.js
+repo: th2-net/viewer
+downloaded_bytes: 28857295
+expected_checkout_bytes: 130782466 (limit 524288000)
+checked_out_files: 25985 (expected 25985)
+checked_out_bytes(without .git): 130782466
+lfs_pointers(not content): 0
+--- 2026-09-24T09:51:12Z method=git target=th2-net/viewer rc=4 time_s=2.198 note=展開の上限を 1,000,000 バイトにして止まる側を打つ
+$ CAT8_MAX_CHECKOUT_BYTES=1000000 sh scripts/cat8_repo_fetch.sh th2-net/viewer /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/lt/v2
+files_in_tree(N): 25999
+blobs_not_downloaded(>1MB): 14
+  skipped: package-lock.json
+  skipped: webpack-starter/node_modules/@babel/parser/lib/index.js.map
+  skipped: webpack-starter/node_modules/@material-ui/core/umd/material-ui.development.js
+  skipped: webpack-starter/node_modules/@material-ui/styles/node_modules/csstype/index.d.ts
+  skipped: webpack-starter/node_modules/@material-ui/system/node_modules/csstype/index.d.ts
+  skipped: webpack-starter/node_modules/@mui/material/umd/material-ui.development.js
+  skipped: webpack-starter/node_modules/node-sass/vendor/darwin-x64-93/binding.node
+  skipped: webpack-starter/node_modules/node-sass/vendor/linux-x64-83/binding.node
+  skipped: webpack-starter/node_modules/typescript/lib/tsc.js
+  skipped: webpack-starter/node_modules/typescript/lib/tsserver.js
+  skipped: webpack-starter/node_modules/typescript/lib/tsserverlibrary.js
+  skipped: webpack-starter/node_modules/typescript/lib/typescript.js
+  skipped: webpack-starter/node_modules/typescript/lib/typescriptServices.js
+  skipped: webpack-starter/node_modules/typescript/lib/typingsInstaller.js
+repo: th2-net/viewer
+downloaded_bytes: 28857295
+expected_checkout_bytes: 130782466 (limit 1000000)
+cat8_repo_fetch: checkout would exceed the limit; nothing checked out
