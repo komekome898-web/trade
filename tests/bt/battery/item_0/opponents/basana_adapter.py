@@ -1,14 +1,21 @@
 """Survey candidate 1 `Basana` (PyPI `basana` 1.11), run in its own venv.
 
-Driven through its public API only: `basana.backtesting_dispatcher()`,
-`basana.Event` (the documented base class for events: "There are many
-different types of events: an update to an order book, a new trade, an
-order update, a new bar", core/event.py) with `FifoQueueEventSource` and
-`dispatcher.subscribe` for event types it has no class for, `BarEvent` /
-`Bar`, `dispatcher.schedule` (timers), `dispatcher.now()`, and the
-backtesting `Exchange` (orders, `subscribe_to_order_events`, and its plug
-points `liquidity_strategy_factory` and `fee_strategy`).
+Driven through its public API only: `basana.backtesting_dispatcher()` with
+`FifoQueueEventSource` and `dispatcher.subscribe`, `dispatcher.schedule`
+(timers), `dispatcher.now()`, and the backtesting `Exchange` (orders,
+`subscribe_to_order_events`, and its plug points
+`liquidity_strategy_factory` and `fee_strategy`).
 Basana's time type is `datetime.datetime` (event `when`).
+
+Event types (round r6-1, critic i0-r5-02): every event is carried in a class
+that Basana's own distribution defines -- a bar in `basana.core.bar.BarEvent`,
+a trade in `basana.external.bitstamp.trades.TradeEvent` (its Trade has
+price, amount and the side as `operation`), a book snapshot in
+`basana.external.binance.order_book.PartialOrderBookEvent`, a book delta in
+`basana.external.binance.order_book_diff.OrderBookDiffEvent`. Funding and
+liquidation have no class in the distribution (`_EVENT_CLASSES` lists every
+subclass of `basana.Event` in it, walked with pkgutil); scenes with them are
+not supported. The adapter defines no event class of its own.
 """
 from __future__ import annotations
 
@@ -32,33 +39,85 @@ PAIR = bs.Pair("BTC", "JPY")
 PAIR_INFO = bs.PairInfo(base_precision=3, quote_precision=2)
 
 
-class Generic(bs.Event):
-    """A market event of a type Basana has no class for, carried as a subclass of basana.Event."""
+from basana.core.bar import BarEvent  # noqa: E402
+from basana.external.binance import order_book as bbook, order_book_diff as bdiff  # noqa: E402
+from basana.external.bitstamp import trades as btrades  # noqa: E402
 
-    def __init__(self, when, kind: str, fields: dict):
-        super().__init__(when)
-        self.kind = kind
-        self.fields = fields
+
+def _event_classes() -> list[str]:
+    """Every subclass of basana.Event defined in Basana's distribution (what a
+    type in a scene could be carried in)."""
+    import importlib
+    import inspect
+    import pkgutil
+    found = set()
+    for m in pkgutil.walk_packages(bs.__path__, "basana."):
+        try:
+            mod = importlib.import_module(m.name)
+        except Exception:  # noqa: BLE001 - optional extras (ccxt, charts) are not installed
+            continue
+        for _, c in inspect.getmembers(mod, inspect.isclass):
+            if issubclass(c, bs.Event) and c.__module__ == mod.__name__:
+                found.add(f"{c.__module__}.{c.__qualname__}")
+    return sorted(found)
+
+
+_EVENT_CLASSES = _event_classes()
+NO_TYPE = ("Basana の配布物に「{k}」の事象の型が無い。配布物の basana.Event の子の全部(pkgutil で辿った): {classes}")
+
+
+def _dec(x) -> str:
+    return format(Decimal(str(x)), "f")
 
 
 def _event(e: dict):
+    """A scene event in the Basana class for its type (None when the distribution has none)."""
     when = C.ns_to_dt(e["ts_ns"])
-    if e["kind"] == "bar":
-        return bs.BarEvent(when, bs.Bar(when - D.timedelta(seconds=1), PAIR, Decimal(str(e["open"])), Decimal(str(e["high"])),
-                                        Decimal(str(e["low"])), Decimal(str(e["close"])), Decimal(str(e["volume"])),
-                                        D.timedelta(seconds=1)))
-    return Generic(when, e["kind"], C.fields_of(e))
+    k = e["kind"]
+    if k == "bar":
+        return BarEvent(when, bs.Bar(when - D.timedelta(seconds=1), PAIR, Decimal(str(e["open"])), Decimal(str(e["high"])),
+                                     Decimal(str(e["low"])), Decimal(str(e["close"])), Decimal(str(e["volume"])),
+                                     D.timedelta(seconds=1)))
+    if k == "trade":
+        return btrades.TradeEvent(when, btrades.Trade(PAIR, {
+            "id": 1, "microtimestamp": str(int(e["ts_ns"]) // 1000), "amount_str": _dec(e["qty"]), "price_str": _dec(e["price"]),
+            "type": 0 if e["side"] == "buy" else 1, "buy_order_id": 1, "sell_order_id": 2}))
+    if k == "book_snapshot":
+        return bbook.PartialOrderBookEvent(when, bbook.PartialOrderBook(PAIR, {
+            "lastUpdateId": 1, "bids": [[_dec(p), _dec(q)] for p, q in e["bids"]], "asks": [[_dec(p), _dec(q)] for p, q in e["asks"]]}))
+    if k == "book_delta":
+        lvl = [[_dec(e["price"]), _dec(e["qty"])]]
+        return bdiff.OrderBookDiffEvent(when, bdiff.OrderBookDiff(PAIR, {
+            "e": "depthUpdate", "E": int(e["ts_ns"]) // 1_000_000, "s": "BTCJPY", "U": 1, "u": 1,
+            "b": lvl if e["side"] == "bid" else [], "a": lvl if e["side"] == "ask" else []}))
+    return None
+
+
+def _missing(evs: list[dict]) -> list[str]:
+    return sorted({e["kind"] for e in evs if _event(e) is None})
 
 
 def _kind(ev) -> str:
-    return "bar" if isinstance(ev, bs.BarEvent) else getattr(ev, "kind", type(ev).__name__)
+    """The scene word for the Basana class the strategy received."""
+    return {BarEvent: "bar", btrades.TradeEvent: "trade", bbook.PartialOrderBookEvent: "book_snapshot",
+            bdiff.OrderBookDiffEvent: "book_delta"}.get(type(ev), type(ev).__name__)
 
 
 def _fields(ev) -> dict:
-    if isinstance(ev, bs.BarEvent):
+    if isinstance(ev, BarEvent):
         b = ev.bar
         return {"open": float(b.open), "high": float(b.high), "low": float(b.low), "close": float(b.close), "volume": float(b.volume)}
-    return dict(ev.fields)
+    if isinstance(ev, btrades.TradeEvent):
+        t = ev.trade
+        return {"price": float(t.price), "qty": float(t.amount), "side": t.operation.name.lower()}
+    if isinstance(ev, bbook.PartialOrderBookEvent):
+        ob = ev.order_book
+        return {"bids": [[float(x.price), float(x.volume)] for x in ob.bids], "asks": [[float(x.price), float(x.volume)] for x in ob.asks]}
+    if isinstance(ev, bdiff.OrderBookDiffEvent):
+        d = ev.order_book_diff
+        side, lv = ("bid", d.bids[0]) if d.bids else ("ask", d.asks[0])
+        return {"side": side, "price": float(lv.price), "qty": float(lv.volume)}
+    return {}
 
 
 from stated_rules import TYPE_PRIORITY  # noqa: E402  (the setting the stated rule is written for)
@@ -72,12 +131,12 @@ def run_streams(streams: list[list[dict]], on_event=None, timer_at=None, priorit
     recs = []
 
     async def handler(ev):
-        recs.append((_kind(ev), C.dt_to_ns(disp.now()), C.dt_to_ns(ev.when), _fields(ev)))
+        recs.append((_kind(ev), C.dt_to_ns(disp.now()), C.dt_to_ns(ev.when), _fields(ev), C.carrier(ev)))
         if on_event:
             on_event(disp, len(recs), ev)
         if timer_at is not None and len(recs) == 1:
             async def job():
-                recs.append(("clock", C.dt_to_ns(disp.now()), None, {}))
+                recs.append(("clock", C.dt_to_ns(disp.now()), None, {}, None))
             disp.schedule(C.ns_to_dt(timer_at), job)
 
     for evs in streams:
@@ -195,54 +254,80 @@ class BasanaAdapter(Adapter):
     name = "opp_basana"
 
     # ---------------- P0-1
+    def _typed_run(self, streams: list[list[dict]], what: str, **kw):
+        miss = _missing([e for evs in streams for e in evs])
+        if miss:
+            return not_supported(NO_TYPE.format(k="・".join(miss), classes=_EVENT_CLASSES)), None
+        recs = run_streams(streams, **kw)
+        return None, recs
+
     def scene_p1_merge_by_time(self, sc):
-        recs = run_streams([evs for _, evs in C.streams_in_order(sc)], priorities=True)
-        return ok({"sequence": [[k, now] for k, now, _, _ in recs]}, "型ごとの 3 入力を渡した順に 3 つの event source にして subscribe(priority は型ごと)")
+        bad, recs = self._typed_run([evs for _, evs in C.streams_in_order(sc)], "")
+        if bad:
+            return bad
+        return ok({"sequence": [[r[0], r[1]] for r in recs]}, "型ごとの入力を渡した順に event source にして subscribe",
+                  {"carriers": [r[4] for r in recs]})
 
     def scene_p1_one_call_per_event(self, sc):
         recs = run_streams([C.events(sc)])
-        return ok({"sequence": [[k, now] for k, now, _, _ in recs]}, "BarEvent 5 件を 1 つの source で渡した")
+        return ok({"sequence": [[r[0], r[1]] for r in recs]}, "BarEvent 5 件を 1 つの source で渡した",
+                  {"carriers": [r[4] for r in recs]})
 
     def scene_p1_typed_events(self, sc):
-        recs = run_streams([C.events(sc)])
-        return ok({"sequence": [[k, now] for k, now, _, _ in recs]}, "足は BarEvent、約定は basana.Event の子で 1 つの source")
+        bad, recs = self._typed_run([C.events(sc)], "")
+        if bad:
+            return bad
+        return ok({"sequence": [[r[0], r[1]] for r in recs]},
+                  "足は basana.core.bar.BarEvent、約定は basana.external.bitstamp.trades.TradeEvent(どちらも Basana の配布物の class)で 1 つの source。"
+                  "戦略は受け取った物の class で型を見分けた", {"carriers": [r[4] for r in recs]})
 
     # ---------------- P0-2
     def _iso(self, sc):
+        from basana.external.common.csv import bars as csv_bars
+        row = {"datetime": sc.input["iso"], "open": "1", "high": "1", "low": "1", "close": "1", "volume": "1"}
+        parser = csv_bars.RowParser(PAIR, D.timezone.utc, D.timedelta(days=1))
         try:
-            d = D.datetime.fromisoformat(sc.input["iso"])
+            evs = parser.parse_row(row)
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"datetime.fromisoformat -> {type(exc).__name__}: {exc}")
-        return ok(C.dt_to_ns(d.astimezone(D.timezone.utc)),
-                  f"Basana の時刻の型 datetime に標準の fromisoformat で入れた値 {d!r}(Basana 自身は ISO の変換を持たない。"
-                  "付属の CSV 読みは strptime('%Y-%m-%d %H:%M:%S') で小数秒を受けない: external/common/csv/bars.py 44 行)")
+            return not_supported("Basana が時刻の文字列を読む入口は CSV の足の読み(basana.external.common.csv.bars.RowParser.parse_row、"
+                                 "strptime('%Y-%m-%d %H:%M:%S'))で、ISO の文字列を渡すと "
+                                 f"{type(exc).__name__}: {str(exc)[:120]}。ほかに時刻の文字列を受ける公開の関数は無い"
+                                 "(binance の helpers.timestamp_to_datetime はミリ秒の整数を受ける)")
+        return ok(C.dt_to_ns(evs[0].bar.datetime), "RowParser.parse_row が読んだ足の datetime",
+                  {"reader": C.qualname(csv_bars.RowParser.parse_row)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
+        evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
+               for e in C.events(sc)]
         recs = run_streams([evs])
-        return ok({"observed_ts_ns": [w for _, _, w, _ in recs]}, "約定(basana.Event の子)で渡し、ev.when を ns にした値")
+        return ok({"observed_ts_ns": [r[2] for r in recs]}, "足(basana.core.bar.BarEvent)で渡し、ev.when を ns にした値",
+                  {"carriers": [r[4] for r in recs]})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
     # ---------------- P0-3
     def _type(self, sc):
-        recs = run_streams([C.events(sc)])
-        return ok({"sequence": [[k, now] for k, now, _, _ in recs], "fields": recs[0][3] if recs else None},
-                  "足は BarEvent、それ以外は basana.Event の子(Basana に無い型)で渡した")
+        bad, recs = self._typed_run([C.events(sc)], "")
+        if bad:
+            return bad
+        return ok({"sequence": [[r[0], r[1]] for r in recs], "fields": recs[0][3] if recs else None},
+                  "Basana の配布物のその型の class で渡し、戦略が受け取った物の欄を読んだ", {"carriers": [r[4] for r in recs]})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
 
     def scene_p3_mixed_one_run(self, sc):
-        recs = run_streams([C.events(sc)])
-        return ok({"sequence": [[k, now] for k, now, _, _ in recs]}, "1 つの source で 6 種")
+        bad, recs = self._typed_run([C.events(sc)], "")
+        if bad:
+            return bad
+        return ok({"sequence": [[r[0], r[1]] for r in recs]}, "1 つの source で 6 種", {"carriers": [r[4] for r in recs]})
 
     def scene_p3_clock_timer(self, sc):
         evs = C.events(sc)
         recs = run_streams([evs], timer_at=sc.input["timer_at_ns"])
-        return ok({"clock_calls_ns": [now for k, now, _, _ in recs if k == "clock"]}, "1 回目に dispatcher.schedule(頼む時刻, job)")
+        return ok({"clock_calls_ns": [r[1] for r in recs if r[0] == "clock"]}, "1 回目に dispatcher.schedule(頼む時刻, job)")
 
     def _bars(self, sc):
         return [C.as_bar(e) for e in C.events(sc)]
@@ -274,19 +359,25 @@ class BasanaAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
-        seen = []
+        tried = {}
 
-        def on_event(disp, n, ev):
-            seen.append(ev)
-            if C.dt_to_ns(disp.now()) == probe:
-                out["visible_count"] = len(seen)
-                out["max_visible_close"] = max(float(e.bar.close) for e in seen)
+        async def plan(ex, n, st):
+            if C.dt_to_ns(st["disp"].now()) != probe or tried:
+                return
+            tried["public"] = sorted(m for m in dir(ex) if not m.startswith("_"))
+            for name in ("get_bars", "get_bar_history", "get_candles"):
+                try:
+                    getattr(ex, name)(PAIR)
+                    tried[name] = "呼べた"
+                except Exception as exc:  # noqa: BLE001
+                    tried[name] = f"{type(exc).__name__}: {exc}"
 
-        run_streams([C.events(sc)], on_event)
-        if not out:  # no_probe_call
+        run_exchange(C.events(sc), 1_000_000, plan)
+        if not tried:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
-        return ok(out, "Basana は戦略に履歴を渡さないので、戦略が受け取った BarEvent を戦略自身が貯めて数えた")
+        return not_supported("Basana は戦略に過去の事象を読む公開の手段を渡さない(戦略が受け取るのは各回の BarEvent だけ)。"
+                             f"試したこと: T0 + 4 日の呼び出しで検証の取引所の公開の名前 {tried['public']} を見て、過去の足を読む名前を呼んだ -> "
+                             + " / ".join(f"{k}: {v}" for k, v in tried.items() if k != "public"))
 
     def scene_p4_received_time(self, sc):
         try:
@@ -308,8 +399,10 @@ class BasanaAdapter(Adapter):
             # Basana hands the strategy no read that takes a time or a position (the Exchange's public
             # methods: get_bid_ask(pair), get_balance(s), get_open_orders, get_order_info, ...; BarEvent
             # has `bar` only). The calls a strategy would write to reach the 5th bar are made as written:
-            await att.run_async("exchange.get_bid_ask(pair, 5 本目の時刻)", "time", lambda: ex.get_bid_ask(PAIR, fut))
-            att.run("受け取った BarEvent の bar[1](次の足)", "position", lambda: st["bar_event"].bar[1])
+            await att.run_async("exchange.get_bid_ask(pair, 5 本目の時刻)", "time", lambda: ex.get_bid_ask(PAIR, fut),
+                                shape="no_means", naming="written_call")
+            att.run("受け取った BarEvent の bar[1](次の足)", "position", lambda: st["bar_event"].bar[1],
+                    shape="no_means", naming="written_call")
             await att.run_async("exchange.get_bid_ask(pair)(今の値)", "other", lambda: ex.get_bid_ask(PAIR))
 
         run_exchange(C.events(sc), 1_000_000, plan)
@@ -318,29 +411,20 @@ class BasanaAdapter(Adapter):
         return ok(att.output(), "T0 + 4 日の呼び出しで試した: " + att.summary())
 
     # ---------------- P0-5
-    def _tie(self, sc, order, priorities):
-        streams = [evs for _, evs in C.streams_in_order(sc, order)]
-        return [[k, when] for k, _now, when, _f in run_streams(streams, priorities=priorities)]
-
     # Basana's written same-time rule (the dispatcher's heap key and the sources'
-    # `priority`) and its application are fixed in stated_rules.py and applied by
-    # the runner (round r5-1, critic i0-r4-05); TYPE_PRIORITY is read from there.
-
+    # `priority`) is fixed in stated_rules.py. The P0-5 inputs hold funding and
+    # liquidation, which Basana's distribution has no class for (round r6-1).
     def scene_p5_same_time_twice(self, sc):
-        dflt = [self._tie(sc, None, False) for _ in range(2)]
-        return ok({"order": self._tie(sc, None, True)},
-                  "型ごとの 4 入力を 4 つの source にし、source の priority(公開の引数)を型ごとに与えた(TYPE_PRIORITY)。"
-                  f"priority を与えない既定では同時刻の並びは id(source) で決まり、2 回の並びは {dflt}")
+        return not_supported(NO_TYPE.format(k="・".join(_missing(C.concatenated(sc))), classes=_EVENT_CLASSES))
 
     def scene_p5_hand_over_order(self, sc):
-        runs = [{"hand_over": list(o), "order": self._tie(sc, o, True)} for o in sc.input["hand_over_orders"]]
-        dflt = {repr(self._tie(sc, o, False)) for o in sc.input["hand_over_orders"]}
-        return ok({"form": "multi_input", "runs": runs},
-                  f"priority を型ごとに与えて 24 通りの subscribe の順で走らせた。priority を与えない既定では {len(dflt)} 通り")
+        evs = C.concatenated(sc, sc.input["hand_over_orders"][0])
+        return not_supported(NO_TYPE.format(k="・".join(_missing(evs)), classes=_EVENT_CLASSES))
 
     def scene_p5_same_stream_order(self, sc):
         recs = run_streams([C.events(sc)])
-        return ok({"prices": [r[3].get("price") for r in recs]}, "1 つの source で同時刻の約定 3 件")
+        return ok({"prices": [r[3].get("price") for r in recs]},
+                  "1 つの source で同時刻の約定 3 件(basana.external.bitstamp.trades.TradeEvent)", {"carriers": [r[4] for r in recs]})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

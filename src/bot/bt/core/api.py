@@ -8,8 +8,9 @@ The context is the strategy's only handle on the run:
   `received_time_ns <= now_ns`); any time argument after `now_ns` (the
   start or the end of a window) raises `LookAheadError`, and naming a
   position after the newest delivered event (an index or slice bound past
-  the end of the answer) raises `FuturePositionError`, rather than
-  returning a silently empty or truncated answer;
+  the end of the answer) raises `FuturePositionError` (or
+  `OutsideAnswerError` when the answer ends in the delivered past, window.py),
+  rather than returning a silently empty or truncated answer;
 * `place_order`, `cancel_order`, `set_timer` -- act;
 * `order(id)`, `open_orders()` -- its own orders, as it knows them.
 
@@ -35,8 +36,11 @@ tests/bt/item_0/test_bt0_api_surface.py):
   (`now_ns` / `current_event` stay readable: they describe the instant
   the context was built for and reveal nothing later.) What was sent
   cannot be changed afterwards either: an `OrderRequest` is a value down
-  to the contents of `extra` (made immutable when the request is made,
-  values.py), so nothing the strategy keeps is shared with the venue.
+  to every field (each made the built-in type itself when the request is
+  made, `extra` immutable plain data, values.py), `place_order` takes the
+  class itself (not a subclass), and the venue receives an object rebuilt
+  from its fields that the strategy never holds (`fresh_request`), so
+  nothing the strategy keeps is shared with the venue.
 * The strategy's view of its orders moves only when it acts or when a
   notice is delivered to it. It never sees the venue's state directly: an
   order it placed is PENDING_NEW until the ACK notice arrives, however long
@@ -75,18 +79,24 @@ from .events import (
     OrderStateUnknownEvent,
 )
 from .time import Nanos, validate_nanos
-from .values import freeze, thaw
+from .values import as_choice, as_flag, as_float, as_int, as_text, freeze, thaw
 from .window import DeliveredEvents
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class OrderRequest:
+    """An order as the strategy (or the account socket) sends it. It crosses
+    the strategy -> venue path and is read at the venue LATER, so it is a
+    value down to every field (values.py): made at construction by the
+    values.py functions -- `str`, `float`, `bool` themselves and immutable
+    plain data in `extra` -- and slotted, so nothing can be attached."""
+
     side: str  # "buy" | "sell"
     order_type: str  # "market" | "limit" | ... -- the set is item 2's to define
     size: float
     price: Optional[float] = None
     client_order_id: str = ""
-    time_in_force: str = "GTC"
+    time_in_force: str = "GTC"  # the set is item 2's to define; a non-empty str
     post_only: bool = False
     reduce_only: bool = False
     trigger_price: Optional[float] = None
@@ -96,23 +106,39 @@ class OrderRequest:
     extra: tuple[tuple[str, Any], ...] = ()
 
     def __post_init__(self) -> None:
-        if self.side not in ORDER_SIDES:
-            raise OrderApiError(f"side must be one of {ORDER_SIDES}, got {self.side!r}")
-        if not isinstance(self.order_type, str) or not self.order_type:
+        put = lambda name, value: object.__setattr__(self, name, value)  # noqa: E731
+        put("side", _order_field(as_choice, "side", self.side, ORDER_SIDES))
+        order_type = _order_field(as_text, "order_type", self.order_type)
+        if not order_type:
             raise OrderApiError("order_type must be a non-empty str")
-        _require_positive("size", self.size)
+        put("order_type", order_type)
+        put("size", _require_positive("size", self.size))
         if self.price is not None:
-            _require_positive("price", self.price)
+            put("price", _require_positive("price", self.price))
         if self.trigger_price is not None:
-            _require_positive("trigger_price", self.trigger_price)
-        if not isinstance(self.client_order_id, str):
-            raise OrderApiError("client_order_id must be str")
-        object.__setattr__(self, "extra", _frozen_extra(self.extra))
+            put("trigger_price", _require_positive("trigger_price", self.trigger_price))
+        put("client_order_id", _order_field(as_text, "client_order_id", self.client_order_id))
+        tif = _order_field(as_text, "time_in_force", self.time_in_force)
+        if not tif:
+            raise OrderApiError("time_in_force must be a non-empty str")
+        put("time_in_force", tif)
+        put("post_only", _order_field(as_flag, "post_only", self.post_only))
+        put("reduce_only", _order_field(as_flag, "reduce_only", self.reduce_only))
+        put("extra", _frozen_extra(self.extra))
 
     def extra_dict(self) -> dict:
         """`extra` as a fresh dict, lists / dicts / sets as they were given
         (values.py `thaw`); changing it changes nothing else."""
         return {key: thaw(value) for key, value in self.extra}
+
+
+def _order_field(make: Callable[..., Any], name: str, value: Any, *args: Any) -> Any:
+    """One field of an order request made by a values.py function; its
+    refusal is an OrderApiError."""
+    try:
+        return make(value, name, *args)
+    except ValueError as exc:
+        raise OrderApiError(str(exc)) from None
 
 
 def _frozen_extra(extra: Any) -> tuple:
@@ -127,7 +153,10 @@ def _frozen_extra(extra: Any) -> tuple:
         if not isinstance(pair, tuple) or len(pair) != 2:
             raise OrderApiError(f"extra[{i}] must be a (key, value) pair, got {pair!r}")
         key, value = pair
-        if not isinstance(key, str) or not key:
+        if not isinstance(key, str):
+            raise OrderApiError(f"extra[{i}]: key must be a non-empty str, got {key!r}")
+        key = as_text(key, f"extra[{i}] key")  # a str itself before anything reads it
+        if not key:
             raise OrderApiError(f"extra[{i}]: key must be a non-empty str, got {key!r}")
         if key in seen:
             raise OrderApiError(f"extra: key {key!r} given twice")
@@ -139,20 +168,39 @@ def _frozen_extra(extra: Any) -> tuple:
     return tuple(pairs)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CancelRequest:
     client_order_id: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.client_order_id, str) or not self.client_order_id:
+        coid = _order_field(as_text, "client_order_id", self.client_order_id)
+        if not coid:
             raise OrderApiError("client_order_id must be a non-empty str")
+        object.__setattr__(self, "client_order_id", coid)
 
 
-def _require_positive(name: str, value: Any) -> None:
+def fresh_request(request: Any, cls: type, error: type, who: str) -> Any:
+    """What the core hands on across the strategy -> venue path (and from
+    the account socket to the strategy's view): an instance of the core's
+    own request class, never a subclass (a subclass could decide a field
+    when it is read), rebuilt from its fields, so the receiver holds an
+    object the sender does not (it cannot be changed afterwards, even by
+    bypassing `frozen`)."""
+    if type(request) is not cls:
+        raise error(
+            f"{who} takes a {cls.__name__} itself (not a subclass), got "
+            f"{type(request).__module__}.{type(request).__qualname__}"
+        )
+    return dataclasses.replace(request)
+
+
+def _require_positive(name: str, value: Any) -> float:
     if isinstance(value, bool) or not isinstance(value, numbers.Real):
         raise OrderApiError(f"{name} must be a number, got {value!r}")
-    if not math.isfinite(value) or value <= 0:
+    f = _order_field(as_float, name, value)
+    if not math.isfinite(f) or f <= 0:
         raise OrderApiError(f"{name} must be finite and > 0, got {value!r}")
+    return f
 
 
 class OrderState(Enum):
@@ -251,8 +299,9 @@ class _OrderPort:
 
     # -- strategy-facing (through StrategyContext) --------------------------
     def place(self, request: OrderRequest) -> str:
-        if not isinstance(request, OrderRequest):
-            raise OrderApiError(f"place_order takes an OrderRequest, got {type(request).__name__}")
+        # the view keeps its own copy; the outbox carries another (below):
+        # nothing the strategy holds is what the venue receives
+        request = fresh_request(request, OrderRequest, OrderApiError, "place_order")
         now = self._time()
         coid = request.client_order_id
         if coid:
@@ -276,14 +325,13 @@ class _OrderPort:
             sent_time_ns=now,
             last_update_ns=now,
         )
-        self._outbox.append(("new", request, now))
+        self._outbox.append(("new", dataclasses.replace(request), now))
         return coid
 
     def cancel(self, request: Union[CancelRequest, str]) -> None:
         if isinstance(request, str):
             request = CancelRequest(request)
-        if not isinstance(request, CancelRequest):
-            raise OrderApiError(f"cancel_order takes a CancelRequest or id, got {type(request).__name__}")
+        request = fresh_request(request, CancelRequest, OrderApiError, "cancel_order (or an id)")
         view = self._registry.get(request.client_order_id)
         if view is None:
             raise OrderApiError(f"cancel for unknown client_order_id {request.client_order_id!r}")
@@ -305,7 +353,8 @@ class _OrderPort:
             raise OrderApiError(f"timer at {at} is before now {now}")
         if not isinstance(tag, str):
             raise OrderApiError("timer tag must be str")
-        self._outbox.append(("timer", at, tag))
+        # the tag reaches the strategy later, in a ClockEvent: a str itself
+        self._outbox.append(("timer", at, _order_field(as_text, "timer tag", tag)))
 
     def order(self, client_order_id: str) -> Optional[OrderView]:
         return self._registry.get(client_order_id)
@@ -454,9 +503,11 @@ class StrategyContext:
         until_ns: Optional[int] = None,
     ) -> DeliveredEvents:
         """Delivered events (all with `received_time_ns <= now_ns`), oldest
-        first, as a `DeliveredEvents` tuple: naming a position after the
-        newest (an index `>= len`, or a slice bound past the end) raises
-        `FuturePositionError` instead of a shortened answer (window.py).
+        first, as a `DeliveredEvents` tuple: naming a position after its
+        last event (an index `>= len`, or a slice bound past the end) raises
+        instead of a shortened answer (window.py) -- `FuturePositionError`
+        if the answer ends at the newest delivered event of what it reads,
+        `OutsideAnswerError` if `until_ns` ended it in the delivered past.
         Filters, all optional: only `event_type`; only those with
         `since_ns <= received_time_ns <= until_ns`; then only the last `n`
         (`n` is a count >= 0: `n=0` returns nothing, a negative `n` raises
@@ -493,15 +544,20 @@ class StrategyContext:
             lo = bisect.bisect_left(events, since, key=_recv)
         if until is not None:
             hi = bisect.bisect_right(events, until, key=_recv)
+        # What follows the answer's last event (window.py, i0-r5-05): it ends
+        # at the newest delivered event of what it reads (the whole history,
+        # or that type's) exactly when nothing delivered was cut off after
+        # it; then what follows has not been delivered yet.
+        ends_at_newest = hi == len(events)
         if count is not None:
             if count == 0:
-                return DeliveredEvents()
+                return DeliveredEvents(next_is_undelivered=ends_at_newest)
             lo = max(lo, hi - count)
         if self.__dropped:
             self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
-            return DeliveredEvents()
-        return DeliveredEvents(events[lo:hi])
+            return DeliveredEvents(next_is_undelivered=ends_at_newest)
+        return DeliveredEvents(events[lo:hi], next_is_undelivered=ends_at_newest)
 
     def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int],
                            count: Optional[int], events: Sequence[Event], lo: int, hi: int) -> None:
@@ -568,6 +624,7 @@ def _count_arg(n: Optional[int]) -> Optional[int]:
         return None
     if isinstance(n, bool) or not isinstance(n, int):
         raise OrderApiError(f"n must be an int, got {n!r}")
+    n = as_int(n, "n")
     if n < 0:
         raise OrderApiError(f"n is a count of events and must be >= 0, got {n}")
     return n

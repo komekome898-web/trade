@@ -40,7 +40,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "adapters"))
 sys.path.insert(0, str(HERE.parents[3] / "src"))
 
-from scenes import SCENES  # noqa: E402
+from scenes import NAMING_SHAPES, SCENES  # noqa: E402
 import stated_rules  # noqa: E402
 from adapters.protocol import Adapter, SceneResult  # noqa: E402
 
@@ -192,6 +192,158 @@ GRADERS = {
 }
 
 
+# ---------------------------------------------------------------- provenance (round r6-1)
+# Where the measured thing came from is checked BEFORE grading (critic
+# i0-r5-02 / i0-r5-03 / i0-r5-04): an event type the scene-set side made, a
+# conversion or a list outside the target, or an incomplete set of namings is
+# not graded -- the scene becomes "error" (結果なし) with the reason.
+
+# modules of the scene set itself (a class defined here is not the target's)
+BATTERY_TOPS = ({p.stem for p in HERE.glob("*.py")} | {p.stem for p in (HERE / "opponents").glob("*.py")}
+                | {p.stem for p in (HERE / "adapters").glob("*.py")} | {"opponents", "adapters", "__main__", "hft_copy"})
+# a time conversion from these is not the target's own reader
+FOREIGN_READER_TOPS = {"pandas", "polars", "datetime", "dateutil", "numpy", "builtins", "time", "arrow",
+                       "pendulum", "ciso8601", "zoneinfo", "calendar", "email"}
+COMPILED = ("rust:", "go:", "c:", "cpp:")
+
+# scene id -> (key of the received list in the output, whether the list carries kinds)
+CARRIER_SCENES = {
+    "p1-merge-by-time": ("sequence", True), "p1-one-call-per-event": ("sequence", True),
+    "p1-typed-events": ("sequence", True),
+    "p2-event-time-exact": ("observed_ts_ns", False), "p2-one-ns-apart": ("observed_ts_ns", False),
+    **{f"p3-{k}": ("sequence", True) for k in ("trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation")},
+    "p3-mixed-one-run": ("sequence", True),
+    "p5-same-time-twice": ("order", True), "p5-hand-over-order": ("runs", True),
+    "p5-same-stream-order": ("prices", False),
+}
+PROVENANCE_SCENES = set(CARRIER_SCENES) | {"p2-iso-utc", "p2-iso-offset", "p4-visible-at-step", "p4-future-read-attempt"}
+
+
+def made_by_scene_set(name: str) -> bool:
+    """A carrier / reader name that points into the scene set (or a driver's own type)."""
+    if name.startswith(COMPILED):
+        return any(w in name.lower() for w in ("battery", "driver", "adapter", "scene"))
+    return name.split(".")[0] in BATTERY_TOPS
+
+
+def _carrier_problem(kinds: list | None, carriers) -> str | None:
+    if not isinstance(carriers, list) or kinds is None or len(carriers) != len(kinds):
+        return f"carriers の長さが受け取った列と合わない(列 {None if kinds is None else len(kinds)} 件、carriers {carriers!r:.200})"
+    for c in carriers:
+        if not isinstance(c, str) or not c:
+            return f"carrier が文字列でない: {c!r:.80}"
+        if made_by_scene_set(c):
+            return f"場面集の側が作った型で運んだ: {c}"
+    if kinds and not isinstance(kinds[0], (int, float)):
+        by: dict[str, set] = {}
+        for k, c in zip(kinds, carriers):
+            by.setdefault(c, set()).add(str(k))
+        many = {c: sorted(ks) for c, ks in by.items() if len(ks) > 1}
+        if many:
+            return f"1 つの型に 2 つ以上の kind を写した(型を場面集の側が決めている): {many}"
+    return None
+
+
+def _kinds(out, key: str, with_kinds: bool):
+    lst = out.get(key) if isinstance(out, dict) else None
+    if not isinstance(lst, list):
+        return None
+    return [e[0] if with_kinds and isinstance(e, (list, tuple)) and e else e for e in lst]
+
+
+def _attempts_problem(out) -> str | None:
+    atts = (out or {}).get("attempts") if isinstance(out, dict) else None
+    if not isinstance(atts, list):
+        return "attempts が無い"
+    groups: dict[tuple, set] = {}
+    for a in atts:
+        shape, form = a.get("shape"), a.get("form")
+        if shape is None:
+            return f"試し {a.get('means')!r} に shape が無い(common.try_position_namings / try_time_namings を通していない)"
+        if shape == "other":
+            continue
+        if shape == "no_means":
+            if form not in ("time", "position"):
+                return f"no_means の試し {a.get('means')!r} の form が time / position でない"
+            if not a.get("raised"):
+                return f"no_means の試し {a.get('means')!r} が例外を出さずに値を返した(読み出しの手段が在る)"
+            continue
+        if shape not in NAMING_SHAPES:
+            return f"未知の shape {shape!r}"
+        if (shape.startswith("time") and form != "time") or (not shape.startswith("time") and form != "position"):
+            return f"試し {a.get('means')!r} の shape {shape} と form {form} が合わない"
+        groups.setdefault((a.get("means"), shape), set()).add(a.get("naming"))
+    for (means, shape), got in groups.items():
+        want = set(NAMING_SHAPES[shape])
+        if got != want:
+            return f"手段 {means!r}({shape})の名指し方が一覧と合わない: 欠け {sorted(want - got)} / 一覧に無い {sorted(got - want)}"
+    return None
+
+
+def _reads_problem(out, prov) -> str | None:
+    reads = (prov or {}).get("reads")
+    if not isinstance(reads, list) or not reads:
+        return "reads が無い(過去を読む公開の手段が無い対象は not_supported)"
+    for r in reads:
+        vals = r.get("returned")
+        if not isinstance(vals, list) or not all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in vals):
+            return f"読み出し {r.get('means')!r} の返り値が終値の列でない"
+    counts = sorted({len(r["returned"]) for r in reads})
+    closes = [x for r in reads for x in r["returned"]]
+    want = {"visible_count": counts[0] if len(counts) == 1 else counts, "max_visible_close": max(closes) if closes else None}
+    got = {k: (out or {}).get(k) for k in want} if isinstance(out, dict) else None
+    if got != want:
+        return f"出力 {got} が読み出しから作った値 {want} と合わない"
+    return None
+
+
+def provenance_problem(res: SceneResult, scene) -> str | None:
+    """Why this result may not be graded, or None. Only `ok` results of the
+    PROVENANCE_SCENES are checked (a refusal or an exception has nothing to
+    credit)."""
+    if scene is None or res.status != "ok" or scene.id not in PROVENANCE_SCENES:
+        return None
+    out, prov = res.output, res.provenance
+    if scene.id == "p4-future-read-attempt":
+        return _attempts_problem(out)
+    if not isinstance(prov, dict):
+        return "provenance が無い"
+    if scene.id == "p4-visible-at-step":
+        return _reads_problem(out, prov)
+    if scene.id in ("p2-iso-utc", "p2-iso-offset"):
+        reader = prov.get("reader")
+        if not isinstance(reader, str) or not reader:
+            return "reader が無い"
+        if made_by_scene_set(reader) or (not reader.startswith(COMPILED) and reader.split(".")[0] in FOREIGN_READER_TOPS):
+            return f"ISO の文字列を読んだのが対象の外の関数: {reader}"
+        return None
+    key, with_kinds = CARRIER_SCENES[scene.id]
+    carriers = prov.get("carriers")
+    if scene.id == "p5-hand-over-order":
+        runs = out.get("runs") if isinstance(out, dict) else None
+        if not isinstance(runs, list) or not isinstance(carriers, list) or len(carriers) != len(runs):
+            return "carriers が回ごとの列になっていない"
+        flat_k, flat_c = [], []
+        for r, cs in zip(runs, carriers):
+            ks = _kinds(r, "order", True)
+            why = _carrier_problem(ks, cs)
+            if why:
+                return why
+            flat_k += ks
+            flat_c += cs
+        return _carrier_problem(flat_k, flat_c)
+    return _carrier_problem(_kinds(out, key, with_kinds), carriers)
+
+
+def checked(res: SceneResult, scene) -> SceneResult:
+    """The result as graded: unchanged, or "error" when its provenance fails."""
+    why = provenance_problem(res, scene)
+    if why is None:
+        return res
+    return SceneResult("error", output={"provenance_error": why, "raw": res.output},
+                       detail=f"出所の検めで採点しない: {why} / {res.detail}", provenance=res.provenance)
+
+
 def graded_output(res: SceneResult, scene, target: str | None = None):
     """What is graded: the raw output, or for a `graded_from` scene the values
     computed here from it (the raw output kept under "raw"). `target` selects
@@ -224,8 +376,8 @@ def run_target(target: str) -> list[dict]:
     adapter_1 = load_adapter(target)
     adapter_2 = load_adapter(target)  # a fresh adapter for the second run
     for sc in SCENES:
-        r1 = adapter_1.run_scene(sc)
-        r2 = adapter_2.run_scene(sc)
+        r1 = checked(adapter_1.run_scene(sc), sc)
+        r2 = checked(adapter_2.run_scene(sc), sc)
         rows.append({
             "target": target, "scene_id": sc.id, "viewpoint": sc.viewpoint, "kind": sc.kind,
             "correctness": correctness(r1, sc.expected, sc, target),
@@ -237,12 +389,13 @@ def run_target(target: str) -> list[dict]:
             "output_2": json.dumps(graded_output(r2, sc, target), ensure_ascii=False, sort_keys=True, default=repr),
             "expected": json.dumps(sc.expected, ensure_ascii=False, sort_keys=True),
             "detail_1": r1.detail.replace("\t", " ").replace("\n", " "),
+            "provenance_1": json.dumps(r1.provenance, ensure_ascii=False, sort_keys=True, default=repr),
         })
     return rows
 
 
 FIELDS = ["target", "scene_id", "viewpoint", "kind", "correctness", "correctness_run2", "reproducibility",
-          "status_1", "output_1", "status_2", "output_2", "expected", "detail_1"]
+          "status_1", "output_1", "status_2", "output_2", "expected", "detail_1", "provenance_1"]
 
 
 def main() -> None:

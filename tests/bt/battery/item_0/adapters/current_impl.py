@@ -2,9 +2,11 @@
 `src/bot/backtest/engine.py: run_backtest` with `src/bot/strategy/base.py:
 Strategy`, fed a pandas DataFrame of OHLCV rows indexed by a
 `DatetimeIndex` (datetime64[ns, UTC]) -- the input form the engine takes
-(`candles`, engine.py docstring and `candles["close"]` etc.). Time
-conversion on our data path is pandas (`pd.to_datetime(..., utc=True)`, as
-in `src/bot/research/board.py`), so the ISO scenes use `pd.Timestamp`.
+(`candles`, engine.py docstring and `candles["close"]` etc.). Our data path
+(`scripts/run_backtest.py`: `pd.read_csv(csv_path)` then `run_backtest`)
+converts no time string: the ISO scenes hand the string to the engine's
+input as it is and report what reached the strategy (round r6-1: the
+adapter does not call a conversion of its own).
 
 This adapter only imports and calls the engine; it edits nothing.
 """
@@ -104,25 +106,35 @@ class CurrentImplAdapter(Adapter):
 
     def scene_p1_one_call_per_event(self, sc):
         rec, _ = _run(C.events(sc))
-        return ok({"sequence": _seq(rec)}, "足 5 本を DataFrame で渡し、on_candles の各呼び出しで candles の最後の行の時刻を記録")
+        return ok({"sequence": _seq(rec)}, "足 5 本を DataFrame で渡し、on_candles の各呼び出しで candles の最後の行の時刻を記録",
+                  {"carriers": [C.carrier(c) for c in rec.seen]})
 
     def scene_p1_typed_events(self, sc):
         return not_supported("約定を渡す口が無い。試したこと: " + _try_non_bar(C.events(sc)[1:]))
 
     # ---------------- P0-2
-    def scene_p2_iso_utc(self, sc):
-        v = int(pd.Timestamp(sc.input["iso"]).value)
-        return ok(v, "当方のデータの道の時刻の変換(pandas)で pd.Timestamp(iso).value")
+    def _iso(self, sc):
+        """The ISO string handed to the engine's only input (the candles' time index) as it is."""
+        iso = sc.input["iso"]
+        df = pd.DataFrame([{"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0}], index=[iso])
+        rec = _Rec()
+        try:
+            E.run_backtest(rec, df)
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"時刻の文字列を読む入口が無い。試したこと: 添字が ISO の文字列の candles を run_backtest に渡した -> "
+                                 f"{type(exc).__name__}: {str(exc)[:160]}")
+        got = [c.index[-1] for c in rec.seen]
+        return not_supported("時刻の文字列を変換する入口が無い(当方のデータの道 scripts/run_backtest.py は pd.read_csv のあと変換せずに渡す)。"
+                             f"試したこと: 添字が ISO の文字列の candles を run_backtest に渡した -> 戦略に届いた添字 {got!r:.160}"
+                             f"(型 {sorted({type(x).__name__ for x in got})}。変換されずに文字列のまま)")
 
-    def scene_p2_iso_offset(self, sc):
-        v = int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value)
-        return ok(v, "pd.Timestamp(iso).tz_convert('UTC').value")
+    scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts_scene(self, sc):
         rows = [dict(C.as_bar({"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0}), volume=1.0) for e in C.events(sc)]
         rec, _ = _run(rows)
         return ok({"observed_ts_ns": [int(c.index[-1].value) for c in rec.seen]},
-                  "足(OHLC=100)で渡し、各呼び出しの candles.index[-1].value を記録")
+                  "足(OHLC=100)で渡し、各呼び出しの candles.index[-1].value を記録", {"carriers": [C.carrier(c) for c in rec.seen]})
 
     def scene_p2_event_time_exact(self, sc):
         return self._ts_scene(sc)
@@ -138,7 +150,8 @@ class CurrentImplAdapter(Adapter):
         rec, _ = _run([e])
         last = rec.seen[0].iloc[-1]
         fields = {k: float(last[k]) for k in ("open", "high", "low", "close", "volume")}
-        return ok({"sequence": _seq(rec), "fields": fields}, "足 1 本を渡し、呼び出しで受け取った行を記録")
+        return ok({"sequence": _seq(rec), "fields": fields}, "足 1 本を渡し、呼び出しで受け取った行を記録",
+                  {"carriers": [C.carrier(c) for c in rec.seen]})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type_scene
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type_scene
@@ -171,11 +184,18 @@ class CurrentImplAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        rec = _Rec(probe=lambda n, c: {"visible_count": len(c), "max_visible_close": float(c["close"].max())} if int(c.index[-1].value) == probe else None)
-        _run(C.events(sc), rec=rec)
-        if not rec.probe_out:  # no_probe_call
+        reads = C.Reads()
+
+        def probe_fn(n, c):
+            if int(c.index[-1].value) == probe and not reads.items:
+                reads.read("on_candles の引数 candles['close']", lambda: list(c["close"]))
+            return None
+
+        _run(C.events(sc), rec=_Rec(probe=probe_fn))
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok(rec.probe_out, "T0 + 4 日の呼び出しの on_candles で受け取った candles の件数と close の最大")
+        return ok(reads.output(), "T0 + 4 日の呼び出しの on_candles で受け取った candles の close を読んだ件数と最大",
+                  reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported("1 件に時刻を 1 つしか持てない(candles の DataFrame の添字 1 つ)。受け取れる時刻を別に渡す口が無い。試したこと: "
@@ -183,17 +203,20 @@ class CurrentImplAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        future_ts = pd.Timestamp(sc.input["future_ts_ns"], unit="ns", tz="UTC")
         att = C.Attempts()
+        ts = (lambda ns: pd.Timestamp(ns, unit="ns", tz="UTC"))
 
         def probe_fn(n, c):
             if int(c.index[-1].value) != probe or att.items:
                 return None
-            att.run("candles.iloc[4](最新の次の位置)", "position", lambda: c.iloc[4]["close"])
-            att.run("candles.loc[5 本目の時刻]", "time", lambda: c.loc[future_ts]["close"])
+            close = c["close"]
+            # namings: the scene's fixed list (common.try_*_namings)
+            C.try_position_namings(att, "candles['close'].iloc", lambda: close.iloc, len(close))
+            C.try_time_namings(att, "candles['close'].loc[時刻]", "time_at", lambda t: close.loc[t], sc, ts)
+            C.try_time_namings(att, "candles['close'].loc[始:終]", "time_range", lambda a, b: close.loc[a:b], sc, ts)
             att.run("candles['close'].shift(-1).iloc[-1](最新の次を先の参照で)", "position",
-                    lambda: c["close"].shift(-1).iloc[-1])
-            att.run("candles['close'] の全部", "other", lambda: list(c["close"]))
+                    lambda: close.shift(-1).iloc[-1], shape="next_call", naming="next")
+            att.run("candles['close'] の全部", "other", lambda: list(close))
             return None
 
         rec = _Rec(probe=probe_fn)
@@ -214,7 +237,8 @@ class CurrentImplAdapter(Adapter):
     def scene_p5_same_stream_order(self, sc):
         rows = [C.as_bar(e) for e in C.events(sc)]
         rec, _ = _run(rows)
-        return ok({"prices": [float(c["close"].iloc[-1]) for c in rec.seen]}, "約定を足に代えて渡し、呼び出しごとの close を記録")
+        return ok({"prices": [float(c["close"].iloc[-1]) for c in rec.seen]}, "約定を足に代えて渡し、呼び出しごとの close を記録",
+                  {"carriers": [C.carrier(c) for c in rec.seen]})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

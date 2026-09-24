@@ -76,25 +76,49 @@ class BacktestingAdapter(Adapter):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
     def scene_p1_one_call_per_event(self, sc):
-        st, _ = run(C.events(sc), lambda s, n, st: st["log"].append(["bar", _now(s)]))
-        return ok({"sequence": st["log"]}, "足 5 本。next の各回に self.data.index[-1]")
+        car = []
+        st, _ = run(C.events(sc), lambda s, n, st: (st["log"].append(["bar", _now(s)]), car.append(C.carrier(s.data))))
+        return ok({"sequence": st["log"]}, "足 5 本。next の各回に self.data.index[-1]", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
 
     def _iso(self, sc):
-        v = int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value)
-        return ok(v, "backtesting.py の時刻は DataFrame の DatetimeIndex(pandas)。pd.Timestamp(iso).tz_convert('UTC').value")
+        """The ISO string handed as it is to the tool's only data input (the DataFrame's index);
+        the strategy's init reads the index the tool made of it."""
+        iso = sc.input["iso"]
+        df = pd.DataFrame({"Open": [1.0, 1.0], "High": [1.0, 1.0], "Low": [1.0, 1.0], "Close": [1.0, 1.0], "Volume": [1.0, 1.0]},
+                          index=[iso, iso])
+        got = {}
+
+        class S(Strategy):
+            def init(self):
+                got["index0"] = self.data.index[0]
+
+            def next(self):
+                pass
+
+        try:
+            Backtest(df, S).run()
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"ISO の文字列を添字にした DataFrame を Backtest に渡した -> {type(exc).__name__}: {str(exc)[:200]}")
+        v = got.get("index0")
+        if not isinstance(v, pd.Timestamp):
+            return not_supported(f"ISO の文字列を添字にした DataFrame を Backtest に渡した -> 戦略の init が読んだ添字 {v!r:.120}(時刻に変換されない)")
+        ts = v if v.tzinfo is None else v.tz_convert("UTC")
+        return ok(int(ts.value), f"ISO の文字列を添字にした DataFrame を Backtest に渡し、Backtest が変換した添字を戦略の init で読んだ {v!r}",
+                  {"reader": C.qualname(Backtest)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
+        car = []
         try:
-            st, _ = run(evs, lambda s, n, st: st["log"].append(_now(s)))
+            st, _ = run(evs, lambda s, n, st: (st["log"].append(_now(s)), car.append(C.carrier(s.data))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"足で渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"observed_ts_ns": st["log"]}, "足(OHLC=100)で渡し、next の self.data.index[-1]")
+        return ok({"observed_ts_ns": st["log"]}, "足(OHLC=100)で渡し、next の self.data.index[-1]", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -104,8 +128,11 @@ class BacktestingAdapter(Adapter):
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
         out = {}
 
+        car = []
+
         def f(s, n, st):
             st["log"].append(["bar", _now(s)])
+            car.append(C.carrier(s.data))
             out.update({"open": float(s.data.Open[-1]), "high": float(s.data.High[-1]), "low": float(s.data.Low[-1]),
                         "close": float(s.data.Close[-1]), "volume": float(s.data.Volume[-1])})
 
@@ -113,7 +140,7 @@ class BacktestingAdapter(Adapter):
             st, _ = run([e], f)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"足 1 本で走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"sequence": st["log"], "fields": out}, f"足 1 本。next が呼ばれた回数 {st['n']}")
+        return ok({"sequence": st["log"], "fields": out}, f"足 1 本。next が呼ばれた回数 {st['n']}", {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -141,18 +168,18 @@ class BacktestingAdapter(Adapter):
 
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
+        reads = C.Reads()
+        called = []
 
         def f(s, n, st):
-            st["log"].append(_now(s))
-            if _now(s) == probe:
-                out["visible_count"] = len(s.data.Close)
-                out["max_visible_close"] = float(max(s.data.Close))
+            called.append(_now(s))
+            if _now(s) == probe and not reads.items:
+                reads.read("self.data.Close", lambda: list(s.data.Close))
 
-        st, _ = run(C.events(sc), f)
-        if not out:  # no_probe_call
-            return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
-        return ok(out, f"T0 + 4 日の呼び出しの next で len(self.data.Close) と max。呼ばれた時刻 {st['log']}")
+        run(C.events(sc), f)
+        if not reads.items:  # no_probe_call
+            return not_supported(f"T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)。呼ばれた時刻 {called}")
+        return ok(reads.output(), f"T0 + 4 日の呼び出しの next で self.data.Close を読んだ。呼ばれた時刻 {called}", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON_BAR.format(k="受け取れる時刻", err=_try_non_bar(
@@ -160,14 +187,17 @@ class BacktestingAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        fut = pd.Timestamp(sc.input["future_ts_ns"], unit="ns")
+        ts = (lambda ns: pd.Timestamp(ns, unit="ns"))
         att = C.Attempts()
 
         def f(s, n, st):
             if _now(s) != probe or att.items:
                 return
-            att.run("self.data.Close[len](最新の次の位置)", "position", lambda: s.data.Close[len(s.data.Close)])
-            att.run("self.data.df.loc[5 本目の時刻]", "time", lambda: s.data.df.loc[fut]["Close"])
+            # namings: the scene's fixed list (common.try_*_namings)
+            C.try_position_namings(att, "self.data.Close[位置]", lambda: s.data.Close, len(s.data.Close))
+            C.try_position_namings(att, "self.data.df.Close.iloc[位置]", lambda: s.data.df.Close.iloc, len(s.data.df))
+            C.try_time_namings(att, "self.data.df.Close.loc[時刻]", "time_at", lambda t: s.data.df.Close.loc[t], sc, ts)
+            C.try_time_namings(att, "self.data.df.Close.loc[始:終]", "time_range", lambda a, b: s.data.df.Close.loc[a:b], sc, ts)
             att.run("self.data.df の Close の全部", "other", lambda: list(s.data.df.Close))
             att.run("self.data.Close.base(numpy の元の配列)", "other",
                     lambda: list(s.data.Close.base) if getattr(s.data.Close, "base", None) is not None else None)
@@ -184,11 +214,12 @@ class BacktestingAdapter(Adapter):
 
     def scene_p5_same_stream_order(self, sc):
         rows = [C.as_bar(e) for e in C.events(sc)]
+        car = []
         try:
-            st, _ = run(rows, lambda s, n, st: st["log"].append(float(s.data.Close[-1])))
+            st, _ = run(rows, lambda s, n, st: (st["log"].append(float(s.data.Close[-1])), car.append(C.carrier(s.data))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ時刻の 3 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 行を渡した")
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 行を渡した", {"carriers": car})
 
     def scene_p6_place_then_cancel(self, sc):
         out = {}

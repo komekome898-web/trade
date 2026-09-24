@@ -196,29 +196,47 @@ class RqalphaAdapter(Adapter):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
     def _seq(self, bars):
+        car = []
+
         def h(c, b, n):
             c.st["log"].append(["bar", _now(c)])
-        return run(bars, h)["log"]
+            car.append(C.carrier(b[OID]))
+        return run(bars, h)["log"], car
 
     def scene_p1_one_call_per_event(self, sc):
-        return ok({"sequence": self._seq(C.events(sc))}, "日足 5 本。handle_bar の各回に context.now(北京時間)を UTC の ns にして記録")
+        log, car = self._seq(C.events(sc))
+        return ok({"sequence": log}, "日足 5 本。handle_bar の各回に context.now(北京時間)を UTC の ns にして記録", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
 
     # ---------------- P0-2
     def _iso(self, sc):
-        return ok(int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value),
-                  "rqalpha の日時は datetime / pandas(get_trading_dates は pandas.DatetimeIndex)。pd.Timestamp(iso).tz_convert('UTC').value")
+        """rqalpha's data carries time as the integer YYYYMMDDhhmmss (the data source's `datetime`); its
+        own conversions take that integer. The ISO string is handed to them as it is."""
+        from rqalpha.utils import datetime_func as F
+        tried = {}
+        for name in ("convert_int_to_datetime", "convert_int_to_date"):
+            fn = getattr(F, name, None)
+            if fn is None:
+                tried[name] = "無い"
+                continue
+            try:
+                tried[name] = repr(fn(sc.input["iso"]))
+            except Exception as exc:  # noqa: BLE001
+                tried[name] = f"{type(exc).__name__}: {str(exc)[:100]}"
+        return not_supported("rqalpha のデータの時刻は YYYYMMDDhhmmss の整数で、時刻の文字列を読む入口が無い。"
+                             f"試したこと: rqalpha.utils.datetime_func の変換に ISO の文字列を渡した -> {tried}")
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
         evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
-        return ok({"observed_ts_ns": [t for _, t in self._seq(evs)]},
+        log, car = self._seq(evs)
+        return ok({"observed_ts_ns": [t for _, t in log]},
                   "足で渡した。データ源の datetime は YYYYMMDDhhmmss の整数(convert_date_to_int)で、日足は取引日に丸められる。"
-                  "handle_bar の context.now")
+                  "handle_bar の context.now", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -228,14 +246,16 @@ class RqalphaAdapter(Adapter):
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
         out = {}
+        car = []
 
         def h(c, b, n):
             c.st["log"].append(["bar", _now(c)])
             bar = b[OID]
+            car.append(C.carrier(bar))
             out.update({k: float(getattr(bar, k)) for k in ("open", "high", "low", "close", "volume")})
 
         st = run([e], h)
-        return ok({"sequence": st["log"], "fields": out}, "日足 1 本。bar_dict['X.XSHE'] の open/high/low/close/volume")
+        return ok({"sequence": st["log"], "fields": out}, "日足 1 本。bar_dict['X.XSHE'] の open/high/low/close/volume", {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -303,21 +323,18 @@ class RqalphaAdapter(Adapter):
 
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out, seen, tried = {}, [], []
+        reads = C.Reads()
         A = _api()
 
         def h(c, b, n):
-            seen.append(float(b[OID].close))
-            if _now(c) == probe:
-                tried.append(f"history_bars(10) -> {list(A.history_bars(OID, 10, '1d', 'close'))}")
-                out["visible_count"] = len(seen)
-                out["max_visible_close"] = max(seen)
+            if _now(c) == probe and not reads.items:
+                reads.read("history_bars(銘柄, 10, '1d', 'close')", lambda: list(A.history_bars(OID, 10, "1d", "close")))
 
         st = run(C.events(sc), h)
-        if not out:  # no_probe_call
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日(UTC 0 時)の呼び出しが無かった。rqalpha の日足の回は取引日の 15:00(北京時間 = UTC 7:00)に"
-                                 f"戦略を呼ぶ。呼び出しの時刻 {st['calls_ns']}、各回の bar_dict の close {seen}")
-        return ok(out, f"各回の close {seen}。{tried}")
+                                 f"戦略を呼ぶ。呼び出しの時刻 {st['calls_ns']}")
+        return ok(reads.output(), "T0 + 4 日の呼び出しに history_bars を読んだ", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported("足は 1 本に時刻 1 つ(datetime)で、受け取れる時刻を別に持たせる口が無い。試したこと: 配列に recv の列を足して渡す -> "
@@ -347,13 +364,15 @@ class RqalphaAdapter(Adapter):
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
     def scene_p5_same_stream_order(self, sc):
-        seen = []
+        seen, car = [], []
 
         def h(c, b, n):
             seen.append(float(b[OID].close))
+            car.append(C.carrier(b[OID]))
 
         st = run([C.as_bar(e) for e in C.events(sc)], h)
-        return ok({"prices": seen}, f"同じ時刻の 3 本(終値 101・99・100)をデータ源の配列に並べた。各回の bar_dict の close、呼び出し {st['calls_ns']}")
+        return ok({"prices": seen}, f"同じ時刻の 3 本(終値 101・99・100)をデータ源の配列に並べた。各回の bar_dict の close、呼び出し {st['calls_ns']}",
+                  {"carriers": car})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

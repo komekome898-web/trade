@@ -23,9 +23,15 @@ not a channel: each is delivered at the time the strategy asked for, so a
 timer set later for an earlier time comes first (same time: set order).
 The queue key is (time, phase, received time, position); the event type
 is not in it, so nothing on a channel is re-sorted by type. What travels
-on a path is a value made when it is sent (values.py): an order request's
-`extra` is immutable plain data and a notice's text is str, so neither
-side can change what the other receives, or learns, without sending.
+on a path is a value made when it is sent (values.py): every field of every
+carrier (an order or cancel request, a venue report, a fill notice, an
+event) is the built-in type itself -- never an object or a subclass
+instance of the sender's -- and the carrier classes are slotted. Each path
+takes the core's own carrier classes themselves (a subclass is refused),
+and the strategy's and the account's requests are rebuilt when they enter
+(api.py `fresh_request`), so no sender holds what its receiver reads.
+Neither side can change what the other receives, or learns, without
+sending.
 
 Input is one stream of events, or several named streams (a mapping of
 name -> iterable, e.g. trades, board, bars and funding read from separate
@@ -64,7 +70,6 @@ the sockets' job (interfaces.py).
 """
 from __future__ import annotations
 
-import copy
 import dataclasses
 import hashlib
 import heapq
@@ -73,7 +78,7 @@ import numbers
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Iterator, Mapping, Optional, Union
 
-from .api import FORCED_ID_PREFIX, CancelRequest, OrderRequest, OrderView, StrategyContext, _OrderPort
+from .api import FORCED_ID_PREFIX, CancelRequest, OrderRequest, OrderView, StrategyContext, _OrderPort, fresh_request
 from .errors import (
     AccountSocketError,
     CostModelError,
@@ -91,6 +96,7 @@ from .events import (
     MARKET_EVENT_TYPES,
     NOTICE_EVENT_TYPES,
     SOURCE_EVENT_TYPES,
+    EVENT_TYPE_TO_CLASS,
     ClockEvent,
     Event,
     EventType,
@@ -111,6 +117,7 @@ from .interfaces import (
     LatencyModel,
     NullAccount,
     NullFillModel,
+    REPORT_CLASSES,
     Reject,
     StateUnknown,
     ZeroLatency,
@@ -126,6 +133,7 @@ from .ordering import (
 from .history import DeliveredHistory
 from .strategy import Strategy
 from .time import validate_nanos
+from .values import as_float, as_int, as_text
 from .window import EventWindow
 
 _K_VENUE_MARKET = 0
@@ -226,19 +234,20 @@ class _VenueLedger:
         return o is not None and o.final is None and (o.acked or o.unknown_new)
 
     def apply(self, report: Any, where: str, subject: Optional[str]) -> None:
-        coid = getattr(report, "client_order_id", None)
         name = type(report).__name__
+        # A report becomes a notice that crosses the venue -> strategy path,
+        # so it must be one of the core's own report classes ITSELF: those
+        # make every field a value when the report is made (interfaces.py,
+        # values.py) and are slotted; a subclass could decide a field when
+        # it is read (i0-r4-02, i0-r5-01).
+        if type(report) not in REPORT_CLASSES:
+            raise VenueProtocolError(
+                f"{where}: unknown report type {type(report).__module__}.{type(report).__qualname__} "
+                f"(a fill model answers with Ack / Reject / Fill / Canceled / StateUnknown themselves, "
+                f"not subclasses)"
+            )
+        coid = report.client_order_id
         kind = getattr(report, "request_kind", None)
-        # A report becomes a notice that crosses the venue -> strategy path:
-        # its text is text, never state the venue could change after
-        # sending it (values.py, i0-r4-02).
-        if not isinstance(coid, str):
-            raise VenueProtocolError(f"{where}: {name}.client_order_id must be a str, got {coid!r}")
-        for fname in ("reason", "detail", "venue_order_id"):
-            if hasattr(report, fname) and not isinstance(getattr(report, fname), str):
-                raise VenueProtocolError(
-                    f"{where}: {name}.{fname} must be a str, got {type(getattr(report, fname)).__name__}"
-                )
         if isinstance(report, (Reject, StateUnknown)) and kind == "cancel":
             # An answer to a cancel request: valid only as the answer to that
             # cancel (inside on_cancel for that order).
@@ -303,6 +312,31 @@ class _VenueLedger:
             raise VenueProtocolError(f"{where}: unknown report type {name}")
 
 
+# The fields of each event class, for the delivery copy. Every event that
+# reaches `_deliver` is one of the core's own classes itself (input events
+# are checked in `_SourceMerger._pull`, notices and timers are made here).
+_EVENT_FIELDS: dict[type, tuple[str, ...]] = {
+    cls: tuple(f.name for f in dataclasses.fields(cls)) for cls in EVENT_TYPE_TO_CLASS.values()
+}
+
+
+def _delivered_copy(event: Event, time_ns: int, seq: int) -> Event:
+    """A copy of `event` with its delivery time and the strategy's delivery
+    number. Field by field (the classes are slotted, so there is nothing
+    else to copy): `copy.copy` of a slotted frozen dataclass goes through
+    `__getstate__` / `__setstate__` and costs about seven times as much.
+    The fields are values already (values.py); `time_ns` was validated as
+    an int64 in `_push`."""
+    cls = type(event)
+    out = object.__new__(cls)
+    put = object.__setattr__
+    for name in _EVENT_FIELDS[cls]:
+        put(out, name, getattr(event, name))
+    put(out, "received_time_ns", time_ns)
+    put(out, "seq", seq)
+    return out
+
+
 def _is_cancel_answer(report: Any, coid: str) -> bool:
     """A report that answers a cancel of order `coid` (inside on_cancel)."""
     if getattr(report, "client_order_id", None) != coid:
@@ -315,7 +349,7 @@ def _is_cancel_answer(report: Any, coid: str) -> bool:
 def _check_delay(value: Any, what: str) -> int:
     if isinstance(value, bool) or not isinstance(value, numbers.Integral):
         raise LatencyModelError(f"{what} must return an int of ns, got {value!r}")
-    ivalue = int(value)
+    ivalue = as_int(value, what)  # an int itself, read once now (values.py)
     if ivalue < 0:
         raise LatencyModelError(f"{what} returned a negative delay {ivalue}")
     return ivalue
@@ -395,12 +429,18 @@ class _SourceMerger:
     def __init__(self, streams: Mapping[str, Iterable[Event]],
                  time_span: Optional[tuple[int, int]] = None) -> None:
         self._span = time_span
-        names = list(streams)
-        for name in names:
+        by_name: dict[str, Iterable[Event]] = {}
+        for key, stream in streams.items():
+            # a str itself (values.py): the names decide the merge order, so
+            # no name may compare or sort by methods of its own
+            name = as_text(key, "stream name") if isinstance(key, str) else key
             if not isinstance(name, str) or not name:
-                raise TypeError(f"stream names must be non-empty str, got {name!r}")
-        self._names = sorted(names)  # rank = position in sorted(); independent of mapping order
-        self._iters: list[Iterator[Event]] = [iter(streams[n]) for n in self._names]
+                raise TypeError(f"stream names must be non-empty str, got {key!r}")
+            if name in by_name:
+                raise TypeError(f"stream name {name!r} given twice")
+            by_name[name] = stream
+        self._names = sorted(by_name)  # rank = position in sorted(); independent of mapping order
+        self._iters: list[Iterator[Event]] = [iter(by_name[n]) for n in self._names]
         self._last: list[Optional[int]] = [None] * len(self._names)
         self.counts: list[int] = [0] * len(self._names)
         self._heads: list[tuple[tuple[int, int, int], Event]] = []  # (merge_key, event)
@@ -418,6 +458,15 @@ class _SourceMerger:
                 f"stream {name!r} yielded {type(event).__name__}, not an Event"
             )
         etype = event.EVENT_TYPE
+        if type(event) is not EVENT_TYPE_TO_CLASS[etype]:
+            # an event crosses the source -> venue / strategy paths: one of
+            # the core's own classes itself (every field a value, slotted),
+            # never a subclass that could decide a field when it is read
+            raise SourceEventTypeError(
+                f"stream {name!r} yielded a {type(event).__module__}.{type(event).__qualname__}, a "
+                f"subclass of {EVENT_TYPE_TO_CLASS[etype].__name__}; the core takes its own event "
+                f"classes themselves"
+            )
         if etype not in SOURCE_EVENT_TYPES:
             raise SourceEventTypeError(
                 f"stream {name!r} yielded {etype.value}; order notices are produced by "
@@ -483,7 +532,10 @@ class CoreEngine:
         from its stream (a bare int carries no unit; a time in seconds or
         milliseconds handed over as ns lands near 1970). Not given, nothing
         is checked -- every int64 is a time -- and `defaults_used` records
-        "time_span" so the result shows the run did not state it."""
+        "time_span" so the result shows the run did not state it. It checks
+        the unit of INPUT events only; it does not bound the run: a timer
+        the strategy sets, a notice or a request arrival may lie after
+        `last_ns` (`end_time_ns` ends a run)."""
         self._strategy = strategy
         time_span = _validate_time_span(time_span_ns)
         self._time_span = time_span
@@ -754,15 +806,13 @@ class CoreEngine:
         # strategy has not received yet (e.g. one that happened at the
         # exchange but reaches us later), and its gaps would let a strategy
         # count them -- a side channel to the future.
-        delivered = copy.copy(event)
-        object.__setattr__(delivered, "received_time_ns", time_ns)
-        object.__setattr__(delivered, "seq", self._deliveries + 1)
+        delivered = _delivered_copy(event, time_ns, self._deliveries + 1)
         port = self._port
         if delivered.EVENT_TYPE in NOTICE_EVENT_TYPES:
             coid = delivered.client_order_id  # type: ignore[attr-defined]
             if not port.knows(coid):
                 # first notice about a forced order: the strategy learns of it now
-                port._adopt(self._forced[coid], time_ns, "forced")
+                port._adopt(dataclasses.replace(self._forced[coid]), time_ns, "forced")
             port._apply_notice(delivered)
         history = self._history
         history.append(delivered)
@@ -826,6 +876,9 @@ class CoreEngine:
             raise AccountSocketError(
                 f"account.on_market_event returned {type(request).__name__}, not an OrderRequest"
             )
+        # the account keeps what it returned; the venue and (later) the
+        # strategy's view get objects of their own (api.py fresh_request)
+        request = fresh_request(request, OrderRequest, AccountSocketError, "account.on_market_event")
         coid = request.client_order_id
         if not coid:
             coid = f"{FORCED_ID_PREFIX}{len(self._forced_list) + 1}"
@@ -846,10 +899,13 @@ class CoreEngine:
     def _venue_order(self, time_ns: int, order: OrderRequest) -> None:
         reason = self._account.check_order(order, time_ns)
         if reason is not None:
-            if not isinstance(reason, str) or not reason:
+            # the reason reaches the strategy in a notice: a str itself
+            # (values.py), made before anything reads it
+            if not isinstance(reason, str) or not as_text(reason, "reason"):
                 raise AccountSocketError(
                     f"account.check_order must return None or a non-empty str, got {reason!r}"
                 )
+            reason = as_text(reason, "reason")
             self._ledger.arrive(order)
             self._handle_reports(
                 time_ns, (Reject(order.client_order_id, reason),), "check_order", order.client_order_id
@@ -906,9 +962,12 @@ class CoreEngine:
                         "NullCostModel() to state zero cost explicitly"
                     )
                 fee = self._cost_model.cost(notice)
-                if isinstance(fee, bool) or not isinstance(fee, numbers.Real) or not math.isfinite(fee):
+                if isinstance(fee, bool) or not isinstance(fee, numbers.Real):
                     raise CostModelError(f"cost model returned {fee!r}")
-                notice = dataclasses.replace(notice, fee=float(fee))
+                fee = as_float(fee, "fee")  # a float itself, read once now (values.py)
+                if not math.isfinite(fee):
+                    raise CostModelError(f"cost model returned {fee!r}")
+                notice = dataclasses.replace(notice, fee=fee)
                 self._account.apply_fill(notice)
                 self._fills.append(notice)
                 event: Event = OrderFillEvent(

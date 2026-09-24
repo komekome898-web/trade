@@ -115,6 +115,12 @@ def _now(s) -> int:
     return C.dt_to_ns(s.timer.now().replace(tzinfo=D.timezone.utc))
 
 
+def _bar_read(s, start):
+    """What the strategy reads for the bars up to now (qf-lib hands the strategy no event object; the
+    data provider's read is how a bar reaches it). Its class is the carrier of the bar."""
+    return s.ts.data_provider.get_price(TK, PriceField.Close, start, s.timer.now())
+
+
 def _closes(s, start):
     try:
         v = s.ts.data_provider.get_price(TK, PriceField.Close, start, s.timer.now())
@@ -144,27 +150,46 @@ class QfLibAdapter(Adapter):
         return not_supported(NON_BAR.format(k="Trade・Funding", err=_pricefield("Trade") + " / " + _pricefield("Funding")))
 
     def scene_p1_one_call_per_event(self, sc):
-        st, _ = run(C.events(sc), lambda s, n, st: st["log"].append(["bar", _now(s)]))
-        return ok({"sequence": st["log"]}, "日足 5 本。毎日 0 時の CalculateAndPlaceOrdersRegularEvent の各回に timer.now()")
+        first = _date(sc.input["events"][0]["ts_ns"])
+        car = []
+        st, _ = run(C.events(sc), lambda s, n, st: (st["log"].append(["bar", _now(s)]), car.append(C.carrier(_bar_read(s, first)))))
+        return ok({"sequence": st["log"]}, "日足 5 本。毎日 0 時の CalculateAndPlaceOrdersRegularEvent の各回に timer.now()"
+                  "(carrier は各回に data_provider.get_price で読んだ物の class)", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="Trade", err=_pricefield("Trade")))
 
     def _iso(self, sc):
-        v = int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value)
-        return ok(v, "qf-lib の時刻は pandas の Timestamp / datetime。pd.Timestamp(iso).tz_convert('UTC').value"
-                  "(timer.now() は tz なしの datetime を返す)")
+        """The ISO string written as it is into a CSV file read by qf-lib's own CSVDataProvider (its
+        reader converts the date column); the value is the date it made (data_bundle.dates)."""
+        import tempfile
+        from qf_lib.data_providers.csv.csv_data_provider import CSVDataProvider
+        iso = sc.input["iso"]
+        rows = [iso] + [iso.replace("2024-01-01", f"2024-01-0{i}") for i in (2, 3)]  # 3 daily rows: the reader infers the frequency
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / f"{TK.as_string()}.csv").write_text("Dates,Close\n" + "\n".join(f"{r},1" for r in rows) + "\n", encoding="utf-8")
+            try:
+                dp = CSVDataProvider(d, TK, "Dates", {"Close": PriceField.Close}, frequency=Frequency.DAILY)
+                v = dp.data_bundle.dates.values[0]
+            except Exception as exc:  # noqa: BLE001
+                return not_supported(f"ISO の文字列を日付の列に書いた CSV を CSVDataProvider で読んだ -> {type(exc).__name__}: {str(exc)[:200]}")
+        t = pd.Timestamp(v)
+        return ok(int((t if t.tzinfo is None else t.tz_convert("UTC")).value),
+                  f"ISO の文字列を日付の列に書いた CSV を qf-lib の CSVDataProvider で読み、data_bundle.dates の最初 {v!r}",
+                  {"reader": C.qualname(CSVDataProvider)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
         evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
+        first = _date(evs[0]["ts_ns"])
+        car = []
         try:
-            st, _ = run(evs, lambda s, n, st: st["log"].append(_now(s)))
+            st, _ = run(evs, lambda s, n, st: (st["log"].append(_now(s)), car.append(C.carrier(_bar_read(s, first)))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"ナノ秒の時刻の足を日足の配列に入れて走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"observed_ts_ns": st["log"]}, "日足で渡し(日付に丸められる)、timer.now()")
+        return ok({"observed_ts_ns": st["log"]}, "日足で渡し(日付に丸められる)、timer.now()", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -173,18 +198,21 @@ class QfLibAdapter(Adapter):
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_pricefield(e["kind"].capitalize())))
         out = {}
+        car = []
 
         def f(s, n, st):
             st["log"].append(["bar", _now(s)])
             px = s.ts.data_provider.get_last_available_price(TK)
             row = s.ts.data_provider.get_price(TK, FIELDS, _date(e["ts_ns"]), s.timer.now())
+            car.append(C.carrier(row))
             out.update({"open": float(row.iloc[-1][PriceField.Open]), "high": float(row.iloc[-1][PriceField.High]),
                         "low": float(row.iloc[-1][PriceField.Low]), "close": float(row.iloc[-1][PriceField.Close]),
                         "volume": float(row.iloc[-1][PriceField.Volume]), "last_available": float(px)})
 
         st, _ = run([e], f)
         return ok({"sequence": st["log"], "fields": {k: v for k, v in out.items() if k != "last_available"}},
-                  f"日足 1 本。data_provider.get_price(ticker, OHLCV, 日付, now) の最後の行。get_last_available_price={out.get('last_available')}")
+                  f"日足 1 本。data_provider.get_price(ticker, OHLCV, 日付, now) の最後の行。get_last_available_price={out.get('last_available')}",
+                  {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -211,20 +239,18 @@ class QfLibAdapter(Adapter):
 
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
+        reads = C.Reads()
         first = _date(sc.input["events"][0]["ts_ns"])
 
         def f(s, n, st):
-            if _now(s) == probe:
-                v = _closes(s, first)
-                out["visible_count"] = len(v) if isinstance(v, list) else None
-                out["max_visible_close"] = max(v) if isinstance(v, list) and v else None
-                out["raw"] = v
+            if _now(s) == probe and not reads.items:
+                reads.read("data_provider.get_price(ticker, Close, 最初の日, now)",
+                           lambda: [x for x in getattr(_bar_read(s, first), "values", []) if x == x])
 
         run(C.events(sc), f)
-        if not out:  # no_probe_call
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
-        return ok(out, "T0 + 4 日の呼び出しに data_provider.get_price(ticker, Close, 最初の日, now)")
+        return ok(reads.output(), "T0 + 4 日の呼び出しに data_provider.get_price(ticker, Close, 最初の日, now) を読んだ", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON_BAR.format(k="受け取れる時刻", err=_pricefield("ReceivedTime")) + "(1 行に日付は 1 つ)")
@@ -232,8 +258,6 @@ class QfLibAdapter(Adapter):
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
         att = C.Attempts()
-        first = _date(sc.input["events"][0]["ts_ns"])
-        fut = _date(sc.input["future_ts_ns"])
 
         def vals(v):
             return [float(x) for x in getattr(v, "values", [v])]
@@ -242,10 +266,9 @@ class QfLibAdapter(Adapter):
             if _now(s) != probe or att.items:
                 return
             dp = s.ts.data_provider
-            att.run("get_price(ticker, Close, 最初の日, 5 本目の日)", "time", lambda: vals(dp.get_price(TK, PriceField.Close, first, fut)))
-            att.run("get_price(ticker, Close, 最初の日, 5 本目の日 + 1 日)", "time",
-                    lambda: vals(dp.get_price(TK, PriceField.Close, first, fut + D.timedelta(days=1))))
-            att.run("get_price(ticker, Close, 5 本目の日, 5 本目の日)", "time", lambda: vals(dp.get_price(TK, PriceField.Close, fut, fut)))
+            # namings: the scene's fixed list; a bar closing at t is dated t - 1 day in qf-lib (_date)
+            C.try_time_namings(att, "data_provider.get_price(ticker, Close, 始, 終)", "time_range",
+                               lambda a, b: vals(dp.get_price(TK, PriceField.Close, a, b)), sc, _date)
             att.run("historical_price(ticker, Close, 6)(件数)", "other", lambda: vals(dp.historical_price(TK, PriceField.Close, 6)))
 
         run(C.events(sc), f)
@@ -263,7 +286,7 @@ class QfLibAdapter(Adapter):
             run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: None)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ日の 3 本を日足の配列に入れようとした -> {type(exc).__name__}: {exc}")
-        return ok({"prices": []}, "例外は出なかった")
+        return ok({"prices": []}, "例外は出なかった", {"carriers": []})
 
     def _order(self, s, qty):
         orders = s.ts.order_factory.orders({TK: qty}, MarketOrder(), TimeInForce.GTC)

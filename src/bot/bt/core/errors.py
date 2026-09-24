@@ -47,12 +47,23 @@ class LookAheadError(CoreError, RuntimeError):
 
 
 class FuturePositionError(LookAheadError, IndexError):
-    """The strategy named, by POSITION, an entry of a history read after
-    the newest delivered one (an index `>= len`, or a slice whose explicit
-    non-negative bound lies past the end). Those positions hold events not
-    delivered yet; like a time argument after `now_ns`, the request is
+    """The strategy named, by POSITION, an entry after the last event of a
+    history read that ends at the newest delivered event of what it reads
+    (an index `>= len`, or a slice whose explicit non-negative bound lies
+    past the end). Those positions hold events not delivered yet (an answer
+    that ends in the delivered past raises `OutsideAnswerError` instead); like a time argument after `now_ns`, the request is
     refused instead of answered with a silently shortened or empty result.
     It is an `IndexError` too, so code that expects one still gets one."""
+
+
+class OutsideAnswerError(CoreError, IndexError):
+    """The strategy named, by POSITION, an entry after the last event of a
+    history read that ends in the delivered PAST (cut by `until_ns`, by a
+    slice, or read backwards): what lies there was delivered but is outside
+    the answer. Not a `LookAheadError` -- nothing in the future was asked
+    for (i0-r5-05) -- but still refused instead of answered with a silently
+    shortened or empty result. An `IndexError`, so code that expects one
+    still gets one."""
 
 
 class HistoryTruncatedError(CoreError, LookupError):

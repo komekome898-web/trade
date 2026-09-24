@@ -38,6 +38,35 @@ Rules for adapter authors (they are what the critic checks):
     `stated_rules.py` before any run and the runner applies them to the
     scene's own input (round r5-1, critic i0-r4-05). An adapter output with
     `stated_rule` or `predicted` fails `test_battery_item0.py`.
+  * What a scene MEASURES must come from the target's own code (round r6-1,
+    critic i0-r5-02 / i0-r5-03 / i0-r5-04). The adapter and the scene's
+    strategy may write only (1) calls to the target's public means, (2) the
+    dummy implementations a scene hands to a socket the target publishes for
+    user implementations (P0-7's models and account, the condition that
+    wakes a timer), and (3) the mapping of what the target returned into the
+    scene's words (a class name to a `kind`, a status to a notice word).
+    They never carry an event in a type the adapter made (a subclass of the
+    target's base class, the base class with fields added, a dict or a
+    function marked with a kind), never answer with values the strategy kept
+    itself or a conversion the adapter called itself. A target without the
+    type / the means is "not_supported", with what was checked.
+  * Provenance (round r6-1): `SceneResult.provenance` carries where the
+    measured thing came from, and `run_battery.py` checks it BEFORE grading
+    (a failed check makes the scene "error" = 結果なし, with the reason):
+      - scenes that list the events the strategy received
+        (`CARRIER_SCENES` in run_battery.py): {"carriers": [...]} with, for
+        each received event, `common.carrier(obj)` of the object the
+        strategy received (made from the object, not written by hand); a
+        target that marks types with its own tag uses `common.carrier_tag`;
+        a compiled tool's driver names the tool type its match arm used.
+        For p5-hand-over-order: one list per run.
+      - p2-iso-*: {"reader": common.qualname(<the target's function that
+        read the ISO string>)}.
+      - p4-visible-at-step: {"reads": ...} from `common.Reads` (each read
+        made at the probe call through the target's public means).
+      - p4-future-read-attempt: every attempt carries `shape` and `naming`
+        from `common.try_position_namings` / `try_time_namings` (the
+        namings are fixed in scenes.py, `NAMING_SHAPES`).
 
 The new implementation's adapter (written each round by the materials
 person, not by the scene keeper) lives at `adapters/new_impl.py` and must
@@ -70,6 +99,7 @@ class SceneResult:
     status: Status
     output: Any = None
     detail: str = ""
+    provenance: Any = None  # where the measured thing came from; checked by run_battery.py before grading
 
 
 def method_name(scene_id: str) -> str:
@@ -108,5 +138,5 @@ def not_supported(what_was_tried: str, output: Any = None) -> SceneResult:
     return SceneResult("not_supported", output=output, detail=what_was_tried)
 
 
-def ok(output: Any, detail: str = "") -> SceneResult:
-    return SceneResult("ok", output=output, detail=detail)
+def ok(output: Any, detail: str = "", provenance: Any = None) -> SceneResult:
+    return SceneResult("ok", output=output, detail=detail, provenance=provenance)

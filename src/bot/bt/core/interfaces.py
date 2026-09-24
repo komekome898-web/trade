@@ -40,57 +40,96 @@ the order.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional, Protocol, Sequence, Union, runtime_checkable
+from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 
 from .api import CancelRequest, OrderRequest
+from .errors import VenueProtocolError
 from .events import Event
 from .time import validate_nanos
+from .values import as_float, as_text
 
 
 # --- venue reports -----------------------------------------------------------
+# A report crosses the venue -> strategy path (the engine turns it into a
+# notice), so it is a value (values.py): every field is made when the report
+# is made, as the built-in type itself, and the classes are slotted. A
+# field of the wrong type is the fill model's error: VenueProtocolError.
+# Whether a value is allowed (a request kind, a liquidity, a finite
+# positive price) is the engine's check against the order's history
+# (engine.py `_VenueLedger`).
 
-@dataclass(frozen=True)
+def _report_field(make, cls: str, name: str, value: Any) -> Any:
+    try:
+        return make(value, f"{cls}.{name}")
+    except ValueError as exc:
+        raise VenueProtocolError(str(exc)) from None
+
+
+def _make_fields(obj: Any, **makers: Any) -> None:
+    cls = type(obj).__name__
+    for name, make in makers.items():
+        object.__setattr__(obj, name, _report_field(make, cls, name, getattr(obj, name)))
+
+
+@dataclass(frozen=True, slots=True)
 class Ack:
     client_order_id: str
     venue_order_id: str = ""
 
+    def __post_init__(self) -> None:
+        _make_fields(self, client_order_id=as_text, venue_order_id=as_text)
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class Reject:
     client_order_id: str
     reason: str
     request_kind: str = "new"  # "new" | "cancel"
 
+    def __post_init__(self) -> None:
+        _make_fields(self, client_order_id=as_text, reason=as_text, request_kind=as_text)
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class Fill:
     client_order_id: str
     price: float
     size: float
     liquidity: str = "taker"  # "maker" | "taker"
 
+    def __post_init__(self) -> None:
+        _make_fields(self, client_order_id=as_text, price=as_float, size=as_float, liquidity=as_text)
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class Canceled:
     client_order_id: str
     reason: str = "canceled"  # "canceled" | "expired" | "ioc_remainder" | ...
 
+    def __post_init__(self) -> None:
+        _make_fields(self, client_order_id=as_text, reason=as_text)
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class StateUnknown:
     client_order_id: str
     detail: str = ""
     request_kind: str = "new"
 
+    def __post_init__(self) -> None:
+        _make_fields(self, client_order_id=as_text, detail=as_text, request_kind=as_text)
+
 
 VenueReport = Union[Ack, Reject, Fill, Canceled, StateUnknown]
+REPORT_CLASSES: tuple[type, ...] = (Ack, Reject, Fill, Canceled, StateUnknown)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FillNotice:
     """What the cost model and the account see for one fill. `fee` is 0.0
     when handed to the cost model and carries the cost model's answer when
-    handed to the account."""
+    handed to the account. Made by the engine from a report; a value like
+    the report (values.py)."""
 
     client_order_id: str
     price: float
@@ -104,6 +143,8 @@ class FillNotice:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "venue_time_ns", int(validate_nanos(self.venue_time_ns)))
+        _make_fields(self, client_order_id=as_text, price=as_float, size=as_float, side=as_text,
+                     liquidity=as_text, fee=as_float)
 
 
 # --- sockets -----------------------------------------------------------------

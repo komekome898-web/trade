@@ -29,7 +29,12 @@ close (a bar covers [start, close) with a positive length), so an
 open-stamped bar (start == close) is refused.
 
 Every event is frozen and validated at construction; `to_dict()` returns a
-JSON-friendly copy of every field (tuples become lists).
+JSON-friendly copy of every field (tuples become lists). An event crosses a
+path (source -> venue and strategy, venue -> strategy), so it is a value
+(values.py): every field is made by a values.py function and holds the
+built-in type itself (`int`, `float`, `str`, tuples of them) -- never an
+object or a subclass instance of the sender's -- and the classes are
+slotted, so nothing can be attached to an event after it is made.
 """
 from __future__ import annotations
 
@@ -41,6 +46,7 @@ from typing import Any, ClassVar, Optional
 
 from .errors import EventValidationError
 from .time import Nanos, validate_nanos
+from .values import as_choice, as_float, as_int, as_text
 
 
 class EventType(Enum):
@@ -90,13 +96,18 @@ REQUEST_KINDS = ("new", "cancel")
 CANCELED_ANSWERS = ("cancel", "new", "venue")
 
 
-def _finite(name: str, value: Any) -> float:
-    if isinstance(value, bool):
-        raise EventValidationError(f"{name} must be a number, got bool")
+def _value(make, name: str, value: Any, *args: Any) -> Any:
+    """One field made by a values.py function; its refusal is an
+    EventValidationError."""
     try:
-        f = float(value)
-    except (TypeError, ValueError) as exc:
-        raise EventValidationError(f"{name} must be a number, got {value!r}") from exc
+        return make(value, name, *args)
+    except ValueError as exc:
+        raise EventValidationError(str(exc)) from None
+
+
+def _finite(name: str, value: Any) -> float:
+    # what float() accepts (a numeric string included), as a float itself
+    f = _value(lambda v, n: as_float(v, n, numbers_only=False), name, value)
     if not math.isfinite(f):
         raise EventValidationError(f"{name} must be finite, got {value!r}")
     return f
@@ -117,27 +128,26 @@ def _non_negative(name: str, value: Any) -> float:
 
 
 def _choice(name: str, value: Any, allowed: tuple) -> str:
-    if value not in allowed:
-        raise EventValidationError(f"{name} must be one of {allowed}, got {value!r}")
-    return value
+    """Made a str first, then compared (values.as_choice): an object that
+    answers `==` as it likes is refused before any comparison runs."""
+    return _value(as_choice, name, value, allowed)
 
 
 def _str(name: str, value: Any) -> str:
-    """A text field of a notice. Text only: a notice crosses the venue ->
-    strategy path, so it may not carry state the venue could still change
-    after sending it (values.py, i0-r4-02)."""
-    if not isinstance(value, str):
-        raise EventValidationError(f"{name} must be a str, got {type(value).__name__}")
-    return value
+    """A text field. Text only: it crosses a path, so it may not carry
+    state or code the sender could still change or run after sending it
+    (values.py, i0-r4-02, i0-r5-01)."""
+    return _value(as_text, name, value)
 
 
 def _nonempty_str(name: str, value: Any) -> str:
-    if not isinstance(value, str) or not value:
+    text = _str(name, value)
+    if not text:
         raise EventValidationError(f"{name} must be a non-empty str, got {value!r}")
-    return value
+    return text
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class Event:
     """Base class. Only subclasses are instantiated."""
 
@@ -159,8 +169,7 @@ class Event:
                 f"event cannot be received before it happened"
             )
         object.__setattr__(self, "exchange_time_ns", exch)
-        if isinstance(self.seq, bool) or not isinstance(self.seq, int):
-            raise EventValidationError(f"seq must be int, got {type(self.seq).__name__}")
+        object.__setattr__(self, "seq", _value(as_int, "seq", self.seq))
         self._validate()
 
     def _validate(self) -> None:  # overridden per type
@@ -183,7 +192,7 @@ def _plain(value: Any) -> Any:
     return value
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class TradeEvent(Event):
     price: float
     size: float
@@ -194,9 +203,8 @@ class TradeEvent(Event):
     def _validate(self) -> None:
         object.__setattr__(self, "price", _positive("price", self.price))
         object.__setattr__(self, "size", _positive("size", self.size))
-        _choice("side", self.side, TRADE_SIDES)
-        if not isinstance(self.trade_id, str):
-            raise EventValidationError("trade_id must be str")
+        object.__setattr__(self, "side", _choice("side", self.side, TRADE_SIDES))
+        object.__setattr__(self, "trade_id", _str("trade_id", self.trade_id))
 
 
 def _levels(name: str, raw: Any, descending: bool) -> tuple[tuple[float, float], ...]:
@@ -220,7 +228,7 @@ def _levels(name: str, raw: Any, descending: bool) -> tuple[tuple[float, float],
     return tuple(out)
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class BookSnapshotEvent(Event):
     bids: tuple[tuple[float, float], ...]  # (price, size), best (highest) first
     asks: tuple[tuple[float, float], ...]  # (price, size), best (lowest) first
@@ -231,7 +239,7 @@ class BookSnapshotEvent(Event):
         object.__setattr__(self, "asks", _levels("asks", self.asks, descending=False))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class BookDeltaEvent(Event):
     side: str  # "bid" | "ask"
     price: float
@@ -239,12 +247,12 @@ class BookDeltaEvent(Event):
     EVENT_TYPE: ClassVar[EventType] = EventType.BOOK_DELTA
 
     def _validate(self) -> None:
-        _choice("side", self.side, BOOK_SIDES)
+        object.__setattr__(self, "side", _choice("side", self.side, BOOK_SIDES))
         object.__setattr__(self, "price", _positive("price", self.price))
         object.__setattr__(self, "size", _non_negative("size", self.size))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class BarEvent(Event):
     open: float
     high: float
@@ -281,7 +289,7 @@ class BarEvent(Event):
             object.__setattr__(self, "start_time_ns", start)
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class FundingEvent(Event):
     rate: float  # fraction for this settlement (may be negative)
     mark_price: Optional[float] = None
@@ -293,7 +301,7 @@ class FundingEvent(Event):
             object.__setattr__(self, "mark_price", _positive("mark_price", self.mark_price))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class LiquidationEvent(Event):
     """A forced-liquidation order printed by the venue. `side` is the side of
     the liquidation ORDER ("sell" = a long position was liquidated), matching
@@ -308,31 +316,30 @@ class LiquidationEvent(Event):
     def _validate(self) -> None:
         object.__setattr__(self, "price", _positive("price", self.price))
         object.__setattr__(self, "size", _positive("size", self.size))
-        _choice("side", self.side, ORDER_SIDES)
+        object.__setattr__(self, "side", _choice("side", self.side, ORDER_SIDES))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class ClockEvent(Event):
     tag: str = ""  # set by StrategyContext.set_timer; "" for source heartbeats
     EVENT_TYPE: ClassVar[EventType] = EventType.CLOCK
 
     def _validate(self) -> None:
-        if not isinstance(self.tag, str):
-            raise EventValidationError("tag must be str")
+        object.__setattr__(self, "tag", _str("tag", self.tag))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class OrderAckEvent(Event):
     client_order_id: str
     venue_order_id: str = ""
     EVENT_TYPE: ClassVar[EventType] = EventType.ORDER_ACK
 
     def _validate(self) -> None:
-        _nonempty_str("client_order_id", self.client_order_id)
-        _str("venue_order_id", self.venue_order_id)
+        object.__setattr__(self, "client_order_id", _nonempty_str("client_order_id", self.client_order_id))
+        object.__setattr__(self, "venue_order_id", _str("venue_order_id", self.venue_order_id))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class OrderRejectEvent(Event):
     client_order_id: str
     reason: str
@@ -340,12 +347,12 @@ class OrderRejectEvent(Event):
     EVENT_TYPE: ClassVar[EventType] = EventType.ORDER_REJECT
 
     def _validate(self) -> None:
-        _nonempty_str("client_order_id", self.client_order_id)
-        _str("reason", self.reason)
-        _choice("request_kind", self.request_kind, REQUEST_KINDS)
+        object.__setattr__(self, "client_order_id", _nonempty_str("client_order_id", self.client_order_id))
+        object.__setattr__(self, "reason", _str("reason", self.reason))
+        object.__setattr__(self, "request_kind", _choice("request_kind", self.request_kind, REQUEST_KINDS))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class OrderFillEvent(Event):
     client_order_id: str
     price: float
@@ -356,15 +363,15 @@ class OrderFillEvent(Event):
     EVENT_TYPE: ClassVar[EventType] = EventType.ORDER_FILL
 
     def _validate(self) -> None:
-        _nonempty_str("client_order_id", self.client_order_id)
+        object.__setattr__(self, "client_order_id", _nonempty_str("client_order_id", self.client_order_id))
         object.__setattr__(self, "price", _positive("price", self.price))
         object.__setattr__(self, "size", _positive("size", self.size))
-        _choice("side", self.side, ORDER_SIDES + ("",))
-        _choice("liquidity", self.liquidity, LIQUIDITY)
+        object.__setattr__(self, "side", _choice("side", self.side, ORDER_SIDES + ("",)))
+        object.__setattr__(self, "liquidity", _choice("liquidity", self.liquidity, LIQUIDITY))
         object.__setattr__(self, "fee", _finite("fee", self.fee))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class OrderCanceledEvent(Event):
     client_order_id: str
     reason: str = "canceled"
@@ -375,12 +382,12 @@ class OrderCanceledEvent(Event):
     EVENT_TYPE: ClassVar[EventType] = EventType.ORDER_CANCELED
 
     def _validate(self) -> None:
-        _nonempty_str("client_order_id", self.client_order_id)
-        _str("reason", self.reason)
-        _choice("answers", self.answers, CANCELED_ANSWERS)
+        object.__setattr__(self, "client_order_id", _nonempty_str("client_order_id", self.client_order_id))
+        object.__setattr__(self, "reason", _str("reason", self.reason))
+        object.__setattr__(self, "answers", _choice("answers", self.answers, CANCELED_ANSWERS))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=True, slots=True)
 class OrderStateUnknownEvent(Event):
     """The venue's answer to a request was ambiguous (timeout, dropped
     connection). The order is held as STATE_UNKNOWN in the strategy's view
@@ -393,9 +400,9 @@ class OrderStateUnknownEvent(Event):
     EVENT_TYPE: ClassVar[EventType] = EventType.ORDER_STATE_UNKNOWN
 
     def _validate(self) -> None:
-        _nonempty_str("client_order_id", self.client_order_id)
-        _str("detail", self.detail)
-        _choice("request_kind", self.request_kind, REQUEST_KINDS)
+        object.__setattr__(self, "client_order_id", _nonempty_str("client_order_id", self.client_order_id))
+        object.__setattr__(self, "detail", _str("detail", self.detail))
+        object.__setattr__(self, "request_kind", _choice("request_kind", self.request_kind, REQUEST_KINDS))
 
 
 ALL_EVENT_CLASSES: tuple[type[Event], ...] = (

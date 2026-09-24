@@ -186,21 +186,37 @@ class FreqtradeAdapter(Adapter):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])) + "。" + _net())
 
     def _seq(self, bars):
-        log = []
-        run(bars, {"loop": lambda s, t: log.append(["bar", _ns(t)])})
-        return log
+        log, car = [], []
+
+        def loop(s, t):
+            log.append(["bar", _ns(t)])
+            car.append(C.carrier(s.dp.get_analyzed_dataframe(PAIR, "1d")[0]))  # the bars reach the strategy as this read
+
+        run(bars, {"loop": loop})
+        return log, car
 
     def scene_p1_one_call_per_event(self, sc):
-        return ok({"sequence": self._seq(C.events(sc))}, "日足 5 本。bot_loop_start(current_time) の各回を記録(足ごとに 1 回呼ぶ唯一の口)。"
-                  "Freqtrade は最初の足を次の足の信号の元にだけ使い、current_time は処理する足の始まり。" + _net())
+        log, car = self._seq(C.events(sc))
+        return ok({"sequence": log}, "日足 5 本。bot_loop_start(current_time) の各回を記録(足ごとに 1 回呼ぶ唯一の口)。"
+                  "Freqtrade は最初の足を次の足の信号の元にだけ使い、current_time は処理する足の始まり。" + _net(), {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])) + "。" + _net())
 
     # ---------------- P0-2
     def _iso(self, sc):
-        return ok(int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value),
-                  "Freqtrade の足の date は pandas の datetime64[ns, UTC]。pd.Timestamp(iso).tz_convert('UTC').value")
+        """The ISO string handed as it is to Freqtrade's own conversion of candle rows into its DataFrame
+        (`freqtrade.data.converter.ohlcv_to_dataframe`, what its data handlers call)."""
+        from freqtrade.data.converter import ohlcv_to_dataframe
+        try:
+            df = ohlcv_to_dataframe([[sc.input["iso"], 1.0, 1.0, 1.0, 1.0, 1.0]], "1d", PAIR, fill_missing=False, drop_incomplete=False)
+            v = df["date"].iloc[0]
+        except Exception as exc:  # noqa: BLE001
+            return not_supported("Freqtrade が足の行を DataFrame にする変換(freqtrade.data.converter.ohlcv_to_dataframe、date はミリ秒の整数を受ける)に "
+                                 f"ISO の文字列の行を渡した -> {type(exc).__name__}: {str(exc)[:160]}。{_net()}")
+        t = pd.Timestamp(v)
+        return ok(int((t if t.tzinfo is None else t.tz_convert("UTC")).value),
+                  f"ISO の文字列の行を ohlcv_to_dataframe に渡し、作られた date {v!r}。{_net()}", {"reader": C.qualname(ohlcv_to_dataframe)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
@@ -208,10 +224,11 @@ class FreqtradeAdapter(Adapter):
         evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
         try:
-            log = self._seq(evs)
+            log, car = self._seq(evs)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"ナノ秒の時刻の足を backtest_one_strategy に渡した -> {type(exc).__name__}: {str(exc)[:200]}。{_net()}")
-        return ok({"observed_ts_ns": [t for _, t in log]}, f"足で渡した。bot_loop_start の current_time(時間足の刻みで作られる)。{_net()}")
+        return ok({"observed_ts_ns": [t for _, t in log]}, f"足で渡した。bot_loop_start の current_time(時間足の刻みで作られる)。{_net()}",
+                  {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -220,16 +237,18 @@ class FreqtradeAdapter(Adapter):
         e = C.events(sc)[0]
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)) + "。" + _net())
-        out, log = {}, []
+        out, log, car = {}, [], []
 
         def loop(s, t):
             log.append(["bar", _ns(t)])
             df, _ = s.dp.get_analyzed_dataframe(PAIR, "1d")
+            car.append(C.carrier(df))
             if len(df):
                 out.update({k: float(df.iloc[-1][k]) for k in ("open", "high", "low", "close", "volume")})
 
         run([e], {"loop": loop})
-        return ok({"sequence": log, "fields": out}, "日足 1 本。bot_loop_start の中で dp.get_analyzed_dataframe の最後の行を読んだ。" + _net())
+        return ok({"sequence": log, "fields": out}, "日足 1 本。bot_loop_start の中で dp.get_analyzed_dataframe の最後の行を読んだ。" + _net(),
+                  {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -288,19 +307,19 @@ class FreqtradeAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out, seen = {}, []
+        reads, seen = C.Reads(), []
 
         def loop(s, t):
             df, _ = s.dp.get_analyzed_dataframe(PAIR, "1d")
-            seen.append((_ns(t), [float(x) for x in df["close"]] if len(df) else []))
-            if _ns(t) == probe:
-                vis = [float(x) for x in df["close"]] if len(df) else []
-                out.update({"visible_count": len(vis), "max_visible_close": max(vis) if vis else None})
+            seen.append(_ns(t))
+            if _ns(t) == probe and not reads.items:
+                reads.read("dp.get_analyzed_dataframe(pair, '1d') の close", lambda: [float(x) for x in df["close"]] if len(df) else [])
 
         run(C.events(sc), {"loop": loop})
-        if not out:  # no_probe_call
-            return not_supported(f"T0 + 4 日の呼び出しが無かった。呼び出しと見えた終値 {seen}。{_net()}")
-        return ok(out, f"bot_loop_start の中で dp.get_analyzed_dataframe の close を数えた。各回 {seen}。{_net()}")
+        if not reads.items:  # no_probe_call
+            return not_supported(f"T0 + 4 日の呼び出しが無かった。呼ばれた時刻 {seen}。{_net()}")
+        return ok(reads.output(), f"bot_loop_start の中で dp.get_analyzed_dataframe の close を読んだ。呼ばれた時刻 {seen}。{_net()}",
+                  reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported("足は 1 本に時刻 1 つ(date)で、受け取れる時刻を別に持たせる口が無い。試したこと: recv の列を足した DataFrame -> "
@@ -309,7 +328,6 @@ class FreqtradeAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        fut = pd.Timestamp(sc.input["future_ts_ns"], unit="ns", tz="UTC")
         att, keep = C.Attempts(), {}
 
         def ind(s, df, md):
@@ -320,9 +338,13 @@ class FreqtradeAdapter(Adapter):
             if _ns(t) != probe or att.items:
                 return
             adf = s.dp.get_analyzed_dataframe(PAIR, "1d")[0]
-            att.run("dp.get_analyzed_dataframe の close の .iloc[len](最新の次の位置)", "position", lambda: float(adf["close"].iloc[len(adf)]))
-            att.run("dp.get_analyzed_dataframe の date == 5 本目の日 の close", "time",
-                    lambda: [float(x) for x in adf.loc[adf["date"] == fut, "close"]])
+            # namings: the scene's fixed list; a bar closing at t is the candle dated t - 1 day
+            C.try_position_namings(att, "dp.get_analyzed_dataframe の close の .iloc[位置]", lambda: adf["close"].iloc, len(adf))
+            ts = (lambda ns: pd.Timestamp(int(ns) - DAY, unit="ns", tz="UTC"))
+            C.try_time_namings(att, "dp.get_analyzed_dataframe の date == 時刻 の close", "time_at",
+                               lambda t: [float(x) for x in adf.loc[adf["date"] == t, "close"]], sc, ts)
+            C.try_time_namings(att, "dp.get_analyzed_dataframe の 始 <= date <= 終 の close", "time_range",
+                               lambda a, b: [float(x) for x in adf.loc[(adf["date"] >= a) & (adf["date"] <= b), "close"]], sc, ts)
             att.run("dp.get_analyzed_dataframe の close(全部)", "other", lambda: [float(x) for x in adf["close"]])
             att.run("dp.get_pair_dataframe の close(全部)", "other", lambda: [float(x) for x in s.dp.get_pair_dataframe(PAIR, "1d")["close"]])
             att.run("populate_indicators に渡された DataFrame の close(全部)", "other", lambda: [float(x) for x in keep["df"]["close"]])
@@ -338,10 +360,11 @@ class FreqtradeAdapter(Adapter):
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
     def scene_p5_same_stream_order(self, sc):
-        seen = []
+        seen, seen_car = [], []
 
         def loop(s, t):
             df, _ = s.dp.get_analyzed_dataframe(PAIR, "1d")
+            seen_car.append(C.carrier(df))
             seen.append((_ns(t), [float(x) for x in df["close"]] if len(df) else []))
 
         try:
@@ -349,7 +372,8 @@ class FreqtradeAdapter(Adapter):
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ時刻の 3 本を渡した -> {type(exc).__name__}: {str(exc)[:200]}。{_net()}")
         prices = seen[-1][1] if seen else []
-        return ok({"prices": prices}, f"同じ時刻の 3 本(終値 101・99・100)を渡した。各回の dp.get_analyzed_dataframe の close {seen}。{_net()}")
+        return ok({"prices": prices}, f"同じ時刻の 3 本(終値 101・99・100)を渡した。各回の dp.get_analyzed_dataframe の close {seen}。{_net()}",
+                  {"carriers": [seen_car[-1]] * len(prices) if seen else []})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

@@ -6,7 +6,8 @@ Modules: time (int64 UTC ns), events (event types), ordering (the FIFO
 channels and the timers, the total order of processing and the merge of input streams), api (strategy context
 and order API), history (the strategy's delivered history and its one
 retention rule), interfaces (the four sockets), engine (the queue),
-contract (machine-readable guarantees), testing (test doubles, not venue
+values (what crosses a path: every field a built-in value), contract
+(machine-readable guarantees), testing (test doubles, not venue
 models). Tests live in tests/bt/item_0/.
 """
 from .api import (
@@ -18,7 +19,7 @@ from .api import (
     OrderView,
     StrategyContext,
 )
-from .contract import CORE_CONTRACT, CORE_VERSION
+from .contract import CORE_CONTRACT, CORE_VERSION, PATH_CARRIERS
 from .engine import SINGLE_STREAM_NAME, CoreEngine, EngineResult
 from .errors import (
     AccountSocketError,
@@ -34,6 +35,7 @@ from .errors import (
     LookAheadError,
     MissingCostModelError,
     OrderApiError,
+    OutsideAnswerError,
     SourceEventTypeError,
     StaleContextError,
     TimestampUnitError,
@@ -88,7 +90,7 @@ from .ordering import (
 )
 from .strategy import Strategy
 from .time import TIME_CONTRACT, Nanos, nanos_to_iso, to_nanos, validate_nanos
-from .values import PLAIN_DATA_RULE, FrozenDict, FrozenList, FrozenSet
+from .values import FIELD_RULE, PLAIN_DATA_RULE, FrozenDict, FrozenList, FrozenSet
 from .window import POSITION_RULE, DeliveredEvents
 
 import types as _types

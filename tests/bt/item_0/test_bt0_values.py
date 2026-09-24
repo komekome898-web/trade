@@ -155,13 +155,23 @@ def test_extra_is_immutable_and_the_request_is_hashable():
     assert type(req.extra_dict()["a"]) is list and type(req.extra_dict()["b"]["k"]) is set
 
 
-class _Color(enum.Enum):
+class _Size(enum.IntEnum):
+    ONE = 1
+
+
+class _Word(enum.StrEnum):
     RED = "red"
 
 
+class _Ratio(float):
+    pass
+
+
 def _random_plain(rng: random.Random, depth: int = 0):
+    # IntEnum / StrEnum members and a float subclass are stored as the
+    # built-in value they hold (values.py `scalar`); they compare equal
     scalars = [None, True, rng.randrange(-10**20, 10**20), rng.random() * 1e6, "s" * rng.randrange(0, 4),
-               b"b", Decimal("1.25"), Fraction(1, 3), complex(1, 2), _Color.RED]
+               b"b", Decimal("1.25"), Fraction(1, 3), complex(1, 2), _Size.ONE, _Word.RED, _Ratio(0.5)]
     if depth >= 3 or rng.random() < 0.35:
         return rng.choice(scalars)
     kind = rng.choice(["list", "tuple", "dict", "set", "frozenset"])
@@ -192,6 +202,14 @@ def _mutate_somewhere(value, rng) -> bool:
     return False
 
 
+def _builtin_only(value) -> bool:
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return all(_builtin_only(v) for v in value)
+    if isinstance(value, dict):
+        return all(_builtin_only(k) and _builtin_only(v) for k, v in value.items())
+    return type(value) in (type(None), bool, int, float, complex, str, bytes, Decimal, Fraction)
+
+
 def test_plain_data_round_trips_and_later_changes_do_not_reach_the_request_seeded():
     rng = random.Random(20260924)
     changed = 0
@@ -199,6 +217,7 @@ def test_plain_data_round_trips_and_later_changes_do_not_reach_the_request_seede
         data = _random_plain(rng)
         req = OrderRequest("sell", "limit", 1.0, price=2.0, extra=(("v", data),))
         assert req.extra_dict() == {"v": data}
+        assert _builtin_only(req.extra_dict())  # no object of the sender's class is kept
         hash(req)
         import copy
         before = copy.deepcopy(data)
@@ -209,12 +228,18 @@ def test_plain_data_round_trips_and_later_changes_do_not_reach_the_request_seede
     assert changed > 300
 
 
+class _Color(enum.Enum):
+    RED = "red"
+
+
 @pytest.mark.parametrize("value", [
     lambda: 1,                      # code: runs later with the sender's state
     object(),                       # an arbitrary object
     (x for x in range(3)),          # a generator
     bytearray(b"x"),                # a changeable scalar
     [1, object()],                  # nested
+    _Color.RED,                     # a plain Enum member: an object of the sender's class (i0-r5-01)
+    {"k": [_Color.RED]},            # ... nested
 ])
 def test_values_that_are_not_plain_data_are_refused_when_the_request_is_made(value):
     with pytest.raises(OrderApiError, match="not plain data"):

@@ -48,7 +48,18 @@ class _Venue:
         self.emitted: list[int] = []
         self.market_seen: list[float] = []  # price of each market event, in venue order
         self.requests_seen: list[int] = []  # send number of each request, in venue order
-        self.send_no: dict[int, int] = {}  # id(request object) -> send number
+        # id(request object as the ENGINE carries it) -> send number. Round 6:
+        # the venue receives an object of its own, not the one the strategy
+        # made (api.py fresh_request), so the number is given where the
+        # engine sends it: the latency model is asked once per request, in
+        # send order (engine.py `_drain`), with the very object that later
+        # reaches the venue.
+        self.send_no: dict[int, int] = {}
+        self.sends_numbered = 0
+
+    def number(self, request) -> None:
+        self.sends_numbered += 1
+        self.send_no[id(request)] = self.sends_numbered
 
     def _n(self) -> int:
         self.emitted.append(len(self.emitted) + 1)
@@ -80,8 +91,8 @@ class _Venue:
 
 
 class _Latency:
-    def __init__(self, rng: random.Random) -> None:
-        self.rng = rng
+    def __init__(self, rng: random.Random, venue: _Venue) -> None:
+        self.rng, self.venue = rng, venue
 
     def _d(self) -> int:
         return self.rng.choice([0, 0, 1, 2, 5]) * MS + self.rng.randrange(3)
@@ -90,9 +101,11 @@ class _Latency:
         return self._d()
 
     def order_delay_ns(self, order, sent_time_ns):
+        self.venue.number(order)
         return self._d()
 
     def cancel_delay_ns(self, request, sent_time_ns):
+        self.venue.number(request)
         return self._d()
 
     def notice_delay_ns(self, report, venue_time_ns):
@@ -115,7 +128,6 @@ class _Trader(Strategy):
     def _send_no(self, obj) -> None:
         self.sent += 1
         self.keep.append(obj)
-        self.venue.send_no[id(obj)] = self.sent
 
     def on_event(self, event, ctx) -> None:
         t = event.EVENT_TYPE
@@ -182,7 +194,8 @@ def _run(seed: int) -> dict:
     streams = _streams(rng)
     venue = _Venue(random.Random(seed + 1))
     trader = _Trader(random.Random(seed + 2), venue)
-    CoreEngine(trader, streams, venue, _Latency(random.Random(seed + 3)), NullCostModel()).run()
+    CoreEngine(trader, streams, venue, _Latency(random.Random(seed + 3), venue), NullCostModel()).run()
+    assert venue.sends_numbered == trader.sent, seed  # every request was sent, once, in the trader's order
 
     # requests: the venue sees all but the cancels the engine answered
     # itself (order no longer live there); those are cancels, one per answer

@@ -143,11 +143,12 @@ class NewImplAdapter(Adapter):
 
         class _S(core.Strategy):
             def __init__(self) -> None:
-                self.state: dict = {"n": 0, "seq": [], "notices": [], "clock": [], "fills": []}
+                self.state: dict = {"n": 0, "seq": [], "carriers": [], "notices": [], "clock": [], "fills": []}
 
             def on_event(self, event, ctx) -> None:
                 st = self.state
                 st["seq"].append([_kind(event), int(event.exchange_time_ns)])
+                st["carriers"].append(C.carrier(event))
                 if event.EVENT_TYPE in market:
                     st["n"] += 1
                 word = _NOTICE_WORD.get(event.EVENT_TYPE.value)
@@ -261,28 +262,39 @@ class NewImplAdapter(Adapter):
     def scene_p1_merge_by_time(self, sc):
         st, _ = self._run(lambda e, c, s: None, self._streams(sc))
         return ok({"sequence": st["seq"]}, "3 つの入力を名前つきの流れ(辞書、渡した順に作成)で CoreEngine に渡し、"
-                  "on_event の各呼び出しで(型, exchange_time_ns)を記録")
+                  "on_event の各呼び出しで(型, exchange_time_ns)を記録", {"carriers": st["carriers"]})
 
     def scene_p1_one_call_per_event(self, sc):
         st, _ = self._run(lambda e, c, s: None, self._events(C.events(sc)))
-        return ok({"sequence": st["seq"]}, "足 5 本を 1 本の入力で渡し、on_event の各呼び出しで(型, exchange_time_ns)を記録")
+        return ok({"sequence": st["seq"]}, "足 5 本を 1 本の入力で渡し、on_event の各呼び出しで(型, exchange_time_ns)を記録",
+                  {"carriers": st["carriers"]})
 
     def scene_p1_typed_events(self, sc):
         st, _ = self._run(lambda e, c, s: None, self._events(C.events(sc)))
-        return ok({"sequence": st["seq"]}, "足と約定を 1 本の入力で渡し、戦略が event.EVENT_TYPE で型を判別して記録")
+        return ok({"sequence": st["seq"]}, "足と約定を 1 本の入力で渡し、戦略が event.EVENT_TYPE で型を判別して記録",
+                  {"carriers": st["carriers"]})
 
     # ---------------- P0-2
     def scene_p2_iso_utc(self, sc):
-        return ok(int(self.core.to_nanos(sc.input["iso"], "iso")), "core.to_nanos(iso, 'iso')")
+        return ok(int(self.core.to_nanos(sc.input["iso"], "iso")), "core.to_nanos(iso, 'iso')",
+                  {"reader": C.qualname(self.core.to_nanos)})
 
     def scene_p2_iso_offset(self, sc):
-        return ok(int(self.core.to_nanos(sc.input["iso"], "iso")), "core.to_nanos(iso, 'iso')")
+        return ok(int(self.core.to_nanos(sc.input["iso"], "iso")), "core.to_nanos(iso, 'iso')",
+                  {"reader": C.qualname(self.core.to_nanos)})
 
     def _ts_scene(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
         seen: list[int] = []
-        self._run(lambda e, c, s: seen.append(int(e.exchange_time_ns)), self._events(evs))
-        return ok({"observed_ts_ns": seen}, "約定(価格 100.0 数量 0.01)で渡し、on_event で event.exchange_time_ns を記録")
+        carriers: list[str] = []
+
+        def fn(e, c, s):
+            seen.append(int(e.exchange_time_ns))
+            carriers.append(C.carrier(e))
+
+        self._run(fn, self._events(evs))
+        return ok({"observed_ts_ns": seen}, "約定(価格 100.0 数量 0.01)で渡し、on_event で event.exchange_time_ns を記録",
+                  {"carriers": carriers})
 
     def scene_p2_event_time_exact(self, sc):
         return self._ts_scene(sc)
@@ -302,14 +314,16 @@ class NewImplAdapter(Adapter):
 
         st, _ = self._run(fn, self._events([d]))
         return ok({"sequence": st["seq"], "fields": got},
-                  f"「{kind}」1 件を渡し、on_event で受け取った事象の型・時刻・中身(欄名は場面の語に読み替え)を記録")
+                  f"「{kind}」1 件を渡し、on_event で受け取った事象の型・時刻・中身(欄名は場面の語に読み替え)を記録",
+                  {"carriers": st["carriers"]})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type_scene
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type_scene
 
     def scene_p3_mixed_one_run(self, sc):
         st, _ = self._run(lambda e, c, s: None, self._events(C.events(sc)))
-        return ok({"sequence": st["seq"]}, "6 種を 1 本の入力で渡し、on_event の各呼び出しで(型, exchange_time_ns)を記録")
+        return ok({"sequence": st["seq"]}, "6 種を 1 本の入力で渡し、on_event の各呼び出しで(型, exchange_time_ns)を記録",
+                  {"carriers": st["carriers"]})
 
     def scene_p3_clock_timer(self, sc):
         at = int(sc.input["timer_at_ns"])
@@ -351,17 +365,16 @@ class NewImplAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         probe = int(sc.input["probe_at_ns"])
-        out: dict = {}
+        reads = C.Reads()
 
         def fn(event, ctx, st):
-            if int(ctx.now_ns) == probe and not out:
-                vis = ctx.visible_events()
-                out.update({"visible_count": len(vis), "max_visible_close": max(float(e.close) for e in vis)})
+            if int(ctx.now_ns) == probe and not reads.items:
+                reads.read("ctx.visible_events() の close", lambda: [e.close for e in ctx.visible_events()])
 
         self._run(fn, self._events(C.events(sc)))
-        if not out:
+        if not reads.items:
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok(out, "T0 + 4 日の呼び出しで ctx.visible_events() の件数と close の最大")
+        return ok(reads.output(), "T0 + 4 日の呼び出しで ctx.visible_events() を読んだ件数と close の最大", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         day = 86_400 * 1_000_000_000
@@ -387,33 +400,21 @@ class NewImplAdapter(Adapter):
     def scene_p4_future_read_attempt(self, sc):
         core = self.core
         probe = int(sc.input["probe_at_ns"])
-        future_ts = int(sc.input["future_ts_ns"])
         att = C.Attempts()
+        close = (lambda e: e.close)
 
         def fn(event, ctx, st):
             if int(ctx.now_ns) != probe or att.items:
                 return
-            att.run("ctx.visible_events(until_ns=5 本目の時刻)", "time",
-                    lambda: [e.close for e in ctx.visible_events(until_ns=future_ts)])
-            att.run("ctx.visible_events(since_ns=5 本目の時刻)", "time",
-                    lambda: [e.close for e in ctx.visible_events(since_ns=future_ts)])
-            att.run("ctx.visible_events()[4](最新の次の位置)", "position", lambda: ctx.visible_events()[4].close)
-            att.run("ctx.visible_events(BAR)[4](最新の次の位置)", "position",
-                    lambda: ctx.visible_events(core.EventType.BAR)[4].close)
-            att.run("ctx.visible_events()[4:5](最新の次の位置だけの区間)", "position",
-                    lambda: [e.close for e in ctx.visible_events()[4:5]])
-            att.run("ctx.visible_events()[3:5](最新と次の位置の区間)", "position",
-                    lambda: [e.close for e in ctx.visible_events()[3:5]])
-            att.run("ctx.visible_events()[4:](最新の次の位置から先の区間)", "position",
-                    lambda: [e.close for e in ctx.visible_events()[4:]])
-            att.run("ctx.visible_events()[4::2](最新の次の位置から先の、歩幅 2 の区間)", "position",
-                    lambda: [e.close for e in ctx.visible_events()[4::2]])
-            att.run("ctx.visible_events()[4:4](最新の次の位置から始まる空の区間)", "position",
-                    lambda: [e.close for e in ctx.visible_events()[4:4]])
-            att.run("ctx.visible_events()[4::-1](最新の次の位置から後ろ向きの区間)", "position",
-                    lambda: [e.close for e in ctx.visible_events()[4::-1]])
-            att.run("ctx.visible_events()[:4:-1](最新の次の位置で止まる後ろ向きの区間)", "position",
-                    lambda: [e.close for e in ctx.visible_events()[:4:-1]])
+            # the namings are the fixed list of the scene (common.try_*_namings); this adapter names the means only
+            C.try_time_namings(att, "ctx.visible_events(until_ns=…)", "time_until",
+                               lambda t: [e.close for e in ctx.visible_events(until_ns=t)], sc)
+            C.try_time_namings(att, "ctx.visible_events(since_ns=…)", "time_since",
+                               lambda t: [e.close for e in ctx.visible_events(since_ns=t)], sc)
+            n = len(ctx.visible_events())
+            C.try_position_namings(att, "ctx.visible_events()", lambda: ctx.visible_events(), n, close)
+            nb = len(ctx.visible_events(core.EventType.BAR))
+            C.try_position_namings(att, "ctx.visible_events(BAR)", lambda: ctx.visible_events(core.EventType.BAR), nb, close)
             att.run("ctx.visible_events(BAR) の全部", "other", lambda: [e.close for e in ctx.visible_events(core.EventType.BAR)])
             att.run("ctx.last(BAR)", "other", lambda: ctx.last(core.EventType.BAR).close)
 
@@ -427,23 +428,33 @@ class NewImplAdapter(Adapter):
     # it into stated_rules.py (by name, ORDERING_RULE["source_merge"]) and the
     # runner applies it (round r5-1, critic i0-r4-05). This adapter only
     # records the delivered order.
-    def _order_of(self, sc, order=None) -> list:
+    def _order_of(self, sc, order=None) -> tuple[list, list]:
         st, _ = self._run(lambda e, c, s: None, self._streams(sc, order))
-        return [[k, t] for k, t in st["seq"]]
+        return [[k, t] for k, t in st["seq"]], list(st["carriers"])
 
     def scene_p5_same_time_twice(self, sc):
-        return ok({"order": self._order_of(sc)},
-                  "4 つの名前つきの流れを渡した順で辞書にして CoreEngine に渡し、戦略に届いた(型, exchange_time_ns)を記録")
+        order, carriers = self._order_of(sc)
+        return ok({"order": order},
+                  "4 つの名前つきの流れを渡した順で辞書にして CoreEngine に渡し、戦略に届いた(型, exchange_time_ns)を記録",
+                  {"carriers": carriers})
 
     def scene_p5_hand_over_order(self, sc):
-        runs = [{"hand_over": list(o), "order": self._order_of(sc, o)} for o in sc.input["hand_over_orders"]]
+        got = [(list(o), *self._order_of(sc, o)) for o in sc.input["hand_over_orders"]]
+        runs = [{"hand_over": h, "order": order} for h, order, _ in got]
         return ok({"form": "multi_input", "runs": runs},
-                  "24 通りの渡す順で名前つきの流れの辞書を作って 24 回走らせ、各回の(型, 時刻)の列を記録")
+                  "24 通りの渡す順で名前つきの流れの辞書を作って 24 回走らせ、各回の(型, 時刻)の列を記録",
+                  {"carriers": [c for _, _, c in got]})
 
     def scene_p5_same_stream_order(self, sc):
         prices: list[float] = []
-        self._run(lambda e, c, s: prices.append(float(e.price)), self._events(C.events(sc)))
-        return ok({"prices": prices}, "同時刻の約定 3 件を 1 本の入力で渡し、on_event で価格を記録")
+        carriers: list[str] = []
+
+        def fn(e, c, s):
+            prices.append(float(e.price))
+            carriers.append(C.carrier(e))
+
+        self._run(fn, self._events(C.events(sc)))
+        return ok({"prices": prices}, "同時刻の約定 3 件を 1 本の入力で渡し、on_event で価格を記録", {"carriers": carriers})
 
     # ---------------- P0-6
     def _place_then_cancel(self, sc):

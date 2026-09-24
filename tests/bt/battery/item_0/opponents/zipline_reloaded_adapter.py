@@ -125,21 +125,47 @@ class ZiplineReloadedAdapter(Adapter):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(e)))
 
     def _seq_run(self, bars):
+        car = []
+
         def h(ctx, data, n):
             ctx.st["log"].append(["bar", _now()])
+            car.append(C.carrier(data))
         st, _ = run(bars, h)
-        return st["log"]
+        return st["log"], car
 
     def scene_p1_one_call_per_event(self, sc):
-        return ok({"sequence": self._seq_run(C.events(sc))}, "日足 5 本を bundle に書き、handle_data の各回に get_datetime() を記録")
+        log, car = self._seq_run(C.events(sc))
+        return ok({"sequence": log}, "日足 5 本を bundle に書き、handle_data の各回に get_datetime() を記録", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
 
     # ---------------- P0-2
     def _iso(self, sc):
-        v = pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value
-        return ok(int(v), "zipline の時刻は pandas.Timestamp(get_datetime の型)。pd.Timestamp(iso).tz_convert('UTC').value")
+        """The ISO string written as it is into the date column of a CSV read by zipline's own csvdir
+        bundle (its reader parses the dates); the value is the asset's start date the reader made of it."""
+        import warnings
+        from zipline.data.bundles import csvdir
+        iso = sc.input["iso"]
+        d = tempfile.mkdtemp(prefix="zl_iso_")
+        os.makedirs(os.path.join(d, "daily"))
+        Path(d, "daily", "X.csv").write_text(f"date,open,high,low,close,volume,dividend,split\n{iso},1,1,1,1,1,0,1\n", encoding="utf-8")
+        name = "iso" + uuid.uuid4().hex[:8]
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                bundles.register(name, csvdir.csvdir_equities(["daily"], d), calendar_name="24/7",
+                                 start_session=pd.Timestamp("2024-01-01"), end_session=pd.Timestamp("2024-01-01"))
+                bundles.ingest(name, os.environ, show_progress=False)
+                b = bundles.load(name)
+                start = b.asset_finder.retrieve_asset(0).start_date
+                sessions = list(b.equity_daily_bar_reader.sessions)
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"ISO の文字列を date の列に書いた CSV を csvdir の bundle で読んだ -> {type(exc).__name__}: {str(exc)[:200]}")
+        t = pd.Timestamp(start)
+        return ok(int((t if t.tzinfo is None else t.tz_convert("UTC")).value),
+                  f"ISO の文字列を date の列に書いた CSV を zipline の csvdir bundle(csvdir_equities)で ingest し、資産の start_date を読んだ {start!r}"
+                  f"(足の session は日付に丸められる: {sessions})", {"reader": C.qualname(csvdir.csvdir_equities)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
@@ -147,10 +173,11 @@ class ZiplineReloadedAdapter(Adapter):
         evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
         try:
-            log = self._seq_run(evs)
+            log, car = self._seq_run(evs)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"ナノ秒の時刻の足を bundle に書いて走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"observed_ts_ns": [t for _, t in log]}, "足で渡した(日足は暦の日に丸めて書かれる)。handle_data の get_datetime()")
+        return ok({"observed_ts_ns": [t for _, t in log]}, "足で渡した(日足は暦の日に丸めて書かれる)。handle_data の get_datetime()",
+                  {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -160,14 +187,16 @@ class ZiplineReloadedAdapter(Adapter):
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
         out = {}
+        car = []
 
         def h(ctx, data, n):
             ctx.st["log"].append(["bar", _now()])
+            car.append(C.carrier(data))
             out.update({k: float(data.current(ctx.a, k)) for k in ("open", "high", "low", "close")})
             out["volume"] = float(data.current(ctx.a, "volume"))
 
         st, _ = run([e], h)
-        return ok({"sequence": st["log"], "fields": out}, "日足 1 本。data.current で読んだ")
+        return ok({"sequence": st["log"], "fields": out}, "日足 1 本。data.current で読んだ", {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -195,25 +224,27 @@ class ZiplineReloadedAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out, seen, tried = {}, [], []
+        reads = C.Reads()
+        refused = []
 
         def h(ctx, data, n):
-            seen.append(float(data.current(ctx.a, "close")))
-            if _now() == probe:
+            if _now() != probe or reads.items:
+                return
+            # the longest window the tool gives from here (a window reaching before the bundle's first session is refused)
+            for k in range(n + 1, 0, -1):
                 try:
-                    hist = list(data.history(ctx.a, "close", n, "1d"))
-                    tried.append(f"data.history(n={n}) -> {hist}")
+                    vals = [x for x in data.history(ctx.a, "close", k, "1d") if x == x]
                 except Exception as exc:  # noqa: BLE001
-                    tried.append(f"data.history(n={n}) -> {type(exc).__name__}: {str(exc)[:100]}")
-                vis = [x for x in seen if x == x]
-                out["visible_count"] = len(vis)
-                out["max_visible_close"] = max(vis) if vis else None
+                    refused.append(f"bar_count={k}: {type(exc).__name__}")
+                    continue
+                reads.read(f"data.history(asset, 'close', {k}, '1d')(NaN の行は足が無い)", lambda vals=vals: vals)
+                break
 
         run(C.events(sc), h)
-        if not out:  # no_probe_call
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
-        return ok(out, f"戦略が各回に data.current(asset,'close') を読んで貯めた(NaN は数えない)。各回の値 {seen}。{tried}。"
-                  "24/7 の暦では 1 日の終わりと次の日の始まりが同じ 0 時で、data.current は 1 回目に NaN、以後 1 日前の足を返した(実測)")
+        return ok(reads.output(), f"T0 + 4 日の呼び出しに data.history(asset,'close',件数,'1d') を読んだ。断られた件数: {refused}",
+                  reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported("足は暦の日に 1 本で、1 本に時刻は 1 つ。受け取れる時刻を別に持たせる口が無い。試したこと: "
@@ -227,10 +258,12 @@ class ZiplineReloadedAdapter(Adapter):
         def h(ctx, data, n):
             if _now() != probe or att.items:
                 return
-            nxt = pd.Timestamp(int(sc.input["future_ts_ns"]) - DAY, unit="ns").tz_localize("UTC")  # the adapter's session date of bar 5
-            att.run("data_portal.get_spot_value(5 本目の日)", "time", lambda: ctx.data_portal.get_spot_value(ctx.a, "close", nxt, "daily"))
-            att.run("data_portal.get_history_window(終わり = 5 本目の日)", "time",
-                    lambda: list(ctx.data_portal.get_history_window([ctx.a], nxt, 1, "1d", "close", "daily")[ctx.a]))
+            # namings: the scene's fixed list; a bar closing at t is the session of t - 1 day (_session)
+            ts = (lambda ns: pd.Timestamp(int(ns) - DAY, unit="ns").tz_localize("UTC"))
+            C.try_time_namings(att, "data_portal.get_spot_value(asset, 'close', 時刻, 'daily')", "time_at",
+                               lambda t: ctx.data_portal.get_spot_value(ctx.a, "close", t, "daily"), sc, ts)
+            C.try_time_namings(att, "data_portal.get_history_window([asset], 終わり, 6, '1d', 'close', 'daily')", "time_until",
+                               lambda t: list(ctx.data_portal.get_history_window([ctx.a], t, 6, "1d", "close", "daily")[ctx.a]), sc, ts)
             att.run("data.history(asset,'close',6,'1d')(件数)", "other", lambda: list(data.history(ctx.a, "close", 6, "1d")))
             att.run("data.current(asset,'close')", "other", lambda: data.current(ctx.a, "close"))
 
@@ -252,7 +285,7 @@ class ZiplineReloadedAdapter(Adapter):
         except Exception as exc:  # noqa: BLE001
             return not_supported("同じ日に 2 本の足を書く口が無い(日足は 1 日 1 本)。試したこと: 同じ日の 2 本を bundle に書いて走らせた -> "
                                  f"{type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": []}, "同じ日の 2 本を書いて走らせたが例外は出なかった")
+        return ok({"prices": []}, "同じ日の 2 本を書いて走らせたが例外は出なかった", {"carriers": []})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

@@ -35,7 +35,14 @@ Common conventions (they are part of every scene's input):
     being measured);
   * "observed" values are what the target handed to the strategy inside
     its callbacks, recorded by the strategy at that moment -- not values
-    read from a result object after the run.
+    read from a result object after the run;
+  * what a scene measures (an event type, a time conversion, a read of the
+    past, an order) counts only when the target's own code produced it
+    (round r6-1): an event carried in a type the adapter made, a value the
+    strategy kept itself, a conversion the adapter called itself do not
+    count; a target without the type or the means is "not supported".
+    run_battery.py checks where each measured thing came from
+    (`SceneResult.provenance`) before it grades.
 """
 from __future__ import annotations
 
@@ -49,6 +56,19 @@ T0 = 1_700_006_400_000_000_000  # 2023-11-15T00:00:00Z (a Wednesday, midnight UT
 S = 1_000_000_000
 DAY = 86_400 * S
 MS = 1_000_000
+
+# P0-4 p4-future-read-attempt: the ways of naming the 5th bar, fixed here for
+# every target (round r6-1, critic i0-r5-03). `n` is the position right after
+# the newest delivered event, in the target's own way of counting; `fut` the
+# 5th bar's time, `now` the probe time, `first` the first event's time.
+POSITION_NAMINGS = ("[n]", "[n:]", "[n:n+1]", "[n-1:n+1]", "[n::2]", "[n:n]", "[n::-1]", "[:n:-1]")
+TIME_NAMINGS = {
+    "time_at": ("at(fut)",),
+    "time_until": ("until(fut)", "until(fut+1d)"),
+    "time_since": ("since(fut)", "since(now+1ns)"),
+    "time_range": ("range(first,fut)", "range(fut,fut)", "range(now+1ns,fut+1d)"),
+}
+NAMING_SHAPES = {"position": POSITION_NAMINGS, **TIME_NAMINGS, "next_call": ("next",)}
 
 VIEWPOINTS = {
     "P0-1": "核が事象駆動(型を持つ事象を時刻順に流す)であること",
@@ -146,9 +166,13 @@ add(id="p1-typed-events", viewpoint="P0-1", kind="capability",
 ISO_Z = "2024-01-01T00:00:00.123456789Z"
 ISO_JST = "2024-01-01T09:00:00.123456789+09:00"
 ISO_NS = 1_704_067_200_123_456_789
+_ISO_NOTE = ("対象がデータを読むときに使う、対象自身の時刻の変換を使う: ISO の文字列を、対象のデータの入口(対象が読む表・ファイル・"
+             "記録の時刻の欄、または対象が公開する時刻の変換の関数)にそのまま渡し、対象が作った時刻を int ナノ秒で読む。"
+             "adapter が自分で変換(pandas・polars・標準の datetime など、対象の入口を通らない呼び出し)をしない。"
+             "時刻の文字列を受ける入口が無い対象は「対応なし」(何を渡して何が起きたかを書く)")
 add(id="p2-iso-utc", viewpoint="P0-2", kind="value",
     title="ナノ秒つきの ISO 8601(UTC)を対象自身の変換で int64 ナノ秒にした値",
-    input={"iso": ISO_Z, "note": "対象がデータを読むときに使う、対象自身の時刻の変換を使う"},
+    input={"iso": ISO_Z, "note": _ISO_NOTE},
     expected=ISO_NS,
     derivation="1970-01-01 から 2024-01-01 までの日数 = 54 年 × 365 + うるう日 13(1972〜2020)= 19,723 日。"
                "19,723 × 86,400 = 1,704,067,200 秒。小数部 0.123456789 秒 = 123,456,789 ns を足して "
@@ -156,21 +180,21 @@ add(id="p2-iso-utc", viewpoint="P0-2", kind="value",
     measures="小数第 9 位まで丸めずに int64 ナノ秒になるか。")
 add(id="p2-iso-offset", viewpoint="P0-2", kind="value",
     title="時差つき(+09:00)の ISO 8601 を UTC の int64 ナノ秒にした値",
-    input={"iso": ISO_JST, "note": "対象がデータを読むときに使う、対象自身の時刻の変換を使う"},
+    input={"iso": ISO_JST, "note": _ISO_NOTE},
     expected=ISO_NS,
     derivation="+09:00 の 09:00:00.123456789 は UTC の 00:00:00.123456789。よって p2-iso-utc と同じ 1,704,067,200,123,456,789。",
     measures="時差を UTC に直すか(時差を捨てて 9 時間ずれないか)。")
 add(id="p2-event-time-exact", viewpoint="P0-2", kind="value",
     title="ナノ秒の端数をもつ事象の時刻が、戦略に届いた時点で 1 ns も変わらないか",
     input={"events": [{"ts_ns": T0 + 123_456_789}],
-           "note": "型は対象が受ける型を 1 つ選んでよい(足なら OHLC はすべて 100.0、約定なら 価格 100.0 数量 0.01)"},
+           "note": "型は対象が受ける型(対象の配布物の型)を 1 つ選んでよい(足なら OHLC はすべて 100.0、約定なら 価格 100.0 数量 0.01)"},
     expected={"observed_ts_ns": [T0 + 123_456_789]},
     derivation="入力の時刻そのもの(恒等写像)。1,700,000,000,123,456,789 ns。",
     measures="戦略が受け取った事象の時刻を int ナノ秒で読んだ値。")
 add(id="p2-one-ns-apart", viewpoint="P0-2", kind="capability",
     title="1 ns だけ離れた 2 つの事象の時刻を別の値として保てるか",
     input={"events": [{"ts_ns": T0}, {"ts_ns": T0 + 1}],
-           "note": "型は対象が受ける型を 1 つ選んでよい(2 件とも同じ型)"},
+           "note": "型は対象が受ける型(対象の配布物の型)を 1 つ選んでよい(2 件とも同じ型)"},
     expected={"observed_ts_ns": [T0, T0 + 1]},
     derivation="int64 ナノ秒なら T0 と T0+1 は別の整数。float64 は 2^53 を超える整数を 256 刻みでしか表せないので"
                "(1.7e18 の近くの間隔は 256)、秒やナノ秒を float で持つと 2 つは同じ値になる。マイクロ秒止まりの型でも同じ値になる。",
@@ -185,7 +209,9 @@ for _k in ["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidatio
         expected={"sequence": [[_k, _s["ts_ns"]]],
                   "fields": {k: v for k, v in _s.items() if k not in ("kind", "ts_ns")}},
         derivation=f"「{JP[_k]}」1 件だけを入れる。届けられるなら戦略は 1 回呼ばれ、型は「{JP[_k]}」、中身は入力と同じ(恒等写像)。"
-                   "型が無い対象は「対応なし」(明示の拒否)になる。",
+                   "型が無い対象は「対応なし」(明示の拒否、または対象の配布物にその型が無いことを確かめた)になる。"
+                   "型は対象の配布物が持つ型で運ぶ。adapter が作った型(対象の基の class の子・欄を足した基の class・型の印を付けた辞書や関数)で運んだものは、"
+                   "その型を対象が持つことに数えない(固定した要件 P0-3 の測り方「型が無ければ『対応なし』」)。",
         measures=f"戦略が受け取った事象の型・時刻・中身が入力の「{JP[_k]}」と一致するか。")
 
 _MIXED = [dict(SAMPLES[k], ts_ns=T0 + (i + 1) * DAY)
@@ -241,7 +267,8 @@ add(id="p4-visible-at-step", viewpoint="P0-4", kind="value",
     expected={"visible_count": 4, "max_visible_close": 103.0},
     derivation="終値は 100,101,102,103,104,105 と 1 ずつ増え、n 本目の足の時刻は T0 + n 日。T0 + 4 日の呼び出しの時点で届いているのは 1〜4 本目だけなので、"
                "件数 4、最大の終値 103。104 か 105 が見えれば未来が漏れている。",
-    measures="T0 + 4 日の呼び出しの中で、戦略が対象の公開の手段で読んだ過去の件数と最大の終値。")
+    measures="T0 + 4 日の呼び出しの中で、戦略が対象の公開の手段で読んだ過去の件数と最大の終値。戦略が自分で貯めた列は対象の読み出しではないので数えない。"
+             "過去を読む公開の手段が無い対象は「対応なし」(何を呼んで何が起きたかを書く)。読み出しが複数あるときは、読んだ件数が全部同じでなければ一致しない。")
 _E1 = trade(T0 + 1 * DAY, 101.0, recv=T0 + 3 * DAY)
 add(id="p4-received-time", viewpoint="P0-4", kind="value",
     title="取引所の時刻は早いが受け取りが遅い事象を、受け取る前に見せないか",
@@ -257,13 +284,19 @@ add(id="p4-future-read-attempt", viewpoint="P0-4", kind="capability",
     title="T0 + 4 日の呼び出しで、戦略が 5 本目の足を名指して読もうとすると、実行時エラーか型エラーで止まるか",
     input={"events": _LA_BARS, "probe_at_ns": T0 + 4 * DAY, "future_ts_ns": T0 + 5 * DAY, "future_value": 104.0,
            "strategy": "T0 + 4 日の呼び出しの中で、5 本目(時刻 T0 + 5 日、終値 104)を名指して読もうとする。"
-                       "名指し方は 2 つ: 時刻で(5 本目の時刻、またはそれを終わりに含む範囲を渡して読む)と、"
-                       "位置で(今の最新の次の位置を、添字・先の参照・次を覗く手段で読む)。"
-                       "対象が戦略に渡す公開の読み出しの手段ごとに、当てはまる名指し方を全部試し、1 つずつ記録する"
-                       "(手段・名指し方・出た例外の名前、または返った値)。名指さない読み出し(全部・最新の 1 件・中身の配列)は名指し方 other として記録してよく、"
-                       "止まったかには数えないが、104 が返ったかには数える。"
+                       "名指し方は 2 つ: 時刻で(5 本目の時刻を渡す・5 本目を含む範囲を渡す)と、位置で(今の最新の次の位置を、添字・区間・次を覗く手段で読む)。"
+                       "対象が戦略に渡す公開の読み出しの手段ごとに、その手段の形に当たる名指し方を、下の `namings` の一覧の全部で試し、1 つずつ記録する"
+                       "(手段・形・名指し方・出た例外の名前、または返った値)。一覧のどれを試すかを adapter は選ばない。"
+                       "名指さない読み出し(全部・最新の 1 件・中身の配列)は形 other として記録してよく、止まったかには数えないが、104 が返ったかには数える。"
                        "時刻も位置も取る手段が 1 つも無い対象では、戦略のコードが 5 本目を読もうとして書く呼び出し"
-                       "(履歴の添字・時刻を渡す問い合わせ)を実際に書いて呼び、出た例外を記録する",
+                       "(履歴の添字・時刻を渡す問い合わせ)を実際に書いて呼び(形 no_means)、出た例外を記録する",
+           "namings": {"position": {"what": "添字と区間を受ける読み出し。n = 最新の次の位置(対象の数え方で)", "namings": list(POSITION_NAMINGS)},
+                       "time_at": {"what": "時刻を 1 つ受ける読み出し", "namings": list(TIME_NAMINGS["time_at"])},
+                       "time_until": {"what": "終わりの時刻だけを受ける読み出し", "namings": list(TIME_NAMINGS["time_until"])},
+                       "time_since": {"what": "始まりの時刻だけを受ける読み出し", "namings": list(TIME_NAMINGS["time_since"])},
+                       "time_range": {"what": "始まりと終わりの時刻を受ける読み出し", "namings": list(TIME_NAMINGS["time_range"])},
+                       "next_call": {"what": "次の 1 件を返す呼び出し(覗く・次へ)", "namings": ["next"]},
+                       "times": "fut = 5 本目の時刻(T0 + 5 日)、now = 呼び出しの時刻(T0 + 4 日)、first = 1 本目の時刻(T0 + 1 日)、1d = 1 日"},
            "note": "足を受けない対象は、同じ時刻・価格=終値の約定で代えてよい"},
     expected={"every_attempt_stopped_by_error": True, "future_value_obtained": False},
     derivation="固定した要件(REQUIREMENTS.md §2 P0-4)の測り方は「戦略側から未来時刻の事象を読もうとするコードが、実行時エラーか型エラーで止まるか"
@@ -271,9 +304,11 @@ add(id="p4-future-read-attempt", viewpoint="P0-4", kind="capability",
                "どれも例外で止まらなければならない。空の結果・切り詰めた結果(4 本目までを黙って返す)・値を返すのは素通りで、"
                "正解ではない。104 が 1 つでも返れば未来が漏れている。",
     measures="試した読み出しのすべてが例外で止まったか、どれかで 104 が得られたか。",
-    graded_from="出力の `attempts`(試しの列。各試しは `means` 手段・`form` 名指し方(time / position / other)・`raised` 例外の名前か null・"
-                "`returned` 返った値か null)から runner が作る: `every_attempt_stopped_by_error` = 名指し方が time か position の試しが 1 つ以上あり、"
-                "その全部の `raised` が null でない / `future_value_obtained` = どれかの試し(other を含む)の `returned` の中に 104(入力の `future_value`)がある。")
+    graded_from="出力の `attempts`(試しの列。各試しは `means` 手段・`form` 名指し方の大分類(time / position / other)・`shape` 手段の形・`naming` 名指し方・"
+                "`raised` 例外の名前か null・`returned` 返った値か null)から runner が作る: `every_attempt_stopped_by_error` = 名指し方が time か position の試しが 1 つ以上あり、"
+                "その全部の `raised` が null でない / `future_value_obtained` = どれかの試し(other を含む)の `returned` の中に 104(入力の `future_value`)がある。"
+                "採点の前に runner は、手段ごとに `namings` のその形の一覧が全部そろっているか、形 no_means の試しが全部例外で止まったかを検め、"
+                "そろっていなければ採点しない(結果なし)。")
 
 # ---------------------------------------------------------------- P0-5
 _TIE_STREAMS = {

@@ -242,21 +242,59 @@ class ZiplimeAdapter(Adapter):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
     def _seq(self, bars, **kw):
+        car = []
+
         async def h(ctx, data, n):
             ctx.st["log"].append(["bar", _now(ctx)])
-        return run(bars, h, **kw)["log"]
+            car.append(C.carrier(data))
+        return run(bars, h, **kw)["log"], car
 
     def scene_p1_one_call_per_event(self, sc):
-        return ok({"sequence": self._seq(C.events(sc))}, "日足 5 本を渡し、handle_data の各回に context.get_datetime() を記録")
+        log, car = self._seq(C.events(sc))
+        return ok({"sequence": log}, "日足 5 本を渡し、handle_data の各回に context.get_datetime() を記録", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
 
     # ---------------- P0-2
     def _iso(self, sc):
-        v = pl.Series([sc.input["iso"]]).str.to_datetime(time_unit="ns", time_zone="UTC")
-        return ok(int(v.cast(pl.Int64)[0]), "ziplime のデータの日時は polars の Datetime。"
-                  "pl.Series([iso]).str.to_datetime(time_unit='ns', time_zone='UTC') を整数にした")
+        """The ISO string written as it is into a CSV read by ziplime's own CSVDataSource (its reader
+        parses the date column with the date_format it is given; both ISO forms of the format are tried)."""
+        from ziplime.data.services.csv_data_source import CSVDataSource
+        from ziplime.utils.calendar_utils import get_calendar
+        iso = sc.input["iso"]
+        d = tempfile.mkdtemp(prefix="iso_", dir=_ROOT)
+        path = os.path.join(d, "x.csv")
+        Path(path).write_text("date,symbol,open,high,low,close,volume\n"
+                              + "".join(f"{iso.replace('-01T', f'-0{i}T')},X,1,1,1,1,1\n" for i in (1, 2, 3)), encoding="utf-8")
+        tried = {}
+
+        async def main():
+            svc = get_asset_service(db_path=os.path.join(d, "assets.sqlite"), clear_asset_db=True)
+            ex = ExchangeInfo(mic="XNGS", name="XNGS", canonical_name="XNGS", country_code="US")  # the CSV reader looks symbols up on XNGS
+            await svc.save_exchanges([ex])
+            eq = Equity(id=None, isin="XX0000000001", asset_name="X", start_date=D.date(2020, 1, 1), end_date=D.date(2030, 1, 1),
+                        first_traded=D.date(2020, 1, 1), auto_close_date=D.date(2030, 1, 1))
+            await svc.save_exchange_assets([ExchangeAsset(
+                sid=None, symbol="X", start_date=D.date(2020, 1, 1), end_date=D.date(2030, 1, 1), first_traded=D.date(2020, 1, 1),
+                auto_close_date=D.date(2030, 1, 1), external_id="X", exchange=ex, asset=eq)])
+            for fmt in ("%Y-%m-%dT%H:%M:%S%.fZ", "%Y-%m-%dT%H:%M:%S%.f%:z"):
+                src = CSVDataSource(name="csv", csv_file_name=path, column_mapping={}, frequency=D.timedelta(days=1),
+                                    date_column_name="date", date_format=fmt, data_frequency_use_window_end=False, symbols=["X"],
+                                    asset_service=svc, trading_calendar=get_calendar("24/7"), data_type=DataType.MARKET_DATA)
+                try:
+                    await src.load_data_in_memory()
+                    col = src.data.sort("date")["date"]
+                    tried[fmt] = (str(col.dtype), int(col.dt.cast_time_unit("ns").cast(pl.Int64)[0]))
+                except Exception as exc:  # noqa: BLE001
+                    tried[fmt] = f"{type(exc).__name__}: {str(exc)[:120]}"
+
+        asyncio.run(main())
+        got = [v for v in tried.values() if isinstance(v, tuple)]
+        if not got:
+            return not_supported(f"ISO の文字列を date の列に書いた CSV を ziplime の CSVDataSource で読んだ(date_format を 2 通り)-> {tried}")
+        return ok(got[0][1], f"ISO の文字列を date の列に書いた CSV を ziplime の CSVDataSource で読み、読んだ date の最初(型 {got[0][0]})。"
+                  f"date_format の試し: {tried}", {"reader": C.qualname(CSVDataSource.load_data_in_memory)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
@@ -264,11 +302,12 @@ class ZiplimeAdapter(Adapter):
         evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
         try:
-            log = self._seq(evs, ns_dates=True)
+            log, car = self._seq(evs, ns_dates=True)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"ナノ秒の時刻の足(polars Datetime ns)を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"observed_ts_ns": [t for _, t in log]},
-                  "足を polars の Datetime('ns') で渡した。handle_data の context.get_datetime()(呼び出しは暦の日ごと)。" + TWO)
+                  "足を polars の Datetime('ns') で渡した。handle_data の context.get_datetime()(呼び出しは暦の日ごと)。" + TWO,
+                  {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -278,14 +317,16 @@ class ZiplimeAdapter(Adapter):
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
         out = {}
+        car = []
 
         async def h(ctx, data, n):
             ctx.st["log"].append(["bar", _now(ctx)])
+            car.append(C.carrier(data))
             df = await data.current(assets=[ctx.a], fields=["open", "high", "low", "close", "volume"])
             out.update({k: float(df[k][0]) for k in ("open", "high", "low", "close", "volume") if len(df)})
 
         st = run([e], h)
-        return ok({"sequence": st["log"], "fields": out}, "日足 1 本。data.current で読んだ。" + TWO)
+        return ok({"sequence": st["log"], "fields": out}, "日足 1 本。data.current で読んだ。" + TWO, {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -323,32 +364,37 @@ class ZiplimeAdapter(Adapter):
     # ---------------- P0-4
     def _visible(self, sc, label):
         probe = sc.input["probe_at_ns"]
-        out, seen, tried = {}, [], []
+        reads, tried = C.Reads(), []
 
         async def h(ctx, data, n):
-            seen.append(await _close(ctx, data))
-            if _now(ctx) == probe:
-                try:
-                    hist = (await data.history(assets=[ctx.a], bar_count=10, fields=["close"]))["close"].to_list()
-                    tried.append(f"data.history(bar_count=10) -> {hist}")
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"data.history(bar_count=10) -> {type(exc).__name__}: {str(exc)[:100]}")
-                vis = [x for x in seen if x == x]
-                out["visible_count"] = len(vis)
-                out["max_visible_close"] = max(vis) if vis else None
+            if _now(ctx) != probe or reads.items:
+                return
+            try:
+                hist = (await data.history(assets=[ctx.a], bar_count=10, fields=["close"]))["close"].to_list()
+            except Exception as exc:  # noqa: BLE001
+                tried.append(f"data.history(bar_count=10) -> {type(exc).__name__}: {str(exc)[:100]}")
+                return
+            reads.read("data.history(assets, bar_count=10, fields=['close'])(null の行は足が無い)",
+                       lambda: [x for x in hist if x is not None and x == x])
 
         st = run(C.events(sc), h, label=label)
-        return out, f"日付={label}: 各回の data.current(close) {seen}、呼び出しの時刻 {st['calls_ns']}、{tried}"
+        return reads, f"日付={label}: 呼び出しの時刻 {st['calls_ns']}、{tried or [r['means'] for r in reads.items]}"
 
     def scene_p4_visible_at_step(self, sc):
         res = {lab: self._visible(sc, lab) for lab in ("start", "close")}
-        got = [r for r in res.values() if r[0]]
-        if not got:  # no_probe_call
-            return not_supported(f"T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)。{res}")
-        best = min(got, key=lambda r: (r[0]["max_visible_close"] is None, r[0]["max_visible_close"] or 0))
-        return ok(best[0], "戦略が各回に data.current(close) を読んで貯めた(NaN は数えない)。足の日付を 2 通りで渡した"
-                  "(start = 足が覆う日、ziplime の日足の通常の付け方 / close = 足の終わりの時刻)。先の値が見えにくい方を結果にした。"
-                  + " / ".join(r[1] for r in res.values()))
+        got = {lab: r for lab, r in res.items() if r[0].items}
+        if not got:  # no_probe_call or no read
+            return not_supported(f"T0 + 4 日の呼び出しで過去を読めなかった。{[r[1] for r in res.values()]}")
+
+        def key(lab):
+            o = got[lab][0].output()
+            return (o["max_visible_close"] is None, o["max_visible_close"] or 0)
+
+        # the survey side is made as strong as the tool allows: the bar-date convention whose read shows less of the future
+        pick = min(got, key=key)
+        return ok(got[pick][0].output(), f"T0 + 4 日の呼び出しに data.history を読んだ。足の日付を 2 通りで渡した"
+                  "(start = 足が覆う日、ziplime の日足の通常の付け方 / close = 足の終わりの時刻)。先の値が見えにくい方(日付="
+                  f"{pick})を結果にした。" + " / ".join(r[1] for r in res.values()), got[pick][0].provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported("足は 1 本に時刻 1 つ(date の列)で、受け取れる時刻を別に持たせる口が無い。試したこと: "
@@ -358,7 +404,6 @@ class ZiplimeAdapter(Adapter):
 
     def _future(self, sc, label):
         probe = sc.input["probe_at_ns"]
-        nxt_ns = int(sc.input["future_ts_ns"])
         att = C.Attempts()
 
         def closes(v):
@@ -368,11 +413,12 @@ class ZiplimeAdapter(Adapter):
             if _now(ctx) != probe or att.items:
                 return
             ex = await ctx.exchange_repository.get_default_exchange()
-            await att.run_async("exchange.get_spot_value(dt=5 本目の日)", "time", lambda: _then(ex.get_spot_value(
-                assets=frozenset({ctx.a}), fields=frozenset({"close"}), dt=_utc(nxt_ns), data_frequency=D.timedelta(days=1)), closes))
-            await att.run_async("exchange.get_data_by_limit(end_date=5 本目の日)", "time", lambda: _then(ex.get_data_by_limit(
-                fields=frozenset({"close"}), limit=6, end_date=_utc(nxt_ns), frequency=D.timedelta(days=1),
-                assets=frozenset({ctx.a}), include_end_date=True), closes))
+            # namings: the scene's fixed list; the bar convention decides which row a time names (_utc of the time)
+            await C.try_time_namings_async(att, "exchange.get_spot_value(dt=時刻)", "time_at", lambda t: _then(ex.get_spot_value(
+                assets=frozenset({ctx.a}), fields=frozenset({"close"}), dt=t, data_frequency=D.timedelta(days=1)), closes), sc, _utc)
+            await C.try_time_namings_async(att, "exchange.get_data_by_limit(end_date=時刻)", "time_until", lambda t: _then(
+                ex.get_data_by_limit(fields=frozenset({"close"}), limit=6, end_date=t, frequency=D.timedelta(days=1),
+                                     assets=frozenset({ctx.a}), include_end_date=True), closes), sc, _utc)
             await att.run_async("data.history(bar_count=6)(件数)", "other",
                                 lambda: _then(data.history(assets=[ctx.a], bar_count=6, fields=["close"]), closes))
             await att.run_async("data.current(close)", "other", lambda: _then(data.current(assets=[ctx.a], fields=["close"]), closes))
@@ -405,18 +451,21 @@ class ZiplimeAdapter(Adapter):
 
     def scene_p5_same_stream_order(self, sc):
         rows = [C.as_bar(e) for e in C.events(sc)]
-        seen = []
+        seen, car = [], []
 
         async def h(ctx, data, n):
             df = await data.current(assets=[ctx.a], fields=["close"])
             seen.append(df["close"].to_list())
+            car.append(C.carrier(data))
 
         try:
             st = run(rows, h)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ時刻の 3 本を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         flat = [float(x) for v in seen for x in v if x is not None]
-        return ok({"prices": flat}, TWO + f"。同じ時刻の 3 本(終値 101・99・100)を渡した。各回の data.current(close) {seen}、呼び出し {st['calls_ns']}")
+        flat_car = [c for v, c in zip(seen, car) for x in v if x is not None]
+        return ok({"prices": flat}, TWO + f"。同じ時刻の 3 本(終値 101・99・100)を渡した。各回の data.current(close) {seen}、呼び出し {st['calls_ns']}",
+                  {"carriers": flat_car})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

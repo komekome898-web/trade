@@ -100,24 +100,65 @@ class BacktraderAdapter(Adapter):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
     def scene_p1_one_call_per_event(self, sc):
-        st = run(C.events(sc), lambda s, n, st: st["log"].append(["bar", _ns(s)]))
-        return ok({"sequence": st["log"]}, "PandasData の足 5 本。next の各回に self.datetime[0] を num2date で読んだ")
+        car = []
+        st = run(C.events(sc), lambda s, n, st: (st["log"].append(["bar", _ns(s)]), car.append(C.carrier(s.data))))
+        return ok({"sequence": st["log"]}, "PandasData の足 5 本。next の各回に self.datetime[0] を num2date で読んだ",
+                  {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
 
     # ---------------- P0-2
     def _iso(self, sc):
-        d = D.datetime.fromisoformat(sc.input["iso"]).astimezone(D.timezone.utc)
-        back = bt.num2date(bt.date2num(d.replace(tzinfo=None))).replace(tzinfo=D.timezone.utc)
-        return ok(C.dt_to_ns(back), f"Backtrader の時刻は date2num の float(日)。fromisoformat -> {d!r} -> date2num -> num2date = {back!r}")
+        """The ISO string handed as it is to Backtrader's data inputs: the pandas feed's time index and the CSV feed."""
+        import tempfile
+        iso = sc.input["iso"]
+        got = {}
+        df = pd.DataFrame([{"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0}], index=[iso])
+        try:
+            cer = bt.Cerebro(stdstats=False)
+            cer.adddata(bt.feeds.PandasData(dataname=df))
+            seen = []
+
+            class S(bt.Strategy):
+                def next(self):
+                    seen.append(_ns(self))
+
+            cer.addstrategy(S)
+            cer.run()
+            got["PandasData"] = seen
+        except Exception as exc:  # noqa: BLE001
+            got["PandasData"] = f"{type(exc).__name__}: {str(exc)[:120]}"
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "bars.csv"
+            path.write_text(f"datetime,open,high,low,close,volume,openinterest\n{iso},1,1,1,1,1,0\n", encoding="utf-8")
+            try:
+                cer = bt.Cerebro(stdstats=False)
+                cer.adddata(bt.feeds.GenericCSVData(dataname=str(path)))
+                seen = []
+
+                class S2(bt.Strategy):
+                    def next(self):
+                        seen.append(_ns(self))
+
+                cer.addstrategy(S2)
+                cer.run()
+                got["GenericCSVData"] = seen
+            except Exception as exc:  # noqa: BLE001
+                got["GenericCSVData"] = f"{type(exc).__name__}: {str(exc)[:120]}"
+        for name, cls in (("GenericCSVData", bt.feeds.GenericCSVData), ("PandasData", bt.feeds.PandasData)):
+            if isinstance(got[name], list) and got[name]:
+                return ok(got[name][0], f"ISO の文字列を {name} に渡し、next の self.datetime[0] を ns にした。全部の試し: {got}",
+                          {"reader": C.qualname(cls)})
+        return not_supported(f"ISO の文字列を Backtrader のデータの入口にそのまま渡した: {got}")
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
-        st = run(evs, lambda s, n, st: st["log"].append(_ns(s)))
-        return ok({"observed_ts_ns": st["log"]}, "足(OHLC=100)で渡し、next の self.datetime[0] を ns に直した")
+        car = []
+        st = run(evs, lambda s, n, st: (st["log"].append(_ns(s)), car.append(C.carrier(s.data))))
+        return ok({"observed_ts_ns": st["log"]}, "足(OHLC=100)で渡し、next の self.datetime[0] を ns に直した", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -128,12 +169,15 @@ class BacktraderAdapter(Adapter):
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
         out = {}
 
+        car = []
+
         def f(s, n, st):
             st["log"].append(["bar", _ns(s)])
+            car.append(C.carrier(s.data))
             out.update({k: float(getattr(s.data, k)[0]) for k in ("open", "high", "low", "close", "volume")})
 
         st = run([e], f)
-        return ok({"sequence": st["log"], "fields": out}, "足 1 本。next で self.data の lines を読んだ")
+        return ok({"sequence": st["log"], "fields": out}, "足 1 本。next で self.data の lines を読んだ", {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -170,18 +214,16 @@ class BacktraderAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
+        reads = C.Reads()
 
         def f(s, n, st):
-            if _ns(s) == probe:
-                vals = [s.data.close[-i] for i in range(len(s.data))]
-                out["visible_count"] = len(s.data)
-                out["max_visible_close"] = float(max(vals))
+            if _ns(s) == probe and not reads.items:
+                reads.read("self.data.close.get(size=len(self.data))", lambda: list(s.data.close.get(size=len(s.data))))
 
         run(C.events(sc), f)
-        if not out:  # no_probe_call
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
-        return ok(out, "T0 + 4 日の呼び出しに len(self.data) と self.data.close[0..-(len-1)]")
+        return ok(reads.output(), "T0 + 4 日の呼び出しに self.data.close.get(size=len(self.data)) を読んだ", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON_BAR.format(k="受け取れる時刻を別に持つ事象", err=_try_non_bar(
@@ -197,9 +239,12 @@ class BacktraderAdapter(Adapter):
             def f(s, n, st, att=att):
                 if _ns(s) != probe or att.items:
                     return
-                att.run("self.data.close[1](最新の次の位置)", "position", lambda: s.data.close[1])
-                att.run("self.data.close.get(ago=1, size=1)(最新の次の位置)", "position", lambda: list(s.data.close.get(ago=1, size=1)))
-                att.run("self.data.close.array[len(self.data)](最新の次の位置)", "position", lambda: s.data.close.array[len(s.data)])
+                # namings: the scene's fixed list. The line counts relative to now (0 = newest, 1 = next);
+                # its `array` counts from the first bar (next = len(self.data)).
+                C.try_position_namings(att, "self.data.close[相対の位置]", lambda: s.data.close, 1)
+                C.try_position_namings(att, "self.data.close.array[位置]", lambda: s.data.close.array, len(s.data))
+                att.run("self.data.close.get(ago=1, size=1)(最新の次の位置)", "position",
+                        lambda: list(s.data.close.get(ago=1, size=1)), shape="next_call", naming="next")
                 att.run("self.data.close.array(中身の配列)", "other", lambda: list(s.data.close.array))
 
             run(C.events(sc), f, preload=preload)
@@ -230,8 +275,10 @@ class BacktraderAdapter(Adapter):
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
     def scene_p5_same_stream_order(self, sc):
-        st = run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: st["log"].append(float(s.data.close[0])))
-        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 本を 1 つの feed で渡した")
+        car = []
+        st = run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: (st["log"].append(float(s.data.close[0])),
+                                                                       car.append(C.carrier(s.data))))
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 本を 1 つの feed で渡した", {"carriers": car})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

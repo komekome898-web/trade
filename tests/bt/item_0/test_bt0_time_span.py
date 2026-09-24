@@ -83,3 +83,24 @@ def test_a_malformed_span_is_refused_at_construction(span, match):
 def test_the_contract_states_the_run_setting():
     rule = CORE_CONTRACT["run_settings"]["time_span_ns"]
     assert "TimestampUnitError" in rule and "defaults_used" in rule
+
+
+def test_the_span_checks_input_events_only_and_does_not_bound_the_run():
+    """i0-r5-07: the span is where an input time's unit is checked; it is
+    not an end of the run. A timer the strategy sets after its last time
+    is delivered (a run ends with end_time_ns), and the contract says so."""
+    got = []
+
+    def act(ev, ctx):
+        if ev.EVENT_TYPE.value == "CLOCK":
+            got.append(ctx.now_ns)
+        elif ctx.now_ns == T0:
+            ctx.set_timer(SPAN[1] + 10 * SEC, "after the span")
+
+    CoreEngine(Recorder(act), [trade(T0)], time_span_ns=SPAN).run()
+    assert got == [SPAN[1] + 10 * SEC]
+    got.clear()
+    CoreEngine(Recorder(act), [trade(T0)], time_span_ns=SPAN, end_time_ns=SPAN[1]).run()
+    assert got == []
+    text = CORE_CONTRACT["run_settings"]["time_span_ns"]
+    assert "INPUT events only" in text and "does not bound the run" in text

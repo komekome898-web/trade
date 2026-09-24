@@ -82,25 +82,41 @@ class LibPybrokerAdapter(Adapter):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
     def scene_p1_one_call_per_event(self, sc):
-        st, _ = run(C.events(sc), lambda ctx, n, st: st["log"].append(["bar", _dt_ns(ctx)]))
-        return ok({"sequence": st["log"]}, "足 5 本。execution の各回に ctx.dt")
+        car = []
+        st, _ = run(C.events(sc), lambda ctx, n, st: (st["log"].append(["bar", _dt_ns(ctx)]), car.append(C.carrier(ctx))))
+        return ok({"sequence": st["log"]}, "足 5 本。execution の各回に ctx.dt", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
 
     def _iso(self, sc):
-        v = int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value)
-        return ok(v, "PyBroker の日時の列は pandas の datetime64。pd.Timestamp(iso).tz_convert('UTC').value")
+        """The ISO string handed as it is to the tool's data input (the `date` column of the DataFrame)."""
+        iso = sc.input["iso"]
+        df = pd.DataFrame({"symbol": ["X"], "date": [iso], "open": [1.0], "high": [1.0], "low": [1.0], "close": [1.0], "volume": [1.0]})
+        seen = []
+        try:
+            s = pb.Strategy(df, "2023-12-30", "2024-01-02", pb.StrategyConfig())
+            s.add_execution(lambda ctx: seen.append(ctx.dt), ["X"])
+            s.backtest(warmup=None)
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"date の列が ISO の文字列の DataFrame を Strategy に渡した -> {type(exc).__name__}: {str(exc)[:200]}")
+        if not seen:
+            return not_supported("date の列が ISO の文字列の DataFrame を Strategy に渡した -> execution が呼ばれなかった")
+        v = pd.Timestamp(seen[0])
+        return ok(int((v if v.tzinfo is None else v.tz_convert("UTC")).value),
+                  f"date の列が ISO の文字列の DataFrame を Strategy に渡し、execution の ctx.dt を読んだ {seen[0]!r}",
+                  {"reader": C.qualname(pb.Strategy)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
+        car = []
         try:
-            st, _ = run(evs, lambda ctx, n, st: st["log"].append(_dt_ns(ctx)))
+            st, _ = run(evs, lambda ctx, n, st: (st["log"].append(_dt_ns(ctx)), car.append(C.carrier(ctx))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"足(OHLC=100)で渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"observed_ts_ns": st["log"]}, "足で渡し、ctx.dt を ns にした")
+        return ok({"observed_ts_ns": st["log"]}, "足で渡し、ctx.dt を ns にした", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -110,15 +126,18 @@ class LibPybrokerAdapter(Adapter):
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
         out = {}
 
+        car = []
+
         def f(ctx, n, st):
             st["log"].append(["bar", _dt_ns(ctx)])
+            car.append(C.carrier(ctx))
             out.update({k: float(getattr(ctx, k)[-1]) for k in ("open", "high", "low", "close", "volume")})
 
         try:
             st, _ = run([e], f)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"足 1 本で走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"sequence": st["log"], "fields": out}, "足 1 本。ctx の open/high/low/close/volume の最後")
+        return ok({"sequence": st["log"], "fields": out}, "足 1 本。ctx の open/high/low/close/volume の最後", {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -147,17 +166,16 @@ class LibPybrokerAdapter(Adapter):
 
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
+        reads = C.Reads()
 
         def f(ctx, n, st):
-            if _dt_ns(ctx) == probe:
-                out["visible_count"] = int(len(ctx.close))
-                out["max_visible_close"] = float(np.max(ctx.close))
+            if _dt_ns(ctx) == probe and not reads.items:
+                reads.read("ctx.close", lambda: list(ctx.close))
 
         run(C.events(sc), f)
-        if not out:  # no_probe_call
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
-        return ok(out, "T0 + 4 日の呼び出しに len(ctx.close) と max(ctx.close)")
+        return ok(reads.output(), "T0 + 4 日の呼び出しに ctx.close を読んだ", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON_BAR.format(k="受け取れる時刻を別に持つ事象", err=_try_non_bar(
@@ -171,8 +189,8 @@ class LibPybrokerAdapter(Adapter):
         def f(ctx, n, st):
             if _dt_ns(ctx) != probe or att.items:
                 return
-            # ExecContext has no read that takes a time; the position reads are tried
-            att.run("ctx.close[len(ctx.close)](最新の次の位置)", "position", lambda: ctx.close[len(ctx.close)])
+            # ExecContext has no read that takes a time; the position reads get the scene's fixed namings
+            C.try_position_namings(att, "ctx.close[位置]", lambda: ctx.close, len(ctx.close))
             att.run("ctx.foreign('X').close(全部)", "other", lambda: list(ctx.foreign("X").close))
             att.run("ctx.close.base(numpy の元の配列)", "other", lambda: list(ctx.close.base) if ctx.close.base is not None else None)
 
@@ -188,11 +206,12 @@ class LibPybrokerAdapter(Adapter):
 
     def scene_p5_same_stream_order(self, sc):
         rows = [C.as_bar(e) for e in C.events(sc)]
+        car = []
         try:
-            st, _ = run(rows, lambda ctx, n, st: st["log"].append(float(ctx.close[-1])))
+            st, _ = run(rows, lambda ctx, n, st: (st["log"].append(float(ctx.close[-1])), car.append(C.carrier(ctx))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ日時の 3 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "約定を足に代え、同じ日時の 3 行を渡した")
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ日時の 3 行を渡した", {"carriers": car})
 
     def scene_p6_place_then_cancel(self, sc):
         out = {}

@@ -74,9 +74,11 @@ _ISO_RE = re.compile(
 def validate_nanos(value: object) -> Nanos:
     """The choke point every event timestamp passes through.
 
-    Accepts Python ints and integral numpy scalars; rejects bool (an int
-    subclass in Python, never a timestamp), floats (a float cannot carry
-    nanoseconds at epoch scale) and anything outside int64. Does not apply
+    Accepts Python ints and integral numpy scalars and returns an `int`
+    itself (never a subclass: what crosses a path is a value, values.py);
+    rejects bool (an int subclass in Python, never a timestamp), floats (a
+    float cannot carry nanoseconds at epoch scale) and anything outside
+    int64. Does not apply
     the plausibility window: a bare int handed to an event constructor has
     no unit label to cross-check. Use `to_nanos` for labelled raw values.
     """
@@ -84,7 +86,10 @@ def validate_nanos(value: object) -> Nanos:
         raise TimestampUnitError(
             f"timestamp must be an int of nanoseconds, got {type(value).__name__}"
         )
-    ivalue = int(value)
+    # an int itself; an int subclass gives the int it holds (read by int,
+    # never by the subclass: values.py); another integral type is
+    # converted once, here
+    ivalue = int.__index__(value) if isinstance(value, int) else int.__index__(int(value))
     if not (INT64_MIN <= ivalue <= INT64_MAX):
         raise TimestampUnitError(f"{ivalue} does not fit in int64")
     return Nanos(ivalue)
