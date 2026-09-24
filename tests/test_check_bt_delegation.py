@@ -56,3 +56,14 @@ def test_every_agent_call_carries_its_own_roles_scrutiny_constant():
     both = good + "const c = await agent(`批評 ${SCRUTINY_CRITIC}${SCRUTINY_FIX}`, { label: `批評:1#1`, model: M })\n"
     errs = cbd.check_script(both)
     assert errs == [e for e in errs if "別の役" in e and "SCRUTINY_FIX" in e] and len(errs) == 1
+
+
+def test_lint_script_reports_undefined_names_the_way_run_7_died():
+    import shutil
+    if not shutil.which("eslint"):
+        assert cbd.lint_script("const a = 1\n") and "eslint" in cbd.lint_script("const a = 1\n")[0]
+        return
+    ok = "export const meta = { name: 'x', description: 'y' }\nconst r = await agent(`p`)\nreturn { r }\n"
+    assert cbd.lint_script(ok) == []
+    bad = "export const meta = { name: 'x', description: 'y' }\nconst r = await agent(`${openFix}`)\nreturn { r }\n"
+    assert any("openFix" in e and "no-undef" in e for e in cbd.lint_script(bad))

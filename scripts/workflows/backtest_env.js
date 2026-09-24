@@ -32,7 +32,6 @@ const SCRUTINY_TABLE = `\n**返す前の吟味(委任文 §3「提出前の吟�
 const SCRUTINY_CRITIC = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。批評家の文)**: 指摘 1 件ごとに根拠(試験・コマンドと出力)を自分で再現し、格付けを委任文 §3「批評家」の基準に照らし、前の周の指摘の直りを自分で確かめる(直ったものを挙げない・直っていないものを見逃さない)。指摘の相手(場面集 / 実装)を付け違えていないか確かめる。記録は CRITIC.md に書く。`
 const SCRUTINY_JUDGE = `返す前の吟味(委任文 §3「提出前の吟味」、L-433。審査員の文): 観点ごとの数えを表から自分で数え直し、reasons に書いた数と一致するかを確かめる。`
 const SCRUTINY_GAPS = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。「欠けているもの」の批評家の文)**: 挙げた欠けが本当に無いか(実際に動かして確かめたか)、既にある項目の [直す] と重ならないかを確かめ、記録のファイルに書く。`
-const DOC_MARK = args.marker_new || MARK
 
 const ITEMS = args.items  // [{id, title}]
 
@@ -52,9 +51,6 @@ const WORK_SCHEMA2 = { type: 'object', properties: { ...WORK_SCHEMA.properties,
   requirement_evidence: { type: 'array', items: { type: 'string' } }, external_tool_checks: { type: 'string' } },
   required: [...WORK_SCHEMA.required, 'requirement_evidence', 'external_tool_checks'] }
 
-const DOSSIER_SCHEMA = { type: 'object', properties: {
-  written: { type: 'array', items: { type: 'string' } }, notes: { type: 'string' } },
-  required: ['written', 'notes'] }
 
 const FINDING = { type: 'object', properties: {
   id: { type: 'string' }, level: { type: 'string', enum: ['止める', '直す', '示唆'] },
@@ -222,6 +218,8 @@ async function runItem(item) {
         fixList = fs
       }
     })()
+    const allFix = history.flatMap(h => (h.critic ? h.critic.findings : []).filter(f => f.level !== '示唆'))  // critic sees both targets for repeat_of
+    const openFix = history.flatMap(h => [...(h.critic ? h.critic.findings : []).filter(f => f.level !== '示唆' && f.target !== '場面集'), ...((h.audit && h.audit.findings) || []).filter(f => f.level !== '聞く').map(f => ({ ...f, source: '監査役' }))])
     const wP = agent(`${attempt === 1 && item.id === 0 ? HEAD : HEAD2}
 あなたは項目 ${item.id}「${item.title}」の作業者です(第 ${attempt} 周)。固定した要件: ${req.path}(変えない)。場面集: ${bat.definitions}(読めるが変えない。場面だけを特別扱いする直しは [止める])。持ち物は委任文 §2 の項目 ${item.id} の行のファイルだけ。${item.extra || ''}${(args.lead_notes || {})[item.id] || ''}
 ${attempt === 1 ? '最初の周です。要件の全行と比較の観点を満たす実装と試験を書く。' :

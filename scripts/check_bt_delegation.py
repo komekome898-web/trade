@@ -15,6 +15,8 @@ Exit 1 on any error.
 """
 from __future__ import annotations
 
+import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -22,6 +24,45 @@ from pathlib import Path
 DEFAULTS = ("docs/DATA/delegations/20260923_backtest_env_prompt.md", "docs/OWNER_LOG.md",
             "docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md",
             "scripts/workflows/backtest_env.js")
+
+# ESLint flat config for the workflow script: the harness runs the body inside an async function with these
+# globals, so the check wraps the body the same way (top-level `return` is legal there) and forbids undefined names.
+ESLINT_CONFIG = """export default [{ files: ['**/*.js'], languageOptions: { ecmaVersion: 2022, sourceType: 'script',
+  globals: { agent: 'readonly', parallel: 'readonly', pipeline: 'readonly', phase: 'readonly', log: 'readonly',
+    args: 'readonly', budget: 'readonly', workflow: 'readonly', JSON: 'readonly', Math: 'readonly', Object: 'readonly',
+    Array: 'readonly', Promise: 'readonly', Set: 'readonly', Map: 'readonly', Number: 'readonly', String: 'readonly',
+    Boolean: 'readonly', Error: 'readonly', console: 'readonly', Date: 'readonly' } },
+  rules: { 'no-undef': 'error', 'no-redeclare': 'error', 'no-dupe-keys': 'error', 'no-unused-vars': ['error', { args: 'none', varsIgnorePattern: '^meta$' }] } }]
+"""
+
+
+def lint_script(script: str) -> list[str]:
+    """Run ESLint (no-undef etc.) on the workflow script wrapped as the harness runs it. Returns errors;
+    a missing eslint is reported as one error (the launch must not rely on an unchecked script)."""
+    import shutil
+    import subprocess
+    import tempfile
+    eslint = shutil.which("eslint")
+    if not eslint:
+        return ["台本: eslint が見つからないので未定義の名前の検査ができない(未確認のまま起動しない)"]
+    body = re.sub(r"^export const meta", "const meta", script, count=1, flags=re.M)
+    with tempfile.TemporaryDirectory() as td:
+        cfg = os.path.join(td, "eslint.config.mjs")
+        js = os.path.join(td, "workflow.js")
+        with open(cfg, "w", encoding="utf-8") as f:
+            f.write(ESLINT_CONFIG)
+        with open(js, "w", encoding="utf-8") as f:
+            f.write("(async () => {\n" + body + "\n})()\n")
+        # cwd = the temp dir: ESLint ignores files outside its base path (silently, exit 0)
+        r = subprocess.run([eslint, "--no-config-lookup", "--config", "eslint.config.mjs", "--format", "json",
+                            "workflow.js"], capture_output=True, text=True, cwd=td)
+    try:
+        msgs = [m for f in json.loads(r.stdout) for m in f["messages"]]
+    except (ValueError, KeyError):
+        return ["台本: eslint の出力が読めない: " + (r.stdout + r.stderr).strip()[:400]]
+    # the wrapper adds one line above the script; every message (warnings included) blocks the launch
+    return [f"台本:{(m.get('line') or 1) - 1}:{m.get('column', 0)}: {m['message']} ({m.get('ruleId')})" for m in msgs]
+
 
 # label prefix → the scrutiny constant that role must carry (delegation §3 提出前の吟味)
 ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), ("場面の直し:", "SCRUTINY_FIX"),
@@ -101,7 +142,11 @@ def check(doc: str, log: str, verdicts: str) -> list[str]:
 def main(argv: list[str]) -> int:
     paths = [Path(argv[i]) if i < len(argv) else Path(DEFAULTS[i]) for i in range(4)]
     errs = check(*(p.read_text(encoding="utf-8") for p in paths[:3]))
-    errs += check_script(paths[3].read_text(encoding="utf-8")) if paths[3].exists() else [f"{paths[3]}: 台本が無い"]
+    if paths[3].exists():
+        script = paths[3].read_text(encoding="utf-8")
+        errs += check_script(script) + lint_script(script)
+    else:
+        errs.append(f"{paths[3]}: 台本が無い")
     for e in errs:
         print("NG", e)
     print(f"{'OK' if not errs else 'NG'} 誤り {len(errs)} 件")
