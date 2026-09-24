@@ -145,14 +145,6 @@ async function auditBattery(item, bat, n, prev) {
 }
 
 const FAMILY = `「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。`
-// LEAD_DESIGN §9.2 の 35 (a): when the lead wrote the family's positive definition (passed through the auditor with the
-// delegation text) the definition step is skipped and the repair starts from that definition; the family's chain restarts (L-438)
-function leadDefinitionFor(item, fixList) {
-  const led = (args.lead_definitions || {})[item.id] || {}
-  const stops = fixList.filter(f => f.level === '止める')
-  if (!stops.length || !stops.every(f => led[f.id])) return null
-  return stops.map(f => `【${f.id} の族の正の定義(リードが書き、委任文と一緒に監査役を通した版。定義の段は置かない = LEAD_DESIGN §9.2 の 32・35)】${led[f.id]}`).join('\n')
-}
 const DEF_SCHEMA = { type: 'object', properties: { definition: { type: 'string' }, rootcause: { type: 'string' } }, required: ['definition', 'rootcause'] }
 
 // L-437: before touching code, the 場面係 writes the positive definition of what the battery measures for the
@@ -224,8 +216,7 @@ async function runItem(item) {
     stops.forEach(f => { bchain[f.id] = f.repeat_of && bchain[f.repeat_of] ? bchain[f.repeat_of] + 1 : 1 })
     const rep3 = stops.find(f => bchain[f.id] >= 3)
     if (rep3) return { item, status: 'escalate', reason: `場面集の監査で同じ未達の理由が 3 回続いた(L-407): ${rep3.text.slice(0, 300)}`, attempts: 0, req, bat, batteryHistory: batHist, history: [] }
-    const ledDef0 = leadDefinitionFor(item, fs)
-    const def = ledDef0 ? { definition: ledDef0 } : await defineThenAudit(item, req, bat, fs, n, bchain, batHist)
+    const def = await defineThenAudit(item, req, bat, fs, n, bchain, batHist)
     if (def.escalate) return { item, status: 'escalate', reason: def.escalate, attempts: 0, req, bat, batteryHistory: batHist, history: [] }
     const fixed = await repairBattery(item, req, bat, fs, n, def.definition)
     if (!fixed) return { item, status: 'error', stage: 'battery_repair', batteryHistory: batHist, history: [] }
@@ -252,8 +243,7 @@ async function runItem(item) {
       let fixList = batFix
       for (let k = 1; ; k++) {
         // LEAD_DESIGN §8.2 の 3: the definition step is for [止める] findings only; [直す]-only repairs go straight to the repair
-        const ledDef = leadDefinitionFor(item, fixList)
-        const def = ledDef ? { definition: ledDef } : fixList.some(f => f.level === '止める') ? await defineThenAudit(item, req, bat, fixList, `r${attempt}-${k}`, cbchain, midAudits) : { definition: null }
+        const def = fixList.some(f => f.level === '止める') ? await defineThenAudit(item, req, bat, fixList, `r${attempt}-${k}`, cbchain, midAudits) : { definition: null }
         if (def.escalate) return { escalate: def.escalate }
         const fixed = await repairBattery(item, req, bat, fixList, `r${attempt}-${k}`, def.definition)
         if (!fixed) return { error: 'battery_repair_in_round' }

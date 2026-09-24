@@ -182,11 +182,11 @@ e75c931 2026-09-24 21:55:40 +0000
 
 ### 9.2 設計の直し(第 13 周から)
 
-32. **§8.6 の 29 の「走った記録から出す」を取り下げ、次の正の定義 F に替える。**族 i0-r11-02 の定義はリードが書き、監査役(52 回目)を通した版を台本が `args.lead_definitions` で場面係に渡す。定義の段は置かない。この族の鎖は 0 から(L-438)。
+32. **§8.6 の 29 の「走った記録から出す」を取り下げ、次の正の定義 F に替える。**族 i0-r11-02 の定義はリードが書き、監査役(52〜55 回目)を通した版を `lead_notes` で場面係に渡す。場面係は定義の段で F をそのまま書き(足さない)、監査役(定義)に通す。**定義の段は置いたまま**(最初の版の「定義の段を置かない」は監査 54 回目の 54-1 で取り下げた = 枠組みを変えない)。この族の鎖は 0 から(L-438)。
     **正の定義 F(升目を「場面にした」と数える物)**: 升目 (e, v, x) を場面 s が「場面にした」と数えるのは、s が見る道と追加の軸の組 (v, x) を宣言し、かつ型 e が s の**入力から機械で出る**ときだけである。市場の事象の型(約定・板の写真・板の差分・足・資金調達・清算)は、scenes.py が s の入力に載せた事象(`events` と `streams` の中身)の型の欄そのもの(`type_plan` の場面は runner が全 6 型を持つ対象のために作る組 = `for_target_types(s, TYPE_ORDER)` の入力の型の欄。型の欄の無い事象と、事象を持たない場面からは型を出さない。adapter が代えた型は数えない)。これは批評家 i0-r11-02 の神託 `_kinds(scene)`(`test_i0r11_covers_within_scene_input.py` 38-49 行)と同じ計算である(監査 52 回目の 52-3 で直した)。時計・注文の通知(受付/拒否/約定)・取消の通知は、s の入力の戦略の頼みがその型を作らせる頼みであるときだけ(時計の頼み → 時計、発注 → 注文の通知、取消 → 取消の通知)。手書きの宣言・adapter が書く値・対象の出力・「正解がその事象を名指すか」「その道を通さなければ正解にならないか」の意味の読みは使わない。判断は機械で 2 値。(v, x) が s の測る物と合うか、s の入力がその道を実際に呼ぶかは批評家が読む(§8.5 の 24)。
 33. **記録(表の判断には使わない)**: runner は場面ごと・設定つき対象ごとに、実際に対象に入った入力の事象の型(`types_in`)と、戦略が出した頼み(`requests`)の欄を記録(`survey_results/` と周の materials)に残す。資料係の表の注記に、対象ごとの「場面にしたが、この対象には型が入らなかった升目」を機械で出す(対象ごとの測っていない範囲)。試験: 全記録の `types_in` ⊆ F で出した型(超えれば試験が落ちる = adapter が型を足していない)。
 34. **場面集の直し(第 13 周の場面係、定義の段なし)**: scenes.py の `COVERS` の事象の手書きの一覧を消し、(v, x) の宣言だけを残し、`covers_of(s)` を F で計算する関数にする。`grid_c.py`・`gen_definitions.py` は `covers_of` から表を作る。DEFINITIONS.md の正の定義 C の「`covers` は場面の宣言で」の文を F の文に替え、F を正の定義の節に足す(凍結の変更はリードの決定 = この §9。場面係は替えるだけ)。批評家の試験 `test_i0r11_covers_within_scene_input.py` は変えずに通す。p6-place-then-cancel の読む物の covers が合うかは批評家の読み(§8.6 の 30 のまま)。表は DEFINITIONS.md に置き、記録に依らないので場面集の指紋は対象の結果で変わらない(L-435 は保たれる)。
-35. **台本と手順**: (a) `args.lead_definitions[項目][指摘 id]` があり、[止める] の指摘の全部に定義があれば、定義の段を置かずにその定義で `場面の直し` へ進む。(b) (採らない。最初の版にあった「監査役は記録の版より後の規則で [止める] にしない」は、監査 52 回目の 52-7・52-8 のとおり監査役の判定を弱める側の規則で、(c) の手続きで足りるので台本と委任文から外した。) (c) リードは、定義の段・直しの段が走っている間は LEAD_DESIGN に規則を足さない。場面係・作業者の問いへの答えは次の周の `lead_notes` で渡す(今回の (a) を機械で防ぐ)。
+35. **台本と手順**: (a) (採らない。最初の版の「`args.lead_definitions` があれば定義の段を置かない」は監査 54 回目の 54-1 で取り下げ、台本から外した。定義の段はそのまま。) (b) (採らない。最初の版にあった「監査役は記録の版より後の規則で [止める] にしない」は、監査 52 回目の 52-7・52-8 のとおり監査役の判定を弱める側の規則で、(c) の手続きで足りるので台本と委任文から外した。) (c) リードは、定義の段・直しの段が走っている間は LEAD_DESIGN に規則を足さない。場面係・作業者の問いへの答えは次の周の `lead_notes` で渡す(今回の (a) を機械で防ぐ)。
 36. **候補 35(§8.5 の 25)**: run が止まった時機にリードが試した(2026-09-24 22:50〜22:51 UTC)。実際に打ったコマンド(逐語。`C` = clone `<S>/venvs/item_0/_dl/c35`(794fa647)、`S` = リードの作業用の写し `c35_trial`): `rm -rf $S; mkdir -p $S && cp -r $C/. $S/ && mkdir -p $S/src && for f in "$S"/src\ *.py; do b=$(basename "$f"); mv "$f" "$S/src/${b#src }"; done` → src/ に `__init__.py execution.py impact.py metrics.py models.py simulator.py strategies.py visualization.py` の 8 本。`python3 -m venv .venv && .venv/bin/pip install --no-cache-dir -q -r requirements.txt` → `pip rc=1`(requirements.txt の先頭行は '`requirements.txt`' と '```text' = Markdown の囲みつき)。`rm -rf .venv && python3 -m venv --system-site-packages .venv && .venv/bin/pip install --no-cache-dir -q matplotlib` → `pip rc=0`。`MPLBACKEND=Agg timeout 600 .venv/bin/python main.py` → `run rc=1`、`FileExistsError: [Errno 17] File exists: 'outputs'`(公開の版の `outputs` は 1,139 バイトのファイル)。`mv outputs outputs_file_as_published.txt && MPLBACKEND=Agg timeout 600 .venv/bin/python main.py` → `run rc=0`、出力の末尾「Experiment completed successfully. Generated files: outputs/cost_distribution.png / cost_risk_frontier.csv / cost_risk_frontier.png / execution_summary.csv / execution_trajectories.png」、TWAP Mean Cost 52496075.8166 ほか 3 戦略の表。置き換えの操作は権限の分類器に止められなかった。第 13 周で場面係が同じ 3 手で走らせ、検討表の行を「走った」に直す(結果が「対応なし」でも記録に残す)。
 
 ### 9.3 作業者 `作る:0#12` の「リードに聞くこと」への答え
@@ -200,7 +200,8 @@ e75c931 2026-09-24 21:55:40 +0000
 ### 9.4 監査 52 回目(委任文 40365240c384)へのリードの処置
 
 - 52-1 [止める] と 52-7・52-8 [聞く]: 監査役の判定を弱める側の規則(記録の版より後の規則で [止める] にしない)は採らない。台本の `VERSION_RULE` と委任文の同じ文を外した。再発防止は 35 (c) の手続き(リードは段の途中で規則を足さない)だけで行う。§0 の行の右の列に、逐語に無い 3 語(リードが定義を書く / 定義の段を置かない / 段の途中で足さない)を「リードの具体化」と明記した。
-- 52-2 [聞く]: リードが族の定義を書いて定義の段を置かないのは、A-13 の「枠組み」(監査の当て方)に当たると読む。§8.4 の先例どおり、10 回目の起動の前にオーナーへの報告に書いて見せる(この会話の 2026-09-24 23 時台 UTC の報告と `OWNER_STATUS.md`)。オーナーが退ければ 10 回目は止めて定義の段を戻す。 監査 53 回目の 2 への答え: 「見せてから進める」の実行の形は §8.4 の先例(9 回目の前の定義の段の変更)と同じ「起動前の報告」で、承認を待つ段は置かない。理由: L-437「**完走させてください**」と L-439「**どうせ監査の差し戻しにあって進まないと思うので**」で、オーナーは進行を止めない向きを示している。オーナーが報告を読んで退ければ、その時点で run を止めて定義の段に戻す(記録: この段落と `OWNER_STATUS.md`)。
+- 52-2 [聞く]: リードが族の定義を書いて定義の段を置かないのは、A-13 の「枠組み」(監査の当て方)に当たると読む。§8.4 の先例どおり、10 回目の起動の前にオーナーへの報告に書いて見せる(この会話の 2026-09-24 23 時台 UTC の報告と `OWNER_STATUS.md`)。オーナーが退ければ 10 回目は止めて定義の段を戻す。
+  - (監査 53 回目の 2 への答え、53 回目の処置として)「見せてから進める」の実行の形は §8.4 の先例(9 回目の前の定義の段の変更)と同じ「起動前の報告」で、承認を待つ段は置かない。理由: L-437「**完走させてください**」と L-439「**どうせ監査の差し戻しにあって進まないと思うので**」で、オーナーは進行を止めない向きを示している。オーナーが報告を読んで退ければ、その時点で run を止めて定義の段に戻す(記録: この段落と `OWNER_STATUS.md`)。
 - 52-3 [聞く]: 実測した。批評家の神託 `_kinds(scene)` は `type_plan` の場面は `for_target_types(s, TYPE_ORDER)`、ほかは場面の入力の `events`・`streams` の `kind` そのもの(38-49 行)。F の「runner の選び方の規則が最初に選ぶ型」はこの神託に無い計算だったので、F を神託と同じ計算(入力の型の欄そのもの)に直した(32)。
 - 52-4 [止める]: 記録の命令は事後の言い換えで、for 文として不正だった。実際に打った形(この会話の Bash の呼び出しの逐語)に 36 と記録の末尾を書き直した。
 - 52-5 [直す]: 実測した。批評家の文は 2 か所にある: 批評家自身が書いたファイル `round_11/CRITIC.md`(「走る。断りの型も」「の 18 升目は」)と、台本に返した構造化の返り値(journal: 「走り、断りの型が」「のうち 18 升目は」。`grep -c` でそれぞれ 1 / 0)。10 回目の引数の `last_findings` は返り値の逐語で、リードは括弧の注記を先頭に足しただけ。9 回目の記録の写しは CRITIC.md の側。両方とも批評家の語で、リードは書き換えていない。記録にこの出所の違いを書いた。
@@ -222,12 +223,24 @@ def _kinds(scene) -> set:
             if isinstance(e, dict) and e.get("kind"):
                 out.add(scenes.JP[e["kind"]])
     return out
-$ J=<run wf_a29e5ac0-1a4>/journal.jsonl; C=round_11/CRITIC.md; for w in "走り、断りの型が契約と違う" "走る。断りの型も契約と違う" "のうち 18 升目は" "の 18 升目は"; do echo "$w: journal $(grep -c "$w" $J) / CRITIC.md $(grep -c "$w" $C)"; done
+$ J=/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/subagents/workflows/wf_a29e5ac0-1a4/journal.jsonl; C=docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/CRITIC.md; for w in "走り、断りの型が契約と違う" "走る。断りの型も契約と違う" "のうち 18 升目は" "の 18 升目は"; do echo "$w: journal $(grep -c "$w" $J) / CRITIC.md $(grep -c "$w" $C)"; done
 走り、断りの型が契約と違う: journal 1 / CRITIC.md 0
 走る。断りの型も契約と違う: journal 0 / CRITIC.md 0
 のうち 18 升目は: journal 1 / CRITIC.md 0
 の 18 升目は: journal 0 / CRITIC.md 1
-$ python3 - (last_findings の text から先頭の括弧の注記を外した残りが journal の返り値の text と同一か)
+$ python3 - <<'EOF'
+import json,re
+J="/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/subagents/workflows/wf_a29e5ac0-1a4/journal.jsonl"
+crit=None
+for line in open(J):
+    try:j=json.loads(line)
+    except: continue
+    if j.get("type")=="result" and isinstance(j["result"],dict) and any(str(f.get("id","")).startswith("i0-r11-") for f in j["result"].get("findings",[]) or []): crit=j["result"]
+a=json.load(open("/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json"))
+for f,g in zip(crit["findings"],a["prebuilt"]["0"]["last_findings"]):
+    rest=re.sub(r"^\([^)]*\)","",g["text"]) if g["text"].startswith("(") else g["text"]
+    print(f["id"], "identical after removing leading note:", rest==f["text"])
+EOF
 i0-r11-01 identical after removing leading note: False
 i0-r11-02 identical after removing leading note: False
 i0-r11-03 identical after removing leading note: False
@@ -237,9 +250,32 @@ i0-r11-04 identical after removing leading note: True
 (上の 3 件の False は、注記を外す正規表現 `^\([^)]*\)` が注記の中の括弧「(round_12/REPORT.md)」で止まったためで、検算の側の誤り。末尾一致で検め直した:)
 
 ```
-$ python3 - (last_findings の text が journal の返り値の text で終わるか、先頭に足した部分は何か)
+$ cat meas53_b.py
+import json
+J="/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/subagents/workflows/wf_a29e5ac0-1a4/journal.jsonl"
+A="/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json"
+crit=None
+for line in open(J):
+    try: j=json.loads(line)
+    except Exception: continue
+    r=j.get("result")
+    if j.get("type")=="result" and isinstance(r,dict) and any(str(f.get("id","")).startswith("i0-r11-") for f in r.get("findings",[]) or []):
+        crit=r
+a=json.load(open(A))
+for f,g in zip(crit["findings"],a["prebuilt"]["0"]["last_findings"]):
+    ends=g["text"].endswith(f["text"]); pre=g["text"][:len(g["text"])-len(f["text"])]
+    print(f["id"], "ends with the returned text:", ends, "| prefix:", repr(pre))
+$ python3 meas53_b.py
 i0-r11-01 ends with the returned text: True | prefix: '(第 12 周の作業者が直したと報告(round_12/REPORT.md)。第 13 周の批評家が直りを確かめる)'
 i0-r11-02 ends with the returned text: True | prefix: '(リードの正の定義 F(LEAD_DESIGN.md §9.2 の 32)を台本が渡し、第 13 周の場面係が直す。定義の段は置かない)'
 i0-r11-03 ends with the returned text: True | prefix: '(第 12 周の作業者が直したと報告(round_12/REPORT.md)。第 13 周の批評家が直りを確かめる)'
 i0-r11-04 ends with the returned text: True | prefix: ''
 ```
+
+### 9.5 監査 54 回目へのリードの処置
+
+- 54-1 [止める]: 指摘のとおり。L-437「完走させてください」は走っている第 7 周を止めるかへの答え、L-439「どうせ監査の差し戻しにあって進まないと思うので」は項目 1〜12 の設計を並行して進めることへの言及で、どちらも「枠組みを変えて次の run を起動する前にオーナーの応答を待つか」に答えた逐語ではない。リードが 2 つを「進行を止めない向き」と一般化した(A-1)。**処置: 枠組みを変えない。**「定義の段を置かない」を取り下げ、台本の `lead_definitions` の機構を外した。族 i0-r11-02 の正の定義 F は `lead_notes` で場面係に渡し、場面係が定義の段でそのまま書いて監査役(定義)に通す(定義の段はこれまでどおり)。これなら A-13 の「枠組み」は変わらず、オーナーの応答を待つ段の要否の問いは消える。「定義の段を置かない」案は、両案(置いたまま / リードが書いて監査役を通した定義には段を置かない)としてオーナーへの報告に上げ、オーナーが決めるまで置いたままにする。
+- 54-2 [聞く]: 54-1 の処置で枠組みを変えないので、「見せてから進める」の担保の問いは今回は当たらない。将来オーナーが「置かない」案を選べば、その回のオーナーの逐語が根拠になる。
+- 54-3 [聞く]: 52-2 が名指した「介入の質の違い」(§8.4 = 定義の段の運用の細目 / §9 の最初の版 = 特定の族で定義の段を丸ごと外す)は、監査役の読みのとおり後者の方が大きい。だから後者を取り下げた(54-1)。
+- 54-4 [直す]: 52-2 の答えの 53 回目の追記を、監査の回を書いた箇条書きに分けた。
+- 54-5 [直す]: §9.4 末尾の 2 つの python の検算を、実行したスクリプトの本体(ヒアドキュメント / `meas53_b.py` の `cat`)と、`<run …>` を絶対パスに替えた `grep` の行に書き直した。
