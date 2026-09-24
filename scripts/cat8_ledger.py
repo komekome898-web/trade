@@ -410,6 +410,7 @@ def cmd_check_elements(a):
     """報告の `### 要素と段` の表(道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠)を検査する。読むだけ。
     受け入れ検査 check_scan_report.py はこの 6 列の表を読まない(監査 8 回目の指摘 3)ので、ここで見る。"""
     text = pathlib.Path(a.report).read_text()
+    ledger_by_name = {r["名前"]: r for r in load()}
     st, en, lines = section(text, a.round)
     if st is None:
         sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
@@ -469,6 +470,19 @@ def cmd_check_elements(a):
                 continue
             tool, el, val, stg, kind, ev = c[:6]
             logcol = c[6] if r7 else ev
+            # 触らない行: 7 回目以降は、6 列目が `台帳の値のまま(…)` だけで、値と段が台帳と同じときに限る(監査 40 回目: 部分一致で検査を飛ばしていた)
+            if r7:
+                untouched = bool(re.fullmatch(r"台帳の値のまま\s*(?:[(（][^)）]*[)）])?", ev.strip()))
+                if untouched:
+                    lr = ledger_by_name.get(tool.strip("`"))
+                    if lr is None or (lr.get(el), lr.get("段_" + el)) != (val, stg):
+                        errs.append("行 %d: %s %s は `台帳の値のまま` と書いたのに、値・段が台帳(%s/%s)と違う: %s/%s" % (
+                            i + 1, tool, el, lr.get(el) if lr else "無し", lr.get("段_" + el) if lr else "無し", val, stg))
+                        untouched = False
+                elif "台帳の値のまま" in ev:
+                    errs.append("行 %d: %s %s の 6 列目に `台帳の値のまま` の語があるが、その語だけの形でない(触らない行は 6 列目を `台帳の値のまま(<何>回目の節)` だけにする)" % (i + 1, tool, el))
+            else:
+                untouched = "台帳の値のまま" in ev
             tool = tool.strip("`")
             table.setdefault(tool, {})
             if el in table[tool]:
@@ -486,7 +500,7 @@ def cmd_check_elements(a):
                 errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
-            if r7 and "台帳の値のまま" not in ev:
+            if r7 and not untouched:
                 bad = logcol_errors(logcol)
                 if bad:
                     errs.append("行 %d: %s %s の「生ログの行」の列に、`<生ログ>:N` か `<生ログ>:N-M` でないものがある: %s" % (i + 1, tool, el, " ".join(bad[:3])))
@@ -514,7 +528,7 @@ def cmd_check_elements(a):
                     if any("text-changed-after-wait" in x for x in ll[k:e]):
                         errs.append("行 %d: %s %s の `印` の根拠の描画の手 %s:%s に text-changed-after-wait がある(条件 (iii))" % (
                             i + 1, tool, el, fname, lno))
-            if a.round and int(a.round) >= 5 and val == "なし" and "台帳の値のまま" not in ev:
+            if a.round and int(a.round) >= 5 and val == "なし" and not untouched:
                 # 5 回目の起動文 §2: `なし` には「一覧 N 件 / 読んだ M 件」と生ログの行を書き、N と M が同じ(監査 21・22 回目)
                 m = re.search(r"一覧\s*(\d+)\s*件\s*/\s*読んだ\s*(\d+)\s*件", ev)
                 if not m:

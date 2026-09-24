@@ -1557,11 +1557,11 @@
    "move": 55,
    "tools": {
     "Read": 2,
-    "Bash": 8,
+    "Bash": 10,
     "Write": 1,
     "Agent": 1
    },
-   "n_tools": 12,
+   "n_tools": 14,
    "read_goal": true,
    "first_write_at": 10,
    "table_shown": false,
