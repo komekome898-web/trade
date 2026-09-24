@@ -8,7 +8,8 @@ For each step whose command line runs scripts/cat8_repo_fetch.sh it prints the r
 the step's exit code, files_in_tree(N), the skipped (>1 MB) and lfs_pointer names,
 downloaded_bytes and checked_out_bytes, then the totals. Exits non-zero when a step's
 output was cut by cat8_step.py (--keep too small), when a repo appears twice with
-different values in any field, or when a successful step lacks one of the helper's count lines.
+different values in any field, when a successful step lacks one of the helper's count lines,
+or when another repo was fetched after a step ended with exit 5 or 6 (audit 62).
 """
 import argparse
 import re
