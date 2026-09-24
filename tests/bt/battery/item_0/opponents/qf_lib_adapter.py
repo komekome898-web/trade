@@ -64,8 +64,11 @@ def _date(ns: int) -> D.datetime:
 
 def run(bars: list[dict], on_call, cash=1_000_000.0, setup=None, timer_at=None):
     rows = [C.as_bar(b) for b in bars]
-    first = _date(rows[0]["ts_ns"])
-    last = _date(rows[-1]["ts_ns"])
+    # round r8-1 (positive definition A): the data array, the provider's range and the session's start / end are the
+    # configured target's chosen window, the same in every scene (until round r8-1: fitted to the scene's first and
+    # last bar, a setting decided from input not yet delivered)
+    first = D.datetime.fromisoformat(C.FIXED_WINDOW[0])
+    last = D.datetime.fromisoformat(C.FIXED_WINDOW[1])
     dates = pd.DatetimeIndex([first + D.timedelta(days=i) for i in range(-10, (last - first).days + 1)])
     by_date = {_date(b["ts_ns"]): b for b in rows}
     if len(by_date) != len(rows):
@@ -73,17 +76,22 @@ def run(bars: list[dict], on_call, cash=1_000_000.0, setup=None, timer_at=None):
     vals = np.array([[[float(by_date[d.to_pydatetime()][k]) if d.to_pydatetime() in by_date else np.nan
                        for k in ("open", "high", "low", "close", "volume")]] for d in dates], dtype=float)
     arr = QFDataArray.create(dates, [TK], FIELDS, vals)
-    dp = PresetDataProvider(arr, dates[0], dates[-1] + D.timedelta(days=2), Frequency.DAILY)
-    b = BacktestTradingSessionBuilder(None, None, None)
-    b.set_monitor_settings(BacktestMonitorSettings.no_stats())
-    b.set_data_provider(dp)
-    b.set_frequency(Frequency.DAILY)
-    b.set_initial_cash(int(cash))
-    b.set_market_open_and_close_time({"hour": 0, "minute": 1}, {"hour": 23, "minute": 0})
+    dp = C.configure(PresetDataProvider, arr, dates[0], dates[-1] + D.timedelta(days=2), Frequency.DAILY,
+                     what="PresetDataProvider(場面の足の配列, 窓の範囲, DAILY)", decided_from=("場面の入力", "選ぶ値"))
+    b = C.configure(BacktestTradingSessionBuilder, None, None, None, what="BacktestTradingSessionBuilder()",
+                    decided_from=("公開の既定",))
+    C.configure(b.set_monitor_settings, BacktestMonitorSettings.no_stats(), what="set_monitor_settings(no_stats)",
+                decided_from=("選ぶ値",))
+    C.configure(b.set_data_provider, dp, what="set_data_provider(provider)", decided_from=("場面の入力",))
+    C.configure(b.set_frequency, Frequency.DAILY, what="set_frequency(DAILY)", decided_from=("選ぶ値",))
+    C.configure(b.set_initial_cash, int(cash), what=f"set_initial_cash({int(cash)})", decided_from=("場面の入力",))
+    C.configure(b.set_market_open_and_close_time, {"hour": 0, "minute": 1}, {"hour": 23, "minute": 0},
+                what="set_market_open_and_close_time(00:01, 23:00)", decided_from=("選ぶ値",))
     if setup:
         setup(b)
     start = first + D.timedelta(days=1) - D.timedelta(minutes=1)
-    ts = b.build(start, last + D.timedelta(days=1))
+    ts = C.configure(b.build, start, last + D.timedelta(days=1), what=f"build({start}, {last + D.timedelta(days=1)})",
+                     decided_from=("選ぶ値",))
     st = {"n": 0, "log": [], "clock": []}
 
     class Timer(SingleTimeEvent):
@@ -145,6 +153,9 @@ def _pricefield(name: str) -> str:
 
 class QfLibAdapter(Adapter):
     name = "opp_qf_lib"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"window": list(C.FIXED_WINDOW), "frequency": "DAILY", "market_open_close": "00:01 / 23:00",
+                    "trigger_time": "00:00"}}
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NON_BAR.format(k="Trade・Funding", err=_pricefield("Trade") + " / " + _pricefield("Funding")))
@@ -202,8 +213,13 @@ class QfLibAdapter(Adapter):
 
         def f(s, n, st):
             st["log"].append(["bar", _now(s)])
-            px = s.ts.data_provider.get_last_available_price(TK)
+            # round r8-1: the run window is fixed (definition A), so the strategy is also called on the days before the
+            # scene's bar; it reads the bar only on a call whose window holds a row (the tool returns a float, not a
+            # frame, for an empty range -- measured: TypeError 'float' object is not subscriptable)
             row = C.read(s.ts.data_provider.get_price, TK, FIELDS, _date(e["ts_ns"]), s.timer.now())  # a read of the tool
+            if not hasattr(row, "iloc") or len(row) == 0 or out:
+                return
+            px = s.ts.data_provider.get_last_available_price(TK)
             car.append(C.carrier(row))
             out.update({"open": float(row.iloc[-1][PriceField.Open]), "high": float(row.iloc[-1][PriceField.High]),
                         "low": float(row.iloc[-1][PriceField.Low]), "close": float(row.iloc[-1][PriceField.Close]),
@@ -333,7 +349,7 @@ class QfLibAdapter(Adapter):
             def _get_fill_prices(self, date, orders, no_slippage_fill_prices, fill_volumes):
                 return np.array([12345.0 for _ in orders])
 
-        r = self._buy(sc, lambda b: b.set_slippage_model(Fixed))
+        r = self._buy(sc, lambda b: C.configure(b.set_slippage_model, Fixed, what="set_slippage_model(場面の約定の模型)"))
         return ok({"fill_price": r["price"] if r else None},
                   "set_slippage_model(Slippage の子: _get_fill_prices が 12345 を返す)。約定の価格は "
                   f"(初めの現金 − 今の現金 − 手数料) ÷ 数量 で読んだ(Portfolio の公開の値): {r}")
@@ -352,7 +368,7 @@ class QfLibAdapter(Adapter):
             def calculate_commission(self, fill_quantity, fill_price):
                 return fee
 
-        r = self._buy(sc, lambda b: b.set_commission_model(Flat))
+        r = self._buy(sc, lambda b: C.configure(b.set_commission_model, Flat, what="set_commission_model(場面の費用の模型)"))
         return ok({"fee": r["commission"] if r else None}, f"set_commission_model(CommissionModel の子: 1 件 {fee})。建玉の total_commission(): {r}")
 
     def scene_p7_cost_model_swap(self, sc):
@@ -363,7 +379,7 @@ class QfLibAdapter(Adapter):
             def calculate_commission(self, fill_quantity, fill_price):
                 return 0.375 * abs(fill_quantity)
 
-        r = self._buy(sc, lambda b: b.set_commission_model(PerUnit), qty=2)
+        r = self._buy(sc, lambda b: C.configure(b.set_commission_model, PerUnit, what="set_commission_model(場面の費用の模型)"), qty=2)
         return ok({"fee": r["commission"] if r else None},
                   f"set_commission_model(CommissionModel の子: 0.375 × |fill_quantity|)、数量 2 の成行。建玉の total_commission(): {r}")
 

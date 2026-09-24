@@ -140,14 +140,19 @@ def run(bars, hooks: dict, wallet=1_000_000.0, fee=0.0):
     for k in ("ind", "entry", "loop", "entry_price", "stake", "entry_timeout", "filled"):
         setattr(_HOOKS, k, hooks.get(k))
     cfg = _config(wallet, fee)
-    ex = Exchange(cfg, validate=False)
+    # round r8-1 (positive definition A): every setting through common.configure; the time range is the configured
+    # target's chosen window, the same in every scene (until round r8-1: the scene's first and last candle)
+    ex = C.configure(Exchange, cfg, validate=False, what=f"Exchange(config: binance, 1d, dry_run_wallet={wallet}, fee={fee}, ...)",
+                     decided_from=("選ぶ値", "場面の入力"))
     ex._markets = _market()
-    bt = Backtesting(cfg, exchange=ex)
+    bt = C.configure(Backtesting, cfg, exchange=ex, what="Backtesting(config, exchange)", decided_from=("選ぶ値",))
     dates = pd.to_datetime([int(b["ts_ns"]) - DAY for b in rows], unit="ns", utc=True)
     df = pd.DataFrame({"date": dates, **{k: [float(b[k]) for b in rows] for k in ("open", "high", "low", "close")},
                        "volume": [float(b.get("volume", 1.0)) for b in rows]})
-    tr = TimeRange("date", "date", int(dates.min().timestamp()), int(dates.max().timestamp()) + 86_400)
-    bt.timerange = tr
+    w0, w1 = (int(pd.Timestamp(x, tz="UTC").timestamp()) for x in C.FIXED_WINDOW)
+    tr = C.configure(TimeRange, "date", "date", w0, w1 + 86_400, what=f"TimeRange(date, date, {C.FIXED_WINDOW[0]}, {C.FIXED_WINDOW[1]} + 1 日)",
+                     decided_from=("選ぶ値",))
+    C.configure_attr(bt, "timerange", tr, what="Backtesting.timerange = TimeRange", decided_from=("選ぶ値",))
     bt.backtest_one_strategy(bt.strategylist[0], {PAIR: df}, tr)
     return bt, bt.all_bt_content["SkStrategy"]
 
@@ -180,6 +185,9 @@ def _try_non_bar(e: dict) -> str:
 
 
 class FreqtradeAdapter(Adapter):
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"window": list(C.FIXED_WINDOW), "timeframe": "1d", "exchange": "binance(markets は場面の銘柄 1 つ)",
+                    "order_types": "limit", "max_open_trades": 1}}
     name = "opp_freqtrade"
 
     # ---------------- P0-1

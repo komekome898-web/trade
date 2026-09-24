@@ -122,16 +122,21 @@ class _Strat(CtaTemplate):
 def run(data, hooks: dict, mode=BacktestingMode.BAR, capital=1_000_000, rate=0.0, engine_cls=BacktestingEngine, slippage=0.0):
     eng = engine_cls()
     eng.output = lambda msg: None
-    start, end = data[0].datetime, data[-1].datetime
-    eng.set_parameters(vt_symbol="X.LOCAL", interval=Interval.DAILY, start=start, end=end, rate=rate, slippage=slippage,
-                       size=1, pricetick=0.01, capital=capital, mode=mode)
+    # round r8-1 (positive definition A): every setting through common.configure; start / end are the configured
+    # target's chosen window, the same in every scene (until round r8-1: the scene's first and last time)
+    start = D.datetime.fromisoformat(C.FIXED_WINDOW[0]).replace(tzinfo=data[0].datetime.tzinfo)
+    end = D.datetime.fromisoformat(C.FIXED_WINDOW[1]).replace(tzinfo=data[0].datetime.tzinfo)
+    C.configure(eng.set_parameters, vt_symbol="X.LOCAL", interval=Interval.DAILY, start=start, end=end, rate=rate, slippage=slippage,
+                size=1, pricetick=0.01, capital=capital, mode=mode,
+                what=f"set_parameters(vt_symbol, interval DAILY, start={start.date()}, end={end.date()}, rate={rate}, slippage={slippage}, "
+                     f"size 1, pricetick 0.01, capital={capital}, mode={mode.name})", decided_from=("選ぶ値", "場面の入力"))
 
     class S(_Strat):
         pass
 
     S.hooks = hooks
-    eng.add_strategy(S, {})
-    eng.history_data = list(data)
+    C.configure(eng.add_strategy, S, {}, what="add_strategy(場面の戦略, {})", decided_from=("場面の入力",))
+    C.configure_attr(eng, "history_data", list(data), what="history_data = 場面の足・tick", decided_from=("場面の入力",))
     eng.run_backtesting()
     return eng
 
@@ -155,6 +160,8 @@ NON = ("vnpy の回は足の回(BarData)か tick の回(TickData: 最終約定�
 
 class VnpyAdapter(Adapter):
     name = "opp_vnpy"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"window": list(C.FIXED_WINDOW), "interval": "DAILY", "size": 1, "pricetick": 0.01}}
 
     # ---------------- P0-1
     # Round r7-1: the scenes of other viewpoints get their types from the tool's own (runner):

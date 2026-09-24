@@ -76,6 +76,11 @@ with open(_ALGO, "w") as f:
             "async def handle_data(context, data):\n    await H.handle_data(context, data)\n")
 
 
+# round r8-1: the configured target's fixed window (common.FIXED_WINDOW) as aware datetimes, for the trials
+_W0 = D.datetime.fromisoformat(C.FIXED_WINDOW[0]).replace(tzinfo=D.timezone.utc)
+_W1 = D.datetime.fromisoformat(C.FIXED_WINDOW[1]).replace(tzinfo=D.timezone.utc)
+
+
 def _utc(ns: int) -> D.datetime:
     return C.ns_to_dt(ns)
 
@@ -84,7 +89,10 @@ def _now(ctx) -> int:
     return C.dt_to_ns(ctx.get_datetime())
 
 
-def run(bars, handle, initialize=None, capital=1_000_000.0, ns_dates=False, label="start", **sim_kw):
+_CHOSEN = {"label": "start"}  # the configured target's chosen bar-date convention (round r8-1); set by the adapter
+
+
+def run(bars, handle, initialize=None, capital=1_000_000.0, ns_dates=True, label=None, **sim_kw):
     """Run `bars` (dicts with ts_ns / OHLC / volume). `handle(ctx, data, n)` is an
     async function called from handle_data; `initialize(ctx)` an async one.
 
@@ -97,6 +105,7 @@ def run(bars, handle, initialize=None, capital=1_000_000.0, ns_dates=False, labe
     validates a benchmark asset even when none is wanted, and its benchmark
     metric indexes one benchmark row per session)."""
     rows = [C.as_bar(b) for b in bars]
+    label = _CHOSEN["label"] if label is None else label
     d = tempfile.mkdtemp(prefix="run_", dir=_ROOT)
     state = {"n": 0, "log": [], "calls_ns": []}
 
@@ -124,9 +133,11 @@ def run(bars, handle, initialize=None, capital=1_000_000.0, ns_dates=False, labe
                            **{k: [float(b[k]) for b in rows] for k in ("open", "high", "low", "close")},
                            "price": [float(b["close"]) for b in rows],
                            "volume": [float(b.get("volume", 1.0)) for b in rows]})
-        first, last = _utc(min(days)), _utc(max(days))
-        if last <= first:
-            last = first + D.timedelta(days=1)
+        del days
+        # round r8-1 (positive definition A): the simulated sessions are the configured target's chosen window, the same
+        # in every scene (until round r8-1: the scene's first and last bar day, a setting fitted to input not yet delivered)
+        first = D.datetime.fromisoformat(C.FIXED_WINDOW[0]).replace(tzinfo=D.timezone.utc)
+        last = D.datetime.fromisoformat(C.FIXED_WINDOW[1]).replace(tzinfo=D.timezone.utc)
         state["sessions"] = [C.dt_to_ns(first), C.dt_to_ns(last)]
         bdays = [first + D.timedelta(days=i) for i in range(0, (last - first).days + 1)]
         bdf = pl.DataFrame({"date": pl.Series("date", bdays).cast(pl.Datetime("ns", "UTC")), "sid": [b_.sid] * len(bdays),
@@ -167,7 +178,12 @@ def run(bars, handle, initialize=None, capital=1_000_000.0, ns_dates=False, labe
             kw["clock"] = clock
             kw["exchange"] = sim_kw.pop("exchange")(kw["market_data_source"], capital, clock)
         kw.update(sim_kw)
-        state["result"] = await run_simulation(**kw)
+        plugs = sorted(set(sim_kw) | ({"exchange", "clock"} & set(kw)))
+        state["result"] = await C.configure(run_simulation, **kw,
+                                            what=f"run_simulation(start_date={first.date()}, end_date={last.date()}, trading_calendar 24/7, "
+                                                 f"emission_rate 1 日, total_cash={capital}, market_data_source=場面の足, "
+                                                 f"benchmark B{', ' + ', '.join(plugs) if plugs else ''})",
+                                            decided_from=("選ぶ値", "場面の入力"))
 
     asyncio.run(main())
     return state
@@ -201,14 +217,15 @@ def _try_non_bar(e: dict) -> str:
 
             class Mem(DataSource):
                 def __init__(self):
-                    super().__init__(name="m", start_date=_utc(int(e["ts_ns"])), end_date=_utc(int(e["ts_ns"]) + 30 * DAY),
+                    # round r8-1: the trial uses the same fixed window as every run (not the event's own day)
+                    super().__init__(name="m", start_date=_W0, end_date=_W1 + D.timedelta(days=30),
                                      frequency=D.timedelta(days=1), original_frequency=D.timedelta(days=1),
                                      data_type=DataType.MARKET_DATA)
                     self.data = df
 
             _HOOKS.initialize = _noop_init
             _HOOKS.handle_data = _noop_hd
-            await run_simulation(start_date=_utc(int(e["ts_ns"])), end_date=_utc(int(e["ts_ns"]) + DAY), trading_calendar="24/7",
+            await run_simulation(start_date=_W0, end_date=_W1, trading_calendar="24/7",
                                  emission_rate=D.timedelta(days=1), total_cash=1.0, market_data_source=Mem(), custom_data_sources=[],
                                  algorithm_file=_ALGO, stop_on_error=True, asset_service=svc)
         asyncio.run(go())
@@ -235,6 +252,17 @@ async def _open_count(ctx) -> int:
 
 
 class ZiplimeAdapter(Adapter):
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene. The
+    # bar-date convention is one of two (start = the day a bar covers, ziplime's usual daily label / close = the
+    # bar's close time), each its own configured target; the window is fixed.
+    CONFIGS = {"label=start": {"label": "start", "window": list(C.FIXED_WINDOW), "calendar": "24/7", "emission_rate": "1 日",
+                               "date_column": "ns"},
+               "label=close": {"label": "close", "window": list(C.FIXED_WINDOW), "calendar": "24/7", "emission_rate": "1 日",
+                               "date_column": "ns"}}
+
+    def __init__(self, config: str = "label=start") -> None:
+        super().__init__(config or "label=start")
+        _CHOSEN["label"] = self.choose["label"]
     name = "opp_ziplime"
 
     # ---------------- P0-1
@@ -382,20 +410,11 @@ class ZiplimeAdapter(Adapter):
         return reads, f"日付={label}: 呼び出しの時刻 {st['calls_ns']}、{tried or [r['means'] for r in reads.items]}"
 
     def scene_p4_visible_at_step(self, sc):
-        res = {lab: self._visible(sc, lab) for lab in ("start", "close")}
-        got = {lab: r for lab, r in res.items() if r[0].items}
-        if not got:  # no_probe_call or no read
-            return not_supported(f"T0 + 4 日の呼び出しで過去を読めなかった。{[r[1] for r in res.values()]}")
-
-        def key(lab):
-            o = got[lab][0].output()
-            return (o["max_visible_close"] is None, o["max_visible_close"] or 0)
-
-        # the survey side is made as strong as the tool allows: the bar-date convention whose read shows less of the future
-        pick = min(got, key=key)
-        return ok(got[pick][0].output(), f"T0 + 4 日の呼び出しに data.history を読んだ。足の日付を 2 通りで渡した"
-                  "(start = 足が覆う日、ziplime の日足の通常の付け方 / close = 足の終わりの時刻)。先の値が見えにくい方(日付="
-                  f"{pick})を結果にした。" + " / ".join(r[1] for r in res.values()), got[pick][0].provenance())
+        # round r8-1: the configured target's one bar-date convention (until round r8-1 both were run and one picked)
+        reads, note = self._visible(sc, self.choose["label"])
+        if not reads.items:  # no_probe_call or no read
+            return not_supported(f"T0 + 4 日の呼び出しで過去を読めなかった。{note}")
+        return ok(reads.output(), f"T0 + 4 日の呼び出しに data.history を読んだ。{note}", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported("足は 1 本に時刻 1 つ(date の列)で、受け取れる時刻を別に持たせる口が無い。試したこと: "
@@ -428,21 +447,10 @@ class ZiplimeAdapter(Adapter):
         return att
 
     def scene_p4_future_read_attempt(self, sc):
-        res = {lab: self._future(sc, lab) for lab in ("start", "close")}
-        tried = {k: v for k, v in res.items() if v.items}
-        if not tried:  # no_probe_call
+        att = self._future(sc, self.choose["label"])  # round r8-1: the configured target's one convention
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かったので、先を読む試しができなかった")
-
-        def rank(att):
-            named = [x for x in att.items if x["form"] in ("time", "position")]
-            stopped = bool(named) and all(x["raised"] for x in named)
-            leaked = any(104.0 in (x["returned"] if isinstance(x["returned"], list) else [x["returned"]]) for x in att.items)
-            return (not stopped, leaked)
-
-        # the survey side is made as strong as the tool allows: the bar-date convention that did best is used
-        pick = min(tried, key=lambda k: rank(tried[k]))
-        return ok(tried[pick].output(), f"T0 + 4 日の呼び出しに試した(足の日付を 2 通り。結果に使ったのは 日付={pick}): "
-                  + " / ".join(f"日付={k}: {v.summary()}" for k, v in tried.items()))
+        return ok(att.output(), f"T0 + 4 日の呼び出しに試した(足の日付={self.choose['label']}): {att.summary()}")
 
     # ---------------- P0-5
     def _no_types(self, sc):

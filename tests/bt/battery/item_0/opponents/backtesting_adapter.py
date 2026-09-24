@@ -47,7 +47,10 @@ def run(bars, fn, cash=1_000_000.0, **kw):
             st["n"] += 1
             fn(self, st["n"], st)
 
-    bt_ = Backtest(_df(bars), S, cash=cash, **kw)
+    # round r8-1 (positive definition A (1)): the settings are Backtest's arguments, made through common.configure
+    bt_ = C.configure(Backtest, _df(bars), S, cash=cash, **kw,
+                      what=f"Backtest(場面の足の DataFrame, 場面の戦略, cash={cash}{', ' + ', '.join(sorted(kw)) if kw else ''})",
+                      decided_from=("場面の入力",))
     res = bt_.run()
     return st, res
 
@@ -71,6 +74,8 @@ def _try_non_bar(e: dict) -> str:
 
 class BacktestingAdapter(Adapter):
     name = "opp_backtesting"
+    # round r8-1 (positive definition A): one configured target (the tool's defaults except what a scene names)
+    CONFIGS = {"": {"trade_on_close": False, "exclusive_orders": False}}
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))

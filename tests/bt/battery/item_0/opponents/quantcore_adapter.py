@@ -36,15 +36,20 @@ def _cfg(latency_ns=0, fee=0.0):
 
 
 def run(events: list[dict], fn, cash=1_000_000.0, latency_ns=0, fee=0.0, ticks=False):
-    eng = qc.BacktestEngine(cash, _cfg(latency_ns, fee))
+    # round r8-1 (positive definition A (1)): every setting through common.configure
+    eng = C.configure(qc.BacktestEngine, cash, _cfg(latency_ns, fee),
+                      what=f"BacktestEngine({cash}, ExecutionConfig(maker_fee = taker_fee = {fee}, latency_ns = {latency_ns}, slippage_pct 0))",
+                      decided_from=("場面の入力", "選ぶ値"))
     if ticks:
-        eng.add_tick_data("X", [qc.TickData("X", int(e["ts_ns"]), float(e["price"]), float(e.get("qty", 1.0)),
-                                            qc.Side.BUY if e.get("side", "buy") == "buy" else qc.Side.SELL) for e in events])
+        C.configure(eng.add_tick_data, "X", [qc.TickData("X", int(e["ts_ns"]), float(e["price"]), float(e.get("qty", 1.0)),
+                                                         qc.Side.BUY if e.get("side", "buy") == "buy" else qc.Side.SELL) for e in events],
+                    what="add_tick_data(X, 場面の約定)", decided_from=("場面の入力",))
     else:
         rows = [C.as_bar(e) for e in events]
-        eng.add_data("X", [qc.BarData("X", int(b["ts_ns"]), float(b["open"]), float(b["high"]), float(b["low"]),
-                                      float(b["close"]), float(b.get("volume", 1.0))) for b in rows])
-    eng.set_position_sizer(qc.FixedShares(1))
+        C.configure(eng.add_data, "X", [qc.BarData("X", int(b["ts_ns"]), float(b["open"]), float(b["high"]), float(b["low"]),
+                                                   float(b["close"]), float(b.get("volume", 1.0))) for b in rows],
+                    what="add_data(X, 場面の足)", decided_from=("場面の入力",))
+    C.configure(eng.set_position_sizer, qc.FixedShares(1), what="set_position_sizer(FixedShares(1))", decided_from=("選ぶ値",))
     # The tool's own risk limits are left at their defaults (RiskLimits(): enabled=True, max_leverage=2.0,
     # max_loss_pct=0.5, max_order_value=0.0, max_position_pct=0.2 -- measured). Round r4-1: an earlier version
     # switched them off here for every scene (critic i0-r2-04 / i0-r3-05); a protective default of a survey
@@ -67,7 +72,7 @@ def run(events: list[dict], fn, cash=1_000_000.0, latency_ns=0, fee=0.0, ticks=F
             st["notices"].append("rejected")
 
     s = S()
-    eng.set_strategy(s)
+    C.configure(eng.set_strategy, s, what="set_strategy(場面の戦略)", decided_from=("場面の入力",))
     eng.run()
     return st, eng
 
@@ -98,6 +103,8 @@ NON = "QuantCore が受ける事象は足(BarData)と約定のティック(TickD
 
 class QuantcoreAdapter(Adapter):
     name = "opp_quantcore"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"position_sizer": "FixedShares(1)", "slippage_pct": 0.0, "risk_limits": "既定"}}
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NON.format(k="資金調達", err=_kinds_attempt("funding"))

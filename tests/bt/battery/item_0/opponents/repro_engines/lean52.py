@@ -599,6 +599,9 @@ class QCAlgorithm:
         Symbol.Create (the scene set's symbol is one ticker string; market and leverage are left at
         their defaults and nothing rewritten here reads them), CreateSecurity's security model (it
         holds the configs it is given; the data path reads the configs only)."""
+        if getattr(self, "_running", False):
+            raise NotImplementedError("a security added while the algorithm runs (applied by OnEndOfTimeStep, "
+                                      "AlgorithmManager.cs 608, and selected at a later frontier) is not rewritten")
         symbol = ticker
         configs = self.DataManager.Add(symbol, security_type, resolution, fill_forward, extended_market_hours)
         security = {"Symbol": symbol, "Subscriptions": list(configs), "Leverage": leverage, "Market": market}
@@ -648,25 +651,25 @@ class QCAlgorithm:
 def run(algorithm: QCAlgorithm, reader, reverse_ties: bool = False) -> None:
     """The engine's run of one algorithm (round r8-1: from the user's Initialize).
 
-    Engine/Setup/BacktestingSetupHandler.cs calls `algorithm.Initialize()`; the
-    pending security additions are processed at the end of that step
-    (`OnEndOfTimeStep`, above) and the universe selection makes one
-    subscription per config (above). `reader(config)` is the data of that
-    config's source -- the file the user placed for it (the scene set's side:
-    the scene's events written as that config's data). Then, as
-    Engine/AlgorithmManager.cs Run: for each time slice of the feed (191),
-    `algorithm.SetDateTime(time)` (244), then `if (timeSlice.Slice.HasData)
-    algorithm.OnData(algorithm.CurrentSlice)` (582-586).
-    Conditions not rewritten, and why they cannot hold for the scenes: 197-201
-    and 360-369 the algorithm's status is not Running / a runtime error (the
-    scenes' algorithm only records); 204 cancellation (none); 216 the
-    portfolio value <= 0 in a backtest (the scenes place no order; LEAN's
-    default cash is not zero); 247 a time pulse (emitted only around universe
-    selection, SubscriptionSynchronizer.cs 225-229). A security added while the
-    algorithm runs (an AddCryptoFuture inside OnData) is applied at the end of
-    that time step and selected at a later frontier: that path is not
-    rewritten and is refused. `reverse_ties` hands the subscriptions to the
-    collection in the reverse order (ties of its sort are not fixed by the source)."""
+    Engine/Setup/BacktestingSetupHandler.cs 194 `algorithm.Initialize()` and 227
+    `algorithm.PostInitialize()`, which ends with `OnEndOfTimeStep()`
+    (QCAlgorithm.cs 791-855): the pending security additions go into the
+    user-defined universe; the universe selection makes one subscription per
+    config (above). `reader(config)` is the data of that config's source --
+    the file the user placed for it (the scene set's side: the scene's events
+    written as that config's data). Then, as Engine/AlgorithmManager.cs Run:
+    for each time slice of the feed (191), `algorithm.SetDateTime(time)` (244),
+    then `if (timeSlice.Slice.HasData) algorithm.OnData(algorithm.CurrentSlice)`
+    (582-586). Conditions not rewritten, and why they cannot hold for the
+    scenes: 197-201 and 360-369 the algorithm's status is not Running / a
+    runtime error (the scenes' algorithm only records); 204 cancellation
+    (none); 216 the portfolio value <= 0 in a backtest (the scenes place no
+    order; LEAN's default cash is not zero); 247 a time pulse (emitted only
+    around universe selection, SubscriptionSynchronizer.cs 225-229); 608 the
+    end-of-step processing of securities added while running (the scenes add
+    none; `_add_security` refuses one). `reverse_ties` hands the subscriptions
+    to the collection in the reverse order (ties of its sort are not fixed by
+    the source)."""
     algorithm.Initialize()
     algorithm.OnEndOfTimeStep()
     configs = algorithm._universe_selection()
@@ -676,15 +679,8 @@ def run(algorithm: QCAlgorithm, reader, reverse_ties: bool = False) -> None:
     subs = [Subscription(reader(c), c, utc_start_time=0) for c in configs]
     if reverse_ties:
         subs = list(reversed(subs))
-    adding = algorithm.AddCryptoFuture
-
-    def refuse(*a, **k):
-        raise NotImplementedError("adding a security while the algorithm runs is not rewritten")
-    algorithm.AddCryptoFuture = refuse
-    try:
-        for ts in sync(subs, 0):
-            algorithm.SetDateTime(ts.UtcTime)
-            if ts.HasData:
-                algorithm.OnData(ts)
-    finally:
-        algorithm.AddCryptoFuture = adding
+    algorithm._running = True
+    for ts in sync(subs, 0):
+        algorithm.SetDateTime(ts.UtcTime)
+        if ts.HasData:
+            algorithm.OnData(ts)

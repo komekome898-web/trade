@@ -39,7 +39,36 @@ TYPE = {"*gobacktest.Bar": "bar", "*gobacktest.Tick": "tick"}
 NO_TYPE = "この道具の相場の事象の型は Bar(OHLCV)と Tick(買い気配と売り気配)の 2 つで、{k} を渡す口が無い"
 
 
+_GO = "go:github.com/dirkolbrich/gobacktest"
+
+
+def _settings(payload: dict) -> None:
+    """Round r8-1 (positive definition A (1)): the settings the driver (survey_results/attempts/69.log, func main)
+    makes through the tool's public Go API, recorded in its order."""
+    if payload.get("mode") == "csv":
+        C.configure_compiled(f"{_GO}/data.(*BarEventFromCSVFile).Load", what="BarEventFromCSVFile{FileDir}.Load([X])",
+                             decided_from=("場面の入力",))
+        return
+    scene = ("場面の入力",)
+    C.configure_compiled(f"{_GO}.(*Data).SetStream", what="Data.SetStream(場面の足)", decided_from=scene)
+    C.configure_compiled(f"{_GO}.New", what="gobacktest.New()", decided_from=("公開の既定",))
+    C.configure_compiled(f"{_GO}.(*Backtest).SetSymbols", what="SetSymbols([X])", decided_from=scene)
+    C.configure_compiled(f"{_GO}.(*Backtest).SetData", what="SetData(data)", decided_from=scene)
+    C.configure_compiled(f"{_GO}.(*Portfolio).SetSizeManager",
+                         what=f"NewPortfolio().SetSizeManager(Size{{DefaultSize: {payload.get('qty', 1)}, DefaultValue: MaxFloat64}})",
+                         decided_from=scene)
+    C.configure_compiled(f"{_GO}.(*Backtest).SetPortfolio",
+                         what="SetPortfolio(" + ("場面の口座(Portfolio を包む)" if payload.get("plug") == "account" else "Portfolio") + ")",
+                         decided_from=scene)
+    C.configure_compiled(f"{_GO}.(*Backtest).SetExchange",
+                         what="SetExchange(NewExchange()" + (", Commission = 場面の費用の模型" if payload.get("plug") in ("cost05", "cost0375unit") else "")
+                              + ")", decided_from=scene)
+    C.configure_compiled(f"{_GO}.(*Backtest).SetStrategy", what="SetStrategy(場面の戦略 = NewStrategy の子, SetChildren(NewAsset(X)))",
+                         decided_from=scene)
+
+
 def drv(payload: dict) -> list[dict]:
+    _settings(payload)
     r = subprocess.run([EXE], input=json.dumps(payload), capture_output=True, text=True, timeout=60)
     return [json.loads(ln) for ln in r.stdout.splitlines() if ln.startswith("{")]
 
@@ -60,6 +89,8 @@ def carriers(rows) -> list:
 
 
 class GobacktestAdapter(Adapter):
+    # round r8-1 (positive definition A): one configured target (the driver uses the tool's defaults)
+    CONFIGS = {"": {"exchange": "NewExchange()", "portfolio": "NewPortfolio()"}}
     name = "opp_gobacktest"
 
     # ---------------- P0-1

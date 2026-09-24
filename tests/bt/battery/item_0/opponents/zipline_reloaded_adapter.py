@@ -53,7 +53,10 @@ def run(bars: list[dict], handle, initialize=None, capital=1_000_000.0):
     idx = pd.DatetimeIndex([_session(b) for b in rows])
     df = pd.DataFrame({k: [float(b[k]) for b in rows] for k in ("open", "high", "low", "close")}, index=idx)
     df["volume"] = [float(b.get("volume", 1.0)) for b in rows]
-    start, end = idx.min(), idx.max()
+    # round r8-1 (positive definition A): the run window (and the asset's and the bundle's sessions) is the configured
+    # target's chosen value, the same in every scene -- until round r8-1 it was the scene's first and last session,
+    # a setting fitted to input not yet delivered
+    start, end = pd.Timestamp(C.FIXED_WINDOW[0]), pd.Timestamp(C.FIXED_WINDOW[1])
     name = "sk" + uuid.uuid4().hex[:8]
 
     def ingest(environ, asset_db_writer, minute_bar_writer, daily_bar_writer, adjustment_writer, calendar,
@@ -66,8 +69,10 @@ def run(bars: list[dict], handle, initialize=None, capital=1_000_000.0):
         daily_bar_writer.write([(0, full)], show_progress=False)
         adjustment_writer.write()
 
-    bundles.register(name, ingest, calendar_name="24/7", start_session=start - pd.Timedelta(days=1), end_session=end)
-    bundles.ingest(name, os.environ, show_progress=False)
+    C.configure(bundles.register, name, ingest, calendar_name="24/7", start_session=start - pd.Timedelta(days=1), end_session=end,
+                what=f"bundles.register(利用者の ingest = 場面の足, calendar 24/7, {start.date()}〜{end.date()})",
+                decided_from=("場面の入力", "選ぶ値"))
+    C.configure(bundles.ingest, name, os.environ, show_progress=False, what="bundles.ingest(name)", decided_from=("場面の入力",))
     state = {"n": 0, "log": []}
 
     def init(ctx):
@@ -80,9 +85,11 @@ def run(bars: list[dict], handle, initialize=None, capital=1_000_000.0):
         state["n"] += 1
         handle(ctx, data, state["n"])
 
-    res = zipline.run_algorithm(start=start, end=end, initialize=init, handle_data=hd, capital_base=capital,
-                                data_frequency="daily", bundle=name, trading_calendar=CAL,
-                                benchmark_returns=pd.Series(0.0, index=CAL.sessions_in_range(start, end).tz_localize("UTC")))
+    res = C.configure(zipline.run_algorithm, start=start, end=end, initialize=init, handle_data=hd, capital_base=capital,
+                      data_frequency="daily", bundle=name, trading_calendar=CAL,
+                      benchmark_returns=pd.Series(0.0, index=CAL.sessions_in_range(start, end).tz_localize("UTC")),
+                      what=f"run_algorithm(start={start.date()}, end={end.date()}, capital_base={capital}, data_frequency=daily, "
+                           "bundle, trading_calendar 24/7, benchmark_returns 0)", decided_from=("選ぶ値", "場面の入力"))
     return state, res
 
 
@@ -117,6 +124,9 @@ def _try_non_bar(e: dict) -> str:
 
 
 class ZiplineReloadedAdapter(Adapter):
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"window": list(C.FIXED_WINDOW), "calendar": "24/7", "data_frequency": "daily",
+                    "slippage": "既定(場面が約定か費用の模型を名指すときは NoSlippage か場面の模型)"}}
     name = "opp_zipline_reloaded"
 
     # ---------------- P0-1
@@ -337,7 +347,7 @@ class ZiplineReloadedAdapter(Adapter):
             def process_order(self, data, order):
                 return 12345.0, order.amount
 
-        fills, _ = self._buy(sc, lambda ctx: Z.set_slippage(us_equities=Fixed()))
+        fills, _ = self._buy(sc, lambda ctx: C.configure(Z.set_slippage, us_equities=Fixed(), what="set_slippage(場面の約定の模型)"))
         return ok({"fill_price": float(fills[0]["price"]) if fills else None},
                   f"set_slippage(SlippageModel の子: process_order が (12345.0, 全量) を返す)。transactions: {fills}")
 
@@ -349,8 +359,9 @@ class ZiplineReloadedAdapter(Adapter):
             def calculate(self, order, transaction):
                 return 0.0 if order.commission else fee
 
-        fills, orders = self._buy(sc, lambda ctx: (Z.set_commission(us_equities=Flat()),
-                                                    Z.set_slippage(us_equities=zslip.NoSlippage())))
+        fills, orders = self._buy(sc, lambda ctx: (C.configure(Z.set_commission, us_equities=Flat(), what="set_commission(場面の費用の模型)"),
+                                                    C.configure(Z.set_slippage, us_equities=zslip.NoSlippage(),
+                                                                what="set_slippage(NoSlippage)", decided_from=("選ぶ値",))))
         comm = [o["commission"] for o in orders if o.get("filled")]
         return ok({"fee": float(comm[-1]) if comm else None}, f"set_commission(CommissionModel の子: 1 件 {fee})。orders: {orders}")
 
@@ -362,8 +373,9 @@ class ZiplineReloadedAdapter(Adapter):
             def calculate(self, order, transaction):
                 return 0.375 * abs(transaction.amount)
 
-        fills, orders = self._buy(sc, lambda ctx: (Z.set_commission(us_equities=PerUnit()),
-                                                    Z.set_slippage(us_equities=zslip.NoSlippage())), qty=2)
+        fills, orders = self._buy(sc, lambda ctx: (C.configure(Z.set_commission, us_equities=PerUnit(), what="set_commission(場面の費用の模型)"),
+                                                    C.configure(Z.set_slippage, us_equities=zslip.NoSlippage(),
+                                                                what="set_slippage(NoSlippage)", decided_from=("選ぶ値",))), qty=2)
         comm = [o["commission"] for o in orders if o.get("filled")]
         return ok({"fee": float(comm[-1]) if comm else None},
                   f"set_commission(CommissionModel の子: 0.375 × |transaction.amount|)、数量 2 の成行。orders: {orders}")

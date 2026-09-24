@@ -219,15 +219,15 @@ def test_stated_rule_recipes_reproduce_the_hand_written_orders():
     base = _scene("p5-same-time-twice")
     # round r7-1: each hand-written order is for the input built from that target's own types;
     # a target left out has fewer than two types and never gets this scene
-    assert set(R.FIXED_PREDICTED) <= set(R.STATED_RULES)
+    assert {t.partition('@')[0] for t in R.FIXED_PREDICTED} <= set(R.STATED_RULES)  # round r8-1: configured targets
     for target, (types, fixed) in R.FIXED_PREDICTED.items():
         sc = scenes.for_target_types(base, types)
         assert sc is not None, target
         if fixed is None:  # the rule leaves a tie
             with pytest.raises(R.RuleDoesNotDecide):
-                R.predicted(R.STATED_RULES[target], sc.input["streams"], sc.input["hand_over_order"])
+                R.predicted(R.rule_for(target), sc.input["streams"], sc.input["hand_over_order"])
             continue
-        assert R.predicted(R.STATED_RULES[target], sc.input["streams"], sc.input["hand_over_order"]) == fixed, target
+        assert R.predicted(R.rule_for(target), sc.input["streams"], sc.input["hand_over_order"]) == fixed, target
         assert sorted(fixed) == sorted(run_battery._all_tie_events(sc)), target
     for target, rule in R.STATED_RULES.items():
         assert rule.form in ("multi_input", "single_input") and rule.source and rule.quote
@@ -367,10 +367,11 @@ def test_every_ran_candidate_has_all_scenes_from_its_own_adapter():             
         if r["result"] != "走った":
             continue
         assert r["target"] in run_battery.OPPONENTS, r["cand"]
-        p = HERE / "survey_results" / f"{r['target']}.tsv"
-        with p.open(encoding="utf-8") as f:
-            ids = [row["scene_id"] for row in csv.DictReader(f, delimiter="\t")]
-        assert sorted(ids) == sorted(s.id for s in scenes.SCENES), r["cand"]
+        for t in run_battery.configured_targets(r["target"]):  # round r8-1: every configured target of the candidate
+            p = HERE / "survey_results" / f"{t}.tsv"
+            with p.open(encoding="utf-8") as f:
+                ids = [row["scene_id"] for row in csv.DictReader(f, delimiter="\t")]
+            assert sorted(ids) == sorted(s.id for s in scenes.SCENES), (r["cand"], t)
 
 
 def test_every_unrun_candidate_has_an_attempt_record_or_a_stated_danger():            # (c)
@@ -483,8 +484,16 @@ def test_no_recorded_result_was_refused_by_the_provenance_check():
     adapter-made carrier, a foreign reader, a value the strategy kept itself,
     an incomplete list of namings would show as provenance_error)."""
     bad = [(t, r["scene_id"], r["detail_1"][:160]) for t, rows in _records().items() for r in rows
-           if "provenance_error" in r["output_1"] or "出所の検めで採点しない" in r["detail_1"]]
+           if ("provenance_error" in r["output_1"] or "出所の検めで採点しない" in r["detail_1"])
+           and "まだ届いていない入力" not in r["detail_1"]]
     assert not bad, bad
+    # round r8-1: the only refusals left are settings the adapter itself recorded as decided from input not yet
+    # delivered (positive definition A); each such row names the refused setting
+    for t, rows in _records().items():
+        for r in rows:
+            if "まだ届いていない入力" in r["detail_1"] and "出所の検めで採点しない" in r["detail_1"]:
+                assert r["status_1"] == "error" and r["correctness"] == "結果なし", (t, r["scene_id"])
+                assert any("まだ届いていない入力" in x["decided_from"] for x in json.loads(r["settings_1"])), (t, r["scene_id"])
 
 
 def test_current_impl_passes_the_provenance_check():
@@ -838,10 +847,12 @@ def test_every_scene_a_containment_cites_as_correct_is_correct_in_the_records():
     for vp, cand, n, seg in _containing_segments():
         named = [targets[int(c)] for c in re.findall(r"(?:^|[\s(、。/])(\d+) [A-Za-z]", seg) if int(c) in targets]
         assert named, (vp, cand, n, seg[:120])
+        # round r8-1: a candidate's records are those of every configured target of it (<target>[@<label>])
+        named_files = [t for t in recs if t.partition("@")[0] in named]
         for group in re.findall(r"((?:p\d-[\w-]+(?:(?:の[^・、。 ]{1,8})?・)?)+) ?が正解と一致", seg):
             for sid in re.findall(r"p\d-[\w-]+", group):
                 checked += 1
-                ok_ = [t for t in named if recs.get(t, {}).get(sid, {}).get("correctness") == "正解と一致"]
+                ok_ = [t for t in named_files if recs.get(t, {}).get(sid, {}).get("correctness") == "正解と一致"]
                 assert ok_, f"{vp} {cand} 能 {n}: {sid} is cited as 正解と一致 but none of {named} has it in survey_results"
         for log in re.findall(r"survey_results/attempts/[\w.-]+", seg):
             assert (HERE / log).exists(), (vp, cand, n, log)
@@ -1036,14 +1047,16 @@ def test_every_skip_names_what_it_lacks_for_each_scene_the_survey_side_misses():
     assert checked > 0
 
 
-def test_the_reproduction_raised_the_best_where_the_review_said_it_would():
-    """The skip that br6-2-2 turned into a reproduction (52 LEAN, P0-1) now
-    carries p1-merge-by-time; the reproduction's records passed the same
-    provenance check (its engine is the only place of the target)."""
-    recs = {r["scene_id"]: r for r in _records()["repro_lean52"]}
-    assert recs["p1-merge-by-time"]["correctness"] == "正解と一致"
+def test_the_reproduction_is_run_for_every_configured_target_and_placed_in_its_engine():
+    """Round r8-1 (i0-r7-03): the reproduction of 52 LEAN is run once per configured target (the resolutions its
+    Initialize passes to AddCryptoFuture), each with its own record; its engine is the target's only place."""
+    recs = _records()
+    for t in run_battery.configured_targets("repro_lean52"):
+        assert t in recs, t
+        choose = {r["choose"] for r in recs[t]}
+        assert len(choose) == 1, t  # one set of chosen values for every scene of a configured target
     assert _best_by_scene()["p1-merge-by-time"] == "正解と一致"
-    roots = run_battery.roots_of("repro_lean52")
+    roots = run_battery.roots_of("repro_lean52@tick")
     assert [Path(d).name for d in roots.dirs] == ["lean52.py"] and "repro_engines" in roots.dirs[0]
     import common as C
     assert C.in_scene_set(str(HERE / "opponents" / "repro_lean52.py"))
@@ -1055,7 +1068,7 @@ def test_the_reproduction_raised_the_best_where_the_review_said_it_would():
 # decided by which event types a target has (that is what P0-3 measures).
 # i0-r6-04: the reproduction rewrites every condition of the source that
 # encloses a rewritten statement (IsInternalFeed, the subscription sort).
-TYPED = {"p1-merge-by-time", "p1-typed-events", "p5-same-time-twice", "p5-hand-over-order"}
+TYPED = set(scenes.L438_2_SCENES)
 
 
 def _kinds_in(inp) -> set:
@@ -1108,22 +1121,20 @@ def test_typed_scenes_are_built_by_their_rule_for_any_set_of_types():
     assert typed.expected == {"sequence": [["book_snapshot", scenes.T0 + scenes.DAY], ["bar", scenes.T0 + 2 * scenes.DAY]]}
 
 
-def test_the_runner_takes_the_types_from_the_p3_results_and_never_asks_the_adapter():
-    t = scenes.T0 + scenes.DAY
-    p3 = {"p3-trade": SceneResult("ok", {"sequence": [["trade", t]]}),
-          "p3-bar": SceneResult("ok", {"sequence": [["bar", t], ["bar", t + scenes.DAY]]}),  # a late extra bar: still a bar
-          "p3-book_snapshot": SceneResult("ok", {"sequence": []}),                           # nothing delivered
-          "p3-book_delta": SceneResult("ok", {"sequence": [["price", t]]}),                 # delivered as another type
-          "p3-funding": SceneResult("error", detail="x"), "p3-liquidation": SceneResult("not_supported")}
-    assert run_battery.target_types(p3) == ["trade", "bar"]
+def test_the_runner_takes_the_types_from_the_p3_grades_and_never_asks_the_adapter():
+    """Round r8-1 (positive definition A, L-438 (2)): a type of the configured target is one whose p3-<type>
+    scene of the same run was graded 正解と一致; 不一致, 対応なし and 結果なし are not had."""
+    grades = {"p3-trade": "正解と一致", "p3-bar": "正解と一致", "p3-book_snapshot": "不一致",
+              "p3-book_delta": "対応なし", "p3-funding": "結果なし"}  # p3-liquidation: no grade at all
+    assert run_battery.target_types(grades) == ["trade", "bar"]
 
     class Never:
         def run_scene(self, sc):
             raise AssertionError("the adapter must not be asked when the target has too few types")
 
     sc = _scene("p5-same-time-twice")
-    _, res = run_battery.run_for_types(Never(), sc, {"p3-bar": p3["p3-bar"]})
-    assert res.status == "not_supported" and "最低 2 種" in res.detail and "p3-bar: ok" in res.detail
+    _, res, settings = run_battery.run_for_types(Never(), sc, {"p3-bar": "正解と一致", "p3-trade": "不一致"})
+    assert res.status == "not_supported" and "最低 2 種" in res.detail and "p3-trade: 不一致" in res.detail and settings == []
 
     seen = []
 
@@ -1132,35 +1143,30 @@ def test_the_runner_takes_the_types_from_the_p3_results_and_never_asks_the_adapt
             seen.append(s)
             return SceneResult("not_supported", detail="rec")
 
-    conc, res = run_battery.run_for_types(Rec(), sc, p3)
+    conc, res, _ = run_battery.run_for_types(Rec(), sc, grades)
     assert seen and seen[0].input["types"] == {"A": "trade", "B": "bar"} and conc is seen[0]
     assert res.detail.startswith("型の選び方(runner")
 
 
-def test_every_record_of_a_typed_scene_used_the_types_of_its_own_p3_rows():
-    """The survey records were made by the runner of this round: the typed
-    scenes' types are the ones the same record's p3 rows show."""
+def test_every_record_of_a_typed_scene_used_the_types_of_its_own_p3_grades():
+    """The survey records were made by the runner of this round: the typed scenes' types are the ones the same
+    record's p3 rows were graded 正解と一致 for, and the chosen type combination is in `types_1`."""
     for target, rows in _records().items():
         by = {r["scene_id"]: r for r in rows}
-        p3 = {}
-        for k in scenes.TYPE_ORDER:
-            r = by[f"p3-{k}"]
-            out = json.loads(r["output_1"]) if r["output_1"] not in ("", "null") else None
-            p3[f"p3-{k}"] = SceneResult(r["status_1"], out if isinstance(out, dict) else None)
-        types = run_battery.target_types(p3)
-        for sid in TYPED:
-            assert by[sid]["detail_1"].startswith(f"型の選び方(runner、第 r7-1 回): 対象の型 {types}"), (target, sid)
+        types = run_battery.target_types({f"p3-{k}": by[f"p3-{k}"]["correctness"] for k in scenes.TYPE_ORDER})
+        for sid in scenes.L438_2_SCENES:
+            assert by[sid]["detail_1"].startswith(f"型の選び方(runner、第 r8-1 回): 設定つき対象の持つ型 {types}"), (target, sid)
+            built = scenes.for_target_types(_scene(sid), types)
+            assert json.loads(by[sid]["types_1"]) == (built.input["types"] if built else None), (target, sid)
 
 
 def test_every_target_with_a_type_has_a_trade_or_a_bar():
     """The any_type scenes and the two P0-4 bar scenes let a target use a trade
-    or a bar; every recorded target that delivers any type has one of them."""
+    or a bar; every recorded target that delivers any market type in its p3 scenes delivers one of them."""
     for target, rows in _records().items():
         by = {r["scene_id"]: r for r in rows}
-        p3 = {f"p3-{k}": SceneResult(by[f"p3-{k}"]["status_1"], json.loads(by[f"p3-{k}"]["output_1"]))
-              for k in scenes.TYPE_ORDER}
-        types = run_battery.target_types(p3)
-        assert not types or {"trade", "bar"} & set(types), (target, types)
+        delivered = [k for k in scenes.TYPE_ORDER if by[f"p3-{k}"]["status_1"] == "ok"]
+        assert not delivered or {"trade", "bar"} & set(delivered), (target, delivered)
 
 
 def test_one_call_per_event_grades_the_times_of_the_calls_not_the_type():
@@ -1196,14 +1202,23 @@ def test_lean_reproduction_keeps_internal_feeds_out_of_the_slice():
     tick = L.Tick(t, "X", "", "", 1.0, 100.0)
     rate = L.MarginInterestRate()
     rate.Time, rate.Symbol, rate.InterestRate = t, "X", 0.1
-    internal = L.SubscriptionDataConfig(L.Tick, "X", L.TickType.Trade, L.SecurityType.CryptoFuture, True)
-    internal_rate = L.SubscriptionDataConfig(L.MarginInterestRate, "X", L.TickType.Quote, L.SecurityType.CryptoFuture, True)
-    L.run(A(), [L.Subscription([tick], internal), L.Subscription([rate], internal_rate)])
+    dm = L.DataManager()
+    internal = dm.Add("X", L.SecurityType.CryptoFuture, L.Resolution.Tick, False, is_internal_feed=True,
+                      subscription_data_types=[(L.Tick, L.TickType.Trade), (L.MarginInterestRate, L.TickType.Quote)])
+    for s_ in L.sync([L.Subscription([tick], internal[0]), L.Subscription([rate], internal[1])], 0):
+        if s_.HasData:
+            A().OnData(s_)
     assert got == []  # TimeSliceFactory.cs 181 / 194 / 329: nothing of an internal feed reaches OnData (HasData false, 389)
-    user = L.data_manager_add("X", L.SecurityType.CryptoFuture, [(L.Tick, L.TickType.Trade), (L.MarginInterestRate, L.TickType.Quote)])
-    assert [c.IsInternalFeed for c in user] == [False, False]  # DataManager.cs 720-721 with AddSecurity's defaults
-    assert L.data_manager_add("X", L.SecurityType.CryptoFuture, [(L.Tick, "OpenInterest")])[0].IsInternalFeed is True
-    L.run(A(), [L.Subscription([tick], user[0]), L.Subscription([rate], user[1])])
+    user = L.DataManager().Add("X", L.SecurityType.CryptoFuture, L.Resolution.Tick, False)
+    assert [c.IsInternalFeed for c in user] == [False, False, False]  # DataManager.cs 720-721 with AddSecurity's defaults
+    oi = L.DataManager().Add("X", L.SecurityType.CryptoFuture, L.Resolution.Tick, False,
+                             subscription_data_types=[(L.Tick, "OpenInterest")])
+    assert oi[0].IsInternalFeed is False  # 720: internal by OpenInterest only when the data types were NOT given
+    by_type = {(c.Type, c.TickType): c for c in user}
+    for s_ in L.sync([L.Subscription([tick], by_type[(L.Tick, L.TickType.Trade)]),
+                      L.Subscription([rate], by_type[(L.MarginInterestRate, L.TickType.Quote)])], 0):
+        if s_.HasData:
+            A().OnData(s_)
     assert got == [[("Tick", t), ("MarginInterestRate", t), ("rates", ["X"]), ("ticks", ["X"])]]
 
 
@@ -1214,13 +1229,208 @@ def test_lean_reproduction_sorts_the_subscriptions_by_their_key():
     t = 10 * L.TICKS_PER_SECOND
 
     def sub(kind, sym):
+        cfgs = {(c.Type, c.TickType): c for c in L.DataManager().Add(sym, L.SecurityType.CryptoFuture, L.Resolution.Tick, False)}
         if kind == "rate":
             d = L.MarginInterestRate()
             d.Time, d.Symbol = t, sym
-            return L.Subscription([d], L.data_manager_add(sym, L.SecurityType.CryptoFuture, [(L.MarginInterestRate, L.TickType.Quote)])[0])
-        d = L.Tick(t, sym, "", "", 1.0, 1.0)
-        return L.Subscription([d], L.data_manager_add(sym, L.SecurityType.CryptoFuture, [(L.Tick, L.TickType.Trade)])[0])
+            return L.Subscription([d], cfgs[(L.MarginInterestRate, L.TickType.Quote)])
+        return L.Subscription([L.Tick(t, sym, "", "", 1.0, 1.0)], cfgs[(L.Tick, L.TickType.Trade)])
 
     subs = [sub("rate", "A"), sub("tick", "B"), sub("tick", "A")]
     assert [(s.Configuration.TickType, s.Configuration.Symbol) for s in L.sort_subscriptions(subs)] == \
         [(L.TickType.Trade, "A"), (L.TickType.Trade, "B"), (L.TickType.Quote, "A")]
+
+
+# ---------------------------------------------------------------- round r8-1
+# i0-r7-03 / positive definition A: settings, configured targets, the types of a configured target.
+# i0-r7-05 / positive definition C: the table of every viewpoint's cells.
+# L-438 (2) / LEAD_DESIGN.md section 7.2 item 10: the four scenes named by id.
+
+def test_l438_2_names_four_scenes_by_id_and_only_they_take_types_from_the_target():
+    assert scenes.L438_2_SCENES == ("p1-merge-by-time", "p1-typed-events", "p5-same-time-twice", "p5-hand-over-order")
+    assert {s.id for s in scenes.SCENES if s.type_plan is not None} == set(scenes.L438_2_SCENES)
+    assert all(_scene(sid).viewpoint in ("P0-1", "P0-5") for sid in scenes.L438_2_SCENES)
+    text = (HERE / "DEFINITIONS.md").read_text(encoding="utf-8")
+    assert "・".join(scenes.L438_2_SCENES) in text
+
+
+def _setting_rec(fn=None, **kw):
+    import common as C
+    C.settings_begin()
+    kw.setdefault("what", "x")
+    C.configure(fn or run_battery.split_target, "a@b", **kw)
+    return C.settings_taken()
+
+
+def test_a_setting_counts_only_when_made_through_the_targets_code_from_knowable_values():
+    import common as C
+    roots_target = run_battery.Roots([str(HERE / "run_battery.py")], [], [])  # a stand-in place of a target
+    good = _setting_rec(decided_from=("選ぶ値",))
+    assert run_battery.settings_problem(good, roots_target) is None
+    assert "対象の配布物に無い" in run_battery.settings_problem(good, run_battery.Roots(["/nonexistent"], [], []))
+    unseen = _setting_rec(decided_from=("場面の入力", "まだ届いていない入力"))
+    assert "まだ届いていない入力" in run_battery.settings_problem(unseen, roots_target)
+    forged = [C.Record({"fn": "run_battery.split_target", "fn_file": str(HERE / "run_battery.py"), "when": "開始前",
+                        "decided_from": ["選ぶ値"]})]  # a record not made by common.configure
+    assert "手で書いた値" in run_battery.settings_problem(forged, roots_target)
+    with pytest.raises(ValueError):
+        _setting_rec(decided_from=("思いついた値",))
+    with pytest.raises(ValueError):
+        _setting_rec(when="いつか")
+    # an ok result made under a refused setting is not graded
+    res = run_battery.checked(SceneResult("ok", {"x": 1}), _scene("p6-place-then-cancel"), roots=roots_target, settings=unseen)
+    assert res.status == "error" and "まだ届いていない入力" in res.detail
+
+
+def test_every_ok_survey_row_records_the_settings_of_its_run():
+    """Round r8-1: each survey row the runner graded from an engine's run carries the settings of that run
+    (`settings_1`, made by common.configure*). The ISO scenes call a reader and make no setting."""
+    for t, rows in _records().items():
+        for r in rows:
+            if r["status_1"] != "ok" or r["scene_id"] in ("p2-iso-utc", "p2-iso-offset"):
+                continue
+            st = json.loads(r["settings_1"])
+            assert isinstance(st, list) and st, (t, r["scene_id"])
+            for x in st:
+                assert x["when"] in ("開始前", "戦略の呼び出しの中") or x["when"].startswith("その他: "), (t, x)
+                assert x["decided_from"] and set(x["decided_from"]) <= {"場面の入力", "選ぶ値", "公開の既定", "戦略が受けた物"}, (t, x)
+
+
+def test_a_configured_target_runs_every_scene_with_one_set_of_chosen_values():
+    for t, rows in _records().items():
+        assert len({r["choose"] for r in rows}) == 1, t
+        assert all(r["target"] == t for r in rows), t
+
+
+def test_the_configured_targets_listed_are_the_adapters_configs():
+    import ast
+    for base in ["current_impl", "new_impl", *run_battery.OPPONENTS, *run_battery._repro_targets()]:
+        ts = run_battery.configured_targets(base)
+        assert ts and len(ts) == len(set(ts)), base
+        assert all(run_battery.split_target(t)[0] == base for t in ts), base
+    # Basana's chosen priority is the one its stated same-time rule is written for
+    tree = ast.parse((HERE / "opponents" / "basana_adapter.py").read_text(encoding="utf-8"))
+    cfg = next(ast.literal_eval(st.value) for n in ast.walk(tree) if isinstance(n, ast.ClassDef) and n.name == "BasanaAdapter"
+               for st in n.body if isinstance(st, ast.Assign) and any(getattr(x, "id", "") == "CONFIGS" for x in st.targets))
+    import stated_rules
+    assert cfg[""]["priority"] == stated_rules.TYPE_PRIORITY
+
+
+def test_lean_subscriptions_come_from_the_resolution_through_the_public_entry():
+    """i0-r7-03: the reproduction's subscriptions are what LEAN's own lookup makes of the resolution the
+    algorithm passes to AddCryptoFuture (LeanData.GetDataType); the scene set never builds a config itself."""
+    from opponents.repro_engines import lean52 as L
+    want = {"Tick": {("Tick", "Trade"), ("Tick", "Quote"), ("MarginInterestRate", "Quote")}}
+    for r in ("Second", "Minute", "Hour", "Daily"):
+        want[r] = {("TradeBar", "Trade"), ("QuoteBar", "Quote"), ("MarginInterestRate", "Quote")}
+    for r, types in want.items():
+        a = L.QCAlgorithm()
+        a.AddCryptoFuture("X", r, None, False)
+        a.OnEndOfTimeStep()
+        got = {(c.Type.__name__, c.TickType) for c in a._universe_selection()}
+        assert got == types, r
+    two = L.QCAlgorithm()
+    two.AddCryptoFuture("X", "Tick", None, False)
+    two.AddCryptoFuture("X", "Minute", None, False)
+    two.OnEndOfTimeStep()
+    assert len(two._universe_selection()) == 6  # both calls' configs, the two MarginInterestRate configs differ by resolution
+    src = (HERE / "opponents" / "repro_lean52.py").read_text(encoding="utf-8")
+    assert "data_manager_add" not in src and "SubscriptionDataConfig(" not in src and "DataManager(" not in src
+    assert "C.configure(self.AddCryptoFuture" in src
+
+
+def _grid_axes_from_the_requirements():
+    """The axes rebuilt here from the requirements' text and the judgments (not from grid_c's output)."""
+    import csv
+    import re
+    lines = (run_battery.REPO / "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/REQUIREMENTS.md").read_text(
+        encoding="utf-8").split("\n")
+    segs = []
+    for n, c in [(9, 4)] + [(n, c) for n in range(17, 24) for c in (2, 3)]:
+        cell = [x.strip() for x in lines[n - 1].strip().strip("|").split("|")][c - 1]
+        segs += [x.strip() for x in re.split(r"[・、。()（）/「」:]|\*\*|\+", cell) if x.strip()]
+    with (HERE / "grid_c_judgments.tsv").open(encoding="utf-8") as f:
+        judged = [r for r in csv.reader(f, delimiter="\t") if r and not r[0].startswith("#")]
+    return segs, judged
+
+
+def test_grid_every_requirement_segment_has_one_judgment():                            # (d)
+    segs, judged = _grid_axes_from_the_requirements()
+    assert [int(r[0]) for r in judged] == list(range(1, len(segs) + 1))
+    assert [r[1] for r in judged] == segs
+    for r in judged:
+        assert r[2][:2] in ("E:", "V:", "X:", "N:") and len(r[2]) > 2, r
+
+
+def test_grid_table_lists_every_cell_of_every_viewpoint_once():                        # (a) (b) (c)
+    import grid_c
+    import itertools
+    _, judged = _grid_axes_from_the_requirements()
+    ev = list(dict.fromkeys(r[2][2:] for r in judged if r[2].startswith("E:")))
+    see = list(dict.fromkeys(r[2][2:] for r in judged if r[2].startswith("V:")))
+    extra: dict = {}
+    for r in judged:
+        if r[2].startswith("X:"):
+            _, vp, ax, val = r[2].split(":", 3)
+            extra.setdefault(vp, [])
+            if val not in extra[vp]:
+                extra[vp].append(val)
+    rows = grid_c.table(scenes.SCENES)
+    got = [(r["viewpoint"], r["event"], r["see"], r["extra"]) for r in rows]
+    want = [(vp, e, s_, x) for vp in [f"P0-{i}" for i in range(1, 8)]
+            for e, s_, x in itertools.product(ev, see, extra.get(vp, [""]))]
+    assert sorted(got) == sorted(want) and len(got) == len(set(got))            # (a) every cell, once
+    covers = {(s_.viewpoint, *c): s_.id for s_ in scenes.SCENES for c in s_.covers}
+    for r in rows:
+        key = (r["viewpoint"], r["event"], r["see"], r["extra"])
+        assert r["verdict"] in ("場面にした", "場面にしない", "未決"), r
+        if r["verdict"] == "場面にした":                                            # (b)
+            assert r["scenes"] and all(key in {(s_.viewpoint, *c) for s_ in scenes.SCENES if s_.id == i for c in s_.covers}
+                                       for i in r["scenes"]), r
+        else:
+            assert key not in covers, r
+        if r["verdict"] == "場面にしない":                                          # (c)
+            lead = r["quote"].startswith("docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §7 の 2")
+            assert lead or r["quote"] in grid_c.measure_text(r["viewpoint"]), r
+            if lead:  # the decision names the notices and the clock of P0-4 only
+                assert r["viewpoint"] == "P0-4" and (r["event"] == "時計" or r["event"].endswith("の通知")), r
+    outside = {c[0] for s_ in scenes.SCENES for c in s_.covers} - set(ev)
+    assert outside == set(scenes.OUTSIDE_AXES)
+    text = (HERE / "DEFINITIONS.md").read_text(encoding="utf-8")
+    assert "升目を列べない" not in text and "観点: なし" not in text  # no statement that skips listing the cells
+
+
+def test_every_line_the_scene_keeper_writes_is_listed_and_every_marked_line_judged():
+    """Round r8-1 (positive definition B): every line of every file the scene keeper writes is in the output of
+    line_marks.py; a line naming a scene (id, family, Scene field, a count of scenes) has a judgment in
+    line_judgments.tsv of a known category, and the categories that rest on a machine stay where the machine is."""
+    import line_marks as M
+    lines = M.all_lines()
+    judged = M.judgments()
+    marked = [x for x in lines if x[3]]
+    missing = [(f, i, t[:100]) for f, i, t, _ in marked if M.key(f, t) not in judged]
+    assert not missing, missing[:10]
+    assert len(marked) + sum(1 for x in lines if not x[3]) == len(lines)
+    for f, i, t, _ in marked:
+        cat = judged[M.key(f, t)][0]
+        assert cat in M.CATEGORIES, (f, i, cat)
+        if cat == "生成物":
+            assert f == "DEFINITIONS.md", (f, i)
+        if cat == "照合元":
+            assert f == "scenes.py", (f, i)
+        if cat == "試験が照らす":
+            assert f in ("opponents/CONSIDERED.md", "mutant.py"), (f, i)
+    files = set(M.files())
+    assert {"opponents/CONSIDERED.md", "DEFINITIONS.md", "scenes.py", "ROOTCAUSE_r8-1.md"} <= files
+    assert not any(f.startswith("survey_results/") for f in files)
+
+
+def test_the_handoff_to_the_materials_role_is_in_the_definitions_and_the_columns_exist():
+    """Round r8-1 (positive definition A, handoff): DEFINITIONS.md carries the handoff to the materials role with the
+    table's one note sentence, and every runner output has the columns the handoff names."""
+    text = (HERE / "DEFINITIONS.md").read_text(encoding="utf-8")
+    assert "## 資料係への申し送り" in text
+    assert "「型の組は対象の持つ型から規則で決めた」" in text
+    for t, rows in _records().items():
+        for col in ("choose", "settings_1", "types_1"):
+            assert rows and col in rows[0], (t, col)

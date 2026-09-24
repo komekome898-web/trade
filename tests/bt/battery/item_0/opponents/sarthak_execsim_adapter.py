@@ -61,21 +61,54 @@ NO_TYPES = ("この道具の市場の事象は MarketData の Tick(買い気配�
             "(events/event.hpp の Event は MarketData / OrderSubmit / OrderCancel / OrderFill / OrderReject / Trade / PositionUpdate / Session / EndOfDay)")
 
 
+def _settings(mode: str, plug: str = "none") -> None:
+    """Round r8-1 (positive definition A (1)): the settings the driver (survey_results/attempts/33.log, fn main)
+    makes through the tool's public C++ API, recorded in its order. Every mode sets `BacktestConfig.start_time` to
+    the first tick's time, and the order mode puts one resting sell at the first trade's price and size into the
+    matching engine before the run: settings decided from input not yet delivered (recorded as such, so the
+    runner does not grade these runs). The driver would have to be rebuilt to make them from chosen values."""
+    unseen = ("場面の入力", "まだ届いていない入力")
+    C.configure_compiled("cpp:execution_simulator BacktestConfig.start_time", what="BacktestConfig.start_time = 最初の tick の時刻",
+                         decided_from=unseen)
+    lat = {"md0": "market_data_latency_ns = 0", "future": "market_data_latency_ns = 0"}.get(mode, "既定(submit 1000 / market data 500 / fill report 500 ns)")
+    if plug == "latency7ms":
+        lat = "order_submit 7 ms、market data / cancel / fill report 0(場面の遅れ)"
+    C.configure_compiled("cpp:execution_simulator BacktestConfig.latency", what=f"LatencyConfig({lat})",
+                         decided_from=("場面の入力",) if plug == "latency7ms" else ("選ぶ値",))
+    C.configure_compiled("cpp:execution_simulator ExecutionSimulator::ExecutionSimulator(BacktestConfig)", what="ExecutionSimulator(cfg)",
+                         decided_from=("選ぶ値",))
+    if plug in ("fill12345", "cost05", "cost0375unit"):
+        which = "set_slippage_model" if plug == "fill12345" else "set_cost_model"
+        C.configure_compiled(f"cpp:execution_simulator ExecutionSimulator::{which}", what=f"{which}(場面の模型)", decided_from=("場面の入力",))
+    if mode == "orders":
+        C.configure_compiled("cpp:execution_simulator MatchingEngine::submit_order",
+                             what="matching_engine().submit_order(売り 指値 = 最初の約定の価格 × 数量)(流動性を先に置く)", decided_from=unseen)
+    C.configure_compiled("cpp:execution_simulator ExecutionSimulator::add_tick", what="add_tick(場面の tick)", decided_from=("場面の入力",))
+
+
 class SarthakExecsimAdapter(Adapter):
     name = "opp_sarthak_execsim"
+    # round r8-1 (positive definition A): the market-data latency is a value the user chooses; each value is its own
+    # configured target, the same in every scene (until round r8-1 the md scenes reported the 0 run and the others
+    # ran with the default)
+    CONFIGS = {"md_latency=default": {"market_data_latency": "default"}, "md_latency=0": {"market_data_latency": 0}}
+
+    def __init__(self, config: str = "md_latency=default") -> None:
+        super().__init__(config or "md_latency=default")
 
     def _md(self, events):
-        default = drv("md", *ticks(events))
-        zero = drv("md0", *ticks(events))
-        return zero, default
+        mode = "md0" if self.choose["market_data_latency"] == 0 else "md"
+        _settings(mode)
+        out = drv(mode, *ticks(events))
+        return out, out
 
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):
         zero, default = self._md(C.events(sc))
         md = [r for r in zero if r[0] == "MD"]
         return ok({"sequence": [["tick", int(r[1])] for r in md]},
-                  "足の型が無いので足を Tick(値 = 終値)にして add_tick、callback が受けた (道具の型 = MarketData の Tick、時刻)。LatencyConfig.market_data_latency_ns = 0 の走り。"
-                  f"既定(500 ns)の走りの時刻: {[int(r[1]) for r in default if r[0] == 'MD']}", {"carriers": [C.compiled(MD_CARRIER) for _ in md]})
+                  "足の型が無いので足を Tick(値 = 終値)にして add_tick、callback が受けた (道具の型 = MarketData の Tick、時刻)。"
+                  f"LatencyConfig.market_data_latency_ns = {self.choose['market_data_latency']}", {"carriers": [C.compiled(MD_CARRIER) for _ in md]})
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NO_TYPES.format(k="資金調達や約定と足"))
@@ -95,8 +128,8 @@ class SarthakExecsimAdapter(Adapter):
                                    "volume": 1.0} for e in C.events(sc)])
         md = [r for r in zero if r[0] == "MD"]
         return ok({"observed_ts_ns": [int(r[1]) for r in md]},
-                  "Tick の timestamp(int64 ns)で渡し、callback の MarketData の時刻。market_data_latency_ns = 0 の走り。"
-                  f"既定(500 ns を足して Tick の時刻を書き換える、execution_simulator.cpp add_tick)の走り: {[int(r[1]) for r in default if r[0] == 'MD']}",
+                  "Tick の timestamp(int64 ns)で渡し、callback の MarketData の時刻。"
+                  f"market_data_latency_ns = {self.choose['market_data_latency']}(既定は 500 ns を足して Tick の時刻を書き換える、execution_simulator.cpp add_tick)",
                   {"carriers": [C.compiled(MD_CARRIER) for _ in md]})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
@@ -113,6 +146,7 @@ class SarthakExecsimAdapter(Adapter):
                              "SessionStart / EndOfDay の事象型はあるが積む公開の口が無い)")
 
     def _orders(self, sc, kind, qty, capital, plug="none"):
+        _settings("orders", plug)
         return drv("orders", kind, qty, capital, plug, *ticks(C.events(sc)))
 
     def scene_p3_notice_accepted(self, sc):
@@ -137,6 +171,7 @@ class SarthakExecsimAdapter(Adapter):
         return not_supported("事象ごとの受け取れる時刻を持つ口が無い(Tick の時刻は 1 つで、配信の遅れは LatencyConfig の全体で 1 つの定数)")
 
     def scene_p4_future_read_attempt(self, sc):
+        _settings("future")
         out = drv("future", sc.input["probe_at_ns"], *ticks(C.events(sc)))
         att = C.Attempts()
         peek = next((r for r in out if r[0] == "PEEK"), None)
@@ -160,7 +195,7 @@ class SarthakExecsimAdapter(Adapter):
         zero, default = self._md(C.events(sc))
         md = [r for r in zero if r[0] == "MD"]
         return ok({"prices": [float(r[2]) for r in md]},
-                  f"同じ時刻の 3 本を add_tick、callback の MarketData の値の順。既定の走り: {[float(r[2]) for r in default if r[0] == 'MD']}",
+                  f"同じ時刻の 3 本を add_tick、callback の MarketData の値の順(market_data_latency_ns = {self.choose['market_data_latency']})",
                   {"carriers": [C.compiled(MD_CARRIER) for _ in md]})
 
     # ---------------- P0-6

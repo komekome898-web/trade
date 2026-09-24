@@ -79,16 +79,30 @@ def _flag_both(a: np.ndarray) -> np.ndarray:
 
 
 def _backtest(data: np.ndarray, entry_latency: int = 0, fee: tuple[str, float] = ("value", 0.0)):
-    asset = (H.BacktestAsset().data([data]).linear_asset(1.0).constant_order_latency(entry_latency, 0)
-             .risk_adverse_queue_model().no_partial_fill_exchange().tick_size(TICK).lot_size(0.001)
-             .last_trades_capacity(1000))
+    """The asset and the backtest, each builder step a recorded setting (round r8-1, positive definition A (1)).
+    The queue model, the exchange model, tick / lot size, the trades buffer and the linear asset are the
+    configured target's chosen values (`HftbacktestAdapter.CONFIGS`); latency and fee are the scene's."""
+    def step(fn, *args, what, frm=("選ぶ値",)):
+        return C.configure(fn, *args, what=what, decided_from=frm)
+
+    asset = step(H.BacktestAsset, what="BacktestAsset()", frm=("公開の既定",))
+    asset = step(asset.data, [data], what="BacktestAsset.data([場面の事象の配列])", frm=("場面の入力",))
+    asset = step(asset.linear_asset, 1.0, what="linear_asset(1.0)")
+    asset = step(asset.constant_order_latency, entry_latency, 0, what=f"constant_order_latency({entry_latency}, 0)",
+                 frm=("場面の入力",) if entry_latency else ("選ぶ値",))
+    asset = step(asset.risk_adverse_queue_model, what="risk_adverse_queue_model()")
+    asset = step(asset.no_partial_fill_exchange, what="no_partial_fill_exchange()")
+    asset = step(asset.tick_size, TICK, what=f"tick_size({TICK})")
+    asset = step(asset.lot_size, 0.001, what="lot_size(0.001)")
+    asset = step(asset.last_trades_capacity, 1000, what="last_trades_capacity(1000)")
+    frm = ("場面の入力",) if fee[1] else ("選ぶ値",)
     if fee[0] == "flat":
-        asset = asset.flat_per_trade_fee_model(fee[1], fee[1])
+        asset = step(asset.flat_per_trade_fee_model, fee[1], fee[1], what=f"flat_per_trade_fee_model({fee[1]}, {fee[1]})", frm=frm)
     elif fee[0] == "qty":
-        asset = asset.trading_qty_fee_model(fee[1], fee[1])
+        asset = step(asset.trading_qty_fee_model, fee[1], fee[1], what=f"trading_qty_fee_model({fee[1]}, {fee[1]})", frm=frm)
     else:
-        asset = asset.trading_value_fee_model(fee[1], fee[1])
-    return H.HashMapMarketDepthBacktest([asset])
+        asset = step(asset.trading_value_fee_model, fee[1], fee[1], what=f"trading_value_fee_model({fee[1]}, {fee[1]})", frm=frm)
+    return step(H.HashMapMarketDepthBacktest, [asset], what="HashMapMarketDepthBacktest([asset])", frm=("場面の入力",))
 
 
 def _levels(depth, side: str, limit: int = 20000) -> list[list[float]]:
@@ -136,32 +150,34 @@ def run(evs: list[dict], on_call=None, entry_latency=0, fee=("value", 0.0), prep
     calls = []
     try:
         for n in range(1, max_calls + 1):
-            code = C.read(hbt.wait_next_feed, True, 10**17)
-            feed = C.carrier(code)
-            if code == 0:
-                break
-            now = int(hbt.current_timestamp)
-            if code == 1:
-                # At the end of the data the last feed is processed but current_timestamp is not
-                # advanced (measured); the tool's own report of the last feed's receipt time is used.
-                fl = hbt.feed_latency(0)
-                if fl is not None:
-                    now = max(now, int(fl[1]))
-            trades = [{"exch_ts": int(t["exch_ts"]), "local_ts": int(t["local_ts"]), "price": float(t["px"]),
-                       "qty": float(t["qty"]), "side": "buy" if int(t["ev"]) & BUY_EVENT else "sell",
-                       "carrier": _row_carrier(t)}
-                      for t in C.read(hbt.last_trades, 0)]
-            if clear:
-                hbt.clear_last_trades(0)
-            if code == 1 and not trades and n > 1 and now == calls[-1][1]:
-                break  # end of data with nothing new
-            c = _Call((2 if code == 1 else code, now, trades))
-            c.feed = feed
-            calls.append(c)
-            if on_call:
-                on_call(hbt, n, 2 if code == 1 else code, now, trades)
-            if code == 1:
-                break  # end of data: the last feed was processed, the strategy got control once more
+            # round r8-1 (positive definition A (3)): the user's loop is the strategy; each wake-up is one strategy call
+            with C.user_loop_call():
+                code = C.read(hbt.wait_next_feed, True, 10**17)
+                feed = C.carrier(code)
+                if code == 0:
+                    break
+                now = int(hbt.current_timestamp)
+                if code == 1:
+                    # At the end of the data the last feed is processed but current_timestamp is not
+                    # advanced (measured); the tool's own report of the last feed's receipt time is used.
+                    fl = hbt.feed_latency(0)
+                    if fl is not None:
+                        now = max(now, int(fl[1]))
+                trades = [{"exch_ts": int(t["exch_ts"]), "local_ts": int(t["local_ts"]), "price": float(t["px"]),
+                           "qty": float(t["qty"]), "side": "buy" if int(t["ev"]) & BUY_EVENT else "sell",
+                           "carrier": _row_carrier(t)}
+                          for t in C.read(hbt.last_trades, 0)]
+                if clear:
+                    hbt.clear_last_trades(0)
+                if code == 1 and not trades and n > 1 and now == calls[-1][1]:
+                    break  # end of data with nothing new
+                c = _Call((2 if code == 1 else code, now, trades))
+                c.feed = feed
+                calls.append(c)
+                if on_call:
+                    on_call(hbt, n, 2 if code == 1 else code, now, trades)
+                if code == 1:
+                    break  # end of data: the last feed was processed, the strategy got control once more
     finally:
         hbt.close()
     return calls
@@ -201,6 +217,12 @@ def _seq_car(calls) -> tuple[list, list]:
 
 class HftbacktestAdapter(Adapter):
     name = "opp_hftbacktest"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"data": "文書の準備 correct_event_order を通した配列", "asset": "linear_asset(1.0)",
+                    "queue_model": "risk_adverse_queue_model", "exchange": "no_partial_fill_exchange",
+                    "tick_size": 0.5, "lot_size": 0.001, "last_trades_capacity": 1000,
+                    "order_latency": "constant_order_latency(0, 0)(場面が遅れを名指さないとき)",
+                    "fee": "trading_value_fee_model(0, 0)(場面が費用を名指さないとき)"}}
 
     # ---------------- P0-1
     def scene_p1_merge_by_time(self, sc):
@@ -212,9 +234,9 @@ class HftbacktestAdapter(Adapter):
             return not_supported("入力は時刻順に並んだ 1 本の配列だけを受ける。渡した順に連結した配列を、この道具の検査 "
                                  f"validate_event_order に通すと {type(exc).__name__}: {exc}。足・資金調達に当たる事象の型も無い"
                                  "(hftbacktest/types.py の事象の型は DEPTH/TRADE/DEPTH_CLEAR/DEPTH_SNAPSHOT/DEPTH_BBO と注文の 4 種)")
-        calls = run(evs, prepare=False)
+        calls = run(evs)  # round r8-1: the documented preparation, as in every scene (one configured target)
         seq, car = _seq_car(calls)
-        return ok({"sequence": seq}, "検査を通ったので連結のまま渡した", {"carriers": car})
+        return ok({"sequence": seq}, "検査を通ったので連結のまま、文書の準備(correct_event_order)を通して渡した", {"carriers": car})
 
     def scene_p1_one_call_per_event(self, sc):
         # round r7-1: the scene does not grade the type; it lets the target take one of its own types
@@ -294,12 +316,13 @@ class HftbacktestAdapter(Adapter):
         hbt = _backtest(a)
         clock = []
         try:
-            code = C.read(hbt.wait_next_feed, True, 10**17)
-            feed = C.carrier(code)
-            first = int(hbt.current_timestamp)
-            target = sc.input["timer_at_ns"]
-            if hbt.elapse(target - first) == 0:
-                clock.append(int(hbt.current_timestamp))
+            with C.user_loop_call():  # round r8-1: the user's loop is the strategy (one strategy call)
+                code = C.read(hbt.wait_next_feed, True, 10**17)
+                feed = C.carrier(code)
+                first = int(hbt.current_timestamp)
+                target = sc.input["timer_at_ns"]
+                if hbt.elapse(target - first) == 0:
+                    clock.append(int(hbt.current_timestamp))
         finally:
             hbt.close()
         return ok({"clock_calls_ns": clock}, f"1 回目(code={code}, {first})で elapse(頼む時刻 − 今) を呼び、戻ったときの current_timestamp を記録")

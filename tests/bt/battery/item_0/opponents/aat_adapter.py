@@ -150,7 +150,11 @@ def run(streams: dict, fn=None, **extra) -> dict:
     args = ["--trading_type", "backtest", "--strategies", "opponents.aat_adapter:SceneStrategy"]
     for name in streams:  # one exchange per input stream, in the hand-over order (parser.py _args_to_dict: "mod:Class,arg")
         args += ["--exchanges", f"opponents.aat_adapter:SceneExchange,{name}"]
-    t = TradingEngine(**parseConfig(args))
+    # round r8-1 (positive definition A (1)): the settings -- trading type, the strategy, one exchange (the tool's
+    # plug for a user exchange) per input stream -- made through aat's public parseConfig / TradingEngine
+    cfg = C.configure(parseConfig, args, what="parseConfig(--trading_type backtest, --strategies 場面の戦略, "
+                      f"--exchanges 入力ごとに 1 つ × {len(streams)})", decided_from=("場面の入力", "選ぶ値"))
+    t = C.configure(TradingEngine, **cfg, what="TradingEngine(**config)", decided_from=("場面の入力",))
     t.start()
     return dict(RUN)
 
@@ -192,6 +196,8 @@ def _carriers(out, kinds=("trade", "open", "data")) -> list:
 
 
 class AatAdapter(Adapter):
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"trading_type": "backtest", "exchange": "利用者の Exchange(aat の口)を入力 1 つに 1 つ"}}
     name = "opp_aat"
 
     # ---------------- P0-1

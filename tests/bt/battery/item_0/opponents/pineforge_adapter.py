@@ -39,7 +39,30 @@ NO_TYPE = ("この道具の相場の入力は足(pf_bar_t: 始値・高値・安
 MS = 1_000_000
 
 
+_CHOSEN = {"tf": "1D"}  # the configured target's chosen time frame (round r8-1); set by the adapter
+
+
+def _settings(opts) -> None:
+    """Round r8-1 (positive definition A (1)): the settings the driver (survey_results/attempts/70.log, int main)
+    makes through the tool's public C API, recorded in its order."""
+    kv_ = dict(o.split("=", 1) for o in opts if "=" in o and not o.startswith("sub="))
+    subs = [o[4:] for o in opts if o.startswith("sub=")]
+    C.configure_compiled("c:pineforge strategy_native_host_create_v1", what="strategy_native_host_create_v1(利用者の callbacks)",
+                         decided_from=("場面の入力",))
+    for sub in subs:
+        C.configure_compiled("c:pineforge pf_native_subscription_v1", what=f"subscription(時間枠:lookahead = {sub})",
+                             decided_from=("場面の入力",))
+    scene_keys = sorted(k for k in kv_ if k in ("capital", "fee_kind", "fee_value", "margin", "terms"))
+    C.configure_compiled("c:pineforge strategy_configure_native_v1",
+                         what=f"strategy_configure_native_v1(input_tf = script_tf = {kv_.get('tf', '1D')}, ticker X, crypto, JPY, UTC, 24x7, "
+                              f"price_tick 0.01, close_execution NEXT_ELIGIBLE_POINT{', ' + ', '.join(scene_keys) if scene_keys else ''})",
+                         decided_from=("選ぶ値", "場面の入力") if scene_keys else ("選ぶ値",))
+    C.configure_compiled("c:pineforge strategy_native_run_v1", what="strategy_native_run_v1(場面の足)", decided_from=("場面の入力",))
+
+
 def drv(*opts, bars) -> list[list[str]]:
+    opts = tuple(o for o in map(str, opts) if not o.startswith("tf=")) + (f"tf={_CHOSEN['tf']}",)
+    _settings(opts)
     r = subprocess.run([EXE, *map(str, opts), "--", *bars], capture_output=True, text=True, timeout=60)
     if r.returncode != 0:
         raise RuntimeError(f"c70_driver rc={r.returncode} {r.stderr[:200]}")
@@ -74,6 +97,13 @@ def errors(rows) -> list[str]:
 
 
 class PineforgeAdapter(Adapter):
+    # round r8-1 (positive definition A): the time frame is a value the user chooses; each value is its own configured
+    # target, the same in every scene (until round r8-1 the ns-time scenes ran with 1S and the others with 1D)
+    CONFIGS = {"tf=1D": {"tf": "1D"}, "tf=1S": {"tf": "1S"}}
+
+    def __init__(self, config: str = "tf=1D") -> None:
+        super().__init__(config or "tf=1D")
+        _CHOSEN["tf"] = self.choose["tf"]
     name = "opp_pineforge"
 
     # ---------------- P0-1
@@ -99,13 +129,13 @@ class PineforgeAdapter(Adapter):
     def _obs(self, sc):
         evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
-        rows = drv("tf=1S", bars=[bar_arg(e) for e in evs])
+        rows = drv(bars=[bar_arg(e) for e in evs])
         if errors(rows):
             return not_supported("時刻の型が Unix ミリ秒(pf_bar_t.timestamp、int64)で、ns を持てない。ミリ秒に切り下げて渡した足を道具が拒否した"
-                                 f"(入力の時間枠 1S、最も細かい秒の枠): {errors(rows)}")
+                                 f"(入力の時間枠 {_CHOSEN['tf']}): {errors(rows)}")
         return ok({"observed_ts_ns": [int(r[2]) * MS for r in calls(rows)]},
                   "足の時刻は Unix ミリ秒(pf_bar_t.timestamp、int64)。ns の時刻をミリ秒に切り下げて渡し、on_bar の bar.timestamp を ns に戻した"
-                  f"(入力の時間枠 1S)。誤り {errors(rows)}", {"carriers": carriers(rows)})
+                  f"(入力の時間枠 {_CHOSEN['tf']})。誤り {errors(rows)}", {"carriers": carriers(rows)})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -199,7 +229,7 @@ class PineforgeAdapter(Adapter):
     scene_p5_hand_over_order = scene_p5_same_time_twice
 
     def scene_p5_same_stream_order(self, sc):
-        rows = drv("tf=1S", bars=[bar_arg(e) for e in C.events(sc)])
+        rows = drv(bars=[bar_arg(e) for e in C.events(sc)])
         if errors(rows):
             return not_supported(f"同じ時刻の足を 2 本以上受けない(道具が拒否した): 同じ時刻の 3 本を足にして strategy_native_run_v1 -> {errors(rows)}")
         return ok({"prices": [float(r[3]) for r in calls(rows)]},

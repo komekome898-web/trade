@@ -140,8 +140,10 @@ class Attempts:
 
     def _record(self, means, form, shape, naming, exc, v, touched, via) -> None:
         import re
+        ctx = call_context()  # round r8-1 (positive definition A (3)): made inside a strategy call?
         item = Record({"means": means, "form": form, "shape": shape, "naming": naming, "touched": touched,
-                "via": via if via is None or (isinstance(via, (Record, Made)) and made_here(via)) else carrier(via)})
+                "via": via if via is None or (isinstance(via, (Record, Made)) and made_here(via)) else carrier(via),
+                "in_call_by": ctx["in_call_by"], "in_user_loop": ctx["in_user_loop"]})
         if exc is not None:
             # memory addresses in messages differ between runs and would read as "2 回で違う"
             item.update({"raised": type(exc).__name__, "message": re.sub(r"0x[0-9a-fA-F]+", "0x…", str(exc))[:160],
@@ -395,7 +397,9 @@ def code_file(fn):
         # a bound C method (pybind11 / builtin): placed by the class in the MRO that defines it
         for k in type(s).__mro__:
             if name in vars(k):
-                return type_file(k)
+                # round r8-1: a compiled base class that names no module of its own (a pyo3 class whose
+                # __module__ is "builtins") is placed by the object's own class, the one the target exports
+                return type_file(k) or type_file(type(s))
     f = getattr(fn, "__func__", fn)
     py = getattr(f, "py_func", None)  # a numba dispatcher: the Python function it compiled
     if py is not None:
@@ -593,6 +597,51 @@ def _track(frame, event, arg) -> None:
                 break
 
 
+_USER_LOOP = [0]  # depth of open `user_loop_call` blocks
+
+
+class user_loop_call:
+    """Round r8-1 (positive definition A (3)): for a target the user drives with his own loop (the strategy is the
+    body of the user's loop and the target calls nothing back), the adapter opens this around each strategy call
+    of that loop, so a read made inside it counts as made inside a strategy call. What the machine does not check:
+    that the block holds a strategy call and nothing after the run (the critic reads the adapter)."""
+
+    def __enter__(self):
+        _USER_LOOP[0] += 1
+        return self
+
+    def __exit__(self, *exc):
+        _USER_LOOP[0] -= 1
+        return False
+
+
+def call_context() -> dict:
+    """Whether the caller runs inside a strategy call (positive definition A (3)), from the live stack:
+    in_call_by   -- the files of the code outside the scene set that called the scene set's outermost frame
+                    (the target calling the strategy; an awaited coroutine's caller is the awaiting frame), and
+                    of a compiled function that called a scene-set frame (needs `native_tracker`);
+    in_user_loop -- an adapter's `user_loop_call` block is open.
+    run_battery.py accepts `returned_by` only when a file of in_call_by is the target's, or in_user_loop."""
+    fr = _sys._getframe(1)
+    while fr is not None and _real(fr.f_code.co_filename) == _HERE_FILE:
+        fr = fr.f_back
+    chain = []
+    while fr is not None and in_scene_set(fr.f_code.co_filename):
+        chain.append(fr)
+        fr = fr.f_back
+    segment = []
+    while fr is not None and not in_scene_set(fr.f_code.co_filename):
+        segment.append(fr)
+        fr = fr.f_back
+    files = {p for p in (_real(f.f_code.co_filename) for f in segment) if p} if chain and segment else set()
+    active = {id(f): fn for f, fn in _ACTIVE_C}
+    for i in range(len(chain) - 1):
+        fn = active.get(id(chain[i + 1]))
+        if fn is not None and code_file(fn):
+            files.add(code_file(fn))
+    return {"in_call_by": sorted(files), "in_user_loop": _USER_LOOP[0] > 0}
+
+
 class native_tracker:
     """Context manager the runner puts around each scene run: records which
     compiled function is running and from which Python frame, so a strategy
@@ -623,7 +672,7 @@ def _chain(mine, prev):
 
 
 _MADE: list = []  # every record made here, kept alive (identity is what run_battery checks)
-_READ: list = []  # (object returned by a target function, file of that function), for `returned_by`
+_READ: list = []  # (object returned by a target function, file of that function, call context), for `returned_by`
 
 
 def _register(x):
@@ -641,8 +690,11 @@ def _object_facts(obj) -> dict:
     if callable(obj) and not isinstance(obj, type) and (hasattr(obj, "__code__") or hasattr(obj, "__func__")):
         out["code_file"] = code_file(obj)
     base = getattr(obj, "base", None) if type(obj).__module__ == "numpy" else None  # a row of an array a read returned
-    rets = [f for o, f in _READ if o is obj or (base is not None and o is base)]
-    out["returned_by"] = rets[-1] if rets else None
+    rets = [(f, ctx) for o, f, ctx in _READ if o is obj or (base is not None and o is base)]
+    out["returned_by"] = rets[-1][0] if rets else None
+    # round r8-1 (positive definition A (3)): whether that read was made inside a strategy call, and who made the call
+    out["read_in_call_by"] = rets[-1][1]["in_call_by"] if rets else None
+    out["read_in_user_loop"] = rets[-1][1]["in_user_loop"] if rets else None
     return out
 
 
@@ -751,10 +803,11 @@ def read(fn, *args, **kwargs):
     if exc is not None:
         raise exc
     f = code_file(fn)
-    _READ.append((v, f))
+    ctx = call_context()
+    _READ.append((v, f, ctx))
     if isinstance(v, (tuple, list)) and len(v) <= 16:
         for x in v:
-            _READ.append((x, f))
+            _READ.append((x, f, ctx))
     return v
 
 
@@ -785,7 +838,7 @@ def iterate(it):
             x = nxt(it)
         except StopIteration:
             return
-        _READ.append((x, f))
+        _READ.append((x, f, call_context()))
         yield x
 
 
@@ -799,7 +852,7 @@ async def aiterate(ait):
             x = await nxt(ait)
         except StopAsyncIteration:
             return
-        _READ.append((x, f))
+        _READ.append((x, f, call_context()))
         yield x
 
 
@@ -849,7 +902,9 @@ class Reads:
         vals = [float(x) for x in raw]
         if of is not None and not (isinstance(of, (Record, Made)) and made_here(of)):
             of = carrier(of)
-        self.items.append(_register(Record({"means": means, "returned": vals, "touched": touched, "of": of})))
+        ctx = call_context()  # round r8-1 (positive definition A (3)): made inside a strategy call?
+        self.items.append(_register(Record({"means": means, "returned": vals, "touched": touched, "of": of,
+                                            "in_call_by": ctx["in_call_by"], "in_user_loop": ctx["in_user_loop"]})))
 
     def output(self) -> dict:
         counts = sorted({len(r["returned"]) for r in self.items})
@@ -877,7 +932,18 @@ class Reads:
 # one run); the critic and the auditor read that from `settings_1`.
 
 WHEN = ("開始前", "戦略の呼び出しの中")  # when the setting was made; anything else is spelled "その他: …"
-DECIDED_FROM = ("場面の銘柄と型", "選ぶ値", "公開の既定", "戦略が受けた物")  # what may decide a setting (definition A (1))
+DECIDED_FROM = ("場面の入力", "選ぶ値", "公開の既定", "戦略が受けた物")  # what may decide a setting (definition A (1): what the scene names, the chosen values, the public defaults, what the strategy received)
+
+# A setting decided from input the run has not delivered yet (a value, time, order or count of
+# events still to come) may be recorded, so the record says so, but the runner never grades
+# a result made under it (positive definition A: 数えない物).
+DECIDED_FROM_REFUSED = ("まだ届いていない入力",)
+
+# The run window a date-driven tool needs (its start and end), chosen once for every scene of a
+# configured target (round r8-1, positive definition A): a window fitted to each scene's own
+# events would be a setting decided from input not yet delivered. It covers every scene's event
+# times (2023-11-15T00:00Z .. 2023-11-21T00:00Z, scenes.py) with room on both sides.
+FIXED_WINDOW = ("2023-11-01", "2023-12-31")
 
 _SETTINGS: list = []
 
@@ -895,12 +961,12 @@ def settings_taken() -> list:
 def _check_setting_words(when: str, decided_from) -> None:
     if not (when in WHEN or (isinstance(when, str) and when.startswith("その他: "))):
         raise ValueError(f"when {when!r} is not one of {WHEN} or 'その他: …'")
-    bad = [d for d in decided_from if d not in DECIDED_FROM]
+    bad = [d for d in decided_from if d not in DECIDED_FROM + DECIDED_FROM_REFUSED]
     if bad or not decided_from:
         raise ValueError(f"decided_from {decided_from!r}: each must be one of {DECIDED_FROM}")
 
 
-def configure(fn, *args, what: str, when: str = "開始前", decided_from=("場面の銘柄と型",), **kwargs):
+def configure(fn, *args, what: str, when: str = "開始前", decided_from=("場面の入力",), **kwargs):
     """Make one setting by calling the target's public `fn(*args, **kwargs)`,
     and record it: the function (its qualified name and code file), the code
     files that ran during the call, `what` (the scene's words for the
@@ -930,7 +996,7 @@ def configure_attr(obj, attr_name: str, value, *, what: str, when: str = "開始
                                        "decided_from": list(decided_from)})))
 
 
-def configure_compiled(name: str, *, what: str, when: str = "開始前", decided_from=("場面の銘柄と型",)) -> None:
+def configure_compiled(name: str, *, what: str, when: str = "開始前", decided_from=("場面の入力",)) -> None:
     """A setting a compiled tool's driver made (the driver's own code calls
     the tool): `name` is the tool's function as the driver names it
     (checked against the target's compiled namespace like `compiled`)."""

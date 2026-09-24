@@ -66,8 +66,9 @@ class _Mem(BaseDataSource):
         self._arr = np.array([(convert_date_to_int(_day_of(b["ts_ns"])), b["open"], b["high"], b["low"], b["close"],
                                b.get("volume", 1.0), b.get("volume", 1.0) * b["close"], 1e15, 0.0, np.nan) for b in rows],
                              dtype=_DT)
-        days = [_day_of(b["ts_ns"]) for b in rows]
-        self._days = pd.date_range(min(days) - D.timedelta(days=30), max(days) + D.timedelta(days=30), freq="D")
+        # round r8-1: the calendar of every day (the scenes' venue trades every day), over a range that does
+        # not depend on the scene's events (it was the events' days +- 30 until round r8-1)
+        self._days = pd.date_range("2023-10-01", "2024-02-29", freq="D")
 
     def _all_day_bars_of(self, instrument):
         return self._arr
@@ -111,15 +112,22 @@ class _Mem(BaseDataSource):
 
 class _SkMod(AbstractMod):
     def start_up(self, env, mod_config):
-        env.set_data_source((_ST.get("mem_cls") or _Mem)(_ST["rows"]))
+        # round r8-1: the settings a user mod makes in rqalpha's start-up (the tool's public mod interface)
+        when = "その他: rqalpha の起動の中(利用者の mod の start_up)"
+        C.configure(env.set_data_source, (_ST.get("mem_cls") or _Mem)(_ST["rows"]), what="env.set_data_source(場面の足のデータ源)",
+                    when=when, decided_from=("場面の入力",))
         if _ST.get("decider") is not None:
             env.event_bus.add_listener(EVENT.POST_SYSTEM_INIT, lambda e: [
-                env.set_transaction_cost_decider(t, _ST["decider"]) for t in _types()])
+                C.configure(env.set_transaction_cost_decider, t, _ST["decider"], what="env.set_transaction_cost_decider(場面の費用の模型)",
+                            when="その他: rqalpha の起動の中(POST_SYSTEM_INIT)", decided_from=("場面の入力",)) for t in _types()])
         if _ST.get("portfolio_cls") is not None:
             def init_pf(e):
                 from rqalpha.portfolio import Portfolio  # noqa: F401
                 c = env.config
-                env.set_portfolio(_ST["portfolio_cls"](c.base.accounts, c.base.init_positions, c.mod.sys_accounts.financing_rate, env))
+                C.configure(env.set_portfolio,
+                            _ST["portfolio_cls"](c.base.accounts, c.base.init_positions, c.mod.sys_accounts.financing_rate, env),
+                            what="env.set_portfolio(場面の口座)", when="その他: rqalpha の起動の中(INIT_PORTFOLIO)",
+                            decided_from=("場面の入力",))
             env.event_bus.add_listener(EVENT.INIT_PORTFOLIO, init_pf)
 
     def tear_down(self, code, exception=None):
@@ -158,10 +166,17 @@ def run(bars, handle, init=None, cash=1_000_000.0, sim=None, decider=None, portf
 
     mods = {"sys_analyser": {"enabled": False}, "sys_progress": {"enabled": False},
             "sys_simulation": dict(sim or {}), "sk": {"enabled": True, "lib": "rqalpha_adapter"}}
-    cfg = {"base": {"start_date": min(days).strftime("%Y-%m-%d"), "end_date": max(days).strftime("%Y-%m-%d"),
+    # round r8-1 (positive definition A): the run window is the configured target's chosen value (the same in every
+    # scene; until round r8-1 it was the scene's first and last day, a setting fitted to input not yet delivered)
+    start, end = C.FIXED_WINDOW
+    cfg = {"base": {"start_date": start, "end_date": end,
                     "frequency": "1d", "accounts": {"stock": cash}, "capital_gain_tax_rate": 0.0},
            "extra": {"log_level": "error"}, "mod": mods}
-    state["result"] = run_func(init=_init, handle_bar=_hb, config=cfg)
+    del days
+    state["result"] = C.configure(run_func, init=_init, handle_bar=_hb, config=cfg,
+                                  what=f"run_func(config: start_date={start}, end_date={end}, frequency=1d, accounts.stock={cash}, "
+                                       f"mod.sys_simulation={dict(sim or {})}, 利用者の mod sk)",
+                                  decided_from=("選ぶ値", "場面の入力"))
     return state
 
 
@@ -189,6 +204,9 @@ def _api():
 
 
 class RqalphaAdapter(Adapter):
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"window": list(C.FIXED_WINDOW), "frequency": "1d", "calendar": "毎日(2023-10-01〜2024-02-29)",
+                    "account": "stock"}}
     name = "opp_rqalpha"
 
     # ---------------- P0-1

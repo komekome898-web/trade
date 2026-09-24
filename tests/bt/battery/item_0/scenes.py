@@ -43,14 +43,20 @@ Common conventions (they are part of every scene's input):
     count; a target without the type or the means is "not supported".
     run_battery.py checks where each measured thing came from
     (`SceneResult.provenance`) before it grades;
-  * round r7-1 (critic i0-r6-02): a scene of a viewpoint other than P0-3
-    never fixes which event types it uses. Which types a target has is what
-    P0-3 measures; a scene that needs several types (`type_plan`) takes them
-    from the target's own types in the fixed order `TYPE_ORDER`, and
-    run_battery.py builds the target's input and expected result with
-    `for_target_types` from the types the target delivered in the P0-3 type
-    scenes of the same run. The scene as listed here is the one for a target
-    that has all six types (the first types of TYPE_ORDER).
+  * round r7-1 (critic i0-r6-02), narrowed in round r8-1 (L-438 (2)): the
+    four scenes named in `L438_2_SCENES` (and only they carry a `type_plan`)
+    take their event types from the configured target's own types in the
+    fixed order `TYPE_ORDER`; run_battery.py builds the input and the
+    expected result with `for_target_types` from the types whose p3-<type>
+    scene of the same run of the same configured target was graded
+    "正解と一致" (round r8-1, positive definition A). The scene as listed
+    here is the one for a target that has all six types.
+  * round r8-1 (positive definition A): a result counts only under the
+    settings the user made through the target's public means within that
+    run (recorded by `adapters/common.py: configure*` and checked by the
+    runner), with the configured target's chosen values the same in every
+    scene; `COVERS` below names the cells of each viewpoint's range a scene
+    covers (positive definition C, grid_c.py).
 """
 from __future__ import annotations
 
@@ -103,6 +109,8 @@ class Scene:
                             # (never by the adapter) from the raw output, as this text says
     type_plan: dict | None = None  # when set: the event types come from the target's own types
                                    # (round r7-1): {"slots", "min_types", "cycle"}; see for_target_types
+    covers: tuple = ()      # round r8-1 (positive definition C): the cells of the viewpoint's range the scene
+                            # covers, (event, see-path, extra) in the words of grid_c.py; see COVERS below
 
 
 def trade(ts: int, price: float, qty: float = 0.01, side: str = "buy", recv: int | None = None) -> dict:
@@ -139,12 +147,18 @@ JP = {"trade": "約定", "book_snapshot": "板の写真", "book_delta": "板の�
 # this order, so no adapter chooses them.
 TYPE_ORDER = ["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation"]
 SLOTS = ["A", "B", "C", "D"]
-TYPE_RULE = ("この場面は型そのものを測らない(型を持つかは P0-3 が型ごとに測る)。入力の事象の型は、対象の型を、"
+# Round r8-1 (L-438 (2), LEAD_DESIGN.md section 7.2 item 10): the scenes whose input's type combination is
+# decided from the configured target's own types, named by id. Only these four; a test checks that the scenes
+# with a `type_plan` are exactly these.
+L438_2_SCENES = ("p1-merge-by-time", "p1-typed-events", "p5-same-time-twice", "p5-hand-over-order")
+TYPE_RULE = ("この場面は型そのものを測らない(型を持つかは P0-3 が型ごとに測る)。入力の事象の型の組は、設定つき対象の持つ型を、"
              "固定した要件 §1 の型の順(約定・板の写真・板の差分・足・資金調達・清算)に並べたものから runner が決める。"
-             "対象の型 = 同じ実行の p3-<型> の場面で、対象がその型の事象を戦略に届けた型(出所の検めを通り、受けた列が空でなく、"
-             "受けた型が全部その型)。adapter は型を選ばない。対象の型の数が最低に足りなければ、runner がこの場面を「対応なし」にし、"
-             "理由に p3 の結果を書く。下の入力と期待は 6 種を全部持つ対象のもの(型の順の最初から)。各事象の型の欄以外の中身は、"
-             "その型の p3-<型> の場面の事象と同じ(時刻だけが違う)")
+             "設定つき対象の持つ型 = 同じ設定つき対象の同じ実行の p3-<型> の場面のうち、出所の検め(共通の決まりの設定の操作と"
+             "出所の検め)を通って採点された正しさが「正解と一致」の場面の事象の型。値が不一致の型(その型の p3 の場面が"
+             "「正解と一致」でない型。届いたが値が違う型、対応なし・結果なしの型を含む)は持つと数えない。違う設定つき対象の"
+             "実行の結果を合わせない。adapter は型を選ばない。持つ型の数が最低に足りない設定つき対象は、runner がこの場面を"
+             "「対応なし」にし、理由に p3 の採点を書く。下の入力と期待は 6 種を全部持つ設定つき対象のもの(型の順の最初から)。"
+             "各事象の型の欄以外の中身は、その型の p3-<型> の場面の事象と同じ(時刻だけが違う)")
 
 
 def own_types(target_types) -> list[str]:
@@ -536,6 +550,64 @@ add(id="p7-account-swap", viewpoint="P0-7", kind="capability",
     expected={"account_recorded_fill_qty": [1.0]},
     derivation="約定は 1 件で数量 1。差し替えた口座に対象が約定を渡すなら、記録は [1.0]。",
     measures="差し替えた口座が記録した約定の数量の列。")
+
+# ---------------------------------------------------------------- round r8-1: the cells each scene covers
+# (positive definition C). Axis values as grid_c.py derives them from the fixed requirements' text: the event
+# axis, the see-path axis (R = what reaches the strategy's call, O = what the order call returns there and then,
+# X = what the cancel call returns there and then, Q = what the strategy reads through the target's public
+# means) and P0-2's time units / P0-7's plug points. A scene whose events the scene leaves to the target
+# ("型は対象が受ける型でよい", `any_type`, or a `type_plan`) covers each market type it may be run with.
+_MKT = ("約定", "板の写真", "板の差分", "足", "資金調達", "清算")
+_R, _O, _X, _Q = ("戦略の呼び出しに届く物", "発注の呼び出しがその場で返す物", "取消の呼び出しがその場で返す物",
+                  "戦略が対象の公開の手段で読む物")
+_ACC, _REJ, _FIL = "注文の受付の通知", "注文の拒否の通知", "注文の約定の通知"
+_TRADE_OR_BAR = ("約定", "足")
+COVERS: dict[str, list[tuple[str, str, str]]] = {
+    "p1-merge-by-time": [(e, _R, "") for e in _MKT],
+    "p1-one-call-per-event": [(e, _R, "") for e in _MKT],
+    "p1-typed-events": [(e, _R, "") for e in _MKT],
+    "p2-iso-utc": [(e, _Q, "ISO 文字列") for e in _MKT],
+    "p2-iso-offset": [(e, _Q, "ISO 文字列") for e in _MKT],
+    "p2-event-time-exact": [(e, _R, "int64 ナノ秒") for e in _MKT],
+    "p2-one-ns-apart": [(e, _R, "int64 ナノ秒") for e in _MKT],
+    **{f"p3-{k}": [(JP[k], _R, "")] for k in ("trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation")},
+    "p3-mixed-one-run": [(e, _R, "") for e in _MKT],
+    "p3-clock-timer": [("時計", _R, "")],
+    "p3-notice-accepted": [(_ACC, _R, ""), (_ACC, _O, "")],
+    "p3-notice-rejected": [(_REJ, _R, ""), (_REJ, _O, "")],
+    "p3-notice-filled": [(_FIL, _R, ""), (_FIL, _O, "")],
+    "p4-visible-at-step": [(e, _Q, "") for e in _TRADE_OR_BAR],
+    "p4-received-time": [(e, _R, "") for e in _TRADE_OR_BAR],
+    "p4-future-read-attempt": [(e, _Q, "") for e in _TRADE_OR_BAR],
+    "p5-same-time-twice": [(e, _R, "") for e in _MKT],
+    "p5-hand-over-order": [(e, _R, "") for e in _MKT],
+    "p5-same-stream-order": [(e, _R, "") for e in _MKT],
+    "p6-place-then-cancel": [(_ACC, _Q, "")],
+    "p6-cancel-notice": [("取消の通知(要件 §1 の事象の型の外)", _R, "")],
+    "p6-fill-seen-by-strategy": [(_FIL, _Q, "")],
+    "p7-fill-model-swap": [(_FIL, _R, "約定模型"), (_FIL, _Q, "約定模型")],
+    "p7-latency-model-swap": [(_FIL, _R, "遅延模型"), (_FIL, _Q, "遅延模型")],
+    "p7-cost-model-swap": [(_FIL, _R, "費用"), (_FIL, _Q, "費用")],
+    "p7-cost-per-unit": [(_FIL, _R, "費用"), (_FIL, _Q, "費用")],
+    "p7-account-swap": [(_FIL, _Q, "口座")],
+}
+# cells outside the requirements' axes a scene covers, with the reason (checked by the tests)
+OUTSIDE_AXES = {"取消の通知(要件 §1 の事象の型の外)": "要件 §1 の通知は「注文の受付/拒否/約定の通知」の 3 つで、取消の通知を名指さない"}
+assert set(COVERS) == {s.id for s in SCENES}, sorted(set(COVERS) ^ {s.id for s in SCENES})
+
+
+def l438_2_ok(ids_with_type_plan, scenes=None) -> bool:
+    """The scenes whose type combination is taken from the configured target (those with a `type_plan`) are
+    exactly the four L-438 (2) names by id, all of P0-1 or P0-5 (round r8-1, LEAD_DESIGN.md section 7.2 item 10)."""
+    by = {s.id: s for s in (scenes or SCENES)}
+    ids = list(ids_with_type_plan)
+    return (len(ids) == len(set(ids)) == 4 and set(ids) == set(L438_2_SCENES)
+            and all(i in by and by[i].viewpoint in ("P0-1", "P0-5") for i in ids))
+
+
+assert l438_2_ok([s.id for s in SCENES if s.type_plan is not None]), "L-438 (2) names four scenes by id"
+from dataclasses import replace as _replace  # noqa: E402
+SCENES[:] = [_replace(s, covers=tuple(COVERS[s.id])) for s in SCENES]
 
 assert len(SCENES) == len({s.id for s in SCENES}), "duplicate scene id"
 for _vp in VIEWPOINTS:

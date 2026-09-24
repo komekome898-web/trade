@@ -122,7 +122,7 @@ def configured_targets(base: str) -> list[str]:
         if isinstance(node, ast.ClassDef) and (cls is None or node.name == cls):
             for st in node.body:
                 if isinstance(st, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "CONFIGS" for t in st.targets):
-                    labels = list(ast.literal_eval(st.value))
+                    labels = [ast.literal_eval(k) for k in st.value.keys]  # the labels (keys) are literal strings
     return [base if lab == "" else f"{base}@{lab}" for lab in labels]
 
 
@@ -391,7 +391,8 @@ def origin_problem(rec, roots: Roots, what: str, means: bool = False) -> str | N
         parts.append(f"{what} {rec.get('type')} は{'対象の型' if own else '共有の型'}だが、対象が戦略に届けたことを示せない"
                      f"(対象のコードが戦略の呼び出しに渡した passed_by {rec.get('passed_by')}・渡した物の中にあった reached_by "
                      f"{rec.get('reached_by')}・母語のコードが渡した native_by {rec.get('native_by')}・対象の関数が返した "
-                     f"returned_by {rec.get('returned_by')} のどれも対象の配布物に無い)")
+                     f"returned_by {rec.get('returned_by')}(戦略の呼び出しの中の読みに限る。呼び出した物 {rec.get('read_in_call_by')}・"
+                     f"利用者の回しの中 {rec.get('read_in_user_loop')}) のどれも対象の配布物に無い)")
     tag = rec.get("tag")
     if tag is not None and not roots.has_file(tag.get("type_file")):
         parts.append(f"{what} の札 {tag.get('const') or tag.get('type')}.{tag.get('name')} が対象の配布物の物でない({tag.get('type_file')})")
@@ -406,7 +407,14 @@ def delivered(rec, roots: Roots) -> bool:
     target's code passed it (or an object holding it) into the strategy's call,
     compiled code of the target did, or a target function returned it."""
     return any(roots.has_file(f) for k in DELIVERY_FACTS for f in (rec.get(k) or [])) or \
-        roots.has_file(rec.get("returned_by"))
+        (roots.has_file(rec.get("returned_by")) and read_in_call(rec, roots))
+
+
+def read_in_call(rec, roots: Roots) -> bool:
+    """Round r8-1 (positive definition A (3)): a read counts as the strategy's only when it was made inside a strategy
+    call -- the target's code (or its compiled code) called the strategy, or an adapter's `user_loop_call` block of a
+    target the user drives with his own loop was open (common.call_context). A read made after the run is not."""
+    return any(roots.has_file(f) for f in (rec.get("read_in_call_by") or [])) or rec.get("read_in_user_loop") is True
 
 
 def _key(rec) -> str:
@@ -444,7 +452,13 @@ def _kinds(out, key: str, with_kinds: bool):
 
 def _touched_ok(item: dict, roots: Roots, what: str) -> str | None:
     """A read / an attempt is the target's when target code ran during it, or
-    the object it read through (`of` / `via`) is the target's."""
+    the object it read through (`of` / `via`) is the target's. Round r8-1 (positive definition A (3)): and it was
+    made inside a strategy call (common.call_context); a compiled driver's attempt (no Python stack) is read by
+    the critic from the driver's code."""
+    if "in_call_by" in item and not read_in_call({"read_in_call_by": item.get("in_call_by"),
+                                                  "read_in_user_loop": item.get("in_user_loop")}, roots):
+        return (f"{what} {item.get('means')!r:.80} は戦略の呼び出しの中で行った物と示せない(呼び出した物 {item.get('in_call_by')}・"
+                f"利用者の回しの中 {item.get('in_user_loop')})")
     if any(roots.has_file(f) for f in (item.get("touched") or [])):
         return None
     for k in ("of", "via"):
@@ -607,6 +621,12 @@ def setting_problem(rec, roots: Roots) -> str | None:
     driver, its name is in the target's namespace)."""
     if not _made(rec):
         return f"設定の操作 {str(rec)[:120]} が common.py で呼び出しから作った記録でない(手で書いた値)"
+    refused = [d for d in rec.get("decided_from") or [] if d not in C.DECIDED_FROM]
+    if refused or not rec.get("decided_from"):
+        return (f"設定の操作 {rec.get('fn')!s:.120}({rec.get('what')!s:.80})は {refused or '何から決めたかの記録なし'} "
+                "から決めた(正の定義 A (1): 実行の前に利用者が知りうる物と、その操作までに戦略が受けた物だけから決まる設定でない)")
+    if rec.get("when") not in C.WHEN and not str(rec.get("when", "")).startswith("その他: "):
+        return f"設定の操作 {rec.get('fn')!s:.120} の時点 {rec.get('when')!r} が書き残す語でない"
     if rec.get("compiled"):
         return None if roots.has_name(rec.get("fn")) else \
             f"設定の操作 {rec.get('fn')!s:.120} の翻訳した道具の名前が対象の名前の頭 {roots.heads} に無い"
@@ -764,9 +784,16 @@ def run_target(target: str) -> list[dict]:
             "provenance_1": json.dumps(compact(r1.provenance, roots), ensure_ascii=False, sort_keys=True, default=repr),
             "choose": json.dumps(adapter_1.choose, ensure_ascii=False, sort_keys=True),
             "settings_1": json.dumps(compact_settings(set1, roots), ensure_ascii=False, sort_keys=True, default=repr),
-            "types_1": json.dumps(sc1.input.get("types") if sc.type_plan is not None else None, ensure_ascii=False),
+            # round r8-1 (L-438 (2)): the type combination chosen for this configured target, when the scene was built for it
+            "types_1": json.dumps(sc1.input.get("types") if sc.type_plan is not None and sc1 is not sc else None,
+                                  ensure_ascii=False),
         }
     return [rows[sc.id] for sc in SCENES]
+
+
+def one_choose(rows: list[dict]) -> bool:
+    """A configured target's rows carry one set of chosen values (round r8-1, positive definition A)."""
+    return len({r.get("choose") for r in rows}) == 1
 
 
 FIELDS = ["target", "scene_id", "viewpoint", "kind", "correctness", "correctness_run2", "reproducibility",

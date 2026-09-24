@@ -47,7 +47,9 @@ def _msg(channel: str, message):
 
 
 def _feed(msgs, store_names):
-    s = pybotters.bitFlyerDataStore()
+    # round r8-1 (positive definition A (1)): the store is the setting (the watched stores are the subscriptions)
+    s = C.configure(pybotters.bitFlyerDataStore, what=f"bitFlyerDataStore()(watch する store: {store_names})",
+                    decided_from=("場面の入力",))
     got = []
 
     async def main():
@@ -73,6 +75,7 @@ def _feed(msgs, store_names):
 
 class PybottersAdapter(VectorBase):
     name = "opp_pybotters"
+    CONFIGS = {"": {"store": "bitFlyerDataStore"}}  # round r8-1: one configured target
     what = "pybotters は取引所の API の窓口と、websocket の文を当てる DataStore で、模擬の時刻・注文・約定を持つバックテストの機関が無い"
 
     def attempt(self, scene_id: str) -> str:

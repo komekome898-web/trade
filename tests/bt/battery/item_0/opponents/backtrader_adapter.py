@@ -47,12 +47,20 @@ def _fed(s):
     return C.read(s.getdatabyname, s.getdatanames()[0])
 
 
-def run(bars, on_next, cash=1_000_000.0, setup=None, notify=None, timer=None, broker=None, preload=True):
-    cer = bt.Cerebro(stdstats=False, preload=preload)
+_CHOSEN = {"preload": True}  # the configured target's chosen values (round r8-1); set by the adapter
+
+
+def run(bars, on_next, cash=1_000_000.0, setup=None, notify=None, timer=None, broker=None, preload=None):
+    preload = _CHOSEN["preload"] if preload is None else preload
+    # round r8-1 (positive definition A (1)): every setting through common.configure
+    cer = C.configure(bt.Cerebro, stdstats=False, preload=preload, what=f"Cerebro(stdstats=False, preload={preload})",
+                      decided_from=("選ぶ値",))
     if broker is not None:
-        cer.setbroker(broker)
-    cer.broker.setcash(cash)
-    cer.adddata(bt.feeds.PandasData(dataname=_df(bars)))
+        C.configure(cer.setbroker, broker, what="Cerebro.setbroker(場面の口座)", decided_from=("場面の入力",))
+    C.configure(cer.broker.setcash, cash, what=f"broker.setcash({cash})", decided_from=("場面の入力",))
+    feed = C.configure(bt.feeds.PandasData, dataname=_df(bars), what="feeds.PandasData(dataname=場面の足)",
+                       decided_from=("場面の入力",))
+    C.configure(cer.adddata, feed, what="Cerebro.adddata(feed)", decided_from=("場面の入力",))
     st = {"n": 0, "log": [], "notices": [], "fills": []}
 
     class S(bt.Strategy):
@@ -77,7 +85,7 @@ def run(bars, on_next, cash=1_000_000.0, setup=None, notify=None, timer=None, br
         def notify_timer(self, t, when, *args, **kwargs):
             st["log"].append(("clock", C.dt_to_ns(when.replace(tzinfo=D.timezone.utc))))
 
-    cer.addstrategy(S)
+    C.configure(cer.addstrategy, S, what="Cerebro.addstrategy(場面の戦略)", decided_from=("場面の入力",))
     if setup:
         setup(cer)
     cer.run()
@@ -102,6 +110,13 @@ NON_BAR = "Backtrader のデータは足の feed(lines: datetime/open/high/low/c
 
 class BacktraderAdapter(Adapter):
     name = "opp_backtrader"
+    # round r8-1 (positive definition A): Cerebro's `preload` is a value the user chooses; each value is its
+    # own configured target, run on every scene (until round r8-1 p4-future-read-attempt ran both and picked one)
+    CONFIGS = {"preload=true": {"preload": True}, "preload=false": {"preload": False}}
+
+    def __init__(self, config: str = "preload=true") -> None:
+        super().__init__(config or "preload=true")
+        _CHOSEN["preload"] = self.choose["preload"]
 
     # ---------------- P0-1
     def scene_p1_merge_by_time(self, sc):
@@ -240,42 +255,23 @@ class BacktraderAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        results = {}
-        for preload in (True, False):
-            att = C.Attempts()
+        att = C.Attempts()
 
-            def f(s, n, st, att=att):
-                if _ns(s) != probe or att.items:
-                    return
-                # namings: the scene's fixed list. The line counts relative to now (0 = newest, 1 = next);
-                # its `array` counts from the first bar (next = len(self.data)).
-                C.try_position_namings(att, "self.data.close[相対の位置]", lambda: s.data.close, 1)
-                C.try_position_namings(att, "self.data.close.array[位置]", lambda: s.data.close.array, len(s.data))
-                att.run("self.data.close.get(ago=1, size=1)(最新の次の位置)", "position",
-                        lambda: list(s.data.close.get(ago=1, size=1)), shape="next_call", naming="next")
-                att.run("self.data.close.array(中身の配列)", "other", lambda: list(s.data.close.array))
+        def f(s, n, st):
+            if _ns(s) != probe or att.items:
+                return
+            # namings: the scene's fixed list. The line counts relative to now (0 = newest, 1 = next);
+            # its `array` counts from the first bar (next = len(self.data)).
+            C.try_position_namings(att, "self.data.close[相対の位置]", lambda: s.data.close, 1)
+            C.try_position_namings(att, "self.data.close.array[位置]", lambda: s.data.close.array, len(s.data))
+            att.run("self.data.close.get(ago=1, size=1)(最新の次の位置)", "position",
+                    lambda: list(s.data.close.get(ago=1, size=1)), shape="next_call", naming="next")
+            att.run("self.data.close.array(中身の配列)", "other", lambda: list(s.data.close.array))
 
-            run(C.events(sc), f, preload=preload)
-            results[preload] = att
-        tried = {k: v for k, v in results.items() if v.items}
-        if not tried:  # no_probe_call
+        run(C.events(sc), f)
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
-
-        def stopped(att):
-            named = [x for x in att.items if x["form"] in ("time", "position")]
-            return bool(named) and all(x["raised"] for x in named)
-
-        # the survey side is made as strong as the tool allows: the setting under which every named read
-        # stopped is used when there is one, else one that did not hand out the 5th bar (both are in the detail)
-        def leaked(att):
-            return any(104.0 in (x["returned"] if isinstance(x["returned"], list) else [x["returned"]]) for x in att.items)
-
-        pick = next((k for k in (False, True) if k in tried and stopped(tried[k])), None)
-        if pick is None:
-            pick = next((k for k in (False, True) if k in tried and not leaked(tried[k])), True if True in tried else False)
-        return ok(tried[pick].output(),
-                  f"T0 + 4 日の呼び出しに試した。結果に使ったのは Cerebro(preload={pick})。"
-                  + " / ".join(f"preload={k}: {v.summary()}" for k, v in tried.items()))
+        return ok(att.output(), f"T0 + 4 日の呼び出しに試した(Cerebro(preload={self.choose['preload']})): {att.summary()}")
 
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
@@ -329,7 +325,11 @@ class BacktraderAdapter(Adapter):
     # ---------------- P0-7
     def scene_p7_fill_model_swap(self, sc):
         def setup(cer):
-            cer.broker.set_slippage_fixed(12345.0 - 100.0, slip_open=True, slip_match=True, slip_out=True)
+            # round r8-1: the slippage is computed from the price the scene's events will have (100) before the run:
+            # a setting decided from input not yet delivered (positive definition A), recorded as such
+            C.configure(cer.broker.set_slippage_fixed, 12345.0 - 100.0, slip_open=True, slip_match=True, slip_out=True,
+                        what="broker.set_slippage_fixed(12245 = 12345 - 場面の約定の価格 100)",
+                        decided_from=("場面の入力", "まだ届いていない入力"))
 
         st = self._buy_run(sc, lambda s: s.buy(size=1), 100_000, setup=setup)
         return ok({"fill_price": st["fills"][0]["price"] if st["fills"] else None},
@@ -352,7 +352,8 @@ class BacktraderAdapter(Adapter):
             def _getcommission(self, size, price, pseudoexec):
                 return fee * abs(size) if per_unit else fee
 
-        st = self._buy_run(sc, lambda s: s.buy(size=size), 100_000, setup=lambda cer: cer.broker.addcommissioninfo(Flat()))
+        st = self._buy_run(sc, lambda s: s.buy(size=size), 100_000, setup=lambda cer: C.configure(
+            cer.broker.addcommissioninfo, Flat(), what="broker.addcommissioninfo(場面の費用の模型)", decided_from=("場面の入力",)))
         return ok({"fee": sum(f["comm"] for f in st["fills"]) if st["fills"] else None},
                   f"addcommissioninfo(CommInfoBase の子: {'数量 1 単位あたり' if per_unit else '1 件'} {fee})、数量 {size} の成行。fills={st['fills']}")
 

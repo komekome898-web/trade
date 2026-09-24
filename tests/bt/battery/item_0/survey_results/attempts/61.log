@@ -338,3 +338,21 @@ async fn main() {
     }
 }
 --- build: the program is a member added to the tool's own workspace (Cargo.toml members += "battery61"), cargo build --offline -p battery61 with CARGO_TARGET_DIR=_cargo_target61 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0; binary copied to c61/bin/c61_driver
+
+=== round r8-1 (scene keeper, 2026-09-24): driver rebuilt so the engine's start time is a chosen value (positive definition A)
+--- change in battery61/src/main.rs (diff against the copy taken before the edit):
+261,262c261,265
+<     use barter::backtest::market_data::BacktestMarketData;
+<     let t0 = market_data.time_first_event().await.unwrap();
+---
+>     #[allow(unused_imports)] use barter::backtest::market_data::BacktestMarketData;
+>     // round r8-1 (scene set): the engine's start time is the configured target's chosen value, the same in every
+>     // scene (cfg["engine_start"], RFC 3339); until round r8-1 it was the first event's time (fitted to the input)
+>     let t0: DateTime<Utc> = DateTime::parse_from_rfc3339(cfg["engine_start"].as_str().unwrap_or("2023-11-01T00:00:00Z"))
+>         .unwrap().with_timezone(&Utc);
+--- build: cd _dl/c61 && CARGO_HOME=_cargo CARGO_TARGET_DIR=_cargo_target61 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 cargo build --offline -p battery61; binary copied to c61/bin/c61_driver
+14:36:41
+   Compiling barter v0.14.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/barter)
+   Compiling battery61 v0.1.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/battery61)
+    Finished `dev` profile [unoptimized] target(s) in 43.79s
+14:37:24

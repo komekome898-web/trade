@@ -15,7 +15,7 @@ at run time, and the runner only compared; now:
     rule gives for the input of p5-same-time-twice; `test_battery_item0.py`
     checks that the recipe reproduces it (two derivations that must agree);
   * the runner (`run_battery.py`) applies the recipe to each scene's own
-    input -- for p5-hand-over-order to each of the scene's 24 hand-over
+    input -- for p5-hand-over-order to each of the scene's hand-over
     orders, not to what an adapter reports -- and compares with what the
     target delivered. Adapters report only what they observed.
 
@@ -24,7 +24,7 @@ types at one time (its adapter's detail says where it was looked for); it
 cannot satisfy "follows its stated rule".
 
 No target name may appear in DEFINITIONS.md (the blind judges read it), so
-this table lives here and in ROOTCAUSE_r5-1.md only. Standard library only
+this table lives here only (round r8-1: ROOTCAUSE_r5-1.md now refers to its git version). Standard library only
 (adapters in the survey venvs import TYPE_PRIORITY from here).
 """
 from __future__ import annotations
@@ -117,17 +117,14 @@ STATED_RULES: dict[str, StatedRule] = {
         params={"key": ["ts", "tick_type_rank"], "tick_type": {"trade": 0, "bar": 0, "funding": 1}}),
 }
 
-# p5-same-time-twice, written by hand from each quote (round r7-1: the input is
-# built from each target's own types, scenes.for_target_types; the types each
-# target delivered in its P0-3 scenes are listed here with the order). The
-# events are one per stream A, B, C, ... at T0 + 1 day, handed over A, B, C, ...
-#   new_impl  -- 6 types, the scene's first four: trade, book_snapshot, book_delta, bar;
-#                type order liquidation < funding < book_snapshot < book_delta < trade < bar;
-#   basana    -- 4 types, the same four; -priority: bar (60), trade (50), book_snapshot (45), book_delta (40);
-#   repro_lean52 -- 3 types trade, bar, funding; trade and bar are both TickType Trade: a tie
-#                the source does not decide (None);
-#   hftbacktest (1 type) and mihircoding/limitOrderBook (0 types) do not get this scene
-#   (fewer than 2 types); their rules stay for the record.
+# p5-same-time-twice, written by hand from each quote. Each entry is (a set of types the target's rule knows,
+# the order the rule gives for the scene built from those types, scenes.for_target_types): a second derivation
+# the test compares with the recipe. Which types a configured target has in a run is not written here (it is in
+# the runner's output of that run, `types_1` and `detail_1`; round r8-1, positive definition B). The events are
+# one per stream A, B, C, ... at T0 + 1 day, handed over A, B, C, ...
+#   new_impl / mutant -- type order liquidation < funding < book_snapshot < book_delta < trade < bar;
+#   basana    -- -priority: bar (60), trade (50), book_snapshot (45), book_delta (40);
+#   repro_lean52@minute -- TickType Trade (the TradeBar) before Quote (MarginInterestRate).
 _T = 1_700_006_400_000_000_000 + 86_400 * 1_000_000_000
 FIXED_PREDICTED: dict[str, tuple[list[str], list[list] | None]] = {
     "new_impl": (["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation"],
@@ -136,7 +133,7 @@ FIXED_PREDICTED: dict[str, tuple[list[str], list[list] | None]] = {
                [["book_snapshot", _T], ["book_delta", _T], ["trade", _T], ["bar", _T]]),
     "opp_basana": (["trade", "book_snapshot", "book_delta", "bar"],
                    [["bar", _T], ["trade", _T], ["book_snapshot", _T], ["book_delta", _T]]),
-    "repro_lean52": (["trade", "bar", "funding"], None),
+    "repro_lean52@minute": (["bar", "funding"], [["bar", _T], ["funding", _T]]),
 }
 
 

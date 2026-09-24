@@ -33,6 +33,10 @@ from protocol import Adapter, not_supported, ok  # noqa: E402
 import common as C  # noqa: E402
 
 EXE = str(Path(sys.prefix) / "bin" / "c61_driver")
+# round r8-1 (positive definition A): the engine's start time is the configured target's chosen value, the same in
+# every scene; until round r8-1 the driver took the first event's time (`time_first_event`), a setting fitted to
+# input not yet delivered. The driver was rebuilt to read it from the input (survey_results/attempts/61.log, round r8-1)
+ENGINE_START = C.FIXED_WINDOW[0] + "T00:00:00Z"
 NO_TYPE = ("この道具の市場の事象の型は DataKind の Trade・OrderBookL1・OrderBook(Snapshot / Update)・Candle・Liquidation の 5 つで"
            "(barter-data/src/event.rs)、{k} を渡す型が無い")
 
@@ -78,9 +82,34 @@ def carriers(rows):
 
 class BarterAdapter(Adapter):
     name = "opp_barter"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    # (the driver's source: survey_results/attempts/61.log, fn main after `let cfg = &input["cfg"]`)
+    CONFIGS = {"": {"instrument": "binance_spot BTCUSDT spot", "execution": "ExecutionConfig::Mock",
+                    "latency_ms": "0(場面が遅れを名指さないとき)", "fees_percent": "0(場面が費用を名指さないとき)",
+                    "balances": "usdt 1,000,000(場面が口座を名指さないとき)", "risk": "DefaultRiskManager",
+                    "summary_interval": "Daily", "trading_state": "Enabled", "engine_start": C.FIXED_WINDOW[0] + "T00:00:00Z"}}
 
     def _run(self, events, **cfg):
-        return drv({"cfg": cfg, "events": [ev(e) for e in events]})
+        # round r8-1 (positive definition A (1)): the settings the driver makes through the tool's public API, in
+        # the order it makes them (the driver's source, survey_results/attempts/61.log, fn main)
+        scene = ("場面の入力",)
+        C.configure_compiled("rust:barter::system::config::InstrumentConfig", what="InstrumentConfig(binance_spot BTCUSDT spot)",
+                             decided_from=("選ぶ値",))
+        C.configure_compiled("rust:barter::system::config::ExecutionConfig::Mock",
+                             what=f"ExecutionConfig::Mock(latency_ms={cfg.get('latency_ms', 0)}, fees_percent={cfg.get('fees_percent', 0.0)}, "
+                                  f"balances usdt={cfg.get('usdt', 1_000_000.0)})",
+                             decided_from=scene if {"latency_ms", "fees_percent", "usdt"} & set(cfg) else ("選ぶ値",))
+        C.configure_compiled("rust:barter::backtest::market_data::MarketDataInMemory::new",
+                             what="MarketDataInMemory::new(場面の事象の 1 本の流れ)", decided_from=scene)
+        C.configure_compiled("rust:barter::engine::state::builder::EngineStateBuilder",
+                             what=f"EngineStateBuilder::new(instruments, DefaultGlobalData, 利用者の InstrumentDataState)"
+                                  f".time_engine_start({ENGINE_START}).trading_state(Enabled).build()",
+                             decided_from=("選ぶ値", "公開の既定"))
+        C.configure_compiled("rust:barter::risk::DefaultRiskManager", what="BacktestArgsDynamic(risk = DefaultRiskManager::default())",
+                             decided_from=("公開の既定",))
+        C.configure_compiled("rust:barter::backtest::backtest", what="backtest(args_constant(summary_interval Daily), args_dynamic)",
+                             decided_from=("選ぶ値",))
+        return drv({"cfg": {**cfg, "engine_start": ENGINE_START}, "events": [ev(e) for e in events]})
 
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):

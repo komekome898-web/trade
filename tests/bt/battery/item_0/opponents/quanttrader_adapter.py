@@ -70,13 +70,16 @@ def run(bars, fn, cash=1_000_000.0):
             st["fills"].append({"price": fe.fill_price, "size": fe.fill_size, "commission": fe.commission,
                                 "time": str(fe.fill_time)})
 
-    eng = BacktestEngine(df.index[0], df.index[-1])
-    eng.set_capital(cash)
+    # round r8-1 (positive definition A): every setting through common.configure; the engine's start and end are the
+    # configured target's chosen window, the same in every scene (until round r8-1: the scene's first and last time)
+    start, end = pd.Timestamp(C.FIXED_WINDOW[0]), pd.Timestamp(C.FIXED_WINDOW[1])
+    eng = C.configure(BacktestEngine, start, end, what=f"BacktestEngine({start.date()}, {end.date()})", decided_from=("選ぶ値",))
+    C.configure(eng.set_capital, cash, what=f"engine.set_capital({cash})", decided_from=("場面の入力",))
     s = S()
-    s.set_capital(cash)
-    s.set_symbols([SYM])
-    eng.set_strategy(s)
-    eng.add_data(SYM, df)
+    C.configure(s.set_capital, cash, what=f"strategy.set_capital({cash})", decided_from=("場面の入力",))
+    C.configure(s.set_symbols, [SYM], what="strategy.set_symbols([銘柄])", decided_from=("場面の入力",))
+    C.configure(eng.set_strategy, s, what="engine.set_strategy(場面の戦略)", decided_from=("場面の入力",))
+    C.configure(eng.add_data, SYM, df, what="engine.add_data(銘柄, 場面の足の DataFrame)", decided_from=("場面の入力",))
     eng.run()
     return st, eng
 
@@ -127,6 +130,8 @@ def _try_non_bar(e: dict) -> str:
 
 class QuanttraderAdapter(Adapter):
     name = "opp_quanttrader"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"window": list(C.FIXED_WINDOW)}}
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))

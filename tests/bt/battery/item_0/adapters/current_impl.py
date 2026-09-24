@@ -62,7 +62,11 @@ class _Rec(Strategy):
 
 def _run(rows: list[dict], **kw) -> tuple[_Rec, object]:
     rec = kw.pop("rec", None) or _Rec()
-    res = E.run_backtest(rec, _df(rows), **kw)
+    # round r8-1 (positive definition A (1)): the engine's only setting is the arguments of run_backtest
+    # (the candles it reads and the keyword settings); the call is made and recorded by common.configure
+    res = C.configure(E.run_backtest, rec, _df(rows), **kw,
+                      what=f"run_backtest(strategy, candles=場面の事象の足の DataFrame{', ' + ', '.join(sorted(kw)) if kw else ''})",
+                      decided_from=("場面の入力",))
     return rec, res
 
 
@@ -268,7 +272,9 @@ class CurrentImplAdapter(Adapter):
     def _buy_once(self, sc, notional: float = 100.0, **kw):
         rows = [C.as_bar(e) for e in C.events(sc)]
         rec = _Rec(signals={1: SignalType.BUY})
-        res = E.run_backtest(rec, _df(rows), order_notional_jpy=notional, initial_equity_jpy=100_000.0, **kw)
+        res = C.configure(E.run_backtest, rec, _df(rows), order_notional_jpy=notional, initial_equity_jpy=100_000.0, **kw,
+                          what=f"run_backtest(strategy, candles=場面の足, order_notional_jpy, initial_equity_jpy"
+                               f"{', ' + ', '.join(sorted(kw)) if kw else ''})", decided_from=("場面の入力",))
         return rows, res
 
     def scene_p7_fill_model_swap(self, sc):

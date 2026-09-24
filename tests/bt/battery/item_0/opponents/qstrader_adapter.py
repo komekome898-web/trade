@@ -53,12 +53,14 @@ def _write(bars: list[dict]) -> str:
 
 def run(bars, alpha, fee_model=None, cash=1_000_000.0):
     d = _write(bars)
-    universe = StaticUniverse([SYM])
-    src = CSVDailyBarDataSource(d, Equity, csv_symbols=["X"])
-    dh = BacktestDataHandler(universe, data_sources=[src])
-    rows = [C.as_bar(b) for b in bars]
-    start = pd.Timestamp(rows[0]["ts_ns"], unit="ns", tz="UTC").normalize()
-    end = pd.Timestamp(rows[-1]["ts_ns"], unit="ns", tz="UTC").normalize() + pd.Timedelta(days=1)
+    # round r8-1 (positive definition A): every setting through common.configure; start / end are the configured
+    # target's chosen window, the same in every scene (until round r8-1: the scene's first and last bar)
+    universe = C.configure(StaticUniverse, [SYM], what="StaticUniverse([銘柄])", decided_from=("場面の入力",))
+    src = C.configure(CSVDailyBarDataSource, d, Equity, csv_symbols=["X"], what="CSVDailyBarDataSource(場面の足の CSV, Equity)",
+                      decided_from=("場面の入力",))
+    dh = C.configure(BacktestDataHandler, universe, data_sources=[src], what="BacktestDataHandler(universe, [source])",
+                     decided_from=("場面の入力",))
+    start, end = pd.Timestamp(C.FIXED_WINDOW[0], tz="UTC"), pd.Timestamp(C.FIXED_WINDOW[1], tz="UTC")
     st = {"n": 0, "log": []}
 
     class A(AlphaModel):
@@ -67,8 +69,11 @@ def run(bars, alpha, fee_model=None, cash=1_000_000.0):
             return alpha(dt, dh, st["n"], st) or {}
 
     kw = {"fee_model": fee_model} if fee_model is not None else {}
-    sess = BacktestTradingSession(start, end, universe, A(), initial_cash=cash, rebalance="daily",
-                                  long_only=True, cash_buffer_percentage=0.01, data_handler=dh, **kw)
+    sess = C.configure(BacktestTradingSession, start, end, universe, A(), initial_cash=cash, rebalance="daily",
+                       long_only=True, cash_buffer_percentage=0.01, data_handler=dh, **kw,
+                       what=f"BacktestTradingSession({start.date()}, {end.date()}, universe, 場面の AlphaModel, initial_cash={cash}, "
+                            f"rebalance=daily, long_only, cash_buffer_percentage=0.01, data_handler"
+                            f"{', fee_model=場面の費用の模型' if kw else ''})", decided_from=("選ぶ値", "場面の入力"))
     sess.run(results=False)
     return st, sess
 
@@ -130,6 +135,8 @@ def _bar_like_classes() -> list[str]:
 
 class QstraderAdapter(Adapter):
     name = "opp_qstrader"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"window": list(C.FIXED_WINDOW), "rebalance": "daily", "long_only": True, "cash_buffer_percentage": 0.01}}
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))

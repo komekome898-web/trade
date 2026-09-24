@@ -73,7 +73,12 @@ def make(frame: pd.DataFrame, amount: float = 1_000_000.0, allow_negative_balanc
                 return self.data.index[ind_nbr + 1], float(fill_price)
 
     with contextlib.redirect_stdout(io.StringIO()):
-        return S("X", D.date(2023, 11, 20), 30, "1d", amount, allow_negative_balance)
+        # round r8-1 (positive definition A (1)): the settings are the strategy's constructor arguments and the
+        # overridden get_data (the tool's documented data plug), made through common.configure
+        return C.configure(S, "X", D.date(2023, 11, 20), 30, "1d", amount, allow_negative_balance,
+                           what=f"EventBased の子(get_data = 場面の足{', get_execution_price = 場面の約定の模型' if fill_price is not None else ''})"
+                                f"(ticker X, end_date 2023-11-20, days 30, interval 1d, amount {amount}, allow_negative_balance {allow_negative_balance})",
+                           decided_from=("場面の入力", "選ぶ値"))
 
 
 def run(rows, fn, **kw):
@@ -131,6 +136,8 @@ def _table_seen(rows) -> str:
 
 
 class LuczinsritterAdapter(Adapter):
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"end_date": "2023-11-20", "days": 30, "interval": "1d"}}
     name = "opp_luczinsritter"
 
     # ---------------- P0-1

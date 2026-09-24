@@ -44,17 +44,23 @@ def _dt_ns(ctx) -> int:
 
 def run(bars, fn, cash=1_000_000.0, fee=None, slippage=None, **cfg):
     df = _df(bars)
-    config = pb.StrategyConfig(initial_cash=cash, fee_mode=fee, **cfg)
-    s = pb.Strategy(df, df["date"].min(), df["date"].max(), config)
+    # round r8-1 (positive definition A): every setting through common.configure; start / end are the configured
+    # target's chosen window, the same in every scene (until round r8-1: the scene's first and last row)
+    config = C.configure(pb.StrategyConfig, initial_cash=cash, fee_mode=fee, **cfg,
+                         what=f"StrategyConfig(initial_cash={cash}, fee_mode={'場面の費用の模型' if fee else None}"
+                              f"{', ' + ', '.join(sorted(cfg)) if cfg else ''})", decided_from=("場面の入力",))
+    start, end = pd.Timestamp(C.FIXED_WINDOW[0]), pd.Timestamp(C.FIXED_WINDOW[1])
+    s = C.configure(pb.Strategy, df, start, end, config, what=f"Strategy(場面の足の DataFrame, {start.date()}, {end.date()}, config)",
+                    decided_from=("場面の入力", "選ぶ値"))
     st = {"n": 0, "log": []}
 
     def exec_fn(ctx):
         st["n"] += 1
         fn(ctx, st["n"], st)
 
-    s.add_execution(exec_fn, ["X"])
+    C.configure(s.add_execution, exec_fn, ["X"], what="add_execution(場面の戦略, [銘柄])", decided_from=("場面の入力",))
     if slippage is not None:
-        s.set_slippage_model(slippage)
+        C.configure(s.set_slippage_model, slippage, what="set_slippage_model(場面の約定の模型)", decided_from=("場面の入力",))
     res = s.backtest(warmup=None)
     return st, res
 
@@ -67,7 +73,8 @@ def _try_non_bar(e: dict) -> str:
     df = pd.DataFrame([{"symbol": "X", "date": pd.Timestamp(e["ts_ns"], unit="ns"),
                         **{k: v for k, v in C.fields_of(e).items() if not isinstance(v, list)}}])
     try:
-        s = pb.Strategy(df, df["date"].min(), df["date"].max())
+        # round r8-1: the trial uses the same fixed window as every run (not the event's own day)
+        s = pb.Strategy(df, pd.Timestamp(C.FIXED_WINDOW[0]), pd.Timestamp(C.FIXED_WINDOW[1]))
         s.add_execution(lambda ctx: None, ["X"])
         s.backtest()
     except Exception as exc:  # noqa: BLE001
@@ -77,6 +84,8 @@ def _try_non_bar(e: dict) -> str:
 
 class LibPybrokerAdapter(Adapter):
     name = "opp_lib_pybroker"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"window": list(C.FIXED_WINDOW), "warmup": None}}
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
@@ -299,16 +308,23 @@ class LibPybrokerAdapter(Adapter):
                 ctx.buy_shares = 1
 
         df = _df([C.as_bar(e) for e in C.events(sc)])
-        s = pb.Strategy(df, df["date"].min(), df["date"].max(), pb.StrategyConfig(initial_cash=100_000.0))
+        # round r8-1 (positive definition A): the settings through common.configure and the fixed window (until
+        # round r8-1 this scene alone kept the scene's first and last row as the window)
+        start, end = pd.Timestamp(C.FIXED_WINDOW[0]), pd.Timestamp(C.FIXED_WINDOW[1])
+        config = C.configure(pb.StrategyConfig, initial_cash=100_000.0, what="StrategyConfig(initial_cash=100000.0)",
+                             decided_from=("場面の入力",))
+        s = C.configure(pb.Strategy, df, start, end, config, what=f"Strategy(場面の足の DataFrame, {start.date()}, {end.date()}, config)",
+                        decided_from=("場面の入力", "選ぶ値"))
         cnt = {"n": 0}
 
         def exec_fn(ctx):
             cnt["n"] += 1
             f(ctx, cnt["n"], None)
 
-        s.add_execution(exec_fn, ["X"])
+        C.configure(s.add_execution, exec_fn, ["X"], what="add_execution(場面の戦略, [銘柄])", decided_from=("場面の入力",))
         try:
-            s.backtest(portfolio=RecPortfolio(100_000.0))
+            s.backtest(portfolio=C.configure(RecPortfolio, 100_000.0, what="Portfolio の子(場面の口座: 現金 100,000)",
+                                             decided_from=("場面の入力",)))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"口座を渡す口 backtest(portfolio=...) に Portfolio の子を渡した -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"account_recorded_fill_qty": rec}, "backtest(portfolio=<Portfolio の子>)。子の buy が返した約定の株数を記録した")

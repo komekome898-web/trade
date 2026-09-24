@@ -57,8 +57,22 @@ def ns(us_: float) -> int:
 
 
 def feed(bus: MessageBus, events: list[dict], on_event) -> None:
+    # round r8-1 (positive definition A (1)): queueing the scene's events on the bus is the data setting (recorded)
     for e in events:
-        bus.send(us(e["ts_ns"]), "feed", lambda e=e: on_event(e, bus.now_us))
+        C.configure(bus.send, us(e["ts_ns"]), "feed", lambda e=e: on_event(e, bus.now_us),
+                    what="MessageBus.send(時刻 µs, 'feed', 場面の事象を運ぶ動作)", decided_from=("場面の入力",))
+
+
+def _bus(*a, **k):
+    """A MessageBus, made as a recorded setting (round r8-1)."""
+    lat = k.get("latency") if k else (a[0] if a else None)
+    return C.configure(MessageBus, *a, **k, what="MessageBus(" + ("{'strategy': LatencyModel(場面の遅れ)}" if lat else "") + ")",
+                       decided_from=("場面の入力",) if lat else ("公開の既定",))
+
+
+def _book():
+    """A LimitOrderBook, made as a recorded setting (round r8-1)."""
+    return C.configure(LimitOrderBook, what="LimitOrderBook()", decided_from=("公開の既定",))
 
 
 # The bus hands the strategy nothing but the call of an action it was given (MessageBus.send(t, participant, action)):
@@ -87,6 +101,8 @@ def _attempt_kw(cls, **kw) -> str:
 
 
 class MihircodingLobAdapter(VectorBase):
+    # round r8-1 (positive definition A): one configured target (the tool's defaults except what a scene names)
+    CONFIGS = {"": {}}
     name = "opp_mihircoding_lob"
     what = ("この道具は照合の機関(LimitOrderBook)と、到着の順に動作を配る MessageBus と、手数料の表(FeeSchedule)で、"
             "相場の事象の型(約定・足・板・資金調達・清算)も、注文の受付・拒否・約定・取消を戦略に知らせる事象も持たない")
@@ -96,13 +112,13 @@ class MihircodingLobAdapter(VectorBase):
 
     # ---------------- P0-1 (the bus orders by arrival time)
     def scene_p1_one_call_per_event(self, sc):
-        bus, seen = MessageBus(), []
+        bus, seen = _bus(), []
         feed(bus, C.events(sc), lambda e, now: seen.append(ns(now)))
         bus.drain()
         return not_supported(NO_CARRIER + f"試したこと: 各足を MessageBus.send(時刻 µs, 'feed', 閉包) で積み drain() -> 閉包が呼ばれた bus.now_us(ns に)は {seen}")
 
     def scene_p1_merge_by_time(self, sc):
-        bus, seen = MessageBus(), []
+        bus, seen = _bus(), []
         for _, evs in C.streams_in_order(sc):
             feed(bus, evs, lambda e, now: seen.append(ns(now)))
         bus.drain()
@@ -111,7 +127,7 @@ class MihircodingLobAdapter(VectorBase):
 
     # ---------------- P0-2 (the bus's time is float microseconds)
     def _obs(self, sc):
-        bus, seen = MessageBus(), []
+        bus, seen = _bus(), []
         feed(bus, C.events(sc), lambda e, now: seen.append(ns(now)))
         bus.drain()
         return not_supported(NO_CARRIER + "試したこと: ns を µs の float(MessageBus の時刻の単位)にして積み、閉包が呼ばれた時の bus.now_us を ns に戻した -> "
@@ -120,7 +136,7 @@ class MihircodingLobAdapter(VectorBase):
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
     def _iso(self, sc):
-        bus = MessageBus()
+        bus = _bus()
         try:
             bus.send(sc.input["iso"], "feed", None)
             bus.drain()
@@ -133,7 +149,7 @@ class MihircodingLobAdapter(VectorBase):
 
     # ---------------- P0-3 clock (the bus runs an action at a requested time)
     def scene_p3_clock_timer(self, sc):
-        bus, calls, st = MessageBus(), [], {"n": 0}
+        bus, calls, st = _bus(), [], {"n": 0}
 
         def on_event(e, now):
             st["n"] += 1
@@ -147,7 +163,7 @@ class MihircodingLobAdapter(VectorBase):
     # ---------------- P0-4
     def scene_p4_future_read_attempt(self, sc):
         probe, fut = sc.input["probe_at_ns"], sc.input["future_ts_ns"]
-        bus, att, seen = MessageBus(), C.Attempts(), []
+        bus, att, seen = _bus(), C.Attempts(), []
 
         def on_event(e, now):
             seen.append(float(C.as_bar(e)["close"]))
@@ -167,7 +183,7 @@ class MihircodingLobAdapter(VectorBase):
 
     # ---------------- P0-5 (ties are broken by the order sent: "(arrival, sequence)")
     def _tie(self, sc, order):
-        bus, seen = MessageBus(), []
+        bus, seen = _bus(), []
         for _, evs in C.streams_in_order(sc, order):
             feed(bus, evs, lambda e, now: seen.append([e["kind"], ns(now)]))
         bus.drain()
@@ -185,7 +201,7 @@ class MihircodingLobAdapter(VectorBase):
         return self.scene_p5_same_time_twice(sc)
 
     def scene_p5_same_stream_order(self, sc):
-        bus, seen = MessageBus(), []
+        bus, seen = _bus(), []
         feed(bus, C.events(sc), lambda e, now: seen.append(float(e["price"])))
         bus.drain()
         return not_supported(NO_CARRIER + "試したこと: 同じ時刻の約定 3 件を 1 本で MessageBus.send に積み drain() -> 閉包が呼ばれた順に閉包が運んだ価格 "
@@ -193,7 +209,7 @@ class MihircodingLobAdapter(VectorBase):
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
-        bus, book, st, out = MessageBus(), LimitOrderBook(), {"n": 0}, {}
+        bus, book, st, out = _bus(), _book(), {"n": 0}, {}
 
         def on_event(e, now):
             st["n"] += 1
@@ -211,14 +227,14 @@ class MihircodingLobAdapter(VectorBase):
                   f"注文の数を読む口は無い)と cancel(id) -> {st.get('cancel')}、3 回目 len(book.depth(BUY))。相場の約定は板に入れていない(買い 90 と交わらない)")
 
     def scene_p6_cancel_notice(self, sc):
-        book = LimitOrderBook()
+        book = _book()
         oid, _ = book.add_limit_order(Side.BUY, 90.0, 1)
         r = book.cancel(oid)
         return not_supported(f"取消の成否は cancel(order_id) の戻り値(bool)だけで、戦略に届く事象が無い。試したこと: add_limit_order(BUY, 90.0, 1) -> id {oid}; "
                              f"cancel({oid}) -> {r}")
 
     def scene_p6_fill_seen_by_strategy(self, sc):
-        book = LimitOrderBook()
+        book = _book()
         book.add_limit_order(Side.SELL, 100.0, 100)
         trades = book.market_order(Side.BUY, 1)
         return not_supported("約定は market_order などの戻り値(Trade の list)で渡るだけで、あとの呼び出しで注文の約定済み数量を読む口が無い"
@@ -228,8 +244,8 @@ class MihircodingLobAdapter(VectorBase):
     # ---------------- P0-7
     def scene_p7_latency_model_swap(self, sc):
         lat_us = 7_000.0  # the scene's plug: order latency 7 ms
-        bus = MessageBus({"strategy": LatencyModel(base_us=lat_us)})
-        book, st, out = LimitOrderBook(), {"n": 0}, {}
+        bus = _bus({"strategy": LatencyModel(base_us=lat_us)})
+        book, st, out = _book(), {"n": 0}, {}
 
         def buy():
             trades = book.market_order(Side.BUY, 1)
@@ -254,7 +270,7 @@ class MihircodingLobAdapter(VectorBase):
                              + _attempt_kw(LimitOrderBook, fill_model=object()))
 
     def _fees(self, sc, what):
-        book = LimitOrderBook()
+        book = _book()
         book.add_limit_order(Side.SELL, 100.0, 100)
         trades = book.market_order(Side.BUY, 2)
         return not_supported(f"{what}。FeeSchedule(name, maker, taker) は 1 株あたりの率の表で、照合(LimitOrderBook)も MessageBus も読まない"

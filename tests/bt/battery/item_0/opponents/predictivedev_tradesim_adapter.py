@@ -50,10 +50,11 @@ def _df(events: list[dict]) -> pd.DataFrame:
 
 
 def run(events: list[dict], fn, setup=None, df=None):
-    me = MatchingEngine(OrderBook())
+    # round r8-1 (positive definition A (1)): the settings through common.configure
+    me = C.configure(MatchingEngine, OrderBook(), what="MatchingEngine(OrderBook())", decided_from=("公開の既定",))
     if setup:
         setup(me)
-    mm = MarketMaker(SYM, me)
+    mm = C.configure(MarketMaker, SYM, me, what="MarketMaker(銘柄, engine)", decided_from=("選ぶ値",))
     st = {"n": 0, "log": [], "fills": [], "oid": 0}
     me.subscribe_trades(lambda ex: st["fills"].append(ex) if ex.taker_owner_id == "strategy" else None)
 
@@ -63,7 +64,8 @@ def run(events: list[dict], fn, setup=None, df=None):
             st["n"] += 1
             fn(self, data, st)
 
-    run_backtest(_df(events) if df is None else df, mm, me, traders=[T(SYM, me)])
+    C.configure(run_backtest, _df(events) if df is None else df, mm, me, traders=[T(SYM, me)],
+                what="run_backtest(場面の事象の表(Date, Close), market_maker, engine, traders=[場面の戦略])", decided_from=("場面の入力",))
     return st, me
 
 
@@ -98,6 +100,8 @@ def _attempt_call(fn_desc: str, fn) -> str:
 
 class PredictivedevTradesimAdapter(Adapter):
     name = "opp_predictivedev_tradesim"
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"market_maker": "MarketMaker(銘柄)", "latency_ms": "既定(場面が遅れを名指さないとき)"}}
 
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):
@@ -259,7 +263,7 @@ class PredictivedevTradesimAdapter(Adapter):
             elif st["n"] == 3:
                 out["filled_qty_at_call3"] = float(pf.positions.get(SYM, 0))
 
-        run([C.as_bar(e) for e in C.events(sc)], f, setup=lambda me: me.subscribe_trades(pf.on_execution))
+        run([C.as_bar(e) for e in C.events(sc)], f, setup=lambda me: C.configure(me.subscribe_trades, pf.on_execution, what="engine.subscribe_trades(場面の口座)"))
         return ok(out, "1 回目 成行 買い 1。3 回目に道具の Portfolio(owner_id='strategy'、道具の CLI と同じく engine.subscribe_trades(portfolio.on_execution) で"
                   "つないだ)の positions[銘柄](注文から約定済み数量を読む口は無い)")
 
@@ -278,7 +282,8 @@ class PredictivedevTradesimAdapter(Adapter):
                 out["fill_time_ns"] = int(pd.Timestamp(st["fills"][0].timestamp).value)
                 out["row_time_when_filled_ns"] = _ts(d)
 
-        run(C.events(sc), f, setup=lambda me: setattr(me, "latency_ms", 7))
+        run(C.events(sc), f, setup=lambda me: C.configure_attr(me, "latency_ms", 7, what="MatchingEngine.latency_ms = 7(場面の遅れ)",
+                                                                decided_from=("場面の入力",)))
         return ok({"fill_time_ns": out.get("fill_time_ns")},
                   "MatchingEngine.latency_ms = 7(道具の遅延の設定)、1 回目(T0)に成行 買い 1。Execution.timestamp を約定の時刻として読んだ"
                   f"(道具は pd.Timestamp.now(tz='UTC') を入れる)。約定が見えた行の時刻 {out.get('row_time_when_filled_ns')}")
@@ -306,6 +311,6 @@ class PredictivedevTradesimAdapter(Adapter):
             if st["n"] == 1:
                 s.matching_engine.submit_order(order(st, "buy", 1))
 
-        run([C.as_bar(e) for e in C.events(sc)], f, setup=lambda me: me.subscribe_trades(RecordingAccount().on_execution))
+        run([C.as_bar(e) for e in C.events(sc)], f, setup=lambda me: C.configure(me.subscribe_trades, RecordingAccount().on_execution, what="engine.subscribe_trades(場面の口座)"))
         return ok({"account_recorded_fill_qty": recorded},
                   "道具の CLI が Portfolio をつなぐのと同じ形(engine.subscribe_trades(portfolio.on_execution)、cli/main.py)で、記録するだけの口座をつないだ")

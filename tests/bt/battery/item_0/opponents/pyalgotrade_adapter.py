@@ -44,10 +44,12 @@ class _MemFeed(membf.BarFeed):
 
 
 def _feed(bars):
+    # round r8-1 (positive definition A (1)): the settings through common.configure (the feed and its bars)
     rows = [C.as_bar(b) for b in bars]
-    f = _MemFeed(bar.Frequency.DAY)
-    f.addBarsFromSequence(INST, [bar.BasicBar(C.ns_to_dt(b["ts_ns"]).replace(tzinfo=None), b["open"], b["high"], b["low"], b["close"],
-                                              b.get("volume", 1.0), b["close"], bar.Frequency.DAY) for b in rows])
+    f = C.configure(_MemFeed, bar.Frequency.DAY, what="membf.BarFeed(Frequency.DAY)(adjClose を持つと言う子)", decided_from=("選ぶ値",))
+    C.configure(f.addBarsFromSequence, INST, [bar.BasicBar(C.ns_to_dt(b["ts_ns"]).replace(tzinfo=None), b["open"], b["high"], b["low"],
+                                                            b["close"], b.get("volume", 1.0), b["close"], bar.Frequency.DAY) for b in rows],
+                what="addBarsFromSequence(銘柄, 場面の足)", decided_from=("場面の入力",))
     return f
 
 
@@ -73,7 +75,7 @@ def run(bars, fn, cash=1_000_000.0, setup=None):
                 st["fills"].append({"price": ex.getPrice(), "qty": ex.getQuantity(), "commission": ex.getCommission(),
                                     "dt": str(ex.getDateTime())})
 
-    s = S()
+    s = C.configure(S, what=f"BacktestingStrategy(feed, {cash})", decided_from=("場面の入力",))
     if setup:
         setup(s.getBroker())
     s.run()
@@ -98,6 +100,8 @@ def _try_non_bar(e: dict) -> str:
 
 
 class PyalgotradeAdapter(Adapter):
+    # round r8-1 (positive definition A): the values this configured target chooses, the same in every scene
+    CONFIGS = {"": {"frequency": "DAY"}}
     name = "opp_pyalgotrade"
 
     def scene_p1_merge_by_time(self, sc):
@@ -291,7 +295,7 @@ class PyalgotradeAdapter(Adapter):
             def fillMarketOrder(self, broker_, order, bar_):
                 return fillstrategy.FillInfo(12345.0, order.getQuantity())
 
-        st = self._buy(sc, lambda br: br.setFillStrategy(Fixed()))
+        st = self._buy(sc, lambda br: C.configure(br.setFillStrategy, Fixed(), what="broker.setFillStrategy(場面の約定の模型)"))
         return ok({"fill_price": st["fills"][0]["price"] if st["fills"] else None},
                   f"broker.setFillStrategy(DefaultStrategy の子: fillMarketOrder が FillInfo(12345, 数量) を返す)。fills={st['fills']} 状態 {st['events']}")
 
@@ -299,7 +303,7 @@ class PyalgotradeAdapter(Adapter):
         return not_supported("遅延の模型を渡す口が無い(注文は次の足で埋める)。試したこと: " + self._try_attr("setLatencyModel"))
 
     def _fee(self, sc, fee):
-        st = self._buy(sc, lambda br: br.setCommission(backtesting.FixedPerTrade(fee)))
+        st = self._buy(sc, lambda br: C.configure(br.setCommission, backtesting.FixedPerTrade(fee), what="broker.setCommission(FixedPerTrade(場面の費用))"))
         return ok({"fee": st["fills"][0]["commission"] if st["fills"] else None}, f"broker.setCommission(FixedPerTrade({fee}))。fills={st['fills']}")
 
     def scene_p7_cost_model_swap(self, sc):
@@ -310,7 +314,7 @@ class PyalgotradeAdapter(Adapter):
             def calculate(self, order, price, quantity):
                 return 0.375 * quantity
 
-        st = self._buy(sc, lambda br: br.setCommission(PerUnit()), qty=2)
+        st = self._buy(sc, lambda br: C.configure(br.setCommission, PerUnit(), what="broker.setCommission(場面の費用の模型)"), qty=2)
         return ok({"fee": sum(x["commission"] for x in st["fills"]) if st["fills"] else None},
                   f"broker.setCommission(Commission の子: calculate が 0.375 × quantity を返す)、数量 2 の成行。fills={st['fills']}")
 
@@ -332,7 +336,7 @@ class PyalgotradeAdapter(Adapter):
                     self.marketOrder(INST, 1)
 
         try:
-            S(feed, RecBroker(100_000, feed)).run()
+            C.configure(S, feed, RecBroker(100_000, feed), what="BacktestingStrategy(feed, 場面の口座 = backtesting.Broker の子)").run()
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"BacktestingStrategy(feed, <Broker の子>) で走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"account_recorded_fill_qty": rec}, "BacktestingStrategy(feed, broker) の第 2 引数に backtesting.Broker の子を渡し、約定を記録した"

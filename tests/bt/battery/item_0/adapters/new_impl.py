@@ -167,7 +167,13 @@ class NewImplAdapter(Adapter):
 
     def _run(self, fn, events, *, fill_model=None, latency_model=None, cost_model=None, account=None):
         strat = self._strategy(fn)
-        engine = self.core.CoreEngine(strat, events, fill_model, latency_model, cost_model, account)
+        # round r8-1 (positive definition A (1)): the settings are the engine's constructor arguments -- the
+        # input streams and the plugged models / account the scene names -- made and recorded by common.configure
+        plugged = [n for n, v in (("fill_model", fill_model), ("latency_model", latency_model), ("cost_model", cost_model),
+                                  ("account", account)) if v is not None]
+        engine = C.configure(self.core.CoreEngine, strat, events, fill_model, latency_model, cost_model, account,
+                             what="CoreEngine(strategy, 場面の事象" + (", " + ", ".join(plugged) if plugged else "") + ")",
+                             decided_from=("場面の入力",))
         res = engine.run()
         return strat.state, res
 

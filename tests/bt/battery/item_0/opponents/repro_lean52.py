@@ -8,12 +8,11 @@ on .NET net10.0, not installed; the Python CLI needs the quantconnect/lean
 Docker image, 14 GB compressed; record `survey_results/attempts/52.log`).
 The review table (`opponents/CONSIDERED.md`, viewpoint P0-1) had skipped it
 as contained by run candidates, but LEAN carries a funding-rate type
-(`MarginInterestRate`) through the same synchroniser as bars and ticks, so
-the scene p1-merge-by-time (then bar, trade and funding merged by time), which
-no run candidate passed in round r6-3, could be passed by LEAN: it is not
-"clearly weaker" (critic br6-2-2, ROOTCAUSE_r6-3.md). Since round r7-1 the
-scenes of other viewpoints than P0-3 take their types from the target's own
-(the runner builds them from LEAN's types: trade, bar, funding).
+(`MarginInterestRate`) through the same synchroniser as bars and ticks: it is
+not "clearly weaker" (critic br6-2-2; the round-r6-3 record is in the git
+version named by ROOTCAUSE_r6-3.md). The scenes named in
+`scenes.L438_2_SCENES` take their types from the configured target's own
+(the runner builds them; the record of each run says which).
 
 Scope of the rewrite = LEAN's data path: the types TradeBar, Tick (trade)
 and MarginInterestRate, the subscriptions, the frontier time, the
@@ -25,22 +24,43 @@ LEAN has those mechanisms, but they are not reproduced, so there is no result
 Slice does not have (an order book with levels, a book delta, a liquidation)
 are 対応なし, with the Slice's members (Common/Data/Slice.cs 86-166).
 
-Settings the scene set chooses through LEAN's public arguments (round r7-1):
-the security is a CryptoFuture added with `fillForward: false`
-(QCAlgorithm.cs 2621 AddCryptoFuture), so the subscriptions are not
-internal (DataManager.cs 720-721 with AddSecurity's defaults) and carry no
-fill-forward data (FileSystemDataFeed.cs 274-277); see
-`repro_engines/lean52.py` for the lines.
+Settings (round r8-1, critic i0-r7-03, positive definition A): the
+subscriptions are no longer built by the scene set from the scene's event
+types. The scene's algorithm adds its security in `Initialize` through the
+public `AddCryptoFuture(ticker, resolution, market, fillForward, leverage)`
+(QCAlgorithm.cs 2621), recorded with `common.configure`; LEAN's own code
+(`repro_engines/lean52.py`: DataManager.Add -> LookupSubscriptionConfigDataTypes
+-> LeanData.GetDataType, the user-defined universe, the universe selection)
+decides the configs and makes one subscription per config. The trade type is
+a `Tick` only at the Tick resolution and a `TradeBar` only at a bar
+resolution (LeanData.cs 488-494); a CryptoFuture always gets a
+MarginInterestRate config (DataManager.cs 770-773).
 
-Inputs: LEAN takes one subscription per (symbol, data type) (a subscription
-has one `Configuration.Type`), so events of one scene stream are handed to
-the subscription of their type, in their given order; the synchroniser
-merges subscriptions by time. Values the primary source leaves open use the
-source's defaults: a TradeBar's Period is `Time.OneMinute`
-(TradeBar.cs 182), so a bar whose scene time is t has EndTime = t (LEAN
-emits a bar at its EndTime, SubscriptionData.cs 73) and Time = t - 1 min.
-Times go through `Time.UnixNanosecondTimeStampToDateTime` (100-ns ticks)
-and back through `DateTimeToUnixTimeStampNanoseconds`.
+Configured targets (`CONFIGS`): the values the user chooses are the list of
+resolutions passed to AddCryptoFuture in Initialize (in that order) and, for
+the scenes that leave the type open, which of the configured target's types
+carries them (`one_type`). Run: each resolution alone (5), and Tick together
+with one bar resolution (4 x one_type trade / bar). `fillForward` is false in
+all (the FillForwardEnumerator is not rewritten; for Tick it is false anyway,
+SubscriptionDataConfig.cs 242); `market` and `leverage` stay at their
+defaults (nothing rewritten reads them). Not run: two or more bar
+resolutions in one run -- the scene's bars name no bar length, so the user
+would choose which resolution's file holds them; holding them in one file
+gives the run of that one resolution plus subscriptions without data, and
+holding them in several delivers each bar more than once; adding a security
+while the algorithm runs (not rewritten, refused by the engine).
+
+Inputs: each config's source is the file the user placed for it: the
+scene's events of that config's (data type, tick type) in the scene's order
+(streams concatenated in the hand-over order). A trade is a trade Tick
+(Tick.cs 283-294), a bar a TradeBar whose Period is the config's Increment
+(TradeBar.cs 248: `Period = config.Increment`; SubscriptionDataConfig.cs 240),
+so a bar whose scene time is t has EndTime = t (LEAN emits a bar at its
+EndTime, SubscriptionData.cs 73) and Time = t - Increment; a funding rate is
+a MarginInterestRate (MarginInterestRate.cs 55-62). An event no config of the
+configured target takes cannot be given to it: the scene is 対応なし. Times go
+through `Time.UnixNanosecondTimeStampToDateTime` (100-ns ticks) and back
+through `DateTimeToUnixTimeStampNanoseconds`.
 """
 from __future__ import annotations
 
@@ -59,73 +79,81 @@ from opponents.repro_engines import lean52 as L  # noqa: E402
 SYM = "BTCJPY"
 SLICE_MEMBERS = ("Bars", "QuoteBars", "Ticks", "OptionChains", "FuturesChains", "Splits", "Dividends", "Delistings",
                  "SymbolChangedEvents", "MarginInterestRates")
-NO_TYPE = ("LEAN の Slice が戦略に渡す型の集まりは {m}(Common/Data/Slice.cs 86-166、版 856327ff)で、{k} を運ぶ型が無い"
-           "(板は Tick の気配(最良の売り買い 1 段、Tick.cs 140-146)と QuoteBar だけ)。再現の Slice の欄: {have}")
 NOT_REPRODUCED = ("再現の範囲外: 候補 52 は LEAN のデータの道(型・購読・frontier・同期・Slice・OnData)だけを一次資料どおりに"
                   "書き直した(opponents/repro_engines/lean52.py)。この場面の機構({what})は LEAN にあるが書き直していないので結果が無い")
 
 KIND = {L.TradeBar: "bar", L.Tick: "trade", L.MarginInterestRate: "funding"}
+_R = L.Resolution
+_BAR_RESOLUTIONS = (_R.Second, _R.Minute, _R.Hour, _R.Daily)
 
 
-def _obj(e: dict) -> L.BaseData:
-    """A scene event as the LEAN data object of its type (None when LEAN has no such type)."""
+def _configs() -> dict:
+    out = {_R.Tick.lower(): {"AddCryptoFuture": [_R.Tick], "one_type": "trade"}}
+    for r in _BAR_RESOLUTIONS:
+        out[r.lower()] = {"AddCryptoFuture": [r], "one_type": "bar"}
+    for r in _BAR_RESOLUTIONS:
+        for one in ("trade", "bar"):
+            out[f"tick+{r.lower()}:{one}"] = {"AddCryptoFuture": [_R.Tick, r], "one_type": one}
+    return out
+
+
+def _takes(cfg, e: dict) -> bool:
+    """Whether this config's source holds the scene event (its data type and tick type)."""
+    k = e.get("kind", "trade")
+    return (k == "trade" and cfg.Type is L.Tick and cfg.TickType == L.TickType.Trade) or \
+        (k == "bar" and cfg.Type is L.TradeBar) or (k == "funding" and cfg.Type is L.MarginInterestRate)
+
+
+def _obj(e: dict, cfg) -> L.BaseData:
+    """A scene event as the LEAN data object of the config that holds it."""
     t = L.unix_ns_to_datetime(int(e["ts_ns"]))
     k = e.get("kind", "trade")
     if k == "bar":
         b = C.as_bar(e)
-        return L.TradeBar(t - L.TradeBar.ONE_MINUTE, SYM, float(b["open"]), float(b["high"]), float(b["low"]),
-                          float(b["close"]), float(b.get("volume", 1.0)))
+        return L.TradeBar(t - cfg.Increment, SYM, float(b["open"]), float(b["high"]), float(b["low"]),
+                          float(b["close"]), float(b.get("volume", 1.0)), period=cfg.Increment)
     if k == "trade":
         return L.Tick(t, SYM, "", "", float(e.get("qty", 0.01)), float(e.get("price", 100.0)))
-    if k == "funding":
-        m = L.MarginInterestRate()  # MarginInterestRate.cs 60-65: new MarginInterestRate { Time, InterestRate = Value = rate, Symbol }
-        m.Time, m.Symbol = t, SYM
-        m.InterestRate = m.Value = float(e["rate"])
-        return m
-    return None
+    m = L.MarginInterestRate()  # MarginInterestRate.cs 55-62: new MarginInterestRate { Time, InterestRate = Value = rate, Symbol }
+    m.Time, m.Symbol = t, SYM
+    m.InterestRate = m.Value = float(e["rate"])
+    return m
 
 
-# round r7-1: each subscription carries its configuration as LEAN makes it for a user's security
-# (DataManager.cs 720-721, via QCAlgorithm.AddSecurity with the defaults; lean52.data_manager_add):
-# the data type and its TickType (TradeBar and a trade Tick: Trade; MarginInterestRate: Quote,
-# DataManager.cs 763-773, SubscriptionManager.cs 361), the CryptoFuture security type.
-_TICK_TYPE = {L.TradeBar: L.TickType.Trade, L.Tick: L.TickType.Trade, L.MarginInterestRate: L.TickType.Quote}
-
-
-def _sources(streams: list[tuple[str, list[dict]]], reverse_ties: bool = False) -> list:
-    """One subscription per data type, in the order the types first appear
-    (LEAN keeps one subscription per (symbol, data type): a config equal to
-    an existing one returns that config, DataManager.cs 503-525 called at 731); each
-    keeps its events' given order. `reverse_ties` hands them to the collection
-    in the reverse order: the order of subscriptions with the same sort key is
-    not fixed by the source (lean52.sort_subscriptions)."""
-    subs: dict[type, list] = {}
-    for _, evs in streams:
-        for e in evs:
-            o = _obj(e)
-            subs.setdefault(type(o), []).append(o)
-    out = []
-    for t, data in subs.items():
-        (cfg,) = L.data_manager_add(SYM, L.SecurityType.CryptoFuture, [(t, _TICK_TYPE[t])])
-        out.append(L.Subscription(data, cfg, utc_start_time=0))
-    return list(reversed(out)) if reverse_ties else out
-
-
-def _missing(evs: list[dict]) -> list[str]:
-    return sorted({e.get("kind", "trade") for e in evs if _obj(e) is None})
+def _as_one_type(e: dict, one: str) -> dict:
+    """A scene that leaves the type open, in the configured target's `one_type`
+    (the scene's notes: a bar has OHLC = its close, a trade price = the close, qty 0.01)."""
+    k = e.get("kind", "trade")
+    if one == "bar":
+        if k == "bar":
+            return dict(e)
+        price = float(e.get("price", 100.0))
+        return {"kind": "bar", "ts_ns": e["ts_ns"], "open": price, "high": price, "low": price, "close": price, "volume": 1.0}
+    if k == "trade":
+        return dict(e, price=float(e.get("price", 100.0)), qty=float(e.get("qty", 0.01)))
+    return {"kind": "trade", "ts_ns": e["ts_ns"], "price": float(e.get("close", 100.0)), "qty": 0.01, "side": "buy"}
 
 
 def _slice_has() -> list[str]:
-    s = L.time_slice_create(0, [])
-    return sorted(k for k in vars(s) if not k.startswith("_"))
+    sl = L.time_slice_create(0, [])
+    return sorted(k for k in vars(sl) if not k.startswith("_"))
 
 
 class _Algo(L.QCAlgorithm):
-    """The scene's algorithm: OnData records each datum of the Slice with its type."""
+    """The scene's algorithm: Initialize adds the security with the configured
+    target's resolutions (recorded settings); OnData records each datum of the
+    Slice with its type."""
 
-    def __init__(self) -> None:
+    def __init__(self, resolutions: list[str]) -> None:
         super().__init__()
+        self._resolutions = list(resolutions)
         self.calls, self.seen, self.car = 0, [], []
+
+    def Initialize(self) -> None:  # noqa: N802
+        for r in self._resolutions:
+            C.configure(self.AddCryptoFuture, SYM, r, None, False,
+                        what=f"AddCryptoFuture({SYM}, resolution={r}, market=既定, fillForward=false, leverage=既定)",
+                        when="開始前", decided_from=("選ぶ値",))
 
     def OnData(self, slice_):  # noqa: N802
         # round r7-1: the data of the call in the Slice's own order, Slice.AllData (Slice.cs 57 / 305 = the
@@ -136,9 +164,32 @@ class _Algo(L.QCAlgorithm):
             self.seen.append((self.calls, d))
 
 
-def _run(streams, reverse_ties: bool = False) -> _Algo:
-    a = _Algo()
-    L.run(a, _sources(streams, reverse_ties))
+class _NotTaken(Exception):
+    pass
+
+
+def _run(resolutions: list[str], evs: list[dict], reverse_ties: bool = False) -> _Algo:
+    """Run LEAN with the scene's events as the configs' sources; raise _NotTaken
+    naming the events no config takes."""
+    a = _Algo(resolutions)
+    taken: set = set()
+
+    def reader(cfg):
+        out = []
+        for i, e in enumerate(evs):
+            if _takes(cfg, e):
+                taken.add(i)
+                out.append(_obj(e, cfg))
+        return out
+
+    L.run(a, reader, reverse_ties)
+    left = sorted({evs[i].get("kind", "trade") for i in range(len(evs)) if i not in taken})
+    if left:
+        cfgs = [f"{c.Type.__name__}/{c.TickType}/{c.Resolution}" for c in a._user_defined_universe.GetSubscriptionRequests(SYM)]
+        raise _NotTaken(f"{'・'.join(left)} の事象を持てる購読が無い。AddCryptoFuture({resolutions}) から LEAN が作った購読: {cfgs}"
+                        f"(DataManager.cs 747-773 / LeanData.cs 488-494)。LEAN の Slice の型の集まり: {', '.join(SLICE_MEMBERS)}"
+                        f"(Common/Data/Slice.cs 86-166。板は Tick の気配(最良の売り買い 1 段、Tick.cs 140-146)と QuoteBar だけ)。"
+                        f"再現の Slice の欄: {_slice_has()}")
     return a
 
 
@@ -162,28 +213,51 @@ def _no_result(what: str) -> SceneResult:
 
 class Adapter(Adapter):  # noqa: F811 - run_battery loads `Adapter` from a repro_* module
     name = "repro_lean52"
+    CONFIGS = {'tick': {'AddCryptoFuture': ['Tick'], 'one_type': 'trade'},
+               'second': {'AddCryptoFuture': ['Second'], 'one_type': 'bar'},
+               'minute': {'AddCryptoFuture': ['Minute'], 'one_type': 'bar'},
+               'hour': {'AddCryptoFuture': ['Hour'], 'one_type': 'bar'},
+               'daily': {'AddCryptoFuture': ['Daily'], 'one_type': 'bar'},
+               'tick+second:trade': {'AddCryptoFuture': ['Tick', 'Second'], 'one_type': 'trade'},
+               'tick+second:bar': {'AddCryptoFuture': ['Tick', 'Second'], 'one_type': 'bar'},
+               'tick+minute:trade': {'AddCryptoFuture': ['Tick', 'Minute'], 'one_type': 'trade'},
+               'tick+minute:bar': {'AddCryptoFuture': ['Tick', 'Minute'], 'one_type': 'bar'},
+               'tick+hour:trade': {'AddCryptoFuture': ['Tick', 'Hour'], 'one_type': 'trade'},
+               'tick+hour:bar': {'AddCryptoFuture': ['Tick', 'Hour'], 'one_type': 'bar'},
+               'tick+daily:trade': {'AddCryptoFuture': ['Tick', 'Daily'], 'one_type': 'trade'},
+               'tick+daily:bar': {'AddCryptoFuture': ['Tick', 'Daily'], 'one_type': 'bar'}}
 
-    def _seq(self, streams, reverse_ties=False):
-        a = _run(streams, reverse_ties)
+    def __init__(self, config: str = "tick") -> None:
+        super().__init__(config or "tick")
+        assert self.CONFIGS == _configs(), "CONFIGS must be the list _configs() makes"
+
+    @property
+    def _res(self) -> list[str]:
+        return self.choose["AddCryptoFuture"]
+
+    def _go(self, evs, reverse_ties=False):
+        a = _run(self._res, evs, reverse_ties)
         return a, [[KIND[type(d)], _ns(d)] for _, d in a.seen]
 
-    def _typed(self, sc, streams):
-        evs = [e for _, s in streams for e in s]
-        miss = _missing(evs)
-        if miss:
-            return not_supported(NO_TYPE.format(m=", ".join(SLICE_MEMBERS), k="・".join(miss), have=_slice_has()))
-        a, seq = self._seq(streams)
-        return ok({"sequence": seq}, f"OnData の呼び出し {a.calls} 回。各回の Slice.AllData の中身を順に記録",
+    def _typed(self, sc, evs):
+        try:
+            a, seq = self._go(evs)
+        except _NotTaken as e:
+            return not_supported(str(e))
+        return ok({"sequence": seq}, f"AddCryptoFuture({self._res})。OnData の呼び出し {a.calls} 回。各回の Slice.AllData の中身を順に記録",
                   {"carriers": a.car})
 
+    def _one(self, sc):
+        return [_as_one_type(e, self.choose["one_type"]) for e in C.events(sc)]
+
     def scene_p1_merge_by_time(self, sc):
-        return self._typed(sc, C.streams_in_order(sc))
+        return self._typed(sc, C.concatenated(sc))
 
     def scene_p1_one_call_per_event(self, sc):
-        return self._typed(sc, [("events", C.events(sc))])
+        return self._typed(sc, self._one(sc))
 
     def scene_p1_typed_events(self, sc):
-        return self._typed(sc, [("events", C.events(sc))])
+        return self._typed(sc, C.events(sc))
 
     def scene_p2_iso_utc(self, sc):
         return _no_result("ISO 8601 の文字列の読み")
@@ -191,28 +265,32 @@ class Adapter(Adapter):  # noqa: F811 - run_battery loads `Adapter` from a repro
     scene_p2_iso_offset = scene_p2_iso_utc
 
     def _ts(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01} for e in C.events(sc)]
-        a = _run([("events", evs)])
+        evs = [_as_one_type({"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01}, self.choose["one_type"])
+               for e in C.events(sc)]
+        try:
+            a, _ = self._go(evs)
+        except _NotTaken as e:
+            return not_supported(str(e))
         return ok({"observed_ts_ns": [_ns(d) for _, d in a.seen]},
-                  f"約定のティックで渡した。OnData {a.calls} 回で受けた Tick の時刻(DateTime は 100 ns 刻み)を ns に直した",
-                  {"carriers": a.car})
+                  f"AddCryptoFuture({self._res})。{self.choose['one_type']} で渡した。OnData {a.calls} 回で受けた物の時刻"
+                  "(DateTime は 100 ns 刻み)を ns に直した", {"carriers": a.car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
     def _type(self, sc):
-        evs = C.events(sc)
-        miss = _missing(evs)
-        if miss:
-            return not_supported(NO_TYPE.format(m=", ".join(SLICE_MEMBERS), k="・".join(miss), have=_slice_has()))
-        a, seq = self._seq([("events", evs)])
+        try:
+            a, seq = self._go(C.events(sc))
+        except _NotTaken as e:
+            return not_supported(str(e))
         f = _fields(a.seen[0][1]) if a.seen else {}
-        return ok({"sequence": seq, "fields": f}, f"OnData {a.calls} 回。受けた物の欄を読んだ", {"carriers": a.car})
+        return ok({"sequence": seq, "fields": f}, f"AddCryptoFuture({self._res})。OnData {a.calls} 回。受けた物の欄を読んだ",
+                  {"carriers": a.car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = scene_p3_bar = _type
     scene_p3_funding = scene_p3_liquidation = _type
 
     def scene_p3_mixed_one_run(self, sc):
-        return self._typed(sc, [("events", C.events(sc))])
+        return self._typed(sc, C.events(sc))
 
     def scene_p3_clock_timer(self, sc):
         return _no_result("予定の事象(Schedule.On)")
@@ -231,40 +309,43 @@ class Adapter(Adapter):  # noqa: F811 - run_battery loads `Adapter` from a repro
     def scene_p4_future_read_attempt(self, sc):
         return _no_result("履歴の読み(History)と先読みの止め")
 
-    # ---------------- P0-5 (round r7-1: the input is built from LEAN's own types by the runner)
+    # ---------------- P0-5 (the input is built from the configured target's own types by the runner)
     def _p5_once(self, sc, hand_over, reverse_ties=False):
-        a, seq = self._seq([(k, sc.input["streams"][k]) for k in hand_over], reverse_ties)
+        a, seq = self._go(C.concatenated(sc, list(hand_over)), reverse_ties)
         return seq, a.car, a.calls
 
     def scene_p5_same_time_twice(self, sc):
-        evs = [e for s in sc.input["streams"].values() for e in s]
-        miss = _missing(evs)
-        if miss:
-            return not_supported(NO_TYPE.format(m=", ".join(SLICE_MEMBERS), k="・".join(miss), have=_slice_has()))
-        order, car, calls = self._p5_once(sc, sc.input["hand_over_order"])
-        other, _, _ = self._p5_once(sc, sc.input["hand_over_order"], reverse_ties=True)
-        return ok({"order": order}, f"型ごとの入力を 1 つずつ購読(SubscriptionDataConfig)にして渡した順に足した。OnData {calls} 回、"
+        try:
+            order, car, calls = self._p5_once(sc, sc.input["hand_over_order"])
+            other, _, _ = self._p5_once(sc, sc.input["hand_over_order"], reverse_ties=True)
+        except _NotTaken as e:
+            return not_supported(str(e))
+        return ok({"order": order}, f"AddCryptoFuture({self._res})。各入力の事象をその型の購読の源に、渡した順に書いた。OnData {calls} 回、"
                   "Slice.AllData の順を記録。購読の並べ替え(SubscriptionCollection.SortSubscriptions の鍵 SecurityType・TickType・Symbol)で"
                   f"鍵が同じ購読の順は一次資料で決まらないので、逆の順でも走らせた: {other}", {"carriers": car})
 
     def scene_p5_hand_over_order(self, sc):
-        evs = [e for s in sc.input["streams"].values() for e in s]
-        miss = _missing(evs)
-        if miss:
-            return not_supported(NO_TYPE.format(m=", ".join(SLICE_MEMBERS), k="・".join(miss), have=_slice_has()))
         runs, cars, others = [], [], []
-        for o in sc.input["hand_over_orders"]:
-            order, car, _ = self._p5_once(sc, o)
-            runs.append({"hand_over": list(o), "order": order})
-            cars.append(car)
-            others.append(self._p5_once(sc, o, reverse_ties=True)[0])
+        try:
+            for o in sc.input["hand_over_orders"]:
+                order, car, _ = self._p5_once(sc, o)
+                runs.append({"hand_over": list(o), "order": order})
+                cars.append(car)
+                others.append(self._p5_once(sc, o, reverse_ties=True)[0])
+        except _NotTaken as e:
+            return not_supported(str(e))
         return ok({"form": "multi_input", "runs": runs},
-                  f"{len(runs)} 通りの渡す順で購読を足し、各回の Slice.AllData の順を記録。鍵が同じ購読の順を逆にした走り: {others}",
+                  f"AddCryptoFuture({self._res})。{len(runs)} 通りの渡す順で、各入力の事象をその型の購読の源に書いた。"
+                  f"各回の Slice.AllData の順を記録。鍵が同じ購読の順を逆にした走り: {others}",
                   {"carriers": cars})
 
     def scene_p5_same_stream_order(self, sc):
-        a = _run([("events", C.events(sc))])
-        return ok({"prices": [d.Price for _, d in a.seen]}, f"同じ時刻の約定 3 件を 1 つの Tick の購読で渡した。OnData {a.calls} 回",
+        try:
+            a, _ = self._go(self._one(sc))
+        except _NotTaken as e:
+            return not_supported(str(e))
+        return ok({"prices": [d.Price if isinstance(d, L.Tick) else d.Close for _, d in a.seen]},
+                  f"AddCryptoFuture({self._res})。同じ時刻の 3 件を {self.choose['one_type']} の 1 つの購読で渡した。OnData {a.calls} 回",
                   {"carriers": a.car})
 
     def scene_p6_place_then_cancel(self, sc):

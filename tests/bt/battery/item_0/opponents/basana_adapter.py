@@ -125,11 +125,13 @@ def _fields(ev) -> dict:
 from stated_rules import TYPE_PRIORITY  # noqa: E402  (the setting the stated rule is written for)
 
 
-def run_streams(streams: list[list[dict]], on_event=None, timer_at=None, priorities=False):
+def run_streams(streams: list[list[dict]], on_event=None, timer_at=None, priorities=True):
     """Each stream becomes one event source; returns records (kind, now_ns, when_ns, fields).
-    `priorities=True` gives each source the documented `priority` (EventSource,
-    core/event.py) by the type of its events; otherwise every source has the default."""
-    disp = bs.backtesting_dispatcher()
+    Each source gets the documented `priority` (EventSource, core/event.py) by the
+    type of its events -- the configured target's chosen value, the same in every
+    scene (round r8-1, positive definition A; until round r8-1 only
+    p5-hand-over-order set it). Settings are made through common.configure."""
+    disp = C.configure(bs.backtesting_dispatcher, what="backtesting_dispatcher()", decided_from=("公開の既定",))
     recs = []
 
     async def handler(ev):
@@ -143,8 +145,10 @@ def run_streams(streams: list[list[dict]], on_event=None, timer_at=None, priorit
 
     for evs in streams:
         kw = {"priority": TYPE_PRIORITY[evs[0]["kind"]]} if priorities and evs else {}
-        src = bs.FifoQueueEventSource(events=[_event(e) for e in evs], **kw)
-        disp.subscribe(src, handler)
+        src = C.configure(bs.FifoQueueEventSource, events=[_event(e) for e in evs], **kw,
+                          what=f"FifoQueueEventSource(events=場面の入力の 1 つ{', priority=' + str(kw['priority']) if kw else ''})",
+                          decided_from=("場面の入力", "選ぶ値") if kw else ("場面の入力",))
+        C.configure(disp.subscribe, src, handler, what="dispatcher.subscribe(source, handler)", decided_from=("場面の入力",))
     asyncio.run(disp.run())
     return recs
 
@@ -201,7 +205,7 @@ class _FlatFee(bfees.FeeStrategy):
 def run_exchange(bars: list[dict], cash: float, plan, liquidity=None, fee=None):
     """Bars go through the backtesting Exchange; `plan(ex, n, st)` is the strategy
     (async, called on the n-th bar). Returns (log of notices, state)."""
-    disp = bs.backtesting_dispatcher()
+    disp = C.configure(bs.backtesting_dispatcher, what="backtesting_dispatcher()", decided_from=("公開の既定",))
     kw = {}
     if liquidity is not None:
         kw["liquidity_strategy_factory"] = liquidity
@@ -209,9 +213,14 @@ def run_exchange(bars: list[dict], cash: float, plan, liquidity=None, fee=None):
         kw["liquidity_strategy_factory"] = bliq.InfiniteLiquidity
     if fee is not None:
         kw["fee_strategy"] = fee
-    ex = bex.Exchange(disp, {"JPY": Decimal(str(cash))}, default_pair_info=PAIR_INFO, **kw)
-    src = bs.FifoQueueEventSource(events=[_event(b) for b in bars])
-    ex.add_bar_source(src)
+    ex = C.configure(bex.Exchange, disp, {"JPY": Decimal(str(cash))}, default_pair_info=PAIR_INFO, **kw,
+                     what="backtesting Exchange(dispatcher, 場面の口座の残高, default_pair_info, "
+                          f"liquidity_strategy_factory={'場面の模型' if liquidity is not None else 'InfiniteLiquidity'}"
+                          f"{', fee_strategy=場面の模型' if fee is not None else ''})",
+                     decided_from=("場面の入力", "公開の既定") if liquidity is None else ("場面の入力",))
+    src = C.configure(bs.FifoQueueEventSource, events=[_event(b) for b in bars], what="FifoQueueEventSource(events=場面の足)",
+                      decided_from=("場面の入力",))
+    C.configure(ex.add_bar_source, src, what="Exchange.add_bar_source(source)", decided_from=("場面の入力",))
     st = {"notices": [], "n": 0, "events": [], "disp": disp}
 
     async def on_bar(be):
@@ -236,8 +245,10 @@ def run_exchange(bars: list[dict], cash: float, plan, liquidity=None, fee=None):
         elif not o.is_open:
             st["notices"].append("canceled")
 
-    ex.subscribe_to_bar_events(PAIR, on_bar)
-    ex.subscribe_to_order_events(on_order)
+    C.configure(ex.subscribe_to_bar_events, PAIR, on_bar, what="Exchange.subscribe_to_bar_events(pair, handler)",
+                decided_from=("場面の入力",))
+    C.configure(ex.subscribe_to_order_events, on_order, what="Exchange.subscribe_to_order_events(handler)",
+                decided_from=("場面の入力",))
     asyncio.run(disp.run())
     return st
 
@@ -253,6 +264,10 @@ async def _place(ex, st, fn):
 
 
 class BasanaAdapter(Adapter):
+    # round r8-1 (positive definition A): the one configured target -- each event source's `priority`
+    # by the type of its events (stated_rules.TYPE_PRIORITY), in every scene
+    CONFIGS = {"": {"priority": {"bar": 60, "trade": 50, "book_snapshot": 45, "book_delta": 40, "funding": 30,
+                                 "liquidation": 20}}}
     name = "opp_basana"
 
     # ---------------- P0-1
@@ -420,7 +435,7 @@ class BasanaAdapter(Adapter):
     # `priority` argument is the setting the stated rule is written for
     # (stated_rules.TYPE_PRIORITY), subscribed in the hand-over order.
     def _p5_once(self, sc, hand_over):
-        recs = run_streams([sc.input["streams"][k] for k in hand_over], priorities=True)
+        recs = run_streams([sc.input["streams"][k] for k in hand_over])
         return [[r[0], r[2]] for r in recs], [r[4] for r in recs]
 
     def scene_p5_same_time_twice(self, sc):
