@@ -26,7 +26,7 @@ const HEAD = `委任文 ${DOC}(指紋 ${MARK})を最初に全部読み、その�
   `一時ファイルとログは ${SCR} の下に、名前に項目番号・周・役を入れて置く。`
 const HEAD2 = args.marker_new ? HEAD.split(MARK).join(args.marker_new) : HEAD
 // L-433: every role scrutinizes before returning (delegation §3「提出前の吟味」)
-const SCRUTINY_FIX = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。直す役の文)**: 固定した要件・場面集の規則・これまでの指摘を読み直し、指摘 1 件ごとに直した根拠(ファイル:行、コマンドと出力)を書く。指摘された 1 か所だけでなく同じ根の全箇所を直す。批評家の試験と場面集の試験を回して落ちるものを残さない。「非常に厳しい批評家なら何を [止める] にするか」を自分で列べて返す前に潰す。場当たりの直しをしない。止められる前提で作業しない。`
+const SCRUTINY_FIX = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。直す役の文)**: 固定した要件・場面集の規則・これまでの指摘を読み直し、指摘 1 件ごとに直した根拠(ファイル:行、コマンドと出力)を書く。指摘された 1 か所だけでなく同じ根の全箇所を直す。批評家の試験と場面集の試験を回して落ちるものを残さない。「非常に厳しい批評家なら何を [止める] にするか」を自分で列べて返す前に潰す。場当たりの直しをしない。止められる前提で作業しない。(6) 直した規則ごとに、その規則の入力の空間を全格子で列べる敵対者の試験(批評家の probe の形。実装の場合分けから入力を作らない)を先に書き、規則を直したあと通す。列に入れなかったものを試験のファイルに書く(リードの設計 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §3.3)。`
 const SCRUTINY_BUILD = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。最初に作る役の文)**: 固定した要件・場面集の規則 1〜9・比較の観点を読み直し、自分の作ったものを「非常に厳しい監査役・批評家なら何を [止める] にするか」の目で観点ごとに列べ、返す前に潰す。止められる前提で作らない。吟味の記録を、要件なら要件のファイルの末尾、場面集なら DEFINITIONS.md の末尾に書く。`
 const SCRUTINY_TABLE = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。資料係(表)の文)**: 表の観点ごとの一致の数を出力から自分で数え直し、表と一致させる。全対象を全場面に通したか(通らなかった場面の注記に試したことと実測があるか)、注記に道具を特定できる語が無いか、組ごとの 2 通りの表の md5 を確かめたか、materials に記録を全部保存したかを確かめ、notes に書く。`
 const SCRUTINY_CRITIC = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。批評家の文)**: 指摘 1 件ごとに根拠(試験・コマンドと出力)を自分で再現し、格付けを委任文 §3「批評家」の基準に照らし、前の周の指摘の直りを自分で確かめる(直ったものを挙げない・直っていないものを見逃さない)。指摘の相手(場面集 / 実装)を付け違えていないか確かめる。記録は CRITIC.md に書く。`
@@ -136,18 +136,49 @@ const BAT2_SCHEMA = { type: 'object', properties: {
 const BAT_AUDIT_SCHEMA = { type: 'object', properties: {
   findings: { type: 'array', items: { type: 'object', properties: {
     id: { type: 'string' }, level: { type: 'string', enum: ['止める', '直す', '聞く'] }, text: { type: 'string' },
-    repeat_of: { type: 'string' } }, required: ['id', 'level', 'text'] } } },
+    repeat_of: { type: ['string', 'null'] } }, required: ['id', 'level', 'text', 'repeat_of'] } } },
   required: ['findings'] }
 
 async function auditBattery(item, bat, n, prev) {
-  return agent(`検査対象: 項目 ${item.id}「${item.title}」の場面集 ${bat.definitions} と、その置き場所 ${bat.battery_dir}(runner・当方の現状と調査結果の側の adapter・検討表 opponents/CONSIDERED.md・再現 opponents/・mutant)。作業者はまだ動いていない(この監査は作業者の 1 周目の前)。委任文 ${DOC} §3「盲検の作り直し」「場面集」「場面集の規則」1〜9「調査結果の側の選び方」「動かせない候補の検討と再現」と照らす。python3 scripts/check_bt_considered.py ${bat.battery_dir}/opponents/CONSIDERED.md を自分で走らせ、出力を見る(道具が見るのは形だけ。理由の中身・再現が一次資料どおりかは読んで確かめる)。場面が新実装に有利な範囲に偏っていないか、場面が振る舞いでなく作りの形を試していないか(期待の値が要件の文から独立に出せるか)、出所を示す語、断定と範囲、動かせなかった候補の記録を検査する。指摘は [止める] / [直す] / [聞く] の印つきで返し、id を b${n}-1, b${n}-2, … と振る。${prev ? `前の回の指摘(id つき): ${JSON.stringify(prev).slice(0, 8000)}。前の回と同じ欠陥(同じ未達の理由)が残っていれば、その指摘の repeat_of に前の回の id を入れる(直ったものは挙げない。直ったかは自分で確かめる)。` : ''}`,
+  return agent(`検査対象: 項目 ${item.id}「${item.title}」の場面集 ${bat.definitions} と、その置き場所 ${bat.battery_dir}(runner・当方の現状と調査結果の側の adapter・検討表 opponents/CONSIDERED.md・再現 opponents/・mutant)。作業者はまだ動いていない(この監査は作業者の 1 周目の前)。委任文 ${DOC} §3「盲検の作り直し」「場面集」「場面集の規則」1〜9「調査結果の側の選び方」「動かせない候補の検討と再現」と照らす。python3 scripts/check_bt_considered.py ${bat.battery_dir}/opponents/CONSIDERED.md を自分で走らせ、出力を見る(道具が見るのは形だけ。理由の中身・再現が一次資料どおりかは読んで確かめる)。場面が新実装に有利な範囲に偏っていないか、場面が振る舞いでなく作りの形を試していないか(期待の値が要件の文から独立に出せるか)、出所を示す語、断定と範囲、動かせなかった候補の記録を検査する。指摘は [止める] / [直す] / [聞く] の印つきで返し、id を b${n}-1, b${n}-2, … と振る。${prev ? `前の回の指摘(id つき): ${JSON.stringify(prev).slice(0, 8000)}。` : ''}指摘ごとに repeat_of を必ず埋める: 前の回までの指摘と同じ理由なら前の指摘の id、そうでなければ null。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。「同じ型の穴」と書くなら repeat_of を付ける(直ったものは挙げない。直ったかは自分で確かめる)。委任文 §3「周回の数え方と止める条件」4。`,
     { label: `監査役(場面):${item.id}#${n}`, phase: '批評', schema: BAT_AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
 }
 
-async function repairBattery(item, req, bat, findings, n) {
+const FAMILY = `「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。`
+const DEF_SCHEMA = { type: 'object', properties: { definition: { type: 'string' }, rootcause: { type: 'string' } }, required: ['definition', 'rootcause'] }
+
+// L-437: before touching code, the 場面係 writes the positive definition of what the battery measures for the
+// findings at hand (what counts as the target's own behaviour and what does not); the auditor passes the
+// definition alone before any code is repaired. Definition audits count in the same chain as battery audits.
+async function defineThenAudit(item, req, bat, findings, n, chainObj, auditLog) {
+  let fixList = findings, definition = null
+  for (let k = 1; ; k++) {
+    const d = await agent(`${HEAD2}
+あなたは項目 ${item.id}「${item.title}」の場面係です(場面集の第 ${n} 回の直しの前の定義、${k} 回目)。固定した要件: ${req.path}。場面集 ${bat.definitions}(置き場所 ${bat.battery_dir})に監査役が次の指摘を出した(逐語):
+${JSON.stringify(fixList).slice(0, 12000)}
+${definition ? `前の定義(監査役が [止める] を出した): ${definition.slice(0, 6000)}` : ''}
+**まだコードを直さない。**${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と、この指摘の族に対する**正の定義**(何を対象自身の振る舞いと数え、何を数えないか。場所や形の一覧ではなく、どの形にも当たる 1 段落の規則。例: 「対象が届けた物 = 対象の配布物のコードが戦略の呼び出しの中で作り、戦略に渡した物。adapter が組んだ物・対象の class を adapter が組み立てた物・戦略の外で対象の関数を呼んで得た物は数えない」)を書く。指摘の形だけを塞ぐ直しはこの段で止める(L-433「場当たり的な修正をするな」、リードの設計 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §5)。definition にその段落を、rootcause にファイルの path を返す。${SCRUTINY_BUILD}`,
+      { label: `定義:${item.id}#${n}-${k}`, phase: '要件の固定', schema: DEF_SCHEMA, model: IMPL_MODEL, effort: 'high' })
+    if (!d) return { escalate: '場面係が定義を返さなかった' }
+    definition = d.definition
+    const a = await agent(`検査対象: 項目 ${item.id}「${item.title}」の場面集の直しの前の**定義だけ**(${d.rootcause}。コードはまだ直していない)。指摘(逐語): ${JSON.stringify(fixList).slice(0, 8000)}。定義: ${definition.slice(0, 6000)}。この定義が、指摘の族のどの形にも当たる正の規則か(場所や形の一覧になっていないか)、委任文 ${DOC} §3「場面集」「場面集の規則」1〜9 と要件に合うか、新実装に有利な範囲に偏っていないかを検査する。定義で塞がれない同じ族の形があれば [止める] にし、その形を書く。指摘は [止める] / [直す] / [聞く] の印つきで返し、id を d${n}-${k}-1, … と振る。repeat_of は必ず埋める(前の指摘と同じ理由なら前の id、そうでなければ null。${FAMILY.replace(/`/g, "'")})。`,
+      { label: `監査役(定義):${item.id}#${n}-${k}`, phase: '批評', schema: BAT_AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
+    const fs = a ? a.findings : [{ id: `d${n}-${k}-x`, level: '止める', text: '監査役が返らなかった', repeat_of: null }]
+    auditLog.push({ k: `def-${n}-${k}`, findings: fs })
+    const st = fs.filter(f => f.level === '止める')
+    if (!st.length) return { definition }
+    st.forEach(f => { chainObj[f.id] = f.repeat_of && chainObj[f.repeat_of] ? chainObj[f.repeat_of] + 1 : 1 })
+    const r3 = st.find(f => chainObj[f.id] >= 3)
+    if (r3) return { escalate: `定義の監査で同じ未達の理由が 3 回続いた(L-407・L-436): ${r3.text.slice(0, 300)}` }
+    fixList = fs
+  }
+}
+
+async function repairBattery(item, req, bat, findings, n, definition) {
   return agent(`${HEAD2}
 あなたは項目 ${item.id}「${item.title}」の場面係です(場面集の第 ${n} 回の直し。作業者でも資料係でもない)。固定した要件: ${req.path}。場面集 ${bat.definitions}(置き場所 ${bat.battery_dir})に、監査役が次の指摘を出した(逐語):
 ${JSON.stringify(findings).slice(0, 12000)}
+監査役が通した正の定義(この直しの規則。これに合わない直しはしない): ${definition || '(無し)'}
 **直す前に** ${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と「どの作りを変えるか」を書く(委任文 §3「根本的解決」)。[聞く] にはそこで答える。指摘の文言だけに合わせる直しをしない: 同じ種類の欠陥を場面集の全体(全観点・全場面・検討表の全行)で探して直す。
 そのうえで委任文 §3「場面集」「場面集の規則」1〜9「調査結果の側の選び方」「動かせない候補の検討と再現」に合わせて、場面の定義・runner・当方の現状と調査結果の側の adapter・検討表・再現・mutant を直す([直す] も直す)。場面の期待は要件の文から独立に出せる振る舞いで書き、新実装の内部の名前・形を写さない(規則 2)。
 検討表は返す前に python3 scripts/check_bt_considered.py ${bat.battery_dir}/opponents/CONSIDERED.md --write を走らせて誤り 0 件にし、出力の最後の行を check_output に入れる(規則 9)。rootcause には ROOTCAUSE の path を入れる。
@@ -180,7 +211,9 @@ async function runItem(item) {
     stops.forEach(f => { bchain[f.id] = f.repeat_of && bchain[f.repeat_of] ? bchain[f.repeat_of] + 1 : 1 })
     const rep3 = stops.find(f => bchain[f.id] >= 3)
     if (rep3) return { item, status: 'escalate', reason: `場面集の監査で同じ未達の理由が 3 回続いた(L-407): ${rep3.text.slice(0, 300)}`, attempts: 0, req, bat, batteryHistory: batHist, history: [] }
-    const fixed = await repairBattery(item, req, bat, fs, n)
+    const def = await defineThenAudit(item, req, bat, fs, n, bchain, batHist)
+    if (def.escalate) return { item, status: 'escalate', reason: def.escalate, attempts: 0, req, bat, batteryHistory: batHist, history: [] }
+    const fixed = await repairBattery(item, req, bat, fs, n, def.definition)
     if (!fixed) return { item, status: 'error', stage: 'battery_repair', batteryHistory: batHist, history: [] }
     bat = { ...bat, ...fixed }
     prevF = fs
@@ -204,7 +237,9 @@ async function runItem(item) {
       if (!batFix.length) return null
       let fixList = batFix
       for (let k = 1; ; k++) {
-        const fixed = await repairBattery(item, req, bat, fixList, `r${attempt}-${k}`)
+        const def = await defineThenAudit(item, req, bat, fixList, `r${attempt}-${k}`, cbchain, midAudits)
+        if (def.escalate) return { escalate: def.escalate }
+        const fixed = await repairBattery(item, req, bat, fixList, `r${attempt}-${k}`, def.definition)
         if (!fixed) return { error: 'battery_repair_in_round' }
         bat = { ...bat, ...fixed }
         const a = await auditBattery(item, bat, `r${attempt}-${k}`, fixList)
@@ -253,7 +288,7 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
     const critic = agent(`${HEAD2}
 あなたは項目 ${item.id}「${item.title}」の批評家(第 ${attempt} 周。新しく起こされた者)です。**非常に厳しく**。固定した要件 ${req.path}、場面集 ${bat.definitions}、調査結果の該当行を手元に置く。
 自分で試験を書いて壊しにいく(試験は tests/bt/critic/item_${item.id}/ に置く。壊れた試験は残し、作業者が直す)。前の周までの批評家の試験のうち、作業者が「試験自身の誤り」と報告したものを確かめ、誤りなら直すか理由を書いて取り下げる(委任文 §3「場面集の規則」8)。場面集が規則 1〜9 を守っているか(能力を申告で数えていないか等)も見る。前の周で「直った」とされた点も自分で確かめ直す。資料係の adapter(${JSON.stringify(t.adapters_changed).slice(0, 2000)})が対象を公平に呼んでいるか(新実装だけ有利・他が不利になる呼び方でないか)、場面係の検討表(${bat.battery_dir}/opponents/CONSIDERED.md)のスキップの理由が調査結果の行で裏付けられているか、再現(${bat.battery_dir}/opponents/)が一次資料どおりで弱められていないか、場面集が要件の観点を全部覆っているかも見る。
-${attempt > 1 ? `前の周までの指摘(場面集の側は、この周の前に場面係が直し監査役が見た = 委任文 §3「場面集」): ${JSON.stringify(allFix).slice(0, 12000)}。同じ原因の指摘には repeat_of にその id を入れる(直ったものは挙げない。直ったかは自分で確かめる)。` : (prior.critic_findings ? `前の起動の最後に数えた周の批評家の指摘(委任文 §3「周回の数え方と止める条件」4。id つき): ${JSON.stringify(prior.critic_findings).slice(0, 10000)}。同じ原因の指摘には repeat_of にその id を入れる(直ったものは挙げない。直ったかは自分で確かめる)。` : '')}
+${attempt > 1 ? `前の周までの指摘(場面集の側は、この周の前に場面係が直し監査役が見た = 委任文 §3「場面集」): ${JSON.stringify(allFix).slice(0, 12000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : (prior.critic_findings ? `前の起動の最後に数えた周の批評家の指摘(委任文 §3「周回の数え方と止める条件」4。id つき): ${JSON.stringify(prior.critic_findings).slice(0, 10000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : '')}
 場当たりの直し(試験や場面だけの特別扱い・閾値や既定値をずらす・文言合わせ・機能を外して要件から逃げる)を見つけたら patchwork=true の [止める] にする。格付けは委任文 §3「批評家」の「格付けの基準」どおり(要件・観点を 1 つでも満たさない / 正解と合わない / 試験が落ちる / 信頼性・再現性を崩す / 場当たり / §4 の禁止 / 場面集の規則違反 は [止める]。迷ったら重い方)。前の周の [直す]・[示唆] に [止める] の基準に当たるものがあれば付け直して理由を書く。
 ${attempt > 1 ? `前の周から構造の変化が無ければ structural_change_since_prev=false(作業者の申告: ${w.structural_change.slice(0, 1000)})。` : 'structural_change_since_prev は true。'}
 指摘ごとに target を付ける: 場面集の側(tests/bt/battery/ の下 = 場面の定義・正解・runner・adapter・検討表・再現・mutant、資料係の表)なら「場面集」、新実装(src/bot/bt/)と作業者の試験なら「実装」。場面集の側の指摘は次の周の前に場面係が直す(委任文 §3「場面集」)。指摘の id は「i${item.id}-r${attempt}-<連番>」。根拠はファイル:行か、実行したコマンドと出力。記録を ${d}/CRITIC.md に書く。${SCRUTINY_CRITIC}`,
