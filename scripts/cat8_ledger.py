@@ -340,6 +340,16 @@ def cmd_check_elements(a):
                 errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
+            if a.round and int(a.round) >= 5 and val == "なし" and "台帳の値のまま" not in ev:
+                # 5 回目の起動文 §2: `なし` には「一覧 N 件 / 読んだ M 件」と生ログの行を書き、N と M が同じ(監査 21・22 回目)
+                m = re.search(r"一覧\s*(\d+)\s*件\s*/\s*読んだ\s*(\d+)\s*件", ev)
+                if not m:
+                    errs.append("行 %d: %s %s は `なし` なのに根拠に「一覧 N 件 / 読んだ M 件」が無い" % (i + 1, tool, el))
+                elif m.group(1) != m.group(2):
+                    errs.append("行 %d: %s %s は一覧 %s 件 / 読んだ %s 件で数が違うので `なし` と書けない" % (
+                        i + 1, tool, el, m.group(1), m.group(2)))
+                if not re.search(r"\.log:\d+", ev):
+                    errs.append("行 %d: %s %s の `なし` の根拠に一覧を取った生ログの行(<生ログ>:<行>)が無い" % (i + 1, tool, el))
     if a.round and int(a.round) >= 2:
         if alt_head is None:
             errs.append("この回の節に `### 代替経路` の小節が無い(2 回目の起動文 §2 の 1)")
