@@ -40,6 +40,7 @@ from __future__ import annotations
 from typing import Optional
 
 from .events import Event, EventType
+from .values import renew
 from .window import AnswerPlace, DeliveredEvents, resolve_key, resolve_search
 
 
@@ -116,18 +117,24 @@ del _name
 
 class DeliveredHistory:
     """The history's lists (what the strategy reaches) and the core's own
-    records they are made from (what the core reads)."""
+    records they are made from. The core decides from its FACTS only (per
+    kept event: delivery number and received time, and its type for the
+    overall list); the event objects are kept beside them only to be put
+    into new lists, never read."""
 
-    __slots__ = ("_limit", "overall", "typed", "dropped", "dropped_count", "_kept", "_overall_kept",
-                 "overall_dropped")
+    __slots__ = ("_limit", "overall", "typed", "dropped", "dropped_count", "_facts", "_items",
+                 "_overall_facts", "_overall_items", "overall_dropped")
 
     def __init__(self, limit: Optional[int]) -> None:
         self._limit = limit
         self.overall: DeliveredList = DeliveredList._made()
         self.typed: dict[EventType, DeliveredList] = {t: DeliveredList._made() for t in EventType}
-        # the core's own records, parallel to the lists: per type, and overall
-        self._kept: dict[EventType, list] = {t: [] for t in EventType}
-        self._overall_kept: list = []
+        # the core's own records, parallel to the lists: (seq, recv) per type,
+        # (seq, type) overall, and the objects to put in new lists
+        self._facts: dict[EventType, list[tuple[int, int]]] = {t: [] for t in EventType}
+        self._items: dict[EventType, list[Event]] = {t: [] for t in EventType}
+        self._overall_facts: list[tuple[int, EventType]] = []
+        self._overall_items: list[Event] = []
         # type -> (seq, received_time_ns) of the last event of that type dropped
         self.dropped: dict[EventType, tuple[int, int]] = {}
         # type -> how many delivered events of that type were dropped (all
@@ -140,40 +147,46 @@ class DeliveredHistory:
         """Keep `event` (the strategy's copy, delivered as number `seq` at
         `recv`, of type `etype` -- the core's own values, not read from the
         event)."""
-        kept = self._kept[etype]
+        facts = self._facts[etype]
         limit = self._limit
-        if limit is not None and len(kept) >= 2 * limit:
-            cut = len(kept) - (limit - 1)  # drop kept[:cut]
-            dropped_seq, dropped_recv, _t, _e = kept[cut - 1]
+        if limit is not None and len(facts) >= 2 * limit:
+            cut = len(facts) - (limit - 1)  # drop the oldest `cut`
+            dropped_seq, dropped_recv = facts[cut - 1]
             self.dropped[etype] = (dropped_seq, dropped_recv)
             self.dropped_count[etype] = self.dropped_count.get(etype, 0) + cut
-            kept = kept[cut:]
-            self._kept[etype] = kept
-            self.typed[etype] = DeliveredList._made([r[3] for r in kept], self.dropped_count[etype])
+            facts = self._facts[etype] = facts[cut:]
+            items = self._items[etype] = self._items[etype][cut:]
+            self.typed[etype] = DeliveredList._made(items, self.dropped_count[etype])
             # the overall list = what the types keep; drop the same events
-            overall = [r for r in self._overall_kept if not (r[2] is etype and r[0] <= dropped_seq)]
-            self._overall_kept = overall
+            keep = [i for i, (s, t) in enumerate(self._overall_facts) if not (t is etype and s <= dropped_seq)]
+            self._overall_facts = [self._overall_facts[i] for i in keep]
+            self._overall_items = [self._overall_items[i] for i in keep]
             # its place: every delivery before its oldest kept event was dropped
-            self.overall_dropped = (overall[0][0] if overall else seq) - 1
-            self.overall = DeliveredList._made([r[3] for r in overall], self.overall_dropped)
-        rec = (seq, recv, etype, event)
-        kept.append(rec)
-        self._overall_kept.append(rec)
+            self.overall_dropped = (self._overall_facts[0][0] if keep else seq) - 1
+            self.overall = DeliveredList._made(self._overall_items, self.overall_dropped)
+        facts.append((seq, recv))
+        self._items[etype].append(event)
+        self._overall_facts.append((seq, etype))
+        self._overall_items.append(event)
         list.append(self.typed[etype], event)
         list.append(self.overall, event)
 
     def count(self, etype: Optional[EventType] = None) -> int:
         """How many events the list holds (the core's own count)."""
-        return len(self._overall_kept if etype is None else self._kept[etype])
+        return len(self._overall_facts if etype is None else self._facts[etype])
 
     def dropped_before(self, etype: EventType) -> int:
         """How many delivered events of `etype` lie before its list's oldest."""
         return self.dropped_count.get(etype, 0)
 
     def dropped_facts(self) -> Optional[dict[EventType, tuple[int, int]]]:
-        """A copy for one callback's context, or None when nothing was dropped."""
-        return dict(self.dropped) if self.dropped else None
+        """A new copy for one callback's context (new tuples and ints: the
+        context shares nothing with the core), or None when nothing was
+        dropped."""
+        if not self.dropped:
+            return None
+        return {t: (renew(s), renew(r)) for t, (s, r) in self.dropped.items()}
 
     def dropped_count_facts(self) -> Optional[dict[EventType, int]]:
-        """A copy for one callback's context, or None when nothing was dropped."""
-        return dict(self.dropped_count) if self.dropped_count else None
+        """A new copy for one callback's context, or None when nothing was dropped."""
+        return {t: renew(n) for t, n in self.dropped_count.items()} if self.dropped_count else None
