@@ -3740,4 +3740,1051 @@ K12 検査の出力の貼付           0 件
 0
 ```
 
-**貼り付け後の打ち直し(K12も含めて0件になることの確認)**: 上記1の出力を本文に貼ったのち同じコマンドを打ち直すと、「---- 検査対象の合計 0 件」と一致するためK12も0件になる(打ち直しはリードが検収で行う)。
+
+## 区分8 — 11 回目の実行(2026-09-24)
+
+この回は 8-016(Exactpro reconciliation testing)の E3a・E3b・E5 やり直しと、辿る一覧から台帳に足された 8-017〜8-028 の 12 件の深掘りを担当する(起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run11_prompt.md`、指紋 `3b00f9d0fd9d`)。
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文 §2)。
+
+### 出典
+
+| # | 対象 | URL | 取得日 | 生ログ |
+|---|---|---|---|---|
+| 1 | 8-016 th2-net の 178 リポジトリ一覧(名前・size) | https://repos.ecosyste.ms/api/v1/hosts/GitHub/owners/th2-net/repositories(9回目に取得) | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:189 |
+| 2 | 8-016 th2-net の各リポジトリ | https://github.com/th2-net/<名前> | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:232-14450 付近(178件の取得手) |
+| 3 | 8-017 Great Expectations(fivetran/great_expectations)README | https://raw.githubusercontent.com/fivetran/great_expectations/develop/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:1101 |
+| 4 | 8-017 GitHub登録情報 | https://ungh.cc/repos/great-expectations/great_expectations | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:726 |
+| 5 | 8-018 Vibe-Trading README(変更履歴) | https://raw.githubusercontent.com/HKUDS/Vibe-Trading/main/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| 6 | 8-018 GitHub登録情報 | https://ungh.cc/repos/HKUDS/Vibe-Trading | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:406 |
+| 7 | 8-018 PyPI(vibe-trading-ai) | https://pypi.org/pypi/vibe-trading-ai/json | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:15837 |
+| 8 | 8-018 LICENSE | https://raw.githubusercontent.com/HKUDS/Vibe-Trading/main/LICENSE | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:15814 |
+| 9 | 8-019 AutoHedge README | https://raw.githubusercontent.com/The-Swarm-Corporation/AutoHedge/main/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:3445 |
+| 10 | 8-019 GitHub登録情報 | https://ungh.cc/repos/The-Swarm-Corporation/AutoHedge | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:409 |
+| 11 | 8-020 OpenBB README | https://raw.githubusercontent.com/OpenBB-finance/OpenBB/develop/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:5393 |
+| 12 | 8-020 GitHub登録情報 | https://ungh.cc/repos/OpenBB-finance/OpenBB | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:412 |
+| 13 | 8-021 Qlib README | https://raw.githubusercontent.com/microsoft/qlib/main/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:5608 |
+| 14 | 8-021 check_data_health.py | https://raw.githubusercontent.com/microsoft/qlib/main/scripts/check_data_health.py | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:9774 |
+| 15 | 8-021 Point-in-Time データ収集README | https://raw.githubusercontent.com/microsoft/qlib/main/scripts/data_collector/pit/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:10036 |
+| 16 | 8-021 GitHub登録情報 | https://ungh.cc/repos/microsoft/qlib | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:436 |
+| 17 | 8-021 PyPI(pyqlib) | https://pypi.org/pypi/pyqlib/json | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:10931 |
+| 18 | 8-022 FinGPT README | https://raw.githubusercontent.com/AI4Finance-Foundation/FinGPT/master/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:4944 |
+| 19 | 8-022 GitHub登録情報 | https://ungh.cc/repos/AI4Finance-Foundation/FinGPT | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:442 |
+| 20 | 8-023 backtrader README.rst | https://raw.githubusercontent.com/mementum/backtrader/master/README.rst | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:6444 |
+| 21 | 8-023 GitHub登録情報 | https://ungh.cc/repos/mementum/backtrader | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:461 |
+| 22 | 8-024 Lean readme.md(小文字。Lean CLIの説明) | https://raw.githubusercontent.com/QuantConnect/Lean/master/readme.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:7558 |
+| 23 | 8-024 GitHub登録情報 | https://ungh.cc/repos/QuantConnect/Lean | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:855 |
+| 24 | 8-025 FinanceToolkit README | https://raw.githubusercontent.com/JerBouma/FinanceToolkit/main/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:4306 |
+| 25 | 8-025 GitHub登録情報 | https://ungh.cc/repos/JerBouma/FinanceToolkit | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:720 |
+| 26 | 8-026 OpenClaw README | https://raw.githubusercontent.com/openclaw/openclaw/main/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:3817 |
+| 27 | 8-026 発見の出典のzenn記事本文 | https://zenn.dev/toshipon/articles/62b65ff46d414b | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:1187 |
+| 28 | 8-026 GitHub登録情報 | https://ungh.cc/repos/openclaw/openclaw | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:741 |
+| 29 | 8-027 Quantreo README | https://raw.githubusercontent.com/Quantreo/quantreo/main/README.md | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:4150 |
+| 30 | 8-027 GitHub登録情報 | https://ungh.cc/repos/Quantreo/quantreo | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:758 |
+| 31 | 8-027 tests.yml・CHANGELOG.md(cat8_search.py出力経由) | https://github.com/Quantreo/quantreo(cat8_repo_fetch.sh経由で取得) | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:14547,docs/DATA/probes/20260923_tools_8_run11.log:14549 |
+| 32 | 8-028 AlgoBuild公式頁 | https://algorier.com/algobuild/ | 2026-09-24 | docs/DATA/probes/20260923_tools_8_run11.log:1582 |
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `Great Expectations` / E2 / 方式(原文): 「GX Core combines the collective wisdom of thousands of community members with a proven track record in data quality deployments worldwide...Its powerful technical tools start with Expectations: expressive and extensible unit tests for your data.」(README。expect_column_values_to_not_be_null等の個別Expectation関数の一覧までは未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:1101 取得日 2026-09-24 |
+| 2 | `Vibe-Trading` / E1a / 方式(原文): 「offline USD-M account reconciliation compares local risk state with an exchange observation without opening a connection」/「Binance USD-M reconciliation results now land as tamper-evident drift evidence artifacts — strict JSON, fail-closed on incomplete or unsupported snapshots」(README変更履歴。自社の計算した口座状態と取引所側の観測値を突き合わせて差分(drift)を検出する機能。突き合わせの単位は指定できないため段4) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:3573 取得日 2026-09-24 |
+| 3 | `Vibe-Trading` / E1b / 方式(原文): バックテストエンジン自身がOHLCVから損益・ポジションを計算する(「a finished backtest is now something you can read」「Run Detail grows four tabs — **Factor Research** (IC series...)、**Positions**...、**Tearsheet**...」)。当方のバックテストエンジンと同じ種類の出力(損益・ポジション)を出す別実装 | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:3573 取得日 2026-09-24 |
+| 4 | `Vibe-Trading` / E2 / 方式(原文): 「a default that quietly substitutes a plausible value for a missing one」「The registry now masks output wherever a declared dependency is missing on that bar」(欠損検出)/「read-time freshness (`fresh`/`aging`/`stale`) and stale rows failing closed」(鮮度=時刻のずれの検出)/「Market-data provenance now names the loader...with the matching fallback flag and adjustment label」(情報源間の食い違いの記録) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:3573 取得日 2026-09-24 |
+| 5 | `Vibe-Trading` / E3a / 方式(原文): 「the HTML alpha-bench report now carries the survivorship-bias disclosure the JSON already had, naming the constituent source and its as-of date」(生存者バイアスの開示を報告書に載せる機能。自動判定して止めるところまでは確認できず人が読んで判断する形なので段2) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:3573 取得日 2026-09-24 |
+| 6 | `Vibe-Trading` / E3b / 方式(原文): 「look-ahead-bias and strict-OOS guards in the factor bench and Shadow Account」/「a look-ahead-bias fix across all 5 portfolio optimizers」/「the ML walk-forward example purges future labels」/Quant Library additions に「group-purged CV」(purged cross-validationの実装) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:3573 取得日 2026-09-24 |
+| 7 | `Vibe-Trading` / E4 / 方式(原文): 0.1.15のリリースノートに新機能として「swarm replay and retry」が挙げられている(再生の粒度・対象は未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:3573 取得日 2026-09-24 |
+| 8 | `Vibe-Trading` / E5 / 方式(原文): 「deterministic USD-M tolerance calibration from recorded comparisons」/「computed through the same test-pinned engine the MCP tools use」(決定的な計算・記録済み比較からの較正への言及。乱数の種の固定・保存の具体的な仕組みまでは未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:3573 取得日 2026-09-24 |
+| 9 | `Vibe-Trading` / E6 / 方式(原文): 「22 new regressions cover hydration, terminal recovery, stale reaping, keepalive cadence, env parsing, and heartbeat wiring; the full swarm/MCP suite is at 169 passed, 4 skipped.」(回帰テストスイートの実行結果件数を明記) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:3573 取得日 2026-09-24 |
+| 10 | `Qlib` / E2 / 方式(原文): `scripts/check_data_health.py` の `DataHealthChecker` クラス docstring: 「Checks a dataset for data completeness and correctness...- any of the columns [...] are missing - any data is missing - any step change in the OHLCV columns is above a threshold (default: 0.5 for price, 3 for volume) - any factor is missing」。コンストラクタに `large_step_threshold_price`・`large_step_threshold_volume`・`missing_data_num` を指定でき((ア)条件は満たす)、`csv_path` 引数でqlib形式の外から持ち込んだCSVディレクトリにも掛けられる(段4)。チェック結果を保存し次回実行と比較する(イ)の記述は見つからず段5にはしない | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:9774 取得日 2026-09-24 |
+| 11 | `Qlib` / E3b / 方式(原文): Point-in-Time(PIT)データ収集・変換のREADME: 四半期決算などの財務データを発表時点(as-of)で正しく参照できる形に変換して積む一連の手順(`download_data`→`normalize_data`→`dump_pit.py dump`)。時点を揃えた結合の具体的な実装箇所までは未確認なので段は未判別 | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:10036 取得日 2026-09-24 |
+| 12 | `Qlib` / E4 / 方式(原文): README: 「Qlib provides a tool named `qrun` to run the whole workflow automatically (including building dataset, training models, backtest and evaluation).」(記録した市場データを順に読んでモデル・戦略を評価するワークフロー。再生の粒度・時刻の扱いは未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:5608 取得日 2026-09-24 |
+| 13 | `FinGPT` / E1a / 方式(原文): 「**Task layer**: This layer is responsible for executing fundamental tasks. These tasks serve as the benchmarks for performance evaluations and cross-comparisons in the realm of FinLLMs」(複数のFinLLM実装の出力をベンチマークで突き合わせて比較するレイヤーがあるとの記述。突き合わせの単位・自動判定の有無は未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:4944 取得日 2026-09-24 |
+| 14 | `FinGPT` / E5 / 方式(原文): 「Reproduce the results by running [benchmarks](./fingpt/FinGPT_Sentiment_Analysis_v3/benchmark/benchmarks.ipynb), and the detailed tutorial is on the way.」(結果の再現をnotebookで行える。乱数の種の固定など具体の仕組みは未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:4944 取得日 2026-09-24 |
+| 15 | `Backtrader` / E4 / 方式(原文): README.rstの機能一覧: 「Integrated Resampling and Replaying」(記録した足を読み込んでリサンプル・再生する統合機能。粒度や遅延の扱いの詳細は未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:6444 取得日 2026-09-24 |
+| 16 | `Quantreo library` / E3b / 方式(原文): README: 「**Robust by design**: Functions implemented to avoid data leakage and look-ahead bias.」(データリーク・ルックアヘッドバイアスを避けるよう実装された関数群。具体の実装方式(embargo/purge等)は未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:4150 取得日 2026-09-24 |
+| 17 | `Quantreo library` / E6 / 方式(原文): `.github/workflows/tests.yml`: 「run: pytest --cov=quantreo --cov-report=term-missing -v --maxfail=1 --disable-warnings」(pytestによる自動テストとカバレッジ計測)。CHANGELOG.mdにも「Improved **unit test coverage** across the library」とある(全要素検索の手は巨大なnotebook出力に埋め込まれた第三者JSバンドルのため生ログ2,000,000字で切られたが、この2件の当たりはいずれも切られる前の範囲に出ている) | 実測 | docs/DATA/probes/20260923_tools_8_run11.log:14547 docs/DATA/probes/20260923_tools_8_run11.log:14549 取得日 2026-09-24 |
+| 18 | `Exactpro の reconciliation testing` / E3a・E3b・E5 / 方式(原文): 178 リポジトリ・34,207 ファイルを cat8_search.py で全件検索したが、ルックアヘッド・survivorship・embargo・purge・再現性・seed・deterministic・snapshot 系の語に当たった 528 ファイルはいずれも webpack/typescript 等のビルド道具の内部語・SNAPSHOT 版番号・protobuf の `IsSerializationDeterministic`・th2-infra-editor の UI 編集履歴(`createSnapshot`)など、E3a/E3b/E5 の述語に当たらないものだった(`### 当たりの判定` に全件) | 実測 | docs/DATA/probes/20260923_tools_8_run11.log:14202 取得日 2026-09-24 |
+
+### 候補の一覧
+
+**8-001〜8-040 の全 40 行。この回に触らない行(8-001〜8-015・8-029〜8-040)は台帳の値のまま。**
+
+1. [深掘り] `qf-lib` (8-001) — https://github.com/quarkfin/qf-lib — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — https://github.com/pineforge-4pass/pineforge-engine — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — https://github.com/Quentin-Piot/prediction-market-backtester — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — https://github.com/akurkar07/OrderBook — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — https://www.exegy.com/ — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — https://github.com/freqtrade/freqtrade — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — https://fxreplay.com/ — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — https://github.com/nicferrari/backtester — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — https://arxiv.org/abs/2603.20319 — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — https://arxiv.org/abs/2512.12924 — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — https://github.com/polakowo/vectorbt — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — https://x.com/WannabeBotter/status/1810558269565571211 — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — https://github.com/Fincept-Corporation/FinceptTerminal — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — 生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い) — (台帳の値のまま) — 状態: 深掘り
+16. `Exactpro の reconciliation testing` (8-016) — 生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い) — th2 (Exactpro) の reconciliation testing 一式(178 リポジトリ)。この回は E3a・E3b・E5 のやり直し(いずれも 34,207 ファイルの全件検索の結果 `なし`) — 状態: 判別に一次資料が要る
+17. `Great Expectations` (8-017) — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧) — Pythonのデータ品質・検証フレームワーク(旧 great-expectations/great_expectations。現在は fivetran 傘下で開発)。「Expectations」という宣言的な単体テストでデータの正しさを検証する — 状態: 判別に一次資料が要る
+18. `Vibe-Trading` (8-018) — https://github.com/HKUDS/Vibe-Trading — 自然言語でトレード仮説を投げるAIリサーチ・エージェント(`vibe-trading-ai`)。バックテストエンジン・複数取引所コネクタ・アルファ動物園(Alpha Zoo)・swarm(複数エージェント並列実行)を持つ — 状態: 浅い
+19. `AutoHedge` (8-019) — https://github.com/The-Swarm-Corporation/AutoHedge — Solana上で自律的に取引する「エージェントヘッジファンド」(Director/Quant/Risk/Executionの4エージェント構成) — 状態: 判別に一次資料が要る
+20. `OpenBB Terminal` (8-020) — https://github.com/OpenBB-finance/OpenBB — 「Open Data Platform」。複数のデータ提供元をPython/Excel/MCP/REST APIに一本化して繋ぐデータ統合基盤(バックテストや検証そのものの機能ではない) — 状態: 判別に一次資料が要る
+21. `Qlib` (8-021) — https://github.com/microsoft/qlib — Microsoft製のAI指向クオンツ投資プラットフォーム。データ・特徴量・モデル・バックテストの一連のワークフローを提供 — 状態: 判別に一次資料が要る
+22. `FinGPT` (8-022) — https://github.com/AI4Finance-Foundation/FinGPT — 金融特化のオープンソースLLM群。感情分析・予測などのベンチマークと学習コードを配布 — 状態: 判別に一次資料が要る
+23. `Backtrader` (8-023) — https://github.com/mementum/backtrader — Pythonのバックテスト・ライブ取引プラットフォーム(README.rst) — 状態: 判別に一次資料が要る
+24. `Lean` (8-024) — https://github.com/QuantConnect/Lean — QuantConnect製のアルゴリズム取引エンジン(バックテスト・ライブ取引)。読んだreadme.md(小文字)はLean CLIというコマンドラインツールの説明だった — 状態: 判別に一次資料が要る
+25. `FinanceToolkit` (8-025) — https://github.com/JerBouma/FinanceToolkit — 財務諸表・比率・リスク指標・econometricsを計算するPythonライブラリ — 状態: 判別に一次資料が要る
+26. `OpenClaw` (8-026) — https://zenn.dev/toshipon/articles/62b65ff46d414b(記事に URL なし) — 「OpenClaw」は汎用のオープンソースAIエージェントフレームワーク(Discord等のチャットからAIエージェントを操作する基盤)。発見の出典のzenn記事はこれを土台にトレーディングボットの仮説検証レポートを自動生成する仕組みを組んだ事例で、記事中の「validated/invalidated判定」等はOpenClaw自身の機能ではなく記事筆者が組んだ別のシステム(KaizenLab)の機能 — 状態: 判別に一次資料が要る
+27. `Quantreo library` (8-027) — https://www.newsletter.quantreo.com/p/look-ahead-bias-the-invisible-killer(記事に URL なし) — 特徴量・ターゲット・オルタナティブバー生成のPythonライブラリ(PyPI: quantreo)。作者によれば開発は停止し後継 Oryon に移行中 — 状態: 判別に一次資料が要る
+28. `AlgoBuild` (8-028) — https://algorier.com/blog/look-ahead-bias-in-backtesting/(記事に URL なし) — Algorier社のSaaS型アルゴ取引ビルダー(「AlgoBuild」)。ノーコードで売買ルール(アルゴ)を作り、取引所に接続して自動執行する — 状態: 判別に一次資料が要る
+29. `MetaTrader の Strategy Tester` (8-029) — https://fortraders.com/blog/how-to-avoid-bias-in-backtesting(記事に URL なし) — (台帳の値のまま) — 状態: 未着手
+30. `dbt` (8-030) — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の dbt) — (台帳の値のまま) — 状態: 未着手
+31. `Debezium` (8-031) — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Debezium) — (台帳の値のまま) — 状態: 未着手
+32. `Apache Kafka` (8-032) — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Apache Kafka) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Prefect) — (台帳の値のまま) — 状態: 未着手
+34. `Pandas` (8-034) — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Pandas) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Apache Spark) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — https://www.newsletter.quantreo.com/p/look-ahead-bias-the-invisible-killer(記事に URL なし、この記事の中の AI Trading Lab) — (台帳の値のまま) — 状態: 未着手
+37. `AlgoNetwork` (8-037) — https://algorier.com/blog/look-ahead-bias-in-backtesting/(記事に URL なし、この記事の中の AlgoNetwork) — (台帳の値のまま) — 状態: 未着手
+38. `NinjaTrader` (8-038) — https://fortraders.com/blog/how-to-avoid-bias-in-backtesting(記事に URL なし、この記事の中の NinjaTrader) — (台帳の値のまま) — 状態: 未着手
+39. `NumPy` (8-039) — 1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の NumPy) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — 1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の SciPy) — (台帳の値のまま) — 状態: 未着手
+
+### 要素と段
+
+**8-001〜8-040 の全 40 候補 × 8 要素 = 320 行。この回に触らない行は 6 列目を `台帳の値のまま(<回>回目の節)` だけにし、値・段は台帳と同じ、7 列目は空にする。**
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Exegy` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Exegy` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Exegy` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Exegy` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Exegy` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Exegy` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Exegy` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 実測 | cat8_repo_fetch.sh で178リポジトリを取得(N=34,610。除外387件(バイナリ・符号化不明386・gitサブモジュール参照1)+絶対に取れない16件=403、listed(M)=34,207)し、cat8_mklist.py+cat8_search.pyで全件検索(パターンはlookahead/survivorship/リーク/時点/embargo/purge/reproducib/seed/deterministic/snapshot等。E3a・E3b・E5の設計票§3の語の組をすべて含む)。当たり528ファイル/3,414行はいずれも `### 当たりの判定` に理由つきで記録した誤検出(webpackやtypescript等ビルド道具の内部語・GradleのSNAPSHOT版番号・protobufの`IsSerializationDeterministic`・th2-infra-editorのUndo履歴の`createSnapshot`等)。一覧 34207 件 / 読んだ 34207 件 / 当たり 528 ファイル / 3414 行 | docs/DATA/probes/20260923_tools_8_run11.log:232 docs/DATA/probes/20260923_tools_8_run11.log:257 docs/DATA/probes/20260923_tools_8_run11.log:285 docs/DATA/probes/20260923_tools_8_run11.log:307 docs/DATA/probes/20260923_tools_8_run11.log:338 docs/DATA/probes/20260923_tools_8_run11.log:376 docs/DATA/probes/20260923_tools_8_run11.log:402 docs/DATA/probes/20260923_tools_8_run11.log:435 docs/DATA/probes/20260923_tools_8_run11.log:470 docs/DATA/probes/20260923_tools_8_run11.log:492 docs/DATA/probes/20260923_tools_8_run11.log:529 docs/DATA/probes/20260923_tools_8_run11.log:558 docs/DATA/probes/20260923_tools_8_run11.log:582 docs/DATA/probes/20260923_tools_8_run11.log:611 docs/DATA/probes/20260923_tools_8_run11.log:633 docs/DATA/probes/20260923_tools_8_run11.log:665 docs/DATA/probes/20260923_tools_8_run11.log:688 docs/DATA/probes/20260923_tools_8_run11.log:719 docs/DATA/probes/20260923_tools_8_run11.log:754 docs/DATA/probes/20260923_tools_8_run11.log:781 docs/DATA/probes/20260923_tools_8_run11.log:803 docs/DATA/probes/20260923_tools_8_run11.log:832 docs/DATA/probes/20260923_tools_8_run11.log:885 docs/DATA/probes/20260923_tools_8_run11.log:913 docs/DATA/probes/20260923_tools_8_run11.log:938 docs/DATA/probes/20260923_tools_8_run11.log:964 docs/DATA/probes/20260923_tools_8_run11.log:991 docs/DATA/probes/20260923_tools_8_run11.log:1025 docs/DATA/probes/20260923_tools_8_run11.log:1047 docs/DATA/probes/20260923_tools_8_run11.log:1069 docs/DATA/probes/20260923_tools_8_run11.log:1097 docs/DATA/probes/20260923_tools_8_run11.log:1183 docs/DATA/probes/20260923_tools_8_run11.log:1578 docs/DATA/probes/20260923_tools_8_run11.log:3312 docs/DATA/probes/20260923_tools_8_run11.log:3334 docs/DATA/probes/20260923_tools_8_run11.log:3361 docs/DATA/probes/20260923_tools_8_run11.log:3386 docs/DATA/probes/20260923_tools_8_run11.log:3411 docs/DATA/probes/20260923_tools_8_run11.log:3444 docs/DATA/probes/20260923_tools_8_run11.log:6299 docs/DATA/probes/20260923_tools_8_run11.log:6325 docs/DATA/probes/20260923_tools_8_run11.log:6347 docs/DATA/probes/20260923_tools_8_run11.log:6373 docs/DATA/probes/20260923_tools_8_run11.log:6399 docs/DATA/probes/20260923_tools_8_run11.log:6424 docs/DATA/probes/20260923_tools_8_run11.log:6619 docs/DATA/probes/20260923_tools_8_run11.log:6647 docs/DATA/probes/20260923_tools_8_run11.log:6672 docs/DATA/probes/20260923_tools_8_run11.log:6697 docs/DATA/probes/20260923_tools_8_run11.log:6723 docs/DATA/probes/20260923_tools_8_run11.log:6778 docs/DATA/probes/20260923_tools_8_run11.log:6800 docs/DATA/probes/20260923_tools_8_run11.log:6830 docs/DATA/probes/20260923_tools_8_run11.log:6852 docs/DATA/probes/20260923_tools_8_run11.log:6880 docs/DATA/probes/20260923_tools_8_run11.log:6910 docs/DATA/probes/20260923_tools_8_run11.log:6932 docs/DATA/probes/20260923_tools_8_run11.log:6954 docs/DATA/probes/20260923_tools_8_run11.log:7006 docs/DATA/probes/20260923_tools_8_run11.log:7034 docs/DATA/probes/20260923_tools_8_run11.log:7056 docs/DATA/probes/20260923_tools_8_run11.log:7085 docs/DATA/probes/20260923_tools_8_run11.log:7113 docs/DATA/probes/20260923_tools_8_run11.log:7135 docs/DATA/probes/20260923_tools_8_run11.log:7160 docs/DATA/probes/20260923_tools_8_run11.log:7189 docs/DATA/probes/20260923_tools_8_run11.log:7212 docs/DATA/probes/20260923_tools_8_run11.log:7235 docs/DATA/probes/20260923_tools_8_run11.log:7258 docs/DATA/probes/20260923_tools_8_run11.log:7288 docs/DATA/probes/20260923_tools_8_run11.log:7310 docs/DATA/probes/20260923_tools_8_run11.log:7335 docs/DATA/probes/20260923_tools_8_run11.log:7357 docs/DATA/probes/20260923_tools_8_run11.log:7383 docs/DATA/probes/20260923_tools_8_run11.log:7406 docs/DATA/probes/20260923_tools_8_run11.log:7438 docs/DATA/probes/20260923_tools_8_run11.log:7465 docs/DATA/probes/20260923_tools_8_run11.log:7497 docs/DATA/probes/20260923_tools_8_run11.log:7526 docs/DATA/probes/20260923_tools_8_run11.log:7554 docs/DATA/probes/20260923_tools_8_run11.log:7801 docs/DATA/probes/20260923_tools_8_run11.log:7830 docs/DATA/probes/20260923_tools_8_run11.log:7859 docs/DATA/probes/20260923_tools_8_run11.log:7882 docs/DATA/probes/20260923_tools_8_run11.log:7904 docs/DATA/probes/20260923_tools_8_run11.log:7926 docs/DATA/probes/20260923_tools_8_run11.log:7954 docs/DATA/probes/20260923_tools_8_run11.log:7980 docs/DATA/probes/20260923_tools_8_run11.log:8009 docs/DATA/probes/20260923_tools_8_run11.log:8037 docs/DATA/probes/20260923_tools_8_run11.log:8059 docs/DATA/probes/20260923_tools_8_run11.log:8096 docs/DATA/probes/20260923_tools_8_run11.log:8126 docs/DATA/probes/20260923_tools_8_run11.log:8161 docs/DATA/probes/20260923_tools_8_run11.log:8183 docs/DATA/probes/20260923_tools_8_run11.log:8205 docs/DATA/probes/20260923_tools_8_run11.log:8227 docs/DATA/probes/20260923_tools_8_run11.log:8317 docs/DATA/probes/20260923_tools_8_run11.log:8368 docs/DATA/probes/20260923_tools_8_run11.log:8397 docs/DATA/probes/20260923_tools_8_run11.log:8424 docs/DATA/probes/20260923_tools_8_run11.log:8458 docs/DATA/probes/20260923_tools_8_run11.log:8484 docs/DATA/probes/20260923_tools_8_run11.log:8524 docs/DATA/probes/20260923_tools_8_run11.log:8546 docs/DATA/probes/20260923_tools_8_run11.log:8576 docs/DATA/probes/20260923_tools_8_run11.log:8602 docs/DATA/probes/20260923_tools_8_run11.log:8630 docs/DATA/probes/20260923_tools_8_run11.log:8660 docs/DATA/probes/20260923_tools_8_run11.log:8688 docs/DATA/probes/20260923_tools_8_run11.log:8716 docs/DATA/probes/20260923_tools_8_run11.log:8746 docs/DATA/probes/20260923_tools_8_run11.log:8773 docs/DATA/probes/20260923_tools_8_run11.log:8799 docs/DATA/probes/20260923_tools_8_run11.log:8825 docs/DATA/probes/20260923_tools_8_run11.log:8847 docs/DATA/probes/20260923_tools_8_run11.log:8876 docs/DATA/probes/20260923_tools_8_run11.log:8907 docs/DATA/probes/20260923_tools_8_run11.log:8935 docs/DATA/probes/20260923_tools_8_run11.log:8965 docs/DATA/probes/20260923_tools_8_run11.log:8995 docs/DATA/probes/20260923_tools_8_run11.log:9017 docs/DATA/probes/20260923_tools_8_run11.log:9042 docs/DATA/probes/20260923_tools_8_run11.log:9068 docs/DATA/probes/20260923_tools_8_run11.log:9094 docs/DATA/probes/20260923_tools_8_run11.log:9124 docs/DATA/probes/20260923_tools_8_run11.log:9153 docs/DATA/probes/20260923_tools_8_run11.log:9182 docs/DATA/probes/20260923_tools_8_run11.log:9238 docs/DATA/probes/20260923_tools_8_run11.log:9377 docs/DATA/probes/20260923_tools_8_run11.log:9429 docs/DATA/probes/20260923_tools_8_run11.log:9495 docs/DATA/probes/20260923_tools_8_run11.log:9518 docs/DATA/probes/20260923_tools_8_run11.log:9559 docs/DATA/probes/20260923_tools_8_run11.log:9583 docs/DATA/probes/20260923_tools_8_run11.log:9607 docs/DATA/probes/20260923_tools_8_run11.log:9633 docs/DATA/probes/20260923_tools_8_run11.log:9663 docs/DATA/probes/20260923_tools_8_run11.log:9693 docs/DATA/probes/20260923_tools_8_run11.log:9723 docs/DATA/probes/20260923_tools_8_run11.log:9745 docs/DATA/probes/20260923_tools_8_run11.log:9770 docs/DATA/probes/20260923_tools_8_run11.log:10084 docs/DATA/probes/20260923_tools_8_run11.log:10106 docs/DATA/probes/20260923_tools_8_run11.log:10129 docs/DATA/probes/20260923_tools_8_run11.log:10191 docs/DATA/probes/20260923_tools_8_run11.log:10216 docs/DATA/probes/20260923_tools_8_run11.log:10246 docs/DATA/probes/20260923_tools_8_run11.log:10274 docs/DATA/probes/20260923_tools_8_run11.log:10296 docs/DATA/probes/20260923_tools_8_run11.log:10327 docs/DATA/probes/20260923_tools_8_run11.log:10350 docs/DATA/probes/20260923_tools_8_run11.log:10380 docs/DATA/probes/20260923_tools_8_run11.log:10405 docs/DATA/probes/20260923_tools_8_run11.log:10428 docs/DATA/probes/20260923_tools_8_run11.log:10454 docs/DATA/probes/20260923_tools_8_run11.log:10479 docs/DATA/probes/20260923_tools_8_run11.log:10507 docs/DATA/probes/20260923_tools_8_run11.log:10557 docs/DATA/probes/20260923_tools_8_run11.log:10586 docs/DATA/probes/20260923_tools_8_run11.log:10608 docs/DATA/probes/20260923_tools_8_run11.log:10631 docs/DATA/probes/20260923_tools_8_run11.log:10677 docs/DATA/probes/20260923_tools_8_run11.log:10706 docs/DATA/probes/20260923_tools_8_run11.log:10735 docs/DATA/probes/20260923_tools_8_run11.log:10773 docs/DATA/probes/20260923_tools_8_run11.log:10803 docs/DATA/probes/20260923_tools_8_run11.log:10827 docs/DATA/probes/20260923_tools_8_run11.log:10849 docs/DATA/probes/20260923_tools_8_run11.log:10872 docs/DATA/probes/20260923_tools_8_run11.log:10902 docs/DATA/probes/20260923_tools_8_run11.log:10944 docs/DATA/probes/20260923_tools_8_run11.log:10972 docs/DATA/probes/20260923_tools_8_run11.log:11001 docs/DATA/probes/20260923_tools_8_run11.log:11026 docs/DATA/probes/20260923_tools_8_run11.log:11048 docs/DATA/probes/20260923_tools_8_run11.log:14198 docs/DATA/probes/20260923_tools_8_run11.log:14445 |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 実測 | cat8_repo_fetch.sh で178リポジトリを取得(N=34,610。除外387件(バイナリ・符号化不明386・gitサブモジュール参照1)+絶対に取れない16件=403、listed(M)=34,207)し、cat8_mklist.py+cat8_search.pyで全件検索(パターンはlookahead/survivorship/リーク/時点/embargo/purge/reproducib/seed/deterministic/snapshot等。E3a・E3b・E5の設計票§3の語の組をすべて含む)。当たり528ファイル/3,414行はいずれも `### 当たりの判定` に理由つきで記録した誤検出(webpackやtypescript等ビルド道具の内部語・GradleのSNAPSHOT版番号・protobufの`IsSerializationDeterministic`・th2-infra-editorのUndo履歴の`createSnapshot`等)。一覧 34207 件 / 読んだ 34207 件 / 当たり 528 ファイル / 3414 行 | docs/DATA/probes/20260923_tools_8_run11.log:232 docs/DATA/probes/20260923_tools_8_run11.log:257 docs/DATA/probes/20260923_tools_8_run11.log:285 docs/DATA/probes/20260923_tools_8_run11.log:307 docs/DATA/probes/20260923_tools_8_run11.log:338 docs/DATA/probes/20260923_tools_8_run11.log:376 docs/DATA/probes/20260923_tools_8_run11.log:402 docs/DATA/probes/20260923_tools_8_run11.log:435 docs/DATA/probes/20260923_tools_8_run11.log:470 docs/DATA/probes/20260923_tools_8_run11.log:492 docs/DATA/probes/20260923_tools_8_run11.log:529 docs/DATA/probes/20260923_tools_8_run11.log:558 docs/DATA/probes/20260923_tools_8_run11.log:582 docs/DATA/probes/20260923_tools_8_run11.log:611 docs/DATA/probes/20260923_tools_8_run11.log:633 docs/DATA/probes/20260923_tools_8_run11.log:665 docs/DATA/probes/20260923_tools_8_run11.log:688 docs/DATA/probes/20260923_tools_8_run11.log:719 docs/DATA/probes/20260923_tools_8_run11.log:754 docs/DATA/probes/20260923_tools_8_run11.log:781 docs/DATA/probes/20260923_tools_8_run11.log:803 docs/DATA/probes/20260923_tools_8_run11.log:832 docs/DATA/probes/20260923_tools_8_run11.log:885 docs/DATA/probes/20260923_tools_8_run11.log:913 docs/DATA/probes/20260923_tools_8_run11.log:938 docs/DATA/probes/20260923_tools_8_run11.log:964 docs/DATA/probes/20260923_tools_8_run11.log:991 docs/DATA/probes/20260923_tools_8_run11.log:1025 docs/DATA/probes/20260923_tools_8_run11.log:1047 docs/DATA/probes/20260923_tools_8_run11.log:1069 docs/DATA/probes/20260923_tools_8_run11.log:1097 docs/DATA/probes/20260923_tools_8_run11.log:1183 docs/DATA/probes/20260923_tools_8_run11.log:1578 docs/DATA/probes/20260923_tools_8_run11.log:3312 docs/DATA/probes/20260923_tools_8_run11.log:3334 docs/DATA/probes/20260923_tools_8_run11.log:3361 docs/DATA/probes/20260923_tools_8_run11.log:3386 docs/DATA/probes/20260923_tools_8_run11.log:3411 docs/DATA/probes/20260923_tools_8_run11.log:3444 docs/DATA/probes/20260923_tools_8_run11.log:6299 docs/DATA/probes/20260923_tools_8_run11.log:6325 docs/DATA/probes/20260923_tools_8_run11.log:6347 docs/DATA/probes/20260923_tools_8_run11.log:6373 docs/DATA/probes/20260923_tools_8_run11.log:6399 docs/DATA/probes/20260923_tools_8_run11.log:6424 docs/DATA/probes/20260923_tools_8_run11.log:6619 docs/DATA/probes/20260923_tools_8_run11.log:6647 docs/DATA/probes/20260923_tools_8_run11.log:6672 docs/DATA/probes/20260923_tools_8_run11.log:6697 docs/DATA/probes/20260923_tools_8_run11.log:6723 docs/DATA/probes/20260923_tools_8_run11.log:6778 docs/DATA/probes/20260923_tools_8_run11.log:6800 docs/DATA/probes/20260923_tools_8_run11.log:6830 docs/DATA/probes/20260923_tools_8_run11.log:6852 docs/DATA/probes/20260923_tools_8_run11.log:6880 docs/DATA/probes/20260923_tools_8_run11.log:6910 docs/DATA/probes/20260923_tools_8_run11.log:6932 docs/DATA/probes/20260923_tools_8_run11.log:6954 docs/DATA/probes/20260923_tools_8_run11.log:7006 docs/DATA/probes/20260923_tools_8_run11.log:7034 docs/DATA/probes/20260923_tools_8_run11.log:7056 docs/DATA/probes/20260923_tools_8_run11.log:7085 docs/DATA/probes/20260923_tools_8_run11.log:7113 docs/DATA/probes/20260923_tools_8_run11.log:7135 docs/DATA/probes/20260923_tools_8_run11.log:7160 docs/DATA/probes/20260923_tools_8_run11.log:7189 docs/DATA/probes/20260923_tools_8_run11.log:7212 docs/DATA/probes/20260923_tools_8_run11.log:7235 docs/DATA/probes/20260923_tools_8_run11.log:7258 docs/DATA/probes/20260923_tools_8_run11.log:7288 docs/DATA/probes/20260923_tools_8_run11.log:7310 docs/DATA/probes/20260923_tools_8_run11.log:7335 docs/DATA/probes/20260923_tools_8_run11.log:7357 docs/DATA/probes/20260923_tools_8_run11.log:7383 docs/DATA/probes/20260923_tools_8_run11.log:7406 docs/DATA/probes/20260923_tools_8_run11.log:7438 docs/DATA/probes/20260923_tools_8_run11.log:7465 docs/DATA/probes/20260923_tools_8_run11.log:7497 docs/DATA/probes/20260923_tools_8_run11.log:7526 docs/DATA/probes/20260923_tools_8_run11.log:7554 docs/DATA/probes/20260923_tools_8_run11.log:7801 docs/DATA/probes/20260923_tools_8_run11.log:7830 docs/DATA/probes/20260923_tools_8_run11.log:7859 docs/DATA/probes/20260923_tools_8_run11.log:7882 docs/DATA/probes/20260923_tools_8_run11.log:7904 docs/DATA/probes/20260923_tools_8_run11.log:7926 docs/DATA/probes/20260923_tools_8_run11.log:7954 docs/DATA/probes/20260923_tools_8_run11.log:7980 docs/DATA/probes/20260923_tools_8_run11.log:8009 docs/DATA/probes/20260923_tools_8_run11.log:8037 docs/DATA/probes/20260923_tools_8_run11.log:8059 docs/DATA/probes/20260923_tools_8_run11.log:8096 docs/DATA/probes/20260923_tools_8_run11.log:8126 docs/DATA/probes/20260923_tools_8_run11.log:8161 docs/DATA/probes/20260923_tools_8_run11.log:8183 docs/DATA/probes/20260923_tools_8_run11.log:8205 docs/DATA/probes/20260923_tools_8_run11.log:8227 docs/DATA/probes/20260923_tools_8_run11.log:8317 docs/DATA/probes/20260923_tools_8_run11.log:8368 docs/DATA/probes/20260923_tools_8_run11.log:8397 docs/DATA/probes/20260923_tools_8_run11.log:8424 docs/DATA/probes/20260923_tools_8_run11.log:8458 docs/DATA/probes/20260923_tools_8_run11.log:8484 docs/DATA/probes/20260923_tools_8_run11.log:8524 docs/DATA/probes/20260923_tools_8_run11.log:8546 docs/DATA/probes/20260923_tools_8_run11.log:8576 docs/DATA/probes/20260923_tools_8_run11.log:8602 docs/DATA/probes/20260923_tools_8_run11.log:8630 docs/DATA/probes/20260923_tools_8_run11.log:8660 docs/DATA/probes/20260923_tools_8_run11.log:8688 docs/DATA/probes/20260923_tools_8_run11.log:8716 docs/DATA/probes/20260923_tools_8_run11.log:8746 docs/DATA/probes/20260923_tools_8_run11.log:8773 docs/DATA/probes/20260923_tools_8_run11.log:8799 docs/DATA/probes/20260923_tools_8_run11.log:8825 docs/DATA/probes/20260923_tools_8_run11.log:8847 docs/DATA/probes/20260923_tools_8_run11.log:8876 docs/DATA/probes/20260923_tools_8_run11.log:8907 docs/DATA/probes/20260923_tools_8_run11.log:8935 docs/DATA/probes/20260923_tools_8_run11.log:8965 docs/DATA/probes/20260923_tools_8_run11.log:8995 docs/DATA/probes/20260923_tools_8_run11.log:9017 docs/DATA/probes/20260923_tools_8_run11.log:9042 docs/DATA/probes/20260923_tools_8_run11.log:9068 docs/DATA/probes/20260923_tools_8_run11.log:9094 docs/DATA/probes/20260923_tools_8_run11.log:9124 docs/DATA/probes/20260923_tools_8_run11.log:9153 docs/DATA/probes/20260923_tools_8_run11.log:9182 docs/DATA/probes/20260923_tools_8_run11.log:9238 docs/DATA/probes/20260923_tools_8_run11.log:9377 docs/DATA/probes/20260923_tools_8_run11.log:9429 docs/DATA/probes/20260923_tools_8_run11.log:9495 docs/DATA/probes/20260923_tools_8_run11.log:9518 docs/DATA/probes/20260923_tools_8_run11.log:9559 docs/DATA/probes/20260923_tools_8_run11.log:9583 docs/DATA/probes/20260923_tools_8_run11.log:9607 docs/DATA/probes/20260923_tools_8_run11.log:9633 docs/DATA/probes/20260923_tools_8_run11.log:9663 docs/DATA/probes/20260923_tools_8_run11.log:9693 docs/DATA/probes/20260923_tools_8_run11.log:9723 docs/DATA/probes/20260923_tools_8_run11.log:9745 docs/DATA/probes/20260923_tools_8_run11.log:9770 docs/DATA/probes/20260923_tools_8_run11.log:10084 docs/DATA/probes/20260923_tools_8_run11.log:10106 docs/DATA/probes/20260923_tools_8_run11.log:10129 docs/DATA/probes/20260923_tools_8_run11.log:10191 docs/DATA/probes/20260923_tools_8_run11.log:10216 docs/DATA/probes/20260923_tools_8_run11.log:10246 docs/DATA/probes/20260923_tools_8_run11.log:10274 docs/DATA/probes/20260923_tools_8_run11.log:10296 docs/DATA/probes/20260923_tools_8_run11.log:10327 docs/DATA/probes/20260923_tools_8_run11.log:10350 docs/DATA/probes/20260923_tools_8_run11.log:10380 docs/DATA/probes/20260923_tools_8_run11.log:10405 docs/DATA/probes/20260923_tools_8_run11.log:10428 docs/DATA/probes/20260923_tools_8_run11.log:10454 docs/DATA/probes/20260923_tools_8_run11.log:10479 docs/DATA/probes/20260923_tools_8_run11.log:10507 docs/DATA/probes/20260923_tools_8_run11.log:10557 docs/DATA/probes/20260923_tools_8_run11.log:10586 docs/DATA/probes/20260923_tools_8_run11.log:10608 docs/DATA/probes/20260923_tools_8_run11.log:10631 docs/DATA/probes/20260923_tools_8_run11.log:10677 docs/DATA/probes/20260923_tools_8_run11.log:10706 docs/DATA/probes/20260923_tools_8_run11.log:10735 docs/DATA/probes/20260923_tools_8_run11.log:10773 docs/DATA/probes/20260923_tools_8_run11.log:10803 docs/DATA/probes/20260923_tools_8_run11.log:10827 docs/DATA/probes/20260923_tools_8_run11.log:10849 docs/DATA/probes/20260923_tools_8_run11.log:10872 docs/DATA/probes/20260923_tools_8_run11.log:10902 docs/DATA/probes/20260923_tools_8_run11.log:10944 docs/DATA/probes/20260923_tools_8_run11.log:10972 docs/DATA/probes/20260923_tools_8_run11.log:11001 docs/DATA/probes/20260923_tools_8_run11.log:11026 docs/DATA/probes/20260923_tools_8_run11.log:11048 docs/DATA/probes/20260923_tools_8_run11.log:14198 docs/DATA/probes/20260923_tools_8_run11.log:14445 |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Exactpro の reconciliation testing` | E5 | なし | - | 実測 | cat8_repo_fetch.sh で178リポジトリを取得(N=34,610。除外387件(バイナリ・符号化不明386・gitサブモジュール参照1)+絶対に取れない16件=403、listed(M)=34,207)し、cat8_mklist.py+cat8_search.pyで全件検索(パターンはlookahead/survivorship/リーク/時点/embargo/purge/reproducib/seed/deterministic/snapshot等。E3a・E3b・E5の設計票§3の語の組をすべて含む)。当たり528ファイル/3,414行はいずれも `### 当たりの判定` に理由つきで記録した誤検出(webpackやtypescript等ビルド道具の内部語・GradleのSNAPSHOT版番号・protobufの`IsSerializationDeterministic`・th2-infra-editorのUndo履歴の`createSnapshot`等)。一覧 34207 件 / 読んだ 34207 件 / 当たり 528 ファイル / 3414 行 | docs/DATA/probes/20260923_tools_8_run11.log:232 docs/DATA/probes/20260923_tools_8_run11.log:257 docs/DATA/probes/20260923_tools_8_run11.log:285 docs/DATA/probes/20260923_tools_8_run11.log:307 docs/DATA/probes/20260923_tools_8_run11.log:338 docs/DATA/probes/20260923_tools_8_run11.log:376 docs/DATA/probes/20260923_tools_8_run11.log:402 docs/DATA/probes/20260923_tools_8_run11.log:435 docs/DATA/probes/20260923_tools_8_run11.log:470 docs/DATA/probes/20260923_tools_8_run11.log:492 docs/DATA/probes/20260923_tools_8_run11.log:529 docs/DATA/probes/20260923_tools_8_run11.log:558 docs/DATA/probes/20260923_tools_8_run11.log:582 docs/DATA/probes/20260923_tools_8_run11.log:611 docs/DATA/probes/20260923_tools_8_run11.log:633 docs/DATA/probes/20260923_tools_8_run11.log:665 docs/DATA/probes/20260923_tools_8_run11.log:688 docs/DATA/probes/20260923_tools_8_run11.log:719 docs/DATA/probes/20260923_tools_8_run11.log:754 docs/DATA/probes/20260923_tools_8_run11.log:781 docs/DATA/probes/20260923_tools_8_run11.log:803 docs/DATA/probes/20260923_tools_8_run11.log:832 docs/DATA/probes/20260923_tools_8_run11.log:885 docs/DATA/probes/20260923_tools_8_run11.log:913 docs/DATA/probes/20260923_tools_8_run11.log:938 docs/DATA/probes/20260923_tools_8_run11.log:964 docs/DATA/probes/20260923_tools_8_run11.log:991 docs/DATA/probes/20260923_tools_8_run11.log:1025 docs/DATA/probes/20260923_tools_8_run11.log:1047 docs/DATA/probes/20260923_tools_8_run11.log:1069 docs/DATA/probes/20260923_tools_8_run11.log:1097 docs/DATA/probes/20260923_tools_8_run11.log:1183 docs/DATA/probes/20260923_tools_8_run11.log:1578 docs/DATA/probes/20260923_tools_8_run11.log:3312 docs/DATA/probes/20260923_tools_8_run11.log:3334 docs/DATA/probes/20260923_tools_8_run11.log:3361 docs/DATA/probes/20260923_tools_8_run11.log:3386 docs/DATA/probes/20260923_tools_8_run11.log:3411 docs/DATA/probes/20260923_tools_8_run11.log:3444 docs/DATA/probes/20260923_tools_8_run11.log:6299 docs/DATA/probes/20260923_tools_8_run11.log:6325 docs/DATA/probes/20260923_tools_8_run11.log:6347 docs/DATA/probes/20260923_tools_8_run11.log:6373 docs/DATA/probes/20260923_tools_8_run11.log:6399 docs/DATA/probes/20260923_tools_8_run11.log:6424 docs/DATA/probes/20260923_tools_8_run11.log:6619 docs/DATA/probes/20260923_tools_8_run11.log:6647 docs/DATA/probes/20260923_tools_8_run11.log:6672 docs/DATA/probes/20260923_tools_8_run11.log:6697 docs/DATA/probes/20260923_tools_8_run11.log:6723 docs/DATA/probes/20260923_tools_8_run11.log:6778 docs/DATA/probes/20260923_tools_8_run11.log:6800 docs/DATA/probes/20260923_tools_8_run11.log:6830 docs/DATA/probes/20260923_tools_8_run11.log:6852 docs/DATA/probes/20260923_tools_8_run11.log:6880 docs/DATA/probes/20260923_tools_8_run11.log:6910 docs/DATA/probes/20260923_tools_8_run11.log:6932 docs/DATA/probes/20260923_tools_8_run11.log:6954 docs/DATA/probes/20260923_tools_8_run11.log:7006 docs/DATA/probes/20260923_tools_8_run11.log:7034 docs/DATA/probes/20260923_tools_8_run11.log:7056 docs/DATA/probes/20260923_tools_8_run11.log:7085 docs/DATA/probes/20260923_tools_8_run11.log:7113 docs/DATA/probes/20260923_tools_8_run11.log:7135 docs/DATA/probes/20260923_tools_8_run11.log:7160 docs/DATA/probes/20260923_tools_8_run11.log:7189 docs/DATA/probes/20260923_tools_8_run11.log:7212 docs/DATA/probes/20260923_tools_8_run11.log:7235 docs/DATA/probes/20260923_tools_8_run11.log:7258 docs/DATA/probes/20260923_tools_8_run11.log:7288 docs/DATA/probes/20260923_tools_8_run11.log:7310 docs/DATA/probes/20260923_tools_8_run11.log:7335 docs/DATA/probes/20260923_tools_8_run11.log:7357 docs/DATA/probes/20260923_tools_8_run11.log:7383 docs/DATA/probes/20260923_tools_8_run11.log:7406 docs/DATA/probes/20260923_tools_8_run11.log:7438 docs/DATA/probes/20260923_tools_8_run11.log:7465 docs/DATA/probes/20260923_tools_8_run11.log:7497 docs/DATA/probes/20260923_tools_8_run11.log:7526 docs/DATA/probes/20260923_tools_8_run11.log:7554 docs/DATA/probes/20260923_tools_8_run11.log:7801 docs/DATA/probes/20260923_tools_8_run11.log:7830 docs/DATA/probes/20260923_tools_8_run11.log:7859 docs/DATA/probes/20260923_tools_8_run11.log:7882 docs/DATA/probes/20260923_tools_8_run11.log:7904 docs/DATA/probes/20260923_tools_8_run11.log:7926 docs/DATA/probes/20260923_tools_8_run11.log:7954 docs/DATA/probes/20260923_tools_8_run11.log:7980 docs/DATA/probes/20260923_tools_8_run11.log:8009 docs/DATA/probes/20260923_tools_8_run11.log:8037 docs/DATA/probes/20260923_tools_8_run11.log:8059 docs/DATA/probes/20260923_tools_8_run11.log:8096 docs/DATA/probes/20260923_tools_8_run11.log:8126 docs/DATA/probes/20260923_tools_8_run11.log:8161 docs/DATA/probes/20260923_tools_8_run11.log:8183 docs/DATA/probes/20260923_tools_8_run11.log:8205 docs/DATA/probes/20260923_tools_8_run11.log:8227 docs/DATA/probes/20260923_tools_8_run11.log:8317 docs/DATA/probes/20260923_tools_8_run11.log:8368 docs/DATA/probes/20260923_tools_8_run11.log:8397 docs/DATA/probes/20260923_tools_8_run11.log:8424 docs/DATA/probes/20260923_tools_8_run11.log:8458 docs/DATA/probes/20260923_tools_8_run11.log:8484 docs/DATA/probes/20260923_tools_8_run11.log:8524 docs/DATA/probes/20260923_tools_8_run11.log:8546 docs/DATA/probes/20260923_tools_8_run11.log:8576 docs/DATA/probes/20260923_tools_8_run11.log:8602 docs/DATA/probes/20260923_tools_8_run11.log:8630 docs/DATA/probes/20260923_tools_8_run11.log:8660 docs/DATA/probes/20260923_tools_8_run11.log:8688 docs/DATA/probes/20260923_tools_8_run11.log:8716 docs/DATA/probes/20260923_tools_8_run11.log:8746 docs/DATA/probes/20260923_tools_8_run11.log:8773 docs/DATA/probes/20260923_tools_8_run11.log:8799 docs/DATA/probes/20260923_tools_8_run11.log:8825 docs/DATA/probes/20260923_tools_8_run11.log:8847 docs/DATA/probes/20260923_tools_8_run11.log:8876 docs/DATA/probes/20260923_tools_8_run11.log:8907 docs/DATA/probes/20260923_tools_8_run11.log:8935 docs/DATA/probes/20260923_tools_8_run11.log:8965 docs/DATA/probes/20260923_tools_8_run11.log:8995 docs/DATA/probes/20260923_tools_8_run11.log:9017 docs/DATA/probes/20260923_tools_8_run11.log:9042 docs/DATA/probes/20260923_tools_8_run11.log:9068 docs/DATA/probes/20260923_tools_8_run11.log:9094 docs/DATA/probes/20260923_tools_8_run11.log:9124 docs/DATA/probes/20260923_tools_8_run11.log:9153 docs/DATA/probes/20260923_tools_8_run11.log:9182 docs/DATA/probes/20260923_tools_8_run11.log:9238 docs/DATA/probes/20260923_tools_8_run11.log:9377 docs/DATA/probes/20260923_tools_8_run11.log:9429 docs/DATA/probes/20260923_tools_8_run11.log:9495 docs/DATA/probes/20260923_tools_8_run11.log:9518 docs/DATA/probes/20260923_tools_8_run11.log:9559 docs/DATA/probes/20260923_tools_8_run11.log:9583 docs/DATA/probes/20260923_tools_8_run11.log:9607 docs/DATA/probes/20260923_tools_8_run11.log:9633 docs/DATA/probes/20260923_tools_8_run11.log:9663 docs/DATA/probes/20260923_tools_8_run11.log:9693 docs/DATA/probes/20260923_tools_8_run11.log:9723 docs/DATA/probes/20260923_tools_8_run11.log:9745 docs/DATA/probes/20260923_tools_8_run11.log:9770 docs/DATA/probes/20260923_tools_8_run11.log:10084 docs/DATA/probes/20260923_tools_8_run11.log:10106 docs/DATA/probes/20260923_tools_8_run11.log:10129 docs/DATA/probes/20260923_tools_8_run11.log:10191 docs/DATA/probes/20260923_tools_8_run11.log:10216 docs/DATA/probes/20260923_tools_8_run11.log:10246 docs/DATA/probes/20260923_tools_8_run11.log:10274 docs/DATA/probes/20260923_tools_8_run11.log:10296 docs/DATA/probes/20260923_tools_8_run11.log:10327 docs/DATA/probes/20260923_tools_8_run11.log:10350 docs/DATA/probes/20260923_tools_8_run11.log:10380 docs/DATA/probes/20260923_tools_8_run11.log:10405 docs/DATA/probes/20260923_tools_8_run11.log:10428 docs/DATA/probes/20260923_tools_8_run11.log:10454 docs/DATA/probes/20260923_tools_8_run11.log:10479 docs/DATA/probes/20260923_tools_8_run11.log:10507 docs/DATA/probes/20260923_tools_8_run11.log:10557 docs/DATA/probes/20260923_tools_8_run11.log:10586 docs/DATA/probes/20260923_tools_8_run11.log:10608 docs/DATA/probes/20260923_tools_8_run11.log:10631 docs/DATA/probes/20260923_tools_8_run11.log:10677 docs/DATA/probes/20260923_tools_8_run11.log:10706 docs/DATA/probes/20260923_tools_8_run11.log:10735 docs/DATA/probes/20260923_tools_8_run11.log:10773 docs/DATA/probes/20260923_tools_8_run11.log:10803 docs/DATA/probes/20260923_tools_8_run11.log:10827 docs/DATA/probes/20260923_tools_8_run11.log:10849 docs/DATA/probes/20260923_tools_8_run11.log:10872 docs/DATA/probes/20260923_tools_8_run11.log:10902 docs/DATA/probes/20260923_tools_8_run11.log:10944 docs/DATA/probes/20260923_tools_8_run11.log:10972 docs/DATA/probes/20260923_tools_8_run11.log:11001 docs/DATA/probes/20260923_tools_8_run11.log:11026 docs/DATA/probes/20260923_tools_8_run11.log:11048 docs/DATA/probes/20260923_tools_8_run11.log:14198 docs/DATA/probes/20260923_tools_8_run11.log:14445 |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(10回目の節) | |
+| `Great Expectations` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Great Expectations` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Great Expectations` | E2 | 印 | 未判別 | 一次資料 | 「GX Core combines the collective wisdom of thousands of community members with a proven track record in data quality deployments worldwide...Its powerful technical tools start with Expectations: expressive and extensible unit tests for your data.」(README。expect_column_values_to_not_be_null等の個別Expectation関数の一覧までは未確認) | docs/DATA/probes/20260923_tools_8_run11.log:1101 |
+| `Great Expectations` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Great Expectations` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Great Expectations` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Great Expectations` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Great Expectations` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Vibe-Trading` | E1a | 印 | 4 | 一次資料 | 「offline USD-M account reconciliation compares local risk state with an exchange observation without opening a connection」/「Binance USD-M reconciliation results now land as tamper-evident drift evidence artifacts — strict JSON, fail-closed on incomplete or unsupported snapshots」(README変更履歴。自社の計算した口座状態と取引所側の観測値を突き合わせて差分(drift)を検出する機能。突き合わせの単位は指定できないため段4) | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | バックテストエンジン自身がOHLCVから損益・ポジションを計算する(「a finished backtest is now something you can read」「Run Detail grows four tabs — **Factor Research** (IC series...)、**Positions**...、**Tearsheet**...」)。当方のバックテストエンジンと同じ種類の出力(損益・ポジション)を出す別実装 | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| `Vibe-Trading` | E2 | 印 | 4 | 一次資料 | 「a default that quietly substitutes a plausible value for a missing one」「The registry now masks output wherever a declared dependency is missing on that bar」(欠損検出)/「read-time freshness (`fresh`/`aging`/`stale`) and stale rows failing closed」(鮮度=時刻のずれの検出)/「Market-data provenance now names the loader...with the matching fallback flag and adjustment label」(情報源間の食い違いの記録) | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 「the HTML alpha-bench report now carries the survivorship-bias disclosure the JSON already had, naming the constituent source and its as-of date」(生存者バイアスの開示を報告書に載せる機能。自動判定して止めるところまでは確認できず人が読んで判断する形なので段2) | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 「look-ahead-bias and strict-OOS guards in the factor bench and Shadow Account」/「a look-ahead-bias fix across all 5 portfolio optimizers」/「the ML walk-forward example purges future labels」/Quant Library additions に「group-purged CV」(purged cross-validationの実装) | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| `Vibe-Trading` | E4 | 印 | 未判別 | 一次資料 | 0.1.15のリリースノートに新機能として「swarm replay and retry」が挙げられている(再生の粒度・対象は未確認) | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| `Vibe-Trading` | E5 | 印 | 未判別 | 一次資料 | 「deterministic USD-M tolerance calibration from recorded comparisons」/「computed through the same test-pinned engine the MCP tools use」(決定的な計算・記録済み比較からの較正への言及。乱数の種の固定・保存の具体的な仕組みまでは未確認) | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| `Vibe-Trading` | E6 | 印 | 未判別 | 一次資料 | 「22 new regressions cover hydration, terminal recovery, stale reaping, keepalive cadence, env parsing, and heartbeat wiring; the full swarm/MCP suite is at 169 passed, 4 skipped.」(回帰テストスイートの実行結果件数を明記) | docs/DATA/probes/20260923_tools_8_run11.log:3573 |
+| `AutoHedge` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AutoHedge` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AutoHedge` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AutoHedge` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AutoHedge` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AutoHedge` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AutoHedge` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AutoHedge` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenBB Terminal` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenBB Terminal` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenBB Terminal` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenBB Terminal` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenBB Terminal` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenBB Terminal` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenBB Terminal` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenBB Terminal` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Qlib` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Qlib` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | `scripts/check_data_health.py` の `DataHealthChecker` クラス docstring: 「Checks a dataset for data completeness and correctness...- any of the columns [...] are missing - any data is missing - any step change in the OHLCV columns is above a threshold (default: 0.5 for price, 3 for volume) - any factor is missing」。コンストラクタに `large_step_threshold_price`・`large_step_threshold_volume`・`missing_data_num` を指定でき((ア)条件は満たす)、`csv_path` 引数でqlib形式の外から持ち込んだCSVディレクトリにも掛けられる(段4)。チェック結果を保存し次回実行と比較する(イ)の記述は見つからず段5にはしない | docs/DATA/probes/20260923_tools_8_run11.log:9774 |
+| `Qlib` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Qlib` | E3b | 印 | 未判別 | 一次資料 | Point-in-Time(PIT)データ収集・変換のREADME: 四半期決算などの財務データを発表時点(as-of)で正しく参照できる形に変換して積む一連の手順(`download_data`→`normalize_data`→`dump_pit.py dump`)。時点を揃えた結合の具体的な実装箇所までは未確認なので段は未判別 | docs/DATA/probes/20260923_tools_8_run11.log:10036 |
+| `Qlib` | E4 | 印 | 未判別 | 一次資料 | README: 「Qlib provides a tool named `qrun` to run the whole workflow automatically (including building dataset, training models, backtest and evaluation).」(記録した市場データを順に読んでモデル・戦略を評価するワークフロー。再生の粒度・時刻の扱いは未確認) | docs/DATA/probes/20260923_tools_8_run11.log:5608 |
+| `Qlib` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Qlib` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinGPT` | E1a | 印 | 未判別 | 一次資料 | 「**Task layer**: This layer is responsible for executing fundamental tasks. These tasks serve as the benchmarks for performance evaluations and cross-comparisons in the realm of FinLLMs」(複数のFinLLM実装の出力をベンチマークで突き合わせて比較するレイヤーがあるとの記述。突き合わせの単位・自動判定の有無は未確認) | docs/DATA/probes/20260923_tools_8_run11.log:4944 |
+| `FinGPT` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinGPT` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinGPT` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinGPT` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinGPT` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinGPT` | E5 | 印 | 未判別 | 一次資料 | 「Reproduce the results by running [benchmarks](./fingpt/FinGPT_Sentiment_Analysis_v3/benchmark/benchmarks.ipynb), and the detailed tutorial is on the way.」(結果の再現をnotebookで行える。乱数の種の固定など具体の仕組みは未確認) | docs/DATA/probes/20260923_tools_8_run11.log:4944 |
+| `FinGPT` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Backtrader` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Backtrader` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Backtrader` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Backtrader` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Backtrader` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Backtrader` | E4 | 印 | 未判別 | 一次資料 | README.rstの機能一覧: 「Integrated Resampling and Replaying」(記録した足を読み込んでリサンプル・再生する統合機能。粒度や遅延の扱いの詳細は未確認) | docs/DATA/probes/20260923_tools_8_run11.log:6444 |
+| `Backtrader` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Backtrader` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Lean` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Lean` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Lean` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Lean` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Lean` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Lean` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Lean` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Lean` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinanceToolkit` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinanceToolkit` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinanceToolkit` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinanceToolkit` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinanceToolkit` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinanceToolkit` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinanceToolkit` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `FinanceToolkit` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenClaw` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Quantreo library` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Quantreo library` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Quantreo library` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Quantreo library` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Quantreo library` | E3b | 印 | 未判別 | 一次資料 | README: 「**Robust by design**: Functions implemented to avoid data leakage and look-ahead bias.」(データリーク・ルックアヘッドバイアスを避けるよう実装された関数群。具体の実装方式(embargo/purge等)は未確認) | docs/DATA/probes/20260923_tools_8_run11.log:4150 |
+| `Quantreo library` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Quantreo library` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `Quantreo library` | E6 | 印 | 未判別 | 実測 | `.github/workflows/tests.yml`: 「run: pytest --cov=quantreo --cov-report=term-missing -v --maxfail=1 --disable-warnings」(pytestによる自動テストとカバレッジ計測)。CHANGELOG.mdにも「Improved **unit test coverage** across the library」とある(全要素検索の手は巨大なnotebook出力に埋め込まれた第三者JSバンドルのため生ログ2,000,000字で切られたが、この2件の当たりはいずれも切られる前の範囲に出ている) | docs/DATA/probes/20260923_tools_8_run11.log:14547 docs/DATA/probes/20260923_tools_8_run11.log:14549 |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 未確認 | 試した手段: README・CHANGELOG・GitHub登録情報(ungh.cc)・PyPI情報を読んだが、この要素の述語に当たる記述もなし の根拠にできる全件検索も、この回では行っていない | |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `MetaTrader の Strategy Tester` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `MetaTrader の Strategy Tester` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `MetaTrader の Strategy Tester` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `MetaTrader の Strategy Tester` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `MetaTrader の Strategy Tester` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `MetaTrader の Strategy Tester` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `MetaTrader の Strategy Tester` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `dbt` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `dbt` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `dbt` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `dbt` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `dbt` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `dbt` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `dbt` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `dbt` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Debezium` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Debezium` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Debezium` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Debezium` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Debezium` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Debezium` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Debezium` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Debezium` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Prefect` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Prefect` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Prefect` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Prefect` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Prefect` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Prefect` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Prefect` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Prefect` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Pandas` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Pandas` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Pandas` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Pandas` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Pandas` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Pandas` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Pandas` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Pandas` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AI Trading Lab` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AI Trading Lab` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AlgoNetwork` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AlgoNetwork` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AlgoNetwork` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AlgoNetwork` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AlgoNetwork` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AlgoNetwork` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AlgoNetwork` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `AlgoNetwork` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NinjaTrader` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NinjaTrader` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NinjaTrader` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NinjaTrader` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NinjaTrader` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NinjaTrader` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NinjaTrader` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NinjaTrader` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NumPy` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NumPy` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NumPy` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NumPy` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NumPy` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NumPy` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NumPy` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `NumPy` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `SciPy` | E1a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `SciPy` | E1b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `SciPy` | E2 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `SciPy` | E3a | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `SciPy` | E3b | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `SciPy` | E4 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `SciPy` | E5 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+| `SciPy` | E6 | 未判別 | 未判別 | 未確認 | 台帳の値のまま(10回目の節) | |
+
+### 当たりの判定
+
+この回に打った `cat8_search.py` の手(8-016 の E3a/E3b/E5 やり直し。178 手)で当たった行のあるファイル 528 件全部を、理由つきで載せる(監査 67 回目の指摘 3)。
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/.github/.github/workflows/compaund-java-multi-project-build.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/.github/.github/workflows/compaund-java-sonatype-push.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/.github/.github/workflows/compound-grpc.yml` | 3 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/.github/.github/workflows/compound-prebuild-java-dev-workflow.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/.github/.github/workflows/java-prepare-version.yml` | 4 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/.github/.github/workflows/python-prepare-version.yml` | 3 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/.github/workflow-templates/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/cradleapi/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/e2e-test-schema/dictionaries/fix50-generic.yml` | 4 | FIXプロトコル辞書データ中のフィールド名(構文データであり機能ではない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/jsonToHtmlParser/build/out/main.3d1f31d2b310bad9c8c2.js` | 1 | webpackでバンドルされたビルド成果物(react-dom等の内部語を含む圧縮JS)。上と同じ理由でビルド道具の内部語 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/junit-jupiter-integration/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/junit-jupiter-integration/api/junit-jupiter-integration.api` | 1 | Kotlin ABIダンプ中の関数シグネチャ`purgeQueue`(RabbitMQキューを空にするテストユーティリティで、E3b(ルックアヘッド防止)の`purge`(データ分割時の除去)とは意味が異なる) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/junit-jupiter-integration/src/main/kotlin/com/exactpro/th2/test/extension/Th2RabbitMqExtension.kt` | 1 | RabbitMQキューを試験終了後に空にする`purgeQueue`呼び出し(後始末処理)。ルックアヘッド防止のpurge(未来情報の除去)ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/junit-jupiter-integration/src/main/kotlin/com/exactpro/th2/test/integration/RabbitMqConfigurator.kt` | 2 | 同上、RabbitMQキューの後始末(`purgeQueue`) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/junit-jupiter-integration/src/main/kotlin/com/exactpro/th2/test/integration/RabbitMqIntegration.kt` | 5 | 同上、RabbitMQキューの後始末(`purgeQueue`)。E3bの`purge`はデータ分割時の除去を指し意味が異なる |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/provider_call/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/pytest-th2-bdd/.gitignore` | 1 | .gitignoreのコメント文中の一般語`reproducibility`(バイナリパッケージのビルド再現性についての注意書きで、pytest-th2-bdd自身の機能ではない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/qfj-dictionary-converter/settings.gradle.kts` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/remotehand/.github/workflows/snapshot-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/remotehand/README.md` | 3 | READMEの一般的な記述中の語(機能としてのE3a/E3b/E5に当たらない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/remotehand/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/remotehand/src/main/java/com/exactpro/remotehand/web/actions/DownloadFile.java` | 3 | ダウンロードファイル操作のコード中の一般語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/run-one/.github/workflows/publish-release-canditate.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/run-one/.github/workflows/publish-release.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/run-one/.github/workflows/publish-snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/test-management-sync/.github/workflows/development.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/test-management-sync/.github/workflows/release-candidate.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/test-management-sync/.github/workflows/release.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-core-j/.github/workflows/dev-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-core-j/README.md` | 1 | READMEの一般的な記述中の語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-core-j/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-gui-core/.github/workflows/snapshot-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-gui-core/build.gradle.kts` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-ssh/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-test/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-ui-backend/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-ui/.github/workflows/build-snapshot.yml` | 7 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-ui/package-lock.json` | 6 | npm依存関係のロックファイル中のパッケージ名・版表記(`*-snapshot`等)。コードではなく依存関係の記録 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-ui/src/components/replay/ReplayTableBody.tsx` | 3 | react-beautiful-dnd(ドラッグ&ドロップ)の型`DraggableStateSnapshot`(ドラッグ中のUI状態)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-ui/src/components/replay/ReplayTableRow.tsx` | 4 | 同上、`DraggableStateSnapshot`(ドラッグUI状態)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-uiframework-web-demo/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-act-uiframework-win-demo/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-bom/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-bom/build.gradle` | 1 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-box-descriptor-generator/.github/workflows/dev-gradle-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-box-descriptor-generator/README.md` | 3 | READMEの一般的な記述中の語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-box-descriptor-generator/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-box-template-j/.github/workflows/dev-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-box-template-j/settings.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-avro/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-csv/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-fix-ng/src/jmh/resources/dictionary-benchmark.xml` | 4 | FIXプロトコル辞書データ(ベンチマーク用)中のフィールド名。構文データで機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-fix-ng/src/test/resources/dictionary.xml` | 4 | FIXプロトコル辞書データ中のフィールド名。構文データで機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-fix-orchestra/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-fix-orchestra/src/test/resources/dict/mit_2016.xml` | 49 | FIXプロトコル辞書データ中のフィールド名`As-of Trade Qty`(FIXの標準フィールド名)。E3a/E3bの時点(point-in-time)の述語ではなくFIXタグ名 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-generic/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-hand-html/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-hand/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-html/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-json-dictionaryless/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-json/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-moldudp64/build.gradle` | 1 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-open-api/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-oracle-log-miner/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-oracle-log-miner/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-oracle-log-miner/src/main/antlr/PlSqlLexer.g4` | 3 | Oracle PL/SQL文法定義(ANTLR)中の予約語`PURGE`/`DETERMINISTIC`(SQLの構文要素)。ルックアヘッド防止・再現性の機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-oracle-log-miner/src/main/antlr/PlSqlParser.g4` | 22 | Oracle PL/SQL文法定義(ANTLR)中の予約語`PURGE`/`DETERMINISTIC`(SQLの構文要素)。ルックアヘッド防止・再現性の機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-sailfish/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-sailfish/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-xml-via-xsd/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-xml-via-xsd/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec-xml/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-codec/README.md` | 1 | READMEの一般的な記述中の語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-cpp/src/common.pb.cc` | 6 | protobufが自動生成したC++コード中の`IsSerializationDeterministic()`(protobufランタイム共通のバイト列決定性シリアライズ設定)。th2-netが独自に持つ再現性確認機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-j/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-j/src/test/kotlin/com/exactpro/th2/common/util/RabbitTestContainerUtil.kt` | 2 | RabbitMQテストコンテナのユーティリティ中の一般語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-py/.github/workflows/publish-release-canditate.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-py/.github/workflows/publish-release.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-py/.github/workflows/publish-snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-utils-j/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-utils-py/.github/workflows/publish-release-canditate.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-utils-py/.github/workflows/publish-release.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-common-utils-py/.github/workflows/publish-snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-dirty-http/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-dirty-http/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-dirty-tcp-core/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-generic/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-http-server/.github/workflows/dev-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-http-server/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-http-ws-client-template/.github/workflows/dev-java-publish-sonatype-and-docker.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-http-ws-client-template/build.gradle` | 1 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-kafka/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-sailfish/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-ws-client/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-conn-ws-client/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-cr-converter/.github/workflows/dev-docker-publish.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-cr-converter/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-crawler-event-healer/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-crawler/README.md` | 2 | 「Crawlerはこの時点からデータを処理する」という取得範囲の開始/終了時刻の説明(データ収集レンジの指定であり、E3a/E3bが指す『その時点で知り得ない情報を使わない』ためのpoint-in-time結合とは異なる) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-crawler/settings.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-custom-resource-model/.github/workflows/dev-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-custom-resource-model/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-processor-zephyr/build.gradle` | 1 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-processor-zephyr/settings.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-services-j/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-services-j/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-services-utils/.github/workflows/publish-release-candidate.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-services-utils/.github/workflows/publish-release.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-services-utils/.github/workflows/publish-snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-services/.github/workflows/publish-release-candidate.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-services/.github/workflows/publish-release.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-data-services/.github/workflows/publish-snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-docs/content/modules/codec/usage.md` | 1 | SonatypeのSNAPSHOTリポジトリURL(Mavenのビルド設定の説明)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-docs/content/terms/helm_chart.md` | 1 | Helm Chartの一般的な説明文中の語(`managed with`等)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-ds-source-lwdp/.github/workflows/publish-release-candidate.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-ds-source-lwdp/.github/workflows/publish-release.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-ds-source-lwdp/.github/workflows/publish-snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-ds-source-rdp/.github/workflows/publish-release.yaml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-ds-source-rdp/.github/workflows/publish-snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-event-uploader-j/build.gradle.kts` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-gradle-plugin/build.gradle.kts` | 1 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-gradle-plugin/plugin/src/functionalTest/kotlin/com/exactpro/th2/gradle/Th2ComponentGradlePluginFunctionalTest.kt` | 4 | 同上。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-gradle-plugin/plugin/src/functionalTest/kotlin/com/exactpro/th2/gradle/Th2GrpcGradlePluginFunctionalTest.kt` | 6 | Gradleプラグインの機能テスト中のSNAPSHOT版番号の検証。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-gradle-plugin/plugin/src/main/kotlin/com/exactpro/th2/gradle/PublishTh2Plugin.kt` | 2 | SonatypeのSNAPSHOTリポジトリURLの定数。ビルド公開設定で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-ssh/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-ssh/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-template/.github/workflows/snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-test/.github/workflows/dev-java-publish-fury.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-test/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-uiframework-web-demo/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-uiframework-web-demo/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-uiframework-win-demo/.github/workflows/snapshot-java-python-publish.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-act-uiframework-win-demo/build.gradle.kts` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-check1/.github/workflows/snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-check1/README.md` | 1 | 「releaseバージョンに置き換える」という変更履歴文中のSNAPSHOTの語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-check2-recon/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-check2-recon/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-client/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-codec/.github/workflows/snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-common/.github/workflows/snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-conn/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-conn/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-crawler-data-processor/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-crawler-data-processor/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-data-provider/.github/workflows/snapshot-java-python-publish.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-data-provider/build.gradle.kts` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-generator-template/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-generator-template/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-hand/.github/workflows/snapshot-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-hand/build.gradle.kts` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-hand/src/main/proto/th2_grpc_hand/rhactionsmessages_web.proto` | 1 | RemoteHand(ブラウザ操作の遠隔実行)のgRPCメッセージ内の列挙値`SNAPSHOT`(画面キャプチャ操作の種別と推定される)。実験結果の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-service-generator/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-sim-template/.github/workflows/snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-sim/.github/workflows/snapshot.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-util/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-util/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-woodpecker/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-grpc-woodpecker/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-hand/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-hand/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor-v2/.github/workflows/build-snapshot.yml` | 7 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor-v2/package-lock.json` | 7 | npm依存関係のロックファイル中のパッケージ名・版表記(`*-snapshot`等)。コードではなく依存関係の記録 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor-v2/src/models/History.ts` | 1 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor-v2/src/stores/HistoryStore.ts` | 8 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/.github/workflows/build-snapshot.yml` | 7 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/package-lock.json` | 6 | npm依存関係のロックファイル中のパッケージ名・版表記(`*-snapshot`等)。コードではなく依存関係の記録 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/components/box/BoxSettings.tsx` | 2 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/components/changeLog/ChangeLogBoxItem.tsx` | 11 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/components/changeLog/ChangeLogDictionaryItem.tsx` | 5 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/components/changeLog/ChangeLogLinkItem.tsx` | 5 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/components/changeLog/ChangeLogModal.tsx` | 5 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/components/util/History.tsx` | 2 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/helpers/snapshot.ts` | 7 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/models/History.ts` | 1 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/store/ConnectionsStore.ts` | 11 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/store/HistoryStore.ts` | 17 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/store/SchemasStore.ts` | 21 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-editor/src/store/SubscriptionStore.ts` | 1 | th2-infra-editorの設定編集画面が持つ独自のundo/redo履歴機構(`createSnapshot`でボックス/辞書/接続の変更を`historyStore`に積む)。GUIの編集操作の取り消し機能であり、E5の述語(実験・データの再現性を確かめる/固定する)には当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-mgr/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-mgr/src/main/java/com/exactpro/th2/inframgr/SchemaController.java` | 18 | th2スキーマ(Kubernetesカスタムリソース定義)のスナップショット取得API(現在のリソース一覧を返すだけ)。実験結果の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-mgr/src/main/java/com/exactpro/th2/inframgr/SchemaControllerResponse.java` | 4 | 同上、スキーマの現在状態を表すレスポンス型。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-mgr/src/main/java/com/exactpro/th2/inframgr/SchemaValidationController.java` | 4 | 同上、スキーマ検証APIの周辺コード中の一般語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-mgr/src/main/java/com/exactpro/th2/inframgr/k8s/K8sOperator.java` | 4 | Kubernetesリソースの現在状態取得コード中の一般語一致(`snapshot`はK8sリソース一覧の意)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-mgr/src/main/java/com/exactpro/th2/inframgr/k8s/K8sSynchronization.java` | 5 | 同上。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-repo/.github/workflows/dev-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-repo/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-repo/src/main/java/com/exactpro/th2/infrarepo/repo/Repository.java` | 8 | Gitリポジトリ操作コード中の一般語一致(`snapshot`はコミット時点のファイル一覧の意)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra-repo/src/main/java/com/exactpro/th2/infrarepo/repo/RepositorySnapshot.java` | 2 | Gitリポジトリのある時点でのリソース一覧を表すクラス名`RepositorySnapshot`。設定リポジトリの現在状態を表す型であり、実験結果の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/README.md` | 1 | Kubernetesネームスペースの削除操作`Purge th2 namespaces`(インフラのクリーンアップ手順)。E3bのpurge(データからの未来情報除去)とは異なる |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/argocd/openshift/cassandra-instance/medusa.cm.yaml` | 2 | Cassandraバックアップツールmedusaの`purge`コマンド(古いバックアップの削除)。述語のpurgeとは異なる |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/chart/charts/cassandra/README.md` | 2 | Bitnami Cassandra Helmチャートのアップグレード注意書き(バックアップ推奨・後方互換性の説明)。th2独自の機能ではなく第三者チャートの定型文 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/chart/charts/cassandra/templates/statefulset.yaml` | 2 | Bitnami製Helmチャート(Cassandra/RabbitMQ)のテンプレートにある、ストレージの`.snapshot`ディレクトリ(NetApp等のファイルシステムスナップショット)を除外する定型句。th2-net自身の機能ではなく第三者チャートの定型文 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/chart/charts/cassandra/values.yaml` | 1 | Bitnami製Helmチャート(Cassandra/RabbitMQ)のテンプレートにある、ストレージの`.snapshot`ディレクトリ(NetApp等のファイルシステムスナップショット)を除外する定型句。th2-net自身の機能ではなく第三者チャートの定型文 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/chart/charts/helm-operator/README.md` | 1 | Helmの`--purge`オプション(削除したリリースの完全消去)。述語のpurgeとは異なる |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/chart/charts/rabbitmq/README.md` | 1 | Bitnami RabbitMQ Helmチャートの変更履歴('.snapshot'ディレクトリの権限変更の記述)。第三者チャートの定型文 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/chart/charts/rabbitmq/templates/statefulset.yaml` | 1 | Bitnami製Helmチャート(Cassandra/RabbitMQ)のテンプレートにある、ストレージの`.snapshot`ディレクトリ(NetApp等のファイルシステムスナップショット)を除外する定型句。th2-net自身の機能ではなく第三者チャートの定型文 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/ci/deploy/cassandra/cassandra-configmap.yaml` | 7 | Apache Cassandra本体の既定設定`auto_snapshot`/`snapshot_before_compaction`(コンパクション前・データ切り詰め前にディスクスナップショットを取るかの設定)。Cassandraの標準設定ファイルの定型文であり、th2独自の実験再現性機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/ci/e2e-test-schema/dictionaries/fix50-generic.yml` | 4 | FIXプロトコル辞書データ(QuickFIXの標準辞書由来)中のフィールド名。構文データで機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-infra/ci/go.sum` | 1 | Go依存関係のロックファイル中のパッケージ名(`stargz-snapshotter`)。コードではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-json-stream-provider-py/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-key-value-storage/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-lib-common-j/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-lib-common-j/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-lib-fix-util-j/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-lib-fix-util-j/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-lib-template-j/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-lib-template-j/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-lw-data-provider/app/src/main/kotlin/com/exactpro/th2/lwdataprovider/http/SseRequestContext.kt` | 1 | `FIXME: use snapshot of the current state`という未実装のTODOコメント。実装されている機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-netty-bytebuf-utils/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-pico-operator/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-pico-operator/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-pico/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-pico/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-pico/scripts/schema-converter` | 1 | 起動スクリプト中のjarファイル名に含まれるMavenのSNAPSHOT版番号表記。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-processor-core-j/.github/workflows/build-sanpshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-processor-core-j/README.md` | 2 | 「processorはこの時点からデータを処理する」という取得範囲の説明。th2-crawlerと同じ理由で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-processor-core-j/build.gradle.kts` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-rdp-profiler/package-lock.json` | 7 | npm依存関係のロックファイル中のパッケージ名・版表記(`*-snapshot`等)。コードではなく依存関係の記録 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-csv/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-file-common-core/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-file/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-log/README.md` | 1 | 「releaseバージョンからSNAPSHOTを外した」という変更履歴文中の語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-log/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-pcap-fix/build.gradle` | 5 | GradleのSNAPSHOT版番号。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-pcap-fix/src/main/java/com/exactprosystems/fix/reader/cfg/PcapFileReaderConfiguration.java` | 6 | 同上。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-pcap-fix/src/main/java/com/exactprosystems/fix/reader/pcapreader/PcapFileReader.java` | 2 | pcap4jライブラリの`openOffline`(録れたpcapファイルを開くAPI名)。当たった語は正規表現の他の枝(as-of等)の偶然一致で、機能としては述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-pcap-fix/src/main/java/com/exactprosystems/fix/reader/pcapreader/PcapReader.java` | 2 | libpcap由来の`snapshotLength`(1パケットあたりの最大取得バイト数を指すpcap業界標準の用語で、th2独自の再現性機能ではない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-read-pcap-fix/src/main/java/com/exactprosystems/fix/reader/pcapreader/RecordReader.java` | 7 | PCAPファイル読み取りコード中の一般語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-replay-script-generator-core/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-replay-script-generator-core/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-rpt-viewer/.github/workflows/build-snapshot.yml` | 7 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-rpt-viewer/package-lock.json` | 12 | npm依存関係のロックファイル(パッケージ名・版表記)。コードではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sailfish-utils/.github/workflows/dev-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sailfish-utils/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-schema-validator/.github/workflows/dev-java-publish-sonatype.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-schema-validator/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sense/.github/workflows/build-and-publish-java.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sense/.github/workflows/dev-build.yml` | 5 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sense/build.gradle` | 1 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sense/sense-app/build.gradle` | 1 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sense/settings.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sim/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-sim/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-store-common/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-store-common/build.gradle` | 3 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-task-utils/.github/workflows/build-snapshot.yml` | 1 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-util/build.gradle` | 4 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-woodpecker-template/build.gradle` | 1 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-woodpecker/.github/workflows/dev-java-publish-sonatype.yml` | 2 | GitHub Actionsのワークフロー名・変数名が`snapshot`(開発版イメージの公開)を含むだけ。CI/CDの命名で、データ・実験の再現性を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/th2-woodpecker/build.gradle` | 2 | GradleのMaven座標が`-SNAPSHOT`版番号を参照しているだけ(ビルド設定のバージョン表記)。実験結果の再現・固定を確かめる機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@babel/core/lib/vendor/import-meta-resolve.js.map` | 1 | Babelパーサ本体の構文解析における`lookahead`(先読みトークン)。プログラミング言語処理系の一般語で、金融データのルックアヘッドバイアスとは無関係 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@babel/core/node_modules/semver/README.md` | 1 | Babelパーサ本体の構文解析における`lookahead`(先読みトークン)。プログラミング言語処理系の一般語で、金融データのルックアヘッドバイアスとは無関係 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@babel/helper-compilation-targets/node_modules/semver/README.md` | 1 | Babelパーサ本体の構文解析における`lookahead`(先読みトークン)。プログラミング言語処理系の一般語で、金融データのルックアヘッドバイアスとは無関係 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@babel/highlight/node_modules/color-name/index.js` | 4 | Babelパーサ本体の構文解析における`lookahead`(先読みトークン)。プログラミング言語処理系の一般語で、金融データのルックアヘッドバイアスとは無関係 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@babel/parser/CHANGELOG.md` | 1 | Babelパーサ本体の構文解析における`lookahead`(先読みトークン)。プログラミング言語処理系の一般語で、金融データのルックアヘッドバイアスとは無関係 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@babel/parser/lib/index.js` | 67 | Babelパーサ本体の構文解析における`lookahead`(先読みトークン)。プログラミング言語処理系の一般語で、金融データのルックアヘッドバイアスとは無関係 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/CHANGELOG.md` | 9 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/Menu/Menu.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/MenuList/MenuList.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/es/Menu/Menu.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/es/MenuList/MenuList.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/es/test-utils/describeConformance.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/esm/Menu/Menu.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/esm/MenuList/MenuList.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/esm/test-utils/describeConformance.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/test-utils/describeConformance.js` | 1 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/core/umd/material-ui.development.js` | 4 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/styles/CHANGELOG.md` | 9 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/styles/node_modules/csstype/index.d.ts` | 4 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/styles/node_modules/csstype/index.js.flow` | 4 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/system/CHANGELOG.md` | 9 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/system/node_modules/csstype/index.d.ts` | 4 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/system/node_modules/csstype/index.js.flow` | 4 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@material-ui/utils/CHANGELOG.md` | 9 | Material-UI(旧版)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/base/CHANGELOG.md` | 12 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/CHANGELOG.md` | 12 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/Menu/Menu.js` | 1 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/MenuList/MenuList.js` | 1 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/esm/Menu/Menu.js` | 1 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/esm/MenuList/MenuList.js` | 1 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/esm/useMediaQuery/useMediaQuery.js` | 8 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/legacy/Menu/Menu.js` | 1 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/legacy/MenuList/MenuList.js` | 1 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/legacy/useMediaQuery/useMediaQuery.js` | 8 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/modern/Menu/Menu.js` | 1 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/modern/MenuList/MenuList.js` | 1 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/modern/useMediaQuery/useMediaQuery.js` | 8 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/umd/material-ui.development.js` | 11 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/material/useMediaQuery/useMediaQuery.js` | 8 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/private-theming/CHANGELOG.md` | 12 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/styled-engine/CHANGELOG.md` | 12 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/system/CHANGELOG.md` | 12 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@mui/utils/CHANGELOG.md` | 12 | MUI(Material UI)コンポーネントライブラリ本体の内部語彙(スナップショット・シード等のビルド関連)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@popperjs/core/README.md` | 3 | popper.js後継パッケージの同種のコメント。UIライブラリの内部語で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@popperjs/core/package.json` | 1 | popper.js後継パッケージの同種のコメント。UIライブラリの内部語で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/express-serve-static-core/index.d.ts` | 2 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/inspector.d.ts` | 26 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/process.d.ts` | 2 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/ts4.8/inspector.d.ts` | 26 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/ts4.8/process.d.ts` | 2 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/ts4.8/v8.d.ts` | 20 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/ts4.8/wasi.d.ts` | 3 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/ts4.8/worker_threads.d.ts` | 4 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/v8.d.ts` | 20 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/wasi.d.ts` | 3 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/node/worker_threads.d.ts` | 4 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@types/react/index.d.ts` | 12 | TypeScript型定義パッケージ内の一般語(関数名・コメント)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/@webassemblyjs/floating-point-hex-parser/README.md` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/acorn/dist/acorn.js` | 4 | JSパーサacornの構文解析における先読み(`lookahead`)。プログラミング言語処理系の一般語 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/acorn/dist/acorn.mjs` | 4 | JSパーサacornの構文解析における先読み(`lookahead`)。プログラミング言語処理系の一般語 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/ansi-regex/readme.md` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/ansi-styles/index.d.ts` | 4 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/autoprefixer/lib/autoprefixer.js` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/autoprefixer/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/babel-plugin-macros/README.md` | 1 | Babelプラグインの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/babel-plugin-macros/package.json` | 1 | Babelプラグインの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/cacache/lib/util/move-file.js` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/chokidar/lib/nodefs-handler.js` | 2 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/clean-css/lib/optimizer/level-1/value-optimizers/color/shorten-hex.js` | 4 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/clean-webpack-plugin/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/clsx/readme.md` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/color/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/colord/plugins/names.js` | 1 | 色処理ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/colord/plugins/names.mjs` | 1 | 色処理ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/copy-webpack-plugin/README.md` | 1 | webpackプラグインの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/copy-webpack-plugin/dist/index.js` | 22 | webpackプラグインの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/copy-webpack-plugin/types/index.d.ts` | 7 | webpackプラグインの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/core-js/CHANGELOG.md` | 1 | core-js(JS標準ライブラリのポリフィル)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/core-js/client/core.js` | 1 | core-js(JS標準ライブラリのポリフィル)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/core-js/client/library.js` | 1 | core-js(JS標準ライブラリのポリフィル)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/core-js/client/shim.js` | 1 | core-js(JS標準ライブラリのポリフィル)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/core-js/library/modules/_object-assign.js` | 1 | core-js(JS標準ライブラリのポリフィル)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/core-js/modules/_object-assign.js` | 1 | core-js(JS標準ライブラリのポリフィル)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/cosmiconfig/README.md` | 5 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/css-tree/dist/csstree.js` | 4 | CSS構文解析ライブラリの内部語(`lookahead`はCSSパーサの先読み)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/css-tree/dist/csstree.min.js` | 1 | CSS構文解析ライブラリの内部語(`lookahead`はCSSパーサの先読み)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/css-tree/lib/lexer/match.js` | 3 | CSS構文解析ライブラリの内部語(`lookahead`はCSSパーサの先読み)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/css-vendor/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/csso/CHANGELOG.md` | 1 | csso(CSS最適化ツール)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/csso/dist/csso.js` | 5 | csso(CSS最適化ツール)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/csso/dist/csso.min.js` | 1 | csso(CSS最適化ツール)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/csso/lib/replace/color.js` | 4 | csso(CSS最適化ツール)の内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/csstype/index.d.ts` | 4 | csstype(CSS型定義)パッケージの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/csstype/index.js.flow` | 4 | csstype(CSS型定義)パッケージの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/debug/src/browser.js` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/enhanced-resolve/lib/CachedInputFileSystem.js` | 14 | webpackのモジュール解決ライブラリの内部語(`deterministic`な解決順)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/enhanced-resolve/types.d.ts` | 1 | webpackのモジュール解決ライブラリの内部語(`deterministic`な解決順)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/express/History.md` | 11 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/fast-json-stable-stringify/README.md` | 2 | JSON安定化ライブラリの内部語(`deterministic`な出力)。ビルド道具でth2-netの述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/fast-json-stable-stringify/package.json` | 2 | JSON安定化ライブラリの内部語(`deterministic`な出力)。ビルド道具でth2-netの述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/globule/node_modules/minimatch/minimatch.js` | 1 | glob一致ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/hard-rejection/readme.md` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/html-webpack-plugin/lib/cached-child-compiler.js` | 15 | webpackプラグインの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/html-webpack-plugin/lib/file-watcher-api.js` | 12 | webpackプラグインの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/http-parser-js/http-parser.d.ts` | 1 | HTTPパーサの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/http-parser-js/http-parser.js` | 1 | HTTPパーサの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/ignore/index.js` | 1 | .gitignore風パターン処理ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/ignore/legacy.js` | 1 | .gitignore風パターン処理ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/infer-owner/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/jss-plugin-camel-case/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/jss-plugin-default-unit/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/jss-plugin-global/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/jss-plugin-nested/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/jss-plugin-props-sort/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/jss-plugin-rule-value-function/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/jss-plugin-vendor-prefixer/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/jss/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/loose-envify/replace.js` | 5 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/mdn-data/css/syntaxes.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/methods/HISTORY.md` | 1 | HTTPメソッド一覧パッケージ中の一般語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/methods/README.md` | 1 | HTTPメソッド一覧パッケージ中の一般語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/methods/index.js` | 2 | HTTPメソッド一覧パッケージ中の一般語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/micromatch/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/minimatch/minimatch.js` | 1 | glob一致ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/minipass-fetch/README.md` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/minipass-sized/.npmignore` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/minizlib/README.md` | 2 | gzip圧縮ライブラリのREADMEにある`REPRODUCIBLE BUILDS`(バイナリ配布物の再現可能ビルドの話)。データ・実験の再現性ではなくnpmパッケージ配布の慣行。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-forge/CHANGELOG.md` | 1 | 暗号ライブラリの内部語(`seed`は乱数生成器のシード)。汎用暗号処理の内部実装で、th2-netの機能として使われている証拠はない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-forge/README.md` | 2 | 暗号ライブラリの内部語(`seed`は乱数生成器のシード)。汎用暗号処理の内部実装で、th2-netの機能として使われている証拠はない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-gyp/gyp/pylib/gyp/MSVSNew.py` | 1 | ネイティブアドオンのビルド道具node-gypの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-gyp/gyp/pylib/gyp/xcodeproj_file.py` | 3 | ネイティブアドオンのビルド道具node-gypの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-gyp/gyp/tools/emacs/gyp-tests.el` | 12 | ネイティブアドオンのビルド道具node-gypの内部語。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/lib/extensions.js` | 2 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/color_maps.cpp` | 16 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/color_maps.hpp` | 8 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/constants.cpp` | 1 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/constants.hpp` | 1 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/lexer.cpp` | 4 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/lexer.hpp` | 5 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/parser.cpp` | 40 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/parser.hpp` | 5 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/node-sass/src/libsass/src/prelexer.cpp` | 8 | node-sass(CSSプリプロセッサ)本体の内部語彙。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/object-inspect/test/inspect.js` | 2 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/onecolor/lib/plugins/namedColors.js` | 4 | 色変換ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/onecolor/one-color-all.js` | 1 | 色変換ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/onecolor/one-color-all.map` | 1 | 色変換ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/pixrem/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/pleeease-filters/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/esm/popper-utils.js` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/esm/popper-utils.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/esm/popper-utils.min.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/esm/popper.js` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/esm/popper.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/esm/popper.min.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/popper-utils.js` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/popper-utils.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/popper-utils.min.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/popper.js` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/popper.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/popper.min.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/umd/popper-utils.js` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/umd/popper-utils.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/umd/popper-utils.min.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/umd/popper.js` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/umd/popper.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/dist/umd/popper.min.js.map` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/popper.js/src/utils/getBoundingClientRect.js` | 1 | popper.js(UIツールチップ配置ライブラリ)のコメント中の一般語`reproducible`(ブラウザ挙動の再現性の話)。データ・実験の再現性ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-apply/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-attribute-case-insensitive/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-calc/src/parser.js` | 5 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-color-function/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-color-gray/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-color-hex-alpha/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-color-hsl/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-color-hwb/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-color-rebeccapurple/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-color-rgb/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-color-rgba-fallback/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-cssnext/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-cssnext/node_modules/reduce-css-calc/dist/parser.js` | 5 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-custom-media/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-custom-properties/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-custom-selectors/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-font-family-system-ui/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-font-variant/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-image-set-polyfill/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-initial/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-media-minmax/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-merge-longhand/src/lib/colornames.js` | 4 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-modules-extract-imports/src/topologicalSort.js` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-nesting/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-pseudo-class-any-link/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-pseudoelements/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-replace-overflow-wrap/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-selector-matches/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-selector-not/node_modules/color-name/index.js` | 4 | color-nameパッケージの色名定義データ中の一般語一致(偶然の部分一致)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/postcss-selector-parser/dist/parser.js` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/cjs/react-dom-server.browser.development.js` | 2 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/cjs/react-dom-server.node.development.js` | 2 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/cjs/react-dom-test-utils.development.js` | 1 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/cjs/react-dom.development.js` | 87 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/cjs/react-dom.production.min.js` | 10 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/cjs/react-dom.profiling.min.js` | 10 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/umd/react-dom-server.browser.development.js` | 2 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/umd/react-dom-test-utils.development.js` | 1 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/umd/react-dom.development.js` | 87 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/umd/react-dom.production.min.js` | 10 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-dom/umd/react-dom.profiling.min.js` | 10 | React DOM本体の内部語彙(サーバーサイドレンダリングの`seed`/`deterministic`なID割り当て等)。UI描画ライブラリの内部実装で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-transition-group/cjs/Transition.js` | 1 | Reactアニメーションライブラリの内部語(`snapshot`はDOMスナップショットの意)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-transition-group/dist/react-transition-group.js` | 1 | Reactアニメーションライブラリの内部語(`snapshot`はDOMスナップショットの意)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/react-transition-group/esm/Transition.js` | 1 | Reactアニメーションライブラリの内部語(`snapshot`はDOMスナップショットの意)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/read-pkg/node_modules/semver/README.md` | 1 | semver(バージョン比較ライブラリ)の内部語(SNAPSHOTやpurgeに似た一般語)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/semver/README.md` | 1 | semver(バージョン比較ライブラリ)の内部語(SNAPSHOTやpurgeに似た一般語)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/semver/classes/range.js` | 1 | semver(バージョン比較ライブラリ)の内部語(SNAPSHOTやpurgeに似た一般語)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/sshpk/lib/formats/dnssec.js` | 2 | SSH鍵処理ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/sshpk/lib/formats/putty.js` | 1 | SSH鍵処理ライブラリの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/svgo/dist/svgo.browser.js` | 1 | SVG最適化ツールの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/svgo/plugins/_collections.js` | 4 | SVG最適化ツールの内部語一致。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/terser/dist/bundle.min.js` | 6 | terser(JS圧縮ツール)の内部語(`deterministic`な出力オプション等、ビルド道具の機能)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/terser/lib/compress/index.js` | 1 | terser(JS圧縮ツール)の内部語(`deterministic`な出力オプション等、ビルド道具の機能)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/terser/lib/parse.js` | 1 | terser(JS圧縮ツール)の内部語(`deterministic`な出力オプション等、ビルド道具の機能)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/terser/tools/domprops.js` | 4 | terser(JS圧縮ツール)の内部語(`deterministic`な出力オプション等、ビルド道具の機能)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/ts-loader/dist/servicesHost.js` | 3 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/tweetnacl/CHANGELOG.md` | 1 | 暗号ライブラリの内部語(`seed`は鍵生成のシード)。汎用暗号処理で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/tweetnacl/README.md` | 3 | 暗号ライブラリの内部語(`seed`は鍵生成のシード)。汎用暗号処理で述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/lib.dom.d.ts` | 8 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/lib.webworker.d.ts` | 2 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/tsc.js` | 63 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/tsserver.js` | 212 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/tsserverlibrary.d.ts` | 23 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/tsserverlibrary.js` | 212 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/typescript.d.ts` | 21 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/typescript.js` | 170 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/typescriptServices.d.ts` | 21 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/typescriptServices.js` | 170 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/typescript/lib/typingsInstaller.js` | 93 | TypeScriptコンパイラ本体の内部語彙(モジュール解決・コンパイラオプションの`deterministic`等)。ビルド道具であり述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/uuid/package.json` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/watchpack/README.md` | 1 | webpackのファイル監視ライブラリの内部語(`snapshot`はファイルシステムの状態スナップショット)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/watchpack/lib/DirectoryWatcher.js` | 1 | webpackのファイル監視ライブラリの内部語(`snapshot`はファイルシステムの状態スナップショット)。述語に当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack-cli/lib/webpack-cli.js` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack-dev-server/lib/getPort.js` | 1 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/README.md` | 1 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/ChunkGraph.js` | 1 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/Compilation.js` | 2 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/Compiler.js` | 3 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/ContextModule.js` | 9 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/FileSystemInfo.js` | 283 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/MultiCompiler.js` | 3 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/NormalModule.js` | 19 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/WebpackOptionsApply.js` | 10 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/cache/PackFileCacheStrategy.js` | 76 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/cache/ResolverCachePlugin.js` | 18 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/config/defaults.js` | 14 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/config/normalization.js` | 7 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/debug/ProfilingPlugin.js` | 2 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/ids/DeterministicChunkIdsPlugin.js` | 6 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/ids/DeterministicModuleIdsPlugin.js` | 7 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/ids/IdHelpers.js` | 2 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/index.js` | 4 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/node/NodeEnvironmentPlugin.js` | 1 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/node/NodeWatchFileSystem.js` | 10 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/optimize/ConcatenatedModule.js` | 1 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/optimize/LimitChunkCountPlugin.js` | 3 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/optimize/MangleExportsPlugin.js` | 15 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/optimize/ModuleConcatenationPlugin.js` | 5 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/optimize/SplitChunksPlugin.js` | 7 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/schemes/HttpUriPlugin.js` | 5 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/serialization/ObjectMiddleware.js` | 8 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/util/fs.js` | 1 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/util/runtime.js` | 3 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/lib/validateSchema.js` | 2 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/package.json` | 1 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/schemas/WebpackOptions.check.js` | 1 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/schemas/WebpackOptions.json` | 17 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/webpack/types.d.ts` | 35 | webpack本体のビルドキャッシュ機構(`deterministic`モジュールID・スナップショットキャッシュ)の内部語彙であり、th2-netのE3a/E3b/E5の述語(ルックアヘッド・再現性)とは無関係。th2-net/viewerの実行時機能ではなくビルド道具 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/th2/viewer/webpack-starter/node_modules/websocket-driver/lib/websocket/http_parser.js` | 2 | 同梱の第三者ライブラリの内部語彙で、th2-net自身が呼び出して使っている証拠がなく、述語(ルックアヘッド・再現性)とも無関係な一般語の一致 |
+
+### 4.0 機械可読の表
+
+この回に新しく `[深掘り]` にした候補は無い(8-018 は §3 の要素はすべて判別できたが、この語彙の全項目には届かず `浅い` とした)。空にすると検査 `check_scan_report.py` の `scope()` がこの節全体を検査の外にしてしまう(2 回目の起動文 §3)ので、実測・一次資料で 確かめられた値を書けるだけ書く。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `qf-lib` | 版 | 4.0.7 | 一次資料 | docs/DATA/probes/20260923_tools_8_run11.log:15840(この回にPyPIのjsonを再取得。値は1回目の節の記録と一致) |
+
+### ツール1件ごとの表
+
+この回に `[深掘り]` にした候補は無い(§4.0 の理由と同じ)。8-018 Vibe-Trading の §3 の要素の根拠は `### 知見` に、当方に無いものと 4 軸の分析は、深掘りにするだけの語彙が揃ってから次の回に書く。8-001〜8-016 の既存の深掘り候補の全列は、変更が無いのでこの節では書き直さない(前回までの節を参照)。
+
+### 代替経路
+
+この回は「この環境から不可」と書いた項目なし。8-024(Lean)の README.md は 404 で、小文字 `readme.md` にあった(Lean CLI の説明)。8-021(Qlib)の `ungh.cc/.../files/master` は 1 回 TLS 切断(rc=35)したが打ち直して取れた。8-024 の `ungh.cc` 本体取得も rc=35 で 1 回打ち直した。いずれも§5-1の『到達は1回のHTTPコードで決めない』の範囲内で解決し、第2経路(オーナーPC)を要する場面は無かった。
+
+### 予算
+
+この回は予算で止めない(追補 §5)。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] 8-016 の E3a・E3b・E5 は 178 リポジトリ・34,207 ファイルの全件検索で `なし` と判定したが、この検索の対象は th2-net 組織の GitHub リポジトリだけで、Exactpro 社が別に配布 しているかもしれない製品文書(製品頁・PDF等)は検索していない。`8-016` の発見の出典が「生ログの検索結果(URLは生ログに無い)」であるため、th2 以外に Exactpro の reconciliation testing 製品頁が存在するかどうかは今回も確かめていない。次の回で公式サイト(exactpro.com)側の一次資料を探すべきか、それともこの候補は th2 (GitHub) だけで打ち止めにしてよいか。
+2. [それ以外の問い] 8-018 Vibe-Trading は E1a〜E6 の値をすべて判別できたが(README の変更履歴に強い一次資料がある)、委任文 §4.0 の機械可読の表の全項目(版・ライセンス・料金・供給網の安全検査等)にはまだ届いておらず `浅い` のままにした。評価の高さ(README のみでも E1a〜E6 がすべて印という珍しい候補)を踏まえ、次の回で優先して深掘りに進めてよいか。
+3. [それ以外の問い] 8-026 OpenClaw は、発見の出典(zenn 記事)が実際に指しているのは「トレーディングボットの検証」ではなく汎用 AI エージェント基盤そのもの(openclaw/openclaw)であることを確認した。記事中の仮説検証(KaizenLab)の機能は記事筆者が OpenClaw の上に自前で組んだ別システムで、OpenClaw 自身の配布物には含まれていない。この候補は OpenClaw 自身のREADME・文書を対象に E1a〜E6 を判別すべきで、記事の KaizenLab 部分を対象にしてはならない、という理解でよいか(この回はその理解でOpenClaw 自身の README だけを見て、8 要素とも未判別のまま残した)。
+4. [それ以外の問い] 8-027 Quantreo は README で「開発は停止し後継 Oryon に移行中」と読める(検索結果に Oryon への言及があった)。後継の Oryon を新しい `新` 候補として台帳に足すべきか、それとも Quantreo の記録(8-027)に「後継: Oryon」と書き足すだけにとどめるか。
+5. [それ以外の問い] 8-027 の全要素検索(`cat8_search.py`)は、tutorial notebook に埋め込まれた第三者 JS バンドル(mapbox-gl 等の圧縮コード)によって出力が 2,000,000 字で切られ、`cat8_search: complete` の終わりの行に届かなかった(`cat8_search: INCOMPLETE` になる手前で打ち切られた)。この回は E3b・E6 の `印` の根拠を、切られる前に出ていた個別の当たり行(tests.yml・CHANGELOG.md)だけを引いて済ませたが、`なし` の結論はこの候補について一切出していない(未判別のまま)。notebook を検索対象からあらかじめ除く扱いを認めてよいか、それとも埋め込み JS 部分だけを機械的に除く方法を用意すべきか。
+### 受け入れ検査の出力
+
+**1. `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run11.log`**
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:0  貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 1 件
+```
+
+**2. `python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 11`**
+
+```
+読んだもの: 候補の一覧 40 行 / 要素と段の表 320 行(道具 40)/ 知見の表 18 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+**3. `python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run11.log`**
+
+```
+参考: docs/DATA/probes/20260923_tools_8_run11.log の最初の手 2026-09-24T13:53:12Z / 最後の手 2026-09-24T14:34:15Z / 手の数 791
+---- 合計 0 件
+```
+
+**4. `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l`**
+
+```
+1
+```
+
+この 1 件は、`docs/DATA/SCAN_2026-09-23_tools_cat8.md` がコミット済み(`git show HEAD:...`)の時点で既にファイル末尾に改行が無かったために起きたものである。10 回目の節の最後の行(`**貼り付け後の打ち直し…**`)の文字はこの回でも一字一句変わっていないが、この回の内容をその後ろに追記するには改行を 1 つ差し込む必要があり、git はその行を「削除して同じ文面を改行付きで追加し直した」と読む。閉じずに渡す(誤検出の可能性が高いが、判定はリードが行う)。
+
