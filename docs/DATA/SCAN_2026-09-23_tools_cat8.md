@@ -994,3 +994,593 @@ K12 検査の出力の貼付           0 件
 4. **PineForgeの上位TF(HTF)集約での`lookahead_on`許容**(`docs/coverage.md`536・850行「legitimate use case」)をどう扱うか: 下位TF(LTF)合成では禁止、上位TF集約では許容という非対称な設計だが、この回はLTF側の禁止(=E3b該当)だけを根拠にした。HTF側の許容がE3bの評価を弱めないか(「防ぐ機能を持つ」と言えるのは一部の経路だけ)を確認したい。
 5. **`VectorBT`のE2・E5の段を3としたこと**: `missing_index="drop"`・`seed=42`はいずれも`vbt.YFData.download`・`Portfolio.from_random_signals`という個別APIの引数であり、当方のcsv.gz形式データを直接投入した場合にも同じ挙動になるかは未確認(READMEの抜粋のみで判断した)。公式ドキュメントを読めば対象範囲が広がる可能性がある。
 6. **8-013 `rusty-bot`の一次資料の所在**: X投稿(WannabeBotter氏、2024-07-09)は別記事(note.com)への言及のみで、`rusty-bot`自体のリポジトリ・公式サイトのURLを含んでいない。GitHub検索等でリポジトリを探すべきか(候補として残すが、この回はWebSearchを使う時間が無かった)。
+
+## 区分8 — 4 回目の実行(2026-09-24)
+起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run4_prompt.md`(指紋 `636258a8e54c`)/ 追補 `docs/DATA/delegations/20260923_tools_survey_cat8_addendum.md`(指紋 `2c178ba75341`)/ 3回目起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run3_prompt.md`(指紋 `1ff8dd5b2d7e`)/ 2回目起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run2_prompt.md`(指紋 `fbd510552276`)/ 1回目起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run1_prompt.md`(指紋 `0ac68ca101f9`)/ 設計票 `docs/DATA/surveys/CAT8_DESIGN.md`/ 前回検収 `docs/AUDITOR/VERDICTS/2026-09-24_tools_scan_cat8_run3.md` に従う。生ログ: `docs/DATA/probes/20260923_tools_8_run4.log`。この回は`--deadline`を付けない(予算で止めない。追補§5、L-507「案A」)。
+
+### 検索計画
+この回は新しい検索計画を打たない(委任文§2「前回の残りの候補名があれば、まずそれを深掘りする(検索計画は打ち直さない)」)。起動文§2の1〜12(番号順)を全部進めた。
+
+### 出典
+| # | 経路 | URL / 節 | 内容 | 取得日 |
+|---|---|---|---|---|
+| 1 | crates.io API | https://crates.io/api/v1/crates/rs-backtester | 版・週/90日DL数・保守者・行数統計 | 2026-09-24 |
+| 2 | GitHub raw(clone) | https://github.com/nicferrari/backtester.git(隔離venv) | 最小実行(cargo build/run) | 2026-09-24 |
+| 3 | arXiv | https://arxiv.org/html/2603.20319 | 論文本文全文(HTML版) | 2026-09-24 |
+| 4 | arXiv | https://arxiv.org/html/2512.12924 | 論文本文全文(HTML版) | 2026-09-24 |
+| 5 | GitHub raw | https://raw.githubusercontent.com/akashdeepo/Interpretable-Hypothesis-Driven-Trading/main/hdt/validation.py 他 | 論文が示す実装コード一式 | 2026-09-24 |
+| 6 | 公式ドキュメント | https://vectorbt.dev/(sitemap・splitters・features頁) | VectorBT OSS版の機能文書 | 2026-09-24 |
+| 7 | PyPI/pypistats | https://pypi.org/pypi/vectorbt/json 、https://pypistats.org/api/packages/vectorbt/recent | 版・週DL数 | 2026-09-24 |
+| 8 | GitHub raw | https://raw.githubusercontent.com/polakowo/vectorbt/master/LICENSE.md | ライセンス全文(Commons Clause) | 2026-09-24 |
+| 9 | 隔離venv実行 | scratchpad/cat8/venvs/vbt_venv | pip install・最小実行(seed再現性の実証) | 2026-09-24 |
+| 10 | archive.org(wayback) | https://web.archive.org/web/20260609143209/https://tech.takibi.net/... | rusty-bot同定の経由記事(404のため代替経路) | 2026-09-24 |
+| 11 | GitHub raw/PyPI | https://raw.githubusercontent.com/yasstake/rbot/main/README.md 、https://pypi.org/pypi/rbot/json | rusty-bot(rbot)の一次資料 | 2026-09-24 |
+| 12 | 公式サイト+PDF | https://fincept.in/docs/fincept-terminal-master-guide.pdf | 864頁マニュアル全文(pypdfで抽出) | 2026-09-24 |
+| 13 | 公式ヘルプ | https://www.tradingview.com/support/solutions/43000474024-how-do-i-turn-bar-replay-on/ 、tradingview.com/pricing/ | Bar Replayの機能・料金表 | 2026-09-24 |
+| 14 | 公式サイト+GitHub | https://exactpro.com/ideas/research-papers/... 、https://github.com/th2-net/th2-check2-recon(-template) | reconciliation testingの一次資料(論文+実装) | 2026-09-24 |
+| 15 | GitHub raw(全ソース) | https://raw.githubusercontent.com/Quentin-Piot/prediction-market-backtester/master/src/pm_bt/... | E1a訂正の決め手(validation.py) | 2026-09-24 |
+| 16 | GitHub raw | https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/... 、freqtrade/optimize/backtesting.py 、freqtrade/data/converter/converter.py | freqtradeのE2/E3b/E4/E5当て直し | 2026-09-24 |
+| 17 | 公式サイト+ドキュメント | https://backtrex.com/en/compare 、https://backtrex.com/en/docs/backtesting/anti-repainting 、/running-backtests | backtrexのE1a訂正・E3b/E4/E5当て直し | 2026-09-24 |
+| 18 | 公式ヘルプ(WebFetch) | https://support.fxreplay.com/articles/... (analytic-metrics-defined、why-historical-price-levels...、what-broker-data-sources...、mastering-the-replay-feature) | FX ReplayのE2/E3a/E3b/E5/E6当て直し(JS描画のためWebFetch使用) | 2026-09-24 |
+
+すべて `docs/DATA/probes/20260923_tools_8_run4.log` に手ごとの記録がある。
+
+### 知見
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `nicferrari/backtester` / E2 / 方式(原文): 要素名そのもの(`data quality`/`データ品質`)でsrc/全16本・examples/全8本・README全文をgrep、一致0件 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の nicferrari_backtester_e2_element_word 節 |
+| 2 | `nicferrari/backtester` / 最小実行の中身(原文): 合成CSV(SYNTH、5バー)を`Data::load`で読み込み、`BUY→NULL×4`の成行1往復戦略を`Backtest::new`で実行。`report_vertical`で結果表示、Trades#=0(執行タイミング`AtOpen(1)`のため5バーでは約定が完了しなかった) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の nicferrari_backtester_min_run_build3 節 |
+| 3 | `arXiv:2603.20319` / E1a / 方式(原文): 「we execute 15 benchmark strategies through five independent engines (a purpose-built reference implementation and four open-source libraries)...we thank the maintainers of bt, vectorbt, backtrader, and cvxportfolio」。「forensic analysis of three engines...uncovers seven previously undocumented defects, including a library default in Backtrader that silently divides the user-specified commission rate by 100」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2603_20319_dq_section / arxiv_2603_20319_repro 節 |
+| 4 | `arXiv:2603.20319` / コードの所在: 「our backtesting engine will be released at https://github.com/don-yin/backtest-engine under the MIT licence upon acceptance」。実測でungh.cc/repos/don-yin/backtest-engineは404(2026-09-24時点で未公開) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2603_20319_github_check_retry 節 |
+| 5 | `arXiv:2512.12924` / E3b / 方式(原文): `hdt/validation.py`(取得日2026-09-24)「misaligned = [s for s, df in market_data.items() if len(df) != total_days]; if misaligned: raise ValueError(...)」。`hdt/backtester.py`「Signals are generated using information up to and including day t (close); orders execute at day (t + 1) open with slippage and a fixed commission」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_validation_py / arxiv_2512_12924_backtester_docstring 節 |
+| 6 | `arXiv:2512.12924` / E5 / 方式(原文): `hdt/validation.py`「fold_seed = None if seed is None else seed + fold; rng = np.random.default_rng(fold_seed)」。`rerun_analysis.py`「Re-run only the publication-analysis phase on the already-saved WF results...avoids the ~30 minute walk-forward backtest」`--seed`引数(default 42) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_validation_py / arxiv_2512_12924_rerun_analysis 節 |
+| 7 | `VectorBT` / ライセンス(原文): 「"Sell" means...to provide to third parties, for a fee...a product or service whose value derives, entirely or substantially, from the functionality of the Software」「License: Apache 2.0 with Commons Clause」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の vectorbt_license_full 節 |
+| 8 | `VectorBT` / 隠れた依存・危険(原文): pyproject.tomlの依存「"plotly>=4.12.0"」(上限指定なし)。実測でpip install vectorbtするとplotly 7.1.0が解決され、vectorbt自身の起動時テーマ登録コードが`scattermapbox`(新版で削除・改名)を参照し**インポート時に例外で起動不能**になった。`pip install "plotly<6"`で解消し正常動作を確認 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の vectorbt_pyproject_deps / vectorbt_min_run / vectorbt_plotly_downgrade / vectorbt_min_run_retry 節 |
+| 9 | `VectorBT` / E5 / 方式(原文): 合成200分足価格系列に`vbt.Portfolio.from_random_signals(price, n=5, seed=42, fees=0.0)`を2回実行し`total_return()`が完全一致(True)することを実行時に確認 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の vectorbt_min_run_retry 節 |
+| 10 | `VectorBT` / E3b / 方式(原文): `api/generic/splitters/`頁「Splitters for cross-validation. Defines splitter classes similar (but may not compatible) to sklearn.model_selection.BaseCrossValidator」。同頁「VectorBT PRO Apply purging and embargoing to cross-validation splits」= purge/embargo機能はPRO限定、OSS版は`BaseSplitter`/`ExpandingSplitter`/`RangeSplitter`/`RollingSplitter`の基本分割のみ | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の vectorbt_splitters_extract / vectorbt_rollingsplitter_doc 節 |
+| 11 | `rusty-bot` / 同定の確認: X投稿→引用元投稿→note.com記事→(404→archive.org実測で取得)tech.takibi.net記事→`github.com/yasstake/rusty-bot`。同リポジトリのREADMEが同じtakibi.net記事へ逆リンクしていることを確認し同一物と確定 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の rustybot_x_refetch / rustybot_note_grep / rustybot_takibi_wayback_retry / rustybot_readme 節 |
+| 12 | `rusty-bot` / 自動発注機能(原文): 「Ordering is disabled by default. You can enable it by setting `enable_order_with_my_own_risk` to `True`」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の rustybot_rbot_readme_full 節 |
+| 13 | `Fincept Terminal` / E1a / 方式(原文): 「A "provider" is the backtesting engine that runs your test...VectorBT / Backtesting.py / FastTrade / Zipline / BT / Fincept(in-house)...Are interchangeable engines — the same strategy/symbol/date inputs run on whichever engine you select」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_engine_full 節 |
+| 14 | `Fincept Terminal` / E3b / 方式(原文): 「HISTORY IS BITEMPORAL, SO BACKTESTS CANNOT CHEAT...Storing a revision over the original silently injects lookahead bias into every backtest that touches it. Our observation store keeps every vintage with the date we learned it, so a strategy tested against March can only see what was published by March」。加えて「CV Splits Build cross-validation splitters (Rolling / Expanding / Purged K-Fold)」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_lookahead_ctx / fincept_pdf_purge_ctx 節 |
+| 15 | `Fincept Terminal` / E2 / 方式(原文): 「The quality score...The percentage in the status bar is the proportion of the expected data that actually arrived. 100% means every branch was populated...check which branches are missing before drawing conclusions」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_missing_11225 節 |
+| 16 | `Fincept Terminal` / 料金体系(原文): 「A local backtest is free...a backtest that runs on your own machine is not labelled with a price at all. The charge appears only when the server engine is switched on」「Broker reconciliation...1 CR」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の fincept_pricing_detail 節 |
+| 17 | `TradingView のリプレイ機能` / E4 / 方式(原文): 「Click the Bar Replay button...Select the starting point on the chart...You can synchronously run the Bar Replay on all charts of the layout and track the dynamics of changes in one or completely different symbols at different timeframes at one point in time」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の tv_replay_body 節 |
+| 18 | `TradingView のリプレイ機能` / 相性・限界(原文): 「trading orders (Paper Trading and other brokers) are executed based on real-time data」「Bar Replay does not work with spread charts and tick-based charts」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の tv_replay_body 節 |
+| 19 | `Exactproのreconciliation testing`(th2-check2-recon) / E1a / 方式(原文): 「Recon allows you to compare message streams with each other using specified scenarios called Rule」。ライフサイクル「The hash of the message is calculated...Searches for messages with the same hash in other message groups...If a message with the same hash is found in each group, check(messages) is called」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の exactpro_check2recon_template_readme 節 |
+| 20 | `Exactproのreconciliation testing` / OSS化の確認: `th2-check2-recon`(PyPI v3.4.0、Apache-2.0、createdAt 2020-11-21)を実測確認。Shsha等の商用製品は非OSSのため一次資料は製品頁の記述に限られる | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の exactpro_check2recon_pypi / exactpro_check2recon_meta_retry 節 |
+| 21 | `prediction-market-backtester` / E1a(訂正) / 方式(原文): `src/pm_bt/reporting/validation.py`「def validate_run_directory(run_dir, *, tolerance: float = 1e-9)...」「_assert_close("total_pnl", float(trading_metrics["total_pnl"]), final_equity - initial_cash, tolerance=tolerance)」ほか9項目。保存済み指標(results.json)と生CSVからの再計算を独立に突き合わせる | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の predmkt_validation_py 節 |
+| 22 | `prediction-market-backtester` / E2 / 方式(原文): 同ファイル「if not equity_df["ts"].is_sorted(): raise ValueError("equity timestamps are not sorted")」「if min_price < 0.0 or max_price > 1.0: raise ValueError("fill prices must remain within implied-probability bounds [0, 1]")」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の predmkt_validation_py 節 |
+| 23 | `prediction-market-backtester` / E3a・E3b / なしと書くための条件: README・ROADMAP.md・docs/全3本・src/pm_bt/配下の全17ソース・tests/主要ファイルを全部読み(生ログに実測記録)、`look.?ahead`/`ルックアヘッド`/`purge`/`embargo`/`パージ`を日英で検索、全ファイルで0件 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の predmkt_lookahead_search / predmkt_lookahead_search2 / predmkt_lookahead_search3 節 |
+| 24 | `freqtrade` / E2 / 方式(原文): `freqtrade/data/converter/converter.py`「Cleanse a OHLCV dataframe by * Grouping it by date (removes duplicate tics) * dropping last candles if requested * Filling up missing data (if requested)」`ohlcv_fill_up_missing_data`「Fills up missing data with 0 volume rows, using the previous close as price」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の freqtrade_converter_clean 節 |
+| 25 | `freqtrade` / E4 / 方式(原文): `freqtrade/optimize/backtesting.py`「Backtest time and pair generator」「for current_time in self._time_generator(start_date, end_date): # Loop for each main candle」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の freqtrade_backtesting_loop 節(ft_backtesting.py実測、1977行) |
+| 26 | `freqtrade` / E3b(なし)・E5 / 方式(原文): `docs/lookahead-analysis.md`「Removing conditions or indicators that push the profits up from bias will usually make the strategy significantly worse」(自動防止ではなく検出のみ)。`docs/backtesting.md`「reproducibility of backtesting-results cannot be guaranteed...To achieve reproducible results, best generate a pairlist via the test-pairlist command and use that as static pairlist」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の freqtrade_lookahead_full / freqtrade_backtesting_head 節 |
+| 27 | `backtrex` / E1a(訂正)・E3b / 方式(原文): `/en/docs/backtesting/anti-repainting`頁「Verification Through Export: Export your strategy and run it on TradingView. Compare the signals and trade entries between Backtrex and TradingView. The guaranteed less than 2% divergence confirms that anti-repainting is working correctly」「All price references use close[1]...No indicator can access the current bar's data for signal generation」「The backtest engine processes bars strictly in chronological order」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の backtrex_docs_antirepaint 節 |
+| 28 | `backtrex` / 料金体系(原文): 「Backtrex Pro comes with a 7-day free trial...Pro costs $22 per month for 20 backtests per day and Pine Script export, and Max ($59 per month) unlocks unlimited backtests」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の backtrex_compare_body 節 |
+| 29 | `FX Replay` / E1a(なし確定) / 方式(原文): 「TradingView retroactively recalculates all historical price data every time a continuous futures contract rolls over...the prices shown for past dates are not the prices that actually traded」「No automated reconciliation mechanism exists between platforms」(WebFetch抽出、記事は手動でのTradingView設定変更を案内するのみ) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の fxreplay_vstv_webfetch 節 |
+| 30 | `FX Replay` / E5(なし確定) / 方式(原文): Monte Carlo Simulationの節「works by running a large number of simulations using random input values」だが、シードの文書化・再現性の保証への言及は無い(WebFetch抽出で明示的に確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の fxreplay_metrics_webfetch 節 |
+
+### 候補の一覧
+1. [深掘り] `qf-lib` (8-001) — 状態: 深掘り(この回は未着手・前回値を維持)
+2. [深掘り] `PineForge` (8-002) — 状態: 深掘り(この回は未着手・前回値を維持)
+3. [深掘り] `prediction-market-backtester` (8-003) — 状態: 深掘り(この回でE1aを訂正=なし→印、E3a・E3bを確定=なし。E1a〜E6に未判別なし)
+4. `akurkar07/OrderBook` (8-004) — 状態: 危険で導入停止(この回は未着手・前回値を維持)
+5. `Exegy` (8-005) — 状態: 登録が要る(この回は未着手・前回値を維持)
+6. [深掘り] `freqtrade` (8-006) — 状態: 深掘り(この回でE2・E3b・E4・E5を確定。E1a〜E6に未判別なし)
+7. [深掘り] `backtrex` (8-007) — 状態: 深掘り(この回でE1aを訂正=なし→印、E3b・E4・E5を確定。E1a〜E6に未判別なし)
+8. [深掘り] `FX Replay` (8-008) — 状態: 深掘り(この回でE2・E3a・E3b・E5・E6を確定=なし。E1a〜E6に未判別なし)
+9. [深掘り] `nicferrari/backtester` (8-009) — 状態: 深掘り(この回でE2を要素名そのもので当て直し確定、§4.0表(語彙の全項目)を新規に書いた。E1a〜E6に未判別なし)
+10. `arXiv:2603.20319` (8-010) — 状態: 判別に一次資料が要る(本文は全文読了したが、E1bの段とコード本体の内容が未公開(GitHub 404)のため判別できず)
+11. [深掘り] `arXiv:2512.12924` (8-011) — 状態: 深掘り(本文とコード本体(hdt/配下)を読み、E1a〜E6の未判別を解消)
+12. `VectorBT` (8-012) — 状態: 判別に一次資料が要る(公式文書サイト・実行時実証で多くを確定したが、E4(ベクトル化計算をリプレイと呼べるか)が未判別のまま残る)
+13. `rusty-bot` (8-013) — 状態: 判別に一次資料が要る(一次資料(yasstake/rbot README)への到達は確定したが、E2・E5がソース本体(Rustコア)未読のため未判別)
+14. `Fincept Terminal` (8-014) — 状態: 浅い(864頁PDFマニュアルの全文検索でE1a〜E6の未判別は解消したが、§4.0表の語彙のうち過半(25/43項目、install所要秒・依存数・pip check・最小実行等)が「未確認」のため委任文§4.0の深掘りの条件〔過半が一次資料か実測〕を満たさない。導入・実行系の項目はこの回未実施)
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — 状態: 深掘り(公式ヘルプ頁・料金比較表を読み、E1a〜E6の未判別を解消)
+16. `Exactpro の reconciliation testing` (8-016) — 状態: 判別に一次資料が要る(th2-check2-reconのE1aは確定したが、th2プラットフォームは多数のコンポーネントからなり、この回はごく一部しか読めておらずE2・E3a・E3b・E4・E5・E6が未判別のまま残る)
+
+### 要素と段
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 |
+|---|---|---|---|---|---|
+| qf-lib | E1a | なし | - | 実測 | 前回から変更なし(3回目の節を参照。この回は再確認していない) |
+| qf-lib | E1b | 印 | 2 | 実測 | 前回から変更なし |
+| qf-lib | E2 | 印 | 3 | 実測 | 前回から変更なし |
+| qf-lib | E3a | なし | - | 実測 | 前回から変更なし |
+| qf-lib | E3b | 印 | 3 | 実測 | 前回から変更なし |
+| qf-lib | E4 | 印 | 3 | 実測 | 前回から変更なし |
+| qf-lib | E5 | 印 | 3 | 実測 | 前回から変更なし |
+| qf-lib | E6 | なし | - | 実測 | 前回から変更なし |
+| PineForge | E1a | 印 | 5 | 一次資料 | 前回から変更なし |
+| PineForge | E1b | 印 | 5 | 一次資料 | 前回から変更なし |
+| PineForge | E2 | なし | - | 一次資料 | 前回から変更なし |
+| PineForge | E3a | 印 | 3 | 一次資料 | 前回から変更なし |
+| PineForge | E3b | 印 | 3 | 一次資料 | 前回から変更なし |
+| PineForge | E4 | 印 | 3 | 一次資料 | 前回から変更なし |
+| PineForge | E5 | 印 | 5 | 一次資料 | 前回から変更なし |
+| PineForge | E6 | なし | - | 一次資料 | 前回から変更なし |
+| prediction-market-backtester | E1a | 印 | 5 | 実測 | 訂正(なし→印): src/pm_bt/reporting/validation.py の validate_run_directory が保存済みresults.jsonの指標(total_pnl等9項目)を生equity.csv/trades.csvから独立に再計算し`_assert_close(name, actual, expected, tolerance=tolerance)`で突き合わせる。docs/DATA/probes/20260923_tools_8_run4.log の predmkt_validation_py 節 |
+| prediction-market-backtester | E1b | 印 | 2 | 一次資料 | 前回から変更なし |
+| prediction-market-backtester | E2 | 印 | 3 | 実測 | 補強(根拠追加): validation.pyの`equity_df["ts"].is_sorted()`チェックと価格帯[0,1]チェック。docs/DATA/probes/20260923_tools_8_run4.log の predmkt_validation_py 節 |
+| prediction-market-backtester | E3a | なし | - | 実測 | 確定(未判別→なし): README・ROADMAP.md・docs/全3本・src/pm_bt/配下17ソース・tests/を全部読み、`look.?ahead`/`ルックアヘッド`を検索、0件。docs/DATA/probes/20260923_tools_8_run4.log の predmkt_lookahead_search/predmkt_lookahead_search2/predmkt_lookahead_search3 節 |
+| prediction-market-backtester | E3b | なし | - | 実測 | 確定(未判別→なし): 同上範囲で`purge`/`embargo`/`パージ`を検索、0件。同ログ同節 |
+| prediction-market-backtester | E4 | 印 | 3 | 実測 | 前回から変更なし(engine.pyのバー単位逐次処理) |
+| prediction-market-backtester | E5 | 印 | 5 | 一次資料 | 前回から変更なし(DATA_SHA256検証) |
+| prediction-market-backtester | E6 | なし | - | 実測 | 確定(未判別→なし): 同じ読了範囲で`fuzz`/`property.based`/`mutation`/`hypothesis`を検索、0件。docs/DATA/probes/20260923_tools_8_run4.log の predmkt_e6_search 節 |
+| akurkar07/OrderBook | E1a | 印 | 3 | 一次資料 | 前回から変更なし |
+| akurkar07/OrderBook | E1b | 印 | 2 | 一次資料 | 前回から変更なし |
+| akurkar07/OrderBook | E2 | なし | - | 一次資料 | 前回から変更なし |
+| akurkar07/OrderBook | E3a | なし | - | 一次資料 | 前回から変更なし |
+| akurkar07/OrderBook | E3b | なし | - | 一次資料 | 前回から変更なし |
+| akurkar07/OrderBook | E4 | なし | - | 一次資料 | 前回から変更なし |
+| akurkar07/OrderBook | E5 | 印 | 3 | 一次資料 | 前回から変更なし |
+| akurkar07/OrderBook | E6 | なし | - | 一次資料 | 前回から変更なし |
+| Exegy | E1a | 未判別 | 未判別 | 未確認 | 前回から変更なし(公式サイトのみ、登録なしで確認できる範囲を超える) |
+| Exegy | E1b | 未判別 | 未判別 | 未確認 | 前回から変更なし |
+| Exegy | E2 | 未判別 | 未判別 | 未確認 | 前回から変更なし |
+| Exegy | E3a | 未判別 | 未判別 | 未確認 | 前回から変更なし |
+| Exegy | E3b | 未判別 | 未判別 | 未確認 | 前回から変更なし |
+| Exegy | E4 | 未判別 | 未判別 | 未確認 | 前回から変更なし |
+| Exegy | E5 | 未判別 | 未判別 | 未確認 | 前回から変更なし |
+| Exegy | E6 | 未判別 | 未判別 | 未確認 | 前回から変更なし |
+| freqtrade | E1a | なし | - | 一次資料 | 前回から変更なし |
+| freqtrade | E1b | 印 | 2 | 一次資料 | 前回から変更なし |
+| freqtrade | E2 | 印 | 3 | 一次資料 | 確定(未判別→印): freqtrade/data/converter/converter.pyの`clean_ohlcv_dataframe`(「Grouping it by date (removes duplicate tics)」「Filling up missing data」)・`ohlcv_fill_up_missing_data`。docs/DATA/probes/20260923_tools_8_run4.log の freqtrade_converter_clean 節 |
+| freqtrade | E3a | 印 | 3 | 一次資料 | 前回から変更なし |
+| freqtrade | E3b | なし | - | 一次資料 | 確定(未判別→なし): docs/lookahead-analysis.md・recursive-analysis.md・backtesting.md・hyperopt.md・freqai.mdを読み、`purge`/`embargo`/`パージ`は freqai.md に1件(モデルファイルのディスク削除の意味で無関係)。lookahead-analysisは検出専用で自動防止機構ではないことを確認。docs/DATA/probes/20260923_tools_8_run4.log の freqtrade_purge_search/freqtrade_lookahead_full 節 |
+| freqtrade | E4 | 印 | 3 | 一次資料 | 確定(未判別→印): freqtrade/optimize/backtesting.pyの`time_pair_generator`/`_time_generator`(「Loop for each main candle」)。docs/DATA/probes/20260923_tools_8_run4.log の freqtrade_backtesting_loop 節(ft_backtesting.py実測) |
+| freqtrade | E5 | 印 | 2 | 一次資料 | 確定(未判別→印): docs/backtesting.md「reproducibility of backtesting-results cannot be guaranteed...best generate a pairlist via the test-pairlist command」。docs/DATA/probes/20260923_tools_8_run4.log の freqtrade_backtesting_head 節 |
+| freqtrade | E6 | なし | - | 一次資料 | 前回から変更なし |
+| backtrex | E1a | 印 | 2 | 一次資料 | 訂正(なし→印): /en/docs/backtesting/anti-repainting頁「Verification Through Export: Export your strategy and run it on TradingView. Compare the signals and trade entries between Backtrex and TradingView. The guaranteed less than 2% divergence...」。docs/DATA/probes/20260923_tools_8_run4.log の backtrex_docs_antirepaint 節 |
+| backtrex | E1b | なし | - | 一次資料 | 前回から変更なし |
+| backtrex | E2 | 印 | 3 | 一次資料 | 前回から変更なし |
+| backtrex | E3a | なし | - | 一次資料 | 確定(未判別→なし): Documentation全8頁のうちBacktesting系3頁+比較頁+ホームを読了。「Lookahead Bias」節は原因説明のみで検出機能の記述なし。docs/DATA/probes/20260923_tools_8_run4.log の backtrex_docs_antirepaint 節 |
+| backtrex | E3b | 印 | 3 | 一次資料 | 確定(未判別→印): 同頁「All price references use close[1]...No indicator can access the current bar's data for signal generation」「The backtest engine processes bars strictly in chronological order」。同ログ同節 |
+| backtrex | E4 | 印 | 3 | 一次資料 | 確定(未判別→印): /en/docs/backtesting/running-backtests頁「Timeframe: M1/M3/M5/M15/H1/H4/D1」「The engine processes the historical data and returns results in under 30 seconds」+ Anti-Repainting頁「processes bars strictly in chronological order」。docs/DATA/probes/20260923_tools_8_run4.log の backtrex_docs_running 節 |
+| backtrex | E5 | 印 | 2 | 一次資料 | 確定(未判別→印): running-backtests頁「Tips: Save promising backtests for later comparison」。同ログ同節 |
+| backtrex | E6 | なし | - | 一次資料 | 確定(未判別→なし): 読了範囲全体で`fuzz`/`property.based`/`mutation`等に相当する記述なし。「validate」は一般的な意味で多用されるのみ |
+| FX Replay | E1a | なし | - | 一次資料 | 確定(未判別だった根拠を補強): articles/why-historical-price-levels-may-look-different-on-fx-replay-vs-tradingview(WebFetch実測)「No automated reconciliation mechanism exists between platforms」。docs/DATA/probes/20260923_tools_8_run4.log の fxreplay_vstv_webfetch 節 |
+| FX Replay | E1b | なし | - | 一次資料 | 前回から変更なし |
+| FX Replay | E2 | なし | - | 一次資料 | 確定(未判別→なし): articles/what-broker-data-sources-does-fx-replay-use-for-its-charts(WebFetch実測)にデータ源(Dukascopy/OANDA/CME Futures)の説明はあるが欠け・重複・外れ値の自動検出機構への言及なし。docs/DATA/probes/20260923_tools_8_run4.log の fxreplay_brokerdata_webfetch 節 |
+| FX Replay | E3a | なし | - | 一次資料 | 確定(未判別→なし): articles/mastering-the-replay-feature(WebFetch実測)に「ルックアヘッドバイアスの防止・検出についての明示的な記述は無い」。docs/DATA/probes/20260923_tools_8_run4.log の fxreplay_replay_mechanics 節 |
+| FX Replay | E3b | なし | - | 一次資料 | 確定(未判別→なし): 同上。docs/DATA/probes/20260923_tools_8_run4.log の fxreplay_replay_mechanics 節 |
+| FX Replay | E4 | 印 | 2 | 一次資料 | 前回から変更なし |
+| FX Replay | E5 | なし | - | 一次資料 | 確定(未判別→なし): articles/analytic-metrics-defined(WebFetch実測)のMonte Carlo節「works by running a large number of simulations using random input values」だがシード文書化・再現性保証への言及なし。docs/DATA/probes/20260923_tools_8_run4.log の fxreplay_metrics_webfetch 節 |
+| FX Replay | E6 | なし | - | 一次資料 | 確定(未判別→なし): 同記事に列挙された指標群にE1a〜E5に当たらない独立検証機能への言及なし。同ログ同節 |
+| nicferrari/backtester | E1a | なし | - | 実測 | 前回から変更なし |
+| nicferrari/backtester | E1b | 印 | 2 | 実測 | 前回から変更なし |
+| nicferrari/backtester | E2 | なし | - | 実測 | 当て直し(要素名そのもので再確認): `data quality`/`データ品質`でsrc/全16本・examples/全8本・README全文をgrep、0件。docs/DATA/probes/20260923_tools_8_run4.log の nicferrari_backtester_e2_element_word 節 |
+| nicferrari/backtester | E3a | なし | - | 実測 | 前回から変更なし |
+| nicferrari/backtester | E3b | なし | - | 実測 | 前回から変更なし |
+| nicferrari/backtester | E4 | 印 | 3 | 実測 | 前回から変更なし(問い1件を末尾に維持) |
+| nicferrari/backtester | E5 | なし | - | 実測 | 前回から変更なし |
+| nicferrari/backtester | E6 | なし | - | 実測 | 前回から変更なし |
+| arXiv:2603.20319 | E1a | 印 | 未判別 | 一次資料 | 前回から変更なし(コード未公開のため段は未判別のまま。実測でungh.cc 404を確認しコード未公開を裏付け) |
+| arXiv:2603.20319 | E1b | 未判別 | 未判別 | 未確認 | 前回から変更なし |
+| arXiv:2603.20319 | E2 | 未判別 | 未判別 | 未確認 | 前回から変更なし(§12 Data Quality Controlは著者自身のデータセットの一回限りの確認であり再利用可能な機能かは未判別) |
+| arXiv:2603.20319 | E3a | なし | - | 一次資料 | 全文(98598文字)読了、`look.?ahead`/`ルックアヘッド`0件。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2603_20319_lookahead/arxiv_2603_20319_elemname_bilingual 節 |
+| arXiv:2603.20319 | E3b | なし | - | 一次資料 | 同上、`purge`/`embargo`/`パージ`0件。同ログ同節 |
+| arXiv:2603.20319 | E4 | なし | - | 一次資料 | 同上、`replay`/`リプレイ`は一般的言及1件のみで独自実装の再生方式の記述なし。同ログ同節 |
+| arXiv:2603.20319 | E5 | 印 | 1 | 一次資料 | 「divergence tables...will be deposited at Zenodo upon acceptance」= 未来の予定の記述(文書だけ)。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2603_20319_repro 節 |
+| arXiv:2603.20319 | E6 | なし | - | 一次資料 | 全文読了、`validat`/`verificat`/`検証`の一致は全てE1a(クロスエンジン比較)の文脈内。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2603_20319_replay_validate_ctx 節 |
+| arXiv:2512.12924 | E1a | なし | - | 一次資料 | 全文(71633文字)読了、`reconcil`/`cross.check`/`突き合わせ`0件。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_elemname_bilingual 節 |
+| arXiv:2512.12924 | E1b | 印 | 3 | 実測 | hdt/backtester.py「Event-driven backtester」がPnL・トレードを計算。対象はhdt独自market_data形式に限られ段3。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_backtester_docstring 節 |
+| arXiv:2512.12924 | E2 | 印 | 4 | 実測 | hdt/data_loader.pyの`align_to_benchmark`+hdt/validation.pyの`misaligned`チェック(ValueError自動送出)。対象はpandas DataFrame(広く使われる形式)のため段4。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_data_loader/arxiv_2512_12924_validation_py 節 |
+| arXiv:2512.12924 | E3a | なし | - | 一次資料 | 全文読了、`look.?ahead`は要旨の一般言及1件のみで検出機能の記述なし。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_context 節 |
+| arXiv:2512.12924 | E3b | 印 | 4 | 実測 | hdt/validation.pyのtrain/test厳密時点分割+backtester.pyの「information up to and including day t」。対象はpandas DataFrame・汎用generatorのため段4。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_validation_py 節 |
+| arXiv:2512.12924 | E4 | 印 | 3 | 実測 | hdt/backtester.pyのEvent-driven backtesterが日次バーを時系列順に処理。対象はhdt独自インターフェースのため段3。同ログ同節 |
+| arXiv:2512.12924 | E5 | 印 | 5 | 実測 | validation.pyの`seed`パラメータ(ア)+rerun_analysis.pyの`--seed`引数と保存済み結果の再利用(イ)。両方満たすため段5。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_rerun_analysis 節 |
+| arXiv:2512.12924 | E6 | なし | - | 一次資料 | 全文読了、`validat`/`verificat`/`検証`は全てE3b(walk-forward)の文脈内。docs/DATA/probes/20260923_tools_8_run4.log の arxiv_2512_12924_context 節 |
+| VectorBT | E1a | なし | - | 一次資料 | README(round3実測)+features頁(25167文字)+splitters頁で`reconcil`/`cross.check`/`突き合わせ`検索、0件。docs/DATA/probes/20260923_tools_8_run4.log の vectorbt_features_elemname 節 |
+| VectorBT | E1b | 印 | 3 | 一次資料 | 前回から変更なし(round3実測のPortfolio.from_*) |
+| VectorBT | E2 | 印 | 3 | 一次資料 | 前回から変更なし。features頁で「Detect confirmed price pivots and outliers」がPRO限定であることを追加確認(OSS版は対象がより狭い) |
+| VectorBT | E3a | なし | - | 一次資料 | features頁・splitters頁で`look.?ahead`/`ルックアヘッド`検索、0件。docs/DATA/probes/20260923_tools_8_run4.log の vectorbt_features_elemname 節 |
+| VectorBT | E3b | 印 | 3 | 一次資料 | 新規確定(未判別→印): splitters頁「BaseSplitter/ExpandingSplitter/RangeSplitter/RollingSplitter」の時系列分割クラス群。ただしpurge/embargoはPRO限定。docs/DATA/probes/20260923_tools_8_run4.log の vectorbt_splitters_extract 節 |
+| VectorBT | E4 | 未判別 | 未判別 | 未確認 | features頁・README(round3実測)にベクトル化計算の説明はあるが、時刻順の逐次再生と呼べる明示的な記述を見つけられず未判別のまま(公式ドキュメントの実行系ページを読み切れていない) |
+| VectorBT | E5 | 印 | 5 | 実測 | 実行時に実証: `vbt.Portfolio.from_random_signals(price, n=5, seed=42, fees=0.0)`を2回実行し`total_return()`が完全一致(True)。docs/DATA/probes/20260923_tools_8_run4.log の vectorbt_min_run_retry 節 |
+| VectorBT | E6 | なし | - | 一次資料 | features頁・splitters頁に該当記述なし |
+| rusty-bot | E1a | なし | - | 一次資料 | yasstake/rbot README全文(10478バイト)で`reconcil`・`cross.check`・`突き合わせ`・`compare.*(implementation` `engine)`検索、0件。docs/DATA/probes/20260923_tools_8_run4.log の rustybot_readme_elemname 節 |
+| rusty-bot | E1b | 印 | 2 | 一次資料 | RunnerのSession経由でPnL・約定を計算(orders DataFrame)。同README実測 |
+| rusty-bot | E2 | 未判別 | 未判別 | 未確認 | README全文で`gap`1件ヒット(`Market#donwload_gap`関数名)だが機能内容が判別できず、ソース本体(Rustコア)未読のため未判別。docs/DATA/probes/20260923_tools_8_run4.log の rustybot_readme_elemname 節 |
+| rusty-bot | E3a | なし | - | 一次資料 | README全文で`look.?ahead`/`ルックアヘッド`0件。同ログ同節 |
+| rusty-bot | E3b | なし | - | 一次資料 | 同上、`purge`/`embargo`/`パージ`0件。同ログ同節 |
+| rusty-bot | E4 | 印 | 2 | 一次資料 | README「TICK BASED backtesting」。自動判定機構は無く人が結果を読むため段2 |
+| rusty-bot | E5 | 未判別 | 未判別 | 未確認 | README全文で`reproducib`/`再現`/`seed`/`deterministic`0件だが、ソース本体(Rustコア)未読のため「なしと書くための条件」(a)を満たさず未判別 |
+| rusty-bot | E6 | なし | - | 一次資料 | README全文で`unit.test`/`property.based`/`fuzz`/`mutation`0件 |
+| Fincept Terminal | E1a | 印 | 未判別 | 一次資料 | 864頁PDF実測「Providers — the 6 backtest engines...Are interchangeable engines」+「Broker reconciliation...1 CR」。自動diffの記述なく段は未判別。docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_engine_full/fincept_pdf_e1a_more 節 |
+| Fincept Terminal | E1b | 印 | 未判別 | 一次資料 | 同上、6エンジンいずれも「Run Backtest...returns performance, trades and an equity curve」。同ログ同節 |
+| Fincept Terminal | E2 | 印 | 2 | 一次資料 | 「The quality score...100% means every branch was populated...check which branches are missing」。自動表示だが判定は人のため段2。docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_missing_11225 節 |
+| Fincept Terminal | E3a | なし | - | 一次資料 | 864頁全文で`lookahead`2件、いずれもE3bの文脈。docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_lookahead_ctx 節 |
+| Fincept Terminal | E3b | 印 | 未判別 | 一次資料 | 「HISTORY IS BITEMPORAL...」+「CV Splits...Purged K-Fold」。自動・枠の外への持込み可否は未確認のため段未判別。docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_lookahead_ctx/fincept_pdf_purge_ctx 節 |
+| Fincept Terminal | E4 | 印 | 未判別 | 一次資料 | Alpha Arena「Every prompt, decision, order and fill is stored, so any round can be replayed」。docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_replay_ctx 節 |
+| Fincept Terminal | E5 | 印 | 未判別 | 一次資料 | PRICERS頁「Deterministic...Identical inputs always give identical output」。乱数の種の指定とは性質が異なり段は未判別。docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_deterministic_ctx 節 |
+| Fincept Terminal | E6 | なし | - | 一次資料 | `validat`/`verificat`の全出現を確認、UIフォームバリデーションかE3bと重複する記述のみ。docs/DATA/probes/20260923_tools_8_run4.log の fincept_pdf_validate_lines 節 |
+| TradingView のリプレイ機能 | E1a | なし | - | 一次資料 | 公式ヘルプ頁全文(4765文字)に該当記述なし。docs/DATA/probes/20260923_tools_8_run4.log の tv_replay_body 節 |
+| TradingView のリプレイ機能 | E1b | なし | - | 一次資料 | 同上(Bar Replay自体は損益計算機能を持たない) |
+| TradingView のリプレイ機能 | E2 | なし | - | 一次資料 | 同上、該当記述なし |
+| TradingView のリプレイ機能 | E3a | なし | - | 一次資料 | 同上、該当記述なし |
+| TradingView のリプレイ機能 | E3b | 印 | 2 | 一次資料 | 「trading orders...are executed based on real-time data」(表示の限定にとどまり発注はリアルタイム価格。自動判定機構の明記なく段2)。docs/DATA/probes/20260923_tools_8_run4.log の tv_replay_body 節 |
+| TradingView のリプレイ機能 | E4 | 印 | 2 | 一次資料 | 「Click the Bar Replay button...synchronously run the Bar Replay on all charts」。同ログ同節 |
+| TradingView のリプレイ機能 | E5 | なし | - | 一次資料 | 同上、該当記述なし |
+| TradingView のリプレイ機能 | E6 | なし | - | 一次資料 | 同上、該当記述なし |
+| Exactpro の reconciliation testing | E1a | 印 | 4 | 一次資料 | th2-check2-recon README+テンプレートREADME(実測)「Recon allows you to compare message streams with each other using specified scenarios called Rule」。Ruleは利用者が任意実装できるため段4。docs/DATA/probes/20260923_tools_8_run4.log の exactpro_check2recon_template_readme 節 |
+| Exactpro の reconciliation testing | E1b | 印 | 4 | 一次資料 | 同上、checkメソッドは任意のメッセージ型を比較対象にできる設計。同ログ同節 |
+| Exactpro の reconciliation testing | E2 | 未判別 | 未判別 | 未確認 | th2プラットフォームの一部(th2-codec・th2-check2-recon関連)しか読めておらず未判別 |
+| Exactpro の reconciliation testing | E3a | 未判別 | 未判別 | 未確認 | 同上 |
+| Exactpro の reconciliation testing | E3b | 未判別 | 未判別 | 未確認 | 同上 |
+| Exactpro の reconciliation testing | E4 | 未判別 | 未判別 | 未確認 | th2-rpt-viewerが記録データの再生に近い可能性があるが未読(WebSearchの要約のみ) |
+| Exactpro の reconciliation testing | E5 | 未判別 | 未判別 | 未確認 | 読んだ範囲に記述なし。他コンポーネント未読 |
+| Exactpro の reconciliation testing | E6 | 未判別 | 未判別 | 未確認 | 同上 |
+
+### ツール1件ごとの表
+この節は委任文§4の全列(料金の構造・到達と実行の記録・相性・当方に無いもの・4軸・危険)を散文で要約する。数値・逐語の一次資料は下の`### 4.0 機械可読の表`と`### 知見`に集約し、ここでは重複を避けて要点だけを書く。
+
+**`prediction-market-backtester`**: Polymarket/Kalshi向けの予測市場バックテストエンジン(Python、Apache系ライセンス、6星)。料金は無料(OSS、外部データ購読なし)。到達・導入は1〜3回目に確認済み(pip install成功)。今回の主な追加は、独立した再計算による自己整合性検証(validate_run_directory)の発見で、区分8の核心(別実装との突き合わせ)に直接該当する。当方に無いもの: 保存済み指標と生データの独立再計算による自動整合性チェック機構、タイムスタンプ順序・価格帯の自動検証。4軸: 道具として入れられるか=印(pip installで導入可能、実測)、当方に無い情報=印(整合性検証・データSHA256固定)、当方に無い視点=印(予測市場特有のcalibration/forecasting_metrics)、既存の成果を向上できるか=推定(バックテスト結果の自己検証パターンは当方のbacktest/engineにも応用できる可能性)。危険: 導入前検査は1回目に実施済み、危険な兆候なし。
+
+**`freqtrade`**: 暗号資産botフレームワーク(Python、GPLv3、54729星)。料金は無料(OSS、取引所APIキーは自前)。今回の追加でデータクレンジング(重複・欠けの検出)・時系列逐次処理・再現性に関する注意文書が確定した。当方に無いもの: OHLCVの自動クレンジング機能(重複除去・欠け補完+警告ログ)、lookahead-analysisコマンド(戦略の指標・シグナルを変化させて自動検出する専用診断ツール、E3aは既に印)。4軸: 道具として入れられるか=印(実運用実績豊富な成熟したOSS)、当方に無い情報=印(lookahead-analysisの診断手法)、当方に無い視点=印(データクレンジングの自動化パターン)、既存の成果を向上できるか=推定(lookahead-analysisの手法を当方のresearch-protocolに参考として取り込める可能性)。危険: 未実施(この回は1〜3回目の危険検査を再確認していない)。
+
+**`backtrex`**: SMC/ICT系のノーコード・ビジュアルバックテストSaaS($22〜59/月、7日間無料試用)。今回の追加で、Anti-Repainting Safeguards文書からルックアヘッド防止機構(close[1]ロジック)とPine Script書き出し経由でのTradingViewとの検証手順(E1a)が確定した。当方に無いもの: close[1]強制によるルックアヘッド防止の設計原則の明文化、Pine Script書き出しによる別実装(TradingView)との検証ワークフロー(<2%乖離の目安)。4軸: 道具として入れられるか=仮定(SaaSでこの環境からの実行不可、登録が要る)、当方に無い情報=印(close[1]設計・SMC/ICTブロック自動検出)、当方に無い視点=印(ノーコードの戦略構築)、既存の成果を向上できるか=推定(close[1]の設計原則は当方のバックテストエンジンの設計指針として参考になりうる)。危険: 登録・課金が要るためこの回は導入せず、公式文書のみで評価。
+
+**`FX Replay`**: 手動バーリプレイ主体のバックテストSaaS。今回の追加でE2・E3a・E3b・E5・E6がいずれも「なし」で確定し、この道具が持つのは「リプレイ(E4)」の機能に限られることが明確になった。当方に無いもの: 複数ブローカー(Dukascopy/OANDA/CME Futures)のデータを切り替えて手動リプレイできるUI、Monte Carloシミュレーション(ただしシード非公開)。4軸: 道具として入れられるか=仮定(SaaS、登録が要る)、当方に無い情報=印(複数ブローカーデータの並存)、当方に無い視点=なし(手動リプレイのみで、自動検証の視点は無い)、既存の成果を向上できるか=未確認。危険: 未実施。
+
+**`nicferrari/backtester`(rs-backtester)**: Rust製の小規模バックテストクレート(6星)。最小実行を実際に走らせ、合成データで成行1往復を確認(Trades#=0という執行タイミングの癖も実測で判明)。当方に無いもの: 特になし(機能は限定的で、E1a〜E6のほぼ全てが「なし」)。4軸: 道具として入れられるか=印(実測でcargo build/run成功)、当方に無い情報=なし、当方に無い視点=なし、既存の成果を向上できるか=なし(機能が限定的で参考価値は低い、推定)。危険: PyPI/crates.io配布元の一致(repository fieldがGitHubと一致)を確認、保守者1名(nicferrari)、難読化・外部URL取得は未確認。
+
+**`arXiv:2512.12924`**: Walk-forward検証フレームワークの論文+実装コード(GitHub、star3)。論文と実装コード(hdt/配下)を実際に読み、E1b〜E6のほぼ全てを「印」で確定できた稀有な事例(該当なし(論文)の列を除く)。当方に無いもの: seedとrerun_analysis.pyによる保存済み結果の再現・比較インフラ、pandas DataFrameの日付整合性の自動検証(align_to_benchmark)。4軸: 道具として入れられるか=未確認(この回はpip install等を試していない)、当方に無い情報=印(walk-forward foldごとの再現可能な乱数制御)、当方に無い視点=印(学術的な厳密性を志向したwalk-forward設計)、既存の成果を向上できるか=推定(当方のresearch-protocolのwalk-forward部分に参考になりうる)。危険: 未実施。
+
+**`Fincept Terminal`**: 統合金融ターミナル(31947星、AGPLv3+クラウド従量課金)。864頁のPDFマニュアルを全文検索し、E1a(6エンジン切替)・E2(データ完全性スコア)・E3b(bitemporalストア+Purged K-Fold)・E4(Alpha Arenaのリプレイ)・E5(決定的プライサー)が確定した、区分8で最も機能が豊富な候補の一つ。当方に無いもの: bitemporalなデータストア(改訂前の値を保持しルックアヘッドを構造的に防ぐ)、6つの異なるバックテストエンジンを切り替え可能な設計、Purged K-Foldを含むCV分割のGUIツール、AIモデル競技(Alpha Arena)の完全監査可能なリプレイ。4軸: 道具として入れられるか=未確認(この回は導入未実施、ローカル実行部分は無料と文書にあるが試していない)、当方に無い情報=印(bitemporalストアの設計そのもの)、当方に無い視点=印(6エンジン比較・AIエージェント競技)、既存の成果を向上できるか=推定(bitemporalデータストアの設計思想は当方のsealed.py(封印機構)と対比する価値がある)。危険: 未実施(AGPLv3のネットワーク公開時のソース開示義務は自己ホストのローカル利用では該当しない可能性が高いが未確認)。
+
+**`TradingView のリプレイ機能`(Bar Replay)**: チャート上のバー再生機能。公式ヘルプ全文とE1a〜E6を確定させたが、E1a・E1b・E2・E5・E6はすべて「なし」で、機能はE4(再生)とE3b(表示の限定、ただし発注はリアルタイム価格という限界つき)に限られることが明確になった。当方に無いもの: 全チャート同期リプレイ(複数銘柄・複数時間足を同時に同じ時点まで巻き戻す機能)。4軸: 道具として入れられるか=仮定(登録・プラン確認が要る、この回は料金表のプラン対応が未確認)、当方に無い情報=印(複数チャート同期リプレイ)、当方に無い視点=なし、既存の成果を向上できるか=未確認。危険: 未実施。
+
+### 4.0 機械可読の表(深掘りした道具: prediction-market-backtester / freqtrade / backtrex / FX Replay / nicferrari/backtester / arXiv:2512.12924 / TradingView のリプレイ機能。Fincept Terminalは表の過半が「未確認」のため深掘りに至らず「浅い」とし、この表には含めない)
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| prediction-market-backtester | 版 | master(タグなし、2026-03-07最終push) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `predmkt_repo_meta` の節 |
+| prediction-market-backtester | 最終更新日 | 2026-03-07 | 一次資料 | 同上(pushedAt) |
+| prediction-market-backtester | ライセンス | Apache-2.0(1回目報告で確認済み) | 一次資料 | 1回目報告(LICENSE実測) |
+| prediction-market-backtester | 言語と動作環境 | Python(polars使用) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `predmkt_validation_py` の節 (importからpolars確認) |
+| prediction-market-backtester | 対応取引所 | Polymarket・Kalshi(予測市場) | 一次資料 | リポジトリ説明文(predmkt_repo_meta) |
+| prediction-market-backtester | 星 | 6 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `predmkt_repo_meta` の節 |
+| prediction-market-backtester | コミット数 | 未確認 | 未確認 | この回はコミット履歴を開いていない |
+| prediction-market-backtester | 保守者数 | 1(Quentin-Piot、推定) | 推定 | リポジトリ所有者名から外挿 |
+| prediction-market-backtester | 週DL数 | 未確認 | 未確認 | PyPI未公開のためpypistats対象外(未検索) |
+| prediction-market-backtester | 初回公開日 | 2026-02-11(GitHub createdAt) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `predmkt_repo_meta` の節 |
+| prediction-market-backtester | 既知の脆弱性 | 未確認 | 未確認 | この回は脆弱性DB検索未実施 |
+| prediction-market-backtester | 料金体系 | 無料(OSS) | 一次資料 | LICENSE(Apache-2.0)、1回目報告で確認済み |
+| prediction-market-backtester | 無料枠の上限 | 該当なし | 一次資料 | OSSライブラリでSaaS的な無料枠の概念なし |
+| prediction-market-backtester | 課金開始条件 | 該当なし | 一次資料 | 同上 |
+| prediction-market-backtester | 隠れた依存 | polars・.env.example記載の外部API鍵(予測市場データ取得用、詳細未確認) | 推定 | src実測(polars import)から外挿、.env.exampleは未読 |
+| prediction-market-backtester | 登録の要否 | 不要(ライブラリとして) | 一次資料 | pip/git経由のみ |
+| prediction-market-backtester | 到達経路 | GitHub(ungh.cc・raw.githubusercontent.com)成功 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `predmkt_repo_meta` の節 他多数 |
+| prediction-market-backtester | 導入可否 | 可(1回目に確認済み、この回は再実施せず) | 一次資料 | 1回目報告 |
+| prediction-market-backtester | install所要秒 | 未確認(この回) | 未確認 | 1回目の値を参照(この回未再測) |
+| prediction-market-backtester | 依存数 | 未確認(この回) | 未確認 | pyproject.tomlは未読(次回) |
+| prediction-market-backtester | pip check | 未確認(この回) | 未確認 | この回は再実施せず |
+| prediction-market-backtester | 最小実行の可否 | 可(1回目に確認済み) | 一次資料 | 1回目報告 |
+| prediction-market-backtester | 最小実行の中身 | 1回目の記録を参照(合成データでのバックテスト実行) | 一次資料 | 1回目報告 |
+| prediction-market-backtester | 実行所要秒 | 未確認(この回) | 未確認 | 1回目の値を参照 |
+| prediction-market-backtester | wheel展開 | 未確認 | 未確認 | この回は未実施 |
+| prediction-market-backtester | setup.py導入時実行 | 該当なし(pyproject.toml使用、setup.pyファイルは無し) | 一次資料 | ファイル一覧実測(setup.py不在) |
+| prediction-market-backtester | 同梱バイナリ | 無し(Pythonソースのみ) | 一次資料 | ファイル一覧実測(99ファイル中バイナリ拡張子なし) |
+| prediction-market-backtester | 外部送信 | 未確認 | 未確認 | この回はネットワーク監視未実施 |
+| prediction-market-backtester | 自動発注機能 | 無し(バックテスト専用、execution/simulator.pyはシミュレーションのみ) | 一次資料 | engine.py/simulator.py実測(paper/live executionクラス不在) |
+| prediction-market-backtester | 宣伝詐欺の兆候 | 無し | 一次資料 | README・docs実測 |
+| prediction-market-backtester | 当方データ投入 | 未確認(予測市場データ形式=implied probability [0,1]。当方のBTC/JPY価格データとは意味論が異なる) | 未確認 | validation.pyの価格帯[0,1]チェックから推定 |
+| prediction-market-backtester | 時刻の扱い | equity_df["ts"]のソート済みタイムスタンプ(polars) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `predmkt_validation_py` の節 |
+| prediction-market-backtester | 再現性 | 印(DATA_SHA256+tolerance付き再計算検証) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `predmkt_validation_py` の節 |
+| prediction-market-backtester | 規模の見積 | 未確認 | 未確認 | この回は大規模実行未実施 |
+| prediction-market-backtester | 配布元の一致 | 未確認(PyPI未公開のため対象外) | 未確認 | GitHubのみで配布 |
+| prediction-market-backtester | 難読化 | 無し(全ソース可読、実測で確認) | 一次資料 | src/pm_bt/配下17ファイルを実測で全文取得・可読 |
+| prediction-market-backtester | 外部URL取得 | scripts/setup_data.shが外部データソースから取得(1回目報告参照) | 一次資料 | 1回目報告 |
+| prediction-market-backtester | 依存の一覧 | 未確認(この回) | 未確認 | pyproject.toml未読 |
+| prediction-market-backtester | 保守者名の一貫性 | 一貫(Quentin-Piot、GitHubのみで確認) | 一次資料 | リポジトリ実測 |
+| prediction-market-backtester | 4軸1_道具 | 印(導入・実行可能、1回目実測) | 一次資料 | 1回目報告 |
+| prediction-market-backtester | 4軸2_情報 | 印(独立再計算による整合性検証の設計) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `predmkt_validation_py` の節 |
+| prediction-market-backtester | 4軸3_視点 | 印(予測市場特有のforecasting_metrics: brier_score・log_loss・ece) | 一次資料 | 同上ファイル実測 |
+| prediction-market-backtester | 4軸4_向上 | 推定(整合性検証パターンを当方のbacktest engineに応用できる可能性) | 推定 | validation.pyの設計から外挿 |
+| nicferrari/backtester | 版 | 0.1.5 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_toml` の節 |
+| nicferrari/backtester | 最終更新日 | 2026-04-08(pushedAt) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_repo_meta` の節 |
+| nicferrari/backtester | ライセンス | Apache-2.0 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_toml` の節 |
+| nicferrari/backtester | 言語と動作環境 | Rust 2021 edition | 一次資料 | 同上(言語と動作環境について同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | 対応取引所 | 無し(汎用OHLCV。yahoo_finance_api経由またはCSV) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_data_rs_head` の節 |
+| nicferrari/backtester | 星 | 7 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_repo_meta` の節 |
+| nicferrari/backtester | コミット数 | 未確認 | 未確認 | この回はコミット履歴未取得 |
+| nicferrari/backtester | 保守者数 | 1(nicferrari) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cratesio_ua` の節 (published_by) |
+| nicferrari/backtester | 週DL数 | 未確認(crates.ioは週次を公開しない。90日recent_downloads=233、総計3539) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cratesio_ua` の節 |
+| nicferrari/backtester | 初回公開日 | crates.io 2025-01-02 / GitHub 2024-02-17 | 一次資料 | 同上(初回公開日について同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | 既知の脆弱性 | 未確認(cargo-audit等この環境に無し。WebSearchでRUSTSEC固有の勧告は見つからず) | 未確認 | docs/DATA/probes/20260923_tools_8_run4.log:nicferrari_backtester_vuln |
+| nicferrari/backtester | 料金体系 | 無料(Apache-2.0、crates.io公開) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cratesio_ua` の節 |
+| nicferrari/backtester | 無料枠の上限 | 該当なし(ライブラリ、SaaSでない) | 一次資料 | 同上(無料枠の上限について同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | 課金開始条件 | 該当なし | 一次資料 | 同上(課金開始条件について同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | 隠れた依存 | yahoo_finance_api(必須ではない、CSVロードで回避可) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_data_rs_pubfn` の節 |
+| nicferrari/backtester | 登録の要否 | 不要 | 一次資料 | cargo経由のみ |
+| nicferrari/backtester | 到達経路 | git clone --depth 1成功、crates.io API成功 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_clone` の節 |
+| nicferrari/backtester | 導入可否 | 可(隔離venv scratchpad/cat8/venvs/nicferrari_backtesterでcargo build成功) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_build_example` の節 |
+| nicferrari/backtester | install所要秒 | 82.377(cargo build --release --example run、初回全依存込み) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_build_example` の節 |
+| nicferrari/backtester | 依存数 | 直接9(runtime)+2(dev)=11、推移含む全体248(`cargo tree --prefix none` の一意行数) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_tree_count` の節 |
+| nicferrari/backtester | pip check | 該当なし(Rustクレート、pipの概念なし。cargo buildはエラー0件) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_build_example` の節 |
+| nicferrari/backtester | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_min_run_build3` の節 |
+| nicferrari/backtester | 最小実行の中身 | 合成CSV(SYNTH、5バー)をData::loadで読み込み、BUY→NULL×4の成行1往復戦略をBacktest::newで実行 | 一次資料 | 同上(最小実行の中身について同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | 実行所要秒 | 0.572(2回目実行、ビルドキャッシュ後) | 一次資料 | 同上(実行所要秒について同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | wheel展開 | 該当なし(Rustクレート) | 一次資料 | 同上(wheel展開について同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | setup.py導入時実行 | 該当なし(build.rs不在、ungh.ccファイル一覧で確認) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_examples_list` の節 |
+| nicferrari/backtester | 同梱バイナリ | 無し(ソースのみ) | 一次資料 | 同上(同梱バイナリについて同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | 外部送信 | cargo build時にcrates.ioへ通常の依存取得のみ、当方データは送っていない | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_build_example` の節 |
+| nicferrari/backtester | 自動発注機能 | 無し(backtestのみ) | 一次資料 | src実測(orders.rsはBUY/SHORTSELL/NULLの列挙のみ、paper/live執行クラス不在) |
+| nicferrari/backtester | 宣伝詐欺の兆候 | 無し | 一次資料 | README実測 |
+| nicferrari/backtester | 当方データ投入 | CSV平文(DATE,OPEN,HIGH,LOW,CLOSE,VOLUME)。当方のtardis形式とは列が異なり変換が要る | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_data_rs_saveload` の節 |
+| nicferrari/backtester | 時刻の扱い | chrono DateTime<FixedOffset>、RFC3339文字列 | 一次資料 | 同上(時刻の扱いについて同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | 再現性 | なし(seed/reproduc/deterministicの言及なし) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_e2_element_word` の節 系の全体grep |
+| nicferrari/backtester | 規模の見積 | 未確認(456日分での実行は試していない) | 未確認 | 5バー実行の実測(0.572秒)から外挿する根拠が弱いため未確認のまま |
+| nicferrari/backtester | 配布元の一致 | 一致(crates.io repository fieldがgithub.com/nicferrari/backtesterと一致) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_toml` の節 |
+| nicferrari/backtester | 難読化 | 無し(全ソース可読) | 一次資料 | src/全16本を実測で取得・可読 |
+| nicferrari/backtester | 外部URL取得 | yahoo_finance_api経由(new_from_yahoo使用時のみ) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_data_rs_head` の節 |
+| nicferrari/backtester | 依存の一覧 | yahoo_finance_api/tokio-test/chrono/plotters/serde/csv/once_cell/charming/toml(直接)+248(推移) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cargo_toml`・`nicferrari_backtester_cargo_tree_count` の節 |
+| nicferrari/backtester | 保守者名の一貫性 | 一貫(nicferrari、GitHub・crates.io共通) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_cratesio_ua` の節 |
+| nicferrari/backtester | 4軸1_道具 | 印(実測でcargo build/run成功、導入可能) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `nicferrari_backtester_min_run_build3` の節 |
+| nicferrari/backtester | 4軸2_情報 | なし(機能限定的で当方に無い情報は見当たらず) | 一次資料 | 全体grepの結果(E1a〜E6ほぼ全てなし) |
+| nicferrari/backtester | 4軸3_視点 | なし | 一次資料 | 同上(4軸3_視点について同旨、実測に基づく個別確認は未実施) |
+| nicferrari/backtester | 4軸4_向上 | なし(推定。機能が限定的で参考価値は低い) | 推定 | 全体の機能範囲から外挿 |
+| freqtrade | 版 | develop(タグ無し継続開発、最新push 2026-09-23) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `freqtrade_repo_meta` の節 |
+| freqtrade | 最終更新日 | 2026-09-23 | 実測 | 同上 |
+| freqtrade | ライセンス | GPLv3(1回目報告で確認済み) | 一次資料 | 1回目報告 |
+| freqtrade | 言語と動作環境 | Python | 一次資料 | ソース実測(converter.py等) |
+| freqtrade | 対応取引所 | 多数の暗号資産取引所(ccxt経由、1回目報告参照) | 一次資料 | 1回目報告 |
+| freqtrade | 星 | 54729 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `freqtrade_repo_meta` の節 |
+| freqtrade | コミット数 | 未確認(この回) | 未確認 | この回は未取得 |
+| freqtrade | 保守者数 | 未確認(この回、多数のコントリビュータがいることはstar/fork数から推定) | 推定 | フォーク数11344から活発なコミュニティと外挿 |
+| freqtrade | 週DL数 | 未確認(この回) | 未確認 | PyPI/pypistats未検索 |
+| freqtrade | 初回公開日 | 2017-05-17 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `freqtrade_repo_meta` の節 |
+| freqtrade | 既知の脆弱性 | 未確認(この回) | 未確認 | 未検索 |
+| freqtrade | 料金体系 | 無料(OSS、取引所APIキーは自前) | 一次資料 | GPLv3・README |
+| freqtrade | 無料枠の上限 | 該当なし | 一次資料 | OSSライブラリ |
+| freqtrade | 課金開始条件 | 該当なし | 一次資料 | 同上 |
+| freqtrade | 隠れた依存 | 取引所APIキー(実運用時)、FreqAI利用時は追加のML依存 | 一次資料 | docs/freqai.md実測(purgeの文脈で確認) |
+| freqtrade | 登録の要否 | 不要(バックテストのみなら) | 一次資料 | docs実測 |
+| freqtrade | 到達経路 | GitHub(ungh.cc・raw.githubusercontent.com)成功 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `freqtrade_repo_meta` の節 他多数 |
+| freqtrade | 導入可否 | 未確認(この回はpip install等を試していない) | 未確認 | この回は導入未実施 |
+| freqtrade | install所要秒 | 未確認(この回) | 未確認 | 同上 |
+| freqtrade | 依存数 | 未確認(この回) | 未確認 | requirements未読 |
+| freqtrade | pip check | 未確認(この回) | 未確認 | 未実施(pip checkについて同旨、実測に基づく個別確認は未実施) |
+| freqtrade | 最小実行の可否 | 未確認(この回はソース読解のみで実行未実施) | 未確認 | 未実施(最小実行の可否について同旨、実測に基づく個別確認は未実施) |
+| freqtrade | 最小実行の中身 | 未確認(この回) | 未確認 | 未実施(最小実行の中身について同旨、実測に基づく個別確認は未実施) |
+| freqtrade | 実行所要秒 | 未確認(この回) | 未確認 | 未実施(実行所要秒について同旨、実測に基づく個別確認は未実施) |
+| freqtrade | wheel展開 | 未確認(この回) | 未確認 | 未実施(wheel展開について同旨、実測に基づく個別確認は未実施) |
+| freqtrade | setup.py導入時実行 | 未確認(この回) | 未確認 | 未実施(setup.py導入時実行について同旨、実測に基づく個別確認は未実施) |
+| freqtrade | 同梱バイナリ | 未確認(この回) | 未確認 | 未実施(同梱バイナリについて同旨、実測に基づく個別確認は未実施) |
+| freqtrade | 外部送信 | 未確認(この回) | 未確認 | 未実施(取引所API通信は設計上必須) |
+| freqtrade | 自動発注機能 | 有り(botフレームワークの本質機能、1回目報告参照) | 一次資料 | 1回目報告 |
+| freqtrade | 宣伝詐欺の兆候 | 無し | 一次資料 | docs実測 |
+| freqtrade | 当方データ投入 | 未確認(独自のOHLCV pandas形式。当方のcsv.gzを変換すれば投入できる可能性、clean_ohlcv_dataframeの対象形式が汎用pandas DataFrameのため) | 推定 | docs/DATA/probes/20260923_tools_8_run4.log:freqtrade_converter_clean |
+| freqtrade | 時刻の扱い | timeframe_td単位のdatetime、UTC(一般的なfreqtradeの設計、この回未再確認) | 推定 | 1回目報告からの外挿 |
+| freqtrade | 再現性 | 印(静的ペアリストで再現性を確保する案内あり) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:freqtrade_backtesting_head |
+| freqtrade | 規模の見積 | 未確認(この回) | 未確認 | 未実施(規模の見積について同旨、実測に基づく個別確認は未実施) |
+| freqtrade | 配布元の一致 | 未確認(この回) | 未確認 | 未検証 |
+| freqtrade | 難読化 | 無し(全ソース可読、実測で複数ファイルを直接取得) | 一次資料 | converter.py・backtesting.py・idatahandler.py等を実測で取得・可読 |
+| freqtrade | 外部URL取得 | 取引所API・download-dataコマンド経由(設計上必須) | 一次資料 | docs/data-download.md実測 |
+| freqtrade | 依存の一覧 | 未確認(この回) | 未確認 | requirements.txt未読 |
+| freqtrade | 保守者名の一貫性 | 未確認(この回、組織アカウントfreqtrade名義) | 未確認 | 未検証 |
+| freqtrade | 4軸1_道具 | 印(実運用実績豊富、1回目報告で導入確認済み) | 一次資料 | 1回目報告 |
+| freqtrade | 4軸2_情報 | 印(lookahead-analysisの診断アルゴリズム、clean_ohlcv_dataframeの警告ログ) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:freqtrade_lookahead_full/freqtrade_converter_clean |
+| freqtrade | 4軸3_視点 | 印(バックテスト結果の再現性への注意喚起という視点) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:freqtrade_backtesting_head |
+| freqtrade | 4軸4_向上 | 推定(lookahead-analysisの手法をresearch-protocolに参考として取り込める可能性) | 推定 | lookahead-analysis.mdの設計から外挿 |
+| backtrex | 版 | 該当なし(SaaS、バージョン番号の記載なし) | 一次資料 | サイト全体を実測で確認、バージョン表記なし |
+| backtrex | 最終更新日 | 未確認(© 2026 Backtrexの著作権表示のみ) | 未確認 | フッター実測 |
+| backtrex | ライセンス | 該当なし(SaaS。Terms of Use and Saleあり、この回は未読) | 一次資料 | フッターのリンク実測 |
+| backtrex | 言語と動作環境 | Webブラウザ(SaaS、実行環境の指定なし) | 一次資料 | サイト実測 |
+| backtrex | 対応取引所 | 該当なし(バックテスト専用、発注機能なし) | 一次資料 | ドキュメント実測 |
+| backtrex | 星 | 該当なし(GitHub非公開、SaaS) | 一次資料 | ドメインのみで提供、GitHub未発見 |
+| backtrex | コミット数 | 該当なし | 一次資料 | 同上(コミット数について同旨、実測に基づく個別確認は未実施) |
+| backtrex | 保守者数 | 未確認 | 未確認 | 会社名Backtrexのみ判明、個人名未確認 |
+| backtrex | 週DL数 | 該当なし(SaaS) | 一次資料 | ダウンロード概念なし |
+| backtrex | 初回公開日 | 未確認 | 未確認 | サイトに記載なし |
+| backtrex | 既知の脆弱性 | 未確認 | 未確認 | 未検索 |
+| backtrex | 料金体系 | Pro $22/月(20 backtests/日・Pine Script export)・Max $59/月(無制限)・7日間無料試用 | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:backtrex_compare_body |
+| backtrex | 無料枠の上限 | 7日間の無料試用(Proの範囲、その後の制限は未確認) | 一次資料 | 同上(無料枠の上限について同旨、実測に基づく個別確認は未実施) |
+| backtrex | 課金開始条件 | 無料試用終了後 | 一次資料 | 同上(課金開始条件について同旨、実測に基づく個別確認は未実施) |
+| backtrex | 隠れた依存 | 無し(SaaS完結、当方環境への依存なし) | 一次資料 | サイト実測 |
+| backtrex | 登録の要否 | 要(アカウント作成、渡すもの=メールアドレス等、この回は登録していない) | 一次資料 | サイト実測(Try for freeボタン) |
+| backtrex | 到達経路 | 公式サイト・比較ページ・ドキュメントいずれも到達成功 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `backtrex_home`・`backtrex_compare_page`・`backtrex_docs_page` の節 |
+| backtrex | 導入可否 | 該当なし(SaaS、ローカル導入の概念なし) | 一次資料 | サイト実測 |
+| backtrex | install所要秒 | 該当なし | 一次資料 | 同上(install所要秒について同旨、実測に基づく個別確認は未実施) |
+| backtrex | 依存数 | 該当なし | 一次資料 | 同上(依存数について同旨、実測に基づく個別確認は未実施) |
+| backtrex | pip check | 該当なし | 一次資料 | 同上(pip checkについて同旨、実測に基づく個別確認は未実施) |
+| backtrex | 最小実行の可否 | 登録が要る(実行はオーナーの判断待ち) | 一次資料 | 委任文§5-6の手順に従い、この回は登録・実行していない |
+| backtrex | 最小実行の中身 | 登録が要る(渡すもの: メール等)。実行はオーナーの判断待ち。手順: Try for free → 7日間無料試用 → Strategy Builderで戦略構築 → Run Backtest | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:backtrex_docs_running |
+| backtrex | 実行所要秒 | 「30秒/10年」(文書上の主張、未実行) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の `backtrex_docs_running` の節 |
+| backtrex | wheel展開 | 該当なし | 一次資料 | SaaS |
+| backtrex | setup.py導入時実行 | 該当なし | 一次資料 | 同上(setup.py導入時実行について同旨、実測に基づく個別確認は未実施) |
+| backtrex | 同梱バイナリ | 該当なし | 一次資料 | 同上(同梱バイナリについて同旨、実測に基づく個別確認は未実施) |
+| backtrex | 外部送信 | 未確認(SaaS、この回は登録していないため通信内容は未確認) | 未確認 | 未検証 |
+| backtrex | 自動発注機能 | 無し(バックテスト・Pine Script書き出しのみ、TradingViewへのデプロイは別途利用者が行う) | 一次資料 | ドキュメント実測 |
+| backtrex | 宣伝詐欺の兆候 | 無し(比較ページの逐語は具体的な機能比較で、誇大な「必ず儲かる」等の文言なし) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:backtrex_compare_body |
+| backtrex | 当方データ投入 | 該当なし(16資産・M1〜D1の内蔵データのみ、外部データ投入の記述なし) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:backtrex_docs_running |
+| backtrex | 時刻の扱い | M1〜D1のバー単位(ミリ秒等の精度言及なし) | 一次資料 | 同上(時刻の扱いについて同旨、実測に基づく個別確認は未実施) |
+| backtrex | 再現性 | 印(Save promising backtests for later comparison) | 一次資料 | 同上(再現性について同旨、実測に基づく個別確認は未実施) |
+| backtrex | 規模の見積 | 該当なし(SaaS側で処理、当方の計算資源は使わない) | 一次資料 | サイト実測 |
+| backtrex | 配布元の一致 | 該当なし | 一次資料 | SaaS |
+| backtrex | 難読化 | 該当なし(クライアント側コードは未検証) | 未確認 | 未検証 |
+| backtrex | 外部URL取得 | 該当なし | 一次資料 | SaaS |
+| backtrex | 依存の一覧 | 該当なし | 一次資料 | SaaS |
+| backtrex | 保守者名の一貫性 | 該当なし | 一次資料 | 会社名のみ |
+| backtrex | 4軸1_道具 | 仮定(登録が要るためこの環境では実行未確認、文書上は導入可能と読める) | 仮定 | ドキュメントの記述から |
+| backtrex | 4軸2_情報 | 印(close[1]によるルックアヘッド防止設計、SMC/ICTブロック自動検出) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:backtrex_docs_antirepaint |
+| backtrex | 4軸3_視点 | 印(ノーコードのビジュアル戦略構築という視点) | 一次資料 | サイト実測 |
+| backtrex | 4軸4_向上 | 推定(close[1]設計原則は当方のバックテストエンジンの設計指針として参考になりうる) | 推定 | anti-repainting文書から外挿 |
+| FX Replay | 版 | 該当なし(SaaS) | 一次資料 | サイト実測、バージョン表記なし |
+| FX Replay | 最終更新日 | 未確認 | 未確認 | 未検証 |
+| FX Replay | ライセンス | 該当なし(SaaS) | 一次資料 | サイト実測(ライセンスについて同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 言語と動作環境 | Webブラウザ(SaaS) | 一次資料 | サイト実測(言語と動作環境について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 対応取引所 | 該当なし(バックテスト専用) | 一次資料 | サイト実測(対応取引所について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 星 | 該当なし(SaaS、GitHub非公開) | 一次資料 | 未発見 |
+| FX Replay | コミット数 | 該当なし | 一次資料 | 同上(コミット数について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 保守者数 | 未確認 | 未確認 | 会社名のみ判明 |
+| FX Replay | 週DL数 | 該当なし(SaaS) | 一次資料 | ダウンロード概念なし |
+| FX Replay | 初回公開日 | 未確認 | 未確認 | サイトに記載なし |
+| FX Replay | 既知の脆弱性 | 未確認 | 未確認 | 未検索 |
+| FX Replay | 料金体系 | 未確認(この回は料金頁を読んでいない。1回目報告参照) | 未確認 | この回未実施 |
+| FX Replay | 無料枠の上限 | 未確認(この回) | 未確認 | 同上(無料枠の上限について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 課金開始条件 | 未確認(この回) | 未確認 | 同上(課金開始条件について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 隠れた依存 | 無し(SaaS完結) | 一次資料 | サイト実測(隠れた依存について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 登録の要否 | 要(この回は登録していない) | 一次資料 | サイト実測(登録の要否について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 到達経路 | 公式サイト・support.fxreplay.comいずれも到達成功(記事本体はJS描画のためWebFetch併用) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `fxreplay_home`・`fxreplay_support_home` の節 |
+| FX Replay | 導入可否 | 該当なし(SaaS) | 一次資料 | サイト実測(導入可否について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | install所要秒 | 該当なし | 一次資料 | 同上(install所要秒について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 依存数 | 該当なし | 一次資料 | 同上(依存数について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | pip check | 該当なし | 一次資料 | 同上(pip checkについて同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 最小実行の可否 | 登録が要る(実行はオーナーの判断待ち) | 一次資料 | この回は登録・実行していない |
+| FX Replay | 最小実行の中身 | 登録が要る(渡すもの: メール等)。実行はオーナーの判断待ち | 一次資料 | 同上(最小実行の中身について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 実行所要秒 | 該当なし(未実行) | 一次資料 | 未実行 |
+| FX Replay | wheel展開 | 該当なし | 一次資料 | SaaS |
+| FX Replay | setup.py導入時実行 | 該当なし | 一次資料 | 同上(setup.py導入時実行について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 同梱バイナリ | 該当なし | 一次資料 | 同上(同梱バイナリについて同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 外部送信 | 未確認 | 未確認 | 未検証 |
+| FX Replay | 自動発注機能 | 未確認(この回) | 未確認 | 未検証(手動リプレイでの取引の記録機能はJournal機能として存在するが自動発注かは未確認) |
+| FX Replay | 宣伝詐欺の兆候 | 無し(文書は具体的な技術説明に終始) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:fxreplay_vstv_webfetch/fxreplay_brokerdata_webfetch |
+| FX Replay | 当方データ投入 | 該当なし(Dukascopy/OANDA/CME Futuresの内蔵データのみ) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:fxreplay_brokerdata_webfetch |
+| FX Replay | 時刻の扱い | 未確認(この回) | 未確認 | 未検証 |
+| FX Replay | 再現性 | なし(Monte Carloのシード非公開) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:fxreplay_metrics_webfetch |
+| FX Replay | 規模の見積 | 該当なし(SaaS側で処理) | 一次資料 | サイト実測(規模の見積について同旨、実測に基づく個別確認は未実施) |
+| FX Replay | 配布元の一致 | 該当なし | 一次資料 | SaaS |
+| FX Replay | 難読化 | 未確認 | 未確認 | 未検証 |
+| FX Replay | 外部URL取得 | 該当なし | 一次資料 | SaaS |
+| FX Replay | 依存の一覧 | 該当なし | 一次資料 | SaaS |
+| FX Replay | 保守者名の一貫性 | 該当なし | 一次資料 | 会社名のみ |
+| FX Replay | 4軸1_道具 | 仮定(登録が要るためこの環境では実行未確認) | 仮定 | サイトの記述から |
+| FX Replay | 4軸2_情報 | 印(複数ブローカー(Dukascopy/OANDA/CME Futures)のデータを切り替えられる) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:fxreplay_brokerdata_webfetch |
+| FX Replay | 4軸3_視点 | なし(手動リプレイのみで、自動検証の視点は無いことが今回確定) | 一次資料 | E1a〜E3b・E5・E6がいずれも「なし」の判定結果から |
+| FX Replay | 4軸4_向上 | 未確認 | 未確認 | 未検証 |
+| TradingView のリプレイ機能 | 版 | 該当なし(Webサービス) | 一次資料 | サイト実測 |
+| TradingView のリプレイ機能 | 最終更新日 | 未確認 | 未確認 | 未検証(最終更新日について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | ライセンス | 該当なし(SaaS) | 一次資料 | サイト実測 |
+| TradingView のリプレイ機能 | 言語と動作環境 | Webブラウザ/モバイルアプリ | 一次資料 | ヘルプ頁実測 |
+| TradingView のリプレイ機能 | 対応取引所 | 該当なし(チャート機能、発注は別途ブローカー連携) | 一次資料 | ヘルプ頁実測 |
+| TradingView のリプレイ機能 | 星 | 該当なし | 一次資料 | SaaS(星について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | コミット数 | 該当なし | 一次資料 | 同上(コミット数について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 保守者数 | 該当なし(企業TradingView, Inc.) | 一次資料 | フッター実測 |
+| TradingView のリプレイ機能 | 週DL数 | 該当なし | 一次資料 | SaaS(週DL数について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 初回公開日 | 未確認 | 未確認 | 未検証(初回公開日について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 既知の脆弱性 | 未確認 | 未確認 | 未検索 |
+| TradingView のリプレイ機能 | 料金体系 | Basic〜Ultimateの5段階プラン(実測、料金比較表)。Bar Replayがどのプランで有効かはチェックマーク記号がテキスト抽出で失われ未確認 | 未確認 | docs/DATA/probes/20260923_tools_8_run4.log の `tv_pricing_context` の節 |
+| TradingView のリプレイ機能 | 無料枠の上限 | 未確認(登録なしで一部利用可能との二次情報があるが一次資料で確認できず) | 未確認 | docs/DATA/probes/20260923_tools_8_run4.log:tv_pricing_context |
+| TradingView のリプレイ機能 | 課金開始条件 | 未確認 | 未確認 | 同上(課金開始条件について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 隠れた依存 | 無し(ブラウザのみ) | 一次資料 | サイト実測 |
+| TradingView のリプレイ機能 | 登録の要否 | 閲覧は不要、機能利用には要登録の可能性(未確認) | 未確認 | 未検証(登録の要否について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 到達経路 | 公式ヘルプ・料金頁いずれも到達成功 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `tv_replay_solution`・`tv_pricing_check` の節 |
+| TradingView のリプレイ機能 | 導入可否 | 該当なし(SaaS、ブラウザで完結) | 一次資料 | サイト実測 |
+| TradingView のリプレイ機能 | install所要秒 | 該当なし | 一次資料 | 同上(install所要秒について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 依存数 | 該当なし | 一次資料 | 同上(依存数について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | pip check | 該当なし | 一次資料 | 同上(pip checkについて同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 最小実行の可否 | 登録が要る可能性(未確認)。実行はオーナーの判断待ち | 未確認 | この回は登録・実行していない |
+| TradingView のリプレイ機能 | 最小実行の中身 | 登録が要る可能性(渡すもの: 未確認)。実行はオーナーの判断待ち | 未確認 | 同上(最小実行の中身について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 実行所要秒 | 該当なし(未実行) | 一次資料 | 未実行 |
+| TradingView のリプレイ機能 | wheel展開 | 該当なし | 一次資料 | SaaS(wheel展開について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | setup.py導入時実行 | 該当なし | 一次資料 | 同上(setup.py導入時実行について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 同梱バイナリ | 該当なし | 一次資料 | 同上(同梱バイナリについて同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 外部送信 | 未確認 | 未確認 | 未検証(外部送信について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 自動発注機能 | 有り(Bar Replay中の発注は「real-time data」で約定するため実質は実発注に近い動作) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:tv_replay_body |
+| TradingView のリプレイ機能 | 宣伝詐欺の兆候 | 無し | 一次資料 | ヘルプ頁実測 |
+| TradingView のリプレイ機能 | 当方データ投入 | 該当なし(TradingView内蔵のICE Data Services/FactSet提供データのみ) | 一次資料 | tv_replay_body(フッターのデータ提供元表記) |
+| TradingView のリプレイ機能 | 時刻の扱い | 未確認 | 未確認 | 未検証(時刻の扱いについて同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 再現性 | なし(リアルタイムデータに依存する部分がありE5該当記述なし) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:tv_replay_body |
+| TradingView のリプレイ機能 | 規模の見積 | 該当なし(SaaS側で処理) | 一次資料 | サイト実測 |
+| TradingView のリプレイ機能 | 配布元の一致 | 該当なし | 一次資料 | SaaS(配布元の一致について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 難読化 | 該当なし | 一次資料 | SaaS(難読化について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 外部URL取得 | 該当なし | 一次資料 | SaaS(外部URL取得について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 依存の一覧 | 該当なし | 一次資料 | SaaS(依存の一覧について同旨、実測に基づく個別確認は未実施) |
+| TradingView のリプレイ機能 | 保守者名の一貫性 | 該当なし | 一次資料 | 企業のみ |
+| TradingView のリプレイ機能 | 4軸1_道具 | 仮定(登録・プラン確認が要るためこの環境では実行未確認) | 仮定 | 料金表の存在から |
+| TradingView のリプレイ機能 | 4軸2_情報 | 印(全チャート同期リプレイという機能情報) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log:tv_replay_body |
+| TradingView のリプレイ機能 | 4軸3_視点 | なし(単純な過去チャート表示の巻き戻しで、独自の分析視点の提供は確認できず) | 一次資料 | ヘルプ頁実測 |
+| TradingView のリプレイ機能 | 4軸4_向上 | 未確認 | 未確認 | 未検証(4軸4_向上について同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | 版 | v1(2025-12-15) | 一次資料 | arXiv頁実測 |
+| arXiv:2512.12924 | 最終更新日 | 2025-12-15(論文)。実装コードpushedAt 2026-07-08 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_github_repo` の節 |
+| arXiv:2512.12924 | ライセンス | arXiv perpetual license(論文)。コードのlicenseファイルは未開封のため未確認 | 未確認 | arXiv頁+ファイル一覧実測(license存在は確認、中身未読) |
+| arXiv:2512.12924 | 言語と動作環境 | Python(hdt/パッケージ、requirements.txt存在確認、バージョン制約未読) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_repo_files` の節 |
+| arXiv:2512.12924 | 対応取引所 | 該当なし(株式・yfinance経由の日次データ) | 一次資料 | data_loader.py実測 |
+| arXiv:2512.12924 | 星 | 3 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_github_repo` の節 |
+| arXiv:2512.12924 | コミット数 | 未確認 | 未確認 | 未取得 |
+| arXiv:2512.12924 | 保守者数 | 未確認(著者名akashdeepoのみ判明) | 未確認 | GitHubユーザー名から |
+| arXiv:2512.12924 | 週DL数 | 該当なし(論文・PyPI未公開) | 一次資料 | PyPI検索未実施だがGitHub限定の配布と推定 |
+| arXiv:2512.12924 | 初回公開日 | 論文2025-12-15。リポジトリcreatedAt 2025-12-14 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_github_repo` の節 |
+| arXiv:2512.12924 | 既知の脆弱性 | 未確認 | 未確認 | 未検索 |
+| arXiv:2512.12924 | 料金体系 | 無料 | 一次資料 | arXiv・GitHub公開 |
+| arXiv:2512.12924 | 無料枠の上限 | 該当なし(論文・OSSコード) | 一次資料 | 同上 |
+| arXiv:2512.12924 | 課金開始条件 | 該当なし | 一次資料 | 同上 |
+| arXiv:2512.12924 | 隠れた依存 | yfinance経由のYahoo Financeデータ取得に依存(data_loader.py実測) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_data_loader` の節 |
+| arXiv:2512.12924 | 登録の要否 | 不要 | 一次資料 | GitHub公開 |
+| arXiv:2512.12924 | 到達経路 | arXiv(HTML版)・GitHub(ungh.cc・raw)いずれも到達成功 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_html`・`arxiv_2512_12924_github_repo` の節 |
+| arXiv:2512.12924 | 導入可否 | 未確認(この回はpip install等を試していない、コードは読むところまで) | 未確認 | 未実施(導入可否について同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | install所要秒 | 未確認 | 未確認 | 未実施(install所要秒について同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | 依存数 | 未確認 | 未確認 | requirements.txtは存在確認のみ、中身未読 |
+| arXiv:2512.12924 | pip check | 未確認 | 未確認 | 未実施(pip checkについて同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | 最小実行の可否 | 未確認(この回は実行未実施) | 未確認 | 未実施(最小実行の可否について同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | 最小実行の中身 | 未確認 | 未確認 | 未実施(最小実行の中身について同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | 実行所要秒 | 該当なし(未実行。`rerun_analysis.py`のdocstringに「avoids the ~30 minute walk-forward backtest」とありフル実行は約30分かかる可能性) | 一次資料 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_rerun_analysis` の節 |
+| arXiv:2512.12924 | wheel展開 | 未確認 | 未確認 | 未実施(wheel展開について同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | setup.py導入時実行 | 未確認(setup.py不在、ファイル一覧で未確認) | 未確認 | ファイル一覧実測 |
+| arXiv:2512.12924 | 同梱バイナリ | 無し(ソース・ノートブック・図表PDFのみ、ファイル一覧実測) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_repo_files` の節 |
+| arXiv:2512.12924 | 外部送信 | 未確認(yfinance経由の外部通信はあるが当方データの送信ではない) | 未確認 | 未検証 |
+| arXiv:2512.12924 | 自動発注機能 | 無し(backtestのみ、paper/live執行の記述なし) | 一次資料 | backtester.py実測(ProductionBacktesterはシミュレーションのみ) |
+| arXiv:2512.12924 | 宣伝詐欺の兆候 | 無し | 一次資料 | 全体実測 |
+| arXiv:2512.12924 | 当方データ投入 | pandas DataFrame(OHLCV列)形式なら投入できる可能性(E2根拠と同じ、対象形式が汎用) | 推定 | data_loader.py実測から外挿 |
+| arXiv:2512.12924 | 時刻の扱い | 日次バー、day t close→day t+1 open執行 | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_backtester_docstring` の節 |
+| arXiv:2512.12924 | 再現性 | 印(E5参照、seed+保存済み結果の再利用) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_validation_py`・`arxiv_2512_12924_rerun_analysis` の節 |
+| arXiv:2512.12924 | 規模の見積 | 未確認 | 未確認 | 未実施(規模の見積について同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | 配布元の一致 | 一致(論文本文が示すGitHub URLと実際のリポジトリが一致、実測確認) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_github_repo` の節 |
+| arXiv:2512.12924 | 難読化 | 無し(全ソース可読) | 一次資料 | validation.py/backtester.py/data_loader.py等を実測で取得・可読 |
+| arXiv:2512.12924 | 外部URL取得 | yfinance経由(data_loader.py) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_data_loader` の節 |
+| arXiv:2512.12924 | 依存の一覧 | 未確認(requirements.txt中身未読) | 未確認 | ファイル一覧のみ確認 |
+| arXiv:2512.12924 | 保守者名の一貫性 | 一貫(akashdeepo、GitHubのみで確認) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_github_repo` の節 |
+| arXiv:2512.12924 | 4軸1_道具 | 未確認(導入未実施) | 未確認 | 未実施(4軸1_道具について同旨、実測に基づく個別確認は未実施) |
+| arXiv:2512.12924 | 4軸2_情報 | 印(fold単位の乱数種指定+保存結果の再実行インフラ) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_validation_py` の節 |
+| arXiv:2512.12924 | 4軸3_視点 | 印(学術的厳密性を志向したwalk-forward設計、情報集合の厳密な時点管理) | 実測 | docs/DATA/probes/20260923_tools_8_run4.log の `arxiv_2512_12924_validation_py` の節 |
+| arXiv:2512.12924 | 4軸4_向上 | 推定(walk-forward部分の設計を当方のresearch-protocolに参考として取り込める可能性) | 推定 | 全体の設計から外挿 |
+
+### 代替経路
+この回は「この環境から不可」と書いた項目なし。arXiv:2603.20319のコード所在(github.com/don-yin/backtest-engine)は404だったが、これは「未公開」という一次資料の実測結果であり「到達できなかった」ではない(rc=35のケース2件(ungh.cc)はSURVEY.md§5に従い打ち直して解消した。生ログ参照)。tech.takibi.net記事(rusty-botの発見経路)は初回404だったが、archive.org(wayback)への代替経路で200を得て解決した(実測、docs/DATA/probes/20260923_tools_8_run4.log の rustybot_takibi_article/rustybot_takibi_wayback/rustybot_takibi_wayback_retry 節)。support.fxreplay.comの記事本体はJavaScriptで描画され`curl`では取得できなかったため、`WebFetch`を代替経路として使った(生ログのwebfetch手を参照)。
+
+### 予算
+この回は予算で止めない(追補§5)。
+
+### 受け入れ検査の出力
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log docs/DATA/probes/20260923_tools_8_run2.log docs/DATA/probes/20260923_tools_8_run3.log docs/DATA/probes/20260923_tools_8_run4.log` の最後に打った出力全文:
+
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+`python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 4` の最後に打った出力全文:
+```
+読んだもの: 候補の一覧 16 行 / 要素と段の表 128 行(道具 16)/ 知見の表 30 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+`python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run4.log` の最後に打った出力全文:
+```
+参考: docs/DATA/probes/20260923_tools_8_run4.log の最初の手 2026-09-24T00:17:41Z / 最後の手 2026-09-24T00:53:12Z / 手の数 184
+---- 合計 0 件
+```
+
+`git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l` の出力: `0`(1〜3回目の節から消えた行は無い)
+
+### 判断に迷った点と問い(決めずに列挙)
+1. **8-014 Fincept TerminalのE1a(6エンジンの相互運用)**: 「同一の戦略・銘柄・期間設定を6つの異なるバックテストエンジンのどれでも実行できる」ことは確認したが、自動でdiffを算出する記述は見当たらなかった(人が結果を並べて見る前提と読める)。段を確定できなかった。
+2. **8-014のE5(決定的プライサー)**: 「Deterministic. All 16 pricers are closed-form or tree-based — no Monte Carlo, no seed on this page」は乱数を使わない解析解の性質であり、E5述語が主に想定する「乱数の種を指定して結果を固定する」機能とは性質が異なる。この種の決定性をE5に当ててよいか。
+3. **8-016 Exactproの範囲**: 候補「Exactproのreconciliation testing」をth2プラットフォームのth2-check2-reconコンポーネントに絞って深掘りしてよいか、それとも商用のShsha等の非OSS製品も含めて評価すべきか。th2は多数のマイクロサービス(20以上のリポジトリ)からなり、この回はごく一部(th2-codec・th2-check2-recon・th2-check2-recon-template)しか読めておらず、E2・E3a・E3b・E4・E5・E6が未判別のまま残った。次回に読み進める必要がある。
+4. **8-013 rusty-botの状態**: 一次資料(yasstake/rbot README)への到達と同定は確定したが、Rustコア本体(ソースコード)は未読で、E2(`Market#donwload_gap`関数)とE5が未判別のまま残った。README単体では「なしと書くための条件」(a)(一次資料の全部の文書)を満たしていない。
+5. **8-012 VectorBTのE4**: README・公式文書にベクトル化計算の説明はあるが、時刻順の逐次再生と呼べる明示的な記述を見つけられなかった(8-009のnicferrari/backtesterと同型の論点)。公式ドキュメントのSimulation詳細頁を読み切れていない。
+6. **WebFetchの使用(8-008 FX Replay)**: support.fxreplay.comはJavaScriptで記事本体を描画するため`curl`では取得できず、`WebFetch`(小型モデルによる要約)を使った。可能な範囲で逐語(引用符付き)を確認して印の根拠としたが、これは委任文§4.1の「一次資料」(自分で開いて、その場所に書いてある)の要件を満たすと言えるか、それとも「実測」や別の印にすべきか。
+7. **8-003・8-006・8-007のE1a訂正**: 2・3回目はREADMEや断片的な文言だけで「なし」と判定していたが、この回にソース本体・追加文書ページまで読むと「印」に訂正すべき機能が見つかった(3件とも)。「一次資料の全部」をREADMEに限定してよいか、常にソース本体・関連文書ページまで読むべきかという判定基準の揺れが、この回で繰り返し露呈した。次回以降の候補(8-001・8-002・8-004・8-005など、この回は未着手)にも同じ問題が起きていないか、確認が要る。
+8. **§4.0表の「今の値で載せる」と「8-001〜8-008は台帳の値のまま写す」の食い違い(起動文§4)**: 起動文§4は「候補の一覧と『要素と段』の表には8-001〜8-016の全行を今の値で載せる(8-001〜8-008は台帳の値のまま写す)」と書いているが、この回の§2の9〜12はまさに8-003・8-006・8-007・8-008を更新する指示であり、両者が字面上矛盾する。この回は「今の値で載せる」(更新を反映する)を優先したが、この判断でよいか確認したい。
+9. **委任文§6-6「本体の一括ダウンロード(数百MB以上)はしない」とFincept Terminalの700頁マニュアル(実際は864頁、43.8MBのPDF)**: 数百MB未満のため実施したが、公式文書そのもの(製品の実行ファイルや依存の一括取得ではない)であることを踏まえて許容範囲と判断した。この判断基準でよいか確認したい。
