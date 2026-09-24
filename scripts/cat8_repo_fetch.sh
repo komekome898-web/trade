@@ -67,4 +67,20 @@ echo "checked_out_files: $n_out (expected $n_present)"
 got_co=$(du -sb --exclude=.git . | cut -f1)
 echo "checked_out_bytes(without .git): $got_co"
 [ "$n_out" -eq "$n_present" ] || { echo "cat8_repo_fetch: checked-out count differs" >&2; exit 1; }
+# Git LFS pointers are written as-is (filters are off), so they are not the file's content:
+# list them so they are counted as unread (audit 55).
+python3 - <<'PY'
+import os
+names = [p for p in open(".git/cat8_present", "rb").read().split(b"\0") if p]
+lfs = []
+for p in names:
+    if os.path.islink(p) or not os.path.isfile(p):
+        continue
+    with open(p, "rb") as f:
+        if f.read(40).startswith(b"version https://git-lfs.github.com/spec/"):
+            lfs.append(p)
+print("lfs_pointers(not content): %d" % len(lfs))
+for p in lfs:
+    print("  lfs_pointer: " + p.decode("utf-8", "replace"))
+PY
 [ "$got_co" -eq "$exp_co" ] || { echo "cat8_repo_fetch: checked-out bytes differ from expected" >&2; exit 1; }
