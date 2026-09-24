@@ -104,6 +104,7 @@ class NewImplAdapter(Adapter):
     name = "new_impl"
 
     def __init__(self, core) -> None:
+        super().__init__()  # round r8-1: one configured target (CONFIGS of the base class)
         self.core = core
 
     # ------------------------------------------------------------ helpers

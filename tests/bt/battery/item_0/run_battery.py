@@ -93,22 +93,58 @@ def _repro_targets() -> dict[str, tuple[str, str]]:
     return out
 
 
+def split_target(target: str) -> tuple[str, str]:
+    """(the target, the label of its configured target) of `<target>[@<label>]` (round r8-1)."""
+    base, _, label = target.partition("@")
+    return base, label
+
+
+def _module_path(base: str) -> Path | None:
+    if base == "current_impl":
+        return HERE / "adapters" / "current_impl.py"
+    if base in ("new_impl", "mutant"):
+        return HERE / "adapters" / "new_impl.py"
+    table = {**OPPONENTS, **_repro_targets()}
+    return HERE / "opponents" / f"{table[base][0]}.py" if base in table else None
+
+
+def configured_targets(base: str) -> list[str]:
+    """Every configured target of a target (round r8-1, positive definition A):
+    the labels of the adapter class's `CONFIGS`, read from the adapter file
+    without importing it (an opponent imports only in its own venv)."""
+    import ast
+    path = _module_path(base)
+    if path is None:
+        raise SystemExit(f"unknown target {base!r}")
+    cls = {**OPPONENTS, **_repro_targets()}.get(base, (None, None))[1]
+    labels = [""]
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.ClassDef) and (cls is None or node.name == cls):
+            for st in node.body:
+                if isinstance(st, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "CONFIGS" for t in st.targets):
+                    labels = list(ast.literal_eval(st.value))
+    return [base if lab == "" else f"{base}@{lab}" for lab in labels]
+
+
 def load_adapter(target: str) -> Adapter:
-    if target == "current_impl":
+    base, label = split_target(target)
+    if base == "current_impl":
         from adapters.current_impl import CurrentImplAdapter
-        return CurrentImplAdapter()
-    if target == "new_impl":
-        import bot.bt.core as core
-        mod = importlib.import_module("adapters.new_impl")
-        return mod.make_adapter(core)
-    if target == "mutant":
+        return CurrentImplAdapter(label)
+    if base in ("new_impl", "mutant"):
+        if label:
+            raise SystemExit(f"{base} has one configured target (no label): {target!r}")
+        if base == "new_impl":
+            import bot.bt.core as core
+            mod = importlib.import_module("adapters.new_impl")
+            return mod.make_adapter(core)
         from mutant import make_mutant_adapter
         return make_mutant_adapter()
     table = {**OPPONENTS, **_repro_targets()}
-    if target in table:
-        mod_name, cls = table[target]
+    if base in table:
+        mod_name, cls = table[base]
         mod = importlib.import_module(f"opponents.{mod_name}")
-        return getattr(mod, cls)()
+        return getattr(mod, cls)(label)
     raise SystemExit(f"unknown target {target!r}; known: current_impl, new_impl, mutant, {', '.join(sorted(table))}")
 
 
@@ -296,6 +332,7 @@ def roots_of(target: str | None) -> Roots:
     """Resolve TARGET_DISTS[target] in THIS interpreter (the target's venv).
     A place inside the scene set is refused for every target, and a place
     inside this repository is refused for a survey tool."""
+    target = split_target(target)[0] if target else target  # a configured target has its target's places
     if target in _ROOTS:
         return _ROOTS[target]
     import importlib.util
@@ -561,9 +598,56 @@ def _provenance_out_of_output(res: SceneResult) -> SceneResult:
     return SceneResult(res.status, output={**out, "attempts": kept}, detail=res.detail, provenance=prov)
 
 
-def checked(res: SceneResult, scene, target: str | None = None, roots: Roots | None = None) -> SceneResult:
-    """The result as graded: unchanged, or "error" when its provenance fails."""
+def setting_problem(rec, roots: Roots) -> str | None:
+    """Why a recorded setting (common.configure*) is not shown to be made
+    through the target's public means, or None (round r8-1, positive
+    definition A (1)): the record was made by common.py from the call, and
+    the function called is the target's (its code file, or the code that ran
+    during the call, lies in the target's distribution; for a compiled
+    driver, its name is in the target's namespace)."""
+    if not _made(rec):
+        return f"設定の操作 {str(rec)[:120]} が common.py で呼び出しから作った記録でない(手で書いた値)"
+    if rec.get("compiled"):
+        return None if roots.has_name(rec.get("fn")) else \
+            f"設定の操作 {rec.get('fn')!s:.120} の翻訳した道具の名前が対象の名前の頭 {roots.heads} に無い"
+    if roots.has_file(rec.get("fn_file")) or any(roots.has_file(f) for f in (rec.get("touched") or [])):
+        return None
+    return (f"設定の操作 {rec.get('fn')!s:.120}({rec.get('what')!s:.80})の関数 {rec.get('fn_file')} も、"
+            "呼び出しの間に走ったコードも、対象の配布物に無い")
+
+
+def settings_problem(settings, roots: Roots) -> str | None:
+    if not isinstance(settings, list):
+        return f"設定の操作の列が list でない: {settings!r:.80}"
+    for rec in settings:
+        why = setting_problem(rec, roots)
+        if why:
+            return why
+    return None
+
+
+def compact_settings(settings, roots: Roots) -> list:
+    """The settings as written into the output: the function, where its code
+    is (relative to the target's place), what, when, decided from."""
+    out = []
+    for r in settings or []:
+        f = r.get("fn_file") or ""
+        for d in roots.dirs:
+            if f == d or f.startswith(d + os.sep):
+                f = os.path.basename(d) + f[len(d):]
+                break
+        out.append({"fn": r.get("fn"), "at": f"{f}:{r.get('line')}" if f else None, "what": r.get("what"),
+                    "when": r.get("when"), "decided_from": r.get("decided_from")})
+    return out
+
+
+def checked(res: SceneResult, scene, target: str | None = None, roots: Roots | None = None,
+            settings: list | None = None) -> SceneResult:
+    """The result as graded: unchanged, or "error" when its provenance or one
+    of its settings (round r8-1) fails."""
     why = provenance_problem(res, scene, target, roots)
+    if why is None and res.status == "ok" and settings is not None:
+        why = settings_problem(settings, roots or roots_of(target))
     res = _provenance_out_of_output(res)
     if why is None:
         return res
@@ -598,76 +682,78 @@ def reproducibility(a: SceneResult, b: SceneResult) -> str:
     return "2 回の実行で同じ" if same else "2 回で違う"
 
 
-# ---------------------------------------------------------------- the target's own types (round r7-1)
-# Scenes of other viewpoints than P0-3 that need several event types
-# (`Scene.type_plan`) take them from the types the target delivered in the
-# P0-3 type scenes of the same run (critic i0-r6-02): a type of the target is
-# one whose p3-<type> scene, after the provenance check, is "ok" with a
-# non-empty received list of that type only. The adapter never chooses them.
+# ---------------------------------------------------------------- the target's own types (round r7-1, r8-1)
+# Scenes that need several event types (`Scene.type_plan`; the four scenes of
+# P0-1 and P0-5 that L-438 (2) names) take them from the types of the
+# configured target, from the P0-3 type scenes of the same run (critic
+# i0-r6-02; positive definition A of round r8-1): a type of the configured
+# target is one whose p3-<type> scene, after the provenance and settings
+# checks, was graded "正解と一致". A type whose p3 scene was 不一致, 対応なし
+# or 結果なし is not had (L-438 (2): a type whose values do not match is not
+# counted). The adapter never chooses them.
 TYPE_SCENES = [f"p3-{k}" for k in TYPE_ORDER]
+_SCENE_BY_ID = {sc.id: sc for sc in SCENES}
 
 
-def target_types(p3_results: dict[str, SceneResult]) -> list[str]:
-    """The target's types from its checked p3-<type> results of one run."""
-    out = []
-    for k in TYPE_ORDER:
-        r = p3_results.get(f"p3-{k}")
-        seq = r.output.get("sequence") if r is not None and r.status == "ok" and isinstance(r.output, dict) else None
-        if isinstance(seq, list) and seq and all(isinstance(p, (list, tuple)) and p and p[0] == k for p in seq):
-            out.append(k)
-    return out
+def target_types(p3_grades: dict[str, str]) -> list[str]:
+    """The configured target's types: the p3-<type> scenes of one run graded 正解と一致."""
+    return [k for k in TYPE_ORDER if p3_grades.get(f"p3-{k}") == "正解と一致"]
 
 
-def _types_detail(p3_results: dict[str, SceneResult]) -> str:
-    parts = []
-    for k in TYPE_ORDER:
-        r = p3_results.get(f"p3-{k}")
-        seq = (r.output or {}).get("sequence") if r is not None and isinstance(r.output, dict) else None
-        parts.append(f"p3-{k}: {r.status if r else 'なし'}"
-                     + (f" 受けた型 {sorted({str(p[0]) for p in seq if isinstance(p, (list, tuple)) and p})}"
-                        if isinstance(seq, list) else ""))
-    return " / ".join(parts)
+def _types_detail(p3_grades: dict[str, str]) -> str:
+    return " / ".join(f"p3-{k}: {p3_grades.get(f'p3-{k}', 'なし')}" for k in TYPE_ORDER)
 
 
-def run_for_types(adapter: Adapter, sc, p3_results: dict[str, SceneResult]):
-    """(the scene as run for this target, its raw result). A scene with a
-    type_plan is built from the target's types; when they are too few the
-    adapter is not called and the scene is 対応なし with the p3 results."""
+def _run_one(adapter: Adapter, sc) -> tuple[SceneResult, list]:
+    """Run one scene with the settings log reset before it (round r8-1)."""
+    C.settings_begin()
+    with C.native_tracker():  # round r6-3: a strategy called from compiled code shows the caller (native_by)
+        raw = adapter.run_scene(sc)
+    return raw, C.settings_taken()
+
+
+def run_for_types(adapter: Adapter, sc, p3_grades: dict[str, str]):
+    """(the scene as run for this configured target, its raw result, its
+    settings). A scene with a type_plan is built from the configured target's
+    types; when they are too few the adapter is not called and the scene is
+    対応なし with the p3 grades."""
     if sc.type_plan is None:
-        with C.native_tracker():  # round r6-3: a strategy called from compiled code shows the caller (native_by)
-            return sc, adapter.run_scene(sc)
-    types = target_types(p3_results)
+        raw, settings = _run_one(adapter, sc)
+        return sc, raw, settings
+    types = target_types(p3_grades)
     conc = for_target_types(sc, types)
-    head = f"型の選び方(runner、第 r7-1 回): 対象の型 {types}"
+    head = f"型の選び方(runner、第 r8-1 回): 設定つき対象の持つ型 {types}"
     if conc is None:
         return sc, SceneResult("not_supported", detail=(
             f"{head} は {len(types)} 種で、この場面の最低 {sc.type_plan['min_types']} 種に足りない"
-            f"(同じ実行の p3 の結果: {_types_detail(p3_results)})"))
-    with C.native_tracker():
-        raw = adapter.run_scene(conc)
+            f"(同じ実行の p3 の採点: {_types_detail(p3_grades)})")), []
+    raw, settings = _run_one(adapter, conc)
     return conc, SceneResult(raw.status, output=raw.output, detail=f"{head} → この場面の型 {conc.input.get('types')}。{raw.detail}",
-                             provenance=raw.provenance)
+                             provenance=raw.provenance), settings
 
 
 def run_target(target: str) -> list[dict]:
     rows = {}
     adapter_1 = load_adapter(target)
     adapter_2 = load_adapter(target)  # a fresh adapter for the second run
-    p3_1: dict[str, SceneResult] = {}
-    p3_2: dict[str, SceneResult] = {}
-    # the P0-3 type scenes first: the other scenes' types come from them (round r7-1)
+    roots = roots_of(target)
+    p3_1: dict[str, str] = {}
+    p3_2: dict[str, str] = {}
+    # the P0-3 type scenes first: the other scenes' types come from their grades (round r7-1, r8-1)
     order = [sc for sc in SCENES if sc.id in TYPE_SCENES] + [sc for sc in SCENES if sc.id not in TYPE_SCENES]
     for sc in order:
-        sc1, raw1 = run_for_types(adapter_1, sc, p3_1)
-        sc2, raw2 = run_for_types(adapter_2, sc, p3_2)
-        r1 = checked(raw1, sc1, target)
-        r2 = checked(raw2, sc2, target)
+        sc1, raw1, set1 = run_for_types(adapter_1, sc, p3_1)
+        sc2, raw2, set2 = run_for_types(adapter_2, sc, p3_2)
+        r1 = checked(raw1, sc1, target, settings=set1)
+        r2 = checked(raw2, sc2, target, settings=set2)
+        g1 = correctness(r1, sc1.expected, sc1, target)
+        g2 = correctness(r2, sc2.expected, sc2, target)
         if sc.id in TYPE_SCENES:
-            p3_1[sc.id], p3_2[sc.id] = r1, r2
+            p3_1[sc.id], p3_2[sc.id] = g1, g2
         rows[sc.id] = {
             "target": target, "scene_id": sc.id, "viewpoint": sc.viewpoint, "kind": sc.kind,
-            "correctness": correctness(r1, sc1.expected, sc1, target),
-            "correctness_run2": correctness(r2, sc2.expected, sc2, target),
+            "correctness": g1,
+            "correctness_run2": g2,
             "reproducibility": reproducibility(r1, r2),
             "status_1": r1.status,
             "output_1": json.dumps(graded_output(r1, sc1, target), ensure_ascii=False, sort_keys=True, default=repr),
@@ -675,13 +761,17 @@ def run_target(target: str) -> list[dict]:
             "output_2": json.dumps(graded_output(r2, sc2, target), ensure_ascii=False, sort_keys=True, default=repr),
             "expected": json.dumps(sc1.expected, ensure_ascii=False, sort_keys=True),
             "detail_1": r1.detail.replace("\t", " ").replace("\n", " "),
-            "provenance_1": json.dumps(compact(r1.provenance, roots_of(target)), ensure_ascii=False, sort_keys=True, default=repr),
+            "provenance_1": json.dumps(compact(r1.provenance, roots), ensure_ascii=False, sort_keys=True, default=repr),
+            "choose": json.dumps(adapter_1.choose, ensure_ascii=False, sort_keys=True),
+            "settings_1": json.dumps(compact_settings(set1, roots), ensure_ascii=False, sort_keys=True, default=repr),
+            "types_1": json.dumps(sc1.input.get("types") if sc.type_plan is not None else None, ensure_ascii=False),
         }
     return [rows[sc.id] for sc in SCENES]
 
 
 FIELDS = ["target", "scene_id", "viewpoint", "kind", "correctness", "correctness_run2", "reproducibility",
-          "status_1", "output_1", "status_2", "output_2", "expected", "detail_1", "provenance_1"]
+          "status_1", "output_1", "status_2", "output_2", "expected", "detail_1", "provenance_1",
+          "choose", "settings_1", "types_1"]
 
 
 def main() -> None:
@@ -691,7 +781,8 @@ def main() -> None:
     ap.add_argument("--list-targets", action="store_true")
     a = ap.parse_args()
     if a.list_targets:
-        print("\n".join(["current_impl", "new_impl", "mutant", *OPPONENTS, *_repro_targets()]))
+        print("\n".join(t for base in ["current_impl", "new_impl", "mutant", *OPPONENTS, *_repro_targets()]
+                        for t in configured_targets(base)))
         return
     if not a.target or not a.out:
         ap.error("--target and --out are required")

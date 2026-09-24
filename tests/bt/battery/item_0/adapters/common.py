@@ -859,3 +859,92 @@ class Reads:
 
     def provenance(self) -> dict:
         return {"reads": list(self.items)}
+
+
+# ---------------------------------------------------------------- settings (round r8-1, positive definition A (1))
+# A result counts as the target's only under a sequence of settings the user
+# made through the target's public means within that one run: subscribing to
+# data, the event types, the resolution, the same-time ordering arguments,
+# the plugged models and the account -- made, added or replaced, before the
+# start or inside a strategy call. The adapter makes each such setting
+# through `configure` (it calls the target's function itself and records it),
+# so the record is made from the call, never written by hand. run_battery.py
+# resets the log before each scene, reads it after, checks that each recorded
+# function is the target's (its code file or the code that ran is in the
+# target's distribution) and writes the sequence into the output (`settings_1`).
+# What the machine does not check: that the sequence is complete and that a
+# user could make it in one run (e.g. two calls the target never allows in
+# one run); the critic and the auditor read that from `settings_1`.
+
+WHEN = ("開始前", "戦略の呼び出しの中")  # when the setting was made; anything else is spelled "その他: …"
+DECIDED_FROM = ("場面の銘柄と型", "選ぶ値", "公開の既定", "戦略が受けた物")  # what may decide a setting (definition A (1))
+
+_SETTINGS: list = []
+
+
+def settings_begin() -> None:
+    """The runner calls this before each scene run."""
+    _SETTINGS.clear()
+
+
+def settings_taken() -> list:
+    """The settings recorded since `settings_begin`, in the order they were made."""
+    return list(_SETTINGS)
+
+
+def _check_setting_words(when: str, decided_from) -> None:
+    if not (when in WHEN or (isinstance(when, str) and when.startswith("その他: "))):
+        raise ValueError(f"when {when!r} is not one of {WHEN} or 'その他: …'")
+    bad = [d for d in decided_from if d not in DECIDED_FROM]
+    if bad or not decided_from:
+        raise ValueError(f"decided_from {decided_from!r}: each must be one of {DECIDED_FROM}")
+
+
+def configure(fn, *args, what: str, when: str = "開始前", decided_from=("場面の銘柄と型",), **kwargs):
+    """Make one setting by calling the target's public `fn(*args, **kwargs)`,
+    and record it: the function (its qualified name and code file), the code
+    files that ran during the call, `what` (the scene's words for the
+    setting), `when` and `decided_from`. Returns what `fn` returned; an
+    exception of `fn` propagates (and nothing is recorded)."""
+    _check_setting_words(when, decided_from)
+    exc, v, touched = _profiled(lambda: fn(*args, **kwargs))
+    if exc is not None:
+        raise exc
+    name = qualname(fn)
+    _SETTINGS.append(_register(Record({"fn": str(name), "fn_file": name.file, "line": _first_line(fn),
+                                       "touched": touched, "what": what, "when": when,
+                                       "decided_from": list(decided_from)})))
+    return v
+
+
+def configure_attr(obj, attr_name: str, value, *, what: str, when: str = "開始前", decided_from=("選ぶ値",)) -> None:
+    """A setting made by assigning a public attribute of a target object: the
+    record names the object's class (its file must be the target's)."""
+    _check_setting_words(when, decided_from)
+    exc, _, touched = _profiled(lambda: setattr(obj, attr_name, value))
+    if exc is not None:
+        raise exc
+    t = type(obj)
+    _SETTINGS.append(_register(Record({"fn": f"{t.__module__}.{t.__qualname__}.{attr_name} =", "fn_file": type_file(t),
+                                       "line": None, "touched": touched, "what": what, "when": when,
+                                       "decided_from": list(decided_from)})))
+
+
+def configure_compiled(name: str, *, what: str, when: str = "開始前", decided_from=("場面の銘柄と型",)) -> None:
+    """A setting a compiled tool's driver made (the driver's own code calls
+    the tool): `name` is the tool's function as the driver names it
+    (checked against the target's compiled namespace like `compiled`)."""
+    _check_setting_words(when, decided_from)
+    m = compiled(name)
+    _SETTINGS.append(_register(Record({"fn": str(m), "compiled": True, "fn_file": None, "line": None, "touched": [],
+                                       "what": what, "when": when, "decided_from": list(decided_from)})))
+
+
+def _first_line(fn):
+    f = getattr(fn, "__func__", fn)
+    f = getattr(f, "py_func", f)
+    code = getattr(f, "__code__", None)
+    if code is None and isinstance(fn, type):
+        init = vars(fn).get("__init__")
+        code = getattr(init, "__code__", None)
+    return getattr(code, "co_firstlineno", None)

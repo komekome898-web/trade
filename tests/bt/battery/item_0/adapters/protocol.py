@@ -142,9 +142,28 @@ def method_name(scene_id: str) -> str:
 
 class Adapter(ABC):
     """One adapter wraps one target. Subclasses define one method per scene:
-    `scene_<id with - replaced by _>(self, scene) -> SceneResult`."""
+    `scene_<id with - replaced by _>(self, scene) -> SceneResult`.
+
+    Configured targets (round r8-1, positive definition A): a configured
+    target is the target together with the values the user chooses -- every
+    setting the scene's input does not decide (a resolution, a preload flag,
+    which of the target's types carries a scene that leaves the type open).
+    `CONFIGS` maps a label to those values; each label is run on every scene
+    as its own configured target and written to its own output
+    (`<target>@<label>`; the label "" keeps the bare target name). All
+    scenes of one configured target run with the same values
+    (`self.choose`); an adapter never picks, per scene, the better of two
+    settings. Settings themselves are made through `common.configure*`,
+    which records them for the runner."""
 
     name: str = "?"
+    CONFIGS: dict[str, dict] = {"": {}}
+
+    def __init__(self, config: str = "") -> None:
+        if config not in self.CONFIGS:
+            raise ValueError(f"{type(self).__name__}: unknown configured target {config!r}; known: {sorted(self.CONFIGS)}")
+        self.config = config
+        self.choose = dict(self.CONFIGS[config])
 
     def __init_subclass__(cls, **kw: Any) -> None:
         super().__init_subclass__(**kw)

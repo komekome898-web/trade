@@ -189,7 +189,8 @@ def predicted(rule: StatedRule, streams: dict[str, list[dict]], hand_over: list[
 
 
 def rule_for(target: str | None) -> StatedRule | None:
-    return STATED_RULES.get(target or "")
+    """The rule of a target; a configured target (`<target>@<label>`, round r8-1) has its target's rule."""
+    return STATED_RULES.get((target or "").partition("@")[0])
 
 
 if __name__ == "__main__":  # print the table (for the materials person and the critic)
