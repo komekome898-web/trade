@@ -21,9 +21,9 @@ from pathlib import Path
 
 REC = Path("docs/DISCUSSIONS/2026-09-23_backtest_env")
 LABEL = re.compile(r"^盲検:(\d+)#(\d+):([a-z]+)(\d)$")
-AUDIT_BATTERY = re.compile(r"^監査役\(場面\):(\d+)(?:#(\d+))?$")  # "#n" = audit before the worker (run 4 on)
+AUDIT_BATTERY = re.compile(r"^監査役\(場面\):(\d+)(?:#([\w-]+))?$")  # "#r4-1" = audit of a repair inside worker round 4 (L-427)  # "#n" = audit before the worker (run 4 on)
 AUDIT_TABLE = re.compile(r"^監査役\(表\):(\d+)$")
-REPAIR = re.compile(r"^場面の直し:(\d+)#(\d+)$")
+REPAIR = re.compile(r"^場面の直し:(\d+)#([\w-]+)$")
 AUDIT_REPORT = re.compile(r"^監査役:(\d+)#(\d+)$")
 WORKER = re.compile(r"^作る:(\d+)#(\d+)$")
 
@@ -103,16 +103,19 @@ def collect_battery(paths: list[str]) -> dict:
         if res is None:
             continue
         if (m := AUDIT_BATTERY.match(lab)) and m.group(2) is not None:
-            out[int(m.group(1))].append((int(m.group(2)), 0, lab, aid, res))
+            out[int(m.group(1))].append((m.group(2), 0, lab, aid, res))
         elif m := REPAIR.match(lab):
-            out[int(m.group(1))].append((int(m.group(2)), 1, lab, aid, res))
+            out[int(m.group(1))].append((m.group(2), 1, lab, aid, res))
     return out
 
 
 def render_battery(item: int, rows: list) -> str:
     lines = [f"# 場面集の監査と直し(項目 {item}、作業者の前。Workflow の記録から逐語で書き出し)", "",
              "監査役(場面):N#k = k 回目の監査、場面の直し:N#k = k 回目の直し(その前の監査の指摘を受けたもの)。", ""]
-    for _, _, lab, aid, res in sorted(rows, key=lambda r: (r[0], r[1])):
+    def order(r):  # pre-worker audits first ("1", "2"; audit before its repair), then in-round repairs ("r4-1", …)
+        k = r[0]
+        return (0, int(k), "", r[1]) if k.isdigit() else (1, 0, k, 1 - r[1])  # in-round: the repair comes before its audit
+    for _, _, lab, aid, res in sorted(rows, key=order):
         lines += [f"## {lab}(agent {aid})", ""]
         if "findings" in res:
             lines += [f"- [{x['level']}] {x['text']}" for x in res["findings"]] or ["(指摘なし)"]
