@@ -94,21 +94,48 @@ STATED_RULES: dict[str, StatedRule] = {
         quote=("`MessageBus` is a priority queue keyed by (arrival, sequence). The sequence number is the tie-break ... "
                "A pending action, ordered by (arrival, sequence)."),
         form="single_input", recipe="stable_by_time"),
+    # round r7-1: the reproduced LEAN now takes part in the P0-5 scenes (it has three types).
+    # Its data of one time goes into one Slice; Slice.AllData keeps the order in which
+    # SubscriptionSynchronizer.Sync visited the subscriptions (TimeSliceFactory.cs 184, Slice.cs 305),
+    # and the subscriptions are enumerated sorted (SubscriptionCollection.cs 123-126, 213-227).
+    # SecurityType and Symbol are the same for every subscription of a scene (one CryptoFuture
+    # symbol), so the key left is the TickType (Common/Global.cs 512-528: Trade, Quote,
+    # OpenInterest); the data type -> TickType of each subscription is DataManager.cs 755-773
+    # (TradeBar / Tick of trades: Trade; MarginInterestRate: Quote). Subscriptions with the same
+    # key are enumerated in the order of the ConcurrentDictionary, which the source does not fix:
+    # the rule does not decide between them (RuleDoesNotDecide).
+    "repro_lean52": StatedRule(
+        source=("QuantConnect/Lean 856327ff Engine/DataFeeds/SubscriptionCollection.cs の SortSubscriptions と、"
+                "Engine/DataFeeds/SubscriptionSynchronizer.cs の Sync、Engine/DataFeeds/TimeSliceFactory.cs の Create"),
+        quote=("_subscriptionsByTickType = _subscriptions.Select(x => x.Value).OrderBy(x => x.Configuration.SecurityType)"
+               ".ThenBy(x => x.Configuration.TickType).ThenBy(x => x.Configuration.Symbol).ToList(); / "
+               "foreach (var subscription in subscriptions) { ... while (subscription.Current != null && "
+               "subscription.Current.EmitTimeUtc <= frontierUtc) { ... packet.Add(subscription.Current.Data); ... } } / "
+               "allDataForAlgorithm.Add(baseData);"),
+        form="multi_input", recipe="head_merge",
+        params={"key": ["ts", "tick_type_rank"], "tick_type": {"trade": 0, "bar": 0, "funding": 1}}),
 }
 
-# p5-same-time-twice: 4 events at T0 + 1 day, one per stream, handed over as
-# trades, bars, funding, liquidation. Written by hand from each quote:
-#   new_impl  -- type order liquidation < funding < trade < bar;
-#   basana    -- -priority: bar (60) first, then trade (50), funding (30), liquidation (20);
-#   hftbacktest -- one input, stable by time: the concatenation's order;
-#   mihircoding/limitOrderBook -- one queue keyed by (arrival, sequence sent): the order sent.
+# p5-same-time-twice, written by hand from each quote (round r7-1: the input is
+# built from each target's own types, scenes.for_target_types; the types each
+# target delivered in its P0-3 scenes are listed here with the order). The
+# events are one per stream A, B, C, ... at T0 + 1 day, handed over A, B, C, ...
+#   new_impl  -- 6 types, the scene's first four: trade, book_snapshot, book_delta, bar;
+#                type order liquidation < funding < book_snapshot < book_delta < trade < bar;
+#   basana    -- 4 types, the same four; -priority: bar (60), trade (50), book_snapshot (45), book_delta (40);
+#   repro_lean52 -- 3 types trade, bar, funding; trade and bar are both TickType Trade: a tie
+#                the source does not decide (None);
+#   hftbacktest (1 type) and mihircoding/limitOrderBook (0 types) do not get this scene
+#   (fewer than 2 types); their rules stay for the record.
 _T = 1_700_006_400_000_000_000 + 86_400 * 1_000_000_000
-FIXED_PREDICTED: dict[str, list[list]] = {
-    "new_impl": [["liquidation", _T], ["funding", _T], ["trade", _T], ["bar", _T]],
-    "mutant": [["liquidation", _T], ["funding", _T], ["trade", _T], ["bar", _T]],
-    "opp_basana": [["bar", _T], ["trade", _T], ["funding", _T], ["liquidation", _T]],
-    "opp_hftbacktest": [["trade", _T], ["bar", _T], ["funding", _T], ["liquidation", _T]],
-    "opp_mihircoding_lob": [["trade", _T], ["bar", _T], ["funding", _T], ["liquidation", _T]],
+FIXED_PREDICTED: dict[str, tuple[list[str], list[list] | None]] = {
+    "new_impl": (["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation"],
+                 [["book_snapshot", _T], ["book_delta", _T], ["trade", _T], ["bar", _T]]),
+    "mutant": (["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation"],
+               [["book_snapshot", _T], ["book_delta", _T], ["trade", _T], ["bar", _T]]),
+    "opp_basana": (["trade", "book_snapshot", "book_delta", "bar"],
+                   [["bar", _T], ["trade", _T], ["book_snapshot", _T], ["book_delta", _T]]),
+    "repro_lean52": (["trade", "bar", "funding"], None),
 }
 
 
@@ -127,6 +154,8 @@ def _head_key(rule: StatedRule, ev: dict, name: str, names_sorted: list[str]) ->
             parts.append(names_sorted.index(name))
         elif k == "minus_priority":
             parts.append(-rule.params["priority"][ev["kind"]])
+        elif k == "tick_type_rank":
+            parts.append(rule.params["tick_type"][ev["kind"]])
         else:  # pragma: no cover - a recipe key this module does not know
             raise ValueError(f"unknown key part {k!r}")
     return tuple(parts)
@@ -168,7 +197,13 @@ if __name__ == "__main__":  # print the table (for the materials person and the 
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from scenes import SCENES
-    sc = next(s for s in SCENES if s.id == "p5-same-time-twice")
+    from scenes import for_target_types
+    base = next(s for s in SCENES if s.id == "p5-same-time-twice")
     for t, r in STATED_RULES.items():
-        p = predicted(r, sc.input["streams"], sc.input["hand_over_order"])
-        print(json.dumps({"target": t, "form": r.form, "source": r.source, "predicted": p}, ensure_ascii=False))
+        types = FIXED_PREDICTED.get(t, (None, None))[0]
+        sc = for_target_types(base, types) if types else None
+        try:
+            p = predicted(r, sc.input["streams"], sc.input["hand_over_order"]) if sc else "この場面に出ない(型が 2 種未満)"
+        except RuleDoesNotDecide as exc:
+            p = f"規則が決めない: {exc}"
+        print(json.dumps({"target": t, "form": r.form, "source": r.source, "types": types, "predicted": p}, ensure_ascii=False))

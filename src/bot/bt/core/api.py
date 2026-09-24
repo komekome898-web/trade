@@ -567,13 +567,36 @@ class StrategyContext:
         delivered = len(events)
         if count is not None:
             if count == 0:
-                return DeliveredEvents(first=hi, delivered=delivered, dropped=dropped)
+                return self.__empty_answer(event_type, until, hi, delivered, dropped)
             lo = max(lo, hi - count)
         if self.__dropped:
             self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
-            return DeliveredEvents(first=hi, delivered=delivered, dropped=dropped)
+            return self.__empty_answer(event_type, until, hi, delivered, dropped)
         return DeliveredEvents(events[lo:hi], first=lo, delivered=delivered, dropped=dropped)
+
+    def __empty_answer(self, event_type: Optional[EventType], until: Optional[int], hi: int,
+                       delivered: int, dropped: int) -> DeliveredEvents:
+        """An empty answer lies where its range was cut (events[hi]). If
+        `until_ns` cut it before the oldest kept event and before the newest
+        event history_limit dropped, the cut lies somewhere among the
+        dropped events and the history cannot say where: the answer could
+        not state its place, so the read is refused (i0-r6-01), as any read
+        reaching into the dropped part is."""
+        if hi == 0 and dropped and until is not None:
+            newest_dropped = max(
+                (recv for etype, (_seq, recv) in self.__dropped.items()
+                 if event_type is None or etype is event_type),
+                default=None,
+            )
+            if newest_dropped is not None and until < newest_dropped:
+                raise HistoryTruncatedError(
+                    f"visible_events(event_type={None if event_type is None else event_type.value}, "
+                    f"until_ns={until}) ends inside the history dropped by history_limit (newest dropped "
+                    f"received at {newest_dropped}); its (empty) answer cannot be placed -- read with "
+                    f"until_ns >= {newest_dropped}"
+                )
+        return DeliveredEvents(first=hi, delivered=delivered, dropped=dropped)
 
     def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int],
                            count: Optional[int], events: Sequence[Event], lo: int, hi: int) -> None:
