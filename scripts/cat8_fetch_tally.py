@@ -94,5 +94,6 @@ for repo, r in rows.items():
 for e in errs:
     print("ERR " + e)
 totals()
-print("---- 合計 %d 件" % len(errs))
+# Not "---": cat8_step.py prefixes such output lines with "| " (audit 58).
+print("== 集計の終わり(誤り %d 件)" % len(errs))
 sys.exit(1 if errs else 0)
