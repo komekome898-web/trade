@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-09-23T21:23:06.790329+00:00",
+  "generated_at": "2026-09-24T21:21:25.721731+00:00",
   "data_md": "docs/DATA.md",
   "max_age_days": 14,
-  "today": "2026-09-23",
+  "today": "2026-09-24",
   "skipped_tables": [
     {
       "header_line": 14,
@@ -120,6 +120,10 @@
     },
     {
       "unit": "auto_okx_open_interest_5m_20260923",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260924",
       "file_count": 2
     },
     {
@@ -383,13 +387,13 @@
     "path": "data\\INTAKE_latest.json",
     "selection": "両方あり、新しい data/ 側を使った",
     "state": "読込済",
-    "entry_count": 15049
+    "entry_count": 15087
   },
   "stale_rows": [],
   "undated_rows": [],
   "summary": {
-    "unit_count": 147,
-    "units_without_ledger_row": 62,
+    "unit_count": 148,
+    "units_without_ledger_row": 63,
     "missing_paths": 17,
     "units_with_files_not_in_intake": 0,
     "files_not_in_intake": 0,
