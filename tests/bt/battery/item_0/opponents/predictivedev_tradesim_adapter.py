@@ -101,9 +101,10 @@ class PredictivedevTradesimAdapter(Adapter):
 
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):
-        st, _ = run(C.events(sc), lambda s, d, st: st["log"].append(["price", _ts(d)]))
+        car = []
+        st, _ = run(C.events(sc), lambda s, d, st: (st["log"].append(["price", _ts(d)]), car.append(C.carrier(d))))
         return ok({"sequence": st["log"]}, "足の終値を Close にした表を run_backtest に渡し、on_market_data の各回に (道具の型 = 値の行 price、data['timestamp'])。"
-                  "戦略に渡る data は {symbol, price, timestamp} で、足の型ではない")
+                  "戦略に渡る data は {symbol, price, timestamp} で、足の型ではない", {"carriers": car})
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NON.format(k="約定・資金調達を別の入力として", err=_attempt_df({"rate": 0.0001})))
@@ -116,15 +117,16 @@ class PredictivedevTradesimAdapter(Adapter):
         df = pd.DataFrame({"Date": [sc.input["iso"]], "Close": [100.0]})
         st, _ = run([], lambda s, d, st: st["log"].append(_ts(d)), df=df)
         return ok(st["log"][0] if st["log"] else None, "Date に ISO の文字列を入れて run_backtest に渡した(道具が pd.to_datetime(utc=True) で読む)。"
-                  "戦略に届いた data['timestamp'] の ns")
+                  "戦略に届いた data['timestamp'] の ns", {"reader": C.qualname(run_backtest)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
         rows = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                 for e in C.events(sc)]
-        st, _ = run(rows, lambda s, d, st: st["log"].append(_ts(d)))
-        return ok({"observed_ts_ns": st["log"]}, "足(終値 100)で渡し、on_market_data の data['timestamp'] を ns に")
+        car = []
+        st, _ = run(rows, lambda s, d, st: (st["log"].append(_ts(d)), car.append(C.carrier(d))))
+        return ok({"observed_ts_ns": st["log"]}, "足(終値 100)で渡し、on_market_data の data['timestamp'] を ns に", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -134,15 +136,18 @@ class PredictivedevTradesimAdapter(Adapter):
         if e["kind"] != "bar":
             return not_supported(NON.format(k=e["kind"], err=_attempt_df({k: v for k, v in C.fields_of(e).items() if not isinstance(v, list)})))
         out = {}
+        car = []
 
         def f(s, d, st):
             st["log"].append(["price", _ts(d)])
+            car.append(C.carrier(d))
             out.update({k: d.get(k) for k in ("open", "high", "low", "close", "volume")})
             out["price"] = d.get("price")
 
         st, _ = run([e], f)
         return ok({"sequence": st["log"], "fields": {k: out.get(k) for k in ("open", "high", "low", "close", "volume")}},
-                  f"足 1 本(Close = 終値)を渡した。戦略に届いた data: price={out.get('price')}(始値・高値・安値・出来高の欄は無い)")
+                  f"足 1 本(Close = 終値)を渡した。戦略に届いた data: price={out.get('price')}(始値・高値・安値・出来高の欄は無い)",
+                  {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -197,9 +202,9 @@ class PredictivedevTradesimAdapter(Adapter):
             # The trader's public reads: current_price, and through its engine get_last_trade_price(symbol),
             # order_book.get_best_bid/ask, depth_snapshot; none takes a time or a position. The calls a
             # strategy would write to reach the 5th bar are made as written:
-            att.run("data['history'][4](次の位置)", "position", lambda: d["history"][4])
+            att.run("data['history'][4](次の位置)", "position", lambda: d["history"][4], shape="no_means", naming="written_call")
             att.run("matching_engine.get_last_trade_price(symbol, 5 本目の時刻)", "time",
-                    lambda: s.matching_engine.get_last_trade_price(SYM, fut))
+                    lambda: s.matching_engine.get_last_trade_price(SYM, fut), shape="no_means", naming="written_call")
             att.run("self.current_price", "other", lambda: s.current_price)
 
         run(C.events(sc), f)
@@ -214,8 +219,9 @@ class PredictivedevTradesimAdapter(Adapter):
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
     def scene_p5_same_stream_order(self, sc):
-        st, _ = run(C.events(sc), lambda s, d, st: st["log"].append(float(d["price"])))
-        return ok({"prices": st["log"]}, "同じ時刻の 3 行(Close = 価格)を 1 つの表で渡した")
+        car = []
+        st, _ = run(C.events(sc), lambda s, d, st: (st["log"].append(float(d["price"])), car.append(C.carrier(d))))
+        return ok({"prices": st["log"]}, "同じ時刻の 3 行(Close = 価格)を 1 つの表で渡した", {"carriers": car})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
@@ -241,16 +247,19 @@ class PredictivedevTradesimAdapter(Adapter):
                              + _attempt_call("MatchingEngine.cancel_order('s1')", lambda: MatchingEngine(OrderBook()).cancel_order("s1")))
 
     def scene_p6_fill_seen_by_strategy(self, sc):
+        from trading_simulator.portfolio.portfolio import Portfolio
         out = {}
+        pf = Portfolio(initial_cash=1_000_000.0, owner_id="strategy")  # the tool's own account, wired as its CLI does
 
         def f(s, d, st):
             if st["n"] == 1:
                 s.matching_engine.submit_order(order(st, "buy", 1))
             elif st["n"] == 3:
-                out["filled_qty_at_call3"] = float(sum(ex.quantity for ex in st["fills"]))
+                out["filled_qty_at_call3"] = float(pf.positions.get(SYM, 0))
 
-        run([C.as_bar(e) for e in C.events(sc)], f)
-        return ok(out, "1 回目 成行 買い 1。3 回目に subscribe_trades で受けた当方の Execution の数量の合計(注文から約定済み数量を読む口は無い)")
+        run([C.as_bar(e) for e in C.events(sc)], f, setup=lambda me: me.subscribe_trades(pf.on_execution))
+        return ok(out, "1 回目 成行 買い 1。3 回目に道具の Portfolio(owner_id='strategy'、道具の CLI と同じく engine.subscribe_trades(portfolio.on_execution) で"
+                  "つないだ)の positions[銘柄](注文から約定済み数量を読む口は無い)")
 
     # ---------------- P0-7
     def scene_p7_fill_model_swap(self, sc):

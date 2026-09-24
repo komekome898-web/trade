@@ -63,7 +63,10 @@ class FastTradeAdapter(VectorBase):
                 f"(返り値の鍵 {keys}。callback は呼ばれない。rules の値は列名・数値・比較だけ)")
 
     def _iso(self, sc):
-        return ok(int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value), "fast-trade の日時は DataFrame の DatetimeIndex(pandas)")
+        # round r6-1 (same root as critic i0-r5-02): the earlier version called pd.Timestamp itself; the tool has
+        # no reader of time strings of its own (it takes a DataFrame the user built)
+        return not_supported(f"{self.what}。時刻の文字列を読む入口が無い(入力は利用者が作る DataFrame で、その DatetimeIndex を作る変換は利用者の側)。"
+                             f"試したこと: {self.attempt(sc.id)}")
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 

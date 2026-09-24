@@ -61,6 +61,11 @@ def feed(bus: MessageBus, events: list[dict], on_event) -> None:
         bus.send(us(e["ts_ns"]), "feed", lambda e=e: on_event(e, bus.now_us))
 
 
+# The bus hands the strategy nothing but the call of an action it was given (MessageBus.send(t, participant, action)):
+# the only type the tool has for what arrives is "an action" (a callable). Its class, read from the object:
+ACTION = C.carrier(lambda: None)
+
+
 def _attempt() -> str:
     book = LimitOrderBook()
     oid, t0 = book.add_limit_order(Side.SELL, 100.0, 100)
@@ -91,14 +96,15 @@ class MihircodingLobAdapter(VectorBase):
         feed(bus, C.events(sc), lambda e, now: seen.append(["action", ns(now)]))
         bus.drain()
         return ok({"sequence": seen}, "各足を MessageBus.send(時刻 µs, 'feed', 戦略を呼ぶ動作) で積み、drain()。記録は (道具の型 = 動作(action)、bus.now_us を ns に)。"
-                  "MessageBus は型の無い動作を配るだけで、足という型を持たない")
+                  "MessageBus は型の無い動作を配るだけで、足という型を持たない", {"carriers": [ACTION] * len(seen)})
 
     def scene_p1_merge_by_time(self, sc):
         bus, seen = MessageBus(), []
         for _, evs in C.streams_in_order(sc):
             feed(bus, evs, lambda e, now: seen.append(["action", ns(now)]))
         bus.drain()
-        return ok({"sequence": seen}, "3 つの入力を渡す順に MessageBus.send で積み、drain()(bus は (到着, 積んだ順) で配る)。記録は (道具の型 = 動作(action)、時刻)")
+        return ok({"sequence": seen}, "3 つの入力を渡す順に MessageBus.send で積み、drain()(bus は (到着, 積んだ順) で配る)。記録は (道具の型 = 動作(action)、時刻)",
+                  {"carriers": [ACTION] * len(seen)})
 
     # ---------------- P0-2 (the bus's time is float microseconds)
     def _obs(self, sc):
@@ -106,7 +112,7 @@ class MihircodingLobAdapter(VectorBase):
         feed(bus, C.events(sc), lambda e, now: seen.append(ns(now)))
         bus.drain()
         return ok({"observed_ts_ns": seen}, "MessageBus の時刻は float のマイクロ秒(send の sent_at_us、bus.now_us)。ns を µs の float にして積み、"
-                  "配られた時の bus.now_us を ns に戻した")
+                  "配られた時の bus.now_us を ns に戻した", {"carriers": [ACTION] * len(seen)})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -145,8 +151,10 @@ class MihircodingLobAdapter(VectorBase):
             if ns(now) != probe or att.items:
                 return
             att.run("bus.pending()(まだ届いていない数)", "other", lambda: bus.pending())
-            att.run("bus.deliver_until(5 本目の時刻 µs) を呼び、その後に戦略に届いた終値", "time",
-                    lambda: (bus.deliver_until(us(fut)), list(seen))[1])
+            # namings: the scene's fixed list for a read that takes only an end time (the bus runs every action
+            # arrived by then, so what reached the strategy's calls afterwards is what the call let through)
+            C.try_time_namings(att, "bus.deliver_until(終わりの時刻 µs) を呼び、その後に戦略の呼び出しに届いた終値", "time_until",
+                               lambda t: (bus.deliver_until(t), list(seen))[1], sc, us)
 
         feed(bus, C.events(sc), on_event)
         bus.drain()
@@ -163,17 +171,22 @@ class MihircodingLobAdapter(VectorBase):
         return seen
 
     def scene_p5_same_time_twice(self, sc):
-        return ok({"order": self._tie(sc, None)}, "4 つの入力を渡す順に MessageBus.send で積み、drain()(bus は 1 本の待ち行列)")
+        # round r6-1 (critic i0-r5-02, same root): the bus has no event types; the kinds the earlier version
+        # reported were read from the scene's own dicts inside the adapter's actions, not from the tool
+        got = self._tie(sc, sc.input.get("hand_over_order") or sc.input["hand_over_orders"][0])
+        return not_supported("約定・足・資金調達・清算を型として持たない(MessageBus が配るのは動作(action)だけで、届いたものの型を戦略が読める物が無い)。"
+                             f"試したこと: 4 つの入力を渡す順に MessageBus.send で積んで drain() -> 戦略の呼び出しの時刻 {[t for _, t in got]}"
+                             f"(呼ばれた物の型は {ACTION})")
 
     def scene_p5_hand_over_order(self, sc):
-        runs = [{"hand_over": list(o), "order": self._tie(sc, o)} for o in sc.input["hand_over_orders"]]
-        return ok({"form": "single_input", "runs": runs}, "bus は 1 本の待ち行列で、同じ到着は積んだ順。24 通りの順で積んで各 1 回")
+        return self.scene_p5_same_time_twice(sc)
 
     def scene_p5_same_stream_order(self, sc):
         bus, seen = MessageBus(), []
         feed(bus, C.events(sc), lambda e, now: seen.append(float(e["price"])))
         bus.drain()
-        return ok({"prices": seen}, "同じ時刻の約定 3 件を 1 本で MessageBus.send に積み、drain()")
+        return ok({"prices": seen}, "同じ時刻の約定 3 件を 1 本で MessageBus.send に積み、drain()(値は各動作が運んだもの。道具が決めるのは呼ぶ順)",
+                  {"carriers": [ACTION] * len(seen)})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

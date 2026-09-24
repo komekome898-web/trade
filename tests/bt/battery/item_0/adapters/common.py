@@ -123,8 +123,8 @@ class Attempts:
       next_call    a call that returns the next item (peek / next), once
       no_means     the target hands the strategy no read that takes a time
                    or a position: the call a strategy would write, written
-                   and called as it is; it must raise (a value returned
-                   means there WAS a means, and the runner refuses to grade)
+                   and called as it is; graded like any named read (a value
+                   returned is a read that was not stopped)
       other        a read that does not name the future bar
     """
 
@@ -196,6 +196,18 @@ def values_of(v, get=None):
     if isinstance(v, (str, bytes)) or not hasattr(v, "__iter__"):
         return get(v)
     return [get(x) for x in v]
+
+
+class KeyCall:
+    """For a target's read that takes the position as an argument (`f(k)`):
+    `KeyCall(f)[key]` is `f(key)` -- the naming's key (an int or a slice)
+    handed to the target's own function as it is, nothing else."""
+
+    def __init__(self, fn) -> None:
+        self.fn = fn
+
+    def __getitem__(self, key):
+        return self.fn(key)
 
 
 def try_position_namings(att: Attempts, means: str, seq_fn, n: int, get=None) -> None:

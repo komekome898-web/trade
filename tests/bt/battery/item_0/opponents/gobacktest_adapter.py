@@ -54,13 +54,19 @@ def seq(rows) -> list:
     return [[TYPE.get(r["ev"], r["ev"]), int(r["ts"])] for r in rows if "ev" in r]
 
 
+def carriers(rows) -> list:
+    """The Go type of each event OnData received, printed by the driver with %T from the event itself."""
+    return [f"go:{r['ev']}" for r in rows if "ev" in r]
+
+
 class GobacktestAdapter(Adapter):
     name = "opp_gobacktest"
 
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):
-        return ok({"sequence": seq(drv({"events": [bar(e) for e in C.events(sc)]}))},
-                  "足を Bar にして Data.SetStream、OnData の各回に (事象の型, Time().UnixNano())")
+        rows = drv({"events": [bar(e) for e in C.events(sc)]})
+        return ok({"sequence": seq(rows)}, "足を Bar にして Data.SetStream、OnData の各回に (事象の型, Time().UnixNano())",
+                  {"carriers": carriers(rows)})
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NO_TYPE.format(k="約定と資金調達") + "(入力も Data の 1 本の流れ)")
@@ -69,7 +75,9 @@ class GobacktestAdapter(Adapter):
         evs = []
         for e in C.events(sc):
             evs.append(bar(e) if e["kind"] == "bar" else {"kind": "tick", "ts_ns": int(e["ts_ns"]), "bid": float(e["price"]), "ask": float(e["price"])})
-        return ok({"sequence": seq(drv({"events": evs}))}, "足は Bar、約定は約定の型が無いので Tick(買い気配 = 売り気配 = 約定の値)で渡し、OnData が受けた型と時刻")
+        rows = drv({"events": evs})
+        return ok({"sequence": seq(rows)}, "足は Bar、約定は約定の型が無いので Tick(買い気配 = 売り気配 = 約定の値)で渡し、OnData が受けた型と時刻",
+                  {"carriers": carriers(rows)})
 
     # ---------------- P0-2
     def _iso(self, sc):
@@ -79,14 +87,17 @@ class GobacktestAdapter(Adapter):
         r = out[0] if out else {}
         return ok(r.get("times", [None])[0] if r.get("times") else None,
                   "道具の CSV の読み込み(data.BarEventFromCSVFile、data/data-csv.go は Date を time.Parse(\"2006-01-02\") で読む)に ISO の日付を 1 行書いて Load。"
-                  f"読めた行の時刻 {r.get('times')}、Load の誤り '{r.get('csv_error')}'(読めない行は誤りを返さずに捨てる)")
+                  f"読めた行の時刻 {r.get('times')}、Load の誤り '{r.get('csv_error')}'(読めない行は誤りを返さずに捨てる)",
+                  {"reader": "go:github.com/dirkolbrich/gobacktest/data.BarEventFromCSVFile.Load"})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
         evs = [{"kind": "bar", "ts_ns": int(e["ts_ns"]), "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
-        return ok({"observed_ts_ns": [t for _, t in seq(drv({"events": evs}))]}, "Bar の時刻(time.Time)で渡し、OnData の event.Time().UnixNano()")
+        rows = drv({"events": evs})
+        return ok({"observed_ts_ns": [t for _, t in seq(rows)]}, "Bar の時刻(time.Time)で渡し、OnData の event.Time().UnixNano()",
+                  {"carriers": carriers(rows)})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -98,7 +109,8 @@ class GobacktestAdapter(Adapter):
         rows = [r for r in drv({"events": [bar(e)]}) if "ev" in r]
         f = rows[0] if rows else {}
         return ok({"sequence": seq(rows), "fields": {k: (float(f[k]) if k in f else None) for k in ("open", "high", "low", "close", "volume")}},
-                  "足 1 本を Bar で渡した。OnData が受けた Bar の型・時刻と欄(Open / High / Low / Close / Volume。Volume は int64)")
+                  "足 1 本を Bar で渡した。OnData が受けた Bar の型・時刻と欄(Open / High / Low / Close / Volume。Volume は int64)",
+                  {"carriers": carriers(rows)})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -120,8 +132,9 @@ class GobacktestAdapter(Adapter):
         v = next((r for r in rows if "visible_count" in r), None)
         if v is None:
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok({"visible_count": v["visible_count"], "max_visible_close": v["max_visible_close"]},
-                  "T0 + 4 日の OnData で、戦略の Data().History() の件数と Price() の最大")
+        reads = C.Reads()
+        reads.read("go:Data().History() の Price()(driver が T0 + 4 日の OnData で読んだ列)", lambda: v["visible_closes"])
+        return ok(reads.output(), "T0 + 4 日の OnData で、戦略の Data().History() の件数と Price() の最大", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported("事象に受け取れる時刻を持たせる口が無い(Bar / Tick の時刻は Time() の 1 つ)")
@@ -130,11 +143,15 @@ class GobacktestAdapter(Adapter):
         rows = drv({"events": [bar(e) for e in C.events(sc)], "probe": sc.input["probe_at_ns"]})
         att = C.Attempts()
         for r in rows:
-            if "read" in r:
-                if "error" in r:
-                    att.items.append({"means": r["read"], "form": r["form"], "raised": "empty", "message": r["error"], "returned": None})
-                else:
-                    att.items.append({"means": r["read"], "form": r["form"], "raised": None, "message": "", "returned": r["value"]})
+            if "read" not in r:
+                continue
+            base = {"means": r["read"], "form": r["form"], "shape": r.get("shape", "other"), "naming": r.get("naming", "other")}
+            if r.get("expressible") is False:  # a Go slice has no step: a strategy cannot write this naming
+                att.items.append({**base, "raised": None, "message": "Go の区間に歩幅は無く書けない", "returned": None, "expressible": False})
+            elif "error" in r:
+                att.items.append({**base, "raised": "panic", "message": r["error"], "returned": None})
+            else:
+                att.items.append({**base, "raised": None, "message": "", "returned": r["value"]})
         if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
         return ok(att.output(), "T0 + 4 日の OnData で試した(戦略の Data() は DataHandler で、Stream() はまだ流れていない事象の列を返す): " + att.summary())
@@ -147,7 +164,8 @@ class GobacktestAdapter(Adapter):
 
     def scene_p5_same_stream_order(self, sc):
         rows = drv({"events": [bar(e) for e in C.events(sc)]})
-        return ok({"prices": [float(r["price"]) for r in rows if "ev" in r]}, "同じ時刻の 3 本を Bar にして Data.SetStream(並べ替えない)、OnData の Price() の順")
+        return ok({"prices": [float(r["price"]) for r in rows if "ev" in r]}, "同じ時刻の 3 本を Bar にして Data.SetStream(並べ替えない)、OnData の Price() の順",
+                  {"carriers": carriers(rows)})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

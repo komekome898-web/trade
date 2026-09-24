@@ -22,7 +22,7 @@ import logging  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from _vector_base import VectorBase  # noqa: E402
-from protocol import ok  # noqa: E402
+from protocol import not_supported, ok  # noqa: E402
 
 logging.disable(logging.CRITICAL)
 from finmarketpy.backtest import Backtest, BacktestRequest  # noqa: E402
@@ -50,6 +50,9 @@ class FinmarketpyAdapter(VectorBase):
         return f"Backtest().calculate_trading_PnL(BacktestRequest, 価格の DataFrame 3 行, 信号の DataFrame 3 行, None) -> {r}"
 
     def _iso(self, sc):
-        return ok(int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value), "finmarketpy の日時は DataFrame の DatetimeIndex(pandas)")
+        # round r6-1 (same root as critic i0-r5-02): the earlier version called pd.Timestamp itself; the tool has
+        # no reader of time strings of its own (it takes a DataFrame the user built)
+        return not_supported(f"{self.what}。時刻の文字列を読む入口が無い(入力は利用者が作る DataFrame で、その DatetimeIndex を作る変換は利用者の側)。"
+                             f"試したこと: {self.attempt(sc.id)}")
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso

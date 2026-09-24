@@ -65,6 +65,17 @@ def seq(rows):
     return [[r["event"]["kind"], r["event"]["ts"]] for r in calls(rows)]
 
 
+# The driver's match arms (survey_results/attempts/61.log, fn label, lines 131-138) name each scene kind from the
+# tool's own enum variant the event came in; `variant` is the tool's own DataKind::kind_name() printed by the driver.
+_VARIANT = {"trade": "DataKind::Trade", "book_l1": "DataKind::OrderBookL1", "book_snapshot": "DataKind::OrderBook(OrderBookEvent::Snapshot)",
+            "book_delta": "DataKind::OrderBook(OrderBookEvent::Update)", "bar": "DataKind::Candle", "liquidation": "DataKind::Liquidation"}
+
+
+def carriers(rows):
+    return [f"rust:barter_data::event::{_VARIANT.get(r['event']['kind'], r['event']['kind'])} (kind_name {r['event'].get('variant')})"
+            for r in calls(rows)]
+
+
 class BarterAdapter(Adapter):
     name = "opp_barter"
 
@@ -74,14 +85,16 @@ class BarterAdapter(Adapter):
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):
         rows = self._run(C.events(sc))
-        return ok({"sequence": seq(rows)}, "足を Candle の MarketEvent にして 1 本の流れで渡し、戦略の各回に InstrumentDataState が受けた (型, time_exchange)")
+        return ok({"sequence": seq(rows)}, "足を Candle の MarketEvent にして 1 本の流れで渡し、戦略の各回に InstrumentDataState が受けた (型, time_exchange)",
+                  {"carriers": carriers(rows)})
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NO_TYPE.format(k="資金調達"))
 
     def scene_p1_typed_events(self, sc):
         rows = self._run(C.events(sc))
-        return ok({"sequence": seq(rows)}, "足は Candle、約定は Trade(PublicTrade)の MarketEvent。戦略の各回に受けた (型, time_exchange)")
+        return ok({"sequence": seq(rows)}, "足は Candle、約定は Trade(PublicTrade)の MarketEvent。戦略の各回に受けた (型, time_exchange)",
+                  {"carriers": carriers(rows)})
 
     # ---------------- P0-2
     def _iso(self, sc):
@@ -90,14 +103,16 @@ class BarterAdapter(Adapter):
         rows = drv({"parse": line})
         r = rows[0] if rows else {}
         return ok(r.get("parsed_ns"), "道具の市場の事象の記録(MarketStreamEvent の JSON。道具の例の資料と同じ形)の time_exchange に ISO の文字列を書き、"
-                  f"道具の読み込み(serde + chrono の DateTime<Utc>)で読んだ時刻。{r}")
+                  f"道具の読み込み(serde + chrono の DateTime<Utc>)で読んだ時刻。{r}",
+                  {"reader": "rust:barter_data::streams::consumer::MarketStreamEvent (serde の Deserialize、time_exchange: chrono::DateTime<Utc>)"})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
         rows = self._run(evs)
-        return ok({"observed_ts_ns": [r["event"]["ts"] for r in calls(rows)]}, "約定(Trade)の time_exchange(DateTime<Utc>、ナノ秒)で渡し、戦略の各回に受けた時刻")
+        return ok({"observed_ts_ns": [r["event"]["ts"] for r in calls(rows)]}, "約定(Trade)の time_exchange(DateTime<Utc>、ナノ秒)で渡し、戦略の各回に受けた時刻",
+                  {"carriers": carriers(rows)})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -121,7 +136,8 @@ class BarterAdapter(Adapter):
             f = {"side": side, "price": float(p) if p is not None else None, "qty": float(q) if q is not None else None}
         return ok({"sequence": seq(rows), "fields": f},
                   "1 件を道具の型(Trade = PublicTrade / OrderBook::Snapshot / OrderBook::Update / Candle / Liquidation)の MarketEvent で渡し、"
-                  f"戦略の回に InstrumentDataState が受けた型・時刻・欄(板の値と量は Decimal の文字列を数に)。道具の型名 {c[0]['event']['variant'] if c else None}")
+                  f"戦略の回に InstrumentDataState が受けた型・時刻・欄(板の値と量は Decimal の文字列を数に)。道具の型名 {c[0]['event']['variant'] if c else None}",
+                  {"carriers": carriers(rows)})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -197,7 +213,8 @@ class BarterAdapter(Adapter):
 
     def scene_p5_same_stream_order(self, sc):
         rows = self._run(C.events(sc))
-        return ok({"prices": [r["event"]["fields"]["price"] for r in calls(rows)]}, "同じ時刻の約定 3 件を 1 本の流れで渡し、戦略の各回に受けた値の順")
+        return ok({"prices": [r["event"]["fields"]["price"] for r in calls(rows)]}, "同じ時刻の約定 3 件を 1 本の流れで渡し、戦略の各回に受けた値の順",
+                  {"carriers": carriers(rows)})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

@@ -184,23 +184,32 @@ def _market_calls(out) -> list:
     return [[_kind_of(k, e), _ts_of(e)] for k, e in out["calls"] if k in ("trade", "open", "data")]
 
 
+def _carriers(out, kinds=("trade", "open", "data")) -> list:
+    """What each market call handed the strategy: aat's Event and its own EventType member (read from the event)."""
+    return [C.carrier_tag(e, e.type) for k, e in out["calls"] if k in kinds]
+
+
 class AatAdapter(Adapter):
     name = "opp_aat"
 
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):
-        return ok({"sequence": _market_calls(run({"events": C.events(sc)}))},
-                  "足の型が無いので足を DATA の事象(型の無い Data)として 1 つの取引所から流し、onData の各回に (道具の型 data, 事象の時刻)")
+        out = run({"events": C.events(sc)})
+        return ok({"sequence": _market_calls(out)},
+                  "足の型が無いので足を DATA の事象(型の無い Data)として 1 つの取引所から流し、onData の各回に (道具の型 data, 事象の時刻)",
+                  {"carriers": _carriers(out)})
 
     def scene_p1_merge_by_time(self, sc):
         streams = {name: sc.input["streams"][name] for name in sc.input["hand_over_order"]}
-        return ok({"sequence": _market_calls(run(streams))},
+        out = run(streams)
+        return ok({"sequence": _market_calls(out)},
                   "3 つの入力を 3 つの取引所(SceneExchange)にし、渡す順に --exchanges に並べた。約定は TRADE、足と資金調達は DATA。"
-                  "戦略が受けた (型, 時刻) の順(道具は取引所の tick を aiostream の merge で 1 本にする)")
+                  "戦略が受けた (型, 時刻) の順(道具は取引所の tick を aiostream の merge で 1 本にする)", {"carriers": _carriers(out)})
 
     def scene_p1_typed_events(self, sc):
-        return ok({"sequence": _market_calls(run({"events": C.events(sc)}))},
-                  "足は DATA(型の無い Data)、約定は TRADE(Trade)で流し、戦略が受けた道具の型と時刻")
+        out = run({"events": C.events(sc)})
+        return ok({"sequence": _market_calls(out)},
+                  "足は DATA(型の無い Data)、約定は TRADE(Trade)で流し、戦略が受けた道具の型と時刻", {"carriers": _carriers(out)})
 
     # ---------------- P0-2
     def _iso(self, sc):
@@ -214,7 +223,8 @@ class AatAdapter(Adapter):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
         out = run({"events": evs})
         return ok({"observed_ts_ns": [_ts_of(e) for k, e in out["calls"] if k == "trade"]},
-                  "約定を TRADE で流し、onTrade の event.target.timestamp(datetime、マイクロ秒まで)を ns に")
+                  "約定を TRADE で流し、onTrade の event.target.timestamp(datetime、マイクロ秒まで)を ns に",
+                  {"carriers": _carriers(out, ("trade",))})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -228,7 +238,7 @@ class AatAdapter(Adapter):
                                  f"試したこと: DATA で流した -> 戦略が受けた {got}(型の無い Data として届く)")
         calls = [(k, ev) for k, ev in out["calls"] if k in ("trade", "open")]
         if not calls:
-            return ok({"sequence": [], "fields": {}}, f"戦略に届かなかった。呼ばれた口 {[k for k, _ in out['calls']]}")
+            return ok({"sequence": [], "fields": {}}, f"戦略に届かなかった。呼ばれた口 {[k for k, _ in out['calls']]}", {"carriers": []})
         k, ev = calls[0]
         t = ev.target
         if k == "trade":
@@ -236,14 +246,16 @@ class AatAdapter(Adapter):
         else:
             fields = {"side": "bid" if t.side == Side.BUY else "ask", "price": float(t.price), "qty": float(t.volume)}
         return ok({"sequence": [[_kind_of(k, ev), _ts_of(ev)]], "fields": fields},
-                  "約定は TRADE(Trade)、板の差分は OPEN(板に入る注文 Order)で流し、戦略が受けた事象の中身")
+                  "約定は TRADE(Trade)、板の差分は OPEN(板に入る注文 Order)で流し、戦略が受けた事象の中身", {"carriers": [C.carrier_tag(ev, ev.type)]})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
 
     def scene_p3_mixed_one_run(self, sc):
-        return ok({"sequence": _market_calls(run({"events": C.events(sc)}))},
-                  "約定は TRADE、板の差分は OPEN、ほか(板の写真・足・資金調達・清算)は DATA(型の無い Data)で流し、戦略が受けた道具の型と時刻")
+        out = run({"events": C.events(sc)})
+        return ok({"sequence": _market_calls(out)},
+                  "約定は TRADE、板の差分は OPEN、ほか(板の写真・足・資金調達・清算)は DATA(型の無い Data)で流し、戦略が受けた道具の型と時刻",
+                  {"carriers": _carriers(out)})
 
     def scene_p3_clock_timer(self, sc):
         calls: list = []
@@ -307,8 +319,12 @@ class AatAdapter(Adapter):
         def fn(s, kind, ev):
             if kind != "data" or _ts_of(ev) != probe or att.items:
                 return
-            att.run("self.trades(5 本目の時刻)", "time", lambda: s.trades(_dt(sc.input["future_ts_ns"])))
-            att.run("event.target.data['next'](次の位置)", "position", lambda: ev.target.data["next"])
+            # aat hands the strategy no read of market data by time or position (orders / positions / trades are
+            # its own); the calls a strategy would write are made as written
+            att.run("self.trades(5 本目の時刻)", "time", lambda: s.trades(_dt(sc.input["future_ts_ns"])), shape="no_means",
+                    naming="written_call")
+            att.run("event.target.data['next'](次の位置)", "position", lambda: ev.target.data["next"], shape="no_means",
+                    naming="written_call")
             att.run("self.positions()", "other", lambda: [str(p) for p in s.positions()])
 
         run({"events": C.events(sc)}, fn)
@@ -318,20 +334,25 @@ class AatAdapter(Adapter):
 
     # ---------------- P0-5
     def _tie(self, sc, order):
-        return _market_calls(run({name: sc.input["streams"][name] for name in order}))
+        out = run({name: sc.input["streams"][name] for name in order})
+        return _market_calls(out), _carriers(out)
 
     def scene_p5_same_time_twice(self, sc):
-        return ok({"order": self._tie(sc, sc.input["hand_over_order"])},
+        order, car = self._tie(sc, sc.input["hand_over_order"])
+        return ok({"order": order},
                   "型ごとの 4 入力を 4 つの取引所にし、渡す順に --exchanges に並べた。約定は TRADE、ほかは DATA。戦略に届いた (型, 時刻)。"
-                  "同じ時刻の並べ方を書いた規則は見つからなかった(engine.py は取引所の tick を aiostream.stream.merge で 1 本にし、時刻では並べない)")
+                  "同じ時刻の並べ方を書いた規則は見つからなかった(engine.py は取引所の tick を aiostream.stream.merge で 1 本にし、時刻では並べない)",
+                  {"carriers": car})
 
     def scene_p5_hand_over_order(self, sc):
-        runs = [{"hand_over": list(o), "order": self._tie(sc, o)} for o in sc.input["hand_over_orders"]]
-        return ok({"form": "multi_input", "runs": runs}, "24 通りの --exchanges の並びで各 1 回")
+        got = [(list(o), *self._tie(sc, o)) for o in sc.input["hand_over_orders"]]
+        runs = [{"hand_over": h, "order": order} for h, order, _ in got]
+        return ok({"form": "multi_input", "runs": runs}, "24 通りの --exchanges の並びで各 1 回", {"carriers": [c for _, _, c in got]})
 
     def scene_p5_same_stream_order(self, sc):
         out = run({"events": C.events(sc)})
-        return ok({"prices": [float(e.target.price) for k, e in out["calls"] if k == "trade"]}, "同じ時刻の約定 3 件を 1 つの取引所から TRADE で流した")
+        return ok({"prices": [float(e.target.price) for k, e in out["calls"] if k == "trade"]}, "同じ時刻の約定 3 件を 1 つの取引所から TRADE で流した",
+                  {"carriers": _carriers(out, ("trade",))})
 
     # ---------------- P0-6
     def _p6(self, sc, read: bool):

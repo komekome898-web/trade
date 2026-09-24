@@ -102,7 +102,8 @@ class ThreeyitLobAdapter(VectorBase):
             o.timestamp = C.ns_to_dt(e["ts_ns"]).replace(tzinfo=None)
             back = o.timestamp
             seen.append(C.dt_to_ns(back.replace(tzinfo=C.ns_to_dt(0).tzinfo)))
-        return ok({"observed_ts_ns": seen}, "Order.timestamp(C++ の high_resolution_clock::time_point。binding では datetime)に事象の時刻を入れて読み戻し、"
-                  "ns にした(datetime はマイクロ秒まで。戦略に渡す口は無いので、道具が持つ値を読んだ)")
+        # round r6-1 (same root as critic i0-r5-02): the scene measures what a strategy RECEIVES; this tool has no strategy that events are delivered to, so the value the tool holds is reported as evidence, not graded
+        return not_supported(f"{self.what}(戦略に事象を渡す口が無く、戦略が受け取った時刻が無い)。試したこと: Order.timestamp(C++ の "
+                             f"high_resolution_clock::time_point。binding では datetime)に事象の時刻を入れて読み戻した -> {seen}")
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs

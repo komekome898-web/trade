@@ -154,12 +154,13 @@ class VnpyAdapter(Adapter):
         return f"戦略が受けたもの {got}"
 
     def _seq(self, bars):
-        log = []
-        run([_bar(e) for e in bars], {"bar": lambda s, b, n: log.append(["bar", _ns(b.datetime)])})
-        return log
+        log, car = [], []
+        run([_bar(e) for e in bars], {"bar": lambda s, b, n: (log.append(["bar", _ns(b.datetime)]), car.append(C.carrier(b)))})
+        return log, car
 
     def scene_p1_one_call_per_event(self, sc):
-        return ok({"sequence": self._seq(C.events(sc))}, "足の回。on_bar の各回に bar.datetime を記録。" + _net())
+        log, car = self._seq(C.events(sc))
+        return ok({"sequence": log}, "足の回。on_bar の各回に bar.datetime を記録。" + _net(), {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         evs = C.events(sc)
@@ -178,47 +179,51 @@ class VnpyAdapter(Adapter):
 
     # ---------------- P0-2
     def _iso(self, sc):
-        import re
-        m = re.fullmatch(r"(.*\.\d{6})\d*(.*)", sc.input["iso"])
-        v = D.datetime.fromisoformat(m.group(1) + m.group(2).replace("Z", "+00:00"))
-        return ok(_ns(v), "vnpy の時刻は datetime(マイクロ秒まで)。datetime.fromisoformat は小数 6 桁までなので、"
-                  "ISO の小数 9 桁の下 3 桁を落として読んだ(vnpy の型が持てない部分)")
+        """vnpy's own conversion of a time string is `vnpy.alpha.to_datetime` (strptime '%Y-%m-%d' or '%Y%m%d');
+        the ISO string is handed to it as it is. Bars themselves carry a datetime, not a string."""
+        try:
+            from vnpy.alpha import to_datetime
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"vnpy の時刻の文字列の変換 vnpy.alpha.to_datetime を読み込めなかった -> {type(exc).__name__}: {str(exc)[:120]}。{_net()}")
+        try:
+            v = to_datetime(sc.input["iso"])
+        except Exception as exc:  # noqa: BLE001
+            return not_supported("vnpy の時刻の文字列の変換(vnpy.alpha.to_datetime、strptime '%Y-%m-%d' / '%Y%m%d')に ISO の文字列を渡した -> "
+                                 f"{type(exc).__name__}: {str(exc)[:120]}。BarData / TickData の時刻は datetime で、文字列を受けない。{_net()}")
+        return ok(_ns(v if v.tzinfo else v.replace(tzinfo=UTC)), f"vnpy.alpha.to_datetime が返した {v!r}", {"reader": C.qualname(to_datetime)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
         evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
-        return ok({"observed_ts_ns": [t for _, t in self._seq(evs)]},
-                  "足の datetime に事象の時刻を入れ、on_bar の bar.datetime を読んだ(datetime はマイクロ秒までで、下 3 桁は落ちる)。" + _net())
+        log, car = self._seq(evs)
+        return ok({"observed_ts_ns": [t for _, t in log]},
+                  "足の datetime に事象の時刻を入れ、on_bar の bar.datetime を読んだ(datetime はマイクロ秒までで、下 3 桁は落ちる)。" + _net(),
+                  {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
     # ---------------- P0-3
     def scene_p3_bar(self, sc):
         e = C.events(sc)[0]
-        out, log = {}, []
+        out, log, car = {}, [], []
 
         def h(s, b, n):
             log.append(["bar", _ns(b.datetime)])
+            car.append(C.carrier(b))
             out.update({"open": b.open_price, "high": b.high_price, "low": b.low_price, "close": b.close_price, "volume": b.volume})
 
         run([_bar(e)], {"bar": h})
-        return ok({"sequence": log, "fields": out}, "足の回。on_bar の BarData。" + _net())
+        return ok({"sequence": log, "fields": out}, "足の回。on_bar の BarData。" + _net(), {"carriers": car})
 
     def scene_p3_trade(self, sc):
         e = C.events(sc)[0]
-        out, log = {}, []
-
-        def h(s, t, n):
-            log.append(["trade", _ns(t.datetime)])
-            out.update({"price": t.last_price, "qty": t.last_volume})
-
-        tick = TickData(symbol="X", exchange=Exchange.LOCAL, datetime=_dt(e["ts_ns"]), last_price=e["price"],
-                        last_volume=e["qty"], gateway_name="BACKTESTING")
-        run([tick], {"tick": h}, mode=BacktestingMode.TICK)
-        return ok({"sequence": log, "fields": out}, "tick の回。TickData の last_price / last_volume に約定を入れ、on_tick で読んだ。"
-                  "TickData に約定の売り買いの向きの欄が無い。" + _net())
+        return not_supported("市場の約定を 1 件ずつの型として戦略に渡す口が無い。市場の型は足(BarData)と tick(TickData)の 2 つで、"
+                             "TickData は 5 段の板の写真に最終約定の値と量(last_price / last_volume)を添えた 1 つの写真"
+                             "(売り買いの向きの欄が無い。欄 " + str([f for f in TickData.__dataclass_fields__]) + ")。"
+                             "型で見分けられない写真に約定を入れても約定の事象にはならない(p3-book_snapshot はこの型で測る)。"
+                             f"TradeData は自分の注文の約定の知らせ(on_trade)で、市場の約定を渡す口ではない。入れようとした約定 {e}。{_net()}")
 
     def scene_p3_book_snapshot(self, sc):
         e = C.events(sc)[0]
@@ -227,17 +232,18 @@ class VnpyAdapter(Adapter):
             kw[f"bid_price_{i}"], kw[f"bid_volume_{i}"] = p, q
         for i, (p, q) in enumerate(e["asks"][:5], 1):
             kw[f"ask_price_{i}"], kw[f"ask_volume_{i}"] = p, q
-        out, log = {}, []
+        out, log, car = {}, [], []
 
         def h(s, t, n):
             log.append(["book_snapshot", _ns(t.datetime)])
+            car.append(C.carrier(t))
             out["bids"] = [[getattr(t, f"bid_price_{i}"), getattr(t, f"bid_volume_{i}")] for i in range(1, 6) if getattr(t, f"bid_price_{i}")]
             out["asks"] = [[getattr(t, f"ask_price_{i}"), getattr(t, f"ask_volume_{i}")] for i in range(1, 6) if getattr(t, f"ask_price_{i}")]
 
         run([TickData(symbol="X", exchange=Exchange.LOCAL, datetime=_dt(e["ts_ns"]), gateway_name="BACKTESTING", **kw)],
             {"tick": h}, mode=BacktestingMode.TICK)
         return ok({"sequence": log, "fields": out}, "tick の回。TickData の 5 段の板(bid/ask_price_1..5 と volume)に板の写真を入れ、"
-                  "on_tick で読んだ(値が 0 の段は空の段)。" + _net())
+                  "on_tick で読んだ(値が 0 の段は空の段)。" + _net(), {"carriers": car})
 
     def _none(self, sc):
         e = C.events(sc)[0]
@@ -299,17 +305,24 @@ class VnpyAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out, seen = {}, []
+        reads, tried = C.Reads(), {}
 
         def h(s, b, n):
-            seen.append(b.close_price)
-            if _ns(b.datetime) == probe:
-                out.update({"visible_count": len(seen), "max_visible_close": max(seen)})
+            if _ns(b.datetime) != probe or reads.items:
+                return
+            # CtaTemplate's own read of past bars is load_bar (it asks the engine for history before now)
+            try:
+                got = s.load_bar(10)
+                tried["self.load_bar(10)"] = repr(got)[:120]
+            except Exception as exc:  # noqa: BLE001
+                tried["self.load_bar(10)"] = f"{type(exc).__name__}: {str(exc)[:120]}"
 
         run([_bar(e) for e in C.events(sc)], {"bar": h})
-        if not out:  # no_probe_call
+        if not tried:  # no_probe_call
             return not_supported(f"T0 + 4 日の呼び出しが無かった。{_net()}")
-        return ok(out, f"on_bar の各回の close を貯めた {seen}。{_net()}")
+        return not_supported("戦略が今より前の足を読む公開の手段は load_bar(日数)(戦略の開始時に過去の足を on_bar に流し直す)だけで、"
+                             "件数と値を返す読み出しではない(ArrayManager は戦略が自分で足を入れて貯める道具)。"
+                             f"試したこと: T0 + 4 日の on_bar の中で {tried}。{_net()}")
 
     def scene_p4_received_time(self, sc):
         return not_supported("BarData / TickData の時刻は datetime の 1 つで、受け取れる時刻を別に持たせる欄が無い。"
@@ -323,8 +336,9 @@ class VnpyAdapter(Adapter):
             if _ns(b.datetime) != probe or att.items:
                 return
             hist = s.cta_engine.history_data
-            att.run("self.cta_engine.history_data[今の足の添字 + 1](最新の次の位置)", "position",
-                    lambda: hist[[_ns(x.datetime) for x in hist].index(probe) + 1].close_price)
+            # namings: the scene's fixed list; the engine's list counts from the first bar (the newest delivered is `now`)
+            now = [_ns(x.datetime) for x in hist].index(probe)
+            C.try_position_namings(att, "self.cta_engine.history_data[位置]", lambda: hist, now + 1, lambda x: x.close_price)
             att.run("self.cta_engine.history_data の close の全部", "other", lambda: [x.close_price for x in hist])
             att.run("self.load_bar(10)", "other", lambda: s.load_bar(10))
 
@@ -339,9 +353,10 @@ class VnpyAdapter(Adapter):
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
     def scene_p5_same_stream_order(self, sc):
-        seen = []
-        run([_bar(e) for e in C.events(sc)], {"bar": lambda s, b, n: seen.append(b.close_price)})
-        return ok({"prices": seen}, "同じ時刻の 3 本の足(終値 101・99・100)を history_data に並べた。on_bar の close。" + _net())
+        seen, car = [], []
+        run([_bar(e) for e in C.events(sc)], {"bar": lambda s, b, n: (seen.append(b.close_price), car.append(C.carrier(b)))})
+        return ok({"prices": seen}, "同じ時刻の 3 本の足(終値 101・99・100)を history_data に並べた。on_bar の close。" + _net(),
+                  {"carriers": car})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

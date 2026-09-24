@@ -104,25 +104,41 @@ class PyalgotradeAdapter(Adapter):
         return not_supported(NON.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
     def scene_p1_one_call_per_event(self, sc):
-        st, _ = run(C.events(sc), lambda s, b, n, st: st["log"].append(["bar", _now(s)]))
-        return ok({"sequence": st["log"]}, "足 5 本。onBars の各回に getCurrentDateTime()")
+        car = []
+        st, _ = run(C.events(sc), lambda s, b, n, st: (st["log"].append(["bar", _now(s)]), car.append(C.carrier(b[INST]))))
+        return ok({"sequence": st["log"]}, "足 5 本。onBars の各回に getCurrentDateTime()", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
 
     def _iso(self, sc):
-        d = D.datetime.fromisoformat(sc.input["iso"]).astimezone(D.timezone.utc)
-        return ok(C.dt_to_ns(d), f"PyAlgoTrade の時刻の型 datetime に標準の fromisoformat で入れた値 {d!r}")
+        """The ISO string written as it is into the Date Time column of a CSV read by PyAlgoTrade's own
+        CSV bar feed (`pyalgotrade.barfeed.csvfeed.GenericBarFeed.addBarsFromCSV`)."""
+        import tempfile
+        from pyalgotrade.barfeed import csvfeed
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "X.csv"
+            path.write_text(f"Date Time,Open,High,Low,Close,Volume,Adj Close\n{sc.input['iso']},1,1,1,1,1,1\n", encoding="utf-8")
+            feed = csvfeed.GenericBarFeed(bar.Frequency.DAY)
+            try:
+                feed.addBarsFromCSV(INST, str(path))
+                dt = feed.getNextBars()[INST].getDateTime()
+            except Exception as exc:  # noqa: BLE001
+                return not_supported("ISO の文字列を Date Time の列に書いた CSV を GenericBarFeed.addBarsFromCSV で読んだ(既定の書式 "
+                                     f"'%Y-%m-%d %H:%M:%S')-> {type(exc).__name__}: {str(exc)[:160]}")
+        d_ = dt if dt.tzinfo is not None else dt.replace(tzinfo=D.timezone.utc)
+        return ok(C.dt_to_ns(d_), f"GenericBarFeed が読んだ足の時刻 {dt!r}", {"reader": C.qualname(csvfeed.GenericBarFeed.addBarsFromCSV)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
+        car = []
         try:
-            st, _ = run(evs, lambda s, b, n, st: st["log"].append(_now(s)))
+            st, _ = run(evs, lambda s, b, n, st: (st["log"].append(_now(s)), car.append(C.carrier(b[INST]))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"足で渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"observed_ts_ns": st["log"]}, "足で渡し(datetime はマイクロ秒まで)、getCurrentDateTime()")
+        return ok({"observed_ts_ns": st["log"]}, "足で渡し(datetime はマイクロ秒まで)、getCurrentDateTime()", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -131,14 +147,16 @@ class PyalgotradeAdapter(Adapter):
         if e["kind"] != "bar":
             return not_supported(NON.format(k=e["kind"], err=_try_non_bar(e)))
         out = {}
+        car = []
 
         def f(s, b, n, st):
             st["log"].append(["bar", _now(s)])
             x = b[INST]
+            car.append(C.carrier(x))
             out.update({"open": x.getOpen(), "high": x.getHigh(), "low": x.getLow(), "close": x.getClose(), "volume": x.getVolume()})
 
         st, _ = run([e], f)
-        return ok({"sequence": st["log"], "fields": out}, "足 1 本。onBars の bars[銘柄]")
+        return ok({"sequence": st["log"], "fields": out}, "足 1 本。onBars の bars[銘柄]", {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -180,19 +198,16 @@ class PyalgotradeAdapter(Adapter):
 
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
+        reads = C.Reads()
 
         def f(s, b, n, st):
-            if _now(s) == probe:
-                ds = s.getFeed()[INST]
-                closes = list(ds.getCloseDataSeries())
-                out["visible_count"] = len(closes)
-                out["max_visible_close"] = max(closes)
+            if _now(s) == probe and not reads.items:
+                reads.read("getFeed()[銘柄].getCloseDataSeries()", lambda: list(s.getFeed()[INST].getCloseDataSeries()))
 
         run(C.events(sc), f)
-        if not out:  # no_probe_call
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok(out, "T0 + 4 日の onBars で getFeed()[銘柄].getCloseDataSeries()")
+        return ok(reads.output(), "T0 + 4 日の onBars で getFeed()[銘柄].getCloseDataSeries() を読んだ", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON.format(k="受け取れる時刻", err=_try_non_bar({"ts_ns": 0, "open": 1.0, "recv_ns": 1})) + "(1 本の足に時刻は 1 つ)")
@@ -205,10 +220,12 @@ class PyalgotradeAdapter(Adapter):
             if _now(s) != probe or att.items:
                 return
             ds = s.getFeed()[INST].getCloseDataSeries()
-            att.run("close の系列[len](最新の次の位置)", "position", lambda: ds[len(ds)])
-            att.run("feed.peekDateTime()(次を覗く)", "position", lambda: s.getFeed().peekDateTime())
+            # namings: the scene's fixed list
+            C.try_position_namings(att, "close の系列[位置]", lambda: ds, len(ds))
+            att.run("feed.peekDateTime()(次を覗く)", "position", lambda: s.getFeed().peekDateTime(), shape="next_call", naming="next")
             att.run("feed.getNextBars()(次を覗く、公開の方法)の終値", "position",
-                    lambda: (lambda nb: nb[INST].getClose() if nb is not None else None)(s.getFeed().getNextBars()))
+                    lambda: (lambda nb: nb[INST].getClose() if nb is not None else None)(s.getFeed().getNextBars()),
+                    shape="next_call", naming="next")
             att.run("close の系列の全部", "other", lambda: [ds[i] for i in range(len(ds))])
 
         run(C.events(sc), f)
@@ -222,11 +239,12 @@ class PyalgotradeAdapter(Adapter):
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
     def scene_p5_same_stream_order(self, sc):
+        car = []
         try:
-            st, _ = run(self._bars(sc), lambda s, b, n, st: st["log"].append(b[INST].getClose()))
+            st, _ = run(self._bars(sc), lambda s, b, n, st: (st["log"].append(b[INST].getClose()), car.append(C.carrier(b[INST]))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ時刻の 3 本を bar feed に入れて走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "同じ時刻の 3 本を 1 つの bar feed に入れた")
+        return ok({"prices": st["log"]}, "同じ時刻の 3 本を 1 つの bar feed に入れた", {"carriers": car})
 
     def scene_p6_place_then_cancel(self, sc):
         out = {}

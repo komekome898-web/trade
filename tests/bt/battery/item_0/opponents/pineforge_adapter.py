@@ -61,6 +61,14 @@ def calls(rows) -> list[list[str]]:
     return [r for r in rows if r[0] == "CALL"]
 
 
+# what the driver's on_bar callback receives: the tool's own struct (include/pineforge/native_c_api.h), one per call
+BAR_CARRIER = "c:pineforge pf_bar_t (on_bar の引数)"
+
+
+def carriers(rows) -> list[str]:
+    return [BAR_CARRIER for _ in calls(rows)]
+
+
 def errors(rows) -> list[str]:
     return [" ".join(r) for r in rows if r[0] == "ERROR"]
 
@@ -73,7 +81,7 @@ class PineforgeAdapter(Adapter):
         rows = drv(bars=[bar_arg(e) for e in C.events(sc)])
         return ok({"sequence": [["bar", int(r[2]) * MS] for r in calls(rows)]},
                   "足を pf_bar_t にして strategy_native_run_v1、on_bar の各回に (道具の型 = 足, bar.timestamp の ms を ns に)。"
-                  f"誤り {errors(rows)}")
+                  f"誤り {errors(rows)}", {"carriers": carriers(rows)})
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NO_TYPE.format(k="約定と資金調達"))
@@ -97,7 +105,7 @@ class PineforgeAdapter(Adapter):
                                  f"(入力の時間枠 1S、最も細かい秒の枠): {errors(rows)}")
         return ok({"observed_ts_ns": [int(r[2]) * MS for r in calls(rows)]},
                   "足の時刻は Unix ミリ秒(pf_bar_t.timestamp、int64)。ns の時刻をミリ秒に切り下げて渡し、on_bar の bar.timestamp を ns に戻した"
-                  f"(入力の時間枠 1S)。誤り {errors(rows)}")
+                  f"(入力の時間枠 1S)。誤り {errors(rows)}", {"carriers": carriers(rows)})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -111,7 +119,7 @@ class PineforgeAdapter(Adapter):
         f = dict(zip(("close", "eff", "open", "high", "low", "volume"), c[0][3:])) if c else {}
         return ok({"sequence": [["bar", int(r[2]) * MS] for r in c],
                    "fields": {k: float(f[k]) if k in f else None for k in ("open", "high", "low", "close", "volume")}},
-                  "足 1 本を pf_bar_t で渡し、on_bar が受けた型・時刻と欄(open / high / low / close / volume)")
+                  "足 1 本を pf_bar_t で渡し、on_bar が受けた型・時刻と欄(open / high / low / close / volume)", {"carriers": carriers(rows)})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -169,8 +177,11 @@ class PineforgeAdapter(Adapter):
             if r[0] == "SERIES":
                 d = kv(r)
                 la = "AT_FIRST_INPUT(区間の最後の値を最初の入力で渡す)" if d["lookahead"] == "1" else "AT_COMPLETION"
-                att.run(f"strategy_native_series_bar_v1(時間枠 {d['tf']}、lookahead = {la}。5 本目を含む区間)", "time",
-                        lambda d=d: None if d["rc"] != "0" else {"timestamp_ms": int(d["ts"]), "close": float(d["close"])})
+                # takes no time and no position: it returns the declared timeframe's bar that holds now (and, with
+                # lookahead, its last value) -- a call that returns the bar reaching past now (shape next_call)
+                att.run(f"strategy_native_series_bar_v1(時間枠 {d['tf']}、lookahead = {la}。5 本目を含む区間)", "position",
+                        lambda d=d: None if d["rc"] != "0" else {"timestamp_ms": int(d["ts"]), "close": float(d["close"])},
+                        shape="next_call", naming="next")
             if r[0] == "PARTIAL":
                 d = kv(r)
                 att.run("strategy_native_partial_bar_v1(今の足の途中)", "other",
@@ -190,7 +201,7 @@ class PineforgeAdapter(Adapter):
         if errors(rows):
             return not_supported(f"同じ時刻の足を 2 本以上受けない(道具が拒否した): 同じ時刻の 3 本を足にして strategy_native_run_v1 -> {errors(rows)}")
         return ok({"prices": [float(r[3]) for r in calls(rows)]},
-                  f"同じ時刻の 3 本を足にして渡し、on_bar の終値の順。誤り {errors(rows)}")
+                  f"同じ時刻の 3 本を足にして渡し、on_bar の終値の順。誤り {errors(rows)}", {"carriers": carriers(rows)})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

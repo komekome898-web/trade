@@ -307,8 +307,8 @@ add(id="p4-future-read-attempt", viewpoint="P0-4", kind="capability",
     graded_from="出力の `attempts`(試しの列。各試しは `means` 手段・`form` 名指し方の大分類(time / position / other)・`shape` 手段の形・`naming` 名指し方・"
                 "`raised` 例外の名前か null・`returned` 返った値か null)から runner が作る: `every_attempt_stopped_by_error` = 名指し方が time か position の試しが 1 つ以上あり、"
                 "その全部の `raised` が null でない / `future_value_obtained` = どれかの試し(other を含む)の `returned` の中に 104(入力の `future_value`)がある。"
-                "採点の前に runner は、手段ごとに `namings` のその形の一覧が全部そろっているか、形 no_means の試しが全部例外で止まったかを検め、"
-                "そろっていなければ採点しない(結果なし)。")
+                "採点の前に runner は、手段ごとに `namings` のその形の一覧が全部そろっているかを検め、そろっていなければ採点しない(結果なし)。"
+                "形 no_means の試しは名指す読み出しとして数える(値が返れば止まらなかった)。")
 
 # ---------------------------------------------------------------- P0-5
 _TIE_STREAMS = {

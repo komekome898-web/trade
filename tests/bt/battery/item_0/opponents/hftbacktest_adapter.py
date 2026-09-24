@@ -104,12 +104,28 @@ def _levels(depth, side: str, limit: int = 20000) -> list[list[float]]:
     return out
 
 
-def run(evs: list[dict], on_call=None, entry_latency=0, fee=("value", 0.0), prepare=True, max_calls=100):
+_KIND_NAMES = ("TRADE_EVENT", "DEPTH_EVENT", "DEPTH_SNAPSHOT_EVENT", "DEPTH_CLEAR_EVENT", "DEPTH_BBO_EVENT")
+_FEED = {"carrier": None}  # the class whose wait_next_feed woke the strategy (set by run)
+
+
+def _row_carrier(ev: int) -> str:
+    """The hftbacktest type of a row the strategy read, named from the row's own `ev` bits and the tool's
+    constants (hftbacktest/types.py), not written by hand."""
+    for name in _KIND_NAMES:
+        code = getattr(H, name, None)
+        if code is not None and (int(ev) & 0xFF) == (int(code) & 0xFF):
+            return f"hftbacktest.{name}"
+    return f"hftbacktest.event_dtype(ev の型の番号 {int(ev) & 0xFF})"
+
+
+def run(evs: list[dict], on_call=None, entry_latency=0, fee=("value", 0.0), prepare=True, max_calls=100, clear=True):
     """Run the loop. `on_call(hbt, n, code, now, trades)` is the strategy; returns calls:
-    list of (code, now, trades)."""
+    list of (code, now, trades). `clear=True` empties last_trades after each call (the usual loop);
+    with `clear=False` last_trades keeps every trade delivered so far (the tool's own buffer)."""
     a = _array(_rows(evs))
     a = _prepare(a) if prepare else _flag_both(a)
     hbt = _backtest(a, entry_latency, fee)
+    _FEED["carrier"] = C.carrier(hbt) + ".wait_next_feed"
     calls = []
     try:
         for n in range(1, max_calls + 1):
@@ -124,9 +140,11 @@ def run(evs: list[dict], on_call=None, entry_latency=0, fee=("value", 0.0), prep
                 if fl is not None:
                     now = max(now, int(fl[1]))
             trades = [{"exch_ts": int(t["exch_ts"]), "local_ts": int(t["local_ts"]), "price": float(t["px"]),
-                       "qty": float(t["qty"]), "side": "buy" if int(t["ev"]) & BUY_EVENT else "sell"}
+                       "qty": float(t["qty"]), "side": "buy" if int(t["ev"]) & BUY_EVENT else "sell",
+                       "carrier": _row_carrier(t["ev"])}
                       for t in hbt.last_trades(0)]
-            hbt.clear_last_trades(0)
+            if clear:
+                hbt.clear_last_trades(0)
             if code == 1 and not trades and n > 1 and now == calls[-1][1]:
                 break  # end of data with nothing new
             calls.append((2 if code == 1 else code, now, trades))
@@ -151,15 +169,23 @@ def _orders(hbt) -> list:
 
 
 def _seq(calls) -> list:
-    seq = []
+    return _seq_car(calls)[0]
+
+
+def _seq_car(calls) -> tuple[list, list]:
+    """What the strategy saw on each market call, and where it came from: each trade row of last_trades
+    (its carrier from the row's ev bits), or, for a feed with no trade, only that wait_next_feed returned."""
+    seq, car = [], []
     for code, now, trades in calls:
         if code != 2:
             continue
         if trades:
             seq += [["trade", now] for _ in trades]
+            car += [t["carrier"] for t in trades]
         else:
             seq.append(["feed_without_trade", now])  # the strategy only sees that a feed arrived and the book state
-    return seq
+            car.append(_FEED["carrier"])
+    return seq, car
 
 
 class HftbacktestAdapter(Adapter):
@@ -176,19 +202,23 @@ class HftbacktestAdapter(Adapter):
                                  f"validate_event_order に通すと {type(exc).__name__}: {exc}。足・資金調達に当たる事象の型も無い"
                                  "(hftbacktest/types.py の事象の型は DEPTH/TRADE/DEPTH_CLEAR/DEPTH_SNAPSHOT/DEPTH_BBO と注文の 4 種)")
         calls = run(evs, prepare=False)
-        return ok({"sequence": _seq(calls)}, "検査を通ったので連結のまま渡した")
+        seq, car = _seq_car(calls)
+        return ok({"sequence": seq}, "検査を通ったので連結のまま渡した", {"carriers": car})
 
     def scene_p1_one_call_per_event(self, sc):
         evs = C.events(sc)
         calls = run(evs)
-        return ok({"sequence": [["unknown", now] for code, now, _ in calls if code == 2]},
-                  f"足に当たる型が無いので未定義の事象の型の番号 {UNKNOWN_KIND_CODE} で渡した。呼ばれた回: {[(c, n) for c, n, _ in calls]}")
+        seq, car = _seq_car(calls)
+        return ok({"sequence": seq},
+                  f"足に当たる型が無いので未定義の事象の型の番号 {UNKNOWN_KIND_CODE} で渡した。呼ばれた回: {[(c, n) for c, n, _ in calls]}",
+                  {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         evs = C.events(sc)
         calls = run(evs)
-        return ok({"sequence": _seq(calls)},
-                  f"足は未定義の番号 {UNKNOWN_KIND_CODE}、約定は TRADE_EVENT で渡した。呼ばれた回(code, 時刻, 約定): {calls}")
+        seq, car = _seq_car(calls)
+        return ok({"sequence": seq},
+                  f"足は未定義の番号 {UNKNOWN_KIND_CODE}、約定は TRADE_EVENT で渡した。呼ばれた回(code, 時刻, 約定): {calls}", {"carriers": car})
 
     # ---------------- P0-2
     def scene_p2_iso_utc(self, sc):
@@ -202,7 +232,8 @@ class HftbacktestAdapter(Adapter):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
         calls = run(evs)
         obs = [t["local_ts"] for _, _, tr in calls for t in tr]
-        return ok({"observed_ts_ns": obs}, f"約定で渡し、last_trades の local_ts を読んだ。呼ばれた回: {[(c, n) for c, n, _ in calls]}")
+        return ok({"observed_ts_ns": obs}, f"約定で渡し、last_trades の local_ts を読んだ。呼ばれた回: {[(c, n) for c, n, _ in calls]}",
+                  {"carriers": [t["carrier"] for _, _, tr in calls for t in tr]})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -218,28 +249,31 @@ class HftbacktestAdapter(Adapter):
                 captured["bids"], captured["asks"] = _levels(d, "bid"), _levels(d, "ask")
 
         calls = run([e], on_call)
-        seq = _seq(calls)
+        seq, car = _seq_car(calls)
+        prov = {"carriers": car}
         if k == "trade":
             t = calls[0][2][0] if calls and calls[0][2] else {}
             return ok({"sequence": seq, "fields": {"price": t.get("price"), "qty": t.get("qty"), "side": t.get("side")}},
-                      "TRADE_EVENT で渡し、last_trades を読んだ")
+                      "TRADE_EVENT で渡し、last_trades を読んだ", prov)
         if k == "book_snapshot":
             return ok({"sequence": seq, "fields": {"bids": captured.get("bids"), "asks": captured.get("asks")}},
                       "DEPTH_SNAPSHOT_EVENT(水準ごとの行)で渡した。戦略は知らせを受けたあと板の状態(depth)を読むだけで、"
-                      "届いたのが写真か差分かは区別できないので型は feed_without_trade と記録")
+                      "届いたのが写真か差分かは区別できないので型は feed_without_trade と記録", prov)
         if k == "book_delta":
             bids = captured.get("bids") or []
             f = {"side": "bid", "price": bids[0][0], "qty": bids[0][1]} if bids else {}
-            return ok({"sequence": seq, "fields": f}, "DEPTH_EVENT|BUY_EVENT で渡し、板の状態を読んだ。型は feed_without_trade と記録")
+            return ok({"sequence": seq, "fields": f}, "DEPTH_EVENT|BUY_EVENT で渡し、板の状態を読んだ。型は feed_without_trade と記録", prov)
         return ok({"sequence": seq, "fields": {}},
-                  f"「{k}」に当たる事象の型は無い。未定義の番号 {UNKNOWN_KIND_CODE} で渡した結果、戦略が呼ばれた回: {[(c, n) for c, n, _ in calls]}")
+                  f"「{k}」に当たる事象の型は無い。未定義の番号 {UNKNOWN_KIND_CODE} で渡した結果、戦略が呼ばれた回: {[(c, n) for c, n, _ in calls]}", prov)
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
 
     def scene_p3_mixed_one_run(self, sc):
         calls = run(C.events(sc))
-        return ok({"sequence": _seq(calls)}, f"足・資金調達・清算は未定義の番号で渡した。呼ばれた回: {[(c, n, len(t)) for c, n, t in calls]}")
+        seq, car = _seq_car(calls)
+        return ok({"sequence": seq}, f"足・資金調達・清算は未定義の番号で渡した。呼ばれた回: {[(c, n, len(t)) for c, n, t in calls]}",
+                  {"carriers": car})
 
     def scene_p3_clock_timer(self, sc):
         evs = C.events(sc)
@@ -299,19 +333,18 @@ class HftbacktestAdapter(Adapter):
         evs = [C.as_bar(e) for e in C.events(sc)]
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": e["close"], "qty": 0.01, "side": "buy"} for e in evs]
         probe = sc.input["probe_at_ns"]
-        seen = []
-        out = {}
+        reads = C.Reads()
 
         def on_call(hbt, n, code, now, trades):
-            seen.extend(trades)
-            if now == probe:
-                out["visible_count"] = len(seen)
-                out["max_visible_close"] = max(t["price"] for t in seen)
+            if now == probe and not reads.items:
+                reads.read("hbt.last_trades(0) の px(道具の約定の記録。clear_last_trades を呼ばなければ届いた約定を持ち続ける)",
+                           lambda: [float(t["px"]) for t in hbt.last_trades(0)])
 
-        run(evs, on_call)
-        if not out:  # no_probe_call
+        run(evs, on_call, clear=False)
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
-        return ok(out, "足の代わりに同じ時刻・価格=終値の約定で渡し(場面の注記どおり)、戦略が各回に last_trades から受け取った約定を貯めた")
+        return ok(reads.output(), "足の代わりに同じ時刻・価格=終値の約定で渡し(場面の注記どおり)、T0 + 4 日の呼び出しで hbt.last_trades(0) を読んだ"
+                  "(clear_last_trades を呼ばない回し方)", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         evs = C.events(sc)
@@ -342,14 +375,16 @@ class HftbacktestAdapter(Adapter):
             if now != probe or att.items:
                 return
             # The strategy's public reads (binding.py): last_trades(asset), depth(asset), feed_latency(asset),
-            # orders(asset), state_values(asset); none takes a time or a position. The calls a strategy
-            # would write to reach the 5th trade are made as written:
-            att.run("hbt.depth(0, 5 本目の時刻)", "time", lambda: hbt.depth(0, fut))
-            att.run("hbt.last_trades(0)[len](最新の次の位置)", "position", lambda: hbt.last_trades(0)[len(hbt.last_trades(0))])
-            att.run("この呼び出しで届いた約定(last_trades)", "other", lambda: [t["price"] for t in trades])
+            # orders(asset), state_values(asset). last_trades is an array of the delivered trades (kept, as in
+            # p4-visible-at-step: clear_last_trades is not called); it gets the scene's fixed position namings.
+            # None takes a time; the time call a strategy would write is made as written.
+            C.try_position_namings(att, "hbt.last_trades(0)[位置] の px", lambda: hbt.last_trades(0), len(hbt.last_trades(0)),
+                                   lambda t: float(t["px"]))
+            att.run("hbt.depth(0, 5 本目の時刻)", "time", lambda: hbt.depth(0, fut), shape="no_means", naming="written_call")
+            att.run("この呼び出しで届いた約定(last_trades)", "other", lambda: [float(t["px"]) for t in hbt.last_trades(0)])
             att.run("hbt.feed_latency(0)", "other", lambda: hbt.feed_latency(0))
 
-        run(evs, on_call)
+        run(evs, on_call, clear=False)
         if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
         return ok(att.output(), "足の代わりに約定で渡した。4 回目の呼び出しで試した: " + att.summary())
@@ -361,20 +396,25 @@ class HftbacktestAdapter(Adapter):
     def _one_input(self, sc, order=None):
         """One run on the hand-over concatenation."""
         evs = C.concatenated(sc, order)
-        return [[k, t] for k, t in _seq(run(evs))]
+        seq, car = _seq_car(run(evs))
+        return [[k, t] for k, t in seq], car
 
     def scene_p5_same_time_twice(self, sc):
-        return ok({"order": self._one_input(sc)},
+        order, car = self._one_input(sc)
+        return ok({"order": order},
                   f"1 本の配列しか受けないので、型ごとの 4 入力を渡した順に連結した。足・資金調達・清算は未定義の番号 {UNKNOWN_KIND_CODE}。"
-                  "戦略に見えるのは約定(last_trades)だけ")
+                  "戦略に見えるのは約定(last_trades)だけ", {"carriers": car})
 
     def scene_p5_hand_over_order(self, sc):
-        runs = [{"hand_over": list(o), "order": self._one_input(sc, o)} for o in sc.input["hand_over_orders"]]
-        return ok({"form": "single_input", "runs": runs}, "1 本の配列しか受けないので、24 通りの連結をそれぞれ 1 回走らせた")
+        got = [(list(o), *self._one_input(sc, o)) for o in sc.input["hand_over_orders"]]
+        runs = [{"hand_over": h, "order": order} for h, order, _ in got]
+        return ok({"form": "single_input", "runs": runs}, "1 本の配列しか受けないので、24 通りの連結をそれぞれ 1 回走らせた",
+                  {"carriers": [c for _, _, c in got]})
 
     def scene_p5_same_stream_order(self, sc):
         calls = run(C.events(sc))
-        return ok({"prices": [t["price"] for _, _, tr in calls for t in tr]}, f"呼ばれた回: {calls}")
+        return ok({"prices": [t["price"] for _, _, tr in calls for t in tr]}, f"呼ばれた回: {calls}",
+                  {"carriers": [t["carrier"] for _, _, tr in calls for t in tr]})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

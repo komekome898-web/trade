@@ -135,7 +135,8 @@ def _pairs(seq) -> list:
 
 def _grade_future_reads(sc, out: dict, target: str | None = None) -> dict:
     atts = list(out.get("attempts") or [])
-    named = [a for a in atts if a.get("form") in ("time", "position")]
+    # a naming the target's language cannot write (a compiled driver's `expressible: False`) is neither a stop nor a pass
+    named = [a for a in atts if a.get("form") in ("time", "position") and a.get("expressible", True)]
     fv = float(sc.input["future_value"])
     return {"every_attempt_stopped_by_error": bool(named) and all(a.get("raised") for a in named),
             "future_value_obtained": any(_contains_number(a.get("returned"), fv) for a in atts)}
@@ -262,16 +263,16 @@ def _attempts_problem(out) -> str | None:
             return f"試し {a.get('means')!r} に shape が無い(common.try_position_namings / try_time_namings を通していない)"
         if shape == "other":
             continue
-        if shape == "no_means":
+        if shape == "no_means":  # graded like any named read: a value returned is a read that was not stopped
             if form not in ("time", "position"):
                 return f"no_means の試し {a.get('means')!r} の form が time / position でない"
-            if not a.get("raised"):
-                return f"no_means の試し {a.get('means')!r} が例外を出さずに値を返した(読み出しの手段が在る)"
             continue
         if shape not in NAMING_SHAPES:
             return f"未知の shape {shape!r}"
         if (shape.startswith("time") and form != "time") or (not shape.startswith("time") and form != "position"):
             return f"試し {a.get('means')!r} の shape {shape} と form {form} が合わない"
+        if a.get("expressible", True) is False and not str(a.get("means", "")).startswith(COMPILED):
+            return f"試し {a.get('means')!r} を書けない名指しとしたが、手段がコンパイルした道具の driver のものでない"
         groups.setdefault((a.get("means"), shape), set()).add(a.get("naming"))
     for (means, shape), got in groups.items():
         want = set(NAMING_SHAPES[shape])

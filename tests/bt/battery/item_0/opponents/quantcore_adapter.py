@@ -72,6 +72,13 @@ def run(events: list[dict], fn, cash=1_000_000.0, latency_ns=0, fee=0.0, ticks=F
     return st, eng
 
 
+def _kind(ev) -> str:
+    """The scene word for what on_data received: QuantCore hands the strategy one class, MarketDataEvent
+    (open/high/low/close/volume), for bars and for trade ticks alike, so that class is a bar (round r6-1:
+    one carrier, one kind)."""
+    return {"MarketDataEvent": "bar"}.get(type(ev).__name__, type(ev).__name__)
+
+
 def _buy(s, ev):
     s.generate_signal("X", qc.SignalType.BUY, 1.0, ev.timestamp_ns)
 
@@ -97,24 +104,26 @@ class QuantcoreAdapter(Adapter):
                              + "(足と約定は add_data と add_tick_data の別々の口で、同じ実行に混ぜる口も無い: engine.has_tick_data で片方の型に切り替わる)")
 
     def scene_p1_one_call_per_event(self, sc):
-        st, _ = run(C.events(sc), lambda s, ev, n, st: st["log"].append(["bar", int(ev.timestamp_ns)]))
-        return ok({"sequence": st["log"]}, "足 5 本。on_data の各回に ev.timestamp_ns")
+        car = []
+        st, _ = run(C.events(sc), lambda s, ev, n, st: (st["log"].append([_kind(ev), int(ev.timestamp_ns)]), car.append(C.carrier(ev))))
+        return ok({"sequence": st["log"]}, "足 5 本。on_data の各回に ev.timestamp_ns", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         evs = C.events(sc)
         eng = qc.BacktestEngine(1.0, _cfg())
         eng.add_data("X", [qc.BarData("X", int(evs[0]["ts_ns"]), 1.0, 1.0, 1.0, 1.0, 1.0)])
         eng.add_tick_data("X", [qc.TickData("X", int(evs[1]["ts_ns"]), 100.5, 0.01, qc.Side.BUY)])
-        seen = []
+        seen, car = [], []
 
         class S(qc.Strategy):
             def on_data(self, ev):
-                seen.append([type(ev).__name__, int(ev.timestamp_ns)])
+                seen.append([_kind(ev), int(ev.timestamp_ns)])
+                car.append(C.carrier(ev))
 
         eng.set_strategy(S("s"))
         eng.run()
         return ok({"sequence": seen}, f"add_data(足) と add_tick_data(約定) を同じ BacktestEngine に入れて走らせた。on_data に届いた事象の型と時刻: {seen}"
-                  "(戦略に届く型は MarketDataEvent の 1 種で、足と約定を見分ける欄は無い)")
+                  "(戦略に届く型は MarketDataEvent の 1 種で、足と約定を見分ける欄は無い)", {"carriers": car})
 
     def _iso(self, sc):
         try:
@@ -128,32 +137,36 @@ class QuantcoreAdapter(Adapter):
 
     def _ts(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01} for e in C.events(sc)]
-        st, _ = run(evs, lambda s, ev, n, st: st["log"].append(int(ev.timestamp_ns)), ticks=True)
-        return ok({"observed_ts_ns": st["log"]}, "約定のティックで渡し、on_data の ev.timestamp_ns")
+        car = []
+        st, _ = run(evs, lambda s, ev, n, st: (st["log"].append(int(ev.timestamp_ns)), car.append(C.carrier(ev))), ticks=True)
+        return ok({"observed_ts_ns": st["log"]}, "約定のティックで渡し、on_data の ev.timestamp_ns", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
     def _type(self, sc):
         e = C.events(sc)[0]
         if e["kind"] == "bar":
-            out = {}
+            out, car = {}, []
 
             def f(s, ev, n, st):
-                st["log"].append(["bar", int(ev.timestamp_ns)])
+                st["log"].append([_kind(ev), int(ev.timestamp_ns)])
+                car.append(C.carrier(ev))
                 out.update({"open": ev.open, "high": ev.high, "low": ev.low, "close": ev.close, "volume": ev.volume})
 
             st, _ = run([e], f)
-            return ok({"sequence": st["log"], "fields": out}, "足 1 本(add_data)。on_data の MarketDataEvent")
+            return ok({"sequence": st["log"], "fields": out}, "足 1 本(add_data)。on_data の MarketDataEvent", {"carriers": car})
         if e["kind"] == "trade":
-            out = {}
+            out, car = {}, []
 
             def f(s, ev, n, st):
-                st["log"].append(["trade", int(ev.timestamp_ns)])
+                st["log"].append([_kind(ev), int(ev.timestamp_ns)])
+                car.append(C.carrier(ev))
                 out.update({"price": ev.close, "qty": ev.volume, "side": None})
 
             st, _ = run([e], f, ticks=True)
             return ok({"sequence": st["log"], "fields": out},
-                      "約定 1 件(add_tick_data)。on_data に届くのは MarketDataEvent(open/high/low/close/volume)で、約定の向きの欄が無い")
+                      "約定 1 件(add_tick_data の TickData)。on_data に届くのは足と同じ MarketDataEvent(open/high/low/close/volume)で、"
+                      "約定として見分ける型も向きの欄も無い", {"carriers": car})
         return not_supported(NON.format(k=e["kind"], err=_kinds_attempt(e["kind"].split("_")[-1])))
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
@@ -179,19 +192,25 @@ class QuantcoreAdapter(Adapter):
 
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
-        seen = []
+        tried = {}
 
         def f(s, ev, n, st):
-            seen.append(ev.close)
-            if int(ev.timestamp_ns) == probe:
-                out["visible_count"] = len(seen)
-                out["max_visible_close"] = max(seen)
+            if int(ev.timestamp_ns) != probe or tried:
+                return
+            tried["public"] = sorted(m for m in dir(s) if not m.startswith("_"))
+            for name in ("get_history", "get_bars", "history"):
+                try:
+                    getattr(s, name)("X")
+                    tried[name] = "呼べた"
+                except Exception as exc:  # noqa: BLE001
+                    tried[name] = f"{type(exc).__name__}: {str(exc)[:80]}"
 
         run(C.events(sc), f)
-        if not out:  # no_probe_call
+        if not tried:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok(out, "戦略に履歴を渡す口が無いので、戦略が受け取った事象を戦略自身が貯めた")
+        return not_supported("戦略に過去の事象を読む公開の手段が無い(on_data が各回に 1 件の MarketDataEvent を渡すだけ)。"
+                             f"試したこと: T0 + 4 日の on_data で Strategy の公開の名前 {tried['public']} を見て、過去を読む名前を呼んだ -> "
+                             + " / ".join(f"{k}: {v}" for k, v in tried.items() if k != "public"))
 
     def scene_p4_received_time(self, sc):
         try:
@@ -212,8 +231,8 @@ class QuantcoreAdapter(Adapter):
             # Strategy's public methods (dir(quantcore.Strategy)): generate_*, get_name, get_portfolio,
             # get_position, get_signals, has_position, has_signals, on_*, reset, set_position -- none reads
             # market data by time or position. The calls a strategy would write are made as written:
-            att.run("self.get_position('X', 5 本目の時刻)", "time", lambda: s.get_position("X", fut))
-            att.run("受け取った事象の [1](次の足)", "position", lambda: ev[1])
+            att.run("self.get_position('X', 5 本目の時刻)", "time", lambda: s.get_position("X", fut), shape="no_means", naming="written_call")
+            att.run("受け取った事象の [1](次の足)", "position", lambda: ev[1], shape="no_means", naming="written_call")
             att.run("self.get_signals()", "other", lambda: [str(x) for x in s.get_signals()])
 
         run(C.events(sc), f)
@@ -227,8 +246,9 @@ class QuantcoreAdapter(Adapter):
     scene_p5_hand_over_order = scene_p5_same_time_twice
 
     def scene_p5_same_stream_order(self, sc):
-        st, _ = run(C.events(sc), lambda s, ev, n, st: st["log"].append(ev.close), ticks=True)
-        return ok({"prices": st["log"]}, "同じ時刻の約定 3 件をティックで渡した")
+        car = []
+        st, _ = run(C.events(sc), lambda s, ev, n, st: (st["log"].append(ev.close), car.append(C.carrier(ev))), ticks=True)
+        return ok({"prices": st["log"]}, "同じ時刻の約定 3 件をティックで渡した", {"carriers": car})
 
     def scene_p6_place_then_cancel(self, sc):
         return not_supported("戦略が指値を出す・取り消す・未決の注文を読む口が無い(戦略は信号を出し、注文は engine が作る)。試したこと: " + _kinds_attempt("cancel"))

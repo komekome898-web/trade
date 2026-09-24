@@ -87,11 +87,12 @@ class PybottersAdapter(VectorBase):
         m = _msg(f"lightning_executions_{CH}", [{"id": 1, "side": e["side"].upper(), "price": e["price"], "size": e["qty"],
                                                  "exec_date": _exec_date(e["ts_ns"]), "buy_child_order_acceptance_id": "a",
                                                  "sell_child_order_acceptance_id": "b"}])
-        _, got = _feed([m], ["executions"])
+        store, got = _feed([m], ["executions"])
         seq = [["trade", _parse_exec_date(g[2]["exec_date"])] for g in got]
+        car = [C.carrier(getattr(store, g[0])) for g in got]  # the tool's store the change came from (its type for trades)
         f = {"price": got[0][2]["price"], "qty": got[0][2]["size"], "side": got[0][2]["side"].lower()} if got else {}
         return ok({"sequence": seq, "fields": f}, "bitFlyer の約定の文を bitFlyerDataStore.onmessage に渡し、executions.watch() で受けた変化。"
-                  f"時刻は文の exec_date(小数 7 桁、100 ns 刻み)を ns に直した。受けた変化: {got}")
+                  f"時刻は文の exec_date(小数 7 桁、100 ns 刻み)を ns に直した。受けた変化: {got}", {"carriers": car})
 
     def _board(self, sc, snapshot: bool):
         e = C.events(sc)[0]

@@ -82,7 +82,7 @@ class DaniyalmlkSlippageAdapter(VectorBase):
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"load_bars(timestamp='{sc.input['iso']}') -> {type(exc).__name__}: {str(exc)[:160]}")
         return ok(C.dt_to_ns(s["X"][0].timestamp), "bars.csv の timestamp に ISO を書き、slippage.io.load_bars(datetime.fromisoformat で読む)の "
-                  "Bar.timestamp を ns にした")
+                  "Bar.timestamp を ns にした", {"reader": C.qualname(sio.load_bars)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
@@ -92,9 +92,9 @@ class DaniyalmlkSlippageAdapter(VectorBase):
             s = load(rows)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"load_bars(timestamp={[r[0] for r in rows]}) -> {type(exc).__name__}: {str(exc)[:160]}")
-        return ok({"observed_ts_ns": [C.dt_to_ns(b.timestamp) for b in s["X"]]},
-                  f"事象の時刻を 9 桁の小数の ISO にして bars.csv に書き({[r[0] for r in rows]})、load_bars の Bar.timestamp を ns に"
-                  "(戦略に渡す口は無いので、道具が持つ値を読んだ)")
+        # round r6-1 (same root as critic i0-r5-02): the scene measures what a strategy RECEIVES; this tool has no strategy that events are delivered to, so the value the tool holds is reported as evidence, not graded
+        return not_supported(f"{self.what}(戦略に事象を渡す口が無く、戦略が受け取った時刻が無い)。試したこと: 事象の時刻を 9 桁の小数の ISO にして "
+                             f"bars.csv に書き({[r[0] for r in rows]})、load_bars が持った Bar.timestamp は {[C.dt_to_ns(b.timestamp) for b in s['X']]}")
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -102,9 +102,9 @@ class DaniyalmlkSlippageAdapter(VectorBase):
         e = C.events(sc)[0]
         s = load([(_iso_of(e["ts_ns"]), e)])
         b = s["X"][0]
-        return ok({"sequence": [["bar", C.dt_to_ns(b.timestamp)]],
-                   "fields": {"open": b.open, "high": b.high, "low": b.low, "close": b.close, "volume": b.volume}},
-                  "bars.csv 1 行を load_bars で読み、BarSeries の 1 本目(戦略に渡す口は無いので、道具が持つ値を読んだ)")
+        # round r6-1 (same root as critic i0-r5-02): the scene measures what a strategy RECEIVES; this tool has no strategy that events are delivered to, so the value the tool holds is reported as evidence, not graded
+        return not_supported(f"{self.what}(足を事象として戦略に届ける口が無い)。試したこと: bars.csv 1 行を load_bars で読んだ -> 道具が持つ Bar "
+                             f"{(C.dt_to_ns(b.timestamp), b.open, b.high, b.low, b.close, b.volume)}(足の型 Bar は在るが、戦略に渡らない)")
 
     def scene_p5_same_stream_order(self, sc):
         rows = [(_iso_of(e["ts_ns"]), _bar(float(e["price"]))) for e in C.events(sc)]
@@ -112,4 +112,5 @@ class DaniyalmlkSlippageAdapter(VectorBase):
             s = load(rows)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ時刻の 3 行を bars.csv にして load_bars -> {type(exc).__name__}: {str(exc)[:160]}")
-        return ok({"prices": [b.close for b in s["X"]]}, "同じ時刻の 3 行を load_bars で読んだ BarSeries の順")
+        # round r6-1 (same root as critic i0-r5-02): the scene measures what a strategy RECEIVES; this tool has no strategy that events are delivered to, so the value the tool holds is reported as evidence, not graded
+        return not_supported(f"{self.what}(戦略に事象を渡す口が無い)。試したこと: 同じ時刻の 3 行を load_bars で読んだ BarSeries の順 {[b.close for b in s['X']]}")

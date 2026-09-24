@@ -132,22 +132,37 @@ class QuanttraderAdapter(Adapter):
         return not_supported(NON_BAR.format(k="約定・資金調達", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
     def scene_p1_one_call_per_event(self, sc):
-        st, _ = run(C.events(sc), lambda s, t, n, st: st["log"].append(["bar", _now(t)]))
-        return ok({"sequence": st["log"]}, "足 5 本。on_tick の各回に tick.timestamp")
+        car = []
+        st, _ = run(C.events(sc), lambda s, t, n, st: (st["log"].append(["bar", _now(t)]), car.append(C.carrier(t))))
+        return ok({"sequence": st["log"]}, "足 5 本。on_tick の各回に tick.timestamp", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
 
     def _iso(self, sc):
-        v = int(pd.Timestamp(sc.input["iso"]).tz_convert("UTC").value)
-        return ok(v, "quanttrader の時刻は DataFrame の DatetimeIndex(pandas)。pd.Timestamp(iso).tz_convert('UTC').value")
+        """The ISO string written as it is into the first column of a CSV read by quanttrader's own
+        reader `quanttrader.util.util_func.read_ohlcv_csv`."""
+        import tempfile
+        from quanttrader.util.util_func import read_ohlcv_csv
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "X.csv"
+            path.write_text(f"Date,Open,High,Low,Close,Adj Close,Volume\n{sc.input['iso']},1,1,1,1,1,1\n", encoding="utf-8")
+            try:
+                df = read_ohlcv_csv(str(path), adjust=False)
+                v = df.index[0]
+            except Exception as exc:  # noqa: BLE001
+                return not_supported(f"ISO の文字列を最初の列に書いた CSV を read_ohlcv_csv で読んだ -> {type(exc).__name__}: {str(exc)[:160]}")
+        t = pd.Timestamp(v)
+        return ok(int((t if t.tzinfo is None else t.tz_convert("UTC")).value), f"read_ohlcv_csv が読んだ添字 {v!r}",
+                  {"reader": C.qualname(read_ohlcv_csv)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
-        st, _ = run(evs, lambda s, t, n, st: st["log"].append(_now(t)))
-        return ok({"observed_ts_ns": st["log"]}, "足で渡し、on_tick の tick.timestamp")
+        car = []
+        st, _ = run(evs, lambda s, t, n, st: (st["log"].append(_now(t)), car.append(C.carrier(t))))
+        return ok({"observed_ts_ns": st["log"]}, "足で渡し、on_tick の tick.timestamp", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
 
@@ -156,15 +171,17 @@ class QuanttraderAdapter(Adapter):
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
         out = {}
+        car = []
 
         def f(s, t, n, st):
             st["log"].append(["bar", _now(t)])
+            car.append(C.carrier(t))
             row = s._data_board.get_hist_price(SYM, t.timestamp).iloc[-1]
             out.update({"open": float(row["Open"]), "high": float(row["High"]), "low": float(row["Low"]),
                         "close": float(row["Close"]), "volume": float(row["Volume"])})
 
         st, _ = run([e], f)
-        return ok({"sequence": st["log"], "fields": out}, "足 1 本。data_board.get_hist_price(銘柄, 時刻) の最後の行")
+        return ok({"sequence": st["log"], "fields": out}, "足 1 本。data_board.get_hist_price(銘柄, 時刻) の最後の行", {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -198,18 +215,16 @@ class QuanttraderAdapter(Adapter):
 
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
+        reads = C.Reads()
 
         def f(s, t, n, st):
-            if _now(t) == probe:
-                h = s._data_board.get_hist_price(SYM, t.timestamp)
-                out["visible_count"] = int(len(h))
-                out["max_visible_close"] = float(h["Close"].max())
+            if _now(t) == probe and not reads.items:
+                reads.read("data_board.get_hist_price(銘柄, 今の時刻) の Close", lambda: list(s._data_board.get_hist_price(SYM, t.timestamp)["Close"]))
 
         run(C.events(sc), f)
-        if not out:  # no_probe_call
+        if not reads.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)")
-        return ok(out, "T0 + 4 日の on_tick で data_board.get_hist_price(銘柄, 時刻)")
+        return ok(reads.output(), "T0 + 4 日の on_tick で data_board.get_hist_price(銘柄, 時刻) を読んだ", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON_BAR.format(k="受け取れる時刻", err=_try_non_bar(
@@ -217,15 +232,17 @@ class QuanttraderAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        nxt = pd.Timestamp(sc.input["future_ts_ns"], unit="ns")
         att = C.Attempts()
 
         def f(s, t, n, st):
             if _now(t) != probe or att.items:
                 return
             db = s._data_board  # the data board quanttrader hands every strategy (StrategyBase)
-            att.run("data_board.get_hist_price(銘柄, 5 本目の時刻)", "time", lambda: list(db.get_hist_price(SYM, nxt)["Close"]))
-            att.run("data_board.get_current_price(銘柄, 5 本目の時刻)", "time", lambda: db.get_current_price(SYM, nxt))
+            # namings: the scene's fixed list
+            ts = (lambda ns: pd.Timestamp(int(ns), unit="ns"))
+            C.try_time_namings(att, "data_board.get_hist_price(銘柄, 終わりの時刻) の Close", "time_until",
+                               lambda x: list(db.get_hist_price(SYM, x)["Close"]), sc, ts)
+            C.try_time_namings(att, "data_board.get_current_price(銘柄, 時刻)", "time_at", lambda x: db.get_current_price(SYM, x), sc, ts)
             att.run("data_board.get_current_price(銘柄, 今の時刻)", "other", lambda: db.get_current_price(SYM, t.timestamp))
 
         run(C.events(sc), f)
@@ -241,14 +258,18 @@ class QuanttraderAdapter(Adapter):
     def scene_p5_same_stream_order(self, sc):
         rows = [C.as_bar(e) for e in C.events(sc)]
 
+        car = []
+
         def f(s, t, n, st):
             st["log"].append(float(s._data_board.get_current_price(SYM, t.timestamp)))
+            car.append(C.carrier(t))
 
         try:
             st, _ = run(rows, f)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ時刻の 3 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 行を渡した。on_tick ごとに data_board.get_current_price")
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 行を渡した。on_tick ごとに data_board.get_current_price",
+                  {"carriers": car})
 
     def scene_p6_place_then_cancel(self, sc):
         out = {}
@@ -288,10 +309,11 @@ class QuanttraderAdapter(Adapter):
             if n == 1:
                 st["o"] = _order(s, 1, None, t.timestamp)
             elif n == 3:
-                out["filled_qty_at_call3"] = float(sum(x["size"] for x in st["fills"]))
+                out["filled_qty_at_call3"] = float(s._position_manager.get_position_size(SYM))
 
         run([C.as_bar(e) for e in C.events(sc)], f)
-        return ok(out, "3 回目に、on_fill で戦略が受け取った約定の数量の合計(注文から約定済み数量を読む口として)")
+        return ok(out, "3 回目に、戦略の position manager の get_position_size(銘柄)(quanttrader の StrategyBase が戦略に持たせる建玉の記録。"
+                  "注文ごとの約定済み数量を戦略が読む公開の口は無い)")
 
     def scene_p7_fill_model_swap(self, sc):
         try:

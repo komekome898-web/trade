@@ -222,3 +222,74 @@ require github.com/dirkolbrich/gobacktest v0.0.0
 require gonum.org/v1/gonum v0.17.0 // indirect
 
 replace github.com/dirkolbrich/gobacktest => /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c69
+=== 2026-09-24T07:00:58Z round r6-1 (scene keeper): driver rebuilt with the scene's fixed position namings (tryNamings) and the History() closes for p4-visible-at-step. go build -o c69_driver . (GOMODCACHE = the recorded module cache, GOPROXY=off) rc=0; df after: /dev/vda          258020 35877      2062  95% /
+--- diff against the previous source
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/r6/item0_r6-1_scenekeeper_drv69_main.go.before	2026-09-24 07:00:47.441556471 +0000
++++ /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv69/main.go	2026-09-24 07:00:47.461307390 +0000
+@@ -108,6 +108,46 @@
+ 	return p.Portfolio.OnFill(f, d)
+ }
+ 
++func prices(s []gbt.DataEvent) []float64 {
++	v := []float64{}
++	for _, e := range s {
++		v = append(v, e.Price())
++	}
++	return v
++}
++
++// tryNamings applies the Go-expressible namings of the scene's list (scenes.py POSITION_NAMINGS) to a slice
++// the strategy holds, each in its own recover; a Go slice has no step, so the three step namings cannot be
++// written by a strategy and are reported as not expressible.
++func tryNamings(name string, s []gbt.DataEvent, n int) {
++	for _, nm := range []string{"[n]", "[n:]", "[n:n+1]", "[n-1:n+1]", "[n:n]"} {
++		func() {
++			defer func() {
++				if r := recover(); r != nil {
++					out(map[string]interface{}{"read": name, "form": "position", "shape": "position", "naming": nm, "error": fmt.Sprint(r)})
++				}
++			}()
++			var v interface{}
++			switch nm {
++			case "[n]":
++				v = s[n].Price()
++			case "[n:]":
++				v = prices(s[n:])
++			case "[n:n+1]":
++				v = prices(s[n : n+1])
++			case "[n-1:n+1]":
++				v = prices(s[n-1 : n+1])
++			case "[n:n]":
++				v = prices(s[n:n])
++			}
++			out(map[string]interface{}{"read": name, "form": "position", "shape": "position", "naming": nm, "value": v})
++		}()
++	}
++	for _, nm := range []string{"[n::2]", "[n::-1]", "[:n:-1]"} {
++		out(map[string]interface{}{"read": name, "form": "position", "shape": "position", "naming": nm, "expressible": false})
++	}
++}
++
+ func main() {
+ 	var in In
+ 	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
+@@ -166,12 +206,14 @@
+ 					mx = h.Price()
+ 				}
+ 			}
+-			out(map[string]interface{}{"visible_count": len(hist), "max_visible_close": mx})
+-			if st := d.Stream(); len(st) > 0 {
+-				out(map[string]interface{}{"read": "Data().Stream()[0]", "form": "position", "value": st[0].Price()})
+-			} else {
+-				out(map[string]interface{}{"read": "Data().Stream()[0]", "form": "position", "error": "empty"})
++			closes := []float64{}
++			for _, h := range hist {
++				closes = append(closes, h.Price())
+ 			}
++			out(map[string]interface{}{"visible_count": len(hist), "max_visible_close": mx, "visible_closes": closes})
++			// the scene's fixed position namings (round r6-1), on each slice the strategy can read
++			tryNamings("go:Data().History()[位置]", hist, len(hist))
++			tryNamings("go:Data().Stream()[位置]", d.Stream(), 0)
+ 			out(map[string]interface{}{"read": "Data().List(\"X\")", "form": "other", "value": len(d.List("X"))})
+ 		}
+ 		if in.ReadAt > 0 && n == in.ReadAt {

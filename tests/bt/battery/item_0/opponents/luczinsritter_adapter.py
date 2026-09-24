@@ -127,32 +127,41 @@ class LuczinsritterAdapter(Adapter):
         return not_supported(NON_BAR.format(k="複数の入力", err=_attempt_rows(rows)))
 
     def scene_p1_one_call_per_event(self, sc):
-        s, st = run(C.events(sc), lambda s, i, st: st["log"].append(["bar", _ts(s, i)]))
+        car = []
+        s, st = run(C.events(sc), lambda s, i, st: (st["log"].append(["bar", _ts(s, i)]), car.append(C.carrier(s.data))))
         return ok({"sequence": st["log"]}, f"足 {len(C.events(sc))} 本を get_data で渡し、{LOOP} の各回に get_date_price(i) の時刻。"
-                  f"__init__ のあとの行数 {st['rows_after_init']}(add_log_returns の dropna が 1 行目を落とす)")
+                  f"__init__ のあとの行数 {st['rows_after_init']}(add_log_returns の dropna が 1 行目を落とす)", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_attempt_rows(C.events(sc))))
 
     # ---------------- P0-2
     def _iso(self, sc):
-        t = pd.Timestamp(sc.input["iso"]).tz_convert("UTC")
-        prev = t - pd.Timedelta(days=1)
+        """The ISO string handed as it is to the tool's only data input (the index of the table get_data returns);
+        a row one day earlier goes first because __init__'s dropna drops the first row."""
+        iso = sc.input["iso"]
+        prev = iso.replace("2024-01-01", "2023-12-31")
         df = pd.DataFrame({"Open": [1.0, 1.0], "High": [1.0, 1.0], "Low": [1.0, 1.0], "Close": [1.0, 2.0], "Volume": [1.0, 1.0]},
-                          index=pd.DatetimeIndex([prev, t]))
-        s = make(df)
-        return ok(int(pd.Timestamp(s.get_date_price(0)[0]).value),
-                  "時刻は表の DatetimeIndex(pandas)。ISO を pd.Timestamp(iso).tz_convert('UTC') にし、その 1 日前の行を前に置いた 2 行の表を渡した"
-                  "(__init__ の dropna が 1 行目を落とすため)。get_date_price(0) の時刻の .value")
+                          index=[prev, iso])
+        try:
+            s = make(df)
+            v = s.get_date_price(0)[0]
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"添字が ISO の文字列の表を get_data から渡した -> {type(exc).__name__}: {str(exc)[:160]}")
+        if not isinstance(v, pd.Timestamp):
+            return not_supported(f"時刻の文字列を変換する入口が無い。試したこと: 添字が ISO の文字列の表を get_data から渡した -> get_date_price(0) の時刻 {v!r}"
+                                 f"(型 {type(v).__name__}。変換されずに文字列のまま)")
+        return ok(int((v if v.tzinfo is None else v.tz_convert("UTC")).value), f"EventBased が作った添字 {v!r}", {"reader": C.qualname(BE.EventBased)})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
+        car = []
         s, st = run([{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0 + k,
                       "volume": 1.0} for k, e in enumerate(C.events(sc))],
-                    lambda s, i, st: st["log"].append(_ts(s, i)))
+                    lambda s, i, st: (st["log"].append(_ts(s, i)), car.append(C.carrier(s.data))))
         return ok({"observed_ts_ns": st["log"]}, f"足で渡し、{LOOP} の各回に get_date_price(i) の時刻。__init__ のあとの行数 {st['rows_after_init']}"
-                  "(dropna が 1 行目を落とす)。呼ばれた回数 " + str(st["n"]))
+                  "(dropna が 1 行目を落とす)。呼ばれた回数 " + str(st["n"]), {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -162,15 +171,18 @@ class LuczinsritterAdapter(Adapter):
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_attempt_rows([e])))
         out = {}
+        car = []
 
         def f(s, i, st):
             st["log"].append(["bar", _ts(s, i)])
+            car.append(C.carrier(s.data))
             row = s.data.iloc[i]
             out.update({k.lower(): float(row[k]) for k in ("Open", "High", "Low", "Close", "Volume")})
 
         s, st = run([e], f)
         return ok({"sequence": st["log"], "fields": out},
-                  f"足 1 本を get_data で渡した。__init__ のあとの行数 {st['rows_after_init']}(dropna が 1 行目を落とす)、{LOOP} の回数 {st['n']}")
+                  f"足 1 本を get_data で渡した。__init__ のあとの行数 {st['rows_after_init']}(dropna が 1 行目を落とす)、{LOOP} の回数 {st['n']}",
+                  {"carriers": car})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -192,17 +204,16 @@ class LuczinsritterAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         probe = sc.input["probe_at_ns"]
-        out = {}
+        reads = C.Reads()
 
         def f(s, i, st):
-            if _ts(s, i) == probe:
-                out["visible_count"] = int(len(s.data))
-                out["max_visible_close"] = float(s.data["Close"].max())
+            if _ts(s, i) == probe and not reads.items:
+                reads.read("self.data['Close'](戦略が持つ表)", lambda: [float(x) for x in s.data["Close"]])
 
         s, st = run(C.events(sc), f)
-        if not out:  # no_probe_call
+        if not reads.items:  # no_probe_call
             return not_supported(f"T0 + 4 日の回が無かった({LOOP}。__init__ のあとの行数 {st['rows_after_init']})")
-        return ok(out, f"T0 + 4 日の回({LOOP})に、戦略が持つ表 self.data の行数と Close の最大")
+        return ok(reads.output(), f"T0 + 4 日の回({LOOP})に、戦略が持つ表 self.data の Close を読んだ", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON_BAR.format(k="受け取れる時刻", err=_attempt_rows(
@@ -211,15 +222,17 @@ class LuczinsritterAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        fut = pd.Timestamp(sc.input["future_ts_ns"], unit="ns", tz="UTC")
         att = C.Attempts()
 
         def f(s, i, st):
             if _ts(s, i) != probe or att.items:
                 return
-            att.run("self.get_date_price(i + 1)(最新の次の位置)", "position", lambda: float(s.get_date_price(i + 1)[1]))
-            att.run("self.data['Close'].iloc[i + 1](最新の次の位置)", "position", lambda: float(s.data["Close"].iloc[i + 1]))
-            att.run("self.data.loc[5 本目の時刻, 'Close']", "time", lambda: float(s.data.loc[fut, "Close"]))
+            # namings: the scene's fixed list; positions count the table's rows (the newest delivered is i, the next i + 1)
+            C.try_position_namings(att, "self.get_date_price(位置) の値", lambda: C.KeyCall(lambda k: s.get_date_price(k)[1]), i + 1)
+            C.try_position_namings(att, "self.data['Close'].iloc[位置]", lambda: s.data["Close"].iloc, i + 1)
+            ts = (lambda ns: pd.Timestamp(int(ns), unit="ns", tz="UTC"))
+            C.try_time_namings(att, "self.data['Close'].loc[時刻]", "time_at", lambda t: float(s.data["Close"].loc[t]), sc, ts)
+            C.try_time_namings(att, "self.data['Close'].loc[始:終]", "time_range", lambda a, b: list(s.data["Close"].loc[a:b]), sc, ts)
             att.run("self.data['Close'] の全部", "other", lambda: [float(x) for x in s.data["Close"]])
 
         run(C.events(sc), f)
@@ -236,8 +249,10 @@ class LuczinsritterAdapter(Adapter):
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
     def scene_p5_same_stream_order(self, sc):
-        s, st = run(C.events(sc), lambda s, i, st: st["log"].append(float(s.data["Close"].iloc[i])))
-        return ok({"prices": st["log"]}, f"約定を足に代え、同じ時刻の 3 行を渡した。__init__ のあとの行数 {st['rows_after_init']}、{LOOP} の回数 {st['n']}")
+        car = []
+        s, st = run(C.events(sc), lambda s, i, st: (st["log"].append(float(s.data["Close"].iloc[i])), car.append(C.carrier(s.data))))
+        return ok({"prices": st["log"]}, f"約定を足に代え、同じ時刻の 3 行を渡した。__init__ のあとの行数 {st['rows_after_init']}、{LOOP} の回数 {st['n']}",
+                  {"carriers": car})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

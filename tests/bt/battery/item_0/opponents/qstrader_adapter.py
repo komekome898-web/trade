@@ -110,7 +110,7 @@ class QstraderAdapter(Adapter):
 
     def scene_p1_one_call_per_event(self, sc):
         car = []
-        st, _ = run(C.events(sc), lambda dt, dh, n, st: (st["log"].append(["bar", _ns(dt)]), car.append(C.carrier(dh))))
+        st, _ = run(C.events(sc), lambda dt, dh, n, st: (st["log"].append(["bar", _ns(dt)]), car.append(C.carrier(dh))) and None)
         return ok({"sequence": st["log"]}, "日足 5 本、rebalance='daily'。AlphaModel の各回の dt(足は data_handler の読み出しで届く。"
                   "carrier はその data_handler の class)", {"carriers": car})
 
@@ -137,7 +137,7 @@ class QstraderAdapter(Adapter):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
         car = []
         try:
-            st, _ = run(evs, lambda dt, dh, n, st: (st["log"].append(_ns(dt)), car.append(C.carrier(dh))))
+            st, _ = run(evs, lambda dt, dh, n, st: (st["log"].append(_ns(dt)), car.append(C.carrier(dh))) and None)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"日足の CSV に書いて走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"observed_ts_ns": st["log"]}, "日足の CSV(日付だけの列)に書いた。AlphaModel の dt", {"carriers": car})
@@ -223,7 +223,7 @@ class QstraderAdapter(Adapter):
         car = []
         try:
             st, _ = run([C.as_bar(e) for e in C.events(sc)],
-                        lambda dt, dh, n, st: (st["log"].append(float(dh.get_asset_latest_mid_price(dt, SYM))), car.append(C.carrier(dh))))
+                        lambda dt, dh, n, st: (st["log"].append(float(dh.get_asset_latest_mid_price(dt, SYM))), car.append(C.carrier(dh))) and None)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ日の 3 行の CSV で走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"prices": st["log"]}, "同じ日の 3 行を CSV に書いた", {"carriers": car})

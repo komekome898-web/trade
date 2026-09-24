@@ -91,33 +91,21 @@ class HomerunAdapter(VectorBase):
             type(self)._out = _attempt()
         return self._out
 
-    # ---------------- P0-2: the time type is datetime (microseconds)
-    def _obs(self, sc):
-        replay = InMemoryBookReplay([snap(int(e["ts_ns"]), 100.0, 1.0) for e in C.events(sc)])
+    # ---------------- P0-2 / P0-3 (round r6-1, same root as critic i0-r5-02): these scenes measure what the
+    # strategy RECEIVES. An earlier version read InMemoryBookReplay.iter_snapshots() itself (the input the
+    # adapter built), which is not a delivery to the strategy; the strategy is not called per snapshot.
+    def _not_delivered(self, sc):
+        e = C.events(sc)[0]
+        replay = InMemoryBookReplay([snap(int(e["ts_ns"]), 100.0, 1.0)])
 
         async def read():
             return [s.observed_at async for s in replay.iter_snapshots()]
 
-        return ok({"observed_ts_ns": [C.dt_to_ns(t) for t in asyncio.run(read())]},
-                  "BookSnapshot の observed_at は datetime(マイクロ秒まで)。事象の時刻を datetime にして InMemoryBookReplay に入れ、iter_snapshots が返した "
-                  "observed_at を ns に(戦略に渡す口は無いので、再生の出す値を読んだ)")
+        return not_supported("板の写真(BookSnapshot)は再生(InMemoryBookReplay)から検証の engine に入るが、戦略に事象ごとに渡す口が無い"
+                             "(戦略が呼ばれるのは建玉があるときの should_exit と、約定・取消の知らせだけ)。試したこと: " + self.attempt(sc.id)
+                             + f"。写真の時刻の型は datetime(再生が返した observed_at {asyncio.run(read())})")
 
-    scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
-
-    # ---------------- P0-3: the book snapshot type
-    def scene_p3_book_snapshot(self, sc):
-        e = C.events(sc)[0]
-        s = BookSnapshot(TOK, C.ns_to_dt(e["ts_ns"]), bids=tuple(PriceLevel(p, q) for p, q in e["bids"]),
-                         asks=tuple(PriceLevel(p, q) for p, q in e["asks"]))
-        replay = InMemoryBookReplay([s])
-
-        async def read():
-            return [x async for x in replay.iter_snapshots()]
-
-        got = asyncio.run(read())
-        return ok({"sequence": [["book_snapshot", C.dt_to_ns(x.observed_at)] for x in got],
-                   "fields": {"bids": [[lv.price, lv.size] for lv in got[0].bids], "asks": [[lv.price, lv.size] for lv in got[0].asks]} if got else {}},
-                  "BookSnapshot を InMemoryBookReplay に入れ、iter_snapshots が返した写真(戦略に渡す口は無いので、再生の出す値を読んだ)")
+    scene_p2_event_time_exact = scene_p2_one_ns_apart = scene_p3_book_snapshot = _not_delivered
 
     # ---------------- P0-7: the engine's plug points, the entry as a TradeIntent at the first event
     def _fill_run(self, sc, size: float = 1.0, **cfg):
