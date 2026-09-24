@@ -465,7 +465,7 @@ def cmd_check_elements(a):
             continue
         if in_trace and re.match(r"^\s*-\s*`[^`]+`", ln):
             n_trace += 1
-        if in_trace and a.round and int(a.round) >= 10 and re.match(r"^\s*[-*]?\s*一覧[::]", ln):
+        if in_trace and a.round and int(a.round) >= 10 and re.match(r"^\s*[-*]?\s*一覧\s*[:：]", ln):
             refs = strict_refs(ln)
             if not refs:
                 errs.append("行 %d: 辿る一覧の「一覧:」の行に `<生ログ>:N` の形の参照が無い" % (i + 1))
