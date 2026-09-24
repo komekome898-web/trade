@@ -1059,3 +1059,38 @@ decisive 検査(6 回目処置 1〜5 + 処置 6 の反映確認): item14 の §3
 2. 直した(答え): 意図した言い換え。委任文に「(1)〜(5) は直す役の文言なので、直さない役には役の性質に合わせて言い換える」と、審査員・批評家・場面係の最初の作りの言い換えを書いた。
 3. 直した: `check_bt_delegation.py` に、台本の全ての agent 呼び出し(監査役を除く)に吟味の文が入っているかの検査を足した(試験 6 件)。最初の実行で監査役の呼び出し 2 つを誤って挙げた(label の丸括弧で切れていた)ので、道具を直した。
 4. 直した: 「完了の条件」に「台本の返り値 `status: 'escalate'` は、項目 0 ではリードへの戻し、ほかの項目では止めた(未達)と読む。オーナーへの報告もこの語で書く」と書いた。
+
+## 47 回目(対象の版: 386bbbb18e78。46 回目の処置の反映。指摘 3 件 = 止める 0・直す 2・聞く 1)
+
+### 監査役の出力(逐語)
+
+読んだファイル(絶対パス):
+- /home/user/trade/docs/DATA/delegations/20260923_backtest_env_prompt.md(版 sha256 先頭 12 桁 386bbbb18e78)
+- /home/user/trade/scripts/check_bt_delegation.py
+- /home/user/trade/tests/test_check_bt_delegation.py
+- /home/user/trade/docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md(「## 46 回目」節)
+- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_workflow.js
+- `git diff e2ec739 HEAD -- docs/DATA/delegations/20260923_backtest_env_prompt.md scripts/check_bt_delegation.py`
+- `python3 scripts/check_bt_delegation.py`(OK 誤り 0 件)/ `PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py -v`(6 passed)
+
+処置 1・3(台本と道具を自分で確かめよ、とのこと)は実測で確認した: `bt_workflow.js` の非監査役 agent 呼び出し 8 か所(要件:88行 / 場面(最初の作り):123行 / 場面の直し:153行 / 作る:227行 / 表:245行 / 批評:256行 / 盲検:264行付近 / 欠けているもの:370行)全てに `${SCRUTINY}` か「返す前の吟味」の文があり、監査役呼び出し 3 か所(142・273・295行)は除外されている。`check_script` の境界計算(`agent(\`` から `\`,` まで、`opts` は次の `})`)も実際のファイルで各呼び出しの開始行〜終了行を計測し直し、取りこぼしが無いことを確認した(45 回目の「label の丸括弧で切れる」バグは `label: \`監査役(表):1\`` を模した試験で再現・修正済みを確認)。処置 4 の `escalate`→「止めた(未達)」/「リードへの戻し」の対応も、`runItem` の全 9 か所の `return { ..., status: 'escalate', ... }`(173/181/216/233/276/280/307/316/317/319 行)を洗い出し、item.id ベースの読み替え規則(委任文:97 行)と矛盾しないことを確認した。差分は追記のみで、既存文の削除は見当たらなかった。
+
+その上で、処置の中身自体に次の食い違いを見つけた。
+
+1. [直す] docs/DATA/delegations/20260923_backtest_env_prompt.md:96 と /tmp/.../bt_workflow.js:123,256(場面係の最初の作り・批評家) — 処置 2 が委任文に足した文は「(1)〜(5) は直す役の文言なので、直さない役には役の性質に合わせて言い換える: 審査員 = … / 批評家 = … / 場面係の最初の作り = …」であり、「直さない役」には (1)〜(5) の文言そのものではなく役の性質に合わせた言い換え文を渡す、と読める。しかし実際の台本では、審査員(259〜264 行)だけが `${SCRUTINY}` を使わず独自の文に完全に置き換えられているのに対し、批評家(256 行)と場面係の最初の作り(123 行)は `${SCRUTINY}`(= (1)〜(5) の内容そのもの、「指摘 1 件ごとに直した根拠を書く」「同じ根の全箇所を探して直す」等)をそのまま丸ごと注入したうえで、括弧書きの言い換えを**追記**しているだけである。「言い換える」(置き換え)と書きながら、実際は 3 役のうち 2 役で「直す役の文言を残したまま追加する」になっており、委任文本文の記述と台本の実装が一致していない。処置 2 の記録には、この対応を `grep` などで実装と突き合わせた形跡がない(処置 1・3 は台本を確かめたコマンド相当の記述があるが、処置 2 は「意図した言い換え」とだけ書かれている)。(P3: 事前登録に書いた規則を実装が反映しているかは、実行して確かめるまで分からない)
+
+2. [直す] scripts/check_bt_delegation.py:27-44(`check_script`) — 46 回目の指摘 3 が求めたのは「役の配線が台本に実際にあるか」の機械検査で、処置はそれを `${SCRUTINY}` か「返す前の吟味」という**文字列の有無**だけで判定する形で足した。この検査は、上記 1 で見つけた「(1)〜(5) の文言を残したまま追記している(=言い換えていない)」状態と「本当に言い換えた」状態を区別できない(どちらも `${SCRUTINY}` または当該文言を含むので「誤り 0 件」になる)。45 回目までの教訓(「誤り 0 件」を提出前の吟味の根拠にする前に、役割配線を機械で検める)を受けて足した検査自体が、今回新しく文書化した「役の性質に合わせて言い換える」という規則の中身までは検めない、同じ型の抜けを抱えている。
+
+3. [聞く] scripts/check_bt_delegation.py:22-24(`DEFAULTS`) — 今回追加した 4 つ目のデフォルト引数が `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_workflow.js` という、特定セッションの scratchpad 配下の絶対パスをハードコードしている。`git ls-files | grep bt_workflow.js` は 0 件で、この台本はリポジトリに一切コミットされていない。scratchpad はセッションごとに切り替わる一時領域(現在の私の監査セッションの scratchpad は別パスだった)なので、別セッションでこの台本が新しい scratchpad に置かれた場合、`python3 scripts/check_bt_delegation.py`(引数なし)は必ず「台本が無い」を返す(コードはこのケースを明示エラーにしており、無言でスキップはしない点は安全側)。台本の恒久的な置き場所(リポジトリ内に置くか、今の運用のまま毎回パスを渡す前提にするか)は委任文にもスクリプトの docstring にも書かれていない。この Workflow の台本を scratchpad に置き続ける運用は既存の(46 回目より前からの)設計か、今回のデフォルト化で初めて「決め打ち」になったのか、確認しておくべきではないか。
+
+他は見当たらなかった(処置 1 は実測で正しく直っていることを確認、処置 4 も escalate の全経路と矛盾しないことを確認)。
+
+最後に読んだ版の sha256 先頭 12 桁: 386bbbb18e78(docs/DATA/delegations/20260923_backtest_env_prompt.md)
+
+### リードの処置(1 件 1 行)
+
+1. 直した(根から): 台本の吟味の定数を役ごとに 6 つに分けた(`SCRUTINY_FIX` = 作る・場面の直し / `SCRUTINY_BUILD` = 要件・場面の最初の作り / `SCRUTINY_TABLE` = 表 / `SCRUTINY_CRITIC` = 批評 / `SCRUTINY_JUDGE` = 盲検 / `SCRUTINY_GAPS` = 欠けているもの)。直さない役には (1)〜(5) を渡さない。委任文 §3「提出前の吟味」の文言を「直さない役には (1)〜(5) を渡さず、役の性質に合わせた文だけを渡す(台本の定数 = 役ごとに 1 つ)」に改め、資料係(表)と「欠けているもの」の批評家の文も足した。実測: `grep -n 'SCRUTINY_[A-Z]*}' scripts/workflows/backtest_env.js` → 93 BUILD / 128 BUILD / 158 FIX / 232 FIX / 250 TABLE / 261 CRITIC / 269 JUDGE / 375 GAPS(8 か所)、`${SCRUTINY}` は 0 件。
+2. 直した: `check_bt_delegation.py` の検査を「文字列の有無」から「label の接頭辞 → 役の定数(`ROLE_SCRUTINY`)」の対応に変え、(a) 役の定数が無い、(b) 別の役の定数が入っている、(c) 役が対応表に無い、の 3 つを誤りにする。試験 `test_every_agent_call_carries_its_own_roles_scrutiny_constant` で (a)(b)(c) を再現(`pytest tests/test_check_bt_delegation.py tests/test_check_bt_considered.py` → 17 passed)。
+3. 答え+直した: 台本を scratchpad に置いていたのは 46 回目より前からの運用(1 回目の起動から scratchpad の台本を `scriptPath` で指していた)で、今回の既定化で初めて決め打ちになった。台本をリポジトリ内 `scripts/workflows/backtest_env.js` に移し(コミット 0013061)、`DEFAULTS` と委任文 §3「提出前の吟味」に置き場所を書いた。起動は今後この場所の台本で行う(scratchpad の写しは同じ内容に保つ)。`python3 scripts/check_bt_delegation.py`(引数なし)→ OK 誤り 0 件。
+
+処置後の版: 4c4cfc6e4052(`sha256sum docs/DATA/delegations/20260923_backtest_env_prompt.md | cut -c1-12`)。
