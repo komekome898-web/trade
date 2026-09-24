@@ -42,7 +42,8 @@ PY
 echo "repo: $repo"
 echo "downloaded_bytes: $(du -sb .git | cut -f1)"
 # Size of what the checkout would write, from the local blobs only (no lazy fetch).
-# Refuse the checkout above CAT8_MAX_CHECKOUT_BYTES (default 500 MB; audit 51).
+# Refuse the checkout above CAT8_MAX_CHECKOUT_BYTES (default 500 MB; audit 51) with exit 4
+# (3 is taken by cat8_step.py for a passed deadline; audit 53).
 max_co="${CAT8_MAX_CHECKOUT_BYTES:-524288000}"
 git cat-file --batch-check='%(objectsize)' < .git/cat8_present_oids > .git/cat8_sizes
 if grep -qv '^[0-9][0-9]*$' .git/cat8_sizes; then
@@ -52,13 +53,15 @@ exp_co=$(awk '{s+=$1} END{print s+0}' .git/cat8_sizes)
 echo "expected_checkout_bytes: $exp_co (limit $max_co)"
 if [ "$exp_co" -gt "$max_co" ]; then
   echo "cat8_repo_fetch: checkout would exceed the limit; nothing checked out" >&2
-  exit 3
+  exit 4
 fi
 if [ -s .git/cat8_present ]; then
-  git checkout -q HEAD --pathspec-from-file=.git/cat8_present --pathspec-file-nul
+  git --literal-pathspecs checkout -q HEAD --pathspec-from-file=.git/cat8_present --pathspec-file-nul
 fi
 n_present=$(tr -cd '\0' < .git/cat8_present | wc -c)
 n_out=$(git ls-files | wc -l)
 echo "checked_out_files: $n_out (expected $n_present)"
-echo "checked_out_bytes(without .git): $(du -sb --exclude=.git . | cut -f1)"
+got_co=$(du -sb --exclude=.git . | cut -f1)
+echo "checked_out_bytes(without .git): $got_co"
 [ "$n_out" -eq "$n_present" ] || { echo "cat8_repo_fetch: checked-out count differs" >&2; exit 1; }
+[ "$got_co" -eq "$exp_co" ] || { echo "cat8_repo_fetch: checked-out bytes differ from expected" >&2; exit 1; }
