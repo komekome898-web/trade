@@ -68,6 +68,8 @@ def lint_script(script: str) -> list[str]:
 ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), ("場面の直し:", "SCRUTINY_FIX"), ("定義:", "SCRUTINY_BUILD"),
                  ("作る:", "SCRUTINY_FIX"), ("表:", "SCRUTINY_TABLE"), ("批評:", "SCRUTINY_CRITIC"),
                  ("盲検:", "SCRUTINY_JUDGE"), ("欠けているもの", "SCRUTINY_GAPS"))
+# roles that must receive the lead's notes and the prior battery record (audit 49 #3 / audit 50 #2)
+ROLE_NOTES = ("監査役(場面):", "監査役(定義):", "定義:", "場面の直し:", "作る:")
 
 
 def check_script(script: str) -> list[str]:
@@ -81,12 +83,16 @@ def check_script(script: str) -> list[str]:
             continue
         body = script[start:end]
         opts = script[end : script.find("})", end) + 2]  # the options object ends with "})"; labels may contain ")"
-        if "owner-auditor" in opts:
-            continue
         label = re.search(r"label: `([^`]*)`", opts)
         name = label.group(1) if label else "?"
         line = script[:start].count(chr(10)) + 1
+        if "owner-auditor" in opts:
+            if any(name.startswith(pre) for pre in ROLE_NOTES) and "lead_notes" not in body:
+                errs.append(f"台本:{line}: agent 呼び出し {name} にリードの注記(args.lead_notes)が届いていない")
+            continue
         want = next((c for pre, c in ROLE_SCRUTINY if name.startswith(pre)), None)
+        if any(name.startswith(pre) for pre in ROLE_NOTES) and "lead_notes" not in body:
+            errs.append(f"台本:{line}: agent 呼び出し {name} にリードの注記(args.lead_notes)が届いていない")
         if want is None:
             errs.append(f"台本:{line}: agent 呼び出し {name} の役が ROLE_SCRUTINY に無い")
         elif "${" + want + "}" not in body:

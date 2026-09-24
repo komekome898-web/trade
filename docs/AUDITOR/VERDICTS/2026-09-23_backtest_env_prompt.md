@@ -1175,3 +1175,36 @@ decisive 検査(6 回目処置 1〜5 + 処置 6 の反映確認): item14 の §3
 8. 答え: 記録の「逐語」は批評家・監査役の出力をそのまま置いたもので、その中の「…」は批評家自身が委任文・DEFINITIONS を引くときに書いた中略(リードの省略ではない)。記録の見出しに「委任先の出力の中の『…』は委任先自身の中略」と 1 文足す。中略の可否の基準は委任文に無いままにし、批評家の引用の中略を禁じる規則は足さない(引用元は path で読める)。
 9. 直す(起動時): 8 回目の起動の記録に `bt_args_run8.json` の `prior_rounds`・`prebuilt.0.battery_chain` の実物(コマンドと出力)を載せる。1 のオーナーの答えで値が変わる。
 10. 1 と同じ(起動前にオーナーの選択を得る)。
+
+## 50 回目(対象の版: 9ef8d697ad0a。49 回目の処置と L-438 の反映。指摘 2 件 = 止める 0・直す 2)
+
+### 監査役の出力(逐語)
+
+検査対象版: docs/DATA/delegations/20260923_backtest_env_prompt.md (9ef8d697ad0a、自分で `sha256sum` で確認)。49回目の指摘10件の処置(VERDICTS「49回目」節、コミット 23aa8d4「Apply audit 49's fixes」/ 1558755「Record L-438」)を検めた。
+
+## 49回目10件の処置状況(確認結果、指摘ではない)
+- 1・10([止める]、族/鎖の定義の追加はオーナー未承認): オーナーに提示しL-438「案1 族で数え、直した族は0から (推奨)」を得て、§0表 行44(delegation:44)と §3 4(delegation:97)にL-438を逐語で引用して反映済み。`check_bt_delegation.py`のverbatim検査(項目2)も0件で通過。
+- 2([聞く]、br7-1-1の設計判断): LEAD_DESIGN.md §4見出しに「オーナーがL-438で案1『条件つきで認める』を選んだ」を追記済み。
+- 3([直す]、lead_notes/prior_battery_recordが監査役2箇所に未配線): `auditBattery`(js:143)・`defineThenAudit`の監査呼び出し(js:165)に配線済み。実際に次回起動用の`bt_args_run8.json`(scratchpad、marker=9ef8d697ad0a)にも実データが入っている。
+- 4([直す]、"(1)〜(5)"の数え漏れ): "(1)〜(6)"に修正済み(delegation:97)。
+- 5・6([直す]、定義役の吟味の記録先の欠落/食い違い): §3の一覧に「場面係は…直しの前の定義(台本の`定義:`の役)…rootcause」を追記し、`SCRUTINY_BUILD`(js:30)の文言も「直しの前の定義ならROOTCAUSEのファイル」に修正。3箇所(js:89,124,165)すべてSCRUTINY_BUILDが刺さっている。
+- 7([直す]、defineThenAuditのエスカレート文言がL-436を誤引用): `(L-407)`のみに修正済み(js:172付近)。
+- 8([聞く]、逐語中の中略の扱い): 記録見出しに「委任先の出力の中の『…』は委任先自身の中略」と1文追記済み(run7_item0.md冒頭)。
+- 9([直す]、8回目起動時にprior_rounds/battery_chainの実物を載せる): 8回目はまだ起動していない(OWNER_STATUS.mdに「監査が[止める]0になり次第、予約した知らせの回に起動する」と明記)ため未処置は妥当。ただし次回起動用の値は`bt_args_run8.json`に実際に用意されている。
+
+`git diff c30aa0b HEAD`(49回目対象版→現在)で確認した限り、delegation本文の削除行は3行のみで、すべて上記の置換に対応(既存文の消失なし)。`check_bt_delegation.py`は誤り0件、`tests/test_check_bt_delegation.py`は7件通過(自分で実行し確認)。
+
+以上は10件とも処置済みで、追加で見つけた指摘は以下。
+
+1. [直す] scripts/workflows/backtest_env.js:201,203 — 項目の最初の場面集監査ループ(`for (let n=1; !pre; n++)`)で使う`bchain`は`prior.chain`から取るが(203行目 `const bchain = { ...prior.chain }`)、`prior_rounds[item.id].chain`というキーを実際に書く経路がリポジトリ内のどこにも無い。リードが起動引数(`bt_args_run8.json`)に実際に書くキーは`critic_chain`(224行目で使用)と`pre.battery_chain`(225行目で使用)で、201行目のデフォルト値`chain: {}`以外に`chain`キーが埋まる場面が見当たらない。項目0は`pre`が真なのでこのループ自体を素通りし影響が隠れているが、項目1〜12が最初の場面集監査(作業者の1周目の前)の途中で起動をまたいだ場合、§3「起動をまたぐ」(L-421「この数えも起動をまたいで続ける」)が実際には働かず、鎖が黙って0から始まるのではないか。項目0で顕在化しなかった欠陥が項目1〜12で再発する構図は、まさに49回目・7回目起動で扱った「同じ族が形を変えて出る」の型に見える。
+
+2. [直す] scripts/workflows/backtest_env.js(lead_notes/prior_battery_recordの配線: 143,165行目) / scripts/check_bt_delegation.py・tests/test_check_bt_delegation.py — 49回目の指摘3で見つかった「監査役2箇所への未配線」はコード上直ったが、この配線自体を機械的に確かめる検査が`check_bt_delegation.py`の6項目にも`test_check_bt_delegation.py`の7件にも無い(`grep`で存在を確認しただけで、テストとしては固定されていない)。`openFix`/`allFix`の実例(L-434反映直後に台本が壊れ、eslintを追加して初めて機械で捕まえた、CLAUDE.md §3の記述どおり)と同型の「直したが検査が無い」状態であり、次にこの2箇所の呼び出しを触ったときに黙って配線が外れても、現状の6項目の検査もpytestも気づかない。
+
+最後に読んだ版の sha256 先頭 12 桁: 9ef8d697ad0a
+
+### リードの処置(1 件 1 行)
+
+1. 直した: 最初の場面集の監査の鎖 `bchain` を `prior_rounds[id].battery_chain`(リードが起動の引数に書く鍵。旧 `chain` も受ける)から取り、周の中の直しの鎖 `cbchain` はその続きとして始める(同じ起動の中でも鎖が途切れない)。
+2. 直した: `check_bt_delegation.py` に「監査役(場面)・監査役(定義)・定義・場面の直し・作る の呼び出しには `args.lead_notes` が届いていること」の検査(`ROLE_NOTES`)を足し、試験で配線が外れた形を再現した(`pytest tests/test_check_bt_delegation.py` → 8 passed)。
+
+処置後の版: 9ef8d697ad0a(委任文は変えていない)。

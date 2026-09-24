@@ -40,7 +40,7 @@ def test_quoted_ellipsis_in_auditor_text_is_not_a_cut():
 
 
 def test_every_agent_call_carries_its_own_roles_scrutiny_constant():
-    good = ("const a = await agent(`作業 ${SCRUTINY_FIX}`, { label: `作る:0#1`, model: M })\n"
+    good = ("const a = await agent(`作業 ${(args.lead_notes || {})[0]} ${SCRUTINY_FIX}`, { label: `作る:0#1`, model: M })\n"
             "const j = await agent(`判定 ${SCRUTINY_JUDGE}`, { label: `盲検:0#1:current0`, model: M })\n"
             "const au = await agent(`検査`, { label: `監査役(表):1`, agentType: 'owner-auditor', model: M })\n")
     assert cbd.check_script(good) == []
@@ -67,3 +67,13 @@ def test_lint_script_reports_undefined_names_the_way_run_7_died():
     assert cbd.lint_script(ok) == []
     bad = "export const meta = { name: 'x', description: 'y' }\nconst r = await agent(`${openFix}`)\nreturn { r }\n"
     assert any("openFix" in e and "no-undef" in e for e in cbd.lint_script(bad))
+
+
+def test_lead_notes_must_reach_the_battery_auditors_and_fixers():
+    ok = ("const a = await agent(`作業 ${(args.lead_notes || {})[0]} ${SCRUTINY_FIX}`, { label: `作る:0#1`, model: M })\n"
+          "const au = await agent(`検査 ${(args.lead_notes || {})[0]}`, { label: `監査役(場面):0#1`, agentType: 'owner-auditor', model: M })\n")
+    assert cbd.check_script(ok) == []
+    bad = ("const a = await agent(`作業 ${SCRUTINY_FIX}`, { label: `作る:0#1`, model: M })\n"
+           "const au = await agent(`検査`, { label: `監査役(定義):0#1`, agentType: 'owner-auditor', model: M })\n")
+    errs = cbd.check_script(bad)
+    assert sum("lead_notes" in e for e in errs) == 2

@@ -180,6 +180,7 @@ async function repairBattery(item, req, bat, findings, n, definition) {
 あなたは項目 ${item.id}「${item.title}」の場面係です(場面集の第 ${n} 回の直し。作業者でも資料係でもない)。固定した要件: ${req.path}。場面集 ${bat.definitions}(置き場所 ${bat.battery_dir})に、監査役が次の指摘を出した(逐語):
 ${JSON.stringify(findings).slice(0, 12000)}
 監査役が通した正の定義(この直しの規則。これに合わない直しはしない): ${definition || '(無し)'}
+${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}
 **直す前に** ${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と「どの作りを変えるか」を書く(委任文 §3「根本的解決」)。[聞く] にはそこで答える。指摘の文言だけに合わせる直しをしない: 同じ種類の欠陥を場面集の全体(全観点・全場面・検討表の全行)で探して直す。
 そのうえで委任文 §3「場面集」「場面集の規則」1〜9「調査結果の側の選び方」「動かせない候補の検討と再現」に合わせて、場面の定義・runner・当方の現状と調査結果の側の adapter・検討表・再現・mutant を直す([直す] も直す)。場面の期待は要件の文から独立に出せる振る舞いで書き、新実装の内部の名前・形を写さない(規則 2)。
 検討表は返す前に python3 scripts/check_bt_considered.py ${bat.battery_dir}/opponents/CONSIDERED.md --write を走らせて誤り 0 件にし、出力の最後の行を check_output に入れる(規則 9)。rootcause には ROOTCAUSE の path を入れる。
@@ -200,7 +201,9 @@ async function runItem(item) {
   // L-420: rounds carry across launches (rounds where a delegate did not work are excluded by the lead's count)
   const prior = (args.prior_rounds || {})[item.id] || { rounds: 0, findings: null, chain: {} }
   const batHist = []
-  const bchain = { ...prior.chain }
+  // L-421/L-424: the battery-side chain carries across launches under prior_rounds[id].battery_chain (the key the lead
+  // writes; `chain` is accepted for older args) and continues into the in-round repairs of this launch
+  const bchain = { ...(prior.battery_chain || prior.chain || {}) }
   let prevF = prior.findings
   for (let n = 1; !pre; n++) {
     if (item.id !== 0 && prior.rounds + n > 10) return { item, status: 'escalate', reason: '場面集の監査が 10 回に達した(L-407 の最大 10 周。L-418 で作業者の周と共有)', attempts: 0, req, bat, batteryHistory: batHist, history: [] }
@@ -222,7 +225,7 @@ async function runItem(item) {
   const history = []
   let counted = prior.rounds + batHist.length, nonStructural = 0  // L-418: battery audits count toward the same 10; L-420: carried across launches
   const chain = { ...(prior.critic_chain || {}) }  // L-421: the same-reason count carries across launches
-  const cbchain = { ...((pre && pre.battery_chain) || {}) }  // L-424: 場面集 findings are counted apart from 実装 findings
+  const cbchain = { ...bchain, ...((pre && pre.battery_chain) || {}) }  // L-424: 場面集 findings are counted apart from 実装 findings; same chain as the pre-worker audits
   const lossStreak = { current: 0, survey: 0 }
   let attempt = pre ? pre.attempt_offset : 0
   if (pre) history.push({ attempt, seeded: true, critic: { findings: pre.last_findings }, judges: pre.judges || {}, audit: null })
