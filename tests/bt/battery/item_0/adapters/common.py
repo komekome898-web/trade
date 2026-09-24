@@ -145,16 +145,3 @@ class Attempts:
             got = f"{a['raised']}: {a['message']}" if a["raised"] else f"-> {str(a['returned'])[:120]}"
             out.append(f"[{a['form']}] {a['means']} {got}")
         return " ; ".join(out)
-
-
-# ---------------------------------------------------------------- P0-5 rules
-def stated_rule(source: str, quote: str, predicted: list) -> dict:
-    """The target's own written rule for same-time order (P0-5), where it is
-    written and its hand application to the scene's input. Written from the
-    target's documents or public code, never from running it."""
-    return {"source": source, "quote": quote, "predicted": [[str(k), int(t)] for k, t in predicted]}
-
-
-def tie_events_in_hand_over(scene, order: list[str] | None = None) -> list[list]:
-    """(kind, ts) of the P0-5 streams concatenated in hand-over order."""
-    return [[e["kind"], int(e["ts_ns"])] for e in concatenated(scene, order)]

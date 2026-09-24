@@ -32,10 +32,12 @@ Rules for adapter authors (they are what the critic checks):
     looks for that.)
   * For a scene with `graded_from` (scenes.py) report the raw observations
     the scene names (each read and its exception / value; the delivered
-    order; the target's written same-time rule with where it is written and
-    its hand application to the input) and nothing graded: the runner
-    computes the graded values. A written rule is copied from the target's
-    documents or public code, never derived from running the target.
+    order and the input form) and nothing graded: the runner computes the
+    graded values. The P0-5 same-time rule of a target and the order it
+    gives are NOT reported by the adapter: the scene keeper fixes them in
+    `stated_rules.py` before any run and the runner applies them to the
+    scene's own input (round r5-1, critic i0-r4-05). An adapter output with
+    `stated_rule` or `predicted` fails `test_battery_item0.py`.
 
 The new implementation's adapter (written each round by the materials
 person, not by the scene keeper) lives at `adapters/new_impl.py` and must

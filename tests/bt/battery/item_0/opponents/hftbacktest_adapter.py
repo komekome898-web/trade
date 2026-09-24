@@ -355,31 +355,22 @@ class HftbacktestAdapter(Adapter):
         return ok(att.output(), "足の代わりに約定で渡した。4 回目の呼び出しで試した: " + att.summary())
 
     # ---------------- P0-5
-    # hftbacktest's written rule for the order of rows (the one input array)
-    _RULE_SOURCE = "hftbacktest 2.4.4 data/validation.py 59-62 行(correct_event_order の説明)と https://hftbacktest.readthedocs.io/en/latest/data.html"
-    _RULE_QUOTE = ("Corrects exchange timestamps that are reversed by splitting each row into separate events. These events "
-                   "are then ordered by both exchange and local timestamps through duplication.")
-
+    # hftbacktest's written rule for the order of rows (one input array, stable by
+    # time) is fixed in stated_rules.py and applied by the runner (round r5-1,
+    # critic i0-r4-05); this adapter records the delivered order only.
     def _one_input(self, sc, order=None):
-        """One run on the hand-over concatenation; the sort indexes handed to correct_event_order are
-        stable (numpy argsort kind='stable'), so rows with equal times keep the concatenation's order."""
+        """One run on the hand-over concatenation."""
         evs = C.concatenated(sc, order)
-        return [[k, t] for k, t in _seq(run(evs))], C.tie_events_in_hand_over(sc, order)
+        return [[k, t] for k, t in _seq(run(evs))]
 
     def scene_p5_same_time_twice(self, sc):
-        order, pred = self._one_input(sc)
-        return ok({"order": order, "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, pred)},
+        return ok({"order": self._one_input(sc)},
                   f"1 本の配列しか受けないので、型ごとの 4 入力を渡した順に連結した。足・資金調達・清算は未定義の番号 {UNKNOWN_KIND_CODE}。"
                   "戦略に見えるのは約定(last_trades)だけ")
 
     def scene_p5_hand_over_order(self, sc):
-        runs = []
-        for o in sc.input["hand_over_orders"]:
-            order, pred = self._one_input(sc, o)
-            runs.append({"hand_over": list(o), "order": order, "predicted": pred})
-        return ok({"form": "single_input", "runs": runs,
-                   "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, runs[0]["predicted"])},
-                  "1 本の配列しか受けないので、24 通りの連結をそれぞれ 1 回走らせた")
+        runs = [{"hand_over": list(o), "order": self._one_input(sc, o)} for o in sc.input["hand_over_orders"]]
+        return ok({"form": "single_input", "runs": runs}, "1 本の配列しか受けないので、24 通りの連結をそれぞれ 1 回走らせた")
 
     def scene_p5_same_stream_order(self, sc):
         calls = run(C.events(sc))

@@ -61,7 +61,7 @@ def _fields(ev) -> dict:
     return dict(ev.fields)
 
 
-TYPE_PRIORITY = {"bar": 60, "trade": 50, "book_snapshot": 45, "book_delta": 40, "funding": 30, "liquidation": 20}
+from stated_rules import TYPE_PRIORITY  # noqa: E402  (the setting the stated rule is written for)
 
 
 def run_streams(streams: list[list[dict]], on_event=None, timer_at=None, priorities=False):
@@ -322,30 +322,20 @@ class BasanaAdapter(Adapter):
         streams = [evs for _, evs in C.streams_in_order(sc, order)]
         return [[k, when] for k, _now, when, _f in run_streams(streams, priorities=priorities)]
 
-    # Basana's written rule for events at the same time: the dispatcher's heap key
-    _RULE_SOURCE = "basana 1.11 core/dispatcher/base.py 92 行と core/event.py 88-92 行(EventSource の priority)"
-    _RULE_QUOTE = ("heapq.heappush(self._event_heap, (event.when, -source.priority, id(source), source, event)) / "
-                   "def __init__(self, producer: Optional[Producer] = None, priority: int = DEFAULT_EVENT_SOURCE_PRIORITY)")
-
-    def _predicted(self, sc) -> list:
-        """The quoted key applied by hand: time, then the higher source priority first. Each stream is one
-        source with the priority TYPE_PRIORITY gives its type (all different, so id(source) never decides)."""
-        rows = [(e["ts_ns"], -TYPE_PRIORITY[e["kind"]], e["kind"]) for evs in sc.input["streams"].values() for e in evs]
-        return [[k, t] for t, _p, k in sorted(rows)]
+    # Basana's written same-time rule (the dispatcher's heap key and the sources'
+    # `priority`) and its application are fixed in stated_rules.py and applied by
+    # the runner (round r5-1, critic i0-r4-05); TYPE_PRIORITY is read from there.
 
     def scene_p5_same_time_twice(self, sc):
         dflt = [self._tie(sc, None, False) for _ in range(2)]
-        return ok({"order": self._tie(sc, None, True),
-                   "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, self._predicted(sc))},
+        return ok({"order": self._tie(sc, None, True)},
                   "型ごとの 4 入力を 4 つの source にし、source の priority(公開の引数)を型ごとに与えた(TYPE_PRIORITY)。"
                   f"priority を与えない既定では同時刻の並びは id(source) で決まり、2 回の並びは {dflt}")
 
     def scene_p5_hand_over_order(self, sc):
-        pred = self._predicted(sc)
-        runs = [{"hand_over": list(o), "order": self._tie(sc, o, True), "predicted": pred} for o in sc.input["hand_over_orders"]]
+        runs = [{"hand_over": list(o), "order": self._tie(sc, o, True)} for o in sc.input["hand_over_orders"]]
         dflt = {repr(self._tie(sc, o, False)) for o in sc.input["hand_over_orders"]}
-        return ok({"form": "multi_input", "runs": runs,
-                   "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, pred)},
+        return ok({"form": "multi_input", "runs": runs},
                   f"priority を型ごとに与えて 24 通りの subscribe の順で走らせた。priority を与えない既定では {len(dflt)} 通り")
 
     def scene_p5_same_stream_order(self, sc):

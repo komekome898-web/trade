@@ -19,9 +19,12 @@ Correctness is decided here, never by the adapter: a dict `expected` must
 match the same keys in the output (extra keys in the output are ignored),
 anything else must be equal. For a scene with `graded_from` (scenes.py), the
 adapter only reports what it observed (the delivered order, each attempt and
-its exception, the target's stated rule and where it is written) and the
+its exception) and the
 values that are graded are computed HERE by `GRADERS[scene.id]`; the output
-column then holds those graded values plus the raw output under "raw".
+column then holds those graded values plus the raw output under "raw". For
+the P0-5 scenes the order a target must produce comes from its rule in
+`stated_rules.py` (fixed by the scene keeper before any run, round r5-1),
+applied here to the scene's own input.
 """
 from __future__ import annotations
 
@@ -38,6 +41,7 @@ sys.path.insert(0, str(HERE / "adapters"))
 sys.path.insert(0, str(HERE.parents[3] / "src"))
 
 from scenes import SCENES  # noqa: E402
+import stated_rules  # noqa: E402
 from adapters.protocol import Adapter, SceneResult  # noqa: E402
 
 # opp_<name> -> (module under opponents/, class name)
@@ -60,6 +64,17 @@ OPPONENTS = {
     "opp_pyalgotrade": ("pyalgotrade_adapter", "PyalgotradeAdapter"),
     "opp_freqtrade": ("freqtrade_adapter", "FreqtradeAdapter"),
     "opp_vnpy": ("vnpy_adapter", "VnpyAdapter"),
+    "opp_luczinsritter": ("luczinsritter_adapter", "LuczinsritterAdapter"),
+    "opp_mihircoding_lob": ("mihircoding_lob_adapter", "MihircodingLobAdapter"),
+    "opp_nickgardi_orderbooksim": ("nickgardi_orderbooksim_adapter", "NickgardiOrderbooksimAdapter"),
+    "opp_daniyalmlk_slippage": ("daniyalmlk_slippage_adapter", "DaniyalmlkSlippageAdapter"),
+    "opp_akurkar07_orderbook": ("cpp_lob_adapters", "Akurkar07OrderbookAdapter"),
+    "opp_3yit_lob": ("cpp_lob_adapters", "ThreeyitLobAdapter"),
+    "opp_jxm35_lob": ("cpp_lob_adapters", "Jxm35LobAdapter"),
+    "opp_pysystemtrade": ("pysystemtrade_adapter", "PysystemtradeAdapter"),
+    "opp_predictivedev_tradesim": ("predictivedev_tradesim_adapter", "PredictivedevTradesimAdapter"),
+    "opp_sarthak_execsim": ("sarthak_execsim_adapter", "SarthakExecsimAdapter"),
+    "opp_sigc": ("sigc_adapter", "SigcAdapter"),
 }
 
 
@@ -111,7 +126,7 @@ def _pairs(seq) -> list:
     return [[str(k), int(t)] for k, t in (seq or [])]
 
 
-def _grade_future_reads(sc, out: dict) -> dict:
+def _grade_future_reads(sc, out: dict, target: str | None = None) -> dict:
     atts = list(out.get("attempts") or [])
     named = [a for a in atts if a.get("form") in ("time", "position")]
     fv = float(sc.input["future_value"])
@@ -123,25 +138,43 @@ def _all_tie_events(sc) -> list:
     return sorted([e["kind"], e["ts_ns"]] for evs in sc.input["streams"].values() for e in evs)
 
 
-def _grade_stated_rule_once(sc, out: dict) -> dict:
+def _rule_order(rule, sc, hand_over) -> list | None:
+    """The order the target's stated rule (stated_rules.py, fixed by the scene
+    keeper) gives for this scene's streams in this hand-over order; None when
+    the target has no stated rule or the rule leaves a tie."""
+    if rule is None:
+        return None
+    try:
+        return stated_rules.predicted(rule, sc.input["streams"], list(hand_over))
+    except stated_rules.RuleDoesNotDecide:
+        return None
+
+
+def _grade_stated_rule_once(sc, out: dict, target: str | None = None) -> dict:
     order = _pairs(out.get("order"))
-    rule = out.get("stated_rule")
+    want = _rule_order(stated_rules.rule_for(target), sc, sc.input["hand_over_order"])
     return {"delivered_as_multiset": sorted(order),
-            "follows_stated_rule": bool(rule) and order == _pairs(rule.get("predicted"))}
+            "follows_stated_rule": want is not None and order == want}
 
 
-def _grade_hand_over(sc, out: dict) -> dict:
+def _grade_hand_over(sc, out: dict, target: str | None = None) -> dict:
+    """Each run i is the scene's own hand-over order i (the adapter's report of
+    it must agree); the expected order of run i is the stated rule applied to
+    that hand-over order here, never a list the adapter wrote."""
     runs = list(out.get("runs") or [])
     want = _all_tie_events(sc)
-    n = len(sc.input["hand_over_orders"])
-    complete = len(runs) == n
+    hand_overs = [list(o) for o in sc.input["hand_over_orders"]]
+    complete = len(runs) == len(hand_overs) and all(list(r.get("hand_over") or []) == h for r, h in zip(runs, hand_overs))
     orders = [_pairs(r.get("order")) for r in runs]
+    rule = stated_rules.rule_for(target)
+    form = out.get("form")
+    per_run = [_rule_order(rule, sc, h) for h in hand_overs]
     return {"every_run_delivers_each_once": complete and all(sorted(o) == want for o in orders),
-            "every_run_follows_stated_rule": complete and bool(out.get("stated_rule"))
-            and all(o == _pairs(r.get("predicted")) for o, r in zip(orders, runs)),
+            "every_run_follows_stated_rule": complete and rule is not None and form == rule.form
+            and all(p is not None and o == p for o, p in zip(orders, per_run)),
             "same_order_whatever_the_hand_over": complete and (
-                out.get("form") == "single_input"
-                or (out.get("form") == "multi_input" and len({json.dumps(o) for o in orders}) == 1))}
+                form == "single_input"
+                or (form == "multi_input" and len({json.dumps(o) for o in orders}) == 1))}
 
 
 # scene id -> grader; exactly the scenes with `graded_from` (test_battery_item0.py checks)
@@ -152,20 +185,22 @@ GRADERS = {
 }
 
 
-def graded_output(res: SceneResult, scene):
+def graded_output(res: SceneResult, scene, target: str | None = None):
     """What is graded: the raw output, or for a `graded_from` scene the values
-    computed here from it (the raw output kept under "raw")."""
+    computed here from it (the raw output kept under "raw"). `target` selects
+    the stated same-time rule (stated_rules.py) for the P0-5 scenes; without
+    it no rule applies."""
     if scene is None or scene.id not in GRADERS or res.status != "ok":
         return res.output
     raw = res.output if isinstance(res.output, dict) else {}
-    return {**GRADERS[scene.id](scene, raw), "raw": res.output}
+    return {**GRADERS[scene.id](scene, raw, target), "raw": res.output}
 
 
-def correctness(res: SceneResult, expected, scene=None) -> str:
+def correctness(res: SceneResult, expected, scene=None, target: str | None = None) -> str:
     if res.status == "not_supported":
         return "対応なし"
     if res.status == "ok":
-        return "正解と一致" if _matches(graded_output(res, scene), expected) else "不一致"
+        return "正解と一致" if _matches(graded_output(res, scene, target), expected) else "不一致"
     return "結果なし"  # error: the target ran into an exception, no result to grade
 
 
@@ -186,13 +221,13 @@ def run_target(target: str) -> list[dict]:
         r2 = adapter_2.run_scene(sc)
         rows.append({
             "target": target, "scene_id": sc.id, "viewpoint": sc.viewpoint, "kind": sc.kind,
-            "correctness": correctness(r1, sc.expected, sc),
-            "correctness_run2": correctness(r2, sc.expected, sc),
+            "correctness": correctness(r1, sc.expected, sc, target),
+            "correctness_run2": correctness(r2, sc.expected, sc, target),
             "reproducibility": reproducibility(r1, r2),
             "status_1": r1.status,
-            "output_1": json.dumps(graded_output(r1, sc), ensure_ascii=False, sort_keys=True, default=repr),
+            "output_1": json.dumps(graded_output(r1, sc, target), ensure_ascii=False, sort_keys=True, default=repr),
             "status_2": r2.status,
-            "output_2": json.dumps(graded_output(r2, sc), ensure_ascii=False, sort_keys=True, default=repr),
+            "output_2": json.dumps(graded_output(r2, sc, target), ensure_ascii=False, sort_keys=True, default=repr),
             "expected": json.dumps(sc.expected, ensure_ascii=False, sort_keys=True),
             "detail_1": r1.detail.replace("\t", " ").replace("\n", " "),
         })

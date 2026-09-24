@@ -283,9 +283,10 @@ _TIE_STREAMS = {
     "liquidation": [{"kind": "liquidation", "ts_ns": T0 + DAY, "price": 99.0, "qty": 0.2, "side": "sell"}],
 }
 _TIE_ALL = sorted([[e["kind"], e["ts_ns"]] for evs in _TIE_STREAMS.values() for e in evs])
-_STATED_RULE_TEXT = ("`stated_rule` = {`source`: 規則が書いてある所(ファイル:行 か URL)、`quote`: その逐語、"
-                     "`predicted`: その規則をこの入力に手で当てた(型, 時刻)の列}。規則は対象の文書かコードの公開の説明から写し、"
-                     "対象を走らせた結果から作らない。規則が見つからない対象は `stated_rule` を null にし、探した所を detail に書く")
+_STATED_RULE_TEXT = ("対象ごとの規則(対象の文書か公開のコードから、書いてある所と逐語を写したもの)と、それをこの入力に当てた並びは、"
+                     "場面係が走らせる前に場面集の側に固定してある(対象の名前を伏せるため、この定義には載せない)。"
+                     "adapter は戦略に届いた(型, 時刻)の列だけを返し、規則もそれを当てた列も返さない。"
+                     "規則を明記していない対象には規則が無く、規則どおりにはならない")
 add(id="p5-same-time-twice", viewpoint="P0-5", kind="value",
     title="同時刻の 4 種の事象を、対象が明記した並びの規則どおりの順で、1 件も落とさずに処理するか",
     input={"streams": _TIE_STREAMS, "hand_over_order": ["trades", "bars", "funding", "liquidation"],
@@ -298,15 +299,15 @@ add(id="p5-same-time-twice", viewpoint="P0-5", kind="value",
                "(2) 届いた順が、対象の規則をこの入力に当てた順と同じ、の 2 つ。2 回の一致は表の「再現」の欄で見る。"
                "規則を明記していない対象は (2) を満たさない。",
     measures="戦略に届いた(型, 時刻)の列が、4 件を落とさず重ねず、対象の明記した規則の順と一致するか。",
-    graded_from="出力の `order`(戦略に届いた(型, 時刻)の列)と `stated_rule` から runner が作る: `delivered_as_multiset` = `order` を並べ替えた列 / "
-                "`follows_stated_rule` = `stated_rule` があり、`order` が `stated_rule.predicted` と同じ。")
+    graded_from="出力の `order`(戦略に届いた(型, 時刻)の列)と、場面係が固定した対象の規則から runner が作る: `delivered_as_multiset` = `order` を並べ替えた列 / "
+                "`follows_stated_rule` = 対象に規則があり、`order` が、その規則を runner がこの入力(渡す順 trades, bars, funding, liquidation)に当てた並びと同じ。")
 add(id="p5-hand-over-order", viewpoint="P0-5", kind="capability",
     title="同時刻の 4 種の事象の並びが、データの中身と無関係な「入力を渡す順」に左右されず、各回が明記した規則どおりか",
     input={"streams": _TIE_STREAMS,
            "hand_over_orders": [list(p) for p in permutations(["trades", "bars", "funding", "liquidation"])],
            "note": "4 つの入力を 24 通りの順で渡して 24 回処理する。複数の入力を受ける対象は 4 つを別々の入力として、"
                    "その回の順で渡す(form = multi_input)。1 本しか受けない対象には、その回の順で連結した 1 本を渡す(form = single_input)",
-           "stated_rule": _STATED_RULE_TEXT + "。各回の `predicted` を、その回の入力に当てて書く"},
+           "stated_rule": _STATED_RULE_TEXT + "。各回の正解の並びは、runner がその規則を場面のその回の渡す順に当てて作る"},
     expected={"every_run_delivers_each_once": True, "every_run_follows_stated_rule": True,
               "same_order_whatever_the_hand_over": True},
     derivation="別々の入力(ファイルごとの約定・足・資金調達・清算)を渡す順は、データをどれから先に読んだかで変わる、データの中身と無関係な順である。"
@@ -315,9 +316,10 @@ add(id="p5-hand-over-order", viewpoint="P0-5", kind="capability",
                "(p5-same-stream-order と同じ理由)なので、各回が規則どおりなら並びは回ごとに違ってよい。"
                "どちらの形でも、各回 4 件がちょうど 1 回ずつ届き、各回の順がその回の入力に規則を当てた順と同じでなければならない。",
     measures="24 回の各回で 4 件が落ちずに届いたか、各回の順が規則どおりか、複数の入力を受ける対象では 24 回の並びが 1 通りか。",
-    graded_from="出力の `form`(multi_input / single_input)・`runs`(各回の `hand_over`・`order`)・`stated_rule`(各回の `predicted` は `runs` の各回に置く)から runner が作る: "
+    graded_from="出力の `form`(multi_input / single_input)・`runs`(各回の `hand_over`・`order`)と、場面係が固定した対象の規則から runner が作る。"
+                "各回の `hand_over` は場面の 24 通りの順と同じ並びでなければならない(違えば 3 つとも偽): "
                 "`every_run_delivers_each_once` = 24 回すべてで `order` を並べ替えた列が入力の 4 件と同じ / "
-                "`every_run_follows_stated_rule` = `stated_rule` があり、24 回すべてで `order` がその回の `predicted` と同じ / "
+                "`every_run_follows_stated_rule` = 対象に規則があり、`form` が規則の書かれた形と同じで、24 回すべてで `order` が、その規則を runner がその回の渡す順に当てた並びと同じ / "
                 "`same_order_whatever_the_hand_over` = form が multi_input なら 24 回の `order` が 1 通り、single_input なら真(渡す順がその回の入力そのものなので)。")
 add(id="p5-same-stream-order", viewpoint="P0-5", kind="value",
     title="1 本の入力の中の同時刻の 3 件を、入力の順のまま処理するか",

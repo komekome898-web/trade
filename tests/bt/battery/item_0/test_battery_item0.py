@@ -170,43 +170,82 @@ def test_p4_only_an_error_on_every_named_read_is_correct():
     assert grade(_p4(("latest", "other", None, 103.0))) == "不一致"
 
 
-def _tie(order, predicted):
-    return {"order": order, "stated_rule": None if predicted is None else {"source": "s", "quote": "q", "predicted": predicted}}
-
-
-def test_p5_same_time_needs_every_event_and_the_written_rule():
+def test_p5_same_time_needs_every_event_and_the_rule_fixed_in_the_scene_set():
+    """The order is graded against the target's rule in stated_rules.py,
+    applied by the runner; an order the adapter writes is ignored (i0-r4-05)."""
     sc = _scene("p5-same-time-twice")
     t = scenes.T0 + scenes.DAY
     four = [["liquidation", t], ["funding", t], ["trade", t], ["bar", t]]
-    grade = lambda out: run_battery.correctness(SceneResult("ok", out), sc.expected, sc)  # noqa: E731
-    assert grade(_tie(four, four)) == "正解と一致"
-    assert grade(_tie(four, list(reversed(four)))) == "不一致"          # does not follow its own rule
-    assert grade(_tie(four, None)) == "不一致"                           # no written rule
-    assert grade(_tie([["trade", t]], [["trade", t]])) == "不一致"      # three events dropped
+    grade = lambda out, target: run_battery.correctness(SceneResult("ok", out), sc.expected, sc, target)  # noqa: E731
+    assert grade({"order": four}, "new_impl") == "正解と一致"
+    assert grade({"order": list(reversed(four))}, "new_impl") == "不一致"       # not the target's rule
+    assert grade({"order": four}, None) == "不一致"                               # no rule for the target
+    assert grade({"order": four}, "opp_no_rule_written") == "不一致"
+    assert grade({"order": [["trade", t]]}, "new_impl") == "不一致"               # three events dropped
+    wrong = list(reversed(four))                                                  # an adapter's own "rule" is not read
+    assert grade({"order": wrong, "stated_rule": {"source": "s", "quote": "q", "predicted": wrong}}, "new_impl") == "不一致"
 
 
-def test_p5_hand_over_single_input_keeping_its_order_is_correct_and_multi_input_must_not_move():
+def test_p5_hand_over_single_input_keeping_its_order_is_correct_and_multi_input_must_not_move(monkeypatch):
+    import stated_rules as R
+    monkeypatch.setitem(R.STATED_RULES, "t_single", R.StatedRule("s", "q", "single_input", "stable_by_time"))
     sc = _scene("p5-hand-over-order")
-    grade = lambda out: run_battery.correctness(SceneResult("ok", out), sc.expected, sc)  # noqa: E731
-    rule = {"source": "s", "quote": "q", "predicted": []}
+    grade = lambda out, target: run_battery.correctness(SceneResult("ok", out), sc.expected, sc, target)  # noqa: E731
     orders = sc.input["hand_over_orders"]
 
     def concat(o):
         return [[e["kind"], e["ts_ns"]] for name in o for e in sc.input["streams"][name]]
 
-    single = {"form": "single_input", "stated_rule": rule,
-              "runs": [{"hand_over": o, "order": concat(o), "predicted": concat(o)} for o in orders]}
-    assert grade(single) == "正解と一致"
-    moving = {"form": "multi_input", "stated_rule": rule,
-              "runs": [{"hand_over": o, "order": concat(o), "predicted": concat(o)} for o in orders]}
-    assert grade(moving) == "不一致"
-    fixed = concat(orders[0])
-    steady = {"form": "multi_input", "stated_rule": rule,
-              "runs": [{"hand_over": o, "order": fixed, "predicted": fixed} for o in orders]}
-    assert grade(steady) == "正解と一致"
-    dropped = {"form": "multi_input", "stated_rule": rule,
-               "runs": [{"hand_over": o, "order": fixed[:1], "predicted": fixed[:1]} for o in orders]}
-    assert grade(dropped) == "不一致"
+    single = {"form": "single_input", "runs": [{"hand_over": o, "order": concat(o)} for o in orders]}
+    assert grade(single, "t_single") == "正解と一致"
+    assert grade(single, "new_impl") == "不一致"                   # the rule is written for separate streams
+    moving = {"form": "multi_input", "runs": [{"hand_over": o, "order": concat(o)} for o in orders]}
+    assert grade(moving, "new_impl") == "不一致"
+    fixed = R.FIXED_PREDICTED["new_impl"]
+    steady = {"form": "multi_input", "runs": [{"hand_over": o, "order": fixed} for o in orders]}
+    assert grade(steady, "new_impl") == "正解と一致"
+    dropped = {"form": "multi_input", "runs": [{"hand_over": o, "order": fixed[:1]} for o in orders]}
+    assert grade(dropped, "new_impl") == "不一致"
+    # runs must be the scene's own 24 hand-over orders, in the scene's order
+    shuffled = {"form": "multi_input", "runs": [{"hand_over": o, "order": fixed} for o in reversed(orders)]}
+    assert grade(shuffled, "new_impl") == "不一致"
+
+
+def test_stated_rule_recipes_reproduce_the_hand_written_orders():
+    """Two derivations of the correct order must agree: the one written by hand
+    from each quote (FIXED_PREDICTED) and the recipe the runner applies."""
+    import stated_rules as R
+    sc = _scene("p5-same-time-twice")
+    assert set(R.FIXED_PREDICTED) == set(R.STATED_RULES)
+    for target, rule in R.STATED_RULES.items():
+        assert R.predicted(rule, sc.input["streams"], sc.input["hand_over_order"]) == R.FIXED_PREDICTED[target], target
+        assert sorted(R.FIXED_PREDICTED[target]) == sorted(run_battery._all_tie_events(sc)), target
+        assert rule.form in ("multi_input", "single_input") and rule.source and rule.quote
+        assert not __import__("re").search(r"\d+\s*[-〜]\s*\d+\s*行|:\d+", rule.source), (
+            f"{target}: cite the rule by a name, not by line numbers (i0-r4-05)")
+
+
+def test_new_impl_rule_copy_matches_the_core_by_name():
+    core = pytest.importorskip("bot.bt.core")
+    import stated_rules as R
+    live = core.ORDERING_RULE["source_merge"]
+    for k, v in R.NEW_IMPL_SOURCE_MERGE.items():
+        assert live[k] == v, (k, live[k], v)
+    assert R.STATED_RULES["new_impl"].params["type_order"] == [t.lower() for t in live["type_order"]]
+
+
+def test_no_adapter_reports_a_rule_or_a_predicted_order():
+    import re
+    bad = []
+    for p in sorted([*(HERE / "adapters").glob("*.py"), *(HERE / "opponents").glob("*.py")]):
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            code = line.split("#", 1)[0]
+            if re.search(r"[\"']predicted[\"']|[\"']stated_rule[\"']|stated_rule\(", code):
+                bad.append(f"{p.name}:{i}: {line.strip()}")
+    assert not bad, bad
+    rows = {r["scene_id"]: r for r in run_battery.run_target("current_impl")}
+    for sid in ("p5-same-time-twice", "p5-hand-over-order"):
+        assert "stated_rule" not in rows[sid]["output_1"] and "predicted" not in rows[sid]["output_1"]
 
 
 def test_p5_same_stream_input_is_not_in_price_order():
@@ -242,13 +281,15 @@ def test_every_unmapped_line_is_reviewed_in_the_table():
     assert unmapped == reviewed, (sorted(unmapped - reviewed)[:10], sorted(reviewed - unmapped)[:10])
 
 
-def test_single_input_form_is_graded_correct_for_the_core_keeping_one_input_in_order():
+def test_single_input_form_is_graded_correct_for_the_core_keeping_one_input_in_order(monkeypatch):
     """The single-input form of p5-hand-over-order through the grader, with the
     real core fed one concatenated input per hand-over order (the case of
-    critic test i0-r2-07): keeping that input's own order is 正解と一致, since
-    the order of a single input is its own content (the core's written rule:
-    ordering.py "inside_one_stream": "the stream's own order")."""
+    critic test i0-r2-07), graded by a rule written for one input (stable by
+    time, like the single-input rule in stated_rules.py): keeping that
+    input's own order is 正解と一致."""
     core = pytest.importorskip("bot.bt.core")
+    import stated_rules as R
+    monkeypatch.setitem(R.STATED_RULES, "t_single", R.StatedRule("s", "q", "single_input", "stable_by_time"))
     sc = _scene("p5-hand-over-order")
     kinds = {"trade": core.TradeEvent, "bar": core.BarEvent, "funding": core.FundingEvent,
              "liquidation": core.LiquidationEvent}
@@ -272,9 +313,7 @@ def test_single_input_form_is_graded_correct_for_the_core_keeping_one_input_in_o
                 got.append([event.EVENT_TYPE.value.lower(), int(event.exchange_time_ns)])
 
         core.CoreEngine(Rec(), [ev(d) for d in dicts]).run()
-        runs.append({"hand_over": order, "order": got, "predicted": [[d["kind"], d["ts_ns"]] for d in dicts]})
-    out = {"form": "single_input", "runs": runs,
-           "stated_rule": {"source": "src/bot/bt/core/ordering.py ORDERING_RULE['source_merge']['inside_one_stream']",
-                           "quote": "the stream's own order, whatever the types", "predicted": runs[0]["predicted"]}}
+        runs.append({"hand_over": order, "order": got})
+    out = {"form": "single_input", "runs": runs}
     assert len({json.dumps(r["order"]) for r in runs}) == 24
-    assert run_battery.correctness(SceneResult("ok", out), sc.expected, sc) == "正解と一致"
+    assert run_battery.correctness(SceneResult("ok", out), sc.expected, sc, "t_single") == "正解と一致"
