@@ -1,0 +1,24 @@
+# md5sum of the two orientations of each pair (materials/mapping.tsv), then cmp
+cc9a8a5ef3c9e698744318fee6303bd9  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_oppu5y.md
+ca4e918b8374be421e70a941a8f7bb96  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_0uieba.md
+current: differ (表_oppu5y.md 表_0uieba.md) :: docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_oppu5y.md docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_0uieba.md differ: char 681, line 13
+c39e1033cae244ce5109a18741a54eba  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_xwdg4h.md
+e37db7d804db2d081450294222aaf1cf  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_v3fozz.md
+survey: differ (表_xwdg4h.md 表_v3fozz.md) :: docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_xwdg4h.md docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_v3fozz.md differ: char 63656, line 51
+ff2713dcf6eb59fb87296dc626a30b47  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_chplbb.md
+e10ede76c7866a79b9d0f23ce257c32e  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_1vt0oe.md
+mutant: differ (表_chplbb.md 表_1vt0oe.md) :: docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_chplbb.md docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_11/表_1vt0oe.md differ: char 707, line 13
+# pass 1 table vs pass 2 table of the same id (pass2_tables; pass 2 built from runs_2/)
+current_1: identical
+current_2: identical
+survey_1: identical
+survey_2: identical
+mutant_1: identical
+mutant_2: identical
+# pass 1 table vs pass 2 table of the same id (pass2_tables_ownlog; pass 2 built from runs_2/)
+current_1: identical
+current_2: identical
+survey_1: differ :: 11c11 < 注記: 場面 p2-iso-utc: この行に寄せた対象のうち 13 件は結果なし(試したこと: 場面の定義どおりに対象の公開の口で走らせた。(1) 出たもの: この場面の機構を実装していない旨を返し、採点できる結果が無い(例外ではない)� --- > 注記: 場面 p2-iso-utc: この行に寄せた対象のうち 13 件は結果なし(試したこと: 場面の定義どおりに対象の公開の口で走らせた。(1) 出たもの: この場面の機構を実装していない旨を返し、採点できる結果が無い(例外ではない)� 
+survey_2: differ :: 11c11 < 注記: 場面 p2-iso-utc: この行に寄せた対象のうち 13 件は結果なし(試したこと: 場面の定義どおりに対象の公開の口で走らせた。(1) 出たもの: この場面の機構を実装していない旨を返し、採点できる結果が無い(例外ではない)� --- > 注記: 場面 p2-iso-utc: この行に寄せた対象のうち 13 件は結果なし(試したこと: 場面の定義どおりに対象の公開の口で走らせた。(1) 出たもの: この場面の機構を実装していない旨を返し、採点できる結果が無い(例外ではない)� 
+mutant_1: identical
+mutant_2: identical

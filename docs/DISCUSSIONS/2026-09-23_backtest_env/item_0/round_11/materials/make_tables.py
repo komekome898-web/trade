@@ -50,6 +50,7 @@ sys.path.insert(0, str(REPO / "tests" / "bt" / "battery" / "item_0"))
 from scenes import SCENES, VIEWPOINTS  # noqa: E402
 
 RUNS = MAT / "runs"
+LOGS = MAT / "logs"  # measured run lengths (pass 1 log unless --log)
 csv.field_size_limit(10**9)
 C_RANK = {"正解と一致": 0, "対応なし": 1, "不一致": 2, "結果なし": 3}
 R_RANK = {"2 回の実行で同じ": 0, "2 回で違う": 1, "結果なし": 2}
@@ -124,7 +125,7 @@ def _durations() -> dict[str, int]:
     # has no materials), so every target was run this round (L-435); all
     # measured lengths are this round's run 1 log (logs/run_all.log)
     lines = []
-    for log in (MAT / "logs" / "run_all.log",):
+    for log in (LOGS / "run_all.log",):
         if log.exists():
             lines += log.read_text(encoding="utf-8").splitlines()
     for line in lines:
@@ -229,7 +230,21 @@ def main() -> None:
     ap.add_argument("--runnability", type=Path, default=None,
                     help="the scene keeper's RUNNABILITY.tsv: candidates not run are counted in a note")
     ap.add_argument("--seed", type=int, default=None, help="seed for the file names (default: system entropy)")
+    # round 11: build the tables of pass 2 (runs_2/) elsewhere, only to check
+    # that both passes give byte-identical tables; the delivered tables are
+    # built from pass 1 (runs/) into this round's folder
+    ap.add_argument("--runs", type=Path, default=None, help="run directory (default: materials/runs)")
+    ap.add_argument("--out", type=Path, default=None, help="where the tables and side files go (default: this round)")
+    ap.add_argument("--log", type=Path, default=None, help="directory of run_all.log for the measured lengths")
     a = ap.parse_args()
+    global RUNS, OUT, MAT, LOGS
+    if a.log is not None:
+        LOGS = a.log.resolve()
+    if a.runs is not None:
+        RUNS = a.runs.resolve()
+    if a.out is not None:
+        OUT = MAT = a.out.resolve()
+        (OUT / "stale").mkdir(parents=True, exist_ok=True)
 
     targets = sorted(p.stem for p in RUNS.glob("*.tsv"))
     survey_targets = [t for t in targets if t.startswith(SURVEY_PREFIXES)]
