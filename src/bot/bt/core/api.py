@@ -6,7 +6,9 @@ The context is the strategy's only handle on the run:
 * `now_ns`, `current_event`, `visible_events(...)`, `last(...)` -- read
   the history of events already delivered to it (all with
   `received_time_ns <= now_ns`); any time argument after `now_ns` (the
-  start or the end of a window) raises `LookAheadError` rather than
+  start or the end of a window) raises `LookAheadError`, and naming a
+  position after the newest delivered event (an index or slice bound past
+  the end of the answer) raises `FuturePositionError`, rather than
   returning a silently empty or truncated answer;
 * `place_order`, `cancel_order`, `set_timer` -- act;
 * `order(id)`, `open_orders()` -- its own orders, as it knows them.
@@ -70,6 +72,7 @@ from .events import (
     OrderStateUnknownEvent,
 )
 from .time import Nanos, validate_nanos
+from .window import DeliveredEvents
 
 
 @dataclass(frozen=True)
@@ -417,9 +420,12 @@ class StrategyContext:
         *,
         since_ns: Optional[int] = None,
         until_ns: Optional[int] = None,
-    ) -> tuple[Event, ...]:
+    ) -> DeliveredEvents:
         """Delivered events (all with `received_time_ns <= now_ns`), oldest
-        first. Filters, all optional: only `event_type`; only those with
+        first, as a `DeliveredEvents` tuple: naming a position after the
+        newest (an index `>= len`, or a slice bound past the end) raises
+        `FuturePositionError` instead of a shortened answer (window.py).
+        Filters, all optional: only `event_type`; only those with
         `since_ns <= received_time_ns <= until_ns`; then only the last `n`
         (`n` is a count >= 0: `n=0` returns nothing, a negative `n` raises
         `OrderApiError`).
@@ -457,13 +463,13 @@ class StrategyContext:
             hi = bisect.bisect_right(events, until, key=_recv)
         if count is not None:
             if count == 0:
-                return ()
+                return DeliveredEvents()
             lo = max(lo, hi - count)
         if self.__dropped:
             self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
-            return ()
-        return tuple(events[lo:hi])
+            return DeliveredEvents()
+        return DeliveredEvents(events[lo:hi])
 
     def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int],
                            count: Optional[int], events: Sequence[Event], lo: int, hi: int) -> None:

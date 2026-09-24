@@ -16,11 +16,13 @@ Two clocks, one queue:
   at t reaches the venue at t + order delay, and its ACK reaches the
   strategy at venue time + notice delay.
 
-Every path is a FIFO channel (ordering.py): input -> venue, strategy ->
+Four paths are FIFO channels (ordering.py): input -> venue, strategy ->
 venue requests (new orders and cancels on ONE channel), input -> strategy
-(per stream, in reception order), venue -> strategy notices, timers. The
-queue key is (time, phase, received time, position on the channel); the
-event type is not in it, so nothing on a channel is re-sorted by type.
+(per stream, in reception order), venue -> strategy notices. Timers are
+not a channel: each is delivered at the time the strategy asked for, so a
+timer set later for an earlier time comes first (same time: set order).
+The queue key is (time, phase, received time, position); the event type
+is not in it, so nothing on a channel is re-sorted by type.
 
 Input is one stream of events, or several named streams (a mapping of
 name -> iterable, e.g. trades, board, bars and funding read from separate
@@ -40,6 +42,20 @@ engine's own process, so introspecting the interpreter -- the call stack,
 `exchange_time_ns`; a backwards step raises `EventOrderError` naming the
 stream (the core merges streams, it never re-sorts one silently).
 
+Lifecycle. A step changes state owned by several parties one after the
+other (the strategy's order view and outbox, the FIFO channels, the queue,
+the venue ledger, the fill list, and the plug-ins' own state), and code
+outside the core (the strategy, every socket) can raise at any point of
+it. The core cannot roll the strategy and the plug-ins back, so a step is
+not made atomic; instead the engine has a lifecycle: any exception that
+escapes `step()` -- whatever its type -- is re-raised unchanged and leaves
+the engine FAILED, and a FAILED engine refuses every later `step()`,
+`run()` and `result()` with `EngineFailedError` (the original exception is
+its `__cause__` and `failure`). Nothing half-updated is ever run on or
+returned as a result. Calling `step()` / `run()` / `result()` from inside
+one of the engine's own steps is refused with `EngineReentryError`
+(`CORE_CONTRACT["lifecycle"]`).
+
 Nothing here is market-specific; fills, delays, fees and bookkeeping are
 the sockets' job (interfaces.py).
 """
@@ -58,6 +74,8 @@ from .api import FORCED_ID_PREFIX, CancelRequest, OrderRequest, OrderView, Strat
 from .errors import (
     AccountSocketError,
     CostModelError,
+    EngineFailedError,
+    EngineReentryError,
     EventOrderError,
     LatencyModelError,
     MissingCostModelError,
@@ -463,6 +481,11 @@ class CoreEngine:
         self._now: Optional[int] = None
         self._first: Optional[int] = None
         self._stopped_at_end = False
+        # lifecycle (module docstring): the exception that escaped a step,
+        # if any (the engine is then FAILED for good), and whether a step is
+        # in progress (a call from inside it is a re-entry)
+        self._failure: Optional[BaseException] = None
+        self._in_step = False
 
         self._port = _OrderPort()
         self._ledger = _VenueLedger()
@@ -535,9 +558,44 @@ class CoreEngine:
     def now_ns(self) -> Optional[int]:
         return self._now
 
+    @property
+    def failure(self) -> Optional[BaseException]:
+        """The exception that escaped a step and left this engine FAILED;
+        None while it is usable. For diagnosis only: it is not a result."""
+        return self._failure
+
+    def _usable(self, what: str) -> None:
+        if self._in_step:
+            raise EngineReentryError(
+                f"{what}() called from inside a step of the same engine; refused (nothing changed)"
+            )
+        failure = self._failure
+        if failure is not None:
+            text = str(failure)
+            if len(text) > 300:
+                text = text[:300] + "..."
+            raise EngineFailedError(
+                f"{what}() refused: an exception escaped an earlier step of this engine "
+                f"({type(failure).__name__}: {text}); its state may be half-updated, so the run "
+                f"is over and no result is produced from it"
+            ) from failure
+
     def step(self) -> bool:
         """Process one queue entry. Returns False when nothing is left (or
-        the next entry is past `end_time_ns`)."""
+        the next entry is past `end_time_ns`). Any exception that escapes
+        is re-raised unchanged and leaves the engine FAILED (module
+        docstring, "Lifecycle")."""
+        self._usable("step")
+        self._in_step = True
+        try:
+            return self._step()
+        except BaseException as exc:
+            self._failure = exc
+            raise
+        finally:
+            self._in_step = False
+
+    def _step(self) -> bool:
         self._refill()
         if not self._heap:
             return False
@@ -569,11 +627,15 @@ class CoreEngine:
         return True
 
     def run(self) -> EngineResult:
+        self._usable("run")
         while self.step():
             pass
         return self.result()
 
     def result(self) -> EngineResult:
+        """The run's result so far. Refused on a FAILED engine and from
+        inside a step (a half-processed step is never reported)."""
+        self._usable("result")
         return EngineResult(
             events_processed=self._deliveries,
             source_events=self._source_count,

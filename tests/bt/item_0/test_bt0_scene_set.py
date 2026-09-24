@@ -4,9 +4,13 @@ core through its public names only, every scene, twice.
 This is the worker's own check that the core produces each scene's fixed
 expected result. It is NOT the materials person's adapter and does not
 replace the comparison table. It reads the scene set (never changes it) and
-grades with the same rule as the battery runner: a dict `expected` must
-match the same keys in the output (extra keys ignored), anything else must
-be equal.
+grades with the battery runner's OWN grading code, imported, not copied
+(run_battery.py: `graded_output` builds the graded values of a
+`graded_from` scene from the raw observations, `_matches` compares). For
+the `graded_from` scenes the drivers below only report observations: each
+attempted read and its exception, the delivered order, and the core's
+written same-time rule with that rule applied by hand (from
+`ORDERING_RULE["source_merge"]`, never from running the core).
 
 Everything a scene calls a "plug" (fill model, latency model, cost model,
 account) is written HERE, against the public socket protocols, to show the
@@ -29,6 +33,12 @@ import bot.bt.core as core
 from bot.bt.core.testing import ImmediateFillModel
 
 _BATTERY = Path(__file__).resolve().parents[1] / "battery" / "item_0" / "scenes.py"
+_BATTERY_DIR = _BATTERY.parent
+for _p in (str(_BATTERY_DIR), str(_BATTERY_DIR / "adapters")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+import run_battery  # noqa: E402  (the battery's own grading; read, never changed)
+from adapters.protocol import SceneResult  # noqa: E402
 
 
 def _load_scenes():
@@ -182,6 +192,16 @@ class PerFillCost:
 
     def cost(self, fill):
         return self.fee
+
+
+class PerUnitCost:
+    """A fee proportional to the filled size (price ignored)."""
+
+    def __init__(self, per_unit: float) -> None:
+        self.per_unit = per_unit
+
+    def cost(self, fill):
+        return self.per_unit * fill.size
 
 
 class QtyRecordingAccount:
@@ -349,43 +369,86 @@ def s_p4_received_time(scene):
 
 
 def s_p4_future_read_attempt(scene):
+    """Every public read of the context that can NAME the 5th bar, by time
+    (a window ending at or starting at its time, or just after now) or by
+    position (the next index, a slice through it), plus reads that do not
+    name it ("other": everything, the last bar). Each attempt is recorded
+    as the scene asks: means, form, the exception's name or the value."""
     probe_at = scene.input["probe_at_ns"]
-    attempts: dict[str, Any] = {}
+    fut = scene.input["future_ts_ns"]
+    bar = core.EventType.BAR
+    attempts: list[dict] = []
+
+    def attempt(means, form, fn):
+        try:
+            value = fn()
+        except Exception as exc:  # noqa: BLE001 - the exception is the observation
+            attempts.append({"means": means, "form": form, "raised": type(exc).__name__, "returned": None})
+        else:
+            attempts.append({"means": means, "form": form, "raised": None, "returned": value})
+
+    def closes(evs):
+        return [e.close if e.EVENT_TYPE is bar else getattr(e, "price", None) for e in evs]
 
     def act(n, e, ctx):
-        if ctx.now_ns != probe_at:
+        if ctx.now_ns != probe_at or attempts:
             return
-        tries = {
-            "index_5th": lambda: ctx.visible_events(core.EventType.BAR)[4].close,
-            "until_future": lambda: [b.close for b in ctx.visible_events(core.EventType.BAR, until_ns=probe_at + SC.DAY)],
-            "since_future": lambda: [b.close for b in ctx.visible_events(core.EventType.BAR, since_ns=probe_at + 1)],
-            "all_history": lambda: [b.close for b in ctx.visible_events()],
-            "last_bar": lambda: ctx.last(core.EventType.BAR).close,
-        }
-        for name, fn in tries.items():
-            try:
-                attempts[name] = fn()
-            except Exception as exc:  # noqa: BLE001 - recorded as a refusal
-                attempts[name] = type(exc).__name__
+        attempt("visible_events(BAR, until_ns=5th)", "time",
+                lambda: closes(ctx.visible_events(bar, until_ns=fut)))
+        attempt("visible_events(BAR, since_ns=5th)", "time",
+                lambda: closes(ctx.visible_events(bar, since_ns=fut)))
+        attempt("visible_events(BAR, since_ns=now+1)", "time",
+                lambda: closes(ctx.visible_events(bar, since_ns=probe_at + 1)))
+        attempt("visible_events(until_ns=5th)", "time",
+                lambda: closes(ctx.visible_events(until_ns=fut)))
+        attempt("visible_events(BAR)[4]", "position", lambda: ctx.visible_events(bar)[4].close)
+        attempt("visible_events()[4]", "position", lambda: ctx.visible_events()[4].close)
+        attempt("visible_events(BAR)[4:5]", "position", lambda: closes(ctx.visible_events(bar)[4:5]))
+        attempt("visible_events(BAR)[3:5]", "position", lambda: closes(ctx.visible_events(bar)[3:5]))
+        attempt("visible_events(BAR, n=5)[4]", "position", lambda: ctx.visible_events(bar, n=5)[4].close)
+        attempt("visible_events()", "other", lambda: closes(ctx.visible_events()))
+        attempt("last(BAR)", "other", lambda: ctx.last(bar).close)
     run(events_of(scene), act)
-
-    def has_104(v):
-        return v == 104.0 or (isinstance(v, list) and 104.0 in v)
-    return {"future_value_obtained": any(has_104(v) for v in attempts.values()), "attempts": attempts}
+    return {"attempts": attempts}
 
 
-def _types_once(scene, order):
+def _rule_applied_by_hand(streams: dict) -> list:
+    """The core's written rule for same-time input from different streams
+    (ORDERING_RULE["source_merge"]: exchange time, then the type order,
+    then the stream name), applied to the scene's streams (one event per
+    stream here). Read from the rule, not from a run."""
+    rule = core.ORDERING_RULE["source_merge"]
+    assert rule["compare_heads_by"] == ["exchange_time_ns", "TYPE_ORDER", "stream name (sorted())"]
+    type_order = [v.lower() for v in rule["type_order"]]  # EventType values -> scene kinds
+    rows = sorted((e["ts_ns"], type_order.index(e["kind"]), name, e["kind"])
+                  for name, evs in streams.items() for e in evs)
+    return [[k, t] for t, _r, _n, k in rows]
+
+
+_STATED_RULE_SOURCE = "src/bot/bt/core/ordering.py ORDERING_RULE['source_merge']"
+
+
+def _order_once(scene, order) -> list:
     p, _ = run(stream_map(scene, list(order)))
-    return tuple(k for k, _ in p.seq)
+    return [[k, t] for k, t in p.seq]
 
 
 def s_p5_same_time_twice(scene):
-    order = scene.input["hand_over_order"]
-    return {"same_order_in_two_runs": _types_once(scene, order) == _types_once(scene, order)}
+    predicted = _rule_applied_by_hand(scene.input["streams"])
+    return {"order": _order_once(scene, scene.input["hand_over_order"]),
+            "stated_rule": {"source": _STATED_RULE_SOURCE,
+                            "quote": core.ORDERING_RULE["source_merge"]["compare_heads_by"],
+                            "predicted": predicted}}
 
 
 def s_p5_hand_over_order(scene):
-    return {"distinct_orders": len({_types_once(scene, o) for o in scene.input["hand_over_orders"]})}
+    predicted = _rule_applied_by_hand(scene.input["streams"])
+    runs = [{"hand_over": list(o), "order": _order_once(scene, o), "predicted": predicted}
+            for o in scene.input["hand_over_orders"]]
+    return {"form": "multi_input", "runs": runs,
+            "stated_rule": {"source": _STATED_RULE_SOURCE,
+                            "quote": core.ORDERING_RULE["source_merge"]["compare_heads_by"],
+                            "predicted": predicted}}
 
 
 def s_p5_same_stream_order(scene):
@@ -451,11 +514,17 @@ def s_p7_latency_model_swap(scene):
     return {"fill_time_ns": _fills(p)[0].exchange_time_ns, "notice_received_ns": _fills(p)[0].received_time_ns}
 
 
-def s_p7_cost(fee):
-    def f(scene):
-        p, _ = run(events_of(scene), _buy_first, cost_model=PerFillCost(fee), account=CashAccount(100_000.0))
-        return {"fee": _fills(p)[0].fee}
-    return f
+def s_p7_cost_model_swap(scene):
+    p, _ = run(events_of(scene), _buy_first, cost_model=PerFillCost(0.5), account=CashAccount(100_000.0))
+    return {"fee": _fills(p)[0].fee}
+
+
+def s_p7_cost_per_unit(scene):
+    def buy_two(n, e, ctx):
+        if n == 1:
+            market_buy(ctx, size=2.0)
+    p, _ = run(events_of(scene), buy_two, cost_model=PerUnitCost(0.375), account=CashAccount(100_000.0))
+    return {"fee": sum(f.fee for f in _fills(p)), "fills": len(_fills(p))}
 
 
 def s_p7_account_swap(scene):
@@ -489,16 +558,23 @@ DRIVERS: dict[str, Callable] = {
     "p6-fill-seen-by-strategy": s_p6_fill_seen,
     "p7-fill-model-swap": s_p7_fill_model_swap,
     "p7-latency-model-swap": s_p7_latency_model_swap,
-    "p7-cost-model-swap": s_p7_cost(0.5),
-    "p7-cost-zero": s_p7_cost(0.0),
+    "p7-cost-model-swap": s_p7_cost_model_swap,
+    "p7-cost-per-unit": s_p7_cost_per_unit,
     "p7-account-swap": s_p7_account_swap,
 }
 
 
-def _matches(output, expected) -> bool:
-    if isinstance(expected, dict):
-        return isinstance(output, dict) and all(k in output and output[k] == v for k, v in expected.items())
-    return output == expected
+def _graded(scene, output):
+    """What the battery runner grades for this output (run_battery.py)."""
+    return run_battery.graded_output(SceneResult("ok", output), scene)
+
+
+def _matches(scene, output) -> bool:
+    return run_battery._matches(_graded(scene, output), scene.expected)
+
+
+def test_graders_are_the_runners_for_exactly_the_graded_from_scenes():
+    assert set(run_battery.GRADERS) == {s.id for s in SC.SCENES if s.graded_from}
 
 
 def test_every_scene_has_a_driver():
@@ -510,19 +586,28 @@ def test_scene_matches_expected_twice(scene_id):
     scene = SCENES[scene_id]
     out1 = DRIVERS[scene_id](scene)
     out2 = DRIVERS[scene_id](scene)
-    assert _matches(out1, scene.expected), (out1, scene.expected)
+    assert _matches(scene, out1), (_graded(scene, out1), scene.expected)
     assert json.dumps(out1, sort_keys=True, default=repr) == json.dumps(out2, sort_keys=True, default=repr)
 
 
 def test_future_read_attempts_are_refused_not_shortened():
-    """p4-future-read-attempt: every time-window read that reaches past now
-    (`until_ns` or `since_ns`) is refused with LookAheadError -- not
-    answered with a shortened or empty list (REQUIREMENTS.md P0-4: stops
-    with a runtime error; i0-r1-08)."""
+    """p4-future-read-attempt: every read that names the 5th bar -- by time
+    (`until_ns` / `since_ns` after now) or by position (an index or a slice
+    bound past the newest) -- is refused with an exception, never answered
+    with a shortened or empty result (REQUIREMENTS.md P0-4: stops with a
+    runtime error; i0-r1-08); the reads that do not name it return only
+    bars 100..103."""
     out = s_p4_future_read_attempt(SCENES["p4-future-read-attempt"])
-    assert out["attempts"]["until_future"] == "LookAheadError"
-    assert out["attempts"]["since_future"] == "LookAheadError"
-    assert out["attempts"]["index_5th"] == "IndexError"
+    by = {a["means"]: a for a in out["attempts"]}
+    for means, a in by.items():
+        if a["form"] == "time":
+            assert a["raised"] == "LookAheadError", a
+        elif a["form"] == "position":
+            assert a["raised"] == "FuturePositionError", a
+    assert by["visible_events()"]["returned"] == [100.0, 101.0, 102.0, 103.0]
+    assert by["last(BAR)"]["returned"] == 103.0
+    assert issubclass(core.FuturePositionError, IndexError)
+    assert issubclass(core.FuturePositionError, core.LookAheadError)
 
 
 def test_hand_over_order_of_streams_does_not_matter_but_one_stream_keeps_its_order():

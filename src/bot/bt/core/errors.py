@@ -1,6 +1,10 @@
 """Exceptions raised by the core. Every one of them means "the run is not
 trustworthy as configured" -- the core never downgrades one of these to a
-warning and carries on."""
+warning and carries on. This is enforced, not only stated: any exception
+that escapes `CoreEngine.step()` (one of these, or one raised by the
+strategy or a socket) leaves the engine FAILED, and a FAILED engine refuses
+every later `step()` / `run()` / `result()` with `EngineFailedError`
+(engine.py, `CORE_CONTRACT["lifecycle"]`)."""
 from __future__ import annotations
 
 
@@ -40,6 +44,15 @@ class LookAheadError(CoreError, RuntimeError):
     `now_ns`). The history it can reach holds nothing later than `now_ns`
     anyway; asking for the future is a strategy bug, so it is refused loudly
     instead of answered with a silently empty or truncated result."""
+
+
+class FuturePositionError(LookAheadError, IndexError):
+    """The strategy named, by POSITION, an entry of a history read after
+    the newest delivered one (an index `>= len`, or a slice whose explicit
+    non-negative bound lies past the end). Those positions hold events not
+    delivered yet; like a time argument after `now_ns`, the request is
+    refused instead of answered with a silently shortened or empty result.
+    It is an `IndexError` too, so code that expects one still gets one."""
 
 
 class HistoryTruncatedError(CoreError, LookupError):
@@ -86,3 +99,20 @@ class MissingCostModelError(CoreError, RuntimeError):
 
 class CostModelError(CoreError, ValueError):
     """A cost model returned something that is not a finite number."""
+
+
+class EngineFailedError(CoreError, RuntimeError):
+    """An exception escaped a step of this engine earlier, so its state may
+    be half-updated (an order the strategy sees but that was never sent, a
+    report booked by the venue ledger but never turned into a notice, a
+    plug-in's own state moved on). The core cannot roll the strategy and
+    the plug-ins back, so the run is over: `step()`, `run()` and `result()`
+    all refuse. The original exception is `__cause__` and
+    `CoreEngine.failure`."""
+
+
+class EngineReentryError(CoreError, RuntimeError):
+    """`step()`, `run()` or `result()` was called on an engine from inside
+    one of its own steps (a strategy or plug-in holding the engine). The
+    call is refused and changes nothing; if nobody catches it, it escapes
+    the outer step and the engine becomes FAILED."""

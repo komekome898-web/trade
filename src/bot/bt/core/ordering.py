@@ -1,44 +1,44 @@
 """The deterministic order in which the engine processes things.
 
-Everything that happens travels on one of five CHANNELS, and every channel
-is FIFO: nothing on a channel ever overtakes something sent on it earlier.
+Everything that happens is one of five kinds of queue entry (PHASES). Four
+are CHANNELS that carry something and are FIFO: nothing on a channel ever
+overtakes something sent on it earlier. Timers are not a channel: a timer
+is a wake-up the strategy asks for, delivered at the time it asked for.
 
-    phase  channel                       position on the channel
+    phase  path (FIFO?)                  position (same time and phase)
     -----  ----------------------------  ---------------------------------
-    0      input  -> venue               merge position (below)
+    0      input -> venue (FIFO)         merge position (below)
     1      strategy -> venue requests    send order (new orders AND cancels,
-                                         one channel, as on one connection)
-    2      input  -> strategy            per input stream: reception order =
-                                         (recorded received_time_ns, merge
-                                         position)
-    3      venue  -> strategy notices    the order the venue emitted them
-    4      strategy timers               the order they were set
+           (FIFO)                        one channel, as on one connection)
+    2      input -> strategy (FIFO per   reception order = (recorded
+           input stream)                 received_time_ns, merge position)
+    3      venue -> strategy notices     the order the venue emitted them
+           (FIFO)
+    4      strategy timers (not FIFO:    the order they were set
+           each at its requested time)
 
 The engine is a discrete-event simulation over ONE priority queue whose key
-is
-
-    (time_ns, phase, received_time_ns or the entry's own time, position)
-
+is (time_ns, phase, received_time_ns or the entry's own time, position),
 and entries are processed in ascending key order. So at one instant the
 venue acts first (market data, then the requests arriving at that instant,
 in the order they were sent), then deliveries reach the strategy (input
 events, then order notices in the order the venue emitted them, then the
 strategy's own timers). The event TYPE is not part of the key: a channel's
 sequence is never re-sorted by type (a trade and the book delta it caused,
-printed in that order in one feed, stay in that order; an ACK / FILL /
+printed in that order in one feed, stay in that order; ACK / FILL /
 STATE_UNKNOWN keep the order the venue sent them; a cancel sent before a
 new order reaches the venue first).
 
 Times on a channel never decrease: a request's arrival time is
 `max(send time + delay, previous arrival)`, a notice's delivery time is
-`max(venue time + delay, previous delivery)` (the first item on a channel
-has no previous one: it keeps its own time -- "nothing sent yet" is not a
-time, every int64 is, 0 and times before 1970 included), and an input event is not
-delivered before an event of the same stream that was received earlier
-(its delivery is postponed to that event's delivery time; engine.py
-`_deliver_input`). With equal times the position decides, so the channel
-stays FIFO. Every queue time is checked to be an int64 of nanoseconds when
-it is pushed (engine.py `_push`).
+`max(venue time + delay, previous delivery)` (the first item has no
+previous one and keeps its own time: "nothing sent yet" is not a time, every
+int64 is), and an input event is not delivered before an earlier-received
+event of its stream (it waits for that event; engine.py `_deliver_input`).
+A timer is delivered at exactly the time requested, so one set later for
+an earlier time comes first; timers for one time come in the order set.
+Every queue time is checked to be an int64 of nanoseconds when it is
+pushed (engine.py `_push`).
 
 Merging input streams (phase 0 positions)
 -----------------------------------------
@@ -125,24 +125,44 @@ PHASES: dict[str, int] = {
 
 assert sorted(PHASES.values()) == list(range(len(PHASES))), "phases must be 0..n-1"
 
+# One entry per phase: how its time is set, what orders it inside one time,
+# and whether it is a FIFO channel. `channels_fifo` below is DERIVED from
+# the `fifo` flags (no hand-kept list); tests/bt/item_0 checks each claim
+# against the engine's behaviour, path by path.
+_PATHS: dict[str, dict] = {
+    "venue:input": {"fifo": True, "time": "exchange_time_ns", "position": "merge position"},
+    "venue:request": {"fifo": True,
+                      "time": "max(send time + order/cancel delay, previous arrival); "
+                              "the first request keeps its own time",
+                      "position": "send order; new orders and cancels share the channel"},
+    "deliver:input": {"fifo": True, "fifo_scope": "per input stream, reception order",
+                      "time": "received_time_ns + feed delay, never before an earlier-received "
+                              "event of the same stream",
+                      "position": "(received_time_ns, merge position)"},
+    "deliver:notice": {"fifo": True,
+                       "time": "max(venue time + notice delay, previous delivery); "
+                               "the first notice keeps its own time",
+                       "position": "the order the venue emitted the reports"},
+    "deliver:timer": {"fifo": False,
+                      "time": "the requested time exactly (a timer set later for an earlier time "
+                              "is delivered first)",
+                      "position": "the order the timers were set (only among timers for one time)"},
+}
+
+assert set(_PATHS) == set(PHASES), "every phase needs exactly one entry in _PATHS"
+
+
+def _fifo_name(name: str, path: dict) -> str:
+    scope = path.get("fifo_scope")
+    return f"{name} ({scope})" if scope else name
+
+
 ORDERING_RULE: dict = {
     "key": ["time_ns", "phase", "received_time_ns (input deliveries; the entry's time otherwise)", "position"],
     "phases_ascending": [name for name, _ in sorted(PHASES.items(), key=lambda kv: kv[1])],
-    "channels": {
-        "venue:input": {"time": "exchange_time_ns", "position": "merge position"},
-        "venue:request": {"time": "max(send time + order/cancel delay, previous arrival); "
-                                  "the first request keeps its own time",
-                          "position": "send order; new orders and cancels share the channel"},
-        "deliver:input": {"time": "received_time_ns + feed delay, never before an earlier-received "
-                                  "event of the same stream",
-                          "position": "(received_time_ns, merge position)"},
-        "deliver:notice": {"time": "max(venue time + notice delay, previous delivery); "
-                                   "the first notice keeps its own time",
-                           "position": "the order the venue emitted the reports"},
-        "deliver:timer": {"time": "the requested time", "position": "the order the timers were set"},
-    },
-    "channels_fifo": ["venue:input", "venue:request", "deliver:input (per stream, reception order)",
-                      "deliver:notice", "deliver:timer"],
+    "channels": {name: dict(path) for name, path in _PATHS.items()},
+    "channels_fifo": [_fifo_name(n, p) for n, p in _PATHS.items() if p["fifo"]],
+    "not_fifo": {n: p["time"] for n, p in _PATHS.items() if not p["fifo"]},
     "type_in_key": False,
     "source_merge": {
         "compare_heads_by": ["exchange_time_ns", "TYPE_ORDER", "stream name (sorted())"],

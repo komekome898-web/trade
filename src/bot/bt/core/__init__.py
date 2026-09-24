@@ -3,7 +3,7 @@ plugs into. Fixed requirements:
 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/REQUIREMENTS.md.
 
 Modules: time (int64 UTC ns), events (event types), ordering (the FIFO
-channels, the total order of processing and the merge of input streams), api (strategy context
+channels and the timers, the total order of processing and the merge of input streams), api (strategy context
 and order API), history (the strategy's delivered history and its one
 retention rule), interfaces (the four sockets), engine (the queue),
 contract (machine-readable guarantees), testing (test doubles, not venue
@@ -24,8 +24,11 @@ from .errors import (
     AccountSocketError,
     CoreError,
     CostModelError,
+    EngineFailedError,
+    EngineReentryError,
     EventOrderError,
     EventValidationError,
+    FuturePositionError,
     HistoryTruncatedError,
     LatencyModelError,
     LookAheadError,
@@ -85,6 +88,7 @@ from .ordering import (
 )
 from .strategy import Strategy
 from .time import TIME_CONTRACT, Nanos, nanos_to_iso, to_nanos, validate_nanos
+from .window import DeliveredEvents
 
 import types as _types
 
