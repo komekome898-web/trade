@@ -24,6 +24,8 @@ LABEL = re.compile(r"^盲検:(\d+)#(\d+):([a-z]+)(\d)$")
 AUDIT_BATTERY = re.compile(r"^監査役\(場面\):(\d+)(?:#([\w-]+))?$")  # "#r4-1" = audit of a repair inside worker round 4 (L-427)  # "#n" = audit before the worker (run 4 on)
 AUDIT_TABLE = re.compile(r"^監査役\(表\):(\d+)$")
 REPAIR = re.compile(r"^場面の直し:(\d+)#([\w-]+)$")
+DEFINE = re.compile(r"^定義:(\d+)#([\w-]+)$")  # "r8-1-2" = 2nd definition before repair r8-1 (L-437 definition-first)
+AUDIT_DEF = re.compile(r"^監査役\(定義\):(\d+)#([\w-]+)$")
 AUDIT_REPORT = re.compile(r"^監査役:(\d+)#(\d+)$")
 WORKER = re.compile(r"^作る:(\d+)#(\d+)$")
 
@@ -106,19 +108,30 @@ def collect_battery(paths: list[str]) -> dict:
             out[int(m.group(1))].append((m.group(2), 0, lab, aid, res))
         elif m := REPAIR.match(lab):
             out[int(m.group(1))].append((m.group(2), 1, lab, aid, res))
+        elif m := DEFINE.match(lab):
+            out[int(m.group(1))].append((m.group(2), 2, lab, aid, res))
+        elif m := AUDIT_DEF.match(lab):
+            out[int(m.group(1))].append((m.group(2), 3, lab, aid, res))
     return out
 
 
 def render_battery(item: int, rows: list) -> str:
     lines = [f"# 場面集の監査と直し(項目 {item}、作業者の前。Workflow の記録から逐語で書き出し)", "",
-             "監査役(場面):N#k = k 回目の監査、場面の直し:N#k = k 回目の直し(その前の監査の指摘を受けたもの)。", ""]
+             "監査役(場面):N#k = k 回目の監査、場面の直し:N#k = k 回目の直し(その前の監査の指摘を受けたもの)。定義:N#k-j = k 回目の直しの前の j 回目の正の定義、監査役(定義):N#k-j = その定義だけの監査(L-437)。", ""]
     def order(r):  # pre-worker audits first ("1", "2"; audit before its repair), then in-round repairs ("r4-1", …)
-        k = r[0]
-        return (0, int(k), "", r[1]) if k.isdigit() else (1, 0, k, 1 - r[1])  # in-round: the repair comes before its audit
+        k, kind = r[0], r[1]
+        if k.isdigit():
+            return (0, int(k), "", 0, kind)
+        parts = k.split("-")  # "r8-1" (repair/audit) or "r8-1-3" (3rd definition and its audit, before the repair)
+        base, sub = "-".join(parts[:2]), int(parts[2]) if len(parts) > 2 else 0
+        # within one repair: definitions (definition then its audit) come first, then the repair, then its audit
+        return (1, 0, base, 0 if kind in (2, 3) else 1, sub, {2: 0, 3: 1, 1: 0, 0: 1}[kind])
     for _, _, lab, aid, res in sorted(rows, key=order):
         lines += [f"## {lab}(agent {aid})", ""]
         if "findings" in res:
-            lines += [f"- [{x['level']}] {x['text']}" for x in res["findings"]] or ["(指摘なし)"]
+            lines += [f"- [{x['level']}]{'(repeat_of ' + x['repeat_of'] + ')' if x.get('repeat_of') else ''} {x['text']}" for x in res["findings"]] or ["(指摘なし)"]
+        elif "definition" in res:
+            lines += [f"- 根本原因と定義の記録: {res.get('rootcause')}", "", "定義(逐語):", "", res["definition"]]
         else:
             lines += [f"- 根本原因の記録: {res.get('rootcause')}", f"- 検討表の道具の出力: {res.get('check_output')}",
                       f"- 動かせた: {res.get('survey_run')}", f"- 動かせなかった: {res.get('survey_not_run')}"]
