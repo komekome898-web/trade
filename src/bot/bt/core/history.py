@@ -129,31 +129,90 @@ for _name in _LIST_CHANGERS:
 del _name
 
 
+class DroppedFacts:
+    """The strategy's side of the facts of one type's dropped events (round
+    10; round 12, i0-r11-03): `seqs` / `recvs`, two `array('q')` of their
+    delivery numbers and received times in drop order, as the strategy's
+    reads use them, and `pending`, the list of chunks the core APPENDED at
+    each drop since the strategy last read (one new `array('q')` per drop:
+    seq, recv, seq, recv, ...). The core never changes `seqs` / `recvs`:
+    an array cannot grow while someone holds a view of its buffer, and the
+    strategy may hold one. `read_dropped` folds the chunks in inside the
+    strategy's own read."""
+
+    __slots__ = ("seqs", "recvs", "pending")
+
+    def __init__(self, pending: list) -> None:
+        self.seqs = array("q")
+        self.recvs = array("q")
+        self.pending = pending
+
+
+_SEQS = DroppedFacts.__dict__["seqs"]
+_RECVS = DroppedFacts.__dict__["recvs"]
+_PENDING = DroppedFacts.__dict__["pending"]
+
+
+def read_dropped(facts: DroppedFacts) -> tuple:
+    """(delivery numbers, received times) of one type's dropped events, for
+    a read of the strategy's (api.py `StrategyContext`), INSIDE its call:
+    the chunks the core appended since the last read are folded in first.
+    An array the strategy holds a view of cannot grow; it then gets a new
+    array holding the same numbers and the new ones (the old one stays with
+    whoever holds the view), so what the strategy holds never changes what
+    it reads (round 12, i0-r11-03)."""
+    seqs, recvs, pending = _SEQS.__get__(facts), _RECVS.__get__(facts), _PENDING.__get__(facts)
+    if list.__len__(pending):
+        chunks = list.__getitem__(pending, slice(None))
+        list.clear(pending)
+        add_s, add_r = array("q"), array("q")
+        for chunk in chunks:
+            array.extend(add_s, chunk[0::2])
+            array.extend(add_r, chunk[1::2])
+        seqs = _grown(facts, _SEQS, seqs, add_s)
+        recvs = _grown(facts, _RECVS, recvs, add_r)
+    return seqs, recvs
+
+
+def _grown(facts: DroppedFacts, slot: Any, old: array, add: array) -> array:
+    try:
+        array.extend(old, add)
+        return old
+    except BufferError:  # a view of it is held: it cannot be resized, a new one takes its place
+        new = array("q", old)
+        array.extend(new, add)
+        slot.__set__(facts, new)
+        return new
+
+
 class HistoryLists:
     """The STRATEGY'S side of the history (round 10, i0-r9-02): what the
     strategy reaches -- the lists (`overall`, `typed`), the event copies in
-    them, and the facts of the dropped events (per type, two `array('q')`:
-    delivery numbers and received times, in drop order) -- plus the plain
-    lists of the same event objects the core rebuilds lists from (nothing
-    the strategy reaches refers to these two; the core reads their order
-    only, never an event copy). Held by
-    the engine only inside its strategy-side holder (engine.py
-    `_StrategySide`); the core's own records (`DeliveredHistory`) hold no
-    reference to it. The core WRITES it through base-type C functions only
-    (`list.append`, `array.array.extend`, new lists) and never reads it back
-    to decide anything: which events are kept, what was dropped and every
-    count come from `DeliveredHistory`, which tells this object what to
-    move (`add`, `drop`)."""
+    them, and the facts of the dropped events (per type, a `DroppedFacts`)
+    -- plus what the core keeps to write them, which nothing the strategy
+    reaches refers to: the plain lists of the same event objects the core
+    rebuilds lists from (the core reads their order only, never an event
+    copy) and its own references to the `pending` lists of the dropped
+    facts. Held by the engine only inside its strategy-side holder
+    (engine.py `_StrategySide`); the core's own records (`DeliveredHistory`)
+    hold no reference to it. The core writes what the strategy reaches ONLY
+    by `list.append` on lists it made -- which, whatever the strategy did to
+    what it reaches, runs none of its code and cannot fail (round 12,
+    i0-r11-03: `array.extend` fails while a view of the array is held) --
+    and by making new lists; it never reads it back to decide anything:
+    which events are kept, what was dropped and every count come from
+    `DeliveredHistory`, which tells this object what to move (`add`,
+    `drop`)."""
 
-    __slots__ = ("overall", "typed", "_items", "_overall_items", "dropped_seqs", "dropped_recvs")
+    __slots__ = ("overall", "typed", "_items", "_overall_items", "dropped", "_pending")
 
     def __init__(self) -> None:
         self.overall: DeliveredList = DeliveredList._made()
         self.typed: dict[EventType, DeliveredList] = {t: DeliveredList._made() for t in EventType}
         self._items: dict[EventType, list[Event]] = {t: [] for t in EventType}
         self._overall_items: list[Event] = []
-        self.dropped_seqs: dict[EventType, array] = {t: array("q") for t in EventType}
-        self.dropped_recvs: dict[EventType, array] = {t: array("q") for t in EventType}
+        self._pending: dict[EventType, list] = {t: [] for t in EventType}
+        self.dropped: dict[EventType, DroppedFacts] = {t: DroppedFacts(self._pending[t]) for t in EventType}
 
     def add(self, event: Event, etype: EventType) -> None:
         list.append(self._items[etype], event)
@@ -173,14 +232,15 @@ class HistoryLists:
         old = self._overall_items
         self._overall_items = [old[i] for i in keep]
         self.overall = DeliveredList._made(self._overall_items, overall_dropped)
-        array.extend(self.dropped_seqs[etype], [s for s, _r in gone])
-        array.extend(self.dropped_recvs[etype], [r for _s, r in gone])
+        # the facts, as ONE new chunk appended through the core's own
+        # reference to the strategy's pending list (read_dropped folds it in)
+        list.append(self._pending[etype], array("q", [x for pair in gone for x in pair]))
 
-    def dropped_arrays(self) -> tuple:
-        """Per type position (`tuple(EventType)` order): (its dropped
-        delivery numbers, their received times) -- the arrays themselves,
-        in a new tuple, for one callback's context."""
-        return tuple((self.dropped_seqs[t], self.dropped_recvs[t]) for t in EventType)
+    def dropped_facts(self) -> tuple:
+        """Per type position (`tuple(EventType)` order): its `DroppedFacts`,
+        in a new tuple, for one callback's context (read through
+        `read_dropped`)."""
+        return tuple(self.dropped[t] for t in EventType)
 
 
 class DeliveredHistory:

@@ -134,6 +134,7 @@ from .errors import (
     EngineFailedError,
     EngineReentryError,
     EventOrderError,
+    EventValidationError,
     LatencyModelError,
     MissingCostModelError,
     SourceEventTypeError,
@@ -179,11 +180,11 @@ from .ordering import (
     PHASE_VENUE_REQUEST,
     merge_key,
 )
-from .history import DeliveredHistory, HistoryLists
+from .history import DeliveredHistory, HistoryLists, read_dropped
 from .strategy import Strategy
 from .time import validate_nanos
-from .values import (Unsettled, as_float, as_int, as_text, class_parts, copy_carrier, exception_text, is_a,
-                     rebuild_carrier, renew, settle, type_name)
+from .values import (IdTable, Unsettled, as_int, as_text, class_parts, copy_carrier, exception_text, is_a,
+                     is_one_of, rebuild_carrier, renew, settle, take_float, take_int, take_items, type_name)
 from .window import EventWindow
 
 _K_VENUE_MARKET = 0
@@ -284,18 +285,18 @@ class _VenueLedger:
         return o is not None and o.final is None and (o.acked or o.unknown_new)
 
     def apply(self, report: Any, where: str, subject: Optional[str]) -> None:
-        name = type(report).__name__
         # A report becomes a notice that crosses the venue -> strategy path,
         # so it must be one of the core's own report classes ITSELF: those
         # make every field a value when the report is made (interfaces.py,
         # values.py) and are slotted; a subclass could decide a field when
-        # it is read (i0-r4-02, i0-r5-01).
-        if type(report) not in REPORT_CLASSES:
+        # it is read (i0-r4-02, i0-r5-01). Compared by identity (round 12).
+        if not is_one_of(type(report), REPORT_CLASSES):
             raise VenueProtocolError(
                 f"{where}: unknown report type {type_name(report)} "
                 f"(a fill model answers with Ack / Reject / Fill / Canceled / StateUnknown themselves, "
                 f"not subclasses)"
             )
+        name = type(report).__name__  # one of the core's classes
         coid = report.client_order_id
         kind = getattr(report, "request_kind", None)
         if isinstance(report, (Reject, StateUnknown)) and kind == "cancel":
@@ -415,12 +416,13 @@ class _StrategySide:
     strategy cannot reach (tests/bt/item_0/test_bt0_r11_foreign_objects.py)
     and of which it reads only the order, never an event copy."""
 
-    __slots__ = ("port", "registry", "outbox", "lists")
+    __slots__ = ("port", "registry", "shown", "outbox", "lists")
 
     def __init__(self) -> None:
         self.registry: dict[str, OrderView] = {}
+        self.shown: list = []
         self.outbox: list = []
-        self.port = _OrderPort(self.registry, self.outbox)
+        self.port = _OrderPort(self.registry, self.outbox, self.shown)
         self.lists = HistoryLists()
 
 
@@ -430,31 +432,31 @@ def _alive_check(alive: Callable[[], bool]) -> None:
 
 
 def _call_place(link: tuple, request: Any) -> str:
-    port, registry, outbox, now, alive = link
+    port, registry, outbox, now, alive, shown = link
     _alive_check(alive)
-    return port_place(port, registry, outbox, request, now)
+    return port_place(port, registry, shown, outbox, request, now)
 
 
 def _call_cancel(link: tuple, request: Any) -> None:
-    _port, registry, outbox, now, alive = link
+    _port, registry, outbox, now, alive, shown = link
     _alive_check(alive)
-    port_cancel(registry, outbox, request, now)
+    port_cancel(registry, shown, outbox, request, now)
 
 
 def _call_order(link: tuple, client_order_id: str) -> Optional[OrderView]:
-    _port, registry, _outbox, _now, alive = link
+    _port, registry, _outbox, _now, alive, shown = link
     _alive_check(alive)
-    return port_order(registry, client_order_id)
+    return port_order(registry, shown, client_order_id)
 
 
 def _call_open_orders(link: tuple) -> tuple:
-    _port, registry, _outbox, _now, alive = link
+    _port, registry, _outbox, _now, alive, shown = link
     _alive_check(alive)
-    return port_open_orders(registry)
+    return port_open_orders(registry, shown)
 
 
 def _call_timer(link: tuple, at_ns: Any, tag: Any) -> None:
-    _port, _registry, outbox, now, alive = link
+    _port, _registry, outbox, now, alive, _shown = link
     _alive_check(alive)
     port_timer(outbox, at_ns, tag, now)
 
@@ -487,12 +489,13 @@ def _settled_request(obj: Any, cls: type) -> Any:
 
 def _context_calls(side: _StrategySide, now: int, alive: Callable[[], bool]) -> tuple:
     """The functions one callback's context acts through, made for that
-    callback: each is bound to ONE tuple -- (the port, the engine's own
-    registry and outbox, the callback's time, its `alive`) -- which cannot
-    be changed, so what the strategy does to its port's attributes or to
-    these functions changes neither where its messages go nor the time
-    they carry (round 10, i0-r9-02). The engine keeps none of them."""
-    link = (side.port, side.registry, side.outbox, now, alive)
+    callback: each is bound to ONE tuple -- (the port, the strategy's
+    registry and outbox, the callback's time, its `alive`, the list of views
+    the core showed since the last call) -- which cannot be changed, so
+    what the strategy does to its port's attributes or to these functions
+    changes neither where its messages go nor the time they carry (round
+    10, i0-r9-02). The engine keeps none of them."""
+    link = (side.port, side.registry, side.outbox, now, alive, side.shown)
     return tuple(types.MethodType(f, link)
                  for f in (_call_place, _call_cancel, _call_order, _call_open_orders, _call_timer))
 
@@ -508,17 +511,19 @@ def _rebuilt(carrier: Any) -> Any:
 
 def _is_cancel_answer(report: Any, coid: str) -> bool:
     """A report that answers a cancel of order `coid` (inside on_cancel)."""
-    t = type(report)  # the real type: only the core's report classes themselves answer
-    if t not in REPORT_CLASSES or report.client_order_id != coid:
+    t = type(report)  # the real type: only the core's report classes themselves answer (by identity)
+    if not is_one_of(t, REPORT_CLASSES) or report.client_order_id != coid:
         return False
     if t is Canceled:
         return True
-    return t in (Reject, StateUnknown) and report.request_kind == "cancel"
+    return (t is Reject or t is StateUnknown) and report.request_kind == "cancel"
 
 
 def _check_delay(value: Any, what: str) -> int:
     try:
-        ivalue = as_int(value, what)  # the one int rule (values.py): an int itself, read once now
+        # taken after the latency model's call returned (values.py `settle`):
+        # an int itself, read by base types' or C classes' own code only
+        ivalue = take_int(value, what)
     except ValueError as exc:
         raise LatencyModelError(f"{what} must return an int of ns: {exc}") from None
     if ivalue < 0:
@@ -565,7 +570,8 @@ class _FifoChannel:
 
 SINGLE_STREAM_NAME = "events"
 # the core's own event classes themselves (never a subclass) -> their type
-_CLASS_TO_TYPE: dict[type, EventType] = {cls: etype for etype, cls in EVENT_TYPE_TO_CLASS.items()}
+# (searched by identity: a class a stream wrote is never hashed or compared, round 12)
+_CLASS_TO_TYPE = IdTable((cls, etype) for etype, cls in EVENT_TYPE_TO_CLASS.items())
 
 
 def _validate_time_span(time_span: Any) -> Optional[tuple[int, int]]:
@@ -656,8 +662,13 @@ class _SourceMerger:
                 f"the engine from the fill model's reports (place an order to get one)"
             )
         # the core's own event from here on: the source's object is read once,
-        # now, and never handed on (values.py, engine.py `_rebuilt`)
-        event = _rebuilt(event)
+        # now, and never handed on (values.py, engine.py `_rebuilt`); a value
+        # the stream put in a slot behind the class's back is taken without
+        # running its code (values.py `settle`, round 12)
+        try:
+            event = _rebuilt(event)
+        except Unsettled as exc:
+            raise EventValidationError(f"stream {name!r} yielded a {etype.value} event holding {exc}") from None
         exch = int(event.exchange_time_ns)
         if self._span is not None:
             _check_in_span(event, exch, self._span, name, self.counts[rank] + 1)
@@ -1057,10 +1068,10 @@ class CoreEngine:
         counts = history.dropped_count_facts()
         dropped_of = None
         if counts:
-            arrays = lists.dropped_arrays()
+            facts = lists.dropped_facts()
 
-            def dropped_of(pos: int, _arrays=arrays) -> tuple:
-                return _arrays[pos]
+            def dropped_of(pos: int, _facts=facts) -> tuple:
+                return read_dropped(_facts[pos])  # inside the strategy's read (history.py)
 
         place_order, cancel_order, order_lookup, open_orders, set_timer = _context_calls(side, time_ns, is_alive)
         ctx = StrategyContext(
@@ -1085,9 +1096,14 @@ class CoreEngine:
         self._drain(time_ns)
 
     def _show(self, coid: str) -> None:
-        """Write the strategy's copy of one order view (from the book) into
-        its registry, through the core's own reference (a plain dict)."""
-        dict.__setitem__(self._side.registry, coid, copy_view(self._book.view(coid)))
+        """Hand the strategy its copy of one order view (from the book): the
+        core APPENDS it to the strategy's list of shown views (`list.append`
+        on the list it made: whatever the strategy did to what it reaches,
+        this runs none of its code and cannot fail). The strategy's registry
+        (a dict whose keys the strategy can set) is brought up to date from
+        that list inside the strategy's own calls (api.py `_bring_up`), never
+        by the core outside them (round 12, i0-r11-01)."""
+        list.append(self._side.shown, (coid, copy_view(self._book.view(coid))))
 
     def _drain(self, sent: int) -> None:
         """Take what the strategy sent in the callback at `sent`: the
@@ -1178,7 +1194,12 @@ class CoreEngine:
         reports = self._take_reports(self._fill_model.on_market_event(copy_carrier(event), renew(time_ns)),
                                      "on_market_event")
         self._handle_reports(time_ns, reports, "on_market_event", None)
-        forced = self._account.on_market_event(copy_carrier(event), renew(time_ns)) or ()
+        answer = self._account.on_market_event(copy_carrier(event), renew(time_ns))
+        try:
+            forced = take_items(answer)  # read by list's / tuple's own iterator (round 12)
+        except Unsettled as exc:
+            raise AccountSocketError(f"account.on_market_event must return a list or tuple of "
+                                     f"OrderRequest (a Sequence): {exc}") from None
         for request in forced:
             self._force(time_ns, request)
 
@@ -1261,15 +1282,23 @@ class CoreEngine:
         """What a fill model answered, taken ONCE: each report one of the
         core's own report classes itself, made again by its constructor
         (`_rebuilt`), so the fill model's objects are never handed on."""
+        try:
+            items = take_items(raw)  # read by list's / tuple's own iterator (round 12)
+        except Unsettled as exc:
+            raise VenueProtocolError(f"{where}: a fill model answers with a list or tuple of reports "
+                                     f"(a Sequence): {exc}") from None
         taken = []
-        for report in raw or ():
-            if type(report) not in REPORT_CLASSES:
+        for report in items:
+            if not is_one_of(type(report), REPORT_CLASSES):  # by identity (round 12)
                 raise VenueProtocolError(
                     f"{where}: unknown report type {type_name(report)} "
                     f"(a fill model answers with Ack / Reject / Fill / Canceled / StateUnknown themselves, "
                     f"not subclasses)"
                 )
-            taken.append(_rebuilt(report))
+            try:
+                taken.append(_rebuilt(report))
+            except Unsettled as exc:
+                raise VenueProtocolError(f"{where}: a {type(report).__name__} holding {exc}") from None
         return tuple(taken)
 
     def _handle_reports(self, venue_time: int, reports: tuple, where: str, subject: Optional[str]) -> None:
@@ -1294,7 +1323,8 @@ class CoreEngine:
                     )
                 fee = self._cost_model.cost(copy_carrier(notice))
                 try:
-                    fee = as_float(fee, "fee")  # the one number rule (values.py): a float itself, read once now
+                    # taken after the cost model's call returned (values.py `settle`)
+                    fee = take_float(fee, "fee")
                 except ValueError as exc:
                     raise CostModelError(f"cost model returned a value that is not a number: {exc}") from None
                 if not math.isfinite(fee):

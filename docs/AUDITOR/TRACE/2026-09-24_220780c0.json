@@ -13281,13 +13281,13 @@
   {
    "move": 489,
    "tools": {
-    "Bash": 10,
+    "Bash": 11,
     "mcp__Claude_Code_Remote__send_later": 3,
     "Read": 3,
     "ReadNotifications": 3,
     "Workflow": 1
    },
-   "n_tools": 20,
+   "n_tools": 21,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,

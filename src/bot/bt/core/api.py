@@ -223,10 +223,9 @@ def fresh_request(request: Any, cls: type, error: type, who: str) -> Any:
     (a field deleted or set to what the class refuses) is refused as
     `error`, never a core crash."""
     if type(request) is not cls:
-        raise error(
-            f"{who} takes a {cls.__name__} itself (not a subclass), got "
-            f"{type(request).__module__}.{type(request).__qualname__}"
-        )
+        # the real type named by values.type_name: no code of its class,
+        # metaclass or dict keys runs (round 12)
+        raise error(f"{who} takes a {cls.__name__} itself (not a subclass), got {type_name(request)}")
     try:
         return rebuild_carrier(request)
     except error:
@@ -477,31 +476,48 @@ class _OrderPort:
     outbox (engine.py `_context_calls`), so replacing an attribute here
     changes nothing that is sent."""
 
-    __slots__ = ("_registry", "_outbox", "_counter")
+    __slots__ = ("_registry", "_outbox", "_shown", "_counter")
 
-    def __init__(self, registry: Optional[dict] = None, outbox: Optional[list] = None) -> None:
+    def __init__(self, registry: Optional[dict] = None, outbox: Optional[list] = None,
+                 shown: Optional[list] = None) -> None:
         self._registry: dict[str, OrderView] = {} if registry is None else registry
         self._outbox: list[tuple] = [] if outbox is None else outbox
+        self._shown: list[tuple] = [] if shown is None else shown
         self._counter = 0
 
     # -- strategy-facing (through StrategyContext) --------------------------
     def place(self, request: OrderRequest, now: Optional[int] = None) -> str:
-        return port_place(self, self._registry, self._outbox, request, now)
+        return port_place(self, self._registry, self._shown, self._outbox, request, now)
 
     def cancel(self, request: Union[CancelRequest, str], now: Optional[int] = None) -> None:
-        port_cancel(self._registry, self._outbox, request, now)
+        port_cancel(self._registry, self._shown, self._outbox, request, now)
 
     def knows(self, client_order_id: str) -> bool:
+        _bring_up(self._registry, self._shown)
         return client_order_id in self._registry
 
     def set_timer(self, at_ns: int, tag: str, now: Optional[int] = None) -> None:
         port_timer(self._outbox, at_ns, tag, now)
 
     def order(self, client_order_id: str) -> Optional[OrderView]:
-        return port_order(self._registry, client_order_id)
+        return port_order(self._registry, self._shown, client_order_id)
 
     def open_orders(self) -> tuple[OrderView, ...]:
-        return port_open_orders(self._registry)
+        return port_open_orders(self._registry, self._shown)
+
+
+def _bring_up(registry: dict, shown: list) -> None:
+    """Bring the strategy's registry up to date with the views the core
+    showed it since the last call (engine.py `_show` only APPENDS to
+    `shown`: round 12, i0-r11-01). Runs inside the strategy's own call --
+    every port function starts with it -- so whatever the strategy put in
+    its registry (a key of its own that compares as it likes) runs, if at
+    all, inside its own call, and changes only what it reads."""
+    if list.__len__(shown):
+        views = list.__getitem__(shown, slice(None))
+        list.clear(shown)
+        for coid, view in views:
+            dict.__setitem__(registry, coid, view)
 
 
 def _callback_time(now: Optional[int]) -> int:
@@ -510,14 +526,16 @@ def _callback_time(now: Optional[int]) -> int:
     return now
 
 
-def port_place(port: _OrderPort, registry: dict, outbox: list, request: Any, now: Optional[int]) -> str:
+def port_place(port: _OrderPort, registry: dict, shown: list, outbox: list, request: Any,
+               now: Optional[int]) -> str:
     """`place_order`: the request made again (the view keeps its own copy;
     the outbox carries another: nothing the strategy holds is what the
     venue receives), its id checked against the strategy's copies (to
     answer at once; the core checks again against its book), its view
-    written and its message put in the outbox. `registry` and `outbox` are
-    the engine's own references (plain dict and list), written by their
-    base type's methods."""
+    written and its message put in the outbox. `registry`, `shown` and
+    `outbox` are the strategy's side (plain dict and lists the engine made),
+    written by their base type's methods, inside the strategy's call."""
+    _bring_up(registry, shown)
     request = fresh_request(request, OrderRequest, OrderApiError, "place_order")
     now = _callback_time(now)
     coid = request.client_order_id
@@ -536,7 +554,8 @@ def port_place(port: _OrderPort, registry: dict, outbox: list, request: Any, now
     return coid
 
 
-def port_cancel(registry: dict, outbox: list, request: Any, now: Optional[int]) -> None:
+def port_cancel(registry: dict, shown: list, outbox: list, request: Any, now: Optional[int]) -> None:
+    _bring_up(registry, shown)
     if is_a(request, str):  # the real type: an object claiming to be a str is not an id
         request = CancelRequest(request)
     request = fresh_request(request, CancelRequest, OrderApiError, "cancel_order (or an id)")
@@ -553,16 +572,18 @@ def port_timer(outbox: list, at_ns: Any, tag: Any, now: Optional[int]) -> None:
     list.append(outbox, ("timer", at, text))
 
 
-def port_order(registry: dict, client_order_id: str) -> Optional[OrderView]:
+def port_order(registry: dict, shown: list, client_order_id: str) -> Optional[OrderView]:
     """A new view object of one of the strategy's orders at every call
     (None if unknown), made from the strategy's own copy (which the core
-    writes at every change, engine.py `_show`, and never reads)."""
+    hands over at every change, engine.py `_show`, and never reads)."""
+    _bring_up(registry, shown)
     view = dict.get(registry, client_order_id)
     return None if view is None else _fresh_view(view)
 
 
-def port_open_orders(registry: dict) -> tuple[OrderView, ...]:
+def port_open_orders(registry: dict, shown: list) -> tuple[OrderView, ...]:
     """New view objects of the strategy's open orders, at every call."""
+    _bring_up(registry, shown)
     return tuple(_fresh_view(v) for v in dict.values(registry) if v.is_open)
 
 

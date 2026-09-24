@@ -169,8 +169,66 @@ FIELD_RULE = (
 def is_a(value: Any, cls: Any) -> bool:
     """Is the REAL type of `value` `cls` or a subclass of it? Unlike
     `isinstance`, it does not ask the object (an object may claim any
-    class through `__class__`); `cls` may be a class, an ABC or a tuple."""
+    class through `__class__`). For a `cls` whose own metaclass is `type`
+    itself (the core's classes, the built-in types) `issubclass` walks the
+    real type's MRO by identity and runs nothing of the value's class; an
+    ABC (`Mapping`) asks the ABC machinery, which may consult classes
+    others wrote -- used only inside the caller's own call (the engine's
+    constructor), never on what a party handed over after its call."""
     return issubclass(type(value), cls)
+
+
+# ---- decisions on a type by identity only (round 12, i0-r11-01) ----------------------
+# Outside a party's own call the core decides about what that party made
+# only through objects the core made and no one else reaches, or static (C)
+# types: a class the party wrote is never hashed, compared with `==`, looked
+# up in a hash table or asked for an attribute the usual way (its metaclass's
+# `__hash__` / `__eq__` / `__getattribute__` and the keys of its own dict are
+# the party's code). These helpers compare classes by `is` only.
+
+_MRO = type.__dict__["__mro__"].__get__  # a class's own MRO, read by `type`'s slot
+_TYPE_FLAGS = type.__dict__["__flags__"].__get__
+_TYPE_DICT = type.__dict__["__dict__"].__get__
+_PROXY_ITEMS = types.MappingProxyType.items
+_HEAPTYPE = 1 << 9  # Py_TPFLAGS_HEAPTYPE: a class made at run time (by a class statement or type())
+
+
+def is_one_of(t: type, classes: tuple) -> bool:
+    """Is class `t` one of `classes` itself (compared by identity)?"""
+    for c in classes:
+        if c is t:
+            return True
+    return False
+
+
+def derives(t: type, base: type) -> bool:
+    """Is `base` in the MRO of class `t` (compared by identity)?"""
+    for c in _MRO(t):
+        if c is base:
+            return True
+    return False
+
+
+def is_static(t: type) -> bool:
+    """A class written in C -- not made at run time -- whose metaclass is
+    `type` itself: no one outside can change what its methods do (the
+    built-in types, numpy's scalar types)."""
+    return type(t) is type and not (_TYPE_FLAGS(t) & _HEAPTYPE)
+
+
+class IdTable:
+    """A lookup table keyed by classes the core names, searched by the
+    identity of a class: its keys are the ids (ints the core made), so a
+    lookup never hashes or compares the class searched for."""
+
+    __slots__ = ("_by_id",)
+
+    def __init__(self, pairs) -> None:
+        object.__setattr__(self, "_by_id", {id(k): (k, v) for k, v in pairs})
+
+    def get(self, t: type, default: Any = None) -> Any:
+        got = self._by_id.get(id(t))
+        return got[1] if got is not None and got[0] is t else default
 
 
 # A class's names, read by `type`'s own descriptors (round 11): the usual
@@ -192,14 +250,26 @@ def _own_text(value: Any) -> Optional[str]:
 
 
 def class_parts(t: type) -> tuple[Optional[str], str]:
-    """(module, qualified name) of class `t`, read by `type`'s own
-    descriptors and made str by `str`'s own method: no code of the class,
-    its metaclass or what its body set `__module__` to runs. A module that
+    """(module, qualified name) of class `t`, read without running any code
+    of the class, its metaclass, its dict's keys or what its body set
+    `__module__` to (round 12, i0-r11-01): the name from `type`'s own slot;
+    the module of a C class from its C name (`type`'s descriptor parses it:
+    no lookup), and of a class made at run time by WALKING the class's own
+    dict -- the key that is the str '__module__' itself -- never by looking
+    it up (a lookup compares the keys the class's author put there, with
+    their own `__eq__`). Both made str by `str`'s own method. A module that
     is not a str reads as None; a name that is not one as "?"."""
-    try:
-        module = _own_text(_TYPE_MODULE(t))
-    except AttributeError:  # a class made without a module
+    if _TYPE_FLAGS(t) & _HEAPTYPE:
         module = None
+        for key, value in _PROXY_ITEMS(_TYPE_DICT(t)):
+            if type(key) is str and key == "__module__":
+                module = _own_text(value)
+                break
+    else:
+        try:
+            module = _own_text(_TYPE_MODULE(t))
+        except AttributeError:  # pragma: no cover - a C class always has a name
+            module = None
     return module, _own_text(_TYPE_QUALNAME(t)) or "?"
 
 
@@ -275,18 +345,20 @@ def _now(convert: Any, value: Any, where: str) -> Any:
 _NOT_PLAIN = object()  # what `_plain_scalar` gives for a value the scalar rule refuses
 
 
-_MRO = type.__dict__["__mro__"].__get__  # a class's own MRO, read by `type`'s slot
-
-
 def _base_of(t: type) -> Any:
     """The base of `_BASES` a class derives from, or None -- read from the
-    class's own MRO, so no metaclass or ABC hook (`Fraction` is an ABC:
-    `issubclass` would ask its subclasses' hooks) runs (round 10)."""
+    class's own MRO and compared by identity, so no metaclass hook (its
+    `__eq__`) or ABC hook (`Fraction` is an ABC: `issubclass` would ask its
+    subclasses' hooks) runs (round 10, round 12)."""
     mro = _MRO(t)
     for base in _BASES:
-        if base in mro:
-            return base
+        for c in mro:
+            if c is base:
+                return base
     return None
+
+
+_BUILDER = IdTable(BUILD.items())  # BUILD searched by identity (round 12)
 
 
 def _plain_scalar(value: Any, where: str) -> Any:
@@ -294,15 +366,18 @@ def _plain_scalar(value: Any, where: str) -> Any:
     `_NOT_PLAIN`. A sender's failing conversion, or a broken Fraction,
     raises ValueError."""
     t = type(value)
-    build = BUILD.get(t)
+    build = _BUILDER.get(t)
     if build is not None:
         return build(value)
     base = _base_of(t)
     if base is not None:
         return BUILD[base](value)
     nb = _numpy_bool()
-    if nb is not None and issubclass(t, nb):
+    if nb is not None and derives(t, nb):
         return nb.__bool__(value)
+    # the numeric tower: asked of the ABCs, inside the sender's own call (a
+    # field made when its carrier is made); after a party's call the core
+    # takes values by `settle` instead, which runs no code of a Python class
     if issubclass(t, numbers.Integral):
         return _now(int, value, where)
     if issubclass(t, numbers.Real):
@@ -319,29 +394,42 @@ class Unsettled(ValueError):
 
 def settle(value: Any) -> Any:
     """`value` as plain data of the built-in types THEMSELVES, made without
-    running any code of the one who handed it over (round 10, i0-r9-02):
-    a built-in scalar or a subclass of one is built anew as the base type by
-    the base type's own method (the subclass's code -- its `__repr__`,
-    `__eq__`, `__hash__` -- never runs, and nothing later can run it: what
-    comes out holds none of the sender's objects); a numpy bool as the bool
-    it holds; a container (tuple, list, dict, set, frozenset, a subclass of
-    one, or the core's FrozenList / FrozenDict / FrozenSet) is read by the
-    base type's own methods and made anew of settled values. Anything whose
-    reading needs its own code (a number of the numeric tower: `__int__`,
-    `__float__`, `__index__`) or is not plain data raises `Unsettled`, a
-    ValueError, whose text names only the value's type. The core applies
-    this to what it reads AFTER a callback returned (the outbox, engine.py
-    `_take_message`): the strategy's code runs only inside its own calls."""
+    running any code of the one who handed it over (round 10, i0-r9-02;
+    round 12, i0-r11-01): THE one way the core takes a value after the call
+    that made it returned. Its type is decided by identity only (`is` on the
+    class and its MRO: the class is never hashed or compared, so no
+    metaclass hook runs); a built-in scalar or a subclass of one is built
+    anew as the base type by the base type's own method (the subclass's
+    code -- its `__repr__`, `__eq__`, `__hash__` -- never runs, and nothing
+    later can run it: what comes out holds none of the sender's objects); a
+    numpy bool as the bool it holds; a number of a STATIC (C) class of the
+    numeric tower (numpy's) is converted by that class's C code, which no
+    one outside can change; a container (tuple, list, dict, set, frozenset,
+    a subclass of one, or the core's FrozenList / FrozenDict / FrozenSet) is
+    read by the base type's own methods and made anew of settled values.
+    Anything else -- a number whose class was written in Python (its
+    `__int__` / `__float__` / `__index__` is the sender's code), any other
+    object -- raises `Unsettled`, a ValueError, whose text names only the
+    value's type. The core applies this to what it takes AFTER a party's
+    call returned: the outbox (engine.py `_take_message`), a plug-in's
+    number (`take_int` / `take_float`), a carrier it makes again
+    (`rebuild_carrier`)."""
     return _settle(value, set())
+
+
+_CONTAINERS = (tuple, list, set, frozenset, dict)
 
 
 def _settle(value: Any, path: set[int]) -> Any:
     t = type(value)
-    build = BUILD.get(t)
+    build = _BUILDER.get(t)
     if build is not None:
         return build(value)
-    mro = _MRO(t)
-    container = next((c for c in (tuple, list, set, frozenset, dict) if c in mro), None)
+    container = None
+    for c in _CONTAINERS:
+        if derives(t, c):
+            container = c
+            break
     if container is not None or t is FrozenDict:
         key = id(value)
         if key in path:
@@ -373,11 +461,67 @@ def _settle(value: Any, path: set[int]) -> Any:
     if base is not None:
         return BUILD[base](value)
     nb = _numpy_bool()
-    if nb is not None and nb in mro:
+    if nb is not None and derives(t, nb):
         return nb.__bool__(value)
+    if is_static(t):
+        # a C class: asking the numbers ABCs about it hashes the class by
+        # `type`'s own hash (its metaclass is `type` itself), and its
+        # conversion is C code
+        for abc, convert in ((numbers.Integral, int), (numbers.Real, float), (numbers.Complex, complex)):
+            if issubclass(t, abc):
+                try:
+                    return _now(convert, value, "value")
+                except ValueError as exc:
+                    raise Unsettled(str(exc)) from None
     raise Unsettled(
         f"a {type_name(value)} cannot be read without running its own code (or is not plain data)"
     )
+
+
+def take_int(value: Any, where: str) -> int:
+    """A plug-in's integer answer, taken after its call returned (engine.py
+    `_check_delay`): `settle`, then an int itself (never a bool)."""
+    got = _taken(value, where)
+    if type(got) is not int:
+        raise ValueError(f"{where} must be an int, got {type_name(value)}")
+    return got
+
+
+def take_float(value: Any, where: str) -> float:
+    """A plug-in's number answer, taken after its call returned (the
+    fee): `settle`, then a float itself (an int or a Fraction converted by
+    the core's own types; never a bool)."""
+    got = _taken(value, where)
+    t = type(got)
+    if t is float:
+        return got
+    if t is int or t is Fraction:
+        return _now(float, got, where)
+    raise ValueError(f"{where} must be a number, got {type_name(value)}")
+
+
+def take_items(value: Any) -> tuple:
+    """A plug-in's answer that is a sequence (the protocols' `Sequence`),
+    taken after its call returned: None is empty; a list or a tuple (or a
+    subclass of one) is read by the base type's own iterator into a new
+    tuple -- its truth, length and iteration are never asked of it, so no
+    code of its class runs; anything else raises `Unsettled`."""
+    if value is None:
+        return ()
+    t = type(value)
+    if derives(t, list):
+        return tuple(list.__iter__(value))
+    if derives(t, tuple):
+        return tuple(tuple.__iter__(value))
+    raise Unsettled(f"a {type_name(value)} is not a list or a tuple")
+
+
+def _taken(value: Any, where: str) -> Any:
+    try:
+        return settle(value)
+    except Unsettled as exc:
+        raise ValueError(f"{where}: {exc}; convert it to the built-in type inside the call that returns it "
+                         f"(the core takes answers after the call returned and runs none of their code)") from None
 
 
 def settled(value: Any) -> bool:
@@ -531,6 +675,9 @@ class FrozenDict(Mapping):
 _FD_ITEMS = FrozenDict.__dict__["_items"].__get__
 
 
+_FREEZE_TYPES = (tuple, list, dict, set, frozenset, FrozenList, FrozenDict, FrozenSet)
+
+
 def freeze(value: Any, where: str = "value") -> Any:
     """An equal, deeply immutable form of plain data; `ValueError` for
     anything that is not plain data (module docstring)."""
@@ -539,7 +686,7 @@ def freeze(value: Any, where: str = "value") -> Any:
 
 def _freeze(value: Any, where: str, path: set[int]) -> Any:
     t = type(value)
-    if t not in (tuple, list, dict, set, frozenset, FrozenList, FrozenDict, FrozenSet):
+    if not is_one_of(t, _FREEZE_TYPES):
         return scalar(value, where)
     key = id(value)
     if key in path:
@@ -681,9 +828,12 @@ def rebuild_carrier(obj: Any) -> Any:
     """The core's own object for a carrier a sender handed over (the
     caller has checked its class is one of the core's carrier classes
     itself): made again by the class's constructor from what its slots
-    hold NOW, so every field passes the field functions above again (new
-    objects, checked) and the class's own checks run again. The sender's
-    object is never kept."""
+    hold NOW, each value taken by `settle` first (round 12: what a sender
+    put in a slot after the carrier was made is read without running its
+    code; a value `settle` refuses raises `Unsettled`, a ValueError), so
+    every field passes the field functions above again (new objects,
+    checked) and the class's own checks run again. The sender's object is
+    never kept."""
     cls = type(obj)
     rebuilder = _REBUILDERS.get(cls)
     if rebuilder is None:
@@ -698,7 +848,16 @@ def _make_rebuilder(cls: type) -> Callable[[Any], Any]:
     for f in fields:
         if not f.name.isidentifier():  # pragma: no cover
             raise TypeError(f"{cls.__qualname__}.{f.name}")
-    args = ", ".join(f"{f.name}=src.{f.name}" for f in fields)
-    namespace = {"cls": cls}
+    args = ", ".join(f"{f.name}=take(src.{f.name})" for f in fields)
+    namespace = {"cls": cls, "take": _as_taken}
     exec(f"def rebuilder(src):\n    return cls({args})", namespace)  # noqa: S102 - the class's own field names
     return namespace["rebuilder"]
+
+
+def _as_taken(value: Any) -> Any:
+    """A slot's value as the constructor may be given it after the
+    sender's call returned (round 12): a built-in scalar itself as it is
+    (the field functions build it anew by its own type), anything else
+    settled first -- so a value the sender put in a slot behind the class's
+    back runs none of its code when the carrier is made again."""
+    return value if _BUILDER.get(type(value)) is not None else settle(value)
