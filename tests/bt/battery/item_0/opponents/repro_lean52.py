@@ -25,6 +25,13 @@ LEAN has those mechanisms, but they are not reproduced, so there is no result
 Slice does not have (an order book with levels, a book delta, a liquidation)
 are 対応なし, with the Slice's members (Common/Data/Slice.cs 86-166).
 
+Settings the scene set chooses through LEAN's public arguments (round r7-1):
+the security is a CryptoFuture added with `fillForward: false`
+(QCAlgorithm.cs 2621 AddCryptoFuture), so the subscriptions are not
+internal (DataManager.cs 720-721 with AddSecurity's defaults) and carry no
+fill-forward data (FileSystemDataFeed.cs 274-277); see
+`repro_engines/lean52.py` for the lines.
+
 Inputs: LEAN takes one subscription per (symbol, data type) (a subscription
 has one `Configuration.Type`), so events of one scene stream are handed to
 the subscription of their type, in their given order; the synchroniser

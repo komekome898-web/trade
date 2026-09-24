@@ -136,9 +136,15 @@ class SubscriptionDataConfig:
     constructor's `isInternalFeed`, 207 / 227), IsCustomData."""
 
     def __init__(self, type_: type, symbol: str, tick_type: str, security_type: str, is_internal_feed: bool,
-                 is_custom_data: bool = False) -> None:
+                 is_custom_data: bool = False, fill_forward: bool = False) -> None:
         self.Type, self.Symbol, self.TickType, self.SecurityType = type_, symbol, tick_type, security_type
         self.IsInternalFeed, self.IsCustomData = is_internal_feed, is_custom_data
+        # 72 / 242: `FillDataForward = resolution == Resolution.Tick ? false : fillForward`. The scene set adds
+        # the security with the public argument fillForward: false (QCAlgorithm.cs 2621 AddCryptoFuture(...,
+        # bool fillForward = true, ...)); the feed adds a FillForwardEnumerator only when it is true and the
+        # resolution is not Tick (FileSystemDataFeed.cs 239, 274-277), so no fill-forward data are made and
+        # that enumerator is not rewritten here.
+        self.FillDataForward = fill_forward
 
 
 def data_manager_add(symbol: str, security_type: str, data_types: list[tuple[type, str]],
@@ -146,16 +152,18 @@ def data_manager_add(symbol: str, security_type: str, data_types: list[tuple[typ
     """Engine/DataFeeds/DataManager.cs 602-690 Add(...): one config per (data
     type, tick type), with the internal flag of 720-721:
     `subscriptionDataTypes == null && tickType == TickType.OpenInterest || isInternalFeed`.
-    A user's security goes through QCAlgorithm.AddSecurity (QCAlgorithm.cs
-    2056-2071), which calls SubscriptionDataConfigService.Add without the
-    `isInternalFeed` and `subscriptionDataTypes` arguments: their defaults are
+    A user's CryptoFuture goes through QCAlgorithm.AddCryptoFuture
+    (QCAlgorithm.cs 2621-2624) -> AddSecurity<T> (3069-3083), which calls
+    SubscriptionDataConfigService.Add without the `isInternalFeed` and
+    `subscriptionDataTypes` arguments: their defaults are
     `false` and `null` (ISubscriptionDataConfigService.cs 53-64, DataManager.cs
     602-613); the data types then come from LookupSubscriptionConfigDataTypes
     (763-773: the security type's tick types, Trade and Quote for a
     CryptoFuture, SubscriptionManager.cs 361, and a MarginInterestRate with
     TickType.Quote for a CryptoFuture, 770-773)."""
     return [SubscriptionDataConfig(t, symbol, tt, security_type,
-                                   (not subscription_data_types_given and tt == "OpenInterest") or is_internal_feed)
+                                   (not subscription_data_types_given and tt == "OpenInterest") or is_internal_feed,
+                                   fill_forward=False)
             for t, tt in data_types]
 
 

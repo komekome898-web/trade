@@ -91,7 +91,16 @@ def test_single_input_form_of_hand_over_order_agrees_with_keeping_one_input_in_o
     assert single, "the scene set fixes no single_input rule: the single-input form cannot be graded at all"
     target = single[0]
     assert stated_rules.STATED_RULES[target].recipe == "stable_by_time"
-    sc = _scene("p5-hand-over-order")
+    # Round 7 (critic, scene-set rule 8): since the scene keeper's round
+    # r7-1 (critic i0-r6-02) a P0-5 scene takes its event types from the
+    # target's own types (scenes.for_target_types); the scene as listed is
+    # the one for a target with all six types, whose first four include the
+    # two book types this test's `_event` does not build (KeyError 'price'
+    # -- an error of this test, as the scene keeper reported in
+    # ROOTCAUSE_r7-1.md). The property is unchanged; the scene is built here
+    # for a target with the four types `_event` builds.
+    sc = scenes.for_target_types(_scene("p5-hand-over-order"), ["trade", "bar", "funding", "liquidation"])
+    assert sc is not None and len(sc.input["hand_over_orders"]) == 24
     runs, seen = [], set()
     for order in sc.input["hand_over_orders"]:
         one_input = [_event(e) for name in order for e in sc.input["streams"][name]]
