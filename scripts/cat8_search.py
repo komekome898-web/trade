@@ -74,6 +74,8 @@ for p, enc in encs:
 for p, why in unread:
     print("読めなかった\t%s\t%s" % (p, why))
 import os
-print("cat8_search: %s files=%d read=%d files_with_hits=%d hits=%d list=%s" % (
-    "complete" if not unread and paths else "INCOMPLETE", len(paths), read, len(per_file), hits, os.path.abspath(a.list)))
+import hashlib
+print("cat8_search: %s files=%d read=%d files_with_hits=%d hits=%d list=%s sha=%s" % (
+    "complete" if not unread and paths else "INCOMPLETE", len(paths), read, len(per_file), hits, os.path.abspath(a.list),
+    hashlib.sha256(raw).hexdigest()[:16]))
 sys.exit(1 if unread or not paths else 0)
