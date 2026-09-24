@@ -690,7 +690,12 @@ def cmd_check_elements(a):
                             missing = [hp for hp in dict.fromkeys(hit_paths) if not hit_judged.get(hp)]
                             if missing:
                                 errs.append("行 %d: %s %s は `なし` なのに、当たった行のあるファイル %d 件が `### 当たりの判定` の表に理由つきで無い: %s" % (i + 1, tool, el, len(missing), " ".join(missing[:3])))
-                        lack = [g for g in ELEM_TERMS_WIDE.get(el, []) if not any(re.search(g, c, re.I) for c in searches)]
+                        if int(a.round) >= 12:
+                            # 11 回目の検収: 「組から 1 語」だと `leak` を探さずに「リーク」だけで組を満たせた。12 回目以降は組の語を全部
+                            lack = [alt for g in ELEM_TERMS_WIDE.get(el, []) for alt in g.split("|")
+                                    if not any(re.search(alt, c, re.I) for c in searches)]
+                        else:
+                            lack = [g for g in ELEM_TERMS_WIDE.get(el, []) if not any(re.search(g, c, re.I) for c in searches)]
                         if lack:
                             errs.append("行 %d: %s %s は `なし` なのに、7 列目の cat8_search.py の手の語に当たらない語の組がある: %s" % (i + 1, tool, el, " / ".join(lack)))
             if r7 and not untouched:

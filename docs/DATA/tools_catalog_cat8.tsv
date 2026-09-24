@@ -16,7 +16,7 @@
 8-015	TradingView のリプレイ機能	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い)		深掘り	なし	なし	なし	なし	印	印	なし	なし	-	-	-	-	2	2	-	-			11	3830
 8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		判別に一次資料が要る	印	印	印	未判別	なし	印	未判別	印	4	4	3	未判別	-	3	未判別	3			11	3831
 8-017	Great Expectations	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧)		判別に一次資料が要る	未判別	未判別	印	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			11	3832
-8-018	Vibe-Trading	10	一覧の辿り	https://github.com/HKUDS/Vibe-Trading		浅い	印	印	印	印	印	印	印	印	4	4	4	2	4	未判別	未判別	未判別			11	3833
+8-018	Vibe-Trading	10	一覧の辿り	https://github.com/HKUDS/Vibe-Trading		浅い	印	印	印	印	印	印	印	印	未判別	未判別	未判別	2	未判別	未判別	未判別	未判別			11	3833
 8-019	AutoHedge	10	一覧の辿り	https://github.com/The-Swarm-Corporation/AutoHedge		判別に一次資料が要る	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			11	3834
 8-020	OpenBB Terminal	10	一覧の辿り	https://github.com/OpenBB-finance/OpenBB		判別に一次資料が要る	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			11	3835
 8-021	Qlib	10	一覧の辿り	https://github.com/microsoft/qlib		判別に一次資料が要る	未判別	未判別	印	未判別	印	印	未判別	未判別	未判別	未判別	4	未判別	未判別	未判別	未判別	未判別			11	3836
