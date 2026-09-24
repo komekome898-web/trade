@@ -56,7 +56,10 @@ if [ "$exp_co" -gt "$max_co" ]; then
   exit 4
 fi
 if [ -s .git/cat8_present ]; then
-  git --literal-pathspecs checkout -q HEAD --pathspec-from-file=.git/cat8_present --pathspec-file-nul
+  # Write blobs byte for byte: no line-ending conversion, no filters, whatever the
+  # repository's .gitattributes or the local core.autocrlf say (audit 54).
+  printf '* -text -eol -filter -ident -working-tree-encoding\n' > .git/info/attributes
+  git -c core.autocrlf=false --literal-pathspecs checkout -q HEAD --pathspec-from-file=.git/cat8_present --pathspec-file-nul
 fi
 n_present=$(tr -cd '\0' < .git/cat8_present | wc -c)
 n_out=$(git ls-files | wc -l)
