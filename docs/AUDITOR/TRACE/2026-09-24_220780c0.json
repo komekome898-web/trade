@@ -12687,10 +12687,10 @@
   {
    "move": 468,
    "tools": {
-    "Read": 2,
-    "Bash": 18
+    "Read": 3,
+    "Bash": 20
    },
-   "n_tools": 20,
+   "n_tools": 23,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
