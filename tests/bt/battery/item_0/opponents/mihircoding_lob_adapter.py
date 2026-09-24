@@ -88,16 +88,17 @@ class MihircodingLobAdapter(VectorBase):
     # ---------------- P0-1 (the bus orders by arrival time)
     def scene_p1_one_call_per_event(self, sc):
         bus, seen = MessageBus(), []
-        feed(bus, C.events(sc), lambda e, now: seen.append([e["kind"], ns(now)]))
+        feed(bus, C.events(sc), lambda e, now: seen.append(["action", ns(now)]))
         bus.drain()
-        return ok({"sequence": seen}, "各足を MessageBus.send(時刻 µs, 'feed', 戦略を呼ぶ動作) で積み、drain()。記録は (入力の型, bus.now_us を ns に)")
+        return ok({"sequence": seen}, "各足を MessageBus.send(時刻 µs, 'feed', 戦略を呼ぶ動作) で積み、drain()。記録は (道具の型 = 動作(action)、bus.now_us を ns に)。"
+                  "MessageBus は型の無い動作を配るだけで、足という型を持たない")
 
     def scene_p1_merge_by_time(self, sc):
         bus, seen = MessageBus(), []
         for _, evs in C.streams_in_order(sc):
-            feed(bus, evs, lambda e, now: seen.append([e["kind"], ns(now)]))
+            feed(bus, evs, lambda e, now: seen.append(["action", ns(now)]))
         bus.drain()
-        return ok({"sequence": seen}, "3 つの入力を渡す順に MessageBus.send で積み、drain()(bus は (到着, 積んだ順) で配る)")
+        return ok({"sequence": seen}, "3 つの入力を渡す順に MessageBus.send で積み、drain()(bus は (到着, 積んだ順) で配る)。記録は (道具の型 = 動作(action)、時刻)")
 
     # ---------------- P0-2 (the bus's time is float microseconds)
     def _obs(self, sc):

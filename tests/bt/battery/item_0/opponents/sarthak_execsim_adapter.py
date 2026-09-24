@@ -70,8 +70,8 @@ class SarthakExecsimAdapter(Adapter):
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):
         zero, default = self._md(C.events(sc))
-        return ok({"sequence": [["bar", int(r[1])] for r in zero if r[0] == "MD"]},
-                  "足を Tick(値 = 終値)にして add_tick、callback が受けた MarketData の時刻。LatencyConfig.market_data_latency_ns = 0 の走り。"
+        return ok({"sequence": [["tick", int(r[1])] for r in zero if r[0] == "MD"]},
+                  "足の型が無いので足を Tick(値 = 終値)にして add_tick、callback が受けた (道具の型 = MarketData の Tick、時刻)。LatencyConfig.market_data_latency_ns = 0 の走り。"
                   f"既定(500 ns)の走りの時刻: {[int(r[1]) for r in default if r[0] == 'MD']}")
 
     def scene_p1_merge_by_time(self, sc):

@@ -101,8 +101,9 @@ class PredictivedevTradesimAdapter(Adapter):
 
     # ---------------- P0-1
     def scene_p1_one_call_per_event(self, sc):
-        st, _ = run(C.events(sc), lambda s, d, st: st["log"].append(["bar", _ts(d)]))
-        return ok({"sequence": st["log"]}, "足の終値を Close にした表を run_backtest に渡し、on_market_data の各回に data['timestamp']")
+        st, _ = run(C.events(sc), lambda s, d, st: st["log"].append(["price", _ts(d)]))
+        return ok({"sequence": st["log"]}, "足の終値を Close にした表を run_backtest に渡し、on_market_data の各回に (道具の型 = 値の行 price、data['timestamp'])。"
+                  "戦略に渡る data は {symbol, price, timestamp} で、足の型ではない")
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NON.format(k="約定・資金調達を別の入力として", err=_attempt_df({"rate": 0.0001})))
@@ -135,7 +136,7 @@ class PredictivedevTradesimAdapter(Adapter):
         out = {}
 
         def f(s, d, st):
-            st["log"].append(["bar", _ts(d)])
+            st["log"].append(["price", _ts(d)])
             out.update({k: d.get(k) for k in ("open", "high", "low", "close", "volume")})
             out["price"] = d.get("price")
 

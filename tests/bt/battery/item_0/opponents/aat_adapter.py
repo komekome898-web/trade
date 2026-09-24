@@ -1,0 +1,409 @@
+"""Survey candidate 65 `aat` (GitHub `AsyncAlgoTrading/aat`, commit c4a07d41,
+version 0.1.0), run in its own venv `c65`. The wheel built from the clone
+held only the C++ binding (`aat/binding*.so`), so the package is used in
+place (a `.pth` to the clone, the built binding copied next to it, as
+`build_ext --inplace` does); install record `survey_results/attempts/65.log`.
+
+Driven the way the tool's own tests and harness drive it
+(`aat/exchange/test/harness.py`): `TradingEngine(**parseConfig(["--trading_type",
+"backtest", "--exchanges", "<module>:<Exchange class>", "--strategies",
+"<module>::<Strategy class>"])).start()`. The exchange is the tool's plug-in
+for the market and for executing orders (its `tick()` yields typed `Event`s:
+TRADE with a `Trade`, OPEN / CANCEL / CHANGE / FILL with an `Order`, DATA with
+a generic `Data`; its `newOrder` / `cancelOrder` receive the strategy's
+orders); the strategy is called per event type (`onTrade`, `onOpen`,
+`onData`, ...) and on its own orders (`onBought`, `onSold`, `onRejected`,
+`onCanceled`); it trades with `newOrder` / `cancel` and reads `orders()`,
+`positions()`, `trades()`. The exchange here is written by this adapter the
+way the tool's CSV exchange (`aat/exchange/generic/csv.py`) is: it yields the
+scene's events in the order given and fills a queued order on the next
+event at the order's price (or at the plugged price).
+"""
+from __future__ import annotations
+
+import asyncio
+import datetime as D
+import logging
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE.parent / "adapters"))
+
+from protocol import Adapter, not_supported, ok  # noqa: E402
+import common as C  # noqa: E402
+
+from aat import Order, OrderType, Side, Strategy, TradingEngine, parseConfig  # noqa: E402
+from aat.config import EventType, InstrumentType  # noqa: E402
+from aat.core import Data, Event, ExchangeType, Instrument, Trade  # noqa: E402
+from aat.exchange import Exchange  # noqa: E402
+
+logging.disable(logging.CRITICAL)
+EXCH = ExchangeType("scene")
+INST = Instrument("X", InstrumentType.EQUITY, exchange=EXCH)
+
+# One scene run at a time: the engine instantiates the exchange and the strategy
+# classes from the config strings, so the scene's data and hooks live here.
+RUN: dict = {}
+
+
+def _dt(ns: int) -> D.datetime:
+    return C.ns_to_dt(ns).replace(tzinfo=None)
+
+
+def _ns(dt) -> int:
+    return C.dt_to_ns(dt.replace(tzinfo=D.timezone.utc) if dt.tzinfo is None else dt)
+
+
+def _event(e: dict) -> Event:
+    ts = _dt(int(e["ts_ns"]))
+    if e["kind"] == "trade":
+        side = Side.BUY if e.get("side", "buy") == "buy" else Side.SELL
+        o = Order(float(e["qty"]), float(e["price"]), side, INST, EXCH, timestamp=ts, filled=float(e["qty"]))
+        return Event(EventType.TRADE, Trade(volume=float(e["qty"]), price=float(e["price"]), maker_orders=[], taker_order=o))
+    if e["kind"] == "book_delta":
+        o = Order(float(e["qty"]), float(e["price"]), Side.BUY if e["side"] == "bid" else Side.SELL, INST, EXCH,
+                  timestamp=ts, order_type=OrderType.LIMIT)
+        return Event(EventType.OPEN, o)
+    return Event(EventType.DATA, Data(instrument=INST, exchange=EXCH, data=dict(e), timestamp=ts))
+
+
+class SceneExchange(Exchange):
+    def __init__(self, trading_type, verbose, stream: str = "events") -> None:
+        super().__init__(EXCH)
+        self._stream = stream
+        self._queued: list = []
+        self._oid = 0
+
+    async def instruments(self):
+        return [INST]
+
+    async def connect(self) -> None:
+        pass
+
+    async def tick(self):
+        for e in RUN["streams"][self._stream]:
+            ev = _event(e)
+            RUN.setdefault("now_ns", []).append(int(e["ts_ns"]))
+            yield ev
+            await asyncio.sleep(0)
+            while self._queued:  # fill the queued orders at the order's price (or the plugged fill price), like csv.py
+                o = self._queued.pop(0)
+                if o.order_type == OrderType.LIMIT and RUN.get("rest_limits"):
+                    RUN.setdefault("resting", []).append(o)
+                    continue
+                o.timestamp = _dt(int(e["ts_ns"]))
+                o.filled = o.volume
+                px = RUN.get("fill_price") or (o.price if o.order_type == OrderType.LIMIT else float(e.get("price", e.get("close", 0.0))))
+                yield Event(EventType.TRADE, Trade(volume=o.volume, price=px, taker_order=o, maker_orders=[], my_order=o))
+
+    async def newOrder(self, order) -> bool:
+        self._oid += 1
+        order.id = str(self._oid)
+        self._queued.append(order)
+        return True
+
+    async def cancelOrder(self, order) -> bool:
+        res = RUN.get("resting", [])
+        for o in list(res):
+            if o.id == order.id:
+                res.remove(o)
+                return True
+        return False
+
+
+class SceneStrategy(Strategy):
+    async def _hook(self, kind: str, event) -> None:
+        RUN["calls"].append((kind, event))
+        fn = RUN.get("fn")
+        if fn is not None:
+            r = fn(self, kind, event)
+            if asyncio.iscoroutine(r):
+                await r
+
+    async def onTrade(self, event):
+        await self._hook("trade", event)
+
+    async def onOpen(self, event):
+        await self._hook("open", event)
+
+    async def onData(self, event):
+        await self._hook("data", event)
+
+    async def onBought(self, event):
+        await self._hook("bought", event)
+
+    async def onRejected(self, event):
+        await self._hook("rejected", event)
+
+    async def onCanceled(self, event):
+        await self._hook("canceled", event)
+
+
+def run(streams: dict, fn=None, **extra) -> dict:
+    RUN.clear()
+    RUN.update(streams=streams, fn=fn, calls=[], **extra)
+    args = ["--trading_type", "backtest", "--strategies", "opponents.aat_adapter:SceneStrategy"]
+    for name in streams:  # one exchange per input stream, in the hand-over order (parser.py _args_to_dict: "mod:Class,arg")
+        args += ["--exchanges", f"opponents.aat_adapter:SceneExchange,{name}"]
+    t = TradingEngine(**parseConfig(args))
+    t.start()
+    return dict(RUN)
+
+
+def _kind_of(kind, event) -> str:
+    """The tool's own type of what the strategy received: TRADE -> trade, OPEN
+    (an order entering the book) -> book_delta, DATA -> "data" (a generic Data:
+    the tool has no type for bars, book snapshots, funding or liquidations;
+    the payload's own label is not the tool's type and is not used)."""
+    if kind == "trade":
+        return "trade"
+    if kind == "open":
+        return "book_delta"
+    return kind
+
+
+def _ts_of(event) -> int:
+    return _ns(event.target.timestamp)
+
+
+def _try(fn) -> str:
+    import contextlib
+    import io
+    try:
+        with contextlib.redirect_stderr(io.StringIO()) as err:
+            return f"-> {fn()!r}"[:200]
+    except BaseException as exc:  # noqa: BLE001 - argparse exits with SystemExit and prints its usage
+        msg = err.getvalue().strip().splitlines()[-1:] if "err" in locals() else []
+        return f"-> {type(exc).__name__}: {str(exc)[:80]} {' '.join(msg)[:160]}"
+
+
+def _market_calls(out) -> list:
+    return [[_kind_of(k, e), _ts_of(e)] for k, e in out["calls"] if k in ("trade", "open", "data")]
+
+
+class AatAdapter(Adapter):
+    name = "opp_aat"
+
+    # ---------------- P0-1
+    def scene_p1_one_call_per_event(self, sc):
+        return ok({"sequence": _market_calls(run({"events": C.events(sc)}))},
+                  "足の型が無いので足を DATA の事象(型の無い Data)として 1 つの取引所から流し、onData の各回に (道具の型 data, 事象の時刻)")
+
+    def scene_p1_merge_by_time(self, sc):
+        streams = {name: sc.input["streams"][name] for name in sc.input["hand_over_order"]}
+        return ok({"sequence": _market_calls(run(streams))},
+                  "3 つの入力を 3 つの取引所(SceneExchange)にし、渡す順に --exchanges に並べた。約定は TRADE、足と資金調達は DATA。"
+                  "戦略が受けた (型, 時刻) の順(道具は取引所の tick を aiostream の merge で 1 本にする)")
+
+    def scene_p1_typed_events(self, sc):
+        return ok({"sequence": _market_calls(run({"events": C.events(sc)}))},
+                  "足は DATA(型の無い Data)、約定は TRADE(Trade)で流し、戦略が受けた道具の型と時刻")
+
+    # ---------------- P0-2
+    def _iso(self, sc):
+        return not_supported("日時の文字列を読む口が無い(事象の時刻は datetime で、取引所の書き手が作って渡す。道具の CSV の取引所は "
+                             "datetime.fromisoformat で読むが、それは取引所の実装の一つ)。試したこと: Data(timestamp=文字列).timestamp "
+                             + _try(lambda: Data(instrument=INST, exchange=EXCH, data={}, timestamp=sc.input["iso"]).timestamp))
+
+    scene_p2_iso_utc = scene_p2_iso_offset = _iso
+
+    def _obs(self, sc):
+        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
+        out = run({"events": evs})
+        return ok({"observed_ts_ns": [_ts_of(e) for k, e in out["calls"] if k == "trade"]},
+                  "約定を TRADE で流し、onTrade の event.target.timestamp(datetime、マイクロ秒まで)を ns に")
+
+    scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
+
+    # ---------------- P0-3
+    def _type(self, sc):
+        e = C.events(sc)[0]
+        out = run({"events": [e]})
+        if e["kind"] not in ("trade", "book_delta"):
+            got = [(k, str(ev.target.type)) for k, ev in out["calls"]]
+            return not_supported(f"{e['kind']} の型が無い(事象の型は TRADE・OPEN / CANCEL / CHANGE / FILL(注文)・DATA(型の無い汎用のデータ))。"
+                                 f"試したこと: DATA で流した -> 戦略が受けた {got}(型の無い Data として届く)")
+        calls = [(k, ev) for k, ev in out["calls"] if k in ("trade", "open")]
+        if not calls:
+            return ok({"sequence": [], "fields": {}}, f"戦略に届かなかった。呼ばれた口 {[k for k, _ in out['calls']]}")
+        k, ev = calls[0]
+        t = ev.target
+        if k == "trade":
+            fields = {"price": float(t.price), "qty": float(t.volume), "side": "buy" if t.side == Side.BUY else "sell"}
+        else:
+            fields = {"side": "bid" if t.side == Side.BUY else "ask", "price": float(t.price), "qty": float(t.volume)}
+        return ok({"sequence": [[_kind_of(k, ev), _ts_of(ev)]], "fields": fields},
+                  "約定は TRADE(Trade)、板の差分は OPEN(板に入る注文 Order)で流し、戦略が受けた事象の中身")
+
+    scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
+    scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
+
+    def scene_p3_mixed_one_run(self, sc):
+        return ok({"sequence": _market_calls(run({"events": C.events(sc)}))},
+                  "約定は TRADE、板の差分は OPEN、ほか(板の写真・足・資金調達・清算)は DATA(型の無い Data)で流し、戦略が受けた道具の型と時刻")
+
+    def scene_p3_clock_timer(self, sc):
+        calls: list = []
+        st = {"n": 0}
+
+        async def wake(**kw):
+            calls.append(len(RUN.get("now_ns", [])))
+
+        def fn(s, kind, ev):
+            if kind != "data":
+                return
+            st["n"] += 1
+            if st["n"] == 1:
+                st["p"] = s.at(wake, second=0, minute=0, hour=0)
+
+        out = run({"events": [C.as_bar(e) for e in C.events(sc)]}, fn)
+        return ok({"clock_calls_ns": [out["now_ns"][i - 1] if 0 < i <= len(out["now_ns"]) else None for i in calls]},
+                  "1 回目の onData で self.at(起こされる関数, second=0, minute=0, hour=0)(時刻の指定は秒・分・時の周期だけで、ある日の 1 回を頼む口は無い。"
+                  f"道具の説明: precise timing is NOT guaranteed)。起こされた時点で流れていた事象の時刻。起こされた回数 {len(calls)}")
+
+    def _notice(self, sc, order_kind: str, qty: float):
+        def fn(s, kind, ev):
+            if kind == "data" and not RUN.get("sent"):
+                RUN["sent"] = True
+                o = Order(qty, 90.0 if order_kind == "limit" else 0.0, Side.BUY, INST, EXCH,
+                          order_type=OrderType.LIMIT if order_kind == "limit" else OrderType.MARKET)
+                return s.newOrder(o)
+            return None
+
+        return run({"events": [C.as_bar(e) for e in C.events(sc)]}, fn, rest_limits=True)
+
+    def scene_p3_notice_accepted(self, sc):
+        out = self._notice(sc, "limit", 1.0)
+        notices = [k for k, _ in out["calls"] if k in ("bought", "rejected", "canceled")]
+        return ok({"notices": notices}, "1 回目に指値 買い 1 @90 を newOrder。受付を知らせる口(onReceived など)は Strategy に無く、戦略が受けた自分の注文の知らせは "
+                  f"{notices}(onBought / onRejected / onCanceled)")
+
+    def scene_p3_notice_rejected(self, sc):
+        out = self._notice(sc, "market", 1.0)
+        notices = ["filled" if k == "bought" else k for k, _ in out["calls"] if k in ("bought", "rejected", "canceled")]
+        return ok({"notices": notices}, "現金を与える設定は取引所の実装の側にあり、この取引所(道具の CSV の取引所と同じ形)は現金を見ない。1 回目に成行 買い 1。"
+                  f"戦略が受けた自分の注文の知らせ {notices}")
+
+    def scene_p3_notice_filled(self, sc):
+        out = self._notice(sc, "market", 1.0)
+        return ok({"filled_qty_in_notices": float(sum(float(ev.target.volume) for k, ev in out["calls"] if k == "bought"))},
+                  "1 回目に成行 買い 1、onBought の事象の Trade の数量の合計")
+
+    # ---------------- P0-4
+    def scene_p4_visible_at_step(self, sc):
+        return not_supported("戦略が過去の相場の事象を読む口が無い(Strategy の読み出しは orders()・positions()・trades()(自分の約定)・"
+                             "instruments()・lookup())。試したこと: Strategy.history " + _try(lambda: Strategy.history))
+
+    def scene_p4_received_time(self, sc):
+        return not_supported("事象に受け取れる時刻を持たせる口が無い(Trade / Order / Data の時刻は timestamp の 1 つ)")
+
+    def scene_p4_future_read_attempt(self, sc):
+        probe = sc.input["probe_at_ns"]
+        att = C.Attempts()
+
+        def fn(s, kind, ev):
+            if kind != "data" or _ts_of(ev) != probe or att.items:
+                return
+            att.run("self.trades(5 本目の時刻)", "time", lambda: s.trades(_dt(sc.input["future_ts_ns"])))
+            att.run("event.target.data['next'](次の位置)", "position", lambda: ev.target.data["next"])
+            att.run("self.positions()", "other", lambda: [str(p) for p in s.positions()])
+
+        run({"events": C.events(sc)}, fn)
+        if not att.items:  # no_probe_call
+            return not_supported("T0 + 4 日の呼び出しが無かった")
+        return ok(att.output(), "T0 + 4 日の onData で試した: " + att.summary())
+
+    # ---------------- P0-5
+    def _tie(self, sc, order):
+        return _market_calls(run({name: sc.input["streams"][name] for name in order}))
+
+    def scene_p5_same_time_twice(self, sc):
+        return ok({"order": self._tie(sc, sc.input["hand_over_order"])},
+                  "型ごとの 4 入力を 4 つの取引所にし、渡す順に --exchanges に並べた。約定は TRADE、ほかは DATA。戦略に届いた (型, 時刻)。"
+                  "同じ時刻の並べ方を書いた規則は見つからなかった(engine.py は取引所の tick を aiostream.stream.merge で 1 本にし、時刻では並べない)")
+
+    def scene_p5_hand_over_order(self, sc):
+        runs = [{"hand_over": list(o), "order": self._tie(sc, o)} for o in sc.input["hand_over_orders"]]
+        return ok({"form": "multi_input", "runs": runs}, "24 通りの --exchanges の並びで各 1 回")
+
+    def scene_p5_same_stream_order(self, sc):
+        out = run({"events": C.events(sc)})
+        return ok({"prices": [float(e.target.price) for k, e in out["calls"] if k == "trade"]}, "同じ時刻の約定 3 件を 1 つの取引所から TRADE で流した")
+
+    # ---------------- P0-6
+    def _p6(self, sc, read: bool):
+        res = {}
+
+        def fn(s, kind, ev):
+            if kind != "data":
+                return None
+            RUN["n"] = RUN.get("n", 0) + 1
+            if RUN["n"] == 1:
+                RUN["mine"] = Order(1.0, 90.0, Side.BUY, INST, EXCH, order_type=OrderType.LIMIT)
+                return s.newOrder(RUN["mine"])
+            if RUN["n"] == 2:
+                if read:
+                    res["open_at_call2"] = len(s.orders())
+                return s.cancel(RUN["mine"])
+            if RUN["n"] == 3 and read:
+                res["open_at_call3"] = len(s.orders())
+            return None
+
+        out = run({"events": [C.as_bar(e) for e in C.events(sc)]}, fn, rest_limits=True)
+        return res, out
+
+    def scene_p6_place_then_cancel(self, sc):
+        res, out = self._p6(sc, True)
+        return ok(res, f"1 回目 newOrder(指値 買い 1 @90)、2 回目 len(self.orders()) と cancel(注文)、3 回目 len(self.orders())。呼ばれた口 {[k for k, _ in out['calls']]}")
+
+    def scene_p6_cancel_notice(self, sc):
+        _, out = self._p6(sc, False)
+        return ok({"cancel_notice_received": any(k == "canceled" for k, _ in out["calls"])}, f"呼ばれた口 {[k for k, _ in out['calls']]}")
+
+    def scene_p6_fill_seen_by_strategy(self, sc):
+        res = {}
+
+        def fn(s, kind, ev):
+            if kind != "data":
+                return None
+            RUN["n"] = RUN.get("n", 0) + 1
+            if RUN["n"] == 1:
+                RUN["mine"] = Order(1.0, 0.0, Side.BUY, INST, EXCH, order_type=OrderType.MARKET)
+                return s.newOrder(RUN["mine"])
+            if RUN["n"] == 3:
+                res["filled_qty_at_call3"] = float(RUN["mine"].filled)
+            return None
+
+        run({"events": [C.as_bar(e) for e in C.events(sc)]}, fn)
+        return ok(res, "1 回目 newOrder(成行 買い 1)、3 回目にその Order の filled")
+
+    # ---------------- P0-7
+    def scene_p7_fill_model_swap(self, sc):
+        def fn(s, kind, ev):
+            if kind == "data" and not RUN.get("sent"):
+                RUN["sent"] = True
+                return s.newOrder(Order(1.0, 0.0, Side.BUY, INST, EXCH, order_type=OrderType.MARKET))
+            return None
+
+        out = run({"events": [C.as_bar(e) for e in C.events(sc)]}, fn, fill_price=12345.0)
+        bought = [float(ev.target.price) for k, ev in out["calls"] if k == "bought"]
+        return ok({"fill_price": bought[0] if bought else None},
+                  "約定の模型 = 取引所(--exchanges に渡す Exchange の子。道具の CSV の取引所と同じ形で、待っている注文を次の事象で埋める)。"
+                  "埋める値を 12345.0 にした取引所を差し込み、1 回目に成行 買い 1、onBought の値")
+
+    def scene_p7_latency_model_swap(self, sc):
+        return not_supported("遅延の模型を渡す口が無い(TradingEngine の設定に遅延は無く、注文は取引所の newOrder に直に渡る。遅らせるなら取引所そのものを書き直す)。"
+                             "試したこと: parseConfig([..., '--latency', '7ms']) " + _try(lambda: parseConfig(["--trading_type", "backtest", "--latency", "7ms"])))
+
+    def _fee(self, sc):
+        return not_supported("費用の模型を渡す口が無い(TradingEngine と Strategy に費用の設定が無い。Trade と Order に費用の欄が無い)。"
+                             "試したこと: parseConfig([..., '--fees', '0.5']) " + _try(lambda: parseConfig(["--trading_type", "backtest", "--fees", "0.5"])))
+
+    scene_p7_cost_model_swap = scene_p7_cost_per_unit = _fee
+
+    def scene_p7_account_swap(self, sc):
+        return not_supported("口座(PortfolioManager)は TradingEngine の trait で、設定から差し替える口が無い。試したこと: parseConfig([..., '--portfolio_manager', ..]) "
+                             + _try(lambda: parseConfig(["--trading_type", "backtest", "--portfolio_manager", "x:y"])))

@@ -76,6 +76,7 @@ OPPONENTS = {
     "opp_sarthak_execsim": ("sarthak_execsim_adapter", "SarthakExecsimAdapter"),
     "opp_sigc": ("sigc_adapter", "SigcAdapter"),
     "opp_homerun": ("homerun_adapter", "HomerunAdapter"),
+    "opp_aat": ("aat_adapter", "AatAdapter"),
 }
 
 
