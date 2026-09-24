@@ -37,6 +37,11 @@ NO_TYPE = ("この道具の市場の事象の型は DataKind の Trade・OrderBo
            "(barter-data/src/event.rs)、{k} を渡す型が無い")
 
 
+ASYNC_NOTE = ("(模擬の取引所は別の非同期の仕事で、注文の応答と約定は AccountEvent として engine の入力に合流する。市場の事象の再生は壁時計で"
+              "間を置かないので、この短い走りでは応答が engine の停止までに届かなかった。道具の記録(RUST_LOG=debug)で、注文を出したあと "
+              "Engine shutting down まで AccountEvent の処理が無いことを見た。3000 件の約定で走らせても同じ)")
+
+
 def drv(payload: dict) -> list[dict]:
     r = subprocess.run([EXE], input=json.dumps(payload), capture_output=True, text=True, timeout=60)
     if r.returncode != 0:
@@ -143,19 +148,19 @@ class BarterAdapter(Adapter):
         rows = self._orders(sc, buy_at=1, limit=True, price=90.0, qty=1.0)
         return ok({"notices": [s["notice"] for s in self._seen(rows)]},
                   "1 回目の generate_algo_orders で指値 買い 1 @90(OrderRequestOpen、OrderKind::Limit)。戦略は各回に InstrumentDataState が受けた "
-                  f"AccountEvent を記録した。driver の出力(市場の事象の行を除く) {self._trail(rows)}")
+                  f"AccountEvent を記録した。driver の出力(市場の事象の行を除く) {self._trail(rows)}" + ASYNC_NOTE)
 
     def scene_p3_notice_rejected(self, sc):
         rows = self._orders(sc, buy_at=1, price=1_000_000.0, qty=1.0, usdt=1000.0)
         return ok({"notices": [s["notice"] for s in self._seen(rows)]},
                   "模擬の取引所の残高 usdt 1000(現物)、1 回目に成行 買い 1(値 1,000,000)。戦略が受けた AccountEvent。"
-                  f"driver の出力(市場の事象の行を除く) {self._trail(rows)}")
+                  f"driver の出力(市場の事象の行を除く) {self._trail(rows)}" + ASYNC_NOTE)
 
     def scene_p3_notice_filled(self, sc):
         rows = self._orders(sc, buy_at=1, price=100.0, qty=1.0)
         return ok({"filled_qty_in_notices": sum(float(s["qty"]) for s in self._seen(rows) if s["notice"] == "trade")},
                   "1 回目に成行 買い 1(値 100)。戦略が受けた AccountEvent の Trade の数量の合計。"
-                  f"driver の出力(市場の事象の行を除く) {self._trail(rows)}")
+                  f"driver の出力(市場の事象の行を除く) {self._trail(rows)}" + ASYNC_NOTE)
 
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
@@ -209,7 +214,7 @@ class BarterAdapter(Adapter):
         q = r.get("position_qty")
         return ok({"filled_qty_at_call3": float(q) if q is not None else None},
                   "1 回目に成行 買い 1、3 回目に EngineState の銘柄の position.current の quantity_abs(注文ごとの約定済み数量の欄は注文の状態に無い)。"
-                  f"driver の出力(市場の事象の行を除く) {self._trail(rows)}")
+                  f"driver の出力(市場の事象の行を除く) {self._trail(rows)}" + ASYNC_NOTE)
 
     # ---------------- P0-7
     def scene_p7_fill_model_swap(self, sc):
@@ -221,7 +226,7 @@ class BarterAdapter(Adapter):
         t = [s for s in self._seen(rows) if s["notice"] == "trade"]
         return ok({"fill_time_ns": t[0]["time"] if t else None},
                   "MockExecutionConfig.latency_ms = 14(往復。取引所に届くのは半分の 7 ms、MockExchange::update_time_exchange)、T0 に成行 買い 1。"
-                  f"戦略が受けた Trade の time_exchange。driver の出力(市場の事象の行を除く) {self._trail(rows)}")
+                  f"戦略が受けた Trade の time_exchange。driver の出力(市場の事象の行を除く) {self._trail(rows)}" + ASYNC_NOTE)
 
     def scene_p7_cost_model_swap(self, sc):
         return not_supported("費用の口は MockExecutionConfig.fees_percent(約定の値 × 数量 × 率)の 1 つで、約定 1 件の定額を渡す口が無い")
