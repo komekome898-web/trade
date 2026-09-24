@@ -33,7 +33,10 @@ tests/bt/item_0/test_bt0_api_surface.py):
   returns; any later attempt to read history or act raises
   `StaleContextError`, and the history view drops its backing list.
   (`now_ns` / `current_event` stay readable: they describe the instant
-  the context was built for and reveal nothing later.)
+  the context was built for and reveal nothing later.) What was sent
+  cannot be changed afterwards either: an `OrderRequest` is a value down
+  to the contents of `extra` (made immutable when the request is made,
+  values.py), so nothing the strategy keeps is shared with the venue.
 * The strategy's view of its orders moves only when it acts or when a
   notice is delivered to it. It never sees the venue's state directly: an
   order it placed is PENDING_NEW until the ACK notice arrives, however long
@@ -72,6 +75,7 @@ from .events import (
     OrderStateUnknownEvent,
 )
 from .time import Nanos, validate_nanos
+from .values import freeze, thaw
 from .window import DeliveredEvents
 
 
@@ -86,7 +90,10 @@ class OrderRequest:
     post_only: bool = False
     reduce_only: bool = False
     trigger_price: Optional[float] = None
-    extra: tuple[tuple[str, Any], ...] = ()  # anything else a venue model needs
+    # anything else a venue model needs, as (key, value) pairs of plain data
+    # (values.py). Made immutable here, when the request is made: what the
+    # venue receives at the arrival time is what was sent (i0-r4-02).
+    extra: tuple[tuple[str, Any], ...] = ()
 
     def __post_init__(self) -> None:
         if self.side not in ORDER_SIDES:
@@ -100,11 +107,36 @@ class OrderRequest:
             _require_positive("trigger_price", self.trigger_price)
         if not isinstance(self.client_order_id, str):
             raise OrderApiError("client_order_id must be str")
-        if not isinstance(self.extra, tuple):
-            raise OrderApiError("extra must be a tuple of (key, value) pairs")
+        object.__setattr__(self, "extra", _frozen_extra(self.extra))
 
     def extra_dict(self) -> dict:
-        return dict(self.extra)
+        """`extra` as a fresh dict, lists / dicts / sets as they were given
+        (values.py `thaw`); changing it changes nothing else."""
+        return {key: thaw(value) for key, value in self.extra}
+
+
+def _frozen_extra(extra: Any) -> tuple:
+    """The one check of `OrderRequest.extra`, at construction: a tuple of
+    (non-empty str key, plain data value) pairs with no key twice, made
+    deeply immutable (values.py)."""
+    if not isinstance(extra, tuple):
+        raise OrderApiError(f"extra must be a tuple of (key, value) pairs, got {type(extra).__name__}")
+    pairs = []
+    seen: set = set()
+    for i, pair in enumerate(extra):
+        if not isinstance(pair, tuple) or len(pair) != 2:
+            raise OrderApiError(f"extra[{i}] must be a (key, value) pair, got {pair!r}")
+        key, value = pair
+        if not isinstance(key, str) or not key:
+            raise OrderApiError(f"extra[{i}]: key must be a non-empty str, got {key!r}")
+        if key in seen:
+            raise OrderApiError(f"extra: key {key!r} given twice")
+        seen.add(key)
+        try:
+            pairs.append((key, freeze(value, f"extra[{key!r}]")))
+        except ValueError as exc:
+            raise OrderApiError(str(exc)) from None
+    return tuple(pairs)
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,117 @@
+##### from item0_r5-1_scenekeeper_install_101.log
+=== 2026-09-24T02:53:17Z git clone --depth 1 https://github.com/akurkar07/OrderBook.git c101
+/dev/vda          258020 31154      6785  83% /
+Cloning into 'c101'...
+rc=0
+5673f66a243ae1908258d1bc63ac3260030d4004 2026-09-17T11:26:37+01:00 Alex Kurkar
+340K	.
+./src/order.h
+./src/order_book.cpp
+./src/price_level.cpp
+./src/price_level.h
+./src/types.h
+./src/order_book.h
+./README.md
+./LICENSE
+./CMakeLists.txt
+./.gitignore
+./reference/reference_order_book.h
+./tests/test_robustness.cpp
+./tests/test_price_level.cpp
+./tests/test_matching.cpp
+./tests/test_reference_order_book.cpp
+./tests/test_utils.h
+./tests/test_order_book.cpp
+./benchmarks/benchmark_order_book.cpp
+--- build files:
+cmake_minimum_required(VERSION 3.14)
+project(OrderBook VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# Main library
+add_library(orderbook_lib
+    src/order_book.cpp
+    src/price_level.cpp
+)
+
+target_include_directories(orderbook_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+# Tests
+enable_testing()
+add_executable(test_order_book tests/test_order_book.cpp)
+target_link_libraries(test_order_book PRIVATE orderbook_lib)
+
+add_executable(test_price_level tests/test_price_level.cpp)
+target_link_libraries(test_price_level PRIVATE orderbook_lib)
+
+add_executable(test_matching tests/test_matching.cpp)
+target_link_libraries(test_matching PRIVATE orderbook_lib)
+
+add_executable(test_robustness tests/test_robustness.cpp)
+target_link_libraries(test_robustness PRIVATE orderbook_lib)
+
+add_executable(test_reference_order_book tests/test_reference_order_book.cpp)
+target_include_directories(test_reference_order_book PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/reference
+)
+target_link_libraries(test_reference_order_book PRIVATE orderbook_lib)
+
+add_test(NAME test_order_book COMMAND test_order_book)
+add_test(NAME test_price_level COMMAND test_price_level)
+add_test(NAME test_matching COMMAND test_matching)
+add_test(NAME test_robustness COMMAND test_robustness)
+add_test(NAME test_reference_order_book COMMAND test_reference_order_book)
+
+# Benchmarks
+add_executable(benchmark_order_book benchmarks/benchmark_order_book.cpp)
+target_include_directories(benchmark_order_book PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/reference
+)
+target_link_libraries(benchmark_order_book PRIVATE orderbook_lib)
+--- network/process calls in sources:
+--- binaries:
+=== start 2026-09-24T02:54:15Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c101 && cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c101 && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release >/dev/null && cmake --build build -j4 --target orderbook_lib && g++ -std=c++17 -O2 -I src /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv101.cpp build/liborderbook_lib.a -o /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c101/bin/c101_driver && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c101/bin/c101_driver
+df before: /dev/vda          258020 31157      6782  83% /
+=== end 2026-09-24T02:54:23Z rc=0 elapsed=8s min_free=6754MB 
+[ 33%] Building CXX object CMakeFiles/orderbook_lib.dir/src/order_book.cpp.o
+[ 66%] Building CXX object CMakeFiles/orderbook_lib.dir/src/price_level.cpp.o
+[100%] Linking CXX static library liborderbook_lib.a
+[100%] Built target orderbook_lib
+place_limit_order(Sell 100.0 x100 id=1) fills=0
+place_market_order(Buy x1 id=2) fills=1 [px=100.00 qty=1 buy=2 sell=1]
+place_limit_order(Buy 90.0 x1 id=3) fills=0
+cancel_order(3) -> 1
+book_empty=0
+df after: /dev/vda          258020 31185      6754  83% /
+=== 2026-09-24T03:52:08Z driver source (the program the adapter runs; built here, synthetic input only)
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv101.cpp
+// Minimal driver for candidate 101 (akurkar07/OrderBook): the calls a scene can make.
+#include "order_book.h"
+#include <cstdio>
+using namespace orderbook;
+static void dump(const char* tag, const Fills& f){
+  printf("%s fills=%zu", tag, f.size());
+  for (const auto& x : f) printf(" [px=%.2f qty=%llu buy=%llu sell=%llu]", x.price, (unsigned long long)x.quantity,
+                                 (unsigned long long)x.buy_order_id, (unsigned long long)x.sell_order_id);
+  printf("\n");
+}
+int main(){
+  OrderBook b;
+  dump("place_limit_order(Sell 100.0 x100 id=1)", b.place_limit_order(Order(1, Side::Sell, OrderType::Limit, 100.0, 100)));
+  dump("place_market_order(Buy x1 id=2)", b.place_market_order(Order(2, Side::Buy, OrderType::Market, 0.0, 1)));
+  dump("place_limit_order(Buy 90.0 x1 id=3)", b.place_limit_order(Order(3, Side::Buy, OrderType::Limit, 90.0, 1)));
+  printf("cancel_order(3) -> %d\n", (int)b.cancel_order(3));
+  printf("book_empty=%d\n", (int)b.empty());
+  return 0;
+}

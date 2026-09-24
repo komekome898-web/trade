@@ -1,6 +1,6 @@
 # 場面集への指摘ごとの根本原因と直し(項目 0、第 r5-1 回の直し、場面係、2026-09-24)
 
-委任文: `docs/DATA/delegations/20260923_backtest_env_prompt.md`。起動文の指紋は `362bf666dfac`、今の作業木の版は `a25b24aa10c9`(`sha256sum … | cut -c1-12`)。差は L-429 の注記 1 行で、リードが VERDICTS(`docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_run6_item0.md` の r4-1 の処置 2)に「リードの手順の誤り、この周の規則には触れない」と記録している。全 158 行を読んだ。
+委任文: `docs/DATA/delegations/20260923_backtest_env_prompt.md`。起動文の指紋は `362bf666dfac`、直しに着手した時点の作業木の版は `a25b24aa10c9`、書き終えた時点は `c9e8800bf176`(`sha256sum … | cut -c1-12`。後者との差は、この周の途中にリードが入れた判定の語の置き換え = 部品ごとは「通過の判定(同等以上)」、L-431・L-432。検討の規則と場面集の規則の中身は変わっていない)。差は L-429 の注記 1 行で、リードが VERDICTS(`docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_run6_item0.md` の r4-1 の処置 2)に「リードの手順の誤り、この周の規則には触れない」と記録している。全 158 行を読んだ。
 指摘の逐語: 起動文に貼られた 3 件(i0-r4-03・i0-r4-04・i0-r4-05)と、その全文 `docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_4/CRITIC.md` の §2。
 合意した完了の形(委任文 §0 の逐語): 「**すべてが調査結果以上の信頼性と再現性に優れたものにすること。**」。この直しで当てた委任文の決まり: §3「根本的解決」(直す前に指摘ごとの根本原因と変える作りを書く / 指摘の文言だけに合わせない)、§3「場面集の規則」4・6・9、「調査結果の側の選び方」(動かせるものを**全部**同じ場面集に通す)、「動かせない候補の検討と再現」(スキップしてよいのは「調査結果から明らかに弱いことがわかっている機構」だけ / 上位互換は「調査報告の行で 1 能力ずつ示す」/ 推測のスキップは禁止)、L-413「**動かせないからと言って機構を検討せず無視することを避ける**」。
 この 3 件に [聞く] は無い。
@@ -43,4 +43,34 @@
 
 ## 結果
 
-(直しのあとに書き足す)
+合意した完了の形(委任文 §0 の逐語): 「**すべてが調査結果以上の信頼性と再現性に優れたものにすること。**」
+
+### i0-r4-04(動かせる候補を走らせる)
+
+- 台帳 `opponents/RUNNABILITY.tsv` を置いた(候補の集まりの 52 候補を 1 行ずつ)。**走った 36 候補**は全部 32 場面を 2 回ずつ通し、表を `survey_results/<対象>.tsv` に置いた。この周に新しく走らせたのは 19 候補: 3 PySystemtrade・16 Luczinsritter・33 SarthakDalmia1(道具そのものを C++ で構築して走らせた。これまでの Python の再現 `repro_33_execution_simulator.py` は退役させ、`survey_results/stale/` に表と写しを移した)・37 ThePredictiveDev・54 finmarketpy(前の周に資料係が作った venv)・61 barter-rs(Rust の小さな driver を道具の workspace に足した)・65 aat・69 gobacktest(Go の driver)・70 PineForge(C の driver)・87 PyTrendFollow(検証の核 accountCurve に建玉と値の系列を直に渡した)・91 homerun・98・99・101・102・103(Python 3.14 を uv で scratchpad に入れた)・104・105・107 sigc。adapter は `opponents/` の各 `*_adapter.py`(driver の源は各候補の導入の記録 `survey_results/attempts/<番号>.log` に写した)。
+- **走らなかった 16 候補**と理由の種類(台帳の reason_kind と reason): 危険(道具台帳 §3 の 11 件 = 41・44・58・120)/ 危険(サーベイの §6-1 = 8・13・123。SCAN 3749・3192 行)/ 導入前の検査を通せない・依存が repository の外(57)/ 鍵・登録(15: 依存の git が資格情報を要する、49)/ 一括の取得(38: torch ほか、52: .NET か 14 GB の Docker の像)/ 外部の場(40)/ 動かなかった(11: 触手が PyPI の外、63: Boost が無い、35: 公開の版の置き場所で止まる)。
+- **35 はリードに上げる**: 公開の版は `main.py` の `from src.models import` で止まる(ファイルが `src <名前>.py` の名前で置かれ、`src/` が無い)。ファイルを `src/` の下に移した写し(コードは変えない)で走らせる手を、この環境の権限の検査(自動の分類器、理由 'Code from External')が拒否した。拒否を回避する手は取っていない。許すかはリードが決める。
+- 機械: `test_battery_item0.py` に (a) 台帳が候補の集まりと 1 対 1 / (b) 走った行は adapter が登録され全 32 場面の表がある / (c) 走らなかった行は記録(UTC の時刻つき)があるか §3 の 11 件で、§6-1 は SCAN の行を持つ / (d) 容量・一括の取得を理由にする行の記録に `df -m /` の行がある / (e) 「試していない」の語が台帳と検討表に無い / (f) 各観点の「動かせた候補」の行 = 候補の集まり ∩ 走った、表の行 = 候補の集まり − 走った、を足した。`survey_counts.py` は候補の番号を台帳から引く。
+- ラベルの揃え: 98・37・33・65 の adapter の P0-1 の型の名を、hftbacktest の前例どおり道具の側の型の名にした(98 = action、37 = price、33 = tick、65 = data)。
+
+### i0-r4-03(上位互換を能力ごとの根拠で)
+
+- 検討表の行は 31 行(観点ごとの延べ)。判断: スキップ(上位互換)16・持たないと確認した 4(P0-7 の 8・11・15・35)・再現できない 11(道具台帳 §3 の 11 件の行 9 と、40 OpenMarket・49 GFT Backtest Software)・再現した 0。
+- 上位互換と持たないの行は、観点の能力を全部 `能 N: 在る|無い` で答え、出所を付けた。**(b) 一次資料**を 13・123(同じ版 52872fb に解決した)・52・57・8・15 は中身を取らない clone で、63・38・35 は導入を試した clone で、11 は PyPI の配布物で読んだ(版と取得日は検討表の読み方の節)。前の版の「在るとしても」「在るかは」「未確認」は判断の行から無くした。P0-7 の「口」は、要件の「ダミー実装を差し込み」から、利用者の実装を渡せる所と定めた(率や定数の 1 つの数は口に数えない)。
+- 読んで判断が変わった行: 13・123 の P0-7(前の版の「約定の口は滑りの率」→ 取引所の物を丸ごと渡せる `s.exchange` の口が在る、engine.js 26-37 行)/ 11・8・15 の P0-7(上位互換 → 持たないと確認した。能力を全部読むと 4 つとも無い)/ 40 の P0-3(上位互換 → 再現できない。場の頁に code への参照が無く、能力の有無を決める材料が (a) にも (b) にも無い)/ 11 の P0-5 の能 3 は無い(取り込みの問い合わせの並べ方が時刻の 1 鍵)。
+- 機械: `test_superset_and_absent_rows_answer_every_ability_with_a_source`(観点の `(能 N)` の全部に `能 N: 在る|無い`、各能力に出所、`在る` には `含む: <走った候補の番号>`、禁止の語が無い、持たないは全部 `無い`)。最初の実行でこの試験が 57 の能 6 の出所の抜けを捕まえ、直した。
+
+### i0-r4-05(P0-5 の規則を場面集の側に)
+
+- `stated_rules.py` に対象ごとの規則(出所・逐語・並べ方の手順)と、手で書いた並び `FIXED_PREDICTED` を置き、runner が対象の名前で規則を引いて各回の正解の並びを作る。adapter は届いた並びと入力の形だけを返す。新実装の規則は `ORDERING_RULE["source_merge"]` を名前で引く。試験は `test_stated_rule_recipes_reproduce_the_hand_written_orders`・`test_new_impl_rule_copy_matches_the_core_by_name`・`test_no_adapter_reports_a_rule_or_a_predicted_order` ほか。
+
+### 走らせた検め
+
+- `python3 scripts/check_bt_considered.py tests/bt/battery/item_0/opponents/CONSIDERED.md --write` → `OK 誤り 0 件`
+- `PYTHONPATH=src python3 -m pytest tests/bt/battery/item_0/test_battery_item0.py` → 28 passed
+- `python3 tests/bt/battery/item_0/mutant.py --check` → `changed scenes: ['p4-received-time']` / `OK`
+- `python3 tests/bt/battery/item_0/gen_definitions.py --check` → `OK`
+- 全体の `PYTHONPATH=src python3 -m pytest`(記録 scratchpad `bt/pytest_item0_r5-1_scenekeeper.log`、2026-09-24T04:06:02Z〜04:13:55Z)→ 11 failed, 3289 passed, 4 skipped。落ちた 11 件の内訳:
+  - この直しで約束事を変えたために落ちる 3 件(規則 8 に従い、他の持ち主の試験は変えていない): 作業者の `tests/bt/item_0/test_bt0_scene_set.py::test_scene_matches_expected_twice[p5-same-time-twice]`・`[p5-hand-over-order]`(`run_battery.graded_output(SceneResult("ok", output), scene)` を対象の名前なしで呼ぶ。規則は対象ごとに場面集の側に固定したので、名前なしでは規則が無く「規則どおり」にならない。直すなら第 3 引数に `"new_impl"` を渡す)、批評家の `tests/bt/critic/item_0/test_i0r2_battery_p5_grading.py::test_single_input_form_of_hand_over_order_agrees_with_keeping_one_input_in_order`(adapter が出力に `stated_rule` と `predicted` を入れる、i0-r4-05 で退役させた形を前提にしている。同じ確かめ = 1 本の入力の順を守る対象は正解と一致、は `test_battery_item0.py::test_p5_hand_over_single_input_keeping_its_order_is_correct_and_multi_input_must_not_move` にある)。
+  - この直しと関わりの無い 8 件: 批評家の第 4 周の試験 `test_i0r4_open_slice_from_next_position.py`(6 件)と `test_i0r4_order_extra_mutated_in_flight.py`(2 件)。新実装の欠け(作業者の次の周の仕事)を名指す試験で、この周の場面集の表でも新実装は p4-future-read-attempt だけが不一致(31/32 が正解と一致)。
+- 容量: 導入の途中で空きが 751 MB まで下がったので、uv の cache・rc 版の interpreter・Rust の build の target(driver は venv に写してある)を消した(`df -m /` の記録は各導入の記録)。uv が scratchpad の外に置いた `/root/.local/bin/python3.14` の link は消した。54 finmarketpy は読み込むときに作業の場所へ空の `finmarketpy.log` を作る(道具の logger)。この周の走りでリポジトリの直下と `tests/bt/battery/item_0/` にできた空の 2 ファイル(リードの途中の記録のコミットに入った)は消した。資料係が走らせると同じものができる。

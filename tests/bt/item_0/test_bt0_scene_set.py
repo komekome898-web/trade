@@ -8,8 +8,10 @@ grades with the battery runner's OWN grading code, imported, not copied
 (run_battery.py: `graded_output` builds the graded values of a
 `graded_from` scene from the raw observations, `_matches` compares). For
 the `graded_from` scenes the drivers below only report observations: each
-attempted read and its exception, the delivered order, and the core's
-written same-time rule with that rule applied by hand (from
+attempted read and its exception, and the delivered order. The same-time
+rule the P0-5 scenes grade by is the scene keeper's copy for this target
+(stated_rules.py, target "new_impl", round r5-1); a separate test checks
+that copy against the core's written rule applied by hand (from
 `ORDERING_RULE["source_merge"]`, never from running the core).
 
 Everything a scene calls a "plug" (fill model, latency model, cost model,
@@ -401,11 +403,25 @@ def s_p4_future_read_attempt(scene):
                 lambda: closes(ctx.visible_events(bar, since_ns=probe_at + 1)))
         attempt("visible_events(until_ns=5th)", "time",
                 lambda: closes(ctx.visible_events(until_ns=fut)))
+        # position 4 is the 5th bar ("今の最新の次の位置"); named through every
+        # role a position can have (window.py POSITION_RULE): an index, the
+        # start of a forward slice, the end of a forward slice past the end,
+        # the start of a backward slice, the old-side end of a backward
+        # slice, and a slice of a slice (i0-r4-01: [4:] was answered with ())
         attempt("visible_events(BAR)[4]", "position", lambda: ctx.visible_events(bar)[4].close)
         attempt("visible_events()[4]", "position", lambda: ctx.visible_events()[4].close)
+        attempt("visible_events(BAR, n=5)[4]", "position", lambda: ctx.visible_events(bar, n=5)[4].close)
+        attempt("visible_events(BAR)[4:]", "position", lambda: closes(ctx.visible_events(bar)[4:]))
+        attempt("visible_events()[4:]", "position", lambda: closes(ctx.visible_events()[4:]))
+        attempt("visible_events(BAR)[4::2]", "position", lambda: closes(ctx.visible_events(bar)[4::2]))
+        attempt("visible_events(BAR)[len:]", "position",
+                lambda: closes(ctx.visible_events(bar)[len(ctx.visible_events(bar)):]))
         attempt("visible_events(BAR)[4:5]", "position", lambda: closes(ctx.visible_events(bar)[4:5]))
         attempt("visible_events(BAR)[3:5]", "position", lambda: closes(ctx.visible_events(bar)[3:5]))
-        attempt("visible_events(BAR, n=5)[4]", "position", lambda: ctx.visible_events(bar, n=5)[4].close)
+        attempt("visible_events(BAR)[:5]", "position", lambda: closes(ctx.visible_events(bar)[:5]))
+        attempt("visible_events(BAR)[4::-1]", "position", lambda: closes(ctx.visible_events(bar)[4::-1]))
+        attempt("visible_events(BAR)[:4:-1]", "position", lambda: closes(ctx.visible_events(bar)[:4:-1]))
+        attempt("visible_events(BAR)[1:][3:]", "position", lambda: closes(ctx.visible_events(bar)[1:][3:]))
         attempt("visible_events()", "other", lambda: closes(ctx.visible_events()))
         attempt("last(BAR)", "other", lambda: ctx.last(bar).close)
     run(events_of(scene), act)
@@ -425,30 +441,18 @@ def _rule_applied_by_hand(streams: dict) -> list:
     return [[k, t] for t, _r, _n, k in rows]
 
 
-_STATED_RULE_SOURCE = "src/bot/bt/core/ordering.py ORDERING_RULE['source_merge']"
-
-
 def _order_once(scene, order) -> list:
     p, _ = run(stream_map(scene, list(order)))
     return [[k, t] for k, t in p.seq]
 
 
 def s_p5_same_time_twice(scene):
-    predicted = _rule_applied_by_hand(scene.input["streams"])
-    return {"order": _order_once(scene, scene.input["hand_over_order"]),
-            "stated_rule": {"source": _STATED_RULE_SOURCE,
-                            "quote": core.ORDERING_RULE["source_merge"]["compare_heads_by"],
-                            "predicted": predicted}}
+    return {"order": _order_once(scene, scene.input["hand_over_order"])}
 
 
 def s_p5_hand_over_order(scene):
-    predicted = _rule_applied_by_hand(scene.input["streams"])
-    runs = [{"hand_over": list(o), "order": _order_once(scene, o), "predicted": predicted}
-            for o in scene.input["hand_over_orders"]]
-    return {"form": "multi_input", "runs": runs,
-            "stated_rule": {"source": _STATED_RULE_SOURCE,
-                            "quote": core.ORDERING_RULE["source_merge"]["compare_heads_by"],
-                            "predicted": predicted}}
+    runs = [{"hand_over": list(o), "order": _order_once(scene, o)} for o in scene.input["hand_over_orders"]]
+    return {"form": "multi_input", "runs": runs}
 
 
 def s_p5_same_stream_order(scene):
@@ -564,13 +568,31 @@ DRIVERS: dict[str, Callable] = {
 }
 
 
+_TARGET = "new_impl"  # the battery's name for this core (stated_rules.py)
+
+
 def _graded(scene, output):
-    """What the battery runner grades for this output (run_battery.py)."""
-    return run_battery.graded_output(SceneResult("ok", output), scene)
+    """What the battery runner grades for this output (run_battery.py), for
+    this core as the target."""
+    return run_battery.graded_output(SceneResult("ok", output), scene, _TARGET)
 
 
 def _matches(scene, output) -> bool:
     return run_battery._matches(_graded(scene, output), scene.expected)
+
+
+def test_the_scene_keepers_copy_of_the_same_time_rule_is_the_cores_rule_applied_by_hand():
+    """stated_rules.py (the scene keeper's copy of this core's same-time
+    rule) and ORDERING_RULE["source_merge"] applied by hand give the same
+    order, for every hand-over order of the P0-5 scenes."""
+    import stated_rules  # noqa: E402  (the battery's; read, never changed)
+    rule = stated_rules.rule_for(_TARGET)
+    for scene_id in ("p5-same-time-twice", "p5-hand-over-order"):
+        scene = SCENES[scene_id]
+        orders = scene.input.get("hand_over_orders") or [scene.input["hand_over_order"]]
+        for hand_over in orders:
+            assert stated_rules.predicted(rule, scene.input["streams"], list(hand_over)) == \
+                _rule_applied_by_hand(scene.input["streams"]), (scene_id, hand_over)
 
 
 def test_graders_are_the_runners_for_exactly_the_graded_from_scenes():

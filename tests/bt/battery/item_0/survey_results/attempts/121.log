@@ -1,0 +1,34 @@
+##### from qstrader_install.log
+=== 2026-09-23T15:36:11Z inspect qstrader
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 74.7/74.7 kB 6.3 MB/s eta 0:00:00
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/qstrader/qstrader-0.3.0-py3-none-any.whl
+Successfully downloaded qstrader
+total 84
+drwxr-xr-x  2 root root  4096 Sep 23 15:36 .
+drwxr-xr-x 12 root root  4096 Sep 23 15:36 ..
+-rw-r--r--  1 root root 74743 Sep 23 15:36 qstrader-0.3.0-py3-none-any.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/qstrader/qstrader-0.3.0-py3-none-any.whl
+Name: qstrader
+Version: 0.3.0
+Project-URL: Homepage, https://github.com/mhallsmoore/qstrader
+Project-URL: Issues, https://github.com/mhallsmoore/qstrader/issues
+Project-URL: Documentation, https://www.quantstart.com/qstrader/
+Project-URL: Website, https://www.quantstart.com
+Author-email: Michael Halls-Moore <support@quantstart.com>
+Requires-Dist: click>=8.1
+Requires-Dist: matplotlib>=3.8
+Requires-Dist: numpy>=2.0.0
+Requires-Dist: pandas>=2.2
+Requires-Dist: seaborn>=0.13
+=== 2026-09-23T15:36:13Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/qstrader
+pip rc=0 elapsed=19s
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+19
+=== 2026-09-23T15:36:39Z done
+=== 2026-09-23T16:10:14Z add pytz (qstrader.data.daily_bar_csv が import pytz で止まったため)
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+rc=0

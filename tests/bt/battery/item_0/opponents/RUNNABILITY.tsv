@@ -1,0 +1,53 @@
+cand	name	survey	tried	log	start_utc	end_utc	result	target	reason_kind	reason
+1	Basana	到達済み(SCAN 6836 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/1.log	-	-	走った	opp_basana	-	-
+2	Backtrader	到達済み(SCAN 6839 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/2.log	2026-09-23T15:34:30Z	2026-09-23T15:56:44Z	走った	opp_backtrader	-	-
+3	PySystemtrade	到達済み(SCAN 9401 行)	git clone(疎)を venv に .pth で読ませ、例の system を走らせた	survey_results/attempts/3.log	2026-09-24T02:56:22Z	2026-09-24T02:57:22Z	走った	opp_pysystemtrade	-	-
+4	PyBroker	到達済み(SCAN 6845 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/4.log	-	-	走った	opp_lib_pybroker	-	-
+6	Ziplime	到達済み(SCAN 9650 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/6.log	-	-	走った	opp_ziplime	-	-
+8	OpenTrader	到達済み(SCAN 9402 行)	導入しない。一次資料は読むだけの blobless clone	survey_results/attempts/8.log	2026-09-24T03:51:48Z	2026-09-24T03:51:49Z	走らなかった	-	危険(§6-1)	サーベイの §6-1 の検査で止めた(SCAN 3749 行「状態は『危険なので止めた』で確定」、3812 行。postinstall が prisma の生成・移行・種入れを走らせる、3809 行)
+10	fast-trade	到達済み(SCAN 6864 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/10.log	2026-09-23T15:34:30Z	2026-09-23T16:42:06Z	走った	opp_fast_trade	-	-
+11	python3	到達済み(SCAN 8452 行)	PyPI の octobot 2.1.1 を導入し、検証を走らせた	survey_results/attempts/11.log	2026-09-23T15:40:50Z	2026-09-23T16:51:06Z	走らなかった	-	動かなかった	検証は触手(tentacles)を要し、配布物には 0 件。既定の触手は PyPI ではない場所の zip(https://tentacles.octobot.online/...)で、導入前の検査を通せず、外から取ったコードは実行しない(記録の stopped の行)
+12	pybotters	到達済み(SCAN 6871 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/12.log	2026-09-23T15:34:30Z	2026-09-23T15:34:46Z	走った	opp_pybotters	-	-
+13	DeviaVir/zenbot	到達済み(SCAN 6874 行)	導入しない。一次資料は読むだけの blobless clone	survey_results/attempts/13.log	2026-09-24T03:51:48Z	2026-09-24T03:51:49Z	走らなかった	-	危険(§6-1)	サーベイの §6-1 の検査で止めた(SCAN 3192 行「状態は『危険なので止めた』で確定」、2966 行 postinstall が webpack と追加の外部取得を走らせる)
+15	Mendl-Labs/BacktestingCore	到達済み(SCAN 6879 行)	一次資料の blobless clone を読み、依存の git を git ls-remote で確かめた	survey_results/attempts/15.log	2026-09-24T03:50:31Z	2026-09-24T03:50:31Z	走らなかった	-	鍵・登録	workspace の依存 ultra-logger(https://github.com/Nwagbara-Group-LLC/LoggingEngine)が資格情報を要する(git ls-remote が Username を求めた)。backtest の crate は strategy を通してこれに依る。委任文 §4 は鍵・登録をしない
+16	Luczinsritter/event_driven_backtesting_engine	到達済み(SCAN 6882 行)	git clone を venv に .pth、依存を PyPI から	survey_results/attempts/16.log	2026-09-24T02:44:23Z	2026-09-24T02:47:22Z	走った	opp_luczinsritter	-	-
+18	zipline-reloaded	到達済み(SCAN 9857 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/18.log	-	-	走った	opp_zipline_reloaded	-	-
+20	VnPy	到達済み(SCAN 6896 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/20.log	2026-09-23T15:40:50Z	2026-09-23T16:53:43Z	走った	opp_vnpy	-	-
+23	hftbacktest	到達済み(SCAN 6906 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/23.log	2026-09-23T15:34:30Z	2026-09-23T15:35:40Z	走った	opp_hftbacktest	-	-
+33	SarthakDalmia1/backtesting_execution_simulator	到達済み(SCAN 4616 行)	git clone、道具の CMake でライブラリを構築し、小さな C++ の driver を書いた	survey_results/attempts/33.log	2026-09-24T02:59:28Z	2026-09-24T03:52:08Z	走った	opp_sarthak_execsim	-	-
+34	SLMolenaar/QuantCore	到達済み(SCAN 4617 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/34.log	2026-09-23T15:40:50Z	2026-09-23T15:41:09Z	走った	opp_quantcore	-	-
+35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	到達済み(SCAN 4618 行)	git clone、依存を venv に導入、main.py を走らせた	survey_results/attempts/35.log	2026-09-24T02:59:28Z	2026-09-24T03:51:48Z	走らなかった	-	動かなかった	公開の版は main.py が `from src.models import` で止まる(ModuleNotFoundError)。src/ が無く、8 つのファイルが 'src <名前>.py' の名前で置かれている。ファイルを src/ の下に移した写しで走らせる手は、この環境の権限の検査(自動の分類器、'Code from External')が拒否したので、この周は走らせていない(リードに上げる)
+37	ThePredictiveDev/Automated-Financial-Market-Trading-System	到達済み(SCAN 10426 行)	git clone を venv に .pth、依存を PyPI から	survey_results/attempts/37.log	2026-09-24T02:59:28Z	2026-09-24T03:01:09Z	走った	opp_predictivedev_tradesim	-	-
+38	microsoft/MarS	到達済み(SCAN 4621 行)	git clone、導入が引き込む依存の大きさを PyPI で読んだ(何も導入していない)	survey_results/attempts/38.log	2026-09-24T02:59:28Z	2026-09-24T03:51:16Z	走らなかった	-	一括の取得(数百 MB 以上)	setup.py 18-22 行が torch==2.6.0・ray[serve]・transformers などを要する(torch の配布物は数百 MB)。委任文 §4 は数百 MB 以上の一括の取得をしない。記録に df -m / の出力がある
+40	OpenMarket	到達済み(SCAN 5725 行)	場の頁を読んだ(GET https://openmarket.xyz)	survey_results/attempts/40.log	2026-09-24T03:51:48Z	2026-09-24T03:51:49Z	走らなかった	-	外部の場	導入する機関が無く、検証は場の中の図で走る(頁の本文)。頁に code や文書への参照は 0 件。走らせるには当方のデータを場に渡すことになる(委任文 §4 外部へ何も渡さない)
+41	prediction-market-backtesting	到達済み(SCAN 6106 行)	導入も実行も (b) もしない	-	-	-	走らなかった	-	危険(台帳 §3 の 11 件)	委任文の道具台帳 §3 の 11 件(44・74・120・41・58・19・112・111・97・51・118)に入る
+44	lo2cin4	到達済み(SCAN 5904 行)	導入も実行も (b) もしない	-	-	-	走らなかった	-	危険(台帳 §3 の 11 件)	委任文の道具台帳 §3 の 11 件に入る
+49	GFT Backtest Software	未到達(SCAN 5731 行)	導入しない	survey_results/attempts/49.log	2026-09-24T03:51:48Z	2026-09-24T03:51:49Z	走らなかった	-	鍵・登録	本体も文書も登録の内側(SCAN 5699 行 4 つの経路で届かなかった、5731 行「登録の内側にあり、当方は登録しない」)。委任文 §4 は鍵・登録をしない
+52	QuantConnect	到達済み(SCAN 7292 行)	一次資料の blobless clone を読み、動かすのに要るものを確かめた	survey_results/attempts/52.log	2026-09-24T03:50:39Z	2026-09-24T03:50:49Z	走らなかった	-	一括の取得(数百 MB 以上)	機関は C#(.NET net10.0。この環境に dotnet は無い)。もう 1 つの道の Docker の像 quantconnect/lean は圧縮で 14,047,437,307 バイト(Docker Hub の tags API)。委任文 §4 は数百 MB 以上の一括の取得をしない。記録に df -m / の出力がある
+53	Rqalpha	到達済み(SCAN 7850 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/53.log	2026-09-23T15:34:30Z	2026-09-23T15:35:48Z	走った	opp_rqalpha	-	-
+54	finmarketpy	到達済み(SCAN 7851 行)	前の周に資料係が作った venv を使った(導入の記録を含む)	survey_results/attempts/54.log	2026-09-23T15:36:11Z	2026-09-24T02:47:31Z	走った	opp_finmarketpy	-	-
+55	backtesting.py	到達済み(SCAN 6344 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/55.log	2026-09-23T15:36:11Z	2026-09-23T15:36:36Z	走った	opp_backtesting	-	-
+57	WonderTrader	到達済み(SCAN 7852 行)	PyPI の wtpy の配布物を落として中を見た(導入しない)、源の構築の道を読んだ	survey_results/attempts/57.log	2026-09-23T16:58:51Z	2026-09-24T03:51:16Z	走らなかった	-	導入前の検査を通せない・依存が repository の外	配布物は検証の核(libWtBtPorter.so)を含む 117 の組み立て済みの共有ライブラリで、閉じた証券会社の SDK を含み、導入前の検査(外への送信・難読化)ができない。源の構築は src/CMakeLists.txt 35-47 行がすべての include と library を repository の外の依存の束(MyDeps)から取り、boost もこの環境に無い
+58	nautilus_trader	到達済み(SCAN 6345 行)	導入も実行も (b) もしない	-	-	-	走らなかった	-	危険(台帳 §3 の 11 件)	委任文の道具台帳 §3 の 11 件に入る
+61	barter-rs	到達済み(SCAN 6926 行)	git clone、cargo で構築し、道具の workspace に小さな Rust の driver を足した	survey_results/attempts/61.log	2026-09-24T02:59:28Z	2026-09-24T03:52:08Z	走った	opp_barter	-	-
+62	qf-lib	到達済み(SCAN 6117 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/62.log	2026-09-23T15:59:29Z	2026-09-23T15:59:41Z	走った	opp_qf_lib	-	-
+63	trade-frame	到達済み(SCAN 6119 行)	git clone、道具の CMake で構築を試した	survey_results/attempts/63.log	2026-09-24T02:59:28Z	2026-09-24T03:03:56Z	走らなかった	-	動かなかった	道具の CMake が Boost を見つけられず止まった(記録の rc=1 と BoostConfig.cmake の行)。この環境に boost の header は無い(57 の記録の ls /usr/include/boost)
+65	aat	到達済み(SCAN 10429 行)	PyPI の aat を導入し、配布物に無い Python の部分は git clone を .pth で読ませた	survey_results/attempts/65.log	2026-09-23T15:36:11Z	2026-09-24T03:04:25Z	走った	opp_aat	-	-
+68	quanttrader	到達済み(SCAN 6382 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/68.log	2026-09-23T15:36:11Z	2026-09-23T16:08:40Z	走った	opp_quanttrader	-	-
+69	gobacktest	到達済み(SCAN 6124 行)	git clone、go build で小さな Go の driver を書いた	survey_results/attempts/69.log	2026-09-24T02:59:28Z	2026-09-24T03:52:08Z	走った	opp_gobacktest	-	-
+70	PineForge	到達済み(SCAN 7855 行)	git clone、道具の CMake で core を構築し、小さな C の driver を書いた	survey_results/attempts/70.log	2026-09-24T02:59:28Z	2026-09-24T03:52:08Z	走った	opp_pineforge	-	-
+75	Freqtrade	到達済み(SCAN 6346 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/75.log	2026-09-23T15:40:50Z	2026-09-23T16:42:12Z	走った	opp_freqtrade	-	-
+87	PyTrendFollow	到達済み(SCAN 7857 行)	git clone、依存を venv に導入。検証の核 accountCurve に建玉と値の系列を直に渡した(取得なし)	survey_results/attempts/87.log	2026-09-24T02:59:28Z	2026-09-24T03:56:42Z	走った	opp_pytrendfollow	-	-
+91	braedonsaunders/homerun	到達済み(SCAN 7858 行)	git clone、検証の package だけを venv に .pth	survey_results/attempts/91.log	2026-09-24T02:59:28Z	2026-09-24T03:12:49Z	走った	opp_homerun	-	-
+98	mihircoding/limitOrderBook	到達済み(SCAN 5236 行)	git clone を venv に .pth	survey_results/attempts/98.log	2026-09-24T02:47:45Z	2026-09-24T02:49:48Z	走った	opp_mihircoding_lob	-	-
+99	NickGardi/orderbooksim	到達済み(SCAN 10444 行)	git clone を venv に .pth	survey_results/attempts/99.log	2026-09-24T02:47:46Z	2026-09-24T02:49:46Z	走った	opp_nickgardi_orderbooksim	-	-
+101	akurkar07/OrderBook	到達済み(SCAN 10450 行)	git clone、小さな C++ の driver を書いた	survey_results/attempts/101.log	2026-09-24T02:53:17Z	2026-09-24T03:52:08Z	走った	opp_akurkar07_orderbook	-	-
+102	3yit/Limit-Order-Book-Simulator	到達済み(SCAN 10453 行)	git clone、道具の CMake で Python の binding を構築	survey_results/attempts/102.log	2026-09-24T02:53:18Z	2026-09-24T02:55:22Z	走った	opp_3yit_lob	-	-
+103	IsaacCheng9/order-book-simulator	到達済み(SCAN 10456 行)	Python 3.14 の interpreter を uv で scratchpad に入れ、その venv に導入。照合の板 OrderBook を直に呼んだ	survey_results/attempts/103.log	2026-09-24T02:59:28Z	2026-09-24T03:56:42Z	走った	opp_isaaccheng_obsim	-	-
+104	jxm35/LimitOrderBook-MatchingEngine	到達済み(SCAN 10459 行)	git clone、照合の部分だけを小さな C++ の driver で構築(spdlog と boost の 2 つを差し替えの header で)	survey_results/attempts/104.log	2026-09-24T02:53:19Z	2026-09-24T03:52:08Z	走った	opp_jxm35_lob	-	-
+105	DaniyalMlk/slippage	到達済み(SCAN 5243 行)	git clone を venv に .pth	survey_results/attempts/105.log	2026-09-24T02:47:47Z	2026-09-24T02:49:49Z	走った	opp_daniyalmlk_slippage	-	-
+107	sigc	到達済み(SCAN 6917 行)	git clone、cargo で sigc の CLI を構築	survey_results/attempts/107.log	2026-09-24T02:59:28Z	2026-09-24T03:07:57Z	走った	opp_sigc	-	-
+120	wbt	到達済み(SCAN 5918 行)	導入も実行も (b) もしない	-	-	-	走らなかった	-	危険(台帳 §3 の 11 件)	委任文の道具台帳 §3 の 11 件に入る
+121	mhallsmoore/qstrader	到達済み(SCAN 6325 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/121.log	2026-09-23T15:36:11Z	2026-09-23T16:10:14Z	走った	opp_qstrader	-	-
+122	gbeced/pyalgotrade	到達済み(SCAN 6329 行)	PyPI の配布物を隔離した venv に導入	survey_results/attempts/122.log	2026-09-23T15:40:50Z	2026-09-23T16:16:59Z	走った	opp_pyalgotrade	-	-
+123	carlos8f/zenbot	到達済み(SCAN 7298 行)	導入しない。一次資料は読むだけの blobless clone	survey_results/attempts/123.log	2026-09-24T03:51:48Z	2026-09-24T03:51:49Z	走らなかった	-	危険(§6-1)	13 と同じ版(git clone の HEAD がどちらも 52872fb)で、同じ postinstall を持つ(SCAN 3192 行、2966 行)

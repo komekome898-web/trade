@@ -1,0 +1,27 @@
+##### from item0_r5-1_scenekeeper_install_107.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/Skelf-Research/sigc.git c107
+/dev/vda          258020 32038      5901  85% /
+rc=0
+aa5f616fc0faffafc072e71f39a26604aaae1474 2026-07-02T13:02:47+01:00 Skelf Research
+80M	.
+=== start 2026-09-24T03:04:51Z limit=600s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c107 && cargo build --target-dir /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_cargo_target107
+df before: /dev/vda          258020 37318       621  99% /
+=== end 2026-09-24T03:04:51Z rc=143 elapsed=0s min_free=621MB KILLED: free space fell to 621 MB
+df after: /dev/vda          258020 37318       621  99% /
+note: the first attempt did not start (the disk guard fired at 621 MB free, left by the barter build). Retry without debug info and incremental cache.
+=== start 2026-09-24T03:06:13Z limit=600s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c107 && cargo build --target-dir /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_cargo_target107 && du -sh /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_cargo_target107
+df before: /dev/vda          258020 34905      3034  93% /
+=== end 2026-09-24T03:07:57Z rc=0 elapsed=104s min_free=737MB 
+   Compiling unindent v0.2.4
+   Compiling indoc v2.0.7
+   Compiling clap v4.5.53
+   Compiling nng v1.0.1
+   Compiling num_cpus v1.17.0
+   Compiling tower-lsp v0.20.0
+warning: `sig_runtime` (lib) generated 3 warnings
+   Compiling sigc v0.1.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c107/crates/sigc)
+   Compiling pysigc v0.1.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c107/crates/pysigc)
+   Compiling sig_lsp v0.1.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c107/crates/sig_lsp)
+    Finished `dev` profile [unoptimized] target(s) in 1m 42s
+2.0G	/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_cargo_target107
+df after: /dev/vda          258020 37207       732  99% /

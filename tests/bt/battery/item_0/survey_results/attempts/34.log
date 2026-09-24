@@ -1,0 +1,30 @@
+##### from quantcore_install.log
+=== 2026-09-23T15:40:50Z inspect quantcore
+Using cached quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl (1.0 MB)
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/quantcore/quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded quantcore
+total 1024
+drwxr-xr-x  2 root root    4096 Sep 23 15:40 .
+drwxr-xr-x 17 root root    4096 Sep 23 15:40 ..
+-rw-r--r--  1 root root 1038795 Sep 23 15:40 quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/quantcore/quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl
+quantcore/_core.cpython-311-x86_64-linux-gnu.so
+Name: quantcore
+Version: 1.0.0
+Author-Email: Stefaan Molenaar <StefaanLMolenaar@gmail.com>
+Project-URL: Homepage, https://github.com/SLMolenaar/quantcore
+Project-URL: Bug Reports, https://github.com/SLMolenaar/quantcore/issues
+Project-URL: Source, https://github.com/SLMolenaar/quantcore
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: matplotlib>=3.7.0; extra == "viz"
+Requires-Dist: seaborn>=0.12.0; extra == "viz"
+=== 2026-09-23T15:40:51Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/quantcore
+pip rc=0 elapsed=12s
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+9
+=== 2026-09-23T15:41:09Z done

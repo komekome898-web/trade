@@ -1,0 +1,24 @@
+##### from item0_r5-1_scenekeeper_install_91.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/braedonsaunders/homerun.git c91
+/dev/vda          258020 32037      5902  85% /
+rc=0
+6cb8ea5614e7a1b6f4c692a5b17436e888904092 2026-08-21T08:33:09+00:00 codeflow-card[bot]
+33M	.
+=== 2026-09-24T03:12:49Z the backtester package backend/services/backtest imports only the standard library (grep of its imports); a venv without the app's web/DB requirements, a .pth to backend/
+    from .retry import RetryConfig, with_retry, RetryableClient
+  File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c91/backend/utils/retry.py", line 5, in <module>
+    import httpx
+ModuleNotFoundError: No module named 'httpx'
+missing: httpx
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+missing: pydantic
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+missing: fastapi
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+import ok

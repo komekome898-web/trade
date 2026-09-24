@@ -122,6 +122,15 @@ def _choice(name: str, value: Any, allowed: tuple) -> str:
     return value
 
 
+def _str(name: str, value: Any) -> str:
+    """A text field of a notice. Text only: a notice crosses the venue ->
+    strategy path, so it may not carry state the venue could still change
+    after sending it (values.py, i0-r4-02)."""
+    if not isinstance(value, str):
+        raise EventValidationError(f"{name} must be a str, got {type(value).__name__}")
+    return value
+
+
 def _nonempty_str(name: str, value: Any) -> str:
     if not isinstance(value, str) or not value:
         raise EventValidationError(f"{name} must be a non-empty str, got {value!r}")
@@ -320,6 +329,7 @@ class OrderAckEvent(Event):
 
     def _validate(self) -> None:
         _nonempty_str("client_order_id", self.client_order_id)
+        _str("venue_order_id", self.venue_order_id)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -331,6 +341,7 @@ class OrderRejectEvent(Event):
 
     def _validate(self) -> None:
         _nonempty_str("client_order_id", self.client_order_id)
+        _str("reason", self.reason)
         _choice("request_kind", self.request_kind, REQUEST_KINDS)
 
 
@@ -365,6 +376,7 @@ class OrderCanceledEvent(Event):
 
     def _validate(self) -> None:
         _nonempty_str("client_order_id", self.client_order_id)
+        _str("reason", self.reason)
         _choice("answers", self.answers, CANCELED_ANSWERS)
 
 
@@ -382,6 +394,7 @@ class OrderStateUnknownEvent(Event):
 
     def _validate(self) -> None:
         _nonempty_str("client_order_id", self.client_order_id)
+        _str("detail", self.detail)
         _choice("request_kind", self.request_kind, REQUEST_KINDS)
 
 

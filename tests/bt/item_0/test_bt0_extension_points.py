@@ -70,7 +70,7 @@ class _Lat:
 def test_all_four_sockets_are_called_with_outside_implementations():
     venue, lat, cost, acct = _Venue(), _Lat(), FixedRateCost(0.01), RecordingAccount()
     res = CoreEngine(Recorder(_buy_once), [trade(T0, 100.0)], fill_model=venue, latency_model=lat,
-                     cost_model=cost, account=acct).run()
+                     cost_model=cost, account=acct, time_span_ns=(T0, T0)).run()
     assert venue.calls == ["market", "order"]
     assert lat.calls == ["feed", "order", "notice", "notice"]
     # account: the order is checked at the venue before the fill model sees
@@ -83,9 +83,10 @@ def test_all_four_sockets_are_called_with_outside_implementations():
 
 
 def test_defaults_are_reported_not_hidden():
+    # the four sockets and the run's time span (i0-r4-06), when not given
     res = CoreEngine(Recorder(), [trade(T0)]).run()
-    assert sorted(res.defaults_used) == ["account", "cost_model", "fill_model", "latency_model"]
-    assert res.models["cost_model"] == "none"
+    assert sorted(res.defaults_used) == ["account", "cost_model", "fill_model", "latency_model", "time_span"]
+    assert res.models["cost_model"] == "none" and res.time_span_ns is None
 
 
 def test_incomplete_socket_is_refused_at_construction():

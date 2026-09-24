@@ -22,7 +22,10 @@ venue requests (new orders and cancels on ONE channel), input -> strategy
 not a channel: each is delivered at the time the strategy asked for, so a
 timer set later for an earlier time comes first (same time: set order).
 The queue key is (time, phase, received time, position); the event type
-is not in it, so nothing on a channel is re-sorted by type.
+is not in it, so nothing on a channel is re-sorted by type. What travels
+on a path is a value made when it is sent (values.py): an order request's
+`extra` is immutable plain data and a notice's text is str, so neither
+side can change what the other receives, or learns, without sending.
 
 Input is one stream of events, or several named streams (a mapping of
 name -> iterable, e.g. trades, board, bars and funding read from separate
@@ -145,6 +148,8 @@ class EngineResult:
     orders: dict[str, OrderView] = field(default_factory=dict)
     venue_states: dict[str, str] = field(default_factory=dict)
     models: dict[str, str] = field(default_factory=dict)
+    # the sockets (fill_model, latency_model, cost_model, account) and run
+    # settings (time_span) the caller did not give, so the core's default ran
     defaults_used: list[str] = field(default_factory=list)
     first_time_ns: Optional[int] = None
     last_time_ns: Optional[int] = None
@@ -152,6 +157,7 @@ class EngineResult:
     delivery_digest: str = ""  # sha256 over every delivered event, in order
     forced_orders: list[OrderRequest] = field(default_factory=list)  # from the account socket
     source_events_by_stream: dict[str, int] = field(default_factory=dict)
+    time_span_ns: Optional[tuple[int, int]] = None  # the declared span, None if not given
 
     @property
     def open_orders(self) -> list[OrderView]:
@@ -223,6 +229,16 @@ class _VenueLedger:
         coid = getattr(report, "client_order_id", None)
         name = type(report).__name__
         kind = getattr(report, "request_kind", None)
+        # A report becomes a notice that crosses the venue -> strategy path:
+        # its text is text, never state the venue could change after
+        # sending it (values.py, i0-r4-02).
+        if not isinstance(coid, str):
+            raise VenueProtocolError(f"{where}: {name}.client_order_id must be a str, got {coid!r}")
+        for fname in ("reason", "detail", "venue_order_id"):
+            if hasattr(report, fname) and not isinstance(getattr(report, fname), str):
+                raise VenueProtocolError(
+                    f"{where}: {name}.{fname} must be a str, got {type(getattr(report, fname)).__name__}"
+                )
         if isinstance(report, (Reject, StateUnknown)) and kind == "cancel":
             # An answer to a cancel request: valid only as the answer to that
             # cancel (inside on_cancel for that order).
@@ -341,12 +357,44 @@ class _FifoChannel:
 SINGLE_STREAM_NAME = "events"
 
 
+def _validate_time_span(time_span: Any) -> Optional[tuple[int, int]]:
+    """The run's declared time span (`CoreEngine(time_span_ns=...)`): two
+    int64 ns times, first <= last, both included."""
+    if time_span is None:
+        return None
+    if not isinstance(time_span, tuple) or len(time_span) != 2:
+        raise TimestampUnitError(f"time_span_ns must be a (first_ns, last_ns) tuple, got {time_span!r}")
+    try:
+        lo, hi = int(validate_nanos(time_span[0])), int(validate_nanos(time_span[1]))
+    except TimestampUnitError as exc:
+        raise TimestampUnitError(f"time_span_ns: {exc}") from exc
+    if lo > hi:
+        raise TimestampUnitError(f"time_span_ns ({lo}, {hi}): the first time is after the last")
+    return lo, hi
+
+
+def _check_in_span(event: Event, exch: int, span: tuple[int, int], stream: str, number: int) -> None:
+    """Both times of an input event must lie in the run's declared span; a
+    bare int carries no unit, and this is where its magnitude meets one
+    (i0-r4-06: seconds or milliseconds handed over as ns land near 1970)."""
+    lo, hi = span
+    for label, t in (("exchange_time_ns", exch), ("received_time_ns", int(event.received_time_ns))):
+        if not lo <= t <= hi:
+            raise TimestampUnitError(
+                f"stream {stream!r} event #{number} ({event.EVENT_TYPE.value}) has {label} {t}, "
+                f"outside the run's time_span_ns [{lo}, {hi}] -- is it in another unit (s, ms, us) "
+                f"handed over as ns?"
+            )
+
+
 class _SourceMerger:
     """Merges named streams by comparing their next events (ordering.py
     `merge_key`: exchange time, type rank, stream name), holding at most one
     pending event per stream. A stream's own order is always kept."""
 
-    def __init__(self, streams: Mapping[str, Iterable[Event]]) -> None:
+    def __init__(self, streams: Mapping[str, Iterable[Event]],
+                 time_span: Optional[tuple[int, int]] = None) -> None:
+        self._span = time_span
         names = list(streams)
         for name in names:
             if not isinstance(name, str) or not name:
@@ -376,6 +424,8 @@ class _SourceMerger:
                 f"the engine from the fill model's reports (place an order to get one)"
             )
         exch = int(event.exchange_time_ns)
+        if self._span is not None:
+            _check_in_span(event, exch, self._span, name, self.counts[rank] + 1)
         last = self._last[rank]
         if last is not None and exch < last:
             raise EventOrderError(
@@ -415,6 +465,7 @@ class CoreEngine:
         *,
         end_time_ns: Optional[int] = None,
         history_limit: Optional[int] = None,
+        time_span_ns: Optional[tuple[int, int]] = None,
     ) -> None:
         """`events`: one iterable of source events, or a mapping of stream
         name -> iterable (merged by time, see ordering.py).
@@ -424,13 +475,23 @@ class CoreEngine:
         `2 * history_limit` delivered events (bounded memory for long tick
         runs); the overall history is exactly what the types keep
         (history.py). A read that would reach into a dropped part raises
-        `HistoryTruncatedError`. None keeps everything."""
+        `HistoryTruncatedError`. None keeps everything.
+
+        `time_span_ns`: the run's time span `(first_ns, last_ns)`, both
+        included. Given, every input event whose exchange or received time
+        lies outside it is refused with `TimestampUnitError` when it is read
+        from its stream (a bare int carries no unit; a time in seconds or
+        milliseconds handed over as ns lands near 1970). Not given, nothing
+        is checked -- every int64 is a time -- and `defaults_used` records
+        "time_span" so the result shows the run did not state it."""
         self._strategy = strategy
+        time_span = _validate_time_span(time_span_ns)
+        self._time_span = time_span
         if isinstance(events, Mapping):
             streams = events
         else:
             streams = {SINGLE_STREAM_NAME: events}
-        self._merger = _SourceMerger(streams)
+        self._merger = _SourceMerger(streams, time_span)
         self._source_count = 0
 
         defaults: list[str] = []
@@ -447,6 +508,8 @@ class CoreEngine:
             _require_protocol(cost_model, CostModel, "cost_model")
         else:
             defaults.append("cost_model")
+        if time_span is None:
+            defaults.append("time_span")
         self._fill_model = fill_model
         self._latency = latency_model
         self._cost_model = cost_model
@@ -654,6 +717,7 @@ class CoreEngine:
             first_time_ns=self._first,
             last_time_ns=self._now,
             stopped_at_end_time=self._stopped_at_end,
+            time_span_ns=self._time_span,
             delivery_digest=self._digest.hexdigest(),
             forced_orders=list(self._forced_list),
             source_events_by_stream=self._merger.counts_by_name(),

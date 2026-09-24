@@ -1,0 +1,28 @@
+##### from hftbacktest_install.log
+=== 2026-09-23T15:34:30Z inspect hftbacktest
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.5/5.5 MB 36.3 MB/s eta 0:00:00
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/hftbacktest/hftbacktest-2.4.4-cp311-cp311-manylinux_2_28_x86_64.whl
+Successfully downloaded hftbacktest
+total 5372
+drwxr-xr-x 2 root root    4096 Sep 23 15:34 .
+drwxr-xr-x 7 root root    4096 Sep 23 15:34 ..
+-rw-r--r-- 1 root root 5492116 Sep 23 15:34 hftbacktest-2.4.4-cp311-cp311-manylinux_2_28_x86_64.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/hftbacktest/hftbacktest-2.4.4-cp311-cp311-manylinux_2_28_x86_64.whl
+hftbacktest/_hftbacktest.cpython-311-x86_64-linux-gnu.so
+Name: hftbacktest
+Version: 2.4.4
+Requires-Dist: numpy>=2.0,<2.3
+Requires-Dist: numba~=0.61
+Requires-Dist: polars
+Requires-Dist: matplotlib
+Requires-Dist: holoviews
+Requires-Dist: databento ; extra == 'databento'
+Author-email: nkaz001 <nkaz001@protonmail.com>
+Project-URL: Repository, https://github.com/nkaz001/hftbacktest
+=== 2026-09-23T15:34:32Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/hftbacktest
+pip rc=0 elapsed=61s
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+47
+=== 2026-09-23T15:35:40Z done

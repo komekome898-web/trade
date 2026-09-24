@@ -1,0 +1,187 @@
+##### from item0_r5-1_scenekeeper_install_70.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/pineforge-4pass/pineforge-engine.git c70
+/dev/vda          258020 32037      5902  85% /
+rc=0
+5e62602cb1ebaff9ec16d7dfbbfaaaff08603764 2026-09-24T10:44:40+08:00 luisleo526
+38M	.
+=== start 2026-09-24T03:02:40Z limit=600s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c70 && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DPINEFORGE_BUILD_TESTS=OFF && cmake --build build -j4 && ls build | head -30
+df before: /dev/vda          258020 34203      3736  91% /
+=== end 2026-09-24T03:03:55Z rc=0 elapsed=75s min_free=3685MB 
+PineForgeConfig.cmake
+PineForgeConfigVersion.cmake
+_deps
+bin
+buildtests.sh
+check.sh
+cmake_install.cmake
+debug.sh
+include
+lib
+release.sh
+tutorial
+df after: /dev/vda          258020 34258      3681  91% /
+=== 2026-09-24T03:52:08Z driver source (the program the adapter runs; built here, synthetic input only)
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv70.c
+/* Battery driver for survey candidate 70 (PineForge native C API).
+ * usage: c70_driver key=value ... -- ts_ms:o:h:l:c:v ...
+ * keys: tf, capital, fee_kind (0 pct / 1 per unit / 2 per execution), fee_value,
+ *       buy_at (call index, 1-based), qty, order (market|limit90), cancel_at, read_at,
+ *       terms (settle price answered by on_execution_terms, 0 = kernel default)
+ * Prints one line per observation; synthetic input only. */
+#include <pineforge/pineforge.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+
+struct st { pf_strategy_t h; int calls, buy_at, cancel_at, read_at, limit, nsub; double qty, terms; uint64_t inc, seen; long long probe;
+             pf_native_subscription_v1 subs[8]; char tfs[8][8]; };
+
+static const char* kind_name(uint32_t k) {
+    switch (k) { case 1: return "accepted"; case 2: return "rejected"; case 5: return "cancelled"; case 9: return "match_rejected";
+                 case 10: return "applied"; case 6: return "not_working"; default: return 0; }
+}
+
+/* The strategy reads the kernel's event history from inside its own callback. */
+static void read_notices(struct st* s) {
+    pf_native_event_v1 ev[64]; int k, m;
+    for (k = 0; k < 64; k++) { memset(&ev[k], 0, sizeof ev[k]); ev[k].struct_size = sizeof ev[k]; }
+    m = strategy_native_events_v1(s->h, s->seen, ev, 64);
+    for (k = 0; k < m; k++) {
+        const char* nm = kind_name(ev[k].kind);
+        s->seen = ev[k].ordinal;
+        if (nm) printf("NOTICE %d %s reason=%u inc=%llu opened=%.17g\n", s->calls, nm, ev[k].reason, (unsigned long long)ev[k].incarnation, ev[k].opened_units);
+    }
+}
+
+static int on_run_begin(void* u) {
+    struct st* s = (struct st*)u;
+    if (s->nsub) printf("DECLARE rc=%d\n", strategy_native_declare_subscriptions_v1(s->h, s->subs, s->nsub));
+    return 0;
+}
+
+static int on_bar(void* u, const pf_bar_t* b, const pf_native_decision_v1* at) {
+    struct st* s = (struct st*)u;
+    s->calls++;
+    printf("CALL %d %lld %.17g %lld %.17g %.17g %.17g %.17g\n", s->calls, (long long)b->timestamp, b->close, (long long)at->effective_time_ms,
+           b->open, b->high, b->low, b->volume);
+    read_notices(s);
+    if (s->probe && b->timestamp == s->probe) {
+        pf_bar_t o; int j, rc;
+        for (j = 0; j < s->nsub; j++) {
+            memset(&o, 0, sizeof o); rc = strategy_native_series_bar_v1(s->h, (uint32_t)j, &o);
+            printf("SERIES %d tf=%s lookahead=%u rc=%d ts=%lld close=%.17g\n", j, s->tfs[j], s->subs[j].lookahead, rc, (long long)o.timestamp, o.close);
+        }
+        memset(&o, 0, sizeof o); rc = strategy_native_partial_bar_v1(s->h, &o);
+        printf("PARTIAL rc=%d ts=%lld close=%.17g\n", rc, (long long)o.timestamp, o.close);
+    }
+    if (s->calls == s->buy_at) {
+        pf_native_request_v1 r; uint32_t rej = 0; int rc;
+        memset(&r, 0, sizeof r);
+        r.struct_size = sizeof r; r.version = PF_NATIVE_API_VERSION;
+        r.intent = PF_NATIVE_INTENT_TRANSACT; r.intent_value = s->qty;
+        if (s->limit) { r.trigger = PF_NATIVE_TRIGGER_LIMIT; r.p1 = 90.0; }
+        r.label = "battery";
+        rc = strategy_native_submit_v1(s->h, &r, &s->inc, &rej);
+        printf("SUBMIT %d rc=%d inc=%llu reject=%u\n", s->calls, rc, (unsigned long long)s->inc, rej);
+    }
+    if (s->cancel_at && (s->calls == s->cancel_at || s->calls == s->cancel_at + 1))
+        printf("WORKING %d %d\n", s->calls, strategy_native_working_len_v1(s->h));
+    if (s->cancel_at && s->calls == s->cancel_at)
+        printf("CANCEL %d rc=%d\n", s->calls, strategy_native_cancel_v1(s->h, s->inc));
+    if (s->read_at && s->calls == s->read_at) {
+        double units = 0, avg = 0; uint64_t lots = 0; int j, nl;
+        int rc = strategy_native_position_v1(s->h, &units, &avg, &lots);
+        printf("POS %d rc=%d units=%.17g avg=%.17g\n", s->calls, rc, units, avg);
+        nl = strategy_native_open_lot_count_v1(s->h, b->close);
+        for (j = 0; j < nl; j++) {
+            pf_native_open_lot_v1 L; memset(&L, 0, sizeof L); L.struct_size = sizeof L;
+            rc = strategy_native_open_lot_get_v1(s->h, j, &L);
+            printf("LOT %d rc=%d units=%.17g entry=%.17g entry_commission=%.17g\n", s->calls, rc, L.signed_units, L.entry_price, L.entry_commission);
+        }
+    }
+    return 0;
+}
+
+static int on_applied(void* u, const pf_native_applied_v1* a, const pf_native_decision_v1* at) {
+    struct st* s = (struct st*)u;
+    printf("APPLIED call=%d eff=%lld inc=%llu price=%.17g opened=%.17g\n", s->calls, (long long)at->effective_time_ms,
+           (unsigned long long)a->incarnation, a->resolved_price, a->opened_units);
+    return 0;
+}
+
+static int on_terms(void* u, const pf_native_terms_view_v1* v, pf_native_terms_v1* out) {
+    struct st* s = (struct st*)u;
+    (void)v;
+    if (s->terms <= 0) return PF_NATIVE_ANSWER_DEFAULT;
+    out->resolved_price = s->terms;
+    return 1;
+}
+
+int main(int argc, char** argv) {
+    struct st s; pf_native_callbacks_v1 cb; pf_native_run_spec_v1 sp; pf_report_t rep;
+    const char* tf = "1D"; double capital = 1000000, fee_value = 0, margin = 0; unsigned fee_kind = PF_NATIVE_FEE_PERCENT;
+    pf_bar_t bars[64]; int n = 0, i, bar_args = 0, rc;
+    memset(&s, 0, sizeof s); s.qty = 1;
+    for (i = 1; i < argc; i++) {
+        char* a = argv[i];
+        if (!strcmp(a, "--")) { bar_args = 1; continue; }
+        if (bar_args) {
+            pf_bar_t* b = &bars[n++]; long long ts;
+            sscanf(a, "%lld:%lf:%lf:%lf:%lf:%lf", &ts, &b->open, &b->high, &b->low, &b->close, &b->volume);
+            b->timestamp = ts; continue;
+        }
+        if (!strncmp(a, "tf=", 3)) tf = a + 3;
+        else if (!strncmp(a, "capital=", 8)) capital = atof(a + 8);
+        else if (!strncmp(a, "fee_kind=", 9)) fee_kind = (unsigned)atoi(a + 9);
+        else if (!strncmp(a, "fee_value=", 10)) fee_value = atof(a + 10);
+        else if (!strncmp(a, "buy_at=", 7)) s.buy_at = atoi(a + 7);
+        else if (!strncmp(a, "qty=", 4)) s.qty = atof(a + 4);
+        else if (!strncmp(a, "order=", 6)) s.limit = !strcmp(a + 6, "limit90");
+        else if (!strncmp(a, "cancel_at=", 10)) s.cancel_at = atoi(a + 10);
+        else if (!strncmp(a, "read_at=", 8)) s.read_at = atoi(a + 8);
+        else if (!strncmp(a, "terms=", 6)) s.terms = atof(a + 6);
+        else if (!strncmp(a, "probe=", 6)) s.probe = atoll(a + 6);
+        else if (!strncmp(a, "margin=", 7)) margin = atof(a + 7);
+        else if (!strncmp(a, "sub=", 4) && s.nsub < 8) {  /* sub=TF:lookahead */
+            pf_native_subscription_v1* r = &s.subs[s.nsub]; char* c = strchr(a + 4, ':');
+            memset(r, 0, sizeof *r); r->struct_size = sizeof *r;
+            snprintf(s.tfs[s.nsub], 8, "%.*s", (int)(c ? c - (a + 4) : 7), a + 4);
+            r->tf = s.tfs[s.nsub]; r->lookahead = c ? (uint32_t)atoi(c + 1) : 0; s.nsub++;
+        }
+    }
+    memset(&cb, 0, sizeof cb);
+    cb.struct_size = sizeof cb; cb.version = PF_NATIVE_API_VERSION; cb.user = &s;
+    cb.on_run_begin = on_run_begin; cb.on_bar = on_bar; cb.on_applied = on_applied; cb.on_execution_terms = on_terms;
+    s.h = strategy_native_host_create_v1(&cb);
+    if (!s.h) { printf("ERROR create\n"); return 2; }
+    memset(&sp, 0, sizeof sp);
+    sp.struct_size = sizeof sp; sp.session_key = "battery"; sp.run_number = 1;
+    sp.input_tf = tf; sp.script_tf = tf; sp.ticker = "X"; sp.tickerid = "TEST:X"; sp.type = "crypto";
+    sp.currency = "JPY"; sp.basecurrency = "X"; sp.description = ""; sp.volumetype = "";
+    sp.timezone = "UTC"; sp.session = "24x7"; sp.chart_timezone = "";
+    sp.initial_capital = capital; sp.point_value = 1.0; sp.account_fx = 1.0; sp.price_tick = 0.01;
+    sp.fee_kind = fee_kind; sp.fee_value = fee_value;
+    sp.close_execution = PF_NATIVE_CLOSE_EXECUTION_NEXT_ELIGIBLE_POINT;
+    sp.allowed_open_directions = PF_NATIVE_OPEN_DIRECTIONS_BOTH;
+    if (margin > 0) { sp.optional_mask |= PF_NATIVE_SPEC_OPTIONAL_INITIAL_MARGIN_FRACTION; sp.initial_margin_fraction = margin; }
+    if (strategy_configure_native_v1(s.h, &sp) != 0) { printf("ERROR configure %s\n", strategy_get_last_error(s.h)); return 0; }
+    memset(&rep, 0, sizeof rep);
+    rc = strategy_native_run_v1(s.h, bars, n, &rep);
+    if (rc != PF_NATIVE_OK) printf("ERROR run rc=%d %s\n", rc, strategy_get_last_error(s.h));
+    {
+        pf_native_event_v1 ev[256]; int k, m;
+        for (k = 0; k < 256; k++) { memset(&ev[k], 0, sizeof ev[k]); ev[k].struct_size = sizeof ev[k]; }
+        m = strategy_native_events_v1(s.h, 0, ev, 256);
+        for (k = 0; k < m; k++)
+            printf("EV kind=%u reason=%u inc=%llu price=%.17g resolved=%.17g opened=%.17g eff=%lld\n", ev[k].kind, ev[k].reason,
+                   (unsigned long long)ev[k].incarnation, ev[k].price, ev[k].resolved_price, ev[k].opened_units, (long long)ev[k].effective_time_ms);
+    }
+    for (i = 0; i < rep.total_trades; i++)
+        printf("TRADE qty=%.17g entry=%.17g entry_time=%lld commission=%.17g open_at_end=%d\n", rep.trades[i].qty, rep.trades[i].entry_price,
+               (long long)rep.trades[i].entry_time, rep.trades[i].commission, rep.trades[i].open_at_end);
+    strategy_native_report_free_v1(&rep);
+    strategy_native_host_free(s.h);
+    return 0;
+}
+--- build: cc -std=gnu11 -O1 -I_dl/c70/include -I_dl/c70/build/include _dl/drivers/drv70.c -L_dl/c70/build/lib -lpineforge -lstdc++ -lm -lpthread -o c70/bin/c70_driver

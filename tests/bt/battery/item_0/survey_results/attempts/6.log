@@ -1,0 +1,286 @@
+##### from ziplime_install.log
+Collecting ziplime
+  Downloading ziplime-1.19.16-py3-none-any.whl.metadata (9.3 kB)
+Collecting aiocache<0.13.0,>=0.12.3 (from ziplime)
+  Downloading aiocache-0.12.3-py2.py3-none-any.whl.metadata (8.3 kB)
+Collecting aiofiles<25.0.0,>=24.1.0 (from ziplime)
+  Downloading aiofiles-24.1.0-py3-none-any.whl.metadata (10 kB)
+Collecting aiosqlite<0.22.0,>=0.21.0 (from ziplime)
+  Downloading aiosqlite-0.21.0-py3-none-any.whl.metadata (4.3 kB)
+Collecting alembic<2.0.0,>=1.15.2 (from ziplime)
+  Downloading alembic-1.20.0-py3-none-any.whl.metadata (7.3 kB)
+Collecting asyncclick<9.0.0,>=8.1.8 (from ziplime)
+  Downloading asyncclick-8.4.2.1-py3-none-any.whl.metadata (4.6 kB)
+Collecting empyrical-reloaded<0.6.0,>=0.5.11 (from ziplime)
+  Downloading empyrical_reloaded-0.5.12-py3-none-any.whl.metadata (21 kB)
+Collecting exchange-calendars<5.0,>=4.10 (from ziplime)
+  Downloading exchange_calendars-4.13.2-py3-none-any.whl.metadata (26 kB)
+Collecting greenlet<4.0.0,>=3.2.2 (from ziplime)
+  Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+Collecting h5py<4.0.0,>=3.13.0 (from ziplime)
+  Downloading h5py-3.16.0-cp312-cp312-manylinux_2_28_x86_64.whl.metadata (3.0 kB)
+Collecting iso3166<3.0.0,>=2.1.1 (from ziplime)
+  Downloading iso3166-2.1.1-py3-none-any.whl.metadata (6.6 kB)
+Collecting iso4217<2.0.0,>=1.12.20240625 (from ziplime)
+  Downloading iso4217-1.16.20260101-py2.py3-none-any.whl.metadata (2.7 kB)
+Collecting joblib<2.0.0,>=1.5.1 (from ziplime)
+  Downloading joblib-1.6.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting lime-trader-sdk<0.5.0,>=0.4.1 (from ziplime)
+  Downloading lime_trader_sdk-0.4.1-py3-none-any.whl.metadata (1.7 kB)
+Collecting limexhub<2.0.0,>=1.16.28 (from ziplime)
+  Downloading limexhub-1.16.28-py3-none-any.whl.metadata (4.5 kB)
+Collecting networkx<4.0.0,>=3.4.2 (from ziplime)
+  Downloading networkx-3.7-py3-none-any.whl.metadata (6.7 kB)
+Collecting numexpr<3.0.0,>=2.10.2 (from ziplime)
+  Downloading numexpr-2.14.2-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.0 kB)
+Collecting orjson<4.0.0,>=3.10.15 (from ziplime)
+  Downloading orjson-3.12.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (41 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 42.0/42.0 kB 117.8 MB/s eta 0:00:00
+Collecting pandas<3.0.0,>=2.0.0 (from ziplime)
+  Downloading pandas-2.3.3-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (91 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 91.2/91.2 kB 178.6 MB/s eta 0:00:00
+Collecting pandas-stubs<2.4.0,>=2.3.3 (from ziplime)
+  Downloading pandas_stubs-2.3.3.260113-py3-none-any.whl.metadata (10 kB)
+Collecting polars<2.0.0,>=1.24.0 (from ziplime)
+  Downloading polars-1.44.2-py3-none-any.whl.metadata (11 kB)
+Collecting pyarrow<20.0.0,>=19.0.1 (from ziplime)
+  Downloading pyarrow-19.0.1-cp312-cp312-manylinux_2_28_x86_64.whl.metadata (3.3 kB)
+Collecting pydantic<3.0.0,>=2.11.2 (from ziplime)
+  Downloading pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 110.2/110.2 kB 282.7 MB/s eta 0:00:00
+Collecting pygments<3.0.0,>=2.18.0 (from ziplime)
+  Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+Collecting python-dateutil<3.0.0,>=2.9.0.post0 (from ziplime)
+  Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Collecting scipy<2.0.0,>=1.15.3 (from ziplime)
+  Downloading scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.4/62.4 kB 184.2 MB/s eta 0:00:00
+Collecting setuptools<80.0.0,>=79.0.1 (from ziplime)
+  Downloading setuptools-79.0.1-py3-none-any.whl.metadata (6.5 kB)
+Collecting sqlalchemy<3.0.0,>=2.0.40 (from ziplime)
+  Downloading sqlalchemy-2.0.54-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.7 kB)
+Collecting structlog<26.0.0,>=25.4.0 (from ziplime)
+  Downloading structlog-25.5.0-py3-none-any.whl.metadata (9.5 kB)
+Collecting tabulate<0.10.0,>=0.9.0 (from ziplime)
+  Downloading tabulate-0.9.0-py3-none-any.whl.metadata (34 kB)
+Collecting yfinance<0.3.0,>=0.2.65 (from ziplime)
+  Downloading yfinance-0.2.66-py2.py3-none-any.whl.metadata (6.0 kB)
+Collecting typing_extensions>=4.0 (from aiosqlite<0.22.0,>=0.21.0->ziplime)
+  Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting Mako (from alembic<2.0.0,>=1.15.2->ziplime)
+  Downloading mako-1.4.3-py3-none-any.whl.metadata (2.9 kB)
+Collecting numpy>=1.26.0 (from empyrical-reloaded<0.6.0,>=0.5.11->ziplime)
+  Downloading numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+Collecting bottleneck>=1.3.0 (from empyrical-reloaded<0.6.0,>=0.5.11->ziplime)
+  Downloading bottleneck-1.6.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (8.2 kB)
+Collecting peewee<3.17.4 (from empyrical-reloaded<0.6.0,>=0.5.11->ziplime)
+  Downloading peewee-3.17.3.tar.gz (3.0 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.0/3.0 MB 267.7 MB/s eta 0:00:00
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Collecting pyluach>=2.3.0 (from exchange-calendars<5.0,>=4.10->ziplime)
+  Downloading pyluach-2.3.0-py3-none-any.whl.metadata (4.3 kB)
+Collecting toolz>=1.0.0 (from exchange-calendars<5.0,>=4.10->ziplime)
+  Downloading toolz-1.1.0-py3-none-any.whl.metadata (5.1 kB)
+Collecting tzdata>=2025.2 (from exchange-calendars<5.0,>=4.10->ziplime)
+  Downloading tzdata-2026.4-py2.py3-none-any.whl.metadata (1.4 kB)
+Collecting korean_lunar_calendar>=0.3.1 (from exchange-calendars<5.0,>=4.10->ziplime)
+  Downloading korean_lunar_calendar-0.4.0-py3-none-any.whl.metadata (6.6 kB)
+Collecting cloudpickle>=3.0 (from joblib<2.0.0,>=1.5.1->ziplime)
+  Downloading cloudpickle-3.1.2-py3-none-any.whl.metadata (7.1 kB)
+Collecting attrs<23.0.0,>=22.2.0 (from lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading attrs-22.2.0-py3-none-any.whl.metadata (13 kB)
+Collecting cattrs<23.0.0,>=22.2.0 (from lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading cattrs-22.2.0-py3-none-any.whl.metadata (9.0 kB)
+Collecting httpx<0.29.0,>=0.28.1 (from lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Collecting python-dotenv<2.0.0,>=1.0.0 (from lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading python_dotenv-1.2.3-py3-none-any.whl.metadata (29 kB)
+Collecting rel<0.5.0,>=0.4.8 (from lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading rel-0.4.9.27-py3-none-any.whl.metadata (1.2 kB)
+Collecting requests<3.0.0,>=2.30.0 (from lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Collecting websocket-client<2.0.0,>=1.6.4 (from lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading websocket_client-1.9.2-py3-none-any.whl.metadata (8.3 kB)
+Collecting pytz>=2020.1 (from pandas<3.0.0,>=2.0.0->ziplime)
+  Downloading pytz-2026.3.post1-py2.py3-none-any.whl.metadata (22 kB)
+Collecting types-pytz>=2022.1.1 (from pandas-stubs<2.4.0,>=2.3.3->ziplime)
+  Downloading types_pytz-2026.3.1.20260727-py3-none-any.whl.metadata (1.7 kB)
+Collecting polars-runtime-32==1.44.2 (from polars<2.0.0,>=1.24.0->ziplime)
+  Downloading polars_runtime_32-1.44.2-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (1.5 kB)
+Collecting annotated-types>=0.6.0 (from pydantic<3.0.0,>=2.11.2->ziplime)
+  Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+Collecting pydantic-core==2.46.5 (from pydantic<3.0.0,>=2.11.2->ziplime)
+  Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+Collecting typing-inspection>=0.4.2 (from pydantic<3.0.0,>=2.11.2->ziplime)
+  Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+Collecting six>=1.5 (from python-dateutil<3.0.0,>=2.9.0.post0->ziplime)
+  Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Collecting multitasking>=0.0.7 (from yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading multitasking-0.0.13-py3-none-any.whl.metadata (16 kB)
+Collecting platformdirs>=2.0.0 (from yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading platformdirs-4.11.12-py3-none-any.whl.metadata (5.5 kB)
+Collecting frozendict>=2.3.4 (from yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading frozendict-2.4.7-py3-none-any.whl.metadata (23 kB)
+Collecting beautifulsoup4>=4.11.1 (from yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading beautifulsoup4-4.15.0-py3-none-any.whl.metadata (3.8 kB)
+Collecting curl_cffi>=0.7 (from yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading curl_cffi-0.16.3-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (17 kB)
+Collecting protobuf>=3.19.0 (from yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading protobuf-7.36.2-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)
+Collecting websockets>=13.0 (from yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading websockets-17.1-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.3 kB)
+Collecting soupsieve>=1.6.1 (from beautifulsoup4>=4.11.1->yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading soupsieve-2.9.2-py3-none-any.whl.metadata (4.6 kB)
+Collecting cffi>=2.0.0 (from curl_cffi>=0.7->yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.5 kB)
+Collecting certifi>=2024.2.2 (from curl_cffi>=0.7->yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+Collecting anyio (from httpx<0.29.0,>=0.28.1->lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+Collecting httpcore==1.* (from httpx<0.29.0,>=0.28.1->lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+Collecting idna (from httpx<0.29.0,>=0.28.1->lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting h11>=0.16 (from httpcore==1.*->httpx<0.29.0,>=0.28.1->lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Collecting charset_normalizer<4,>=2 (from requests<3.0.0,>=2.30.0->lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading charset_normalizer-3.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (45 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.9/45.9 kB 141.8 MB/s eta 0:00:00
+Collecting urllib3<3,>=1.26 (from requests<3.0.0,>=2.30.0->lime-trader-sdk<0.5.0,>=0.4.1->ziplime)
+  Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting MarkupSafe>=2.0 (from Mako->alembic<2.0.0,>=1.15.2->ziplime)
+  Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Collecting pycparser (from cffi>=2.0.0->curl_cffi>=0.7->yfinance<0.3.0,>=0.2.65->ziplime)
+  Downloading pycparser-3.0-py3-none-any.whl.metadata (8.2 kB)
+Downloading ziplime-1.19.16-py3-none-any.whl (537 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 537.0/537.0 kB 213.4 MB/s eta 0:00:00
+Downloading aiocache-0.12.3-py2.py3-none-any.whl (28 kB)
+Downloading aiofiles-24.1.0-py3-none-any.whl (15 kB)
+Downloading aiosqlite-0.21.0-py3-none-any.whl (15 kB)
+Downloading alembic-1.20.0-py3-none-any.whl (268 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 268.7/268.7 kB 173.1 MB/s eta 0:00:00
+Downloading asyncclick-8.4.2.1-py3-none-any.whl (121 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 121.9/121.9 kB 172.0 MB/s eta 0:00:00
+Downloading empyrical_reloaded-0.5.12-py3-none-any.whl (33 kB)
+Downloading exchange_calendars-4.13.2-py3-none-any.whl (213 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 213.3/213.3 kB 299.2 MB/s eta 0:00:00
+Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (621 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 621.4/621.4 kB 284.8 MB/s eta 0:00:00
+Downloading h5py-3.16.0-cp312-cp312-manylinux_2_28_x86_64.whl (5.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.4/5.4 MB 257.9 MB/s eta 0:00:00
+Downloading iso3166-2.1.1-py3-none-any.whl (9.8 kB)
+Downloading iso4217-1.16.20260101-py2.py3-none-any.whl (11 kB)
+Downloading joblib-1.6.0-py3-none-any.whl (306 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 306.1/306.1 kB 302.8 MB/s eta 0:00:00
+Downloading lime_trader_sdk-0.4.1-py3-none-any.whl (37 kB)
+Downloading limexhub-1.16.28-py3-none-any.whl (8.8 kB)
+Downloading networkx-3.7-py3-none-any.whl (2.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 272.6 MB/s eta 0:00:00
+Downloading numexpr-2.14.2-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (445 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 445.2/445.2 kB 237.2 MB/s eta 0:00:00
+Downloading orjson-3.12.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (131 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 131.2/131.2 kB 104.2 MB/s eta 0:00:00
+Downloading pandas-2.3.3-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (12.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.4/12.4 MB 224.9 MB/s eta 0:00:00
+Downloading pandas_stubs-2.3.3.260113-py3-none-any.whl (168 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 168.2/168.2 kB 181.8 MB/s eta 0:00:00
+Downloading polars-1.44.2-py3-none-any.whl (865 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 865.8/865.8 kB 309.6 MB/s eta 0:00:00
+Downloading polars_runtime_32-1.44.2-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (49.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 49.9/49.9 MB 222.0 MB/s eta 0:00:00
+Downloading pyarrow-19.0.1-cp312-cp312-manylinux_2_28_x86_64.whl (42.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 42.1/42.1 MB 188.7 MB/s eta 0:00:00
+Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 472.6/472.6 kB 321.0 MB/s eta 0:00:00
+Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 231.7 MB/s eta 0:00:00
+Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 227.5 MB/s eta 0:00:00
+Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 229.9/229.9 kB 307.1 MB/s eta 0:00:00
+Downloading scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 272.5 MB/s eta 0:00:00
+Downloading setuptools-79.0.1-py3-none-any.whl (1.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 288.3 MB/s eta 0:00:00
+Downloading sqlalchemy-2.0.54-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.5/3.5 MB 256.0 MB/s eta 0:00:00
+Downloading structlog-25.5.0-py3-none-any.whl (72 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 72.5/72.5 kB 293.4 MB/s eta 0:00:00
+Downloading tabulate-0.9.0-py3-none-any.whl (35 kB)
+Downloading yfinance-0.2.66-py2.py3-none-any.whl (123 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 123.4/123.4 kB 296.8 MB/s eta 0:00:00
+Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Downloading attrs-22.2.0-py3-none-any.whl (60 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 60.0/60.0 kB 199.2 MB/s eta 0:00:00
+Downloading beautifulsoup4-4.15.0-py3-none-any.whl (109 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 109.9/109.9 kB 259.7 MB/s eta 0:00:00
+Downloading bottleneck-1.6.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (377 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 377.5/377.5 kB 314.9 MB/s eta 0:00:00
+Downloading cattrs-22.2.0-py3-none-any.whl (35 kB)
+Downloading cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+Downloading curl_cffi-0.16.3-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (13.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.5/13.5 MB 230.6 MB/s eta 0:00:00
+Downloading frozendict-2.4.7-py3-none-any.whl (16 kB)
+Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.5/73.5 kB 185.8 MB/s eta 0:00:00
+Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 78.8/78.8 kB 295.6 MB/s eta 0:00:00
+Downloading korean_lunar_calendar-0.4.0-py3-none-any.whl (11 kB)
+Downloading multitasking-0.0.13-py3-none-any.whl (16 kB)
+Downloading numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.7 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.7/16.7 MB 181.8 MB/s eta 0:00:00
+Downloading platformdirs-4.11.12-py3-none-any.whl (24 kB)
+Downloading protobuf-7.36.2-cp310-abi3-manylinux2014_x86_64.whl (343 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 343.2/343.2 kB 273.5 MB/s eta 0:00:00
+Downloading pyluach-2.3.0-py3-none-any.whl (25 kB)
+Downloading python_dotenv-1.2.3-py3-none-any.whl (22 kB)
+Downloading pytz-2026.3.post1-py2.py3-none-any.whl (508 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 508.3/508.3 kB 278.0 MB/s eta 0:00:00
+Downloading rel-0.4.9.27-py3-none-any.whl (21 kB)
+Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.1/73.1 kB 170.2 MB/s eta 0:00:00
+Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Downloading toolz-1.1.0-py3-none-any.whl (58 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 58.1/58.1 kB 267.5 MB/s eta 0:00:00
+Downloading types_pytz-2026.3.1.20260727-py3-none-any.whl (10 kB)
+Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 kB 128.6 MB/s eta 0:00:00
+Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Downloading tzdata-2026.4-py2.py3-none-any.whl (347 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 347.5/347.5 kB 300.0 MB/s eta 0:00:00
+Downloading websocket_client-1.9.2-py3-none-any.whl (95 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 95.8/95.8 kB 291.3 MB/s eta 0:00:00
+Downloading websockets-17.1-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (224 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 224.6/224.6 kB 267.1 MB/s eta 0:00:00
+Downloading mako-1.4.3-py3-none-any.whl (80 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 80.2/80.2 kB 250.0 MB/s eta 0:00:00
+Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 137.0/137.0 kB 196.6 MB/s eta 0:00:00
+Downloading cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (221 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 221.8/221.8 kB 243.1 MB/s eta 0:00:00
+Downloading charset_normalizer-3.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (248 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 248.8/248.8 kB 202.4 MB/s eta 0:00:00
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 69.6/69.6 kB 196.8 MB/s eta 0:00:00
+Downloading markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+Downloading soupsieve-2.9.2-py3-none-any.whl (37 kB)
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 135.7/135.7 kB 193.1 MB/s eta 0:00:00
+Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 132.1/132.1 kB 235.2 MB/s eta 0:00:00
+Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Downloading pycparser-3.0-py3-none-any.whl (48 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.2/48.2 kB 232.8 MB/s eta 0:00:00
+Building wheels for collected packages: peewee
+  Building wheel for peewee (pyproject.toml): started
+  Building wheel for peewee (pyproject.toml): finished with status 'done'
+  Created wheel for peewee: filename=peewee-3.17.3-py3-none-any.whl size=138488 sha256=1ccf0ec75c14298bd1b3a4b6777c9b13b9338c0106638cb2e29ab815f506d0f3
+  Stored in directory: /tmp/pip-ephem-wheel-cache-mlaf5b18/wheels/39/c7/dd/909d267742f7fbb941ff081dacd661f622a0b4eb38f667b84b
+Successfully built peewee
+Installing collected packages: rel, pytz, peewee, multitasking, aiocache, websockets, websocket-client, urllib3, tzdata, typing_extensions, types-pytz, toolz, tabulate, structlog, soupsieve, six, setuptools, python-dotenv, pyluach, pygments, pycparser, pyarrow, protobuf, polars-runtime-32, platformdirs, orjson, numpy, networkx, MarkupSafe, korean_lunar_calendar, iso4217, iso3166, idna, h11, greenlet, frozendict, cloudpickle, charset_normalizer, certifi, attrs, asyncclick, annotated-types, aiofiles, typing-inspection, sqlalchemy, scipy, requests, python-dateutil, pydantic-core, polars, pandas-stubs, numexpr, Mako, joblib, httpcore, h5py, cffi, cattrs, bottleneck, beautifulsoup4, anyio, aiosqlite, pydantic, pandas, limexhub, httpx, curl_cffi, alembic, yfinance, lime-trader-sdk, exchange-calendars, empyrical-reloaded, ziplime
+Successfully installed Mako-1.4.3 MarkupSafe-3.0.3 aiocache-0.12.3 aiofiles-24.1.0 aiosqlite-0.21.0 alembic-1.20.0 annotated-types-0.8.0 anyio-4.15.1 asyncclick-8.4.2.1 attrs-22.2.0 beautifulsoup4-4.15.0 bottleneck-1.6.0 cattrs-22.2.0 certifi-2026.7.22 cffi-2.1.1 charset_normalizer-3.5.1 cloudpickle-3.1.2 curl_cffi-0.16.3 empyrical-reloaded-0.5.12 exchange-calendars-4.13.2 frozendict-2.4.7 greenlet-3.5.6 h11-0.16.0 h5py-3.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.20 iso3166-2.1.1 iso4217-1.16.20260101 joblib-1.6.0 korean_lunar_calendar-0.4.0 lime-trader-sdk-0.4.1 limexhub-1.16.28 multitasking-0.0.13 networkx-3.7 numexpr-2.14.2 numpy-2.5.3 orjson-3.12.0 pandas-2.3.3 pandas-stubs-2.3.3.260113 peewee-3.17.3 platformdirs-4.11.12 polars-1.44.2 polars-runtime-32-1.44.2 protobuf-7.36.2 pyarrow-19.0.1 pycparser-3.0 pydantic-2.13.5 pydantic-core-2.46.5 pygments-2.21.0 pyluach-2.3.0 python-dateutil-2.9.0.post0 python-dotenv-1.2.3 pytz-2026.3.post1 rel-0.4.9.27 requests-2.34.2 scipy-1.18.1 setuptools-79.0.1 six-1.17.0 soupsieve-2.9.2 sqlalchemy-2.0.54 structlog-25.5.0 tabulate-0.9.0 toolz-1.1.0 types-pytz-2026.3.1.20260727 typing-inspection-0.4.4 typing_extensions-4.16.0 tzdata-2026.4 urllib3-2.8.0 websocket-client-1.9.2 websockets-17.1 yfinance-0.2.66 ziplime-1.19.16

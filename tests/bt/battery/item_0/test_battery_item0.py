@@ -317,3 +317,131 @@ def test_single_input_form_is_graded_correct_for_the_core_keeping_one_input_in_o
     out = {"form": "single_input", "runs": runs}
     assert len({json.dumps(r["order"]) for r in runs}) == 24
     assert run_battery.correctness(SceneResult("ok", out), sc.expected, sc, "t_single") == "正解と一致"
+
+
+# ---------------------------------------------------------------- round r5-1
+# The runnability ledger opponents/RUNNABILITY.tsv and the ability-by-ability
+# form of the review table (ROOTCAUSE_r5-1.md, critic i0-r4-03 / i0-r4-04).
+DANGER_11 = {44, 74, 120, 41, 58, 19, 112, 111, 97, 51, 118}   # delegation: tool catalogue §3
+
+
+def _ledger() -> list[dict]:
+    import csv
+    with (HERE / "opponents" / "RUNNABILITY.tsv").open(encoding="utf-8") as f:
+        return list(csv.DictReader(f, delimiter="\t"))
+
+
+def _pool() -> dict[str, set[int]]:
+    import collections
+    import csv
+    pool = collections.defaultdict(set)
+    with (HERE / "pool.tsv").open(encoding="utf-8") as f:
+        for r in csv.DictReader(f, delimiter="\t"):
+            if r["viewpoint"].startswith("P0-"):
+                pool[r["viewpoint"]].add(int(r["cand"]))
+    return pool
+
+
+def test_ledger_has_one_row_per_pool_candidate():                                    # (a)
+    cands = [int(r["cand"]) for r in _ledger()]
+    assert len(cands) == len(set(cands))
+    assert set(cands) == set().union(*_pool().values())
+    assert all(r["result"] in ("走った", "走らなかった") for r in _ledger())
+
+
+def test_every_ran_candidate_has_all_scenes_from_its_own_adapter():                   # (b)
+    import csv
+    for r in _ledger():
+        if r["result"] != "走った":
+            continue
+        assert r["target"] in run_battery.OPPONENTS, r["cand"]
+        p = HERE / "survey_results" / f"{r['target']}.tsv"
+        with p.open(encoding="utf-8") as f:
+            ids = [row["scene_id"] for row in csv.DictReader(f, delimiter="\t")]
+        assert sorted(ids) == sorted(s.id for s in scenes.SCENES), r["cand"]
+
+
+def test_every_unrun_candidate_has_an_attempt_record_or_a_stated_danger():            # (c)
+    import re
+    for r in _ledger():
+        if r["result"] != "走らなかった":
+            continue
+        log = HERE / r["log"] if r["log"] != "-" else None
+        if log is not None:
+            assert log.is_file() and log.stat().st_size > 0, r["cand"]
+            assert re.search(r"20\d\d-\d\d-\d\dT\d\d:\d\d:\d\dZ", log.read_text(encoding="utf-8")), r["cand"]
+        else:
+            assert int(r["cand"]) in DANGER_11 and r["reason_kind"].startswith("危険(台帳 §3"), r["cand"]
+        if r["reason_kind"].startswith("危険(§6-1)"):
+            assert re.search(r"SCAN \d+ 行", r["reason"]), r["cand"]
+
+
+def test_a_size_or_space_reason_carries_the_disk_reading():                          # (d)
+    for r in _ledger():
+        if any(w in r["reason_kind"] + r["reason"] for w in ("容量", "一括の取得", "数百 MB")):
+            assert r["log"] != "-", r["cand"]
+            text = (HERE / r["log"]).read_text(encoding="utf-8")
+            assert "/dev/" in text and "%" in text, r["cand"]   # a `df -m /` line
+
+
+def test_no_record_says_it_was_not_tried():                                          # (e)
+    for p in (HERE / "opponents" / "RUNNABILITY.tsv", HERE / "opponents" / "CONSIDERED.md"):
+        assert "試していない" not in p.read_text(encoding="utf-8"), p.name
+
+
+def test_runnable_lines_equal_the_pool_candidates_that_ran():                         # (f)
+    import re
+    ran = {int(r["cand"]) for r in _ledger() if r["result"] == "走った"}
+    pool = _pool()
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    for sec in re.split(r"^### 観点 ", text, flags=re.M)[1:]:
+        vp = sec[:4]
+        line = re.search(r"動かせた候補: (\d+) 件(?:\((.*)\))?", sec)
+        named = {int(x) for x in re.findall(r"(?:^|, )(\d+) ", line.group(2) or "")}
+        rows = {int(m) for m in re.findall(r"^\| (\d+) ", sec, flags=re.M)}
+        assert named == pool[vp] & ran, vp
+        assert int(line.group(1)) == len(named), vp
+        assert rows == pool[vp] - ran, vp
+
+
+def _table_rows(sec: str):
+    lines = sec.splitlines()
+    for i, ln in enumerate(lines):
+        if ln.startswith("| 候補 |"):
+            head = [c.strip() for c in ln.strip().strip("|").split("|")]
+            for row in lines[i + 2:]:
+                if not row.startswith("|"):
+                    break
+                yield dict(zip(head, [c.strip() for c in row.strip().strip("|").split("|")]))
+
+
+def test_superset_and_absent_rows_answer_every_ability_with_a_source():
+    """i0-r4-03: a 上位互換 or 持たないと確認した row answers each ability of the
+    viewpoint as 在る or 無い with its source; 在る names the containing ran
+    candidate after 含む:; the hedging words are not used; 持たない is all 無い."""
+    import re
+    ran = {int(r["cand"]) for r in _ledger() if r["result"] == "走った"}
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    checked = 0
+    for sec in re.split(r"^### 観点 ", text, flags=re.M)[1:]:
+        abilities = sorted({int(n) for n in re.findall(r"\(能 (\d+)\)", sec)})
+        for row in _table_rows(sec):
+            verdict, why = row["判断"], row["理由"]
+            if not (verdict.startswith("スキップ") or verdict.startswith("持たないと確認した")):
+                continue
+            checked += 1
+            whole = " ".join(row.values())
+            for w in ("在るとしても", "在るかは", "未確認"):
+                assert w not in whole, (row["候補"], w)
+            assert re.search(r"SCAN \d+ 行|https?://", whole), row["候補"]
+            parts = re.split(r"能 (\d+): (在る|無い)", why)
+            found = {int(parts[k]): (parts[k + 1], parts[k + 2]) for k in range(1, len(parts) - 1, 3)}
+            assert sorted(found) == abilities, (row["候補"], sorted(found), abilities)
+            for n, (have, seg) in found.items():
+                assert re.search(r"SCAN \d+ 行|https?://|\d+(?:-\d+)? 行|grep", seg), (row["候補"], n)
+                if have == "在る":
+                    m = re.search(r"含む: (\d+) ", seg)
+                    assert m and int(m.group(1)) in ran, (row["候補"], n)
+            if verdict.startswith("持たないと確認した"):
+                assert all(h == "無い" for h, _ in found.values()), row["候補"]
+    assert checked > 0

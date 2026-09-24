@@ -1,0 +1,49 @@
+##### from item0_r5-1_scenekeeper_install_3.log
+=== 2026-09-24T02:56:22Z sparse clone of pst-group/pysystemtrade without the 737 MB data folder (delegation §4 / survey §6-6: no bulk download of hundreds of MB); only the SP500 sample files and the csv config
+/dev/vda          258020 31248      6691  83% /
+Cloning into 'c3'...
+Your branch is up to date with 'origin/develop'.
+8958c49c38b1e4a8c07f0e4375d5e9cb68a087f7 2026-09-21T11:55:15+01:00
+55M	.
+--- setup.py install-time hooks:
+--- requirements:
+######################################################################
+# This method of installing the project is deprecated
+# Dependencies and package data are defined in 'pyproject.toml'
+# See the README
+# This file will be removed in a future release
+######################################################################
+
+pandas==2.1.3
+matplotlib>=3.0.0
+pyyaml==6.0.1
+numpy>=1.24.0
+scipy>=1.0.0
+pymongo==3.11.3
+ib_async>=2,<3
+psutil==7.2.1
+pytest>6.2
+Flask>=2.0.1
+Werkzeug>=2.0.1
+statsmodels==0.14.0
+PyPDF2>=2.5.0
+pyarrow>=14.0.1
+scikit-learn>1.3.0
+=== start 2026-09-24T02:56:31Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c3 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c3/bin/pip install --no-cache-dir -r /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c3/requirements.txt && echo /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c3 > /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c3/lib/python3.11/site-packages/c3_src.pth
+df before: /dev/vda          258020 31302      6637  83% /
+=== end 2026-09-24T02:57:04Z rc=0 elapsed=33s min_free=5733MB 
+Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Building wheels for collected packages: pymongo
+  Building wheel for pymongo (pyproject.toml): started
+  Building wheel for pymongo (pyproject.toml): finished with status 'done'
+  Created wheel for pymongo: filename=pymongo-3.11.3-cp311-cp311-linux_x86_64.whl size=497748 sha256=7bfafb3580691a030d9ea2c004212de04afe3cb54fc324ed92a6f7406b37ede6
+  Stored in directory: /tmp/pip-ephem-wheel-cache-n3imcmk3/wheels/6e/73/c3/600acfe4491f92356b7e98911618cf2016aac145a50b626c02
+Successfully built pymongo
+Installing collected packages: pytz, tzdata, threadpoolctl, six, pyyaml, PyPDF2, pyparsing, pymongo, pygments, pyarrow, psutil, pluggy, pillow, packaging, numpy, nest_asyncio, narwhals, markupsafe, kiwisolver, itsdangerous, iniconfig, fonttools, cycler, cloudpickle, click, blinker, Werkzeug, scipy, python-dateutil, pytest, patsy, joblib, jinja2, contourpy, aeventkit, scikit-learn, pandas, matplotlib, ib_async, Flask, statsmodels
+Successfully installed Flask-3.1.3 PyPDF2-3.0.1 Werkzeug-3.1.8 aeventkit-2.1.0 blinker-1.9.0 click-8.5.0 cloudpickle-3.1.2 contourpy-1.3.3 cycler-0.12.1 fonttools-4.66.0 ib_async-2.1.0 iniconfig-2.3.0 itsdangerous-2.2.0 jinja2-3.1.6 joblib-1.6.0 kiwisolver-1.5.1 markupsafe-3.0.3 matplotlib-3.11.2 narwhals-2.26.0 nest_asyncio-1.6.0 numpy-1.26.4 packaging-26.3 pandas-2.1.3 patsy-1.0.3 pillow-12.3.0 pluggy-1.6.0 psutil-7.2.1 pyarrow-25.0.1 pygments-2.21.0 pymongo-3.11.3 pyparsing-3.3.3 pytest-9.1.1 python-dateutil-2.9.0.post0 pytz-2026.3.post1 pyyaml-6.0.1 scikit-learn-1.9.1 scipy-1.17.1 six-1.17.0 statsmodels-0.14.0 threadpoolctl-3.7.0 tzdata-2025.3
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+df after: /dev/vda          258020 32032      5907  85% /
+=== 2026-09-24T02:57:22Z add the SP500_micro sample files (the example config maps SP500 to SP500_micro)
+60M	.

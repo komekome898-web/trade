@@ -1,0 +1,8 @@
+##### from item0_r5-1_scenekeeper_install_123.log
+=== start 2026-09-24T03:51:48Z candidate 123 zenbot: not installed (survey §6-1: SCAN 3192 行「状態は『危険なので止めた』で確定」、2966 行 postinstall が node post_install.js で webpack と追加の外部取得を走らせる)
+/dev/vda          258020 35584      2355  94% /
+--- read only (primary source for the review table): blobless clone, no install scripts run
+https://github.com/DeviaVir/zenbot HEAD 52872fb4b5f9d10e2f891d95daec05da0b721ceb branch unstable
+21:    "postinstall": "node post_install.js",
+https://github.com/carlos8f/zenbot HEAD 52872fb4b5f9d10e2f891d95daec05da0b721ceb branch unstable  (the same commit as DeviaVir/zenbot)
+=== end 2026-09-24T03:51:49Z

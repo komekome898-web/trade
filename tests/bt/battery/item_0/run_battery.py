@@ -80,6 +80,8 @@ OPPONENTS = {
     "opp_gobacktest": ("gobacktest_adapter", "GobacktestAdapter"),
     "opp_pineforge": ("pineforge_adapter", "PineforgeAdapter"),
     "opp_barter": ("barter_adapter", "BarterAdapter"),
+    "opp_pytrendfollow": ("pytrendfollow_adapter", "PytrendfollowAdapter"),
+    "opp_isaaccheng_obsim": ("isaaccheng_obsim_adapter", "IsaaccengObsimAdapter"),
 }
 
 

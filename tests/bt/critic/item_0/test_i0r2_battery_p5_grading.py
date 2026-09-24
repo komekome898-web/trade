@@ -13,7 +13,7 @@ true}` and was graded 正解と一致 (round_2/materials/runs/opp_hftbacktest.ts
 Rule 1 of the scene set: a result counts only if the result a working
 capability produces is there.
 
-i0-r2-07 (test rewritten in round 4; see the test). `p5-hand-over-order` tells single-input targets to take the four
+i0-r2-07 (test rewritten in round 4 and again in round 5; see the test). `p5-hand-over-order` tells single-input targets to take the four
 streams "その回の順で連結して" and expects ONE order for all 24
 concatenations. For a one-input target the concatenation IS that input's
 own order, which `p5-same-stream-order` (and the core's rule since round 2,
@@ -73,14 +73,24 @@ def _event(d: dict):
 
 
 def test_single_input_form_of_hand_over_order_agrees_with_keeping_one_input_in_order():
-    # Rewritten in round 4 (critic, scene-set rule 8): the round-4 scene set
-    # replaced the expected key `distinct_orders` with form-dependent grading
-    # (`graded_from`), so the old assertion failed with KeyError -- an error of
-    # this test, not of the scene. The property is unchanged: a one-input
-    # target that keeps its own input's order (the rule of
-    # p5-same-stream-order, and the core's rule since i0-r1-10) must be graded
-    # 正解と一致, and one that re-sorts the concatenation must not be graded as
-    # following a keep-the-input-order rule.
+    # Rewritten in round 5 (critic, scene-set rule 8). Since the scene
+    # keeper's round r5-1 (critic i0-r4-05) the rule a target is graded by is
+    # fixed on the scene-set side (stated_rules.py) and looked up by target
+    # name; an adapter no longer reports `stated_rule` / `predicted`. The
+    # round-4 version put them into the output and graded without a target
+    # name, so it failed on the retired protocol -- an error of this test, as
+    # the scene keeper reported (ROOTCAUSE_r5-1.md). The property is
+    # unchanged: a one-input target whose fixed rule keeps the input's own
+    # order (p5-same-stream-order; here the scene set's single_input rule of
+    # opp_hftbacktest, recipe stable_by_time) and that keeps it must be graded
+    # 正解と一致, and a one-input target that re-sorts the concatenation by a
+    # fixed type order must not be.
+    import stated_rules  # noqa: E402  (scene-set side, on sys.path above)
+
+    single = [t for t, r in stated_rules.STATED_RULES.items() if r.form == "single_input"]
+    assert single, "the scene set fixes no single_input rule: the single-input form cannot be graded at all"
+    target = single[0]
+    assert stated_rules.STATED_RULES[target].recipe == "stable_by_time"
     sc = _scene("p5-hand-over-order")
     runs, seen = [], set()
     for order in sc.input["hand_over_orders"]:
@@ -92,19 +102,17 @@ def test_single_input_form_of_hand_over_order_agrees_with_keeping_one_input_in_o
                 got.append([str(event.EVENT_TYPE.value).lower(), int(event.exchange_time_ns)])
 
         CoreEngine(_Rec(), one_input).run()
-        predicted = [[e["kind"], e["ts_ns"]] for name in order for e in sc.input["streams"][name]]
-        runs.append({"hand_over": list(order), "order": got, "predicted": predicted})
+        runs.append({"hand_over": list(order), "order": got})
         seen.add(repr(got))
     assert len(seen) == 24  # the core keeps one input's own order
-    rule = {"source": "ordering.py source_merge.inside_one_stream", "quote": "the stream's own order",
-            "predicted": runs[0]["predicted"]}
-    keeps = SceneResult("ok", {"form": "single_input", "runs": runs, "stated_rule": rule})
-    assert run_battery.correctness(keeps, sc.expected, sc) == "正解と一致", (
+    keeps = SceneResult("ok", {"form": "single_input", "runs": runs})
+    assert run_battery.correctness(keeps, sc.expected, sc, target) == "正解と一致", (
         f"a one-input target keeping its input's order is graded "
-        f"{run_battery.correctness(keeps, sc.expected, sc)}: {run_battery.graded_output(keeps, sc)}"
+        f"{run_battery.correctness(keeps, sc.expected, sc, target)}: "
+        f"{ {k: v for k, v in run_battery.graded_output(keeps, sc, target).items() if k != 'raw'} }"
     )
-    # the same observed orders claimed against a single fixed type order must not pass
-    fixed = sorted(runs[0]["predicted"], key=lambda kt: ["liquidation", "funding", "trade", "bar"].index(kt[0]))
-    wrong = SceneResult("ok", {"form": "single_input", "stated_rule": rule,
-                               "runs": [dict(r, predicted=fixed) for r in runs]})
-    assert run_battery.correctness(wrong, sc.expected, sc) != "正解と一致"
+    # the same target re-sorting the concatenation by one fixed type order must not pass
+    rank = ["liquidation", "funding", "trade", "bar"]
+    resorted = [dict(r, order=sorted(r["order"], key=lambda kt: rank.index(kt[0]))) for r in runs]
+    wrong = SceneResult("ok", {"form": "single_input", "runs": resorted})
+    assert run_battery.correctness(wrong, sc.expected, sc, target) != "正解と一致"

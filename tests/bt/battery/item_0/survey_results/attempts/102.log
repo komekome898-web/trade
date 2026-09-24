@@ -1,0 +1,151 @@
+##### from item0_r5-1_scenekeeper_install_102.log
+=== 2026-09-24T02:53:18Z git clone --depth 1 https://github.com/3yit/Limit-Order-Book-Simulator.git c102
+/dev/vda          258020 31154      6785  83% /
+Cloning into 'c102'...
+rc=0
+8e5e9d24110e5336848a2d77b8f2705ec0f4d8d4 2025-10-26T22:02:38-03:00 Rim
+1.4M	.
+./src/matching_engine.cpp
+./src/order_book.cpp
+./src/simulator.cpp
+./src/analytics.cpp
+./src/main.cpp
+./requirements.txt
+./GIT_SETUP.md
+./README.md
+./CMakeLists.txt
+./scripts/setup_python_bindings.sh
+./scripts/benchmark_suite.sh
+./scripts/README.md
+./scripts/profile.sh
+./scripts/init_git.sh
+./scripts/binance_depth_capture.py
+./scripts/generate_sample_data.py
+./scripts/test_python_bindings.py
+./scripts/run_scenarios.sh
+./scripts/cleanup.sh
+./.gitignore
+./tests/catch_amalgamated.hpp
+./tests/test_order_book.cpp
+./tests/catch_amalgamated.cpp
+./data/sample_orders.csv
+./bindings/module.cpp
+./benchmarks/order_book_benchmark.cpp
+./include/matching_engine.hpp
+./include/order.hpp
+./include/simulator.hpp
+./include/order_book.hpp
+./include/analytics.hpp
+--- build files:
+cmake_minimum_required(VERSION 3.16)
+project(lob_simulator VERSION 0.1.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+option(LOB_BUILD_TESTS "Build unit tests" ON)
+option(LOB_BUILD_BENCHMARKS "Build microbenchmarks" OFF)
+option(LOB_BUILD_PYTHON "Build pybind11 module" OFF)
+
+add_library(lob_core STATIC
+    src/order_book.cpp
+    src/matching_engine.cpp
+    src/analytics.cpp
+    src/simulator.cpp
+)
+target_include_directories(lob_core
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+target_compile_features(lob_core PUBLIC cxx_std_20)
+
+add_executable(lob_simulator src/main.cpp)
+target_link_libraries(lob_simulator PRIVATE lob_core)
+
+if (LOB_BUILD_TESTS)
+    enable_testing()
+    add_executable(lob_tests
+        tests/catch_amalgamated.cpp
+        tests/test_order_book.cpp
+    )
+    target_link_libraries(lob_tests PRIVATE lob_core)
+    target_include_directories(lob_tests PRIVATE tests)
+    add_test(NAME lob_tests COMMAND lob_tests)
+endif ()
+
+if (LOB_BUILD_BENCHMARKS)
+    find_package(benchmark QUIET)
+    if (benchmark_FOUND)
+        add_executable(lob_bench benchmarks/order_book_benchmark.cpp)
+        target_compile_definitions(lob_bench PRIVATE LOB_ENABLE_GOOGLE_BENCHMARK)
+        target_link_libraries(lob_bench PRIVATE lob_core benchmark::benchmark)
+    else ()
+        message(WARNING "Google Benchmark not found; benchmarks will not be built.")
+    endif ()
+endif ()
+
+if (LOB_BUILD_PYTHON)
+    find_package(pybind11 CONFIG QUIET)
+    if (pybind11_FOUND)
+        pybind11_add_module(lob_cpp bindings/module.cpp)
+        target_link_libraries(lob_cpp PRIVATE lob_core)
+    else ()
+        message(WARNING "pybind11 not found; skipping Python bindings.")
+    endif ()
+endif ()
+--- network/process calls in sources:
+./scripts/binance_depth_capture.py:34:BINANCE_REST_DEPTH = "https://api.binance.com/api/v3/depth"
+./tests/catch_amalgamated.hpp:4://        https://www.boost.org/LICENSE_1_0.txt)
+./tests/catch_amalgamated.hpp:87:// https://opensource.apple.com/source/CarbonHeaders/CarbonHeaders-18.1/TargetConditionals.h.auto.html
+./tests/catch_amalgamated.hpp:194:// https://developer.nvidia.com/nvidia_bug/3321845.
+./tests/catch_amalgamated.hpp:272:// see: http://stackoverflow.com/questions/36901803/gettimeofday-not-declared-in-this-scope-cygwin
+./tests/catch_amalgamated.hpp:275:// https://gcc.gnu.org/onlinedocs/gcc-4.8.2/libstdc++/api/a01053_source.html line 2812-2813
+./tests/catch_amalgamated.hpp:372:         // work around clang bug with libstdc++ https://bugs.llvm.org/show_bug.cgi?id=31852
+./tests/catch_amalgamated.hpp:7998:    // The implementation is based on the PCG family (http://pcg-random.org)
+./tests/catch_amalgamated.cpp:4://        https://www.boost.org/LICENSE_1_0.txt)
+./tests/catch_amalgamated.cpp:3537:        // https://developer.apple.com/library/archive/qa/qa1361/_index.html
+--- binaries:
+./scripts/setup_python_bindings.sh: Bourne-Again shell script, Unicode text, UTF-8 text executable
+./scripts/benchmark_suite.sh: Bourne-Again shell script, Unicode text, UTF-8 text executable
+./scripts/profile.sh: Bourne-Again shell script, Unicode text, UTF-8 text executable
+./scripts/init_git.sh: Bourne-Again shell script, Unicode text, UTF-8 text executable
+./scripts/binance_depth_capture.py: Python script, ASCII text executable
+./scripts/generate_sample_data.py: Python script, Unicode text, UTF-8 text executable
+./scripts/test_python_bindings.py: Python script, Unicode text, UTF-8 text executable
+./scripts/run_scenarios.sh: Bourne-Again shell script, Unicode text, UTF-8 text executable
+./scripts/cleanup.sh: Bourne-Again shell script, Unicode text, UTF-8 text executable
+=== start 2026-09-24T02:54:44Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/pip install --no-cache-dir 'pybind11>=2.10.0' && cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c102 && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLOB_BUILD_TESTS=OFF -DLOB_BUILD_PYTHON=ON -Dpybind11_DIR=$(/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/python -m pybind11 --cmakedir) -DPython_EXECUTABLE=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/python -DPYTHON_EXECUTABLE=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/python && cmake --build build -j4 && cp build/lob_cpp*.so /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/lib/python3.11/site-packages/ && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/python -c 'import lob_cpp; print(lob_cpp.__file__)'
+df before: /dev/vda          258020 31185      6754  83% /
+=== end 2026-09-24T02:55:00Z rc=2 elapsed=16s min_free=6712MB 
+[ 66%] Building CXX object CMakeFiles/lob_simulator.dir/src/main.cpp.o
+[ 77%] Building CXX object CMakeFiles/lob_cpp.dir/bindings/module.cpp.o
+[ 88%] Linking CXX executable lob_simulator
+[ 88%] Built target lob_simulator
+[100%] Linking CXX shared module lob_cpp.cpython-311-x86_64-linux-gnu.so
+/usr/bin/ld: liblob_core.a(order_book.cpp.o): warning: relocation against `_ZSt19piecewise_construct' in read-only section `.text'
+/usr/bin/ld: liblob_core.a(order_book.cpp.o): relocation R_X86_64_PC32 against symbol `_ZSt19piecewise_construct' can not be used when making a shared object; recompile with -fPIC
+/usr/bin/ld: final link failed: bad value
+collect2: error: ld returned 1 exit status
+gmake[2]: *** [CMakeFiles/lob_cpp.dir/build.make:98: lob_cpp.cpython-311-x86_64-linux-gnu.so] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:139: CMakeFiles/lob_cpp.dir/all] Error 2
+gmake: *** [Makefile:91: all] Error 2
+df after: /dev/vda          258020 31219      6720  83% /
+note: first link failed (static lob_core not built with -fPIC); retry with the cmake flag CMAKE_POSITION_INDEPENDENT_CODE=ON (build option only, no source change)
+=== start 2026-09-24T02:55:11Z limit=600s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c102 && rm -rf build && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLOB_BUILD_TESTS=OFF -DLOB_BUILD_PYTHON=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -Dpybind11_DIR=$(/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/python -m pybind11 --cmakedir) -DPython_EXECUTABLE=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/python -DPYTHON_EXECUTABLE=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/python >/dev/null && cmake --build build -j4 && cp build/lob_cpp*.so /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/lib/python3.11/site-packages/ && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/bin/python -c 'import lob_cpp, datetime; o=lob_cpp.Order(); print(lob_cpp.__file__, type(o.timestamp), o.timestamp)'
+df before: /dev/vda          258020 31219      6720  83% /
+=== end 2026-09-24T02:55:22Z rc=0 elapsed=11s min_free=6713MB 
+[ 22%] Building CXX object CMakeFiles/lob_core.dir/src/simulator.cpp.o
+[ 44%] Building CXX object CMakeFiles/lob_core.dir/src/analytics.cpp.o
+[ 44%] Building CXX object CMakeFiles/lob_core.dir/src/matching_engine.cpp.o
+[ 55%] Linking CXX static library liblob_core.a
+[ 55%] Built target lob_core
+[ 66%] Building CXX object CMakeFiles/lob_cpp.dir/bindings/module.cpp.o
+[ 77%] Building CXX object CMakeFiles/lob_simulator.dir/src/main.cpp.o
+[ 88%] Linking CXX executable lob_simulator
+[ 88%] Built target lob_simulator
+[100%] Linking CXX shared module lob_cpp.cpython-311-x86_64-linux-gnu.so
+[100%] Built target lob_cpp
+/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c102/lib/python3.11/site-packages/lob_cpp.cpython-311-x86_64-linux-gnu.so <class 'datetime.datetime'> 2026-09-24 02:55:21.847704
+df after: /dev/vda          258020 31220      6719  83% /

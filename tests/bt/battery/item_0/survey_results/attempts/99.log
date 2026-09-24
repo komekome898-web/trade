@@ -1,0 +1,33 @@
+##### from item0_r5-1_scenekeeper_install_99.log
+=== 2026-09-24T02:47:46Z git clone --depth 1 https://github.com/NickGardi/orderbooksim.git c99
+/dev/vda          258020 30921      7018  82% /
+Cloning into 'c99'...
+rc=0
+b767b0c4e86be0535f505e0d09d5407a849da074 2026-08-22T18:49:48-04:00 NickGardi
+./.dockerignore
+./requirements.txt
+./README.md
+./Dockerfile
+./.gitignore
+./.streamlit/config.toml
+./tests/__init__.py
+./tests/test_matching_engine.py
+./models.py
+./app.py
+./matching_engine.py
+--- setup/pyproject:
+--- exec/eval/network/subprocess:
+--- binaries:
+./tests/__init__.py: very short file (no magic)
+=== start 2026-09-24T02:49:41Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c99 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c99/bin/pip install --no-cache-dir 'sortedcontainers>=2.4.0' && echo /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c99 > /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c99/lib/python3.11/site-packages/c99_src.pth
+df before: /dev/vda          258020 30922      7017  82% /
+=== end 2026-09-24T02:49:46Z rc=0 elapsed=5s min_free=6920MB 
+Collecting sortedcontainers>=2.4.0
+  Downloading sortedcontainers-2.4.0-py2.py3-none-any.whl.metadata (10 kB)
+Downloading sortedcontainers-2.4.0-py2.py3-none-any.whl (29 kB)
+Installing collected packages: sortedcontainers
+Successfully installed sortedcontainers-2.4.0
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+df after: /dev/vda          258020 31092      6847  82% /

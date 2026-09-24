@@ -1,0 +1,105 @@
+##### from item0_r5-1_scenekeeper_install_105.log
+=== 2026-09-24T02:47:47Z git clone --depth 1 https://github.com/DaniyalMlk/slippage.git c105
+/dev/vda          258020 30922      7017  82% /
+Cloning into 'c105'...
+rc=0
+6985edb124b737b0979e3f4fd49fb65ffb2bfaf3 2026-09-23T22:34:01-04:00 DaniyalMl
+./src/slippage/cli.py
+./src/slippage/costs.py
+./src/slippage/report.py
+./src/slippage/synthetic.py
+./src/slippage/calibration.py
+./src/slippage/__init__.py
+./src/slippage/impact.py
+./src/slippage/series.py
+./src/slippage/execution.py
+./src/slippage/shortfall.py
+./src/slippage/simulate.py
+./src/slippage/volume.py
+./src/slippage/exceptions.py
+./src/slippage/io.py
+./src/slippage/scheduling.py
+./src/slippage/types.py
+./src/slippage/__main__.py
+./src/slippage/py.typed
+./src/slippage/benchmarks.py
+./.github/workflows/ci.yml
+./.github/workflows/release.yml
+./README.md
+./ROADMAP.md
+./LICENSE
+./.gitignore
+./examples/almgren_chriss.py
+./examples/shortfall_worked_example.py
+./examples/end_to_end.py
+./examples/constrained_schedule.py
+./examples/strategy_comparison.py
+./tests/test_cli.py
+./tests/test_simulate.py
+./tests/test_scheduling.py
+./tests/test_series.py
+./tests/test_shortfall.py
+./tests/test_io.py
+./tests/test_execution.py
+./tests/test_examples.py
+./tests/test_synthetic.py
+./tests/test_costs.py
+--- setup/pyproject:
+[build-system]
+# 77 is the floor for the SPDX `license` expression and `license-files` below.
+# Anything older reads `license = "MIT"` as a legacy table and fails the build.
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# The distribution name is not the import name. `slippage` is taken on the index
+# by an unrelated project, so this publishes as `slippage-tca` — the suffix names
+# what the library is for — while `import slippage` is unchanged. Renaming the
+# Python package to match would have broken every existing import for the sake of
+# a registry collision.
+name = "slippage-tca"
+version = "0.1.0"
+description = "An optimal execution and transaction cost analysis engine"
+readme = "README.md"
+requires-python = ">=3.10"
+# The legacy `license = { text = "MIT" }` table this replaces put the word MIT in
+# the metadata and left the LICENSE file out of the distribution entirely.
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Daniyal" }]
+keywords = [
+    "transaction-cost-analysis",
+    "optimal-execution",
+    "market-impact",
+    "implementation-shortfall",
+    "almgren-chriss",
+    "quantitative-finance",
+]
+# No `License ::` classifier: it is mutually exclusive with the SPDX expression
+# above, and supplying both is an error rather than a duplication.
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+--- exec/eval/network/subprocess:
+--- binaries:
+=== start 2026-09-24T02:49:41Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c105 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c105/bin/pip install --no-cache-dir /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c105
+df before: /dev/vda          258020 30922      7017  82% /
+=== end 2026-09-24T02:49:49Z rc=0 elapsed=8s min_free=6768MB 
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.9/16.9 MB 97.6 MB/s eta 0:00:00
+Building wheels for collected packages: slippage-tca
+  Building wheel for slippage-tca (pyproject.toml): started
+  Building wheel for slippage-tca (pyproject.toml): finished with status 'done'
+  Created wheel for slippage-tca: filename=slippage_tca-0.1.0-py3-none-any.whl size=61512 sha256=80db57b0ab3adcfa95ff5cdcb4253b8aa846fa0f49ded6010d3631fa8e2bae7d
+  Stored in directory: /tmp/pip-ephem-wheel-cache-diq479j9/wheels/94/eb/2c/b791bd47aeca121bf6fd3d8f85b74945961e6ef7f5c790f301
+Successfully built slippage-tca
+Installing collected packages: numpy, slippage-tca
+Successfully installed numpy-2.4.6 slippage-tca-0.1.0
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+df after: /dev/vda          258020 31153      6786  83% /

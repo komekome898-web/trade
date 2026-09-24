@@ -18,6 +18,15 @@ Round r5-1 (scene keeper): the P0-5 rule and its application moved to
 stated_rules.py / run_battery.py; the P0-5 scenes here return only the
 delivered order (the shape changed, nothing else; the materials person
 re-reads this).
+Round 5 (materials person): re-read against the round-5 core. The public
+names used here all still exist (`CoreEngine` keeps its positional
+sockets; `time_span_ns` is a new optional keyword, not passed here, so the
+run is the same as before). History reads now check each slice bound by
+its role (`POSITION_RULE`, window.py), so p4-future-read-attempt also
+tries the remaining forms that name the position after the newest as a
+bound of each role: a forward start with a step ([4::2]), an empty forward
+slice starting there ([4:4]), a backward start ([4::-1]) and a backward
+stop ([:4:-1]). Nothing else changed.
 The engine is reached ONLY through the `core` object handed to
 `make_adapter(core)` (protocol.py): no `import bot.bt.core...` here, so the
 canary (`mutant.py`) can hand over a wrapped `core`.
@@ -397,6 +406,14 @@ class NewImplAdapter(Adapter):
                     lambda: [e.close for e in ctx.visible_events()[3:5]])
             att.run("ctx.visible_events()[4:](最新の次の位置から先の区間)", "position",
                     lambda: [e.close for e in ctx.visible_events()[4:]])
+            att.run("ctx.visible_events()[4::2](最新の次の位置から先の、歩幅 2 の区間)", "position",
+                    lambda: [e.close for e in ctx.visible_events()[4::2]])
+            att.run("ctx.visible_events()[4:4](最新の次の位置から始まる空の区間)", "position",
+                    lambda: [e.close for e in ctx.visible_events()[4:4]])
+            att.run("ctx.visible_events()[4::-1](最新の次の位置から後ろ向きの区間)", "position",
+                    lambda: [e.close for e in ctx.visible_events()[4::-1]])
+            att.run("ctx.visible_events()[:4:-1](最新の次の位置で止まる後ろ向きの区間)", "position",
+                    lambda: [e.close for e in ctx.visible_events()[:4:-1]])
             att.run("ctx.visible_events(BAR) の全部", "other", lambda: [e.close for e in ctx.visible_events(core.EventType.BAR)])
             att.run("ctx.last(BAR)", "other", lambda: ctx.last(core.EventType.BAR).close)
 

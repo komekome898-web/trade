@@ -1,0 +1,5 @@
+##### from item0_r5-1_scenekeeper_install_8.log
+=== start 2026-09-24T03:51:48Z candidate 8 OpenTrader: not installed (survey §6-1: SCAN 3749 行「状態は『危険なので止めた』で確定」、3812 行、3809 行 postinstall が prisma generate / migrate deploy / node seed.mjs を走らせる)
+/dev/vda          258020 35584      2355  94% /
+read only: blobless clone https://github.com/Open-Trader/opentrader HEAD 8b8e24599599df214b12b4263553885854015b4b branch dev
+=== end 2026-09-24T03:51:49Z

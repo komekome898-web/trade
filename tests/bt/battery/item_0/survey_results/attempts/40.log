@@ -1,0 +1,11 @@
+##### from item0_r5-1_scenekeeper_install_40.log
+=== start 2026-09-24T03:51:48Z candidate 40 OpenMarket: a hosted platform (SCAN 5694 行 openmarket.xyz、4327 行「登録はしない」)
+/dev/vda          258020 35584      2355  94% /
+--- read only: GET https://openmarket.xyz (the platform's page)
+-rw-r--r-- 1 root root 63310 Sep 24 03:49 /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/b_reads/openmarket_home.html
+<title>OpenMarket - Market Intelligence Platform
+links to code or documentation on the page (github / gitlab / docs):
+0
+the backtest runs inside the platform's chart (page text): backtest over history, and read the console, all without leaving your chart.
+=== decision: not run. There is no engine to install; running a backtest means sending our data to the platform (委任文 §4 外部へ何も渡さない)
+=== end 2026-09-24T03:51:49Z

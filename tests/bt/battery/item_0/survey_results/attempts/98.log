@@ -1,0 +1,49 @@
+##### from item0_r5-1_scenekeeper_install_98.log
+=== 2026-09-24T02:47:45Z git clone --depth 1 https://github.com/mihircoding/limitOrderBook.git c98
+/dev/vda          258020 30920      7019  82% /
+Cloning into 'c98'...
+rc=0
+6cc053660c1499e4948e7fc759d8c283c9c3d3b1 2026-09-23T17:16:42+00:00 mihircoding
+./benchmark.py
+./RESULTS.md
+./INTERVIEW.md
+./src/simulator.py
+./src/fees.py
+./src/__init__.py
+./src/orderbook.py
+./src/order.py
+./src/latency.py
+./requirements.txt
+./simulation.png
+./latency_study.py
+./pytest.ini
+./README.md
+./.gitignore
+./run_simulation.py
+./tests/test_latency.py
+./tests/test_stp.py
+./tests/test_simulator.py
+./tests/test_stylized_facts.py
+./tests/test_fees.py
+./tests/test_lazy_cancel.py
+./tests/test_best_price.py
+./tests/test_orderbook.py
+./docs/build_data.py
+./docs/index.html
+./docs/data.js
+--- setup/pyproject:
+--- exec/eval/network/subprocess:
+--- binaries:
+=== start 2026-09-24T02:49:41Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c98 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c98/bin/pip install --no-cache-dir 'numpy>=1.24' && echo /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c98 > /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c98/lib/python3.11/site-packages/c98_src.pth
+df before: /dev/vda          258020 30922      7017  82% /
+=== end 2026-09-24T02:49:48Z rc=0 elapsed=7s min_free=6797MB 
+Collecting numpy>=1.24
+  Downloading numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+Downloading numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.9/16.9 MB 34.4 MB/s eta 0:00:00
+Installing collected packages: numpy
+Successfully installed numpy-2.4.6
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+df after: /dev/vda          258020 31171      6768  83% /

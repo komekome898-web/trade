@@ -1,0 +1,26 @@
+##### from item0_r5-1_scenekeeper_install_52.log
+=== start 2026-09-24T03:50:39Z candidate 52 QuantConnect LEAN: what the engine needs to run here
+/dev/vda          258020 35584      2355  94% /
+--- the blobless clone (read only) HEAD 856327ff33869cba98393781000c4ab1d2af423d; the engine is C# (.NET): project files:
+Common/QuantConnect.csproj
+Engine/QuantConnect.Lean.Engine.csproj
+Launcher/QuantConnect.Lean.Launcher.csproj
+    <TargetFramework>net10.0</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+--- runtimes in this environment:
+dotnet: not found
+docker: /usr/bin/docker
+mono: not found
+--- the Python CLI (PyPI lean) runs the engine in a Docker image (SCAN 482: 最小実行が Docker 必須のため未完了)
+=== end 2026-09-24T03:50:40Z
+/dev/vda          258020 35584      2355  94% /
+=== 2026-09-24T03:50:49Z docker daemon and the engine image size (read only; nothing pulled)
+Client: Docker Engine - Community
+ Version:    29.3.1
+ Context:    default
+ Debug Mode: false
+ Plugins:
+--- https://hub.docker.com/v2/repositories/quantconnect/lean/tags/latest (compressed image size in bytes):
+full_size 14047437307 last_updated 2026-09-23T21:47:43.753296Z
+/dev/vda          258020 35584      2355  94% /
+=== decision: not run. The engine needs .NET (net10.0, not installed) or the quantconnect/lean image (size above, compressed); the free disk is under that and the delegation forbids bulk downloads of hundreds of MB (委任文 §4)

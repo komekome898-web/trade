@@ -1,0 +1,11 @@
+##### from basana_install.log
+Name: basana
+Version: 1.11
+Summary: A Python async and event driven framework for algorithmic trading, with a focus on crypto currencies.
+Home-page: 
+Author: Gabriel Becedillas
+Author-email: Gabriel Becedillas <gabriel.becedillas@gmail.com>
+License: 
+Location: /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/basana/lib/python3.11/site-packages
+Requires: aiohttp, python-dateutil
+Required-by: 
