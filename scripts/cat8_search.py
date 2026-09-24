@@ -46,14 +46,14 @@ for p in paths:
         unread.append((p, "バイナリ(NUL を含む。cat8_mklist の --exclude で理由を書いて外す)"))
         continue
     text = None
-    for enc in ("utf-8", "utf-8-sig", "cp932", "euc_jp"):
+    for enc in ("utf-8", "utf-8-sig", "cp932", "euc_jp", "cp1252"):
         try:
             text = data.decode(enc)
             break
         except UnicodeDecodeError:
             continue
     if text is None:
-        unread.append((p, "符号化が utf-8・cp932・euc_jp のどれでもない"))
+        unread.append((p, "符号化が utf-8・cp932・euc_jp・cp1252 のどれでもない"))
         continue
     if enc not in ("utf-8", "utf-8-sig"):
         encs.append((p, enc))
