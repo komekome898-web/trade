@@ -49,8 +49,8 @@ CORE_CONTRACT: dict = {
                      "u = first + q * step of what the read reads (DeliveredEvents.place); u >= delivered "
                      "(the count delivered when the answer was made) -> FuturePositionError (an IndexError "
                      "and a LookAheadError); 0 <= u < delivered -> OutsideAnswerError (delivered, outside "
-                     "the answer); u < 0 -> DroppedPositionError if history_limit dropped events there, "
-                     "else BeforeFirstEventError (nothing there); these three are OutsideAnswerErrors, "
+                     "the answer); -dropped <= u < 0 -> DroppedPositionError (a delivered event history_limit "
+                     "dropped), u < -dropped -> BeforeFirstEventError (nothing there); these three are OutsideAnswerErrors, "
                      "not LookAheadErrors; of two slice bounds outside, one naming an event not delivered "
                      "yet is reported first; each error carries answer_position, read_position, delivered",
         },

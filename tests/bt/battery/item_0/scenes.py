@@ -42,7 +42,15 @@ Common conventions (they are part of every scene's input):
     strategy kept itself, a conversion the adapter called itself do not
     count; a target without the type or the means is "not supported".
     run_battery.py checks where each measured thing came from
-    (`SceneResult.provenance`) before it grades.
+    (`SceneResult.provenance`) before it grades;
+  * round r7-1 (critic i0-r6-02): a scene of a viewpoint other than P0-3
+    never fixes which event types it uses. Which types a target has is what
+    P0-3 measures; a scene that needs several types (`type_plan`) takes them
+    from the target's own types in the fixed order `TYPE_ORDER`, and
+    run_battery.py builds the target's input and expected result with
+    `for_target_types` from the types the target delivered in the P0-3 type
+    scenes of the same run. The scene as listed here is the one for a target
+    that has all six types (the first types of TYPE_ORDER).
 """
 from __future__ import annotations
 
@@ -93,6 +101,8 @@ class Scene:
     measures: str           # what the scene measures, one or two sentences
     graded_from: str = ""   # when set: the graded values are computed by run_battery.py
                             # (never by the adapter) from the raw output, as this text says
+    type_plan: dict | None = None  # when set: the event types come from the target's own types
+                                   # (round r7-1): {"slots", "min_types", "cycle"}; see for_target_types
 
 
 def trade(ts: int, price: float, qty: float = 0.01, side: str = "buy", recv: int | None = None) -> dict:
@@ -122,6 +132,42 @@ SAMPLES: dict[str, dict] = {
 JP = {"trade": "約定", "book_snapshot": "板の写真", "book_delta": "板の差分", "bar": "足",
       "funding": "資金調達", "liquidation": "清算", "clock": "時計"}
 
+# ---------------------------------------------------------------- types taken from the target (round r7-1)
+# The order of the market event types in the fixed requirements, §1 of
+# REQUIREMENTS.md ("約定・板の写真・板の差分・足・資金調達・清算"). One order for
+# every target: a scene with a `type_plan` uses the target's own types in
+# this order, so no adapter chooses them.
+TYPE_ORDER = ["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation"]
+SLOTS = ["A", "B", "C", "D"]
+TYPE_RULE = ("この場面は型そのものを測らない(型を持つかは P0-3 が型ごとに測る)。入力の事象の型は、対象の型を、"
+             "固定した要件 §1 の型の順(約定・板の写真・板の差分・足・資金調達・清算)に並べたものから runner が決める。"
+             "対象の型 = 同じ実行の p3-<型> の場面で、対象がその型の事象を戦略に届けた型(出所の検めを通り、受けた列が空でなく、"
+             "受けた型が全部その型)。adapter は型を選ばない。対象の型の数が最低に足りなければ、runner がこの場面を「対応なし」にし、"
+             "理由に p3 の結果を書く。下の入力と期待は 6 種を全部持つ対象のもの(型の順の最初から)。各事象の型の欄以外の中身は、"
+             "その型の p3-<型> の場面の事象と同じ(時刻だけが違う)")
+
+
+def own_types(target_types) -> list[str]:
+    """The target's types in TYPE_ORDER (unknown names dropped)."""
+    have = set(target_types or [])
+    return [k for k in TYPE_ORDER if k in have]
+
+
+def plan_types(plan: dict, target_types) -> list[str] | None:
+    """The slot types of a `type_plan` for a target with these types, or None
+    when the target has fewer than `min_types` of them."""
+    own = own_types(target_types)
+    if len(own) < plan["min_types"]:
+        return None
+    if plan["cycle"]:
+        return [own[i % len(own)] for i in range(plan["slots"])]
+    return own[:plan["slots"]]
+
+
+def typed_event(kind: str, ts: int) -> dict:
+    """An event of this type at this time; its other fields are the P0-3 sample's."""
+    return dict(SAMPLES[kind], ts_ns=ts)
+
 SCENES: list[Scene] = []
 
 
@@ -130,37 +176,67 @@ def add(**kw: Any) -> None:
 
 
 # ---------------------------------------------------------------- P0-1
-_MERGE_STREAMS = {
-    "trades": [trade(T0 + 2 * DAY, 101.0), trade(T0 + 5 * DAY, 104.0)],
-    "bars": [bar(T0 + 1 * DAY, 100.0), bar(T0 + 4 * DAY, 103.0)],
-    "funding": [{"kind": "funding", "ts_ns": T0 + 3 * DAY, "rate": 0.0001}],
-}
+BUILDERS: dict[str, Any] = {}  # scene id -> slot types -> {"input", "expected"} (round r7-1)
+
+
+def _merge_by_time(types: list[str]) -> dict:
+    # A = days 2 and 5, B = days 1 and 4, C = day 3; handed over A, B, C
+    days = {"A": (2, 5), "B": (1, 4), "C": (3,)}
+    streams = {slot: [typed_event(t, T0 + d * DAY) for d in days[slot]] for slot, t in zip(SLOTS, types)}
+    seq = sorted(([e["kind"], e["ts_ns"]] for evs in streams.values() for e in evs), key=lambda p: p[1])
+    return {"input": {"streams": streams, "hand_over_order": list(streams),
+                      "types": dict(zip(streams, types)),
+                      "note": "3 つの入力 A・B・C をこの順で渡す。同じ銘柄の事象を別々の入力として受ける対象には別々に、"
+                              "1 本の入力しか受けない対象には、この順に連結して渡す(並べ替えない)",
+                      "type_rule": TYPE_RULE + "。この場面: 入力 A・B・C に対象の型を型の順に割り当てる"
+                                               "(2 種なら A・B・A)。最低 2 種"},
+            "expected": {"sequence": seq}}
+
+
+BUILDERS["p1-merge-by-time"] = _merge_by_time
+_P1M = {"slots": 3, "min_types": 2, "cycle": True}
+_m = _merge_by_time(plan_types(_P1M, TYPE_ORDER))
 add(id="p1-merge-by-time", viewpoint="P0-1", kind="value",
-    title="型ごとに分かれた入力を、渡した順ではなく時刻の順に処理するか",
-    input={"streams": _MERGE_STREAMS, "hand_over_order": ["trades", "bars", "funding"],
-           "note": "3 つの入力をこの順で渡す。1 本の入力しか受けない対象には、この順に連結して渡す(並べ替えない)"},
-    expected={"sequence": [["bar", T0 + 1 * DAY], ["trade", T0 + 2 * DAY], ["funding", T0 + 3 * DAY],
-                           ["bar", T0 + 4 * DAY], ["trade", T0 + 5 * DAY]]},
-    derivation="5 件の時刻は T0 から 1,2,3,4,5 日後で互いに異なる。時刻の昇順に並べると 足(1)・約定(2)・資金調達(3)・足(4)・約定(5)。"
-               "渡した順(約定,約定,足,足,資金調達)のまま処理すれば 2,5,1,4,3 日の順になり一致しない。",
+    title="別々の入力に分かれた、型の違う事象を、渡した順ではなく時刻の順に処理するか",
+    input=_m["input"], expected=_m["expected"], type_plan=_P1M,
+    derivation="5 件の時刻は T0 から 1,2,3,4,5 日後で互いに異なる(A = 2・5 日後、B = 1・4 日後、C = 3 日後)。"
+               "時刻の昇順に並べると B(1)・A(2)・C(3)・B(4)・A(5)。期待はこの順の(型, 時刻)の列で、型は各入力に割り当てた対象の型。"
+               "渡した順(A,A,B,B,C)のまま処理すれば 2,5,1,4,3 日の順になり一致しない。"
+               "最低 2 種の理由: 固定した要件 P0-1 は「同期のバー逐次ループではないこと」を問う。同じ型だけの入力を時刻で合わせることは"
+               "複数の足の系列を日時で揃える逐次ループでもできるので、1 種では P0-1 の区別が測れない。",
     measures="戦略の呼び出しごとに記録した(事象の型, 時刻)の列が、時刻の昇順と一致するか。")
 
 _SEQ_BARS = [bar(T0 + (i + 1) * DAY, 100.0 + i) for i in range(5)]
 add(id="p1-one-call-per-event", viewpoint="P0-1", kind="value",
     title="事象 1 件ごとに戦略が 1 回呼ばれ、呼ばれたときの時刻がその事象の時刻か",
-    input={"events": _SEQ_BARS},
-    expected={"sequence": [["bar", e["ts_ns"]] for e in _SEQ_BARS]},
-    derivation="入力は 1 日おきの足 5 本(時刻の昇順)。事象ごとに 1 回呼ぶなら呼び出しは 5 回で、各回の(型, 時刻)は入力と同じ。"
-               "恒等写像なので計算は要らない。",
-    measures="呼び出しの回数と、各呼び出しで戦略が受け取った事象の型と時刻。")
+    input={"events": _SEQ_BARS,
+           "note": "型は対象が受ける型(対象の配布物の型)を 1 つ選んでよい(型は測らない。足なら OHLC はすべて終値、"
+                   "約定なら 価格 = 終値 数量 0.01)。5 件とも同じ型"},
+    expected={"observed_ts_ns": [e["ts_ns"] for e in _SEQ_BARS]},
+    derivation="入力は 1 日おきの 5 件(時刻の昇順)。事象ごとに 1 回呼ぶなら呼び出しは 5 回で、各回に受けた事象の時刻は入力と同じ。"
+               "恒等写像なので計算は要らない。型は測らない(型を持つかは P0-3 が測る。第 r7-1 回)。",
+    measures="呼び出しの回数と、各呼び出しで戦略が受け取った事象の時刻。",
+    graded_from="出力の `sequence`(戦略の各呼び出しで受けた(型, 時刻)の列)から runner が作る: `observed_ts_ns` = `sequence` の時刻の列"
+                "(件数 = 呼び出しの回数)。型の欄は採点に使わない(出所の検めには使う: 対象の型で、1 つの型に 2 つの型の名前を写していないこと)。")
 
+
+def _typed_events(types: list[str]) -> dict:
+    evs = [typed_event(t, T0 + (i + 1) * DAY) for i, t in enumerate(types)]
+    return {"input": {"events": evs, "types": list(types),
+                      "type_rule": TYPE_RULE + "。この場面: 対象の型の最初の 2 種を 1 日後・2 日後に 1 件ずつ。最低 2 種"},
+            "expected": {"sequence": [[e["kind"], e["ts_ns"]] for e in evs]}}
+
+
+BUILDERS["p1-typed-events"] = _typed_events
+_P1T = {"slots": 2, "min_types": 2, "cycle": False}
+_t = _typed_events(plan_types(_P1T, TYPE_ORDER))
 add(id="p1-typed-events", viewpoint="P0-1", kind="capability",
     title="戦略が受け取った事象の型を見分けられるか",
-    input={"events": [bar(T0 + 1 * DAY, 100.0), trade(T0 + 2 * DAY, 100.5)]},
-    expected={"sequence": [["bar", T0 + 1 * DAY], ["trade", T0 + 2 * DAY]]},
-    derivation="足 1 件と約定 1 件を時刻の昇順で 1 本の入力に入れる。型を持つ事象が 1 件ずつ届くなら、"
-               "戦略は 2 回呼ばれ、1 回目に足、2 回目に約定を受け取る。型を区別できなければ型の欄を埋められない。",
-    measures="戦略が呼ばれた時に受け取ったものから、足と約定の別を戦略自身が判別できたか(判別した結果の列)。")
+    input=_t["input"], expected=_t["expected"], type_plan=_P1T,
+    derivation="型の違う 2 件を時刻の昇順で 1 本の入力に入れる(型は対象の型の最初の 2 種)。型を持つ事象が 1 件ずつ届くなら、"
+               "戦略は 2 回呼ばれ、1 回目に 1 種目、2 回目に 2 種目を受け取る。型を区別できなければ型の欄を埋められない。"
+               "見分けるには型が 2 種要るので最低 2 種。",
+    measures="戦略が呼ばれた時に受け取ったものから、2 つの型の別を戦略自身が判別できたか(判別した結果の列)。")
 
 # ---------------------------------------------------------------- P0-2
 ISO_Z = "2024-01-01T00:00:00.123456789Z"
@@ -311,51 +387,73 @@ add(id="p4-future-read-attempt", viewpoint="P0-4", kind="capability",
                 "形 no_means の試しは名指す読み出しとして数える(値が返れば止まらなかった)。")
 
 # ---------------------------------------------------------------- P0-5
-_TIE_STREAMS = {
-    "trades": [trade(T0 + DAY, 100.0)],
-    "bars": [bar(T0 + DAY, 100.0)],
-    "funding": [{"kind": "funding", "ts_ns": T0 + DAY, "rate": 0.0001}],
-    "liquidation": [{"kind": "liquidation", "ts_ns": T0 + DAY, "price": 99.0, "qty": 0.2, "side": "sell"}],
-}
-_TIE_ALL = sorted([[e["kind"], e["ts_ns"]] for evs in _TIE_STREAMS.values() for e in evs])
 _STATED_RULE_TEXT = ("対象ごとの規則(対象の文書か公開のコードから、書いてある所と逐語を写したもの)と、それをこの入力に当てた並びは、"
                      "場面係が走らせる前に場面集の側に固定してある(対象の名前を伏せるため、この定義には載せない)。"
                      "adapter は戦略に届いた(型, 時刻)の列だけを返し、規則もそれを当てた列も返さない。"
                      "規則を明記していない対象には規則が無く、規則どおりにはならない")
+_P5 = {"slots": 4, "min_types": 2, "cycle": False}
+_P5_RULE = (TYPE_RULE + "。この場面: 対象の型の最初の 4 種まで(対象が 2 種か 3 種しか持たなければその全部)を、"
+            "1 つの入力に 1 種 1 件ずつ、同じ時刻 T0 + 1 日に置く。最低 2 種(固定した要件 P0-5 の「複数型」)")
+
+
+def _tie_streams(types: list[str]) -> dict:
+    return {slot: [typed_event(t, T0 + DAY)] for slot, t in zip(SLOTS, types)}
+
+
+def _same_time_twice(types: list[str]) -> dict:
+    streams = _tie_streams(types)
+    return {"input": {"streams": streams, "hand_over_order": list(streams), "types": dict(zip(streams, types)),
+                      "note": "型ごとの入力(A から順に)。同じ銘柄の事象を別々の入力として受ける対象には別々に、"
+                              "1 本しか受けない対象には、この順に連結して渡す(並べ替えない)",
+                      "type_rule": _P5_RULE, "stated_rule": _STATED_RULE_TEXT},
+            "expected": {"delivered_as_multiset": sorted([e["kind"], e["ts_ns"]] for evs in streams.values() for e in evs),
+                         "follows_stated_rule": True}}
+
+
+def _hand_over_order(types: list[str]) -> dict:
+    streams = _tie_streams(types)
+    n = len(streams)
+    return {"input": {"streams": streams, "hand_over_orders": [list(p) for p in permutations(list(streams))],
+                      "types": dict(zip(streams, types)),
+                      "note": f"{n} つの入力を全ての順({n}! 通り)で渡して、その回数だけ処理する。同じ銘柄の事象を別々の入力として受ける対象には"
+                              "別々の入力として、その回の順で渡す(form = multi_input)。1 本しか受けない対象には、その回の順で連結した 1 本を渡す"
+                              "(form = single_input)",
+                      "type_rule": _P5_RULE,
+                      "stated_rule": _STATED_RULE_TEXT + "。各回の正解の並びは、runner がその規則を場面のその回の渡す順に当てて作る"},
+            "expected": {"every_run_delivers_each_once": True, "every_run_follows_stated_rule": True,
+                         "same_order_whatever_the_hand_over": True}}
+
+
+BUILDERS["p5-same-time-twice"] = _same_time_twice
+BUILDERS["p5-hand-over-order"] = _hand_over_order
+_s2 = _same_time_twice(plan_types(_P5, TYPE_ORDER))
 add(id="p5-same-time-twice", viewpoint="P0-5", kind="value",
-    title="同時刻の 4 種の事象を、対象が明記した並びの規則どおりの順で、1 件も落とさずに処理するか",
-    input={"streams": _TIE_STREAMS, "hand_over_order": ["trades", "bars", "funding", "liquidation"],
-           "note": "型ごとの 4 つの入力。1 本しか受けない対象には、この順に連結して渡す(並べ替えない)",
-           "stated_rule": _STATED_RULE_TEXT},
-    expected={"delivered_as_multiset": _TIE_ALL, "follows_stated_rule": True},
+    title="同時刻の型の違う事象を、対象が明記した並びの規則どおりの順で、1 件も落とさずに処理するか",
+    input=_s2["input"], expected=_s2["expected"], type_plan=_P5,
     derivation="固定した要件(REQUIREMENTS.md §2 P0-5)の測り方は「同時刻に複数型の事象を仕込んだ入力を作り、規則どおりの順で処理されるか(値)、"
-               "2 回実行して一致するか(再現)」。4 件は同じ時刻なので時刻では並びが決まらず、決めるのは対象が明記した規則だけである。"
-               "よって正解は (1) 4 件がちょうど 1 回ずつ届く(型と時刻の組を並べ替えた列が入力の 4 件と同じ)、"
+               "2 回実行して一致するか(再現)」。入力の事象はどれも同じ時刻なので時刻では並びが決まらず、決めるのは対象が明記した規則だけである。"
+               "よって正解は (1) 入力の事象がちょうど 1 回ずつ届く(型と時刻の組を並べ替えた列が入力のものと同じ)、"
                "(2) 届いた順が、対象の規則をこの入力に当てた順と同じ、の 2 つ。2 回の一致は表の「再現」の欄で見る。"
-               "規則を明記していない対象は (2) を満たさない。",
-    measures="戦略に届いた(型, 時刻)の列が、4 件を落とさず重ねず、対象の明記した規則の順と一致するか。",
+               "規則を明記していない対象は (2) を満たさない。型は対象の型から決める(第 r7-1 回。どの型を持つかで結果が決まらないように)。",
+    measures="戦略に届いた(型, 時刻)の列が、入力の事象を落とさず重ねず、対象の明記した規則の順と一致するか。",
     graded_from="出力の `order`(戦略に届いた(型, 時刻)の列)と、場面係が固定した対象の規則から runner が作る: `delivered_as_multiset` = `order` を並べ替えた列 / "
-                "`follows_stated_rule` = 対象に規則があり、`order` が、その規則を runner がこの入力(渡す順 trades, bars, funding, liquidation)に当てた並びと同じ。")
+                "`follows_stated_rule` = 対象に規則があり、`order` が、その規則を runner がこの入力(渡す順 A, B, …)に当てた並びと同じ。")
+_h = _hand_over_order(plan_types(_P5, TYPE_ORDER))
 add(id="p5-hand-over-order", viewpoint="P0-5", kind="capability",
-    title="同時刻の 4 種の事象の並びが、データの中身と無関係な「入力を渡す順」に左右されず、各回が明記した規則どおりか",
-    input={"streams": _TIE_STREAMS,
-           "hand_over_orders": [list(p) for p in permutations(["trades", "bars", "funding", "liquidation"])],
-           "note": "4 つの入力を 24 通りの順で渡して 24 回処理する。複数の入力を受ける対象は 4 つを別々の入力として、"
-                   "その回の順で渡す(form = multi_input)。1 本しか受けない対象には、その回の順で連結した 1 本を渡す(form = single_input)",
-           "stated_rule": _STATED_RULE_TEXT + "。各回の正解の並びは、runner がその規則を場面のその回の渡す順に当てて作る"},
-    expected={"every_run_delivers_each_once": True, "every_run_follows_stated_rule": True,
-              "same_order_whatever_the_hand_over": True},
-    derivation="別々の入力(ファイルごとの約定・足・資金調達・清算)を渡す順は、データをどれから先に読んだかで変わる、データの中身と無関係な順である。"
-               "複数の入力を受ける対象では、同時刻の並びが規則(型・時刻など中身)で決まるなら 24 回とも同じ並びになる。"
+    title="同時刻の型の違う事象の並びが、データの中身と無関係な「入力を渡す順」に左右されず、各回が明記した規則どおりか",
+    input=_h["input"], expected=_h["expected"], type_plan=_P5,
+    derivation="別々の入力(型ごとの記録)を渡す順は、データをどれから先に読んだかで変わる、データの中身と無関係な順である。"
+               "複数の入力を受ける対象では、同時刻の並びが規則(型・時刻など中身)で決まるなら全ての回で同じ並びになる。"
                "1 本しか受けない対象では、連結した 1 本がその回の入力そのもので、その入力の順は同時刻でも守るのが規則"
                "(p5-same-stream-order と同じ理由)なので、各回が規則どおりなら並びは回ごとに違ってよい。"
-               "どちらの形でも、各回 4 件がちょうど 1 回ずつ届き、各回の順がその回の入力に規則を当てた順と同じでなければならない。",
-    measures="24 回の各回で 4 件が落ちずに届いたか、各回の順が規則どおりか、複数の入力を受ける対象では 24 回の並びが 1 通りか。",
+               "どちらの形でも、各回 入力の事象がちょうど 1 回ずつ届き、各回の順がその回の入力に規則を当てた順と同じでなければならない。"
+               "型は対象の型から決める(第 r7-1 回)。4 種を持つ対象は 24 通り、3 種は 6 通り、2 種は 2 通り。",
+    measures="全ての回で入力の事象が落ちずに届いたか、各回の順が規則どおりか、複数の入力を受ける対象では全ての回の並びが 1 通りか。",
     graded_from="出力の `form`(multi_input / single_input)・`runs`(各回の `hand_over`・`order`)と、場面係が固定した対象の規則から runner が作る。"
-                "各回の `hand_over` は場面の 24 通りの順と同じ並びでなければならない(違えば 3 つとも偽): "
-                "`every_run_delivers_each_once` = 24 回すべてで `order` を並べ替えた列が入力の 4 件と同じ / "
-                "`every_run_follows_stated_rule` = 対象に規則があり、`form` が規則の書かれた形と同じで、24 回すべてで `order` が、その規則を runner がその回の渡す順に当てた並びと同じ / "
-                "`same_order_whatever_the_hand_over` = form が multi_input なら 24 回の `order` が 1 通り、single_input なら真(渡す順がその回の入力そのものなので)。")
+                "各回の `hand_over` は場面の渡す順の一覧と同じ並びでなければならない(違えば 3 つとも偽): "
+                "`every_run_delivers_each_once` = 全ての回で `order` を並べ替えた列が入力の事象と同じ / "
+                "`every_run_follows_stated_rule` = 対象に規則があり、`form` が規則の書かれた形と同じで、全ての回で `order` が、その規則を runner がその回の渡す順に当てた並びと同じ / "
+                "`same_order_whatever_the_hand_over` = form が multi_input なら全ての回の `order` が 1 通り、single_input なら真(渡す順がその回の入力そのものなので)。")
 add(id="p5-same-stream-order", viewpoint="P0-5", kind="value",
     title="1 本の入力の中の同時刻の 3 件を、入力の順のまま処理するか",
     input={"events": [trade(T0 + DAY, 101.0), trade(T0 + DAY, 99.0), trade(T0 + DAY, 100.0)],
@@ -442,3 +540,19 @@ add(id="p7-account-swap", viewpoint="P0-7", kind="capability",
 assert len(SCENES) == len({s.id for s in SCENES}), "duplicate scene id"
 for _vp in VIEWPOINTS:
     assert any(s.viewpoint == _vp and s.kind == "value" for s in SCENES), f"{_vp} has no value scene"
+
+
+# ---------------------------------------------------------------- round r7-1: a scene for one target's types
+def for_target_types(scene: Scene, target_types) -> Scene | None:
+    """The scene with its input and expected result built for a target that
+    has these event types (TYPE_ORDER names), or None when the target has
+    fewer types than the scene's `type_plan` needs. Scenes without a
+    `type_plan` come back unchanged."""
+    if scene.type_plan is None:
+        return scene
+    types = plan_types(scene.type_plan, target_types)
+    if types is None:
+        return None
+    built = BUILDERS[scene.id](types)
+    from dataclasses import replace
+    return replace(scene, input=built["input"], expected=built["expected"])

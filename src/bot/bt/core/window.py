@@ -65,29 +65,31 @@ class AnswerPlace(NamedTuple):
     `first + i * step` there. `delivered` is how many events of it had
     been delivered when the answer was made (the read's `now_ns`; an
     answer kept past its callback still speaks of that instant).
-    `dropped_before`: whether `history_limit` had dropped delivered events
-    of it before its oldest kept one."""
+    `dropped`: how many delivered events of it lie before its oldest kept
+    one, which `history_limit` dropped (positions -dropped .. -1 there;
+    before them nothing was ever delivered)."""
 
     first: int
     step: int
     delivered: int
-    dropped_before: bool
+    dropped: int
 
 
-def _checked_place(first: Any, step: Any, delivered: Any, dropped_before: Any, n: int) -> AnswerPlace:
-    for name, v in (("first", first), ("step", step), ("delivered", delivered)):
+def _checked_place(first: Any, step: Any, delivered: Any, dropped: Any, n: int) -> AnswerPlace:
+    for name, v in (("first", first), ("step", step), ("delivered", delivered), ("dropped", dropped)):
         if type(v) is not int:
             raise TypeError(f"AnswerPlace.{name} must be an int, got {type(v).__qualname__}")
-    if type(dropped_before) is not bool:
-        raise TypeError("AnswerPlace.dropped_before must be a bool")
-    if step == 0 or delivered < 0:
-        raise ValueError(f"AnswerPlace step {step} / delivered {delivered}: step must be non-zero, delivered >= 0")
+    if step == 0 or delivered < 0 or dropped < 0:
+        raise ValueError(
+            f"AnswerPlace step {step} / delivered {delivered} / dropped {dropped}: step must be "
+            f"non-zero, delivered and dropped >= 0"
+        )
     if n and not (0 <= first < delivered and 0 <= first + (n - 1) * step < delivered):
         raise ValueError(
             f"an answer of {n} events at positions {first}, {first + step}, ... of what the read reads "
             f"must lie within the {delivered} delivered ones"
         )
-    return AnswerPlace(first, step, delivered, dropped_before)
+    return AnswerPlace(first, step, delivered, dropped)
 
 
 class DeliveredEvents(tuple):
@@ -111,12 +113,15 @@ class DeliveredEvents(tuple):
 
     The place is fixed when the answer is made and cannot be changed:
     `DeliveredEvents(items, first=..., delivered=...)` has no default for
-    them -- the maker of an answer states where it lies."""
+    them -- the maker of an answer states where it lies. (It is kept in the
+    instance's dict, as a tuple subclass cannot have slots; a strategy
+    that rewrites it there by bypassing `__setattr__` only misleads itself
+    about its own answer and is outside the contract, like bypassing a
+    frozen carrier with `object.__setattr__`.)"""
 
-    def __new__(cls, items: Any = (), *, first: int, delivered: int, step: int = 1,
-                dropped_before: bool = False):
+    def __new__(cls, items: Any = (), *, first: int, delivered: int, step: int = 1, dropped: int = 0):
         self = tuple.__new__(cls, items)
-        place = _checked_place(first, step, delivered, dropped_before, tuple.__len__(self))
+        place = _checked_place(first, step, delivered, dropped, tuple.__len__(self))
         object.__setattr__(self, "_place", place)
         return self
 
@@ -155,7 +160,7 @@ class DeliveredEvents(tuple):
             start, _stop, st = key.indices(n)
             p = self._place
             return DeliveredEvents(items, first=p.first + start * p.step, step=p.step * st,
-                                   delivered=p.delivered, dropped_before=p.dropped_before)
+                                   delivered=p.delivered, dropped=p.dropped)
         i = operator.index(index)
         if i >= n or i < -n:
             raise self._outside("index", i, i if i >= 0 else i + n, n, f"[{i}]")
@@ -189,14 +194,15 @@ class DeliveredEvents(tuple):
                 "; that event was delivered but is outside this answer (a time range, n or a slice "
                 "ended it) -- read a wider range instead"
             )
-        elif p.dropped_before:
+        elif u >= -p.dropped:
             cls, why = DroppedPositionError, (
-                "; it lies before the oldest event the history keeps of what the read reads, where "
-                "history_limit dropped delivered events"
+                f"; it lies before the oldest event the history keeps of what the read reads, among "
+                f"the {p.dropped} delivered events history_limit dropped"
             )
         else:
             cls, why = BeforeFirstEventError, (
-                "; it lies before the first event ever delivered of what the read reads: nothing is there"
+                f"; it lies before the first event ever delivered of what the read reads "
+                f"({p.dropped} dropped ones included): nothing is there"
             )
         exc = cls(where + why)
         exc.answer_position, exc.read_position, exc.delivered = q, u, p.delivered
@@ -204,8 +210,8 @@ class DeliveredEvents(tuple):
 
 
 def _rebuild(items: tuple, place: tuple) -> DeliveredEvents:
-    first, step, delivered, dropped_before = place
-    return DeliveredEvents(items, first=first, step=step, delivered=delivered, dropped_before=dropped_before)
+    first, step, delivered, dropped = place
+    return DeliveredEvents(items, first=first, step=step, delivered=delivered, dropped=dropped)
 
 
 class EventWindow(Sequence):

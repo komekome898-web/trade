@@ -843,6 +843,7 @@ class CoreEngine:
             set_timer_cb=port.set_timer,
             typed_events=typed_windows,
             dropped=history.dropped_facts(),
+            dropped_counts=history.dropped_count_facts(),
         )
         try:
             self._strategy.on_event(delivered, ctx)

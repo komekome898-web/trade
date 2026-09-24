@@ -196,27 +196,27 @@ def _all_keys():
         yield slice(start, stop, step)
 
 
-def _what_is_there(u: int, delivered: int, dropped: bool) -> type:
+def _what_is_there(u: int, delivered: int, dropped: int) -> type:
     """What a position of the read's list is, from the list itself: at or
     after the delivered count, not delivered yet; inside, a delivered
-    event; before it, dropped or nothing."""
-    if u >= delivered:
-        return FuturePositionError
-    if u >= 0:
-        return OutsideAnswerError
-    return DroppedPositionError if dropped else BeforeFirstEventError
+    event; before it, one of the `dropped` ones, then nothing."""
+    world = ["nothing"] * 50 + ["dropped"] * dropped + ["kept"] * delivered + ["future"] * 50
+    what = world[u + 50 + dropped]
+    return {"nothing": BeforeFirstEventError, "dropped": DroppedPositionError,
+            "kept": OutsideAnswerError, "future": FuturePositionError}[what]
 
 
 # places of an answer of n events in a read's list of `delivered`: at the
 # newest, cut in the past, stepped, backward, with and without a drop
 def _places(n: int):
-    yield "newest", 3, 1, n + 3, False
-    yield "past", 1, 1, n + 6, False
-    yield "past-dropped", 0, 1, n + 2, True
-    yield "stepped", 1, 2, 2 * n + 3, False
-    yield "backward-newest", n + 1, -1, n + 2, False
-    yield "backward-past", n + 2, -1, n + 5, True
-    yield "backward-stepped", 3 * n, -3, 3 * n + 1, False
+    yield "newest", 3, 1, n + 3, 0
+    yield "past", 1, 1, n + 6, 0
+    yield "past-dropped", 0, 1, n + 2, 4
+    yield "stepped", 1, 2, 2 * n + 3, 0
+    yield "stepped-dropped", 2, 3, 3 * n + 3, 5
+    yield "backward-newest", n + 1, -1, n + 2, 0
+    yield "backward-past", n + 2, -1, n + 5, 3
+    yield "backward-stepped", 3 * n, -3, 3 * n + 1, 0
 
 
 @pytest.mark.parametrize("n", range(0, 7))
@@ -224,8 +224,7 @@ def test_every_index_and_slice_matches_the_probe_oracle(n):
     checked = refused = 0
     for label, first, step, delivered, dropped in _places(n):
         world = [first + i * step for i in range(n)]  # each item is its own position in the read
-        seq = DeliveredEvents(world, first=first if n else first, step=step, delivered=delivered,
-                              dropped_before=dropped)
+        seq = DeliveredEvents(world, first=first, step=step, delivered=delivered, dropped=dropped)
         for key in _all_keys():
             checked += 1
             named = _outside_positions(n, key)
@@ -248,8 +247,8 @@ def test_every_index_and_slice_matches_the_probe_oracle(n):
                 assert out.place.first == out[0], (label, key)
             if len(out) >= 2:
                 assert out.place.step == out[1] - out[0], (label, key)
-            assert out.place.delivered == delivered and out.place.dropped_before is dropped
-    assert checked == 7 * (19 + 20 * 20 * 7) and refused > 0
+            assert out.place.delivered == delivered and out.place.dropped == dropped
+    assert checked == 8 * (19 + 20 * 20 * 7) and refused > 0
 
 
 def test_a_slice_that_ends_before_the_answer_names_the_past_not_the_future():
@@ -297,12 +296,14 @@ def test_the_place_cannot_be_left_out_or_changed():
     with pytest.raises(TypeError):
         DeliveredEvents((1, 2), first=0, delivered=2.0)
     with pytest.raises(TypeError):
-        DeliveredEvents((1, 2), first=0, delivered=2, dropped_before=1)
+        DeliveredEvents((1, 2), first=0, delivered=2, dropped=True)
+    with pytest.raises(ValueError):
+        DeliveredEvents((1, 2), first=0, delivered=2, dropped=-1)
     with pytest.raises(ValueError):
         DeliveredEvents((1, 2), first=1, delivered=2)  # position 2 was not delivered
     with pytest.raises(ValueError):
         DeliveredEvents((1, 2), first=0, step=0, delivered=2)
-    ans = DeliveredEvents((1, 2), first=3, delivered=9, dropped_before=True)
+    ans = DeliveredEvents((1, 2), first=3, delivered=9, dropped=4)
     for name in ("place", "_place", "next_is_undelivered", "anything"):
         with pytest.raises(AttributeError):
             setattr(ans, name, None)
@@ -311,7 +312,7 @@ def test_the_place_cannot_be_left_out_or_changed():
     import copy
     import pickle
     for clone in (copy.copy(ans), copy.deepcopy(ans), pickle.loads(pickle.dumps(ans))):
-        assert clone == ans and clone.place == ans.place == AnswerPlace(3, 1, 9, True)
+        assert clone == ans and clone.place == ans.place == AnswerPlace(3, 1, 9, 4)
 
 
 def test_a_slice_bound_is_read_once():
@@ -395,7 +396,11 @@ def _run_every_naming(events, history_limit=None):
     def cb(ev, ctx):
         nonlocal checked
         now = ctx.now_ns
-        for etype in (None, BAR, EventType.TRADE):
+        # with a limit, the overall kept list is not a run of the input (each
+        # type drops its own oldest), so only one-type reads are placed here;
+        # test_positions_before_the_kept_history_are_dropped_not_nothing
+        # covers the whole history
+        for etype in ((None, BAR, EventType.TRADE) if history_limit is None else (BAR, EventType.TRADE)):
             sel = selection(etype, now)
             times = [int(e.received_time_ns) for e in sel]
             for until in sorted(set(times))[::3] + [None]:
@@ -404,7 +409,6 @@ def _run_every_naming(events, history_limit=None):
                         ans = ctx.visible_events(etype, until_ns=until, **kw)
                     except HistoryTruncatedError:
                         continue
-                    kept = ctx.visible_events(etype, n=len(sel)) if history_limit is None else None
                     # where the answer's events sit in the input's list (times are distinct)
                     if ans:
                         lo = times.index(int(ans[0].received_time_ns))
@@ -436,16 +440,14 @@ def _run_every_naming(events, history_limit=None):
                                 got = None
                             except IndexError as exc:
                                 got = type(exc)
-                            if history_limit is not None and want is BeforeFirstEventError:
-                                ok = got in (BeforeFirstEventError, DroppedPositionError)
-                            elif history_limit is not None and want is OutsideAnswerError:
+                            if history_limit is not None and want is OutsideAnswerError:
+                                # a delivered event: kept (outside the answer) or dropped
                                 ok = got in (OutsideAnswerError, DroppedPositionError)
                             else:
                                 ok = got is want
                             if not ok:
                                 problems.append((now, etype, until, kw, sl, q, u, len(times), got, want))
                             checked += 1
-                    del kept
 
     CoreEngine(Recorder(cb), events, history_limit=history_limit).run()
     return checked, problems
@@ -505,26 +507,45 @@ def test_positions_before_the_kept_history_are_dropped_not_nothing():
     is still FuturePositionError."""
     got: dict = {}
 
+    def kind(read):
+        try:
+            read()
+        except IndexError as exc:
+            return (type(exc).__name__, isinstance(exc, HistoryTruncatedError), isinstance(exc, LookAheadError))
+        return "value"
+
     def cb(ev, ctx):
         if ev.EVENT_TYPE is BAR and ev.close == 109.0:
-            bars = ctx.visible_events(BAR, n=2)
-            for name, read in (("bars[-3]", lambda: bars[-3]), ("bars[::-1][2]", lambda: bars[::-1][2]),
-                               ("bars[2]", lambda: bars[2]),
-                               ("trades[-9]", lambda: ctx.visible_events(EventType.TRADE)[-9]),
-                               ("all[-99]", lambda: ctx.visible_events()[-99])):
+            # the kept bars: the largest n the history answers (10 were delivered)
+            kept = 0
+            while kept < 10:
                 try:
-                    read()
-                except IndexError as exc:
-                    got[name] = (type(exc).__name__, isinstance(exc, HistoryTruncatedError),
-                                 isinstance(exc, LookAheadError))
+                    ctx.visible_events(BAR, n=kept + 1)
+                except HistoryTruncatedError:
+                    break
+                kept += 1
+            bars = ctx.visible_events(BAR, n=kept)
+            got["kept"] = kept
+            got["bars[-kept-1]"] = kind(lambda: bars[-kept - 1])            # the newest dropped bar
+            got["bars[-10]"] = kind(lambda: bars[-10])                      # the first bar (dropped)
+            got["bars[-11]"] = kind(lambda: bars[-11])                      # before the first bar
+            got["bars[::-1][kept]"] = kind(lambda: bars[::-1][kept])
+            got["bars[kept]"] = kind(lambda: bars[kept])
+            got["trades[-1]"] = kind(lambda: ctx.visible_events(EventType.TRADE)[-1])  # none delivered
+            last = ctx.visible_events(n=1)
+            got["all[-10]"] = kind(lambda: last[-10])                      # delivery #1 (dropped)
+            got["all[-11]"] = kind(lambda: last[-11])                      # before delivery #1
 
     events = [bar(T0 + i * SEC, 100.0 + i) for i in range(10)] + [trade(T0 + 20 * SEC)]
-    CoreEngine(Recorder(cb), sorted(events, key=lambda e: e.received_time_ns), history_limit=3).run()
-    assert got["bars[-3]"] == ("DroppedPositionError", True, False)
-    assert got["bars[::-1][2]"] == ("DroppedPositionError", True, False)
-    assert got["bars[2]"] == ("FuturePositionError", False, True)
-    assert got["trades[-9]"] == ("BeforeFirstEventError", False, False)  # no trade delivered yet
-    assert got["all[-99]"] == ("DroppedPositionError", True, False)
+    CoreEngine(Recorder(cb), events, history_limit=3).run()
+    dropped, before, future = ("DroppedPositionError", True, False), ("BeforeFirstEventError", False, False), \
+        ("FuturePositionError", False, True)
+    assert 3 <= got["kept"] < 10
+    assert got["bars[-kept-1]"] == dropped and got["bars[-10]"] == dropped and got["bars[-11]"] == before
+    assert got["bars[::-1][kept]"] == dropped
+    assert got["bars[kept]"] == future
+    assert got["trades[-1]"] == before
+    assert got["all[-10]"] == dropped and got["all[-11]"] == before
 
 
 def test_every_named_position_with_a_history_limit():

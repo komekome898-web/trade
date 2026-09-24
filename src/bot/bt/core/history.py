@@ -27,7 +27,7 @@ from .events import Event, EventType
 
 
 class DeliveredHistory:
-    __slots__ = ("_limit", "overall", "typed", "dropped")
+    __slots__ = ("_limit", "overall", "typed", "dropped", "dropped_count")
 
     def __init__(self, limit: Optional[int]) -> None:
         self._limit = limit
@@ -35,6 +35,9 @@ class DeliveredHistory:
         self.typed: dict[EventType, list[Event]] = {t: [] for t in EventType}
         # type -> (seq, received_time_ns) of the last event of that type dropped
         self.dropped: dict[EventType, tuple[int, int]] = {}
+        # type -> how many delivered events of that type were dropped (all
+        # before its oldest kept one: a type drops its oldest)
+        self.dropped_count: dict[EventType, int] = {}
 
     def append(self, event: Event) -> None:
         etype = event.EVENT_TYPE
@@ -45,6 +48,7 @@ class DeliveredHistory:
             last_dropped = kept[cut - 1]
             dropped_seq = int(last_dropped.seq)
             self.dropped[etype] = (dropped_seq, int(last_dropped.received_time_ns))
+            self.dropped_count[etype] = self.dropped_count.get(etype, 0) + cut
             kept = kept[cut:]
             self.typed[etype] = kept
             # the overall list = what the types keep; drop the same events
@@ -57,3 +61,7 @@ class DeliveredHistory:
     def dropped_facts(self) -> Optional[dict[EventType, tuple[int, int]]]:
         """A copy for one callback's context, or None when nothing was dropped."""
         return dict(self.dropped) if self.dropped else None
+
+    def dropped_count_facts(self) -> Optional[dict[EventType, int]]:
+        """A copy for one callback's context, or None when nothing was dropped."""
+        return dict(self.dropped_count) if self.dropped_count else None

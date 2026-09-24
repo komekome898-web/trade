@@ -439,6 +439,7 @@ class StrategyContext:
         set_timer_cb: Optional[Callable[[int, str], None]] = None,
         typed_events: Optional[Mapping[EventType, Sequence[Event]]] = None,
         dropped: Optional[Mapping[EventType, tuple[int, int]]] = None,
+        dropped_counts: Optional[Mapping[EventType, int]] = None,
     ) -> None:
         """`typed_events`, if given, maps an event type to the delivered
         events of that type (same objects, same order as `visible_events`);
@@ -447,10 +448,13 @@ class StrategyContext:
         `dropped`, if given, maps an event type to (seq, received_time_ns)
         of the last event of that type the history no longer holds
         (`history_limit`, history.py); reads reaching into that part raise
-        `HistoryTruncatedError`."""
+        `HistoryTruncatedError`. `dropped_counts` maps a type to how many
+        of its delivered events the history no longer holds (for the place
+        of an answer, window.py)."""
         self.__visible_events = visible_events
         self.__typed_events = typed_events
         self.__dropped = dict(dropped) if dropped else {}
+        self.__dropped_counts = dict(dropped_counts) if dropped_counts else {}
         self.__current = current
         self.__place_order_cb = place_order_cb
         self.__cancel_order_cb = cancel_order_cb
@@ -550,25 +554,26 @@ class StrategyContext:
         # Where the answer lies in what the read reads (window.py
         # `AnswerPlace`, i0-r6-01): its first event is events[lo] (an empty
         # answer lies where the range was cut, events[hi]); every event of
-        # `events` was delivered by now; history_limit dropped events of it
-        # before its oldest kept one if its type dropped any -- for the
-        # whole history, if its oldest kept event is not delivery #1
-        # (deliveries are numbered 1, 2, 3, ... without gaps and everything
-        # not dropped is kept, so a gap before the oldest is a drop).
+        # `events` was delivered by now; `dropped` delivered events of it
+        # lie before its oldest kept one, all dropped by history_limit: for
+        # one type, the count the history recorded; for the whole history,
+        # every delivery before its oldest kept event (deliveries are
+        # numbered 1, 2, 3, ... without gaps and everything not dropped is
+        # kept).
         if event_type is not None:
-            dropped_before = event_type in self.__dropped
+            dropped = self.__dropped_counts.get(event_type, 0)
         else:
-            dropped_before = len(events) > 0 and int(events[0].seq) > 1
+            dropped = int(events[0].seq) - 1 if len(events) else 0
         delivered = len(events)
         if count is not None:
             if count == 0:
-                return DeliveredEvents(first=hi, delivered=delivered, dropped_before=dropped_before)
+                return DeliveredEvents(first=hi, delivered=delivered, dropped=dropped)
             lo = max(lo, hi - count)
         if self.__dropped:
             self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
-            return DeliveredEvents(first=hi, delivered=delivered, dropped_before=dropped_before)
-        return DeliveredEvents(events[lo:hi], first=lo, delivered=delivered, dropped_before=dropped_before)
+            return DeliveredEvents(first=hi, delivered=delivered, dropped=dropped)
+        return DeliveredEvents(events[lo:hi], first=lo, delivered=delivered, dropped=dropped)
 
     def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int],
                            count: Optional[int], events: Sequence[Event], lo: int, hi: int) -> None:

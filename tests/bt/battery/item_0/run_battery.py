@@ -41,7 +41,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "adapters"))
 sys.path.insert(0, str(HERE.parents[3] / "src"))
 
-from scenes import NAMING_SHAPES, SCENES  # noqa: E402
+from scenes import NAMING_SHAPES, SCENES, TYPE_ORDER, for_target_types  # noqa: E402
 import stated_rules  # noqa: E402
 from adapters.protocol import Adapter, SceneResult  # noqa: E402
 
@@ -186,8 +186,17 @@ def _grade_hand_over(sc, out: dict, target: str | None = None) -> dict:
                 or (form == "multi_input" and len({json.dumps(o) for o in orders}) == 1))}
 
 
+def _grade_times(sc, out: dict, target: str | None = None) -> dict:
+    """p1-one-call-per-event (round r7-1): the times of the events the
+    strategy received, one per call; the type column is not graded."""
+    seq = out.get("sequence")
+    return {"observed_ts_ns": [int(p[1]) for p in seq] if isinstance(seq, list)
+            and all(isinstance(p, (list, tuple)) and len(p) == 2 for p in seq) else None}
+
+
 # scene id -> grader; exactly the scenes with `graded_from` (test_battery_item0.py checks)
 GRADERS = {
+    "p1-one-call-per-event": _grade_times,
     "p4-future-read-attempt": _grade_future_reads,
     "p5-same-time-twice": _grade_stated_rule_once,
     "p5-hand-over-order": _grade_hand_over,
@@ -589,31 +598,86 @@ def reproducibility(a: SceneResult, b: SceneResult) -> str:
     return "2 回の実行で同じ" if same else "2 回で違う"
 
 
+# ---------------------------------------------------------------- the target's own types (round r7-1)
+# Scenes of other viewpoints than P0-3 that need several event types
+# (`Scene.type_plan`) take them from the types the target delivered in the
+# P0-3 type scenes of the same run (critic i0-r6-02): a type of the target is
+# one whose p3-<type> scene, after the provenance check, is "ok" with a
+# non-empty received list of that type only. The adapter never chooses them.
+TYPE_SCENES = [f"p3-{k}" for k in TYPE_ORDER]
+
+
+def target_types(p3_results: dict[str, SceneResult]) -> list[str]:
+    """The target's types from its checked p3-<type> results of one run."""
+    out = []
+    for k in TYPE_ORDER:
+        r = p3_results.get(f"p3-{k}")
+        seq = r.output.get("sequence") if r is not None and r.status == "ok" and isinstance(r.output, dict) else None
+        if isinstance(seq, list) and seq and all(isinstance(p, (list, tuple)) and p and p[0] == k for p in seq):
+            out.append(k)
+    return out
+
+
+def _types_detail(p3_results: dict[str, SceneResult]) -> str:
+    parts = []
+    for k in TYPE_ORDER:
+        r = p3_results.get(f"p3-{k}")
+        seq = (r.output or {}).get("sequence") if r is not None and isinstance(r.output, dict) else None
+        parts.append(f"p3-{k}: {r.status if r else 'なし'}"
+                     + (f" 受けた型 {sorted({str(p[0]) for p in seq if isinstance(p, (list, tuple)) and p})}"
+                        if isinstance(seq, list) else ""))
+    return " / ".join(parts)
+
+
+def run_for_types(adapter: Adapter, sc, p3_results: dict[str, SceneResult]):
+    """(the scene as run for this target, its raw result). A scene with a
+    type_plan is built from the target's types; when they are too few the
+    adapter is not called and the scene is 対応なし with the p3 results."""
+    if sc.type_plan is None:
+        with C.native_tracker():  # round r6-3: a strategy called from compiled code shows the caller (native_by)
+            return sc, adapter.run_scene(sc)
+    types = target_types(p3_results)
+    conc = for_target_types(sc, types)
+    head = f"型の選び方(runner、第 r7-1 回): 対象の型 {types}"
+    if conc is None:
+        return sc, SceneResult("not_supported", detail=(
+            f"{head} は {len(types)} 種で、この場面の最低 {sc.type_plan['min_types']} 種に足りない"
+            f"(同じ実行の p3 の結果: {_types_detail(p3_results)})"))
+    with C.native_tracker():
+        raw = adapter.run_scene(conc)
+    return conc, SceneResult(raw.status, output=raw.output, detail=f"{head} → この場面の型 {conc.input.get('types')}。{raw.detail}",
+                             provenance=raw.provenance)
+
+
 def run_target(target: str) -> list[dict]:
-    rows = []
+    rows = {}
     adapter_1 = load_adapter(target)
     adapter_2 = load_adapter(target)  # a fresh adapter for the second run
-    for sc in SCENES:
-        with C.native_tracker():  # round r6-3: a strategy called from compiled code shows the caller (native_by)
-            raw1 = adapter_1.run_scene(sc)
-        with C.native_tracker():
-            raw2 = adapter_2.run_scene(sc)
-        r1 = checked(raw1, sc, target)
-        r2 = checked(raw2, sc, target)
-        rows.append({
+    p3_1: dict[str, SceneResult] = {}
+    p3_2: dict[str, SceneResult] = {}
+    # the P0-3 type scenes first: the other scenes' types come from them (round r7-1)
+    order = [sc for sc in SCENES if sc.id in TYPE_SCENES] + [sc for sc in SCENES if sc.id not in TYPE_SCENES]
+    for sc in order:
+        sc1, raw1 = run_for_types(adapter_1, sc, p3_1)
+        sc2, raw2 = run_for_types(adapter_2, sc, p3_2)
+        r1 = checked(raw1, sc1, target)
+        r2 = checked(raw2, sc2, target)
+        if sc.id in TYPE_SCENES:
+            p3_1[sc.id], p3_2[sc.id] = r1, r2
+        rows[sc.id] = {
             "target": target, "scene_id": sc.id, "viewpoint": sc.viewpoint, "kind": sc.kind,
-            "correctness": correctness(r1, sc.expected, sc, target),
-            "correctness_run2": correctness(r2, sc.expected, sc, target),
+            "correctness": correctness(r1, sc1.expected, sc1, target),
+            "correctness_run2": correctness(r2, sc2.expected, sc2, target),
             "reproducibility": reproducibility(r1, r2),
             "status_1": r1.status,
-            "output_1": json.dumps(graded_output(r1, sc, target), ensure_ascii=False, sort_keys=True, default=repr),
+            "output_1": json.dumps(graded_output(r1, sc1, target), ensure_ascii=False, sort_keys=True, default=repr),
             "status_2": r2.status,
-            "output_2": json.dumps(graded_output(r2, sc, target), ensure_ascii=False, sort_keys=True, default=repr),
-            "expected": json.dumps(sc.expected, ensure_ascii=False, sort_keys=True),
+            "output_2": json.dumps(graded_output(r2, sc2, target), ensure_ascii=False, sort_keys=True, default=repr),
+            "expected": json.dumps(sc1.expected, ensure_ascii=False, sort_keys=True),
             "detail_1": r1.detail.replace("\t", " ").replace("\n", " "),
             "provenance_1": json.dumps(compact(r1.provenance, roots_of(target)), ensure_ascii=False, sort_keys=True, default=repr),
-        })
-    return rows
+        }
+    return [rows[sc.id] for sc in SCENES]
 
 
 FIELDS = ["target", "scene_id", "viewpoint", "kind", "correctness", "correctness_run2", "reproducibility",
