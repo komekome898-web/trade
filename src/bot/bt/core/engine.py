@@ -27,11 +27,14 @@ on a path is a value made when it is sent (values.py): every field of every
 carrier (an order or cancel request, a venue report, a fill notice, an
 event) is the built-in type itself -- never an object or a subclass
 instance of the sender's -- and the carrier classes are slotted. Each path
-takes the core's own carrier classes themselves (a subclass is refused),
-and the strategy's and the account's requests are rebuilt when they enter
-(api.py `fresh_request`), so no sender holds what its receiver reads.
-Neither side can change what the other receives, or learns, without
-sending.
+takes the core's own carrier classes themselves (a subclass is refused).
+The core keeps only objects it built (round 8, i0-r7-02): what a sender
+hands over -- a source's event, a request from the strategy's outbox, a
+fill model's report, the account's forced order -- is made again by its
+constructor when the core takes it (`_rebuilt`, api.py `fresh_request`),
+and every receiver gets a copy of its own (values.py `copy_carrier`), so
+no sender and no receiver holds what another reads. Neither side can
+change what the other receives, or learns, without sending.
 
 Input is one stream of events, or several named streams (a mapping of
 name -> iterable, e.g. trades, board, bars and funding read from separate
@@ -78,6 +81,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Iterator, Mapping, Optional, Union
 
 from .api import FORCED_ID_PREFIX, CancelRequest, OrderRequest, OrderView, StrategyContext, _OrderPort, fresh_request
+from .errors import OrderApiError
 from .errors import (
     AccountSocketError,
     CostModelError,
@@ -132,7 +136,7 @@ from .ordering import (
 from .history import DeliveredHistory
 from .strategy import Strategy
 from .time import validate_nanos
-from .values import as_float, as_int, as_text, is_a, type_name
+from .values import as_float, as_int, as_text, copy_carrier, is_a, rebuild_carrier, renew, type_name
 from .window import EventWindow
 
 _K_VENUE_MARKET = 0
@@ -312,29 +316,38 @@ class _VenueLedger:
             raise VenueProtocolError(f"{where}: unknown report type {name}")
 
 
-# The fields of each event class, for the delivery copy. Every event that
-# reaches `_deliver` is one of the core's own classes itself (input events
-# are checked in `_SourceMerger._pull`, notices and timers are made here).
-_EVENT_FIELDS: dict[type, tuple[str, ...]] = {
-    cls: tuple(f.name for f in dataclasses.fields(cls)) for cls in EVENT_TYPE_TO_CLASS.values()
-}
-
-
 def _delivered_copy(event: Event, time_ns: int, seq: int) -> Event:
-    """A copy of `event` with its delivery time and the strategy's delivery
-    number. Field by field (the classes are slotted, so there is nothing
-    else to copy): `copy.copy` of a slotted frozen dataclass goes through
-    `__getstate__` / `__setstate__` and costs about seven times as much.
-    The fields are values already (values.py); `time_ns` was validated as
-    an int64 in `_push`."""
-    cls = type(event)
-    out = object.__new__(cls)
+    """The strategy's own copy of the core's event, with its delivery time
+    and the strategy's delivery number: every field built anew
+    (values.py `renew`), so the strategy holds nothing the core, a sender
+    or another receiver holds. `time_ns` was validated as an int64 in
+    `_push`."""
+    out = copy_carrier(event)
     put = object.__setattr__
-    for name in _EVENT_FIELDS[cls]:
-        put(out, name, getattr(event, name))
-    put(out, "received_time_ns", time_ns)
+    put(out, "received_time_ns", renew(time_ns))
     put(out, "seq", seq)
     return out
+
+
+def _rebuilt(carrier: Any) -> Any:
+    """The core's own object for a carrier a sender handed over (its class
+    already checked to be one of the core's carrier classes itself): made
+    again by its constructor from what its slots hold NOW, so every field
+    passes values.py again and is built anew. The sender's object is
+    never kept: changing it afterwards, by any means, reaches no one."""
+    return rebuild_carrier(carrier)
+
+
+def _copied_view(view: OrderView) -> OrderView:
+    """The caller's own copy of one of the strategy's order views (the
+    result shares nothing with the strategy): the request copied, every
+    other field built anew (the state is an enum member: one object)."""
+    fields = {f.name: getattr(view, f.name) for f in dataclasses.fields(view)}
+    fields["request"] = copy_carrier(fields["request"])
+    for name, v in fields.items():
+        if name not in ("request", "state"):
+            fields[name] = renew(v)
+    return OrderView(**fields)
 
 
 def _is_cancel_answer(report: Any, coid: str) -> bool:
@@ -482,6 +495,9 @@ class _SourceMerger:
                 f"stream {name!r} yielded {etype.value}; order notices are produced by "
                 f"the engine from the fill model's reports (place an order to get one)"
             )
+        # the core's own event from here on: the source's object is read once,
+        # now, and never handed on (values.py, engine.py `_rebuilt`)
+        event = _rebuilt(event)
         exch = int(event.exchange_time_ns)
         if self._span is not None:
             _check_in_span(event, exch, self._span, name, self.counts[rank] + 1)
@@ -672,7 +688,7 @@ class CoreEngine:
         position = self._source_count  # merge position (ordering.py)
         if etype in MARKET_EVENT_TYPES:
             self._push(exch, PHASE_VENUE_MARKET, _K_VENUE_MARKET, event, position)
-            delay = _check_delay(self._latency.feed_delay_ns(event), "feed_delay_ns")
+            delay = _check_delay(self._latency.feed_delay_ns(copy_carrier(event)), "feed_delay_ns")
         else:
             delay = 0
         at = recv + delay
@@ -766,10 +782,11 @@ class CoreEngine:
         return EngineResult(
             events_processed=self._deliveries,
             source_events=self._source_count,
-            order_requests=list(self._order_requests),
-            cancel_requests=list(self._cancel_requests),
-            fills=list(self._fills),
-            orders=dict(self._port._registry),
+            # copies: the caller holds nothing the core or a receiver holds
+            order_requests=[copy_carrier(r) for r in self._order_requests],
+            cancel_requests=[copy_carrier(r) for r in self._cancel_requests],
+            fills=[copy_carrier(f) for f in self._fills],
+            orders={coid: _copied_view(v) for coid, v in self._port._registry.items()},
             venue_states=self._ledger.states(),
             models={
                 "fill_model": _qualname(self._fill_model),
@@ -783,7 +800,7 @@ class CoreEngine:
             stopped_at_end_time=self._stopped_at_end,
             time_span_ns=self._time_span,
             delivery_digest=self._digest.hexdigest(),
-            forced_orders=list(self._forced_list),
+            forced_orders=[copy_carrier(r) for r in self._forced_list],
             source_events_by_stream=self._merger.counts_by_name(),
         )
 
@@ -832,11 +849,16 @@ class CoreEngine:
         self._digest.update(repr(delivered).encode())
         self._digest.update(b"\n")
         port._now = time_ns
-        window = EventWindow(history.overall, len(history.overall))
-        typed_windows = {t: EventWindow(lst, len(lst)) for t, lst in history.typed.items() if lst}
+        dropped_counts = history.dropped_count_facts()
+        overall = history.overall
+        # the windows' places (window.py): each list knows how many delivered
+        # events lie before its oldest (history.py `DeliveredList.dropped`)
+        window = EventWindow(overall, len(overall), overall.dropped)
+        typed_windows = {t: EventWindow(lst, len(lst), lst.dropped) for t, lst in history.typed.items() if lst}
         ctx = StrategyContext(
             visible_events=window,
             current=delivered,
+            now_ns=time_ns,
             place_order_cb=port.place,
             cancel_order_cb=port.cancel,
             order_lookup_cb=port.order,
@@ -844,43 +866,67 @@ class CoreEngine:
             set_timer_cb=port.set_timer,
             typed_events=typed_windows,
             dropped=history.dropped_facts(),
-            dropped_counts=history.dropped_count_facts(),
+            dropped_counts=dropped_counts,
         )
         try:
             self._strategy.on_event(delivered, ctx)
         finally:
             ctx._revoke()
             outbox, port._outbox = port._outbox, []
-        self._drain(outbox)
+        self._drain(outbox, time_ns)
 
-    def _drain(self, outbox: list[tuple]) -> None:
+    def _drain(self, outbox: list[tuple], sent: int) -> None:
+        """Take what the strategy sent in the callback at `sent`. The outbox
+        is reachable from the strategy (through its context's private
+        attributes), so what lies there is still the sender's: each request
+        is made again here (`fresh_request`), when the core takes it, and
+        sent at the callback's time -- never a time or an object the
+        outbox holds. Every receiver gets a copy of its own."""
+        port = self._port
         for item in outbox:
+            # the outbox is written by the order port; an item written
+            # around it (through private attributes) is refused, never guessed
+            if type(item) is not tuple or tuple.__len__(item) != 3 or item[0] not in ("new", "cancel", "timer"):
+                raise OrderApiError(
+                    f"the order outbox holds a {type_name(item)} the order port did not put there"
+                )
             kind = item[0]
+            if kind in ("new", "cancel"):
+                cls = OrderRequest if kind == "new" else CancelRequest
+                coid = fresh_request(item[1], cls, OrderApiError, "the order outbox").client_order_id
+                if not port.knows(coid):
+                    raise OrderApiError(f"the order outbox holds a {kind} for {coid!r}, which the order port "
+                                        f"never registered (written around place_order / cancel_order)")
             if kind == "new":
-                _, req, sent = item
-                delay = _check_delay(self._latency.order_delay_ns(req, sent), "order_delay_ns")
+                req = fresh_request(item[1], OrderRequest, OrderApiError, "place_order")
+                delay = _check_delay(self._latency.order_delay_ns(copy_carrier(req), sent), "order_delay_ns")
                 arrive = self._outbound.admit(sent + delay)
                 self._order_requests.append(req)
                 self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_ORDER, req)
             elif kind == "cancel":
-                _, req, sent = item
-                delay = _check_delay(self._latency.cancel_delay_ns(req, sent), "cancel_delay_ns")
+                req = fresh_request(item[1], CancelRequest, OrderApiError, "cancel_order")
+                delay = _check_delay(self._latency.cancel_delay_ns(copy_carrier(req), sent), "cancel_delay_ns")
                 arrive = self._outbound.admit(sent + delay)
                 self._cancel_requests.append(req)
                 self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_CANCEL, req)
-            else:
+            else:  # "timer"
                 _, at, tag = item
+                at = int(validate_nanos(at))
+                if at < sent:
+                    raise OrderApiError(f"timer at {at} is before the callback's time {sent}")
                 self._push(at, PHASE_DELIVER_TIMER, _K_DELIVER, ClockEvent(received_time_ns=at, tag=tag))
 
     # -- venue side --------------------------------------------------------
     def _venue_market(self, time_ns: int, event: Event) -> None:
+        # every receiver gets a copy of its own of the core's event
         if event.EVENT_TYPE is EventType.FUNDING:
-            self._account.apply_funding(event)
+            self._account.apply_funding(copy_carrier(event))
         elif event.EVENT_TYPE is EventType.LIQUIDATION:
-            self._account.apply_liquidation(event)
-        reports = self._fill_model.on_market_event(event, time_ns)
-        self._handle_reports(time_ns, reports or (), "on_market_event", None)
-        forced = self._account.on_market_event(event, time_ns) or ()
+            self._account.apply_liquidation(copy_carrier(event))
+        reports = self._take_reports(self._fill_model.on_market_event(copy_carrier(event), time_ns),
+                                     "on_market_event")
+        self._handle_reports(time_ns, reports, "on_market_event", None)
+        forced = self._account.on_market_event(copy_carrier(event), time_ns) or ()
         for request in forced:
             self._force(time_ns, request)
 
@@ -910,7 +956,7 @@ class CoreEngine:
         self._submit_to_venue(time_ns, request)
 
     def _venue_order(self, time_ns: int, order: OrderRequest) -> None:
-        reason = self._account.check_order(order, time_ns)
+        reason = self._account.check_order(copy_carrier(order), time_ns)
         if reason is not None:
             # the reason reaches the strategy in a notice: a str itself
             # (values.py), made before anything reads it
@@ -931,8 +977,8 @@ class CoreEngine:
         self._submit_to_venue(time_ns, order)
 
     def _submit_to_venue(self, time_ns: int, order: OrderRequest) -> None:
-        self._ledger.arrive(order)
-        reports = self._fill_model.on_order(order, time_ns) or ()
+        self._ledger.arrive(order)  # the core's own; the fill model gets a copy
+        reports = self._take_reports(self._fill_model.on_order(copy_carrier(order), time_ns), "on_order")
         self._handle_reports(time_ns, reports, "on_order", order.client_order_id)
         if self._ledger.state(order.client_order_id) == _VenueLedger.ARRIVED:
             raise VenueProtocolError(
@@ -948,7 +994,7 @@ class CoreEngine:
                 time_ns, (Reject(coid, f"order_not_open:{state}", "cancel"),), "on_cancel", coid
             )
             return
-        reports = tuple(self._fill_model.on_cancel(request, time_ns) or ())
+        reports = self._take_reports(self._fill_model.on_cancel(copy_carrier(request), time_ns), "on_cancel")
         answers = sum(1 for r in reports if _is_cancel_answer(r, coid))
         if answers != 1:
             # one cancel, one answer: the strategy counts its cancels in
@@ -959,7 +1005,23 @@ class CoreEngine:
             )
         self._handle_reports(time_ns, reports, "on_cancel", coid)
 
-    def _handle_reports(self, venue_time: int, reports: Iterable[Any], where: str, subject: Optional[str]) -> None:
+    def _take_reports(self, raw: Any, where: str) -> tuple:
+        """What a fill model answered, taken ONCE: each report one of the
+        core's own report classes itself, made again by its constructor
+        (`_rebuilt`), so the fill model's objects are never handed on."""
+        taken = []
+        for report in raw or ():
+            if type(report) not in REPORT_CLASSES:
+                raise VenueProtocolError(
+                    f"{where}: unknown report type {type(report).__module__}.{type(report).__qualname__} "
+                    f"(a fill model answers with Ack / Reject / Fill / Canceled / StateUnknown themselves, "
+                    f"not subclasses)"
+                )
+            taken.append(_rebuilt(report))
+        return tuple(taken)
+
+    def _handle_reports(self, venue_time: int, reports: tuple, where: str, subject: Optional[str]) -> None:
+        """`reports`: the core's own (`_take_reports`, or made by the core)."""
         for report in reports:
             self._ledger.apply(report, where, subject)
             coid = report.client_order_id
@@ -978,7 +1040,7 @@ class CoreEngine:
                         "a fill happened but no cost_model was given; pass "
                         "NullCostModel() to state zero cost explicitly"
                     )
-                fee = self._cost_model.cost(notice)
+                fee = self._cost_model.cost(copy_carrier(notice))
                 try:
                     fee = as_float(fee, "fee")  # the one number rule (values.py): a float itself, read once now
                 except ValueError as exc:
@@ -986,7 +1048,7 @@ class CoreEngine:
                 if not math.isfinite(fee):
                     raise CostModelError(f"cost model returned {fee!r}")
                 notice = dataclasses.replace(notice, fee=fee)
-                self._account.apply_fill(notice)
+                self._account.apply_fill(copy_carrier(notice))
                 self._fills.append(notice)
                 event: Event = OrderFillEvent(
                     received_time_ns=venue_time, client_order_id=coid, price=notice.price,
@@ -1010,7 +1072,7 @@ class CoreEngine:
             else:
                 event = OrderStateUnknownEvent(received_time_ns=venue_time, client_order_id=coid,
                                                detail=report.detail, request_kind=report.request_kind)
-            delay = _check_delay(self._latency.notice_delay_ns(report, venue_time), "notice_delay_ns")
+            delay = _check_delay(self._latency.notice_delay_ns(copy_carrier(report), venue_time), "notice_delay_ns")
             deliver_at = self._notices.admit(venue_time + delay)
             event = dataclasses.replace(event, received_time_ns=deliver_at, exchange_time_ns=venue_time)
             self._push(deliver_at, PHASE_DELIVER_NOTICE, _K_DELIVER, event)

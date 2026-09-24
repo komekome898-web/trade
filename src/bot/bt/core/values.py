@@ -25,72 +25,144 @@ passes every one of its fields through one of them:
 The one scalar rule (`scalar`) -- the ONE rule for which foreign values
 become values, used by every field function below (i0-r6-03):
 
-* an instance of an exact built-in scalar type (None, bool, int, float,
-  complex, str, bytes, Decimal, Fraction) is kept;
-* an instance of a SUBCLASS of int, float, complex, str or bytes
-  (`IntEnum` / `StrEnum` members, numpy.float64, numpy.str_, ...) is stored
-  as the built-in value it holds, read by the built-in type's own method
-  (`str.__str__`, `float.__float__`, `int.__index__`, ...) so no method of
-  the subclass ever runs or crosses;
+* nothing a sender hands over is kept: every accepted value is BUILT
+  ANEW by the core, as an object no one else holds (i0-r7-02: the
+  round-5 rule kept "an instance of an exact built-in scalar type" as
+  the same object, and a `Fraction` -- a Python class whose slots can be
+  assigned -- then crossed live). `None`, `True` and `False` are the only
+  objects kept (there is one of each); an object the interpreter itself
+  keeps one of per value (a small int, the empty string) may come back
+  as that object;
+* the accepted types are one table, `BUILD`: None, bool, int, float,
+  complex, str, bytes, Decimal, Fraction. For each, the value is read by
+  that type's OWN method or slot descriptor (`int.__neg__`,
+  `float.__mul__`, `str.encode`, `bytes.hex`, `complex.real`,
+  `Decimal.__str__`, `Fraction`'s `_numerator` / `_denominator` slots)
+  and a new object is built from what was read, so no method of the
+  sender's class runs and nothing of the sender's object is kept;
+* an instance of a SUBCLASS of one of those types (`IntEnum` / `StrEnum`
+  members, numpy.float64, numpy.str_, a `Fraction` or `Decimal`
+  subclass, ...) is read the same way, by the base type's own method,
+  and built as the base type;
 * a numpy bool (what numpy and pandas comparisons give) is stored as the
   `bool` it holds, read by numpy's own method;
 * a number of the numeric tower (`numbers.Integral` -> int,
   `numbers.Real` -> float, `numbers.Complex` -> complex; numpy.int64,
-  numpy.float32, ...) is converted once, NOW, to the built-in type itself;
+  numpy.float32, ...) is converted once, NOW, and what the conversion
+  returned is built anew as the built-in type itself;
 * anything else -- a plain `Enum` member (its class is the sender's), a
   function (it can read the sender's state when it is called, later), an
   arbitrary object, a generator, a container that holds itself -- raises
   `ValueError`; the caller wraps it in its own error type.
 
-Every type decision here reads the object's REAL type, `type(x)` (`is_a`),
-never `isinstance`: `isinstance` also believes the object's own
-`__class__`, which any object may answer as it likes, while the built-in
-reads check the real type -- a check that believed the claim and a read
-that does not would see two different facts (i0-r6-03). Every error names
-the real type in full (`module.name`).
+`renew` makes the core's own copy of a value the core built (a field of a
+carrier): the same table, and new containers. The engine hands every
+receiver such a copy of its own (engine.py), so no receiver holds what a
+sender or another receiver holds.
 
-Containers of plain data (tuple, list, dict, set, frozenset): a list
-becomes a `FrozenList`, a dict a `FrozenDict`, a set a `FrozenSet`; each
-remembers what it was, so `thaw` gives back a fresh list / dict / set.
+Containers of plain data (tuple, list, dict, set, frozenset, and the
+core's own frozen ones): a list becomes a `FrozenList`, a dict a
+`FrozenDict`, a set a `FrozenSet` -- always new containers of new values;
+each remembers what it was, so `thaw` gives back a fresh list / dict /
+set of fresh values.
 """
 from __future__ import annotations
 
 import numbers
 import sys
+import types
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, Iterator, Mapping
+from typing import Any, Callable, Iterator, Mapping
 
-_SCALARS: frozenset[type] = frozenset(
-    {type(None), bool, int, float, complex, str, bytes, Decimal, Fraction}
-)
 
-# A subclass instance of one of these is stored as the built-in value it
-# holds, read by the built-in type's own method (never the subclass's).
-# bool cannot be subclassed; int is checked after it.
-_BUILTIN_READ: tuple[tuple[type, Any], ...] = (
-    (str, str.__str__),
-    (float, float.__float__),
-    (int, int.__index__),
-    (complex, complex.__complex__),
-    (bytes, bytes.__bytes__),
-)
+def _same(x: Any) -> Any:  # None, True, False: one object each
+    return x
+
+
+def _new_int(x: int) -> int:
+    return int.__neg__(int.__neg__(x))
+
+
+def _new_float(x: float) -> float:
+    return float.__mul__(x, 1.0)  # -0.0, inf and nan kept
+
+
+_REAL = complex.__dict__["real"].__get__
+_IMAG = complex.__dict__["imag"].__get__
+
+
+def _new_complex(x: complex) -> complex:
+    return complex(_new_float(_REAL(x)), _new_float(_IMAG(x)))
+
+
+def _new_str(x: str) -> str:
+    return str.encode(x, "utf-8", "surrogatepass").decode("utf-8", "surrogatepass")
+
+
+def _new_bytes(x: bytes) -> bytes:
+    return bytes.fromhex(bytes.hex(x))
+
+
+def _new_decimal(x: Decimal) -> Decimal:
+    return Decimal(Decimal.__str__(x))  # text -> Decimal is exact (no context rounding)
+
+
+_NUMERATOR = Fraction.__dict__["_numerator"].__get__
+_DENOMINATOR = Fraction.__dict__["_denominator"].__get__
+
+
+def _new_fraction(x: Fraction) -> Fraction:
+    try:
+        n, d = _NUMERATOR(x), _DENOMINATOR(x)
+    except AttributeError:
+        raise ValueError("a Fraction without its numerator or denominator") from None
+    if not (issubclass(type(n), int) and issubclass(type(d), int)) or type(n) is bool or type(d) is bool:
+        raise ValueError(f"a Fraction whose parts are not ints ({type_name(n)}, {type_name(d)})")
+    try:
+        return Fraction(_new_int(n), _new_int(d))
+    except ZeroDivisionError:
+        raise ValueError("a Fraction with a zero denominator") from None
+
+
+# THE table of accepted scalar types (module docstring): each type -> the
+# builder that reads a value of it (or of a subclass) by the type's own
+# method and makes a new object. Nothing here returns what it was given,
+# except the three objects there is one of.
+BUILD: dict[type, Callable[[Any], Any]] = {
+    type(None): _same,
+    bool: _same,
+    int: _new_int,
+    float: _new_float,
+    complex: _new_complex,
+    str: _new_str,
+    bytes: _new_bytes,
+    Decimal: _new_decimal,
+    Fraction: _new_fraction,
+}
+# the bases a subclass is read as (bool cannot be subclassed; checked in
+# this order, after the exact type)
+_BASES: tuple[type, ...] = (str, bytes, float, int, complex, Decimal, Fraction)
 
 PLAIN_DATA_RULE = (
-    "scalars None, bool, int, float, complex, str, bytes, Decimal, Fraction (exact types); an instance of "
-    "a subclass of int / float / complex / str / bytes (IntEnum and StrEnum members included) is stored "
-    "as the built-in value it holds, read by the built-in type (the subclass's methods never run); a numpy "
-    "bool is stored as the bool it holds; a number of the numeric tower (numbers.Integral / Real / "
-    "Complex, numpy's included) is converted once, when it is sent, to int / float / complex; types are "
-    "decided by the real type, never by what the object claims (__class__); "
-    "tuple / list / dict / set / frozenset of plain data; lists, dicts and sets are stored immutable and "
-    "read back as fresh copies; anything else (a plain Enum member, a function, any other object) is refused"
+    "every value is built anew by the core (nothing a sender hands over is kept; None, True and False "
+    "are the one objects kept); accepted scalars are the table BUILD: None, bool, int, float, complex, "
+    "str, bytes, Decimal, Fraction, each read by that type's own method or slot and built as a new "
+    "object; an instance of a subclass of one of them (IntEnum and StrEnum members, numpy's, a Fraction "
+    "or Decimal subclass) is read by the base type and built as the base type (the subclass's methods "
+    "never run); a numpy bool is stored as the bool it holds; a number of the numeric tower "
+    "(numbers.Integral / Real / Complex, numpy's included) is converted once, when it is sent, and built "
+    "anew as int / float / complex; types are decided by the real type, never by what the object claims "
+    "(__class__); tuple / list / dict / set / frozenset of plain data become new immutable containers "
+    "and are read back as fresh copies; anything else (a plain Enum member, a function, any other "
+    "object) is refused"
 )
 
 FIELD_RULE = (
     "every field of a carrier (PATH_CARRIERS) is made, when the carrier is made, by one of values.as_text / "
-    "as_float / as_int / as_flag / as_choice / freeze, which return the built-in type itself (str, float, "
-    "int, bool, frozen plain data), never a subclass or an object of the sender's"
+    "as_float / as_int / as_flag / as_choice / freeze, which build a new object of the built-in type itself "
+    "(str, float, int, bool, frozen plain data), never a subclass, an object of the sender's, or the "
+    "object the sender handed over"
 )
 
 
@@ -114,8 +186,9 @@ def _numpy_bool() -> Any:
 
 
 def _now(convert: Any, value: Any, where: str) -> Any:
-    """Convert a foreign number once, now, to the built-in type itself; an
-    error in the sender's conversion is a ValueError of this module."""
+    """Convert a foreign number once, now, and build what the conversion
+    returned anew as the built-in type itself; an error in the sender's
+    conversion is a ValueError of this module."""
     try:
         out = convert(value)
     except Exception as exc:  # the sender's own conversion code, or a number too large
@@ -124,24 +197,25 @@ def _now(convert: Any, value: Any, where: str) -> Any:
             f"{where} must be a number {article} {convert.__name__} can hold, got a "
             f"{type_name(value)} ({type(exc).__name__}: {exc})"
         ) from None
-    for base, read in _BUILTIN_READ:
-        if base is convert:
-            return out if type(out) is convert else read(out)
-    return out  # pragma: no cover
+    if not issubclass(type(out), convert):  # pragma: no cover - int() / float() / complex() check it
+        raise ValueError(f"{where}: {convert.__name__}() gave a {type_name(out)}")
+    return BUILD[convert](out)
 
 
 _NOT_PLAIN = object()  # what `_plain_scalar` gives for a value the scalar rule refuses
 
 
 def _plain_scalar(value: Any, where: str) -> Any:
-    """The scalar rule (module docstring): a built-in scalar itself, or
-    `_NOT_PLAIN`. Only a sender's failing conversion raises (ValueError)."""
+    """The scalar rule (module docstring): a NEW built-in scalar, or
+    `_NOT_PLAIN`. A sender's failing conversion, or a broken Fraction,
+    raises ValueError."""
     t = type(value)
-    if t in _SCALARS:
-        return value
-    for base, read in _BUILTIN_READ:
+    build = BUILD.get(t)
+    if build is not None:
+        return build(value)
+    for base in _BASES:
         if issubclass(t, base):
-            return read(value)
+            return BUILD[base](value)
     nb = _numpy_bool()
     if nb is not None and issubclass(t, nb):
         return nb.__bool__(value)
@@ -168,11 +242,11 @@ def scalar(value: Any, where: str = "value") -> Any:
 
 
 def as_text(value: Any, where: str) -> str:
-    """A text field: a `str` (a subclass instance gives the characters it
-    holds, as a `str`)."""
+    """A text field: a new `str` (a subclass instance gives the characters
+    it holds, read by `str`'s own method)."""
     if not is_a(value, str):
         raise ValueError(f"{where} must be a str, got {type_name(value)}")
-    return value if type(value) is str else str.__str__(value)
+    return _new_str(value)
 
 
 def as_choice(value: Any, where: str, allowed: tuple) -> str:
@@ -206,9 +280,9 @@ def as_int(value: Any, where: str) -> int:
 
 
 def as_float(value: Any, where: str, *, numbers_only: bool = True) -> float:
-    """A number field, as a `float` itself (the scalar rule: a float or int
-    subclass gives the number it holds, a real number of the numeric tower
-    is converted once, now; a Fraction is converted); never a bool.
+    """A number field, as a new `float` itself (the scalar rule: a float or
+    int subclass gives the number it holds, a real number of the numeric
+    tower is converted once, now; a Fraction is converted); never a bool.
     `numbers_only=False` also accepts a numeric str and a Decimal (what
     `float()` reads exactly as text). Whether the
     number is finite or positive is the caller's rule."""
@@ -246,15 +320,25 @@ class FrozenSet(frozenset):
 
 class FrozenDict(Mapping):
     """An immutable, hashable dict (was a `dict` when given). Keeps the
-    given order; equal to any mapping with the same items."""
+    given order; equal to any mapping with the same items. Its lookup
+    table is a read-only mapping proxy: no dict of it is reachable by
+    attribute access."""
 
     __slots__ = ("_items", "_map", "_hash")
 
     def __init__(self, items: Mapping) -> None:
         pairs = tuple(items.items())
         object.__setattr__(self, "_items", pairs)
-        object.__setattr__(self, "_map", dict(pairs))
+        object.__setattr__(self, "_map", types.MappingProxyType(dict(pairs)))
         object.__setattr__(self, "_hash", None)
+
+    @classmethod
+    def _from_pairs(cls, pairs: tuple) -> "FrozenDict":
+        self = object.__new__(cls)
+        object.__setattr__(self, "_items", pairs)
+        object.__setattr__(self, "_map", types.MappingProxyType(dict(pairs)))
+        object.__setattr__(self, "_hash", None)
+        return self
 
     def __setattr__(self, name: str, value: Any) -> None:
         raise AttributeError("FrozenDict is immutable")
@@ -283,6 +367,9 @@ class FrozenDict(Mapping):
         return f"FrozenDict({dict(self._items)!r})"
 
 
+_FD_ITEMS = FrozenDict.__dict__["_items"].__get__
+
+
 def freeze(value: Any, where: str = "value") -> Any:
     """An equal, deeply immutable form of plain data; `ValueError` for
     anything that is not plain data (module docstring)."""
@@ -299,35 +386,158 @@ def _freeze(value: Any, where: str, path: set[int]) -> Any:
     path.add(key)
     try:
         if t in (tuple, FrozenList):
-            items = tuple(_freeze(v, f"{where}[{i}]", path) for i, v in enumerate(value))
+            items = tuple([_freeze(v, f"{where}[{i}]", path) for i, v in enumerate(tuple.__iter__(value))])
             return FrozenList(items) if t is FrozenList else items
         if t is list:
-            return FrozenList(_freeze(v, f"{where}[{i}]", path) for i, v in enumerate(value))
+            return FrozenList([_freeze(v, f"{where}[{i}]", path) for i, v in enumerate(list.__iter__(value))])
         if t in (dict, FrozenDict):
-            frozen = {}
-            for k, v in value.items():
+            # read by the real type's own methods (a dict's, or the core's
+            # FrozenDict's pairs), then built anew
+            src = dict.items(value) if t is dict else _frozen_pairs(value, where)
+            frozen: dict = {}
+            for k, v in src:
                 fk = _freeze(k, f"{where} key {k!r}", path)
                 frozen[fk] = _freeze(v, f"{where}[{k!r}]", path)
-            return FrozenDict(frozen)
-        items = frozenset(_freeze(v, f"{where} element", path) for v in value)
+            return FrozenDict._from_pairs(tuple(frozen.items()))
+        each = set.__iter__(value) if t is set else frozenset.__iter__(value)
+        items = frozenset([_freeze(v, f"{where} element", path) for v in each])
         return FrozenSet(items) if t in (set, FrozenSet) else items
     finally:
         path.discard(key)
 
 
+def _frozen_pairs(value: "FrozenDict", where: str) -> tuple:
+    """The pairs a FrozenDict holds, read by its own slot; a FrozenDict a
+    sender broke (its slot set to something else with object.__setattr__)
+    is not plain data."""
+    try:
+        pairs = _FD_ITEMS(value)
+    except AttributeError:
+        pairs = None
+    if type(pairs) is not tuple or any(type(p) is not tuple or tuple.__len__(p) != 2 for p in pairs):
+        raise ValueError(f"{where} holds a FrozenDict whose pairs were replaced by something else; not plain data")
+    return pairs
+
+
 def thaw(value: Any) -> Any:
     """A fresh, changeable copy of frozen plain data, with the containers
-    as they were given (list, dict, set); changing it changes nothing
-    else."""
+    as they were given (list, dict, set) and every value built anew;
+    changing it changes nothing else."""
     t = type(value)
     if t is FrozenList:
         return [thaw(v) for v in value]
     if t is tuple:
-        return tuple(thaw(v) for v in value)
+        return tuple([thaw(v) for v in value])
     if t is FrozenDict:
-        return {thaw(k): thaw(v) for k, v in value.items()}
+        return {thaw(k): thaw(v) for k, v in value._items}
     if t is FrozenSet:
         return {thaw(v) for v in value}
     if t is frozenset:
-        return frozenset(thaw(v) for v in value)
-    return value
+        return frozenset([thaw(v) for v in value])
+    return renew(value)
+
+
+def _renew_tuple(v: tuple) -> tuple:
+    return tuple([renew(x) for x in v])
+
+
+def _renew_frozen_list(v: FrozenList) -> FrozenList:
+    return FrozenList([renew(x) for x in v])
+
+
+def _renew_frozenset(v: frozenset) -> frozenset:
+    return frozenset([renew(x) for x in v])
+
+
+def _renew_frozen_set(v: FrozenSet) -> FrozenSet:
+    return FrozenSet([renew(x) for x in v])
+
+
+def _renew_frozen_dict(v: FrozenDict) -> FrozenDict:
+    return FrozenDict._from_pairs(tuple([(renew(k), renew(x)) for k, x in v._items]))
+
+
+_RENEW: dict[type, Callable[[Any], Any]] = {
+    **BUILD,
+    tuple: _renew_tuple,
+    FrozenList: _renew_frozen_list,
+    frozenset: _renew_frozenset,
+    FrozenSet: _renew_frozen_set,
+    FrozenDict: _renew_frozen_dict,
+}
+
+
+def renew(value: Any) -> Any:
+    """The core's own new copy of a value the core built (a field of a
+    carrier, made by the functions above): equal, sharing no object with
+    it (but None, True, False and what the interpreter keeps one of per
+    value). A value of any other type is a bug of the core: TypeError."""
+    make = _RENEW.get(type(value))
+    if make is None:
+        raise TypeError(f"renew: a {type_name(value)} is not a value the core builds")
+    return make(value)
+
+
+_COPIERS: dict[type, Callable[[Any], Any]] = {}
+
+
+def copy_carrier(obj: Any) -> Any:
+    """The core's own new copy of one of its carriers (a slotted, frozen
+    dataclass whose fields the core made): the same class, every field
+    `renew`ed. Used for every hand-over to a receiver (engine.py), so each
+    receiver holds objects no one else holds."""
+    cls = type(obj)
+    copier = _COPIERS.get(cls)
+    if copier is None:
+        copier = _COPIERS[cls] = _make_copier(cls)
+    return copier(obj)
+
+
+def _make_copier(cls: type) -> Callable[[Any], Any]:
+    """One function per carrier class that reads each field and sets its
+    renewed value on a new instance (written out field by field: about a
+    quarter faster than a loop over the names)."""
+    import dataclasses
+
+    names = [f.name for f in dataclasses.fields(cls)]
+    for name in names:
+        if not name.isidentifier():  # pragma: no cover - dataclass field names are identifiers
+            raise TypeError(f"{cls.__qualname__}.{name}")
+    lines = ["def copier(src):", "    out = new(cls)"]
+    for name in names:
+        lines.append(f"    v = src.{name}")
+        lines.append(f"    put(out, {name!r}, table[type(v)](v))")
+    lines.append("    return out")
+    namespace = {"new": object.__new__, "put": object.__setattr__, "table": _RENEW, "cls": cls}
+    exec("\n".join(lines), namespace)  # noqa: S102 - source built above from the class's own field names
+    return namespace["copier"]
+
+
+_REBUILDERS: dict[type, Callable[[Any], Any]] = {}
+
+
+def rebuild_carrier(obj: Any) -> Any:
+    """The core's own object for a carrier a sender handed over (the
+    caller has checked its class is one of the core's carrier classes
+    itself): made again by the class's constructor from what its slots
+    hold NOW, so every field passes the field functions above again (new
+    objects, checked) and the class's own checks run again. The sender's
+    object is never kept."""
+    cls = type(obj)
+    rebuilder = _REBUILDERS.get(cls)
+    if rebuilder is None:
+        rebuilder = _REBUILDERS[cls] = _make_rebuilder(cls)
+    return rebuilder(obj)
+
+
+def _make_rebuilder(cls: type) -> Callable[[Any], Any]:
+    import dataclasses
+
+    fields = [f for f in dataclasses.fields(cls) if f.init]
+    for f in fields:
+        if not f.name.isidentifier():  # pragma: no cover
+            raise TypeError(f"{cls.__qualname__}.{f.name}")
+    args = ", ".join(f"{f.name}=src.{f.name}" for f in fields)
+    namespace = {"cls": cls}
+    exec(f"def rebuilder(src):\n    return cls({args})", namespace)  # noqa: S102 - the class's own field names
+    return namespace["rebuilder"]

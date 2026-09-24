@@ -39,9 +39,11 @@ tests/bt/item_0/test_bt0_api_surface.py):
   cannot be changed afterwards either: an `OrderRequest` is a value down
   to every field (each made the built-in type itself when the request is
   made, `extra` immutable plain data, values.py), `place_order` takes the
-  class itself (not a subclass), and the venue receives an object rebuilt
-  from its fields that the strategy never holds (`fresh_request`), so
-  nothing the strategy keeps is shared with the venue.
+  class itself (not a subclass), and the engine takes the request from the
+  outbox when the callback returns, makes it again (`fresh_request`) and
+  hands every receiver a copy of its own (engine.py), so nothing the
+  strategy keeps -- or reaches through private attributes -- is shared
+  with the venue.
 * The strategy's view of its orders moves only when it acts or when a
   notice is delivered to it. It never sees the venue's state directly: an
   order it placed is PENDING_NEW until the ACK notice arrives, however long
@@ -79,8 +81,8 @@ from .events import (
     OrderStateUnknownEvent,
 )
 from .time import Nanos, validate_nanos
-from .values import as_choice, as_flag, as_float, as_int, as_text, freeze, is_a, thaw, type_name
-from .window import DeliveredEvents
+from .values import as_choice, as_flag, as_float, as_int, as_text, freeze, is_a, rebuild_carrier, thaw, type_name
+from .window import DeliveredEvents, EventWindow
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,7 +194,7 @@ def fresh_request(request: Any, cls: type, error: type, who: str) -> Any:
             f"{who} takes a {cls.__name__} itself (not a subclass), got "
             f"{type(request).__module__}.{type(request).__qualname__}"
         )
-    return dataclasses.replace(request)
+    return rebuild_carrier(request)
 
 
 def _require_positive(name: str, value: Any) -> float:
@@ -440,6 +442,7 @@ class StrategyContext:
         typed_events: Optional[Mapping[EventType, Sequence[Event]]] = None,
         dropped: Optional[Mapping[EventType, tuple[int, int]]] = None,
         dropped_counts: Optional[Mapping[EventType, int]] = None,
+        now_ns: Optional[int] = None,
     ) -> None:
         """`typed_events`, if given, maps an event type to the delivered
         events of that type (same objects, same order as `visible_events`);
@@ -450,12 +453,16 @@ class StrategyContext:
         (`history_limit`, history.py); reads reaching into that part raise
         `HistoryTruncatedError`. `dropped_counts` maps a type to how many
         of its delivered events the history no longer holds (for the place
-        of an answer, window.py)."""
+        of an answer, window.py). `now_ns`: the delivery time, from the
+        engine (not read back from `current`, which is the strategy's own
+        copy and could be changed by it); default `current`'s received
+        time."""
         self.__visible_events = visible_events
         self.__typed_events = typed_events
         self.__dropped = dict(dropped) if dropped else {}
         self.__dropped_counts = dict(dropped_counts) if dropped_counts else {}
         self.__current = current
+        self.__now = int(current.received_time_ns) if now_ns is None else int(now_ns)
         self.__place_order_cb = place_order_cb
         self.__cancel_order_cb = cancel_order_cb
         self.__order_lookup_cb = order_lookup_cb
@@ -485,7 +492,7 @@ class StrategyContext:
     # refused after revocation.
     @property
     def now_ns(self) -> Nanos:
-        return self.__current.received_time_ns
+        return self.__now
 
     @property
     def current_event(self) -> Event:
@@ -527,7 +534,7 @@ class StrategyContext:
         (history.py); an answer that is returned is the same as without the
         limit."""
         self.__check()
-        now = int(self.__current.received_time_ns)
+        now = self.__now
         since = _time_arg("since_ns", since_ns, now)
         until = _time_arg("until_ns", until_ns, now)
         count = _count_arg(n)
@@ -575,7 +582,9 @@ class StrategyContext:
             self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
             return self.__empty_answer(event_type, until, hi, delivered, dropped)
-        return DeliveredEvents._placed(events[lo:hi], lo, 1, delivered, dropped)
+        # the core's own read of the kept events lo..hi-1 (inside by construction)
+        chunk = events._range(lo, hi) if type(events) is EventWindow else tuple(events)[lo:hi]
+        return DeliveredEvents._placed(chunk, lo, 1, delivered, dropped)
 
     def __empty_answer(self, event_type: Optional[EventType], until: Optional[int], hi: int,
                        delivered: int, dropped: int) -> DeliveredEvents:

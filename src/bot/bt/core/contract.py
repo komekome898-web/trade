@@ -10,9 +10,9 @@ from .interfaces import REPORT_CLASSES, SOCKETS, FillNotice, socket_methods
 from .ordering import ORDERING_RULE
 from .time import TIME_CONTRACT
 from .values import FIELD_RULE, PLAIN_DATA_RULE
-from .window import POSITION_RULE
+from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-9"
+CORE_VERSION = "core-10"
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.
@@ -41,10 +41,9 @@ CORE_CONTRACT: dict = {
                     "OutsideAnswerError / DroppedPositionError / BeforeFirstEventError for the past; "
                     "context revoked on return",
         "position_rule": {
-            "max_position_by_role_as_offset_from_len": dict(POSITION_RULE),
-            "negative_bounds": "a negative index counts back from the newest and one before the oldest "
-                               "(< -len) raises like any position outside the answer; negative slice bounds "
-                               "are cut at the answer's ends, as for any tuple",
+            "range_by_role": {role: list(v) for role, v in POSITION_RULE.items()},
+            "range_by_role_is": "(lowest c, highest c as an offset from len) in the answer's coordinate",
+            "bounds": POSITION_RULE_TEXT,
             "error": "decided by the NAMED position (i0-r6-01): answer position q is position "
                      "u = first + q * step of what the read reads (DeliveredEvents.place); u >= delivered "
                      "(the count delivered when the answer was made) -> FuturePositionError (an IndexError "
@@ -53,6 +52,13 @@ CORE_CONTRACT: dict = {
                      "dropped), u < -dropped -> BeforeFirstEventError (nothing there); these three are OutsideAnswerErrors, "
                      "not LookAheadErrors; of two slice bounds outside, one naming an event not delivered "
                      "yet is reported first; each error carries answer_position, read_position, delivered",
+            "applies_to": "every answer of a history read (DeliveredEvents: [], index()), the windows a "
+                          "context holds (EventWindow: [], index()) and the core's lists behind them, reachable "
+                          "through a window's private attribute (history.DeliveredList: [], index(); changing "
+                          "one is refused); not to a base class's method called on the core's object "
+                          "(tuple.__getitem__(answer, key), list.__getitem__(list, key)), which bypasses the "
+                          "object's own behaviour like object.__setattr__; nor to a plain tuple the strategy "
+                          "makes from an answer (tuple(answer), answer + other): it has no place",
         },
         "venue": "fill model and account see market data at exchange_time_ns and our requests at "
                  "their arrival time; never earlier",
@@ -70,13 +76,14 @@ CORE_CONTRACT: dict = {
                          "the dropped events (its place could not be stated); an answer's place counts the "
                          "dropped events before its oldest kept one (AnswerPlace.dropped)",
         "scope": "the guarantees hold for the context and everything reachable from it by attribute "
-                 "access; the strategy runs in the engine's process, so interpreter introspection "
-                 "(call stack, gc) is not covered -- the core does not sandbox strategy code; nor is a "
-                 "sender that bypasses a frozen carrier of its own with object.__setattr__ after handing "
-                 "it over -- the strategy's and the account's requests are rebuilt when they enter a path, "
-                 "so theirs reach no one; an event source's events are not (a copy per event would cost "
-                 "about a sixth of the engine's time per event), and the strategy only ever gets a copy "
-                 "made at delivery",
+                 "access; the strategy runs in the engine's process, so interpreter introspection used "
+                 "to reach the engine's own state (call stack, gc of the engine) is not covered -- the "
+                 "core does not sandbox strategy code; nor is writing memory (ctypes), nor calling a base "
+                 "class's method on an object of the core's (tuple.__getitem__(answer, key), which "
+                 "bypasses the answer's own behaviour). A sender changing what it handed over, by any "
+                 "means (object.__setattr__ on a frozen carrier's slots or __class__, a container's "
+                 "contents, a Fraction's slots), IS covered: the core never keeps a sender's object "
+                 "(channel_payloads.ownership)",
     },
     "lifecycle": {
         "failed_after_escaped_exception": True,
@@ -91,11 +98,20 @@ CORE_CONTRACT: dict = {
     },
     "channel_payloads": {
         "rule": "what crosses a path (an order or cancel request, a venue report, a fill notice, an "
-                "event) is a value when it is made: every field is the built-in type itself (str, float, "
-                "int, bool, frozen plain data), never an object or a subclass instance of the sender's; "
-                "the carrier classes are slotted (nothing can be attached); each path takes the core's own "
-                "carrier classes themselves (a subclass is refused); the strategy's and the account's "
-                "requests are rebuilt when they enter the path, so no sender holds what its receiver reads",
+                "event) is a value when it is made: every field is a new object of the built-in type "
+                "itself (str, float, int, bool, frozen plain data), never an object, a subclass instance "
+                "or the very object of the sender's; the carrier classes are slotted (nothing can be "
+                "attached); each path takes the core's own carrier classes themselves (a subclass is "
+                "refused)",
+        "ownership": "the core keeps only objects it built: a sender's carrier (a source's event, the "
+                     "strategy's request -- taken from its outbox when the callback returns, at the "
+                     "callback's time --, a fill model's report, the account's forced order) is made "
+                     "again by its constructor when the core takes it, and never handed on; every "
+                     "receiver (latency model, fill model, account, cost model, the strategy, the "
+                     "caller's result, order views included) gets a copy of its own "
+                     "(values.copy_carrier), so what one receiver changes in its copy reaches no sender, "
+                     "no other receiver and not the core; an item written into the order outbox around "
+                     "place_order / cancel_order (private attributes) is refused with OrderApiError",
         "fields": FIELD_RULE,
         "plain_data": PLAIN_DATA_RULE,
         "carriers": [c.__name__ for c in PATH_CARRIERS],

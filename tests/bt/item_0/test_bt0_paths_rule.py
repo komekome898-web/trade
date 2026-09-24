@@ -47,19 +47,17 @@ class _Venue:
         self.live: set[str] = set()
         self.emitted: list[int] = []
         self.market_seen: list[float] = []  # price of each market event, in venue order
-        self.requests_seen: list[int] = []  # send number of each request, in venue order
-        # id(request object as the ENGINE carries it) -> send number. Round 6:
-        # the venue receives an object of its own, not the one the strategy
-        # made (api.py fresh_request), so the number is given where the
-        # engine sends it: the latency model is asked once per request, in
-        # send order (engine.py `_drain`), with the very object that later
-        # reaches the venue.
-        self.send_no: dict[int, int] = {}
-        self.sends_numbered = 0
+        self.requests_seen: list[tuple] = []  # (kind, client_order_id) of each request, in venue order
+        # (kind, client_order_id) of each request in SEND order: the latency
+        # model is asked once per request, in send order (engine.py
+        # `_drain`). Round 8: every receiver gets an object of its own
+        # (values.py, engine.py), so requests are told apart by what they
+        # say, not by object identity; two requests that say the same
+        # (two cancels of one order) cannot be told apart by any receiver.
+        self.sent_labels: list[tuple] = []
 
-    def number(self, request) -> None:
-        self.sends_numbered += 1
-        self.send_no[id(request)] = self.sends_numbered
+    def number(self, label: tuple) -> None:
+        self.sent_labels.append(label)
 
     def _n(self) -> int:
         self.emitted.append(len(self.emitted) + 1)
@@ -75,7 +73,7 @@ class _Venue:
         return out
 
     def on_order(self, order, venue_time_ns):
-        self.requests_seen.append(self.send_no[id(order)])
+        self.requests_seen.append(("order", order.client_order_id))
         coid = order.client_order_id
         out = [Ack(coid, f"v{self._n()}")]
         if self.rng.random() < 0.3:
@@ -85,7 +83,7 @@ class _Venue:
         return out
 
     def on_cancel(self, request, venue_time_ns):
-        self.requests_seen.append(self.send_no[id(request)])
+        self.requests_seen.append(("cancel", request.client_order_id))
         self.live.discard(request.client_order_id)
         return (Canceled(request.client_order_id, f"c{self._n()}"),)
 
@@ -101,11 +99,11 @@ class _Latency:
         return self._d()
 
     def order_delay_ns(self, order, sent_time_ns):
-        self.venue.number(order)
+        self.venue.number(("order", order.client_order_id))
         return self._d()
 
     def cancel_delay_ns(self, request, sent_time_ns):
-        self.venue.number(request)
+        self.venue.number(("cancel", request.client_order_id))
         return self._d()
 
     def notice_delay_ns(self, report, venue_time_ns):
@@ -116,7 +114,8 @@ class _Trader(Strategy):
     def __init__(self, rng: random.Random, venue: _Venue) -> None:
         self.rng, self.venue = rng, venue
         self.sent = 0
-        self.keep: list = []  # request objects stay alive so id() stays unique
+        self.keep: list = []
+        self.sent_labels: list[tuple] = []  # (kind, client_order_id) in the order the trader sent them
         self.mine: list[str] = []
         self.delivered_prices: list[float] = []
         self.notices: list[int] = []  # emit number of each venue notice, in arrival order
@@ -128,6 +127,8 @@ class _Trader(Strategy):
     def _send_no(self, obj) -> None:
         self.sent += 1
         self.keep.append(obj)
+        self.sent_labels.append(("order", obj.client_order_id) if isinstance(obj, OrderRequest)
+                                else ("cancel", obj.client_order_id))
 
     def on_event(self, event, ctx) -> None:
         t = event.EVENT_TYPE
@@ -195,12 +196,22 @@ def _run(seed: int) -> dict:
     venue = _Venue(random.Random(seed + 1))
     trader = _Trader(random.Random(seed + 2), venue)
     CoreEngine(trader, streams, venue, _Latency(random.Random(seed + 3), venue), NullCostModel()).run()
-    assert venue.sends_numbered == trader.sent, seed  # every request was sent, once, in the trader's order
+    assert len(venue.sent_labels) == trader.sent, seed  # every request was sent, once
+    assert venue.sent_labels == trader.sent_labels, seed  # ... in the trader's order
 
     # requests: the venue sees all but the cancels the engine answered
-    # itself (order no longer live there); those are cancels, one per answer
-    missing = sorted(set(range(1, trader.sent + 1)) - set(venue.requests_seen))
-    assert set(missing) <= trader.cancel_nos and len(missing) == trader.engine_answers, seed
+    # itself (order no longer live there). Match the arrivals against the
+    # sends in order; what is skipped must be cancels, one per answer.
+    kept, skipped, i = [], [], 0
+    for label in venue.requests_seen:
+        while i < len(venue.sent_labels) and venue.sent_labels[i] != label:
+            skipped.append(venue.sent_labels[i])
+            i += 1
+        assert i < len(venue.sent_labels), (seed, "an arrival that was not sent, or out of send order")
+        kept.append(venue.sent_labels[i])
+        i += 1
+    skipped.extend(venue.sent_labels[i:])
+    assert all(k == "cancel" for k, _ in skipped) and len(skipped) == trader.engine_answers, seed
     merged = [e.price for e in merge_order(streams)]
     per_stream_sent, per_stream_got = [], []
     for evs in streams.values():
@@ -211,7 +222,7 @@ def _run(seed: int) -> dict:
         per_stream_got.append([p for p in trader.delivered_prices if p in mine])
     return {
         "venue:input": [(merged, venue.market_seen)],
-        "venue:request": [([n for n in range(1, trader.sent + 1) if n not in missing], venue.requests_seen)],
+        "venue:request": [(kept, venue.requests_seen)],
         "deliver:input": list(zip(per_stream_sent, per_stream_got)),
         "deliver:notice": [(list(venue.emitted), trader.notices)],
         "deliver:timer": [([k for k, _ in trader.timers_set], [k for k, _ in trader.timers_got])],

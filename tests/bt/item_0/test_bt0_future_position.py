@@ -28,6 +28,11 @@ is compared on EVERY slice with bounds None / -9..9 and steps
 None / +-1 / +-2 / +-3 over answers of 0..6 events (enumerated, not
 sampled). A second, rule-free check: a read that is answered gives the
 same answer in a world where more events were delivered after these.
+
+Round 8 (i0-r7-01): negative slice bounds are no longer cut by their sign
+(`[-10:]` of 4 names position -6: before the first bar, refused); the
+oracle below states the round-8 principle, enumerated on every place in
+test_bt0_r8_named_position_grid.py.
 """
 from __future__ import annotations
 
@@ -109,6 +114,14 @@ def test_naming_a_position_after_the_newest_is_refused(name, read):
     assert isinstance(exc, IndexError) and isinstance(exc, LookAheadError)
 
 
+def _kind(read):
+    try:
+        read()
+    except IndexError as exc:
+        return type(exc).__name__
+    return "answered"
+
+
 def test_reads_within_the_delivered_positions_answer_as_a_tuple():
     def reads(ctx):
         bars = ctx.visible_events(BAR)
@@ -122,7 +135,7 @@ def test_reads_within_the_delivered_positions_answer_as_a_tuple():
             "from_newest": [b.close for b in bars[3:]],
             "newer_than_newest": [b.close for b in bars[:3:-1]],  # names position 3 (delivered): nothing
             "empty_at_newest": [b.close for b in bars[3:3]],
-            "past_clamp": [b.close for b in bars[-10:]],
+            "past_before_first": _kind(lambda: bars[-10:]),  # round 8: not cut, names position -6
             "reverse": [b.close for b in bars[::-1]],
             "eq_tuple": bars == tuple(bars),
         }
@@ -133,7 +146,7 @@ def test_reads_within_the_delivered_positions_answer_as_a_tuple():
     assert got["head"] == got["all"] and got["tail2"] == [102.0, 103.0]
     assert got["from_newest"] == [103.0]
     assert got["newer_than_newest"] == [] and got["empty_at_newest"] == []
-    assert got["past_clamp"] == got["all"]
+    assert got["past_before_first"] == "BeforeFirstEventError"
     assert got["reverse"] == [103.0, 102.0, 101.0, 100.0] and got["eq_tuple"] is True
 
 
@@ -153,35 +166,33 @@ def test_negative_index_before_the_oldest_is_before_the_first_event():
 # -- the rule, checked against an oracle that does not read the core -------
 
 def _outside_positions(n: int, key) -> list[int]:
-    """Probe a plain tuple of n elements: the answer positions a key names
-    outside the answer, one per refused bound. An index must name an
-    element that is there (a negative one counts from the newest). A
-    slice's start, and the old-side end of a backward slice (its stop,
-    the element just before the range), must name an element that is
-    there; the end of a forward slice (its stop, not read) names the
-    position before it, so it may be the end of the answer, and
-    `plain[:stop]` must not be cut short. Negative slice bounds are cut
-    (as for any tuple) and name nothing outside."""
-    plain = tuple(range(n))
-
-    def is_there(p: int) -> bool:
-        try:
-            plain[p]
-        except IndexError:
-            return False
-        return True
+    """The answer positions a key's explicit bounds name outside an
+    answer of n (round 8, i0-r7-01; the same principle as
+    test_bt0_r8_named_position_grid.py, which enumerates it on every
+    place). Every bound is placed first -- c = b, or b + n for b < 0, as
+    Python reads it -- and nothing is cut: an index and a slice start name
+    an item (0 <= c <= n-1); a slice stop names a gap (forward: between c-1
+    and c; backward: between c and c+1), and the n+1 gaps from before 0 to
+    after n-1 are inside; a gap outside names its neighbour nearer the
+    answer. (Round 7's oracle cut negative slice bounds by their sign, as
+    the implementation did -- it copied the implementation's case.)"""
+    def at(b: int) -> int:
+        return b if b >= 0 else b + n
 
     if isinstance(key, int):
-        return [] if is_there(key) else [key if key >= 0 else key + n]
+        c = at(key)
+        return [] if 0 <= c < n else [c]
     step = 1 if key.step is None else key.step
     out = []
-    if key.start is not None and key.start >= 0 and not is_there(key.start):
-        out.append(key.start)
-    if key.stop is not None and key.stop >= 0:
-        if step < 0 and not is_there(key.stop):
-            out.append(key.stop)
-        if step > 0 and len(plain[:key.stop]) != key.stop:
-            out.append(key.stop - 1)
+    if key.start is not None and not 0 <= at(key.start) < n:
+        out.append(at(key.start))
+    if key.stop is not None:
+        c = at(key.stop)
+        lo, hi = (c - 1, c) if step > 0 else (c, c + 1)
+        if hi > n:
+            out.append(lo)
+        elif lo < -1:
+            out.append(hi)
     return out
 
 
@@ -578,33 +589,40 @@ def test_an_answered_read_does_not_depend_on_what_comes_after(n):
 
 
 def test_each_role_of_the_table_refuses_by_itself_and_is_named():
-    """Every role of POSITION_RULE refuses a bound one past its limit, and
-    the error names the role (the rule is the table, not per-form code)."""
+    """Every role of POSITION_RULE refuses a bound one past each end of its
+    range, and the error names the role (the rule is the table, not
+    per-form code); the ends themselves are answered."""
     n = 4
-    seq = DeliveredEvents(range(n), first=0, delivered=n)
-    past = DeliveredEvents(range(n), first=0, delivered=n + 6)
-    one_past = {
-        "index": 4,
-        "forward slice start": slice(4, None),
-        "forward slice stop": slice(None, 5),
-        "backward slice start": slice(4, None, -1),
-        "backward slice stop": slice(None, 4, -1),
+    seq = DeliveredEvents(range(n), first=0, delivered=n)  # at the newest
+    back = seq[::-1]  # newest first: before its position 0 is the future
+    # (role, key one past the highest, key one below the lowest)
+    cases = {
+        "index": (4, -5),
+        "forward slice start": (slice(4, None), slice(-5, None)),
+        "forward slice stop": (slice(None, 5), slice(None, -5)),
+        "backward slice start": (slice(4, None, -1), slice(-5, None, -1)),
+        "backward slice stop": (slice(None, 4, -1), slice(None, -6, -1)),
     }
-    assert set(one_past) == set(POSITION_RULE)
-    for role, key in one_past.items():
+    assert set(cases) == set(POSITION_RULE)
+    for role, (high, low) in cases.items():
         with pytest.raises(FuturePositionError, match=role):
-            seq[key]
-        with pytest.raises(OutsideAnswerError, match=role):
-            past[key]
-        # one less is answered
-        if isinstance(key, int):
-            assert seq[key - 1] == 3
-        else:
-            fix = {"start": key.start, "stop": key.stop}
-            which = "start" if "start" in role else "stop"
-            fix[which] -= 1
-            seq[slice(fix["start"], fix["stop"], key.step)]
-    assert CORE_CONTRACT["visibility"]["position_rule"]["max_position_by_role_as_offset_from_len"] == POSITION_RULE
+            seq[high]
+        with pytest.raises(BeforeFirstEventError, match=role):
+            seq[low]
+        with pytest.raises(FuturePositionError, match=role):
+            back[low]  # below position 0 of a newest-first answer: after the newest
+        # the ends themselves are answered
+        lowest, highest = POSITION_RULE[role]
+        for c in (lowest, n + highest):
+            b = c if c >= 0 else c - n
+            if isinstance(high, int):
+                assert seq[b] == c
+            else:
+                which = "start" if "start" in role else "stop"
+                key = slice(b if which == "start" else None, b if which == "stop" else None, high.step)
+                seq[key]
+    assert CORE_CONTRACT["visibility"]["position_rule"]["range_by_role"] == {
+        role: list(v) for role, v in POSITION_RULE.items()}
 
 
 def test_an_empty_answer_cut_inside_the_dropped_part_is_refused():

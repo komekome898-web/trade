@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import operator
 from collections.abc import Sequence
-from typing import Any, Iterator, NamedTuple
+from typing import Any, Iterator, NamedTuple, Optional
 
 from .errors import (
     BeforeFirstEventError,
@@ -28,34 +28,49 @@ from .errors import (
 from .events import Event
 
 
-# The position rule of a history read, as ONE table (i0-r4-01). A bound of
-# an index or a slice has a role; each role says how far the position it
-# names may go, as an offset from `len` (the count of events in the
-# answer): an INCLUSIVE bound (an index, the first position a slice reads,
-# and the exclusive old-side end of a backward slice, which names an event
-# that must be there) may name at most `len - 1`; the exclusive end of a
-# FORWARD slice may be `len` itself -- "up to the end of what was
-# delivered" -- and no more (it names position `bound - 1`). An explicit
-# non-negative bound past its limit, and a negative INDEX before the
-# oldest (`< -len`), name a position outside the answer and raise. Negative
-# SLICE bounds count back from the newest and are cut at the answer's ends,
-# as for any tuple (a cut only ever shortens towards what the answer
-# holds). `DeliveredEvents.__getitem__` only looks bounds up here.
+# The position rule of a history read, as ONE table of ranges (i0-r4-01,
+# i0-r7-01). Every explicit bound -- an index, a slice start or stop, the
+# start / stop of `index()` -- is first placed in the answer's own
+# coordinate, c = b (b >= 0) or c = b + len (b < 0: Python's "count from
+# the end"), and checked there against its role's range, BEFORE anything is
+# cut; `tuple` slicing runs only on bounds already inside, so it never
+# shortens an answer. The sign of a bound and the direction of the answer
+# decide nothing on their own (i0-r7-01: negative slice bounds used to be
+# cut by their sign, which on a newest-first answer skipped the future).
+#
+# Each role is (lowest c, highest c as an offset from len):
+# * an index and a slice start name an ITEM: 0 <= c <= len-1;
+# * a slice stop names a GAP: a forward stop c the gap between c-1 and c,
+#   a backward stop c the gap between c and c+1; the len+1 gaps from
+#   "before 0" to "after len-1" are inside: forward 0 <= c <= len, backward
+#   -1 <= c <= len-1 (c = -1, written b = -(len+1), reads down to the
+#   oldest). A gap outside names the one of its two neighbours nearer the
+#   answer.
 #
 # WHICH error follows from the NAMED position (i0-r6-01), never from one
 # fact about the answer as a whole: the answer knows its place in what
-# the read reads (`AnswerPlace`), so the named position is mapped back
-# there and the error says what is there -- an event not delivered yet
-# (`FuturePositionError`, a `LookAheadError`), a delivered event outside
-# the answer (`OutsideAnswerError`), a delivered event `history_limit`
-# dropped (`DroppedPositionError`), or nothing (`BeforeFirstEventError`).
-POSITION_RULE: dict[str, int] = {
-    "index": -1,
-    "forward slice start": -1,
-    "forward slice stop": 0,
-    "backward slice start": -1,
-    "backward slice stop": -1,
+# the read reads (`AnswerPlace`), so the named position q is mapped back
+# there (u = first + q * step) and the error says what is there -- an event
+# not delivered yet (`FuturePositionError`, a `LookAheadError`), a
+# delivered event outside the answer (`OutsideAnswerError`), a delivered
+# event `history_limit` dropped (`DroppedPositionError`), or nothing
+# (`BeforeFirstEventError`). Of two bounds outside, one naming an event
+# not delivered yet is reported, else the start's.
+POSITION_RULE: dict[str, tuple[int, int]] = {
+    "index": (0, -1),
+    "forward slice start": (0, -1),
+    "forward slice stop": (0, 0),
+    "backward slice start": (0, -1),
+    "backward slice stop": (-1, -1),
 }
+
+POSITION_RULE_TEXT = (
+    "every explicit bound (an index, a slice start or stop, index()'s start and stop) is placed in the "
+    "answer's coordinate first (c = b, or b + len for b < 0) and checked there against its role's range, "
+    "never cut before the check: an index and a slice start name an item (0 <= c <= len-1); a slice stop "
+    "names a gap (forward 0 <= c <= len, backward -1 <= c <= len-1); a gap outside names its neighbour "
+    "nearer the answer; the direction of the answer and the sign of a bound decide nothing on their own"
+)
 
 
 class AnswerPlace(NamedTuple):
@@ -92,24 +107,122 @@ def _checked_place(first: Any, step: Any, delivered: Any, dropped: Any, n: int) 
     return AnswerPlace(first, step, delivered, dropped)
 
 
+def _named(role: str, c: int, n: int) -> Optional[int]:
+    """The answer position a bound of `role` at answer coordinate `c` names
+    OUTSIDE the answer of `n`, or None when it is inside (POSITION_RULE)."""
+    lowest, highest = POSITION_RULE[role]
+    if lowest <= c <= n + highest:
+        return None
+    if role.endswith("stop"):  # a gap: its neighbour nearer the answer
+        below, above = (c - 1, c) if role.startswith("forward") else (c, c + 1)
+        return below if c > n + highest else above
+    return c
+
+
+def _outside(place: AnswerPlace, role: str, bound: int, q: int, n: int, shown: str) -> IndexError:
+    """The error for naming answer position `q` (outside the answer), from
+    what that position is in what the read reads."""
+    u = place.first + q * place.step
+    holds = f"it holds {n}, positions 0..{n - 1}" if n else "it holds no event"
+    where = (
+        f"{shown}: the {role} {bound} names position {q} of this answer ({holds}), which is "
+        f"position {u} of what the read reads"
+    )
+    if u >= place.delivered:
+        had = f"positions 0..{place.delivered - 1}" if place.delivered else "none"
+        cls, why = FuturePositionError, (
+            f"; {place.delivered} of those events had been delivered when the answer was made "
+            f"({had}), so what position {u} names had not been delivered yet"
+        )
+    elif u >= 0:
+        cls, why = OutsideAnswerError, (
+            "; that event was delivered but is outside this answer (a time range, n or a slice "
+            "ended it) -- read a wider range instead"
+        )
+    elif u >= -place.dropped:
+        cls, why = DroppedPositionError, (
+            f"; it lies before the oldest event the history keeps of what the read reads, among "
+            f"the {place.dropped} delivered events history_limit dropped"
+        )
+    else:
+        cls, why = BeforeFirstEventError, (
+            "; it lies before the first event ever delivered of what the read reads"
+            + (f" (the {place.dropped} history_limit dropped included)" if place.dropped else "")
+            + ": nothing is there"
+        )
+    exc = cls(where + why)
+    exc.answer_position, exc.read_position, exc.delivered = q, u, place.delivered
+    return exc
+
+
+def resolve_key(key: Any, n: int, place: AnswerPlace) -> Any:
+    """THE rule (POSITION_RULE) for one key on an answer of `n` at `place`:
+    an int index returns its answer coordinate (0 <= c < n); a slice returns
+    a slice of plain ints, every bound read ONCE (its __index__) and
+    checked BEFORE anything is cut, so slicing a sequence of `n` by it cuts
+    nothing (a backward stop c = -1 is returned as None: "down to the
+    oldest"). Raises the error of the named position otherwise. A step of
+    0 is returned as it is (the sequence refuses it with ValueError)."""
+    if type(key) is slice:  # slice cannot be subclassed; an object claiming to be one is not
+        b0, b1, b2 = key.start, key.stop, key.step
+        start = None if b0 is None else operator.index(b0)
+        stop = None if b1 is None else operator.index(b1)
+        step = None if b2 is None else operator.index(b2)
+        st = 1 if step is None else step
+        if st == 0:
+            return slice(start, stop, step)
+        way = "forward" if st > 0 else "backward"
+        shown = f"[{start}:{stop}:{step}]"
+        errors = []
+        cs = ct = None
+        if start is not None:
+            cs = start if start >= 0 else start + n
+            q = _named(f"{way} slice start", cs, n)
+            if q is not None:
+                errors.append(_outside(place, f"{way} slice start", start, q, n, shown))
+        if stop is not None:
+            ct = stop if stop >= 0 else stop + n
+            q = _named(f"{way} slice stop", ct, n)
+            if q is not None:
+                errors.append(_outside(place, f"{way} slice stop", stop, q, n, shown))
+        if errors:
+            future = [e for e in errors if isinstance(e, FuturePositionError)]
+            raise (future or errors)[0]
+        return slice(cs, None if ct == -1 else ct, step)
+    i = operator.index(key)
+    c = i if i >= 0 else i + n
+    if _named("index", c, n) is not None:
+        raise _outside(place, "index", i, c, n, f"[{i}]")
+    return c
+
+
+def resolve_search(args: tuple, n: int, place: AnswerPlace) -> tuple[int, int]:
+    """The start and stop of `index(value, start, stop)` (a forward range of
+    the answer), by the same rule: (start, stop) as answer coordinates."""
+    if len(args) > 2:
+        raise TypeError(f"index expected at most 3 arguments, got {len(args) + 1}")
+    key = resolve_key(slice(args[0] if args else None, args[1] if len(args) > 1 else None), n, place)
+    return (0 if key.start is None else key.start), (n if key.stop is None else key.stop)
+
+
 class DeliveredEvents(tuple):
     """What a history read (`StrategyContext.visible_events`) returns: a
     tuple of delivered events, oldest first (a backward slice of one is
     newest first). Every position `0 .. len-1` holds an event of the
-    answer; naming a position outside it -- by an index `>= len` or
-    `< -len`, or by an explicit non-negative slice bound past its limit
-    (`POSITION_RULE`) -- raises instead of returning a silently shortened
-    or empty tuple. WHICH error follows from what the NAMED position is in
-    what the read reads (`place`, i0-r6-01): an event not delivered yet
-    -> `FuturePositionError` (an `IndexError` and a `LookAheadError`); a
-    delivered event outside the answer -> `OutsideAnswerError`; a
-    delivered event `history_limit` dropped -> `DroppedPositionError`;
-    nothing -> `BeforeFirstEventError` (the last three are
-    `OutsideAnswerError`s, not `LookAheadError`s). When two slice bounds
-    are outside, one naming an event not delivered yet is reported first.
-    Otherwise it is a plain tuple (equality, hashing, iteration, `len`),
-    and a slice of it is again a `DeliveredEvents` under the same rule,
-    with its own place computed from this one.
+    answer; naming a position outside it -- by an index, a slice bound or
+    `index()`'s start / stop, of either sign, on an answer of either
+    direction (`POSITION_RULE`) -- raises instead of returning a silently
+    shortened or empty tuple. WHICH error follows from what the NAMED
+    position is in what the read reads (`place`, i0-r6-01): an event not
+    delivered yet -> `FuturePositionError` (an `IndexError` and a
+    `LookAheadError`); a delivered event outside the answer ->
+    `OutsideAnswerError`; a delivered event `history_limit` dropped ->
+    `DroppedPositionError`; nothing -> `BeforeFirstEventError` (the last
+    three are `OutsideAnswerError`s, not `LookAheadError`s). When two slice
+    bounds are outside, one naming an event not delivered yet is reported
+    first. Otherwise it is a plain tuple (equality, hashing, iteration,
+    `len`), and a slice of it is again a `DeliveredEvents` under the same
+    rule, with its own place computed from this one.
 
     The place is fixed when the answer is made and cannot be changed:
     `DeliveredEvents(items, first=..., delivered=...)` has no default for
@@ -117,7 +230,8 @@ class DeliveredEvents(tuple):
     instance's dict, as a tuple subclass cannot have slots; a strategy
     that rewrites it there by bypassing `__setattr__` only misleads itself
     about its own answer and is outside the contract, like bypassing a
-    frozen carrier with `object.__setattr__`.)"""
+    frozen carrier with `object.__setattr__` or calling
+    `tuple.__getitem__` on the answer.)"""
 
     def __new__(cls, items: Any = (), *, first: int, delivered: int, step: int = 1, dropped: int = 0):
         self = tuple.__new__(cls, items)
@@ -155,70 +269,19 @@ class DeliveredEvents(tuple):
 
     def __getitem__(self, index):
         n = tuple.__len__(self)
-        if type(index) is slice:  # slice cannot be subclassed; an object claiming to be one is not
-            # each bound read ONCE (its __index__), then the same ints are
-            # checked, cut and placed
-            b0, b1, b2 = index.start, index.stop, index.step
-            key = slice(None if b0 is None else operator.index(b0), None if b1 is None else operator.index(b1),
-                        None if b2 is None else operator.index(b2))
-            step = 1 if key.step is None else key.step
-            if step != 0:  # step 0 is refused by tuple below
-                way = "forward" if step > 0 else "backward"
-                self._check_bounds(((f"{way} slice start", key.start), (f"{way} slice stop", key.stop)),
-                                   n, f"[{key.start}:{key.stop}:{key.step}]")
-            items = tuple.__getitem__(self, key)
-            start, _stop, st = key.indices(n)
-            p = self._place
-            return DeliveredEvents._placed(items, p.first + start * p.step, p.step * st, p.delivered, p.dropped)
-        i = operator.index(index)
-        if i >= n or i < -n:
-            raise self._outside("index", i, i if i >= 0 else i + n, n, f"[{i}]")
-        return tuple.__getitem__(self, i)
-
-    def _check_bounds(self, bounds: tuple, n: int, shown: str) -> None:
-        errors = []
-        for role, b in bounds:
-            if b is not None and b >= 0 and b > n + POSITION_RULE[role]:
-                errors.append(self._outside(role, b, b - 1 - POSITION_RULE[role], n, shown))
-        if errors:
-            future = [e for e in errors if isinstance(e, FuturePositionError)]
-            raise (future or errors)[0]
-
-    def _outside(self, role: str, bound: int, q: int, n: int, shown: str) -> IndexError:
-        """The error for naming answer position `q` (outside the answer),
-        from what that position is in what the read reads."""
         p = self._place
-        u = p.first + q * p.step
-        holds = f"it holds {n}, positions 0..{n - 1}" if n else "it holds no event"
-        where = (
-            f"{shown}: the {role} {bound} names position {q} of this answer ({holds}), which is "
-            f"position {u} of what the read reads"
-        )
-        if u >= p.delivered:
-            had = f"positions 0..{p.delivered - 1}" if p.delivered else "none"
-            cls, why = FuturePositionError, (
-                f"; {p.delivered} of those events had been delivered when the answer was made "
-                f"({had}), so what position {u} names had not been delivered yet"
-            )
-        elif u >= 0:
-            cls, why = OutsideAnswerError, (
-                "; that event was delivered but is outside this answer (a time range, n or a slice "
-                "ended it) -- read a wider range instead"
-            )
-        elif u >= -p.dropped:
-            cls, why = DroppedPositionError, (
-                f"; it lies before the oldest event the history keeps of what the read reads, among "
-                f"the {p.dropped} delivered events history_limit dropped"
-            )
-        else:
-            cls, why = BeforeFirstEventError, (
-                "; it lies before the first event ever delivered of what the read reads"
-                + (f" (the {p.dropped} history_limit dropped included)" if p.dropped else "")
-                + ": nothing is there"
-            )
-        exc = cls(where + why)
-        exc.answer_position, exc.read_position, exc.delivered = q, u, p.delivered
-        return exc
+        key = resolve_key(index, n, p)
+        if type(key) is int:
+            return tuple.__getitem__(self, key)
+        items = tuple.__getitem__(self, key)  # every bound is inside: nothing is cut
+        start, _stop, st = key.indices(n)
+        return DeliveredEvents._placed(items, p.first + start * p.step, p.step * st, p.delivered, p.dropped)
+
+    def index(self, value: Any, *args: Any) -> int:
+        """`tuple.index`, with `start` and `stop` naming positions by the
+        same rule as a forward slice `[start:stop]`."""
+        start, stop = resolve_search(args, tuple.__len__(self), self._place)
+        return tuple.index(self, value, start, stop)
 
 
 def _rebuild(items: tuple, place: tuple) -> DeliveredEvents:
@@ -227,12 +290,23 @@ def _rebuild(items: tuple, place: tuple) -> DeliveredEvents:
 
 
 class EventWindow(Sequence):
-    __slots__ = ("_log", "_end", "_revoked")
+    """The window a context holds over the history list (the whole history
+    or one type's): the first `end` events of `history`. Naming a position
+    follows the same rule as an answer (`resolve_key`), with the window's
+    own place: first 0, step 1, delivered `end`, `dropped` delivered events
+    before its oldest (history_limit); a slice of it is a `DeliveredEvents`.
+    `history` itself is the core's own list (reachable by attribute
+    access): it holds only events delivered by now, reads by position under
+    the same rule and refuses changes (history.py `DeliveredList`), and is
+    dropped when the callback returns. `history` is a list."""
 
-    def __init__(self, history: Sequence[Event], end: int) -> None:
+    __slots__ = ("_log", "_end", "_revoked", "_dropped")
+
+    def __init__(self, history: Sequence[Event], end: int, dropped: int = 0) -> None:
         self._log = history
         self._end = end
         self._revoked = False
+        self._dropped = dropped
 
     def revoke(self) -> None:
         self._log = ()
@@ -243,33 +317,53 @@ class EventWindow(Sequence):
         if self._revoked:
             raise StaleContextError("this history view belonged to a callback that has returned")
 
+    def _place(self) -> AnswerPlace:
+        return AnswerPlace(0, 1, self._end, self._dropped)
+
     def __len__(self) -> int:
         self._check()
         return self._end
 
     def __getitem__(self, index):
         self._check()
-        if type(index) is slice:  # by the real type (values.py), as DeliveredEvents decides
-            start, stop, step = index.indices(self._end)
-            return tuple(self._log[start:stop:step])
-        index = operator.index(index)
-        if index < 0:
-            index += self._end
-        if not 0 <= index < self._end:
-            raise IndexError(index)
-        return self._log[index]
+        end = self._end
+        key = resolve_key(index, end, self._place())
+        log = self._log
+        if type(key) is int:
+            return list.__getitem__(log, key)  # the core's own read of its list
+        start, stop, step = key.indices(end)  # inside by the rule: nothing is cut
+        # read the positions themselves: a negative start or stop of the
+        # window's coordinate (an empty backward read, -1) is not a
+        # position counted from the end of the backing list
+        get = list.__getitem__
+        items = tuple([get(log, i) for i in range(start, stop, step)])
+        return DeliveredEvents._placed(items, start, step, end, self._dropped)
+
+    def _range(self, lo: int, hi: int) -> tuple:
+        """The core's own read of events lo..hi-1 (0 <= lo <= hi <= end)."""
+        return tuple(list.__getitem__(self._log, slice(lo, hi)))
+
+    def index(self, value: Any, *args: Any) -> int:
+        self._check()
+        start, stop = resolve_search(args, self._end, self._place())
+        log = self._log
+        for i in range(start, stop):
+            v = list.__getitem__(log, i)
+            if v is value or v == value:
+                return i
+        raise ValueError(f"{value!r} is not in the window")
 
     def __iter__(self) -> Iterator[Event]:
         self._check()
-        log, end = self._log, self._end
+        log, end, get = self._log, self._end, list.__getitem__
         for i in range(end):
-            yield log[i]
+            yield get(log, i)
 
     def __reversed__(self) -> Iterator[Event]:
         self._check()
-        log = self._log
+        log, get = self._log, list.__getitem__
         for i in range(self._end - 1, -1, -1):
-            yield log[i]
+            yield get(log, i)
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"EventWindow(len={self._end}, revoked={self._revoked})"

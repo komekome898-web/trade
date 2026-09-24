@@ -163,11 +163,19 @@ def test_order_equals_the_stated_rule_as_a_global_sort():
 
 
 class _JitterFeed:
-    def __init__(self, delays):
-        self.delays = delays
+    """Round 8: every receiver gets an object of its own (values.py,
+    engine.py), so the model cannot look the delay up by the sender's
+    object. It is asked once per market event in merge order (engine.py
+    `_ingest`), so it answers the delays in that order, and checks that the
+    event it is asked about says what the merge's event at that place says."""
+
+    def __init__(self, in_merge_order):
+        self.queue = list(in_merge_order)  # (signature, delay) of each market event, merge order
 
     def feed_delay_ns(self, e):
-        return self.delays[id(e)]
+        sig, delay = self.queue.pop(0)
+        assert _sig(e) == sig and e.received_time_ns is not None, (_sig(e), sig)
+        return delay
 
     def order_delay_ns(self, o, t):
         return 0
@@ -190,7 +198,11 @@ def test_jittered_feed_delay_keeps_each_stream_in_reception_order():
         delays = {id(e): (rng.choice([0, 0, 1, 2, 9, 4000]) if e.EVENT_TYPE in MARKET_EVENT_TYPES else 0)
                   for evs in streams.values() for e in evs}
         expected, deliver = _reference_delivery(streams, lambda e: delays[id(e)])
+        in_merge_order = [(_sig(e), delays[id(e)]) for _, e in _reference_merge(streams)
+                          if e.EVENT_TYPE in MARKET_EVENT_TYPES]
         rec = Recorder()
-        CoreEngine(rec, streams, latency_model=_JitterFeed(delays)).run()
+        feed = _JitterFeed(in_merge_order)
+        CoreEngine(rec, streams, latency_model=feed).run()
+        assert feed.queue == [], seed  # asked once per market event
         assert [_sig(e) for e in rec.seen] == [_sig(e) for e in expected], seed
         assert [e.received_time_ns for e in rec.seen] == [deliver[id(e)] for e in expected], seed
