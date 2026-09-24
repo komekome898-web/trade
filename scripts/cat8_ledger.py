@@ -364,7 +364,10 @@ def cmd_check_elements(a):
                         while k >= 0 and not loglines[k].startswith("--- "):
                             k -= 1
                         cmdline = loglines[k + 1] if 0 <= k and k + 1 < len(loglines) else ""
-                        if "cat8_render" in cmdline:
+                        if k < 0 or not cmdline.startswith("$ "):
+                            errs.append("行 %d: %s %s の `なし` の根拠の行 %s:%s の手の見出し(`--- ` と `$ ` の行)が見つからない" % (
+                                i + 1, tool, el, fname, lno))
+                        elif "cat8_render" in cmdline:
                             errs.append("行 %d: %s %s の `なし` の根拠が描画した頁(cat8_render.js)の手: %s:%s。描画した頁は `なし` の根拠にしない" % (
                                 i + 1, tool, el, fname, lno))
                 if not refs:
