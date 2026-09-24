@@ -484,8 +484,8 @@ class _Log:
         self.got: list = []  # (who, obj, snap at receipt, graph at receipt)
         self.foreign: list = []  # (who, type name) of objects not built by the core, at receipt
 
-    def receive(self, who: str, obj, attack: bool = True):
-        graph = _graph(obj)
+    def receive(self, who: str, obj, attack: bool = True, t=None):
+        graph = _graph(obj) + ([t] if t is not None else [])  # the time argument is the receiver's too
         self.got.append((who, obj, _snap(obj), graph))
         self.foreign.extend((who, t) for t in _foreign(graph))  # at receipt, before it attacks
         if attack:
@@ -504,15 +504,15 @@ class _Latency:
         return IntAnswer(0)
 
     def order_delay_ns(self, order, sent):
-        LOG.receive("latency.order", order)
+        LOG.receive("latency.order", order, t=sent)
         return 10 * SEC
 
     def cancel_delay_ns(self, request, sent):
-        LOG.receive("latency.cancel", request)
+        LOG.receive("latency.cancel", request, t=sent)
         return 10 * SEC
 
     def notice_delay_ns(self, report, venue_time):
-        LOG.receive("latency.notice", report, attack=False)
+        LOG.receive("latency.notice", report, attack=False, t=venue_time)
         self.kept.append((report, _snap(report)))  # read again later
         return SEC
 
@@ -531,13 +531,13 @@ class _Venue:
 
     def on_market_event(self, event, t):
         self._later()
-        LOG.receive("venue.market", event)
+        LOG.receive("venue.market", event, t=t)
         return ()
 
     def on_order(self, order, t):
         self._later()
         coid = order.client_order_id  # read before the attack: its own copy
-        LOG.receive("venue.order", order)
+        LOG.receive("venue.order", order, t=t)
         out = (Ack(StrSub(coid), StrSub(f"v-{coid}")), Fill(StrSub(coid), FracSub(203, 2), Fraction(1, 4),
                                                              liquidity=StrSub("maker")))
         self.sent.extend((r, _snap(r)) for r in out)
@@ -546,7 +546,7 @@ class _Venue:
     def on_cancel(self, request, t):
         self._later()
         coid = request.client_order_id
-        LOG.receive("venue.cancel", request)
+        LOG.receive("venue.cancel", request, t=t)
         out = (Canceled(StrSub(coid), StrSub("user asked")),)
         self.sent.extend((r, _snap(r)) for r in out)
         return out
@@ -574,7 +574,7 @@ class _Account:
     def on_market_event(self, event, t):
         if self.forced is not None:
             _attack(self.forced[0])  # the account changes what it returned, later
-        LOG.receive("account.market", event)
+        LOG.receive("account.market", event, t=t)
         if event.EVENT_TYPE is EventType.LIQUIDATION and self.forced is None:
             req = OrderRequest(StrSub("sell"), "market", FracSub(3, 2), client_order_id=StrSub("forced-1"),
                                extra=(("why", {"margin": [Fraction(1, 9)]}),))
@@ -583,7 +583,7 @@ class _Account:
         return ()
 
     def check_order(self, order, t):
-        LOG.receive("account.check", order)
+        LOG.receive("account.check", order, t=t)
         return None
 
 

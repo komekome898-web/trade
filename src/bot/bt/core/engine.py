@@ -893,22 +893,20 @@ class CoreEngine:
             kind = item[0]
             if kind in ("new", "cancel"):
                 cls = OrderRequest if kind == "new" else CancelRequest
-                coid = fresh_request(item[1], cls, OrderApiError, "the order outbox").client_order_id
-                if not port.knows(coid):
-                    raise OrderApiError(f"the order outbox holds a {kind} for {coid!r}, which the order port "
-                                        f"never registered (written around place_order / cancel_order)")
-            if kind == "new":
-                req = fresh_request(item[1], OrderRequest, OrderApiError, "place_order")
-                delay = _check_delay(self._latency.order_delay_ns(copy_carrier(req), sent), "order_delay_ns")
+                req = fresh_request(item[1], cls, OrderApiError, "place_order" if kind == "new" else "cancel_order")
+                if not port.knows(req.client_order_id):
+                    raise OrderApiError(f"the order outbox holds a {kind} for {req.client_order_id!r}, which the "
+                                        f"order port never registered (written around place_order / cancel_order)")
+                model = self._latency.order_delay_ns if kind == "new" else self._latency.cancel_delay_ns
+                name = "order_delay_ns" if kind == "new" else "cancel_delay_ns"
+                delay = _check_delay(model(copy_carrier(req), renew(sent)), name)
                 arrive = self._outbound.admit(sent + delay)
-                self._order_requests.append(req)
-                self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_ORDER, req)
-            elif kind == "cancel":
-                req = fresh_request(item[1], CancelRequest, OrderApiError, "cancel_order")
-                delay = _check_delay(self._latency.cancel_delay_ns(copy_carrier(req), sent), "cancel_delay_ns")
-                arrive = self._outbound.admit(sent + delay)
-                self._cancel_requests.append(req)
-                self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_CANCEL, req)
+                if kind == "new":
+                    self._order_requests.append(req)
+                    self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_ORDER, req)
+                else:
+                    self._cancel_requests.append(req)
+                    self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_CANCEL, req)
             else:  # "timer"
                 _, at, tag = item
                 at = int(validate_nanos(at))
@@ -918,15 +916,16 @@ class CoreEngine:
 
     # -- venue side --------------------------------------------------------
     def _venue_market(self, time_ns: int, event: Event) -> None:
-        # every receiver gets a copy of its own of the core's event
+        # every receiver gets a copy of its own of the core's event (and of
+        # the time: an int the core does not share either)
         if event.EVENT_TYPE is EventType.FUNDING:
             self._account.apply_funding(copy_carrier(event))
         elif event.EVENT_TYPE is EventType.LIQUIDATION:
             self._account.apply_liquidation(copy_carrier(event))
-        reports = self._take_reports(self._fill_model.on_market_event(copy_carrier(event), time_ns),
+        reports = self._take_reports(self._fill_model.on_market_event(copy_carrier(event), renew(time_ns)),
                                      "on_market_event")
         self._handle_reports(time_ns, reports, "on_market_event", None)
-        forced = self._account.on_market_event(copy_carrier(event), time_ns) or ()
+        forced = self._account.on_market_event(copy_carrier(event), renew(time_ns)) or ()
         for request in forced:
             self._force(time_ns, request)
 
@@ -956,7 +955,7 @@ class CoreEngine:
         self._submit_to_venue(time_ns, request)
 
     def _venue_order(self, time_ns: int, order: OrderRequest) -> None:
-        reason = self._account.check_order(copy_carrier(order), time_ns)
+        reason = self._account.check_order(copy_carrier(order), renew(time_ns))
         if reason is not None:
             # the reason reaches the strategy in a notice: a str itself
             # (values.py), made before anything reads it
@@ -978,7 +977,7 @@ class CoreEngine:
 
     def _submit_to_venue(self, time_ns: int, order: OrderRequest) -> None:
         self._ledger.arrive(order)  # the core's own; the fill model gets a copy
-        reports = self._take_reports(self._fill_model.on_order(copy_carrier(order), time_ns), "on_order")
+        reports = self._take_reports(self._fill_model.on_order(copy_carrier(order), renew(time_ns)), "on_order")
         self._handle_reports(time_ns, reports, "on_order", order.client_order_id)
         if self._ledger.state(order.client_order_id) == _VenueLedger.ARRIVED:
             raise VenueProtocolError(
@@ -994,7 +993,7 @@ class CoreEngine:
                 time_ns, (Reject(coid, f"order_not_open:{state}", "cancel"),), "on_cancel", coid
             )
             return
-        reports = self._take_reports(self._fill_model.on_cancel(copy_carrier(request), time_ns), "on_cancel")
+        reports = self._take_reports(self._fill_model.on_cancel(copy_carrier(request), renew(time_ns)), "on_cancel")
         answers = sum(1 for r in reports if _is_cancel_answer(r, coid))
         if answers != 1:
             # one cancel, one answer: the strategy counts its cancels in
@@ -1072,7 +1071,7 @@ class CoreEngine:
             else:
                 event = OrderStateUnknownEvent(received_time_ns=venue_time, client_order_id=coid,
                                                detail=report.detail, request_kind=report.request_kind)
-            delay = _check_delay(self._latency.notice_delay_ns(copy_carrier(report), venue_time), "notice_delay_ns")
+            delay = _check_delay(self._latency.notice_delay_ns(copy_carrier(report), renew(venue_time)), "notice_delay_ns")
             deliver_at = self._notices.admit(venue_time + delay)
             event = dataclasses.replace(event, received_time_ns=deliver_at, exchange_time_ns=venue_time)
             self._push(deliver_at, PHASE_DELIVER_NOTICE, _K_DELIVER, event)
