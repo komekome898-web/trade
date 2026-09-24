@@ -33,3 +33,7 @@ def test_single_definition_and_no_abbreviated_auditor_output():
     assert any("定義が 2 回" in e for e in errs)
     errs = cbd.check(DOC, LOG, "### 監査役の出力(逐語)\n1. [直す] 前半(…)後半\n")
     assert any("(…)" in e for e in errs)
+
+
+def test_quoted_ellipsis_in_auditor_text_is_not_a_cut():
+    assert cbd.check(DOC, LOG, "### 監査役の出力(逐語)\n1. [聞く] 記録が「(…)」で切られている。\n") == []

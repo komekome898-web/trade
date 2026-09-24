@@ -58,7 +58,7 @@ def check(doc: str, log: str, verdicts: str) -> list[str]:
     for i, line in enumerate(verdicts.splitlines(), 1):
         if line.startswith("### "):
             in_audit = "監査役の出力" in line
-        elif in_audit and "(…)" in line:
+        elif in_audit and re.search(r"(?<!「)\(…\)(?!」)", line):  # 「(…)」 quoted by the auditor itself is not a cut
             errs.append(f"VERDICTS:{i}: 監査役の出力の中に「(…)」= 切り詰めがある(O-4)")
     return errs
 
