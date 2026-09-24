@@ -1,0 +1,2 @@
+scene_id	target	correctness	reproducibility	detail_1
+p6-place-then-cancel	opp_ziplime	結果なし	結果なし	取消のあと、走行が止まった。context.cancel_order は blotter.order_cancelled を呼び、これが未決の注文の辞書を資産ではなく資産の番号(order.asset.sid)で引くので(in_memory_blotter.py 74 行、登録は 69 行で資産で引く)、辞書に番号の鍵が足され、次の足で SimulationExchange.get_transactions が番号を資産として扱って落ちた。取消の呼び出しで起きたこと: ["cancel_order(id, 'LIME') -> TypeError: SimulationExchange.cancel_order() got an unexpected keyword argument 'order_id'"]。走行の例外: AttributeError: 'int' object has no attribute 'asset'。それまでに記録した値: {'open_at_call2': 1}

@@ -43,10 +43,16 @@ def test_end_time_stops_before_later_entries():
 
 
 def test_history_limit_bounds_memory_but_keeps_the_latest():
-    lens = []
-    CoreEngine(Recorder(lambda ev, ctx: lens.append(len(ctx.visible_events()))),
-               [trade(T0 + i) for i in range(50)], history_limit=5).run()
+    # rewritten in round 3: an unbounded read after a drop now raises
+    # HistoryTruncatedError (i0-r2-03), so the kept size is read from the
+    # engine's history and the latest events through a read bounded by n
+    lens, latest = [], []
+    eng = CoreEngine(Recorder(lambda ev, ctx: latest.append(ctx.visible_events(n=5))),
+                     [trade(T0 + i) for i in range(50)], history_limit=5)
+    while eng.step():
+        lens.append(len(eng._history.overall))
     assert max(lens) <= 10 and lens[-1] >= 5
+    assert [e.received_time_ns for e in latest[-1]] == [T0 + i for i in range(45, 50)]
     with pytest.raises(ValueError):
         CoreEngine(Recorder(), [], history_limit=0)
 

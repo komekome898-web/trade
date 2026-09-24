@@ -1,0 +1,19 @@
+# 項目 0 第 3 周 資料係が打ったコマンド(リポジトリ直下から。時刻は各ログに記録)
+wc -l docs/DATA/delegations/20260923_backtest_env_prompt.md; sha256sum docs/DATA/delegations/20260923_backtest_env_prompt.md | cut -c1-12   # -> f9fe736bfcff(起動文の指紋と一致)。委任文を全部読んだ
+PYTHONPATH=src python3 -B tests/bt/battery/item_0/run_battery.py --target new_impl --out /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/item0_r3_materials_probe_new_impl.tsv   # 第 3 周の核で adapter が動くかの下見(32 場面すべて正解と一致、2 回で違う 0)
+grep 'core\.' tests/bt/battery/item_0/adapters/new_impl.py   # adapter が使う公開の名前 18 個(core.<name> だけ。import bot.bt.core なし)
+grep -n cancel src/bot/bt/core/interfaces.py   # 第 3 周の核は取消 1 つに答えちょうど 1 つを要求 -> adapter の _ArrivalFill.on_cancel は Canceled を 1 つ返す
+# adapters/new_impl.py: 冒頭の説明に第 3 周の核で読み直したことを 3 行足した(振る舞いは変えていない)
+bash docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_3/materials/finmarketpy_attempt.sh   # -> logs/finmarketpy_attempt.log(空き 726 MB から始めて 27 秒で 146 MB < 150 MB、導入を止めて部分の venv を消した)
+PYTHONPATH=src python3 -B tests/bt/battery/item_0/mutant.py --check   # -> logs/mutant_check.log(変わった場面 = p4-received-time だけ、OK)
+sh docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_3/materials/run_all.sh   # -> runs/*.tsv, logs/run_all.log, logs/*.stderr(各対象を run_battery.py が 2 回走らせる)
+(cd materials && python3 -B compare_survey_results.py)   # -> logs/compare_survey_results.out(この周の走行と場面係の survey_results/*.tsv の差 0 セル)
+(cd materials && python3 -B check_finmarketpy_whatif.py)   # -> logs/check_finmarketpy_whatif.out(動かせなかった 1 件の場面係の結果を足しても寄せた行は 0 セルしか変わらない)
+PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/battery/item_0   # -> logs/pytest_battery_item0.log(9 passed)
+ls docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_3/表_*.md   # 前の起動の表の有無(無し。stale に移したものは 0 件) -> logs/make_tables.out
+(cd materials && python3 -B make_tables.py --survey-note "調査結果の側で導入できた道具のうち 1 件は、この周では動かなかった(試したこと: 隔離した環境への再導入。出たもの: 導入の途中で空きの容量が下限を割り、導入を止めた。実測: 導入の開始から止めるまで 27 秒)。この道具の結果はこの行に入っていない。")   # -> logs/make_tables.out, mapping.tsv, survey_best.tsv, survey_failures.tsv
+md5sum <各組の 2 枚>   # -> md5sum_pairs.txt
+grep -liE '<道具名・opp_・repro_・対象名・日付・時刻>' 表_*.md   # -> logs/grep_tool_names.out(該当 0 件、rc=1)
+git status / sha256sum / ls / df -m /   # -> logs/final_state.txt
+# 注記に書かなかった具体: 動かなかった 1 件 = opp_finmarketpy(venv item_0/finmarketpy、wheel finmarketpy-0.11.19)。
+# 場面 p6-place-then-cancel の結果なし 1 件 = survey_failures.tsv を見よ。

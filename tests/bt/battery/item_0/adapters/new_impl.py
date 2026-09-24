@@ -1,6 +1,9 @@
 """Adapter for the new implementation (`src/bot/bt/core/`), item-0 battery.
 
 Written by the materials person (not the scene keeper, not the worker).
+Round 3: re-read against the round-3 core (`src/bot/bt/core/`); the public
+names used below all still exist there, and a cancel still gets exactly one
+venue answer from `_ArrivalFill.on_cancel` (the round-3 core requires that).
 The engine is reached ONLY through the `core` object handed to
 `make_adapter(core)` (protocol.py): no `import bot.bt.core...` here, so the
 canary (`mutant.py`) can hand over a wrapped `core`.

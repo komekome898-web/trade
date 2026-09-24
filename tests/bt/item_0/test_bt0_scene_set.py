@@ -515,21 +515,32 @@ def test_scene_matches_expected_twice(scene_id):
 
 
 def test_future_read_attempts_are_refused_not_shortened():
-    """p4-future-read-attempt: the time-window read is refused with
-    LookAheadError (not answered with a shortened list)."""
+    """p4-future-read-attempt: every time-window read that reaches past now
+    (`until_ns` or `since_ns`) is refused with LookAheadError -- not
+    answered with a shortened or empty list (REQUIREMENTS.md P0-4: stops
+    with a runtime error; i0-r1-08)."""
     out = s_p4_future_read_attempt(SCENES["p4-future-read-attempt"])
     assert out["attempts"]["until_future"] == "LookAheadError"
+    assert out["attempts"]["since_future"] == "LookAheadError"
     assert out["attempts"]["index_5th"] == "IndexError"
-    assert out["attempts"]["since_future"] == []
 
 
-def test_hand_over_permutations_of_single_concatenated_stream_also_agree():
-    """p5-hand-over-order, single-input form: the 4 same-time events
-    concatenated in each of the 24 orders into ONE stream give one order."""
+def test_hand_over_order_of_streams_does_not_matter_but_one_stream_keeps_its_order():
+    """p5-hand-over-order: the 4 same-time events as 4 named streams handed
+    over in each of the 24 orders give ONE order (the head-type merge).
+    The same 4 events concatenated into ONE stream keep that stream's own
+    order (i0-r1-10: a stream is never re-sorted by type), so the 24
+    concatenations give exactly the 24 concatenation orders."""
     scene = SCENES["p5-hand-over-order"]
-    seen = set()
+    by_mapping, by_concat = set(), set()
     for order in itertools.permutations(scene.input["streams"]):
-        evs = [to_event(e) for name in order for e in scene.input["streams"][name]]
+        streams = {name: [to_event(e) for e in scene.input["streams"][name]] for name in order}
+        p, _ = run(streams)
+        by_mapping.add(tuple(k for k, _ in p.seq))
+        evs = [e for name in order for e in streams[name]]
         p, _ = run(evs)
-        seen.add(tuple(k for k, _ in p.seq))
-    assert len(seen) == 1
+        got = tuple(k for k, _ in p.seq)
+        assert got == tuple(scene.input["streams"][name][0]["kind"] for name in order)
+        by_concat.add(got)
+    assert len(by_mapping) == 1
+    assert len(by_concat) == 24

@@ -35,10 +35,19 @@ class SourceEventTypeError(CoreError, TypeError):
 
 
 class LookAheadError(CoreError, RuntimeError):
-    """The strategy asked for events at a time after its current time
-    (`until_ns > now_ns`). The history it can reach holds nothing later than
-    `now_ns` anyway; asking for the future is a strategy bug, so it is
-    refused loudly instead of answered with a silently truncated result."""
+    """The strategy asked for events at a time after its current time (any
+    time argument of a history read -- `since_ns` or `until_ns` -- after
+    `now_ns`). The history it can reach holds nothing later than `now_ns`
+    anyway; asking for the future is a strategy bug, so it is refused loudly
+    instead of answered with a silently empty or truncated result."""
+
+
+class HistoryTruncatedError(CoreError, LookupError):
+    """The strategy asked for history whose answer would reach into the part
+    that `history_limit` dropped (a window starting at or before the last
+    dropped event of a type it covers, and not confined to the kept part by
+    `n`). The core does not know what the dropped part would have added, so
+    it refuses instead of returning a silently shorter answer."""
 
 
 class StaleContextError(CoreError, RuntimeError):

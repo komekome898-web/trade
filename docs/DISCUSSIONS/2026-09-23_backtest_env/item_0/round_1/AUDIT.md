@@ -15,6 +15,13 @@
 - [直す] 資料係の記録(commands のコマンド10)は『finmarketpy を足しても場面ごとの最も良い結果は1件も変わらない、食い違い0件』という結論を、make_tables.py の load/best を使った即興の Python 実行として説明するのみで、他の全ステップ(コマンド1〜9、12)と違い、出力を保存した実測ログのファイル名が示されていない。この確認だけ再現可能な形跡(スクリプト・保存出力)が無いのはなぜか、残す判断はしたか(CLAUDE.md §0.2 O-3 系: 機構・データの挙動主張には実行コマンドと出力を示す)。
 - [聞く] 表_k5k5vm.md / 表_9cvgdi.md の『注記』は道具名を伏せる一方、導入を試みて止まった正確な開始・停止時刻(2026-09-23T17:42:44Z/17:43:20Z)を書いている。この時刻は同じリポジトリ内の runs/not_run_finmarketpy_reinstall.log(道具名 finmarketpy を明記)の時刻と完全一致し、同じ round_1 ディレクトリを見られる者なら突き合わせて対象を特定できる。審査員は場面集と比較の表だけを読む設計のため実害は無いと思われるが、注記に一次資料級の具体的時刻を残すことは、道具名を伏せる目的(場面集の規則)との整合をどう判断したか確認したか(P1 に近い『範囲と方法の記述』の要求)。
 
+### 監査役(表):0(agent a1c10ece5262b4a70)
+
+- [直す] docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_1/AUDIT.md と同 REPORT.md — 両ファイルは21:55のタイムスタンプのままで、materials/stale/logs/stale_move.log(23:06:18Z)で既に materials/stale/ へ退避された前起動(17:45)の6枚の表(表_ebp3vp.md・表_wlkjip.md・表_k5k5vm.md・表_9cvgdi.md・表_urwv3s.md・表_64cb9h.md)を指している。今回この周に作られた6枚(表_tyaa4n.md・表_k4kg5o.md・表_xcy2qe.md・表_ifsgk8.md・表_wom7pj.md・表_63i5ua.md)を対象にした監査記録・作業者報告が round_1 直下に無い。資料係の記録(commands 1〜10)にもこの2ファイルの更新は含まれていない。round_1/AUDIT.md を読む者は、どの表が実際に監査・報告された表なのかを機械的に確認できない(research-protocol §0.2 類似の記録義務、CLAUDE.md §0.2 O-3・O-4)。
+- [聞く] tests/bt/battery/item_0/opponents/CONSIDERED.md(最終更新 2026-09-23 17:11、この周の run_all.sh 実行 23:04〜23:05 より前)の P0-7 集計行は「動かせた候補: 8 件」に 54 opp_finmarketpy を含めている。しかし今回の周ではこの道具は再導入できず(資料係の記録コマンド2、NOT_RUN)、比較表(表_xcy2qe.md/表_ifsgk8.md の注記)からも除外された。委任文 `docs/DATA/delegations/20260923_backtest_env_prompt.md` §3 の場面集の規則9は「検討表は機械で検める。場面係は検討表を返す前に `python3 scripts/check_bt_considered.py <検討表> --write` を走らせ、誤り0件にする」としているが、資料係の記録(コマンド1〜10)にはこの周にこの検査を再実行した形跡が無い。finmarketpy を「動かせた」扱いのまま残す集計は、今回の実行実態(NOT_RUN)と食い違っていないか(PRINCIPLES P3・P5)。
+- [聞く] docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_1/materials/check_finmarketpy_whatif.py(コマンド7、出力 materials/logs/check_finmarketpy_whatif.out)は、finmarketpy の「場面係の前の実行」(tests/bt/battery/item_0/survey_results/opp_finmarketpy.tsv、2026-09-23 17:07 更新)を足しても merged best の32場面全てが変わらないことを確認している。この『前の実行』がいつの周・どの版の道具で得たものかという出所(一次資料/実測のどちらか、取得日時)がスクリプト本体にも出力にも書かれていない。この確認結果は今回のインストール失敗の影響を『無害』と判断する根拠に使われているが(REPORT想定文言では『表には入れていない』とも書かれ、判定には使っていないとされる一方で)、根拠として参照する場合の出所明記が無い(PRINCIPLES P2 の出所3分類)。
+- [聞く] docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_1/表_xcy2qe.md・表_ifsgk8.md の冒頭注記は finmarketpy 相当の道具の再導入失敗を『実測: 導入の開始から止めるまで101秒』とだけ書き、絶対時刻を伏せている(前回監査 `docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_run5_item0.md` 項目6の指摘への対応と見られる)。一方 materials/logs には `not_run_finmarketpy_reinstall.log` 等、絶対時刻つきの記録が残る運用が継続しており、この使い分け(表=期間のみ、materials=絶対時刻)が委任文のどの規則に基づくかが資料係の記録(notes)に明記されていない。今回のケースで意図どおり運用できているかの確認は済んでいるか(場面集の規則、CLAUDE.md §0.2 O-3系)。
+
 ## 監査役(作業者の報告)の出力
 
 (この周には無い)

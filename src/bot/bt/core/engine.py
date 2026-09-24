@@ -14,23 +14,31 @@ Two clocks, one queue:
 * Strategy side (`received_time_ns`): the strategy is called here and sees
   only what has been delivered to it. With a latency model, an order placed
   at t reaches the venue at t + order delay, and its ACK reaches the
-  strategy at venue time + notice delay; both channels are FIFO (a later
-  request never overtakes an earlier one, a later notice never overtakes an
-  earlier one), as on a single connection.
+  strategy at venue time + notice delay.
+
+Every path is a FIFO channel (ordering.py): input -> venue, strategy ->
+venue requests (new orders and cancels on ONE channel), input -> strategy
+(per stream, in reception order), venue -> strategy notices, timers. The
+queue key is (time, phase, received time, position on the channel); the
+event type is not in it, so nothing on a channel is re-sorted by type.
 
 Input is one stream of events, or several named streams (a mapping of
 name -> iterable, e.g. trades, board, bars and funding read from separate
 files). Streams are merged by time (ordering.py: exchange time, then
 stream name in `sorted()` order, then position inside the stream), so the
 events are processed in time order whatever order the streams, or the
-types, were handed over in. Each stream is consumed lazily: the engine
+types, were handed over in; inside a stream, the stream's own order is
+kept whatever the types. Each stream is consumed lazily: the engine
 holds at most one not-yet-processed event per stream and pulls the next
 one only when the queue has nothing earlier to process, so a stream can be
-a generator over a file larger than memory, and no future event is held
-anywhere a strategy could reach. Each stream must be non-decreasing in
+a generator over a file larger than memory. Nothing the strategy is handed
+(its context and every object reachable from it by attribute access,
+private attributes included) holds an event it has not received yet; see
+api.py for what that guarantee does not cover (the strategy runs in the
+engine's own process, so introspecting the interpreter -- the call stack,
+`gc` -- reaches the engine). Each stream must be non-decreasing in
 `exchange_time_ns`; a backwards step raises `EventOrderError` naming the
-stream (the core merges streams, it never re-sorts one silently). Events
-sharing a timestamp may arrive in any order; ordering.py decides.
+stream (the core merges streams, it never re-sorts one silently).
 
 Nothing here is market-specific; fills, delays, fees and bookkeeping are
 the sockets' job (interfaces.py).
@@ -87,13 +95,14 @@ from .interfaces import (
     ZeroLatency,
 )
 from .ordering import (
-    DELIVERY_PRIORITY,
-    ORIGIN_ENGINE,
-    ORIGIN_SOURCE,
-    VENUE_CANCEL,
-    VENUE_MARKET_PRIORITY,
-    VENUE_ORDER,
+    PHASE_DELIVER_INPUT,
+    PHASE_DELIVER_NOTICE,
+    PHASE_DELIVER_TIMER,
+    PHASE_VENUE_MARKET,
+    PHASE_VENUE_REQUEST,
+    merge_key,
 )
+from .history import DeliveredHistory
 from .strategy import Strategy
 from .time import validate_nanos
 from .window import EventWindow
@@ -101,7 +110,8 @@ from .window import EventWindow
 _K_VENUE_MARKET = 0
 _K_VENUE_ORDER = 1
 _K_VENUE_CANCEL = 2
-_K_DELIVER = 3
+_K_DELIVER = 3  # a notice or a timer
+_K_DELIVER_INPUT = 4
 
 _OVERFILL_TOL = 1e-9
 _FILLED_EPS = 1e-12
@@ -130,9 +140,31 @@ class EngineResult:
         return [v for v in self.orders.values() if v.is_open]
 
 
+@dataclass
+class _VenueOrder:
+    """The venue-side FACTS about one order. Its state name is derived from
+    them, so an ambiguous answer never erases what is already known (that
+    the order was acknowledged, how much of it filled)."""
+
+    request: OrderRequest
+    acked: bool = False
+    filled: float = 0.0
+    final: Optional[str] = None  # FILLED | CANCELED | REJECTED
+    unknown_new: bool = False  # ambiguous answer to the new order, not settled
+    unknown_cancel: bool = False  # ambiguous answer to a cancel, not settled
+
+    def state_name(self) -> str:
+        if self.final is not None:
+            return self.final
+        if self.unknown_new or self.unknown_cancel:
+            return _VenueLedger.UNKNOWN
+        return _VenueLedger.LIVE if self.acked else _VenueLedger.ARRIVED
+
+
 class _VenueLedger:
     """The venue-side history of every order, used to reject impossible
-    reports from a fill model."""
+    reports from a fill model. Each report is checked against the order's
+    facts (`_VenueOrder`), not against a single state string."""
 
     ARRIVED = "ARRIVED"
     LIVE = "LIVE"
@@ -140,78 +172,110 @@ class _VenueLedger:
     CANCELED = "CANCELED"
     REJECTED = "REJECTED"
     UNKNOWN = "STATE_UNKNOWN"
-    TERMINAL = frozenset({FILLED, CANCELED, REJECTED})
 
     def __init__(self) -> None:
-        self.state: dict[str, str] = {}
-        self.orders: dict[str, OrderRequest] = {}
-        self.filled: dict[str, float] = {}
+        self._orders: dict[str, _VenueOrder] = {}
 
     def arrive(self, order: OrderRequest) -> None:
         coid = order.client_order_id
-        if coid in self.state:  # pragma: no cover - the port refuses duplicates
+        if coid in self._orders:  # pragma: no cover - the port refuses duplicates
             raise VenueProtocolError(f"order {coid!r} reached the venue twice")
-        self.state[coid] = self.ARRIVED
-        self.orders[coid] = order
-        self.filled[coid] = 0.0
+        self._orders[coid] = _VenueOrder(order)
+
+    def __contains__(self, coid: str) -> bool:
+        return coid in self._orders
+
+    def request(self, coid: str) -> OrderRequest:
+        return self._orders[coid].request
+
+    def state(self, coid: str) -> Optional[str]:
+        o = self._orders.get(coid)
+        return None if o is None else o.state_name()
+
+    def states(self) -> dict[str, str]:
+        return {coid: o.state_name() for coid, o in self._orders.items()}
 
     def is_live(self, coid: str) -> bool:
-        return self.state.get(coid) in (self.LIVE, self.UNKNOWN)
+        """At the venue and not final: acknowledged, or with an ambiguous
+        answer to its new order (it may exist)."""
+        o = self._orders.get(coid)
+        return o is not None and o.final is None and (o.acked or o.unknown_new)
 
     def apply(self, report: Any, where: str, subject: Optional[str]) -> None:
         coid = getattr(report, "client_order_id", None)
-        if isinstance(report, Reject) and report.request_kind == "cancel":
-            # A cancel reject speaks about the cancel, not the order: it is
-            # valid in any order state, but only as the answer to that cancel.
+        name = type(report).__name__
+        kind = getattr(report, "request_kind", None)
+        if isinstance(report, (Reject, StateUnknown)) and kind == "cancel":
+            # An answer to a cancel request: valid only as the answer to that
+            # cancel (inside on_cancel for that order).
             if where != "on_cancel" or subject != coid:
-                raise VenueProtocolError(f"{where}: cancel Reject for {coid!r} outside its cancel")
-            return
-        if coid not in self.state:
+                raise VenueProtocolError(f"{where}: cancel {name} for {coid!r} outside its cancel")
+            if isinstance(report, Reject):
+                return  # a refused cancel changes nothing about the order
+        if coid not in self._orders:
             raise VenueProtocolError(
-                f"{where}: {type(report).__name__} for order {coid!r}, which has not "
+                f"{where}: {name} for order {coid!r}, which has not "
                 f"reached the venue -- a fill model may not act on an order before "
                 f"its arrival time"
             )
-        st = self.state[coid]
-        name = type(report).__name__
-        if st in self.TERMINAL:
-            raise VenueProtocolError(f"{where}: {name} for order {coid!r} after terminal state {st}")
+        o = self._orders[coid]
+        if o.final is not None:
+            raise VenueProtocolError(f"{where}: {name} for order {coid!r} after terminal state {o.final}")
         if isinstance(report, Ack):
-            if st not in (self.ARRIVED, self.UNKNOWN):
+            if o.acked:
                 raise VenueProtocolError(f"{where}: second Ack for order {coid!r}")
-            self.state[coid] = self.LIVE
+            o.acked, o.unknown_new = True, False
         elif isinstance(report, Reject):
-            if report.request_kind == "new":
-                if st not in (self.ARRIVED, self.UNKNOWN):
-                    raise VenueProtocolError(f"{where}: new-order Reject for acknowledged order {coid!r}")
-                self.state[coid] = self.REJECTED
-            else:
-                raise VenueProtocolError(f"{where}: Reject.request_kind {report.request_kind!r}")
+            if kind != "new":
+                raise VenueProtocolError(f"{where}: Reject.request_kind {kind!r}")
+            if o.acked or o.filled > 0:
+                raise VenueProtocolError(f"{where}: new-order Reject for acknowledged order {coid!r}")
+            o.final = self.REJECTED
         elif isinstance(report, Fill):
-            if st not in (self.LIVE, self.UNKNOWN):
-                raise VenueProtocolError(f"{where}: Fill for order {coid!r} before its Ack (state {st})")
+            if not (o.acked or o.unknown_new):
+                raise VenueProtocolError(f"{where}: Fill for order {coid!r} before its Ack (state {o.state_name()})")
             for fname in ("price", "size"):
                 val = getattr(report, fname)
                 if isinstance(val, bool) or not isinstance(val, numbers.Real) or not math.isfinite(val) or val <= 0:
                     raise VenueProtocolError(f"{where}: Fill.{fname} must be finite > 0, got {val!r}")
             if report.liquidity not in LIQUIDITY:
                 raise VenueProtocolError(f"{where}: Fill.liquidity must be one of {LIQUIDITY}")
-            size = self.orders[coid].size
-            new_filled = self.filled[coid] + float(report.size)
+            size = o.request.size
+            new_filled = o.filled + float(report.size)
             if new_filled > size * (1 + _OVERFILL_TOL):
                 raise VenueProtocolError(
                     f"{where}: overfill of {coid!r}: {new_filled} > order size {size}"
                 )
-            self.filled[coid] = new_filled
-            self.state[coid] = self.FILLED if new_filled >= size * (1 - _FILLED_EPS) else self.LIVE
+            # a fill proves the order exists (settles an ambiguous new order)
+            o.filled, o.acked, o.unknown_new = new_filled, True, False
+            if new_filled >= size * (1 - _FILLED_EPS):
+                o.final = self.FILLED
         elif isinstance(report, Canceled):
-            if st not in (self.LIVE, self.UNKNOWN):
-                raise VenueProtocolError(f"{where}: Canceled for order {coid!r} in state {st}")
-            self.state[coid] = self.CANCELED
+            if not (o.acked or o.unknown_new):
+                raise VenueProtocolError(f"{where}: Canceled for order {coid!r} in state {o.state_name()}")
+            o.final = self.CANCELED
         elif isinstance(report, StateUnknown):
-            self.state[coid] = self.UNKNOWN
+            if kind == "cancel":
+                o.unknown_cancel = True  # the order's own facts stay as they are
+            elif kind == "new":
+                if o.acked:
+                    raise VenueProtocolError(
+                        f"{where}: StateUnknown about the new order {coid!r}, which was acknowledged"
+                    )
+                o.unknown_new = True
+            else:
+                raise VenueProtocolError(f"{where}: StateUnknown.request_kind {kind!r}")
         else:
             raise VenueProtocolError(f"{where}: unknown report type {name}")
+
+
+def _is_cancel_answer(report: Any, coid: str) -> bool:
+    """A report that answers a cancel of order `coid` (inside on_cancel)."""
+    if getattr(report, "client_order_id", None) != coid:
+        return False
+    if isinstance(report, Canceled):
+        return True
+    return isinstance(report, (Reject, StateUnknown)) and report.request_kind == "cancel"
 
 
 def _check_delay(value: Any, what: str) -> int:
@@ -237,12 +301,32 @@ def _require_protocol(obj: Any, protocol: type, name: str) -> None:
         raise TypeError(f"{name} {type(obj).__name__} lacks {missing} required by {protocol.__name__}")
 
 
+class _FifoChannel:
+    """One FIFO path (strategy -> venue requests, or venue -> strategy
+    notices). An item sent on it arrives at `max(its own time, the previous
+    arrival)`, so nothing overtakes an earlier item (equal times are then
+    ordered by position in the queue key). "Nothing sent yet" is `None`,
+    never a time: every int64 is a valid time, 0 and negatives included."""
+
+    __slots__ = ("_last",)
+
+    def __init__(self) -> None:
+        self._last: Optional[int] = None
+
+    def admit(self, time_ns: int) -> int:
+        last = self._last
+        at = time_ns if last is None or time_ns >= last else last
+        self._last = at
+        return at
+
+
 SINGLE_STREAM_NAME = "events"
 
 
 class _SourceMerger:
-    """Merges named streams by (exchange_time_ns, stream name, position in
-    the stream), holding at most one pending event per stream."""
+    """Merges named streams by comparing their next events (ordering.py
+    `merge_key`: exchange time, type rank, stream name), holding at most one
+    pending event per stream. A stream's own order is always kept."""
 
     def __init__(self, streams: Mapping[str, Iterable[Event]]) -> None:
         names = list(streams)
@@ -253,7 +337,7 @@ class _SourceMerger:
         self._iters: list[Iterator[Event]] = [iter(streams[n]) for n in self._names]
         self._last: list[Optional[int]] = [None] * len(self._names)
         self.counts: list[int] = [0] * len(self._names)
-        self._heads: list[tuple[int, int, Event]] = []  # (exchange_time_ns, rank, event)
+        self._heads: list[tuple[tuple[int, int, int], Event]] = []  # (merge_key, event)
         for rank in range(len(self._names)):
             self._pull(rank)
 
@@ -282,15 +366,20 @@ class _SourceMerger:
             )
         self._last[rank] = exch
         self.counts[rank] += 1
-        heapq.heappush(self._heads, (exch, rank, event))
+        heapq.heappush(self._heads, (merge_key(event, rank), event))
+
+    @property
+    def n_streams(self) -> int:
+        return len(self._names)
 
     def peek_time(self) -> Optional[int]:
-        return self._heads[0][0] if self._heads else None
+        return self._heads[0][0][0] if self._heads else None
 
-    def pop(self) -> Event:
-        _exch, rank, event = heapq.heappop(self._heads)
+    def pop(self) -> tuple[int, Event]:
+        key, event = heapq.heappop(self._heads)
+        rank = key[2]
         self._pull(rank)
-        return event
+        return rank, event
 
     def counts_by_name(self) -> dict[str, int]:
         return dict(zip(self._names, self.counts))
@@ -312,10 +401,12 @@ class CoreEngine:
         """`events`: one iterable of source events, or a mapping of stream
         name -> iterable (merged by time, see ordering.py).
 
-        `history_limit`: if set, the strategy's history keeps at least the
-        last `history_limit` and at most `2 * history_limit` delivered
-        events, overall and per event type (bounded memory for long tick
-        runs). None keeps everything."""
+        `history_limit`: if set, the strategy's history keeps, per event
+        type, at least the last `history_limit` and at most
+        `2 * history_limit` delivered events (bounded memory for long tick
+        runs); the overall history is exactly what the types keep
+        (history.py). A read that would reach into a dropped part raises
+        `HistoryTruncatedError`. None keeps everything."""
         self._strategy = strategy
         if isinstance(events, Mapping):
             streams = events
@@ -344,13 +435,31 @@ class CoreEngine:
         self._account = account
         self._defaults = defaults
 
+        # Run settings pass the same checks as event times: an int64 of ns
+        # (floats, bools and out-of-range values are refused here, before
+        # anything runs). A value in the wrong unit that still fits int64
+        # (seconds, say) ends the run before its first entry; `step` refuses
+        # that window instead of processing nothing.
+        if end_time_ns is not None:
+            try:
+                end_time_ns = int(validate_nanos(end_time_ns))
+            except TimestampUnitError as exc:
+                raise TimestampUnitError(f"end_time_ns: {exc}") from exc
         self._end_time_ns = end_time_ns
-        if history_limit is not None and (isinstance(history_limit, bool) or history_limit < 1):
-            raise ValueError("history_limit must be a positive int or None")
-        self._history_limit = history_limit
+        if history_limit is not None and (
+            isinstance(history_limit, bool) or not isinstance(history_limit, numbers.Integral)
+            or history_limit < 1
+        ):
+            raise ValueError(f"history_limit must be a positive int or None, got {history_limit!r}")
+        self._history_limit = None if history_limit is None else int(history_limit)
 
         self._heap: list[tuple] = []
-        self._created = 0  # ordinal of engine-created entries (orders, cancels, notices, timers)
+        self._created = 0  # position of engine-created entries (requests, notices, timers)
+        # input -> strategy channel, per stream: the not-yet-delivered events
+        # in reception order (received_time_ns, merge position), and each
+        # one's scheduled delivery time
+        self._pending_by_stream: list[list[tuple[int, int]]] = [[] for _ in range(self._merger.n_streams)]
+        self._scheduled: dict[int, int] = {}
         self._now: Optional[int] = None
         self._first: Optional[int] = None
         self._stopped_at_end = False
@@ -359,25 +468,26 @@ class CoreEngine:
         self._ledger = _VenueLedger()
         self._forced: dict[str, OrderRequest] = {}
         self._forced_list: list[OrderRequest] = []
-        self._history: list[Event] = []
-        self._typed_history: dict[EventType, list[Event]] = {t: [] for t in EventType}
+        self._history = DeliveredHistory(self._history_limit)
         self._deliveries = 0
-        self._last_outbound = 0
-        self._last_notice = 0
+        self._outbound = _FifoChannel()  # strategy -> venue: new orders and cancels
+        self._notices = _FifoChannel()  # venue -> strategy
         self._order_requests: list[OrderRequest] = []
         self._cancel_requests: list[CancelRequest] = []
         self._fills: list[FillNotice] = []
         self._digest = hashlib.sha256()
 
     # -- queue -------------------------------------------------------------
-    def _push(self, time_ns: int, priority: int, kind: int, payload: Any,
-              source_ordinal: Optional[int] = None) -> None:
-        """Queue key = (time_ns, priority, origin, ordinal) -- ordering.py.
-        `source_ordinal` given: the entry comes from the input (origin 0,
-        ordinal = the event's position in the merged input). Otherwise the
-        engine created it (origin 1, ordinal = creation count). The key is
-        unique, so the payload is never compared, and it does not depend on
-        WHEN an input event was pulled from its stream."""
+    def _push(self, time_ns: int, phase: int, kind: int, payload: Any,
+              position: Optional[int] = None, received: Optional[int] = None) -> None:
+        """Queue key = (time_ns, phase, received, position) -- ordering.py.
+        `position` given: the entry comes from the input (its merge
+        position; `received` is its recorded received time for a delivery).
+        Otherwise the engine created it and its position is the creation
+        count, which is the send / emit / set order on its channel.
+        `received` not given: the entry's own time (no in-range sentinel).
+        The key is unique, so the payload is never compared, and it does not
+        depend on WHEN an input event was pulled from its stream."""
         # The one place every queue time passes: a delay that pushes a time
         # out of int64 fails here, loudly, whichever channel it came from.
         try:
@@ -387,12 +497,12 @@ class CoreEngine:
                 f"queue time {time_ns!r} for {type(payload).__name__} is not an int64 of ns "
                 f"(a latency model or timer produced an out-of-range time): {exc}"
             ) from exc
-        if source_ordinal is None:
+        if position is None:
             self._created += 1
-            key = (t, priority, ORIGIN_ENGINE, self._created)
-        else:
-            key = (t, priority, ORIGIN_SOURCE, source_ordinal)
-        heapq.heappush(self._heap, (*key, kind, payload))
+            position = self._created
+        if received is None:
+            received = t
+        heapq.heappush(self._heap, (t, phase, received, position, kind, payload))
 
     def _refill(self) -> None:
         merger = self._merger
@@ -402,19 +512,23 @@ class CoreEngine:
                 return
             if self._heap and head_time > self._heap[0][0]:
                 return
-            self._ingest(merger.pop())
+            self._ingest(*merger.pop())
 
-    def _ingest(self, event: Event) -> None:
+    def _ingest(self, rank: int, event: Event) -> None:
         etype = event.EVENT_TYPE
         exch = int(event.exchange_time_ns)
+        recv = int(event.received_time_ns)
         self._source_count += 1
-        ordinal = self._source_count  # position in the merged input (merge order, ordering.py)
+        position = self._source_count  # merge position (ordering.py)
         if etype in MARKET_EVENT_TYPES:
-            self._push(exch, VENUE_MARKET_PRIORITY[etype], _K_VENUE_MARKET, event, ordinal)
+            self._push(exch, PHASE_VENUE_MARKET, _K_VENUE_MARKET, event, position)
             delay = _check_delay(self._latency.feed_delay_ns(event), "feed_delay_ns")
         else:
             delay = 0
-        self._push(int(event.received_time_ns) + delay, DELIVERY_PRIORITY[etype], _K_DELIVER, event, ordinal)
+        at = recv + delay
+        self._push(at, PHASE_DELIVER_INPUT, _K_DELIVER_INPUT, (rank, event), position, recv)
+        heapq.heappush(self._pending_by_stream[rank], (recv, position))
+        self._scheduled[position] = at
 
     # -- public ------------------------------------------------------------
     @property
@@ -428,15 +542,23 @@ class CoreEngine:
         if not self._heap:
             return False
         if self._end_time_ns is not None and self._heap[0][0] > self._end_time_ns:
+            if self._now is None:
+                raise TimestampUnitError(
+                    f"end_time_ns {self._end_time_ns} is before the first entry of the run "
+                    f"({self._heap[0][0]} ns): the run would process nothing -- is end_time_ns "
+                    f"in another unit (s, ms, us)?"
+                )
             self._stopped_at_end = True
             return False
-        time_ns, _prio, _origin, _ordinal, kind, payload = heapq.heappop(self._heap)
+        time_ns, _phase, received, position, kind, payload = heapq.heappop(self._heap)
         if self._now is not None and time_ns < self._now:  # pragma: no cover - invariant
             raise RuntimeError(f"queue went back in time: {time_ns} < {self._now}")
         self._now = time_ns
         if self._first is None:
             self._first = time_ns
-        if kind == _K_DELIVER:
+        if kind == _K_DELIVER_INPUT:
+            self._deliver_input(time_ns, received, position, *payload)
+        elif kind == _K_DELIVER:
             self._deliver(time_ns, payload)
         elif kind == _K_VENUE_MARKET:
             self._venue_market(time_ns, payload)
@@ -459,7 +581,7 @@ class CoreEngine:
             cancel_requests=list(self._cancel_requests),
             fills=list(self._fills),
             orders=dict(self._port._registry),
-            venue_states=dict(self._ledger.state),
+            venue_states=self._ledger.states(),
             models={
                 "fill_model": _qualname(self._fill_model),
                 "latency_model": _qualname(self._latency),
@@ -476,6 +598,27 @@ class CoreEngine:
         )
 
     # -- strategy side -----------------------------------------------------
+    def _deliver_input(self, time_ns: int, received: int, position: int, rank: int, event: Event) -> None:
+        """Input -> strategy channel of one stream, in reception order. If
+        an event of the same stream that was received earlier has not been
+        delivered yet (its feed delay was longer), this one waits for it:
+        it is re-queued at that event's delivery time, where the key
+        (received, position) puts it after that event. The earlier event is
+        always already read from its stream here: it happened at the venue
+        no later than it was received, i.e. no later than now."""
+        pending = self._pending_by_stream[rank]
+        head_recv, head_pos = pending[0]
+        if head_pos != position:
+            wait_until = self._scheduled[head_pos]
+            if wait_until <= time_ns:  # pragma: no cover - invariant of the queue key
+                raise RuntimeError("an earlier-received event of the stream is overdue")
+            self._scheduled[position] = wait_until
+            self._push(wait_until, PHASE_DELIVER_INPUT, _K_DELIVER_INPUT, (rank, event), position, received)
+            return
+        heapq.heappop(pending)
+        del self._scheduled[position]
+        self._deliver(time_ns, event)
+
     def _deliver(self, time_ns: int, event: Event) -> None:
         # A shallow copy with the delivery time and sequence set. The event
         # was validated at construction, and time_ns was validated as int64
@@ -495,15 +638,14 @@ class CoreEngine:
                 # first notice about a forced order: the strategy learns of it now
                 port._adopt(self._forced[coid], time_ns, "forced")
             port._apply_notice(delivered)
-        self._history = self._append(self._history, delivered)
-        typed = self._typed_history
-        typed[delivered.EVENT_TYPE] = self._append(typed[delivered.EVENT_TYPE], delivered)
+        history = self._history
+        history.append(delivered)
         self._deliveries += 1
         self._digest.update(repr(delivered).encode())
         self._digest.update(b"\n")
         port._now = time_ns
-        window = EventWindow(self._history, len(self._history))
-        typed_windows = {t: EventWindow(lst, len(lst)) for t, lst in typed.items() if lst}
+        window = EventWindow(history.overall, len(history.overall))
+        typed_windows = {t: EventWindow(lst, len(lst)) for t, lst in history.typed.items() if lst}
         ctx = StrategyContext(
             visible_events=window,
             current=delivered,
@@ -513,6 +655,7 @@ class CoreEngine:
             open_orders_cb=port.open_orders,
             set_timer_cb=port.set_timer,
             typed_events=typed_windows,
+            dropped=history.dropped_facts(),
         )
         try:
             self._strategy.on_event(delivered, ctx)
@@ -521,34 +664,24 @@ class CoreEngine:
             outbox, port._outbox = port._outbox, []
         self._drain(outbox)
 
-    def _append(self, history: list[Event], event: Event) -> list[Event]:
-        limit = self._history_limit
-        if limit is not None and len(history) >= 2 * limit:
-            # amortised O(1): a new list, so no live view is affected
-            history = history[-(limit - 1):] if limit > 1 else []
-        history.append(event)
-        return history
-
     def _drain(self, outbox: list[tuple]) -> None:
         for item in outbox:
             kind = item[0]
             if kind == "new":
                 _, req, sent = item
                 delay = _check_delay(self._latency.order_delay_ns(req, sent), "order_delay_ns")
-                arrive = max(sent + delay, self._last_outbound)
-                self._last_outbound = arrive
+                arrive = self._outbound.admit(sent + delay)
                 self._order_requests.append(req)
-                self._push(arrive, VENUE_ORDER, _K_VENUE_ORDER, req)
+                self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_ORDER, req)
             elif kind == "cancel":
                 _, req, sent = item
                 delay = _check_delay(self._latency.cancel_delay_ns(req, sent), "cancel_delay_ns")
-                arrive = max(sent + delay, self._last_outbound)
-                self._last_outbound = arrive
+                arrive = self._outbound.admit(sent + delay)
                 self._cancel_requests.append(req)
-                self._push(arrive, VENUE_CANCEL, _K_VENUE_CANCEL, req)
+                self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_CANCEL, req)
             else:
                 _, at, tag = item
-                self._push(at, DELIVERY_PRIORITY[EventType.CLOCK], _K_DELIVER, ClockEvent(received_time_ns=at, tag=tag))
+                self._push(at, PHASE_DELIVER_TIMER, _K_DELIVER, ClockEvent(received_time_ns=at, tag=tag))
 
     # -- venue side --------------------------------------------------------
     def _venue_market(self, time_ns: int, event: Event) -> None:
@@ -575,7 +708,7 @@ class CoreEngine:
             raise AccountSocketError(
                 f"forced order id {coid!r} must be empty or start with {FORCED_ID_PREFIX!r}"
             )
-        if coid in self._forced or coid in self._ledger.state:
+        if coid in self._forced or coid in self._ledger:
             raise AccountSocketError(f"forced order id {coid!r} is already in use")
         self._forced[coid] = request
         self._forced_list.append(request)
@@ -602,7 +735,7 @@ class CoreEngine:
         self._ledger.arrive(order)
         reports = self._fill_model.on_order(order, time_ns) or ()
         self._handle_reports(time_ns, reports, "on_order", order.client_order_id)
-        if self._ledger.state[order.client_order_id] == _VenueLedger.ARRIVED:
+        if self._ledger.state(order.client_order_id) == _VenueLedger.ARRIVED:
             raise VenueProtocolError(
                 f"on_order: fill model gave no Ack/Reject/StateUnknown for order "
                 f"{order.client_order_id!r}"
@@ -611,24 +744,19 @@ class CoreEngine:
     def _venue_cancel(self, time_ns: int, request: CancelRequest) -> None:
         coid = request.client_order_id
         if not self._ledger.is_live(coid):
-            state = self._ledger.state.get(coid, "not at venue")
+            state = self._ledger.state(coid) or "not at venue"
             self._handle_reports(
                 time_ns, (Reject(coid, f"order_not_open:{state}", "cancel"),), "on_cancel", coid
             )
             return
         reports = tuple(self._fill_model.on_cancel(request, time_ns) or ())
-        answered = any(
-            getattr(r, "client_order_id", None) == coid
-            and (
-                isinstance(r, Canceled)
-                or (isinstance(r, (Reject, StateUnknown)) and r.request_kind == "cancel")
-            )
-            for r in reports
-        )
-        if not answered:
+        answers = sum(1 for r in reports if _is_cancel_answer(r, coid))
+        if answers != 1:
+            # one cancel, one answer: the strategy counts its cancels in
+            # flight by their answers (api.py `cancels_in_flight`)
             raise VenueProtocolError(
-                f"on_cancel: fill model gave no Canceled / cancel Reject / cancel "
-                f"StateUnknown for order {coid!r}"
+                f"on_cancel: fill model gave {answers} answers (Canceled / cancel Reject / "
+                f"cancel StateUnknown) to one cancel of order {coid!r}; exactly one is required"
             )
         self._handle_reports(time_ns, reports, "on_cancel", coid)
 
@@ -637,7 +765,7 @@ class CoreEngine:
             self._ledger.apply(report, where, subject)
             coid = report.client_order_id
             if isinstance(report, Fill):
-                order = self._ledger.orders[coid]
+                order = self._ledger.request(coid)
                 notice = FillNotice(
                     client_order_id=coid,
                     price=float(report.price),
@@ -668,13 +796,18 @@ class CoreEngine:
                 event = OrderRejectEvent(received_time_ns=venue_time, client_order_id=coid,
                                          reason=report.reason, request_kind=report.request_kind)
             elif isinstance(report, Canceled):
+                if coid == subject and where == "on_cancel":
+                    answers = "cancel"  # the answer to our cancel
+                elif coid == subject and where == "on_order":
+                    answers = "new"  # part of the answer to the new order
+                else:
+                    answers = "venue"  # the venue on its own (expiry, say)
                 event = OrderCanceledEvent(received_time_ns=venue_time, client_order_id=coid,
-                                           reason=report.reason)
+                                           reason=report.reason, answers=answers)
             else:
                 event = OrderStateUnknownEvent(received_time_ns=venue_time, client_order_id=coid,
                                                detail=report.detail, request_kind=report.request_kind)
             delay = _check_delay(self._latency.notice_delay_ns(report, venue_time), "notice_delay_ns")
-            deliver_at = max(venue_time + delay, self._last_notice)
-            self._last_notice = deliver_at
+            deliver_at = self._notices.admit(venue_time + delay)
             event = dataclasses.replace(event, received_time_ns=deliver_at, exchange_time_ns=venue_time)
-            self._push(deliver_at, DELIVERY_PRIORITY[event.EVENT_TYPE], _K_DELIVER, event)
+            self._push(deliver_at, PHASE_DELIVER_NOTICE, _K_DELIVER, event)

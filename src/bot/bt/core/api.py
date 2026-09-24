@@ -5,9 +5,9 @@ The context is the strategy's only handle on the run:
 
 * `now_ns`, `current_event`, `visible_events(...)`, `last(...)` -- read
   the history of events already delivered to it (all with
-  `received_time_ns <= now_ns`); asking for a time window that ends after
-  `now_ns` raises `LookAheadError` rather than returning a silently
-  truncated answer;
+  `received_time_ns <= now_ns`); any time argument after `now_ns` (the
+  start or the end of a window) raises `LookAheadError` rather than
+  returning a silently empty or truncated answer;
 * `place_order`, `cancel_order`, `set_timer` -- act;
 * `order(id)`, `open_orders()` -- its own orders, as it knows them.
 
@@ -20,7 +20,13 @@ tests/bt/item_0/test_bt0_api_surface.py):
   only the strategy's own order registry and an outbox -- not the engine,
   not the event source, not the pending queue. So nothing reachable from a
   context, even through private attributes, holds an event the strategy has
-  not received yet.
+  not received yet. Scope of this guarantee: the context and what is
+  reachable from it by attribute access. It does NOT cover introspecting
+  the interpreter: the strategy is called inside the engine's own process
+  and call (`CoreEngine.step`), so `sys._getframe()` / `inspect.stack()` /
+  `gc.get_objects()` reach the engine and its queue. The core does not
+  sandbox strategy code; a strategy that does this is outside the contract
+  (`CORE_CONTRACT["visibility"]["scope"]`).
 * No acting later. The engine revokes the context when the callback
   returns; any later attempt to read history or act raises
   `StaleContextError`, and the history view drops its backing list.
@@ -30,6 +36,17 @@ tests/bt/item_0/test_bt0_api_surface.py):
   notice is delivered to it. It never sees the venue's state directly: an
   order it placed is PENDING_NEW until the ACK notice arrives, however long
   the latency model says that takes.
+* The view is kept as FACTS (acknowledged? filled size? how many cancels
+  of ours await their answers? an ambiguous answer about the new order or
+  about a cancel? a final state?) and `state` is derived from them
+  (`_derive_state`). Cancels are counted one by one: the venue answers each
+  cancel exactly once (engine.py refuses a fill model that answers one with
+  none or two), the channels are FIFO, and each answer (a cancel reject, an
+  ambiguous cancel, or an ORDER_CANCELED with `answers == "cancel"`)
+  takes one off `cancels_in_flight`; `cancel_pending` is "at least one". STATE_UNKNOWN is held until a notice that settles it
+  arrives -- for an ambiguous new order: ACK, new-order reject, a fill or
+  CANCELED; for an ambiguous cancel: CANCELED or the last fill. Nothing the
+  strategy does (sending a cancel) and no cancel reject clears it.
 """
 from __future__ import annotations
 
@@ -41,7 +58,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Mapping, Optional, Sequence, Union
 
-from .errors import LookAheadError, OrderApiError, StaleContextError
+from .errors import HistoryTruncatedError, LookAheadError, OrderApiError, StaleContextError
 from .events import (
     ORDER_SIDES,
     Event,
@@ -121,6 +138,22 @@ OPEN_STATES = frozenset(
 
 _FILL_EPS = 1e-12
 
+FINAL_STATES = frozenset({OrderState.FILLED, OrderState.CANCELED, OrderState.REJECTED})
+
+
+def _derive_state(view: "OrderView") -> OrderState:
+    """The state shown to the strategy, from the view's facts. A final
+    state is kept; otherwise an unsettled ambiguous answer wins over
+    everything (CLAUDE.md section 1: STATE_UNKNOWN is held until
+    resolved), then a cancel awaiting its answer, then acknowledged."""
+    if view.state in FINAL_STATES:
+        return view.state
+    if view.unknown_new or view.unknown_cancel:
+        return OrderState.STATE_UNKNOWN
+    if view.cancels_in_flight > 0:
+        return OrderState.PENDING_CANCEL
+    return OrderState.OPEN if view.acked else OrderState.PENDING_NEW
+
 
 @dataclass(frozen=True)
 class OrderView:
@@ -137,6 +170,16 @@ class OrderView:
     venue_order_id: str = ""
     reason: str = ""
     origin: str = "strategy"  # "strategy" = placed by the strategy; "forced" = by the account socket
+    # cancels of ours sent and not answered yet (one fact per cancel, not one
+    # per order: with two in flight, the answer to the first leaves one)
+    cancels_in_flight: int = 0
+    unknown_new: bool = False  # an ambiguous answer about the new order, not settled yet
+    unknown_cancel: bool = False  # an ambiguous answer about a cancel, not settled yet
+
+    @property
+    def cancel_pending(self) -> bool:
+        """A cancel of ours was sent and has no answer yet."""
+        return self.cancels_in_flight > 0
 
     @property
     def client_order_id(self) -> str:
@@ -161,12 +204,21 @@ class _OrderPort:
         self._registry: dict[str, OrderView] = {}
         self._outbox: list[tuple] = []
         self._counter = 0
-        self._now: int = 0
+        # the delivery time of the callback in progress; None before the
+        # first callback ("no time yet" is not a time: every int64 is one)
+        self._now: Optional[int] = None
+
+    def _time(self) -> int:
+        now = self._now
+        if now is None:
+            raise OrderApiError("the order port was used before the first callback")
+        return now
 
     # -- strategy-facing (through StrategyContext) --------------------------
     def place(self, request: OrderRequest) -> str:
         if not isinstance(request, OrderRequest):
             raise OrderApiError(f"place_order takes an OrderRequest, got {type(request).__name__}")
+        now = self._time()
         coid = request.client_order_id
         if coid:
             if coid.startswith(FORCED_ID_PREFIX):
@@ -186,10 +238,10 @@ class _OrderPort:
         self._registry[coid] = OrderView(
             request=request,
             state=OrderState.PENDING_NEW,
-            sent_time_ns=self._now,
-            last_update_ns=self._now,
+            sent_time_ns=now,
+            last_update_ns=now,
         )
-        self._outbox.append(("new", request, self._now))
+        self._outbox.append(("new", request, now))
         return coid
 
     def cancel(self, request: Union[CancelRequest, str]) -> None:
@@ -200,19 +252,22 @@ class _OrderPort:
         view = self._registry.get(request.client_order_id)
         if view is None:
             raise OrderApiError(f"cancel for unknown client_order_id {request.client_order_id!r}")
-        if view.state in (OrderState.PENDING_NEW, OrderState.OPEN, OrderState.STATE_UNKNOWN):
-            self._registry[request.client_order_id] = dataclasses.replace(
-                view, state=OrderState.PENDING_CANCEL, last_update_ns=self._now
-            )
-        self._outbox.append(("cancel", request, self._now))
+        now = self._time()
+        # Every cancel is answered by the venue exactly once (the engine
+        # answers one for an order that is not live there), so it is counted
+        # even for an order already final in this view.
+        view = dataclasses.replace(view, cancels_in_flight=view.cancels_in_flight + 1, last_update_ns=now)
+        self._registry[request.client_order_id] = dataclasses.replace(view, state=_derive_state(view))
+        self._outbox.append(("cancel", request, now))
 
     def knows(self, client_order_id: str) -> bool:
         return client_order_id in self._registry
 
     def set_timer(self, at_ns: int, tag: str) -> None:
+        now = self._time()
         at = int(validate_nanos(at_ns))
-        if at < self._now:
-            raise OrderApiError(f"timer at {at} is before now {self._now}")
+        if at < now:
+            raise OrderApiError(f"timer at {at} is before now {now}")
         if not isinstance(tag, str):
             raise OrderApiError("timer tag must be str")
         self._outbox.append(("timer", at, tag))
@@ -238,39 +293,54 @@ class _OrderPort:
         )
 
     def _apply_notice(self, event: Event) -> None:
+        """Update the facts of one order from a delivered notice, then
+        derive its state. Nothing here guesses a previous state."""
         coid = event.client_order_id  # type: ignore[attr-defined]
         view = self._registry[coid]
         t = int(event.received_time_ns)
+        final: Optional[OrderState] = None
+        if _answers_cancel(event):
+            # channels are FIFO, so the k-th answer answers the k-th cancel
+            if view.cancels_in_flight < 1:  # pragma: no cover - engine invariant
+                raise RuntimeError(f"an answer to a cancel of {coid!r} with no cancel in flight")
+            view = dataclasses.replace(view, cancels_in_flight=view.cancels_in_flight - 1)
         if isinstance(event, OrderAckEvent):
-            state = OrderState.OPEN if view.state in (OrderState.PENDING_NEW, OrderState.STATE_UNKNOWN) else view.state
-            view = dataclasses.replace(view, state=state, acked=True, venue_order_id=event.venue_order_id)
+            view = dataclasses.replace(view, acked=True, unknown_new=False,
+                                       venue_order_id=event.venue_order_id)
         elif isinstance(event, OrderRejectEvent):
             if event.request_kind == "new":
-                view = dataclasses.replace(view, state=OrderState.REJECTED, reason=event.reason)
-            elif view.state is OrderState.PENDING_CANCEL:
-                back = OrderState.OPEN if view.acked else OrderState.PENDING_NEW
-                view = dataclasses.replace(view, state=back, reason=event.reason)
-            else:
-                view = dataclasses.replace(view, reason=event.reason)
+                final = OrderState.REJECTED
+            # a cancel reject answers our cancel; it says nothing that settles
+            # an ambiguous answer about the order
+            view = dataclasses.replace(view, reason=event.reason)
         elif isinstance(event, OrderFillEvent):
             filled = view.filled_size + event.size
             prev_notional = (view.avg_fill_price or 0.0) * view.filled_size
             avg = (prev_notional + event.price * event.size) / filled
-            state = view.state
-            if filled >= view.request.size * (1 - _FILL_EPS):
-                state = OrderState.FILLED
-            elif state in (OrderState.PENDING_NEW, OrderState.STATE_UNKNOWN):
-                state = OrderState.OPEN
+            # a fill proves the order exists at the venue (settles an
+            # ambiguous new order), not whether a cancel took effect
             view = dataclasses.replace(
-                view, state=state, filled_size=filled, avg_fill_price=avg, fees=view.fees + event.fee
+                view, acked=True, unknown_new=False, filled_size=filled, avg_fill_price=avg,
+                fees=view.fees + event.fee,
             )
+            if filled >= view.request.size * (1 - _FILL_EPS):
+                final = OrderState.FILLED
         elif isinstance(event, OrderCanceledEvent):
-            view = dataclasses.replace(view, state=OrderState.CANCELED, reason=event.reason)
+            final = OrderState.CANCELED
+            view = dataclasses.replace(view, reason=event.reason)
         elif isinstance(event, OrderStateUnknownEvent):
-            view = dataclasses.replace(view, state=OrderState.STATE_UNKNOWN, reason=event.detail)
+            if event.request_kind == "cancel":
+                view = dataclasses.replace(view, unknown_cancel=True, reason=event.detail)
+            else:
+                view = dataclasses.replace(view, unknown_new=True, reason=event.detail)
         else:  # pragma: no cover - engine only routes notices here
             raise TypeError(type(event).__name__)
-        self._registry[coid] = dataclasses.replace(view, last_update_ns=t)
+        if final is not None and view.state not in FINAL_STATES:
+            # a final state settles every ambiguity; cancels still in flight
+            # stay counted until their answers arrive
+            view = dataclasses.replace(view, state=final, unknown_new=False, unknown_cancel=False)
+        view = dataclasses.replace(view, last_update_ns=t)
+        self._registry[coid] = dataclasses.replace(view, state=_derive_state(view))
 
 
 class StrategyContext:
@@ -287,12 +357,19 @@ class StrategyContext:
         open_orders_cb: Optional[Callable[[], tuple]] = None,
         set_timer_cb: Optional[Callable[[int, str], None]] = None,
         typed_events: Optional[Mapping[EventType, Sequence[Event]]] = None,
+        dropped: Optional[Mapping[EventType, tuple[int, int]]] = None,
     ) -> None:
         """`typed_events`, if given, maps an event type to the delivered
         events of that type (same objects, same order as `visible_events`);
-        it only makes `visible_events(event_type)` faster."""
+        it only makes `visible_events(event_type)` faster.
+
+        `dropped`, if given, maps an event type to (seq, received_time_ns)
+        of the last event of that type the history no longer holds
+        (`history_limit`, history.py); reads reaching into that part raise
+        `HistoryTruncatedError`."""
         self.__visible_events = visible_events
         self.__typed_events = typed_events
+        self.__dropped = dict(dropped) if dropped else {}
         self.__current = current
         self.__place_order_cb = place_order_cb
         self.__cancel_order_cb = cancel_order_cb
@@ -344,24 +421,23 @@ class StrategyContext:
         """Delivered events (all with `received_time_ns <= now_ns`), oldest
         first. Filters, all optional: only `event_type`; only those with
         `since_ns <= received_time_ns <= until_ns`; then only the last `n`
-        (`n` is a count: `n=0` returns nothing).
+        (`n` is a count >= 0: `n=0` returns nothing, a negative `n` raises
+        `OrderApiError`).
 
-        `until_ns > now_ns` raises `LookAheadError`: the history holds
-        nothing after now, and a request for the future is a strategy bug
-        that must not be answered with a silently shortened result."""
+        Any time argument after `now_ns` (`since_ns` or `until_ns`) raises
+        `LookAheadError`: the history holds nothing after now, and a request
+        for the future is a strategy bug that must not be answered with a
+        silently empty or shortened result.
+
+        With `history_limit`, a read whose answer would reach into the
+        dropped part of a type it covers raises `HistoryTruncatedError`
+        (history.py); an answer that is returned is the same as without the
+        limit."""
         self.__check()
         now = int(self.__current.received_time_ns)
-        if until_ns is not None:
-            until = int(validate_nanos(until_ns))
-            if until > now:
-                raise LookAheadError(
-                    f"visible_events(until_ns={until}) asks for events after now_ns={now}"
-                )
-        else:
-            until = None
-        since = int(validate_nanos(since_ns)) if since_ns is not None else None
-        if n is not None and (isinstance(n, bool) or not isinstance(n, int)):
-            raise OrderApiError("n must be an int")
+        since = _time_arg("since_ns", since_ns, now)
+        until = _time_arg("until_ns", until_ns, now)
+        count = _count_arg(n)
         if event_type is not None and not isinstance(event_type, EventType):
             raise OrderApiError(f"event_type must be an EventType, got {event_type!r}")
 
@@ -379,13 +455,37 @@ class StrategyContext:
             lo = bisect.bisect_left(events, since, key=_recv)
         if until is not None:
             hi = bisect.bisect_right(events, until, key=_recv)
-        if n is not None:
-            if n <= 0:
+        if count is not None:
+            if count == 0:
                 return ()
-            lo = max(lo, hi - n)
+            lo = max(lo, hi - count)
+        if self.__dropped:
+            self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
             return ()
         return tuple(events[lo:hi])
+
+    def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int],
+                           count: Optional[int], events: Sequence[Event], lo: int, hi: int) -> None:
+        """Raise if the answer events[lo:hi] may lack events the history
+        dropped. For each type the read covers that has a dropped part: the
+        window reaches into it when it has no start or starts at or before
+        the last dropped event's received time; it is still complete when
+        `n` confines it to `count` kept events that all come after that
+        type's last dropped event (by delivery number)."""
+        for etype, (dropped_seq, dropped_recv) in self.__dropped.items():
+            if event_type is not None and etype is not event_type:
+                continue
+            if since is not None and since > dropped_recv:
+                continue  # the window starts after everything dropped of this type
+            if count is not None and hi - lo == count and int(events[lo].seq) > dropped_seq:
+                continue  # the last `count` events are all after the dropped part
+            raise HistoryTruncatedError(
+                f"visible_events(event_type={None if event_type is None else event_type.value}, "
+                f"since_ns={since}, n={count}) reaches into the {etype.value} history dropped by "
+                f"history_limit (last dropped: delivery #{dropped_seq} received at {dropped_recv}); "
+                f"narrow the read with since_ns > {dropped_recv} or a smaller n"
+            )
 
     def last(self, event_type: EventType) -> Optional[Event]:
         """Most recent delivered event of `event_type`, or None."""
@@ -422,6 +522,37 @@ class StrategyContext:
         if self.__set_timer_cb is None:
             raise OrderApiError("this context was built without timers")
         self.__set_timer_cb(at_ns, tag)
+
+
+def _count_arg(n: Optional[int]) -> Optional[int]:
+    """The one check of the count argument of a history read: an int >= 0."""
+    if n is None:
+        return None
+    if isinstance(n, bool) or not isinstance(n, int):
+        raise OrderApiError(f"n must be an int, got {n!r}")
+    if n < 0:
+        raise OrderApiError(f"n is a count of events and must be >= 0, got {n}")
+    return n
+
+
+def _time_arg(name: str, value: Optional[int], now: int) -> Optional[int]:
+    """The one check every time argument of a history read passes: an int64
+    of ns, and not after now."""
+    if value is None:
+        return None
+    t = int(validate_nanos(value))
+    if t > now:
+        raise LookAheadError(f"visible_events({name}={t}) asks for events after now_ns={now}")
+    return t
+
+
+def _answers_cancel(event: Event) -> bool:
+    """Is this notice the venue's answer to one of our cancels?"""
+    if isinstance(event, OrderCanceledEvent):
+        return event.answers == "cancel"
+    if isinstance(event, (OrderRejectEvent, OrderStateUnknownEvent)):
+        return event.request_kind == "cancel"
+    return False
 
 
 def _recv(event: Event) -> int:

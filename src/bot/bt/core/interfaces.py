@@ -39,11 +39,12 @@ the order.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Protocol, Sequence, Union, runtime_checkable
 
 from .api import CancelRequest, OrderRequest
 from .events import Event
+from .time import validate_nanos
 
 
 # --- venue reports -----------------------------------------------------------
@@ -96,8 +97,13 @@ class FillNotice:
     size: float
     side: str = ""
     liquidity: str = "taker"
-    venue_time_ns: int = 0
+    # required (no default): a default time would be a real instant (0 =
+    # 1970-01-01), so a notice built without one would carry a wrong time
+    venue_time_ns: int = field(kw_only=True)
     fee: float = 0.0
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "venue_time_ns", int(validate_nanos(self.venue_time_ns)))
 
 
 # --- sockets -----------------------------------------------------------------

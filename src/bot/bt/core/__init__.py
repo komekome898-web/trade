@@ -2,9 +2,10 @@
 plugs into. Fixed requirements:
 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/REQUIREMENTS.md.
 
-Modules: time (int64 UTC ns), events (event types), ordering (the total
-order of processing and of merging input streams), api (strategy context
-and order API), interfaces (the four sockets), engine (the queue),
+Modules: time (int64 UTC ns), events (event types), ordering (the FIFO
+channels, the total order of processing and the merge of input streams), api (strategy context
+and order API), history (the strategy's delivered history and its one
+retention rule), interfaces (the four sockets), engine (the queue),
 contract (machine-readable guarantees), testing (test doubles, not venue
 models). Tests live in tests/bt/item_0/.
 """
@@ -25,6 +26,7 @@ from .errors import (
     CostModelError,
     EventOrderError,
     EventValidationError,
+    HistoryTruncatedError,
     LatencyModelError,
     LookAheadError,
     MissingCostModelError,
@@ -75,12 +77,10 @@ from .interfaces import (
     ZeroLatency,
 )
 from .ordering import (
-    DELIVERY_PRIORITY,
     ORDERING_RULE,
-    ORIGIN_ENGINE,
-    ORIGIN_SOURCE,
+    PHASES,
     TYPE_ORDER,
-    VENUE_MARKET_PRIORITY,
+    merge_order,
     order_events,
 )
 from .strategy import Strategy

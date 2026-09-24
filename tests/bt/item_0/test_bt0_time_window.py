@@ -7,6 +7,7 @@ import pytest
 from bot.bt.core import (
     CoreEngine,
     EventType,
+    HistoryTruncatedError,
     LookAheadError,
     StaleContextError,
 )
@@ -100,8 +101,12 @@ def test_history_limit_applies_per_type_too():
     def act(ev, ctx):
         if ev.EVENT_TYPE is EventType.BAR:
             probe["bars"] = len(ctx.visible_events(EventType.BAR))
-            probe["trades"] = len(ctx.visible_events(EventType.TRADE))
+            probe["trades10"] = len(ctx.visible_events(EventType.TRADE, n=10))
+            # rewritten in round 3 (i0-r2-03): reading every trade after some
+            # were dropped is refused, not answered with the kept part only
+            with pytest.raises(HistoryTruncatedError):
+                ctx.visible_events(EventType.TRADE)
 
     CoreEngine(Recorder(act), events, history_limit=10).run()
-    assert probe["bars"] == 1
-    assert 10 <= probe["trades"] <= 20
+    assert probe["bars"] == 1  # the bar is kept although 50 trades came first
+    assert probe["trades10"] == 10

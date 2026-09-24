@@ -1,4 +1,4 @@
-"""P0-4 / P0-5: the queue key (time, priority, origin, ordinal) and the
+"""P0-4 / P0-5: the queue key (time, phase, received, position) and the
 strategy-visible `seq`.
 
 * `seq` on a delivered event is the strategy's own delivery count. A queue
@@ -6,14 +6,17 @@ strategy-visible `seq`.
   yet (an event that happened at the exchange but reaches us later), and
   its gaps would let the strategy count them.
 * The processing order is a function of the input only: for input events
-  it equals a global sort by (delivery time, type priority, merge position),
+  it equals a global sort by (delivery time, received time, merge
+  position), where the merge takes the streams' heads by (exchange time,
+  TYPE_ORDER, stream name) and delivery never lets an event overtake an
+  earlier-received event of its own stream, whatever the feed delays and
   whatever the lazy stream reading does; an input heartbeat and a strategy
   timer at the same instant are ordered input first.
 """
 import random
 
 from bot.bt.core import (
-    DELIVERY_PRIORITY,
+    TYPE_ORDER,
     BarEvent,
     ClockEvent,
     CoreEngine,
@@ -111,21 +114,83 @@ def _random_streams(rng):
     return streams
 
 
+_RANK = {t: i for i, t in enumerate(TYPE_ORDER)}
+
+
+def _reference_merge(streams):
+    """Greedy merge written independently of the engine: repeatedly take
+    the stream whose next event has the smallest (exchange time, type rank,
+    stream name)."""
+    pos = {n: 0 for n in streams}
+    out = []
+    while True:
+        heads = [(evs[pos[n]].exchange_time_ns, _RANK[evs[pos[n]].EVENT_TYPE], n)
+                 for n, evs in streams.items() if pos[n] < len(evs)]
+        if not heads:
+            return out
+        _, _, n = min(heads)
+        out.append((n, streams[n][pos[n]]))
+        pos[n] += 1
+
+
+def _reference_delivery(streams, delay_of):
+    merged = _reference_merge(streams)
+    mpos = {id(e): i for i, (_, e) in enumerate(merged)}
+    deliver = {}
+    for name, evs in streams.items():
+        last = None
+        for e in sorted(evs, key=lambda e: (e.received_time_ns, mpos[id(e)])):  # reception order
+            t = e.received_time_ns + delay_of(e)
+            if last is not None and t < last:
+                t = last
+            deliver[id(e)] = t
+            last = t
+    return sorted((e for _, e in merged), key=lambda e: (deliver[id(e)], e.received_time_ns, mpos[id(e)])), deliver
+
+
+def _sig(e):
+    return (e.EVENT_TYPE, e.exchange_time_ns, getattr(e, "tag", None), getattr(e, "price", None))
+
+
 def test_order_equals_the_stated_rule_as_a_global_sort():
-    """Reference computed without the engine: merge position = rank by
-    (exchange time, stream name, position); delivery order = sort by
-    (received time, type priority, merge position)."""
     for seed in range(200):
         rng = random.Random(seed)
         streams = _random_streams(rng)
-        tagged = [(e.exchange_time_ns, name, i, e) for name, evs in streams.items() for i, e in enumerate(evs)]
-        merged = [x[3] for x in sorted(tagged, key=lambda x: x[:3])]
-        expected = [
-            e for _, e in sorted(enumerate(merged),
-                                 key=lambda p: (p[1].received_time_ns, DELIVERY_PRIORITY[p[1].EVENT_TYPE], p[0]))
-        ]
+        expected, deliver = _reference_delivery(streams, lambda e: 0)
         got = _run(streams)
-        assert [(e.EVENT_TYPE, e.received_time_ns, e.exchange_time_ns, getattr(e, "tag", None),
-                 getattr(e, "price", None)) for e in got] == \
-               [(e.EVENT_TYPE, e.received_time_ns, e.exchange_time_ns, getattr(e, "tag", None),
-                 getattr(e, "price", None)) for e in expected], seed
+        assert [_sig(e) for e in got] == [_sig(e) for e in expected], seed
+        assert [e.received_time_ns for e in got] == [deliver[id(e)] for e in expected], seed
+
+
+class _JitterFeed:
+    def __init__(self, delays):
+        self.delays = delays
+
+    def feed_delay_ns(self, e):
+        return self.delays[id(e)]
+
+    def order_delay_ns(self, o, t):
+        return 0
+
+    def cancel_delay_ns(self, c, t):
+        return 0
+
+    def notice_delay_ns(self, r, t):
+        return 0
+
+
+def test_jittered_feed_delay_keeps_each_stream_in_reception_order():
+    """i0-r1-12: with a random feed delay per event, the delivery order is
+    the rule's: per stream, reception order is kept (delivery time = running
+    max over the stream in reception order)."""
+    from bot.bt.core import MARKET_EVENT_TYPES
+    for seed in range(200):
+        rng = random.Random(1000 + seed)
+        streams = _random_streams(rng)
+        delays = {id(e): (rng.choice([0, 0, 1, 2, 9, 4000]) if e.EVENT_TYPE in MARKET_EVENT_TYPES else 0)
+                  for evs in streams.values() for e in evs}
+        expected, deliver = _reference_delivery(streams, lambda e: delays[id(e)])
+        rec = Recorder()
+        CoreEngine(rec, streams, latency_model=_JitterFeed(delays)).run()
+        assert [_sig(e) for e in rec.seen] == [_sig(e) for e in expected], seed
+        assert [e.received_time_ns for e in rec.seen] == [deliver[id(e)] for e in expected], seed

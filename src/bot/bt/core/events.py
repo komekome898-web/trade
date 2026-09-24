@@ -24,7 +24,9 @@ Two timestamps, both int64 UTC nanoseconds (time.py):
 A BAR's timestamps are the time the bar became complete (its close), never
 its open: delivering an open-labelled bar at its open time would let a
 strategy see the bar's high/low/close before they happened. `start_time_ns`
-optionally records the bar's open for display and validation only.
+optionally records the bar's open; if given it must be strictly before the
+close (a bar covers [start, close) with a positive length), so an
+open-stamped bar (start == close) is refused.
 
 Every event is frozen and validated at construction; `to_dict()` returns a
 JSON-friendly copy of every field (tuples become lists).
@@ -82,6 +84,10 @@ TRADE_SIDES = ("buy", "sell", "")  # "" = aggressor unknown (e.g. an auction pri
 BOOK_SIDES = ("bid", "ask")
 LIQUIDITY = ("maker", "taker")
 REQUEST_KINDS = ("new", "cancel")
+# What an ORDER_CANCELED notice answers: "cancel" = one of our cancels (the
+# venue's answer to it), "new" = part of the answer to the new order (an IOC
+# remainder, say), "venue" = the venue acted on its own (expiry, say).
+CANCELED_ANSWERS = ("cancel", "new", "venue")
 
 
 def _finite(name: str, value: Any) -> float:
@@ -253,10 +259,15 @@ class BarEvent(Event):
             object.__setattr__(self, name, val)
         if self.start_time_ns is not None:
             start = validate_nanos(self.start_time_ns)
-            if start > self.exchange_time_ns:
+            if start >= self.exchange_time_ns:
+                # A bar aggregates the interval [start_time_ns, exchange_time_ns)
+                # and needs a positive length. start == close is the signature
+                # of a bar stamped at its open (its high/low/close would reach
+                # the strategy at the open); one print is a TradeEvent.
                 raise EventValidationError(
-                    "start_time_ns is after the bar's completion time; a bar is "
-                    "timestamped at its close, not its open"
+                    f"start_time_ns {start} is not before the bar's completion time "
+                    f"{self.exchange_time_ns}; a bar covers [start, close) with a "
+                    f"positive length and is timestamped at its close, not its open"
                 )
             object.__setattr__(self, "start_time_ns", start)
 
@@ -346,10 +357,15 @@ class OrderFillEvent(Event):
 class OrderCanceledEvent(Event):
     client_order_id: str
     reason: str = "canceled"
+    # what this cancellation answers (one of CANCELED_ANSWERS), set by the
+    # engine from where the venue reported it. Not `request_kind`: a reject
+    # names the request refused, this names the request (if any) answered.
+    answers: str = "venue"
     EVENT_TYPE: ClassVar[EventType] = EventType.ORDER_CANCELED
 
     def _validate(self) -> None:
         _nonempty_str("client_order_id", self.client_order_id)
+        _choice("answers", self.answers, CANCELED_ANSWERS)
 
 
 @dataclass(frozen=True, kw_only=True)

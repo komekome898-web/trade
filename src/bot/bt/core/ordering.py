@@ -1,84 +1,98 @@
 """The deterministic order in which the engine processes things.
 
-The engine is a discrete-event simulation over ONE priority queue. Every
-queue entry has the key
+Everything that happens travels on one of five CHANNELS, and every channel
+is FIFO: nothing on a channel ever overtakes something sent on it earlier.
 
-    (time_ns, priority, origin, ordinal)
+    phase  channel                       position on the channel
+    -----  ----------------------------  ---------------------------------
+    0      input  -> venue               merge position (below)
+    1      strategy -> venue requests    send order (new orders AND cancels,
+                                         one channel, as on one connection)
+    2      input  -> strategy            per input stream: reception order =
+                                         (recorded received_time_ns, merge
+                                         position)
+    3      venue  -> strategy notices    the order the venue emitted them
+    4      strategy timers               the order they were set
 
-and entries are processed in ascending key order. The four parts:
+The engine is a discrete-event simulation over ONE priority queue whose key
+is
 
-1. `time_ns` -- when the entry happens. Venue-side entries use the venue's
-   clock (a market event's `exchange_time_ns`; an order's arrival time at
-   the venue). Strategy deliveries use the time the strategy receives the
-   event (`received_time_ns` plus the latency model's feed delay, or the
-   venue time of a report plus the notice delay). Every queue time is
-   checked to be an int64 of nanoseconds when it is pushed (engine.py
-   `_push`), so a latency model cannot push a time out of range unnoticed.
-2. `priority` -- `PRIORITY` below. At one instant the venue acts first:
-   market data is applied to the venue in the event-type order of
-   `TYPE_ORDER` (settled venue-side facts -- liquidation, funding -- before
-   the evolving market state -- book snapshot -> book delta -> trade -> bar;
-   a bar is derived from the trades that built it), then orders arriving
-   at that instant, then cancels arriving at that instant. Then deliveries
-   to the strategy happen in the same type order, followed by our own order
-   notices (ack -> reject -> fill -> canceled -> state unknown; an order is
-   acknowledged before it can fill), and the clock heartbeat last, so a
-   timer sees everything else that happened at that instant.
-3. `origin` -- 0 (`ORIGIN_SOURCE`) for an entry made from an input event,
-   1 (`ORIGIN_ENGINE`) for an entry the engine created (an order or cancel
-   reaching the venue, a notice, a timer). Only one priority holds entries
-   of both origins -- `deliver:CLOCK` (a heartbeat from the input and a
-   timer the strategy set) -- and there the input's heartbeat comes first.
-4. `ordinal` -- for an input event, its position in the merged input
-   (next point: exchange time, stream name, position in the stream), which
-   is fixed by the input alone; for an engine-created entry, the count of
-   entries the engine has created so far (creation order). The key is
-   unique, so it is a *total* order, and it is a function of the input and
-   the models' answers only: it does not depend on WHEN the engine pulled
-   an event from its stream (streams are read lazily), on sort stability,
-   or on hash/dict iteration order. Two runs over the same input with the
-   same models process exactly the same sequence.
+    (time_ns, phase, received_time_ns or the entry's own time, position)
 
-Several input streams (for example trades, board, bars and funding read
-from separate files) are merged by `(exchange_time_ns, stream name)`: the
-earliest event first; at equal times the stream whose name sorts first.
-The name order is `sorted()` of the names, not the order the streams were
-handed over, so the result does not depend on the order of the mapping.
-Inside one stream the stream's own order is kept, and a stream that goes
-backwards in `exchange_time_ns` is refused (`EventOrderError`) -- the core
-merges streams, it does not re-sort a stream.
+and entries are processed in ascending key order. So at one instant the
+venue acts first (market data, then the requests arriving at that instant,
+in the order they were sent), then deliveries reach the strategy (input
+events, then order notices in the order the venue emitted them, then the
+strategy's own timers). The event TYPE is not part of the key: a channel's
+sequence is never re-sorted by type (a trade and the book delta it caused,
+printed in that order in one feed, stay in that order; an ACK / FILL /
+STATE_UNKNOWN keep the order the venue sent them; a cancel sent before a
+new order reaches the venue first).
 
-So for input events delivered at the same time the rule is: type
-(`TYPE_ORDER`), then merge order (exchange time, then stream name, then
-position inside the stream). With no feed delay and received time equal
-to exchange time this is: type, then stream name, then position. Only the
-position depends on how the input was written, and it is the stream's own
-sequence (for example the venue's print order of two trades in one
-nanosecond).
+Times on a channel never decrease: a request's arrival time is
+`max(send time + delay, previous arrival)`, a notice's delivery time is
+`max(venue time + delay, previous delivery)` (the first item on a channel
+has no previous one: it keeps its own time -- "nothing sent yet" is not a
+time, every int64 is, 0 and times before 1970 included), and an input event is not
+delivered before an event of the same stream that was received earlier
+(its delivery is postponed to that event's delivery time; engine.py
+`_deliver_input`). With equal times the position decides, so the channel
+stays FIFO. Every queue time is checked to be an int64 of nanoseconds when
+it is pushed (engine.py `_push`).
+
+Merging input streams (phase 0 positions)
+-----------------------------------------
+Several input streams (trades, board, bars and funding read from separate
+files, say) are merged by comparing the streams' NEXT events:
+
+    (exchange_time_ns, place of the event's type in TYPE_ORDER, stream name)
+
+The smallest head is taken, then that stream's next event becomes its head.
+So a stream's own order is always kept, and only between different streams
+at the same exchange time does the type order decide (liquidation, funding,
+book snapshot, book delta, trade, bar, clock -- settled venue-side facts
+first, a bar after the trades it is built from, a heartbeat last), then the
+stream name (`sorted()` order, not the order the mapping was handed over).
+A stream that goes backwards in `exchange_time_ns` is refused
+(`EventOrderError`); the core merges streams, it never re-sorts one.
+The merge position is fixed by the input alone -- not by when the engine
+pulls an event (streams are read lazily), not by sort stability, not by
+dict order.
+
+Delivery of input events (phase 2)
+----------------------------------
+An input event reaches the strategy at `received_time_ns + feed delay`.
+Inside one stream the reception order -- (recorded received_time_ns, merge
+position) -- is kept whatever the feed delays are: a jittered delay never
+lets a later-received event of the same stream overtake an earlier one.
+The recorded received_time_ns is data (when the recorder actually got the
+event); if a stream records an event as received later than the next one
+(a late print), the reception order is what the record says. Between
+streams at one delivery time: recorded received time, then merge position.
 
 The strategy sees `event.seq` = its own delivery count (1, 2, 3, ...), not
 the queue key: the queue also holds entries for events the strategy has
 not received yet, and a counter over the queue would let it count them.
 
 Causality inside one instant: an entry created while processing time T at
-time T (for example an order a strategy placed at T that reaches the venue
-with zero latency) is processed after the entry that created it, and then
-by priority among the entries still pending at T. The queue never goes back
-in time: an entry for a time earlier than the current time is an engine
-error.
+time T (an order a strategy placed at T that reaches the venue with zero
+latency, say) is processed after the entry that created it, then by key
+among the entries still pending at T. The queue never goes back in time.
 
 `ORDERING_RULE` is the machine-readable form of this docstring.
-`order_events` applies the delivery part of the rule to a finite batch
-(what the engine does when every latency is zero).
+`merge_order` and `order_events` apply the rule to a finite input (what the
+engine does when every latency is zero).
 """
 from __future__ import annotations
 
-from typing import Iterable
+import heapq
+from typing import Iterable, Mapping, Union
 
-from .events import Event, EventType
+from .events import SOURCE_EVENT_TYPES, Event, EventType
 
-# Event-type order at one instant, shared by the venue side and the
-# strategy side.
+# Type order used to merge the heads of DIFFERENT input streams at one
+# exchange time. Only input (source) types appear: notices are never merged
+# with input, they travel on their own channel.
 TYPE_ORDER: tuple[EventType, ...] = (
     EventType.LIQUIDATION,
     EventType.FUNDING,
@@ -86,80 +100,101 @@ TYPE_ORDER: tuple[EventType, ...] = (
     EventType.BOOK_DELTA,
     EventType.TRADE,
     EventType.BAR,
-    EventType.ORDER_ACK,
-    EventType.ORDER_REJECT,
-    EventType.ORDER_FILL,
-    EventType.ORDER_CANCELED,
-    EventType.ORDER_STATE_UNKNOWN,
     EventType.CLOCK,
 )
 
-assert set(TYPE_ORDER) == set(EventType) and len(TYPE_ORDER) == len(EventType), (
-    "every EventType needs exactly one place in TYPE_ORDER"
+assert set(TYPE_ORDER) == set(SOURCE_EVENT_TYPES) and len(TYPE_ORDER) == len(SOURCE_EVENT_TYPES), (
+    "every input event type needs exactly one place in TYPE_ORDER"
 )
 
-_VENUE_MARKET_BASE = 0
-VENUE_MARKET_PRIORITY: dict[EventType, int] = {
-    t: _VENUE_MARKET_BASE + i
-    for i, t in enumerate(
-        x for x in TYPE_ORDER
-        if x in (EventType.LIQUIDATION, EventType.FUNDING, EventType.BOOK_SNAPSHOT,
-                 EventType.BOOK_DELTA, EventType.TRADE, EventType.BAR)
-    )
+TYPE_RANK: dict[EventType, int] = {t: i for i, t in enumerate(TYPE_ORDER)}
+
+PHASE_VENUE_MARKET = 0
+PHASE_VENUE_REQUEST = 1
+PHASE_DELIVER_INPUT = 2
+PHASE_DELIVER_NOTICE = 3
+PHASE_DELIVER_TIMER = 4
+
+PHASES: dict[str, int] = {
+    "venue:input": PHASE_VENUE_MARKET,
+    "venue:request": PHASE_VENUE_REQUEST,
+    "deliver:input": PHASE_DELIVER_INPUT,
+    "deliver:notice": PHASE_DELIVER_NOTICE,
+    "deliver:timer": PHASE_DELIVER_TIMER,
 }
-VENUE_ORDER = 10
-VENUE_CANCEL = 11
 
-ORIGIN_SOURCE = 0  # entry made from an input event; ordinal = position in the merged input
-ORIGIN_ENGINE = 1  # entry created by the engine; ordinal = creation count
-
-_DELIVERY_BASE = 20
-DELIVERY_PRIORITY: dict[EventType, int] = {t: _DELIVERY_BASE + i for i, t in enumerate(TYPE_ORDER)}
-
-assert set(DELIVERY_PRIORITY) == set(EventType), "every EventType needs a delivery priority"
-assert len(set(DELIVERY_PRIORITY.values())) == len(DELIVERY_PRIORITY), "priorities must be distinct"
-assert max(VENUE_MARKET_PRIORITY.values()) < VENUE_ORDER < VENUE_CANCEL < min(DELIVERY_PRIORITY.values())
-
-PRIORITY: dict[str, int] = {
-    **{f"venue:market:{t.value}": p for t, p in VENUE_MARKET_PRIORITY.items()},
-    "venue:order": VENUE_ORDER,
-    "venue:cancel": VENUE_CANCEL,
-    **{f"deliver:{t.value}": p for t, p in DELIVERY_PRIORITY.items()},
-}
+assert sorted(PHASES.values()) == list(range(len(PHASES))), "phases must be 0..n-1"
 
 ORDERING_RULE: dict = {
-    "key": ["time_ns", "priority", "origin", "ordinal"],
-    "time_ns": {
-        "venue": "exchange_time_ns of market data; arrival time of our order/cancel at the venue",
-        "deliver": "received_time_ns + feed delay (market data); venue time + notice delay (notices); timer time",
-        "checked": "every queue time is validated as int64 ns when pushed",
+    "key": ["time_ns", "phase", "received_time_ns (input deliveries; the entry's time otherwise)", "position"],
+    "phases_ascending": [name for name, _ in sorted(PHASES.items(), key=lambda kv: kv[1])],
+    "channels": {
+        "venue:input": {"time": "exchange_time_ns", "position": "merge position"},
+        "venue:request": {"time": "max(send time + order/cancel delay, previous arrival); "
+                                  "the first request keeps its own time",
+                          "position": "send order; new orders and cancels share the channel"},
+        "deliver:input": {"time": "received_time_ns + feed delay, never before an earlier-received "
+                                  "event of the same stream",
+                          "position": "(received_time_ns, merge position)"},
+        "deliver:notice": {"time": "max(venue time + notice delay, previous delivery); "
+                                   "the first notice keeps its own time",
+                           "position": "the order the venue emitted the reports"},
+        "deliver:timer": {"time": "the requested time", "position": "the order the timers were set"},
     },
-    "priority_ascending": [name for name, _ in sorted(PRIORITY.items(), key=lambda kv: kv[1])],
-    "type_order_at_one_instant": [t.value for t in TYPE_ORDER],
-    "origin": {"source": ORIGIN_SOURCE, "engine": ORIGIN_ENGINE,
-               "shared_priority": "deliver:CLOCK (input heartbeat before strategy timer)"},
-    "ordinal": {"source": "position in the merged input (merge key below); fixed by the input",
-                "engine": "creation count; fixed by the processing order"},
-    "depends_on_pull_timing": False,
-    "strategy_visible_seq": "the strategy's own delivery count 1, 2, 3, ... (not the queue key)",
+    "channels_fifo": ["venue:input", "venue:request", "deliver:input (per stream, reception order)",
+                      "deliver:notice", "deliver:timer"],
+    "type_in_key": False,
     "source_merge": {
-        "key": ["exchange_time_ns", "stream name (sorted())", "position inside the stream"],
+        "compare_heads_by": ["exchange_time_ns", "TYPE_ORDER", "stream name (sorted())"],
+        "type_order": [t.value for t in TYPE_ORDER],
+        "inside_one_stream": "the stream's own order, whatever the types",
         "backwards_inside_a_stream": "EventOrderError (never re-sorted)",
         "depends_on_mapping_order": False,
     },
+    "depends_on_pull_timing": False,
+    "strategy_visible_seq": "the strategy's own delivery count 1, 2, 3, ... (not the queue key)",
     "total_order": True,
     "same_instant_causality": "an entry created while processing time T at time T runs after its creator",
-    "channels_fifo": ["strategy->venue orders/cancels", "venue->strategy notices"],
 }
 
 
-def delivery_key(event: Event, arrival_index: int) -> tuple[int, int, int]:
-    return (int(event.received_time_ns), DELIVERY_PRIORITY[event.EVENT_TYPE], arrival_index)
+def merge_key(event: Event, stream_rank: int) -> tuple[int, int, int]:
+    """Key of a stream's head in the merge: (exchange time, type rank,
+    stream rank). One head per stream, so the key is unique."""
+    return (int(event.exchange_time_ns), TYPE_RANK[event.EVENT_TYPE], stream_rank)
 
 
-def order_events(events_in_arrival_order: Iterable[Event]) -> list[Event]:
-    """Sort a finite batch by the delivery rule (received time, type
-    priority, arrival order). Pure function; the input is not modified."""
-    indexed = list(enumerate(events_in_arrival_order))
-    indexed.sort(key=lambda pair: delivery_key(pair[1], pair[0]))
+def _as_streams(events: Union[Iterable[Event], Mapping[str, Iterable[Event]]]) -> dict[str, list[Event]]:
+    if isinstance(events, Mapping):
+        return {name: list(evs) for name, evs in events.items()}
+    return {"events": list(events)}
+
+
+def merge_order(events: Union[Iterable[Event], Mapping[str, Iterable[Event]]]) -> list[Event]:
+    """The merge positions of a finite input: one stream (an iterable) or
+    several named streams (a mapping). Pure function."""
+    streams = _as_streams(events)
+    names = sorted(streams)
+    heads: list[tuple[tuple[int, int, int], int]] = []
+    pos = [0] * len(names)
+    for rank, name in enumerate(names):
+        if streams[name]:
+            heapq.heappush(heads, (merge_key(streams[name][0], rank), rank))
+    out: list[Event] = []
+    while heads:
+        _key, rank = heapq.heappop(heads)
+        evs = streams[names[rank]]
+        out.append(evs[pos[rank]])
+        pos[rank] += 1
+        if pos[rank] < len(evs):
+            heapq.heappush(heads, (merge_key(evs[pos[rank]], rank), rank))
+    return out
+
+
+def order_events(events: Union[Iterable[Event], Mapping[str, Iterable[Event]]]) -> list[Event]:
+    """The order in which a finite input reaches the strategy when every
+    latency is zero: merge, then sort by (received time, merge position).
+    Pure function; the input is not modified."""
+    merged = merge_order(events)
+    indexed = sorted(enumerate(merged), key=lambda p: (int(p[1].received_time_ns), p[0]))
     return [e for _, e in indexed]

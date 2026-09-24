@@ -1,0 +1,14 @@
+# 項目 0 第 2 周 資料係が打ったコマンド(リポジトリ直下から。時刻は各ログに記録)
+PYTHONPATH=src python3 tests/bt/battery/item_0/run_battery.py --target new_impl --out /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/item0_r2_materials_probe_new_impl.tsv   # 第 2 周の核で既存の adapter が動くかの下見
+PYTHONPATH=src python3 tests/bt/battery/item_0/mutant.py --check   # 下見。のちに materials/logs/mutant_check.log に保存して再実行
+PYTHONPATH=src python3 -c "import bot.bt.core as c; ..."   # adapter が使う公開の名前 18 個が第 2 周の核にあるか(全部 True)
+bash docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_2/materials/finmarketpy_attempt.sh   # -> logs/finmarketpy_attempt.log
+PYTHONPATH=src python3 -B tests/bt/battery/item_0/mutant.py --check   # -> logs/mutant_check.log
+sh docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_2/materials/run_all.sh   # -> runs/*.tsv, logs/run_all.log, logs/*.stderr
+PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/battery/item_0   # -> logs/pytest_battery_item0.log
+ls docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_2/表_*.md   # 前の起動の表の有無(無し) -> logs/make_tables.out
+(cd materials && python3 -B make_tables.py --survey-note "…")   # -> logs/make_tables.out, mapping.tsv, survey_best.tsv, survey_failures.tsv
+(cd materials && python3 -B check_finmarketpy_whatif.py)   # -> logs/check_finmarketpy_whatif.out
+md5sum <各組の 2 枚>   # -> md5sum_pairs.txt
+grep -liE '<道具名・opp_・repro_・日付>' 表_*.md   # 表に道具を特定できる語が無いか(該当 0 件、rc=1)
+git log/diff/status, sha256sum, ls -R, df -m /   # -> logs/final_state.txt

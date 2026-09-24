@@ -1,5 +1,7 @@
-"""P0-5 on the venue side: at one instant the fill model and the account see
-market events in the declared type order, whatever order the input had."""
+"""P0-5 on the venue side: at one instant the fill model sees market events
+from DIFFERENT streams in the declared type order, whatever order the
+streams were handed over in; events of ONE stream in that stream's own
+order (i0-r1-10)."""
 import random
 
 from bot.bt.core import (
@@ -41,11 +43,19 @@ def test_fill_model_sees_same_instant_market_events_in_type_order():
     ]
     expected = [t for t in TYPE_ORDER if t in {e.EVENT_TYPE for e in base}]
     for seed in range(20):
+        names = [f"s{i}" for i in range(len(base))]
+        streams = dict(zip(names, ([e] for e in base)))
+        keys = list(streams)
+        random.Random(seed).shuffle(keys)
+        venue = _SeeingVenue()
+        CoreEngine(Recorder(), {k: streams[k] for k in keys}, fill_model=venue).run()
+        assert venue.seen == expected
+        # the same events in one stream: that stream's order
         shuffled = base[:]
         random.Random(seed).shuffle(shuffled)
         venue = _SeeingVenue()
         CoreEngine(Recorder(), shuffled, fill_model=venue).run()
-        assert venue.seen == expected
+        assert venue.seen == [e.EVENT_TYPE for e in shuffled]
     assert expected == [
         EventType.LIQUIDATION, EventType.FUNDING, EventType.BOOK_SNAPSHOT,
         EventType.BOOK_DELTA, EventType.TRADE, EventType.BAR,

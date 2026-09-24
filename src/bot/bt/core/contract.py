@@ -10,7 +10,7 @@ from .interfaces import SOCKETS, socket_methods
 from .ordering import ORDERING_RULE
 from .time import TIME_CONTRACT
 
-CORE_VERSION = "core-4"
+CORE_VERSION = "core-6"
 
 CORE_CONTRACT: dict = {
     "version": CORE_VERSION,
@@ -21,14 +21,24 @@ CORE_CONTRACT: dict = {
     "source_event_types": sorted(t.value for t in SOURCE_EVENT_TYPES),
     "visibility": {
         "strategy": "called at now_ns = delivery time; sees only events already delivered, "
-                    "all with received_time_ns <= now_ns; asking for until_ns > now_ns raises "
-                    "LookAheadError; context revoked on return",
+                    "all with received_time_ns <= now_ns; any time argument after now_ns (since_ns or "
+                    "until_ns) raises LookAheadError; context revoked on return",
         "venue": "fill model and account see market data at exchange_time_ns and our requests at "
                  "their arrival time; never earlier",
         "source": "one stream or named streams merged by time; each consumed lazily (at most one "
                   "pending event per stream); each must be non-decreasing in exchange_time_ns "
-                  "(else EventOrderError)",
+                  "(else EventOrderError); a stream's own order is never re-sorted",
+        "order_state": "the strategy's view and the venue ledger keep facts (acked, filled, "
+                       "cancels in flight (counted one by one; each cancel gets exactly one answer), "
+                       "unknown about the new order / about a cancel, final); "
+                       "STATE_UNKNOWN is held until a report that settles it",
         "forced_orders": "the strategy learns of a forced order only when its first notice is delivered",
+        "history_limit": "per event type the latest N..2N delivered events are kept; the overall history "
+                         "is exactly what the types keep; a read reaching into a dropped part raises "
+                         "HistoryTruncatedError",
+        "scope": "the guarantees hold for the context and everything reachable from it by attribute "
+                 "access; the strategy runs in the engine's process, so interpreter introspection "
+                 "(call stack, gc) is not covered -- the core does not sandbox strategy code",
     },
     "ordering": ORDERING_RULE,
     "strategy_api": list(STRATEGY_API),

@@ -141,5 +141,6 @@ def test_random_streams_two_runs_identical_and_time_ordered():
 
 def test_merge_rule_is_declared():
     merge = ORDERING_RULE["source_merge"]
-    assert merge["key"][0] == "exchange_time_ns"
+    assert merge["compare_heads_by"] == ["exchange_time_ns", "TYPE_ORDER", "stream name (sorted())"]
+    assert merge["inside_one_stream"] == "the stream's own order, whatever the types"
     assert merge["depends_on_mapping_order"] is False
