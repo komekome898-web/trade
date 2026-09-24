@@ -94,3 +94,10 @@ def test_launch_args_are_checked_against_delegation_script_and_owner_log():
     assert any("marker" in e for e in errs)
     assert any("lead_definitions" in e for e in errs)
     assert any("L-999" in e for e in errs)
+
+
+def test_scene_keeper_write_destination_is_the_same_pair_everywhere():
+    ok = "… 節「リードに聞くこと」 … lead_answer_changes …"
+    assert cbd.check_destination(ok, ok, ok) == []
+    errs = cbd.check_destination(ok, "台本に欄が無い", "lead_notes は questions_for_lead と書いた 節「リードに聞くこと」")
+    assert any("台本" in e for e in errs) and any("引数" in e and "lead_answer_changes" in e for e in errs)

@@ -15,6 +15,10 @@ Checks, all against primary records:
    has, as `lead_definitions` was after audit 54), and every L-NNN cited in its lead notes has a row in OWNER_LOG
    (audit 55-4: the args file was where the mismatches lived, and nothing checked it).
 
+8. The scene keeper's write destination for changes to the lead's answer (audit 56-3 / 57-1) is the same pair in the
+   delegation, the script's 定義 prompt and the args' lead notes: the phrase 節「リードに聞くこと」 and the field
+   `lead_answer_changes` (not the worker's `questions_for_lead`) must appear in all of them.
+
 Usage: python3 scripts/check_bt_delegation.py [delegation.md] [OWNER_LOG.md] [VERDICTS.md] [workflow.js] [args.json]
 Exit 1 on any error.
 """
@@ -172,9 +176,27 @@ def check_args(args_text: str, delegation_text: str, delegation_name: str, scrip
     return errs
 
 
+DEST_PHRASES = ("節「リードに聞くこと」", "lead_answer_changes")
+
+
+def check_destination(delegation_text: str, script: str, args_text: str | None) -> list[str]:
+    """Check 8: the scene keeper's write destination is stated with the same two tokens everywhere."""
+    errs: list[str] = []
+    places = {"委任文": delegation_text, "台本": script}
+    if args_text is not None:
+        places["引数の lead_notes"] = args_text
+    for name, text in places.items():
+        for ph in DEST_PHRASES:
+            if ph not in text:
+                errs.append(f"書き先: {name} に {ph!r} が無い(場面係がリードの答えを変えた点と理由の書き先が揃っていない)")
+    return errs
+
+
 def main(argv: list[str]) -> int:
     paths = [Path(argv[i]) if i < len(argv) else Path(DEFAULTS[i]) for i in range(4)]
     errs = check(*(p.read_text(encoding="utf-8") for p in paths[:3]))
+    errs += check_destination(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "",
+                              Path(argv[4]).read_text(encoding="utf-8") if len(argv) >= 5 else None)
     if len(argv) >= 5:
         errs += check_args(Path(argv[4]).read_text(encoding="utf-8"), paths[0].read_text(encoding="utf-8"), paths[0].name,
                            paths[3].read_text(encoding="utf-8") if paths[3].exists() else "", paths[1].read_text(encoding="utf-8"))

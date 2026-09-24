@@ -1452,3 +1452,30 @@ decisive 検査(6 回目処置 1〜5 + 処置 6 の反映確認): item14 の §3
 1. 56-3 [止める]: 書き先を 1 つに決めた(ROOTCAUSE_<回>.md の節「リードに聞くこと」+ 返り値の `questions_for_lead`)。台本の DEF_SCHEMA に欄を足し、場面係・監査役(定義)への文と書き出しに通した。委任文 §3・LEAD_DESIGN 32・lead_notes を同じ文にした。
 2. 56-4 [聞く]: 当たっている。55-2 の根拠づけ(史実)を §9.6 で訂正し、正しい根拠(委任文 §3 が定義の段を場面係が書く段と定めている)に替えた。判断は変えない。
 新しい版: 0fa912ffb9f2 → 57 回目へ。オーナー決定 L-440「案1で進めてください」(定義の段はこれまでどおり)を受けた版。
+
+## 57 回目(対象の版: 0fa912ffb9f2。56 回目の処置の検め。指摘 3 件 = 止める 0・直す 2・聞く 1)
+
+監査役の出力(逐語):
+
+> 1. [直す] scripts/check_bt_delegation.py(検査 1〜7 全体)/ scripts/workflows/backtest_env.js:108,149,163 / docs/DATA/delegations/20260923_backtest_env_prompt.md:108 / docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §9.2 の 32 — 56-3 は「委任文 §3・LEAD_DESIGN 32・lead_notes を同じ文にした」と処置したが、この 3〜4 箇所(委任文・LEAD_DESIGN・lead_notes・workflow.js の場面係向け文)の「リードに聞くことの書き先」の規約が今後も一致し続けることを機械で検める検査が `check_bt_delegation.py` に無い(検査 1〜7 のどれにも該当しない)。56-3 自体が「書き先の指定が 3 箇所で食い違い」を検出したものであり、`check_bt_delegation.py` の docstring は検査 7 を追加した理由を「audit 55-4: the args file was where the mismatches lived, and nothing checked it」と明記している(= 同種の食い違いには機械検査を足すのがこの委任の確立した対応)。今回は同種の食い違い(56-3)を見つけたにもかかわらず、対応する機械検査は追加されていない。次にこの 3〜4 箇所のどれか一つだけが編集されて他が追随しなければ、同型の食い違いが再発しても検出されないのではないか。(P8「規則は書くだけでは機能しない」、CLAUDE.md §0.2 O-3)
+>
+> 2. [直す] docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §9.7 の 1 行目(「委任文§3・LEAD_DESIGN 32・lead_notesを同じ文にした」)— 実際に 4 箇所を突き合わせると、規則の内容(書き先が ROOTCAUSE の「リードに聞くこと」節 + 返り値 `questions_for_lead` の 2 つ)は一致するが、文そのものは逐語で同一ではない: 委任文§3「答えの内容を変えるなら…(書き先はこの 2 つ。監査 56 回目の 56-3)」/ LEAD_DESIGN 32「F の内容を変えるなら…(台本の DEF_SCHEMA に足した欄)に返す。書き先はこの 2 つ(監査 56 回目の 56-3)」/ lead_notes「F の内容を変える必要があると読むなら、…(書き先はこの 2 つ)。」/ workflow.js「リードの答え…の内容を変えるなら、…(無ければ空の配列)。書き先はこの 2 つだけ。」— 主語(「答えの内容」/「F の内容」/「リードの答えの内容」)・括弧内注記・句読点がいずれも異なる paraphrase であり、この監査記録群が L-NNN の太字引用に要求する逐語一致(check_bt_delegation.py 検査 2、O-4)の基準では「同じ文」とは呼べない。「同じ文にした」は不正確な記述ではないか(実態は「同じ規則にした」)。(P2 に近い型、O-4 寄りの精度規範)
+>
+> 3. [聞く] scripts/workflows/backtest_env.js:43-48(WORK_SCHEMA)と :149(DEF_SCHEMA)/ scripts/export_workflow_judges.py:133-136, 148 — 同名フィールド `questions_for_lead` を、作業者ロール(WORK_SCHEMA。意味 = 作業者からリードへの一般的な未解決の問い、範囲を限定する規約なし)と、56-3 で新設した場面係ロール(DEF_SCHEMA。意味 = 委任文 §3 が「書き先はこの 2 つだけ」と明示的に限定した、リードの答え(F)の内容を変えた点と理由に限る狭い用途)の、2 つの異なる意味範囲で再利用している。`export_workflow_judges.py` の 2 つの書き出し経路(`render_report` の REPORT_FIELDS と `render_battery` の definition 分岐)はどちらも同じ日本語見出し「リードに聞くこと」で表示する。この命名の再利用は、場面係が「書き先はこの 2 つだけ」という限定された狭い用途を、作業者と同じ「何でも聞いてよい」広い用途として書いてしまう方向に紛れ込ませないか。8 回目の第 10 周で「足したい規則は『リードに聞くこと』に書く」の運用が定義の膨張(A-17)を招いた前例があるだけに、同名フィールドの意味の混線は確認しておくべきではないか。(P2「記号・用語は意味が変わったら名前も変える」、A-17)
+>
+> 機械的に確認した事項(参考、指摘ではない):
+> - `python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260923_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json` → `OK 誤り 0 件`
+> - `PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py -p no:cacheprovider` → `9 passed`
+> - `sha256sum docs/DATA/delegations/20260923_backtest_env_prompt.md | cut -c1-12` → `0fa912ffb9f2`(bt_args_run10.json の marker と一致)
+> - lead_notes["0"] の「リードに聞くこと」書き先の文は、内容としては委任文 §3・LEAD_DESIGN §9.2 の 32 と一致する(逐語は不一致、上記 2 参照)
+> - 委任文 §3 の「場面係はそれを規則として自分の定義を書き、監査役(定義)に通す」の実測により、56-4 の訂正(55-2 の根拠を史実の先例ではなく委任文 §3 の規約自体に置き換えた)は原典と整合している
+
+リードの処置(詳細は `round_7/LEAD_DESIGN.md` §9.8): 57-1 = 検査器に検査 8(書き先の 2 語が委任文・台本・引数に揃っているか)+ 試験 1 件 / 57-2 = 「同じ規則にした」に直した / 57-3 = 欄の名前を `lead_answer_changes` に分けた(台本・書き出し・委任文・32・lead_notes)。検査(引数つき)OK 誤り 0 件、試験 10 件通過。[止める] 0 なので、この版(56394f7b1686)で 10 回目を予約した知らせの回に起動する。
+
+## 起動に使う版の記録(10 回目の起動)
+
+- 委任文: `docs/DATA/delegations/20260923_backtest_env_prompt.md@56394f7b1686`(監査 52〜57 回目。57 回目 = 止める 0)
+- 台本: `scripts/workflows/backtest_env.js`(`lead_definitions` の機構なし = 定義の段はこれまでどおり。DEF_SCHEMA に `lead_answer_changes`)
+- 引数: `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json`(marker 56394f7b1686、prebuilt attempt_offset 12 = 第 13 周から、last_findings = 第 11 周の批評家の返り値の逐語 + 先頭の注記、lead_notes["0"] に正の定義 F の逐語、prior_rounds 18、battery_chain {"br6-1-1":1,"br6-2-1":1}、critic_chain {"i0-r6-01":1,"i0-r7-01":2,"i0-r8-01":1})
+- オーナー決定: L-440「案1で進めてください」(定義の段はこれまでどおり)
+- リードの設計: `round_7/LEAD_DESIGN.md` §9(§9.1〜§9.8)
