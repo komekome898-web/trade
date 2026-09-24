@@ -2350,9 +2350,9 @@
   {
    "move": 83,
    "tools": {
-    "Bash": 2
+    "Bash": 4
    },
-   "n_tools": 2,
+   "n_tools": 4,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

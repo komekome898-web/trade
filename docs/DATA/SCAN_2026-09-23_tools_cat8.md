@@ -3386,3 +3386,358 @@ K12 検査の出力の貼付           1 件
 ```
 
 **貼り付け後の打ち直し(K12 も含めて 0 件になることの確認)**: 上記1の出力を本文に貼ったのち同じコマンドを打ち直すと、「---- 検査対象の合計 0 件」と一致するため K12 も 0 件になる(打ち直しはリードが検収で行う)。
+## 区分8 — 10 回目の実行(2026-09-24)
+
+起動文 `docs/DATA/delegations/20260923_tools_survey_cat8_run10_prompt.md`(指紋 `292183d28506`)。追補 `docs/DATA/delegations/20260923_tools_survey_cat8_addendum.md`(指紋 `2c178ba75341`)。対象: 8-016 `Exactpro の reconciliation testing`(E3a・E3b・E5、委任文§4.0の表)/ 8-005 `Exegy`(登録なしで取れる一次資料の範囲でE1a〜E6を決める)/ 辿る一覧(dev.to・X・zenn・quantreo・algorier・fortraders・1回目の検索計画7)/ 成熟度の枠組み(Testing Maturity Model)の原典 / 8-011 `arXiv:2512.12924`のE6の段(9回目の監査47回目の指摘1への対応)/ 8-014 `Fincept Terminal`のE1bの段とE3aの値・段。**この回は予算で止めない(追補§5、オーナー決定L-507「案A」)。途中で止めない(起動文§0)。**
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2「前回の残りの候補名があれば、まずそれを深掘りする(検索計画は打ち直さない)」)。
+
+### 出典
+
+| # | 出典 | URL | 内容 | 取得日 |
+|---|---|---|---|---|
+| 1 | ecosyste.ms(9回目のキャッシュを再利用、新規取得は無し) | https://repos.ecosyste.ms/api/v1/hosts/GitHub/owners/th2-net/repositories | th2-net組織178件の名前・size(KB)一覧 | 2026-09-24 |
+| 2 | GitHub(cat8_repo_fetch.sh経由、1件ずつ全178件を新規取得) | https://github.com/th2-net/<各リポジトリ> | files_in_tree・skipped・downloaded_bytesの実測 | 2026-09-24 |
+| 3 | raw.githubusercontent.com(1MB超で取得できなかった11件を個別取得) | https://raw.githubusercontent.com/th2-net/(viewer|th2-codec-fix-orchestra)/master/<path> | E3a/E3b/E5の検索対象からM<Nを解消 | 2026-09-24 |
+| 4 | GitHub(再取得、th2-check2-recon単体) | https://github.com/th2-net/th2-check2-recon | setup.py・requirements.txt・package_info.json(§4.0表) | 2026-09-24 |
+| 5 | ungh.cc・PyPI JSON API・pypistats.org・OSV.dev | https://ungh.cc/repos/th2-net/th2-check2-recon 等 | 版・最終更新日・週DL数・既知の脆弱性(§4.0表) | 2026-09-24 |
+| 6 | 隔離venvへのpip install(実測) | PyPI th2-check2-recon==3.4.0 | 導入可否・依存数・pip check・最小実行(§4.0表) | 2026-09-24 |
+| 7 | 公式サイト(curl、sitemap.xml経由で頁の全件一覧を確認) | https://www.exegy.com/(page-sitemap.xml 93頁・post-sitemap.xml 199頁) | Exegyの登録なしで読める頁の全件一覧 | 2026-09-24 |
+| 8 | 公式サイト(curl、製品・ソリューション頁17頁を取得) | https://www.exegy.com/products/exegy-capture-replay/ 等 | E4(Capture Replay)・E1a(Metro reconciliation)の根拠 | 2026-09-24 |
+| 9 | arXiv(citeseerx経由、原典PDF) | https://citeseerx.ist.psu.edu/document?...doi=ebd77d4611876e981ab41a559b977525378d63c6 | Burnstein "Developing a Testing Maturity Model: Part I"(CrossTalk 1996-08)全文 | 2026-09-24 |
+| 10 | citeseerx経由、原典PDF(Part II) | https://citeseerx.ist.psu.edu/document?...doi=db3993ef31a0112f45d617b4ca412ce8ebe297ef | Burnstein "Developing a Testing Maturity Model, Part II"(CrossTalk 1996-09)全文、段ごとのBehavioral Characteristics | 2026-09-24 |
+| 11 | dev.to(辿る一覧) | https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg | reconciliation tools 7件の記事 | 2026-09-24 |
+| 12 | zenn.dev(辿る一覧) | https://zenn.dev/toshipon/articles/62b65ff46d414b | 仮説検証フレームワーク記事 | 2026-09-24 |
+| 13 | X(fxtwitter経由、辿る一覧) | https://x.com/aiwithjainam/status/2059228811733172736 | GitHubリポジトリ10件の列挙投稿 | 2026-09-24 |
+| 14 | quantreo newsletter(辿る一覧) | https://www.newsletter.quantreo.com/p/look-ahead-bias-the-invisible-killer | look-ahead bias記事 | 2026-09-24 |
+| 15 | algorier(辿る一覧) | https://algorier.com/blog/look-ahead-bias-in-backtesting/ | look-ahead bias記事 | 2026-09-24 |
+| 16 | fortraders(辿る一覧) | https://fortraders.com/blog/how-to-avoid-bias-in-backtesting | bias記事 | 2026-09-24 |
+
+### 知見
+
+(設計票§4.2の「記録する軸」。原文とURL/生ログ。`印`を付けた要素ごと)
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `Exegy` / E4 / 方式(原文): 「Applications requiring normalized market data can access structured or bespoke replays of market data via the Exegy Client API (XCAPI).」に続けて「This unique feature allows you to accurately simulate market data conditions and to quantify application performance and stability.」(Exegy Capture Replay製品頁) | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:6452-6457 / 取得日 2026-09-24 |
+| 2 | `Exegy` / E4 / 入力(原文)・外から持ち込める対象: 記載なし(読んだ箇所: Exegy Capture Replay・Hosted Capture Replay・Historical Market Data・Exegy Ticker Plantの各頁)。再生する記録データはExegy自身が収集・管理するPCAP/正規化データに限られ、利用者が任意の外部データを持ち込んで再生できるという記述は無い。再生を受ける戦略・計算のコード側(顧客のトレーディングアプリケーション、XCAPI経由)は道具の外にあたる | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:2385-2600 / 取得日 2026-09-24 |
+| 3 | `Exegy` / E4 / (ア)基準を指定できるか: 印。「Set replay rates to conduct capacity stress testing for Reg SCI and MiFID II compliance.」のとおり再生レートを利用者が指定できる | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:6452-6457 / 取得日 2026-09-24 |
+| 4 | `Exegy` / E4 / (イ)結果を保存して次の実行と比べられるか: 記載なし(読んだ箇所: 同上)。再生の結果(アプリケーション性能・シミュレーション出力)を保存し複数回の実行を比較する仕組みの記述は見当たらない | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:2385-2600 / 取得日 2026-09-24 |
+| 5 | `Exegy` / E4 / 自動で判定するか: 不成立(合否判定ではなく、記録データを再生してアプリケーションに配信する機能。段の条件は再生を自動で行うかで判定し、レート指定のみで人手を介さず配信するため段2は超える) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6452-6457 / 取得日 2026-09-24 |
+| 6 | `arXiv:2512.12924` / E6 / この機能が名指す対象の原文(再確認): `def minimum_track_record_length(returns, sr_benchmark=0.0, confidence=0.95, periods_per_year=4)` / `def deflated_sharpe_ratio(returns, n_trials, periods_per_year=4)` / `combinatorially_symmetric_cv(performance_matrix, n_slices=16)` → `CSCVResult`(pbo: float) / `def pbo_from_train_test_pairs(train_returns, test_returns)`(hdt/stats.py全文、この回に取得し直して確認) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:5056-5389 / 取得日 2026-09-24 |
+| 7 | `arXiv:2512.12924` / E6 / 自動で判定するか: 不成立(段3の条件)。`deflated_sharpe_ratio`のdocstring「A DSR > 0.95 indicates that the observed Sharpe is unlikely (at the 5% level) to be the chance maximum of ``n_trials`` independent backtests.」は解釈の目安を示すコメントであり、関数自体は`float`を返すのみで`pass`/`fail`に相当する分岐は無い(呼ぶと結果を出すが判定は利用者がdocstringを読んで行う=段2) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:5056-5389 / 取得日 2026-09-24 |
+| 8 | `Fincept Terminal` / E1b / 方式(原文、当て直し): `self.performance_metrics`(属性のリスト初期化、172行)はファイル内で他に一度も参照されず未使用と確認(根拠にしない)。実際に使われるのは`walk_forward_validation`(returns: pd.DataFrame, models: Dict[str, Any])が呼ぶ`self._extract_walk_forward_metrics(cv_scores)`で、「sharpe_ratios = [getattr(score, 'sharpe_ratio', 0) for score in cv_scores]」のようにskfolioの`Portfolio`オブジェクトから`getattr`で指標(sharpe/return/volatility/max_drawdown の mean・std)を計算しdict展開構文(performance_metrics)で`ValidationResults`へ展開する | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:5390-5419 docs/DATA/probes/20260923_tools_8_run10.log:6402-6450 / 取得日 2026-09-24 |
+| 9 | `Fincept Terminal` / E1b / 外から持ち込める対象: 印。`returns: pd.DataFrame`・`models: Dict[str, Any]`という汎用形式で、計算対象はskfolioの`Portfolio`(getattr経由、属性が無ければdefault 0)のため道具の外から持ち込める(段4)。結果の保存・比較は確認できず(E6と同じ理由)段5には届かない | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6402-6450 / 取得日 2026-09-24 |
+| 10 | `Fincept Terminal` / E3a / 方式(原文): `scripts/agents/deepagents/subagents.py`の`BACKTESTER_AGENT`は`description`「Validates strategies through historical simulation and performance attribution. Use when you need to evaluate how a strategy would have performed historically, analyze backtest results, or check for overfitting.」を持つ汎用サブエージェントで、`system_prompt`のResponsibilitiesに「Identify lookahead bias and survivorship bias」とある(LLMへの指示文。オーナーの述語の読みL-508の承認により候補の機能に数える) | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:6364-6401 / 取得日 2026-09-24 |
+| 11 | `Fincept Terminal` / E3a / 入力(原文)・外から持ち込める対象: 記載なし(読んだ箇所: subagents.py全体、deepagentsのオーケストレーション定義)。このサブエージェントはFincept Terminal自身のdeepagentsオーケストレーション(固定のエージェント構成・ツール群)の中で動くもので、任意の外部戦略コードをこの検出に掛けられる汎用インターフェースとして文書化された記述は見当たらない | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6364-6401 / 取得日 2026-09-24 |
+| 12 | `Fincept Terminal` / E3a / 自動で判定するか: 印(段3の条件)。呼ぶとLLMが検出結果を含む応答(「Backtest results with methodology, assumptions, and limitations clearly stated」)を自動で生成するため段2は超えるが、対象がこの道具の枠組みの中(自社deepagentsの会話コンテキスト)に留まるため段4には届かない | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:6364-6401 / 取得日 2026-09-24 |
+| 13 | 成熟度の枠組み(Testing Maturity Model) / 原典 / 出典: Burnstein, I., Suwannasart, T., Carlson, C.R. "Developing a Testing Maturity Model: Part I"(CrossTalk, STSC, Hill Air Force Base, Utah, 1996年8月, pp.21-24)・"Developing a Testing Maturity Model, Part II"(CrossTalk, 1996年9月, pp.19-26)。Illinois Institute of Technology。原文入手先: citeseerx.ist.psu.edu(doi=ebd77d4611876e981ab41a559b977525378d63c6 / doi=db3993ef31a0112f45d617b4ca412ce8ebe297ef) | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:5462-5486 docs/DATA/probes/20260923_tools_8_run10.log:5827-5851 / 取得日 2026-09-24 |
+| 14 | 成熟度の枠組み / 原典 / 段1の定義(逐語、Part II "Behavioral Characteristics of the TMM Levels"): 「Level 1 - Initial: Testing is a chaotic process; it is ill-defined and not distinguished from debugging. Tests are developed in an ad hoc way after coding is done. ... The objective of testing is to show that the software works [1]. Software products are released without quality assurance. ... There are no maturity goals at this level.」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:5849-5854 / 取得日 2026-09-24 |
+| 15 | 成熟度の枠組み / 原典 / 段2の定義(逐語): 「Level 2 - Phase Definition: Testing is separated from debugging and is defined as a phase that follows coding. It is a planned activity; however, test planning at Level 2 may occur after coding for reasons related to the immaturity of the test process. ... The primary goal of testing at this level of maturity is to show that the software meets its specifications [2].」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:5855-5864 / 取得日 2026-09-24 |
+| 16 | 成熟度の枠組み / 原典 / 段3の定義(逐語): 「Level 3 - Integration: Testing is no longer a phase that follows coding; it is integrated into the entire software lifecycle. ... Unlike Level 2, planning for testing at TMM Level 3 begins at the requirements phase and continues throughout the lifecycle supported by a version of the V-model [3]. ... There is a test organization, and testing is recognized as a professional activity.」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:5865-5874 / 取得日 2026-09-24 |
+| 17 | 成熟度の枠組み / 原典 / 段4の定義(逐語): 「Level 4 - Management and Measurement: Testing is a measured and quantified process. Reviews at all phases of the development process are now recognized as testing and quality control activities. Software products are tested for quality attributes such as reliability, usability, and maintainability. Test cases from all projects are collected and recorded in a test case database to test case reuse and regression testing.」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:5875-5881 / 取得日 2026-09-24 |
+| 18 | 成熟度の枠組み / 原典 / 段5の定義(逐語): 「Level 5 - Optimization, Defect Prevention, and Quality Control: Because of the infrastructure provided by the attainment of maturity goals at Levels 1 through 4 of the TMM, the testing process is」に続けて(PDF抽出でダッシュ欠落)「now said to be defined and managed」「its cost and effectiveness can be monitored. At Level 5, there are mechanisms that fine-tune and continuously improve testing. Defect prevention and quality control are practiced.」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:5882-5891 / 取得日 2026-09-24 |
+| 19 | 成熟度の枠組み / 原典 / 段の並びの根拠(逐語、CMMとの対応): 「Our research shows that an organization striving to reach the "ith" level of the TMM must be at least at the "ith" level of the CMM.」(Part II、CMMとTMMの相関節)。TMM自体は「五段階」構成で、Level 1のみ成熟度目標(maturity goals)を持たない特別な段である | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:6144-6146 / 取得日 2026-09-24 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — https://github.com/quarkfin/qf-lib — バックテストエンジン(区分1から) — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+2. [深掘り] `PineForge` (8-002) — https://github.com/pineforge-4pass/pineforge-engine — 低レイテンシ検証志向のバックテストエンジン(区分1から) — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+3. [深掘り] `prediction-market-backtester` (8-003) — https://github.com/Quentin-Piot/prediction-market-backtester — 予測市場向けバックテスター(区分1から) — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+4. `akurkar07/OrderBook` (8-004) — https://github.com/akurkar07/OrderBook — C++の板(オーダーブック)実装(区分1から) — 状態: 危険で導入停止 — 変更点: この回は触っていない(台帳の値のまま)
+5. `Exegy` (8-005) — https://www.exegy.com/ — 市場データベンダー(区分1から、登録が要る) — 状態: 登録が要る — 変更点: E4を`未判別`→`印`(段3、Exegy Capture Replay(XCR)。登録なしで取れる製品頁・sitemap全93頁のうち関連頁を読んだ。他のE1a/E1b/E2/E3a/E3b/E5/E6は登録が要る範囲に留まり`未判別`のまま)
+6. [深掘り] `freqtrade` (8-006) — https://github.com/freqtrade/freqtrade — 暗号資産トレーディングボット — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+7. [深掘り] `backtrex` (8-007) — https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide — ノーコードのビジュアルバックテストプラットフォーム — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+8. [深掘り] `FX Replay` (8-008) — https://fxreplay.com/ — チャートのリプレイ・バックテストWebサービス — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+9. [深掘り] `nicferrari/backtester` (8-009) — https://github.com/nicferrari/backtester — Pythonのバックテスター — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+10. [深掘り] `arXiv:2603.20319` (8-010) — https://arxiv.org/abs/2603.20319 — 論文(マルチエンジン・バックテスト比較) — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+11. [深掘り] `arXiv:2512.12924` (8-011) — https://arxiv.org/abs/2512.12924 — 論文(walk-forward検証フレームワーク)+実装 — 状態: 深掘り — 変更点: E6の段を`未判別`→`2`(9回目は根拠に引いた生ログの行が別ファイルの内容だった=監査47回目の指摘1。この回hdt/stats.py全文を取得し直し、pass/fail相当の分岐が無くfloat/CSCVResultを返すのみと再確認)
+12. [深掘り] `VectorBT` (8-012) — https://github.com/polakowo/vectorbt — ベクトル化バックテストライブラリ — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+13. [深掘り] `rusty-bot` (8-013) — https://x.com/WannabeBotter/status/1810558269565571211 — 暗号資産トレーディングボット(個人開発) — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+14. [深掘り] `Fincept Terminal` (8-014) — https://github.com/Fincept-Corporation/FinceptTerminal — 統合金融ターミナル(OSS+Enterprise) — 状態: 深掘り — 変更点: E1bの段を`未判別`→`4`(self.performance_metrics属性は未使用のため根拠にせず、実際に使われる_extract_walk_forward_metricsを根拠にした)。E3aを`未判別`→`印`(段3、オーナーの述語の読みL-508によりLLMへの指示文subagents.pyのbacktesterサブエージェント`Identify lookahead bias and survivorship bias`を機能に数めた。Fincept自身のdeepagentsオーケストレーションの枠内に留まるため段3)
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — 生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い) — TradingViewのバー再生機能 — 状態: 深掘り — 変更点: この回は触っていない(台帳の値のまま)
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — 生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い) — メッセージ照合テストの方法論+th2プラットフォーム+商用製品 — 状態: 深掘り — 変更点: E3a・E3b・E5を`未判別`→`なし`とした(th2-net組織178リポジトリをcat8_repo_fetch.sh経由で1件ずつ全件取得した(合計59.4MB、300MB上限未到達)。files_in_tree合計34610件のうち1MB超で個別取得した11件を含め、除外16件(画像・バイナリ・ロックファイル・ソースマップ)を除く34594件全部を検索。一覧34594件/読んだ34594件)。E1a〜E6に未判別が無くなり、委任文§4.0の機械可読表(th2-check2-recon、PyPI/GitHub/OSV/pip installを実測)も新規に作成したため状態を`判別に一次資料が要る`→`深掘り`とした
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exegy` | E4 | 印 | 3 | 一次資料 | 方式(原文): Exegy Capture Replay(XCR)製品頁「Applications requiring normalized market data can access structured or bespoke replays of market data via the Exegy Client API (XCAPI).」に続けて「This unique feature allows you to accurately simulate market data conditions and to quantify application performance and stability.」。「Set replay rates to conduct capacity stress testing for Reg SCI and MiFID II compliance.」・「Strategy Backtesting」の見出しあり。記録済み市場データ(XCRが収集したPCAP/正規化データ)をXCAPI経由でユーザー自身のアプリケーション(戦略・計算のコード)に再生する機能で、再生は自動(レート指定のみで人手を介さない)。対象のうち再生を受ける戦略・計算のコードは顧客自身のアプリケーションで道具の外にあたるが、再生する記録データはExegy自身が収集したフィードに限られ、任意の外部データを持ち込める旨の記述は見当たらないため段4条件(対象のすべてを外から持ち込める)を満たさず段3。 | docs/DATA/probes/20260923_tools_8_run10.log:2385 docs/DATA/probes/20260923_tools_8_run10.log:6452-6457 |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 実測 | この回、hdt/stats.py全文を取得し直して再確認した(9回目は根拠に引いた生ログの行が別ファイルhdt_validation.pyの内容で、監査47回目の指摘1により未判別に戻されていた)。`minimum_track_record_length`・`deflated_sharpe_ratio`・`combinatorially_symmetric_cv`(→`CSCVResult`)・`pbo_from_train_test_pairs`はいずれも`float`または`CSCVResult`(float型フィールドのdataclass)を`return`するのみで、`pass`/`fail`/`reject`/`accept`に相当する分岐は1件も無い。`deflated_sharpe_ratio`のdocstring「A DSR > 0.95 indicates that the observed Sharpe is unlikely (at the 5% level) to be the chance maximum of ``n_trials`` independent backtests.」は解釈の目安をコメントで示すのみで、道具自身が閾値0.95で合否を返す実装ではない(利用者がdocstringを読んで判定する=人が読んで決める)。呼ぶと結果(確率・年数・PBO比率)を出すが合否を自分で判定しない段2の条件に当たる。 | docs/DATA/probes/20260923_tools_8_run10.log:5056-5389 |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 実測 | self.performance_metrics(属性のリスト初期化)は根拠にしない(問い6(a)の確認結果、知見参照)。かわりに実際に使われている`_extract_walk_forward_metrics`/`_extract_cv_metrics`を根拠にする。`walk_forward_validation(returns: pd.DataFrame, models: Dict[str, Any], ...)`が`performance_metrics = self._extract_walk_forward_metrics(cv_scores)`を呼び、同メソッドは「sharpe_ratios = [getattr(score, 'sharpe_ratio', 0) for score in cv_scores]」のようにskfolioの`Portfolio`オブジェクトから`getattr`で指標を計算し`mean_sharpe`等をdict展開構文(performance_metrics)で`ValidationResults`へ展開する。入力は汎用の`pd.DataFrame`・任意の`models`辞書で道具の外から持ち込めるため段4。結果の保存・比較は無い(E6と同じ理由)ため段5には届かない。 | docs/DATA/probes/20260923_tools_8_run10.log:5390-5419 docs/DATA/probes/20260923_tools_8_run10.log:6402-6450 |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | オーナーが決めた述語の読み(L-508の承認)により、LLMへの指示文(プロンプト)に書かれた検出・検証の指示を候補の機能に数える。`scripts/agents/deepagents/subagents.py`の`BACKTESTER_AGENT`は`description`「Validates strategies through historical simulation and performance attribution. Use when you need to evaluate how a strategy would have performed historically, analyze backtest results, or check for overfitting.」を持つ汎用サブエージェントで、`system_prompt`のResponsibilitiesに「Identify lookahead bias and survivorship bias」とある。呼ぶとLLMが検出結果を含む応答(Backtest results with methodology, assumptions, and limitations)を自動で生成するため段2は超えるが、このサブエージェントはFincept Terminal自身のdeepagentsオーケストレーション(固定のエージェント構成・ツール群)の中で動くもので、任意の外部戦略コードをこの検出に掛けられる汎用インターフェースとして文書化された記述は見当たらない(段4の根拠は無い)。自動で判定(LLMが検出の有無を応答に含める)を行うが対象はこの道具の枠組みの中に留まるため段3。 | docs/DATA/probes/20260923_tools_8_run10.log:6364-6401 |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 実測 | th2-net組織178リポジトリ(files_in_tree合計34610件)のうち、画像・バイナリ・ロックファイル・ソースマップ16件(package-lock.json3・png2・gif5・eot1・ttf1・map1・node binary2・以上13...)を除外(内訳は本節末尾の除外一覧)し、残り34594件全部(1MB超で個別取得した11件を含む)を要素名(ルックアヘッド/lookahead/look-?ahead/look ahead)で検索した。一覧 34594 件 / 読んだ 34594 件。一致は`th2-net/viewer`のwebpack-starter/node_modules配下(acorn.mjs等のJavaScriptパーサーの正規表現lookahead機能・TypeScriptコンパイラのspeculative parsing)のみで、いずれもトレードのルックアヘッドバイアスとは無関係(検出・報告する機能ではない)。 | docs/DATA/probes/20260923_tools_8_run10.log:4560-4776 docs/DATA/probes/20260923_tools_8_run10.log:4532-4548 docs/DATA/probes/20260923_tools_8_run10.log:4810-4838 |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 実測 | 上と同じ34594件(一覧 34594 件 / 読んだ 34594 件)を要素名(ルックアヘッド/lookahead)で検索(E3a・E3bは設計票§3で同じ要素名のため同じ検索語を使う)。防ぐ機能に当たる一致は無かった(th2-infra.mdの`Purge`はKubernetes名前空間の削除コマンドで、9回目に既に無関係と確認済み。この回はさらに9回目未読だった9件のREADME欠落リポジトリ相当分を含む全ファイルまで範囲を広げたが、新しい一致は無かった)。 | docs/DATA/probes/20260923_tools_8_run10.log:4560-4776 docs/DATA/probes/20260923_tools_8_run10.log:4810-4838 |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | なし | - | 実測 | 同じ34594件(一覧 34594 件 / 読んだ 34594 件)を要素名(再現/reproduc)で検索。一致150件超はすべてApache-2.0ライセンス条文のreproduction/distributionの定型文か、TypeScriptコンパイラのビルド出力コメント(出力先ディレクトリの再現に関する開発者コメント)で、乱数の種の固定・依存やデータ版の固定・実験結果の差分比較といったE5の述語には当たらない。 | docs/DATA/probes/20260923_tools_8_run10.log:4560-4776 docs/DATA/probes/20260923_tools_8_run10.log:4839-4845 |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(9回目の節) |  |
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `Exactpro の reconciliation testing` | 版 | 3.4.0 | 実測 | pip list出力(th2_check2_recon 3.4.0)。docs/DATA/probes/20260923_tools_8_run10.log:4957-5017 |
+| `Exactpro の reconciliation testing` | 最終更新日 | 2024-01-09(pushedAt) | 一次資料 | ungh.cc「"pushedAt":"2024-01-09T14:50:49Z"」。docs/DATA/probes/20260923_tools_8_run10.log:4847-4863 |
+| `Exactpro の reconciliation testing` | ライセンス | Apache License 2.0 | 一次資料 | PyPI info「license Apache License 2.0」。docs/DATA/probes/20260923_tools_8_run10.log:4864-4873 |
+| `Exactpro の reconciliation testing` | 言語と動作環境 | Python >=3.7 | 一次資料 | PyPI info「requires_python >=3.7」・setup.py「python_requires='>=3.7'」。docs/DATA/probes/20260923_tools_8_run10.log:4864-4873 docs/DATA/probes/20260923_tools_8_run10.log:6363-6400 |
+| `Exactpro の reconciliation testing` | 対応取引所 | 該当なし(取引所接続機能ではなくFIX等の金融メッセージ照合テストツール) | 一次資料 | handler.py(MessageHandler・GRPCHandler、gRPC Crawler経由でメッセージを受け取るのみで取引所APIへの接続コードは無い)を読んだ範囲。docs/DATA/probes/20260923_tools_8_run10.log:6469-6583 |
+| `Exactpro の reconciliation testing` | 星 | 0(stars)、watchers 2、forks 1 | 実測 | ungh.cc「"stars":0,"watchers":2,"forks":1」。docs/DATA/probes/20260923_tools_8_run10.log:4847-4863 |
+| `Exactpro の reconciliation testing` | コミット数 | 未確認(試した手段: api.github.com/repos/.../commitsはこの環境でGitHub access not enabledのため拒否。ungh.ccのrepo情報にコミット数フィールド無し。--depth 1のshallow cloneのためgit logで総数を数えられない) | 未確認 | docs/DATA/probes/20260923_tools_8_run10.log:4877-4879 docs/DATA/probes/20260923_tools_8_run10.log:4880-4891 |
+| `Exactpro の reconciliation testing` | 保守者数 | 未確認(試した手段: api.github.com/contributorsが環境で拒否。setup.pyのauthor欄は'TH2-devs'という共有名義のみで個人名は分からない) | 未確認 | docs/DATA/probes/20260923_tools_8_run10.log:4877-4879 docs/DATA/probes/20260923_tools_8_run10.log:6363-6400 |
+| `Exactpro の reconciliation testing` | 週DL数 | 37(last_week) | 実測 | pypistats.org「"last_day":1,"last_month":62,"last_week":37」。docs/DATA/probes/20260923_tools_8_run10.log:4874-4876 |
+| `Exactpro の reconciliation testing` | 初回公開日 | 2020-11-21(PyPI初回リリース2.2.0のupload_time 2020-11-21T11:55:10、GitHub createdAtも同日2020-11-21T11:36:42Z) | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:6278-6289 docs/DATA/probes/20260923_tools_8_run10.log:4847-4863 |
+| `Exactpro の reconciliation testing` | 既知の脆弱性 | 無し(OSV.dev照会で0件) | 実測 | OSV.dev応答「{}」(空)。docs/DATA/probes/20260923_tools_8_run10.log:5047-5049 |
+| `Exactpro の reconciliation testing` | 料金体系 | 無償(PyPI公開のOSS、Apache-2.0) | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:4864-4873 |
+| `Exactpro の reconciliation testing` | 無料枠の上限 | 該当なし(登録・課金の枠組みを持たないOSSパッケージ) | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:4864-4873 |
+| `Exactpro の reconciliation testing` | 課金開始条件 | 該当なし(無償) | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:4864-4873 |
+| `Exactpro の reconciliation testing` | 隠れた依存 | 印。th2_common・th2_grpc_util・th2_grpc_crawler_data_processor等のExactpro自社エコシステムパッケージに依存し、実運用にはth2プラットフォーム基盤(RabbitMQ・Cradle DB・gRPC Crawler)を自前で用意する必要がある(requirements.txt原文「th2-grpc-util==3.1.0」「th2-common==3.9.2」「th2-grpc-crawler-data-processor==0.3.2」、recon.pyの`Recon.__init__`が`EventBatchRouter`・`MessageRouter`をコンストラクタで要求する設計) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6291-6330 docs/DATA/probes/20260923_tools_8_run10.log:6661-6753 |
+| `Exactpro の reconciliation testing` | 登録の要否 | 不要(PyPI公開パッケージ、鍵不要) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:4957-5017 |
+| `Exactpro の reconciliation testing` | 到達経路 | PyPI(pip install th2-check2-recon)・GitHub(github.com/th2-net/th2-check2-recon、cat8_repo_fetch.sh経由)、いずれも到達確認済み | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:4864-4873 docs/DATA/probes/20260923_tools_8_run10.log:4880-4891 |
+| `Exactpro の reconciliation testing` | 導入可否 | 可(隔離venvへ--no-build-isolationでのpip installで確認。既定のbuild isolationではpkg_resources欠如でビルド失敗した点も記録) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:4892-4917 docs/DATA/probes/20260923_tools_8_run10.log:4918-4956 docs/DATA/probes/20260923_tools_8_run10.log:4957-5017 |
+| `Exactpro の reconciliation testing` | install所要秒 | 17.95(--no-build-isolation成功時。試行錯誤の失敗2回は8.89秒・5.28秒) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:4957-5017 |
+| `Exactpro の reconciliation testing` | 依存数 | 45(pip list --format=freeze 46行からth2_check2_recon自身を除く) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:5018-5025 |
+| `Exactpro の reconciliation testing` | pip check | No broken requirements found | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:5018-5025 |
+| `Exactpro の reconciliation testing` | 最小実行の可否 | 部分的(モジュールのimportとRule/ReconMessageのメソッド・属性の確認までは鍵無しで実行できたが、Reconオブジェクトの生成・メッセージ処理の実行にはth2プラットフォーム基盤(RabbitMQ等)が要るため、ルールのcheck処理そのものは未実行) | 実測 | import実測。docs/DATA/probes/20260923_tools_8_run10.log:5026-5046 |
+| `Exactpro の reconciliation testing` | 最小実行の中身 | th2_check2_recon.rule等の主要モジュールをimportし、Ruleクラスのcheck・hash・group等のメソッドとReconMessageのgroup_id・hash・is_matched等の属性の存在を確認。rule.pyの`Rule.__init__`・`__check_and_store_event`等の実装本体も読み、`self.check(matched_messages, attributes, ...)`の呼び出し構造を確認 | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:5026-5046 docs/DATA/probes/20260923_tools_8_run10.log:6754-6845 |
+| `Exactpro の reconciliation testing` | 実行所要秒 | 0.267(import実測のtime_s) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:5026-5046 |
+| `Exactpro の reconciliation testing` | wheel展開 | 該当なし(--no-build-isolationでのソースビルドで導入したため個別のwheel展開は試していない。試した手段: pip download --no-depsは未実施) | 未確認 | docs/DATA/probes/20260923_tools_8_run10.log:4957-5017 |
+| `Exactpro の reconciliation testing` | setup.py導入時実行 | 危険な外部URL取得・難読化コードなし(setup.py全文を読み確認。urlopen/requests.get/subprocess/os.system/eval/exec等のパターンをgrepし一致なし) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6291-6330 docs/DATA/probes/20260923_tools_8_run10.log:5050-5052 |
+| `Exactpro の reconciliation testing` | 同梱バイナリ | 無し(.so/.exe/.dllをfindし0件) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:5050-5052 |
+| `Exactpro の reconciliation testing` | 外部送信 | 未確認(試した手段: importのみでの外部通信は観測されなかったが、実行時の通信を遮断して試すところまでは行っていない) | 未確認 | import時に観測。docs/DATA/probes/20260923_tools_8_run10.log:5026-5046 |
+| `Exactpro の reconciliation testing` | 自動発注機能 | 無し(handler.py・rule.py・recon.pyを読んだ範囲でメッセージの照合・イベント記録のみ。発注APIの呼び出しは見当たらない) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6469-6583 docs/DATA/probes/20260923_tools_8_run10.log:6754-6845 docs/DATA/probes/20260923_tools_8_run10.log:6661-6753 |
+| `Exactpro の reconciliation testing` | 宣伝詐欺の兆候 | 無し(Exactpro社名義のOSS、Apache-2.0。Telegram限定配布・秘密鍵要求等の兆候なし) | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:4864-4873 |
+| `Exactpro の reconciliation testing` | 当方データ投入 | 未確認(試した手段: 当方のcsv.gzをth2のProtobufメッセージ形式に変換する経路を試していない。ReconMessageはproto_message引数を取るため変換すれば投入できる可能性がある) | 未確認 | ReconMessage定義。docs/DATA/probes/20260923_tools_8_run10.log:6584-6660 |
+| `Exactpro の reconciliation testing` | 時刻の扱い | 印。reconcommon.pyに`_get_msg_timestamp`関数と`ReconMessage.timestamp`プロパティがあり、メッセージのタイムスタンプを扱う(UTC/ミリ秒等の詳細粒度は未確認) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6584-6660 |
+| `Exactpro の reconciliation testing` | 再現性 | なし(この回のE5判定と同じ。乱数の種の固定・依存やデータ版の固定の機能は見当たらない) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:4560-4776 |
+| `Exactpro の reconciliation testing` | 規模の見積 | 未確認(試した手段: 小さい実行の実測が無いため外挿できない。フル起動にth2プラットフォーム基盤が要るため) | 未確認 | フル起動未実施。docs/DATA/probes/20260923_tools_8_run10.log:5026-5046 |
+| `Exactpro の reconciliation testing` | 4軸1_道具 | 印。隔離venvへのpip installが成功し、importして主要クラス・メソッドを確認できた | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:4957-5017 docs/DATA/probes/20260923_tools_8_run10.log:5026-5046 |
+| `Exactpro の reconciliation testing` | 4軸2_情報 | 印。ハッシュベースのメッセージ照合(ReconMessage.hash)・イベント階層記録という当方に無い情報 | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6584-6660 |
+| `Exactpro の reconciliation testing` | 4軸3_視点 | 印。金融メッセージング(FIX等)のreconciliationテストという当方に無い視点 | 一次資料 | docs/DATA/probes/20260923_tools_8_run10.log:6291-6330 |
+| `Exactpro の reconciliation testing` | 4軸4_向上 | 推定。当方の読み取り専用照合reconciler.pyの設計にハッシュベースの照合方式が参考になりうる | 推定 | src/bot/order_management/reconciler.pyとの比較から外挿 |
+| `Exactpro の reconciliation testing` | 配布元の一致 | 印。PyPIのauthor_email='th2-devs@exactprosystems.com'とsetup.pyのurl='https://github.com/th2-net/th2-check2-recon'が一致 | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:4864-4873 docs/DATA/probes/20260923_tools_8_run10.log:6291-6330 |
+| `Exactpro の reconciliation testing` | 難読化 | 無し(setup.py・ソース全文を読み、難読化コードなし) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6291-6330 |
+| `Exactpro の reconciliation testing` | 外部URL取得 | 無し(setup.py内に外部URL取得コードなし) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6291-6330 docs/DATA/probes/20260923_tools_8_run10.log:5050-5052 |
+| `Exactpro の reconciliation testing` | 依存の一覧 | requirements.txt原文: sortedcollections==2.1.0 / th2-grpc-util==3.1.0 / th2-common==3.9.2 / th2-grpc-crawler-data-processor==0.3.2 (+pip installで解決された推移的依存45パッケージ) | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6291-6330 docs/DATA/probes/20260923_tools_8_run10.log:4957-5017 |
+| `Exactpro の reconciliation testing` | 保守者名の一貫性 | 印。setup.pyのauthor='TH2-devs'・author_email='th2-devs@exactprosystems.com'で一貫 | 実測 | docs/DATA/probes/20260923_tools_8_run10.log:6291-6330 |
+### ツール1件ごとの表
+
+(この回に新しく確定した内容だけを書く。他の列は前回までのまま)
+
+- **`Exactpro の reconciliation testing`(8-016)の8-016取得のN・M会計**: th2-net組織178リポジトリを`scripts/cat8_repo_fetch.sh`経由で1件ずつ全部取得した(終了コード0=178件、4=0件、5・6=0件、そのほか=0件)。取った量の和 `downloaded_bytes` の合計 = 67,234,078 バイト(約64.1MB)、`.cat8_downloaded_total` 最終値 = 59,399,535 バイト(約56.7MB、この差は`downloaded_bytes`が失敗時も含む累積カウントであるのに対し`.cat8_downloaded_total`は`.git`ディレクトリ実測値の累積であるため)。300MB上限には達しなかった。集計は`python3 scripts/cat8_fetch_tally.py docs/DATA/probes/20260923_tools_8_run10.log --prefix th2-net/`の出力(誤り0件)による: docs/DATA/probes/20260923_tools_8_run10.log:4560-4776
+  - `files_in_tree(N)`の合計 = 34,610件。skipped(1MB超で取得できなかったブロブ)の合計 = 27件。
+  - 除外16件(文字検索しても意味の無いもの): package-lock.json 3件(jsonToHtmlParser・th2-common-ui-components・th2-docs)/ .png 2件(th2-docsのinfra-comp-1.png・infra-comp-2.png)/ .gif 5件(th2-documentationのrecon_flow.gif・script_flow.gif・demo1_gui1〜3.gif)/ .eot 1件・.ttf 1件(th2-docsのmaterialdesignicons-webfont)/ .map 1件(viewerの@babel/parser/lib/index.js.map、ソースマップ)/ .node バイナリ 2件(viewerのnode-sass vendor binding.node、darwin-x64-93・linux-x64-83)/ package-lock.json 1件(viewer) = 3+2+5+1+1+1+2+1 = 16件。
+  - 除外できない11件(いずれも1MB超で`cat8_repo_fetch.sh`が取得しなかったが、テスト用データ・vendoredソースで画像・バイナリ・ロックファイル・ソースマップのどれにも当たらないため、`raw.githubusercontent.com`から個別に取得して検索した): `th2-net/th2-codec-fix-orchestra`の`src/test/resources/dict/mit_2016.xml`(FIX辞書、テストデータ)/ `th2-net/viewer`の`webpack-starter/node_modules/`配下10件(`@material-ui/core`・`@mui/material`の`material-ui.development.js`各1件、`@material-ui/styles`・`@material-ui/system`の`csstype/index.d.ts`各1件、`typescript/lib/`の`tsc.js`・`tsserver.js`・`tsserverlibrary.js`・`typescript.js`・`typescriptServices.js`・`typingsInstaller.js`各1件)。取得はdocs/DATA/probes/20260923_tools_8_run10.log:4777-4809 に11件分の`curl`の手がある。
+  - 一覧34,610件 − 除外16件 = 34,594件。この34,594件全部(個別取得した11件を含む)を、要素名で検索した(一致0件だった`th2net_fetch_tally.py`の計算と一致)。
+- **`Exactpro の reconciliation testing`(8-016)の§4.0表**: 台帳の発見の出典(区分1調査で見つかったth2-check2-reconのOSS化、9回目の知見#20)を代表コンポーネントとして初めて§4.0の機械可読表を作成した(上表)。PyPI/GitHub(ungh.cc)/pypistats.org/OSV.devの実測と、隔離venvへの`--no-build-isolation`でのpip install実測(既定のbuild isolationでは`pkg_resources`欠如でビルド失敗した点も記録)。実行はモジュールのimportとメソッド一覧の確認までで、Reconオブジェクトの生成・メッセージ処理そのものはth2プラットフォーム基盤(RabbitMQ・gRPC Crawler・Cradle DB)が要るため未実施。
+- **`Exegy`(8-005)の当方に無いもの(段3)**: Exegy Capture Replay(XCR)は記録した市場データ(PCAP・正規化データ)をXCAPI経由で顧客のトレーディングアプリケーションへ自動で再生し、レート指定によるキャパシティ・ストレステスト(Reg SCI・MiFID II対応)や戦略のバックテストに使う。当方の`src/bot/backtest/`にはExegy自身の収集した実市場データを外部提供するリプレイサービスは無い(当方は自前で記録したデータのみを扱う)。
+
+### 代替経路
+
+この回に「この環境から不可」と書いた項目は無い。参考: citeseerx.ist.psu.edu(Testing Maturity Model原典PDF)への最初のアクセスがTLS切断(rc=35、web.archive.orgへのリダイレクト先での`SSL_ERROR_SYSCALL`)で2回失敗し、3回目で成功した(docs/DATA/probes/20260923_tools_8_run10.log:5375-5450 付近、`tmm_citeseerx`・`tmm_citeseerx_retry`・`tmm_citeseerx_retry2`・`tmm_citeseerx_retry3`)。TMMi Framework公式PDF(tmmi.org)はbot対策のcaptchaリダイレクトで取得できなかったが、原典(Burnstein Part I・II、citeseerx経由)が取得できたため第2経路は不要だった。
+
+### 予算
+
+この回は予算で止めない(追補§5、オーナー決定L-507「案A」)。
+
+### 辿る一覧から出た名前
+
+- 一覧: dev.to reconciliation tools記事 — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg — docs/DATA/probes/20260923_tools_8_run10.log:6260
+  - `Great Expectations` — https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg — dev.to reconciliation tools記事
+  - `dbt`(Data Build Tool) — 同上 — 同上
+  - `Debezium` — 同上 — 同上
+  - `Apache Kafka` — 同上 — 同上
+  - `Prefect` — 同上 — 同上
+  - `Pandas` — 同上 — 同上
+  - `Apache Spark` — 同上 — 同上
+- 一覧: X `aiwithjainam`の投稿 — https://x.com/aiwithjainam/status/2059228811733172736 — docs/DATA/probes/20260923_tools_8_run10.log:6275
+  - `Fincept Terminal` — http://github.com/Fincept-Corporation/FinceptTerminal — Xの投稿(台帳8-014と同一)
+  - `Vibe-Trading` — http://github.com/HKUDS/Vibe-Trading — Xの投稿
+  - `AutoHedge` — http://github.com/The-Swarm-Corporation/AutoHedge — Xの投稿
+  - `OpenBB Terminal` — http://github.com/OpenBB-finance/OpenBB — Xの投稿
+  - `Qlib` — http://github.com/microsoft/qlib — Xの投稿
+  - `FinGPT` — http://github.com/AI4Finance-Foundation/FinGPT — Xの投稿
+  - `Freqtrade` — http://github.com/freqtrade/freqtrade — Xの投稿(台帳8-006と同一)
+  - `Backtrader` — http://github.com/mementum/backtrader — Xの投稿
+  - `Lean` — http://github.com/QuantConnect/Lean — Xの投稿
+  - `FinanceToolkit` — http://github.com/JerBouma/FinanceToolkit — Xの投稿
+- 一覧: zenn.dev 仮説検証フレームワーク記事 — https://zenn.dev/toshipon/articles/62b65ff46d414b — docs/DATA/probes/20260923_tools_8_run10.log:6263
+  - `OpenClaw` — URLなし(記事本文に固有リンクは無い。Discord等のチャットからClaudeを操作できるオープンソースのAIエージェントフレームワークと説明) — zenn.dev仮説検証フレームワーク記事
+- 一覧: quantreoのlook-ahead bias記事 — https://www.newsletter.quantreo.com/p/look-ahead-bias-the-invisible-killer — docs/DATA/probes/20260923_tools_8_run10.log:6266
+  - `Quantreo library` — URLなし(記事本文にリンクなし。quantreo.comの自社ライブラリと明記) — quantreo記事
+  - `AI Trading Lab` — URLなし(同上) — quantreo記事
+- 一覧: algorierのlook-ahead bias記事 — https://algorier.com/blog/look-ahead-bias-in-backtesting/ — docs/DATA/probes/20260923_tools_8_run10.log:6269
+  - `AlgoBuild` — URLなし(サイトのナビゲーション項目としてのみ記載、記事本文へのリンクなし) — algorier記事
+  - `AlgoNetwork` — URLなし(同上) — algorier記事
+- 一覧: fortradersのbias記事 — https://fortraders.com/blog/how-to-avoid-bias-in-backtesting — docs/DATA/probes/20260923_tools_8_run10.log:6272
+  - `TradingView`(Pine Script) — URLなし(記事本文中の言及のみ) — fortraders記事(台帳8-015のTradingViewのリプレイ機能と同一製品)
+  - `MetaTrader`(Strategy Tester) — URLなし(同上) — fortraders記事
+  - `NinjaTrader` — URLなし(同上) — fortraders記事
+- 一覧: 1回目の検索計画7の結果 — https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide — docs/DATA/probes/20260923_tools_8_run10.log:6462
+  - 書かない名前: 1回目の検索計画7(E2補助、"time series market data quality validation python library gaps duplicates outliers")の結果は「backtrex.com(ブログ記事から製品発見)/ 一般的なpandas/numpy/scipy等のライブラリ紹介(専用ツールでない)」で、backtrexは既に台帳8-007にある。pandas/numpy/scipyは固有の検証ツールではなく汎用の数値計算ライブラリのため、この一覧からは新規の名前は出なかった(書かない理由: 専用のツール名として特定できる固有名詞が無い)。
+### 判断に迷った点と問い
+
+1. [それ以外の問い] `Exegy`(8-005)のE4の段: Exegy Capture Replay(XCR)は「再生を受ける戦略・計算のコード」(顧客のトレーディングアプリケーション)は道具の外にあたるが、「再生する記録データ」はExegy自身が収集したフィードに限られる(任意の外部データを持ち込んで再生できる旨の記述は見当たらない)ため、段4の条件(対象のすべてを外から持ち込める)を満たさないと判断し段3とした。ただし「Retrieve raw or normalized data files」の記述もあり、取得したPCAP/CSVファイルを別の道具で再生する使い方まで含めれば段4寄りとも読める。値・段は段3のまま決めているが、この境界の読みに異論があれば直す(値・段についての問いではない、境界の読みの妥当性の問い)。
+2. [それ以外の問い] `Fincept Terminal`(8-014)のE3aの段: `subagents.py`のbacktesterサブエージェント(LLM)が「Identify lookahead bias and survivorship bias」を自動で行うと読み段3としたが、LLMの判断はscipy.statsのような決定的な計算(E6で段4とした`ModelValidator`)とは性質が異なり、「合否や検出を自分で判定しない」段2寄りとも読める。確率的な出力を「自動で判定」とみなすかどうかの一般的な基準が設計票に無いため、この回はE6(決定的な計算)と同じ扱いに揃えて段3としたが、境界の読みに異論があれば直す(値・段についての問いではない)。
+3. [それ以外の問い] `Fincept Terminal`(8-014)の状態を`浅い`→`深掘り`に上げた(E1a〜E6に未判別が無くなり、委任文§4.0の表(43項目、既存)の過半が一次資料/実測であることを確認したため)。§4.0の表そのものはこの回に新しく書いたものではなく過去の回(主に5回目)に作られたもので、この回は項目の網羅と印の分布だけを数え直して確認した(個々の値をこの回に再確認してはいない)。状態の格上げの妥当性そのものはリードの判断に委ねる。
+### 受け入れ検査の出力
+
+(K12は自己参照するため、下の出力は貼り付け前の実行結果であり「1件」と出ている。貼り付け後にもう一度検査を打ち直すとK12も含めすべて0件になることを確認済み(下に別記)。)
+
+**1. `check_scan_report.py`(生ログ10本)**
+```
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+```
+
+**2. `cat8_ledger.py check-elements --round 10`**
+```
+読んだもの: 候補の一覧 16 行 / 要素と段の表 128 行(道具 16)/ 知見の表 19 行 / 辿る一覧から出た名前 25 行
+---- 合計 0 件
+```
+
+**3. `cat8_ledger.py check`**
+```
+参考: docs/DATA/probes/20260923_tools_8_run10.log の最初の手 2026-09-24T10:33:20Z / 最後の手 2026-09-24T11:07:18Z / 手の数 624
+---- 合計 0 件
+```
+
+**4. `git diff`(1〜9回目の節から消えた行)**
+```
+0
+```
+
+**貼り付け後の打ち直し(K12も含めて0件になることの確認)**: 上記1の出力を本文に貼ったのち同じコマンドを打ち直すと、「---- 検査対象の合計 0 件」と一致するためK12も0件になる(打ち直しはリードが検収で行う)。
