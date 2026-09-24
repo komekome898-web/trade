@@ -2,7 +2,7 @@
 8-001	qf-lib	0	区分1から	https://github.com/quarkfin/qf-lib	62	深掘り	なし	印	印	なし	印	印	印	印	-	2	3	-	3	3	3	2			7	2572
 8-002	PineForge	0	区分1から	https://github.com/pineforge-4pass/pineforge-engine	70	浅い	印	印	印	印	印	印	印	未判別	5	5	未判別	3	3	3	未判別	未判別			7	2573
 8-003	prediction-market-backtester	0	区分1から	https://github.com/Quentin-Piot/prediction-market-backtester	92	深掘り	印	印	印	なし	なし	印	印	なし	5	2	3	-	-	3	未判別	-			7	2574
-8-004	akurkar07/OrderBook	0	区分1から	https://github.com/akurkar07/OrderBook	101	危険で導入停止	印	印	未判別	なし	なし	なし	印	なし	3	2	未判別	-	-	-	3	-			7	2575
+8-004	akurkar07/OrderBook	0	区分1から	https://github.com/akurkar07/OrderBook	101	危険で導入停止	印	印	未判別	なし	なし	なし	印	未判別	3	2	未判別	-	-	-	3	未判別			7	2575
 8-005	Exegy	0	区分1から	https://www.exegy.com/	117	登録が要る	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			7	2576
 8-006	freqtrade	1	検索	https://github.com/freqtrade/freqtrade		深掘り	なし	印	印	印	印	印	印	印	-	2	3	3	3	3	2	2			7	2577
 8-007	backtrex	1	検索	https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide		深掘り	印	印	印	印	印	印	印	印	2	3	3	2	3	3	2	未判別			7	2578
@@ -14,4 +14,4 @@
 8-013	rusty-bot	1	X	https://x.com/WannabeBotter/status/1810558269565571211		浅い	なし	印	印	なし	なし	印	なし	未判別	-	2	3	-	-	2	-	未判別			7	2584
 8-014	Fincept Terminal	1	X	https://github.com/Fincept-Corporation/FinceptTerminal		深掘り	印	印	印	なし	印	印	印	なし	3	未判別	2	-	未判別	未判別	3	-			7	2585
 8-015	TradingView のリプレイ機能	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い)		深掘り	なし	なし	なし	なし	印	印	なし	なし	-	-	-	-	2	2	-	-			7	2586
-8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		判別に一次資料が要る	印	印	印	未判別	未判別	印	未判別	印	4	4	未判別	未判別	未判別	3	未判別	4			7	2587
+8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		判別に一次資料が要る	印	印	印	未判別	未判別	印	未判別	印	4	4	未判別	未判別	未判別	3	未判別	未判別			7	2587
