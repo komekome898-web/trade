@@ -8,10 +8,10 @@
 8-007	backtrex	1	検索	https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide		深掘り	印	印	印	印	印	印	印	印	2	3	3	2	3	3	2	2			9	3179
 8-008	FX Replay	1	検索	https://fxreplay.com/		深掘り	なし	印	なし	なし	なし	印	なし	なし	-	3	-	-	-	2	-	-			9	3180
 8-009	nicferrari/backtester	1	検索	https://github.com/nicferrari/backtester		深掘り	なし	印	なし	なし	なし	印	なし	なし	-	2	-	-	-	3	-	-			9	3181
-8-010	arXiv:2603.20319	1	検索	https://arxiv.org/abs/2603.20319		深掘り	印	印	印	なし	印	印	印	なし	1	1	1	-	1	1	1	-			9	3182
-8-011	arXiv:2512.12924	1	検索	https://arxiv.org/abs/2512.12924		深掘り	なし	印	印	なし	印	印	印	印	-	3	4	-	4	3	4	2			9	3183
+8-010	arXiv:2603.20319	1	検索	https://arxiv.org/abs/2603.20319		浅い	印	印	印	なし	未判別	印	印	なし	1	1	1	-	未判別	1	1	-			9	3182
+8-011	arXiv:2512.12924	1	検索	https://arxiv.org/abs/2512.12924		深掘り	なし	印	印	なし	印	印	印	印	-	3	4	-	4	3	4	未判別			9	3183
 8-012	VectorBT	1	X	https://github.com/polakowo/vectorbt		深掘り	なし	印	印	なし	印	印	印	なし	-	3	3	-	3	4	4	-			9	3184
 8-013	rusty-bot	1	X	https://x.com/WannabeBotter/status/1810558269565571211		深掘り	なし	印	印	なし	なし	印	なし	なし	-	2	3	-	-	2	-	-			9	3185
-8-014	Fincept Terminal	1	X	https://github.com/Fincept-Corporation/FinceptTerminal		浅い	印	印	印	未判別	印	印	印	印	3	4	2	未判別	4	3	3	4			9	3186
+8-014	Fincept Terminal	1	X	https://github.com/Fincept-Corporation/FinceptTerminal		浅い	印	印	印	未判別	印	印	印	未判別	3	未判別	2	未判別	未判別	3	3	未判別			9	3186
 8-015	TradingView のリプレイ機能	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い)		深掘り	なし	なし	なし	なし	印	印	なし	なし	-	-	-	-	2	2	-	-			9	3187
 8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		判別に一次資料が要る	印	印	印	未判別	未判別	印	未判別	印	4	4	3	未判別	未判別	3	未判別	3			9	3188
