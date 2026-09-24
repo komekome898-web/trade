@@ -299,57 +299,71 @@ def log_refs(text):
     return out
 
 
+REF_STRICT = re.compile(r"(?:docs/DATA/probes/)?(20260923_tools_8_run(\d+)\.log):(\d+)(?:-(\d+))?(?![\d])")
+
+
+def strict_refs(text):
+    """7 回目以降の読み方: 参照は `<生ログ>:N` か `<生ログ>:N-M` だけ(範囲は 500 行まで)。列挙は読まない。"""
+    out = []
+    for m in REF_STRICT.finditer(text):
+        lo = int(m.group(3))
+        hi = int(m.group(4)) if m.group(4) else lo
+        out += [(m.group(1), m.group(2), str(x)) for x in range(lo, min(hi, lo + 500) + 1)]
+    return out
+
+
+def refs_for(text, rnd):
+    return strict_refs(text) if rnd and int(rnd) >= 7 else log_refs(text)
+
+
+def unaccounted_numbers(text):
+    """7 回目以降: 根拠の欄の数字は、決まった場所にしか置かない(監査 36〜38 回目。書き方を読み当てる作りをやめた)。
+    許す場所: 参照 `<生ログ>:N`・`<生ログ>:N-M` / 「…」と `…` の中 / URL / 日付 / `N 件` / 英字に付いた数字(E1a・run7 など)。
+    それ以外に残った数字を返す(列挙・注記の中の番号・入れ子の括弧など、どんな書き方でも黙って通さない)。"""
+    t = re.sub(r"「[^」]*」", " ", text)
+    t = re.sub(r"`[^`]*`", " ", t)
+    t = re.sub(r"https?://\S+", " ", t)
+    t = REF_STRICT.sub(" ", t)
+    t = re.sub(r"\d{4}-\d{2}-\d{2}(?:T[\d:]+Z?)?", " ", t)
+    t = re.sub(r"\d+\s*件", " ", t)
+    return re.findall(r"(?<![A-Za-z0-9_.\-])\d+(?![A-Za-z0-9_])", t)
+
+
 def ref_list_errors(text):
-    """7 回目以降: 生ログの参照は 1 つの行(か 1 つの範囲)ごとにファイル名を書く(監査 36・37 回目)。
-    区切りの文字を挙げて探すのをやめ、参照(`<生ログ>:N` か `:N-M`、後ろに括弧の注記があってよい)の直後から、
-    文字(かな・漢字・英字)に当たる前に数字が出てきたら、ファイル名の無い行の番号とみなして返す。
-    読めない書き方は止まる(黙って通さない)。"""
-    bad = []
-    for m in re.finditer(r"20260923_tools_8_run\d+\.log:\d+(?:\s*[-〜~]\s*\d+)?", text):
-        rest = re.split(r"[|\n]", text[m.end():])[0]  # 表の欄の境と改行の先は見ない
-        rest = re.sub(r"^\s*[(（][^)）]*[)）]", "", rest)
-        k = 0
-        while k < len(rest) and not rest[k].isalnum():
-            k += 1
-        if rest[k:].startswith("20260923_tools_8_run"):
-            continue  # 次の参照(ファイル名を付けて書いたもの)
-        if k < len(rest) and rest[k].isdigit():
-            bad.append(m.group(0) + rest[:k + 1])
-            continue
-        mm = re.match(r"(と|および|及び|又は|または|and|or)\s*\d", rest[k:])
-        if mm and not re.match(r"(と|および|及び|又は|または|and|or)\s*20260923_tools_8_run", rest[k:]):
-            bad.append(m.group(0) + rest[:k] + mm.group(0))
-    return bad
+    """(互換)7 回目以降は unaccounted_numbers を使う。"""
+    return unaccounted_numbers(text)
 
 
 def cmd_selftest(a):
     """log_refs と ref_list_errors の形ごとの試し(tests/ に置かず、この道具の中で打てるように)。"""
     L = "20260923_tools_8_run7.log"
-    cases = [
+    P = "docs/DATA/probes/" + L
+    cases = [  # (根拠の欄, 読む行, 決まった場所に無い数字の数)
         (L + ":10", ["10"], 0),
-        (L + ":4,10", ["4", "10"], 1),
-        (L + ":1186-1188", ["1186", "1187", "1188"], 0),
-        (L + ":1067(N=107),1186-1187(注記)", ["1067", "1186", "1187"], 1),
-        (L + ":188(一覧を取った手)、192,203", ["188", "192", "203"], 1),
-        (L + ":3 と " + L + ":6", ["3", "6"], 0),
-        ("一覧 5 件 / 読んだ 5 件、" + L + ":12", ["12"], 0),
-        (L + ":12。全 5 記事", ["12"], 0),
+        (P + ":10、" + P + ":20", ["10", "20"], 0),
         (L + ":10、" + L + ":20", ["10", "20"], 0),
-        ("docs/DATA/probes/" + L + ":10、docs/DATA/probes/" + L + ":20", ["10", "20"], 0),
+        (L + ":1186-1188", ["1186", "1187", "1188"], 0),
+        ("一覧 5 件 / 読んだ 5 件、" + P + ":12", ["12"], 0),
+        (P + ":12。本文は scratchpad の下", ["12"], 0),
+        ("「lookahead 2 bars」の文、" + P + ":7", ["7"], 0),
+        ("`grep -c 3` の出力、" + P + ":7(2026-09-24 に取得)", ["7"], 0),
+        ("E3a・E3b、" + P + ":7", ["7"], 0),
+        (L + ":4,10", ["4"], 1),
         (L + ":2 6", ["2"], 1),
         (L + ":2・6", ["2"], 1),
         (L + ":2 と 6", ["2"], 1),
-        (L + ":2 / 6", ["2"], 1),
-        (L + ":2(一覧) 6(描画)", ["2"], 1),
-        (L + ":2(一覧を取った手)。本文は scratchpad", ["2"], 0),
-        (L + ":2 の出力", ["2"], 0),
-        (L + ":2 |\n| 3 | 次の行", ["2"], 0),
+        (L + ":2 行目と 6 行目", ["2"], 1),
+        (L + ":1067(N=107),1186-1187(注記)", ["1067"], 3),
+        (L + ":4369(Table: Ours (internal) – Python)、555", ["4369"], 1),
+        (L + ":2(note1)(note2)6", ["2"], 3),
+        (L + ":2(A\\|B)、6", ["2"], 1),
+        (L + ":2 |\n| 3 | 次の行", ["2"], 1),
     ]
     bad = 0
     for text, want, nlist in cases:
-        got = [r[2] for r in log_refs(text)]
-        nl = len(ref_list_errors(text))
-        ok = got == want and nl == nlist
+        got = [r[2] for r in strict_refs(text)]
+        nl = len(unaccounted_numbers(text))
+        ok = got == want and (nl > 0) == (nlist > 0)  # 止まるか通るかを見る(数は問わない)
         bad += not ok
         print("%s %s -> %s / 列挙 %d" % ("OK " if ok else "NG ", text[:60], got, nl))
     print("---- 合計 %d 件" % bad)
@@ -359,7 +373,7 @@ def quotes_in_log(text, refs_text, rnd):
     """7 回目以降: 根拠に引いた「…」の逐語が、引いた生ログの手の出力に実際にあるか(監査 33 回目)。
     見つからない引用の先頭を返す。生ログの参照が無い行・引用の無い行は見ない。"""
     qs = [q for q in re.findall(r"「([^「」]{8,})」", text)]
-    refs = log_refs(refs_text)
+    refs = refs_for(refs_text, rnd)
     if not qs or not refs:
         return []
     blocks = []
@@ -420,8 +434,9 @@ def cmd_check_elements(a):
                 if not re.search(r"https?://|\.log|生ログ", c[3]):
                     errs.append("行 %d: 知見の表の根拠に URL も生ログの参照も無い: %s" % (i + 1, c[3][:50]))
                 if a.round and int(a.round) >= 7:
-                    for r in ref_list_errors(c[3]):
-                        errs.append("行 %d: 知見の根拠の生ログの参照が列挙の形: `%s`。行ごとにファイル名を書く" % (i + 1, r))
+                    nums = unaccounted_numbers(c[3])
+                    if nums:
+                        errs.append("行 %d: 知見の根拠に、決まった場所に無い数字: %s。行は `<生ログ>:N` か `<生ログ>:N-M` で 1 つずつファイル名を付けて書き、件数は `N 件`、ほかの数字は「…」か `…` の中に書く" % (i + 1, " ".join(nums[:5])))
                     for h in quotes_in_log(c[1], c[3], a.round):
                         errs.append("行 %d: 知見の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, h))
             elif len(c) >= 2 and not set("".join(c)) <= set("-: ") and c[0] not in ("#", "道具"):
@@ -457,13 +472,14 @@ def cmd_check_elements(a):
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
             if a.round and int(a.round) >= 7 and "台帳の値のまま" not in ev:
-                for r in ref_list_errors(ev):
-                    errs.append("行 %d: %s %s の根拠の生ログの参照が列挙の形: `%s`。行ごとにファイル名を書く(`<生ログ>:10、<生ログ>:20`)" % (i + 1, tool, el, r))
+                nums = unaccounted_numbers(ev)
+                if nums:
+                    errs.append("行 %d: %s %s の根拠に、決まった場所に無い数字: %s。行は `<生ログ>:N` か `<生ログ>:N-M` で 1 つずつファイル名を付けて書き、件数は `N 件`、ほかの数字は「…」か `…` の中に書く" % (i + 1, tool, el, " ".join(nums[:5])))
                 for h in quotes_in_log(ev, ev, a.round):
                     errs.append("行 %d: %s %s の根拠の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, tool, el, h))
             if a.round and int(a.round) >= 5 and val == "印":
                 # 描画した頁を `印` の根拠にするときの条件 (iii)(5 回目の起動文 §2、監査 29 回目への答え 1)
-                for fname, rn, lno in log_refs(ev):
+                for fname, rn, lno in refs_for(ev, a.round):
                     lp = pathlib.Path("docs/DATA/probes") / fname
                     if not lp.exists():
                         continue
@@ -489,7 +505,7 @@ def cmd_check_elements(a):
                 elif int(m.group(1)) != int(m.group(2)):
                     errs.append("行 %d: %s %s は一覧 %s 件 / 読んだ %s 件で数が違うので `なし` と書けない" % (
                         i + 1, tool, el, m.group(1), m.group(2)))
-                refs = log_refs(ev)
+                refs = refs_for(ev, a.round)
                 for fname, rn, lno in refs:
                     lp = pathlib.Path("docs/DATA/probes") / fname
                     if int(rn) != int(a.round):
