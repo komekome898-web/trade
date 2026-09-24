@@ -13021,15 +13021,15 @@
   {
    "move": 480,
    "tools": {
-    "Bash": 31,
+    "Bash": 33,
     "Read": 2,
-    "mcp__Claude_Code_Remote__send_later": 2,
-    "ReadNotifications": 1,
+    "mcp__Claude_Code_Remote__send_later": 3,
+    "ReadNotifications": 2,
     "Workflow": 2,
     "ToolSearch": 1,
     "TaskStop": 1
    },
-   "n_tools": 40,
+   "n_tools": 44,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,

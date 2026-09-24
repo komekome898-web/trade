@@ -118,6 +118,18 @@ def _attempt_call(name: str, *args, **kw) -> str:
 NON_BAR = "この道具の入力は OHLCV の表 1 つ(get_data)で、{k} を事象として渡す口が無い。試したこと: {err}"
 
 
+NO_CALL = ("この道具は戦略を呼ばない(backtest_engine.py の EventBased に戦略を呼ぶ loop が無く、道具の例 ema_arima.py は利用者が "
+           "for i in range(len(self.data) - 1) を自分で書く)。事象を戦略に届ける・呼び出しごとに見せる、という振る舞いを道具が持たないので、"
+           "戦略の呼び出しで測る場面は数えない(round r6-2: 呼び出しは adapter が書いた loop で、道具のものではない)。")
+
+
+def _table_seen(rows) -> str:
+    """What the tool's table holds after __init__ (the observation kept in the detail)."""
+    s = make(_frame(rows))
+    return (f"観察: __init__ のあとの self.data の行数 {len(s.data)}(入力 {len(rows)} 行。add_log_returns の dropna が 1 行目を落とす)、"
+            f"時刻 {[int(pd.Timestamp(x).value) for x in s.data.index]}、Close {[float(x) for x in s.data['Close']]}")
+
+
 class LuczinsritterAdapter(Adapter):
     name = "opp_luczinsritter"
 
@@ -127,10 +139,7 @@ class LuczinsritterAdapter(Adapter):
         return not_supported(NON_BAR.format(k="複数の入力", err=_attempt_rows(rows)))
 
     def scene_p1_one_call_per_event(self, sc):
-        car = []
-        s, st = run(C.events(sc), lambda s, i, st: (st["log"].append(["bar", _ts(s, i)]), car.append(C.carrier(s.data))))
-        return ok({"sequence": st["log"]}, f"足 {len(C.events(sc))} 本を get_data で渡し、{LOOP} の各回に get_date_price(i) の時刻。"
-                  f"__init__ のあとの行数 {st['rows_after_init']}(add_log_returns の dropna が 1 行目を落とす)", {"carriers": car})
+        return not_supported(NO_CALL + _table_seen(C.events(sc)))
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_attempt_rows(C.events(sc))))
@@ -156,12 +165,8 @@ class LuczinsritterAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
-        car = []
-        s, st = run([{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0 + k,
-                      "volume": 1.0} for k, e in enumerate(C.events(sc))],
-                    lambda s, i, st: (st["log"].append(_ts(s, i)), car.append(C.carrier(s.data))))
-        return ok({"observed_ts_ns": st["log"]}, f"足で渡し、{LOOP} の各回に get_date_price(i) の時刻。__init__ のあとの行数 {st['rows_after_init']}"
-                  "(dropna が 1 行目を落とす)。呼ばれた回数 " + str(st["n"]), {"carriers": car})
+        return not_supported(NO_CALL + _table_seen([{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0,
+                                                      "close": 100.0 + k, "volume": 1.0} for k, e in enumerate(C.events(sc))]))
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -170,19 +175,7 @@ class LuczinsritterAdapter(Adapter):
         e = C.events(sc)[0]
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_attempt_rows([e])))
-        out = {}
-        car = []
-
-        def f(s, i, st):
-            st["log"].append(["bar", _ts(s, i)])
-            car.append(C.carrier(s.data))
-            row = s.data.iloc[i]
-            out.update({k.lower(): float(row[k]) for k in ("Open", "High", "Low", "Close", "Volume")})
-
-        s, st = run([e], f)
-        return ok({"sequence": st["log"], "fields": out},
-                  f"足 1 本を get_data で渡した。__init__ のあとの行数 {st['rows_after_init']}(dropna が 1 行目を落とす)、{LOOP} の回数 {st['n']}",
-                  {"carriers": car})
+        return not_supported(NO_CALL + _table_seen([e]))
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -203,17 +196,22 @@ class LuczinsritterAdapter(Adapter):
 
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
+        """P0-4 does not need the tool to call the strategy: at the step of the tool's example loop, what the
+        strategy can read through the tool's own method (get_date_price) is measured. Round r6-2: the read goes
+        through the tool's method (the table attribute self.data alone runs no tool code)."""
         probe = sc.input["probe_at_ns"]
         reads = C.Reads()
 
         def f(s, i, st):
             if _ts(s, i) == probe and not reads.items:
-                reads.read("self.data['Close'](戦略が持つ表)", lambda: [float(x) for x in s.data["Close"]])
+                reads.read("self.get_date_price(k) の値(k = 0 … len(self.data) - 1)",
+                           lambda: [float(s.get_date_price(k)[1]) for k in range(len(s.data))])
 
         s, st = run(C.events(sc), f)
         if not reads.items:  # no_probe_call
             return not_supported(f"T0 + 4 日の回が無かった({LOOP}。__init__ のあとの行数 {st['rows_after_init']})")
-        return ok(reads.output(), f"T0 + 4 日の回({LOOP})に、戦略が持つ表 self.data の Close を読んだ", reads.provenance())
+        return ok(reads.output(), f"T0 + 4 日の回({LOOP}。道具は戦略を呼ばないので、道具の例の loop の回)に、"
+                  "道具の get_date_price で表の全行を読んだ", reads.provenance())
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON_BAR.format(k="受け取れる時刻", err=_attempt_rows(
@@ -228,12 +226,13 @@ class LuczinsritterAdapter(Adapter):
             if _ts(s, i) != probe or att.items:
                 return
             # namings: the scene's fixed list; positions count the table's rows (the newest delivered is i, the next i + 1)
+            # round r6-2: only reads through the tool's own method are made (the table self.data is an attribute of the
+            # strategy object the adapter built; the tool's code does not run when it is indexed, so its provenance
+            # cannot be shown). The tool has no read that takes a time: the call a strategy would write is made as written.
             C.try_position_namings(att, "self.get_date_price(位置) の値", lambda: C.KeyCall(lambda k: s.get_date_price(k)[1]), i + 1)
-            C.try_position_namings(att, "self.data['Close'].iloc[位置]", lambda: s.data["Close"].iloc, i + 1)
-            ts = (lambda ns: pd.Timestamp(int(ns), unit="ns", tz="UTC"))
-            C.try_time_namings(att, "self.data['Close'].loc[時刻]", "time_at", lambda t: float(s.data["Close"].loc[t]), sc, ts)
-            C.try_time_namings(att, "self.data['Close'].loc[始:終]", "time_range", lambda a, b: list(s.data["Close"].loc[a:b]), sc, ts)
-            att.run("self.data['Close'] の全部", "other", lambda: [float(x) for x in s.data["Close"]])
+            ts = pd.Timestamp(int(sc.input["future_ts_ns"]), unit="ns", tz="UTC")
+            att.run("self.get_date_price(5 本目の時刻)", "time", lambda: s.get_date_price(ts), shape="no_means",
+                    naming="written_call", via=s.get_date_price)
 
         run(C.events(sc), f)
         if not att.items:  # no_probe_call
@@ -249,10 +248,7 @@ class LuczinsritterAdapter(Adapter):
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 
     def scene_p5_same_stream_order(self, sc):
-        car = []
-        s, st = run(C.events(sc), lambda s, i, st: (st["log"].append(float(s.data["Close"].iloc[i])), car.append(C.carrier(s.data))))
-        return ok({"prices": st["log"]}, f"約定を足に代え、同じ時刻の 3 行を渡した。__init__ のあとの行数 {st['rows_after_init']}、{LOOP} の回数 {st['n']}",
-                  {"carriers": car})
+        return not_supported(NO_CALL + _table_seen(C.events(sc)))
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

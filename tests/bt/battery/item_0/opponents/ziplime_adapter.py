@@ -374,8 +374,9 @@ class ZiplimeAdapter(Adapter):
             except Exception as exc:  # noqa: BLE001
                 tried.append(f"data.history(bar_count=10) -> {type(exc).__name__}: {str(exc)[:100]}")
                 return
+            # round r6-2: of = the BarData the tool passed to handle_data (its history is awaited above)
             reads.read("data.history(assets, bar_count=10, fields=['close'])(null の行は足が無い)",
-                       lambda: [x for x in hist if x is not None and x == x])
+                       lambda: [x for x in hist if x is not None and x == x], of=data)
 
         st = run(C.events(sc), h, label=label)
         return reads, f"日付={label}: 呼び出しの時刻 {st['calls_ns']}、{tried or [r['means'] for r in reads.items]}"

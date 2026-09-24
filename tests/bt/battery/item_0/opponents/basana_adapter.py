@@ -400,9 +400,9 @@ class BasanaAdapter(Adapter):
             # methods: get_bid_ask(pair), get_balance(s), get_open_orders, get_order_info, ...; BarEvent
             # has `bar` only). The calls a strategy would write to reach the 5th bar are made as written:
             await att.run_async("exchange.get_bid_ask(pair, 5 本目の時刻)", "time", lambda: ex.get_bid_ask(PAIR, fut),
-                                shape="no_means", naming="written_call")
+                                shape="no_means", naming="written_call", via=ex.get_bid_ask)
             att.run("受け取った BarEvent の bar[1](次の足)", "position", lambda: st["bar_event"].bar[1],
-                    shape="no_means", naming="written_call")
+                    shape="no_means", naming="written_call", via=st["bar_event"].bar)
             await att.run_async("exchange.get_bid_ask(pair)(今の値)", "other", lambda: ex.get_bid_ask(PAIR))
 
         run_exchange(C.events(sc), 1_000_000, plan)

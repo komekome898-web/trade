@@ -202,9 +202,11 @@ class PredictivedevTradesimAdapter(Adapter):
             # The trader's public reads: current_price, and through its engine get_last_trade_price(symbol),
             # order_book.get_best_bid/ask, depth_snapshot; none takes a time or a position. The calls a
             # strategy would write to reach the 5th bar are made as written:
-            att.run("data['history'][4](次の位置)", "position", lambda: d["history"][4], shape="no_means", naming="written_call")
+            att.run("data['history'][4](次の位置)", "position", lambda: d["history"][4], shape="no_means", naming="written_call",
+                    via=d)
             att.run("matching_engine.get_last_trade_price(symbol, 5 本目の時刻)", "time",
-                    lambda: s.matching_engine.get_last_trade_price(SYM, fut), shape="no_means", naming="written_call")
+                    lambda: s.matching_engine.get_last_trade_price(SYM, fut), shape="no_means", naming="written_call",
+                    via=s.matching_engine.get_last_trade_price)
             att.run("self.current_price", "other", lambda: s.current_price)
 
         run(C.events(sc), f)

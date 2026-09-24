@@ -25,6 +25,7 @@ from protocol import Adapter, not_supported, ok  # noqa: E402
 import common as C  # noqa: E402
 
 import hftbacktest as H  # noqa: E402
+import hftbacktest.types as HT  # noqa: E402
 from hftbacktest import (BUY_EVENT, DEPTH_EVENT, DEPTH_SNAPSHOT_EVENT, EXCH_EVENT, LOCAL_EVENT,  # noqa: E402
                          SELL_EVENT, TRADE_EVENT)
 from hftbacktest.data.validation import correct_event_order, validate_event_order  # noqa: E402
@@ -105,17 +106,24 @@ def _levels(depth, side: str, limit: int = 20000) -> list[list[float]]:
 
 
 _KIND_NAMES = ("TRADE_EVENT", "DEPTH_EVENT", "DEPTH_SNAPSHOT_EVENT", "DEPTH_CLEAR_EVENT", "DEPTH_BBO_EVENT")
-_FEED = {"carrier": None}  # the class whose wait_next_feed woke the strategy (set by run)
 
 
-def _row_carrier(ev: int) -> str:
-    """The hftbacktest type of a row the strategy read, named from the row's own `ev` bits and the tool's
-    constants (hftbacktest/types.py), not written by hand."""
+def _row_carrier(t):
+    """Round r6-2 (critic br6-1-1 / br6-1-2): the provenance of a row the strategy read from last_trades, made
+    from the row: its record type is the tool's `event_dtype` (hftbacktest/types.py) and its kind is the tool's
+    constant whose code the row's `ev` carries (the constant named from the tool's own module, checked there)."""
+    code = int(t["ev"]) & 0xFF
     for name in _KIND_NAMES:
-        code = getattr(H, name, None)
-        if code is not None and (int(ev) & 0xFF) == (int(code) & 0xFF):
-            return f"hftbacktest.{name}"
-    return f"hftbacktest.event_dtype(ev の型の番号 {int(ev) & 0xFF})"
+        v = getattr(HT, name, None)
+        if v is not None and (int(v) & 0xFF) == code:
+            return C.carrier_record(t, HT, "event_dtype", const=(HT, name, v))
+    return C.carrier_record(t, HT, "event_dtype")
+
+
+class _Call(tuple):
+    """(code, now, trades) of one wake-up; `.feed` = the provenance of what woke the strategy (the value the
+    tool's wait_next_feed returned, read through common.read)."""
+    feed = None
 
 
 def run(evs: list[dict], on_call=None, entry_latency=0, fee=("value", 0.0), prepare=True, max_calls=100, clear=True):
@@ -125,11 +133,11 @@ def run(evs: list[dict], on_call=None, entry_latency=0, fee=("value", 0.0), prep
     a = _array(_rows(evs))
     a = _prepare(a) if prepare else _flag_both(a)
     hbt = _backtest(a, entry_latency, fee)
-    _FEED["carrier"] = C.carrier(hbt) + ".wait_next_feed"
     calls = []
     try:
         for n in range(1, max_calls + 1):
-            code = hbt.wait_next_feed(True, 10**17)
+            code = C.read(hbt.wait_next_feed, True, 10**17)
+            feed = C.carrier(code)
             if code == 0:
                 break
             now = int(hbt.current_timestamp)
@@ -141,13 +149,15 @@ def run(evs: list[dict], on_call=None, entry_latency=0, fee=("value", 0.0), prep
                     now = max(now, int(fl[1]))
             trades = [{"exch_ts": int(t["exch_ts"]), "local_ts": int(t["local_ts"]), "price": float(t["px"]),
                        "qty": float(t["qty"]), "side": "buy" if int(t["ev"]) & BUY_EVENT else "sell",
-                       "carrier": _row_carrier(t["ev"])}
-                      for t in hbt.last_trades(0)]
+                       "carrier": _row_carrier(t)}
+                      for t in C.read(hbt.last_trades, 0)]
             if clear:
                 hbt.clear_last_trades(0)
             if code == 1 and not trades and n > 1 and now == calls[-1][1]:
                 break  # end of data with nothing new
-            calls.append((2 if code == 1 else code, now, trades))
+            c = _Call((2 if code == 1 else code, now, trades))
+            c.feed = feed
+            calls.append(c)
             if on_call:
                 on_call(hbt, n, 2 if code == 1 else code, now, trades)
             if code == 1:
@@ -176,7 +186,8 @@ def _seq_car(calls) -> tuple[list, list]:
     """What the strategy saw on each market call, and where it came from: each trade row of last_trades
     (its carrier from the row's ev bits), or, for a feed with no trade, only that wait_next_feed returned."""
     seq, car = [], []
-    for code, now, trades in calls:
+    for call in calls:
+        code, now, trades = call
         if code != 2:
             continue
         if trades:
@@ -184,7 +195,7 @@ def _seq_car(calls) -> tuple[list, list]:
             car += [t["carrier"] for t in trades]
         else:
             seq.append(["feed_without_trade", now])  # the strategy only sees that a feed arrived and the book state
-            car.append(_FEED["carrier"])
+            car.append(call.feed)
     return seq, car
 
 
@@ -281,7 +292,8 @@ class HftbacktestAdapter(Adapter):
         hbt = _backtest(a)
         clock = []
         try:
-            code = hbt.wait_next_feed(True, 10**17)
+            code = C.read(hbt.wait_next_feed, True, 10**17)
+            feed = C.carrier(code)
             first = int(hbt.current_timestamp)
             target = sc.input["timer_at_ns"]
             if hbt.elapse(target - first) == 0:
@@ -380,7 +392,8 @@ class HftbacktestAdapter(Adapter):
             # None takes a time; the time call a strategy would write is made as written.
             C.try_position_namings(att, "hbt.last_trades(0)[位置] の px", lambda: hbt.last_trades(0), len(hbt.last_trades(0)),
                                    lambda t: float(t["px"]))
-            att.run("hbt.depth(0, 5 本目の時刻)", "time", lambda: hbt.depth(0, fut), shape="no_means", naming="written_call")
+            att.run("hbt.depth(0, 5 本目の時刻)", "time", lambda: hbt.depth(0, fut), shape="no_means", naming="written_call",
+                    via=hbt.depth)
             att.run("この呼び出しで届いた約定(last_trades)", "other", lambda: [float(t["px"]) for t in hbt.last_trades(0)])
             att.run("hbt.feed_latency(0)", "other", lambda: hbt.feed_latency(0))
 

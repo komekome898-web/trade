@@ -66,7 +66,7 @@ BAR_CARRIER = "c:pineforge pf_bar_t (on_bar の引数)"
 
 
 def carriers(rows) -> list[str]:
-    return [BAR_CARRIER for _ in calls(rows)]
+    return [C.compiled(BAR_CARRIER) for _ in calls(rows)]
 
 
 def errors(rows) -> list[str]:
@@ -181,11 +181,13 @@ class PineforgeAdapter(Adapter):
                 # lookahead, its last value) -- a call that returns the bar reaching past now (shape next_call)
                 att.run(f"strategy_native_series_bar_v1(時間枠 {d['tf']}、lookahead = {la}。5 本目を含む区間)", "position",
                         lambda d=d: None if d["rc"] != "0" else {"timestamp_ms": int(d["ts"]), "close": float(d["close"])},
+                        via=C.compiled("c:pineforge strategy_native_series_bar_v1"),
                         shape="next_call", naming="next")
             if r[0] == "PARTIAL":
                 d = kv(r)
                 att.run("strategy_native_partial_bar_v1(今の足の途中)", "other",
-                        lambda d=d: None if d["rc"] != "0" else {"timestamp_ms": int(d["ts"]), "close": float(d["close"])})
+                        lambda d=d: None if d["rc"] != "0" else {"timestamp_ms": int(d["ts"]), "close": float(d["close"])},
+                        via=C.compiled("c:pineforge strategy_native_partial_bar_v1"))
         if not att.items:
             return not_supported(f"T0 + 4 日の呼び出しが無かった。driver の出力 {rows[:6]}")
         return ok(att.output(), "T0 + 4 日の on_bar の中で試した(on_run_begin で上位の時間枠を宣言。位置で次を読む口は無い): " + att.summary())

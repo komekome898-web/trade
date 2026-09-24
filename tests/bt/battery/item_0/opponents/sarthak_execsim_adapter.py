@@ -75,7 +75,7 @@ class SarthakExecsimAdapter(Adapter):
         md = [r for r in zero if r[0] == "MD"]
         return ok({"sequence": [["tick", int(r[1])] for r in md]},
                   "足の型が無いので足を Tick(値 = 終値)にして add_tick、callback が受けた (道具の型 = MarketData の Tick、時刻)。LatencyConfig.market_data_latency_ns = 0 の走り。"
-                  f"既定(500 ns)の走りの時刻: {[int(r[1]) for r in default if r[0] == 'MD']}", {"carriers": [MD_CARRIER] * len(md)})
+                  f"既定(500 ns)の走りの時刻: {[int(r[1]) for r in default if r[0] == 'MD']}", {"carriers": [C.compiled(MD_CARRIER) for _ in md]})
 
     def scene_p1_merge_by_time(self, sc):
         return not_supported(NO_TYPES.format(k="資金調達や約定と足"))
@@ -97,7 +97,7 @@ class SarthakExecsimAdapter(Adapter):
         return ok({"observed_ts_ns": [int(r[1]) for r in md]},
                   "Tick の timestamp(int64 ns)で渡し、callback の MarketData の時刻。market_data_latency_ns = 0 の走り。"
                   f"既定(500 ns を足して Tick の時刻を書き換える、execution_simulator.cpp add_tick)の走り: {[int(r[1]) for r in default if r[0] == 'MD']}",
-                  {"carriers": [MD_CARRIER] * len(md)})
+                  {"carriers": [C.compiled(MD_CARRIER) for _ in md]})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -143,9 +143,11 @@ class SarthakExecsimAdapter(Adapter):
         last = next((r for r in out if r[0] == "LAST"), None)
         att.run("simulator.event_queue().peek()(次の事象)", "position",
                 lambda: None if peek is None or peek[1] == "none" else {"timestamp": int(peek[1]), "close": float(peek[2])},
+                via=C.compiled("cpp:execution_simulator Simulator::event_queue().peek()"),
                 shape="next_call", naming="next")
         att.run("simulator.get_last_tick('X')(最新の 1 本)", "other",
-                lambda: None if last is None or last[1] == "none" else {"timestamp": int(last[1]), "close": float(last[2])})
+                lambda: None if last is None or last[1] == "none" else {"timestamp": int(last[1]), "close": float(last[2])},
+                via=C.compiled("cpp:execution_simulator Simulator::get_last_tick"))
         return ok(att.output(), f"T0 + 4 日の MarketData の callback の中で試した(driver の出力 {out}): " + att.summary())
 
     # ---------------- P0-5
@@ -159,7 +161,7 @@ class SarthakExecsimAdapter(Adapter):
         md = [r for r in zero if r[0] == "MD"]
         return ok({"prices": [float(r[2]) for r in md]},
                   f"同じ時刻の 3 本を add_tick、callback の MarketData の値の順。既定の走り: {[float(r[2]) for r in default if r[0] == 'MD']}",
-                  {"carriers": [MD_CARRIER] * len(md)})
+                  {"carriers": [C.compiled(MD_CARRIER) for _ in md]})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

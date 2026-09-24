@@ -56,7 +56,7 @@ def seq(rows) -> list:
 
 def carriers(rows) -> list:
     """The Go type of each event OnData received, printed by the driver with %T from the event itself."""
-    return [f"go:{r['ev']}" for r in rows if "ev" in r]
+    return [C.compiled(f"go:{r['ev']}") for r in rows if "ev" in r]
 
 
 class GobacktestAdapter(Adapter):
@@ -88,7 +88,7 @@ class GobacktestAdapter(Adapter):
         return ok(r.get("times", [None])[0] if r.get("times") else None,
                   "道具の CSV の読み込み(data.BarEventFromCSVFile、data/data-csv.go は Date を time.Parse(\"2006-01-02\") で読む)に ISO の日付を 1 行書いて Load。"
                   f"読めた行の時刻 {r.get('times')}、Load の誤り '{r.get('csv_error')}'(読めない行は誤りを返さずに捨てる)",
-                  {"reader": "go:github.com/dirkolbrich/gobacktest/data.BarEventFromCSVFile.Load"})
+                  {"reader": C.compiled("go:github.com/dirkolbrich/gobacktest/data.BarEventFromCSVFile.Load")})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
@@ -133,7 +133,8 @@ class GobacktestAdapter(Adapter):
         if v is None:
             return not_supported("T0 + 4 日の呼び出しが無かった")
         reads = C.Reads()
-        reads.read("go:Data().History() の Price()(driver が T0 + 4 日の OnData で読んだ列)", lambda: v["visible_closes"])
+        reads.read("go:Data().History() の Price()(driver が T0 + 4 日の OnData で読んだ列)", lambda: v["visible_closes"],
+                   of=C.compiled("go:github.com/dirkolbrich/gobacktest.Data.History"))
         return ok(reads.output(), "T0 + 4 日の OnData で、戦略の Data().History() の件数と Price() の最大", reads.provenance())
 
     def scene_p4_received_time(self, sc):
@@ -145,13 +146,14 @@ class GobacktestAdapter(Adapter):
         for r in rows:
             if "read" not in r:
                 continue
-            base = {"means": r["read"], "form": r["form"], "shape": r.get("shape", "other"), "naming": r.get("naming", "other")}
+            # round r6-2: recorded through common.Attempts.compiled (the driver's read of the tool's DataHandler)
+            base = (r["read"], r["form"], r.get("shape", "other"), r.get("naming", "other"), "go:github.com/dirkolbrich/gobacktest.Data")
             if r.get("expressible") is False:  # a Go slice has no step: a strategy cannot write this naming
-                att.items.append({**base, "raised": None, "message": "Go の区間に歩幅は無く書けない", "returned": None, "expressible": False})
+                att.compiled(*base, message="Go の区間に歩幅は無く書けない", expressible=False)
             elif "error" in r:
-                att.items.append({**base, "raised": "panic", "message": r["error"], "returned": None})
+                att.compiled(*base, raised="panic", message=r["error"])
             else:
-                att.items.append({**base, "raised": None, "message": "", "returned": r["value"]})
+                att.compiled(*base, returned=r["value"])
         if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
         return ok(att.output(), "T0 + 4 日の OnData で試した(戦略の Data() は DataHandler で、Stream() はまだ流れていない事象の列を返す): " + att.summary())

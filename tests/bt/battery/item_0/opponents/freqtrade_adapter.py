@@ -59,6 +59,7 @@ PAIR = "X/JPY"
 _ROOT = Path(tempfile.mkdtemp(prefix="freqtrade_sk_"))
 _HOOKS = types.ModuleType("_ft_hooks")
 sys.modules["_ft_hooks"] = _HOOKS
+C.scene_set_file(_ROOT / "SkStrategy.py")  # the strategy file below is the scene set's code (round r6-2)
 (_ROOT / "SkStrategy.py").write_text('''
 import sys
 from freqtrade.strategy import IStrategy
@@ -189,8 +190,8 @@ class FreqtradeAdapter(Adapter):
         log, car = [], []
 
         def loop(s, t):
+            car.append(C.carrier(t))  # what Freqtrade passed to bot_loop_start for this bar (its current_time)
             log.append(["bar", _ns(t)])
-            car.append(C.carrier(s.dp.get_analyzed_dataframe(PAIR, "1d")[0]))  # the bars reach the strategy as this read
 
         run(bars, {"loop": loop})
         return log, car
@@ -241,7 +242,7 @@ class FreqtradeAdapter(Adapter):
 
         def loop(s, t):
             log.append(["bar", _ns(t)])
-            df, _ = s.dp.get_analyzed_dataframe(PAIR, "1d")
+            df, _ = C.read(s.dp.get_analyzed_dataframe, PAIR, "1d")
             car.append(C.carrier(df))
             if len(df):
                 out.update({k: float(df.iloc[-1][k]) for k in ("open", "high", "low", "close", "volume")})
@@ -310,10 +311,11 @@ class FreqtradeAdapter(Adapter):
         reads, seen = C.Reads(), []
 
         def loop(s, t):
-            df, _ = s.dp.get_analyzed_dataframe(PAIR, "1d")
+            df, _ = C.read(s.dp.get_analyzed_dataframe, PAIR, "1d")
             seen.append(_ns(t))
             if _ns(t) == probe and not reads.items:
-                reads.read("dp.get_analyzed_dataframe(pair, '1d') の close", lambda: [float(x) for x in df["close"]] if len(df) else [])
+                reads.read("dp.get_analyzed_dataframe(pair, '1d') の close", lambda: [float(x) for x in df["close"]] if len(df) else [],
+                           of=df)
 
         run(C.events(sc), {"loop": loop})
         if not reads.items:  # no_probe_call
@@ -331,23 +333,27 @@ class FreqtradeAdapter(Adapter):
         att, keep = C.Attempts(), {}
 
         def ind(s, df, md):
+            keep["car"] = C.carrier(df)  # the DataFrame Freqtrade passed to populate_indicators, recorded when received
             keep["df"] = df
             return df
 
         def loop(s, t):
             if _ns(t) != probe or att.items:
                 return
-            adf = s.dp.get_analyzed_dataframe(PAIR, "1d")[0]
-            # namings: the scene's fixed list; a bar closing at t is the candle dated t - 1 day
-            C.try_position_namings(att, "dp.get_analyzed_dataframe の close の .iloc[位置]", lambda: adf["close"].iloc, len(adf))
+            adf = C.read(s.dp.get_analyzed_dataframe, PAIR, "1d")[0]
+            # namings: the scene's fixed list; a bar closing at t is the candle dated t - 1 day. The reads run pandas
+            # code only; via = the DataFrame Freqtrade's get_analyzed_dataframe returned
+            C.try_position_namings(att, "dp.get_analyzed_dataframe の close の .iloc[位置]", lambda: adf["close"].iloc, len(adf), via=adf)
             ts = (lambda ns: pd.Timestamp(int(ns) - DAY, unit="ns", tz="UTC"))
             C.try_time_namings(att, "dp.get_analyzed_dataframe の date == 時刻 の close", "time_at",
-                               lambda t: [float(x) for x in adf.loc[adf["date"] == t, "close"]], sc, ts)
+                               lambda t: [float(x) for x in adf.loc[adf["date"] == t, "close"]], sc, ts, via=adf)
             C.try_time_namings(att, "dp.get_analyzed_dataframe の 始 <= date <= 終 の close", "time_range",
-                               lambda a, b: [float(x) for x in adf.loc[(adf["date"] >= a) & (adf["date"] <= b), "close"]], sc, ts)
-            att.run("dp.get_analyzed_dataframe の close(全部)", "other", lambda: [float(x) for x in adf["close"]])
+                               lambda a, b: [float(x) for x in adf.loc[(adf["date"] >= a) & (adf["date"] <= b), "close"]], sc, ts,
+                               via=adf)
+            att.run("dp.get_analyzed_dataframe の close(全部)", "other", lambda: [float(x) for x in adf["close"]], via=adf)
             att.run("dp.get_pair_dataframe の close(全部)", "other", lambda: [float(x) for x in s.dp.get_pair_dataframe(PAIR, "1d")["close"]])
-            att.run("populate_indicators に渡された DataFrame の close(全部)", "other", lambda: [float(x) for x in keep["df"]["close"]])
+            att.run("populate_indicators に渡された DataFrame の close(全部)", "other", lambda: [float(x) for x in keep["df"]["close"]],
+                    via=keep.get("car"))
 
         run(C.events(sc), {"ind": ind, "loop": loop})
         if not att.items:  # no_probe_call
@@ -363,7 +369,7 @@ class FreqtradeAdapter(Adapter):
         seen, seen_car = [], []
 
         def loop(s, t):
-            df, _ = s.dp.get_analyzed_dataframe(PAIR, "1d")
+            df, _ = C.read(s.dp.get_analyzed_dataframe, PAIR, "1d")
             seen_car.append(C.carrier(df))
             seen.append((_ns(t), [float(x) for x in df["close"]] if len(df) else []))
 

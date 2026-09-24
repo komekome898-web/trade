@@ -118,7 +118,7 @@ def _now(s) -> int:
 def _bar_read(s, start):
     """What the strategy reads for the bars up to now (qf-lib hands the strategy no event object; the
     data provider's read is how a bar reaches it). Its class is the carrier of the bar."""
-    return s.ts.data_provider.get_price(TK, PriceField.Close, start, s.timer.now())
+    return C.read(s.ts.data_provider.get_price, TK, PriceField.Close, start, s.timer.now())  # round r6-2: a read of the tool
 
 
 def _closes(s, start):

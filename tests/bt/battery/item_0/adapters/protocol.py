@@ -50,23 +50,40 @@ Rules for adapter authors (they are what the critic checks):
     function marked with a kind), never answer with values the strategy kept
     itself or a conversion the adapter called itself. A target without the
     type / the means is "not_supported", with what was checked.
-  * Provenance (round r6-1): `SceneResult.provenance` carries where the
-    measured thing came from, and `run_battery.py` checks it BEFORE grading
-    (a failed check makes the scene "error" = 結果なし, with the reason):
+  * Provenance (round r6-1, made positive in round r6-2 -- critic br6-1-1 /
+    br6-1-2): `SceneResult.provenance` carries where the measured thing
+    came from, and `run_battery.py` checks it BEFORE grading (a failed check
+    makes the scene "error" = 結果なし, with the reason). Only records that
+    `common.py` made from objects are accepted; a thing is the target's
+    only when its file lies in the target's distribution (the runner's own
+    table `TARGET_DISTS`, resolved in the target's interpreter) -- never
+    because its name is not the scene set's:
       - scenes that list the events the strategy received
         (`CARRIER_SCENES` in run_battery.py): {"carriers": [...]} with, for
-        each received event, `common.carrier(obj)` of the object the
-        strategy received (made from the object, not written by hand); a
-        target that marks types with its own tag uses `common.carrier_tag`;
-        a compiled tool's driver names the tool type its match arm used.
-        For p5-hand-over-order: one list per run.
+        each received event, `common.carrier(obj)` called AT THE MOMENT the
+        strategy receives the object (a shared type -- dict, function,
+        datetime, DataFrame -- is the target's only when the target's code
+        passed it into the strategy's call, or the strategy got it through
+        `common.read(target_fn, ...)`, and the scene set did not hand it in).
+        A target that marks types with its own enum uses
+        `common.carrier_tag(obj, tag)`, with a plain constant
+        `common.carrier_const(obj, module, name, value)`, a numpy record
+        `common.carrier_record(row, module, dtype_name, const=...)`; the
+        tag is checked on its own. A compiled tool's driver names the tool
+        type its match arm used through `common.compiled(name)`. For
+        p5-hand-over-order: one list per run.
       - p2-iso-*: {"reader": common.qualname(<the target's function that
-        read the ISO string>)}.
+        read the ISO string>)} (or `common.compiled(name)`).
       - p4-visible-at-step: {"reads": ...} from `common.Reads` (each read
-        made at the probe call through the target's public means).
-      - p4-future-read-attempt: every attempt carries `shape` and `naming`
-        from `common.try_position_namings` / `try_time_namings` (the
-        namings are fixed in scenes.py, `NAMING_SHAPES`).
+        made at the probe call; the target's code must run during the read,
+        or `of=` names the target object read).
+      - p4-future-read-attempt: every attempt through `common.Attempts`
+        (`try_position_namings` / `try_time_namings`, `run(..., via=)`,
+        `compiled(...)` for a driver's attempt); the target's code must run
+        during it or `via` names the target object; a stop raised by a
+        `raise` statement of the scene set is not the target's.
+      - A code file an adapter generates for a tool to load (a strategy
+        module) is declared with `common.scene_set_file(path)`.
 
 The new implementation's adapter (written each round by the materials
 person, not by the scene keeper) lives at `adapters/new_impl.py` and must

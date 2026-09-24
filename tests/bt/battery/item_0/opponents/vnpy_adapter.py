@@ -338,8 +338,10 @@ class VnpyAdapter(Adapter):
             hist = s.cta_engine.history_data
             # namings: the scene's fixed list; the engine's list counts from the first bar (the newest delivered is `now`)
             now = [_ns(x.datetime) for x in hist].index(probe)
-            C.try_position_namings(att, "self.cta_engine.history_data[位置]", lambda: hist, now + 1, lambda x: x.close_price)
-            att.run("self.cta_engine.history_data の close の全部", "other", lambda: [x.close_price for x in hist])
+            # via = the tool's engine whose list is read (indexing a list runs no tool code)
+            C.try_position_namings(att, "self.cta_engine.history_data[位置]", lambda: hist, now + 1, lambda x: x.close_price,
+                                   via=s.cta_engine)
+            att.run("self.cta_engine.history_data の close の全部", "other", lambda: [x.close_price for x in hist], via=s.cta_engine)
             att.run("self.load_bar(10)", "other", lambda: s.load_bar(10))
 
         run([_bar(e) for e in C.events(sc)], {"bar": h})

@@ -54,7 +54,8 @@ def _feed(msgs, store_names):
         async def consume(name):
             with getattr(s, name).watch() as stream:
                 async for ch in stream:
-                    got.append((name, ch.operation, dict(ch.data)))
+                    # round r6-2: the provenance of the change the tool handed over, made when it is received
+                    got.append((name, ch.operation, dict(ch.data), C.carrier(ch)))
 
         tasks = [asyncio.create_task(consume(n)) for n in store_names]
         await asyncio.sleep(0)
@@ -89,10 +90,10 @@ class PybottersAdapter(VectorBase):
                                                  "sell_child_order_acceptance_id": "b"}])
         store, got = _feed([m], ["executions"])
         seq = [["trade", _parse_exec_date(g[2]["exec_date"])] for g in got]
-        car = [C.carrier(getattr(store, g[0])) for g in got]  # the tool's store the change came from (its type for trades)
+        car = [g[3] for g in got]  # the change object the tool's store handed over (its class), recorded when received
         f = {"price": got[0][2]["price"], "qty": got[0][2]["size"], "side": got[0][2]["side"].lower()} if got else {}
         return ok({"sequence": seq, "fields": f}, "bitFlyer の約定の文を bitFlyerDataStore.onmessage に渡し、executions.watch() で受けた変化。"
-                  f"時刻は文の exec_date(小数 7 桁、100 ns 刻み)を ns に直した。受けた変化: {got}", {"carriers": car})
+                  f"時刻は文の exec_date(小数 7 桁、100 ns 刻み)を ns に直した。受けた変化: {[g[:3] for g in got]}", {"carriers": car})
 
     def _board(self, sc, snapshot: bool):
         e = C.events(sc)[0]
@@ -106,7 +107,7 @@ class PybottersAdapter(VectorBase):
         s, got = _feed([m], ["board"])
         return not_supported("板の文は、websocket の接続(ClientWebSocketResponse)から来たときだけ写真として受け、差分は写真のあとだけ当てる"
                              "(models/bitflyer.py 69-87)。接続なしで渡すと板に何も入らない。"
-                             f"試したこと: onmessage(板の{'写真' if snapshot else '差分'}の文, None) -> board.watch() の変化 {got}、board.sorted() {s.board.sorted()}")
+                             f"試したこと: onmessage(板の{'写真' if snapshot else '差分'}の文, None) -> board.watch() の変化 {[g[:3] for g in got]}、board.sorted() {s.board.sorted()}")
 
     def scene_p3_book_snapshot(self, sc):
         return self._board(sc, True)

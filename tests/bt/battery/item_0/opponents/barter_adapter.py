@@ -72,7 +72,7 @@ _VARIANT = {"trade": "DataKind::Trade", "book_l1": "DataKind::OrderBookL1", "boo
 
 
 def carriers(rows):
-    return [f"rust:barter_data::event::{_VARIANT.get(r['event']['kind'], r['event']['kind'])} (kind_name {r['event'].get('variant')})"
+    return [C.compiled(f"rust:barter_data::event::{_VARIANT.get(r['event']['kind'], r['event']['kind'])} (kind_name {r['event'].get('variant')})")
             for r in calls(rows)]
 
 
@@ -104,7 +104,7 @@ class BarterAdapter(Adapter):
         r = rows[0] if rows else {}
         return ok(r.get("parsed_ns"), "道具の市場の事象の記録(MarketStreamEvent の JSON。道具の例の資料と同じ形)の time_exchange に ISO の文字列を書き、"
                   f"道具の読み込み(serde + chrono の DateTime<Utc>)で読んだ時刻。{r}",
-                  {"reader": "rust:barter_data::streams::consumer::MarketStreamEvent (serde の Deserialize、time_exchange: chrono::DateTime<Utc>)"})
+                  {"reader": C.compiled("rust:barter_data::streams::consumer::MarketStreamEvent (serde の Deserialize、time_exchange: chrono::DateTime<Utc>)")})
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 

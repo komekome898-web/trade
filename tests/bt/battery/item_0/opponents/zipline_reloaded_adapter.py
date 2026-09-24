@@ -232,12 +232,12 @@ class ZiplineReloadedAdapter(Adapter):
                 return
             # the longest window the tool gives from here (a window reaching before the bundle's first session is refused)
             for k in range(n + 1, 0, -1):
-                try:
-                    vals = [x for x in data.history(ctx.a, "close", k, "1d") if x == x]
+                try:  # round r6-2: the tool's read is made inside common.Reads (its code runs there)
+                    reads.read(f"data.history(asset, 'close', {k}, '1d')(NaN の行は足が無い)",
+                               lambda k=k: [x for x in data.history(ctx.a, "close", k, "1d") if x == x], of=data)
                 except Exception as exc:  # noqa: BLE001
                     refused.append(f"bar_count={k}: {type(exc).__name__}")
                     continue
-                reads.read(f"data.history(asset, 'close', {k}, '1d')(NaN の行は足が無い)", lambda vals=vals: vals)
                 break
 
         run(C.events(sc), h)

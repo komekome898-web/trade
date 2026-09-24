@@ -445,3 +445,390 @@ def test_superset_and_absent_rows_answer_every_ability_with_a_source():
             if verdict.startswith("持たないと確認した"):
                 assert all(h == "無い" for h, _ in found.values()), row["候補"]
     assert checked > 0
+
+
+# ---------------------------------------------------------------- round r6-1
+# i0-r5-02 / i0-r5-03 / i0-r5-04: what a scene measures counts only when the
+# target's own code produced it; the runner checks the provenance before it
+# grades, and the review table's containments must hold in the records.
+def _records() -> dict[str, list[dict]]:
+    import csv
+    csv.field_size_limit(10**9)
+    out = {}
+    for p in sorted((HERE / "survey_results").glob("*.tsv")):
+        with p.open(encoding="utf-8") as f:
+            out[p.stem] = list(csv.DictReader(f, delimiter="\t"))
+    return out
+
+
+def _raw(row: dict):
+    out = json.loads(row["output_1"])
+    return out.get("raw", out) if isinstance(out, dict) else out
+
+
+def test_no_recorded_result_was_refused_by_the_provenance_check():
+    """Every recorded survey result passed the runner's provenance check (an
+    adapter-made carrier, a foreign reader, a value the strategy kept itself,
+    an incomplete list of namings would show as provenance_error)."""
+    bad = [(t, r["scene_id"], r["detail_1"][:160]) for t, rows in _records().items() for r in rows
+           if "provenance_error" in r["output_1"] or "出所の検めで採点しない" in r["detail_1"]]
+    assert not bad, bad
+
+
+def test_current_impl_passes_the_provenance_check():
+    rows = run_battery.run_target("current_impl")
+    bad = [(r["scene_id"], r["detail_1"][:160]) for r in rows if "出所の検めで採点しない" in r["detail_1"]]
+    assert not bad, bad
+
+
+def test_one_carrier_carries_one_kind_across_all_scenes_of_a_target():
+    """A class of the target carries ONE event kind over the whole record: the
+    same base class carried as 'trade' in one scene and 'funding' in another
+    is the adapter deciding the type (i0-r5-02)."""
+    for target, rows in _records().items():
+        by: dict[str, set] = {}
+        for r in rows:
+            if r["scene_id"] not in run_battery.CARRIER_SCENES or r["status_1"] != "ok":
+                continue
+            key, with_kinds = run_battery.CARRIER_SCENES[r["scene_id"]]
+            if not with_kinds:
+                continue
+            raw, prov = _raw(r), json.loads(r["provenance_1"])
+            if r["scene_id"] == "p5-hand-over-order":
+                pairs = [(k, c) for run, cs in zip(raw["runs"], prov["carriers"])
+                         for k, c in zip(run_battery._kinds(run, "order", True), cs)]
+            else:
+                pairs = list(zip(run_battery._kinds(raw, key, True), prov["carriers"]))
+            for k, c in pairs:
+                by.setdefault(run_battery._key(c), set()).add(str(k))
+        many = {c: sorted(ks) for c, ks in by.items() if len(ks) > 1}
+        assert not many, (target, many)
+
+
+# ---------------------------------------------------------------- round r6-2
+# br6-1-1 / br6-1-2: the provenance check is positive. A fake tool is written
+# to a temporary directory OUTSIDE the scene set; its directory is the only
+# place of the target. Every hole of round r6-1's name check is fed to the
+# runner: an adapter-built dict, an adapter-written function, a tag class of
+# the scene set, a string written by hand, a shared reader, a strategy-kept
+# list, an adapter's own raise -- all must be refused; the same things made
+# by the fake tool must pass.
+_FAKE_TOOL = """
+import enum, datetime
+
+
+class Kind(enum.Enum):
+    TRADE = 1
+
+
+class Event:
+    def __init__(self, kind, ts):
+        self.kind, self.ts = kind, ts
+
+
+def run_dicts(strategy, rows):
+    for r in rows:
+        d = {"price": r[0], "timestamp": r[1]}   # the tool builds the dict it hands over
+        strategy.on(d)
+
+
+def forward(strategy, items):
+    for d in items:                               # the tool hands over what it was given
+        strategy.on(d)
+
+
+def call_back(strategy):
+    strategy.on(pick)                             # hands over one of its own functions
+
+
+def pick(xs, i):
+    return xs[i]
+
+
+def parse(s):
+    return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
+def history():
+    return [100.0, 101.0, 102.0, 103.0]
+
+
+def event(ts):
+    return Event(Kind.TRADE, ts)
+"""
+
+
+@pytest.fixture()
+def fake_tool(tmp_path, monkeypatch):
+    pkg = tmp_path / "faketool_r62"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text(_FAKE_TOOL, encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    import importlib
+    mod = importlib.import_module("faketool_r62")
+    roots = run_battery.Roots([str(pkg.resolve())], ["go:*faketool."], [])
+    yield mod, roots
+    sys.modules.pop("faketool_r62", None)
+
+
+def _check(sid, out, prov, roots):
+    return run_battery.checked(SceneResult("ok", out, provenance=prov), _scene(sid), roots=roots)
+
+
+class _Strat:
+    def __init__(self):
+        self.car = []
+
+    def on(self, obj):
+        import common as C
+        self.car.append(C.carrier(obj))
+
+
+def test_shared_type_carriers_are_placed_by_how_they_reached_the_strategy(fake_tool):
+    """br6-1-1: builtins.dict / a function are the target's only when the
+    target's code passed them into the strategy's call (or returned them),
+    and not when the scene-set side made or handed them in."""
+    import common as C
+    tool, roots = fake_tool
+    out = {"observed_ts_ns": [1]}
+    s = _Strat()
+    tool.run_dicts(s, [(100.0, 1)])  # the tool made the dict and passed it
+    assert _check("p2-event-time-exact", out, {"carriers": s.car}, roots).status == "ok"
+    s = _Strat()
+    tool.forward(s, [{"price": 100.0, "timestamp": 1}])  # the adapter's dict, only forwarded by the tool
+    got = _check("p2-event-time-exact", out, {"carriers": s.car}, roots)
+    assert got.status == "error" and "場面集の側が持つ物" in got.output["provenance_error"], got.output
+
+    def cb(e, now):  # the scene-set side builds the dict inside its own callback
+        return C.carrier({"price": e, "timestamp": now})
+    got = _check("p2-event-time-exact", out, {"carriers": [cb(100.0, 1)]}, roots)
+    assert got.status == "error" and "共有の型" in got.output["provenance_error"], got.output
+    got = _check("p5-same-stream-order", {"prices": [1.0]}, {"carriers": [C.carrier(lambda: None)]}, roots)  # an adapter lambda
+    assert got.status == "error", got.output
+    s = _Strat()
+    tool.call_back(s)  # the tool's own function handed over
+    assert _check("p5-same-stream-order", {"prices": [1.0]}, {"carriers": s.car}, roots).status == "ok"
+
+
+def test_hand_written_carriers_and_names_are_refused(fake_tool):
+    """A carrier / reader that common.py did not make from an object is not
+    graded, whatever it says (round r6-1's `_row_carrier` strings)."""
+    import common as C
+    tool, roots = fake_tool
+    for c in ("faketool_r62.Event", {"type": "faketool_r62.Event", "type_file": str(roots.dirs[0]) + "/__init__.py"}):
+        got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [c]}, roots)
+        assert got.status == "error" and "手で書いた" in got.output["provenance_error"], (c, got.output)
+    assert _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier(tool.event(1))]}, roots).status == "ok"
+    assert _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.compiled("go:*faketool.Trade")]}, roots).status == "ok"
+    got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.compiled("go:*othertool.Trade")]}, roots)
+    assert got.status == "error", got.output
+
+
+def test_a_tag_is_checked_as_well_as_the_object(fake_tool):
+    """br6-1-2: the tag of `carrier_tag` / `carrier_const` is placed on its own."""
+    import enum
+
+    import common as C
+    tool, roots = fake_tool
+
+    class MyKind(enum.Enum):  # a tag class of the scene-set side
+        TRADE = 1
+    ev = tool.event(1)
+    assert _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier_tag(ev, tool.Kind.TRADE)]}, roots).status == "ok"
+    got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier_tag(ev, MyKind.TRADE)]}, roots)
+    assert got.status == "error" and "札" in got.output["provenance_error"], got.output
+    import types
+    here = types.ModuleType("scene_side_consts")
+    here.__file__ = str(HERE / "scene_side_consts.py")
+    here.TRADE = 2
+    got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier_const(ev, here, "TRADE", 2)]}, roots)
+    assert got.status == "error" and "札" in got.output["provenance_error"], got.output
+    with pytest.raises(ValueError):
+        C.carrier_const(ev, tool, "history", 2)  # the named constant must carry the value
+
+
+def test_readers_reads_and_attempts_must_run_the_targets_code(fake_tool):
+    """The same positive check for p2-iso's reader, p4-visible-at-step's reads
+    and p4-future-read-attempt's attempts."""
+    import datetime
+
+    import common as C
+    tool, roots = fake_tool
+    iso = 1704067200123456789
+    assert _check("p2-iso-utc", iso, {"reader": C.qualname(tool.parse)}, roots).status == "ok"
+    for reader in (C.qualname(datetime.datetime.fromisoformat), "faketool_r62.parse", C.qualname(_check)):
+        assert _check("p2-iso-utc", iso, {"reader": reader}, roots).status == "error", reader
+    out = {"visible_count": 4, "max_visible_close": 103.0}
+    r = C.Reads()
+    r.read("tool.history()", tool.history)
+    assert _check("p4-visible-at-step", out, r.provenance(), roots).status == "ok"
+    kept = [100.0, 101.0, 102.0, 103.0]
+    r = C.Reads()
+    r.read("a list the strategy kept", lambda: list(kept))
+    got = _check("p4-visible-at-step", out, r.provenance(), roots)
+    assert got.status == "error" and "1 行も走らず" in got.output["provenance_error"], got.output
+    by_hand = {"reads": [{"means": "tool.history()", "returned": [100.0, 101.0, 102.0, 103.0], "touched": [roots.dirs[0] + "/__init__.py"]}]}
+    got = _check("p4-visible-at-step", out, by_hand, roots)
+    assert got.status == "error" and "手で書いた" in got.output["provenance_error"], got.output
+    r = C.Reads()
+    r.read("tool.history()", tool.history)
+    assert _check("p4-visible-at-step", {"visible_count": 5, "max_visible_close": 104.0}, r.provenance(), roots).status == "error"
+
+    def attempts(fn):
+        att = C.Attempts()
+        C.try_position_namings(att, "seq", fn, 4)
+        return att.output()
+    stopped = attempts(lambda: C.KeyCall(lambda k: tool.pick([100.0, 101.0, 102.0, 103.0], k)))
+    assert _check("p4-future-read-attempt", stopped, None, roots).status == "ok"
+    own = attempts(lambda: [100.0, 101.0, 102.0, 103.0])  # the strategy's own list: no tool code runs
+    got = _check("p4-future-read-attempt", own, None, roots)
+    assert got.status == "error" and "1 行も走らず" in got.output["provenance_error"], got.output
+
+    def raiser(k):
+        tool.history()
+        raise IndexError("the adapter stops itself")
+    self_stopped = attempts(lambda: C.KeyCall(raiser))
+    got = _check("p4-future-read-attempt", self_stopped, None, roots)
+    assert got.status == "error" and "raise 文" in got.output["provenance_error"], got.output
+
+
+def test_p4_attempts_must_cover_the_fixed_namings_and_only_compiled_means_may_skip_one(fake_tool):
+    """i0-r5-03: a means is graded only with the whole fixed list of namings
+    of its shape; `expressible: False` is allowed only for a compiled driver."""
+    tool, roots = fake_tool
+    sc = _scene("p4-future-read-attempt")
+    f = roots.dirs[0] + "/__init__.py"
+
+    def res(atts):
+        return run_battery.checked(SceneResult("ok", {"attempts": atts}), sc, roots=roots)
+
+    import common as C
+
+    def made(d):  # an attempt record as common.Attempts makes it (the provenance itself is tested above)
+        return C._register(C.Record(d))
+    whole = [made({"means": "seq", "form": "position", "shape": "position", "naming": n, "raised": "IndexError", "returned": None,
+                   "touched": [f]}) for n in scenes.POSITION_NAMINGS]
+    assert res(whole).status == "ok"
+    assert res(whole[:1]).status == "error"  # only [n]: the open slices were not tried
+    skipped = [made(dict(a, expressible=False)) if a["naming"] == "[n::2]" else a for a in whole]
+    assert res(skipped).status == "error"  # a Python means cannot declare a naming unwritable
+    compiled = [made(dict(a, means="go:" + a["means"])) for a in skipped]
+    assert res(compiled).status == "ok"
+    untouched = [made(dict(a, touched=[])) for a in whole]
+    assert res(untouched).status == "error"  # nothing of the target ran
+    assert res([dict(a) for a in whole]).status == "error"  # records not made by common.Attempts
+
+
+def test_every_target_has_its_distribution_in_the_runner():
+    """The places of each target are the runner's table, not the adapter's."""
+    names = {"current_impl", "new_impl", "mutant", *run_battery.OPPONENTS}
+    assert names <= set(run_battery.TARGET_DISTS), sorted(names - set(run_battery.TARGET_DISTS))
+    for t, spec in run_battery.TARGET_DISTS.items():
+        assert spec.get("py") or spec.get("compiled"), t
+        assert all(h.startswith(run_battery.COMPILED) for h in spec.get("compiled", [])), t
+
+
+def test_the_scene_set_is_never_a_place_of_a_target():
+    """A target whose table entry resolves into the scene set is refused."""
+    run_battery._ROOTS.pop("__probe__", None)
+    run_battery.TARGET_DISTS["__probe__"] = {"py": ["run_battery"]}
+    try:
+        with pytest.raises(SystemExit):
+            run_battery.roots_of("__probe__")
+    finally:
+        run_battery.TARGET_DISTS.pop("__probe__", None)
+        run_battery._ROOTS.pop("__probe__", None)
+
+
+def test_generated_code_files_are_declared_as_the_scene_sets():
+    """An adapter that writes a Python file for a tool to load (a strategy
+    module) declares it with common.scene_set_file, so frames of that code are
+    not taken for the tool's."""
+    import re
+    for p in sorted((HERE / "opponents").glob("*.py")):
+        src = p.read_text(encoding="utf-8")
+        if re.search(r"\.py[\"']\)\.write_text|\.py[\"']\)\s*,\s*[\"']w", src):
+            assert "C.scene_set_file(" in src, p.name
+
+
+def test_no_adapter_composes_a_carrier_string():
+    """Carriers are made by common.py from objects: no adapter adds to or
+    formats a carrier (round r6-1's `C.carrier(hbt) + ".wait_next_feed"`,
+    `f"hftbacktest.{name}"`)."""
+    import re
+    for p in sorted([*(HERE / "opponents").glob("*.py"), *(HERE / "adapters").glob("*.py")]):
+        if p.name == "common.py":
+            continue
+        src = p.read_text(encoding="utf-8")
+        assert not re.search(r"C\.carrier(?:_tag)?\([^)]*\)\s*\+", src), p.name
+        assert not re.search(r"carrier\(lambda", src), p.name
+
+
+def test_every_python_adapter_names_the_future_through_the_common_helpers():
+    """The namings a Python adapter tries are not its own choice: a p4 attempt
+    with form time / position goes through common.try_position_namings /
+    try_time_namings, or is a written call of shape no_means, or the one
+    naming of shape next_call (a call that returns the next item)."""
+    import re
+    for p in sorted([*(HERE / "opponents").glob("*.py"), *(HERE / "adapters").glob("*.py")]):
+        if p.name == "common.py":  # the helpers themselves
+            continue
+        src = p.read_text(encoding="utf-8")
+        for m in re.finditer(r"att\.run(?:_async)?\((.{0,400}?)\)\s*$", src, flags=re.M | re.S):
+            call = m.group(1)
+            if re.search(r"[\"'](time|position)[\"']", call.split(",")[1] if "," in call else ""):
+                assert re.search(r"shape=[\"'](no_means|next_call)[\"']", call), (p.name, call[:160])
+
+
+def _cand_targets() -> dict[int, str]:
+    return {int(r["cand"]): r["target"] for r in _ledger() if r["result"] == "走った"}
+
+
+def _containing_segments():
+    """(row, ability number, text after 含む:) for every 在る ability of a 上位互換 row."""
+    import re
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    for sec in re.split(r"^### 観点 ", text, flags=re.M)[1:]:
+        for row in _table_rows(sec):
+            if not row["判断"].startswith("スキップ"):
+                continue
+            parts = re.split(r"能 (\d+): (在る|無い)", row["理由"])
+            for k in range(1, len(parts) - 1, 3):
+                if parts[k + 1] == "在る" and "含む:" in parts[k + 2]:
+                    yield sec[:4], row["候補"], int(parts[k]), parts[k + 2].split("含む:", 1)[1]
+
+
+def test_every_scene_a_containment_cites_as_correct_is_correct_in_the_records():
+    """i0-r5-04: a 上位互換 row's evidence is checked against the records, not
+    believed: each scene the containing text cites as 正解と一致 is 正解と一致
+    in the survey result of a run candidate the same text names, and a cited
+    probe log exists."""
+    import re
+    recs = {t: {r["scene_id"]: r for r in rows} for t, rows in _records().items()}
+    targets = _cand_targets()
+    checked = 0
+    for vp, cand, n, seg in _containing_segments():
+        named = [targets[int(c)] for c in re.findall(r"(?:^|[\s(、。/])(\d+) [A-Za-z]", seg) if int(c) in targets]
+        assert named, (vp, cand, n, seg[:120])
+        for group in re.findall(r"((?:p\d-[\w-]+(?:(?:の[^・、。 ]{1,8})?・)?)+) ?が正解と一致", seg):
+            for sid in re.findall(r"p\d-[\w-]+", group):
+                checked += 1
+                ok_ = [t for t in named if recs.get(t, {}).get(sid, {}).get("correctness") == "正解と一致"]
+                assert ok_, f"{vp} {cand} 能 {n}: {sid} is cited as 正解と一致 but none of {named} has it in survey_results"
+        for log in re.findall(r"survey_results/attempts/[\w.-]+", seg):
+            assert (HERE / log).exists(), (vp, cand, n, log)
+    assert checked > 0
+
+
+def test_no_containment_rests_on_what_a_user_could_add():
+    """i0-r5-04: the containing side is a mechanism the run candidate itself
+    has; a base class users can subclass, 'no limit on types', 'can be written
+    in the handler' contain every ability of every candidate without reading it.
+    P0-7 is left out on purpose: its abilities ARE the places a user's own
+    implementation is handed in (the table's reading section, 「P0-7 の口」), so
+    a class the user writes against a published socket is the mechanism itself."""
+    for vp, cand, n, seg in _containing_segments():
+        if vp == "P0-7":
+            continue
+        for w in ("の子", "上限が無い", "上限の無い", "で書ける", "で運べる", "書き足せ"):
+            assert w not in seg, (vp, cand, n, w, seg[:160])

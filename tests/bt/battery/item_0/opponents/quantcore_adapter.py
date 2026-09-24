@@ -231,8 +231,9 @@ class QuantcoreAdapter(Adapter):
             # Strategy's public methods (dir(quantcore.Strategy)): generate_*, get_name, get_portfolio,
             # get_position, get_signals, has_position, has_signals, on_*, reset, set_position -- none reads
             # market data by time or position. The calls a strategy would write are made as written:
-            att.run("self.get_position('X', 5 本目の時刻)", "time", lambda: s.get_position("X", fut), shape="no_means", naming="written_call")
-            att.run("受け取った事象の [1](次の足)", "position", lambda: ev[1], shape="no_means", naming="written_call")
+            att.run("self.get_position('X', 5 本目の時刻)", "time", lambda: s.get_position("X", fut), shape="no_means", naming="written_call",
+                    via=s.get_position)
+            att.run("受け取った事象の [1](次の足)", "position", lambda: ev[1], shape="no_means", naming="written_call", via=ev)
             att.run("self.get_signals()", "other", lambda: [str(x) for x in s.get_signals()])
 
         run(C.events(sc), f)

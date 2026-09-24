@@ -32,6 +32,7 @@ import argparse
 import csv
 import importlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -193,18 +194,51 @@ GRADERS = {
 }
 
 
-# ---------------------------------------------------------------- provenance (round r6-1)
+# ---------------------------------------------------------------- provenance (round r6-1, r6-2)
 # Where the measured thing came from is checked BEFORE grading (critic
 # i0-r5-02 / i0-r5-03 / i0-r5-04): an event type the scene-set side made, a
 # conversion or a list outside the target, or an incomplete set of namings is
 # not graded -- the scene becomes "error" (結果なし) with the reason.
+#
+# Round r6-2 (critic br6-1-1 / br6-1-2): the check is POSITIVE. A thing is the
+# target's only when the file it comes from lies in the target's own
+# distribution (the directories below, found by the import system of the
+# target's interpreter) -- never because its name is not on a list of the
+# scene set's names. Shared types (builtins.dict, functions, datetime, pandas,
+# numpy rows, numba boxes) are placed by how they reached the strategy
+# (common.py: passed_by / returned_by / code_file / dtype / tag), and only
+# records common.py made from objects are accepted.
 
-# modules of the scene set itself (a class defined here is not the target's)
-BATTERY_TOPS = ({p.stem for p in HERE.glob("*.py")} | {p.stem for p in (HERE / "opponents").glob("*.py")}
-                | {p.stem for p in (HERE / "adapters").glob("*.py")} | {"opponents", "adapters", "__main__", "hft_copy"})
-# a time conversion from these is not the target's own reader
-FOREIGN_READER_TOPS = {"pandas", "polars", "datetime", "dateutil", "numpy", "builtins", "time", "arrow",
-                       "pendulum", "ciso8601", "zoneinfo", "calendar", "email"}
+import common as C  # noqa: E402  (the same module object the adapters use: its registry is checked)
+
+REPO = HERE.parents[3]
+
+# target -> the target's own distribution: Python top modules ("py") and the
+# heads of a compiled driver's type names ("compiled"). Written here, not by
+# the adapters. A reproduction (opponents/repro_*.py) is its own file.
+TARGET_DISTS: dict[str, dict] = {
+    "new_impl": {"py": ["bot.bt"]}, "mutant": {"py": ["bot.bt"]},
+    "current_impl": {"py": ["bot.backtest", "bot.strategy"]},
+    "opp_basana": {"py": ["basana"]}, "opp_ziplime": {"py": ["ziplime"]}, "opp_zipline_reloaded": {"py": ["zipline"]},
+    "opp_lib_pybroker": {"py": ["pybroker"]}, "opp_qf_lib": {"py": ["qf_lib"]}, "opp_backtrader": {"py": ["backtrader"]},
+    "opp_hftbacktest": {"py": ["hftbacktest"]}, "opp_rqalpha": {"py": ["rqalpha"]}, "opp_fast_trade": {"py": ["fast_trade"]},
+    "opp_pybotters": {"py": ["pybotters"]}, "opp_backtesting": {"py": ["backtesting"]}, "opp_qstrader": {"py": ["qstrader"]},
+    "opp_quantcore": {"py": ["quantcore"]}, "opp_finmarketpy": {"py": ["finmarketpy"]},
+    "opp_quanttrader": {"py": ["quanttrader"]}, "opp_pyalgotrade": {"py": ["pyalgotrade"]},
+    "opp_freqtrade": {"py": ["freqtrade"]}, "opp_vnpy": {"py": ["vnpy", "vnpy_ctastrategy"]},
+    "opp_luczinsritter": {"py": ["backtest_engine", "tradeanalysis"]}, "opp_mihircoding_lob": {"py": ["src"]},
+    "opp_nickgardi_orderbooksim": {"py": ["matching_engine", "models"]}, "opp_daniyalmlk_slippage": {"py": ["slippage"]},
+    "opp_akurkar07_orderbook": {"py": ["lob_cpp"], "compiled": ["cpp:akurkar07"]},
+    "opp_3yit_lob": {"py": ["lob_cpp"], "compiled": ["cpp:3yit"]}, "opp_jxm35_lob": {"py": ["lob_cpp"], "compiled": ["cpp:jxm35"]},
+    "opp_pysystemtrade": {"py": ["sysdata", "systems", "syscore", "sysquant", "sysobjects"]},
+    "opp_predictivedev_tradesim": {"py": ["trading_simulator"]},
+    "opp_sarthak_execsim": {"compiled": ["cpp:execution_simulator"]}, "opp_sigc": {"compiled": ["c:sigc"]},
+    "opp_homerun": {"py": ["services"]}, "opp_aat": {"py": ["aat"]},
+    "opp_gobacktest": {"compiled": ["go:*gobacktest.", "go:github.com/dirkolbrich/gobacktest"]},
+    "opp_pineforge": {"compiled": ["c:pineforge"]},
+    "opp_barter": {"compiled": ["rust:barter_data::", "rust:barter::"]},
+    "opp_pytrendfollow": {"py": ["trading"]}, "opp_isaaccheng_obsim": {"py": ["order_book_simulator"]},
+}
 COMPILED = ("rust:", "go:", "c:", "cpp:")
 
 # scene id -> (key of the received list in the output, whether the list carries kinds)
@@ -220,25 +254,112 @@ CARRIER_SCENES = {
 PROVENANCE_SCENES = set(CARRIER_SCENES) | {"p2-iso-utc", "p2-iso-offset", "p4-visible-at-step", "p4-future-read-attempt"}
 
 
-def made_by_scene_set(name: str) -> bool:
-    """A carrier / reader name that points into the scene set (or a driver's own type)."""
-    if name.startswith(COMPILED):
-        return any(w in name.lower() for w in ("battery", "driver", "adapter", "scene"))
-    return name.split(".")[0] in BATTERY_TOPS
+class Roots:
+    """The target's own places: directories / files of its Python
+    distribution and the heads of its compiled names."""
+
+    def __init__(self, dirs: list[str], heads: list[str], missing: list[str]) -> None:
+        self.dirs, self.heads, self.missing = dirs, heads, missing
+
+    def has_file(self, path) -> bool:
+        if not path or not isinstance(path, str) or not os.path.isabs(path):
+            return False
+        p = os.path.realpath(path)
+        return any(p == d or p.startswith(d + os.sep) for d in self.dirs)
+
+    def has_name(self, name) -> bool:
+        return isinstance(name, str) and any(name.startswith(h) for h in self.heads)
 
 
-def _carrier_problem(kinds: list | None, carriers) -> str | None:
+_ROOTS: dict[str, Roots] = {}
+
+
+def roots_of(target: str | None) -> Roots:
+    """Resolve TARGET_DISTS[target] in THIS interpreter (the target's venv).
+    A place inside the scene set is refused for every target, and a place
+    inside this repository is refused for a survey tool."""
+    if target in _ROOTS:
+        return _ROOTS[target]
+    import importlib.util
+    spec = dict(TARGET_DISTS.get(target or "", {}))
+    if target and target.startswith("repro_"):
+        spec = {"py": [f"opponents.{target}"]}
+    dirs, missing = [], []
+    for mod in spec.get("py", []):
+        try:
+            s = importlib.util.find_spec(mod)
+        except (ImportError, ValueError):
+            s = None
+        if s is None:
+            missing.append(mod)
+            continue
+        places = list(s.submodule_search_locations or []) or ([s.origin] if s.origin else [])
+        for pl in places:
+            rp = os.path.realpath(pl)
+            if C.in_scene_set(rp) and not (target or "").startswith("repro_"):
+                raise SystemExit(f"{target}: {mod} resolves into the scene set ({rp})")
+            if (target or "").startswith("opp_") and (rp == str(REPO) or rp.startswith(str(REPO) + os.sep)):
+                raise SystemExit(f"{target}: {mod} resolves into this repository ({rp}), not the tool's distribution")
+            dirs.append(rp)
+    r = Roots(dirs, list(spec.get("compiled", [])), missing)
+    _ROOTS[target] = r
+    return r
+
+
+def _made(x) -> bool:
+    return isinstance(x, (C.Record, C.Made)) and C.made_here(x)
+
+
+def origin_problem(rec, roots: Roots, what: str) -> str | None:
+    """Why `rec` (a common.py record / name) is not shown to be the target's, or None."""
+    if not _made(rec):
+        return f"{what} が common.py で物から作った記録でない(手で書いた値): {str(rec)[:120]}"
+    if isinstance(rec, C.Made):
+        if rec.compiled:
+            return None if roots.has_name(rec) else f"{what} の翻訳した道具の名前 {rec!s:.120} が対象の名前の頭 {roots.heads} に無い"
+        return None if roots.has_file(rec.file) else f"{what} {rec!s:.120} の定義のファイル {rec.file} が対象の配布物に無い"
+    parts = []
+    if roots.has_file(rec.get("type_file")) or roots.has_file((rec.get("dtype") or {}).get("type_file")):
+        base_ok = True  # the target's own class / record type
+    elif C.in_scene_set(rec.get("type_file") or "/") and rec.get("type_file"):
+        return f"{what} {rec.get('type')} は場面集の側の型"
+    else:  # a shared type: placed by how it reached the strategy
+        via = [f for f in (rec.get("passed_by") or []) if roots.has_file(f)]
+        ret = roots.has_file(rec.get("returned_by"))
+        code = roots.has_file(rec.get("code_file"))
+        base_ok = bool(via or ret or code)
+        if not base_ok:
+            parts.append(f"{what} {rec.get('type')} は共有の型で、対象のコードが戦略に渡した(passed_by {rec.get('passed_by')})"
+                         f"・対象の関数が返した(returned_by {rec.get('returned_by')})・対象のコード(code_file {rec.get('code_file')})"
+                         "のどれも示せない")
+        elif rec.get("held_by") and not code:
+            parts.append(f"{what} {rec.get('type')} は場面集の側が持つ物と同じ物({rec.get('held_by')}): adapter が渡した物を対象が転送しただけ")
+    tag = rec.get("tag")
+    if tag is not None and not roots.has_file(tag.get("type_file")):
+        parts.append(f"{what} の札 {tag.get('const') or tag.get('type')}.{tag.get('name')} が対象の配布物の物でない({tag.get('type_file')})")
+    return "; ".join(parts) or None
+
+
+def _key(rec) -> str:
+    """The carrier's identity for 'one type, one kind': the object's type and its tag."""
+    if isinstance(rec, dict):
+        tag = rec.get("tag") or {}
+        return f"{rec.get('type')}[{tag.get('const') or tag.get('type')}.{tag.get('name')}]" if tag else \
+            f"{rec.get('type')}" + (f"<{rec['dtype']['name']}>" if rec.get("dtype") else "")
+    return str(rec)
+
+
+def _carrier_problem(kinds: list | None, carriers, roots: Roots) -> str | None:
     if not isinstance(carriers, list) or kinds is None or len(carriers) != len(kinds):
-        return f"carriers の長さが受け取った列と合わない(列 {None if kinds is None else len(kinds)} 件、carriers {carriers!r:.200})"
+        return f"carriers の長さが受け取った列と合わない(列 {None if kinds is None else len(kinds)} 件、carriers {len(carriers) if isinstance(carriers, list) else carriers!r:.80})"
     for c in carriers:
-        if not isinstance(c, str) or not c:
-            return f"carrier が文字列でない: {c!r:.80}"
-        if made_by_scene_set(c):
-            return f"場面集の側が作った型で運んだ: {c}"
+        why = origin_problem(c, roots, "carrier")
+        if why:
+            return why
     if kinds and not isinstance(kinds[0], (int, float)):
         by: dict[str, set] = {}
         for k, c in zip(kinds, carriers):
-            by.setdefault(c, set()).add(str(k))
+            by.setdefault(_key(c), set()).add(str(k))
         many = {c: sorted(ks) for c, ks in by.items() if len(ks) > 1}
         if many:
             return f"1 つの型に 2 つ以上の kind を写した(型を場面集の側が決めている): {many}"
@@ -252,7 +373,18 @@ def _kinds(out, key: str, with_kinds: bool):
     return [e[0] if with_kinds and isinstance(e, (list, tuple)) and e else e for e in lst]
 
 
-def _attempts_problem(out) -> str | None:
+def _touched_ok(item: dict, roots: Roots, what: str) -> str | None:
+    """A read / an attempt is the target's when target code ran during it, or
+    the object it read through (`of` / `via`) is the target's."""
+    if any(roots.has_file(f) for f in (item.get("touched") or [])):
+        return None
+    for k in ("of", "via"):
+        if item.get(k) is not None:
+            return origin_problem(item[k], roots, f"{what} の {k}")
+    return f"{what} {item.get('means')!r:.80} の間に対象のコードが 1 行も走らず、読んだ物(of / via)も無い"
+
+
+def _attempts_problem(out, roots: Roots) -> str | None:
     atts = (out or {}).get("attempts") if isinstance(out, dict) else None
     if not isinstance(atts, list):
         return "attempts が無い"
@@ -261,6 +393,19 @@ def _attempts_problem(out) -> str | None:
         shape, form = a.get("shape"), a.get("form")
         if shape is None:
             return f"試し {a.get('means')!r} に shape が無い(common.try_position_namings / try_time_namings を通していない)"
+        means = str(a.get("means", ""))
+        compiled = means.startswith(COMPILED)
+        if not _made(a):
+            return f"試し {means!r:.80} が common.Attempts で記録されていない(手で書いた記録)"
+        if compiled:
+            if not roots.heads or not any(means.startswith(h.split(":")[0] + ":") for h in roots.heads):
+                return f"試し {means!r:.80} は翻訳した道具の手段だが、対象は翻訳した道具でない"
+        else:
+            why = _touched_ok(a, roots, "試し")
+            if why:
+                return why
+        if a.get("raised") and a.get("raised_by_scene_set_raise") and shape != "other":  # a stop is credited to named reads only
+            return f"試し {means!r:.80} の例外 {a.get('raised')} は場面集の側の raise 文で起きた(対象が止めたのではない)"
         if shape == "other":
             continue
         if shape == "no_means":  # graded like any named read: a value returned is a read that was not stopped
@@ -271,7 +416,7 @@ def _attempts_problem(out) -> str | None:
             return f"未知の shape {shape!r}"
         if (shape.startswith("time") and form != "time") or (not shape.startswith("time") and form != "position"):
             return f"試し {a.get('means')!r} の shape {shape} と form {form} が合わない"
-        if a.get("expressible", True) is False and not str(a.get("means", "")).startswith(COMPILED):
+        if a.get("expressible", True) is False and not compiled:
             return f"試し {a.get('means')!r} を書けない名指しとしたが、手段がコンパイルした道具の driver のものでない"
         groups.setdefault((a.get("means"), shape), set()).add(a.get("naming"))
     for (means, shape), got in groups.items():
@@ -281,7 +426,7 @@ def _attempts_problem(out) -> str | None:
     return None
 
 
-def _reads_problem(out, prov) -> str | None:
+def _reads_problem(out, prov, roots: Roots) -> str | None:
     reads = (prov or {}).get("reads")
     if not isinstance(reads, list) or not reads:
         return "reads が無い(過去を読む公開の手段が無い対象は not_supported)"
@@ -289,6 +434,11 @@ def _reads_problem(out, prov) -> str | None:
         vals = r.get("returned")
         if not isinstance(vals, list) or not all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in vals):
             return f"読み出し {r.get('means')!r} の返り値が終値の列でない"
+        if not _made(r):
+            return f"読み出し {r.get('means')!r:.80} が common.Reads で記録されていない(手で書いた記録)"
+        why = _touched_ok(r, roots, "読み出し")
+        if why:
+            return why
     counts = sorted({len(r["returned"]) for r in reads})
     closes = [x for r in reads for x in r["returned"]]
     want = {"visible_count": counts[0] if len(counts) == 1 else counts, "max_visible_close": max(closes) if closes else None}
@@ -298,26 +448,29 @@ def _reads_problem(out, prov) -> str | None:
     return None
 
 
-def provenance_problem(res: SceneResult, scene) -> str | None:
+def _reader_problem(reader, roots: Roots) -> str | None:
+    if reader is None or (isinstance(reader, str) and not reader):
+        return "reader が無い"
+    why = origin_problem(reader, roots, "ISO の文字列を読んだ関数")
+    return f"ISO の文字列を読んだのが対象の外の関数: {why}" if why else None
+
+
+def provenance_problem(res: SceneResult, scene, target: str | None = None, roots: Roots | None = None) -> str | None:
     """Why this result may not be graded, or None. Only `ok` results of the
     PROVENANCE_SCENES are checked (a refusal or an exception has nothing to
     credit)."""
     if scene is None or res.status != "ok" or scene.id not in PROVENANCE_SCENES:
         return None
+    roots = roots or roots_of(target)
     out, prov = res.output, res.provenance
     if scene.id == "p4-future-read-attempt":
-        return _attempts_problem(out)
+        return _attempts_problem(out, roots)
     if not isinstance(prov, dict):
         return "provenance が無い"
     if scene.id == "p4-visible-at-step":
-        return _reads_problem(out, prov)
+        return _reads_problem(out, prov, roots)
     if scene.id in ("p2-iso-utc", "p2-iso-offset"):
-        reader = prov.get("reader")
-        if not isinstance(reader, str) or not reader:
-            return "reader が無い"
-        if made_by_scene_set(reader) or (not reader.startswith(COMPILED) and reader.split(".")[0] in FOREIGN_READER_TOPS):
-            return f"ISO の文字列を読んだのが対象の外の関数: {reader}"
-        return None
+        return _reader_problem(prov.get("reader"), roots)
     key, with_kinds = CARRIER_SCENES[scene.id]
     carriers = prov.get("carriers")
     if scene.id == "p5-hand-over-order":
@@ -327,18 +480,56 @@ def provenance_problem(res: SceneResult, scene) -> str | None:
         flat_k, flat_c = [], []
         for r, cs in zip(runs, carriers):
             ks = _kinds(r, "order", True)
-            why = _carrier_problem(ks, cs)
+            why = _carrier_problem(ks, cs, roots)
             if why:
                 return why
             flat_k += ks
             flat_c += cs
-        return _carrier_problem(flat_k, flat_c)
-    return _carrier_problem(_kinds(out, key, with_kinds), carriers)
+        return _carrier_problem(flat_k, flat_c, roots)
+    return _carrier_problem(_kinds(out, key, with_kinds), carriers, roots)
 
 
-def checked(res: SceneResult, scene) -> SceneResult:
+def compact(prov, roots: Roots):
+    """What is written to the record: `touched` keeps only the target's files
+    (with the count of all), so the table stays readable."""
+    def walk(x):
+        if isinstance(x, dict):
+            out = {}
+            for k, v in x.items():
+                if k == "touched" and isinstance(v, list):
+                    out[k] = [f for f in v if roots.has_file(f)]
+                    out["touched_count"] = len(v)
+                else:
+                    out[k] = walk(v)
+            return out
+        if isinstance(x, list):
+            return [walk(v) for v in x]
+        return x
+    return walk(prov)
+
+
+ATTEMPT_PROVENANCE = ("touched", "via", "raised_file", "raised_by_scene_set_raise")
+
+
+def _provenance_out_of_output(res: SceneResult) -> SceneResult:
+    """The attempts' provenance (common.Attempts) is moved from the output to
+    the provenance column: it is checked, not graded, and must not decide
+    '2 回の実行で同じ' (file lists and records are not the target's result)."""
+    out = res.output
+    if not (isinstance(out, dict) and isinstance(out.get("attempts"), list)
+            and any(isinstance(a, dict) and any(k in a for k in ATTEMPT_PROVENANCE) for a in out["attempts"])):
+        return res
+    kept = [{k: v for k, v in a.items() if k not in ATTEMPT_PROVENANCE} if isinstance(a, dict) else a for a in out["attempts"]]
+    prov = dict(res.provenance) if isinstance(res.provenance, dict) else {}
+    prov["attempts"] = [{"means": a.get("means"), "naming": a.get("naming"), **{k: a[k] for k in ATTEMPT_PROVENANCE if k in a}}
+                        for a in out["attempts"] if isinstance(a, dict)]
+    return SceneResult(res.status, output={**out, "attempts": kept}, detail=res.detail, provenance=prov)
+
+
+def checked(res: SceneResult, scene, target: str | None = None, roots: Roots | None = None) -> SceneResult:
     """The result as graded: unchanged, or "error" when its provenance fails."""
-    why = provenance_problem(res, scene)
+    why = provenance_problem(res, scene, target, roots)
+    res = _provenance_out_of_output(res)
     if why is None:
         return res
     return SceneResult("error", output={"provenance_error": why, "raw": res.output},
@@ -377,8 +568,8 @@ def run_target(target: str) -> list[dict]:
     adapter_1 = load_adapter(target)
     adapter_2 = load_adapter(target)  # a fresh adapter for the second run
     for sc in SCENES:
-        r1 = checked(adapter_1.run_scene(sc), sc)
-        r2 = checked(adapter_2.run_scene(sc), sc)
+        r1 = checked(adapter_1.run_scene(sc), sc, target)
+        r2 = checked(adapter_2.run_scene(sc), sc, target)
         rows.append({
             "target": target, "scene_id": sc.id, "viewpoint": sc.viewpoint, "kind": sc.kind,
             "correctness": correctness(r1, sc.expected, sc, target),
@@ -390,7 +581,7 @@ def run_target(target: str) -> list[dict]:
             "output_2": json.dumps(graded_output(r2, sc, target), ensure_ascii=False, sort_keys=True, default=repr),
             "expected": json.dumps(sc.expected, ensure_ascii=False, sort_keys=True),
             "detail_1": r1.detail.replace("\t", " ").replace("\n", " "),
-            "provenance_1": json.dumps(r1.provenance, ensure_ascii=False, sort_keys=True, default=repr),
+            "provenance_1": json.dumps(compact(r1.provenance, roots_of(target)), ensure_ascii=False, sort_keys=True, default=repr),
         })
     return rows
 

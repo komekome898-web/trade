@@ -40,6 +40,7 @@ class _Rec(Strategy):
     def __init__(self, signals: dict[int, SignalType] | None = None, probe=None) -> None:
         super().__init__()
         self.seen: list[pd.DataFrame] = []
+        self.carriers: list = []  # provenance of each candles, made when it is received (round r6-2)
         self.signals = signals or {}
         self.probe = probe
         self.probe_out = None
@@ -49,6 +50,7 @@ class _Rec(Strategy):
         return 0
 
     def on_candles(self, candles: pd.DataFrame) -> Signal:
+        self.carriers.append(C.carrier(candles))  # first: the object the engine passed, before this strategy keeps it
         self.seen.append(candles)
         n = len(self.seen)
         if self.probe is not None:
@@ -107,7 +109,7 @@ class CurrentImplAdapter(Adapter):
     def scene_p1_one_call_per_event(self, sc):
         rec, _ = _run(C.events(sc))
         return ok({"sequence": _seq(rec)}, "足 5 本を DataFrame で渡し、on_candles の各呼び出しで candles の最後の行の時刻を記録",
-                  {"carriers": [C.carrier(c) for c in rec.seen]})
+                  {"carriers": list(rec.carriers)})
 
     def scene_p1_typed_events(self, sc):
         return not_supported("約定を渡す口が無い。試したこと: " + _try_non_bar(C.events(sc)[1:]))
@@ -134,7 +136,7 @@ class CurrentImplAdapter(Adapter):
         rows = [dict(C.as_bar({"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0}), volume=1.0) for e in C.events(sc)]
         rec, _ = _run(rows)
         return ok({"observed_ts_ns": [int(c.index[-1].value) for c in rec.seen]},
-                  "足(OHLC=100)で渡し、各呼び出しの candles.index[-1].value を記録", {"carriers": [C.carrier(c) for c in rec.seen]})
+                  "足(OHLC=100)で渡し、各呼び出しの candles.index[-1].value を記録", {"carriers": list(rec.carriers)})
 
     def scene_p2_event_time_exact(self, sc):
         return self._ts_scene(sc)
@@ -151,7 +153,7 @@ class CurrentImplAdapter(Adapter):
         last = rec.seen[0].iloc[-1]
         fields = {k: float(last[k]) for k in ("open", "high", "low", "close", "volume")}
         return ok({"sequence": _seq(rec), "fields": fields}, "足 1 本を渡し、呼び出しで受け取った行を記録",
-                  {"carriers": [C.carrier(c) for c in rec.seen]})
+                  {"carriers": list(rec.carriers)})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type_scene
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type_scene
@@ -188,7 +190,7 @@ class CurrentImplAdapter(Adapter):
 
         def probe_fn(n, c):
             if int(c.index[-1].value) == probe and not reads.items:
-                reads.read("on_candles の引数 candles['close']", lambda: list(c["close"]))
+                reads.read("on_candles の引数 candles['close']", lambda: list(c["close"]), of=c)
             return None
 
         _run(C.events(sc), rec=_Rec(probe=probe_fn))
@@ -211,12 +213,13 @@ class CurrentImplAdapter(Adapter):
                 return None
             close = c["close"]
             # namings: the scene's fixed list (common.try_*_namings)
-            C.try_position_namings(att, "candles['close'].iloc", lambda: close.iloc, len(close))
-            C.try_time_namings(att, "candles['close'].loc[時刻]", "time_at", lambda t: close.loc[t], sc, ts)
-            C.try_time_namings(att, "candles['close'].loc[始:終]", "time_range", lambda a, b: close.loc[a:b], sc, ts)
+            # via = the candles the engine passed (the reads run pandas code only, no engine code)
+            C.try_position_namings(att, "candles['close'].iloc", lambda: close.iloc, len(close), via=c)
+            C.try_time_namings(att, "candles['close'].loc[時刻]", "time_at", lambda t: close.loc[t], sc, ts, via=c)
+            C.try_time_namings(att, "candles['close'].loc[始:終]", "time_range", lambda a, b: close.loc[a:b], sc, ts, via=c)
             att.run("candles['close'].shift(-1).iloc[-1](最新の次を先の参照で)", "position",
-                    lambda: close.shift(-1).iloc[-1], shape="next_call", naming="next")
-            att.run("candles['close'] の全部", "other", lambda: list(close))
+                    lambda: close.shift(-1).iloc[-1], shape="next_call", naming="next", via=c)
+            att.run("candles['close'] の全部", "other", lambda: list(close), via=c)
             return None
 
         rec = _Rec(probe=probe_fn)
@@ -238,7 +241,7 @@ class CurrentImplAdapter(Adapter):
         rows = [C.as_bar(e) for e in C.events(sc)]
         rec, _ = _run(rows)
         return ok({"prices": [float(c["close"].iloc[-1]) for c in rec.seen]}, "約定を足に代えて渡し、呼び出しごとの close を記録",
-                  {"carriers": [C.carrier(c) for c in rec.seen]})
+                  {"carriers": list(rec.carriers)})
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):

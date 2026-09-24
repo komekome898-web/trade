@@ -116,6 +116,8 @@ class SceneExchange(Exchange):
 
 class SceneStrategy(Strategy):
     async def _hook(self, kind: str, event) -> None:
+        # round r6-2: the provenance of what the tool handed over, made when it is received (event and its own EventType)
+        RUN["cars"].append(C.carrier_tag(event, event.type) if kind in ("trade", "open", "data") else None)
         RUN["calls"].append((kind, event))
         fn = RUN.get("fn")
         if fn is not None:
@@ -144,7 +146,7 @@ class SceneStrategy(Strategy):
 
 def run(streams: dict, fn=None, **extra) -> dict:
     RUN.clear()
-    RUN.update(streams=streams, fn=fn, calls=[], **extra)
+    RUN.update(streams=streams, fn=fn, calls=[], cars=[], **extra)
     args = ["--trading_type", "backtest", "--strategies", "opponents.aat_adapter:SceneStrategy"]
     for name in streams:  # one exchange per input stream, in the hand-over order (parser.py _args_to_dict: "mod:Class,arg")
         args += ["--exchanges", f"opponents.aat_adapter:SceneExchange,{name}"]
@@ -186,7 +188,7 @@ def _market_calls(out) -> list:
 
 def _carriers(out, kinds=("trade", "open", "data")) -> list:
     """What each market call handed the strategy: aat's Event and its own EventType member (read from the event)."""
-    return [C.carrier_tag(e, e.type) for k, e in out["calls"] if k in kinds]
+    return [c for (k, e), c in zip(out["calls"], out["cars"]) if k in kinds]
 
 
 class AatAdapter(Adapter):
@@ -236,17 +238,17 @@ class AatAdapter(Adapter):
             got = [(k, str(ev.target.type)) for k, ev in out["calls"]]
             return not_supported(f"{e['kind']} の型が無い(事象の型は TRADE・OPEN / CANCEL / CHANGE / FILL(注文)・DATA(型の無い汎用のデータ))。"
                                  f"試したこと: DATA で流した -> 戦略が受けた {got}(型の無い Data として届く)")
-        calls = [(k, ev) for k, ev in out["calls"] if k in ("trade", "open")]
+        calls = [(k, ev, c) for (k, ev), c in zip(out["calls"], out["cars"]) if k in ("trade", "open")]
         if not calls:
             return ok({"sequence": [], "fields": {}}, f"戦略に届かなかった。呼ばれた口 {[k for k, _ in out['calls']]}", {"carriers": []})
-        k, ev = calls[0]
+        k, ev, car = calls[0]
         t = ev.target
         if k == "trade":
             fields = {"price": float(t.price), "qty": float(t.volume), "side": "buy" if t.side == Side.BUY else "sell"}
         else:
             fields = {"side": "bid" if t.side == Side.BUY else "ask", "price": float(t.price), "qty": float(t.volume)}
         return ok({"sequence": [[_kind_of(k, ev), _ts_of(ev)]], "fields": fields},
-                  "約定は TRADE(Trade)、板の差分は OPEN(板に入る注文 Order)で流し、戦略が受けた事象の中身", {"carriers": [C.carrier_tag(ev, ev.type)]})
+                  "約定は TRADE(Trade)、板の差分は OPEN(板に入る注文 Order)で流し、戦略が受けた事象の中身", {"carriers": [car]})
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -322,9 +324,9 @@ class AatAdapter(Adapter):
             # aat hands the strategy no read of market data by time or position (orders / positions / trades are
             # its own); the calls a strategy would write are made as written
             att.run("self.trades(5 本目の時刻)", "time", lambda: s.trades(_dt(sc.input["future_ts_ns"])), shape="no_means",
-                    naming="written_call")
+                    naming="written_call", via=s.trades)
             att.run("event.target.data['next'](次の位置)", "position", lambda: ev.target.data["next"], shape="no_means",
-                    naming="written_call")
+                    naming="written_call", via=ev)
             att.run("self.positions()", "other", lambda: [str(p) for p in s.positions()])
 
         run({"events": C.events(sc)}, fn)

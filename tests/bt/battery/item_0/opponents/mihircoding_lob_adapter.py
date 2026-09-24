@@ -62,8 +62,12 @@ def feed(bus: MessageBus, events: list[dict], on_event) -> None:
 
 
 # The bus hands the strategy nothing but the call of an action it was given (MessageBus.send(t, participant, action)):
-# the only type the tool has for what arrives is "an action" (a callable). Its class, read from the object:
-ACTION = C.carrier(lambda: None)
+# the action is a closure the adapter wrote, and the event rides in that closure. Round r6-2 (critic br6-1-1): an
+# event carried by a function the scene-set side wrote is not the tool's event, so the scenes that list what the
+# strategy received are "not supported"; what the bus did with the actions is kept in the detail.
+NO_CARRIER = ("この道具は戦略に事象の物を渡さない: MessageBus.send(時刻, 参加者, 動作) の動作は呼び出す側(ここでは adapter)が書いた閉包で、"
+              "事象はその閉包が運ぶ(src/latency.py の MessageBus は動作を引数なしで呼ぶ)。場面集の共通の決まり「事象を渡す側が書いた関数で事象を運ばない」"
+              "により、戦略が受け取った事象の列は道具のものとして数えない。")
 
 
 def _attempt() -> str:
@@ -93,26 +97,25 @@ class MihircodingLobAdapter(VectorBase):
     # ---------------- P0-1 (the bus orders by arrival time)
     def scene_p1_one_call_per_event(self, sc):
         bus, seen = MessageBus(), []
-        feed(bus, C.events(sc), lambda e, now: seen.append(["action", ns(now)]))
+        feed(bus, C.events(sc), lambda e, now: seen.append(ns(now)))
         bus.drain()
-        return ok({"sequence": seen}, "各足を MessageBus.send(時刻 µs, 'feed', 戦略を呼ぶ動作) で積み、drain()。記録は (道具の型 = 動作(action)、bus.now_us を ns に)。"
-                  "MessageBus は型の無い動作を配るだけで、足という型を持たない", {"carriers": [ACTION] * len(seen)})
+        return not_supported(NO_CARRIER + f"試したこと: 各足を MessageBus.send(時刻 µs, 'feed', 閉包) で積み drain() -> 閉包が呼ばれた bus.now_us(ns に)は {seen}")
 
     def scene_p1_merge_by_time(self, sc):
         bus, seen = MessageBus(), []
         for _, evs in C.streams_in_order(sc):
-            feed(bus, evs, lambda e, now: seen.append(["action", ns(now)]))
+            feed(bus, evs, lambda e, now: seen.append(ns(now)))
         bus.drain()
-        return ok({"sequence": seen}, "3 つの入力を渡す順に MessageBus.send で積み、drain()(bus は (到着, 積んだ順) で配る)。記録は (道具の型 = 動作(action)、時刻)",
-                  {"carriers": [ACTION] * len(seen)})
+        return not_supported(NO_CARRIER + f"試したこと: 3 つの入力を渡す順に MessageBus.send で積み drain() -> 閉包が呼ばれた時刻 {seen}"
+                             "(bus は (到着, 積んだ順) で呼ぶ)")
 
     # ---------------- P0-2 (the bus's time is float microseconds)
     def _obs(self, sc):
         bus, seen = MessageBus(), []
         feed(bus, C.events(sc), lambda e, now: seen.append(ns(now)))
         bus.drain()
-        return ok({"observed_ts_ns": seen}, "MessageBus の時刻は float のマイクロ秒(send の sent_at_us、bus.now_us)。ns を µs の float にして積み、"
-                  "配られた時の bus.now_us を ns に戻した", {"carriers": [ACTION] * len(seen)})
+        return not_supported(NO_CARRIER + "試したこと: ns を µs の float(MessageBus の時刻の単位)にして積み、閉包が呼ばれた時の bus.now_us を ns に戻した -> "
+                             f"{seen}(入力 {[int(e['ts_ns']) for e in C.events(sc)]})")
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -176,7 +179,7 @@ class MihircodingLobAdapter(VectorBase):
         got = self._tie(sc, sc.input.get("hand_over_order") or sc.input["hand_over_orders"][0])
         return not_supported("約定・足・資金調達・清算を型として持たない(MessageBus が配るのは動作(action)だけで、届いたものの型を戦略が読める物が無い)。"
                              f"試したこと: 4 つの入力を渡す順に MessageBus.send で積んで drain() -> 戦略の呼び出しの時刻 {[t for _, t in got]}"
-                             f"(呼ばれた物の型は {ACTION})")
+                             "(呼ばれるのは adapter が書いた閉包)")
 
     def scene_p5_hand_over_order(self, sc):
         return self.scene_p5_same_time_twice(sc)
@@ -185,8 +188,8 @@ class MihircodingLobAdapter(VectorBase):
         bus, seen = MessageBus(), []
         feed(bus, C.events(sc), lambda e, now: seen.append(float(e["price"])))
         bus.drain()
-        return ok({"prices": seen}, "同じ時刻の約定 3 件を 1 本で MessageBus.send に積み、drain()(値は各動作が運んだもの。道具が決めるのは呼ぶ順)",
-                  {"carriers": [ACTION] * len(seen)})
+        return not_supported(NO_CARRIER + "試したこと: 同じ時刻の約定 3 件を 1 本で MessageBus.send に積み drain() -> 閉包が呼ばれた順に閉包が運んだ価格 "
+                             f"{seen}(道具が決めるのは呼ぶ順だけ)")
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
