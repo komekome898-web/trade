@@ -9,9 +9,11 @@ Docker image, 14 GB compressed; record `survey_results/attempts/52.log`).
 The review table (`opponents/CONSIDERED.md`, viewpoint P0-1) had skipped it
 as contained by run candidates, but LEAN carries a funding-rate type
 (`MarginInterestRate`) through the same synchroniser as bars and ticks, so
-the scene p1-merge-by-time (bar, trade and funding merged by time), which no
-run candidate passes, could be passed by LEAN: it is not "clearly weaker"
-(critic br6-2-2, ROOTCAUSE_r6-3.md).
+the scene p1-merge-by-time (then bar, trade and funding merged by time), which
+no run candidate passed in round r6-3, could be passed by LEAN: it is not
+"clearly weaker" (critic br6-2-2, ROOTCAUSE_r6-3.md). Since round r7-1 the
+scenes of other viewpoints than P0-3 take their types from the target's own
+(the runner builds them from LEAN's types: trade, bar, funding).
 
 Scope of the rewrite = LEAN's data path: the types TradeBar, Tick (trade)
 and MarginInterestRate, the subscriptions, the frontier time, the
@@ -76,15 +78,30 @@ def _obj(e: dict) -> L.BaseData:
     return None
 
 
-def _sources(streams: list[tuple[str, list[dict]]]) -> list[tuple[str, list]]:
-    """One subscription per data type, in the order the types first appear;
-    each keeps its events' given order."""
+# round r7-1: each subscription carries its configuration as LEAN makes it for a user's security
+# (DataManager.cs 720-721, via QCAlgorithm.AddSecurity with the defaults; lean52.data_manager_add):
+# the data type and its TickType (TradeBar and a trade Tick: Trade; MarginInterestRate: Quote,
+# DataManager.cs 763-773, SubscriptionManager.cs 361), the CryptoFuture security type.
+_TICK_TYPE = {L.TradeBar: L.TickType.Trade, L.Tick: L.TickType.Trade, L.MarginInterestRate: L.TickType.Quote}
+
+
+def _sources(streams: list[tuple[str, list[dict]]], reverse_ties: bool = False) -> list:
+    """One subscription per data type, in the order the types first appear
+    (LEAN keeps one subscription per (symbol, data type): a config equal to
+    an existing one returns that config, DataManager.cs 503-525 called at 731); each
+    keeps its events' given order. `reverse_ties` hands them to the collection
+    in the reverse order: the order of subscriptions with the same sort key is
+    not fixed by the source (lean52.sort_subscriptions)."""
     subs: dict[type, list] = {}
     for _, evs in streams:
         for e in evs:
             o = _obj(e)
             subs.setdefault(type(o), []).append(o)
-    return [(SYM, data) for data in subs.values()]
+    out = []
+    for t, data in subs.items():
+        (cfg,) = L.data_manager_add(SYM, L.SecurityType.CryptoFuture, [(t, _TICK_TYPE[t])])
+        out.append(L.Subscription(data, cfg, utc_start_time=0))
+    return list(reversed(out)) if reverse_ties else out
 
 
 def _missing(evs: list[dict]) -> list[str]:
@@ -104,17 +121,17 @@ class _Algo(L.QCAlgorithm):
         self.calls, self.seen, self.car = 0, [], []
 
     def OnData(self, slice_):  # noqa: N802
+        # round r7-1: the data of the call in the Slice's own order, Slice.AllData (Slice.cs 57 / 305 = the
+        # factory's allDataForAlgorithm), not in an order of reading the typed collections chosen here
         self.calls += 1
-        for coll in (slice_.Bars, slice_.Ticks, slice_.MarginInterestRates):
-            for v in coll.values():
-                for d in (v if isinstance(v, list) else [v]):
-                    self.car.append(C.carrier(d))
-                    self.seen.append((self.calls, d))
+        for d in slice_.AllData:
+            self.car.append(C.carrier(d))
+            self.seen.append((self.calls, d))
 
 
-def _run(streams) -> _Algo:
+def _run(streams, reverse_ties: bool = False) -> _Algo:
     a = _Algo()
-    L.run(a, _sources(streams))
+    L.run(a, _sources(streams, reverse_ties))
     return a
 
 
@@ -139,8 +156,8 @@ def _no_result(what: str) -> SceneResult:
 class Adapter(Adapter):  # noqa: F811 - run_battery loads `Adapter` from a repro_* module
     name = "repro_lean52"
 
-    def _seq(self, streams):
-        a = _run(streams)
+    def _seq(self, streams, reverse_ties=False):
+        a = _run(streams, reverse_ties)
         return a, [[KIND[type(d)], _ns(d)] for _, d in a.seen]
 
     def _typed(self, sc, streams):
@@ -149,7 +166,7 @@ class Adapter(Adapter):  # noqa: F811 - run_battery loads `Adapter` from a repro
         if miss:
             return not_supported(NO_TYPE.format(m=", ".join(SLICE_MEMBERS), k="・".join(miss), have=_slice_has()))
         a, seq = self._seq(streams)
-        return ok({"sequence": seq}, f"OnData の呼び出し {a.calls} 回。各回の Slice の Bars・Ticks・MarginInterestRates の中身を記録",
+        return ok({"sequence": seq}, f"OnData の呼び出し {a.calls} 回。各回の Slice.AllData の中身を順に記録",
                   {"carriers": a.car})
 
     def scene_p1_merge_by_time(self, sc):
@@ -207,15 +224,36 @@ class Adapter(Adapter):  # noqa: F811 - run_battery loads `Adapter` from a repro
     def scene_p4_future_read_attempt(self, sc):
         return _no_result("履歴の読み(History)と先読みの止め")
 
-    def _p5(self, sc):
-        """p5-same-time-twice / p5-hand-over-order: all four types at one time; LEAN has no liquidation type."""
+    # ---------------- P0-5 (round r7-1: the input is built from LEAN's own types by the runner)
+    def _p5_once(self, sc, hand_over, reverse_ties=False):
+        a, seq = self._seq([(k, sc.input["streams"][k]) for k in hand_over], reverse_ties)
+        return seq, a.car, a.calls
+
+    def scene_p5_same_time_twice(self, sc):
         evs = [e for s in sc.input["streams"].values() for e in s]
         miss = _missing(evs)
         if miss:
             return not_supported(NO_TYPE.format(m=", ".join(SLICE_MEMBERS), k="・".join(miss), have=_slice_has()))
-        return _no_result("同時刻の 4 種の並び(清算の型を含む入力)")  # not reached with the fixed scenes (they have a liquidation)
+        order, car, calls = self._p5_once(sc, sc.input["hand_over_order"])
+        other, _, _ = self._p5_once(sc, sc.input["hand_over_order"], reverse_ties=True)
+        return ok({"order": order}, f"型ごとの入力を 1 つずつ購読(SubscriptionDataConfig)にして渡した順に足した。OnData {calls} 回、"
+                  "Slice.AllData の順を記録。購読の並べ替え(SubscriptionCollection.SortSubscriptions の鍵 SecurityType・TickType・Symbol)で"
+                  f"鍵が同じ購読の順は一次資料で決まらないので、逆の順でも走らせた: {other}", {"carriers": car})
 
-    scene_p5_same_time_twice = scene_p5_hand_over_order = _p5
+    def scene_p5_hand_over_order(self, sc):
+        evs = [e for s in sc.input["streams"].values() for e in s]
+        miss = _missing(evs)
+        if miss:
+            return not_supported(NO_TYPE.format(m=", ".join(SLICE_MEMBERS), k="・".join(miss), have=_slice_has()))
+        runs, cars, others = [], [], []
+        for o in sc.input["hand_over_orders"]:
+            order, car, _ = self._p5_once(sc, o)
+            runs.append({"hand_over": list(o), "order": order})
+            cars.append(car)
+            others.append(self._p5_once(sc, o, reverse_ties=True)[0])
+        return ok({"form": "multi_input", "runs": runs},
+                  f"{len(runs)} 通りの渡す順で購読を足し、各回の Slice.AllData の順を記録。鍵が同じ購読の順を逆にした走り: {others}",
+                  {"carriers": cars})
 
     def scene_p5_same_stream_order(self, sc):
         a = _run([("events", C.events(sc))])

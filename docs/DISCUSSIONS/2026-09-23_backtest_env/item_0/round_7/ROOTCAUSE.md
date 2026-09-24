@@ -91,3 +91,12 @@ history_limit=np.int64(3)	ACCEPTED	int	3
 
 1. 履歴の答えが「読み出しの列の中の自分の場所」を持ち、誤りの種類を名指した位置から 4 つのどれかに決める(A)。
 2. 送り手の値の型は本当の型で判定し、外来の値を受ける決まりを 1 つにし、断る型は所の型にする(B)。
+
+## D. 直している途中で見つけて足したこと(同じ根。直した後に追記)
+
+- **落とした事象の数(A の同じ根)**: `history_limit` の下では、答えの最も古い事象より前の位置が「落とした事象」か「何も無い」かを分けるには、落とした数が要る。第 1 案の「落としたか(真偽)」では、落とした数より前(何も届いていない所)まで「落とした」と言った(自分の神託の試験 `test_every_named_position_with_a_history_limit` が 102 件の食い違いで見つけた)。履歴に型ごとの落とした数を持たせ(`history.py` の `dropped_count`)、答えの場所は `dropped`(数)を持つ。全部の読み出しの落とした数は、列の最も古い事象の配達番号 − 1(配達番号は欠けなく振られ、落とされなかった事象は全部残るため)。
+- **場所を言えない空の答え**: `until_ns` が落とした事象の間で切った空の答えは、切った所が落とした事象のどこかで、履歴はそれを覚えていないので、場所を言えない。黙って誤った場所を言わず、`HistoryTruncatedError` で断る(落とした部分に届く読み出しを断る今の決まりと同じ扱い)。切った所が落とした最も新しい事象以後なら場所は正確に決まるので答える(`api.py` の `__empty_answer`、試験 `test_an_empty_answer_cut_inside_the_dropped_part_is_refused`)。
+- **注文の見え方の読み出し** `ctx.order(id)`: 文字でない物(文字を名乗る物を含む)を渡すと、黙って `None`(知らない注文)を返していた。`visible_events(event_type=偽)` の黙った空と同じ形なので、id を本当の型で文字にし、違えば `OrderApiError`。
+- **データ源の事象の型**: 核の `Event` の子で自分の型(`EVENT_TYPE`)を持たない class を流すと、`SourceEventTypeError` でなく生の `AttributeError` が出た。核の 12 の class そのものから型への対応(`engine.py` の `_CLASS_TO_TYPE`)で引き、無ければ `SourceEventTypeError`。
+- **内部の履歴の見え方** `EventWindow`: 文脈の私的な属性から届くので、添字と区間の判定を本当の型(`type(index) is slice`、`operator.index`)にそろえた。
+- **速さ**: 答えを作るたびに場所を検めると、読み出しの多い戦略で 1 事象あたり 18.6 → 23.6 マイクロ秒になった(`scratchpad/bt/item0_r7_worker_speed.py`、5 万事象、3 回の最小)。核の中で作る答え(`visible_events` と区間)は場所が作りから正しいので検めない作り方(`DeliveredEvents._placed`)に分け、外から作るときだけ検める。直した後(読み出しなし / あり、1 事象あたりマイクロ秒、`scratchpad/bt/item0_r7_worker_speed.txt`): 1 回目は始めの版 13.49 / 22.6、今の版 12.34 / 21.78。2 回目は始めの版 14.13 / 21.05、今の版 14.34 / 22.48。差は回ごとのばらつきの幅の中。配達の要約(`delivery_digest`)は始めの版と同じ `35269aeea5ca…`。

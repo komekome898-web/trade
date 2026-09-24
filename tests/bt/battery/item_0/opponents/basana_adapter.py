@@ -14,8 +14,10 @@ price, amount and the side as `operation`), a book snapshot in
 `basana.external.binance.order_book.PartialOrderBookEvent`, a book delta in
 `basana.external.binance.order_book_diff.OrderBookDiffEvent`. Funding and
 liquidation have no class in the distribution (`_EVENT_CLASSES` lists every
-subclass of `basana.Event` in it, walked with pkgutil); scenes with them are
-not supported. The adapter defines no event class of its own.
+subclass of `basana.Event` in it, walked with pkgutil); the P0-3 scenes of
+those types are not supported, and the scenes of other viewpoints get their
+types from Basana's own (round r7-1, runner). The adapter defines no event
+class of its own.
 """
 from __future__ import annotations
 
@@ -278,8 +280,8 @@ class BasanaAdapter(Adapter):
         if bad:
             return bad
         return ok({"sequence": [[r[0], r[1]] for r in recs]},
-                  "足は basana.core.bar.BarEvent、約定は basana.external.bitstamp.trades.TradeEvent(どちらも Basana の配布物の class)で 1 つの source。"
-                  "戦略は受け取った物の class で型を見分けた", {"carriers": [r[4] for r in recs]})
+                  "型の違う 2 件を Basana の配布物の class(" + "・".join(sorted({r[4]["type"] for r in recs if isinstance(r[4], dict)}))
+                  + ")で 1 つの source に入れた。戦略は受け取った物の class で型を見分けた", {"carriers": [r[4] for r in recs]})
 
     # ---------------- P0-2
     def _iso(self, sc):
@@ -412,14 +414,36 @@ class BasanaAdapter(Adapter):
 
     # ---------------- P0-5
     # Basana's written same-time rule (the dispatcher's heap key and the sources'
-    # `priority`) is fixed in stated_rules.py. The P0-5 inputs hold funding and
-    # liquidation, which Basana's distribution has no class for (round r6-1).
+    # `priority`) is fixed in stated_rules.py. Round r7-1: the P0-5 inputs are
+    # built by the runner from Basana's own types (scenes.for_target_types), one
+    # type per input; each input becomes one event source whose public
+    # `priority` argument is the setting the stated rule is written for
+    # (stated_rules.TYPE_PRIORITY), subscribed in the hand-over order.
+    def _p5_once(self, sc, hand_over):
+        recs = run_streams([sc.input["streams"][k] for k in hand_over], priorities=True)
+        return [[r[0], r[2]] for r in recs], [r[4] for r in recs]
+
     def scene_p5_same_time_twice(self, sc):
-        return not_supported(NO_TYPE.format(k="・".join(_missing(C.concatenated(sc))), classes=_EVENT_CLASSES))
+        miss = _missing(C.concatenated(sc))
+        if miss:
+            return not_supported(NO_TYPE.format(k="・".join(miss), classes=_EVENT_CLASSES))
+        order, car = self._p5_once(sc, sc.input["hand_over_order"])
+        return ok({"order": order}, f"型ごとの {len(sc.input['streams'])} つの入力を 1 つずつ event source にし(source の公開の引数 priority に"
+                  "場面集の側で固定した値)、渡した順に dispatcher.subscribe した。戦略に届いた(型, 事象の時刻 when)",
+                  {"carriers": car})
 
     def scene_p5_hand_over_order(self, sc):
-        evs = C.concatenated(sc, sc.input["hand_over_orders"][0])
-        return not_supported(NO_TYPE.format(k="・".join(_missing(evs)), classes=_EVENT_CLASSES))
+        miss = _missing(C.concatenated(sc, sc.input["hand_over_orders"][0]))
+        if miss:
+            return not_supported(NO_TYPE.format(k="・".join(miss), classes=_EVENT_CLASSES))
+        runs, cars = [], []
+        for o in sc.input["hand_over_orders"]:
+            order, car = self._p5_once(sc, o)
+            runs.append({"hand_over": list(o), "order": order})
+            cars.append(car)
+        return ok({"form": "multi_input", "runs": runs},
+                  f"{len(runs)} 通りの渡す順で、型ごとの入力を event source にして subscribe し(priority は同じ固定の値)、各回の(型, 時刻)を記録",
+                  {"carriers": cars})
 
     def scene_p5_same_stream_order(self, sc):
         recs = run_streams([C.events(sc)])

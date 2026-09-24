@@ -217,11 +217,13 @@ class HftbacktestAdapter(Adapter):
         return ok({"sequence": seq}, "検査を通ったので連結のまま渡した", {"carriers": car})
 
     def scene_p1_one_call_per_event(self, sc):
-        evs = C.events(sc)
+        # round r7-1: the scene does not grade the type; it lets the target take one of its own types
+        # (a trade here, price = the bar's close, 0.01), not an undocumented event code
+        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": float(e["close"]), "qty": 0.01, "side": "buy"} for e in C.events(sc)]
         calls = run(evs)
         seq, car = _seq_car(calls)
         return ok({"sequence": seq},
-                  f"足に当たる型が無いので未定義の事象の型の番号 {UNKNOWN_KIND_CODE} で渡した。呼ばれた回: {[(c, n) for c, n, _ in calls]}",
+                  f"足に当たる型が無いので、この道具の型の約定(TRADE_EVENT、値 = 終値、数量 0.01)で渡した。呼ばれた回: {[(c, n) for c, n, _ in calls]}",
                   {"carriers": car})
 
     def scene_p1_typed_events(self, sc):

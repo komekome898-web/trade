@@ -198,20 +198,23 @@ class AatAdapter(Adapter):
     def scene_p1_one_call_per_event(self, sc):
         out = run({"events": C.events(sc)})
         return ok({"sequence": _market_calls(out)},
-                  "足の型が無いので足を DATA の事象(型の無い Data)として 1 つの取引所から流し、onData の各回に (道具の型 data, 事象の時刻)",
+                  "足の型が無いので足を DATA の事象(道具の型の無い Data)として 1 つの取引所から流し、onData の各回に (道具の型 data, 事象の時刻)"
+                  "(この場面は型を採点しない)",
                   {"carriers": _carriers(out)})
 
     def scene_p1_merge_by_time(self, sc):
         streams = {name: sc.input["streams"][name] for name in sc.input["hand_over_order"]}
         out = run(streams)
         return ok({"sequence": _market_calls(out)},
-                  "3 つの入力を 3 つの取引所(SceneExchange)にし、渡す順に --exchanges に並べた。約定は TRADE、足と資金調達は DATA。"
-                  "戦略が受けた (型, 時刻) の順(道具は取引所の tick を aiostream の merge で 1 本にする)", {"carriers": _carriers(out)})
+                  f"{len(streams)} つの入力を {len(streams)} つの取引所(SceneExchange)にし、渡す順に --exchanges に並べた。約定は TRADE、"
+                  "板の差分は OPEN(板に入る注文)。戦略が受けた (型, 時刻) の順(道具は取引所の tick を aiostream の merge で 1 本にする)",
+                  {"carriers": _carriers(out)})
 
     def scene_p1_typed_events(self, sc):
         out = run({"events": C.events(sc)})
         return ok({"sequence": _market_calls(out)},
-                  "足は DATA(型の無い Data)、約定は TRADE(Trade)で流し、戦略が受けた道具の型と時刻", {"carriers": _carriers(out)})
+                  "約定は TRADE(Trade)、板の差分は OPEN(板に入る注文)で 1 つの取引所から流し、戦略が受けた道具の型と時刻",
+                  {"carriers": _carriers(out)})
 
     # ---------------- P0-2
     def _iso(self, sc):
@@ -342,14 +345,15 @@ class AatAdapter(Adapter):
     def scene_p5_same_time_twice(self, sc):
         order, car = self._tie(sc, sc.input["hand_over_order"])
         return ok({"order": order},
-                  "型ごとの 4 入力を 4 つの取引所にし、渡す順に --exchanges に並べた。約定は TRADE、ほかは DATA。戦略に届いた (型, 時刻)。"
+                  f"型ごとの {len(sc.input['streams'])} 入力を {len(sc.input['streams'])} つの取引所にし、渡す順に --exchanges に並べた。"
+                  "約定は TRADE、板の差分は OPEN。戦略に届いた (型, 時刻)。"
                   "同じ時刻の並べ方を書いた規則は見つからなかった(engine.py は取引所の tick を aiostream.stream.merge で 1 本にし、時刻では並べない)",
                   {"carriers": car})
 
     def scene_p5_hand_over_order(self, sc):
         got = [(list(o), *self._tie(sc, o)) for o in sc.input["hand_over_orders"]]
         runs = [{"hand_over": h, "order": order} for h, order, _ in got]
-        return ok({"form": "multi_input", "runs": runs}, "24 通りの --exchanges の並びで各 1 回", {"carriers": [c for _, _, c in got]})
+        return ok({"form": "multi_input", "runs": runs}, f"{len(runs)} 通りの --exchanges の並びで各 1 回", {"carriers": [c for _, _, c in got]})
 
     def scene_p5_same_stream_order(self, sc):
         out = run({"events": C.events(sc)})

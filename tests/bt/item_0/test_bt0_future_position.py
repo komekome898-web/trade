@@ -388,7 +388,6 @@ def _run_every_naming(events, history_limit=None):
     is delivered at its received time), not from the core."""
     checked = 0
     problems: list = []
-    by_seq_time: dict = {}
 
     def selection(etype, now):
         return [e for e in events if (etype is None or e.EVENT_TYPE is etype) and e.received_time_ns <= now]
@@ -606,3 +605,47 @@ def test_each_role_of_the_table_refuses_by_itself_and_is_named():
             fix[which] -= 1
             seq[slice(fix["start"], fix["stop"], key.step)]
     assert CORE_CONTRACT["visibility"]["position_rule"]["max_position_by_role_as_offset_from_len"] == POSITION_RULE
+
+
+def test_an_empty_answer_cut_inside_the_dropped_part_is_refused():
+    """An empty answer lies where its range was cut. With history_limit,
+    `until_ns` before the newest dropped event cuts somewhere among the
+    dropped events, which the history no longer holds: the answer could
+    not state what its positions are, so the read is refused (as any read
+    reaching into the dropped part is). Cut at or after the newest dropped
+    event, it is placed exactly and answered."""
+    got = {}
+
+    def cb(ev, ctx):
+        if ev.EVENT_TYPE is BAR and ev.close == 109.0:
+            for name, kw in (("inside", {"until_ns": T0 + 2 * SEC, "since_ns": T0 + 9 * SEC}),
+                             ("n=0 inside", {"until_ns": T0 + 2 * SEC, "n": 0})):
+                try:
+                    ctx.visible_events(BAR, **kw)
+                    got[name] = "answered"
+                except HistoryTruncatedError:
+                    got[name] = "refused"
+            # the newest dropped bar: the largest n the history answers, then one more
+            kept = 1
+            while True:
+                try:
+                    ctx.visible_events(BAR, n=kept + 1)
+                    kept += 1
+                except HistoryTruncatedError:
+                    break
+            newest_dropped = T0 + (9 - kept) * SEC
+            at_edge = ctx.visible_events(BAR, until_ns=newest_dropped, since_ns=T0 + 9 * SEC)
+            got["edge"] = (len(at_edge), at_edge.place.first, at_edge.place.dropped)
+            try:
+                at_edge[-1]
+            except DroppedPositionError:
+                got["edge[-1]"] = "dropped"
+            try:
+                at_edge[0]
+            except OutsideAnswerError as exc:
+                got["edge[0]"] = (type(exc).__name__, exc.read_position)
+
+    CoreEngine(Recorder(cb), [bar(T0 + i * SEC, 100.0 + i) for i in range(10)], history_limit=3).run()
+    assert got["inside"] == "refused" and got["n=0 inside"] == "refused"
+    assert got["edge"][0] == 0 and got["edge"][1] == 0 and got["edge"][2] > 0
+    assert got["edge[-1]"] == "dropped" and got["edge[0]"] == ("OutsideAnswerError", 0)

@@ -391,6 +391,8 @@ class _FifoChannel:
 
 
 SINGLE_STREAM_NAME = "events"
+# the core's own event classes themselves (never a subclass) -> their type
+_CLASS_TO_TYPE: dict[type, EventType] = {cls: etype for etype, cls in EVENT_TYPE_TO_CLASS.items()}
 
 
 def _validate_time_span(time_span: Any) -> Optional[tuple[int, int]]:
@@ -466,15 +468,14 @@ class _SourceMerger:
             raise SourceEventTypeError(
                 f"stream {name!r} yielded a {type_name(event)}, not an Event"
             )
-        etype = type(event).EVENT_TYPE  # the class's own type (an event object cannot shadow it)
-        if type(event) is not EVENT_TYPE_TO_CLASS[etype]:
+        etype = _CLASS_TO_TYPE.get(type(event))  # the core's own event classes themselves
+        if etype is None:
             # an event crosses the source -> venue / strategy paths: one of
             # the core's own classes itself (every field a value, slotted),
             # never a subclass that could decide a field when it is read
             raise SourceEventTypeError(
-                f"stream {name!r} yielded a {type(event).__module__}.{type(event).__qualname__}, a "
-                f"subclass of {EVENT_TYPE_TO_CLASS[etype].__name__}; the core takes its own event "
-                f"classes themselves"
+                f"stream {name!r} yielded a {type_name(event)}, a subclass of the core's Event; the "
+                f"core takes its own event classes themselves"
             )
         if etype not in SOURCE_EVENT_TYPES:
             raise SourceEventTypeError(

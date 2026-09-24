@@ -575,7 +575,7 @@ class StrategyContext:
             self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
             return self.__empty_answer(event_type, until, hi, delivered, dropped)
-        return DeliveredEvents(events[lo:hi], first=lo, delivered=delivered, dropped=dropped)
+        return DeliveredEvents._placed(events[lo:hi], lo, 1, delivered, dropped)
 
     def __empty_answer(self, event_type: Optional[EventType], until: Optional[int], hi: int,
                        delivered: int, dropped: int) -> DeliveredEvents:
@@ -598,7 +598,7 @@ class StrategyContext:
                     f"received at {newest_dropped}); its (empty) answer cannot be placed -- read with "
                     f"until_ns >= {newest_dropped}"
                 )
-        return DeliveredEvents(first=hi, delivered=delivered, dropped=dropped)
+        return DeliveredEvents._placed((), hi, 1, delivered, dropped)
 
     def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int],
                            count: Optional[int], events: Sequence[Event], lo: int, hi: int) -> None:
@@ -628,10 +628,13 @@ class StrategyContext:
         return got[0] if got else None
 
     def order(self, client_order_id: str) -> Optional[OrderView]:
+        """The strategy's own view of one of its orders, or None for an id
+        it never placed. The id is a str by its real type (values.py): an
+        object that only claims to be one is refused, not answered None."""
         self.__check()
         if self.__order_lookup_cb is None:
             raise OrderApiError("this context was built without an order registry")
-        return self.__order_lookup_cb(client_order_id)
+        return self.__order_lookup_cb(_order_field(as_text, "client_order_id", client_order_id))
 
     def open_orders(self) -> tuple[OrderView, ...]:
         self.__check()

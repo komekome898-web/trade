@@ -66,7 +66,9 @@ CORE_CONTRACT: dict = {
         "forced_orders": "the strategy learns of a forced order only when its first notice is delivered",
         "history_limit": "per event type the latest N..2N delivered events are kept; the overall history "
                          "is exactly what the types keep; a read reaching into a dropped part raises "
-                         "HistoryTruncatedError",
+                         "HistoryTruncatedError, and so does an empty answer whose until_ns cut lies among "
+                         "the dropped events (its place could not be stated); an answer's place counts the "
+                         "dropped events before its oldest kept one (AnswerPlace.dropped)",
         "scope": "the guarantees hold for the context and everything reachable from it by attribute "
                  "access; the strategy runs in the engine's process, so interpreter introspection "
                  "(call stack, gc) is not covered -- the core does not sandbox strategy code; nor is a "

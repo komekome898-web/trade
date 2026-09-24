@@ -89,11 +89,18 @@ class BarterAdapter(Adapter):
                   {"carriers": carriers(rows)})
 
     def scene_p1_merge_by_time(self, sc):
-        return not_supported(NO_TYPE.format(k="資金調達"))
+        # the backtest takes ONE stream of market events (MarketDataInMemory::new(Vec<MarketStreamEvent>),
+        # barter/src/backtest/market_data.rs 61-70): the inputs are concatenated in the hand-over order
+        miss = sorted({e["kind"] for e in C.concatenated(sc)} - set(_VARIANT))
+        if miss:
+            return not_supported(NO_TYPE.format(k="・".join(miss)))
+        rows = self._run(C.concatenated(sc))
+        return ok({"sequence": seq(rows)}, "市場の事象の入力は 1 本(MarketDataInMemory の Vec)なので、入力を渡す順に連結して渡した。"
+                  "戦略の各回に InstrumentDataState が受けた (型, time_exchange)", {"carriers": carriers(rows)})
 
     def scene_p1_typed_events(self, sc):
         rows = self._run(C.events(sc))
-        return ok({"sequence": seq(rows)}, "足は Candle、約定は Trade(PublicTrade)の MarketEvent。戦略の各回に受けた (型, time_exchange)",
+        return ok({"sequence": seq(rows)}, "型の違う 2 件を道具の型(DataKind)の MarketEvent で 1 本の流れにして渡した。戦略の各回に受けた (型, time_exchange)",
                   {"carriers": carriers(rows)})
 
     # ---------------- P0-2
@@ -206,10 +213,35 @@ class BarterAdapter(Adapter):
                              "MarketDataInMemory は engine の入力で戦略からは見えない)")
 
     # ---------------- P0-5
-    def scene_p5_same_time_twice(self, sc):
-        return not_supported(NO_TYPE.format(k="資金調達"))
+    # One input only (MarketDataInMemory, barter/src/backtest/market_data.rs 28-31: "Stores all market
+    # events in memory and generates a Stream of MarketStreamEvent by lazy cloning the data as it's
+    # required"). No written rule for events of one time was found in the crate (the doc above and the
+    # engine's HistoricalClock, engine/clock.rs, which follows each event's time_exchange); the scene
+    # set has no stated rule for this tool (stated_rules.py).
+    def _p5_once(self, sc, hand_over):
+        rows = self._run(C.concatenated(sc, list(hand_over)))
+        return seq(rows), carriers(rows)
 
-    scene_p5_hand_over_order = scene_p5_same_time_twice
+    def scene_p5_same_time_twice(self, sc):
+        miss = sorted({e["kind"] for e in C.concatenated(sc)} - set(_VARIANT))
+        if miss:
+            return not_supported(NO_TYPE.format(k="・".join(miss)))
+        order, car = self._p5_once(sc, sc.input["hand_over_order"])
+        return ok({"order": order}, "市場の事象の入力は 1 本なので、型ごとの入力を渡す順に連結した 1 本を渡した。戦略に届いた (型, time_exchange)。"
+                  "同じ時刻の並べ方を書いた規則は crate に見つからなかった(backtest/market_data.rs の MarketDataInMemory の説明・engine/clock.rs)",
+                  {"carriers": car})
+
+    def scene_p5_hand_over_order(self, sc):
+        miss = sorted({e["kind"] for e in C.concatenated(sc, sc.input["hand_over_orders"][0])} - set(_VARIANT))
+        if miss:
+            return not_supported(NO_TYPE.format(k="・".join(miss)))
+        runs, cars = [], []
+        for o in sc.input["hand_over_orders"]:
+            order, car = self._p5_once(sc, o)
+            runs.append({"hand_over": list(o), "order": order})
+            cars.append(car)
+        return ok({"form": "single_input", "runs": runs}, f"{len(runs)} 通りの渡す順それぞれで連結した 1 本を渡し、各回の (型, time_exchange) を記録",
+                  {"carriers": cars})
 
     def scene_p5_same_stream_order(self, sc):
         rows = self._run(C.events(sc))

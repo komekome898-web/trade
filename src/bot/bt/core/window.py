@@ -125,6 +125,14 @@ class DeliveredEvents(tuple):
         object.__setattr__(self, "_place", place)
         return self
 
+    @classmethod
+    def _placed(cls, items: Any, first: int, step: int, delivered: int, dropped: int) -> "DeliveredEvents":
+        """The core's own maker (`visible_events`, a slice of an answer):
+        the place is right by construction, so it is not checked again."""
+        self = tuple.__new__(cls, items)
+        object.__setattr__(self, "_place", AnswerPlace(first, step, delivered, dropped))
+        return self
+
     def __setattr__(self, name: str, value: Any) -> None:
         raise AttributeError("a history answer cannot be changed")
 
@@ -150,7 +158,9 @@ class DeliveredEvents(tuple):
         if type(index) is slice:  # slice cannot be subclassed; an object claiming to be one is not
             # each bound read ONCE (its __index__), then the same ints are
             # checked, cut and placed
-            key = slice(*(None if b is None else operator.index(b) for b in (index.start, index.stop, index.step)))
+            b0, b1, b2 = index.start, index.stop, index.step
+            key = slice(None if b0 is None else operator.index(b0), None if b1 is None else operator.index(b1),
+                        None if b2 is None else operator.index(b2))
             step = 1 if key.step is None else key.step
             if step != 0:  # step 0 is refused by tuple below
                 way = "forward" if step > 0 else "backward"
@@ -159,8 +169,7 @@ class DeliveredEvents(tuple):
             items = tuple.__getitem__(self, key)
             start, _stop, st = key.indices(n)
             p = self._place
-            return DeliveredEvents(items, first=p.first + start * p.step, step=p.step * st,
-                                   delivered=p.delivered, dropped=p.dropped)
+            return DeliveredEvents._placed(items, p.first + start * p.step, p.step * st, p.delivered, p.dropped)
         i = operator.index(index)
         if i >= n or i < -n:
             raise self._outside("index", i, i if i >= 0 else i + n, n, f"[{i}]")
@@ -180,14 +189,16 @@ class DeliveredEvents(tuple):
         from what that position is in what the read reads."""
         p = self._place
         u = p.first + q * p.step
+        holds = f"it holds {n}, positions 0..{n - 1}" if n else "it holds no event"
         where = (
-            f"{shown}: the {role} {bound} names position {q} of this answer (it holds {n}, positions "
-            f"0..{n - 1}), which is position {u} of what the read reads"
+            f"{shown}: the {role} {bound} names position {q} of this answer ({holds}), which is "
+            f"position {u} of what the read reads"
         )
         if u >= p.delivered:
+            had = f"positions 0..{p.delivered - 1}" if p.delivered else "none"
             cls, why = FuturePositionError, (
                 f"; {p.delivered} of those events had been delivered when the answer was made "
-                f"(positions 0..{p.delivered - 1}), so what position {u} names had not been delivered yet"
+                f"({had}), so what position {u} names had not been delivered yet"
             )
         elif u >= 0:
             cls, why = OutsideAnswerError, (
@@ -201,8 +212,9 @@ class DeliveredEvents(tuple):
             )
         else:
             cls, why = BeforeFirstEventError, (
-                f"; it lies before the first event ever delivered of what the read reads "
-                f"({p.dropped} dropped ones included): nothing is there"
+                "; it lies before the first event ever delivered of what the read reads"
+                + (f" (the {p.dropped} history_limit dropped included)" if p.dropped else "")
+                + ": nothing is there"
             )
         exc = cls(where + why)
         exc.answer_position, exc.read_position, exc.delivered = q, u, p.delivered
@@ -237,9 +249,10 @@ class EventWindow(Sequence):
 
     def __getitem__(self, index):
         self._check()
-        if isinstance(index, slice):
+        if type(index) is slice:  # by the real type (values.py), as DeliveredEvents decides
             start, stop, step = index.indices(self._end)
             return tuple(self._log[start:stop:step])
+        index = operator.index(index)
         if index < 0:
             index += self._end
         if not 0 <= index < self._end:

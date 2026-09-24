@@ -62,6 +62,20 @@ def _ns(d: D.datetime) -> int:
     return C.dt_to_ns(d.astimezone(UTC))
 
 
+def _snapshot(e: dict) -> TickData:
+    """A book snapshot as vnpy's TickData (its 5 levels), as in the p3-book_snapshot scene."""
+    kw = {}
+    for i, (p, q) in enumerate(e["bids"][:5], 1):
+        kw[f"bid_price_{i}"], kw[f"bid_volume_{i}"] = p, q
+    for i, (p, q) in enumerate(e["asks"][:5], 1):
+        kw[f"ask_price_{i}"], kw[f"ask_volume_{i}"] = p, q
+    return TickData(symbol="X", exchange=Exchange.LOCAL, datetime=_dt(e["ts_ns"]), gateway_name="BACKTESTING", **kw)
+
+
+def _obj(e: dict):
+    return _bar(e) if e["kind"] == "bar" else _snapshot(e)
+
+
 def _bar(e: dict) -> BarData:
     b = C.as_bar(e)
     return BarData(symbol="X", exchange=Exchange.LOCAL, datetime=_dt(b["ts_ns"]), interval=Interval.DAILY,
@@ -143,22 +157,30 @@ class VnpyAdapter(Adapter):
     name = "opp_vnpy"
 
     # ---------------- P0-1
+    # Round r7-1: the scenes of other viewpoints get their types from the tool's own (runner):
+    # vnpy delivers bars (BarData, p3-bar) and book snapshots (TickData, p3-book_snapshot).
     def scene_p1_merge_by_time(self, sc):
-        return not_supported(NON.format(k="足と約定と資金調達を 1 つの回で", t="試したこと: 足と tick を 1 つの history_data に並べて足の回で走らせた -> "
-                                         + self._mixed_try(sc)) + "。" + _net())
+        return not_supported(NON.format(k=self._kinds(C.concatenated(sc)) + "を 1 つの回で",
+                                        t="試したこと: " + self._mixed_try(C.concatenated(sc))) + "。" + _net())
 
-    def _mixed_try(self, sc):
-        tr = sc.input["streams"]["trades"][0]
-        data = [_bar(sc.input["streams"]["bars"][0]),
-                TickData(symbol="X", exchange=Exchange.LOCAL, datetime=_dt(tr["ts_ns"]), last_price=tr["price"],
-                         last_volume=tr["qty"], gateway_name="BACKTESTING")]
-        got = []
-        try:
-            run(data, {"bar": lambda s, b, n: got.append(("bar", _ns(b.datetime))),
-                       "tick": lambda s, t, n: got.append(("tick", _ns(t.datetime)))})
-        except Exception as exc:  # noqa: BLE001
-            return f"{type(exc).__name__}: {str(exc)[:120]}"
-        return f"戦略が受けたもの {got}"
+    @staticmethod
+    def _kinds(evs) -> str:
+        return "・".join(dict.fromkeys({"bar": "足", "book_snapshot": "板の写真"}.get(e["kind"], e["kind"]) for e in evs))
+
+    def _mixed_try(self, evs):
+        """The scene's events as the tool's own objects (bar -> BarData, book snapshot -> TickData) in ONE
+        history_data, run once in the bar mode and once in the tick mode; what on_bar / on_tick received."""
+        data = [_obj(e) for e in evs]
+        out = []
+        for mode in (BacktestingMode.BAR, BacktestingMode.TICK):
+            got = []
+            try:
+                run(data, {"bar": lambda s, b, n: got.append(("on_bar", type(b).__name__, _ns(b.datetime))),
+                           "tick": lambda s, t, n: got.append(("on_tick", type(t).__name__, _ns(t.datetime)))}, mode=mode)
+                out.append(f"{mode.name} の回 -> 戦略が受けたもの {got}")
+            except Exception as exc:  # noqa: BLE001
+                out.append(f"{mode.name} の回 -> {type(exc).__name__}: {str(exc)[:120]}")
+        return " / ".join(out)
 
     def _seq(self, bars):
         log, car = [], []
@@ -171,18 +193,7 @@ class VnpyAdapter(Adapter):
 
     def scene_p1_typed_events(self, sc):
         evs = C.events(sc)
-        return not_supported(NON.format(k="足と約定を 1 つの回で", t="試したこと: 足と tick を 1 つの history_data にして足の回 -> "
-                                         + self._typed_try(evs)) + "。" + _net())
-
-    def _typed_try(self, evs):
-        data = [_bar(evs[0]), TickData(symbol="X", exchange=Exchange.LOCAL, datetime=_dt(evs[1]["ts_ns"]),
-                                       last_price=evs[1]["price"], last_volume=evs[1]["qty"], gateway_name="BACKTESTING")]
-        got = []
-        try:
-            run(data, {"bar": lambda s, b, n: got.append(("bar", type(b).__name__)), "tick": lambda s, t, n: got.append(("tick", type(t).__name__))})
-        except Exception as exc:  # noqa: BLE001
-            return f"{type(exc).__name__}: {str(exc)[:120]}"
-        return f"on_bar / on_tick が受けたもの {got}"
+        return not_supported(NON.format(k=self._kinds(evs) + "を 1 つの回で", t="試したこと: " + self._mixed_try(evs)) + "。" + _net())
 
     # ---------------- P0-2
     def _iso(self, sc):
@@ -260,8 +271,9 @@ class VnpyAdapter(Adapter):
     scene_p3_book_delta = scene_p3_funding = scene_p3_liquidation = _none
 
     def scene_p3_mixed_one_run(self, sc):
-        return not_supported(NON.format(k="6 種を 1 つの回で", t="試したこと: " + self._typed_try(
-            [C.events(sc)[3], C.events(sc)[0]])) + "。" + _net())
+        own = [e for e in C.events(sc) if e["kind"] in ("book_snapshot", "bar")]  # the tool's two types (p3-bar, p3-book_snapshot)
+        return not_supported(NON.format(k="6 種を 1 つの回で", t="試したこと(この道具の 2 つの型の分だけ): " + self._mixed_try(own))
+                             + "。" + _net())
 
     def scene_p3_clock_timer(self, sc):
         tried = []
@@ -357,7 +369,8 @@ class VnpyAdapter(Adapter):
         return ok(att.output(), "T0 + 4 日の on_bar の中で試した: " + att.summary() + "。" + _net())
 
     def _no_types(self, sc):
-        return not_supported(NON.format(k="約定・足・資金調達・清算を 1 つの回で", t="試したこと: " + self._mixed_try(sc)) + "。" + _net())
+        evs = C.concatenated(sc, (sc.input.get("hand_over_orders") or [sc.input.get("hand_over_order")])[0])
+        return not_supported(NON.format(k=self._kinds(evs) + "を 1 つの回で", t="試したこと: " + self._mixed_try(evs)) + "。" + _net())
 
     scene_p5_same_time_twice = scene_p5_hand_over_order = _no_types
 

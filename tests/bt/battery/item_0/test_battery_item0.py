@@ -1048,3 +1048,179 @@ def test_the_reproduction_raised_the_best_where_the_review_said_it_would():
     import common as C
     assert C.in_scene_set(str(HERE / "opponents" / "repro_lean52.py"))
     assert not C.in_scene_set(roots.dirs[0])
+
+
+# ---------------------------------------------------------------- round r7-1
+# i0-r6-02: a scene of another viewpoint than P0-3 must not have its result
+# decided by which event types a target has (that is what P0-3 measures).
+# i0-r6-04: the reproduction rewrites every condition of the source that
+# encloses a rewritten statement (IsInternalFeed, the subscription sort).
+TYPED = {"p1-merge-by-time", "p1-typed-events", "p5-same-time-twice", "p5-hand-over-order"}
+
+
+def _kinds_in(inp) -> set:
+    evs = list(inp.get("events") or []) + [e for evs in (inp.get("streams") or {}).values() for e in evs]
+    return {e["kind"] for e in evs if "kind" in e}
+
+
+def test_no_scene_outside_p0_3_fixes_its_event_types():
+    """Every scene of P0-1, P0-2, P0-4 .. P0-7 is one of: (A) its types come
+    from the target's own (type_plan, built by the runner); (B) the target
+    picks one of its own types and no type name is graded; (C) any_type:
+    trades that may be bars; (D) bars that may be trades."""
+    kind_names = set(scenes.TYPE_ORDER)
+    for sc in scenes.SCENES:
+        if sc.viewpoint == "P0-3":
+            continue
+        kinds = _kinds_in(sc.input)
+        exp = json.dumps(sc.expected, ensure_ascii=False)
+        if sc.type_plan is not None:
+            assert sc.id in TYPED and "type_rule" in sc.input, sc.id
+        elif not kinds or "型は対象が受ける型" in json.dumps(sc.input, ensure_ascii=False):
+            assert not any(f'"{k}"' in exp for k in kind_names), (sc.id, "the target picks the type, so no type may be graded")
+        elif sc.input.get("any_type"):
+            assert kinds == {"trade"}, sc.id
+        else:
+            assert kinds == {"bar"} and "約定で代えてよい" in sc.input.get("note", ""), sc.id
+    assert {sc.id for sc in scenes.SCENES if sc.type_plan} == TYPED
+
+
+def test_typed_scenes_are_built_by_their_rule_for_any_set_of_types():
+    base = {sc.id: sc for sc in scenes.SCENES if sc.type_plan}
+    for sid, sc in base.items():
+        full = scenes.for_target_types(sc, scenes.TYPE_ORDER)
+        assert (full.input, full.expected) == (sc.input, sc.expected), sid  # the listed scene = all six types
+        assert scenes.for_target_types(sc, ["bar"]) is None, sid           # every typed scene needs two types
+        assert scenes.for_target_types(sc, []) is None, sid
+    two = scenes.for_target_types(base["p1-merge-by-time"], ["bar", "trade"])
+    assert two.input["types"] == {"A": "trade", "B": "bar", "C": "trade"}  # TYPE_ORDER, cycled over A, B, C
+    evs = [e for s in two.input["streams"].values() for e in s]
+    assert two.expected["sequence"] == [[e["kind"], e["ts_ns"]] for e in sorted(evs, key=lambda e: e["ts_ns"])]
+    assert [e["ts_ns"] for e in two.input["streams"]["A"]] == [scenes.T0 + 2 * scenes.DAY, scenes.T0 + 5 * scenes.DAY]
+    for e in evs:
+        assert {k: v for k, v in e.items() if k != "ts_ns"} == {k: v for k, v in scenes.SAMPLES[e["kind"]].items() if k != "ts_ns"}
+    three = scenes.for_target_types(base["p5-hand-over-order"], ["funding", "bar", "trade"])
+    assert three.input["types"] == {"A": "trade", "B": "bar", "C": "funding"}
+    assert len(three.input["hand_over_orders"]) == 6 and len({tuple(o) for o in three.input["hand_over_orders"]}) == 6
+    twice = scenes.for_target_types(base["p5-same-time-twice"], ["book_delta", "trade"])
+    assert twice.expected["delivered_as_multiset"] == sorted([["book_delta", scenes.T0 + scenes.DAY], ["trade", scenes.T0 + scenes.DAY]])
+    typed = scenes.for_target_types(base["p1-typed-events"], ["liquidation", "book_snapshot", "bar"])
+    assert typed.expected == {"sequence": [["book_snapshot", scenes.T0 + scenes.DAY], ["bar", scenes.T0 + 2 * scenes.DAY]]}
+
+
+def test_the_runner_takes_the_types_from_the_p3_results_and_never_asks_the_adapter():
+    t = scenes.T0 + scenes.DAY
+    p3 = {"p3-trade": SceneResult("ok", {"sequence": [["trade", t]]}),
+          "p3-bar": SceneResult("ok", {"sequence": [["bar", t], ["bar", t + scenes.DAY]]}),  # a late extra bar: still a bar
+          "p3-book_snapshot": SceneResult("ok", {"sequence": []}),                           # nothing delivered
+          "p3-book_delta": SceneResult("ok", {"sequence": [["price", t]]}),                 # delivered as another type
+          "p3-funding": SceneResult("error", detail="x"), "p3-liquidation": SceneResult("not_supported")}
+    assert run_battery.target_types(p3) == ["trade", "bar"]
+
+    class Never:
+        def run_scene(self, sc):
+            raise AssertionError("the adapter must not be asked when the target has too few types")
+
+    sc = _scene("p5-same-time-twice")
+    _, res = run_battery.run_for_types(Never(), sc, {"p3-bar": p3["p3-bar"]})
+    assert res.status == "not_supported" and "最低 2 種" in res.detail and "p3-bar: ok" in res.detail
+
+    seen = []
+
+    class Rec:
+        def run_scene(self, s):
+            seen.append(s)
+            return SceneResult("not_supported", detail="rec")
+
+    conc, res = run_battery.run_for_types(Rec(), sc, p3)
+    assert seen and seen[0].input["types"] == {"A": "trade", "B": "bar"} and conc is seen[0]
+    assert res.detail.startswith("型の選び方(runner")
+
+
+def test_every_record_of_a_typed_scene_used_the_types_of_its_own_p3_rows():
+    """The survey records were made by the runner of this round: the typed
+    scenes' types are the ones the same record's p3 rows show."""
+    for target, rows in _records().items():
+        by = {r["scene_id"]: r for r in rows}
+        p3 = {}
+        for k in scenes.TYPE_ORDER:
+            r = by[f"p3-{k}"]
+            out = json.loads(r["output_1"]) if r["output_1"] not in ("", "null") else None
+            p3[f"p3-{k}"] = SceneResult(r["status_1"], out if isinstance(out, dict) else None)
+        types = run_battery.target_types(p3)
+        for sid in TYPED:
+            assert by[sid]["detail_1"].startswith(f"型の選び方(runner、第 r7-1 回): 対象の型 {types}"), (target, sid)
+
+
+def test_every_target_with_a_type_has_a_trade_or_a_bar():
+    """The any_type scenes and the two P0-4 bar scenes let a target use a trade
+    or a bar; every recorded target that delivers any type has one of them."""
+    for target, rows in _records().items():
+        by = {r["scene_id"]: r for r in rows}
+        p3 = {f"p3-{k}": SceneResult(by[f"p3-{k}"]["status_1"], json.loads(by[f"p3-{k}"]["output_1"]))
+              for k in scenes.TYPE_ORDER}
+        types = run_battery.target_types(p3)
+        assert not types or {"trade", "bar"} & set(types), (target, types)
+
+
+def test_one_call_per_event_grades_the_times_of_the_calls_not_the_type():
+    sc = _scene("p1-one-call-per-event")
+    ts = [e["ts_ns"] for e in sc.input["events"]]
+    grade = lambda out: run_battery.correctness(SceneResult("ok", out), sc.expected, sc)  # noqa: E731
+    assert grade({"sequence": [["data", t] for t in ts]}) == "正解と一致"
+    assert grade({"sequence": [["bar", t] for t in ts[:4]]}) == "不一致"          # a call missing
+    assert grade({"sequence": [["bar", t] for t in ts + ts[-1:]]}) == "不一致"    # a call too many
+    assert grade({"sequence": [["bar", t + 1] for t in ts]}) == "不一致"          # the time moved
+
+
+def test_no_stale_best_claim_in_the_review_table():
+    """A 'best is not 正解と一致' claim in the review table names only scenes
+    whose best over the records is still not 正解と一致."""
+    import re
+    best = _best_by_scene()
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    for sid in re.findall(r"最良が正解と一致でない場面 (p\d-[a-z_\-]+)", text):
+        assert best[sid] != "正解と一致", sid
+
+
+def test_lean_reproduction_keeps_internal_feeds_out_of_the_slice():
+    from opponents.repro_engines import lean52 as L
+    got = []
+
+    class A(L.QCAlgorithm):
+        def OnData(self, s):  # noqa: N802
+            got.append([(type(d).__name__, d.EndTime) for d in s.AllData] + [("rates", sorted(s.MarginInterestRates)),
+                                                                           ("ticks", sorted(s.Ticks))])
+
+    t = 10 * L.TICKS_PER_SECOND
+    tick = L.Tick(t, "X", "", "", 1.0, 100.0)
+    rate = L.MarginInterestRate()
+    rate.Time, rate.Symbol, rate.InterestRate = t, "X", 0.1
+    internal = L.SubscriptionDataConfig(L.Tick, "X", L.TickType.Trade, L.SecurityType.CryptoFuture, True)
+    internal_rate = L.SubscriptionDataConfig(L.MarginInterestRate, "X", L.TickType.Quote, L.SecurityType.CryptoFuture, True)
+    L.run(A(), [L.Subscription([tick], internal), L.Subscription([rate], internal_rate)])
+    assert got == []  # TimeSliceFactory.cs 181 / 194 / 329: nothing of an internal feed reaches OnData (HasData false, 389)
+    user = L.data_manager_add("X", L.SecurityType.CryptoFuture, [(L.Tick, L.TickType.Trade), (L.MarginInterestRate, L.TickType.Quote)])
+    assert [c.IsInternalFeed for c in user] == [False, False]  # DataManager.cs 720-721 with AddSecurity's defaults
+    assert L.data_manager_add("X", L.SecurityType.CryptoFuture, [(L.Tick, "OpenInterest")])[0].IsInternalFeed is True
+    L.run(A(), [L.Subscription([tick], user[0]), L.Subscription([rate], user[1])])
+    assert got == [[("Tick", t), ("MarginInterestRate", t), ("rates", ["X"]), ("ticks", ["X"])]]
+
+
+def test_lean_reproduction_sorts_the_subscriptions_by_their_key():
+    """SubscriptionCollection.cs 213-227: SecurityType, then TickType (Trade <
+    Quote), then Symbol; the same key keeps the order handed over."""
+    from opponents.repro_engines import lean52 as L
+    t = 10 * L.TICKS_PER_SECOND
+
+    def sub(kind, sym):
+        if kind == "rate":
+            d = L.MarginInterestRate()
+            d.Time, d.Symbol = t, sym
+            return L.Subscription([d], L.data_manager_add(sym, L.SecurityType.CryptoFuture, [(L.MarginInterestRate, L.TickType.Quote)])[0])
+        d = L.Tick(t, sym, "", "", 1.0, 1.0)
+        return L.Subscription([d], L.data_manager_add(sym, L.SecurityType.CryptoFuture, [(L.Tick, L.TickType.Trade)])[0])
+
+    subs = [sub("rate", "A"), sub("tick", "B"), sub("tick", "A")]
+    assert [(s.Configuration.TickType, s.Configuration.Symbol) for s in L.sort_subscriptions(subs)] == \
+        [(L.TickType.Trade, "A"), (L.TickType.Trade, "B"), (L.TickType.Quote, "A")]
