@@ -357,6 +357,16 @@ def cmd_check_elements(a):
                         errs.append("行 %d: %s %s の `なし` の根拠の生ログが無い: %s" % (i + 1, tool, el, lp))
                     elif not (1 <= int(lno) <= len(lp.read_text().splitlines())):
                         errs.append("行 %d: %s %s の `なし` の根拠の行番号が生ログに無い: %s:%s" % (i + 1, tool, el, fname, lno))
+                    else:
+                        # 描画した頁は `なし` の根拠にしない(監査 27 回目: 描画の道具は本文の欠けを全部は数えられない)
+                        loglines = lp.read_text().splitlines()
+                        k = int(lno) - 1
+                        while k >= 0 and not loglines[k].startswith("--- "):
+                            k -= 1
+                        cmdline = loglines[k + 1] if 0 <= k and k + 1 < len(loglines) else ""
+                        if "cat8_render" in cmdline:
+                            errs.append("行 %d: %s %s の `なし` の根拠が描画した頁(cat8_render.js)の手: %s:%s。描画した頁は `なし` の根拠にしない" % (
+                                i + 1, tool, el, fname, lno))
                 if not refs:
                     errs.append("行 %d: %s %s の `なし` の根拠に一覧を取った生ログの行(20260923_tools_8_run%s.log:<行>)が無い" % (
                         i + 1, tool, el, a.round))

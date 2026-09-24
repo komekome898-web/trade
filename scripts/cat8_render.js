@@ -6,15 +6,14 @@
 // fetched by Playwright's Node side, which verifies TLS normally against NODE_EXTRA_CA_CERTS
 // (the proxy's bundle), then handed back to the page. Service workers are blocked and
 // WebSockets are closed (audit 24).
-// Completeness is not assumed. What is counted as an `INCOMPLETE` line (audits 25-26):
-//   - each request seen by route() (tracked per request, not per URL) that failed or had not
-//     finished when the text was taken; websockets; failed requests; page-load errors;
-//   - the page text changing between the first read (after wait_ms) and a second read
-//     (after another max(2*wait_ms, 8 s)), which catches late content whatever its path.
-// The last line is always `INCOMPLETE 合計 <N> 件`. What is NOT covered: requests the page
-// never started (e.g. service workers are blocked, so their fetches never happen), content
-// that arrives after the second read, and text drawn without the DOM (canvas, images).
-// So N = 0 does not prove the text is the whole page.
+// Completeness is not assumed, and cannot be proved by this tool (audits 25-27 each found a
+// new way for text to be missing while nothing was counted). Therefore a rendered page is
+// used only as positive evidence (text that is there); it is never the basis for `なし`
+// (run 5 prompt §2; `cat8_ledger.py check-elements` rejects `なし` citing a cat8_render step).
+// Printed as help, not as proof: `INCOMPLETE` lines for requests (tracked per request) that
+// failed or were unfinished, websockets, page-load errors, unreadable frames, and text that
+// changed between two reads; the last line is always `INCOMPLETE 合計 <N> 件`.
+// Text of frames (iframes) is printed after the main text under `--- frame <URL>`.
 const { chromium } = require('playwright');
 (async () => {
   const url = process.argv[2];
@@ -56,6 +55,15 @@ const { chromium } = require('playwright');
       const second = await page.evaluate(() => document.body.innerText);
       console.log('HTTP ' + (res ? res.status() : 'NA') + ' ' + page.url());
       console.log(second);
+      for (const f of page.frames()) {
+        if (f === page.mainFrame()) continue;
+        const t = await f.evaluate(() => (document.body ? document.body.innerText : '')).catch((e) => {
+          incomplete.push('frame-unreadable ' + f.url() + ' ' + String(e).split('\n')[0]);
+          return '';
+        });
+        console.log('--- frame ' + f.url());
+        console.log(t);
+      }
       if (first !== second) incomplete.push('text-changed-after-wait (' + first.length + ' -> ' + second.length + ' chars)');
     } catch (e) {
       incomplete.push('error ' + String(e).split('\n')[0]);
