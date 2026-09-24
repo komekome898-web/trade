@@ -22,6 +22,21 @@ lists the conditions of the cited range: the ones rewritten (with their
 lines), and the ones not rewritten with the source lines that show they
 cannot hold for the scenes' subscriptions. The source files were read at
 the same commit with `git show` (a blobless clone; nothing of it was run).
+
+Round r8-1 (critic i0-r7-03, positive definition A): the rewrite now starts
+at the user's public entry. The algorithm's Initialize calls
+`QCAlgorithm.AddCryptoFuture(ticker, resolution, market, fillForward,
+leverage)`; the data types of the subscriptions come out of LEAN's own
+lookup from the resolution (`DataManager.Add` -> `LookupSubscriptionConfigDataTypes`
+-> `LeanData.GetDataType`), the configs go into the user-defined universe
+at the end of the time step, and one subscription is made per config by the
+universe selection. The scene set no longer builds subscriptions from the
+scene's event types. Each function below names the lines it rewrites.
+Read on 2026-09-24 for this round (same commit, `git show`):
+Common/Util/LeanData.cs, Common/Data/BaseData.cs, Common/Data/Market/
+{Tick,TradeBar,MarginInterestRate}.cs, Common/Extensions.cs,
+Algorithm/QCAlgorithm.Universe.cs, Common/Data/UniverseSelection/
+{UserDefinedUniverse,Universe}.cs, Engine/DataFeeds/UniverseSelection.cs.
 """
 from __future__ import annotations
 
@@ -123,6 +138,76 @@ class MarginInterestRate(BaseData):
 class SecurityType:
     """Common/Global.cs SecurityType; only the member the scenes use."""
     CryptoFuture = "CryptoFuture"
+
+
+class Resolution:
+    """Common/Global.cs 566-592 `public enum Resolution { Tick, Second, Minute, Hour, Daily }`."""
+    Tick, Second, Minute, Hour, Daily = "Tick", "Second", "Minute", "Hour", "Daily"
+    ALL = (Tick, Second, Minute, Hour, Daily)
+
+
+def resolution_to_timespan(resolution: str) -> int:
+    """Common/Extensions.cs 2255-2273 ToTimeSpan(this Resolution): Tick -> TimeSpan.Zero,
+    Second / Minute / Hour / Daily -> Time.OneSecond / OneMinute / OneHour / OneDay; anything
+    else throws ArgumentOutOfRangeException. (100-ns ticks, like every DateTime here.)"""
+    spans = {Resolution.Tick: 0, Resolution.Second: TICKS_PER_SECOND, Resolution.Minute: 60 * TICKS_PER_SECOND,
+             Resolution.Hour: 3600 * TICKS_PER_SECOND, Resolution.Daily: 86_400 * TICKS_PER_SECOND}
+    if resolution not in spans:
+        raise ValueError(f"ArgumentOutOfRangeException: resolution {resolution!r}")
+    return spans[resolution]
+
+
+class QuoteBar(BaseData):
+    """Common/Data/Market/QuoteBar.cs: the Quote data type of a bar resolution
+    (LeanData.GetDataType, 492). Only its existence as a subscription's type is
+    rewritten: the scenes carry no quotes, so no QuoteBar is ever made."""
+
+
+def get_data_type(resolution: str, tick_type: str) -> type:
+    """Common/Util/LeanData.cs 488-494 GetDataType(resolution, tickType):
+    `if (resolution == Resolution.Tick) return typeof(Tick);
+     if (tickType == TickType.OpenInterest) return typeof(OpenInterest);
+     if (tickType == TickType.Quote) return typeof(QuoteBar);
+     return typeof(TradeBar);` (OpenInterest: no CryptoFuture tick type is
+    OpenInterest, SubscriptionManager.cs 361, so that branch cannot be reached here)."""
+    if resolution == Resolution.Tick:
+        return Tick
+    if tick_type == "OpenInterest":
+        raise NotImplementedError("OpenInterest is not a CryptoFuture tick type (SubscriptionManager.cs 361)")
+    if tick_type == TickType.Quote:
+        return QuoteBar
+    return TradeBar
+
+
+def is_valid_configuration(security_type: str, resolution: str, tick_type: str) -> bool:
+    """Common/Util/LeanData.cs 520-527 IsValidConfiguration: false only for an
+    Equity's Quote at Daily / Hour; true otherwise."""
+    if security_type == "Equity" and resolution in (Resolution.Daily, Resolution.Hour):
+        return tick_type != TickType.Quote
+    return True
+
+
+# Engine/DataFeeds/SubscriptionManager.cs 361 (the default data types):
+# `{SecurityType.CryptoFuture, new List<TickType> {TickType.Trade, TickType.Quote}}`
+AVAILABLE_DATA_TYPES = {SecurityType.CryptoFuture: [TickType.Trade, TickType.Quote]}
+
+
+def lookup_subscription_config_data_types(security_type: str, resolution: str, is_canonical: bool) -> list[tuple[type, str]]:
+    """Engine/DataFeeds/DataManager.cs 747-773 LookupSubscriptionConfigDataTypes:
+    `if (isCanonical) { ... }` (753-761, a canonical option / future symbol: a
+    CryptoFuture ticker added by AddCryptoFuture is not canonical -- the branch
+    is kept and refuses); `AvailableDataTypes[symbolSecurityType].Where(tickType =>
+    LeanData.IsValidConfiguration(...))` (763-765); `.Select(tickType => new
+    Tuple<Type, TickType>(LeanData.GetDataType(resolution, tickType), tickType))`
+    (767-768); `if (symbolSecurityType == SecurityType.CryptoFuture)
+    result.Add(new Tuple<Type, TickType>(typeof(MarginInterestRate), TickType.Quote));` (770-773)."""
+    if is_canonical:
+        raise NotImplementedError("a canonical symbol's universe types (DataManager.cs 753-761) are not rewritten")
+    available = [tt for tt in AVAILABLE_DATA_TYPES[security_type] if is_valid_configuration(security_type, resolution, tt)]
+    result = [(get_data_type(resolution, tt), tt) for tt in available]
+    if security_type == SecurityType.CryptoFuture:
+        result.append((MarginInterestRate, TickType.Quote))
+    return result
 
 
 # Common/Global.cs 512-528 `public enum TickType { Trade, Quote, OpenInterest }`: the
