@@ -472,7 +472,7 @@ def cmd_check_elements(a):
             logcol = c[6] if r7 else ev
             # 触らない行: 7 回目以降は、6 列目が `台帳の値のまま(…)` だけで、値と段が台帳と同じときに限る(監査 40 回目: 部分一致で検査を飛ばしていた)
             if r7:
-                untouched = bool(re.fullmatch(r"台帳の値のまま\s*(?:[(（][^)）]*[)）])?", ev.strip()))
+                untouched = bool(re.fullmatch(r"台帳の値のまま\s*[(（]\s*\d+\s*回目の節\s*[)）]", ev.strip()))  # 監査 41 回目の指摘 2
                 if untouched:
                     lr = ledger_by_name.get(tool.strip("`"))
                     if lr is None or (lr.get(el), lr.get("段_" + el)) != (val, stg):
@@ -506,6 +506,9 @@ def cmd_check_elements(a):
                     errs.append("行 %d: %s %s の「生ログの行」の列に、`<生ログ>:N` か `<生ログ>:N-M` でないものがある: %s" % (i + 1, tool, el, " ".join(bad[:3])))
                 if val in ("印", "なし") and not logcol.strip():
                     errs.append("行 %d: %s %s は `%s` なのに「生ログの行」の列が空" % (i + 1, tool, el, val))
+                elif not logcol.strip() and re.search(r"「[^「」]{8,}」", ev):
+                    # 監査 41 回目の指摘 1: `未判別` の行でも、引用があれば生ログの行を書かせて照らす
+                    errs.append("行 %d: %s %s は 6 列目に「…」の引用があるのに「生ログの行」の列が空(引用は生ログと照らす)" % (i + 1, tool, el))
                 for h in quotes_in_log(ev, logcol, a.round):
                     errs.append("行 %d: %s %s の根拠の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, tool, el, h))
             if a.round and int(a.round) >= 5 and val == "印":
