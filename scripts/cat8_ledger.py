@@ -465,6 +465,14 @@ def cmd_check_elements(a):
             continue
         if in_trace and re.match(r"^\s*-\s*`[^`]+`", ln):
             n_trace += 1
+        if in_trace and a.round and int(a.round) >= 10 and re.match(r"^\s*[-*]?\s*一覧[::]", ln):
+            refs = strict_refs(ln)
+            if not refs:
+                errs.append("行 %d: 辿る一覧の「一覧:」の行に `<生ログ>:N` の形の参照が無い" % (i + 1))
+            for fname, rn, lno in refs[:1]:
+                lp = pathlib.Path("docs/DATA/probes") / fname
+                if int(rn) != int(a.round) or not lp.exists() or int(lno) > len(lp.read_text().splitlines()):
+                    errs.append("行 %d: 辿る一覧の「一覧:」の行の生ログの行が無い: %s:%s" % (i + 1, fname, lno))
         if in_find and ln.strip().startswith("|"):
             c = cells(ln)
             if len(c) == 4 and re.fullmatch(r"\d+", c[0]):
