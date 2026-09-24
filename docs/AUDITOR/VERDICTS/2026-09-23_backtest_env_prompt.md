@@ -1132,3 +1132,5 @@ decisive 検査(6 回目処置 1〜5 + 処置 6 の反映確認): item14 の §3
 
 6 回目の起動は項目 0 の第 5 周で周の上限 10 に届いて止まった(盲検は対現状 3/3・対調査 同等で L-432 では通過、批評家の [止める] 4 件 = 実装 1・場面集 3)。L-433(項目 0 は上限なし、次の 1 周で片付ける、提出前の吟味)・L-434(場面係と作業者の同時の直し、項目 1〜12 は項目 0 のあと)・L-435(指紋が同じなら相手の道具の結果を再利用)・L-436(同じ理由 3 周でリードへ戻す)を反映し、45〜48 回目の監査を経た版(48 回目 = 止める 0)。場面集と要件は 6 回目のものを使い(台本の `prebuilt`、第 5 周の指摘 7 件を持ち越し)、項目 0 の第 6 周から(`attempt_offset` 5、`prior_rounds` 10)。台本はリポジトリ内 `scripts/workflows/backtest_env.js`(コミット 0013061)。
 委任文の指紋: 20260923_backtest_env_prompt.md@4c4cfc6e4052
+
+**起動の記録**: 15:16 JST の run `wf_0b4adc34-1f2` は `ReferenceError: openFix is not defined`(workflow.js:217)で 36 ms で落ちた(agent 0 体)。原因: L-434 の同時の直しを台本に入れたときに作業者の呼び出しの前の 2 行(`allFix`・`openFix` の定義)を落とし、起動前の検査(`new Function` の構文検査)では未定義の名前が見えなかった。直し: 2 行を 6 回目の台本(run の記録 `workflows/wf_fe44f546-09e.json` の script 213 行)から戻し、`check_bt_delegation.py` に eslint(no-undef・no-redeclare・no-dupe-keys・no-unused-vars)を足して、落ちた版で `openFix`・`allFix` の 2 件を捕まえることを実測した(コミット d41f0f7。委任文は変えていないので版は同じ)。15:21 JST に run `wf_4c6278b6-0bf` で同じ引数で起動し直した。
