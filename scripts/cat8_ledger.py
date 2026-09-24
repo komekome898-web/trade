@@ -283,7 +283,7 @@ def log_refs(text):
         fname, rn = m.group(1), m.group(2)
         rest = text[m.end():]
         rest = re.sub(r"[(（][^)）]*[)）]", "", rest.split("|")[0])
-        for part in rest.split(","):
+        for part in re.split(r"[,、，;；]", rest):
             part = part.strip()
             mm = re.match(r"^(\d+)(?:\s*[-〜~]\s*(\d+))?", part)
             if not mm:
@@ -294,6 +294,39 @@ def log_refs(text):
             if mm.end() < len(part):
                 break
     return out
+
+
+def ref_list_errors(text):
+    """7 回目以降: 生ログの参照は 1 つの行(か 1 つの範囲)ごとにファイル名を書く(監査 36 回目)。
+    `<生ログ>:10、20` のように、ファイル名を付けずに続く行の番号があれば、その参照を返す(読み落としを黙って通さない)。"""
+    bad = []
+    for m in re.finditer(r"20260923_tools_8_run\d+\.log:\d+(?:\s*[-〜~]\s*\d+)?(?:\s*[(（][^)）]*[)）])?\s*[,、，;；]\s*\d", text):
+        bad.append(m.group(0))
+    return bad
+
+
+def cmd_selftest(a):
+    """log_refs と ref_list_errors の形ごとの試し(tests/ に置かず、この道具の中で打てるように)。"""
+    L = "20260923_tools_8_run7.log"
+    cases = [
+        (L + ":10", ["10"], 0),
+        (L + ":4,10", ["4", "10"], 1),
+        (L + ":1186-1188", ["1186", "1187", "1188"], 0),
+        (L + ":1067(N=107),1186-1187(注記)", ["1067", "1186", "1187"], 1),
+        (L + ":188(一覧を取った手)、192,203", ["188", "192", "203"], 1),
+        (L + ":3 と " + L + ":6", ["3", "6"], 0),
+        ("一覧 5 件 / 読んだ 5 件、" + L + ":12", ["12"], 0),
+        (L + ":12。全 5 記事", ["12"], 0),
+    ]
+    bad = 0
+    for text, want, nlist in cases:
+        got = [r[2] for r in log_refs(text)]
+        nl = len(ref_list_errors(text))
+        ok = got == want and nl == nlist
+        bad += not ok
+        print("%s %s -> %s / 列挙 %d" % ("OK " if ok else "NG ", text[:60], got, nl))
+    print("---- 合計 %d 件" % bad)
+    sys.exit(1 if bad else 0)
 
 def quotes_in_log(text, refs_text, rnd):
     """7 回目以降: 根拠に引いた「…」の逐語が、引いた生ログの手の出力に実際にあるか(監査 33 回目)。
@@ -360,6 +393,8 @@ def cmd_check_elements(a):
                 if not re.search(r"https?://|\.log|生ログ", c[3]):
                     errs.append("行 %d: 知見の表の根拠に URL も生ログの参照も無い: %s" % (i + 1, c[3][:50]))
                 if a.round and int(a.round) >= 7:
+                    for r in ref_list_errors(c[3]):
+                        errs.append("行 %d: 知見の根拠の生ログの参照が列挙の形: `%s`。行ごとにファイル名を書く" % (i + 1, r))
                     for h in quotes_in_log(c[1], c[3], a.round):
                         errs.append("行 %d: 知見の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, h))
             elif len(c) >= 2 and not set("".join(c)) <= set("-: ") and c[0] not in ("#", "道具"):
@@ -395,6 +430,8 @@ def cmd_check_elements(a):
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
             if a.round and int(a.round) >= 7 and "台帳の値のまま" not in ev:
+                for r in ref_list_errors(ev):
+                    errs.append("行 %d: %s %s の根拠の生ログの参照が列挙の形: `%s`。行ごとにファイル名を書く(`<生ログ>:10、<生ログ>:20`)" % (i + 1, tool, el, r))
                 for h in quotes_in_log(ev, ev, a.round):
                     errs.append("行 %d: %s %s の根拠の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, tool, el, h))
             if a.round and int(a.round) >= 5 and val == "印":
@@ -539,9 +576,10 @@ def main():
     p.add_argument("--require-deadline", action="store_true", help="生ログの全部の手に期限が付いているかを見る")
     p = sp.add_parser("check-elements"); p.add_argument("report"); p.add_argument("--round", required=True)
     p = sp.add_parser("import"); p.add_argument("report"); p.add_argument("--round", required=True)
+    sp.add_parser("selftest")
     a = ap.parse_args()
     {"add": cmd_add, "sync": cmd_sync, "set": cmd_set, "recount": cmd_recount, "check": cmd_check,
-     "check-elements": cmd_check_elements, "import": cmd_import}[a.cmd](a)
+     "check-elements": cmd_check_elements, "import": cmd_import, "selftest": cmd_selftest}[a.cmd](a)
 
 
 if __name__ == "__main__":
