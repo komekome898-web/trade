@@ -334,7 +334,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     const stops = c ? c.findings.filter(f => f.level === '止める') : [{ id: 'critic-missing', level: '止める', text: '批評家が返らなかった', evidence: '', repeat_of: null, patchwork: false }]
     let audit = null
     if (okC && okS && stops.length === 0) {
-      audit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の作業者の報告(返り値の逐語: ${JSON.stringify(w).slice(0, 15000)})と、そこから引かれたファイル。組の判定: 対現状 ${eqC ? '同等(表が左右同一 = L-422)' : winsC + '/3'}・対調査 ${eqS ? '同等(表が左右同一 = L-422)' : winsS + '/3'}。委任文 ${DOC} §0 の表のオーナーの原文と照らす。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
+      audit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の作業者の報告(返り値の逐語: ${JSON.stringify(w).slice(0, 15000)})と、そこから引かれたファイル。組の判定: 対現状 ${eqC ? '同等(表が左右同一 = L-422)' : winsC + '/3'}・対調査 ${eqS ? '同等(表が左右同一 = L-422)' : winsS + '/3'}。審査員の出力の逐語(この周。new_chosen = 新実装を選んだ、opp_chosen = 相手を選んだ): ${JSON.stringify([...jc, ...jsv]).slice(0, 12000)}。批評家の出力の逐語: ${JSON.stringify(c ? c.findings : []).slice(0, 8000)}。round_${attempt}/JUDGES.md・AUDIT.md・REPORT.md は Workflow の記録からリードが周の終わりに書き出す(この監査の時点では無いことがある。無いことは [止める] の根拠にしない。第 9 周の報告の監査の指摘 1)。委任文 ${DOC} §0 の表のオーナーの原文と照らす。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
         { label: `監査役:${item.id}#${attempt}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
     }
     const auditStops = audit ? audit.findings.filter(f => f.level === '止める') : []
