@@ -233,3 +233,13 @@ i0-r11-02 identical after removing leading note: False
 i0-r11-03 identical after removing leading note: False
 i0-r11-04 identical after removing leading note: True
 ```
+
+(上の 3 件の False は、注記を外す正規表現 `^\([^)]*\)` が注記の中の括弧「(round_12/REPORT.md)」で止まったためで、検算の側の誤り。末尾一致で検め直した:)
+
+```
+$ python3 - (last_findings の text が journal の返り値の text で終わるか、先頭に足した部分は何か)
+i0-r11-01 ends with the returned text: True | prefix: '(第 12 周の作業者が直したと報告(round_12/REPORT.md)。第 13 周の批評家が直りを確かめる)'
+i0-r11-02 ends with the returned text: True | prefix: '(リードの正の定義 F(LEAD_DESIGN.md §9.2 の 32)を台本が渡し、第 13 周の場面係が直す。定義の段は置かない)'
+i0-r11-03 ends with the returned text: True | prefix: '(第 12 周の作業者が直したと報告(round_12/REPORT.md)。第 13 周の批評家が直りを確かめる)'
+i0-r11-04 ends with the returned text: True | prefix: ''
+```
