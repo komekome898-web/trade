@@ -79,6 +79,7 @@ OPPONENTS = {
     "opp_aat": ("aat_adapter", "AatAdapter"),
     "opp_gobacktest": ("gobacktest_adapter", "GobacktestAdapter"),
     "opp_pineforge": ("pineforge_adapter", "PineforgeAdapter"),
+    "opp_barter": ("barter_adapter", "BarterAdapter"),
 }
 
 
