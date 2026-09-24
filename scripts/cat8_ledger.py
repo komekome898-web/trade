@@ -432,14 +432,24 @@ ELEM_TERMS_WIDE = {
     "E5": [r"再現|reproduc", r"seed|乱数", r"determinis|決定的", r"snapshot|golden|pin|lock|版の固定"],
     "E6": [r"検証|verif|validat", r"品質|quality", r"test|assert|check"],
 }
+SEARCH_TOOL_RE = re.compile(r"cat8_search\.py")
+SEARCH_DONE_RE = re.compile(r"^cat8_search: complete files=(\d+) read=\1 ", re.M)
 TRUNC_RE = re.compile(r"^\[出力は \d+ 文字。先頭 \d+ 文字だけを残した\]$", re.M)
-# 出力を間引く手(監査 64 回目の指摘 3: head・tail・grep -m だけでは sed・awk・rg・cut を通していた)
-CUT_RE = re.compile(
-    r"\|\s*(?:head|tail|less|more)\b|\bhead\s+-n?\s*\d"
-    r"|\b(?:grep|egrep|rg|ag)\b[^|]*\s(?:-m\s*\d|--max-count)"
-    r"|\bsed\s+(?:-\w+\s+)*-n\s+['\"]?\d|\bsed\s+['\"]?\d+q"
-    r"|\bawk\b[^|]*\bNR\s*[<>=]"
-    r"|\|\s*cut\s+-c|\|\s*fold\b|\[:\d+\]|\bitertools\.islice\b")
+
+
+
+def search_cmd_only(cmdline):
+    """`$ python3 scripts/cat8_search.py ...` だけで、引用の外にパイプ・; ・&&・リダイレクトが無いか。"""
+    import shlex
+    try:
+        lex = shlex.shlex(cmdline[2:] if cmdline.startswith("$ ") else cmdline, posix=True, punctuation_chars=True)
+        lex.whitespace_split = True
+        toks = list(lex)
+    except ValueError:
+        return False
+    if toks[:2] != ["python3", "scripts/cat8_search.py"]:
+        return False
+    return not any(t and set(t) <= set("();<>|&") for t in toks)
 
 
 def step_block(fname, lno):
@@ -595,18 +605,35 @@ def cmd_check_elements(a):
                     if not any(re.search(ELEM_TERMS.get(el, "^$"), c, re.I) for c in cmds):
                         errs.append("行 %d: %s %s は `なし` なのに、7 列目のどの手の `$` の行にも要素の名前の語(%s)が無い" % (i + 1, tool, el, ELEM_TERMS.get(el)))
                     if int(a.round) >= 11:
-                        # (e) 監査 63 回目の指摘 1・2: 切った出力で `なし` を書かない / 述語の語を広く当てる
+                        # (e) 監査 63〜65 回目: 間引く形を並べて止める作りは抜け道が残った(`[0:60]`・`head -c` など)ので、
+                        # `なし` の検索は `scripts/cat8_search.py` の出力だけを認める(許す形を 1 つに決める)。
+                        searches, searched_files = [], 0
                         for f, _, n in strict_refs(logcol):
                             c = step_cmdline(f, n) or ""
                             blk = step_block(f, n) or ""
-                            # 検索の手(その要素の語を含む手)だけを見る。一覧の件数と先頭・末尾を印字する手は対象外
-                            if re.search(ELEM_TERMS.get(el, "^$"), c, re.I) and CUT_RE.search(c):
-                                errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s が出力を切っている(head・tail・grep -m)" % (i + 1, tool, el, f, n))
-                            if TRUNC_RE.search(blk):
-                                errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s の出力が生ログで切られている(--keep を大きくする)" % (i + 1, tool, el, f, n))
-                        lack = [g for g in ELEM_TERMS_WIDE.get(el, []) if not any(re.search(g, c, re.I) for c in cmds)]
+                            if SEARCH_TOOL_RE.search(c):
+                                searches.append(c)
+                                if not search_cmd_only(c):
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s が `python3 scripts/cat8_search.py ...` だけの形でない(前後に別の手・パイプがある)" % (i + 1, tool, el, f, n))
+                                done = SEARCH_DONE_RE.search(blk)
+                                if not done:
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の出力に `cat8_search: complete` の終わりの行が無い" % (i + 1, tool, el, f, n))
+                                else:
+                                    searched_files += int(done.group(1))
+                                if TRUNC_RE.search(blk):
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s の出力が生ログで切られている(--keep を大きくする)" % (i + 1, tool, el, f, n))
+                            elif re.search(r"\b(?:grep|egrep|rg|ag|findstr)\b|re\.search|\.find\(", c):
+                                errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s が cat8_search.py でない検索(`なし` の検索は cat8_search.py で打つ)" % (i + 1, tool, el, f, n))
+                        if not searches:
+                            errs.append("行 %d: %s %s は `なし` なのに、7 列目に cat8_search.py の手が無い" % (i + 1, tool, el))
+                        else:
+                            # 引いた検索の手が読んだファイルの数の和が、根拠の「読んだ M 件」と同じか(リポジトリごとに打った手の和でよい)
+                            mm = re.search(r"一覧\s*([0-9,]+)\s*件\s*/\s*読んだ\s*([0-9,]+)\s*件", ev)
+                            if mm and searched_files != int(mm.group(2).replace(",", "")):
+                                errs.append("行 %d: %s %s は `なし` なのに、7 列目の cat8_search.py の手が読んだファイルの数の和 %d が、根拠の「読んだ %s 件」と違う" % (i + 1, tool, el, searched_files, mm.group(2)))
+                        lack = [g for g in ELEM_TERMS_WIDE.get(el, []) if not any(re.search(g, c, re.I) for c in searches)]
                         if lack:
-                            errs.append("行 %d: %s %s は `なし` なのに、7 列目の手の `$` の行に当たらない語の組がある: %s" % (i + 1, tool, el, " / ".join(lack)))
+                            errs.append("行 %d: %s %s は `なし` なのに、7 列目の cat8_search.py の手の語に当たらない語の組がある: %s" % (i + 1, tool, el, " / ".join(lack)))
             if r7 and not untouched:
                 bad = logcol_errors(logcol)
                 if bad:
