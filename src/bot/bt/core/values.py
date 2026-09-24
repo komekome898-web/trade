@@ -205,6 +205,20 @@ def _now(convert: Any, value: Any, where: str) -> Any:
 _NOT_PLAIN = object()  # what `_plain_scalar` gives for a value the scalar rule refuses
 
 
+_MRO = type.__dict__["__mro__"].__get__  # a class's own MRO, read by `type`'s slot
+
+
+def _base_of(t: type) -> Any:
+    """The base of `_BASES` a class derives from, or None -- read from the
+    class's own MRO, so no metaclass or ABC hook (`Fraction` is an ABC:
+    `issubclass` would ask its subclasses' hooks) runs (round 10)."""
+    mro = _MRO(t)
+    for base in _BASES:
+        if base in mro:
+            return base
+    return None
+
+
 def _plain_scalar(value: Any, where: str) -> Any:
     """The scalar rule (module docstring): a NEW built-in scalar, or
     `_NOT_PLAIN`. A sender's failing conversion, or a broken Fraction,
@@ -213,9 +227,9 @@ def _plain_scalar(value: Any, where: str) -> Any:
     build = BUILD.get(t)
     if build is not None:
         return build(value)
-    for base in _BASES:
-        if issubclass(t, base):
-            return BUILD[base](value)
+    base = _base_of(t)
+    if base is not None:
+        return BUILD[base](value)
     nb = _numpy_bool()
     if nb is not None and issubclass(t, nb):
         return nb.__bool__(value)
@@ -226,6 +240,83 @@ def _plain_scalar(value: Any, where: str) -> Any:
     if issubclass(t, numbers.Complex):
         return _now(complex, value, where)
     return _NOT_PLAIN
+
+
+class Unsettled(ValueError):
+    """A value that cannot be read without running code of the one who
+    handed it over (`settle`)."""
+
+
+def settle(value: Any) -> Any:
+    """`value` as plain data of the built-in types THEMSELVES, made without
+    running any code of the one who handed it over (round 10, i0-r9-02):
+    a built-in scalar or a subclass of one is built anew as the base type by
+    the base type's own method (the subclass's code -- its `__repr__`,
+    `__eq__`, `__hash__` -- never runs, and nothing later can run it: what
+    comes out holds none of the sender's objects); a numpy bool as the bool
+    it holds; a container (tuple, list, dict, set, frozenset, a subclass of
+    one, or the core's FrozenList / FrozenDict / FrozenSet) is read by the
+    base type's own methods and made anew of settled values. Anything whose
+    reading needs its own code (a number of the numeric tower: `__int__`,
+    `__float__`, `__index__`) or is not plain data raises `Unsettled`, a
+    ValueError, whose text names only the value's type. The core applies
+    this to what it reads AFTER a callback returned (the outbox, engine.py
+    `_take_message`): the strategy's code runs only inside its own calls."""
+    return _settle(value, set())
+
+
+def _settle(value: Any, path: set[int]) -> Any:
+    t = type(value)
+    build = BUILD.get(t)
+    if build is not None:
+        return build(value)
+    mro = _MRO(t)
+    container = next((c for c in (tuple, list, set, frozenset, dict) if c in mro), None)
+    if container is not None or t is FrozenDict:
+        key = id(value)
+        if key in path:
+            raise Unsettled(f"a {type_name(value)} that holds itself (a cycle) is not plain data")
+        path.add(key)
+        try:
+            if t is FrozenDict:
+                try:
+                    pairs = _FD_ITEMS(value)
+                except AttributeError:
+                    pairs = None
+                if type(pairs) is not tuple or any(type(p) is not tuple or tuple.__len__(p) != 2
+                                                   for p in tuple.__iter__(pairs)):
+                    raise Unsettled("a FrozenDict whose pairs were replaced is not plain data")
+                return FrozenDict._from_pairs(tuple(
+                    (_settle(tuple.__getitem__(p, 0), path), _settle(tuple.__getitem__(p, 1), path))
+                    for p in tuple.__iter__(pairs)))
+            if container is dict:
+                return {_settle(k, path): _settle(v, path) for k, v in dict.items(value)}
+            items = [_settle(v, path) for v in container.__iter__(value)]
+            if t is FrozenList:
+                return FrozenList(items)
+            if t is FrozenSet:
+                return FrozenSet(items)
+            return container(items)
+        finally:
+            path.discard(key)
+    base = _base_of(t)
+    if base is not None:
+        return BUILD[base](value)
+    nb = _numpy_bool()
+    if nb is not None and nb in mro:
+        return nb.__bool__(value)
+    raise Unsettled(
+        f"a {type_name(value)} cannot be read without running its own code (or is not plain data)"
+    )
+
+
+def settled(value: Any) -> bool:
+    """Would `settle(value)` succeed?"""
+    try:
+        settle(value)
+    except Unsettled:
+        return False
+    return True
 
 
 def scalar(value: Any, where: str = "value") -> Any:

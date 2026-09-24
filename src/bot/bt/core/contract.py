@@ -12,7 +12,7 @@ from .time import TIME_CONTRACT
 from .values import FIELD_RULE, PLAIN_DATA_RULE
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-11"
+CORE_VERSION = "core-12"
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.
@@ -79,10 +79,16 @@ CORE_CONTRACT: dict = {
                        "STATE_UNKNOWN is held until a report that settles it",
         "forced_orders": "the strategy learns of a forced order only when its first notice is delivered",
         "history_limit": "per event type the latest N..2N delivered events are kept; the overall history "
-                         "is exactly what the types keep; a read reaching into a dropped part raises "
-                         "HistoryTruncatedError, and so does an empty answer whose until_ns cut lies among "
-                         "the dropped events (its place could not be stated); an answer's place counts the "
-                         "dropped events before its oldest kept one (AnswerPlace.dropped)",
+                         "is exactly what the types keep; the facts of every dropped event (delivery number, "
+                         "received time: two int64 each) are kept, the events are not (the limit bounds the "
+                         "events held, not these facts); a read raises HistoryTruncatedError exactly when its "
+                         "answer without the limit holds a dropped event, naming the newest such event and how "
+                         "to read kept events only (a since_ns after it, or n <= the number of its newest events "
+                         "that are kept); every answer returned, empty or not, is the answer without the limit; "
+                         "its place is in the kept events of its scope with the dropped deliveries before the "
+                         "oldest kept one at -dropped..-1 (AnswerPlace.dropped); an empty answer lies where its "
+                         "range was cut on that line, which may be among or before the dropped positions "
+                         "(round 10)",
         "scope": "the guarantees hold for the context and everything reachable from it by attribute "
                  "access; the strategy runs in the engine's process, so interpreter introspection used "
                  "to reach the engine's own state (call stack, gc of the engine) is not covered -- the "
@@ -95,10 +101,15 @@ CORE_CONTRACT: dict = {
                  "contents, a Fraction's slots), IS covered: the core never keeps a sender's object "
                  "(channel_payloads.ownership). So is the strategy changing ANY state object it can "
                  "reach, by any means including a base class's methods (list.append on its order "
-                 "registry, object.__setattr__ on a slot of its port or of an event in its history): "
-                 "the core decides, sends and reports nothing from those objects (ownership), so such a "
-                 "change reaches only what the strategy itself reads -- and what it sends, through the "
-                 "outbox, under the API's rules",
+                 "registry, object.__setattr__ on a slot of its port or of an event in its history) "
+                 "and assigning an object another class (__class__ of the same layout): "
+                 "the core decides, sends and reports nothing from those objects (ownership) and never "
+                 "acts on them through their classes, so such a change reaches only what the strategy "
+                 "itself reads -- and what it sends, through the outbox, under the API's rules -- and "
+                 "the strategy's code runs only inside its own on_event (round 10). Not covered either: "
+                 "classes whose metaclass runs code when the class's own attributes are read, and "
+                 "subclasses of the numbers ABCs with a __subclasshook__ (defining classes changes the "
+                 "program)",
     },
     "lifecycle": {
         "failed_after_escaped_exception": True,
@@ -127,24 +138,32 @@ CORE_CONTRACT: dict = {
                      "the core takes it, and never handed on; every receiver (latency model, fill model, "
                      "account, cost model, the strategy, the caller's result, order views included -- "
                      "the strategy's order views are new objects the core writes at every change) gets a "
-                     "copy of its own "
-                     "(values.copy_carrier), so what one receiver changes in its copy reaches no sender, "
-                     "no other receiver and not the core. The context holds no mutable object: its slots "
-                     "cannot be assigned, and it holds values, the frozen current event, windows that "
-                     "hold none either, and functions; the history lists and the order port are reached "
-                     "only inside those functions (by calling them), and order() / open_orders() / "
-                     "visible_events() return new objects at every call. What the strategy reaches, "
-                     "through those functions' closures included, is its own: its "
-                     "history lists (the core writes the lists and reads nothing "
-                     "back), its order port's registry (copies the core writes from its book and never "
-                     "reads) and its outbox -- the one object the core reads, once, when the callback "
-                     "returns, through the core's own reference: each message is the arguments of one "
-                     "API call (('new', OrderRequest, t), ('cancel', CancelRequest, t), ('timer', at_ns, "
-                     "tag); t is never used, the callback's time is), read by its real types, and every "
-                     "rule of that call is applied again against the core's book and time "
-                     "(api.check_new_id, api.check_timer), so a message written around place_order / "
-                     "cancel_order / set_timer has exactly that call's effect, or is refused with "
-                     "OrderApiError (as is a port whose outbox or registry was replaced)",
+                     "copy of its own (values.copy_carrier), so what one receiver changes in its copy "
+                     "reaches no sender, no other receiver and not the core. Everything the strategy can "
+                     "reach that outlives a callback -- its order port, its copies of its order views "
+                     "(registry), its outbox, its history lists with the event copies in them and the "
+                     "facts of the dropped events -- is kept in ONE holder of the engine (_StrategySide, "
+                     "round 10, i0-r9-02); nothing of the core's own state refers into it. The core "
+                     "touches it only through base-type C functions on containers it made (dict and "
+                     "list and array methods called on the base type), never through the objects' own "
+                     "classes (no attribute read or write, no method of theirs), and reads from it only "
+                     "the outbox: once, when the callback returns, through the core's own reference. The "
+                     "context holds values, the frozen current event, windows and functions; its calls "
+                     "are methods bound to one tuple made for the callback (the port, the registry, the "
+                     "outbox, the callback's time, alive), which cannot be changed, so replacing the "
+                     "port's attributes changes nothing that is sent; the context and its windows are "
+                     "revoked through alive, a cell only the engine flips; order() / open_orders() / "
+                     "visible_events() return new objects at every call. Each outbox message is the "
+                     "arguments of one API call (('new', OrderRequest, t), ('cancel', CancelRequest, t), "
+                     "('timer', at_ns, tag); t is never used, the callback's time is), read by its real "
+                     "types; every value in it is settled first (values.settle: made anew as the "
+                     "built-in type itself by the base type's own methods; a value whose reading needs "
+                     "its own code -- a number of the numeric tower -- or that is not plain data is "
+                     "refused with OrderApiError: the API's calls convert such values inside the "
+                     "callback, the core does not after it returned), and every rule of that call is "
+                     "applied again against the core's book and time (api.check_new_id, "
+                     "api.check_timer), so a message written around place_order / cancel_order / "
+                     "set_timer has exactly that call's effect, or is refused with OrderApiError",
         "fields": FIELD_RULE,
         "plain_data": PLAIN_DATA_RULE,
         "carriers": [c.__name__ for c in PATH_CARRIERS],

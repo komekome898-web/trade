@@ -625,45 +625,44 @@ def test_each_role_of_the_table_refuses_by_itself_and_is_named():
         role: list(v) for role, v in POSITION_RULE.items()}
 
 
-def test_an_empty_answer_cut_inside_the_dropped_part_is_refused():
+def test_an_empty_answer_cut_inside_the_dropped_part_is_placed_there():
     """An empty answer lies where its range was cut. With history_limit,
-    `until_ns` before the newest dropped event cuts somewhere among the
-    dropped events, which the history no longer holds: the answer could
-    not state what its positions are, so the read is refused (as any read
-    reaching into the dropped part is). Cut at or after the newest dropped
-    event, it is placed exactly and answered."""
+    `until_ns` before the oldest kept event cuts among the dropped events
+    (or before all of them); the history keeps the facts of every dropped
+    event, so the answer is placed there exactly and its positions name
+    what is there. (Rewritten in round 10, i0-r9-01: until round 9 such a
+    read was refused, because the history kept only the newest dropped
+    event's time.)
+
+    Input: bars at 0, 1, ..., 9 s, history_limit=3: at the 7th bar the four
+    oldest (0-3 s) are dropped, and at the 10th the history keeps 4-9 s. The
+    line of what a BAR read reads: dropped 0-3 s at -4..-1, kept 4-9 s at
+    0..5."""
     got = {}
 
     def cb(ev, ctx):
         if ev.EVENT_TYPE is BAR and ev.close == 109.0:
-            for name, kw in (("inside", {"until_ns": T0 + 2 * SEC, "since_ns": T0 + 9 * SEC}),
-                             ("n=0 inside", {"until_ns": T0 + 2 * SEC, "n": 0})):
-                try:
-                    ctx.visible_events(BAR, **kw)
-                    got[name] = "answered"
-                except HistoryTruncatedError:
-                    got[name] = "refused"
-            # the newest dropped bar: the largest n the history answers, then one more
-            kept = 1
-            while True:
-                try:
-                    ctx.visible_events(BAR, n=kept + 1)
-                    kept += 1
-                except HistoryTruncatedError:
-                    break
-            newest_dropped = T0 + (9 - kept) * SEC
-            at_edge = ctx.visible_events(BAR, until_ns=newest_dropped, since_ns=T0 + 9 * SEC)
-            got["edge"] = (len(at_edge), at_edge.place.first, at_edge.place.dropped)
-            try:
-                at_edge[-1]
-            except DroppedPositionError:
-                got["edge[-1]"] = "dropped"
-            try:
-                at_edge[0]
-            except OutsideAnswerError as exc:
-                got["edge[0]"] = (type(exc).__name__, exc.read_position)
+            cases = {
+                "cut after 2 s": {"until_ns": T0 + 2 * SEC, "since_ns": T0 + 9 * SEC},
+                "n=0 cut after 2 s": {"until_ns": T0 + 2 * SEC, "n": 0},
+                "cut before 0 s": {"until_ns": T0 - 1},
+                "cut after 3 s": {"until_ns": T0 + 3 * SEC, "since_ns": T0 + 9 * SEC},
+            }
+            for name, kw in cases.items():
+                ans = ctx.visible_events(BAR, **kw)
+                got[name] = [len(ans), tuple(ans.place)]
+                for q in (0, -1):
+                    try:
+                        ans[q]
+                    except (DroppedPositionError, BeforeFirstEventError, OutsideAnswerError) as exc:
+                        got[name].append((q, type(exc).__name__))
 
     CoreEngine(Recorder(cb), [bar(T0 + i * SEC, 100.0 + i) for i in range(10)], history_limit=3).run()
-    assert got["inside"] == "refused" and got["n=0 inside"] == "refused"
-    assert got["edge"][0] == 0 and got["edge"][1] == 0 and got["edge"][2] > 0
-    assert got["edge[-1]"] == "dropped" and got["edge[0]"] == ("OutsideAnswerError", 0)
+    # cut after 2 s: the cut is between 2 s (-2) and 3 s (-1): first = -1
+    assert got["cut after 2 s"] == [0, (-1, 1, 6, 4), (0, "DroppedPositionError"), (-1, "DroppedPositionError")]
+    assert got["n=0 cut after 2 s"] == got["cut after 2 s"]
+    # before 0 s: before everything: first = -4; [0] is the dropped 0 s bar, [-1] is nothing
+    assert got["cut before 0 s"] == [0, (-4, 1, 6, 4), (0, "DroppedPositionError"),
+                                     (-1, "BeforeFirstEventError")]
+    # after 3 s (the newest dropped): at the oldest kept one
+    assert got["cut after 3 s"] == [0, (0, 1, 6, 4), (0, "OutsideAnswerError"), (-1, "DroppedPositionError")]

@@ -12,13 +12,23 @@ Checked at every callback of a run that places, cancels and fills orders,
 adopts a forced order, sets timers and drops history (`history_limit`):
 
 1. no object the context reaches is (`is`) one of the core's mutable
-   objects -- everything the engine holds, found by the same walk from the
-   engine's own attributes (its order book, the port's registry and outbox,
-   the history lists and records, the venue ledger, the queue, the source
+   objects -- everything the engine holds outside its strategy-side holder
+   (`_StrategySide`), found by the same walk from the engine (its order
+   book, the history's records, the venue ledger, the queue, the source
    merger, the channels, the request / fill lists, the sockets' objects);
-2. no object the context reaches is of a mutable kind: a dict, list, set or
-   bytearray, an object with an instance dict, or an object one of whose
-   slots can be assigned by plain `setattr` (the context itself included).
+2. every object of a mutable kind the context reaches -- a dict, list, set
+   or bytearray, an object with an instance dict, or an object one of whose
+   slots can be assigned by plain `setattr` (the context itself included) --
+   is the strategy's own: reached from the strategy-side holder.
+
+Rewritten in round 10 (i0-r9-02): the context's calls are now methods
+bound to one tuple (the port, the registry, the outbox, the time, alive),
+which this walk enters as a bound method's `__self__`; so the strategy's
+registry, outbox and port -- which round 9 hid only from this walk (they
+were in closures, which it does not enter) -- are reached. Rule 2 was "no
+mutable object at all"; it is now what round_7/LEAD_DESIGN.md s7.4 19-20
+ask (the strategy's side objects are its own; the core's are not reached).
+The stricter walk, entering closures, is test_bt0_r10_strategy_side.py.
 
 The adversary that changes everything the strategy reaches before the
 result is taken, and compares the result, is
@@ -57,6 +67,9 @@ _NOT_ENTERED = (type, types.FunctionType, types.ModuleType, types.CodeType, type
 
 
 def _enter(obj) -> bool:
+    import enum
+    if isinstance(obj, enum.Enum):  # an Enum member is the program (one object per member), round 10
+        return False
     if isinstance(obj, types.BuiltinFunctionType):  # a C method bound to an object is state
         s = getattr(obj, "__self__", None)
         return s is not None and not isinstance(s, types.ModuleType)
@@ -90,7 +103,10 @@ def _slot_names(obj):
 
 
 def _mutable(obj) -> str | None:
-    """Why `obj` is of a mutable kind, or None."""
+    """Why `obj` is of a mutable kind, or None. A bound method is code (its
+    `__dict__` is its function's); what it is bound to is walked (round 10)."""
+    if isinstance(obj, types.MethodType):
+        return None
     if isinstance(obj, (dict, list, set, bytearray)):
         return type(obj).__name__
     if isinstance(getattr(obj, "__dict__", None), dict):
@@ -188,14 +204,16 @@ def test_the_context_graph_meets_no_mutable_state_of_the_core_and_holds_none():
             ctx.visible_events(EventType.TRADE, n=1)
             eng = engines[0]
             reached = _graph(ctx)
-            core = _graph(eng, stop=(eng._strategy,))
+            core = _graph(eng, stop=(eng._strategy, eng._side))
             core_mutable = {i for i, o in core.items() if _mutable(o)}
             shared = sorted({type(reached[i]).__name__ for i in set(reached) & core_mutable})
             if shared:
                 problems.append((k, "meets the core's mutable state", shared))
-            mutable = sorted({why for o in reached.values() for why in [_mutable(o)] if why})
+            side = _graph(eng._side)
+            mutable = sorted({why for i, o in reached.items() for why in [_mutable(o)]
+                              if why and i not in side})
             if mutable:
-                problems.append((k, "reaches mutable objects", mutable))
+                problems.append((k, "reaches mutable objects that are not the strategy's side", mutable))
             counts["callbacks"] += 1
             counts["reached"] += len(reached)
 

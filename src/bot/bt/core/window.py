@@ -294,11 +294,12 @@ def _rebuild(items: tuple, place: tuple) -> DeliveredEvents:
 def _getter(history: Any) -> Any:
     """The core's own read of a backing sequence: the base type's method (a
     `DeliveredList`'s own position rule is for the strategy's reads)."""
-    if isinstance(history, list):
+    t = type(history)  # the real type (round 10): isinstance could ask the object's __class__
+    if issubclass(t, list):
         return list.__getitem__
-    if isinstance(history, tuple):
+    if issubclass(t, tuple):
         return tuple.__getitem__
-    return type(history).__getitem__
+    return t.__getitem__
 
 
 class EventWindow(Sequence):

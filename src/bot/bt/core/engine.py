@@ -31,7 +31,8 @@ takes the core's own carrier classes themselves (a subclass is refused).
 The core keeps only objects it built (round 8, i0-r7-02): what a sender
 hands over -- a source's event, a request from the strategy's outbox, a
 fill model's report, the account's forced order -- is made again by its
-constructor when the core takes it (`_rebuilt`, api.py `fresh_request`),
+constructor when the core takes it (`_rebuilt`, api.py `fresh_request`, and
+for the outbox `_settled_request`),
 and every receiver gets a copy of its own (values.py `copy_carrier`), so
 no sender and no receiver holds what another reads. Neither side can
 change what the other receives, or learns, without sending.
@@ -40,14 +41,21 @@ What the core decides from, sends and reports is built from objects only
 the core holds (round 9, i0-r8-01; contract `channel_payloads.ownership`):
 the facts of the strategy's orders live in the engine's own order book
 (api.py `_OrderBook`), the history's retention in its own records
-(history.py), and the engine keeps its own references to the objects it
-shares with the strategy -- the port's registry (the strategy's copies,
-written from the book, never read) and the outbox (read once per callback,
-as messages under the API's rules, `_drain`). It revokes the context and
-its windows through their classes and its own references. Nothing the
-strategy changes in what it can reach, by any means, reaches the core, the
-venue, another receiver or the caller's result; what it SENDS goes through
-the API's rules.
+(history.py `DeliveredHistory`). What the strategy can reach and what
+outlives a callback -- its order port, its copies of its order views, its
+outbox, its side of the history (lists, event copies, dropped facts) -- is
+kept in ONE holder, `_StrategySide` (round 10, i0-r9-02), which nothing of
+the core's state refers into. The core touches it only through base-type C
+functions on containers it made, never through the objects' own classes,
+and reads from it only the outbox's messages, once per callback, as values
+it settles itself (values.py `settle`) under the API's rules (`_drain`).
+The context's calls are methods bound to one tuple made for the callback
+(the port, the registry, the outbox, the time, `alive`); the context and
+its windows are revoked through `alive`, a cell only the engine flips. So
+the strategy's code runs only inside its own `on_event`, whatever class it
+gives what it reaches; nothing it changes there, by any means, reaches the
+core, the venue, another receiver or the caller's result; what it SENDS
+goes through the API's rules.
 
 Input is one stream of events, or several named streams (a mapping of
 name -> iterable, e.g. trades, board, bars and funding read from separate
@@ -89,9 +97,10 @@ from __future__ import annotations
 import dataclasses
 import hashlib
 import heapq
+import types
 import math
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Iterator, Mapping, Optional, Union
+from typing import Any, Callable, Iterable, Iterator, Mapping, Optional, Union
 
 from .api import (
     FORCED_ID_PREFIX,
@@ -105,8 +114,13 @@ from .api import (
     check_timer,
     copy_view,
     fresh_request,
+    port_cancel,
+    port_open_orders,
+    port_order,
+    port_place,
+    port_timer,
 )
-from .errors import OrderApiError
+from .errors import OrderApiError, StaleContextError
 from .errors import (
     AccountSocketError,
     CostModelError,
@@ -158,10 +172,10 @@ from .ordering import (
     PHASE_VENUE_REQUEST,
     merge_key,
 )
-from .history import DeliveredHistory
+from .history import DeliveredHistory, HistoryLists
 from .strategy import Strategy
 from .time import validate_nanos
-from .values import as_float, as_int, as_text, copy_carrier, is_a, rebuild_carrier, renew, type_name
+from .values import Unsettled, as_float, as_int, as_text, copy_carrier, is_a, rebuild_carrier, renew, settle, type_name
 from .window import EventWindow
 
 _K_VENUE_MARKET = 0
@@ -372,28 +386,103 @@ def _alive_switch() -> tuple:
     return is_alive, kill
 
 
-def _context_calls(port: _OrderPort) -> tuple:
-    """The functions a context acts through: each closes over one method of
-    the order port and nothing else (never the engine), so the port is
-    reached only by calling them (LEAD_DESIGN s3.4)."""
-    place, cancel, lookup, opens, timer = port.place, port.cancel, port.order, port.open_orders, port.set_timer
+class _StrategySide:
+    """THE one place the engine keeps what the strategy can reach and what
+    outlives a callback (round 10, i0-r9-02): the strategy's order port, its
+    copies of its order views (`registry`), its outbox, and its side of the
+    history (history.py `HistoryLists`: the lists, the event copies, the
+    dropped facts). The core's own state -- the book, the ledger, the queue,
+    the history's records, the counters -- holds no reference into it.
 
-    def place_order(request: Any) -> str:
-        return place(request)
+    The core touches what is in here only through base-type C functions on
+    the containers it made (`dict.__setitem__` on the registry, `list`'s
+    methods on the outbox and the history lists, `array.array.extend`),
+    never through the objects' own classes (no attribute read or write, no
+    method of theirs): whatever class the strategy gives an object it
+    reaches, its code runs only inside the strategy's own calls. It reads
+    one thing from here: the outbox's messages, copied once when a callback
+    returns (`_drain`)."""
 
-    def cancel_order(request: Any) -> None:
-        cancel(request)
+    __slots__ = ("port", "registry", "outbox", "lists")
 
-    def order_lookup(client_order_id: str) -> Optional[OrderView]:
-        return lookup(client_order_id)
+    def __init__(self) -> None:
+        self.registry: dict[str, OrderView] = {}
+        self.outbox: list = []
+        self.port = _OrderPort(self.registry, self.outbox)
+        self.lists = HistoryLists()
 
-    def open_orders() -> tuple:
-        return opens()
 
-    def set_timer(at_ns: Any, tag: Any) -> None:
-        timer(at_ns, tag)
+def _alive_check(alive: Callable[[], bool]) -> None:
+    if not alive():
+        raise StaleContextError("StrategyContext used after its callback returned")
 
-    return place_order, cancel_order, order_lookup, open_orders, set_timer
+
+def _call_place(link: tuple, request: Any) -> str:
+    port, registry, outbox, now, alive = link
+    _alive_check(alive)
+    return port_place(port, registry, outbox, request, now)
+
+
+def _call_cancel(link: tuple, request: Any) -> None:
+    _port, registry, outbox, now, alive = link
+    _alive_check(alive)
+    port_cancel(registry, outbox, request, now)
+
+
+def _call_order(link: tuple, client_order_id: str) -> Optional[OrderView]:
+    _port, registry, _outbox, _now, alive = link
+    _alive_check(alive)
+    return port_order(registry, client_order_id)
+
+
+def _call_open_orders(link: tuple) -> tuple:
+    _port, registry, _outbox, _now, alive = link
+    _alive_check(alive)
+    return port_open_orders(registry)
+
+
+def _call_timer(link: tuple, at_ns: Any, tag: Any) -> None:
+    _port, _registry, outbox, now, alive = link
+    _alive_check(alive)
+    port_timer(outbox, at_ns, tag, now)
+
+
+def _settled_request(obj: Any, cls: type) -> Any:
+    """The core's own request for one the strategy put in its outbox: the
+    object must be of the core's request class itself (never a subclass);
+    each slot is read by the class's own slot descriptor, settled
+    (values.py `settle`: the built-in types themselves, no code of the
+    sender run) and the request made again by the class's constructor, so
+    every rule of the API applies. A field deleted or refused by the class
+    is an OrderApiError."""
+    who = "place_order" if cls is OrderRequest else "cancel_order"
+    if type(obj) is not cls:
+        raise OrderApiError(f"{who} takes a {cls.__name__} itself (not a subclass), got {type_name(obj)}")
+    fields = {}
+    for f in dataclasses.fields(cls):
+        try:
+            value = cls.__dict__[f.name].__get__(obj, cls)
+        except AttributeError:
+            raise OrderApiError(f"{who}: the {cls.__name__} has no {f.name} (deleted)") from None
+        fields[f.name] = settle(value)
+    try:
+        return cls(**fields)
+    except OrderApiError:
+        raise
+    except (TypeError, ValueError) as exc:
+        raise OrderApiError(f"{who}: the {cls.__name__} cannot be made again from its fields: {exc}") from None
+
+
+def _context_calls(side: _StrategySide, now: int, alive: Callable[[], bool]) -> tuple:
+    """The functions one callback's context acts through, made for that
+    callback: each is bound to ONE tuple -- (the port, the engine's own
+    registry and outbox, the callback's time, its `alive`) -- which cannot
+    be changed, so what the strategy does to its port's attributes or to
+    these functions changes neither where its messages go nor the time
+    they carry (round 10, i0-r9-02). The engine keeps none of them."""
+    link = (side.port, side.registry, side.outbox, now, alive)
+    return tuple(types.MethodType(f, link)
+                 for f in (_call_place, _call_cancel, _call_order, _call_open_orders, _call_timer))
 
 
 def _rebuilt(carrier: Any) -> Any:
@@ -686,16 +775,12 @@ class CoreEngine:
         self._in_step = False
 
         # The strategy's orders (round 9, i0-r8-01): the core's own book is
-        # the one place their facts live; the port the strategy reaches holds
-        # the strategy's copies (`_shown`, written from the book, never read)
-        # and its outbox (`_box`, read once per callback as messages). The
-        # engine keeps its own references to both and never reads the port's
-        # attributes to find them.
+        # the one place their facts live. What the strategy reaches -- its
+        # port, its copies of its views, its outbox, its side of the history
+        # -- is kept in ONE holder, `_side` (round 10, i0-r9-02), which the
+        # core writes and never reads (but the outbox, once per callback).
         self._book = _OrderBook()
-        self._shown: dict[str, OrderView] = {}
-        self._box: list = []
-        self._port = _OrderPort(self._shown, self._box)
-        self._ctx_calls = _context_calls(self._port)
+        self._side = _StrategySide()
         self._ledger = _VenueLedger()
         self._forced: dict[str, OrderRequest] = {}
         self._forced_list: list[OrderRequest] = []
@@ -917,21 +1002,26 @@ class CoreEngine:
             book.apply_notice(event, time_ns)
             self._show(coid)
         history = self._history
-        history.append(delivered, seq, time_ns, etype)
+        side = self._side
+        lists = side.lists
+        history.append(delivered, seq, time_ns, etype, lists)
         self._deliveries = seq
         self._digest.update(repr(delivered).encode())
         self._digest.update(b"\n")
-        port = self._port
-        port._now = renew(time_ns)  # written, never read back by the core
         # The context holds no mutable object (LEAD_DESIGN s3.4): the history
         # lists are reached only inside the windows' reading functions, the
-        # port only inside the call functions, and the context and its
-        # windows are revoked together through `alive` (a cell only the
-        # engine flips; the engine holds no reference to the windows).
+        # port, registry and outbox only inside the call functions (bound to
+        # a tuple made for this callback), and the context and its windows
+        # are revoked together through `alive` (a cell only the engine
+        # flips). Nothing made here is kept by the engine after the
+        # callback, and nothing the strategy reaches is touched through its
+        # own class (round 10, i0-r9-02): the engine no longer writes the
+        # port's time or calls the context's `_revoke`.
         is_alive, kill = _alive_switch()
 
-        window = EventWindow(history.overall, history.count(), history.overall_dropped, is_alive)
-        places = {t: (lst, n, dropped) for t, lst, n, dropped in history.typed_places()}
+        window = EventWindow(lists.overall, history.count(), history.overall_dropped, is_alive)
+        typed_lists = lists.typed
+        places = {t: (typed_lists[t], n, dropped) for t, n, dropped in history.typed_places()}
         made: dict = {}
 
         def typed(etype: EventType):
@@ -943,7 +1033,15 @@ class CoreEngine:
                 w = made[etype] = EventWindow(got[0], got[1], got[2], is_alive)
             return w
 
-        place_order, cancel_order, order_lookup, open_orders, set_timer = self._ctx_calls
+        counts = history.dropped_count_facts()
+        dropped_of = None
+        if counts:
+            arrays = lists.dropped_arrays()
+
+            def dropped_of(pos: int, _arrays=arrays) -> tuple:
+                return _arrays[pos]
+
+        place_order, cancel_order, order_lookup, open_orders, set_timer = _context_calls(side, time_ns, is_alive)
         ctx = StrategyContext(
             visible_events=window,
             current=delivered,
@@ -954,47 +1052,34 @@ class CoreEngine:
             open_orders_cb=open_orders,
             set_timer_cb=set_timer,
             typed_events=typed,
-            dropped=history.dropped_facts(),
-            dropped_counts=history.dropped_count_facts(),
+            dropped_of=dropped_of,
+            dropped_counts=counts,
             dropped_overall=history.overall_dropped,
             alive=is_alive,
         )
         try:
             self._strategy.on_event(delivered, ctx)
         finally:
-            # the engine's own cell and the context's class: nothing the
-            # strategy put on its context or windows is called here
-            kill()
-            StrategyContext._revoke(ctx)
+            kill()  # the engine's own cell: nothing of the strategy's runs here
         self._drain(time_ns)
 
     def _show(self, coid: str) -> None:
         """Write the strategy's copy of one order view (from the book) into
-        the port's registry, through the core's own reference to it."""
-        dict.__setitem__(self._shown, coid, copy_view(self._book.view(coid)))
+        its registry, through the core's own reference (a plain dict)."""
+        dict.__setitem__(self._side.registry, coid, copy_view(self._book.view(coid)))
 
     def _drain(self, sent: int) -> None:
         """Take what the strategy sent in the callback at `sent`: the
-        messages in the outbox, read ONCE, now, through the core's own
-        reference to it (never the port's attribute), by their real types.
-        Each is the arguments of one API call, and the core applies that
-        call's rules again against its OWN state -- the book and the
-        callback's time (`check_new_id`, `check_timer`), never the port's
-        copies -- so a message written around the port has exactly the
-        effect of the API call, or is refused with OrderApiError. Every
-        request is made again (`fresh_request`) and sent at the callback's
-        time; every receiver gets a copy of its own."""
-        port, box = self._port, self._box
-        for name, own in (("_outbox", box), ("_registry", self._shown)):
-            try:
-                held = object.__getattribute__(port, name)
-            except AttributeError:
-                held = None
-            if held is not own:
-                raise OrderApiError(
-                    f"the order port's {name} was replaced or removed around the order port; the core "
-                    f"reads and writes only its own, so what was sent through the replacement went nowhere"
-                )
+        messages in the outbox, copied ONCE, now, through the core's own
+        reference to it (a plain list, by `list`'s own methods), and read by
+        their real types. Each is the arguments of one API call, and the
+        core applies that call's rules again against its OWN state -- the
+        book and the callback's time (`check_new_id`, `check_timer`), never
+        the strategy's copies -- so a message written around the port has
+        exactly the effect of the API call, or is refused with
+        OrderApiError. Every request is made again (`_settled_request`) and
+        sent at the callback's time; every receiver gets a copy of its own."""
+        box = self._side.outbox
         messages = list.__getitem__(box, slice(None))
         list.clear(box)
         for message in messages:
@@ -1017,13 +1102,26 @@ class CoreEngine:
                 if type(kind) is str else
                 f"the order outbox holds a message whose kind is a {type_name(kind)}, not a str"
             )
+        # read after the callback returned: every value is settled first
+        # (values.py `settle`: made anew as the built-in type itself by the
+        # base type's own methods), so nothing below -- the API's rules,
+        # their error texts -- can run any code of the sender (round 10)
+        try:
+            if kind == "timer":
+                payload, third = settle(payload), settle(third)
+            else:
+                payload = _settled_request(payload, OrderRequest if kind == "new" else CancelRequest)
+        except Unsettled as exc:
+            raise OrderApiError(f"the order outbox holds a {kind} message with {exc}; the API's calls "
+                                f"convert such values when they are called (inside the callback), the core "
+                                f"does not after it returned") from None
         book = self._book
         if kind == "timer":
             at, tag = check_timer(payload, third, sent)
             self._push(at, PHASE_DELIVER_TIMER, _K_DELIVER, ClockEvent(received_time_ns=at, tag=tag))
             return
         if kind == "new":
-            req = fresh_request(payload, OrderRequest, OrderApiError, "place_order")
+            req = payload  # made by the core from settled values (`_settled_request`)
             coid = req.client_order_id
             if not coid:
                 raise OrderApiError("the order outbox holds a new order without a client_order_id "
@@ -1032,7 +1130,7 @@ class CoreEngine:
             book.add(req, sent)
             model, name = self._latency.order_delay_ns, "order_delay_ns"
         else:
-            req = fresh_request(payload, CancelRequest, OrderApiError, "cancel_order")
+            req = payload
             coid = req.client_order_id
             if not book.knows(coid):
                 raise OrderApiError(f"cancel for unknown client_order_id {coid!r}")

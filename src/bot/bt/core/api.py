@@ -112,6 +112,7 @@ from .values import (
     thaw,
     type_name,
 )
+from .history import dropped_before, dropped_in_range
 from .window import DeliveredEvents, EventWindow
 
 
@@ -464,76 +465,105 @@ class _OrderBook:
 
 class _OrderPort:
     """The strategy's side of the order channel: its OWN copies of its
-    order views (`_registry`, written by the engine, never read by it) and
-    its outbox (the messages it sent, read by the engine once per callback,
-    engine.py `_drain`). It has no reference to the engine or to the core's
-    book. Slotted: nothing can be put on it (an instance attribute cannot
-    shadow a method)."""
+    order views (`_registry`, written by the engine, never read by it), its
+    outbox (the messages it sent, read by the engine once per callback,
+    engine.py `_drain`) and its counter of engine-named ids. It has no
+    reference to the engine or to the core's book, and holds no time (round
+    10, i0-r9-02: the engine wrote the callback's time on it through its
+    class, which ran the strategy's code when the strategy had replaced
+    that class; the time now comes with each call). Slotted: nothing can be
+    put on it. The context's calls do not go through its attributes: they
+    are bound to the engine's own references to the same registry and
+    outbox (engine.py `_context_calls`), so replacing an attribute here
+    changes nothing that is sent."""
 
-    __slots__ = ("_registry", "_outbox", "_counter", "_now")
+    __slots__ = ("_registry", "_outbox", "_counter")
 
     def __init__(self, registry: Optional[dict] = None, outbox: Optional[list] = None) -> None:
         self._registry: dict[str, OrderView] = {} if registry is None else registry
         self._outbox: list[tuple] = [] if outbox is None else outbox
         self._counter = 0
-        # the delivery time of the callback in progress; None before the
-        # first callback ("no time yet" is not a time: every int64 is one)
-        self._now: Optional[int] = None
-
-    def _time(self) -> int:
-        now = self._now
-        if now is None:
-            raise OrderApiError("the order port was used before the first callback")
-        return now
 
     # -- strategy-facing (through StrategyContext) --------------------------
-    def place(self, request: OrderRequest) -> str:
-        # the view keeps its own copy; the outbox carries another (below):
-        # nothing the strategy holds is what the venue receives
-        request = fresh_request(request, OrderRequest, OrderApiError, "place_order")
-        now = self._time()
-        coid = request.client_order_id
-        if coid:
-            check_new_id(coid, self._registry.__contains__)
-        else:
-            while True:
-                self._counter += 1
-                coid = f"core-{self._counter}"
-                if coid not in self._registry:
-                    break
-            request = dataclasses.replace(request, client_order_id=coid)
-        self._registry[coid] = _new_view(request, now)
-        self._outbox.append(("new", dataclasses.replace(request), now))
-        return coid
+    def place(self, request: OrderRequest, now: Optional[int] = None) -> str:
+        return port_place(self, self._registry, self._outbox, request, now)
 
-    def cancel(self, request: Union[CancelRequest, str]) -> None:
-        if is_a(request, str):  # the real type: an object claiming to be a str is not an id
-            request = CancelRequest(request)
-        request = fresh_request(request, CancelRequest, OrderApiError, "cancel_order (or an id)")
-        view = self._registry.get(request.client_order_id)
-        if view is None:
-            raise OrderApiError(f"cancel for unknown client_order_id {request.client_order_id!r}")
-        now = self._time()
-        self._registry[request.client_order_id] = _view_after_cancel(view, now)
-        self._outbox.append(("cancel", request, now))
+    def cancel(self, request: Union[CancelRequest, str], now: Optional[int] = None) -> None:
+        port_cancel(self._registry, self._outbox, request, now)
 
     def knows(self, client_order_id: str) -> bool:
         return client_order_id in self._registry
 
-    def set_timer(self, at_ns: int, tag: str) -> None:
-        at, text = check_timer(at_ns, tag, self._time())
-        self._outbox.append(("timer", at, text))
+    def set_timer(self, at_ns: int, tag: str, now: Optional[int] = None) -> None:
+        port_timer(self._outbox, at_ns, tag, now)
 
     def order(self, client_order_id: str) -> Optional[OrderView]:
-        """A new view object of one of the strategy's orders at every call
-        (None if unknown), made from the strategy's own copy (which the core
-        writes at every change, engine.py `_show`, and never reads)."""
-        view = self._registry.get(client_order_id)
-        return None if view is None else _fresh_view(view)
+        return port_order(self._registry, client_order_id)
 
     def open_orders(self) -> tuple[OrderView, ...]:
-        """New view objects of the strategy's open orders, at every call."""
-        return tuple(_fresh_view(v) for v in self._registry.values() if v.is_open)
+        return port_open_orders(self._registry)
+
+
+def _callback_time(now: Optional[int]) -> int:
+    if now is None:
+        raise OrderApiError("the order port was used without a callback's time (before the first callback)")
+    return now
+
+
+def port_place(port: _OrderPort, registry: dict, outbox: list, request: Any, now: Optional[int]) -> str:
+    """`place_order`: the request made again (the view keeps its own copy;
+    the outbox carries another: nothing the strategy holds is what the
+    venue receives), its id checked against the strategy's copies (to
+    answer at once; the core checks again against its book), its view
+    written and its message put in the outbox. `registry` and `outbox` are
+    the engine's own references (plain dict and list), written by their
+    base type's methods."""
+    request = fresh_request(request, OrderRequest, OrderApiError, "place_order")
+    now = _callback_time(now)
+    coid = request.client_order_id
+    known = registry.__contains__
+    if coid:
+        check_new_id(coid, known)
+    else:
+        while True:
+            port._counter += 1
+            coid = f"core-{port._counter}"
+            if not known(coid):
+                break
+        request = dataclasses.replace(request, client_order_id=coid)
+    dict.__setitem__(registry, coid, _new_view(request, now))
+    list.append(outbox, ("new", dataclasses.replace(request), now))
+    return coid
+
+
+def port_cancel(registry: dict, outbox: list, request: Any, now: Optional[int]) -> None:
+    if is_a(request, str):  # the real type: an object claiming to be a str is not an id
+        request = CancelRequest(request)
+    request = fresh_request(request, CancelRequest, OrderApiError, "cancel_order (or an id)")
+    view = dict.get(registry, request.client_order_id)
+    if view is None:
+        raise OrderApiError(f"cancel for unknown client_order_id {request.client_order_id!r}")
+    now = _callback_time(now)
+    dict.__setitem__(registry, request.client_order_id, _view_after_cancel(view, now))
+    list.append(outbox, ("cancel", request, now))
+
+
+def port_timer(outbox: list, at_ns: Any, tag: Any, now: Optional[int]) -> None:
+    at, text = check_timer(at_ns, tag, _callback_time(now))
+    list.append(outbox, ("timer", at, text))
+
+
+def port_order(registry: dict, client_order_id: str) -> Optional[OrderView]:
+    """A new view object of one of the strategy's orders at every call
+    (None if unknown), made from the strategy's own copy (which the core
+    writes at every change, engine.py `_show`, and never reads)."""
+    view = dict.get(registry, client_order_id)
+    return None if view is None else _fresh_view(view)
+
+
+def port_open_orders(registry: dict) -> tuple[OrderView, ...]:
+    """New view objects of the strategy's open orders, at every call."""
+    return tuple(_fresh_view(v) for v in dict.values(registry) if v.is_open)
 
 
 _TYPES: tuple = tuple(EventType)  # position -> event type (a context holds positions, never Enum members)
@@ -550,7 +580,7 @@ class StrategyContext:
     acts on -- the order port, the history lists -- is reached only by
     CALLING those functions, never as an attribute value."""
 
-    __slots__ = ("__visible_events", "__typed", "__dropped", "__dropped_counts", "__current", "__now",
+    __slots__ = ("__visible_events", "__typed", "__dropped_of", "__dropped_counts", "__current", "__now",
                  "__place_order_cb", "__cancel_order_cb", "__order_lookup_cb", "__open_orders_cb",
                  "__set_timer_cb", "__dropped_overall", "__alive", "__revoked")
 
@@ -565,7 +595,7 @@ class StrategyContext:
         open_orders_cb: Optional[Callable[[], tuple]] = None,
         set_timer_cb: Optional[Callable[[int, str], None]] = None,
         typed_events: Optional[Union[Mapping[EventType, Sequence[Event]], Callable]] = None,
-        dropped: Optional[Mapping[EventType, tuple[int, int]]] = None,
+        dropped_of: Optional[Callable[[int], tuple]] = None,
         dropped_counts: Optional[Mapping[EventType, int]] = None,
         now_ns: Optional[int] = None,
         dropped_overall: Optional[int] = None,
@@ -577,12 +607,15 @@ class StrategyContext:
         type's window when it is first read); it only makes
         `visible_events(event_type)` faster.
 
-        `dropped`, if given, maps an event type to (seq, received_time_ns)
-        of the last event of that type the history no longer holds
-        (`history_limit`, history.py); reads reaching into that part raise
-        `HistoryTruncatedError`. `dropped_counts` maps a type to how many
-        of its delivered events the history no longer holds (for the place
-        of an answer, window.py). `now_ns`: the delivery time, from the
+        `dropped_counts` maps an event type to how many of its delivered
+        events the history no longer holds (`history_limit`, history.py),
+        and `dropped_of`, given with it, maps a type's position in
+        `tuple(EventType)` to (the delivery numbers, the received times) of
+        those events, in drop order (the engine's: the strategy's side of
+        the history, history.py `HistoryLists`); with them a read is refused
+        (`HistoryTruncatedError`) exactly when its answer without the limit
+        holds a dropped event, and an empty answer's place is stated (for
+        the placeof an answer, window.py). `now_ns`: the delivery time, from the
         engine (not read back from `current`, which is the strategy's own
         copy and could be changed by it); default `current`'s received
         time. `dropped_overall`: how many delivered events the whole history
@@ -601,8 +634,7 @@ class StrategyContext:
         put = object.__setattr__
         put(self, "_StrategyContext__visible_events", visible_events)
         put(self, "_StrategyContext__typed", typed)
-        put(self, "_StrategyContext__dropped", tuple(
-            (_TYPE_POS[t], int(sq), int(rc)) for t, (sq, rc) in dict(dropped).items()) if dropped else ())
+        put(self, "_StrategyContext__dropped_of", dropped_of)
         put(self, "_StrategyContext__dropped_counts", tuple(
             (_TYPE_POS[t], int(n)) for t, n in dict(dropped_counts).items()) if dropped_counts else ())
         put(self, "_StrategyContext__current", current)
@@ -623,9 +655,11 @@ class StrategyContext:
         raise AttributeError("a StrategyContext cannot be changed")
 
     def _revoke(self) -> None:
-        """Called by the engine through the class (`StrategyContext._revoke(
-        ctx)`), never looked up on the instance, and it only WRITES: it reads
-        nothing the strategy could have changed on its context."""
+        """Revokes a context built without `alive` (a direct construction).
+        The engine does not call it (round 10, i0-r9-02: writing the
+        context's slots after the callback ran the class the strategy may
+        have given its context); it revokes through `alive`, a cell only it
+        flips."""
         object.__setattr__(self, "_StrategyContext__revoked", True)
         object.__setattr__(self, "_StrategyContext__typed", None)
 
@@ -692,10 +726,11 @@ class StrategyContext:
         for the future is a strategy bug that must not be answered with a
         silently empty or shortened result.
 
-        With `history_limit`, a read whose answer would reach into the
-        dropped part of a type it covers raises `HistoryTruncatedError`
-        (history.py); an answer that is returned is the same as without the
-        limit."""
+        With `history_limit`, a read raises `HistoryTruncatedError` exactly
+        when its answer WITHOUT the limit holds an event the limit dropped
+        (the error names the newest such event and how to read kept events
+        only); every answer returned, empty or not, is the answer without
+        the limit, at its place (round 10, i0-r9-01)."""
         self.__check()
         now = self.__now
         since = _time_arg("since_ns", since_ns, now)
@@ -721,81 +756,96 @@ class StrategyContext:
             lo = bisect.bisect_left(events, since, key=_recv)
         if until is not None:
             hi = bisect.bisect_right(events, until, key=_recv)
-        # Where the answer lies in what the read reads (window.py
-        # `AnswerPlace`, i0-r6-01): its first event is events[lo] (an empty
-        # answer lies where the range was cut, events[hi]); every event of
-        # `events` was delivered by now; `dropped` delivered events of it
-        # lie before its oldest kept one, all dropped by history_limit: for
-        # one type, the count the history recorded; for the whole history,
-        # every delivery before its oldest kept event (deliveries are
-        # numbered 1, 2, 3, ... without gaps and everything not dropped is
-        # kept).
-        if event_type is not None:
-            dropped = self.__dropped_count(event_type)
-        elif self.__dropped_overall is not None:
-            dropped = self.__dropped_overall  # the engine's own count
-        elif self.__dropped and len(events):
-            dropped = max(0, int(events[0].seq) - 1)
-        else:
-            dropped = 0  # nothing dropped: the oldest held event is the first delivered
         delivered = len(events)
+        # the types the read covers that history_limit dropped events of
+        # (position, how many); and where the answer lies in what the read
+        # reads (window.py `AnswerPlace`, i0-r6-01): the kept events of its
+        # scope, with the `dropped` deliveries of it before its oldest kept
+        # one at -dropped..-1 (for one type, the count the history keeps;
+        # for the whole history, every delivery before its oldest kept one:
+        # deliveries are numbered 1, 2, 3, ... and everything not dropped
+        # is kept)
+        counts = self.__dropped_counts if self.__dropped_of is not None else ()
+        if event_type is not None:
+            pos = _TYPE_POS[event_type]
+            scope = tuple((p, k) for p, k in counts if p == pos)
+            dropped = scope[0][1] if scope else 0
+            before_seq = None  # a type drops its oldest: all its dropped events lie before its kept ones
+        else:
+            scope = counts
+            dropped = self.__dropped_overall or 0  # the engine's own count
+            before_seq = dropped + 1  # the oldest kept delivery
+        if count == 0:
+            return self.__empty_answer(scope, until, before_seq, hi, delivered, dropped)
+        if scope:
+            self.__refuse_truncated(event_type, since, until, count, scope, events, lo, hi)
         if count is not None:
-            if count == 0:
-                return self.__empty_answer(event_type, until, hi, delivered, dropped)
             lo = max(lo, hi - count)
-        if self.__dropped:
-            self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
-            return self.__empty_answer(event_type, until, hi, delivered, dropped)
+            return self.__empty_answer(scope, until, before_seq, hi, delivered, dropped)
         # the core's own read of the kept events lo..hi-1 (inside by construction)
         chunk = events._range(lo, hi) if type(events) is EventWindow else tuple(events)[lo:hi]
         return DeliveredEvents._placed(chunk, lo, 1, delivered, dropped)
 
-    def __empty_answer(self, event_type: Optional[EventType], until: Optional[int], hi: int,
+    def __empty_answer(self, scope: tuple, until: Optional[int], before_seq: Optional[int], hi: int,
                        delivered: int, dropped: int) -> DeliveredEvents:
-        """An empty answer lies where its range was cut (events[hi]). If
-        `until_ns` cut it before the oldest kept event and before the newest
-        event history_limit dropped, the cut lies somewhere among the
-        dropped events and the history cannot say where: the answer could
-        not state its place, so the read is refused (i0-r6-01), as any read
-        reaching into the dropped part is."""
-        if hi == 0 and dropped and until is not None:
-            newest_dropped = max(
-                (recv for pos, _seq, recv in self.__dropped
-                 if event_type is None or _TYPES[pos] is event_type),
-                default=None,
-            )
-            if newest_dropped is not None and until < newest_dropped:
-                raise HistoryTruncatedError(
-                    f"visible_events(event_type={None if event_type is None else event_type.value}, "
-                    f"until_ns={until}) ends inside the history dropped by history_limit (newest dropped "
-                    f"received at {newest_dropped}); its (empty) answer cannot be placed -- read with "
-                    f"until_ns >= {newest_dropped}"
-                )
-        return DeliveredEvents._placed((), hi, 1, delivered, dropped)
+        """An empty answer lies where its range was cut: on the line of what
+        the read reads (the `dropped` deliveries before the oldest kept one,
+        then the kept ones), after every event received at or before
+        `until_ns` (after all of them without `until_ns`). Among the kept
+        ones that is `hi`; the dropped deliveries before the oldest kept one
+        that were received after `until_ns` lie after the cut too, so the
+        cut is that many positions before `hi` (round 10, i0-r9-01: it was
+        refused as unplaceable)."""
+        after = 0
+        if until is not None:
+            for p, k in scope:
+                seqs, recvs = self.__dropped_of(p)
+                after += dropped_before(seqs, recvs, k, before_seq, until)
+        return DeliveredEvents._placed((), hi - after, 1, delivered, dropped)
 
-    def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int],
-                           count: Optional[int], events: Sequence[Event], lo: int, hi: int) -> None:
-        """Raise if the answer events[lo:hi] may lack events the history
-        dropped. For each type the read covers that has a dropped part: the
-        window reaches into it when it has no start or starts at or before
-        the last dropped event's received time; it is still complete when
-        `n` confines it to `count` kept events that all come after that
-        type's last dropped event (by delivery number)."""
-        for pos, dropped_seq, dropped_recv in self.__dropped:
-            etype = _TYPES[pos]
-            if event_type is not None and etype is not event_type:
-                continue
-            if since is not None and since > dropped_recv:
-                continue  # the window starts after everything dropped of this type
-            if count is not None and hi - lo == count and int(events[lo].seq) > dropped_seq:
-                continue  # the last `count` events are all after the dropped part
-            raise HistoryTruncatedError(
-                f"visible_events(event_type={None if event_type is None else event_type.value}, "
-                f"since_ns={since}, n={count}) reaches into the {etype.value} history dropped by "
-                f"history_limit (last dropped: delivery #{dropped_seq} received at {dropped_recv}); "
-                f"narrow the read with since_ns > {dropped_recv} or a smaller n"
-            )
+    def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int], until: Optional[int],
+                           count: Optional[int], scope: tuple, events: Sequence[Event], lo: int, hi: int) -> None:
+        """Raise iff the answer this read gives WITHOUT history_limit holds
+        a dropped event (round 10, i0-r9-01: the definition itself, decided
+        from the facts of every dropped event, not from a list of cases).
+        That answer is the last `count` (or all) of the delivered events of
+        the scope with since <= received <= until. The kept ones of them are
+        events[lo:hi]. With `count` and at least `count` kept ones, the
+        answer starts at the kept event events[hi - count] and holds no
+        dropped event iff no dropped event in the range comes after it;
+        otherwise the answer needs every event in the range, and holds no
+        dropped event iff there is none in the range. (An answer with no
+        dropped event is a run of the delivered events all kept, so it is
+        events[max(lo, hi - count):hi], the answer returned.)"""
+        after_seq = None
+        if count is not None and hi - lo >= count:
+            after_seq = int(events[hi - count].seq)
+        newest = None
+        total = 0
+        for p, k in scope:
+            seqs, recvs = self.__dropped_of(p)
+            a, b = dropped_in_range(seqs, recvs, k, since, until, after_seq)
+            if b > a:
+                total += b - a
+                cand = (int(seqs[b - 1]), int(recvs[b - 1]), p)
+                if newest is None or cand > newest:
+                    newest = cand
+        if newest is None:
+            return
+        seq, recv, p = newest
+        # the events the read asks for after that one are all kept: how many
+        kept_after = hi - bisect.bisect_right(events, seq, lo, hi, key=_seq)
+        remedy = f"a since_ns after {recv}"
+        if kept_after:
+            remedy += f", or n <= {kept_after} (its newest {kept_after} events are kept)"
+        raise HistoryTruncatedError(
+            f"visible_events(event_type={None if event_type is None else event_type.value}, "
+            f"since_ns={since}, until_ns={until}, n={count}) asks for delivery #{seq} "
+            f"({_TYPES[p].value} received at {recv}), which history_limit dropped "
+            f"({total} dropped event{'s' if total > 1 else ''} in its answer); to read kept events "
+            f"only: {remedy}"
+        )
 
     def last(self, event_type: EventType) -> Optional[Event]:
         """Most recent delivered event of `event_type`, or None."""
@@ -869,6 +919,10 @@ def _answers_cancel(event: Event) -> bool:
 
 def _recv(event: Event) -> int:
     return int(event.received_time_ns)
+
+
+def _seq(event: Event) -> int:
+    return int(event.seq)
 
 
 STRATEGY_API: tuple[str, ...] = (

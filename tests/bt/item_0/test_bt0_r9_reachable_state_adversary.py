@@ -59,8 +59,10 @@ introspection (call stack, `gc`) used to reach the engine; the core's CODE
 changing an object while the callback's own API calls run (a strategy that
 breaks its own port before calling it changes its own messages, which are
 its to choose); attacks from socket code (the sockets get copies, round 8's
-adversary); `__class__` assignment (the core's objects are slotted or
-built-in; a lying subclass of a carrier is round 8's adversary).
+adversary); `__class__` assignment -- in round 9 this line gave the reason
+"the core's objects are slotted or built-in", which was false (i0-r9-02:
+slotted classes of the core accept a `__class__` of the same layout); the
+class-swap grid is test_bt0_r10_strategy_side.py.
 """
 from __future__ import annotations
 
@@ -841,22 +843,28 @@ def test_the_port_s_own_answer_does_not_decide_what_is_sent(case, when):
     assert _judge(base, got) is None
 
 
-def test_a_replaced_outbox_is_refused():
-    """The core reads its own outbox, never the port's attribute: a port
-    whose outbox attribute was replaced (its later sends would go nowhere)
-    is refused, not silently ignored."""
+def test_a_replaced_outbox_attribute_changes_nothing_that_is_sent():
+    """The core reads its own outbox, never the port's attribute, and the
+    context's calls are bound to the core's own references (round 10,
+    i0-r9-02): a port whose outbox or registry attribute was replaced still
+    sends through place_order exactly what the API call sends. (Until round
+    9 this test expected a refusal: the calls went through the port's
+    attributes, so a replaced outbox lost what was sent after it, and the
+    core refused the run when it saw the replacement.)"""
     def replace(k, ctx):
         if k == WALK_AT:
-            [path] = _outbox_paths()
-            owner_path, _, name = path.rpartition(".")
-            owner = dict(_walk(ctx))[owner_path]
-            object.__setattr__(owner, name, [])
+            [port] = find(ctx, _OrderPort)
+            object.__setattr__(port, "_outbox", [])
+            object.__setattr__(port, "_registry", {})
             ctx.place_order(OrderRequest("buy", "limit", 1.0, price=95.0, client_order_id="m1"))
 
-    base = _run()
-    got = _run(extra=replace)
-    assert got[0] == "raised" and isinstance(got[1], CoreError), got[:2]
-    assert _judge(base, got) is None
+    def via_api(k, ctx):
+        if k == WALK_AT:
+            ctx.place_order(OrderRequest("buy", "limit", 1.0, price=95.0, client_order_id="m1"))
+
+    got, want = _run(extra=replace), _run(extra=via_api)
+    assert want[0] == "ok" and got[0] == "ok", (got[:2], want[:2])
+    assert got[1] == want[1] and got[2].logs == want[2].logs and got[2].delivered == want[2].delivered
 
 
 # --- the structural check: the context reaches none of the core's own state ----------

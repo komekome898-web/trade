@@ -3,7 +3,10 @@
 Per type the latest N..2N delivered events are kept; the overall history is
 exactly what the types keep. A read is either answered with the same answer
 as a run without the limit, or refused with HistoryTruncatedError -- and it
-is refused only when its window reaches into a dropped part."""
+is refused exactly when the unlimited answer holds a dropped event (round
+10, i0-r9-01: until round 9 this test checked only "some dropped fact is at
+or after since_ns", a copy of the implementation's condition; the full grid
+of that rule is test_bt0_r10_history_read_oracle.py)."""
 import random
 
 import pytest
@@ -44,16 +47,21 @@ class _Asker(Strategy):
     """At each callback asks a list of reads drawn from rng(seed, seq), so a
     limited and an unlimited run ask exactly the same reads."""
 
-    def __init__(self, seed: int, engine_ref: list) -> None:
+    def __init__(self, seed: int, engine_ref: list, limit=None) -> None:
         self.seed = seed
         self.engine_ref = engine_ref
-        self.answers: list = []  # (seq, query, answer seqs | "refused", dropped facts)
+        self.limit = limit
+        self.kept: dict = {t: [] for t in EventType}  # the retention rule, from its text
+        self.answers: list = []  # (seq, query, answer seqs | "refused", kept seqs)
 
     def on_event(self, event, ctx) -> None:
         rng = random.Random(self.seed * 100_003 + event.seq)
         now = int(ctx.now_ns)
-        eng = self.engine_ref[0] if self.engine_ref else None
-        dropped = dict(eng._history.dropped) if eng is not None else {}
+        t = event.EVENT_TYPE
+        if self.limit is not None and len(self.kept[t]) >= 2 * self.limit:
+            del self.kept[t][:len(self.kept[t]) - (self.limit - 1)]
+        self.kept[t].append(event.seq)
+        kept_seqs = {s for lst in self.kept.values() for s in lst}
         for _ in range(6):
             etype = rng.choice(TYPES)
             since = rng.choice([None, None, now - rng.choice([0, 1, 5, 20, 80]) * MS])
@@ -66,7 +74,7 @@ class _Asker(Strategy):
                 got = tuple(e.seq for e in ctx.visible_events(etype, n, since_ns=since, until_ns=until))
             except HistoryTruncatedError:
                 got = "refused"
-            self.answers.append((event.seq, query, got, dropped))
+            self.answers.append((event.seq, query, got, kept_seqs))
             # the typed view and the overall view filtered by type agree
             # whenever both answer (same window, no n)
             if etype is not None:
@@ -80,7 +88,7 @@ class _Asker(Strategy):
 
 def _run(events, seed, limit):
     ref = []
-    strat = _Asker(seed, ref)
+    strat = _Asker(seed, ref, limit)
     eng = CoreEngine(strat, events, history_limit=limit)
     ref.append(eng)
     eng.run()
@@ -95,24 +103,23 @@ def test_limited_reads_equal_unlimited_reads_or_are_refused_for_a_reason():
         for limit in (1, 2, 3, 8):
             lim, eng = _run(events, seed, limit)
             assert len(lim) == len(full)
-            for (seq, query, got, dropped), (seq_f, query_f, want, _) in zip(lim, full):
+            for (seq, query, got, kept), (seq_f, query_f, want, _) in zip(lim, full):
                 assert (seq, query) == (seq_f, query_f)
                 assert want != "refused"  # nothing is dropped without a limit
-                etype, since, _until, _n = query
-                covered = {t: d for t, d in dropped.items() if etype is None or t is etype}
                 if got == "refused":
                     refused += 1
-                    # refused only when the window reaches into a dropped part
-                    assert any(since is None or since <= recv for _seq, recv in covered.values()), (
-                        seed, limit, seq, query, covered)
+                    # refused exactly when the unlimited answer holds a dropped event
+                    assert any(s not in kept for s in want), (seed, limit, seq, query, want)
                 else:
-                    if covered:
+                    if any(s not in kept for s in range(1, seq + 1)):
                         answered_after_drop += 1
                     assert got == want, (seed, limit, seq, query, got, want)
+                    assert all(s in kept for s in want)
             # memory bound: per type at most 2N kept, overall = what the types keep
-            h = eng._history
-            assert all(len(lst) <= 2 * limit for lst in h.typed.values())
-            assert sorted(e.seq for e in h.overall) == sorted(e.seq for lst in h.typed.values() for e in lst)
+            h = eng._side.lists  # the strategy's side of the history (round 10)
+            assert all(list.__len__(lst) <= 2 * limit for lst in h.typed.values())
+            assert sorted(e.seq for e in list.__iter__(h.overall)) == sorted(
+                e.seq for lst in h.typed.values() for e in list.__iter__(lst))
     assert refused > 0 and answered_after_drop > 0  # both branches were exercised
 
 

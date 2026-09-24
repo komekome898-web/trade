@@ -50,7 +50,7 @@ def test_history_limit_bounds_memory_but_keeps_the_latest():
     eng = CoreEngine(Recorder(lambda ev, ctx: latest.append(ctx.visible_events(n=5))),
                      [trade(T0 + i) for i in range(50)], history_limit=5)
     while eng.step():
-        lens.append(len(eng._history.overall))
+        lens.append(eng._history.count())  # the core's own count of the kept events (round 10)
     assert max(lens) <= 10 and lens[-1] >= 5
     assert [e.received_time_ns for e in latest[-1]] == [T0 + i for i in range(45, 50)]
     with pytest.raises(ValueError):
