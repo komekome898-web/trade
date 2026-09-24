@@ -77,6 +77,8 @@ OPPONENTS = {
     "opp_sigc": ("sigc_adapter", "SigcAdapter"),
     "opp_homerun": ("homerun_adapter", "HomerunAdapter"),
     "opp_aat": ("aat_adapter", "AatAdapter"),
+    "opp_gobacktest": ("gobacktest_adapter", "GobacktestAdapter"),
+    "opp_pineforge": ("pineforge_adapter", "PineforgeAdapter"),
 }
 
 
