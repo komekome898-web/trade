@@ -433,7 +433,13 @@ ELEM_TERMS_WIDE = {
     "E6": [r"検証|verif|validat", r"品質|quality", r"test|assert|check"],
 }
 TRUNC_RE = re.compile(r"^\[出力は \d+ 文字。先頭 \d+ 文字だけを残した\]$", re.M)
-CUT_RE = re.compile(r"\|\s*(?:head|tail)\b|\bhead\s+-n?\s*\d|\bgrep\b[^|]*\s-m\s*\d")
+# 出力を間引く手(監査 64 回目の指摘 3: head・tail・grep -m だけでは sed・awk・rg・cut を通していた)
+CUT_RE = re.compile(
+    r"\|\s*(?:head|tail|less|more)\b|\bhead\s+-n?\s*\d"
+    r"|\b(?:grep|egrep|rg|ag)\b[^|]*\s(?:-m\s*\d|--max-count)"
+    r"|\bsed\s+(?:-\w+\s+)*-n\s+['\"]?\d|\bsed\s+['\"]?\d+q"
+    r"|\bawk\b[^|]*\bNR\s*[<>=]"
+    r"|\|\s*cut\s+-c|\|\s*fold\b|\[:\d+\]|\bitertools\.islice\b")
 
 
 def step_block(fname, lno):
@@ -593,7 +599,8 @@ def cmd_check_elements(a):
                         for f, _, n in strict_refs(logcol):
                             c = step_cmdline(f, n) or ""
                             blk = step_block(f, n) or ""
-                            if CUT_RE.search(c):
+                            # 検索の手(その要素の語を含む手)だけを見る。一覧の件数と先頭・末尾を印字する手は対象外
+                            if re.search(ELEM_TERMS.get(el, "^$"), c, re.I) and CUT_RE.search(c):
                                 errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s が出力を切っている(head・tail・grep -m)" % (i + 1, tool, el, f, n))
                             if TRUNC_RE.search(blk):
                                 errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s の出力が生ログで切られている(--keep を大きくする)" % (i + 1, tool, el, f, n))
