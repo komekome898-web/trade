@@ -278,7 +278,16 @@ def quotes_in_log(text, refs_text, rnd):
     """7 回目以降: 根拠に引いた「…」の逐語が、引いた生ログの手の出力に実際にあるか(監査 33 回目)。
     見つからない引用の先頭を返す。生ログの参照が無い行・引用の無い行は見ない。"""
     qs = [q for q in re.findall(r"「([^「」]{8,})」", text)]
-    refs = re.findall(r"(20260923_tools_8_run(\d+)\.log):(\d+)", refs_text)
+    # 「<生ログ>:1356,1362」「<生ログ>:1186-1223」のように 1 つの参照に行が複数あっても全部を拾う(監査 34 回目)
+    refs = []
+    for fname, rn, nums in re.findall(r"(20260923_tools_8_run(\d+)\.log):([\d,\-]+\d)", refs_text):
+        for part in nums.split(","):
+            if "-" in part:
+                lo, _, hi = part.partition("-")
+                if lo.isdigit() and hi.isdigit():
+                    refs += [(fname, rn, str(x)) for x in range(int(lo), min(int(hi), int(lo) + 500) + 1)]
+            elif part.isdigit():
+                refs.append((fname, rn, part))
     if not qs or not refs:
         return []
     blocks = []
