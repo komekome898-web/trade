@@ -12,7 +12,7 @@ from .time import TIME_CONTRACT
 from .values import FIELD_RULE, PLAIN_DATA_RULE
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-12"
+CORE_VERSION = "core-13"
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.
@@ -80,8 +80,9 @@ CORE_CONTRACT: dict = {
         "forced_orders": "the strategy learns of a forced order only when its first notice is delivered",
         "history_limit": "per event type the latest N..2N delivered events are kept; the overall history "
                          "is exactly what the types keep; the facts of every dropped event (delivery number, "
-                         "received time: two int64 each) are kept, the events are not (the limit bounds the "
-                         "events held, not these facts); a read raises HistoryTruncatedError exactly when its "
+                         "received time: two int64, 16 bytes per dropped event) are kept, the events are not "
+                         "(the limit bounds the events held, not these facts, which grow by 16 bytes with every "
+                         "dropped event for the whole run); a read raises HistoryTruncatedError exactly when its "
                          "answer without the limit holds a dropped event, naming the newest such event and how "
                          "to read kept events only (a since_ns after it, or n <= the number of its newest events "
                          "that are kept); every answer returned, empty or not, is the answer without the limit; "
@@ -106,17 +107,28 @@ CORE_CONTRACT: dict = {
                  "the core decides, sends and reports nothing from those objects (ownership) and never "
                  "acts on them through their classes, so such a change reaches only what the strategy "
                  "itself reads -- and what it sends, through the outbox, under the API's rules -- and "
-                 "the strategy's code runs only inside its own on_event (round 10). Not covered either: "
-                 "classes whose metaclass runs code when the class's own attributes are read, and "
-                 "subclasses of the numbers ABCs with a __subclasshook__ (defining classes changes the "
-                 "program)",
+                 "the strategy's code runs only inside the core's call of its on_event (the lookup of "
+                 "on_event included; round 10). Nor does the core run code of an exception the strategy, "
+                 "a socket or a stream raised: a FAILED engine describes it from its facts "
+                 "(values.exception_text; round 11). Not covered: finalizers (__del__, weakref "
+                 "callbacks) of the strategy's objects, which the interpreter runs whenever it frees "
+                 "them, inside a step too -- they reach only what the strategy reaches, which the core "
+                 "does not decide from; classes whose metaclass runs code when the class's own attributes "
+                 "are read the usual way (the core reads a class's names by type's own descriptors, "
+                 "values.class_parts), and subclasses of the numbers ABCs with a __subclasshook__ "
+                 "(defining classes changes the program)",
     },
     "lifecycle": {
         "failed_after_escaped_exception": True,
         "rule": "any exception that escapes CoreEngine.step() (a core error, or one raised by the "
-                "strategy or a socket) is re-raised unchanged and leaves the engine FAILED; a FAILED "
-                "engine refuses step(), run() and result() with EngineFailedError (cause = the original "
-                "exception, also CoreEngine.failure); a half-updated state is never run on or reported",
+                "strategy, a socket or an input stream) is re-raised unchanged and leaves the engine "
+                "FAILED; a FAILED engine refuses step(), run() and result() with EngineFailedError (cause "
+                "= the original exception, also CoreEngine.failure), whose text is made from the "
+                "failure's facts only -- its real type read by type's own descriptors and its arguments "
+                "that are a str, int, float, bool or None themselves (values.exception_text) -- so no "
+                "code of the failure (its __str__, __repr__, an args property, its metaclass) runs and "
+                "the refusal is always EngineFailedError (round 11); a half-updated state is never run "
+                "on or reported",
         "atomic_step": False,
         "why_not_atomic": "the strategy and the plug-ins own state the core cannot roll back",
         "reentry": "step(), run() or result() called from inside a step of the same engine raises "
@@ -146,8 +158,11 @@ CORE_CONTRACT: dict = {
                      "round 10, i0-r9-02); nothing of the core's own state refers into it. The core "
                      "touches it only through base-type C functions on containers it made (dict and "
                      "list and array methods called on the base type), never through the objects' own "
-                     "classes (no attribute read or write, no method of theirs), and reads from it only "
-                     "the outbox: once, when the callback returns, through the core's own reference. The "
+                     "classes (no attribute read or write, no method of theirs), and reads nothing the "
+                     "strategy can reach but the outbox: once, when the callback returns, through the "
+                     "core's own reference. (The holder also keeps, for the core, its lists of references "
+                     "to the event copies, which nothing the strategy reaches refers to; the core slices "
+                     "them to make new history lists when it drops events and never reads an event copy.) The "
                      "context holds values, the frozen current event, windows and functions; its calls "
                      "are methods bound to one tuple made for the callback (the port, the registry, the "
                      "outbox, the callback's time, alive), which cannot be changed, so replacing the "
@@ -174,7 +189,10 @@ CORE_CONTRACT: dict = {
         "type_decisions": "every decision on the type of a value a sender hands the core (a field, a "
                           "plug-in's answer, a source's event, a read argument, a run setting) reads the "
                           "value's REAL type (values.is_a: issubclass(type(x), C)), never what the object "
-                          "claims through __class__; a refusal is the error type of the place it enters "
+                          "claims through __class__; a type's names in a text are read by type's own "
+                          "descriptors (values.type_name / class_parts: no code of the class or its "
+                          "metaclass runs), and a socket's names in result().models once, when the engine "
+                          "is built; a refusal is the error type of the place it enters "
                           "(OrderApiError, VenueProtocolError, EventValidationError, TimestampUnitError, "
                           "LatencyModelError, CostModelError, AccountSocketError, SourceEventTypeError), "
                           "naming the real type in full",

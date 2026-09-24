@@ -47,15 +47,22 @@ outbox, its side of the history (lists, event copies, dropped facts) -- is
 kept in ONE holder, `_StrategySide` (round 10, i0-r9-02), which nothing of
 the core's state refers into. The core touches it only through base-type C
 functions on containers it made, never through the objects' own classes,
-and reads from it only the outbox's messages, once per callback, as values
-it settles itself (values.py `settle`) under the API's rules (`_drain`).
+and reads nothing the strategy can reach but the outbox's messages, once
+per callback, as values it settles itself (values.py `settle`) under the
+API's rules (`_drain`); the holder's other reads are of the core's own
+lists of references to the event copies, which the strategy cannot reach
+(history.py `HistoryLists`).
 The context's calls are methods bound to one tuple made for the callback
 (the port, the registry, the outbox, the time, `alive`); the context and
 its windows are revoked through `alive`, a cell only the engine flips. So
 the strategy's code runs only inside its own `on_event`, whatever class it
 gives what it reaches; nothing it changes there, by any means, reaches the
 core, the venue, another receiver or the caller's result; what it SENDS
-goes through the API's rules.
+goes through the API's rules. An exception it (or a socket, or a stream)
+raises is described by a FAILED engine from its facts only (values.py
+`exception_text`, round 11): none of its code runs. (Finalizers of the
+strategy's objects run whenever the interpreter frees them; they reach
+only what the strategy reaches.)
 
 Input is one stream of events, or several named streams (a mapping of
 name -> iterable, e.g. trades, board, bars and funding read from separate
@@ -175,7 +182,8 @@ from .ordering import (
 from .history import DeliveredHistory, HistoryLists
 from .strategy import Strategy
 from .time import validate_nanos
-from .values import Unsettled, as_float, as_int, as_text, copy_carrier, is_a, rebuild_carrier, renew, settle, type_name
+from .values import (Unsettled, as_float, as_int, as_text, class_parts, copy_carrier, exception_text, is_a,
+                     rebuild_carrier, renew, settle, type_name)
 from .window import EventWindow
 
 _K_VENUE_MARKET = 0
@@ -284,7 +292,7 @@ class _VenueLedger:
         # it is read (i0-r4-02, i0-r5-01).
         if type(report) not in REPORT_CLASSES:
             raise VenueProtocolError(
-                f"{where}: unknown report type {type(report).__module__}.{type(report).__qualname__} "
+                f"{where}: unknown report type {type_name(report)} "
                 f"(a fill model answers with Ack / Reject / Fill / Canceled / StateUnknown themselves, "
                 f"not subclasses)"
             )
@@ -399,9 +407,13 @@ class _StrategySide:
     methods on the outbox and the history lists, `array.array.extend`),
     never through the objects' own classes (no attribute read or write, no
     method of theirs): whatever class the strategy gives an object it
-    reaches, its code runs only inside the strategy's own calls. It reads
-    one thing from here: the outbox's messages, copied once when a callback
-    returns (`_drain`)."""
+    reaches, its code runs only inside the strategy's own calls. Of what
+    the strategy reaches it reads one thing: the outbox's messages, copied
+    once when a callback returns (`_drain`). It also reads, to make new
+    history lists when events are dropped, its own lists of references to
+    the event copies (`lists._items`, `lists._overall_items`), which the
+    strategy cannot reach (tests/bt/item_0/test_bt0_r11_foreign_objects.py)
+    and of which it reads only the order, never an event copy."""
 
     __slots__ = ("port", "registry", "outbox", "lists")
 
@@ -515,8 +527,12 @@ def _check_delay(value: Any, what: str) -> int:
 
 
 def _qualname(obj: Any) -> str:
-    cls = type(obj)
-    return f"{cls.__module__}.{cls.__qualname__}"
+    """"module.qualname" of the real class of `obj` (a socket), read by
+    `type`'s own descriptors (values.py `class_parts`): no code of the
+    socket's class or metaclass runs. The engine reads it once, when it is
+    built."""
+    module, qualname = class_parts(type(obj))
+    return f"{module if module is not None else '?'}.{qualname}"
 
 
 def _require_protocol(obj: Any, protocol: type, name: str) -> None:
@@ -525,7 +541,7 @@ def _require_protocol(obj: Any, protocol: type, name: str) -> None:
         if not m.startswith("_") and callable(vars(protocol)[m]) and not callable(getattr(obj, m, None))
     ]
     if missing:
-        raise TypeError(f"{name} {type(obj).__name__} lacks {missing} required by {protocol.__name__}")
+        raise TypeError(f"{name} {type_name(obj)} lacks {missing} required by {protocol.__name__}")
 
 
 class _FifoChannel:
@@ -737,6 +753,14 @@ class CoreEngine:
         self._cost_model = cost_model
         self._account = account
         self._defaults = defaults
+        # the sockets' names, read once now (round 11): result() reads
+        # nothing of a socket's class
+        self._models = {
+            "fill_model": _qualname(fill_model),
+            "latency_model": _qualname(latency_model),
+            "cost_model": _qualname(cost_model) if cost_model is not None else "none",
+            "account": _qualname(account),
+        }
 
         # Run settings pass the same checks as event times: an int64 of ns
         # (floats, bools and out-of-range values are refused here, before
@@ -864,12 +888,14 @@ class CoreEngine:
             )
         failure = self._failure
         if failure is not None:
-            text = str(failure)
-            if len(text) > 300:
-                text = text[:300] + "..."
+            # the failure may be the strategy's, a socket's or a stream's own
+            # exception: it is described from its facts (values.py
+            # `exception_text`), never by its own methods, so none of its
+            # code runs here and the refusal is always EngineFailedError
+            # (round 11)
             raise EngineFailedError(
                 f"{what}() refused: an exception escaped an earlier step of this engine "
-                f"({type(failure).__name__}: {text}); its state may be half-updated, so the run "
+                f"({exception_text(failure)}); its state may be half-updated, so the run "
                 f"is over and no result is produced from it"
             ) from failure
 
@@ -938,12 +964,7 @@ class CoreEngine:
             fills=[copy_carrier(f) for f in self._fills],
             orders={coid: copy_view(v) for coid, v in self._book.items()},
             venue_states=self._ledger.states(),
-            models={
-                "fill_model": _qualname(self._fill_model),
-                "latency_model": _qualname(self._latency),
-                "cost_model": _qualname(self._cost_model) if self._cost_model is not None else "none",
-                "account": _qualname(self._account),
-            },
+            models=dict(self._models),
             defaults_used=list(self._defaults),
             first_time_ns=self._first,
             last_time_ns=self._now,
@@ -1244,7 +1265,7 @@ class CoreEngine:
         for report in raw or ():
             if type(report) not in REPORT_CLASSES:
                 raise VenueProtocolError(
-                    f"{where}: unknown report type {type(report).__module__}.{type(report).__qualname__} "
+                    f"{where}: unknown report type {type_name(report)} "
                     f"(a fill model answers with Ack / Reject / Fill / Canceled / StateUnknown themselves, "
                     f"not subclasses)"
                 )

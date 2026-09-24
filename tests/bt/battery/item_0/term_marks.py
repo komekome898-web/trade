@@ -8,8 +8,10 @@ checked by the scene keeper's self-check named in that file, and `term_judgments
 terms, it does not use them). A line holding a longer term is matched by the
 longer term first (「設定つき対象の持つ型」 before 「設定つき対象」). Each (term, line) needs one judgment:
   表の意味   -- the term is used in the meaning of the term table (read by the scene keeper);
-  写し       -- the line is a segment of a positive definition's paragraph (`def_axes/`) or text generated from
-                those segments (DEFINITIONS.md's section of definition A's options): the defining text itself;
+  写し       -- the line is a segment of a positive definition's paragraph (`def_axes/`), text generated from
+                those segments (DEFINITIONS.md's section of definition A's options), or the frozen paragraph itself
+                (DEFINITIONS.md's lines 「正の定義 k: …」 and gen_definitions.py's FROZEN_DEFINITIONS, round r11-1):
+                the defining text itself;
   別の意味: … -- another meaning (the test fails: a term of the table has one meaning; qualify it instead).
 What the machine does not decide: whether a judgment is right (the critic and the auditor read the lines)."""
 from __future__ import annotations

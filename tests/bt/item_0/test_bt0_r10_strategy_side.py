@@ -6,9 +6,11 @@ The rule under test (round_10/ROOTCAUSE.md B, the contract's
 `channel_payloads.ownership`): everything the strategy can reach that
 outlives a callback lives in ONE holder of the engine (`_StrategySide`);
 the core's own state holds nothing of it; the core touches it only through
-base-type C functions on containers it made and reads from it only the
-outbox's messages, once per callback, and only values that need none of
-the sender's code to be read. So, whatever the strategy does to what it
+base-type C functions on containers it made and reads, of what the
+strategy reaches, only the outbox's messages, once per callback, and only
+values that need none of the sender's code to be read (it also slices its
+own lists of references to the event copies, which the strategy cannot
+reach: test_bt0_r11_foreign_objects.py). So, whatever the strategy does to what it
 reaches -- including giving an object another class -- its code runs only
 inside its own `on_event`, and the core decides, sends and reports the same
 (or refuses with a CoreError).

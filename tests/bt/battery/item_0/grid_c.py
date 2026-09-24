@@ -1,4 +1,4 @@
-"""The cells of every viewpoint's range (round r8-1, positive definition C).
+"""The cells of every viewpoint's range (positive definition C) and their verdicts.
 
 The axes are written out by machine from the fixed requirements' text, never
 kept by hand: the text is the section 1 row (column 4) and every section 2
@@ -10,18 +10,21 @@ their values come only from those judgments.
 
 A viewpoint's cells are every combination of the event axis, the see-path
 axis and the viewpoint's own extra axes (a viewpoint's text limits no axis).
-Each cell is either "場面にした" (the scenes whose `Scene.covers` holds the
-cell), "場面にしない" (a reason that quotes the words of that viewpoint's fixed
-way of measuring -- REQUIREMENTS.md section 2, column 3 -- the cell falls
-outside, or a lead's decision that names the cell), or "未決" (the words do
-not decide it; raised to the lead). `DEFINITIONS.md` shows the table made
-here ("場面にしていない観点・側面"); `test_battery_item0.py` rebuilds the
-axes from the requirements' text on its own and checks the table.
+Each cell's verdict has two values only and is made from the scenes' `covers`
+alone (round r11-1, LEAD_DESIGN.md section 8.2 item 1): "場面にした" with the
+ids of the scenes of the same viewpoint whose `Scene.covers` holds the cell,
+and "測っていない(固定した測り方の外)" otherwise. No reading of the
+requirements' words decides a verdict. `DEFINITIONS.md` shows the table made
+here ("場面にしていない観点・側面"); `test_battery_item0.py` rebuilds the axes
+from the requirements' text on its own and checks the table against an oracle
+written from the rule's sentence.
 """
 from __future__ import annotations
 
 import csv
 import re
+from collections import Counter
+from functools import lru_cache
 from itertools import product
 from pathlib import Path
 
@@ -56,14 +59,15 @@ def segments() -> list[tuple[int, int, str]]:
     return out
 
 
-def judgments() -> list[tuple[int, str, str]]:
+@lru_cache(maxsize=None)
+def judgments() -> tuple[tuple[int, str, str], ...]:
     rows = []
     with JUDGMENTS.open(encoding="utf-8") as f:
         for r in csv.reader(f, delimiter="\t"):
             if not r or r[0].startswith("#"):
                 continue
             rows.append((int(r[0]), r[1], r[2]))
-    return rows
+    return tuple(rows)
 
 
 def axes() -> tuple[list[str], list[str], dict[tuple[str, str], list[str]]]:
@@ -95,86 +99,39 @@ def cells(vp: str) -> list[tuple[str, str, str]]:
     return [(e, s, x) for e, s, x in product(ev, see, ex[0] if ex else [""])]
 
 
-# ------------------------------------------------------------------ what the words decide
-# Names used in the rules below (the axis values, as the judgments write them).
-MARKET = ["約定", "板の写真", "板の差分", "足", "資金調達", "清算"]
-CLOCK = "時計"
-NOTICES = ["注文の受付の通知", "注文の拒否の通知", "注文の約定の通知"]
-RECV, PLACE_RET, CANCEL_RET, READ = ("戦略の呼び出しに届く物", "発注の呼び出しがその場で返す物",
-                                     "取消の呼び出しがその場で返す物", "戦略が対象の公開の手段で読む物")
-
-# A lead's decision that names cells: LEAD_DESIGN.md section 7, item 2 (the words quoted), and the cells its
-# segments name (ROOTCAUSE_r8-1.md section 9 item 2: the notices and the clock of P0-4).
-LEAD_7_2 = ("docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §7 の 2(57 のファイルの行。切片 5「定義 C を当てたときの通知・時計の組(i0-r7-05)」・"
-            "切片 6「場面にしない」・切片 8「固定した測り方(要件 P0-4 の文)の外」)",
-            "固定した測り方(要件 P0-4 の文)の外。要件は 1 周目の前に固定したもので、周の途中で広げない(委任文 §3「要件と判定の固定」)")
-
-PENDING_SCENE = ("測り方の語では中(引いた語)。場面を足すかは ROOTCAUSE_r8-1.md §9 の 8(升目の場面の事象の型の扱い)の答えを待つ"
-                 "(正の定義 C: その扱いに依る升目の場面は答えまで足さない)")
-UNDECIDED_SEE = ("測り方の文が見る道を名指さない(ROOTCAUSE_r8-1.md §9 の 3)")
-UNDECIDED_INPUT = ("測り方の語「{w}」が、核が作る事象(時計・注文の通知)を入れるかを決めない(ROOTCAUSE_r8-1.md §9 の 2)")
+VERDICTS = ("場面にした", "測っていない(固定した測り方の外)")  # the only two values (LEAD_DESIGN.md section 8.2 item 1)
+MEANING = ("この表は測っていない範囲の記録である。要件を広げるかはオーナーの判断で、項目 0 の通過のあとに"
+           "『欠けているもの』の批評家の経路で上げる。")  # section 8.2 item 2, verbatim
 
 
-def rule(vp: str, event: str, see: str, extra: str) -> tuple[str, str, str]:
-    """(verdict for a cell no scene covers, the words quoted, the reason). The verdict is 場面にしない or 未決;
-    a quoted word is a substring of the viewpoint's measuring text, or the lead's decision is named."""
-    m = measure_text(vp)
-    if vp == "P0-1":
-        w = "事象を型で投入し"
-        if event not in MARKET:
-            return "未決", w, UNDECIDED_INPUT.format(w=w)
-        if see in (PLACE_RET, CANCEL_RET):
-            return "場面にしない", w, "発注・取消の呼び出しがその場で返す物は、投入した事象ではない"
-        return "未決", "時刻順に処理されるかを見る", UNDECIDED_SEE
-    if vp == "P0-2":
-        if extra in ("秒", "ミリ"):
-            return "未決", "既知の時刻", "測り方の語「既知の時刻(例 …)を投入し」が、秒・ミリの時刻を入れるかを決めない(例はナノ秒の ISO 文字列)"
-        if event not in MARKET:
-            return "未決", "既知の時刻", UNDECIDED_INPUT.format(w="既知の時刻")
-        return "未決", "核が保持する値", UNDECIDED_SEE
-    if vp == "P0-3":
-        return "未決", "型ごとに 1 件ずつ投入し", UNDECIDED_SEE
-    if vp == "P0-4":
-        if event == CLOCK or event in NOTICES:
-            return "場面にしない", LEAD_7_2[0], LEAD_7_2[1]
-        w = "未来時刻の事象を読もうとするコード"
-        if see in (PLACE_RET, CANCEL_RET):
-            return "場面にしない", w, "発注・取消の呼び出しがその場で返す物は、事象を読むコードの読み出しではない"
-        if see == READ:
-            return "未決", w, PENDING_SCENE.replace("引いた語", w)
-        return "未決", "戦略側から未来時刻の事象を読もうとする", UNDECIDED_SEE
-    if vp == "P0-5":
-        w = "同時刻に複数型の事象を仕込んだ入力を作り"
-        if event not in MARKET:
-            return "未決", w, UNDECIDED_INPUT.format(w=w)
-        if see in (PLACE_RET, CANCEL_RET):
-            return "場面にしない", w, "発注・取消の呼び出しがその場で返す物は、入力に仕込んだ事象ではない"
-        return "未決", "規則どおりの順で処理されるか", UNDECIDED_SEE
-    if vp == "P0-6":
-        w = "注文の受付"
-        if event not in NOTICES:
-            return "場面にしない", w, "測り方は核が返す物を「注文の受付/拒否/約定の通知の事象」に限る。市場の事象と時計は通知ではない"
-        return "未決", "通知の事象として返すか", PENDING_SCENE.replace("引いた語", "通知の事象として返すか")
-    if vp == "P0-7":
-        return "未決", "各口にダミー実装を差し込み", UNDECIDED_SEE
-    raise ValueError(vp)  # pragma: no cover
+def verdict(vp: str, cell: tuple[str, str, str], scenes) -> tuple[str, list[str]]:
+    """(verdict, scene ids) of one cell: the scenes of the same viewpoint whose covers hold the cell."""
+    ids = [sc.id for sc in scenes if sc.viewpoint == vp and tuple(cell) in {tuple(c) for c in sc.covers}]
+    return (VERDICTS[0], ids) if ids else (VERDICTS[1], [])
 
 
 def table(scenes) -> list[dict]:
-    """Every cell of every viewpoint, once, with its verdict (made from the scenes' `covers` and `rule`)."""
-    by_cell: dict[tuple, list[str]] = {}
-    for sc in scenes:
-        for cov in sc.covers:
-            by_cell.setdefault((sc.viewpoint, *cov), []).append(sc.id)
+    """Every cell of every viewpoint, once, with its verdict made from the scenes' `covers` only."""
     rows = []
     for vp in VIEWPOINTS:
         for e, s, x in cells(vp):
-            ids = by_cell.get((vp, e, s, x), [])
-            if ids:
-                rows.append({"viewpoint": vp, "event": e, "see": s, "extra": x, "verdict": "場面にした",
-                             "scenes": ids, "quote": "", "reason": ""})
-            else:
-                v, q, r = rule(vp, e, s, x)
-                rows.append({"viewpoint": vp, "event": e, "see": s, "extra": x, "verdict": v, "scenes": [],
-                             "quote": q, "reason": r})
+            v, ids = verdict(vp, (e, s, x), scenes)
+            rows.append({"viewpoint": vp, "event": e, "see": s, "extra": x, "verdict": v, "scenes": ids})
     return rows
+
+
+def problems(scenes, rows) -> list[tuple]:
+    """What differs between a table and the one the scenes' covers make: a missing, repeated or foreign cell, or a
+    verdict / scene list that is not the covers' (the check the generator, the tests and the probes share)."""
+    want = {(r["viewpoint"], r["event"], r["see"], r["extra"]): (r["verdict"], r["scenes"]) for r in table(scenes)}
+    got = [((r["viewpoint"], r["event"], r["see"], r["extra"]), (r["verdict"], list(r["scenes"]))) for r in rows]
+    out: list[tuple] = []
+    seen = Counter(k for k, _ in got)
+    out += [("升目が無い", k) for k in want if k not in seen]
+    out += [("升目が 2 回", k) for k, n in sorted(seen.items()) if n > 1]
+    for k, v in got:
+        if k not in want:
+            out.append(("範囲の外の升目", k))
+        elif v[0] not in VERDICTS or v != want[k]:
+            out.append(("判断が covers と違う", k, v, want[k]))
+    return out

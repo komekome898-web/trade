@@ -26,7 +26,9 @@ Two owners (round 10, i0-r9-02): `DeliveredHistory` is the core's records
 (delivery numbers, received times, types, counts) and decides everything;
 `HistoryLists` is the strategy's side -- the lists, the event copies in
 them and the dropped facts -- which the core writes through base-type C
-functions and NEVER reads back. The lists are `DeliveredList`s: the
+functions and NEVER reads back (it reads only its own lists of references
+to the copies, `_items` / `_overall_items`, which the strategy cannot
+reach, to make new lists when it drops events). The lists are `DeliveredList`s: the
 strategy reaches them through a window's reading functions (window.py), so
 reading one by position follows the same rule as an answer (round 8,
 i0-r7-01: nothing is cut, a position outside raises by what is there), and
@@ -132,7 +134,9 @@ class HistoryLists:
     strategy reaches -- the lists (`overall`, `typed`), the event copies in
     them, and the facts of the dropped events (per type, two `array('q')`:
     delivery numbers and received times, in drop order) -- plus the plain
-    lists of the same event objects the core rebuilds lists from. Held by
+    lists of the same event objects the core rebuilds lists from (nothing
+    the strategy reaches refers to these two; the core reads their order
+    only, never an event copy). Held by
     the engine only inside its strategy-side holder (engine.py
     `_StrategySide`); the core's own records (`DeliveredHistory`) hold no
     reference to it. The core WRITES it through base-type C functions only

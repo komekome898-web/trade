@@ -73,7 +73,7 @@ import sys
 import types
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, Callable, Iterator, Mapping
+from typing import Any, Callable, Iterator, Mapping, Optional
 
 
 def _same(x: Any) -> Any:  # None, True, False: one object each
@@ -173,10 +173,80 @@ def is_a(value: Any, cls: Any) -> bool:
     return issubclass(type(value), cls)
 
 
+# A class's names, read by `type`'s own descriptors (round 11): the usual
+# read (`cls.__qualname__`) goes through the class's metaclass, which can run
+# code of whoever wrote the class; `type`'s descriptors read what `type`
+# stored, and run nothing.
+_TYPE_QUALNAME = type.__dict__["__qualname__"].__get__
+_TYPE_MODULE = type.__dict__["__module__"].__get__
+# an exception's arguments, read by BaseException's own descriptor (a class
+# may shadow `args` with a property of its own)
+_EXC_ARGS = BaseException.__dict__["args"].__get__
+
+
+def _own_text(value: Any) -> Optional[str]:
+    """`value` as a str made by `str`'s own method when its real type is str
+    or a subclass of it (a subclass's `__str__` / `__format__` never run);
+    None for anything else."""
+    return str.__str__(value) if issubclass(type(value), str) else None
+
+
+def class_parts(t: type) -> tuple[Optional[str], str]:
+    """(module, qualified name) of class `t`, read by `type`'s own
+    descriptors and made str by `str`'s own method: no code of the class,
+    its metaclass or what its body set `__module__` to runs. A module that
+    is not a str reads as None; a name that is not one as "?"."""
+    try:
+        module = _own_text(_TYPE_MODULE(t))
+    except AttributeError:  # a class made without a module
+        module = None
+    return module, _own_text(_TYPE_QUALNAME(t)) or "?"
+
+
 def type_name(value: Any) -> str:
-    """The real type of `value` in full (`numpy.bool`, not `bool`)."""
-    t = type(value)
-    return t.__qualname__ if t.__module__ == "builtins" else f"{t.__module__}.{t.__qualname__}"
+    """The real type of `value` in full (`numpy.bool`, not `bool`), read
+    without running any code of the value, its class or its metaclass
+    (`class_parts`)."""
+    module, qualname = class_parts(type(value))
+    return qualname if module in (None, "builtins") else f"{module}.{qualname}"
+
+
+_TEXT_LIMIT = 300
+
+
+def _arg_text(arg: Any) -> str:
+    t = type(arg)
+    if t is str:
+        return arg
+    if arg is None or t is bool:
+        return "None" if arg is None else ("True" if arg else "False")
+    if t is int:
+        return int.__repr__(arg)
+    if t is float:
+        return float.__repr__(arg)
+    return f"<a {type_name(arg)}>"
+
+
+def exception_text(exc: BaseException) -> str:
+    """"<its real type>: <its arguments>" for an exception raised by code
+    outside the core (the strategy, a socket, a stream, a sender's
+    conversion), read without running any code of it (round 11): the type
+    by `type_name`; the arguments by BaseException's own descriptor, each
+    one that is a str, int, float, bool or None itself (not a subclass) as
+    its text, anything else as its type's name. Its `__str__`, `__repr__`,
+    `__format__`, `__getattribute__`, an `args` property of its class and
+    its metaclass never run. At most `_TEXT_LIMIT` characters of arguments."""
+    try:
+        args = _EXC_ARGS(exc)
+    except TypeError:  # not an exception at all
+        args = ()
+    if type(args) is not tuple:  # pragma: no cover - BaseException stores a tuple itself
+        args = ()
+    text = ", ".join(_arg_text(tuple.__getitem__(args, i)) for i in range(tuple.__len__(args)))
+    if len(text) > _TEXT_LIMIT:
+        text = text[:_TEXT_LIMIT] + "..."
+    name = type_name(exc)
+    return f"{name}: {text}" if text else name
 
 
 def _numpy_bool() -> Any:
@@ -195,7 +265,7 @@ def _now(convert: Any, value: Any, where: str) -> Any:
         article = "an" if convert is int else "a"
         raise ValueError(
             f"{where} must be a number {article} {convert.__name__} can hold, got a "
-            f"{type_name(value)} ({type(exc).__name__}: {exc})"
+            f"{type_name(value)} ({exception_text(exc)})"  # no code of the sender's exception runs
         ) from None
     if not issubclass(type(out), convert):  # pragma: no cover - int() / float() / complex() check it
         raise ValueError(f"{where}: {convert.__name__}() gave a {type_name(out)}")

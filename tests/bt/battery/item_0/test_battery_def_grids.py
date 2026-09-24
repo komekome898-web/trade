@@ -1,5 +1,5 @@
-"""Adversarial tests of the six positive definitions of round r8-1 (0, A, B, C, D, E), written from the
-definitions' own text (def_grids.py), not from the implementation's cases.
+"""Adversarial tests of the six positive definitions of round r8-1 (0, A, B, C, D, E; C as replaced by
+LEAD_DESIGN.md section 8.2 item 1 in round r11-1), written from the definitions' own text (def_grids.py), not from the implementation's cases.
 
 For each definition: every segment of its paragraph is judged; its input space (all axes x all values,
 'どれにも当たらない' included) is written out and counted; the cells run follow the lead's rule
@@ -27,8 +27,11 @@ the auditor:
     them; the adapters' and reproductions' code is read;
   * definition B: every axis not in PROBES["B"] (whether a sentence's truth depends on the sources of truth is
     not decided by a machine; line_marks.py lists every line and makes every marked line need a judgment);
-  * definition C: every axis not in PROBES["C"] (the judgments of the requirement segments and the verdicts of
-    the cells are read; the machine checks their form: tests (a)-(d) in test_battery_item0.py).
+  * definition C: every axis not in PROBES["C"] (the judgments of the requirement segments are read; the machine
+    checks their form, test (d) in test_battery_item0.py; whether a scene's `covers` matches what it measures is
+    read by the critic, LEAD_DESIGN.md section 8.2 item 1). 升目を覆う場面 is not probed on its own: its
+    conditions with 升目の判断 need both values in one input, which the table's own tests in test_battery_item0.py
+    run on every cell (test_grid_verdicts_follow_covers_on_every_cell_and_every_cover_state).
 """
 from __future__ import annotations
 
@@ -53,7 +56,7 @@ SELECTED = {
     "0": (30958682112000, 92, "2 軸の全組(pairwise)"),
     "A": (3120635156889600000, 73, "2 軸の全組(pairwise)"),
     "B": (497664, 59, "2 軸の全組(pairwise)"),
-    "C": (9342812160, 58, "2 軸の全組(pairwise)"),
+    "C": (10510663680, 59, "2 軸の全組(pairwise)"),
     "D": (68812800, 42, "2 軸の全組(pairwise)"),
     "E": (103680, 24, "2 軸の全組(pairwise)"),
 }
@@ -221,6 +224,16 @@ PROBES: dict[str, dict[str, dict[str, object]]] = {
             "観点ごとに観点の範囲の全部の升目が表にある": lambda: _grid_complete(),
             "観点の範囲の升目が 1 つでも表に無い": lambda: _grid_complete(drop_one=True),
         },
+        "升目の判断": {
+            "場面にした": lambda: _grid_verdict_accepted("場面にした"),
+            "測っていない(固定した測り方の外)": lambda: _grid_verdict_accepted("測っていない(固定した測り方の外)"),
+            N: lambda: _grid_verdict_accepted("未決"),
+        },
+        "升目の判断の決め方": {
+            "`covers` から機械で決める": lambda: _grid_rule_accepted(None),
+            "要件の文を切片に切って名指しを決める機械": lambda: _grid_rule_accepted("words"),
+            N: lambda: _grid_rule_accepted("all_not_measured"),
+        },
     },
 }
 
@@ -267,6 +280,28 @@ def _grid_complete(drop_one: bool = False) -> bool:
         rows = rows[1:]
     want = sum(len(grid_c.cells(vp)) for vp in grid_c.VIEWPOINTS)
     return len({(r["viewpoint"], r["event"], r["see"], r["extra"]) for r in rows}) == want
+
+
+def _grid_verdict_accepted(verdict: str) -> bool:
+    """Definition C's machine (grid_c.problems) on the table of the scene set with one row given `verdict`: the row
+    is the first whose verdict is `verdict` when there is one, else the first row (a verdict no row can have)."""
+    import grid_c
+    rows = [dict(r) for r in grid_c.table(scenes.SCENES)]
+    n = next((i for i, r in enumerate(rows) if r["verdict"] == verdict), 0)
+    rows[n]["verdict"] = verdict
+    return not grid_c.problems(scenes.SCENES, rows)
+
+
+def _grid_rule_accepted(other) -> bool:
+    """Definition C's machine on a table made by covers (None), by a reading of the requirements' words that puts a
+    covered cell outside because its see-path is not the one the measuring text names ("words": P0-7's cells that
+    reach the strategy's call are made 測っていない), or by no rule (every cell 測っていない)."""
+    import grid_c
+    rows = [dict(r) for r in grid_c.table(scenes.SCENES)]
+    for r in rows:
+        if other == "all_not_measured" or (other == "words" and r["viewpoint"] == "P0-7" and r["see"] == "戦略の呼び出しに届く物"):
+            r["verdict"], r["scenes"] = "測っていない(固定した測り方の外)", []
+    return not grid_c.problems(scenes.SCENES, rows)
 
 
 def test_every_paragraph_segment_is_judged_once_and_every_axis_can_pass():

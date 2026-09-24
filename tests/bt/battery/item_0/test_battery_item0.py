@@ -1382,8 +1382,17 @@ def test_grid_every_requirement_segment_has_one_judgment():                     
         assert r[2][:2] in ("E:", "V:", "X:", "N:") and len(r[2]) > 2, r
 
 
-def test_grid_table_lists_every_cell_of_every_viewpoint_once():                        # (a) (b) (c)
-    import grid_c
+# ------------------------------------------------------------------ round r11-1: the cells' verdicts, two values
+# The rule (LEAD_DESIGN.md section 8.2 items 1-2): a cell is "場面にした" (with the ids of the scenes) when a scene
+# of the same viewpoint has the cell in `covers`, and "測っていない(固定した測り方の外)" otherwise; nothing else.
+# The oracle below is written from that sentence alone (not from grid_c's code); the axes are rebuilt here from
+# the requirements' text and the judgments.
+GRID_DONE, GRID_NOT_MEASURED = "場面にした", "測っていない(固定した測り方の外)"
+GRID_MEANING = ("この表は測っていない範囲の記録である。要件を広げるかはオーナーの判断で、項目 0 の通過のあとに"
+                "『欠けているもの』の批評家の経路で上げる。")
+
+
+def _grid_cells_from_the_requirements():
     import itertools
     _, judged = _grid_axes_from_the_requirements()
     ev = list(dict.fromkeys(r[2][2:] for r in judged if r[2].startswith("E:")))
@@ -1395,35 +1404,114 @@ def test_grid_table_lists_every_cell_of_every_viewpoint_once():                 
             extra.setdefault(vp, [])
             if val not in extra[vp]:
                 extra[vp].append(val)
+    return [(vp, e, s_, x) for vp in [f"P0-{i}" for i in range(1, 8)]
+            for e, s_, x in itertools.product(ev, see, extra.get(vp, [""]))], ev
+
+
+def _grid_oracle(cell, scene_list):
+    ids = [s_.id for s_ in scene_list if s_.viewpoint == cell[0] and tuple(cell[1:]) in {tuple(c) for c in s_.covers}]
+    return (GRID_DONE, ids) if ids else (GRID_NOT_MEASURED, [])
+
+
+def _fake(i, vp, *cells):
+    from types import SimpleNamespace
+    return SimpleNamespace(id=i, viewpoint=vp, covers=tuple(cells))
+
+
+def test_grid_verdicts_follow_covers_on_every_cell_and_every_cover_state():
+    """Adversarial grid (round r11-1, the delegation's scrutiny (6)): every cell of every viewpoint (all of them,
+    from the requirements' text) x every state of the scenes covering it -- none / a scene of the same viewpoint /
+    only a scene of another viewpoint with the same (event, see-path, extra) / both -- and on each run every row
+    of the table is compared with the oracle. Not in the grid (left out, and why): cells outside the axes (their
+    scenes are listed apart and checked by test_grid_table_lists_every_cell_of_every_viewpoint_once), scene objects
+    that lack `id`/`viewpoint`/`covers` (scenes.py builds every scene with them)."""
+    import grid_c
+    cells, _ = _grid_cells_from_the_requirements()
+    others = {vp: next(v for v in [f"P0-{i}" for i in range(1, 8)] if v != vp) for vp in {c[0] for c in cells}}
+    runs = 0
+    for cell in cells:
+        vp, key = cell[0], cell[1:]
+        for state in (
+            [],
+            [_fake("same", vp, key)],
+            [_fake("other", others[vp], key)],
+            [_fake("same", vp, key), _fake("other", others[vp], key), _fake("same2", vp, key)],
+        ):
+            rows = grid_c.table(state)
+            got = {(r["viewpoint"], r["event"], r["see"], r["extra"]): (r["verdict"], list(r["scenes"])) for r in rows}
+            assert sorted(got) == sorted(cells) and len(rows) == len(cells), (cell, len(rows))
+            for c in cells:
+                assert got[c] == _grid_oracle(c, state), (cell, [s_.id for s_ in state], c, got[c])
+            assert not grid_c.problems(state, rows), (cell, grid_c.problems(state, rows)[:3])
+            runs += 1
+    assert runs == 4 * len(cells)
+
+
+def test_grid_check_refuses_every_verdict_but_the_one_covers_gives():
+    """Adversarial grid for the check (grid_c.problems): every row of the table of the scene set x every candidate
+    verdict (the two values, the words the three-valued table used, an empty verdict, "場面にした" without ids, the
+    right verdict with a scene id that does not cover the cell); the check passes iff the candidate is the oracle's.
+    Not in the grid: other strings (a verdict is refused unless it is one of the two values, so any other string is
+    the same case as the ones listed), rows added or removed (test_grid_table_lists_every_cell_of_every_viewpoint_once)."""
+    import grid_c
+    rows = grid_c.table(scenes.SCENES)
+    assert not grid_c.problems(scenes.SCENES, rows)
+    checked = 0
+    for n, r in enumerate(rows):
+        cell = (r["viewpoint"], r["event"], r["see"], r["extra"])
+        want = _grid_oracle(cell, scenes.SCENES)
+        candidates = [(GRID_DONE, want[1] or ["p1-merge-by-time"]), (GRID_NOT_MEASURED, []), ("未決", []),
+                      ("場面にしない", []), ("", []), (GRID_DONE, []), (want[0], want[1] + ["p7-account-swap"])]
+        for verdict, ids in candidates:
+            bad = [dict(x) for x in rows]
+            bad[n]["verdict"], bad[n]["scenes"] = verdict, list(ids)
+            ok = not grid_c.problems(scenes.SCENES, bad)
+            assert ok == ((verdict, list(ids)) == want), (cell, verdict, ids, want)
+            checked += 1
+    assert checked == 7 * len(rows)
+
+
+def test_the_six_positive_definitions_are_frozen_in_the_definitions_one_paragraph_each():
+    """LEAD_DESIGN.md section 8.2 item 5: definitions 0-E sit in DEFINITIONS.md, one paragraph each. 0, A, B, D, E are
+    ROOTCAUSE_r8-1.md's paragraphs character for character; C keeps every sentence but the four section 8.2 item 1
+    withdrew (the 9th to 12th: the three-valued verdicts and how they were decided), which it replaces."""
+    import def_grids
+    old = (HERE / "ROOTCAUSE_r8-1.md").read_text(encoding="utf-8").split("\n")
+    text = (HERE / "DEFINITIONS.md").read_text(encoding="utf-8").split("\n")
+    for k, head in def_grids.HEADS.items():
+        mine = gen_definitions.FROZEN_DEFINITIONS[k]
+        assert [ln for ln in text if ln == f"正の定義 {k}: " + mine], k            # one line, one paragraph
+        before = [ln for ln in old if ln.startswith(head)]
+        assert len(before) == 1, k
+        if k != "C":
+            assert mine == before[0], k
+            continue
+        a, b = before[0].split("。"), mine.split("。")
+        assert a[:8] == b[:8] and a[12:] == b[-len(a[12:]):], "C: only the 9th to 12th sentences change"
+        replaced = "。".join(b[8:len(b) - len(a[12:])])
+        assert "未決" not in replaced and "場面にしない" not in replaced and "covers" in replaced
+        assert "この表は測っていない範囲の記録である。要件を広げるかはオーナーの判断で" in replaced
+
+
+def test_grid_table_lists_every_cell_of_every_viewpoint_once():                        # (a) (b)
+    import grid_c
+    cells, ev = _grid_cells_from_the_requirements()
     rows = grid_c.table(scenes.SCENES)
     got = [(r["viewpoint"], r["event"], r["see"], r["extra"]) for r in rows]
-    want = [(vp, e, s_, x) for vp in [f"P0-{i}" for i in range(1, 8)]
-            for e, s_, x in itertools.product(ev, see, extra.get(vp, [""]))]
-    assert sorted(got) == sorted(want) and len(got) == len(set(got))            # (a) every cell, once
-    covers = {(s_.viewpoint, *c): s_.id for s_ in scenes.SCENES for c in s_.covers}
+    assert sorted(got) == sorted(cells) and len(got) == len(set(got))              # (a) every cell, once
+    assert {r["verdict"] for r in rows} <= {GRID_DONE, GRID_NOT_MEASURED}             # (b) two values only
     for r in rows:
-        key = (r["viewpoint"], r["event"], r["see"], r["extra"])
-        assert r["verdict"] in ("場面にした", "場面にしない", "未決"), r
-        if r["verdict"] == "場面にした":                                            # (b)
-            assert r["scenes"] and all(key in {(s_.viewpoint, *c) for s_ in scenes.SCENES if s_.id == i for c in s_.covers}
-                                       for i in r["scenes"]), r
-        else:
-            assert key not in covers, r
-        if r["verdict"] == "場面にしない":                                          # (c)
-            lead = r["quote"].startswith("docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §7 の 2")
-            assert lead or r["quote"] in grid_c.measure_text(r["viewpoint"]), r
-            if lead:  # the decision names the notices and the clock of P0-4 only
-                assert r["viewpoint"] == "P0-4" and (r["event"] == "時計" or r["event"].endswith("の通知")), r
-                # the quoted segments are the decision's own words (line 57 of LEAD_DESIGN.md)
-                import re as _re
-                src = (REPO / "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md").read_text(
-                    encoding="utf-8").split("\n")[56]
-                segs = _re.findall(r"切片 \d+「(.+?)」(?=・切片|\))", r["quote"])
-                assert len(segs) == 3 and all(x in src for x in segs), (segs, r["quote"])
+        assert (r["verdict"], r["scenes"]) == _grid_oracle((r["viewpoint"], r["event"], r["see"], r["extra"]),
+                                                           scenes.SCENES), r
     outside = {c[0] for s_ in scenes.SCENES for c in s_.covers} - set(ev)
     assert outside == set(scenes.OUTSIDE_AXES)
     text = (HERE / "DEFINITIONS.md").read_text(encoding="utf-8")
-    assert "升目を列べない" not in text and "観点: なし" not in text  # no statement that skips listing the cells
+    frozen = text[text.index("## 正の定義 0〜E"):text.index("## 数える物の選択肢")]  # definition C's own words
+    rest = text.replace(frozen, "")
+    assert "升目を列べない" not in rest and "観点: なし" not in rest  # no statement that skips listing the cells
+    section = text[text.index("## 場面にしていない観点・側面"):text.index("\n## ", text.index("## 場面にしていない観点・側面") + 5)]
+    assert GRID_MEANING in section                                                    # section 8.2 item 2
+    assert "未決" not in section and "場面にしない" not in section and "理由1" not in section
 
 
 def test_every_line_the_scene_keeper_writes_is_listed_and_every_marked_line_judged():

@@ -2,11 +2,13 @@
 4b4eddb29e47660a	DEFINITIONS.md:12	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 864cdfde60b0a5ec	DEFINITIONS.md:24	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 8f6532fb6fa79195	DEFINITIONS.md:30	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+24f12b65407bc54d	DEFINITIONS.md:40	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+18f7a951b20f0af6	DEFINITIONS.md:44	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 5e75fd9410e48820	DEFINITIONS.md:61	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 35ad558732852eb5	DEFINITIONS.md:64	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 793ca0b966627551	DEFINITIONS.md:80	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 5f8627f6511181f1	DEFINITIONS.md:81	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
-cfcc9b0da5da4d5e	DEFINITIONS.md:85	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+b8a437ac920c97fd	DEFINITIONS.md:103	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 5aab388657006181	DEFINITIONS.md:98	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 1875508e56adc25c	DEFINITIONS.md:102	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 cdac64fbb8befcda	DEFINITIONS.md:106	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
@@ -58,7 +60,7 @@ fd7a55da435db833	DEFINITIONS.md:644	生成物	gen_definitions.py が scenes.py �
 5d678f32a16bbfbc	DEFINITIONS.md:658	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 8950f0709176bf87	DEFINITIONS.md:659	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 496c1e7772f4a398	DEFINITIONS.md:680	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
-c1e023019e3b4de0	DEFINITIONS.md:685	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+c1e023019e3b4de0	DEFINITIONS.md:854	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 a3975195e3a895a2	DEFINITIONS.md:688	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 ad1509e9b7aead2b	DEFINITIONS.md:690	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 91a02b72e27d9ec4	DEFINITIONS.md:695	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
@@ -84,7 +86,7 @@ fcc73ee9913dc179	DEFINITIONS.md:811	生成物	gen_definitions.py が scenes.py �
 054256c0f45c9a8a	DEFINITIONS.md:816	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 90466fbed23a944d	DEFINITIONS.md:818	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 5a6abc8f5ff30c73	DEFINITIONS.md:823	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
-c1e023019e3b4de0	DEFINITIONS.md:827	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+c1e023019e3b4de0	DEFINITIONS.md:854	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 159b7ac3db2c852d	DEFINITIONS.md:830	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 df8f77da5dad72ad	DEFINITIONS.md:837	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 06ee92ab77355197	DEFINITIONS.md:844	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
@@ -108,6 +110,16 @@ d7deeb7af7554e7c	DEFINITIONS.md:925	生成物	gen_definitions.py が scenes.py �
 d024be8cb8e801ec	DEFINITIONS.md:932	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 a9ab53072ba9459f	DEFINITIONS.md:939	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
 55117c686221ea37	DEFINITIONS.md:948	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+203b31c1015bb44d	ROOTCAUSE_r11-1.md:11	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+89aaed07688e6b99	ROOTCAUSE_r11-1.md:25	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+f5551d4443063a53	ROOTCAUSE_r11-1.md:34	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+8ba61cb6a2d46ea0	ROOTCAUSE_r11-1.md:38	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+e9bc8312f2db096f	ROOTCAUSE_r11-1.md:52	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+8597e97261ed8523	ROOTCAUSE_r11-1.md:53	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+72ac679f9d781316	ROOTCAUSE_r11-1.md:63	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+65dbe3e2ed18da50	ROOTCAUSE_r11-1.md:67	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+b3ffb685050a27dc	ROOTCAUSE_r11-1.md:82	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
+9610c07c0e2b7dd0	ROOTCAUSE_r11-1.md:93	規則・読み	根本原因の読み・直しの所の名指し・出力の path の名指し(第 r11-1 回)
 5e77b8486708b981	ROOTCAUSE_r8-1.md:110	規則・読み	正の定義・根本原因の読み・試験の軸の表・出力の path の名指し
 7f678506d65d5a3b	ROOTCAUSE_r8-1.md:144	規則・読み	正の定義・根本原因の読み・試験の軸の表・出力の path の名指し
 958d9feb60d0c5e7	ROOTCAUSE_r8-1.md:262	規則・読み	正の定義・根本原因の読み・試験の軸の表・出力の path の名指し
@@ -149,11 +161,21 @@ def558c6bdeee99a	def_axes/jA.tsv:127	規則・読み	場面集のコードの振
 20812b22d2e4e788	def_axes/jA.tsv:131	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
 29ddf4e39d6e0817	def_axes/jA.tsv:141	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
 e9a273b9994bfc67	def_axes/jA.tsv:166	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
-5b8491b09f988236	def_axes/jC.tsv:95	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+0aaa9d5bbedef061	def_axes/jC.tsv:54	規則・読み	正の定義の段落の切片と判断
+b44b028d9ceb6bba	def_axes/jC.tsv:57	規則・読み	正の定義の段落の切片と判断
+2d0b70e53a3bdc2d	def_axes/jC.tsv:61	規則・読み	正の定義の段落の切片と判断
+99b89f476ecbc790	def_axes/jC.tsv:63	規則・読み	正の定義の段落の切片と判断
+d69015a51df6344a	def_axes/jC.tsv:64	規則・読み	正の定義の段落の切片と判断
+04d254a3175a4db1	def_axes/jC.tsv:89	規則・読み	正の定義の段落の切片と判断
+7839ac2d749015f5	gen_definitions.py:20	規則・読み	凍結した正の定義の段落(FROZEN_DEFINITIONS の文字列)
+5ed56d5a1837c173	gen_definitions.py:22	規則・読み	凍結した正の定義の段落(FROZEN_DEFINITIONS の文字列)
 dfaffd8ca09d6446	gen_definitions.py:38	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
-0fd2047d4f26c40d	gen_definitions.py:70	コード	場面 id・欄名を識別子・鍵・引数として使う
+0ec8a0e34778a24c	gen_definitions.py:80	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+ad38b286be1a6361	gen_definitions.py:89	規則・読み	生成器が DEFINITIONS.md に書く説明の文(升目の判断の決め方。場面の中身ではない)
+9d5257cc659b856e	gen_definitions.py:90	規則・読み	生成器が DEFINITIONS.md に書く説明の文(升目の判断の決め方。場面の中身ではない)
 e1e0ace91589de63	gen_unmapped_review.py:32	コード	場面 id・欄名を識別子・鍵・引数として使う
-14cfe5b46c166cbb	grid_c.py:164	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+5341605ee212b5bb	grid_c.py:13	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+621178282dc832e7	grid_c.py:114	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
 1df5eda44e488267	line_marks.py:5	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
 aca132552e21e64a	mutant.py:16	試験が照らす	MUTATION の scenes_expected_to_change を mutant.py --check が照らす
 483b76ff329742fa	mutant.py:28	試験が照らす	MUTATION の scenes_expected_to_change を mutant.py --check が照らす
@@ -295,13 +317,15 @@ c26fe9e1f8298c89	scenes.py:589	コード	場面 id・欄名を識別子・鍵・
 7b902dcd6a0b644c	stated_rules.py:18	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
 3341a00178427c79	stated_rules.py:120	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
 055a22567b389a02	stated_rules.py:200	コード	場面 id・欄名を識別子・鍵・引数として使う
+e8db21d6a03c10a7	test_battery_def_grids.py:31	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
 f9bd2ff9c87abd3d	test_battery_def_grids.py:83	コード	場面 id・欄名を識別子・鍵・引数として使う
 389a46973828065f	test_battery_def_grids.py:170	コード	場面 id・欄名を識別子・鍵・引数として使う
 6ad150eb97635c6b	test_battery_def_grids.py:173	コード	場面 id・欄名を識別子・鍵・引数として使う
 0245047e5fd75a46	test_battery_def_grids.py:180	コード	場面 id・欄名を識別子・鍵・引数として使う
 def4e80ee6f24350	test_battery_def_grids.py:184	コード	場面 id・欄名を識別子・鍵・引数として使う
-ea4463512e31eace	test_battery_item0.py:161	コード	場面 id・欄名を識別子・鍵・引数として使う
-18bbf62cf1210e4a	test_battery_item0.py:177	コード	場面 id・欄名を識別子・鍵・引数として使う
+6e6677191dfab089	test_battery_def_grids.py:233	コード	場面 id・欄名を識別子・鍵・引数として使う
+ea4463512e31eace	test_battery_item0.py:748	コード	場面 id・欄名を識別子・鍵・引数として使う
+18bbf62cf1210e4a	test_battery_item0.py:1155	コード	場面 id・欄名を識別子・鍵・引数として使う
 a7f66106b745ebe7	test_battery_item0.py:194	コード	場面 id・欄名を識別子・鍵・引数として使う
 bce13d711e2d69d8	test_battery_item0.py:220	コード	場面 id・欄名を識別子・鍵・引数として使う
 1639572c165e0613	test_battery_item0.py:258	コード	場面 id・欄名を識別子・鍵・引数として使う
@@ -327,8 +351,8 @@ feab6a3d2eec9a36	test_battery_item0.py:674	コード	場面 id・欄名を識別
 56a2181325da18e8	test_battery_item0.py:690	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
 36e184e853361b4f	test_battery_item0.py:696	コード	場面 id・欄名を識別子・鍵・引数として使う
 94e4907f4d5d672d	test_battery_item0.py:698	コード	場面 id・欄名を識別子・鍵・引数として使う
-90c1cc8e18dc905f	test_battery_item0.py:702	コード	場面 id・欄名を識別子・鍵・引数として使う
-3c7da83e2342d2a5	test_battery_item0.py:705	コード	場面 id・欄名を識別子・鍵・引数として使う
+90c1cc8e18dc905f	test_battery_item0.py:710	コード	場面 id・欄名を識別子・鍵・引数として使う
+3c7da83e2342d2a5	test_battery_item0.py:715	コード	場面 id・欄名を識別子・鍵・引数として使う
 90c1cc8e18dc905f	test_battery_item0.py:710	コード	場面 id・欄名を識別子・鍵・引数として使う
 3c7da83e2342d2a5	test_battery_item0.py:715	コード	場面 id・欄名を識別子・鍵・引数として使う
 ea0d2fd5a6a7c5b4	test_battery_item0.py:718	コード	場面 id・欄名を識別子・鍵・引数として使う
@@ -339,7 +363,7 @@ b93006e39709168a	test_battery_item0.py:740	コード	場面 id・欄名を識別
 ea4463512e31eace	test_battery_item0.py:748	コード	場面 id・欄名を識別子・鍵・引数として使う
 04dc0d95bcfff1ed	test_battery_item0.py:927	コード	場面 id・欄名を識別子・鍵・引数として使う
 2de6859b0e3c2511	test_battery_item0.py:978	コード	場面 id・欄名を識別子・鍵・引数として使う
-88a79df3e57c4526	test_battery_item0.py:982	コード	場面 id・欄名を識別子・鍵・引数として使う
+88a79df3e57c4526	test_battery_item0.py:991	コード	場面 id・欄名を識別子・鍵・引数として使う
 88a79df3e57c4526	test_battery_item0.py:991	コード	場面 id・欄名を識別子・鍵・引数として使う
 27fea4044ae25790	test_battery_item0.py:1078	コード	場面 id・欄名を識別子・鍵・引数として使う
 223844268746b0de	test_battery_item0.py:1128	コード	場面 id・欄名を識別子・鍵・引数として使う
@@ -356,3 +380,7 @@ e93717ee6265a10c	test_battery_item0.py:1148	規則・読み	場面集のコー�
 f6e81097149bc1bd	test_battery_item0.py:1270	コード	場面 id・欄名を識別子・鍵・引数として使う
 4d386d956276527b	test_battery_item0.py:1301	コード	場面 id・欄名を識別子・鍵・引数として使う
 dd886a78a0309ec7	test_battery_item0.py:1310	コード	場面 id・欄名を識別子・鍵・引数として使う
+4c111a4a12b5644d	test_battery_item0.py:1387	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+b7aa336a3182d7bb	test_battery_item0.py:1427	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+dbef38b5fec89129	test_battery_item0.py:1463	コード	場面 id・欄名を識別子・鍵・引数として使う
+ac827806119aa328	test_battery_item0.py:1464	コード	場面 id・欄名を識別子・鍵・引数として使う

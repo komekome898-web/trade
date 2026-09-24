@@ -1,7 +1,7 @@
 """The input spaces of the six positive definitions of round r8-1 (0, A, B, C, D, E), written out by machine.
 
-Each definition's paragraph (ROOTCAUSE_r8-1.md, the paragraph that starts with the definition's bold name) is
-cut into segments at the delimiter characters below; every segment has exactly one judgment in
+Each definition's paragraph (frozen in DEFINITIONS.md by LEAD_DESIGN.md section 8.2 item 5; the text is
+`gen_definitions.FROZEN_DEFINITIONS`, the one source DEFINITIONS.md is made from) is cut into segments at the delimiter characters below; every segment has exactly one judgment in
 `def_axes/j<k>.tsv`:
   N|reason                       not an axis value
   T|axis|value|通る or 落ちる      an axis value and its expectation
@@ -24,7 +24,6 @@ import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-PARAGRAPHS = HERE / "ROOTCAUSE_r8-1.md"
 HEADS = {"0": "**当てる範囲**:", "A": "**対象の振る舞いと数える物**:", "B": "**場面集の文が場面について述べてよいこと**:",
          "C": "**観点の範囲と場面**:", "D": "**語の意味**:", "E": "**提出前の吟味の記録が持ってよい物**:"}
 DELIMITERS = r"[・、。()（）/「」:]|\*\*|\+"
@@ -33,10 +32,10 @@ FULL_GRID_LIMIT = 100_000
 
 
 def segments(k: str) -> list[str]:
-    lines = PARAGRAPHS.read_text(encoding="utf-8").split("\n")
-    found = [ln for ln in lines if ln.startswith(HEADS[k])]
-    assert len(found) == 1, (k, len(found))
-    return [s.strip() for s in re.split(DELIMITERS, found[0]) if s.strip()]
+    import gen_definitions
+    para = gen_definitions.FROZEN_DEFINITIONS[k]
+    assert para.startswith(HEADS[k]) and "\n" not in para, k
+    return [s.strip() for s in re.split(DELIMITERS, para) if s.strip()]
 
 
 def judgments(k: str) -> dict[int, tuple[str, str]]:
