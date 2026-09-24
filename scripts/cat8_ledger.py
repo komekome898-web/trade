@@ -273,6 +273,36 @@ def cells(ln):
     return [c.strip() for c in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
 
 
+
+def quotes_in_log(text, refs_text, rnd):
+    """7 回目以降: 根拠に引いた「…」の逐語が、引いた生ログの手の出力に実際にあるか(監査 33 回目)。
+    見つからない引用の先頭を返す。生ログの参照が無い行・引用の無い行は見ない。"""
+    qs = [q for q in re.findall(r"「([^「」]{8,})」", text)]
+    refs = re.findall(r"(20260923_tools_8_run(\d+)\.log):(\d+)", refs_text)
+    if not qs or not refs:
+        return []
+    blocks = []
+    for fname, rn, lno in refs:
+        lp = pathlib.Path("docs/DATA/probes") / fname
+        if int(rn) != int(rnd) or not lp.exists():
+            continue
+        ll = lp.read_text().splitlines()
+        k = min(int(lno), len(ll)) - 1
+        while k >= 0 and not ll[k].startswith("--- "):
+            k -= 1
+        e = k + 1
+        while e < len(ll) and not ll[e].startswith("--- "):
+            e += 1
+        blocks.append(" ".join(" ".join(ll[max(k, 0):e]).split()))
+    if not blocks:
+        return []
+    miss = []
+    for q in qs:
+        head = " ".join(q.split())[:30]
+        if not any(head in b for b in blocks):
+            miss.append(head)
+    return miss
+
 def cmd_check_elements(a):
     """報告の `### 要素と段` の表(道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠)を検査する。読むだけ。
     受け入れ検査 check_scan_report.py はこの 6 列の表を読まない(監査 8 回目の指摘 3)ので、ここで見る。"""
@@ -308,6 +338,9 @@ def cmd_check_elements(a):
                     errs.append("行 %d: 知見の表の印が委任文 §4.1 の 5 語でない: %s" % (i + 1, c[2]))
                 if not re.search(r"https?://|\.log|生ログ", c[3]):
                     errs.append("行 %d: 知見の表の根拠に URL も生ログの参照も無い: %s" % (i + 1, c[3][:50]))
+                if a.round and int(a.round) >= 7:
+                    for h in quotes_in_log(c[1], c[3], a.round):
+                        errs.append("行 %d: 知見の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, h))
             elif len(c) >= 2 and not set("".join(c)) <= set("-: ") and c[0] not in ("#", "道具"):
                 errs.append("行 %d: 知見の表の行が `| # | 知見 | 印 | 根拠 |` の形でない: %s" % (i + 1, ln.strip()[:60]))
         if in_list:
@@ -340,6 +373,9 @@ def cmd_check_elements(a):
                 errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
+            if a.round and int(a.round) >= 7 and "台帳の値のまま" not in ev:
+                for h in quotes_in_log(ev, ev, a.round):
+                    errs.append("行 %d: %s %s の根拠の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, tool, el, h))
             if a.round and int(a.round) >= 5 and val == "印":
                 # 描画した頁を `印` の根拠にするときの条件 (iii)(5 回目の起動文 §2、監査 29 回目への答え 1)
                 for fname, rn, lno in re.findall(r"(20260923_tools_8_run(\d+)\.log):(\d+)", ev):

@@ -14,4 +14,4 @@
 8-013	rusty-bot	1	X	https://x.com/WannabeBotter/status/1810558269565571211		深掘り	なし	印	印	なし	なし	印	なし	なし	-	2	3	-	-	2	-	-			6	2241
 8-014	Fincept Terminal	1	X	https://github.com/Fincept-Corporation/FinceptTerminal		深掘り	印	印	印	なし	印	印	印	なし	3	未判別	2	-	未判別	未判別	3	-			6	2242
 8-015	TradingView のリプレイ機能	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い)		深掘り	なし	なし	なし	なし	印	印	なし	なし	-	-	-	-	2	2	-	-			6	2243
-8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		判別に一次資料が要る	印	印	印	未判別	未判別	未判別	未判別	印	4	4	未判別	未判別	未判別	未判別	未判別	未判別			6	2244
+8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		判別に一次資料が要る	印	印	印	未判別	未判別	未判別	未判別	未判別	4	4	未判別	未判別	未判別	未判別	未判別	未判別			6	2244
