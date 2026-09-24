@@ -316,58 +316,66 @@ def refs_for(text, rnd):
     return strict_refs(text) if rnd and int(rnd) >= 7 else log_refs(text)
 
 
-def unaccounted_numbers(text):
-    """7 回目以降: 根拠の欄の数字は、決まった場所にしか置かない(監査 36〜38 回目。書き方を読み当てる作りをやめた)。
-    許す場所: 参照 `<生ログ>:N`・`<生ログ>:N-M` / 「…」と `…` の中 / URL / 日付 / `N 件` / 英字に付いた数字(E1a・run7 など)。
-    それ以外に残った数字を返す(列挙・注記の中の番号・入れ子の括弧など、どんな書き方でも黙って通さない)。"""
-    t = re.sub(r"「[^」]*」", " ", text)
-    t = re.sub(r"`[^`]*`", " ", t)
-    t = re.sub(r"https?://\S+", " ", t)
-    t = REF_STRICT.sub(" ", t)
-    t = re.sub(r"\d{4}-\d{2}-\d{2}(?:T[\d:]+Z?)?", " ", t)
-    t = re.sub(r"\d+\s*件", " ", t)
-    return re.findall(r"(?<![A-Za-z0-9_.\-])\d+(?![A-Za-z0-9_])", t)
+def logcol_errors(text):
+    """7 回目以降の「要素と段」の表の 7 列目(生ログの行)の形。空白で区切った `<生ログ>:N` / `<生ログ>:N-M` だけ。
+    それ以外の字があれば返す(監査 34〜39 回目: 自由な文から番号を読み当てる作りをやめ、番号だけの列を別に置いた)。"""
+    bad = []
+    for tok in text.split():
+        if not re.fullmatch(REF_STRICT.pattern, tok):
+            bad.append(tok)
+    return bad
 
 
-def ref_list_errors(text):
-    """(互換)7 回目以降は unaccounted_numbers を使う。"""
-    return unaccounted_numbers(text)
+def finding_evidence_errors(text):
+    """7 回目以降の知見の表の根拠の欄の形。`<生ログ>:N`・`<生ログ>:N-M`・URL・日付(`2026-09-24`)・「取得日」と、
+    区切り(空白・`/`・`、`・`,`・括弧)だけ。それ以外の字があれば、その残りを返す。"""
+    t = REF_STRICT.sub(" ", text)
+    t = re.sub(r"https?://[^\s、,()（）]+", " ", t)
+    t = re.sub(r"\d{4}-\d{2}-\d{2}", " ", t)
+    t = t.replace("取得日", " ")
+    t = re.sub(r"[\s/、,，()（）:：]+", "", t)
+    return t
 
 
 def cmd_selftest(a):
-    """log_refs と ref_list_errors の形ごとの試し(tests/ に置かず、この道具の中で打てるように)。"""
+    """7 回目以降の 2 つの欄の形の試し(tests/ は区分 8 の書き込み先に無いので、この道具の中に置く)。"""
     L = "20260923_tools_8_run7.log"
     P = "docs/DATA/probes/" + L
-    cases = [  # (根拠の欄, 読む行, 決まった場所に無い数字の数)
-        (L + ":10", ["10"], 0),
-        (P + ":10、" + P + ":20", ["10", "20"], 0),
-        (L + ":10、" + L + ":20", ["10", "20"], 0),
-        (L + ":1186-1188", ["1186", "1187", "1188"], 0),
-        ("一覧 5 件 / 読んだ 5 件、" + P + ":12", ["12"], 0),
-        (P + ":12。本文は scratchpad の下", ["12"], 0),
-        ("「lookahead 2 bars」の文、" + P + ":7", ["7"], 0),
-        ("`grep -c 3` の出力、" + P + ":7(2026-09-24 に取得)", ["7"], 0),
-        ("E3a・E3b、" + P + ":7", ["7"], 0),
-        (L + ":4,10", ["4"], 1),
-        (L + ":2 6", ["2"], 1),
-        (L + ":2・6", ["2"], 1),
-        (L + ":2 と 6", ["2"], 1),
-        (L + ":2 行目と 6 行目", ["2"], 1),
-        (L + ":1067(N=107),1186-1187(注記)", ["1067"], 3),
-        (L + ":4369(Table: Ours (internal) – Python)、555", ["4369"], 1),
-        (L + ":2(note1)(note2)6", ["2"], 3),
-        (L + ":2(A\\|B)、6", ["2"], 1),
-        (L + ":2 |\n| 3 | 次の行", ["2"], 1),
+    cases = [  # (欄, 文字, 通るか, 読む行)
+        ("生ログの行", P + ":10", True, ["10"]),
+        ("生ログの行", P + ":10 " + P + ":20", True, ["10", "20"]),
+        ("生ログの行", L + ":10-12", True, ["10", "11", "12"]),
+        ("生ログの行", "", True, []),
+        ("生ログの行", P + ":10、" + P + ":20", False, None),
+        ("生ログの行", P + ":10,20", False, None),
+        ("生ログの行", P + ":10 20", False, None),
+        ("生ログの行", P + ":10(一覧)", False, None),
+        ("生ログの行", P + ":10・20", False, None),
+        ("生ログの行", "段3", False, None),
+        ("生ログの行", "`1200`", False, None),
+        ("生ログの行", "https://example.com/x,1400", False, None),
+        ("知見の根拠", P + ":10 / https://github.com/x/y 取得日 2026-09-24", True, None),
+        ("知見の根拠", P + ":10、" + P + ":20", True, None),
+        ("知見の根拠", P + ":10,20", False, None),
+        ("知見の根拠", P + ":10 段3", False, None),
+        ("知見の根拠", P + ":10(一覧)", False, None),
+        ("知見の根拠", "scripts/setup_data.sh 40-42行", False, None),
+        ("知見の根拠", "`1200` " + P + ":10", False, None),
     ]
     bad = 0
-    for text, want, nlist in cases:
-        got = [r[2] for r in strict_refs(text)]
-        nl = len(unaccounted_numbers(text))
-        ok = got == want and (nl > 0) == (nlist > 0)  # 止まるか通るかを見る(数は問わない)
-        bad += not ok
-        print("%s %s -> %s / 列挙 %d" % ("OK " if ok else "NG ", text[:60], got, nl))
+    for kind, text, want_ok, want_lines in cases:
+        if kind == "生ログの行":
+            ok = not logcol_errors(text)
+        else:
+            ok = not finding_evidence_errors(text)
+        good = ok == want_ok
+        if good and want_lines is not None:
+            good = [r[2] for r in strict_refs(text)] == want_lines
+        bad += not good
+        print("%s [%s] %s -> %s" % ("OK " if good else "NG ", kind, text[:60], "通る" if ok else "止まる"))
     print("---- 合計 %d 件" % bad)
     sys.exit(1 if bad else 0)
+
 
 def quotes_in_log(text, refs_text, rnd):
     """7 回目以降: 根拠に引いた「…」の逐語が、引いた生ログの手の出力に実際にあるか(監査 33 回目)。
@@ -434,9 +442,9 @@ def cmd_check_elements(a):
                 if not re.search(r"https?://|\.log|生ログ", c[3]):
                     errs.append("行 %d: 知見の表の根拠に URL も生ログの参照も無い: %s" % (i + 1, c[3][:50]))
                 if a.round and int(a.round) >= 7:
-                    nums = unaccounted_numbers(c[3])
-                    if nums:
-                        errs.append("行 %d: 知見の根拠に、決まった場所に無い数字: %s。行は `<生ログ>:N` か `<生ログ>:N-M` で 1 つずつファイル名を付けて書き、件数は `N 件`、ほかの数字は「…」か `…` の中に書く" % (i + 1, " ".join(nums[:5])))
+                    rest = finding_evidence_errors(c[3])
+                    if rest:
+                        errs.append("行 %d: 知見の根拠の欄に、生ログの参照・URL・日付・「取得日」以外の字がある: `%s`。説明は知見の欄に書く" % (i + 1, rest[:30]))
                     for h in quotes_in_log(c[1], c[3], a.round):
                         errs.append("行 %d: 知見の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, h))
             elif len(c) >= 2 and not set("".join(c)) <= set("-: ") and c[0] not in ("#", "道具"):
@@ -451,9 +459,16 @@ def cmd_check_elements(a):
                 errs.append("行 %d: 候補の一覧の行に (8-NNN) か (新) が無い: %s" % (i + 1, ln.strip()[:60]))
         if in_tab and ln.strip().startswith("|"):
             c = cells(ln)
-            if len(c) != 6 or c[0] in ("道具", "") or set(c[0]) <= set("-: "):
+            if c[0] in ("道具", "") or set(c[0]) <= set("-: "):
                 continue
-            tool, el, val, stg, kind, ev = c
+            r7 = a.round and int(a.round) >= 7
+            if r7 and len(c) != 7:
+                errs.append("行 %d: 7 回目以降の「要素と段」の表は 7 列(`| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |`): %s" % (i + 1, ln.strip()[:60]))
+                continue
+            if not r7 and len(c) != 6:
+                continue
+            tool, el, val, stg, kind, ev = c[:6]
+            logcol = c[6] if r7 else ev
             tool = tool.strip("`")
             table.setdefault(tool, {})
             if el in table[tool]:
@@ -471,15 +486,17 @@ def cmd_check_elements(a):
                 errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
-            if a.round and int(a.round) >= 7 and "台帳の値のまま" not in ev:
-                nums = unaccounted_numbers(ev)
-                if nums:
-                    errs.append("行 %d: %s %s の根拠に、決まった場所に無い数字: %s。行は `<生ログ>:N` か `<生ログ>:N-M` で 1 つずつファイル名を付けて書き、件数は `N 件`、ほかの数字は「…」か `…` の中に書く" % (i + 1, tool, el, " ".join(nums[:5])))
-                for h in quotes_in_log(ev, ev, a.round):
+            if r7 and "台帳の値のまま" not in ev:
+                bad = logcol_errors(logcol)
+                if bad:
+                    errs.append("行 %d: %s %s の「生ログの行」の列に、`<生ログ>:N` か `<生ログ>:N-M` でないものがある: %s" % (i + 1, tool, el, " ".join(bad[:3])))
+                if val in ("印", "なし") and not logcol.strip():
+                    errs.append("行 %d: %s %s は `%s` なのに「生ログの行」の列が空" % (i + 1, tool, el, val))
+                for h in quotes_in_log(ev, logcol, a.round):
                     errs.append("行 %d: %s %s の根拠の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, tool, el, h))
             if a.round and int(a.round) >= 5 and val == "印":
                 # 描画した頁を `印` の根拠にするときの条件 (iii)(5 回目の起動文 §2、監査 29 回目への答え 1)
-                for fname, rn, lno in refs_for(ev, a.round):
+                for fname, rn, lno in refs_for(logcol, a.round):
                     lp = pathlib.Path("docs/DATA/probes") / fname
                     if not lp.exists():
                         continue
@@ -505,7 +522,7 @@ def cmd_check_elements(a):
                 elif int(m.group(1)) != int(m.group(2)):
                     errs.append("行 %d: %s %s は一覧 %s 件 / 読んだ %s 件で数が違うので `なし` と書けない" % (
                         i + 1, tool, el, m.group(1), m.group(2)))
-                refs = refs_for(ev, a.round)
+                refs = refs_for(logcol, a.round)
                 for fname, rn, lno in refs:
                     lp = pathlib.Path("docs/DATA/probes") / fname
                     if int(rn) != int(a.round):
@@ -576,7 +593,7 @@ def cmd_import(a):
             continue
         if in_tab and ln.strip().startswith("|"):
             c = cells(ln)
-            if len(c) == 6 and c[0].strip("`") in byname and c[1] in ELEMS:
+            if len(c) in (6, 7) and c[0].strip("`") in byname and c[1] in ELEMS:
                 r = byname[c[0].strip("`")]
                 if (r[c[1]], r["段_" + c[1]]) != (c[2], c[3]):
                     print("値: %s %s %s/%s -> %s/%s" % (r["番号"], c[1], r[c[1]], r["段_" + c[1]], c[2], c[3])); n += 1
