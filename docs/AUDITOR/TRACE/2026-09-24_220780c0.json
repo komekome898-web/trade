@@ -12907,16 +12907,18 @@
   {
    "move": 476,
    "tools": {
-    "Read": 1,
-    "Bash": 1
+    "Read": 2,
+    "Bash": 14,
+    "AskUserQuestion": 3,
+    "Agent": 1
    },
-   "n_tools": 2,
+   "n_tools": 20,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
    "claims_without_output": 0,
    "claims_total": 0,
-   "audit_calls": 0,
+   "audit_calls": 1,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
    "protected_writes": 0,
@@ -12950,7 +12952,7 @@
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
-   "den": 151,
+   "den": 152,
    "value": 0.0
   },
   "P5_tools_per_move": {
@@ -12960,8 +12962,8 @@
   },
   "P6_findings_applied": {
    "num": 42,
-   "den": 151,
-   "value": 0.2781,
+   "den": 152,
+   "value": 0.2763,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
