@@ -900,3 +900,90 @@ L-438 の切片ごとに、このファイルのどこに書いたかと、切�
 8. **L-438 (2) の外の場面の事象の型の扱い**: L-438 (2) は「P0-1・P0-5 の 4 場面」の型の組を設定つき対象の持つ型から決めることを認めた。正の定義 C の升目の場面(例: 事象が時計や通知の升目)で、ほかの観点が測るもの(事象の型の有無)で結果が決まらないようにするには、同じ方法を当てるか、別の方法(型の組を場面の定義に固定し、その型を持たない設定つき対象を対応なしにする、など)が要る。場面係はどれにするかを決めない。答えが来るまで、その扱いに依る升目の場面は足さない。
 9. **正の定義 C の軸の数(リードの答え §7 の 7 の「事象 8 種 × 見る道 3 種」と、要件の文の書き出しの 10 × 4)**: 書き出しは通知を 3 つ、発注と取消を 2 つに分けた(`…_axes_c.txt`)。リードの答えの升目は書き出した升目のどれかに入る。どちらで列べるか。答えが来るまで、升目を落とさない側(10 × 4)で列べる。
 10. **敵対者の試験の升目の取り方**: 委任文 §3「提出前の吟味」(6) は「直した規則ごとに、その規則の入力の空間を全格子で列べる敵対者の試験」を求める。6 つの正の定義の段落を切片まで書き出した軸の全格子の升目の数は `…_axes_defs.txt` の各見出しの下にあり、正の定義 0・A・C では 1 つの試験の中で全部を走らせられる数ではないと場面係は読む(走らせる速さは測っていない。**未測定**)。全格子を縮める(軸ごとに値を替える升目・値の 2 つずつの組み合わせを覆う升目の類)のは義務を弱める緩める決定なので場面係は決めない。どう取るかを決めてほしい。答えが来るまでは全格子を義務の側として置く。
+
+## 10. 直しの段(第 r8-1 回の直し、場面係、2026-09-24)
+
+合意した完了の形(委任文 §0 の逐語): 「すべてが調査結果以上の信頼性と再現性に優れたものにすること。」
+
+§0〜§9 は直しの前の正の定義の段の記録で、監査役(定義)を通った文のまま置いた。用語の表の 4 列目は、その段の比べる範囲(作業木の版 `623b353`)での結果である。直しの段で場面集の他のファイルに足した語の出現の確かめは 10.4。この節が引く出力は `<scratchpad>/bt/r8-1/` の下に置き、名は略さずに書く。
+
+### 10.1 指摘ごとの根本原因と、変えた構造
+
+i0-r7-03(LEAN の再現が、利用者の公開の入口に基づかずに Tick と TradeBar の購読を作っていた)。根本原因の読みは §3 の「なぜ起きたか(i0-r7-03)」の 1〜3。変えた構造は次の 5 つ。
+- 再現の始まりを利用者の公開の入口に移した: `opponents/repro_lean52.py` の場面の戦略の Initialize が `AddCryptoFuture(ticker, resolution, …)`(QCAlgorithm.cs 2621 のファイルの行)を呼び、`opponents/repro_engines/lean52.py` の書き直し(DataManager.Add → LookupSubscriptionConfigDataTypes → LeanData.GetDataType → UserDefinedUniverse → universe の選び)が購読を作る。場面集の側は場面の入力から購読を組まない。§3 で未確認とした 3 点は一次資料(版 `856327ff`)を読んで決めた: LeanData.GetDataType は Tick の解像度なら Tick、ほかの解像度なら TradeBar(LeanData.cs 488-494 のファイルの行)。同じ銘柄への 2 回目の AddCryptoFuture は、UserDefinedUniverse.Add が config を HashSet に足し、同じ config は足さない(UserDefinedUniverse.cs 140-155 のファイルの行)。実行の途中の AddSecurity は OnEndOfTimeStep で後の frontier から効く(AlgorithmManager.cs 608 のファイルの行)が、再現はそこを書き直していないので断る(`lean52.py` の `_add_security`)。読んだ一次資料の写しは `item0_r8-1_fix_scenekeeper_LeanData.cs` ほか同じ頭の名の 10 のファイル。設定つき対象は、AddCryptoFuture に渡す解像度の並びと、型を場面が決めない場面で使う型(`one_type`)の 13(`repro_lean52.py` の `CONFIGS`。`_configs()` が作る物と同じことを `__init__` が確かめる)。
+- 設定の操作を書き残して照らす: `adapters/common.py` の `configure`・`configure_attr`・`configure_compiled` が、呼んだ関数・そのファイル・触れた対象のファイル・時点・決めた物を記録し、runner の `settings_problem` が、記録の無い物・手で書いた物・対象の関数でない物・「まだ届いていない入力」から決めた物の下の結果を採点しない。記録は runner の出力の `settings_1` の表の列。
+- 設定つき対象: `adapters/protocol.py` の `Adapter.CONFIGS` と `choose`、runner の `<対象>@<選ぶ値の名>`、runner の出力の `choose` の表の列。1 つの設定つき対象の中で選ぶ値が全部同じことを試験が確かめる。
+- 届き方 (3) の「戦略の呼び出しの中」(§3 の「当てたときに直す所」の 7 つ目): `common.call_context` が、読み・試しの時点の呼び出しの並びから、場面集の側の一番外の枠を呼んだ対象のコードか母語のコードのファイルを記録し、利用者が自分の回しで対象を動かす対象では adapter が `common.user_loop_call` の塊で戦略の呼び出しを示す。runner の `read_in_call` と `_touched_ok` が、どちらも示せない読み・試しを採点しない。翻訳した道具の driver の中の読み・試しは Python の側から見えないので、この検めの外に置いた(driver のコードは `survey_results/attempts/<番号>.log` にあり、批評家が読む)。
+- 型の組(L-438 (2)): runner の `target_types` が、設定つき対象の持つ型を同じ設定つき対象の p3 の場面の正しさ「正解と一致」から決め、4 場面を `scenes.L438_2_SCENES` に場面 id で置いた(リードの答え LEAD_DESIGN.md §7.2 の 10)。型の組は runner の出力の `types_1` の表の列。資料係への申し送りは DEFINITIONS.md の「資料係への申し送り」の節。
+
+確かめた試験(`test_battery_item0.py`): `test_lean_subscriptions_come_from_the_resolution_through_the_public_entry`・`test_the_reproduction_is_run_for_every_configured_target_and_placed_in_its_engine`・`test_a_setting_counts_only_when_made_through_the_targets_code_from_knowable_values`・`test_every_ok_survey_row_records_the_settings_of_its_run`・`test_a_configured_target_runs_every_scene_with_one_set_of_chosen_values`・`test_the_configured_targets_listed_are_the_adapters_configs`・`test_the_runner_takes_the_types_from_the_p3_grades_and_never_asks_the_adapter`・`test_every_record_of_a_typed_scene_used_the_types_of_its_own_p3_grades`・`test_l438_2_names_four_scenes_by_id_and_only_they_take_types_from_the_target`・`test_the_handoff_to_the_materials_role_is_in_the_definitions_and_the_columns_exist`、読み・試しの呼び出しの中の検めは `test_a_tag_is_checked_as_well_as_the_object`・`test_readers_reads_and_attempts_must_run_the_targets_code`・`test_own_class_carriers_must_have_been_delivered_by_the_target`(呼び出しの外の読みが落ちることも確かめる)。
+
+i0-r7-04(検討表の 15 のファイルの行が、場面の入力を写した前提を持っていた)。根本原因の読みは §4 の「なぜ起きたか(i0-r7-04)」。変えた構造: 検討表の 15 のファイルの行から場面の入力の写しを外し、型の数による対応なしは runner の出力の `types_1`・`detail_1` の表の列と試しの記録を引く文にした。場面集の手で書く全ファイルの全部のファイルの行を `line_marks.py` が書き出し、場面 id・`Scene` の欄名・場面の数を持つファイルの行に印を付け、印の付いたファイルの行の判断を `line_judgments.tsv` に持つ(`test_every_line_the_scene_keeper_writes_is_listed_and_every_marked_line_judged`)。過去の周の ROOTCAUSE の 7 つのファイルは、版を固定した参照(`git show <版>:…`)に置き換えた。観点ごとの正解と一致の数は `survey_counts.py` が runner の出力から数え、検討表に写さない。DEFINITIONS.md の場面 id の一覧と数は `scenes.py` の値から作る。
+
+i0-r7-05(注文の通知について「受け取れた時刻 ≤ 今」の場面が無い)。根本原因の読みは §5 の「なぜ起きたか(i0-r7-05)」。変えた構造: 7 観点の升目を要件の文の切片から `grid_c.py`・`grid_c_judgments.tsv` で作り、各場面が覆う升目を `Scene.covers` に書き、DEFINITIONS.md の「場面にしていない観点・側面」を両方から作る。P0-4 の通知と時計の升目は「場面にしない」で、理由はリードの答え LEAD_DESIGN.md §7 の 2(57 のファイルの行の切片 5・6・8)の引用(DEFINITIONS.md の理由11)。試験の (a)〜(d) は `test_grid_table_lists_every_cell_of_every_viewpoint_once`・`test_grid_every_requirement_segment_has_one_judgment`。理由11 の引用が決定の文の語であることも同じ試験が確かめる。
+
+緩める決定(「場面にしない」と L-438 (2))は、決定の文の切片が名指す升目と 4 場面にだけ当てた。当て方はリードの規則(LEAD_DESIGN §7.2 の 11)による。名指されない升目は「未決」のまま §9 の 2・3・8 とこの節の 10.7 に置いた。
+
+### 10.2 同じ根の探し(場面集の全体)
+
+探したコマンドと出力は `item0_r8-1_fix_scenekeeper_sameroot.txt` の (1)〜(6)。見つけた物と行ったことは次のとおり。
+- 実行の窓と始まりの時刻を場面の事象から決めていた adapter と driver(正の定義 A の「まだ届いていない入力の時刻…に合わせて決めた設定の操作」): rqalpha・zipline_reloaded・ziplime・quanttrader・vnpy・freqtrade・qf_lib・lib_pybroker(p7-account-swap の場面の関数は全部の試験を回したときに見つけた)・qstrader・barter(driver の engine の始まり)・sarthak_execsim(driver の start_time と、走る前に置いた売りの注文)。窓は `common.FIXED_WINDOW` の 1 つの選ぶ値に替え、barter と sarthak_execsim は driver を作り直した(`survey_results/attempts/61.log`・`survey_results/attempts/33.log` の第 r8-1 回の項)。対応なしの理由を作る試し(lib_pybroker と ziplime の `_try_non_bar`)も同じ窓に替えた。
+- 選ぶ値を場面ごとに替えていた adapter(正の定義 A の「1 つの設定つき対象の場面は全部同じ選ぶ値」): backtrader の preload、ziplime の足の日付の付け方、pineforge の時間枠、sarthak_execsim の配信の遅れ、basana の事象の源の優先、hftbacktest の前処理。選ぶ値ごとに別の設定つき対象にし、全部の場面を走らせた。
+- 設定の操作を場面のまだ届いていない値から決めていた adapter: backtrader の p7-fill-model-swap の場面の関数(滑りの値を場面の約定の価格から決める)。記録に「まだ届いていない入力」と書き、runner はその結果を採点しない(結果なし)。
+- 戦略の呼び出しの外で読んだ物と、利用者の回しの中の読み: 検めを足したあと全部の設定つき対象を走らせ直し、結果なしに変わった所を 1 つずつ読んだ(`item0_r8-1_fix_scenekeeper_results.txt` の (4))。hftbacktest・luczinsritter・pybotters は、道具が戦略を呼ばず利用者の回しが戦略である道具なので、adapter の回しに `common.user_loop_call` を置いた。gobacktest と pineforge は driver の中の読み・試しなので、上の検めの外に置いた。
+- 検めを通さない候補として読んだが直していない物: qf_lib の約定の価格を現金の差から出す場面の関数(道具の記録から読む手段を見つけていない)。homerun の入りの注文(TradeIntent)の時刻を最初の事象の時刻にしている所(道具が走る前に注文の並びを受ける形で、その場面の結果はどれも対応なし)。どちらも 10.7 に置いた。
+
+### 10.3 走らせ直しの結果
+
+全部の設定つき対象を、直しの最後の変更のあとの版で走らせた(`item0_r8-1_fix_scenekeeper_results.txt` の (3)。その後に変えた設定つき対象の走らせ直しも同じ出力の (4) の末尾に名指した)。直しの前の版(`623b353`)との正しさの違いは同じ出力の (1)、場面ごとに正解と一致の設定つき対象が在るかの違いは (2)。場面の中身(対象ごとの結果と数)はここに写さない(正の定義 B)。
+- 日付で動く道具は、窓を選ぶ値に替えたので、事象の無い日にも戦略を呼ぶ。場面の文「1 回目の呼び出しで…」は、事象の無い日の呼び出しも 1 回目に数える読みで走らせた。この読みを 10.7 の 1 に上げた。
+- runner の出力の再現の欄が「2 回で違う」の設定つき対象と場面は `item0_r8-1_fix_scenekeeper_results.txt` の (3) にある。その場面は版 `623b353` の runner の出力でも「2 回で違う」で、直しの段で変わった物ではない(道具が壁の時計を読む)。
+
+### 10.4 正の定義 D の当て(直しの段で他のファイルに足した語の出現)
+
+用語の表の語のうち区分が「比べる範囲の中の既存の語」「新しい語」の語の、場面集の他のファイル(ROOTCAUSE_r8-1.md と判断のファイルを除く)の中の出現を `term_marks.py` が機械で書き出し、出現ごと(語 × ファイルの行)の判断を `term_judgments.tsv` に持つ。判断は「表の意味」(読んで、用語の表の意味で使っていた)か「写し」(`def_axes/` の正の定義の段落の切片と、そこから作った DEFINITIONS.md の正の定義 A の選択肢の節)の 2 つだけで、判断の無い出現・ほかの判断・出現の無い判断があれば `test_every_use_of_the_scene_keepers_terms_is_judged` が落とす。読むのは、判断を書く道具 `item0_r8-1_fix_scenekeeper_judge_terms.py` が新しい出現を出したときで、読んだあとに `--add-read` で足す。読んだ出現の書き出しは `item0_r8-1_fix_scenekeeper_term_occ.txt`。読んで直した所: DEFINITIONS.md の「設定の値の組み合わせ」を正の定義 A の語に替えた。`scenes.py` の「持つ型の数」を「設定つき対象の持つ型の数」に替え、「対象の配布物が持つ型」を「対象の配布物の型」に替えた。検討表の名指し「`survey_results/<対象>[@<設定>].tsv`」を `[@<選ぶ値の名>]` に替えた。
+- 区分が「要件・委任文の語」の語の他のファイルの中の出現には判断を付けていない(正の定義 D はその区分に、意味を持たせたファイルの行を引いてこのファイルでその意味で使うことを求める。範囲を切った理由: 対象・事象の出現が千を超え、この段で出現ごとの判断を持てない)。
+
+### 10.5 敵対者の試験(リードの規則 LEAD_DESIGN §7.2 の 12)
+
+`def_grids.py` が 6 つの正の定義の段落を切片まで書き出し(判断は `def_axes/j0.tsv`〜`def_axes/jE.tsv`)、全格子の升目の数を数える。6 つとも 100,000 を超えるので、各軸の全部の値と他の軸の全部の値の組み合わせを覆う升目(2 軸の全部の値の組み合わせ、pairwise)を決定的に選んで走らせた。全格子を走らせてはいない。数と選び方は `test_battery_def_grids.py` の `SELECTED` に書き、試験が `def_grids.py` の数と照らす。機械の答えと表の期待を照らす軸(`PROBES`)は正の定義 A・B・C・D の一部の軸で、照らさない軸とその理由は同じファイルの docstring。正の定義 A には、戦略の呼び出しの中の読み・呼び出しの外の読み・利用者の回し・コルーチンの呼び出しを、場面集の外に置いた試しの対象(一時のディレクトリのモジュール)で照らす軸を足した。速さ: `test_battery_def_grids.py` の 5 つの試験の全部で 0.86 秒(pytest の `--durations=0` で測った。いちばん長いのは B の 0.51 秒)。
+
+### 10.6 提出前の吟味(正の定義 E の形)
+
+| 指摘の候補 | 何をしたか |
+|---|---|
+| i0-r7-03 | 10.1 の i0-r7-03 の 5 つを置いた。同じ根の探しは 10.2 |
+| i0-r7-04 | 10.1 の i0-r7-04 の構造を置いた。語の出現の判断を 10.4 に置いた |
+| i0-r7-05 | 10.1 の i0-r7-05 の構造を置いた。名指されない升目を §9 の 2・3・8 と 10.7 に上げた |
+| dr8-1-1-1 | 過去の周の ROOTCAUSE の 7 つのファイルを版を固定した参照に替えた。`line_marks.py` の当てる範囲にこのファイルを入れた |
+| dr8-1-1-2 | `grid_c.py` が 7 観点の全部の升目を作り、試験 (a) が数を照らす |
+| dr8-1-1-3 | `common.configure` の時点の記録(開始前・戦略の呼び出しの中・その他)を置いた |
+| dr8-1-1-4 | 設定つき対象ごとの runner の出力と `choose` の表の列を置いた。資料係への申し送りを DEFINITIONS.md に置いた |
+| dr8-1-2-1 | `line_marks.py` と `line_judgments.tsv` と試験を置いた |
+| dr8-1-2-2 | `term_marks.py` と `term_judgments.tsv` と試験を置いた(10.4) |
+| dr8-1-2-3 | 正の定義 A の `PROBES` に届き方 (3) の軸を足した(10.5) |
+| dr8-1-2-4 | 正の定義 A・B・C・D の `PROBES` を置き、0・E は照らさない理由を docstring に書いた |
+| dr8-1-3-1 | L-438 (2) の 4 場面を場面 id で置いた(`scenes.L438_2_SCENES`、試験 `test_l438_2_names_four_scenes_by_id_and_only_they_take_types_from_the_target`) |
+| dr8-1-3-2 | `grid_c_judgments.tsv` に要件の文の切片ごとの判断を置いた。試験 (d) |
+| dr8-1-3-3 | 6 つの正の定義の全格子を `def_grids.py` で数え、`test_battery_def_grids.py` を置いた |
+| dr8-1-3-4 | 用語の表の外の出現を 10.4 の道具で書き出した |
+| dr8-1-3-5 | この表を正の定義 E の形で置いた。O-10 との関係は §9 の 7 のまま上げている |
+| dr8-1-3-6 | 正の定義 A の軸を `def_axes/jA.tsv` から作り、DEFINITIONS.md の正の定義 A の選択肢の節も同じ物から作った(`gen_definitions.py` の `def_a_section`) |
+| dr8-1-4-1 | 緩める決定の当てる先を 10.1 の末尾に書いた。リードの規則(LEAD_DESIGN §7.2 の 11)として引いた |
+| dr8-1-4-2 | この節の裏付けの名指しを自己検査が引き当てる(`item0_r8-1_fix_scenekeeper_selfcheck.txt` の (4)) |
+| dr8-1-4-3 | O-10 との関係を §9 の 7 のまま上げている |
+| dr8-1-4-4 | 10.4 の判断の値を 2 つの語に限り、試験が照らす |
+| 場面係が足した候補: 読みを戦略の呼び出しの外で行った場面の関数 | `common.call_context` と runner の `read_in_call` を置き、走らせ直して変わった所を読んだ(`item0_r8-1_fix_scenekeeper_results.txt` の (4)) |
+| 場面係が足した候補: 事象の無い日の呼び出しと場面の文「1 回目の呼び出し」 | 10.7 の 1 に上げた |
+| 場面係が足した候補: driver の中の読み・試しは呼び出しの中かを runner が見られない | 10.1 に書き、10.7 の 3 に上げた |
+| 場面係が足した候補: 利用者の回しの塊を adapter が置くこと | 10.1 に書き、10.7 の 3 に上げた |
+| 場面係が足した候補: 要件・委任文の語の他のファイルの中の出現 | 10.4 に範囲を切った理由を書いた |
+| 場面係が足した候補: 候補 35 の件を埋もれさせる(L-438 (3)) | §9 の 1 を独立の項目のまま置いた |
+
+自己検査のコマンドと出力は `item0_r8-1_fix_scenekeeper_selfcheck.txt`。この段で回した試験のコマンドと出力は `item0_r8-1_fix_scenekeeper_tests_final.txt`。
+
+### 10.7 リードに聞くこと(直しの段で足した物。§9 の 1〜9 はそのまま答えを待つ)
+
+1. 場面の文の「1 回目の呼び出し」の読み: 日付で動く道具(窓を選ぶ値に替えた道具)は事象の無い日にも戦略を呼ぶ。今は事象の無い日の呼び出しも 1 回目に数えて走らせた(その道具の p3・p6・p7 の場面は、事象の前に注文を出すことになる)。「事象を受けた最初の呼び出し」と読むかは場面の文の読みで、場面係は替えていない。
+2. qf_lib の約定の価格を現金の差から出す場面の関数と、homerun の入りの注文の時刻を最初の事象の時刻にしている所(10.2)。どちらも正の定義 A の測る仕事と設定の操作の読みに当たる候補で、場面係は直していない。直すかを決めてほしい。
+3. 利用者の回しの塊(`common.user_loop_call`)は adapter が置き、runner はその塊が戦略の呼び出しだけを囲むかを見られない。driver の中の読み・試しも同じく runner の外。どちらも批評家が adapter と driver のコードを読む形でよいか。
