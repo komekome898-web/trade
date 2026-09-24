@@ -13335,7 +13335,7 @@
   {
    "move": 491,
    "tools": {
-    "Bash": 32,
+    "Bash": 33,
     "Read": 1,
     "Agent": 1,
     "ToolSearch": 1,
@@ -13343,7 +13343,7 @@
     "ReadNotifications": 1,
     "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 38,
+   "n_tools": 39,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,

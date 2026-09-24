@@ -29,6 +29,8 @@ Workflow の記録(journal)から `scripts/export_workflow_judges.py` で逐語�
 
 ### 批評家 `批評:0#11` の出力(逐語)
 
+(出所の注記、監査 52 回目の 52-5: 下は批評家自身が書いたファイル `round_11/CRITIC.md` の写し。台本に返した構造化の返り値(journal)は同じ批評家の文で、接続の語が 2 か所違う(「走る。断りの型も」↔「走り、断りの型が」/「の 18 升目は」↔「のうち 18 升目は」)。10 回目の引数の last_findings は返り値の側の逐語。)
+
 # 批評家の記録(項目 0「核」、第 11 周。新しく起こされた批評家)
 
 委任文: `docs/DATA/delegations/20260923_backtest_env_prompt.md`(指紋 `d3eae0d221c9`。`sha256sum … | cut -c1-12` で確かめ、全 164 行を読んだ)。
@@ -310,10 +312,12 @@ p6-place-then-cancel への答え(指摘 3)は §5.1 にある。定義の機械
 ### 候補 35 の試行(§8.5 の 25。リードが 2026-09-24 22:50〜22:51 UTC に実行。コマンドと出力)
 
 ```
-cp -r <S>/venvs/item_0/_dl/c35/. c35_trial/ && mkdir -p c35_trial/src && (for f in c35_trial/src\ *.py: mv "$f" c35_trial/src/${b#src })
+# C = <S>/venvs/item_0/_dl/c35 (clone 794fa647), S = <scratchpad>/c35_trial
+rm -rf $S; mkdir -p $S && cp -r $C/. $S/ && mkdir -p $S/src && for f in "$S"/src\ *.py; do b=$(basename "$f"); mv "$f" "$S/src/${b#src }"; done; ls $S $S/src
+  -> src/: __init__.py execution.py impact.py metrics.py models.py simulator.py strategies.py visualization.py
 python3 -m venv .venv && .venv/bin/pip install -q -r requirements.txt   -> pip rc=1 (requirements.txt は Markdown の囲みつき: 先頭行 '`requirements.txt`' と '```text')
-python3 -m venv --system-site-packages .venv && .venv/bin/pip install --no-cache-dir -q matplotlib   -> pip rc=0
-MPLBACKEND=Agg timeout 600 .venv/bin/python main.py   -> FileExistsError: [Errno 17] File exists: 'outputs' (公開の版の 'outputs' は 1,139 バイトのファイル)
+rm -rf .venv && python3 -m venv --system-site-packages .venv && .venv/bin/pip install --no-cache-dir -q matplotlib   -> pip rc=0
+MPLBACKEND=Agg timeout 600 .venv/bin/python main.py   -> run rc=1, FileExistsError: [Errno 17] File exists: 'outputs' (公開の版の 'outputs' は 1,139 バイトのファイル)
 mv outputs outputs_file_as_published.txt && MPLBACKEND=Agg timeout 600 .venv/bin/python main.py   -> run rc=0
 ============================================================
 OPTIMAL EXECUTION & MARKET IMPACT SIMULATOR
