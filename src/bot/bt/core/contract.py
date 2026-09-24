@@ -34,20 +34,25 @@ CORE_CONTRACT: dict = {
     "visibility": {
         "strategy": "called at now_ns = delivery time; sees only events already delivered, "
                     "all with received_time_ns <= now_ns; any time argument after now_ns (since_ns or "
-                    "until_ns) raises LookAheadError; a history read returns DeliveredEvents, where an index or "
-                    "an explicit non-negative slice bound naming a position after the last event of the "
-                    "answer (position_rule) raises FuturePositionError if the answer ends at the newest "
-                    "delivered event of what it reads, OutsideAnswerError if it ends in the delivered past; "
+                    "until_ns) raises LookAheadError; a history read returns DeliveredEvents, which knows "
+                    "its place in what the read reads (AnswerPlace); an index or an explicit slice bound "
+                    "naming a position outside the answer (position_rule) raises by what that position is "
+                    "there: FuturePositionError (a LookAheadError) for an event not delivered yet, "
+                    "OutsideAnswerError / DroppedPositionError / BeforeFirstEventError for the past; "
                     "context revoked on return",
         "position_rule": {
             "max_position_by_role_as_offset_from_len": dict(POSITION_RULE),
-            "negative_bounds": "count back from the newest; they can only name the past",
-            "error": "the answer carries next_is_undelivered (is the position after its last event an "
-                     "event not delivered yet?): True for an answer ending at the newest delivered event "
-                     "of what it reads -> FuturePositionError (an IndexError and a LookAheadError); False "
-                     "for one ending in the delivered past (until_ns, a slice, read backwards) -> "
-                     "OutsideAnswerError (an IndexError, not a LookAheadError); a slice carries the fact "
-                     "for its own last event",
+            "negative_bounds": "a negative index counts back from the newest and one before the oldest "
+                               "(< -len) raises like any position outside the answer; negative slice bounds "
+                               "are cut at the answer's ends, as for any tuple",
+            "error": "decided by the NAMED position (i0-r6-01): answer position q is position "
+                     "u = first + q * step of what the read reads (DeliveredEvents.place); u >= delivered "
+                     "(the count delivered when the answer was made) -> FuturePositionError (an IndexError "
+                     "and a LookAheadError); 0 <= u < delivered -> OutsideAnswerError (delivered, outside "
+                     "the answer); u < 0 -> DroppedPositionError if history_limit dropped events there, "
+                     "else BeforeFirstEventError (nothing there); these three are OutsideAnswerErrors, "
+                     "not LookAheadErrors; of two slice bounds outside, one naming an event not delivered "
+                     "yet is reported first; each error carries answer_position, read_position, delivered",
         },
         "venue": "fill model and account see market data at exchange_time_ns and our requests at "
                  "their arrival time; never earlier",
@@ -96,6 +101,13 @@ CORE_CONTRACT: dict = {
                            "(float), a pre-trade reject reason (str), a stream name (str) -- is read once, "
                            "when it is returned, as the built-in value (values.py); none of their methods "
                            "runs later",
+        "type_decisions": "every decision on the type of a value a sender hands the core (a field, a "
+                          "plug-in's answer, a source's event, a read argument, a run setting) reads the "
+                          "value's REAL type (values.is_a: issubclass(type(x), C)), never what the object "
+                          "claims through __class__; a refusal is the error type of the place it enters "
+                          "(OrderApiError, VenueProtocolError, EventValidationError, TimestampUnitError, "
+                          "LatencyModelError, CostModelError, AccountSocketError, SourceEventTypeError), "
+                          "naming the real type in full",
     },
     "run_settings": {
         "time_span_ns": "optional (first_ns, last_ns), both included; given, an input event with its "

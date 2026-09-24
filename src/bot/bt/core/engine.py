@@ -74,7 +74,6 @@ import dataclasses
 import hashlib
 import heapq
 import math
-import numbers
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Iterator, Mapping, Optional, Union
 
@@ -133,7 +132,7 @@ from .ordering import (
 from .history import DeliveredHistory
 from .strategy import Strategy
 from .time import validate_nanos
-from .values import as_float, as_int, as_text
+from .values import as_float, as_int, as_text, is_a, type_name
 from .window import EventWindow
 
 _K_VENUE_MARKET = 0
@@ -279,7 +278,8 @@ class _VenueLedger:
                 raise VenueProtocolError(f"{where}: Fill for order {coid!r} before its Ack (state {o.state_name()})")
             for fname in ("price", "size"):
                 val = getattr(report, fname)
-                if isinstance(val, bool) or not isinstance(val, numbers.Real) or not math.isfinite(val) or val <= 0:
+                # a float itself: Fill makes its fields by the one number rule (interfaces.py)
+                if not math.isfinite(val) or val <= 0:
                     raise VenueProtocolError(f"{where}: Fill.{fname} must be finite > 0, got {val!r}")
             if report.liquidity not in LIQUIDITY:
                 raise VenueProtocolError(f"{where}: Fill.liquidity must be one of {LIQUIDITY}")
@@ -339,17 +339,19 @@ def _delivered_copy(event: Event, time_ns: int, seq: int) -> Event:
 
 def _is_cancel_answer(report: Any, coid: str) -> bool:
     """A report that answers a cancel of order `coid` (inside on_cancel)."""
-    if getattr(report, "client_order_id", None) != coid:
+    t = type(report)  # the real type: only the core's report classes themselves answer
+    if t not in REPORT_CLASSES or report.client_order_id != coid:
         return False
-    if isinstance(report, Canceled):
+    if t is Canceled:
         return True
-    return isinstance(report, (Reject, StateUnknown)) and report.request_kind == "cancel"
+    return t in (Reject, StateUnknown) and report.request_kind == "cancel"
 
 
 def _check_delay(value: Any, what: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, numbers.Integral):
-        raise LatencyModelError(f"{what} must return an int of ns, got {value!r}")
-    ivalue = as_int(value, what)  # an int itself, read once now (values.py)
+    try:
+        ivalue = as_int(value, what)  # the one int rule (values.py): an int itself, read once now
+    except ValueError as exc:
+        raise LatencyModelError(f"{what} must return an int of ns: {exc}") from None
     if ivalue < 0:
         raise LatencyModelError(f"{what} returned a negative delay {ivalue}")
     return ivalue
@@ -396,10 +398,14 @@ def _validate_time_span(time_span: Any) -> Optional[tuple[int, int]]:
     int64 ns times, first <= last, both included."""
     if time_span is None:
         return None
-    if not isinstance(time_span, tuple) or len(time_span) != 2:
-        raise TimestampUnitError(f"time_span_ns must be a (first_ns, last_ns) tuple, got {time_span!r}")
+    if not is_a(time_span, tuple) or tuple.__len__(time_span) != 2:
+        raise TimestampUnitError(
+            f"time_span_ns must be a (first_ns, last_ns) tuple, got a {type_name(time_span)}"
+            + (f" of {tuple.__len__(time_span)}" if is_a(time_span, tuple) else "")
+        )
     try:
-        lo, hi = int(validate_nanos(time_span[0])), int(validate_nanos(time_span[1]))
+        lo = int(validate_nanos(tuple.__getitem__(time_span, 0)))
+        hi = int(validate_nanos(tuple.__getitem__(time_span, 1)))
     except TimestampUnitError as exc:
         raise TimestampUnitError(f"time_span_ns: {exc}") from exc
     if lo > hi:
@@ -433,8 +439,11 @@ class _SourceMerger:
         for key, stream in streams.items():
             # a str itself (values.py): the names decide the merge order, so
             # no name may compare or sort by methods of its own
-            name = as_text(key, "stream name") if isinstance(key, str) else key
-            if not isinstance(name, str) or not name:
+            try:
+                name = as_text(key, "stream name")  # by its real type (values.py)
+            except ValueError:
+                raise TypeError(f"stream names must be non-empty str, got a {type_name(key)}") from None
+            if not name:
                 raise TypeError(f"stream names must be non-empty str, got {key!r}")
             if name in by_name:
                 raise TypeError(f"stream name {name!r} given twice")
@@ -453,11 +462,11 @@ class _SourceMerger:
         except StopIteration:
             return
         name = self._names[rank]
-        if not isinstance(event, Event):
+        if not is_a(event, Event):  # the real type, not what the object claims
             raise SourceEventTypeError(
-                f"stream {name!r} yielded {type(event).__name__}, not an Event"
+                f"stream {name!r} yielded a {type_name(event)}, not an Event"
             )
-        etype = event.EVENT_TYPE
+        etype = type(event).EVENT_TYPE  # the class's own type (an event object cannot shadow it)
         if type(event) is not EVENT_TYPE_TO_CLASS[etype]:
             # an event crosses the source -> venue / strategy paths: one of
             # the core's own classes itself (every field a value, slotted),
@@ -539,7 +548,7 @@ class CoreEngine:
         self._strategy = strategy
         time_span = _validate_time_span(time_span_ns)
         self._time_span = time_span
-        if isinstance(events, Mapping):
+        if is_a(events, Mapping):  # the real type, not what the object claims
             streams = events
         else:
             streams = {SINGLE_STREAM_NAME: events}
@@ -579,12 +588,14 @@ class CoreEngine:
             except TimestampUnitError as exc:
                 raise TimestampUnitError(f"end_time_ns: {exc}") from exc
         self._end_time_ns = end_time_ns
-        if history_limit is not None and (
-            isinstance(history_limit, bool) or not isinstance(history_limit, numbers.Integral)
-            or history_limit < 1
-        ):
-            raise ValueError(f"history_limit must be a positive int or None, got {history_limit!r}")
-        self._history_limit = None if history_limit is None else int(history_limit)
+        if history_limit is not None:
+            try:
+                history_limit = as_int(history_limit, "history_limit")  # the one int rule (values.py)
+            except ValueError as exc:
+                raise ValueError(f"history_limit must be a positive int or None: {exc}") from None
+            if history_limit < 1:
+                raise ValueError(f"history_limit must be a positive int or None, got {history_limit}")
+        self._history_limit = history_limit
 
         self._heap: list[tuple] = []
         self._created = 0  # position of engine-created entries (requests, notices, timers)
@@ -872,9 +883,9 @@ class CoreEngine:
             self._force(time_ns, request)
 
     def _force(self, time_ns: int, request: Any) -> None:
-        if not isinstance(request, OrderRequest):
+        if not is_a(request, OrderRequest):  # the real type, not what the object claims
             raise AccountSocketError(
-                f"account.on_market_event returned {type(request).__name__}, not an OrderRequest"
+                f"account.on_market_event returned a {type_name(request)}, not an OrderRequest"
             )
         # the account keeps what it returned; the venue and (later) the
         # strategy's view get objects of their own (api.py fresh_request)
@@ -901,11 +912,15 @@ class CoreEngine:
         if reason is not None:
             # the reason reaches the strategy in a notice: a str itself
             # (values.py), made before anything reads it
-            if not isinstance(reason, str) or not as_text(reason, "reason"):
+            try:
+                text = as_text(reason, "reason")  # a str itself (values.py), by its real type
+            except ValueError:
                 raise AccountSocketError(
-                    f"account.check_order must return None or a non-empty str, got {reason!r}"
-                )
-            reason = as_text(reason, "reason")
+                    f"account.check_order must return None or a non-empty str, got a {type_name(reason)}"
+                ) from None
+            if not text:
+                raise AccountSocketError("account.check_order must return None or a non-empty str, got ''")
+            reason = text
             self._ledger.arrive(order)
             self._handle_reports(
                 time_ns, (Reject(order.client_order_id, reason),), "check_order", order.client_order_id
@@ -962,9 +977,10 @@ class CoreEngine:
                         "NullCostModel() to state zero cost explicitly"
                     )
                 fee = self._cost_model.cost(notice)
-                if isinstance(fee, bool) or not isinstance(fee, numbers.Real):
-                    raise CostModelError(f"cost model returned {fee!r}")
-                fee = as_float(fee, "fee")  # a float itself, read once now (values.py)
+                try:
+                    fee = as_float(fee, "fee")  # the one number rule (values.py): a float itself, read once now
+                except ValueError as exc:
+                    raise CostModelError(f"cost model returned a value that is not a number: {exc}") from None
                 if not math.isfinite(fee):
                     raise CostModelError(f"cost model returned {fee!r}")
                 notice = dataclasses.replace(notice, fee=fee)

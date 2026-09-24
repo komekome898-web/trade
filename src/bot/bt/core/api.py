@@ -7,9 +7,10 @@ The context is the strategy's only handle on the run:
   the history of events already delivered to it (all with
   `received_time_ns <= now_ns`); any time argument after `now_ns` (the
   start or the end of a window) raises `LookAheadError`, and naming a
-  position after the newest delivered event (an index or slice bound past
-  the end of the answer) raises `FuturePositionError` (or
-  `OutsideAnswerError` when the answer ends in the delivered past, window.py),
+  position outside an answer raises, by what that position is in what the
+  read reads (window.py): `FuturePositionError` (a `LookAheadError`) for
+  an event not delivered yet, `OutsideAnswerError` (or its
+  `DroppedPositionError` / `BeforeFirstEventError`) for the past --
   rather than returning a silently empty or truncated answer;
 * `place_order`, `cancel_order`, `set_timer` -- act;
 * `order(id)`, `open_orders()` -- its own orders, as it knows them.
@@ -62,7 +63,6 @@ from __future__ import annotations
 import bisect
 import dataclasses
 import math
-import numbers
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Mapping, Optional, Sequence, Union
@@ -79,7 +79,7 @@ from .events import (
     OrderStateUnknownEvent,
 )
 from .time import Nanos, validate_nanos
-from .values import as_choice, as_flag, as_float, as_int, as_text, freeze, thaw
+from .values import as_choice, as_flag, as_float, as_int, as_text, freeze, is_a, thaw, type_name
 from .window import DeliveredEvents
 
 
@@ -145,17 +145,18 @@ def _frozen_extra(extra: Any) -> tuple:
     """The one check of `OrderRequest.extra`, at construction: a tuple of
     (non-empty str key, plain data value) pairs with no key twice, made
     deeply immutable (values.py)."""
-    if not isinstance(extra, tuple):
-        raise OrderApiError(f"extra must be a tuple of (key, value) pairs, got {type(extra).__name__}")
+    # decided by the REAL type and read by tuple's own methods (values.py
+    # `is_a`): an object claiming to be a tuple, or a tuple subclass with
+    # its own iteration, does not decide what the pairs are
+    if not is_a(extra, tuple):
+        raise OrderApiError(f"extra must be a tuple of (key, value) pairs, got {type_name(extra)}")
     pairs = []
     seen: set = set()
-    for i, pair in enumerate(extra):
-        if not isinstance(pair, tuple) or len(pair) != 2:
-            raise OrderApiError(f"extra[{i}] must be a (key, value) pair, got {pair!r}")
-        key, value = pair
-        if not isinstance(key, str):
-            raise OrderApiError(f"extra[{i}]: key must be a non-empty str, got {key!r}")
-        key = as_text(key, f"extra[{i}] key")  # a str itself before anything reads it
+    for i, pair in enumerate(tuple.__getitem__(extra, slice(None))):
+        if not is_a(pair, tuple) or tuple.__len__(pair) != 2:
+            raise OrderApiError(f"extra[{i}] must be a (key, value) pair, got a {type_name(pair)}")
+        key, value = tuple.__getitem__(pair, 0), tuple.__getitem__(pair, 1)
+        key = _order_field(as_text, f"extra[{i}] key", key)  # a str itself before anything reads it
         if not key:
             raise OrderApiError(f"extra[{i}]: key must be a non-empty str, got {key!r}")
         if key in seen:
@@ -195,9 +196,7 @@ def fresh_request(request: Any, cls: type, error: type, who: str) -> Any:
 
 
 def _require_positive(name: str, value: Any) -> float:
-    if isinstance(value, bool) or not isinstance(value, numbers.Real):
-        raise OrderApiError(f"{name} must be a number, got {value!r}")
-    f = _order_field(as_float, name, value)
+    f = _order_field(as_float, name, value)  # the one number rule (values.py), never a bool
     if not math.isfinite(f) or f <= 0:
         raise OrderApiError(f"{name} must be finite and > 0, got {value!r}")
     return f
@@ -329,7 +328,7 @@ class _OrderPort:
         return coid
 
     def cancel(self, request: Union[CancelRequest, str]) -> None:
-        if isinstance(request, str):
+        if is_a(request, str):  # the real type: an object claiming to be a str is not an id
             request = CancelRequest(request)
         request = fresh_request(request, CancelRequest, OrderApiError, "cancel_order (or an id)")
         view = self._registry.get(request.client_order_id)
@@ -351,8 +350,6 @@ class _OrderPort:
         at = int(validate_nanos(at_ns))
         if at < now:
             raise OrderApiError(f"timer at {at} is before now {now}")
-        if not isinstance(tag, str):
-            raise OrderApiError("timer tag must be str")
         # the tag reaches the strategy later, in a ClockEvent: a str itself
         self._outbox.append(("timer", at, _order_field(as_text, "timer tag", tag)))
 
@@ -503,11 +500,14 @@ class StrategyContext:
         until_ns: Optional[int] = None,
     ) -> DeliveredEvents:
         """Delivered events (all with `received_time_ns <= now_ns`), oldest
-        first, as a `DeliveredEvents` tuple: naming a position after its
-        last event (an index `>= len`, or a slice bound past the end) raises
-        instead of a shortened answer (window.py) -- `FuturePositionError`
-        if the answer ends at the newest delivered event of what it reads,
-        `OutsideAnswerError` if `until_ns` ended it in the delivered past.
+        first, as a `DeliveredEvents` tuple that knows where it lies in what
+        the read reads: naming a position outside it (an index `>= len` or
+        `< -len`, or a slice bound past the end) raises instead of a
+        shortened answer, with the error chosen by what the NAMED position
+        is (window.py): `FuturePositionError` (a `LookAheadError`) for an
+        event not delivered yet, `OutsideAnswerError` for a delivered event
+        outside the answer, `DroppedPositionError` / `BeforeFirstEventError`
+        before the oldest.
         Filters, all optional: only `event_type`; only those with
         `since_ns <= received_time_ns <= until_ns`; then only the last `n`
         (`n` is a count >= 0: `n=0` returns nothing, a negative `n` raises
@@ -527,8 +527,11 @@ class StrategyContext:
         since = _time_arg("since_ns", since_ns, now)
         until = _time_arg("until_ns", until_ns, now)
         count = _count_arg(n)
-        if event_type is not None and not isinstance(event_type, EventType):
-            raise OrderApiError(f"event_type must be an EventType, got {event_type!r}")
+        # a member of EventType itself (EventType has members, so it has no
+        # subclasses): an object claiming to be one would match no type and
+        # give a silently empty answer
+        if event_type is not None and type(event_type) is not EventType:
+            raise OrderApiError(f"event_type must be an EventType member, got a {type_name(event_type)}")
 
         if event_type is None:
             events: Sequence[Event] = self.__visible_events
@@ -544,20 +547,28 @@ class StrategyContext:
             lo = bisect.bisect_left(events, since, key=_recv)
         if until is not None:
             hi = bisect.bisect_right(events, until, key=_recv)
-        # What follows the answer's last event (window.py, i0-r5-05): it ends
-        # at the newest delivered event of what it reads (the whole history,
-        # or that type's) exactly when nothing delivered was cut off after
-        # it; then what follows has not been delivered yet.
-        ends_at_newest = hi == len(events)
+        # Where the answer lies in what the read reads (window.py
+        # `AnswerPlace`, i0-r6-01): its first event is events[lo] (an empty
+        # answer lies where the range was cut, events[hi]); every event of
+        # `events` was delivered by now; history_limit dropped events of it
+        # before its oldest kept one if its type dropped any -- for the
+        # whole history, if its oldest kept event is not delivery #1
+        # (deliveries are numbered 1, 2, 3, ... without gaps and everything
+        # not dropped is kept, so a gap before the oldest is a drop).
+        if event_type is not None:
+            dropped_before = event_type in self.__dropped
+        else:
+            dropped_before = len(events) > 0 and int(events[0].seq) > 1
+        delivered = len(events)
         if count is not None:
             if count == 0:
-                return DeliveredEvents(next_is_undelivered=ends_at_newest)
+                return DeliveredEvents(first=hi, delivered=delivered, dropped_before=dropped_before)
             lo = max(lo, hi - count)
         if self.__dropped:
             self.__refuse_truncated(event_type, since, count, events, lo, hi)
         if hi <= lo:
-            return DeliveredEvents(next_is_undelivered=ends_at_newest)
-        return DeliveredEvents(events[lo:hi], next_is_undelivered=ends_at_newest)
+            return DeliveredEvents(first=hi, delivered=delivered, dropped_before=dropped_before)
+        return DeliveredEvents(events[lo:hi], first=lo, delivered=delivered, dropped_before=dropped_before)
 
     def __refuse_truncated(self, event_type: Optional[EventType], since: Optional[int],
                            count: Optional[int], events: Sequence[Event], lo: int, hi: int) -> None:
@@ -622,9 +633,7 @@ def _count_arg(n: Optional[int]) -> Optional[int]:
     """The one check of the count argument of a history read: an int >= 0."""
     if n is None:
         return None
-    if isinstance(n, bool) or not isinstance(n, int):
-        raise OrderApiError(f"n must be an int, got {n!r}")
-    n = as_int(n, "n")
+    n = _order_field(as_int, "n", n)  # the one int rule (values.py): never a bool
     if n < 0:
         raise OrderApiError(f"n is a count of events and must be >= 0, got {n}")
     return n

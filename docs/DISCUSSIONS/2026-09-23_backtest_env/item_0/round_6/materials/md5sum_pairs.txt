@@ -1,0 +1,15 @@
+## current: current_1=表_1kgskl.md current_2=表_7zdd6g.md
+d6ebbc607dac4f2eeef951983d3ae860  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_6/表_1kgskl.md
+48baa5976e9e094147f2675cd5517422  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_6/表_7zdd6g.md
+current: differ
+cmp: bytes differ
+## survey: survey_1=表_oh7l5v.md survey_2=表_1s1zhl.md
+1f8f625f3dcfec3506bbe45bdd494f0b  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_6/表_oh7l5v.md
+690fee821c60b98c7ddb94e42325956d  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_6/表_1s1zhl.md
+survey: differ
+cmp: bytes differ
+## mutant: mutant_1=表_8ulrlx.md mutant_2=表_l7u8d2.md
+3a6728f1a3c674f26ba9f9a19d336727  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_6/表_8ulrlx.md
+1eba8ef3702e3af5cc14f1043916ebc1  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_6/表_l7u8d2.md
+mutant: differ
+cmp: bytes differ

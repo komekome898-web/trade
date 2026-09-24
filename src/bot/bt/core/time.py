@@ -28,12 +28,13 @@ data's era passes `plausible=(min_ns, max_ns)` to catch that direction too
 from __future__ import annotations
 
 import datetime as dt
-import numbers
 import re
 from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from typing import NewType, Union
 
 from .errors import TimestampUnitError
+from .values import as_int, as_text, scalar, type_name
 
 Nanos = NewType("Nanos", int)
 
@@ -82,14 +83,16 @@ def validate_nanos(value: object) -> Nanos:
     the plausibility window: a bare int handed to an event constructor has
     no unit label to cross-check. Use `to_nanos` for labelled raw values.
     """
-    if isinstance(value, bool) or not isinstance(value, numbers.Integral):
+    # one rule for what is an int (values.py `as_int`): the REAL type is an
+    # int (a subclass gives the int it holds, read by int) or an integral
+    # number of the numeric tower (numpy's, say), converted once, here;
+    # never a bool, never an object that only claims to be an int
+    try:
+        ivalue = as_int(value, "timestamp")
+    except ValueError:
         raise TimestampUnitError(
-            f"timestamp must be an int of nanoseconds, got {type(value).__name__}"
-        )
-    # an int itself; an int subclass gives the int it holds (read by int,
-    # never by the subclass: values.py); another integral type is
-    # converted once, here
-    ivalue = int.__index__(value) if isinstance(value, int) else int.__index__(int(value))
+            f"timestamp must be an int of nanoseconds, got {type_name(value)}"
+        ) from None
     if not (INT64_MIN <= ivalue <= INT64_MAX):
         raise TimestampUnitError(f"{ivalue} does not fit in int64")
     return Nanos(ivalue)
@@ -123,17 +126,18 @@ def to_nanos(
             f"{sorted(_UNIT_TO_NS_FACTOR)} or 'iso'"
         )
     factor = _UNIT_TO_NS_FACTOR[unit]
-    if isinstance(value, bool):
-        raise TimestampUnitError("bool is not a timestamp")
-    if isinstance(value, numbers.Integral):
-        ns = int(value) * factor
-    elif isinstance(value, (float, str, Decimal)) or isinstance(value, numbers.Real):
-        if isinstance(value, float) or (
-            isinstance(value, numbers.Real) and not isinstance(value, (str, Decimal))
-        ):
-            text = repr(float(value))
-        else:
-            text = str(value).strip()
+    # the value as a built-in scalar, by its REAL type (values.py `scalar`:
+    # numpy numbers converted once, a subclass read by its built-in type)
+    try:
+        v = scalar(value, "timestamp")
+    except ValueError:
+        v = None
+    if type(v) is bool:
+        raise TimestampUnitError(f"a bool ({type_name(value)}) is not a timestamp")
+    if type(v) is int:
+        ns = v * factor
+    elif type(v) in (float, str, Decimal, Fraction):
+        text = v.strip() if type(v) is str else (str(v) if type(v) is Decimal else repr(float(v)))
         try:
             dec = Decimal(text)
         except InvalidOperation as exc:
@@ -149,14 +153,16 @@ def to_nanos(
     else:
         raise TimestampUnitError(
             f"timestamp value for unit {unit!r} must be int, float, Decimal or "
-            f"numeric str, got {type(value).__name__}"
+            f"numeric str, got {type_name(value)}"
         )
     return _check_plausible(ns, f"{value!r} labelled unit={unit!r}", plausible)
 
 
 def _iso_to_nanos(value: object, plausible: tuple[int, int]) -> Nanos:
-    if not isinstance(value, str):
-        raise TimestampUnitError(f"iso timestamp must be str, got {type(value).__name__}")
+    try:
+        value = as_text(value, "iso timestamp")  # a str itself (its own strip, not a subclass's)
+    except ValueError:
+        raise TimestampUnitError(f"iso timestamp must be str, got {type_name(value)}") from None
     m = _ISO_RE.match(value.strip())
     if m is None:
         raise TimestampUnitError(f"unparseable ISO-8601 timestamp {value!r}")

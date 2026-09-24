@@ -5,15 +5,19 @@ explicit non-negative slice bound, whatever the bound's role -- raises
 silently shortened or empty answer, as a time argument after now does.
 Scene p4-future-read-attempt: "空・切り詰め … は素通り".
 
-Round 6 (i0-r5-05): the error said "not delivered yet" also for an answer
-that ends in the delivered past (`until_ns` before the newest, a slice
-ending before the answer's end, a backward read). An answer now carries
-`next_is_undelivered` (is the position after its last event an event not
-delivered yet?), fixed when it is made; past its end it raises
-`FuturePositionError` if True and `OutsideAnswerError` (an IndexError, not
-a LookAheadError) if False. The oracles below run over both facts; the
-engine-level check compares the fact with the INPUT (was the event after
-the answer's last delivered at that time?), not with the core's rule.
+Round 6 (i0-r5-05) gave an answer ONE fact about the position after its
+last event, and chose the error for EVERY outside position from it; round
+7 (i0-r6-01): an answer past its end names, further out, events not
+delivered yet, and a backward answer's negative index names the newer
+side. An answer now knows its place in what the read reads
+(`AnswerPlace`: answer position q is position first + q * step there;
+`delivered` of those had been delivered), and the error follows from the
+NAMED position: not delivered yet -> FuturePositionError (a
+LookAheadError); delivered, outside -> OutsideAnswerError; before the
+oldest -> DroppedPositionError (history_limit dropped it) or
+BeforeFirstEventError (nothing there). The engine-level checks decide what
+a named position is from the INPUT and the callback time (which input
+events of the selection had been received by now), not from the core.
 
 Round 5 (i0-r4-01): `[4:]` at the 4th bar returned () -- the rule was a
 list of per-form inequalities and this file's oracle copied them. The
@@ -34,10 +38,14 @@ import pytest
 from bot.bt.core import (
     CORE_CONTRACT,
     POSITION_RULE,
+    AnswerPlace,
+    BeforeFirstEventError,
     CoreEngine,
     DeliveredEvents,
+    DroppedPositionError,
     EventType,
     FuturePositionError,
+    HistoryTruncatedError,
     LookAheadError,
     OutsideAnswerError,
 )
@@ -129,26 +137,31 @@ def test_reads_within_the_delivered_positions_answer_as_a_tuple():
     assert got["reverse"] == [103.0, 102.0, 101.0, 100.0] and got["eq_tuple"] is True
 
 
-def test_negative_index_before_the_oldest_is_a_plain_index_error():
+def test_negative_index_before_the_oldest_is_before_the_first_event():
+    """At the 4th bar, `[-5]` names the position before the first bar ever
+    delivered: nothing is there, which is the past, not the future."""
     def read(ctx):
         try:
             ctx.visible_events(BAR)[-5]
         except FuturePositionError:
             return "future"
-        except IndexError:
-            return "past"
-    assert _reads_at_fourth_bar(read) == "past"
+        except BeforeFirstEventError as exc:
+            return ("nothing", exc.answer_position, exc.read_position, exc.delivered)
+    assert _reads_at_fourth_bar(read) == ("nothing", -1, -1, 4)
 
 
 # -- the rule, checked against an oracle that does not read the core -------
 
-def _names_a_position_past_the_end(n: int, key) -> bool:
-    """Probe a plain tuple of n elements. An index, the first position a
-    slice reads (its start), and the old-side end of a backward slice (its
-    stop, which names the element just before the range) must name an
-    element that is there. The end of a forward slice (its stop, not read)
-    may be the end of the answer, but `plain[:stop]` must not be cut short.
-    Negative bounds count from the newest and never name the future."""
+def _outside_positions(n: int, key) -> list[int]:
+    """Probe a plain tuple of n elements: the answer positions a key names
+    outside the answer, one per refused bound. An index must name an
+    element that is there (a negative one counts from the newest). A
+    slice's start, and the old-side end of a backward slice (its stop,
+    the element just before the range), must name an element that is
+    there; the end of a forward slice (its stop, not read) names the
+    position before it, so it may be the end of the answer, and
+    `plain[:stop]` must not be cut short. Negative slice bounds are cut
+    (as for any tuple) and name nothing outside."""
     plain = tuple(range(n))
 
     def is_there(p: int) -> bool:
@@ -159,12 +172,17 @@ def _names_a_position_past_the_end(n: int, key) -> bool:
         return True
 
     if isinstance(key, int):
-        return key >= 0 and not is_there(key)
+        return [] if is_there(key) else [key if key >= 0 else key + n]
     step = 1 if key.step is None else key.step
-    must_be_there = [key.start] + ([key.stop] if step < 0 else [])
-    if any(b is not None and b >= 0 and not is_there(b) for b in must_be_there):
-        return True
-    return step > 0 and key.stop is not None and key.stop >= 0 and len(plain[:key.stop]) != key.stop
+    out = []
+    if key.start is not None and key.start >= 0 and not is_there(key.start):
+        out.append(key.start)
+    if key.stop is not None and key.stop >= 0:
+        if step < 0 and not is_there(key.stop):
+            out.append(key.stop)
+        if step > 0 and len(plain[:key.stop]) != key.stop:
+            out.append(key.stop - 1)
+    return out
 
 
 _BOUNDS = [None] + list(range(-9, 10))
@@ -178,83 +196,140 @@ def _all_keys():
         yield slice(start, stop, step)
 
 
-def _next_after_result(n: int, key: slice) -> int:
-    """The position, in an answer of n events, of what follows the last
-    event of `answer[key]` in the slice's own direction -- from Python's
-    range semantics on plain positions, not from the core."""
-    r = range(n)[key]
-    return r.start + len(r) * r.step
+def _what_is_there(u: int, delivered: int, dropped: bool) -> type:
+    """What a position of the read's list is, from the list itself: at or
+    after the delivered count, not delivered yet; inside, a delivered
+    event; before it, dropped or nothing."""
+    if u >= delivered:
+        return FuturePositionError
+    if u >= 0:
+        return OutsideAnswerError
+    return DroppedPositionError if dropped else BeforeFirstEventError
 
 
-@pytest.mark.parametrize("fact", [True, False])
+# places of an answer of n events in a read's list of `delivered`: at the
+# newest, cut in the past, stepped, backward, with and without a drop
+def _places(n: int):
+    yield "newest", 3, 1, n + 3, False
+    yield "past", 1, 1, n + 6, False
+    yield "past-dropped", 0, 1, n + 2, True
+    yield "stepped", 1, 2, 2 * n + 3, False
+    yield "backward-newest", n + 1, -1, n + 2, False
+    yield "backward-past", n + 2, -1, n + 5, True
+    yield "backward-stepped", 3 * n, -3, 3 * n + 1, False
+
+
 @pytest.mark.parametrize("n", range(0, 7))
-def test_every_index_and_slice_matches_the_probe_oracle(n, fact):
-    seq = DeliveredEvents(range(n), next_is_undelivered=fact)
-    past_end_error = FuturePositionError if fact else OutsideAnswerError
-    plain = list(range(n))
+def test_every_index_and_slice_matches_the_probe_oracle(n):
     checked = refused = 0
-    for key in _all_keys():
-        checked += 1
-        if _names_a_position_past_the_end(n, key):
-            with pytest.raises(past_end_error) as info:
-                seq[key]
-            # the kind follows the answer's fact: never "not delivered yet"
-            # for an answer that ends in the delivered past
-            assert isinstance(info.value, LookAheadError) is fact, key
-            refused += 1
-            continue
-        if isinstance(key, int):
-            if key < -n:
+    for label, first, step, delivered, dropped in _places(n):
+        world = [first + i * step for i in range(n)]  # each item is its own position in the read
+        seq = DeliveredEvents(world, first=first if n else first, step=step, delivered=delivered,
+                              dropped_before=dropped)
+        for key in _all_keys():
+            checked += 1
+            named = _outside_positions(n, key)
+            if named:
+                kinds = [_what_is_there(first + q * step, delivered, dropped) for q in named]
+                want = FuturePositionError if FuturePositionError in kinds else kinds[0]
                 with pytest.raises(IndexError) as info:
                     seq[key]
-                assert not isinstance(info.value, (FuturePositionError, OutsideAnswerError))
-            else:
-                assert seq[key] == plain[key]
-            continue
-        out = seq[key]
-        assert isinstance(out, DeliveredEvents) and list(out) == plain[key], key
-        # the slice carries the fact for its OWN last event: what follows it
-        # is what follows the answer only if that position is past the
-        # answer's end in the forward direction
-        nxt = _next_after_result(n, key)
-        step = 1 if key.step is None else key.step
-        assert out.next_is_undelivered is (fact and step > 0 and nxt >= n), key
-    assert checked == 19 + 20 * 20 * 7 and refused > 0
+                assert type(info.value) is want, (label, key, type(info.value).__name__, want.__name__)
+                assert isinstance(info.value, LookAheadError) is (want is FuturePositionError)
+                refused += 1
+                continue
+            if isinstance(key, int):
+                assert seq[key] == world[key]
+                continue
+            out = seq[key]
+            assert isinstance(out, DeliveredEvents) and list(out) == world[key], (label, key)
+            # the slice's place, read from its own items (each is its position)
+            if len(out) >= 1:
+                assert out.place.first == out[0], (label, key)
+            if len(out) >= 2:
+                assert out.place.step == out[1] - out[0], (label, key)
+            assert out.place.delivered == delivered and out.place.dropped_before is dropped
+    assert checked == 7 * (19 + 20 * 20 * 7) and refused > 0
 
 
 def test_a_slice_that_ends_before_the_answer_names_the_past_not_the_future():
-    """i0-r5-05 by slicing: in an answer of 4 that ends at the newest,
-    `[1:3]` ends at position 2; its position 2 is the answer's position 3
-    (delivered). `[1:]` reaches the end; its position 3 is not delivered.
-    A backward read's position after its last is older than the oldest."""
-    ans = DeliveredEvents(range(4), next_is_undelivered=True)
+    """In an answer of 4 that ends at the newest, `[1:3]` ends at position
+    2; its position 2 is the answer's position 3 (delivered). `[1:]`
+    reaches the end; its position 3 is not delivered. A backward read's
+    position after its last is before the first event (nothing)."""
+    ans = DeliveredEvents(range(4), first=0, delivered=4)
     with pytest.raises(OutsideAnswerError) as info:
         ans[1:3][2]
-    assert not isinstance(info.value, LookAheadError)
+    assert type(info.value) is OutsideAnswerError and not isinstance(info.value, LookAheadError)
     with pytest.raises(FuturePositionError):
         ans[1:][3]
-    with pytest.raises(OutsideAnswerError):
+    with pytest.raises(BeforeFirstEventError):
         ans[::-1][4]
-    # positions 0 and 2; stepping 2 on from position 2 lands at 4, past the
-    # answer's end, which is not delivered
+    # a backward answer's negative index before its first names the NEWER side
+    with pytest.raises(FuturePositionError):
+        ans[::-1][-5]
     assert ans[0:4:2].next_is_undelivered is True
     assert ans[0:3:2].next_is_undelivered is True and ans[1:3:2].next_is_undelivered is False
     with pytest.raises(FuturePositionError):
         ans[0:4:2][2]
 
 
-def test_the_fact_cannot_be_left_out_or_changed():
+def test_a_stepped_answer_in_the_past_names_the_future_further_out():
+    """The critic's case (i0-r6-01): all[0:6:3] of 10 delivered holds
+    positions 0 and 3; its [2] is position 6 (delivered), its [4] is
+    position 12 (not delivered)."""
+    ans = DeliveredEvents(range(10), first=0, delivered=10)[0:6:3]
+    with pytest.raises(OutsideAnswerError) as past:
+        ans[2]
+    assert type(past.value) is OutsideAnswerError and past.value.read_position == 6
+    with pytest.raises(FuturePositionError) as future:
+        ans[4]
+    assert (future.value.answer_position, future.value.read_position, future.value.delivered) == (4, 12, 10)
+    # two bounds outside: the one naming the future is reported
+    cut = DeliveredEvents(range(7), first=0, delivered=10)
+    with pytest.raises(FuturePositionError):
+        cut[8:12]
+
+
+def test_the_place_cannot_be_left_out_or_changed():
     with pytest.raises(TypeError):
-        DeliveredEvents((1, 2))  # the maker states what follows
+        DeliveredEvents((1, 2))  # the maker states where it lies
     with pytest.raises(TypeError):
-        DeliveredEvents((1, 2), next_is_undelivered=1)
-    ans = DeliveredEvents((1, 2), next_is_undelivered=False)
+        DeliveredEvents((1, 2), first=0, delivered=2.0)
+    with pytest.raises(TypeError):
+        DeliveredEvents((1, 2), first=0, delivered=2, dropped_before=1)
+    with pytest.raises(ValueError):
+        DeliveredEvents((1, 2), first=1, delivered=2)  # position 2 was not delivered
+    with pytest.raises(ValueError):
+        DeliveredEvents((1, 2), first=0, step=0, delivered=2)
+    ans = DeliveredEvents((1, 2), first=3, delivered=9, dropped_before=True)
+    for name in ("place", "_place", "next_is_undelivered", "anything"):
+        with pytest.raises(AttributeError):
+            setattr(ans, name, None)
     with pytest.raises(AttributeError):
-        ans.next_is_undelivered = True
+        del ans._place
     import copy
     import pickle
     for clone in (copy.copy(ans), copy.deepcopy(ans), pickle.loads(pickle.dumps(ans))):
-        assert clone == ans and clone.next_is_undelivered is False
+        assert clone == ans and clone.place == ans.place == AnswerPlace(3, 1, 9, True)
+
+
+def test_a_slice_bound_is_read_once():
+    """A bound whose `__index__` answers differently each time it is asked
+    must not pass the check with one value and cut with another."""
+    class Shifty:
+        def __init__(self, values):
+            self.values = list(values)
+
+        def __index__(self):
+            return self.values.pop(0) if len(self.values) > 1 else self.values[0]
+
+    ans = DeliveredEvents(range(4), first=0, delivered=4)
+    # asked first: 2 (inside); asked again: 9 (outside, would give ())
+    got = ans[Shifty([2, 9]):]
+    assert list(got) == [2, 3]
+    with pytest.raises(FuturePositionError):
+        ans[Shifty([9, 2]):]
 
 
 DAY = 86_400 * SEC
@@ -288,55 +363,173 @@ def test_a_read_cut_in_the_past_names_delivered_events_outside_it():
         assert got[name] == ("OutsideAnswerError", False), (name, got[name])
 
 
-def test_the_fact_agrees_with_the_input_at_every_callback():
-    """Rule-free: at every callback, for reads cut at every delivered
-    time (and uncut, by type and overall, with n and since_ns), the fact
-    is True exactly when the INPUT event after the answer's last one (of
-    what the read selects) had not been delivered by now -- decided from
-    the input list and the callback time, not from the core -- and the
-    position after the answer's last raises the matching error."""
-    import random
+_SLICES = (None, slice(None, None, -1), slice(None, None, 2), slice(1, None, 3), (slice(None, None, -1), slice(1, None)))
 
-    rng = random.Random(606)
-    events = []
-    t = T0
-    for i in range(40):
-        t += rng.choice([1, 2, 3]) * SEC
-        events.append(bar(t, 100.0 + i) if rng.random() < 0.5 else trade(t, 200.0 + i))
+
+def _apply(ans, rng_positions, sl):
+    """Apply one slice (or a chain of them) to the answer and, with
+    Python's own range slicing, to the read positions its items hold."""
+    for key in (sl if isinstance(sl, tuple) else (sl,)):
+        if key is None:
+            continue
+        if _outside_positions(len(ans), key):
+            return None  # the slice itself names outside the answer (checked elsewhere)
+        ans, rng_positions = ans[key], rng_positions[key]
+    return ans, rng_positions
+
+
+def _run_every_naming(events, history_limit=None):
+    """At every callback, for reads by type and overall, cut at every
+    delivered time and not, with n and since_ns, and slices of them: name
+    every position from -len-3 to len+3 and compare the error with what
+    the INPUT holds there -- the read's list rebuilt from the input
+    events of the selection received by now (zero latency: an input event
+    is delivered at its received time), not from the core."""
     checked = 0
     problems: list = []
+    by_seq_time: dict = {}
 
-    def selection(etype):
-        return [e for e in events if etype is None or e.EVENT_TYPE is etype]
+    def selection(etype, now):
+        return [e for e in events if (etype is None or e.EVENT_TYPE is etype) and e.received_time_ns <= now]
 
     def cb(ev, ctx):
         nonlocal checked
         now = ctx.now_ns
         for etype in (None, BAR, EventType.TRADE):
-            sel = selection(etype)
+            sel = selection(etype, now)
+            times = [int(e.received_time_ns) for e in sel]
+            for until in sorted(set(times))[::3] + [None]:
+                for kw in ({}, {"n": 2}, {"since_ns": times[len(times) // 2] if times else None}):
+                    try:
+                        ans = ctx.visible_events(etype, until_ns=until, **kw)
+                    except HistoryTruncatedError:
+                        continue
+                    kept = ctx.visible_events(etype, n=len(sel)) if history_limit is None else None
+                    # where the answer's events sit in the input's list (times are distinct)
+                    if ans:
+                        lo = times.index(int(ans[0].received_time_ns))
+                    else:
+                        hi = len([t for t in times if until is None or t <= until])
+                        lo = hi
+                    positions = range(lo, lo + len(ans))
+                    for sl in _SLICES:
+                        applied = _apply(ans, positions, sl)
+                        if applied is None:
+                            continue
+                        a, pos = applied
+                        pstep = pos.step
+                        for q in range(-len(a) - 3, len(a) + 3):
+                            if -len(a) <= q < len(a):
+                                if int(a[q].received_time_ns) != times[pos[q]]:
+                                    problems.append(("value", now, etype, until, kw, sl, q))
+                                continue
+                            qq = q if q >= 0 else q + len(a)
+                            u = pos.start + qq * pstep
+                            if u >= len(times):
+                                want = FuturePositionError
+                            elif u >= 0:
+                                want = OutsideAnswerError
+                            else:
+                                want = BeforeFirstEventError
+                            try:
+                                a[q]
+                                got = None
+                            except IndexError as exc:
+                                got = type(exc)
+                            if history_limit is not None and want is BeforeFirstEventError:
+                                ok = got in (BeforeFirstEventError, DroppedPositionError)
+                            elif history_limit is not None and want is OutsideAnswerError:
+                                ok = got in (OutsideAnswerError, DroppedPositionError)
+                            else:
+                                ok = got is want
+                            if not ok:
+                                problems.append((now, etype, until, kw, sl, q, u, len(times), got, want))
+                            checked += 1
+                    del kept
+
+    CoreEngine(Recorder(cb), events, history_limit=history_limit).run()
+    return checked, problems
+
+
+def _random_input(seed: int, count: int = 40):
+    import random
+
+    rng = random.Random(seed)
+    events = []
+    t = T0
+    for i in range(count):
+        t += rng.choice([1, 2, 3]) * SEC
+        events.append(bar(t, 100.0 + i) if rng.random() < 0.5 else trade(t, 200.0 + i))
+    return events
+
+
+def test_every_named_position_agrees_with_the_input_at_every_callback():
+    checked, problems = _run_every_naming(_random_input(606))
+    assert checked > 10_000 and problems == [], problems[:5]
+
+
+def test_the_fact_after_the_last_event_agrees_with_the_input():
+    """`next_is_undelivered` (derived from the place) is True exactly when
+    the input event after the answer's last one (of the selection) had not
+    been received by now."""
+    events = _random_input(607)
+    problems: list = []
+    checked = 0
+
+    def cb(ev, ctx):
+        nonlocal checked
+        now = ctx.now_ns
+        for etype in (None, BAR, EventType.TRADE):
+            sel = [e for e in events if etype is None or e.EVENT_TYPE is etype]
             cuts = sorted({int(e.received_time_ns) for e in sel if e.received_time_ns <= now}) + [None]
             for until in cuts:
                 for kw in ({}, {"n": 2}, {"since_ns": T0}):
                     ans = ctx.visible_events(etype, until_ns=until, **kw)
                     if not ans:
                         continue
-                    last = ans[-1]
-                    later = [e for e in sel if e.received_time_ns > last.received_time_ns]  # times are distinct
+                    later = [e for e in sel if e.received_time_ns > ans[-1].received_time_ns]
                     undelivered = not later or later[0].received_time_ns > now
                     if ans.next_is_undelivered is not undelivered:
-                        problems.append((now, etype, until, kw, ans.next_is_undelivered, undelivered))
-                    try:
-                        ans[len(ans)]
-                    except FuturePositionError:
-                        kind = True
-                    except OutsideAnswerError:
-                        kind = False
-                    if kind is not undelivered:
-                        problems.append(("error", now, etype, until, kw))
+                        problems.append((now, etype, until, kw))
                     checked += 1
 
     CoreEngine(Recorder(cb), events).run()
     assert checked > 1000 and problems == []
+
+
+def test_positions_before_the_kept_history_are_dropped_not_nothing():
+    """With history_limit, a position before the oldest KEPT event of a
+    type that dropped some is a delivered event no longer held
+    (DroppedPositionError, also a HistoryTruncatedError); before the first
+    event ever delivered it is BeforeFirstEventError; after the newest it
+    is still FuturePositionError."""
+    got: dict = {}
+
+    def cb(ev, ctx):
+        if ev.EVENT_TYPE is BAR and ev.close == 109.0:
+            bars = ctx.visible_events(BAR, n=2)
+            for name, read in (("bars[-3]", lambda: bars[-3]), ("bars[::-1][2]", lambda: bars[::-1][2]),
+                               ("bars[2]", lambda: bars[2]),
+                               ("trades[-9]", lambda: ctx.visible_events(EventType.TRADE)[-9]),
+                               ("all[-99]", lambda: ctx.visible_events()[-99])):
+                try:
+                    read()
+                except IndexError as exc:
+                    got[name] = (type(exc).__name__, isinstance(exc, HistoryTruncatedError),
+                                 isinstance(exc, LookAheadError))
+
+    events = [bar(T0 + i * SEC, 100.0 + i) for i in range(10)] + [trade(T0 + 20 * SEC)]
+    CoreEngine(Recorder(cb), sorted(events, key=lambda e: e.received_time_ns), history_limit=3).run()
+    assert got["bars[-3]"] == ("DroppedPositionError", True, False)
+    assert got["bars[::-1][2]"] == ("DroppedPositionError", True, False)
+    assert got["bars[2]"] == ("FuturePositionError", False, True)
+    assert got["trades[-9]"] == ("BeforeFirstEventError", False, False)  # no trade delivered yet
+    assert got["all[-99]"] == ("DroppedPositionError", True, False)
+
+
+def test_every_named_position_with_a_history_limit():
+    checked, problems = _run_every_naming(_random_input(608), history_limit=4)
+    assert checked > 1000 and problems == [], problems[:5]
 
 
 @pytest.mark.parametrize("n", range(0, 7))
@@ -345,7 +538,7 @@ def test_an_answered_read_does_not_depend_on_what_comes_after(n):
     length (non-negative, or None where None means position 0 / the oldest
     end), a read that is answered gives the same positions had 12 more
     events been delivered after these."""
-    seq = DeliveredEvents(range(n), next_is_undelivered=True)
+    seq = DeliveredEvents(range(n), first=0, delivered=n)
     for key in _all_keys():
         if isinstance(key, int):
             fixed, later = key >= 0, list(range(n + 12))
@@ -368,8 +561,8 @@ def test_each_role_of_the_table_refuses_by_itself_and_is_named():
     """Every role of POSITION_RULE refuses a bound one past its limit, and
     the error names the role (the rule is the table, not per-form code)."""
     n = 4
-    seq = DeliveredEvents(range(n), next_is_undelivered=True)
-    past = DeliveredEvents(range(n), next_is_undelivered=False)
+    seq = DeliveredEvents(range(n), first=0, delivered=n)
+    past = DeliveredEvents(range(n), first=0, delivered=n + 6)
     one_past = {
         "index": 4,
         "forward slice start": slice(4, None),

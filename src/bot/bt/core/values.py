@@ -22,17 +22,32 @@ passes every one of its fields through one of them:
 * `freeze` -- plain data of any shape (`OrderRequest.extra`): an equal,
   deeply immutable, hashable form.
 
-The one scalar rule (`scalar`): an instance of an exact built-in scalar
-type (None, bool, int, float, complex, str, bytes, Decimal, Fraction) is
-kept; an instance of a SUBCLASS of int, float, complex, str or bytes
-(`IntEnum` / `StrEnum` members, numpy.float64, ...) is stored as the
-built-in value it holds, read by the built-in type's own method
-(`str.__str__`, `float.__float__`, `int.__index__`, ...) so no method of
-the subclass ever runs or crosses; anything else -- a plain `Enum` member
-(its class is the sender's), a function (it can read the sender's state
-when it is called, later), an arbitrary object, a generator, a container
-that holds itself -- raises `ValueError`; the caller wraps it in its own
-error type.
+The one scalar rule (`scalar`) -- the ONE rule for which foreign values
+become values, used by every field function below (i0-r6-03):
+
+* an instance of an exact built-in scalar type (None, bool, int, float,
+  complex, str, bytes, Decimal, Fraction) is kept;
+* an instance of a SUBCLASS of int, float, complex, str or bytes
+  (`IntEnum` / `StrEnum` members, numpy.float64, numpy.str_, ...) is stored
+  as the built-in value it holds, read by the built-in type's own method
+  (`str.__str__`, `float.__float__`, `int.__index__`, ...) so no method of
+  the subclass ever runs or crosses;
+* a numpy bool (what numpy and pandas comparisons give) is stored as the
+  `bool` it holds, read by numpy's own method;
+* a number of the numeric tower (`numbers.Integral` -> int,
+  `numbers.Real` -> float, `numbers.Complex` -> complex; numpy.int64,
+  numpy.float32, ...) is converted once, NOW, to the built-in type itself;
+* anything else -- a plain `Enum` member (its class is the sender's), a
+  function (it can read the sender's state when it is called, later), an
+  arbitrary object, a generator, a container that holds itself -- raises
+  `ValueError`; the caller wraps it in its own error type.
+
+Every type decision here reads the object's REAL type, `type(x)` (`is_a`),
+never `isinstance`: `isinstance` also believes the object's own
+`__class__`, which any object may answer as it likes, while the built-in
+reads check the real type -- a check that believed the claim and a read
+that does not would see two different facts (i0-r6-03). Every error names
+the real type in full (`module.name`).
 
 Containers of plain data (tuple, list, dict, set, frozenset): a list
 becomes a `FrozenList`, a dict a `FrozenDict`, a set a `FrozenSet`; each
@@ -41,6 +56,7 @@ remembers what it was, so `thaw` gives back a fresh list / dict / set.
 from __future__ import annotations
 
 import numbers
+import sys
 from decimal import Decimal
 from fractions import Fraction
 from typing import Any, Iterator, Mapping
@@ -63,7 +79,10 @@ _BUILTIN_READ: tuple[tuple[type, Any], ...] = (
 PLAIN_DATA_RULE = (
     "scalars None, bool, int, float, complex, str, bytes, Decimal, Fraction (exact types); an instance of "
     "a subclass of int / float / complex / str / bytes (IntEnum and StrEnum members included) is stored "
-    "as the built-in value it holds, read by the built-in type (the subclass's methods never run); "
+    "as the built-in value it holds, read by the built-in type (the subclass's methods never run); a numpy "
+    "bool is stored as the bool it holds; a number of the numeric tower (numbers.Integral / Real / "
+    "Complex, numpy's included) is converted once, when it is sent, to int / float / complex; types are "
+    "decided by the real type, never by what the object claims (__class__); "
     "tuple / list / dict / set / frozenset of plain data; lists, dicts and sets are stored immutable and "
     "read back as fresh copies; anything else (a plain Enum member, a function, any other object) is refused"
 )
@@ -75,28 +94,84 @@ FIELD_RULE = (
 )
 
 
-def scalar(value: Any, where: str = "value") -> Any:
-    """The one scalar rule (module docstring): the value itself for an
-    exact built-in scalar, the built-in value held by a subclass instance
-    of int / float / complex / str / bytes, `ValueError` otherwise."""
+def is_a(value: Any, cls: Any) -> bool:
+    """Is the REAL type of `value` `cls` or a subclass of it? Unlike
+    `isinstance`, it does not ask the object (an object may claim any
+    class through `__class__`); `cls` may be a class, an ABC or a tuple."""
+    return issubclass(type(value), cls)
+
+
+def type_name(value: Any) -> str:
+    """The real type of `value` in full (`numpy.bool`, not `bool`)."""
+    t = type(value)
+    return t.__qualname__ if t.__module__ == "builtins" else f"{t.__module__}.{t.__qualname__}"
+
+
+def _numpy_bool() -> Any:
+    # numpy is not imported for this: a numpy bool exists only once numpy is
+    np = sys.modules.get("numpy")
+    return getattr(np, "bool_", None) if np is not None else None
+
+
+def _now(convert: Any, value: Any, where: str) -> Any:
+    """Convert a foreign number once, now, to the built-in type itself; an
+    error in the sender's conversion is a ValueError of this module."""
+    try:
+        out = convert(value)
+    except Exception as exc:  # the sender's own conversion code, or a number too large
+        article = "an" if convert is int else "a"
+        raise ValueError(
+            f"{where} must be a number {article} {convert.__name__} can hold, got a "
+            f"{type_name(value)} ({type(exc).__name__}: {exc})"
+        ) from None
+    for base, read in _BUILTIN_READ:
+        if base is convert:
+            return out if type(out) is convert else read(out)
+    return out  # pragma: no cover
+
+
+_NOT_PLAIN = object()  # what `_plain_scalar` gives for a value the scalar rule refuses
+
+
+def _plain_scalar(value: Any, where: str) -> Any:
+    """The scalar rule (module docstring): a built-in scalar itself, or
+    `_NOT_PLAIN`. Only a sender's failing conversion raises (ValueError)."""
     t = type(value)
     if t in _SCALARS:
         return value
     for base, read in _BUILTIN_READ:
-        if isinstance(value, base):
+        if issubclass(t, base):
             return read(value)
-    raise ValueError(
-        f"{where} holds a {t.__module__}.{t.__qualname__}, which is not plain data "
-        f"({PLAIN_DATA_RULE}); what crosses a path is sent at one time and may not hold "
-        f"state that can change or code that runs later"
-    )
+    nb = _numpy_bool()
+    if nb is not None and issubclass(t, nb):
+        return nb.__bool__(value)
+    if issubclass(t, numbers.Integral):
+        return _now(int, value, where)
+    if issubclass(t, numbers.Real):
+        return _now(float, value, where)
+    if issubclass(t, numbers.Complex):
+        return _now(complex, value, where)
+    return _NOT_PLAIN
+
+
+def scalar(value: Any, where: str = "value") -> Any:
+    """The one scalar rule (module docstring): a built-in scalar itself,
+    or `ValueError`."""
+    got = _plain_scalar(value, where)
+    if got is _NOT_PLAIN:
+        raise ValueError(
+            f"{where} holds a {type_name(value)}, which is not plain data "
+            f"({PLAIN_DATA_RULE}); what crosses a path is sent at one time and may not hold "
+            f"state that can change or code that runs later"
+        )
+    return got
 
 
 def as_text(value: Any, where: str) -> str:
     """A text field: a `str` (a subclass instance gives the characters it
     holds, as a `str`)."""
-    if not isinstance(value, str):
-        raise ValueError(f"{where} must be a str, got {type(value).__name__}")
+    if not is_a(value, str):
+        raise ValueError(f"{where} must be a str, got {type_name(value)}")
     return value if type(value) is str else str.__str__(value)
 
 
@@ -111,43 +186,44 @@ def as_choice(value: Any, where: str, allowed: tuple) -> str:
 
 
 def as_flag(value: Any, where: str) -> bool:
-    """A true/false field: a `bool` (bool cannot be subclassed), nothing
-    that decides its truth when it is asked."""
-    if type(value) is not bool:
-        raise ValueError(f"{where} must be a bool, got {type(value).__name__}")
-    return value
+    """A true/false field: a `bool`, or a numpy bool (read as the `bool` it
+    holds); nothing that decides its truth when it is asked, and no
+    number."""
+    got = _plain_scalar(value, where)
+    if type(got) is not bool:
+        raise ValueError(f"{where} must be a bool, got {type_name(value)}")
+    return got
 
 
 def as_int(value: Any, where: str) -> int:
-    """An integer field: an int (a subclass instance gives the int it
-    holds) or another integral number (numpy's, say) converted once, now;
-    never a bool."""
-    if isinstance(value, bool) or not isinstance(value, numbers.Integral):
-        raise ValueError(f"{where} must be an int, got {type(value).__name__}")
-    if isinstance(value, int):
-        return value if type(value) is int else int.__index__(value)
-    out = int(value)
-    return out if type(out) is int else int.__index__(out)
+    """An integer field: an int itself (the scalar rule: a subclass gives
+    the int it holds, an integral number of the numeric tower is converted
+    once, now); never a bool."""
+    got = _plain_scalar(value, where)
+    if type(got) is not int:
+        raise ValueError(f"{where} must be an int, got {type_name(value)}")
+    return got
 
 
 def as_float(value: Any, where: str, *, numbers_only: bool = True) -> float:
-    """A number field, as a `float`. A float or int subclass instance gives
-    the number it holds (read by float / int, never by the subclass); any
-    other accepted value is converted once, now. `numbers_only` (the
-    default) accepts `numbers.Real` only; False also accepts what `float()`
-    accepts (a numeric string, say). Never a bool. Whether the number is
-    finite or positive is the caller's rule."""
-    if isinstance(value, bool):
-        raise ValueError(f"{where} must be a number, got bool")
-    if isinstance(value, float):
-        return value if type(value) is float else float.__float__(value)
-    if numbers_only and not isinstance(value, numbers.Real):
-        raise ValueError(f"{where} must be a number, got {type(value).__name__}")
-    try:
-        out = float(int.__index__(value)) if isinstance(value, int) else float(value)
-    except (TypeError, ValueError, OverflowError) as exc:
-        raise ValueError(f"{where} must be a number a float can hold, got {value!r}") from exc
-    return out if type(out) is float else float.__float__(out)
+    """A number field, as a `float` itself (the scalar rule: a float or int
+    subclass gives the number it holds, a real number of the numeric tower
+    is converted once, now; a Fraction is converted); never a bool.
+    `numbers_only=False` also accepts a numeric str and a Decimal (what
+    `float()` reads exactly as text). Whether the
+    number is finite or positive is the caller's rule."""
+    got = _plain_scalar(value, where)
+    t = type(got)
+    if t is float:
+        return got
+    if t is int or t is Fraction or (t is Decimal and not numbers_only):
+        return _now(float, got, where)
+    if t is str and not numbers_only:
+        try:
+            return float(got)
+        except ValueError:
+            raise ValueError(f"{where} must be a number, got the text {got!r}") from None
+    raise ValueError(f"{where} must be a number, got {type_name(value)}")
 
 
 class FrozenList(tuple):

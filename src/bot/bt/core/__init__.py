@@ -23,8 +23,10 @@ from .contract import CORE_CONTRACT, CORE_VERSION, PATH_CARRIERS
 from .engine import SINGLE_STREAM_NAME, CoreEngine, EngineResult
 from .errors import (
     AccountSocketError,
+    BeforeFirstEventError,
     CoreError,
     CostModelError,
+    DroppedPositionError,
     EngineFailedError,
     EngineReentryError,
     EventOrderError,
@@ -91,7 +93,7 @@ from .ordering import (
 from .strategy import Strategy
 from .time import TIME_CONTRACT, Nanos, nanos_to_iso, to_nanos, validate_nanos
 from .values import FIELD_RULE, PLAIN_DATA_RULE, FrozenDict, FrozenList, FrozenSet
-from .window import POSITION_RULE, DeliveredEvents
+from .window import POSITION_RULE, AnswerPlace, DeliveredEvents
 
 import types as _types
 

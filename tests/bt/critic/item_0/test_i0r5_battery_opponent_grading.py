@@ -48,22 +48,42 @@ def _cells(target: str) -> dict[str, dict]:
         return {r["scene_id"]: r for r in csv.DictReader(fh, delimiter="\t")}
 
 
-# Basana 1.11 has a class for bars only; the adapter carries every other market type in its own subclass
+# The six P0-3 cells of Basana that i0-r5-02 was about. Round 6 critic (rule 8 of the
+# scene set): the round-5 version asserted `"class Generic(bs.Event)" in adapter`, i.e.
+# the adapter's OLD shape, so it failed as soon as the carrier class was removed -- an
+# error of the test itself. It also assumed Basana 1.11 has no trade / book classes
+# (`dir(basana)` lists top-level names only); the distribution has them under
+# `basana.external.*`. The property the test is for is kept and read from the
+# records instead: a cell graded 正解と一致 must rest on carriers whose class file is
+# in Basana's own distribution (never the scene set's modules), and the types Basana
+# has no class for (funding, liquidation, and the run that mixes them in) are not
+# graded 正解と一致.
 _NO_CLASS_IN_BASANA = ["p3-trade", "p3-book_snapshot", "p3-book_delta", "p3-funding", "p3-liquidation",
                        "p3-mixed-one-run"]
+_BASANA_HAS_NO_TYPE = {"p3-funding", "p3-liquidation", "p3-mixed-one-run"}
 
 
 @pytest.mark.parametrize("scene_id", _NO_CLASS_IN_BASANA)
 def test_basana_is_not_credited_with_an_event_type_its_adapter_wrote(scene_id):
-    cells = _cells("opp_basana")
-    adapter = (BATTERY / "opponents" / "basana_adapter.py").read_text(encoding="utf-8")
-    assert "class Generic(bs.Event)" in adapter  # the adapter's own carrier class (what this test is about)
-    cell = cells[scene_id]
-    assert cell["correctness"] != "正解と一致", (
-        f"{scene_id}: Basana is graded 正解と一致 for a type it has no class for; the events were carried "
-        f"in the adapter's own `Generic(bs.Event)` (detail: {cell['detail_1'][:120]!r}). The fixed "
-        f"measurement of P0-3 says 型が無ければ「対応なし」"
-    )
+    import json
+
+    cell = _cells("opp_basana")[scene_id]
+    if scene_id in _BASANA_HAS_NO_TYPE:
+        assert cell["correctness"] != "正解と一致", (
+            f"{scene_id}: Basana is graded 正解と一致 for a type its distribution has no class for; "
+            f"the fixed measurement of P0-3 says 型が無ければ「対応なし」 (detail: {cell['detail_1'][:160]!r})"
+        )
+        return
+    if cell["correctness"] != "正解と一致":
+        return
+    carriers = json.loads(cell["provenance_1"])["carriers"]
+    assert carriers, f"{scene_id}: 正解と一致 without any recorded carrier"
+    for c in carriers:
+        tf = c.get("type_file") or ""
+        assert "/site-packages/basana/" in tf, (
+            f"{scene_id}: the carrier {c.get('type')!r} is defined in {tf!r}, not in Basana's distribution"
+        )
+        assert "/tests/bt/battery/" not in tf, f"{scene_id}: carrier class from the scene set: {tf!r}"
 
 
 def test_funding_best_cell_of_the_survey_side_does_not_rest_only_on_an_adapter_made_type():

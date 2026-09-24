@@ -47,23 +47,28 @@ class LookAheadError(CoreError, RuntimeError):
 
 
 class FuturePositionError(LookAheadError, IndexError):
-    """The strategy named, by POSITION, an entry after the last event of a
-    history read that ends at the newest delivered event of what it reads
-    (an index `>= len`, or a slice whose explicit non-negative bound lies
-    past the end). Those positions hold events not delivered yet (an answer
-    that ends in the delivered past raises `OutsideAnswerError` instead); like a time argument after `now_ns`, the request is
-    refused instead of answered with a silently shortened or empty result.
-    It is an `IndexError` too, so code that expects one still gets one."""
+    """The strategy named, by POSITION (an index, a slice bound, a negative
+    index), an entry outside a history read's answer that is an event NOT
+    DELIVERED YET: mapped back to what the read reads (window.py
+    `AnswerPlace`), the position lies at or after the count of its events
+    delivered when the answer was made. Like a time argument after
+    `now_ns`, the request is refused instead of answered with a silently
+    shortened or empty result. It is an `IndexError` too, so code that
+    expects one still gets one. Attributes: `answer_position`,
+    `read_position`, `delivered`."""
 
 
 class OutsideAnswerError(CoreError, IndexError):
-    """The strategy named, by POSITION, an entry after the last event of a
-    history read that ends in the delivered PAST (cut by `until_ns`, by a
-    slice, or read backwards): what lies there was delivered but is outside
-    the answer. Not a `LookAheadError` -- nothing in the future was asked
-    for (i0-r5-05) -- but still refused instead of answered with a silently
-    shortened or empty result. An `IndexError`, so code that expects one
-    still gets one."""
+    """The strategy named, by POSITION, an entry outside a history read's
+    answer that is not in the future: raised as this class itself when
+    the position holds an event that WAS delivered (the read was cut by a
+    time range, `n` or a slice). Not a `LookAheadError` -- nothing in the
+    future was asked for (i0-r5-05) -- but still refused instead of
+    answered with a silently shortened or empty result: read a wider range
+    instead. An `IndexError`, so code that expects one still gets one.
+    Its subclasses say what else a past-side position can be:
+    `DroppedPositionError`, `BeforeFirstEventError`. Attributes:
+    `answer_position`, `read_position`, `delivered`."""
 
 
 class HistoryTruncatedError(CoreError, LookupError):
@@ -72,6 +77,20 @@ class HistoryTruncatedError(CoreError, LookupError):
     dropped event of a type it covers, and not confined to the kept part by
     `n`). The core does not know what the dropped part would have added, so
     it refuses instead of returning a silently shorter answer."""
+
+
+class DroppedPositionError(OutsideAnswerError, HistoryTruncatedError):
+    """A position outside the answer, before the oldest event the history
+    keeps of what the read reads, where `history_limit` dropped events:
+    that position was delivered but is no longer held. An
+    `OutsideAnswerError` (past, not a `LookAheadError`) and a
+    `HistoryTruncatedError`."""
+
+
+class BeforeFirstEventError(OutsideAnswerError):
+    """A position outside the answer, before the first event ever delivered
+    of what the read reads: nothing is there (nothing was dropped). Past,
+    not a `LookAheadError`."""
 
 
 class StaleContextError(CoreError, RuntimeError):

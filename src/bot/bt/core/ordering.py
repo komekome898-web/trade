@@ -89,6 +89,7 @@ import heapq
 from typing import Iterable, Mapping, Union
 
 from .events import SOURCE_EVENT_TYPES, Event, EventType
+from .values import is_a
 
 # Type order used to merge the heads of DIFFERENT input streams at one
 # exchange time. Only input (source) types appear: notices are never merged
@@ -185,7 +186,7 @@ def merge_key(event: Event, stream_rank: int) -> tuple[int, int, int]:
 
 
 def _as_streams(events: Union[Iterable[Event], Mapping[str, Iterable[Event]]]) -> dict[str, list[Event]]:
-    if isinstance(events, Mapping):
+    if is_a(events, Mapping):  # the real type, as the engine decides it (values.py)
         return {name: list(evs) for name, evs in events.items()}
     return {"events": list(events)}
 

@@ -113,7 +113,7 @@ EOF
 
 - 穴の再現: 直す前 `…/r6-3/item0_r6-3_scenekeeper_hole_probe.before.txt`(`git stash` で `run_battery.py`・`common.py` を HEAD に戻して走らせた。HEAD の 2 本は第 r6-2 回の検めを持つ): `delivered by the tool ok` / `built by the adapter in the call ok` / `adapter's object, never handed ok`。直したあと `…after.txt`: `ok` / `error` / `error`。
 - 試験(`test_battery_item0.py` の第 r6-3 回の節): `test_own_class_carriers_must_have_been_delivered_by_the_target`(道具が組んで渡した物 → 通る / 戦略の呼び出しの中で場面集の側が道具の class を組んだ物 → 拒む / adapter が持つだけの物 → 拒む / 戦略の `self` に adapter が付けた物 → 拒む / 道具が渡した物の中の物 → 通る / adapter が組んで道具に渡し道具が届けた入力 → 通り、記録に `input`・`held_by` / 道具の関数が返した物 → 通る)、`test_a_strategy_called_from_compiled_code_shows_the_compiled_caller`(母語の関数 `contextvars.Context.run`(lib-dynload の `_contextvars` の .so)が戦略を呼ぶ形: 追跡の中なら `native_by` = その .so で通る、追跡が無ければ拒む、戦略の中で組んだ物は拒む)、`test_every_recorded_carrier_shows_how_the_target_delivered_it`(全記録の carrier・of・via が届いた道の事実を持つ。`in_args`・`called_by` が記録に無い)、`test_quantcore_is_placed_by_its_compiled_caller`。
-- 全 36 対象と再現 1 つを走らせ直した(`sh …/r6-3/item0_r6-3_scenekeeper_runall.sh`、出力 `…/r6-3/item0_r6-3_scenekeeper_runall2.out`、37 行とも `32 scenes`)。出所の検めの拒否は 0 件(`grep -l "出所の検めで採点しない" …/r6-3/opp_*.tsv …/r6-3/repro_*.tsv` → 出力なし)。第 r6-2 回の記録からの正しさと再現の欄の変化は 1 セルだけ: `('opp_qstrader', 'p3-bar') ('不一致', …) -> ('対応なし', …)`(上の QSTrader の直し)。**1 Basana の全 32 場面の結果は変わらない**(`{'対応なし': 12, '正解と一致': 18, '不一致': 2}`)。Basana の carrier は `passed_by` = `basana/core/dispatcher/backtesting.py`・`base.py`(dispatcher が handler に渡した)で、届いた道の検めを通った(記録の一覧 `…/r6-3/item0_r6-3_scenekeeper_inventory.after.txt`)。65 aat の carrier も `passed_by` = `aat/engine/engine.py`。
+- 全 36 対象と再現 1 つを走らせ直した(`sh …/r6-3/item0_r6-3_scenekeeper_runall.sh`、出力 `…/r6-3/item0_r6-3_scenekeeper_runall3.out`、37 行とも `32 scenes`。母語の呼び出しの追跡を主の thread だけにした最後の版で走らせた。その前の版(`runall2.out`、道具が起こした thread も追跡)との差は 1 セルで、37 ThePredictiveDev の p7-latency-model-swap の `fill_time_ns`(道具が約定の時刻に壁時計 `pd.Timestamp.now()` を入れる、第 r6-2 回から「2 回で違う」の場面))。出所の検めの拒否は 0 件(`grep -l "出所の検めで採点しない" …/r6-3/opp_*.tsv …/r6-3/repro_*.tsv` → 出力なし)。第 r6-2 回の記録からの正しさと再現の欄の変化は 1 セルだけ: `('opp_qstrader', 'p3-bar') ('不一致', …) -> ('対応なし', …)`(上の QSTrader の直し)。**1 Basana の全 32 場面の結果は変わらない**(`{'対応なし': 12, '正解と一致': 18, '不一致': 2}`)。Basana の carrier は `passed_by` = `basana/core/dispatcher/backtesting.py`・`base.py`(dispatcher が handler に渡した)で、届いた道の検めを通った(記録の一覧 `…/r6-3/item0_r6-3_scenekeeper_inventory.after.txt`)。65 aat の carrier も `passed_by` = `aat/engine/engine.py`。
 - 直す前に届けた事実の無かった carrier の、直したあとの事実(同じ一覧から): 55 backtesting.py `returned_by` = `backtesting/backtesting.py` / 2 Backtrader `returned_by` = `backtrader/strategy.py` / 12 pybotters `returned_by` = `pybotters/store.py` / 34 QuantCore `native_by` = `quantcore/_core.cpython-311-x86_64-linux-gnu.so` / 53 Rqalpha・122 PyAlgoTrade `reached_by`(受けた `bar_dict`・`bars` の中) / 121 QSTrader `passed_by` = `qstrader/trading/backtest.py` ほか(carrier は `dt`) / 20 VnPy の試しの via `passed_by` = `vnpy_ctastrategy/backtesting.py`。
 - 当方の現状と新実装も同じ検めを通る: `--target new_impl` → `{'正解と一致': 32}; 2 回で違う=0`、`--target current_impl` → `{'対応なし': 23, '正解と一致': 8, '不一致': 1}; 2 回で違う=0`(第 r6-2 回と同じ)、`--target mutant` → `{'正解と一致': 31, '不一致': 1}`(記録 `…/r6-3/item0_r6-3_scenekeeper_{new_impl,current_impl,mutant}.tsv`)。
 - 検討表の含む側の文が引く場面が今の記録で正解と一致: `test_every_scene_a_containment_cites_as_correct_is_correct_in_the_records` が通る(引く候補に再現した 52 を足した)。
@@ -135,3 +135,28 @@ EOF
 5. **対象の class の入力(adapter が組んで対象に渡した物)は数える**。場面の入力はどの対象にも adapter が入口の形に直して渡すしかないので、これを拒むと新実装も含めて全対象の型の場面が測れない。対象がその入力を届けたこと(届いた道)は求める。
 6. 読み出しの「対象のコードが走った」は走ったことしか見ない(第 r6-2 回の限界 3 のまま)。
 7. 再現の機構の正しさ(一次資料どおりか)は機械では見ない。注釈の行と一次資料を批評家と監査役が突き合わせる。再現しなかった機構の 17 場面は結果なしで、そこでの LEAN の強さとは比べていない(P0-6・P0-7 は走った候補の最良が全場面で正解と一致なので、比べる相手の強さは下がらない)。
+
+## 提出前の吟味(委任文 §3「提出前の吟味」(1)〜(5))
+
+1. 読み直したもの: 固定した要件(`docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/REQUIREMENTS.md` の P0-1〜P0-7、特に P0-3「型が無ければ『対応なし』」)、委任文の「場面集の規則」1〜9・「調査結果の側の選び方」・「動かせない候補の検討と再現」(段の無い観点の既定は全部の再現、スキップは上位互換だけ)・「根本的解決」、これまでの指摘(第 5 周の i0-r5-01〜07、br6-1-1・br6-1-2、br6-2-1・br6-2-2)と前の周の根本原因(`ROOTCAUSE.md`・`ROOTCAUSE_r4-1.md`・`ROOTCAUSE_r5-1.md`・`ROOTCAUSE_r6-1.md`・`ROOTCAUSE_r6-2.md`)。
+2. 指摘ごとの根拠は「br6-2-1 の根拠」「br6-2-2 の根拠」に、ファイルと行・コマンドと出力で書いた。
+3. 同じ根の全箇所: br6-2-1 は指摘の 2 対象(Basana・aat)だけでなく、記録の全部の carrier・of・via を一覧にし(直す前の表)、届けた事実の無かった対象を全部直した: adapter を直したのは 55・2・12・121・20(試しの via)、作りを足したのは 34(母語の呼び出しの記録)、53・122 は adapter を変えずに `reached_by`(受けた物の中)が付いた。1 Basana・37 ThePredictiveDev の試しの via(対象の method)は「手段が対象のコード」の決まりで通る(限界 4)。記録の全件を機械で見る試験 `test_every_recorded_carrier_shows_how_the_target_delivered_it` を足した。第 r6-2 回の限界 1 の書き方の誤り(`in_args`・`called_by` を「持つ」に数えた)は `ROOTCAUSE_r6-2.md` に注を足し、判定に使わない欄は記録から外した。br6-2-2 はスキップの 16 行の全部を場面ごとの最良と照らし(「br6-2-2 の根拠」の最後の段落)、再現が要った 52 を再現した。
+4. 試験: 下の「試験の結果」。
+5. 非常に厳しい批評家が止めそうなものと扱い:
+   - 「adapter が対象の class で入力を組むのは、対象の物を adapter が組んだことにならないか」: 限界 5 と br6-2-1 の答えのとおり。新実装の adapter(`adapters/new_impl.py` 110-129 行)も同じ形で、これを拒むと全対象の型の場面が測れない。対象が届けたこと(届いた道)は全対象に求め、記録に `input` と残す。
+   - 「LEAN の再現が 17 場面で結果なし」: 再現は P0-1 の候補としての最小の書き直しで、再現しなかった機構を「対応なし」にすると LEAN がその機構を持たないと書くことになり、場面ごとの最良を不当に上げうる。17 場面の観点(P0-2 の ISO・P0-3 の時計と通知・P0-4・P0-6・P0-7)で 52 は候補の集まりに無いか(P0-2・P0-3・P0-4・P0-5)、スキップの行が全場面で最良を下げていない(P0-6・P0-7)。
+   - 「再現が 1 本の入力を型ごとの購読に分けている(adapter が並べ替えている)」: LEAN の購読は 1 つの型しか持たない(Subscription の `Configuration.Type`)ので、型ごとに分けるのは LEAN の入口の形。各型の中の順は変えていない。時刻での合わせは再現した同期がする。
+   - 「足の Period を adapter が決めた」: 一次資料の既定 `Time.OneMinute`(TradeBar.cs 182 行)を使い、EndTime(LEAN が足を出す時刻、SubscriptionData.cs 73 行)を場面の時刻に合わせた。
+   - 「QSTrader の p3-bar を不一致から対応なしに上げた」: 場面の定義「型が無い対象は『対応なし』(対象の配布物にその型が無いことを確かめた)」どおりで、確かめ方(配布物の Bar・Event を名に持つ class の全部と、呼び出しで受けた物)を detail に書いた。上げた向きは調査結果の側を強くする向き。調査結果の側の最良は変わらない(p3-bar は他の 11 候補が正解と一致)。
+   - 「試しの via が対象の関数なら通すのは緩い」: 限界 4。第 r6-2 回にも共有の型の関数は `code_file` で通っていた線で、緩めてはいない(届いた道を足したのは物の側)。
+   - [判断] **新実装の adapter(資料係の持ち物)は変えていない**。新実装の 32 場面は第 r6-2 回と同じく全部正解と一致で、届いた道は `passed_by` = `bot/bt/core` のコード。
+
+## 試験の結果
+
+- 場面係の試験: `PYTHONPATH=src python -m pytest tests/bt/battery/item_0` → `49 passed`(第 r6-2 回の 43 件に、第 r6-3 回の 6 件を足した: 届いた道の 4 件と、スキップと最良の 2 件。第 r6-2 回の 2 件は、道具の関数の返り値をそのまま記録していた「通る」側の例を、道具が届けた形 `tool.emit`・`C.read(tool.event, 1)` に書き直した = 規則 8 の「この作業の前の周で作った試験は、設計を変えたときに書き直してよい」。消した試験は無い)。
+- 批評家と作業者の試験: `PYTHONPATH=src python -m pytest tests/bt/battery/item_0 tests/bt/critic/item_0 tests/bt/item_0` → `6 failed, 787 passed, 2 skipped`。落ちた 6 件は第 r6-1 回から同じ `test_i0r5_battery_opponent_grading.py::test_basana_is_not_credited_with_an_event_type_its_adapter_wrote` の 6 つ(60 行の `assert "class Generic(bs.Event)" in adapter` が、指摘どおり消した adapter の class の存在を前提にしている。試験自身の誤りの理由は `ROOTCAUSE_r6-1.md` の i0-r5-02 の結果の節。場面集の規則 8 により試験は変えていない)。
+- mutant: `PYTHONPATH=src python3 mutant.py --check` → `changed scenes: ['p4-received-time']` / `OK`。
+- 定義: `python3 gen_definitions.py` → `wrote … DEFINITIONS.md (32 scenes)`。
+- 検討表: `python3 scripts/check_bt_considered.py tests/bt/battery/item_0/opponents/CONSIDERED.md --write` → `OK 誤り 0 件`。
+- 全試験(`setsid nohup … python -m pytest`、記録 `scratchpad/bt/pytest_item0_r6-3_scenekeeper_2.log`、2026-09-24T09:28:09Z 開始・09:36:38Z に終わりを確かめた): `6 failed, 3681 passed, 6 skipped, 1 warning in 502.10s (0:08:22)`。落ちたのは上の 6 件だけ(`grep ^FAILED` の全行)。
+- 全 36 対象と再現 1 つの走らせ直し: `…/r6-3/item0_r6-3_scenekeeper_runall3.out`(37 行とも `32 scenes`)。記録は `survey_results/opp_*.tsv` と `survey_results/repro_lean52.tsv` に置き換えた。
