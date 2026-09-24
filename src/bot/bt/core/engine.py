@@ -36,6 +36,19 @@ and every receiver gets a copy of its own (values.py `copy_carrier`), so
 no sender and no receiver holds what another reads. Neither side can
 change what the other receives, or learns, without sending.
 
+What the core decides from, sends and reports is built from objects only
+the core holds (round 9, i0-r8-01; contract `channel_payloads.ownership`):
+the facts of the strategy's orders live in the engine's own order book
+(api.py `_OrderBook`), the history's retention in its own records
+(history.py), and the engine keeps its own references to the objects it
+shares with the strategy -- the port's registry (the strategy's copies,
+written from the book, never read) and the outbox (read once per callback,
+as messages under the API's rules, `_drain`). It revokes the context and
+its windows through their classes and its own references. Nothing the
+strategy changes in what it can reach, by any means, reaches the core, the
+venue, another receiver or the caller's result; what it SENDS goes through
+the API's rules.
+
 Input is one stream of events, or several named streams (a mapping of
 name -> iterable, e.g. trades, board, bars and funding read from separate
 files). Streams are merged by time (ordering.py: exchange time, then
@@ -341,6 +354,48 @@ def _delivered_copy(event: Event, time_ns: int, seq: int) -> Event:
     return out
 
 
+def _alive_switch() -> tuple:
+    """(is_alive, kill) for one callback's context and windows: a closure
+    variable, not a container -- the engine's `kill` always succeeds,
+    whatever the strategy does to what it can reach (it can only make its
+    own stale context look alive to itself; what it then reads was
+    delivered, and what it sends is taken at a later callback's time)."""
+    state = True
+
+    def is_alive() -> bool:
+        return state
+
+    def kill() -> None:
+        nonlocal state
+        state = False
+
+    return is_alive, kill
+
+
+def _context_calls(port: _OrderPort) -> tuple:
+    """The functions a context acts through: each closes over one method of
+    the order port and nothing else (never the engine), so the port is
+    reached only by calling them (LEAD_DESIGN s3.4)."""
+    place, cancel, lookup, opens, timer = port.place, port.cancel, port.order, port.open_orders, port.set_timer
+
+    def place_order(request: Any) -> str:
+        return place(request)
+
+    def cancel_order(request: Any) -> None:
+        cancel(request)
+
+    def order_lookup(client_order_id: str) -> Optional[OrderView]:
+        return lookup(client_order_id)
+
+    def open_orders() -> tuple:
+        return opens()
+
+    def set_timer(at_ns: Any, tag: Any) -> None:
+        timer(at_ns, tag)
+
+    return place_order, cancel_order, order_lookup, open_orders, set_timer
+
+
 def _rebuilt(carrier: Any) -> Any:
     """The core's own object for a carrier a sender handed over (its class
     already checked to be one of the core's carrier classes itself): made
@@ -640,6 +695,7 @@ class CoreEngine:
         self._shown: dict[str, OrderView] = {}
         self._box: list = []
         self._port = _OrderPort(self._shown, self._box)
+        self._ctx_calls = _context_calls(self._port)
         self._ledger = _VenueLedger()
         self._forced: dict[str, OrderRequest] = {}
         self._forced_list: list[OrderRequest] = []
@@ -867,34 +923,48 @@ class CoreEngine:
         self._digest.update(b"\n")
         port = self._port
         port._now = renew(time_ns)  # written, never read back by the core
-        # the windows' places (window.py), all from the core's own counts
-        window = EventWindow(history.overall, history.count(), history.overall_dropped)
-        typed_windows = {
-            t: EventWindow(history.typed[t], history.count(t), history.dropped_before(t))
-            for t in EventType if history.count(t)
-        }
-        windows = [window, *typed_windows.values()]  # the core's own references, for revoking
+        # The context holds no mutable object (LEAD_DESIGN s3.4): the history
+        # lists are reached only inside the windows' reading functions, the
+        # port only inside the call functions, and the context and its
+        # windows are revoked together through `alive` (a cell only the
+        # engine flips; the engine holds no reference to the windows).
+        is_alive, kill = _alive_switch()
+
+        window = EventWindow(history.overall, history.count(), history.overall_dropped, is_alive)
+        places = {t: (lst, n, dropped) for t, lst, n, dropped in history.typed_places()}
+        made: dict = {}
+
+        def typed(etype: EventType):
+            w = made.get(etype)
+            if w is None:
+                got = places.get(etype)
+                if got is None:
+                    return ()
+                w = made[etype] = EventWindow(got[0], got[1], got[2], is_alive)
+            return w
+
+        place_order, cancel_order, order_lookup, open_orders, set_timer = self._ctx_calls
         ctx = StrategyContext(
             visible_events=window,
             current=delivered,
             now_ns=time_ns,
-            place_order_cb=port.place,
-            cancel_order_cb=port.cancel,
-            order_lookup_cb=port.order,
-            open_orders_cb=port.open_orders,
-            set_timer_cb=port.set_timer,
-            typed_events=typed_windows,
+            place_order_cb=place_order,
+            cancel_order_cb=cancel_order,
+            order_lookup_cb=order_lookup,
+            open_orders_cb=open_orders,
+            set_timer_cb=set_timer,
+            typed_events=typed,
             dropped=history.dropped_facts(),
             dropped_counts=history.dropped_count_facts(),
             dropped_overall=history.overall_dropped,
+            alive=is_alive,
         )
         try:
             self._strategy.on_event(delivered, ctx)
         finally:
-            # through the classes and the core's own references: nothing the
+            # the engine's own cell and the context's class: nothing the
             # strategy put on its context or windows is called here
-            for w in windows:
-                EventWindow.revoke(w)
+            kill()
             StrategyContext._revoke(ctx)
         self._drain(time_ns)
 

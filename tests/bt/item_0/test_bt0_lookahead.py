@@ -1,6 +1,7 @@
 """The strategy can only see events it has received (received_time_ns <=
 now), by construction -- checked through public AND private paths."""
 import random
+import types
 
 import pytest
 
@@ -71,15 +72,39 @@ def _reachable_events(root, limit=20000):
         if isinstance(obj, (list, tuple, set, frozenset)):
             stack.extend(obj)
             continue
-        owner = getattr(obj, "__self__", None)
-        if owner is not None:
-            stack.append(owner)
-        if hasattr(obj, "__dict__"):
-            stack.extend(vars(obj).values())
-        for slot in getattr(type(obj), "__slots__", ()):
-            if hasattr(obj, slot):
-                stack.append(getattr(obj, slot))
+        stack.extend(_attribute_values(obj))
     return found
+
+
+def _attribute_values(obj):
+    """What `obj` references by attribute access: a bound method's
+    `__self__`, a function's closure cells (round 9: the context reaches the
+    core's lists and port only through functions, and those are followed
+    too), instance dict values, and slot values of every class in the MRO
+    under their real (mangled) names."""
+    out = []
+    owner = getattr(obj, "__self__", None)
+    if owner is not None:
+        out.append(owner)
+    if isinstance(obj, types.FunctionType):
+        for cell in obj.__closure__ or ():
+            try:
+                out.append(cell.cell_contents)
+            except ValueError:
+                pass
+        out.extend(obj.__defaults__ or ())
+    if isinstance(getattr(obj, "__dict__", None), dict) and not isinstance(obj, types.FunctionType):
+        out.extend(vars(obj).values())
+    for cls in type(obj).__mro__:
+        slots = cls.__dict__.get("__slots__", ())
+        for slot in ([slots] if isinstance(slots, str) else slots):
+            if slot.startswith("__") and not slot.endswith("__"):
+                slot = f"_{cls.__name__.lstrip('_')}{slot}"
+            try:
+                out.append(object.__getattribute__(obj, slot))
+            except AttributeError:
+                pass
+    return out
 
 
 def _random_run(seed, n=200):
@@ -139,14 +164,7 @@ def _reachable_objects(root, limit=20000):
         elif isinstance(obj, (list, tuple, set, frozenset)):
             stack.extend(obj)
         else:
-            owner = getattr(obj, "__self__", None)
-            if owner is not None:
-                stack.append(owner)
-            if hasattr(obj, "__dict__"):
-                stack.extend(vars(obj).values())
-            for slot in getattr(type(obj), "__slots__", ()):
-                if hasattr(obj, slot):
-                    stack.append(getattr(obj, slot))
+            stack.extend(_attribute_values(obj))
     return list(seen.values())
 
 

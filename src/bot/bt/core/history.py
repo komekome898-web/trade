@@ -60,24 +60,33 @@ class DeliveredList(list):
     delivered = its length (it holds only delivered events), `dropped`
     delivered events before its oldest (history_limit). Read by position, it
     follows the answer's rule (window.py `resolve_key`); a slice is a
-    `DeliveredEvents`. Made by the core only (`_made`); every change through
-    its own behaviour is refused; the core writes it with `list`'s methods
-    and reads nothing back from it."""
+    `DeliveredEvents`. Once made (`DeliveredList(items, dropped)`, or the
+    core's `_made`), every change through its own behaviour is refused --
+    `__init__` again included; the core writes it with `list`'s methods and
+    reads nothing back from it."""
 
-    __slots__ = ("_dropped",)
+    __slots__ = ("_dropped", "_sealed")
 
-    def __new__(cls, *args, **kwargs):
-        raise TypeError("a DeliveredList is made by the core only")
-
-    @classmethod
-    def _made(cls, items=(), dropped: int = 0) -> "DeliveredList":
+    def __new__(cls, items=(), dropped: int = 0):
         self = list.__new__(cls)
         list.__init__(self, items)
         object.__setattr__(self, "_dropped", int(dropped))
+        object.__setattr__(self, "_sealed", False)  # sealed by the __init__ call that follows construction
+        return self
+
+    @classmethod
+    def _made(cls, items=(), dropped: int = 0) -> "DeliveredList":
+        """The core's maker: a list sealed at once."""
+        self = cls.__new__(cls, items, dropped)
+        object.__setattr__(self, "_sealed", True)
         return self
 
     def __init__(self, *args, **kwargs) -> None:
-        _refused()
+        # the call Python makes right after construction seals the list;
+        # any later call (re-initialising a made list) is refused
+        if self._sealed:
+            _refused()
+        object.__setattr__(self, "_sealed", True)
 
     def __setattr__(self, name, value) -> None:
         _refused()
@@ -175,9 +184,12 @@ class DeliveredHistory:
         """How many events the list holds (the core's own count)."""
         return len(self._overall_facts if etype is None else self._facts[etype])
 
-    def dropped_before(self, etype: EventType) -> int:
-        """How many delivered events of `etype` lie before its list's oldest."""
-        return self.dropped_count.get(etype, 0)
+    def typed_places(self) -> list:
+        """(type, its list, how many it holds, how many were dropped before
+        its oldest) for every type with events -- the core's own counts."""
+        dropped = self.dropped_count
+        typed = self.typed
+        return [(t, typed[t], len(f), dropped.get(t, 0)) for t, f in self._facts.items() if f]
 
     def dropped_facts(self) -> Optional[dict[EventType, tuple[int, int]]]:
         """A new copy for one callback's context (new tuples and ints: the

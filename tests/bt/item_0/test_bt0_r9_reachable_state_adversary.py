@@ -82,7 +82,8 @@ from bot.bt.core import (
     OrderRequest,
     TradeEvent,
 )
-from bot.bt.core.api import OrderState, OrderView
+from bot.bt.core.api import OrderState, OrderView, _OrderPort
+from bt0_util import find
 
 T0 = 1_700_000_000_000_000_000
 SEC = 1_000_000_000
@@ -802,6 +803,42 @@ def test_removing_a_sent_message_is_not_sending_it(when):
     got = _run(extra=placed_then_taken_back)
     assert got[0] == "ok", got[1]
     assert got[1] == base[1] and got[2].logs == base[2].logs and got[2].delivered == base[2].delivered
+
+
+@pytest.mark.parametrize("when", TIMES)
+@pytest.mark.parametrize("case", ["registry cleared, then a placed id again",
+                                  "counter reset, then an engine-named id again",
+                                  "a placed message's id changed to a forced id"])
+def test_the_port_s_own_answer_does_not_decide_what_is_sent(case, when):
+    """The port answers the strategy from its OWN copies (a strategy that
+    breaks them before calling it changes that answer); what is sent is
+    decided again by the core against its book: a duplicate or a reserved
+    id is refused before anything is sent, whatever the port answered."""
+    walk_at, at = TIMINGS[when]
+    kept = {}
+
+    def attack(k, ctx):
+        if k == walk_at:
+            [kept["port"]] = find(ctx, _OrderPort)
+        if k == at:
+            port = kept["port"]
+            reg = object.__getattribute__(port, "_registry")
+            if case.startswith("registry cleared"):
+                dict.clear(reg)
+                ctx.place_order(OrderRequest("buy", "limit", 1.0, price=95.0, client_order_id="a1"))
+            elif case.startswith("counter reset"):
+                object.__setattr__(port, "_counter", 0)
+                dict.clear(reg)
+                ctx.place_order(OrderRequest("buy", "limit", 1.0, price=95.0))  # names core-1 again
+            else:  # the port accepted "ok-id"; the message is changed to a reserved id before the return
+                ctx.place_order(OrderRequest("buy", "limit", 1.0, price=95.0, client_order_id="ok-id"))
+                msg = list.__getitem__(object.__getattribute__(port, "_outbox"), -1)
+                object.__setattr__(msg[1], "client_order_id", "forced-5")
+
+    base = _run()
+    got = _run(extra=attack)
+    assert got[0] == "raised" and isinstance(got[1], CoreError), (got[0], got[1])
+    assert _judge(base, got) is None
 
 
 def test_a_replaced_outbox_is_refused():

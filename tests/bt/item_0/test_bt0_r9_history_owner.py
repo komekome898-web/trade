@@ -27,6 +27,7 @@ import pytest
 from bot.bt.core import CORE_CONTRACT, CoreEngine, EventType, TradeEvent
 from bot.bt.core.errors import BeforeFirstEventError, DroppedPositionError
 from bot.bt.core.history import DeliveredList
+from bt0_util import find
 
 T0 = 1_700_000_000_000_000_000
 SEC = 1_000_000_000
@@ -95,11 +96,14 @@ def test_attributes_cannot_be_assigned_or_deleted(name):
     assert type(lst) is DeliveredList and lst.dropped == 2 and list.__len__(lst) == 3
 
 
-def test_it_is_made_by_the_core_only():
+def test_a_made_list_cannot_be_made_again():
+    """Constructing a list is not changing one: `DeliveredList(items,
+    dropped)` makes a new one; calling `__init__` on a made one is refused."""
+    lst = DeliveredList(["a"], 1)
+    assert list.__getitem__(lst, slice(None)) == ["a"] and lst.dropped == 1
     with pytest.raises(TypeError):
-        DeliveredList(["a"])
-    with pytest.raises(TypeError):
-        DeliveredList()
+        lst.__init__(["b", "c"], 0)
+    assert list.__getitem__(lst, slice(None)) == ["a"] and lst.dropped == 1
 
 
 def test_the_critic_s_changes_are_refused_in_a_run_and_the_view_is_whole():
@@ -116,7 +120,7 @@ def test_the_critic_s_changes_are_refused_in_a_run_and_the_view_is_whole():
             self.k += 1
             if self.k != 3:
                 return
-            lst = ctx._StrategyContext__visible_events._log
+            [lst] = find(ctx._StrategyContext__visible_events, DeliveredList)  # through the window's function
             for label, act in (("__init__", lambda: lst.__init__([lst[0]], 0)),
                                ("dropped =", lambda: setattr(lst, "dropped", 7)),
                                ("append", lambda: lst.append(1))):

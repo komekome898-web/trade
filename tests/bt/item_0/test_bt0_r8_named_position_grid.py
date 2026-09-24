@@ -73,7 +73,9 @@ from bot.bt.core import (
 )
 from bot.bt.core.window import EventWindow
 
-from bt0_util import SEC, T0, Recorder, bar, trade
+from bt0_util import SEC, T0, Recorder, bar, find, trade
+
+from bot.bt.core.history import DeliveredList
 
 STEPS = (None, 0, 1, 2, 3, -1, -2, -3)
 
@@ -454,7 +456,10 @@ def test_the_backing_list_names_positions_like_an_answer_and_cannot_be_changed()
 
     def cb(ev, ctx):
         win = ctx._StrategyContext__visible_events
-        log = win._log
+        # the core's list, reached through the window's reading function
+        # (round 9: the window holds no list as an attribute; `win._log` is a
+        # new tuple)
+        [log] = [o for o in find(win, DeliveredList) if o is not None]
         items = list(iter(log))
         place = AnswerPlace(0, 1, len(items), 0)
         for key in _keys(len(items)) if len(items) <= 4 else range(-len(items) - 3, len(items) + 4):

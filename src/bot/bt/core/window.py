@@ -7,10 +7,12 @@ element of the backing list satisfies `received_time_ns <= now_ns` while
 the callback runs: the future is not hidden behind a bound, it was never
 put into the list.
 
-`revoke()` is called by the engine when the callback returns: the window
-drops its reference to the history (the backing becomes an empty tuple) and
-every further access raises `StaleContextError`, so a window kept past its
-callback shows nothing, rather than events delivered later.
+When the callback returns (the engine's `alive()` turns false, or
+`revoke()` is called) every further access raises `StaleContextError` and
+the window's reading functions drop the backing list, so a window kept past
+its callback shows nothing, rather than events delivered later. The window
+holds the backing only inside those functions and its attributes cannot be
+changed (round 9, LEAD_DESIGN s3.4).
 """
 from __future__ import annotations
 
@@ -289,33 +291,90 @@ def _rebuild(items: tuple, place: tuple) -> DeliveredEvents:
     return DeliveredEvents(items, first=first, step=step, delivered=delivered, dropped=dropped)
 
 
+def _getter(history: Any) -> Any:
+    """The core's own read of a backing sequence: the base type's method (a
+    `DeliveredList`'s own position rule is for the strategy's reads)."""
+    if isinstance(history, list):
+        return list.__getitem__
+    if isinstance(history, tuple):
+        return tuple.__getitem__
+    return type(history).__getitem__
+
+
 class EventWindow(Sequence):
-    """The window a context holds over the history list (the whole history
-    or one type's): the first `end` events of `history`. Naming a position
-    follows the same rule as an answer (`resolve_key`), with the window's
-    own place: first 0, step 1, delivered `end`, `dropped` delivered events
-    before its oldest (history_limit); a slice of it is a `DeliveredEvents`.
-    `history` itself is the core's own list (reachable by attribute
-    access): it holds only events delivered by now, reads by position under
-    the same rule and refuses changes (history.py `DeliveredList`), and is
-    dropped when the callback returns. `history` is a list."""
+    """The window a context holds over the history (the whole history or
+    one type's): its first `end` events. Naming a position follows the same
+    rule as an answer (`resolve_key`), with the window's own place: first
+    0, step 1, delivered `end`, `dropped` delivered events before its oldest
+    (history_limit); a slice of it is a `DeliveredEvents`.
 
-    __slots__ = ("_log", "_end", "_revoked", "_dropped")
+    It holds no mutable object (round 9, LEAD_DESIGN s3.4): the backing list
+    (the core's, which the core appends to) is held only inside the
+    window's reading functions, never as an attribute, and the window's
+    attributes cannot be assigned or deleted. It stops working when the
+    engine's `alive()` (given) turns false at the end of its callback, or
+    when `revoke()` is called; every access then raises `StaleContextError`
+    and the functions drop the backing list, so a window kept past its
+    callback shows nothing, rather than events delivered later. `_log` is a
+    new tuple of the events it covers (empty once revoked)."""
 
-    def __init__(self, history: Sequence[Event], end: int, dropped: int = 0) -> None:
-        self._log = history
-        self._end = end
-        self._revoked = False
-        self._dropped = dropped
+    __slots__ = ("_read", "_range_of", "_ok", "_kill", "_end", "_dropped")
+
+    def __init__(self, history: Sequence[Event], end: int, dropped: int = 0,
+                 alive: Optional[Any] = None) -> None:
+        get = _getter(history)
+        backing: Any = history  # closure variables (not a container): only these functions see them
+        live = True
+
+        def ok() -> bool:
+            return live and (alive is None or alive())
+
+        def check() -> None:
+            nonlocal backing
+            if not ok():
+                backing = ()
+                raise StaleContextError("this history view belonged to a callback that has returned")
+
+        def read(i: int) -> Event:
+            check()
+            return get(backing, i)
+
+        def range_of(lo: int, hi: int) -> tuple:
+            check()
+            return tuple(get(backing, slice(lo, hi)))
+
+        def kill() -> None:
+            nonlocal backing, live
+            backing, live = (), False
+
+        put = object.__setattr__
+        put(self, "_read", read)
+        put(self, "_range_of", range_of)
+        put(self, "_ok", ok)
+        put(self, "_kill", kill)
+        put(self, "_end", int(end))
+        put(self, "_dropped", int(dropped))
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError("a history window cannot be changed")
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("a history window cannot be changed")
 
     def revoke(self) -> None:
-        self._log = ()
-        self._end = 0
-        self._revoked = True
+        self._kill()
 
     def _check(self) -> None:
-        if self._revoked:
+        if not self._ok():
+            self._kill()
             raise StaleContextError("this history view belonged to a callback that has returned")
+
+    @property
+    def _log(self) -> tuple:
+        """The events this window covers, as a new tuple; () once revoked."""
+        if not self._ok():
+            return ()
+        return self._range_of(0, self._end)
 
     def _place(self) -> AnswerPlace:
         return AnswerPlace(0, 1, self._end, self._dropped)
@@ -328,42 +387,41 @@ class EventWindow(Sequence):
         self._check()
         end = self._end
         key = resolve_key(index, end, self._place())
-        log = self._log
+        read = self._read
         if type(key) is int:
-            return list.__getitem__(log, key)  # the core's own read of its list
+            return read(key)
         start, stop, step = key.indices(end)  # inside by the rule: nothing is cut
         # read the positions themselves: a negative start or stop of the
         # window's coordinate (an empty backward read, -1) is not a
         # position counted from the end of the backing list
-        get = list.__getitem__
-        items = tuple([get(log, i) for i in range(start, stop, step)])
+        items = tuple([read(i) for i in range(start, stop, step)])
         return DeliveredEvents._placed(items, start, step, end, self._dropped)
 
     def _range(self, lo: int, hi: int) -> tuple:
         """The core's own read of events lo..hi-1 (0 <= lo <= hi <= end)."""
-        return tuple(list.__getitem__(self._log, slice(lo, hi)))
+        return self._range_of(lo, hi)
 
     def index(self, value: Any, *args: Any) -> int:
         self._check()
         start, stop = resolve_search(args, self._end, self._place())
-        log = self._log
+        read = self._read
         for i in range(start, stop):
-            v = list.__getitem__(log, i)
+            v = read(i)
             if v is value or v == value:
                 return i
         raise ValueError(f"{value!r} is not in the window")
 
     def __iter__(self) -> Iterator[Event]:
         self._check()
-        log, end, get = self._log, self._end, list.__getitem__
-        for i in range(end):
-            yield get(log, i)
+        read = self._read
+        for i in range(self._end):
+            yield read(i)
 
     def __reversed__(self) -> Iterator[Event]:
         self._check()
-        log, get = self._log, list.__getitem__
+        read = self._read
         for i in range(self._end - 1, -1, -1):
-            yield get(log, i)
+            yield read(i)
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"EventWindow(len={self._end}, revoked={self._revoked})"
+        return f"EventWindow(len={self._end}, revoked={not self._ok()})"

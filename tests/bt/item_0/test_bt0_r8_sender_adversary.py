@@ -56,6 +56,9 @@ from fractions import Fraction
 
 import numpy as np
 import pytest
+from bt0_util import find
+
+from bot.bt.core.api import _OrderPort
 
 from bot.bt.core import (
     PATH_CARRIERS,
@@ -790,7 +793,7 @@ def test_an_outbox_item_written_around_the_order_port_is_refused(forged):
     checks that equivalence.)"""
     class S:
         def on_event(self, ev, ctx):
-            port = ctx._StrategyContext__place_order_cb.__self__
+            [port] = find(ctx, _OrderPort)  # reached through the context's call functions (round 9)
             port._outbox.append(forged)
 
     with pytest.raises(CoreError):

@@ -20,11 +20,15 @@ tests/bt/item_0/test_bt0_api_surface.py):
 
 * No path to the future. The history view is backed by the list of events
   already delivered; the engine appends to it only between callbacks. The
-  order functions are bound methods of `_OrderPort`, an object that holds
-  only the strategy's OWN copies of its order views and its outbox -- not
-  the engine, not the core's order book, not the event source, not the
-  pending queue. So nothing reachable from a context, even through private
-  attributes, holds an event the strategy has not received yet. Scope of
+  context holds no mutable object (round 9, LEAD_DESIGN s3.4): values, the
+  frozen current event, windows that hold none either (window.py), and
+  functions -- the history lists are reached only inside the windows'
+  reading functions, and the order functions close over the methods of
+  `_OrderPort`, an object that holds only the strategy's OWN copies of its
+  order views and its outbox -- not the engine, not the core's order book,
+  not the event source, not the pending queue. So nothing reachable from a
+  context, even through private attributes or functions' closures, holds an
+  event the strategy has not received yet. Scope of
   this guarantee: the context and what is reachable from it by attribute
   access. It does NOT cover introspecting the interpreter: the strategy is
   called inside the engine's own process and call (`CoreEngine.step`), so
@@ -324,6 +328,17 @@ def copy_view(view: OrderView) -> OrderView:
     return OrderView(**fields)
 
 
+def _fresh_view(view: OrderView) -> OrderView:
+    """A new OrderView object with the same fields, for one answer of
+    `order()` / `open_orders()`: what the strategy does to it (bypassing
+    `frozen`) reaches no other answer. The fields are values; the request is
+    the strategy's own copy (frozen and slotted, made by `copy_view` when the
+    core wrote the view)."""
+    out = object.__new__(OrderView)
+    out.__dict__.update(view.__dict__)
+    return out
+
+
 def _new_view(request: OrderRequest, now: int, origin: str = "strategy") -> OrderView:
     return OrderView(request=request, state=OrderState.PENDING_NEW, sent_time_ns=now, last_update_ns=now,
                      origin=origin)
@@ -510,18 +525,34 @@ class _OrderPort:
         self._outbox.append(("timer", at, text))
 
     def order(self, client_order_id: str) -> Optional[OrderView]:
-        """The strategy's own copy of its view of one order (None if
-        unknown): an object the core wrote for the strategy alone
-        (engine.py `_show`, a new copy at every change) and never reads."""
-        return self._registry.get(client_order_id)
+        """A new view object of one of the strategy's orders at every call
+        (None if unknown), made from the strategy's own copy (which the core
+        writes at every change, engine.py `_show`, and never reads)."""
+        view = self._registry.get(client_order_id)
+        return None if view is None else _fresh_view(view)
 
     def open_orders(self) -> tuple[OrderView, ...]:
-        """The strategy's own copies of its views of its open orders."""
-        return tuple(v for v in self._registry.values() if v.is_open)
+        """New view objects of the strategy's open orders, at every call."""
+        return tuple(_fresh_view(v) for v in self._registry.values() if v.is_open)
+
+
+_TYPES: tuple = tuple(EventType)  # position -> event type (a context holds positions, never Enum members)
+_TYPE_POS: dict = {t: i for i, t in enumerate(_TYPES)}
 
 
 class StrategyContext:
-    """Built by the engine for one callback and revoked when it returns."""
+    """Built by the engine for one callback and revoked when it returns.
+
+    Holds no mutable object (round 9, LEAD_DESIGN s3.4): its slots cannot be
+    assigned or deleted, and what it holds is values (ints, tuples, the
+    frozen current event), windows that hold no mutable object themselves
+    (window.py `EventWindow`), and functions. Everything of the core's it
+    acts on -- the order port, the history lists -- is reached only by
+    CALLING those functions, never as an attribute value."""
+
+    __slots__ = ("__visible_events", "__typed", "__dropped", "__dropped_counts", "__current", "__now",
+                 "__place_order_cb", "__cancel_order_cb", "__order_lookup_cb", "__open_orders_cb",
+                 "__set_timer_cb", "__dropped_overall", "__alive", "__revoked")
 
     def __init__(
         self,
@@ -533,15 +564,18 @@ class StrategyContext:
         order_lookup_cb: Optional[Callable[[str], Optional[OrderView]]] = None,
         open_orders_cb: Optional[Callable[[], tuple]] = None,
         set_timer_cb: Optional[Callable[[int, str], None]] = None,
-        typed_events: Optional[Mapping[EventType, Sequence[Event]]] = None,
+        typed_events: Optional[Union[Mapping[EventType, Sequence[Event]], Callable]] = None,
         dropped: Optional[Mapping[EventType, tuple[int, int]]] = None,
         dropped_counts: Optional[Mapping[EventType, int]] = None,
         now_ns: Optional[int] = None,
         dropped_overall: Optional[int] = None,
+        alive: Optional[Callable[[], bool]] = None,
     ) -> None:
         """`typed_events`, if given, maps an event type to the delivered
-        events of that type (same objects, same order as `visible_events`);
-        it only makes `visible_events(event_type)` faster.
+        events of that type (same objects, same order as `visible_events`)
+        -- a mapping, or a function of the type (the engine's: it makes the
+        type's window when it is first read); it only makes
+        `visible_events(event_type)` faster.
 
         `dropped`, if given, maps an event type to (seq, received_time_ns)
         of the last event of that type the history no longer holds
@@ -554,33 +588,58 @@ class StrategyContext:
         time. `dropped_overall`: how many delivered events the whole history
         no longer holds, from the engine's own count (not read back from the
         events, which are the strategy's copies); default: counted from the
-        oldest held event's delivery number."""
-        self.__visible_events = visible_events
-        self.__typed_events = typed_events
-        self.__dropped = dict(dropped) if dropped else {}
-        self.__dropped_counts = dict(dropped_counts) if dropped_counts else {}
-        self.__current = current
-        self.__now = int(current.received_time_ns) if now_ns is None else int(now_ns)
-        self.__place_order_cb = place_order_cb
-        self.__cancel_order_cb = cancel_order_cb
-        self.__order_lookup_cb = order_lookup_cb
-        self.__open_orders_cb = open_orders_cb
-        self.__set_timer_cb = set_timer_cb
-        self.__dropped_overall = None if dropped_overall is None else int(dropped_overall)
-        self.__revoked = False
+        oldest held event's delivery number. `alive`: the engine's function
+        that turns false when the callback returns (the context is then
+        revoked, like after `_revoke`)."""
+        if typed_events is not None and not callable(typed_events):
+            table = dict(typed_events)
+
+            def typed(etype: EventType, _table=table) -> Sequence[Event]:
+                return _table.get(etype, ())
+        else:
+            typed = typed_events
+        put = object.__setattr__
+        put(self, "_StrategyContext__visible_events", visible_events)
+        put(self, "_StrategyContext__typed", typed)
+        put(self, "_StrategyContext__dropped", tuple(
+            (_TYPE_POS[t], int(sq), int(rc)) for t, (sq, rc) in dict(dropped).items()) if dropped else ())
+        put(self, "_StrategyContext__dropped_counts", tuple(
+            (_TYPE_POS[t], int(n)) for t, n in dict(dropped_counts).items()) if dropped_counts else ())
+        put(self, "_StrategyContext__current", current)
+        put(self, "_StrategyContext__now", int(current.received_time_ns) if now_ns is None else int(now_ns))
+        put(self, "_StrategyContext__place_order_cb", place_order_cb)
+        put(self, "_StrategyContext__cancel_order_cb", cancel_order_cb)
+        put(self, "_StrategyContext__order_lookup_cb", order_lookup_cb)
+        put(self, "_StrategyContext__open_orders_cb", open_orders_cb)
+        put(self, "_StrategyContext__set_timer_cb", set_timer_cb)
+        put(self, "_StrategyContext__dropped_overall", None if dropped_overall is None else int(dropped_overall))
+        put(self, "_StrategyContext__alive", alive)
+        put(self, "_StrategyContext__revoked", False)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError("a StrategyContext cannot be changed")
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("a StrategyContext cannot be changed")
 
     def _revoke(self) -> None:
         """Called by the engine through the class (`StrategyContext._revoke(
         ctx)`), never looked up on the instance, and it only WRITES: it reads
-        nothing the strategy could have changed on its context. The engine
-        revokes the history windows it built itself, through its own
-        references to them (engine.py `_deliver`)."""
-        self.__revoked = True
-        self.__typed_events = None
+        nothing the strategy could have changed on its context."""
+        object.__setattr__(self, "_StrategyContext__revoked", True)
+        object.__setattr__(self, "_StrategyContext__typed", None)
 
     def __check(self) -> None:
-        if self.__revoked:
+        alive = self.__alive
+        if self.__revoked or (alive is not None and not alive()):
             raise StaleContextError("StrategyContext used after its callback returned")
+
+    def __dropped_count(self, event_type: EventType) -> int:
+        pos = _TYPE_POS[event_type]
+        for p, n in self.__dropped_counts:
+            if p == pos:
+                return n
+        return 0
 
     # -- read ---------------------------------------------------------------
     # `now_ns` and `current_event` stay readable after revocation: they are
@@ -597,7 +656,8 @@ class StrategyContext:
 
     @property
     def revoked(self) -> bool:
-        return self.__revoked
+        alive = self.__alive
+        return self.__revoked or (alive is not None and not alive())
 
     def visible_events(
         self,
@@ -649,8 +709,8 @@ class StrategyContext:
 
         if event_type is None:
             events: Sequence[Event] = self.__visible_events
-        elif self.__typed_events is not None:
-            events = self.__typed_events.get(event_type, ())
+        elif self.__typed is not None:
+            events = self.__typed(event_type)
         else:
             events = tuple(e for e in self.__visible_events if e.EVENT_TYPE is event_type)
 
@@ -671,7 +731,7 @@ class StrategyContext:
         # numbered 1, 2, 3, ... without gaps and everything not dropped is
         # kept).
         if event_type is not None:
-            dropped = self.__dropped_counts.get(event_type, 0)
+            dropped = self.__dropped_count(event_type)
         elif self.__dropped_overall is not None:
             dropped = self.__dropped_overall  # the engine's own count
         elif self.__dropped and len(events):
@@ -701,8 +761,8 @@ class StrategyContext:
         reaching into the dropped part is."""
         if hi == 0 and dropped and until is not None:
             newest_dropped = max(
-                (recv for etype, (_seq, recv) in self.__dropped.items()
-                 if event_type is None or etype is event_type),
+                (recv for pos, _seq, recv in self.__dropped
+                 if event_type is None or _TYPES[pos] is event_type),
                 default=None,
             )
             if newest_dropped is not None and until < newest_dropped:
@@ -722,7 +782,8 @@ class StrategyContext:
         the last dropped event's received time; it is still complete when
         `n` confines it to `count` kept events that all come after that
         type's last dropped event (by delivery number)."""
-        for etype, (dropped_seq, dropped_recv) in self.__dropped.items():
+        for pos, dropped_seq, dropped_recv in self.__dropped:
+            etype = _TYPES[pos]
             if event_type is not None and etype is not event_type:
                 continue
             if since is not None and since > dropped_recv:
