@@ -1,17 +1,17 @@
 番号	名前	初出の回	発見の経路	発見の出典	区分1の番号	状態	E1a	E1b	E2	E3a	E3b	E4	E5	E6	段_E1a	段_E1b	段_E2	段_E3a	段_E3b	段_E4	段_E5	段_E6	他の区分へ	安全側の所見	最後の記載の回	最後の記載の行
-8-001	qf-lib	0	区分1から	https://github.com/quarkfin/qf-lib	62	深掘り	なし	印	印	なし	印	印	印	なし	-	2	3	-	3	3	3	-			3	786
-8-002	PineForge	0	区分1から	https://github.com/pineforge-4pass/pineforge-engine	70	深掘り	印	印	なし	印	印	印	印	なし	5	5	-	3	3	3	5	-			3	787
-8-003	prediction-market-backtester	0	区分1から	https://github.com/Quentin-Piot/prediction-market-backtester	92	浅い	なし	印	印	未判別	未判別	印	印	なし	-	2	3	未判別	未判別	3	5	-			3	788
-8-004	akurkar07/OrderBook	0	区分1から	https://github.com/akurkar07/OrderBook	101	危険で導入停止	印	印	なし	なし	なし	なし	印	なし	3	2	-	-	-	-	3	-			3	789
-8-005	Exegy	0	区分1から	https://www.exegy.com/	117	登録が要る	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			3	790
-8-006	freqtrade	1	検索	https://github.com/freqtrade/freqtrade		浅い	なし	印	未判別	印	未判別	未判別	未判別	なし	-	2	未判別	3	未判別	未判別	未判別	-			3	791
-8-007	backtrex	1	検索	https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide		浅い	なし	なし	印	未判別	未判別	未判別	未判別	未判別	-	-	3	未判別	未判別	未判別	未判別	未判別			3	792
-8-008	FX Replay	1	検索	https://fxreplay.com/		浅い	なし	なし	未判別	未判別	未判別	印	未判別	未判別	-	-	未判別	未判別	未判別	2	未判別	未判別			3	793
-8-009	nicferrari/backtester	1	検索	https://github.com/nicferrari/backtester		浅い	なし	印	なし	なし	なし	印	なし	なし	-	2	-	-	-	3	-	-			3	794
-8-010	arXiv:2603.20319	1	検索	https://arxiv.org/abs/2603.20319		判別に一次資料が要る	印	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			3	795
-8-011	arXiv:2512.12924	1	検索	https://arxiv.org/abs/2512.12924		判別に一次資料が要る	未判別	未判別	未判別	未判別	印	未判別	印	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			3	796
-8-012	VectorBT	1	X	https://github.com/polakowo/vectorbt		判別に一次資料が要る	未判別	未判別	印	未判別	未判別	未判別	印	未判別	未判別	未判別	3	未判別	未判別	未判別	3	未判別			3	797
-8-013	rusty-bot	1	X	https://x.com/WannabeBotter/status/1810558269565571211		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			3	798
-8-014	Fincept Terminal	1	X	https://github.com/Fincept-Corporation/FinceptTerminal		判別に一次資料が要る	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			3	799
-8-015	TradingView のリプレイ機能	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い)		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			3	800
-8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			3	801
+8-001	qf-lib	0	区分1から	https://github.com/quarkfin/qf-lib	62	深掘り	なし	印	印	なし	印	印	印	なし	-	2	3	-	3	3	3	-			4	1063
+8-002	PineForge	0	区分1から	https://github.com/pineforge-4pass/pineforge-engine	70	深掘り	印	印	なし	印	印	印	印	なし	5	5	-	3	3	3	5	-			4	1064
+8-003	prediction-market-backtester	0	区分1から	https://github.com/Quentin-Piot/prediction-market-backtester	92	深掘り	印	印	印	なし	なし	印	印	なし	5	2	3	-	-	3	5	-			4	1065
+8-004	akurkar07/OrderBook	0	区分1から	https://github.com/akurkar07/OrderBook	101	危険で導入停止	印	印	なし	なし	なし	なし	印	なし	3	2	-	-	-	-	3	-			4	1066
+8-005	Exegy	0	区分1から	https://www.exegy.com/	117	登録が要る	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			4	1067
+8-006	freqtrade	1	検索	https://github.com/freqtrade/freqtrade		深掘り	なし	印	印	印	なし	印	印	なし	-	2	3	3	-	3	2	-			4	1068
+8-007	backtrex	1	検索	https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide		深掘り	印	なし	印	なし	印	印	印	なし	2	-	3	-	3	3	2	-			4	1069
+8-008	FX Replay	1	検索	https://fxreplay.com/		深掘り	なし	なし	なし	なし	なし	印	なし	なし	-	-	-	-	-	2	-	-			4	1070
+8-009	nicferrari/backtester	1	検索	https://github.com/nicferrari/backtester		深掘り	なし	印	なし	なし	なし	印	なし	なし	-	2	-	-	-	3	-	-			4	1071
+8-010	arXiv:2603.20319	1	検索	https://arxiv.org/abs/2603.20319		判別に一次資料が要る	印	未判別	未判別	なし	なし	なし	印	なし	未判別	未判別	未判別	-	-	-	1	-			4	1072
+8-011	arXiv:2512.12924	1	検索	https://arxiv.org/abs/2512.12924		深掘り	なし	印	印	なし	印	印	印	なし	-	3	4	-	4	3	5	-			4	1073
+8-012	VectorBT	1	X	https://github.com/polakowo/vectorbt		判別に一次資料が要る	なし	印	印	なし	印	未判別	印	なし	-	3	3	-	3	未判別	5	-			4	1074
+8-013	rusty-bot	1	X	https://x.com/WannabeBotter/status/1810558269565571211		判別に一次資料が要る	なし	印	未判別	なし	なし	印	未判別	なし	-	2	未判別	-	-	2	未判別	-			4	1075
+8-014	Fincept Terminal	1	X	https://github.com/Fincept-Corporation/FinceptTerminal		浅い	印	印	印	なし	印	印	印	なし	未判別	未判別	2	-	未判別	未判別	未判別	-			4	1076
+8-015	TradingView のリプレイ機能	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い)		深掘り	なし	なし	なし	なし	印	印	なし	なし	-	-	-	-	2	2	-	-			4	1077
+8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		判別に一次資料が要る	印	印	未判別	未判別	未判別	未判別	未判別	未判別	4	4	未判別	未判別	未判別	未判別	未判別	未判別			4	1078
