@@ -28,7 +28,7 @@ sep = b"\0" if b"\0" in raw else b"\n"
 paths = [p.decode("utf-8", "surrogateescape") for p in raw.split(sep) if p.strip()]
 rx = re.compile(a.pattern, re.I if a.ignore_case else 0)
 
-read, unread, per_file, hits = 0, [], {}, 0
+read, unread, per_file, hits, encs = 0, [], {}, 0, []
 for p in paths:
     try:
         with open(p, "rb") as f:
@@ -36,8 +36,24 @@ for p in paths:
     except OSError as e:
         unread.append((p, e.strerror))
         continue
+    # Binary (NUL) and undecodable files are not "read": a silent replacement would lose
+    # Japanese matches (audit 66, finding 3). Exclude binaries with cat8_mklist --exclude.
+    if b"\0" in data:
+        unread.append((p, "バイナリ(NUL を含む。cat8_mklist の --exclude で理由を書いて外す)"))
+        continue
+    text = None
+    for enc in ("utf-8", "utf-8-sig", "cp932", "euc_jp"):
+        try:
+            text = data.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    if text is None:
+        unread.append((p, "符号化が utf-8・cp932・euc_jp のどれでもない"))
+        continue
+    if enc not in ("utf-8", "utf-8-sig"):
+        encs.append((p, enc))
     read += 1
-    text = data.decode("utf-8", "replace")
     for no, line in enumerate(text.splitlines(), 1):
         ms = list(rx.finditer(line))
         if not ms:
@@ -53,8 +69,11 @@ for p in paths:
 print("== ファイルごとの当たった行の数")
 for p, n in per_file.items():
     print("%d\t%s" % (n, p))
+for p, enc in encs:
+    print("符号化\t%s\t%s として読んだ" % (p, enc))
 for p, why in unread:
     print("読めなかった\t%s\t%s" % (p, why))
-print("cat8_search: %s files=%d read=%d files_with_hits=%d hits=%d" % (
-    "complete" if not unread else "INCOMPLETE", len(paths), read, len(per_file), hits))
-sys.exit(1 if unread else 0)
+import os
+print("cat8_search: %s files=%d read=%d files_with_hits=%d hits=%d list=%s" % (
+    "complete" if not unread and paths else "INCOMPLETE", len(paths), read, len(per_file), hits, os.path.abspath(a.list)))
+sys.exit(1 if unread or not paths else 0)

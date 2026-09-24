@@ -433,7 +433,8 @@ ELEM_TERMS_WIDE = {
     "E6": [r"検証|verif|validat", r"品質|quality", r"test|assert|check"],
 }
 SEARCH_TOOL_RE = re.compile(r"cat8_search\.py")
-SEARCH_DONE_RE = re.compile(r"^cat8_search: complete files=(\d+) read=\1 ", re.M)
+SEARCH_DONE_RE = re.compile(r"^cat8_search: complete files=(\d+) read=\1 files_with_hits=(\d+) hits=(\d+) list=(\S+)$", re.M)
+MKLIST_RE = re.compile(r"^cat8_mklist: complete out=(\S+) in_root=(\d+) added=(\d+) absent=(\d+) excluded=(\d+) listed=(\d+)$", re.M)
 TRUNC_RE = re.compile(r"^\[出力は \d+ 文字。先頭 \d+ 文字だけを残した\]$", re.M)
 
 
@@ -450,6 +451,20 @@ def search_cmd_only(cmdline):
     if toks[:2] != ["python3", "scripts/cat8_search.py"]:
         return False
     return not any(t and set(t) <= set("();<>|&") for t in toks)
+
+
+def mklist_footer(fname, lno, list_path):
+    """同じ生ログの、その行より前にある cat8_mklist.py の手のうち、out= が list_path の最後のもの。"""
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    if not lp.exists():
+        return None
+    head = "\n".join(lp.read_text().splitlines()[: int(lno)])
+    found = None
+    for m in MKLIST_RE.finditer(head):
+        if m.group(1) == list_path:
+            found = {"in_root": int(m.group(2)), "added": int(m.group(3)), "absent": int(m.group(4)),
+                     "excluded": int(m.group(5)), "listed": int(m.group(6))}
+    return found
 
 
 def step_block(fname, lno):
@@ -486,6 +501,7 @@ def cmd_check_elements(a):
     st, en, lines = section(text, a.round)
     if st is None:
         sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
+    section_text = "\n".join(lines[st:en])
     questions, in_q = [], False
     for ln in lines[st:en]:
         if re.match(r"^#{2,4} ", ln):
@@ -605,32 +621,56 @@ def cmd_check_elements(a):
                     if not any(re.search(ELEM_TERMS.get(el, "^$"), c, re.I) for c in cmds):
                         errs.append("行 %d: %s %s は `なし` なのに、7 列目のどの手の `$` の行にも要素の名前の語(%s)が無い" % (i + 1, tool, el, ELEM_TERMS.get(el)))
                     if int(a.round) >= 11:
-                        # (e) 監査 63〜65 回目: 間引く形を並べて止める作りは抜け道が残った(`[0:60]`・`head -c` など)ので、
-                        # `なし` の検索は `scripts/cat8_search.py` の出力だけを認める(許す形を 1 つに決める)。
-                        searches, searched_files = [], 0
-                        for f, _, n in strict_refs(logcol):
+                        # (e) 監査 63〜66 回目: `なし` の検索は cat8_search.py、その一覧は cat8_mklist.py で作ったものだけを認める。
+                        # 7 列目の手は重複を除いて数える(同じ手を 2 回書いて和を増やさない)。
+                        refs = list(dict.fromkeys(strict_refs(logcol)))
+                        searches, sum_files, sum_fwh, sum_hits, hit_paths = [], 0, 0, 0, []
+                        n_src, m_list = 0, 0
+                        for f, _, n in refs:
                             c = step_cmdline(f, n) or ""
                             blk = step_block(f, n) or ""
                             if SEARCH_TOOL_RE.search(c):
                                 searches.append(c)
                                 if not search_cmd_only(c):
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s が `python3 scripts/cat8_search.py ...` だけの形でない(前後に別の手・パイプがある)" % (i + 1, tool, el, f, n))
+                                if TRUNC_RE.search(blk):
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s の出力が生ログで切られている(--keep を大きくする)" % (i + 1, tool, el, f, n))
                                 done = SEARCH_DONE_RE.search(blk)
                                 if not done:
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の出力に `cat8_search: complete` の終わりの行が無い" % (i + 1, tool, el, f, n))
+                                    continue
+                                files, fwh, hts, lst = int(done.group(1)), int(done.group(2)), int(done.group(3)), done.group(4)
+                                sum_files += files; sum_fwh += fwh; sum_hits += hts
+                                hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
+                                mk = mklist_footer(f, n, lst)
+                                if not mk:
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧 %s を作った cat8_mklist.py の手が、同じ生ログのそれより前に無い" % (i + 1, tool, el, f, n, lst))
                                 else:
-                                    searched_files += int(done.group(1))
-                                if TRUNC_RE.search(blk):
-                                    errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s の出力が生ログで切られている(--keep を大きくする)" % (i + 1, tool, el, f, n))
+                                    n_src += mk["listed"]; m_list += mk["listed"]  # N は除外のあとの件数(これまでの回の決まり)。除外・無いものは cat8_mklist の出力に名前と理由がある
+                                    if mk["listed"] != files:
+                                        errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の files=%d が、一覧を作った手の listed=%d と違う" % (i + 1, tool, el, f, n, files, mk["listed"]))
                             elif re.search(r"\b(?:grep|egrep|rg|ag|findstr)\b|re\.search|\.find\(", c):
                                 errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s が cat8_search.py でない検索(`なし` の検索は cat8_search.py で打つ)" % (i + 1, tool, el, f, n))
                         if not searches:
                             errs.append("行 %d: %s %s は `なし` なのに、7 列目に cat8_search.py の手が無い" % (i + 1, tool, el))
                         else:
-                            # 引いた検索の手が読んだファイルの数の和が、根拠の「読んだ M 件」と同じか(リポジトリごとに打った手の和でよい)
                             mm = re.search(r"一覧\s*([0-9,]+)\s*件\s*/\s*読んだ\s*([0-9,]+)\s*件", ev)
-                            if mm and searched_files != int(mm.group(2).replace(",", "")):
-                                errs.append("行 %d: %s %s は `なし` なのに、7 列目の cat8_search.py の手が読んだファイルの数の和 %d が、根拠の「読んだ %s 件」と違う" % (i + 1, tool, el, searched_files, mm.group(2)))
+                            if mm:
+                                nn_, mm_ = int(mm.group(1).replace(",", "")), int(mm.group(2).replace(",", ""))
+                                if mm_ == 0:
+                                    errs.append("行 %d: %s %s は `なし` なのに、読んだ件数が 0" % (i + 1, tool, el))
+                                if sum_files != mm_:
+                                    errs.append("行 %d: %s %s は `なし` なのに、7 列目の cat8_search.py の手の files= の和 %d が、根拠の「読んだ %d 件」と違う" % (i + 1, tool, el, sum_files, mm_))
+                                if n_src != nn_:
+                                    errs.append("行 %d: %s %s は `なし` なのに、一覧を作った cat8_mklist.py の手の listed の和 %d が、根拠の「一覧 %d 件」と違う" % (i + 1, tool, el, n_src, nn_))
+                            hm = re.search(r"当たり\s*([0-9,]+)\s*ファイル\s*/\s*([0-9,]+)\s*行", ev)
+                            if not hm:
+                                errs.append("行 %d: %s %s は `なし` なのに、根拠に「当たり F ファイル / H 行」が無い(検索の出力の和 %d ファイル / %d 行)" % (i + 1, tool, el, sum_fwh, sum_hits))
+                            elif (int(hm.group(1).replace(",", "")), int(hm.group(2).replace(",", ""))) != (sum_fwh, sum_hits):
+                                errs.append("行 %d: %s %s は `なし` なのに、根拠の「当たり %s ファイル / %s 行」が検索の出力の和 %d ファイル / %d 行と違う" % (i + 1, tool, el, hm.group(1), hm.group(2), sum_fwh, sum_hits))
+                            missing = [hp for hp in dict.fromkeys(hit_paths) if hp not in section_text]
+                            if missing:
+                                errs.append("行 %d: %s %s は `なし` なのに、当たった行のあるファイル %d 件がこの回の節に書かれていない(当たりを読んで、ファイルごとに理由を書く): %s" % (i + 1, tool, el, len(missing), " ".join(missing[:3])))
                         lack = [g for g in ELEM_TERMS_WIDE.get(el, []) if not any(re.search(g, c, re.I) for c in searches)]
                         if lack:
                             errs.append("行 %d: %s %s は `なし` なのに、7 列目の cat8_search.py の手の語に当たらない語の組がある: %s" % (i + 1, tool, el, " / ".join(lack)))
