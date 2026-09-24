@@ -45,13 +45,31 @@ the facts of the strategy's orders live in the engine's own order book
 outlives a callback -- its order port, its copies of its order views, its
 outbox, its side of the history (lists, event copies, dropped facts) -- is
 kept in ONE holder, `_StrategySide` (round 10, i0-r9-02), which nothing of
-the core's state refers into. The core touches it only through base-type C
-functions on containers it made, never through the objects' own classes,
-and reads nothing the strategy can reach but the outbox's messages, once
-per callback, as values it settles itself (values.py `settle`) under the
-API's rules (`_drain`); the holder's other reads are of the core's own
-lists of references to the event copies, which the strategy cannot reach
-(history.py `HistoryLists`).
+the core's state refers into. The core WRITES it only by `list.append` on
+lists it made (the views it shows, the event copies, one chunk of dropped
+facts per drop) and by making new lists: whatever the strategy did to what
+it reaches -- a key of its own in its registry, a view holding an array's
+buffer -- such a write runs none of its code and cannot fail (round 12,
+i0-r11-01 / i0-r11-03). The strategy's registry and the arrays its reads
+use are brought up to date from those lists inside the strategy's own
+calls (api.py `_bring_up`, history.py `read_dropped`). The core never acts
+on what the strategy reaches through the objects' own classes, and reads
+nothing of it but the outbox's messages, once per callback, as values it
+settles itself (values.py `settle`) under the API's rules (`_drain`); the
+holder's other reads are of the core's own lists of references to the
+event copies, which the strategy cannot reach (history.py `HistoryLists`).
+
+Every party alike (round 12): outside a party's own call -- the core's
+call of the strategy's `on_event`, of a socket's method, of a stream's
+`__next__` -- what the core does with what that party handed over, raised
+or can reach is decided only by objects the core made and no one else
+reaches, or by static (C) classes. A class the party wrote is never
+hashed, compared with `==`, looked up in a hash table or asked for an
+attribute the usual way (values.py `is_one_of`, `derives`, `IdTable`,
+`class_parts`); an answer is taken by values.py `settle` / `take_int` /
+`take_float` / `take_items` (its truth, length, iteration and conversion
+are never asked of it); a carrier is made again from its slots settled
+first (`rebuild_carrier`).
 The context's calls are methods bound to one tuple made for the callback
 (the port, the registry, the outbox, the time, `alive`); the context and
 its windows are revoked through `alive`, a cell only the engine flips. So
@@ -403,18 +421,24 @@ class _StrategySide:
     dropped facts). The core's own state -- the book, the ledger, the queue,
     the history's records, the counters -- holds no reference into it.
 
-    The core touches what is in here only through base-type C functions on
-    the containers it made (`dict.__setitem__` on the registry, `list`'s
-    methods on the outbox and the history lists, `array.array.extend`),
-    never through the objects' own classes (no attribute read or write, no
-    method of theirs): whatever class the strategy gives an object it
-    reaches, its code runs only inside the strategy's own calls. Of what
-    the strategy reaches it reads one thing: the outbox's messages, copied
-    once when a callback returns (`_drain`). It also reads, to make new
-    history lists when events are dropped, its own lists of references to
-    the event copies (`lists._items`, `lists._overall_items`), which the
-    strategy cannot reach (tests/bt/item_0/test_bt0_r11_foreign_objects.py)
-    and of which it reads only the order, never an event copy."""
+    The core WRITES what is in here only by `list.append` on lists it made
+    (`shown`: the views it shows, whose (id, view) pairs the port folds into
+    the registry inside the strategy's calls, api.py `_bring_up`; the
+    history lists; the dropped facts' pending chunks, history.py) and by
+    making new lists, and empties the outbox with `list.clear` -- writes
+    that, whatever the strategy did to what it reaches, run none of its
+    code and cannot fail (round 12: `dict.__setitem__` on the registry ran
+    the `__eq__` of a key the strategy put there, `array.extend` failed
+    while the strategy held a view). It never acts on the objects through
+    their own classes (no attribute read or write, no method of theirs):
+    whatever class the strategy gives an object it reaches, its code runs
+    only inside the strategy's own calls. Of what the strategy reaches it
+    reads one thing: the outbox's messages, copied once when a callback
+    returns (`_drain`). It also reads, to make new history lists when
+    events are dropped, its own lists of references to the event copies
+    (`lists._items`, `lists._overall_items`), which the strategy cannot
+    reach (tests/bt/item_0/test_bt0_r11_foreign_objects.py) and of which it
+    reads only the order, never an event copy."""
 
     __slots__ = ("port", "registry", "shown", "outbox", "lists")
 

@@ -82,10 +82,13 @@ core's own classes (changing the program); `__subclasscheck__` on the
 metaclass of an exception a party RAISES -- the interpreter itself asks it
 of the exception's class while the exception propagates through any frame
 (the caller's, the core's), with no core code involved (shown without the
-core: `<W>/item0_r12_worker_dbg2_interpreter_subclasscheck.py`), as it runs finalizers; the core re-raises the
+core: /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/
+scratchpad/bt/r12_worker/item0_r12_worker_dbg2_interpreter_subclasscheck.py), as it runs finalizers; the core re-raises the
 party's exception unchanged (the contract's `lifecycle`). A hook that runs
 INSIDE its own party's call (the party calling its own object) is allowed
-and not recorded.
+and not recorded. Hooks on the party object ITSELF (the strategy, a socket,
+a stream): the core's call of its method -- the method's lookup included --
+is that party's own call (the contract's `scope`, round 10).
 """
 from __future__ import annotations
 
@@ -965,3 +968,96 @@ def _exports(o) -> bool:
         return True
     except TypeError:
         return False
+
+
+# === the answer-taking rule, value by value (round 12) ===================================
+
+def _one_run(latency=None, fee=None, forced=None):
+    rec = _Rec()
+    socks = {s: c(rec) for s, c in BASE_SOCKETS.items()}
+    if latency is not None:
+        socks["latency_model"].feed_delay_ns = lambda event: latency
+    if fee is not None:
+        socks["cost_model"].cost = lambda fill: fee
+    if forced is not None:
+        socks["account"].on_market_event = lambda event, t: forced
+    return CoreEngine(_Strategy(rec, None), _events(), **socks, history_limit=2)
+
+
+def test_a_c_number_class_s_answer_is_taken_and_a_python_number_class_s_is_refused():
+    """A number of a static (C) class (numpy's) is converted by its C code
+    and taken as the built-in value; a number whose class was written in
+    Python is refused with the entry's error and its conversion never
+    runs (round 12: its conversion is the plug-in's code, after its call)."""
+    np = pytest.importorskip("numpy")
+    base = _snapshot(_one_run(latency=100 * MS, fee=0.25).run())
+    assert _snapshot(_one_run(latency=np.int64(100 * MS), fee=np.float32(0.25)).run()) == base
+    ran = []
+
+    class Py(numbers.Integral):
+        def __index__(self):
+            ran.append("index")
+            return 100 * MS
+        __int__ = __index__
+
+    Py.__abstractmethods__ = frozenset()
+    with pytest.raises(LatencyModelError, match="convert it"):
+        _one_run(latency=Py()).run()
+
+    class PyReal(numbers.Real):
+        def __float__(self):
+            ran.append("float")
+            return 0.25
+
+    PyReal.__abstractmethods__ = frozenset()
+    with pytest.raises(CostModelError):
+        _one_run(fee=PyReal()).run()
+    assert ran == []
+
+
+@pytest.mark.parametrize("answer", ["generator", "deque", "dict", "str"])
+def test_a_sequence_answer_that_is_not_a_list_or_tuple_is_refused(answer):
+    """The protocols declare `Sequence[...]`; the core reads a list or a
+    tuple by the base type's iterator and asks nothing else of an answer."""
+    import collections
+    req = OrderRequest("sell", "market", 1.0)
+    made = {"generator": lambda: (r for r in [req]), "deque": lambda: collections.deque([req]),
+            "dict": lambda: {0: req}, "str": lambda: "x"}[answer]
+    eng = _one_run()
+    eng._account.on_market_event = lambda event, t: made() if event.EVENT_TYPE is EventType.LIQUIDATION else []
+    with pytest.raises(AccountSocketError, match="list or tuple"):
+        eng.run()
+
+
+@pytest.mark.parametrize("entry", sorted({e for _p, e, f in entries() if f == "raised"}))
+def test_after_a_raised_exception_escaped_the_later_calls_ask_nothing_of_its_class(entry):
+    """The one hook left out of grid 1 for a raised exception -- its
+    metaclass's `__subclasscheck__`, which the interpreter asks while the
+    exception propagates -- is not asked by the core's later `step()`,
+    `run()` and `result()` (they describe the failure from its facts and
+    raise EngineFailedError): every hook of META_HOOKS is planted on the
+    exception's metaclass and recorded only from the moment the exception
+    has escaped `run()`."""
+    party = entry.split(".")[0]
+    plan = Plan(party, entry, "raised", "exc", "meta", META_HOOKS)
+    rec = _Rec()
+    live = [False]
+    socks = {s: _party_socket(s, rec, plan, live) for s in BASE_SOCKETS}
+    eng = CoreEngine(_Strategy(rec, plan), _Stream(plan, live), **socks, history_limit=2)
+    live[0] = True
+    with pytest.raises(BaseException) as info:
+        eng.run()
+    assert info.value is plan.raised
+    _OUTSIDE.clear()
+    _ARMED[0] = True
+    try:
+        later = []
+        for call in ("step", "run", "result"):
+            try:
+                getattr(eng, call)()
+            except EngineFailedError as exc:
+                later.append(exc.__cause__ is plan.raised)
+    finally:
+        _ARMED[0] = False
+    assert later == [True, True, True]
+    assert _OUTSIDE == [], _OUTSIDE[:6]

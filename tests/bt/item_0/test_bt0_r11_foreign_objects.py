@@ -858,8 +858,11 @@ def test_the_grid_reaches_every_kind_it_must():
 
 def test_the_core_s_own_reference_lists_are_not_reached():
     """history.py `HistoryLists` keeps, for the core, lists of references to
-    the event copies, which it slices when it drops events: the strategy
-    reaches neither them nor the holder that keeps them."""
+    the event copies, which it slices when it drops events, and (round 12)
+    its own dicts of the dropped facts' holders and of their pending lists:
+    the strategy reaches neither them nor the holder that keeps them.
+    (Round 12 rewrote this list: the two dicts of arrays `dropped_seqs` /
+    `dropped_recvs` became the dicts `dropped` / `_pending`.)"""
     engines: list = []
     problems: list = []
 
@@ -867,7 +870,7 @@ def test_the_core_s_own_reference_lists_are_not_reached():
         def on_event(self, event, ctx):
             eng = engines[0]
             lists = eng._side.lists
-            own = [lists, lists._overall_items, lists.typed, lists.dropped_seqs, lists.dropped_recvs, eng._side,
+            own = [lists, lists._overall_items, lists.typed, lists.dropped, lists._pending, eng._side,
                    *lists._items.values(), lists._items]
             reached = {id(o) for o in _walk(ctx)}
             hit = [type(o).__name__ for o in own if id(o) in reached]
