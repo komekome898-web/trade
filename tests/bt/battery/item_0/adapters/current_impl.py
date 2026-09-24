@@ -103,7 +103,7 @@ class CurrentImplAdapter(Adapter):
     # ---------------- P0-1
     def scene_p1_merge_by_time(self, sc):
         rows = C.concatenated(sc)
-        return not_supported("足以外(約定・資金調達)を含む入力を渡す口が無い。試したこと: " + _try_non_bar(rows)
+        return not_supported("足以外の型を含む入力を渡す口が無い。試したこと: " + _try_non_bar(rows)
                              + "。run_backtest の入力は candles 1 つだけ(複数の入力を渡す引数も無い: " + _no_kw("streams") + ")")
 
     def scene_p1_one_call_per_event(self, sc):
@@ -112,7 +112,7 @@ class CurrentImplAdapter(Adapter):
                   {"carriers": list(rec.carriers)})
 
     def scene_p1_typed_events(self, sc):
-        return not_supported("約定を渡す口が無い。試したこと: " + _try_non_bar(C.events(sc)[1:]))
+        return not_supported("足以外の型を渡す口が無い。試したこと: " + _try_non_bar([e for e in C.events(sc) if e.get("kind") != "bar"]))
 
     # ---------------- P0-2
     def _iso(self, sc):
@@ -231,7 +231,7 @@ class CurrentImplAdapter(Adapter):
 
     # ---------------- P0-5
     def scene_p5_same_time_twice(self, sc):
-        return not_supported("同時刻の 4 種(約定・足・資金調達・清算)のうち足以外を渡す口が無い。試したこと: "
+        return not_supported("同時刻の型の違う事象のうち足以外を渡す口が無い。試したこと: "
                              + _try_non_bar(C.concatenated(sc)))
 
     def scene_p5_hand_over_order(self, sc):

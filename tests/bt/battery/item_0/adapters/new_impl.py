@@ -261,17 +261,17 @@ class NewImplAdapter(Adapter):
     # ---------------- P0-1
     def scene_p1_merge_by_time(self, sc):
         st, _ = self._run(lambda e, c, s: None, self._streams(sc))
-        return ok({"sequence": st["seq"]}, "3 つの入力を名前つきの流れ(辞書、渡した順に作成)で CoreEngine に渡し、"
+        return ok({"sequence": st["seq"]}, f"{len(sc.input['streams'])} つの入力を名前つきの流れ(辞書、渡した順に作成)で CoreEngine に渡し、"
                   "on_event の各呼び出しで(型, exchange_time_ns)を記録", {"carriers": st["carriers"]})
 
     def scene_p1_one_call_per_event(self, sc):
         st, _ = self._run(lambda e, c, s: None, self._events(C.events(sc)))
-        return ok({"sequence": st["seq"]}, "足 5 本を 1 本の入力で渡し、on_event の各呼び出しで(型, exchange_time_ns)を記録",
+        return ok({"sequence": st["seq"]}, f"{len(C.events(sc))} 件を場面の型のまま 1 本の入力で渡し、on_event の各呼び出しで(型, exchange_time_ns)を記録",
                   {"carriers": st["carriers"]})
 
     def scene_p1_typed_events(self, sc):
         st, _ = self._run(lambda e, c, s: None, self._events(C.events(sc)))
-        return ok({"sequence": st["seq"]}, "足と約定を 1 本の入力で渡し、戦略が event.EVENT_TYPE で型を判別して記録",
+        return ok({"sequence": st["seq"]}, "型の違う 2 件を 1 本の入力で渡し、戦略が event.EVENT_TYPE で型を判別して記録",
                   {"carriers": st["carriers"]})
 
     # ---------------- P0-2
@@ -435,14 +435,14 @@ class NewImplAdapter(Adapter):
     def scene_p5_same_time_twice(self, sc):
         order, carriers = self._order_of(sc)
         return ok({"order": order},
-                  "4 つの名前つきの流れを渡した順で辞書にして CoreEngine に渡し、戦略に届いた(型, exchange_time_ns)を記録",
+                  f"{len(sc.input['streams'])} つの名前つきの流れを渡した順で辞書にして CoreEngine に渡し、戦略に届いた(型, exchange_time_ns)を記録",
                   {"carriers": carriers})
 
     def scene_p5_hand_over_order(self, sc):
         got = [(list(o), *self._order_of(sc, o)) for o in sc.input["hand_over_orders"]]
         runs = [{"hand_over": h, "order": order} for h, order, _ in got]
         return ok({"form": "multi_input", "runs": runs},
-                  "24 通りの渡す順で名前つきの流れの辞書を作って 24 回走らせ、各回の(型, 時刻)の列を記録",
+                  f"{len(runs)} 通りの渡す順で名前つきの流れの辞書を作って {len(runs)} 回走らせ、各回の(型, 時刻)の列を記録",
                   {"carriers": [c for _, _, c in got]})
 
     def scene_p5_same_stream_order(self, sc):

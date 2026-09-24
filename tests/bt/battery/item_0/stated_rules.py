@@ -100,8 +100,9 @@ STATED_RULES: dict[str, StatedRule] = {
     # and the subscriptions are enumerated sorted (SubscriptionCollection.cs 123-126, 213-227).
     # SecurityType and Symbol are the same for every subscription of a scene (one CryptoFuture
     # symbol), so the key left is the TickType (Common/Global.cs 512-528: Trade, Quote,
-    # OpenInterest); the data type -> TickType of each subscription is DataManager.cs 755-773
-    # (TradeBar / Tick of trades: Trade; MarginInterestRate: Quote). Subscriptions with the same
+    # OpenInterest); the data type -> TickType of each subscription is DataManager.cs 763-773 with
+    # SubscriptionManager.cs 361 (CryptoFuture: Trade, Quote; a Trade subscription's data type is a
+    # TradeBar or a trade Tick; MarginInterestRate is added with TickType.Quote, line 772). Subscriptions with the same
     # key are enumerated in the order of the ConcurrentDictionary, which the source does not fix:
     # the rule does not decide between them (RuleDoesNotDecide).
     "repro_lean52": StatedRule(

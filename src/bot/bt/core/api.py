@@ -562,8 +562,10 @@ class StrategyContext:
         # kept).
         if event_type is not None:
             dropped = self.__dropped_counts.get(event_type, 0)
+        elif self.__dropped and len(events):
+            dropped = max(0, int(events[0].seq) - 1)
         else:
-            dropped = int(events[0].seq) - 1 if len(events) else 0
+            dropped = 0  # nothing dropped: the oldest held event is the first delivered
         delivered = len(events)
         if count is not None:
             if count == 0:

@@ -175,7 +175,8 @@ def test_p5_same_time_needs_every_event_and_the_rule_fixed_in_the_scene_set():
     applied by the runner; an order the adapter writes is ignored (i0-r4-05)."""
     sc = _scene("p5-same-time-twice")
     t = scenes.T0 + scenes.DAY
-    four = [["liquidation", t], ["funding", t], ["trade", t], ["bar", t]]
+    # the scene as listed = a target with all six types: trade, book_snapshot, book_delta, bar (round r7-1)
+    four = [["book_snapshot", t], ["book_delta", t], ["trade", t], ["bar", t]]
     grade = lambda out, target: run_battery.correctness(SceneResult("ok", out), sc.expected, sc, target)  # noqa: E731
     assert grade({"order": four}, "new_impl") == "正解と一致"
     assert grade({"order": list(reversed(four))}, "new_impl") == "不一致"       # not the target's rule
@@ -201,7 +202,7 @@ def test_p5_hand_over_single_input_keeping_its_order_is_correct_and_multi_input_
     assert grade(single, "new_impl") == "不一致"                   # the rule is written for separate streams
     moving = {"form": "multi_input", "runs": [{"hand_over": o, "order": concat(o)} for o in orders]}
     assert grade(moving, "new_impl") == "不一致"
-    fixed = R.FIXED_PREDICTED["new_impl"]
+    fixed = R.FIXED_PREDICTED["new_impl"][1]
     steady = {"form": "multi_input", "runs": [{"hand_over": o, "order": fixed} for o in orders]}
     assert grade(steady, "new_impl") == "正解と一致"
     dropped = {"form": "multi_input", "runs": [{"hand_over": o, "order": fixed[:1]} for o in orders]}
@@ -215,11 +216,20 @@ def test_stated_rule_recipes_reproduce_the_hand_written_orders():
     """Two derivations of the correct order must agree: the one written by hand
     from each quote (FIXED_PREDICTED) and the recipe the runner applies."""
     import stated_rules as R
-    sc = _scene("p5-same-time-twice")
-    assert set(R.FIXED_PREDICTED) == set(R.STATED_RULES)
+    base = _scene("p5-same-time-twice")
+    # round r7-1: each hand-written order is for the input built from that target's own types;
+    # a target left out has fewer than two types and never gets this scene
+    assert set(R.FIXED_PREDICTED) <= set(R.STATED_RULES)
+    for target, (types, fixed) in R.FIXED_PREDICTED.items():
+        sc = scenes.for_target_types(base, types)
+        assert sc is not None, target
+        if fixed is None:  # the rule leaves a tie
+            with pytest.raises(R.RuleDoesNotDecide):
+                R.predicted(R.STATED_RULES[target], sc.input["streams"], sc.input["hand_over_order"])
+            continue
+        assert R.predicted(R.STATED_RULES[target], sc.input["streams"], sc.input["hand_over_order"]) == fixed, target
+        assert sorted(fixed) == sorted(run_battery._all_tie_events(sc)), target
     for target, rule in R.STATED_RULES.items():
-        assert R.predicted(rule, sc.input["streams"], sc.input["hand_over_order"]) == R.FIXED_PREDICTED[target], target
-        assert sorted(R.FIXED_PREDICTED[target]) == sorted(run_battery._all_tie_events(sc)), target
         assert rule.form in ("multi_input", "single_input") and rule.source and rule.quote
         assert not __import__("re").search(r"\d+\s*[-〜]\s*\d+\s*行|:\d+", rule.source), (
             f"{target}: cite the rule by a name, not by line numbers (i0-r4-05)")
@@ -290,7 +300,9 @@ def test_single_input_form_is_graded_correct_for_the_core_keeping_one_input_in_o
     core = pytest.importorskip("bot.bt.core")
     import stated_rules as R
     monkeypatch.setitem(R.STATED_RULES, "t_single", R.StatedRule("s", "q", "single_input", "stable_by_time"))
-    sc = _scene("p5-hand-over-order")
+    # the input of a target with the four types trade, bar, funding, liquidation (round r7-1: the
+    # types come from the target; this core has all six, so any four of them are a valid input)
+    sc = scenes.for_target_types(_scene("p5-hand-over-order"), ["trade", "bar", "funding", "liquidation"])
     kinds = {"trade": core.TradeEvent, "bar": core.BarEvent, "funding": core.FundingEvent,
              "liquidation": core.LiquidationEvent}
 
