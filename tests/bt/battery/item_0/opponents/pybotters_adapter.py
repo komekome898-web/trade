@@ -54,7 +54,10 @@ def _feed(msgs, store_names):
 
     async def main():
         async def consume(name):
-            with getattr(s, name).watch() as stream:
+            # round r8-1 (positive definition A (3)): the user's consuming loop is the strategy (pybotters calls no
+            # strategy; the user's coroutine takes the store's changes); the block spans that loop and its awaits,
+            # while the feeding coroutine below reads nothing
+            with getattr(s, name).watch() as stream, C.user_loop_call():
                 async for ch in C.aiterate(stream):
                     # round r6-2: the provenance of the change the tool handed over, made when it is received
                     # round r6-3: iterated through common.aiterate, so it shows returned_by = the stream's __anext__

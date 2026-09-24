@@ -40,8 +40,17 @@ import common as C  # noqa: E402
 EXE = str(Path(sys.prefix) / "bin" / "c33_driver")
 
 
+# round r8-1 (positive definition A): the engine's start time is the configured target's chosen value, the same in
+# every scene (the driver reads it from START_NS; until round r8-1 it took the first tick's time). The driver was
+# rebuilt for this (survey_results/attempts/33.log, round r8-1).
+START_NS = C.dt_to_ns(__import__("datetime").datetime.fromisoformat(C.FIXED_WINDOW[0]).replace(
+    tzinfo=__import__("datetime").timezone.utc))
+
+
 def drv(*args) -> list[list[str]]:
-    r = subprocess.run([EXE, *map(str, args)], capture_output=True, text=True, timeout=60)
+    import os
+    r = subprocess.run([EXE, *map(str, args)], capture_output=True, text=True, timeout=60,
+                       env={**os.environ, "START_NS": str(START_NS)})
     if r.returncode != 0:
         raise RuntimeError(f"c33_driver {args[:2]} rc={r.returncode} {r.stderr[:200]}")
     return [ln.split() for ln in r.stdout.splitlines() if ln.strip()]
@@ -63,13 +72,12 @@ NO_TYPES = ("この道具の市場の事象は MarketData の Tick(買い気配�
 
 def _settings(mode: str, plug: str = "none") -> None:
     """Round r8-1 (positive definition A (1)): the settings the driver (survey_results/attempts/33.log, fn main)
-    makes through the tool's public C++ API, recorded in its order. Every mode sets `BacktestConfig.start_time` to
-    the first tick's time, and the order mode puts one resting sell at the first trade's price and size into the
-    matching engine before the run: settings decided from input not yet delivered (recorded as such, so the
-    runner does not grade these runs). The driver would have to be rebuilt to make them from chosen values."""
-    unseen = ("場面の入力", "まだ届いていない入力")
-    C.configure_compiled("cpp:execution_simulator BacktestConfig.start_time", what="BacktestConfig.start_time = 最初の tick の時刻",
-                         decided_from=unseen)
+    makes through the tool's public C++ API, recorded in its order. Round r8-1: `BacktestConfig.start_time` is the
+    configured target's chosen value (START_NS) and the order mode's one resting sell is put in the strategy's
+    first call at the price and size of the tick it received (until round r8-1 both came from the first input
+    tick before the run: settings decided from input not yet delivered; the driver was rebuilt)."""
+    C.configure_compiled("cpp:execution_simulator BacktestConfig.start_time", what=f"BacktestConfig.start_time = {C.FIXED_WINDOW[0]}T00:00Z",
+                         decided_from=("選ぶ値",))
     lat = {"md0": "market_data_latency_ns = 0", "future": "market_data_latency_ns = 0"}.get(mode, "既定(submit 1000 / market data 500 / fill report 500 ns)")
     if plug == "latency7ms":
         lat = "order_submit 7 ms、market data / cancel / fill report 0(場面の遅れ)"
@@ -80,10 +88,11 @@ def _settings(mode: str, plug: str = "none") -> None:
     if plug in ("fill12345", "cost05", "cost0375unit"):
         which = "set_slippage_model" if plug == "fill12345" else "set_cost_model"
         C.configure_compiled(f"cpp:execution_simulator ExecutionSimulator::{which}", what=f"{which}(場面の模型)", decided_from=("場面の入力",))
+    C.configure_compiled("cpp:execution_simulator ExecutionSimulator::add_tick", what="add_tick(場面の tick)", decided_from=("場面の入力",))
     if mode == "orders":
         C.configure_compiled("cpp:execution_simulator MatchingEngine::submit_order",
-                             what="matching_engine().submit_order(売り 指値 = 最初の約定の価格 × 数量)(流動性を先に置く)", decided_from=unseen)
-    C.configure_compiled("cpp:execution_simulator ExecutionSimulator::add_tick", what="add_tick(場面の tick)", decided_from=("場面の入力",))
+                             what="matching_engine().submit_order(売り 指値 = 戦略が 1 回目の呼び出しで受けた tick の価格 × 数量)(流動性を置く)",
+                             when="戦略の呼び出しの中", decided_from=("戦略が受けた物",))
 
 
 class SarthakExecsimAdapter(Adapter):

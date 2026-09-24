@@ -148,3 +148,34 @@ int main(int argc, char** argv) {
   }
   return 2;
 }
+=== 2026-09-24T15:16:13Z round r8-1 (scene keeper, fix): driver rebuilt -- start_time from env START_NS (the configured target's chosen value), the resting sell put in the strategy's first call from the tick it received (was: both from the first input tick before the run)
+$ g++ -std=c++20 -O2 -I cpp /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv33.cpp build/libbacktesting_engine.a -lpthread -o /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/c33_driver  (in /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c33)
+--- diff (before -> after)
+42a43,46
+> // round r8-1: the start time is the configured target's chosen value (env START_NS, the same in every scene),
+> // never the first tick's time (a setting fitted to input not yet delivered)
+> static Timestamp start_ns() { const char* s = getenv("START_NS"); return s ? (Timestamp)atoll(s) : 0; }
+> 
+50c54
+<     cfg.start_time = v.empty() ? 0 : v[0].ts;
+---
+>     cfg.start_time = start_ns();
+61c65
+<     auto v = ins(argc, argv, 3); cfg.start_time = v[0].ts;
+---
+>     auto v = ins(argc, argv, 3); cfg.start_time = start_ns();
+78c82
+<     auto v = ins(argc, argv, 6); cfg.start_time = v[0].ts;
+---
+>     auto v = ins(argc, argv, 6); cfg.start_time = start_ns();
+85,86c89,91
+<     // liquidity: one resting sell at the first trade's price and size (the tool's demo puts a resting order first)
+<     sim.matching_engine().submit_order(req(Side::Sell, OrderType::Limit, v[0].px, v[0].qty));
+---
+>     // liquidity (round r8-1): one resting sell at the price and size of the first tick the strategy received, put
+>     // in the strategy's first call (the tool's demo puts a resting order first; until round r8-1 it was put before
+>     // the run from the first input tick, a setting fitted to input not yet delivered)
+92a98,99
+>           const auto& m = std::get<MarketDataEvent>(e);
+>           sim.matching_engine().submit_order(req(Side::Sell, OrderType::Limit, m.tick.last_price.to_double(), m.tick.last_size.to_double()));
+--- sha256 of the new driver: 04a961a52acf8ba1

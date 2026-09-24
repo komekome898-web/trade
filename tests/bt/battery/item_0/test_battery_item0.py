@@ -666,8 +666,13 @@ def test_a_tag_is_checked_as_well_as_the_object(fake_tool):
 
     class MyKind(enum.Enum):  # a tag class of the scene-set side
         TRADE = 1
-    ev = C.read(tool.event, 1)  # round r6-3: returned by the tool's function (returned_by), so delivered
+    got_ev = []
+    tool.call_each(lambda _: got_ev.append(C.read(tool.event, 1)), [0])  # read inside a strategy call the tool made
+    ev = got_ev[0]  # round r6-3: returned by the tool's function (returned_by), so delivered
     assert _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier_tag(ev, tool.Kind.TRADE)]}, roots).status == "ok"
+    after = C.read(tool.event, 2)  # round r8-1 (positive definition A (3)): a read made outside any strategy call
+    got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier_tag(after, tool.Kind.TRADE)]}, roots)
+    assert got.status == "error" and "戦略の呼び出しの中の読みに限る" in got.output["provenance_error"], got.output
     got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier_tag(ev, MyKind.TRADE)]}, roots)
     assert got.status == "error" and "札" in got.output["provenance_error"], got.output
     import types
@@ -693,23 +698,34 @@ def test_readers_reads_and_attempts_must_run_the_targets_code(fake_tool):
         assert _check("p2-iso-utc", iso, {"reader": reader}, roots).status == "error", reader
     out = {"visible_count": 4, "max_visible_close": 103.0}
     r = C.Reads()
-    r.read("tool.history()", tool.history)
+    tool.call_each(lambda _: r.read("tool.history()", tool.history), [0])  # inside a strategy call the tool made
+    assert _check("p4-visible-at-step", out, r.provenance(), roots).status == "ok"
+    r = C.Reads()
+    r.read("tool.history()", tool.history)  # round r8-1 (positive definition A (3)): outside any strategy call
+    got = _check("p4-visible-at-step", out, r.provenance(), roots)
+    assert got.status == "error" and "戦略の呼び出しの中で行った物と示せない" in got.output["provenance_error"], got.output
+    r = C.Reads()
+    with C.user_loop_call():  # a target the user drives with his own loop: the loop body is the strategy call
+        r.read("tool.history()", tool.history)
     assert _check("p4-visible-at-step", out, r.provenance(), roots).status == "ok"
     kept = [100.0, 101.0, 102.0, 103.0]
     r = C.Reads()
-    r.read("a list the strategy kept", lambda: list(kept))
+    with C.user_loop_call():
+        r.read("a list the strategy kept", lambda: list(kept))
     got = _check("p4-visible-at-step", out, r.provenance(), roots)
     assert got.status == "error" and "1 行も走らず" in got.output["provenance_error"], got.output
     by_hand = {"reads": [{"means": "tool.history()", "returned": [100.0, 101.0, 102.0, 103.0], "touched": [roots.dirs[0] + "/__init__.py"]}]}
     got = _check("p4-visible-at-step", out, by_hand, roots)
     assert got.status == "error" and "手で書いた" in got.output["provenance_error"], got.output
     r = C.Reads()
-    r.read("tool.history()", tool.history)
+    with C.user_loop_call():
+        r.read("tool.history()", tool.history)
     assert _check("p4-visible-at-step", {"visible_count": 5, "max_visible_close": 104.0}, r.provenance(), roots).status == "error"
 
     def attempts(fn):
         att = C.Attempts()
-        C.try_position_namings(att, "seq", fn, 4)
+        with C.user_loop_call():  # round r8-1: the attempts are made inside a strategy call
+            C.try_position_namings(att, "seq", fn, 4)
         return att.output()
     stopped = attempts(lambda: C.KeyCall(lambda k: tool.pick([100.0, 101.0, 102.0, 103.0], k)))
     assert _check("p4-future-read-attempt", stopped, None, roots).status == "ok"
@@ -933,8 +949,11 @@ def test_own_class_carriers_must_have_been_delivered_by_the_target(fake_tool):
     assert grade(s.car).status == "ok"
     rec = run_battery.compact({"carriers": s.car}, roots)["carriers"][0]
     assert rec.get("input") and rec.get("held_by"), rec  # the record says it was the adapter's input
-    ev = C.read(tool.event, 1)  # returned by the tool's function
-    assert grade([C.carrier(ev)]).status == "ok"
+    got_ev = []
+    tool.call_each(lambda _: got_ev.append(C.read(tool.event, 1)), [0])  # returned by the tool's function, in a call
+    assert grade([C.carrier(got_ev[0])]).status == "ok"
+    got = grade([C.carrier(C.read(tool.event, 2))])  # round r8-1: the same read after the run
+    assert got.status == "error" and "届けたことを示せない" in got.output["provenance_error"], got.output
 
 
 def test_a_strategy_called_from_compiled_code_shows_the_compiled_caller():
@@ -1441,3 +1460,14 @@ def test_the_handoff_to_the_materials_role_is_in_the_definitions_and_the_columns
     for t, rows in _records().items():
         for col in ("choose", "settings_1", "types_1"):
             assert rows and col in rows[0], (t, col)
+
+
+def test_every_use_of_the_scene_keepers_terms_is_judged():
+    """Round r8-1 (positive definition D): every occurrence (term, line) of the terms ROOTCAUSE_r8-1.md's term
+    table gives a meaning of the scene keeper's own is listed by term_marks.py and has one judgment in
+    term_judgments.tsv; no judgment is 「別の意味」 (a term of the table has one meaning), and no judgment is left
+    for a line that no longer holds the term (a changed line is read again)."""
+    import term_marks as T
+    ts = T.terms()
+    assert "設定つき対象" in ts and "升目" in ts and "照合元" in ts  # the table is read (a smoke check of the reader)
+    assert not T.problems(), T.problems()[:20]

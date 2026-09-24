@@ -89,7 +89,8 @@ def run(rows, fn, **kw):
     with contextlib.redirect_stdout(buf):
         for i in range(len(s.data) - 1):
             st["n"] += 1
-            fn(s, i, st)
+            with C.user_loop_call():  # round r8-1 (positive definition A (3)): the user's loop body is the strategy call
+                fn(s, i, st)
     st["printed"] = buf.getvalue()[-300:]
     return s, st
 

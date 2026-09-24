@@ -17,9 +17,11 @@ probed axes.
 
 Not probed (left out of the comparison, and why) -- what the machine does not decide, read by the critic and
 the auditor:
-  * positive definitions 0, D, E: rules for the scene keeper's own documents (what may be claimed, how terms
-    are used, what the scrutiny record holds); the machine for them is the scene keeper's self-check of
-    ROOTCAUSE_r8-1.md (outputs named in its section 10), not code of the scene set;
+  * positive definitions 0 and E: rules for the scene keeper's own documents (what may be claimed, what the
+    scrutiny record holds); the machine for them is the scene keeper's self-check of ROOTCAUSE_r8-1.md (outputs
+    named in its section 10), not code of the scene set;
+  * definition D: every axis not in PROBES["D"] (the term table's cells and the uses inside ROOTCAUSE_r8-1.md are
+    the self-check's; term_marks.py decides only the uses in the other files);
   * definition A: every axis not in PROBES["A"] (e.g. 寄せ集め of settings no run can make, a work done by
     code the primary source does not have, the materials' records, the table's rows): the runner does not see
     them; the adapters' and reproductions' code is read;
@@ -205,6 +207,15 @@ PROBES: dict[str, dict[str, dict[str, object]]] = {
             N + "(除かない(14-16 の「除かない」))": lambda: _files_complete(None),
         },
     },
+    "D": {
+        "示した結果": {
+            "意味は 1 つ(全部の出現に判断)": lambda: _terms_ok(),
+            "一部の出現の判断で「意味は 1 つ」": lambda: _terms_ok(drop=True),
+        },
+        "2 つ以上の意味の語の使い方": {
+            "裸で使う": lambda: _terms_ok(other=True),
+        },
+    },
     "C": {
         "升目の表での出方": {
             "観点ごとに観点の範囲の全部の升目が表にある": lambda: _grid_complete(),
@@ -212,6 +223,19 @@ PROBES: dict[str, dict[str, dict[str, object]]] = {
         },
     },
 }
+
+
+def _terms_ok(drop: bool = False, other: bool = False) -> bool:
+    """Definition D's machine (term_marks.py) on the judgments as they are, with one judgment dropped, or with one
+    judgment turned into another meaning."""
+    import term_marks
+    j = dict(term_marks.judgments())
+    k = sorted(j)[0]
+    if drop:
+        del j[k]
+    if other:
+        j[k] = "別の意味: 試し"
+    return not term_marks.problems(j)
 
 
 def _files_complete(exclude) -> bool:
@@ -270,7 +294,7 @@ def test_the_full_grids_are_counted_and_the_cells_run_follow_the_leads_rule():
                     assert (a, x, b, y) in seen, (k, a, x, b, y)
 
 
-@pytest.mark.parametrize("k", ["A", "B", "C"])
+@pytest.mark.parametrize("k", ["A", "B", "C", "D"])
 def test_the_machine_agrees_with_the_definition_on_every_cell_run(k):
     axes, pairs, _ = G.derive(k)
     probes = PROBES[k]

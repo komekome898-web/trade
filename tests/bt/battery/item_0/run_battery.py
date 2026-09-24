@@ -455,8 +455,10 @@ def _touched_ok(item: dict, roots: Roots, what: str) -> str | None:
     the object it read through (`of` / `via`) is the target's. Round r8-1 (positive definition A (3)): and it was
     made inside a strategy call (common.call_context); a compiled driver's attempt (no Python stack) is read by
     the critic from the driver's code."""
-    if "in_call_by" in item and not read_in_call({"read_in_call_by": item.get("in_call_by"),
-                                                  "read_in_user_loop": item.get("in_user_loop")}, roots):
+    through = item.get("via") if item.get("via") is not None else item.get("of")
+    by_driver = isinstance(through, C.Made) and through.compiled  # made inside a compiled tool's driver
+    if "in_call_by" in item and not by_driver and not read_in_call({"read_in_call_by": item.get("in_call_by"),
+                                                                    "read_in_user_loop": item.get("in_user_loop")}, roots):
         return (f"{what} {item.get('means')!r:.80} は戦略の呼び出しの中で行った物と示せない(呼び出した物 {item.get('in_call_by')}・"
                 f"利用者の回しの中 {item.get('in_user_loop')})")
     if any(roots.has_file(f) for f in (item.get("touched") or [])):
