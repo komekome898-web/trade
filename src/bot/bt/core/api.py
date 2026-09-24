@@ -21,16 +21,29 @@ tests/bt/item_0/test_bt0_api_surface.py):
 * No path to the future. The history view is backed by the list of events
   already delivered; the engine appends to it only between callbacks. The
   order functions are bound methods of `_OrderPort`, an object that holds
-  only the strategy's own order registry and an outbox -- not the engine,
-  not the event source, not the pending queue. So nothing reachable from a
-  context, even through private attributes, holds an event the strategy has
-  not received yet. Scope of this guarantee: the context and what is
-  reachable from it by attribute access. It does NOT cover introspecting
-  the interpreter: the strategy is called inside the engine's own process
-  and call (`CoreEngine.step`), so `sys._getframe()` / `inspect.stack()` /
-  `gc.get_objects()` reach the engine and its queue. The core does not
-  sandbox strategy code; a strategy that does this is outside the contract
+  only the strategy's OWN copies of its order views and its outbox -- not
+  the engine, not the core's order book, not the event source, not the
+  pending queue. So nothing reachable from a context, even through private
+  attributes, holds an event the strategy has not received yet. Scope of
+  this guarantee: the context and what is reachable from it by attribute
+  access. It does NOT cover introspecting the interpreter: the strategy is
+  called inside the engine's own process and call (`CoreEngine.step`), so
+  `sys._getframe()` / `inspect.stack()` / `gc.get_objects()` reach the
+  engine and its queue. The core does not sandbox strategy code; a
+  strategy that does this is outside the contract
   (`CORE_CONTRACT["visibility"]["scope"]`).
+* Nothing the strategy can reach decides anything of the core's (round 9,
+  i0-r8-01; `CORE_CONTRACT["channel_payloads"]["ownership"]`). The facts
+  of the strategy's orders live in the core's own `_OrderBook`, which no
+  context reaches; the port's registry holds the strategy's own copies
+  (what `order()` / `open_orders()` return), each a new object the core
+  writes at every change and never reads back. The one thing the core reads from
+  what the strategy can reach is the outbox -- the messages it sent --
+  once, when the callback returns, as the arguments of API calls: the
+  core applies every rule of `place_order` / `cancel_order` / `set_timer`
+  again, against its own book and its own time (`check_new_id`,
+  `check_timer`), so a message written into the outbox around the port
+  has exactly the effect of the API call, or is refused.
 * No acting later. The engine revokes the context when the callback
   returns; any later attempt to read history or act raises
   `StaleContextError`, and the history view drops its backing list.
@@ -81,7 +94,20 @@ from .events import (
     OrderStateUnknownEvent,
 )
 from .time import Nanos, validate_nanos
-from .values import as_choice, as_flag, as_float, as_int, as_text, freeze, is_a, rebuild_carrier, thaw, type_name
+from .values import (
+    as_choice,
+    as_flag,
+    as_float,
+    as_int,
+    as_text,
+    copy_carrier,
+    freeze,
+    is_a,
+    rebuild_carrier,
+    renew,
+    thaw,
+    type_name,
+)
 from .window import DeliveredEvents, EventWindow
 
 
@@ -188,13 +214,20 @@ def fresh_request(request: Any, cls: type, error: type, who: str) -> Any:
     own request class, never a subclass (a subclass could decide a field
     when it is read), rebuilt from its fields, so the receiver holds an
     object the sender does not (it cannot be changed afterwards, even by
-    bypassing `frozen`)."""
+    bypassing `frozen`). A request whose slots were broken after it was made
+    (a field deleted or set to what the class refuses) is refused as
+    `error`, never a core crash."""
     if type(request) is not cls:
         raise error(
             f"{who} takes a {cls.__name__} itself (not a subclass), got "
             f"{type(request).__module__}.{type(request).__qualname__}"
         )
-    return rebuild_carrier(request)
+    try:
+        return rebuild_carrier(request)
+    except error:
+        raise
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise error(f"{who}: the {cls.__name__} cannot be made again from its fields: {exc}") from None
 
 
 def _require_positive(name: str, value: Any) -> float:
@@ -278,15 +311,155 @@ class OrderView:
         return self.state in OPEN_STATES
 
 
-class _OrderPort:
-    """The strategy's side of the order channel. Holds the strategy's order
-    registry and an outbox; the engine drains the outbox after each callback
-    and feeds delivered notices back through `_apply_notice`. It has no
-    reference to the engine."""
+def copy_view(view: OrderView) -> OrderView:
+    """A new copy of an order view for one receiver (the strategy, on every
+    `order()` / `open_orders()`; the caller's result): the request copied
+    (values.py `copy_carrier`), every other field built anew (the state is
+    an Enum member: one object). What a receiver does to it reaches no one."""
+    fields = {f.name: getattr(view, f.name) for f in dataclasses.fields(view)}
+    fields["request"] = copy_carrier(fields["request"])
+    for name, v in fields.items():
+        if name not in ("request", "state"):
+            fields[name] = renew(v)
+    return OrderView(**fields)
+
+
+def _new_view(request: OrderRequest, now: int, origin: str = "strategy") -> OrderView:
+    return OrderView(request=request, state=OrderState.PENDING_NEW, sent_time_ns=now, last_update_ns=now,
+                     origin=origin)
+
+
+def _view_after_cancel(view: OrderView, now: int) -> OrderView:
+    """Every cancel is answered by the venue exactly once (the engine
+    answers one for an order that is not live there), so it is counted
+    even for an order already final in this view."""
+    view = dataclasses.replace(view, cancels_in_flight=view.cancels_in_flight + 1, last_update_ns=now)
+    return dataclasses.replace(view, state=_derive_state(view))
+
+
+def _view_after_notice(view: OrderView, event: Event, t: int) -> OrderView:
+    """The facts of one order after a delivered notice (delivered at `t`),
+    then its derived state. Nothing here guesses a previous state."""
+    coid = view.client_order_id
+    final: Optional[OrderState] = None
+    if _answers_cancel(event):
+        # channels are FIFO, so the k-th answer answers the k-th cancel
+        if view.cancels_in_flight < 1:  # pragma: no cover - engine invariant
+            raise RuntimeError(f"an answer to a cancel of {coid!r} with no cancel in flight")
+        view = dataclasses.replace(view, cancels_in_flight=view.cancels_in_flight - 1)
+    if isinstance(event, OrderAckEvent):
+        view = dataclasses.replace(view, acked=True, unknown_new=False, venue_order_id=event.venue_order_id)
+    elif isinstance(event, OrderRejectEvent):
+        if event.request_kind == "new":
+            final = OrderState.REJECTED
+        # a cancel reject answers our cancel; it says nothing that settles
+        # an ambiguous answer about the order
+        view = dataclasses.replace(view, reason=event.reason)
+    elif isinstance(event, OrderFillEvent):
+        filled = view.filled_size + event.size
+        prev_notional = (view.avg_fill_price or 0.0) * view.filled_size
+        avg = (prev_notional + event.price * event.size) / filled
+        # a fill proves the order exists at the venue (settles an
+        # ambiguous new order), not whether a cancel took effect
+        view = dataclasses.replace(
+            view, acked=True, unknown_new=False, filled_size=filled, avg_fill_price=avg,
+            fees=view.fees + event.fee,
+        )
+        if filled >= view.request.size * (1 - _FILL_EPS):
+            final = OrderState.FILLED
+    elif isinstance(event, OrderCanceledEvent):
+        final = OrderState.CANCELED
+        view = dataclasses.replace(view, reason=event.reason)
+    elif isinstance(event, OrderStateUnknownEvent):
+        if event.request_kind == "cancel":
+            view = dataclasses.replace(view, unknown_cancel=True, reason=event.detail)
+        else:
+            view = dataclasses.replace(view, unknown_new=True, reason=event.detail)
+    else:  # pragma: no cover - engine only routes notices here
+        raise TypeError(type(event).__name__)
+    if final is not None and view.state not in FINAL_STATES:
+        # a final state settles every ambiguity; cancels still in flight
+        # stay counted until their answers arrive
+        view = dataclasses.replace(view, state=final, unknown_new=False, unknown_cancel=False)
+    view = dataclasses.replace(view, last_update_ns=t)
+    return dataclasses.replace(view, state=_derive_state(view))
+
+
+def check_new_id(coid: str, known: Callable[[str], bool]) -> None:
+    """THE rule for the id of a new order, applied by `place_order` (against
+    the strategy's copies, to answer at once) and again by the core when it
+    takes the order from the outbox (against its own book, engine.py): not
+    the prefix reserved for forced orders, not an id already used."""
+    if coid.startswith(FORCED_ID_PREFIX):
+        raise OrderApiError(
+            f"client_order_id {coid!r}: the prefix {FORCED_ID_PREFIX!r} is reserved "
+            f"for forced orders from the account socket"
+        )
+    if known(coid):
+        raise OrderApiError(f"duplicate client_order_id {coid!r}")
+
+
+def check_timer(at_ns: Any, tag: Any, now: int) -> tuple[int, str]:
+    """THE rule for a timer, applied by `set_timer` and again by the core
+    when it takes the timer from the outbox (against the callback's time):
+    an int64 of ns not before now, and a tag that is a str (it reaches the
+    strategy later, in a ClockEvent)."""
+    at = int(validate_nanos(at_ns))
+    if at < now:
+        raise OrderApiError(f"timer at {at} is before now {now}")
+    return at, _order_field(as_text, "timer tag", tag)
+
+
+class _OrderBook:
+    """The core's OWN record of the strategy's orders: the facts of every
+    order the core took from the outbox and of every forced order the
+    strategy was told of. Held by the engine only -- no context, port or
+    receiver reaches it -- so what the strategy changes in what it can
+    reach changes nothing here (round 9, i0-r8-01). The engine derives
+    from it the strategy's copies (the port's registry) and the caller's
+    result."""
+
+    __slots__ = ("_views",)
 
     def __init__(self) -> None:
-        self._registry: dict[str, OrderView] = {}
-        self._outbox: list[tuple] = []
+        self._views: dict[str, OrderView] = {}
+
+    def knows(self, client_order_id: str) -> bool:
+        return client_order_id in self._views
+
+    def view(self, client_order_id: str) -> OrderView:
+        return self._views[client_order_id]
+
+    def items(self):
+        return self._views.items()
+
+    def add(self, request: OrderRequest, now: int, origin: str = "strategy") -> None:
+        coid = request.client_order_id
+        if coid in self._views:  # pragma: no cover - the engine checks ids first (check_new_id)
+            raise OrderApiError(f"duplicate client_order_id {coid!r}")
+        self._views[coid] = _new_view(request, now, origin)
+
+    def cancel(self, client_order_id: str, now: int) -> None:
+        self._views[client_order_id] = _view_after_cancel(self._views[client_order_id], now)
+
+    def apply_notice(self, event: Event, t: int) -> None:
+        coid = event.client_order_id  # type: ignore[attr-defined]
+        self._views[coid] = _view_after_notice(self._views[coid], event, t)
+
+
+class _OrderPort:
+    """The strategy's side of the order channel: its OWN copies of its
+    order views (`_registry`, written by the engine, never read by it) and
+    its outbox (the messages it sent, read by the engine once per callback,
+    engine.py `_drain`). It has no reference to the engine or to the core's
+    book. Slotted: nothing can be put on it (an instance attribute cannot
+    shadow a method)."""
+
+    __slots__ = ("_registry", "_outbox", "_counter", "_now")
+
+    def __init__(self, registry: Optional[dict] = None, outbox: Optional[list] = None) -> None:
+        self._registry: dict[str, OrderView] = {} if registry is None else registry
+        self._outbox: list[tuple] = [] if outbox is None else outbox
         self._counter = 0
         # the delivery time of the callback in progress; None before the
         # first callback ("no time yet" is not a time: every int64 is one)
@@ -306,13 +479,7 @@ class _OrderPort:
         now = self._time()
         coid = request.client_order_id
         if coid:
-            if coid.startswith(FORCED_ID_PREFIX):
-                raise OrderApiError(
-                    f"client_order_id {coid!r}: the prefix {FORCED_ID_PREFIX!r} is reserved "
-                    f"for forced orders from the account socket"
-                )
-            if coid in self._registry:
-                raise OrderApiError(f"duplicate client_order_id {coid!r}")
+            check_new_id(coid, self._registry.__contains__)
         else:
             while True:
                 self._counter += 1
@@ -320,12 +487,7 @@ class _OrderPort:
                 if coid not in self._registry:
                     break
             request = dataclasses.replace(request, client_order_id=coid)
-        self._registry[coid] = OrderView(
-            request=request,
-            state=OrderState.PENDING_NEW,
-            sent_time_ns=now,
-            last_update_ns=now,
-        )
+        self._registry[coid] = _new_view(request, now)
         self._outbox.append(("new", dataclasses.replace(request), now))
         return coid
 
@@ -337,93 +499,25 @@ class _OrderPort:
         if view is None:
             raise OrderApiError(f"cancel for unknown client_order_id {request.client_order_id!r}")
         now = self._time()
-        # Every cancel is answered by the venue exactly once (the engine
-        # answers one for an order that is not live there), so it is counted
-        # even for an order already final in this view.
-        view = dataclasses.replace(view, cancels_in_flight=view.cancels_in_flight + 1, last_update_ns=now)
-        self._registry[request.client_order_id] = dataclasses.replace(view, state=_derive_state(view))
+        self._registry[request.client_order_id] = _view_after_cancel(view, now)
         self._outbox.append(("cancel", request, now))
 
     def knows(self, client_order_id: str) -> bool:
         return client_order_id in self._registry
 
     def set_timer(self, at_ns: int, tag: str) -> None:
-        now = self._time()
-        at = int(validate_nanos(at_ns))
-        if at < now:
-            raise OrderApiError(f"timer at {at} is before now {now}")
-        # the tag reaches the strategy later, in a ClockEvent: a str itself
-        self._outbox.append(("timer", at, _order_field(as_text, "timer tag", tag)))
+        at, text = check_timer(at_ns, tag, self._time())
+        self._outbox.append(("timer", at, text))
 
     def order(self, client_order_id: str) -> Optional[OrderView]:
+        """The strategy's own copy of its view of one order (None if
+        unknown): an object the core wrote for the strategy alone
+        (engine.py `_show`, a new copy at every change) and never reads."""
         return self._registry.get(client_order_id)
 
     def open_orders(self) -> tuple[OrderView, ...]:
+        """The strategy's own copies of its views of its open orders."""
         return tuple(v for v in self._registry.values() if v.is_open)
-
-    # -- engine-facing ------------------------------------------------------
-    def _adopt(self, request: OrderRequest, time_ns: int, origin: str) -> None:
-        """Register an order the strategy did not place (a forced order from
-        the account socket). Called by the engine when the first notice
-        about it is delivered, never earlier, so the strategy learns of it
-        only through a notice."""
-        coid = request.client_order_id
-        if coid in self._registry:  # pragma: no cover - the engine checks ids first
-            raise OrderApiError(f"duplicate client_order_id {coid!r}")
-        self._registry[coid] = OrderView(
-            request=request, state=OrderState.PENDING_NEW, sent_time_ns=time_ns,
-            last_update_ns=time_ns, origin=origin,
-        )
-
-    def _apply_notice(self, event: Event) -> None:
-        """Update the facts of one order from a delivered notice, then
-        derive its state. Nothing here guesses a previous state."""
-        coid = event.client_order_id  # type: ignore[attr-defined]
-        view = self._registry[coid]
-        t = int(event.received_time_ns)
-        final: Optional[OrderState] = None
-        if _answers_cancel(event):
-            # channels are FIFO, so the k-th answer answers the k-th cancel
-            if view.cancels_in_flight < 1:  # pragma: no cover - engine invariant
-                raise RuntimeError(f"an answer to a cancel of {coid!r} with no cancel in flight")
-            view = dataclasses.replace(view, cancels_in_flight=view.cancels_in_flight - 1)
-        if isinstance(event, OrderAckEvent):
-            view = dataclasses.replace(view, acked=True, unknown_new=False,
-                                       venue_order_id=event.venue_order_id)
-        elif isinstance(event, OrderRejectEvent):
-            if event.request_kind == "new":
-                final = OrderState.REJECTED
-            # a cancel reject answers our cancel; it says nothing that settles
-            # an ambiguous answer about the order
-            view = dataclasses.replace(view, reason=event.reason)
-        elif isinstance(event, OrderFillEvent):
-            filled = view.filled_size + event.size
-            prev_notional = (view.avg_fill_price or 0.0) * view.filled_size
-            avg = (prev_notional + event.price * event.size) / filled
-            # a fill proves the order exists at the venue (settles an
-            # ambiguous new order), not whether a cancel took effect
-            view = dataclasses.replace(
-                view, acked=True, unknown_new=False, filled_size=filled, avg_fill_price=avg,
-                fees=view.fees + event.fee,
-            )
-            if filled >= view.request.size * (1 - _FILL_EPS):
-                final = OrderState.FILLED
-        elif isinstance(event, OrderCanceledEvent):
-            final = OrderState.CANCELED
-            view = dataclasses.replace(view, reason=event.reason)
-        elif isinstance(event, OrderStateUnknownEvent):
-            if event.request_kind == "cancel":
-                view = dataclasses.replace(view, unknown_cancel=True, reason=event.detail)
-            else:
-                view = dataclasses.replace(view, unknown_new=True, reason=event.detail)
-        else:  # pragma: no cover - engine only routes notices here
-            raise TypeError(type(event).__name__)
-        if final is not None and view.state not in FINAL_STATES:
-            # a final state settles every ambiguity; cancels still in flight
-            # stay counted until their answers arrive
-            view = dataclasses.replace(view, state=final, unknown_new=False, unknown_cancel=False)
-        view = dataclasses.replace(view, last_update_ns=t)
-        self._registry[coid] = dataclasses.replace(view, state=_derive_state(view))
 
 
 class StrategyContext:
@@ -443,6 +537,7 @@ class StrategyContext:
         dropped: Optional[Mapping[EventType, tuple[int, int]]] = None,
         dropped_counts: Optional[Mapping[EventType, int]] = None,
         now_ns: Optional[int] = None,
+        dropped_overall: Optional[int] = None,
     ) -> None:
         """`typed_events`, if given, maps an event type to the delivered
         events of that type (same objects, same order as `visible_events`);
@@ -456,7 +551,10 @@ class StrategyContext:
         of an answer, window.py). `now_ns`: the delivery time, from the
         engine (not read back from `current`, which is the strategy's own
         copy and could be changed by it); default `current`'s received
-        time."""
+        time. `dropped_overall`: how many delivered events the whole history
+        no longer holds, from the engine's own count (not read back from the
+        events, which are the strategy's copies); default: counted from the
+        oldest held event's delivery number."""
         self.__visible_events = visible_events
         self.__typed_events = typed_events
         self.__dropped = dict(dropped) if dropped else {}
@@ -468,17 +566,16 @@ class StrategyContext:
         self.__order_lookup_cb = order_lookup_cb
         self.__open_orders_cb = open_orders_cb
         self.__set_timer_cb = set_timer_cb
+        self.__dropped_overall = None if dropped_overall is None else int(dropped_overall)
         self.__revoked = False
 
     def _revoke(self) -> None:
+        """Called by the engine through the class (`StrategyContext._revoke(
+        ctx)`), never looked up on the instance, and it only WRITES: it reads
+        nothing the strategy could have changed on its context. The engine
+        revokes the history windows it built itself, through its own
+        references to them (engine.py `_deliver`)."""
         self.__revoked = True
-        views = [self.__visible_events]
-        if self.__typed_events is not None:
-            views.extend(self.__typed_events.values())
-        for view in views:
-            revoke = getattr(view, "revoke", None)
-            if revoke is not None:
-                revoke()
         self.__typed_events = None
 
     def __check(self) -> None:
@@ -523,6 +620,12 @@ class StrategyContext:
         `since_ns <= received_time_ns <= until_ns`; then only the last `n`
         (`n` is a count >= 0: `n=0` returns nothing, a negative `n` raises
         `OrderApiError`).
+
+        "The last k events, or all of them if fewer were delivered" is
+        `visible_events(n=k)`, not `visible_events()[-k:]`: a slice bound
+        naming a position before the answer's oldest event raises
+        (`BeforeFirstEventError` / `DroppedPositionError`) instead of
+        shortening the answer (round 8; `position_rule.last_k`).
 
         Any time argument after `now_ns` (`since_ns` or `until_ns`) raises
         `LookAheadError`: the history holds nothing after now, and a request
@@ -569,6 +672,8 @@ class StrategyContext:
         # kept).
         if event_type is not None:
             dropped = self.__dropped_counts.get(event_type, 0)
+        elif self.__dropped_overall is not None:
+            dropped = self.__dropped_overall  # the engine's own count
         elif self.__dropped and len(events):
             dropped = max(0, int(events[0].seq) - 1)
         else:

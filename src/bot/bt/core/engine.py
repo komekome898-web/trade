@@ -80,7 +80,19 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Iterator, Mapping, Optional, Union
 
-from .api import FORCED_ID_PREFIX, CancelRequest, OrderRequest, OrderView, StrategyContext, _OrderPort, fresh_request
+from .api import (
+    FORCED_ID_PREFIX,
+    CancelRequest,
+    OrderRequest,
+    OrderView,
+    StrategyContext,
+    _OrderBook,
+    _OrderPort,
+    check_new_id,
+    check_timer,
+    copy_view,
+    fresh_request,
+)
 from .errors import OrderApiError
 from .errors import (
     AccountSocketError,
@@ -336,18 +348,6 @@ def _rebuilt(carrier: Any) -> Any:
     passes values.py again and is built anew. The sender's object is
     never kept: changing it afterwards, by any means, reaches no one."""
     return rebuild_carrier(carrier)
-
-
-def _copied_view(view: OrderView) -> OrderView:
-    """The caller's own copy of one of the strategy's order views (the
-    result shares nothing with the strategy): the request copied, every
-    other field built anew (the state is an enum member: one object)."""
-    fields = {f.name: getattr(view, f.name) for f in dataclasses.fields(view)}
-    fields["request"] = copy_carrier(fields["request"])
-    for name, v in fields.items():
-        if name not in ("request", "state"):
-            fields[name] = renew(v)
-    return OrderView(**fields)
 
 
 def _is_cancel_answer(report: Any, coid: str) -> bool:
@@ -630,7 +630,16 @@ class CoreEngine:
         self._failure: Optional[BaseException] = None
         self._in_step = False
 
-        self._port = _OrderPort()
+        # The strategy's orders (round 9, i0-r8-01): the core's own book is
+        # the one place their facts live; the port the strategy reaches holds
+        # the strategy's copies (`_shown`, written from the book, never read)
+        # and its outbox (`_box`, read once per callback as messages). The
+        # engine keeps its own references to both and never reads the port's
+        # attributes to find them.
+        self._book = _OrderBook()
+        self._shown: dict[str, OrderView] = {}
+        self._box: list = []
+        self._port = _OrderPort(self._shown, self._box)
         self._ledger = _VenueLedger()
         self._forced: dict[str, OrderRequest] = {}
         self._forced_list: list[OrderRequest] = []
@@ -786,7 +795,7 @@ class CoreEngine:
             order_requests=[copy_carrier(r) for r in self._order_requests],
             cancel_requests=[copy_carrier(r) for r in self._cancel_requests],
             fills=[copy_carrier(f) for f in self._fills],
-            orders={coid: _copied_view(v) for coid, v in self._port._registry.items()},
+            orders={coid: copy_view(v) for coid, v in self._book.items()},
             venue_states=self._ledger.states(),
             models={
                 "fill_model": _qualname(self._fill_model),
@@ -827,34 +836,44 @@ class CoreEngine:
         self._deliver(time_ns, event)
 
     def _deliver(self, time_ns: int, event: Event) -> None:
-        # A shallow copy with the delivery time and sequence set. The event
-        # was validated at construction, and time_ns was validated as int64
-        # in `_push` and is >= its received time >= its exchange time.
-        # `seq` is the strategy's own delivery count (1, 2, 3, ...), never a
-        # queue counter: a queue counter also counts entries for events the
+        # A copy with the delivery time and sequence set. The event was
+        # validated at construction, and time_ns was validated as int64 in
+        # `_push` and is >= its received time >= its exchange time. `seq` is
+        # the strategy's own delivery count (1, 2, 3, ...), never a queue
+        # counter: a queue counter also counts entries for events the
         # strategy has not received yet (e.g. one that happened at the
         # exchange but reaches us later), and its gaps would let a strategy
         # count them -- a side channel to the future.
-        delivered = _delivered_copy(event, time_ns, self._deliveries + 1)
-        port = self._port
-        if delivered.EVENT_TYPE in NOTICE_EVENT_TYPES:
-            coid = delivered.client_order_id  # type: ignore[attr-defined]
-            if not port.knows(coid):
+        #
+        # Everything decided here is decided from the core's own objects
+        # (round 9, i0-r8-01): `event` (the core's), the book, the history's
+        # records, the engine's counters. The strategy's copy `delivered` is
+        # only written and handed over.
+        seq = self._deliveries + 1
+        delivered = _delivered_copy(event, time_ns, seq)
+        etype = event.EVENT_TYPE
+        book = self._book
+        if etype in NOTICE_EVENT_TYPES:
+            coid = event.client_order_id  # type: ignore[attr-defined]
+            if not book.knows(coid):
                 # first notice about a forced order: the strategy learns of it now
-                port._adopt(dataclasses.replace(self._forced[coid]), time_ns, "forced")
-            port._apply_notice(delivered)
+                book.add(dataclasses.replace(self._forced[coid]), time_ns, "forced")
+            book.apply_notice(event, time_ns)
+            self._show(coid)
         history = self._history
-        history.append(delivered)
-        self._deliveries += 1
+        history.append(delivered, seq, time_ns, etype)
+        self._deliveries = seq
         self._digest.update(repr(delivered).encode())
         self._digest.update(b"\n")
-        port._now = time_ns
-        dropped_counts = history.dropped_count_facts()
-        overall = history.overall
-        # the windows' places (window.py): each list knows how many delivered
-        # events lie before its oldest (history.py `DeliveredList.dropped`)
-        window = EventWindow(overall, len(overall), overall.dropped)
-        typed_windows = {t: EventWindow(lst, len(lst), lst.dropped) for t, lst in history.typed.items() if lst}
+        port = self._port
+        port._now = renew(time_ns)  # written, never read back by the core
+        # the windows' places (window.py), all from the core's own counts
+        window = EventWindow(history.overall, history.count(), history.overall_dropped)
+        typed_windows = {
+            t: EventWindow(history.typed[t], history.count(t), history.dropped_before(t))
+            for t in EventType if history.count(t)
+        }
+        windows = [window, *typed_windows.values()]  # the core's own references, for revoking
         ctx = StrategyContext(
             visible_events=window,
             current=delivered,
@@ -866,53 +885,98 @@ class CoreEngine:
             set_timer_cb=port.set_timer,
             typed_events=typed_windows,
             dropped=history.dropped_facts(),
-            dropped_counts=dropped_counts,
+            dropped_counts=history.dropped_count_facts(),
+            dropped_overall=history.overall_dropped,
         )
         try:
             self._strategy.on_event(delivered, ctx)
         finally:
-            ctx._revoke()
-            outbox, port._outbox = port._outbox, []
-        self._drain(outbox, time_ns)
+            # through the classes and the core's own references: nothing the
+            # strategy put on its context or windows is called here
+            for w in windows:
+                EventWindow.revoke(w)
+            StrategyContext._revoke(ctx)
+        self._drain(time_ns)
 
-    def _drain(self, outbox: list[tuple], sent: int) -> None:
-        """Take what the strategy sent in the callback at `sent`. The outbox
-        is reachable from the strategy (through its context's private
-        attributes), so what lies there is still the sender's: each request
-        is made again here (`fresh_request`), when the core takes it, and
-        sent at the callback's time -- never a time or an object the
-        outbox holds. Every receiver gets a copy of its own."""
-        port = self._port
-        for item in outbox:
-            # the outbox is written by the order port; an item written
-            # around it (through private attributes) is refused, never guessed
-            if type(item) is not tuple or tuple.__len__(item) != 3 or item[0] not in ("new", "cancel", "timer"):
+    def _show(self, coid: str) -> None:
+        """Write the strategy's copy of one order view (from the book) into
+        the port's registry, through the core's own reference to it."""
+        dict.__setitem__(self._shown, coid, copy_view(self._book.view(coid)))
+
+    def _drain(self, sent: int) -> None:
+        """Take what the strategy sent in the callback at `sent`: the
+        messages in the outbox, read ONCE, now, through the core's own
+        reference to it (never the port's attribute), by their real types.
+        Each is the arguments of one API call, and the core applies that
+        call's rules again against its OWN state -- the book and the
+        callback's time (`check_new_id`, `check_timer`), never the port's
+        copies -- so a message written around the port has exactly the
+        effect of the API call, or is refused with OrderApiError. Every
+        request is made again (`fresh_request`) and sent at the callback's
+        time; every receiver gets a copy of its own."""
+        port, box = self._port, self._box
+        for name, own in (("_outbox", box), ("_registry", self._shown)):
+            try:
+                held = object.__getattribute__(port, name)
+            except AttributeError:
+                held = None
+            if held is not own:
                 raise OrderApiError(
-                    f"the order outbox holds a {type_name(item)} the order port did not put there"
+                    f"the order port's {name} was replaced or removed around the order port; the core "
+                    f"reads and writes only its own, so what was sent through the replacement went nowhere"
                 )
-            kind = item[0]
-            if kind in ("new", "cancel"):
-                cls = OrderRequest if kind == "new" else CancelRequest
-                req = fresh_request(item[1], cls, OrderApiError, "place_order" if kind == "new" else "cancel_order")
-                if not port.knows(req.client_order_id):
-                    raise OrderApiError(f"the order outbox holds a {kind} for {req.client_order_id!r}, which the "
-                                        f"order port never registered (written around place_order / cancel_order)")
-                model = self._latency.order_delay_ns if kind == "new" else self._latency.cancel_delay_ns
-                name = "order_delay_ns" if kind == "new" else "cancel_delay_ns"
-                delay = _check_delay(model(copy_carrier(req), renew(sent)), name)
-                arrive = self._outbound.admit(sent + delay)
-                if kind == "new":
-                    self._order_requests.append(req)
-                    self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_ORDER, req)
-                else:
-                    self._cancel_requests.append(req)
-                    self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_CANCEL, req)
-            else:  # "timer"
-                _, at, tag = item
-                at = int(validate_nanos(at))
-                if at < sent:
-                    raise OrderApiError(f"timer at {at} is before the callback's time {sent}")
-                self._push(at, PHASE_DELIVER_TIMER, _K_DELIVER, ClockEvent(received_time_ns=at, tag=tag))
+        messages = list.__getitem__(box, slice(None))
+        list.clear(box)
+        for message in messages:
+            self._take_message(message, sent)
+
+    def _take_message(self, message: Any, sent: int) -> None:
+        """One message of the outbox: `("new", OrderRequest, t)`,
+        `("cancel", CancelRequest, t)` or `("timer", at_ns, tag)` -- a tuple
+        itself, of three, whose first item is a str itself (the time a
+        message names is never used: it is sent at the callback's)."""
+        if type(message) is not tuple or tuple.__len__(message) != 3:
+            raise OrderApiError(
+                f"the order outbox holds a {type_name(message)} the order port did not put there "
+                f"(a message is a tuple of three)"
+            )
+        kind, payload, third = (tuple.__getitem__(message, i) for i in range(3))
+        if type(kind) is not str or kind not in ("new", "cancel", "timer"):
+            raise OrderApiError(
+                f"the order outbox holds a message of kind {type_name(kind)} {kind!r}"
+                if type(kind) is str else
+                f"the order outbox holds a message whose kind is a {type_name(kind)}, not a str"
+            )
+        book = self._book
+        if kind == "timer":
+            at, tag = check_timer(payload, third, sent)
+            self._push(at, PHASE_DELIVER_TIMER, _K_DELIVER, ClockEvent(received_time_ns=at, tag=tag))
+            return
+        if kind == "new":
+            req = fresh_request(payload, OrderRequest, OrderApiError, "place_order")
+            coid = req.client_order_id
+            if not coid:
+                raise OrderApiError("the order outbox holds a new order without a client_order_id "
+                                    "(the order port always names one)")
+            check_new_id(coid, book.knows)
+            book.add(req, sent)
+            model, name = self._latency.order_delay_ns, "order_delay_ns"
+        else:
+            req = fresh_request(payload, CancelRequest, OrderApiError, "cancel_order")
+            coid = req.client_order_id
+            if not book.knows(coid):
+                raise OrderApiError(f"cancel for unknown client_order_id {coid!r}")
+            book.cancel(coid, sent)
+            model, name = self._latency.cancel_delay_ns, "cancel_delay_ns"
+        self._show(coid)
+        delay = _check_delay(model(copy_carrier(req), renew(sent)), name)
+        arrive = self._outbound.admit(sent + delay)
+        if kind == "new":
+            self._order_requests.append(req)
+            self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_ORDER, req)
+        else:
+            self._cancel_requests.append(req)
+            self._push(arrive, PHASE_VENUE_REQUEST, _K_VENUE_CANCEL, req)
 
     # -- venue side --------------------------------------------------------
     def _venue_market(self, time_ns: int, event: Event) -> None:

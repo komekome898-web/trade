@@ -776,14 +776,18 @@ def test_the_result_order_views_share_nothing_with_the_strategys():
     ("new", "not a request", 0),
     ("xyz", None, None),
     ["new"],
-    ("new", OrderRequest("buy", "limit", 1.0, client_order_id="never-placed"), 0),
     ("cancel", CancelRequest("never-placed"), 0),
     ("timer", T0 - 1, "back in time"),
 ])
 def test_an_outbox_item_written_around_the_order_port_is_refused(forged):
     """The outbox is reachable through the context's private attributes;
-    what the order port did not put there is refused (OrderApiError), not
-    guessed at or sent at a time the item names."""
+    an item that is not a message by the API's rules is refused
+    (OrderApiError), not guessed at or sent at a time the item names.
+    (Rewritten in round 9: the round-8 case of a well-formed new order for
+    an id the port never registered is no longer refused -- the core reads a
+    message by the API's rules against its OWN book, so such a message has
+    exactly the effect of place_order; test_bt0_r9_reachable_state_adversary.py
+    checks that equivalence.)"""
     class S:
         def on_event(self, ev, ctx):
             port = ctx._StrategyContext__place_order_cb.__self__

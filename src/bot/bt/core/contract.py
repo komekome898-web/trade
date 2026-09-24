@@ -12,7 +12,7 @@ from .time import TIME_CONTRACT
 from .values import FIELD_RULE, PLAIN_DATA_RULE
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-10"
+CORE_VERSION = "core-11"
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.
@@ -52,10 +52,18 @@ CORE_CONTRACT: dict = {
                      "dropped), u < -dropped -> BeforeFirstEventError (nothing there); these three are OutsideAnswerErrors, "
                      "not LookAheadErrors; of two slice bounds outside, one naming an event not delivered "
                      "yet is reported first; each error carries answer_position, read_position, delivered",
+            "last_k": "a slice bound naming a position before the oldest event of an answer is refused, "
+                      "not cut: with fewer than k events delivered, visible_events()[-k:] raises "
+                      "BeforeFirstEventError (or DroppedPositionError under history_limit) instead of "
+                      "returning the shorter answer (round 8); 'the last k events, or all of them if fewer "
+                      "were delivered' is visible_events(n=k) (event_type, since_ns and until_ns combine "
+                      "with it)",
             "applies_to": "every answer of a history read (DeliveredEvents: [], index()), the windows a "
                           "context holds (EventWindow: [], index()) and the core's lists behind them, reachable "
                           "through a window's private attribute (history.DeliveredList: [], index(); changing "
-                          "one is refused); not to a base class's method called on the core's object "
+                          "one through its own behaviour is refused at every entry -- attribute assignment and "
+                          "deletion, __init__ on a made list, every list method that changes the contents -- "
+                          "and the core never reads one back); not to a base class's method called on the core's object "
                           "(tuple.__getitem__(answer, key), list.__getitem__(list, key)), which bypasses the "
                           "object's own behaviour like object.__setattr__; nor to a plain tuple the strategy "
                           "makes from an answer (tuple(answer), answer + other): it has no place",
@@ -78,12 +86,19 @@ CORE_CONTRACT: dict = {
         "scope": "the guarantees hold for the context and everything reachable from it by attribute "
                  "access; the strategy runs in the engine's process, so interpreter introspection used "
                  "to reach the engine's own state (call stack, gc of the engine) is not covered -- the "
-                 "core does not sandbox strategy code; nor is writing memory (ctypes), nor calling a base "
+                 "core does not sandbox strategy code; nor is writing memory (ctypes), nor changing the "
+                 "core's CODE (its classes, functions and modules, reachable as __class__ or "
+                 "__func__.__globals__: that changes the program, not its state), nor calling a base "
                  "class's method on an object of the core's (tuple.__getitem__(answer, key), which "
                  "bypasses the answer's own behaviour). A sender changing what it handed over, by any "
                  "means (object.__setattr__ on a frozen carrier's slots or __class__, a container's "
                  "contents, a Fraction's slots), IS covered: the core never keeps a sender's object "
-                 "(channel_payloads.ownership)",
+                 "(channel_payloads.ownership). So is the strategy changing ANY state object it can "
+                 "reach, by any means including a base class's methods (list.append on its order "
+                 "registry, object.__setattr__ on a slot of its port or of an event in its history): "
+                 "the core decides, sends and reports nothing from those objects (ownership), so such a "
+                 "change reaches only what the strategy itself reads -- and what it sends, through the "
+                 "outbox, under the API's rules",
     },
     "lifecycle": {
         "failed_after_escaped_exception": True,
@@ -103,15 +118,28 @@ CORE_CONTRACT: dict = {
                 "or the very object of the sender's; the carrier classes are slotted (nothing can be "
                 "attached); each path takes the core's own carrier classes themselves (a subclass is "
                 "refused)",
-        "ownership": "the core keeps only objects it built: a sender's carrier (a source's event, the "
-                     "strategy's request -- taken from its outbox when the callback returns, at the "
-                     "callback's time --, a fill model's report, the account's forced order) is made "
-                     "again by its constructor when the core takes it, and never handed on; every "
-                     "receiver (latency model, fill model, account, cost model, the strategy, the "
-                     "caller's result, order views included) gets a copy of its own "
+        "ownership": "what the core decides from, sends and reports is built from objects only the core "
+                     "holds (round 9, i0-r8-01): the facts of the strategy's orders live in the core's "
+                     "own order book (never handed out), the history's retention in the core's own "
+                     "records (delivery number, received time, type), the queue, ledger and lists in the "
+                     "engine. A sender's carrier (a source's event, the strategy's request, a fill "
+                     "model's report, the account's forced order) is made again by its constructor when "
+                     "the core takes it, and never handed on; every receiver (latency model, fill model, "
+                     "account, cost model, the strategy, the caller's result, order views included -- "
+                     "the strategy's order views are new objects the core writes at every change) gets a "
+                     "copy of its own "
                      "(values.copy_carrier), so what one receiver changes in its copy reaches no sender, "
-                     "no other receiver and not the core; an item written into the order outbox around "
-                     "place_order / cancel_order (private attributes) is refused with OrderApiError",
+                     "no other receiver and not the core. What the strategy reaches is its own: its "
+                     "context, windows and history lists (the core writes the lists and reads nothing "
+                     "back), its order port's registry (copies the core writes from its book and never "
+                     "reads) and its outbox -- the one object the core reads, once, when the callback "
+                     "returns, through the core's own reference: each message is the arguments of one "
+                     "API call (('new', OrderRequest, t), ('cancel', CancelRequest, t), ('timer', at_ns, "
+                     "tag); t is never used, the callback's time is), read by its real types, and every "
+                     "rule of that call is applied again against the core's book and time "
+                     "(api.check_new_id, api.check_timer), so a message written around place_order / "
+                     "cancel_order / set_timer has exactly that call's effect, or is refused with "
+                     "OrderApiError (as is a port whose outbox or registry was replaced)",
         "fields": FIELD_RULE,
         "plain_data": PLAIN_DATA_RULE,
         "carriers": [c.__name__ for c in PATH_CARRIERS],
