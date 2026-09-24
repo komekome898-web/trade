@@ -274,20 +274,32 @@ def cells(ln):
 
 
 
+
+def log_refs(text):
+    """根拠の欄から (生ログの名前, 回, 行) を全部取り出す(監査 34・35 回目)。
+    `<生ログ>:10` / `:1356,1362` / `:1186-1223`(範囲は 500 行まで)/ `:1067(N=107),1186-1223(注記)` の形を読む。"""
+    out = []
+    for m in re.finditer(r"(20260923_tools_8_run(\d+)\.log):", text):
+        fname, rn = m.group(1), m.group(2)
+        rest = text[m.end():]
+        rest = re.sub(r"[(（][^)）]*[)）]", "", rest.split("|")[0])
+        for part in rest.split(","):
+            part = part.strip()
+            mm = re.match(r"^(\d+)(?:\s*[-〜~]\s*(\d+))?", part)
+            if not mm:
+                break
+            lo = int(mm.group(1))
+            hi = int(mm.group(2)) if mm.group(2) else lo
+            out += [(fname, rn, str(x)) for x in range(lo, min(hi, lo + 500) + 1)]
+            if mm.end() < len(part):
+                break
+    return out
+
 def quotes_in_log(text, refs_text, rnd):
     """7 回目以降: 根拠に引いた「…」の逐語が、引いた生ログの手の出力に実際にあるか(監査 33 回目)。
     見つからない引用の先頭を返す。生ログの参照が無い行・引用の無い行は見ない。"""
     qs = [q for q in re.findall(r"「([^「」]{8,})」", text)]
-    # 「<生ログ>:1356,1362」「<生ログ>:1186-1223」のように 1 つの参照に行が複数あっても全部を拾う(監査 34 回目)
-    refs = []
-    for fname, rn, nums in re.findall(r"(20260923_tools_8_run(\d+)\.log):([\d,\-]+\d)", refs_text):
-        for part in nums.split(","):
-            if "-" in part:
-                lo, _, hi = part.partition("-")
-                if lo.isdigit() and hi.isdigit():
-                    refs += [(fname, rn, str(x)) for x in range(int(lo), min(int(hi), int(lo) + 500) + 1)]
-            elif part.isdigit():
-                refs.append((fname, rn, part))
+    refs = log_refs(refs_text)
     if not qs or not refs:
         return []
     blocks = []
@@ -387,7 +399,7 @@ def cmd_check_elements(a):
                     errs.append("行 %d: %s %s の根拠の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, tool, el, h))
             if a.round and int(a.round) >= 5 and val == "印":
                 # 描画した頁を `印` の根拠にするときの条件 (iii)(5 回目の起動文 §2、監査 29 回目への答え 1)
-                for fname, rn, lno in re.findall(r"(20260923_tools_8_run(\d+)\.log):(\d+)", ev):
+                for fname, rn, lno in log_refs(ev):
                     lp = pathlib.Path("docs/DATA/probes") / fname
                     if not lp.exists():
                         continue
@@ -413,7 +425,7 @@ def cmd_check_elements(a):
                 elif int(m.group(1)) != int(m.group(2)):
                     errs.append("行 %d: %s %s は一覧 %s 件 / 読んだ %s 件で数が違うので `なし` と書けない" % (
                         i + 1, tool, el, m.group(1), m.group(2)))
-                refs = re.findall(r"(20260923_tools_8_run(\d+)\.log):(\d+)", ev)
+                refs = log_refs(ev)
                 for fname, rn, lno in refs:
                     lp = pathlib.Path("docs/DATA/probes") / fname
                     if int(rn) != int(a.round):
