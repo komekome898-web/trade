@@ -105,7 +105,8 @@ RECV, PLACE_RET, CANCEL_RET, READ = ("戦略の呼び出しに届く物", "発�
 
 # A lead's decision that names cells: LEAD_DESIGN.md section 7, item 2 (the words quoted), and the cells its
 # segments name (ROOTCAUSE_r8-1.md section 9 item 2: the notices and the clock of P0-4).
-LEAD_7_2 = ("docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §7 の 2",
+LEAD_7_2 = ("docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §7 の 2(57 のファイルの行。切片 5「定義 C を当てたときの通知・時計の組(i0-r7-05)」・"
+            "切片 6「場面にしない」・切片 8「固定した測り方(要件 P0-4 の文)の外」)",
             "固定した測り方(要件 P0-4 の文)の外。要件は 1 周目の前に固定したもので、周の途中で広げない(委任文 §3「要件と判定の固定」)")
 
 PENDING_SCENE = ("測り方の語では中(引いた語)。場面を足すかは ROOTCAUSE_r8-1.md §9 の 8(升目の場面の事象の型の扱い)の答えを待つ"

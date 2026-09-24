@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[3]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "adapters"))
 
@@ -1394,6 +1395,12 @@ def test_grid_table_lists_every_cell_of_every_viewpoint_once():                 
             assert lead or r["quote"] in grid_c.measure_text(r["viewpoint"]), r
             if lead:  # the decision names the notices and the clock of P0-4 only
                 assert r["viewpoint"] == "P0-4" and (r["event"] == "時計" or r["event"].endswith("の通知")), r
+                # the quoted segments are the decision's own words (line 57 of LEAD_DESIGN.md)
+                import re as _re
+                src = (REPO / "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md").read_text(
+                    encoding="utf-8").split("\n")[56]
+                segs = _re.findall(r"切片 \d+「(.+?)」(?=・切片|\))", r["quote"])
+                assert len(segs) == 3 and all(x in src for x in segs), (segs, r["quote"])
     outside = {c[0] for s_ in scenes.SCENES for c in s_.covers} - set(ev)
     assert outside == set(scenes.OUTSIDE_AXES)
     text = (HERE / "DEFINITIONS.md").read_text(encoding="utf-8")

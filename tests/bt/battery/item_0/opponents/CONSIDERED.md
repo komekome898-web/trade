@@ -7,7 +7,7 @@
 ## 読み方
 
 - **候補の集まり**は `pool.tsv`(`gen_pool.py` が機械で抜き出す。P0-1 は台帳 `docs/DATA/tools_catalog.tsv` の 7 列目 = ○、P0-2〜P0-7 は `REQUIREMENTS.md` の grep の語で `docs/DATA/SCAN_2026-09-21_tools.md`(以下 SCAN)を引いた行)。人は足し引きしていない。写せなかった grep の当たりは、この文書の最後の節で 1 行ずつ検討した。
-- **動かせるかの台帳**は `opponents/RUNNABILITY.tsv`。候補の集まりの 52 候補を 1 行ずつ: サーベイの状態(台帳の到達の欄と、SCAN の最後の記載の行)、この周に何を試したか、記録(`survey_results/attempts/<番号>.log`。始めと終わりの UTC 時刻、`df -m /` の行)、結果。**走った候補は全部、設定つき対象ごとに、同じ場面集の全場面を 2 回ずつ走らせた**(`survey_results/<対象>[@<設定>].tsv`)。走らなかった 16 候補の理由の種類は: 危険(道具台帳 §3 の 11 件 = 41・44・58・120、サーベイの §6-1 の検査で止めた = 8・13・123、57 は組み立て済みの閉じた SDK)、鍵・登録(15・49)、一括の取得(数百 MB 以上。38・52)、外部の場(40)、動かなかった(11・35・63。記録に止まった所がある)。35 は、ファイルの置き場所を公開の版のまま直して走らせる手を、この環境の権限の検査(自動の分類器)が拒否したので走らせていない(リードに上げる)。
+- **動かせるかの台帳**は `opponents/RUNNABILITY.tsv`。候補の集まりの 52 候補を 1 行ずつ: サーベイの状態(台帳の到達の欄と、SCAN の最後の記載の行)、この周に何を試したか、記録(`survey_results/attempts/<番号>.log`。始めと終わりの UTC 時刻、`df -m /` の行)、結果。**走った候補は全部、設定つき対象ごとに、同じ場面集の全場面を 2 回ずつ走らせた**(`survey_results/<対象>[@<選ぶ値の名>].tsv`)。走らなかった 16 候補の理由の種類は: 危険(道具台帳 §3 の 11 件 = 41・44・58・120、サーベイの §6-1 の検査で止めた = 8・13・123、57 は組み立て済みの閉じた SDK)、鍵・登録(15・49)、一括の取得(数百 MB 以上。38・52)、外部の場(40)、動かなかった(11・35・63。記録に止まった所がある)。35 は、ファイルの置き場所を公開の版のまま直して走らせる手を、この環境の権限の検査(自動の分類器)が拒否したので走らせていない(リードに上げる)。
 - 各観点の「動かせた候補」の行 = その観点の候補の集まりのうち台帳で「走った」もの。表の行 = 走らなかったもの。`test_battery_item0.py` がこの 2 つを台帳から機械で確かめる(ROOTCAUSE_r5-1.md の (a)〜(f))。
 - 項目 0 の 7 観点には `段(機構)`/`段(既定)` の列が無い(その 2 列は項目 3 の観点専用。`REQUIREMENTS.md` 57 行)。**全観点が「段の無い観点」**で、スキップに使える理由は「上位互換」だけ(委任文 §3)。
 - **観点の能力**は固定した要件の文(`REQUIREMENTS.md` §1 の行と §2 の観点)から書き、各観点の冒頭に `(能 N)` で並べ、測る場面を添えた。
@@ -33,7 +33,7 @@
 
 動かせた候補: 12 件(1 Basana, 6 Ziplime, 18 zipline-reloaded, 23 hftbacktest, 37 ThePredictiveDev/Automated-Financial-Market-Trading-System, 53 Rqalpha, 61 barter-rs, 62 qf-lib, 65 aat, 68 quanttrader, 69 gobacktest, 91 braedonsaunders/homerun)
 
-この観点の能力(`REQUIREMENTS.md` §2 P0-1「型を持つ事象をイベントバス/イベントループで流す構造…投入順ではなく時刻順に処理されるか」): (能 1)型を持つ事象を流す → 場面 p1-typed-events / (能 2)事象ごとに戦略を呼ぶ → p1-one-call-per-event / (能 3)渡した順ではなく時刻順に処理する → p1-merge-by-time。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<設定>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
+この観点の能力(`REQUIREMENTS.md` §2 P0-1「型を持つ事象をイベントバス/イベントループで流す構造…投入順ではなく時刻順に処理されるか」): (能 1)型を持つ事象を流す → 場面 p1-typed-events / (能 2)事象ごとに戦略を呼ぶ → p1-one-call-per-event / (能 3)渡した順ではなく時刻順に処理する → p1-merge-by-time。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<選ぶ値の名>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
 
 | 候補 | 機構(書き写しの行か一次資料の URL) | 実装(実装のコードで確かめたか) | 判断 | 理由 |
 |---|---|---|---|---|
@@ -49,7 +49,7 @@
 
 動かせた候補: 2 件(34 SLMolenaar/QuantCore, 102 3yit/Limit-Order-Book-Simulator)
 
-この観点の能力(`REQUIREMENTS.md` §2 P0-2「全事象の時刻が UTC 起点の int64 ナノ秒で表現され、他の単位…が核の内部表現に混入しない」): (能 1)事象の時刻をナノ秒の整数のまま保つ → 場面 p2-event-time-exact・p2-one-ns-apart / (能 2)UTC に直した int64 ナノ秒で表す → p2-iso-utc・p2-iso-offset。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<設定>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
+この観点の能力(`REQUIREMENTS.md` §2 P0-2「全事象の時刻が UTC 起点の int64 ナノ秒で表現され、他の単位…が核の内部表現に混入しない」): (能 1)事象の時刻をナノ秒の整数のまま保つ → 場面 p2-event-time-exact・p2-one-ns-apart / (能 2)UTC に直した int64 ナノ秒で表す → p2-iso-utc・p2-iso-offset。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<選ぶ値の名>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
 
 | 候補 | 機構(書き写しの行か一次資料の URL) | 実装(実装のコードで確かめたか) | 判断 | 理由 |
 |---|---|---|---|---|
@@ -60,7 +60,7 @@
 
 動かせた候補: 14 件(1 Basana, 2 Backtrader, 4 PyBroker, 6 Ziplime, 10 fast-trade, 12 pybotters, 16 Luczinsritter/event_driven_backtesting_engine, 18 zipline-reloaded, 23 hftbacktest, 34 SLMolenaar/QuantCore, 61 barter-rs, 91 braedonsaunders/homerun, 103 IsaacCheng9/order-book-simulator, 121 mhallsmoore/qstrader)
 
-この観点の能力(`REQUIREMENTS.md` §1 の行「事象の型(約定・板の写真・板の差分・足・資金調達・清算・時計・注文の受付/拒否/約定の通知)」): (能 1)約定 → p3-trade / (能 2)板の写真 → p3-book_snapshot / (能 3)板の差分 → p3-book_delta / (能 4)足 → p3-bar / (能 5)資金調達 → p3-funding / (能 6)清算 → p3-liquidation / (能 7)時計 → p3-clock-timer / (能 8)注文の受付・拒否・約定の通知 → p3-notice-accepted・p3-notice-rejected・p3-notice-filled / (能 9)6 種を 1 回の実行に混ぜる → p3-mixed-one-run。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<設定>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
+この観点の能力(`REQUIREMENTS.md` §1 の行「事象の型(約定・板の写真・板の差分・足・資金調達・清算・時計・注文の受付/拒否/約定の通知)」): (能 1)約定 → p3-trade / (能 2)板の写真 → p3-book_snapshot / (能 3)板の差分 → p3-book_delta / (能 4)足 → p3-bar / (能 5)資金調達 → p3-funding / (能 6)清算 → p3-liquidation / (能 7)時計 → p3-clock-timer / (能 8)注文の受付・拒否・約定の通知 → p3-notice-accepted・p3-notice-rejected・p3-notice-filled / (能 9)6 種を 1 回の実行に混ぜる → p3-mixed-one-run。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<選ぶ値の名>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
 
 | 候補 | 機構(書き写しの行か一次資料の URL) | 実装(実装のコードで確かめたか) | 判断 | 理由 |
 |---|---|---|---|---|
@@ -74,7 +74,7 @@
 
 動かせた候補: 2 件(16 Luczinsritter/event_driven_backtesting_engine, 62 qf-lib)
 
-この観点の能力(`REQUIREMENTS.md` §2 P0-4「戦略側から未来時刻の事象を読もうとするコードが、実行時エラーか型エラーで止まるか(素通りしたら不合格)」と §1 の行「受け取れた時刻 ≤ 今」): (能 1)未来を名指す読み出しが例外で止まる → 場面 p4-future-read-attempt / (能 2)受け取れた時刻より前に見せない → p4-received-time / (能 3)今までの事象だけが見える → p4-visible-at-step。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<設定>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
+この観点の能力(`REQUIREMENTS.md` §2 P0-4「戦略側から未来時刻の事象を読もうとするコードが、実行時エラーか型エラーで止まるか(素通りしたら不合格)」と §1 の行「受け取れた時刻 ≤ 今」): (能 1)未来を名指す読み出しが例外で止まる → 場面 p4-future-read-attempt / (能 2)受け取れた時刻より前に見せない → p4-received-time / (能 3)今までの事象だけが見える → p4-visible-at-step。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<選ぶ値の名>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
 
 候補 0 件: この観点の候補の集まりの 2 候補はどちらも走った(`awk -F'\t' '$1=="P0-4" {print $2}' tests/bt/battery/item_0/pool.tsv` → 16・62、台帳 `opponents/RUNNABILITY.tsv` の結果はどちらも「走った」)。結果は `survey_results/opp_luczinsritter.tsv`・`survey_results/opp_qf_lib.tsv`。
 
@@ -82,7 +82,7 @@
 
 動かせた候補: 13 件(3 PySystemtrade, 23 hftbacktest, 37 ThePredictiveDev/Automated-Financial-Market-Trading-System, 55 backtesting.py, 70 PineForge, 75 Freqtrade, 98 mihircoding/limitOrderBook, 99 NickGardi/orderbooksim, 101 akurkar07/OrderBook, 104 jxm35/LimitOrderBook-MatchingEngine, 105 DaniyalMlk/slippage, 121 mhallsmoore/qstrader, 122 gbeced/pyalgotrade)
 
-この観点の能力(`REQUIREMENTS.md` §1 の行「決定的な事象の順序(同時刻の並びの規則を明記)」と §2 P0-5「同時刻の複数事象に決定的な並び規則が明記され、同じ入力を 2 回実行して同じ順序・同じ結果になること」): (能 1)同時刻の複数の型の事象を、明記した規則どおりに落とさず並べる → 場面 p5-same-time-twice / (能 2)その並びがデータの中身と無関係な渡す順に左右されない → p5-hand-over-order / (能 3)1 本の入力の中の同時刻の事象は入力の順を守る → p5-same-stream-order / (能 4)同じ入力を 2 回走らせて同じ → 表の「再現」の欄(全場面を 2 回走らせる)。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<設定>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
+この観点の能力(`REQUIREMENTS.md` §1 の行「決定的な事象の順序(同時刻の並びの規則を明記)」と §2 P0-5「同時刻の複数事象に決定的な並び規則が明記され、同じ入力を 2 回実行して同じ順序・同じ結果になること」): (能 1)同時刻の複数の型の事象を、明記した規則どおりに落とさず並べる → 場面 p5-same-time-twice / (能 2)その並びがデータの中身と無関係な渡す順に左右されない → p5-hand-over-order / (能 3)1 本の入力の中の同時刻の事象は入力の順を守る → p5-same-stream-order / (能 4)同じ入力を 2 回走らせて同じ → 表の「再現」の欄(全場面を 2 回走らせる)。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<選ぶ値の名>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
 
 「同時刻の並び」は、核が受け取った複数の事象(型の違う入力)の並びのこと。約定の模型が足の中や板の中で決める順(値段と時刻の優先・足の内側の道筋)は項目 3・14 の観点で、この観点の外とした(固定した要件の P0-5 の測り方は「同時刻に複数型の事象を仕込んだ入力を作り、規則どおりの順で処理されるか」で、入力の事象の並びを見る)。
 
@@ -97,7 +97,7 @@
 
 動かせた候補: 2 件(1 Basana, 23 hftbacktest)
 
-この観点の能力(`REQUIREMENTS.md` §1 の行「戦略の API(事象ごとの呼び出し・発注・取消)」と §2 P0-6): (能 1)事象ごとに戦略を呼ぶ → 場面 p1-one-call-per-event / (能 2)戦略から発注し、その結果が戦略に返る → p6-place-then-cancel(発注の部分)・p6-fill-seen-by-strategy / (能 3)戦略から取り消し、その結果が戦略に返る → p6-place-then-cancel(取消の部分)・p6-cancel-notice。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<設定>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
+この観点の能力(`REQUIREMENTS.md` §1 の行「戦略の API(事象ごとの呼び出し・発注・取消)」と §2 P0-6): (能 1)事象ごとに戦略を呼ぶ → 場面 p1-one-call-per-event / (能 2)戦略から発注し、その結果が戦略に返る → p6-place-then-cancel(発注の部分)・p6-fill-seen-by-strategy / (能 3)戦略から取り消し、その結果が戦略に返る → p6-place-then-cancel(取消の部分)・p6-cancel-notice。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<選ぶ値の名>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
 
 | 候補 | 機構(書き写しの行か一次資料の URL) | 実装(実装のコードで確かめたか) | 判断 | 理由 |
 |---|---|---|---|---|
@@ -109,7 +109,7 @@
 
 動かせた候補: 14 件(1 Basana, 3 PySystemtrade, 4 PyBroker, 6 Ziplime, 10 fast-trade, 16 Luczinsritter/event_driven_backtesting_engine, 18 zipline-reloaded, 20 VnPy, 23 hftbacktest, 33 SarthakDalmia1/backtesting_execution_simulator, 54 finmarketpy, 87 PyTrendFollow, 98 mihircoding/limitOrderBook, 107 sigc)
 
-この観点の能力(`REQUIREMENTS.md` §1 の行「他項目が差し込む口(約定模型・遅延模型・費用・口座)」と §2 P0-7「各口にダミー実装を差し込み、核のコードを変えずに動くか」): (能 1)約定の模型の口 → 場面 p7-fill-model-swap / (能 2)遅延の模型の口 → p7-latency-model-swap / (能 3)費用の模型の口 → p7-cost-model-swap・p7-cost-per-unit / (能 4)口座の口 → p7-account-swap。「口」は読み方の節のとおり、利用者の実装を渡せる所。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<設定>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
+この観点の能力(`REQUIREMENTS.md` §1 の行「他項目が差し込む口(約定模型・遅延模型・費用・口座)」と §2 P0-7「各口にダミー実装を差し込み、核のコードを変えずに動くか」): (能 1)約定の模型の口 → 場面 p7-fill-model-swap / (能 2)遅延の模型の口 → p7-latency-model-swap / (能 3)費用の模型の口 → p7-cost-model-swap・p7-cost-per-unit / (能 4)口座の口 → p7-account-swap。「口」は読み方の節のとおり、利用者の実装を渡せる所。候補ごとのこの観点の場面の結果は、各対象(設定つき対象)の runner の出力 `survey_results/<対象>[@<選ぶ値の名>].tsv` にあり、ここには写さない(第 r8-1 回、正の定義 B: 照合元と照らせない場面の中身を置かない)。スキップの行の「含む:」が引く結果は `test_battery_item0.py` が今の出力と 1 件ずつ照らす。
 
 データの取り込みの口(入力の表の形を替える)は、この観点の 4 つの口のどれでもない(項目 1 の観点)ので、観点の外とした。
 
