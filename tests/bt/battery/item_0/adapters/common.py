@@ -562,7 +562,8 @@ def _object_facts(obj) -> dict:
     out = {"type": f"{t.__module__}.{t.__qualname__}", "type_file": type_file(t)}
     if callable(obj) and not isinstance(obj, type) and (hasattr(obj, "__code__") or hasattr(obj, "__func__")):
         out["code_file"] = code_file(obj)
-    rets = [f for o, f in _READ if o is obj]
+    base = getattr(obj, "base", None) if type(obj).__module__ == "numpy" else None  # a row of an array a read returned
+    rets = [f for o, f in _READ if o is obj or (base is not None and o is base)]
     out["returned_by"] = rets[-1] if rets else None
     return out
 

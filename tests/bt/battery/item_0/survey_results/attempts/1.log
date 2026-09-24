@@ -19,3 +19,13 @@ P5 hand_over ['trades', 'bars'] delivered [["bar", 1700092800000000000], ["trade
 P5 hand_over ['bars', 'trades'] delivered [["bar", 1700092800000000000], ["trade", 1700092800000000000]] carriers ['basana.core.bar.BarEvent', 'basana.external.bitstamp.trades.TradeEvent'] carrier_check None stated_rule_order [["bar", 1700092800000000000], ["trade", 1700092800000000000]] FOLLOWS True
 P5 distinct_orders_over_hand_overs 1
 === 2026-09-24T07:21:11Z probe r6-1 done
+=== 2026-09-24T08:22:07Z probe r6-2 (scene keeper): the r6-1 probe re-run under the round r6-2 positive provenance check (records made by common.py from the objects; a thing is Basana's only when its file is in Basana's distribution)
+command: BT_SCRATCH=$S $S/venvs/item_0/basana/bin/python -B survey_results/attempts/1_probe_r6-2.py  (cwd tests/bt/battery/item_0)
+P1-MERGE hand_over ['trades', 'bars'] status ok provenance_error None
+P1-MERGE handed_over_order [["trade", 1700179200000000000], ["trade", 1700438400000000000], ["bar", 1700092800000000000], ["bar", 1700352000000000000]]
+P1-MERGE delivered [["bar", 1700092800000000000], ["trade", 1700179200000000000], ["bar", 1700352000000000000], ["trade", 1700438400000000000]] carriers ['basana.core.bar.BarEvent', 'basana.external.bitstamp.trades.TradeEvent', 'basana.core.bar.BarEvent', 'basana.external.bitstamp.trades.TradeEvent']
+P1-MERGE time_order [["bar", 1700092800000000000], ["trade", 1700179200000000000], ["bar", 1700352000000000000], ["trade", 1700438400000000000]] EQUAL True
+P5 hand_over ['trades', 'bars'] delivered [["bar", 1700092800000000000], ["trade", 1700092800000000000]] carriers ['basana.core.bar.BarEvent', 'basana.external.bitstamp.trades.TradeEvent'] carrier_check None stated_rule_order [["bar", 1700092800000000000], ["trade", 1700092800000000000]] FOLLOWS True
+P5 hand_over ['bars', 'trades'] delivered [["bar", 1700092800000000000], ["trade", 1700092800000000000]] carriers ['basana.core.bar.BarEvent', 'basana.external.bitstamp.trades.TradeEvent'] carrier_check None stated_rule_order [["bar", 1700092800000000000], ["trade", 1700092800000000000]] FOLLOWS True
+P5 distinct_orders_over_hand_overs 1
+=== 2026-09-24T08:22:07Z probe r6-2 done
