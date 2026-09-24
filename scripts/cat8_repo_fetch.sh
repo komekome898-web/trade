@@ -36,6 +36,16 @@ if not entries or len(present) + len(skipped) != len(entries):
 PY
 echo "repo: $repo"
 echo "downloaded_bytes: $(du -sb .git | cut -f1)"
+# Size of what the checkout would write, from the local blobs only (no lazy fetch).
+# Refuse the checkout above CAT8_MAX_CHECKOUT_BYTES (default 500 MB; audit 51).
+max_co="${CAT8_MAX_CHECKOUT_BYTES:-524288000}"
+exp_co=$(tr '\0' '\n' < .git/cat8_present | sed 's/^/HEAD:/' \
+  | git cat-file --batch-check='%(objectsize)' | awk '{s+=$1} END{print s+0}')
+echo "expected_checkout_bytes: $exp_co (limit $max_co)"
+if [ "$exp_co" -gt "$max_co" ]; then
+  echo "cat8_repo_fetch: checkout would exceed the limit; nothing checked out" >&2
+  exit 3
+fi
 if [ -s .git/cat8_present ]; then
   git checkout -q HEAD --pathspec-from-file=.git/cat8_present --pathspec-file-nul
 fi
