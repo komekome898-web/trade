@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Count, per survey target and viewpoint, the scenes graded 正解と一致 in
 survey_results/*.tsv (the runner's output, copied from the scene keeper's
-runs); the catalogue number of each target comes from opponents/RUNNABILITY.tsv. Prints a Markdown table; CONSIDERED.md quotes it. Standard library only.
+runs); the catalogue number of each target comes from opponents/RUNNABILITY.tsv
+(run candidates) and from the review table's 再現した rows (reproductions). Prints a Markdown table; CONSIDERED.md quotes it. Standard library only.
 
 Usage: python3 survey_counts.py
 """
@@ -20,8 +21,20 @@ def catalog_numbers() -> dict[str, int]:
         return {r["target"]: int(r["cand"]) for r in csv.DictReader(f, delimiter="\t") if r["result"] == "走った"}
 
 
+def repro_numbers() -> dict[str, int]:
+    """repro_<name> -> catalogue number, from the review table's 再現した rows
+    (round r6-3: a reproduction is counted with its candidate's number)."""
+    import re
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    out = {}
+    for m in re.finditer(r"^\| (\d+) [^|]*\|[^|]*\|[^|]*\| 再現した \|([^\n]*)$", text, flags=re.M):
+        for t in re.findall(r"opponents/(repro_\w+)\.py", m.group(2)):
+            out[t] = int(m.group(1))
+    return out
+
+
 def main() -> None:
-    no_of = catalog_numbers()
+    no_of = {**catalog_numbers(), **repro_numbers()}
     rows, vps = [], set()
     for p in sorted((HERE / "survey_results").glob("*.tsv")):
         hit, tot, same = collections.Counter(), collections.Counter(), 0

@@ -420,7 +420,7 @@ def test_superset_and_absent_rows_answer_every_ability_with_a_source():
     viewpoint as 在る or 無い with its source; 在る names the containing ran
     candidate after 含む:; the hedging words are not used; 持たない is all 無い."""
     import re
-    ran = {int(r["cand"]) for r in _ledger() if r["result"] == "走った"}
+    ran = set(_cand_targets())  # run candidates and (round r6-3) reproduced ones: 委任文 §3「動かせた候補か再現した候補の機構」
     text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
     checked = 0
     for sec in re.split(r"^### 観点 ", text, flags=re.M)[1:]:
@@ -555,6 +555,15 @@ def history():
 
 def event(ts):
     return Event(Kind.TRADE, ts)
+
+
+def emit(strategy, ts):
+    strategy.on(Event(Kind.TRADE, ts))            # the tool builds its own event and hands it over
+
+
+def call_each(fn, items):
+    for x in items:                               # the tool calls the strategy with each item
+        fn(x)
 """
 
 
@@ -618,7 +627,9 @@ def test_hand_written_carriers_and_names_are_refused(fake_tool):
     for c in ("faketool_r62.Event", {"type": "faketool_r62.Event", "type_file": str(roots.dirs[0]) + "/__init__.py"}):
         got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [c]}, roots)
         assert got.status == "error" and "手で書いた" in got.output["provenance_error"], (c, got.output)
-    assert _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier(tool.event(1))]}, roots).status == "ok"
+    s = _Strat()
+    tool.emit(s, 1)  # round r6-3: an object of the tool's class counts only once the tool delivered it
+    assert _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": s.car}, roots).status == "ok"
     assert _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.compiled("go:*faketool.Trade")]}, roots).status == "ok"
     got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.compiled("go:*othertool.Trade")]}, roots)
     assert got.status == "error", got.output
@@ -633,7 +644,7 @@ def test_a_tag_is_checked_as_well_as_the_object(fake_tool):
 
     class MyKind(enum.Enum):  # a tag class of the scene-set side
         TRADE = 1
-    ev = tool.event(1)
+    ev = C.read(tool.event, 1)  # round r6-3: returned by the tool's function (returned_by), so delivered
     assert _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier_tag(ev, tool.Kind.TRADE)]}, roots).status == "ok"
     got = _check("p3-trade", {"sequence": [["trade", 1]]}, {"carriers": [C.carrier_tag(ev, MyKind.TRADE)]}, roots)
     assert got.status == "error" and "札" in got.output["provenance_error"], got.output
@@ -781,7 +792,12 @@ def test_every_python_adapter_names_the_future_through_the_common_helpers():
 
 
 def _cand_targets() -> dict[int, str]:
-    return {int(r["cand"]): r["target"] for r in _ledger() if r["result"] == "走った"}
+    """Candidate number -> recorded target: run candidates (ledger) and, round
+    r6-3, reproductions (the review table's 再現した rows)."""
+    import survey_counts
+    out = {int(r["cand"]): r["target"] for r in _ledger() if r["result"] == "走った"}
+    out.update({n: t for t, n in survey_counts.repro_numbers().items()})
+    return out
 
 
 def _containing_segments():
@@ -832,3 +848,191 @@ def test_no_containment_rests_on_what_a_user_could_add():
             continue
         for w in ("の子", "上限が無い", "上限の無い", "で書ける", "で運べる", "書き足せ"):
             assert w not in seg, (vp, cand, n, w, seg[:160])
+
+
+# ---------------------------------------------------------------- round r6-3
+# br6-2-1: an object of the target's own class counts as the target's delivery
+# only when the target's code (Python or compiled) passed it -- or an object
+# holding it -- into the strategy's call, or a target function returned it. The
+# type alone says only that the target HAS the class.
+class _OwnStrat:
+    """A strategy of the scene-set side (this file is inside the scene set)."""
+
+    def __init__(self, tool=None):
+        self.car, self.tool, self.kept = [], tool, None
+
+    def on(self, obj):
+        import common as C
+        self.car.append(C.carrier(obj))
+
+    def on_build(self, ts):  # the scene-set side builds the tool's class inside the call
+        import common as C
+        self.car.append(C.carrier(self.tool.Event(self.tool.Kind.TRADE, ts)))
+
+    def on_kept(self, _obj):  # records what the adapter hung on the strategy, not what it received
+        import common as C
+        self.car.append(C.carrier(self.kept))
+
+    def on_box(self, box):  # the event arrives inside another object the tool hands over
+        import common as C
+        self.car.append(C.carrier(box["event"]))
+
+
+def test_own_class_carriers_must_have_been_delivered_by_the_target(fake_tool):
+    import common as C
+    tool, roots = fake_tool
+    out = {"sequence": [["trade", 1]]}
+
+    def grade(car):
+        return _check("p3-trade", out, {"carriers": car}, roots)
+
+    s = _OwnStrat(tool)
+    tool.emit(s, 1)  # the tool built its own event and passed it
+    assert grade(s.car).status == "ok"
+    s = _OwnStrat(tool)
+    tool.call_each(s.on_build, [1])  # the tool calls the strategy, but the strategy builds the tool's class itself
+    got = grade(s.car)
+    assert got.status == "error" and "届けたことを示せない" in got.output["provenance_error"], got.output
+    held = tool.Event(tool.Kind.TRADE, 1)  # the adapter's object of the tool's class, never handed over
+    got = grade([C.carrier(held)])
+    assert got.status == "error" and "届けたことを示せない" in got.output["provenance_error"], got.output
+    s = _OwnStrat(tool)
+    s.kept = tool.Event(tool.Kind.TRADE, 1)  # hung on the strategy by the adapter; the tool passes something else
+    tool.call_each(s.on_kept, [0])
+    got = grade(s.car)
+    assert got.status == "error" and "届けたことを示せない" in got.output["provenance_error"], got.output
+    s = _OwnStrat(tool)
+    tool.call_each(s.on_box, [{"event": tool.Event(tool.Kind.TRADE, 1)}])  # inside an argument the tool passed
+    assert grade(s.car).status == "ok"
+    s = _OwnStrat(tool)
+    tool.forward(s, [tool.Event(tool.Kind.TRADE, 1)])  # input the adapter built in the tool's class, delivered by the tool
+    assert grade(s.car).status == "ok"
+    rec = run_battery.compact({"carriers": s.car}, roots)["carriers"][0]
+    assert rec.get("input") and rec.get("held_by"), rec  # the record says it was the adapter's input
+    ev = C.read(tool.event, 1)  # returned by the tool's function
+    assert grade([C.carrier(ev)]).status == "ok"
+
+
+def test_a_strategy_called_from_compiled_code_shows_the_compiled_caller():
+    """34 QuantCore's shape: compiled code calls the strategy, so no Python frame
+    of the target is on the stack. `contextvars.Context.run` is a compiled
+    function (lib-dynload/_contextvars) that calls a Python callable with an
+    argument; a Context object is its own module's class."""
+    import contextvars
+    import os
+
+    import _contextvars
+
+    import common as C
+    so = os.path.realpath(_contextvars.__file__)
+    roots = run_battery.Roots([so], [], [])
+    out = {"sequence": [["trade", 1]]}
+    ctx = contextvars.Context()
+    s = _OwnStrat()
+    with C.native_tracker():
+        ctx.run(s.on, ctx)
+    assert s.car[0]["native_by"] == [so], s.car[0]
+    assert _check("p3-trade", out, {"carriers": s.car}, roots).status == "ok"
+    s = _OwnStrat()
+    ctx2 = contextvars.Context()
+    ctx2.run(s.on, ctx2)  # without the tracker the compiled caller is not seen: not graded
+    assert _check("p3-trade", out, {"carriers": s.car}, roots).status == "error"
+
+    class Build(_OwnStrat):
+        def on(self, _obj):
+            import common as C
+            self.car.append(C.carrier(contextvars.Context()))  # built inside the call by the scene set
+    s = Build()
+    with C.native_tracker():
+        contextvars.Context().run(s.on, 0)
+    assert _check("p3-trade", out, {"carriers": s.car}, roots).status == "error"
+
+
+def test_every_recorded_carrier_shows_how_the_target_delivered_it():
+    """br6-2-1 on the records: every carrier, `of` and `via` of every recorded
+    target carries a delivery fact the runner accepted (or is the target's code
+    as a means); the facts the check does not read are not in the records."""
+    checked = 0
+    for target, rows in _records().items():
+        for r in rows:
+            prov = json.loads(r["provenance_1"])
+            recs = []
+
+            def walk(x, path=""):
+                if isinstance(x, dict):
+                    if "type_file" in x and "type" in x and not path.endswith("/tag"):
+                        recs.append((path, x))
+                    for k, v in x.items():
+                        walk(v, path + "/" + k)
+                elif isinstance(x, list):
+                    for v in x:
+                        walk(v, path)
+            walk(prov)
+            for path, rec in recs:
+                assert "in_args" not in rec and "called_by" not in rec, (target, r["scene_id"], path)
+                if r["status_1"] != "ok":
+                    continue
+                checked += 1
+                shown = any(rec.get(k) for k in ("passed_by", "reached_by", "native_by", "returned_by"))
+                assert shown or (path.endswith(("/via", "/of")) and rec.get("code_file")), (target, r["scene_id"], path, rec)
+    assert checked > 0
+
+
+def test_quantcore_is_placed_by_its_compiled_caller():
+    rows = _records().get("opp_quantcore", [])
+    natives = {tuple(c.get("native_by") or ()) for r in rows if r["status_1"] == "ok"
+               for c in (json.loads(r["provenance_1"]) or {}).get("carriers", []) if isinstance(c, dict)}
+    assert natives and all(n and n[0].endswith(".so") and "/quantcore/" in n[0] for n in natives), natives
+
+
+def _best_by_scene() -> dict[str, str]:
+    """Scene -> best correctness over every recorded survey target (run
+    candidates and reproductions), by the order of rule 5."""
+    order = {"正解と一致": 0, "対応なし": 1, "不一致": 2, "結果なし": 3}
+    best: dict[str, str] = {}
+    for t, rows in _records().items():
+        if not t.startswith(("opp_", "repro_")):
+            continue
+        for r in rows:
+            c = r["correctness"]
+            if r["scene_id"] not in best or order[c] < order[best[r["scene_id"]]]:
+                best[r["scene_id"]] = c
+    return best
+
+
+def test_every_skip_names_what_it_lacks_for_each_scene_the_survey_side_misses():
+    """br6-2-2: a skip is allowed only for a candidate that is clearly weaker,
+    and the survey side's strength is the best result per scene. For each
+    scene of the row's viewpoint whose best is not 正解と一致, a skip row names
+    the type or ability the candidate lacks for it, with the line it read;
+    otherwise the candidate could raise that best and must be reproduced."""
+    import re
+    best = _best_by_scene()
+    assert set(best) == {sc.id for sc in scenes.SCENES}
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    checked = 0
+    for sec in re.split(r"^### 観点 ", text, flags=re.M)[1:]:
+        vp = sec[:4]
+        missed = [sc.id for sc in scenes.SCENES if sc.viewpoint == vp and best[sc.id] != "正解と一致"]
+        for row in _table_rows(sec):
+            if not row["判断"].startswith("スキップ"):
+                continue
+            for sid in missed:
+                m = re.search(rf"最良が正解と一致でない場面 {re.escape(sid)}: (.*?)(?= / |$)", row["理由"])
+                assert m and "無い" in m.group(1) and ("行" in m.group(1) or "http" in m.group(1)), (vp, row["候補"], sid)
+                checked += 1
+    assert checked > 0
+
+
+def test_the_reproduction_raised_the_best_where_the_review_said_it_would():
+    """The skip that br6-2-2 turned into a reproduction (52 LEAN, P0-1) now
+    carries p1-merge-by-time; the reproduction's records passed the same
+    provenance check (its engine is the only place of the target)."""
+    recs = {r["scene_id"]: r for r in _records()["repro_lean52"]}
+    assert recs["p1-merge-by-time"]["correctness"] == "正解と一致"
+    assert _best_by_scene()["p1-merge-by-time"] == "正解と一致"
+    roots = run_battery.roots_of("repro_lean52")
+    assert [Path(d).name for d in roots.dirs] == ["lean52.py"] and "repro_engines" in roots.dirs[0]
+    import common as C
+    assert C.in_scene_set(str(HERE / "opponents" / "repro_lean52.py"))
+    assert not C.in_scene_set(roots.dirs[0])

@@ -84,6 +84,23 @@ Rules for adapter authors (they are what the critic checks):
         `raise` statement of the scene set is not the target's.
       - A code file an adapter generates for a tool to load (a strategy
         module) is declared with `common.scene_set_file(path)`.
+      - Delivery (round r6-3, critic br6-2-1): the type says only that the
+        target HAS the class; every carrier / `of` / `via` must also show
+        that the target DELIVERED the object -- the target's code passed it
+        (or an object holding it, never through the scene set's own objects)
+        into the strategy's call, the target's compiled code called the
+        strategy with it (the runner's `common.native_tracker`), or a target
+        function returned it (`common.read`, a property through
+        `common.attr`, an iterator through `common.iterate` /
+        `common.aiterate`). An object the adapter received earlier (e.g. the
+        engine a tool hands a strategy's constructor) is recorded with
+        `common.carrier` at that moment; later records reuse those facts.
+        Input the adapter builds in the target's own class and hands to the
+        target counts once the target delivers it (the record says `input`);
+        the target's class built inside the strategy's call, or held by the
+        adapter and never handed over, does not. A reproduction keeps its
+        engine side in `opponents/repro_engines/<name>.py` (the target's
+        place) and its scene-set side in `opponents/repro_<name>.py`.
 
 The new implementation's adapter (written each round by the materials
 person, not by the scene keeper) lives at `adapters/new_impl.py` and must

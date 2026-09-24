@@ -77,7 +77,7 @@ class BacktestingAdapter(Adapter):
 
     def scene_p1_one_call_per_event(self, sc):
         car = []
-        st, _ = run(C.events(sc), lambda s, n, st: (st["log"].append(["bar", _now(s)]), car.append(C.carrier(s.data))))
+        st, _ = run(C.events(sc), lambda s, n, st: (st["log"].append(["bar", _now(s)]), car.append(C.carrier(C.attr(s, "data")))))
         return ok({"sequence": st["log"]}, "足 5 本。next の各回に self.data.index[-1]", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
@@ -115,7 +115,7 @@ class BacktestingAdapter(Adapter):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
         car = []
         try:
-            st, _ = run(evs, lambda s, n, st: (st["log"].append(_now(s)), car.append(C.carrier(s.data))))
+            st, _ = run(evs, lambda s, n, st: (st["log"].append(_now(s)), car.append(C.carrier(C.attr(s, "data")))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"足で渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"observed_ts_ns": st["log"]}, "足(OHLC=100)で渡し、next の self.data.index[-1]", {"carriers": car})
@@ -132,7 +132,7 @@ class BacktestingAdapter(Adapter):
 
         def f(s, n, st):
             st["log"].append(["bar", _now(s)])
-            car.append(C.carrier(s.data))
+            car.append(C.carrier(C.attr(s, "data")))
             out.update({"open": float(s.data.Open[-1]), "high": float(s.data.High[-1]), "low": float(s.data.Low[-1]),
                         "close": float(s.data.Close[-1]), "volume": float(s.data.Volume[-1])})
 
@@ -216,7 +216,7 @@ class BacktestingAdapter(Adapter):
         rows = [C.as_bar(e) for e in C.events(sc)]
         car = []
         try:
-            st, _ = run(rows, lambda s, n, st: (st["log"].append(float(s.data.Close[-1])), car.append(C.carrier(s.data))))
+            st, _ = run(rows, lambda s, n, st: (st["log"].append(float(s.data.Close[-1])), car.append(C.carrier(C.attr(s, "data")))))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ時刻の 3 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 行を渡した", {"carriers": car})

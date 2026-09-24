@@ -102,6 +102,32 @@ def _no_kw(name: str) -> str:
     return f"BacktestTradingSession(..., {name}=...) は受け付けられた"
 
 
+def _mid(dt, dh, st, car) -> None:
+    """The price the strategy reads at `dt`, through QSTrader's data_handler (round r6-3: the value
+    returned by the tool's function is the carrier, returned_by = QSTrader's backtest_data_handler.py)."""
+    v = C.read(dh.get_asset_latest_mid_price, dt, SYM)
+    st["log"].append(float(v))
+    car.append(C.carrier(v))
+
+
+def _bar_like_classes() -> list[str]:
+    """Every class of QSTrader's distribution whose name has Bar or Event (walked with pkgutil)."""
+    import importlib
+    import inspect
+    import pkgutil
+    import qstrader
+    found = set()
+    for m in pkgutil.walk_packages(qstrader.__path__, "qstrader."):
+        try:
+            mod = importlib.import_module(m.name)
+        except Exception:  # noqa: BLE001
+            continue
+        for _, c in inspect.getmembers(mod, inspect.isclass):
+            if c.__module__ == mod.__name__ and ("bar" in c.__name__.lower() or "event" in c.__name__.lower()):
+                found.add(f"{c.__module__}.{c.__qualname__}")
+    return sorted(found)
+
+
 class QstraderAdapter(Adapter):
     name = "opp_qstrader"
 
@@ -110,9 +136,9 @@ class QstraderAdapter(Adapter):
 
     def scene_p1_one_call_per_event(self, sc):
         car = []
-        st, _ = run(C.events(sc), lambda dt, dh, n, st: (st["log"].append(["bar", _ns(dt)]), car.append(C.carrier(dh))) and None)
-        return ok({"sequence": st["log"]}, "日足 5 本、rebalance='daily'。AlphaModel の各回の dt(足は data_handler の読み出しで届く。"
-                  "carrier はその data_handler の class)", {"carriers": car})
+        st, _ = run(C.events(sc), lambda dt, dh, n, st: (st["log"].append(["bar", _ns(dt)]), car.append(C.carrier(dt))) and None)
+        return ok({"sequence": st["log"]}, "日足 5 本、rebalance='daily'。AlphaModel の各回の dt(round r6-3: carrier は QSTrader が "
+                  "AlphaModel の呼び出しに渡す dt そのもの。足の物は戦略に届かず、値は data_handler の読み出しで得る)", {"carriers": car})
 
     def scene_p1_typed_events(self, sc):
         return not_supported(NON_BAR.format(k="約定", err=_try_non_bar(C.events(sc)[1])))
@@ -137,7 +163,7 @@ class QstraderAdapter(Adapter):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
         car = []
         try:
-            st, _ = run(evs, lambda dt, dh, n, st: (st["log"].append(_ns(dt)), car.append(C.carrier(dh))) and None)
+            st, _ = run(evs, lambda dt, dh, n, st: (st["log"].append(_ns(dt)), car.append(C.carrier(dt))) and None)
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"日足の CSV に書いて走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"observed_ts_ns": st["log"]}, "日足の CSV(日付だけの列)に書いた。AlphaModel の dt", {"carriers": car})
@@ -148,17 +174,17 @@ class QstraderAdapter(Adapter):
         e = C.events(sc)[0]
         if e["kind"] != "bar":
             return not_supported(NON_BAR.format(k=e["kind"], err=_try_non_bar(e)))
-        out = {}
-        car = []
+        # round r6-3: QSTrader hands the AlphaModel only `dt` (the ts of its SimulationEvent); no bar object
+        # reaches the strategy (the earlier record carried the data_handler the adapter built and kept).
+        seen = []
 
         def f(dt, dh, n, st):
-            st["log"].append(["bar", _ns(dt)])
-            car.append(C.carrier(dh))
-            out["close"] = float(dh.get_asset_latest_mid_price(dt, SYM))
+            seen.append((type(dt).__name__, _ns(dt), float(dh.get_asset_latest_mid_price(dt, SYM))))
 
-        st, _ = run([e], f)
-        return ok({"sequence": st["log"], "fields": out}, "日足 1 本。戦略(AlphaModel)が読めるのは data_handler の bid/ask/mid と終値の範囲で、始値・高値・安値・出来高を読む口は無い",
-                  {"carriers": car})
+        run([e], f)
+        return not_supported("QSTrader が戦略(AlphaModel.__call__)に渡すのは dt(SimulationEvent の ts)だけで、足の型の物は届かない。"
+                             f"配布物の class は {_bar_like_classes()} で、足を運ぶ事象の型が無い。日足 1 本を CSV で渡して試した: "
+                             f"呼び出しで受けた (dt の型, 時刻, data_handler の mid) = {seen}(始値・高値・安値・出来高を読む口も無い)")
 
     scene_p3_trade = scene_p3_book_snapshot = scene_p3_book_delta = _type
     scene_p3_bar = scene_p3_funding = scene_p3_liquidation = _type
@@ -223,7 +249,7 @@ class QstraderAdapter(Adapter):
         car = []
         try:
             st, _ = run([C.as_bar(e) for e in C.events(sc)],
-                        lambda dt, dh, n, st: (st["log"].append(float(dh.get_asset_latest_mid_price(dt, SYM))), car.append(C.carrier(dh))) and None)
+                        lambda dt, dh, n, st: _mid(dt, dh, st, car))
         except Exception as exc:  # noqa: BLE001
             return not_supported(f"同じ日の 3 行の CSV で走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         return ok({"prices": st["log"]}, "同じ日の 3 行を CSV に書いた", {"carriers": car})

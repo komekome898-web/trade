@@ -39,6 +39,14 @@ def _ns(strategy_or_data) -> int:
     return C.dt_to_ns(d)
 
 
+def _fed(s):
+    """The data feed the strategy reads, asked of Backtrader through its public
+    lookup `Strategy.getdatabyname` (round r6-3: `returned_by` = Backtrader's
+    strategy.py; `self.data` is a plain attribute Backtrader's metaclass sets,
+    which the provenance check cannot place)."""
+    return C.read(s.getdatabyname, s.getdatanames()[0])
+
+
 def run(bars, on_next, cash=1_000_000.0, setup=None, notify=None, timer=None, broker=None, preload=True):
     cer = bt.Cerebro(stdstats=False, preload=preload)
     if broker is not None:
@@ -101,7 +109,7 @@ class BacktraderAdapter(Adapter):
 
     def scene_p1_one_call_per_event(self, sc):
         car = []
-        st = run(C.events(sc), lambda s, n, st: (st["log"].append(["bar", _ns(s)]), car.append(C.carrier(s.data))))
+        st = run(C.events(sc), lambda s, n, st: (st["log"].append(["bar", _ns(s)]), car.append(C.carrier(_fed(s)))))
         return ok({"sequence": st["log"]}, "PandasData の足 5 本。next の各回に self.datetime[0] を num2date で読んだ",
                   {"carriers": car})
 
@@ -157,7 +165,7 @@ class BacktraderAdapter(Adapter):
     def _ts(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
         car = []
-        st = run(evs, lambda s, n, st: (st["log"].append(_ns(s)), car.append(C.carrier(s.data))))
+        st = run(evs, lambda s, n, st: (st["log"].append(_ns(s)), car.append(C.carrier(_fed(s)))))
         return ok({"observed_ts_ns": st["log"]}, "足(OHLC=100)で渡し、next の self.datetime[0] を ns に直した", {"carriers": car})
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _ts
@@ -173,7 +181,7 @@ class BacktraderAdapter(Adapter):
 
         def f(s, n, st):
             st["log"].append(["bar", _ns(s)])
-            car.append(C.carrier(s.data))
+            car.append(C.carrier(_fed(s)))
             out.update({k: float(getattr(s.data, k)[0]) for k in ("open", "high", "low", "close", "volume")})
 
         st = run([e], f)
@@ -277,7 +285,7 @@ class BacktraderAdapter(Adapter):
     def scene_p5_same_stream_order(self, sc):
         car = []
         st = run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: (st["log"].append(float(s.data.close[0])),
-                                                                       car.append(C.carrier(s.data))))
+                                                                       car.append(C.carrier(_fed(s)))))
         return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 本を 1 つの feed で渡した", {"carriers": car})
 
     # ---------------- P0-6

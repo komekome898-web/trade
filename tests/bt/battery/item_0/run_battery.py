@@ -208,6 +208,15 @@ GRADERS = {
 # numpy rows, numba boxes) are placed by how they reached the strategy
 # (common.py: passed_by / returned_by / code_file / dtype / tag), and only
 # records common.py made from objects are accepted.
+#
+# Round r6-3 (critic br6-2-1): the type says only that the target HAS the type;
+# that the object REACHED the strategy through the target is a second, separate
+# check applied to every type, the target's own classes included (`delivered`):
+# the target's code passed it (or an object holding it) into the strategy's
+# call, the target's compiled code did (common.native_tracker), or a target
+# function returned it. An object of the target's class that the scene-set side
+# built inside the strategy's call, or holds without ever handing it over, is
+# not the target's delivery.
 
 import common as C  # noqa: E402  (the same module object the adapters use: its registry is checked)
 
@@ -283,7 +292,9 @@ def roots_of(target: str | None) -> Roots:
     import importlib.util
     spec = dict(TARGET_DISTS.get(target or "", {}))
     if target and target.startswith("repro_"):
-        spec = {"py": [f"opponents.{target}"]}
+        # round r6-3: the reproduced engine is its own file under opponents/repro_engines/
+        # (the adapter side, opponents/repro_<name>.py, is the scene set's)
+        spec = {"py": [f"opponents.repro_engines.{target[len('repro_'):]}"]}
     dirs, missing = [], []
     for mod in spec.get("py", []):
         try:
@@ -296,7 +307,7 @@ def roots_of(target: str | None) -> Roots:
         places = list(s.submodule_search_locations or []) or ([s.origin] if s.origin else [])
         for pl in places:
             rp = os.path.realpath(pl)
-            if C.in_scene_set(rp) and not (target or "").startswith("repro_"):
+            if C.in_scene_set(rp):  # a reproduction's engine (opponents/repro_engines/) is not the scene set's
                 raise SystemExit(f"{target}: {mod} resolves into the scene set ({rp})")
             if (target or "").startswith("opp_") and (rp == str(REPO) or rp.startswith(str(REPO) + os.sep)):
                 raise SystemExit(f"{target}: {mod} resolves into this repository ({rp}), not the tool's distribution")
@@ -310,8 +321,11 @@ def _made(x) -> bool:
     return isinstance(x, (C.Record, C.Made)) and C.made_here(x)
 
 
-def origin_problem(rec, roots: Roots, what: str) -> str | None:
-    """Why `rec` (a common.py record / name) is not shown to be the target's, or None."""
+def origin_problem(rec, roots: Roots, what: str, means: bool = False) -> str | None:
+    """Why `rec` (a common.py record / name) is not shown to be the target's, or None.
+    `means=True` (a read's `of` / an attempt's `via`): a function or method whose
+    code is the target's is the target's means by its code alone -- code carries
+    no event, so how the strategy came to hold it is not asked (round r6-3)."""
     if not _made(rec):
         return f"{what} が common.py で物から作った記録でない(手で書いた値): {str(rec)[:120]}"
     if isinstance(rec, C.Made):
@@ -319,25 +333,34 @@ def origin_problem(rec, roots: Roots, what: str) -> str | None:
             return None if roots.has_name(rec) else f"{what} の翻訳した道具の名前 {rec!s:.120} が対象の名前の頭 {roots.heads} に無い"
         return None if roots.has_file(rec.file) else f"{what} {rec!s:.120} の定義のファイル {rec.file} が対象の配布物に無い"
     parts = []
-    if roots.has_file(rec.get("type_file")) or roots.has_file((rec.get("dtype") or {}).get("type_file")):
-        base_ok = True  # the target's own class / record type
-    elif C.in_scene_set(rec.get("type_file") or "/") and rec.get("type_file"):
+    own = roots.has_file(rec.get("type_file")) or roots.has_file((rec.get("dtype") or {}).get("type_file"))
+    if not own and rec.get("type_file") and C.in_scene_set(rec.get("type_file")):
         return f"{what} {rec.get('type')} は場面集の側の型"
-    else:  # a shared type: placed by how it reached the strategy
-        via = [f for f in (rec.get("passed_by") or []) if roots.has_file(f)]
-        ret = roots.has_file(rec.get("returned_by"))
-        code = roots.has_file(rec.get("code_file"))
-        base_ok = bool(via or ret or code)
-        if not base_ok:
-            parts.append(f"{what} {rec.get('type')} は共有の型で、対象のコードが戦略に渡した(passed_by {rec.get('passed_by')})"
-                         f"・対象の関数が返した(returned_by {rec.get('returned_by')})・対象のコード(code_file {rec.get('code_file')})"
-                         "のどれも示せない")
-        elif rec.get("held_by") and not code:
-            parts.append(f"{what} {rec.get('type')} は場面集の側が持つ物と同じ物({rec.get('held_by')}): adapter が渡した物を対象が転送しただけ")
+    if not own and rec.get("held_by") and not roots.has_file(rec.get("code_file")):
+        # (T) a shared type is the target's only when the target made the object
+        parts.append(f"{what} {rec.get('type')} は共有の型で、場面集の側が持つ物と同じ物({rec.get('held_by')}): "
+                     "adapter が渡した物を対象が転送しただけ")
+    if not delivered(rec, roots) and not (means and roots.has_file(rec.get("code_file"))):
+        # (D) round r6-3 (br6-2-1): for every type, the target must have delivered the object
+        parts.append(f"{what} {rec.get('type')} は{'対象の型' if own else '共有の型'}だが、対象が戦略に届けたことを示せない"
+                     f"(対象のコードが戦略の呼び出しに渡した passed_by {rec.get('passed_by')}・渡した物の中にあった reached_by "
+                     f"{rec.get('reached_by')}・母語のコードが渡した native_by {rec.get('native_by')}・対象の関数が返した "
+                     f"returned_by {rec.get('returned_by')} のどれも対象の配布物に無い)")
     tag = rec.get("tag")
     if tag is not None and not roots.has_file(tag.get("type_file")):
         parts.append(f"{what} の札 {tag.get('const') or tag.get('type')}.{tag.get('name')} が対象の配布物の物でない({tag.get('type_file')})")
     return "; ".join(parts) or None
+
+
+DELIVERY_FACTS = ("passed_by", "reached_by", "native_by")
+
+
+def delivered(rec, roots: Roots) -> bool:
+    """(D) The object reached the strategy through the target's code: the
+    target's code passed it (or an object holding it) into the strategy's call,
+    compiled code of the target did, or a target function returned it."""
+    return any(roots.has_file(f) for k in DELIVERY_FACTS for f in (rec.get(k) or [])) or \
+        roots.has_file(rec.get("returned_by"))
 
 
 def _key(rec) -> str:
@@ -380,7 +403,7 @@ def _touched_ok(item: dict, roots: Roots, what: str) -> str | None:
         return None
     for k in ("of", "via"):
         if item.get(k) is not None:
-            return origin_problem(item[k], roots, f"{what} の {k}")
+            return origin_problem(item[k], roots, f"{what} の {k}", means=True)
     return f"{what} {item.get('means')!r:.80} の間に対象のコードが 1 行も走らず、読んだ物(of / via)も無い"
 
 
@@ -499,6 +522,9 @@ def compact(prov, roots: Roots):
                 if k == "touched" and isinstance(v, list):
                     out[k] = [f for f in v if roots.has_file(f)]
                     out["touched_count"] = len(v)
+                elif k == "held_by" and v and roots.has_file(x.get("type_file")):
+                    out[k] = v
+                    out["input"] = "adapter が対象の型で組んで対象に渡した入力(対象が届けた)"
                 else:
                     out[k] = walk(v)
             return out
@@ -568,8 +594,12 @@ def run_target(target: str) -> list[dict]:
     adapter_1 = load_adapter(target)
     adapter_2 = load_adapter(target)  # a fresh adapter for the second run
     for sc in SCENES:
-        r1 = checked(adapter_1.run_scene(sc), sc, target)
-        r2 = checked(adapter_2.run_scene(sc), sc, target)
+        with C.native_tracker():  # round r6-3: a strategy called from compiled code shows the caller (native_by)
+            raw1 = adapter_1.run_scene(sc)
+        with C.native_tracker():
+            raw2 = adapter_2.run_scene(sc)
+        r1 = checked(raw1, sc, target)
+        r2 = checked(raw2, sc, target)
         rows.append({
             "target": target, "scene_id": sc.id, "viewpoint": sc.viewpoint, "kind": sc.kind,
             "correctness": correctness(r1, sc.expected, sc, target),

@@ -72,6 +72,13 @@ def _bar(e: dict) -> BarData:
 class _Strat(CtaTemplate):
     hooks: dict = {}
 
+    def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
+        # round r6-3: the engine VnPy hands the strategy when it builds it (BacktestingEngine.add_strategy
+        # calls strategy_class(self, ...)); recorded here, on receipt, so a later `via=s.cta_engine` shows
+        # passed_by = VnPy's backtesting.py
+        C.carrier(cta_engine)
+        super().__init__(cta_engine, strategy_name, vt_symbol, setting)
+
     def on_init(self):
         return None
 

@@ -203,7 +203,7 @@ class QfLibAdapter(Adapter):
         def f(s, n, st):
             st["log"].append(["bar", _now(s)])
             px = s.ts.data_provider.get_last_available_price(TK)
-            row = s.ts.data_provider.get_price(TK, FIELDS, _date(e["ts_ns"]), s.timer.now())
+            row = C.read(s.ts.data_provider.get_price, TK, FIELDS, _date(e["ts_ns"]), s.timer.now())  # a read of the tool
             car.append(C.carrier(row))
             out.update({"open": float(row.iloc[-1][PriceField.Open]), "high": float(row.iloc[-1][PriceField.High]),
                         "low": float(row.iloc[-1][PriceField.Low]), "close": float(row.iloc[-1][PriceField.Close]),

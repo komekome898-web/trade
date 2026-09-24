@@ -303,6 +303,10 @@ from pathlib import Path as _Path
 
 BATTERY_DIR = _os.path.realpath(str(_Path(__file__).resolve().parent.parent))
 _HERE_FILE = _os.path.realpath(__file__)
+# Round r6-3: the engine side of a reproduction (opponents/repro_engines/<name>.py) is
+# the reproduced target's code, not the scene set's; the adapter side of the same
+# reproduction (opponents/repro_<name>.py) stays the scene set's.
+REPRO_ENGINES = _os.path.join(BATTERY_DIR, "opponents", "repro_engines")
 
 
 class Record(dict):
@@ -346,6 +350,8 @@ def in_scene_set(path) -> bool:
     if not _os.path.isabs(path):
         return True
     rp = _os.path.realpath(path)
+    if rp.startswith(REPRO_ENGINES + _os.sep):
+        return False  # a reproduction's engine code: the reproduced target's side (run_battery places it for repro_* only)
     return rp == BATTERY_DIR or rp.startswith(BATTERY_DIR + _os.sep) or rp in _GENERATED
 
 
@@ -492,8 +498,20 @@ def _stack_facts(obj) -> dict:
 
 
 def _stack_facts_now(obj) -> dict:
-    """alpha (who passed `obj` into the strategy's call) and held_by, from the
-    live stack at the moment the strategy recorded the object."""
+    """How `obj` reached the strategy, from the live stack at the moment the
+    strategy recorded it (round r6-3: the facts the runner's delivery check
+    reads, for every type):
+
+    passed_by  -- files of the non-scene-set code that called the strategy's
+                  outermost frame, when `obj` is one of that call's arguments;
+    reached_by -- the same files, when `obj` is inside such an argument (items
+                  and attributes, never through an object of the scene set:
+                  what an adapter hung on its own strategy is not handed over);
+    native_by  -- the file of a compiled (C / pybind11) function that called a
+                  strategy frame directly, when `obj` is (inside) an argument of
+                  that frame (needs `native_tracker`, installed by the runner);
+    held_by    -- a scene-set frame outside the strategy's call holds `obj`, or
+                  the scene set handed it to the target as (part of) an argument."""
     fr = _sys._getframe(1)
     while fr is not None and _real(fr.f_code.co_filename) == _HERE_FILE:
         fr = fr.f_back
@@ -510,19 +528,35 @@ def _stack_facts_now(obj) -> dict:
         if in_scene_set(fr.f_code.co_filename):
             outer.append(fr)
         fr = fr.f_back
-    passed = None
     called = sorted({p for p in (_real(f.f_code.co_filename) for f in segment) if p}) if chain and segment else None
     args = _args_of(chain[-1]) if chain else []
-    if called and any(a is obj for a in args):
-        passed = called
+    passed = reached = None
+    if called:
+        if any(a is obj for a in args):
+            passed = called
+        elif _reachable(obj, args):
+            reached = called
+    native = native_how = None
+    active = {id(f): fn for f, fn in _ACTIVE_C}
+    for i in range(len(chain) - 1):  # innermost boundary where a compiled function called a strategy frame
+        fn = active.get(id(chain[i + 1]))
+        if fn is None:
+            continue
+        cargs = _args_of(chain[i])
+        how = "arg" if any(a is obj for a in cargs) else ("inside_arg" if _reachable(obj, cargs) else None)
+        f = code_file(fn)
+        if how and f:
+            native, native_how = [f], how
+        break
     # the arguments of the target function the scene set called (the outermost frame of the segment)
     handed = _args_of(segment[-1]) if segment else []
-    return {"passed_by": passed, "called_by": called, "in_args": bool(called) and _reachable(obj, args),
+    return {"passed_by": passed, "reached_by": reached, "native_by": native, "native_how": native_how,
             "held_by": _held(obj, outer, handed)}
 
 
 def _reachable(obj, roots_, depth: int = 3) -> bool:
-    """`obj` is one of `roots_` or inside them (items and attributes, `depth` steps)."""
+    """`obj` is one of `roots_` or inside them (items and attributes, `depth`
+    steps), never looking inside an object of the scene set."""
     seen: set[int] = set()
     level = list(roots_)
     for _ in range(depth + 1):
@@ -530,7 +564,7 @@ def _reachable(obj, roots_, depth: int = 3) -> bool:
         for v in level:
             if v is obj:
                 return True
-            if id(v) in seen or isinstance(v, (str, bytes, int, float, type)):
+            if id(v) in seen or isinstance(v, (str, bytes, int, float, type)) or _is_scene_set_instance(v):
                 continue
             seen.add(id(v))
             if isinstance(v, (list, tuple, set, frozenset)):
@@ -542,6 +576,50 @@ def _reachable(obj, roots_, depth: int = 3) -> bool:
                 nxt.extend(list(d.values())[:2000])
         level = nxt
     return False
+
+
+# Round r6-3: compiled functions running now, with the Python frame that called
+# each (kept by `native_tracker` from sys.setprofile's c_call / c_return).
+_ACTIVE_C: list = []
+
+
+def _track(frame, event, arg) -> None:
+    if event == "c_call":
+        _ACTIVE_C.append((frame, arg))
+    elif event in ("c_return", "c_exception"):
+        for i in range(len(_ACTIVE_C) - 1, -1, -1):
+            if _ACTIVE_C[i][0] is frame and _ACTIVE_C[i][1] is arg:
+                del _ACTIVE_C[i:]
+                break
+
+
+class native_tracker:
+    """Context manager the runner puts around each scene run: records which
+    compiled function is running and from which Python frame, so a strategy
+    called from compiled code (a pybind11 engine's run loop) shows the
+    engine's file as `native_by`."""
+
+    def __enter__(self):
+        # this thread only: a thread the tool starts is not tracked (its entries would mix with these)
+        self._prev = _sys.getprofile()
+        _ACTIVE_C.clear()
+        _sys.setprofile(_chain(_track, self._prev))
+        return self
+
+    def __exit__(self, *exc):
+        _sys.setprofile(self._prev)
+        _ACTIVE_C.clear()
+        return False
+
+
+def _chain(mine, prev):
+    if prev is None:
+        return mine
+
+    def both(frame, event, arg):
+        mine(frame, event, arg)
+        prev(frame, event, arg)
+    return both
 
 
 _MADE: list = []  # every record made here, kept alive (identity is what run_battery checks)
@@ -626,10 +704,6 @@ def compiled(name: str) -> Made:
     return _register(m)
 
 
-def carrier_tag_compiled(name: str) -> Made:  # kept name for clarity at call sites
-    return compiled(name)
-
-
 def qualname(fn) -> Made:
     """Module and name of the function / class that did the work (p2-iso-*:
     the target's own reader), from the object itself, with its file."""
@@ -657,7 +731,7 @@ def _profiled(fn):
             files.add(code_file(arg) or "")
 
     prev = _sys.getprofile()
-    _sys.setprofile(prof)
+    _sys.setprofile(_chain(prof, prev))  # round r6-3: the native tracker keeps running inside a read
     try:
         v = fn()
         exc = None
@@ -682,6 +756,51 @@ def read(fn, *args, **kwargs):
         for x in v:
             _READ.append((x, f))
     return v
+
+
+def attr(obj, name: str):
+    """Read `obj.name` the way the target defines it (round r6-3): when a class
+    in the MRO defines `name` as a property, the value is read through that
+    property's getter with `read`, so a `carrier` of it shows `returned_by` =
+    the getter's file. A plain instance attribute has no such record (who set
+    it is not known), and neither does a property of the scene set."""
+    for k in type(obj).__mro__:
+        d = vars(k).get(name)
+        if d is None:
+            continue
+        if isinstance(d, property) and d.fget is not None:
+            return read(d.fget, obj)
+        break
+    return getattr(obj, name)
+
+
+def iterate(it):
+    """Iterate a target's iterator (round r6-3): each item it yields is
+    recorded as returned by the iterator's `__next__` (for `returned_by`)."""
+    it = iter(it)
+    nxt = type(it).__next__
+    f = code_file(nxt)
+    while True:
+        try:
+            x = nxt(it)
+        except StopIteration:
+            return
+        _READ.append((x, f))
+        yield x
+
+
+async def aiterate(ait):
+    """Async form of `iterate`: each item a target's async iterator yields is
+    recorded as returned by its `__anext__`."""
+    nxt = type(ait).__anext__
+    f = code_file(nxt)
+    while True:
+        try:
+            x = await nxt(ait)
+        except StopAsyncIteration:
+            return
+        _READ.append((x, f))
+        yield x
 
 
 def _raise_site(exc) -> dict:
