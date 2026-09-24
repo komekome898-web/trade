@@ -212,7 +212,7 @@ def _script(k: int, ctx, now: int) -> None:
         ctx.cancel_order("a2")
         ctx.order("a1")
         ctx.open_orders()
-        ctx.visible_events()
+        ctx.visible_events(n=3)
     elif k == 4:
         ctx.place_order(OrderRequest("buy", "limit", 2.0, price=98.0, client_order_id="a3"))
     elif k == 5:
@@ -228,13 +228,13 @@ def _script(k: int, ctx, now: int) -> None:
         ctx.open_orders()
     elif k == 12:
         ctx.place_order(OrderRequest("buy", "limit", 1.0, price=96.0, client_order_id="a6"))
-        ctx.visible_events(since_ns=now - 3 * SEC)
+        ctx.visible_events(until_ns=now, n=2)
     elif k == 29:  # after the forced order was adopted (28, 29) and history_limit dropped events
         ctx.place_order(OrderRequest("buy", "limit", 1.0, price=95.0, client_order_id="a7"))
         ctx.open_orders()
     elif k == 30:
         ctx.cancel_order("a7")
-        ctx.visible_events(EventType.LIQUIDATION)
+        ctx.visible_events(EventType.LIQUIDATION, n=1)
     elif k == 31:
         ctx.place_order(OrderRequest("sell", "market", 1.0, client_order_id="a8"))
 
@@ -556,8 +556,10 @@ def _outbox_paths():
 def _grid(walk_at: int):
     survey: list = []
     _run(survey=(walk_at, survey))
-    outbox = set(_outbox_paths())
-    return [(i, path, tname, names) for i, (path, tname, names) in enumerate(survey) if path not in outbox]
+    outbox = _outbox_paths()
+    # the outbox and the messages in it are what the strategy SENT: its own grid below
+    return [(i, path, tname, names) for i, (path, tname, names) in enumerate(survey)
+            if not any(path == p or path.startswith(p + "[") for p in outbox)]
 
 
 def test_the_outbox_is_found_by_behaviour_and_is_one_list():
@@ -702,6 +704,85 @@ def test_a_message_against_the_api_rules_is_refused_before_anything_is_sent(kind
     assert _judge(base, got) is None
 
 
+# a field of the request inside a message, changed after place_order put it
+# there and before the callback returned (object.__setattr__ on its slot)
+CONTENT_OK = {  # -> the place_order call that has the same effect
+    "size 2.0": ("size", 2.0),
+    "side sell": ("side", "sell"),
+    "price None": ("price", None),
+    "id m9": ("client_order_id", "m9"),
+    "extra": ("extra", (("k", 1),)),
+}
+CONTENT_BAD = {
+    "side up": ("side", "up"),
+    "size 0": ("size", 0.0),
+    "size a str": ("size", "1"),
+    "id forced": ("client_order_id", "forced-3"),
+    "id empty": ("client_order_id", ""),
+    "id a1 (placed)": ("client_order_id", "a1"),
+    "extra not pairs": ("extra", ("k",)),
+    "size deleted": ("size", None),  # deleted, below
+}
+
+
+def _place_m1(ctx, **change):
+    fields = dict(side="buy", order_type="limit", size=1.0, price=95.0, client_order_id="m1")
+    fields.update(change)
+    return ctx.place_order(OrderRequest(**fields))
+
+
+@pytest.mark.parametrize("when", TIMES)
+@pytest.mark.parametrize("case", sorted(CONTENT_OK))
+def test_a_message_changed_before_the_callback_returned_is_what_was_sent(case, when):
+    """The core reads the outbox when the callback returns: a request the
+    strategy changed in its message before that is what it sent -- the
+    effect of placing the changed request, by the API's rules."""
+    walk_at, at = TIMINGS[when]
+    name, value = CONTENT_OK[case]
+    kept = {}
+
+    def changed(k, ctx):
+        if k == walk_at:
+            kept["box"] = _box(ctx)
+        if k == at:
+            _place_m1(ctx)
+            msg = list.__getitem__(kept["box"], -1)
+            object.__setattr__(msg[1], name, value)
+
+    def via_api(k, ctx):
+        if k == at:
+            _place_m1(ctx, **{name: value})
+
+    got, want = _run(extra=changed), _run(extra=via_api)
+    assert want[0] == "ok", want[1]
+    assert got[0] == "ok", got[1]
+    assert got[1] == want[1] and got[2].logs == want[2].logs and got[2].delivered == want[2].delivered
+
+
+@pytest.mark.parametrize("when", TIMES)
+@pytest.mark.parametrize("case", sorted(CONTENT_BAD))
+def test_a_message_changed_against_the_api_rules_is_refused(case, when):
+    walk_at, at = TIMINGS[when]
+    name, value = CONTENT_BAD[case]
+    kept = {}
+
+    def changed(k, ctx):
+        if k == walk_at:
+            kept["box"] = _box(ctx)
+        if k == at:
+            _place_m1(ctx)
+            msg = list.__getitem__(kept["box"], -1)
+            if case == "size deleted":
+                object.__delattr__(msg[1], name)
+            else:
+                object.__setattr__(msg[1], name, value)
+
+    base = _run()
+    got = _run(extra=changed)
+    assert got[0] == "raised" and isinstance(got[1], CoreError), (got[0], got[1])
+    assert _judge(base, got) is None
+
+
 @pytest.mark.parametrize("when", TIMES)
 def test_removing_a_sent_message_is_not_sending_it(when):
     """The outbox is the strategy's message until the callback returns:
@@ -743,6 +824,14 @@ def test_a_replaced_outbox_is_refused():
 
 # --- the structural check: the context reaches none of the core's own state ----------
 
+def _one_per_value(obj) -> bool:
+    """An object the interpreter keeps one of per value (the empty tuple,
+    say), asked by building its value again: sharing it is not sharing."""
+    if type(obj) in (tuple, frozenset):
+        return type(obj)(list(obj)) is obj
+    return False
+
+
 def test_nothing_reachable_from_a_context_is_part_of_the_core_s_own_state():
     """The engine's decision state (its order book, venue ledger, queue,
     source merger, request / fill / forced lists, history facts, channels)
@@ -759,10 +848,10 @@ def test_nothing_reachable_from_a_context_is_part_of_the_core_s_own_state():
             if hasattr(eng, name):
                 own.extend(o for _p, o in _walk(getattr(eng, name)))
         hist = getattr(eng, "_history")
-        for name in ("_meta", "_facts", "dropped", "dropped_count", "_counts"):
+        for name in ("_facts", "_overall_facts", "dropped", "dropped_count"):
             if hasattr(hist, name):
                 own.extend(o for _p, o in _walk(getattr(hist, name)))
-        shared = [type(o).__name__ for o in own if id(o) in reach and _is_state(o)]
+        shared = [type(o).__name__ for o in own if id(o) in reach and _is_state(o) and not _one_per_value(o)]
         if shared:
             problems.append((k, sorted(set(shared))))
 
