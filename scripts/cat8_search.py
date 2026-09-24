@@ -19,9 +19,13 @@ import sys
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--list", required=True)
+ap.add_argument("--candidate", required=True, help="台帳の番号 8-NNN。検索がどの候補のものかを検査が突き合わせる(監査 68 回目)")
 ap.add_argument("--pattern", required=True)
 ap.add_argument("-i", "--ignore-case", action="store_true")
 a = ap.parse_args()
+import re as _re
+if not _re.fullmatch(r"8-\d{3}", a.candidate):
+    sys.exit("--candidate は 8-NNN の形: " + a.candidate)
 
 raw = open(a.list, "rb").read()
 sep = b"\0" if b"\0" in raw else b"\n"
@@ -75,7 +79,7 @@ for p, why in unread:
     print("読めなかった\t%s\t%s" % (p, why))
 import os
 import hashlib
-print("cat8_search: %s files=%d read=%d files_with_hits=%d hits=%d list=%s sha=%s" % (
+print("cat8_search: %s files=%d read=%d files_with_hits=%d hits=%d list=%s sha=%s candidate=%s" % (
     "complete" if not unread and paths else "INCOMPLETE", len(paths), read, len(per_file), hits, os.path.abspath(a.list),
-    hashlib.sha256(raw).hexdigest()[:16]))
+    hashlib.sha256(raw).hexdigest()[:16], a.candidate))
 sys.exit(1 if unread or not paths else 0)

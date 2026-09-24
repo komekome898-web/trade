@@ -21,6 +21,7 @@ import sys
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--root", required=True)
+ap.add_argument("--candidate", required=True, help="台帳の番号 8-NNN。検索がどの候補のものかを検査が突き合わせる(監査 68 回目)")
 ap.add_argument("--out", required=True)
 ap.add_argument("--exclude", action="append", default=[])
 ap.add_argument("--add", action="append", default=[])
@@ -28,6 +29,9 @@ ap.add_argument("--absent", action="append", default=[],
                 help="<path>=<reason>: a file of the source tree that is not under --root and not added "
                      "(for example an image over 1 MB the fetch helper did not download). Counted in N, not listed.")
 a = ap.parse_args()
+import re as _re
+if not _re.fullmatch(r"8-\d{3}", a.candidate):
+    sys.exit("--candidate は 8-NNN の形: " + a.candidate)
 
 root = os.path.abspath(a.root)
 if os.path.isdir(os.path.join(root, ".git")):
@@ -96,5 +100,5 @@ for p, why in absent.items():
     print("無い\t%s\t%s" % (p, why))
 for x in a.add:
     print("足した\t%s" % os.path.abspath(x))
-print("cat8_mklist: complete out=%s in_root=%d added=%d absent=%d excluded=%d listed=%d sha=%s" % (
-    os.path.abspath(a.out), len(rel), len(a.add), len(absent), len(excl), len(listed), digest))
+print("cat8_mklist: complete out=%s in_root=%d added=%d absent=%d excluded=%d listed=%d sha=%s candidate=%s" % (
+    os.path.abspath(a.out), len(rel), len(a.add), len(absent), len(excl), len(listed), digest, a.candidate))

@@ -433,8 +433,8 @@ ELEM_TERMS_WIDE = {
     "E6": [r"検証|verif|validat", r"品質|quality", r"test|assert|check"],
 }
 SEARCH_TOOL_RE = re.compile(r"cat8_search\.py")
-SEARCH_DONE_RE = re.compile(r"^cat8_search: complete files=(\d+) read=\1 files_with_hits=(\d+) hits=(\d+) list=(\S+) sha=(\w+)$", re.M)
-MKLIST_RE = re.compile(r"^cat8_mklist: complete out=(\S+) in_root=(\d+) added=(\d+) absent=(\d+) excluded=(\d+) listed=(\d+) sha=(\w+)$", re.M)
+SEARCH_DONE_RE = re.compile(r"^cat8_search: complete files=(\d+) read=\1 files_with_hits=(\d+) hits=(\d+) list=(\S+) sha=(\w+) candidate=(8-\d{3})$", re.M)
+MKLIST_RE = re.compile(r"^cat8_mklist: complete out=(\S+) in_root=(\d+) added=(\d+) absent=(\d+) excluded=(\d+) listed=(\d+) sha=(\w+) candidate=(8-\d{3})$", re.M)
 TRUNC_RE = re.compile(r"^\[出力は \d+ 文字。先頭 \d+ 文字だけを残した\]$", re.M)
 
 
@@ -463,7 +463,7 @@ def mklist_footer(fname, lno, list_path):
     for m in MKLIST_RE.finditer(head):
         if m.group(1) == list_path:
             found = {"in_root": int(m.group(2)), "added": int(m.group(3)), "absent": int(m.group(4)),
-                     "excluded": int(m.group(5)), "listed": int(m.group(6)), "sha": m.group(7)}
+                     "excluded": int(m.group(5)), "listed": int(m.group(6)), "sha": m.group(7), "candidate": m.group(8)}
     return found
 
 
@@ -509,7 +509,8 @@ def cmd_check_elements(a):
             in_hj = "当たりの判定" in ln
             continue
         if in_hj and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
-            c = [x.strip() for x in ln.strip().strip("|").split("|")]
+            # 道の中の `|` は `\|` と書く(監査 68 回目の指摘 2-3)
+            c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
             if len(c) >= 3 and c[0] not in ("ファイルの道", "道"):
                 hit_judged[c[0].strip("`")] = c[2]
     questions, in_q = [], False
@@ -650,6 +651,10 @@ def cmd_check_elements(a):
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の出力に `cat8_search: complete` の終わりの行が無い" % (i + 1, tool, el, f, n))
                                     continue
                                 files, fwh, hts, lst, lsha = int(done.group(1)), int(done.group(2)), int(done.group(3)), done.group(4), done.group(5)
+                                cand = done.group(6)
+                                row_num = (ledger_by_name.get(tool.strip("`")) or {}).get("番号")
+                                if cand != row_num:
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の候補 %s が、この行の候補の番号 %s と違う(ほかの候補の手を引いている)" % (i + 1, tool, el, f, n, cand, row_num))
                                 sum_files += files; sum_fwh += fwh; sum_hits += hts
                                 hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
                                 mk = mklist_footer(f, n, lst)
@@ -657,6 +662,8 @@ def cmd_check_elements(a):
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧 %s を作った cat8_mklist.py の手が、同じ生ログのそれより前に無い" % (i + 1, tool, el, f, n, lst))
                                 else:
                                     n_src += mk["listed"]; m_list += mk["listed"]  # N は除外のあとの件数(これまでの回の決まり)。除外・無いものは cat8_mklist の出力に名前と理由がある
+                                    if mk["candidate"] != cand:
+                                        errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧を作った手の候補 %s が、検索の候補 %s と違う" % (i + 1, tool, el, f, n, mk["candidate"], cand))
                                     if mk["sha"] != lsha:
                                         errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧が、cat8_mklist.py で作ったあとに書き換えられている(sha が違う)" % (i + 1, tool, el, f, n))
                                     if mk["listed"] != files:
@@ -773,6 +780,12 @@ def cmd_check_elements(a):
             for n, ln in enumerate(lp.read_text().splitlines(), 1):
                 if ln.startswith("$ ") and re.search(r"/tmp/(?!claude-0/)", ln):
                     errs.append("生ログ %s:%d: `/tmp` の直下(scratchpad の外)のファイルを使う手: %s" % (lp.name, n, ln[:80]))
+    if a.round and int(a.round) >= 11:
+        # 監査 68 回目の [聞く]: 「要素と段」の表に台帳の全行が 8 要素ずつあるか
+        for r in load():
+            got = table.get(r["名前"]) or {}
+            if len(got) < len(ELEMS):
+                errs.append("「要素と段」の表に、台帳の %s %s の要素が %d 行しか無い(8 行要る)" % (r["番号"], r["名前"], len(got)))
     if a.round and int(a.round) >= 11:
         # 監査 67 回目の指摘 3: 7 列目に引かなかった検索の当たりも隠さない。この回の生ログの cat8_search.py の手の
         # 当たったファイルは、全部 `### 当たりの判定` の表に理由つきで書く(印の根拠なら、その旨を理由に書く)。
