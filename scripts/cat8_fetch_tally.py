@@ -31,6 +31,7 @@ for ln in lines:
         cur["out"].append(ln)
 
 rows, errs = {}, []
+stopped_by = None  # first repo that ended the fetching with exit 5 or 6
 for s in steps:
     if "cat8_repo_fetch.sh" not in s["cmd"]:
         continue
@@ -66,16 +67,21 @@ for s in steps:
     if repo in rows and rows[repo] != r:
         diff = [k for k in r if rows[repo][k] != r[k]]
         errs.append("%s: 2 回打たれて結果が違う(違う項目: %s)" % (repo, ", ".join(diff)))
+    if stopped_by and repo != stopped_by:
+        errs.append("%s: 終了コード 5・6(%s)で取得をやめたあとに打たれている" % (repo, stopped_by))
+    if rc in ("5", "6") and not stopped_by:
+        stopped_by = repo
     rows[repo] = r
 
 ok = [r for r in rows.values() if r["rc"] == "0"]
 
 
 def totals():
-    print("== リポジトリ %d 件(終了コード 0 = %d / 4 = %d / 5 は下の行 / そのほか = %d)" % (
+    print("== リポジトリ %d 件(終了コード 0 = %d / 4 = %d / 5・6 は下の行 / そのほか = 取れなかった = %d)" % (
         len(rows), len(ok), sum(1 for r in rows.values() if r["rc"] == "4"),
-        sum(1 for r in rows.values() if r["rc"] not in ("0", "4", "5"))))
-    print("== 終了コード 5(取った量の和が上限で取らなかった) = %d" % sum(1 for r in rows.values() if r["rc"] == "5"))
+        sum(1 for r in rows.values() if r["rc"] not in ("0", "4", "5", "6"))))
+    print("== 終了コード 5(取った量の和が上限で取らなかった) = %d / 6(置き場か和のファイルの誤りで取らなかった) = %d" % (
+        sum(1 for r in rows.values() if r["rc"] == "5"), sum(1 for r in rows.values() if r["rc"] == "6")))
     print("== 終了コード 0 の N の和 = %d / skipped の和 = %d / lfs_pointer の和 = %d / downloaded_bytes の和 = %d" % (
         sum(r["N"] or 0 for r in ok), sum(len(r["skipped"]) for r in ok), sum(len(r["lfs"]) for r in ok),
         sum(r["dl"] or 0 for r in rows.values())))
