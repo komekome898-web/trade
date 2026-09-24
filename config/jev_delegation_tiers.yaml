@@ -26,7 +26,7 @@ tiers:
     label: "委任しない(リードの判断)"
     who: "リード"
     model_tier: "上位モデル"
-    model: opus
+    model: claude-opus-5-5  # owner L-429 (2026-09-24): the opus tier runs on Opus 5.5
     source: "docs/DELEGATION.md §7(リードの行: 案の選択と枠組み、事前登録の骨子、結果の読み)"
     compares_as: no_delegation
 
@@ -42,7 +42,7 @@ tiers:
     label: "実装の段"
     who: "下位モデル(委任先)"
     model_tier: "下位モデル"
-    model: opus
+    model: claude-opus-5-5  # owner L-429 (2026-09-24): the opus tier runs on Opus 5.5
     source: ".claude/skills/delegated-study/SKILL.md §1(研究・実装: 検証スクリプト作成・実装変更)"
     compares_as: implementation
 
@@ -104,4 +104,5 @@ marks:
 # ここに無いモデルは「対応表に無い」として、一致にも不一致にも数えない。
 model_to_tier:
   opus: implementation
+  claude-opus-5-5: implementation
   sonnet: work

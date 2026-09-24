@@ -21,6 +21,21 @@ Rules for adapter authors (they are what the critic checks):
   * `error` is for an unexpected exception while running the scene.
   * There is no status for "not run this round" (rule 4): every adapter
     implements every scene id.
+  * Do not switch off a survey tool's own protective default (risk limits,
+    cash checks, look-ahead guards) for convenience: the survey side must be
+    at least as strong as the tool is out of the box. A non-default setting
+    is used only when the scene states it (e.g. the scene's account) or when
+    the adapter runs BOTH the default and the setting and reports both
+    (e.g. backtrader's `preload`); the detail says which one the output is.
+    (Round r4-1, critic i0-r2-04 / i0-r3-05: one adapter had turned a
+    tool's risk limits off for every scene; `test_battery_item0.py` now
+    looks for that.)
+  * For a scene with `graded_from` (scenes.py) report the raw observations
+    the scene names (each read and its exception / value; the delivered
+    order; the target's written same-time rule with where it is written and
+    its hand application to the input) and nothing graded: the runner
+    computes the graded values. A written rule is copied from the target's
+    documents or public code, never derived from running the target.
 
 The new implementation's adapter (written each round by the materials
 person, not by the scene keeper) lives at `adapters/new_impl.py` and must

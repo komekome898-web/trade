@@ -282,10 +282,10 @@ OUT_OF_SCOPE = ("再現の範囲外: 候補 33 は P0-7 の候補(pool.tsv)で�
                 "滑りと費用の模型の setter・約定の道)だけを一次資料から書き直した")
 
 
-def _market_run(sc, *, latency=None, slippage=None, cost=None, capital=100_000.0):
+def _market_run(sc, *, latency=None, slippage=None, cost=None, capital=100_000.0, qty: float = 1.0):
     """Run the scene: seed one resting sell order at the first trade's price and
     size ([DEMO] demo_order_submission), hand every trade to add_tick, and on the
-    first MarketData event submit a market buy of quantity 1."""
+    first MarketData event submit a market buy of quantity `qty` (1 unless the scene says otherwise)."""
     evs = C.events(sc)
     sim = ExecutionSimulator(BacktestConfig(start_time=evs[0]["ts_ns"], initial_capital=capital,
                                             latency=latency or LatencyConfig()))
@@ -301,7 +301,7 @@ def _market_run(sc, *, latency=None, slippage=None, cost=None, capital=100_000.0
         seen.append((ev.kind, ev.ts))
         if ev.kind == "MarketData" and not state["sent"]:
             state["sent"] = True
-            sim.submit_order({"symbol": "X", "side": "Buy", "type": "Market", "price": 0.0, "quantity": 1.0})
+            sim.submit_order({"symbol": "X", "side": "Buy", "type": "Market", "price": 0.0, "quantity": float(qty)})
         if ev.kind == "OrderSubmit":
             state["mine"] = ev.data["order_id"]
         if ev.kind == "OrderFill" and ev.data["fill"]["order_id"] == state["mine"]:
@@ -353,8 +353,16 @@ class Adapter(_Abstract):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        class PerUnit(TransactionCostModel):
+            def calculate_cost(self, notional, quantity, is_maker, symbol):
+                return 0.375 * abs(quantity)
+
+        _, st, _ = _market_run(sc, cost=PerUnit(), qty=2.0)
+        f = st.get("fills", [])
+        return ok({"fee": sum(x[2] for x in f) if f else None},
+                  "set_cost_model(<TransactionCostModel の子: calculate_cost(notional, quantity, ...) が 0.375 × |quantity|>)、数量 2 の成行。"
+                  f"OrderFillEvent の cost の合計([ES.cpp] 198-221)。自分の注文の約定 {f}")
 
     def scene_p7_account_swap(self, sc):
         return not_supported("口座(PositionManager / PnLTracker)は ExecutionSimulator の中で config から作られ([ES.cpp] 10-11)、"

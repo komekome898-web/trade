@@ -17,7 +17,11 @@ Columns: scene_id, viewpoint, kind, correctness (正解と一致 / 対応なし 
 結果なし), status and output of run 1 and run 2, expected, detail of run 1.
 Correctness is decided here, never by the adapter: a dict `expected` must
 match the same keys in the output (extra keys in the output are ignored),
-anything else must be equal.
+anything else must be equal. For a scene with `graded_from` (scenes.py), the
+adapter only reports what it observed (the delivered order, each attempt and
+its exception, the target's stated rule and where it is written) and the
+values that are graded are computed HERE by `GRADERS[scene.id]`; the output
+column then holds those graded values plus the raw output under "raw".
 """
 from __future__ import annotations
 
@@ -91,11 +95,77 @@ def _matches(output, expected) -> bool:
     return output == expected
 
 
-def correctness(res: SceneResult, expected) -> str:
+def _contains_number(v, x: float) -> bool:
+    if isinstance(v, bool):
+        return False
+    if isinstance(v, (int, float)):
+        return float(v) == x
+    if isinstance(v, dict):
+        return any(_contains_number(u, x) for u in v.values())
+    if isinstance(v, (list, tuple)):
+        return any(_contains_number(u, x) for u in v)
+    return False
+
+
+def _pairs(seq) -> list:
+    return [[str(k), int(t)] for k, t in (seq or [])]
+
+
+def _grade_future_reads(sc, out: dict) -> dict:
+    atts = list(out.get("attempts") or [])
+    named = [a for a in atts if a.get("form") in ("time", "position")]
+    fv = float(sc.input["future_value"])
+    return {"every_attempt_stopped_by_error": bool(named) and all(a.get("raised") for a in named),
+            "future_value_obtained": any(_contains_number(a.get("returned"), fv) for a in atts)}
+
+
+def _all_tie_events(sc) -> list:
+    return sorted([e["kind"], e["ts_ns"]] for evs in sc.input["streams"].values() for e in evs)
+
+
+def _grade_stated_rule_once(sc, out: dict) -> dict:
+    order = _pairs(out.get("order"))
+    rule = out.get("stated_rule")
+    return {"delivered_as_multiset": sorted(order),
+            "follows_stated_rule": bool(rule) and order == _pairs(rule.get("predicted"))}
+
+
+def _grade_hand_over(sc, out: dict) -> dict:
+    runs = list(out.get("runs") or [])
+    want = _all_tie_events(sc)
+    n = len(sc.input["hand_over_orders"])
+    complete = len(runs) == n
+    orders = [_pairs(r.get("order")) for r in runs]
+    return {"every_run_delivers_each_once": complete and all(sorted(o) == want for o in orders),
+            "every_run_follows_stated_rule": complete and bool(out.get("stated_rule"))
+            and all(o == _pairs(r.get("predicted")) for o, r in zip(orders, runs)),
+            "same_order_whatever_the_hand_over": complete and (
+                out.get("form") == "single_input"
+                or (out.get("form") == "multi_input" and len({json.dumps(o) for o in orders}) == 1))}
+
+
+# scene id -> grader; exactly the scenes with `graded_from` (test_battery_item0.py checks)
+GRADERS = {
+    "p4-future-read-attempt": _grade_future_reads,
+    "p5-same-time-twice": _grade_stated_rule_once,
+    "p5-hand-over-order": _grade_hand_over,
+}
+
+
+def graded_output(res: SceneResult, scene):
+    """What is graded: the raw output, or for a `graded_from` scene the values
+    computed here from it (the raw output kept under "raw")."""
+    if scene is None or scene.id not in GRADERS or res.status != "ok":
+        return res.output
+    raw = res.output if isinstance(res.output, dict) else {}
+    return {**GRADERS[scene.id](scene, raw), "raw": res.output}
+
+
+def correctness(res: SceneResult, expected, scene=None) -> str:
     if res.status == "not_supported":
         return "対応なし"
     if res.status == "ok":
-        return "正解と一致" if _matches(res.output, expected) else "不一致"
+        return "正解と一致" if _matches(graded_output(res, scene), expected) else "不一致"
     return "結果なし"  # error: the target ran into an exception, no result to grade
 
 
@@ -116,11 +186,13 @@ def run_target(target: str) -> list[dict]:
         r2 = adapter_2.run_scene(sc)
         rows.append({
             "target": target, "scene_id": sc.id, "viewpoint": sc.viewpoint, "kind": sc.kind,
-            "correctness": correctness(r1, sc.expected),
-            "correctness_run2": correctness(r2, sc.expected),
+            "correctness": correctness(r1, sc.expected, sc),
+            "correctness_run2": correctness(r2, sc.expected, sc),
             "reproducibility": reproducibility(r1, r2),
-            "status_1": r1.status, "output_1": json.dumps(r1.output, ensure_ascii=False, sort_keys=True, default=repr),
-            "status_2": r2.status, "output_2": json.dumps(r2.output, ensure_ascii=False, sort_keys=True, default=repr),
+            "status_1": r1.status,
+            "output_1": json.dumps(graded_output(r1, sc), ensure_ascii=False, sort_keys=True, default=repr),
+            "status_2": r2.status,
+            "output_2": json.dumps(graded_output(r2, sc), ensure_ascii=False, sort_keys=True, default=repr),
             "expected": json.dumps(sc.expected, ensure_ascii=False, sort_keys=True),
             "detail_1": r1.detail.replace("\t", " ").replace("\n", " "),
         })

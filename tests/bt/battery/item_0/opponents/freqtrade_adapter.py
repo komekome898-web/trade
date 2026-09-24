@@ -309,31 +309,29 @@ class FreqtradeAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got, keep = [], {"v": False}, {}
+        fut = pd.Timestamp(sc.input["future_ts_ns"], unit="ns", tz="UTC")
+        att, keep = C.Attempts(), {}
 
         def ind(s, df, md):
             keep["df"] = df
             return df
 
         def loop(s, t):
-            if _ns(t) != probe:
+            if _ns(t) != probe or att.items:
                 return
-            for label, fn in [("dp.get_analyzed_dataframe の close", lambda: [float(x) for x in s.dp.get_analyzed_dataframe(PAIR, "1d")[0]["close"]]),
-                              ("dp.get_pair_dataframe の close", lambda: [float(x) for x in s.dp.get_pair_dataframe(PAIR, "1d")["close"]]),
-                              ("populate_indicators に渡された DataFrame の close", lambda: [float(x) for x in keep["df"]["close"]])]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    got["v"] = got["v"] or 104.0 in v
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            adf = s.dp.get_analyzed_dataframe(PAIR, "1d")[0]
+            att.run("dp.get_analyzed_dataframe の close の .iloc[len](最新の次の位置)", "position", lambda: float(adf["close"].iloc[len(adf)]))
+            att.run("dp.get_analyzed_dataframe の date == 5 本目の日 の close", "time",
+                    lambda: [float(x) for x in adf.loc[adf["date"] == fut, "close"]])
+            att.run("dp.get_analyzed_dataframe の close(全部)", "other", lambda: [float(x) for x in adf["close"]])
+            att.run("dp.get_pair_dataframe の close(全部)", "other", lambda: [float(x) for x in s.dp.get_pair_dataframe(PAIR, "1d")["close"]])
+            att.run("populate_indicators に渡された DataFrame の close(全部)", "other", lambda: [float(x) for x in keep["df"]["close"]])
 
         run(C.events(sc), {"ind": ind, "loop": loop})
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported(f"T0 + 4 日の呼び出しが無かった。{_net()}")
-        return ok({"future_value_obtained": got["v"]}, "T0 + 4 日の bot_loop_start の中で試した: " + " ; ".join(tried) + "。" + _net())
+        return ok(att.output(), "T0 + 4 日の bot_loop_start の中で試した: " + att.summary() + "。" + _net())
 
-    # ---------------- P0-5
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])) + "。" + _net())
 
@@ -349,9 +347,9 @@ class FreqtradeAdapter(Adapter):
         try:
             run([C.as_bar(e) for e in C.events(sc)], {"loop": loop})
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"同じ時刻の 2 本を渡した -> {type(exc).__name__}: {str(exc)[:200]}。{_net()}")
+            return not_supported(f"同じ時刻の 3 本を渡した -> {type(exc).__name__}: {str(exc)[:200]}。{_net()}")
         prices = seen[-1][1] if seen else []
-        return ok({"prices": prices}, f"同じ時刻の 2 本(終値 100 と 101)を渡した。各回の dp.get_analyzed_dataframe の close {seen}。{_net()}")
+        return ok({"prices": prices}, f"同じ時刻の 3 本(終値 101・99・100)を渡した。各回の dp.get_analyzed_dataframe の close {seen}。{_net()}")
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
@@ -410,11 +408,11 @@ class FreqtradeAdapter(Adapter):
                              "試したこと: " + _kw("fee_model") + f"。率 0.005 で走らせた取引の表の手数料の列 "
                              f"{r[[c for c in r.columns if 'fee' in c]].to_dict('records') if len(r) else []}。{_net()}")
 
-    def scene_p7_cost_zero(self, sc):
-        r = self._fee_run(sc, 0.0)
-        fees = r[[c for c in r.columns if c.startswith("fee_open")]].to_dict("records") if len(r) else []
-        return ok({"fee": float(r.iloc[0]["fee_open"]) * float(r.iloc[0]["open_rate"]) * float(r.iloc[0]["amount"]) if len(r) else None},
-                  f"設定の fee=0.0。取引の表の fee_open × open_rate × amount。{fees}。{_net()}")
+    def scene_p7_cost_per_unit(self, sc):
+        r = self._fee_run(sc, 0.00375)
+        return not_supported("費用は設定の fee(約定代金に掛ける率)だけで、数量 1 単位あたりの模型を差し込む口が無い。"
+                             "試したこと: " + _kw("fee_model") + f"。率 0.00375 で走らせた取引の表の手数料の列 "
+                             f"{r[[c for c in r.columns if 'fee' in c]].to_dict('records') if len(r) else []}(率は約定代金に掛かる)。{_net()}")
 
     def scene_p7_account_swap(self, sc):
         return not_supported("口座(Wallets)は Backtesting の中で作られ、差し替える口が無い。試したこと: " + _kw("wallets") + "。" + _net())

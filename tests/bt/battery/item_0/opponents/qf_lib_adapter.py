@@ -231,30 +231,27 @@ class QfLibAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        att = C.Attempts()
         first = _date(sc.input["events"][0]["ts_ns"])
-        fut = _date([e for e in sc.input["events"] if e["ts_ns"] > probe][0]["ts_ns"])
+        fut = _date(sc.input["future_ts_ns"])
+
+        def vals(v):
+            return [float(x) for x in getattr(v, "values", [v])]
 
         def f(s, n, st):
-            if _now(s) != probe:
+            if _now(s) != probe or att.items:
                 return
             dp = s.ts.data_provider
-            for label, fn in [("get_price(ticker, Close, 最初の日, 5 本目の日)", lambda: dp.get_price(TK, PriceField.Close, first, fut)),
-                              ("get_price(..., 5 本目の日 + 1 日)", lambda: dp.get_price(TK, PriceField.Close, first, fut + D.timedelta(days=1))),
-                              ("historical_price(ticker, Close, 6)", lambda: dp.historical_price(TK, PriceField.Close, 6))]:
-                try:
-                    v = fn()
-                    vs = [float(x) for x in getattr(v, "values", [v])]
-                    tried.append(f"{label} -> {vs}")
-                    if 104.0 in vs:
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:100]}")
+            att.run("get_price(ticker, Close, 最初の日, 5 本目の日)", "time", lambda: vals(dp.get_price(TK, PriceField.Close, first, fut)))
+            att.run("get_price(ticker, Close, 最初の日, 5 本目の日 + 1 日)", "time",
+                    lambda: vals(dp.get_price(TK, PriceField.Close, first, fut + D.timedelta(days=1))))
+            att.run("get_price(ticker, Close, 5 本目の日, 5 本目の日)", "time", lambda: vals(dp.get_price(TK, PriceField.Close, fut, fut)))
+            att.run("historical_price(ticker, Close, 6)(件数)", "other", lambda: vals(dp.historical_price(TK, PriceField.Close, 6)))
 
         run(C.events(sc), f)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
-        return ok({"future_value_obtained": got["v"]}, f"T0 + 4 日の呼び出しに試した: " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の呼び出しに試した: " + att.summary())
 
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="Trade・Funding・Liquidation", err=_pricefield("Funding")))
@@ -265,7 +262,7 @@ class QfLibAdapter(Adapter):
         try:
             run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: None)
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"同じ日の 2 本を日足の配列に入れようとした -> {type(exc).__name__}: {exc}")
+            return not_supported(f"同じ日の 3 本を日足の配列に入れようとした -> {type(exc).__name__}: {exc}")
         return ok({"prices": []}, "例外は出なかった")
 
     def _order(self, s, qty):
@@ -293,10 +290,10 @@ class QfLibAdapter(Adapter):
         run([C.as_bar(e) for e in C.events(sc)], f)
         return ok(out, "3 回目に broker.get_positions() の数量(注文の約定済み数量を注文から読む口は無い)")
 
-    def _buy(self, sc, setup):
+    def _buy(self, sc, setup, qty: int = 1):
         def f(s, n, st):
             if n == 1:
-                self._order(s, 1)
+                self._order(s, qty)
 
         st, ts = run([C.as_bar(e) for e in C.events(sc)], f, cash=100_000.0, setup=setup)
         pos = ts.broker.get_positions()
@@ -338,8 +335,14 @@ class QfLibAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        class PerUnit(CommissionModel):
+            def calculate_commission(self, fill_quantity, fill_price):
+                return 0.375 * abs(fill_quantity)
+
+        r = self._buy(sc, lambda b: b.set_commission_model(PerUnit), qty=2)
+        return ok({"fee": r["commission"] if r else None},
+                  f"set_commission_model(CommissionModel の子: 0.375 × |fill_quantity|)、数量 2 の成行。建玉の total_commission(): {r}")
 
     def scene_p7_account_swap(self, sc):
         try:

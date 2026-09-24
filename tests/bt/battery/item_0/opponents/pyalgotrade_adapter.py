@@ -199,28 +199,22 @@ class PyalgotradeAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        att = C.Attempts()
 
         def f(s, b, n, st):
-            if _now(s) != probe:
+            if _now(s) != probe or att.items:
                 return
             ds = s.getFeed()[INST].getCloseDataSeries()
-            for label, fn in [("close の系列[len]", lambda: ds[len(ds)]),
-                              ("feed.peekDateTime()", lambda: s.getFeed().peekDateTime()),
-                              ("membf の読み残し(公開の getNextBars)", lambda: s.getFeed().getNextBars())]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if v == 104.0 or (hasattr(v, "__getitem__") and INST in getattr(v, "getInstruments", lambda: [])()
-                                      and v[INST].getClose() == 104.0):
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            att.run("close の系列[len](最新の次の位置)", "position", lambda: ds[len(ds)])
+            att.run("feed.peekDateTime()(次を覗く)", "position", lambda: s.getFeed().peekDateTime())
+            att.run("feed.getNextBars()(次を覗く、公開の方法)の終値", "position",
+                    lambda: (lambda nb: nb[INST].getClose() if nb is not None else None)(s.getFeed().getNextBars()))
+            att.run("close の系列の全部", "other", lambda: [ds[i] for i in range(len(ds))])
 
         run(C.events(sc), f)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok({"future_value_obtained": got["v"]}, "T0 + 4 日の onBars で試した: " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の onBars で試した: " + att.summary())
 
     def _no_types(self, sc):
         return not_supported(NON.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
@@ -231,8 +225,8 @@ class PyalgotradeAdapter(Adapter):
         try:
             st, _ = run(self._bars(sc), lambda s, b, n, st: st["log"].append(b[INST].getClose()))
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"同じ時刻の 2 本を bar feed に入れて走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "同じ時刻の 2 本を 1 つの bar feed に入れた")
+            return not_supported(f"同じ時刻の 3 本を bar feed に入れて走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"prices": st["log"]}, "同じ時刻の 3 本を 1 つの bar feed に入れた")
 
     def scene_p6_place_then_cancel(self, sc):
         out = {}
@@ -271,8 +265,8 @@ class PyalgotradeAdapter(Adapter):
         run(self._bars(sc), f)
         return ok(out, "3 回目に order.getFilled()")
 
-    def _buy(self, sc, setup):
-        return run(self._bars(sc), lambda s, b, n, st: s.marketOrder(INST, 1) if n == 1 else None, cash=100_000, setup=setup)[0]
+    def _buy(self, sc, setup, qty: int = 1):
+        return run(self._bars(sc), lambda s, b, n, st: s.marketOrder(INST, qty) if n == 1 else None, cash=100_000, setup=setup)[0]
 
     def scene_p7_fill_model_swap(self, sc):
         class Fixed(fillstrategy.DefaultStrategy):
@@ -293,8 +287,14 @@ class PyalgotradeAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        class PerUnit(backtesting.Commission):
+            def calculate(self, order, price, quantity):
+                return 0.375 * quantity
+
+        st = self._buy(sc, lambda br: br.setCommission(PerUnit()), qty=2)
+        return ok({"fee": sum(x["commission"] for x in st["fills"]) if st["fills"] else None},
+                  f"broker.setCommission(Commission の子: calculate が 0.375 × quantity を返す)、数量 2 の成行。fills={st['fills']}")
 
     def scene_p7_account_swap(self, sc):
         rec = []

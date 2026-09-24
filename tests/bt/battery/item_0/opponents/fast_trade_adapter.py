@@ -74,11 +74,10 @@ class FastTradeAdapter(VectorBase):
         return not_supported("時刻ごとに戦略のコードが呼ばれないので、T0 + 4 日の呼び出しの中で先を読む試しができない。"
                              f"表の中で先を参照できるかを試した: 条件の lookback に -1 -> {msg} / datapoints に shift(-1) -> {msg2}")
 
-    def scene_p7_cost_zero(self, sc):
+    def scene_p7_cost_per_unit(self, sc):
         bars = [C.as_bar(e) for e in C.events(sc)]
-        r, msg = _run(_bt([["close", ">", 0]], comission=0.0), bars)
+        r, msg = _run(_bt([["close", ">", 0]], comission=0.00375), bars)
         if r is None:
-            return not_supported(f"comission=0.0 で走らせた -> {msg}")
-        tl = r.get("trade_df") if isinstance(r, dict) else None
-        return not_supported("comission は率の設定で、約定 1 件・数量 1 の成行を戦略が出す口が無い(lot_size_perc で残高の割合を買う)。"
-                             f"comission=0.0 で走らせた -> {msg}、返り値の鍵 {sorted(r.keys())}")
+            return not_supported(f"comission=0.00375 で走らせた -> {msg}")
+        return not_supported("comission は約定代金に掛ける率の設定で、数量 1 単位あたりの模型を書けない。数量 2 の成行を戦略が出す口も無い"
+                             f"(lot_size_perc で残高の割合を買う)。comission=0.00375 で走らせた -> {msg}、返り値の鍵 {sorted(r.keys())}")

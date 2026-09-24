@@ -4,6 +4,11 @@ Written by the materials person (not the scene keeper, not the worker).
 Round 3: re-read against the round-3 core (`src/bot/bt/core/`); the public
 names used below all still exist there, and a cancel still gets exactly one
 venue answer from `_ArrivalFill.on_cancel` (the round-3 core requires that).
+Round r4-1 (the scene keeper, because the scene outputs changed): the scenes
+p4-future-read-attempt, p5-same-time-twice, p5-hand-over-order and
+p7-cost-per-unit now report raw observations (each read and its exception;
+the delivered order and the core's written same-time rule with its hand
+application) and the runner grades them; the materials person re-reads this.
 The engine is reached ONLY through the `core` object handed to
 `make_adapter(core)` (protocol.py): no `import bot.bt.core...` here, so the
 canary (`mutant.py`) can hand over a wrapped `core`.
@@ -225,12 +230,12 @@ class NewImplAdapter(Adapter):
 
         return _CashAccount()
 
-    def _buy_market_at_first_call(self, sc, **kw):
+    def _buy_market_at_first_call(self, sc, size: float = 1.0, **kw):
         core = self.core
 
         def fn(event, ctx, st):
             if self._market_call(event, st, 1) and "coid" not in st:
-                st["coid"] = ctx.place_order(core.OrderRequest(side="buy", order_type="market", size=1.0))
+                st["coid"] = ctx.place_order(core.OrderRequest(side="buy", order_type="market", size=size))
 
         return self._run(fn, self._events(C.events(sc)), **kw)
 
@@ -364,56 +369,62 @@ class NewImplAdapter(Adapter):
     def scene_p4_future_read_attempt(self, sc):
         core = self.core
         probe = int(sc.input["probe_at_ns"])
-        future_ts = [int(e["ts_ns"]) for e in C.events(sc) if int(e["ts_ns"]) > probe][0]
-        tried: list[str] = []
-        got = {"v": False}
-
-        def attempt(label, f):
-            try:
-                v = f()
-                tried.append(f"{label} -> {v!r}")
-                vals = v if isinstance(v, (list, tuple)) else [v]
-                if any(getattr(x, "close", x) == 104.0 for x in vals):
-                    got["v"] = True
-            except Exception as exc:  # noqa: BLE001
-                tried.append(f"{label} -> {type(exc).__name__}: {exc}")
+        future_ts = int(sc.input["future_ts_ns"])
+        att = C.Attempts()
 
         def fn(event, ctx, st):
-            if int(ctx.now_ns) != probe or tried:
+            if int(ctx.now_ns) != probe or att.items:
                 return
-            attempt("ctx.visible_events(until_ns=5 本目の時刻)",
+            att.run("ctx.visible_events(until_ns=5 本目の時刻)", "time",
                     lambda: [e.close for e in ctx.visible_events(until_ns=future_ts)])
-            attempt("ctx.visible_events(since_ns=5 本目の時刻)",
+            att.run("ctx.visible_events(since_ns=5 本目の時刻)", "time",
                     lambda: [e.close for e in ctx.visible_events(since_ns=future_ts)])
-            attempt("ctx.visible_events()[4]", lambda: ctx.visible_events()[4].close)
-            attempt("ctx.visible_events(BAR) の全部", lambda: [e.close for e in ctx.visible_events(core.EventType.BAR)])
-            attempt("ctx.last(BAR)", lambda: ctx.last(core.EventType.BAR).close)
+            att.run("ctx.visible_events()[4](最新の次の位置)", "position", lambda: ctx.visible_events()[4].close)
+            att.run("ctx.visible_events(BAR) の全部", "other", lambda: [e.close for e in ctx.visible_events(core.EventType.BAR)])
+            att.run("ctx.last(BAR)", "other", lambda: ctx.last(core.EventType.BAR).close)
 
         self._run(fn, self._events(C.events(sc)))
-        if not tried:
+        if not att.items:
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok({"future_value_obtained": got["v"]}, "T0 + 4 日の呼び出しの中で試した: " + "; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の呼び出しの中で試した: " + att.summary())
 
     # ---------------- P0-5
-    def _types_of(self, sc, order=None) -> list[str]:
+    # The core's written rule for same-time input from different streams
+    # (src/bot/bt/core/ordering.py, module docstring, "Merging input streams"):
+    _RULE_SOURCE = "src/bot/bt/core/ordering.py 43-55 行(モジュールの説明「Merging input streams」)"
+    _RULE_QUOTE = ("Several input streams ... are merged by comparing the streams' NEXT events: "
+                   "(exchange_time_ns, place of the event's type in TYPE_ORDER, stream name) ... only between different "
+                   "streams at the same exchange time does the type order decide (liquidation, funding, book snapshot, "
+                   "book delta, trade, bar, clock ...), then the stream name (`sorted()` order, not the order the mapping "
+                   "was handed over).")
+    _TYPE_ORDER_QUOTED = ["liquidation", "funding", "book_snapshot", "book_delta", "trade", "bar", "clock"]
+
+    def _predicted(self, sc) -> list:
+        """The quoted rule applied by hand to the scene's streams (one event per stream here)."""
+        rows = [(int(e["ts_ns"]), self._TYPE_ORDER_QUOTED.index(e["kind"]), name, e["kind"])
+                for name, evs in sc.input["streams"].items() for e in evs]
+        return [[k, t] for t, _r, _n, k in sorted(rows)]
+
+    def _order_of(self, sc, order=None) -> list:
         st, _ = self._run(lambda e, c, s: None, self._streams(sc, order))
-        return [k for k, _t in st["seq"]]
+        return [[k, t] for k, t in st["seq"]]
 
     def scene_p5_same_time_twice(self, sc):
-        a = self._types_of(sc)
-        b = self._types_of(sc)
-        return ok({"same_order_in_two_runs": a == b, "run1": a, "run2": b},
-                  "4 つの名前つきの流れを渡した順で辞書にして CoreEngine を 2 回(別の実行)走らせ、型の列を比べた")
+        return ok({"order": self._order_of(sc),
+                   "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, self._predicted(sc))},
+                  "4 つの名前つきの流れを渡した順で辞書にして CoreEngine に渡し、戦略に届いた(型, exchange_time_ns)を記録")
 
     def scene_p5_hand_over_order(self, sc):
-        seen = {tuple(self._types_of(sc, order)) for order in sc.input["hand_over_orders"]}
-        return ok({"distinct_orders": len(seen), "orders": sorted(list(s) for s in seen)},
-                  "24 通りの渡す順で辞書を作って 24 回走らせ、型の列の異なり数を数えた")
+        pred = self._predicted(sc)
+        runs = [{"hand_over": list(o), "order": self._order_of(sc, o), "predicted": pred} for o in sc.input["hand_over_orders"]]
+        return ok({"form": "multi_input", "runs": runs,
+                   "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, pred)},
+                  "24 通りの渡す順で名前つきの流れの辞書を作って 24 回走らせ、各回の(型, 時刻)の列を記録")
 
     def scene_p5_same_stream_order(self, sc):
         prices: list[float] = []
         self._run(lambda e, c, s: prices.append(float(e.price)), self._events(C.events(sc)))
-        return ok({"prices": prices}, "同時刻の約定 2 件を 1 本の入力で渡し、on_event で価格を記録")
+        return ok({"prices": prices}, "同時刻の約定 3 件を 1 本の入力で渡し、on_event で価格を記録")
 
     # ---------------- P0-6
     def _place_then_cancel(self, sc):
@@ -484,11 +495,11 @@ class NewImplAdapter(Adapter):
                   "latency_model の口に発注の遅れ 7 ms(ほかは 0。ZeroLatency の子)を差し、約定の模型は着いた時点で埋める _ArrivalFill。"
                   "戦略に届いた ORDER_FILL の exchange_time_ns(取引所で埋まった時刻)を記録")
 
-    def _fee(self, sc, cost_model):
-        st, _ = self._buy_market_at_first_call(sc, fill_model=self._arrival_fill(), cost_model=cost_model,
+    def _fee(self, sc, cost_model, size: float = 1.0):
+        st, _ = self._buy_market_at_first_call(sc, size=size, fill_model=self._arrival_fill(), cost_model=cost_model,
                                                account=self._cash_account(100_000.0))
-        fee = st["fills"][0]["fee"] if st["fills"] else None
-        return ok({"fee": fee, "fills": st["fills"]}, "cost_model の口に模型を差し、戦略に届いた ORDER_FILL の fee を記録")
+        fee = sum(f["fee"] for f in st["fills"]) if st["fills"] else None
+        return ok({"fee": fee, "fills": st["fills"]}, "cost_model の口に模型を差し、戦略に届いた ORDER_FILL の fee の合計を記録")
 
     def scene_p7_cost_model_swap(self, sc):
         class _PerFill:
@@ -497,8 +508,12 @@ class NewImplAdapter(Adapter):
 
         return self._fee(sc, _PerFill())
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, self.core.NullCostModel())
+    def scene_p7_cost_per_unit(self, sc):
+        class _PerUnit:
+            def cost(self, fill) -> float:
+                return 0.375 * float(fill.size)
+
+        return self._fee(sc, _PerUnit(), size=2.0)
 
     def scene_p7_account_swap(self, sc):
         core = self.core

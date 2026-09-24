@@ -71,6 +71,8 @@ class Scene:
     expected: Any           # the correct result, fixed before any run
     derivation: str         # how `expected` was obtained, without any engine
     measures: str           # what the scene measures, one or two sentences
+    graded_from: str = ""   # when set: the graded values are computed by run_battery.py
+                            # (never by the adapter) from the raw output, as this text says
 
 
 def trade(ts: int, price: float, qty: float = 0.01, side: str = "buy", recv: int | None = None) -> dict:
@@ -252,15 +254,26 @@ add(id="p4-received-time", viewpoint="P0-4", kind="value",
                "101 が戦略に届くのは 3 日後、4 日後の呼び出しでは見える。取引所の時刻で届けると 1 日後に見えてしまう。",
     measures="2 日後と 4 日後の呼び出しで 101 の約定が見えたか、101 が届いた時刻。")
 add(id="p4-future-read-attempt", viewpoint="P0-4", kind="capability",
-    title="T0 + 4 日の呼び出しで、戦略が 1 つ先の足を公開の手段で読みに行ったとき、値が得られないか",
-    input={"events": _LA_BARS, "probe_at_ns": T0 + 4 * DAY,
-           "strategy": "T0 + 4 日の呼び出しの中で、対象が戦略に渡す公開の手段(履歴の添字・データの参照・時刻を指定した問い合わせ)"
-                       "で 5 本目(終値 104)を読もうとする。試した方法を全部記録する",
+    title="T0 + 4 日の呼び出しで、戦略が 5 本目の足を名指して読もうとすると、実行時エラーか型エラーで止まるか",
+    input={"events": _LA_BARS, "probe_at_ns": T0 + 4 * DAY, "future_ts_ns": T0 + 5 * DAY, "future_value": 104.0,
+           "strategy": "T0 + 4 日の呼び出しの中で、5 本目(時刻 T0 + 5 日、終値 104)を名指して読もうとする。"
+                       "名指し方は 2 つ: 時刻で(5 本目の時刻、またはそれを終わりに含む範囲を渡して読む)と、"
+                       "位置で(今の最新の次の位置を、添字・先の参照・次を覗く手段で読む)。"
+                       "対象が戦略に渡す公開の読み出しの手段ごとに、当てはまる名指し方を全部試し、1 つずつ記録する"
+                       "(手段・名指し方・出た例外の名前、または返った値)。名指さない読み出し(全部・最新の 1 件・中身の配列)は名指し方 other として記録してよく、"
+                       "止まったかには数えないが、104 が返ったかには数える。"
+                       "時刻も位置も取る手段が 1 つも無い対象では、戦略のコードが 5 本目を読もうとして書く呼び出し"
+                       "(履歴の添字・時刻を渡す問い合わせ)を実際に書いて呼び、出た例外を記録する",
            "note": "足を受けない対象は、同じ時刻・価格=終値の約定で代えてよい"},
-    expected={"future_value_obtained": False},
-    derivation="T0 + 4 日の呼び出しの時点で 5 本目(T0 + 5 日)はまだ届いていない。構造で先読みを塞いでいれば、どの公開の手段でも 104 は得られない"
-               "(例外・空の結果・拒否のどれか)。1 つの手段でも 104 が返れば未来が漏れている。",
-    measures="T0 + 4 日の呼び出しの中で、試したどれかの手段で 104 が得られたか。")
+    expected={"every_attempt_stopped_by_error": True, "future_value_obtained": False},
+    derivation="固定した要件(REQUIREMENTS.md §2 P0-4)の測り方は「戦略側から未来時刻の事象を読もうとするコードが、実行時エラーか型エラーで止まるか"
+               "(素通りしたら不合格)」。T0 + 4 日の時点で 5 本目(T0 + 5 日)はまだ届いていないので、5 本目を名指した読み出しは"
+               "どれも例外で止まらなければならない。空の結果・切り詰めた結果(4 本目までを黙って返す)・値を返すのは素通りで、"
+               "正解ではない。104 が 1 つでも返れば未来が漏れている。",
+    measures="試した読み出しのすべてが例外で止まったか、どれかで 104 が得られたか。",
+    graded_from="出力の `attempts`(試しの列。各試しは `means` 手段・`form` 名指し方(time / position / other)・`raised` 例外の名前か null・"
+                "`returned` 返った値か null)から runner が作る: `every_attempt_stopped_by_error` = 名指し方が time か position の試しが 1 つ以上あり、"
+                "その全部の `raised` が null でない / `future_value_obtained` = どれかの試し(other を含む)の `returned` の中に 104(入力の `future_value`)がある。")
 
 # ---------------------------------------------------------------- P0-5
 _TIE_STREAMS = {
@@ -269,31 +282,52 @@ _TIE_STREAMS = {
     "funding": [{"kind": "funding", "ts_ns": T0 + DAY, "rate": 0.0001}],
     "liquidation": [{"kind": "liquidation", "ts_ns": T0 + DAY, "price": 99.0, "qty": 0.2, "side": "sell"}],
 }
+_TIE_ALL = sorted([[e["kind"], e["ts_ns"]] for evs in _TIE_STREAMS.values() for e in evs])
+_STATED_RULE_TEXT = ("`stated_rule` = {`source`: 規則が書いてある所(ファイル:行 か URL)、`quote`: その逐語、"
+                     "`predicted`: その規則をこの入力に手で当てた(型, 時刻)の列}。規則は対象の文書かコードの公開の説明から写し、"
+                     "対象を走らせた結果から作らない。規則が見つからない対象は `stated_rule` を null にし、探した所を detail に書く")
 add(id="p5-same-time-twice", viewpoint="P0-5", kind="value",
-    title="同時刻の 4 種の事象を 2 回処理して、同じ順になるか",
+    title="同時刻の 4 種の事象を、対象が明記した並びの規則どおりの順で、1 件も落とさずに処理するか",
     input={"streams": _TIE_STREAMS, "hand_over_order": ["trades", "bars", "funding", "liquidation"],
-           "note": "型ごとの 4 つの入力。1 本しか受けない対象には、この順に連結して渡す"},
-    expected={"same_order_in_two_runs": True},
-    derivation="決定的とは、同じ入力から同じ出力が出ること。定義から、2 回の順は同じでなければならない。",
-    measures="1 回目と 2 回目の(型)の列が同じか。")
+           "note": "型ごとの 4 つの入力。1 本しか受けない対象には、この順に連結して渡す(並べ替えない)",
+           "stated_rule": _STATED_RULE_TEXT},
+    expected={"delivered_as_multiset": _TIE_ALL, "follows_stated_rule": True},
+    derivation="固定した要件(REQUIREMENTS.md §2 P0-5)の測り方は「同時刻に複数型の事象を仕込んだ入力を作り、規則どおりの順で処理されるか(値)、"
+               "2 回実行して一致するか(再現)」。4 件は同じ時刻なので時刻では並びが決まらず、決めるのは対象が明記した規則だけである。"
+               "よって正解は (1) 4 件がちょうど 1 回ずつ届く(型と時刻の組を並べ替えた列が入力の 4 件と同じ)、"
+               "(2) 届いた順が、対象の規則をこの入力に当てた順と同じ、の 2 つ。2 回の一致は表の「再現」の欄で見る。"
+               "規則を明記していない対象は (2) を満たさない。",
+    measures="戦略に届いた(型, 時刻)の列が、4 件を落とさず重ねず、対象の明記した規則の順と一致するか。",
+    graded_from="出力の `order`(戦略に届いた(型, 時刻)の列)と `stated_rule` から runner が作る: `delivered_as_multiset` = `order` を並べ替えた列 / "
+                "`follows_stated_rule` = `stated_rule` があり、`order` が `stated_rule.predicted` と同じ。")
 add(id="p5-hand-over-order", viewpoint="P0-5", kind="capability",
-    title="同時刻の 4 種の事象の並びが、入力を渡した順に左右されないか",
+    title="同時刻の 4 種の事象の並びが、データの中身と無関係な「入力を渡す順」に左右されず、各回が明記した規則どおりか",
     input={"streams": _TIE_STREAMS,
            "hand_over_orders": [list(p) for p in permutations(["trades", "bars", "funding", "liquidation"])],
-           "note": "4 つの入力を 24 通りの順で渡して 24 回処理する。1 本しか受けない対象には、その回の順で連結して渡す"},
-    expected={"distinct_orders": 1},
-    derivation="型ごとの入力を渡す順は、データをどのファイルから先に読んだかで変わる、データの中身と無関係な順である。"
-               "同時刻の並びが規則(型・時刻など中身)で決まるなら 24 回とも同じ並びで、異なる並びの数は 1。"
-               "渡した順に従うなら 24 通りになる。",
-    measures="24 回の処理で出た(型)の列が何通りあったか。")
+           "note": "4 つの入力を 24 通りの順で渡して 24 回処理する。複数の入力を受ける対象は 4 つを別々の入力として、"
+                   "その回の順で渡す(form = multi_input)。1 本しか受けない対象には、その回の順で連結した 1 本を渡す(form = single_input)",
+           "stated_rule": _STATED_RULE_TEXT + "。各回の `predicted` を、その回の入力に当てて書く"},
+    expected={"every_run_delivers_each_once": True, "every_run_follows_stated_rule": True,
+              "same_order_whatever_the_hand_over": True},
+    derivation="別々の入力(ファイルごとの約定・足・資金調達・清算)を渡す順は、データをどれから先に読んだかで変わる、データの中身と無関係な順である。"
+               "複数の入力を受ける対象では、同時刻の並びが規則(型・時刻など中身)で決まるなら 24 回とも同じ並びになる。"
+               "1 本しか受けない対象では、連結した 1 本がその回の入力そのもので、その入力の順は同時刻でも守るのが規則"
+               "(p5-same-stream-order と同じ理由)なので、各回が規則どおりなら並びは回ごとに違ってよい。"
+               "どちらの形でも、各回 4 件がちょうど 1 回ずつ届き、各回の順がその回の入力に規則を当てた順と同じでなければならない。",
+    measures="24 回の各回で 4 件が落ちずに届いたか、各回の順が規則どおりか、複数の入力を受ける対象では 24 回の並びが 1 通りか。",
+    graded_from="出力の `form`(multi_input / single_input)・`runs`(各回の `hand_over`・`order`)・`stated_rule`(各回の `predicted` は `runs` の各回に置く)から runner が作る: "
+                "`every_run_delivers_each_once` = 24 回すべてで `order` を並べ替えた列が入力の 4 件と同じ / "
+                "`every_run_follows_stated_rule` = `stated_rule` があり、24 回すべてで `order` がその回の `predicted` と同じ / "
+                "`same_order_whatever_the_hand_over` = form が multi_input なら 24 回の `order` が 1 通り、single_input なら真(渡す順がその回の入力そのものなので)。")
 add(id="p5-same-stream-order", viewpoint="P0-5", kind="value",
-    title="1 本の入力の中の同時刻の 2 件を、入力の順のまま処理するか",
-    input={"events": [trade(T0 + DAY, 100.0), trade(T0 + DAY, 101.0)],
-           "note": "型は対象が受ける型でよい(足なら終値 100 と 101)"},
-    expected={"prices": [100.0, 101.0]},
+    title="1 本の入力の中の同時刻の 3 件を、入力の順のまま処理するか",
+    input={"events": [trade(T0 + DAY, 101.0), trade(T0 + DAY, 99.0), trade(T0 + DAY, 100.0)],
+           "note": "型は対象が受ける型でよい(足なら終値 101・99・100)"},
+    expected={"prices": [101.0, 99.0, 100.0]},
     derivation="同じ取引所から来た 1 本の記録の中では、並びが取引所での起きた順である。同時刻でも入れ替えてはならないので、"
-               "処理の順は 100、101。",
-    measures="戦略が受け取った 2 件の価格の順。")
+               "処理の順は 101、99、100。価格の昇順(99, 100, 101)でも降順(101, 100, 99)でもない順にしてあるので、"
+               "価格で並べ替える対象や 1 件を落とす対象はこの正解を出せない。",
+    measures="戦略が受け取った 3 件の価格の順。")
 
 # ---------------------------------------------------------------- P0-6
 _API_TRADES = [trade(T0 + i * DAY, 100.0, qty=100.0) for i in (1, 2, 3)]
@@ -350,13 +384,15 @@ add(id="p7-cost-model-swap", viewpoint="P0-7", kind="capability",
     expected={"fee": 0.5},
     derivation="約定は 1 件、1 件あたり 0.5 円なので費用は 0.5。",
     measures="その約定に付いた費用(戦略が受け取ったか、実行の結果の約定の記録から読んだ値)。")
-add(id="p7-cost-zero", viewpoint="P0-7", kind="value",
-    title="費用 0 の模型に差し替えると、費用が 0 になるか",
+add(id="p7-cost-per-unit", viewpoint="P0-7", kind="value",
+    title="数量に比例する費用の模型に差し替えると、その模型が数量から出した費用が約定に付くか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
-           "plug": "費用の模型: 常に 0", "strategy": "1 回目: 成行 買い 数量 1"},
-    expected={"fee": 0.0},
-    derivation="模型の定義から費用は恒等的に 0。",
-    measures="その約定に付いた費用。")
+           "plug": "費用の模型: 約定の数量 1 単位あたり 0.375 円(価格によらない)", "strategy": "1 回目: 成行 買い 数量 2"},
+    expected={"fee": 0.75},
+    derivation="数量 2 の成行は、100 単位の約定(100.0)で 1 回に全量が埋まる。費用は 2 × 0.375 = 0.75(0.375 = 3/8 は 2 進の小数で丸めなく表せる)。"
+               "差し込みが効かない対象は、その対象の既定の費用(0 か、その対象の手数料)になり 0.75 にならない。"
+               "模型が数量を受け取らなければ 0.75 は出ない。",
+    measures="その注文の約定に付いた費用の合計(戦略が受け取ったか、実行の結果の約定の記録から読んだ値)。")
 add(id="p7-account-swap", viewpoint="P0-7", kind="capability",
     title="口座を差し替えると、差し替えた口座が約定を受け取るか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",

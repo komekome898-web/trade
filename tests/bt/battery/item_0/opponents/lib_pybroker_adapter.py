@@ -166,26 +166,20 @@ class LibPybrokerAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        att = C.Attempts()
 
         def f(ctx, n, st):
-            if _dt_ns(ctx) != probe:
+            if _dt_ns(ctx) != probe or att.items:
                 return
-            for label, fn in [("ctx.close[len(ctx.close)]", lambda: ctx.close[len(ctx.close)]),
-                              ("ctx.bars / ctx.foreign('X')", lambda: list(ctx.foreign("X").close)),
-                              ("ctx.close.base (元の配列)", lambda: list(ctx.close.base) if ctx.close.base is not None else None)]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if v == 104.0 or (isinstance(v, list) and 104.0 in [float(x) for x in v]):
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            # ExecContext has no read that takes a time; the position reads are tried
+            att.run("ctx.close[len(ctx.close)](最新の次の位置)", "position", lambda: ctx.close[len(ctx.close)])
+            att.run("ctx.foreign('X').close(全部)", "other", lambda: list(ctx.foreign("X").close))
+            att.run("ctx.close.base(numpy の元の配列)", "other", lambda: list(ctx.close.base) if ctx.close.base is not None else None)
 
         run(C.events(sc), f)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
-        return ok({"future_value_obtained": got["v"]}, f"T0 + 4 日の呼び出しに試した: " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の呼び出しに試した: " + att.summary())
 
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
@@ -197,8 +191,8 @@ class LibPybrokerAdapter(Adapter):
         try:
             st, _ = run(rows, lambda ctx, n, st: st["log"].append(float(ctx.close[-1])))
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"同じ日時の 2 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "約定を足に代え、同じ日時の 2 行を渡した")
+            return not_supported(f"同じ日時の 3 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ日時の 3 行を渡した")
 
     def scene_p6_place_then_cancel(self, sc):
         out = {}
@@ -235,10 +229,10 @@ class LibPybrokerAdapter(Adapter):
         run([C.as_bar(e) for e in C.events(sc)], f)
         return ok(out, "3 回目に ctx.long_pos().shares(注文の約定済み数量を読む口は ctx.orders() の約定済みの一覧)")
 
-    def _buy(self, sc, **kw):
+    def _buy(self, sc, shares: int = 1, **kw):
         def f(ctx, n, st):
             if n == 1:
-                ctx.buy_shares = 1
+                ctx.buy_shares = shares
                 if "fill" in kw:
                     ctx.buy_fill_price = kw["fill"]
 
@@ -264,8 +258,11 @@ class LibPybrokerAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        res = self._buy(sc, shares=2, fee=lambda info: Decimal("0.375") * Decimal(str(info.shares)))
+        o = res.orders
+        return ok({"fee": float(o["fees"].sum()) if len(o) else None},
+                  f"StrategyConfig(fee_mode=<FeeInfo -> 0.375 × info.shares>)、数量 2 の成行。orders: {o.to_dict('records')}")
 
     def scene_p7_account_swap(self, sc):
         from pybroker.portfolio import Portfolio

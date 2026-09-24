@@ -98,11 +98,11 @@ class _Strat(CtaTemplate):
             f(self, trade)
 
 
-def run(data, hooks: dict, mode=BacktestingMode.BAR, capital=1_000_000, rate=0.0, engine_cls=BacktestingEngine):
+def run(data, hooks: dict, mode=BacktestingMode.BAR, capital=1_000_000, rate=0.0, engine_cls=BacktestingEngine, slippage=0.0):
     eng = engine_cls()
     eng.output = lambda msg: None
     start, end = data[0].datetime, data[-1].datetime
-    eng.set_parameters(vt_symbol="X.LOCAL", interval=Interval.DAILY, start=start, end=end, rate=rate, slippage=0.0,
+    eng.set_parameters(vt_symbol="X.LOCAL", interval=Interval.DAILY, start=start, end=end, rate=rate, slippage=slippage,
                        size=1, pricetick=0.01, capital=capital, mode=mode)
 
     class S(_Strat):
@@ -317,27 +317,22 @@ class VnpyAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        att = C.Attempts()
 
         def h(s, b, n):
-            if _ns(b.datetime) != probe:
+            if _ns(b.datetime) != probe or att.items:
                 return
-            for label, fn in [("self.cta_engine.history_data の close", lambda: [x.close_price for x in s.cta_engine.history_data]),
-                              ("self.load_bar(10)", lambda: s.load_bar(10))]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if isinstance(v, list) and 104.0 in v:
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            hist = s.cta_engine.history_data
+            att.run("self.cta_engine.history_data[今の足の添字 + 1](最新の次の位置)", "position",
+                    lambda: hist[[_ns(x.datetime) for x in hist].index(probe) + 1].close_price)
+            att.run("self.cta_engine.history_data の close の全部", "other", lambda: [x.close_price for x in hist])
+            att.run("self.load_bar(10)", "other", lambda: s.load_bar(10))
 
         run([_bar(e) for e in C.events(sc)], {"bar": h})
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported(f"T0 + 4 日の呼び出しが無かった。{_net()}")
-        return ok({"future_value_obtained": got["v"]}, "T0 + 4 日の on_bar の中で試した: " + " ; ".join(tried) + "。" + _net())
+        return ok(att.output(), "T0 + 4 日の on_bar の中で試した: " + att.summary() + "。" + _net())
 
-    # ---------------- P0-5
     def _no_types(self, sc):
         return not_supported(NON.format(k="約定・足・資金調達・清算を 1 つの回で", t="試したこと: " + self._mixed_try(sc)) + "。" + _net())
 
@@ -346,7 +341,7 @@ class VnpyAdapter(Adapter):
     def scene_p5_same_stream_order(self, sc):
         seen = []
         run([_bar(e) for e in C.events(sc)], {"bar": lambda s, b, n: seen.append(b.close_price)})
-        return ok({"prices": seen}, "同じ時刻の 2 本の足(終値 100 と 101)を history_data に並べた。on_bar の close。" + _net())
+        return ok({"prices": seen}, "同じ時刻の 3 本の足(終値 101・99・100)を history_data に並べた。on_bar の close。" + _net())
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
@@ -412,9 +407,21 @@ class VnpyAdapter(Adapter):
         return not_supported("費用は set_parameters の rate(約定代金に掛ける率)と slippage(1 単位あたり)だけで、約定 1 件に決まった額を返す模型を"
                              f"差し込む口が無い。試したこと: {_kw('fee_model')}。rate=0.005 で走らせた手数料の合計 {fee}。{_net()}")
 
-    def scene_p7_cost_zero(self, sc):
-        fee, _ = self._fee(sc, 0.0)
-        return ok({"fee": fee}, "set_parameters(rate=0.0)。calculate_result() の commission の合計。" + _net())
+    def scene_p7_cost_per_unit(self, sc):
+        px = C.as_bar(C.events(sc)[0])["close"]
+
+        def h(s, b, n):
+            if n == 1:
+                s.buy(px * 1.01, 2)
+
+        eng = run([_bar(e) for e in C.events(sc)], {"bar": h}, capital=100_000, rate=0.0, slippage=0.375)
+        df = eng.calculate_result()
+        if df is None or not len(df):
+            return ok({"fee": None}, "約定が無かった。" + _net())
+        fee = float(df["commission"].sum()) + float(df["slippage"].sum())
+        return ok({"fee": fee}, "費用の口は set_parameters の rate(約定代金に掛ける率)と slippage(数量 1 単位あたりの額。日ごとの結果で費用として"
+                  "差し引かれる)。rate=0、slippage=0.375 で数量 2 の買い。calculate_result() の commission と slippage の合計を費用とした。"
+                  f"commission {df['commission'].tolist()} / slippage {df['slippage'].tolist()}。" + _net())
 
     def scene_p7_account_swap(self, sc):
         return not_supported("口座を差し込む口が無い(BacktestingEngine が capital と日ごとの損益を自分で持つ)。試したこと: " + _kw("account") + "。" + _net())

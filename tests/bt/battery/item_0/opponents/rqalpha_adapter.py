@@ -325,30 +325,22 @@ class RqalphaAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        att = C.Attempts()
         A = _api()
 
         def h(c, b, n):
-            if _now(c) != probe:
+            if _now(c) != probe or att.items:
                 return
-            for label, fn in [("history_bars(6)", lambda: list(A.history_bars(OID, 6, "1d", "close"))),
-                              ("history_bars(6, include_now=True)", lambda: list(A.history_bars(OID, 6, "1d", "close", include_now=True))),
-                              ("current_snapshot", lambda: A.current_snapshot(OID).last)]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if v == 104.0 or (isinstance(v, list) and 104.0 in v):
-                        got["v"] = True
-                except BaseException as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            att.run("history_bars(6)(件数)", "other", lambda: list(A.history_bars(OID, 6, "1d", "close")))
+            att.run("history_bars(6, include_now=True)(件数)", "other", lambda: list(A.history_bars(OID, 6, "1d", "close", include_now=True)))
+            att.run("current_snapshot(銘柄).last", "other", lambda: A.current_snapshot(OID).last)
 
         st = run(C.events(sc), h)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日(UTC 0 時)の呼び出しが無かったので、先を読む試しができなかった(日足の回は取引日の 15:00 北京時間)。"
                                  f"呼び出しの時刻 {st['calls_ns']}")
-        return ok({"future_value_obtained": got["v"]}, "T0 + 4 日の呼び出しに試した: " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の呼び出しに試した: " + att.summary())
 
-    # ---------------- P0-5
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
@@ -361,7 +353,7 @@ class RqalphaAdapter(Adapter):
             seen.append(float(b[OID].close))
 
         st = run([C.as_bar(e) for e in C.events(sc)], h)
-        return ok({"prices": seen}, f"同じ時刻の 2 本(終値 100 と 101)をデータ源の配列に並べた。各回の bar_dict の close、呼び出し {st['calls_ns']}")
+        return ok({"prices": seen}, f"同じ時刻の 3 本(終値 101・99・100)をデータ源の配列に並べた。各回の bar_dict の close、呼び出し {st['calls_ns']}")
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
@@ -407,13 +399,13 @@ class RqalphaAdapter(Adapter):
         return ok(out, "3 回目に order.filled_quantity")
 
     # ---------------- P0-7
-    def _buy(self, sc, **kw):
+    def _buy(self, sc, qty: int = 1, **kw):
         A = _api()
         out = {}
 
         def h(c, b, n):
             if n == 1:
-                c.o = A.order_shares(OID, 1)
+                c.o = A.order_shares(OID, qty)
             out.update({"filled": float(c.o.filled_quantity), "avg_price": float(c.o.avg_price),
                         "transaction_cost": float(c.o.transaction_cost)})
 
@@ -430,10 +422,10 @@ class RqalphaAdapter(Adapter):
         return not_supported("発注の遅延の模型を渡す口が無い。sys_simulation の設定の鍵は "
                              f"{sorted(simcfg.keys())}(撮合の方式・滑り・出来高の制限で、遅延は無い)")
 
-    def _fee(self, fee):
+    def _fee(self, fee, per_unit: bool = False):
         class Flat(AbstractTransactionCostDecider):
             def calc(self, args):
-                return TransactionCost(commission=fee, tax=0.0, other_fees=0.0)
+                return TransactionCost(commission=fee * abs(args.quantity) if per_unit else fee, tax=0.0, other_fees=0.0)
         return Flat()
 
     def scene_p7_cost_model_swap(self, sc):
@@ -441,10 +433,10 @@ class RqalphaAdapter(Adapter):
         return ok({"fee": out.get("transaction_cost")}, "mod から env.set_transaction_cost_decider(CS, <AbstractTransactionCostDecider の子: "
                   f"1 件 0.5>)。order.transaction_cost: {out}")
 
-    def scene_p7_cost_zero(self, sc):
-        out = self._buy(sc, decider=self._fee(0.0))
-        return ok({"fee": out.get("transaction_cost")}, "mod から env.set_transaction_cost_decider(CS, <1 件 0.0>)。"
-                  f"order.transaction_cost: {out}")
+    def scene_p7_cost_per_unit(self, sc):
+        out = self._buy(sc, qty=2, decider=self._fee(0.375, per_unit=True))
+        return ok({"fee": out.get("transaction_cost")}, "mod から env.set_transaction_cost_decider(CS, <AbstractTransactionCostDecider の子: "
+                  f"0.375 × TransactionCostArgs.quantity>)、数量 2 の成行。order.transaction_cost: {out}")
 
     def scene_p7_account_swap(self, sc):
         from rqalpha.portfolio import Portfolio

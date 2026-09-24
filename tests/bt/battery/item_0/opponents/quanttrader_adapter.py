@@ -217,28 +217,21 @@ class QuanttraderAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        nxt = pd.Timestamp([e for e in sc.input["events"] if e["ts_ns"] > probe][0]["ts_ns"], unit="ns")
-        tried, got = [], {"v": False}
+        nxt = pd.Timestamp(sc.input["future_ts_ns"], unit="ns")
+        att = C.Attempts()
 
         def f(s, t, n, st):
-            if _now(t) != probe:
+            if _now(t) != probe or att.items:
                 return
-            db = s._data_board
-            for label, fn in [("data_board.get_hist_price(銘柄, 5 本目の時刻)", lambda: list(db.get_hist_price(SYM, nxt)["Close"])),
-                              ("data_board.get_current_price(銘柄, 5 本目の時刻)", lambda: db.get_current_price(SYM, nxt)),
-                              ("data_board._hist_data_dict (中身)", lambda: list(db._hist_data_dict[SYM]["Close"]))]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if v == 104.0 or (isinstance(v, list) and 104.0 in v):
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            db = s._data_board  # the data board quanttrader hands every strategy (StrategyBase)
+            att.run("data_board.get_hist_price(銘柄, 5 本目の時刻)", "time", lambda: list(db.get_hist_price(SYM, nxt)["Close"]))
+            att.run("data_board.get_current_price(銘柄, 5 本目の時刻)", "time", lambda: db.get_current_price(SYM, nxt))
+            att.run("data_board.get_current_price(銘柄, 今の時刻)", "other", lambda: db.get_current_price(SYM, t.timestamp))
 
         run(C.events(sc), f)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
-        return ok({"future_value_obtained": got["v"]}, "T0 + 4 日の on_tick で試した(戦略が持つ data_board の公開の方法): " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の on_tick で試した(戦略が持つ data_board の公開の方法): " + att.summary())
 
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
@@ -254,8 +247,8 @@ class QuanttraderAdapter(Adapter):
         try:
             st, _ = run(rows, f)
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"同じ時刻の 2 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 2 行を渡した。on_tick ごとに data_board.get_current_price")
+            return not_supported(f"同じ時刻の 3 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 行を渡した。on_tick ごとに data_board.get_current_price")
 
     def scene_p6_place_then_cancel(self, sc):
         out = {}
@@ -328,7 +321,7 @@ class QuanttraderAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc)
 
-    def scene_p7_cost_zero(self, sc):
+    def scene_p7_cost_per_unit(self, sc):
         return self._fee(sc)
 
     def scene_p7_account_swap(self, sc):

@@ -113,6 +113,21 @@ class _FixedPrice(bliq.LiquidityStrategy):
         return Decimal("1e9")
 
 
+class _PerUnitFee(bfees.FeeStrategy):
+    """0.375 JPY per unit of the base symbol filled (the fee_strategy socket;
+    total over the order minus what was already charged, as Basana's own
+    Percentage strategy does, backtesting/fees.py 83-91)."""
+
+    def __init__(self, per_unit: Decimal):
+        self.per_unit = per_unit
+
+    def calculate_fees(self, order, balance_updates):
+        charged = order.fees.get("JPY", Decimal(0))
+        base = abs(order.balance_updates.get("BTC", Decimal(0)) + balance_updates.get("BTC", Decimal(0)))
+        pending = -self.per_unit * base - charged
+        return {"JPY": pending} if pending != 0 else {}
+
+
 class _FlatFee(bfees.FeeStrategy):
     def __init__(self, fee: Decimal):
         self.fee = fee
@@ -140,6 +155,7 @@ def run_exchange(bars: list[dict], cash: float, plan, liquidity=None, fee=None):
 
     async def on_bar(be):
         st["n"] += 1
+        st["bar_event"] = be
         await plan(ex, st["n"], st)
 
     async def on_order(oe):
@@ -283,47 +299,58 @@ class BasanaAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        fut = C.ns_to_dt(sc.input["future_ts_ns"])
+        att = C.Attempts()
 
         async def plan(ex, n, st):
-            if C.dt_to_ns(st["disp"].now()) != probe:
+            if C.dt_to_ns(st["disp"].now()) != probe or att.items:
                 return
-            for label, coro in [("exchange.get_bid_ask", ex.get_bid_ask(PAIR))]:
-                try:
-                    v = await coro
-                    tried.append(f"{label} -> {v}")
-                    if any(float(x) == 104.0 for x in v):
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}")
+            # Basana hands the strategy no read that takes a time or a position (the Exchange's public
+            # methods: get_bid_ask(pair), get_balance(s), get_open_orders, get_order_info, ...; BarEvent
+            # has `bar` only). The calls a strategy would write to reach the 5th bar are made as written:
+            await att.run_async("exchange.get_bid_ask(pair, 5 本目の時刻)", "time", lambda: ex.get_bid_ask(PAIR, fut))
+            att.run("受け取った BarEvent の bar[1](次の足)", "position", lambda: st["bar_event"].bar[1])
+            await att.run_async("exchange.get_bid_ask(pair)(今の値)", "other", lambda: ex.get_bid_ask(PAIR))
 
         run_exchange(C.events(sc), 1_000_000, plan)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
-        return ok({"future_value_obtained": got["v"]}, f"T0 + 4 日の呼び出しで、戦略が相場を読める公開の手段(exchange.get_bid_ask)を試した: "
-                  + "; ".join(tried) + "。戦略に履歴・先の足を引く手段は渡されない")
+        return ok(att.output(), "T0 + 4 日の呼び出しで試した: " + att.summary())
 
     # ---------------- P0-5
     def _tie(self, sc, order, priorities):
         streams = [evs for _, evs in C.streams_in_order(sc, order)]
-        return [k for k, *_ in run_streams(streams, priorities=priorities)]
+        return [[k, when] for k, _now, when, _f in run_streams(streams, priorities=priorities)]
+
+    # Basana's written rule for events at the same time: the dispatcher's heap key
+    _RULE_SOURCE = "basana 1.11 core/dispatcher/base.py 92 行と core/event.py 88-92 行(EventSource の priority)"
+    _RULE_QUOTE = ("heapq.heappush(self._event_heap, (event.when, -source.priority, id(source), source, event)) / "
+                   "def __init__(self, producer: Optional[Producer] = None, priority: int = DEFAULT_EVENT_SOURCE_PRIORITY)")
+
+    def _predicted(self, sc) -> list:
+        """The quoted key applied by hand: time, then the higher source priority first. Each stream is one
+        source with the priority TYPE_PRIORITY gives its type (all different, so id(source) never decides)."""
+        rows = [(e["ts_ns"], -TYPE_PRIORITY[e["kind"]], e["kind"]) for evs in sc.input["streams"].values() for e in evs]
+        return [[k, t] for t, _p, k in sorted(rows)]
 
     def scene_p5_same_time_twice(self, sc):
-        d = [self._tie(sc, None, False), self._tie(sc, None, False)]
-        a, b = self._tie(sc, None, True), self._tie(sc, None, True)
-        return ok({"same_order_in_two_runs": a == b, "orders": [a, b]},
-                  "型ごとの 4 入力を 4 つの source にし、文書にある source の priority を型ごとに与えた(TYPE_PRIORITY)。"
-                  f"priority を与えない既定では同時刻の並びは (when, -priority, id(source)) で決まり(core/dispatcher/base.py 92 行)、2 回の並びは {d}")
+        dflt = [self._tie(sc, None, False) for _ in range(2)]
+        return ok({"order": self._tie(sc, None, True),
+                   "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, self._predicted(sc))},
+                  "型ごとの 4 入力を 4 つの source にし、source の priority(公開の引数)を型ごとに与えた(TYPE_PRIORITY)。"
+                  f"priority を与えない既定では同時刻の並びは id(source) で決まり、2 回の並びは {dflt}")
 
     def scene_p5_hand_over_order(self, sc):
-        outs = {repr(self._tie(sc, o, True)) for o in sc.input["hand_over_orders"]}
+        pred = self._predicted(sc)
+        runs = [{"hand_over": list(o), "order": self._tie(sc, o, True), "predicted": pred} for o in sc.input["hand_over_orders"]]
         dflt = {repr(self._tie(sc, o, False)) for o in sc.input["hand_over_orders"]}
-        return ok({"distinct_orders": len(outs)}, f"priority を型ごとに与えて 24 通りの subscribe の順で走らせた。出た並び: {sorted(outs)}。"
-                  f"priority を与えない既定では {len(dflt)} 通り")
+        return ok({"form": "multi_input", "runs": runs,
+                   "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, pred)},
+                  f"priority を型ごとに与えて 24 通りの subscribe の順で走らせた。priority を与えない既定では {len(dflt)} 通り")
 
     def scene_p5_same_stream_order(self, sc):
         recs = run_streams([C.events(sc)])
-        return ok({"prices": [r[3].get("price") for r in recs]}, "1 つの source で同時刻の約定 2 件")
+        return ok({"prices": [r[3].get("price") for r in recs]}, "1 つの source で同時刻の約定 3 件")
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
@@ -365,10 +392,10 @@ class BasanaAdapter(Adapter):
         return ok(out, "3 回目に exchange.get_order_info(id).amount_filled")
 
     # ---------------- P0-7
-    def _market_buy(self, sc, **kw):
+    def _market_buy(self, sc, amount: str = "1", **kw):
         async def plan(ex, n, st):
             if n == 1:
-                await _place(ex, st, lambda: ex.create_market_order(bs.OrderOperation.BUY, PAIR, Decimal("1")))
+                await _place(ex, st, lambda: ex.create_market_order(bs.OrderOperation.BUY, PAIR, Decimal(amount)))
 
         return run_exchange(self._bars(sc), 100_000, plan, **kw)
 
@@ -396,8 +423,11 @@ class BasanaAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        st = self._market_buy(sc, amount="2", fee=_PerUnitFee(Decimal("0.375")))
+        ev = [e for e in st["events"] if e["filled"] > 0]
+        f = abs(ev[-1]["fees"].get("JPY", 0.0)) if ev else None
+        return ok({"fee": f}, f"fee_strategy に数量 1 単位あたり 0.375 円の模型を渡し、数量 2 の成行。order events: {st['events']}")
 
     def scene_p7_account_swap(self, sc):
         try:

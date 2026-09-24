@@ -160,27 +160,22 @@ class BacktestingAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        fut = pd.Timestamp(sc.input["future_ts_ns"], unit="ns")
+        att = C.Attempts()
 
         def f(s, n, st):
-            if _now(s) != probe:
+            if _now(s) != probe or att.items:
                 return
-            for label, fn in [("self.data.Close[len]", lambda: s.data.Close[len(s.data.Close)]),
-                              ("self.data.df (DataFrame)", lambda: list(s.data.df.Close)),
-                              ("self.data.Close.base", lambda: list(s.data.Close.base) if getattr(s.data.Close, "base", None) is not None else None),
-                              ("self._data (元の DataFrame)", lambda: list(s._data.df.Close) if hasattr(s, "_data") else None)]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if v == 104.0 or (isinstance(v, list) and 104.0 in [float(x) for x in v]):
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            att.run("self.data.Close[len](最新の次の位置)", "position", lambda: s.data.Close[len(s.data.Close)])
+            att.run("self.data.df.loc[5 本目の時刻]", "time", lambda: s.data.df.loc[fut]["Close"])
+            att.run("self.data.df の Close の全部", "other", lambda: list(s.data.df.Close))
+            att.run("self.data.Close.base(numpy の元の配列)", "other",
+                    lambda: list(s.data.Close.base) if getattr(s.data.Close, "base", None) is not None else None)
 
         run(C.events(sc), f)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
-        return ok({"future_value_obtained": got["v"]}, f"T0 + 4 日の呼び出しに試した: " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の呼び出しに試した: " + att.summary())
 
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
@@ -192,8 +187,8 @@ class BacktestingAdapter(Adapter):
         try:
             st, _ = run(rows, lambda s, n, st: st["log"].append(float(s.data.Close[-1])))
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"同じ時刻の 2 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 2 行を渡した")
+            return not_supported(f"同じ時刻の 3 行を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 行を渡した")
 
     def scene_p6_place_then_cancel(self, sc):
         out = {}
@@ -226,12 +221,12 @@ class BacktestingAdapter(Adapter):
         st, _ = run([C.as_bar(e) for e in C.events(sc)], f)
         return ok(out, f"3 回目に self.position.size(注文の約定済み数量を注文から読む口は無い)。next の回数 {st['n']}")
 
-    def _buy(self, sc, **kw):
+    def _buy(self, sc, size: int = 1, **kw):
         def f(s, n, st):
             st["equity"] = float(s.equity)
             st["pos"] = float(s.position.size)
             if n == 1:
-                s.buy(size=1)
+                s.buy(size=size)
 
         st, res = run([C.as_bar(e) for e in C.events(sc)], f, cash=100_000.0, **kw)
         return st
@@ -254,8 +249,13 @@ class BacktestingAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        st = self._buy(sc, size=2, commission=lambda order_size, price: 0.375 * abs(order_size))
+        if not st.get("pos"):
+            return ok({"fee": None}, f"commission=<数量 × 0.375 の関数>。最後の呼び出しまでに建玉が無かった。{st}")
+        return ok({"fee": round(100_000.0 - st["equity"], 10)},
+                  "commission=<(order_size, price) を受けて 0.375 × |order_size| を返す関数>(backtesting.py 734-735 行の callable の口)、"
+                  f"数量 2 の成行。約定の値と最後の足の値が同じ 100 なので、費用 = 初めの現金 − 最後の呼び出しの self.equity と読んだ。{st}")
 
     def scene_p7_account_swap(self, sc):
         return not_supported("口座(_Broker)は Backtest.run の中で作られ、差し替える口が無い。試したこと: " + self._no_api("broker", "broker"))

@@ -45,9 +45,10 @@ def run(events: list[dict], fn, cash=1_000_000.0, latency_ns=0, fee=0.0, ticks=F
         eng.add_data("X", [qc.BarData("X", int(b["ts_ns"]), float(b["open"]), float(b["high"]), float(b["low"]),
                                       float(b["close"]), float(b.get("volume", 1.0))) for b in rows])
     eng.set_position_sizer(qc.FixedShares(1))
-    limits = qc.RiskLimits()
-    limits.enabled = False
-    eng.set_risk_limits(limits)
+    # The tool's own risk limits are left at their defaults (RiskLimits(): enabled=True, max_leverage=2.0,
+    # max_loss_pct=0.5, max_order_value=0.0, max_position_pct=0.2 -- measured). Round r4-1: an earlier version
+    # switched them off here for every scene (critic i0-r2-04 / i0-r3-05); a protective default of a survey
+    # tool is not taken away (protocol.py, "Rules for adapter authors").
     st = {"n": 0, "log": [], "notices": [], "fills": []}
 
     class S(qc.Strategy):
@@ -202,25 +203,23 @@ class QuantcoreAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        fut = int(sc.input["future_ts_ns"])
+        att = C.Attempts()
 
         def f(s, ev, n, st):
-            if int(ev.timestamp_ns) != probe:
+            if int(ev.timestamp_ns) != probe or att.items:
                 return
-            for label, fn in [("self.get_portfolio()", lambda: str(s.get_portfolio())[:80]),
-                              ("self.get_signals()", lambda: str(s.get_signals())[:80])]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if "104" in str(v):
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}")
+            # Strategy's public methods (dir(quantcore.Strategy)): generate_*, get_name, get_portfolio,
+            # get_position, get_signals, has_position, has_signals, on_*, reset, set_position -- none reads
+            # market data by time or position. The calls a strategy would write are made as written:
+            att.run("self.get_position('X', 5 本目の時刻)", "time", lambda: s.get_position("X", fut))
+            att.run("受け取った事象の [1](次の足)", "position", lambda: ev[1])
+            att.run("self.get_signals()", "other", lambda: [str(x) for x in s.get_signals()])
 
         run(C.events(sc), f)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok({"future_value_obtained": got["v"]}, "T0 + 4 日の on_data で、戦略が持つ公開の方法を試した(履歴・データを引く方法は Strategy に無い): " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の on_data で試した: " + att.summary())
 
     def scene_p5_same_time_twice(self, sc):
         return not_supported(NON.format(k="資金調達・清算", err=_kinds_attempt("liquidation")))
@@ -229,7 +228,7 @@ class QuantcoreAdapter(Adapter):
 
     def scene_p5_same_stream_order(self, sc):
         st, _ = run(C.events(sc), lambda s, ev, n, st: st["log"].append(ev.close), ticks=True)
-        return ok({"prices": st["log"]}, "同じ時刻の約定 2 件をティックで渡した")
+        return ok({"prices": st["log"]}, "同じ時刻の約定 3 件をティックで渡した")
 
     def scene_p6_place_then_cancel(self, sc):
         return not_supported("戦略が指値を出す・取り消す・未決の注文を読む口が無い(戦略は信号を出し、注文は engine が作る)。試したこと: " + _kinds_attempt("cancel"))
@@ -262,9 +261,9 @@ class QuantcoreAdapter(Adapter):
         return not_supported("費用は ExecutionConfig の maker_fee / taker_fee(率)だけで、1 件あたり定額の模型に差し替える口が無い。試したこと: "
                              + _kinds_attempt("commission"))
 
-    def scene_p7_cost_zero(self, sc):
-        st, _ = run(C.events(sc), lambda s, ev, n, st: _buy(s, ev) if n == 1 else None, fee=0.0, ticks=True)
-        return ok({"fee": st["fills"][0]["commission"] if st["fills"] else None}, f"maker_fee = taker_fee = 0。on_fill の commission。fills={st['fills']}")
-
+    def scene_p7_cost_per_unit(self, sc):
+        st, _ = run(C.events(sc), lambda s, ev, n, st: _buy(s, ev) if n == 1 else None, fee=0.001, ticks=True)
+        return not_supported("費用の口は ExecutionConfig の maker_fee / taker_fee(約定代金に掛ける率)だけで、数量 1 単位あたりの模型を書けない。"
+                             f"試したこと: maker_fee = taker_fee = 0.001 で成行 -> on_fill の commission は約定代金 × 率。fills={st['fills']}")
     def scene_p7_account_swap(self, sc):
         return not_supported("口座は engine の中にあり、差し替える口が無い(get_portfolio_context は読むだけ)。試したこと: " + _kinds_attempt("account"))

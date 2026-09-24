@@ -19,8 +19,25 @@ Mapping a SCAN line to catalogue numbers (fixed rules, applied in order):
      occur in many lines about other things);
   3a. an indented continuation line of a numbered list item (`N. ...`) also
      takes the candidates of that list item (rules 1 and 2 on the item line);
+  3b. a line inside a paragraph that SCAN opens with a bold backticked name
+     (`**\`Name\` — ...**`, SCAN's per-tool prose blocks) takes the
+     candidates of that opening line; the block ends at the next such opening
+     line or heading;
+  3c. a table row whose first cell is a plain row number (`| 4 | ...`, SCAN's
+     numbered "知見" tables) and that maps to nothing takes the candidates of
+     the nearest earlier row of the same table (contiguous `|` lines) that
+     maps to some (those tables name the tool in one row and say "同エンジン"
+     in the next). A row whose first cell names a tool (`| \`bt\` | ...`) is
+     not given another row's candidates;
   3. otherwise, the nearest preceding `#### ` heading, by rule 2 only (SCAN's
-     own heading numbers are per-run and are not catalogue numbers).
+     own heading numbers are per-run and are not catalogue numbers); in a
+     heading a name also matches with case, `_`, `-` and spaces ignored
+     (`#### 2. NautilusTrader` is catalogue `nautilus_trader`);
+  4. a line still unmapped is looked up in READ_BY_HAND below: each entry
+     says which candidate the line is about and the SCAN line that shows it
+     (added in round r4-1 after the critic's i0-r3-07; the entries were read,
+     not guessed, and the test `test_every_unmapped_line_is_reviewed` makes
+     CONSIDERED.md review every line that stays unmapped).
 A repo part of a name (`owner/REPO` -> `REPO`) counts in rule 2 only as a
 whole backticked word (some repo parts are common words or path parts, e.g.
 `mote/backtest`), and not inside a full `owner/REPO` name already matched;
@@ -83,6 +100,17 @@ def aliases(cat: dict[int, dict]) -> list[tuple[str, int, bool]]:
     return out
 
 
+def _norm(t: str) -> str:
+    return re.sub(r"[\s_\-]", "", t).lower()
+
+
+# Rule 4: lines the rules above leave unmapped, read by hand. line -> (candidates, evidence).
+READ_BY_HAND: dict[int, tuple[set[int], str]] = {
+    3617: ({3}, "同じ節(3596 行の「#### 文章の列」)の最初の段落 3598 行が「`PySystemtrade` は…」と名指し、3617 行はその「当方の用途との相性」の段落の続き"),
+    8407: ({13, 123, 63, 23}, "8406 行(同じ段落の前の行)が「段 3 を足した 4 件(13・123・63・23)」と名指し、8407 行はその理由の続き"),
+}
+
+
 def names_in(text: str, al: list[tuple[str, int, bool]], heading: bool = False) -> set[int]:
     found = set()
     low = text.lower()
@@ -102,6 +130,8 @@ def names_in(text: str, al: list[tuple[str, int, bool]], heading: bool = False) 
             if re.search(r"(?<![\w-])" + re.escape(nm) + r"(?![\w-])", text, re.I):
                 found.add(n)
         elif nm.lower() in low:
+            found.add(n)
+        elif heading and _norm(nm) and _norm(nm) in _norm(text):
             found.add(n)
     return found
 
@@ -125,17 +155,30 @@ def main() -> None:
     lines = SCAN.read_text(encoding="utf-8").splitlines()
     heading_at: list[str] = []
     list_item_at: list[str] = []
-    cur, item = "", ""
-    for ln in lines:
+    bold_at: list[str] = []
+    table_prev: list[list[int]] = []   # earlier row numbers (1-based) of the same table
+    cur, item, bold = "", "", ""
+    rows_so_far: list[int] = []
+    for i, ln in enumerate(lines):
         if ln.startswith("#"):
             cur = ln if ln.startswith("#### ") else ("" if ln.startswith("## ") or ln.startswith("### ") else cur)
             item = ""
+            bold = ""
         elif re.match(r"^\d+\.\s", ln):
             item = ln
         elif not ln.startswith("   "):
             item = ""
+        if re.match(r"^\*\*`[^`]+`", ln):
+            bold = ln
         heading_at.append(cur)
         list_item_at.append(item)
+        bold_at.append(bold)
+        if ln.startswith("|"):
+            table_prev.append(list(rows_so_far))
+            rows_so_far.append(i + 1)
+        else:
+            table_prev.append([])
+            rows_so_far = []
 
     rows: list[dict] = []
     # P0-1: the catalogue's event-driven column (column 7), mark ○.
@@ -162,9 +205,22 @@ def main() -> None:
                     if extra - c:
                         c = c | extra
                         rule = rule + "+3a"
+                if not c and bold_at[ln_no - 1]:
+                    c = numbers_in(bold_at[ln_no - 1], cat) or names_in(bold_at[ln_no - 1], al)
+                    rule = "3b"
+                if not c and table_prev[ln_no - 1] and re.match(r"^\|\s*\d+\s*\|", text):
+                    for prev in reversed(table_prev[ln_no - 1]):
+                        pt = lines[prev - 1]
+                        c = numbers_in(pt, cat) or names_in(pt, al)
+                        if c:
+                            rule = "3c"
+                            break
                 if not c and heading_at[ln_no - 1]:
                     c = names_in(heading_at[ln_no - 1], al, heading=True)
                     rule = "3"
+                if not c and ln_no in READ_BY_HAND:
+                    c = set(READ_BY_HAND[ln_no][0])
+                    rule = "4"
                 if not c:
                     unmapped.append((vp, ln_no, text[:80]))
                     continue

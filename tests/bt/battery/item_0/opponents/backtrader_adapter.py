@@ -192,32 +192,38 @@ class BacktraderAdapter(Adapter):
         probe = sc.input["probe_at_ns"]
         results = {}
         for preload in (True, False):
-            tried, got = [], {"v": False}
+            att = C.Attempts()
 
-            def f(s, n, st, tried=tried, got=got):
-                if _ns(s) != probe:
+            def f(s, n, st, att=att):
+                if _ns(s) != probe or att.items:
                     return
-                for label, fn in [("self.data.close[1]", lambda: s.data.close[1]),
-                                  ("self.data.close.get(ago=1)", lambda: list(s.data.close.get(ago=1, size=1))),
-                                  ("self.data.close.array[len(self.data)]", lambda: s.data.close.array[len(s.data)])]:
-                    try:
-                        v = fn()
-                        tried.append(f"{label} -> {v}")
-                        if v == 104.0 or (isinstance(v, list) and 104.0 in v):
-                            got["v"] = True
-                    except Exception as exc:  # noqa: BLE001
-                        tried.append(f"{label} -> {type(exc).__name__}: {exc}")
+                att.run("self.data.close[1](最新の次の位置)", "position", lambda: s.data.close[1])
+                att.run("self.data.close.get(ago=1, size=1)(最新の次の位置)", "position", lambda: list(s.data.close.get(ago=1, size=1)))
+                att.run("self.data.close.array[len(self.data)](最新の次の位置)", "position", lambda: s.data.close.array[len(s.data)])
+                att.run("self.data.close.array(中身の配列)", "other", lambda: list(s.data.close.array))
 
             run(C.events(sc), f, preload=preload)
-            results[preload] = (got["v"], tried)
-        if not results[True][1] and not results[False][1]:  # no_probe_call
+            results[preload] = att
+        tried = {k: v for k, v in results.items() if v.items}
+        if not tried:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        best = min(results[True][0], results[False][0])
-        return ok({"future_value_obtained": best},
-                  f"T0 + 4 日の呼び出しに試した。既定の Cerebro(preload=True): {results[True]} / Cerebro(preload=False): {results[False]}。"
-                  "良い方(値が得られなかった方)を結果にした")
 
-    # ---------------- P0-5
+        def stopped(att):
+            named = [x for x in att.items if x["form"] in ("time", "position")]
+            return bool(named) and all(x["raised"] for x in named)
+
+        # the survey side is made as strong as the tool allows: the setting under which every named read
+        # stopped is used when there is one, else one that did not hand out the 5th bar (both are in the detail)
+        def leaked(att):
+            return any(104.0 in (x["returned"] if isinstance(x["returned"], list) else [x["returned"]]) for x in att.items)
+
+        pick = next((k for k in (False, True) if k in tried and stopped(tried[k])), None)
+        if pick is None:
+            pick = next((k for k in (False, True) if k in tried and not leaked(tried[k])), True if True in tried else False)
+        return ok(tried[pick].output(),
+                  f"T0 + 4 日の呼び出しに試した。結果に使ったのは Cerebro(preload={pick})。"
+                  + " / ".join(f"preload={k}: {v.summary()}" for k, v in tried.items()))
+
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
 
@@ -225,7 +231,7 @@ class BacktraderAdapter(Adapter):
 
     def scene_p5_same_stream_order(self, sc):
         st = run([C.as_bar(e) for e in C.events(sc)], lambda s, n, st: st["log"].append(float(s.data.close[0])))
-        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 2 本を 1 つの feed で渡した")
+        return ok({"prices": st["log"]}, "約定を足に代え、同じ時刻の 3 本を 1 つの feed で渡した")
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
@@ -284,21 +290,22 @@ class BacktraderAdapter(Adapter):
         return not_supported(f"遅延の模型の口が無い(約定は次の足)。試したこと: bt.Cerebro(latency=...) -> {r}"
                              "(Cerebro は未知の引数を黙って受けるかを見た)")
 
-    def _fee(self, sc, fee):
+    def _fee(self, sc, fee, per_unit: bool = False, size: int = 1):
         class Flat(bt.CommInfoBase):
             params = (("commission", fee), ("stocklike", True), ("commtype", bt.CommInfoBase.COMM_FIXED))
 
             def _getcommission(self, size, price, pseudoexec):
-                return fee
+                return fee * abs(size) if per_unit else fee
 
-        st = self._buy_run(sc, lambda s: s.buy(size=1), 100_000, setup=lambda cer: cer.broker.addcommissioninfo(Flat()))
-        return ok({"fee": st["fills"][0]["comm"] if st["fills"] else None}, f"addcommissioninfo(CommInfoBase の子: 1 件 {fee})。fills={st['fills']}")
+        st = self._buy_run(sc, lambda s: s.buy(size=size), 100_000, setup=lambda cer: cer.broker.addcommissioninfo(Flat()))
+        return ok({"fee": sum(f["comm"] for f in st["fills"]) if st["fills"] else None},
+                  f"addcommissioninfo(CommInfoBase の子: {'数量 1 単位あたり' if per_unit else '1 件'} {fee})、数量 {size} の成行。fills={st['fills']}")
 
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        return self._fee(sc, 0.375, per_unit=True, size=2)
 
     def scene_p7_account_swap(self, sc):
         rec = []

@@ -180,26 +180,21 @@ class QstraderAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        nxt = pd.Timestamp([e for e in sc.input["events"] if e["ts_ns"] > probe][0]["ts_ns"], unit="ns", tz="UTC")
-        tried, got = [], {"v": False}
+        nxt = pd.Timestamp(sc.input["future_ts_ns"], unit="ns", tz="UTC")
+        att = C.Attempts()
 
         def f(dt, dh, n, st):
-            if pd.Timestamp(dt).normalize() != pd.Timestamp(probe, unit="ns", tz="UTC"):
+            if pd.Timestamp(dt).normalize() != pd.Timestamp(probe, unit="ns", tz="UTC") or att.items:
                 return
-            for label, fn in [("data_handler.get_asset_latest_mid_price(5 本目の日時, 銘柄)", lambda: dh.get_asset_latest_mid_price(nxt + pd.Timedelta(hours=21), SYM)),
-                              ("data_handler.get_assets_historical_range_close_price(dt, 5 本目の日時)", lambda: list(dh.get_assets_historical_range_close_price(pd.Timestamp(dt), nxt + pd.Timedelta(hours=21), [SYM])[SYM]))]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if v == 104.0 or (isinstance(v, list) and 104.0 in v):
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            att.run("data_handler.get_asset_latest_mid_price(5 本目の日時, 銘柄)", "time",
+                    lambda: dh.get_asset_latest_mid_price(nxt + pd.Timedelta(hours=21), SYM))
+            att.run("data_handler.get_assets_historical_range_close_price(dt, 5 本目の日時)", "time",
+                    lambda: list(dh.get_assets_historical_range_close_price(pd.Timestamp(dt), nxt + pd.Timedelta(hours=21), [SYM])[SYM]))
 
         run(C.events(sc), f)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
-        return ok({"future_value_obtained": got["v"]}, "T0 + 4 日の日の呼び出しで、戦略が持つ data_handler に先の日時を渡して試した: " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の日の呼び出しで、戦略が持つ data_handler に先の日時を渡して試した: " + att.summary())
 
     def _no_types(self, sc):
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(sc.input["streams"]["trades"][0])))
@@ -210,8 +205,8 @@ class QstraderAdapter(Adapter):
         try:
             st, _ = run([C.as_bar(e) for e in C.events(sc)], lambda dt, dh, n, st: st["log"].append(float(dh.get_asset_latest_mid_price(dt, SYM))))
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"同じ日の 2 行の CSV で走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
-        return ok({"prices": st["log"]}, "同じ日の 2 行を CSV に書いた")
+            return not_supported(f"同じ日の 3 行の CSV で走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+        return ok({"prices": st["log"]}, "同じ日の 3 行を CSV に書いた")
 
     def _no_order_api(self, sc):
         return not_supported("戦略が注文を出す・取り消す・注文を読む口が無い(AlphaModel は目標の重みを返すだけ)。試したこと: " + _no_kw("order_api"))
@@ -224,18 +219,21 @@ class QstraderAdapter(Adapter):
     def scene_p7_latency_model_swap(self, sc):
         return not_supported("遅延の模型を渡す口が無い。試したこと: " + _no_kw("latency_model"))
 
-    def _fee(self, sc, fee):
+    def _fee(self, sc, fee, per_unit: bool = False, weight: float = 1.0):
+        def cost(quantity):
+            return fee * abs(quantity) if per_unit else fee
+
         class Flat(FeeModel):
             def _calc_commission(self, asset, quantity, consideration, broker=None):
-                return fee
+                return cost(quantity)
 
             def _calc_tax(self, asset, quantity, consideration, broker=None):
                 return 0.0
 
             def calc_total_cost(self, asset, quantity, consideration, broker=None):
-                return fee
+                return cost(quantity)
 
-        st, sess = run([C.as_bar(e) for e in C.events(sc)], lambda dt, dh, n, st: {SYM: 1.0}, fee_model=Flat(), cash=100_000.0)
+        st, sess = run([C.as_bar(e) for e in C.events(sc)], lambda dt, dh, n, st: {SYM: weight}, fee_model=Flat(), cash=100_000.0)
         port = sess.broker.portfolios[list(sess.broker.portfolios)[0]]
         hist = port.history_to_df()
         rows = hist.to_dict("records")
@@ -245,13 +243,18 @@ class QstraderAdapter(Adapter):
                 parts = str(r["description"]).split()  # e.g. "LONG 989 EQ:X 100.00 17/11/2023"
                 comm.append(round(float(r["debit"]) - int(parts[1]) * float(parts[3]), 10))
         return ok({"fee": float(comm[0]) if comm else None},
-                  f"fee_model に FeeModel の子(1 件 {fee})。戦略は重み 1.0 を返す(数量は重みから決まる)。ポートフォリオの履歴の最初の asset_transaction の debit − 数量 × 価格(description の値)を手数料とした。履歴: {rows[:3]}")
+                  f"fee_model に FeeModel の子({'数量 1 単位あたり' if per_unit else '1 件'} {fee})。戦略は重み {weight} を返す(数量は重みから決まる)。ポートフォリオの履歴の最初の asset_transaction の debit − 数量 × 価格(description の値)を手数料とした。履歴: {rows[:3]}")
 
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        # QSTrader orders by target weight only. A weight that would be 2.5 units (0.002525 of 100,000 less the
+        # 1 % cash buffer, at 100) was tried; the session scales the weights (measured: it bought 990 units), so
+        # the scene's order of quantity 2 cannot be placed and the per-unit fee cannot be read for it.
+        r = self._fee(sc, 0.375, per_unit=True, weight=0.002525)
+        return not_supported("数量を指定した注文を出す口が無い(戦略は目標の重みを返すだけ)。試したこと: 数量 2.5 単位に当たる重み 0.002525 を返し、"
+                             "fee_model に数量 1 単位あたり 0.375 円の FeeModel の子を渡した -> " + r.detail[:600])
 
     def scene_p7_account_swap(self, sc):
         return not_supported("口座(SimulatedBroker / Portfolio)は BacktestTradingSession の中で作られ、差し替える口が無い。試したこと: " + _no_kw("broker"))

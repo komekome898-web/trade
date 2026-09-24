@@ -358,41 +358,44 @@ class ZiplimeAdapter(Adapter):
 
     def _future(self, sc, label):
         probe = sc.input["probe_at_ns"]
-        nxt_ns = [e for e in sc.input["events"] if e["ts_ns"] > probe][0]["ts_ns"]
-        tried, got = [], {"v": False}
+        nxt_ns = int(sc.input["future_ts_ns"])
+        att = C.Attempts()
+
+        def closes(v):
+            return v["close"].to_list() if hasattr(v, "columns") and "close" in v.columns else v
 
         async def h(ctx, data, n):
-            if _now(ctx) != probe:
+            if _now(ctx) != probe or att.items:
                 return
             ex = await ctx.exchange_repository.get_default_exchange()
-            for label, fn in [
-                ("data.history(bar_count=6)", lambda: data.history(assets=[ctx.a], bar_count=6, fields=["close"])),
-                ("data.current(close)", lambda: data.current(assets=[ctx.a], fields=["close"])),
-                ("exchange.get_spot_value(dt=5 本目の日)", lambda: ex.get_spot_value(assets=frozenset({ctx.a}), fields=frozenset({"close"}),
-                                                                             dt=_utc(nxt_ns), data_frequency=D.timedelta(days=1))),
-                ("exchange.get_data_by_limit(end_date=5 本目の日)", lambda: ex.get_data_by_limit(
-                    fields=frozenset({"close"}), limit=6, end_date=_utc(nxt_ns), frequency=D.timedelta(days=1),
-                    assets=frozenset({ctx.a}), include_end_date=True)),
-            ]:
-                try:
-                    v = await fn()
-                    vals = v["close"].to_list() if hasattr(v, "columns") and "close" in v.columns else v
-                    tried.append(f"{label} -> {vals}")
-                    if isinstance(vals, list) and 104.0 in vals:
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            await att.run_async("exchange.get_spot_value(dt=5 本目の日)", "time", lambda: _then(ex.get_spot_value(
+                assets=frozenset({ctx.a}), fields=frozenset({"close"}), dt=_utc(nxt_ns), data_frequency=D.timedelta(days=1)), closes))
+            await att.run_async("exchange.get_data_by_limit(end_date=5 本目の日)", "time", lambda: _then(ex.get_data_by_limit(
+                fields=frozenset({"close"}), limit=6, end_date=_utc(nxt_ns), frequency=D.timedelta(days=1),
+                assets=frozenset({ctx.a}), include_end_date=True), closes))
+            await att.run_async("data.history(bar_count=6)(件数)", "other",
+                                lambda: _then(data.history(assets=[ctx.a], bar_count=6, fields=["close"]), closes))
+            await att.run_async("data.current(close)", "other", lambda: _then(data.current(assets=[ctx.a], fields=["close"]), closes))
 
         run(C.events(sc), h, label=label)
-        return got["v"], tried
+        return att
 
     def scene_p4_future_read_attempt(self, sc):
         res = {lab: self._future(sc, lab) for lab in ("start", "close")}
-        if not any(r[1] for r in res.values()):  # no_probe_call
+        tried = {k: v for k, v in res.items() if v.items}
+        if not tried:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かったので、先を読む試しができなかった")
-        best = min(r[0] for r in res.values() if r[1])
-        return ok({"future_value_obtained": best}, "T0 + 4 日の呼び出しに試した(足の日付を 2 通り、良い方を結果にした): "
-                  + " / ".join(f"日付={k}: " + " ; ".join(v[1]) for k, v in res.items()))
+
+        def rank(att):
+            named = [x for x in att.items if x["form"] in ("time", "position")]
+            stopped = bool(named) and all(x["raised"] for x in named)
+            leaked = any(104.0 in (x["returned"] if isinstance(x["returned"], list) else [x["returned"]]) for x in att.items)
+            return (not stopped, leaked)
+
+        # the survey side is made as strong as the tool allows: the bar-date convention that did best is used
+        pick = min(tried, key=lambda k: rank(tried[k]))
+        return ok(tried[pick].output(), f"T0 + 4 日の呼び出しに試した(足の日付を 2 通り。結果に使ったのは 日付={pick}): "
+                  + " / ".join(f"日付={k}: {v.summary()}" for k, v in tried.items()))
 
     # ---------------- P0-5
     def _no_types(self, sc):
@@ -411,9 +414,9 @@ class ZiplimeAdapter(Adapter):
         try:
             st = run(rows, h)
         except Exception as exc:  # noqa: BLE001
-            return not_supported(f"同じ時刻の 2 本を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
+            return not_supported(f"同じ時刻の 3 本を渡して走らせた -> {type(exc).__name__}: {str(exc)[:200]}")
         flat = [float(x) for v in seen for x in v if x is not None]
-        return ok({"prices": flat}, TWO + f"。同じ時刻の 2 本(終値 100 と 101)を渡した。各回の data.current(close) {seen}、呼び出し {st['calls_ns']}")
+        return ok({"prices": flat}, TWO + f"。同じ時刻の 3 本(終値 101・99・100)を渡した。各回の data.current(close) {seen}、呼び出し {st['calls_ns']}")
 
     # ---------------- P0-6
     def scene_p6_place_then_cancel(self, sc):
@@ -459,12 +462,12 @@ class ZiplimeAdapter(Adapter):
         return ok(out, "3 回目に get_order(id, 'LIME').filled")
 
     # ---------------- P0-7
-    def _buy(self, sc, capital=100_000.0, **kw):
+    def _buy(self, sc, capital=100_000.0, qty: int = 1, **kw):
         out = {}
 
         async def h(ctx, data, n):
             if n == 1:
-                ctx.o = await ctx.order(ctx.a, 1, style=MarketOrder())
+                ctx.o = await ctx.order(ctx.a, qty, style=MarketOrder())
             o = ctx.get_order(ctx.o.id, "LIME")
             pos = ctx.portfolio.positions.get("LIME", {}).get("simulation_account", {}).get(ctx.a)
             out.update({"filled": float(o.filled), "commission": float(o.commission), "n": n,
@@ -519,8 +522,10 @@ class ZiplimeAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        out, _ = self._buy(sc, qty=2, equity_commission=_PerUnit(0.375))
+        return ok({"fee": out.get("commission")}, "run_simulation(equity_commission=<EquityCommissionModel の子: 0.375 × |transaction.amount|>)、"
+                  f"数量 2 の成行。最後の呼び出しの get_order: {out}")
 
     def scene_p7_account_swap(self, sc):
         rec = []
@@ -534,6 +539,24 @@ class ZiplimeAdapter(Adapter):
         self._buy(sc, exchange=self._exchange(cls=RecExchange))
         return ok({"account_recorded_fill_qty": rec}, "run_simulation(exchange=<SimulationExchange の子>)。ziplime の Exchange は"
                   "口座(cash_balance / get_account / get_positions)と約定を 1 つで持つ。子の get_transactions で約定の数量を記録した")
+
+
+async def _then(coro, f):
+    return f(await coro)
+
+
+class _PerUnit(EquityCommissionModel):
+    """0.375 per unit of each transaction (the equity_commission socket)."""
+
+    def __init__(self, per_unit: float):
+        super().__init__()
+        self.per_unit = per_unit
+
+    def calculate(self, order, transaction):
+        return self.per_unit * abs(float(transaction.amount))
+
+    def calculate_for_asset(self, asset, quantity, transaction_amount):
+        return self.per_unit * abs(float(quantity))
 
 
 class _Flat(EquityCommissionModel):

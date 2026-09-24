@@ -183,30 +183,24 @@ class CurrentImplAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        future_ts = pd.Timestamp([e for e in sc.input["events"] if e["ts_ns"] > probe][0]["ts_ns"], unit="ns", tz="UTC")
-        tried: list[str] = []
+        future_ts = pd.Timestamp(sc.input["future_ts_ns"], unit="ns", tz="UTC")
+        att = C.Attempts()
 
         def probe_fn(n, c):
-            if int(c.index[-1].value) != probe:
+            if int(c.index[-1].value) != probe or att.items:
                 return None
-            got = False
-            for label, fn in [("candles.iloc[4]", lambda: c.iloc[4]["close"]),
-                              ("candles.loc[5 本目の時刻]", lambda: c.loc[future_ts]["close"]),
-                              ("candles.iloc[-1] の次を shift(-1) で", lambda: c["close"].shift(-1).iloc[-1])]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if v == 104.0:
-                        got = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}")
-            return {"future_value_obtained": got}
+            att.run("candles.iloc[4](最新の次の位置)", "position", lambda: c.iloc[4]["close"])
+            att.run("candles.loc[5 本目の時刻]", "time", lambda: c.loc[future_ts]["close"])
+            att.run("candles['close'].shift(-1).iloc[-1](最新の次を先の参照で)", "position",
+                    lambda: c["close"].shift(-1).iloc[-1])
+            att.run("candles['close'] の全部", "other", lambda: list(c["close"]))
+            return None
 
         rec = _Rec(probe=probe_fn)
         _run(C.events(sc), rec=rec)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった")
-        return ok(rec.probe_out, "T0 + 4 日の呼び出しの on_candles の中で試した: " + "; ".join(tried)
+        return ok(att.output(), "T0 + 4 日の呼び出しの on_candles の中で試した: " + att.summary()
                   + "。戦略が持つのは渡された candles だけ(エンジンは candles.iloc[: i + 1] を渡す)")
 
     # ---------------- P0-5
@@ -244,10 +238,10 @@ class CurrentImplAdapter(Adapter):
                              f"3 回目に受け取った引数を調べた(candles の DataFrame だけ。注文・建玉に当たる属性 {seen_attrs})")
 
     # ---------------- P0-7
-    def _buy_once(self, sc, **kw):
+    def _buy_once(self, sc, notional: float = 100.0, **kw):
         rows = [C.as_bar(e) for e in C.events(sc)]
         rec = _Rec(signals={1: SignalType.BUY})
-        res = E.run_backtest(rec, _df(rows), order_notional_jpy=100.0, initial_equity_jpy=100_000.0, **kw)
+        res = E.run_backtest(rec, _df(rows), order_notional_jpy=notional, initial_equity_jpy=100_000.0, **kw)
         return rows, res
 
     def scene_p7_fill_model_swap(self, sc):
@@ -277,8 +271,19 @@ class CurrentImplAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        calls: list = []
+
+        class Recording(E.CostModel):
+            def fee(self, *args, **kwargs) -> float:
+                calls.append((args, kwargs))
+                return 0.0
+
+        # size 2 at the market price 100 is the notional 200 (the engine sizes by notional)
+        _, res = self._buy_once(sc, notional=200.0, costs=Recording(spread_pct=0.0, slippage_pct=0.0))
+        return not_supported("費用の口(CostModel.fee)が受け取るのは約定代金だけで、数量を受け取らない。数量 1 単位あたりの模型を書けない。"
+                             f"試したこと: fee に渡るものを記録する CostModel の子を costs= に渡し、約定代金 200 円(数量 2)で走らせた -> "
+                             f"fee の呼び出しの引数 {calls}。trade_log={res.trade_log}")
 
     def scene_p7_account_swap(self, sc):
         return not_supported("口座を渡す口が無い(現金・建玉は run_backtest の中の局所変数)。試したこと: " + _no_kw("account")

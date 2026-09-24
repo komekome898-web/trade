@@ -81,7 +81,12 @@ def _backtest(data: np.ndarray, entry_latency: int = 0, fee: tuple[str, float] =
     asset = (H.BacktestAsset().data([data]).linear_asset(1.0).constant_order_latency(entry_latency, 0)
              .risk_adverse_queue_model().no_partial_fill_exchange().tick_size(TICK).lot_size(0.001)
              .last_trades_capacity(1000))
-    asset = asset.flat_per_trade_fee_model(fee[1], fee[1]) if fee[0] == "flat" else asset.trading_value_fee_model(fee[1], fee[1])
+    if fee[0] == "flat":
+        asset = asset.flat_per_trade_fee_model(fee[1], fee[1])
+    elif fee[0] == "qty":
+        asset = asset.trading_qty_fee_model(fee[1], fee[1])
+    else:
+        asset = asset.trading_value_fee_model(fee[1], fee[1])
     return H.HashMapMarketDepthBacktest([asset])
 
 
@@ -330,37 +335,51 @@ class HftbacktestAdapter(Adapter):
     def scene_p4_future_read_attempt(self, sc):
         evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": e["close"], "qty": 0.01, "side": "buy"} for e in C.events(sc)]
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        fut = int(sc.input["future_ts_ns"])
+        att = C.Attempts()
 
         def on_call(hbt, n, code, now, trades):
-            if now != probe:
+            if now != probe or att.items:
                 return
-            d = hbt.depth(0)
-            tried.append(f"last_trades -> {trades}")
-            tried.append(f"depth.best_bid={d.best_bid}")
-            fl = hbt.feed_latency(0)
-            tried.append(f"feed_latency -> {fl}")
-            if any(t["price"] == 104.0 for t in trades):
-                got["v"] = True
+            # The strategy's public reads (binding.py): last_trades(asset), depth(asset), feed_latency(asset),
+            # orders(asset), state_values(asset); none takes a time or a position. The calls a strategy
+            # would write to reach the 5th trade are made as written:
+            att.run("hbt.depth(0, 5 本目の時刻)", "time", lambda: hbt.depth(0, fut))
+            att.run("hbt.last_trades(0)[len](最新の次の位置)", "position", lambda: hbt.last_trades(0)[len(hbt.last_trades(0))])
+            att.run("この呼び出しで届いた約定(last_trades)", "other", lambda: [t["price"] for t in trades])
+            att.run("hbt.feed_latency(0)", "other", lambda: hbt.feed_latency(0))
 
         run(evs, on_call)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
-        return ok({"future_value_obtained": got["v"]}, "足の代わりに約定で渡した。4 回目に戦略が読める公開の手段(last_trades・depth・feed_latency)を試した: "
-                  + "; ".join(tried) + "。先の事象を添字や時刻で引く公開の手段は無い(binding.py の公開の方法の一覧)")
+        return ok(att.output(), "足の代わりに約定で渡した。4 回目の呼び出しで試した: " + att.summary())
 
     # ---------------- P0-5
+    # hftbacktest's written rule for the order of rows (the one input array)
+    _RULE_SOURCE = "hftbacktest 2.4.4 data/validation.py 59-62 行(correct_event_order の説明)と https://hftbacktest.readthedocs.io/en/latest/data.html"
+    _RULE_QUOTE = ("Corrects exchange timestamps that are reversed by splitting each row into separate events. These events "
+                   "are then ordered by both exchange and local timestamps through duplication.")
+
+    def _one_input(self, sc, order=None):
+        """One run on the hand-over concatenation; the sort indexes handed to correct_event_order are
+        stable (numpy argsort kind='stable'), so rows with equal times keep the concatenation's order."""
+        evs = C.concatenated(sc, order)
+        return [[k, t] for k, t in _seq(run(evs))], C.tie_events_in_hand_over(sc, order)
+
     def scene_p5_same_time_twice(self, sc):
-        evs = C.concatenated(sc)
-        orders = [_seq(run(evs)) for _ in range(2)]
-        return ok({"same_order_in_two_runs": orders[0] == orders[1], "orders": orders},
-                  "型ごとの 4 入力を渡した順に連結(同時刻なので時刻の順にも合う)。足・資金調達・清算は未定義の番号")
+        order, pred = self._one_input(sc)
+        return ok({"order": order, "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, pred)},
+                  f"1 本の配列しか受けないので、型ごとの 4 入力を渡した順に連結した。足・資金調達・清算は未定義の番号 {UNKNOWN_KIND_CODE}。"
+                  "戦略に見えるのは約定(last_trades)だけ")
 
     def scene_p5_hand_over_order(self, sc):
-        outs = set()
-        for order in sc.input["hand_over_orders"]:
-            outs.add(repr(_seq(run(C.concatenated(sc, order)))))
-        return ok({"distinct_orders": len(outs)}, f"24 通りの連結で走らせた結果の列: {sorted(outs)[:3]}…")
+        runs = []
+        for o in sc.input["hand_over_orders"]:
+            order, pred = self._one_input(sc, o)
+            runs.append({"hand_over": list(o), "order": order, "predicted": pred})
+        return ok({"form": "single_input", "runs": runs,
+                   "stated_rule": C.stated_rule(self._RULE_SOURCE, self._RULE_QUOTE, runs[0]["predicted"])},
+                  "1 本の配列しか受けないので、24 通りの連結をそれぞれ 1 回走らせた")
 
     def scene_p5_same_stream_order(self, sc):
         calls = run(C.events(sc))
@@ -438,23 +457,24 @@ class HftbacktestAdapter(Adapter):
         return ok({"fill_time_ns": fills[0] if fills else None, "notices": notices},
                   "constant_order_latency(entry=7 ms, resp=0) を渡し、注文の exch_timestamp を読んだ(板の無い入力で成行)")
 
-    def _fee(self, sc, fee):
+    def _fee(self, sc, fee, kind: str = "flat", qty: float = 1.0):
         vals = {}
 
         def extra(hbt, n, code, now, snaps):
             vals["fee"] = float(hbt.state_values(0).fee)
             vals["num_trades"] = int(hbt.state_values(0).num_trades)
 
-        notices, snaps, calls = self._notice_run(C.events(sc), lambda h: h.submit_buy_order(0, 1, 100.0, 1.0, GTC, MARKET, False), extra,
-                                                  fee=("flat", fee))
+        notices, snaps, calls = self._notice_run(C.events(sc), lambda h: h.submit_buy_order(0, 1, 100.0, qty, GTC, MARKET, False), extra,
+                                                  fee=(kind, fee))
         return ok({"fee": vals.get("fee") if vals.get("num_trades") else None, **vals, "notices": notices},
-                  "flat_per_trade_fee_model(fee, fee) を渡し、state_values の fee を読んだ(約定が無ければ None)")
+                  f"{'flat_per_trade_fee_model' if kind == 'flat' else 'trading_qty_fee_model'}({fee}, {fee}) を渡し、数量 {qty} の成行。"
+                  "state_values の fee を読んだ(約定が無ければ None)")
 
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        return self._fee(sc, 0.375, kind="qty", qty=2.0)
 
     def scene_p7_account_swap(self, sc):
         try:

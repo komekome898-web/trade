@@ -222,30 +222,23 @@ class ZiplineReloadedAdapter(Adapter):
 
     def scene_p4_future_read_attempt(self, sc):
         probe = sc.input["probe_at_ns"]
-        tried, got = [], {"v": False}
+        att = C.Attempts()
 
         def h(ctx, data, n):
-            if _now() != probe:
+            if _now() != probe or att.items:
                 return
-            nxt = pd.Timestamp(int([e for e in sc.input["events"] if e["ts_ns"] > probe][0]["ts_ns"]) - DAY, unit="ns").tz_localize("UTC")
-            for label, fn in [("data.history(asset,'close',6,'1d')", lambda: list(data.history(ctx.a, "close", 6, "1d"))),
-                              ("data.current(asset,'close')", lambda: data.current(ctx.a, "close")),
-                              ("data_portal.get_spot_value(5 本目の日)", lambda: ctx.data_portal.get_spot_value(ctx.a, "close", nxt, "daily")),
-                              ("data.history の窓を 5 本目の日まで伸ばす", lambda: list(ctx.data_portal.get_history_window([ctx.a], nxt, 1, "1d", "close", "daily")[ctx.a]))]:
-                try:
-                    v = fn()
-                    tried.append(f"{label} -> {v}")
-                    if (isinstance(v, list) and 104.0 in v) or v == 104.0:
-                        got["v"] = True
-                except Exception as exc:  # noqa: BLE001
-                    tried.append(f"{label} -> {type(exc).__name__}: {str(exc)[:80]}")
+            nxt = pd.Timestamp(int(sc.input["future_ts_ns"]) - DAY, unit="ns").tz_localize("UTC")  # the adapter's session date of bar 5
+            att.run("data_portal.get_spot_value(5 本目の日)", "time", lambda: ctx.data_portal.get_spot_value(ctx.a, "close", nxt, "daily"))
+            att.run("data_portal.get_history_window(終わり = 5 本目の日)", "time",
+                    lambda: list(ctx.data_portal.get_history_window([ctx.a], nxt, 1, "1d", "close", "daily")[ctx.a]))
+            att.run("data.history(asset,'close',6,'1d')(件数)", "other", lambda: list(data.history(ctx.a, "close", 6, "1d")))
+            att.run("data.current(asset,'close')", "other", lambda: data.current(ctx.a, "close"))
 
         run(C.events(sc), h)
-        if not tried:  # no_probe_call
+        if not att.items:  # no_probe_call
             return not_supported("T0 + 4 日の呼び出しが無かった(対象がその時刻に戦略を呼ばない)ので、先を読む試しができなかった")
-        return ok({"future_value_obtained": got["v"]}, f"T0 + 4 日の呼び出しに試した: " + " ; ".join(tried))
+        return ok(att.output(), "T0 + 4 日の呼び出しに試した: " + att.summary())
 
-    # ---------------- P0-5
     def _no_types(self, sc):
         e = sc.input["streams"]["trades"][0]
         return not_supported(NON_BAR.format(k="約定・資金調達・清算", err=_try_non_bar(e)))
@@ -293,12 +286,12 @@ class ZiplineReloadedAdapter(Adapter):
         return ok(out, "3 回目に get_order(id).filled")
 
     # ---------------- P0-7
-    def _buy(self, sc, init):
+    def _buy(self, sc, init, qty: int = 1):
         fills = []
 
         def h(ctx, data, n):
             if n == 1:
-                ctx.oid = Z.order(ctx.a, 1)
+                ctx.oid = Z.order(ctx.a, qty)
 
         st, res = run([C.as_bar(e) for e in C.events(sc)], h, init, capital=100_000.0)
         for day in res["transactions"]:
@@ -331,8 +324,16 @@ class ZiplineReloadedAdapter(Adapter):
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 0.5)
 
-    def scene_p7_cost_zero(self, sc):
-        return self._fee(sc, 0.0)
+    def scene_p7_cost_per_unit(self, sc):
+        class PerUnit(zcomm.CommissionModel):
+            def calculate(self, order, transaction):
+                return 0.375 * abs(transaction.amount)
+
+        fills, orders = self._buy(sc, lambda ctx: (Z.set_commission(us_equities=PerUnit()),
+                                                    Z.set_slippage(us_equities=zslip.NoSlippage())), qty=2)
+        comm = [o["commission"] for o in orders if o.get("filled")]
+        return ok({"fee": float(comm[-1]) if comm else None},
+                  f"set_commission(CommissionModel の子: 0.375 × |transaction.amount|)、数量 2 の成行。orders: {orders}")
 
     def scene_p7_account_swap(self, sc):
         return not_supported("口座(Portfolio / Ledger)は run_algorithm の中で作られ、差し替える口が無い。試したこと: "

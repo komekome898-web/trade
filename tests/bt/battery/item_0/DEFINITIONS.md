@@ -17,12 +17,14 @@
 ## 判定(資料係の表の 2 つの欄。対象の側は判定しない)
 
 - **正しさ**: 正解と一致 / 対応なし(対象が明示的に拒否した・その口が無いことを実際に呼んで確かめた)/ 不一致(黙って違う結果を返した)/ 結果なし(例外で結果が出なかった)。期待が辞書のときは、期待に書いた鍵がすべて同じ値で出ていれば一致(出力の余分な鍵は見ない)。
+- **採点に使う値を出力から作る場面**(「採点に使う値」の行がある場面): 対象の側(adapter)は観測したもの(届いた列・試しの結果・対象が明記した規則とその出所)だけを出し、採点に使う値は runner が書いたとおりに作る。対象の側が「できた」と書いた値では採点しない(場面集の規則 1)。
 - **再現**: 2 回の実行で同じ / 2 回で違う / 結果なし。
 - 良い順(場面集の規則 5): 正解と一致 > 対応なし > 不一致 > 結果なし。正しさが同じなら「2 回の実行で同じ」が上。
 
-## 場面にしていない観点
+## 場面にしていない観点・側面
 
-なし。要件の §2 の 7 観点はすべて場面にした(振る舞いでない形の観点は無い)。
+- 観点: なし。要件の §2 の 7 観点はすべて場面にした(振る舞いでない形の観点は無い)。
+- 側面: P0-2 の「他の単位(秒・ミリ・ISO 文字列)が核の内部表現に混入しないこと」の**拒否の側**(秒の整数や小数の時刻を事象の時刻として渡したとき、止めるか黙って受けるか)は場面にしていない。固定した測り方(REQUIREMENTS.md §2 P0-2「既知の時刻を投入し、核が保持する値が同じ int64 ナノ秒と一致するか」)は受け入れの側の一致だけを求め、拒否の場面を足すと測り方より厳しくなる(委任文 §3「後から厳しくもしない」)。この側面は審査員ではなく批評家が見る(委任文 §3「場面にできない観点は場面係が記録し、審査員ではなく批評家が見る」)。
 
 
 ## P0-1 核が事象駆動(型を持つ事象を時刻順に流す)であること
@@ -185,38 +187,41 @@
 - **正解の出し方**: 「受け取れた時刻 ≤ 今」の事象しか見せないなら、2 日後の呼び出しでは 101 は見えない(3 日 > 2 日)。101 が戦略に届くのは 3 日後、4 日後の呼び出しでは見える。取引所の時刻で届けると 1 日後に見えてしまう。
 - **何を測るか**: 2 日後と 4 日後の呼び出しで 101 の約定が見えたか、101 が届いた時刻。
 
-### `p4-future-read-attempt` — T0 + 4 日の呼び出しで、戦略が 1 つ先の足を公開の手段で読みに行ったとき、値が得られないか(能力の場面)
+### `p4-future-read-attempt` — T0 + 4 日の呼び出しで、戦略が 5 本目の足を名指して読もうとすると、実行時エラーか型エラーで止まるか(能力の場面)
 
-- **入力**: `{"events": [{"kind": "bar", "ts_ns": 1700092800000000000, "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700179200000000000, "open": 101.0, "high": 101.0, "low": 101.0, "close": 101.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700265600000000000, "open": 102.0, "high": 102.0, "low": 102.0, "close": 102.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700352000000000000, "open": 103.0, "high": 103.0, "low": 103.0, "close": 103.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700438400000000000, "open": 104.0, "high": 104.0, "low": 104.0, "close": 104.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700524800000000000, "open": 105.0, "high": 105.0, "low": 105.0, "close": 105.0, "volume": 1.0}], "probe_at_ns": 1700352000000000000, "strategy": "T0 + 4 日の呼び出しの中で、対象が戦略に渡す公開の手段(履歴の添字・データの参照・時刻を指定した問い合わせ)で 5 本目(終値 104)を読もうとする。試した方法を全部記録する", "note": "足を受けない対象は、同じ時刻・価格=終値の約定で代えてよい"}`
-- **期待(正解)**: `{"future_value_obtained": false}`
-- **正解の出し方**: T0 + 4 日の呼び出しの時点で 5 本目(T0 + 5 日)はまだ届いていない。構造で先読みを塞いでいれば、どの公開の手段でも 104 は得られない(例外・空の結果・拒否のどれか)。1 つの手段でも 104 が返れば未来が漏れている。
-- **何を測るか**: T0 + 4 日の呼び出しの中で、試したどれかの手段で 104 が得られたか。
+- **入力**: `{"events": [{"kind": "bar", "ts_ns": 1700092800000000000, "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700179200000000000, "open": 101.0, "high": 101.0, "low": 101.0, "close": 101.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700265600000000000, "open": 102.0, "high": 102.0, "low": 102.0, "close": 102.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700352000000000000, "open": 103.0, "high": 103.0, "low": 103.0, "close": 103.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700438400000000000, "open": 104.0, "high": 104.0, "low": 104.0, "close": 104.0, "volume": 1.0}, {"kind": "bar", "ts_ns": 1700524800000000000, "open": 105.0, "high": 105.0, "low": 105.0, "close": 105.0, "volume": 1.0}], "probe_at_ns": 1700352000000000000, "future_ts_ns": 1700438400000000000, "future_value": 104.0, "strategy": "T0 + 4 日の呼び出しの中で、5 本目(時刻 T0 + 5 日、終値 104)を名指して読もうとする。名指し方は 2 つ: 時刻で(5 本目の時刻、またはそれを終わりに含む範囲を渡して読む)と、位置で(今の最新の次の位置を、添字・先の参照・次を覗く手段で読む)。対象が戦略に渡す公開の読み出しの手段ごとに、当てはまる名指し方を全部試し、1 つずつ記録する(手段・名指し方・出た例外の名前、または返った値)。名指さない読み出し(全部・最新の 1 件・中身の配列)は名指し方 other として記録してよく、止まったかには数えないが、104 が返ったかには数える。時刻も位置も取る手段が 1 つも無い対象では、戦略のコードが 5 本目を読もうとして書く呼び出し(履歴の添字・時刻を渡す問い合わせ)を実際に書いて呼び、出た例外を記録する", "note": "足を受けない対象は、同じ時刻・価格=終値の約定で代えてよい"}`
+- **期待(正解)**: `{"every_attempt_stopped_by_error": true, "future_value_obtained": false}`
+- **正解の出し方**: 固定した要件(REQUIREMENTS.md §2 P0-4)の測り方は「戦略側から未来時刻の事象を読もうとするコードが、実行時エラーか型エラーで止まるか(素通りしたら不合格)」。T0 + 4 日の時点で 5 本目(T0 + 5 日)はまだ届いていないので、5 本目を名指した読み出しはどれも例外で止まらなければならない。空の結果・切り詰めた結果(4 本目までを黙って返す)・値を返すのは素通りで、正解ではない。104 が 1 つでも返れば未来が漏れている。
+- **何を測るか**: 試した読み出しのすべてが例外で止まったか、どれかで 104 が得られたか。
+- **採点に使う値**: 出力の `attempts`(試しの列。各試しは `means` 手段・`form` 名指し方(time / position / other)・`raised` 例外の名前か null・`returned` 返った値か null)から runner が作る: `every_attempt_stopped_by_error` = 名指し方が time か position の試しが 1 つ以上あり、その全部の `raised` が null でない / `future_value_obtained` = どれかの試し(other を含む)の `returned` の中に 104(入力の `future_value`)がある。
 
 ## P0-5 同時刻の事象の並びが決定的で、規則に従うこと
 
 場面 3 件(値の場面 2 / 能力の場面 1)
 
 
-### `p5-same-time-twice` — 同時刻の 4 種の事象を 2 回処理して、同じ順になるか(値の場面)
+### `p5-same-time-twice` — 同時刻の 4 種の事象を、対象が明記した並びの規則どおりの順で、1 件も落とさずに処理するか(値の場面)
 
-- **入力**: `{"streams": {"trades": [{"kind": "trade", "ts_ns": 1700092800000000000, "price": 100.0, "qty": 0.01, "side": "buy"}], "bars": [{"kind": "bar", "ts_ns": 1700092800000000000, "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}], "funding": [{"kind": "funding", "ts_ns": 1700092800000000000, "rate": 0.0001}], "liquidation": [{"kind": "liquidation", "ts_ns": 1700092800000000000, "price": 99.0, "qty": 0.2, "side": "sell"}]}, "hand_over_order": ["trades", "bars", "funding", "liquidation"], "note": "型ごとの 4 つの入力。1 本しか受けない対象には、この順に連結して渡す"}`
-- **期待(正解)**: `{"same_order_in_two_runs": true}`
-- **正解の出し方**: 決定的とは、同じ入力から同じ出力が出ること。定義から、2 回の順は同じでなければならない。
-- **何を測るか**: 1 回目と 2 回目の(型)の列が同じか。
+- **入力**: `{"streams": {"trades": [{"kind": "trade", "ts_ns": 1700092800000000000, "price": 100.0, "qty": 0.01, "side": "buy"}], "bars": [{"kind": "bar", "ts_ns": 1700092800000000000, "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}], "funding": [{"kind": "funding", "ts_ns": 1700092800000000000, "rate": 0.0001}], "liquidation": [{"kind": "liquidation", "ts_ns": 1700092800000000000, "price": 99.0, "qty": 0.2, "side": "sell"}]}, "hand_over_order": ["trades", "bars", "funding", "liquidation"], "note": "型ごとの 4 つの入力。1 本しか受けない対象には、この順に連結して渡す(並べ替えない)", "stated_rule": "`stated_rule` = {`source`: 規則が書いてある所(ファイル:行 か URL)、`quote`: その逐語、`predicted`: その規則をこの入力に手で当てた(型, 時刻)の列}。規則は対象の文書かコードの公開の説明から写し、対象を走らせた結果から作らない。規則が見つからない対象は `stated_rule` を null にし、探した所を detail に書く"}`
+- **期待(正解)**: `{"delivered_as_multiset": [["bar", 1700092800000000000], ["funding", 1700092800000000000], ["liquidation", 1700092800000000000], ["trade", 1700092800000000000]], "follows_stated_rule": true}`
+- **正解の出し方**: 固定した要件(REQUIREMENTS.md §2 P0-5)の測り方は「同時刻に複数型の事象を仕込んだ入力を作り、規則どおりの順で処理されるか(値)、2 回実行して一致するか(再現)」。4 件は同じ時刻なので時刻では並びが決まらず、決めるのは対象が明記した規則だけである。よって正解は (1) 4 件がちょうど 1 回ずつ届く(型と時刻の組を並べ替えた列が入力の 4 件と同じ)、(2) 届いた順が、対象の規則をこの入力に当てた順と同じ、の 2 つ。2 回の一致は表の「再現」の欄で見る。規則を明記していない対象は (2) を満たさない。
+- **何を測るか**: 戦略に届いた(型, 時刻)の列が、4 件を落とさず重ねず、対象の明記した規則の順と一致するか。
+- **採点に使う値**: 出力の `order`(戦略に届いた(型, 時刻)の列)と `stated_rule` から runner が作る: `delivered_as_multiset` = `order` を並べ替えた列 / `follows_stated_rule` = `stated_rule` があり、`order` が `stated_rule.predicted` と同じ。
 
-### `p5-hand-over-order` — 同時刻の 4 種の事象の並びが、入力を渡した順に左右されないか(能力の場面)
+### `p5-hand-over-order` — 同時刻の 4 種の事象の並びが、データの中身と無関係な「入力を渡す順」に左右されず、各回が明記した規則どおりか(能力の場面)
 
-- **入力**: `{"streams": {"trades": [{"kind": "trade", "ts_ns": 1700092800000000000, "price": 100.0, "qty": 0.01, "side": "buy"}], "bars": [{"kind": "bar", "ts_ns": 1700092800000000000, "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}], "funding": [{"kind": "funding", "ts_ns": 1700092800000000000, "rate": 0.0001}], "liquidation": [{"kind": "liquidation", "ts_ns": 1700092800000000000, "price": 99.0, "qty": 0.2, "side": "sell"}]}, "hand_over_orders": [["trades", "bars", "funding", "liquidation"], ["trades", "bars", "liquidation", "funding"], ["trades", "funding", "bars", "liquidation"], ["trades", "funding", "liquidation", "bars"], ["trades", "liquidation", "bars", "funding"], ["trades", "liquidation", "funding", "bars"], ["bars", "trades", "funding", "liquidation"], ["bars", "trades", "liquidation", "funding"], ["bars", "funding", "trades", "liquidation"], ["bars", "funding", "liquidation", "trades"], ["bars", "liquidation", "trades", "funding"], ["bars", "liquidation", "funding", "trades"], ["funding", "trades", "bars", "liquidation"], ["funding", "trades", "liquidation", "bars"], ["funding", "bars", "trades", "liquidation"], ["funding", "bars", "liquidation", "trades"], ["funding", "liquidation", "trades", "bars"], ["funding", "liquidation", "bars", "trades"], ["liquidation", "trades", "bars", "funding"], ["liquidation", "trades", "funding", "bars"], ["liquidation", "bars", "trades", "funding"], ["liquidation", "bars", "funding", "trades"], ["liquidation", "funding", "trades", "bars"], ["liquidation", "funding", "bars", "trades"]], "note": "4 つの入力を 24 通りの順で渡して 24 回処理する。1 本しか受けない対象には、その回の順で連結して渡す"}`
-- **期待(正解)**: `{"distinct_orders": 1}`
-- **正解の出し方**: 型ごとの入力を渡す順は、データをどのファイルから先に読んだかで変わる、データの中身と無関係な順である。同時刻の並びが規則(型・時刻など中身)で決まるなら 24 回とも同じ並びで、異なる並びの数は 1。渡した順に従うなら 24 通りになる。
-- **何を測るか**: 24 回の処理で出た(型)の列が何通りあったか。
+- **入力**: `{"streams": {"trades": [{"kind": "trade", "ts_ns": 1700092800000000000, "price": 100.0, "qty": 0.01, "side": "buy"}], "bars": [{"kind": "bar", "ts_ns": 1700092800000000000, "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}], "funding": [{"kind": "funding", "ts_ns": 1700092800000000000, "rate": 0.0001}], "liquidation": [{"kind": "liquidation", "ts_ns": 1700092800000000000, "price": 99.0, "qty": 0.2, "side": "sell"}]}, "hand_over_orders": [["trades", "bars", "funding", "liquidation"], ["trades", "bars", "liquidation", "funding"], ["trades", "funding", "bars", "liquidation"], ["trades", "funding", "liquidation", "bars"], ["trades", "liquidation", "bars", "funding"], ["trades", "liquidation", "funding", "bars"], ["bars", "trades", "funding", "liquidation"], ["bars", "trades", "liquidation", "funding"], ["bars", "funding", "trades", "liquidation"], ["bars", "funding", "liquidation", "trades"], ["bars", "liquidation", "trades", "funding"], ["bars", "liquidation", "funding", "trades"], ["funding", "trades", "bars", "liquidation"], ["funding", "trades", "liquidation", "bars"], ["funding", "bars", "trades", "liquidation"], ["funding", "bars", "liquidation", "trades"], ["funding", "liquidation", "trades", "bars"], ["funding", "liquidation", "bars", "trades"], ["liquidation", "trades", "bars", "funding"], ["liquidation", "trades", "funding", "bars"], ["liquidation", "bars", "trades", "funding"], ["liquidation", "bars", "funding", "trades"], ["liquidation", "funding", "trades", "bars"], ["liquidation", "funding", "bars", "trades"]], "note": "4 つの入力を 24 通りの順で渡して 24 回処理する。複数の入力を受ける対象は 4 つを別々の入力として、その回の順で渡す(form = multi_input)。1 本しか受けない対象には、その回の順で連結した 1 本を渡す(form = single_input)", "stated_rule": "`stated_rule` = {`source`: 規則が書いてある所(ファイル:行 か URL)、`quote`: その逐語、`predicted`: その規則をこの入力に手で当てた(型, 時刻)の列}。規則は対象の文書かコードの公開の説明から写し、対象を走らせた結果から作らない。規則が見つからない対象は `stated_rule` を null にし、探した所を detail に書く。各回の `predicted` を、その回の入力に当てて書く"}`
+- **期待(正解)**: `{"every_run_delivers_each_once": true, "every_run_follows_stated_rule": true, "same_order_whatever_the_hand_over": true}`
+- **正解の出し方**: 別々の入力(ファイルごとの約定・足・資金調達・清算)を渡す順は、データをどれから先に読んだかで変わる、データの中身と無関係な順である。複数の入力を受ける対象では、同時刻の並びが規則(型・時刻など中身)で決まるなら 24 回とも同じ並びになる。1 本しか受けない対象では、連結した 1 本がその回の入力そのもので、その入力の順は同時刻でも守るのが規則(p5-same-stream-order と同じ理由)なので、各回が規則どおりなら並びは回ごとに違ってよい。どちらの形でも、各回 4 件がちょうど 1 回ずつ届き、各回の順がその回の入力に規則を当てた順と同じでなければならない。
+- **何を測るか**: 24 回の各回で 4 件が落ちずに届いたか、各回の順が規則どおりか、複数の入力を受ける対象では 24 回の並びが 1 通りか。
+- **採点に使う値**: 出力の `form`(multi_input / single_input)・`runs`(各回の `hand_over`・`order`)・`stated_rule`(各回の `predicted` は `runs` の各回に置く)から runner が作る: `every_run_delivers_each_once` = 24 回すべてで `order` を並べ替えた列が入力の 4 件と同じ / `every_run_follows_stated_rule` = `stated_rule` があり、24 回すべてで `order` がその回の `predicted` と同じ / `same_order_whatever_the_hand_over` = form が multi_input なら 24 回の `order` が 1 通り、single_input なら真(渡す順がその回の入力そのものなので)。
 
-### `p5-same-stream-order` — 1 本の入力の中の同時刻の 2 件を、入力の順のまま処理するか(値の場面)
+### `p5-same-stream-order` — 1 本の入力の中の同時刻の 3 件を、入力の順のまま処理するか(値の場面)
 
-- **入力**: `{"events": [{"kind": "trade", "ts_ns": 1700092800000000000, "price": 100.0, "qty": 0.01, "side": "buy"}, {"kind": "trade", "ts_ns": 1700092800000000000, "price": 101.0, "qty": 0.01, "side": "buy"}], "note": "型は対象が受ける型でよい(足なら終値 100 と 101)"}`
-- **期待(正解)**: `{"prices": [100.0, 101.0]}`
-- **正解の出し方**: 同じ取引所から来た 1 本の記録の中では、並びが取引所での起きた順である。同時刻でも入れ替えてはならないので、処理の順は 100、101。
-- **何を測るか**: 戦略が受け取った 2 件の価格の順。
+- **入力**: `{"events": [{"kind": "trade", "ts_ns": 1700092800000000000, "price": 101.0, "qty": 0.01, "side": "buy"}, {"kind": "trade", "ts_ns": 1700092800000000000, "price": 99.0, "qty": 0.01, "side": "buy"}, {"kind": "trade", "ts_ns": 1700092800000000000, "price": 100.0, "qty": 0.01, "side": "buy"}], "note": "型は対象が受ける型でよい(足なら終値 101・99・100)"}`
+- **期待(正解)**: `{"prices": [101.0, 99.0, 100.0]}`
+- **正解の出し方**: 同じ取引所から来た 1 本の記録の中では、並びが取引所での起きた順である。同時刻でも入れ替えてはならないので、処理の順は 101、99、100。価格の昇順(99, 100, 101)でも降順(101, 100, 99)でもない順にしてあるので、価格で並べ替える対象や 1 件を落とす対象はこの正解を出せない。
+- **何を測るか**: 戦略が受け取った 3 件の価格の順。
 
 ## P0-6 戦略の API(事象ごとの呼び出し・発注・取消)
 
@@ -270,12 +275,12 @@
 - **正解の出し方**: 約定は 1 件、1 件あたり 0.5 円なので費用は 0.5。
 - **何を測るか**: その約定に付いた費用(戦略が受け取ったか、実行の結果の約定の記録から読んだ値)。
 
-### `p7-cost-zero` — 費用 0 の模型に差し替えると、費用が 0 になるか(値の場面)
+### `p7-cost-per-unit` — 数量に比例する費用の模型に差し替えると、その模型が数量から出した費用が約定に付くか(値の場面)
 
-- **入力**: `{"any_type": true, "events": [{"kind": "trade", "ts_ns": 1700092800000000000, "price": 100.0, "qty": 100.0, "side": "buy"}, {"kind": "trade", "ts_ns": 1700179200000000000, "price": 100.0, "qty": 100.0, "side": "buy"}, {"kind": "trade", "ts_ns": 1700265600000000000, "price": 100.0, "qty": 100.0, "side": "buy"}], "account": "現金 100,000 円", "plug": "費用の模型: 常に 0", "strategy": "1 回目: 成行 買い 数量 1"}`
-- **期待(正解)**: `{"fee": 0.0}`
-- **正解の出し方**: 模型の定義から費用は恒等的に 0。
-- **何を測るか**: その約定に付いた費用。
+- **入力**: `{"any_type": true, "events": [{"kind": "trade", "ts_ns": 1700092800000000000, "price": 100.0, "qty": 100.0, "side": "buy"}, {"kind": "trade", "ts_ns": 1700179200000000000, "price": 100.0, "qty": 100.0, "side": "buy"}, {"kind": "trade", "ts_ns": 1700265600000000000, "price": 100.0, "qty": 100.0, "side": "buy"}], "account": "現金 100,000 円", "plug": "費用の模型: 約定の数量 1 単位あたり 0.375 円(価格によらない)", "strategy": "1 回目: 成行 買い 数量 2"}`
+- **期待(正解)**: `{"fee": 0.75}`
+- **正解の出し方**: 数量 2 の成行は、100 単位の約定(100.0)で 1 回に全量が埋まる。費用は 2 × 0.375 = 0.75(0.375 = 3/8 は 2 進の小数で丸めなく表せる)。差し込みが効かない対象は、その対象の既定の費用(0 か、その対象の手数料)になり 0.75 にならない。模型が数量を受け取らなければ 0.75 は出ない。
+- **何を測るか**: その注文の約定に付いた費用の合計(戦略が受け取ったか、実行の結果の約定の記録から読んだ値)。
 
 ### `p7-account-swap` — 口座を差し替えると、差し替えた口座が約定を受け取るか(能力の場面)
 
