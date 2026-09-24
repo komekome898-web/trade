@@ -406,6 +406,29 @@ def quotes_in_log(text, refs_text, rnd):
             miss.append(head)
     return miss
 
+# 8 回目以降: `なし` の 7 列目の手の `$` の行に、要素の名前(設計票 §3)の日本語か英語があるか(監査 43 回目の処置 (b))
+ELEM_TERMS = {
+    "E1a": r"突き合わせ|突合|reconcil|cross.?check",
+    "E1b": r"突き合わせ|突合|reconcil|cross.?check|別実装|reference.?impl|参照実装",
+    "E2": r"データ品質|data.?quality|欠損|重複|missing|duplicat|outlier|外れ値",
+    "E3a": r"ルックアヘッド|look.?ahead",
+    "E3b": r"ルックアヘッド|look.?ahead",
+    "E4": r"リプレイ|再生|replay",
+    "E5": r"再現|reproduc",
+    "E6": r"検証|品質|verif|validat|quality",
+}
+
+
+def step_cmdline(fname, lno):
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    if not lp.exists():
+        return None
+    ll = lp.read_text().splitlines()
+    k = min(int(lno), len(ll)) - 1
+    while k >= 0 and not ll[k].startswith("--- "):
+        k -= 1
+    return ll[k + 1] if 0 <= k and k + 1 < len(ll) else None
+
 def cmd_check_elements(a):
     """報告の `### 要素と段` の表(道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠)を検査する。読むだけ。
     受け入れ検査 check_scan_report.py はこの 6 列の表を読まない(監査 8 回目の指摘 3)ので、ここで見る。"""
@@ -414,6 +437,13 @@ def cmd_check_elements(a):
     st, en, lines = section(text, a.round)
     if st is None:
         sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
+    questions, in_q = [], False
+    for ln in lines[st:en]:
+        if re.match(r"^#{2,4} ", ln):
+            in_q = "判断に迷った" in ln or "問い" in ln
+            continue
+        if in_q and ln.strip():
+            questions.append(ln)
     errs, names, table, in_tab, in_list = [], [], {}, False, False
     in_find, in_trace, n_find, n_trace = False, False, 0, 0
     alt_head, alt_first = None, None
@@ -500,6 +530,20 @@ def cmd_check_elements(a):
                 errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
+            if a.round and int(a.round) >= 8 and not untouched:
+                # (a) 問いに出した行は値も段も `未判別`
+                for q in questions:
+                    if tool.strip("`") in q and re.search(r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(el), q) and (val != "未判別" or stg != "未判別"):
+                        errs.append("行 %d: %s %s は「判断に迷った点と問い」に出ているのに値・段が `未判別` でない(%s/%s)" % (i + 1, tool, el, val, stg))
+                        break
+                # (d) 段 4・5 は 6 列目に「…」の引用が要る
+                if stg in ("4", "5") and not re.search(r"「[^「」]{8,}」", ev):
+                    errs.append("行 %d: %s %s は段 %s なのに、その条件に当たる逐語「…」が 6 列目に無い" % (i + 1, tool, el, stg))
+                # (b) `なし` の 7 列目の手は、その要素の語で検索したもの
+                if val == "なし" and logcol.strip():
+                    cmds = [step_cmdline(f, n) or "" for f, _, n in strict_refs(logcol)]
+                    if not any(re.search(ELEM_TERMS.get(el, "^$"), c, re.I) for c in cmds):
+                        errs.append("行 %d: %s %s は `なし` なのに、7 列目のどの手の `$` の行にも要素の名前の語(%s)が無い" % (i + 1, tool, el, ELEM_TERMS.get(el)))
             if r7 and not untouched:
                 bad = logcol_errors(logcol)
                 if bad:
@@ -577,6 +621,12 @@ def cmd_check_elements(a):
     for t in table:
         if t not in names:
             errs.append("「要素と段」の表の道具が候補の一覧に無い(名前が 1 文字違う?): `%s`" % t)
+    if a.round and int(a.round) >= 8:
+        lp = pathlib.Path("docs/DATA/probes") / ("20260923_tools_8_run%s.log" % a.round)
+        if lp.exists():
+            for n, ln in enumerate(lp.read_text().splitlines(), 1):
+                if ln.startswith("$ ") and re.search(r"/tmp/(?!claude-0/)", ln):
+                    errs.append("生ログ %s:%d: `/tmp` の直下(scratchpad の外)のファイルを使う手: %s" % (lp.name, n, ln[:80]))
     print("読んだもの: 候補の一覧 %d 行 / 要素と段の表 %d 行(道具 %d)/ 知見の表 %d 行 / 辿る一覧から出た名前 %d 行" % (
         len(names), sum(len(v) for v in table.values()), len(table), n_find, n_trace))
     for e in errs:
