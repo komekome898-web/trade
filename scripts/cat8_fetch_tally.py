@@ -8,7 +8,7 @@ For each step whose command line runs scripts/cat8_repo_fetch.sh it prints the r
 the step's exit code, files_in_tree(N), the skipped (>1 MB) and lfs_pointer names,
 downloaded_bytes and checked_out_bytes, then the totals. Exits non-zero when a step's
 output was cut by cat8_step.py (--keep too small), when a repo appears twice with
-different results, or when a successful step lacks one of the helper's count lines.
+different values in any field, or when a successful step lacks one of the helper's count lines.
 """
 import argparse
 import re
@@ -63,26 +63,36 @@ for s in steps:
         errs.append("%s: lfs_pointer の件数 %s と行の数 %d が合わない" % (repo, m.group(1), len(r["lfs"])))
     if rc == "0" and (r["N"] is None or r["co"] is None or not m):
         errs.append("%s: 終了コード 0 なのに件数の行が欠けている" % repo)
-    if repo in rows and (rows[repo]["N"], rows[repo]["rc"]) != (r["N"], r["rc"]):
-        errs.append("%s: 2 回打たれて結果が違う(%s / %s)" % (repo, rows[repo]["rc"], r["rc"]))
+    if repo in rows and rows[repo] != r:
+        diff = [k for k in r if rows[repo][k] != r[k]]
+        errs.append("%s: 2 回打たれて結果が違う(違う項目: %s)" % (repo, ", ".join(diff)))
     rows[repo] = r
 
+ok = [r for r in rows.values() if r["rc"] == "0"]
+
+
+def totals():
+    print("== リポジトリ %d 件(終了コード 0 = %d / 4 = %d / そのほか = %d)" % (
+        len(rows), len(ok), sum(1 for r in rows.values() if r["rc"] == "4"),
+        sum(1 for r in rows.values() if r["rc"] not in ("0", "4"))))
+    print("== 終了コード 0 の N の和 = %d / skipped の和 = %d / lfs_pointer の和 = %d / downloaded_bytes の和 = %d" % (
+        sum(r["N"] or 0 for r in ok), sum(len(r["skipped"]) for r in ok), sum(len(r["lfs"]) for r in ok),
+        sum(r["dl"] or 0 for r in rows.values())))
+    print("== 誤り %d 件" % len(errs))
+
+
+# Totals first and last, so a cut output still shows them once (audit 57).
+totals()
 print("repo\trc\tN\tskipped\tlfs_pointer\tdownloaded_bytes\tchecked_out_bytes")
 for repo, r in rows.items():
     print("%s\t%s\t%s\t%d\t%d\t%s\t%s" % (repo, r["rc"], r["N"], len(r["skipped"]), len(r["lfs"]), r["dl"], r["co"]))
-ok = [r for r in rows.values() if r["rc"] == "0"]
-print("== リポジトリ %d 件(終了コード 0 = %d / 4 = %d / そのほか = %d)" % (
-    len(rows), len(ok), sum(1 for r in rows.values() if r["rc"] == "4"),
-    sum(1 for r in rows.values() if r["rc"] not in ("0", "4"))))
-print("== 終了コード 0 の N の和 = %d / skipped の和 = %d / lfs_pointer の和 = %d / downloaded_bytes の和 = %d" % (
-    sum(r["N"] or 0 for r in ok), sum(len(r["skipped"]) for r in ok), sum(len(r["lfs"]) for r in ok),
-    sum(r["dl"] or 0 for r in rows.values())))
 for repo, r in rows.items():
     for n in r["skipped"]:
         print("skipped\t%s\t%s" % (repo, n))
     for n in r["lfs"]:
         print("lfs_pointer\t%s\t%s" % (repo, n))
 for e in errs:
-    print("ERR " + e, file=sys.stderr)
+    print("ERR " + e)
+totals()
 print("---- 合計 %d 件" % len(errs))
 sys.exit(1 if errs else 0)
