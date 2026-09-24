@@ -340,6 +340,26 @@ def cmd_check_elements(a):
                 errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
             if not ev:
                 errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
+            if a.round and int(a.round) >= 5 and val == "印":
+                # 描画した頁を `印` の根拠にするときの条件 (iii)(5 回目の起動文 §2、監査 29 回目への答え 1)
+                for fname, rn, lno in re.findall(r"(20260923_tools_8_run(\d+)\.log):(\d+)", ev):
+                    lp = pathlib.Path("docs/DATA/probes") / fname
+                    if not lp.exists():
+                        continue
+                    ll = lp.read_text().splitlines()
+                    k = int(lno) - 1
+                    if not (0 <= k < len(ll)):
+                        continue
+                    while k >= 0 and not ll[k].startswith("--- "):
+                        k -= 1
+                    if k < 0 or k + 1 >= len(ll) or "cat8_render" not in ll[k + 1]:
+                        continue
+                    e = k + 1
+                    while e < len(ll) and not ll[e].startswith("--- "):
+                        e += 1
+                    if any("text-changed-after-wait" in x for x in ll[k:e]):
+                        errs.append("行 %d: %s %s の `印` の根拠の描画の手 %s:%s に text-changed-after-wait がある(条件 (iii))" % (
+                            i + 1, tool, el, fname, lno))
             if a.round and int(a.round) >= 5 and val == "なし" and "台帳の値のまま" not in ev:
                 # 5 回目の起動文 §2: `なし` には「一覧 N 件 / 読んだ M 件」と生ログの行を書き、N と M が同じ(監査 21・22 回目)
                 m = re.search(r"一覧\s*(\d+)\s*件\s*/\s*読んだ\s*(\d+)\s*件", ev)
