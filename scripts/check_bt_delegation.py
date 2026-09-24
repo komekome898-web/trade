@@ -10,7 +10,12 @@ Checks, all against primary records:
 6. Every agent(...) call in the workflow script (except owner-auditor calls) carries the scrutiny constant
    that matches its role (by label prefix) — L-433 提出前の吟味 wired into every role with the role's own text.
 
-Usage: python3 scripts/check_bt_delegation.py [delegation.md] [OWNER_LOG.md] [VERDICTS.md] [workflow.js]
+7. (optional 5th path) The launch args JSON: its `marker` names the delegation file at its current sha256[:12],
+   every top-level key is read by the script as `args.<key>` (an unread key = a mechanism the script no longer
+   has, as `lead_definitions` was after audit 54), and every L-NNN cited in its lead notes has a row in OWNER_LOG
+   (audit 55-4: the args file was where the mismatches lived, and nothing checked it).
+
+Usage: python3 scripts/check_bt_delegation.py [delegation.md] [OWNER_LOG.md] [VERDICTS.md] [workflow.js] [args.json]
 Exit 1 on any error.
 """
 from __future__ import annotations
@@ -145,9 +150,34 @@ def check(doc: str, log: str, verdicts: str) -> list[str]:
     return errs
 
 
+def check_args(args_text: str, delegation_text: str, delegation_name: str, script: str, owner_log: str) -> list[str]:
+    """Check 7: the launch args against the delegation file, the script and OWNER_LOG."""
+    import hashlib
+    import json
+    errs: list[str] = []
+    try:
+        args = json.loads(args_text)
+    except ValueError as e:
+        return [f"引数: JSON として読めない: {e}"]
+    want = f"{delegation_name}@{hashlib.sha256(delegation_text.encode('utf-8')).hexdigest()[:12]}"
+    if args.get("marker") != want:
+        errs.append(f"引数: marker が委任文の今の版と違う: {args.get('marker')!r} != {want!r}")
+    for key in args:
+        if f"args.{key}" not in script:
+            errs.append(f"引数: 台本が読まない鍵 {key!r}(台本に args.{key} が無い = 台本に無い機構)")
+    notes = json.dumps(args.get("lead_notes", {}), ensure_ascii=False) + json.dumps(args.get("prior_battery_record", {}), ensure_ascii=False)
+    for l in sorted(set(re.findall(r"L-\d{3}", notes))):
+        if l not in owner_log:
+            errs.append(f"引数: lead_notes が引く {l} が OWNER_LOG に無い")
+    return errs
+
+
 def main(argv: list[str]) -> int:
     paths = [Path(argv[i]) if i < len(argv) else Path(DEFAULTS[i]) for i in range(4)]
     errs = check(*(p.read_text(encoding="utf-8") for p in paths[:3]))
+    if len(argv) >= 5:
+        errs += check_args(Path(argv[4]).read_text(encoding="utf-8"), paths[0].read_text(encoding="utf-8"), paths[0].name,
+                           paths[3].read_text(encoding="utf-8") if paths[3].exists() else "", paths[1].read_text(encoding="utf-8"))
     if paths[3].exists():
         script = paths[3].read_text(encoding="utf-8")
         errs += check_script(script) + lint_script(script)

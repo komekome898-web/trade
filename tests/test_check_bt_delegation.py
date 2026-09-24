@@ -77,3 +77,20 @@ def test_lead_notes_must_reach_the_battery_auditors_and_fixers():
            "const au = await agent(`検査`, { label: `監査役(定義):0#1`, agentType: 'owner-auditor', model: M })\n")
     errs = cbd.check_script(bad)
     assert sum("lead_notes" in e for e in errs) == 2
+
+
+def test_launch_args_are_checked_against_delegation_script_and_owner_log():
+    import hashlib
+    import json
+    check_args = cbd.check_args
+    deleg = "委任文の本文"
+    sha = hashlib.sha256(deleg.encode("utf-8")).hexdigest()[:12]
+    script = "const a = args.marker; const b = args.lead_notes; const c = args.prebuilt"
+    log = "| L-436 | 案1 |\n"
+    good = json.dumps({"marker": f"d.md@{sha}", "lead_notes": {"0": "L-436 のとおり"}, "prebuilt": {}})
+    assert check_args(good, deleg, "d.md", script, log) == []
+    bad = json.dumps({"marker": "d.md@000000000000", "lead_definitions": {}, "lead_notes": {"0": "L-999"}})
+    errs = check_args(bad, deleg, "d.md", script, log)
+    assert any("marker" in e for e in errs)
+    assert any("lead_definitions" in e for e in errs)
+    assert any("L-999" in e for e in errs)
