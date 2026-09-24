@@ -2743,11 +2743,11 @@
   {
    "move": 97,
    "tools": {
-    "Read": 1,
-    "Bash": 3,
+    "Read": 2,
+    "Bash": 6,
     "Agent": 1
    },
-   "n_tools": 5,
+   "n_tools": 9,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
