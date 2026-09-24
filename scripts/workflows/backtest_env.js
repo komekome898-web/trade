@@ -153,16 +153,17 @@ const DEF_SCHEMA = { type: 'object', properties: { definition: { type: 'string' 
 async function defineThenAudit(item, req, bat, findings, n, chainObj, auditLog) {
   let fixList = findings, definition = null
   for (let k = 1; ; k++) {
+    if (k > 3) return { escalate: `定義の段が 3 回で通らなかった(LEAD_DESIGN §8.2 の 3): ${JSON.stringify(fixList.filter(f => f.level === '止める').map(f => f.text.slice(0, 200)))}` }
     const d = await agent(`${HEAD2}
 あなたは項目 ${item.id}「${item.title}」の場面係です(場面集の第 ${n} 回の直しの前の定義、${k} 回目)。固定した要件: ${req.path}。場面集 ${bat.definitions}(置き場所 ${bat.battery_dir})に監査役が次の指摘を出した(逐語):
 ${JSON.stringify(fixList).slice(0, 12000)}
 ${definition ? `前の定義(監査役が [止める] を出した): ${definition.slice(0, 6000)}` : ''}
 ${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}
-**まだコードを直さない。**${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と、この指摘の族に対する**正の定義**(何を対象自身の振る舞いと数え、何を数えないか。場所や形の一覧ではなく、どの形にも当たる 1 段落の規則。例: 「対象が届けた物 = 対象の配布物のコードが戦略の呼び出しの中で作り、戦略に渡した物。adapter が組んだ物・対象の class を adapter が組み立てた物・戦略の外で対象の関数を呼んで得た物は数えない」)を書く。指摘の形だけを塞ぐ直しはこの段で止める(L-433「場当たり的な修正をするな」、リードの設計 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §5)。definition にその段落を、rootcause にファイルの path を返す。${SCRUTINY_BUILD}`,
+**まだコードを直さない。**定義は指摘の族への 1 段落で、新しい一般規則・手続き・登録簿・用語の表を足さない(足したい規則は「リードに聞くこと」に書いて止める。LEAD_DESIGN §8.2 の 3、A-17)。${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と、この指摘の族に対する**正の定義**(何を対象自身の振る舞いと数え、何を数えないか。場所や形の一覧ではなく、どの形にも当たる 1 段落の規則。例: 「対象が届けた物 = 対象の配布物のコードが戦略の呼び出しの中で作り、戦略に渡した物。adapter が組んだ物・対象の class を adapter が組み立てた物・戦略の外で対象の関数を呼んで得た物は数えない」)を書く。指摘の形だけを塞ぐ直しはこの段で止める(L-433「場当たり的な修正をするな」、リードの設計 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §5)。definition にその段落を、rootcause にファイルの path を返す。${SCRUTINY_BUILD}`,
       { label: `定義:${item.id}#${n}-${k}`, phase: '要件の固定', schema: DEF_SCHEMA, model: IMPL_MODEL, effort: 'high' })
     if (!d) return { escalate: '場面係が定義を返さなかった' }
     definition = d.definition
-    const a = await agent(`検査対象: 項目 ${item.id}「${item.title}」の場面集の直しの前の**定義だけ**(${d.rootcause}。コードはまだ直していない)。指摘(逐語): ${JSON.stringify(fixList).slice(0, 8000)}。定義: ${definition.slice(0, 6000)}。この定義が、指摘の族のどの形にも当たる正の規則か(場所や形の一覧になっていないか)、委任文 ${DOC} §3「場面集」「場面集の規則」1〜9 と要件に合うか、新実装に有利な範囲に偏っていないかを検査する。定義で塞がれない同じ族の形があれば [止める] にし、その形を書く。${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}指摘は [止める] / [直す] / [聞く] の印つきで返し、id を d${n}-${k}-1, … と振る。repeat_of は必ず埋める(前の指摘と同じ理由なら前の id、そうでなければ null。${FAMILY.replace(/`/g, "'")})。`,
+    const a = await agent(`検査対象: 項目 ${item.id}「${item.title}」の場面集の直しの前の**定義だけ**(${d.rootcause}。コードはまだ直していない)。指摘(逐語): ${JSON.stringify(fixList).slice(0, 8000)}。定義: ${definition.slice(0, 6000)}。この定義が、指摘の族のどの形にも当たる正の規則か(場所や形の一覧になっていないか)、委任文 ${DOC} §3「場面集」「場面集の規則」1〜9 と要件に合うか、新実装に有利な範囲に偏っていないかを検査する。定義で塞がれない同じ族の形があれば [止める] にし、その形を書く。検めるのはその 2 点(族のどの形にも当たる正の規則か / 固定した規則に反しないか)だけで、定義に無い一般規則・手続き・登録簿の追加を求めない(LEAD_DESIGN §8.2 の 4)。${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}指摘は [止める] / [直す] / [聞く] の印つきで返し、id を d${n}-${k}-1, … と振る。repeat_of は必ず埋める(前の指摘と同じ理由なら前の id、そうでなければ null。${FAMILY.replace(/`/g, "'")})。`,
       { label: `監査役(定義):${item.id}#${n}-${k}`, phase: '批評', schema: BAT_AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
     const fs = a ? a.findings : [{ id: `d${n}-${k}-x`, level: '止める', text: '監査役が返らなかった', repeat_of: null }]
     auditLog.push({ k: `def-${n}-${k}`, findings: fs })
@@ -241,7 +242,8 @@ async function runItem(item) {
       if (!batFix.length) return null
       let fixList = batFix
       for (let k = 1; ; k++) {
-        const def = await defineThenAudit(item, req, bat, fixList, `r${attempt}-${k}`, cbchain, midAudits)
+        // LEAD_DESIGN §8.2 の 3: the definition step is for [止める] findings only; [直す]-only repairs go straight to the repair
+        const def = fixList.some(f => f.level === '止める') ? await defineThenAudit(item, req, bat, fixList, `r${attempt}-${k}`, cbchain, midAudits) : { definition: null }
         if (def.escalate) return { escalate: def.escalate }
         const fixed = await repairBattery(item, req, bat, fixList, `r${attempt}-${k}`, def.definition)
         if (!fixed) return { error: 'battery_repair_in_round' }
