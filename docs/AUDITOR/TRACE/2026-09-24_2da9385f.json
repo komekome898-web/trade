@@ -2744,10 +2744,10 @@
    "move": 97,
    "tools": {
     "Read": 2,
-    "Bash": 6,
+    "Bash": 8,
     "Agent": 1
    },
-   "n_tools": 9,
+   "n_tools": 11,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
