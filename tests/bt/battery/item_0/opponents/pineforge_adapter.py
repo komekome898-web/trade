@@ -92,6 +92,9 @@ class PineforgeAdapter(Adapter):
         evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
                for e in C.events(sc)]
         rows = drv("tf=1S", bars=[bar_arg(e) for e in evs])
+        if errors(rows):
+            return not_supported("時刻の型が Unix ミリ秒(pf_bar_t.timestamp、int64)で、ns を持てない。ミリ秒に切り下げて渡した足を道具が拒否した"
+                                 f"(入力の時間枠 1S、最も細かい秒の枠): {errors(rows)}")
         return ok({"observed_ts_ns": [int(r[2]) * MS for r in calls(rows)]},
                   "足の時刻は Unix ミリ秒(pf_bar_t.timestamp、int64)。ns の時刻をミリ秒に切り下げて渡し、on_bar の bar.timestamp を ns に戻した"
                   f"(入力の時間枠 1S)。誤り {errors(rows)}")
@@ -125,7 +128,9 @@ class PineforgeAdapter(Adapter):
 
     @staticmethod
     def _notices(rows):
-        return [r[2] for r in rows if r[0] == "NOTICE"]
+        # the kernel's event kinds: ACCEPTED, REJECTED (at submit), MATCH_REJECTED (refused when matched), CANCELLED, APPLIED
+        name = {"match_rejected": "rejected"}
+        return [name.get(r[2], r[2]) for r in rows if r[0] == "NOTICE"]
 
     def scene_p3_notice_accepted(self, sc):
         rows = self._orders(sc, "buy_at=1", "order=limit90")
@@ -134,10 +139,11 @@ class PineforgeAdapter(Adapter):
                   f"受付・拒否・取消・約定の事象を記録した。driver の出力 {[' '.join(r) for r in rows if r[0] in ('SUBMIT', 'NOTICE')]}")
 
     def scene_p3_notice_rejected(self, sc):
-        rows = self._orders(sc, "buy_at=1", "capital=1000")
+        rows = self._orders(sc, "buy_at=1", "capital=1000", "margin=1")
         ns = self._notices(rows)
         return ok({"notices": [n for n in ns if n != "applied"] + (["filled"] if "applied" in ns else [])},
-                  "run spec の initial_capital = 1000(証拠金の規則は道具の既定)、1 回目に成行 買い 1。戦略が読んだ事象。"
+                  "run spec の initial_capital = 1000、initial_margin_fraction = 1(レバレッジ無し)、1 回目に成行 買い 1。戦略が各回の on_bar の中で "
+                  "strategy_native_events_v1 から読んだ事象(MATCH_REJECTED = 照合の時点の拒否を rejected に数えた)。"
                   f"driver の出力 {[' '.join(r) for r in rows if r[0] in ('SUBMIT', 'NOTICE', 'APPLIED', 'ERROR')]}")
 
     def scene_p3_notice_filled(self, sc):
@@ -181,6 +187,8 @@ class PineforgeAdapter(Adapter):
 
     def scene_p5_same_stream_order(self, sc):
         rows = drv("tf=1S", bars=[bar_arg(e) for e in C.events(sc)])
+        if errors(rows):
+            return not_supported(f"同じ時刻の足を 2 本以上受けない(道具が拒否した): 同じ時刻の 3 本を足にして strategy_native_run_v1 -> {errors(rows)}")
         return ok({"prices": [float(r[3]) for r in calls(rows)]},
                   f"同じ時刻の 3 本を足にして渡し、on_bar の終値の順。誤り {errors(rows)}")
 
@@ -217,11 +225,11 @@ class PineforgeAdapter(Adapter):
         return not_supported("遅延の模型の口が無い(注文は出した足の次の約定できる点から照合される。run spec と callbacks に遅延の欄・口が無い、native_c_api.h)")
 
     def _fee(self, sc, kind: int, value: float, qty: int, what: str):
-        rows = self._orders(sc, "buy_at=1", "capital=100000", f"fee_kind={kind}", f"fee_value={value}", f"qty={qty}")
-        t = [kv(r) for r in rows if r[0] == "TRADE"]
-        return ok({"fee": sum(float(x["commission"]) for x in t) if t else None},
-                  f"run spec の fee_kind = {what}、fee_value = {value}、1 回目に成行 買い {qty}。報告の trades の commission の合計(建玉は走りの終わりに"
-                  f"開いたまま、open_at_end の行)。{[' '.join(r) for r in rows if r[0] in ('SUBMIT', 'APPLIED', 'TRADE')]}")
+        rows = self._orders(sc, "buy_at=1", "capital=100000", f"fee_kind={kind}", f"fee_value={value}", f"qty={qty}", "read_at=3")
+        lots = [kv(r) for r in rows if r[0] == "LOT"]
+        return ok({"fee": sum(float(x["entry_commission"]) for x in lots) if lots else None},
+                  f"run spec の fee_kind = {what}、fee_value = {value}、1 回目に成行 買い {qty}。3 回目に strategy_native_open_lot_count_v1 / "
+                  f"open_lot_get_v1 で読んだ建玉の entry_commission の合計。{[' '.join(r) for r in rows if r[0] in ('SUBMIT', 'APPLIED', 'LOT')]}")
 
     def scene_p7_cost_model_swap(self, sc):
         return self._fee(sc, 2, 0.5, 1, "PF_NATIVE_FEE_CASH_PER_EXECUTION(約定 1 件あたりの額)")
