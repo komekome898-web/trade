@@ -132,6 +132,8 @@ def render_battery(item: int, rows: list) -> str:
             lines += [f"- [{x['level']}]{'(repeat_of ' + x['repeat_of'] + ')' if x.get('repeat_of') else ''} {x['text']}" for x in res["findings"]] or ["(指摘なし)"]
         elif "definition" in res:
             lines += [f"- 根本原因と定義の記録: {res.get('rootcause')}", "", "定義(逐語):", "", res["definition"]]
+            if res.get("questions_for_lead"):
+                lines += ["", "リードに聞くこと(逐語):", ""] + [f"- {q}" for q in res["questions_for_lead"]]
         else:
             lines += [f"- 根本原因の記録: {res.get('rootcause')}", f"- 検討表の道具の出力: {res.get('check_output')}",
                       f"- 動かせた: {res.get('survey_run')}", f"- 動かせなかった: {res.get('survey_not_run')}"]

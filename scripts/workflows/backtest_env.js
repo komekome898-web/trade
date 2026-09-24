@@ -145,7 +145,8 @@ async function auditBattery(item, bat, n, prev) {
 }
 
 const FAMILY = `「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。`
-const DEF_SCHEMA = { type: 'object', properties: { definition: { type: 'string' }, rootcause: { type: 'string' } }, required: ['definition', 'rootcause'] }
+// questions_for_lead: audit 56-3 — the one place the 場面係 writes what it changed in the lead's answer and why
+const DEF_SCHEMA = { type: 'object', properties: { definition: { type: 'string' }, rootcause: { type: 'string' }, questions_for_lead: { type: 'array', items: { type: 'string' } } }, required: ['definition', 'rootcause', 'questions_for_lead'] }
 
 // L-437: before touching code, the 場面係 writes the positive definition of what the battery measures for the
 // findings at hand (what counts as the target's own behaviour and what does not); the auditor passes the
@@ -159,11 +160,11 @@ async function defineThenAudit(item, req, bat, findings, n, chainObj, auditLog) 
 ${JSON.stringify(fixList).slice(0, 12000)}
 ${definition ? `前の定義(監査役が [止める] を出した): ${definition.slice(0, 6000)}` : ''}
 ${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}
-**まだコードを直さない。**定義は指摘の族への 1 段落で、新しい一般規則・手続き・登録簿・用語の表を足さない(足したい規則は「リードに聞くこと」に書いて止める。LEAD_DESIGN §8.2 の 3、A-17)。${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と、この指摘の族に対する**正の定義**(何を対象自身の振る舞いと数え、何を数えないか。場所や形の一覧ではなく、どの形にも当たる 1 段落の規則。例: 「対象が届けた物 = 対象の配布物のコードが戦略の呼び出しの中で作り、戦略に渡した物。adapter が組んだ物・対象の class を adapter が組み立てた物・戦略の外で対象の関数を呼んで得た物は数えない」)を書く。指摘の形だけを塞ぐ直しはこの段で止める(L-433「場当たり的な修正をするな」、リードの設計 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §5)。definition にその段落を、rootcause にファイルの path を返す。${SCRUTINY_BUILD}`,
+**まだコードを直さない。**定義は指摘の族への 1 段落で、新しい一般規則・手続き・登録簿・用語の表を足さない(足したい規則は「リードに聞くこと」に書いて止める。LEAD_DESIGN §8.2 の 3、A-17)。${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と、この指摘の族に対する**正の定義**(何を対象自身の振る舞いと数え、何を数えないか。場所や形の一覧ではなく、どの形にも当たる 1 段落の規則。例: 「対象が届けた物 = 対象の配布物のコードが戦略の呼び出しの中で作り、戦略に渡した物。adapter が組んだ物・対象の class を adapter が組み立てた物・戦略の外で対象の関数を呼んで得た物は数えない」)を書く。指摘の形だけを塞ぐ直しはこの段で止める(L-433「場当たり的な修正をするな」、リードの設計 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §5)。definition にその段落を、rootcause にファイルの path を返す。リードの答え(リードの注記にある正の定義など)の内容を変えるなら、変えた点と理由を ROOTCAUSE_${n}.md の節「リードに聞くこと」に書き、同じ文を questions_for_lead に返す(無ければ空の配列)。書き先はこの 2 つだけ。${SCRUTINY_BUILD}`,
       { label: `定義:${item.id}#${n}-${k}`, phase: '要件の固定', schema: DEF_SCHEMA, model: IMPL_MODEL, effort: 'high' })
     if (!d) return { escalate: '場面係が定義を返さなかった' }
     definition = d.definition
-    const a = await agent(`検査対象: 項目 ${item.id}「${item.title}」の場面集の直しの前の**定義だけ**(${d.rootcause}。コードはまだ直していない)。指摘(逐語): ${JSON.stringify(fixList).slice(0, 8000)}。定義: ${definition.slice(0, 6000)}。この定義が、指摘の族のどの形にも当たる正の規則か(場所や形の一覧になっていないか)、委任文 ${DOC} §3「場面集」「場面集の規則」1〜9 と要件に合うか、新実装に有利な範囲に偏っていないかを検査する。定義で塞がれない同じ族の形があれば [止める] にし、その形を書く。検めるのはその 2 点(族のどの形にも当たる正の規則か / 固定した規則に反しないか)だけで、定義に無い一般規則・手続き・登録簿の追加を求めない(LEAD_DESIGN §8.2 の 4)。${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}指摘は [止める] / [直す] / [聞く] の印つきで返し、id を d${n}-${k}-1, … と振る。repeat_of は必ず埋める(前の指摘と同じ理由なら前の id、そうでなければ null。${FAMILY.replace(/`/g, "'")})。`,
+    const a = await agent(`検査対象: 項目 ${item.id}「${item.title}」の場面集の直しの前の**定義だけ**(${d.rootcause}。コードはまだ直していない)。指摘(逐語): ${JSON.stringify(fixList).slice(0, 8000)}。定義: ${definition.slice(0, 6000)}。場面係のリードに聞くこと(リードの答えを変えた点と理由を含む): ${JSON.stringify(d.questions_for_lead || []).slice(0, 3000)}。この定義が、指摘の族のどの形にも当たる正の規則か(場所や形の一覧になっていないか)、委任文 ${DOC} §3「場面集」「場面集の規則」1〜9 と要件に合うか、新実装に有利な範囲に偏っていないかを検査する。定義で塞がれない同じ族の形があれば [止める] にし、その形を書く。検めるのはその 2 点(族のどの形にも当たる正の規則か / 固定した規則に反しないか)だけで、定義に無い一般規則・手続き・登録簿の追加を求めない(LEAD_DESIGN §8.2 の 4)。${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}指摘は [止める] / [直す] / [聞く] の印つきで返し、id を d${n}-${k}-1, … と振る。repeat_of は必ず埋める(前の指摘と同じ理由なら前の id、そうでなければ null。${FAMILY.replace(/`/g, "'")})。`,
       { label: `監査役(定義):${item.id}#${n}-${k}`, phase: '批評', schema: BAT_AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
     const fs = a ? a.findings : [{ id: `d${n}-${k}-x`, level: '止める', text: '監査役が返らなかった', repeat_of: null }]
     auditLog.push({ k: `def-${n}-${k}`, findings: fs })
