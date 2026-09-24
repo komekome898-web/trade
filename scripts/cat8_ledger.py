@@ -281,8 +281,11 @@ def log_refs(text):
     out = []
     for m in re.finditer(r"(20260923_tools_8_run(\d+)\.log):", text):
         fname, rn = m.group(1), m.group(2)
-        rest = text[m.end():]
-        rest = re.sub(r"[(（][^)）]*[)）]", "", rest.split("|")[0])
+        rest = text[m.end():].split("|")[0]
+        nxt = re.search(r"(?:docs/DATA/probes/)?20260923_tools_8_run\d+\.log:", rest)
+        if nxt:
+            rest = rest[:nxt.start()]  # 次の参照(ファイル名から)は別に読む(監査 37 回目: 次のファイル名の日付を行と読んでいた)
+        rest = re.sub(r"[(（][^)）]*[)）]", "", rest)
         for part in re.split(r"[,、，;；]", rest):
             part = part.strip()
             mm = re.match(r"^(\d+)(?:\s*[-〜~]\s*(\d+))?", part)
@@ -297,11 +300,25 @@ def log_refs(text):
 
 
 def ref_list_errors(text):
-    """7 回目以降: 生ログの参照は 1 つの行(か 1 つの範囲)ごとにファイル名を書く(監査 36 回目)。
-    `<生ログ>:10、20` のように、ファイル名を付けずに続く行の番号があれば、その参照を返す(読み落としを黙って通さない)。"""
+    """7 回目以降: 生ログの参照は 1 つの行(か 1 つの範囲)ごとにファイル名を書く(監査 36・37 回目)。
+    区切りの文字を挙げて探すのをやめ、参照(`<生ログ>:N` か `:N-M`、後ろに括弧の注記があってよい)の直後から、
+    文字(かな・漢字・英字)に当たる前に数字が出てきたら、ファイル名の無い行の番号とみなして返す。
+    読めない書き方は止まる(黙って通さない)。"""
     bad = []
-    for m in re.finditer(r"20260923_tools_8_run\d+\.log:\d+(?:\s*[-〜~]\s*\d+)?(?:\s*[(（][^)）]*[)）])?\s*[,、，;；]\s*\d", text):
-        bad.append(m.group(0))
+    for m in re.finditer(r"20260923_tools_8_run\d+\.log:\d+(?:\s*[-〜~]\s*\d+)?", text):
+        rest = re.split(r"[|\n]", text[m.end():])[0]  # 表の欄の境と改行の先は見ない
+        rest = re.sub(r"^\s*[(（][^)）]*[)）]", "", rest)
+        k = 0
+        while k < len(rest) and not rest[k].isalnum():
+            k += 1
+        if rest[k:].startswith("20260923_tools_8_run"):
+            continue  # 次の参照(ファイル名を付けて書いたもの)
+        if k < len(rest) and rest[k].isdigit():
+            bad.append(m.group(0) + rest[:k + 1])
+            continue
+        mm = re.match(r"(と|および|及び|又は|または|and|or)\s*\d", rest[k:])
+        if mm and not re.match(r"(と|および|及び|又は|または|and|or)\s*20260923_tools_8_run", rest[k:]):
+            bad.append(m.group(0) + rest[:k] + mm.group(0))
     return bad
 
 
@@ -317,6 +334,16 @@ def cmd_selftest(a):
         (L + ":3 と " + L + ":6", ["3", "6"], 0),
         ("一覧 5 件 / 読んだ 5 件、" + L + ":12", ["12"], 0),
         (L + ":12。全 5 記事", ["12"], 0),
+        (L + ":10、" + L + ":20", ["10", "20"], 0),
+        ("docs/DATA/probes/" + L + ":10、docs/DATA/probes/" + L + ":20", ["10", "20"], 0),
+        (L + ":2 6", ["2"], 1),
+        (L + ":2・6", ["2"], 1),
+        (L + ":2 と 6", ["2"], 1),
+        (L + ":2 / 6", ["2"], 1),
+        (L + ":2(一覧) 6(描画)", ["2"], 1),
+        (L + ":2(一覧を取った手)。本文は scratchpad", ["2"], 0),
+        (L + ":2 の出力", ["2"], 0),
+        (L + ":2 |\n| 3 | 次の行", ["2"], 0),
     ]
     bad = 0
     for text, want, nlist in cases:
