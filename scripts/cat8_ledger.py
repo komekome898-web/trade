@@ -434,6 +434,7 @@ def cmd_check_elements(a):
     受け入れ検査 check_scan_report.py はこの 6 列の表を読まない(監査 8 回目の指摘 3)ので、ここで見る。"""
     text = pathlib.Path(a.report).read_text()
     ledger_by_name = {r["名前"]: r for r in load()}
+    latest_round = max([int(x) for x in re.findall(r"^## 区分8 — (\d+) 回目", text, re.M)] or [0])
     st, en, lines = section(text, a.round)
     if st is None:
         sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
@@ -504,8 +505,9 @@ def cmd_check_elements(a):
             if r7:
                 untouched = bool(re.fullmatch(r"台帳の値のまま\s*[(（]\s*\d+\s*回目の節\s*[)）]", ev.strip()))  # 監査 41 回目の指摘 2
                 if untouched:
+                    # 台帳は今の値なので、照らせるのは最新の回の節だけ(前の回は形だけを見る)
                     lr = ledger_by_name.get(tool.strip("`"))
-                    if lr is None or (lr.get(el), lr.get("段_" + el)) != (val, stg):
+                    if int(a.round) == latest_round and (lr is None or (lr.get(el), lr.get("段_" + el)) != (val, stg)):
                         errs.append("行 %d: %s %s は `台帳の値のまま` と書いたのに、値・段が台帳(%s/%s)と違う: %s/%s" % (
                             i + 1, tool, el, lr.get(el) if lr else "無し", lr.get("段_" + el) if lr else "無し", val, stg))
                         untouched = False
@@ -533,6 +535,8 @@ def cmd_check_elements(a):
             if a.round and int(a.round) >= 8 and not untouched:
                 # (a) 問いに出した行は値も段も `未判別`
                 for q in questions:
+                    if int(a.round) >= 9 and "[それ以外の問い]" in q:
+                        continue  # 9 回目の起動文: 値・段についての問いでないものは対象外
                     if tool.strip("`") in q and re.search(r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(el), q) and (val != "未判別" or stg != "未判別"):
                         errs.append("行 %d: %s %s は「判断に迷った点と問い」に出ているのに値・段が `未判別` でない(%s/%s)" % (i + 1, tool, el, val, stg))
                         break
@@ -621,6 +625,10 @@ def cmd_check_elements(a):
     for t in table:
         if t not in names:
             errs.append("「要素と段」の表の道具が候補の一覧に無い(名前が 1 文字違う?): `%s`" % t)
+    if a.round and int(a.round) >= 9:
+        for q in questions:
+            if re.match(r"^\s*\d+\.", q) and "[値・段の問い]" not in q and "[それ以外の問い]" not in q:
+                errs.append("「判断に迷った点と問い」の行に `[値・段の問い]` か `[それ以外の問い]` が無い: %s" % q.strip()[:60])
     if a.round and int(a.round) >= 8:
         lp = pathlib.Path("docs/DATA/probes") / ("20260923_tools_8_run%s.log" % a.round)
         if lp.exists():
