@@ -9,6 +9,16 @@
 set -eu
 repo="$1"; dest="$2"
 export GIT_NO_LAZY_FETCH=1
+# Running total of downloaded bytes for all repos fetched into the same parent directory.
+# At or above CAT8_MAX_TOTAL_DOWNLOAD_BYTES (default 300 MB) nothing is cloned: exit 5 (audit 59).
+total_file="$(dirname "$dest")/.cat8_downloaded_total"
+max_total="${CAT8_MAX_TOTAL_DOWNLOAD_BYTES:-314572800}"
+total_before=$(cat "$total_file" 2>/dev/null || echo 0)
+echo "downloaded_total_before: $total_before (limit $max_total)"
+if [ "$total_before" -ge "$max_total" ]; then
+  echo "cat8_repo_fetch: download total reached the limit; not cloned" >&2
+  exit 5
+fi
 rm -rf "${dest:?}"
 git clone -q --depth 1 --filter=blob:limit=1m --no-checkout "https://github.com/$repo.git" "$dest"
 cd "$dest"
@@ -40,7 +50,10 @@ if not entries or len(present) + len(skipped) != len(entries):
              % (len(entries), len(present), len(skipped)))
 PY
 echo "repo: $repo"
-echo "downloaded_bytes: $(du -sb .git | cut -f1)"
+dl=$(du -sb .git | cut -f1)
+echo "downloaded_bytes: $dl"
+echo $((total_before + dl)) > "$total_file"
+echo "downloaded_total_after: $((total_before + dl))"
 # Size of what the checkout would write, from the local blobs only (no lazy fetch).
 # Refuse the checkout above CAT8_MAX_CHECKOUT_BYTES (default 500 MB; audit 51) with exit 4
 # (3 is taken by cat8_step.py for a passed deadline; audit 53).

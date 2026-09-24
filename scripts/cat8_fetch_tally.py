@@ -72,9 +72,10 @@ ok = [r for r in rows.values() if r["rc"] == "0"]
 
 
 def totals():
-    print("== リポジトリ %d 件(終了コード 0 = %d / 4 = %d / そのほか = %d)" % (
+    print("== リポジトリ %d 件(終了コード 0 = %d / 4 = %d / 5 は下の行 / そのほか = %d)" % (
         len(rows), len(ok), sum(1 for r in rows.values() if r["rc"] == "4"),
-        sum(1 for r in rows.values() if r["rc"] not in ("0", "4"))))
+        sum(1 for r in rows.values() if r["rc"] not in ("0", "4", "5"))))
+    print("== 終了コード 5(取った量の和が上限で取らなかった) = %d" % sum(1 for r in rows.values() if r["rc"] == "5"))
     print("== 終了コード 0 の N の和 = %d / skipped の和 = %d / lfs_pointer の和 = %d / downloaded_bytes の和 = %d" % (
         sum(r["N"] or 0 for r in ok), sum(len(r["skipped"]) for r in ok), sum(len(r["lfs"]) for r in ok),
         sum(r["dl"] or 0 for r in rows.values())))
