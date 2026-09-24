@@ -50,7 +50,7 @@ def check_script(script: str) -> list[str]:
             errs.append(f"台本:{line}: agent 呼び出し {name} の役が ROLE_SCRUTINY に無い")
         elif "${" + want + "}" not in body:
             errs.append(f"台本:{line}: agent 呼び出し {name} に役の吟味の定数 {want} が無い")
-        others = [c for _, c in ROLE_SCRUTINY if c != want and "${" + c + "}" in body]
+        others = [c for _, c in ROLE_SCRUTINY if want and c != want and "${" + c + "}" in body]
         if others:
             errs.append(f"台本:{line}: agent 呼び出し {name} に別の役の吟味の定数 {others} が入っている")
     return errs

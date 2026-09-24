@@ -1094,3 +1094,41 @@ decisive 検査(6 回目処置 1〜5 + 処置 6 の反映確認): item14 の §3
 3. 答え+直した: 台本を scratchpad に置いていたのは 46 回目より前からの運用(1 回目の起動から scratchpad の台本を `scriptPath` で指していた)で、今回の既定化で初めて決め打ちになった。台本をリポジトリ内 `scripts/workflows/backtest_env.js` に移し(コミット 0013061)、`DEFAULTS` と委任文 §3「提出前の吟味」に置き場所を書いた。起動は今後この場所の台本で行う(scratchpad の写しは同じ内容に保つ)。`python3 scripts/check_bt_delegation.py`(引数なし)→ OK 誤り 0 件。
 
 処置後の版: 4c4cfc6e4052(`sha256sum docs/DATA/delegations/20260923_backtest_env_prompt.md | cut -c1-12`)。
+
+## 48 回目(対象の版: 4c4cfc6e4052。47 回目の処置の反映。指摘 3 件 = 止める 0・直す 1・聞く 2)
+
+### 監査役の出力(逐語)
+
+48 回目の監査(対象: docs/DATA/delegations/20260923_backtest_env_prompt.md、版 4c4cfc6e4052)。47 回目の指摘 3 件への処置を、台本 scripts/workflows/backtest_env.js・道具 scripts/check_bt_delegation.py・試験 tests/test_check_bt_delegation.py・`git diff e1ed3fc 0013061`・`python3 scripts/check_bt_delegation.py`(OK 誤り0件)・`PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py`(6 passed)を実測して確認した。
+
+47 回目の指摘 3 件そのものは、実測で正しく直っていることを確認した:
+- 指摘1(言い換えのはずが (1)〜(5) を残したまま追記): SCRUTINY_FIX / SCRUTINY_BUILD / SCRUTINY_TABLE / SCRUTINY_CRITIC / SCRUTINY_JUDGE / SCRUTINY_GAPS の 6 定数に役ごとに分割され(29〜34 行)、`grep -n '\${SCRUTINY}'` は 0 件、6 定数は台本中で役ごとに 1 箇所ずつ(8 注入先。`grep -n 'SCRUTINY_[A-Z]*}'` の出力)しか現れず、旧 (1)〜(5) 文言の残存は無い。委任文 §3「提出前の吟味」96 行の役ごとの記述(最初に作る役 / 資料係(表)/ 批評家 / 審査員 / 「欠けているもの」の批評家)と台本の 6 定数の中身を役ごとに突き合わせたが、内容は一致している。
+- 指摘2(文字列有無だけの検査): check_bt_delegation.py の check_script が「label 接頭辞 → ROLE_SCRUTINY の対応定数」を検める形に変わり、(a) 定数が無い、(b) 別の役の定数が入っている、(c) 役が対応表に無い、を試験(test_every_agent_call_carries_its_own_roles_scrutiny_constant)が個別に再現していることを確認した。
+- 指摘3(scratchpad のハードコード): 台本はコミット 0013061 でリポジトリ内 scripts/workflows/backtest_env.js に移り、DEFAULTS もこのパスに変わった。委任文 §3 の「台本は `scripts/workflows/backtest_env.js`(リポジトリ内)」の記述と道具の既定は一致している。
+
+台本の全 agent() 呼び出し 11 か所(`grep -n 'label: \`'`)のうち、owner-auditor 呼び出し 3 か所(監査役(場面)・監査役(表)・監査役)を除く 8 か所すべてに ROLE_SCRUTINY の 8 エントリが過不足なく対応し、`check_bt_delegation.py`(引数なし、OWNER_LOG.md・VERDICTS 本体との突き合わせを含む)は誤り 0 件だった。§3 の段落の diff(`git diff e1ed3fc 0013061 -- docs/DATA/...`)は該当 1 段落の置き換えのみで、他の既存文の削除は見当たらなかった。
+
+以下、独立に見つけた問い(3 件、いずれも「止める」に届く根拠は見つからなかった):
+
+1. [聞く] scripts/check_bt_delegation.py:48-55(`check_script`) — `others`(別の役の定数の混入検査)は `want is None`(=役が ROLE_SCRUTINY に無い、既に別のエラーを出す分岐)のときも実行され、その未登録ラベルの本文にたまたま既知の `SCRUTINY_*` 文字列が含まれると「別の役の吟味の定数が入っている」という追加のエラーも同時に出る(`others` の生成が `elif` の中に無く、if/elif の外に置かれているため)。実害は確認できていないが、意図した挙動か(役不明のエラーと別役混入のエラーを両方出したいのか)。
+
+2. [聞く] tests/test_check_bt_delegation.py:42-53(`test_every_agent_call_carries_its_own_roles_scrutiny_constant`) — `wrong` の場面は「自分の役の定数が無く、別の役の定数だけが入っている」形(`批評 ${SCRUTINY_FIX}` に `${SCRUTINY_CRITIC}` が無い)だけを検査しており、47 回目が実際に見つけた形(自分の役の定数もあり、かつ別の役の文言が**残ったまま追記**されている = 両方が同時に本文にある状態)を直接再現する試験は無い。`check_script` のコード上は `others` の判定が elif の外にあるので両方存在時も検出できると読めるが、これは手読みの確認であり、この具体形を試験が独立に固定していない。1 のエラー文言の重複と合わせて、試験に足す価値があるか。
+
+3. [直す] コミット 0013061(この回の処置本体、`Split the scrutiny text per role and move the backtest-env workflow script into the repo`)の末尾 — `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` とモデル名が書かれている(`git log -1 --format='%B' 0013061` で確認)。CLAUDE.md §6「コミット規約」: 「モデル名(Claude / Opus 等)をコードにもコミットメッセージにも書かない」に直接反する。同じ形は直前の 2 コミット(04291da・e1ed3fc)にも連続して現れている。委任文・VERDICTS・道具のいずれにもこの点への言及は無く、47 回目の監査でも指摘されていない(監査対象がドキュメント本体で、コミット履歴までは見ていなかったため)。今回の処置の「実体」がこのコミットである以上、同じコミットの中で規約違反が起きている点をどう扱うか。
+
+確認して問題が見当たらなかった点: (1) 委任文 §3 の役ごとの文言と台本の 6 定数の中身の対応、(2) `check_script` の (a)(b)(c) を試験が各個に再現していること(上の 2 の粒度の指摘を除く)、(3) 台本の置き場所(委任文・`DEFAULTS` とも `scripts/workflows/backtest_env.js` で一致)、(4) 47 回目の処置の diff に既存文の削除は無いこと、(5) `check_bt_delegation.py`(実行、OWNER_LOG.md との突き合わせを含む)が誤り 0 件であること。
+
+最後に読んだ版の sha256 先頭 12 桁: 4c4cfc6e4052(docs/DATA/delegations/20260923_backtest_env_prompt.md)
+
+### リードの処置(1 件 1 行)
+
+1. 答え+直した: 意図した挙動ではない(役不明のときに別役混入まで出すのは重複)。`others` の生成を役が分かったときだけに限った(`want and c != want`)。試験で「役不明のときは『別の役』の誤りを出さない」を固定した。
+2. 直した: 47 回目が実際に見つけた形(自分の役の定数があり、かつ直す役の文言が追記されている)を再現する場面 `both` を試験に足した(誤りがちょうど 1 件で、それが「別の役 … SCRUTINY_FIX」であること)。`PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py` → 6 passed。
+3. 直した(以後): コミット末尾の `Co-Authored-By: Claude Fable 5.1 <…>` はハーネスが会話ごとに指示する付記で、リードが CLAUDE.md §6(モデル名を書かない)より優先して付けていた。ハーネスの指示自体が「CLAUDE.md の規則が優先する」と書いているので、この回から Co-Authored-By の行を付けない(会話の URL の行だけ残す)。押し出し済みの履歴(04291da・e1ed3fc・0013061・14c5706 ほか)は書き換えない(履歴の書き換えは別の規則に反する)。この会話のそれ以前のコミットも同じ形だったことを記録する。
+
+処置後の版: 4c4cfc6e4052(委任文は変えていない。`sha256sum` で同じ)。
+
+## 起動に使う版の記録(7 回目の起動)
+
+6 回目の起動は項目 0 の第 5 周で周の上限 10 に届いて止まった(盲検は対現状 3/3・対調査 同等で L-432 では通過、批評家の [止める] 4 件 = 実装 1・場面集 3)。L-433(項目 0 は上限なし、次の 1 周で片付ける、提出前の吟味)・L-434(場面係と作業者の同時の直し、項目 1〜12 は項目 0 のあと)・L-435(指紋が同じなら相手の道具の結果を再利用)・L-436(同じ理由 3 周でリードへ戻す)を反映し、45〜48 回目の監査を経た版(48 回目 = 止める 0)。場面集と要件は 6 回目のものを使い(台本の `prebuilt`、第 5 周の指摘 7 件を持ち越し)、項目 0 の第 6 周から(`attempt_offset` 5、`prior_rounds` 10)。台本はリポジトリ内 `scripts/workflows/backtest_env.js`(コミット 0013061)。
+委任文の指紋: 20260923_backtest_env_prompt.md@4c4cfc6e4052

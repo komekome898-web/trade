@@ -50,4 +50,9 @@ def test_every_agent_call_carries_its_own_roles_scrutiny_constant():
     errs = cbd.check_script(wrong)
     assert any("SCRUTINY_CRITIC が無い" in e for e in errs) and any("別の役" in e for e in errs)
     unknown = good + "const u = await agent(`x ${SCRUTINY_FIX}`, { label: `謎:1`, model: M })\n"
-    assert any("ROLE_SCRUTINY に無い" in e for e in cbd.check_script(unknown))
+    errs = cbd.check_script(unknown)
+    assert any("ROLE_SCRUTINY に無い" in e for e in errs) and not any("別の役" in e for e in errs)
+    # audit 47's actual shape: the role's own constant is present and the fixing text is appended on top
+    both = good + "const c = await agent(`批評 ${SCRUTINY_CRITIC}${SCRUTINY_FIX}`, { label: `批評:1#1`, model: M })\n"
+    errs = cbd.check_script(both)
+    assert errs == [e for e in errs if "別の役" in e and "SCRUTINY_FIX" in e] and len(errs) == 1
