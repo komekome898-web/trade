@@ -792,7 +792,7 @@ def _o_sqrt(inp):
 scene("c2-7-impact-sqrt", "C2-7", "能力", "平方根の市場影響の関数を渡すと、その関数どおりの値で埋まる",
       "市場影響の関数(値 = 仲値 × (1 + η √(数量 / 1 日の出来高)))",
       "仲値 10000、η = 0.1、1 日の出来高 100、成行の買い 1 → 10000 × (1 + 0.1 × √0.01) = 10100。",
-      base_input(market=mkt0(), actions=[place(T0 + 1 * MS, "o1", "buy", "market", 1)],
+      base_input(market=mkt0() + [trade(T0 + 5 * MS, 10000, 5, "buy")], actions=[place(T0 + 1 * MS, "o1", "buy", "market", 1)],
                  fill_model={"tier": 6, "impact": {"kind": "sqrt_temporary", "eta": 0.1, "adv": 100.0, "basis": "mid"}}),
       _o_sqrt)
 
@@ -807,8 +807,8 @@ def _o_perm(inp):
 scene("c2-7-impact-permanent", "C2-7", "能力", "恒久的な市場影響は、自分の約定の後の値を動かし、次の約定の値に効く",
       "市場影響の関数(恒久的な影響 = γ × 約定した数量だけ以後の値が動く)",
       "γ = 5 円/単位。成行の買い 1 → 最良の売り 10001。以後の値は +5 → 次の成行の買い 1 は 10006。",
-      base_input(market=mkt0(), actions=[place(T0 + 1 * MS, "o1", "buy", "market", 1),
-                                         place(T0 + 2 * MS, "o2", "buy", "market", 1)],
+      base_input(market=mkt0() + [trade(T0 + 5 * MS, 10001, 5, "buy")],
+                 actions=[place(T0 + 1 * MS, "o1", "buy", "market", 1), place(T0 + 2 * MS, "o2", "buy", "market", 1)],
                  fill_model={"tier": 6, "impact": {"kind": "linear_permanent", "gamma": 5.0, "k": 0.0, "basis": "best_ask"}}),
       _o_perm)
 
@@ -967,7 +967,7 @@ def _o_spread(inp):
 scene("c2-10-spread", "C2-10", "値", "スプレッドの費用: 成行の買いは仲値 + スプレッドの半分で埋まる",
       "スプレッド",
       "仲値 10000、スプレッド 2(板は 9999 / 10001 で同じ)。成行の買い 1 → 10000 + 1 = 10001。",
-      base_input(market=[book(T0, [(9999, 5)], [(10001, 5)]), trade(T0, 10000, 0.1, "buy"), trade(T0 + 5 * MS, 10000, 0.1, "buy")],
+      base_input(market=[book(T0, [(9999, 5)], [(10001, 5)]), trade(T0, 10000, 0.1, "buy"), trade(T0 + 5 * MS, 10000, 5, "buy")],
                  actions=[place(T0 + 1 * MS, "o1", "buy", "market", 1)],
                  costs=dict(ZERO_COSTS, spread=2.0, mid=10000.0)),
       _o_spread)

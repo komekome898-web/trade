@@ -111,3 +111,17 @@ def status_from(filled: float, qty: float, active: bool, canceled: bool = False,
     if active:
         return "open"
     return "canceled"
+
+
+def issue_schedule(bar_times: list[int], actions: list[dict]) -> dict[int, list[dict]]:
+    """For a bar tool: the actions to issue in the strategy call of bar k = those whose time lies in
+    [bar k, bar k+1) (actions before the first bar go to bar 0; after the last bar, to the last bar).
+    Only times are compared -- no price of a later bar is read."""
+    out: dict[int, list[dict]] = {}
+    for a in sorted(actions, key=lambda x: x["t"]):
+        k = 0
+        for i, bt_ in enumerate(bar_times):
+            if bt_ <= a["t"]:
+                k = i
+        out.setdefault(k, []).append(a)
+    return out
