@@ -549,7 +549,9 @@ def classified_searches(rnd, line_judged, errs, rule_table=None):
                 j += 1
             foot = [x for x in ll[i + 1:j + 1] if x.startswith("cat8_search: complete ")]
             # コマンドに加えて、一覧の sha・件数・当たりの数も同じであること(一覧を書き換えて打ち直した手を同じとしない)
-            cmds[i + 1] = (ll[i + 1], re.sub(r" list=\S+", "", foot[-1]) if foot else None)
+            # list= も含めて同じであること(道の違う一覧を同じとすると、7 列目の重複の検査(一覧の道で見る)を
+            # すり抜けて N・M が 2 倍に数えられる = 監査 84 回目の指摘 1)
+            cmds[i + 1] = (ll[i + 1], foot[-1] if foot else None)
     for st in cut:
         if st in done:
             done.discard(st)
@@ -767,7 +769,7 @@ def cmd_check_elements(a):
                         # 7 列目の手は重複を除いて数える(同じ手を 2 回書いて和を増やさない)。
                         refs = list(dict.fromkeys(strict_refs(logcol)))
                         searches, sum_files, sum_fwh, sum_hits, hit_paths = [], 0, 0, 0, []
-                        seen_lists = set()
+                        seen_lists, seen_shas = set(), set()
                         n_src, m_list = 0, 0
                         for f, _, n in refs:
                             c = step_cmdline(f, n) or ""
@@ -783,11 +785,12 @@ def cmd_check_elements(a):
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の出力に `cat8_search: complete` の終わりの行が無い" % (i + 1, tool, el, f, n))
                                     continue
                                 files, fwh, hts, lst, lsha = int(done.group(1)), int(done.group(2)), int(done.group(3)), done.group(4), done.group(5)
-                                if int(a.round) >= 13 and lst in seen_lists:
+                                if int(a.round) >= 13 and (lst in seen_lists or (int(a.round) >= 15 and lsha in seen_shas)):
                                     # 12 回目の検収: 同じ一覧を別の語で 2 回検索すると N・M が 2 倍に数えられた。13 回目以降は一覧ごとに 1 回だけ数える
                                     hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
                                     continue
                                 seen_lists.add(lst)
+                                seen_shas.add(lsha)
                                 cand = done.group(6)
                                 row_num = (ledger_by_name.get(tool.strip("`")) or {}).get("番号")
                                 if cand != row_num:
