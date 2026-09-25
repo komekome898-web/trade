@@ -1,0 +1,21 @@
+# 項目 3 第 1 周 資料係(表)が打ったコマンド(cwd は /home/user/trade。M = docs/DISCUSSIONS/2026-09-23_backtest_env/item_3/round_1/materials)
+sha256sum docs/DATA/delegations/20260925_backtest_env_prompt.md | cut -c1-12          # 委任文の指紋 da84268e88fc
+(adapter の本体を書く) tests/bt/battery/item_3/adapters/new_impl.py(書く前の版の写し: scratchpad の i3_r1_shiryo_new_impl_head.py)
+git ls-files -z tests/bt/battery/item_3 | xargs -0 sha256sum | sha256sum > $M/fingerprint.txt
+git diff tests/bt/battery/item_3/adapters/new_impl.py > $M/new_impl_adapter.diff
+python3 tests/bt/battery/item_3/run_battery.py --list-targets > $M/targets_list.tsv
+env -u PHASE2_FINAL_EVAL sh $M/run_all.sh new_impl mutant > $M/run_log_part1.tsv
+mv $M/runs/mutant.tsv $M/runs/mutant.obs.jsonl $M/discarded_head_changed/      # 実行の最中に HEAD が動いた(RECORD.md)
+python3 - > $M/head_changed_diff.out   # 退避した実行の 2 回の観測を i3_judge.stable_view で比べた差(本文は RECORD.md の節)
+(run_all.sh に実行の前後の HEAD の記録を足した)
+env -u PHASE2_FINAL_EVAL sh $M/run_all.sh mutant current_impl opp_homerun opp_mlflow opp_freqtrade opp_pysystemtrade opp_luczinsritter opp_polymarket_fill opp_mihircoding_lob opp_isaaccheng_obsim opp_sigc opp_pybotters opp_repro_15 opp_repro_88 > $M/run_log_part2.tsv
+env -u PHASE2_FINAL_EVAL sh $M/run_all.sh new_impl > $M/run_log_part3.tsv
+cd $M && python3 make_tables.py > make_tables.out           # 6 枚の表・mapping.tsv・survey_breakdown.tsv・table_counts.tsv
+cd $M && python3 compare_runs.py > compare_runs.out
+cd $M && python3 recount.py > recount.out                   # make_tables.py を使わない数え直し(runs/*.tsv から)
+cd $M && python3 recount_from_tables.py > recount_from_tables.out
+cd $M && python3 check_names.py > check_names.out
+cd round_1 && md5sum <組の 2 枚> ; cmp -s <組の 2 枚>  > $M/md5sum_pairs.txt
+env -u PHASE2_FINAL_EVAL PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/battery/item_3 tests/bt/item_3 > $M/pytest_item3_r1_shiryo.out   # 215 passed
+git ls-files -z tests/bt/battery/item_3 | xargs -0 sha256sum | sha256sum > $M/fingerprint_after.txt
+ls round_1/表_*.md   # この周の 6 枚のほかに無い = stale への移動なし

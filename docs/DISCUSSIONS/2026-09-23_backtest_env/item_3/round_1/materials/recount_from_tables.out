@@ -1,0 +1,13 @@
+current_1 表_ht9ekn.md A new_impl 正解と一致 53 同じ 53 場面 19 観点
+current_1 表_ht9ekn.md B current_impl 正解と一致 6 同じ 8 場面 19 観点
+current_2 表_1u9a70.md A current_impl 正解と一致 6 同じ 8 場面 19 観点
+current_2 表_1u9a70.md B new_impl 正解と一致 53 同じ 53 場面 19 観点
+survey_1 表_pz6abh.md A new_impl 正解と一致 53 同じ 53 場面 19 観点
+survey_1 表_pz6abh.md B survey_best 正解と一致 11 同じ 18 場面 19 観点
+survey_2 表_fe76bx.md A survey_best 正解と一致 11 同じ 18 場面 19 観点
+survey_2 表_fe76bx.md B new_impl 正解と一致 53 同じ 53 場面 19 観点
+mutant_1 表_fc1pn4.md A new_impl 正解と一致 53 同じ 53 場面 19 観点
+mutant_1 表_fc1pn4.md B mutant 正解と一致 51 同じ 53 場面 19 観点
+mutant_2 表_4rkq83.md A mutant 正解と一致 51 同じ 53 場面 19 観点
+mutant_2 表_4rkq83.md B new_impl 正解と一致 53 同じ 53 場面 19 観点
+all counts match the cells: True
