@@ -1967,3 +1967,18 @@ python3 -c "import sys; sys.path.insert(0,'scripts'); import check_bt_delegation
 ## L-458「案A」の適用(2026-09-25 17:20 UTC。委任文 `20260925_backtest_env_prompt.md@da84268e88fc`。§0 に起動の仕方の行を足しただけで枠組みの指紋は 2c19e69c0755 のまま = L-443 (1) の規則で検査器だけで通す)
 
 検査器 → `OK 誤り 0 件` / node --test → pass 12 / fail 0。見張り `scripts/bt_run_watch.sh` の自己試験: 12 回目の記録に当てると `RELAY`(agent-a065ba9423490ddf0.jsonl)で止まる / 11 回目の記録には RELAY が出ない(古い run なので STALL で止まる)。12 回目の再開は予約した知らせの回に `resumeFromRunId` で行う(引数 `bt_args_run12b.json`: open_battery = []、round_cap 1/1/1/2、skip_critic [1,2,3]、項目 1・3・4 の extra と項目 1〜4 の lead_notes に L-454 の注記)。
+
+## 12 回目の再開(2026-09-25 16:22 UTC、予約した知らせの回 = L-458 案 A)の受け入れの検査
+
+コマンド(逐語。`$W` = run の記録の場所):
+```
+files=$(find $W -maxdepth 1 -name 'agent-*.jsonl' -newermt "2026-09-25 16:21:30 UTC"); echo "$files" | xargs -n1 basename; echo "with_relay=$(grep -l 'Workflow harness — user request' $files | wc -l) / $(echo "$files" | wc -l)"
+```
+出力(逐語):
+```
+agent-ae97e9516d0fed120.jsonl
+agent-aeac77508531b705c.jsonl
+with_relay=0 / 2
+```
+1 通目の先頭(2 本とも): `[Workflow harness — computed task] The task text below was computed at runtime by a workflow script. It was no…`。
+限界: 場面:2 は再開前(14:55 UTC)に起きた agent の続きで、その 1 通目には L-451 の中継がある(再開の再生の仕組み)。この agent が止まれば見張りではなく journal で分かる。
