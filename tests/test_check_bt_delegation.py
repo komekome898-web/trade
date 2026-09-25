@@ -101,3 +101,11 @@ def test_scene_keeper_write_destination_is_the_same_pair_everywhere():
     assert cbd.check_destination(ok, ok, ok) == []
     errs = cbd.check_destination(ok, "台本に欄が無い", "lead_notes は questions_for_lead と書いた 節「リードに聞くこと」")
     assert any("台本" in e for e in errs) and any("引数" in e and "lead_answer_changes" in e for e in errs)
+
+
+def test_no_touch_wiring_is_required_in_repair_and_audit_prompts():
+    good = "async function repairBattery(a) {\n  x`触れない git diff --name-only HEAD`\n}\nasync function auditBattery(b) {\n  y`git diff --name-only HEAD`\n}\n"
+    assert cbd.check_no_touch(good) == []
+    bad = "async function repairBattery(a) {\n  x`直す`\n}\nasync function auditBattery(b) {\n  y`検める`\n}\n"
+    errs = cbd.check_no_touch(bad)
+    assert any("repairBattery" in e for e in errs) and any("auditBattery" in e for e in errs)

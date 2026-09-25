@@ -19,6 +19,10 @@ Checks, all against primary records:
    delegation, the script's 定義 prompt and the args' lead notes: the phrase 節「リードに聞くこと」 and the field
    `lead_answer_changes` (not the worker's `questions_for_lead`) must appear in all of them.
 
+9. The no-touch wiring (audit 60-3 / 61-7): the script's repairBattery text tells the scene keeper not to touch files
+   outside the battery and to paste `git diff --name-only HEAD`, and the auditBattery text tells the auditor to check
+   that diff itself.
+
 Usage: python3 scripts/check_bt_delegation.py [delegation.md] [OWNER_LOG.md] [VERDICTS.md] [workflow.js] [args.json]
 Exit 1 on any error.
 """
@@ -180,6 +184,25 @@ def check_args(args_text: str, delegation_text: str, delegation_name: str, scrip
     return errs
 
 
+NO_TOUCH = (("repairBattery", ("git diff --name-only HEAD", "触れない")), ("auditBattery", ("git diff --name-only HEAD",)))
+
+
+def check_no_touch(script: str) -> list[str]:
+    """Check 9: the repair and audit prompts carry the no-touch wiring."""
+    errs: list[str] = []
+    for fn, phrases in NO_TOUCH:
+        i = script.find(f"async function {fn}(")
+        if i < 0:
+            errs.append(f"台本: {fn} が無い")
+            continue
+        j = script.find("\nasync function", i + 1)
+        body = script[i:j if j > 0 else len(script)]
+        for ph in phrases:
+            if ph not in body:
+                errs.append(f"台本: {fn} の文に {ph!r} が無い(場面集の直しが実装に触れない配線 = 監査 60-3)")
+    return errs
+
+
 DEST_PHRASES = ("節「リードに聞くこと」", "lead_answer_changes")
 
 
@@ -199,6 +222,7 @@ def check_destination(delegation_text: str, script: str, args_text: str | None) 
 def main(argv: list[str]) -> int:
     paths = [Path(argv[i]) if i < len(argv) else Path(DEFAULTS[i]) for i in range(4)]
     errs = check(*(p.read_text(encoding="utf-8") for p in paths[:3]))
+    errs += check_no_touch(paths[3].read_text(encoding="utf-8") if paths[3].exists() else "")
     errs += check_destination(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "",
                               Path(argv[4]).read_text(encoding="utf-8") if len(argv) >= 5 else None)
     if len(argv) >= 5:
