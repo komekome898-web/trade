@@ -702,3 +702,59 @@ A が一致しなかった 5 場面は、B も同じく「対応なし」だっ�
 - 実装の側 [止める] 1(i0-r16-02 = 核が作った入れ物を鍵に持つ値を freeze は受け付け thaw で TypeError。正しい入力で約定の模型の呼び出しの中で止まる = 射程の中)・[直す] 2(01 = 衝突する鍵が複数ある段の枠数、03 = 共有された入れ物の展開が指数)。射程の外の反例は 0 件(L-445 の射程で測っている)。
 - 場面集の側 [止める] 1(i0-r16-04 = NO_INT の 5 場面が「断った」と「入口が無い」を見分けられない。リードの答え(08:50 UTC)が場面係の起動(08:41)より後だった = リードの答えの時機の族、3 回目)・[示唆] 1。第 17 周の場面係が直す。
 - 表 0#16 で新実装 41/46 の 5 件の外れは、この見分けの穴によるもの(新実装は断っている = 正解の側)。
+
+## 第 17 周(進行中。12:55 UTC の見回りで写した分)
+
+**終わった項目 0 / 5。項目 0 は第 17 周。通過に残るもの = 批評家 0#17(表 0#17 のあと)の実装の側の [止める] 0。**
+
+| 段 | 開始 | 終了 |
+|---|---|---|
+| 作る:0#17 | 11:14:35 | 12:52:21 |
+| 場面の直し:0#r17-1 | 11:14:35 | 12:32:53 |
+| 監査役(場面):0#r17-1 | 12:32:55 | 12:38:39 |
+| 表:0#17 | 12:52:22 | (進行中) |
+
+### 場面係 r17-1 の返り値(逐語)
+
+- definitions: /home/user/trade/tests/bt/battery/item_0/DEFINITIONS.md(gen_definitions.py で作り直し、--check →「OK」。正しさの行に、正解が「断る」の場面の採点(断りの記録で決める)を足した。NO_INT の 5 場面の期待は {"int64_ns": NO_INT, "refused_by_entry": true})
+- runner: /home/user/trade/tests/bt/battery/item_0/run_battery.py(第 r17-1 回: refusal_problem・_handed_problem・_refusal_chain_problem・expects_refusal を足し、correctness は正解が「断る」の場面で、対象の入口に帰せた断り(common.refusal が例外の物から作った記録)だけを「正解と一致」にする。入口が無い・帰せない断りは「対応なし」、時刻を作れば「不一致」)
+- scenarios: 46 / mutant: /home/user/trade/tests/bt/battery/item_0/mutant.py(--check → changed scenes: ['p4-received-time'] / OK。試金石は to_nanos を包まないので、断りの記録の入口の名は新実装と同じ)
+- survey_run: ["run_battery.py --list-targets の 57 の設定つき対象(新実装・当方の現状・試金石・相手 37・再現 1 の設定つき対象)を全部 46 場面に通し、全部 rc=0(11:39:28〜11:53:16 UTC、記録 scratchpad の bt/r17-1/logs/run_all.log、写し docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/battery/materials/r17-1/item0_r17-1_scenekeeper_run_all.log)。相手と再現の 54 の出力を tests/bt/battery/item_0/survey_results/ に写した", "HEAD の survey_results と照らした結果(materials/r17-1/item0_r17-1_scenekeeper_compare_runs.txt): 2,484 件のうち正しさ・再現・状態が変わったのは 2 件だけ。basana の p2-us-text-subns と pyalgotrade の p2-s-text-subns が「対応なし」→「正解と一致」(道具の入口が int() で十進の小数を断った。断りの記録の枠は道具の配布物の bitstamp/trades.py・bitcoincharts/barfeed.py)", "調査結果の側で断りの記録を持つ行は 4 件(pyalgotrade の p2-s-text・p2-s-text-subns、basana の p2-us-text・p2-us-text-subns)で 4 件とも帰せた。正解が整数の 2 場面は「対応なし」のまま", "新実装は 46 場面すべて「正解と一致」(第 16 周の表の P0-2 は 13/18 で、欠けた 5 場面がこの回の NO_INT の 5 場面だった)"]
+- survey_not_run: ["無し。この回で走らせなかった設定つき対象は 0。動かせなかった候補は検討表 opponents/CONSIDERED.md のとおりで、この回は行を変えていない(check_bt_considered.py … --write →「OK 誤り 0 件」)", "リードの答え F3(P0-2 の全場面で入口の基準を揃える)はこの起動の lead_notes に無く、道具ごとに起動文に無い分岐((a) 単位ごとか単位 × 型ごとか、(b) データの入口に渡せる型、(c) 事象の場面の道、(d) barter の Rust の driver)が出るので当てていない。ROOTCAUSE_r17-1.md §5.2 の 1 で聞いた"]
+- rootcause: `/home/user/trade/tests/bt/battery/item_0/ROOTCAUSE_r17-1.md` / check_output: `OK 誤り 0 件`
+- lead_answer_changes: ["「断る」を正解に入れる場面の範囲: リードの答え(VERDICTS run11 item0、i0-r15-05 への事前の答え)は「float が正確に持たない値では「断る」も正解に入れる(黙って丸めた値は不一致)」と float の場面を名指す。この回は、ナノ秒より細かい桁を持つ十進の文字列の 3 場面(秒・ミリ秒・マイクロ秒の text-subns)にも同じく「断る」を正解とした(float の 2 場面 s-float-subns・ms-float-subns と合わせて 5 場面)。理由: 3 場面とも、入力が持つ値 × 倍率 がナノ秒の整数にならず、正解の int64 ナノ秒が無い理由が float の 2 場面と同じ。批評家 i0-r16-04 の向きも「前者を NO_INT の場面の正解と一致に数える」で 5 場面を名指す。また、この 5 場面では正解の整数が無いので、「断る」が唯一の正解になる(「も」の片方の整数は無い)。float が持つ値がナノ秒で割り切れる場面(float-held の 3 場面。マイクロ秒の場面は書いた十進 …456.789 を float が持てないが、入力の物 1704067200123456.75 そのものは正確に持つ)は、正解は整数 1 つのままで、断りは「対応なし」とした。"]
+
+### 監査役(場面) r17-1 の出力(逐語)
+
+- **aud-r17-1-01** [聞く](repeat_of: None)
+  docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/battery/materials/r17-1/item0_r17-1_scenekeeper_compare_runs.txt の OUTPUT_ONLY 行(opp_predictivedev_tradesim@p7-latency-model-swap、opp_ziplime@label=close/start@p4-future-read-attempt)は、ROOTCAUSE_r17-1.md §6.1 で「前の回からある壁時計・一時フォルダの3件」として今回の直しと無関係と処理されている。だが、この3件が実行のたびに埋め込み値(fill_time_ns 等)が変わる原因(壁時計・一時フォルダ由来)は、今回も含め複数回にわたり root cause の検討なしに『既知のノイズ』として素通りされている。委任文の完了の形(L-405)は『信頼性と再現性』を明記しており、この3場面の『再現』欄(2回の実行で同じ/2回で違う)の採点そのものは揺らいでいないとしても、埋め込み値が毎回変わる事実は測っていない範囲として明記されているか、それとも『前からある』の一言で毎回スキップされているだけか(P16 の型: 棄却/保留方向に効く前提の一次資料なしの繰り返し不問)。
+- **aud-r17-1-02** [聞く](repeat_of: None)
+  ROOTCAUSE_r17-1.md §5.1 は、リードの既存の答え(i0-r15-05、float の2場面だけを名指す)を、この回の場面係の判断で十進文字列の3場面(text-subns)にも拡張し、『lead_answer_changes に返す』形で開示している。これは手続き上は正しい経路(CLAUDE.md §0.1「作業中に、原文に無い判断が必要になったら…追加で擦り合わせる」)だが、拡張の判断自体は今回の場面係が独自に行い、拡張した状態のまま r17-1 の直しが本 ROOTCAUSE の主張の表・試験に組み込まれてリードの承認を待たずに実行されている。リードが『違うと言えば戻す』形で事後承認を待つ設計(§5.2 と同型)である場合、リードの承認前に本文の主張の表・試験・DEFINITIONS.md が既にこの拡張を前提に固定されている点(§5.2.1 は聞くだけで実装は先行)は、A-6(判定バーを開封後に動かさない/一度だけ)やA-13(枠組みはオーナーに見せてから進める)の型に照らして、この程度の先行実装が許容される範囲か。
+
+### 作業者 0#17 の返り値(逐語)
+
+- `structural_change`: 核が平らなデータにする操作(freeze・settle・renew・thaw の歩き、FrozenDict の hash、核の比べ)は、入れ物を「道ごと」ではなく「物ごとに 1 回」扱うようにした。_walk は作り直した入れ物を id と高さで覚えて使い回し(共有は渡されたとおりに保つ)、FrozenDict の hash は求められたときに 1 回だけ反復で作る。_plain_equal は、候補が複数ある鍵も同じ積み上げの上の課題として比べ、比べた組を覚える。thaw は戻す形を位置で決める(辞書の鍵・集合の要素の位置は、hash を持つ核の不変の写しのまま返す)。契約は core-18。
+- `tests_added`: 496 / `test_tail`: 9891 passed, 6 skipped, 4 warnings in 1150.47s (0:19:10)。落ちたものは無い。批評家の第 16 周の試験(実装の側 3 本): 直す前 15 failed, 1 passed → 直した後、第 15 周の 2 本と合わせて 47 passed in 0.82s。新しい格子 test_bt0_r17_shared_and_placed.py: 直す前の核(git archive 1d8a107)で 334 failed, 161 passed → 直した後 496 passed(最後に足した 1 件を含む)。1 回目の全試験(11:52 UTC〜)はディスクの空きが 19M になって 88% 以降が準備の段の誤り(E)になり、ログが途中で切れた。自分の実行の一時フォルダ /tmp/pytest-of-root/pytest-487(217M)だけを消し、ほかの者の全試験が終わるのを待って回し直した。
+- `changed_files`: ["/home/user/trade/src/bot/bt/core/values.py", "/home/user/trade/src/bot/bt/core/api.py", "/home/user/trade/src/bot/bt/core/contract.py", "/home/user/trade/tests/bt/item_0/test_bt0_r17_shared_and_placed.py", "/home/user/trade/tests/bt/item_0/test_bt0_r14_process_state.py", "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/ROOTCAUSE.md", "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/ (直す前と後の記録: pytest_item0_r17_worker_start.log, pytest_item0_r17_worker_grid_before_fix.log, test_bt0_r17_shared_and_placed_as_run_before_fix.py, item0_r17_worker_probe_before.{py,out}, item0_r17_worker_probe_after.{py,out}, item0_r17_worker_headroom.py, item0_r17_worker_chain_times.out, item0_r17_worker_speed.{py,out}, pytest_item0_r17_worker_full_tail.log)"]
+- `unmet`:
+  - 満たせなかった要件の行: 無し。以下は提出前の吟味の記録(委任文 §3。全文は round_17/ROOTCAUSE.md §6〜§8)。
+  - (1) 指摘ごとの直した根拠: i0-r16-02 [止める] = values.py 1730 行 thaw・1747 行の 2 つの位置・1750 行 _thaw_open(鍵・要素の位置は _renew_open と同じ不変の写し)と api.py 164-168 行。批評家の試験 test_i0r16_accepted_keys_read_back.py は 10 failed → 10 passed。自分の格子 K(鍵になる値 46 × 位置 9 × 読み手 4、乱数の文法 600 件の往復)は直す前 308 件落ちる → 全部通る。i0-r16-03 [直す] = values.py 1002 行 _walk(1020 行で覚え、1038 行で使い回しと高さの確かめ)、1445 行 __hash__・1458 行 _fd_fill・1466 行 _fd_of_table・1478 行 _fd_hash。批評家の試験 test_i0r16_shared_containers_bounded_work.py は 2 failed(20 秒で終わらない)→ 2 passed。共有の 8 形 × freeze・settle・renew・thaw・== の 40 通りは全部 5 ms 以下(直す前は入れ子 18 で 0.68〜8.9 秒)。格子 S の 9 入口(発注・出口の箱・口座の強制注文を含む。入れ子 46〜91、展開すれば 2**45〜2**90)は直す前は全部 60 秒で終わらず、直した後は全部通る。i0-r16-01 [直す] = values.py 1546 行 _plain_equal(課題の積み上げ、1550 行で答えを覚える)・1644 行 _match。批評家の試験 test_i0r16_colliding_frozendict_chain_frames.py は 3 failed → 4 passed。格子 C(1 段に同じ hash の鍵 3〜5 個 × 1〜90 段 × 入れ物 3 種 × 答え 3 種、要る枠 ≤ CALL_FRAMES + 段数)と、深い候補が 2〜3 個の鎖(90 段で 2.78 秒以下)が通る。
+  - (2) 同じ根の全箇所: 核が平らなデータをたどる所は _walk の 4 つの使い手(freeze・settle・renew・thaw)で全部。hash を取る所は _hashed(辞書の鍵・集合の要素)・_match の索引・FrozenDict.__hash__。比べる所は _plain_equal と、インタプリタが辞書・集合を作るときの鍵の比べ(tuple・frozenset は C、FrozenDict から下は _plain_equal)。thaw を通る読み手は values.thaw と OrderRequest.extra_dict の 2 つ。settle の結果は核の中で構築子に渡って凍らされるだけで、受け手には渡らない(engine.py 506 行・1173 行を読んだ)。
+  - (3) 試験: 全試験 9891 passed(場面集・批評家・項目 0)。途中で自分の試験 3 件が落ちたので直した: 第 15 周の格子 D(発注の道の FrozenDict の鍵で、hash を遅らせたために要る枠が 30 を超えた → 内包表記を繰り返しに、_HashOnly を C の slot だけの int の子にして 24。前は 22)、第 8 周の送り手の敵対者 2 件(hash の欄の「まだ」の印を object() にしたため受け手どうしが同じ物を持った → インタプリタが 1 つだけ持つ None と False に)。
+  - (4) 厳しい批評家が止めそうな点と潰した結果: thaw が共有を保つので、送り手が同じ list を 2 か所に置けば戻した値でも 1 つの list になる(copy.deepcopy と同じ。値の外とは何も共有しない。送り手が共有していない等しい 2 つは 2 つのまま。test_s_equal_objects_the_sender_did_not_share_stay_apart)/ 覚えた物を使うと MAX_NESTING を素通りしないか(格子 D: 浅い所で覚えて深い所に置く・逆、深さ 95〜101 で、共有しない写しと同じ受け付け・断り)/ 比べを作り替えて Python の == と答えが違わないか(第 16 周の乱数の比べと、この周に足した共有を含む乱数の値 2 万組以上をライブラリの型に写した神託と照らした)/ 速さ(直した後 140.9〜154.9、直す前 141.6〜153.0 us/bar。揺れの中)。
+  - (5) 場当たりでないこと: 核の差分に場面の id・場面集の語は無い(git diff 1d8a107 -- src/bot/bt/core | grep -ciE 'scene|p2-|battery' → 0)。批評家の試験は変えていない。上限や閾値を置いて断る形(展開した大きさの上限)は採らなかった(根拠の無い値になり、送り手が作れる小さな値を断る)。
+  - (6) 敵対者の格子を先に書いた: tests/bt/item_0/test_bt0_r17_shared_and_placed.py(格子 K・S・D・C と、共有を含む乱数の比べ)。直す前の核で 334 failed を記録した(materials/pytest_item0_r17_worker_grid_before_fix.log)。途中で試験の側の誤りを 3 つ直した(ROOTCAUSE §7)。特に、子のプロセスが編集可能な導入の bot を読んで直す前の核で走っていなかったので、親の bot の場所を PYTHONPATH に置き、子で確かめる形にした。列に入れなかったもの(ファイルの先頭に書いた): それ自体が共有された TUPLE の鍵(送り手の辞書を作るときにインタプリタが同じ展開をする)、共有された tuple を持つ値の hash をとること(Python 3.11 のインタプリタの tuple の hash。核がとるのは鍵・要素だけで、それは送り手の辞書・集合もとっている)、衝突の鎖のいちばん上の FrozenDict より上の frozenset の比べ(C)、送り手が書いた class(L-445 の射程の外)、スレッド。
+  - 残る限界(実測): 衝突の鎖の時間は段数に対しておよそ 2 乗で増える(深い候補 3 個・90 段で 2.78 秒)。インタプリタが辞書を作るときの鍵の比べは、呼び出しごとに新しい覚えで始まるため。送り手が公開の FrozenDict({...}) で同じ鎖を作るときも同じ比べをする。
+- `questions_for_lead`:
+  - [指紋の食い違い] 起動文は委任文の指紋を cdf623e4fb24 と書いているが、作業木とコミット abb256d の版の実測は 20487e2d8aec(sha256sum … | cut -c1-12)。cdf623e4fb24 は 1 つ前の版(dc3f666)。違いは L-445 の射程の行と批評家の格付けの 1 文で、作業者の手順は変わらない。起動文の「委任文が優先する」に従い、今の版で作業した。次の起動文の指紋を直すかを決めてほしい。
+  - [振る舞いの変化の周知、core-18] (a) thaw・OrderRequest.extra_dict() は、辞書の鍵・集合の要素の位置にある入れ物を、list・dict・set ではなく核の不変の写し(tuple・frozenset・FrozenList・FrozenSet・FrozenDict)で返す。前はそこでインタプリタの TypeError が出ていた。(b) 送り手が同じ入れ物を 2 か所に置いた値は、freeze・renew・thaw の結果でも 1 つの物が 2 か所から指される(copy.deepcopy と同じ)。thaw の結果の list を片方から変えると、もう片方も変わる。値の外の物とは何も共有しない。項目 1〜13 で extra_dict() を読む者のために、この 2 行を lead_notes に入れるかを決めてほしい(契約と values.py・api.py の説明には書いた)。
+  - [環境] この周の途中で、ディスクの空きが 19M になった(df -h / → 252G 38G 19M 100%)。自分が作った一時フォルダ 1 つ(217M)だけを消した。今の空きは 459M。場面係の scratchpad/bt/venvs が 16G ある。次の周の全試験も同じ理由で落ちうるので、容量の扱い(-o tmp_path_retention_policy=none を全員の全試験に付けるか、venvs を整理するか)を決めてほしい。
+
+### リードの答え(2026-09-25 13:00 UTC。段の途中で規則は足さない。次の起動の lead_notes に写す)
+
+- 場面係の変えた点(text-subns の 3 場面も「断る」を正解に): **採る。**入力が持つ値 × 倍率 がナノ秒の整数にならない理由が float の 2 場面と同じで、批評家 i0-r16-04 の向きと一致する。float-held の 3 場面は正解が整数 1 つのままでよい。
+- aud-r17-1-01 [聞く]: リードの答え = 「前からある」で毎回素通りしていた(当たっている)。この 3 件(predictivedev_tradesim の p7-latency-model-swap、ziplime の p4-future-read-attempt ×2)の埋め込み値が壁時計・一時フォルダで変わることは、通過の報告の「測っていない範囲」に対象名と欄の名を添えて逐語で載せる。再現の欄の採点(2 回で同じ)は値の欄を見ない設計なので変わらない。次の場面集の直しで、その対象の adapter が壁時計・一時フォルダの値を出力に写さない形にできるかを場面係が確かめ、できなければ理由を ROOTCAUSE に書く。
+- aud-r17-1-02 [聞く]: リードの答え = **この程度の先行は許す。**理由: 変えたのは実装を測る判定バーではなく場面集の正解の範囲で、向きは批評家 i0-r16-04 が名指した 5 場面そのもの。場面係は `lead_answer_changes` で開示し、リードが違うと言えば戻す形になっている(§0.1 の「作業中に原文に無い判断が必要になったらそこで止めて擦り合わせる」を、run の中では「開示して続け、リードが後で判定する」形で運用している = リードの答えが run の途中では届かないため。12 回目からは答えを起動前に lead_notes に入れる)。
+- 作業者の問い 1(指紋の食い違い): 起動文の指紋は起動時の版で、L-445 を当てたあとの版(20487e2d8aec)を読んで作業したのは正しい。12 回目の起動文は新しい委任文(20260925 版)の指紋を使う。
+- 作業者の問い 2(core-18 の振る舞いの変化 = extra_dict() の鍵・要素の位置の入れ物は核の不変の写しで返る / 共有は保たれる): **項目 1〜4 の lead_notes に 2 行を入れる。**
+- 作業者の問い 3(ディスク): リードが処置する(下の実測)。全試験に `-o tmp_path_retention_policy=none` を付けることは、次の起動の lead_notes に「全試験を回すときは付ける」と書く(pyproject は変えない)。scratchpad の venvs(16G)は調査結果の側の対象を走らせるのに要るので消さない。
