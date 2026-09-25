@@ -453,6 +453,43 @@ def search_cmd_only(cmdline):
     return not any(t and set(t) <= set("();<>|&") for t in toks)
 
 
+def step_start(fname, lno):
+    """その行を含む手の見出しの行の番号(1 始まり)。"""
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    if not lp.exists():
+        return None
+    ll = lp.read_text().splitlines()
+    k = min(int(lno), len(ll)) - 1
+    while k >= 0 and not ll[k].startswith("--- "):
+        k -= 1
+    return k + 1 if k >= 0 else None
+
+
+CLASSIFY_RE = re.compile(r"^cat8_classify: complete step=(\S+):(\d+) hits=(\d+) matched=(\d+) unmatched=(\d+) rules=(\d+) candidate=(8-\d{3})$", re.M)
+
+
+def classified_searches(rnd, line_judged, errs):
+    """15 回目以降: cat8_classify.py で決まりに当てた検索の手(見出しの行の番号)の集まり。決まりに当たらなかった行は
+    `### 当たりの判定(行ごと)` の表に理由つきで要る(無ければ errs に足し、その検索は数えない)。"""
+    fname = "20260923_tools_8_run%s.log" % rnd
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    done = set()
+    if not lp.exists():
+        return done
+    for blk in re.split(r"(?m)^(?=--- )", lp.read_text()):
+        m = CLASSIFY_RE.search(blk)
+        if not m or m.group(1) != fname:
+            continue
+        miss = [u for u in re.findall(r"^unmatched\t(\S+:\d+)\t", blk, re.M) if not line_judged.get(u)]
+        if miss:
+            errs.append("生ログ %s: cat8_classify.py の手の決まりに当たらなかった行 %d 件が `### 当たりの判定(行ごと)` の表に理由つきで無い: %s" % (fname, len(miss), " ".join(miss[:3])))
+            continue
+        st = step_start(fname, int(m.group(2)))
+        if st:
+            done.add(st)
+    return done
+
+
 def mklist_footer(fname, lno, list_path):
     """同じ生ログの、その行より前にある cat8_mklist.py の手のうち、out= が list_path の最後のもの。"""
     lp = pathlib.Path("docs/DATA/probes") / fname
@@ -503,16 +540,24 @@ def cmd_check_elements(a):
         sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
     section_text = "\n".join(lines[st:en])
     # `### 当たりの判定` の表: | ファイルの道 | 当たった行の数 | 述語に当たらない理由 |(監査 67 回目の指摘 1。理由の中身は監査で読む)
-    hit_judged, in_hj = {}, False
+    hit_judged, in_hj, line_judged, in_lj = {}, False, {}, False
     for ln in lines[st:en]:
         if re.match(r"^#{2,4} ", ln):
-            in_hj = "当たりの判定" in ln
+            in_lj = "当たりの判定(行ごと)" in ln
+            in_hj = "当たりの判定" in ln and not in_lj
+            continue
+        if in_lj and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
+            c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
+            if len(c) >= 2 and c[0] not in ("ファイルの道と行", "道と行"):
+                line_judged[c[0].strip("`")] = c[-1]
             continue
         if in_hj and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
             # 道の中の `|` は `\|` と書く(監査 68 回目の指摘 2-3)
             c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
             if len(c) >= 3 and c[0] not in ("ファイルの道", "道"):
                 hit_judged[c[0].strip("`")] = c[2]
+    classify_errs = []
+    classified = classified_searches(a.round, line_judged, classify_errs) if a.round and int(a.round) >= 15 else set()
     questions, in_q = [], False
     for ln in lines[st:en]:
         if re.match(r"^#{2,4} ", ln):
@@ -520,7 +565,7 @@ def cmd_check_elements(a):
             continue
         if in_q and ln.strip():
             questions.append(ln)
-    errs, names, table, in_tab, in_list = [], [], {}, False, False
+    errs, names, table, in_tab, in_list = list(classify_errs), [], {}, False, False
     in_find, in_trace, n_find, n_trace = False, False, 0, 0
     alt_head, alt_first = None, None
     cand_re = re.compile(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`([^`\n]+)`\s*\((8-\d{3}|新)\)")
@@ -662,7 +707,8 @@ def cmd_check_elements(a):
                                 if cand != row_num:
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の候補 %s が、この行の候補の番号 %s と違う(ほかの候補の手を引いている)" % (i + 1, tool, el, f, n, cand, row_num))
                                 sum_files += files; sum_fwh += fwh; sum_hits += hts
-                                hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
+                                if step_start(f, n) not in classified:
+                                    hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
                                 mk = mklist_footer(f, n, lst)
                                 if not mk:
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧 %s を作った cat8_mklist.py の手が、同じ生ログのそれより前に無い" % (i + 1, tool, el, f, n, lst))
@@ -803,9 +849,13 @@ def cmd_check_elements(a):
         lp = pathlib.Path("docs/DATA/probes") / ("20260923_tools_8_run%s.log" % a.round)
         if lp.exists():
             txt = lp.read_text()
+            pos = 1
             for blk in re.split(r"(?m)^(?=--- )", txt):
+                start, pos = pos, pos + blk.count("\n")
                 cl = blk.split("\n", 2)
                 if len(cl) < 2 or "cat8_search.py" not in cl[1]:
+                    continue
+                if start in classified:
                     continue
                 if not SEARCH_DONE_RE.search(blk) and re.search(r"^cat8_search: INCOMPLETE", blk, re.M) is None:
                     continue
