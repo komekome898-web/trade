@@ -149,3 +149,85 @@
 | 実装(`src/bot/bt/`)と作業者の試験(`tests/bt/item_0/`)に触れる | 触れていない(§8) |
 | 既存の試験を弱めた・消した | 消していない。値の名を替えた 4 ファイルと、設定の記録の試験の読み取りの場面の扱いだけを変えた(§6.2) |
 | 自分の作業の採点を書く(O-10) | この表は候補と、したことだけを書く |
+
+### 6.4 試験の結果
+
+- 直す前に書いた試験を直す前に回した記録: `<S>item0_r16-1_scenekeeper_tests_first_before.txt`(収集の段で `scenes.extra_values_of` が無くて落ちた)。
+- 全試験: `PYTHONPATH=src python -m pytest -p no:cacheprovider`(09:45:52〜10:03:56 UTC、`<S>pytest_item0_r16-1_scenekeeper.log`)の末尾の行「9362 passed, 6 skipped, 4 warnings in 1082.82s (0:18:02)」。
+- 場面集の全部と批評家 i0-r11 の試験(最後の編集のあとに打った。`<S>item0_r16-1_scenekeeper_pytest_after.txt`)「330 passed in 144.97s」。
+- `<S>item0_r16-1_scenekeeper_checks.txt`: `mutant.py --check` →「OK」、`check_bt_considered.py … --write` →「OK 誤り 0 件」、`gen_definitions.py --check` →「OK」。
+- 行と語の判断: 印のある行の判断の無い行 0、語の判断の問題 0(`line_marks`・`term_marks`。足した判断は `<S>item0_r16-1_scenekeeper_judge_lines.py`・`…_judge_terms.py` が書いた。正の定義 C の凍結した段落と `def_axes/` の切片の語は「写し」、ほかは「表の意味」)。
+
+## 8. `git diff --name-only HEAD` の出力(返す前に最後に打った)
+
+この起動の間にリードが途中の版を何度もコミットした(`git log --oneline 0f2e07d..HEAD` の 9 件。最後は 1306987)。この回の変更はそれらのコミットにほぼ全部入っているので、HEAD との差分はこのファイルの最後の追記だけになる。この回の変更の全部は、起動の始めの版 0f2e07d との差分で示す(下の 2 つ目。相手と再現の出力 `survey_results/opp_*`・`repro_*` の 54 本を除いて列べた)。
+
+```
+$ git diff --name-only HEAD
+tests/bt/battery/item_0/ROOTCAUSE_r16-1.md
+
+$ git diff --name-only 0f2e07d -- tests/bt/battery/ (survey_results/opp_* と repro_* を除く)
+tests/bt/battery/item_0/DEFINITIONS.md
+tests/bt/battery/item_0/ROOTCAUSE_r16-1.md
+tests/bt/battery/item_0/adapters/common.py
+tests/bt/battery/item_0/adapters/current_impl.py
+tests/bt/battery/item_0/adapters/new_impl.py
+tests/bt/battery/item_0/def_axes/jC.tsv
+tests/bt/battery/item_0/gen_definitions.py
+tests/bt/battery/item_0/grid_c.py
+tests/bt/battery/item_0/line_judgments.tsv
+tests/bt/battery/item_0/opponents/CONSIDERED.md
+tests/bt/battery/item_0/opponents/aat_adapter.py
+tests/bt/battery/item_0/opponents/backtesting_adapter.py
+tests/bt/battery/item_0/opponents/backtrader_adapter.py
+tests/bt/battery/item_0/opponents/barter_adapter.py
+tests/bt/battery/item_0/opponents/basana_adapter.py
+tests/bt/battery/item_0/opponents/daniyalmlk_slippage_adapter.py
+tests/bt/battery/item_0/opponents/fast_trade_adapter.py
+tests/bt/battery/item_0/opponents/finmarketpy.log
+tests/bt/battery/item_0/opponents/finmarketpy_adapter.py
+tests/bt/battery/item_0/opponents/freqtrade_adapter.py
+tests/bt/battery/item_0/opponents/gobacktest_adapter.py
+tests/bt/battery/item_0/opponents/hftbacktest_adapter.py
+tests/bt/battery/item_0/opponents/lib_pybroker_adapter.py
+tests/bt/battery/item_0/opponents/luczinsritter_adapter.py
+tests/bt/battery/item_0/opponents/mihircoding_lob_adapter.py
+tests/bt/battery/item_0/opponents/nickgardi_orderbooksim_adapter.py
+tests/bt/battery/item_0/opponents/pineforge_adapter.py
+tests/bt/battery/item_0/opponents/predictivedev_tradesim_adapter.py
+tests/bt/battery/item_0/opponents/pyalgotrade_adapter.py
+tests/bt/battery/item_0/opponents/qf_lib_adapter.py
+tests/bt/battery/item_0/opponents/qstrader_adapter.py
+tests/bt/battery/item_0/opponents/quantcore_adapter.py
+tests/bt/battery/item_0/opponents/quanttrader_adapter.py
+tests/bt/battery/item_0/opponents/repro_lean52.py
+tests/bt/battery/item_0/opponents/rqalpha_adapter.py
+tests/bt/battery/item_0/opponents/sarthak_execsim_adapter.py
+tests/bt/battery/item_0/opponents/sigc_adapter.py
+tests/bt/battery/item_0/opponents/vnpy_adapter.py
+tests/bt/battery/item_0/opponents/ziplime_adapter.py
+tests/bt/battery/item_0/opponents/zipline_reloaded_adapter.py
+tests/bt/battery/item_0/run_battery.py
+tests/bt/battery/item_0/scenes.py
+tests/bt/battery/item_0/survey_results/attempts/34.log
+tests/bt/battery/item_0/survey_results/attempts/61.log
+tests/bt/battery/item_0/survey_results/attempts/r16-1_unit_entries.txt
+tests/bt/battery/item_0/term_judgments.tsv
+tests/bt/battery/item_0/test_battery_def_grids.py
+tests/bt/battery/item_0/test_battery_item0.py
+tests/bt/battery/item_0/test_battery_r13_claims.py
+tests/bt/battery/item_0/test_battery_r15_unplaced.py
+tests/bt/battery/item_0/test_battery_r16_units.py
+
+$ git diff --name-only 0f2e07d -- src/bot/bt tests/bt/item_0
+src/bot/bt/core/contract.py
+src/bot/bt/core/time.py
+src/bot/bt/core/values.py
+tests/bt/item_0/test_bt0_r14_process_state.py
+tests/bt/item_0/test_bt0_r15_library_code.py
+tests/bt/item_0/test_bt0_r16_one_reading.py
+tests/bt/item_0/test_bt0_scene_set.py
+tests/bt/item_0/test_bt0_time.py
+```
+
+tests/bt/battery/ の外のファイル: 上の 3 つ目の `src/bot/bt/` と `tests/bt/item_0/` の差分は、同じ時間に第 16 周の直しをした作業者の物で(リードのコミット cfceaed ほかに入っている)、場面係は書いていない。場面係が tests/bt/battery/ の外で変えた物は、scratchpad の venv(quantcore の venv への pyarrow の導入と barter の driver の作り直し。記録は `survey_results/attempts/34.log`・`61.log`)だけで、リポジトリのファイルではない。
