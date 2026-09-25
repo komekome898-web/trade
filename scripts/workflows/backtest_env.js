@@ -336,16 +336,20 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     const overwhelm = item.id === 13
     const okC = eqC || (jc.length === 3 && (overwhelm ? winsC >= 2 : lossC < 2)), okS = eqS || (jsv.length === 3 && (overwhelm ? winsS >= 2 : lossS < 2))
     const stops = c ? c.findings.filter(f => f.level === '止める') : [{ id: 'critic-missing', level: '止める', text: '批評家が返らなかった', evidence: '', repeat_of: null, patchwork: false }]
+    // L-441 (案 2): item 0 passes on the implementation-side [止める] only; its battery-side [止める] are repaired in
+    // parallel by batteryFollowUp() and do not hold items 1..12 (owner: 「案2 実装の通過と場面集の直しを分ける」)
+    const stopsImpl = item.id === 0 ? stops.filter(f => f.target !== '場面集') : stops
+    const stopsBat = item.id === 0 ? stops.filter(f => f.target === '場面集') : []
     let audit = null
-    if (okC && okS && stops.length === 0) {
-      audit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の作業者の報告(返り値の逐語: ${JSON.stringify(w).slice(0, 15000)})と、そこから引かれたファイル。組の判定: 対現状 ${eqC ? '同等(表が左右同一 = L-422)' : winsC + '/3'}・対調査 ${eqS ? '同等(表が左右同一 = L-422)' : winsS + '/3'}。審査員の出力の逐語(この周。new_chosen = 新実装を選んだ、opp_chosen = 相手を選んだ): ${JSON.stringify([...jc, ...jsv]).slice(0, 12000)}。批評家の出力の逐語: ${JSON.stringify(c ? c.findings : []).slice(0, 8000)}。round_${attempt}/JUDGES.md・AUDIT.md・REPORT.md は Workflow の記録からリードが周の終わりに書き出す(この監査の時点では無いことがある。無いことは [止める] の根拠にしない。第 9 周の報告の監査の指摘 1)。委任文 ${DOC} §0 の表のオーナーの原文と照らす。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
+    if (okC && okS && stopsImpl.length === 0) {
+      audit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の作業者の報告(返り値の逐語: ${JSON.stringify(w).slice(0, 15000)})と、そこから引かれたファイル。組の判定: 対現状 ${eqC ? '同等(表が左右同一 = L-422)' : winsC + '/3'}・対調査 ${eqS ? '同等(表が左右同一 = L-422)' : winsS + '/3'}。審査員の出力の逐語(この周。new_chosen = 新実装を選んだ、opp_chosen = 相手を選んだ): ${JSON.stringify([...jc, ...jsv]).slice(0, 12000)}。批評家の出力の逐語: ${JSON.stringify(c ? c.findings : []).slice(0, 8000)}。${stopsBat.length ? `場面集の側の [止める] ${stopsBat.length} 件は、オーナー決定 L-441(「案2 実装の通過と場面集の直しを分ける」)により項目 0 の通過を止めず、通過のあと場面係が項目 1〜12 と並行して直す(台本の batteryFollowUp)。場面集の側の [止める] が残っていること自体はこの監査の [止める] の根拠にしない。リードはオーナーへの通過の報告にその件数と逐語を「並行して直しているもの」として書く。` : ''}round_${attempt}/JUDGES.md・AUDIT.md・REPORT.md は Workflow の記録からリードが周の終わりに書き出す(この監査の時点では無いことがある。無いことは [止める] の根拠にしない。第 9 周の報告の監査の指摘 1)。委任文 ${DOC} §0 の表のオーナーの原文と照らす。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
         { label: `監査役:${item.id}#${attempt}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
     }
     const auditStops = audit ? audit.findings.filter(f => f.level === '止める') : []
     history.push({ attempt, worker: w, table: t, critic: c, audit, judges: { current: jc, survey: jsv }, winsC, winsS, lossC, lossS, eqC, eqS, midAudits })
     const pass = audit !== null && auditStops.length === 0
-    log(`項目 ${item.id} 第 ${attempt} 周: 対現状 ${eqC ? '同等(表が同一)' : `新 ${winsC}・相手 ${lossC}・同等 ${jc.length - winsC - lossC}`}・対調査 ${eqS ? '同等(表が同一)' : `新 ${winsS}・相手 ${lossS}・同等 ${jsv.length - winsS - lossS}`}・批評の止める ${stops.length} 件・監査役の止める ${audit ? auditStops.length : '未実施'} → ${pass ? '通過' : '未達'}`)
-    if (pass) return { item, status: 'pass', attempts: attempt, req, bat, history }
+    log(`項目 ${item.id} 第 ${attempt} 周: 対現状 ${eqC ? '同等(表が同一)' : `新 ${winsC}・相手 ${lossC}・同等 ${jc.length - winsC - lossC}`}・対調査 ${eqS ? '同等(表が同一)' : `新 ${winsS}・相手 ${lossS}・同等 ${jsv.length - winsS - lossS}`}・批評の止める ${stops.length} 件(実装 ${stopsImpl.length}・場面集 ${stopsBat.length})・監査役の止める ${audit ? auditStops.length : '未実施'} → ${pass ? '通過' : '未達'}`)
+    if (pass) return { item, status: 'pass', attempts: attempt, req, bat, history, openBattery: c ? c.findings.filter(f => f.target === '場面集' && f.level !== '示唆') : [], bchain: cbchain }
 
     // counting rules (委任文 §3 根本的解決)
     const structural = attempt === 1 || (c ? c.structural_change_since_prev : true)
@@ -363,6 +367,32 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     if (lossStreak.current >= 3 || lossStreak.survey >= 3) return { item, status: 'escalate', reason: `盲検で 3 周続けて負けた(対現状 ${lossStreak.current}・対調査 ${lossStreak.survey})`, attempts: attempt, req, history }
   }
   return { item, status: 'escalate', reason: '周回の上限 10 に達した', attempts: attempt, req, history }
+}
+
+// L-441 (案 2): after item 0 passes on the implementation side, its battery-side findings keep being repaired in
+// parallel with items 1..12 — the definition step for [止める] as always (L-440 案 1), the repair, then the battery
+// audit — until the audit has no [止める], the family rule returns it to the lead, or 5 repairs are spent (never silent)
+async function batteryFollowUp(item, req, bat, findings, chainObj) {
+  const hist = []
+  let fixList = findings
+  for (let k = 1; ; k++) {
+    if (k > 5) return { status: 'escalate', reason: '場面集の並行の直しが 5 回に達した(L-441)', history: hist, bat }
+    const n = `f${k}`
+    const def = fixList.some(f => f.level === '止める') ? await defineThenAudit(item, req, bat, fixList, n, chainObj, hist) : { definition: null }
+    if (def.escalate) return { status: 'escalate', reason: def.escalate, history: hist, bat }
+    const fixed = await repairBattery(item, req, bat, fixList, n, def.definition)
+    if (!fixed) return { status: 'error', stage: 'battery_followup', history: hist, bat }
+    bat = { ...bat, ...fixed }
+    const a = await auditBattery(item, bat, n, fixList)
+    const fs = a ? a.findings : [{ id: `b${n}-x`, level: '止める', text: '監査役が返らなかった', repeat_of: null }]
+    hist.push({ k: n, findings: fs })
+    const stops = fs.filter(f => f.level === '止める')
+    if (!stops.length) return { status: 'pass', history: hist, bat }
+    stops.forEach(f => { chainObj[f.id] = f.repeat_of && chainObj[f.repeat_of] ? chainObj[f.repeat_of] + 1 : 1 })
+    const r3 = stops.find(f => chainObj[f.id] >= 3)
+    if (r3) return { status: 'escalate', reason: `場面集の並行の直しの監査で同じ未達の理由が 3 回続いた(L-407): ${r3.text.slice(0, 300)}`, history: hist, bat }
+    fixList = fs
+  }
 }
 
 function brief(r) {
@@ -385,19 +415,26 @@ if (!only || only.includes(0)) {
   results[0] = await runItem(byId[0])
   if (results[0].status !== 'pass') return { stopped_at: 'core', results: Object.values(results).map(brief) }
 }
+// L-441 (案 2): the battery-side findings left open at item 0's pass are repaired while items 1..12 run
+let batteryFollow = null
+if (results[0] && results[0].openBattery && results[0].openBattery.length) {
+  log(`L-441: 項目 0 は実装の側で通過。場面集の側の指摘 ${results[0].openBattery.length} 件は項目 1〜12 と並行して場面係が直す`)
+  batteryFollow = batteryFollowUp(byId[0], results[0].req, results[0].bat, results[0].openBattery, results[0].bchain || {})
+}
+async function finish(out) { out.battery_followup = batteryFollow ? await batteryFollow : null; return out }
 
 // stage 2: items 1..12 in parallel
 const mid = ITEMS.filter(it => it.id >= 1 && it.id <= 12 && (!only || only.includes(it.id)))
 const midRes = await parallel(mid.map(it => () => runItem(it)))
 midRes.forEach((r, i) => { results[mid[i].id] = r || { item: mid[i], status: 'error' } })
 const blocked = Object.values(results).filter(r => r.status !== 'pass')
-if (blocked.length) return { stopped_at: 'parallel', results: Object.values(results).map(brief) }
+if (blocked.length) return finish({ stopped_at: 'parallel', results: Object.values(results).map(brief) })
 
 // stage 3: compat (14), then integration (13)
 for (const id of [14, 13]) {
   if (only && !only.includes(id)) continue
   results[id] = await runItem(byId[id])
-  if (results[id].status !== 'pass') return { stopped_at: `item_${id}`, results: Object.values(results).map(brief) }
+  if (results[id].status !== 'pass') return finish({ stopped_at: `item_${id}`, results: Object.values(results).map(brief) })
 }
 
 // stage 4: completeness critic loop
@@ -420,8 +457,8 @@ while (true) {
   extra.push(...newItems.map(x => x.id))
   const rs = await parallel(newItems.map(it => () => runItem(it)))
   rs.forEach((r, i) => { results[newItems[i].id] = r || { item: newItems[i], status: 'error' } })
-  if (rs.some(r => !r || r.status !== 'pass')) return { stopped_at: 'gaps', results: Object.values(results).map(brief) }
+  if (rs.some(r => !r || r.status !== 'pass')) return finish({ stopped_at: 'gaps', results: Object.values(results).map(brief) })
   gapRounds++
-  if (gapRounds >= 3) return { stopped_at: 'gaps_3_rounds', extra_items: extra, results: Object.values(results).map(brief) }
+  if (gapRounds >= 3) return finish({ stopped_at: 'gaps_3_rounds', extra_items: extra, results: Object.values(results).map(brief) })
 }
-return { stopped_at: 'done', extra_items: extra, results: Object.values(results).map(brief) }
+return finish({ stopped_at: 'done', extra_items: extra, results: Object.values(results).map(brief) })
