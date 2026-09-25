@@ -12,7 +12,7 @@ from .time import TIME_CONTRACT
 from .values import CALL_FRAMES, FIELD_RULE, INT_TEXT_BITS, MAX_NESTING, PLAIN_DATA_RULE, bind_carriers
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-15"
+CORE_VERSION = "core-16"
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.

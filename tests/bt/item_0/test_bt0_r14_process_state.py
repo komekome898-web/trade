@@ -275,7 +275,8 @@ def test_the_contract_states_the_rule_from_the_code():
 
     vis = CORE_CONTRACT["visibility"]
     text = vis["process_state"]
-    assert CORE_CONTRACT["version"] == "core-15"
+    # core-16 (round 15): the rule of process_state reaches the library code the core runs
+    assert CORE_CONTRACT["version"] == "core-16"
     assert str(V.MAX_NESTING) in text and str(V.INT_TEXT_BITS) in text and "NUMBER_BASES" in text
     assert "registered with the numbers ABCs" not in vis["scope"] and "process_state" in vis["scope"]
     assert [k.__name__ for _, k in V.NUMBER_BASES] == ["int", "int", "float", "float", "complex", "complex"]
