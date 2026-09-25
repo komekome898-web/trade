@@ -40,3 +40,7 @@ the user request that triggered this workflow run. This relayed request is the o
 ## 17:26 UTC 見回り(再開後 1)
 
 受け入れの検査(再開の時刻より新しい agent の記録): `for f in $(find $W -maxdepth 1 -name "agent-*.jsonl" -newer <marker>); do echo "$(basename $f) relay=$(grep -c "Workflow harness — user request" $f)"; done` → ae20726c(場面:1) 0 / a1f0d35a(場面:2) 0 / ae97e951(要件:1) 0 / a9e6cf89(要件:3) 0 / aeac7750(要件:2) 0。場面:2 は再開時に旧 agent の続きとして "started" が出たが、17:25 UTC に新しい agent(a1f0d35a)で起き直した(旧 agent の記録は更新されていない)。ディスク: 17:09 の 4.3G が 17:26 に 658M まで減った(場面係の venv と試験の一時ファイル)ので、項目 0 の venv の 500M 超を消した(上の出力)。
+
+## 18:28 UTC 見回り(再開後 2)
+
+受け入れの検査: 再開の時刻より新しい agent 6 本(ae20726c 場面:1 / a1f0d35a 場面:2 / ae97e951 要件:1 / a9e6cf89 要件:3 / aeac7750 要件:2 / a96c842f 場面:3)すべて relay=0。場面:1 の返り値(要点、逐語): scenarios=35 / survey_run の先頭「73 vectorbt 1.1.0 — 2026-09-25 に隔離した venv item_1/vectorbt へ新しく入れた…V7 の規則の場面 3 つ(整数・小数・速さ)が正解と一致。V1〜V6 と、約定から足を作る V7 の 2 場面は結果なし(読み口も集計の経路も無い)」/ survey_not_run の先頭「OK 誤り 0 件」(検討表の検査器の最後の行)、「74 ml-quant-trading — 入れなかった(道具台帳 §3 の危険な 11 件の 1 つ…)」。ディスク: 項目 0 の venv の残り 15 本(100M 超)を消した。項目 0 の場面集を調査結果の側の道具で走らせ直すには venv の入れ直しが要る(測っていない範囲に載せる)。
