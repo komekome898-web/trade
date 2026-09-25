@@ -1,5 +1,5 @@
 // node --test tests/workflows/ — the pure parts of scripts/workflows/backtest_env.js (audit 58-5): the item-0 side split
-// (L-441 + 58-3) and the parallel battery follow-up's exits (pass / same-family 3 / 5 repairs). The functions are cut out
+// (L-441 + 58-3 + 59-1) and the parallel battery follow-up's exits (pass / same-family 3 / definition escalation; no repair cap). The functions are cut out
 // of the script text and run with stubs, because the script itself only runs inside the Workflow harness.
 import test from 'node:test'
 import assert from 'node:assert/strict'
