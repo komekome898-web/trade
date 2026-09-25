@@ -128,3 +128,10 @@ def test_framework_fingerprint_changes_when_a_decision_function_body_changes():
     script = "function splitStops(a) { return a }\nfunction judgeRound(n, c, s) { return n === 1 }\nasync function runItem(i) {}\n"
     fp = cbd.framework_fingerprint(deleg, script)
     assert cbd.framework_fingerprint(deleg, script.replace("n === 1", "n === 2")) != fp
+    assert cbd.framework_fingerprint(deleg, script.replace("return a", "return []")) != fp   # splitStops too (63-3)
+
+
+def test_cut_function_ignores_braces_inside_strings_templates_and_comments():
+    src = "function f(a) {\n  const s = `x ${a} }` // } comment\n  const q = '}'\n  return { k: 1 }\n}\nfunction g() { return 2 }\n"
+    body = cbd._cut_function(src, "f")
+    assert body.endswith("return { k: 1 }\n}") and "function g" not in body

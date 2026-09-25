@@ -1582,3 +1582,83 @@ decisive 検査(6 回目処置 1〜5 + 処置 6 の反映確認): item14 の §3
 - 引数: `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json`(marker e1952f4a41cf、lead_notes["0"] に L-441 の段落と「神託は提案中・課さない」の段落、lead_notes["1"]〜["12"] に設計メモを読む指示、attempt_offset 12 = 第 13 周から)
 - オーナー決定: L-440(定義の段はそのまま)、L-441(案 2)。L-442 への答え(神託)は提案中で課さない。
 - リードの設計: `round_7/LEAD_DESIGN.md` §9.9〜§9.14
+
+
+## 監査 62 回目(委任文 `docs/DATA/delegations/20260923_backtest_env_prompt.md@09a4f9f75e19`、L-443 の版。2026-09-25 02:08 UTC)
+
+### 監査役の出力(逐語)
+
+## 監査結果(62 回目)
+
+1. [止める] 62-1 `scripts/workflows/backtest_env.js:317-327,354-357`(証拠: `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json` の `prebuilt.0.judges = {"note": "…"}`)— L-443 (3) で足した「審査員を起こさない周は前の周の判定を持ち越す」(`judgeNow`/`judgedAt`/`lastJ`)の実装は、持ち越し先が見つからない場合に何が起きるかを扱っていない。`lastJ`は`history`を`h.judges.current`/`h.judges.survey`の**配列の長さ**で探すが、起動をまたいだ引き継ぎ(`pre.judges`)は実測で `{note: "…"}` という自由記述であり `current`/`survey` の配列を持たない。この形では `lastJ` は見つからず、`jc=[]`・`jsv=[]` のまま(実際には審査員を 1 体も起こしていないのに)`okC = eqC || (jc.length===3 && …)` が評価され、多くの場合 `false` になる。そして `lossStreak.current = okC ? 0 : lossStreak.current + 1` がこの「審査員 0 体の周」を「負けた周」として数える。さらに `lastJ` が見つかる通常のケースでも、同一の過去の審査員判定が複数周にわたって繰り返し「負け」としてカウントされうる(審査員は 1 回しか判断していないのに)。委任文 §3「周回の数え方と止める条件」の「盲検で同じ組に 3 周続けて負けた」という基準は §0 の表で「オーナーだけが変える」と明記された条項だが、この実装はその基準の意味(3 回の独立した審査員判定)を無自覚に変えていないか。項目 0 はまさにこの `lossStreak` 判定の対象であり(周の上限は無いが 3 連敗の escalate は対象)、次に起動する 11 回目が直後にこの経路に入りうる。(委任文 §3「周回の数え方と止める条件」/ CLAUDE.md §0.2 A-6 に近い型 = 判定基準を無自覚に動かす)
+
+2. [直す] 62-2 `scripts/workflows/backtest_env.js:317` と `:345` — 同じ「批評家が申告した構造変化の有無」を表すはずの変数が 2 つ独立に定義され、批評家が返らない(`c` が `null`)ケースで**逆の値**になる: `structNow = attempt === 1 || !!(c && c.structural_change_since_prev)`(`c` が無ければ `false`、審査員を起こさない側に倒れる)/ `structural = attempt === 1 || (c ? c.structural_change_since_prev : true)`(`c` が無ければ `true`、周回数を「構造変化あり」として数える側に倒れる)。同じ入力から導かれる同種の概念が、片方は null 安全側、片方は逆側に決め打たれており、どちらが正しい既定かの説明が本文に無い。P2「記号・用語は意味が変わったら名前も変える。同じ量の重複定義」に近い型。
+
+3. [聞く] 62-3 `scripts/check_bt_delegation.py:192-198`(`framework_fingerprint`)— 「枠組みの指紋」(検査 10)の対象は agent の `label`・`async function` の名・委任文の「| 通過の判定」で始まる行だけで、既存関数の**中身**(条件式・カウントの仕方)は対象外。`tests/test_check_bt_delegation.py:114-123` はこれを意図的な仕様として固定し(「wording does not」)、関数名やラベルを変えずに文言を変えても指紋は動かないことをむしろ保証している。しかし 62-1・62-2 で指摘した `judgeNow`/`structNow`/`lossStreak` の条件式は、まさに「関数名を変えずに中身だけ変える」形の変更であり、この指紋機構は将来そうした変更を検出できない。委任文 §3 は「委任文を監査役に出すのは、枠組みの指紋が変わったときだけ」(L-443 (1))とし、それ以外は「検査器で守る」としているが、この検査器が族の切り方・判定条件そのものの実装的変更を見逃す設計であることを、リードは自覚した上でこの範囲に決めたか。A-13(枠組みはオーナーに見せる)の「族の切り方・検定単位」を、この指紋定義は十分に覆っているか。
+
+4. [直す] 62-4 `docs/DATA/delegations/20260923_backtest_env_prompt.md:101`、`scripts/workflows/backtest_env.js:30`、`scripts/check_bt_delegation.py:86,90` — L-443 (2) で `defineThenAudit`・`DEF_SCHEMA`・「定義:」ラベルの agent 呼び出しを台本から削除したが、以下に古い定義への言及が残っている: 委任文 §3「提出前の吟味」の場面係の記録先の説明「場面係は最初の作りでは DEFINITIONS.md の末尾・直しの前の定義(**台本の `定義:` の役**。最初に作る役の文を受ける)」/ 台本の `SCRUTINY_BUILD` 定数の文言「直しの前の定義なら ROOTCAUSE のファイルに書く」/ `check_bt_delegation.py` の `ROLE_SCRUTINY`・`ROLE_NOTES` タプルに残る `("定義:", "SCRUTINY_BUILD")`・`"監査役(定義):"`・`"定義:"`。動作上は害が無い(該当ラベルの agent 呼び出しが存在しないので検査は false negative を起こさない)が、P2「訂正は古い定義を消してから」に反し、読み手(委任先・次の監査)に廃止済みの段があるかのような誤読を許す。
+
+5. [聞く] 62-5 `docs/OWNER_LOG.md:444`(L-443 行)— 摘要欄が「リードの問い『今の進め方は過剰検査だと思いますか？』**(オーナー)**へのリードの意見…」という形になっており、この問いの発話者が「リード」なのか「(オーナー)」括弧が示す「オーナー」なのか、一読して定まらない(「リードの問い」というラベルと「(オーナー)」という注記が同じ名詞句の中で競合している)。同じ種類の誤り(発話者の取り違え)は同じ文書内の L-441 行で「最初の版で『リードの問い』と書き誤った = 監査 58 回目の 58-2 で直した」と明記されており、訂正後の正しい表記は「オーナーの問い『…』」(括弧なし)という形になっている。L-443 行はこの訂正パターンに倣っていない。この行は同型の誤りを繰り返していないか、それとも意図的に異なる記法(「リードがオーナーに投げた問い」)なのか、確認が要る。
+
+6. [確認] 62-6 `tests/workflows/backtest_env_logic.test.mjs`(実行結果: 8 件全通過)— 実行して確認した 8 件の node 試験は `splitStops` と `batteryFollowUp` だけを検査しており(`grep -n "^test("` で確認)、L-443 (3) の中核である `judgeNow`/`structNow`/`judgedAt`/`lossStreak` の分岐(62-1・62-2 で指摘した箇所)を検査する試験は 1 件も無い。委任文 §3「提出前の吟味」(6)は「直した規則ごとに…敵対者の試験を先に書き」を全ての直す役に課しているが、この新しい分岐自体にはその試験が無い。「試験 8 件、全通過」を機構の妥当性の根拠として監査に出す前に、この分岐の試験が要らないと判断した理由が本文にあるか。
+
+7. [確認] 62-7 `docs/OWNER_STATUS.md`(進行中の合意 L-443 の行)/ `docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md:380`(§10 の 52)— run 10 の停止・11 回目の起動の判断は記録に残っている(item (e) は満たされている)。ただし OWNER_LOG L-443 の行は「リードはオーナーの返事を 1 回見落とした(予約の回の処理中)」「オーナーの発言の回は他の処理より先に答える」という再発防止策のみを記し、**いつ**オーナーの返事(「その案に賛成します。今すぐ体制を変えて進めてください。」)を受け取り、**いつ**それに気づいて応答したかの実測時刻が書かれていない(LEAD_DESIGN §10 の 52 は停止時刻を「02:0x UTC」と丸めている)。「今すぐ」という逐語に対し実際にどれだけの遅延があったかを、既存の記録(Workflow の記録・コミット時刻)から実測して書く余地は無いか。
+
+---
+
+検証のため実行したコマンドと結果(本文と重複しないもののみ記す):
+- `sha256sum docs/DATA/delegations/20260923_backtest_env_prompt.md` → `09a4f9f75e19`(委任文の版指紋。task 記載と一致)
+- `node --check scripts/workflows/backtest_env.js` → 構文エラー無し
+- `node --test tests/workflows/backtest_env_logic.test.mjs` → 8 pass / 0 fail(上記 62-6 のとおり新分岐は未網羅)
+- `PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py -p no:cacheprovider -q` → 12 passed
+- `python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260923_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json` → `OK 誤り 0 件`(検査 8・検査 9 とも台本と一致することを含む)
+- `python3 scripts/check_bt_delegation.py --fingerprint` → `f8a2c9abadf9`(委任文末尾の「枠組みの指紋: f8a2c9abadf9」と一致)
+
+なお、`scripts/check_bt_delegation.py` の検査 8(書き先の対)・検査 9(no-touch 配線)は今の台本(`repairBattery`・`auditBattery`)と実際に整合していることを個別に確認した(`repairBattery` 本文に「git diff --name-only HEAD」「触れない」、`auditBattery` 本文に「git diff --name-only HEAD」が現存)。この 2 点は指摘なし。
+
+### リードの処置(`round_7/LEAD_DESIGN.md` §10.1 と同じ)
+
+- 62-1 [止める]: 当たっている。負けの連続(lossStreak)は審査員を起こした周だけで数えるようにした(持ち越した判定は新しい判定ではない)。起動をまたいだ `pre.judges` が注記だけのときは持ち越し先が無く、その周は審査員が起きる(通過の候補なら)か、負けとして数えないかのどちらかになる。
+- 62-2 [直す]: 構造の変化の既定を 1 つの純粋な関数 `judgeRound(attempt, c, stopsImpl)` にまとめた(批評家が返らなければ「構造の変化あり」= 周を数える側にも審査員を起こす側にも安全側)。
+- 62-3 [聞く]: 自覚していなかった。枠組みの指紋に判定の関数(`splitStops`・`judgeRound`)の本文を入れた(名前を変えずに条件だけ変えても指紋が変わる)。試験を足した。それでも `lossStreak` の数え方など runItem の中の条件は指紋の外に残る = 限界として書く(次に判定の条件を触るときは関数に切り出して指紋に入れる)。
+- 62-4 [直す]: 委任文の「台本の `定義:` の役」、台本の SCRUTINY_BUILD の「直しの前の定義」、検査器の `定義:`・`監査役(定義):` の項を消した。
+- 62-5 [聞く]: 誤記(同じ型)。「オーナーの問い」に直した。
+- 62-6 [確認]: `judgeRound` の node の試験を 1 件足した(5 分岐)。lossStreak の数え方は runItem の中にあり切り出していないので試験は無い(限界)。
+- 62-7 [確認]: 受け取った時刻は会話の記録に付かないので未確認。気づいて記録した時刻 = コミット 1c29785(01:53:06 UTC)、その直前のリードの返答は 01:49 UTC の予約の回。OWNER_LOG に書いた。
+
+## 監査 63 回目(委任文 `docs/DATA/delegations/20260923_backtest_env_prompt.md@cdf623e4fb24`、指紋 2ccfc354e4e7。2026-09-25 02:16 UTC)
+
+### 監査役の出力(逐語)
+
+1. [止める] scripts/workflows/backtest_env.js:221(`const lossStreak = { current: 0, survey: 0 }`)、219(`const chain = { ...(prior.critic_chain || {}) }`)、200(`const bchain = { ...(prior.battery_chain || prior.chain || {}) }`)、362 — `chain`・`bchain`(「同じ未達の理由が3周続いたら止める」の鎖)は `prior`(= `args.prior_rounds[item.id]`)から起動をまたいで引き継ぐが、`lossStreak`(「盲検で3周続けて負けた」の鎖)は起動のたびに `{current:0, survey:0}` へ初期化されるだけで、`prior_rounds` のどの欄からも読み込まれない(`bt_args_run10.json` の `prior_rounds["0"]` は `rounds`・`critic_chain` の2欄のみで `loss_streak` に相当する欄が無い。台本内 `lossStreak` の唯一の読み書きは行 221・222 帯・362・364 で、`args.prior_rounds`・`args.prior`・`pre` のいずれも参照しない)。委任文 `docs/DATA/delegations/20260923_backtest_env_prompt.md` §3「周回の数え方と止める条件」4 は「盲検で同じ組に3周続けて負けた…ときも**同じ扱い**」「**この数えも起動をまたいで続ける**」と明記しており(「同じ扱い」の直前の文が同じ理由の鎖の起動またぎを説明している)、文面はロス連続の鎖も起動をまたいで持ち越すことを求めているように読める。62-1 は「起動をまたいだ pre.judges が注記だけのとき」の**その周の**挙動(審査員が起きるか、負けとして数えないか)だけを検査・処置しており、**それより前(前の起動)に積み上がっていた lossStreak の値そのものが起動のたびに 0 にリセットされる**ことには触れていない。10 回目の起動(第13周〜、`attempt_offset: 12`)の時点で、9 回目までに対現状・対調査で何連敗していたとしても 0 から数え直しになる。この停止条件(盲検3連敗)が起動をまたいでは実質機能しない可能性があり、62-1/62-2 がまさに同じ行の周辺(362行目の直前)を書き換えたにもかかわらず見落とされている(P3: 事前登録の定義=委任文の「起動をまたいで続ける」を実装が反映しているか)。
+
+2. [聞く] docs/OWNER_LOG.md:444(L-443 行) — 62-5 は「誤記(同じ型)。「オーナーの問い」に直した」として「リードの問い」→「オーナーの問い」に修正したが、修正後も `オーナーの問い「今の進め方は過剰検査だと思いますか？意見を聞かせてください。」` は太字(`**…**`)で囲まれていない。台帳の列見出し(1行目)は「オーナーの言葉(要旨、原文があれば引用)」で、実際にログ全体を見ると原文の逐語は一貫して `**…**` で強調され(同じ L-443 行内の「その案に賛成します」「返事したやろ 無視すんな」も太字)、地の文の要約・リードの言葉は太字なしで書かれる(同じ行内の直後の「リードの意見「過剰検査。…」」も太字なし)。この慣例に従えば、太字の無い「オーナーの問い「…」」は書式上リードの要約に見える。62-5 は「誰が言ったか」のラベルだけを直したが、太字の有無から見て「原文をそのまま引いたのか、リードが要約して『オーナーの問い』と名付け直しただけなのか」が本文からは判別できない。どちらであるかの確認は取れているか。
+
+3. [直す] tests/test_check_bt_delegation.py:124-129(`test_framework_fingerprint_changes_when_a_decision_function_body_changes`) — `scripts/check_bt_delegation.py` の `DECISION_FUNCS = ("splitStops", "judgeRound")` は62-3の処置で2関数とも指紋に含めたが、追加された試験は `judgeRound` の本文の変更(`"n === 1"` → `"n === 2"`)だけを指紋の変化で確認しており、`splitStops` の本文が変わったときに指紋が変わることは試験で確認されていない。`DECISION_FUNCS` に2つ登録した意図(実測: `scripts/check_bt_delegation.py` 202行)に対して、試験は1つしか運動していない。
+
+4. [聞く] scripts/check_bt_delegation.py:203-213(`_cut_function`) — 波括弧の深さを文字単位で数えるだけの実装で、文字列・テンプレートリテラル・正規表現リテラルの中の `{`/`}` を区別しない。`splitStops`・`judgeRound` の現在の本文には該当箇所が無く今回の指紋計算は正しく動く(実測: `python3 scripts/check_bt_delegation.py --fingerprint` → `2ccfc354e4e7`、委任文の記載値と一致)が、この台本はテンプレートリテラル(バッククォート文字列に `${...}` を多用)だらけのファイルであり、今後この2関数のどちらかに文字列中の波括弧(例: JSON の断片や正規表現)が混入すると `_cut_function` が本文を途中で切り詰め、以後その切り詰められた版が「指紋の対象」として固定される恐れがある。この壊れ方に対する試験は無い(このケースを想定した意図的な検討があったか)。
+
+5. [確認] 自分で実行して確認した: (a) `node --check scripts/workflows/backtest_env.js` → エラー無し。(b) `node --test tests/workflows/backtest_env_logic.test.mjs` → `# tests 9` `# pass 9` `# fail 0`(申告の node 9 件と一致)。(c) `PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py -p no:cacheprovider` → `13 passed`(申告の python 13 件と一致)。(d) `python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260923_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json` → `OK 誤り 0 件`。(e) `python3 scripts/check_bt_delegation.py --fingerprint` → `2ccfc354e4e7`(委任文末尾「枠組みの指紋: 2ccfc354e4e7」・タスク記載値と一致)。(f) 委任文 `docs/DATA/delegations/20260923_backtest_env_prompt.md` の sha256 先頭12桁を自分で計算 → `cdf623e4fb24`(タスク記載の「委任文の版」・`bt_args_run10.json` の `marker` 欄と一致)。以上、指摘ではない。
+
+6. [確認] 自分で実測して確認した: 62-1・62-2 の意図どおり、`lossStreak` の判定を守る `judgeNow` ガード(scripts/workflows/backtest_env.js:362)を外す変更(`if (judgeNow) { ... }` → 無条件の代入)を加えても `check_bt_delegation.py` の `framework_fingerprint()` の値(`2ccfc354e4e7`)は変化しないことを、実際に `framework_fingerprint` を呼んで確認した(`fp1 == fp2` = `True`)。これは62-3・62-6 で自己申告されている限界(`lossStreak` の数え方は `runItem` の中にあり指紋・試験の外)そのものであり、新規の指摘ではないが、1 と合わせて読むと「まさに今回作り込んだ規則(judgeNow によるガード)自体が、将来この規則だけを黙って外しても再監査にかからない」ことを意味する。指摘ではなく確認事項として記録するが、1 の [止める] と併せて読まれたい。
+
+他 0 件省略。
+
+### リードの処置(`round_7/LEAD_DESIGN.md` §10.2 と同じ)
+
+- 63-1 [止める]: 当たっている(前からの穴)。盲検の連敗の鎖 `lossStreak` を `prior_rounds[id].loss_streak` から引き継ぎ、各周の history に写しを残し、`brief` の `loss_streak` に出す(リードが次の起動の引数に書く)。11 回目の引数は {current: 0, survey: 0}(第 5〜11 周で審査員は毎回新実装を選んだ = 連敗 0。逐語は各周の JUDGES.md)。
+- 63-2 [聞く]: 逐語(「あなたの手が今あいているなら議論したいのですが、今の進め方は過剰検査だと思いますか？意見を聞かせてください。」)を太字で入れた。
+- 63-3 [直す]: 試験を `splitStops` の本文の変更にも当てた。
+- 63-4 [聞く]: 想定していなかった。`_cut_function` を文字列・テンプレート・コメントの中の波括弧を数えない形にし、試験を足した。
+- 63-6 [確認]: そのとおり(lossStreak の数え方は指紋の外)。次にこの条件を触るときは関数に切り出して指紋に入れる(10.1 の 62-3 と同じ限界)。
+
+処置後の実測(2026-09-25、リード): `node --check scripts/workflows/backtest_env.js` → エラー無し / `node --test tests/workflows/backtest_env_logic.test.mjs` → `1..9`(not ok 0)/ `PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py -p no:cacheprovider` → `14 passed` / `python3 scripts/check_bt_delegation.py --fingerprint` → `2ccfc354e4e7`(63 回目の版と同じ = 枠組みは変わっていない。L-443 (1) により、委任文の版 cdf623e4fb24 は 64 回目の監査に出さず検査器で通す)/ 検査器(委任文・OWNER_LOG・VERDICTS・台本・引数)→ `OK 誤り 0 件`。
+
+## 起動に使う版の記録(11 回目)
+
+- 委任文: `docs/DATA/delegations/20260923_backtest_env_prompt.md@cdf623e4fb24`(監査 62 回目 = 止める 1 → 処置、63 回目 = 止める 1 → 処置。処置後は枠組みの指紋が変わらないので検査器だけで通す、L-443 (1))
+- 枠組みの指紋: `2ccfc354e4e7`
+- 台本: `scripts/workflows/backtest_env.js`(L-443: 定義の段なし・主張の表・審査員は通過の候補の周と構造が変わった周と最初の周だけ・負けの連続は審査員を起こした周だけで数え起動をまたいで引き継ぐ(63-1))
+- 引数: `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json`(marker cdf623e4fb24、`prior_rounds["0"]` = rounds 18・critic_chain・loss_streak {current: 0, survey: 0}、attempt_offset 12 = 第 13 周から、新しい run として起動 = 10 回目の途中の記録は再生しない)
+- オーナー決定: L-441(案 2)、L-443(体制の変更 3 点)。L-440(定義の段)は L-443 (2) で置き換わった。
+- リードの設計: `round_7/LEAD_DESIGN.md` §10〜§10.2

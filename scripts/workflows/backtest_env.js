@@ -218,7 +218,9 @@ async function runItem(item) {
   let counted = prior.rounds + batHist.length, nonStructural = 0  // L-418: battery audits count toward the same 10; L-420: carried across launches
   const chain = { ...(prior.critic_chain || {}) }  // L-421: the same-reason count carries across launches
   const cbchain = { ...bchain, ...((pre && pre.battery_chain) || {}) }  // L-424: 場面集 findings are counted apart from 実装 findings; same chain as the pre-worker audits
-  const lossStreak = { current: 0, survey: 0 }
+  // audit 63-1: the blind-judge loss streak carries across launches (委任文 §3「周回の数え方と止める条件」4) under
+  // prior_rounds[id].loss_streak, written by the lead from the last history entry's lossStreak snapshot
+  const lossStreak = { current: 0, survey: 0, ...((prior.loss_streak && typeof prior.loss_streak === 'object') ? prior.loss_streak : {}) }
   let attempt = pre ? pre.attempt_offset : 0
   if (pre) history.push({ attempt, seeded: true, critic: { findings: pre.last_findings }, judges: pre.judges || {}, audit: null })
   while (item.id === 0 || counted < 10) {  // L-433: item 0 has no round cap
@@ -343,7 +345,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
         { label: `監査役:${item.id}#${attempt}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
     }
     const auditStops = audit ? audit.findings.filter(f => f.level === '止める') : []
-    history.push({ attempt, worker: w, table: t, critic: c, audit, judges: { current: jc, survey: jsv }, judgedAt, winsC, winsS, lossC, lossS, eqC, eqS, midAudits })
+    history.push({ attempt, worker: w, table: t, critic: c, audit, judges: { current: jc, survey: jsv }, judgedAt, winsC, winsS, lossC, lossS, eqC, eqS, midAudits, lossStreak: { ...lossStreak } })
     const pass = audit !== null && auditStops.length === 0
     log(`項目 ${item.id} 第 ${attempt} 周: 対現状 ${eqC ? '同等(表が同一)' : `新 ${winsC}・相手 ${lossC}・同等 ${jc.length - winsC - lossC}`}・対調査 ${eqS ? '同等(表が同一)' : `新 ${winsS}・相手 ${lossS}・同等 ${jsv.length - winsS - lossS}`}・批評の止める ${stops.length} 件(実装 ${stopsImpl.length}・場面集 ${stopsBat.length})・監査役の止める ${audit ? auditStops.length : '未実施'} → ${pass ? '通過' : '未達'}`)
     if (pass) return { item, status: 'pass', attempts: attempt, req, bat, history, openBattery: c ? c.findings.filter(f => f.target === '場面集' && f.level !== '示唆') : [], bchain: cbchain }
@@ -360,6 +362,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     }
     // audit 62-1: a loss is counted only on a round whose judges actually sat; a carried-over verdict is not a new judgement
     if (judgeNow) { lossStreak.current = okC ? 0 : lossStreak.current + 1; lossStreak.survey = okS ? 0 : lossStreak.survey + 1 }
+    history[history.length - 1].lossStreak = { ...lossStreak }  // the snapshot the lead carries into the next launch
     if (repeated) return { item, status: 'escalate', reason: `同じ [止める] が 3 周続いた${item.id === 0 ? '(項目 0: 未達ではなくリードへの戻し = L-436)' : ''}: ${repeated.text}`, attempts: attempt, req, history }
     if (lossStreak.current >= 3 || lossStreak.survey >= 3) return { item, status: 'escalate', reason: `盲検で 3 周続けて負けた(対現状 ${lossStreak.current}・対調査 ${lossStreak.survey})`, attempts: attempt, req, history }
   }
@@ -409,7 +412,7 @@ function brief(r) {
     battery: r.batteryHistory ? r.batteryHistory.map(h => ({ n: h.n, stops: h.findings.filter(f => f.level === '止める').map(f => f.text.slice(0, 300)) })) : null,
     last: last ? { winsC: last.winsC, winsS: last.winsS,
       findings: last.critic ? last.critic.findings : null,
-      judges: last.judges, worker: { test_tail: last.worker.test_tail, unmet: last.worker.unmet, questions: last.worker.questions_for_lead, changed: last.worker.changed_files } } : null }
+      judges: last.judges, loss_streak: last.lossStreak || null, worker: { test_tail: last.worker.test_tail, unmet: last.worker.unmet, questions: last.worker.questions_for_lead, changed: last.worker.changed_files } } : null }
 }
 
 const results = {}

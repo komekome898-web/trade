@@ -205,17 +205,31 @@ DECISION_FUNCS = ("splitStops", "judgeRound")
 
 
 def _cut_function(script: str, name: str) -> str:
+    """The source of `function name(...) {...}`, braces counted outside string, template and comment text (audit 63-4)."""
     i = script.find(f"function {name}(")
     if i < 0:
         return f"{name}: missing"
-    depth, j = 0, script.find("{", i)
-    for j in range(j, len(script)):
-        if script[j] == "{":
+    depth, j, quote = 0, script.find("{", i), None
+    while j < len(script):
+        ch = script[j]
+        if quote:
+            if ch == "\\":
+                j += 1
+            elif ch == quote:
+                quote = None
+        elif ch in ("'", '"', "`"):
+            quote = ch
+        elif script.startswith("//", j):
+            j = script.find("\n", j)
+            if j < 0:
+                break
+        elif ch == "{":
             depth += 1
-        elif script[j] == "}":
+        elif ch == "}":
             depth -= 1
             if depth == 0:
                 break
+        j += 1
     return script[i:j + 1]
 
 
