@@ -22,7 +22,19 @@ for p in (str(HERE), str(BATTERY)):
 import i1_driver as D  # noqa: E402
 import i1_judge as J  # noqa: E402
 import i1_scenes as S  # noqa: E402
-import run_battery as R  # noqa: E402
+def _load_runner():
+    """The item-1 battery's runner, loaded from its path under a name of its own: every battery has a
+    module called run_battery, and `import run_battery` gives whichever another test imported first
+    (26 failures in the full suite, worker 3's question; fixed by the lead 2026-09-25)."""
+    import importlib.util
+    import pathlib
+    spec = importlib.util.spec_from_file_location("i1_battery_run_battery", pathlib.Path(p) / "run_battery.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+R = _load_runner()  # noqa: E402
 
 from bot.bt.data import DataError  # noqa: E402
 

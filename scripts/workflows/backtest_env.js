@@ -284,7 +284,7 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
     if (repairOut && repairOut.escalate) return { item, status: 'escalate', reason: repairOut.escalate, attempts: attempt, req, bat, history }
     if (!w) return { item, status: 'error', stage: 'worker', attempt, history }
 
-    const t = await agent(`${HEAD2}
+    let t = await agent(`${HEAD2}
 あなたは項目 ${item.id} の資料係(第 ${attempt} 周。作業者とは別の者)です。委任文 §3「比較の表」に従う。**文章を書かない。表はスクリプトの出力だけ。**
 1. 新実装の adapter を ${bat.battery_dir} に書く(新実装の公開された口だけを呼ぶ。新実装の本体は変えない)。
 2. ${bat.runner} で、新実装・当方の現状・調査結果の側(入れられた道具すべて)・試金石(${bat.mutant})を、それぞれ 2 回走らせる。
@@ -323,9 +323,21 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     })
 
     if (attempt === 1) {
-      const batAudit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の最初の結果の表 ${Object.values(t.tables).join(' / ')} と、表を作った資料係の記録(${JSON.stringify({ commands: t.commands, adapters_changed: t.adapters_changed, notes: t.notes }).slice(0, 4000)})。場面集 ${bat.definitions} は作業者の前に監査を通っている(${batHist.length} 回)。委任文 ${DOC} §3「盲検の作り直し」「場面集の規則」「比較の表」と照らし、表が場面集の全場面に全員(当方の現状・調査結果の側の動かせた道具と再現・新実装)を通しているか、新実装の adapter が公開の口だけを公平に呼んでいるか、表に出所を示す語が残っていないか、断定と範囲を検査する。表が 6 枚そろっていなければ [止める]。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
+      // audit of the first table; on a [止める] the table maker is re-run ONCE with the findings (run 12, 2026-09-25:
+      // item 1's adapter absolutised paths twice; the lead's bound = 1 retry, then escalate as before = I-013)
+      const tableAudit = (tt) => agent(`検査対象: 項目 ${item.id}「${item.title}」の最初の結果の表 ${Object.values(tt.tables).join(' / ')} と、表を作った資料係の記録(${JSON.stringify({ commands: tt.commands, adapters_changed: tt.adapters_changed, notes: tt.notes }).slice(0, 4000)})。場面集 ${bat.definitions} は作業者の前に監査を通っている(${batHist.length} 回)。委任文 ${DOC} §3「盲検の作り直し」「場面集の規則」「比較の表」と照らし、表が場面集の全場面に全員(当方の現状・調査結果の側の動かせた道具と再現・新実装)を通しているか、新実装の adapter が公開の口だけを公平に呼んでいるか、表に出所を示す語が残っていないか、断定と範囲を検査する。表が 6 枚そろっていなければ [止める]。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
         { label: `監査役(表):${item.id}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
-      const batStops = batAudit ? batAudit.findings.filter(f => f.level === '止める') : [{ level: '止める', text: '監査役が返らなかった' }]
+            let batAudit = await tableAudit(t)
+      let batStops = batAudit ? batAudit.findings.filter(f => f.level === '止める') : [{ level: '止める', text: '監査役が返らなかった' }]
+      if (batStops.length) {
+        const t2 = await agent(`${HEAD2}
+あなたは項目 ${item.id} の資料係(第 ${attempt} 周の作り直し。1 回だけ)です。最初の表 ${Object.values(t.tables).join(' / ')} に監査役が次の指摘を出した(逐語): ${JSON.stringify(batAudit ? batAudit.findings : batStops).slice(0, 8000)}。[止める] と [直す] を全部直してから、前の資料係と同じ手順(委任文 ${DOC} §3「比較の表」、場面集の規則 3〜5、対象ごとの実行の出力は ${d}/materials/runs/<対象の名>.tsv と runs_2/、2 通りの表の md5sum、資料係自身の数え直し)で 6 枚の表を作り直す。adapter は新実装の公開の口だけを呼び、runner が渡す root と paths をそのまま渡す(自分で絶対化・結合しない)。「結果なし」の注記には実際に試したことと出たエラーの文言を書く(定型文にしない)。直した点と根拠を notes に書く。実データから出た数値は入れない。`,
+          { label: `表:${item.id}#${attempt}r`, phase: '比較資料', schema: TABLE_SCHEMA, model: IMPL_MODEL, effort: 'medium' })
+        if (!t2) return { item, status: 'error', stage: 'table_retry', attempt, history }
+        t = t2
+        batAudit = await tableAudit(t)
+        batStops = batAudit ? batAudit.findings.filter(f => f.level === '止める') : [{ level: '止める', text: '監査役が返らなかった' }]
+      }
       if (batStops.length) return { item, status: 'escalate', reason: '最初の表が監査役の [止める] を受けた = 資料係の作りを直す', attempts: attempt, req, bat, batteryHistory: batHist, history: [{ attempt, worker: w, table: t, batteryAudit: batAudit }] }
       const cal = (await Promise.all(trio('mutant'))).filter(Boolean)
       const calOk = cal.length === 3 && cal.every(j => j.new_chosen)
