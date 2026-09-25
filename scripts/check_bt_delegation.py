@@ -233,6 +233,18 @@ def _cut_function(script: str, name: str) -> str:
     return script[i:j + 1]
 
 
+def check_bound(doc: str) -> list[str]:
+    """Check 11 (I-013): every pass-rule row must carry an explicit end bound field; its content is read by the auditor."""
+    errs: list[str] = []
+    rows = [l for l in doc.split("\n") if l.startswith("| 通過の判定")]
+    if not rows:
+        errs.append("通過の判定の行が無い")
+    for l in rows:
+        if "終わりの上限:" not in l:
+            errs.append("通過の判定の行に「終わりの上限:」の欄が無い(I-013: 終わる条件と上限を書く)")
+    return errs
+
+
 def check_fingerprint(delegation_text: str, script: str) -> list[str]:
     want = framework_fingerprint(delegation_text, script)
     m = re.search(r"^枠組みの指紋: ([0-9a-f]{12})", delegation_text, flags=re.M)
@@ -293,6 +305,7 @@ def main(argv: list[str]) -> int:
     errs = check(*(p.read_text(encoding="utf-8") for p in paths[:3]))
     errs += check_fingerprint(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "")
     errs += check_no_touch(paths[3].read_text(encoding="utf-8") if paths[3].exists() else "")
+    errs += check_bound(paths[0].read_text(encoding="utf-8"))  # check 11 (I-013)
     errs += check_destination(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "",
                               Path(argv[4]).read_text(encoding="utf-8") if len(argv) >= 5 else None)
     if len(argv) >= 5:

@@ -150,11 +150,21 @@ class BarterAdapter(Adapter):
     # of an f64 of s, Duration::from_secs_f64). The driver calls them on the value (survey_results/attempts/61.log, round
     # r16-1) and reads the DateTime<Utc> with chrono's timestamp_nanos_opt. A float for a text deserializer is written as
     # its repr (parsing it as f64 gives the same float). None reads microseconds.
+    # round f2 (i0-r17-03): the driver prints `de_error` both for the tool's `Err` and for its OWN "unknown deserializer"
+    # (61.log 377). Only a name the driver's `match` dispatches (61.log 373-376) reaches the tool, so only such a call's
+    # `de_error` is the tool's refusal; any other name is the driver's error (not the tool's), and is not sent at all.
+    DRIVER_DE = ("de_u64_epoch_ms_as_datetime_utc", "de_str_u64_epoch_ms_as_datetime_utc",
+                 "de_str_f64_epoch_ms_as_datetime_utc", "de_str_f64_epoch_s_as_datetime_utc")
+
     @staticmethod
     def _de(name: str, value):
+        if name not in BarterAdapter.DRIVER_DE:
+            raise ValueError(f"the driver does not dispatch {name!r}: not the tool's refusal")
         r = drv({"de": name, "value": value})
         row = r[0] if r else {}
         if "de_error" in row:  # round r17-1: the tool's own `Err`, as the driver printed it
+            if str(row["de_error"]).startswith("unknown deserializer"):
+                raise ValueError(f"driver error: {row['de_error']}")  # the driver's own error, not the tool's
             raise C.CompiledRefusal(row["de_error"])
         if "de_ns" not in row:
             raise ValueError(f"no output: {r}")  # the driver printed nothing: not the tool's refusal
