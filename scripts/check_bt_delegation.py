@@ -233,8 +233,9 @@ def _cut_function(script: str, name: str) -> str:
     return script[i:j + 1]
 
 
-def check_bound(doc: str) -> list[str]:
-    """Check 11 (I-013): every pass-rule row must carry an explicit end bound field; its content is read by the auditor."""
+def check_bound(doc: str, script: str = "", args_text: str = "") -> list[str]:
+    """Check 11 (I-013): every pass-rule row carries an explicit end bound, and its number agrees with the script's
+    default CAP and with args.round_cap when given (audit 66-4)."""
     errs: list[str] = []
     rows = [l for l in doc.split("\n") if l.startswith("| 通過の判定")]
     if not rows:
@@ -242,6 +243,22 @@ def check_bound(doc: str) -> list[str]:
     for l in rows:
         if "終わりの上限:" not in l:
             errs.append("通過の判定の行に「終わりの上限:」の欄が無い(I-013: 終わる条件と上限を書く)")
+            continue
+        m = re.search(r"終わりの上限:[^|]*?最大 (\d+) 周", l)
+        if not m:
+            errs.append("「終わりの上限:」の欄に「最大 N 周」が無い")
+            continue
+        n = int(m.group(1))
+        ms = re.search(r"const CAP = Number\(args\.round_cap\) \|\| (\d+)", script)
+        if script and (not ms or int(ms.group(1)) != n):
+            errs.append(f"台本の CAP の既定({ms.group(1) if ms else '無し'})が委任文の上限({n})と違う(66-4)")
+        if args_text:
+            try:
+                rc = json.loads(args_text).get("round_cap")
+            except Exception:
+                rc = None
+            if rc is not None and int(rc) != n:
+                errs.append(f"引数の round_cap({rc})が委任文の上限({n})と違う(66-4)")
     return errs
 
 
@@ -305,7 +322,8 @@ def main(argv: list[str]) -> int:
     errs = check(*(p.read_text(encoding="utf-8") for p in paths[:3]))
     errs += check_fingerprint(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "")
     errs += check_no_touch(paths[3].read_text(encoding="utf-8") if paths[3].exists() else "")
-    errs += check_bound(paths[0].read_text(encoding="utf-8"))  # check 11 (I-013)
+    errs += check_bound(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "",
+                        Path(argv[4]).read_text(encoding="utf-8") if len(argv) > 4 else "")  # check 11 (I-013, 66-4)
     errs += check_destination(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "",
                               Path(argv[4]).read_text(encoding="utf-8") if len(argv) >= 5 else None)
     if len(argv) >= 5:

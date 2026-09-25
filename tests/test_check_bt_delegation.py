@@ -135,3 +135,11 @@ def test_cut_function_ignores_braces_inside_strings_templates_and_comments():
     src = "function f(a) {\n  const s = `x ${a} }` // } comment\n  const q = '}'\n  return { k: 1 }\n}\nfunction g() { return 2 }\n"
     body = cbd._cut_function(src, "f")
     assert body.endswith("return { k: 1 }\n}") and "function g" not in body
+
+
+def test_end_bound_number_must_match_the_script_default_and_args():
+    row = "| 通過の判定 = x **終わりの上限:** 項目 1〜4 は 1 項目あたり最大 10 周 | L-407 |\n"
+    assert cbd.check_bound(row, "const CAP = Number(args.round_cap) || 10", '{"round_cap": 10}') == []
+    assert any("台本" in e for e in cbd.check_bound(row, "const CAP = Number(args.round_cap) || 5", '{"round_cap": 10}'))
+    assert any("引数" in e for e in cbd.check_bound(row, "const CAP = Number(args.round_cap) || 10", '{"round_cap": 5}'))
+    assert any("欄が無い" in e for e in cbd.check_bound("| 通過の判定 = x | L-407 |\n"))

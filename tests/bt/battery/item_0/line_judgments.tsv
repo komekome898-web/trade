@@ -662,3 +662,4 @@ efb4391a70a2e93c	run_battery.py:23	規則・読み	runner の docstring(採点�
 ac89678b7a62c690	test_battery_r17_refusal.py:197	コード	場面 id を照合元から場面を引く鍵・格子の場面の一覧として使う試験のコード(第 r17-1 回)
 856ea1c6109fe126	test_battery_r17_refusal.py:312	コード	場面 id を照合元から場面を引く鍵・格子の場面の一覧として使う試験のコード(第 r17-1 回)
 2a3edc820fd1ef51	test_battery_r17_refusal.py:420	コード	場面 id を照合元から場面を引く鍵・格子の場面の一覧として使う試験のコード(第 r17-1 回)
+164c55df6c2dc1ee	ROOTCAUSE_f2.md:1	規則・読み	根本原因・主張の表・読みと判断・結果の記録(場面の中身は scenes.py と runner の出力を名指す)(第 f2 回)
