@@ -27,9 +27,10 @@ rule takes a line for the word and not for what the word means there. Write the 
 the rule (`(dark|pale|light)?goldenrod`, `color:.*golden`). Each rule is printed with its
 share of the hits, the number of lines it took in each file, and up to 10 of its lines
 spread evenly over what it took (audit 78, finding 5: the matched side must be readable).
-A rule takes a line only where its match overlaps a text the search pattern matched, so a
-rule about another word of the line (`the` in "Recreate the golden samples") leaves the line
-unmatched.
+A rule covers a searched word only where its match overlaps it, so a rule about another word
+of the line (`the` in "Recreate the golden samples") covers nothing. A line is taken only when
+every searched word in it is covered by some rule; a line with one covered word and one
+uncovered word comes out as unmatched (round 15 intake).
 A line where the searched word is part of a name that follows one of the keywords in DEF_KW
 (`def replay_x`, `class GoldenTest`, `const replay_helper`, ...) is never
 taken by a rule and always comes out as unmatched, so it is judged line by line (audit 78,
@@ -121,14 +122,20 @@ for ln in block[2:end]:
         forced += 1
         unmatched.append((m.group(1), m.group(2), text))
         continue
-    for rid, rx, _ in rules:
-        # The rule takes the line only where its match overlaps a searched word (a rule
-        # about some other word in the same line, e.g. `the`, does not take it).
-        if any(rb < e and b < re_ for r in rx.finditer(text) for rb, re_ in [r.span()] for b, e in spans):
-            counts[rid] += 1
-            samples[rid].append("%s:%s\t%s" % (m.group(1), m.group(2), text[:300]))
-            per_file[rid][m.group(1)] = per_file[rid].get(m.group(1), 0) + 1
-            break
+    # A rule covers a searched word where its match overlaps it (a rule about some other word in
+    # the same line, e.g. `the`, covers nothing). The line is taken only when EVERY searched word
+    # in it is covered by some rule (audit 86 intake: a line holding a benign `records` and another
+    # searched word was taken whole by the `records` rule); it is counted for the rule covering the
+    # first searched word.
+    covering = []
+    for b, e in spans:
+        covering.append(next((rid for rid, rx, _ in rules
+                              if any(r.start() < e and b < r.end() for r in rx.finditer(text))), None))
+    if spans and all(covering):
+        rid = covering[0]
+        counts[rid] += 1
+        samples[rid].append("%s:%s\t%s" % (m.group(1), m.group(2), text[:300]))
+        per_file[rid][m.group(1)] = per_file[rid].get(m.group(1), 0) + 1
     else:
         unmatched.append((m.group(1), m.group(2), text))
 if total != want:
