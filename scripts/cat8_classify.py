@@ -25,13 +25,19 @@ that matches the text the search pattern itself matched in a hit line (the searc
 alone, e.g. `golden` or `\w` for a search of `golden`), stops with exit code 1, because such a
 rule takes a line for the word and not for what the word means there. Write the context into
 the rule (`(dark|pale|light)?goldenrod`, `color:.*golden`). Each rule is printed with its
-share of the hits and its first 3 lines.
+share of the hits, the number of lines it took in each file, and up to 10 of its lines
+spread evenly over what it took (audit 78, finding 5: the matched side must be readable).
 A rule takes a line only where its match overlaps a text the search pattern matched, so a
 rule about another word of the line (`the` in "Recreate the golden samples") leaves the line
 unmatched.
-What this does NOT stop: a rule that holds the searched word with generic context written
-on purpose (for example `\bthe golden`) passes; only a reader of the printed rules and
-samples catches it.
+A line where the searched word is part of a name being defined (`def replay_x`, `class
+GoldenTest`, `function replay(`, `fn`, `func`, `struct`, `interface`, `impl`) is never
+taken by a rule and always comes out as unmatched, so it is judged line by line (audit 78,
+finding 1: a narrow rule with a false reason took the definition of the feature itself).
+What this does NOT stop: (1) a rule that holds the searched word with generic context written
+on purpose (for example `\bthe golden`); (2) a narrow rule whose reason is false for the lines
+it takes, when those lines are not definitions. Both pass; only a reader of the printed rules,
+per-file counts and samples catches them, the same as a false reason in a line-by-line table.
 """
 import argparse
 import re
@@ -88,6 +94,8 @@ if not rules:
 hit_re = re.compile(r"^(/\S.*?):(\d+): (.*)$")
 counts = {r[0]: 0 for r in rules}
 samples = {r[0]: [] for r in rules}
+per_file = {r[0]: {} for r in rules}
+forced = 0
 broad = []
 unmatched, total = [], 0
 end = block.index("== ファイルごとの当たった行の数") if "== ファイルごとの当たった行の数" in block else len(block)
@@ -103,13 +111,18 @@ for ln in block[2:end]:
         for w in words:
             if rx.search(w):
                 broad.append((rid, w, m.group(1), m.group(2)))
+    if any(re.search(r"\b(def|class|function|fn|func|struct|interface|impl)\s+[\w$.]*" + re.escape(w), text)
+           for w in words):
+        forced += 1
+        unmatched.append((m.group(1), m.group(2), text))
+        continue
     for rid, rx, _ in rules:
         # The rule takes the line only where its match overlaps a searched word (a rule
         # about some other word in the same line, e.g. `the`, does not take it).
         if any(rb < e and b < re_ for r in rx.finditer(text) for rb, re_ in [r.span()] for b, e in spans):
             counts[rid] += 1
-            if len(samples[rid]) < 3:
-                samples[rid].append("%s:%s\t%s" % (m.group(1), m.group(2), text[:300]))
+            samples[rid].append("%s:%s\t%s" % (m.group(1), m.group(2), text[:300]))
+            per_file[rid][m.group(1)] = per_file[rid].get(m.group(1), 0) + 1
             break
     else:
         unmatched.append((m.group(1), m.group(2), text))
@@ -128,8 +141,13 @@ if broad:
 print("== 決まり(id / 正規表現 / 理由 / 取った行 / 当たりに占める割合)")
 for rid, rx, why in rules:
     print("%s\t%s\t%s\t%d\t%.1f%%" % (rid, rx.pattern, why, counts[rid], 100.0 * counts[rid] / total if total else 0))
-    for smp in samples[rid]:
+    for f, c in per_file[rid].items():
+        print("  file\t%s\t%d\t%s" % (rid, c, f))
+    sm = samples[rid]
+    pick = sm if len(sm) <= 10 else [sm[i * (len(sm) - 1) // 9] for i in range(10)]
+    for smp in pick:
         print("  sample\t%s\t%s" % (rid, smp))
+print("== 名前の定義に検索した語がある行(決まりに取らせず unmatched に出した) = %d" % forced)
 for p, no, text in unmatched:
     print("unmatched\t%s:%s\t%s" % (p, no, text[:300]))
 print("cat8_classify: complete step=%s:%d hits=%d matched=%d unmatched=%d rules=%d candidate=%s" % (
