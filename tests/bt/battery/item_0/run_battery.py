@@ -17,7 +17,10 @@ Columns: scene_id, viewpoint, kind, correctness (正解と一致 / 対応なし 
 結果なし), status and output of run 1 and run 2, expected, detail of run 1.
 Correctness is decided here, never by the adapter: a dict `expected` must
 match the same keys in the output (extra keys in the output are ignored),
-anything else must be equal. For a scene with `graded_from` (scenes.py), the
+anything else must be equal. A `not_supported` result is 対応なし, except in a
+scene whose answer is a refusal (round r17-1, critic i0-r16-04): there a refusal
+the runner credits to the target's entry (`refusal_problem`, from the record
+common.py makes from the exception) is 正解と一致. For a scene with `graded_from` (scenes.py), the
 adapter only reports what it observed (the delivered order, each attempt and
 its exception) and the
 values that are graded are computed HERE by `GRADERS[scene.id]`; the output
@@ -41,7 +44,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "adapters"))
 sys.path.insert(0, str(HERE.parents[3] / "src"))
 
-from scenes import JP, NAMING_SHAPES, SCENES, TYPE_ORDER, UNIT_SCENES, for_target_types  # noqa: E402
+from scenes import JP, NAMING_SHAPES, REFUSED, SCENES, TYPE_ORDER, UNIT_SCENES, for_target_types  # noqa: E402
 import stated_rules  # noqa: E402
 from adapters.protocol import Adapter, SceneResult  # noqa: E402
 
@@ -238,7 +241,8 @@ def _grade_unit_time(sc, out: dict, target: str | None = None) -> dict:
     v = out.get("ns") if isinstance(out, dict) else None
     kind = getattr(getattr(v, "dtype", None), "kind", None) if type(v).__module__ == "numpy" else None
     is_int = type(v) is int or kind in ("i", "u")
-    return {"int64_ns": int(v) if is_int and -2 ** 63 <= int(v) < 2 ** 63 else None}
+    # round r17-1: a result that made a time is not a refusal (the refusal scenes' answer is a refusal)
+    return {"int64_ns": int(v) if is_int and -2 ** 63 <= int(v) < 2 ** 63 else None, REFUSED: False}
 
 
 # scene id -> grader; exactly the scenes with `graded_from` (test_battery_item0.py checks)
@@ -589,15 +593,15 @@ def provenance_problem(res: SceneResult, scene, target: str | None = None, roots
 
 
 def compact(prov, roots: Roots):
-    """What is written to the record: `touched` keeps only the target's files
+    """What is written to the record: `touched` (and a refusal's `frames`, round r17-1) keeps only the target's files
     (with the count of all), so the table stays readable."""
     def walk(x):
         if isinstance(x, dict):
             out = {}
             for k, v in x.items():
-                if k == "touched" and isinstance(v, list):
+                if k in ("touched", "frames") and isinstance(v, list):
                     out[k] = [f for f in v if roots.has_file(f)]
-                    out["touched_count"] = len(v)
+                    out[f"{k}_count"] = len(v)
                 elif k == "held_by" and v and roots.has_file(x.get("type_file")):
                     out[k] = v
                     out["input"] = "adapter が対象の型で組んで対象に渡した入力(対象が届けた)"
@@ -691,11 +695,80 @@ def checked(res: SceneResult, scene, target: str | None = None, roots: Roots | N
                        detail=f"出所の検めで採点しない: {why} / {res.detail}", provenance=res.provenance)
 
 
+# ---------------------------------------------------------------- a refusal of the target's entry (round r17-1)
+# Critic i0-r16-04: `not_supported` stands both for "the target has no entry for this" and "the target's entry was
+# called with the scene's input and refused". They are told apart by the record `provenance["refusal"]` that
+# common.py makes from the exception object (`common.refusal`), never by the text. A scene whose answer is a refusal
+# (`expects_refusal`: the P0-2 unit scenes whose input holds no whole number of ns) is graded 正解と一致 only for a
+# refusal credited here to the target's entry; no entry, or a refusal not shown to be the target's, is 対応なし.
+def expects_refusal(expected) -> bool:
+    """The scene's answer is a refusal of the target's entry (the expected dict's key `scenes.REFUSED` is True)."""
+    return isinstance(expected, dict) and expected.get(REFUSED) is True
+
+
+def _handed_problem(rec, scene) -> str | None:
+    """What the entry was handed is the scene input's field the record names: the same type and the same value."""
+    inp = getattr(scene, "input", None)
+    field = rec.get("field")
+    if not isinstance(inp, dict) or field not in inp:
+        return f"断った入口に渡した欄 {field!r} が場面の入力に無い"
+    want, got = inp[field], rec.get("handed")
+    if type(want) is not type(got) or want != got:
+        return f"断った入口に渡した物 {got!r:.80}(型 {type(got).__name__})が場面の入力の {field} {want!r:.80}(型 {type(want).__name__})と違う"
+    return None
+
+
+def _refusal_chain_problem(rec, roots: Roots) -> str | None:
+    """A Python entry's exception: (i) a frame of the target's distribution is on its traceback, (ii) no frame of a
+    real file of the scene set lies inside the outermost target frame, (iii) the innermost frame is a real file."""
+    frames = [f for f in (rec.get("frames") or []) if isinstance(f, str)]
+    first = next((i for i, f in enumerate(frames) if roots.has_file(f)), None)
+    if first is None:
+        return "例外の道筋に対象の配布物の枠が 1 つも無い(対象のコードに入る前か、対象が返ったあとに止まった)"
+    inner = [f for f in frames[first + 1:] if os.path.isabs(f) and C.in_scene_set(f)]
+    if inner:
+        return f"対象のコードが呼んだ場面集の側のコード {inner[0]} の中で例外が起きた(対象の断りでない)"
+    if not frames or not os.path.isabs(frames[-1]):
+        return f"例外を投げた最も内の枠 {frames[-1] if frames else None!r} がどのファイルか分からない(exec したコードなど)"
+    return None
+
+
+def refusal_problem(res: SceneResult, scene, target: str | None = None, roots: Roots | None = None) -> str | None:
+    """Why this result is not shown to be the target's entry refusing the scene's input, or None (round r17-1)."""
+    if res.status != "not_supported":
+        return f"状態が {res.status}(断りは not_supported)"
+    prov = res.provenance if isinstance(res.provenance, dict) else {}
+    rec = prov.get("refusal")
+    if rec is None:
+        return "入口を呼んで断られた記録が無い(対象にこの入口が無い)"
+    if not _made(rec):
+        return f"断りの記録が common.py で例外の物から作った物でない(手で書いた記録): {str(rec)[:120]}"
+    why = _handed_problem(rec, scene)
+    if why:
+        return why
+    roots = roots or roots_of(target)
+    reader = prov.get("reader")
+    why = _reader_problem(reader, roots)
+    if why:
+        return f"断った入口が対象の物と示せない: {why}"
+    if isinstance(reader, C.Made) and reader.compiled:
+        return None if rec.get("compiled_refusal") is True else \
+            "翻訳した道具の入口だが、例外が driver の印した道具の断り(common.CompiledRefusal)でない"
+    if rec.get("compiled_refusal"):
+        return "Python の入口の例外が common.CompiledRefusal(翻訳した道具の入口にだけ使う)"
+    return _refusal_chain_problem(rec, roots)
+
+
 def graded_output(res: SceneResult, scene, target: str | None = None):
     """What is graded: the raw output, or for a `graded_from` scene the values
     computed here from it (the raw output kept under "raw"). `target` selects
     the stated same-time rule (stated_rules.py) for the P0-5 scenes; without
-    it no rule applies."""
+    it no rule applies. A not_supported result with a refusal record (round r17-1) shows whether the refusal is
+    credited to the target's entry, and why not."""
+    if scene is not None and res.status == "not_supported" and isinstance(res.provenance, dict) \
+            and "refusal" in res.provenance:
+        why = refusal_problem(res, scene, target)
+        return {REFUSED: why is None, "refusal_problem": why, "raw": res.output}
     if scene is None or scene.id not in GRADERS or res.status != "ok":
         return res.output
     raw = res.output if isinstance(res.output, dict) else {}
@@ -704,6 +777,9 @@ def graded_output(res: SceneResult, scene, target: str | None = None):
 
 def correctness(res: SceneResult, expected, scene=None, target: str | None = None) -> str:
     if res.status == "not_supported":
+        # round r17-1: a refusal is the answer of a refusal scene when it is credited to the target's entry
+        if expects_refusal(expected) and refusal_problem(res, scene, target) is None:
+            return "正解と一致"
         return "対応なし"
     if res.status == "ok":
         return "正解と一致" if _matches(graded_output(res, scene, target), expected) else "不一致"

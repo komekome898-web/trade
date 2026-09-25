@@ -19,7 +19,8 @@ Family 11 -- the P0-2 unit scenes: the answer is (the value the input holds) x (
   count, decimal text with sub-ns digits, int, float holding a whole ns count, float holding sub-ns digits) except a
   form no value can have at the scenes' time (the float spacing there is a whole number of ns).
 Family 12 -- the unit scenes' grader: the target's value counts when it is an int (not a bool) or a numpy integer,
-  inside int64; everything else grades as null.
+  inside int64; everything else grades as null. Round r17-1: the graded values also say the result is not a refusal
+  (`scenes.REFUSED`: False), and a scene with no whole ns answers "the target's entry refuses" (test_battery_r17_refusal.py).
 Family 13 -- the unit scenes' provenance, and `common.unit_time`: an entry is used only when its unit is the scene's
   unit and its forms hold the input's form (the first such entry, in the adapter's order); none -> not supported; the
   entry raising -> not supported (the tool refused); otherwise the tool's time object read to int ns exactly (an int
@@ -351,7 +352,10 @@ def _held(v) -> Fraction:
 
 def oracle_answer(s, held=_held):
     q = held(s.input["time"]) * FACTOR[s.input["unit"]]
-    return {"int64_ns": int(q) if q.denominator == 1 else scenes.NO_INT}
+    if q.denominator == 1:
+        return {"int64_ns": int(q)}
+    # round r17-1 (critic i0-r16-04): no int is right, and the answer is the target's entry refusing
+    return {"int64_ns": scenes.NO_INT, scenes.REFUSED: True}
 
 
 def answer_problems(scs, held=_held) -> list:
@@ -421,9 +425,10 @@ def test_mutants_of_the_answer_oracle_are_caught():
 def oracle_grade(out) -> dict:
     v = out.get("ns") if isinstance(out, dict) else None
     ok = (type(v) is int) or isinstance(v, np.integer)
+    # round r17-1: an ok result made a time, so it is not a refusal
     if ok and -2 ** 63 <= int(v) < 2 ** 63:
-        return {"int64_ns": int(v)}
-    return {"int64_ns": None}
+        return {"int64_ns": int(v), scenes.REFUSED: False}
+    return {"int64_ns": None, scenes.REFUSED: False}
 
 
 GRADE_VALUES = [K_NS, True, False, float(K_NS), 1704067200000000000.0, np.int64(K_NS), np.uint64(K_NS),
@@ -451,21 +456,23 @@ def test_unit_grader_on_every_value_type():
     from adapters.protocol import SceneResult
     for c in [{"ns": v} for v in GRADE_VALUES] + [K_NS]:
         g = R.graded_output(SceneResult("ok", output=c), sc)
-        assert {"int64_ns": g["int64_ns"]} == oracle_grade(c if isinstance(c, dict) else {}), repr(c)[:60]
+        assert {k: g[k] for k in ("int64_ns", scenes.REFUSED)} == oracle_grade(c if isinstance(c, dict) else {}), repr(c)[:60]
 
 
 def test_mutants_of_the_unit_grader_are_caught():
+    F = scenes.REFUSED  # round r17-1: the mutants carry the key too, so each is caught by its own defect
+
     def float_equal(o):
         v = o.get("ns") if isinstance(o, dict) else None
-        return {"int64_ns": int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v == int(v) else None}
+        return {"int64_ns": int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and v == int(v) else None, F: False}
 
     def with_bool(o):
         v = o.get("ns") if isinstance(o, dict) else None
-        return {"int64_ns": int(v) if isinstance(v, (int, np.integer)) else None}
+        return {"int64_ns": int(v) if isinstance(v, (int, np.integer)) else None, F: False}
 
     def no_range(o):
         v = o.get("ns") if isinstance(o, dict) else None
-        return {"int64_ns": int(v) if (type(v) is int or isinstance(v, np.integer)) else None}
+        return {"int64_ns": int(v) if (type(v) is int or isinstance(v, np.integer)) else None, F: False}
     for name, m in {"float が整数に等しければ通す": float_equal, "bool を通す": with_bool, "範囲を見ない": no_range}.items():
         assert grader_problems(m), name
 

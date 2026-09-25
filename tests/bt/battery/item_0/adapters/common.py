@@ -131,14 +131,42 @@ def time_to_ns(obj):
 _FORM = {str: "str", int: "int", float: "float"}
 
 
+class CompiledRefusal(Exception):
+    """Round r17-1 (critic i0-r16-04): a compiled tool's own refusal of the value its driver was handed, carried with
+    the text the driver printed for the tool's error (e.g. a Rust `Err`). An adapter raises it only with that text;
+    run_battery.py credits it only to an entry named by `compiled(...)` under the target's heads (the driver's code is
+    read by the critic: Python sees no frame of the tool)."""
+
+
+def refusal(exc, field: str, handed) -> Record:
+    """Round r17-1 (critic i0-r16-04): the record of the target's entry, called with the scene input's field `field`
+    (the object `handed` itself), raising `exc` -- made here from the exception object: its type and text, the files
+    of its traceback's frames from outer to inner (a pseudo name such as '<string>' kept as it is), the innermost
+    frame's file and whether it was a `raise` statement of the scene set, and whether it is a CompiledRefusal.
+    run_battery.py (`refusal_problem`) decides from these facts whether the refusal is the target's; a dict or a
+    `Record` written by hand is never credited."""
+    import re
+    frames = []
+    tb = exc.__traceback__
+    while tb is not None:
+        f = tb.tb_frame.f_code.co_filename
+        frames.append(_real(f) or f)
+        tb = tb.tb_next
+    return _register(Record({"field": field, "handed": handed, "raised": type(exc).__name__,
+                             "message": re.sub(r"0x[0-9a-fA-F]+", "0x…", str(exc))[:200], "frames": frames,
+                             **_raise_site(exc), "compiled_refusal": isinstance(exc, CompiledRefusal)}))
+
+
 def unit_time(sc, entries: list[dict], tried: str = ""):
     """A P0-2 unit scene (scenes.UNIT_SCENES; input {"time", "unit"}) through the target's own entries. `entries` =
     [{"unit": "s" | "ms" | "us", "forms": ("str", "int", "float"), "how": what the entry is, "reader": the target's
     function / class (or a `compiled` name), "call": fn(value) -> the target's time object}], in the adapter's fixed
     order. The first entry whose unit is the scene's unit and whose forms hold the input's form is called with the
-    input's object itself (nothing converted); none -> not supported (with `tried`: what was tried); the entry raising
-    -> not supported (an explicit refusal, with the exception); the entry making no time and raising nothing (the call
-    returns None: a row dropped without a word) -> error (no result). The result is read with `time_to_ns`."""
+    input's object itself (nothing converted); none -> not supported (with `tried`: what was tried), with no refusal
+    record; the entry raising -> not supported with `provenance` {"reader": the entry, "refusal": refusal(exception,
+    "time", the input's object)} (round r17-1, critic i0-r16-04: the runner tells an entry that refused from no entry
+    by this record, never by the text); the entry making no time and raising nothing (the call returns None: a row
+    dropped without a word) -> error (no result). The result is read with `time_to_ns`."""
     from protocol import SceneResult, not_supported, ok
     u, v = sc.input["unit"], sc.input["time"]
     form = _FORM.get(type(v), type(v).__name__)
@@ -148,13 +176,15 @@ def unit_time(sc, entries: list[dict], tried: str = ""):
         return not_supported(f"単位 {u} の時刻を {form} で読む入口が無い(この道具の時刻の入口: {have})。{tried}")
     e = pick[0]
     shown = f"{v!r}" if type(v) is not float else f"{v!r}(float の正確な値 {__import__('decimal').Decimal(v)})"
+    reader = e["reader"] if isinstance(e["reader"], Made) else qualname(e["reader"])
     try:
         got = e["call"](v)
-    except Exception as exc:  # noqa: BLE001 - the target's own refusal
-        return not_supported(f"{e['how']} に {shown}(単位 {u})を渡した -> 例外で止まった {type(exc).__name__}: {str(exc)[:200]}")
+    except Exception as exc:  # noqa: BLE001 - the entry refused: recorded from the exception object (round r17-1)
+        return SceneResult("not_supported", detail=f"{e['how']} に {shown}(単位 {u})を渡した -> 例外で止まった "
+                                                   f"{type(exc).__name__}: {str(exc)[:200]}",
+                           provenance={"reader": reader, "refusal": refusal(exc, "time", v)})
     if got is None:
         return SceneResult("error", detail=f"{e['how']} に {shown}(単位 {u})を渡した -> 時刻を作らず、断りもしなかった(結果なし)")
-    reader = e["reader"] if isinstance(e["reader"], Made) else qualname(e["reader"])
     return ok({"ns": time_to_ns(got)}, f"{e['how']} に {shown}(単位 {u})を渡し、道具が作った時刻 {got!r:.160} を int ナノ秒に読んだ",
               {"reader": reader})
 
@@ -788,13 +818,18 @@ _MADE: list = []  # every record made here, kept alive (identity is what run_bat
 _READ: list = []  # (object returned by a target function, file of that function, call context), for `returned_by`
 
 
+_MADE_IDS: set = set()  # ids of the records in _MADE (kept alive there, so an id is never reused while listed)
+
+
 def _register(x):
     _MADE.append(x)
+    _MADE_IDS.add(id(x))
     return x
 
 
 def made_here(x) -> bool:
-    return any(x is m for m in _MADE)
+    # every listed record is kept alive in _MADE, so no other live object can carry a listed id
+    return id(x) in _MADE_IDS
 
 
 def _object_facts(obj) -> dict:

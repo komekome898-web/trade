@@ -162,8 +162,10 @@ class OrderRequest:
         put("extra", _frozen_extra(self.extra))
 
     def extra_dict(self) -> dict:
-        """`extra` as a fresh dict, lists / dicts / sets as they were given
-        (values.py `thaw`); changing it changes nothing else."""
+        """`extra` as a fresh dict, lists / dicts / sets as they were given,
+        a dict key or a set element as the core's immutable copy of what was
+        given there (it has a hash; values.py `thaw`, round 17); changing it
+        changes nothing else."""
         return {key: thaw(value) for key, value in self.extra}
 
 

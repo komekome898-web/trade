@@ -1,0 +1,20 @@
+E       assert 'timeout' in ('taken', 'refused')
+
+tests/bt/critic/item_0/test_i0r16_shared_containers_bounded_work.py:54: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_thaw_reads_back_what_freeze_took[frozendict-dict-key]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_thaw_reads_back_what_freeze_took[frozenset-class-dict-key]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_thaw_reads_back_what_freeze_took[tuple-holding-frozenlist-key]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_thaw_reads_back_what_freeze_took[frozendict-set-element]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_thaw_reads_back_what_freeze_took[frozenset-class-in-frozenset]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_a_fill_model_reads_the_extra_of_an_accepted_order[frozendict-dict-key]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_a_fill_model_reads_the_extra_of_an_accepted_order[frozenset-class-dict-key]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_a_fill_model_reads_the_extra_of_an_accepted_order[tuple-holding-frozenlist-key]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_a_fill_model_reads_the_extra_of_an_accepted_order[frozendict-set-element]
+FAILED tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py::test_a_fill_model_reads_the_extra_of_an_accepted_order[frozenset-class-in-frozenset]
+FAILED tests/bt/critic/item_0/test_i0r16_colliding_frozendict_chain_frames.py::test_colliding_chain_needs_no_more_than_the_contract_says[20]
+FAILED tests/bt/critic/item_0/test_i0r16_colliding_frozendict_chain_frames.py::test_colliding_chain_needs_no_more_than_the_contract_says[40]
+FAILED tests/bt/critic/item_0/test_i0r16_colliding_frozendict_chain_frames.py::test_colliding_chain_needs_no_more_than_the_contract_says[90]
+FAILED tests/bt/critic/item_0/test_i0r16_shared_containers_bounded_work.py::test_a_shared_value_is_taken_or_refused_in_bounded_time[freeze]
+FAILED tests/bt/critic/item_0/test_i0r16_shared_containers_bounded_work.py::test_a_shared_value_is_taken_or_refused_in_bounded_time[settle]
+15 failed, 1 passed in 40.47s

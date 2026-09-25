@@ -280,8 +280,10 @@ def test_the_contract_states_the_rule_from_the_code():
     text = vis["process_state"]
     # core-16 (round 15): the rule of process_state reaches the library code the core runs;
     # core-17 (round 16): one reading of a value (a float time, a float field, a key without a hash,
-    # colliding nested FrozenDicts compared iteratively)
-    assert CORE_CONTRACT["version"] == "core-17"
+    # colliding nested FrozenDicts compared iteratively);
+    # core-18 (round 17): each container taken once per object, a key read back with a hash,
+    # several colliding candidates compared on one stack
+    assert CORE_CONTRACT["version"] == "core-18"
     assert str(V.MAX_NESTING) in text and str(V.INT_TEXT_BITS) in text and "NUMBER_BASES" in text
     assert "registered with the numbers ABCs" not in vis["scope"] and "process_state" in vis["scope"]
     assert [k.__name__ for _, k in V.NUMBER_BASES] == ["int", "int", "float", "float", "complex", "complex"]

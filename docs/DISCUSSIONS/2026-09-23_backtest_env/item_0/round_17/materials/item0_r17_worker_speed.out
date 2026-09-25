@@ -1,0 +1,10 @@
+before: 144.59 us/bar (best of 3) core at /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/r17_worker/head_src/src/bot/bt/core/values.py
+after: 146.83 us/bar (best of 3) core at /home/user/trade/src/bot/bt/core/values.py
+before: 144.83 us/bar (best of 3) core at /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/r17_worker/head_src/src/bot/bt/core/values.py
+after: 154.62 us/bar (best of 3) core at /home/user/trade/src/bot/bt/core/values.py
+after: 140.92 us/bar
+before: 141.60 us/bar
+after: 154.87 us/bar
+before: 151.48 us/bar
+after: 148.28 us/bar
+before: 152.95 us/bar

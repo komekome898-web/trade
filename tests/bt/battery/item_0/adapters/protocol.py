@@ -18,6 +18,13 @@ Rules for adapter authors (they are what the critic checks):
     the error / refusal it gave (rule 6: a declaration or a missing name is
     not evidence). A target that silently does something else returns "ok"
     with what it did and is graded "不一致".
+  * A refusal of the target's entry (round r17-1, critic i0-r16-04) is told
+    from "no entry" only by `provenance["refusal"]`, the record
+    `common.refusal(exception, field, handed)` makes from the exception
+    object (with `provenance["reader"]` = the entry); `common.unit_time`
+    makes it. The runner never reads `detail` for this. A compiled tool's
+    refusal is carried by `common.CompiledRefusal` with the text its driver
+    printed for the tool's error.
   * `error` is for an unexpected exception while running the scene.
   * There is no status for "not run this round" (rule 4): every adapter
     implements every scene id.

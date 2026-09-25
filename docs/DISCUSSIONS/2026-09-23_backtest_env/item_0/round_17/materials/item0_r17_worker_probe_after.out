@@ -1,0 +1,40 @@
+tuple n=90 freeze: ok in 0.000 s
+tuple n=90 settle: ok in 0.000 s
+tuple n=90 renew: ok in 0.000 s
+tuple n=90 thaw: ok in 0.000 s
+tuple n=90 == of two built apart: ok in 0.000 s
+list n=90 freeze: ok in 0.000 s
+list n=90 settle: ok in 0.000 s
+list n=90 renew: ok in 0.000 s
+list n=90 thaw: ok in 0.000 s
+list n=90 == of two built apart: ok in 0.000 s
+dict n=90 freeze: ok in 0.005 s
+dict n=90 settle: ok in 0.000 s
+dict n=90 renew: ok in 0.000 s
+dict n=90 thaw: ok in 0.000 s
+dict n=90 == of two built apart: ok in 0.001 s
+FrozenList n=90 freeze: ok in 0.000 s
+FrozenList n=90 settle: ok in 0.000 s
+FrozenList n=90 renew: ok in 0.004 s
+FrozenList n=90 thaw: ok in 0.000 s
+FrozenList n=90 == of two built apart: ok in 0.000 s
+FrozenDict n=90 freeze: ok in 0.001 s
+FrozenDict n=90 settle: ok in 0.001 s
+FrozenDict n=90 renew: ok in 0.000 s
+FrozenDict n=90 thaw: ok in 0.000 s
+FrozenDict n=90 == of two built apart: ok in 0.005 s
+FrozenDict-key n=90 freeze: ok in 0.002 s
+FrozenDict-key n=90 settle: ok in 0.001 s
+FrozenDict-key n=90 renew: ok in 0.001 s
+FrozenDict-key n=90 thaw: ok in 0.002 s
+FrozenDict-key n=90 == of two built apart: ok in 0.002 s
+frozenset n=45 freeze: ok in 0.000 s
+frozenset n=45 settle: ok in 0.000 s
+frozenset n=45 renew: ok in 0.000 s
+frozenset n=45 thaw: ok in 0.000 s
+frozenset n=45 == of two built apart: ok in 0.000 s
+mixed n=90 freeze: ok in 0.000 s
+mixed n=90 settle: ok in 0.000 s
+mixed n=90 renew: ok in 0.000 s
+mixed n=90 thaw: ok in 0.000 s
+mixed n=90 == of two built apart: ok in 0.001 s

@@ -154,8 +154,10 @@ class BarterAdapter(Adapter):
     def _de(name: str, value):
         r = drv({"de": name, "value": value})
         row = r[0] if r else {}
+        if "de_error" in row:  # round r17-1: the tool's own `Err`, as the driver printed it
+            raise C.CompiledRefusal(row["de_error"])
         if "de_ns" not in row:
-            raise ValueError(row.get("de_error", f"no output: {r}"))
+            raise ValueError(f"no output: {r}")  # the driver printed nothing: not the tool's refusal
         return int(row["de_ns"])
 
     def _units(self, sc):

@@ -308,19 +308,28 @@ add(id="p2-one-ns-apart", viewpoint="P0-2", kind="capability",
 # .123456789Z) written in the unit; the int and the float forms whose value cannot be ISO_NS carry a known time of their
 # own, written in the derivation. The answer is the value the input holds (a text: its decimal; an int: itself; a
 # float: the binary value it holds) times the unit's factor, when that is a whole number of ns; otherwise no int64 ns
-# is right (NO_INT: any int returned is a different time = 不一致; a refusal is 対応なし, above it by rule 5).
+# is right (NO_INT: any int returned is a different time = 不一致) and the answer is a refusal of the target's entry
+# (round r17-1, critic i0-r16-04 and the lead's answer to i0-r15-05: expected[REFUSED] is True; run_battery.py grades
+# a refusal it credits to the target's entry, from common.py's record of the exception, as 正解と一致).
+REFUSED = "refused_by_entry"  # the expected key of a scene whose answer is a refusal (run_battery.expects_refusal)
+REFUSAL_PHRASE = "正解は「対象の入口が断る」: 入口が断れば「正解と一致」"  # every refusal scene's text carries it (test)
 UNIT_WORDS = {"s": "秒", "ms": "ミリ", "us": "マイクロ秒"}  # the input's unit code -> the requirements' word
 UNIT_FACTOR = {"s": 10 ** 9, "ms": 10 ** 6, "us": 10 ** 3}
 NO_INT = "無い(入力が持つ値にナノ秒より細かい端数がある。どの整数も入力と違う時刻)"
 _UNIT_NOTE = ("time を、対象が単位 unit(s = 秒、ms = ミリ秒、us = マイクロ秒)の時刻として読む入口(対象のデータの入口の時刻の欄、"
               "または対象が公開する時刻の変換の関数)に、そのままの型(文字列 / 整数 / float)で渡し、対象が作った時刻を int ナノ秒で読む。"
               "adapter は数を換算しない(倍率を掛ける・型を変える・文字列にする・対象の入口を通らない変換をする、をしない)。その単位とその型を"
-              "読む入口が無い対象は「対応なし」(試したことを書く)、入口が断れば「対応なし」(出た例外を書く)")
+              "読む入口が無い対象は「対応なし」(試したことを書く)。入口が例外で断れば、その例外の物から common.py が断りの記録を作り"
+              "(何を渡したか・例外の道筋の枠)、runner がその記録で対象の入口の断りかを確かめる。確かめた断りは、正解が「断る」の場面では"
+              "「正解と一致」、正解が整数の場面では「対応なし」")
 _UNIT_GRADED = ("adapter の出力の ns(対象が作った時刻を、対象の時刻の型から正確に int ナノ秒に読んだ値)を runner が採点する: int64 の範囲の"
-                "整数(bool でない。numpy の整数を含む)ならその整数、ほかは null(run_battery.py の _grade_unit_time)")
+                "整数(bool でない。numpy の整数を含む)ならその整数、ほかは null(run_battery.py の _grade_unit_time)。入口が断ったときは、"
+                "runner が断りの記録(common.py が例外の物から作る)から対象の入口の断りかを決める(run_battery.py の refusal_problem。"
+                "入口に渡した物が場面の入力と同じ型・同じ値、断った入口が対象の物、例外の道筋に対象の枠があり、その内側に場面集の側の"
+                "ファイルの枠が無い)。文の読みは使わない")
 _UNIT_MEASURES = "対象自身の変換が、この単位の時刻を丸めずに int64 ナノ秒にするか(ナノ秒の整数にならない値を黙って丸めないか)。"
-_NO_INT_TAIL = ("正解の int64 ナノ秒は無い: どの整数を返しても入力と違う時刻なので「不一致」、対象が断れば「対応なし」"
-                "(場面集の規則 5 の順で断る方が上)。")
+_NO_INT_TAIL = ("正解の int64 ナノ秒は無い: どの整数を返しても入力と違う時刻なので「不一致」。" + REFUSAL_PHRASE +
+                "(runner が断りの記録で対象の入口の断りと確かめた物)、入口が無ければ「対応なし」。")
 _FORM_TITLE = {"text": "十進の文字列・ナノ秒で割り切れる", "text-subns": "十進の文字列・ナノ秒より細かい桁がある", "int": "整数",
                "float-held": "float・float が持つ値がナノ秒で割り切れる",
                "float-subns": "float・書いた数を float が持てず、持つ値にナノ秒より細かい端数がある"}
@@ -378,7 +387,8 @@ for _u, _f, _t, _want, _d in _UNIT_PLAN:
     add(id=f"p2-{_u}-{_f}", viewpoint="P0-2", kind="value",
         title=f"{UNIT_WORDS[_u]}の時刻({_FORM_TITLE[_f]})を対象自身の変換で int64 ナノ秒にした値",
         input={"time": _t, "unit": _u, "note": _UNIT_NOTE},
-        expected={"int64_ns": _want}, derivation=_d, measures=_UNIT_MEASURES, graded_from=_UNIT_GRADED)
+        expected={"int64_ns": _want, **({REFUSED: True} if _want == NO_INT else {})}, derivation=_d,
+        measures=_UNIT_MEASURES, graded_from=_UNIT_GRADED)
 UNIT_SCENES = [f"p2-{_u}-{_f}" for _u, _f, *_ in _UNIT_PLAN]
 
 # ---------------------------------------------------------------- P0-3

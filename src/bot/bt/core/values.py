@@ -90,7 +90,15 @@ Containers of plain data (tuple, list, dict, set, frozenset, and the
 core's own frozen ones): a list becomes a `FrozenList`, a dict a
 `FrozenDict`, a set a `FrozenSet` -- always new containers of new values;
 each remembers what it was, so `thaw` gives back a fresh list / dict /
-set of fresh values.
+set of fresh values -- except in the place of a dict key or a set element
+(round 17, i0-r16-02), where what the sender gave was hashable and comes
+back as the core's immutable copy of the same classes (a key must have a
+hash). Each walk over plain data rebuilds a container once per OBJECT, not
+once per path to it (round 17, i0-r16-03): a container the value holds
+twice is one new container held twice, as the sender gave it, and the
+work is decided by the objects handed over, never by the tree they unfold
+to; a FrozenDict's hash is made when it is first asked for, and the core's
+equality of its containers remembers what it has compared.
 """
 from __future__ import annotations
 
@@ -436,7 +444,11 @@ PLAIN_DATA_RULE = (
     "or clongdouble whose value the float / complex does not hold exactly is refused, and numpy's "
     "timedelta64 / datetime64 (a count in a unit of their own) are not numbers (round 15); types are "
     "decided by the real type's own MRO, never by what the object claims (__class__); tuple / list / dict "
-    "/ set / frozenset of plain data become new immutable containers and are read back as fresh copies, "
+    "/ set / frozenset of plain data become new immutable containers and are read back (thaw) as fresh "
+    "copies -- list / dict / set where they were given, and in the place of a dict key or a set element the "
+    "core's immutable copy of the same classes, which has a hash (round 17) -- each container rebuilt once "
+    "per object: one the value holds twice is one new container held twice, as given, and nothing is "
+    "shared with anything outside the value (round 17), "
     "nested at most MAX_NESTING (100) containers deep counted from the field that holds them; two keys of a "
     "dict or two elements of a set that are distinct in the sender's container but equal as plain data are "
     "refused (never merged), and so is a key or an element that has no hash (a signaling-NaN Decimal, or "
@@ -640,7 +652,8 @@ def value_text(value: Any) -> str:
 # nested values of equal hash in one set or dict, one level of its recursion
 # limit per tuple / frozenset container (measured round 15: two distinct
 # 98-level tuples need 106 frames of headroom; from a FrozenDict down the
-# core's iterative `_plain_equal` takes none per level, round 16) -- well
+# core's iterative `_plain_equal` takes none per level, round 16, and none
+# per candidate of a colliding key, round 17) -- well
 # inside its default limit (1000). The value 100 was
 # set in round 14 from the recursive walks of then (3 frames a level, about 20
 # for a run: half of 1000) and kept.
@@ -649,7 +662,8 @@ MAX_NESTING = 100
 # out plain data needs below its caller, whatever the nesting of the value
 # (round 15, measured over freeze, settle, renew, thaw, and place_order /
 # order() / extra_dict() from inside on_event: at most 22, for place_order
-# from inside on_event; 30 leaves a margin).
+# from inside on_event; round 17: 24, a FrozenDict key whose hash is made
+# when the core makes the key; 30 leaves a margin).
 # With less headroom than this a call may fail with RecursionError; with at
 # least this much, whether a value is taken never depends on the stack depth
 # of the call -- except for the interpreter's comparison above, which needs
@@ -960,34 +974,50 @@ def _too_deep(where: str) -> str:
             f"plain data is refused beyond that depth")
 
 
-# ---- the walks over plain data (round 15, i0-r14-05) ------------------------------------
+# ---- the walks over plain data (round 15, i0-r14-05; round 17, i0-r16-03) ---------------
 # One iterative walk rebuilds nested plain data for freeze, settle, renew and
 # thaw: an explicit stack instead of recursion, so the frames of the
 # interpreter's stack a walk takes are the same few whatever the nesting, and
 # whether a value is taken never depends on how deep the caller's stack is.
+# A container is rebuilt ONCE PER OBJECT, not once per path to it (round 17,
+# i0-r16-03): what a walk has built for a container is remembered by the
+# container's id (the walk holds the value, so no id is reused during it),
+# and a container met again is given the same new object. So the work of a
+# walk is decided by the objects handed over -- a value whose n tuples each
+# hold the one below twice is n rebuilds, not 2**n -- and what comes out is
+# shared exactly where the sender's value was shared (as copy.deepcopy does),
+# never with anything outside it. MAX_NESTING is checked where a remembered
+# container is placed again: it is reused only when its height fits below
+# that place; otherwise it is walked again and refused where it goes too deep,
+# exactly as without the sharing.
 # What is left of the interpreter's own recursion: comparing two DISTINCT
 # nested values whose hashes are equal, when both are keys of one dict or
-# elements of one set (the interpreter compares them, one level of its
-# recursion limit a container) -- caught at the walk and refused with the
-# entry's own error, never RecursionError.
+# elements of one set (the interpreter compares tuples and frozensets, one
+# level of its recursion limit a container) -- caught at the walk and refused
+# with the entry's own error, never RecursionError.
 
 _CYCLE, _DEEP, _RECURSION = "cycle", "deep", "recursion"
 
 
-def _walk(root: Any, where: str, outer: int, open_node: Callable, leaf: Callable, fail: Callable) -> Any:
-    """Rebuild `root` depth first, without recursion. `open_node(v, where)`
-    is None for a leaf -- then `leaf(v, where)` is its new value -- or
-    (children, finish): `children` a list of (value, where) rebuilt in
-    order, `finish(list of the new children)` the new container. A
-    container on the path again (a cycle), or deeper than MAX_NESTING
-    counted from the field (`outer` containers around `root`), raises
-    `fail(kind, value, where)`; so does the interpreter's recursion limit
-    reached while a finished container is built (kind _RECURSION)."""
+def _walk(root: Any, where: str, outer: int, open_node: Callable, leaf: Callable, fail: Callable,
+          tagged: bool = False) -> Any:
+    """Rebuild `root` depth first, without recursion, each container once.
+    `open_node(v, where)` is None for a leaf -- then `leaf(v, where)` is its
+    new value -- or (children, finish): `children` a list of (value, where)
+    rebuilt in order, `finish(list of the new children)` the new container.
+    A container is remembered by its id -- and by its `where` when `tagged`
+    (thaw: the form depends on the position) -- with its height, and reused
+    where it fits under MAX_NESTING. A container on the path again (a
+    cycle), or deeper than MAX_NESTING counted from the field (`outer`
+    containers around `root`), raises `fail(kind, value, where)`; so does the
+    interpreter's recursion limit reached while a finished container is
+    built (kind _RECURSION)."""
     try:
         opened = open_node(root, where)
         if opened is None:
             return leaf(root, where)
         path: set = set()
+        memo: dict = {}  # memo key -> (new container, height in containers)
         stack: list = []
         v, w, node = root, where, opened
         while True:
@@ -998,12 +1028,20 @@ def _walk(root: Any, where: str, outer: int, open_node: Callable, leaf: Callable
                 if outer + len(path) >= MAX_NESTING:
                     raise fail(_DEEP, v, w)
                 path.add(key)
-                stack.append([key, node[0], 0, [], node[1]])
+                # [id, children, next index, new children, finish, memo key, height below]
+                stack.append([key, node[0], 0, [], node[1], (key, w) if tagged else key, 0])
             top = stack[-1]
             children, i = top[1], top[2]
             if i < len(children):
                 top[2] = i + 1
                 v, w = children[i]
+                got = memo.get((id(v), w) if tagged else id(v))
+                if got is not None and outer + len(path) + got[1] <= MAX_NESTING:
+                    top[3].append(got[0])
+                    if got[1] > top[6]:
+                        top[6] = got[1]
+                    node = None
+                    continue
                 node = open_node(v, w)
                 if node is None:
                     top[3].append(leaf(v, w))
@@ -1012,9 +1050,14 @@ def _walk(root: Any, where: str, outer: int, open_node: Callable, leaf: Callable
             stack.pop()
             path.discard(top[0])
             built = top[4](top[3])
+            height = top[6] + 1
+            memo[top[5]] = (built, height)
             if not stack:
                 return built
-            stack[-1][3].append(built)
+            parent = stack[-1]
+            parent[3].append(built)
+            if height > parent[6]:
+                parent[6] = height
     except RecursionError:
         raise fail(_RECURSION, root, where) from None
 
@@ -1082,7 +1125,7 @@ def _settle_open(value: Any, where: str) -> Any:
         for p in tuple.__iter__(pairs):
             children.append((tuple.__getitem__(p, 0), where))
             children.append((tuple.__getitem__(p, 1), where))
-        return children, lambda out: FrozenDict._from_pairs(tuple(_dict_of(_pairs_of(out), Unsettled, where).items()))
+        return children, lambda out: _fd_of_table(_dict_of(_pairs_of(out), Unsettled, where))
     container = None
     for c in _CONTAINERS:
         if derives(t, c):
@@ -1310,43 +1353,53 @@ class FrozenSet(frozenset):
         return f"FrozenSet({set(self)!r})"
 
 
-class _HashOnly:
-    """An element whose hash is a given int and whose == is identity: a
+class _HashOnly(int):
+    """An element whose hash is the int it is and whose == is identity: a
     frozenset of these hashes as the frozenset of the objects the ints are
     the hashes of (CPython's frozenset hash is made from its elements'
-    hashes and their number), without comparing those objects."""
+    hashes and their number), without comparing those objects. Its hash and
+    == are the C slots of int and object (round 17): no frame of Python runs
+    while the frozenset is made."""
 
-    __slots__ = ("_h",)
-
-    def __init__(self, h: int) -> None:
-        self._h = h
-
-    def __hash__(self) -> int:
-        return self._h
+    __slots__ = ()
+    __hash__ = int.__int__
+    __eq__ = object.__eq__
+    __ne__ = object.__ne__
 
 
-_UNHASHABLE = object()
+# what a FrozenDict's hash slot holds when it has no int hash: objects the
+# interpreter keeps one of (round 17), so no receiver's copy holds an object
+# another holds (the sender adversary of round 8 walks every slot); a hash is
+# an int, never the bool False itself.
+_UNHASHABLE = False  # it holds a value that has no hash
+_NOT_YET = None  # its hash has not been asked for yet
 
 
 def _pairs_hash(pairs: tuple) -> Any:
     """hash(frozenset(pairs)) for distinct pairs, made without comparing two
-    pairs (round 15): each pair's hash is taken (a FrozenDict inside hashes by
-    the hash it stored when it was made: no frame per nesting level), and
-    the frozenset is made of objects that compare by identity. A pair that
-    cannot be hashed (a signaling-NaN Decimal) leaves the FrozenDict
-    unhashable."""
+    pairs (round 15): each pair's hash is taken, and the frozenset is made
+    of objects that compare by identity. A pair that cannot be hashed (a
+    signaling-NaN Decimal) leaves the FrozenDict unhashable. A plain loop
+    (no comprehension frame; round 17)."""
+    hashes = []
     try:
-        return hash(frozenset([_HashOnly(hash(p)) for p in pairs]))
+        for p in tuple.__iter__(pairs):
+            hashes.append(_HashOnly(hash(p)))
     except TypeError:
         return _UNHASHABLE
+    return hash(frozenset(hashes))
 
 
 class FrozenDict(Mapping):
     """An immutable, hashable dict (was a `dict` when given). Keeps the
     given order; equal to any mapping with the same items. Its lookup
     table is a read-only mapping proxy: no dict of it is reachable by
-    attribute access. Its hash is made when it is made (the value of
-    hash(frozenset(its items))), so hashing never walks it."""
+    attribute access. Its hash (the value of hash(frozenset(its items))) is
+    made the first time it is asked for, once (round 17, i0-r16-03: made
+    when the FrozenDict was made, it hashed every VALUE -- a value no one
+    had hashed, whose tuples the interpreter's hash unfolds -- although only
+    a FrozenDict that is a key or an element needs one); `_fd_hash` makes it
+    without a frame per nesting level."""
 
     __slots__ = ("_items", "_map", "_hash")
 
@@ -1391,37 +1444,91 @@ class FrozenDict(Mapping):
 
     def __hash__(self) -> int:
         h = self._hash
+        if h is _NOT_YET:
+            h = _fd_hash(self)
         if h is _UNHASHABLE:
-            raise TypeError("unhashable FrozenDict: it holds a value that has no hash (a signaling-NaN Decimal)")
+            raise TypeError("unhashable FrozenDict: it holds a value that has no hash (a signaling-NaN Decimal, or "
+                            "a list / dict / set in one made by the public constructor)")
         return h
 
     def __repr__(self) -> str:
         return f"FrozenDict({dict(self._items)!r})"
 
 
-def _fd_fill(self: FrozenDict, pairs: tuple) -> None:
+def _fd_fill(self: FrozenDict, pairs: tuple, table: Optional[dict] = None) -> None:
+    """`table`: a new dict of `pairs` the core made already (never one anyone
+    else holds), used as the lookup table instead of making it again."""
     object.__setattr__(self, "_items", pairs)
-    object.__setattr__(self, "_map", types.MappingProxyType(dict(pairs)))
-    object.__setattr__(self, "_hash", _pairs_hash(pairs))
+    object.__setattr__(self, "_map", types.MappingProxyType(dict(pairs) if table is None else table))
+    object.__setattr__(self, "_hash", _NOT_YET)
+
+
+def _fd_of_table(table: dict) -> FrozenDict:
+    """A FrozenDict of a new dict the core built (`_dict_of`)."""
+    self = object.__new__(FrozenDict)
+    _fd_fill(self, tuple(table.items()), table)
+    return self
 
 
 _FD_ITEMS = FrozenDict.__dict__["_items"].__get__
+_FD_HASH = FrozenDict.__dict__["_hash"].__get__
+_FD_SET_HASH = FrozenDict.__dict__["_hash"].__set__
 
 
-# ---- the core's equality of the containers it builds (round 16, i0-r15-03) --------------
-# Two FrozenDicts compare by `_plain_equal`: one loop over an explicit stack of
-# pairs, never a call per nesting level, so comparing two distinct nested
+def _fd_hash(root: FrozenDict) -> Any:
+    """Make the hash of `root` and of every FrozenDict under it whose hash
+    is not made yet, deepest first, without recursion (round 17): so each
+    pair's hash, taken by the interpreter, meets only FrozenDicts whose
+    hash is made (no frame per FrozenDict level) and each FrozenDict is
+    hashed once however often it is held. Tuples are looked into (their
+    hash is not kept by the interpreter); a frozenset's elements were
+    hashed when it was made. Returns root's stored hash (or _UNHASHABLE)."""
+    seen: set = set()
+    stack: list = [(root, False)]
+    while stack:
+        x, done = stack.pop()
+        if done:
+            _FD_SET_HASH(x, _pairs_hash(_FD_ITEMS(x)))
+            continue
+        if id(x) in seen:
+            continue
+        seen.add(id(x))
+        t = type(x)
+        if t is FrozenDict:
+            if _FD_HASH(x) is not _NOT_YET:
+                continue
+            stack.append((x, True))
+            for p in tuple.__iter__(_FD_ITEMS(x)):
+                stack.append((tuple.__getitem__(p, 0), False))
+                stack.append((tuple.__getitem__(p, 1), False))
+        elif t is tuple or t is FrozenList:
+            for v in tuple.__iter__(x):
+                stack.append((v, False))
+    return _FD_HASH(root)
+
+
+# ---- the core's equality of the containers it builds (round 16, i0-r15-03; round 17) -----
+# Two FrozenDicts compare by `_plain_equal`: one loop over explicit stacks,
+# never a Python call per nesting level, so comparing two distinct nested
 # values of equal hash (what a dict or set the core builds does when their
 # hashes collide) takes the same few frames at every depth below a
 # FrozenDict; tuples and frozensets above it compare in the interpreter's C,
 # one level of its recursion limit per container. The answer is Python's ==:
 # the same object is equal (the interpreter's identity shortcut in
 # containers), tuples / FrozenLists by position, frozensets / FrozenSets and
-# FrozenDicts by their elements / items, anything else by its own ==. Keys
-# and elements are matched through a table of their hashes (ints: no
-# comparison runs), never through a dict lookup (which would compare
-# colliding keys by ==, a call per level); only when the other side holds
-# several keys of that hash is each tried by a nested `_plain_equal`.
+# FrozenDicts by their elements / items, anything else by its own ==.
+# The comparison is a stack of TASKS (round 17, i0-r16-01), each "are all
+# these pairs equal?": the first task is (a, b). Keys and elements are
+# matched through a table of their hashes (ints: no comparison runs), never
+# through a dict lookup (which would compare colliding keys by ==, a call
+# per level). A key whose hash one key of the other side has is paired with
+# it in the same task; when the other side holds SEVERAL keys of that hash,
+# the task waits while a new task per candidate asks "is this candidate the
+# key?" -- on the same stack, so no call nests however many candidates or
+# levels. Every pair a task has settled is remembered for the comparison
+# (by the ids of the two objects, which the comparison holds), each object's
+# hash is taken once, and a pair met twice in one task is compared once: the
+# work is decided by the objects compared, not by the tree they unfold to.
 
 _SEQ, _SET, _MAP = "seq", "set", "map"
 
@@ -1436,70 +1543,126 @@ def _container_kind(t: type) -> Any:
     return None
 
 
-def _match(xs: tuple, ys: tuple, keyed: bool, stack: list) -> bool:
-    """Pair every item of `xs` with the equal item of `ys` (same length),
-    pushing what is left to compare; False when one has no partner. Items
-    are (key, value) pairs when `keyed`, else elements."""
+def _plain_equal(a: Any, b: Any) -> bool:
+    """a == b for values the core built (Python's answer; module comment
+    above), without a call per nesting level or per candidate."""
+    hashes: dict = {}  # id -> hash, each object hashed once in this comparison
+    answers: dict = {}  # (id, id) -> the answer of a finished task for that pair
+
+    def hash_of(o: Any) -> int:
+        got = hashes.get(id(o))
+        if got is None:
+            got = hashes[id(o)] = hash(o)
+        return got
+
+    # a task: [x, y, work (pairs, and "find" items), pairs seen, the find it waits on]
+    tasks: list = [[a, b, [(a, b)], set(), None]]
+    answer: Any = None  # the answer of the task that just finished, for the one below it
+    while True:
+        task = tasks[-1]
+        find = task[4]
+        failed = False
+        if find is not None:
+            kx, xv, cands, i, keyed = find
+            if answer is True:
+                answer = None
+                task[4] = None
+                if keyed:
+                    task[2].append((xv, tuple.__getitem__(cands[i], 1)))
+                continue
+            if answer is False:
+                answer = None
+                i += 1
+            while i < len(cands):
+                ky = tuple.__getitem__(cands[i], 0) if keyed else cands[i]
+                known = True if ky is kx else answers.get((id(kx), id(ky)))
+                if known is True:
+                    task[4] = None
+                    if keyed:
+                        task[2].append((xv, tuple.__getitem__(cands[i], 1)))
+                    break
+                if known is False:
+                    i += 1
+                    continue
+                find[3] = i
+                tasks.append([kx, ky, [(kx, ky)], set(), None])
+                break
+            else:
+                failed = True
+            if not failed:
+                continue
+        else:
+            work = task[2]
+            while work and not failed:
+                item = work.pop()
+                if len(item) == 5:  # a key with several candidates: wait on it
+                    task[4] = list(item)
+                    break
+                x, y = item
+                if x is y:
+                    continue
+                pair = (id(x), id(y))
+                if pair in task[3]:
+                    continue
+                task[3].add(pair)
+                known = answers.get(pair)
+                if known is not None:
+                    failed = not known
+                    continue
+                kx_, ky_ = _container_kind(type(x)), _container_kind(type(y))
+                if kx_ is None or ky_ is None:
+                    # a scalar, or what is not a container the core builds (a dict in
+                    # a FrozenDict a caller made with the public constructor): its own ==
+                    failed = not (x == y)
+                elif kx_ != ky_:
+                    failed = True
+                elif kx_ == _SEQ:
+                    if tuple.__len__(x) != tuple.__len__(y):
+                        failed = True
+                    else:
+                        work.extend(zip(tuple.__iter__(x), tuple.__iter__(y)))
+                elif kx_ == _SET:
+                    failed = (frozenset.__len__(x) != frozenset.__len__(y)
+                              or not _match(tuple(frozenset.__iter__(x)), tuple(frozenset.__iter__(y)), False,
+                                            work, hash_of))
+                else:
+                    px, py = _FD_ITEMS(x), _FD_ITEMS(y)
+                    failed = tuple.__len__(px) != tuple.__len__(py) or not _match(px, py, True, work, hash_of)
+            if task[4] is not None and not failed:
+                continue
+            if not failed and work:
+                continue
+        # the task is answered: all its pairs equal (not failed), or one pair unequal
+        tasks.pop()
+        result = not failed
+        answers[(id(task[0]), id(task[1]))] = result
+        if not tasks:
+            return result
+        answer = result
+
+
+def _match(xs: tuple, ys: tuple, keyed: bool, work: list, hash_of: Callable) -> bool:
+    """Pair every item of `xs` with the item of `ys` (same length) whose key
+    has its hash: one candidate is paired in `work` directly, several make a
+    "find" item the comparison resolves by tasks; False when one has none.
+    Items are (key, value) pairs when `keyed`, else elements."""
     index: dict = {}
     for y in ys:
-        ky = tuple.__getitem__(y, 0) if keyed else y
-        index.setdefault(hash(ky), []).append(y)
+        index.setdefault(hash_of(tuple.__getitem__(y, 0) if keyed else y), []).append(y)
     for x in xs:
         kx = tuple.__getitem__(x, 0) if keyed else x
-        cands = index.get(hash(kx))
+        cands = index.get(hash_of(kx))
         if not cands:
             return False
         if len(cands) == 1:
             y = cands[0]
             if keyed:
-                stack.append((kx, tuple.__getitem__(y, 0)))
-                stack.append((tuple.__getitem__(x, 1), tuple.__getitem__(y, 1)))
+                work.append((kx, tuple.__getitem__(y, 0)))
+                work.append((tuple.__getitem__(x, 1), tuple.__getitem__(y, 1)))
             else:
-                stack.append((kx, y))
+                work.append((kx, y))
             continue
-        for y in cands:
-            ky = tuple.__getitem__(y, 0) if keyed else y
-            if ky is kx or _plain_equal(kx, ky):
-                if keyed:
-                    stack.append((tuple.__getitem__(x, 1), tuple.__getitem__(y, 1)))
-                break
-        else:
-            return False
-    return True
-
-
-def _plain_equal(a: Any, b: Any) -> bool:
-    """a == b for values the core built (Python's answer; module comment
-    above), without a call per nesting level."""
-    stack: list = [(a, b)]
-    while stack:
-        x, y = stack.pop()
-        if x is y:
-            continue
-        kx, ky = _container_kind(type(x)), _container_kind(type(y))
-        if kx is None or ky is None:
-            # a scalar, or what is not a container the core builds (a dict in
-            # a FrozenDict a caller made with the public constructor): its own ==
-            if not (x == y):
-                return False
-            continue
-        if kx != ky:
-            return False
-        if kx == _SEQ:
-            if tuple.__len__(x) != tuple.__len__(y):
-                return False
-            stack.extend(zip(tuple.__iter__(x), tuple.__iter__(y)))
-        elif kx == _SET:
-            if frozenset.__len__(x) != frozenset.__len__(y):
-                return False
-            if not _match(tuple(frozenset.__iter__(x)), tuple(frozenset.__iter__(y)), False, stack):
-                return False
-        else:
-            px, py = _FD_ITEMS(x), _FD_ITEMS(y)
-            if tuple.__len__(px) != tuple.__len__(py):
-                return False
-            if not _match(px, py, True, stack):
-                return False
+        work.append((kx, tuple.__getitem__(x, 1) if keyed else None, cands, 0, keyed))
     return True
 
 
@@ -1537,7 +1700,7 @@ def _freeze_open(value: Any, where: str) -> Any:
             text = _key_text(k)
             children.append((k, f"{where} key {text}"))
             children.append((v, f"{where}[{text}]"))
-        return children, lambda out: FrozenDict._from_pairs(tuple(_dict_of(_pairs_of(out), ValueError, where).items()))
+        return children, lambda out: _fd_of_table(_dict_of(_pairs_of(out), ValueError, where))
     each = set.__iter__(value) if t is set else frozenset.__iter__(value)
     make = FrozenSet if (t is set or t is FrozenSet) else frozenset
     return [(v, f"{where} element") for v in each], lambda out: _set_of(make, out, ValueError, where)
@@ -1565,26 +1728,42 @@ def _frozen_pairs(value: "FrozenDict", where: str) -> tuple:
 
 
 def thaw(value: Any) -> Any:
-    """A fresh, changeable copy of frozen plain data, with the containers
-    as they were given (list, dict, set) and every value built anew;
-    changing it changes nothing else. Iterative (round 15)."""
-    return _walk(value, "value", 0, _thaw_open, _thaw_leaf, _core_fail)
+    """A fresh copy of frozen plain data for its reader, each container in
+    the form of its PLACE (round 17, i0-r16-02): as a dict key or an element
+    of a set / frozenset -- where the sender's own dict or set needed a
+    hash, so what it gave there was an immutable, hashable value -- the
+    core's immutable copy of it, of the same classes (tuple, frozenset,
+    FrozenList, FrozenSet, FrozenDict, down to every value inside); anywhere
+    else a list, dict or set for what was one when given (a FrozenList,
+    FrozenDict, FrozenSet), a tuple / frozenset as a tuple / frozenset. Every
+    value is built anew; a container the value holds twice comes back as one
+    object held twice (as it was given), and nothing is shared with anything
+    outside the copy: changing it changes nothing else. Iterative (round
+    15), each container once (round 17)."""
+    return _walk(value, _VALUE_PLACE, 0, _thaw_open, _thaw_leaf, _core_fail, tagged=True)
+
+
+# the two places `thaw` tells apart (its walk's `where`: the form depends on it)
+_VALUE_PLACE, _KEY_PLACE = "value", "key"
 
 
 def _thaw_open(value: Any, where: str) -> Any:
     t = type(value)
+    if where == _KEY_PLACE:  # a key or an element: the core's immutable copy, all the way down
+        opened = _renew_open(value, where)
+        return opened
     if t is FrozenList or t is tuple:
         return [(v, where) for v in tuple.__iter__(value)], (list if t is FrozenList else tuple)
     if t is FrozenDict:
         children = []
         for k, v in _FD_ITEMS(value):
-            children.append((k, where))
-            children.append((v, where))
+            children.append((k, _KEY_PLACE))
+            children.append((v, _VALUE_PLACE))
         return children, lambda out: dict(_pairs_of(out))
     if t is FrozenSet:
-        return [(v, where) for v in frozenset.__iter__(value)], set
+        return [(v, _KEY_PLACE) for v in frozenset.__iter__(value)], set
     if t is frozenset:
-        return [(v, where) for v in frozenset.__iter__(value)], frozenset
+        return [(v, _KEY_PLACE) for v in frozenset.__iter__(value)], frozenset
     return None
 
 
@@ -1606,10 +1785,11 @@ _RENEW_CONTAINERS = (tuple, FrozenList, frozenset, FrozenSet, FrozenDict)
 
 def renew(value: Any) -> Any:
     """The core's own new copy of a value the core built (a field of a
-    carrier, made by the functions above): equal, sharing no object with
-    it (but None, True, False and what the interpreter keeps one of per
-    value). A value of any other type is a bug of the core: TypeError.
-    Iterative (round 15)."""
+    carrier, made by the functions above): equal, of the same classes,
+    sharing no object with it (but None, True, False and what the
+    interpreter keeps one of per value); a container it holds twice is one
+    new container held twice. A value of any other type is a bug of the
+    core: TypeError. Iterative (round 15), each container once (round 17)."""
     make = _RENEW_SCALAR.get(type(value))
     if make is not None:
         return make(value)
