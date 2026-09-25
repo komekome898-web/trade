@@ -38,13 +38,13 @@ SEC = 1_000_000_000
 T0 = 1_767_571_200 * SEC  # 2026-01-05 00:00:00 UTC (Monday)
 
 FX_BTC_JPY = {"symbol": "FX_BTC_JPY", "venue": "bitflyer_cfd", "tick": 1.0, "min_qty": 0.01,
-              "quote_ccy": "JPY", "margin": True}
+              "qty_step": 1e-8, "quote_ccy": "JPY", "margin": True}
 JPX_STOCK = {"symbol": "JPX_STOCK_A", "venue": "jpx_equity", "tick": 1.0, "min_qty": 100.0,
-             "quote_ccy": "JPY", "margin": False}
+             "qty_step": 100.0, "quote_ccy": "JPY", "margin": False}
 USDJPY = {"symbol": "USDJPY", "venue": "fx", "tick": 0.001, "min_qty": 1000.0,
-          "quote_ccy": "JPY", "margin": True}
+          "qty_step": 1.0, "quote_ccy": "JPY", "margin": True}
 EURUSD = {"symbol": "EURUSD", "venue": "fx", "tick": 0.00001, "min_qty": 1000.0,
-          "quote_ccy": "USD", "margin": True}
+          "qty_step": 1.0, "quote_ccy": "USD", "margin": True}
 
 ZERO_COSTS = {"maker_rate": 0.0, "taker_rate": 0.0,
               "source": "場面の定義(費用を測らない場面なので 0 と明示する)"}
