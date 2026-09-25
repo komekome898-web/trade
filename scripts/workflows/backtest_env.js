@@ -432,6 +432,9 @@ function brief(r) {
     battery: r.batteryHistory ? r.batteryHistory.map(h => ({ n: h.n, stops: h.findings.filter(f => f.level === '止める').map(f => f.text.slice(0, 300)) })) : null,
     last: last ? { winsC: last.winsC, winsS: last.winsS,
       findings: last.critic ? last.critic.findings : null,
+      // audit 68-2: an item passed without a critic must say so in the final return value, by machine
+      critic_skipped: last.critic ? !!last.critic.skipped : null, recount: last.critic ? (last.critic.table_recount || null) : null,
+      unverified: last.critic && last.critic.skipped ? '未確認(批評家なし。資料係の申告の裏取りは無い)' : null,
       judges: last.judges, loss_streak: last.lossStreak || null, worker: { test_tail: last.worker.test_tail, unmet: last.worker.unmet, questions: last.worker.questions_for_lead, changed: last.worker.changed_files } } : null }
 }
 

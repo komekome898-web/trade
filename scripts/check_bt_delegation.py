@@ -261,6 +261,22 @@ def check_bound(doc: str, script: str = "", args_text: str = "") -> list[str]:
             bad = [v for v in vals if int(v) not in nums]
             if bad:
                 errs.append(f"引数の round_cap の値 {bad} が委任文の上限 {nums} に無い(66-4 / L-454)")
+    # audit 68-2 / 68-3 / 68-8: items run without a critic must be capped at one round and disclosed as unverified
+    if args_text:
+        try:
+            a = json.loads(args_text)
+        except Exception:
+            a = {}
+        skip = [int(x) for x in (a.get("skip_critic") or [])]
+        rc = a.get("round_cap")
+        for sid in skip:
+            cap = rc.get(str(sid)) if isinstance(rc, dict) else rc
+            if int(cap or 0) != 1:
+                errs.append(f"批評家を置かない項目 {sid} の round_cap が 1 でない({cap})(68-8)")
+        if skip and "未確認" not in doc:
+            errs.append("批評家を置かない項目があるのに委任文に「未確認」の開示が無い(68-3)")
+        if skip and script and not re.search(r"unverified: .*skipped", script):
+            errs.append("批評家を置かない項目があるのに台本の brief が unverified を機械で入れていない(68-2)")
     return errs
 
 

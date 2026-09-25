@@ -1901,3 +1901,65 @@ python3 -c "import sys; sys.path.insert(0,'scripts'); import check_bt_delegation
 - 67-1〜5・10・11 [確認]: 記録する。
 
 処置後の実測(逐語): `node --check` → エラー無し / `node --test tests/workflows/backtest_env_logic.test.mjs` → pass 12 / fail 0 / pytest → 15 passed / 検査器(同じ 5 引数)→ `OK 誤り 0 件`。
+
+
+## 監査 68 回目(委任文 `20260925_backtest_env_prompt.md@fcb48cb4d261`、指紋 2c19e69c0755。案 B(L-454)+ 67 回目の処置の版。2026-09-25 15:07 UTC 完了)
+
+### 監査役の出力(逐語)
+
+監査 68 回目。指摘 1 件ごとに印・ファイル:行・根拠を全文で出す(要約しない)。
+
+---
+
+1. [止める] `docs/DATA/delegations/20260925_backtest_env_prompt.md:92` と `:62` の矛盾 — §3「周回の数え方と止める条件」は冒頭(91 行)で「**この段落が唯一の定義。§0 の表…はここを指す**」と明記しているのに、その中身(92 行、項目 1)は今なお「**上限**: 1 項目あたり最大 10 周(L-407「C 案1」…)」とだけ書かれ、L-454(案 B、項目 1〜3 = 最大 1 周・項目 4 = 最大 2 周)を一切反映していない。一方 §0 の「通過の判定」行(62 行)は「**終わりの上限:** 項目 1〜3 は最大 1 周…、項目 4 は最大 2 周(L-454「案B」)。**それまでは項目 1〜4 は最大 10 周 = L-407 C**」と明示的に「10 周は過去の値」と書いている。同じ文書内で、片方(62 行)は「10 周は過去」、もう片方(92 行、しかも「唯一の定義」と自称する側)は「10 周が今の上限」と読める文のまま残っている。
+
+根拠(実測): `grep -n "^1\. \*\*上限\*\*" docs/DATA/delegations/20260925_backtest_env_prompt.md` → 92 行がヒットし「1 項目あたり最大 10 周」「L-454」への言及なし。`grep -n "終わりの上限" 同ファイル` → 62 行のみヒットし、そこには L-454 とその上限が明記されている。`python3 scripts/check_bt_delegation.py` の `check()`(rule 4)は「周回の数え方と止める条件」の見出し出現回数(=1)しか見ておらず、中身の数値が §0 の行と食い違っていないかは検査していない(`check_bound` は「| 通過の判定」で始まる行だけを対象にしており、§3 の段落は対象外。`scripts/check_bt_delegation.py:236-264` 参照)。結果、「誤り 0 件」はこの矛盾を検出できていない。**(a)(e) 直結**: 「最大 10 周」が現行の指示として読める文が §3 に残っている(P-2 記号・用語の使い回し=同じ「上限」という概念が 2 箇所で違う現在値を持ち、古い定義が消されていない型と同型)。
+
+2. [止める] `scripts/workflows/backtest_env.js:427-436`(`brief` 関数)と `:503`(`return finish({..., results: Object.values(results).map(brief)})`) — 委任文 62 行が約束する「批評家を置かない項目では…通過の報告に「未確認」と書く」を実現する経路が、Workflow の最終返り値に無い。`brief()` は `last.critic ? last.critic.findings : null` だけを抜き出し、`critic.skipped`・`critic.table_recount`(項目 1〜3 では `'批評家なし(L-454 案 B)'` が入る唯一の場所)をどこにも転記しない。全項目が通過した「完了」の経路(504 行 `return finish({stopped_at:'done', ..., results: Object.values(results).map(brief)})`)でも同じ `brief()` を使うため、**通過時の最終成果物に「この項目は批評家なしで通した」という情報が一切残らない**。
+
+根拠(実測): `grep -n "未確認\|skipped\|裏取り" scripts/workflows/backtest_env.js` → ヒットは 199 行(`passCandidate` 内の分岐)・303 行(`critic` のスタブ定義)・307〜308 行(批評家プロンプト文中の語)のみで、`brief` 関数(427〜436 行)にも、最終 `return`(503 行)にも一致なし。つまり「未確認」の事実は `results[id].history[].critic.table_recount` という生のオブジェクトの奥にしか存在せず、リードが手作業でそこまで掘って書き写さない限り、オーナーへの報告(§5 納品・§6 報告)に反映される保証が無い。これは I-013 の再発防止(66-2: 資料係の自己申告を独立に裏取りする)そのものが依拠する「自己申告は機械で裏取りする」という原則に反し、今回は「批評家なし=自己申告のみ」という状態そのものが**開示されるかどうかも**自己申告(リードの手作業)に頼っている(P-3: 事前登録の定義を実装が反映しているかは実行して確かめるまで分からない、の型)。
+
+3. [直す] `docs/DATA/delegations/20260925_backtest_env_prompt.md:62` — 「未確認と書く」という約束に対応する機械検査が `scripts/check_bt_delegation.py` に無い。`check_bound`(236〜264 行)は上限の数値の突き合わせ(66-4/L-454)しか見ておらず、「未確認」という語が最終報告のどこかに出るかを検めるルールが 1〜11 のどの検査にも無い。#2 と同じ欠落の別の角度(委任文側の対応するチェックが無い)。
+
+4. [直す] `docs/DATA/delegations/20260925_backtest_env_prompt.md:51` — 「最小で回す(案 B)」の行は、選ばれた「案 B」の文面と、オーナーが「案B」を選んだ理由の逐語(「理由は上限5周といえばあなたは5周以上回すからです」)は明記しているが、**却下された「案A」(上限 5 周)自体の文面・出所(委任文のどこにもオーナーの逐語にも見当たらない)がどこにも記録されていない**。`docs/OWNER_LOG.md:454`(L-453 の行)も「リードの答え(これからどうするか・capacity)は同じ回の返答」とだけ書き、案 A/B の中身自体は転記していない。
+
+根拠(実測): `grep -n "案A\|案 A" docs/OWNER_LOG.md docs/DATA/delegations/20260925_backtest_env_prompt.md` → いずれも無一致。「案 A = 上限 5 周」という対応は、L-454 の逐語「上限5周といえば」から読者が**推測**するしかなく、委任文自身がこの推測を明記していない。「案 B の文面はリードの語」という自己開示(既存の文書全体で使われている house style、例: L-441・L-443 の行など)はここにも付いているが、案 A 側にはその注記すら無い(案 A の中身が一度もどこにも書かれていないため、リードの語かオーナーの語かの判定自体ができない)。(a) の「案 A を選ばなかった理由の逐語」は残っているが、「案 A が何だったか」は追跡できない。
+
+5. [確認] `docs/OWNER_LOG.md:455` — L-454 行の逐語「**案B。理由は上限5周といえばあなたは5周以上回すからです。最小で回しますが、適当な仕事や無駄な仕事をしたと判断した場合あなたの親会社に返金申請をします。覚悟して仕事してください。**」が `docs/DATA/delegations/20260925_backtest_env_prompt.md:51` に一字一句一致して引用されていることを確認した(実測: 両ファイルの当該行を直接比較)。`python3 scripts/check_bt_delegation.py`(検査 2 = 太字引用の逐語照合)も同じ箇所を検査対象にしており、`OK 誤り 0 件`(自分で再実行して確認、下記参照)。
+
+6. [確認] 67-6・67-9・67-7・67-8 の処置はいずれも差分に実在し、67 回目の指摘文言どおりに閉じている。
+- 67-6(runs の置き場所): `docs/DATA/delegations/20260925_backtest_env_prompt.md:62`「資料係は対象ごとの実行の出力を round_<k>/materials/runs/<対象の名>.tsv に置き、批評家は同じ path から数え直す(監査 67-6)」/ `scripts/workflows/backtest_env.js:294`(資料係への指示「対象ごとの場面集の実行の出力は ${d}/materials/runs/<対象の名>.tsv…に置く(監査 67-6…)」)/ `:297`(資料係自身の recount が同じ path から)/ `:308`(批評家への指示「${d}/materials/runs/*.tsv(資料係の置き場所 = 監査 67-6)から…数え直し」)。3 箇所とも同一の `${d}/materials/runs/` を指しており、67 回目の指摘(#6、「資料係が書く場所」と「批評家が読む場所」の保証が指示文に無い)は埋まっている。
+- 67-9(持ち越しは全レベル): `scripts/workflows/backtest_env.js:372`「`carriedImpl: c ? c.findings : []`(audit 67-9: every level is carried (止める・直す・示唆), not only the stops)」/ `:469, :472`(`carried` の集約と項目 4 への `extra` 注入が「[止める]・[直す]・[示唆]」と明記)。旧版は `stopsImpl`([止める] のみ)だったのが `c.findings`(全レベル)に変更されている(`git diff 8b8ac70 c8dfa53` で実測済み、上記diff引用)。
+- 67-7(数え直しの不一致でも止まる旨の明記): `docs/DATA/delegations/20260925_backtest_env_prompt.md:62`「止めるのは 2 つだけ: 場当たりの直し patchwork=true の [止める] と、批評家の数え直し table_recount_ok=false = 資料係の申告が違う。監査 67-7」/ `scripts/workflows/backtest_env.js:189-190`(コメントに「and a recount that disagrees with the table maker (66-2)」が追加)。
+- 67-8(項目 1〜4 に相手による通過の分岐が無い旨の明記): `docs/DATA/delegations/20260925_backtest_env_prompt.md:62`「項目 1〜4 では指摘の相手(実装 / 場面集)で通過の分岐は無く(項目 0 だけの仕組み)、場面集の側の指摘は場面係が周の中で直す(監査 67-8)」— `scripts/workflows/backtest_env.js:176-181`(`splitStops` が `item.id !== 0` では `{impl: stops, bat: []}` を返す実装)と整合。
+
+7. [確認] `capOf`・`SKIP_CRITIC` の配線は項目ごとに正しく効いている。`scripts/workflows/backtest_env.js:205`「`function capOf(cap, id) { return (cap && typeof cap === 'object') ? (Number(cap[id]) || 10) : (Number(cap) || 10) }`」/ `:238`「`const CAP = capOf(args.round_cap, item.id)`」/ `:239`「`while (item.id === 0 || counted < CAP)`」。実測した引数ファイル `bt_args_run12.json` の `round_cap = {"1":1,"2":1,"3":1,"4":2}`・`skip_critic = [1,2,3]` を通すと、項目 1〜3 は `CAP=1` で 1 周のみ実行後に `counted++` → ループ終了(`structural=true` は `attempt===1` で確定するため、この 1 周だけで判定される。批評家スタブの `structural_change_since_prev: true` は cap=1 の項目では毎周判定を起こすという読みは正しいが、cap=1 なので「毎周」は実質「初回の 1 回きり」であり空虚に真になる点は委任文・台本のどちらにも明記が無い)。項目 4 は `CAP=2` で批評家は実際に起動される(`SKIP_CRITIC.includes(4)` は false)ので、この項目では `structural_change_since_prev` は批評家自身の申告に基づく本来の意味を持つ。`judgeRound`(:207-210)との整合も確認: `judgeNow = attempt===1 || stopsImpl.length===0 || structural`。node --test の実測(下記)でも `capOf` の単体試験が pass している。
+
+8. [聞く] #7 に関連し、項目 1〜3 で `structural_change_since_prev: true` を固定値として埋めている設計(`scripts/workflows/backtest_env.js:303`)は、cap=1 なので実害は無いが、将来 `round_cap` の値だけを外から変えて項目 1〜3 を複数周に増やす運用になった場合(委任文はこれを禁じていない。「オーナーだけが変える」と書かれているのは通過の判定・上限の値そのものであり、`skip_critic` の対象項目をそのままに上限だけ上げる操作を明示的に禁じた文言は見当たらない)、批評家なしで「毎周 structural=true」が効き続け、`judgeRound` の「構造の変化が無い周は審査員を起こさない」という節約機構が常に無効化される。これは意図された挙動か、それとも cap=1 前提でしか検証されていない未検証の分岐か。
+
+9. [確認] リードが報告した実測コマンドと出力を自分で再実行し、一致を確認した。
+- `python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260925_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/bt_args_run12.json` → `OK 誤り 0 件`(実測一致)。
+- `node --test tests/workflows/backtest_env_logic.test.mjs` → `# pass 12` `# fail 0`(実測一致)。
+- `PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py -v` → `15 passed`(実測一致)。
+- `sha256sum docs/DATA/delegations/20260925_backtest_env_prompt.md | cut -c1-12` → `fcb48cb4d261`(タスク記載の指紋と一致)。
+- `python3 scripts/check_bt_delegation.py --fingerprint` → `2c19e69c0755`(委任文末尾「枠組みの指紋: 2c19e69c0755」と一致)。
+- `/tmp/…/bt_args_run12.json` の `marker` = `"20260925_backtest_env_prompt.md@fcb48cb4d261"`、`round_cap` = `{"1":1,"2":1,"3":1,"4":2}`、`skip_critic` = `[1,2,3]`(委任文 51 行の記述と一致)。**ただしタスク冒頭の「round_cap=10」という記載は誤り**(実際のファイルの中身は上記の項目別の値であり 10 ではない。タスク文中の要約が古いか誤記の可能性がある。念のため報告する)。
+
+10. [確認] `docs/DATA/delegations/20260925_backtest_env_prompt.md` 中の「0 件」「10 周」の全出現(`grep -n "0 件" / "10 周"`)を数え直した。「0 件」は 12・50・61・95・138 行の 5 件、すべて (a) 過去の案の逐語引用、(b) 「2026-09-25 まではここが…」と明示的に過去化された記述、(c) 項目 0 限定と明記された現行の例外、のいずれかで、現行の一般規則として「[止める] が 0 件」を課す文は残っていない(67 回目の #10 の確認を再確認)。「10 周」は 11・92 行の 2 件で、11 行は L-407 の提案の逐語引用として明確に過去形の文脈にあるが、**92 行は #1 で指摘したとおり現行の指示として読める文のまま**である。67 回目の監査ではこの版(案 B 適用前)にはまだこの矛盾は存在せず、今回の変更(L-454 の適用)で新たに生じた。
+
+---
+以上 10 件(止める 2・直す 2・確認 5・聞く 1)。
+
+**特に重い順**: #1(§3「唯一の定義」と自称する段落が、直近の L-454 の決定を反映せず「最大 10 周」のまま残り、§0 の行と矛盾している。「唯一の定義」への参照が誤った値を指す状態は、次にこの委任文を読む者・次に起動する者が上限を取り違える具体的なリスクを持つ)と #2(「未確認」という約束された開示が、Workflow の最終返り値のどの経路にも機械的に残らず、リードの手作業に依存している。I-013 の再発防止(66-2)が「自己申告は独立に裏取りする」だったのに対し、今回の「裏取りをしない」こと自体の開示が無裏取りの自己申告になっている)。
+
+### リードの処置(2026-09-25 15:20 UTC。処置後の版 7f2320b1041d。枠組みの指紋は 2c19e69c0755 のまま変わらないので、L-443 (1) の規則(63 回目と同じ)により検査器と試験で通し、次の監査は起動前の版に掛ける)
+
+- 68-1 [止める]: 当たっている。§3 の「上限」の項を L-454 の値(項目 1〜3 = 最大 1 周、項目 4 = 最大 2 周)に書き換え、10 周は「2026-09-25 まで」と過去化した。
+- 68-2 [止める]: 当たっている。台本の `brief` に `critic_skipped`・`recount`・`unverified`(批評家なしなら「未確認(批評家なし。資料係の申告の裏取りは無い)」)を機械で入れる。
+- 68-3 [直す]: 検査器に、`skip_critic` があるとき委任文に「未確認」の開示があること・台本の `brief` が `unverified` を入れていることの検査を足した(試験 1 件追加)。
+- 68-4 [直す]: 案 A の文面(リードの語)を委任文 §0 の案 B の行と `OWNER_LOG` の L-453 の行に転記した。
+- 68-8 [聞く]: cap=1 前提でしか検証していない分岐である(意図した挙動ではない)。委任文に「批評家を置かない項目の上限は 1 周に限る」と書き、検査器が `skip_critic` の項目の `round_cap` が 1 であることを確かめる(68-8 の型を機械で塞ぐ)。
+- 68-9 の注記(タスク文の「round_cap=10」): 監査役の言うとおり、起動文の要約がリードの古い記述だった。実物は項目別の値。
+- 68-5〜7・9・10 [確認]: 記録する。
+
+処置後の実測(逐語): `node --check` → エラー無し / `node --test tests/workflows/backtest_env_logic.test.mjs` → `# pass 12` `# fail 0` / `PYTHONPATH=src python -m pytest tests/test_check_bt_delegation.py` → `16 passed` / 検査器(引数 `bt_args_run12b.json`、marker `20260925_backtest_env_prompt.md@7f2320b1041d`)→ `OK 誤り 0 件` / `python3 scripts/check_bt_delegation.py --fingerprint` → `2c19e69c0755`。

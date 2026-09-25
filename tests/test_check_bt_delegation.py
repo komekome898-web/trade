@@ -144,3 +144,13 @@ def test_end_bound_number_must_match_the_script_default_and_args():
     assert any("台本" in e for e in cbd.check_bound(row, "const CAP = Number(args.round_cap) || 10", '{"round_cap": 1}'))
     assert any("引数" in e for e in cbd.check_bound(row, ok, '{"round_cap": {"1": 5}}'))
     assert any("欄が無い" in e for e in cbd.check_bound("| 通過の判定 = x | L-407 |\n"))
+
+
+def test_critic_less_items_must_be_capped_at_one_and_disclosed_as_unverified():
+    row = "| 通過の判定 = x **終わりの上限:** 項目 1〜3 は最大 1 周、項目 4 は最大 2 周 | L-454 |\n"
+    ok = "const CAP = capOf(args.round_cap, item.id)\n unverified: last.critic && last.critic.skipped ? 'x' : null"
+    good = '{"round_cap": {"1": 1, "2": 1, "3": 1, "4": 2}, "skip_critic": [1, 2, 3]}'
+    assert cbd.check_bound(row + "未確認\n", ok, good) == []
+    assert any("68-8" in e for e in cbd.check_bound(row + "未確認\n", ok, '{"round_cap": {"1": 2, "4": 2}, "skip_critic": [1]}'))
+    assert any("68-3" in e for e in cbd.check_bound(row, ok, good))
+    assert any("68-2" in e for e in cbd.check_bound(row + "未確認\n", "const CAP = capOf(args.round_cap, item.id)", good))
