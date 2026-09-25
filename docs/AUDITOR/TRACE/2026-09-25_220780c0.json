@@ -14054,12 +14054,12 @@
    "move": 516,
    "tools": {
     "Read": 4,
-    "Bash": 11,
+    "Bash": 12,
     "Write": 1,
     "ReadNotifications": 2,
     "mcp__Claude_Code_Remote__send_later": 2
    },
-   "n_tools": 20,
+   "n_tools": 21,
    "read_goal": true,
    "first_write_at": 5,
    "table_shown": false,

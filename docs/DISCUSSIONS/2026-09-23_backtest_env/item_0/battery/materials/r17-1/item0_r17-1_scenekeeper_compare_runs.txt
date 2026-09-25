@@ -1,0 +1,9 @@
+NO_OLD current_impl.tsv
+NO_OLD mutant.tsv
+NO_OLD new_impl.tsv
+DIFF opp_basana.tsv p2-us-text-subns ('対応なし', '2 回の実行で同じ', 'not_supported') -> ('正解と一致', '2 回の実行で同じ', 'not_supported') | {"raw": null, "refusal_problem": null, "refused_by_entry": true}
+OUTPUT_ONLY opp_predictivedev_tradesim.tsv p7-latency-model-swap {"fill_time_ns": 1790329000356292000} -> {"fill_time_ns": 1790337167793783000}
+DIFF opp_pyalgotrade.tsv p2-s-text-subns ('対応なし', '2 回の実行で同じ', 'not_supported') -> ('正解と一致', '2 回の実行で同じ', 'not_supported') | {"raw": null, "refusal_problem": null, "refused_by_entry": true}
+OUTPUT_ONLY opp_ziplime@label=close.tsv p4-future-read-attempt {"every_attempt_stopped_by_error": false, "future_value_obtained": true, "raw": {"attempts": [{"form -> {"every_attempt_stopped_by_error": false, "future_value_obtained": true, "raw": {"attempts": [{"form
+OUTPUT_ONLY opp_ziplime@label=start.tsv p4-future-read-attempt {"every_attempt_stopped_by_error": false, "future_value_obtained": true, "raw": {"attempts": [{"form -> {"every_attempt_stopped_by_error": false, "future_value_obtained": true, "raw": {"attempts": [{"form
+same grade 2482 grade differs 2 output-only differences by family {'unit': 42, 'p7-latency-model-swap': 1, 'p4-future-read-attempt': 2}

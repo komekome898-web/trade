@@ -1,0 +1,25 @@
+
+tests/bt/battery/item_0/test_battery_r17_refusal.py:563: AttributeError
+_____________________ test_a_stale_refusal_text_is_caught ______________________
+
+    def test_a_stale_refusal_text_is_caught():
+        import gen_definitions
+        text = gen_definitions.render()
+>       assert text_problems(text.replace(scenes.REFUSAL_PHRASE, "対象が断れば「対応なし」"), {}), "古い文を戻す"
+                                          ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'scenes' has no attribute 'REFUSAL_PHRASE'
+
+tests/bt/battery/item_0/test_battery_r17_refusal.py:570: AttributeError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_refusal_rule_on_every_cell_of_the_grid
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_mutants_of_the_refusal_rule_are_caught
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_unit_time_records_a_refusal_only_when_an_entry_raised
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_mutants_of_unit_time_refusal_are_caught
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_refusal_is_the_answer_exactly_where_no_int_is
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_mutants_of_the_refusal_answer_set_are_caught
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_grades_on_every_cell_of_the_grid
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_mutants_of_the_grade_are_caught
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_every_scene_has_a_behavior_graded_as_its_answer
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_texts_state_the_grade_the_machine_gives
+FAILED tests/bt/battery/item_0/test_battery_r17_refusal.py::test_a_stale_refusal_text_is_caught
+11 failed in 1.21s
