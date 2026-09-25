@@ -109,7 +109,7 @@
 - 核の歩きを全部**反復**(明示の積み上げ)にする: `_freeze`・`_settle`・`renew`・`thaw` を 1 つの反復の道具で書き、段数によらず決まった枠しか使わない。
 - `FrozenDict` の hash は作るときに下から計算して覚える(§2)ので、hash を取っても Python の枠は積まれない。
 - 残るのはインタプリタ自身の比較の再帰(hash の等しい**別々の入れ子の値**が同じ集合・辞書に入るときだけ)。核はこれを避けられない(Python の集合は hash の等しい要素を必ず `==` で比べる)。核の値を作る入口でこの `RecursionError` を捕まえ、入口の誤り(`ValueError` → 呼び手の誤りの型)にし、契約に「残り」として事実を書く(核の歩きは段数によらず K 枠 = 実測、インタプリタの比較は hash の衝突した入れ子の値だけで 1 段 1 枠)。これを完全に閉じる案(核の tuple・frozenset を、平らな鍵で比べる核の class にする)は、`extra` の tuple / frozenset の型を変えるので、この周は作らずリードに聞く。
-- 試験(格子 D): 呼び手の積み上がり {0, 300, 600, 800, 900, 940} × 入れ子 {0, 1, 10, 50, MAX_NESTING-2, MAX_NESTING, MAX_NESTING+1} × 入れ物(list・tuple・dict・set の中の tuple・`FrozenDict` を鍵に持つ dict)× 入口(`place_order` の `extra`、`freeze`、`settle`、`ctx.order()` の写し、`extra_dict()`)。神託 = 深さによらず同じ結果(受け付けるか、入口の誤りで断るか)。hash の衝突した入れ子の値は「残り」として別の試験で、深いところでも `RecursionError` でなく入口の誤りになることを確かめる。
+- 試験(格子 D): 呼び手の積み上がりを「インタプリタの再帰の上限までに残る枠(headroom)」で数える(pytest の枠の数に依らないため。書いたときの予定は深さ {0, 300, 600, 800, 900, 940} だったが、pytest 自身の枠で 940 が上限を越えるので、残りの枠に替えた)。残りの枠 {CALL_FRAMES, CALL_FRAMES+5, 60, 200} × 入れ子 {1, 10, 50, MAX_NESTING-2, MAX_NESTING, MAX_NESTING+1} × 入れ物(list・tuple・dict・入れ子の tuple を持つ set・dict の鍵の中に入れ子の FrozenDict)× 入口(freeze・settle・renew・thaw・on_event の中の place_order・on_event の中の order() と extra_dict())。神託 = 積み上がりが空のときと同じ結果(受け付けるか、入口の誤りで断るか)。hash の衝突した入れ子の値(`(((-1,),…)` と `(((-2,),…)` の frozenset)は「残り」として別の試験で、残りの枠が少ないときも `RecursionError` でなく入口の誤りになること、CALL_FRAMES + 段数 + 30 の枠があれば空のときと同じことを確かめる。
 
 ## 6. 先に書く敵対者の試験(委任文 §3「提出前の吟味」(6))
 
@@ -117,7 +117,7 @@
 - **格子 A(走ったものの列べ)**: 作業量を `sys.setprofile` の下で走らせ、核の代わりに入った核の外の Python の関数の集合 ⊆ 理由を書いた表。表に ABC・`importlib`・`decimal` の文脈の関数は入れない。
 - **格子 B(プロセスの状態 × ライブラリのコードの道)**: 状態の変更 = `numbers` と `collections.abc` の全ての ABC × {作業量が使う全ての型を登録 / True を返すフックの子(負の覚えを消してから)}、十進の文脈(精度・丸め・罠・FloatOperation の罠・capitals)、`sys.modules` の核が使う全てのモジュールを 1 回の呼び出しの間だけ差し替え。場所 = 作業量の全て(戦略の `extra`、口座の強制注文、出口の箱の作り直し、受け手への写し、`extra_dict()`、hash の衝突する組の全ての型の対 = `colliding_pairs()`)。神託 = 新しいプロセスの実行と同じ結果、持ち主の呼び出しの外で変える者のコードが 0 回、スレッドの十進の旗が核の比較で立たない。1 つの変更を 1 つの新しいプロセスで。
 - **格子 B'**: 核のモジュールの状態が作業量の前後で同じ・関数の中の import が無い(§3)。
-- **格子 C・D**: §4・§5 のとおり。
+- **格子 C・D**: §4・§5 のとおり(格子 D は §5 の最後の項の形で書いた)。
 
 ## 7. 厳しい批評家が [止める] にしそうな点(返す前に潰す一覧)
 
@@ -152,3 +152,7 @@
 - 核の入口が要る枠(`<W>/item0_r15_worker_probe_headroom.out`): freeze 12・settle 12・renew 12・thaw 9・on_event の中の place_order 22・order() と extra_dict() 11(入れ子 1〜101、入れ物 5 種の最大)。hash の衝突した別々の入れ子の値: 10 段 18、50 段 58、98 段 106。
 - 速さ(第 14 周と同じ測り `<W>/item0_r15_worker_speed.py`、2 万本の足、ほかの試験と同時): HEAD `66.50` / `65.21` us/bar、この周 `64.80` / `65.60` us/bar(`<W>/item0_r15_worker_speed.out`)。
 - 書き直した前の周までの自分の試験(消した試験は無い): `test_bt0_r8_sender_adversary.py`(核が作る型の表 `_CORE_BUILT` の `Fraction` / `Decimal` を `PlainFraction` / `PlainDecimal` に替えた = 核がもう作らない型を外したので弱めていない。`type(...) is Fraction` の 2 行も同じ)、`test_bt0_values.py`(`_builtin_only` の型の表を同じく)、`test_bt0_r14_process_state.py` と子 `_r14_state_child.py`(契約の版 `core-16`。格子 2 の「ABC と同じ答え」から numpy の単位を持つ 2 つの class を外し、外した物がちょうど `timedelta64`(ABC は int、核は数でない)と `datetime64`(どちらも数でない)であることを試験で確かめる)。
+- 核が実行中に入るライブラリのコード(項目 0 と批評家の試験の全部を `sys.setprofile` の下で走らせた。読み込み時の枠は除く。`<W>/item0_r15_worker_profile_plugin.py`): 直す前(`<W>/item0_r15_worker_profile_runtime_before.tsv`)は `fractions.Fraction.__new__` 1053 回・`__hash__` 56・`numerator` / `denominator` 65・`numbers.Rational.__float__` 65 と、実行中に作る copier / rebuilder(`<string>` の `copier` 4,464,001 回ほか)。直した後(`<W>/item0_r15_worker_profile_runtime_after.tsv`)は `fractions.Fraction.__hash__` 5 回だけで、出所は試験のコードが自分の呼び出しの中で公開の `FrozenDict(...)` をライブラリの Fraction で作った所(`<W>/item0_r15_worker_sites.tsv`: `values.py:1223 _pairs_hash`)。ほかは `dataclasses`(`replace` ほか)・`enum`(`Enum.__hash__` ほか)・核の class のために読み込み時に書かれたコード(`<string>` の `__init__` / `__repr__` / namedtuple の `__new__`)で、どれも格子 A の表に理由を書いた。`Field.__init__`・`_EnumDict.__setitem__`・`abstractmethod` は核の class の本体(engine.py 223-237 行 `EngineResult`、api.py 247-254 行 `OrderState`、events.py 52-64 行 `EventType`、strategy.py 11 行)が読み込み時に 1 回ずつ走らせたもの。
+- 項目 0・批評家の試験(最後の版): `PYTHONPATH=src python -m pytest tests/bt/item_0 tests/bt/critic/item_0 -p no:cacheprovider -rf` → `3080 passed, 2 skipped, 1 warning in 428.64s (0:07:08)`(`<W>/pytest_item0_r15_worker_final.log`)。
+- 全試験(場面集を含む。場面集はこの 1 回だけ回した): `PYTHONPATH=src python -m pytest -p no:cacheprovider -rf`(切り離して)→ `6199 passed, 6 skipped, 2 warnings in 950.89s (0:15:50)`(`<W>/pytest_item0_r15_worker_full.log`)。その後に変えたのは試験のファイル 1 本(格子 A の表に `enum` の 3 行を足した)だけで、その試験は `1120 passed`(`<W>/pytest_item0_r15_worker_grid_final.log`)。
+
