@@ -1,10 +1,3 @@
-  [ok] liquidations_repaired_20260912: 15/15 matched
-  [ok] liquidations_repaired_20260917: 11/11 matched
-  [ok] mini_topixf_225labo_20260907: 7/7 matched
-  [ok] n225f_225labo_20260828: 7/7 matched (2 extra-untracked)
-  [ok, line-ending-only] nk225_events_20260904: 3/4 matched, 1 line-ending-only (2 extra-untracked)
-  [ok] o3c_oi_distance_20260917: 4/4 matched
-  [ok] o3c_oi_distance_split_20260918: 4/4 matched
   [ok] o3c_price_level_band_20260917: 2/2 matched
   [ok] o3c_price_level_bundle_first_20260917: 2/2 matched
   [ok] o3c_price_level_full_20260917: 2/2 matched
@@ -52,7 +45,7 @@
   [ok] topixf_225labo_20260907: 7/7 matched
   [ok, line-ending-only] venue_survey_20260827: 31/35 matched, 4 line-ending-only
   [ok, line-ending-only] yutai_20260904: 2/3 matched, 1 line-ending-only
-ledger cross-check (data\INTAKE_latest.json): 6520 files checked, 0 mismatches
+ledger cross-check (data\INTAKE_latest.json): 6522 files checked, 0 mismatches
 overall: FAIL
 wrote C:\Users\ryoma\trade\data\SNAPSHOT_VERIFY.json
 file                                 bytes     members  complete  last_ok  recoverable_bytes
@@ -282,19 +275,25 @@ FX_BTC_JPY_20260924_060902.jsonl.gz  14230083  252      252       yes      12048
 FX_BTC_JPY_20260924_102203.jsonl.gz  1345277   27       27        yes      11516994         
 FX_BTC_JPY_20260924_105119.jsonl.gz  17506211  303      303       yes      148041438        
 FX_BTC_JPY_20260924_155535.jsonl.gz  10567145  186      186       yes      89911659         
-FX_BTC_JPY_20260924_190405.jsonl.gz  5610631   123      123       yes      52414719         
+FX_BTC_JPY_20260924_190405.jsonl.gz  6825564   154      154       yes      65211258         
+FX_BTC_JPY_20260924_213836.jsonl.gz  10238222  219      219       yes      94664855         
+FX_BTC_JPY_20260925_011835.jsonl.gz  24932593  490      490       yes      218962008        
+FX_BTC_JPY_20260925_092953.jsonl.gz  963943    19       19        yes      8061963          
+FX_BTC_JPY_20260925_094912.jsonl.gz  9358102   168      168       yes      78825998         
+FX_BTC_JPY_20260925_123708.jsonl.gz  22427441  385      385       yes      188641290        
+FX_BTC_JPY_20260925_190405.jsonl.gz  4842822   112      112       yes      46666538         
 
-226 files scanned, 34 with a truncated last member, 21958476421 decompressed bytes recoverable in total
+232 files scanned, 34 with a truncated last member, 22607095612 decompressed bytes recoverable in total
 wrote C:\Users\ryoma\trade\data\WS_GZ_LISTING.json
-data_quality: 3931/12311 data/api_health.csv 39927 0.4s
-data_quality: 5881/12311 data/archive/bitmex/data/quote/20200324.csv.gz 6570244 804.7s
-data_quality: budget exhausted after 5881/12311 files (809.4s); the rest resumes next run
-data_quality: skipped 5879 unchanged
-data_quality: 31 datasets, 472996704 flagged rows total -> C:\Users\ryoma\trade\data\QUALITY.json
-check_data_ledger: docs/DATA.md 縺ｨ螳溽黄縺ｮ逶ｸ莠貞盾辣ｧ (蝓ｺ貅匁律 2026-09-24縲・ｮｮ蠎ｦ縺ｮ縺励″縺・14 譌･)
-  蜊倅ｽ・148 莉ｶ / 蜿ｰ蟶ｳ縺ｫ陦後′辟｡縺・腰菴・63 莉ｶ / 謇蝨ｨ縺悟ｮ溷惠縺励↑縺・｡・17 莉ｶ / 蜿鈴伜床蟶ｳ縺ｫ辟｡縺・ヵ繧｡繧､繝ｫ 0 蛟・(0 蜊倅ｽ・ / 譛邨ら｢ｺ隱肴律縺悟商縺・｡・0 莉ｶ
+data_quality: 3932/12340 data/api_health.csv 58766 0.6s
+data_quality: 5933/12340 data/archive/bitmex/data/quote/20200514.csv.gz 8871598 1069.8s
+data_quality: budget exhausted after 5933/12340 files (1074.7s); the rest resumes next run
+data_quality: skipped 5931 unchanged
+data_quality: 31 datasets, 538630905 flagged rows total -> C:\Users\ryoma\trade\data\QUALITY.json
+check_data_ledger: docs/DATA.md 縺ｨ螳溽黄縺ｮ逶ｸ莠貞盾辣ｧ (蝓ｺ貅匁律 2026-09-25縲・ｮｮ蠎ｦ縺ｮ縺励″縺・14 譌･)
+  蜊倅ｽ・149 莉ｶ / 蜿ｰ蟶ｳ縺ｫ陦後′辟｡縺・腰菴・64 莉ｶ / 謇蝨ｨ縺悟ｮ溷惠縺励↑縺・｡・17 莉ｶ / 蜿鈴伜床蟶ｳ縺ｫ辟｡縺・ヵ繧｡繧､繝ｫ 0 蛟・(0 蜊倅ｽ・ / 譛邨ら｢ｺ隱肴律縺悟商縺・｡・0 莉ｶ
 
-蜿鈴伜床蟶ｳ: data\INTAKE_latest.json(荳｡譁ｹ縺ゅｊ縲∵眠縺励＞ data/ 蛛ｴ繧剃ｽｿ縺｣縺溘∬ｪｭ霎ｼ貂医・5087 陦・
+蜿鈴伜床蟶ｳ: data\INTAKE_latest.json(荳｡譁ｹ縺ゅｊ縲∵眠縺励＞ data/ 蛛ｴ繧剃ｽｿ縺｣縺溘∬ｪｭ霎ｼ貂医・5119 陦・
 
 [鬟帙・縺励◆陦ｨ] 繝倥ャ繝縺梧ｨ呎ｺ門ｽ｢縺ｧ縺ｪ縺・・縺ｧ魄ｮ蠎ｦ讀懈渊縺ｮ蟇ｾ雎｡螟・(7 陦ｨ)
   14 陦檎岼: 驛ｨ蜩・| 蠖ｹ蜑ｲ | 謇蝨ｨ(11 陦・
@@ -305,7 +304,7 @@ check_data_ledger: docs/DATA.md 縺ｨ螳溽黄縺ｮ逶ｸ莠貞盾辣ｧ (蝓ｺ貅匁律 2026-09-24縲
   269 陦檎岼: 繧ｽ繝ｼ繧ｹ | 荳企剞 | 莉慕ｵ・∩縺ｧ縺ｮ謇ｱ縺・| 迥ｶ諷・5 陦・
   292 陦檎岼: 繝吶ル繝･繝ｼ | 迥ｶ諷九蝉ｺ句ｮ溘・荳谺｡諠・ｱ縲・| 譛滄剞 | 蟇ｾ蠢・2 陦・
 
-(i) 蜿ｰ蟶ｳ縺ｫ陦後′辟｡縺・腰菴・窶・63 莉ｶ
+(i) 蜿ｰ蟶ｳ縺ｫ陦後′辟｡縺・腰菴・窶・64 莉ｶ
   | 蜊倅ｽ・| 繝輔ぃ繧､繝ｫ謨ｰ |
   | backtest_data/audit_fetch_P2-08_docs_20260906 | 10 |
   | backtest_data/audit_fetch_P2-08b_20260906 | 11 |
@@ -328,6 +327,7 @@ check_data_ledger: docs/DATA.md 縺ｨ螳溽黄縺ｮ逶ｸ莠貞盾辣ｧ (蝓ｺ貅匁律 2026-09-24縲
   | backtest_data/auto_okx_open_interest_5m_20260922 | 2 |
   | backtest_data/auto_okx_open_interest_5m_20260923 | 2 |
   | backtest_data/auto_okx_open_interest_5m_20260924 | 2 |
+  | backtest_data/auto_okx_open_interest_5m_20260925 | 2 |
   | backtest_data/auto_venues_20260921 | 131 |
   | backtest_data/binance_BTCUSDT_1m.csv | 1 |
   | backtest_data/candles_BTC_JPY_20260820.csv | 1 |
@@ -397,4 +397,4 @@ check_data_ledger: docs/DATA.md 縺ｨ螳溽黄縺ｮ逶ｸ莠貞盾辣ｧ (蝓ｺ貅匁律 2026-09-24縲
 
 鬟溘＞驕輔＞: 縺ゅｊ
 wrote C:\Users\ryoma\trade\data\LEDGER_CHECK.json
-[record_oi] C:\Users\ryoma\trade\data\oi_snapshots.csv += 1 row (6/6 fields): ts_utc=2026-09-24T21:30:16+00:00  okx_usdt_oi=2855141.0200000107  okx_usd_oi=5207056.8999999985  okx_ls_ratio=1.24  dvol=36.06  deribit_oi=818345980.0  btc_usd=84375.0
+[record_oi] C:\Users\ryoma\trade\data\oi_snapshots.csv += 1 row (6/6 fields): ts_utc=2026-09-25T21:30:12+00:00  okx_usdt_oi=2842287.65000001  okx_usd_oi=5485158.0  okx_ls_ratio=1.34  dvol=34.84  deribit_oi=907878880.0  btc_usd=83743.5
