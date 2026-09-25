@@ -121,3 +121,10 @@ def test_framework_fingerprint_changes_with_roles_stages_or_pass_rule_only():
     assert cbd.framework_fingerprint(ok.replace("同等以上", "圧倒"), script) != fp   # pass rule changes it
     assert cbd.framework_fingerprint(ok + "\n文言の直し\n", script) == fp            # wording does not
     assert cbd.framework_fingerprint(ok, script.replace("作る:", "定義:")) != fp        # a role changes it
+
+
+def test_framework_fingerprint_changes_when_a_decision_function_body_changes():
+    deleg = "| 通過の判定 = x |\n"
+    script = "function splitStops(a) { return a }\nfunction judgeRound(n, c, s) { return n === 1 }\nasync function runItem(i) {}\n"
+    fp = cbd.framework_fingerprint(deleg, script)
+    assert cbd.framework_fingerprint(deleg, script.replace("n === 1", "n === 2")) != fp

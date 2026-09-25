@@ -83,11 +83,11 @@ def lint_script(script: str) -> list[str]:
 
 
 # label prefix → the scrutiny constant that role must carry (delegation §3 提出前の吟味)
-ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), ("場面の直し:", "SCRUTINY_FIX"), ("定義:", "SCRUTINY_BUILD"),
+ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), ("場面の直し:", "SCRUTINY_FIX"),
                  ("作る:", "SCRUTINY_FIX"), ("表:", "SCRUTINY_TABLE"), ("批評:", "SCRUTINY_CRITIC"),
                  ("盲検:", "SCRUTINY_JUDGE"), ("欠けているもの", "SCRUTINY_GAPS"))
 # roles that must receive the lead's notes and the prior battery record (audit 49 #3 / audit 50 #2)
-ROLE_NOTES = ("監査役(場面):", "監査役(定義):", "定義:", "場面の直し:", "作る:")
+ROLE_NOTES = ("監査役(場面):", "場面の直し:", "作る:")  # the 定義 roles are gone (L-443)
 # roles that only write a fixed text to a file (no judgement, so no scrutiny text): audit 59-4 stop notice
 ROLE_MECHANICAL = ("並行の直しの戻し:",)
 
@@ -195,7 +195,28 @@ def framework_fingerprint(delegation_text: str, script: str) -> str:
     labels = sorted(set(re.findall(r"label: `([^`$:]+):", script)))
     funcs = sorted(set(re.findall(r"^async function (\w+)\(", script, flags=re.M)))
     rows = [ln for ln in delegation_text.splitlines() if ln.startswith("| 通過の判定")]
-    return hashlib.sha256(("\n".join(labels + funcs + rows)).encode("utf-8")).hexdigest()[:12]
+    # audit 62-3: the pure decision functions' bodies are part of the framework (a change of a judgement rule
+    # without renaming anything must still change the fingerprint)
+    bodies = [_cut_function(script, name) for name in DECISION_FUNCS]
+    return hashlib.sha256(("\n".join(labels + funcs + rows + bodies)).encode("utf-8")).hexdigest()[:12]
+
+
+DECISION_FUNCS = ("splitStops", "judgeRound")
+
+
+def _cut_function(script: str, name: str) -> str:
+    i = script.find(f"function {name}(")
+    if i < 0:
+        return f"{name}: missing"
+    depth, j = 0, script.find("{", i)
+    for j in range(j, len(script)):
+        if script[j] == "{":
+            depth += 1
+        elif script[j] == "}":
+            depth -= 1
+            if depth == 0:
+                break
+    return script[i:j + 1]
 
 
 def check_fingerprint(delegation_text: str, script: str) -> list[str]:

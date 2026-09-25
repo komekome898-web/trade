@@ -17,6 +17,7 @@ function cut(name) {
   return src.slice(start, j + 1)
 }
 const splitStops = new Function(`${cut('splitStops')}; return splitStops`)()
+const judgeRound = new Function(`${cut('judgeRound')}; return judgeRound`)()
 const makeFollowUp = (st) => new Function('repairBattery', 'auditBattery', 'log', 'agent', 'HEAD2', 'REC', 'MODEL', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
   st.repairBattery, st.auditBattery, st.log || (() => {}), st.agent || (async () => 'ok'), '', '/rec', 'm')
 
@@ -80,4 +81,13 @@ test('a repair that returns nothing ends the follow-up as an error, also written
   const f = makeFollowUp({ repairBattery: async () => null, auditBattery: async () => ({ findings: [] }), agent: async (prompt, opts) => { calls.push(opts.label); return 'ok' } })
   const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], {})
   assert.equal(out.status, 'error'); assert.deepEqual(calls, ['並行の直しの戻し:0'])
+})
+
+
+test('judges sit on the first round, on a pass candidate, or on a structural change; a missing critic counts as structural (L-443, 62-1/62-2)', () => {
+  assert.deepEqual(judgeRound(1, { structural_change_since_prev: false }, [stop('a', '実装')]), { structural: true, judgeNow: true })
+  assert.deepEqual(judgeRound(5, { structural_change_since_prev: false }, []), { structural: false, judgeNow: true })
+  assert.deepEqual(judgeRound(5, { structural_change_since_prev: false }, [stop('a', '実装')]), { structural: false, judgeNow: false })
+  assert.deepEqual(judgeRound(5, { structural_change_since_prev: true }, [stop('a', '実装')]), { structural: true, judgeNow: true })
+  assert.deepEqual(judgeRound(5, null, [stop('a', '実装')]), { structural: true, judgeNow: true })
 })

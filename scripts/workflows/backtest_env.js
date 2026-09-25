@@ -27,7 +27,7 @@ const HEAD = `委任文 ${DOC}(指紋 ${MARK})を最初に全部読み、その�
 const HEAD2 = args.marker_new ? HEAD.split(MARK).join(args.marker_new) : HEAD
 // L-433: every role scrutinizes before returning (delegation §3「提出前の吟味」)
 const SCRUTINY_FIX = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。直す役の文)**: 固定した要件・場面集の規則・これまでの指摘を読み直し、指摘 1 件ごとに直した根拠(ファイル:行、コマンドと出力)を書く。指摘された 1 か所だけでなく同じ根の全箇所を直す。批評家の試験と場面集の試験を回して落ちるものを残さない。「非常に厳しい批評家なら何を [止める] にするか」を自分で列べて返す前に潰す。場当たりの直しをしない。止められる前提で作業しない。(6) 直した規則ごとに、その規則の入力の空間を全格子で列べる敵対者の試験(批評家の probe の形。実装の場合分けから入力を作らない)を先に書き、規則を直したあと通す。列に入れなかったものを試験のファイルに書く(リードの設計 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §3.3)。`
-const SCRUTINY_BUILD = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。最初に作る役の文)**: 固定した要件・場面集の規則 1〜9・比較の観点を読み直し、自分の作ったものを「非常に厳しい監査役・批評家なら何を [止める] にするか」の目で観点ごとに列べ、返す前に潰す。止められる前提で作らない。吟味の記録を、要件なら要件のファイルの末尾、場面集の最初の作りなら DEFINITIONS.md の末尾、直しの前の定義なら ROOTCAUSE のファイルに書く。`
+const SCRUTINY_BUILD = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。最初に作る役の文)**: 固定した要件・場面集の規則 1〜9・比較の観点を読み直し、自分の作ったものを「非常に厳しい監査役・批評家なら何を [止める] にするか」の目で観点ごとに列べ、返す前に潰す。止められる前提で作らない。吟味の記録を、要件なら要件のファイルの末尾、場面集の最初の作りなら DEFINITIONS.md の末尾、直しなら ROOTCAUSE のファイルに書く。`
 const SCRUTINY_TABLE = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。資料係(表)の文)**: 表の観点ごとの一致の数を出力から自分で数え直し、表と一致させる。全対象を全場面に通したか(通らなかった場面の注記に試したことと実測があるか)、注記に道具を特定できる語が無いか、組ごとの 2 通りの表の md5 を確かめたか、materials に記録を全部保存したかを確かめ、notes に書く。`
 const SCRUTINY_CRITIC = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。批評家の文)**: 指摘 1 件ごとに根拠(試験・コマンドと出力)を自分で再現し、格付けを委任文 §3「批評家」の基準に照らし、前の周の指摘の直りを自分で確かめる(直ったものを挙げない・直っていないものを見逃さない)。指摘の相手(場面集 / 実装)を付け違えていないか確かめる。記録は CRITIC.md に書く。`
 const SCRUTINY_JUDGE = `返す前の吟味(委任文 §3「提出前の吟味」、L-433。審査員の文): 観点ごとの数えを表から自分で数え直し、reasons に書いた数と一致するかを確かめる。`
@@ -174,6 +174,14 @@ function splitStops(item, stops) {
   return { impl: stops.filter(isImpl), bat: stops.filter(f => !isImpl(f)) }
 }
 
+// L-443 (3) + audit 62-1/62-2: whether this round's judges sit. Pure: in the framework fingerprint and node-tested.
+// structural = the critic saw a structural change (a missing critic counts as one, the conservative side for the
+// round count); judgeNow = first round, or a pass candidate (no implementation-side [止める]), or structural.
+function judgeRound(attempt, c, stopsImpl) {
+  const structural = attempt === 1 || (c ? !!c.structural_change_since_prev : true)
+  return { structural, judgeNow: attempt === 1 || stopsImpl.length === 0 || structural }
+}
+
 async function runItem(item) {
   // pre = a launch that continues from an existing, audited battery (L-426/L-427): skip requirements, battery build and the pre-worker audit
   const pre = (args.prebuilt || {})[item.id] || null
@@ -314,8 +322,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     // L-443 (3): the blind judges sit only on a pass-candidate round (no implementation-side [止める]), on a round whose
     // structure changed (the critic's structural_change_since_prev) and on the first round; other rounds carry the last
     // judged round's verdicts (judgedAt) — a pass always rests on this round's own judges
-    const structNow = attempt === 1 || !!(c && c.structural_change_since_prev)
-    const judgeNow = attempt === 1 || stopsImpl.length === 0 || structNow
+    const { structural: structNow, judgeNow } = judgeRound(attempt, c, stopsImpl)
     let jc = [], jsv = [], judgedAt = attempt
     if (judgeNow) {
       const js = await Promise.all([...(eqC ? [] : trio('current')), ...(eqS ? [] : trio('survey'))])
@@ -342,7 +349,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     if (pass) return { item, status: 'pass', attempts: attempt, req, bat, history, openBattery: c ? c.findings.filter(f => f.target === '場面集' && f.level !== '示唆') : [], bchain: cbchain }
 
     // counting rules (委任文 §3 根本的解決)
-    const structural = attempt === 1 || (c ? c.structural_change_since_prev : true)
+    const structural = structNow  // audit 62-2: one definition (judgeRound), a missing critic counts as structural
     if (structural) { counted++; nonStructural = 0 } else { nonStructural++ }
     if (nonStructural >= 2) return { item, status: 'escalate', reason: '構造の変化が無い周が 2 回続いた', attempts: attempt, req, history }
     let repeated = null
@@ -351,8 +358,8 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
       ch[f.id] = f.repeat_of && ch[f.repeat_of] ? ch[f.repeat_of] + 1 : 1
       if (ch[f.id] >= 3) repeated = f
     }
-    lossStreak.current = okC ? 0 : lossStreak.current + 1
-    lossStreak.survey = okS ? 0 : lossStreak.survey + 1
+    // audit 62-1: a loss is counted only on a round whose judges actually sat; a carried-over verdict is not a new judgement
+    if (judgeNow) { lossStreak.current = okC ? 0 : lossStreak.current + 1; lossStreak.survey = okS ? 0 : lossStreak.survey + 1 }
     if (repeated) return { item, status: 'escalate', reason: `同じ [止める] が 3 周続いた${item.id === 0 ? '(項目 0: 未達ではなくリードへの戻し = L-436)' : ''}: ${repeated.text}`, attempts: attempt, req, history }
     if (lossStreak.current >= 3 || lossStreak.survey >= 3) return { item, status: 'escalate', reason: `盲検で 3 周続けて負けた(対現状 ${lossStreak.current}・対調査 ${lossStreak.survey})`, attempts: attempt, req, history }
   }
