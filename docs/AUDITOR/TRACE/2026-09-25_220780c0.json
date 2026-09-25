@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 528,
+ "n_moves": 530,
  "moves": [
   {
    "move": 1,
@@ -14423,6 +14423,63 @@
    "readdo_reads": 0,
    "unlock_created": 3,
    "unlock_in_test": 0
+  },
+  {
+   "move": 529,
+   "tools": {
+    "Read": 2,
+    "Bash": 4,
+    "Agent": 1,
+    "Skill": 1
+   },
+   "n_tools": 8,
+   "read_goal": true,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 2
+  },
+  {
+   "move": 530,
+   "tools": {
+    "Read": 1,
+    "Bash": 4,
+    "Grep": 2
+   },
+   "n_tools": 7,
+   "read_goal": true,
+   "first_write_at": null,
+   "table_shown": true,
+   "claims_without_output": 0,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
@@ -14437,9 +14494,9 @@
    "value": 0.0746
   },
   "P3_claim_with_output": {
-   "num": 193,
-   "den": 494,
-   "value": 0.3907
+   "num": 194,
+   "den": 495,
+   "value": 0.3919
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -14449,7 +14506,7 @@
   "P5_tools_per_move": {
    "median": 6.0,
    "max": 64,
-   "n": 512
+   "n": 514
   },
   "P6_findings_applied": {
    "num": 50,
@@ -14469,7 +14526,7 @@
    "note_key": "excludes_test_origin"
   },
   "R4b_unlock_in_test": {
-   "num": 4,
+   "num": 6,
    "den": null,
    "value": null
   },
