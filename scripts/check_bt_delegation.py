@@ -201,7 +201,7 @@ def framework_fingerprint(delegation_text: str, script: str) -> str:
     return hashlib.sha256(("\n".join(labels + funcs + rows + bodies)).encode("utf-8")).hexdigest()[:12]
 
 
-DECISION_FUNCS = ("splitStops", "judgeRound")
+DECISION_FUNCS = ("splitStops", "judgeRound", "passCandidate")  # I-013: the pass rule is fingerprinted
 
 
 def _cut_function(script: str, name: str) -> str:

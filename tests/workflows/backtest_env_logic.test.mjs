@@ -18,6 +18,7 @@ function cut(name) {
 }
 const splitStops = new Function(`${cut('splitStops')}; return splitStops`)()
 const judgeRound = new Function(`${cut('judgeRound')}; return judgeRound`)()
+const passCandidate = new Function(`${cut('passCandidate')}; return passCandidate`)()
 const checkBattery = new Function(`${cut('checkBattery')}; return checkBattery`)()
 // L-448: the follow-up has no audit agent; the machine check reads the repair's own return
 const makeFollowUp = (st) => new Function('repairBattery', 'checkBattery', 'log', 'agent', 'HEAD2', 'REC', 'MODEL', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
@@ -100,4 +101,15 @@ test('judges sit on the first round, on a pass candidate, or on a structural cha
   assert.deepEqual(judgeRound(5, { structural_change_since_prev: false }, [stop('a', '実装')]), { structural: false, judgeNow: false })
   assert.deepEqual(judgeRound(5, { structural_change_since_prev: true }, [stop('a', '実装')]), { structural: true, judgeNow: true })
   assert.deepEqual(judgeRound(5, null, [stop('a', '実装')]), { structural: true, judgeNow: true })
+})
+
+test('pass candidate (L-451 / I-013): items 1..4 pass on a full battery match and even judges; critic stops are carried unless patchwork', () => {
+  const s = stop('a', '実装', ['src/x.py'])
+  assert.equal(passCandidate({ id: 1 }, true, true, [s], { new_impl_all_correct: true, new_impl_correct: '46/46' }).candidate, true)
+  assert.equal(passCandidate({ id: 1 }, true, true, [{ ...s, patchwork: true }], { new_impl_all_correct: true }).candidate, false)
+  assert.equal(passCandidate({ id: 1 }, true, true, [], { new_impl_all_correct: false, new_impl_correct: '41/46' }).candidate, false)
+  assert.equal(passCandidate({ id: 1 }, true, false, [], { new_impl_all_correct: true }).candidate, false)
+  assert.equal(passCandidate({ id: 1 }, true, true, [], null).candidate, false)
+  assert.equal(passCandidate({ id: 0 }, true, true, [s], { new_impl_all_correct: true }).candidate, false)
+  assert.equal(passCandidate({ id: 0 }, true, true, [], null).candidate, true)
 })
