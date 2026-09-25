@@ -84,6 +84,10 @@ def _sealed_records(inp, ds, path, rel, units):
         except sealed.SealedDataError as exc:
             raise Refused(f"load_sealed: {exc}")
         raise NotExpressible("load_sealed が封印の行を返した(守りが開いている)")
+    if rng is not None:
+        _, stamps = sealed.read_timestamps(Path(path), entry["time_column"])
+        need(rng[0] <= _dt_ns(min(stamps)) and rng[1] == _dt_ns(cutoff),
+             "load_unsealed に範囲の引数が無い(封印の境より前の行を全部返す)。求められた範囲が「最初の行から境まで」でない")
     df = sealed.load_unsealed(path, unit, root=inp["root"])
     f = sp["fields"]
     col = sp["time"]["columns"][0]

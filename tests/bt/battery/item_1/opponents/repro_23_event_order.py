@@ -1,6 +1,6 @@
 """Reproduction of hftbacktest's event-order validation (catalogue 23) for item 1 V3.
 
-Source (the installed hftbacktest, venv item_0/hftbacktest, read 2026-09-25):
+Source (the installed hftbacktest 2.4.4, venv item_0/hftbacktest and item_1/hftbacktest, read 2026-09-25):
 hftbacktest/data/validation.py:139-152 `validate_event_order(data)`:
     exch_ev = data['ev'] & EXCH_EVENT == EXCH_EVENT
     ...

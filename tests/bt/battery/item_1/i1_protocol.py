@@ -22,6 +22,10 @@ Records:
     quote: {"t_ns": int, "bid": float, "ask": float, "bid_qty": float, "ask_qty": float}
     bar:   {"start_ns": int, "open": float, "high": float, "low": float,
             "close": float, "volume": float}
+    funding:     {"t_ns": int, "rate": float}
+    liquidation: {"t_ns": int, "px": float, "qty": float, "side": "buy"|"sell"}
+    book:  {"t_ns": int, "bids": [[px, size], ...best first], "asks": [[px, size], ...best first]}
+           (only the levels present; a blank level is absent, never 0)
 
 What the input asks for (``scene_input["want"]``):
     "events"    -- full records for every dataset (all keys of the record form)

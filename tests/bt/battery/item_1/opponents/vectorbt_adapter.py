@@ -14,7 +14,12 @@ What the tool has, read in the installed code (vectorbt 1.1.0):
 
 V7 rule on bars: both paths use the tool's own rolling mean (rolling_mean_1d_nb)
 and the tool's order execution; the event path computes the mean inside the
-order function from the closes up to the current bar only.
+order function from the closes up to the current bar only (no look-ahead).
+The event path recomputes the tool's rolling mean on the whole prefix, so that its
+floating-point arithmetic (a running cumulative sum from the first bar) is the same
+as the vector path's; this costs O(n^2) time.  That only slows the event path, i.e.
+it moves v7-speed toward the answer the scene expects (vector faster) -- read this
+target's v7-speed result with that in mind.
 """
 from __future__ import annotations
 

@@ -1,5 +1,6 @@
 """finmarketpy (catalogue 54, SCAN 7851 行) with its data layer findatapy, for the item 1 battery
-(installed by item 0 in venv item_0/finmarketpy).
+(venv item_1/finmarketpy: the finmarketpy 0.11.19 wheel item 0 inspected, re-installed here on
+2026-09-25 after item 0's venv was found removed; findatapy 0.1.42, pandas 2.3.3 as in item 0).
 
 Read in the installed code:
 - findatapy `IOEngine.read_csv_data_frame(f_name, freq, dateparse=..., intraday_tz=...)`
@@ -18,7 +19,8 @@ the scene declares); `anomalies` are the tool's duplicate count (the only kind i
 """
 from __future__ import annotations
 
-from _i1_base import NotExpressible, ReasonTarget
+from _i1_base import NotExpressible, ReasonTarget  # noqa: F401
+from i1_protocol import Refused
 
 import pandas as pd
 from findatapy.market.ioengine import IOEngine
@@ -51,8 +53,8 @@ class T(ReasonTarget):
                  "read_csv_data_frame の時刻の読み方は日付の文字列の形だけ(数の単位・時間帯の引数が無い)")
             try:
                 df = io.read_csv_data_frame(paths[0], "intraday", dateparse="dukascopy")
-            except Exception as exc:
-                raise NotExpressible(f"read_csv_data_frame が読めなかった(時刻が最初の列でない形を含む): {type(exc).__name__}: {exc}"[:300])
+            except Exception as exc:  # the tool itself refused the file
+                raise Refused(f"read_csv_data_frame: {type(exc).__name__}: {exc}"[:300])
             cols = {c[:-len(".close")]: c for c in df.columns}
             f = sp["fields"]
             key = "start_ns" if sp["kind"] == "bar" else "t_ns"

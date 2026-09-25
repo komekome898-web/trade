@@ -179,6 +179,33 @@ def test_v4_expected_hash_is_of_the_written_bytes():
     assert h[0] == h[1] != h[2]
 
 
+def test_every_scene_materializes_and_every_dataset_path_exists(tmp_path):
+    import os
+    sys.path.insert(0, str(HERE))
+    import run_battery as R
+    for sc in S.SCENES:
+        for inp in [sc["input"]] + ([sc["variant"]] if "variant" in sc else []):
+            if not inp.get("files"):
+                continue
+            root = R.materialize(inp, str(tmp_path))
+            for ds in inp["datasets"]:
+                for p in ds["paths"]:
+                    assert os.path.isfile(os.path.join(root, p)), (sc["id"], p)
+    link = next(s for s in S.SCENES if s["id"] == "v5-reject-symlink")
+    root = R.materialize(link["variant"], str(tmp_path))
+    assert os.path.islink(os.path.join(root, "backtest_data", "bf_exec_link_synth"))
+    assert "qa_" in os.path.realpath(os.path.join(root, link["variant"]["datasets"][0]["paths"][0]))
+
+
+def test_board_blank_levels_are_absent_not_zero():
+    sc = next(s for s in S.SCENES if s["id"] == "v1-bitflyer-board-top10")
+    recs = sc["expect"]["events"]["board"]
+    assert [len(r["bids"]) for r in recs] == [10, 3] and [len(r["asks"]) for r in recs] == [10, 2]
+    obs = perfect(sc)
+    obs["events"]["board"][1]["bids"].append([0.0, 0.0])
+    assert J.compare(S.expected(sc), obs, sc)[0] == "不一致"
+
+
 # ---------------------------------------------------------------- judge
 @pytest.mark.parametrize("scene", S.SCENES, ids=[s["id"] for s in S.SCENES])
 def test_judge_accepts_the_expected_answer(scene):
@@ -207,10 +234,15 @@ def test_judge_rejects_one_nanosecond_off(scene):
 def test_judge_rejects_paths_that_differ_in_one_bit(scene):
     import struct
     obs = perfect(scene)
-    key = next(k for k in obs["paths"]["vector"] if k != "bars")
-    seq = obs["paths"]["vector"][key]
-    i = next(i for i, x in enumerate(seq) if isinstance(x, float))
-    seq[i] = struct.unpack("<d", (struct.unpack("<q", struct.pack("<d", seq[i]))[0] + 1).to_bytes(8, "little", signed=True))[0]
+    nudge = lambda x: struct.unpack("<d", (struct.unpack("<q", struct.pack("<d", x))[0] + 1).to_bytes(8, "little", signed=True))[0]  # noqa: E731
+    vec = obs["paths"]["vector"]
+    key = next((k for k in vec if k != "bars"), "bars")
+    if key == "bars":
+        vec["bars"][-1]["close"] = nudge(vec["bars"][-1]["close"])
+    else:
+        seq = vec[key]
+        i = next(i for i, x in enumerate(seq) if isinstance(x, float))
+        seq[i] = nudge(seq[i])
     assert J.compare(S.expected(scene), obs, scene)[0] == "不一致"
 
 

@@ -109,7 +109,7 @@ class Adapter:
                 begin, when = _dt(b["t"]), _dt(b["t"]) + dur
             evs.append(BarEvent(when, bs.Bar(begin, pair, *(Decimal(str(b[k])) for k in ("o", "h", "l", "c", "v")), dur)))
         ex.add_bar_source(bs.FifoQueueEventSource(events=evs))
-        sched = C.issue_schedule([b["t"] for b in bars], inp["actions"])
+        sched = C.issue_schedule(bars, inp["actions"])
         st = {"k": -1, "ids": {}, "orders": {}}
 
         async def on_bar(be):

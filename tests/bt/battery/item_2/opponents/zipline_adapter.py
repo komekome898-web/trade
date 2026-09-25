@@ -3,18 +3,17 @@
 Public API used: a custom bundle (`zipline.data.bundles.register` / `ingest`),
 the `24/7` calendar, `zipline.run_algorithm` (daily), and in the algorithm
 `zipline.api` (`order` with `limit_price` / `stop_price`, `cancel_order`,
-`get_order`, `set_commission(commission.PerDollar)`, `set_slippage`), the
-slippage models `FixedSlippage(spread)`, `VolumeShareSlippage(volume_limit,
-price_impact)` and a user `SlippageModel` subclass (`process_order(data, order)
--> (price, amount)`, the documented plug for a market-impact function).
+`get_order`, `set_commission(commission.PerDollar)`, `set_slippage`) and the
+tool's own slippage models `FixedSlippage(spread)` and `VolumeShareSlippage(volume_limit, price_impact)` (no
+user-written model: an adapter never computes an answer inside the tool's plug).
 
-Scene -> tool: zipline takes OHLCV bars per session, not a book. Every trade of
-the scene is one daily session in order (session k = the k-th trade; open =
-high = low = close = its price, volume = its quantity); book snapshots are not
-given. An action is issued in `handle_data` of the last session at or before
-its time; zipline fills it on later sessions by its own rules. A fill's time is
-the time of the trade whose session zipline filled it on. Zipline's amounts are
-whole shares.
+Scene -> tool: zipline takes OHLCV bars per session, not a book.  The bars are i2_common.bar_rows (one bar per
+trade print, the scene's own bars, or the prints grouped into a tier-2 scene's declared bars), each one daily
+session in order; book snapshots are not given.  Actions are issued in `handle_data` of the bar chosen by
+i2_common.issue_schedule; zipline fills them on later sessions by its own rules.  A fill's time is the end time of
+the bar of the session zipline filled it on.  Zipline's amounts are whole shares: one share = the scene's quantity
+unit (lob_common.qty_unit, the largest power of ten dividing every quantity); prices, the spread and volumes are
+given per share and converted back.  Commission: PerDollar(i2_common.single_fee_rate).
 """
 from __future__ import annotations
 
@@ -27,10 +26,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE))
 
 import pandas as pd  # noqa: E402
 
 import i2_common as C  # noqa: E402
+import lob_common as LC  # noqa: E402
 from i2_protocol import NotExpressible, Refused  # noqa: E402
 
 _ROOT = tempfile.mkdtemp(prefix="i2_zipline_root_")
@@ -49,55 +50,31 @@ START = pd.Timestamp("2024-01-01")
 
 
 def _fm(fm):
-    if "range" in fm:
-        return "楽観と悲観を同時に回す口が無い"
-    if "impact" in fm:
-        return None  # a user SlippageModel carries the scene's impact function
-    if fm.get("tier") == 4 and fm.get("cancel_stance", "none") == "none":
+    if fm.get("tier") == 4 and "range" not in fm and not fm.get("impact"):
         return None  # VolumeShareSlippage(volume_limit=1, price_impact=0): fills up to the bar's volume
-    return f"段 {fm.get('tier')} / 取消の扱い {fm.get('cancel_stance')} の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)"
-
-
-class _Impact(zslip.SlippageModel):
-    """The scene's impact function handed to zipline's slippage plug (reference price = the bar's close)."""
-
-    def __init__(self, im):
-        super().__init__()
-        self.im = im
-        self.shift = 0.0
-
-    def process_order(self, data, order):
-        px = float(data.current(order.asset, "close")) + self.shift
-        q = abs(order.amount)
-        sgn = 1 if order.amount > 0 else -1
-        k = self.im["kind"]
-        if k == "linear_temporary":
-            p = px + sgn * self.im["k"] * q
-        elif k == "sqrt_temporary":
-            p = px * (1 + sgn * self.im["eta"] * math.sqrt(q / self.im["adv"]))
-        else:  # linear_permanent
-            p = px
-            self.shift += sgn * self.im["gamma"] * q
-        return p, order.amount
+    return C.bar_fill_models(fm, extra=lambda f: (
+        "市場影響の関数は VolumeShareSlippage(出来高の割合の 2 乗 × price_impact)と FixedBasisPointsSlippage(一定の bp)で、"
+        f"場面の形 {(f.get('impact') or {}).get('kind')} を渡す口が無い" if f.get("impact") else
+        f"段 {f.get('tier')} / 取消の扱い {f.get('cancel_stance')} の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)"))
 
 
 class ZiplineAdapter:
     name = "opp_zipline_reloaded"
 
     def run(self, inp):
-        C.gate(inp, tool=TOOL, orders=("market", "limit", "stop", "cancel"), events=("book", "trade"),
+        C.gate(inp, tool=TOOL, orders=("market", "limit", "stop", "cancel"), events=("book", "trade", "bar"),
                fill_models=_fm, costs=("maker_rate", "taker_rate", "spread"), account=("cash",))
         c = inp["costs"]
-        if c.get("maker_rate", 0.0) != c.get("taker_rate", 0.0) and any(a["type"] == "limit" for a in C.places(inp)):
-            raise NotExpressible(f"{TOOL}: 手数料は commission の模型 1 つ(PerDollar(cost))で maker と taker を分けられない")
-        tr = C.trades(inp)
+        rate = C.single_fee_rate(inp, TOOL)
+        tr, _src = C.bar_rows(inp)
         if not tr:
-            raise NotExpressible(f"{TOOL}: 足にする約定が無い(zipline は足の bundle だけを取る)")
-        bar_t = [e["t"] for e in tr]
+            raise NotExpressible(f"{TOOL}: 足にする約定も足も無い(zipline は足の bundle だけを取る)")
+        unit = LC.qty_unit(inp)  # one share = this quantity; prices are per share
+        bar_t = [b["t"] for b in tr]
         sessions = CAL.sessions_in_range(START, START + pd.Timedelta(days=len(tr) + 3))
         idx = sessions[: len(tr)]
-        df = pd.DataFrame({"open": [e["px"] for e in tr], "high": [e["px"] for e in tr], "low": [e["px"] for e in tr],
-                           "close": [e["px"] for e in tr], "volume": [e["qty"] for e in tr]}, index=idx)
+        df = pd.DataFrame({k: [b[x] * unit for b in tr] for k, x in (("open", "o"), ("high", "h"), ("low", "l"), ("close", "c"))}
+                          | {"volume": [b["v"] / unit for b in tr]}, index=idx)
         # measured on this install: the bar written at session label L is what handle_data reads on the NEXT
         # session (get_datetime() = L + 2 days), so the run covers sessions[1..n] and handle_data call j reads trade j
         run_start, end = sessions[1], sessions[len(tr)]
@@ -113,19 +90,17 @@ class ZiplineAdapter:
             daily_bar_writer.write([(0, full)], show_progress=False)
             adjustment_writer.write()
 
-        sched = C.issue_schedule(bar_t, inp["actions"])
+        sched = C.issue_schedule(tr, inp["actions"])
         fm = inp.get("fill_model") or {}
         rec = {"ids": {}, "k": -1}
 
         def init(ctx):
             ctx.a = Z.symbol("X")
-            Z.set_commission(zcomm.PerDollar(cost=float(c.get("taker_rate", 0.0))))
-            if "impact" in fm:
-                Z.set_slippage(_Impact(fm["impact"]))
-            elif fm.get("tier") == 4:
+            Z.set_commission(zcomm.PerDollar(cost=float(rate)))
+            if fm.get("tier") == 4:
                 Z.set_slippage(zslip.VolumeShareSlippage(volume_limit=1.0, price_impact=0.0))
             else:
-                Z.set_slippage(zslip.FixedSlippage(spread=float(c.get("spread", 0.0))))
+                Z.set_slippage(zslip.FixedSlippage(spread=float(c.get("spread", 0.0)) * unit))
 
         def hd(ctx, data):
             rec["k"] += 1
@@ -136,12 +111,13 @@ class ZiplineAdapter:
                     if a["ref"] in rec["ids"]:
                         Z.cancel_order(rec["ids"][a["ref"]])
                     continue
-                amt = a["qty"] if a["side"] == "buy" else -a["qty"]
+                shares = round(a["qty"] / unit)
+                amt = shares if a["side"] == "buy" else -shares
                 style = None
                 if a["type"] == "limit":
-                    style = LimitOrder(a["px"])
+                    style = LimitOrder(a["px"] * unit)
                 elif a["type"] == "stop":
-                    style = StopOrder(a["stop_px"])
+                    style = StopOrder(a["stop_px"] * unit)
                 try:
                     oid = Z.order(ctx.a, amt, style=style) if style else Z.order(ctx.a, amt)
                 except Exception as exc:
@@ -178,8 +154,8 @@ class ZiplineAdapter:
                 continue
             d = pd.Timestamp(tx["dt"]).tz_localize(None).normalize()
             k = sess_pos.get(d)
-            fills.append({"ref": ref, "t": bar_t[k] if k is not None else None, "px": float(tx["price"]),
-                          "qty": abs(float(tx["amount"])), "fee": float(tx.get("commission") or 0.0), "liq": None})
+            fills.append({"ref": ref, "t": bar_t[k] if k is not None else None, "px": float(tx["price"]) / unit,
+                          "qty": abs(float(tx["amount"])) * unit, "fee": float(tx.get("commission") or 0.0), "liq": None})
         last_orders = {}
         for _, row in perf.iterrows():
             for o in row["orders"]:
@@ -203,7 +179,7 @@ class ZiplineAdapter:
         pos = 0.0
         last = perf.iloc[-1]
         for p in last["positions"]:
-            pos += float(p["amount"])
+            pos += float(p["amount"]) * unit
         return {"orders": orders, "fills": fills, "account": {"position": pos}}
 
 

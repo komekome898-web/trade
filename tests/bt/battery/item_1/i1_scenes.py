@@ -204,7 +204,66 @@ def _jpx_1m():
     return {"path": path, "text": text}, {"name": "jpx_1m", "paths": [path], "spec": spec_jpx_1m()}, exp
 
 
-FIXED_V1 = [_bf_rest, _bf_us, _binance, _fx, _jpx_1m]
+def spec_board_top10():
+    f = {"levels": 10}
+    for side in ("bid", "ask"):
+        f[f"{side}_px"] = [f"{side}_px_{i}" for i in range(1, 11)]
+        f[f"{side}_sz"] = [f"{side}_sz_{i}" for i in range(1, 11)]
+    return {"format": "csv", "header": True, "delimiter": ",", "kind": "book", "symbol": "FX_BTC_JPY", "asset": "crypto",
+            "time": {"columns": ["ts"], "unit": "iso", "tz": "UTC"}, "fields": f, "compression": "gzip"}
+
+
+def _board():
+    # row 1: 10 levels on both sides; row 2: 3 bid levels and 2 ask levels (blank cells beyond, as in the tape's board_top10)
+    t1, t2 = T0 + 10 * NS, T0 + 11 * NS
+    full_b = [(15000000 - 5 * i, round(0.01 * (i + 1), 2)) for i in range(10)]
+    full_a = [(15000010 + 5 * i, round(0.02 * (i + 1), 2)) for i in range(10)]
+    part_b = [(15000000, 0.5), (14999990, 1.25), (14999900, 2)]
+    part_a = [(15000020, 0.75), (15000100, 3)]
+
+    def row(t, b, a):
+        cells = [iso(t, sep=" ", digits=0, suffix="+00:00")]
+        pad = lambda lv, k: [str(lv[i][k]) if i < len(lv) else "" for i in range(10)]  # noqa: E731
+        return cells + pad(b, 0) + pad(b, 1) + pad(a, 0) + pad(a, 1)
+
+    header = ["ts"] + [f"bid_px_{i}" for i in range(1, 11)] + [f"bid_sz_{i}" for i in range(1, 11)] + \
+             [f"ask_px_{i}" for i in range(1, 11)] + [f"ask_sz_{i}" for i in range(1, 11)]
+    text = csv_text(header, [row(t1, full_b, full_a), row(t2, part_b, part_a)])
+    path = "backtest_data/bf_board_synth_20260105/board_top10_20260105.csv.gz"
+    rec = lambda t, b, a: {"t_ns": t, "bids": [[float(p), float(q)] for p, q in b], "asks": [[float(p), float(q)] for p, q in a]}  # noqa: E731
+    return ({"path": path, "text": text, "gzip": True}, {"name": "board", "paths": [path], "spec": spec_board_top10()},
+            [rec(t1, full_b, full_a), rec(t2, part_b, part_a)])
+
+
+def _funding():
+    rows = [(ns(2026, 1, 5, 4), ns(2026, 1, 5, 12), "0.0001"), (ns(2026, 1, 5, 12), ns(2026, 1, 5, 20), "-0.00005")]
+    text = csv_text(["calculation_date", "settlement_date", "rate"],
+                    [(iso(c, digits=0, suffix=""), iso(st, digits=0, suffix=""), r) for c, st, r in rows])
+    path = "backtest_data/funding_synth/funding_rate_history.csv"
+    spec = {"format": "csv", "header": True, "delimiter": ",", "kind": "funding", "symbol": "FX_BTC_JPY", "asset": "crypto",
+            "time": {"columns": ["settlement_date"], "unit": "iso", "tz": "UTC"}, "fields": {"rate": "rate"}}
+    return {"path": path, "text": text}, {"name": "funding", "paths": [path], "spec": spec}, [{"t_ns": st, "rate": float(r)} for _, st, r in rows]
+
+
+def _liquidations():
+    import json as _json
+    msgs = [(T0 + 12 * NS + 345_000_000, "SELL", "96000.5", "0.25"), (T0 + 13 * NS, "BUY", "96010", "1.5")]
+    lines = [_json.dumps({"venue": "binance_um", "recv_us": (t + 50_000_000) // 1000,
+                          "raw": {"e": "forceOrder", "o": {"s": "BTCUSDT", "S": sd, "p": p, "q": q, "T": t // 1_000_000}}},
+                         separators=(",", ":")) for t, sd, p, q in msgs]
+    path = "backtest_data/liquidations_synth/liquidations_20260105.jsonl.gz"
+    spec = {"format": "jsonl", "compression": "gzip", "kind": "liquidation", "symbol": "BTCUSDT", "asset": "crypto",
+            "time": {"columns": ["raw.o.T"], "unit": "ms", "tz": "UTC"},
+            "fields": {"px": "raw.o.p", "qty": "raw.o.q", "side": "raw.o.S"}, "side_map": {"SELL": "sell", "BUY": "buy"}}
+    return ({"path": path, "text": "\n".join(lines) + "\n", "gzip": True}, {"name": "liquidations", "paths": [path], "spec": spec},
+            [{"t_ns": t, "px": float(p), "qty": float(q), "side": sd.lower()} for t, sd, p, q in msgs])
+
+
+def _funding_and_liquidations():
+    return [_funding(), _liquidations()]
+
+
+FIXED_V1 = [_bf_rest, _bf_us, _binance, _fx, _jpx_1m, _board, _funding, _liquidations]
 
 
 def _generic(seed: int, n: int):
@@ -265,12 +324,17 @@ def scenes_v1():
         (_binance, "v1-binance-aggtrades", "Binance aggTrades(見出しなし 8 列、ミリ秒、is_buyer_maker から攻め側の売買)を約定の事象にできるか"),
         (_fx, "v1-fx-ticks", "FX のイベントティック(ts_utc,bid,ask,bidvol,askvol、空白区切りの ISO)を気配の事象にできるか"),
         (_jpx_1m, "v1-jpx-1m", "JPX の 1 分足(date,time の 2 列、日本時間。朝 8:45 は UTC で前日)を足の事象にできるか"),
+        (_board, "v1-bitflyer-board-top10", "bitFlyer の板の上位 10 段(ts と bid_px_1..10・bid_sz_1..10・ask_px_1..10・ask_sz_1..10、gzip。段が足りない行は空欄)を板の写真の事象にできるか(空欄の段を 0 や欠けた値にしない)"),
     ]:
         out.append(_load_scene(sid, "V1", "値", what, HOW_WRITE, [fn()]))
     out.append(_load_scene(
+        "v1-funding-and-liquidations", "V1", "値",
+        "資金調達の率(CSV、settlement_date の時刻)と清算の通知(JSON の 1 行 1 通、gzip、欄は入れ子の raw.o.T・raw.o.p・raw.o.q・raw.o.S)を、それぞれ資金調達と清算の事象にできるか(入れ子の欄を宣言で指せるか)",
+        HOW_WRITE, _funding_and_liquidations()))
+    out.append(_load_scene(
         "v1-all-assets-one-call", "V1", "能力",
-        "上の 5 つ(暗号資産の約定 3 形・FX の気配・JPX の足)を 1 回の読み込みの呼び出しで渡し、全部を共通の事象の形で返せるか(資産ごとの別の読み口を使わない)",
-        HOW_WRITE + " 5 つの正解は上の 5 場面と同じ。", [fn() for fn in FIXED_V1]))
+        "上の 8 つ(暗号資産の約定 3 形・板の上位 10 段・資金調達・清算・FX の気配・JPX の足)を 1 回の読み込みの呼び出しで渡し、全部を共通の事象の形で返せるか(資産ごとの別の読み口を使わない)",
+        HOW_WRITE + " 8 つの正解は上の場面と同じ。", [fn() for fn in FIXED_V1]))
     out.append(_load_scene(
         "v1-generic-shape", "V1", "能力",
         "種(20260925 から 3 つ)で列の名前・並び・区切り文字(, ; タブ |)・見出しの有無・時刻の単位(s/ms/us/ns/iso)を引いた 3 つのファイルを、宣言(spec)だけで読めるか(形ごとの専用の読み口を書かずに読めること)",
@@ -420,7 +484,7 @@ def scenes_v4():
 
 
 # --------------------------------------------------------------------------- V5
-def _v5(sid, what, control_path, variant_path, extra_files=(), how_extra=""):
+def _v5(sid, what, control_path, variant_path, extra_files=(), how_extra="", variant_via_link=False):
     f, ds, exp = _bf_rest()
     fc = dict(f, path=control_path)
     fv = dict(f, path=variant_path)
@@ -429,7 +493,7 @@ def _v5(sid, what, control_path, variant_path, extra_files=(), how_extra=""):
     return {"id": sid, "viewpoint": "V5", "kind": "能力", "what": what,
             "how": "対照 = 許されるパスに置いた同じ中身(正解は V1 の bitflyer-rest と同じ事象)。変形 = 拒むべきパス。正解 = 対照を正しく読み、変形を拒む。" + how_extra,
             "input": {"op": "load", "files": [fc, *extra_files], "datasets": [dsc], "want": ["events"]},
-            "variant": {"op": "load", "files": [fv, *extra_files], "datasets": [dsv], "want": ["events"]},
+            "variant": {"op": "load", "files": ([] if variant_via_link else [fv]) + list(extra_files), "datasets": [dsv], "want": ["events"]},
             "expect": {"events": {ds["name"]: [{"t_ns": r["t_ns"], "px": r["px"]} for r in exp]}}}
 
 
@@ -446,7 +510,13 @@ def _sealed_scene():
     ds = {"name": "sealtest", "paths": [data_path], "spec": spec_simple_trades("iso")}
     ctrl = dict(ds, range_ns=[rows[0][1], cutoff])
     var = dict(ds, range_ns=[rows[0][1], rows[-1][1] + 1])
-    return {"id": "v5-sealed-window", "viewpoint": "V5", "kind": "能力",
+    edge = {"id": "v5-seal-boundary", "viewpoint": "V5", "kind": "値",
+            "what": "封印の境ちょうどの扱い: 範囲 [境の 1 時間前, 境) は境の直前の 1 行だけを返し、終わりを境の 1 ns 後にした範囲(境ちょうどの行 = 封印区間の最初の行を含む)は拒むか",
+            "how": "範囲は [始まり, 終わり) の半開区間、封印区間は seal_from_ts 以後(sealed.py の load_unsealed と同じ d < cutoff)。境の 1 時間前の行は範囲の中、境ちょうどの行は封印区間。",
+            "input": {"op": "load", "files": [{"path": data_path, "text": text}, seal_file], "datasets": [dict(ds, range_ns=[cutoff - 3600 * NS, cutoff])], "want": ["events"]},
+            "variant": {"op": "load", "files": [{"path": data_path, "text": text}, seal_file], "datasets": [dict(ds, range_ns=[cutoff - 3600 * NS, cutoff + 1])], "want": ["events"]},
+            "expect": {"events": {"sealtest": [{"t_ns": rows[6][1], "px": float(rows[6][2])}]}}}
+    return edge, {"id": "v5-sealed-window", "viewpoint": "V5", "kind": "能力",
             "what": "封印の記録(backtest_data/phase2_sealed/<unit>/SEALED.json、load_sealed が守る形)に載ったファイルで、封印の境より前の範囲は読み、境をまたぐ範囲の読み込みを拒むか",
             "how": "対照 = 範囲 [最初の行, seal_from_ts) の 7 行(正解は書いた行そのもの)。変形 = 範囲 [最初の行, 最後の行] = 封印区間の 3 行を含む。正解 = 変形を拒む。",
             "input": {"op": "load", "files": [{"path": data_path, "text": text}, seal_file], "datasets": [ctrl], "want": ["events"]},
@@ -467,8 +537,9 @@ def scenes_v5():
         _v5("v5-reject-symlink", "許される名前のフォルダが拒むフォルダ(qa_*)への symlink のとき、実体で拒むか",
             f"backtest_data/bf_exec_synth_20260105/{base}", f"backtest_data/bf_exec_link_synth/{base}",
             extra_files=[{"path": f"backtest_data/qa_known_answer_synth/{base}", "text": _bf_rest()[0]["text"]},
-                         {"path": "backtest_data/bf_exec_link_synth", "symlink_to": "qa_known_answer_synth"}]),
-        _sealed_scene(),
+                         {"path": "backtest_data/bf_exec_link_synth", "symlink_to": "qa_known_answer_synth"}],
+            variant_via_link=True),
+        *_sealed_scene(),
     ]
     # in the dotdot/symlink scenes the forbidden file itself also exists, so a refusal must come from the path rule
     return out

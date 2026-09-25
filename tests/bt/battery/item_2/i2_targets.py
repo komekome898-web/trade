@@ -43,5 +43,10 @@ SURVEY: dict[str, dict] = {
     "opp_basana": {"module": "opponents/basana_adapter.py", "venv": "item_0/basana", "cand": 1},
     "opp_vnpy@tick": {"module": "opponents/vnpy_tick_adapter.py", "venv": "item_0/vnpy", "cand": 20},
     "opp_vnpy@bar": {"module": "opponents/vnpy_bar_adapter.py", "venv": "item_0/vnpy", "cand": 20},
+    "opp_quantcore": {"module": "opponents/quantcore_adapter.py", "venv": "item_0/quantcore", "cand": 34},
+    "opp_luczinsritter": {"module": "opponents/luczinsritter_adapter.py", "venv": "item_0/luczinsritter", "cand": 16},
+    "opp_lib_pybroker": {"module": "opponents/lib_pybroker_adapter.py", "venv": "item_0/lib-pybroker", "cand": 4},
+    "opp_rqalpha": {"module": "opponents/rqalpha_adapter.py", "venv": "item_0/rqalpha", "cand": 53},
+    "opp_predictivedev_tradesim": {"module": "opponents/predictivedev_tradesim_adapter.py", "venv": "item_0/c37", "cand": 37},
 }
 TARGETS.update(SURVEY)

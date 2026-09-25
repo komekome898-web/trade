@@ -56,6 +56,8 @@ def _num_eq(e, o, tol):
 
 
 def _val_eq(key, e, o, tol):
+    if isinstance(e, (list, tuple)):
+        return isinstance(o, (list, tuple)) and len(e) == len(o) and all(_val_eq(key, x, y, tol) for x, y in zip(e, o))
     if isinstance(e, str) or isinstance(o, str):
         return isinstance(o, str) and e == o
     if key in ("t_ns", "start_ns"):

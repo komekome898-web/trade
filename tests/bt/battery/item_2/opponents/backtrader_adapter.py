@@ -5,15 +5,14 @@ Public API used: `Cerebro`, `feeds.PandasData`, `Strategy` (`next`,
 `broker.setcash`, `broker.setcommission(commission, leverage)`,
 `Order.Market / Limit / Stop`, the `oco=` argument.
 
-Scene -> tool: Backtrader takes bars, not a book. Every trade of the scene is
-one bar (open = high = low = close = the trade price, volume = its quantity);
-book snapshots have no feed type in Backtrader and are not given (a scene whose
-orders need a book to fill simply finds no bar to fill on). An action is issued
-in `next()` of the last bar at or before its time (Backtrader then executes it
-on the following bars by its own rules). A fill's time is the time of the bar
-Backtrader executed it on. One commission rate (`setcommission(commission=)`)
-serves every fill, so a scene with different maker and taker rates is not
-expressible.
+Scene -> tool: Backtrader takes bars, not a book.  The bars are i2_common.bar_rows (one bar per trade print,
+the scene's own bars, or the prints grouped into a tier-2 scene's declared bars); book snapshots have no feed
+type in Backtrader and are not given.  Actions are issued in `next()` of the bar chosen by
+i2_common.issue_schedule (Backtrader then executes them on the following bars by its own rules).  A fill's time
+is the end time of the bar Backtrader executed it on.  Fill model: none / tier 2 -> the broker's default; tier 4
+-> the tool's `broker.fillers.FixedBarPerc(perc=100)` (fills up to the bar's volume).  One commission rate
+(`setcommission(commission=)`, i2_common.single_fee_rate); a spread cost -> the tool's
+`set_slippage_fixed(spread / 2)`.
 """
 from __future__ import annotations
 
@@ -42,28 +41,26 @@ class BacktraderAdapter:
     name = "opp_backtrader"
 
     def run(self, inp):
-        C.gate(inp, tool=TOOL, orders=("market", "limit", "stop", "oco", "cancel"), events=("book", "trade"),
+        C.gate(inp, tool=TOOL, orders=("market", "limit", "stop", "oco", "cancel"), events=("book", "trade", "bar"),
+               fill_models=lambda fm: C.bar_fill_models(fm, extra=lambda f: None if f.get("tier") == 4 and "range" not in f
+                                                        and not f.get("impact") else C.bar_fill_models({})),
                costs=("maker_rate", "taker_rate", "spread"), account=("cash", "leverage"))
         c = inp["costs"]
-        if c.get("maker_rate", 0.0) != c.get("taker_rate", 0.0) and any(
-                a["type"] == "limit" for a in C.places(inp)):
-            raise NotExpressible(f"{TOOL}: 手数料の率は 1 つ(broker.setcommission(commission=))で maker と taker を分けられない")
-        tr = C.trades(inp)
+        rate = C.single_fee_rate(inp, TOOL)
+        tr, _src = C.bar_rows(inp)
         if not tr:
-            raise NotExpressible(f"{TOOL}: 足にする約定が無い(Backtrader は足の feed だけを取る)")
-        bar_t = [e["t"] for e in tr]
-        df = pd.DataFrame({"open": [e["px"] for e in tr], "high": [e["px"] for e in tr], "low": [e["px"] for e in tr],
-                           "close": [e["px"] for e in tr], "volume": [e["qty"] for e in tr], "openinterest": 0.0},
+            raise NotExpressible(f"{TOOL}: 足にする約定も足も無い(Backtrader は足の feed だけを取る)")
+        bar_t = [b["t"] for b in tr]
+        df = pd.DataFrame({"open": [b["o"] for b in tr], "high": [b["h"] for b in tr], "low": [b["l"] for b in tr],
+                           "close": [b["c"] for b in tr], "volume": [b["v"] for b in tr], "openinterest": 0.0},
                           index=pd.DatetimeIndex([_dt(t) for t in bar_t]))
-        acts = sorted(inp["actions"], key=lambda a: a["t"])
+        sched = C.issue_schedule(tr, inp["actions"])
+        fm = inp.get("fill_model") or {}
         rec = {"orders": {}, "fills": [], "o": {}, "realized": 0.0}
 
         class S(bt.Strategy):
             def next(self):
-                k = len(self.data) - 1
-                nxt = bar_t[k + 1] if k + 1 < len(bar_t) else None
-                while acts and (nxt is None or acts[0]["t"] < nxt):
-                    a = acts.pop(0)
+                for a in sched.get(len(self.data) - 1, []):
                     self._act(a)
 
             def _act(self, a):
@@ -114,8 +111,9 @@ class BacktraderAdapter:
             cer = bt.Cerebro(stdstats=False)
             cer.adddata(bt.feeds.PandasData(dataname=df))
             cer.broker.setcash(float(inp["account"]["cash"]))
-            cer.broker.setcommission(commission=float(c.get("taker_rate", 0.0)),
-                                     leverage=float(inp["account"].get("leverage", 1.0)))
+            cer.broker.setcommission(commission=float(rate), leverage=float(inp["account"].get("leverage", 1.0)))
+            if fm.get("tier") == 4:
+                cer.broker.set_filler(bt.broker.fillers.FixedBarPerc(perc=100.0))
             if c.get("spread"):  # half the spread as a fixed slippage on market orders (Backtrader has no spread argument)
                 cer.broker.set_slippage_fixed(float(c["spread"]) / 2, slip_open=True, slip_limit=False, slip_match=True)
             cer.addstrategy(S)

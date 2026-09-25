@@ -36,8 +36,8 @@ READER = {
     12: ("HTTP / WebSocket の通信と DataStore だけ。ファイルの読み口なし(grep read_csv・csv.reader 0 件)。時刻の文字列は変換せずに持つ(SCAN 2788 行)", f"{VEN}/item_0/pybotters/…/pybotters"),
     20: ("本体と vnpy_ctastrategy にファイルの読み口なし(grep read_csv・csv.reader 0 件)。足は BarGenerator.update_tick(vnpy/trader/utility.py 166・204 行)の 1 本道", f"{VEN}/item_0/vnpy/…/vnpy/trader/utility.py 166・204 行"),
     21: ("配布物に CSV の読み口なし(read_csv の当たりは銘柄の一覧 file_storage.py 208 行・暦 utils/__init__.py 602 行・注文・予測の表)。CSV から自前の形に直す dump_bin.py はリポジトリの scripts/ にあり配布物に無い", f"{VEN}/item_1/qlib/…/qlib/data/storage/file_storage.py 208 行"),
-    23: ("取引所・業者ごとに形が固定の変換器(data/utils/tardis.py 56 行 convert は Tardis の trades / incremental_book_L2 の CSV)。列の対応・単位・時間帯の引数なし", f"{VEN}/item_0/hftbacktest/…/hftbacktest/data/utils/tardis.py 56 行"),
-    54: ("findatapy の IOEngine.read_csv_data_frame(ioengine.py 1080 行。最初の列を時刻の索引、ほかの列を float32 = 1130 行、時刻の読み方は日付の文字列の型だけ = 1108-1121 行)", f"{VEN}/item_0/finmarketpy/…/findatapy/market/ioengine.py 1080・1108-1130 行"),
+    23: ("取引所・業者ごとに形が固定の変換器(data/utils/tardis.py 56 行 convert は Tardis の trades / incremental_book_L2 の CSV)。列の対応・単位・時間帯の引数なし", f"{VEN}/item_1/hftbacktest/…/hftbacktest/data/utils/tardis.py 56 行"),
+    54: ("findatapy の IOEngine.read_csv_data_frame(ioengine.py 1080 行。最初の列を時刻の索引、ほかの列を float32 = 1130 行、時刻の読み方は日付の文字列の型だけ = 1108-1121 行)", f"{VEN}/item_1/finmarketpy/…/findatapy/market/ioengine.py 1080・1108-1130 行"),
     55: ("読み口なし。Backtest(backtesting.py 1111 行)はメモリ上の OHLC の DataFrame を取る(read_csv の当たりは同梱の例の test/__init__.py だけ)", f"{VEN}/item_0/backtesting/…/backtesting/backtesting.py 1111 行"),
     61: ("ファイルの読み口なし(grep csv::Reader・ReaderBuilder 0 件)。型つきの MarketEvent の列を受ける。Candle は close_time: DateTime<Utc>(SCAN 6303 行)", f"{VEN}/item_0/_dl/c61"),
     73: ("市場データのファイルの読み口なし(grep read_csv・class CSVData 0 件。data の型は合成と取得だけ: data/custom.py 29 行 SyntheticData・183 行 YFData・301 行 BinanceData・556 行 CCXTData・759 行 AlpacaData)", f"{VEN}/item_1/vectorbt/…/vectorbt/data/custom.py"),
@@ -72,7 +72,7 @@ def rows_for(vp: str, runnable: set[int]) -> list[tuple]:
         run = RUN.format(t=tgt, vp=vp, why=why)
         if vp == "V3" and c in (23, 105):
             f = {23: "opponents/repro_23_event_order.py", 105: "opponents/repro_105_duplicate_bars.py"}[c]
-            mech = {23: f"事象の順の検査 validate_event_order(exch_ts が戻れば ValueError。報告は無い)({VEN}/item_0/hftbacktest/…/hftbacktest/data/validation.py 139-152 行)",
+            mech = {23: f"事象の順の検査 validate_event_order(exch_ts が戻れば ValueError。報告は無い)({VEN}/item_1/hftbacktest/…/hftbacktest/data/validation.py 139-152 行)",
                     105: f"足の系列 BarSeries(時刻で並べ替え、同じ時刻の足があれば ValidationError。報告は無い)({VEN}/item_0/c105/…/slippage/series.py 35-41 行)"}[c]
             out.append((name, mech, IMPL.format(where=mech.split("(")[-1].rstrip(")")), "再現した",
                         f"道具の読み口がこの場面の形を取れない({rd})ため、検査の機構だけを一次資料(導入済みのコード)どおりに書き直し、{f} として全場面に通した"

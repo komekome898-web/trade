@@ -77,9 +77,19 @@ class Engine:
     tool = "?"
     features: frozenset = frozenset()
     int_units = True  # the engine takes integer prices / sizes only
+    costs: tuple = ()  # cost keys the engine itself applies to its trades (a fill tuple then carries a 5th
+    # element {key: fee in tick*lot units} computed by the engine's own accounting)
 
     def start(self, inp) -> None:
         pass
+
+    def fill_model_ok(self, fm, inp):
+        """None when the engine can run this fill model, else why not (default: price-time matching only)."""
+        return _fill_model_ok(fm, inp, self)
+
+    def unit(self, inp) -> float:
+        """The quantity of one lot (default: qty_unit of the scene)."""
+        return qty_unit(inp)
 
     def limit(self, key, side, px, qty, mine, stp):  # -> list[(maker_key, taker_key, px, qty)]
         raise NotImplementedError
@@ -108,11 +118,19 @@ class Engine:
         """True / False, or None when the engine cannot say."""
         return None
 
+    emit = None  # set by run_lob to on_fills(fills, t): for fills the engine reports later than the call
+    # that caused them (an engine that holds orders back for its own latency)
+
     def schedule(self, jobs, inp):
         """jobs: [(t, participant, fn)] in timeline order; participant in market / order / cancel / seen.
         Default: run at the scene time (no latency).  An engine with its own scheduler overrides this."""
         for t, _who, fn in jobs:
             fn(t)
+
+    def account_out(self, inp, tick, step):
+        """The engine's own account for our orders (position / realized / unrealized in scene units), or None
+        when the engine keeps no account."""
+        return None
 
     def finish(self) -> None:
         pass
@@ -137,9 +155,9 @@ def run_lob(inp, eng: Engine) -> dict:
     lat = tuple(k for k in ("feed", "order", "cancel", "notice") if f"latency:{k}" in feats)
     C.gate(inp, tool=eng.tool, orders=orders,
            events=("book", "trade") + (("l3_add", "l3_cancel") if "l3" in feats else ()),
-           fill_models=lambda fm: _fill_model_ok(fm, inp, eng), latency=lat, costs=(), account=("cash",))
+           fill_models=lambda fm: eng.fill_model_ok(fm, inp), latency=lat, costs=eng.costs, account=("cash",))
     prod = inp["product"]
-    tick, step = prod["tick"], qty_unit(inp)
+    tick, step = prod["tick"], eng.unit(inp)
     stp = (inp.get("rules") or {}).get("self_trade")
     if stp and "stp" not in feats:
         stp = None  # the engine has no self-trade policy: our orders go in as ordinary orders
@@ -155,13 +173,18 @@ def run_lob(inp, eng: Engine) -> dict:
     now = [0]
 
     def on_fills(fl, t):
-        for maker, taker, px, q in fl:
+        for f in fl:
+            maker, taker, px, q = f[:4]
+            fees = f[4] if len(f) > 4 else {}
             for k, liq in ((maker, "maker"), (taker, "taker")):
                 if k in rem:
                     rem[k] -= q
                 if k in refs:
-                    rec["fills"].append({"ref": k, "t": int(t), "px": float(Fraction(str(px)) * Fraction(str(tick))),
-                                         "qty": float(Fraction(str(q)) * Fraction(str(step))), "liq": liq})
+                    d = {"ref": k, "t": int(t), "px": float(Fraction(str(px)) * Fraction(str(tick))),
+                         "qty": float(Fraction(str(q)) * Fraction(str(step))), "liq": liq}
+                    if k in fees:
+                        d["fee"] = float(Fraction(str(fees[k])) * Fraction(str(tick)) * Fraction(str(step)))
+                    rec["fills"].append(d)
 
     def ext_add(side, px, q, t, key=None):
         n[0] += 1
@@ -175,21 +198,28 @@ def run_lob(inp, eng: Engine) -> dict:
         return sum(max(rem[k], 0) for k in ext_at[side].get(px, []) if rem.get(k, 0) > 0)
 
     def on_book(e, t):
-        for side, key in (("bid", "bids"), ("ask", "asks")):
-            new = {ticks(p, tick): lots(q, step) for p, q in e[key]}
-            for px in sorted(set(ext_at[side]) | set(new)):
-                have = ext_level(side, px)
-                want = new.get(px, 0)
-                if want > have:
-                    ext_add(side, px, want - have, t)
-                elif want == 0 and have > 0:
-                    for k in ext_at[side].get(px, []):
-                        if rem.get(k, 0) > 0:
-                            eng.cancel(k)
-                            rem[k] = 0
-                elif 0 < want < have:
-                    raise NotExpressible(f"{eng.tool}: 板の写真で値位 {px * tick} の量が {have * step} から {want * step} に減った。"
-                                         "どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない")
+        # removals on both sides first, then additions: a level the snapshot adds must not meet a stale
+        # external level of the other side that the same snapshot removes
+        new_of = {side: {ticks(p, tick): lots(q, step) for p, q in e[key]} for side, key in (("bid", "bids"), ("ask", "asks"))}
+        for phase in ("remove", "add"):
+            for side in ("bid", "ask"):
+                new = new_of[side]
+                for px in sorted(set(ext_at[side]) | set(new)):
+                    have = ext_level(side, px)
+                    want = new.get(px, 0)
+                    if want > have:
+                        if phase == "add":
+                            ext_add(side, px, want - have, t)
+                    elif phase == "add":
+                        continue
+                    elif want == 0 and have > 0:
+                        for k in ext_at[side].get(px, []):
+                            if rem.get(k, 0) > 0:
+                                eng.cancel(k)
+                                rem[k] = 0
+                    elif 0 < want < have:
+                        raise NotExpressible(f"{eng.tool}: 板の写真で値位 {px * tick} の量が {have * step} から {want * step} に減った。"
+                                             "どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない")
 
     def on_trade(e, t):
         n[0] += 1
@@ -276,6 +306,7 @@ def run_lob(inp, eng: Engine) -> dict:
             fn = {"place": on_place, "cancel": on_cancel, "amend": on_amend}[x["op"]]
             who = "cancel" if x["op"] == "cancel" else "order"
             jobs.append((t, who, lambda tt, x=x, fn=fn: fn(x, tt)))
+    eng.emit = on_fills
     try:
         eng.schedule(jobs, inp)
     except _OffGrid as exc:
@@ -292,6 +323,9 @@ def run_lob(inp, eng: Engine) -> dict:
             r = eng.resting(ref)
             st = "open" if r in (True, None) else "canceled"
         rec["orders"][ref] = {"status": st}
+    acc = eng.account_out(inp, tick, step)
+    if acc is not None:
+        rec["account"] = acc
     eng.finish()
     return rec
 

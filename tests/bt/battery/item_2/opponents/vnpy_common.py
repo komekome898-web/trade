@@ -77,7 +77,7 @@ def _ticks(inp):
 
 def _bars(inp):
     rows, _ = C.bar_rows(inp)
-    return [(b["t"], BarData(symbol="X", exchange=Exchange.LOCAL, datetime=_dt(b["t"]), interval=Interval.MINUTE,
+    return [(b, BarData(symbol="X", exchange=Exchange.LOCAL, datetime=_dt(b["t"]), interval=Interval.MINUTE,
                              volume=float(b["v"]), open_price=float(b["o"]), high_price=float(b["h"]),
                              low_price=float(b["l"]), close_price=float(b["c"]), gateway_name="BACKTESTING")) for b in rows]
 
@@ -89,7 +89,7 @@ def run(inp, mode_name: str, tool: str):
     data = _ticks(inp) if mode_name == "TICK" else _bars(inp)
     if not data:
         raise NotExpressible(f"{tool}: 渡せる {('tick' if mode_name == 'TICK' else '足')} が無い")
-    sched = C.issue_schedule([t for t, _ in data], inp["actions"])
+    sched = C.issue_schedule([t for t, _ in data], inp["actions"])  # ticks: times; bars: bar_rows dicts
     st = {"k": -1, "oid": {}, "rejected": {}}
 
     class S(CtaTemplate):

@@ -1,4 +1,5 @@
-"""hftbacktest (catalogue 23, SCAN 6906 行; installed by item 0 in venv item_0/hftbacktest).
+"""hftbacktest (catalogue 23, SCAN 6906 行; venv item_1/hftbacktest: the hftbacktest 2.4.4 wheel item 0
+inspected, re-installed here on 2026-09-25 after item 0's venv was found removed).
 
 Read in the installed code:
 - file readers are per-venue converters with FIXED input shapes

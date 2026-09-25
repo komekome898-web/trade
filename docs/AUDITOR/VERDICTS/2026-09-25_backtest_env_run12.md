@@ -36,3 +36,7 @@ the user request that triggered this workflow run. This relayed request is the o
 ## 17:09 UTC 見張りが DISK LOW(199M)で止まった → リードの処置
 
 `du` の実測: 調査結果の側の道具の venv(`…/scratchpad/bt/venvs/`)が 17G(item_0 16.5G / item_1 243M / item_2 93M)。項目 0 の venv のうち 800M 超の 4 本(finmarketpy 1529M / _cargo_target61 903M / hftbacktest 892M / fast-trade-r17 823M)を消した(pip で入れ直せる道具の環境。項目 0 は通過済みで、今の run は項目 0 の場面集を走らせ直さない。項目 4 の批評家が項目 0 の場面集を調査結果の側の道具で走らせ直したいときは、この 4 本は入れ直しが要る = 測っていない範囲に書く)。空き 199M → 4.3G。git gc は打っていない。見張りを起こし直した。
+
+## 17:26 UTC 見回り(再開後 1)
+
+受け入れの検査(再開の時刻より新しい agent の記録): `for f in $(find $W -maxdepth 1 -name "agent-*.jsonl" -newer <marker>); do echo "$(basename $f) relay=$(grep -c "Workflow harness — user request" $f)"; done` → ae20726c(場面:1) 0 / a1f0d35a(場面:2) 0 / ae97e951(要件:1) 0 / a9e6cf89(要件:3) 0 / aeac7750(要件:2) 0。場面:2 は再開時に旧 agent の続きとして "started" が出たが、17:25 UTC に新しい agent(a1f0d35a)で起き直した(旧 agent の記録は更新されていない)。ディスク: 17:09 の 4.3G が 17:26 に 658M まで減った(場面係の venv と試験の一時ファイル)ので、項目 0 の venv の 500M 超を消した(上の出力)。

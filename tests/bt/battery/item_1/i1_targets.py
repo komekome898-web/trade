@@ -24,9 +24,9 @@ TARGETS: dict[str, dict] = {
 SURVEY: dict[str, dict] = {
     "opp_vectorbt": {"module": "opponents/vectorbt_adapter.py", "venv": "item_1/vectorbt", "cand": 73},
     "opp_qlib": {"module": "opponents/qlib_adapter.py", "venv": "item_1/qlib", "cand": 21},
-    "opp_finmarketpy": {"module": "opponents/finmarketpy_adapter.py", "venv": "item_0/finmarketpy", "cand": 54},
+    "opp_finmarketpy": {"module": "opponents/finmarketpy_adapter.py", "venv": "item_1/finmarketpy", "cand": 54},
     "opp_pytrendfollow": {"module": "opponents/pytrendfollow_adapter.py", "venv": "item_0/c87", "cand": 87},
-    "opp_hftbacktest": {"module": "opponents/hftbacktest_adapter.py", "venv": "item_0/hftbacktest", "cand": 23},
+    "opp_hftbacktest": {"module": "opponents/hftbacktest_adapter.py", "venv": "item_1/hftbacktest", "cand": 23},
     "opp_pybotters": {"module": "opponents/pybotters_adapter.py", "venv": "item_0/pybotters", "cand": 12},
     "opp_backtesting": {"module": "opponents/backtesting_adapter.py", "venv": "item_0/backtesting", "cand": 55},
     "opp_qstrader": {"module": "opponents/qstrader_adapter.py", "venv": "item_0/qstrader", "cand": 121},

@@ -13,3 +13,14 @@
 - 最小の実行: 暦 5 日・銘柄 3 件(1001 / 1004 は 1/6 上場 / 1005 は 1/7 まで)の instruments を置き、`D.list_instruments(D.instruments('all'), start_time=d, end_time=d, as_list=True)` が 1/5 ['1001','1005']・1/6 ['1001','1004','1005']・1/7 同じ・1/8 ['1001','1004'] を返した。
 ## 外部送信
 - 場面に渡したのは合成の銘柄の一覧と日付だけ。mlflow の記録は scratchpad の file: URI にだけ書く。
+
+## 入れ直し(2026-09-25 17:1xZ)
+土台にしていた項目 0 の venv finmarketpy が消えていた。.pth を外し、宣言済みの依存を pip に解かせて入れ直した(numpy 1.26.4・pandas 2.3.3・mlflow-skinny 3.16.1・scipy ほか)。
+== add typing-extensions
+== add requests
+== add packaging
+== add scipy
+== add anyio
+== add importlib_metadata
+== 2026-09-25T17:18:47Z 土台が消えた分の依存を、宣言済みのものを pip に解かせて入れ直す
+exit=0
