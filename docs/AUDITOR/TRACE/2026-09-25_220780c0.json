@@ -14484,11 +14484,13 @@
   {
    "move": 531,
    "tools": {
-    "Read": 1,
-    "Bash": 2,
-    "mcp__Claude_Code_Remote__send_later": 1
+    "Read": 3,
+    "Bash": 6,
+    "mcp__Claude_Code_Remote__send_later": 2,
+    "ReadNotifications": 1,
+    "Workflow": 1
    },
-   "n_tools": 4,
+   "n_tools": 13,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
