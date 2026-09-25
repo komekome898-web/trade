@@ -580,3 +580,125 @@ md5: 3 組とも 2 通りの表はバイト単位で違う。したがって L-4
 - F2 [聞く]: リードの答え = **入口が対象の公開のデータの入口(データの時刻の欄)か公開の変換の関数なら振る舞いの試験で、内部の関数を呼ぶなら作りの形の試験。**_UNIT_NOTE の「対象が公開する」の条件が守られているかは批評家が対象ごとに読む。守られていない対象があれば場面係が入口を公開のものに替える。
 - F3 [聞く]: リードの答え = **揃える。**次の場面集の直しで、対象ごとに P0-2 の全場面(ISO・int・単位)で同じ入口の基準(公開のデータの入口 → 無ければ公開の変換の関数)を当て、対象ごとの入口を materials に記録する。
 - F4 [聞く]: リードの答え = **当たっている(再現できない記録は主張の根拠にならない)。**次の起動の lead_notes に規則として書く: 場面係は「直す前に落ちた試験の出力」「走らせ直しの出力」「比較の出力」の写しを `docs/DISCUSSIONS/2026-09-23_backtest_env/item_<N>/battery/materials/<回>/` に置く(scratchpad だけに置かない)。作業者の格子の「直す前に落ちる」記録も同じ。
+
+### 第 16 周の残りの段(11:52 UTC の見回りで写した)
+
+| 段 | 開始 | 終了 |
+|---|---|---|
+| 批評:0#16 | 10:47:46 | 11:13:13 |
+| 盲検:0#16:current0〜2 | 11:13:14 | 11:13:45 |
+| 盲検:0#16:survey0〜2 | 11:13:30 | 11:14:34 |
+| 作る:0#17 / 場面の直し:0#r17-1 | 11:14:35 | (進行中) |
+
+### 批評家 0#16 の出力(逐語)
+
+- **i0-r16-01** [直す](target: 実装, repeat_of: i0-r15-03, fix_files: ['src/bot/bt/core/values.py', 'src/bot/bt/core/contract.py'])
+  values._plain_equal が反復になるのは、どの鍵にも相手の側に同じ hash の鍵が 1 つしか無いときだけ。相手の側に同じ hash の鍵が複数ある段では、_match(values.py 1439 行〜)の for y in cands の枝が候補ごとに _plain_equal(kx, ky) を入れ子で呼ぶ(1 段に 2 枠)。各段で鍵の hash が衝突する鎖(X_k = FrozenDict({X_{k-1}: 0, Z_k: 0})、Y_k = FrozenDict({Y_{k-1}: 0, Z_k: 0})、Z_k は hash(X_{k-1}) を hash に持つ int、X_0 = 5、Y_0 = 5 + 2^61 - 1。戦略が公開の FrozenDict と int だけで作れるので射程の中)では、freeze({X_n: 1, Y_n: 2}) に要る枠は 20 段 55・40 段 95・90 段 195。契約 core-17 process_state(contract.py 179-187 行)は「FrozenDicts at most 12 at any depth」「at most CALL_FRAMES + one frame per level for every container kind」と書き、その余裕なら受け付けが積み上がりに依らないと約束する。20 段で 55 > 50、90 段で 195 > 120 なので、契約が足りると書く余裕では断られ、それより深い余裕では受け付けられる。根本原因: 作業者の格子 F は衝突の置き方を「一番下で違う・途中で違う・等しい」で列べ、「相手の側に同じ hash の鍵が複数ある段」を列に入れていない。i0-r15-03 と同じ族。断りの型は入口の誤り(ValueError)のままで、黙って誤った値は無いので、前例(i0-r14-05・i0-r15-03)に合わせて [直す]。直すときは文を合わせるだけで閉じず、候補が複数の枝も積み上げに載せるか、余裕の約束を測った形に書き直すかを決める。
+  証拠: PYTHONPATH=src python3 <S>/r16_critic/item0_r16_critic_probe_plain_equal_chain.py → 'levels   1: ... needs 13 frames of headroom' / 'levels  20: ... needs 55 ... CALL_FRAMES + levels = 50' / 'levels  40: ... needs 95 ... = 70' / 'levels  90: ... needs 195 ... = 120'(…_plain_equal_chain.out)。試験(残す): PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r16_colliding_frozendict_chain_frames.py -p no:cacheprovider → '3 failed, 1 passed'('two colliding 20-level FrozenDict chains need 55 frames of headroom; the contract says CALL_FRAMES + levels = 50 is enough')。<S> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt
+- **i0-r16-02** [止める](target: 実装, repeat_of: i0-r15-02, fix_files: ['src/bot/bt/core/values.py', 'src/bot/bt/core/api.py', 'src/bot/bt/core/contract.py'])
+  freeze は、核自身が作る入れ物(公開の FrozenDict・FrozenSet、FrozenList を持つ tuple)を辞書の鍵・集合の要素として受け付け、class を保つ。受け手が thaw(values.py 1567 行。OrderRequest.extra_dict() = api.py 164-167 行)で読むと、その鍵を dict / set / list に戻してから辞書・集合を作るので、インタプリタの TypeError: unhashable type が出る。5 形(FrozenDict を辞書の鍵 / FrozenSet を辞書の鍵 / FrozenList を持つ tuple を辞書の鍵 / FrozenDict を集合の要素 / FrozenSet を frozenset の要素)の全部で freeze は受け付け、thaw は TypeError。戦略が extra=(('k', {FrozenDict({'a': 1}): 3}),) の注文を出すと受け付けられ、約定の模型(他項目の差し込み口)が自分の on_order で order.extra_dict() を呼ぶと TypeError、捕まえなければ実行はインタプリタの TypeError で止まる(契約のどの誤りの型でもなく、落ち度の無い約定の模型の呼び出しの中で)。契約 values.py 92 行「thaw gives back a fresh list / dict / set」、PLAIN_DATA_RULE「read back as fresh copies」、api.py 165 行「as they were given」に反する。作業者は ROOTCAUSE §4 で「thaw と renew は核が作った入れ物からしか作らない(鍵は作った時に hash を取れた)ので変えない」と書いたが、thaw は鍵の型を変えるのでこの前提は当たらない。i0-r15-02 と同じ「核が辞書・集合を作るとき鍵・要素が hash を持つかを確かめない」族。第 15 周の核でも同じ(前からある)。格付け: 前の周までの [直す] の前例は既に断る・止まる道で型だけが違うものだったが、これは正しい入力(要件どおりの平らなデータを出す戦略と、公開の読み手を呼ぶ約定の模型)で実行が止まり、止まる場所が別の者の呼び出しになる。要件 §1 の「他項目が差し込む口」を通る注文の値が口の側から読めないので、信頼性を崩すとして [止める](迷ったので重い方)。
+  証拠: PYTHONPATH=src python3 <S>/r16_critic/item0_r16_critic_probe_thaw_container_keys.py → "FrozenDict as a dict key: freeze accepted -> thaw: TypeError: unhashable type: 'dict' | the fill model's order.extra_dict(): [\"TypeError: unhashable type: 'dict'\"] | run ok" ほか 4 形(…_thaw_container_keys.out)。捕まえない約定の模型: <S>/r16_critic/item0_r16_critic_probe_thaw_uncaught.out → "run raised TypeError unhashable type: 'dict'"。試験(残す): PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r16_accepted_keys_read_back.py -p no:cacheprovider → '10 failed'。第 15 周の核(git archive 0f2e07d を <S>/r16_critic/head_0f2e07d に取り出し -o pythonpath=)でも同じ 10 件が落ちる。<S> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt
+- **i0-r16-03** [直す](target: 実装, repeat_of: None, fix_files: ['src/bot/bt/core/values.py', 'src/bot/bt/core/contract.py'])
+  核の歩き(values.py 977 行 _walk。freeze・settle・renew・thaw)は、入れ物を物ごとではなく道ごとに作り直す。戦略が同じ入れ物を 2 か所から指す値(循環ではない共有。_walk が断るのは自分の道の上にある入れ物だけ)を渡すと、核は展開した木として作り、仕事の量が渡された物の数の指数になる。t_k = (t_{k-1}, t_{k-1}) を n 回(戦略の tuple は n + 1 個、入れ子 n は MAX_NESTING 100 の中): freeze は n = 18 で 0.65 秒、20 で 2.8 秒、22 で 11.7 秒。発注の道でも入れ子 20(物 21 個)で place_order の実行 34.4 秒、出口の箱(on_event の後に核が settle)の実行 23.2 秒、入れ子 40 なら実行が終わらない。値は正しく断りも出ず、核は受け付けも断りもしないまま止まらない。黙って誤った値・非決定性は無いので [直す]。共有を物ごとに 1 回だけ作り直す(id で覚える)か、展開した大きさに上限を置いて入口の誤りで断るかを作業者が決め、契約に書く。列に入れていない形: 相手の側に深い候補が 2 つずつある FrozenDict の比べ(i0-r16-01 の枝)も同じ理由で指数の仕事になる(試していない)。
+  証拠: PYTHONPATH=src python3 <S>/r16_critic/item0_r16_critic_probe_shared_dag.py → 'nesting 18 (the sender holds 19 tuples): freeze took 0.654 s' / 'nesting 20 ...: 2.834 s' / 'nesting 22 ...: 11.652 s'。<S>/r16_critic/item0_r16_critic_probe_shared_dag_engine.py → 'nesting 20 via place_order: run ok in 34.42 s' / 'nesting 20 via outbox: run ok in 23.17 s'。試験(残す): PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r16_shared_containers_bounded_work.py -p no:cacheprovider → '2 failed in 40.13s'(入れ子 30 の freeze と settle が子のプロセスで 20 秒以内に受け付けも断りもしない)。<S> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt
+- **i0-r16-04** [止める](target: 場面集, repeat_of: None, fix_files: ['tests/bt/battery/item_0/run_battery.py', 'tests/bt/battery/item_0/adapters/common.py', 'tests/bt/battery/item_0/scenes.py', 'tests/bt/battery/item_0/gen_definitions.py'])
+  第 r16-1 回に足した P0-2 の単位の場面のうち、正解が NO_INT の 5 場面(p2-s-text-subns・p2-s-float-subns・p2-ms-text-subns・p2-ms-float-subns・p2-us-text-subns)は、丸めずに断る対象と、時刻の変換を持たない対象を見分けられない。場面の測るもの(_UNIT_MEASURES)と検討表の能 3 は「ナノ秒の整数にならない値を黙って丸めないか」だが、adapters/common.py 147-148 行(入口が無い)と 153-154 行(入口が断る)が同じ not_supported になり、run_battery.correctness は全部「対応なし」にする。この周の対 調査結果の側の表(round_16/表_vhkby5.md)で行 A(新実装)と行 B の 5 場面は両方「対応なし」で、行 B の最良は時刻の単位の入口を 1 つも持たない対象から来る(survey_results/opp_gobacktest.tsv の 14 場面は全部 対応なし/not_supported。黙って丸めた freqtrade・barter は「不一致」)。どの対象も「正解と一致」にならない。場面集の規則 1「能力があるかは、その能力を使ったときに出るはずの結果(正解)が出たかで決める」に反する。リードの答え(VERDICTS run11 item0、08:50 UTC、i0-r15-05)「float が正確に持たない値では「断る」も正解に入れる(黙って丸めた値は不一致)」は場面係の起動(08:41:53)より後で、場面係は ROOTCAUSE_r16-1.md §5.2 の 1 でリードに聞いている。答えは既にあるので次の直しで当てる。場面集の側なので項目 0 の通過は止めず並行の直し(L-441)。直し方の向き: 「入口があり、その入口が断った」と「入口が無い」を採点で分け(文の読みでなく機械の欄で)、前者を NO_INT の場面の正解と一致に数える。
+  証拠: 試験(残す、場面係が直す): PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r16_no_int_scene_tells_refusal_from_no_entry.py -p no:cacheprovider → '5 failed, 1 passed'("p2-s-text-subns: the target that refuses to round (not_supported: core.to_nanos(値, 's') に '1704067200.1234567891'(単位 s)を渡した -> 例外で止まった TimestampUn...) and a target with no time conversion both grade '対応なし'" ほか)。表: round_16/表_vhkby5.md 130-133 行の P0-2 の行 A・B(5 場面とも 対応なし)。awk -F'\t' '$2 ~ /^p2-(s|ms|us)-/' tests/bt/battery/item_0/survey_results/opp_gobacktest.tsv → 14 行とも '対応なし not_supported'。
+- **i0-r16-05** [示唆](target: 場面集, repeat_of: None, fix_files: ['tests/bt/battery/item_0/scenes.py'])
+  マイクロ秒の「float が持つ値にナノ秒より細かい端数がある」形は、既知の時刻を 2024-01-01 に固定したので作れない(この大きさの float の刻みは 0.25 µs)と試験で示している。刻みがナノ秒より細かくなる小さい時刻(1970 年 1 月の 2^40 µs 未満など)を既知の時刻に使えば、この形も値の場面にでき、単位 × 形の格子の欠けを埋められる。要件は既知の時刻を 1 つに決めていない。
+  証拠: tests/bt/battery/item_0/scenes.py 377-383 行(p2-us-float-held の導き方の最後の文「「持つ値にナノ秒より細かい端数がある」float はマイクロ秒では作れない」)。
+
+`structural_change_since_prev`: True。記録: `/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_16/CRITIC.md`。
+
+### 審査員 0#16(構造の変化ありのため 6 体。逐語。割り当て: k=0,2 は表 1(A = 新実装)、k=1 は表 2(B = 新実装))
+
+#### 盲検:0#16:current0
+
+- choice: 左
+- reasons(逐語): 表の観点ごとの節のセルを 1 つずつ数え直した。数え直した結果は、表の上部にある集計と一致した。
+正しさ(正解と一致の数、A 対 B):
+- P0-1: 3/3 対 1/3。B は p1-merge-by-time と p1-typed-events が対応なしで、一致は p1-one-call-per-event の 1 件だけ。
+- P0-2: 13/18 対 2/18。A の対応なしは -subns の 5 場面。B で一致したのは p2-event-time-exact と p2-one-ns-apart の 2 件だけで、残りは対応なし。
+- P0-3: 11/11 対 1/11。B で一致したのは p3-bar だけ。
+- P0-4: 3/3 対 1/3。B は p4-received-time が対応なし、p4-future-read-attempt が不一致(未来を読む試みの全部が例外で止まってはいない)。
+- P0-5: 3/3 対 1/3。B で一致したのは p5-same-stream-order だけ。
+- P0-6: 3/3 対 0/3。
+- P0-7: 5/5 対 2/5。B で一致したのは fill-model-swap と cost-model-swap の 2 件。
+7 観点のすべてで A が B を上回る。また、どの場面でも B が A より良い判定を得ていない。A が一致しなかった P0-2 の 5 場面は、B でも対応なしだった。
+再現(2 回の実行で同じ)は両者とも全観点で満数、合計 46/46 で差は無い。
+以上から、正しさでは全観点で A が優れ、再現は同等である。場面数の多い P0-2 と P0-3 を除いても、残る 5 観点すべてで A が上回る。なお、B の注記には型が入らなかった升目が 15 個あるが、A の注記では無しとなっている。
+- missing_in_choice(逐語): A(行 A)は P0-2 の次の 5 場面が「対応なし」で、正解と一致していない。p2-s-text-subns、p2-s-float-subns、p2-ms-text-subns、p2-ms-float-subns、p2-us-text-subns(ナノ秒未満の端数を含む秒・ミリ・マイクロの時刻表現)。ほかの観点の場面はすべて正解と一致し、2 回の実行でも同じ結果だった。
+
+#### 盲検:0#16:current1
+
+- choice: 右
+- reasons(逐語): 表から数え直した「正解と一致」の数は、7 観点すべてで行 B が行 A を上回っている。
+- P0-1: B 3/3、A 1/3。A は p1-merge-by-time と p1-typed-events が対応なし。
+- P0-2: B 13/18、A 2/18。A で一致したのは p2-event-time-exact と p2-one-ns-apart だけで、残り 16 場面は対応なし。
+- P0-3: B 11/11、A 1/11。A で一致したのは p3-bar だけで、残り 10 場面は対応なし。
+- P0-4: B 3/3、A 1/3。A は p4-received-time が対応なしで、p4-future-read-attempt は不一致。
+- P0-5: B 3/3、A 1/3。A は p5-same-time-twice と p5-hand-over-order が対応なし。
+- P0-6: B 3/3、A 0/3。
+- P0-7: B 5/5、A 2/5。A は latency-model-swap、cost-per-unit、account-swap が対応なし。
+- 計: B 41/46、A 8/46。表の計の欄と一致する。
+
+A だけに「不一致」が 1 件ある(p4-future-read-attempt)。B には不一致も結果なしも無い。
+表の注記によると、A は P0-1・P0-3・P0-4・P0-5・P0-7 の升目 15 個で型が入らなかった。B は無し。
+
+再現は A・B ともに、7 観点すべてで「2 回の実行で同じ」だった(46/46)。差は無い。
+
+場面の数が多い P0-2 と P0-3 を除いても、残りの 5 観点はすべて B が上回る。正しさでは B が優れ、再現では同等なので、行 B(右)を選ぶ。
+- missing_in_choice(逐語): 行 B に足りない場面は P0-2 の秒以下の端数を持つ 5 場面で、いずれも正しさが対応なし。
+- p2-s-text-subns
+- p2-s-float-subns
+- p2-ms-text-subns
+- p2-ms-float-subns
+- p2-us-text-subns
+
+ほかの観点には、B の足りない場面は無い。
+
+#### 盲検:0#16:current2
+
+- choice: 左
+- reasons(逐語): 表から数え直した結果(表の集計と一致)。正しさ(正解と一致の数): P0-1 A 3/3 対 B 1/3、P0-2 A 13/18 対 B 2/18、P0-3 A 11/11 対 B 1/11(B は p3-bar だけ一致)、P0-4 A 3/3 対 B 1/3(B は p4-received-time が対応なし、p4-future-read-attempt が不一致)、P0-5 A 3/3 対 B 1/3、P0-6 A 3/3 対 B 0/3、P0-7 A 5/5 対 B 2/5。7 観点すべてで A が B より多く、B が上回る観点も、B が一致して A が一致しない場面もない。場面数の多い P0-2 を除いても、残りの 6 観点すべてで A が上回る。A には不一致も結果なしも無い。B には不一致が 1 件(p4-future-read-attempt)あり、ほかの未一致は対応なしである。再現(2 回の実行で同じ)は両者とも全観点で満点(46/46)で差がない。したがって正しさは全観点で A が優れ、再現は同等なので、A(左)を選ぶ。
+- missing_in_choice(逐語): P0-2 の 1 ナノ秒未満の端数を含む 5 場面(p2-s-text-subns、p2-s-float-subns、p2-ms-text-subns、p2-ms-float-subns、p2-us-text-subns)。A はどれも「対応なし」で、再現は 2 回とも同じ。そのほかの観点(P0-1、P0-3〜P0-7)には、A に足りない場面はない。
+
+#### 盲検:0#16:survey0
+
+- choice: 左
+- reasons(逐語): 表の各セルを数え直した(A/B の順)。場面の数で重み付けせず、観点ごとに比べた。
+「正解と一致」の数: P0-1 3/3 と 3/3、P0-2 13/18 と 8/18、P0-3 11/11 と 10/11、P0-4 3/3 と 3/3、P0-5 3/3 と 3/3、P0-6 3/3 と 3/3、P0-7 5/5 と 5/5。合計は 41/46 と 35/46。
+「2 回の実行で同じ」の数: 両方とも全観点で満点(P0-1 3/3、P0-2 18/18、P0-3 11/11、P0-4 3/3、P0-5 3/3、P0-6 3/3、P0-7 5/5、合計 46/46)。再現性には差が無い。
+正しさの差は 2 つの観点に出ている。
+・P0-2: B は p2-s-text、p2-ms-text、p2-ms-float-held、p2-us-text、p2-us-float-held の 5 場面が「対応なし」で、A はこの 5 場面で正解と一致した。ナノ秒の整数で表せる時刻(秒・ミリ・マイクロの文字列と、float が持てる値)を B は変換できていない。
+・P0-3: p3-mixed-one-run(値の場面)が B では「対応なし」、A では正解と一致した。
+A が一致しなかった 5 場面は、B も同じく「対応なし」だった。したがって、B が A より良いセルは 1 つも無い。7 観点のうち 2 観点(P0-2、P0-3)で A が上回り、残りの 5 観点は同じ。一方の観点の場面数に引きずられた結論ではない。
+注記として 2 点ある。ナノ秒より細かい端数を持つ場面(subns)は、定義上「正解の int64 ナノ秒が無い」とされ、断れば「対応なし」になる。この 5 場面で A と B は同じ結果なので、差には影響しない。また、p7-account-swap では行 B に寄せた設定つき対象のうち 16 件が「結果なし」だったが、この行には残りの対象の最良(正解と一致)が載っている。
+- missing_in_choice(逐語): A が「正解と一致」に届かなかったのは P0-2 の 5 場面で、どれも「対応なし」(2 回の実行で同じ)だった: p2-s-text-subns、p2-s-float-subns、p2-ms-text-subns、p2-ms-float-subns、p2-us-text-subns。定義では、この 5 場面は正解のナノ秒整数が無く、対象が断れば「対応なし」になる。そのため、A に欠けた能力と言い切れるかどうかは表だけでは決められない。
+
+#### 盲検:0#16:survey1
+
+- choice: 右
+- reasons(逐語): 表の各セルを自分で数え直した結果、観点ごとの「正解と一致」の数は、A と B の順に P0-1 3/3 と 3/3、P0-2 8/18 と 13/18、P0-3 10/11 と 11/11、P0-4 3/3 と 3/3、P0-5 3/3 と 3/3、P0-6 3/3 と 3/3、P0-7 5/5 と 5/5 だった(計 35/46 と 41/46)。表の集計行と一致する。
+
+正しさで差があるのは 2 観点で、どちらも B が上である。
+- P0-2: A が「対応なし」、B が「正解と一致」の場面が 5 つある(p2-s-text、p2-ms-text、p2-ms-float-held、p2-us-text、p2-us-float-held)。残りの 13 場面は両者とも同じ結果である。
+- P0-3: p3-mixed-one-run が A は「対応なし」、B は「正解と一致」である。
+
+残りの 5 観点(P0-1・P0-4・P0-5・P0-6・P0-7)は全場面で同じ結果で、B が A より悪い場面は 1 つも無い。再現は、A と B ともに全 46 場面が「2 回の実行で同じ」で(各観点で満数、46/46)、差は無い。
+
+場面数の多い P0-2 を除いても、P0-3 で B が上である。どの観点でも B は A 以下にならないので、B(右)を選ぶ。
+- missing_in_choice(逐語): B に足りない場面は P0-2 の 5 つで、いずれも「対応なし」である(再現は 2 回の実行で同じ)。p2-s-text-subns、p2-s-float-subns、p2-ms-text-subns、p2-ms-float-subns、p2-us-text-subns。この 5 場面は A も同じく「対応なし」である。
+
+#### 盲検:0#16:survey2
+
+- choice: 左
+- reasons(逐語): 表の各セルを自分で数え直した(読んだのは指定の 2 ファイルだけ)。表の集計と一致した。【正しさ(正解と一致)】P0-1: A 3/3・B 3/3。P0-2: A 13/18・B 8/18。A が一致しなかった 5 件(p2-s-text-subns・p2-s-float-subns・p2-ms-text-subns・p2-ms-float-subns・p2-us-text-subns)は、B でもすべて「対応なし」。B はこれに加えて p2-s-text・p2-ms-text・p2-ms-float-held・p2-us-text・p2-us-float-held の 5 件も「対応なし」で、計 10 件。P0-3: A 11/11・B 10/11(B は p3-mixed-one-run が「対応なし」)。P0-4: 3/3 と 3/3、P0-5: 3/3 と 3/3、P0-6: 3/3 と 3/3、P0-7: 5/5 と 5/5 で同じ。計は A 41/46・B 35/46。どちらの行にも「不一致」と「結果なし」は無い。【再現(2 回の実行で同じ)】両方とも全観点で 46/46 で、差は無い。【観点ごとの比較】差があるのは P0-2 と P0-3 の 2 観点で、どちらも A が上だった。ほかの 5 観点は同じ。B が A を上回る観点は 1 つも無い。場面の多い P0-2(18 件)の差を除いても、P0-3 で A が上。A が一致しなかった場面は、B でも一致していない。つまり A は B を包含して上回る。これにより、A の方がより正しく、再現性は同等だと判断した。なお注記によると、行 B の結果は 54 件の設定つき対象から最良のものを寄せたもので、その多くで型が入らなかった升目がある。行 A にはその種の升目が無い。この注記は判定に使っていない。
+- missing_in_choice(逐語): 行 A(選んだ側)で「正解と一致」に届かなかったのは、P0-2 のナノ秒未満を含む時刻の 5 場面(p2-s-text-subns・p2-s-float-subns・p2-ms-text-subns・p2-ms-float-subns・p2-us-text-subns)。5 件とも正しさは「対応なし」で、再現は「2 回の実行で同じ」。ほかの 41 場面はすべて「正解と一致」かつ「2 回の実行で同じ」。
+
+### リードの読み(2026-09-25 11:55 UTC)
+
+- 審査員は対現状・対調査とも 3 体が新実装(k=0,2 左 = 新実装、k=1 右 = 新実装)。3 回連続で 6/6。連敗 0/0。
+- 実装の側 [止める] 1(i0-r16-02 = 核が作った入れ物を鍵に持つ値を freeze は受け付け thaw で TypeError。正しい入力で約定の模型の呼び出しの中で止まる = 射程の中)・[直す] 2(01 = 衝突する鍵が複数ある段の枠数、03 = 共有された入れ物の展開が指数)。射程の外の反例は 0 件(L-445 の射程で測っている)。
+- 場面集の側 [止める] 1(i0-r16-04 = NO_INT の 5 場面が「断った」と「入口が無い」を見分けられない。リードの答え(08:50 UTC)が場面係の起動(08:41)より後だった = リードの答えの時機の族、3 回目)・[示唆] 1。第 17 周の場面係が直す。
+- 表 0#16 で新実装 41/46 の 5 件の外れは、この見分けの穴によるもの(新実装は断っている = 正解の側)。
