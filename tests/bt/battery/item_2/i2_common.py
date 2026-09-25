@@ -125,3 +125,32 @@ def issue_schedule(bar_times: list[int], actions: list[dict]) -> dict[int, list[
                 k = i
         out.setdefault(k, []).append(a)
     return out
+
+
+def bar_rows(inp):
+    """Bars for a bar-driven tool, from the scene itself (no answer is computed):
+    - the scene's own bar events when it has any (t = the bar's end, span_ns);
+    - otherwise one bar per trade print (open = high = low = close = the print's price, volume = its size,
+      t = the print's time, span_ns = 0: the bar is the print).
+    Book snapshots have no bar form; a scene without prints or bars gives no bars."""
+    bars = [dict(t=e["t"], span_ns=e["span_ns"], o=e["o"], h=e["h"], l=e["l"], c=e["c"], v=e["v"])
+            for e in inp["market"] if e["type"] == "bar"]
+    if bars:
+        return bars, "bar"
+    return [dict(t=e["t"], span_ns=0, o=e["px"], h=e["px"], l=e["px"], c=e["px"], v=e["qty"])
+            for e in inp["market"] if e["type"] == "trade"], "trade"
+
+
+def single_fee_rate(inp, tool):
+    """For a tool with ONE fee rate: taker_rate when every order is a market / stop order, maker_rate when every
+    order is a plain limit order, the common rate when both rates are equal; otherwise NotExpressible."""
+    c = inp.get("costs") or {}
+    mk, tk = float(c.get("maker_rate", 0.0)), float(c.get("taker_rate", 0.0))
+    if mk == tk:
+        return tk
+    types = {a["type"] for a in places(inp)}
+    if types <= {"market", "stop"}:
+        return tk
+    if types == {"limit"}:
+        return mk
+    raise NotExpressible(f"{tool}: 手数料の率は 1 つで、maker と taker で違う率を同じ実行の中で渡せない")

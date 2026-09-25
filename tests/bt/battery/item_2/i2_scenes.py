@@ -102,8 +102,31 @@ def base_input(**kw):
             inp["rules"].update(v)
         else:
             inp[k] = v
-    inp["market"] = sorted(inp["market"], key=lambda e: e["t"])  # stable: same-time events keep list order
+    inp["market"] = consistent(sorted(inp["market"], key=lambda e: e["t"]))  # stable: same-time events keep list order
     return inp
+
+
+def consistent(market):
+    """Make the market events agree with each other: when a trade prints at a price WORSE than the
+    displayed best quote on the side it trades against (a sell below the best bid, a buy above the
+    best ask), put a book snapshot at the same time, just before the trade, without the levels better
+    than the print on that side (they cannot still be resting when the print happens).  Nothing is
+    changed when the market already agrees.  Applied to every scene by base_input."""
+    out, cur = [], None
+    for e in market:
+        if e["type"] == "book":
+            cur = e
+        elif e["type"] == "trade" and cur is not None:
+            if e["aggressor"] == "sell" and cur["bids"] and cur["bids"][0][0] > e["px"]:
+                cur = {"t": e["t"], "type": "book", "bids": [l for l in cur["bids"] if l[0] <= e["px"]],
+                       "asks": [list(l) for l in cur["asks"]]}
+                out.append(cur)
+            elif e["aggressor"] == "buy" and cur["asks"] and cur["asks"][0][0] < e["px"]:
+                cur = {"t": e["t"], "type": "book", "bids": [list(l) for l in cur["bids"]],
+                       "asks": [l for l in cur["asks"] if l[0] >= e["px"]]}
+                out.append(cur)
+        out.append(e)
+    return out
 
 
 # ---------------------------------------------------------------- oracle helpers
@@ -576,10 +599,10 @@ TIER_T = T0 + 500 * MS
 
 
 def tier_input(tier, with_through=True):
-    mk = [book(T0, [(9999, 5), (9995, 2)], [(10001, 5)]), trade(T0, 10000, 0.1, "buy"),
+    mk = [book(T0, [(9995, 2), (9990, 5)], [(10001, 5)]), trade(T0, 9998, 0.1, "buy"),
           trade(T0 + 1010 * MS, 9995, 1, "sell"), trade(T0 + 1020 * MS, 9995, 1.5, "sell")]
     if with_through:
-        mk.append(trade(T0 + 1030 * MS, 9994, 1, "sell"))
+        mk.append(trade(T0 + 1030 * MS, 9994, 2, "sell"))
     return base_input(market=mk, actions=[place(TIER_T, "o1", "buy", "limit", 2, px=9995)],
                       fill_model={"tier": tier, "cancel_stance": "none", "bar_ns": 1 * SEC},
                       checkpoints={"c1": T0 + 1015 * MS, "c2": T0 + 1025 * MS, "c3": T0 + 1035 * MS,
@@ -654,15 +677,30 @@ TIER_TEXT = {
     2: "段 2 = 1 秒の足。出した足(0 秒目)より後の足で安値が指値に届いた最初の足の終わり(T0+2s)に全量。c1〜c3 は 0、cend は 2。",
     3: "段 3 = 指値に届いた約定の事象が来た時点で全量。9995(T0+1010ms)で届く → c1 から 2、最初の約定の時刻 T0+1010ms。",
     4: "段 4 = 指値に届いた約定の数量まで埋まる(列なし)。1010ms に 1、1020ms に残り 1 → c1 = 1、c2 以後 2。",
-    5: "段 5 = 列: 出した時の 9995 の表示 2 が先行。1010ms の 1 と 1020ms の 1.5 で先行 2 を消化し 0.5 が自分へ、1030ms の 9994 は跨ぐので残り 1.5 → c1 = 0、c2 = 0.5、c3・cend = 2。",
+    5: "段 5 = 列: 出した時の 9995 の表示 2 が先行。1010ms の 1 と 1020ms の 1.5 で先行 2 を消化し 0.5 が自分へ、1030ms の 9994 x 2 は跨ぐので残り 1.5 → c1 = 0、c2 = 0.5、c3・cend = 2。",
 }
 
 for _tier in range(6):
     scene(f"c2-5-tier{_tier}", "C2-5", "能力", f"約定の模型の段 {_tier} を選べ、選んだ段の規則どおりに埋まる",
           f"段 {_tier} を選べること(選んだ段の埋まり方の累計が正解と一致)",
-          "指値 9995 の買い 2(T0+500ms)。板の 9995 に外部の 2。約定 9995 x 1(T0+1010ms)・9995 x 1.5(1020ms)・9994 x 1(1030ms)。"
+          "指値 9995 の買い 2(T0+500ms)。板の最良の買い 9995 に外部の 2。約定 9995 x 1(T0+1010ms)・9995 x 1.5(1020ms)・9994 x 2(1030ms)。"
           + TIER_TEXT[_tier] + "(段の規則の文は道具台帳 §2.1 の 1 行の定義を、この場面の入力で測れる形に場面係が具体にしたもの)",
           tier_input(_tier), tier_path)
+
+
+def queue_input():
+    mk = [book(T0, [(9995, 1.2), (9990, 5)], [(10001, 5)]), trade(T0, 10000, 0.1, "buy"),
+          trade(T0 + 10 * MS, 9995, 0.5, "sell"), trade(T0 + 20 * MS, 9995, 0.9, "sell"),
+          trade(T0 + 30 * MS, 9995, 0.4, "sell")]
+    return base_input(market=mk, actions=[place(T0 + 1 * MS, "o1", "buy", "limit", 1, px=9995)],
+                      fill_model={"tier": 5, "cancel_stance": "none", "bar_ns": 1 * SEC},
+                      checkpoints={"c1": T0 + 15 * MS, "c2": T0 + 25 * MS, "c3": T0 + 35 * MS}, end_t=T0 + 1 * SEC)
+
+
+scene("c2-5-queue-value", "C2-5", "値", "段 5(列の位置)で、先行の量を約定が消化した残りだけ自分が埋まる(値)",
+      "段 5 の列の位置の計算の値(先行 1.2、約定 0.5・0.9・0.4)",
+      "9995 の外部の買い 1.2 の後ろに買い 1。0.5 で先行 0.7、0.9 で先行 0 になり残り 0.2 が自分へ、0.4 で 0.4 → c1 = 0、c2 = 0.2、c3 = 0.6。",
+      queue_input(), tier_path)
 
 
 def _o_tier6(inp):
@@ -702,7 +740,7 @@ def cxl_input(stance, **extra):
 
 def cxl_filled(inp):
     """Queue ahead of us after the declared stance, then FIFO consumption by the trade
-    at our price (catalogue §2.2 stances; prob = hftbacktest-documented ProbQueueModel form)."""
+    at our price (catalogue §2.2 stances; prob = the documented probabilistic queue-model form, front and back shares by f(x) = x ** n)."""
     fm, a = inp["fill_model"], action(inp, "o1")
     L, q = a["px"], a["qty"]
     st = fm["cancel_stance"]
@@ -727,7 +765,8 @@ def cxl_filled(inp):
                 chg = prev - new
                 if chg > 0:
                     front, back = ahead, prev - ahead
-                    prob = back / (back + front)  # f(x) = x
+                    n = fm.get("prob_n", 1)
+                    prob = back ** n / (back ** n + front ** n)  # f(x) = x ** n
                     ahead = min(front - (1 - prob) * chg + min(back - prob * chg, 0.0), new)
             prev = new
     at_level = [e["qty"] for e in inp["market"] if e["type"] == "trade" and e["px"] == L]
@@ -748,12 +787,18 @@ CXL_TEXT = {
 }
 
 for _st, _extra in (("none", {}), ("discount_at_entry", {"cancel_rate": 0.4}), ("snapshot_cap", {}),
-                    ("l3", {}), ("prob", {"prob_f": "identity"})):
+                    ("l3", {}), ("prob", {"prob_f": "power", "prob_n": 1})):
     scene(f"c2-6-{_st.replace('_', '-')}", "C2-6", "能力", f"先行注文の取り消しの扱い「{CXL_TEXT[_st][0]}」を選べ、その規則どおりに埋まる",
           "先行注文の取り消しの扱いを選べること(埋まる量が立場の規則の正解と一致)",
           "9995 の外部の買い 5 の後ろに買い 3(先行 5)。外部の 3 が後ろに付き(板 8)、4 が取り消される(板 4。L3 の場面では e1・e2・e3・e6)。9995 の約定 4.5。"
           + CXL_TEXT[_st][1],
           cxl_input(_st, **_extra), cxl_filled)
+
+scene("c2-6-prob-power2", "C2-6", "値", "確率型の列で f(x) = x² のとき、先行の減り方が式どおりの値になる(値)",
+      "確率型の列の模型の値(f(x) = x²)",
+      "c2-6-prob と同じ入力で f(x) = x²。T0+3ms の減少 4: prob = 3² / (3² + 5²) = 9/34、前 = 5 − (25/34) × 4 + min(3 − (9/34) × 4, 0) = 5 − 100/34。"
+      "9995 の約定 4.5 − 前 → 自分へ min(3, 4.5 − 前)。",
+      cxl_input("prob", prob_f="power", prob_n=2), cxl_filled)
 
 # ======================= C2-7 板を辿る成行・市場影響 =======================
 
@@ -961,15 +1006,18 @@ scene("c2-10-maker", "C2-10", "値", "待っていた指値の約定に maker �
 
 def _o_spread(inp):
     a = action(inp, "o1")
-    return {"avg_px.o1": inp["costs"]["mid"] + inp["costs"]["spread"] / 2, "filled.o1": a["qty"]}
+    ref = [e for e in inp["market"] if e["type"] == "trade" and e["t"] <= a["t"]][-1]["px"]
+    assert book_at(inp, a["t"]) is None  # no book: the half spread can only come from the cost model
+    return {"avg_px.o1": ref + inp["costs"]["spread"] / 2, "filled.o1": a["qty"]}
 
 
-scene("c2-10-spread", "C2-10", "値", "スプレッドの費用: 成行の買いは仲値 + スプレッドの半分で埋まる",
-      "スプレッド",
-      "仲値 10000、スプレッド 2(板は 9999 / 10001 で同じ)。成行の買い 1 → 10000 + 1 = 10001。",
-      base_input(market=[book(T0, [(9999, 5)], [(10001, 5)]), trade(T0, 10000, 0.1, "buy"), trade(T0 + 5 * MS, 10000, 5, "buy")],
+scene("c2-10-spread", "C2-10", "値", "スプレッドの費用: 板の無い場面で、成行の買いは基準の値(直前の約定)+ スプレッドの半分で埋まる",
+      "スプレッド(規則 market_ref = last_trade。板を渡さないので、スプレッドの模型を使わずにこの値は出ない)",
+      "板は無く、約定は 10000 だけ。スプレッド 2 → 成行の買い 1 は 10000 + 2 / 2 = 10001。スプレッドを掛けなければ 10000 になる。",
+      base_input(market=[trade(T0, 10000, 0.1, "buy"), trade(T0 + 5 * MS, 10000, 5, "buy")],
                  actions=[place(T0 + 1 * MS, "o1", "buy", "market", 1)],
-                 costs=dict(ZERO_COSTS, spread=2.0, mid=10000.0)),
+                 rules={"market_ref": "last_trade"},
+                 costs=dict(ZERO_COSTS, spread=2.0)),
       _o_spread)
 
 
@@ -1183,10 +1231,36 @@ scene("c2-11-jpy", "C2-11", "値", "円以外で値が付く商品の損益を�
 
 # ======================= C2-12 JPX データ待ち =======================
 _jw_ctrl = tier_input(5)
-_jw_var = base_input(product=JPX_STOCK, rules=JPX_RULES,
-                     market=[{"t": jst(10, 0), "type": "bar", "o": 1500.0, "h": 1502.0, "l": 1495.0, "c": 1500.0, "v": 10000.0},
-                             {"t": jst(10, 1), "type": "bar", "o": 1500.0, "h": 1501.0, "l": 1496.0, "c": 1497.0, "v": 8000.0}],
-                     actions=[place(jst(10, 0, 30), "o1", "buy", "limit", 100, px=1496)],
+def jbar(end, o, h, l, c, v):
+    """A 1-minute bar event; `t` is the bar's END (the time it is known), `span_ns` its length."""
+    return {"t": end, "type": "bar", "span_ns": 60 * SEC, "o": float(o), "h": float(h), "l": float(l), "c": float(c), "v": float(v)}
+
+
+JPX_BARS = [jbar(jst(10, 1), 1500, 1502, 1497, 1500, 10000), jbar(jst(10, 2), 1499, 1500, 1495, 1497, 8000),
+            jbar(jst(10, 3), 1498, 1499, 1494, 1495, 9000), jbar(jst(10, 4), 1495, 1497, 1493, 1496, 7000)]
+
+
+def _o_jpx_bar(inp):
+    """Tier 2 on bars: the first bar that STARTS after the placement and whose low reaches the limit fills
+    in full at its end, at the limit (the scene keeps that bar's open above the limit, so no gap price)."""
+    a = action(inp, "o1")
+    for b in inp["market"]:
+        if b["type"] == "bar" and b["t"] - b["span_ns"] >= a["t"] and b["l"] <= a["px"]:
+            assert b["o"] > a["px"]
+            return {"filled.o1": a["qty"], "avg_px.o1": a["px"], "first_fill_t.o1": b["t"]}
+    raise AssertionError("scene must fill")
+
+
+scene("c2-12-jpx-bar-value", "C2-12", "値", "JPX の 1 分足だけの場面で、足の段(段 2)の指値は足の値どおりに埋まる(データ待ちになるのは板・ティックの段だけ)",
+      "JPX の足での約定の値(段 2。出した足の中の安値は使わない)",
+      "10:01:30 JST に指値 1496 の買い 100。出した足(10:01〜10:02、安値 1495)は使わない。次の足(10:02〜10:03)の安値 1494 ≤ 1496 → その足の終わり 10:03 に 1496 で 100。",
+      base_input(product=JPX_STOCK, rules=JPX_RULES, market=list(JPX_BARS),
+                 actions=[place(jst(10, 1, 30), "o1", "buy", "limit", 100, px=1496)],
+                 fill_model={"tier": 2}, end_t=jst(10, 5)),
+      _o_jpx_bar)
+
+_jw_var = base_input(product=JPX_STOCK, rules=JPX_RULES, market=list(JPX_BARS),
+                     actions=[place(jst(10, 1, 30), "o1", "buy", "limit", 100, px=1496)],
                      fill_model={"tier": 5, "cancel_stance": "none"}, end_t=jst(10, 5))
 scene("c2-12-jpx-wait", "C2-12", "能力", "JPX の板・ティックが無いまま列の模型(段 5)を求めると、足で代用せずに断る(データ待ち)",
       "JPX のデータ待ちの扱い",
@@ -1205,10 +1279,10 @@ NOUNS = {
              "JPX の取引時間": ["c2-3-jpx-session"], "JPX の値幅制限": ["c2-3-jpx-limit"], "FX の規則": ["c2-3-fx-weekend"]},
     "C2-4": {"拒否": ["c2-4-reject"], "時間切れ": ["c2-4-timeout"], "状態不明を保持し自動で再送しない": ["c2-4-unknown", "c2-4-timeout"],
              "Kill Switch での停止": ["c2-4-kill"]},
-    "C2-5": {f"段 {k}": [f"c2-5-tier{k}"] for k in range(7)},
-    "C2-6": {"何もしない(95)": ["c2-6-none"], "出した瞬間に割り引く(57)": ["c2-6-discount-at-entry"],
-             "取消の時点で繰り上がる(104)": ["c2-6-l3"], "印を付けて列に残す(98)": ["c2-6-l3"],
-             "写真の量で先行を下げる(90)": ["c2-6-snapshot-cap"], "確率型の列の模型": ["c2-6-prob"]},
+    "C2-5": dict({f"段 {k}": [f"c2-5-tier{k}"] for k in range(7)}, **{"列の位置の値": ["c2-5-queue-value"]}),
+    "C2-6": {"何もしない": ["c2-6-none"], "出した瞬間に割り引く": ["c2-6-discount-at-entry"],
+             "取消の時点で繰り上がる": ["c2-6-l3"], "印を付けて列に残す": ["c2-6-l3"],
+             "写真の量で先行を下げる": ["c2-6-snapshot-cap"], "確率型の列の模型": ["c2-6-prob", "c2-6-prob-power2"]},
     "C2-7": {"板を辿る成行": ["c2-7-walk", "c2-7-walk-exhaust"], "市場影響の関数": ["c2-7-impact-sqrt", "c2-7-impact-permanent", "c2-5-tier6"]},
     "C2-8": {"楽観側と悲観側の両方で回す": ["c2-8-range", "c2-8-both-required"], "幅で出す": ["c2-8-range"]},
     "C2-9": {"配信の遅れ": ["c2-9-order-feed"], "発注の遅れ": ["c2-9-order-feed", "c2-9-cancel-late"],
@@ -1220,7 +1294,7 @@ NOUNS = {
     "C2-11": {"円建て": ["c2-11-jpy"], "証拠金・レバレッジ": ["c2-11-margin"], "強制決済": ["c2-11-liquidation"],
               "建玉の時間(露出の時計)": ["c2-11-exposure"], "脚ごとの費用": ["c2-11-legs"],
               "実現/評価損益": ["c2-11-pnl"], "分割/併合の建玉反映": ["c2-11-split", "c2-11-reverse-split"]},
-    "C2-12": {"データ待ちの明示(足で代用しない)": ["c2-12-jpx-wait"]},
+    "C2-12": {"データ待ちの明示(足で代用しない)": ["c2-12-jpx-wait"], "足の段は JPX でも使える": ["c2-12-jpx-bar-value"]},
 }
 
 # Nouns of the requirement rows that are deliberately NOT a scene, with the reason.
@@ -1228,8 +1302,8 @@ NOT_SCENES = {
     "C2-5": [("段(既定)= そのまま使ったときの段",
               "要件の行(REQUIREMENTS §2 C2-5)は候補の道具の性質として段(既定)を挙げる。新実装に既定の約定の模型を持たせるべきか・持たせないべきかは"
               " §2 の行(委任文 §2 の項目 2「段 0〜6 を全部選べる」)に無く、正解を決めると要件を足すことになる。場面にできない観点として批評家が見る。")],
-    "C2-6": [("104 と 98 の区別",
-              "取消の時点で繰り上がる(104)と、印を付けて通り過ぎる(98)は、どの約定の列でも自分の埋まる量と時刻が同じ(先行の取消済みの分は"
+    "C2-6": [("取消の時点で繰り上がる立場と、印を付けて通り過ぎる立場の区別",
+              "取消の時点で繰り上がる立場と、印を付けて通り過ぎる立場は、どの約定の列でも自分の埋まる量と時刻が同じ(先行の取消済みの分は"
               "どちらでも約定の数量を消費しない)。観測できる結果に差が出ないので、1 つの場面(c2-6-l3)で両方を測る。")],
     "C2-12": [("完了の判定に混ぜずに別立てで書く",
                "報告の書き方(委任文 §3「完了の条件」)であり、エンジンの振る舞いではない。場面にできない観点として批評家が見る。")],

@@ -113,7 +113,7 @@ class Hftbacktest:
                      .constant_order_latency(g("order"), g("notice"))
                      .tick_size(prod["tick"]).lot_size(prod["qty_step"]).last_trades_capacity(1000))
             if fm.get("cancel_stance") == "prob":
-                asset = asset.power_prob_queue_model(1.0)
+                asset = asset.power_prob_queue_model(float(fm.get("prob_n", 1)))
             else:
                 asset = asset.risk_adverse_queue_model()
             asset = asset.partial_fill_exchange()
@@ -143,6 +143,8 @@ class Hftbacktest:
         acts = sorted(inp["actions"], key=lambda a: a["t"])
         ai = 0
         fee_prev = 0.0
+        bal_prev = float(hbt.state_values(0).balance)
+        pos_prev = float(hbt.state_values(0).position)
         labels = [(e["t"] + feed, e["label"]) for e in inp["market"] if e.get("label")]
         data_start = min(e["t"] for e in inp["market"])  # the tool's clock starts at the first exchange time
         now = hbt.current_timestamp
@@ -199,12 +201,25 @@ class Hftbacktest:
                     last_status[ref] = o.status
                 del q
             dfee = fee_now - fee_prev
+            bal_now = float(sv.balance)
+            pos_now = float(sv.position)
             if step_fills:
                 tot = sum(f["qty"] for f in step_fills)
                 for f in step_fills:
                     f["fee"] = dfee * f["qty"] / tot
+                if len(step_fills) == 1:
+                    # one order filled in this step, possibly across several price levels: the tool's own
+                    # balance change (cash moves by -price*qty for a buy, excluding the fee) gives its notional
+                    f = step_fills[0]
+                    sign = 1.0 if places[f["ref"]]["side"] == "buy" else -1.0
+                    notional = -(bal_now - bal_prev) * sign
+                    # only when the tool's own position moved by the same quantity (its accounts agree with
+                    # its order record); otherwise the order record (last execution price) is reported as is
+                    if notional > 0 and abs(abs(pos_now - pos_prev) - f["qty"]) <= 1e-9:
+                        f["px"] = notional / f["qty"]
                 fills.extend(step_fills)
             fee_prev = fee_now
+            bal_prev, pos_prev = bal_now, pos_now
         for oid, ref in refs.items():
             if ref in orders_rec:
                 continue
