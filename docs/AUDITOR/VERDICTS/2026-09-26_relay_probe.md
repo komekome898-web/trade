@@ -92,3 +92,51 @@
 - 4 [直す]: 経路 ②③ の script を逐語で貼った。①にだけ貼っていた理由は無い(手抜き)。
 - 5 [聞く]: 当たっている。「起動の手順を変える」はリードの語と §0 に書いた。右の逐語で裏付けられるのは「直す」ことだけ。直し方は 2 手目の委任文の §0.1 の表で出す。
 - 6 [確認]: 解除ファイルは作っていない。数えられたのは、関門の拒否の出力(その語を含む)をヒアドキュメントで書いた操作(§6 に書いた)。
+
+## §2 の実測の結果(版 88eb1dd3121e で起こした probe。2026-09-25 16:45 UTC。これでこの委任は終わり = §0.5)
+
+### 委任先の返り値(逐語)
+
+委任文 `docs/DATA/delegations/20260926_relay_probe.md`(版 88eb1dd3121e)§2 の実測の報告。§4 の返すもの (a)(b)(c) の順で書く。ファイルは書いていない。リポジトリは変えていない。git は打っていない。
+
+(a) 呼べたか: **呼べなかった**(§2 の 2 に該当 = 道具が無い)。
+
+試した手順と出力(逐語):
+
+1. `ToolSearch(query="workflow", max_results=5)` → 返った道具は EnterWorktree / TaskUpdate / mcp__github__actions_get / mcp__github__actions_list / mcp__github__actions_run_trigger の 5 つ。Workflow の道具は含まれない。
+2. `ToolSearch(query="select:Workflow", max_results=5)` → 出力(逐語): `No matching deferred tools found`
+3. `ToolSearch(query="+workflow run script agent", max_results=10)` → GitHub Actions 系と EnterWorktree / TaskUpdate / mcp__github__get_job_logs のみ。Workflow の道具は含まれない。
+4. `ToolSearch(query="select:Workflow,WorkflowRun,RunWorkflow,workflow", max_results=10)` → 出力(逐語): `No matching deferred tools found`
+5. §2 の script(inline、逐語どおり)を引数 `script` に入れて `Workflow` の道具を直接呼んだ → エラー(逐語):
+```
+Error: No such tool available: Workflow. Workflow is not available inside subagents. Complete the task with the tools provided and return findings to the orchestrator.
+```
+
+補足(事実): この委任先(general-purpose の subagent)に最初から与えられている道具の一覧(Artifact / Bash / Edit / Glob / Grep / ListAgents / Read / ReportFindings / SendUserFile / ShowOnboardingRolePicker / Skill / SuggestSkills / ToolSearch / Write / mcp__Claude_Code_Remote__* / mcp__Claude_Docs__* / SubagentHandback)にも、遅延読込の道具の一覧(ArtifactComments … mcp__github__update_pull_request_branch)にも、`Workflow` は無い。
+
+(b) run id: **無し**(起動されていないため)。
+
+(c) relayed の全文: **無し**(起動されていないため)。
+
+§3 の読み方に当てると「Workflow の道具が呼べない → 経路 ④ は無い」に該当する(判定はリードが行う。ここでは該当箇所を示すだけ)。§5 の「言えないこと」のとおり、測ったのは general-purpose の subagent 1 本・この回 1 回だけである。
+
+### リードの読み(§3 に当てる)
+
+経路 ④ は無い(§3 の 3 通り目)。残る候補は経路 ②(Agent の道具でリードが 1 段ずつ起こす)と経路 ③(予約した知らせの回に Workflow を起こす)。
+
+### 追加の実測(2026-09-25 16:47 UTC): 8〜12 回目の run の全 agent の記録に中継の文があるか
+
+コマンド(逐語。`$W` = `…/subagents/workflows`):
+```
+for r in wf_aa19b450-82f wf_a29e5ac0-1a4 wf_02fcd9df-a0c wf_bdb3a806-5e1 wf_f93df86b-dab wf_a71420c5-954; do n=$(ls $W/$r/agent-*.jsonl 2>/dev/null | wc -l); m=$(grep -l 'Workflow harness — user request' $W/$r/agent-*.jsonl 2>/dev/null | wc -l); echo "$r agents=$n with_relay=$m"; done
+```
+出力(逐語):
+```
+wf_aa19b450-82f agents=40 with_relay=0
+wf_a29e5ac0-1a4 agents=18 with_relay=0
+wf_02fcd9df-a0c agents=8 with_relay=0
+wf_bdb3a806-5e1 agents=42 with_relay=0
+wf_f93df86b-dab agents=8 with_relay=8
+wf_a71420c5-954 agents=1 with_relay=1
+```
+読み: 予約した知らせの回に起動した 8〜11 回目(agent 108 本)には中継の文が 1 本も無い。オーナーの発言の回に起動した 12 回目(8 本)と probe(1 本)は全部に中継の文がある。中継の文は run ごとに 1 種類(起動の引き金になった発言)。
