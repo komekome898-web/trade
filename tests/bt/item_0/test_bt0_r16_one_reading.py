@@ -328,7 +328,7 @@ ENTRIES = {
     "as_float": lambda v: V.as_float(v, "x"),
     "as_float_text": lambda v: V.as_float(v, "x", numbers_only=False),
     "take_float": lambda v: V.take_float(v, "x"),
-    "event_price": lambda v: TradeEvent(received_time_ns=T0, price=v, size=1.0).price,
+    "event_price": lambda v: TradeEvent(received_time_ns=T0, price=v, size=1.0, side="buy").price,
     "fee": _fee_run,
 }
 REFUSALS = (ValueError, EventValidationError, CostModelError)
@@ -437,8 +437,9 @@ def test_freeze_and_settle_hash_nothing_that_has_no_hash(shape):
             assert not taken and isinstance(exc, err), f"{fn.__name__} {shape}: {type(exc).__name__}: {exc}"
             continue
         assert taken, f"{fn.__name__} {shape}: taken, should be refused"
-        V.thaw(got)
-        V.renew(got)
+        if fn is V.freeze:  # what the core froze is handed out again by thaw and renew
+            V.thaw(got)
+            V.renew(got)
 
 
 def _bars():
@@ -492,7 +493,7 @@ def _entry_outcomes(value):
         def on_market_event(self, event, t):
             super().on_market_event(event, t)
             if event.received_time_ns == T0 + 10:
-                req = OrderRequest(side="sell", order_type="market", size=1.0, client_order_id="f1")
+                req = OrderRequest(side="sell", order_type="market", size=1.0, client_order_id="forced-f1")
                 object.__setattr__(req, "extra", (("k", value),))
                 return [req]
             return []
