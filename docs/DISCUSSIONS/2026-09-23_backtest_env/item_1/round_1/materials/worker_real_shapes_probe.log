@@ -1,0 +1,9 @@
+bf_us 拒否: SealedRangeError 'backtest_data/bitflyer_executions_us_20260723_20260906/executions_20260723.csv.gz' is sealed (unit P2-08b) from 1787443200000000000 ns; give range_ns with an e
+fx_ticks 読めた 異常の種類: [] 封印: [None]
+n225f_1m 拒否: SealedRangeError 'backtest_data/n225f_225labo_20260828/bars_1min.csv.gz' is sealed (unit P2-01) from 1608508800000000000 ns; give range_ns with an end at or before it (the seale
+fxbtc_1m 拒否: SealedRangeError 'backtest_data/fx_btc_jpy_1m_continuous_20260906/candles_1m.csv.gz' is sealed (unit P2-08) from 1702857600000000000 ns; give range_ns with an end at or before i
+--- ranges before the seal
+n225f_1m 境まで 読めた []
+n225f_1m 境の12時間前まで 読めた []
+fxbtc_1m 境まで 読めた []
+fxbtc_1m 境の12時間前まで 読めた []

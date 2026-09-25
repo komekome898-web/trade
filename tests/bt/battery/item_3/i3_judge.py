@@ -289,36 +289,53 @@ _VOLATILE = ("git_sha", "diff_hash")
 
 
 def stable_view(obs):
-    """Replace what may legitimately change between the two passes by placeholders."""
+    """Replace what may legitimately change between the two passes by placeholders: a string value (or
+    key) equal to a volatile value becomes its placeholder, and a volatile value of 8 characters or more
+    that occurs inside a longer string (a path runs/<id>/...) is replaced there too.  Equality patterns
+    survive because each distinct volatile value gets its own placeholder, numbered in order of appearance."""
     if obs is None:
         return None
-    s = json.dumps(obs, ensure_ascii=False, sort_keys=True, default=str)
     vals = []
 
-    def walk(x):
+    def collect(x):
         if isinstance(x, dict):
             for k, v in x.items():
                 if k in _VOLATILE and isinstance(v, str):
                     vals.append((k, v))
-                elif k in ("run_id",) and isinstance(v, str):
+                elif k == "run_id" and isinstance(v, str):
                     vals.append(("run_id", v))
                 elif k == "run_ids" and isinstance(v, dict):
                     vals.extend(("run_id", str(i)) for i in v.values())
                 elif k == "ids" and isinstance(v, list):
                     vals.extend(("run_id", str(i)) for i in v)
-                walk(v)
+                collect(v)
         elif isinstance(x, list):
             for v in x:
-                walk(v)
+                collect(v)
 
-    walk(obs)
-    seen = {}
+    collect(obs)
+    ph, count = {}, {}
     for kind, v in vals:
-        if v and v not in seen:
-            seen[v] = f"<{kind}{len([1 for x in seen.values() if x.startswith('<' + kind)])}>"
-    for v in sorted(seen, key=len, reverse=True):
-        s = s.replace(v, seen[v])
-    return json.loads(s)
+        if v and v not in ph:
+            ph[v] = f"<{kind}{count.get(kind, 0)}>"
+            count[kind] = count.get(kind, 0) + 1
+    longs = sorted((v for v in ph if len(v) >= 8), key=len, reverse=True)
+
+    def sub(x):
+        if isinstance(x, str):
+            if x in ph:
+                return ph[x]
+            for v in longs:
+                if v in x:
+                    x = x.replace(v, ph[v])
+            return x
+        if isinstance(x, dict):
+            return {sub(k): sub(v) for k, v in x.items()}
+        if isinstance(x, list):
+            return [sub(v) for v in x]
+        return x
+
+    return sub(json.loads(json.dumps(obs, default=str)))
 
 
 def digest(x) -> str:

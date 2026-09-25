@@ -10,7 +10,10 @@ so the page renders offline exactly as it did before they existed. Worst case
 they add 2 requests per PUBLIC_TTL seconds (0.4 req/s) against the 500 per
 5 minutes per-IP public budget the bot also draws on.
 
-Usage: python scripts/dashboard.py [--port 8300]
+Usage: python scripts/dashboard.py [--port 8300] [--runs-dir backtest_runs]
+
+The バックテスト tab lists the runs bot.bt.repro wrote under --runs-dir and
+shows each run's tabs, rendered on the server (src/bot/monitoring/backtest_view.py).
 """
 from __future__ import annotations
 
@@ -30,6 +33,9 @@ from bot.monitoring.aggregate import collect_status  # noqa: E402
 from bot.monitoring.market_view import (  # noqa: E402
     PRODUCT, attach_board, bars_from_executions, collect_market,
 )
+from bot.monitoring import backtest_view  # noqa: E402
+
+BACKTEST_RUNS_DIR = "backtest_runs"  # bot.bt.repro writes <runs_dir>/<run_id>/
 
 PAGE = """<!doctype html>
 <html lang="ja"><head>
@@ -184,6 +190,11 @@ PAGE = """<!doctype html>
   .legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted);
             font-size: 11.5px; padding: 0 14px 12px; }
   .legend b { font-weight: 500; }
+  .bt-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+  .bt-tabs button { background: none; color: var(--ink); border: 1px solid var(--line); padding: 4px 8px; cursor: pointer; }
+  .bt-tabs button.on { border-color: var(--accent); }
+  .bt-row { cursor: pointer; }
+  .bt-warn { border: 1px solid #d39e00; padding: 6px 8px; margin: 4px 0; }
 </style></head><body>
 <header>
   <h1>Bot <span>Console</span></h1>
@@ -197,6 +208,7 @@ PAGE = """<!doctype html>
 <nav class="tabs">
   <button id="tab-console" class="on" onclick="showTab('console')">Botコンソール</button>
   <button id="tab-market" onclick="showTab('market')">マーケット</button>
+  <button id="tab-backtest" onclick="showTab('backtest')">バックテスト</button>
 </nav>
 <main id="view-console">
   <div class="banner" id="banner"></div>
@@ -247,6 +259,17 @@ PAGE = """<!doctype html>
     <div class="tfbar" id="m-tfs"></div>
     <div class="chartwrap"><canvas id="m-chart"></canvas><div class="tip" id="m-tip"></div></div>
     <div class="legend" id="m-legend"></div>
+  </section>
+</main>
+<main id="view-backtest" hidden>
+  <section>
+    <h2>バックテストの実行 <span class="sub">実行の一覧(実行 ID = 内容のハッシュ)。行を押すと項目別のタブを開く</span></h2>
+    <div class="scroll" id="bt-list"><span class="empty">読込中…</span></div>
+  </section>
+  <section>
+    <h2 id="bt-title">実行を選んでください</h2>
+    <div class="bt-tabs" id="bt-tabs"></div>
+    <div id="bt-body"></div>
   </section>
 </main>
 <script>
@@ -702,7 +725,7 @@ function startMarketTimer() {
 }
 
 function showTab(name) {
-  for (const t of ["console", "market"]) {
+  for (const t of ["console", "market", "backtest"]) {
     const view = document.getElementById("view-" + t);
     const btn = document.getElementById("tab-" + t);
     if (view) view.hidden = (t !== name);
@@ -712,6 +735,40 @@ function showTab(name) {
     refreshMarket();
     startMarketTimer();
   } else if (marketTimer) { clearInterval(marketTimer); marketTimer = null; }
+  if (name === "backtest") loadBacktestRuns();
+}
+
+// バックテスト tab: the server renders every tab of a run (backtest_view.py);
+// this only lists the runs and swaps the server's HTML in.
+const btEsc = s => String(s == null ? "—" : s).replace(/[&<>"']/g,
+  c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+let btView = null;
+function loadBacktestRuns() {
+  return fetch("/api/backtest/runs").then(r => r.json()).then(d => {
+    const rows = (d.runs || []).map(r =>
+      `<tr class="bt-row" onclick="openBacktestRun('${btEsc(r.run_id)}')"><td class="mono">${btEsc(r.run_id.slice(0, 12))}</td>` +
+      `<td>${btEsc(r.purpose)}</td><td>${btEsc(r.instrument)}</td><td>${btEsc(r.setup)}</td><td>${btEsc(r.trades)}</td></tr>`);
+    document.getElementById("bt-list").innerHTML = rows.length
+      ? `<table><tr><th>実行 ID</th><th>目的</th><th>商品</th><th>手順</th><th>往復</th></tr>${rows.join("")}</table>`
+      : '<span class="empty">実行がまだ無い</span>';
+  });
+}
+function openBacktestRun(id) {
+  return fetch("/api/backtest/run/" + encodeURIComponent(id)).then(r => r.json()).then(v => {
+    btView = v;
+    document.getElementById("bt-title").innerHTML = `実行 <span class="mono">${btEsc(v.run_id)}</span>(目的: ${btEsc(v.purpose)})`;
+    document.getElementById("bt-tabs").innerHTML = v.tabs.map((t, i) =>
+      `<button id="bt-tab-${i}" onclick="showBacktestTab(${i})">${btEsc(t.label)}</button>`).join("");
+    showBacktestTab(0);
+  });
+}
+function showBacktestTab(i) {
+  if (!btView) return;
+  btView.tabs.forEach((t, k) => {
+    const b = document.getElementById("bt-tab-" + k);
+    if (b) b.className = (k === i) ? "on" : "";
+  });
+  document.getElementById("bt-body").innerHTML = btView.tabs[i].html;
 }
 
 // Slope arrow. SVG y grows downward, so a rising slope (positive angle) is
@@ -1349,8 +1406,38 @@ def market_body(root: str = ".", now: float | None = None) -> bytes:
         return json.dumps(cached).encode()
 
 
+def _backtest(path: str, runs_dir: str):
+    """(status, content type, body) for the バックテスト routes, or None."""
+    route = path.split("?", 1)[0]
+    try:
+        if route == "/api/backtest/runs":
+            return 200, "application/json", json.dumps({"runs": backtest_view.list_runs(runs_dir)},
+                                                       ensure_ascii=False).encode()
+        if route.startswith("/api/backtest/run/"):
+            view = backtest_view.run_view(runs_dir, route[len("/api/backtest/run/"):])
+            return 200, "application/json", json.dumps(view, ensure_ascii=False).encode()
+        if route.startswith("/backtest/run/"):
+            view = backtest_view.run_view(runs_dir, route[len("/backtest/run/"):])
+            return 200, "text/html; charset=utf-8", backtest_view.run_page(view).encode()
+    except backtest_view.BacktestViewError as exc:
+        return 404, "application/json", json.dumps({"error": str(exc)}, ensure_ascii=False).encode()
+    return None
+
+
 class Handler(BaseHTTPRequestHandler):
+    backtest_runs_dir = BACKTEST_RUNS_DIR
+
     def do_GET(self):
+        bt = _backtest(self.path, self.backtest_runs_dir)
+        if bt is not None:
+            status, ctype, body = bt
+            self.send_response(status)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if self.path.startswith("/api/status"):
             body = json.dumps(collect_status(".")).encode()
             ctype = "application/json"
@@ -1375,11 +1462,18 @@ class Handler(BaseHTTPRequestHandler):
         pass  # keep the console quiet
 
 
+def make_handler(runs_dir: str) -> type:
+    """A Handler whose バックテスト tab reads `runs_dir`."""
+    return type("BacktestHandler", (Handler,), {"backtest_runs_dir": str(runs_dir)})
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8300)
+    ap.add_argument("--runs-dir", default=BACKTEST_RUNS_DIR,
+                    help="where bot.bt.repro wrote the backtest runs (the バックテスト tab)")
     args = ap.parse_args()
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(args.runs_dir))
     print(f"dashboard: http://127.0.0.1:{args.port}  (Ctrl+C to stop)", flush=True)
     try:
         server.serve_forever()

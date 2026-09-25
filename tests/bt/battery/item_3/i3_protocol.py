@@ -33,11 +33,15 @@ Requests (``op``) and the observation each must return (only these keys are read
   data_read        path, time_column (the target's ORDINARY read for a run, not the sealed loader)
                    -> {"v": [...]}
   run              run {data [path], config, seed, strategy, runs_dir, purpose?, prereg?}, repeat?
+                   strategy: "fixed_times" = the config's legs as market orders; "seeded_random" = the same legs,
+                   each round trip's quantity 0.01 * (1 + r / 256) with r drawn in leg order from
+                   random.Random(seed).randrange(256); "unseeded_random" = the same with r = one byte of os.urandom
                    -> {"run_id": str, "record": {git_sha, diff_hash, config, data_sha256 {path: hex},
                        seed, version, prereg_sha256, purpose}, "exports": {path: purpose}}
                    (with repeat = k: {"records": [record, ...]} as well)
   run_ids          runs [run spec], sleep_before_s [float] -> {"ids": [str, ...]}
-  auto_repro       run -> {"reproduced": bool}   (the TARGET's own two-run comparison)
+  auto_repro       run -> {"reproduced": bool, "runs": int}   (the TARGET's own comparison: how many times
+                   it ran the same input and whether the results were identical)
   trade_metrics    trades [{id, side, qty, entry_px, exit_px, entry_t_ns, exit_t_ns}], want [...]
                    -> {"per_trade_bp": [...], "quantiles": {"0.05": ...}, "neg_frac": float,
                        "exposure_hours": float, "bp_per_hour": float}  (the keys in want)

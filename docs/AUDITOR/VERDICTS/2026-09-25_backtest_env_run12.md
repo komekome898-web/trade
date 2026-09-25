@@ -52,3 +52,16 @@ the user request that triggered this workflow run. This relayed request is the o
 ## 18:29 UTC 見張りが RELAY で止まった → 偽の陽性(実測)
 
 見張りの出力: `RELAY at Fri Sep 25 18:29:32 UTC 2026: …/agent-a1f0d35ab1862c355.jsonl`(場面:2)。この記録の 1 通目は `[Workflow harness — computed task]` で始まり中継の文は無い。文字列があったのは 1958 行目の `tool_result`(場面係がこの記録ファイル `VERDICTS/2026-09-25_backtest_env_run12.md` を grep した出力に、受け入れの検査のコマンドの文がそのまま入っていた)。処置: 見張りを「各記録の**最初の**ユーザーの文だけ」を見る形に直し(`scripts/bt_run_watch.sh`)、自己試験(この記録 → 出ない / 14:20 起動の記録 → 出る)を通してから起こし直した。run は止めていない。
+
+## 19:30 UTC 見回り(再開後 3)
+
+段の時刻(agent の記録の最終更新): 場面:2 完了 18:30(場面 66)/ 場面:3 完了 18:39(場面 53)/ 作る:1#1 完了 19:07 / 作る:2#1 進行中(19:26)/ 作る:3#1 開始 19:29。同時に走るのは 2 本(CPU 4 の上限)。受け入れの検査(1 通目だけ、見張りと同じ関数): relay 0 / 9。見張りは動いている。ディスク 6.5G。
+
+### 作る:1#1 の questions_for_lead(逐語)とリードの答え
+
+1. 「**【最優先】.gitignore の 12 行目 `data/` が src/bot/bt/data/ にも当たる(`git check-ignore -v src/bot/bt/data/loader.py` の出力 → `.gitignore:12:data/\tsrc/bot/bt/data/loader.py`)。このままだとデータ層のパッケージ 8 本がコミットされず、git status にも git diff --name-only HEAD にも出ない。台本の機械の検査や批評家の差分の確かめからも見えない。.gitignore は私の持ち物の外なので変えていない。`!src/bot/bt/data/` の例外を足すか、git add -f で入れるかを決めてほしい。**」→ 答え: `.gitignore` に `!src/bot/bt/data/` の例外を足した(実測: `git check-ignore -v src/bot/bt/data/loader.py` → 出力なし、exit 1)。8 本はこの見回りのコミットに入る。
+2. 「**資料係が書く adapters/new_impl.py の本体のために: tests/bt/item_1/i1_driver.py が、新実装の公開の API だけで 3 種の op(load / jpx / vector_vs_event)を場面の観測の形にする例になっている(ファイルを開かない、値を作らない)。資料係がこれを写して使ってよいか。使ってよければ、adapter が観測の hashes の鍵から root を外す一手(driver では os.path.relpath)が要ることも伝えてほしい。**」→ 答え: 使ってよい(公開の口だけを呼ぶ限り)。root を外す一手も要る。ただし資料係の起動文は台本が作るので、この答えは資料係には届かない(限界。資料係が driver を見つけて使うかは資料係の判断)。
+3. 「**既定の許可一覧の根(backtest_data・data・paper_logs/tape)と、必ず拒むもの(qa_*・o3c_*・phase2_runs・phase2_sealed)はリードの確認が要る。paper_logs/tape を入れたのは、封印の記録 P2-08b がそこのファイルを実データとして名指しているため。docs/DATA.md §6 の storm_events・burst_events・regime_composite(研究基盤の抽出物)は拒む側に入れていない。**」→ 答え: この既定でよい。研究基盤の抽出物を拒む側に入れない判断も採る(全捨て L-019 の対象は結論であってデータではない)。
+4. 「**異常の「逆行」を「同じファイルの中で、前の行の最大より前」と読んだ。場面集の DEFINITIONS.md §3 の文面は「それより前の行」でファイルの区切りを言っていない。ただ場面 v3-generations の正解(世代の境の行を逆行と数えない)と合わせるには、ファイルごとにしか読めなかった。この読みでよいか。**」→ 答え: その読みでよい(場面集の正解と合う読み)。項目 1 の報告に「逆行はファイルの中で数える」と読みを明記する。
+
+unmet(逐語)は上の journal のとおり 6 件(V3 の欠落は 24x7 の足だけ / 受け取った時刻は射程の外 / ハードリンク / 大きなファイルの速さ / V6 の実データ無し(この環境のフォルダ名だけ見た、オーナー PC は未確認)/ 敵対者の試験の順)。項目 1 の通過の報告の「測っていない範囲」に逐語で載せる。test_tail: 自分の項目 3970 passed / 核と批評家 14 failed(全部 tests/bt/critic/item_0/ の第 17 周の批評家の試験 = 項目 0 の持ち越し、核は 1 行も変えていない)。

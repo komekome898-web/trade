@@ -1,0 +1,38 @@
+# item 3, round 1, scene-keeper: the output of the sigc binary (venvs/item_0/c107/bin/sigc, built by item 0's
+# scene-keeper; tests/bt/battery/item_0/survey_results/attempts/107.log), called on 2026-09-25 before 18:13 UTC,
+# i.e. before the first battery run of item 3.  The binary was removed by the lead's disk cleanup at 18:28 UTC
+# (commit 08aaad4 "remaining item-0 venvs removed"); the battery runs of 18:13, 18:23 and 18:28 UTC called it
+# live (every request ended in NotExpressible with this help text as what was tried).
+$ sigc --help
+Signal compiler and backtester
+
+Usage: sigc [OPTIONS] [COMMAND]
+
+Commands:
+  compile  Compile a .sig file to IR
+  run      Run a signal (compile + execute)
+  fetch    Fetch a daily price panel into a parquet file
+  daemon   Start the daemon server
+  request  Send request to daemon
+  explain  Explain a compiled signal's IR
+  diff     Show differences between two runs
+  cache    Cache management
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -v, --verbose  Enable verbose output
+  -h, --help     Print help
+  -V, --version  Print version
+$ sigc run --help
+Run a signal (compile + execute)
+
+Usage: sigc run [OPTIONS] <INPUT>
+
+Arguments:
+  <INPUT>  Input .sig file
+
+Options:
+  -o, --output <OUTPUT>  Output report file (json or csv)
+      --trials <TRIALS>  Number of strategy/parameter configurations searched to reach this one. Used to deflate the Sharpe ratio for multiple testing (1 = no search). See the "Statistical Rigor" section in the output [default: 1]
+  -v, --verbose          Enable verbose output
+  -h, --help             Print help

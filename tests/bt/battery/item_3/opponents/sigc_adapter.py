@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _i3_base import NotExpressible  # noqa: E402
 
-BIN = str(Path(sys.executable).parent / "sigc")
+BIN = "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c107/bin/sigc"
 NEAR = {
     "dsr": "`sigc run --trials N` が自分のバックテストの Sharpe を試行の数で縮める(help の逐語「Used to deflate the Sharpe ratio for multiple testing」)。"
            "述べた積率(SR・T・歪度・尖度・V)を渡す口は無い",
@@ -29,14 +29,21 @@ NEAR = {
 }
 
 
+HELP_LOG = Path(__file__).resolve().parent / "attempts" / "i3_r1_scenekeeper_sigc_help.log"
+
+
 class Sigc:
     name = "opp_sigc"
 
     def run(self, inp: dict) -> dict:
-        r = subprocess.run([BIN, "run", "--help"], capture_output=True, text=True, timeout=30)
         op = inp["op"]
-        raise NotExpressible(f"{op}: {NEAR.get(op, '口が無い')}。sigc は .sig の信号の言語と日足の価格の表(parquet)だけを受け取る。"
-                             f"試したこと: sigc run --help → rc={r.returncode}、{r.stdout.strip().splitlines()[0] if r.stdout.strip() else r.stderr[:80]}")
+        if Path(BIN).exists():
+            r = subprocess.run([BIN, "run", "--help"], capture_output=True, text=True, timeout=30)
+            tried = f"sigc run --help → rc={r.returncode}、{r.stdout.strip().splitlines()[0] if r.stdout.strip() else r.stderr[:80]}"
+        else:
+            tried = ("実行ファイルは 2026-09-25 18:28 UTC のリードの容量の片付け(commit 08aaad4)で消えた。消える前に打った sigc --help と"
+                     f" sigc run --help の出力(opponents/attempts/{HELP_LOG.name})で判断した")
+        raise NotExpressible(f"{op}: {NEAR.get(op, '口が無い')}。sigc は .sig の信号の言語と日足の価格の表(parquet)だけを受け取る。試したこと: {tried}")
 
 
 TARGET = Sigc()

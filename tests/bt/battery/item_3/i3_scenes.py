@@ -704,6 +704,13 @@ scene(id="v8-run-id", viewpoint="C3-8", kind="値",
       expect={"check": "id_relations", "groups": [[0, 1, 2], [3], [4]]})
 
 # --- C3-9
+scene(id="v9-seeded-repro", viewpoint="C3-9", kind="値",
+      measures="種つきの乱数を使う実行を、対象の自動の確認が 2 回回して「一致する」と判定するか(種が効いているか)。",
+      how=("戦略を「種つきの乱数」(各往復の数量を 0.01 × (1 + r / 256)、r は種 11 の random.Random(11).randrange(256) を往復の順に引く)"
+           "にした固定の実行を対象の自動の確認にかける。種が同じなので 2 回の結果は同じ = 一致(真)、比べた回数 2 が正解。"
+           "種を使わない実行(a9 の変形)と違い、乱数そのものは入っている。"),
+      input={"op": "auto_repro", "files": RUN_FILES, "run": run_spec(strategy="seeded_random")},
+      expect={"check": "equal", "values": {"reproduced": True, "runs": 2}})
 scene(id="a9-auto-repro", viewpoint="C3-9", kind="能力",
       measures="同じ入力で 2 回回して一致を自動で確かめる仕組みがあり、一致しないときに一致しないと言えるか。",
       how=("対照 = 固定の実行を対象の自動の確認にかける → 一致(真)が正解。変形 = 戦略だけを「種を使わない乱数」"

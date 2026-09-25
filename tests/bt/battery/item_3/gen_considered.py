@@ -159,6 +159,9 @@ def main() -> int:
         "調査報告(SCAN)は多くの候補について機能の一行の説明しか持たず、「上位互換」を 1 能力ずつ調査報告の行で示せないので、上位互換のスキップも無い。",
         "- 「再現した」の候補(15・88)は一次資料を読むだけで複製し(実行しない)、場面に掛かる機構を注釈に行を 1 対 1 で書き写した(opponents/repro_*.py)。"
         "再現も場面集の全部の場面に通した(survey_results/opp_repro_*.tsv)。",
+        "- 動かせた候補の「持たないと確認した」の根拠: その候補を場面集の全部の場面に実際に通した走行(`run_battery.py --target <対象>`)の出力"
+        " survey_results/<対象>.tsv の行と、adapter が書いた「探した口と見つからなかった理由」(道具のコードへの固定の grep = opponents/SEARCH.tsv と、"
+        "当たりが口でない理由の行)。口(関数・設定・文書の節)が無いものは呼びようが無いので、呼べた口は呼び、無い口は探した方法と結果を書いた。",
         "- 実装の列の <venvs> は `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs`、<read> は同じ scratchpad の "
         "`bt/i3_r1_scenekeeper/read`(読むだけの複製と取得の記録 i3_r1_scenekeeper_read.log)、「…」は `lib/python3.11/site-packages`。",
         "",

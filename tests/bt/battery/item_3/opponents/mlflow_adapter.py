@@ -67,9 +67,18 @@ class Mlflow(Base):
             rec["purpose"] = info.data.tags["purpose"]
         return rec
 
+    def _experiment(self, root, name):
+        # the artifact store defaults to ./mlruns under the working directory (the repository): keep it
+        # inside the request's scratch root instead
+        client = MlflowClient()
+        exp = client.get_experiment_by_name(name)
+        if exp is None:
+            client.create_experiment(name, artifact_location=Path(root, "mlartifacts", name).as_uri())
+        return mlflow.set_experiment(name)
+
     def op_run(self, inp):
         mlflow.set_tracking_uri(self._uri(inp["root"]))
-        mlflow.set_experiment("i3")
+        self._experiment(inp["root"], "i3")
         k = int(inp.get("repeat", 1))
         ids = [self._log(inp["root"], inp["run"]) for _ in range(k)]
         recs = [self._record(i) for i in ids]
@@ -78,7 +87,7 @@ class Mlflow(Base):
 
     def op_run_ids(self, inp):
         mlflow.set_tracking_uri(self._uri(inp["root"]))
-        mlflow.set_experiment("i3")
+        self._experiment(inp["root"], "i3")
         ids = []
         for run, pause in zip(inp["runs"], inp["sleep_before_s"]):
             time.sleep(pause)
@@ -88,7 +97,7 @@ class Mlflow(Base):
     def op_iter_ledger(self, inp):
         uri = self._uri(inp["root"], inp["ledger_dir"])
         mlflow.set_tracking_uri(uri)
-        exp = mlflow.set_experiment("iter")
+        exp = self._experiment(inp["root"], "iter")
 
         def add(trials):
             for t in trials:

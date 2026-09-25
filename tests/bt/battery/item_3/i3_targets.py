@@ -30,8 +30,11 @@ SURVEY: dict[str, dict] = {
     "opp_luczinsritter": {"module": "opponents/luczinsritter_adapter.py", "venv": "item_3/c16", "cand": 16},
     "opp_polymarket_fill": {"module": "opponents/polymarket_fill_adapter.py", "venv": "item_2/c95", "cand": 95},
     "opp_mihircoding_lob": {"module": "opponents/mihircoding_lob_adapter.py", "venv": "item_2/c98", "cand": 98},
-    "opp_isaaccheng_obsim": {"module": "opponents/isaaccheng_obsim_adapter.py", "venv": "item_2/c103", "cand": 103},
-    "opp_sigc": {"module": "opponents/sigc_adapter.py", "venv": "item_0/c107", "cand": 107},
+    # 103 and 107: their interpreter / binary was removed by the lead's disk cleanup at 2026-09-25 18:28 UTC
+    # (commit 08aaad4).  Neither adapter imports its tool (every request ends in NotExpressible from the grep
+    # of the tool's source, or from the recorded help text), so both run under the runner's interpreter.
+    "opp_isaaccheng_obsim": {"module": "opponents/isaaccheng_obsim_adapter.py", "cand": 103},
+    "opp_sigc": {"module": "opponents/sigc_adapter.py", "cand": 107},
     "opp_pybotters": {"module": "opponents/pybotters_adapter.py", "venv": "item_0/pybotters", "cand": 12},
     # reproductions (委任文 §3「動かせない候補の検討と再現」; opponents/CONSIDERED.md)
     "opp_repro_15": {"module": "opponents/repro_15_backtestingcore.py", "cand": 15, "repro": True},
