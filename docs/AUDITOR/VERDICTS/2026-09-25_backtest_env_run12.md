@@ -44,3 +44,7 @@ the user request that triggered this workflow run. This relayed request is the o
 ## 18:28 UTC 見回り(再開後 2)
 
 受け入れの検査: 再開の時刻より新しい agent 6 本(ae20726c 場面:1 / a1f0d35a 場面:2 / ae97e951 要件:1 / a9e6cf89 要件:3 / aeac7750 要件:2 / a96c842f 場面:3)すべて relay=0。場面:1 の返り値(要点、逐語): scenarios=35 / survey_run の先頭「73 vectorbt 1.1.0 — 2026-09-25 に隔離した venv item_1/vectorbt へ新しく入れた…V7 の規則の場面 3 つ(整数・小数・速さ)が正解と一致。V1〜V6 と、約定から足を作る V7 の 2 場面は結果なし(読み口も集計の経路も無い)」/ survey_not_run の先頭「OK 誤り 0 件」(検討表の検査器の最後の行)、「74 ml-quant-trading — 入れなかった(道具台帳 §3 の危険な 11 件の 1 つ…)」。ディスク: 項目 0 の venv の残り 15 本(100M 超)を消した。項目 0 の場面集を調査結果の側の道具で走らせ直すには venv の入れ直しが要る(測っていない範囲に載せる)。
+
+### 18:35 UTC 作る:1#1 が起きない理由
+
+台本 `runItem` は場面の段のあと何も待たずに作業者を起こす(262〜282 行を読んだ)。`nproc` → `4`。Workflow の道具の仕様「Concurrent agent() calls are capped at min(16, available CPUs - 2) per workflow — excess calls queue」により上限 2。journal と agent の記録の時刻もこれと合う(常に 2 本だけが書いている)。処置: 無し(台本の不具合ではない)。推定の期間を状態板に書き直した。
