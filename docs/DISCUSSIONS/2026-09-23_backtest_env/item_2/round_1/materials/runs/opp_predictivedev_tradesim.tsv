@@ -1,0 +1,67 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+c2-1-market	C2-1	値	正解と一致		9fdf0351b0729d18	正解と一致		9fdf0351b0729d18	2 回の実行で同じ	0.001	0.001
+c2-1-limit	C2-1	値	正解と一致		fc2caf443d1da2d7	正解と一致		fc2caf443d1da2d7	2 回の実行で同じ	0.001	0.001
+c2-1-postonly	C2-1	値	不一致	status.o1: 期待 in ['rejected', 'canceled'] / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0	44f25c7c41ac9b4c	不一致	status.o1: 期待 in ['rejected', 'canceled'] / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0	44f25c7c41ac9b4c	2 回の実行で同じ	0.001	0.001
+c2-1-ioc	C2-1	値	正解と一致		177f80f29372f696	正解と一致		177f80f29372f696	2 回の実行で同じ	0.0	0.001
+c2-1-fok	C2-1	値	正解と一致		ea2cddebd13f9c83	正解と一致		ea2cddebd13f9c83	2 回の実行で同じ	0.0	0.0
+c2-1-stop	C2-1	値	結果なし	adapter: trading_simulator 2.2.0: 公開の口に stop が無い	-	結果なし	adapter: trading_simulator 2.2.0: 公開の口に stop が無い	-	結果なし	0.0	0.0
+c2-1-reduceonly	C2-1	値	結果なし	adapter: trading_simulator 2.2.0: 公開の口に reduce_only が無い	-	結果なし	adapter: trading_simulator 2.2.0: 公開の口に reduce_only が無い	-	結果なし	0.0	0.0
+c2-1-oco	C2-1	値	結果なし	adapter: trading_simulator 2.2.0: 公開の口に oco が無い	-	結果なし	adapter: trading_simulator 2.2.0: 公開の口に oco が無い	-	結果なし	0.0	0.0
+c2-2-cancel	C2-2	値	正解と一致		88d7f71e9c8975c4	正解と一致		88d7f71e9c8975c4	2 回の実行で同じ	0.0	0.0
+c2-2-amend-price	C2-2	値	正解と一致		c8ec986ed28a45e5	正解と一致		c8ec986ed28a45e5	2 回の実行で同じ	0.001	0.001
+c2-2-amend-qty	C2-2	能力	不一致	filled.o1: 期待 1.0 / 出力 0.0; status.o1: 期待 filled / 出力 open	9d6f52590313accc	不一致	filled.o1: 期待 1.0 / 出力 0.0; status.o1: 期待 filled / 出力 open	9d6f52590313accc	2 回の実行で同じ	0.0	0.0
+c2-2-partial	C2-2	能力	結果なし	adapter: trading_simulator 2.2.0: 段 4 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	adapter: trading_simulator 2.2.0: 段 4 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-3-tick	C2-3	値	結果なし	adapter: trading_simulator 2.2.0: 値 9990.5 が呼値 1.0・数量の刻み 0.1 の整数倍でなく、整数の刻みで渡せない	-	結果なし	adapter: trading_simulator 2.2.0: 値 9990.5 が呼値 1.0・数量の刻み 0.1 の整数倍でなく、整数の刻みで渡せない	-	結果なし	0.0	0.0
+c2-3-minqty	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 0.005	8d06c84eb280e786	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 0.005	8d06c84eb280e786	2 回の実行で同じ	0.0	0.001
+c2-3-round	C2-3	能力	結果なし	adapter: trading_simulator 2.2.0: 値 9990.7 が呼値 1.0・数量の刻み 0.1 の整数倍でなく、整数の刻みで渡せない	-	結果なし	adapter: trading_simulator 2.2.0: 値 9990.7 が呼値 1.0・数量の刻み 0.1 の整数倍でなく、整数の刻みで渡せない	-	結果なし	0.0	0.0
+c2-3-stp	C2-3	値	不一致	status.o2: 期待 canceled / 出力 filled; filled.o2: 期待 0.0 / 出力 1.0	a675b4fc35e027c9	不一致	status.o2: 期待 canceled / 出力 filled; filled.o2: 期待 0.0 / 出力 1.0	a675b4fc35e027c9	2 回の実行で同じ	0.0	0.0
+c2-3-jpx-session	C2-3	値	不一致	avg_px.o1: 期待 1510.0 / 出力 1501.0; first_fill_t.o1: 期待 ge 1767670200000000000 / 出力 1767667500000000000	e4e6e0b76404b4a4	不一致	avg_px.o1: 期待 1510.0 / 出力 1501.0; first_fill_t.o1: 期待 ge 1767670200000000000 / 出力 1767667500000000000	e4e6e0b76404b4a4	2 回の実行で同じ	0.001	0.001
+c2-3-jpx-limit	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 100.0	2c3def68413598e7	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 100.0	2c3def68413598e7	2 回の実行で同じ	0.001	0.001
+c2-3-fx-weekend	C2-3	値	不一致	filled.o1: 期待 10000.0 / 出力 0.0; avg_px.o1: 期待 150.103 / 出力に無い(KeyError: 'no fill for o1'); first_fill_t.o1: 期待 ge 1768168800000000000 / 出力に無い(KeyError: 'no fill for o1')	80a01cb461cdb49d	不一致	filled.o1: 期待 10000.0 / 出力 0.0; avg_px.o1: 期待 150.103 / 出力に無い(KeyError: 'no fill for o1'); first_fill_t.o1: 期待 ge 1768168800000000000 / 出力に無い(KeyError: 'no fill for o1')	80a01cb461cdb49d	2 回の実行で同じ	0.001	0.001
+c2-4-reject	C2-4	値	結果なし	adapter: trading_simulator 2.2.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-timeout	C2-4	値	結果なし	adapter: trading_simulator 2.2.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-unknown	C2-4	値	結果なし	adapter: trading_simulator 2.2.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-kill	C2-4	値	結果なし	adapter: trading_simulator 2.2.0: 公開の口に kill が無い	-	結果なし	adapter: trading_simulator 2.2.0: 公開の口に kill が無い	-	結果なし	0.0	0.0
+c2-5-tier0	C2-5	能力	結果なし	adapter: trading_simulator 2.2.0: 段 0 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	adapter: trading_simulator 2.2.0: 段 0 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier1	C2-5	能力	結果なし	adapter: trading_simulator 2.2.0: 段 1 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	adapter: trading_simulator 2.2.0: 段 1 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier2	C2-5	能力	結果なし	adapter: trading_simulator 2.2.0: 段 2 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	adapter: trading_simulator 2.2.0: 段 2 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier3	C2-5	能力	結果なし	adapter: trading_simulator 2.2.0: 段 3 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	adapter: trading_simulator 2.2.0: 段 3 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier4	C2-5	能力	結果なし	adapter: trading_simulator 2.2.0: 段 4 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	adapter: trading_simulator 2.2.0: 段 4 を選ぶ口が無い(照合の機関の埋まり方は注文の列の価格と時間の優先 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier5	C2-5	能力	正解と一致		b7888aa17b64c85e	正解と一致		b7888aa17b64c85e	2 回の実行で同じ	0.001	0.001
+c2-5-queue-value	C2-5	値	正解と一致		858755f1a1e509cd	正解と一致		858755f1a1e509cd	2 回の実行で同じ	0.001	0.001
+c2-5-tier6	C2-5	能力	正解と一致		ec5c1f6bc7131db9	正解と一致		ec5c1f6bc7131db9	2 回の実行で同じ	0.0	0.001
+c2-6-none	C2-6	能力	結果なし	adapter: trading_simulator 2.2.0: 板の写真で値位 9995.0 の量が 8.0 から 4.0 に減った。どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない	-	結果なし	adapter: trading_simulator 2.2.0: 板の写真で値位 9995.0 の量が 8.0 から 4.0 に減った。どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない	-	結果なし	0.0	0.0
+c2-6-discount-at-entry	C2-6	能力	結果なし	adapter: trading_simulator 2.2.0: 先行を出した瞬間に割り引く扱いの口が無い(照合の機関は列の注文をそのまま数える)	-	結果なし	adapter: trading_simulator 2.2.0: 先行を出した瞬間に割り引く扱いの口が無い(照合の機関は列の注文をそのまま数える)	-	結果なし	0.0	0.0
+c2-6-snapshot-cap	C2-6	能力	結果なし	adapter: trading_simulator 2.2.0: 板の写真で値位 9995.0 の量が 8.0 から 4.0 に減った。どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない	-	結果なし	adapter: trading_simulator 2.2.0: 板の写真で値位 9995.0 の量が 8.0 から 4.0 に減った。どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない	-	結果なし	0.0	0.0
+c2-6-l3	C2-6	能力	正解と一致		81e86f85357e7662	正解と一致		81e86f85357e7662	2 回の実行で同じ	0.001	0.001
+c2-6-prob	C2-6	能力	結果なし	adapter: trading_simulator 2.2.0: 板の写真で値位 9995.0 の量が 8.0 から 4.0 に減った。どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない	-	結果なし	adapter: trading_simulator 2.2.0: 板の写真で値位 9995.0 の量が 8.0 から 4.0 に減った。どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない	-	結果なし	0.0	0.0
+c2-6-prob-power2	C2-6	値	結果なし	adapter: trading_simulator 2.2.0: 板の写真で値位 9995.0 の量が 8.0 から 4.0 に減った。どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない	-	結果なし	adapter: trading_simulator 2.2.0: 板の写真で値位 9995.0 の量が 8.0 から 4.0 に減った。どの注文が抜けたかを写真は言わず、照合の機関は名指しの取消しか受けない	-	結果なし	0.0	0.0
+c2-7-walk	C2-7	値	正解と一致		6cd443076f91661b	正解と一致		6cd443076f91661b	2 回の実行で同じ	0.001	0.0
+c2-7-walk-exhaust	C2-7	値	正解と一致		26acc65271f4daa6	正解と一致		26acc65271f4daa6	2 回の実行で同じ	0.0	0.0
+c2-7-impact-sqrt	C2-7	能力	結果なし	adapter: trading_simulator 2.2.0: 市場影響 sqrt_temporary(基準 mid)を渡す口が無い(この道具の市場影響は約定値の bps × 量の一次の一時的な滑りだけで、恒久の影響も平方根の形も無い)	-	結果なし	adapter: trading_simulator 2.2.0: 市場影響 sqrt_temporary(基準 mid)を渡す口が無い(この道具の市場影響は約定値の bps × 量の一次の一時的な滑りだけで、恒久の影響も平方根の形も無い)	-	結果なし	0.0	0.0
+c2-7-impact-permanent	C2-7	能力	結果なし	adapter: trading_simulator 2.2.0: 市場影響 linear_permanent(基準 best_ask)を渡す口が無い(この道具の市場影響は約定値の bps × 量の一次の一時的な滑りだけで、恒久の影響も平方根の形も無い)	-	結果なし	adapter: trading_simulator 2.2.0: 市場影響 linear_permanent(基準 best_ask)を渡す口が無い(この道具の市場影響は約定値の bps × 量の一次の一時的な滑りだけで、恒久の影響も平方根の形も無い)	-	結果なし	0.0	0.0
+c2-8-range	C2-8	値	結果なし	adapter: trading_simulator 2.2.0: 市場影響の関数・楽観と悲観の両方を回す口が無い(照合の機関は価格と時間の優先の照合だけ)	-	結果なし	adapter: trading_simulator 2.2.0: 市場影響の関数・楽観と悲観の両方を回す口が無い(照合の機関は価格と時間の優先の照合だけ)	-	結果なし	0.0	0.0
+c2-8-both-required	C2-8	能力	結果なし	adapter: trading_simulator 2.2.0: 市場影響の関数・楽観と悲観の両方を回す口が無い(照合の機関は価格と時間の優先の照合だけ)	-	結果なし	adapter: trading_simulator 2.2.0: 市場影響の関数・楽観と悲観の両方を回す口が無い(照合の機関は価格と時間の優先の照合だけ)	-	結果なし	0.0	0.0
+c2-9-order-feed	C2-9	値	結果なし	adapter: trading_simulator 2.2.0: 遅延(feed)を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 遅延(feed)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-late	C2-9	値	結果なし	adapter: trading_simulator 2.2.0: 遅延(cancel)を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-early	C2-9	値	結果なし	adapter: trading_simulator 2.2.0: 遅延(cancel)を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-notice	C2-9	値	結果なし	adapter: trading_simulator 2.2.0: 遅延(notice)を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 遅延(notice)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-empirical	C2-9	能力	結果なし	adapter: trading_simulator 2.2.0: 遅延(order)の分布 empirical を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 遅延(order)の分布 empirical を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-taker	C2-10	値	正解と一致		856c1552e9d39f0e	正解と一致		856c1552e9d39f0e	2 回の実行で同じ	0.001	0.001
+c2-10-maker	C2-10	値	正解と一致		75c369473acf4f13	正解と一致		75c369473acf4f13	2 回の実行で同じ	0.0	0.001
+c2-10-spread	C2-10	値	結果なし	adapter: trading_simulator 2.2.0: 費用 spread を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 費用 spread を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-funding	C2-10	値	結果なし	adapter: trading_simulator 2.2.0: 事象 funding を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 事象 funding を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-swap	C2-10	値	結果なし	adapter: trading_simulator 2.2.0: 事象 rollover を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 事象 rollover を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-jpx-fee	C2-10	値	結果なし	adapter: trading_simulator 2.2.0: 費用 fee_table を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 費用 fee_table を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-no-default	C2-10	能力	不一致	変形を断らずに走った(単一の結果を返した)	3b70703755edd93c	不一致	変形を断らずに走った(単一の結果を返した)	3b70703755edd93c	2 回の実行で同じ	0.001	0.001
+c2-10-source	C2-10	能力	不一致	変形を断らずに走った(単一の結果を返した)	3b70703755edd93c	不一致	変形を断らずに走った(単一の結果を返した)	3b70703755edd93c	2 回の実行で同じ	0.001	0.001
+c2-11-pnl	C2-11	値	正解と一致		47b2e26848ca9c46	正解と一致		47b2e26848ca9c46	2 回の実行で同じ	0.001	0.001
+c2-11-margin	C2-11	値	結果なし	adapter: trading_simulator 2.2.0: 口座の leverage を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 口座の leverage を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-liquidation	C2-11	値	結果なし	adapter: trading_simulator 2.2.0: 口座の leverage を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 口座の leverage を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-exposure	C2-11	値	不一致	account.exposure_ns: 期待 3999000000 / 出力に無い(KeyError: 'exposure_ns')	85faebe2c311871b	不一致	account.exposure_ns: 期待 3999000000 / 出力に無い(KeyError: 'exposure_ns')	85faebe2c311871b	2 回の実行で同じ	0.001	0.001
+c2-11-legs	C2-11	値	正解と一致		4b4085c9586a7103	正解と一致		4b4085c9586a7103	2 回の実行で同じ	0.001	0.001
+c2-11-split	C2-11	値	結果なし	adapter: trading_simulator 2.2.0: 事象 corporate を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-reverse-split	C2-11	値	結果なし	adapter: trading_simulator 2.2.0: 事象 corporate を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-jpy	C2-11	値	結果なし	adapter: trading_simulator 2.2.0: 事象 fx_rate を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 事象 fx_rate を渡す口が無い	-	結果なし	0.0	0.0
+c2-12-jpx-bar-value	C2-12	値	結果なし	adapter: trading_simulator 2.2.0: 事象 bar を渡す口が無い	-	結果なし	adapter: trading_simulator 2.2.0: 事象 bar を渡す口が無い	-	結果なし	0.0	0.0
+c2-12-jpx-wait	C2-12	能力	結果なし	変形: adapter: trading_simulator 2.2.0: 事象 bar を渡す口が無い	-	結果なし	変形: adapter: trading_simulator 2.2.0: 事象 bar を渡す口が無い	-	結果なし	0.001	0.001

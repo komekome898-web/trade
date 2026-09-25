@@ -1,0 +1,67 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+c2-1-market	C2-1	値	正解と一致		af1807214fb747db	正解と一致		af1807214fb747db	2 回の実行で同じ	1.191	0.413
+c2-1-limit	C2-1	値	正解と一致		9ca835d295fdb19d	正解と一致		9ca835d295fdb19d	2 回の実行で同じ	0.141	0.172
+c2-1-postonly	C2-1	値	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に post_only が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に post_only が無い	-	結果なし	0.0	0.0
+c2-1-ioc	C2-1	値	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に IOC が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に IOC が無い	-	結果なし	0.0	0.0
+c2-1-fok	C2-1	値	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に FOK が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に FOK が無い	-	結果なし	0.0	0.0
+c2-1-stop	C2-1	値	正解と一致		dd7706c75b6d156b	正解と一致		dd7706c75b6d156b	2 回の実行で同じ	0.152	0.143
+c2-1-reduceonly	C2-1	値	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に reduce_only が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に reduce_only が無い	-	結果なし	0.0	0.0
+c2-1-oco	C2-1	値	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に oco が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に oco が無い	-	結果なし	0.0	0.0
+c2-2-cancel	C2-2	値	正解と一致		ebb0ce3baeb3314f	正解と一致		ebb0ce3baeb3314f	2 回の実行で同じ	0.134	0.135
+c2-2-amend-price	C2-2	値	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に amend が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に amend が無い	-	結果なし	0.0	0.0
+c2-2-amend-qty	C2-2	能力	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に amend が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に amend が無い	-	結果なし	0.0	0.0
+c2-2-partial	C2-2	能力	正解と一致		233b3a6dafd1cf07	正解と一致		233b3a6dafd1cf07	2 回の実行で同じ	0.149	0.143
+c2-3-tick	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0; avg_px.o2: 期待 9990.0 / 出力 9985.0	036daeee53c0cf6c	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0; avg_px.o2: 期待 9990.0 / 出力 9985.0	036daeee53c0cf6c	2 回の実行で同じ	0.144	0.136
+c2-3-minqty	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 0.005	34f9711393b2ede1	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 0.005	34f9711393b2ede1	2 回の実行で同じ	0.143	0.138
+c2-3-round	C2-3	能力	不一致	avg_px.o1: 期待 9990.0 / 出力 9985.0; avg_px.o2: 期待 10011.0 / 出力 10015.0	476bb43816ee09a1	不一致	avg_px.o1: 期待 9990.0 / 出力 9985.0; avg_px.o2: 期待 10011.0 / 出力 10015.0	476bb43816ee09a1	2 回の実行で同じ	0.151	0.13
+c2-3-stp	C2-3	値	結果なし	adapter: zipline-reloaded 3.1.1: 足にする約定も足も無い(zipline は足の bundle だけを取る)	-	結果なし	adapter: zipline-reloaded 3.1.1: 足にする約定も足も無い(zipline は足の bundle だけを取る)	-	結果なし	0.0	0.0
+c2-3-jpx-session	C2-3	値	正解と一致		3643a32d2e28dbd7	正解と一致		3643a32d2e28dbd7	2 回の実行で同じ	0.148	0.147
+c2-3-jpx-limit	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 100.0	ab809511d5daffb4	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 100.0	ab809511d5daffb4	2 回の実行で同じ	0.145	0.14
+c2-3-fx-weekend	C2-3	値	正解と一致		b2094c488506c24b	正解と一致		b2094c488506c24b	2 回の実行で同じ	0.139	0.13
+c2-4-reject	C2-4	値	結果なし	adapter: zipline-reloaded 3.1.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-timeout	C2-4	値	結果なし	adapter: zipline-reloaded 3.1.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-unknown	C2-4	値	結果なし	adapter: zipline-reloaded 3.1.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-kill	C2-4	値	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に kill が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に kill が無い	-	結果なし	0.0	0.0
+c2-5-tier0	C2-5	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 0 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 0 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-5-tier1	C2-5	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 1 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 1 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-5-tier2	C2-5	能力	正解と一致		93de6eb1b91649f2	正解と一致		93de6eb1b91649f2	2 回の実行で同じ	0.145	0.128
+c2-5-tier3	C2-5	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 3 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 3 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-5-tier4	C2-5	能力	正解と一致		b2d0522a6f9e2ecc	正解と一致		b2d0522a6f9e2ecc	2 回の実行で同じ	0.16	0.138
+c2-5-tier5	C2-5	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-5-queue-value	C2-5	値	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-5-tier6	C2-5	能力	結果なし	adapter: zipline-reloaded 3.1.1: 市場影響の関数は VolumeShareSlippage(出来高の割合の 2 乗 × price_impact)と FixedBasisPointsSlippage(一定の bp)で、場面の形 linear_temporary を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 市場影響の関数は VolumeShareSlippage(出来高の割合の 2 乗 × price_impact)と FixedBasisPointsSlippage(一定の bp)で、場面の形 linear_temporary を渡す口が無い	-	結果なし	0.0	0.0
+c2-6-none	C2-6	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-6-discount-at-entry	C2-6	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い discount_at_entry の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い discount_at_entry の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-6-snapshot-cap	C2-6	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い snapshot_cap の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い snapshot_cap の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-6-l3	C2-6	能力	結果なし	adapter: zipline-reloaded 3.1.1: 事象 l3_add を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 事象 l3_add を渡す口が無い	-	結果なし	0.0	0.0
+c2-6-prob	C2-6	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い prob の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い prob の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-6-prob-power2	C2-6	値	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い prob の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い prob の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-7-walk	C2-7	値	結果なし	adapter: zipline-reloaded 3.1.1: 足にする約定も足も無い(zipline は足の bundle だけを取る)	-	結果なし	adapter: zipline-reloaded 3.1.1: 足にする約定も足も無い(zipline は足の bundle だけを取る)	-	結果なし	0.0	0.0
+c2-7-walk-exhaust	C2-7	値	結果なし	adapter: zipline-reloaded 3.1.1: 足にする約定も足も無い(zipline は足の bundle だけを取る)	-	結果なし	adapter: zipline-reloaded 3.1.1: 足にする約定も足も無い(zipline は足の bundle だけを取る)	-	結果なし	0.0	0.0
+c2-7-impact-sqrt	C2-7	能力	結果なし	adapter: zipline-reloaded 3.1.1: 市場影響の関数は VolumeShareSlippage(出来高の割合の 2 乗 × price_impact)と FixedBasisPointsSlippage(一定の bp)で、場面の形 sqrt_temporary を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 市場影響の関数は VolumeShareSlippage(出来高の割合の 2 乗 × price_impact)と FixedBasisPointsSlippage(一定の bp)で、場面の形 sqrt_temporary を渡す口が無い	-	結果なし	0.0	0.0
+c2-7-impact-permanent	C2-7	能力	結果なし	adapter: zipline-reloaded 3.1.1: 市場影響の関数は VolumeShareSlippage(出来高の割合の 2 乗 × price_impact)と FixedBasisPointsSlippage(一定の bp)で、場面の形 linear_permanent を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 市場影響の関数は VolumeShareSlippage(出来高の割合の 2 乗 × price_impact)と FixedBasisPointsSlippage(一定の bp)で、場面の形 linear_permanent を渡す口が無い	-	結果なし	0.0	0.0
+c2-8-range	C2-8	値	結果なし	adapter: zipline-reloaded 3.1.1: 段 None / 取消の扱い None の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 None / 取消の扱い None の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-8-both-required	C2-8	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 None / 取消の扱い None の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 None / 取消の扱い None の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0
+c2-9-order-feed	C2-9	値	結果なし	adapter: zipline-reloaded 3.1.1: 遅延(feed)を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 遅延(feed)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-late	C2-9	値	結果なし	adapter: zipline-reloaded 3.1.1: 遅延(cancel)を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-early	C2-9	値	結果なし	adapter: zipline-reloaded 3.1.1: 遅延(cancel)を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-notice	C2-9	値	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に post_only が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 公開の口に post_only が無い	-	結果なし	0.0	0.0
+c2-9-empirical	C2-9	能力	結果なし	adapter: zipline-reloaded 3.1.1: 遅延(order)を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 遅延(order)を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-taker	C2-10	値	正解と一致		31e67a0d33769563	正解と一致		31e67a0d33769563	2 回の実行で同じ	0.137	0.147
+c2-10-maker	C2-10	値	不一致	fee.o1: 期待 -0.999 / 出力 -0.9985	f13b6387d836c2e6	不一致	fee.o1: 期待 -0.999 / 出力 -0.9985	f13b6387d836c2e6	2 回の実行で同じ	0.137	0.169
+c2-10-spread	C2-10	値	正解と一致		0c413c8918f1c8c9	正解と一致		0c413c8918f1c8c9	2 回の実行で同じ	0.134	0.137
+c2-10-funding	C2-10	値	結果なし	adapter: zipline-reloaded 3.1.1: 事象 funding を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 事象 funding を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-swap	C2-10	値	結果なし	adapter: zipline-reloaded 3.1.1: 事象 rollover を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 事象 rollover を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-jpx-fee	C2-10	値	結果なし	adapter: zipline-reloaded 3.1.1: 費用 fee_table を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 費用 fee_table を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-no-default	C2-10	能力	不一致	変形を断らずに走った(単一の結果を返した)	dadbc1cd5432f733	不一致	変形を断らずに走った(単一の結果を返した)	dadbc1cd5432f733	2 回の実行で同じ	0.288	0.438
+c2-10-source	C2-10	能力	不一致	変形を断らずに走った(単一の結果を返した)	dadbc1cd5432f733	不一致	変形を断らずに走った(単一の結果を返した)	dadbc1cd5432f733	2 回の実行で同じ	0.307	0.234
+c2-11-pnl	C2-11	値	不一致	account.realized: 期待 40.0 / 出力に無い(KeyError: 'realized'); account.unrealized: 期待 30.0 / 出力に無い(KeyError: 'unrealized')	d268ec9122ccff4a	不一致	account.realized: 期待 40.0 / 出力に無い(KeyError: 'realized'); account.unrealized: 期待 30.0 / 出力に無い(KeyError: 'unrealized')	d268ec9122ccff4a	2 回の実行で同じ	0.352	0.14
+c2-11-margin	C2-11	値	結果なし	adapter: zipline-reloaded 3.1.1: 口座の leverage を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 口座の leverage を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-liquidation	C2-11	値	結果なし	adapter: zipline-reloaded 3.1.1: 口座の leverage を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 口座の leverage を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-exposure	C2-11	値	不一致	account.exposure_ns: 期待 3999000000 / 出力に無い(KeyError: 'exposure_ns')	38bebda766c2295f	不一致	account.exposure_ns: 期待 3999000000 / 出力に無い(KeyError: 'exposure_ns')	38bebda766c2295f	2 回の実行で同じ	0.137	0.129
+c2-11-legs	C2-11	値	結果なし	adapter: zipline-reloaded 3.1.1: 手数料の率は 1 つで、maker と taker で違う率を同じ実行の中で渡せない	-	結果なし	adapter: zipline-reloaded 3.1.1: 手数料の率は 1 つで、maker と taker で違う率を同じ実行の中で渡せない	-	結果なし	0.0	0.0
+c2-11-split	C2-11	値	結果なし	adapter: zipline-reloaded 3.1.1: 事象 corporate を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-reverse-split	C2-11	値	結果なし	adapter: zipline-reloaded 3.1.1: 事象 corporate を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-jpy	C2-11	値	結果なし	adapter: zipline-reloaded 3.1.1: 事象 fx_rate を渡す口が無い	-	結果なし	adapter: zipline-reloaded 3.1.1: 事象 fx_rate を渡す口が無い	-	結果なし	0.0	0.0
+c2-12-jpx-bar-value	C2-12	値	不一致	avg_px.o1: 期待 1496.0 / 出力 1495.0	a05653793fd73545	不一致	avg_px.o1: 期待 1496.0 / 出力 1495.0	a05653793fd73545	2 回の実行で同じ	0.138	0.133
+c2-12-jpx-wait	C2-12	能力	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	adapter: zipline-reloaded 3.1.1: 段 5 / 取消の扱い none の約定の模型が無い(slippage は価格と数量を足ごとに決める模型)	-	結果なし	0.0	0.0

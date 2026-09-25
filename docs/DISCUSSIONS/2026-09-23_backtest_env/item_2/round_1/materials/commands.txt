@@ -1,0 +1,27 @@
+# item 2, round 1, table-maker: commands run (cwd /home/user/trade unless noted)
+sha256sum docs/DATA/delegations/20260925_backtest_env_prompt.md   # da84268e88fc...
+# adapter body written: tests/bt/battery/item_2/adapters/new_impl.py (diff: new_impl_adapter.diff)
+python3 tests/bt/battery/item_2/run_battery.py --target new_impl --out $M/runs/new_impl.tsv   # first check
+PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/battery/item_2 -v -k mutant > pytest_item2_r1_shiryo_mutant.out
+git ls-files -z tests/bt/battery/item_2 | xargs -0 sha256sum | sha256sum > fingerprint.txt
+python3 tests/bt/battery/item_2/run_battery.py --list-targets > targets_list.tsv
+bash reinstall_venvs.sh > logs/reinstall_venvs.log                 # part 1 (stopped by the 1200MB guard at zipline)
+rm -rf <scratch>/venvs/item_0/zipline-reloaded <scratch>/venvs/item_0/_dl/{c37,luczinsritter}   # partial installs
+run_all.sh <targets whose venv existed> > run_log_part1.tsv
+<venv>/backtrader/bin/pip install --no-cache-dir pandas
+run_all.sh opp_backtrader opp_quantcore opp_fast_trade opp_rqalpha opp_lib_pybroker > run_log_part2.tsv
+rm -rf <scratch>/venvs/item_0/{fast-trade-r17,rqalpha,lib-pybroker,quantcore}   # after both runs, to free disk
+bash reinstall_venvs_3.sh > logs/reinstall_venvs_3.log            # install -> run twice -> remove, one at a time
+# c103 retry: helper venv with a newer uv, uv python install 3.14.7, uv venv, uv pip install sortedcontainers==2.4.0 pydantic==2.13.5, .pth to src/c103/src (logs/reinstall_venvs_3.log)
+run_all.sh opp_isaaccheng_obsim >> run_log_part3.tsv
+<venv>/vnpy/bin/pip install --no-cache-dir --no-deps vnpy_ctastrategy==1.4.1
+run_all.sh opp_vnpy@tick opp_vnpy@bar >> run_log_part3.tsv
+python3 compare_runs.py > compare_runs.out
+python3 make_tables.py > make_tables.out
+python3 check_names.py > check_names.out
+md5sum ../表_*.md per pair (mapping.tsv) > md5sum_pairs.txt
+python3 recount.py > recount.out
+python3 recount_from_tables.py > recount_from_tables.out
+git diff tests/bt/battery/item_2/adapters/new_impl.py > new_impl_adapter.diff
+git ls-files -z tests/bt/battery/item_2 | xargs -0 sha256sum | sha256sum > fingerprint_after.txt
+PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/battery/item_2 tests/bt/item_2/test_i2_scenes.py > pytest_item2_r1_shiryo.out   # 150 passed

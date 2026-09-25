@@ -22,22 +22,257 @@ the mouth, not the body).  The contract the body must keep:
   i2_protocol.NotExpressible(what was tried).
 - Never compute an answer the engine did not produce, never read the scene's
   oracle / expected answer (i2_scenes.expected), never special-case a scene id.
+
+Body (item 2, round 1, table-maker).  Only names exported by the public
+packages bot.bt.core / orders / fill / latency / costs / portfolio are used.
+Choices the scene input leaves open (each is named once, here):
+- fill_model null (the scene declares that every tier gives its answer):
+  FillSpec(tier=4) -- a tier that needs neither a book replay nor a cancel
+  stance.  The scene word "l3" for a cancel stance is the engine's "l3_advance".
+- latency null: Constant(0) on all four channels.
+- rules.sessions_jst: Sessions(windows, utc_offset_min=540 (JST), weekdays
+  Mon-Fri, source).
+- costs.funding "apply_events": FundingRule(price="event_mark").
+- market items that are not core events (l3_add / l3_cancel, rollover,
+  corporate, fx_rate) go to the venue's L3Feed / the account's
+  ReferenceSchedule / FxRates.
+- a tier-2 fill model with bar_ns and no bar events: bars_from_trades.
+- every distinct action time is a ClockEvent in its own stream; the strategy
+  performs the actions of that time when it sees the clock event.
 """
 from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import Any, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from i2_protocol import NotExpressible  # noqa: E402
+from i2_protocol import NotExpressible, Refused  # noqa: E402
+
+from bot.bt.core import (BarEvent, BookSnapshotEvent, ClockEvent, CoreEngine, EventType,  # noqa: E402
+                         FundingEvent, OrderApiError, Strategy, TradeEvent)
+from bot.bt.costs import (CostSchedule, FeeTable, FundingRule, FxPoint, FxRates,  # noqa: E402
+                          ScheduleCostModel, SwapRule)
+from bot.bt.fill import (FillRange, FillSpec, ImpactSpec, L3Add, L3Cancel, L3Feed, SimVenue,  # noqa: E402
+                         bars_from_trades, run_range)
+from bot.bt.latency import Constant, Empirical, LatencyModel  # noqa: E402
+from bot.bt.orders import (POLICY_VALUES, ClosedWindows, ExecutionModelError, Fault, FaultPlan,  # noqa: E402
+                           KillSwitch, OrderClient, PriceLimit, Product, Sessions, VenueRules)
+from bot.bt.portfolio import (CorporateAction, LiquidationRule, MarginAccount, ReferenceSchedule,  # noqa: E402
+                              Rollover)
+
+TIER_WHEN_ANY = 4
+JST_OFFSET_MIN = 540
+WEEKDAYS = (0, 1, 2, 3, 4)
+STANCE_WORDS = {"l3": "l3_advance"}
+RULE_EXTRA = {"mark", "sessions_jst", "closed_utc_ns", "price_limit", "source"}
+COST_KEYS = {"maker_rate", "taker_rate", "source", "spread", "funding", "swap", "fee_table", "mid"}
+
+
+def _rules(r: dict) -> VenueRules:
+    extra = set(r) - set(POLICY_VALUES) - RULE_EXTRA
+    if extra:
+        raise NotExpressible(f"VenueRules has no parameter for rules {sorted(extra)}")
+    kw: dict[str, Any] = {k: v for k, v in r.items() if k in POLICY_VALUES}
+    if "sessions_jst" in r:
+        kw["sessions"] = Sessions(tuple(tuple(w) for w in r["sessions_jst"]), JST_OFFSET_MIN, WEEKDAYS, r["source"])
+    if "closed_utc_ns" in r:
+        kw["closed"] = ClosedWindows(tuple(tuple(w) for w in r["closed_utc_ns"]), r["source"])
+    if "price_limit" in r:
+        p = r["price_limit"]
+        kw["price_limit"] = PriceLimit(p["base"], p["width"], p["source"])
+    return VenueRules(**kw)
+
+
+def _costs(c: dict) -> CostSchedule:
+    extra = set(c) - COST_KEYS
+    if extra:
+        raise NotExpressible(f"CostSchedule has no parameter for costs {sorted(extra)}")
+    kw: dict[str, Any] = {k: c[k] for k in ("maker_rate", "taker_rate", "source", "spread") if k in c}
+    if "funding" in c:
+        if c["funding"] != "apply_events":
+            raise NotExpressible(f"funding declaration {c['funding']!r}")
+        kw["funding"] = FundingRule(price="event_mark")
+    if "swap" in c:
+        kw["swap"] = SwapRule(**c["swap"])
+    if "fee_table" in c:
+        kw["fee_table"] = FeeTable(tuple(tuple(x) for x in c["fee_table"]))
+    try:
+        return CostSchedule(**kw)
+    except TypeError as exc:  # a required cost is missing: the engine will not build the schedule
+        raise Refused(f"CostSchedule: {type(exc).__name__}: {exc}") from None
+
+
+def _fill(fm: Optional[dict]) -> FillSpec:
+    if fm is None:
+        return FillSpec(tier=TIER_WHEN_ANY)
+    kw: dict[str, Any] = {"tier": fm["tier"]}
+    if "cancel_stance" in fm:
+        kw["cancel_stance"] = STANCE_WORDS.get(fm["cancel_stance"], fm["cancel_stance"])
+    for k in ("cancel_rate", "prob_f", "prob_n", "bar_ns"):
+        if k in fm:
+            kw[k] = fm[k]
+    if "impact" in fm:
+        kw["impact"] = ImpactSpec(**fm["impact"])
+    return FillSpec(**kw)
+
+
+def _latency(lat: Optional[dict]) -> LatencyModel:
+    if lat is None:
+        return LatencyModel(feed=Constant(0), order=Constant(0), cancel=Constant(0), notice=Constant(0))
+    ch = {}
+    for name in ("feed", "order", "cancel", "notice"):
+        d = lat[name]
+        if d["kind"] == "constant":
+            ch[name] = Constant(d["ns"])
+        elif d["kind"] == "empirical":
+            ch[name] = Empirical(d["samples_ns"], d["seed"])
+        else:
+            raise NotExpressible(f"latency kind {d['kind']!r}")
+    return LatencyModel(**ch)
+
+
+def _key(ev) -> tuple:
+    d = ev.to_dict()
+    d.pop("received_time_ns", None)
+    d.pop("seq", None)
+    return tuple(sorted((k, repr(v)) for k, v in d.items()))
+
+
+class _Actor(Strategy):
+    """Performs the scene's actions at their times; records what it saw."""
+
+    def __init__(self, by_tag: dict, client: OrderClient, labels: dict):
+        self.by_tag, self.client, self.labels = by_tag, client, labels
+        self.seen: dict[str, int] = {}
+        self.refused: dict[str, str] = {}
+
+    def on_event(self, event, ctx) -> None:
+        self.client.observe(event, ctx)
+        if event.EVENT_TYPE is not EventType.CLOCK:
+            names = self.labels.get(_key(event))
+            if names:
+                self.seen.setdefault(names.pop(0), ctx.now_ns)
+            return
+        for a in self.by_tag.get(event.tag, ()):
+            op = a["op"]
+            if op == "place":
+                try:
+                    self.client.place(ctx, ref=a["ref"], side=a["side"], order_type=a["type"], size=a["qty"],
+                                      price=a["px"] if a["type"] in ("limit", "stop_limit") else None,
+                                      trigger_price=a["stop_px"], tif=a["tif"], post_only=a["post_only"],
+                                      reduce_only=a["reduce_only"], oco_with=a["oco"])
+                except (ExecutionModelError, OrderApiError) as exc:  # the engine refused this one order
+                    self.refused[a["ref"]] = f"{type(exc).__name__}: {exc}"[:300]
+            elif op == "cancel":
+                self.client.cancel(ctx, a["ref"])
+            elif op == "amend":
+                self.client.amend(ctx, a["ref"], price=a.get("px"), size=a.get("qty"))
+            elif op == "kill":
+                self.client.kill("kill switch action", ctx.now_ns)
+            else:
+                raise NotExpressible(f"action {op!r}")
+
+
+def _market(inp: dict):
+    core, l3, ref, fx, labels = [], [], [], [], {}
+    for e in inp["market"]:
+        t, typ, ev = e["t"], e["type"], None
+        if typ == "book":
+            ev = BookSnapshotEvent(received_time_ns=t, bids=[tuple(x) for x in e["bids"]],
+                                   asks=[tuple(x) for x in e["asks"]])
+        elif typ == "trade":
+            ev = TradeEvent(received_time_ns=t, price=e["px"], size=e["qty"], side=e["aggressor"])
+        elif typ == "bar":
+            ev = BarEvent(received_time_ns=t, start_time_ns=t - e["span_ns"], open=e["o"], high=e["h"],
+                          low=e["l"], close=e["c"], volume=e["v"])
+        elif typ == "funding":
+            ev = FundingEvent(received_time_ns=t, rate=e["rate"], mark_price=e.get("mark"))
+        elif typ == "l3_add":
+            l3.append(L3Add(t, e["id"], e["side"], e["px"], e["qty"]))
+        elif typ == "l3_cancel":
+            l3.append(L3Cancel(t, e["id"]))
+        elif typ == "rollover":
+            ref.append(Rollover(t))
+        elif typ == "corporate":
+            ref.append(CorporateAction(t, e["ratio"]))
+        elif typ == "fx_rate":
+            fx.append(FxPoint(t, e["pair"], e["px"]))
+        else:
+            raise NotExpressible(f"market item {typ!r}")
+        if ev is not None:
+            core.append(ev)
+            if e.get("label"):
+                labels.setdefault(_key(ev), []).append(e["label"])
+    return core, l3, ref, fx, labels
+
+
+def _run(inp: dict, fill: FillSpec) -> dict:
+    product = Product(**inp["product"])
+    rules = _rules(inp["rules"])
+    costs = _costs(inp["costs"])
+    core, l3, refs_sched, fx_pts, labels = _market(inp)
+    fx = FxRates(fx_pts) if fx_pts else None
+    streams: dict[str, list] = {"market": core}
+    if fill.tier == 2 and fill.bar_ns and not any(type(e) is BarEvent for e in core):
+        streams["bars"] = bars_from_trades([e for e in core if type(e) is TradeEvent], fill.bar_ns)
+    by_tag: dict[str, list] = {}
+    for a in inp["actions"]:
+        by_tag.setdefault(f"t{a['t']}", []).append(a)
+    streams["actions"] = sorted((ClockEvent(received_time_ns=int(tag[1:]), tag=tag) for tag in by_tag),
+                                key=lambda c: c.received_time_ns)
+    faults = FaultPlan(tuple(Fault(f["kind"], f["ref"]) for f in inp.get("inject") or ()))
+    venue = SimVenue(product=product, rules=rules, fill=fill, costs=costs, faults=faults,
+                     l3=L3Feed(l3) if l3 else None)
+    acc = inp["account"]
+    liq = None
+    if "maint_ratio" in acc:
+        liq = LiquidationRule(acc["maint_ratio"], acc.get("source", ""), acc.get("liquidation_price", "mark"))
+    account = MarginAccount(product=product, currency=acc["currency"], cash=acc["cash"], leverage=acc["leverage"],
+                            liquidation=liq, mark=inp["rules"].get("mark", "last_trade"), costs=costs, fx=fx,
+                            reference=ReferenceSchedule(refs_sched) if refs_sched else None,
+                            open_orders=venue.open_orders)
+    cost_model = ScheduleCostModel(costs, product=product, account_currency=acc["currency"], fx=fx)
+    client = OrderClient(KillSwitch(None))
+    actor = _Actor(by_tag, client, labels)
+    times = [e.received_time_ns for s in streams.values() for e in s]
+    engine = CoreEngine(actor, streams, venue, _latency(inp["latency"]), cost_model, account,
+                        end_time_ns=inp["end_t"], time_span_ns=(min(times), max(max(times), inp["end_t"])))
+    result = engine.run()
+    snap = account.finish(inp["end_t"])
+    placed = [a["ref"] for a in inp["actions"] if a["op"] == "place"]
+    orders = {r: ({"status": "rejected", "error": actor.refused[r]} if r in actor.refused
+                  else {"status": client.status(result, r)}) for r in placed}
+    return {
+        "orders": orders,
+        "fills": [{"ref": f.client_order_id, "t": f.venue_time_ns, "px": f.price, "qty": f.size, "fee": f.fee,
+                   "liq": f.liquidity} for f in result.fills],
+        "sent": {r: int(r in result.venue_states) for r in placed},
+        "notices": {r: client.notice_times(r) for r in placed},
+        "seen": dict(actor.seen),
+        "account": {"position": snap.position, "realized": snap.realized, "unrealized": snap.unrealized,
+                    "avg_px": snap.avg_px, "exposure_ns": snap.exposure_ns, "liquidated_t": snap.liquidated_t,
+                    "realized_jpy": snap.realized_account if snap.currency == "JPY" else None},
+        "costs": {"funding": snap.funding_paid, "swap": snap.swap_paid},
+    }
 
 
 class NewImpl:
     name = "new_impl"
 
     def run(self, inp: dict) -> dict:
-        raise NotExpressible("新実装の adapter の本体はまだ書かれていない(資料係が毎周書く)")
+        fm = inp["fill_model"]
+        try:
+            if fm is not None and "range" in fm:
+                sides = fm["range"]
+                fr = FillRange(optimistic=_fill(sides["optimistic"]) if sides.get("optimistic") else None,
+                               pessimistic=_fill(sides["pessimistic"]) if sides.get("pessimistic") else None)
+                rr = run_range(lambda spec: _run(inp, spec), fr)
+                return {"range": {"optimistic": rr.optimistic, "pessimistic": rr.pessimistic}}
+            return _run(inp, _fill(fm))
+        except ExecutionModelError as exc:  # the engine refused the run
+            raise Refused(f"{type(exc).__name__}: {exc}") from None
 
 
 TARGET = NewImpl()

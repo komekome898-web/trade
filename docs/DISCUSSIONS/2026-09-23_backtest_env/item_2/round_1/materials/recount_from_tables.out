@@ -1,0 +1,13 @@
+current_1 表_az3umc.md A new_impl 正解と一致 66 同じ 66 場面 12 観点
+current_1 表_az3umc.md B current_impl 正解と一致 4 同じ 19 場面 12 観点
+current_2 表_0pnhsh.md A current_impl 正解と一致 4 同じ 19 場面 12 観点
+current_2 表_0pnhsh.md B new_impl 正解と一致 66 同じ 66 場面 12 観点
+survey_1 表_kfau3j.md A new_impl 正解と一致 66 同じ 66 場面 12 観点
+survey_1 表_kfau3j.md B survey_best 正解と一致 38 同じ 49 場面 12 観点
+survey_2 表_c5pwpg.md A survey_best 正解と一致 38 同じ 49 場面 12 観点
+survey_2 表_c5pwpg.md B new_impl 正解と一致 66 同じ 66 場面 12 観点
+mutant_1 表_i6bjdn.md A new_impl 正解と一致 66 同じ 66 場面 12 観点
+mutant_1 表_i6bjdn.md B mutant 正解と一致 61 同じ 66 場面 12 観点
+mutant_2 表_qjqwvv.md A mutant 正解と一致 61 同じ 66 場面 12 観点
+mutant_2 表_qjqwvv.md B new_impl 正解と一致 66 同じ 66 場面 12 観点
+all counts match the cells: True

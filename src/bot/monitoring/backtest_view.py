@@ -8,7 +8,7 @@ with record.json, repro.json and the exports) and renders them on the
 server: every tab's HTML and its plain text are made here, so what the page
 shows is what the API serves (no chart library, no external URL).
 
-    list_runs(runs_dir)          -> [{run_id, purpose, instrument, setup, trades, ...}]
+    list_runs(runs_dir)          -> [{run_id, purpose, instrument, setup, trades, ...}], newest first
     run_view(runs_dir, run_id)   -> {run_id, purpose, warning, tabs: [{label, text, html}], values}
     run_page(view)               -> a complete HTML page of one run (no script)
 """
@@ -45,10 +45,19 @@ def _run_dir(runs_dir: str, run_id: str) -> str:
 
 
 def list_runs(runs_dir: str) -> list[dict]:
+    """Finished runs, newest first (by the time record.json was written;
+    run ids are content hashes, so their order says nothing), ties by id."""
     out = []
     if not os.path.isdir(runs_dir):
         return out
-    for name in sorted(os.listdir(runs_dir)):
+    names = []
+    for name in os.listdir(runs_dir):
+        try:
+            d = _run_dir(runs_dir, name)
+        except BacktestViewError:
+            continue
+        names.append((-os.stat(os.path.join(d, "record.json")).st_mtime_ns, name))
+    for _, name in sorted(names):
         try:
             d = _run_dir(runs_dir, name)
         except BacktestViewError:
@@ -97,7 +106,6 @@ def run_view(runs_dir: str, run_id: str) -> dict:
     repro = _load(os.path.join(d, "repro.json"))
     m = _export(d, "metrics") or {}
     trades = _export(d, "trades") or []
-    fills = _export(d, "fills") or []
     quality = _export(d, "data_quality") or {}
     validation = _export(d, "validation")
     cfg = rec.get("config") or {}

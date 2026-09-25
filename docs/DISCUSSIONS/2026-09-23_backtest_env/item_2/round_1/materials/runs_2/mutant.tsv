@@ -1,0 +1,67 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+c2-1-market	C2-1	値	正解と一致		23704a8147c23b5a	正解と一致		23704a8147c23b5a	2 回の実行で同じ	0.002	0.002
+c2-1-limit	C2-1	値	正解と一致		d5e76844248c73d9	正解と一致		d5e76844248c73d9	2 回の実行で同じ	0.002	0.002
+c2-1-postonly	C2-1	値	正解と一致		189775d33fa03f29	正解と一致		189775d33fa03f29	2 回の実行で同じ	0.002	0.002
+c2-1-ioc	C2-1	値	正解と一致		86594d883cee45f1	正解と一致		86594d883cee45f1	2 回の実行で同じ	0.001	0.001
+c2-1-fok	C2-1	値	正解と一致		a7eb0883aed87ab4	正解と一致		a7eb0883aed87ab4	2 回の実行で同じ	0.001	0.002
+c2-1-stop	C2-1	値	正解と一致		b7d745852eb520d4	正解と一致		b7d745852eb520d4	2 回の実行で同じ	0.002	0.002
+c2-1-reduceonly	C2-1	値	正解と一致		c40d4d7ab0b1a835	正解と一致		c40d4d7ab0b1a835	2 回の実行で同じ	0.003	0.002
+c2-1-oco	C2-1	値	正解と一致		df847d3ac20062d6	正解と一致		df847d3ac20062d6	2 回の実行で同じ	0.003	0.003
+c2-2-cancel	C2-2	値	正解と一致		b8d3bfc85eef6b37	正解と一致		b8d3bfc85eef6b37	2 回の実行で同じ	0.001	0.002
+c2-2-amend-price	C2-2	値	正解と一致		fe2f58d4ae7c16b5	正解と一致		fe2f58d4ae7c16b5	2 回の実行で同じ	0.002	0.002
+c2-2-amend-qty	C2-2	能力	正解と一致		e69f14c330f05dbe	正解と一致		e69f14c330f05dbe	2 回の実行で同じ	0.002	0.002
+c2-2-partial	C2-2	能力	正解と一致		4ddb81843bc494a0	正解と一致		4ddb81843bc494a0	2 回の実行で同じ	0.002	0.002
+c2-3-tick	C2-3	値	正解と一致		35f6d99edaef72c5	正解と一致		35f6d99edaef72c5	2 回の実行で同じ	0.002	0.002
+c2-3-minqty	C2-3	値	正解と一致		2f82b562bf2eefdd	正解と一致		2f82b562bf2eefdd	2 回の実行で同じ	0.002	0.002
+c2-3-round	C2-3	能力	正解と一致		12e83c0898b502d8	正解と一致		12e83c0898b502d8	2 回の実行で同じ	0.002	0.002
+c2-3-stp	C2-3	値	正解と一致		d849e9bc7d22390c	正解と一致		d849e9bc7d22390c	2 回の実行で同じ	0.001	0.001
+c2-3-jpx-session	C2-3	値	正解と一致		9ed3d84ad2bee3dd	正解と一致		9ed3d84ad2bee3dd	2 回の実行で同じ	0.002	0.002
+c2-3-jpx-limit	C2-3	値	正解と一致		2b2724e0661e215a	正解と一致		2b2724e0661e215a	2 回の実行で同じ	0.003	0.002
+c2-3-fx-weekend	C2-3	値	正解と一致		d846e8c841782dd7	正解と一致		d846e8c841782dd7	2 回の実行で同じ	0.002	0.001
+c2-4-reject	C2-4	値	正解と一致		25ff5ea6bbe40d71	正解と一致		25ff5ea6bbe40d71	2 回の実行で同じ	0.002	0.002
+c2-4-timeout	C2-4	値	正解と一致		3a3f892af62736d3	正解と一致		3a3f892af62736d3	2 回の実行で同じ	0.002	0.001
+c2-4-unknown	C2-4	値	正解と一致		3a3f892af62736d3	正解と一致		3a3f892af62736d3	2 回の実行で同じ	0.002	0.001
+c2-4-kill	C2-4	値	正解と一致		ff0c80c0f0914834	正解と一致		ff0c80c0f0914834	2 回の実行で同じ	0.002	0.001
+c2-5-tier0	C2-5	能力	正解と一致		08b4df2fb0651889	正解と一致		08b4df2fb0651889	2 回の実行で同じ	0.002	0.002
+c2-5-tier1	C2-5	能力	正解と一致		8ca3e11a8c9bf1ed	正解と一致		8ca3e11a8c9bf1ed	2 回の実行で同じ	0.003	0.001
+c2-5-tier2	C2-5	能力	正解と一致		32fff42785143c05	正解と一致		32fff42785143c05	2 回の実行で同じ	0.002	0.002
+c2-5-tier3	C2-5	能力	正解と一致		affea40d95b18559	正解と一致		affea40d95b18559	2 回の実行で同じ	0.002	0.002
+c2-5-tier4	C2-5	能力	正解と一致		4fe7697bde41abbd	正解と一致		4fe7697bde41abbd	2 回の実行で同じ	0.002	0.002
+c2-5-tier5	C2-5	能力	正解と一致		6fb4b41beaaa3632	正解と一致		6fb4b41beaaa3632	2 回の実行で同じ	0.002	0.002
+c2-5-queue-value	C2-5	値	正解と一致		356b4a858741c005	正解と一致		356b4a858741c005	2 回の実行で同じ	0.002	0.002
+c2-5-tier6	C2-5	能力	正解と一致		03ce4b770bcf71d7	正解と一致		03ce4b770bcf71d7	2 回の実行で同じ	0.001	0.001
+c2-6-none	C2-6	能力	正解と一致		862d39a94b5cd4c0	正解と一致		862d39a94b5cd4c0	2 回の実行で同じ	0.001	0.002
+c2-6-discount-at-entry	C2-6	能力	正解と一致		51ee961c1c6fcd96	正解と一致		51ee961c1c6fcd96	2 回の実行で同じ	0.001	0.002
+c2-6-snapshot-cap	C2-6	能力	正解と一致		a683339be6f5eebd	正解と一致		a683339be6f5eebd	2 回の実行で同じ	0.001	0.002
+c2-6-l3	C2-6	能力	正解と一致		55c7667ec06d6c8b	正解と一致		55c7667ec06d6c8b	2 回の実行で同じ	0.001	0.001
+c2-6-prob	C2-6	能力	正解と一致		5d0c7645027789d3	正解と一致		5d0c7645027789d3	2 回の実行で同じ	0.001	0.002
+c2-6-prob-power2	C2-6	値	正解と一致		dc3f765a2dafa911	正解と一致		dc3f765a2dafa911	2 回の実行で同じ	0.002	0.002
+c2-7-walk	C2-7	値	正解と一致		7b8c7ae0b44281c8	正解と一致		7b8c7ae0b44281c8	2 回の実行で同じ	0.001	0.001
+c2-7-walk-exhaust	C2-7	値	正解と一致		e8b29480561b8688	正解と一致		e8b29480561b8688	2 回の実行で同じ	0.001	0.001
+c2-7-impact-sqrt	C2-7	能力	正解と一致		68f97b1fb33e4f21	正解と一致		68f97b1fb33e4f21	2 回の実行で同じ	0.001	0.001
+c2-7-impact-permanent	C2-7	能力	正解と一致		1ff12c3a802068f5	正解と一致		1ff12c3a802068f5	2 回の実行で同じ	0.002	0.003
+c2-8-range	C2-8	値	正解と一致		d0c06d1ac6aca141	正解と一致		d0c06d1ac6aca141	2 回の実行で同じ	0.002	0.002
+c2-8-both-required	C2-8	能力	正解と一致	変形を断った: FillSpecError: a range needs both sides; pessimistic is None	72fe852cc3876baf	正解と一致	変形を断った: FillSpecError: a range needs both sides; pessimistic is None	72fe852cc3876baf	2 回の実行で同じ	0.002	0.002
+c2-9-order-feed	C2-9	値	正解と一致		25c721743fa2d3d4	正解と一致		25c721743fa2d3d4	2 回の実行で同じ	0.001	0.001
+c2-9-cancel-late	C2-9	値	正解と一致		37a4cf2d777d8a15	正解と一致		37a4cf2d777d8a15	2 回の実行で同じ	0.001	0.002
+c2-9-cancel-early	C2-9	値	正解と一致		2a10107e63750dd8	正解と一致		2a10107e63750dd8	2 回の実行で同じ	0.001	0.002
+c2-9-notice	C2-9	値	正解と一致		baf18dd061f6f90d	正解と一致		baf18dd061f6f90d	2 回の実行で同じ	0.001	0.001
+c2-9-empirical	C2-9	能力	正解と一致		c90d7c7a6b468c5a	正解と一致		c90d7c7a6b468c5a	2 回の実行で同じ	0.002	0.002
+c2-10-taker	C2-10	値	不一致	fee.o1: 期待 5.0005 / 出力 2.0002	b871a770d9ee9432	不一致	fee.o1: 期待 5.0005 / 出力 2.0002	b871a770d9ee9432	2 回の実行で同じ	0.001	0.001
+c2-10-maker	C2-10	値	正解と一致		af3f7743772702b6	正解と一致		af3f7743772702b6	2 回の実行で同じ	0.001	0.001
+c2-10-spread	C2-10	値	正解と一致		b4a6004d0e825266	正解と一致		b4a6004d0e825266	2 回の実行で同じ	0.001	0.001
+c2-10-funding	C2-10	値	正解と一致		fd02d872bc725e19	正解と一致		fd02d872bc725e19	2 回の実行で同じ	0.001	0.001
+c2-10-swap	C2-10	値	正解と一致		9a8fc9b2be14bac1	正解と一致		9a8fc9b2be14bac1	2 回の実行で同じ	0.001	0.001
+c2-10-jpx-fee	C2-10	値	不一致	fee.o1: 期待 115.0 / 出力 0.0	589851fd505ef1e8	不一致	fee.o1: 期待 115.0 / 出力 0.0	589851fd505ef1e8	2 回の実行で同じ	0.001	0.001
+c2-10-no-default	C2-10	能力	不一致	対照: fee.o1: 期待 5.0005 / 出力 2.0002	b871a770d9ee9432	不一致	対照: fee.o1: 期待 5.0005 / 出力 2.0002	b871a770d9ee9432	2 回の実行で同じ	0.001	0.001
+c2-10-source	C2-10	能力	不一致	対照: fee.o1: 期待 5.0005 / 出力 2.0002	b871a770d9ee9432	不一致	対照: fee.o1: 期待 5.0005 / 出力 2.0002	b871a770d9ee9432	2 回の実行で同じ	0.001	0.001
+c2-11-pnl	C2-11	値	正解と一致		0ed4d63d4e38b04e	正解と一致		0ed4d63d4e38b04e	2 回の実行で同じ	0.002	0.002
+c2-11-margin	C2-11	値	正解と一致		4a0bf7179155efd9	正解と一致		4a0bf7179155efd9	2 回の実行で同じ	0.001	0.002
+c2-11-liquidation	C2-11	値	正解と一致		d62af2a12a9a5839	正解と一致		d62af2a12a9a5839	2 回の実行で同じ	0.002	0.002
+c2-11-exposure	C2-11	値	正解と一致		729fd1e53418fd9d	正解と一致		729fd1e53418fd9d	2 回の実行で同じ	0.002	0.002
+c2-11-legs	C2-11	値	不一致	fee.o2: 期待 4.99 / 出力 1.996	6309b57d91cc2b63	不一致	fee.o2: 期待 4.99 / 出力 1.996	6309b57d91cc2b63	2 回の実行で同じ	0.002	0.002
+c2-11-split	C2-11	値	正解と一致		8fd30773df3a807e	正解と一致		8fd30773df3a807e	2 回の実行で同じ	0.001	0.001
+c2-11-reverse-split	C2-11	値	正解と一致		a304a692f8552cda	正解と一致		a304a692f8552cda	2 回の実行で同じ	0.001	0.001
+c2-11-jpy	C2-11	値	正解と一致		1e0bc8c0d23bbe93	正解と一致		1e0bc8c0d23bbe93	2 回の実行で同じ	0.002	0.002
+c2-12-jpx-bar-value	C2-12	値	正解と一致		cfbc71b7ef5afde3	正解と一致		cfbc71b7ef5afde3	2 回の実行で同じ	0.001	0.001
+c2-12-jpx-wait	C2-12	能力	正解と一致	変形を断った: DataUnavailableError: tier 5 (queue position) needs the displayed size at the order's price when it rests: the run has no book data for venue 'jpx_equity'; the model does not substitute another layer (bars) for it -- data wait (データ待ち): この環境: リードが 2026-09-23 に `ls backtest_data | grep -iE "jpx|n225|t	40f7541fbeae9c38	正解と一致	変形を断った: DataUnavailableError: tier 5 (queue position) needs the displayed size at the order's price when it rests: the run has no book data for venue 'jpx_equity'; the model does not substitute another layer (bars) for it -- data wait (データ待ち): この環境: リードが 2026-09-23 に `ls backtest_data | grep -iE "jpx|n225|t	40f7541fbeae9c38	2 回の実行で同じ	0.002	0.002

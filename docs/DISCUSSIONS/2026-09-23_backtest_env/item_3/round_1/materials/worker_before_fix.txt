@@ -1,0 +1,53 @@
+項目 3 第 1 周 作業者: 格子の試験と場面の試験が「直す前に落ちた」記録(この会話で打ったコマンドの出力の写し)
+
+1. 場面の試験の再現の欄(v16-run-tabs)が 2 回で違った
+   コマンド: PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/item_3/test_i3_battery_scenes.py -x
+   出力(末尾):
+     >       assert J.digest({"class": cls1, "obs": obs1}) == J.digest({"class": cls2, "obs": obs2})
+     E       AssertionError: assert '18cf44ba384b8b0c' == 'c117789229fd21c1'
+     FAILED tests/bt/item_3/test_i3_battery_scenes.py::test_scene[v16-run-tabs] - ...
+     1 failed, 45 passed in 7.78s
+   2 回の観測の差(安定化した観測を行で比べた最初の違い):
+     'data_quality.json 9e6eb43d1bd9c988deaeeb53ec6869781886decdb64d1dd019dd5040de5c988f'
+     'data_quality.json f0f60c31a0cf6c9909f26339b7c5dd6c579faa6c983946f775b238ae4a3b4af2'
+   根本原因: 実行の出力(data_quality.json)にデータ層の manifest の絶対パス(root・real)が入り、同じ入力でも
+   根(置き場)が違うと出力のバイトが変わった。実行 ID は置き場を含まないので、同じ ID で中身の違う出力になりうる。
+   直した構造: src/bot/bt/repro/runner.py の _execute で manifest から root と real を外し、封印の記録の path を
+   根からの相対にした。敵対者の試験: tests/bt/item_3/test_i3_repro_grid.py::test_same_run_in_two_places_is_the_same_bytes。
+
+2. 場面の試験 a16-list-to-run が全体の実行で 1 回だけ落ちた(単独では通った)
+   コマンド: PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/item_3
+   出力(末尾):
+     FAILED tests/bt/item_3/test_i3_battery_scenes.py::test_scene[a16-list-to-run]
+     1 failed, 145 passed in 44.40s
+   根本原因(推定: 落ちた回の観測は残していない): 実行の一覧を実行 ID(内容のハッシュ)の順に並べていた。
+   並行の作業者が src/ を書き換えると差分のハッシュ → 実行 ID が 2 回の間で変わり、一覧の順が入れ替わる。
+   直した構造: src/bot/monitoring/backtest_view.py の list_runs を record.json を書いた時刻の新しい順(同じなら ID 順)に。
+   直したあと: 同じファイルを 2 回続けて回して 54 passed / 54 passed。
+
+3. purge の格子(test_i3_validation_grid.py::test_purge_grid)が落ちた — 誤りは試験の側の oracle
+   出力(末尾):
+     E               AssertionError: ([[0, 1, 2, 3, 4, 5, ...]], 'rows', 1)
+     E               assert [8, 9, 10, 11] == [7, 8, 9, 10, 11]
+   原因: 試験の oracle が「空き」を評価の塊の中の行からも探していた(ラベルの終わり = 塊の最後の行の時刻の場合)。
+   規則の文(DEFINITIONS.md の v2 の節)は「評価の最後の行の次から「空き」の手前までを除き」で、空きは塊のあと。
+   oracle を文どおりに直し、src/bot/bt/validation/purge.py の説明文にこの境界を書いた。実装は変えていない。
+   場面集の試験の oracle(tests/bt/battery/item_3/test_battery_item3.py の _afml_train)は全行から探すが、
+   場面のラベルは行の時刻 + 2.5 時間なのでこの境界は場面には出ない(場面集は変えていない)。
+
+4. 数の誤り(試験の側): test_pbo_grid の期待の件数(90 が正しい。T はどれも S で割り切れる)と
+   test_identity_grid の期待の件数(単独の変更は 10 種)。実装は変えていない。
+
+5. 全試験の実行で、場面の試験 53 件が全部落ちた(単独では通っていた)
+   コマンド: PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=<scratchpad>/pt_item3_r1_worker
+   出力: E       AttributeError: module 'run_battery' has no attribute 'classify'
+         93 failed, 18945 passed, 6 skipped, 4 warnings in 1260.12s (0:21:00)
+   根本原因: どの場面集にも run_battery という同じ名のモジュールがあり、`import run_battery` は先に読まれた
+   別の項目のもの(項目 0 の批評家の試験が読む項目 0 の run_battery)を返した。
+   直した構造: tests/bt/item_3/test_i3_battery_scenes.py で項目 3 の runner を path から別の名
+   (i3_battery_run_battery)で読み、場面集のフォルダは sys.path の末尾に足す。
+   直したあと: 項目 0 の批評家の試験・項目 1 の場面の試験と一緒に回して項目 3 は全部通過
+   (項目 1 の tests/bt/item_1/test_i1_battery_scenes.py は同じ衝突で 26 件落ちる。項目 3 の持ち物ではないので変えていない)。
+
+6. 最初の全試験の実行の ERROR 485 件は /tmp/pytest-of-root/pytest-544 が消えたことによる(FileNotFoundError)。
+   並行の別の全試験の実行が同じ basetemp の親を片付けたため。自分の --basetemp を付けて回し直すと ERROR は 0 件。

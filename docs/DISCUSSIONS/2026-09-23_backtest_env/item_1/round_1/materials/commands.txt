@@ -1,0 +1,18 @@
+# commands run by the table-maker (item 1, round 1), in order
+git ls-files -z tests/bt/battery/item_1 | xargs -0 sha256sum | sha256sum          # before: 283aff43c842...
+sh <scratchpad>/bt/i1_r1_shiryo_reinstall.sh > materials/logs/reinstall_item_1_round_1_shiryo.log   # 4 missing venvs
+git -C <venvs>/item_0/c105/src_slippage checkout 6985edb124b737b0979e3f4fd49fb65ffb2bfaf3
+# wrote tests/bt/battery/item_1/adapters/new_impl.py body (diff: materials/new_impl_adapter.diff)
+sh materials/run_all.sh new_impl mutant current_impl        # first attempt, relative --out -> moved to materials/logs/first_attempt_relative_root/
+python3 tests/bt/battery/item_1/run_battery.py --target new_impl --out materials/logs/probe_rel.tsv --scenes v1-bitflyer-rest,v5-reject-dotdot,v5-reject-symlink,v4-sha256-values
+python3 tests/bt/battery/item_1/run_battery.py --list-targets > materials/targets_list.tsv
+sh materials/run_all.sh current_impl new_impl mutant opp_vectorbt opp_qlib opp_finmarketpy opp_pytrendfollow opp_hftbacktest opp_pybotters opp_backtesting opp_qstrader opp_vnpy opp_slippage opp_barter opp_pysystemtrade opp_repro_23 opp_repro_105 > materials/run_log.tsv
+python3 materials/compare_runs.py > materials/compare_runs.out
+python3 materials/make_tables.py > materials/make_tables.out
+python3 materials/recount.py > materials/recount.out
+(inline) recount from table cells > materials/recount_from_tables.out
+(inline) survey best recount > materials/recount_survey.out
+md5sum / cmp of each pair > materials/md5sum_pairs.txt
+grep -icE '<tool names|clock times>' 表_*.md > materials/check_names.out
+git ls-files -z tests/bt/battery/item_1 | xargs -0 sha256sum | sha256sum > materials/fingerprint.txt   # after: fd528e42f066...
+PYTHONPATH=src python -m pytest tests/bt/battery/item_1 tests/bt/item_1 > materials/pytest_item1_r1_shiryo.out

@@ -1,0 +1,91 @@
+31a32
+> import os
+32a34
+> import time
+37c39,52
+< from i1_protocol import NotExpressible  # noqa: E402
+---
+> from i1_protocol import NotExpressible, Refused  # noqa: E402
+> 
+> from bot.bt.data import DataError, adjust_daily, load, universe  # noqa: E402
+> from bot.bt.vector import (bars_from_trades, rule_from_mapping, run_event_bars, run_event_rule,  # noqa: E402
+>                            run_vector_rule)
+> 
+> 
+> def _engine(fn, *args, **kwargs):
+>     """Call one public function of the new implementation; its refusal (a
+>     DataError, the data layer's one error family) becomes Refused."""
+>     try:
+>         return fn(*args, **kwargs)
+>     except DataError as exc:
+>         raise Refused(f"{type(exc).__name__}: {exc}") from exc
+44c59,125
+<         raise NotExpressible("新実装の adapter の本体はまだ書かれていない(資料係が毎周書く)")
+---
+>         op = inp.get("op")
+>         if op == "load":
+>             return self._load(inp)
+>         if op == "jpx":
+>             return self._jpx(inp)
+>         if op == "vector_vs_event":
+>             return self._vector_vs_event(inp)
+>         raise NotExpressible(f"新実装の公開された口に op {op!r} に当たるものを探したが無い")
+> 
+>     @staticmethod
+>     def _load(inp: dict) -> dict:
+>         # The data layer reads a relative data path as relative to `root`, so the
+>         # root joined with a scene path is handed over in absolute form (lexical
+>         # only: no symlink is resolved, `..` is normalised the same way the data
+>         # layer itself normalises it); otherwise a relative scene root would be
+>         # prefixed twice.
+>         root = os.path.abspath(inp["root"])
+>         datasets = []
+>         for d in inp["datasets"]:
+>             # files by path; the scene's declarative spec is the data layer's own
+>             # declaration form (bot.bt.data.spec.parse_spec), handed over unchanged
+>             x = {"name": d["name"], "paths": [os.path.join(root, p) for p in d["paths"]], "spec": d["spec"]}
+>             if "range_ns" in d:
+>                 x["range_ns"] = d["range_ns"]
+>             datasets.append(x)
+>         res = _engine(load, root, datasets)
+>         want = set(inp.get("want") or [])
+>         obs: dict = {}
+>         if want & {"events", "times"}:
+>             obs["events"] = {n: _engine(res.records, n) for n in res.names()}
+>         if "anomalies" in want:
+>             obs["anomalies"] = {n: _engine(res.anomalies, n) for n in res.names()}
+>         if "hashes" in want:
+>             obs["hashes"] = {os.path.relpath(p, root): h for p, h in _engine(res.hashes).items()}
+>         return obs
+> 
+>     @staticmethod
+>     def _jpx(inp: dict) -> dict:
+>         return {"adjusted": _engine(adjust_daily, inp["bars"], inp["actions"], inp["listings"], inp["as_of"]),
+>                 "universe": _engine(universe, inp["listings"], inp["actions"], inp["universe_dates"])}
+> 
+>     @staticmethod
+>     def _vector_vs_event(inp: dict) -> dict:
+>         iv = inp["interval_s"]
+>         paths: dict = {"event": {}, "vector": {}}
+>         timing: dict = {}
+>         if inp.get("trades") is not None:
+>             tr = inp["trades"]
+>             t0 = time.perf_counter()
+>             paths["event"]["bars"] = _engine(run_event_bars, tr, iv)
+>             t1 = time.perf_counter()
+>             paths["vector"]["bars"] = _engine(bars_from_trades, [x["t_ns"] for x in tr], [x["px"] for x in tr],
+>                                               [x["qty"] for x in tr], iv)
+>             t2 = time.perf_counter()
+>             timing = {"event_s": t1 - t0, "vector_s": t2 - t1}
+>         if inp.get("rule") is not None:
+>             rule = _engine(rule_from_mapping, inp["rule"])
+>             bars = inp["bars"]
+>             t0 = time.perf_counter()
+>             ev = _engine(run_event_rule, bars, iv, rule)
+>             t1 = time.perf_counter()
+>             vc = _engine(run_vector_rule, bars, rule)
+>             t2 = time.perf_counter()
+>             paths["event"].update(ev)
+>             paths["vector"].update(vc)
+>             timing = {"event_s": t1 - t0, "vector_s": t2 - t1}
+>         return {"paths": paths, "timing": timing}

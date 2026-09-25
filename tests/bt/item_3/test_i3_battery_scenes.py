@@ -8,7 +8,6 @@ give the same digest of the stable view (the battery's reproducibility cell).
 from __future__ import annotations
 
 import copy
-import shutil
 import sys
 from pathlib import Path
 
@@ -18,12 +17,24 @@ HERE = Path(__file__).resolve().parent
 BATTERY = HERE.parent / "battery" / "item_3"
 for p in (str(HERE), str(BATTERY)):
     if p not in sys.path:
-        sys.path.insert(0, p)
+        sys.path.append(p)  # appended: the battery's modules must not shadow another item's same-named ones
 
 import i3_driver as D  # noqa: E402
 import i3_judge as J  # noqa: E402
 import i3_scenes as S  # noqa: E402
-import run_battery as R  # noqa: E402
+
+
+def _load_runner():
+    """The item-3 battery's runner, loaded from its path under a name of its own: every battery has a
+    module called run_battery, and `import run_battery` gives whichever another test imported first."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("i3_battery_run_battery", BATTERY / "run_battery.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+R = _load_runner()
 
 
 class _Target:

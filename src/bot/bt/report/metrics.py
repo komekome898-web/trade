@@ -34,7 +34,7 @@ Definitions (each written once, here):
 from __future__ import annotations
 
 import math
-from typing import Any, Mapping, Optional, Sequence
+from typing import Mapping, Optional, Sequence
 
 import numpy as np
 
