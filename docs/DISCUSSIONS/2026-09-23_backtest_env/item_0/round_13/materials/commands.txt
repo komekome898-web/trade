@@ -1,0 +1,46 @@
+# 項目 0 第 13 周 資料係が打ったコマンド(リポジトリ直下から。時刻は各ログに記録)
+sha256sum docs/DATA/delegations/20260923_backtest_env_prompt.md | cut -c1-12   # -> cdf623e4fb24(起動文の指紋と同じ)。§0・§3「比較の表」「場面集の規則」「相手の道具の結果の再利用」「提出前の吟味」・§4 を読んだ
+ls round_13/表_*.md   # -> logs/stale_check_before.out(この周の前の表は 0 枚。stale/ に移したものは 0 枚)
+git ls-files -z tests/bt/battery/item_0 | xargs -0 sha256sum | sha256sum   # -> logs/scene_set_fingerprint.txt(dff3bc73…)。第 11 周の cdbcfe90… と違う(第 12 周は materials が無い)。
+#   指紋が違うので、L-435 どおり相手の道具(当方の現状・調査結果の側の設定つき対象 54)を全部走らせ直した。前の周の結果は使っていない。
+#   走らせた後にも同じコマンドを打った -> logs/scene_set_fingerprint.txt の末尾と logs/final_state.txt(dff3bc73… のまま = 走らせている間に場面集は変わっていない)
+python3 -B tests/bt/battery/item_0/run_battery.py --list-targets   # -> logs/list_targets.out(57 対象。第 11 周の 56 に opp_thirupathikannan_execsim を足した物)
+# 手順 1(新実装の adapter): tests/bt/battery/item_0/adapters/new_impl.py は既にあり、この周の資料係は変えていない(logs/final_state.txt の git diff --stat HEAD が空)。
+#   新実装の本体 src/bot/bt/ は変えていない(走らせた版の sha256 = logs/final_state.txt)
+PYTHONPATH=src python3 -B round_13/materials/check_new_impl_names.py   # -> logs/new_impl_public_names.out(18 個すべて bot.bt.core.__all__ にあり、_ で始まる名前 0 個、adapter の中の bot.bt の import 0 個)
+(cd tests/bt/battery/item_0 && PYTHONPATH=/home/user/trade/src python3 -B mutant.py --check)   # -> logs/mutant_check.log(changed scenes: ['p4-received-time'] / OK / rc=0)
+cp round_11/materials/{make_tables.py,compare_passes.py,compare_survey_results.py,recount.py,recount_cells.py,check_new_impl_names.py,check_md5.sh,run_all.sh,run_both.sh} round_13/materials/ with sed 's/round 11/round 13/; s/round_11/round_13/; s/第 11 周/第 13 周/'
+#   run_all.sh の第 13 周の変更: opp_thirupathikannan_execsim の interpreter = 場面係が写しの中に作った venv(<S>/venvs/item_0/c35_run/.venv/bin/python)
+#   make_tables.py の第 13 周の変更: 行ごとに、その行に寄せた設定つき対象の grid_c.not_entered_note の 1 行を注記に出す(DEFINITIONS.md の申し送り、第 r13-1 回)。
+#     1 対象の行はその 1 行、調査結果の側の行は同じ文の行をまとめて「寄せた設定つき対象 54 件のうち N 件」と数だけ付ける(道具の名は出さない)。
+#     設定つき対象ごとの 1 行(名前つき)は materials/not_entered.tsv にだけ書く。
+setsid nohup sh round_13/materials/run_both.sh > logs/run_both_stdout.out 2>&1 &   # -> 第 1 回 runs/*.tsv 57 本(logs/run_all.log、57 対象とも rc=0、03:51:41Z〜04:03:02Z)、第 2 回 runs_2/*.tsv 57 本(logs/run2/run_all.log、57 対象とも rc=0)。
+#   run_battery.py はそれ自体が 1 場面につき 2 回、別々の adapter で走らせる(再現の欄)。全対象 × 全 32 場面
+PYTHONPATH=src timeout 580 python -m pytest -p no:cacheprovider tests/bt/battery/item_0   # -> logs/pytest_battery_item0.log(170 passed, rc=0。test_battery_r13_claim_mutants.py を含む)
+python3 -B round_13/materials/make_tables.py --runnability tests/bt/battery/item_0/opponents/RUNNABILITY.tsv --out <S>/item0_r13_materials_trial --seed 1   # 試しの作り(scratchpad、納めない)
+python3 -B round_13/materials/make_tables.py --runnability tests/bt/battery/item_0/opponents/RUNNABILITY.tsv   # 1 回だけ -> 6 枚、logs/make_tables.out, mapping.tsv, survey_best.tsv, survey_failures.tsv, configs.tsv, not_entered.tsv
+python3 -B round_13/materials/make_tables.py --runnability … --runs materials/runs_2 --out materials/pass2_tables --log materials/logs   # 第 2 回の実行から、所要の秒数は第 1 回の実測のままで作った表 -> pass2_tables/
+python3 -B round_13/materials/make_tables.py --runnability … --runs materials/runs_2 --out materials/pass2_tables_ownlog --log materials/logs/run2   # 所要の秒数も第 2 回の実測 -> pass2_tables_ownlog/
+sh round_13/materials/check_md5.sh   # -> md5sum_pairs.txt(組ごとの 2 通り: current differ / survey differ / mutant differ。第 1 回と第 2 回の同じ表 id: pass2_tables は 6 枚とも同じ、pass2_tables_ownlog は survey の 2 枚が注記の所要の秒数だけ違う)
+python3 -B round_13/materials/compare_passes.py   # -> logs/compare_passes.out: 正しさ・再現の欄は第 1 回と第 2 回で全対象・全場面同じ。出力の値の欄だけが 3 対象の各 1 場面で違う(下の具体)。表のセルに出る値ではない
+(cd materials && python3 -B compare_survey_results.py)   # -> logs/compare_survey_results.out(第 1 回の結果と場面係の survey_results/*.tsv の違うセル 0)
+python3 - (第 11 周と第 13 周の各 runs の正しさ・再現を突き合わせ)   # -> logs/diff_vs_round11.out(第 11 周にある 56 対象で違う場面 0。opp_thirupathikannan_execsim は第 11 周に無い)
+python3 -B round_13/materials/recount.py   # -> logs/recount.out(runs/*.tsv から観点ごとの数を make_tables.py を使わずに数え直し、6 枚の表の数の行と突き合わせた。不一致 0)
+python3 -B round_13/materials/recount_cells.py   # -> logs/recount_cells.out(表の各観点の節のセルを数え、同じ表の数の行と突き合わせた。不一致 0)
+(cd tests/bt/battery/item_0 && python3 -B grid_c.py <materials/runs/*.tsv>)   # -> logs/grid_c_cli.out(57 行。場面係の申し送りの口)
+python3 - (grid_c.py の出力と not_entered.tsv と 6 枚の表の注記を突き合わせ)   # -> logs/check_notes_vs_cli.out(違い 0、表に無い注記 0)
+grep -noiE -f logs/grep_tool_names.pat round_13/表_*.md   # -> logs/grep_tool_names.out(175 語 = 第 11 周の 172 語 + 候補 35 の名 + repro_lean52。全対象の base 名が語に入ることを logs/pattern_coverage.out で確かめた = 漏れ 0。該当は候補の注記の「書き直」2 件だけ = 調査の側の 2 枚の同じ集計の注記の一般の語)
+grep -cE '[0-9]{1,2}:[0-9]{2}' round_13/表_*.md   # -> logs/grep_clock_times.out(6 枚とも 0)
+grep -c '型の組は対象の持つ型から規則で決めた' round_13/表_*.md   # -> logs/grep_type_note.out(6 枚とも 1)
+git status / sha256sum / 指紋の打ち直し   # -> logs/final_state.txt
+# 注記に書かなかった具体(ここにだけ書く):
+#  - 調査の側の寄せた行で正解と一致でない場面は p3-mixed-one-run の 1 つだけで、どの対象も最良が「対応なし」(survey_best.tsv の名は同順位の先頭 = 名前順の規則による)。
+#  - 場面ごとの結果なしの対象と、表の注記の所要の秒数の出所(第 13 周第 1 回の実測、logs/run_all.log): repro_lean52 の 13 設定つき対象は 17 場面で「再現の範囲外」。
+#    p3-bar = opp_qf_lib(TypeError、04:00:10Z〜04:00:30Z)。p6/p7 の例外 = opp_rqalpha(04:00:52Z〜04:01:56Z)と
+#    opp_ziplime@label=start(03:52:11Z〜03:55:58Z)/ @label=close(03:55:58Z〜03:59:38Z)。どれも時間の打ち切り(timeout 400)には届いていない(rc=0)。
+#    p7-fill-model-swap の出所の検めで退けた 2 件 = opp_backtrader@preload=true / @preload=false。詳細は survey_failures.tsv。
+#  - 第 1 回と第 2 回で出力の値の欄だけが違った 3 件: opp_predictivedev_tradesim の p7-latency-model-swap、opp_ziplime@label=start / @label=close の p4-future-read-attempt(logs/compare_passes.out)。
+#    どれも正しさ・再現の欄は 2 回とも同じで、寄せた行の最良ではないので表のセルに出ない。
+#  - 候補の注記の「書き直して走らせた 1 件」= repro_lean52(候補 52。設定つき対象 13)。寄せた行の場面ごとの道具は survey_best.tsv。
+#  - 候補ごとの欠け(動かせなかった 14 件)の名と理由は tests/bt/battery/item_0/opponents/RUNNABILITY.tsv(result = 走らなかった)。
+#  - 設定つき対象ごとの選ぶ値(choose)と型の組(types_1)は configs.tsv。設定つき対象ごとの入らなかった升目の注記は not_entered.tsv。

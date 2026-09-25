@@ -524,3 +524,10 @@ f71d851a624ba73e	test_battery_r13_claims.py:259	コード	場面 id を試験の
 3bbcfcd8cd43f559	test_battery_r13_covers_of.py:30	規則・読み	試験の説明の文(場面集の試験の振る舞い)
 2ca4d52a0bf4eca7	test_battery_r13_covers_of.py:204	コード	場面 id を試験の引数・比べる値に使う試験のコード
 f5bd4727eb2eb69e	test_battery_r13_covers_of.py:211	コード	場面 id を試験の引数・比べる値に使う試験のコード
+ddce397db8e2f96e	ROOTCAUSE_r13-1.md:28	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+cad3f5c43a9c78ed	ROOTCAUSE_r13-1.md:53	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+d805a8c2435828a9	ROOTCAUSE_r13-1.md:131	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+18821b244ce55700	ROOTCAUSE_r13-1.md:132	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+e4ab82bde1b7df70	ROOTCAUSE_r13-1.md:133	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+5d77c2e23988a98c	ROOTCAUSE_r13-1.md:143	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+9a1d01f29da10661	test_battery_r13_claims.py:262	コード	場面 id を試験の引数・比べる値に使う試験のコード

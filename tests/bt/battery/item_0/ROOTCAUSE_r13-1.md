@@ -132,7 +132,7 @@
 - 主張の表の (d): `test_battery_r13_claim_mutants.py` の mutant は、市場の型の機械に 4 種(型の欄の無い事象を約定と数える / `type_plan` を読まない / 6 型を全部足す / `streams` を読まない)、`covers_of` に 1 種、`grid_c.verdict` に 1 種、頼みの機械に 2 種(欄を読まない / 時計と発注の取り違え)、欄 `requests` の写しに全場面 × 1 つ落とす・1 つ足す、軸に 1 種、`records_of` に 4 種、`not_entered` に 3 種。どれも捕まり、機械そのものは神託と一致する(`test_the_machine_itself_agrees_with_the_oracle`)。
 - 場面集の試金石: `PYTHONPATH=src python3 tests/bt/battery/item_0/mutant.py --check` → 「changed scenes: ['p4-received-time']」「OK」(`<S>item0_r13-1_scenekeeper_fix_mutant.txt`)。
 - 検討表: `python3 scripts/check_bt_considered.py tests/bt/battery/item_0/opponents/CONSIDERED.md --write` → 「OK 誤り 0 件」。
-- 全試験: __FULL__
+- 全試験: `setsid nohup env PYTHONPATH=src python -m pytest -p no:cacheprovider > <S>pytest_item0_r13-1_scenekeeper.log 2>&1 &`(03:20:30 UTC に始めた)の末尾の行「2 failed, 4899 passed, 6 skipped, 1 warning in 886.78s (0:14:46)」。落ちた 2 件は `test_battery_item0.py` の `test_every_line_the_scene_keeper_writes_is_listed_and_every_marked_line_judged` と `test_every_use_of_the_scene_keepers_terms_is_judged` で、全試験を始めたあとにこのファイルに書き足した行の判断がまだ無かったため。判断を足したあと、場面集の試験を回し直した(`<S>item0_r13-1_scenekeeper_fix_pytest_final.txt`。§9 の差分を貼ったあとに回した)。
 
 ## 7. 提出前の吟味(委任文 §3「提出前の吟味」(1)〜(6))
 
@@ -168,3 +168,27 @@
 4. **注文の 3 つの通知のどれを数えるか(監査役(定義) r13-1-2 の [聞く] 1)**: 答え: 前の起動の定義の段で上げたまま、宣言が決めて批評家が読む形で直しに進んだ(この回の起動文は「F を規則として…直す」と直しの段を求め、定義の段は L-443 で無い)。機械で閉じるには F が使わないとした物(正解の欄が名指す通知の種類・対象の出力・記録)のどれかを使う決定が要り、場面係は決めない。3 つの升目を「測っていない」に振るのは場面が測る升目を測っていない側に置くので採らなかった。同じく、p3 の通知の 3 場面と p7 の 4 場面は `measures` が 2 つの道のどちらか一方で結果が出る形で、道ごとには分けて測っていない(§6.2)。この扱いでよいか、閉じる決定をするかを聞く。
 5. **相手の adapter の記録 `requests`**: 記録するのは新実装・当方の現状・試金石の adapter だけで、相手の 37 の adapter(41 の設定つき対象)と再現の 1 つ(13 の設定つき対象)は null。相手の adapter の戦略は対象ごとの API で頼みを出し、runner はそれを見られないので、記録には adapter の各場面の戦略に `request` を書き足すことが要る(38 ファイル × 最大 12 場面)。書き足しても adapter の申告で、照らせるのは「記録 ⊆ 欄」だけである。§9.2 の 33 の記録をこの形で相手の全部に要るかを聞く。答えが来るまで、注記は相手の通知・時計の升目を「頼みの記録が無く入ったかを決められない升目」と分けて出す(入ったとは数えない)。
 6. **P0-7 の差し込んだ口座(と、実行のあとに読む約定の記録)を見る道が升目の軸に無い**: 見る道の軸は要件の文から機械で作った R・O・X・Q の 4 つで(`grid_c_judgments.tsv`)、「差し替えた口座が受け取った物」「実行のあとに読む約定の記録」はどれにも当たらない。よって p7-account-swap は升目を宣言せず、P0-7 の口座の 40 升目は全部「測っていない」になった(場面 p7-account-swap は口座の口を測っている)。軸の値は要件の文の判断から作る物で、場面係が足す物ではない。要件の文を読む判断(`grid_c_judgments.tsv`)をリードが見直すかを聞く。
+
+## 9. `git diff --name-only HEAD` の出力(返す前に最後に打った。HEAD = 40c2525)
+
+この起動の間にリードが途中の版を 2 回コミットした(`git log --oneline d2a6254..HEAD`: 40c2525 c6d88e8 43624b3 の中の "Checkpoint run 11 round 13 work in progress" の 2 つ)ので、HEAD との差分はこの回の変更の一部しか出ない。この回の変更の全部は、起動の始めの版 d2a6254 との差分(下の 2 つ目)で示す。
+
+```
+$ git diff --name-only HEAD
+docs/AUDITOR/TRACE/2026-09-25_220780c0.json
+tests/bt/battery/item_0/ROOTCAUSE_r13-1.md
+tests/bt/battery/item_0/line_judgments.tsv
+tests/bt/battery/item_0/term_judgments.tsv
+```
+
+```
+$ git diff --name-only d2a6254 -- . ':!tests/bt/battery/'   (tests/bt/battery/ の外)
+docs/AUDITOR/TRACE/2026-09-25_220780c0.json
+docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_13/ROOTCAUSE.md
+docs/OWNER_STATUS.md
+$ git diff --name-only d2a6254 -- tests/bt/battery/ | wc -l
+96
+$ git status --porcelain --untracked-files=all | grep '^??'
+```
+
+tests/bt/battery/ の外のファイルの理由: `docs/AUDITOR/TRACE/2026-09-25_220780c0.json` は道具の呼び出しの記録(フックが書く)、`docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_13/ROOTCAUSE.md` は第 13 周の作業者の記録、`docs/OWNER_STATUS.md` はリードのコミット 43624b3 の状態板で、どれも場面係は書いていない。`src/bot/bt/` と `tests/bt/item_0/` の下のファイルは、d2a6254 との差分にも無い。
