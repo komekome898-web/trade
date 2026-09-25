@@ -164,6 +164,7 @@
 
 ```
 $ git diff --name-only HEAD
+docs/AUDITOR/TRACE/2026-09-25_220780c0.json
 tests/bt/battery/item_0/ROOTCAUSE_r16-1.md
 
 $ git diff --name-only 0f2e07d -- tests/bt/battery/ (survey_results/opp_* と repro_* を除く)
@@ -230,4 +231,4 @@ tests/bt/item_0/test_bt0_scene_set.py
 tests/bt/item_0/test_bt0_time.py
 ```
 
-tests/bt/battery/ の外のファイル: 上の 3 つ目の `src/bot/bt/` と `tests/bt/item_0/` の差分は、同じ時間に第 16 周の直しをした作業者の物で(リードのコミット cfceaed ほかに入っている)、場面係は書いていない。場面係が tests/bt/battery/ の外で変えた物は、scratchpad の venv(quantcore の venv への pyarrow の導入と barter の driver の作り直し。記録は `survey_results/attempts/34.log`・`61.log`)だけで、リポジトリのファイルではない。
+tests/bt/battery/ の外のファイル: 1 つ目の `docs/AUDITOR/TRACE/2026-09-25_220780c0.json` は道具の呼び出しの記録(フックが書く)で、場面係は書いていない。上の 3 つ目の `src/bot/bt/` と `tests/bt/item_0/` の差分は、同じ時間に第 16 周の直しをした作業者の物で(リードのコミット cfceaed ほかに入っている)、場面係は書いていない。場面係が tests/bt/battery/ の外で変えた物は、scratchpad の venv(quantcore の venv への pyarrow の導入と barter の driver の作り直し。記録は `survey_results/attempts/34.log`・`61.log`)だけで、リポジトリのファイルではない。

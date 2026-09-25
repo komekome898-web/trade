@@ -39,7 +39,7 @@ import re
 import sys
 from pathlib import Path
 
-DEFAULTS = ("docs/DATA/delegations/20260923_backtest_env_prompt.md", "docs/OWNER_LOG.md",
+DEFAULTS = ("docs/DATA/delegations/20260925_backtest_env_prompt.md", "docs/OWNER_LOG.md",  # v2 (L-447/L-448); audit 64-3
             "docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md",
             "scripts/workflows/backtest_env.js")
 
@@ -83,7 +83,7 @@ def lint_script(script: str) -> list[str]:
 
 
 # label prefix → the scrutiny constant that role must carry (delegation §3 提出前の吟味)
-ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), ("場面の直し:", "SCRUTINY_FIX"),
+ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), ("場面の直し:", "SCRUTINY_FIX"), ("参照実装:", "SCRUTINY_BUILD"),
                  ("作る:", "SCRUTINY_FIX"), ("表:", "SCRUTINY_TABLE"), ("批評:", "SCRUTINY_CRITIC"),
                  ("盲検:", "SCRUTINY_JUDGE"), ("欠けているもの", "SCRUTINY_GAPS"))
 # roles that must receive the lead's notes and the prior battery record (audit 49 #3 / audit 50 #2)
