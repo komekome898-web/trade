@@ -121,7 +121,7 @@ def _durations() -> dict[str, int]:
     into a table; the clock times stay in the log."""
     import datetime as dt
     out = {}
-    # round 16: the scene-set fingerprint differs from round 14's, so every
+    # round 16: the scene-set fingerprint differs from round 15's, so every
     # target is run again this round (L-435) and all lengths are in
     # logs/run_all.log (nothing is reused).
     lines = []
