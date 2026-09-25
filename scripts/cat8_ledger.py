@@ -785,30 +785,33 @@ def cmd_check_elements(a):
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の出力に `cat8_search: complete` の終わりの行が無い" % (i + 1, tool, el, f, n))
                                     continue
                                 files, fwh, hts, lst, lsha = int(done.group(1)), int(done.group(2)), int(done.group(3)), done.group(4), done.group(5)
-                                if int(a.round) >= 13 and (lst in seen_lists or (int(a.round) >= 15 and lsha in seen_shas)):
-                                    # 12 回目の検収: 同じ一覧を別の語で 2 回検索すると N・M が 2 倍に数えられた。13 回目以降は一覧ごとに 1 回だけ数える
-                                    hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
-                                    continue
-                                seen_lists.add(lst)
-                                seen_shas.add(lsha)
+                                # 候補の番号と一覧の突き合わせは、重複として数えない手にも掛ける(監査 85 回目の指摘 1:
+                                # 重複を先に飛ばすと、候補違いの手を同じ中身の一覧で引いたときに検査を通り抜けた)
                                 cand = done.group(6)
                                 row_num = (ledger_by_name.get(tool.strip("`")) or {}).get("番号")
                                 if cand != row_num:
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の候補 %s が、この行の候補の番号 %s と違う(ほかの候補の手を引いている)" % (i + 1, tool, el, f, n, cand, row_num))
-                                sum_files += files; sum_fwh += fwh; sum_hits += hts
-                                if step_start(f, n) not in classified:
-                                    hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
                                 mk = mklist_footer(f, n, lst)
                                 if not mk:
                                     errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧 %s を作った cat8_mklist.py の手が、同じ生ログのそれより前に無い" % (i + 1, tool, el, f, n, lst))
                                 else:
-                                    n_src += mk["listed"]; m_list += mk["listed"]  # N は除外のあとの件数(これまでの回の決まり)。除外・無いものは cat8_mklist の出力に名前と理由がある
                                     if mk["candidate"] != cand:
                                         errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧を作った手の候補 %s が、検索の候補 %s と違う" % (i + 1, tool, el, f, n, mk["candidate"], cand))
                                     if mk["sha"] != lsha:
                                         errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧が、cat8_mklist.py で作ったあとに書き換えられている(sha が違う)" % (i + 1, tool, el, f, n))
                                     if mk["listed"] != files:
                                         errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の files=%d が、一覧を作った手の listed=%d と違う" % (i + 1, tool, el, f, n, files, mk["listed"]))
+                                if int(a.round) >= 13 and (lst in seen_lists or (int(a.round) >= 15 and lsha in seen_shas)):
+                                    # 12 回目の検収: 同じ一覧を別の語で 2 回検索すると N・M が 2 倍に数えられた。13 回目以降は一覧ごとに 1 回だけ数える
+                                    hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
+                                    continue
+                                seen_lists.add(lst)
+                                seen_shas.add(lsha)
+                                sum_files += files; sum_fwh += fwh; sum_hits += hts
+                                if step_start(f, n) not in classified:
+                                    hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
+                                if mk:
+                                    n_src += mk["listed"]; m_list += mk["listed"]  # N は除外のあとの件数(これまでの回の決まり)。除外・無いものは cat8_mklist の出力に名前と理由がある
                             elif re.search(r"\b(?:grep|egrep|rg|ag|findstr)\b|re\.search|\.find\(", c):
                                 errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s が cat8_search.py でない検索(`なし` の検索は cat8_search.py で打つ)" % (i + 1, tool, el, f, n))
                         if not searches:
