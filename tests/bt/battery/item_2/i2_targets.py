@@ -41,5 +41,7 @@ SURVEY: dict[str, dict] = {
     "opp_fast_trade": {"module": "opponents/fast_trade_adapter.py", "venv": "item_0/fast-trade-r17", "cand": 10},
     "opp_pybotters": {"module": "opponents/pybotters_adapter.py", "venv": "item_0/pybotters", "cand": 12},
     "opp_basana": {"module": "opponents/basana_adapter.py", "venv": "item_0/basana", "cand": 1},
+    "opp_vnpy@tick": {"module": "opponents/vnpy_tick_adapter.py", "venv": "item_0/vnpy", "cand": 20},
+    "opp_vnpy@bar": {"module": "opponents/vnpy_bar_adapter.py", "venv": "item_0/vnpy", "cand": 20},
 }
 TARGETS.update(SURVEY)

@@ -113,16 +113,22 @@ def status_from(filled: float, qty: float, active: bool, canceled: bool = False,
     return "canceled"
 
 
-def issue_schedule(bar_times: list[int], actions: list[dict]) -> dict[int, list[dict]]:
-    """For a bar tool: the actions to issue in the strategy call of bar k = those whose time lies in
-    [bar k, bar k+1) (actions before the first bar go to bar 0; after the last bar, to the last bar).
-    Only times are compared -- no price of a later bar is read."""
+def issue_schedule(bars, actions: list[dict]) -> dict[int, list[dict]]:
+    """For a bar tool: the index of the bar in whose handler each action is issued.  `bars` are bar_rows dicts
+    (t = end, span_ns) or plain end times (span 0).  An action at time a is issued in the handler of the first bar k
+    after which every later bar starts after a (bar k+1's start = its end - span > a; same-time market events come
+    before actions), so no price from before the action can fill it; the last bar when none.  For bars of single
+    prints (span 0) this is the last print at or before a; for bars with a span it is the first bar that ends after a.
+    Only times are compared -- no price is read."""
+    rows = [b if isinstance(b, dict) else {"t": b, "span_ns": 0} for b in bars]
     out: dict[int, list[dict]] = {}
     for a in sorted(actions, key=lambda x: x["t"]):
-        k = 0
-        for i, bt_ in enumerate(bar_times):
-            if bt_ <= a["t"]:
+        k = len(rows) - 1
+        for i in range(len(rows)):
+            nxt = rows[i + 1] if i + 1 < len(rows) else None
+            if nxt is None or nxt["t"] - nxt.get("span_ns", 0) > a["t"]:
                 k = i
+                break
         out.setdefault(k, []).append(a)
     return out
 
@@ -130,6 +136,8 @@ def issue_schedule(bar_times: list[int], actions: list[dict]) -> dict[int, list[
 def bar_rows(inp):
     """Bars for a bar-driven tool, from the scene itself (no answer is computed):
     - the scene's own bar events when it has any (t = the bar's end, span_ns);
+    - when the scene's fill model declares bars (tier 2 with bar_ns): the trade prints grouped into bars of
+      bar_ns aligned to the epoch (t = the bar's end; open / high / low / close / volume of its prints);
     - otherwise one bar per trade print (open = high = low = close = the print's price, volume = its size,
       t = the print's time, span_ns = 0: the bar is the print).
     Book snapshots have no bar form; a scene without prints or bars gives no bars."""
@@ -137,6 +145,15 @@ def bar_rows(inp):
             for e in inp["market"] if e["type"] == "bar"]
     if bars:
         return bars, "bar"
+    fm = inp.get("fill_model") or {}
+    if fm.get("tier") == 2 and fm.get("bar_ns"):
+        bn = int(fm["bar_ns"])
+        groups = {}
+        for e in inp["market"]:
+            if e["type"] == "trade":
+                groups.setdefault(e["t"] // bn, []).append(e)
+        return [dict(t=(k + 1) * bn, span_ns=bn, o=g[0]["px"], h=max(x["px"] for x in g), l=min(x["px"] for x in g),
+                     c=g[-1]["px"], v=sum(x["qty"] for x in g)) for k, g in sorted(groups.items())], "bar"
     return [dict(t=e["t"], span_ns=0, o=e["px"], h=e["px"], l=e["px"], c=e["px"], v=e["qty"])
             for e in inp["market"] if e["type"] == "trade"], "trade"
 
@@ -154,3 +171,12 @@ def single_fee_rate(inp, tool):
     if types == {"limit"}:
         return mk
     raise NotExpressible(f"{tool}: 手数料の率は 1 つで、maker と taker で違う率を同じ実行の中で渡せない")
+
+
+def bar_fill_models(fm, extra=None):
+    """fill_models gate for a tool that fills on bars: tier 2 (bars) is the tool's own model; `extra` may accept more."""
+    if fm.get("tier") == 2 and not fm.get("impact") and "range" not in fm:
+        return None
+    if extra is not None:
+        return extra(fm)
+    return "約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い"

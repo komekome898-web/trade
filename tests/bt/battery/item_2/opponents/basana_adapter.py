@@ -13,7 +13,8 @@ Scene -> tool: bars from i2_common.bar_rows (one bar per trade print, or the sce
 `when` is its end and `begin` = end - span; a print's bar begins at the print and lasts 1 microsecond (Basana's
 datetime resolution), its event `when` = begin + 1 microsecond.  Product: PairInfo in TICK_SIZE mode with the
 product's tick and qty_step.  Actions are issued in the bar handler of the last bar at or before their
-time (i2_common.issue_schedule; actions before the first bar in the first bar's handler).  Fill model: none ->
+time (i2_common.issue_schedule; actions before the first bar in the first bar's handler).  Fill model: none or tier 2 (bars;
+the prints grouped into the scene's declared bars) ->
 InfiniteLiquidity (no volume limit; Basana's default VolumeShareImpact(25, 10) is a volume / impact model the
 scene does not ask for), tier 4 -> VolumeShareImpact(volume_limit_pct=100, price_impact=0) (fills up to the bar's
 volume), other tiers / impact / range -> refused.  Fee: Percentage(rate x 100) with i2_common.single_fee_rate.
@@ -64,9 +65,9 @@ def _places(x) -> int:
 
 
 def _fm(fm):
-    if fm.get("tier") == 4 and not fm.get("impact") and "range" not in fm:
+    if fm.get("tier") in (2, 4) and not fm.get("impact") and "range" not in fm:
         return None
-    return "約定の模型は流動性の戦略(無限 / 足の出来高の割合と価格の影響)だけで、段 4 以外の段・列・市場影響の関数・楽観と悲観の両方を回す口が無い"
+    return "約定の模型は足での約定(段 2)と流動性の戦略(無限 / 足の出来高の割合と価格の影響)だけで、段 2・4 以外の段・列・市場影響の関数・楽観と悲観の両方を回す口が無い"
 
 
 class Adapter:
