@@ -1414,8 +1414,20 @@ def _grid_oracle(cell, scene_list):
 
 
 def _fake(i, vp, *cells):
-    from types import SimpleNamespace
-    return SimpleNamespace(id=i, viewpoint=vp, covers=tuple(cells))
+    """A scene of the set's own class (round r13-1: grid_c takes only scenes.Scene) whose declaration is `cells` and
+    whose input gives every event type the cells name: an event with that type field for a market type, the
+    `requests` field for the clock and the order notices (ROOTCAUSE_r13-1.md section 3)."""
+    kinds = {v: k for k, v in scenes.JP.items() if k in scenes.TYPE_ORDER}
+    inp: dict = {"events": [], "requests": []}
+    for c in cells:
+        if c[0] in kinds:
+            inp["events"].append({"kind": kinds[c[0]], "ts_ns": scenes.T0})
+        elif c[0] == "時計":
+            inp["requests"].append("timer")
+        else:
+            inp["requests"].append("place")
+    return scenes.Scene(id=i, viewpoint=vp, kind="value", title="", input=inp, expected=None, derivation="",
+                        measures="", declares=tuple(cells))
 
 
 def test_grid_verdicts_follow_covers_on_every_cell_and_every_cover_state():
@@ -1423,8 +1435,10 @@ def test_grid_verdicts_follow_covers_on_every_cell_and_every_cover_state():
     from the requirements' text) x every state of the scenes covering it -- none / a scene of the same viewpoint /
     only a scene of another viewpoint with the same (event, see-path, extra) / both -- and on each run every row
     of the table is compared with the oracle. Not in the grid (left out, and why): cells outside the axes (their
-    scenes are listed apart and checked by test_grid_table_lists_every_cell_of_every_viewpoint_once), scene objects
-    that lack `id`/`viewpoint`/`covers` (scenes.py builds every scene with them)."""
+    scenes are listed apart and checked by test_grid_table_lists_every_cell_of_every_viewpoint_once), objects that are
+    not a scenes.Scene (grid_c refuses them since round r13-1: test_grid_refuses_an_object_that_is_not_a_scene), a
+    declaration the input does not give (test_battery_r13_covers_of.py). Round r13-1: the fake scenes are
+    scenes.Scene objects whose input gives the declared cells' types (`_fake`), so the table reads covers_of."""
     import grid_c
     cells, _ = _grid_cells_from_the_requirements()
     others = {vp: next(v for v in [f"P0-{i}" for i in range(1, 8)] if v != vp) for vp in {c[0] for c in cells}}
@@ -1445,6 +1459,15 @@ def test_grid_verdicts_follow_covers_on_every_cell_and_every_cover_state():
             assert not grid_c.problems(state, rows), (cell, grid_c.problems(state, rows)[:3])
             runs += 1
     assert runs == 4 * len(cells)
+
+
+def test_grid_refuses_an_object_that_is_not_a_scene():
+    """Round r13-1: the table is made from scenes.covers_of only; an object with a hand-written `covers` is refused."""
+    import grid_c
+    from types import SimpleNamespace
+    cell = ("約定", "戦略の呼び出しに届く物", "")
+    with pytest.raises(TypeError):
+        grid_c.table([SimpleNamespace(id="x", viewpoint="P0-1", covers=(cell,))])
 
 
 def test_grid_check_refuses_every_verdict_but_the_one_covers_gives():

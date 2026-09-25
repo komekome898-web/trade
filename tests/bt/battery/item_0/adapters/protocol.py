@@ -158,6 +158,9 @@ class Adapter(ABC):
 
     name: str = "?"
     CONFIGS: dict[str, dict] = {"": {}}
+    # round r13-1 (LEAD_DESIGN.md section 9.2 item 33): True when the adapter's strategies call `common.request`
+    # wherever they ask the target for something; the runner records `requests` only then (null otherwise)
+    records_requests: bool = False
 
     def __init__(self, config: str = "") -> None:
         if config not in self.CONFIGS:

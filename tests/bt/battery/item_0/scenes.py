@@ -56,7 +56,14 @@ Common conventions (they are part of every scene's input):
     run (recorded by `adapters/common.py: configure*` and checked by the
     runner), with the configured target's chosen values the same in every
     scene; `COVERS` below names the cells of each viewpoint's range a scene
-    covers (positive definition C, grid_c.py).
+    declares (positive definition C, grid_c.py);
+  * round r13-1 (critic i0-r11-02; ROOTCAUSE_r13-1.md section 3): a declared
+    cell counts ("場面にした") only when its event type comes out of the
+    scene's input by machine -- the type field of the input's events for the
+    market types, the input's `requests` field for the clock and the notices
+    (`input_types`, `covers_of`). A scene whose strategy asks the target for
+    something holds the kinds in `requests` ("timer" / "place" / "cancel"),
+    the same requests its `strategy` text says.
 """
 from __future__ import annotations
 
@@ -109,8 +116,13 @@ class Scene:
                             # (never by the adapter) from the raw output, as this text says
     type_plan: dict | None = None  # when set: the event types come from the target's own types
                                    # (round r7-1): {"slots", "min_types", "cycle"}; see for_target_types
-    covers: tuple = ()      # round r8-1 (positive definition C): the cells of the viewpoint's range the scene
-                            # covers, (event, see-path, extra) in the words of grid_c.py; see COVERS below
+    declares: tuple = ()    # round r8-1 (positive definition C), r13-1: the cells of the viewpoint's range the scene
+                            # declares, (event, see-path, extra) in the words of grid_c.py; see COVERS below
+
+    @property
+    def covers(self) -> tuple:
+        """The declared cells that count: those whose event type comes out of the input (round r13-1, covers_of)."""
+        return covers_of(self)
 
 
 def trade(ts: int, price: float, qty: float = 0.01, side: str = "buy", recv: int | None = None) -> dict:
@@ -317,7 +329,8 @@ add(id="p3-mixed-one-run", viewpoint="P0-3", kind="value",
 add(id="p3-clock-timer", viewpoint="P0-3", kind="capability",
     title="戦略が頼んだ時刻に、時計の事象で呼ばれるか",
     input={"any_type": True, "events": [trade(T0 + 1 * DAY, 100.0, qty=100.0), trade(T0 + 6 * DAY, 100.0, qty=100.0)],
-           "strategy": "1 回目の呼び出し(1 日後)で「4 日後(T0 + 4 DAY)に起こして」と頼む。型は対象が受ける型でよい", "timer_at_ns": T0 + 4 * DAY},
+           "strategy": "1 回目の呼び出し(1 日後)で「4 日後(T0 + 4 DAY)に起こして」と頼む。型は対象が受ける型でよい", "timer_at_ns": T0 + 4 * DAY,
+           "requests": ["timer"]},
     expected={"clock_calls_ns": [T0 + 4 * DAY]},
     derivation="頼んだ時刻は T0 + 4 日。データの事象は 1 日後と 6 日後にしか無いので、4 日後ちょうどに呼ばれるのは時計の事象だけ。",
     measures="データの事象が無い時刻に、時計の事象として戦略が呼ばれた時刻の列。")
@@ -326,7 +339,7 @@ _NOTICE_TRADES = [trade(T0 + i * DAY, 100.0, qty=100.0) for i in (1, 2, 3)]
 add(id="p3-notice-accepted", viewpoint="P0-3", kind="capability",
     title="注文の受付の通知が、事象として戦略に届くか",
     input={"any_type": True, "events": _NOTICE_TRADES,
-           "strategy": "1 回目の呼び出しで 指値 買い 数量 1 価格 90.0 を出す(市場は 100.0 なので埋まらない)"},
+           "strategy": "1 回目の呼び出しで 指値 買い 数量 1 価格 90.0 を出す(市場は 100.0 なので埋まらない)", "requests": ["place"]},
     expected={"notices": ["accepted"]},
     derivation="価格 90 の買い指値は、約定が 100 のまま続くので埋まらない。取消もしない。よって戦略に届く通知は受付の 1 件だけ。",
     measures="戦略が受け取った、その注文についての通知の種類の列。受け取ったとは、戦略の呼び出しに事象として届いたか、発注の呼び出しの戻り値・例外としてその場で返ったこと。後から戦略が問い合わせて得たものは数えない。")
@@ -334,7 +347,7 @@ add(id="p3-notice-rejected", viewpoint="P0-3", kind="capability",
     title="注文の拒否の通知が、事象として戦略に届くか",
     input={"any_type": True, "events": [trade(T0 + i * DAY, 1_000_000.0, qty=100.0) for i in (1, 2, 3)],
            "account": "現金 1,000 円、レバレッジ無し(現物の口座)",
-           "strategy": "1 回目の呼び出しで 成行 買い 数量 1 を出す"},
+           "strategy": "1 回目の呼び出しで 成行 買い 数量 1 を出す", "requests": ["place"]},
     expected={"notices": ["rejected"]},
     derivation="必要な資金は 1 × 1,000,000 = 1,000,000 円で、現金 1,000 円を超える。レバレッジ無しなので受けられず、"
                "届く通知は拒否の 1 件だけ。",
@@ -342,7 +355,7 @@ add(id="p3-notice-rejected", viewpoint="P0-3", kind="capability",
 add(id="p3-notice-filled", viewpoint="P0-3", kind="capability",
     title="注文の約定の通知が、事象として戦略に届くか",
     input={"any_type": True, "events": _NOTICE_TRADES, "account": "現金 1,000,000 円",
-           "strategy": "1 回目の呼び出しで 成行 買い 数量 1 を出す"},
+           "strategy": "1 回目の呼び出しで 成行 買い 数量 1 を出す", "requests": ["place"]},
     expected={"filled_qty_in_notices": 1.0},
     derivation="成行の買い 1 は、次の約定(100.0)で全量が埋まる。資金は 100 円で足りる。"
                "戦略が受け取った約定の通知の数量の合計は 1.0。価格は約定の模型によるので見ない。",
@@ -484,7 +497,7 @@ add(id="p6-place-then-cancel", viewpoint="P0-6", kind="value",
     title="発注して取り消すと、未決の注文が 1 → 0 になるか",
     input={"any_type": True, "events": _API_TRADES,
            "strategy": "1 回目: 指値 買い 数量 1 価格 90.0 を出す。2 回目: 未決の注文の数を記録し、その注文を取り消す。"
-                       "3 回目: 未決の注文の数を記録する"},
+                       "3 回目: 未決の注文の数を記録する", "requests": ["place", "cancel"]},
     expected={"open_at_call2": 1, "open_at_call3": 0},
     derivation="90 の買い指値は 100 の相場では埋まらないので 2 回目には未決が 1 件。2 回目に取り消せば、"
                "遅延の無い既定の下で 3 回目には 1 − 1 = 0 件。",
@@ -492,14 +505,14 @@ add(id="p6-place-then-cancel", viewpoint="P0-6", kind="value",
 add(id="p6-cancel-notice", viewpoint="P0-6", kind="capability",
     title="取消が成ったことが、事象として戦略に届くか",
     input={"any_type": True, "events": _API_TRADES,
-           "strategy": "p6-place-then-cancel と同じ。戦略が呼び出しの中で受け取った通知を記録する"},
+           "strategy": "p6-place-then-cancel と同じ。戦略が呼び出しの中で受け取った通知を記録する", "requests": ["place", "cancel"]},
     expected={"cancel_notice_received": True},
     derivation="取消を出し、それが成れば、その知らせは戦略に届く事象として 1 件ある。届かなければ False。",
     measures="取消の成立を知らせる通知を戦略が受け取ったか(受け取ったの意味は p3-notice-accepted と同じ)。")
 add(id="p6-fill-seen-by-strategy", viewpoint="P0-6", kind="capability",
     title="戦略が出した成行が埋まったことを、戦略が次の呼び出しで読めるか",
     input={"any_type": True, "events": _API_TRADES, "account": "現金 1,000,000 円",
-           "strategy": "1 回目: 成行 買い 数量 1。3 回目: その注文の約定済みの数量を対象の公開の手段で読む"},
+           "strategy": "1 回目: 成行 買い 数量 1。3 回目: その注文の約定済みの数量を対象の公開の手段で読む", "requests": ["place"]},
     expected={"filled_qty_at_call3": 1.0},
     derivation="成行の買い 1 は 2 日後の約定(100)で全量が埋まる。3 回目にはその注文の約定済み数量は 1.0。",
     measures="3 回目の呼び出しの中で戦略が読んだ約定済み数量。")
@@ -510,7 +523,7 @@ add(id="p7-fill-model-swap", viewpoint="P0-7", kind="capability",
     title="約定の模型を差し替えると、その模型の値で埋まるか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
            "plug": "約定の模型: 届いた注文を、その場で全量、価格 12345.0 で埋める",
-           "strategy": "1 回目: 成行 買い 数量 1"},
+           "strategy": "1 回目: 成行 買い 数量 1", "requests": ["place"]},
     expected={"fill_price": 12345.0},
     derivation="差し替えた模型は相場によらず 12345.0 で埋める。差し替えが効けば約定の価格は 12345.0。"
                "既定の模型なら 100.0 前後になるので区別できる。",
@@ -520,7 +533,7 @@ add(id="p7-latency-model-swap", viewpoint="P0-7", kind="capability",
     title="発注の遅延の模型を差し替えると、注文がその遅れで取引所に着くか",
     input={"any_type": True, "events": _LAT_TRADES, "account": "現金 100,000 円",
            "plug": "遅延の模型: 発注の遅れ 7 ms(7,000,000 ns)。配信・取消・通知の遅れは 0",
-           "strategy": "1 回目(T0): 成行 買い 数量 1"},
+           "strategy": "1 回目(T0): 成行 買い 数量 1", "requests": ["place"]},
     expected={"fill_time_ns": T0 + 7 * MS},
     derivation="約定は 1 ms おきに T0〜T0+10 ms。T0 に出した注文は T0+7 ms に取引所に着く。成行はそこで最初の約定"
                "(T0+7 ms、価格 100)で埋まる。着いた時点で埋める模型でも T0+7 ms。",
@@ -529,14 +542,15 @@ add(id="p7-cost-model-swap", viewpoint="P0-7", kind="capability",
     title="費用の模型を差し替えると、その模型の費用が約定に付くか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
            "plug": "費用の模型: 約定 1 件につき 0.5 円(数量・価格によらない)",
-           "strategy": "1 回目: 成行 買い 数量 1"},
+           "strategy": "1 回目: 成行 買い 数量 1", "requests": ["place"]},
     expected={"fee": 0.5},
     derivation="約定は 1 件、1 件あたり 0.5 円なので費用は 0.5。",
     measures="その約定に付いた費用(戦略が受け取ったか、実行の結果の約定の記録から読んだ値)。")
 add(id="p7-cost-per-unit", viewpoint="P0-7", kind="value",
     title="数量に比例する費用の模型に差し替えると、その模型が数量から出した費用が約定に付くか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
-           "plug": "費用の模型: 約定の数量 1 単位あたり 0.375 円(価格によらない)", "strategy": "1 回目: 成行 買い 数量 2"},
+           "plug": "費用の模型: 約定の数量 1 単位あたり 0.375 円(価格によらない)", "strategy": "1 回目: 成行 買い 数量 2",
+           "requests": ["place"]},
     expected={"fee": 0.75},
     derivation="数量 2 の成行は、100 単位の約定(100.0)で 1 回に全量が埋まる。費用は 2 × 0.375 = 0.75(0.375 = 3/8 は 2 進の小数で丸めなく表せる)。"
                "差し込みが効かない対象は、その対象の既定の費用(0 か、その対象の手数料)になり 0.75 にならない。"
@@ -546,44 +560,49 @@ add(id="p7-account-swap", viewpoint="P0-7", kind="capability",
     title="口座を差し替えると、差し替えた口座が約定を受け取るか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
            "plug": "口座: 渡された約定の数量を記録するだけの口座(対象の口座の差し込み口の形で書く)",
-           "strategy": "1 回目: 成行 買い 数量 1"},
+           "strategy": "1 回目: 成行 買い 数量 1", "requests": ["place"]},
     expected={"account_recorded_fill_qty": [1.0]},
     derivation="約定は 1 件で数量 1。差し替えた口座に対象が約定を渡すなら、記録は [1.0]。",
     measures="差し替えた口座が記録した約定の数量の列。")
 
-# ---------------------------------------------------------------- round r8-1: the cells each scene covers
-# (positive definition C). Axis values as grid_c.py derives them from the fixed requirements' text: the event
-# axis, the see-path axis (R = what reaches the strategy's call, O = what the order call returns there and then,
-# X = what the cancel call returns there and then, Q = what the strategy reads through the target's public
-# means) and P0-2's time units / P0-7's plug points. A scene whose events the scene leaves to the target
-# ("型は対象が受ける型でよい", `any_type`, or a `type_plan`) covers each market type it may be run with.
+# ---------------------------------------------------------------- round r8-1 / r13-1: the cells each scene declares
+# (positive definition C; round r13-1's definition, ROOTCAUSE_r13-1.md section 3). Axis values as grid_c.py derives
+# them from the fixed requirements' text: the event axis, the see-path axis (R = what reaches the strategy's call,
+# O = what the order call returns there and then, X = what the cancel call returns there and then, Q = what the
+# strategy reads through the target's public means) and P0-2's time units / P0-7's plug points. A declared cell
+# counts ("場面にした") only when its event type comes out of the scene's input by machine (`covers_of` below): a
+# market type is the type field of an event the input holds (for a `type_plan` scene, the input built for a target
+# with all six types); the clock and the notices come from the input's `requests` field. A declaration whose event
+# type the input does not give is named by `covers_problems` and a test fails (it is never dropped silently).
+# Which of the three order notices a scene measures is not decided by the input (the order request gives all three);
+# the declaration names it and the critic reads it.
 _MKT = ("約定", "板の写真", "板の差分", "足", "資金調達", "清算")
 _R, _O, _X, _Q = ("戦略の呼び出しに届く物", "発注の呼び出しがその場で返す物", "取消の呼び出しがその場で返す物",
                   "戦略が対象の公開の手段で読む物")
 _ACC, _REJ, _FIL = "注文の受付の通知", "注文の拒否の通知", "注文の約定の通知"
-_TRADE_OR_BAR = ("約定", "足")
+_CANCEL = "取消の通知(要件 §1 の事象の型の外)"
 COVERS: dict[str, list[tuple[str, str, str]]] = {
-    "p1-merge-by-time": [(e, _R, "") for e in _MKT],
-    "p1-one-call-per-event": [(e, _R, "") for e in _MKT],
-    "p1-typed-events": [(e, _R, "") for e in _MKT],
-    "p2-iso-utc": [(e, _Q, "ISO 文字列") for e in _MKT],
-    "p2-iso-offset": [(e, _Q, "ISO 文字列") for e in _MKT],
-    "p2-event-time-exact": [(e, _R, "int64 ナノ秒") for e in _MKT],
-    "p2-one-ns-apart": [(e, _R, "int64 ナノ秒") for e in _MKT],
+    "p1-merge-by-time": [(e, _R, "") for e in ("約定", "板の写真", "板の差分")],
+    "p1-one-call-per-event": [("足", _R, "")],
+    "p1-typed-events": [(e, _R, "") for e in ("約定", "板の写真")],
+    "p2-iso-utc": [],
+    "p2-iso-offset": [],
+    "p2-event-time-exact": [],
+    "p2-one-ns-apart": [],
     **{f"p3-{k}": [(JP[k], _R, "")] for k in ("trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation")},
     "p3-mixed-one-run": [(e, _R, "") for e in _MKT],
     "p3-clock-timer": [("時計", _R, "")],
     "p3-notice-accepted": [(_ACC, _R, ""), (_ACC, _O, "")],
     "p3-notice-rejected": [(_REJ, _R, ""), (_REJ, _O, "")],
     "p3-notice-filled": [(_FIL, _R, ""), (_FIL, _O, "")],
-    "p4-visible-at-step": [(e, _Q, "") for e in _TRADE_OR_BAR],
-    "p4-received-time": [(e, _R, "") for e in _TRADE_OR_BAR],
-    "p4-future-read-attempt": [(e, _Q, "") for e in _TRADE_OR_BAR],
-    "p5-same-time-twice": [(e, _R, "") for e in _MKT],
-    "p5-hand-over-order": [(e, _R, "") for e in _MKT],
-    "p5-same-stream-order": [(e, _R, "") for e in _MKT],
+    "p4-visible-at-step": [("足", _Q, "")],
+    "p4-received-time": [("約定", _R, "")],
+    "p4-future-read-attempt": [("足", _Q, "")],
+    "p5-same-time-twice": [(e, _R, "") for e in ("約定", "板の写真", "板の差分", "足")],
+    "p5-hand-over-order": [(e, _R, "") for e in ("約定", "板の写真", "板の差分", "足")],
+    "p5-same-stream-order": [("約定", _R, "")],
     "p6-place-then-cancel": [(_ACC, _Q, "")],
-    "p6-cancel-notice": [("取消の通知(要件 §1 の事象の型の外)", _R, "")],
+    "p6-cancel-notice": [(_CANCEL, _R, "")],
     "p6-fill-seen-by-strategy": [(_FIL, _Q, "")],
     "p7-fill-model-swap": [(_FIL, _R, "約定模型"), (_FIL, _Q, "約定模型")],
     "p7-latency-model-swap": [(_FIL, _R, "遅延模型"), (_FIL, _Q, "遅延模型")],
@@ -592,8 +611,48 @@ COVERS: dict[str, list[tuple[str, str, str]]] = {
     "p7-account-swap": [(_FIL, _Q, "口座")],
 }
 # cells outside the requirements' axes a scene covers, with the reason (checked by the tests)
-OUTSIDE_AXES = {"取消の通知(要件 §1 の事象の型の外)": "要件 §1 の通知は「注文の受付/拒否/約定の通知」の 3 つで、取消の通知を名指さない"}
+OUTSIDE_AXES = {_CANCEL: "要件 §1 の通知は「注文の受付/拒否/約定の通知」の 3 つで、取消の通知を名指さない"}
 assert set(COVERS) == {s.id for s in SCENES}, sorted(set(COVERS) ^ {s.id for s in SCENES})
+# round r13-1: the kinds a scene's `requests` field may hold, and the event types each one gives
+REQUEST_TYPES = {"timer": ("時計",), "place": (_ACC, _REJ, _FIL), "cancel": (_CANCEL,)}
+
+
+def input_types(scene: Scene) -> set:
+    """The event types that come out of the scene's input by machine (round r13-1, ROOTCAUSE_r13-1.md section 3):
+    the type field of every event of `events` and of every stream (a `type_plan` scene: the input built for a target
+    with all six types), and the types the `requests` field gives. An event without a type field gives nothing; a
+    type outside the six market types or an unknown request raises ValueError (never dropped silently)."""
+    built = for_target_types(scene, TYPE_ORDER) if scene.type_plan is not None else scene
+    inp = built.input if built is not None and isinstance(built.input, dict) else {}
+    evs = list(inp.get("events") or [])
+    for stream in (inp.get("streams") or {}).values():
+        evs += list(stream)
+    out = set()
+    for e in evs:
+        if isinstance(e, dict) and "kind" in e:
+            if e["kind"] not in TYPE_ORDER:
+                raise ValueError(f"{scene.id}: an event of a type outside the market types: {e['kind']!r}")
+            out.add(JP[e["kind"]])
+    own = scene.input if isinstance(scene.input, dict) else {}
+    if "requests" in own:
+        req = own["requests"]
+        if not isinstance(req, list) or any(r not in REQUEST_TYPES for r in req):
+            raise ValueError(f"{scene.id}: `requests` must be a list of {sorted(REQUEST_TYPES)}: {req!r}")
+        for r in req:
+            out.update(REQUEST_TYPES[r])
+    return out
+
+
+def covers_of(scene: Scene) -> tuple:
+    """The declared cells that count, in the declaration's order: those whose event type comes out of the input."""
+    types = input_types(scene)
+    return tuple(tuple(c) for c in scene.declares if c[0] in types)
+
+
+def covers_problems(scene: Scene) -> list:
+    """The declared cells whose event type does not come out of the input (a test fails on any)."""
+    types = input_types(scene)
+    return [tuple(c) for c in scene.declares if c[0] not in types]
 
 
 def l438_2_ok(ids_with_type_plan, scenes=None) -> bool:
@@ -607,7 +666,7 @@ def l438_2_ok(ids_with_type_plan, scenes=None) -> bool:
 
 assert l438_2_ok([s.id for s in SCENES if s.type_plan is not None]), "L-438 (2) names four scenes by id"
 from dataclasses import replace as _replace  # noqa: E402
-SCENES[:] = [_replace(s, covers=tuple(COVERS[s.id])) for s in SCENES]
+SCENES[:] = [_replace(s, declares=tuple(tuple(c) for c in COVERS[s.id])) for s in SCENES]
 
 assert len(SCENES) == len({s.id for s in SCENES}), "duplicate scene id"
 for _vp in VIEWPOINTS:

@@ -41,7 +41,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "adapters"))
 sys.path.insert(0, str(HERE.parents[3] / "src"))
 
-from scenes import NAMING_SHAPES, SCENES, TYPE_ORDER, for_target_types  # noqa: E402
+from scenes import JP, NAMING_SHAPES, SCENES, TYPE_ORDER, for_target_types  # noqa: E402
 import stated_rules  # noqa: E402
 from adapters.protocol import Adapter, SceneResult  # noqa: E402
 
@@ -727,31 +727,88 @@ def _types_detail(p3_grades: dict[str, str]) -> str:
 
 
 def _run_one(adapter: Adapter, sc) -> tuple[SceneResult, list]:
-    """Run one scene with the settings log reset before it (round r8-1)."""
+    """Run one scene with the settings log reset before it (round r8-1) and the records of round r13-1 reset
+    (`common.records_begin`; read back by `records_of`)."""
     C.settings_begin()
+    C.records_begin()
     with C.native_tracker():  # round r6-3: a strategy called from compiled code shows the caller (native_by)
         raw = adapter.run_scene(sc)
     return raw, C.settings_taken()
 
 
+# ---------------------------------------------------------------- round r13-1: records (never used for the table)
+# LEAD_DESIGN.md section 9.2 item 33: per scene and configured target, the market event types that entered the target
+# (`types_in`), the types that reached the strategy although the input handed had none of them (`types_added`, a type
+# the adapter replaced), and the requests the strategy made (`requests`). The grid table (grid_c.py) never reads them;
+# `grid_c.not_entered` turns them into the materials role's note.
+def _input_kinds(inp) -> list[str]:
+    """The market event types (TYPE_ORDER names, in that order) of an input's `events` and `streams`."""
+    inp = inp if isinstance(inp, dict) else {}
+    evs = list(inp.get("events") or [])
+    for stream in (inp.get("streams") or {}).values():
+        evs += list(stream)
+    have = {e.get("kind") for e in evs if isinstance(e, dict)}
+    return [k for k in TYPE_ORDER if k in have]
+
+
+def _delivered_kinds(res: SceneResult, scene) -> list | None:
+    """The types in the list of what reached the strategy (the scenes whose provenance check reads a kind for each
+    delivered item), or None when the scene or the result has no such list."""
+    key = CARRIER_SCENES.get(scene.id)
+    if key is None or not key[1] or res.status != "ok" or not isinstance(res.output, dict):
+        return None
+    if scene.id == "p5-hand-over-order":
+        runs = res.output.get("runs")
+        if not isinstance(runs, list):
+            return None
+        out: list = []
+        for r in runs:
+            out += _kinds(r, "order", True) or []
+        return out
+    return _kinds(res.output, key[0], True)
+
+
+def records_of(scene_run, res: SceneResult, called: bool, substituted: list, requests, records_requests: bool) -> dict:
+    """`types_in` / `types_added` (scenes.JP names) and `requests` of one run (see the comment above)."""
+    if not called:
+        return {"types_in": [], "types_added": [], "requests": [] if records_requests else None}
+    handed = _input_kinds(scene_run.input)
+    delivered = _delivered_kinds(res, scene_run)
+    if delivered is not None:
+        got = {str(k) for k in delivered}
+        types_in = [k for k in handed if k in got]
+        added = sorted(got - set(handed))
+    else:
+        types_in = [k for k in handed if k not in set(substituted)]
+        added = []
+    return {"types_in": [JP[k] for k in types_in], "types_added": [JP.get(k, k) for k in added],
+            "requests": list(requests) if records_requests else None}
+
+
 def run_for_types(adapter: Adapter, sc, p3_grades: dict[str, str]):
     """(the scene as run for this configured target, its raw result, its
-    settings). A scene with a type_plan is built from the configured target's
+    settings, its round r13-1 raw records). A scene with a type_plan is built from the configured target's
     types; when they are too few the adapter is not called and the scene is
     対応なし with the p3 grades."""
+    rec = run_for_types_records(adapter, sc, p3_grades)
+    return rec[0], rec[1], rec[2]
+
+
+def run_for_types_records(adapter: Adapter, sc, p3_grades: dict[str, str]):
+    """run_for_types plus (called, substituted types, requests) of the run (round r13-1)."""
     if sc.type_plan is None:
         raw, settings = _run_one(adapter, sc)
-        return sc, raw, settings
+        return sc, raw, settings, True, C.substituted_taken(), C.requests_taken()
     types = target_types(p3_grades)
     conc = for_target_types(sc, types)
     head = f"型の選び方(runner、第 r8-1 回): 設定つき対象の持つ型 {types}"
     if conc is None:
         return sc, SceneResult("not_supported", detail=(
             f"{head} は {len(types)} 種で、この場面の最低 {sc.type_plan['min_types']} 種に足りない"
-            f"(同じ実行の p3 の採点: {_types_detail(p3_grades)})")), []
+            f"(同じ実行の p3 の採点: {_types_detail(p3_grades)})")), [], False, [], []
     raw, settings = _run_one(adapter, conc)
     return conc, SceneResult(raw.status, output=raw.output, detail=f"{head} → この場面の型 {conc.input.get('types')}。{raw.detail}",
-                             provenance=raw.provenance), settings
+                             provenance=raw.provenance), settings, True, C.substituted_taken(), C.requests_taken()
 
 
 def run_target(target: str) -> list[dict]:
@@ -764,8 +821,8 @@ def run_target(target: str) -> list[dict]:
     # the P0-3 type scenes first: the other scenes' types come from their grades (round r7-1, r8-1)
     order = [sc for sc in SCENES if sc.id in TYPE_SCENES] + [sc for sc in SCENES if sc.id not in TYPE_SCENES]
     for sc in order:
-        sc1, raw1, set1 = run_for_types(adapter_1, sc, p3_1)
-        sc2, raw2, set2 = run_for_types(adapter_2, sc, p3_2)
+        sc1, raw1, set1, called1, subst1, req1 = run_for_types_records(adapter_1, sc, p3_1)
+        sc2, raw2, set2, _, _, _ = run_for_types_records(adapter_2, sc, p3_2)
         r1 = checked(raw1, sc1, target, settings=set1)
         r2 = checked(raw2, sc2, target, settings=set2)
         g1 = correctness(r1, sc1.expected, sc1, target)
@@ -789,6 +846,9 @@ def run_target(target: str) -> list[dict]:
             # round r8-1 (L-438 (2)): the type combination chosen for this configured target, when the scene was built for it
             "types_1": json.dumps(sc1.input.get("types") if sc.type_plan is not None and sc1 is not sc else None,
                                   ensure_ascii=False),
+            # round r13-1 (LEAD_DESIGN.md section 9.2 item 33): records of run 1, never used for the grid table
+            **{k: json.dumps(v, ensure_ascii=False) for k, v in records_of(
+                sc1, r1, called1, subst1, req1, getattr(adapter_1, "records_requests", False)).items()},
         }
     return [rows[sc.id] for sc in SCENES]
 
@@ -800,7 +860,7 @@ def one_choose(rows: list[dict]) -> bool:
 
 FIELDS = ["target", "scene_id", "viewpoint", "kind", "correctness", "correctness_run2", "reproducibility",
           "status_1", "output_1", "status_2", "output_2", "expected", "detail_1", "provenance_1",
-          "choose", "settings_1", "types_1"]
+          "choose", "settings_1", "types_1", "types_in", "types_added", "requests"]
 
 
 def main() -> None:

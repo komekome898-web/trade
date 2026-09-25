@@ -13,8 +13,11 @@ axis and the viewpoint's own extra axes (a viewpoint's text limits no axis).
 Each cell's verdict has two values only and is made from the scenes' `covers`
 alone (round r11-1, LEAD_DESIGN.md section 8.2 item 1): "場面にした" with the
 ids of the scenes of the same viewpoint whose `Scene.covers` holds the cell,
-and "測っていない(固定した測り方の外)" otherwise. No reading of the
-requirements' words decides a verdict. `DEFINITIONS.md` shows the table made
+and "測っていない(固定した測り方の外)" otherwise. Since round r13-1 (critic
+i0-r11-02, ROOTCAUSE_r13-1.md section 3) `Scene.covers` is not written by
+hand: it is `scenes.covers_of`, the declared cells whose event type comes out
+of the scene's input by machine. No reading of the requirements' words decides
+a verdict. `DEFINITIONS.md` shows the table made
 here ("場面にしていない観点・側面"); `test_battery_item0.py` rebuilds the axes
 from the requirements' text on its own and checks the table against an oracle
 written from the rule's sentence.
@@ -105,8 +108,13 @@ MEANING = ("この表は測っていない範囲の記録である。要件を�
 
 
 def verdict(vp: str, cell: tuple[str, str, str], scenes) -> tuple[str, list[str]]:
-    """(verdict, scene ids) of one cell: the scenes of the same viewpoint whose covers hold the cell."""
-    ids = [sc.id for sc in scenes if sc.viewpoint == vp and tuple(cell) in {tuple(c) for c in sc.covers}]
+    """(verdict, scene ids) of one cell: the scenes of the same viewpoint whose covers (scenes.covers_of: declared and
+    given by the input, round r13-1) hold the cell."""
+    import scenes as _scenes
+    for sc in scenes:
+        if not isinstance(sc, _scenes.Scene):  # round r13-1: only a scene's own declaration and input decide
+            raise TypeError(f"not a scenes.Scene: {type(sc).__name__}")
+    ids = [sc.id for sc in scenes if sc.viewpoint == vp and tuple(cell) in set(_scenes.covers_of(sc))]
     return (VERDICTS[0], ids) if ids else (VERDICTS[1], [])
 
 

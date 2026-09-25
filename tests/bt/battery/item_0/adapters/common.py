@@ -16,11 +16,42 @@ def as_bar(e: dict) -> dict:
     open = high = low = close = its price (receive time kept)."""
     if e.get("kind", "trade") != "trade":
         return dict(e)
+    _SUBSTITUTED.append("trade")  # round r13-1: the runner records the types an adapter replaced (types_in)
     out = {"kind": "bar", "ts_ns": e["ts_ns"], "open": e["price"], "high": e["price"],
            "low": e["price"], "close": e["price"], "volume": e.get("qty", 1.0), "substituted_from": "trade"}
     if "recv_ns" in e:
         out["recv_ns"] = e["recv_ns"]
     return out
+
+
+# Round r13-1 (LEAD_DESIGN.md section 9.2 item 33): what the runner records per scene run and configured target --
+# never used for the grid table's verdicts. `records_begin` is called by the runner before each scene run.
+_SUBSTITUTED: list = []
+_REQUESTS: list = []
+REQUEST_KINDS = ("timer", "place", "cancel")  # the kinds of scenes.py's `requests` field
+
+
+def records_begin() -> None:
+    _SUBSTITUTED.clear()
+    _REQUESTS.clear()
+
+
+def substituted_taken() -> list:
+    """The event types the adapter replaced through `as_bar` since `records_begin` (each once)."""
+    return sorted(set(_SUBSTITUTED))
+
+
+def request(kind: str) -> None:
+    """The adapter's strategy calls this right where it asks the target for something: `timer` (wake me at a
+    time), `place` (an order), `cancel` (cancel an order). A record only; it does nothing to the target."""
+    if kind not in REQUEST_KINDS:
+        raise ValueError(f"request kind {kind!r} is not one of {REQUEST_KINDS}")
+    _REQUESTS.append(kind)
+
+
+def requests_taken() -> list:
+    """The request kinds recorded since `records_begin`, each once, in the order first made."""
+    return list(dict.fromkeys(_REQUESTS))
 
 
 def recv(e: dict) -> int:
