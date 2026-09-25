@@ -51,13 +51,16 @@ test('follow-up passes when the repair touches only the battery and its tests pa
 })
 
 test('machine check: a file outside tests/bt/battery/ or failing tests is a stop; the same kind chains via repeat_of', () => {
-  const a = checkBattery(clean({ changed_files: ['tests/bt/battery/item_0/x.py', './src/bot/bt/core/engine.py'] }), 'f1', [])
+  const a = checkBattery(clean({ changed_files: ['tests/bt/battery/item_0/x.py', './src/bot/bt/core/engine.py'] }), 'f1', [], { id: 0 })
   assert.deepEqual(a.findings.map(f => f.id), ['bf1-touch']); assert.equal(a.findings[0].repeat_of, null)
-  const b = checkBattery(clean({ tests_passed: false, test_tail: '2 failed' }), 'f2', a.findings)
+  const b = checkBattery(clean({ tests_passed: false, test_tail: '2 failed' }), 'f2', a.findings, { id: 0 })
   assert.deepEqual(b.findings.map(f => f.id), ['bf2-tests']); assert.equal(b.findings[0].repeat_of, null)
-  const c = checkBattery(clean({ changed_files: ['docs/x.md'] }), 'f3', a.findings)
+  const c = checkBattery(clean({ changed_files: ['docs/x.md'] }), 'f3', a.findings, { id: 0 })
   assert.equal(c.findings[0].repeat_of, 'bf1-touch')
-  assert.deepEqual(checkBattery(clean(), 'f4', []).findings, [])
+  assert.deepEqual(checkBattery(clean(), 'f4', [], { id: 0 }).findings, [])
+  // 65-4: another item's battery is outside; item 4 may touch item 0's battery
+  assert.deepEqual(checkBattery(clean({ changed_files: ['tests/bt/battery/item_2/x.py'] }), 'f5', [], { id: 1 }).findings.map(f => f.id), ['bf5-touch'])
+  assert.deepEqual(checkBattery(clean({ changed_files: ['tests/bt/battery/item_0/x.py', 'tests/bt/battery/item_4/y.py'] }), 'f6', [], { id: 4 }).findings, [])
 })
 
 test('follow-up returns to the lead when the same machine stop repeats 3 times', async () => {

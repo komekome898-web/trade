@@ -14025,11 +14025,11 @@
    "move": 515,
    "tools": {
     "Read": 2,
-    "Bash": 7,
+    "Bash": 8,
     "Write": 1,
     "Agent": 1
    },
-   "n_tools": 11,
+   "n_tools": 12,
    "read_goal": true,
    "first_write_at": 9,
    "table_shown": false,

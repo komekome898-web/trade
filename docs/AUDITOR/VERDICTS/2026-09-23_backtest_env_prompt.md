@@ -1716,3 +1716,55 @@ python3 -c "import sys; sys.path.insert(0,'scripts'); import check_bt_delegation
 - 64-5 [聞く]: 付け替え漏れ。`tests/bt/item_4/reference/`(旧 `tests/bt/item_11/`)に直した。
 - 64-6 [直す]: 批評家の文に裏取りの指示を足した(自分で `git diff --name-only HEAD`・`git status --short` を打ち、場面集の試験を自分で回し、違えば [止める] target=場面集)。委任文 §0 の L-448 の行と §3「場面集」に同じ配線を書いた。
 - 64-7 [確認]: §0 の L-447 の行に「`passed_items`・`open_battery` は切り替えの起動でリードが埋める。通過前に起動するなら空で、その run で通過すれば台本が項目 1〜3 に進む」を書いた。
+
+
+## 監査 65 回目(委任文 `docs/DATA/delegations/20260925_backtest_env_prompt.md@72cfedf21884`、枠組みの指紋 7e9d8b96ba0e。2026-09-25 10:30 UTC)
+
+### 監査役の出力(逐語)
+
+監査 65 回目の指摘を全文で示す(要約しない)。
+
+1. [直す] `docs/DATA/delegations/20260925_backtest_env_prompt.md:46` — §0 の表の行(項目 0 の通過条件を説明する段落)の冒頭が「台本の `batteryFollowUp`: [止める] には定義の段、直し、監査役(場面)。」のままで、直後の文が「機械の検査(差分・試験)の [止める] 0 で終わり(L-448。中身は項目 4 の批評家が読む)」と修正されているにもかかわらず、冒頭の列挙(定義の段・監査役(場面))には「(L-448 で廃止)」のような注記が付いていない。同じ委任文の他の箇所(§3「場面集」: 「**(L-448 で外した)場面集と最初の周の結果の表を審査員が読む前に監査役にかける段は無い。**」、§0 の別行: 「(L-448 でこの役自体を外し、台本の機械の検査に置き換えた)」)はすべて「廃止済み」であることを明示的に注記しているのに、この 1 箇所だけ旧手順(定義の段・監査役(場面))が現行の構成要素であるかのように読める形で残っている。これは監査 64-1・64-2 が指摘し処置した型(「旧の監査の手順が現行の指示として残っていた」)と同型の、別箇所での再発である。
+   根拠: `Read docs/DATA/delegations/20260925_backtest_env_prompt.md offset=46 limit=1` の出力(該当行全文)。`diff docs/DATA/delegations/20260923_backtest_env_prompt.md docs/DATA/delegations/20260925_backtest_env_prompt.md` により、この行のうち「監査役(場面)の [止める] 0 で終わり」→「機械の検査(差分・試験)の [止める] 0 で終わり(L-448。中身は項目 4 の批評家が読む)」の部分だけが 09-25 版で修正され、冒頭の「定義の段、直し、監査役(場面)」は 09-23 版から無修正のまま残存していることを確認。(P8「規則は書くだけでは機能しない」/64-1・64-2 と同型)
+
+2. [直す] `docs/DATA/delegations/20260925_backtest_env_prompt.md:46` および `scripts/check_bt_delegation.py:22-24` — 両ファイルとも「台本の `repairBattery`・`auditBattery` の文に配線した」「the `auditBattery` text tells the auditor to check that diff itself」と、`auditBattery` という関数名を実在するものとして名指ししているが、この関数はコミット `e1d42fe` の `scripts/workflows/backtest_env.js` に存在しない。L-448 で監査役(場面)の役が外れた際に実装された機械の検査の関数名は `checkBattery`(144 行)であり、`auditBattery` という名は台本のどこにも定義されていない。
+   根拠: `grep -n "function auditBattery" scripts/workflows/backtest_env.js scripts/check_bt_delegation.py` → 0 件。`grep -n "^function checkBattery" scripts/workflows/backtest_env.js` → `144:function checkBattery(fixed, n, prev) {`。`grep -rn "auditBattery" scripts/ docs/DATA/delegations/` → 一致するのは `scripts/check_bt_delegation.py:23`(docstring)と `docs/DATA/delegations/20260925_backtest_env_prompt.md:46`・`20260923_backtest_env_prompt.md:46`(いずれも同じ文言)の 3 箇所のみで、定義は一つも無い。
+   補足: `python3 scripts/check_bt_delegation.py <5引数>` を実測で再実行すると `OK 誤り 0 件` になる(リードの報告と一致)。しかし `scripts/check_bt_delegation.py` のチェック 9(`check_no_touch`)は `repairBattery`・`checkBattery` という固定名の関数本体の中に特定の語句があるかだけを見ており、委任文本文やこの docstring 自身に残る `auditBattery` という存在しない関数名への言及は検査対象に入っていない。つまり「誤り 0 件」はこの不整合を検出しない設計であり、この結果を根拠に「委任文の記述と台本の配線が一致している」と読むことはできない。
+
+3. [止める] `scripts/workflows/backtest_env.js:274-281`(批評家のプロンプト本体)と `docs/DATA/delegations/20260925_backtest_env_prompt.md:81`(§2 項目 4 の行) — 委任文は項目 4 の参照実装役について「`src/bot/bt/core/` を開いたら [止める] = **批評家が** agent の記録ではなく**成果物の形**(核の内部の名前・構造の写し)で読む」と、この守りを批評家の役目として明記している。しかし台本の批評家のプロンプト(274〜281 行、item.id===4 の分岐を含む)には、参照実装・`src/bot/bt/reference/`・「核の内部の名前や構造の写し」に類する検査を行えという指示が一度も出てこない(item.id===4 の分岐で追加されるのは項目 0 の場面集を読む指示だけで、参照実装の独立性チェックには触れていない)。この守りは項目 4「統合と答え合わせ」(旧 11 = 正しさの答え合わせ)の妥当性の根幹(参照実装が核を見ずに独立に書かれたことの保証)に関わるが、台本上は批評家に自発的な注意力以外の配線が無い。
+   根拠: `grep -n "参照実装" scripts/workflows/backtest_env.js` → 242 行(参照実装役自身のプロンプト)と 243 行(label)、436 行(コメント)のみで、274〜281 行(批評家プロンプト)には出現しない。`grep -n "核の内部|成果物の形|reference/" scripts/workflows/backtest_env.js` → 一致は 242 行(参照実装役自身のプロンプト内の記述)のみで、批評家プロンプトの行(274-281)には一致なし。`grep -n "const critic = agent|label: \`批評:" scripts/workflows/backtest_env.js` → `274:const critic = agent(...)` / `281:{ label: \`批評:${item.id}#${attempt}\`, ...}` で範囲を確定。(P3「事前登録の定義を実装が反映しているか」と同型 — ここでは委任文が明記した守りが批評家プロンプトに実装されているかを検査すべき箇所)
+
+4. [直す] `scripts/workflows/backtest_env.js:144-151`(`checkBattery` 関数) — 「場面係の差分に場面集の外のファイルがある」の判定が `!x.startsWith('tests/bt/battery/')` のみで、`tests/bt/battery/item_<番号>/` のように項目番号まで絞っていない。ある項目(例: 項目 1)の場面係の直しが `tests/bt/battery/item_2/` 配下のファイルを変更しても、この機械の検査は「場面集の外」とは判定せず通してしまう。委任文 §3「場面集の規則」7 は試験の置き場所を項目ごとに定めているが、`checkBattery` はこの項目間の境界を機械的には確認していない。
+   根拠: `Read scripts/workflows/backtest_env.js` の該当関数(144-151 行、`const outside = (fixed.changed_files || []).map(...).filter(x => !x.startsWith('tests/bt/battery/'))`)。委任文 §3「場面集の規則」7(`tests/bt/battery/item_<番号>/` への項目ごとの限定)と突き合わせた結果。
+
+5. [聞く] `docs/DATA/delegations/20260925_backtest_env_prompt.md:118` — 「**Jev の設計の段の判定(L-242)は当てない**: この委任は事前登録ではなく…L-402 で道具サーベイに同じ判断をした」とあるが、この除外判断自体はリードの読み(L-242 の逐語の解釈と L-402 の先例の援用)であり、この委任文(バックテスト環境の刷新)そのものについてオーナーが L-242 の適用除外を逐語で承認した記録は委任文中に引用されていない。§0 の表の「右が『(該当語なし)』の行は…起動しない」という規則(CLAUDE.md §0.1)に照らし、この除外判断がオーナーの原文に基づくものか、それともリードの類推(A-1 型)かを確認したいという問い。
+   根拠: `Grep "L-242" docs/DATA/delegations/20260925_backtest_env_prompt.md` の一致箇所(118 行)を読んだ限り、L-242 の逐語(「設計の段階でjevの判定…事前登録させない」)以外にオーナーがこの委任単体について除外を承認した逐語は無い。
+
+---
+
+上記のうち、指摘 2 で確認した「`check_bt_delegation.py` は `auditBattery` のような存在しない関数名への言及を検出しない」という点は、リードが提示した実測(`OK 誤り 0 件`)自体は私も独立に再実行して同じ結果を得ており(`python3 scripts/check_bt_delegation.py <5引数>` → `OK 誤り 0 件`)、リードの実測結果そのものへの疑義ではない。「誤り 0 件」という結果が、私が指摘した種類の不整合(旧関数名の残存)まで検査範囲に含んでいるわけではない、という検査器の守備範囲についての事実を書き添えた。
+
+以下は今回の監査で確認した、問題なしと判定した(=指摘しなかった)主な照合結果(参考として記す。指摘ではない):
+- (a) の全体網羅: `docs/DATA/delegations/20260925_backtest_env_prompt.md` 中の「監査役」を含む全行を読み直した結果、指摘 1 以外の箇所(§0 の L-448 行、§3「場面集」、§3「場面集の規則」9、§3「盲検の作り直し」等)はいずれも「(L-448 で外した)」「(L-448 以後)」等の注記が明示され、旧手順が現行指示として誤読される余地は無かった。
+- (b) 参照実装:4 の起こし方(項目 4 第 1 周の作業者の前)・読める範囲の制限・委任文 §2 項目 4 の行と `bt_args_run12.json` の `items[4].extra` の文言は、内容として一致していることを確認した(指摘 3 の批評家配線の欠落を除く)。
+- (c) 64-6 の批評家の裏取りの文(`git diff --name-only HEAD`・`git status --short` を批評家自身が打つ)は、台本(274-281 行付近)・委任文 §0 の L-448 行・§3「場面集」の 3 箇所で一致していることを確認した。
+- (d) `diff docs/DATA/delegations/20260923_backtest_env_prompt.md docs/DATA/delegations/20260925_backtest_env_prompt.md` により、旧 §2 の項目 1〜14 の要件文はすべて新 4 項目の該当箇所に一字一句そのまま(【旧n …】の見出しを付けて)結合されており、削られた要件文は見当たらなかった(A-10 に反する縮小は確認されなかった)。
+- (e) §0 の表の L-446・L-447・L-448 の右列の引用は、いずれも `docs/OWNER_LOG.md` の該当行の逐語と一致し、案の文面(「実装の側の指摘だけを直させる」等)がリードの具体化である旨も注記されており、オーナーの語とリードの語の混同は見当たらなかった。
+
+### リードの処置(2026-09-25 10:40 UTC。処置後の版 c26059000160。枠組みの指紋は 7e9d8b96ba0e のまま = 役・段・通過の判定は変えていないので、L-443 (1) により 66 回目には出さず検査器で通す)
+
+- 65-1 [直す]: 同型の再発(当たっている)。§0 の L-441 の行の冒頭を「[止める] には直しと機械の検査(定義の段は L-443 で、監査役(場面)は L-448 で廃止)」に直した。
+- 65-2 [直す]: 委任文の L-441 の行と検査器の docstring の `auditBattery` を `checkBattery` に直した(委任文には「auditBattery は L-448 で消えた」と経緯として 1 か所残す)。検査器が旧関数名の残存を見ないことはそのとおりで、検査器の守備範囲として記録する(検査は足していない)。
+- 65-3 [止める]: 当たっている。台本の批評家の文の項目 4 の分岐に「参照実装の独立」の検査を配線した(src/bot/bt/reference/ と tests/bt/item_4/reference/ を成果物の形で読み、核の内部の名前・構造・コメントの写しや核の import があれば [止める] target=実装。根拠を CRITIC.md に書く)。委任文 §2 の項目 4 の行に「台本の批評家の文の項目 4 の分岐に配線」と書いた。
+- 65-4 [直す]: `checkBattery` に item を渡し、許す範囲を `tests/bt/battery/item_<番号>/`(項目 4 だけは項目 0 の場面集も)に絞った。node の試験に 2 件足した(他の項目の場面集は外 / 項目 4 は項目 0 に触れてよい)。委任文 §0 の L-448 の行に同じ文。
+- 65-5 [聞く]: リードの読み(類推)で、この委任についてのオーナーの逐語は無い。委任文に「リードの読み、オーナーに確認を出した」と書き、同じ回の返答でオーナーに 1 行で聞く(Jev の設計の段の判定をこの委任に当てるか。当てなくても起動は止めない = 64 回の監査がその代わりに走っている)。
+
+処置後の実測(逐語): `node --check scripts/workflows/backtest_env.js` → エラー無し / `node --test tests/workflows/backtest_env_logic.test.mjs` → pass 10 / fail 0 / pytest `tests/test_check_bt_delegation.py` → 14 passed / `python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260925_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/bt_args_run12.json` → `OK 誤り 0 件`。
+
+## 起動に使う版の記録(12 回目 = 4 項目化・監査の削減の版。起動は項目 0 の通過のあと)
+
+- 委任文: `docs/DATA/delegations/20260925_backtest_env_prompt.md@c26059000160`(監査 64 回目 = 止める 2 → 処置、65 回目 = 止める 1 → 処置。処置後は指紋が変わらないので検査器で通す)
+- 枠組みの指紋: `7e9d8b96ba0e`
+- 台本: `scripts/workflows/backtest_env.js`(L-447: 項目 1〜3 並列 → 4、参照実装:4 の役、passed_items / open_battery / L-448: checkBattery、監査役(場面)なし、批評家の裏取りと参照実装の独立の検査)
+- 引数: `/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/bt_args_run12.json`(marker c26059000160。`passed_items`・`open_battery` は項目 0 の通過時にリードが埋める)
+- オーナー決定: L-445(射程)、L-446/L-447(4 項目)、L-448(監査の削減 案 1)

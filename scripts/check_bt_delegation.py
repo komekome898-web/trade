@@ -20,7 +20,7 @@ Checks, all against primary records:
    `lead_answer_changes` (not the worker's `questions_for_lead`) must appear in all of them.
 
 9. The no-touch wiring (audit 60-3 / 61-7): the script's repairBattery text tells the scene keeper not to touch files
-   outside the battery and to paste `git diff --name-only HEAD`, and the auditBattery text tells the auditor to check
+   outside the battery and to paste `git diff --name-only HEAD`, and the checkBattery (the machine check that replaced the audit agent, L-448) text tells the auditor to check
    that diff itself.
 
 10. The framework fingerprint (L-443 (1)): sha256[:12] of the script's role labels and function names plus the

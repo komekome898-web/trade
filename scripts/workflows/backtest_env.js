@@ -141,10 +141,12 @@ const BAT2_SCHEMA = { type: 'object', properties: {
 // return: a file outside tests/bt/battery/ in `git diff --name-only HEAD`, or failing tests, stops the repair. The content
 // of the battery is read by the next round's critic (and item 0's battery by item 4's critic after item 0 passes).
 // Self-reported values: the critic re-checks them next round. Pure: tested by node --test.
-function checkBattery(fixed, n, prev) {
+function checkBattery(fixed, n, prev, item) {
   const out = []
   const same = kind => { const f = (prev || []).find(x => String(x.id).endsWith(kind)); return f ? f.id : null }
-  const outside = (fixed.changed_files || []).map(x => String(x).replace(/^\.\//, '')).filter(x => !x.startsWith('tests/bt/battery/'))
+  // audit 65-4: only this item's battery (item 4's 場面係 may also repair item 0's battery, L-448)
+  const allowed = item ? [`tests/bt/battery/item_${item.id}/`, ...(item.id === 4 ? ['tests/bt/battery/item_0/'] : [])] : ['tests/bt/battery/']
+  const outside = (fixed.changed_files || []).map(x => String(x).replace(/^\.\//, '')).filter(x => !allowed.some(a => x.startsWith(a)))
   if (outside.length) out.push({ id: `b${n}-touch`, level: '止める', repeat_of: same('-touch'), text: `場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): ${outside.join(', ')}` })
   if (fixed.tests_passed !== true) out.push({ id: `b${n}-tests`, level: '止める', repeat_of: same('-tests'), text: `場面集の試験が通っていない(L-448 の機械の検査): ${String(fixed.test_tail || '').slice(0, 300)}` })
   return { findings: out }
@@ -224,7 +226,7 @@ async function runItem(item) {
         const fixed = await repairBattery(item, req, bat, fixList, `r${attempt}-${k}`)
         if (!fixed) return { error: 'battery_repair_in_round' }
         bat = { ...bat, ...fixed }
-        const fs = checkBattery(fixed, `r${attempt}-${k}`, midAudits.length ? midAudits[midAudits.length - 1].findings : []).findings  // L-448
+        const fs = checkBattery(fixed, `r${attempt}-${k}`, midAudits.length ? midAudits[midAudits.length - 1].findings : [], item).findings  // L-448
         midAudits.push({ k, findings: fs })
         const bst = fs.filter(f => f.level === '止める')
         if (!bst.length) return null
@@ -275,7 +277,7 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
 あなたは項目 ${item.id}「${item.title}」の批評家(第 ${attempt} 周。新しく起こされた者)です。**非常に厳しく**。固定した要件 ${req.path}、場面集 ${bat.definitions}、調査結果の該当行を手元に置く。
 自分で試験を書いて壊しにいく(試験は tests/bt/critic/item_${item.id}/ に置く。壊れた試験は残し、作業者が直す)。前の周までの批評家の試験のうち、作業者が「試験自身の誤り」と報告したものを確かめ、誤りなら直すか理由を書いて取り下げる(委任文 §3「場面集の規則」8)。場面集が規則 1〜9 を守っているか(能力を申告で数えていないか等)も見る。前の周で「直った」とされた点も自分で確かめ直す。資料係の adapter(${JSON.stringify(t.adapters_changed).slice(0, 2000)})が対象を公平に呼んでいるか(新実装だけ有利・他が不利になる呼び方でないか)、場面係の検討表(${bat.battery_dir}/opponents/CONSIDERED.md)のスキップの理由が調査結果の行で裏付けられているか、再現(${bat.battery_dir}/opponents/)が一次資料どおりで弱められていないか、場面集が要件の観点を全部覆っているかも見る。
 ${attempt > 1 ? `前の周までの指摘(場面集の側は、この周の前に場面係が直し監査役が見た = 委任文 §3「場面集」): ${JSON.stringify(allFix).slice(0, 12000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : (prior.critic_findings ? `前の起動の最後に数えた周の批評家の指摘(委任文 §3「周回の数え方と止める条件」4。id つき): ${JSON.stringify(prior.critic_findings).slice(0, 10000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : '')}
-場当たりの直し(試験や場面だけの特別扱い・閾値や既定値をずらす・文言合わせ・機能を外して要件から逃げる)を見つけたら patchwork=true の [止める] にする。**場面係の申告の裏取り(L-448、監査 64-6)**: この周の前に場面係が直していれば、その返り値の changed_files・tests_passed は申告なので、自分で「git diff --name-only HEAD」「git status --short」を打って場面集の外(src/bot/bt/・tests/bt/item_${item.id}/・tests/bt/critic/)に変更が無いか、場面集の試験(tests/bt/battery/item_${item.id}/)と自分の前の周までの試験を自分で回して通るかを確かめ、違えば [止める](target=場面集、fix_files に該当のファイル)にする。${item.id === 4 ? '項目 0 の場面集(tests/bt/battery/item_0/)も読む(L-448 で周ごとの監査役(場面)を外し、項目 0 の通過後の並行の直しは機械の検査だけなので、その中身の欠陥はこの批評家が読む)。欠陥は target=場面集、fix_files に tests/bt/battery/item_0/ の path で返す(この項目の場面係が直す)。' : ''}格付けは委任文 §3「批評家」の「格付けの基準」どおり(要件・観点を 1 つでも満たさない / 正解と合わない / 試験が落ちる / 信頼性・再現性を崩す / 場当たり / §4 の禁止 / 場面集の規則違反 は [止める]。迷ったら重い方)。前の周の [直す]・[示唆] に [止める] の基準に当たるものがあれば付け直して理由を書く。要件のファイル §0「核の約束の射程」(L-445)の外の反例(戦略が Python のプロセス自体 = sys.modules・builtins・class の定義・ABC への登録・インタプリタの設定を書き換える形)は [止める] にせず [示唆] にし、射程の外と書く。
+場当たりの直し(試験や場面だけの特別扱い・閾値や既定値をずらす・文言合わせ・機能を外して要件から逃げる)を見つけたら patchwork=true の [止める] にする。**場面係の申告の裏取り(L-448、監査 64-6)**: この周の前に場面係が直していれば、その返り値の changed_files・tests_passed は申告なので、自分で「git diff --name-only HEAD」「git status --short」を打って場面集の外(src/bot/bt/・tests/bt/item_${item.id}/・tests/bt/critic/)に変更が無いか、場面集の試験(tests/bt/battery/item_${item.id}/)と自分の前の周までの試験を自分で回して通るかを確かめ、違えば [止める](target=場面集、fix_files に該当のファイル)にする。${item.id === 4 ? '項目 0 の場面集(tests/bt/battery/item_0/)も読む(L-448 で周ごとの監査役(場面)を外し、項目 0 の通過後の並行の直しは機械の検査だけなので、その中身の欠陥はこの批評家が読む)。欠陥は target=場面集、fix_files に tests/bt/battery/item_0/ の path で返す(この項目の場面係が直す)。**参照実装の独立(監査 65-3)**: src/bot/bt/reference/ と tests/bt/item_4/reference/ が核 src/bot/bt/core/ を見ずに要件だけから書かれたかを、成果物の形で読む(核の内部の名前・構造・コメントの写し、核のモジュールの import があれば [止める] target=実装、fix_files に reference/ の path。agent の記録は読めないので成果物だけで判断し、判断の根拠を CRITIC.md に書く)。' : ''}格付けは委任文 §3「批評家」の「格付けの基準」どおり(要件・観点を 1 つでも満たさない / 正解と合わない / 試験が落ちる / 信頼性・再現性を崩す / 場当たり / §4 の禁止 / 場面集の規則違反 は [止める]。迷ったら重い方)。前の周の [直す]・[示唆] に [止める] の基準に当たるものがあれば付け直して理由を書く。要件のファイル §0「核の約束の射程」(L-445)の外の反例(戦略が Python のプロセス自体 = sys.modules・builtins・class の定義・ABC への登録・インタプリタの設定を書き換える形)は [止める] にせず [示唆] にし、射程の外と書く。
 ${attempt > 1 ? `前の周から構造の変化が無ければ structural_change_since_prev=false(作業者の申告: ${w.structural_change.slice(0, 1000)})。` : 'structural_change_since_prev は true。'}
 指摘ごとに target を付ける: 場面集の側(tests/bt/battery/ の下 = 場面の定義・正解・runner・adapter・検討表・再現・mutant、資料係の表)なら「場面集」、新実装(src/bot/bt/)と作業者の試験なら「実装」。fix_files に、その指摘を直すために変えるべきファイルの path(リポジトリ相対)を全部書く(相手の根拠。src/bot/bt/ の下が 1 つでもあれば台本は相手を「実装」と数える = 付け違いで通過の判定が変わらないための機械、監査 58-3)。場面集の側の指摘は次の周の前に場面係が直す(委任文 §3「場面集」)。指摘の id は「i${item.id}-r${attempt}-<連番>」。根拠はファイル:行か、実行したコマンドと出力。記録を ${d}/CRITIC.md に書く。${SCRUTINY_CRITIC}`,
       { label: `批評:${item.id}#${attempt}`, phase: '批評', schema: CRITIC_SCHEMA, model: IMPL_MODEL, effort: 'high' })
@@ -381,7 +383,7 @@ async function batteryFollowUp(item, req, bat, findings, chainObj) {
     const fixed = await repairBattery(item, req, bat, fixList, n)
     if (!fixed) return done({ status: 'error', stage: 'battery_followup', history: hist, bat })
     bat = { ...bat, ...fixed }
-    const fs = checkBattery(fixed, n, hist.length ? hist[hist.length - 1].findings : []).findings  // L-448: no audit agent; item 4's critic reads the content
+    const fs = checkBattery(fixed, n, hist.length ? hist[hist.length - 1].findings : [], item).findings  // L-448: no audit agent; item 4's critic reads the content
     hist.push({ k: n, findings: fs })
     const stops = fs.filter(f => f.level === '止める')
     log(`並行の直し(項目 ${item.id}) ${n}: 機械の検査の止める ${stops.length} 件`)
