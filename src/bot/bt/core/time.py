@@ -10,17 +10,25 @@ There is one sanctioned way to turn a raw, unit-labelled value into one:
 * integers are scaled with integer arithmetic;
 * a Fraction is scaled with integer arithmetic too (numerator x factor must
   divide by the denominator), never through a float (round 15, i0-r14-03);
-* floats go through `decimal.Decimal` of their shortest decimal
-  representation, and numeric strings and Decimals are read as the decimal
-  they write, so `1700000000.123456789` (as a string) or `1.5` (as a
-  float) convert without binary-float rounding; a value whose decimal
-  representation has sub-nanosecond digits is rejected instead of being
-  rounded silently;
+* numeric strings and Decimals are read as the decimal they write, so
+  `1700000000.123456789` (as a string) converts without binary-float
+  rounding;
+* a float has two readings -- the binary value it holds, and the decimal
+  it prints (its shortest repr, the digits a caller typed when it was
+  made from them) -- and the core sees only the float. It is taken only
+  when both readings are the same number (`1.5`, `0.25`, `1700000000.0`
+  s); a float that does not hold the decimal it prints
+  (`1700000000.123` s holds 1700000000.12299990654...; `1700000000123456.8`
+  us holds ...456.75) is refused with both readings in the text, since
+  either choice would silently change the time the other one states
+  (round 16, i0-r15-01); pass an int, a str or a Decimal instead;
+* a value whose exact value has sub-nanosecond digits is rejected instead
+  of being rounded silently;
 * a number of another class is converted exactly first (values.py `scalar`):
   numpy's integers and float16/32/64 as they are; a numpy longdouble only
-  when a float holds its value exactly (else refused, never rounded);
-  numpy's timedelta64 / datetime64 -- a count in a unit of their own -- are
-  refused (round 15, i0-r14-04);
+  when a float holds its value exactly (else refused with that reason,
+  never rounded); numpy's timedelta64 / datetime64 -- a count in a unit of
+  their own -- are refused (round 15, i0-r14-04);
 * ISO-8601 strings are parsed by this module (not by `datetime`, whose
   resolution stops at microseconds and would drop the last three digits of
   `...00.123456789Z`) and must carry an explicit offset.
@@ -36,13 +44,14 @@ data's era passes `plausible=(min_ns, max_ns)` to catch that direction too
 from __future__ import annotations
 
 import datetime as dt
+import math
 import re
 from decimal import Decimal, InvalidOperation
 from typing import NewType, Union
 
 from .errors import TimestampUnitError
-from .values import (PlainDecimal, PlainFraction, as_int, as_text, derives, exact_context, fraction_parts,
-                     int_text, scalar, type_name, value_text)
+from .values import (NOT_PLAIN, PlainDecimal, PlainFraction, as_int, as_text, derives, exact_context,
+                     fraction_parts, int_text, plain_scalar, type_name, value_text)
 
 Nanos = NewType("Nanos", int)
 
@@ -67,7 +76,8 @@ TIME_CONTRACT: dict = {
     "epoch": "1970-01-01T00:00:00Z",
     "timezone": "UTC",
     "accepted_input_units": sorted(_UNIT_TO_NS_FACTOR) + ["iso"],
-    "rounding": "none (inputs with sub-nanosecond digits are rejected)",
+    "rounding": "none (inputs with sub-nanosecond digits are rejected; a float is taken only when the "
+                "value it holds is the decimal it prints)",
     "default_plausible_range_ns": [PLAUSIBLE_MIN_NS, PLAUSIBLE_MAX_NS],
 }
 
@@ -161,8 +171,12 @@ def to_nanos(
     # the value as a built-in scalar, by its REAL type (values.py `scalar`:
     # numpy numbers converted once, a subclass read by its built-in type)
     try:
-        v = scalar(value, "timestamp")
-    except ValueError:
+        v = plain_scalar(value, "timestamp")
+    except ValueError as exc:
+        # a number whose exact conversion failed (a numpy longdouble a float
+        # cannot hold): refused with that reason (round 16, i0-r15-07)
+        raise TimestampUnitError(f"timestamp value for unit {unit!r}: {exc}") from None
+    if v is NOT_PLAIN:
         v = None
     if type(v) is bool:
         raise TimestampUnitError(f"a bool ({type_name(value)}) is not a timestamp")
@@ -181,11 +195,24 @@ def to_nanos(
             raise TimestampUnitError(f"{shown} {unit} has sub-nanosecond digits; refusing to round")
         ns = q
     elif t is float or t is str or t is PlainDecimal:
-        text = v.strip() if t is str else ctx.to_sci_string(v) if t is PlainDecimal else float.__repr__(v)
-        try:
-            dec = ctx.create_decimal(text)
-        except InvalidOperation as exc:
-            raise TimestampUnitError(f"not a number: {shown}") from exc
+        if t is float:
+            if not math.isfinite(v):
+                raise TimestampUnitError(f"non-finite timestamp {shown}")
+            # the float's two readings (module docstring): taken only when they agree
+            dec = ctx.create_decimal_from_float(v)  # exactly the value it holds
+            printed = float.__repr__(v)
+            if not ctx.compare(dec, ctx.create_decimal(printed)).is_zero():
+                raise TimestampUnitError(
+                    f"a float timestamp holds {ctx.to_sci_string(dec)} {unit}, not the decimal it prints "
+                    f"({printed}); a float is taken only when the two are the same number (either reading "
+                    f"would silently change the other's time) -- pass an int, a str or a Decimal"
+                )
+        else:
+            text = v.strip() if t is str else ctx.to_sci_string(v)
+            try:
+                dec = ctx.create_decimal(text)
+            except InvalidOperation as exc:
+                raise TimestampUnitError(f"not a number: {shown}") from exc
         if not dec.is_finite():
             raise TimestampUnitError(f"non-finite timestamp {shown}")
         # every operation in the core's own context (the comparison and the

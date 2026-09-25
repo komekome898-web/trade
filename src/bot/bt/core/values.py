@@ -582,6 +582,10 @@ def _exactly_converted(value: Any, out: Any) -> bool:
         return _same_real(value, out)
     if derives(t, _NP_CLONGDOUBLE):
         return _same_real(_NP_REAL(value), _REAL(out)) and _same_real(_NP_IMAG(value), _IMAG(out))
+    if derives(t, int) and derives(type(out), float):
+        # an int made a float (round 16, i0-r15-04): exact only when the float
+        # holds that int (float == int compares the exact values, in C)
+        return float.__eq__(_new_float(out), _new_int(value)) is True
     return True
 
 
@@ -784,12 +788,86 @@ def fraction_float(x: Fraction) -> float:
 
 
 def decimal_float(x: Decimal) -> float:
-    """A Decimal as the nearest float, from its text written by a context
-    of the core's own; ValueError for a signaling NaN."""
+    """A Decimal as the nearest float (correctly rounded, from its text
+    written by a context of the core's own); inf, nan and the sign of a
+    zero kept; ValueError for a signaling NaN and for a finite value beyond
+    a float's range (it is not infinite: never made inf, round 16)."""
     try:
-        return float(exact_context().to_sci_string(x))
+        f = float(exact_context().to_sci_string(x))
     except ValueError:
         raise ValueError("a signaling NaN is not a float") from None
+    if _is_inf(f) and not _DEC_IS_INFINITE(x):
+        raise ValueError("a Decimal beyond a float's range")
+    return f
+
+
+def _is_inf(f: float) -> bool:
+    return float.__eq__(f, _INFINITY) or float.__eq__(f, -_INFINITY)
+
+
+_INF_TEXTS = ("inf", "infinity")
+_INT_FLOAT = int.__float__
+
+
+# ---- the float FIELD: the nearest float of the value (round 16, i0-r15-04) ---------------
+# A field declared float (a price, a size, a fee) takes the float NEAREST the
+# exact value of every real number it accepts, whatever its class: an int, a
+# float, a Fraction, a numpy integer or floating number (a longdouble too), and
+# where text is taken a Decimal or a numeric str -- correctly rounded (half to
+# even), by int division, C conversions and the correctly rounded text reader,
+# never by the floating-point state of the process. inf, nan and the sign of a
+# zero are kept; a FINITE value beyond a float's range is refused (never made
+# inf). One value is never rounded by one class and refused by another. (Plain
+# data -- `freeze`, `settle` -- keeps values exactly or refuses them: `_now`.)
+
+def _nearest_of(got: Any, value: Any, where: str, numbers_only: bool) -> float:
+    """The float field's value of `got`, what the scalar rule built of
+    `value`."""
+    t = type(got)
+    if t is float:
+        return got
+    if t is int:
+        try:
+            return _INT_FLOAT(got)  # correctly rounded, in C
+        except OverflowError:
+            raise ValueError(f"{where} holds an int beyond a float's range") from None
+    if t is PlainFraction:
+        try:
+            return fraction_float(got)
+        except ValueError as exc:
+            raise ValueError(f"{where}: {exc}") from None
+    if t is PlainDecimal and not numbers_only:
+        try:
+            return decimal_float(got)
+        except ValueError as exc:
+            raise ValueError(f"{where}: {exc}") from None
+    if t is str and not numbers_only:
+        try:
+            f = float(got)  # correctly rounded (the interpreter's text reader)
+        except ValueError:
+            raise ValueError(f"{where} must be a number, got the text {got!r}") from None
+        if _is_inf(f) and str.lower(str.lstrip(str.strip(got), "+-")) not in _INF_TEXTS:
+            raise ValueError(f"{where} holds the text of a number beyond a float's range")
+        return f
+    raise ValueError(f"{where} must be a number, got {type_name(value)}")
+
+
+def _longdouble_nearest(value: Any, where: str) -> float:
+    """A numpy longdouble's nearest float: the float itself when it holds
+    the value exactly (inf, nan, the sign of a zero), else its exact value
+    (the class's own C `as_integer_ratio`) divided as ints."""
+    try:
+        return _now(float, value, where)
+    except ValueError:
+        pass
+    try:
+        n, d = _LD_RATIO(value)
+    except (OverflowError, ValueError):  # pragma: no cover - a finite longdouble has a ratio
+        raise ValueError(f"{where} holds a {type_name(value)} that cannot be read") from None
+    try:
+        return int.__truediv__(_new_int(n), _new_int(d))
+    except OverflowError:
+        raise ValueError(f"{where} holds a {type_name(value)} beyond a float's range") from None
 
 
 _NOT_PLAIN = object()  # what `_plain_scalar` gives for a value the scalar rule refuses
@@ -938,11 +1016,24 @@ def _pairs_of(out: list) -> list:
     return [(out[i], out[i + 1]) for i in range(0, len(out), 2)]
 
 
+def _hashed(x: Any, err: type, where: str, what: str) -> None:
+    """A value the core built is made a key or an element only when it has
+    a hash (round 16, i0-r15-02): the one it can lack is a signaling-NaN
+    Decimal (Decimal's C hash refuses it), and what holds one; refused with
+    the entry's own error, never the interpreter's TypeError."""
+    try:
+        hash(x)
+    except TypeError:
+        raise err(f"{where}: a {what} holds a value that has no hash (a signaling-NaN Decimal); refused") from None
+
+
 def _dict_of(pairs: list, err: type, where: str) -> dict:
     """A dict of the new keys, refusing keys that were distinct in the
-    sender's container but are equal as plain data (never merged)."""
+    sender's container but are equal as plain data (never merged), and a
+    key that has no hash."""
     d: dict = {}
     for k, x in pairs:
+        _hashed(k, err, where, "dict key")
         d[k] = x
     if len(d) != len(pairs):
         raise err(f"{where}: keys that differ in the sender's dict are equal as plain data; refused, not merged")
@@ -950,6 +1041,8 @@ def _dict_of(pairs: list, err: type, where: str) -> dict:
 
 
 def _set_of(make: Callable, out: list, err: type, where: str) -> Any:
+    for x in out:
+        _hashed(x, err, where, "set element")
     got = make(out)
     if len(got) != len(out):
         raise err(f"{where}: elements that differ in the sender's set are equal as plain data; refused, "
@@ -1048,17 +1141,16 @@ def take_int(value: Any, where: str) -> int:
 
 def take_float(value: Any, where: str) -> float:
     """A plug-in's number answer, taken after its call returned (the
-    fee): `settle`, then a float itself (an int or a Fraction converted by
-    the core's own types; never a bool)."""
+    fee): `settle`, then the float field's rule (the nearest float of the
+    value: an int, a Fraction, a numpy number -- a longdouble too --;
+    never a bool)."""
+    t = type(value)
+    if is_static(t) and derives(t, _NP_LONGDOUBLE):
+        return _longdouble_nearest(value, where)  # numpy's C code: runs nothing of the plug-in's
     got = _taken(value, where)
-    t = type(got)
-    if t is float:
-        return got
-    if t is int:
-        return _now(float, got, where)
-    if t is PlainFraction:
-        return fraction_float(got)
-    raise ValueError(f"{where} must be a number, got {type_name(value)}")
+    if type(got) is bool:
+        raise ValueError(f"{where} must be a number, got {type_name(value)}")
+    return _nearest_of(got, value, where, True)
 
 
 def take_items(value: Any) -> tuple:
@@ -1092,6 +1184,16 @@ def settled(value: Any) -> bool:
     except Unsettled:
         return False
     return True
+
+
+NOT_PLAIN = _NOT_PLAIN
+
+
+def plain_scalar(value: Any, where: str = "value") -> Any:
+    """The scalar rule's value, or `NOT_PLAIN` for a value the rule does
+    not take; ValueError for a number whose exact conversion failed (the
+    reason in its text)."""
+    return _plain_scalar(value, where)
 
 
 def scalar(value: Any, where: str = "value") -> Any:
@@ -1146,34 +1248,19 @@ def as_int(value: Any, where: str) -> int:
 
 
 def as_float(value: Any, where: str, *, numbers_only: bool = True) -> float:
-    """A number field, as a new `float` itself (the scalar rule: a float or
-    int subclass gives the number it holds, a real number of the numeric
-    tower is converted once, now; a Fraction is converted); never a bool.
-    `numbers_only=False` also accepts a numeric str and a Decimal (what
-    `float()` reads exactly as text). Whether the
-    number is finite or positive is the caller's rule."""
+    """A number field, as a new `float` itself: the float nearest the
+    value (the float field's rule above: an int, a float, a Fraction, a
+    numpy integer or floating number, a longdouble too; a subclass gives the
+    number it holds); never a bool. `numbers_only=False` also accepts a
+    numeric str and a Decimal (read as the decimal they write). A finite
+    value beyond a float's range is refused. Whether the number is finite
+    or positive is the caller's rule."""
+    if derives(type(value), _NP_LONGDOUBLE):
+        return _longdouble_nearest(value, where)
     got = _plain_scalar(value, where)
-    t = type(got)
-    if t is float:
-        return got
-    if t is int:
-        return _now(float, got, where)
-    if t is PlainFraction:
-        try:
-            return fraction_float(got)
-        except ValueError as exc:
-            raise ValueError(f"{where}: {exc}") from None
-    if t is PlainDecimal and not numbers_only:
-        try:
-            return decimal_float(got)
-        except ValueError as exc:
-            raise ValueError(f"{where}: {exc}") from None
-    if t is str and not numbers_only:
-        try:
-            return float(got)
-        except ValueError:
-            raise ValueError(f"{where} must be a number, got the text {got!r}") from None
-    raise ValueError(f"{where} must be a number, got {type_name(value)}")
+    if type(got) is bool:
+        raise ValueError(f"{where} must be a number, got {type_name(value)}")
+    return _nearest_of(got, value, where, numbers_only)
 
 
 class FrozenList(tuple):
@@ -1268,7 +1355,7 @@ class FrozenDict(Mapping):
         # anything else is not a mapping.
         t = type(other)
         if t is FrozenDict:
-            return dict(_FD_ITEMS(self)) == dict(_FD_ITEMS(other))
+            return _plain_equal(self, other)  # iterative: no frame per level (round 16)
         if is_mapping(t):
             return dict(_FD_ITEMS(self)) == dict(other.items())
         return NotImplemented
@@ -1290,6 +1377,99 @@ def _fd_fill(self: FrozenDict, pairs: tuple) -> None:
 
 
 _FD_ITEMS = FrozenDict.__dict__["_items"].__get__
+
+
+# ---- the core's equality of the containers it builds (round 16, i0-r15-03) --------------
+# Two FrozenDicts compare by `_plain_equal`: one loop over an explicit stack of
+# pairs, never a call per nesting level, so comparing two distinct nested
+# values of equal hash (what a dict or set the core builds does when their
+# hashes collide) takes the same few frames at every depth below a
+# FrozenDict; tuples and frozensets above it compare in the interpreter's C,
+# one level of its recursion limit per container. The answer is Python's ==:
+# the same object is equal (the interpreter's identity shortcut in
+# containers), tuples / FrozenLists by position, frozensets / FrozenSets and
+# FrozenDicts by their elements / items, anything else by its own ==. Keys
+# and elements are matched through a table of their hashes (ints: no
+# comparison runs), never through a dict lookup (which would compare
+# colliding keys by ==, a call per level); only when the other side holds
+# several keys of that hash is each tried by a nested `_plain_equal`.
+
+_SEQ, _SET, _MAP = "seq", "set", "map"
+
+
+def _container_kind(t: type) -> Any:
+    if t is tuple or t is FrozenList:
+        return _SEQ
+    if t is frozenset or t is FrozenSet:
+        return _SET
+    if t is FrozenDict:
+        return _MAP
+    return None
+
+
+def _match(xs: tuple, ys: tuple, keyed: bool, stack: list) -> bool:
+    """Pair every item of `xs` with the equal item of `ys` (same length),
+    pushing what is left to compare; False when one has no partner. Items
+    are (key, value) pairs when `keyed`, else elements."""
+    index: dict = {}
+    for y in ys:
+        ky = tuple.__getitem__(y, 0) if keyed else y
+        index.setdefault(hash(ky), []).append(y)
+    for x in xs:
+        kx = tuple.__getitem__(x, 0) if keyed else x
+        cands = index.get(hash(kx))
+        if not cands:
+            return False
+        if len(cands) == 1:
+            y = cands[0]
+            if keyed:
+                stack.append((kx, tuple.__getitem__(y, 0)))
+                stack.append((tuple.__getitem__(x, 1), tuple.__getitem__(y, 1)))
+            else:
+                stack.append((kx, y))
+            continue
+        for y in cands:
+            ky = tuple.__getitem__(y, 0) if keyed else y
+            if ky is kx or _plain_equal(kx, ky):
+                if keyed:
+                    stack.append((tuple.__getitem__(x, 1), tuple.__getitem__(y, 1)))
+                break
+        else:
+            return False
+    return True
+
+
+def _plain_equal(a: Any, b: Any) -> bool:
+    """a == b for values the core built (Python's answer; module comment
+    above), without a call per nesting level."""
+    stack: list = [(a, b)]
+    while stack:
+        x, y = stack.pop()
+        if x is y:
+            continue
+        kx, ky = _container_kind(type(x)), _container_kind(type(y))
+        if kx is None and ky is None:
+            if not (x == y):
+                return False
+            continue
+        if kx != ky:
+            return False
+        if kx == _SEQ:
+            if tuple.__len__(x) != tuple.__len__(y):
+                return False
+            stack.extend(zip(tuple.__iter__(x), tuple.__iter__(y)))
+        elif kx == _SET:
+            if frozenset.__len__(x) != frozenset.__len__(y):
+                return False
+            if not _match(tuple(frozenset.__iter__(x)), tuple(frozenset.__iter__(y)), False, stack):
+                return False
+        else:
+            px, py = _FD_ITEMS(x), _FD_ITEMS(y)
+            if tuple.__len__(px) != tuple.__len__(py):
+                return False
+            if not _match(px, py, True, stack):
+                return False
+    return True
 
 
 _FREEZE_TYPES = (tuple, list, dict, set, frozenset, FrozenList, FrozenDict, FrozenSet)

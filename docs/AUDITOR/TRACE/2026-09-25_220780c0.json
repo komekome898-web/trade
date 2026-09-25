@@ -13855,19 +13855,19 @@
   {
    "move": 509,
    "tools": {
-    "Read": 10,
-    "Bash": 32,
+    "Read": 11,
+    "Bash": 36,
     "mcp__Claude_Code_Remote__get_trigger": 1,
-    "ReadNotifications": 7,
+    "ReadNotifications": 8,
     "Workflow": 1,
-    "mcp__Claude_Code_Remote__send_later": 6
+    "mcp__Claude_Code_Remote__send_later": 7
    },
-   "n_tools": 57,
+   "n_tools": 64,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
    "claims_without_output": 2,
-   "claims_total": 9,
+   "claims_total": 10,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
@@ -13896,9 +13896,9 @@
    "value": 0.0806
   },
   "P3_claim_with_output": {
-   "num": 175,
-   "den": 469,
-   "value": 0.3731
+   "num": 176,
+   "den": 470,
+   "value": 0.3745
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -13907,7 +13907,7 @@
   },
   "P5_tools_per_move": {
    "median": 6,
-   "max": 63,
+   "max": 64,
    "n": 493
   },
   "P6_findings_applied": {
