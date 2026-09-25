@@ -304,7 +304,22 @@ i0-r11-04 ends with the returned text: True | prefix: ''
 42. **通過の判定(項目 0 だけ)**: 批評家の [止める] を相手で分け、実装の側が 0 件・審査員が両組で「同等以上」・報告の監査 [止める] 0 で通過。場面集の側の [止める] は通過を止めない。報告の監査への文に L-441 を書き、場面集の側の残りを [止める] の根拠にしないことを明記した。log に実装・場面集の内訳を出す。
 43. **並行の直し `batteryFollowUp`**: 通過のあと、項目 0 の場面集の側の指摘([止める]・[直す])を、項目 1〜12 と並行して場面係が直す(k 回目 = `f<k>`: [止める] には定義の段(L-440 案 1 のまま)→ 直し → 監査役(場面)。監査役(場面)の [止める] 0 で終わり。同じ族 3 回でリードへ戻す。回数の上限は置かない = L-433 と同じ(最初の版の「5 回」は根拠の無い値 = 監査 59-7 で外した)。通らずに止まったときは agent が `item_0/battery/FOLLOWUP_STOPPED.md` に状態と理由を書く(journal にその agent の記録が残る = 実測。裏の見張りの bash の label の検出は 10 回目の再開で初めて入れる = 未確認。監査 59-4・60-2))。結果は台本の返り値の `battery_followup` にも載る。並列の上限 2 の下では項目 1〜12 と agent の枠を分け合う。
 44. **項目 1〜12 の lead_notes**: 設計メモ `docs/DISCUSSIONS/2026-09-23_backtest_env/LEAD_DESIGN_items_1-12.md` を必ず読む、核の契約は変えない、項目 0 の場面集には触れない(並行の直しと競合させない)。
-45. **10 回目の再開**: コンテナの再起動(00:54 UTC)で止まった run `wf_02fcd9df-a0c` を、監査 58 回目(委任文 87913c214220)が [止める] 0 になり次第、予約した知らせの回に `resumeFromRunId` で再開する。委任文の版が変わるので marker が変わり、第 13 周の完了済み agent(定義 r13-1-1/2・監査役(定義)r13-1-1/2・作る:0#13)は記録から再生されず走り直すと読む。根拠(監査 58-7): Workflow の道具の説明の逐語「Completed agent() calls with unchanged (prompt, opts) return their cached results instantly; only edited or new calls re-run」と、8 回目の再開の実測(同じ台本・同じ引数で `resumeFromRunId` → 完了済み 2 体が記録から再生され、途中の 2 体が走り直した = OWNER_STATUS の 8 回目の段落)。marker が変わった場合の再生の有無は未確認で、10 回目の再開のあとに journal の agent の数で確かめて記録する。作業木の場面係の途中の変更(コミット済み)はそのまま次の場面係が引き継ぐ。
+45. **10 回目の再開**: コンテナの再起動(00:54 UTC)で止まった run `wf_02fcd9df-a0c` を、監査 58 回目(委任文 87913c214220)が [止める] 0 になり次第、予約した知らせの回に `resumeFromRunId` で再開する。委任文の版が変わるので marker が変わり、第 13 周の完了済み agent(定義 r13-1-1/2・監査役(定義)r13-1-1/2・作る:0#13)は記録から再生されず走り直すと読む。根拠(監査 58-7): Workflow の道具の説明の逐語「Completed agent() calls with unchanged (prompt, opts) return their cached results instantly; only edited or new calls re-run」と、8 回目の再開の実測(同じ台本・同じ引数で `resumeFromRunId` → 完了済み 2 体が記録から再生され、途中の 2 体が走り直した = OWNER_STATUS の 8 回目の段落)。marker が変わった場合の再生の有無は、10 回目の再開(01:44 UTC)のあとに確かめた: 再開の前の agent の記録は 6 体(00:02〜00:40 に開始)、再開の後は同じ label(定義:0#r13-1-1・作る:0#13)の agent が新しく開始された(下の一覧。`stat -c %y <run>/agent-*.meta.json` の時刻と description)。= marker が変わると完了済みの agent は記録から再生されず走り直す(読みのとおり)。
+
+```
+$ for f in <run>/*.meta.json; do stat -c %y $f | cut -c12-16; grep -o description $f; done | sort
+00:02 作る:0#13 agent-a7d45996bbf7943de
+00:02 定義:0#r13-1-1 agent-ac191f6406c7d245c
+00:14 監査役(定義):0#r13-1-1 agent-a5024fa1222481bcb
+00:23 定義:0#r13-1-2 agent-a0b637bcaba33a40a
+00:36 監査役(定義):0#r13-1-2 agent-a93ffeff2f4ef1be4
+00:40 場面の直し:0#r13-1 agent-a527d9cd4b72ce91e
+01:44 作る:0#13 agent-a037d0e1ee69ad094
+01:44 定義:0#r13-1-1 agent-a091bf2d30d177625
+meta=8 results(journal)=5
+```
+
+裏の見張りの bash(再開の直後に起動、コマンドの逐語): `D=<run>; sleep 45; while true; do newest=$(stat -c %Y $D/* | sort -n | tail -1); age=$(( $(date +%s) - newest )); if [ $age -gt 5400 ]; then echo STALL; exit 0; fi; if grep -q '"type":"failed"' $D/journal.jsonl; then echo FAILED; exit 0; fi; if grep -l '並行の直しの戻し' $D/*.meta.json >/dev/null 2>&1; then echo FOLLOWUP_STOPPED; exit 0; fi; sleep 60; done`(label の検出が働くかは、戻しが起きるまで未確認)。作業木の場面係の途中の変更(コミット済み)はそのまま次の場面係が引き継ぐ。
 
 ### 9.10 オーナーの指摘 L-442(「おかしいのは毎回批評家に引っかかるものを作らせているあなた」)へのリードの答えと処置(2026-09-25 01:10 UTC)
 
