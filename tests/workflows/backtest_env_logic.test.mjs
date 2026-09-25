@@ -1,5 +1,5 @@
 // node --test tests/workflows/ — the pure parts of scripts/workflows/backtest_env.js (audit 58-5): the item-0 side split
-// (L-441 + 58-3 + 59-1) and the parallel battery follow-up's exits (pass / same-family 3 / definition escalation; no repair cap). The functions are cut out
+// (L-441 + 58-3 + 59-1) and the parallel battery follow-up's exits (pass / same-family 3 / repair error; no repair cap, no definition step = L-443). The functions are cut out
 // of the script text and run with stubs, because the script itself only runs inside the Workflow harness.
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -17,8 +17,8 @@ function cut(name) {
   return src.slice(start, j + 1)
 }
 const splitStops = new Function(`${cut('splitStops')}; return splitStops`)()
-const makeFollowUp = (st) => new Function('defineThenAudit', 'repairBattery', 'auditBattery', 'log', 'agent', 'HEAD2', 'REC', 'MODEL', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
-  st.defineThenAudit, st.repairBattery, st.auditBattery, st.log || (() => {}), st.agent || (async () => 'ok'), '', '/rec', 'm')
+const makeFollowUp = (st) => new Function('repairBattery', 'auditBattery', 'log', 'agent', 'HEAD2', 'REC', 'MODEL', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
+  st.repairBattery, st.auditBattery, st.log || (() => {}), st.agent || (async () => 'ok'), '', '/rec', 'm')
 
 const stop = (id, target, fix_files = [], repeat_of = null) => ({ id, level: '止める', target, fix_files, repeat_of, text: id, evidence: '', patchwork: false })
 
@@ -66,15 +66,18 @@ test('follow-up has no repair cap (L-433): new families keep being repaired unti
 
 test('a follow-up that does not pass is written to a file by an agent (59-4)', async () => {
   const calls = []
-  const f = makeFollowUp({ defineThenAudit: async () => ({ escalate: '定義の段が 3 回で通らなかった' }), repairBattery: async () => ({}), auditBattery: async () => ({ findings: [] }),
+  let k = 0
+  const f = makeFollowUp({ repairBattery: async () => ({}),
+    auditBattery: async () => { k++; return { findings: [{ id: `s${k}`, level: '止める', text: 'same', repeat_of: k > 1 ? `s${k - 1}` : null }] } },
     agent: async (prompt, opts) => { calls.push({ prompt, opts }); return 'ok' } })
   const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], {})
   assert.equal(out.status, 'escalate'); assert.equal(calls.length, 1)
   assert.equal(calls[0].opts.label, '並行の直しの戻し:0'); assert.match(calls[0].prompt, /FOLLOWUP_STOPPED\.md/)
 })
 
-test('follow-up escalates when the definition step escalates', async () => {
-  const f = makeFollowUp({ defineThenAudit: async () => ({ escalate: '定義の段が 3 回で通らなかった' }), repairBattery: async () => ({}), auditBattery: async () => ({ findings: [] }) })
+test('a repair that returns nothing ends the follow-up as an error, also written to the file', async () => {
+  const calls = []
+  const f = makeFollowUp({ repairBattery: async () => null, auditBattery: async () => ({ findings: [] }), agent: async (prompt, opts) => { calls.push(opts.label); return 'ok' } })
   const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], {})
-  assert.equal(out.status, 'escalate'); assert.match(out.reason, /定義の段/)
+  assert.equal(out.status, 'error'); assert.deepEqual(calls, ['並行の直しの戻し:0'])
 })

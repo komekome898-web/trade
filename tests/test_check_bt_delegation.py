@@ -109,3 +109,15 @@ def test_no_touch_wiring_is_required_in_repair_and_audit_prompts():
     bad = "async function repairBattery(a) {\n  x`直す`\n}\nasync function auditBattery(b) {\n  y`検める`\n}\n"
     errs = cbd.check_no_touch(bad)
     assert any("repairBattery" in e for e in errs) and any("auditBattery" in e for e in errs)
+
+
+def test_framework_fingerprint_changes_with_roles_stages_or_pass_rule_only():
+    deleg = "| 通過の判定 = 両組で同等以上 |\n枠組みの指紋: 000000000000\n"
+    script = "async function runItem(a) {\n agent(`x`, { label: `作る:${item.id}#1` })\n}\n"
+    fp = cbd.framework_fingerprint(deleg, script)
+    assert cbd.check_fingerprint(deleg, script) and "指紋が変わった" in cbd.check_fingerprint(deleg, script)[0]
+    ok = deleg.replace("000000000000", fp)
+    assert cbd.check_fingerprint(ok, script) == []
+    assert cbd.framework_fingerprint(ok.replace("同等以上", "圧倒"), script) != fp   # pass rule changes it
+    assert cbd.framework_fingerprint(ok + "\n文言の直し\n", script) == fp            # wording does not
+    assert cbd.framework_fingerprint(ok, script.replace("作る:", "定義:")) != fp        # a role changes it

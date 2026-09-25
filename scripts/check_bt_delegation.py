@@ -23,6 +23,11 @@ Checks, all against primary records:
    outside the battery and to paste `git diff --name-only HEAD`, and the auditBattery text tells the auditor to check
    that diff itself.
 
+10. The framework fingerprint (L-443 (1)): sha256[:12] of the script's role labels and function names plus the
+    delegation's 「通過の判定」 row. The delegation carries the last audited value on a line `枠組みの指紋: <hex>`;
+    a mismatch means the framework changed and the delegation must go to the auditor again (wording and record
+    fixes do not change it, so they need no audit). Print the current value with `--fingerprint`.
+
 Usage: python3 scripts/check_bt_delegation.py [delegation.md] [OWNER_LOG.md] [VERDICTS.md] [workflow.js] [args.json]
 Exit 1 on any error.
 """
@@ -184,6 +189,25 @@ def check_args(args_text: str, delegation_text: str, delegation_name: str, scrip
     return errs
 
 
+def framework_fingerprint(delegation_text: str, script: str) -> str:
+    """Check 10: what counts as the framework — the roles (agent labels), the stages (async functions) and the pass rule."""
+    import hashlib
+    labels = sorted(set(re.findall(r"label: `([^`$:]+):", script)))
+    funcs = sorted(set(re.findall(r"^async function (\w+)\(", script, flags=re.M)))
+    rows = [ln for ln in delegation_text.splitlines() if ln.startswith("| 通過の判定")]
+    return hashlib.sha256(("\n".join(labels + funcs + rows)).encode("utf-8")).hexdigest()[:12]
+
+
+def check_fingerprint(delegation_text: str, script: str) -> list[str]:
+    want = framework_fingerprint(delegation_text, script)
+    m = re.search(r"^枠組みの指紋: ([0-9a-f]{12})", delegation_text, flags=re.M)
+    if not m:
+        return [f"枠組み: 委任文に「枠組みの指紋: <12 桁>」の行が無い(今の値 {want})"]
+    if m.group(1) != want:
+        return [f"枠組み: 指紋が変わった {m.group(1)} → {want} = 役・段・通過の判定が変わったので監査に出し、通ったら行を更新する(L-443)"]
+    return []
+
+
 NO_TOUCH = (("repairBattery", ("git diff --name-only HEAD", "触れない")), ("auditBattery", ("git diff --name-only HEAD",)))
 
 
@@ -220,8 +244,13 @@ def check_destination(delegation_text: str, script: str, args_text: str | None) 
 
 
 def main(argv: list[str]) -> int:
+    if argv and argv[0] == "--fingerprint":
+        d, w = Path(DEFAULTS[0]), Path(DEFAULTS[3])
+        print(framework_fingerprint(d.read_text(encoding="utf-8"), w.read_text(encoding="utf-8")))
+        return 0
     paths = [Path(argv[i]) if i < len(argv) else Path(DEFAULTS[i]) for i in range(4)]
     errs = check(*(p.read_text(encoding="utf-8") for p in paths[:3]))
+    errs += check_fingerprint(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "")
     errs += check_no_touch(paths[3].read_text(encoding="utf-8") if paths[3].exists() else "")
     errs += check_destination(paths[0].read_text(encoding="utf-8"), paths[3].read_text(encoding="utf-8") if paths[3].exists() else "",
                               Path(argv[4]).read_text(encoding="utf-8") if len(argv) >= 5 else None)
