@@ -35573,3 +35573,888 @@ K12 検査の出力の貼付           0 件
 0
 ```
 
+
+## 区分8 — 18 回目の実行(2026-09-25)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run18_prompt.md`(起動文、印 `20260923_tools_survey_cat8_run18_prompt.md@4bc5c0d40b3f`)
+- `https://algorier.com/sitemap_index.xml`・`https://algorier.com/page-sitemap.xml`(18頁)・`https://algorier.com/post-sitemap.xml`(50頁)。この回に取り直し、算入は前回と同じ68頁。取得日2026-09-25
+- `https://algorier.com/*` 全68頁(page-sitemap18+post-sitemap50)。HTMLをこの回に取り直しcurlで取得、bodyタグ内をテキスト抽出。取得日2026-09-25
+- `https://github.com/lucasinglese/oryon`(8-041一次資料。`scripts/cat8_repo_fetch.sh`でこの回に取り直し、files_in_tree=180、PNG画像4件を除外しlisted=175)。取得日2026-09-25
+- `https://pypistats.org/api/packages/oryon/recent`・`https://api.osv.dev/v1/query`・`https://ungh.cc/repos/lucasinglese/oryon`・`https://ungh.cc/repos/lucasinglese/oryon/contributors`・`https://pypi.org/pypi/oryon/json`(いずれも登録不要の公開API)。取得日2026-09-25
+- `https://api.github.com/repos/lucasinglese/oryon/...`はこの環境のプロキシが「GitHub access to this repository is not enabled for this session」を返し到達できなかった(セッション未許可。`CONNECT tunnel failed`型ではないがプロキシ層の拒否)。代替として`ungh.cc`で同等の情報を取得した
+- `https://web.archive.org/cdx/search/cdx?url=algorier.com*`(Wayback Machine公開API、登録不要)。取得日2026-09-25。`http://`(平文)は「Blocked by egress policy」、`https://`で到達
+- Oryonのwheel `oryon-0.2.12-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl`(PyPIから`pip download`)。取得日2026-09-25
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `AlgoNetwork` / E1a: 全68頁の検索(997件)を決まりで分類(matched=992・unmatched=5)。当たりの語はdiffer/difficult/compar/mismatchの一般語のみで、2つ以上の実装の出力を突き合わせて差を出す機能の記述は無かった | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:5581 |
+| 2 | `AlgoNetwork` / E2: 全68頁の検索(899件)を決まりで分類(matched=897・unmatched=2)。当たりの語は戦略の妥当性(valid)・価格レンジ(range)・戦略設計の助言(missing/gap/timestamp/duplicate)等の一般語のみで、時系列・約定・板・足・参照データの欠け重複外れ値等を自動検出する機能の記述は無かった | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:6274 |
+| 3 | `AlgoNetwork` / E3a: 全68頁の検索(212件)を決まりで分類(matched=212・unmatched=0)。当たりの112件はblog_look-ahead-bias-in-backtesting.txt自体によるルックアヘッドバイアスの一般解説で、同記事の「Well-designed backtesting systems can enforce chronological processing」は利用者自身が検証すべきだと続けている | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:2122 |
+| 4 | `AlgoNetwork` / E3b: 全68頁の検索(156件)を決まりで分類(matched=156・unmatched=0)。当たりは全て「look-ahead」「point-in-time」の一般解説で、「embargo」「purge」は1件も当たらず、未来情報の混入を防ぐ自動の仕組みの記述は無かった | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:6426 |
+| 5 | `AlgoNetwork` / E6: faqs.txt(FAQ)の「it's the first platform to combine four things」の1つとして「independent verification through backtests and forward tests」が挙げられる | 一次資料 | docs/DATA/probes/20260923_tools_8_run18.log:3974 |
+| 6 | `AlgoNetwork` / E6: algonetwork.txtの見出し「Verified performance」の逐語「Every backtest and live trade is auditable. No cherry-picking.」は、バックテストの計算結果そのものではなく、良否を問わず全ての結果が改変・取捨選択なく公開されるという完全性の保証を述べる | 一次資料 | docs/DATA/probes/20260923_tools_8_run18.log:4338 |
+| 7 | `AlgoNetwork` / 初回公開日: Wayback Machineの最古のアーカイブは2026-09-07(`https://algorier.com/blog/is-algorithmic-trading-legal/`)。algorier.com自体の設立日の一次資料記載は無い(未確認のまま) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10390 |
+| 8 | `AlgoNetwork` / 隠れた依存: about-us.txtの逐語「Leads the AI core & LLM strategy generation」がLLM使用を示すが、具体的なプロバイダ名(OpenAI/Anthropic等)は他頁で第三者の引用としてのみ登場し、Algorier自身が使うプロバイダの明記は無い(未確認のまま) | 一次資料 | docs/DATA/probes/20260923_tools_8_run18.log:10408 |
+| 9 | `Oryon` / E6: README.mdの逐語「Every feature and target in Oryon ships with contract tests that enforce `warm_up_period`, `forward_period`, `None` propagation, reset correctness, and instance independence. The test infrastructure is part of the public API. Contributions must pass the same contracts.」。`#[macro_export]`されたマクロ(`target_contract_tests!`・`streaming_transform_contract_tests!`)により、実装(warm_up_period・forward_period・None伝播・reset・インスタンス独立性)の正しさを自動判定する | 一次資料 | docs/DATA/probes/20260923_tools_8_run18.log:7444 |
+| 10 | `Oryon` / E6の段の根拠: docs/docs/contributing/test-templates.mdの逐語「`streaming_transform_contract_tests!` generates 6 tests automatically」「`target_contract_tests!` generates 5 tests automatically」。対象はOryon自身の`Target`/`StreamingTransform`トレイトを実装する型に限られる(外部の任意の関数・CSV等には掛けられない逐語は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run18.log:9169-9214 |
+| 11 | `Oryon` / E6の限界: CONTRIBUTING.mdの逐語「It covers the end-to-end workflow for adding a feature or target, the required tests and benchmarks」。この契約テストの主な用途はOryon自身への機能追加(コントリビューション)であり、L-516の自己試験除外との境界は明確でない(問いとして残す) | 一次資料 | docs/DATA/probes/20260923_tools_8_run18.log:7432 |
+| 12 | `Oryon` / 段_E1bの根拠: README.mdの逐語「X = run_features_pipeline_pandas(fp, df)」(dfはpandas DataFrame)。当方の計算と同じ種類の出力(特徴量)を出す計算に、Oryon自身の内部形式でなくpandas DataFrameという広く使われる一般形式でデータを持ち込める | 一次資料 | docs/DATA/probes/20260923_tools_8_run18.log:10173-10195 |
+| 13 | `Oryon` / 保守者数・コミット数: ungh.ccの逐語「{"contributors":[{"id":177825473,"username":"lucasinglese","contributions":56}]}」。保守者1名(contributions=56、正確な「コミット数」の定義とは限らないため推定) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10218 |
+| 14 | `Oryon` / 週DL数: pypistats.orgの逐語「{"data":{"last_day":1,"last_month":38,"last_week":13}...}」 | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10198 |
+| 15 | `Oryon` / 既知の脆弱性: OSV.devへのPyPIパッケージ`oryon`のクエリ応答は空(`{}`)で、登録された脆弱性は無い | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10201 |
+| 16 | `Oryon` / 保守者名の一貫性: PyPIメタデータの逐語「author_email= Lucas Inglese <lucas@quantreo.com>」がGitHubのユーザー名`lucasinglese`・LICENSEの著作権者`Quantreo`と一致する | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10223 |
+| 17 | `Oryon` / wheel展開・難読化: wheelの中身17ファイルにsetup.pyは無く(PEP517/maturinビルド)、同梱の共有ライブラリ`_oryon.cpython-311-x86_64-linux-gnu.so`から抽出した文字列にtelemetry/analytics/phone-home等の語は見当たらなかった。SBOM(`oryon-python.cyclonedx.json`)の24件の依存コンポーネントもRust/PyO3標準のビルド部品のみ | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10317-10366 |
+| 18 | `Oryon` / 規模の見積: 合成データ456日分の1分足656,640本に対しSma(window=20)を`update()`で逐次実行し、0.2174秒(Python API経由、1本あたり約331ns)で完了した | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10373-10377 |
+</content>
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 未着手
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 未着手
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 未着手
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — algorier.com全68頁をこの回に取り直し検索。E1a・E2・E3a・E3bは全件検索・決まりで分類しなし(乙、matched/unmatched: E1a 992/5・E2 897/2・E3a 212/0・E3b 156/0)。E6は印に確定(段1、根拠はalgonetwork.txt「Every backtest and live trade is auditable. No cherry-picking.」・faqs.txt「independent verification through backtests and forward tests」。全件検索(matched=2843/2847)の当たりの大半はバックテスト・検証の一般語かE1b/E4/E3bの対象の言い換え)。E1a〜E6に未判別が無くなり、§4.0の表(43項目)も過半が一次資料/実測のため状態を深掘りにした — 状態: 深掘り
+38. `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 浅い
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — GitHubリポジトリをこの回に取り直し取得(files_in_tree=180、PNG4件除外でlisted=175)。E6を印に確定(段3、根拠はREADME.md「Every feature and target in Oryon ships with contract tests...The test infrastructure is part of the public API.」。#[macro_export]のtarget_contract_tests!/streaming_transform_contract_tests!が実装の正しさ(warm_up_period・forward_period・None伝播・reset・インスタンス独立性)を自動判定する。ただしCONTRIBUTING.mdは主な用途を「adding a feature or target」とOryon自身への機能追加と説明しており、自己試験(L-516)との境界を問いに残す)。段_E1bを4に確定(README.mdのrun_features_pipeline_pandas(fp, df)がpandas DataFrameという広く使われる形式を受け付ける)。§4.0の表の未確認項目(週DL数・既知の脆弱性・保守者数・保守者名の一貫性・wheel展開・難読化・外部送信・依存の一覧・規模の見積)をこの回に確認。E1a〜E6に未判別が無くなり状態を深掘りにした — 状態: 深掘り
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 一覧68件/読んだ68件(algorier.com全68頁、この回に取り直し)。当たり59ファイル/997行を(乙)cat8_classify.pyで分類、matched=992・unmatched=5(4決まり: differ系694件・difficult系64件・compar系232件・mismatch系2件)。unmatchedの5行(いずれも文脈の空白に挟まれた単独のmismatch/Mismatch)は個別判定(下表)。2つ以上の実装の出力を突き合わせて差を出す機能は見当たらなかった | docs/DATA/probes/20260923_tools_8_run18.log:33 docs/DATA/probes/20260923_tools_8_run18.log:5581 |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 一覧68件/読んだ68件(同上)。当たり58ファイル/899行を(乙)cat8_classify.pyで分類、matched=897・unmatched=2(12決まり: valid/range/missing/gap/timestamp/duplicate/sortino/sort/clock-skew/type/Singapore偶然一致/anomal)。unmatchedの2行(news-sentiment記事内の表見出し単独語Timestamp)は個別判定(下表)。検索・分類は打ち直したもの(最初の手は分類の試行錯誤でcut扱いになったため、同じ一覧・同じ語で検索を再実行し1回で分類)。時系列・約定・板・足・参照データの欠け・重複・順序の乱れ・外れ値・時刻のずれ・型や範囲の違反を検出する機能は見当たらなかった | docs/DATA/probes/20260923_tools_8_run18.log:10409 docs/DATA/probes/20260923_tools_8_run18.log:11370 |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 一覧68件/読んだ68件(同上)。当たり27ファイル/212行を(乙)cat8_classify.pyで分類、matched=212・unmatched=0(5決まり: look-ahead系121件・survivorship系36件・leak系23件・point-in-time系32件・as-of系0件)。112件はblog_look-ahead-bias-in-backtesting.txt自体の一般解説で、同記事は「Well-designed backtesting systems can enforce chronological processing, but researchers must still verify data availability」と利用者自身の検証を求めている。計算・特徴量・戦略・模擬が知り得ない情報を使っていることを検出する機能は見当たらなかった | docs/DATA/probes/20260923_tools_8_run18.log:2054 docs/DATA/probes/20260923_tools_8_run18.log:6371 |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 一覧68件/読んだ68件(同上)。当たり21ファイル/156行を(乙)cat8_classify.pyで分類、matched=156・unmatched=0(3決まり: look-ahead系124件・point-in-time系32件・as-of系0件)。embargo・purgeの当たりは0件だった。未来情報の混入を防ぐ仕組みは見当たらなかった | docs/DATA/probes/20260923_tools_8_run18.log:2297 docs/DATA/probes/20260923_tools_8_run18.log:6426 |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | algonetwork.txt:285の逐語「Every backtest and live trade is auditable. No cherry-picking.」。良否を問わず全ての結果が改変・取捨選択なく公開されるという完全性の保証で、バックテストの計算そのもの(E1b・E4の対象)や時点分割(E3bの対象)とは別の、公開データの完全性を確かめる機能に当たる。faqs.txt:54の「independent verification through backtests and forward tests」も同じ保証を指す。全件検索(68頁、当たり68ファイル/2847行)を(乙)cat8_classify.pyで分類、matched=2843・unmatched=4(5決まり: test系2039件・validat系417件・quality系187件・check系104件・verif系96件)。残りの当たりはE1b/E4/E3bの対象の言い換えか一般的な検証・品質の語で、E6の独自機能には当たらない。段は、監査可能性の主張が機能としてどう呼び出せるかの記述を欠くため段1(文書だけ) | docs/DATA/probes/20260923_tools_8_run18.log:2478 docs/DATA/probes/20260923_tools_8_run18.log:4338 docs/DATA/probes/20260923_tools_8_run18.log:3974 docs/DATA/probes/20260923_tools_8_run18.log:7351 |
+| `NinjaTrader` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E1b | 印 | 4 | 一次資料 | 段の根拠: README.mdの逐語「X = run_features_pipeline_pandas(fp, df)」。dfはpandas DataFrame(df = pd.DataFrame({...})の例。docs/docs/api/scalers.md・operators.md等の全アダプタ例でも同型)という広く使われる一般形式で、当方の計算と同じ種類の出力(特徴量)を出す計算にデータを持ち込める。対象の全てが道具の外から持ち込めるため段4 | docs/DATA/probes/20260923_tools_8_run18.log:10173-10195 |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 一覧175件/読んだ175件(GitHubリポジトリ、この回に取り直し)。全件検索(当たり109ファイル/2680行)は17回目の結果を使わず打ち直した。README.md:127の逐語「Every feature and target in Oryon ships with contract tests that enforce `warm_up_period`, `forward_period`, `None` propagation, reset correctness, and instance independence. The test infrastructure is part of the public API. Contributions must pass the same contracts.」。#[macro_export]されたtarget_contract_tests!/streaming_transform_contract_tests!マクロ(docs/docs/contributing/test-templates.mdに「`streaming_transform_contract_tests!` generates 6 tests automatically」「`target_contract_tests!` generates 5 tests automatically」)は、warm_up_period・forward_period・None伝播・reset・インスタンス独立性という実装の正しさをassert_eq!による自動判定で確かめる。L-516の自己試験除外(候補が自分自身の版・ランタイムを試験する仕組み)はOryon自身の既存機能に対する開発時テストに当たるが、この契約テストマクロは新たに書く実装(型)がOryonのトレイトの契約を満たすかを検証する道具そのものであり、READMEが「public API」と明記する。ただしCONTRIBUTING.mdは「It covers the end-to-end workflow for adding a feature or target」と主な用途をOryon自身への機能追加と説明しており、L-516との境界は問いに残す(下記)。段は、対象がOryon自身のTarget/StreamingTransformトレイトを実装する型に限られ(外部の任意の関数への適用は逐語に無い)、段3 | docs/DATA/probes/20260923_tools_8_run18.log:7380 docs/DATA/probes/20260923_tools_8_run18.log:10172 docs/DATA/probes/20260923_tools_8_run18.log:7444 docs/DATA/probes/20260923_tools_8_run18.log:9169-9214 docs/DATA/probes/20260923_tools_8_run18.log:7432 |
+
+### ツール1件ごとの表
+
+`AlgoNetwork`・`Oryon`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`・`### 要素と段`・`### 知見`を参照(未変更の項目は17回目の値を17回目の生ログとともに引用し、この回に確認・更新した項目はこの回の生ログを引用する)。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `AlgoNetwork` | 版 | 該当なし(SaaSのWebプラットフォームで、利用者側にバージョン番号の概念は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 最終更新日 | post-sitemap.xmlのlastmod 2026-09-22T16:25:14+00:00(ブログ記事の最終更新、この回に取り直しても同じ) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:2 |
+| `AlgoNetwork` | ライセンス | 該当なし(自社ホストのSaaSであり、配布されるソフトウェアではない。利用規約はterms-of-use.txtに別途ある) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 言語と動作環境 | 該当なし(ブラウザから使うWebプラットフォーム。動作環境の指定は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 対応取引所 | 「live on 10 exchanges & brokers」(algonetwork.txt冒頭)。個別の取引所名は一次資料に一覧されていない(未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3777 |
+| `AlgoNetwork` | 星 | 該当なし(GitHubリポジトリを持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | コミット数 | 該当なし | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 保守者数 | 該当なし(会社Algorier(Toronto, Ontario, Canada、Corporation No: 1805545-9)が運営。個人の保守者名の記載は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14832 |
+| `AlgoNetwork` | 週DL数 | 該当なし | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 初回公開日 | Wayback Machineの最古のアーカイブは2026-09-07(https://algorier.com/blog/is-algorithmic-trading-legal/、statuscode 200)。ただしこれはクロール開始日の下限に過ぎず、企業の設立日・サイト公開日そのものの一次資料記載は無い(未確認) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10390 |
+| `AlgoNetwork` | 既知の脆弱性 | 該当なし(自社ホストのSaaSで、当方が導入するソフトウェアではないため、パッケージ脆弱性データベースの対象にならない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 料金体系 | 月額課金(FREE $0 / STARTER $29 / PRO $79(most popular) / PREMIUM $189。年額は20%引き)+マーケットプレイスでの戦略の都度購入(価格は各creatorが設定) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14921-14998 |
+| `AlgoNetwork` | 無料枠の上限 | FREEプラン: AI Assistant chat 40/月・Backtests 5/月・Activated strategies 1・Auto-trade & signals不可・Live trading不可・AlgoNetworkでの販売時はcreatorが75%を受け取る(該当箇所render頁) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14921-14943 |
+| `AlgoNetwork` | 課金開始条件 | STARTER以上で稼働中戦略数・自動売買シグナル数・ライブ取引が拡大($29/月〜)。暗号資産決済も可(「Pay $27.5 in crypto · $1.5 from your wallet」) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14944-14964 |
+| `AlgoNetwork` | 隠れた依存 | 取引の実行には接続先取引所・ブローカーの口座が要る(algonetwork.txt「run them on your own exchange or broker account」)。about-us.txt「Leads the AI core & LLM strategy generation」がLLM使用を示すが、具体的なプロバイダ名(OpenAI/Anthropic等)は他頁で第三者の引用としてのみ登場し、Algorier自身が使うプロバイダの明記は無い(未確認) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10408 |
+| `AlgoNetwork` | 登録の要否 | 要(「Get Started」でのアカウント作成。この回も登録していない)。FREEプランは「No card required」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14926 |
+| `AlgoNetwork` | 到達経路 | 到達できた(algorier.com/algonetwork/・algorier.com/pricing/ともこの回もHTTPコード200) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:4 |
+| `AlgoNetwork` | 導入可否 | 該当なし(自社ホストのSaaS。導入するパッケージが無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | install所要秒 | 該当なし | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 依存数 | 該当なし | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | pip check | 該当なし | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 最小実行の可否 | 試していない(§6-1の理由: 登録(アカウント作成)が要るため。実行にはブローカー・取引所口座の接続も要る) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:3785-3789 |
+| `AlgoNetwork` | 最小実行の中身 | 登録が要る(渡すもの: メールアドレス、Get Startedフォーム。実行はオーナーの判断待ち) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14926 |
+| `AlgoNetwork` | 実行所要秒 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | wheel展開 | 該当なし | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | setup.py導入時実行 | 該当なし | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 同梱バイナリ | 該当なし | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 外部送信 | 取引所・ブローカーAPIキーの送信が前提(「Trade-only API permissions. We can never withdraw your funds」= 出金権限は求めないと明記)。当方のデータ・鍵はこの回も一切渡していない | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3752-3754 |
+| `AlgoNetwork` | 自動発注機能 | あり。買い手は購入した戦略を「run them on your own exchange or broker account」で自動売買させる。ただし「Algorier doesn't run or own strategies... all execution happens in your own account under your own settings」と、実行主体は利用者自身の口座であると明記 | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3785-3789 |
+| `AlgoNetwork` | 宣伝詐欺の兆候 | 「No withdrawal rights. Trade-only API permissions」「Verified performance. Every backtest and live trade is auditable. No cherry-picking」と出金権限を求めない旨・検証済みである旨を明示。ウォレット秘密鍵を求める記述は無い。「All figures shown are historical backtest and forward-test results. Past performance is not indicative of future results」と免責も明記 | 一次資料 | docs/DATA/probes/20260923_tools_8_run18.log:4338 |
+| `AlgoNetwork` | 当方データ投入 | 試していない(登録が要るため) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:3785-3789 |
+| `AlgoNetwork` | 時刻の扱い | 記載なし(読んだ箇所: algonetwork.txt全文、faqs.txt、pricing.txt) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3777-3960 |
+| `AlgoNetwork` | 再現性 | E5の知見のとおり「backtest it yourself in seconds」で買い手が自分で再実行できる。乱数種・依存版の固定についての記述は無い | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14821-14827 |
+| `AlgoNetwork` | 規模の見積 | 未確認(試した手段: 登録なしに扱えるデータ量やバックテストの実行時間の記載を一次資料内で探したが、具体的な数値の記載は無かった) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:3777-3960 |
+| `AlgoNetwork` | 4軸1_道具 | △。自然言語で戦略を記述しAIが自動でコード化・バックテスト・フォワードテストするという、当方に無い道具立て(自然言語からの戦略生成)を持つが、登録・口座接続が要るため実際に道具として使えるかはこの回も確認できていない | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3861-3872 |
+| `AlgoNetwork` | 4軸2_情報 | 印。マーケットプレイス上の他の創作者による戦略の勝率・ドローダウン・買い手数・週次の買い手増加数(「↑ 32 / wk」等)という、当方に無い情報源を持つ | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:4059-4090 |
+| `AlgoNetwork` | 4軸3_視点 | 印。「buyers... backtest it yourself in seconds」のように、公開された戦略の主張を買い手自身が独立に再現できるという視点は、当方の事前登録・監査の考え方(CLAUDE.md §5)に近い外部の実践例を与える | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14821-14827 |
+| `AlgoNetwork` | 4軸4_向上 | 未確認(試した手段: 当方のdocs/配下でresearch/live乖離・監査可能性に関する既存の課題記録を検索したが専用の議論記録は見当たらなかった。実際にAlgoNetworkに登録し既存の成果と組み合わせて比較する統合検証は、道具サーベイの範囲を超える(口座接続を要する実装作業が要る)) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:3785-3789 |
+| `AlgoNetwork` | 配布元の一致 | 該当なし(パッケージ配布を行わないSaaSのため、配布元の一致という概念が無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 外部URL取得 | 該当なし(同上。導入時実行スクリプトを持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 難読化 | 該当なし(利用者側に配布されるコードが無いSaaSのため、難読化の対象が無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 依存の一覧 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:3798 |
+| `AlgoNetwork` | 保守者名の一貫性 | 該当なし(個人の保守者名を公開していないSaaS。法人名(Algorier、Toronto, Ontario, Canada、Corporation No: 1805545-9)は各頁で一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14832-14833 |
+| `Oryon` | 版 | 0.2.12(Cargo.toml・PyPI配布版とも一致。この回もwheelで再確認) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10309-10317 |
+| `Oryon` | 最終更新日 | GitHubリポジトリのpushedAt 2026-06-05T10:25:26Z(ungh.cc)。CHANGELOG.mdの「## [0.2.12] - 2026-06-05」と一致 | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10213 |
+| `Oryon` | ライセンス | MIT(LICENSE「MIT License / Copyright (c) 2026 Quantreo」。pyproject.tomlのclassifiersにも「License :: OSI Approved :: MIT License」) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14891-14893 |
+| `Oryon` | 言語と動作環境 | Rust(コア)+ Python API(PyO3ブリッジ)。PyPI配布はcp311のmanylinux2014 x86_64ホイール(CPython 3.11) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14840-14843 |
+| `Oryon` | 対応取引所 | 該当なし(取引所接続を持たない特徴量・ターゲット計算ライブラリ) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14790-14798 |
+| `Oryon` | 星 | 54(ungh.cc stars、この回に再確認しても同じ) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10213 |
+| `Oryon` | コミット数 | 未確認。ungh.ccのcontributorsエンドポイントは「contributions」を56と返すが、GitHubの「コミット数」と同一の定義かは確認できていない(api.github.comはこの環境のプロキシがセッション未許可で403、ungh.ccが代替経路) | 未確認 | docs/DATA/probes/20260923_tools_8_run18.log:10218 |
+| `Oryon` | 保守者数 | 1名(lucasinglese)。ungh.ccのcontributors応答「{"contributors":[{"id":177825473,"username":"lucasinglese","contributions":56}]}」 | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10218 |
+| `Oryon` | 週DL数 | last_week=13(pypistats.orgの逐語「{"data":{"last_day":1,"last_month":38,"last_week":13}...}」) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10198 |
+| `Oryon` | 初回公開日 | GitHubリポジトリ作成日 2026-03-23T19:13:50Z(ungh.cc)。CHANGELOG.mdは「This changelog starts at v0.2.0, the first public release of Oryon」と明記 | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10213 |
+| `Oryon` | 既知の脆弱性 | 0件。OSV.devへの`{"package":{"name":"oryon","ecosystem":"PyPI"}}`クエリの応答は空(`{}`) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10201 |
+| `Oryon` | 料金体系 | 無料(MITライセンスのOSS。PyPI配布に課金は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14891-14893 |
+| `Oryon` | 無料枠の上限 | 該当なし(無料枠という概念の無いOSS) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14891-14893 |
+| `Oryon` | 課金開始条件 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14891-14893 |
+| `Oryon` | 隠れた依存 | pip listの結果、oryon自体の実行時依存は0件(pip/setuptoolsのみがvenvの初期パッケージ)。外部データ・APIキーは不要 | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14858-14867 |
+| `Oryon` | 登録の要否 | 不要(PyPIからの`pip install`のみで導入可能。登録・APIキーは不要) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14840-14854 |
+| `Oryon` | 到達経路 | 到達できた(GitHub `lucasinglese/oryon`・PyPI `oryon`とも到達。cat8_repo_fetch.shでこの回もfiles_in_tree=180を取得) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:7355 |
+| `Oryon` | 導入可否 | 可。隔離venvへの`pip install`が成功(wheelから、この回も再確認) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10367 |
+| `Oryon` | install所要秒 | 1.469(17回目の実測。この回はwheel展開・規模計測用に別途venvを作成) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14840-14854 |
+| `Oryon` | 依存数 | 実行時0件(pip listの出力はoryon・pip・setuptoolsの3件のみ)。開発時依存はCargo.tomlの`[dev-dependencies]`にcriterion 1件、requirements-dev.txtにruff/mkdocs等 | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10226 |
+| `Oryon` | pip check | 「No broken requirements found.」(正常、17回目の実測) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14857 |
+| `Oryon` | 最小実行の可否 | 可。合成データ(price系列)でSmaを4回update()して`[nan, nan, 101.0, 102.0]`を得た(17回目の実測) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14868-14887 |
+| `Oryon` | 最小実行の中身 | 合成の価格系列にwindow=3のSmaを逐次update()。当方の実データ・鍵は使用していない | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14868-14887 |
+| `Oryon` | 実行所要秒 | 0.027(4回のupdate()呼び出し全体、17回目の実測)。この回は規模の見積として656,640本を0.2174秒で実測(下記) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10373-10377 |
+| `Oryon` | wheel展開 | 実施。wheel(`oryon-0.2.12-...whl`)の中身は17ファイルで、setup.pyは無い(PEP517/maturinビルド。`oryon-0.2.12.dist-info/RECORD`に導入時実行スクリプトの記載も無い) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10317 |
+| `Oryon` | setup.py導入時実行 | 該当なし(pyproject.toml方式(PEP 517)のビルドで、レガシーなsetup.pyは存在しない。wheelの中身17ファイルにもsetup.pyは無い) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10317 |
+| `Oryon` | 同梱バイナリ | PyPIホイールにコンパイル済みRustの共有ライブラリ(`_oryon.cpython-311-x86_64-linux-gnu.so`)が同梱される。ソース中には他のバイナリファイルは見当たらない(除外した4件のPNG画像を除く) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10317 |
+| `Oryon` | 外部送信 | 共有ライブラリ`_oryon.cpython-311-x86_64-linux-gnu.so`から抽出した文字列にtelemetry/analytics/phone-home等の語は見当たらず、SBOM(`oryon-python.cyclonedx.json`)の24件の依存コンポーネントもRust/PyO3標準のビルド部品のみ(HTTPクライアント等の通信用ライブラリは含まれない) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10337-10366 |
+| `Oryon` | 自動発注機能 | 該当なし(README「Not a strategy framework. What you do with the features is your decision」と、特徴量計算に特化し発注機能を持たないことが明記されている) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14790-14798 |
+| `Oryon` | 宣伝詐欺の兆候 | 見当たらない(MITライセンス、GitHub/PyPIの配布元一致、必ず儲かる等の誇大な文言は無い) | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14840-14893 |
+| `Oryon` | 当方データ投入 | 試していない(合成データのみを使用。当方のcsv.gzの約定・板データは使っていない) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:14868-14887 |
+| `Oryon` | 時刻の扱い | 記載なし(読んだ範囲: README・philosophy.md・streaming-vs-research.md。バー単位の順序は扱うが、UTC/ミリ秒等の時刻表現の規約についての明示的な記述は見当たらなかった) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14746-14780 |
+| `Oryon` | 再現性 | E5の知見のとおり、streaming/researchモードのbit-for-bit一致保証とreset()によるフォールド独立性を持つ(印・段2) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14760-14780 |
+| `Oryon` | 規模の見積 | 実測。合成データ456日分の1分足656,640本にSma(window=20)を`update()`で逐次実行し0.2174秒(1本あたり約331ns、Python API経由) | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10373-10377 |
+| `Oryon` | 配布元の一致 | 一致。PyPIの`oryon`パッケージとGitHubの`lucasinglese/oryon`はいずれもLICENSEの著作権表記「Copyright (c) 2026 Quantreo」で一致し、同一プロジェクトであることを確認 | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14891-14893 |
+| `Oryon` | 難読化 | 見当たらない。共有ライブラリ`_oryon.cpython-311-x86_64-linux-gnu.so`から抽出した文字列はPyO3のエラーメッセージ等の平文で、難読化の兆候は見当たらなかった | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10366 |
+| `Oryon` | 外部URL取得 | 該当なし(setup.pyが存在せず、レガシーな導入時実行フックを持たない。pyproject.tomlに外部URL取得の記述は見当たらない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:6738 |
+| `Oryon` | 依存の一覧 | 実行時0件(前掲)。開発時依存はCargo.tomlの`[dev-dependencies]`にcriterion 1件のみ、requirements-dev.txtにruff・mkdocs・mkdocs-material・mkdocstrings | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10226 |
+| `Oryon` | 保守者名の一貫性 | 一致。PyPIメタデータの逐語「author_email= Lucas Inglese <lucas@quantreo.com>」がGitHubのユーザー名`lucasinglese`・LICENSEの著作権者`Quantreo`と一致する | 実測 | docs/DATA/probes/20260923_tools_8_run18.log:10223 |
+| `Oryon` | 4軸1_道具 | 印。streaming/researchの単一実装保証を持つ特徴量計算エンジンという、当方のバックテストエンジン(足単位のmaker/taker約定・費用計算、CLAUDE.md §2)には無い、研究-本番一致の道具立て | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14868-14887 |
+| `Oryon` | 4軸2_情報 | 印。null_rate/has_nan/has_infといった列単位のデータ品質診断値という、当方のdata_quality.py(CLAUDE.md §2)とは別実装の情報源 | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:14713-14742 |
+| `Oryon` | 4軸3_視点 | 印。「研究とライブの乖離は構造的に起こり得ない」という設計思想(streaming/researchの単一実装)は、当方が抱える可能性のある研究-本番間の乖離リスクを見直す新しい視点を与える | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14760-14766 |
+| `Oryon` | 4軸4_向上 | 未確認(試した手段: 当方のdocs/配下でresearch/live乖離に関する既知の課題の記録を検索したが専用の議論記録は見当たらなかった。実際にOryonを当方のbt/特徴量計算に組み込んで比較する統合検証は、道具サーベイの範囲を超える(実装作業が要る)) | 未確認 | docs/DATA/probes/20260923_tools_8_run18.log:10367 |
+</content>
+
+### 当たりの判定
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/.github/PULL_REQUEST_TEMPLATE.md` | 9 | PRテンプレートのチェックリスト(コントリビューター向けの提出前確認項目)で、Oryon自身の開発プロセスの一部 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/.github/workflows/cd.yml` | 8 | OryonのCI設定(GitHub Actions)で、Oryon自身の開発のためのビルド・試験の自動化(L-516の「候補の開発のためのCI」に当たる) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/.github/workflows/ci.yml` | 20 | OryonのCI設定(GitHub Actions)で、Oryon自身の開発のためのビルド・試験の自動化(L-516の「候補の開発のためのCI」に当たる) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/.github/workflows/docs.yml` | 2 | OryonのCI設定(GitHub Actions)で、Oryon自身の開発のためのビルド・試験の自動化(L-516の「候補の開発のためのCI」に当たる) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/.gitignore` | 7 | 「Unit test / coverage reports」「nosetests.xml」「.pytest_cache/」「.ipynb_checkpoints」「check them in」「Pyre type checker」という、テスト成果物やlintツールを除外するgit設定の一般的なコメントで、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/CHANGELOG.md` | 4 | 変更履歴で、過去のバージョンにおけるcontract testsの追加等の開発記録であり、L-516の自己試験の記録に当たる |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/CONTRIBUTING.md` | 1 | コントリビューションガイドへの誘導文書で、「the required tests and benchmarks」という開発プロセスの説明であり、この文言自体は`要素と段`の根拠(問い)として扱う |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/Makefile` | 10 | ビルド・Lint設定ファイルで、`pytest`のtestpaths指定や`make test`ターゲット等、Oryon自身の開発時試験の実行設定(L-516の「候補の開発のためのCI」に当たる) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/README.md` | 3 | 127行目は「Every feature and target in Oryon ships with contract tests...The test infrastructure is part of the public API」でE6の`印`の根拠そのもの(`要素と段`・`知見`の表を参照)。124行目「State leakage between folds」は自作パイプラインの落とし穴の一般描写(E3bに関連)。139行目「checklist」はコントリビューションガイドへの誘導で開発プロセスの一部 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/ROADMAP.md` | 1 | 開発ロードマップで、将来の機能追加予定に伴う試験項目の記述であり、L-516の自己試験計画に当たる |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon-python/src/features.rs` | 1 | 47行目「Rolling Augmented Dickey-Fuller test」はADF検定というソフトウェアテストではなく統計学的検定手法の名称(コメント)で、E6の述語(実装の正しさを確かめる機能)とは無関係 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/Cargo.toml` | 1 | 37行目「name = "checks"」はベンチマーク対象のクレート内モジュール名(`checks/`)を指すビルド設定で、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/benches/checks.rs` | 1 | checks/モジュール(E2の根拠)の実行速度を測るベンチマークコードで、正しさではなく速さを測るものであり、L-516の自己試験(候補の開発のための試験)にも実装の正しさの検証にも当たらない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/examples/data_quality.rs` | 2 | diagnostics/モジュール(E2の根拠であるnull_rate等)の使用例コードで、E6の独自機能ではなくE2の実装例 |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/checks/mod.rs` | 17 | E2の根拠(is_valid/null_rate等のデータ品質チェック関数)の実装・その`#[cfg(test)]`ブロックで、E6の独自機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/diagnostics/mod.rs` | 23 | E2の根拠(is_valid/null_rate等のデータ品質チェック関数)の実装・その`#[cfg(test)]`ブロックで、E6の独自機能ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/adf.rs` | 51 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/autocorrelation.rs` | 62 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/correlation.rs` | 62 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/ema.rs` | 49 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/kama.rs` | 46 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/kurtosis.rs` | 44 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/linear_slope.rs` | 42 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/log_return.rs` | 46 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/mma.rs` | 46 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/parkinson_volatility.rs` | 36 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/rogers_satchell_volatility.rs` | 34 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/shannon_entropy.rs` | 58 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/simple_return.rs` | 49 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/skewness.rs` | 43 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/features/sma.rs` | 45 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/fitting/standard_scaler.rs` | 21 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/lib.rs` | 5 | `pub mod checks`・`pub mod testing`等のモジュール一覧とその1行要約(E2のchecks/diagnosticsとE6の根拠であるtesting/の在処を示すだけ)で、機能そのものの説明ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/add.rs` | 25 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/divide.rs` | 29 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/log.rs` | 27 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/logit.rs` | 29 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/macros.rs` | 2 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/multiply.rs` | 25 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/neg_log.rs` | 27 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/reciprocal.rs` | 26 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/operators/subtract.rs` | 25 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/ops/adf.rs` | 70 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/ops/correlation.rs` | 50 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/ops/regression.rs` | 23 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/ops/returns.rs` | 32 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/ops/stats.rs` | 98 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/ops/volatility.rs` | 37 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/pipeline/dag.rs` | 36 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/pipeline/feature_pipeline.rs` | 45 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/pipeline/target_pipeline.rs` | 41 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/scalers/fixed_zscore.rs` | 22 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/scalers/rolling_zscore.rs` | 39 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/targets/future_ctc_volatility.rs` | 30 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/targets/future_linear_slope.rs` | 46 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/targets/future_return.rs` | 22 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/testing/macros.rs` | 42 | target_contract_tests!/streaming_transform_contract_tests!マクロの定義そのもので、E6の`印`の根拠(README.mdが「part of the public API」と明記する契約テスト機構)。理由欄ではなく`要素と段`・`知見`の表でE6の根拠として扱う |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/crates/oryon/src/tools/mod.rs` | 25 | Oryon自身が同梱する機能(features/ops/operators/pipeline/targets/scalers/tools/fitting)の実装ファイルで、内部の`#[cfg(test)] mod tests`ブロックがtarget_contract_tests!/streaming_transform_contract_tests!マクロを呼びOryon自身の版を試験する(候補が自分自身を試験する仕組み、L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/api/features/returns.md` | 2 | 特徴量・ターゲット・スケーラー等のAPIリファレンス文書で、各関数の`reset()`の説明やADFの手計算検証例(Manual verification)等の一般的な仕様解説であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/api/features/statistics.md` | 15 | 特徴量・ターゲット・スケーラー等のAPIリファレンス文書で、各関数の`reset()`の説明やADFの手計算検証例(Manual verification)等の一般的な仕様解説であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/api/features/trend.md` | 6 | 特徴量・ターゲット・スケーラー等のAPIリファレンス文書で、各関数の`reset()`の説明やADFの手計算検証例(Manual verification)等の一般的な仕様解説であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/api/features/volatility.md` | 2 | 特徴量・ターゲット・スケーラー等のAPIリファレンス文書で、各関数の`reset()`の説明やADFの手計算検証例(Manual verification)等の一般的な仕様解説であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/api/fitting.md` | 1 | 特徴量・ターゲット・スケーラー等のAPIリファレンス文書で、各関数の`reset()`の説明やADFの手計算検証例(Manual verification)等の一般的な仕様解説であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/api/scalers.md` | 1 | 特徴量・ターゲット・スケーラー等のAPIリファレンス文書で、各関数の`reset()`の説明やADFの手計算検証例(Manual verification)等の一般的な仕様解説であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/api/targets/regressions.md` | 2 | 特徴量・ターゲット・スケーラー等のAPIリファレンス文書で、各関数の`reset()`の説明やADFの手計算検証例(Manual verification)等の一般的な仕様解説であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/contributing/architecture.md` | 5 | コントリビューター向けガイド(機能追加時の実装・試験・文書化の手順書)で、target_contract_tests!マクロの使い方を説明する箇所を含むが、これらは`要素と段`の根拠として扱い、この表では手順書自体を理由欄に個別記載しない(重複を避けるため) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/contributing/doc-templates.md` | 2 | コントリビューター向けガイド(機能追加時の実装・試験・文書化の手順書)で、target_contract_tests!マクロの使い方を説明する箇所を含むが、これらは`要素と段`の根拠として扱い、この表では手順書自体を理由欄に個別記載しない(重複を避けるため) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/contributing/guide.md` | 20 | コントリビューター向けガイド(機能追加時の実装・試験・文書化の手順書)で、target_contract_tests!マクロの使い方を説明する箇所を含むが、これらは`要素と段`の根拠として扱い、この表では手順書自体を理由欄に個別記載しない(重複を避けるため) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/contributing/test-templates.md` | 186 | コントリビューター向けガイド(機能追加時の実装・試験・文書化の手順書)で、target_contract_tests!マクロの使い方を説明する箇所を含むが、これらは`要素と段`の根拠として扱い、この表では手順書自体を理由欄に個別記載しない(重複を避けるため) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/getting-started/installation.md` | 4 | 設計思想・インストール手順等の一般文書で、Oryon自身の開発時テストスイート(pytest/cargo test)への言及、またはstreaming/researchモードの一致保証(E5の対象)の説明であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/getting-started/quickstart.md` | 1 | 設計思想・インストール手順等の一般文書で、Oryon自身の開発時テストスイート(pytest/cargo test)への言及、またはstreaming/researchモードの一致保証(E5の対象)の説明であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/getting-started/streaming-vs-research.md` | 1 | 設計思想・インストール手順等の一般文書で、Oryon自身の開発時テストスイート(pytest/cargo test)への言及、またはstreaming/researchモードの一致保証(E5の対象)の説明であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/llms.txt` | 1 | 設計思想・インストール手順等の一般文書で、Oryon自身の開発時テストスイート(pytest/cargo test)への言及、またはstreaming/researchモードの一致保証(E5の対象)の説明であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/docs/philosophy.md` | 6 | 設計思想・インストール手順等の一般文書で、Oryon自身の開発時テストスイート(pytest/cargo test)への言及、またはstreaming/researchモードの一致保証(E5の対象)の説明であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/mkdocs.yml` | 1 | 設計思想・インストール手順等の一般文書で、Oryon自身の開発時テストスイート(pytest/cargo test)への言及、またはstreaming/researchモードの一致保証(E5の対象)の説明であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/docs/overrides/home.html` | 7 | 設計思想・インストール手順等の一般文書で、Oryon自身の開発時テストスイート(pytest/cargo test)への言及、またはstreaming/researchモードの一致保証(E5の対象)の説明であり、E6の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/pyproject.toml` | 2 | ビルド・Lint設定ファイルで、`pytest`のtestpaths指定や`make test`ターゲット等、Oryon自身の開発時試験の実行設定(L-516の「候補の開発のためのCI」に当たる) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/python/oryon/adapters.py` | 2 | Pythonバインディング層のソースで、型ヒント・アダプタ関数の実装であり、検証・品質の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/python/oryon/datasets.py` | 1 | Pythonバインディング層のソースで、型ヒント・アダプタ関数の実装であり、検証・品質の独自機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/benchmarks/bench_features.py` | 23 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/benchmarks/bench_targets.py` | 6 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_adf.py` | 36 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_autocorrelation.py` | 51 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_correlation.py` | 46 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_ema.py` | 19 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_feature_pipeline.py` | 25 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_kama.py` | 22 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_kurtosis.py` | 14 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_linear_slope.py` | 22 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_log_return.py` | 16 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_mma.py` | 22 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_parkinson_volatility.py` | 18 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_rogers_satchell_volatility.py` | 18 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_shannon_entropy.py` | 33 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_simple_return.py` | 15 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_skewness.py` | 14 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/features/test_sma.py` | 20 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/operators/test_add.py` | 19 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/operators/test_divide.py` | 21 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/operators/test_log.py` | 23 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/operators/test_logit.py` | 27 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/operators/test_multiply.py` | 19 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/operators/test_neglog.py` | 21 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/operators/test_reciprocal.py` | 19 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/operators/test_subtract.py` | 19 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/scalers/test_fixed_z_score.py` | 21 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/scalers/test_rolling_z_score.py` | 20 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/targets/test_future_linear_slope.py` | 24 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-041r18/oryon_repo/tests/targets/test_targets.py` | 37 | Oryon自身のPython側テストスイート(pytest)で、Oryon自身の版を試験する(L-516により印に数えない) |
+
+### 当たりの判定(行ごと)
+
+| ファイルの道と行 | 当たった行の字 | その語がその行で何を指し、なぜ述語に当たらないか |
+|---|---|---|
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_news-sentiment-trading-strategy.txt:1553` | It is a subtle mismatch between the historical simulation and the information that would actually have been available in real time. | 「mismatch」はルックアヘッドバイアス解説記事の中で、バックテストが使う情報と実運用で得られる情報の「食い違い」というリスクの一般描写を指し、2つ以上の実装の出力を道具が自動で突き合わせる機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_news-sentiment-trading-strategy.txt:1554` | The biggest risk is a subtle mismatch between the simulation and the real information set. | 「mismatch」は同記事の直後の文で同じリスクを言い換えたもので、道具の自動突き合わせ機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_natural-language-trading-how-plain-english-becomes-a-trading-strategy.txt:428` | A mismatch at any stage can produce a misleading conclusion. | 「mismatch」は自然言語から戦略を作る工程の各段階(仕様→実装→検証)での「食い違い」一般を指す抽象的な語で、実装の出力同士を突き合わせる機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_natural-language-trading-how-plain-english-becomes-a-trading-strategy.txt:503` | Semantic Mismatch | 「Mismatch」は同記事内の小見出し(意味の食い違いという概念の見出し)で、機能の説明文ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-risks.txt:213` | Semantic Mismatch | 「Mismatch」は別記事(vibe-trading-risks)の同名の小見出しで、こちらも概念の見出しであり機能の説明文ではない |
+</content>
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_news-sentiment-trading-strategy.txt:1104` | Timestamp | 「Timestamp」はニュースの時点整合を説明する表の見出しセル(直前の行は「Event」)で、AlgoNetwork自身が自動検出する機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_news-sentiment-trading-strategy.txt:1203` | Timestamp | 「Timestamp」は別の表(The Relevant Timestamps、直後の行は「Meaning」)の見出しセルで、同じく機能の記述ではない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:37` | The world's first marketplace for verifiable trading intelligence | 「The world's first marketplace for verifiable trading intelligence」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:40` | Just describe your idea. Algorier's AI turns it into a production-grade algorith | 「Just describe your idea. Algorier's AI turns it into a production-grade algorithm, backtests and forward-tests it, and hands you a…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:71` | Everything you need to go from a plain-English idea to a verified, | 「Everything you need to go from a plain-English idea to a verified,」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:84` | A marketplace of verified strategies with standardised backtest and forward-test | 「A marketplace of verified strategies with standardised backtest and forward-test records. Buy any edge and run it under your own r…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:95` | 03 · Verified Edge | 「03 · Verified Edge」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:120` | publish it to AlgoNetwork to earn from every sale, or buy verified | 「publish it to AlgoNetwork to earn from every sale, or buy verified」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:124` | Traders worldwide have already used Algorier to turn their ideas into real, veri | 「Traders worldwide have already used Algorier to turn their ideas into real, verified automated systems.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:126` | Dual Verification | 「Dual Verification」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:159` | is just the safe, reliable, verifiable layer that connects it all. | 「is just the safe, reliable, verifiable layer that connects it all.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:170` | New to trading? Buy verified strategies on AlgoNetwork, each with a | 「New to trading? Buy verified strategies on AlgoNetwork, each with a」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:180` | Strategy Verifiers & Researchers | 「Strategy Verifiers & Researchers」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:193` | Running a Telegram or Discord signal group? Replace unverifiable calls with | 「Running a Telegram or Discord signal group? Replace unverifiable calls with」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:199` | Coach or run a community? Back your lessons with transparent, verifiable | 「Coach or run a community? Back your lessons with transparent, verifiable」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:208` | [行の長さ 489 字。当たった 5 か所の前後 200 字] …Algorier is the world's first marketplace for v | 「[行の長さ 489 字。当たった 5 か所の前後 200 字] …Algorier is the world's first marketplace for verifiable, customizable trading intelligence. Desc…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:214` | [行の長さ 569 字。当たった 4 か所の前後 200 字] …A crypto exchange lists coins. A broker lists s | 「[行の長さ 569 字。当たった 4 か所の前後 200 字] …A crypto exchange lists coins. A broker lists stocks. Algorier is an exchange for a new asset cla…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:241` | AlgoNetwork is the verified strategy marketplace. Creators publish their algos,  | 「AlgoNetwork is the verified strategy marketplace. Creators publish their algos, logic kept private, and anyone can buy and run the…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:244` | Verifiable. Private. | 「Verifiable. Private.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/_root.txt:246` | Start for free. Build and verify your next idea in minutes, or buy | 「Start for free. Build and verify your next idea in minutes, or buy」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/about-us.txt:39` | The market never had an intelligence problem — it had a trust problem . Algorier | 「The market never had an intelligence problem — it had a trust problem . Algorier is the marketplace where real trading edges are v…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/about-us.txt:41` | Verify | 「Verify」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/about-us.txt:45` | verified and accessible — and, along the way, creating real | 「verified and accessible — and, along the way, creating real」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/about-us.txt:54` | We're building Algorier into the most trusted marketplace for trading algorithms | 「We're building Algorier into the most trusted marketplace for trading algorithms in our industry — verified, transparent, and open…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/about-us.txt:82` | Verified algorithms on the marketplace | 「Verified algorithms on the marketplace」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/about-us.txt:101` | Buy a verified edge and run it on your own account, or publish your own and set  | 「Buy a verified edge and run it on your own account, or publish your own and set your price. The marketplace is live — and just get…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:39` | Browse verified algorithms. Buy the ones you like. Run them on your own account. | 「Browse verified algorithms. Buy the ones you like. Run them on your own account.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:40` | A marketplace of fully automated trading algorithms. Browse verified | 「A marketplace of fully automated trading algorithms. Browse verified」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:51` | Verified algorithms listed | 「Verified algorithms listed」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:85` | verified algorithms. | 「verified algorithms.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:87` | automated algorithms. Every one is verified: real backtests, forward | 「automated algorithms. Every one is verified: real backtests, forward」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:90` | Verified algorithms · live | 「Verified algorithms · live」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:146` | Instantly compiled into an algorithm and replayed across years of historical can | 「Instantly compiled into an algorithm and replayed across years of historical candles. Win rate, drawdown, profit factor: all verif…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:175` | Every algorithm is verified: backtests, forward tests, and buyer counts. | 「Every algorithm is verified: backtests, forward tests, and buyer counts.」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:263` | You don't have to build anything. Browse verified algorithms, review | 「You don't have to build anything. Browse verified algorithms, review」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/algonetwork.txt:284` | Verified performance | 「Verified performance」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_backtesting-vs-forward-testing.txt:200` | Paper trading — verify operational performance | 「Paper trading — verify operational performance」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_backtesting-vs-forward-testing.txt:254` | [行の長さ 519 字。当たった 5 か所の前後 200 字] …Modern markets are increasingly competitive. St | 「[行の長さ 519 字。当たった 5 か所の前後 200 字] …Modern markets are increasingly competitive. Strategies are discovered faster, edges disappear mo…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_best-ai-trading-bots-in-2026-what-actually-works.txt:142` | [行の長さ 402 字。当たった 2 か所の前後 200 字] …Now, traders increasingly expect transparent ba | 「[行の長さ 402 字。当たった 2 か所の前後 200 字] …Now, traders increasingly expect transparent backtests, historical metrics, strategy comparisons,…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_best-vibe-trading-platforms.txt:626` | Some can connect strategies to live execution, while others focus on research, t | 「Some can connect strategies to live execution, while others focus on research, testing, simulation, or paper trading. Execution ca…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_copy-trading-explained-a-modern-guide-for-beginners.txt:73` | [行の長さ 528 字。当たった 2 か所の前後 200 字] …io consistency, and scalable automation — which | 「[行の長さ 528 字。当たった 2 か所の前後 200 字] …io consistency, and scalable automation — which generally provide more transparent risk behavior …」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_copy-trading-explained-a-modern-guide-for-beginners.txt:121` | Copy trading is gradually evolving beyond influencer-driven trading, signal-sell | 「Copy trading is gradually evolving beyond influencer-driven trading, signal-selling groups, and isolated trader-following models. …」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_copy-trading-risks.txt:111` | Due diligence — verifying regulation and transparency — is one of the most effec | 「Due diligence — verifying regulation and transparency — is one of the most effective ways to reduce risk.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_copy-trading-risks.txt:112` | Before copying any trader, verify the platform’s reputation, regulatory status,  | 「Before copying any trader, verify the platform’s reputation, regulatory status, historical transparency, and whether performance s…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_copy-trading-vs-algorithmic-trading.txt:481` | whether the results are verified, | 「whether the results are verified,」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_copy-trading-vs-algorithmic-trading.txt:893` | Algorier is a marketplace and network for verifiable trading intelligence. AlgoN | 「Algorier is a marketplace and network for verifiable trading intelligence. AlgoNetwork is its private strategy marketplace , where…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_copy-trading-vs-algorithmic-trading.txt:1037` | However, it creates dependence on provider behavior, track-record quality, platf | 「However, it creates dependence on provider behavior, track-record quality, platform controls, and replication accuracy.」の「quality」は、データ・執行・戦略の「品質」という一般語で、AlgoNetwork自身が自動確認する独自の品質検証機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_how-to-sell-trading-strategies-online.txt:84` | [行の長さ 465 字。当たった 1 か所の前後 200 字] …se through newsletters, signal groups, private  | 「[行の長さ 465 字。当たった 1 か所の前後 200 字] …se through newsletters, signal groups, private communities, and managed accounts. Today, strategy…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_how-to-sell-trading-strategies-online.txt:89` | Build a verifiable track record — investors rarely trust screenshots; they evalu | 「Build a verifiable track record — investors rarely trust screenshots; they evaluate trading strategy performance metrics such as r…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_how-to-sell-trading-strategies-online.txt:101` | One of the oldest forms — users receive entry/exit signals and trade alerts. Sim | 「One of the oldest forms — users receive entry/exit signals and trade alerts. Simple to launch but increasingly competitive; invest…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_how-to-sell-trading-strategies-online.txt:114` | Sophisticated investors increasingly prefer strategy-based evaluation because it | 「Sophisticated investors increasingly prefer strategy-based evaluation because it offers long-term confidence. The industry is movi…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_how-to-sell-trading-strategies-online.txt:154` | [行の長さ 691 字。当たった 1 か所の前後 200 字] …ription newsletters, Telegram groups, Discord s | 「[行の長さ 691 字。当たった 1 か所の前後 200 字] …ription newsletters, Telegram groups, Discord servers, and direct client relationships. These app…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_how-to-sell-trading-strategies-online.txt:162` | [行の長さ 598 字。当たった 1 か所の前後 200 字] …mproving credibility. Investors rarely allocate | 「[行の長さ 598 字。当たった 1 か所の前後 200 字] …mproving credibility. Investors rarely allocate capital based solely on returns — they evaluate c…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_how-to-sell-trading-strategies-online.txt:163` | Verifiable track records and clear risk disclosures are what turn interest into  | 「Verifiable track records and clear risk disclosures are what turn interest into allocations.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_how-to-vibe-trade.txt:363` | Before interpreting performance, verify three things: | 「Before interpreting performance, verify three things:」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_is-algorithmic-trading-legal.txt:94` | [行の長さ 695 字。当たった 1 か所の前後 200 字] …as spoofing, wash trading, creating artificial  | 「[行の長さ 695 字。当たった 1 か所の前後 200 字] …as spoofing, wash trading, creating artificial volume, or misleading other participants remain pr…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_is-algorithmic-trading-legal.txt:158` | [行の長さ 592 字。当たった 1 か所の前後 200 字] …t varies. Some brokers actively encourage algor | 「[行の長さ 592 字。当たった 1 か所の前後 200 字] …t varies. Some brokers actively encourage algorithmic trading; others restrict excessive order fr…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_is-copy-trading-profitable.txt:144` | [行の長さ 433 字。当たった 2 か所の前後 200 字] … also legal in many jurisdictions when offered  | 「[行の長さ 433 字。当たった 2 か所の前後 200 字] … also legal in many jurisdictions when offered through properly regulated providers. The exact fr…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_is-copy-trading-profitable.txt:203` | Yes. It is a legitimate mechanism offered by many regulated brokers and platform | 「Yes. It is a legitimate mechanism offered by many regulated brokers and platforms, and legal in most jurisdictions. Always verify …」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_look-ahead-bias-in-backtesting.txt:167` | Professional researchers first verify that the backtest itself is free from stru | 「Professional researchers first verify that the backtest itself is free from structural errors before interpreting any performance …」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_look-ahead-bias-in-backtesting.txt:211` | Well-designed backtesting systems can enforce chronological processing, but rese | 「Well-designed backtesting systems can enforce chronological processing, but researchers must still verify data availability, featu…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_look-ahead-bias-in-backtesting.txt:334` | verifying that every input was available before the trading decision, | 「verifying that every input was available before the trading decision,」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_look-ahead-bias-in-backtesting.txt:350` | Manually reconstruct several randomly selected trades to verify exactly which in | 「Manually reconstruct several randomly selected trades to verify exactly which information would have been available at the decisio…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_look-ahead-bias-in-backtesting.txt:403` | Extremely strong historical performance should encourage additional verification | 「Extremely strong historical performance should encourage additional verification—not immediate confidence.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_look-ahead-bias-in-backtesting.txt:407` | Before trusting any historical simulation, verify the following: | 「Before trusting any historical simulation, verify the following:」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_look-ahead-bias-in-backtesting.txt:439` | Review data timestamps, verify indicator calculations, ensure point-in-time data | 「Review data timestamps, verify indicator calculations, ensure point-in-time datasets are used, and confirm that every trading deci…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_look-ahead-bias-in-backtesting.txt:457` | Shifting a signal by one bar can eliminate many common forms of look-ahead bias, | 「Shifting a signal by one bar can eliminate many common forms of look-ahead bias, particularly when signals are generated using com…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_natural-language-trading-how-plain-english-becomes-a-trading-strategy.txt:55` | Verify the Translation Before You Verify Performance | 「Verify the Translation Before You Verify Performance」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_natural-language-trading-how-plain-english-becomes-a-trading-strategy.txt:152` | Verify the meaning first. Evaluate the performance second. | 「Verify the meaning first. Evaluate the performance second.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_natural-language-trading-how-plain-english-becomes-a-trading-strategy.txt:435` | Verify the Translation Before You Verify Performance | 「Verify the Translation Before You Verify Performance」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_natural-language-trading-how-plain-english-becomes-a-trading-strategy.txt:492` | Verify More Than Code Execution | 「Verify More Than Code Execution」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_overfitting-in-trading.txt:174` | Verified | 「Verified」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_supply-and-demand-trading-strategy.txt:217` | The explanation about remaining institutional orders is harder to verify from ch | 「The explanation about remaining institutional orders is harder to verify from chart data alone.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-performance-metrics.txt:226` | This highlights one of the most important lessons in strategy evaluation: the st | 「This highlights one of the most important lessons in strategy evaluation: the strategy with the highest return is not always the b…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-prompt.txt:661` | Before generating a strategy specification, verify that the prompt answers the f | 「Before generating a strategy specification, verify that the prompt answers the following questions.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-prompt.txt:663` | Check | 「Check」の「check」は、一般的な「確認する」の用法(多くは読者向けの手動チェックリスト)で、AlgoNetwork自身の自動確認機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-robustness-testing.txt:191` | Test | 「Test」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-robustness-testing.txt:216` | Test | 「Test」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-robustness-testing.txt:382` | Before deploying a trading strategy, professional researchers often verify that  | 「Before deploying a trading strategy, professional researchers often verify that it has successfully passed multiple robustness eva…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:47` | Validation vs Verification | 「Validation vs Verification」の「validat」は、戦略の妥当性検証という一般的な語で、既存のE1b/E3b/E4の検証段階の言い換えであり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:69` | Validation vs Verification: What’s the Difference? | 「Validation vs Verification: What’s the Difference?」の「validat」は、戦略の妥当性検証という一般的な語で、既存のE1b/E3b/E4の検証段階の言い換えであり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:70` | The terms validation and verification are often used interchangeably, but they d | 「The terms validation and verification are often used interchangeably, but they describe different stages of evaluating a trading s…」の「validat」は、戦略の妥当性検証という一般的な語で、既存のE1b/E3b/E4の検証段階の言い換えであり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:71` | Verification and validation answer different questions | 「Verification and validation answer different questions」の「validat」は、戦略の妥当性検証という一般的な語で、既存のE1b/E3b/E4の検証段階の言い換えであり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:72` | Verification | 「Verification」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:82` | [行の長さ 459 字。当たった 4 か所の前後 200 字] …For example, a developer may verify that entry  | 「[行の長さ 459 字。当たった 4 か所の前後 200 字] …For example, a developer may verify that entry rules execute correctly, stop-loss orders trigger …」の「validat」は、戦略の妥当性検証という一般的な語で、既存のE1b/E3b/E4の検証段階の言い換えであり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:87` | [行の長さ 470 字。当たった 7 か所の前後 200 字] …Professional strategy development follows a str | 「[行の長さ 470 字。当たった 7 か所の前後 200 字] …Professional strategy development follows a structured algorithmic trading workflow . Validation …」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:111` | Historical testing eventually reaches its limit. Forward testing evaluates the s | 「Historical testing eventually reaches its limit. Forward testing evaluates the strategy using live market data without risking mea…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:129` | Verifies performance using live market data | 「Verifies performance using live market data」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:183` | A strategy is generally considered ready only after it demonstrates consistent h | 「A strategy is generally considered ready only after it demonstrates consistent historical profitability, acceptable drawdown, stab…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_trading-strategy-validation.txt:198` | [行の長さ 574 字。当たった 8 か所の前後 200 字] …Before allocating significant capital, many pro | 「[行の長さ 574 字。当たった 8 か所の前後 200 字] …Before allocating significant capital, many professional traders verify that every major validati…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-risks.txt:86` | The easier AI makes strategy creation, the more important it becomes to separate | 「The easier AI makes strategy creation, the more important it becomes to separate generation from verification.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-risks.txt:88` | [行の長さ 585 字。当たった 3 か所の前後 200 字] …use AI can turn plain-English ideas into tradin | 「[行の長さ 585 字。当たった 3 か所の前後 200 字] …use AI can turn plain-English ideas into trading systems. Its main risks include ambiguous instru…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-risks.txt:96` | Natural Language → Explicit Rules → Verification → Testing → Risk Constraints →  | 「Natural Language → Explicit Rules → Verification → Testing → Risk Constraints → Controlled Deployment → Monitoring」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-risks.txt:250` | Do not evaluate performance until you have verified what strategy was actually t | 「Do not evaluate performance until you have verified what strategy was actually tested.」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-risks.txt:432` | Verify Specification → Verify Implementation → Verify Test Design → Interpret Pe | 「Verify Specification → Verify Implementation → Verify Test Design → Interpret Performance」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-risks.txt:536` | For vibe trading, that means verification should not end when the AI produces co | 「For vibe trading, that means verification should not end when the AI produces convincing rules.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-vs-ai-trading-bots.txt:389` | Verify the translation → evaluate the strategy | 「Verify the translation → evaluate the strategy」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading-vs-ai-trading-bots.txt:581` | Do you first need to verify that AI built the intended strategy? | 「Do you first need to verify that AI built the intended strategy?」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading.txt:418` | In trading, persuasive language and verified behavior must remain separate. | 「In trading, persuasive language and verified behavior must remain separate.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading.txt:486` | This is why structured logic and verification may become more important as AI lo | 「This is why structured logic and verification may become more important as AI lowers the cost of strategy creation.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading.txt:491` | Verification May Become the Real Bottleneck | 「Verification May Become the Real Bottleneck」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/blog_vibe-trading.txt:515` | But the more autonomy trading systems receive, the more important precision, ver | 「But the more autonomy trading systems receive, the more important precision, verification, permissions, and monitoring become.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/faqs.txt:39` | How Algorier builds, verifies, and runs strategies plus pricing, the marketplace | 「How Algorier builds, verifies, and runs strategies plus pricing, the marketplace, and integrations.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/faqs.txt:50` | [行の長さ 489 字。当たった 5 か所の前後 200 字] …Algorier is the world's first marketplace for v | 「[行の長さ 489 字。当たった 5 か所の前後 200 字] …Algorier is the world's first marketplace for verifiable, customizable trading intelligence. Desc…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/faqs.txt:54` | [行の長さ 569 字。当たった 4 か所の前後 200 字] …A crypto exchange lists coins. A broker lists s | 「[行の長さ 569 字。当たった 4 か所の前後 200 字] …A crypto exchange lists coins. A broker lists stocks. Algorier is an exchange for a new asset cla…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/faqs.txt:84` | AlgoNetwork is Algorier's marketplace of verified strategies each carrying a sta | 「AlgoNetwork is Algorier's marketplace of verified strategies each carrying a standardised backtest and live forward-test record. Y…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/pricing.txt:40` | One monthly plan covers the platform — build, verify, and run strategies. | 「One monthly plan covers the platform — build, verify, and run strategies.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/propsubstitute.txt:137` | automated, backtested algorithm with transparent, verifiable | 「automated, backtested algorithm with transparent, verifiable」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/publish-pros.txt:78` | Verified by Data, Not Trust | 「Verified by Data, Not Trust」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/publish-pros.txt:147` | Signal providers sell manual calls with no verifiable track record. | 「Signal providers sell manual calls with no verifiable track record.」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/terms-of-use.txt:167` | This content, including any performance data, is provided for informational purp | 「This content, including any performance data, is provided for informational purposes only. Past performance is not indicative of f…」の「verif」は、「verified」「verification」というマーケットプレイスのマーケティング語で、内容は標準化されたバックテスト・フォワードテストの提供(E1b/E4/E3bの対象)か業界一般の教育的解説であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/trade-with-algorithms.txt:112` | 200+ Proven Strategies, Verified Backtests | 「200+ Proven Strategies, Verified Backtests」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/trade-with-algorithms.txt:113` | Browse our marketplace of strategies with verified backtest results . Tap Get Si | 「Browse our marketplace of strategies with verified backtest results . Tap Get Signals for alerts only — or Auto-Trade for full aut…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/trade-with-algorithms.txt:420` | Browse Algo Network's marketplace of strategies with verified backtest results.  | 「Browse Algo Network's marketplace of strategies with verified backtest results. Pick one, hit Auto-Trade, done. Or just receive it…」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+| `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-037r18/pages_text/trade-with-algorithms.txt:428` | Verified backtest data | 「Verified backtest data」の「test」は、バックテスト・フォワードテストという一般語で、E1b・E3b・E4の対象(勝率等の自動計算・時点分割・過去データ再生)であり、E6の独自機能を指さない |
+
+### 決まりの一覧
+
+| 検索の手の行 | 決まりの id | 正規表現 | 理由 | 取った行の数 | 取った行のあるファイルの数 |
+|---|---|---|---|---|---|
+| docs/DATA/probes/20260923_tools_8_run18.log:33 | r_diff_adj | (?i)differ\w* | 一般の形容詞・動詞「異なる/違う」(different・difference・differently・differ・differed・differentiat*等)で、市場・戦略・製品・資産クラスの違いを述べる一般叙述に使われており、2つ以上の実装の出力を突き合わせて差を出す道具の機能を指さない(全707件の当たりを読み、うち25件を無作為抽出して個別に文脈を確認、いずれも編集記事の一般叙述だった) | 694 | 55 |
+| docs/DATA/probes/20260923_tools_8_run18.log:33 | r_difficult_word | (?i)diffic\w* | 「difficult/difficulty(難しい)」という「diff」を含むだけの無関係な語で、比較・突き合わせとは無関係 | 64 | 30 |
+| docs/DATA/probes/20260923_tools_8_run18.log:33 | r_compare_prose | (?i)compar\w+ | 戦略・資産クラス・プラットフォームを比較する編集記事の一般叙述(comparing/compare/comparison/comparable等)で、217件全部を読んだが、道具が2つの実装や参照値の出力を自動で突き合わせる機能を述べたものは無い(記事見出し「Comparison」や比較表の案内も含む) | 232 | 52 |
+| docs/DATA/probes/20260923_tools_8_run18.log:33 | r_mismatch_dep | (?i)mismatch\w+\|\w+mismatch | 戦略状態とブローカー状態の食い違いや依存関係のバージョン不一致という一般的なリスク描写(mismatched library versions等)で、道具が自動で2つの出力を突き合わせて差を検出する機能の記述ではない | 2 | 2 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_singapore_coincidence | (?i)singapore | 国名「Singapore」の部分文字列として検索語「gap」に偶然一致しただけで、データの欠け検出とは無関係(法域の説明・求人票の所在地) | 4 | 2 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_valid_strategy | (?i).valid\|valid. | 戦略の妥当性・無効化条件・技術的に正しいコードかという一般的な取引戦略設計/検証の語(strategy validation, invalidates the trade, a valid trading strategy, technically valid code等)で、読んだ範囲はすべて編集記事の一般叙述であり、時系列・約定・板・足・参照データの型や範囲の違反を自動検出する機能を指すものは無い(「Can AI Replace or Improve Strategy Validation?」の節も、AIが検出しうると一般論で述べるのみでAlgoNetwork自身の機能とは明記していない) | 568 | 54 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_range_market | (?i).range\|range. | 価格・指標の値幅、レンジ相場という一般的なトレード概念(trading range, quiet range, average true range, WFE Range等)で、読んだ範囲はすべて編集記事の一般叙述であり、データのスキーマ・範囲違反を検出する機能ではない(Granger因果性の引用文献中の「Granger」も"range"を部分一致で含むだけの偶然の一致) | 110 | 20 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_missing_strategy | (?i).missing\|missing. | 戦略プロンプト・条件定義・データ収集における「欠けている条件・情報・記録」という一般的な語(missing conditions, Missing records, missing-data correction等)で、読んだ範囲はすべて、読者自身が構築する戦略やAIへの助言、または業界一般の記述であり、AlgoNetwork自身が時系列データの欠損を自動検出する機能の記述ではない | 59 | 14 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_gap_trading | (?i).gap\|gap. | 価格ギャップ・実行のギャップという一般的なトレード概念(gap risk, execution gap, fill gaps等)で、読んだ範囲はすべて編集記事の一般叙述であり、時系列データの欠損検出機能ではない | 41 | 22 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_timestamp_edu | (?i).timestamp\|timestamp. | ルックアヘッドバイアス・トレンドフォロー戦略の解説記事が、読者自身が構築する戦略でタイムスタンプの整合を取るべきだと助言する一般叙述(preserve publication and provider-ingestion timestamps, need particularly clear timestamp rules等)で、AlgoNetwork自身が自動検出する機能の記述ではない | 51 | 8 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_duplicate_edu | (?i).duplicat\|duplicat. | ニュースセンチメント戦略・AIリスクの解説記事が、読者自身のデータパイプラインで重複を検出すべきだと助言する一般叙述(Duplicate Detection, duplicate entries等)で、AlgoNetwork自身が時系列・約定データの重複を自動検出する機能の記述ではない | 27 | 5 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_sortino_name | (?i)sortino | Sortino Ratioという成績指標の固有名詞で、「sort」を部分一致で含むだけの偶然の一致。順序の乱れの検出とは無関係 | 31 | 9 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_sort_verb | (?i).sort\|sort. | モメンタム戦略記事の「sorts them from strongest to weakest」という資産のランキング処理の一般的な語で、時系列・約定データの順序異常を検出する機能ではない | 2 | 2 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_clock_skew_unrel | (?i).clock\|clock.\|.skew\|skew. | 「around the clock(24時間稼働)」「options skew(オプションのスキュー)」という一般的なトレード用語で、時刻のずれの検出とは無関係 | 3 | 3 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_type_unrel | (?i).type\|type. | 「ユーザーが戦略を入力する(type a strategy)」「注文の種類(order types)」という一般語で、データの型検証とは無関係 | 0 | 0 |
+| docs/DATA/probes/20260923_tools_8_run18.log:10409 | r_outlier_anomal_edu | (?i).anomal\|anomal. | 「an anomaly with a long history」という市場アノマリー(異常収益機会)の学術的議論、およびAIが「detect anomalies」できるという一般論(Algorier自身の機能と明記されていない)で、時系列データの外れ値を自動検出する機能の記述ではない | 1 | 1 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2054 | r_lookahead_edu | (?i).look-ahead\|look-ahead. | ルックアヘッドバイアスの概念を解説する教育記事の一般叙述(112件がblog_look-ahead-bias-in-backtesting.txt自体)で、AlgoBuild/AlgoNetworkがこれを自動で検出・報告する機能を述べたものではない。同記事は「researchers must still verify data availability, feature construction, timestamp alignment, and execution timing」「Even sophisticated software cannot automatically eliminate every source of look-ahead bias」と、利用者自身が検証すべきと明記しており、機能の不在を裏付ける | 121 | 15 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2054 | r_survivorship_edu | (?i).survivorship\|survivorship. | 生存者バイアスという一般的なリスク概念の解説(Survivorship Bias, provider survivorship等。ルックアヘッドバイアス記事内・成績指標解説記事・コピートレード解説記事に分散)で、AlgoNetwork/AlgoBuildが生存者バイアスを自動検出する機能の記述ではない | 36 | 18 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2054 | r_leak_edu | (?i).leak\|leak. | 情報の「漏れ」という一般的なリスク概念の解説(state leaking, information leakage, leaked information等)で、道具が自動検出する機能の記述ではない | 23 | 5 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2054 | r_pit_edu | (?i).point-in-time\|point-in-time. | 時点を揃えたデータの必要性という一般的な助言(コーポレートアクション・ニュースの時点整合)で、AlgoNetwork/AlgoBuildが自動でこれを検証する機能の記述ではない | 32 | 9 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2054 | r_asof_edu | (?i).as-of\|as-of. | as-of時点のデータという一般的な助言で、道具の自動検証機能の記述ではない | 0 | 0 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2297 | r_lookahead_edu | (?i).look-ahead\|look-ahead. | ルックアヘッドバイアスの概念を解説する教育記事の一般叙述(大半がblog_look-ahead-bias-in-backtesting.txt自体)で、未来情報の混入を防ぐAlgoNetwork/AlgoBuild自身の仕組み(purged CV・embargo・時点を揃えた結合の自動実装等)を述べたものではない。同記事は「researchers must still verify data availability, feature construction, timestamp alignment, and execution timing」と利用者自身が防止策を講じるべきと明記しており、自動防止機能の不在を裏付ける(embargo・purgeという語は本コーパスに1件も当たらなかった) | 124 | 18 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2297 | r_pit_edu | (?i).point-in-time\|point-in-time. | 時点を揃えたデータを使うべきという一般的な助言(コーポレートアクション・ニュース・投資ユニバースの時点整合)で、AlgoNetwork/AlgoBuildが自動でこれを保証する仕組みの記述ではない(「How do professional traders avoid look-ahead bias? They use point-in-time data...」は業界一般の実務描写であり、Algorier自身の機能の記述ではない) | 32 | 9 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2297 | r_asof_edu | (?i).as-of\|as-of. | as-of時点のデータという一般的な助言で、道具の自動防止機構の記述ではない | 0 | 0 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2478 | r_test_backtest | (?i).test\|test. | バックテスト・フォワードテスト・robustness testingという一般語(backtest, forward test, out-of-sample testing, Walk Forward等)で、これ自体はE1b(勝率・ドローダウン・profit factorを自動計算する既存の機能)・E3b(時点分割)・E4(過去データの再生)の対象であり、E6の述語「E1a〜E5のどれにも当たらないもの」には当たらない。教育記事の一般的なテスト手法の解説を含む。ただしalgonetwork.txt:285「Every backtest and live trade is auditable. No cherry-picking.」(生ログ4338行)は、バックテストの計算結果そのものではなく全結果が改変・取捨選択なく公開される完全性の保証を述べており、この決まりの理由には当たらない。この1行は決まりでは検索語testの当たりとして数の上では分類されるが、報告本文でE6の`印`の根拠として個別に扱う | 2039 | 68 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2478 | r_validat_strategy | (?i).validat\|validat. | 戦略の妥当性を確認するという一般的な取引戦略検証の語(strategy validation, AI-assisted validation等)で、内容は「out-of-sample and walk-forward results」「forward testing」等、既存のE1b/E3b/E4の対象と同じ検証段階を指すか、業界一般の教育的解説であり、AlgoNetwork自身のE1a〜E5に当たらない独自機能の記述ではない | 417 | 48 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2478 | r_quality_general | (?i).quality\|quality. | データ品質・執行品質・戦略品質という一般的な語(data quality, execution quality, strategy quality等)で、道具が自動で確認する独自の品質検証機能を述べたものではなく、教育記事の一般叙述(「The quality gate」はAlgoBuildという別製品のページの記述で、AlgoNetworkの機能の根拠にしない) | 187 | 42 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2478 | r_check_general | (?i).check\|check. | 一般的な「確認する」の用法(checklist, due diligence, API permission checks等)で、多くは読者向けの手動チェックリスト(✓ Every trading decision uses only information available…等)であり、AlgoNetwork自身が自動で確認する機能の記述ではない | 104 | 35 |
+| docs/DATA/probes/20260923_tools_8_run18.log:2478 | r_verif_general | (?i).verif\|verif. | 「verified」「verification」というマーケットプレイスのマーケティング語で、その中身は標準化されたバックテスト・フォワードテストの提供(既存のE1b・E4・E3bの対象)を指すか、業界一般の教育的解説(Validation vs Verificationの用語解説、投資家に「verify the platform's regulatory status」を促す助言等)であり、道具自身の機能としてE1a〜E5に当たらない独自の検証機能を述べたものではない。ただしfaqs.txt:54/_root.txt:214「independent verification through backtests and forward tests」(生ログ3974行)は、上記と同じ完全性保証を指す文で、報告本文でE6の`印`の根拠として個別に扱う | 96 | 27 |
+
+### 代替経路
+
+`https://api.github.com/repos/lucasinglese/oryon/...`は、この環境のプロキシが「GitHub access to this repository is not enabled for this session. Use add_repo to request access.」を返し到達できなかった(`CONNECT tunnel failed`型ではなく、セッションの許可設定によるプロキシ層の拒否)。代替として`https://ungh.cc/repos/lucasinglese/oryon`・`https://ungh.cc/repos/lucasinglese/oryon/contributors`で同等の情報(pushedAt・stars・保守者一覧)を取得した。また`http://web.archive.org/cdx/search/cdx?...`は「Blocked by egress policy」(平文HTTPの遮断)で、`https://`に変えて到達できた。第2経路(オーナーPC)でそのまま打てるコマンド: `curl -sS https://api.github.com/repos/lucasinglese/oryon/contributors`(GitHub公開APIへの到達を試す。認証は不要だが、レート制限に掛かる場合は個人アクセストークンを添える)。
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] `Oryon`のE6を`印`(段3)と判定した根拠(README.mdの「The test infrastructure is part of the public API」、生ログ7444行)と、CONTRIBUTING.mdの「It covers the end-to-end workflow for adding a feature or target」(生ログ7432行)の関係について。`target_contract_tests!`/`streaming_transform_contract_tests!`マクロは`#[macro_export]`されており技術的にはOryonをRustの依存として使う任意の下流コードから呼べるが、文書上の主な用途はOryon自身への機能追加(コントリビューション)であって、17回目までの検収・監査89回目が扱った「候補が自分自身を試験する仕組み」(L-516の自己試験除外)とこの機能の境界線がどこにあるかは、この回の一次資料だけでは一義的に決まらない。今回はマクロが新規に書く実装(Oryonのトレイトを満たす型)の正しさを検証する道具であり、既にリリース済みのOryon自身の版・ランタイムを試験するものではないという理由で`印`に確定したが、この整理が妥当かどうかは問いとして残す。
+2. [それ以外の問い] `AlgoNetwork`・`Oryon`の状態をこの回に`浅い`から`深掘り`へ進めたことについて。両候補ともE1a〜E6に`未判別`は無くなり(委任文§4.0の「深掘り」の第2条件)、§4.0の表(各43項目)も過半が一次資料/実測である(第1条件、AlgoNetworkは38/43・Oryonは41/43が一次資料/実測で、残りはいずれも登録・口座接続・実装統合が要ることを理由に明記した未確認)。この基準の適用が妥当かどうかを問いとして残す(委任文§4.0は「過半が一次資料か実測のときだけ」とのみ定め、具体的な閾値の例は無い)。
+3. [それ以外の問い] `AlgoNetwork`の4軸4_向上・`Oryon`の4軸4_向上を、「時間が掛かる」ではなく「当方のbt/特徴量計算への実際の組み込みという実装作業が道具サーベイの範囲を超える」という理由で未確認のまま残したことについて。この理由づけが委任文§2.5の「時間が掛かる」の禁止に当たらない正当な限界か、それとも実装作業への言及も同じ型の先送りに当たるかを問いとして残す。
+</content>
+
+### 受け入れ検査の出力
+
+**1. `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run18.log`**(誤検出は閉じずに残す。K1・K2(19612・19909・30448・34975・35047行目)とK13(15024〜20425行目あたりの複写検出、前回までの回の分)は前回までの回で誤検出として受け取られ済み(検収`docs/AUDITOR/VERDICTS/2026-09-25_tools_scan_cat8_run15.md`・`run17.md`等)。**この回に新しく増えたのはK13だけ**: AlgoNetwork(34040行目、38行+9行)・Oryon(34169行目、11行+9行+10行)の2件で、いずれも`### 4.0 機械可読の表`の「該当なし」等の行が、この回に43項目全体を書き直した際に同じ生ログの行(例: `docs/DATA/probes/20260923_tools_8_run17.log:3798`)を繰り返し引いたために生じる誤検出(17回目の検収が同型として受け取った理由と同じ。17回目は各候補5候補を初めて書いたときの複写、この回は既存の2候補の43項目を丸ごと書き直したための複写で、件数が増えているが型は同じ)。K1・K2の新規行(34975・35047行目)は、`### 当たりの判定(行ごと)`の表がソースコードの関数シグネチャ・正規表現の断片(例: `pub fn is_valid(v: Option<f64>) -> bool`・`(?i).valid|valid.`)を逐語で引用しているために生じる誤検出(前回までの検収の説明と同型)。**
+
+```
+</content>
+K1 太字                  2 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+K2 括弧                  7 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             29 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 16 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 16 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:0  貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)
+---- 検査対象の合計 38 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 39 件
+```
+
+**2. `python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 18`**
+
+```
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 18 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+**3. `python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run18.log`**
+
+```
+参考: docs/DATA/probes/20260923_tools_8_run18.log の最後の手 2026-09-25T11:18:32Z / 期限 2026-09-25T10:49:05Z / 期限切れの手 なし
+---- 合計 0 件
+```
+
+**4. `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run18.log | grep '^-[^-]' | wc -l`**
+
+```
+0
+```
