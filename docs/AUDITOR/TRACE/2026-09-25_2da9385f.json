@@ -3220,11 +3220,11 @@
    "move": 114,
    "tools": {
     "Read": 5,
-    "Bash": 12,
+    "Bash": 17,
     "ToolSearch": 1,
     "Agent": 1
    },
-   "n_tools": 19,
+   "n_tools": 24,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
