@@ -318,7 +318,14 @@ def facts(cat):
     return F
 
 
+GONE_NOTE = "。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)"
+GONE = {2, 20, 34, 35, 37, 65, 105, 107}  # venvs removed after this role's last run of them (3, 4, 10, 16, 18, 53, 87 say so in RUN)
+
+
 def main():
+    for c in GONE:
+        t, r, why = RUN[c]
+        RUN[c] = (t + GONE_NOTE, r, why)
     cat = catalog()
     pl, names = pool()
     res = results()

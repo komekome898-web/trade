@@ -239,6 +239,7 @@ def max_drawdown(equity):
 
 class BacktestingCore(Base):
     name = "opp_repro_15"
+    SEARCH_AS = "read_15"
     WHAT = "候補 15 の再現(一次資料 " + SRC + " を読むだけで書き写した)。"
     NO = {
         "calendar_split": "日付で Train / Val / OOS に切る口が無い。OOS の欄(backtest/src/engine.rs L52-L78)は walk-forward の窓の評価の集計",

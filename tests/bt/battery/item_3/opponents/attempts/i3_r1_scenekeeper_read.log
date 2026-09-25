@@ -1,0 +1,23 @@
+=== 2026-09-25T18:14:43Z git clone --depth 1 https://github.com/Mendl-Labs/BacktestingCore (read only)
+rc=0 f8d81ee0b4b65f6fbbf205d011ad2e815054fbc7 2026-08-25T12:34:56-04:00 size=5.3M
+=== 2026-09-25T18:14:44Z git clone --depth 1 https://github.com/bludnic/OpenTrader (read only)
+rc=0 8b8e24599599df214b12b4263553885854015b4b 2025-06-29T17:24:07+01:00 size=16M
+=== 2026-09-25T18:14:45Z GitHub search TradeSight
+total None
+=== 2026-09-25T18:22:33Z GitHub search TradeSight (raw)
+code=403
+=== 2026-09-25T18:22:40Z GET https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md
+code=200
+=== 2026-09-25T18:22:40Z GET https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/master/README.md
+code=200
+=== 2026-09-25T18:22:48Z git clone --depth 1 https://github.com/rmbell09-lang/tradesight (read only)
+rc=0 8b2de128b5180d05e87a51a191685298e2e888e6 2026-07-14T20:10:24-04:00 size=8.3M
+=== 2026-09-25T18:26:22Z GET https://backtestingmax.com/ (read only)
+code=307 size=15
+=== 2026-09-25T18:26:22Z GET https://backtestingmax.com/pricing (read only)
+code=307 size=15
+=== 2026-09-25T18:26:23Z GET https://backtestingmax.com/docs (read only)
+curl: (28) Connection timed out after 30002 milliseconds
+code=000 size=0
+=== 2026-09-25T18:27:00Z GET -L https://backtestingmax.com/ (read only)
+code=200 size=10474 url=https://www.backtestingmax.com/

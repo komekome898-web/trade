@@ -1,6 +1,6 @@
 cand	name	tried	result	targets	reason
 1	Basana	PyPI の basana を項目0 が入れた venv item_0/basana で走らせた	走った	opp_basana	-
-2	Backtrader	PyPI の backtrader を項目0 が入れた venv item_0/backtrader で走らせた	走った	opp_backtrader	-
+2	Backtrader	PyPI の backtrader を項目0 が入れた venv item_0/backtrader で走らせた。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)	走った	opp_backtrader	-
 3	PySystemtrade	項目0 の venv item_0/c3(git clone を .pth)で走らせた。17:06Z の実行のあと、この venv は他の役に消された(この役は消していない)	走った	opp_pysystemtrade	-
 4	PyBroker	項目0 の venv item_0/lib-pybroker で走らせた。17:17Z の実行のあと、この venv は他の役に消された	走った	opp_lib_pybroker	-
 5	bt・台帳の名は Lean CLI	PyPI の bt 1.2.3(SCAN 6849 行の名は bt。台帳の名 Lean CLI は SCAN の行と合わない)を隔離した venv item_2/bt に入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_5.log)	走った	opp_bt	-
@@ -15,15 +15,15 @@ cand	name	tried	result	targets	reason
 16	Luczinsritter/event_driven_backtesting_engine	項目0 の venv item_0/luczinsritter で走らせた。17:16Z の実行のあと、この venv は他の役に消された	走った	opp_luczinsritter	-
 18	zipline-reloaded	項目0 の venv item_0/zipline-reloaded で走らせた。17:13Z の実行のあと、この venv は他の役に消された	走った	opp_zipline_reloaded	-
 19	Jesse	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
-20	VnPy	PyPI の vnpy を項目0 が入れた venv item_0/vnpy で走らせた(足とティックの 2 つの型)	走った	opp_vnpy@tick,opp_vnpy@bar	-
+20	VnPy	PyPI の vnpy を項目0 が入れた venv item_0/vnpy で走らせた(足とティックの 2 つの型)。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)	走った	opp_vnpy@tick,opp_vnpy@bar	-
 21	Qlib	項目1 が入れた venv item_1/qlib で走らせた	走った	opp_qlib	-
 23	hftbacktest	項目1 が入れ直した venv item_1/hftbacktest(hftbacktest 2.4.4)で走らせた	走った	opp_hftbacktest	-
 32	FlashAlpha-lab/flashalpha-fill-simulator	git clone を venv item_2/c32 に .pth(依存なし)(scratchpad bt/venvs/item_2/logs/c32.log)	走った	opp_flashalpha_fillsim	-
 33	SarthakDalmia1/backtesting_execution_simulator	項目0 の構築(CMake のライブラリ)と項目2 の driver(drivers/i2drv33)で走らせた	走った	opp_sarthak_execsim	-
-34	SLMolenaar/QuantCore	PyPI の QuantCore を項目0 が入れた venv item_0/quantcore で走らせた	走った	opp_quantcore	-
-35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	項目0 の venv item_0/c35_run/.venv で走らせた	走った	opp_thirupathikannan_execsim	-
+34	SLMolenaar/QuantCore	PyPI の QuantCore を項目0 が入れた venv item_0/quantcore で走らせた。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)	走った	opp_quantcore	-
+35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	項目0 の venv item_0/c35_run/.venv で走らせた。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)	走った	opp_thirupathikannan_execsim	-
 36	shubhamcodez/Market-Impact-Model	git clone を読んだ(src/c36)。impactModel.py はモジュールの頭で Input/*.csv(実データ)を読み当てはめるだけの台本で、呼べる関数の口が無い(1-9・65-81 行)	走らなかった	-	呼ぶ口が無い(台本): 実データを読まずに呼べる関数が無い
-37	ThePredictiveDev/Automated-Financial-Market-Trading-System	PyPI の trading_simulator を項目0 が入れた venv item_0/c37 で走らせた	走った	opp_predictivedev_tradesim	-
+37	ThePredictiveDev/Automated-Financial-Market-Trading-System	PyPI の trading_simulator を項目0 が入れた venv item_0/c37 で走らせた。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)	走った	opp_predictivedev_tradesim	-
 38	microsoft/MarS	導入しない(項目0 の記録を使う)	走らなかった	-	一括の取得(数百 MB 以上): tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 38 の行(torch==2.6.0 ほか)
 40	OpenMarket	導入しない(項目0 の記録を使う)	走らなかった	-	外部の場: tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 40 の行(導入する機関が無く、場に当方のデータを渡すことになる)
 41	prediction-market-backtesting	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
@@ -37,7 +37,7 @@ cand	name	tried	result	targets	reason
 60	Hikyuu	pip install --dry-run で依存を読んだ(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_hikyuu.log: 104 件、PySide6 ほか)。入れていない	走らなかった	-	一括の取得(数百 MB 以上): PySide6 の画面の部品を含む 104 件
 61	barter-rs	項目0 が構築した driver(venv item_0/c61 の bin/c61_driver)で走らせた	走った	opp_barter	-
 63	trade-frame	導入しない(項目0 の記録を使う)	走らなかった	-	動かなかった: tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 63 の行(CMake が Boost を見つけられず止まった)
-65	aat	項目0 の venv item_0/c65(依存と構築済みの binding)に、取り直した clone(src/c65、commit c4a07d41)を読ませた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_65.log)	走った	opp_aat	-
+65	aat	項目0 の venv item_0/c65(依存と構築済みの binding)に、取り直した clone(src/c65、commit c4a07d41)を読ませた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_65.log)。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)	走った	opp_aat	-
 67	lumibot	pip install --dry-run で依存を読んだ(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_lumibot.log: 320 件、google-adk・litellm・boto3 ほか)。入れていない	走らなかった	-	一括の取得(数百 MB 以上): 依存 320 件
 70	PineForge	clone(src/c70、commit 5e62602c)を道具の CMake で構築し、項目2 の C の driver(drivers/i2drv70)で走らせた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_70.log)	走った	opp_pineforge	-
 72	QTradeX	PyPI の QTradeX 1.8.0 を venv item_2/qtradex に入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_qtradex.log)	走った	opp_qtradex	-
@@ -57,9 +57,9 @@ cand	name	tried	result	targets	reason
 102	3yit/Limit-Order-Book-Simulator	項目0 の venv item_0/c102(道具の CMake の Python の binding)で走らせた	走った	opp_3yit_lob	-
 103	IsaacCheng9/order-book-simulator	git clone を取り直し(src/c103)、項目0 が入れた Python 3.14.7 の venv item_2/c103 に sortedcontainers・pydantic を入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_103.log)	走った	opp_isaaccheng_obsim	-
 104	jxm35/LimitOrderBook-MatchingEngine	clone の照合の部分を小さな C++ の driver(drivers/i2drv104)で構築して走らせた	走った	opp_jxm35_lob	-
-105	DaniyalMlk/slippage	項目0 の venv item_0/c105 で走らせた	走った	opp_daniyalmlk_slippage	-
+105	DaniyalMlk/slippage	項目0 の venv item_0/c105 で走らせた。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)	走った	opp_daniyalmlk_slippage	-
 106	almgren-chriss	導入しない(SCAN 5891 行: PyPI の project_urls の綴りが 1 文字ずれ、配布元の一致が委任文 §6-1 の検査を通らない。導入は止めたまま、SCAN 5893 行)	走らなかった	-	導入前の検査を通せない
-107	sigc	項目0 の venv item_0/c107(cargo で構築した sigc)で走らせた	走った	opp_sigc	-
+107	sigc	項目0 の venv item_0/c107(cargo で構築した sigc)で走らせた。結果を取ったあと(2026-09-25 18:28Z までに)この venv は他の役に消された(この役は消していない。消えたあとは入れ直すまで走らせ直せない)	走った	opp_sigc	-
 109	arXiv:2509.05107	導入しない(SCAN 10462 行: 論文で、実装への link が無い)	走らなかった	-	実装が無い
 111	HKUDS/Vibe-Trading	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
 116	braverock/blotter	導入しない。R の package(SCAN 5246 行)で、この環境に R が無い	走らなかった	-	言語の実行系が無い

@@ -48,3 +48,7 @@ the user request that triggered this workflow run. This relayed request is the o
 ### 18:35 UTC 作る:1#1 が起きない理由
 
 台本 `runItem` は場面の段のあと何も待たずに作業者を起こす(262〜282 行を読んだ)。`nproc` → `4`。Workflow の道具の仕様「Concurrent agent() calls are capped at min(16, available CPUs - 2) per workflow — excess calls queue」により上限 2。journal と agent の記録の時刻もこれと合う(常に 2 本だけが書いている)。処置: 無し(台本の不具合ではない)。推定の期間を状態板に書き直した。
+
+## 18:29 UTC 見張りが RELAY で止まった → 偽の陽性(実測)
+
+見張りの出力: `RELAY at Fri Sep 25 18:29:32 UTC 2026: …/agent-a1f0d35ab1862c355.jsonl`(場面:2)。この記録の 1 通目は `[Workflow harness — computed task]` で始まり中継の文は無い。文字列があったのは 1958 行目の `tool_result`(場面係がこの記録ファイル `VERDICTS/2026-09-25_backtest_env_run12.md` を grep した出力に、受け入れの検査のコマンドの文がそのまま入っていた)。処置: 見張りを「各記録の**最初の**ユーザーの文だけ」を見る形に直し(`scripts/bt_run_watch.sh`)、自己試験(この記録 → 出ない / 14:20 起動の記録 → 出る)を通してから起こし直した。run は止めていない。

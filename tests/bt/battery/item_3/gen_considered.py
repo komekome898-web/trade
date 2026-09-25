@@ -127,6 +127,20 @@ def _search():
         return {(r["target"], r["op"]): r for r in csv.DictReader(fh, delimiter="\t")}
 
 
+def _reasons(rs, cap=900):
+    """The distinct reasons the viewpoint's scenes ended with (the adapter's words), in scene order."""
+    if not rs:
+        return "表が無い"
+    seen, out = set(), []
+    for r in rs:
+        d = r["detail_1"].replace("|", "/").removeprefix("adapter: ")
+        if d not in seen:
+            seen.add(d)
+            out.append(f"{r['scene']}: {d}")
+    t = " / ".join(out)
+    return t if len(t) <= cap else t[:cap] + "…(全文は survey_results の表)"
+
+
 def main() -> int:
     search = _search()
     vps = list(S.VIEWPOINTS)
@@ -159,9 +173,9 @@ def main() -> int:
                 if ok:
                     runnable.append(tag)
                     continue
-                first = (rs[0]["detail_1"] if rs else "表が無い").replace("|", "/")
+                first = _reasons(rs)
                 rows.append((tag, mech, impl, "持たないと確認した",
-                             f"場面が測る「{S.VIEWPOINTS[vp]}」の口が無い: {first[:420]}。`run_battery.py --target {target}` の出力 "
+                             f"場面が測る「{S.VIEWPOINTS[vp]}」の口が無い: {first}。`run_battery.py --target {target}` の出力 "
                              f"survey_results/{target}.tsv の {'・'.join(ids[vp])} の行が全部「結果なし」"))
             elif kind == "repro":
                 rs = [r for r in (_tsv(target) or []) if r["viewpoint"] == vp]
@@ -172,9 +186,9 @@ def main() -> int:
                                  f"{fname} に一次資料の {REPRO_LINES.get((target, vp), '(行は再現の注釈)')} を書き写した(注釈に行を 1 対 1)。"
                                  f"場面の結果は survey_results/{target}.tsv の {'・'.join(r['scene'] for r in ok)} の行"))
                 else:
-                    first = (rs[0]["detail_1"] if rs else "表が無い").replace("|", "/")
+                    first = _reasons(rs)
                     rows.append((tag, mech, impl, "持たないと確認した",
-                                 f"一次資料を読んだ結果、場面が測る「{S.VIEWPOINTS[vp]}」の口が無い: {first[:420]}(再現 {fname} を場面に通した"
+                                 f"一次資料を読んだ結果、場面が測る「{S.VIEWPOINTS[vp]}」の口が無い: {first}(再現 {fname} を場面に通した"
                                  f" survey_results/{target}.tsv の {'・'.join(ids[vp])} の行が全部「結果なし」)"))
             elif num == 8:
                 parts = []

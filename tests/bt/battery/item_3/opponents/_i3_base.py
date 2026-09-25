@@ -46,6 +46,7 @@ class Base:
     name = "base"
     WHAT = ""     # one line: what the tool is and what it takes as input
     NO: dict = {}  # op -> why there is no mouth (when the grep has hits that are not a mouth)
+    SEARCH_AS = None  # a reproduction names the SEARCH.tsv rows of the primary source it was read from
 
     def run(self, inp: dict) -> dict:
         op = inp["op"]
@@ -54,5 +55,5 @@ class Base:
             why = self.NO.get(op) or self.NO.get(SEARCH_KEY.get(op, op))
             if not why:
                 why = "口が無い"
-            raise NotExpressible(f"{op}: {why}。{self.WHAT} 探した方法: {search_line(self.name, op)}")
+            raise NotExpressible(f"{op}: {why}。{self.WHAT} 探した方法: {search_line(self.SEARCH_AS or self.name, op)}")
         return fn(inp)

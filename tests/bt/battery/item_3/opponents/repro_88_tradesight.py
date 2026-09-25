@@ -37,6 +37,7 @@ def max_drawdown_pct(equity):
 
 class TradeSight(Base):
     name = "opp_repro_88"
+    SEARCH_AS = "read_88"
     WHAT = "候補 88 の再現(一次資料 " + SRC + " を読むだけで書き写した)。"
     NO = {
         "walk_forward": "walk_forward_validation(src/strategy_lab/backtester.py L78-L152)は行を n_folds の重ならない塊に分け、塊の中を行の割合"
