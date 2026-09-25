@@ -32,7 +32,7 @@ A_ONLY = "(a) の書き写しだけ(道具台帳 §3 の 11 件。導入も一�
 
 # ---- facts per candidate (installed code read 2026-09-25; lines are file:line in the installed copy)
 READER = {
-    3: ("先物の足の CSV の読み口 csvFuturesContractPriceData + ConfigCsvFuturesPrices(日付の索引 1 列・日付の書式・列の対応)", f"{VEN}/item_0/_dl/c3/sysdata/csv/csv_futures_contract_prices.py 17-27 行"),
+    3: ("先物の足の CSV の読み口 csvFuturesContractPriceData + ConfigCsvFuturesPrices(日付の索引 1 列・日付の書式・列の対応)", f"{VEN}/item_1/_dl/c3/sysdata/csv/csv_futures_contract_prices.py 17-27 行"),
     12: ("HTTP / WebSocket の通信と DataStore だけ。ファイルの読み口なし(grep read_csv・csv.reader 0 件)。時刻の文字列は変換せずに持つ(SCAN 2788 行)", f"{VEN}/item_0/pybotters/…/pybotters"),
     20: ("本体と vnpy_ctastrategy にファイルの読み口なし(grep read_csv・csv.reader 0 件)。足は BarGenerator.update_tick(vnpy/trader/utility.py 166・204 行)の 1 本道", f"{VEN}/item_0/vnpy/…/vnpy/trader/utility.py 166・204 行"),
     21: ("配布物に CSV の読み口なし(read_csv の当たりは銘柄の一覧 file_storage.py 208 行・暦 utils/__init__.py 602 行・注文・予測の表)。CSV から自前の形に直す dump_bin.py はリポジトリの scripts/ にあり配布物に無い", f"{VEN}/item_1/qlib/…/qlib/data/storage/file_storage.py 208 行"),
@@ -41,7 +41,7 @@ READER = {
     55: ("読み口なし。Backtest(backtesting.py 1111 行)はメモリ上の OHLC の DataFrame を取る(read_csv の当たりは同梱の例の test/__init__.py だけ)", f"{VEN}/item_0/backtesting/…/backtesting/backtesting.py 1111 行"),
     61: ("ファイルの読み口なし(grep csv::Reader・ReaderBuilder 0 件)。型つきの MarketEvent の列を受ける。Candle は close_time: DateTime<Utc>(SCAN 6303 行)", f"{VEN}/item_0/_dl/c61"),
     73: ("市場データのファイルの読み口なし(grep read_csv・class CSVData 0 件。data の型は合成と取得だけ: data/custom.py 29 行 SyntheticData・183 行 YFData・301 行 BinanceData・556 行 CCXTData・759 行 AlpacaData)", f"{VEN}/item_1/vectorbt/…/vectorbt/data/custom.py"),
-    87: ("任意の CSV の読み口なし(grep read_csv・DictReader・csv.reader 0 件。データは IB と Quandl からの取得を自前で保管: config/currencies.py 9-12 行)", f"{VEN}/item_0/_dl/c87"),
+    87: ("任意の CSV の読み口なし(grep read_csv・DictReader・csv.reader 0 件。データは IB と Quandl からの取得を自前で保管: config/currencies.py 9-12 行)", f"{VEN}/item_1/_dl/c87"),
     105: ("読み口の列が固定(足 = symbol,timestamp,open,high,low,close,volume、io.py 44 行。欠けると InputError、57-59 行)。時刻は datetime.fromisoformat(133 行)", f"{VEN}/item_0/c105/…/slippage/io.py 44・57-59・126-149 行"),
     121: ("CSVDailyBarDataSource(qstrader/data/daily_bar_csv.py 35・44-54 行)は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)", f"{VEN}/item_0/qstrader/…/qstrader/data/daily_bar_csv.py 35・44-54 行"),
 }

@@ -15,7 +15,7 @@ scene exactly, so an engine with narrow integer sizes is not overflowed by a fin
 - trade print (px, qty, aggressor): an external order of the aggressor's side, qty at px, that takes
   what crosses at px or better and leaves nothing resting (the engine's IOC, or its limit order
   followed at once by a cancel of the remainder when the engine has no IOC).
-- our actions: market / limit (GTC) / IOC / FOK / post-only / cancel / amend, each only through
+- our actions: market / limit (GTC) / stop-market / IOC / FOK / post-only / cancel / amend, each only through
   the engine's own call for it; a type the engine has no call for is refused.
 - self-trade prevention only through the engine's own policy when it has one.
 - same-time order: market events first, then actions, each in list order (i2_common.timeline).
@@ -109,6 +109,10 @@ class Engine:
     def cancel(self, key) -> bool:
         raise NotImplementedError
 
+    def stop(self, key, side, stop_px, qty, mine, stp):
+        """A stop-market order triggered at stop_px (ticks), through the engine's own stop call."""
+        raise NotImplementedError
+
     def amend(self, key, px, new_left, left):
         """px in ticks; new_left = the lots that should be left after the amend (new size minus what has
         filled), or None when the size is not amended; left = the lots left now."""
@@ -151,7 +155,7 @@ def _fill_model_ok(fm, inp, eng):
 
 def run_lob(inp, eng: Engine) -> dict:
     feats = eng.features
-    orders = tuple(f for f in ("market", "limit", "IOC", "FOK", "post_only", "cancel", "amend") if f in feats)
+    orders = tuple(f for f in ("market", "limit", "stop", "IOC", "FOK", "post_only", "cancel", "amend") if f in feats)
     lat = tuple(k for k in ("feed", "order", "cancel", "notice") if f"latency:{k}" in feats)
     C.gate(inp, tool=eng.tool, orders=orders,
            events=("book", "trade") + (("l3_add", "l3_cancel") if "l3" in feats else ()),
@@ -256,6 +260,8 @@ def run_lob(inp, eng: Engine) -> dict:
         try:
             if a["type"] == "market":
                 fl = eng.market(ref, side, q, True, stp)
+            elif a["type"] == "stop":
+                fl = eng.stop(ref, side, ticks(a["stop_px"], tick), q, True, stp)
             elif a["post_only"]:
                 fl = eng.post_only(ref, side, px, q, True, stp)
             elif a["tif"] == "IOC":

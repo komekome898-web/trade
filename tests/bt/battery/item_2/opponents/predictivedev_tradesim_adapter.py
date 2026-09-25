@@ -45,7 +45,7 @@ SYM = "X"
 
 class Eng(L.Engine):
     tool = TOOL
-    features = frozenset({"market", "limit", "IOC", "FOK", "post_only", "cancel", "amend", "stp", "latency:order"})
+    features = frozenset({"market", "limit", "IOC", "FOK", "post_only", "cancel", "amend", "stp", "l3", "latency:order"})
     costs = ("maker_rate", "taker_rate")
 
     def fill_model_ok(self, fm, inp):

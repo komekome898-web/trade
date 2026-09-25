@@ -585,4 +585,27 @@
 
 ## 提出前の吟味
 
-(未記入)
+場面係(最初の作り、項目 2、2026-09-25)。読み直したもの: 固定した要件 `docs/DISCUSSIONS/2026-09-23_backtest_env/item_2/REQUIREMENTS.md` の C2-1〜C2-12、
+委任文 §3 の場面集の規則 1〜9・「動かせない候補の検討と再現」・比較の観点、§4 の禁止と安全。数え直しのコマンドと出力は下の各項に書いた。
+
+### 厳しい監査役・批評家なら [止める] にするもの(観点ごと)と、潰した記録
+
+1. **規則 1(能力の場面も正解と突き合わせる)**: 能力の場面 22 件は、どれも「使ったら出るはずの値」か「断るはずの変形」を正解に持つ(対照と変形の組は c2-8-both-required・c2-10-no-default・c2-10-source・c2-12-jpx-wait)。申告だけで数える場面は無い(試験 `test_variant_scenes_differ_from_control`・`test_judge_accepts_a_faithful_observation_and_rejects_a_perturbed_one`)。
+2. **規則 3(各観点に値の場面)**: 66 場面 = 値 44・能力 22(`python3 -c "import i2_scenes as S, collections; print(collections.Counter(s['kind'] for s in S.SCENES))"`)。C2-1〜C2-12 の全部に値の場面がある(試験 `test_every_viewpoint_has_a_value_scene`)。
+3. **規則 4(動かせた道具は全部の場面に通す)**: 調査結果の側の対象 42 本(実物 40 本 + 再現 2 本)が 66 場面の全部を走った(試験 `test_every_survey_target_ran_every_scene`、結果は `survey_results/*.tsv`)。候補ごとの欠け = `opponents/RUNNABILITY.tsv`(66 候補: 走った 39・走らなかった 27、走らなかった理由つき。試験 `test_every_pool_candidate_has_an_install_record`)。場面ごとの欠け = 各表の「結果なし」の行の adapter の理由。時間の超過は実測を付けた(ziplime の 1 秒の足: `timeout 240` で打ち切り、`real 4m0.147s`、試しの台本 scratchpad bt/item_2/zl/i2_r1_scenekeeper_zl_probe.py)。
+4. **規則 5(最も良い結果の順)**: 判定の順は i2_judge.py の分類(正解と一致 > 対応なし > 不一致 > 結果なし)。場面集の側で順を変えていない。
+5. **規則 6・9(検討表)**: `python3 scripts/check_bt_considered.py tests/bt/battery/item_2/opponents/CONSIDERED.md --write` → `OK 誤り 0 件`(試験 `test_considered_passes_the_checker_and_has_no_blank_row`)。再現した候補は 2 件(57 WonderTrader の MatchEngine = `opponents/repro_57_wondertrader_match.py`、94 mote/backtest = `opponents/repro_94_mote_backtest.py`)。どちらも一次資料の行を注釈に 1 対 1 で書き、工夫を足していない(94 の成行の値だけは一次資料が決めておらず、足が約定 1 件の場面では 2 案(始値・終値)が同じ値になることを注釈に書いた)。
+6. **段で外した行(C2-5・C2-7)**: 段の値は tools_catalog.tsv の列 10・11 から機械で写した(gen_considered.py の `catalog()`)。段(機構)が空欄の候補(100・109)は段で外さず、SCAN の「付けない。該当なし」の行で「持たないと確認した」にした。段 6 の動かせない候補(15・21・36・106・116・119)は、動かせた候補の機構で上位互換(15 → 33 の平方根の影響、SCAN 7189・7555 行。106・116 → 105 の線形の恒久と一時、SCAN 5222・5572・5895 行)か、約定を決める口が無い(36 = 当てはめの台本 SCAN 7191 行、119 = 測る側 SCAN 9405 行)と確かめてから外した。21 は動かせた(試しの対象で全場面「結果なし」)。
+7. **C2-6 を段で外していない**: 5 つの立場に順位は無い(REQUIREMENTS §3.1)。立場を持つ動かせない候補は再現(57)か上位互換(38・97 → 104、SCAN 8820・9149・10537 行)。段 5 未満の候補は「先行注文が立たない」を段の表の行で書いた。
+8. **mutant**: `mutant.py` は新実装を包み、taker の約定に maker の率で手数料を掛ける 1 か所だけを誤らせる(新実装の本体は変えない)。試験 `test_mutant_breaks_taker_fee_scenes_and_leaves_others` が c2-10-taker・c2-11-legs で落ち、c2-10-maker で変わらないことを見る。
+9. **adapter が正解を計算していない**: adapter は i2_scenes の正解の関数を読まない(試験 `test_adapters_do_not_read_the_answer`)。道具の口に無いものは結果なし(adapter の理由つき)にし、道具の外で値を作らない。37 の市場影響の係数だけは場面の k(円/単位)を道具の単位(約定値の bps / 100 株)に直しており、その換算に場面の最良の売り(基準 best_ask)を使うことを adapter の注釈に書いた。
+10. **§4 の禁止**: git commit / push をしていない。場面集の外(src/bot/ ほか)に触れていない(`git status --short` の item_2 以外の変更は他の役のもの: item_1・item_3・docs/AUDITOR/TRACE・mlruns/。mlruns/ は 18:13:40〜18:14:12Z にできており、この役の Qlib の実行 18:01:42Z・QTradeX の実行 18:12:54Z の後で、この役の実行の時刻とは合わない)。入れた道具に渡したのは合成の場面だけ。道具台帳 §3 の 11 件(19・41・51・58・97・111 がこの項目の候補)は導入も実行も (b) もしていない。(b) は読むだけ(15・57・63・94 と、再現の根拠の clone / raw の取得。記録 scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_read.log)。
+
+### 持ち越し(直していない、または確かめきれていないもの。リードに聞くこと)
+
+- **他の役に消された venv**: 対象 3・4・10・16・18・53・87 の venv(item_0 の下)は、この役の最後の実行(17:04〜17:19Z)のあとに消えた(この役は消していない)。結果は今の場面集と今の共通部品で取ったものだが、場面集を変えると入れ直すまで走らせ直せない。
+- **C2-9 に発注の遅れだけの場面が無い**: 発注の遅れだけを持つ道具(37)は c2-9 の場面を 1 つも取れない(c2-9-order-feed は配信の遅れも要る)。発注だけの場面を足すと、上の 7 対象を走らせ直せず規則 4 を破るので、この起動では足さなかった。
+- **REQUIREMENTS.md の読み替え**: C2-1 の「15 BacktestingCore(SCAN 1819・1823 行)」の 2 行は候補 1 Basana の節。候補 5 は台帳の名が Lean CLI だが SCAN 6849 行は bt(bt として導入した)。候補 11 の台帳の名は python3 だが SCAN 8452 行は OctoBot。§3.1 の「52 件」の awk は列の名が 1 つずれている($9 は市場影響と約定の模型、$10 が段(機構))。§3.1 の「92 の段(既定)= 6」は台帳の列 11 では 0。
+- **遅延の「持たないと確認した」の範囲**: C2-9 で、導入できなかった候補の多くは SCAN の段の表の遅延の欄(「未確認(走査 N 本。当たり 0 件)」)を根拠にした。走査の範囲は各行に書いたが、全ファイルを読んだものではない(67 lumibot は走査 1 本)。
+- **上位互換の根拠の一部は結果の表**: 37 の maker・taker の手数料と口座の損益は SCAN に書き写しの行が無く、survey_results の行(c2-10-maker・c2-10-taker・c2-11-pnl が正解と一致)を根拠にした(11・13・123 の行)。
+- **導入しなかった候補**: 60 Hikyuu(依存 104 件、PySide6 を含む)と 67 lumibot(依存 320 件)は `pip install --dry-run --report` で読んだところで止めた(委任文 §4 の一括の取得)。検討表は段の表の行で判断した。

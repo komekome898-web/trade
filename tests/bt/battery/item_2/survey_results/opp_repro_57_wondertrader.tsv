@@ -1,0 +1,67 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+c2-1-market	C2-1	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-1-limit	C2-1	値	正解と一致		6ee94c806983648e	正解と一致		6ee94c806983648e	2 回の実行で同じ	0.001	0.0
+c2-1-postonly	C2-1	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に post_only が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に post_only が無い	-	結果なし	0.0	0.0
+c2-1-ioc	C2-1	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に IOC が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に IOC が無い	-	結果なし	0.0	0.0
+c2-1-fok	C2-1	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に FOK が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に FOK が無い	-	結果なし	0.0	0.0
+c2-1-stop	C2-1	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に stop が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に stop が無い	-	結果なし	0.0	0.0
+c2-1-reduceonly	C2-1	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-1-oco	C2-1	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-2-cancel	C2-2	値	正解と一致		b34d43b23d64e77f	正解と一致		b34d43b23d64e77f	2 回の実行で同じ	0.0	0.0
+c2-2-amend-price	C2-2	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に amend が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に amend が無い	-	結果なし	0.0	0.0
+c2-2-amend-qty	C2-2	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に amend が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に amend が無い	-	結果なし	0.0	0.0
+c2-2-partial	C2-2	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 4 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 4 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	0.0	0.0
+c2-3-tick	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0; avg_px.o2: 期待 9990.0 / 出力 9985.0	a7d427e34f23ebab	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0; avg_px.o2: 期待 9990.0 / 出力 9985.0	a7d427e34f23ebab	2 回の実行で同じ	0.0	0.0
+c2-3-minqty	C2-3	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-3-round	C2-3	能力	不一致	avg_px.o1: 期待 9990.0 / 出力 9985.0; avg_px.o2: 期待 10011.0 / 出力 10015.0	005c4e98dafd2450	不一致	avg_px.o1: 期待 9990.0 / 出力 9985.0; avg_px.o2: 期待 10011.0 / 出力 10015.0	005c4e98dafd2450	2 回の実行で同じ	0.0	0.0
+c2-3-stp	C2-3	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-3-jpx-session	C2-3	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-3-jpx-limit	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 100.0	8de7d96c6054302b	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 100.0	8de7d96c6054302b	2 回の実行で同じ	0.0	0.0
+c2-3-fx-weekend	C2-3	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-4-reject	C2-4	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-4-timeout	C2-4	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-4-unknown	C2-4	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-4-kill	C2-4	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に kill が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に kill が無い	-	結果なし	0.0	0.0
+c2-5-tier0	C2-5	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 0 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 0 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	0.0	0.0
+c2-5-tier1	C2-5	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 1 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 1 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	0.0	0.0
+c2-5-tier2	C2-5	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 2 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 2 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	0.0	0.0
+c2-5-tier3	C2-5	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 3 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 3 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	0.0	0.0
+c2-5-tier4	C2-5	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 4 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 段 4 を選ぶ口が無い(MatchEngine の受け身の注文は列の位置を追う型だけ)	-	結果なし	0.0	0.0
+c2-5-tier5	C2-5	能力	正解と一致		00b1ff46347bc7be	正解と一致		00b1ff46347bc7be	2 回の実行で同じ	0.0	0.0
+c2-5-queue-value	C2-5	値	正解と一致		814fd07ae5215137	正解と一致		814fd07ae5215137	2 回の実行で同じ	0.0	0.0
+c2-5-tier6	C2-5	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-6-none	C2-6	能力	正解と一致		9763d950e34c95bb	正解と一致		9763d950e34c95bb	2 回の実行で同じ	0.0	0.0
+c2-6-discount-at-entry	C2-6	能力	正解と一致		5166ef6d59243769	正解と一致		5166ef6d59243769	2 回の実行で同じ	0.0	0.0
+c2-6-snapshot-cap	C2-6	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 先行の取消の扱い snapshot_cap の口が無い(出した時に 1 回だけ cancelrate で割り引く型だけ, 254 行)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 先行の取消の扱い snapshot_cap の口が無い(出した時に 1 回だけ cancelrate で割り引く型だけ, 254 行)	-	結果なし	0.0	0.0
+c2-6-l3	C2-6	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 事象 l3_add を渡す口が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 事象 l3_add を渡す口が無い	-	結果なし	0.0	0.0
+c2-6-prob	C2-6	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 先行の取消の扱い prob の口が無い(出した時に 1 回だけ cancelrate で割り引く型だけ, 254 行)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 先行の取消の扱い prob の口が無い(出した時に 1 回だけ cancelrate で割り引く型だけ, 254 行)	-	結果なし	0.0	0.0
+c2-6-prob-power2	C2-6	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 先行の取消の扱い prob の口が無い(出した時に 1 回だけ cancelrate で割り引く型だけ, 254 行)	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 先行の取消の扱い prob の口が無い(出した時に 1 回だけ cancelrate で割り引く型だけ, 254 行)	-	結果なし	0.0	0.0
+c2-7-walk	C2-7	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-7-walk-exhaust	C2-7	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-7-impact-sqrt	C2-7	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-7-impact-permanent	C2-7	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-8-range	C2-8	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-8-both-required	C2-8	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-9-order-feed	C2-9	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-9-cancel-late	C2-9	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 遅延(cancel)を渡す口が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-early	C2-9	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 遅延(cancel)を渡す口が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-notice	C2-9	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に post_only が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に post_only が無い	-	結果なし	0.0	0.0
+c2-9-empirical	C2-9	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-10-taker	C2-10	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-10-maker	C2-10	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 費用 maker_rate を渡す口が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 費用 maker_rate を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-spread	C2-10	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-10-funding	C2-10	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-10-swap	C2-10	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-10-jpx-fee	C2-10	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-10-no-default	C2-10	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-10-source	C2-10	能力	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-11-pnl	C2-11	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-11-margin	C2-11	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-11-liquidation	C2-11	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-11-exposure	C2-11	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-11-legs	C2-11	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-11-split	C2-11	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-11-reverse-split	C2-11	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-11-jpy	C2-11	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 公開の口に market が無い	-	結果なし	0.0	0.0
+c2-12-jpx-bar-value	C2-12	値	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 事象 bar を渡す口が無い	-	結果なし	adapter: WonderTrader MatchEngine(08b230dd)(再現): 事象 bar を渡す口が無い	-	結果なし	0.0	0.0
+c2-12-jpx-wait	C2-12	能力	結果なし	変形: adapter: WonderTrader MatchEngine(08b230dd)(再現): 事象 bar を渡す口が無い	-	結果なし	変形: adapter: WonderTrader MatchEngine(08b230dd)(再現): 事象 bar を渡す口が無い	-	結果なし	0.0	0.0

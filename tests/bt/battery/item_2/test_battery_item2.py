@@ -181,3 +181,32 @@ def test_pool_is_machine_extracted_and_current():
     assert r.returncode == 0, r.stderr
     rows = list(csv.DictReader(open(HERE / "pool.tsv", encoding="utf-8"), delimiter="\t"))
     assert rows and all(row["rule"] for row in rows)
+
+
+def test_every_pool_candidate_has_an_install_record():
+    pool = {int(r["cand"]) for r in csv.DictReader(open(HERE / "pool.tsv", encoding="utf-8"), delimiter="\t")}
+    recs = {int(r["cand"]): r for r in csv.DictReader(open(HERE / "opponents" / "RUNNABILITY.tsv", encoding="utf-8"),
+                                                      delimiter="\t")}
+    assert pool == set(recs)
+    for c, r in recs.items():
+        assert r["result"] in ("走った", "走らなかった"), (c, r["result"])
+        if r["result"] == "走らなかった":
+            assert r["reason"] not in ("", "-"), c  # a candidate that did not run says why
+
+
+def test_every_survey_target_ran_every_scene():
+    import i2_targets as T
+    ids = {s["id"] for s in S.SCENES}
+    for k, t in {**T.TARGETS, **getattr(T, "SURVEY", {})}.items():
+        if k in ("new_impl", "mutant"):
+            continue
+        rows = list(csv.DictReader(open(HERE / "survey_results" / f"{k}.tsv", encoding="utf-8"), delimiter="\t"))
+        assert {r["scene"] for r in rows} == ids, k  # rule 4: every runnable tool through every scene
+
+
+def test_considered_passes_the_checker_and_has_no_blank_row():
+    text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
+    assert "(未記入)" not in text
+    r = subprocess.run([sys.executable, str(REPO / "scripts" / "check_bt_considered.py"),
+                        str(HERE / "opponents" / "CONSIDERED.md")], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-800:]

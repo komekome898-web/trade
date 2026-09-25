@@ -181,8 +181,7 @@ def test_v4_expected_hash_is_of_the_written_bytes():
 
 def test_every_scene_materializes_and_every_dataset_path_exists(tmp_path):
     import os
-    sys.path.insert(0, str(HERE))
-    import run_battery as R
+    R = _load(HERE / "run_battery.py", "i1_run_battery_under_test")  # by path: other items also have a run_battery.py
     for sc in S.SCENES:
         for inp in [sc["input"]] + ([sc["variant"]] if "variant" in sc else []):
             if not inp.get("files"):

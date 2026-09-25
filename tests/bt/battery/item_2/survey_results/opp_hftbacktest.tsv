@@ -1,0 +1,67 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+c2-1-market	C2-1	値	正解と一致		b9014fa448da7885	正解と一致		b9014fa448da7885	2 回の実行で同じ	3.668	3.792
+c2-1-limit	C2-1	値	正解と一致		97c85aa17fa2f9b6	正解と一致		97c85aa17fa2f9b6	2 回の実行で同じ	0.001	0.001
+c2-1-postonly	C2-1	値	正解と一致		a43708d42c305c31	正解と一致		a43708d42c305c31	2 回の実行で同じ	0.001	0.001
+c2-1-ioc	C2-1	値	正解と一致		f41dc8ae3638b81e	正解と一致		f41dc8ae3638b81e	2 回の実行で同じ	0.0	0.0
+c2-1-fok	C2-1	値	正解と一致		e7341c8ec27150e8	正解と一致		e7341c8ec27150e8	2 回の実行で同じ	0.0	0.0
+c2-1-stop	C2-1	値	結果なし	adapter: hftbacktest 2.4.4: 公開の口に stop が無い	-	結果なし	adapter: hftbacktest 2.4.4: 公開の口に stop が無い	-	結果なし	0.0	0.0
+c2-1-reduceonly	C2-1	値	結果なし	adapter: hftbacktest 2.4.4: 公開の口に reduce_only が無い	-	結果なし	adapter: hftbacktest 2.4.4: 公開の口に reduce_only が無い	-	結果なし	0.0	0.0
+c2-1-oco	C2-1	値	結果なし	adapter: hftbacktest 2.4.4: 公開の口に oco が無い	-	結果なし	adapter: hftbacktest 2.4.4: 公開の口に oco が無い	-	結果なし	0.0	0.0
+c2-2-cancel	C2-2	値	正解と一致		5b3702224cbcc6b8	正解と一致		5b3702224cbcc6b8	2 回の実行で同じ	0.105	0.087
+c2-2-amend-price	C2-2	値	正解と一致		f3e52705c8ab76a6	正解と一致		f3e52705c8ab76a6	2 回の実行で同じ	0.099	0.091
+c2-2-amend-qty	C2-2	能力	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い none の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い none の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	0.0	0.0
+c2-2-partial	C2-2	能力	結果なし	adapter: hftbacktest 2.4.4: 段 4 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 段 4 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-3-tick	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0	6e9bab87a184fbd1	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0	6e9bab87a184fbd1	2 回の実行で同じ	0.001	0.001
+c2-3-minqty	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 0.005	ffb41898bd1f28b2	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 0.005	ffb41898bd1f28b2	2 回の実行で同じ	0.001	0.001
+c2-3-round	C2-3	能力	不一致	avg_px.o1: 期待 9990.0 / 出力 9991.0; avg_px.o2: 期待 10011.0 / 出力 10010.0	116ef2b2c8d05ef7	不一致	avg_px.o1: 期待 9990.0 / 出力 9991.0; avg_px.o2: 期待 10011.0 / 出力 10010.0	116ef2b2c8d05ef7	2 回の実行で同じ	0.104	0.093
+c2-3-stp	C2-3	値	不一致	status.o2: 期待 canceled / 出力 filled; filled.o2: 期待 0.0 / 出力 1.0	adcbfa8ed9a282d1	不一致	status.o2: 期待 canceled / 出力 filled; filled.o2: 期待 0.0 / 出力 1.0	adcbfa8ed9a282d1	2 回の実行で同じ	0.001	0.001
+c2-3-jpx-session	C2-3	値	不一致	avg_px.o1: 期待 1510.0 / 出力 1501.0; first_fill_t.o1: 期待 ge 1767670200000000000 / 出力 1767667500000000000	df5259bae2a760d2	不一致	avg_px.o1: 期待 1510.0 / 出力 1501.0; first_fill_t.o1: 期待 ge 1767670200000000000 / 出力 1767667500000000000	df5259bae2a760d2	2 回の実行で同じ	0.001	0.0
+c2-3-jpx-limit	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 100.0	fac8265fe19709e4	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 100.0	fac8265fe19709e4	2 回の実行で同じ	0.001	0.001
+c2-3-fx-weekend	C2-3	値	不一致	avg_px.o1: 期待 150.103 / 出力 150.00300000000001; first_fill_t.o1: 期待 ge 1768168800000000000 / 出力 1768014000000000000	793645d5053d1eee	不一致	avg_px.o1: 期待 150.103 / 出力 150.00300000000001; first_fill_t.o1: 期待 ge 1768168800000000000 / 出力 1768014000000000000	793645d5053d1eee	2 回の実行で同じ	0.0	0.001
+c2-4-reject	C2-4	値	結果なし	adapter: hftbacktest 2.4.4: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-timeout	C2-4	値	結果なし	adapter: hftbacktest 2.4.4: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-unknown	C2-4	値	結果なし	adapter: hftbacktest 2.4.4: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-kill	C2-4	値	結果なし	adapter: hftbacktest 2.4.4: 公開の口に kill が無い	-	結果なし	adapter: hftbacktest 2.4.4: 公開の口に kill が無い	-	結果なし	0.0	0.0
+c2-5-tier0	C2-5	能力	結果なし	adapter: hftbacktest 2.4.4: 段 0 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 段 0 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier1	C2-5	能力	結果なし	adapter: hftbacktest 2.4.4: 段 1 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 段 1 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier2	C2-5	能力	結果なし	adapter: hftbacktest 2.4.4: 段 2 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 段 2 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier3	C2-5	能力	結果なし	adapter: hftbacktest 2.4.4: 段 3 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 段 3 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier4	C2-5	能力	結果なし	adapter: hftbacktest 2.4.4: 段 4 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 段 4 の約定の模型が無い(列の模型 = 段 5 だけ)	-	結果なし	0.0	0.0
+c2-5-tier5	C2-5	能力	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い none の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い none の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	0.0	0.0
+c2-5-queue-value	C2-5	値	正解と一致		73d95efd1f72fe54	正解と一致		73d95efd1f72fe54	2 回の実行で同じ	0.0	0.0
+c2-5-tier6	C2-5	能力	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	0.0	0.0
+c2-6-none	C2-6	能力	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い none の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い none の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	0.0	0.0
+c2-6-discount-at-entry	C2-6	能力	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い discount_at_entry の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い discount_at_entry の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	0.0	0.0
+c2-6-snapshot-cap	C2-6	能力	正解と一致		29f6885ab681fb3e	正解と一致		29f6885ab681fb3e	2 回の実行で同じ	0.0	0.0
+c2-6-l3	C2-6	能力	結果なし	adapter: hftbacktest 2.4.4: 事象 l3_add を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 事象 l3_add を渡す口が無い	-	結果なし	0.0	0.0
+c2-6-prob	C2-6	能力	正解と一致		1196a5edcb68e53f	正解と一致		1196a5edcb68e53f	2 回の実行で同じ	0.0	0.0
+c2-6-prob-power2	C2-6	値	正解と一致		6daf9999e2305a5c	正解と一致		6daf9999e2305a5c	2 回の実行で同じ	0.0	0.0
+c2-7-walk	C2-7	値	不一致	avg_px.o1: 期待 10002.266666666666 / 出力 10005.0	4bfb3d392c31719a	不一致	avg_px.o1: 期待 10002.266666666666 / 出力 10005.0	4bfb3d392c31719a	2 回の実行で同じ	0.0	0.0
+c2-7-walk-exhaust	C2-7	値	不一致	avg_px.o1: 期待 10001.583333333334 / 出力 10002.0	963f3142b0c7b45b	不一致	avg_px.o1: 期待 10001.583333333334 / 出力 10002.0	963f3142b0c7b45b	2 回の実行で同じ	0.0	0.0
+c2-7-impact-sqrt	C2-7	能力	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	0.0	0.0
+c2-7-impact-permanent	C2-7	能力	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	0.0	0.0
+c2-8-range	C2-8	値	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	0.0	0.0
+c2-8-both-required	C2-8	能力	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	adapter: hftbacktest 2.4.4: 市場影響の関数・楽観と悲観を同時に回す口が無い(待ち行列の模型と取引所の模型だけ)	-	結果なし	0.0	0.0
+c2-9-order-feed	C2-9	値	正解と一致		0552504d75c927a7	正解と一致		0552504d75c927a7	2 回の実行で同じ	0.0	0.0
+c2-9-cancel-late	C2-9	値	結果なし	adapter: hftbacktest 2.4.4: 遅延(cancel)を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-early	C2-9	値	結果なし	adapter: hftbacktest 2.4.4: 遅延(cancel)を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-notice	C2-9	値	正解と一致		8442346d1e628128	正解と一致		8442346d1e628128	2 回の実行で同じ	0.001	0.0
+c2-9-empirical	C2-9	能力	結果なし	adapter: hftbacktest 2.4.4: 遅延(order)の分布 empirical を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 遅延(order)の分布 empirical を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-taker	C2-10	値	正解と一致		18a0a415232e253d	正解と一致		18a0a415232e253d	2 回の実行で同じ	0.0	0.0
+c2-10-maker	C2-10	値	正解と一致		23b1cfbaa4125d17	正解と一致		23b1cfbaa4125d17	2 回の実行で同じ	0.0	0.0
+c2-10-spread	C2-10	値	結果なし	adapter: hftbacktest 2.4.4: 板の事象が無い場面は渡せない(約定は板の深さの事象と約定の事象から決まる)	-	結果なし	adapter: hftbacktest 2.4.4: 板の事象が無い場面は渡せない(約定は板の深さの事象と約定の事象から決まる)	-	結果なし	0.0	0.0
+c2-10-funding	C2-10	値	結果なし	adapter: hftbacktest 2.4.4: 事象 funding を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 事象 funding を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-swap	C2-10	値	結果なし	adapter: hftbacktest 2.4.4: 事象 rollover を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 事象 rollover を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-jpx-fee	C2-10	値	結果なし	adapter: hftbacktest 2.4.4: 費用 fee_table を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 費用 fee_table を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-no-default	C2-10	能力	不一致	変形を断らずに走った(単一の結果を返した)	e05bf35021559ba3	不一致	変形を断らずに走った(単一の結果を返した)	e05bf35021559ba3	2 回の実行で同じ	0.001	0.001
+c2-10-source	C2-10	能力	不一致	変形を断らずに走った(単一の結果を返した)	e05bf35021559ba3	不一致	変形を断らずに走った(単一の結果を返した)	e05bf35021559ba3	2 回の実行で同じ	0.001	0.001
+c2-11-pnl	C2-11	値	不一致	account.realized: 期待 40.0 / 出力に無い(KeyError: 'realized'); account.unrealized: 期待 30.0 / 出力に無い(KeyError: 'unrealized')	0968445adf9d75f5	不一致	account.realized: 期待 40.0 / 出力に無い(KeyError: 'realized'); account.unrealized: 期待 30.0 / 出力に無い(KeyError: 'unrealized')	0968445adf9d75f5	2 回の実行で同じ	0.001	0.001
+c2-11-margin	C2-11	値	結果なし	adapter: hftbacktest 2.4.4: 口座の leverage を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 口座の leverage を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-liquidation	C2-11	値	結果なし	adapter: hftbacktest 2.4.4: 口座の leverage を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 口座の leverage を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-exposure	C2-11	値	不一致	account.exposure_ns: 期待 3999000000 / 出力に無い(KeyError: 'exposure_ns')	4bb8a89d162bf457	不一致	account.exposure_ns: 期待 3999000000 / 出力に無い(KeyError: 'exposure_ns')	4bb8a89d162bf457	2 回の実行で同じ	0.001	0.001
+c2-11-legs	C2-11	値	正解と一致		f4e6fa8bbcb2f156	正解と一致		f4e6fa8bbcb2f156	2 回の実行で同じ	0.001	0.001
+c2-11-split	C2-11	値	結果なし	adapter: hftbacktest 2.4.4: 事象 corporate を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-reverse-split	C2-11	値	結果なし	adapter: hftbacktest 2.4.4: 事象 corporate を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-jpy	C2-11	値	結果なし	adapter: hftbacktest 2.4.4: 事象 fx_rate を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 事象 fx_rate を渡す口が無い	-	結果なし	0.0	0.0
+c2-12-jpx-bar-value	C2-12	値	結果なし	adapter: hftbacktest 2.4.4: 事象 bar を渡す口が無い	-	結果なし	adapter: hftbacktest 2.4.4: 事象 bar を渡す口が無い	-	結果なし	0.0	0.0
+c2-12-jpx-wait	C2-12	能力	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い none の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	adapter: hftbacktest 2.4.4: 先行の取消の扱い none の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)	-	結果なし	0.0	0.0

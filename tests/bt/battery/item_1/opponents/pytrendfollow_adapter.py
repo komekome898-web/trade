@@ -1,7 +1,8 @@
-"""PyTrendFollow (catalogue 87, SCAN 7857 行; git clone read through a .pth in venv item_0/c87).
+"""PyTrendFollow (catalogue 87, SCAN 7857 行; git clone at 439232a read through a .pth; venv item_1/c87,
+re-cloned 2026-09-25 after item 0's clone and venv were removed).
 
-Read in the clone (`_dl/c87`): data comes from its own downloaders/stores (Quandl,
-IB) into its HDF store; `grep -rln "read_csv\\|DictReader\\|csv.reader" _dl/c87 --include=*.py`
+Read in the clone (`item_1/_dl/c87`): data comes from its own downloaders/stores (Quandl,
+IB) into its HDF store; `grep -rln "read_csv\\|DictReader\\|csv.reader" item_1/_dl/c87 --include=*.py`
 -> 0 files; the account curve (`trading/accountcurve.py`) is a vectorised
 computation over position and price series; no event path, no corporate actions,
 no universe by date.

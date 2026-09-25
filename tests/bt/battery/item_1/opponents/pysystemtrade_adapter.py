@@ -1,6 +1,7 @@
-"""PySystemtrade (catalogue 3, SCAN 9401 行; git clone read through a .pth in venv item_0/c3).
+"""PySystemtrade (catalogue 3, SCAN 9401 行; sparse git clone at 8958c49 without data/, read through a .pth;
+venv item_1/c3, re-cloned 2026-09-25 after item 0's clone and venv were removed).
 
-Read in the clone (`_dl/c3`, sysdata/csv/):
+Read in the clone (`item_1/_dl/c3`, sysdata/csv/):
 - `csvFuturesContractPriceData(datapath, config=ConfigCsvFuturesPrices(input_date_index_name,
   input_skiprows, input_skipfooter, input_date_format, input_column_mapping))` reads
   per-contract price files named `<INSTRUMENT>_<YYYYMMDD>.csv` with ONE date index

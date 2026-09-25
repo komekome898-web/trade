@@ -1,0 +1,67 @@
+cand	name	tried	result	targets	reason
+1	Basana	PyPI の basana を項目0 が入れた venv item_0/basana で走らせた	走った	opp_basana	-
+2	Backtrader	PyPI の backtrader を項目0 が入れた venv item_0/backtrader で走らせた	走った	opp_backtrader	-
+3	PySystemtrade	項目0 の venv item_0/c3(git clone を .pth)で走らせた。17:06Z の実行のあと、この venv は他の役に消された(この役は消していない)	走った	opp_pysystemtrade	-
+4	PyBroker	項目0 の venv item_0/lib-pybroker で走らせた。17:17Z の実行のあと、この venv は他の役に消された	走った	opp_lib_pybroker	-
+5	bt・台帳の名は Lean CLI	PyPI の bt 1.2.3(SCAN 6849 行の名は bt。台帳の名 Lean CLI は SCAN の行と合わない)を隔離した venv item_2/bt に入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_5.log)	走った	opp_bt	-
+6	Ziplime	PyPI の ziplime 1.19.16(項目0 が検査した版)を venv item_2/ziplime に入れ直した(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_6.log)。1 秒の足は 240 秒で終わらず打ち切った(同じ記録の試し)	走った	opp_ziplime	-
+7	Superalgos	導入しない。Node.js の平台(SCAN 6855・6986 行)で、Python の venv に入れる配布物が無い	走らなかった	-	導入の形が違う
+8	OpenTrader	導入しない(項目0 の記録を使う)	走らなかった	-	危険(§6-1): tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 8 の行(postinstall が prisma の生成・移行・種入れを走らせる、SCAN 3809 行)
+10	fast-trade	項目0 の venv item_0/fast-trade-r17 で走らせた。17:04Z の実行のあと、この venv は他の役に消された	走った	opp_fast_trade	-
+11	OctoBot・台帳の名は python3	導入しない(項目0 の記録を使う)	走らなかった	-	動かなかった: tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 11 の行(検証は触手を要し、既定の触手は PyPI の外の zip で導入前の検査を通せない)
+12	pybotters	PyPI の pybotters を項目0 が入れた venv item_0/pybotters で走らせた	走った	opp_pybotters	-
+13	DeviaVir/zenbot	導入しない(項目0 の記録を使う)	走らなかった	-	危険(§6-1): tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 13 の行(postinstall が webpack と追加の外部取得を走らせる、SCAN 2966 行)
+15	Mendl-Labs/BacktestingCore	導入しない(項目0 の記録を使う)。一次資料は読むだけの clone(read/c15)	走らなかった	-	鍵・登録: tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 15 の行(workspace の依存 ultra-logger が資格情報を要する)
+16	Luczinsritter/event_driven_backtesting_engine	項目0 の venv item_0/luczinsritter で走らせた。17:16Z の実行のあと、この venv は他の役に消された	走った	opp_luczinsritter	-
+18	zipline-reloaded	項目0 の venv item_0/zipline-reloaded で走らせた。17:13Z の実行のあと、この venv は他の役に消された	走った	opp_zipline_reloaded	-
+19	Jesse	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
+20	VnPy	PyPI の vnpy を項目0 が入れた venv item_0/vnpy で走らせた(足とティックの 2 つの型)	走った	opp_vnpy@tick,opp_vnpy@bar	-
+21	Qlib	項目1 が入れた venv item_1/qlib で走らせた	走った	opp_qlib	-
+23	hftbacktest	項目1 が入れ直した venv item_1/hftbacktest(hftbacktest 2.4.4)で走らせた	走った	opp_hftbacktest	-
+32	FlashAlpha-lab/flashalpha-fill-simulator	git clone を venv item_2/c32 に .pth(依存なし)(scratchpad bt/venvs/item_2/logs/c32.log)	走った	opp_flashalpha_fillsim	-
+33	SarthakDalmia1/backtesting_execution_simulator	項目0 の構築(CMake のライブラリ)と項目2 の driver(drivers/i2drv33)で走らせた	走った	opp_sarthak_execsim	-
+34	SLMolenaar/QuantCore	PyPI の QuantCore を項目0 が入れた venv item_0/quantcore で走らせた	走った	opp_quantcore	-
+35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	項目0 の venv item_0/c35_run/.venv で走らせた	走った	opp_thirupathikannan_execsim	-
+36	shubhamcodez/Market-Impact-Model	git clone を読んだ(src/c36)。impactModel.py はモジュールの頭で Input/*.csv(実データ)を読み当てはめるだけの台本で、呼べる関数の口が無い(1-9・65-81 行)	走らなかった	-	呼ぶ口が無い(台本): 実データを読まずに呼べる関数が無い
+37	ThePredictiveDev/Automated-Financial-Market-Trading-System	PyPI の trading_simulator を項目0 が入れた venv item_0/c37 で走らせた	走った	opp_predictivedev_tradesim	-
+38	microsoft/MarS	導入しない(項目0 の記録を使う)	走らなかった	-	一括の取得(数百 MB 以上): tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 38 の行(torch==2.6.0 ほか)
+40	OpenMarket	導入しない(項目0 の記録を使う)	走らなかった	-	外部の場: tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 40 の行(導入する機関が無く、場に当方のデータを渡すことになる)
+41	prediction-market-backtesting	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
+45	ForexTester	導入しない。検証はウェブの場(SCAN 10082 行)で、導入する配布物が無い	走らなかった	-	外部の場
+50	AlgoTest	導入しない。検証はウェブの場(SCAN 10088 行)で、導入する配布物が無い	走らなかった	-	外部の場
+51	QUANTAXIS	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
+53	Rqalpha	PyPI の rqalpha を項目0 の venv item_0/rqalpha で走らせた。17:19Z の実行のあと、この venv は他の役に消された	走った	opp_rqalpha	-
+54	finmarketpy	項目1 が入れ直した venv item_1/finmarketpy で走らせた	走った	opp_finmarketpy	-
+57	WonderTrader	導入しない(項目0 の記録を使う)。MatchEngine.cpp を一次資料から再現した(opponents/repro_57_wondertrader_match.py)	走らなかった	opp_repro_57_wondertrader	導入前の検査を通せない・依存が repository の外: tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 57 の行
+58	nautilus_trader	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
+60	Hikyuu	pip install --dry-run で依存を読んだ(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_hikyuu.log: 104 件、PySide6 ほか)。入れていない	走らなかった	-	一括の取得(数百 MB 以上): PySide6 の画面の部品を含む 104 件
+61	barter-rs	項目0 が構築した driver(venv item_0/c61 の bin/c61_driver)で走らせた	走った	opp_barter	-
+63	trade-frame	導入しない(項目0 の記録を使う)	走らなかった	-	動かなかった: tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 63 の行(CMake が Boost を見つけられず止まった)
+65	aat	項目0 の venv item_0/c65(依存と構築済みの binding)に、取り直した clone(src/c65、commit c4a07d41)を読ませた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_65.log)	走った	opp_aat	-
+67	lumibot	pip install --dry-run で依存を読んだ(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_lumibot.log: 320 件、google-adk・litellm・boto3 ほか)。入れていない	走らなかった	-	一括の取得(数百 MB 以上): 依存 320 件
+70	PineForge	clone(src/c70、commit 5e62602c)を道具の CMake で構築し、項目2 の C の driver(drivers/i2drv70)で走らせた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_70.log)	走った	opp_pineforge	-
+72	QTradeX	PyPI の QTradeX 1.8.0 を venv item_2/qtradex に入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_qtradex.log)	走った	opp_qtradex	-
+73	vectorbt	項目1 が入れた venv item_1/vectorbt(vectorbt 1.1.0)で走らせた	走った	opp_vectorbt	-
+87	PyTrendFollow	項目0 の venv item_0/c87 で走らせた。17:04Z の実行のあと、この venv は他の役に消された	走った	opp_pytrendfollow	-
+90	Oddpool/PredictionMarketBench	git clone を venv item_2/c90 に .pth(依存なし)(scratchpad bt/venvs/item_2/logs/c90.log)	走った	opp_oddpool_bench	-
+91	braedonsaunders/homerun	git clone を取り直し(src/c91、commit 6cb8ea56)、venv item_2/c91 に httpx・pydantic・fastapi を入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_91.log)	走った	opp_homerun	-
+92	prediction-market-backtester	git clone を venv item_2/c92 に .pth、pyproject の依存を PyPI から(scratchpad bt/venvs/item_2/logs/c92.log)	走った	opp_pm_backtester	-
+94	mote/backtest	導入しない。backtest.py は Python 2 の文法(print 文、356 行)で、この環境に Python 2 は無い。一次資料から再現した(opponents/repro_94_mote_backtest.py)	走らなかった	opp_repro_94_mote	動かなかった: Python 2 の台本
+95	sacha9214/polymarket-fill-model	git clone を venv item_2/c95 に .pth(標準の部品だけ)(scratchpad bt/venvs/item_2/logs/c95.log)	走った	opp_polymarket_fillmodel	-
+96	sashankzade/limit-order-book-matching-engine	clone の照合の部分を小さな C++ の driver(drivers/i2drv96)で構築して走らせた	走った	opp_sashankzade_lob	-
+97	kahan15/Limit-Order-Book-Simulator	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
+98	mihircoding/limitOrderBook	git clone を取り直し(src/c98、commit 6cc05366)、venv item_2/c98 に numpy を入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_98.log)	走った	opp_mihircoding_lob	-
+99	NickGardi/orderbooksim	git clone を取り直し(src/c99、commit b767b0c4)、venv item_2/c99 に sortedcontainers を入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_99.log)	走った	opp_nickgardi_orderbooksim	-
+100	xavierchuan/OrderMatchingEngine	導入しない(SCAN 10447 行: 公開された原典の照合の 4 関数の本体が空)	走らなかった	-	埋まりを決める本体が無い
+101	akurkar07/OrderBook	項目0 の記録どおり小さな C++ の driver(drivers/i2drv101)を構築して走らせた	走った	opp_akurkar07_orderbook	-
+102	3yit/Limit-Order-Book-Simulator	項目0 の venv item_0/c102(道具の CMake の Python の binding)で走らせた	走った	opp_3yit_lob	-
+103	IsaacCheng9/order-book-simulator	git clone を取り直し(src/c103)、項目0 が入れた Python 3.14.7 の venv item_2/c103 に sortedcontainers・pydantic を入れた(scratchpad bt/venvs/item_2/logs/i2_r1_scenekeeper_install_103.log)	走った	opp_isaaccheng_obsim	-
+104	jxm35/LimitOrderBook-MatchingEngine	clone の照合の部分を小さな C++ の driver(drivers/i2drv104)で構築して走らせた	走った	opp_jxm35_lob	-
+105	DaniyalMlk/slippage	項目0 の venv item_0/c105 で走らせた	走った	opp_daniyalmlk_slippage	-
+106	almgren-chriss	導入しない(SCAN 5891 行: PyPI の project_urls の綴りが 1 文字ずれ、配布元の一致が委任文 §6-1 の検査を通らない。導入は止めたまま、SCAN 5893 行)	走らなかった	-	導入前の検査を通せない
+107	sigc	項目0 の venv item_0/c107(cargo で構築した sigc)で走らせた	走った	opp_sigc	-
+109	arXiv:2509.05107	導入しない(SCAN 10462 行: 論文で、実装への link が無い)	走らなかった	-	実装が無い
+111	HKUDS/Vibe-Trading	導入も実行も (b) もしない	走らなかった	-	危険: 道具台帳 §3 の 11 件
+116	braverock/blotter	導入しない。R の package(SCAN 5246 行)で、この環境に R が無い	走らなかった	-	言語の実行系が無い
+119	peernagy/lob_bench	git clone を読んだ(src/c119)。requirements は jax・jaxlob ほか(requirements.txt)で、生成の模型の出力を測る道具(impact.py 1-3 行)	走らなかった	-	埋まりを決める口が無い(測る側)
+123	carlos8f/zenbot	導入しない(項目0 の記録を使う)	走らなかった	-	危険(§6-1): tests/bt/battery/item_0/opponents/RUNNABILITY.tsv の候補 123 の行(13 と同じ版・同じ postinstall)

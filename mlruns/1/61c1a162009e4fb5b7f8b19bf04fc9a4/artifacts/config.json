@@ -1,0 +1,53 @@
+{
+  "instrument": "FX_BTC_JPY",
+  "strategy": {
+    "kind": "fixed_times",
+    "legs": [
+      {
+        "t_ns": 1767229200000000000,
+        "side": "buy",
+        "qty": 0.01
+      },
+      {
+        "t_ns": 1767229500000000000,
+        "side": "sell",
+        "qty": 0.01
+      },
+      {
+        "t_ns": 1767232800000000000,
+        "side": "buy",
+        "qty": 0.01
+      },
+      {
+        "t_ns": 1767233100000000000,
+        "side": "sell",
+        "qty": 0.01
+      },
+      {
+        "t_ns": 1767236400000000000,
+        "side": "buy",
+        "qty": 0.01
+      },
+      {
+        "t_ns": 1767236700000000000,
+        "side": "sell",
+        "qty": 0.01
+      }
+    ]
+  },
+  "order_type": "market",
+  "fill": {
+    "market": "next_trade_price"
+  },
+  "latency_ns": {
+    "feed": 0,
+    "order": 0,
+    "cancel": 0
+  },
+  "costs": {
+    "maker_fee_rate": 0.0,
+    "taker_fee_rate": 0.0,
+    "funding": "none",
+    "source": "\u5408\u6210\u306e\u5834\u9762\u306e\u5ba3\u8a00(\u8cbb\u7528 0 \u3092\u660e\u793a)"
+  }
+}
