@@ -468,7 +468,7 @@ def step_start(fname, lno):
 CLASSIFY_RE = re.compile(r"^cat8_classify: complete step=(\S+):(\d+) hits=(\d+) matched=(\d+) unmatched=(\d+) rules=(\d+) candidate=(8-\d{3})$", re.M)
 
 
-def classified_searches(rnd, line_judged, errs):
+def classified_searches(rnd, line_judged, errs, rule_table=None):
     """15 回目以降: cat8_classify.py で決まりに当てた検索の手(見出しの行の番号)の集まり。決まりに当たらなかった行は
     `### 当たりの判定(行ごと)` の表に理由つきで要る(無ければ errs に足し、その検索は数えない)。"""
     fname = "20260923_tools_8_run%s.log" % rnd
@@ -485,6 +485,24 @@ def classified_searches(rnd, line_judged, errs):
             errs.append("生ログ %s: cat8_classify.py の手の決まりに当たらなかった行 %d 件が `### 当たりの判定(行ごと)` の表に理由つきで無い: %s" % (fname, len(miss), " ".join(miss[:3])))
             continue
         st = step_start(fname, int(m.group(2)))
+        # 決まりごとの行(id / 正規表現 / 理由 / 取った行 / 割合)と `  file` の行を、報告の `### 決まりの一覧` と
+        # 突き合わせる(監査 79 回目の指摘 3)。
+        got = {}
+        for ln in blk.splitlines():
+            ln = ln[2:] if ln.startswith("| ") else ln
+            c = ln.split("\t")
+            if len(c) == 5 and re.fullmatch(r"\d+", c[3]) and c[4].endswith("%") and c[0] not in ("unmatched",):
+                got[c[0]] = [c[1], c[2], int(c[3]), 0]
+            elif ln.startswith("  file\t") and len(c) == 4 and c[1] in got:
+                got[c[1]][3] += 1
+        if rule_table is not None:
+            want = {rid: v for (s_, rid), v in rule_table.items() if s_ == st}
+            bad = [rid for rid in got if want.get(rid) != [got[rid][0], got[rid][1], str(got[rid][2]), str(got[rid][3])]]
+            extra = [rid for rid in want if rid not in got]
+            if bad or extra:
+                errs.append("生ログ %s:%s: cat8_classify.py の決まりが `### 決まりの一覧` の表と合わない(無いか値が違う: %s / 出力に無い: %s)"
+                            % (fname, st, " ".join(bad[:5]) or "-", " ".join(extra[:5]) or "-"))
+                continue
         if st:
             done.add(st)
     return done
@@ -541,10 +559,18 @@ def cmd_check_elements(a):
     section_text = "\n".join(lines[st:en])
     # `### 当たりの判定` の表: | ファイルの道 | 当たった行の数 | 述語に当たらない理由 |(監査 67 回目の指摘 1。理由の中身は監査で読む)
     hit_judged, in_hj, line_judged, in_lj = {}, False, {}, False
+    rule_table, in_rl = {}, False
     for ln in lines[st:en]:
         if re.match(r"^#{2,4} ", ln):
+            in_rl = "決まりの一覧" in ln
             in_lj = "当たりの判定(行ごと)" in ln
             in_hj = "当たりの判定" in ln and not in_lj
+            continue
+        if in_rl and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
+            c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
+            mm = re.fullmatch(r"`?docs/DATA/probes/(\S+?):(\d+)`?", c[0]) if c else None
+            if len(c) == 6 and mm:
+                rule_table[(step_start(mm.group(1), mm.group(2)), c[1].strip("`"))] = [c[2].strip("`"), c[3], c[4], c[5]]
             continue
         if in_lj and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
             c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
@@ -557,7 +583,7 @@ def cmd_check_elements(a):
             if len(c) >= 3 and c[0] not in ("ファイルの道", "道"):
                 hit_judged[c[0].strip("`")] = c[2]
     classify_errs = []
-    classified = classified_searches(a.round, line_judged, classify_errs) if a.round and int(a.round) >= 15 else set()
+    classified = classified_searches(a.round, line_judged, classify_errs, rule_table) if a.round and int(a.round) >= 15 else set()
     questions, in_q = [], False
     for ln in lines[st:en]:
         if re.match(r"^#{2,4} ", ln):

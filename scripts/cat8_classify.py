@@ -30,16 +30,21 @@ spread evenly over what it took (audit 78, finding 5: the matched side must be r
 A rule takes a line only where its match overlaps a text the search pattern matched, so a
 rule about another word of the line (`the` in "Recreate the golden samples") leaves the line
 unmatched.
-A line where the searched word is part of a name being defined (`def replay_x`, `class
-GoldenTest`, `function replay(`, `fn`, `func`, `struct`, `interface`, `impl`) is never
+A line where the searched word is part of a name that follows one of the keywords in DEF_KW
+(`def replay_x`, `class GoldenTest`, `const replay_helper`, ...) is never
 taken by a rule and always comes out as unmatched, so it is judged line by line (audit 78,
 finding 1: a narrow rule with a false reason took the definition of the feature itself).
 What this does NOT stop: (1) a rule that holds the searched word with generic context written
 on purpose (for example `\bthe golden`); (2) a narrow rule whose reason is false for the lines
-it takes, when those lines are not definitions. Both pass; only a reader of the printed rules,
+it takes, when those lines are not definitions; (3) a definition written without any of the
+DEF_KW keywords (`replay_helper = 1` in Python, `(defun replay ...)`, a YAML key). DEF_KW covers
+only the words listed in it (audit 79, finding 1). Both pass; only a reader of the printed rules,
 per-file counts and samples catches them, the same as a false reason in a line-by-line table.
 """
 import argparse
+DEF_KW = ("def", "class", "function", "fn", "func", "struct", "interface", "impl", "const", "let", "var",
+          "val", "type", "typedef", "enum", "trait", "module", "namespace", "macro", "record", "object", "sub",
+          "proc", "method", "export")
 import re
 import sys
 
@@ -111,7 +116,7 @@ for ln in block[2:end]:
         for w in words:
             if rx.search(w):
                 broad.append((rid, w, m.group(1), m.group(2)))
-    if any(re.search(r"\b(def|class|function|fn|func|struct|interface|impl)\s+[\w$.]*" + re.escape(w), text)
+    if any(re.search(r"\b(" + "|".join(DEF_KW) + r")\s+[\w$.]*" + re.escape(w), text)
            for w in words):
         forced += 1
         unmatched.append((m.group(1), m.group(2), text))
