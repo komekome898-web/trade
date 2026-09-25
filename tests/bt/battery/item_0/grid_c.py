@@ -143,3 +143,58 @@ def problems(scenes, rows) -> list[tuple]:
         elif v[0] not in VERDICTS or v != want[k]:
             out.append(("判断が covers と違う", k, v, want[k]))
     return out
+
+
+# ---------------------------------------------------------------- round r13-1: the materials role's note
+# LEAD_DESIGN.md section 9.2 item 33: per configured target, the cells the table counts ("場面にした") whose event type
+# entered none of the covering scenes' runs for that target. Made from the table and the runner's records only; it
+# never changes a verdict. A market type entered when it is in a covering scene's `types_in`; the clock and the three
+# order notices when the request that gives them (scenes.REQUEST_TYPES) is in a covering scene's `requests`. A cell
+# whose covering scenes all have no request record (`requests` null: an adapter that does not record requests) is
+# listed apart ("記録なし"), never as entered.
+def not_entered(rows, records: dict) -> dict:
+    """{"入らなかった": [cell, ...], "記録なし": [cell, ...]}; cell = (viewpoint, event, see-path, extra).
+    `records` = {scene id: {"types_in": [event type, ...], "requests": [kind, ...] or None}} of one configured target."""
+    import scenes as _scenes
+    gives = {e: k for k, es in _scenes.REQUEST_TYPES.items() for e in es}
+    miss, unknown = [], []
+    for r in rows:
+        if r["verdict"] != VERDICTS[0]:
+            continue
+        cell = (r["viewpoint"], r["event"], r["see"], r["extra"])
+        recs = [records[i] for i in r["scenes"] if records.get(i) is not None]
+        if r["event"] in gives:
+            known = [x for x in recs if x.get("requests") is not None]
+            if not known:
+                unknown.append(cell)
+            elif not any(gives[r["event"]] in x["requests"] for x in known):
+                miss.append(cell)
+        elif not any(r["event"] in (x.get("types_in") or []) for x in recs):
+            miss.append(cell)
+    return {"入らなかった": miss, "記録なし": unknown}
+
+
+def records_from_tsv(path) -> dict:
+    """{scene id: {"types_in", "requests"}} from one runner output (run_battery.py's columns, round r13-1)."""
+    import json
+    csv.field_size_limit(1 << 30)
+    out = {}
+    with open(path, encoding="utf-8") as f:
+        for row in csv.DictReader(f, delimiter="\t"):
+            out[row["scene_id"]] = {"types_in": json.loads(row["types_in"]), "requests": json.loads(row["requests"])}
+    return out
+
+
+def not_entered_note(path, scenes) -> str:
+    """The note line of one configured target for the materials role's table (the cells named, no target name)."""
+    got = not_entered(table(scenes), records_from_tsv(path))
+    fmt = lambda cs: "、".join(f"{v} {e}/{s}{'/' + x if x else ''}" for v, e, s, x in cs) or "無し"
+    return (f"場面にしたが、この対象には型が入らなかった升目: {fmt(got['入らなかった'])}。"
+            f"頼みの記録が無く入ったかを決められない升目: {fmt(got['記録なし'])}。")
+
+
+if __name__ == "__main__":
+    import sys
+    import scenes as _s
+    for p in sys.argv[1:]:
+        print(f"{p}\t{not_entered_note(p, _s.SCENES)}")

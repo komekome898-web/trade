@@ -57,7 +57,10 @@ class _Rec(Strategy):
             out = self.probe(n, candles)
             if out is not None:
                 self.probe_out = out
-        return Signal(type=self.signals.get(n, SignalType.HOLD))
+        sig = self.signals.get(n, SignalType.HOLD)
+        if sig != SignalType.HOLD:
+            C.request("place")  # round r13-1: the record `requests` (a signal other than HOLD asks for an order)
+        return Signal(type=sig)
 
 
 def _run(rows: list[dict], **kw) -> tuple[_Rec, object]:
@@ -103,6 +106,7 @@ def _signal_attempt(field: str) -> str:
 
 class CurrentImplAdapter(Adapter):
     name = "current_impl"
+    records_requests = True  # round r13-1: its strategy records an order request where it returns a signal
 
     # ---------------- P0-1
     def scene_p1_merge_by_time(self, sc):
@@ -137,7 +141,7 @@ class CurrentImplAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts_scene(self, sc):
-        rows = [dict(C.as_bar({"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0}), volume=1.0) for e in C.events(sc)]
+        rows = [dict(C.as_bar(C.substitute(e, "trade", price=100.0)), volume=1.0) for e in C.events(sc)]
         rec, _ = _run(rows)
         return ok({"observed_ts_ns": [int(c.index[-1].value) for c in rec.seen]},
                   "足(OHLC=100)で渡し、各呼び出しの candles.index[-1].value を記録", {"carriers": list(rec.carriers)})

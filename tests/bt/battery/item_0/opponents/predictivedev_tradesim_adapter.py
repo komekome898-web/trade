@@ -126,7 +126,7 @@ class PredictivedevTradesimAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
-        rows = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
+        rows = [C.substitute(e, "bar", open=100.0, high=100.0, low=100.0, close=100.0, volume=1.0)
                 for e in C.events(sc)]
         car = []
         st, _ = run(rows, lambda s, d, st: (st["log"].append(_ts(d)), car.append(C.carrier(d))))

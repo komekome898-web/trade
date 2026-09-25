@@ -145,7 +145,7 @@ class BarterAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
+        evs = [C.substitute(e, "trade", price=100.0, qty=0.01, side="buy") for e in C.events(sc)]
         rows = self._run(evs)
         return ok({"observed_ts_ns": [r["event"]["ts"] for r in calls(rows)]}, "約定(Trade)の time_exchange(DateTime<Utc>、ナノ秒)で渡し、戦略の各回に受けた時刻",
                   {"carriers": carriers(rows)})

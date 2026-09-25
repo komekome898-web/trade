@@ -575,7 +575,12 @@ add(id="p7-account-swap", viewpoint="P0-7", kind="capability",
 # with all six types); the clock and the notices come from the input's `requests` field. A declaration whose event
 # type the input does not give is named by `covers_problems` and a test fails (it is never dropped silently).
 # Which of the three order notices a scene measures is not decided by the input (the order request gives all three);
-# the declaration names it and the critic reads it.
+# the declaration names it and the critic reads it. Round r13-1 (ROOTCAUSE_r13-1.md section 6): a scene declares a
+# see-path only when its `measures` names that path as a way its result is observed, and an event only when what is
+# observed along it is that event's content -- p6-place-then-cancel reads the count of open orders (not a notice),
+# the P0-7 scenes read the fill either as the strategy received it or from the run's fill record afterwards (not
+# "what the strategy reads through the target's public means"), and p7-account-swap reads the plugged account's own
+# record (no see-path of the axis): those declare nothing there.
 _MKT = ("約定", "板の写真", "板の差分", "足", "資金調達", "清算")
 _R, _O, _X, _Q = ("戦略の呼び出しに届く物", "発注の呼び出しがその場で返す物", "取消の呼び出しがその場で返す物",
                   "戦略が対象の公開の手段で読む物")
@@ -601,14 +606,14 @@ COVERS: dict[str, list[tuple[str, str, str]]] = {
     "p5-same-time-twice": [(e, _R, "") for e in ("約定", "板の写真", "板の差分", "足")],
     "p5-hand-over-order": [(e, _R, "") for e in ("約定", "板の写真", "板の差分", "足")],
     "p5-same-stream-order": [("約定", _R, "")],
-    "p6-place-then-cancel": [(_ACC, _Q, "")],
+    "p6-place-then-cancel": [],
     "p6-cancel-notice": [(_CANCEL, _R, "")],
     "p6-fill-seen-by-strategy": [(_FIL, _Q, "")],
-    "p7-fill-model-swap": [(_FIL, _R, "約定模型"), (_FIL, _Q, "約定模型")],
-    "p7-latency-model-swap": [(_FIL, _R, "遅延模型"), (_FIL, _Q, "遅延模型")],
-    "p7-cost-model-swap": [(_FIL, _R, "費用"), (_FIL, _Q, "費用")],
-    "p7-cost-per-unit": [(_FIL, _R, "費用"), (_FIL, _Q, "費用")],
-    "p7-account-swap": [(_FIL, _Q, "口座")],
+    "p7-fill-model-swap": [(_FIL, _R, "約定模型")],
+    "p7-latency-model-swap": [(_FIL, _R, "遅延模型")],
+    "p7-cost-model-swap": [(_FIL, _R, "費用")],
+    "p7-cost-per-unit": [(_FIL, _R, "費用")],
+    "p7-account-swap": [],
 }
 # cells outside the requirements' axes a scene covers, with the reason (checked by the tests)
 OUTSIDE_AXES = {_CANCEL: "要件 §1 の通知は「注文の受付/拒否/約定の通知」の 3 つで、取消の通知を名指さない"}

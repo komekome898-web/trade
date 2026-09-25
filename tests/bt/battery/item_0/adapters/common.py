@@ -24,6 +24,17 @@ def as_bar(e: dict) -> dict:
     return out
 
 
+def substitute(e: dict, kind: str, **fields) -> dict:
+    """A scene event given to the target as another event type (round r13-1): {"kind": kind, "ts_ns": e's time,
+    **fields} (nothing else of the event is kept; pass `recv_ns` in `fields` to keep it). The runner records the
+    replaced type (`types_in` leaves it out); an event without a type field (a scene that leaves the type to the
+    target) records nothing. Every adapter that gives a scene event as another type goes through here or `as_bar`
+    (test_battery_r13_claims.py reads the adapters' code for any other place)."""
+    if e.get("kind") is not None and e.get("kind") != kind:
+        _SUBSTITUTED.append(e["kind"])
+    return {"kind": kind, "ts_ns": e["ts_ns"], **fields}
+
+
 # Round r13-1 (LEAD_DESIGN.md section 9.2 item 33): what the runner records per scene run and configured target --
 # never used for the grid table's verdicts. `records_begin` is called by the runner before each scene run.
 _SUBSTITUTED: list = []

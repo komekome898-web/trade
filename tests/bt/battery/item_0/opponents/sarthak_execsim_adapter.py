@@ -133,8 +133,7 @@ class SarthakExecsimAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
-        zero, default = self._md([{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0,
-                                   "volume": 1.0} for e in C.events(sc)])
+        zero, default = self._md([C.substitute(e, "bar", open=100.0, high=100.0, low=100.0, close=100.0, volume=1.0) for e in C.events(sc)])
         md = [r for r in zero if r[0] == "MD"]
         return ok({"observed_ts_ns": [int(r[1]) for r in md]},
                   "Tick の timestamp(int64 ns)で渡し、callback の MarketData の時刻。"

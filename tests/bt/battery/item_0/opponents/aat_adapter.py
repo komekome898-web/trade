@@ -231,7 +231,7 @@ class AatAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
+        evs = [C.substitute(e, "trade", price=100.0, qty=0.01, side="buy") for e in C.events(sc)]
         out = run({"events": evs})
         return ok({"observed_ts_ns": [_ts_of(e) for k, e in out["calls"] if k == "trade"]},
                   "約定を TRADE で流し、onTrade の event.target.timestamp(datetime、マイクロ秒まで)を ns に",

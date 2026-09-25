@@ -143,7 +143,7 @@ class QuantcoreAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01} for e in C.events(sc)]
+        evs = [C.substitute(e, "trade", price=100.0, qty=0.01) for e in C.events(sc)]
         car = []
         st, _ = run(evs, lambda s, ev, n, st: (st["log"].append(int(ev.timestamp_ns)), car.append(C.carrier(ev))), ticks=True)
         return ok({"observed_ts_ns": st["log"]}, "約定のティックで渡し、on_data の ev.timestamp_ns", {"carriers": car})

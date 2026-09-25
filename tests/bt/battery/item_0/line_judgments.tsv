@@ -426,3 +426,101 @@ f58a5f7d2bc157ea	ROOTCAUSE_r13-1.md:90	参照だけ	場面 id と欄を版を固
 97eb35f61f8b326b	ROOTCAUSE_r13-1.md:95	規則・読み	根本原因の読み・正の定義・固定した規則との関係・直しの所の名指し・出力の path の名指し(第 r13-1 回の定義の段、第 2 版)
 427d2eb43b35275f	ROOTCAUSE_r13-1.md:96	規則・読み	根本原因の読み・正の定義・固定した規則との関係・直しの所の名指し・出力の path の名指し(第 r13-1 回の定義の段、第 2 版)
 759167cef35b054a	ROOTCAUSE_r13-1.md:98	規則・読み	根本原因の読み・正の定義・固定した規則との関係・直しの所の名指し・出力の path の名指し(第 r13-1 回の定義の段、第 2 版)
+82c80d4aeaf85ba5	DEFINITIONS.md:38	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+70fec2ed26476690	DEFINITIONS.md:46	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+41348dddf813bb80	DEFINITIONS.md:52	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+0bff05bb0d6e5c54	DEFINITIONS.md:54	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+d378a4f1bc16f906	DEFINITIONS.md:109	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+6aaa0ea946660a67	DEFINITIONS.md:122	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+c88f5e5c982da105	DEFINITIONS.md:126	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+3cec580933fffa39	DEFINITIONS.md:130	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+fbe8dac4d3788b0d	DEFINITIONS.md:134	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+54d15b886511b65e	DEFINITIONS.md:434	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+fe10581aac96adf3	DEFINITIONS.md:438	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+a74bd2fdc8b5b066	DEFINITIONS.md:442	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+bf5b8dda11877af0	DEFINITIONS.md:899	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+5f09f0263288a383	ROOTCAUSE_r13-1.md:25	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+6a7786a6a8ce82d2	ROOTCAUSE_r13-1.md:26	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+486c0207f47e295e	ROOTCAUSE_r13-1.md:28	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+b1fb67837c1dc49e	ROOTCAUSE_r13-1.md:33	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+ced1fa1953dcef08	ROOTCAUSE_r13-1.md:34	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+a1f41fd4106f4669	ROOTCAUSE_r13-1.md:38	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+c5f207117a0adb88	ROOTCAUSE_r13-1.md:40	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+48a5081c2bd0235d	ROOTCAUSE_r13-1.md:41	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+425fbcb3242b8275	ROOTCAUSE_r13-1.md:53	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+65b8234da1278273	ROOTCAUSE_r13-1.md:65	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+db6680e0298752b3	ROOTCAUSE_r13-1.md:81	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+d47c68da7ea365d9	ROOTCAUSE_r13-1.md:82	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+8515b7584d6dda02	ROOTCAUSE_r13-1.md:86	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+7cebe8cea9de2f3c	ROOTCAUSE_r13-1.md:90	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+129b53a091bda61d	ROOTCAUSE_r13-1.md:91	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+23747ad6fae297c0	ROOTCAUSE_r13-1.md:92	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+d35a163868d19b86	ROOTCAUSE_r13-1.md:93	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+04de39b15233b69d	ROOTCAUSE_r13-1.md:94	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+8335b81157eef200	ROOTCAUSE_r13-1.md:95	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+391d5f36d01978d4	ROOTCAUSE_r13-1.md:96	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+2f7dcffc7219ed64	ROOTCAUSE_r13-1.md:97	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+afb9c62adb873b78	ROOTCAUSE_r13-1.md:98	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+20f65bead434a2df	ROOTCAUSE_r13-1.md:99	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+439611df7a733f89	ROOTCAUSE_r13-1.md:100	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+597ff8be45076d8e	ROOTCAUSE_r13-1.md:114	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+70b2d238115df466	ROOTCAUSE_r13-1.md:120	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+488038b09a99b1c3	ROOTCAUSE_r13-1.md:125	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+d3a2a982a68fb786	ROOTCAUSE_r13-1.md:141	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+550b24633b2bf501	ROOTCAUSE_r13-1.md:142	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+84a99545cb17e58a	ROOTCAUSE_r13-1.md:145	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+fd8afee851ccf958	ROOTCAUSE_r13-1.md:156	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+786151bbb0d0fdc6	ROOTCAUSE_r13-1.md:158	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+2fc8c2e59a54f763	ROOTCAUSE_r13-1.md:162	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+aa0fbaeccf090ed2	ROOTCAUSE_r13-1.md:163	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+eae549c78ac321a8	ROOTCAUSE_r13-1.md:164	規則・読み	根本原因・主張の表・読みと判断(場面の中身は scenes.py と出力を名指す)
+c191e4e7fa558473	def_axes/jC.tsv:63	規則・読み	正の定義 C の段落の切片の判断(第 r13-1 回)
+0dbee7fb4bf80647	def_axes/jC.tsv:64	規則・読み	正の定義 C の段落の切片の判断(第 r13-1 回)
+6c9602775f09bd04	def_axes/jC.tsv:101	規則・読み	正の定義 C の段落の切片の判断(第 r13-1 回)
+37f999b0e72127b5	gen_definitions.py:22	規則・読み	DEFINITIONS.md に写す規則の文・その説明
+5f47631eb6fce378	gen_definitions.py:29	規則・読み	DEFINITIONS.md に写す規則の文・その説明
+e64e1c87bbad9c7b	gen_definitions.py:33	規則・読み	DEFINITIONS.md に写す規則の文・その説明
+4bd6004f4a636927	gen_definitions.py:34	規則・読み	DEFINITIONS.md に写す規則の文・その説明
+3bb4983e397bd54f	gen_definitions.py:91	規則・読み	DEFINITIONS.md に写す規則の文・その説明
+7f90079d1371b575	gen_definitions.py:102	規則・読み	DEFINITIONS.md に写す規則の文・その説明
+c326c44bd183188f	gen_definitions.py:104	規則・読み	DEFINITIONS.md に写す規則の文・その説明
+706aaaa40eb2ffef	gen_definitions.py:136	規則・読み	DEFINITIONS.md に写す規則の文・その説明
+47a80db26540265b	opponents/thirupathikannan_execsim_adapter.py:46	コード	場面 id を鍵に使う adapter のコード
+b461d9eb93a11ab0	opponents/thirupathikannan_execsim_adapter.py:47	コード	場面 id を鍵に使う adapter のコード
+597a9e84b3de3891	scenes.py:508	照合元	scenes.py の値そのもの(場面の入力・宣言)
+5f4c9cbf69896f09	scenes.py:574	規則・読み	場面集のコードの注・説明(場面の中身ではない)
+fca0d3d5e2afe8e3	scenes.py:579	規則・読み	場面集のコードの注・説明(場面の中身ではない)
+1f3de9dbabca38d4	scenes.py:580	規則・読み	場面集のコードの注・説明(場面の中身ではない)
+5d75232bf2dd04b5	scenes.py:582	規則・読み	場面集のコードの注・説明(場面の中身ではない)
+dcc1e3f4f45e6c89	scenes.py:590	照合元	scenes.py の値そのもの(場面の入力・宣言)
+a2a67e8728fd3317	scenes.py:591	照合元	scenes.py の値そのもの(場面の入力・宣言)
+2198f2e4393bea18	scenes.py:592	照合元	scenes.py の値そのもの(場面の入力・宣言)
+e4fd2ea8b7d76ac6	scenes.py:593	照合元	scenes.py の値そのもの(場面の入力・宣言)
+09f15504a4e1ac3d	scenes.py:594	照合元	scenes.py の値そのもの(場面の入力・宣言)
+8c8187db2be29b49	scenes.py:595	照合元	scenes.py の値そのもの(場面の入力・宣言)
+185fb701965f8455	scenes.py:596	照合元	scenes.py の値そのもの(場面の入力・宣言)
+eb9f6d78bbbb6106	scenes.py:603	照合元	scenes.py の値そのもの(場面の入力・宣言)
+d8bcd0166790a767	scenes.py:604	照合元	scenes.py の値そのもの(場面の入力・宣言)
+85aa3332434ee771	scenes.py:605	照合元	scenes.py の値そのもの(場面の入力・宣言)
+4adf9ed136ddae08	scenes.py:606	照合元	scenes.py の値そのもの(場面の入力・宣言)
+e30d3a98ebe2c241	scenes.py:607	照合元	scenes.py の値そのもの(場面の入力・宣言)
+836d6530500e66bb	scenes.py:608	照合元	scenes.py の値そのもの(場面の入力・宣言)
+af8a949c914357f5	scenes.py:609	照合元	scenes.py の値そのもの(場面の入力・宣言)
+297a77ef327dcecd	scenes.py:610	照合元	scenes.py の値そのもの(場面の入力・宣言)
+9a0acff4c82b469a	scenes.py:612	照合元	scenes.py の値そのもの(場面の入力・宣言)
+bfa461efe57ac7b8	scenes.py:613	照合元	scenes.py の値そのもの(場面の入力・宣言)
+f1b741663725c26c	scenes.py:614	照合元	scenes.py の値そのもの(場面の入力・宣言)
+00b4abd30f09ab89	scenes.py:615	照合元	scenes.py の値そのもの(場面の入力・宣言)
+37a9f07b68e389bf	scenes.py:616	照合元	scenes.py の値そのもの(場面の入力・宣言)
+c403bcab52f3862f	scenes.py:627	規則・読み	場面集のコードの注・説明(場面の中身ではない)
+e1c29a02fc70b969	test_battery_item0.py:1465	規則・読み	試験の説明の文(場面集の試験の振る舞い)
+5f7ececab596a592	test_battery_r13_claim_mutants.py:110	コード	場面 id を試験の引数・比べる値に使う試験のコード
+0086a727da74ae4f	test_battery_r13_claims.py:119	規則・読み	試験の説明の文(場面集の試験の振る舞い)
+392500091ee7db87	test_battery_r13_claims.py:257	コード	場面 id を試験の引数・比べる値に使う試験のコード
+2014c09d3ac5a3b0	test_battery_r13_claims.py:258	コード	場面 id を試験の引数・比べる値に使う試験のコード
+f71d851a624ba73e	test_battery_r13_claims.py:259	コード	場面 id を試験の引数・比べる値に使う試験のコード
+342f8665e6964a11	test_battery_r13_covers_of.py:7	規則・読み	試験の説明の文(場面集の試験の振る舞い)
+3f0f3c5ffdedcd6e	test_battery_r13_covers_of.py:21	規則・読み	試験の説明の文(場面集の試験の振る舞い)
+3bbcfcd8cd43f559	test_battery_r13_covers_of.py:30	規則・読み	試験の説明の文(場面集の試験の振る舞い)
+2ca4d52a0bf4eca7	test_battery_r13_covers_of.py:204	コード	場面 id を試験の引数・比べる値に使う試験のコード
+f5bd4727eb2eb69e	test_battery_r13_covers_of.py:211	コード	場面 id を試験の引数・比べる値に使う試験のコード

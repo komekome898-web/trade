@@ -75,8 +75,7 @@ def drv(payload: dict) -> list[dict]:
 
 def bar(e: dict) -> dict:
     b = C.as_bar(e)
-    return {"kind": "bar", "ts_ns": int(b["ts_ns"]), "open": float(b["open"]), "high": float(b["high"]), "low": float(b["low"]),
-            "close": float(b["close"]), "volume": float(b.get("volume", 100.0))}
+    return C.substitute(b, "bar", open=float(b["open"]), high=float(b["high"]), low=float(b["low"]), close=float(b["close"]), volume=float(b.get("volume", 100.0)))
 
 
 def seq(rows) -> list:
@@ -124,7 +123,7 @@ class GobacktestAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
-        evs = [{"kind": "bar", "ts_ns": int(e["ts_ns"]), "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
+        evs = [C.substitute(e, "bar", open=100.0, high=100.0, low=100.0, close=100.0, volume=1.0)
                for e in C.events(sc)]
         rows = drv({"events": evs})
         return ok({"observed_ts_ns": [t for _, t in seq(rows)]}, "Bar の時刻(time.Time)で渡し、OnData の event.Time().UnixNano()",

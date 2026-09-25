@@ -167,7 +167,7 @@ class QstraderAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0} for e in C.events(sc)]
+        evs = [C.substitute(e, "trade", price=100.0) for e in C.events(sc)]
         car = []
         try:
             st, _ = run(evs, lambda dt, dh, n, st: (st["log"].append(_ns(dt)), car.append(C.carrier(dt))) and None)

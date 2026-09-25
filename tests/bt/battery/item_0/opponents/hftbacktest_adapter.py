@@ -241,7 +241,7 @@ class HftbacktestAdapter(Adapter):
     def scene_p1_one_call_per_event(self, sc):
         # round r7-1: the scene does not grade the type; it lets the target take one of its own types
         # (a trade here, price = the bar's close, 0.01), not an undocumented event code
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": float(e["close"]), "qty": 0.01, "side": "buy"} for e in C.events(sc)]
+        evs = [C.substitute(e, "trade", price=float(e["close"]), qty=0.01, side="buy") for e in C.events(sc)]
         calls = run(evs)
         seq, car = _seq_car(calls)
         return ok({"sequence": seq},
@@ -264,7 +264,7 @@ class HftbacktestAdapter(Adapter):
     scene_p2_iso_offset = scene_p2_iso_utc
 
     def _ts(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
+        evs = [C.substitute(e, "trade", price=100.0, qty=0.01, side="buy") for e in C.events(sc)]
         calls = run(evs)
         obs = [t["local_ts"] for _, _, tr in calls for t in tr]
         return ok({"observed_ts_ns": obs}, f"約定で渡し、last_trades の local_ts を読んだ。呼ばれた回: {[(c, n) for c, n, _ in calls]}",
@@ -368,7 +368,7 @@ class HftbacktestAdapter(Adapter):
     # ---------------- P0-4
     def scene_p4_visible_at_step(self, sc):
         evs = [C.as_bar(e) for e in C.events(sc)]
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": e["close"], "qty": 0.01, "side": "buy"} for e in evs]
+        evs = [C.substitute(e, "trade", price=e["close"], qty=0.01, side="buy") for e in evs]
         probe = sc.input["probe_at_ns"]
         reads = C.Reads()
 
@@ -403,7 +403,7 @@ class HftbacktestAdapter(Adapter):
                   f"呼ばれた回(code, 時刻, 約定): {calls}")
 
     def scene_p4_future_read_attempt(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": e["close"], "qty": 0.01, "side": "buy"} for e in C.events(sc)]
+        evs = [C.substitute(e, "trade", price=e["close"], qty=0.01, side="buy") for e in C.events(sc)]
         probe = sc.input["probe_at_ns"]
         fut = int(sc.input["future_ts_ns"])
         att = C.Attempts()

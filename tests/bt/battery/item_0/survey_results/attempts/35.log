@@ -48,3 +48,57 @@ from src.models import (
 
 from src.strategies import (
 === 2026-09-24T03:51:48Z decision: not run. As published, main.py stops at 'from src.models import' (ModuleNotFoundError above): the 8 source files are named 'src <x>.py' in the repository root and there is no src/ directory. Running a copy with the files moved under src/ (no code change) was refused by this environment's permission check (the auto-mode classifier: 'Code from External'), so the tool was not run in this round; the lead decides whether to allow it. /dev/vda          258020 35584      2355  94% /
+
+##### from item0_r13-1_scenekeeper_fix_c35_run.log (round r13-1, scene keeper, 2026-09-25): the lead's three steps of LEAD_DESIGN.md section 9.2 item 36 on a copy (df before/after: 1061 MB free)
+=== 2026-09-25T02:56:31Z round r13-1, scene keeper: the lead's three steps (LEAD_DESIGN.md section 9.2 item 36) on a copy of the clone 794fa647f8c8168a6f30338ea0987d26124d6101
+--- step 1: copy the clone and move the 8 files named 'src <name>.py' into src/
+rc=0
+__init__.py
+execution.py
+impact.py
+metrics.py
+models.py
+simulator.py
+strategies.py
+visualization.py
+--- step 2: python3 -m venv --system-site-packages .venv && .venv/bin/pip install --no-cache-dir -q matplotlib
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+pip rc=0 elapsed=7s
+numpy 2.4.6 pandas 3.0.6 matplotlib 3.11.2
+--- step 3: the published 'outputs' is a file (1,139 bytes); rename it, then run main.py
+-rw-r--r-- 1 root root 1139 Sep 25 02:56 outputs
+============================================================
+OPTIMAL EXECUTION & MARKET IMPACT SIMULATOR
+============================================================
+
+Initial Price      : 100.00
+Order Quantity     : 100,000
+Execution Horizon  : 1.00
+Time Steps         : 20
+Monte Carlo Paths   : 5000
+
+Strategy Results
+------------------------------------------------------------
+
+TWAP
+
+Front-Loaded
+
+Optimal
+
+============================================================
+Experiment completed successfully.
+============================================================
+
+Generated files:
+  - outputs/cost_distribution.png
+  - outputs/cost_risk_frontier.csv
+  - outputs/cost_risk_frontier.png
+  - outputs/execution_summary.csv
+  - outputs/execution_trajectories.png
+run rc=0 elapsed=3s
+=== end 2026-09-25T02:56:42Z
+(the tool's own printed cost figures, from its own synthetic price paths, are left out of this log; the full log is <scratchpad>/bt/r13-1e/item0_r13-1_scenekeeper_fix_c35_run.log)
+=== 2026-09-25 decision: run. The scene set was run on it: target opp_thirupathikannan_execsim (opponents/thirupathikannan_execsim_adapter.py), survey_results/opp_thirupathikannan_execsim.tsv

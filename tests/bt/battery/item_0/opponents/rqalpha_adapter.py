@@ -249,7 +249,7 @@ class RqalphaAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _ts(self, sc):
-        evs = [{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0, "close": 100.0, "volume": 1.0}
+        evs = [C.substitute(e, "bar", open=100.0, high=100.0, low=100.0, close=100.0, volume=1.0)
                for e in C.events(sc)]
         log, car = self._seq(evs)
         return ok({"observed_ts_ns": [t for _, t in log]},

@@ -128,10 +128,10 @@ def _as_one_type(e: dict, one: str) -> dict:
         if k == "bar":
             return dict(e)
         price = float(e.get("price", 100.0))
-        return {"kind": "bar", "ts_ns": e["ts_ns"], "open": price, "high": price, "low": price, "close": price, "volume": 1.0}
+        return C.substitute(e, "bar", open=price, high=price, low=price, close=price, volume=1.0)
     if k == "trade":
         return dict(e, price=float(e.get("price", 100.0)), qty=float(e.get("qty", 0.01)))
-    return {"kind": "trade", "ts_ns": e["ts_ns"], "price": float(e.get("close", 100.0)), "qty": 0.01, "side": "buy"}
+    return C.substitute(e, "trade", price=float(e.get("close", 100.0)), qty=0.01, side="buy")
 
 
 def _slice_has() -> list[str]:
@@ -265,7 +265,7 @@ class Adapter(Adapter):  # noqa: F811 - run_battery loads `Adapter` from a repro
     scene_p2_iso_offset = scene_p2_iso_utc
 
     def _ts(self, sc):
-        evs = [_as_one_type({"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01}, self.choose["one_type"])
+        evs = [_as_one_type(C.substitute(e, "trade", price=100.0, qty=0.01), self.choose["one_type"])
                for e in C.events(sc)]
         try:
             a, _ = self._go(evs)

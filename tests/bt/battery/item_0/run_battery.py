@@ -82,6 +82,7 @@ OPPONENTS = {
     "opp_pineforge": ("pineforge_adapter", "PineforgeAdapter"),
     "opp_barter": ("barter_adapter", "BarterAdapter"),
     "opp_pytrendfollow": ("pytrendfollow_adapter", "PytrendfollowAdapter"),
+    "opp_thirupathikannan_execsim": ("thirupathikannan_execsim_adapter", "ThirupathikannanExecsimAdapter"),  # round r13-1
     "opp_isaaccheng_obsim": ("isaaccheng_obsim_adapter", "IsaaccengObsimAdapter"),
 }
 
@@ -291,7 +292,7 @@ TARGET_DISTS: dict[str, dict] = {
     "opp_gobacktest": {"compiled": ["go:*gobacktest.", "go:github.com/dirkolbrich/gobacktest"]},
     "opp_pineforge": {"compiled": ["c:pineforge"]},
     "opp_barter": {"compiled": ["rust:barter_data::", "rust:barter::"]},
-    "opp_pytrendfollow": {"py": ["trading"]}, "opp_isaaccheng_obsim": {"py": ["order_book_simulator"]},
+    "opp_pytrendfollow": {"py": ["trading"]}, "opp_thirupathikannan_execsim": {"py": ["src"]}, "opp_isaaccheng_obsim": {"py": ["order_book_simulator"]},
 }
 COMPILED = ("rust:", "go:", "c:", "cpp:")
 
@@ -740,7 +741,11 @@ def _run_one(adapter: Adapter, sc) -> tuple[SceneResult, list]:
 # LEAD_DESIGN.md section 9.2 item 33: per scene and configured target, the market event types that entered the target
 # (`types_in`), the types that reached the strategy although the input handed had none of them (`types_added`, a type
 # the adapter replaced), and the requests the strategy made (`requests`). The grid table (grid_c.py) never reads them;
-# `grid_c.not_entered` turns them into the materials role's note.
+# `grid_c.not_entered` turns them into the materials role's note. For a scene without a list of what reached the
+# strategy, `types_in` is the input's types less those an adapter replaced through adapters/common.py (`as_bar`,
+# `substitute`; test_battery_r13_claims.py checks no adapter replaces a type elsewhere), limited to the configured
+# target's own types (the P0-3 grades of the same run, L-438 (2)): a type the target does not have did not enter as
+# that type, whatever the adapter did (ROOTCAUSE_r13-1.md section 2, root 7).
 def _input_kinds(inp) -> list[str]:
     """The market event types (TYPE_ORDER names, in that order) of an input's `events` and `streams`."""
     inp = inp if isinstance(inp, dict) else {}
@@ -768,8 +773,10 @@ def _delivered_kinds(res: SceneResult, scene) -> list | None:
     return _kinds(res.output, key[0], True)
 
 
-def records_of(scene_run, res: SceneResult, called: bool, substituted: list, requests, records_requests: bool) -> dict:
-    """`types_in` / `types_added` (scenes.JP names) and `requests` of one run (see the comment above)."""
+def records_of(scene_run, res: SceneResult, called: bool, substituted: list, requests, records_requests: bool,
+               own_types) -> dict:
+    """`types_in` / `types_added` (scenes.JP names) and `requests` of one run (see the comment above); `own_types` =
+    the configured target's own types (TYPE_ORDER names) known when the scene ran."""
     if not called:
         return {"types_in": [], "types_added": [], "requests": [] if records_requests else None}
     handed = _input_kinds(scene_run.input)
@@ -779,7 +786,7 @@ def records_of(scene_run, res: SceneResult, called: bool, substituted: list, req
         types_in = [k for k in handed if k in got]
         added = sorted(got - set(handed))
     else:
-        types_in = [k for k in handed if k not in set(substituted)]
+        types_in = [k for k in handed if k not in set(substituted) and k in set(own_types)]
         added = []
     return {"types_in": [JP[k] for k in types_in], "types_added": [JP.get(k, k) for k in added],
             "requests": list(requests) if records_requests else None}
@@ -848,7 +855,8 @@ def run_target(target: str) -> list[dict]:
                                   ensure_ascii=False),
             # round r13-1 (LEAD_DESIGN.md section 9.2 item 33): records of run 1, never used for the grid table
             **{k: json.dumps(v, ensure_ascii=False) for k, v in records_of(
-                sc1, r1, called1, subst1, req1, getattr(adapter_1, "records_requests", False)).items()},
+                sc1, r1, called1, subst1, req1, getattr(adapter_1, "records_requests", False),
+                target_types(p3_1)).items()},
         }
     return [rows[sc.id] for sc in SCENES]
 

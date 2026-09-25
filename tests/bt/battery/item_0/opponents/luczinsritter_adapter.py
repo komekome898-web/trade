@@ -173,8 +173,7 @@ class LuczinsritterAdapter(Adapter):
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
     def _obs(self, sc):
-        return not_supported(NO_CALL + _table_seen([{"kind": "bar", "ts_ns": e["ts_ns"], "open": 100.0, "high": 100.0, "low": 100.0,
-                                                      "close": 100.0 + k, "volume": 1.0} for k, e in enumerate(C.events(sc))]))
+        return not_supported(NO_CALL + _table_seen([C.substitute(e, "bar", open=100.0, high=100.0, low=100.0, close=100.0 + k, volume=1.0) for k, e in enumerate(C.events(sc))]))
 
     scene_p2_event_time_exact = scene_p2_one_ns_apart = _obs
 
@@ -223,7 +222,7 @@ class LuczinsritterAdapter(Adapter):
 
     def scene_p4_received_time(self, sc):
         return not_supported(NON_BAR.format(k="受け取れる時刻", err=_attempt_rows(
-            [{"kind": "bar", "ts_ns": e["ts_ns"], "recv_ns": C.recv(e), "Close": e["price"]} for e in C.events(sc)]))
+            [C.substitute(e, "bar", recv_ns=C.recv(e), Close=e["price"]) for e in C.events(sc)]))
             + "(1 行の時刻は表の index の 1 つだけ)")
 
     def scene_p4_future_read_attempt(self, sc):

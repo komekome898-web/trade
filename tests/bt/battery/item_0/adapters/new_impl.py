@@ -102,6 +102,7 @@ def _kind(event) -> str:
 
 class NewImplAdapter(Adapter):
     name = "new_impl"
+    records_requests = True  # round r13-1: its strategies call common.request wherever they ask the target
 
     def __init__(self, core) -> None:
         super().__init__()  # round r8-1: one configured target (CONFIGS of the base class)
@@ -261,6 +262,7 @@ class NewImplAdapter(Adapter):
 
         def fn(event, ctx, st):
             if self._market_call(event, st, 1) and "coid" not in st:
+                C.request("place")  # round r13-1: the record `requests` (LEAD_DESIGN.md section 9.2 item 33)
                 st["coid"] = ctx.place_order(core.OrderRequest(side="buy", order_type="market", size=size))
 
         return self._run(fn, self._events(C.events(sc)), **kw)
@@ -291,7 +293,7 @@ class NewImplAdapter(Adapter):
                   {"reader": C.qualname(self.core.to_nanos)})
 
     def _ts_scene(self, sc):
-        evs = [{"kind": "trade", "ts_ns": e["ts_ns"], "price": 100.0, "qty": 0.01, "side": "buy"} for e in C.events(sc)]
+        evs = [C.substitute(e, "trade", price=100.0, qty=0.01, side="buy") for e in C.events(sc)]
         seen: list[int] = []
         carriers: list[str] = []
 
@@ -338,6 +340,7 @@ class NewImplAdapter(Adapter):
         def fn(event, ctx, st):
             if self._market_call(event, st, 1) and not st.get("asked"):
                 st["asked"] = True
+                C.request("timer")  # round r13-1: the record `requests` (LEAD_DESIGN.md section 9.2 item 33)
                 ctx.set_timer(at, "wake")
 
         st, _ = self._run(fn, self._events(C.events(sc)))
@@ -348,6 +351,7 @@ class NewImplAdapter(Adapter):
 
         def fn(event, ctx, st):
             if self._market_call(event, st, 1) and "coid" not in st:
+                C.request("place")  # round r13-1: the record `requests` (LEAD_DESIGN.md section 9.2 item 33)
                 st["coid"] = ctx.place_order(core.OrderRequest(side="buy", order_type="limit", size=1.0, price=90.0))
 
         st, _ = self._run(fn, self._events(C.events(sc)), fill_model=self._arrival_fill(),
@@ -471,9 +475,11 @@ class NewImplAdapter(Adapter):
             if event.EVENT_TYPE not in set(core.MARKET_EVENT_TYPES):
                 return
             if st["n"] == 1 and "coid" not in st:
+                C.request("place")  # round r13-1: the record `requests` (LEAD_DESIGN.md section 9.2 item 33)
                 st["coid"] = ctx.place_order(core.OrderRequest(side="buy", order_type="limit", size=1.0, price=90.0))
             elif st["n"] == 2:
                 st["open_at_call2"] = len(ctx.open_orders())
+                C.request("cancel")  # round r13-1: the record `requests` (LEAD_DESIGN.md section 9.2 item 33)
                 ctx.cancel_order(st["coid"])
             elif st["n"] == 3:
                 st["open_at_call3"] = len(ctx.open_orders())
@@ -500,6 +506,7 @@ class NewImplAdapter(Adapter):
             if event.EVENT_TYPE not in set(core.MARKET_EVENT_TYPES):
                 return
             if st["n"] == 1 and "coid" not in st:
+                C.request("place")  # round r13-1: the record `requests` (LEAD_DESIGN.md section 9.2 item 33)
                 st["coid"] = ctx.place_order(core.OrderRequest(side="buy", order_type="market", size=1.0))
             elif st["n"] == 3:
                 st["filled_at_call3"] = float(ctx.order(st["coid"]).filled_size)

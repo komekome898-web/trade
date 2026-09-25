@@ -19,7 +19,10 @@ Oracles are written here from the claim table's words, not from the code under t
     target's own types (L-438 (2)), which limit `types_in` for the scenes without a delivered list;
   * whether the adapters of the survey tools call `request` (they do not record requests; ROOTCAUSE_r13-1.md
     section 8 item 5 asks the lead);
-  * which of the three order notices a scene measures (family 3: left to the declaration and the critic).
+  * which of the three order notices a scene measures (family 3: left to the declaration and the critic);
+  * the record function's grid (test_records_of_on_every_case) takes one scene per shape of what reached the
+    strategy (a list with kinds, per-run lists with kinds, a list without kinds, no list), not every scene; the real
+    rows of every scene are checked by test_records_types_in_within_the_input_handed.
 """
 from __future__ import annotations
 
@@ -40,6 +43,7 @@ import scenes  # noqa: E402
 
 MARKET_JP = {"trade": "約定", "book_snapshot": "板の写真", "book_delta": "板の差分", "bar": "足",
              "funding": "資金調達", "liquidation": "清算"}
+MARKET_JP_INV = {v: k for k, v in MARKET_JP.items()}
 REQUEST_KINDS = ("timer", "place", "cancel")
 csv.field_size_limit(1 << 30)
 
@@ -122,6 +126,8 @@ def handed_types(row: dict) -> set:
     if s.type_plan is None:
         return _market_kinds(s.input)
     types = json.loads(row["types_1"]) if row.get("types_1") not in (None, "") else None
+    if isinstance(types, dict):  # slot -> type (the streams of a type_plan scene)
+        types = list(types.values())
     return {MARKET_JP[k] for k in (types or []) if k in MARKET_JP}
 
 
@@ -194,7 +200,9 @@ def substitution_sites(tree, fields) -> list[int]:
     for n in ast.walk(tree):
         if isinstance(n, ast.Dict):
             kinds = [v for k, v in zip(n.keys, n.values) if isinstance(k, ast.Constant) and k.value == "kind"]
-            if not kinds:
+            # a type field of a market type, or one whose value is not a constant; a target's own form ("tick") is not
+            # a scene type
+            if not any(not isinstance(v, ast.Constant) or v.value in MARKET_JP for v in kinds):
                 continue
             others = [v for k, v in zip(n.keys, n.values) if not (isinstance(k, ast.Constant) and k.value == "kind")]
             unpack = any(k is None for k in n.keys)
@@ -226,7 +234,7 @@ def test_the_substitution_finder_sees_every_form():
              '{**e, "kind": "bar"}', 'dict(e, kind="bar")', '{"kind": "bar", "close": e.get("price")}',
              '{"kind": "bar", "ts_ns": C.recv(e)}']
     not_found = ['{"kind": "bar", "ts_ns": 1_700_000_000, "close": 1.0}', '{"ts_ns": e["ts_ns"], "close": 1.0}',
-                 'dict(e, price=1.0)']
+                 'dict(e, price=1.0)', '{"kind": "tick", "ts_ns": e["ts_ns"], "bid": e["price"]}']
     for src in found:
         assert substitution_sites(ast.parse(src), fields), src
     for src in not_found:
@@ -251,17 +259,23 @@ def _oracle_records(handed, delivered, called, substituted, requests, records_re
 def _cases():
     import adapters.protocol as P
     carrier = next(s for s in scenes.SCENES if s.id == "p3-mixed-one-run")          # a list of delivered kinds
+    runs = _built(next(s for s in scenes.SCENES if s.id == "p5-hand-over-order"))  # per-run lists with kinds
     no_kinds = next(s for s in scenes.SCENES if s.id == "p2-event-time-exact")       # a list without kinds
     plain = next(s for s in scenes.SCENES if s.id == "p4-received-time")             # no delivered list
     for s, status, delivered, called, subst, req, rr, own in itertools.product(
-            (carrier, no_kinds, plain), ("ok", "not_supported", "error"),
+            (carrier, runs, no_kinds, plain), ("ok", "not_supported", "error"),
             (None, ["trade"], ["trade", "bar"], ["bar"]), (True, False), ([], ["trade"]),
             ([], ["place"], ["timer", "place", "cancel"]), (True, False),
             ([], ["trade"], list(MARKET_JP))):
-        out = {"sequence": [[k, 0] for k in delivered]} if delivered is not None else {}
+        if delivered is None:
+            out = {}
+        elif s is runs:  # two runs, the kinds split between them
+            out = {"runs": [{"order": [[k, 0] for k in delivered[:1]]}, {"order": [[k, 0] for k in delivered[1:]]}]}
+        else:
+            out = {"sequence": [[k, 0] for k in delivered]}
         res = P.SceneResult(status, output=out if status == "ok" else None)
-        got_delivered = delivered if (s is carrier and status == "ok" and delivered is not None) else None
-        handed = [k for k in MARKET_JP if k in {e.get("kind") for e in s.input.get("events", [])}]
+        got_delivered = delivered if (s in (carrier, runs) and status == "ok" and delivered is not None) else None
+        handed = [MK for MK in MARKET_JP if MK in {MARKET_JP_INV[t] for t in _market_kinds(s.input)}]
         yield (s, res, called, subst, req, rr, own), (handed, got_delivered, called, subst, req, rr, own)
 
 
@@ -271,7 +285,7 @@ def test_records_of_on_every_case():
     for args, oracle_args in _cases():
         assert run_battery.records_of(*args) == _oracle_records(*oracle_args), (args[0].id, args[1:], oracle_args)
         n += 1
-    assert n == 3 * 3 * 4 * 2 * 2 * 3 * 2 * 3
+    assert n == 4 * 3 * 4 * 2 * 2 * 3 * 2 * 3
 
 
 # ---------------------------------------------------------------- family 7: not_entered
@@ -310,3 +324,20 @@ def test_not_entered_on_every_case():
         assert grid_c.not_entered(rows, records) == _oracle_not_entered(rows, records), combo
         n += 1
     assert n == 5 ** 4
+
+
+# ---------------------------------------------------------------- the texts DEFINITIONS.md shows for family 1-4
+def test_the_rule_texts_are_the_sources_character_for_character():
+    """DEFINITIONS.md says F is verbatim LEAD_DESIGN.md section 9.2 item 32 and the round r13-1 definition is
+    ROOTCAUSE_r13-1.md section 3 unchanged; both claims are checked here."""
+    import gen_definitions as G
+    lead = (HERE.parents[3] / "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md").read_text(
+        encoding="utf-8")
+    assert G.LEAD_F in [ln.strip() for ln in lead.split("\n")]
+    rc = (HERE / "ROOTCAUSE_r13-1.md").read_text(encoding="utf-8").split("\n")
+    i = next(n for n, ln in enumerate(rc) if ln.startswith("## 3. "))
+    para = [ln for ln in rc[i + 1:next(n for n in range(i + 1, len(rc)) if rc[n].startswith("## "))]
+            if ln.startswith("**升目を「場面にした」と数える物**")]
+    assert para == [G.R13_DEFINITION]
+    text = (HERE / "DEFINITIONS.md").read_text(encoding="utf-8")
+    assert G.LEAD_F in text and G.R13_DEFINITION in text
