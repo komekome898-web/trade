@@ -113,7 +113,7 @@ class CurrentImpl:
             orders[ref] = {"status": {"COMPLETED": "filled", "ACTIVE": "open", "CANCELED": "canceled"}.get(st.state, st.state)}
         pos = px.positions.get(sym, 0.0)
         fee_sum = sum(f["fee"] for f in fills)
-        return {"orders": orders, "fills": fills, "seen": seen, "sent": {r: 1 for r in ids},
+        return {"orders": orders, "fills": fills, "seen": seen,
                 "account": {"position": pos, "realized": px.balance_jpy - start_balance + fee_sum}}
 
 
