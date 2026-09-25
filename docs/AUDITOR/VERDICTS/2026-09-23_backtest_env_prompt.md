@@ -1662,3 +1662,57 @@ decisive 検査(6 回目処置 1〜5 + 処置 6 の反映確認): item14 の §3
 - 引数: `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt_args_run10.json`(marker cdf623e4fb24、`prior_rounds["0"]` = rounds 18・critic_chain・loss_streak {current: 0, survey: 0}、attempt_offset 12 = 第 13 周から、新しい run として起動 = 10 回目の途中の記録は再生しない)
 - オーナー決定: L-441(案 2)、L-443(体制の変更 3 点)。L-440(定義の段)は L-443 (2) で置き換わった。
 - リードの設計: `round_7/LEAD_DESIGN.md` §10〜§10.2
+
+
+## 監査 64 回目(委任文の新しい版 `docs/DATA/delegations/20260925_backtest_env_prompt.md@b4373a85a38c`、枠組みの指紋 90fef0a038b2。L-447 の 4 項目化 + L-448 の監査の削減。2026-09-25 10:16 UTC)
+
+### 監査役の出力(逐語)
+
+監査 64 回目。対象: `docs/DATA/delegations/20260925_backtest_env_prompt.md`(指紋 b4373a85a38c)、`scripts/workflows/backtest_env.js`、`bt_args_run12.json`、`scripts/check_bt_delegation.py`。
+
+1. [止める] docs/DATA/delegations/20260925_backtest_env_prompt.md:103 — §3「場面集(場面係 = …)」の段落全体が、L-448 で削除されたはずの周ごとの監査役(場面)を、現行の指示として書いたまま残っている。「**場面集と、最初の周の結果の表は、審査員が読む前に監査役(`owner-auditor`)にかける**」「**場面集は作業者の 1 周目の前にかける。**」「直した場面集を資料係が表を作る前に監査役にかける」という文は、§0 の L-448 の行(同ファイル 49 行目)「作業者の 1 周目の前の場面集の監査も無い(最初の批評家が読む)」「項目 0 の通過後の並行の直しは機械の検査だけで、場面集の中身は項目 4 の批評家が読む」と正面から矛盾する。旧版(20260923)の同じ段落とバイト単位で完全に同一であることを確認済み:
+```
+python3 - <<'EOF'
+old = open('docs/DATA/delegations/20260923_backtest_env_prompt.md', encoding='utf-8').readlines()
+new = open('docs/DATA/delegations/20260925_backtest_env_prompt.md', encoding='utf-8').readlines()
+print("IDENTICAL:", old[110] == new[102])
+EOF
+```
+→ `IDENTICAL: True`。この文書は「文書全体が指示」(冒頭 3 行)であり、場面係・批評家がこの段落だけを読めば「監査役(場面)に出すまで待つ」「表の前に監査役へ出す」という、もはや実行されない手順に従おうとしうる。質問(e)で挙げられた「前の版から残った現行の指示」に該当する最も重大な事例。P-xx: P2(意味が変わったら定義を差し替える。訂正は古い定義を消してから)に相当する型 — ここでは「手順」が変わったのに旧い手順の記述が消されていない。
+
+2. [止める] docs/DATA/delegations/20260925_backtest_env_prompt.md:91 — §3「周回の数え方と止める条件」点 2 が自己矛盾している。文の冒頭で「L-448 で場面集の監査を外したので、以後は作業者の周だけを数える」と書きながら、同じ文の続きでは旧仕様のまま「**場面集の監査の回数は、作業者の周と同じ「1 項目あたり最大 10 周」に数える**(…例: 場面集の監査に 3 回かかれば、作業者の周は残り 7 周まで。場面集の監査で 10 回を使い切れば、作業者は 1 周も走らずに止めた(未達)になる)」「その監査が [止める] を出したら場面係がもう一度直して監査にかけ…」と、削除されたはずの監査を数える規則をそのまま残している。1 の指摘と同根(P2)。「以後は作業者の周だけを数える」を先頭に足しただけで、後続の矛盾する具体例・手順文を削っていない。
+
+3. [直す] / [聞く] scripts/check_bt_delegation.py:42-44 — `DEFAULTS` が旧い委任文 `20260923_backtest_env_prompt.md` と、その VERDICTS ファイルを指したまま更新されていない。実際に確かめた:
+```
+python3 scripts/check_bt_delegation.py
+→ NG 枠組み: 指紋が変わった 2ccfc354e4e7 → 7519ec066f2c ... / NG 誤り 1 件
+
+python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260925_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js
+→ OK 誤り 0 件
+
+python3 scripts/check_bt_delegation.py --fingerprint  (DEFAULTS[0] = 旧ファイルを使う)
+→ 7519ec066f2c
+python3 -c "import sys; sys.path.insert(0,'scripts'); import check_bt_delegation as c; from pathlib import Path; print(c.framework_fingerprint(Path('docs/DATA/delegations/20260925_backtest_env_prompt.md').read_text(encoding='utf-8'), Path('scripts/workflows/backtest_env.js').read_text(encoding='utf-8')))"
+→ 90fef0a038b2  (新委任文が主張する枠組みの指紋 90fef0a038b2 と一致)
+```
+つまり「素の実行(引数なし)」は新委任文を検査せず、無関係な理由(古いファイルの指紋不一致)で NG になる。「OK 誤り 0 件」は新委任文のパスを明示して渡したときにだけ出る値。リードが実測した「OK 誤り 0 件」がどの引数で打ったコマンドかが委任文にも報告にも書かれていない(CLAUDE.md §0.2 の O-3 = 機構の挙動を主張するときは実行したコマンドと出力を同じ返答に出す規則に、コマンドの引数まで含めて満たしているか)。DEFAULTS を更新しないままでは、次回以降さらに版が進んだときに「素の実行で OK」が出ても、実は古い版を検査しているだけという事故が起こりうる構造。
+
+4. [聞く] docs/DATA/delegations/20260925_backtest_env_prompt.md:81(項目 4 の行)と `bt_args_run12.json` の `items[4].extra` — 「参照実装(旧 11)は核 `src/bot/bt/core/` の実装を読まずに…別の agent が書く」という要件が明記されているが、`scripts/workflows/backtest_env.js` の `runItem()` には項目 4 用の「参照実装」役の `agent(...)` 呼び出しが見当たらない(項目 4 でも他項目と同じ単一の作業者 `wP` だけが起こされる)。この「核を見ない別の作業者」という要件は、台本の配線で強制されているのか、それとも項目 4 の作業者(核を読める)の自己申告・自主性に委ねられたままなのか。委任文全体が「相手の自己申告は次の周の批評家/監査役の読み直しでしか捕まらない」という穴を繰り返し警戒している(58-3・59-1 と同じパターン)のに、この要件だけ機械の配線が見当たらない。
+
+5. [聞く] docs/DATA/delegations/20260925_backtest_env_prompt.md:81 — 項目 4 の「持ち物」列に旧番号のパス `tests/bt/item_11/` がそのまま残っている(`src/bot/bt/reference/`・`tests/bt/item_11/`、`src/bot/bt/compat/`・`tests/bt/compat/`)。§3「場面集の規則」7 の一般則は「作業者 = `tests/bt/item_<番号>/`」で、項目 4 自身の番号なら `tests/bt/item_4/` になるはず。`tests/bt/item_11/` は参照実装役(旧 11)のための意図的な別パスか、旧番号の付け替え漏れか、委任文からは判別できない。
+
+6. [直す] / [聞く] scripts/workflows/backtest_env.js:270-276(critic 関数のプロンプト) — 委任文 49 行目・台本 162 行目のコメントはいずれも「値は場面係の申告で、偽の申告は次の周の批評家が読む」と書くが、critic() のプロンプト本文には場面係の自己申告(`changed_files`・`tests_passed`、`checkBattery` が検める対象)を批評家が独立に確かめ直せという指示が見当たらない。批評家に渡されるのは「場面集が規則 1〜9 を守っているか」の一般チェックのみで、規則 1〜9(場面集の中身の質に関する規則)は「実装に触れていないか」「試験が本当に通ったか」を対象にしていない。checkBattery(scripts/workflows/backtest_env.js:144-151) 自身は場面係が返した `changed_files`/`tests_passed` を機械的に読むだけで、独立に `git diff` や pytest を再実行して裏取りする配線ではない。「次の周の批評家が読む」という守りが、具体的にどの文でどう配線されているのか委任文・台本のどちらにも見当たらない(9 の穴と守り、L-448 の項目の並行の直しに対する fix_files のような機械的裏取りが、この自己申告には無い)。
+
+7. [確認] `bt_args_run12.json` — `passed_items: []`・`open_battery: []`。`lead_notes["0"]` によれば項目 0 は 9 回目起動の第 12 周でまだ「戻し」の途中(第 13 周からの続き)であり、実装の側の通過はまだ確定していないため、この時点では空欄が正しいという読みは成り立つ。ただし委任文 48 行目は「適用は項目 0 の通過のあと、新しい run で(項目 0 は `passed_items` で通過済みとして持ち越し…)」と明記しており、この run12 が「項目 0 通過後の切り替え専用の起動」なのか「まだ項目 0 を回している最中の起動(たまたま items 1〜4 の定義も同梱している)」なのかが委任文・引数のどちらにも一言で書かれていない。委任文どおりであれば、項目 0 が本 run 中に通過した場合は台本が自動的に stage2 に進む(`runItem` 内の `pass` 分岐)ので動作は壊れないが、「なぜこの run で `passed_items` が空なのか」を一行の注記として残していない点は A-10(説明なく族・範囲を縮める/切り替える)の周辺に触れる。
+
+以上 7 件(1・2 が最も重い — 委任文自身の中で「監査役(場面)は廃止」と「監査役(場面)にかける」が両方、現行の指示として同居している)。他は省略なし(全件記載)。
+
+### リードの処置(2026-09-25 10:50 UTC。処置後の版 72cfedf21884、指紋 7e9d8b96ba0e = 役 `参照実装:4` を足したので指紋が変わり、65 回目に出す)
+
+- 64-1 [止める]: 当たっている。§3「場面集」の段落の文(審査員が読む前に監査役にかける / 1 周目の前にかける / 監査役(場面)が見るのは / もう一度かける / 表を作る前に監査役にかける / 最初の周の表はその周の盲検の前にかける)を L-448 の形(外した・機械の検査・批評家が読む)に書き換えた。経緯の文は「経緯」と分かる形で残した。
+- 64-2 [止める]: 当たっている。§3「周回の数え方」2 を書き直した(作業者の周だけを数える。旧の数え方は L-407・L-418・L-427・L-428 の経緯として 1 文に畳んだ)。
+- 64-3 [直す]: `DEFAULTS[0]` を新しい版に替えた。「OK 誤り 0 件」を出したコマンド(逐語): `python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260925_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/bt_args_run12.json` → `OK 誤り 0 件`(処置後の実測)。
+- 64-4 [聞く]: 配線されていなかった(自主性に委ねていた)。台本に役 `参照実装:4` を足した(項目 4 の 1 周目の作業者の前に起こす。読めるのは §2 の行と要件だけ、核を開かない。成果物の形で批評家が読む)。委任文 §2 の項目 4 の行と引数の extra に同じ文。検査器の ROLE_SCRUTINY に役を足した。
+- 64-5 [聞く]: 付け替え漏れ。`tests/bt/item_4/reference/`(旧 `tests/bt/item_11/`)に直した。
+- 64-6 [直す]: 批評家の文に裏取りの指示を足した(自分で `git diff --name-only HEAD`・`git status --short` を打ち、場面集の試験を自分で回し、違えば [止める] target=場面集)。委任文 §0 の L-448 の行と §3「場面集」に同じ配線を書いた。
+- 64-7 [確認]: §0 の L-447 の行に「`passed_items`・`open_battery` は切り替えの起動でリードが埋める。通過前に起動するなら空で、その run で通過すれば台本が項目 1〜3 に進む」を書いた。
