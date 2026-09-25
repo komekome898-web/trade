@@ -478,14 +478,23 @@ def classified_searches(rnd, line_judged, errs, rule_table=None):
         return done
     # 同じ検索の手に cat8_classify.py を打ち直したら、最後の 1 回だけを数える(決まりを見直して打ち直すことは
     # 許す。前の回の手は数えずに名前だけ出す = 監査 80 回目の指摘 1)。
-    last = {}
+    # 一度 unmatched に出た行は、打ち直した回で決まりに取られても行の表に理由が要る(打ち直しで行を決まりに
+    # 移して消すことを止める = 監査 81 回目の指摘 1)。行の表の行は、どれかの回の unmatched に出た行に限る。
+    last, ever = {}, {}
     for blk in re.split(r"(?m)^(?=--- )", lp.read_text()):
         m = CLASSIFY_RE.search(blk)
         if not m or m.group(1) != fname:
             continue
-        last[step_start(fname, int(m.group(2)))] = (blk, m)
+        st0 = step_start(fname, int(m.group(2)))
+        last[st0] = (blk, m)
+        ever.setdefault(st0, set()).update(re.findall(r"^unmatched\t(\S+:\d+)\t", blk, re.M))
+    all_unmatched = set().union(*ever.values()) if ever else set()
+    stale = [k for k in line_judged if k not in all_unmatched]
+    if stale:
+        errs.append("`### 当たりの判定(行ごと)` の表に、どの cat8_classify.py の手の unmatched にも出ていない行 %d 件: %s"
+                    % (len(stale), " ".join(stale[:3])))
     for st, (blk, m) in last.items():
-        miss = [u for u in re.findall(r"^unmatched\t(\S+:\d+)\t", blk, re.M) if not line_judged.get(u)]
+        miss = [u for u in sorted(ever[st]) if not line_judged.get(u)]
         if miss:
             errs.append("生ログ %s: cat8_classify.py の手の決まりに当たらなかった行 %d 件が `### 当たりの判定(行ごと)` の表に理由つきで無い: %s" % (fname, len(miss), " ".join(miss[:3])))
             continue
@@ -579,11 +588,16 @@ def cmd_check_elements(a):
                 rule_table_errs.append("`### 決まりの一覧` の行の列が 6 つでないか、1 列目が `docs/DATA/probes/<生ログ>:<行>` でない"
                                        "(正規表現の中の `|` は `\\|` と書く = 監査 80 回目の指摘 3): %s" % ln[:120])
                 continue
-            rule_table[(step_start(mm.group(1), mm.group(2)), c[1])] = [c[2], c[3], c[4], c[5]]
+            key = (step_start(mm.group(1), mm.group(2)), c[1])
+            if key in rule_table:
+                rule_table_errs.append("`### 決まりの一覧` に同じ手・同じ id の行が 2 つ以上ある(監査 81 回目の指摘 4): %s %s" % (c[0], c[1]))
+            rule_table[key] = [c[2], c[3], c[4], c[5]]
             continue
         if in_lj and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
             c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
             if len(c) >= 2 and c[0] not in ("ファイルの道と行", "道と行"):
+                if c[0].strip("`") in line_judged:
+                    rule_table_errs.append("`### 当たりの判定(行ごと)` に同じ行が 2 つ以上ある(監査 81 回目の指摘 4): %s" % c[0])
                 line_judged[c[0].strip("`")] = c[-1]
             continue
         if in_hj and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
