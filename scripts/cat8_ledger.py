@@ -480,10 +480,11 @@ def classified_searches(rnd, line_judged, errs, rule_table=None):
     # 許す。前の回の手は数えずに名前だけ出す = 監査 80 回目の指摘 1)。
     # 一度 unmatched に出た行は、打ち直した回で決まりに取られても行の表に理由が要る(打ち直しで行を決まりに
     # 移して消すことを止める = 監査 81 回目の指摘 1)。行の表の行は、どれかの回の unmatched に出た行に限る。
-    # 終わりの行の無い手(--keep が足りずに切れた手・途中で落ちた手)も、コマンドの --step で手を決めて、出た
-    # unmatched の行を ever に入れる(監査 82 回目の指摘 1)。数える(last)のは終わりの行のある手だけ。
+    # 終わりの行の無い手(--keep が足りずに切れた手・途中で落ちた手)も、コマンドの --step で手を決める。
+    # 切れた手の出力は全部が見えないので、その検索の手は (乙) として数えない(ファイルの表 (甲) を求める。
+    # 監査 83 回目の指摘 1・2: 途中で切れた unmatched の行・unmatched に届く前に切れた出力は拾えない)。
     import shlex
-    last, ever = {}, {}
+    last, ever, cut = {}, {}, set()
     for blk in re.split(r"(?m)^(?=--- )", lp.read_text()):
         bl = blk.split("\n")
         cmd = bl[1] if len(bl) > 1 and bl[1].startswith("$ ") else ""
@@ -502,12 +503,16 @@ def classified_searches(rnd, line_judged, errs, rule_table=None):
         m = CLASSIFY_RE.search(blk)
         if m and m.group(1) == fname:
             last[st0] = (blk, m)
+        else:
+            cut.add(st0)
     all_unmatched = set().union(*ever.values()) if ever else set()
     stale = [k for k in line_judged if k not in all_unmatched]
     if stale:
         errs.append("`### 当たりの判定(行ごと)` の表に、どの cat8_classify.py の手の unmatched にも出ていない行 %d 件: %s"
                     % (len(stale), " ".join(stale[:3])))
     for st, (blk, m) in last.items():
+        if st in cut:
+            continue
         miss = [u for u in sorted(ever[st]) if not line_judged.get(u)]
         if miss:
             errs.append("生ログ %s: cat8_classify.py の手の決まりに当たらなかった行 %d 件が `### 当たりの判定(行ごと)` の表に理由つきで無い: %s" % (fname, len(miss), " ".join(miss[:3])))
@@ -531,6 +536,24 @@ def classified_searches(rnd, line_judged, errs, rule_table=None):
                             % (fname, st, " ".join(bad[:5]) or "-", " ".join(extra[:5]) or "-"))
                 continue
         if st:
+            done.add(st)
+    # 切れた手のある検索の手は、あとに打った同じコマンドの cat8_search.py の手が (乙) で数えられたときだけ、それで
+    # 済んだとする(同じ一覧・同じ型なので当たりの行は同じ)。そうでなければ (乙) として数えず、ファイルの表を求める
+    # (エラーにはしない。生ログから消せない手でその回が 0 件にならなくなるのを避ける = 監査 80 回目の指摘 1 と同じ型)。
+    cmds = {}
+    ll = lp.read_text().splitlines()
+    for i, ln in enumerate(ll):
+        if ln.startswith("--- ") and i + 1 < len(ll) and "cat8_search.py" in ll[i + 1]:
+            j = i + 1
+            while j + 1 < len(ll) and not ll[j + 1].startswith("--- "):
+                j += 1
+            foot = [x for x in ll[i + 1:j + 1] if x.startswith("cat8_search: complete ")]
+            # コマンドに加えて、一覧の sha・件数・当たりの数も同じであること(一覧を書き換えて打ち直した手を同じとしない)
+            cmds[i + 1] = (ll[i + 1], re.sub(r" list=\S+", "", foot[-1]) if foot else None)
+    for st in cut:
+        if st in done:
+            done.discard(st)
+        if st and cmds.get(st, (None, None))[1] and any(st2 > st and cmds.get(st2) == cmds.get(st) for st2 in done):
             done.add(st)
     return done
 
