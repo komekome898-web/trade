@@ -59,6 +59,7 @@ import pytest
 from bt0_util import find
 
 from bot.bt.core.api import _OrderPort
+from bot.bt.core.values import PlainDecimal, PlainFraction
 
 from bot.bt.core import (
     PATH_CARRIERS,
@@ -286,7 +287,9 @@ def _shared(g1: list, g2: list) -> list:
     return [o for o in g1 if id(o) in ids and not _kept_once_per_value(o)]
 
 
-_CORE_BUILT = (type(None), bool, int, float, complex, str, bytes, Decimal, Fraction, tuple, frozenset,
+# round 15 (i0-r14-01): the core builds a Fraction / Decimal as its own PlainFraction / PlainDecimal
+# (their == asks no ABC); the library's Fraction and Decimal are no longer built, so they left the table
+_CORE_BUILT = (type(None), bool, int, float, complex, str, bytes, PlainDecimal, PlainFraction, tuple, frozenset,
                FrozenList, FrozenSet, FrozenDict, types.MappingProxyType, dict, *PATH_CARRIERS)
 
 
@@ -440,8 +443,9 @@ def test_a_value_the_sender_changes_through_its_slots_does_not_cross():
     object.__setattr__(held[3], "_items", (("a", 5),))
     _attack(held)
     assert req.extra_dict() == before
-    assert req.extra_dict()["k0"] == Fraction(1, 3) and type(req.extra_dict()["k0"]) is Fraction
-    assert req.extra_dict()["k1"] == Fraction(2, 5) and type(req.extra_dict()["k2"]) is Decimal
+    # round 15: built as the core's own PlainFraction / PlainDecimal (a Fraction / a Decimal)
+    assert req.extra_dict()["k0"] == Fraction(1, 3) and type(req.extra_dict()["k0"]) is PlainFraction
+    assert req.extra_dict()["k1"] == Fraction(2, 5) and type(req.extra_dict()["k2"]) is PlainDecimal
     assert not _shared(_graph(req), _graph(held))
 
 

@@ -106,7 +106,10 @@ br13-1-1〜3 のリードの答えは、記録の見出しに「次の起動の 
 
 ### 6.6 試験の結果
 
-(§7 を書いたあとに打った。出力は `<S>item0_r15-1_scenekeeper_pytest_after.txt` と `<S>pytest_item0_r15-1_scenekeeper.log`。末尾の行を下に写す。)
+(§7 を書いたあとに打った。出力は `<S>item0_r15-1_scenekeeper_pytest_after.txt` と `<S>pytest_item0_r15-1_scenekeeper.log`。)
+
+- 全試験: `PYTHONPATH=src python -m pytest -p no:cacheprovider > <S>pytest_item0_r15-1_scenekeeper.log`(06:27:13〜06:42:24 UTC)の末尾の行「18 failed, 5061 passed, 6 skipped, 1 warning in 909.26s (0:15:09)」。落ちた 18 件は、第 14 周の批評家の試験(実装の側の指摘 i0-r14-01〜04 の根拠。CRITIC.md に「全部落ちる」「15 件のうち 3 件落ちる」と書かれた 4 + 10 + 3 = 17 件)と、作業者の試験 `tests/bt/item_0/test_bt0_r14_process_state.py` の 1 件(同じ時間に作業者が第 15 周の直しをしている。`git status --short tests/bt/item_0` → `M tests/bt/item_0/test_bt0_r15_library_code.py`)。場面集の試験(`tests/bt/battery/`)で落ちたものは 0 件。
+- 場面集と批評家 i0-r11 の試験(このファイルの §6.6 と §8 を書き、行と語の判断を足したあとに最後に打った): 出力 `<S>item0_r15-1_scenekeeper_pytest_after.txt`: 場面集の全部と i0-r11 の批評家の試験「250 passed」、主張の表の試験 4 ファイル「139 passed」、`gen_definitions.py --check`「OK」、`check_bt_considered.py … --write`「OK 誤り 0 件」。
 
 ## 7. 提出前の吟味(委任文 §3「提出前の吟味」(1)〜(6))
 
@@ -127,3 +130,31 @@ br13-1-1〜3 のリードの答えは、記録の見出しに「次の起動の 
 | 実装(`src/bot/bt/`)と作業者の試験(`tests/bt/item_0/`)に触れる | 触れていない(§8 の差分) |
 | 既存の試験を弱めた・消した | 消していない。`test_battery_r13_claims.py` は格子を広げ(数の assert を 4 → 6 に)、`test_battery_r13_claim_mutants.py` は mutant を足しただけ。升目の節に「未決」の語を入れないために、一覧に場面の「何を測るか」を写す最初の版をやめた(既存の試験 `test_grid_table_lists_every_cell_of_every_viewpoint_once` は変えていない) |
 | 自分の作業の採点を書く(O-10) | この表は候補と、したことだけを書き、通るかの判定は書いていない |
+
+## 8. `git diff --name-only HEAD` の出力(返す前に最後に打った)
+
+この起動の間にリードが途中の版を 2 回コミットした(`git log --oneline 563661d..HEAD` → 39af7b0・a1b480c の "Checkpoint run 11 round 1[45] …")。a1b480c がこの回の変更の大部分を含むので、HEAD との差分はこの回の変更の一部しか出ない。この回の変更の全部は、起動の始めの版 563661d との差分(下の 2 つ目・3 つ目)で示す。
+
+```
+$ git diff --name-only HEAD
+docs/AUDITOR/TRACE/2026-09-25_220780c0.json
+src/bot/bt/core/contract.py
+tests/bt/battery/item_0/ROOTCAUSE_r15-1.md
+tests/bt/item_0/test_bt0_r15_library_code.py
+
+$ git diff --name-only 563661d -- tests/bt/battery/
+tests/bt/battery/item_0/DEFINITIONS.md
+tests/bt/battery/item_0/ROOTCAUSE_r15-1.md
+tests/bt/battery/item_0/gen_definitions.py
+tests/bt/battery/item_0/grid_c.py
+tests/bt/battery/item_0/line_judgments.tsv
+tests/bt/battery/item_0/scenes.py
+tests/bt/battery/item_0/term_judgments.tsv
+tests/bt/battery/item_0/test_battery_r13_claim_mutants.py
+tests/bt/battery/item_0/test_battery_r13_claims.py
+tests/bt/battery/item_0/test_battery_r15_unplaced.py
+
+$ git status --porcelain --untracked-files=all -- tests/bt/battery/ | grep '^??'
+```
+
+tests/bt/battery/ の外のファイルの理由: `docs/AUDITOR/TRACE/2026-09-25_220780c0.json` は道具の呼び出しの記録(フックが書く)、`src/bot/bt/core/contract.py` と `tests/bt/item_0/` の下のファイルは同じ時間に第 15 周の直しをしている作業者の物で、どれも場面係は書いていない。`src/bot/bt/` と `tests/bt/item_0/` の下のファイルを場面係は変えていない(563661d 以降のそれらの変更は、リードのコミット a1b480c・39af7b0 と作業木の作業者の変更)。

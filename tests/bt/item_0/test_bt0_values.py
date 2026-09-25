@@ -35,7 +35,7 @@ from bot.bt.core import (
     TradeEvent,
     VenueProtocolError,
 )
-from bot.bt.core.values import freeze, thaw
+from bot.bt.core.values import PlainDecimal, PlainFraction, freeze, thaw
 
 from test_bt0_events import SAMPLES
 
@@ -207,7 +207,8 @@ def _builtin_only(value) -> bool:
         return all(_builtin_only(v) for v in value)
     if isinstance(value, dict):
         return all(_builtin_only(k) and _builtin_only(v) for k, v in value.items())
-    return type(value) in (type(None), bool, int, float, complex, str, bytes, Decimal, Fraction)
+    # round 15 (i0-r14-01): a Fraction / Decimal comes back as the core's own PlainFraction / PlainDecimal
+    return type(value) in (type(None), bool, int, float, complex, str, bytes, PlainDecimal, PlainFraction)
 
 
 def test_plain_data_round_trips_and_later_changes_do_not_reach_the_request_seeded():

@@ -155,6 +155,9 @@ def test_the_battery_itself_decides_the_values_by_the_rule(state_results):
 def test_in_a_clean_process_the_core_decides_numbers_and_mappings_as_the_abcs_do():
     got = _child("equivalence")
     assert got["numbers_diff"] == [] and got["mapping_diff"] == []
+    # round 15 (i0-r14-04): the one difference, by rule: numpy's counts in a unit (the ABCs call a
+    # timedelta64 an Integral; the core refuses it; a datetime64 is no number for either)
+    assert sorted(got["units"]) == [["numpy.datetime64", None, None], ["numpy.timedelta64", "int", None]]
     assert got["static"] > 50 and got["classes"] > 1000
 
 

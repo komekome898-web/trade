@@ -92,7 +92,7 @@ from .ordering import (
 )
 from .strategy import Strategy
 from .time import TIME_CONTRACT, Nanos, nanos_to_iso, to_nanos, validate_nanos
-from .values import FIELD_RULE, PLAIN_DATA_RULE, FrozenDict, FrozenList, FrozenSet
+from .values import FIELD_RULE, PLAIN_DATA_RULE, FrozenDict, FrozenList, FrozenSet, PlainDecimal, PlainFraction
 from .window import POSITION_RULE, AnswerPlace, DeliveredEvents
 
 import types as _types

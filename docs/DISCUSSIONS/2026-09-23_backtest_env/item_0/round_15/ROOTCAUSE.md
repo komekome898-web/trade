@@ -127,6 +127,28 @@
 4. `RecursionError` を捕まえる直しは場当たりではないか → 核の歩きは反復にして(捕まえるのはインタプリタの比較の残りだけ)、残りの範囲を契約と試験で固定する。
 5. 速さ → 直した後に第 14 周と同じ測り(`<W>/item0_r14_worker_speed.py` の形)で測って書く。
 
-## 8. 直したあとの確かめ
+## 7'. 返す前に潰した点(§7 の結果)
 
-(直したあとに書く)
+1. `PlainFraction` / `PlainDecimal` と「組み込みの型そのもの」: 欄は今も組み込みの型そのもの。契約 `channel_payloads.rule` に「平らな値の Fraction / Decimal は核の PlainFraction / PlainDecimal」と書き(contract.py 229 行)、`PLAIN_DATA_RULE` にも書いた。受け手の読み方(`isinstance(v, Fraction)`、演算の結果)は `test_fractions_and_decimals_read_back_as_the_cores_own_subclasses` で縛った。
+2. 核の等しさと Python の等しさ: `test_the_cores_number_equality_is_pythons_in_a_clean_process`(15 の値 × 36 の相手 × 両向き・`!=`・hash)。ライブラリ自身が答えられない対(C の decimal と numpy の整数: `Decimal('0.5') == np.int64(100)` がライブラリで `TypeError`)は、核が例外を出さずに真偽を返すことだけを確かめる。signaling NaN はライブラリの答えが文脈の罠で変わるので、核は「等しくない」と決め、罠を外しても同じことを `test_a_signaling_nan_…` で確かめた。
+3. 大きな指数の Decimal: `Decimal('1E+999999')`・`Decimal('1E-999999')` を等しさの試験に入れた(十進の文脈の `compare` で比べ、巨大な int を作らない)。
+4. `RecursionError` を捕まえる所: 核の歩きは反復にしたので、捕まえるのはインタプリタの比較の残り(hash の衝突した別々の入れ子の値)だけ。範囲は `test_colliding_nested_values_…` と契約の文で固定した。
+5. 速さ: §8。
+6. 追加で見つけて直したもの(同じ族): (a) 核が作った Decimal の `str` / `repr` / `f"{}"` がスレッドの文脈の `capitals` を読む(ライブラリの `Decimal.__str__`)。別の者が文脈を変えると受け手が読む文字が変わるので、核の文脈で書く形にした(`test_the_text_of_a_decimal_the_core_built_…`)。書式を指定した整形(`format(d, '.2f')`)はライブラリの定義で文脈の丸めを使う = 読み手が自分の呼び出しで選ぶ物として残し、class の説明に書いた。(b) 送り手の dict / 集合では別々だった鍵が、核が作り直すと等しくなる場合(送り手の float の子が `__eq__` を常に偽にしたもの)、以前は黙って 1 つにまとめていた(値が 1 つ消える)。断る形にした(`_dict_of` / `_set_of`、`test_keys_distinct_for_the_sender_but_equal_as_plain_data_are_refused_not_merged` 9 件)。
+7. 事象の型の表を hash の順に回していないか(Enum の hash は名前の str の hash で、プロセスごとに種が違う): 核が表を作るときは `for t in EventType`(Enum の定義順。history.py 213-217・245・262 行、api.py 593 行)。事象の型の集合(`MARKET_EVENT_TYPES` ほか)を回すのは contract.py 34-36 行の `sorted(...)` だけで、ほかは所属の判定(`grep -n "for .* in .*_TYPES\|set(\|frozenset(" src/bot/bt/core/*.py` の出力を 1 行ずつ読んだ)。
+
+## 8. 直したあとの確かめ(コマンドと出力)
+
+直した場所(ファイル:行は直した後の作業木):
+- i0-r14-01: `src/bot/bt/core/values.py` の `PlainFraction`(357 行)・`PlainDecimal`(369 行。`str` / `repr` / 空の書式も核の文脈で書く = 受け手が読む核の値の文字がスレッドの `capitals` に従わない)・`_number_equal`(307 行)・`_number_parts`・`_decimal_equal`・`_fraction_hash`・`_make_fraction`・`exact_context`・`_new_decimal`、BUILD に 2 つの class を足した表、`FrozenDict` の `_pairs_hash` / `_HashOnly` / `_fd_fill`(hash を作るときに組を比べずに計算)。`thaw` も `PlainFraction` / `PlainDecimal` を返す。
+- i0-r14-02: `values.py` の `bind_carriers`・`_CARRIER_TABLES`(IdTable 2 つ)・`copy_carrier`・`rebuild_carrier`・`_make_copier` / `_make_rebuilder`(`_dataclasses` は先頭で import、コードは `<bot.bt.core.values copier of …>` の名前で compile)。`src/bot/bt/core/contract.py` が `PATH_CARRIERS` の直後に `bind_carriers(PATH_CARRIERS)` を 1 回呼ぶ。
+- i0-r14-03・04: `values.py` の `UNIT_CLASSES`・`number_kind`(単位を持つ型は None)・`_exactly_converted` / `_same_real`(`longdouble` / `clongdouble` の整数比を照らす)・`_now`(正確でなければ断る)・`fraction_float` / `decimal_float`。`src/bot/bt/core/time.py` の `to_nanos`(`PlainFraction` は int の演算、十進の演算は全部 `exact_context()` の `compare` / `quantize` / `to_sci_string`)。
+- i0-r14-05: `values.py` の `_walk`(明示の積み上げの反復)と、それを使う `freeze` / `settle` / `renew` / `thaw`、`CALL_FRAMES = 30`、`_recursion_text`。
+- 契約: `contract.py` の `process_state`(測って変化 0 だったものと、測っていない対象外を分けて書いた = 第 14 周のリードの答えの条件)・`channel_payloads.rule`・版 `core-16`。`PLAIN_DATA_RULE`(values.py)。`src/bot/bt/core/__init__.py` が `PlainFraction` / `PlainDecimal` を公開する。
+
+確かめ:
+- 第 14 周の批評家の試験 3 本 + 第 13 周の 1 本 + 第 11 周の 3 本: `PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r14_process_state_through_library_code.py tests/bt/critic/item_0/test_i0r14_time_values_silently_changed.py tests/bt/critic/item_0/test_i0r14_nesting_refusal_depends_on_the_callers_stack.py tests/bt/critic/item_0/test_i0r13_process_global_state_decides_core_values.py tests/bt/critic/item_0/test_i0r11_class_dict_key_runs_foreign_code.py tests/bt/critic/item_0/test_i0r11_pinned_dropped_facts_fail_the_core_step.py tests/bt/critic/item_0/test_i0r11_history_limit_exact_refusal.py -p no:cacheprovider` → `59 passed in 3.76s`(`<W>/pytest_item0_r15_worker_critic_after.log`)。直す前は第 14 周の 3 本が `17 failed, 12 passed`。
+- 新しい格子(§6): 直す前 `167 failed, 942 passed`(`<W>/pytest_item0_r15_worker_prefix.log`。落ちたのは格子 A の 2 件、格子 B の numbers の ABC 8 通りと `sys_modules:dataclasses`、十進の旗、格子 B' の 2 件、格子 C の 94 件、格子 D の 42 件ほか)。直した後、第 14 周の格子と合わせて `1213 passed`(`<W>/pytest_item0_r15_worker_grids_after.log`)。
+- 核の入口が要る枠(`<W>/item0_r15_worker_probe_headroom.out`): freeze 12・settle 12・renew 12・thaw 9・on_event の中の place_order 22・order() と extra_dict() 11(入れ子 1〜101、入れ物 5 種の最大)。hash の衝突した別々の入れ子の値: 10 段 18、50 段 58、98 段 106。
+- 速さ(第 14 周と同じ測り `<W>/item0_r15_worker_speed.py`、2 万本の足、ほかの試験と同時): HEAD `66.50` / `65.21` us/bar、この周 `64.80` / `65.60` us/bar(`<W>/item0_r15_worker_speed.out`)。
+- 書き直した前の周までの自分の試験(消した試験は無い): `test_bt0_r8_sender_adversary.py`(核が作る型の表 `_CORE_BUILT` の `Fraction` / `Decimal` を `PlainFraction` / `PlainDecimal` に替えた = 核がもう作らない型を外したので弱めていない。`type(...) is Fraction` の 2 行も同じ)、`test_bt0_values.py`(`_builtin_only` の型の表を同じく)、`test_bt0_r14_process_state.py` と子 `_r14_state_child.py`(契約の版 `core-16`。格子 2 の「ABC と同じ答え」から numpy の単位を持つ 2 つの class を外し、外した物がちょうど `timedelta64`(ABC は int、核は数でない)と `datetime64`(どちらも数でない)であることを試験で確かめる)。

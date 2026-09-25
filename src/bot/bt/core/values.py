@@ -369,15 +369,34 @@ class PlainFraction(Fraction):
 class PlainDecimal(Decimal):
     """A Decimal the core built (round 15): the library's Decimal, whose ==
     and != are the core's (`_number_equal`: exact, in a context of the
-    core's own; never the thread's context) and whose hash is Decimal's (C,
-    computed in a context of its own). Slotted; arithmetic gives library
-    Decimals."""
+    core's own; never the thread's context), whose hash is Decimal's (C,
+    computed in a context of its own) and whose str / repr / f"{}" are
+    written by a context of the core's own (the library's read the
+    thread's capitals). Slotted; arithmetic, and formatting with a spec,
+    are the library's (they use the thread's context by their own
+    definition, in the reader's call)."""
 
     __slots__ = ()
 
     __eq__ = _number_equal
     __ne__ = _not_equal
     __hash__ = _DEC_HASH
+
+    def __str__(self) -> str:
+        # written by a context of the core's own: the library's str / repr read
+        # the thread's context (its capitals), which any party can change
+        return exact_context().to_sci_string(self)
+
+    def __repr__(self) -> str:
+        return f"PlainDecimal('{exact_context().to_sci_string(self)}')"
+
+    def __format__(self, spec: str) -> str:
+        # an empty spec (f"{d}") is its str; a spec that asks for rounding or
+        # a layout is the library's formatting, which by its own definition
+        # uses the thread's context -- the reader's choice, in its own call
+        if type(spec) is str and str.__len__(spec) == 0:
+            return exact_context().to_sci_string(self)
+        return Decimal.__format__(self, spec)
 
 
 # THE table of accepted scalar types (module docstring): each type -> the
@@ -618,9 +637,11 @@ def value_text(value: Any) -> str:
 # set in round 14 from the recursive walks of then (3 frames a level, about 20
 # for a run: half of 1000) and kept.
 MAX_NESTING = 100
-# The frames of the interpreter's recursion limit an entry of the core needs
-# below its caller, whatever the nesting of the value (round 15, measured: at
-# most 22, for place_order called from inside on_event; 30 leaves a margin).
+# The frames of the interpreter's recursion limit an entry that takes or hands
+# out plain data needs below its caller, whatever the nesting of the value
+# (round 15, measured over freeze, settle, renew, thaw, and place_order /
+# order() / extra_dict() from inside on_event: at most 22, for place_order
+# from inside on_event; 30 leaves a margin).
 # With less headroom than this a call may fail with RecursionError; with at
 # least this much, whether a value is taken never depends on the stack depth
 # of the call -- except for the interpreter's comparison above, which needs

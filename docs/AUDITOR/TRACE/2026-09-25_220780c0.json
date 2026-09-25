@@ -13856,13 +13856,13 @@
    "move": 509,
    "tools": {
     "Read": 9,
-    "Bash": 29,
+    "Bash": 30,
     "mcp__Claude_Code_Remote__get_trigger": 1,
     "ReadNotifications": 6,
     "Workflow": 1,
     "mcp__Claude_Code_Remote__send_later": 5
    },
-   "n_tools": 51,
+   "n_tools": 52,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,

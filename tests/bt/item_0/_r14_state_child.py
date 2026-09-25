@@ -676,7 +676,7 @@ def _all_classes():
 def mode_equivalence() -> dict:
     import pandas  # noqa: F401 - a declared dependency: its classes are in the process too
 
-    numbers_diff, mapping_diff, counted = [], [], [0, 0]
+    numbers_diff, mapping_diff, counted, units = [], [], [0, 0], []
     for c in list(_all_classes()):
         try:
             by_abc = next((conv.__name__ for a, conv in ((numbers.Integral, int), (numbers.Real, float),
@@ -686,6 +686,11 @@ def mode_equivalence() -> dict:
             continue
         kind = V.number_kind(c)
         mine = None if kind is None else kind.__name__
+        if V.is_static(c) and any(m is u for m in V._MRO(c) for u in V.UNIT_CLASSES):
+            # round 15 (i0-r14-04): numpy's counts in a unit of their own are not numbers for the
+            # core (int() of a timedelta64 is its count in ITS unit); listed, and checked by the test
+            units.append([f"{c.__module__}.{c.__qualname__}", by_abc, mine])
+            continue
         if V.is_static(c):
             counted[0] += 1
             if mine != by_abc and not any(m is b for m in V._MRO(c) for b in (int, float, complex)):
@@ -694,7 +699,7 @@ def mode_equivalence() -> dict:
         if V.is_mapping(c) != is_map:
             mapping_diff.append([f"{c.__module__}.{c.__qualname__}", is_map])
     return {"numbers_diff": numbers_diff, "mapping_diff": mapping_diff, "static": counted[0],
-            "classes": counted[1]}
+            "classes": counted[1], "units": units}
 
 
 if __name__ == "__main__":

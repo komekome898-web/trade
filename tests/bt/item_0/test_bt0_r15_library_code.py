@@ -132,6 +132,10 @@ REVIEWED = {
     ("enum.py", "Enum.__hash__"): "hash of the member's own name (the core's EventType / OrderState)",
     ("enum.py", "EnumType.__iter__"): "the members of the core's own Enum class",
     ("enum.py", "EnumType.__iter__.<locals>.<genexpr>"): "the same",
+    # seen only in the whole item-0 suite run under the same profile (round 15), not in the workload
+    ("enum.py", "property.__get__"): "a member's own .value / .name (the core's Enum)",
+    ("enum.py", "EnumType.__call__"): "a member of the core's Enum looked up by its value (the class's own map)",
+    ("enum.py", "Enum.__new__"): "the same lookup",
     # code compiled from a string: keyed with its first argument's name, so another piece of code
     # of the same qualname is not taken for it
     ("<string>", "__create_fn__.<locals>.__init__(self)"): "the __init__ dataclasses wrote, when the core was "
@@ -708,3 +712,47 @@ def test_colliding_nested_values_are_refused_by_the_entry_never_recursion_error(
         assert here[0] != "RecursionError", (entry, n, h, here)
         assert here == top or here[0] == "raised", (entry, n, h, here, top)
     assert _entry_outcome(entry, value, k + n + 30) == top, (entry, n)
+
+
+# ---- keys distinct in the sender's container, equal as plain data -------------------------
+
+class _NeverEqual(float):
+    """A float subclass the sender wrote: never equal to anything, so its
+    dict holds it next to the int of the same value."""
+
+    def __eq__(self, other):
+        return False
+
+    def __hash__(self):
+        return float.__hash__(self)
+
+
+@pytest.mark.parametrize("entry", ["freeze", "settle", "extra"])
+@pytest.mark.parametrize("shape", ["dict", "set", "frozenset"])
+def test_keys_distinct_for_the_sender_but_equal_as_plain_data_are_refused_not_merged(entry, shape):
+    a, b = _NeverEqual(1.0), 1
+    value = {a: "x", b: "y"} if shape == "dict" else ({a, b} if shape == "set" else frozenset([a, b]))
+    assert len(value) == 2
+    if entry == "extra":
+        with pytest.raises(OrderApiError):
+            OrderRequest(side="buy", order_type="market", size=1.0, client_order_id="o", extra=(("k", value),))
+    else:
+        with pytest.raises(ValueError):
+            (V.freeze if entry == "freeze" else V.settle)(value)
+
+
+def test_the_text_of_a_decimal_the_core_built_does_not_follow_the_threads_context():
+    """str / repr / an empty-spec format of a PlainDecimal are written by a
+    context of the core's own: the library's read the thread's capitals,
+    which another party can set."""
+    import decimal
+
+    d = V.freeze(Decimal("1E+5"))
+    texts = (str(d), repr(d), f"{d}", format(d, ""))
+    ctx = decimal.getcontext()
+    saved = ctx.capitals
+    try:
+        ctx.capitals = 0
+        assert (str(d), repr(d), f"{d}", format(d, "")) == texts == ("1E+5", "PlainDecimal('1E+5')", "1E+5", "1E+5")
+    finally:
+        ctx.capitals = saved
