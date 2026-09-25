@@ -17,15 +17,20 @@ function cut(name) {
   return src.slice(start, j + 1)
 }
 const splitStops = new Function(`${cut('splitStops')}; return splitStops`)()
-const makeFollowUp = (st) => new Function('defineThenAudit', 'repairBattery', 'auditBattery', 'log', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
-  st.defineThenAudit, st.repairBattery, st.auditBattery, st.log || (() => {}))
+const makeFollowUp = (st) => new Function('defineThenAudit', 'repairBattery', 'auditBattery', 'log', 'agent', 'HEAD2', 'REC', 'MODEL', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
+  st.defineThenAudit, st.repairBattery, st.auditBattery, st.log || (() => {}), st.agent || (async () => 'ok'), '', '/rec', 'm')
 
 const stop = (id, target, fix_files = [], repeat_of = null) => ({ id, level: '止める', target, fix_files, repeat_of, text: id, evidence: '', patchwork: false })
 
 test('item 0: a stop tagged 場面集 whose fix touches src/bot/bt/ counts as implementation-side (58-3)', () => {
-  const r = splitStops({ id: 0 }, [stop('a', '場面集', ['tests/bt/battery/item_0/scenes.py']), stop('b', '場面集', ['./src/bot/bt/core/engine.py']), stop('c', '実装', [])])
+  const r = splitStops({ id: 0 }, [stop('a', '場面集', ['tests/bt/battery/item_0/scenes.py']), stop('b', '場面集', ['./src/bot/bt/core/engine.py']), stop('c', '実装', ['x'])])
   assert.deepEqual(r.impl.map(f => f.id), ['b', 'c'])
   assert.deepEqual(r.bat.map(f => f.id), ['a'])
+})
+
+test('item 0: a 場面集-tagged stop with empty, missing or non-battery fix_files blocks the pass (59-1)', () => {
+  const r = splitStops({ id: 0 }, [stop('e', '場面集', []), { ...stop('m', '場面集'), fix_files: undefined }, stop('o', '場面集', ['tests/bt/battery/item_0/scenes.py', 'docs/x.md'])])
+  assert.deepEqual(r.impl.map(f => f.id), ['e', 'm', 'o']); assert.equal(r.bat.length, 0)
 })
 
 test('other items: every stop blocks the pass', () => {
@@ -51,12 +56,21 @@ test('follow-up returns to the lead when the same family stops 3 times', async (
   assert.equal(out.status, 'escalate'); assert.match(out.reason, /3 回続いた/); assert.equal(k, 3); assert.equal(chain.s3, 3)
 })
 
-test('follow-up stops after 5 repairs when stops keep changing family', async () => {
+test('follow-up has no repair cap (L-433): new families keep being repaired until the audit is clean', async () => {
   let k = 0
   const f = makeFollowUp({ defineThenAudit: async () => ({ definition: 'd' }), repairBattery: async () => ({}),
-    auditBattery: async () => { k++; return { findings: [{ id: `n${k}`, level: '止める', text: 'new', repeat_of: null }] } } })
+    auditBattery: async () => { k++; return { findings: k < 7 ? [{ id: `n${k}`, level: '止める', text: 'new', repeat_of: null }] : [] } } })
   const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], {})
-  assert.equal(out.status, 'escalate'); assert.match(out.reason, /5 回/); assert.equal(k, 5)
+  assert.equal(out.status, 'pass'); assert.equal(k, 7)
+})
+
+test('a follow-up that does not pass is written to a file by an agent (59-4)', async () => {
+  const calls = []
+  const f = makeFollowUp({ defineThenAudit: async () => ({ escalate: '定義の段が 3 回で通らなかった' }), repairBattery: async () => ({}), auditBattery: async () => ({ findings: [] }),
+    agent: async (prompt, opts) => { calls.push({ prompt, opts }); return 'ok' } })
+  const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], {})
+  assert.equal(out.status, 'escalate'); assert.equal(calls.length, 1)
+  assert.equal(calls[0].opts.label, '並行の直しの戻し:0'); assert.match(calls[0].prompt, /FOLLOWUP_STOPPED\.md/)
 })
 
 test('follow-up escalates when the definition step escalates', async () => {

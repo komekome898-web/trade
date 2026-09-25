@@ -57,7 +57,7 @@ const FINDING = { type: 'object', properties: {
   text: { type: 'string' }, evidence: { type: 'string' },
   repeat_of: { type: ['string', 'null'] }, patchwork: { type: 'boolean' },
   target: { type: 'string', enum: ['場面集', '実装'] },
-  fix_files: { type: 'array', items: { type: 'string' } } },  // audit 58-3: the files the fix must change — the machine's basis for the side
+  fix_files: { type: 'array', items: { type: 'string' }, minItems: 1 } },  // audit 58-3 / 59-1: the files the fix must change; empty or missing = implementation side (blocks the pass)
   required: ['id', 'level', 'text', 'evidence', 'repeat_of', 'patchwork', 'target', 'fix_files'] }
 const CRITIC_SCHEMA = { type: 'object', properties: {
   findings: { type: 'array', items: FINDING },
@@ -197,7 +197,9 @@ ${SCRUTINY_FIX}
 // the gate), and the report auditor re-reads every battery-tagged [止める] (prompt below). Pure: tested by node --test.
 function splitStops(item, stops) {
   if (item.id !== 0) return { impl: stops, bat: [] }
-  const isImpl = f => f.target === '実装' || (f.fix_files || []).some(x => String(x).replace(/^\.\//, '').startsWith('src/bot/bt/'))
+  // audit 59-1: fix_files is self-reported too, so the default is the side that blocks the pass: no file named (empty or
+  // missing) = implementation side. A battery-side stop must name only battery files (tests/bt/) to be counted as battery.
+  const isImpl = f => f.target === '実装' || !(f.fix_files || []).length || !(f.fix_files || []).every(x => String(x).replace(/^\.\//, '').startsWith('tests/bt/'))
   return { impl: stops.filter(isImpl), bat: stops.filter(f => !isImpl(f)) }
 }
 
@@ -380,14 +382,22 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
 
 // L-441 (案 2): after item 0 passes on the implementation side, its battery-side findings keep being repaired in
 // parallel with items 1..12 — the definition step for [止める] as always (L-440 案 1), the repair, then the battery
-// audit — until the audit has no [止める], the family rule returns it to the lead, or 5 repairs are spent (never silent)
+// audit — until the audit has no [止める] or the family rule returns it to the lead (no repair cap: L-433). Never silent:
+// a stop is written to FOLLOWUP_STOPPED.md by an agent (audit 59-4)
 async function batteryFollowUp(item, req, bat, findings, chainObj) {
   const hist = []
   let fixList = findings
-  const done = out => { log(`並行の直し(項目 ${item.id}): ${out.status}${out.reason ? ' — ' + out.reason : ''}(直し ${hist.length} 回)`); return out }
+  // audit 59-4: an end that is not a pass is written to a file by an agent, so it shows in the journal (the stall watcher
+  // and the 見回り grep the label) and on disk — log() alone reaches nobody until the run ends
+  const done = async out => {
+    log(`並行の直し(項目 ${item.id}): ${out.status}${out.reason ? ' — ' + out.reason : ''}(直し ${hist.length} 回)`)
+    if (out.status !== 'pass') await agent(`${HEAD2}
+並行の直し(項目 ${item.id})が止まった。次の文をそのまま ${REC}/item_${item.id}/battery/FOLLOWUP_STOPPED.md に書く(1 行目に状態、2 行目に理由、3 行目に直しの回数 ${hist.length})。ほかは何もしない。状態: ${out.status}。理由: ${out.reason || out.stage || ''}`, { label: `並行の直しの戻し:${item.id}`, phase: '要件の固定', model: MODEL, effort: 'low' })
+    return out
+  }
   log(`並行の直し(項目 ${item.id})を始める: 指摘 ${findings.length} 件(止める ${findings.filter(f => f.level === '止める').length})`)
+  // no repair cap: item 0 has no round cap (L-433); the follow-up ends on a clean battery audit or the family rule (3)
   for (let k = 1; ; k++) {
-    if (k > 5) return done({ status: 'escalate', reason: '場面集の並行の直しが 5 回に達した(L-441)', history: hist, bat })
     const n = `f${k}`
     const def = fixList.some(f => f.level === '止める') ? await defineThenAudit(item, req, bat, fixList, n, chainObj, hist) : { definition: null }
     if (def.escalate) return done({ status: 'escalate', reason: def.escalate, history: hist, bat })

@@ -79,6 +79,8 @@ ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), (
                  ("盲検:", "SCRUTINY_JUDGE"), ("欠けているもの", "SCRUTINY_GAPS"))
 # roles that must receive the lead's notes and the prior battery record (audit 49 #3 / audit 50 #2)
 ROLE_NOTES = ("監査役(場面):", "監査役(定義):", "定義:", "場面の直し:", "作る:")
+# roles that only write a fixed text to a file (no judgement, so no scrutiny text): audit 59-4 stop notice
+ROLE_MECHANICAL = ("並行の直しの戻し:",)
 
 
 def check_script(script: str) -> list[str]:
@@ -95,6 +97,8 @@ def check_script(script: str) -> list[str]:
         label = re.search(r"label: `([^`]*)`", opts)
         name = label.group(1) if label else "?"
         line = script[:start].count(chr(10)) + 1
+        if any(f"label: `{r}" in opts for r in ROLE_MECHANICAL):
+            continue
         if "owner-auditor" in opts:
             if any(name.startswith(pre) for pre in ROLE_NOTES) and "lead_notes" not in body:
                 errs.append(f"台本:{line}: agent 呼び出し {name} にリードの注記(args.lead_notes)が届いていない")
