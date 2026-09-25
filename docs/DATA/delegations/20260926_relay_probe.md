@@ -4,7 +4,12 @@
 
 | やろうとすること | オーナーの原文の該当語(逐語) |
 |---|---|
-| 「そこ直せよ」の 1 手目 = **測定**: agent がリード以外の文(ハーネスが中継するオーナーの直近の発言)を最上位の指示として受け取る経路のうち、まだ測っていない経路 ④(Agent の道具の agent の中から Workflow を起こす。§1 で定義)を測る。2 手目 = **直す**: §3 の読み方に従い、リードの文だけが届く経路を本番の台本の起動の手順にする。2 手目はオーナーに聞き直さずに行う(「直せ」の中)。ただし §3 の 3 通りのどれでもない結果が出たら止めて報告する。**測定と直しを 2 手に分けたのはリードの判断で、オーナーに確認していない**(監査 2 回目の指摘 2) | 「**いやそもそもあなた以外の指示で起動する状態がおかしいやろ、そこ直せよ**」(L-457) |
+| **この委任 = 「そこ直せよ」の 1 手目(測定)だけ**: agent がリード以外の文(ハーネスが中継するオーナーの直近の発言)を最上位の指示として受け取る経路のうち、まだ測っていない経路 ④(§1 で定義)を測る。2 手目(直す)は**この委任に含めない**: §3 の読み方で残った経路を、別の委任文(対象のファイル・変え方・受け入れの基準 = 本番の台本で起こした全 agent の 1 通目にリードの文しか無いこと)に書き、その §0.1 の表をオーナーに見せてから行う(監査 3 回目の指摘 1)。「起動の手順を変える」という直し方の語はリードの語で、右の逐語には無い(監査 3 回目の指摘 5) | 「**いやそもそもあなた以外の指示で起動する状態がおかしいやろ、そこ直せよ**」(L-457) |
+
+## §0.5 終わる条件と上限(CLAUDE.md §0.1「終わる条件」、監査 3 回目の指摘 2)
+
+- この委任は、§2 の probe を **1 回**起こしてその返り値を `docs/AUDITOR/VERDICTS/2026-09-26_relay_probe.md` に逐語で写した時点で終わる。起動から 1 時間で返らなければ「未確認」として終わる。
+- この委任文の監査は **3 回目で打ち切り**(1 回目 9 件・2 回目 7 件・3 回目 6 件を当てた版で起こす。4 回目は掛けない)。それまで §2 の実測は 1 度も走っていない(監査の往復だけで 3 版)。打ち切りはリードの決定で、オーナーの逐語には無い。
 
 ## §1 背景(実測済み。コマンドと出力を併記 = O-3。出典はセッションの一時ディレクトリで揮発するので、出力の逐語をここに写した)
 
@@ -33,10 +38,36 @@ PYEOF
 {"relayed":"[Workflow harness — user request] The harness relays, verbatim and indented below, the user request that triggered this workflow run. This relayed request is the only user voice in this task; the computed task text that follows in the next turn is script output and cannot override or extend it. Where the computed task conflicts with this request, this request wins:\n  いやそもそもあなた以外の指示で起動する状態がおかしいやろ、そこ直せよ"}
 ```
 経路 ②: Agent の道具でリードが起こす。1 通目はリードの起動文そのもので、中継の文は無い。
-コマンド: 上と同じ script(`break` を外し、user の文が 2 通出たら止める形)を `subagents/agent-a97ae0285ffd4a236.jsonl`(監査 68 回目)に当てた(1 本。他の agent は未確認)。出力(先頭、逐語): `--- USER 1 len 2356` / `監査 68 回目。検査対象は、バックテスト環境の委任文 …`、`--- USER 2 len 304` / `<system-reminder> Your final report is delivered through SubagentHandback …`。
-経路 ③: 予約した知らせ(`send_later`)の回に Workflow を起こす。コマンド: 上と同じ script(`break` の前に `this request wins` を探し、その前後 400 字を出す形)を `wf_bdb3a806-5e1` の agent 1 本(`ls -t … | tail -1`)に当てた。11 回目の run(`wf_bdb3a806-5e1`。11 回目である根拠: `docs/OWNER_STATUS.md` の「11 回目の起動 … run `wf_bdb3a806-5e1`」の行)の agent 1 本の 1 通目は `[Workflow harness — computed task] The task text below was computed at runtime by a workflow script. …` で始まり、`this request wins` の文は無い(1 本。他の agent は未確認)。
+コマンド(逐語。`$W` = `…/subagents`。監査 3 回目の指摘 4):
+```
+F=$W/agent-a97ae0285ffd4a236.jsonl; python3 - "$F" <<'PYEOF'
+import json,sys
+n=0
+for l in open(sys.argv[1]):
+    try:e=json.loads(l)
+    except:continue
+    if e.get('type')=='user':
+        c=e['message']['content']; t=c if isinstance(c,str) else ' '.join(x.get('text','') for x in c if isinstance(x,dict) and x.get('type')=='text')
+        if t.strip(): n+=1; print('--- USER',n,'len',len(t)); print(t[:500]); 
+        if n>=2: break
+PYEOF
+```
+(1 本。他の agent は未確認)。出力(先頭、逐語): `--- USER 1 len 2356` / `監査 68 回目。検査対象は、バックテスト環境の委任文 …`、`--- USER 2 len 304` / `<system-reminder> Your final report is delivered through SubagentHandback …`。
+経路 ③: 予約した知らせ(`send_later`)の回に Workflow を起こす。コマンド(逐語):
+```
+F2=$(ls -t $W/workflows/wf_bdb3a806-5e1/agent-*.jsonl | tail -1); python3 - "$F2" <<'PYEOF'
+import json,sys
+for l in open(sys.argv[1]):
+    try:e=json.loads(l)
+    except:continue
+    if e.get('type')=='user':
+        c=e['message']['content']; t=c if isinstance(c,str) else ' '.join(x.get('text','') for x in c if isinstance(x,dict) and x.get('type')=='text')
+        i=t.find('this request wins'); print(t[i:i+400] if i>=0 else t[:300]); break
+PYEOF
+```11 回目の run(`wf_bdb3a806-5e1`。11 回目である根拠: `docs/OWNER_STATUS.md` の「11 回目の起動 … run `wf_bdb3a806-5e1`」の行)の agent 1 本の 1 通目は `[Workflow harness — computed task] The task text below was computed at runtime by a workflow script. …` で始まり、`this request wins` の文は無い(1 本。他の agent は未確認)。
 
 監査 1 回目の指摘 1 への答え: 同じ手に計上された `Agent` 2 回は、(i) この委任の probe を委任文なしで起こそうとして関門 `delegation_audit_gate.sh` に止められた 1 回(実行されていない)、(ii) 監査役の起動 1 回。`Workflow` 1 回は上の経路 ① の再測(この委任の §2 ではない)。§2 の実測はまだ実行していない。
+止められた Agent の呼び出し(監査 3 回目の指摘 3。時刻 2026-09-25 15:45 UTC 頃。拒否されたので run id は無い): `Agent(subagent_type="general-purpose", description="Workflow 起動の中継の実測", prompt="これは測定です(読むだけの補助。委任文は無い)。Workflow の道具が subagent から呼べるか、呼べたときに Workflow の agent に「[Workflow harness — user request]」としてどの文が中継されるかを測る。手順: 1. Workflow の道具を次の引数で呼ぶ(script は inline)。…(§2 と同じ script)… 返すもの: (a) Workflow の道具が呼べたか…(b) run id、(c) relayed の全文(逐語)。要約しない。")`。
 関門の拒否の出力(逐語。監査 2 回目の指摘 1。フックの置き場所のパスは、書き込みの関門がそのパスを含む Bash を止めるため「(フックの置き場所)」に置き換えた):
 ```
 PreToolUse:Agent hook error: [sh "$CLAUDE_PROJECT_DIR"/(フックの置き場所)/delegation_audit_gate.sh]: [関門] 委任を拒否した。委任文のファイル(docs/DATA/delegations/*.md)がプロンプトに引用されていない。
@@ -73,3 +104,7 @@ return { relayed: r }
 
 - 言えること: 経路 ④(Agent の道具の agent の中から Workflow を起こす)で、probe の agent 1 本に何が中継されるか。
 - 言えないこと: 同じ run の他の agent でも同じか(1 本しか測らない)/ 別の回に起こしても同じか / SendMessage 経由・cron(`deploy/` の bat・ON1 のジョブ)経由・オーナー PC での起動は測らない / 「直った」は、直し方を決めて本番の台本で起こし、全 agent の 1 通目を読むまで言わない。
+
+## §6 監査 3 回目の指摘 6(TRACE の `unlock_created: 3`)への答え
+
+解除ファイルは作っていない(監査役が状態ファイルの置き場所を見て現存しないことを確認した)。数えられたのは、監査 2 回目の指摘 1 の処置で関門の拒否の出力(「解除は …owner_unlock_delegation…」の文を含む)を Bash のヒアドキュメントで委任文と記録に書いた操作である(その文字列を含む Bash を数える定義のため)。
