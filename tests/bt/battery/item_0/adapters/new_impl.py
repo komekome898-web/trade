@@ -292,6 +292,18 @@ class NewImplAdapter(Adapter):
         return ok(int(self.core.to_nanos(sc.input["iso"], "iso")), "core.to_nanos(iso, 'iso')",
                   {"reader": C.qualname(self.core.to_nanos)})
 
+    # ---------------- P0-2 unit scenes (round r16-1, critic i0-r15-05): the core's own conversion `to_nanos(value, unit)`
+    # (units "s" / "ms" / "us"), handed the input's object as it is; what it returns is reported as it is (common.unit_time)
+    def _units(self, sc):
+        to_nanos = self.core.to_nanos
+        return C.unit_time(sc, [{"unit": u, "forms": ("str", "int", "float"), "how": f"core.to_nanos(値, {u!r})",
+                                 "reader": to_nanos, "call": (lambda u_: lambda v: to_nanos(v, u_))(u)}
+                                for u in ("s", "ms", "us")])
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _ts_scene(self, sc):
         evs = [C.substitute(e, "trade", price=100.0, qty=0.01, side="buy") for e in C.events(sc)]
         seen: list[int] = []

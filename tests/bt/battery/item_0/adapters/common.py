@@ -104,6 +104,57 @@ def dt_to_ns(d) -> int:
     return (delta.days * 86_400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
 
 
+# ---------------------------------------------------------------- P0-2 unit scenes (round r16-1)
+def time_to_ns(obj):
+    """A target's time object read to int ns exactly, never through a float: an int as it is (a bool too; the
+    runner's grader refuses it); a numpy integer as int; a pandas Timestamp by `.value`; an aware datetime by its
+    fields; a naive datetime as UTC; a numpy datetime64 at ns. Anything else comes back as it is (the grader gives
+    null for it)."""
+    import datetime as _dt
+    mod = type(obj).__module__.split(".")[0]
+    if type(obj) is int or type(obj) is bool:
+        return obj
+    if mod == "pandas" and hasattr(obj, "value") and isinstance(obj, _dt.datetime):
+        return int(obj.value)
+    if isinstance(obj, _dt.datetime):
+        return dt_to_ns(obj if obj.tzinfo is not None else obj.replace(tzinfo=_dt.timezone.utc))
+    if mod == "numpy":
+        kind = getattr(getattr(obj, "dtype", None), "kind", None)
+        if kind in ("i", "u"):
+            return int(obj)
+        if kind == "M":
+            import numpy as _np
+            return int(obj.astype("datetime64[ns]").astype(_np.int64))
+    return obj
+
+
+_FORM = {str: "str", int: "int", float: "float"}
+
+
+def unit_time(sc, entries: list[dict], tried: str = ""):
+    """A P0-2 unit scene (scenes.UNIT_SCENES; input {"time", "unit"}) through the target's own entries. `entries` =
+    [{"unit": "s" | "ms" | "us", "forms": ("str", "int", "float"), "how": what the entry is, "reader": the target's
+    function / class (or a `compiled` name), "call": fn(value) -> the target's time object}], in the adapter's fixed
+    order. The first entry whose unit is the scene's unit and whose forms hold the input's form is called with the
+    input's object itself (nothing converted); none -> not supported (with `tried`: what was tried); the entry raising
+    -> not supported (the target refused, with the exception). The result is read with `time_to_ns`."""
+    from protocol import not_supported, ok
+    u, v = sc.input["unit"], sc.input["time"]
+    form = _FORM.get(type(v), type(v).__name__)
+    pick = [e for e in entries if e["unit"] == u and form in e["forms"]]
+    have = "、".join(f"{e['how']}(単位 {e['unit']}、型 {'/'.join(e['forms'])})" for e in entries) or "無し"
+    if not pick:
+        return not_supported(f"単位 {u} の時刻を {form} で読む入口が無い(この道具の時刻の入口: {have})。{tried}")
+    e = pick[0]
+    try:
+        got = e["call"](v)
+    except Exception as exc:  # noqa: BLE001 - the target's own refusal
+        return not_supported(f"{e['how']} に {v!r}(単位 {u})を渡した -> 道具が断った {type(exc).__name__}: {str(exc)[:200]}")
+    reader = e["reader"] if isinstance(e["reader"], Made) else qualname(e["reader"])
+    return ok({"ns": time_to_ns(got)}, f"{e['how']} に {v!r}(単位 {u})を渡し、道具が作った時刻 {got!r:.160} を int ナノ秒に読んだ",
+              {"reader": reader})
+
+
 # ---------------------------------------------------------------- P0-4 reads
 def plain(v, depth: int = 0):
     """A JSON-able copy of what a read returned, so the runner can look for the

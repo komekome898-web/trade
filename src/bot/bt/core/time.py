@@ -13,22 +13,22 @@ There is one sanctioned way to turn a raw, unit-labelled value into one:
 * numeric strings and Decimals are read as the decimal they write, so
   `1700000000.123456789` (as a string) converts without binary-float
   rounding;
-* a float has two readings -- the binary value it holds, and the decimal
-  it prints (its shortest repr, the digits a caller typed when it was
-  made from them) -- and the core sees only the float. It is taken only
-  when both readings are the same number (`1.5`, `0.25`, `1700000000.0`
-  s); a float that does not hold the decimal it prints
-  (`1700000000.123` s holds 1700000000.12299990654...; `1700000000123456.8`
-  us holds ...456.75) is refused with both readings in the text, since
-  either choice would silently change the time the other one states
-  (round 16, i0-r15-01); pass an int, a str or a Decimal instead;
+* a float is read by the value it HOLDS (`float.as_integer_ratio`), never
+  by its shortest repr, which is a decimal rounding of it (round 16,
+  i0-r15-01: `1700000000123456.75` us is held exactly by a float and is
+  1700000000123456750 ns, not the ...800 its repr `1700000000123456.8`
+  would say); the core sees only the float, never the digits a caller
+  typed, so `1700000000.123` s -- a float that holds
+  1700000000.1229999065399169921875 -- has sub-nanosecond digits and is
+  refused (pass an int, a str or a Decimal for such a time);
+* a numpy longdouble is read by the value it holds too (the class's own C
+  `as_integer_ratio`), whether or not a float could hold it;
 * a value whose exact value has sub-nanosecond digits is rejected instead
-  of being rounded silently;
+  of being rounded silently, with the value it holds in the text;
 * a number of another class is converted exactly first (values.py `scalar`):
-  numpy's integers and float16/32/64 as they are; a numpy longdouble only
-  when a float holds its value exactly (else refused with that reason,
-  never rounded); numpy's timedelta64 / datetime64 -- a count in a unit of
-  their own -- are refused (round 15, i0-r14-04);
+  numpy's integers and float16/32/64 as they are; numpy's timedelta64 /
+  datetime64 -- a count in a unit of their own -- are refused (round 15,
+  i0-r14-04);
 * ISO-8601 strings are parsed by this module (not by `datetime`, whose
   resolution stops at microseconds and would drop the last three digits of
   `...00.123456789Z`) and must carry an explicit offset.
@@ -51,7 +51,8 @@ from typing import NewType, Union
 
 from .errors import TimestampUnitError
 from .values import (NOT_PLAIN, PlainDecimal, PlainFraction, as_int, as_text, derives, exact_context,
-                     fraction_parts, int_text, plain_scalar, type_name, value_text)
+                     fraction_parts, int_text, is_longdouble, longdouble_ratio, plain_scalar, type_name,
+                     value_text)
 
 Nanos = NewType("Nanos", int)
 
@@ -76,8 +77,8 @@ TIME_CONTRACT: dict = {
     "epoch": "1970-01-01T00:00:00Z",
     "timezone": "UTC",
     "accepted_input_units": sorted(_UNIT_TO_NS_FACTOR) + ["iso"],
-    "rounding": "none (inputs with sub-nanosecond digits are rejected; a float is taken only when the "
-                "value it holds is the decimal it prints)",
+    "rounding": "none (inputs with sub-nanosecond digits are rejected; a float or a numpy longdouble is "
+                "read by the exact value it holds, never by its shortest repr)",
     "default_plausible_range_ns": [PLAUSIBLE_MIN_NS, PLAUSIBLE_MAX_NS],
 }
 
@@ -168,51 +169,55 @@ def to_nanos(
             f"{sorted(_UNIT_TO_NS_FACTOR)} or 'iso'"
         )
     factor = _UNIT_TO_NS_FACTOR[unit]
-    # the value as a built-in scalar, by its REAL type (values.py `scalar`:
-    # numpy numbers converted once, a subclass read by its built-in type)
-    try:
-        v = plain_scalar(value, "timestamp")
-    except ValueError as exc:
-        # a number whose exact conversion failed (a numpy longdouble a float
-        # cannot hold): refused with that reason (round 16, i0-r15-07)
-        raise TimestampUnitError(f"timestamp value for unit {unit!r}: {exc}") from None
-    if v is NOT_PLAIN:
-        v = None
-    if type(v) is bool:
-        raise TimestampUnitError(f"a bool ({type_name(value)}) is not a timestamp")
     ctx = _decimal_context()
     shown = _shown(value, ctx)
+    ratio = None  # (numerator, denominator): the exact value of a float or a longdouble
+    if is_longdouble(type(value)):
+        # read by the value it holds, by numpy's own C method (round 16)
+        ratio = longdouble_ratio(value)
+        if ratio is None:
+            raise TimestampUnitError(f"non-finite timestamp {shown}")
+        v = None
+    else:
+        # the value as a built-in scalar, by its REAL type (values.py `scalar`:
+        # numpy numbers converted once, exactly; a subclass read by its built-in type)
+        try:
+            v = plain_scalar(value, "timestamp")
+        except ValueError as exc:
+            # a number whose exact conversion failed: refused with that reason
+            # (round 16, i0-r15-07)
+            raise TimestampUnitError(f"timestamp value for unit {unit!r}: {exc}") from None
+        if v is NOT_PLAIN:
+            raise TimestampUnitError(
+                f"timestamp value for unit {unit!r} must be int, float, Decimal, Fraction or "
+                f"numeric str, got {type_name(value)}"
+            )
     t = type(v)
+    if t is bool:
+        raise TimestampUnitError(f"a bool ({type_name(value)}) is not a timestamp")
+    if t is float:
+        if not math.isfinite(v):
+            raise TimestampUnitError(f"non-finite timestamp {shown}")
+        ratio = float.as_integer_ratio(v)  # the value it HOLDS, exactly (never its repr)
     if t is int:
         ns = v * factor
-    elif t is PlainFraction:
+    elif ratio is not None or t is PlainFraction:
         # exactly, with ints: numerator x factor must divide by the denominator
-        n, d = fraction_parts(v)
+        n, d = ratio if ratio is not None else fraction_parts(v)
         if n.bit_length() - d.bit_length() > _MAX_SCALED_BITS:
             raise TimestampUnitError(f"{shown} labelled unit={unit!r} is far outside int64 ns")
         q, r = divmod(n * factor, d)
         if r:
-            raise TimestampUnitError(f"{shown} {unit} has sub-nanosecond digits; refusing to round")
+            held = "" if t is PlainFraction else (
+                f" (it holds {ctx.to_sci_string(ctx.divide(ctx.create_decimal(n), ctx.create_decimal(d)))})")
+            raise TimestampUnitError(f"{shown} {unit}{held} has sub-nanosecond digits; refusing to round")
         ns = q
-    elif t is float or t is str or t is PlainDecimal:
-        if t is float:
-            if not math.isfinite(v):
-                raise TimestampUnitError(f"non-finite timestamp {shown}")
-            # the float's two readings (module docstring): taken only when they agree
-            dec = ctx.create_decimal_from_float(v)  # exactly the value it holds
-            printed = float.__repr__(v)
-            if not ctx.compare(dec, ctx.create_decimal(printed)).is_zero():
-                raise TimestampUnitError(
-                    f"a float timestamp holds {ctx.to_sci_string(dec)} {unit}, not the decimal it prints "
-                    f"({printed}); a float is taken only when the two are the same number (either reading "
-                    f"would silently change the other's time) -- pass an int, a str or a Decimal"
-                )
-        else:
-            text = v.strip() if t is str else ctx.to_sci_string(v)
-            try:
-                dec = ctx.create_decimal(text)
-            except InvalidOperation as exc:
-                raise TimestampUnitError(f"not a number: {shown}") from exc
+    elif t is str or t is PlainDecimal:
+        text = v.strip() if t is str else ctx.to_sci_string(v)
+        try:
+            dec = ctx.create_decimal(text)
+        except InvalidOperation as exc:
+            raise TimestampUnitError(f"not a number: {shown}") from exc
         if not dec.is_finite():
             raise TimestampUnitError(f"non-finite timestamp {shown}")
         # every operation in the core's own context (the comparison and the

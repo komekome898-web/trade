@@ -41,7 +41,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "adapters"))
 sys.path.insert(0, str(HERE.parents[3] / "src"))
 
-from scenes import JP, NAMING_SHAPES, SCENES, TYPE_ORDER, for_target_types  # noqa: E402
+from scenes import JP, NAMING_SHAPES, SCENES, TYPE_ORDER, UNIT_SCENES, for_target_types  # noqa: E402
 import stated_rules  # noqa: E402
 from adapters.protocol import Adapter, SceneResult  # noqa: E402
 
@@ -231,12 +231,23 @@ def _grade_times(sc, out: dict, target: str | None = None) -> dict:
             and all(isinstance(p, (list, tuple)) and len(p) == 2 for p in seq) else None}
 
 
+def _grade_unit_time(sc, out: dict, target: str | None = None) -> dict:
+    """The P0-2 unit scenes (round r16-1, critic i0-r15-05): the time the target made, read by the adapter from the
+    target's time type exactly (`ns`), counts only as an int64 integer -- an int that is not a bool, or a numpy
+    integer; a float (even one equal to an int), a bool, a decimal, a text or a value outside int64 grades as null."""
+    v = out.get("ns") if isinstance(out, dict) else None
+    kind = getattr(getattr(v, "dtype", None), "kind", None) if type(v).__module__ == "numpy" else None
+    is_int = type(v) is int or kind in ("i", "u")
+    return {"int64_ns": int(v) if is_int and -2 ** 63 <= int(v) < 2 ** 63 else None}
+
+
 # scene id -> grader; exactly the scenes with `graded_from` (test_battery_item0.py checks)
 GRADERS = {
     "p1-one-call-per-event": _grade_times,
     "p4-future-read-attempt": _grade_future_reads,
     "p5-same-time-twice": _grade_stated_rule_once,
     "p5-hand-over-order": _grade_hand_over,
+    **{i: _grade_unit_time for i in UNIT_SCENES},
 }
 
 
@@ -306,7 +317,9 @@ CARRIER_SCENES = {
     "p5-same-time-twice": ("order", True), "p5-hand-over-order": ("runs", True),
     "p5-same-stream-order": ("prices", False),
 }
-PROVENANCE_SCENES = set(CARRIER_SCENES) | {"p2-iso-utc", "p2-iso-offset", "p4-visible-at-step", "p4-future-read-attempt"}
+# the scenes whose value is a time the target read (round r16-1: the unit scenes join the ISO scenes)
+READER_SCENES = {"p2-iso-utc", "p2-iso-offset", *UNIT_SCENES}
+PROVENANCE_SCENES = set(CARRIER_SCENES) | READER_SCENES | {"p4-visible-at-step", "p4-future-read-attempt"}
 
 
 class Roots:
@@ -537,8 +550,8 @@ def _reads_problem(out, prov, roots: Roots) -> str | None:
 def _reader_problem(reader, roots: Roots) -> str | None:
     if reader is None or (isinstance(reader, str) and not reader):
         return "reader が無い"
-    why = origin_problem(reader, roots, "ISO の文字列を読んだ関数")
-    return f"ISO の文字列を読んだのが対象の外の関数: {why}" if why else None
+    why = origin_problem(reader, roots, "時刻を読んだ関数")
+    return f"時刻を読んだのが対象の外の関数: {why}" if why else None
 
 
 def provenance_problem(res: SceneResult, scene, target: str | None = None, roots: Roots | None = None) -> str | None:
@@ -555,7 +568,7 @@ def provenance_problem(res: SceneResult, scene, target: str | None = None, roots
         return "provenance が無い"
     if scene.id == "p4-visible-at-step":
         return _reads_problem(out, prov, roots)
-    if scene.id in ("p2-iso-utc", "p2-iso-offset"):
+    if scene.id in READER_SCENES:
         return _reader_problem(prov.get("reader"), roots)
     key, with_kinds = CARRIER_SCENES[scene.id]
     carriers = prov.get("carriers")

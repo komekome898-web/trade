@@ -35,9 +35,15 @@ def test_units_scale_exactly():
 
 
 def test_float_and_string_seconds_do_not_pick_up_binary_rounding():
-    # float(1700000000.123456) * 1e9 in binary floating point is not an
-    # integer number of ns; the decimal path must give the written value.
-    assert to_nanos(1700000000.123456, "s") == 1_700_000_000_123_456_000
+    # Rewritten in round 16 (i0-r15-01): a float is read by the value it holds,
+    # never by its shortest repr. float 1700000000.123456 holds
+    # 1700000000.1234560012817...: sub-nanosecond digits -> refused (it was
+    # taken as ...123456000 by reading the repr). A string or a Decimal gives
+    # the written value; a float whose value is a whole number of ns is taken.
+    with pytest.raises(TimestampUnitError):
+        to_nanos(1700000000.123456, "s")
+    assert to_nanos(1700000000.5, "s") == 1_700_000_000_500_000_000
+    assert to_nanos("1700000000.123456", "s") == 1_700_000_000_123_456_000
     assert to_nanos("1700000000.123456789", "s") == 1_700_000_000_123_456_789
     assert to_nanos(Decimal("1700000000.000000001"), "s") == 1_700_000_000_000_000_001
 

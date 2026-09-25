@@ -12,7 +12,7 @@ from .time import TIME_CONTRACT
 from .values import CALL_FRAMES, FIELD_RULE, INT_TEXT_BITS, MAX_NESTING, PLAIN_DATA_RULE, bind_carriers
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-16"
+CORE_VERSION = "core-17"
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.
@@ -176,10 +176,19 @@ CORE_CONTRACT: dict = {
                          "most 22, place_order from inside on_event), and with that much headroom whether a "
                          "value is taken never depends on the stack depth of the call. "
                          "What is left of the interpreter's own recursion: when two DISTINCT nested values "
-                         "whose hashes are equal are keys of one dict or elements of one set, the interpreter "
-                         "compares them, one level of its recursion limit per container of the two (measured: "
-                         "two distinct 98-level values need 106 frames of headroom); with less, such a value "
-                         "is refused with the entry's own error (never RecursionError). MAX_NESTING is 100: "
+                         "whose hashes are equal are keys of one dict or elements of one set, they are "
+                         "compared: tuples and frozensets by the interpreter's C, one level of its recursion "
+                         "limit per container, and from a FrozenDict down by the core's own iterative "
+                         "comparison (values._plain_equal, round 16, i0-r15-03: no frame per level; before, "
+                         "a Python method took 3 a level) -- measured (freeze of a dict with the two as keys): "
+                         "tuples and frozensets need the levels + 6 frames of headroom (97 levels: 103), "
+                         "FrozenDicts at most 12 at any depth, a mixed nest at most 14; at most " +
+                         str(CALL_FRAMES) + " + one frame per level for every container kind "
+                         "(tests/bt/item_0/test_bt0_r16_one_reading.py grid F); with less, "
+                         "such a value is refused with the entry's own error (never RecursionError). A key "
+                         "or an element that has no hash (a signaling-NaN Decimal, or what holds one) is "
+                         "refused with the entry's own error too, never the interpreter's TypeError (round "
+                         "16, i0-r15-02). MAX_NESTING is 100: "
                          "set in round 14 from the then recursive walks (3 frames a nesting level, about 20 "
                          "for a run: within half of the default limit 1000) and kept, now bounding the "
                          "interpreter's own recursion over one value. So a registration, a subclass hook, a "
@@ -282,7 +291,9 @@ CORE_CONTRACT: dict = {
         "plain_data": PLAIN_DATA_RULE,
         "carriers": [c.__name__ for c in PATH_CARRIERS],
         "plug_in_answers": "what the engine takes from a plug-in after its call returned -- a delay "
-                           "(int), a fee (float), a pre-trade reject reason (str), the reports of a fill "
+                           "(int), a fee (float: the float nearest the value of any real number, a numpy "
+                           "longdouble too; a finite value beyond a float's range refused -- the float field's "
+                           "rule, values.as_float, round 16), a pre-trade reject reason (str), the reports of a fill "
                            "model and the forced orders of the account (a Sequence: a list or a tuple, "
                            "read by the base type's own iterator, its truth and length never asked) -- is "
                            "taken once, as the built-in value, by values.settle (take_int, take_float, "

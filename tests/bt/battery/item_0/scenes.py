@@ -64,6 +64,10 @@ Common conventions (they are part of every scene's input):
     (`input_types`, `covers_of`). A scene whose strategy asks the target for
     something holds the kinds in `requests` ("timer" / "place" / "cancel"),
     the same requests its `strategy` text says.
+  * round r16-1 (critic i0-r15-05): a viewpoint's title is the fixed requirements' text (VIEWPOINTS); P0-2 holds a
+    value scene per time unit (秒 / ミリ / マイクロ秒) and form (decimal text, int, float) whose input is
+    {"time", "unit"}; `extra_values_of` gives the extra-axis values (P0-2's units, P0-7's plug points) an input
+    holds, and grid_c.named_coverage shows which scenes give each value the viewpoint's text names.
 """
 from __future__ import annotations
 
@@ -91,15 +95,12 @@ TIME_NAMINGS = {
 }
 NAMING_SHAPES = {"position": POSITION_NAMINGS, **TIME_NAMINGS, "next_call": ("next",)}
 
-VIEWPOINTS = {
-    "P0-1": "核が事象駆動(型を持つ事象を時刻順に流す)であること",
-    "P0-2": "時刻が UTC の int64 ナノ秒で表されること",
-    "P0-3": "8 種の事象型(約定・板の写真・板の差分・足・資金調達・清算・時計・注文の受付/拒否/約定の通知)を扱えること",
-    "P0-4": "戦略が「受け取れた時刻 ≤ 今」の事象しか見られないこと(構造で)",
-    "P0-5": "同時刻の事象の並びが決定的で、規則に従うこと",
-    "P0-6": "戦略の API(事象ごとの呼び出し・発注・取消)",
-    "P0-7": "他項目が核を書き換えずに差し込める口(約定模型・遅延模型・費用・口座)",
-}
+# Round r16-1 (critic i0-r15-05; ROOTCAUSE_r16-1.md section 2, root 2): a viewpoint's title is the fixed
+# requirements' section 2 row, column 2, character for character (a summary written here by hand dropped part of it).
+import grid_c as _grid_c  # noqa: E402  (stdlib only; reads the fixed requirements' file)
+
+VIEWPOINTS = {vp: _grid_c.table_cell(_grid_c.MEASURE_LINE[vp], 2) for vp in _grid_c.VIEWPOINTS}
+assert all(_grid_c.table_cell(_grid_c.MEASURE_LINE[vp], 1) == vp for vp in VIEWPOINTS), "REQUIREMENTS.md rows moved"
 
 
 @dataclass(frozen=True)
@@ -301,6 +302,84 @@ add(id="p2-one-ns-apart", viewpoint="P0-2", kind="capability",
     derivation="int64 ナノ秒なら T0 と T0+1 は別の整数。float64 は 2^53 を超える整数を 256 刻みでしか表せないので"
                "(1.7e18 の近くの間隔は 256)、秒やナノ秒を float で持つと 2 つは同じ値になる。マイクロ秒止まりの型でも同じ値になる。",
     measures="戦略が受け取った 2 件の時刻(int ナノ秒)。")
+
+# Round r16-1 (critic i0-r15-05): the time units the viewpoint's text names besides ISO (秒・ミリ, and マイクロ秒 as
+# another of 「他の単位」), each as a decimal text, an int and a float. The known time is ISO_NS (2024-01-01T00:00:00
+# .123456789Z) written in the unit; the int and the float forms whose value cannot be ISO_NS carry a known time of their
+# own, written in the derivation. The answer is the value the input holds (a text: its decimal; an int: itself; a
+# float: the binary value it holds) times the unit's factor, when that is a whole number of ns; otherwise no int64 ns
+# is right (NO_INT: any int returned is a different time = 不一致; a refusal is 対応なし, above it by rule 5).
+UNIT_WORDS = {"s": "秒", "ms": "ミリ", "us": "マイクロ秒"}  # the input's unit code -> the requirements' word
+UNIT_FACTOR = {"s": 10 ** 9, "ms": 10 ** 6, "us": 10 ** 3}
+NO_INT = "無い(入力が持つ値にナノ秒より細かい端数がある。どの整数も入力と違う時刻)"
+_UNIT_NOTE = ("time を、対象が単位 unit(s = 秒、ms = ミリ秒、us = マイクロ秒)の時刻として読む入口(対象のデータの入口の時刻の欄、"
+              "または対象が公開する時刻の変換の関数)に、そのままの型(文字列 / 整数 / float)で渡し、対象が作った時刻を int ナノ秒で読む。"
+              "adapter は数を換算しない(倍率を掛ける・型を変える・文字列にする・対象の入口を通らない変換をする、をしない)。その単位とその型を"
+              "読む入口が無い対象は「対応なし」(試したことを書く)、入口が断れば「対応なし」(出た例外を書く)")
+_UNIT_GRADED = ("adapter の出力の ns(対象が作った時刻を、対象の時刻の型から正確に int ナノ秒に読んだ値)を runner が採点する: int64 の範囲の"
+                "整数(bool でない。numpy の整数を含む)ならその整数、ほかは null(run_battery.py の _grade_unit_time)")
+_UNIT_MEASURES = "対象自身の変換が、この単位の時刻を丸めずに int64 ナノ秒にするか(ナノ秒の整数にならない値を黙って丸めないか)。"
+_NO_INT_TAIL = ("正解の int64 ナノ秒は無い: どの整数を返しても入力と違う時刻なので「不一致」、対象が断れば「対応なし」"
+                "(場面集の規則 5 の順で断る方が上)。")
+_FORM_TITLE = {"text": "十進の文字列・ナノ秒で割り切れる", "text-subns": "十進の文字列・ナノ秒より細かい桁がある", "int": "整数",
+               "float-held": "float・float が持つ値がナノ秒で割り切れる",
+               "float-subns": "float・書いた数を float が持てず、持つ値にナノ秒より細かい端数がある"}
+_UNIT_PLAN = [
+    # (unit, form, time, expected int64 ns or NO_INT, derivation)
+    ("s", "text", "1704067200.123456789", ISO_NS,
+     "既知の時刻 2024-01-01T00:00:00.123456789Z(p2-iso-utc と同じ)を秒の十進で書いた。1,704,067,200 秒(p2-iso-utc の導き方)"
+     " + 0.123456789 秒 = 1,704,067,200,123,456,789 ns。"),
+    ("s", "text-subns", "1704067200.1234567891", NO_INT,
+     "0.1234567891 秒 = 123,456,789.1 ns で、ナノ秒の整数にならない(10 桁目の 1 = 0.1 ns)。" + _NO_INT_TAIL),
+    ("s", "int", 1704067200, 1_704_067_200_000_000_000,
+     "既知の時刻 2024-01-01T00:00:00Z。1,704,067,200 秒(p2-iso-utc の導き方)× 10^9 = 1,704,067,200,000,000,000 ns。"),
+    ("s", "float-held", 1704067200.001953125, 1_704_067_200_001_953_125,
+     "既知の時刻 2024-01-01T00:00:00.001953125Z。2^30 ≤ 1704067200 < 2^31 なので float はこの範囲を 2^-22 秒刻みで持つ。"
+     "0.001953125 = 1/512 = 8192 × 2^-22 は刻みの上にあるので、float が持つ値は正確に 1704067200.001953125 秒"
+     "(最短の表記は 1704067200.0019531 で、表記の桁は持つ値より短い)。1/512 秒 = 1,953,125 ns。"
+     "よって 1,704,067,200,001,953,125 ns。"),
+    ("s", "float-subns", float("1704067200.123456789"), NO_INT,
+     "既知の時刻 2024-01-01T00:00:00.123456789Z を秒の float で書いた数 1704067200.123456789 は float が持てない。"
+     "2^-22 秒刻みで最も近いのは 1704067200 + 517815 × 2^-22 秒(0.123456789 × 2^22 = 517,815.30…)で、float が持つ値は正確に "
+     "1704067200.1234567165374755859375 秒。ナノ秒にすると 517815 × 10^9 / 2^22 = 517815 × 1953125 / 8192 で、"
+     "517815 は奇数なので 8192 で割り切れず、ナノ秒の整数にならない。" + _NO_INT_TAIL),
+    ("ms", "text", "1704067200123.456789", ISO_NS,
+     "既知の時刻 2024-01-01T00:00:00.123456789Z をミリ秒の十進で書いた。1,704,067,200,123 ミリ秒 + 0.456789 ミリ秒 = "
+     "1,704,067,200,123,456,789 ns。"),
+    ("ms", "text-subns", "1704067200123.4567891", NO_INT,
+     "0.4567891 ミリ秒 = 456,789.1 ns で、ナノ秒の整数にならない。" + _NO_INT_TAIL),
+    ("ms", "int", 1704067200123, 1_704_067_200_123_000_000,
+     "既知の時刻 2024-01-01T00:00:00.123Z。1,704,067,200,123 ミリ秒 × 10^6 = 1,704,067,200,123,000,000 ns。"),
+    ("ms", "float-held", 1704067200123.015625, 1_704_067_200_123_015_625,
+     "既知の時刻 2024-01-01T00:00:00.123015625Z。2^40 ≤ 1704067200123 < 2^41 なので float はこの範囲を 2^-12 ミリ秒刻みで持つ。"
+     "0.015625 = 1/64 = 64 × 2^-12 は刻みの上にあるので、float が持つ値は正確に 1704067200123.015625 ミリ秒"
+     "(最短の表記は 1704067200123.0156)。1/64 ミリ秒 = 15,625 ns。よって 1,704,067,200,123,015,625 ns。"),
+    ("ms", "float-subns", float("1704067200123.456789"), NO_INT,
+     "既知の時刻 2024-01-01T00:00:00.123456789Z をミリ秒の float で書いた数 1704067200123.456789 は float が持てない。"
+     "2^-12 ミリ秒刻みで最も近いのは 1704067200123 + 1871 × 2^-12 ミリ秒(0.456789 × 4096 = 1,871.007…)で、float が持つ値は正確に "
+     "1704067200123.456787109375 ミリ秒。ナノ秒にすると 1871 × 10^6 / 2^12 = 1871 × 15625 / 64 で、1871 は奇数なので"
+     "ナノ秒の整数にならない。" + _NO_INT_TAIL),
+    ("us", "text", "1704067200123456.789", ISO_NS,
+     "既知の時刻 2024-01-01T00:00:00.123456789Z をマイクロ秒の十進で書いた。1,704,067,200,123,456 マイクロ秒 + 0.789 マイクロ秒 = "
+     "1,704,067,200,123,456,789 ns。"),
+    ("us", "text-subns", "1704067200123456.7891", NO_INT,
+     "0.7891 マイクロ秒 = 789.1 ns で、ナノ秒の整数にならない。" + _NO_INT_TAIL),
+    ("us", "int", 1704067200123456, 1_704_067_200_123_456_000,
+     "既知の時刻 2024-01-01T00:00:00.123456Z。1,704,067,200,123,456 マイクロ秒 × 10^3 = 1,704,067,200,123,456,000 ns。"),
+    ("us", "float-held", 1704067200123456.75, 1_704_067_200_123_456_750,
+     "既知の時刻 2024-01-01T00:00:00.12345675Z。2^50 ≤ 1704067200123456 < 2^51 なので float はこの範囲を 2^-2 マイクロ秒"
+     "(= 250 ns)刻みで持つ。0.75 は刻みの上にあるので、float が持つ値は正確に 1704067200123456.75 マイクロ秒(最短の表記は "
+     "1704067200123456.8)= 1,704,067,200,123,456,750 ns。この float は、既知の時刻 …123456789Z をマイクロ秒で書いた数 "
+     "1704067200123456.789(float が持てない)に最も近い float でもあり、その数を float で入れた場合はこの場面と同じ入力になる。"
+     "刻みの 250 ns がナノ秒の整数なので、この範囲の float はどれもナノ秒で割り切れる値を持ち、「持つ値にナノ秒より細かい端数がある」"
+     "float はマイクロ秒では作れない。"),
+]
+for _u, _f, _t, _want, _d in _UNIT_PLAN:
+    add(id=f"p2-{_u}-{_f}", viewpoint="P0-2", kind="value",
+        title=f"{UNIT_WORDS[_u]}の時刻({_FORM_TITLE[_f]})を対象自身の変換で int64 ナノ秒にした値",
+        input={"time": _t, "unit": _u, "note": _UNIT_NOTE},
+        expected={"int64_ns": _want}, derivation=_d, measures=_UNIT_MEASURES, graded_from=_UNIT_GRADED)
+UNIT_SCENES = [f"p2-{_u}-{_f}" for _u, _f, *_ in _UNIT_PLAN]
 
 # ---------------------------------------------------------------- P0-3
 for _k in ["trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation"]:
@@ -522,7 +601,7 @@ _PLUG_TRADES = [trade(T0 + i * DAY, 100.0, qty=100.0) for i in (1, 2, 3)]
 add(id="p7-fill-model-swap", viewpoint="P0-7", kind="capability",
     title="約定の模型を差し替えると、その模型の値で埋まるか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
-           "plug": "約定の模型: 届いた注文を、その場で全量、価格 12345.0 で埋める",
+           "plug": "約定模型: 届いた注文を、その場で全量、価格 12345.0 で埋める",
            "strategy": "1 回目: 成行 買い 数量 1", "requests": ["place"]},
     expected={"fill_price": 12345.0},
     derivation="差し替えた模型は相場によらず 12345.0 で埋める。差し替えが効けば約定の価格は 12345.0。"
@@ -532,7 +611,7 @@ _LAT_TRADES = [trade(T0 + i * MS, 100.0, qty=100.0) for i in range(0, 11)]
 add(id="p7-latency-model-swap", viewpoint="P0-7", kind="capability",
     title="発注の遅延の模型を差し替えると、注文がその遅れで取引所に着くか",
     input={"any_type": True, "events": _LAT_TRADES, "account": "現金 100,000 円",
-           "plug": "遅延の模型: 発注の遅れ 7 ms(7,000,000 ns)。配信・取消・通知の遅れは 0",
+           "plug": "遅延模型: 発注の遅れ 7 ms(7,000,000 ns)。配信・取消・通知の遅れは 0",
            "strategy": "1 回目(T0): 成行 買い 数量 1", "requests": ["place"]},
     expected={"fill_time_ns": T0 + 7 * MS},
     derivation="約定は 1 ms おきに T0〜T0+10 ms。T0 に出した注文は T0+7 ms に取引所に着く。成行はそこで最初の約定"
@@ -541,7 +620,7 @@ add(id="p7-latency-model-swap", viewpoint="P0-7", kind="capability",
 add(id="p7-cost-model-swap", viewpoint="P0-7", kind="capability",
     title="費用の模型を差し替えると、その模型の費用が約定に付くか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
-           "plug": "費用の模型: 約定 1 件につき 0.5 円(数量・価格によらない)",
+           "plug": "費用: 約定 1 件につき 0.5 円(数量・価格によらない)",
            "strategy": "1 回目: 成行 買い 数量 1", "requests": ["place"]},
     expected={"fee": 0.5},
     derivation="約定は 1 件、1 件あたり 0.5 円なので費用は 0.5。",
@@ -549,7 +628,7 @@ add(id="p7-cost-model-swap", viewpoint="P0-7", kind="capability",
 add(id="p7-cost-per-unit", viewpoint="P0-7", kind="value",
     title="数量に比例する費用の模型に差し替えると、その模型が数量から出した費用が約定に付くか",
     input={"any_type": True, "events": _PLUG_TRADES, "account": "現金 100,000 円",
-           "plug": "費用の模型: 約定の数量 1 単位あたり 0.375 円(価格によらない)", "strategy": "1 回目: 成行 買い 数量 2",
+           "plug": "費用: 約定の数量 1 単位あたり 0.375 円(価格によらない)", "strategy": "1 回目: 成行 買い 数量 2",
            "requests": ["place"]},
     expected={"fee": 0.75},
     derivation="数量 2 の成行は、100 単位の約定(100.0)で 1 回に全量が埋まる。費用は 2 × 0.375 = 0.75(0.375 = 3/8 は 2 進の小数で丸めなく表せる)。"
@@ -594,6 +673,7 @@ COVERS: dict[str, list[tuple[str, str, str]]] = {
     "p2-iso-offset": [],
     "p2-event-time-exact": [],
     "p2-one-ns-apart": [],
+    **{_i: [] for _i in UNIT_SCENES},
     **{f"p3-{k}": [(JP[k], _R, "")] for k in ("trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation")},
     "p3-mixed-one-run": [(e, _R, "") for e in _MKT],
     "p3-clock-timer": [("時計", _R, "")],
@@ -666,6 +746,40 @@ def covers_problems(scene: Scene) -> list:
     """The declared cells whose event type does not come out of the input (a test fails on any)."""
     types = input_types(scene)
     return [tuple(c) for c in scene.declares if c[0] not in types]
+
+
+# Round r16-1 (critic i0-r15-05; ROOTCAUSE_r16-1.md section 3 item 1): the extra-axis values a scene's input gives by
+# machine (families 10 of section 4). The axis names are grid_c_judgments.tsv's (a test checks them); the unit codes'
+# words are UNIT_WORDS; a value outside the viewpoint's axis carries its reason in OUTSIDE_EXTRA (a test checks it).
+TIME_AXIS, PLUG_AXIS = "時刻の単位", "差し込む口"
+OUTSIDE_EXTRA = {"マイクロ秒": "要件 P0-2 の文は「他の単位(秒・ミリ・ISO 文字列)」と括弧で 3 つを列べ、マイクロ秒を列べない。"
+                              "マイクロ秒は括弧の外の「他の単位」の 1 つとして場面にした(軸の値は要件の文の切片からだけ作るので、軸には足さない)"}
+
+
+def extra_values_of(scene: Scene) -> set:
+    """{(axis, value)} the scene's input gives: `iso` (a str) -> ISO 文字列; `unit` (s / ms / us, with a `time`) -> its
+    word; an event item (input_events) whose `ts_ns` is an int, not a bool -> int64 ナノ秒; `plug` (a str holding ":")
+    -> the text before the first ":", stripped. Anything else in those fields raises ValueError (never dropped)."""
+    inp = scene.input if isinstance(scene.input, dict) else {}
+    out = set()
+    if "iso" in inp:
+        if not isinstance(inp["iso"], str):
+            raise ValueError(f"{scene.id}: `iso` must be a str: {inp['iso']!r}")
+        out.add((TIME_AXIS, "ISO 文字列"))
+    if ("unit" in inp) != ("time" in inp):
+        raise ValueError(f"{scene.id}: `unit` and `time` go together")
+    if "unit" in inp:
+        if inp["unit"] not in UNIT_WORDS:
+            raise ValueError(f"{scene.id}: `unit` must be one of {sorted(UNIT_WORDS)}: {inp['unit']!r}")
+        out.add((TIME_AXIS, UNIT_WORDS[inp["unit"]]))
+    if any(isinstance(e, dict) and type(e.get("ts_ns")) is int for e in input_events(scene)):
+        out.add((TIME_AXIS, "int64 ナノ秒"))
+    if "plug" in inp:
+        plug = inp["plug"]
+        if not isinstance(plug, str) or ":" not in plug:
+            raise ValueError(f"{scene.id}: `plug` must be a str with ':' after the plug point: {plug!r}")
+        out.add((PLUG_AXIS, plug.split(":", 1)[0].strip()))
+    return out
 
 
 def l438_2_ok(ids_with_type_plan, scenes=None) -> bool:

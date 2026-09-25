@@ -439,14 +439,16 @@ PLAIN_DATA_RULE = (
     "/ set / frozenset of plain data become new immutable containers and are read back as fresh copies, "
     "nested at most MAX_NESTING (100) containers deep counted from the field that holds them; two keys of a "
     "dict or two elements of a set that are distinct in the sender's container but equal as plain data are "
-    "refused (never merged); anything else (a plain Enum member, a function, any other object) is refused"
+    "refused (never merged), and so is a key or an element that has no hash (a signaling-NaN Decimal, or "
+    "what holds one; round 16); anything else (a plain Enum member, a function, any other object) is refused"
 )
 
 FIELD_RULE = (
     "every field of a carrier (PATH_CARRIERS) is made, when the carrier is made, by one of values.as_text / "
     "as_float / as_int / as_flag / as_choice / freeze, which build a new object of the built-in type itself "
     "(str, float, int, bool, frozen plain data), never a subclass, an object of the sender's, or the "
-    "object the sender handed over"
+    "object the sender handed over; a float field is the float nearest the value of any real number it "
+    "takes, whatever its class (round 16)"
 )
 
 
@@ -636,8 +638,10 @@ def value_text(value: Any) -> str:
 # iterative (round 15, i0-r14-05) and take no frame per level; the bound keeps
 # what the INTERPRETER itself does over one value -- comparing two distinct
 # nested values of equal hash in one set or dict, one level of its recursion
-# limit per container (measured round 15: two distinct 98-level values need 106
-# frames of headroom) -- well inside its default limit (1000). The value 100 was
+# limit per tuple / frozenset container (measured round 15: two distinct
+# 98-level tuples need 106 frames of headroom; from a FrozenDict down the
+# core's iterative `_plain_equal` takes none per level, round 16) -- well
+# inside its default limit (1000). The value 100 was
 # set in round 14 from the recursive walks of then (3 frames a level, about 20
 # for a run: half of 1000) and kept.
 MAX_NESTING = 100
@@ -649,7 +653,7 @@ MAX_NESTING = 100
 # With less headroom than this a call may fail with RecursionError; with at
 # least this much, whether a value is taken never depends on the stack depth
 # of the call -- except for the interpreter's comparison above, which needs
-# one more frame per container of the two values it compares.
+# one more frame per tuple / frozenset level of the values it compares.
 CALL_FRAMES = 30
 
 
@@ -1189,6 +1193,22 @@ def settled(value: Any) -> bool:
 NOT_PLAIN = _NOT_PLAIN
 
 
+def is_longdouble(t: type) -> bool:
+    """Does class `t` derive from numpy's longdouble (its own MRO)?"""
+    return derives(t, _NP_LONGDOUBLE)
+
+
+def longdouble_ratio(value: Any) -> Any:
+    """The exact value a numpy longdouble holds, as (numerator, denominator)
+    ints, read by numpy's own C method (no code of a subclass runs); None
+    for inf or nan."""
+    try:
+        n, d = _LD_RATIO(value)
+    except (OverflowError, ValueError):
+        return None
+    return _new_int(n), _new_int(d)
+
+
 def plain_scalar(value: Any, where: str = "value") -> Any:
     """The scalar rule's value, or `NOT_PLAIN` for a value the rule does
     not take; ValueError for a number whose exact conversion failed (the
@@ -1448,7 +1468,9 @@ def _plain_equal(a: Any, b: Any) -> bool:
         if x is y:
             continue
         kx, ky = _container_kind(type(x)), _container_kind(type(y))
-        if kx is None and ky is None:
+        if kx is None or ky is None:
+            # a scalar, or what is not a container the core builds (a dict in
+            # a FrozenDict a caller made with the public constructor): its own ==
             if not (x == y):
                 return False
             continue

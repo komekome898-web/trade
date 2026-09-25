@@ -13,7 +13,8 @@ axis and the viewpoint's own extra axes (a viewpoint's text limits no axis).
 Each cell's verdict has two values only and is made from the scenes' `covers`
 alone (round r11-1, LEAD_DESIGN.md section 8.2 item 1): "場面にした" with the
 ids of the scenes of the same viewpoint whose `Scene.covers` holds the cell,
-and "測っていない(固定した測り方の外)" otherwise. Since round r13-1 (critic
+and "測っていない" otherwise (round r16-1: with the reason made per cell from the declarations and F's counted cells,
+`why`). Since round r13-1 (critic
 i0-r11-02, ROOTCAUSE_r13-1.md section 3) `Scene.covers` is not written by
 hand: it is `scenes.covers_of`, the declared cells whose event type comes out
 of the scene's input by machine. No reading of the requirements' words decides
@@ -102,7 +103,12 @@ def cells(vp: str) -> list[tuple[str, str, str]]:
     return [(e, s, x) for e, s, x in product(ev, see, ex[0] if ex else [""])]
 
 
-VERDICTS = ("場面にした", "測っていない(固定した測り方の外)")  # the only two values (LEAD_DESIGN.md section 8.2 item 1)
+VERDICTS = ("場面にした", "測っていない")  # the only two values (LEAD_DESIGN.md section 8.2 item 1; the name, round r16-1)
+# Round r16-1 (critic i0-r15-06; ROOTCAUSE_r16-1.md section 2, root 4): the second value's name carried the reason of
+# the criterion section 8.2 item 1 withdrew ("固定した測り方の外"), which no machine checked. The reason is now made per
+# cell from what the machine does check: the scenes' declarations and F's counted cells (`why`).
+WHY_NO_DECLARATION = "この升目を宣言した場面が無い"
+WHY_TYPE_NOT_FROM_INPUT = "宣言した場面はあるが、その事象の型が場面の入力から出ない"
 MEANING = ("この表は測っていない範囲の記録である。要件を広げるかはオーナーの判断で、項目 0 の通過のあとに"
            "『欠けているもの』の批評家の経路で上げる。")  # section 8.2 item 2, verbatim
 
@@ -118,21 +124,38 @@ def verdict(vp: str, cell: tuple[str, str, str], scenes) -> tuple[str, list[str]
     return (VERDICTS[0], ids) if ids else (VERDICTS[1], [])
 
 
+def why(vp: str, cell: tuple[str, str, str], scenes) -> str:
+    """The reason of a cell no scene counts (round r16-1): a scene of the viewpoint declares it but F does not count
+    it -> WHY_TYPE_NOT_FROM_INPUT; no scene of the viewpoint declares it -> WHY_NO_DECLARATION; "" for a counted cell."""
+    if verdict(vp, cell, scenes)[0] == VERDICTS[0]:
+        return ""
+    declared = any(sc.viewpoint == vp and tuple(cell) in {tuple(c) for c in sc.declares} for sc in scenes)
+    return WHY_TYPE_NOT_FROM_INPUT if declared else WHY_NO_DECLARATION
+
+
+def shown(row: dict) -> str:
+    """The verdict as the table shows it: 場面にした, or 測っていない(<why>)."""
+    return row["verdict"] if row["verdict"] == VERDICTS[0] else f"{row['verdict']}({row['why']})"
+
+
 def table(scenes) -> list[dict]:
-    """Every cell of every viewpoint, once, with its verdict made from the scenes' `covers` only."""
+    """Every cell of every viewpoint, once, with its verdict made from the scenes' `covers` only (and, round r16-1,
+    the reason of a cell not counted)."""
     rows = []
     for vp in VIEWPOINTS:
         for e, s, x in cells(vp):
             v, ids = verdict(vp, (e, s, x), scenes)
-            rows.append({"viewpoint": vp, "event": e, "see": s, "extra": x, "verdict": v, "scenes": ids})
+            rows.append({"viewpoint": vp, "event": e, "see": s, "extra": x, "verdict": v, "scenes": ids,
+                         "why": why(vp, (e, s, x), scenes)})
     return rows
 
 
 def problems(scenes, rows) -> list[tuple]:
     """What differs between a table and the one the scenes' covers make: a missing, repeated or foreign cell, or a
     verdict / scene list that is not the covers' (the check the generator, the tests and the probes share)."""
-    want = {(r["viewpoint"], r["event"], r["see"], r["extra"]): (r["verdict"], r["scenes"]) for r in table(scenes)}
-    got = [((r["viewpoint"], r["event"], r["see"], r["extra"]), (r["verdict"], list(r["scenes"]))) for r in rows]
+    want = {(r["viewpoint"], r["event"], r["see"], r["extra"]): (r["verdict"], r["scenes"], r["why"]) for r in table(scenes)}
+    got = [((r["viewpoint"], r["event"], r["see"], r["extra"]), (r["verdict"], list(r["scenes"]), r.get("why")))
+           for r in rows]
     out: list[tuple] = []
     seen = Counter(k for k, _ in got)
     out += [("升目が無い", k) for k in want if k not in seen]
@@ -143,6 +166,46 @@ def problems(scenes, rows) -> list[tuple]:
         elif v[0] not in VERDICTS or v != want[k]:
             out.append(("判断が covers と違う", k, v, want[k]))
     return out
+
+
+# ---------------------------------------------------------------- round r16-1: the values a viewpoint names
+# Critic i0-r15-05 (ROOTCAUSE_r16-1.md section 2, root 1): nothing checked that a viewpoint's scenes give every value
+# its text names (P0-2 names 秒 and ミリ; no scene gave them). `named_values` reads them from the judgments of the
+# segments of the viewpoint's own section 2 row (event-axis and extra-axis values; see-path values are the scenes'
+# declarations, read by the critic -- LEAD_DESIGN.md section 8.5 item 24); `named_coverage` lists, for each, the
+# scenes of the viewpoint whose input gives it (an event value: F's types, scenes.input_types; an extra value:
+# scenes.extra_values_of). A value no input gives shows with no scene, and a test fails.
+def named_values(vp: str) -> list[tuple[str, str]]:
+    """[(axis, value)] named by the viewpoint's own section 2 row, in order: ("事象", event) and (extra axis, value)."""
+    out: list = []
+    for (n, _, _), (_, _, j) in zip(segments(), judgments()):
+        if n != MEASURE_LINE[vp]:
+            continue
+        if j.startswith("E:"):
+            item = ("事象", j[2:])
+        elif j.startswith("X:"):
+            _, v, ax, val = j.split(":", 3)
+            if v != vp:
+                raise ValueError(f"line {n} names an extra value of {v}, not of {vp}: {j}")
+            item = (ax, val)
+        else:
+            continue
+        if item not in out:
+            out.append(item)
+    return out
+
+
+def named_coverage(scenes) -> list[dict]:
+    """[{"viewpoint", "axis", "value", "scenes"}] for every value every viewpoint names, with the ids of the scenes of
+    that viewpoint whose input gives it."""
+    import scenes as _scenes
+    rows = []
+    for vp in VIEWPOINTS:
+        for ax, val in named_values(vp):
+            ids = [sc.id for sc in scenes if sc.viewpoint == vp and (
+                val in _scenes.input_types(sc) if ax == "事象" else (ax, val) in _scenes.extra_values_of(sc))]
+            rows.append({"viewpoint": vp, "axis": ax, "value": val, "scenes": ids})
+    return rows
 
 
 # ---------------------------------------------------------------- round r15-1: the scenes the cells do not place

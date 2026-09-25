@@ -140,6 +140,25 @@ class CurrentImplAdapter(Adapter):
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
+    # ---------------- P0-2 unit scenes (round r16-1): the old engine has no entry that reads a time in a unit; its only
+    # input is the candles' time index, handed on as it is (the same entry as p2-iso-*)
+    def _units(self, sc):
+        v = sc.input["time"]
+        df = pd.DataFrame([{"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1.0}], index=[v])
+        rec = _Rec()
+        try:
+            E.run_backtest(rec, df)
+            got = [c.index[-1] for c in rec.seen]
+            r = f"戦略に届いた添字 {got!r:.160}(型 {sorted({type(x).__name__ for x in got})}。単位の変換はされない)"
+        except Exception as exc:  # noqa: BLE001
+            r = f"{type(exc).__name__}: {str(exc)[:160]}"
+        return C.unit_time(sc, [], tried=f"単位を受ける引数も変換も無い(run_backtest の入力は candles の DataFrame だけ)。試したこと: "
+                                         f"添字が {v!r} の candles を run_backtest に渡した -> {r}")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _ts_scene(self, sc):
         rows = [dict(C.as_bar(C.substitute(e, "trade", price=100.0)), volume=1.0) for e in C.events(sc)]
         rec, _ = _run(rows)

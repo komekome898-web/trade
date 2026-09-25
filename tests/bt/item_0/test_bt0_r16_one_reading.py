@@ -2,7 +2,7 @@
 
 The root cause of the round-15 findings (round_16/ROOTCAUSE.md §1): the
 core read one value differently by type or by path -- a float time by its
-shortest repr but a Fraction by its value; a float FIELD rounded an int and
+shortest repr (a decimal rounding of it) but a Fraction by its value; a float FIELD rounded an int and
 refused a longdouble; a key without a hash escaped as the interpreter's
 TypeError where a too-deep comparison was the entry's error; two colliding
 nested FrozenDicts compared through a Python method (3 frames a level) where
@@ -13,11 +13,12 @@ Grid T (`test_to_nanos_*`): value class {float, numpy float16 / float32 /
   float64 / longdouble, int, Fraction, Decimal, str} x unit {s, ms, us, ns}
   x values (seed 16: times TYPED as decimals with 0..9 fractional digits,
   the value a float of them holds, whole-number floats, floats coarser than
-  1 ns, 0, -0.0, negatives, 0.25, 1.5, inf, nan). Oracle: the value has two
-  readings -- its exact value (a float's `as_integer_ratio`) and the decimal
-  it writes (a str / Decimal: its text; a float: its shortest repr; a
-  longdouble: the float it converts to exactly, else no reading); when both
-  state the same whole number of ns, that number; else a refusal.
+  1 ns, 0, -0.0, negatives, 0.25, 1.5, inf, nan). Oracle: the value the
+  input HOLDS (a str / Decimal: the decimal it writes; a float / numpy
+  float / longdouble: its `as_integer_ratio`; an int / Fraction: itself)
+  times the unit; that int when it is a whole number of ns in int64, else
+  a refusal. A float's shortest repr is never read (it is a decimal
+  rounding of the float: the reading of round 15 this grid replaces).
 
 Grid N (`test_a_float_field_*`): value class {int, every numpy integer
   class, float, numpy float16 / 32 / 64 / longdouble, Fraction, Decimal,
@@ -45,8 +46,9 @@ Grid F (`test_*colliding*`, `test_the_cores_equality_*`): container of each
   97} x where the two values differ {at the bottom, nowhere}: (a) the core's
   equality equals an oracle that compares the same structure with
   FrozenDict read as a tagged frozenset of its items (plenty of stack); (b)
-  freeze of a dict with both as keys needs at most CALL_FRAMES + 2 x levels
-  frames of headroom. Plus random core values (seed 16, nesting up to 4,
+  freeze of a dict with both as keys needs at most CALL_FRAMES + levels
+  frames of headroom (the contract's one frame per level; the critic's
+  test i0-r15-03 allows 2 x levels). Plus random core values (seed 16, nesting up to 4,
   leaves whose hashes collide across types) compared pairwise.
 
 NOT in the grids (A-10): numpy complex classes other than complex128 in
@@ -106,44 +108,36 @@ def _typed_times():
 TYPED = _typed_times()
 
 
-def _ld_is_float(v) -> bool:
-    return Fraction(*v.as_integer_ratio()) == Fraction(*float(v).as_integer_ratio())
-
-
-def _readings(v):
-    """(exact value, the decimal it writes) as Fractions, or None where the
-    value has no such reading; decided by the library."""
-    if isinstance(v, (bool, np.bool_)):
-        return None, None
+def _held(v):
+    """The exact value the input holds, as a Fraction (None: no finite
+    real value), decided by the library."""
+    if isinstance(v, (bool, np.bool_, complex, np.complexfloating)):
+        return None
     if isinstance(v, str):
         try:
             d = Decimal(v.strip())
         except Exception:  # noqa: BLE001 - not a number
-            return None, None
-        return (Fraction(d), Fraction(d)) if d.is_finite() else (None, None)
+            return None
+        return Fraction(d) if d.is_finite() else None
     if isinstance(v, Decimal):
-        return (Fraction(v), Fraction(v)) if v.is_finite() else (None, None)
+        return Fraction(v) if v.is_finite() else None
     if isinstance(v, (int, np.integer)):
-        return Fraction(int(v)), Fraction(int(v))
+        return Fraction(int(v))
     if isinstance(v, Fraction):
-        return v, v
-    if isinstance(v, np.longdouble):
-        if not np.isfinite(v) or not _ld_is_float(v):
-            return None, None
-        v = float(v)
+        return v
     if isinstance(v, (float, np.floating)):
-        f = float(v)
-        if not math.isfinite(f):
-            return None, None
-        return Fraction(*f.as_integer_ratio()), Fraction(Decimal(repr(f)))
-    return None, None
+        if not np.isfinite(v):
+            return None
+        n, d = v.as_integer_ratio()
+        return Fraction(int(n), int(d))
+    return None
 
 
 def _oracle_ns(v, unit):
-    exact, written = _readings(v)
-    if exact is None or written is None or exact != written:
+    held = _held(v)
+    if held is None:
         return None
-    q = exact * UNITS[unit]
+    q = held * UNITS[unit]
     return int(q) if q.denominator == 1 and WIDE[0] <= q <= WIDE[1] else None
 
 
@@ -191,31 +185,34 @@ def test_to_nanos_gives_the_one_reading_of_a_value_or_refuses(v, unit):
     assert got is None or type(got) is int
 
 
-def test_the_grid_holds_floats_whose_two_readings_differ_and_agree():
-    """The grid is not vacuous: floats of both kinds, and times accepted."""
-    differ = agree = 0
+def test_the_grid_holds_floats_whose_repr_is_not_their_value():
+    """The grid is not vacuous: floats whose shortest repr differs from the
+    value they hold, both taken (whole ns) and refused (sub-ns digits)."""
+    taken = refused = 0
     for v, unit in TIME_VALUES:
-        if type(v) is float and math.isfinite(v):
-            e, w = _readings(v)
-            if e != w:
-                differ += 1
-            elif (e * UNITS[unit]).denominator == 1:
-                agree += 1
-    assert differ >= 50 and agree >= 20, (differ, agree)
+        if type(v) is float and math.isfinite(v) and Fraction(Decimal(repr(v))) != _held(v):
+            if _oracle_ns(v, unit) is None:
+                refused += 1
+            else:
+                taken += 1
+    assert taken >= 20 and refused >= 50, (taken, refused)
 
 
 def test_a_refused_longdouble_says_why():
-    """i0-r15-07: the refusal names the reason, not the class as a whole."""
+    """i0-r15-07: the refusal names the reason (the value it holds has
+    sub-nanosecond digits), not the class as a whole."""
     with pytest.raises(TimestampUnitError) as info:
         to_nanos(np.longdouble("1700000000.123456789"), "s")
-    assert "exactly" in str(info.value), str(info.value)
-
-
-def test_a_float_that_does_not_hold_its_decimal_is_refused_with_the_reason():
-    with pytest.raises(TimestampUnitError) as info:
-        to_nanos(1700000000123456.75, "us")
     text = str(info.value)
-    assert "1700000000123456.75" in text and "1700000000123456.8" in text, text
+    assert "sub-nanosecond" in text and "holds" in text and "must be int" not in text, text
+
+
+def test_a_float_is_its_value_and_a_refusal_names_the_value_it_holds():
+    assert to_nanos(1700000000123456.75, "us") == 1_700_000_000_123_456_750  # repr: ...456.8
+    assert to_nanos(float("1700000000123456.8"), "us") == 1_700_000_000_123_456_750  # the same float
+    with pytest.raises(TimestampUnitError) as info:
+        to_nanos(1700000000.123, "s")
+    assert "1700000000.1229999065399169921875" in str(info.value), str(info.value)
 
 
 # ---- grid N: a float field is the nearest float of the value -----------------------------
@@ -641,8 +638,15 @@ def test_two_colliding_nested_values_compare_alike_and_within_one_frame_per_cont
         assert (a != b) == differ
     a, b = _pair(kind, levels, True)
     need = _least(lambda: V.freeze({a: 1, b: 2}))
-    bound = V.CALL_FRAMES + 2 * levels
+    bound = V.CALL_FRAMES + levels  # the contract: at most one frame per level (the critic's bound is 2x)
     assert need <= bound, f"{kind} x {levels}: freeze needs {need} frames of headroom; bound {bound}"
+
+
+def test_a_caller_made_frozendict_holding_a_dict_compares_as_python_says():
+    """What is not a container the core builds is compared by its own ==."""
+    x, y = V.FrozenDict({"a": {}}), V.FrozenDict({"a": V.FrozenDict({})})
+    assert (x == y) == ({} == V.FrozenDict({})) is True
+    assert (V.FrozenDict({"a": [1]}) == V.FrozenDict({"a": V.FrozenList((1,))})) == ([1] == (1,)) is False
 
 
 def _random_value(rng, depth):

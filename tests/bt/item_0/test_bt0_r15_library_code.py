@@ -50,9 +50,9 @@ Grid C (`test_*_number_*`, `test_to_nanos_*`, `test_validate_nanos_*`,
   freeze, settle, to_nanos in every unit, validate_nanos, a latency model's
   delay. Oracle (from the value, not from the core): plain data is EQUAL to
   the value handed over (exact rationals compared), or refused; a time is
-  the int of ns the value states (a binary float by its shortest repr, as
-  documented; a value a float cannot hold exactly is refused), or refused
-  when it states none; numpy timedelta64 / datetime64 (a count in a unit)
+  the int of ns the value holds (a binary float and a numpy longdouble by
+  the exact value they hold, never a shortest repr -- round 16), or
+  refused when it states none; numpy timedelta64 / datetime64 (a count in a unit)
   are refused everywhere.
 
 Grid D (`test_an_entry_takes_a_value_alike_at_every_stack_depth`): headroom
@@ -490,9 +490,10 @@ def _stated_ns(v, unit):
         fl = float(v)
         if fl != fl or fl in (math.inf, -math.inf):
             return None
-        if _exact(np.float64(fl)) != _exact(v):  # the value is not a float: nothing exact to take
-            return None
-        q = Fraction(Decimal(float.__repr__(fl))) * f  # the documented shortest-repr reading
+        # round 16 (i0-r15-01): the value it HOLDS, a longdouble's too (this oracle
+        # read a float's shortest repr before -- the implementation's reading,
+        # copied -- and refused a longdouble a float cannot hold)
+        q = _exact(v)[1] * f
     elif isinstance(v, (Fraction, Decimal)):
         if isinstance(v, Decimal) and not v.is_finite():
             return None
